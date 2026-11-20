@@ -1,0 +1,203 @@
+{
+ "_note": "V7 · د5-هـ (t2): قطعُ المتابعة اليومية في ملفات العميل الأساسية وسجلّ الصفحات",
+ "pages.entry.dreport.under.daily": {
+  "order": 10,
+  "text": ",\n   \"under\": \"daily\""
+ },
+ "pages.kpi.refs.daily": {
+  "order": 10,
+  "text": ",\n    \"daily/kpiDaily\",\n    \"daily/kpiOcc\",\n    \"daily/kpiZones\""
+ },
+ "pages.kpi.names.daily": {
+  "order": 10,
+  "text": ",\n    \"daily/kpiDaily\": \"مؤشرات التشغيل اليومي\",\n    \"daily/kpiOcc\": \"مؤشرات الإشغال\",\n    \"daily/kpiZones\": \"مؤشرات المصليات\""
+ },
+ "root.live.planning.daily": {
+  "order": 10,
+  "text": "|rounds"
+ },
+ "root.live.profile.daily": {
+  "order": 10,
+  "text": "|rounds"
+ },
+ "root.self.daily": {
+  "order": 10,
+  "text": "daily: 1, "
+ },
+ "root.landing.daily": {
+  "order": 10,
+  "text": "\"daily\", "
+ },
+ "root.navPerm.daily": {
+  "order": 10,
+  "text": " daily: \"daily\","
+ },
+ "root.inPlanning.daily": {
+  "order": 10,
+  "text": "\"daily\""
+ },
+ "root.labels.daily": {
+  "order": 10,
+  "text": " daily:\"المتابعة اليومية\","
+ },
+ "root.navVals.daily": {
+  "order": 10,
+  "text": "          nDaily: cls(\"daily\", \"daily\"), tDaily: tip(\"daily\"),\n"
+ },
+ "root.go.daily": {
+  "order": 10,
+  "text": "goDaily: go(\"daily\"), "
+ },
+ "root.is.daily": {
+  "order": 10,
+  "text": " isDaily: ap === \"daily\","
+ },
+ "root.known.daily": {
+  "order": 10,
+  "text": "\"daily\","
+ },
+ "plat.sideOrder": {
+  "order": 5,
+  "text": ", \"daily\""
+ },
+ "kpis.okOf.daily": {
+  "order": 10,
+  "text": "      if (\"kpiOcc\" === t) return L(\"zones\") && L(\"dens\");\n      if (\"kpiZones\" === t) return L(\"zones\");\n"
+ },
+ "kpis.panels.daily": {
+  "order": 10,
+  "text": "        { k: \"dy\", pk: \"daily\", sk: \"kpiDaily\" },\n        { k: \"occ\", pk: \"daily\", sk: \"kpiOcc\" },\n        { k: \"zn\", pk: \"daily\", sk: \"kpiZones\" },\n"
+ },
+ "kpis.tabs.daily": {
+  "order": 10,
+  "file": "slots/kpis.tabs.daily.frag"
+ },
+ "kpis.mounts.daily": {
+  "order": 10,
+  "text": "  <sc-if value=\"{{on_dy}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Daily Sessions\" solo=\"kpiDaily\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n  <sc-if value=\"{{on_occ}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Daily Sessions\" solo=\"kpiOcc\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n  <sc-if value=\"{{on_zn}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Daily Sessions\" solo=\"kpiZones\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n"
+ },
+ "tree.keyCap.daily": {
+  "order": 10,
+  "text": "    bassam_rounds_v1:'daily/rounds'"
+ },
+ "tree.kpiPanel.daily": {
+  "order": 10,
+  "text": "      if (sk === 'kpiOcc') return onCap('zones') && onCap('dens');\n      if (sk === 'kpiZones') return onCap('zones');\n"
+ },
+ "p24.derive.daily": {
+  "order": 10,
+  "text": "'field.view': ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change']"
+ },
+ "nfc.kind.color.daily": {
+  "order": 10,
+  "text": " round:'#1d6fd6', kpi:'#9f1239',"
+ },
+ "nfc.kind.name.daily": {
+  "order": 10,
+  "text": " round:'الجولات', kpi:'المؤشرات',"
+ },
+ "nfc.kind.icon.daily": {
+  "order": 10,
+  "text": " round:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v4M12 16h.01', kpi:'M3 3v18h18M7 14l4-4 4 4 5-5',"
+ },
+ "nfc.reg.daily": {
+  "order": 10,
+  "file": "slots/nfc.reg.daily.frag"
+ },
+ "nfc.goNav.daily": {
+  "order": 10,
+  "text": " 'افتح الجولات':'daily', 'افتح الخريطة':'daily',"
+ },
+ "nfc.goKpi.daily": {
+  "order": 10,
+  "text": ", 'افتح المؤشرات': ['daily', 'kpiDaily'], 'افتح الإشغال': ['daily', 'kpiOcc']"
+ },
+ "findday.cap.daily": {
+  "order": 10,
+  "text": "cap.indexOf('daily') !== -1"
+ },
+ "findday.pk.daily": {
+  "order": 10,
+  "text": "pk === 'daily'"
+ },
+ "deptStore.labels.daily": {
+  "order": 10,
+  "text": "\n                 'bassam_rounds_v1':'جولات المتابعة اليومية',"
+ },
+ "deptStore.pageKeys.daily": {
+  "order": 10,
+  "text": "'daily',"
+ },
+ "bk.labels.daily": {
+  "order": 10,
+  "text": "bassam_rounds_v1: 'الجولات'"
+ },
+ "imgref.empty.daily": {
+  "order": 10,
+  "text": "bassam_rounds_v1: '{}', "
+ },
+ "store.opResources.daily": {
+  "order": 10,
+  "text": " 'bassam_rounds_v1',"
+ },
+ "store.keyLabels.daily": {
+  "order": 10,
+  "text": " bassam_rounds_v1:[\"الجولات اليومية\"],"
+ },
+ "store.identity.daily": {
+  "order": 10,
+  "text": "      bassam_rounds_v1: { \"*.d\": \"sid\" },\n"
+ },
+ "store.identity.uid.daily": {
+  "order": 10,
+  "text": "[\"bassam_rounds_v1\", \"*.d.*.\"]"
+ },
+ "store.proj.daily": {
+  "order": 10,
+  "text": "bassam_rounds_v1: 1"
+ },
+ "admin.keyLabels.daily": {
+  "order": 10,
+  "text": "        bassam_rounds_v1: \"الجولات اليومية\",\r\n"
+ },
+ "admin.wipe.labels.daily": {
+  "order": 10,
+  "text": "                bassam_rounds_v1: \"الجولات اليومية\",\r\n"
+ },
+ "admin.lift.owner.daily": {
+  "order": 10,
+  "text": "\"daily/rounds\" === e.owner"
+ },
+ "admin.cap24.daily": {
+  "order": 10,
+  "file": "slots/admin.cap24.daily.frag"
+ },
+ "blocks.shell.daily.t2": {
+  "order": 10,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/daily/client/422-daily-t2.js\",\n   \"kind\": \"js\",\n   \"line\": 10497,\n   \"new\": \"V7 · د5-هـ: قراءةٌ معلنة من المتابعة اليومية لصفحات القاعدة (ورقةُ الجولات مفعَّلة؟)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "shell.blocks.daily.t2": {
+  "order": 10,
+  "text": "@@KIVO_BLOCK:systems/daily/client/422-daily-t2.js@@\n"
+ },
+ "emp.permPages.daily": {
+  "order": 10,
+  "text": "          { k: \"daily\", n: \"المتابعة اليومية\", acts: r },\n"
+ },
+ "profile.rel.daily": {
+  "order": 10,
+  "text": " \"bassam_rounds_v1\","
+ },
+ "profile.data.key.daily": {
+  "order": 10,
+  "text": "        \"bassam_rounds_v1\",\n"
+ },
+ "profile.spot.daily": {
+  "order": 10,
+  "text": "    r.spotDailyOn = this.can(\"daily\", \"view\");\n    r.spotDaily = () => {\n      KIVO.__BS_OPEN_TAB = { page: \"daily\", tab: \"rounds\" };\n      this.pfClose();\n      this.go(\"daily\");\n    };\n"
+ },
+ "profile.field.daily": {
+  "order": 10,
+  "file": "slots/profile.field.daily.frag"
+ }
+}

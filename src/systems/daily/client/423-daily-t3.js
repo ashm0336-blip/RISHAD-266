@@ -1,9 +1,7 @@
 /* ═══ المتابعة اليومية — قراءاتٌ معلنة لبرامجَ أخرى تعرفها (V7 · د5-هـ · t3) ═══
    التقريرُ اليومي والجدولُ الشهري لا يسمّيان ورقةَ الجولات ولا صفحتَها: يسألان بالاسم. الأسماءُ معلنةٌ في contract.json ← provides.
    بغياب هذا الملف القراءةُ تعيد undefined، فيُطفأ ما يخصّ الجولات عند كلِّ مستهلك (سلوكُ الغياب في عقده).
-     read     daily.roundsOn@1()   هل «الجولات» (daily/rounds) مفعَّلةٌ في الإدارة النشطة — true إن تعذّر السؤال (كما كان bsOn).
      read     daily.permPage@1()   { k, n } صفحةُ المتابعة اليومية في قائمة الصلاحيات الاحتياطية (حين لا سجلَّ صفحات). */
 (function () {
-  KIVO.bus.provide('daily.roundsOn@1', function () { try { var P = KIVO.BassamPerm; return !P || !P.on || !!P.on('daily/rounds'); } catch (e) { return true; } });
   KIVO.bus.provide('daily.permPage@1', function () { return { k: 'daily', n: 'المتابعة اليومية' }; });
 })();

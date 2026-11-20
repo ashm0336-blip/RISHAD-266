@@ -23,7 +23,7 @@
   function relationalKey9(k) { return /^(?:bsdept:[^:\s]+:)?bassam_(?:@@SYS:store.relational.dstats@@@@SYS:store.relational.systems|post="notif(?:_cfg|_sys)?|bc)_v1$/"|empty="notif(?:_cfg|_sys)?|bc)_v1$/"@@.test(k)@@SYS:store.relational.awardDocs@@; }
   var operationResources9 = Object.freeze([
     'bassam_employees_v1', 'bassam_options_v1',@@SYS:store.opResources.staff@@
-    'bassam_shift_options_v1',@@SYS:store.opResources.plan@@ 'bassam_rounds_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1'@@SYS:store.opResources.dreport@@@@SYS:store.opResources.tasks@@
+    'bassam_shift_options_v1',@@SYS:store.opResources.plan@@@@SYS:store.opResources.daily@@ 'bassam_dayshift_v1', 'bassam_dayfocus_v1'@@SYS:store.opResources.dreport@@@@SYS:store.opResources.tasks@@
   ]);
   function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '')) !== -1; }
   function operationKey9(k) { return typeof k === 'string' && /^bsdept:[^:\s,]+:bassam_[A-Za-z0-9_]+$/.test(k) && operationResource9(k); }
@@ -181,7 +181,7 @@
      kind: data = محتوى يعمل عليه المستخدم · tech = مفتاح تقني للجهاز أو الجلسة (يُسمّى بالعربية ولا يُعدّ «تعديلاً») */
   KIVO.BassamKeyLabels = (function(){
     var M = {
-      bassam_employees_v1:["قائمة الموظفين"],@@SYS:store.keyLabels.staff@@ bassam_rounds_v1:["الجولات اليومية"],@@SYS:store.keyLabels.dreport@@
+      bassam_employees_v1:["قائمة الموظفين"],@@SYS:store.keyLabels.staff@@@@SYS:store.keyLabels.daily@@@@SYS:store.keyLabels.dreport@@
 @@SYS:store.keyLabels.plan@@      @@SYS:store.keyLabels.tasks@@@@SYS:store.keyLabels.custody@@
 @@SYS:store.keyLabels@@      bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"],@@SYS:store.keyLabels.dreport.lk@@@@SYS:store.keyLabels.staff.callsigns@@
       bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"],
@@ -233,13 +233,12 @@
      ناقصة) يُدمج بالمحاذاة الآمنة ويُبلَّغ ما يلتبس. والخانةُ 13 هويةُ صفوف المهام وحدها (يعتمد عليها نظامُ المهام). */
   var IDMAP9 = (function () {
     var M = {
-      bassam_rounds_v1: { "*.d": "sid" },
-@@SYS:store.identity.plan@@@@SYS:store.identity.dreport@@@@SYS:store.identity.tasks@@      bassam_employees_v1: { "": "eid" },
+@@SYS:store.identity.daily@@@@SYS:store.identity.plan@@@@SYS:store.identity.dreport@@@@SYS:store.identity.tasks@@      bassam_employees_v1: { "": "eid" },
      @@SYS:store.identity@@
       bassam_auth_users_v1: { "": "id" }, bassam_depts_v1: { "": "id" }, bassam_gdepts_v1: { "": "id" }
     };
     /* عناصرُ الخريطة التشغيلية تحت كلّ موقع (المصلى · الباب · المعلم · المسار): uid الثابت (500-element-uid) — ومرآتُها في رأس الخطة */
-    [["bassam_rounds_v1", "*.d.*."]@@SYS:store.identity.uid.plan@@].forEach(function (x) {
+    [@@SYS:store.identity.uid.daily@@@@SYS:store.identity.uid.plan@@].forEach(function (x) {
       ["zones", "gates", "marks", "paths"].forEach(function (e) { M[x[0]][x[1] + e] = "uid"; });
     });
     var out = {}, r, q;
@@ -1615,7 +1614,7 @@
        وعدساتُها · ورقتي فيها · الوحداتُ المطفأة. مديرُ النظام يقرأ كلَّ شيءٍ فنصيبُه ثابت. والنطاقُ والمنحُ في الإنفاذ يحكمها وصفُ صلاحياتي
        (authzSync9 · az) لا هذا المفتاح. PROJ9 نسخةٌ من ENF_PROJ في الخادم (061-enf-read.js) — يُضاف إليها bassam_tasks_v1 إن صار الخادمُ يُسقطها. */
     var SLICEK9 = /^bassam_(perms|auth_users|depts|gdepts|platform)_v1$/;
-    var PROJ9 = { @@SYS:store.proj.staff@@@@SYS:store.proj.dreport@@@@SYS:store.proj.plan@@bassam_rounds_v1: 1 };
+    var PROJ9 = { @@SYS:store.proj.staff@@@@SYS:store.proj.dreport@@@@SYS:store.proj.plan@@@@SYS:store.proj.daily@@ };
     function pj9(k, dflt) { try { var v = JSON.parse(mem[k] || "null"); return v == null ? dflt : v; } catch (e) { return dflt; } }   /* قيمةٌ تالفة ⇒ الافتراض */
     function slice9() {
       var U = pj9("bassam_auth_users_v1", []), me = null, i;

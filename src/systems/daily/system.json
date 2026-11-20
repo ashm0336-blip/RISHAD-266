@@ -20,6 +20,7 @@
   "files": [
    "client/420-round-factory.js",
    "client/421-round-links.js",
+   "client/422-daily-t2.js",
    "client/423-daily-t3.js",
    "client/520-field-monitor.js",
    "client/helmet.css",

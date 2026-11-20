@@ -107,7 +107,7 @@ def derive():
                 if not pp: errs.append(oid + ': ليست صفحةً في pages.json')
                 else:
                     leaf['page'] = oid
-                    if pp.get('under') and pp['under'] != cont[cname]['page']: errs.append(oid + ': تحت «' + pp['under'] + '» في المنصة لا «' + str(cont[cname]['page']) + '»')
+                    if pp.get('under') in PG and pp['under'] != cont[cname]['page']: errs.append(oid + ': تحت «' + pp['under'] + '» في المنصة لا «' + str(cont[cname]['page']) + '»')
         cont[cname]['leaves'].append(leaf)
     # KIVO_259 · AUD-030 (ADR-018): عدسةُ إضافةٍ غيرُ مذكورةٍ في الوثيقة تُلحق بحاوية «العدسات (Plugins)» من manifest-ها (source: plugin) —
     # مفاتيحُها من السجلّ كسائر الأوراق؛ والعدساتُ المذكورة في الوثيقة كما هي (لا تغيير للست المضمَّنة).

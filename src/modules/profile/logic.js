@@ -209,7 +209,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       m = +p[2],
       upto = 12 * y + m < 12 * T.y + T.m ? 31 : y === T.y && m === T.m ? T.d : 0,
       H = toks.length
-        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), reports: this.LB("dreport.doc@1", {}), plan: this.LB("plan.doc@1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
+        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), reports: this.LB("dreport.doc@1", {}), plan: this.LB("plan.doc@1", {}), rounds: this.LR({}), opts: this.LS("bassam_shift_options_v1", []) })
         : null;
     return {
       ok: 1,
@@ -298,6 +298,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* V7 · د5-د2: وثيقةٌ يملكها برنامجٌ آخر تُسأل بالاسم (الناقل) — محجوبةٌ أو غائبٌ مالكُها ⇒ القيمةُ الافتراضية */
   LB(t, e) {
     const value = KIVO.bus.read(t, "granted");
+    return value == null ? e : value;
+  }
+  /* V7 · د5-هـ: أيامُ الجولات من مالكها (daily.days@1) بقراءة Operations نفسِها (LS: المحجوبُ ⇒ الافتراض)؛ بغياب مالكها الافتراض */
+  LR(e) {
+    const value = KIVO.bus.read("daily.days@1", (k) => this.LS(k, e));
     return value == null ? e : value;
   }
   can(t, e) {
@@ -1914,7 +1919,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       u = u0 && "object" == typeof u0 ? u0 : {},
       LK = this.LB("staff.locks@1", {}),
       B = this.LB("dreport.doc@1", {}),   /* V7 · د5-هـ: التقريرُ يملكه برنامجُه — بالناقل؛ بغيابه أو حجبه لا تقرير */
-      RND = this.LS("bassam_rounds_v1", {}),
+      RND = this.LR({}),   /* V7 · د5-هـ: الجولاتُ يملكها برنامجُها — بالناقل؛ بغيابه أو حجبها لا جولة */
       Z = this.LB("plan.doc@1", {}),   /* V7 · د5-د2: الخطةُ يملكها التشغيلُ الميداني — بالناقل؛ بغيابه أو حجبها لا خطة */
       GO = this.LS("bassam_shift_options_v1", []);
     const ME = l ? this.pfMine({ user: t, emps: y, months: u, locks: LK, reports: B, plan: Z, rounds: RND, opts: GO, readable: null !== raw("bassam_employees_v1") && null !== rawSched() }) : null,
@@ -2676,7 +2681,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       /* ورديةٌ ليلية بدأت أمس (اليوم التشغيلي — OD-10): ما بعد منتصف الليل امتدادٌ لها */
       w = null != d && null != g && night && u < d ? u + 1440 : u,
       S = null != d && null != g;
-    const bsRd = this.bsOn("daily/rounds") && (this.bsLensOn("zones") || this.bsLensOn("gates") || this.bsLensOn("marks") || this.bsLensOn("paths")),
+    const bsRd = !!KIVO.bus.read("daily.usable@1") && (this.bsLensOn("zones") || this.bsLensOn("gates") || this.bsLensOn("marks") || this.bsLensOn("paths")),
       bsSt = !!KIVO.bus.read("staff.usable@1"),
       bsDr = !!KIVO.bus.read("dreport.usable@1"),   /* V7 · د5-هـ: ورقةُ التقرير اليومي يجيب عنها مالكُه؛ بغيابه مطفأة */
       bsDi = this.bsLensOn("dist"),
@@ -2920,7 +2925,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   pfMapVals(i, bsDi, tdDiff) {
     const r = {},
       ops = KIVO.__BS_SRV && KIVO.__BS_SRV.operations,
-      unavailable = !!(ops && ops.state("bassam_rounds_v1") === "denied" && !i.fromPlan),
+      unavailable = !!(ops && (KIVO.bus.read("daily.resources@1") || []).some((k) => ops.state(k) === "denied") && !i.fromPlan),   /* V7 · د5-هـ: موردُ الجولات من مالكها؛ بغيابه لا حجب */
       bsEls = i.mapEls.filter((t) => this.bsLensOn(t.kind));
     let _ = i.mySpot ? i.mySpot.fi : 0;
     if (!i.mySpot && bsEls.length) {

@@ -19,7 +19,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
            على الأكثر كلَّ ١٠ ثوانٍ مهما تتابعت الأحداث (كلُّ جلبٍ يقرأ مفاتيحَ الإدارة في الخادم)، ومفاتيحُ لا تمسّ يومي (المهام · التنبيهات …) لا تجلب */
         const keys = ev && ev.detail && ev.detail.keys,
           ks = Array.isArray(keys) ? keys.map(String) : [],
-          REL = ["bassam_employees_v1",@@SYS:profile.rel.staff@@@@SYS:profile.rel.dreport@@@@SYS:profile.rel.plan@@ "bassam_rounds_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
+          REL = ["bassam_employees_v1",@@SYS:profile.rel.staff@@@@SYS:profile.rel.dreport@@@@SYS:profile.rel.plan@@@@SYS:profile.rel.daily@@ "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
         if (ks.length && !ks.some((k) => REL.some((r) => k === r || k.slice(-r.length - 1) === ":" + r))) return;
         this.pfMeInvalidate();
       }));
@@ -188,7 +188,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       m = +p[2],
       upto = 12 * y + m < 12 * T.y + T.m ? 31 : y === T.y && m === T.m ? T.d : 0,
       H = toks.length
-        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), reports: this.LB("dreport.doc@1", {}), plan: this.LB("plan.doc@1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
+        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), reports: this.LB("dreport.doc@1", {}), plan: this.LB("plan.doc@1", {}), rounds: this.LR({}), opts: this.LS("bassam_shift_options_v1", []) })
         : null;
     return {
       ok: 1,
@@ -279,6 +279,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const value = KIVO.bus.read(t, "granted");
     return value == null ? e : value;
   }
+  /* V7 · د5-هـ: أيامُ الجولات من مالكها (daily.days@1) بقراءة Operations نفسِها (LS: المحجوبُ ⇒ الافتراض)؛ بغياب مالكها الافتراض */
+  LR(e) {
+    const value = KIVO.bus.read("daily.days@1", (k) => this.LS(k, e));
+    return value == null ? e : value;
+  }
   can(t, e) {
     try {
       const s = KIVO.BassamPerm;
@@ -354,8 +359,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       e = [
         "bassam_employees_v1",
 @@SYS:profile.data.key.staff@@        "bassam_shift_options_v1",
-@@SYS:profile.data.key.dreport@@        "bassam_rounds_v1",
-@@SYS:profile.data.key.plan@@@@SYS:profile.data.key.tasks@@        "bassam_dayshift_v1",
+@@SYS:profile.data.key.dreport@@@@SYS:profile.data.key.daily@@@@SYS:profile.data.key.plan@@@@SYS:profile.data.key.tasks@@        "bassam_dayshift_v1",
 @@SYS:profile.data.key.staff.locks@@        "bassam_auth_users_v1",
       ];
     let s = (this.state.pfTick || 0) + "|" + (t ? t.id : "") + "|" + Math.floor(Date.now() / 6e4) + "|" + (this.state.pfMeAt || 0);
@@ -373,140 +377,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return true;
   }
 @@SYS:profile.methods.2.tasks@@  _pfField(t, e, s) {
-    const a = KIVO.BassamField;
-    if (
-      ((t.fdOn = !1), (t.fdDlgOn = !1), (t.fdNoteOn = !1), (t.fdNote = ""), (t.fdRows = []), !a || !e.isStaff || !(e.mySpots || []).length)
-    )
-      return;
-    const r = e.mySpots;
-    if (!a.canField()) {
-      t.fdNoteOn = !0;
-      const e = KIVO.BassamPerm;
-      let s = [],
-        a = [];
-      try {
-        s = (e && e.deptCap && e.deptCap()) || [];
-      } catch (t) {}
-      try {
-        a = (e && e.deptTabs && e.deptTabs(null, "daily")) || [];
-      } catch (t) {}
-      const r = "رصد الميدان (حالة موقعك ومساره) ";
-      return void (-1 === s.indexOf("daily")
-        ? (t.fdNote =
-            r +
-            "يحتاج تفعيل صفحة «المتابعة اليومية» في سقف إدارتك أولاً — يفعّلها مسؤول المنصة من «الإدارات»، ثم يمنحك مدير الإدارة ورقة «رصد الميدان»")
-        : -1 === a.indexOf("field")
-          ? (t.fdNote = r + "يحتاج تفعيل ورقة «رصد الميدان» ضمن أوراق «المتابعة اليومية» لإدارتك — يفعّلها مسؤول المنصة من «الإدارات»")
-          : (t.fdNote =
-              r +
-              "يحتاج ورقة «رصد الميدان» في صلاحيتك: صلاحيات الموظف ← المتابعة اليومية ← رصد الميدان (أو قالب «راصد ميدان») — يمنحها مدير الإدارة"));
-    }
-    const n = e.DK,
-      i = (t, e) => {
-        t.ok
-          ? ((this._pfFieldPending = false), t.same) || ((this._pfMemo = null), this.setState({ pfTick: (s.pfTick || 0) + 1, fdDlg: null }), this.bsAck(e, "ok"))
-          : ((this._pfFieldPending = t.status === "uncertain" || t.uncertain === true), this.bsToast(t.err || "لم يُؤكَّد الرصد — المسودة باقية؛ أعد الإجراء نفسه", "warn"));
-      },
-      o = [];
-    if (
-      (r.forEach((t) => {
-        const s = -1 !== a.KINDS.indexOf(t.kind) ? t.kind : "gates",
-          r = a.KIND_AL[s] || "الموقع",
-          f = a.flowOn(s),
-          l = ((e.rnd && e.rnd.d && e.rnd.d[t.fi] && e.rnd.d[t.fi][s]) || [])[t.i];
-        if (!l) return;
-        const h = a.stateOf(l, s),
-          c = f ? a.flowOf(l) : "",
-          p = t.fi,
-          m = t.i,
-          d = "open" === h ? "مفتوح" : "gates" === s ? "مغلق" : "معطّل",
-          y = [
-            a.KIND_T[s] || "موقع",
-            d + ("closed" === h && l.cWhy ? " — " + l.cWhy : ""),
-            "open" === h && c ? a.FLOWS[c].a + " " + a.FLOWS[c].t : "",
-            l.fAt ? a.clock(l.fAt) + (l.fBy ? " · " + l.fBy : "") : "لم يُرصد بعد",
-          ]
-            .filter(Boolean)
-            .join(" · ");
-        o.push({
-          key: s + ":" + p + ":" + m,
-          name: a.label(l, s),
-          meta: y,
-          color: "open" === h ? "#16a34a" : "#64748b",
-          flowOn: f,
-          flCls: "fd-fl" + ("open" === h ? "" : " dis"),
-          flows: a.FLOW_ORDER.map((t) => ({
-            k: t,
-            t: a.FLOWS[t].t,
-            one: "both" !== t,
-            two: "both" === t,
-            a: a.FLOWS[t].a,
-            arCls: "fd-ar" + ("out" === t ? " r" : ""),
-            cls: "fd-fb" + (t === c && "open" === h ? " on" : ""),
-            pick: async () => {
-              if ("closed" === h) return void this.bsToast(r + " مغلق — أعد فتحه أولاً ثم حدّد المسار", "warn");
-              if (t === c) return;
-              this._pfFieldPending = true;
-              const e = await a.observe(n, p, m, { flow: t, kind: s, expected: l });
-              i(e, "سُجّل المسار: " + a.FLOWS[t].t + " — " + a.label(l, s));
-            },
-          })),
-          stOn: "open" === h,
-          stOff: "closed" === h,
-          stCls: "fd-tg " + ("open" === h ? "on" : "off"),
-          stTitle: "open" === h ? ("gates" === s ? "إغلاق الباب" : "تعطيل الموقع") : "إعادة الفتح",
-          stPick: async () => {
-            if ("open" === h) return void this.setState({ fdDlg: { why: "", txt: "", fi: p, gi: m, kind: s, name: a.label(l, s), g: l } });
-            this._pfFieldPending = true;
-            const t = await a.observe(n, p, m, { st: "open", kind: s, expected: l });
-            i(
-              t,
-              "سُجّل: أُعيد فتح " +
-                a.label(l, s) +
-                (t.entry && t.entry.dur ? " · مدة الإغلاق " + KIVO.BassamCount(t.entry.dur, "دقيقة") + "" : ""),
-            );
-          },
-        });
-      }),
-      !o.length)
-    )
-      return (
-        (t.fdNoteOn = !0),
-        void (t.fdNote = e.rnd
-          ? "رصد الميدان يبدأ عندما تكون على موقعك في جولة اليوم"
-          : "رصد الميدان يبدأ مع جولة اليوم — لم تُنشأ بعد (تُنشأ من المتابعة اليومية أو عند سحب التقرير اليومي)")
-      );
-    ((t.fdOn = !0), (t.fdRows = o), (t.fdPill = o.length > 1 ? KIVO.BassamCount(o.length, "موقع") + " لك اليوم" : "موقعك اليوم"));
-    const f = s.fdDlg;
-    if (!f) return;
-    ((t.fdDlgOn = !0),
-      (t.fdSpot = f.name || ""),
-      (t.fdStop = (t) => {
-        try {
-          t.stopPropagation();
-        } catch (t) {}
-      }),
-      (t.fdReasons = a.REASONS.map((t) => ({
-        t: t,
-        cls: "fd-chip" + (f.why === t ? " on" : ""),
-        pick: () => this.setState({ fdDlg: { ...f, why: t } }),
-      }))),
-      (t.fdWhyTxt = f.txt),
-      (t.fdOnWhy = (t) => this.setState({ fdDlg: { ...f, txt: t.target.value } })),
-      (t.fdWhyPh = "أخرى" === f.why ? "اكتب السبب — مطلوب مع «أخرى»" : "تفصيل السبب (اختياري)"),
-      (t.fdNow = a.clock()),
-      (t.fdMe = (KIVO.BassamAuth && KIVO.BassamAuth.display && KIVO.BassamAuth.display().name) || ""));
-    const l = !(!f.why || ("أخرى" === f.why && !f.txt.trim()));
-    ((t.fdOkDis = !l),
-      (t.fdDlgNo = () => this._pfFieldPending ? this.bsToast("الرصد السابق لم يُحسم — أعد تأكيد الطلب نفسه قبل إغلاق المسودة", "warn") : this.setState({ fdDlg: null })),
-      (t.fdDlgOk = async () => {
-        if (!l) return;
-        this._pfFieldPending = true;
-        const t = "أخرى" === f.why ? f.txt.trim() : f.txt.trim() ? f.why + " — " + f.txt.trim() : f.why,
-          e = await a.observe(n, f.fi, f.gi, { st: "closed", why: t, kind: f.kind, expected: f.g });
-        i(e, "سُجّل إغلاق " + (f.name || "") + " الساعة " + a.clock());
-      }));
-  }
+@@SYS:profile.field.daily|empty="    (t.fdOn = !1), (t.fdDlgOn = !1), (t.fdNoteOn = !1), (t.fdNote = \"\"), (t.fdRows = []);   /* V7 · د5-هـ: بلا المتابعة اليومية لا رصدَ ميداني */\n"@@  }
   /* KIVO_264 · حقائقُ يومي الموحّدة { M, src, toks, els, loading }: ردُّ الخادم (/api/me/today) في الوضع السحابي هو المرجع — والحسابُ المحلي
      بالقواعد نفسِها (PF-CORE) رسمٌ أوّلُ حتى يصل لمن تصله المفاتيح، أو بديلٌ حين يتعذّر الخادم، أو في الوضع المحلي. toks/els محليّةٌ دائماً
      (للخريطة ورصد الميدان على جولة اليوم المحلية). */
@@ -564,7 +435,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       u = u0 && "object" == typeof u0 ? u0 : {},
       LK = this.LB("staff.locks@1", {}),
       B = this.LB("dreport.doc@1", {}),   /* V7 · د5-هـ: التقريرُ يملكه برنامجُه — بالناقل؛ بغيابه أو حجبه لا تقرير */
-      RND = this.LS("bassam_rounds_v1", {}),
+      RND = this.LR({}),   /* V7 · د5-هـ: الجولاتُ يملكها برنامجُها — بالناقل؛ بغيابه أو حجبها لا جولة */
       Z = this.LB("plan.doc@1", {}),   /* V7 · د5-د2: الخطةُ يملكها التشغيلُ الميداني — بالناقل؛ بغيابه أو حجبها لا خطة */
       GO = this.LS("bassam_shift_options_v1", []);
     const ME = l ? this.pfMine({ user: t, emps: y, months: u, locks: LK, reports: B, plan: Z, rounds: RND, opts: GO, readable: null !== raw("bassam_employees_v1") && null !== rawSched() }) : null,
@@ -1326,7 +1197,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       /* ورديةٌ ليلية بدأت أمس (اليوم التشغيلي — OD-10): ما بعد منتصف الليل امتدادٌ لها */
       w = null != d && null != g && night && u < d ? u + 1440 : u,
       S = null != d && null != g;
-    const bsRd = this.bsOn("daily/rounds") && (this.bsLensOn("zones") || this.bsLensOn("gates") || this.bsLensOn("marks") || this.bsLensOn("paths")),
+    const bsRd = !!KIVO.bus.read("daily.usable@1") && (this.bsLensOn("zones") || this.bsLensOn("gates") || this.bsLensOn("marks") || this.bsLensOn("paths")),
       bsSt = !!KIVO.bus.read("staff.usable@1"),
       bsDr = !!KIVO.bus.read("dreport.usable@1"),   /* V7 · د5-هـ: ورقةُ التقرير اليومي يجيب عنها مالكُه؛ بغيابه مطفأة */
       bsDi = this.bsLensOn("dist"),
@@ -1559,7 +1430,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   pfMapVals(i, bsDi, tdDiff) {
     const r = {},
       ops = KIVO.__BS_SRV && KIVO.__BS_SRV.operations,
-      unavailable = !!(ops && ops.state("bassam_rounds_v1") === "denied" && !i.fromPlan),
+      unavailable = !!(ops && (KIVO.bus.read("daily.resources@1") || []).some((k) => ops.state(k) === "denied") && !i.fromPlan),   /* V7 · د5-هـ: موردُ الجولات من مالكها؛ بغيابه لا حجب */
       bsEls = i.mapEls.filter((t) => this.bsLensOn(t.kind));
     let _ = i.mySpot ? i.mySpot.fi : 0;
     if (!i.mySpot && bsEls.length) {
@@ -1786,13 +1657,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     r.spotRestOn = !!r.spotRest;
     r.spotMatesSub = (i.shiftRef ? "وردية " + i.shiftRef + " · " : "") + "على العنصر نفسِه · لستم في راحة · بلا غيابٍ أو إجازةٍ أو تحويل — بالاسم وحده";
     r.spotMapOn = !!(mapOk && i.floors.length);
-    r.spotDailyOn = this.can("daily", "view");
-    r.spotDaily = () => {
-      KIVO.__BS_OPEN_TAB = { page: "daily", tab: "rounds" };
-      this.pfClose();
-      this.go("daily");
-    };
-    r.spotNote = "الموقعُ المُسنَد ليس تحديداً لموقعك الفعلي — هو ما أُسند إليك في التشغيل الميداني وجولة اليوم.";
+@@SYS:profile.spot.daily|empty="    r.spotDailyOn = !1;   /* V7 · د5-هـ: بلا المتابعة اليومية لا زرَّ إليها */\n"@@    r.spotNote = "الموقعُ المُسنَد ليس تحديداً لموقعك الفعلي — هو ما أُسند إليك في التشغيل الميداني وجولة اليوم.";
     r.spotSub = O ? O.label : TD ? TD.label : "تفاصيل الإسناد ومصدره";
     return r;
   }

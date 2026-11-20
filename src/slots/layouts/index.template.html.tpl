@@ -101,7 +101,7 @@
 
 @@KIVO_BLOCK:services/490-emp-key.js@@
 @@KIVO_BLOCK:services/500-element-uid.js@@
-@@SYS:shell.svc.daily.2@@@@SYS:shell.blocks.staff@@@@SYS:shell.blocks.plan.p3@@@@SYS:shell.blocks.plan.p4@@@@SYS:shell.blocks.dreport@@@@SYS:shell.blocks.dreport.r3@@@@SYS:shell.blocks.daily.t3@@@@KIVO_BLOCK:services/535-profile-facts.js@@
+@@SYS:shell.svc.daily.2@@@@SYS:shell.blocks.staff@@@@SYS:shell.blocks.plan.p3@@@@SYS:shell.blocks.plan.p4@@@@SYS:shell.blocks.dreport@@@@SYS:shell.blocks.dreport.r3@@@@SYS:shell.blocks.daily.t2@@@@SYS:shell.blocks.daily.t3@@@@KIVO_BLOCK:services/535-profile-facts.js@@
 @@SYS:shell.blocks.tasks@@@@SYS:shell.blocks.custody@@@@KIVO_BLOCK:services/548-atomic-backup.js@@
 @@KIVO_BLOCK:styles/540-busy.css@@
 @@KIVO_BLOCK:components/550-bassam-busy.js@@

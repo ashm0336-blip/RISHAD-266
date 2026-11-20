@@ -20,7 +20,11 @@
   "pages.daily.seq.dreport",
   "pages.daily.seq.tasks",
   "pages.tabAddr.daily.dreport",
-  "pages.tabAddr.daily"
+  "pages.tabAddr.daily",
+  "pages.entry.dreport.under.daily",
+  "nfc.reg.dreport",
+  "nfc.reg.dreport.top",
+  "admin.kpiDaily.dreport"
  ],
  "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
  "templates": [
