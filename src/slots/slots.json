@@ -308,6 +308,10 @@
   {
    "tpl": "workers/parts/019r-operational-storage.js.tpl",
    "out": "workers/parts/019r-operational-storage.js"
+  },
+  {
+   "tpl": "workers/parts/019o1-table-names.js.tpl",
+   "out": "workers/parts/019o1-table-names.js"
   }
  ]
 }

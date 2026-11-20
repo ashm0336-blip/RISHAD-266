@@ -7,7 +7,7 @@
         ② كلُّ جدول كيانٍ تستعمله موجودٌ في ترحيلات D1 (migrations/*.sql) — أو معلنٌ في الخريطة «جديداً» بترحيله
         ③ الخريطةُ متّسقة: الاسمُ الواحد لا يُثبَّت على جدولين
      node tools/oc_tables.mjs --census    ما تعطيه التسميةُ القديمة (بالترتيب) لكل اسمٍ معلن — JSON (للاختبار وللمقارنة)
-     node tools/oc_tables.mjs --seed      يكتب الخريطة من التسمية القديمة على الشجرة الكاملة (استُعمل مرةً واحدة عند إنشائها)
+     node tools/oc_tables.mjs --seed      (معطَّل) كتب الخريطة مرةً عند إنشائها؛ صارت قالباً وقطعُ الجدول الشهري في مجلده
    KIVO_OC_EXTRA=ملف.js : تعريفاتٌ إضافية تُضمّ بعد الأجزاء (للاختبار: شكلٌ جديد بلا اسم). */
 import fs from 'node:fs'; import path from 'node:path'; import vm from 'node:vm'; import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), PD = path.join(ROOT, 'workers', 'parts');
@@ -40,6 +40,7 @@ export function census(C, withNames) {
 function migrated() { const out = new Set(); for (const f of fs.readdirSync(path.join(ROOT, 'migrations')).filter((f) => f.endsWith('.sql'))) for (const m of fs.readFileSync(path.join(ROOT, 'migrations', f), 'utf8').matchAll(/CREATE TABLE IF NOT EXISTS\s+"?([A-Za-z0-9_]+)"?/g)) out.add(m[1]); return out; }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (MODE === '--seed') {
+    console.error('✘ --seed استُعمل مرةً عند إنشاء الخريطة؛ صارت قالباً (src/slots/workers/parts/019o1-table-names.js.tpl) وقطعُ كل برنامجٍ في مجلده — شكلٌ جديد يُضاف سطرُه يدوياً حيث يملكه'); process.exit(2);
     const full = fs.readFileSync(path.join(PD, NAMES), 'utf8'); const C = load(); const c = census(C, false);
     if (c.conflicts.length) { console.error('✘ اسمٌ معلنٌ على جدولين: ' + c.conflicts.join(', ')); process.exit(1); }
     const body = Object.keys(c.names).sort().map((k) => '  ' + k + ': { t: ' + JSON.stringify(c.names[k].t) + ', e: ' + JSON.stringify(c.names[k].e) + ' },').join('\n');
