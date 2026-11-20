@@ -138,33 +138,56 @@ test('the contract registry (د5-ج): a base resource needs evidence and no prog
   try { assert.equal(run(good, '--check').code, 0); } finally { fs.rmSync(good, { recursive: true, force: true }); }
 });
 
-/* د5-د · قرار المراجع 4 — base-name يعدّ الاسمَ حيث هو اسمُ برنامج، ويستبعد مفتاحَ الصلاحية المماثل ودورَ الحساب، كلٌّ بقاعدته.
-   كلُّ سطرٍ هنا ملفٌ في شجرةٍ مصطنعة: «يُعدّ» ⇒ استثناءُ base-name واحد لملفه · «لا يُعدّ» ⇒ لا شيء، وصنفُه في تقرير names. */
-test('base-name counts a name only where it is a program name; a same-named permission key or account role is excluded, each by its rule', () => {
-  const USE = {   /* القاعدة ← سطرٌ يطابقها */
-    'system-key': 'if (this.bsOn("alpha")) x();',
-    'system-field': 'var e = { system: "alpha" };',
-    'pk': 'if (pk === "alpha") x();',
-    'registry': 'var p = { page: "alpha", name: "x" };',
-    'go': 'this._bsGo("alpha");',
-    'page-key': 'var pg = pages.filter((p) => "alpha" === p.key)[0];',
-    'go-map': 'var go = { "افتح الصفحة": "alpha" };',
-  };
-  const NOT = {
-    'perm-key': ['var r = { scope: "dept", cap: "alpha" };', 'if (P.can("alpha", "view")) x();', 'if (capOnDept(A, d, "alpha")) x();', 'var n = { k: "alpha", n: "x" };', "  'bassam_other_v1': ['alpha', 'emps/data'],"],
-    'role': ['if (u.role === "alpha") x();'],
-  };
-  const OTHER = ['if ("alpha" === this.state.lens) x();'];   /* كلمةٌ بالحروف نفسها لمعنى آخر — لا تُعدّ، وتظهر في تقرير names تحت other */
-  const files = { 'systems/alpha/contract.json': contract('alpha') };
-  Object.entries(USE).forEach(([rule, line]) => { files['layouts/use-' + rule + '.js'] = line + '\n'; });
-  Object.entries(NOT).forEach(([rule, lines]) => lines.forEach((line, i) => { files['layouts/not-' + rule + '-' + i + '.js'] = line + '\n'; }));
-  OTHER.forEach((line, i) => { files['layouts/other-' + i + '.js'] = line + '\n'; });
+/* د5-د · قرار المراجع 4 ود5-د2 · قرار 3 — base-name: قائمةُ قواعد مرتَّبة (tools/contracts.py ← NAME_RULES)، أولُ قاعدةٍ تطابق تحسم.
+   «يُعدّ» = الاسمُ اسمُ برنامج · «لا يُعدّ» = مفتاحُ صلاحيةٍ مماثل أو دورُ حساب أو كلمةٌ لمعنى آخر — **كلٌّ بقاعدةٍ مكتوبة**.
+   لكل قاعدةٍ هنا سطرٌ يطابقها (ملفٌ في شجرةٍ مصطنعة). ولا ورودَ بلا قاعدة: على المستودع وعلى الشجرة المصطنعة صنفُ other غائب. */
+const USE = {
+  'system-key': 'if (this.bsOn("alpha")) x();',
+  'system-field': 'var e = { system: "alpha" };',
+  'pk': 'if (pk === "alpha") x();',
+  'registry': 'var p = { page: "alpha", name: "x" };',
+  'go': 'this._bsGo("alpha");',
+  'page-key': 'var pg = pages.filter((p) => "alpha" === p.key)[0];',
+  'go-map': 'var go = { "افتح الصفحة": ["alpha", "tab"] };',
+  'active-page': 'var v = { isAlpha: ap === "alpha" };',
+  'nav-item': 'var v = { nAlpha: cls("alphaNav", "alpha") };',
+  'page-list': 'var order = ["kpis", "emps", "planning", "alpha"];',
+  'nav-perm': 'var NAVP = { employees: "emps", beta: "alpha" };',
+  'notif-leaf': "L('al_new','alpha','تنبيه','فور الحفظ',true,['own'],'info','bell','نص','افتح');",
+  'dept-tabs': 'var a = (e && e.deptTabs && e.deptTabs(null, "alpha")) || [];',
+  'shape': "var ops = { approve: ['*.ap'], shape: 'alpha' };",
+  'scope-item': "items.push(it({ what: 'resource', kind: 'changed', id: 'alpha', path: '*' }));",
+  'container-tab': 'var P = this._tabOk("alpha");',
+};
+const NOT = {
+  'role': ['if (u.role === "alpha") x();'],
+  'perm-key': ['var r = { scope: "dept", cap: "alpha" };', 'if (P.can("alpha", "view")) x();', 'if (capOnDept(A, d, "alpha")) x();', 'var n = { k: "alpha", n: "x" };', "  'bassam_other_v1': ['alpha', 'emps/data'],",
+    "var hs = hosts[key] || ['alpha', 'other/leaf'];", 'var has = -1 !== (dr.cap || []).indexOf("alpha");', "if (R9.field === 'alpha' && v != null) x();", "var K = { bassam_other_v1:'alpha' };"],
+  'local-state': ['var v = { onAlpha: "alpha" === e };', "if (act === 'alpha') x();", 'var t = P ? "alpha" : "none";'],
+  'guard-path': ["classifyFloor(R, a, b, 'floors[1]', 'alpha', ctx);"],
+  'audit-filter': ['inp("alpha", "الشهر", 110);', "var planA = audLike(qA.get('alpha')).slice(0, 20);"],
+  'element-kind': ['var offEl = SITE ? findEl(SITE.official, "alpha") : null;'],
+  'bound-name': ["if (i9 === LIMIT) return 'alpha';", "try { f(); } catch (e) { swallow('alpha', e); }"],
+  'label-pair': ["var F = [['site', 'المواقع'], ['alpha', 'خطط الشهور']];"],
+};
+test('base-name: every rule has a case — a name counts only where it is a program name; a same-named permission key, account role or other-meaning word is excluded by its own written rule', () => {
+  const files = { 'systems/alpha/contract.json': contract('alpha') }, want = {};
+  Object.entries(USE).forEach(([rule, line]) => { files['layouts/use-' + rule + '.js'] = line + '\n'; want['use:' + rule] = 1; });
+  Object.entries(NOT).forEach(([rule, lines]) => { lines.forEach((line, i) => { files['layouts/not-' + rule + '-' + i + '.js'] = line + '\n'; }); want['not:' + rule] = lines.length; });
+  files['layouts/comment.js'] = '/* اسمٌ في تعليق: "alpha"\n   وفي سطره الثاني "alpha" */\nvar x = 1;\n';   /* داخل تعليق: لا يُعدّ ولا يُصنَّف */
   const dir = tree(files);
   try {
     const got = JSON.parse(run(dir, '--scan').out);
     assert.deepEqual(Object.keys(got.violations).sort(), Object.keys(USE).map((rule) => 'base|base-name|' + path.basename(dir) + '/layouts/use-' + rule + '.js|alpha').sort());
-    const want = { 'not:perm-key': NOT['perm-key'].length, 'not:role': NOT.role.length, other: OTHER.length };
-    Object.keys(USE).forEach((rule) => { want['use:' + rule] = 1; });
-    assert.deepEqual(got.names, want);
+    assert.deepEqual(got.names, Object.fromEntries(Object.entries(want).sort()));
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  /* كلُّ قاعدةٍ في الأداة لها حالةٌ هنا، ولا قاعدةَ هنا ليست في الأداة */
+  const src = fs.readFileSync(path.join(ROOT, 'tools/contracts.py'), 'utf8'), rules = [...src.slice(src.indexOf('NAME_RULES = ['), src.indexOf('def name_class')).matchAll(/^\s*\('(use|not)', '([a-z-]+)'/gm)].map((m) => m[1] + ':' + m[2]);
+  assert.deepEqual(rules.filter((r) => r !== 'not:comment').sort(), Object.keys(want).sort());
+});
+
+test('base-name on the repository: no occurrence is left unclassified («other meaning» without a rule is not evidence)', () => {
+  const names = scan().names;
+  assert.equal(names.other, undefined, 'ورودٌ بلا قاعدة: ' + names.other);
+  assert.ok(Object.keys(names).every((k) => /^(use|not):[a-z-]+$/.test(k)), Object.keys(names).join(' '));
 });

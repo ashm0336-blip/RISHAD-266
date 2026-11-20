@@ -19,29 +19,44 @@ WRITE = [r'draft\.set\(\s*["\']%s', r'_opWrite\(\s*["\']%s', r'(?:related|_opRel
 GLOBAL_DEF = re.compile(r'(?:KIVO|window)\.([A-Z][A-Za-z0-9_]{3,})\s*=(?!=)')
 GLOBAL_USE = re.compile(r'KIVO\.([A-Z][A-Za-z0-9_]{3,})\b')
 ROLE_STAFF = re.compile(r'role\b[^;\n]{0,40}["\']staff["\']|["\']staff["\'][^;\n]{0,25}\brole\b')
-# ── base-name (د5-د · قرار المراجع 4): الاسمُ يُعدّ **فقط حيث يُستعمل اسمَ برنامج**. %s = الاسم.
-#    كلُّ قاعدةٍ هنا لها حالةٌ في tests/isolation/isolation.test.mjs. ما يطابق قاعدةَ استعمالٍ يُعدّ ولو طابق استبعاداً (الأحوط).
-NAME_USE = [
-    ('system-key',   r'\b\w*[oO]n\(\s*["\']%s["\']'),                                   # bsOn("x") · _on("x") · impOn("x") — سؤالُ «هل النظام مفعَّل» بمفتاحه
-    ('system-field', r'\bsystem\s*(?::|={2,3}|!={1,2})\s*["\']%s["\']'),               # system: "x" · system === "x"
-    ('pk',           r'\bpk\s*(?::|={1,3}|!={1,2})\s*["\']%s["\']|["\']%s["\']\s*(?:={2,3}|!={1,2})\s*pk\b'),   # pk: "x" · pk === "x"
-    ('registry',     r'\b(?:module|page|nav)\s*:\s*["\']%s["\']'),                     # اسمُ صفحةٍ أو نظامٍ في سجل: module: "x" · page: "x" · nav: "x"
-    ('go',           r'\b_?(?:bsGo|go|goto)\(\s*["\']%s["\']'),                        # الانتقالُ إلى صفحة البرنامج باسمها
-    ('page-key',     r'\.key\s*(?:={2,3}|!={1,2})\s*["\']%s["\']|["\']%s["\']\s*(?:={2,3}|!={1,2})\s*\w+(?:\.\w+)*\.key\b'),   # البحثُ عن صفحة البرنامج في سجل الصفحات: "x" === p.key
-    ('go-map',       r'["\']افتح[^"\']*["\']\s*:\s*["\']%s["\']'),                    # خريطةُ «افتح …» ← صفحة البرنامج (أزرار التنبيهات)
-]
-#    المستبعَد (ليس اسمَ برنامج وإن طابقه حرفاً) — يُصنَّف ليُكتب عددُه، ولا يُعدّ:
-NAME_NOT = [
-    ('perm-key', r'\bcap\s*:|\bcan\(|\b\w*[cC]ap\w*\(|\bleafOn\(|\b_?p(?:OK|Any|tOk)\(|\bk\s*:\s*["\']%s["\']|^\s*[\'"]bassam_\w+[\'"]\s*:\s*\['),   # مفتاحُ صلاحية: cap: · can( · capOnDept( · _bsCapOk( · leafOn( · _pOK( · k: "x" (شجرة) · قائمةُ أوراق القراءة
-    ('role',     r'\brole\b'),                                                            # دورُ حساب: role === "staff"
+# ── base-name (د5-د · قرار المراجع 4 — ود5-د2 · قرار 3): الاسمُ يُعدّ **فقط حيث يُستعمل اسمَ برنامج**. %s = الاسم.
+#    قائمةٌ واحدة مرتَّبة: أولُ قاعدةٍ تطابق السطر تحسم (use = يُعدّ · not = لا يُعدّ). لا ورودَ بلا قاعدة: «معنى آخر» بلا قاعدةٍ ليس دليلاً —
+#    الاختبار يفشل إن بقي ورودٌ غير مصنَّف (other). كلُّ قاعدةٍ لها حالةٌ في tests/isolation/isolation.test.mjs.
+_Q = r'["\']%s["\']'
+NAME_RULES = [
+    # ── يُعدّ: الاسمُ اسمُ برنامج (نظامٌ · صفحة · تبويب · نوعُ تنبيه) ──
+    ('use', 'system-key',   r'\b\w*[oO]n\(\s*' + _Q),                                             # bsOn("x") · _on("x") · impOn("x") — «هل النظام مفعَّل» بمفتاحه
+    ('use', 'system-field', r'\bsystem\s*(?::|={2,3}|!={1,2})\s*' + _Q),                          # system: "x" · system === "x"
+    ('use', 'pk',           r'\bpk\s*(?::|={1,3}|!={1,2})\s*' + _Q + r'|' + _Q + r'\s*(?:={2,3}|!={1,2})\s*pk\b'),
+    ('use', 'registry',     r'\b(?:module|page|nav|key|tab)\s*:\s*' + _Q),                        # مدخلُ سجل: module/page/nav/key/tab: "x"
+    ('use', 'go',           r'\b_?(?:bsGo|go|goto)\(\s*' + _Q),                                   # الانتقالُ إلى صفحة البرنامج
+    ('use', 'page-key',     r'\.key\s*(?:={2,3}|!={1,2})\s*' + _Q + r'|' + _Q + r'\s*(?:={2,3}|!={1,2})\s*\w+(?:\.\w+)*\.key\b'),
+    ('use', 'go-map',       r'["\']افتح[^"\']*["\']\s*:\s*(?:\[\s*)?' + _Q),                      # «افتح …» ← صفحة البرنامج (نصاً أو [صفحة، تبويب])
+    ('use', 'active-page',  r'\bap\s*(?:={2,3}|!={1,2})\s*' + _Q),                                # الصفحةُ النشطة: ap === "x"
+    ('use', 'nav-item',     r'\b(?:cls|tip)\(\s*' + _Q + r'|\bcls\(\s*["\']\w+["\']\s*,\s*' + _Q), # عنصرُ القائمة الجانبية: cls("x", …) · tip("x")
+    ('use', 'page-list',    r'["\'](?:employees|planning|kpis|links|admin|emps)["\']\s*,[^\]\n]*' + _Q + r'|' + _Q + r'\s*,[^\]\n]*["\'](?:employees|planning|kpis|links|admin)["\']'),   # قائمةُ صفحات/أوراق صفحات (ترتيبُ القائمة · الهبوط · أوراقُ الإدارة)
+    ('use', 'nav-perm',     r'\b(?:employees|staffing|plan|daily|rep)\s*:\s*["\']\w+["\']\s*,?[^\n]*\b\w+\s*:\s*' + _Q + r'|(?:^|@@)\s*\w+\s*:\s*' + _Q + r'\s*,\s*$'),   # خريطةُ اسم ← ورقة: { staffing: "staff", plan: "plan" } · سطرُ خريطة «x: "x",»
+    ('use', 'notif-leaf',   r'\bL\(\s*["\']\w+["\']\s*,\s*' + _Q),                                # نوعُ تنبيهٍ للبرنامج مكتوبٌ في القاعدة: L('pl_cap','plan',…)
+    ('use', 'dept-tabs',    r'\bdeptTabs\([^)]*' + _Q),                                           # تبويباتُ صفحة البرنامج
+    ('use', 'shape',        r'\bshape\s*:\s*' + _Q),                                              # شكلُ بيانات البرنامج في سجل عمليات الخادم
+    ('use', 'scope-item',   r'\bid\s*:\s*' + _Q + r'\s*,\s*path\b'),                               # عنصرُ نطاقٍ باسم مورد البرنامج
+    ('use', 'container-tab', r'\b_tabOk\(\s*' + _Q + r'|\bPT_TABS\b'),                            # تبويبُ البرنامج في الحاوية (يبقى حتى يُنقل برنامجُه)
+    # ── لا يُعدّ: مفتاحُ صلاحيةٍ مماثل · دورُ حساب · كلمةٌ لمعنى آخر — كلٌّ بقاعدته ──
+    ('not', 'role',         r'\brole\b|\bkind\s*(?::|={2,3})\s*["\']staff["\']|["\']staff["\']\s*={2,3}\s*[a-z]\b|\{\s*v\s*:\s*["\']staff["\']'),   # دورُ الحساب staff: role · kind: 'staff' · "staff" === r · خيارُ الدور {v:"staff"}
+    ('not', 'perm-key',     r'\bcap\s*:|\bcan\(|\b\w*[cC]ap\w*\(|\bleafOn\(|\b_?p(?:OK|Any|tOk)\(|\bk\s*:\s*' + _Q + r'|^\s*[\'"]?bassam_\w+[\'"]?\s*:\s*[\[\'"]|\bbassam_\w+\s*:\s*' + _Q + r'|["\'][a-z]+/[a-zA-Z]+["\']|\bcap\)?\s*(?:\|\|\s*\[\])?\)?\.indexOf\(|\.indexOf\(\s*' + _Q + r'\s*\)|\bfield\s*={2,3}\s*' + _Q),   # مفتاحُ صلاحية/ورقة: cap: · can( · k: "x" · مورد ← ورقة · قائمةُ أوراق (فيها «صفحة/ورقة») · cap.indexOf("x") · field === 'x'
+    ('not', 'local-state',  _Q + r'\s*(?:={2,3}|!={1,2})\s*(?:[a-z]\b|src\b|this\.state\.)|\b(?:[a-z]|src|act|host)\s*(?:={2,3}|!={1,2})\s*' + _Q + r'|\?\s*' + _Q + r'\s*:|:\s*' + _Q + r'\s*\)'),   # حالةٌ محلية تُقارَن بمتغيّرٍ محلي: تبويبٌ معروض · عدسة · مصدرُ عنصر · فعل ("plan" === e · act === 'plan' · P ? "plan" : …)
+    ('not', 'guard-path',   _Q + r'\s*,\s*ctx\)'),                                                # وسمُ مسارٍ في مصنِّف الحراسة: classify(…, 'plan', ctx)
+    ('not', 'audit-filter', r'\b(?:qA\.get|inp)\(\s*' + _Q + r'|%%"%s":"'),                       # حقلُ تصفيةٍ في سجل التدقيق: inp("plan", …) · qA.get('plan') · LIKE '%%"plan":"…'
+    ('not', 'element-kind', r'\bfindEl\([^)]*' + _Q),                                             # نوعُ عنصرٍ على الخريطة
+    ('not', 'bound-name',   r'\breturn\s+' + _Q + r'\s*;|\bswallow\(\s*' + _Q),                   # اسمُ حدٍّ/وسمُ خطأ: return 'rounds' (حدُّ الجولات في عقد الصور) · swallow('x', e)
+    ('not', 'label-pair',   r'\[\s*' + _Q + r'\s*,\s*["\'][^"\']*[؀-ۿ]'),               # زوجُ (قيمة، تسمية عربية) في قائمة تصفية: ['plan', 'خطط الشهور']
+    ('not', 'comment',      r'/\*[^\n]*' + _Q + r'|^\s*(?:\*|//)[^\n]*' + _Q + r'|' + _Q + r'\s*[·:]\s*["\']?\w*["\']?[^\n]*\*/'),   # نصٌّ داخل تعليق
 ]
 def name_class(line, nm):
-    """صنفُ ورود الاسم في السطر: ('use', القاعدة) يُعدّ · ('not', القاعدة) مستبعَد بقاعدته · ('other', '') كلمةٌ بالحروف نفسها لمعنى آخر."""
+    """صنفُ ورود الاسم في السطر بأول قاعدةٍ تطابق: ('use', القاعدة) يُعدّ · ('not', القاعدة) لا يُعدّ · ('other', '') بلا قاعدة (الاختبار يرفضه)."""
     q = re.escape(nm)
-    for rid, pat in NAME_USE:
-        if re.search(pat.replace('%s', q), line): return ('use', rid)
-    for rid, pat in NAME_NOT:
-        if re.search(pat.replace('%s', q), line): return ('not', rid)
+    for kind, rid, pat in NAME_RULES:
+        if re.search(pat.replace('%%', '\0').replace('%s', q).replace('\0', '%'), line): return (kind, rid)
     return ('other', '')
 DCIMPORT = re.compile(r'<dc-import\s+name="([^"{]+)"')
 BASE_EXT = ('.js', '.html', '.json', '.css', '.tpl')
@@ -235,10 +250,13 @@ def scan(S):
                 p = os.path.normpath(os.path.join(base, n))
                 if not n.endswith(BASE_EXT) or p in mine_files or p in gen or p in skip: continue
                 if any(p.startswith(os.path.normpath(os.path.join(S, f)) + os.sep) for f in folders.values()): continue
-                try: lines = open(p, encoding='utf-8').read().split('\n')
+                try: text = open(p, encoding='utf-8').read()
                 except UnicodeDecodeError: continue
+                lines = text.split('\n')
+                # د5-د2: اسمُ البرنامج داخل تعليقٍ /* … */ (ولو امتدّ أسطراً) ليس استعمالاً — يُفرَّغ التعليق قبل عدّ الأسماء (المفاتيحُ تُعدّ على النص كما هو)
+                bare = re.sub(r'/\*.*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group(0)), text, flags=re.S).split('\n') if n.endswith(('.js', '.tpl')) else lines
                 rel = os.path.relpath(p, os.path.dirname(S)).replace(os.sep, '/')
-                for line in lines:
+                for li, line in enumerate(lines):
                     for key in set(KEY.findall(line)):
                         if key in owner: add('base', 'base-key', rel, key)
                     for g in set(GLOBAL_USE.findall(line)):
@@ -246,8 +264,8 @@ def scan(S):
                     for c in DCIMPORT.findall(line):
                         if c in comp: add('base', 'base-dcimport', rel, c)
                     if NAMEQ and n.endswith(('.js', '.tpl')) and not n.endswith(('.json.tpl', '.html.tpl')):
-                        for nm in set(NAMEQ.findall(line)):
-                            kind, rid = name_class(line, nm)
+                        for nm in set(NAMEQ.findall(bare[li])):
+                            kind, rid = name_class(bare[li], nm)
                             tally[(kind, rid)] = tally.get((kind, rid), 0) + 1
                             if kind == 'use': add('base', 'base-name', rel, nm)
     return {'errors': bad, 'violations': found, 'names': {k[0] + (':' + k[1] if k[1] else ''): v for k, v in sorted(tally.items())}}
