@@ -98,30 +98,18 @@ var KIVO_GUARDS = (function (B, R) {
     for (i = 0; i < m.removed.length; i++) R.op('lens.' + col + '.delete', p + '[' + m.removed[i].id + ']');
     for (i = 0; i < m.changed.length; i++) classifyEntity(R, col, m.changed[i].a, m.changed[i].b, p + '[' + m.changed[i].id + ']', ctx);
   }
-  function classifySectors(R, la, lb, p) {
-    var m = matchById(la, lb, ID.sectors), i;
-    for (i = 0; i < m.added.length; i++) R.op('sector.create', p + '[' + m.added[i].id + ']');
-    for (i = 0; i < m.removed.length; i++) R.op('sector.delete', p + '[' + m.removed[i].id + ']');
-    for (i = 0; i < m.changed.length; i++) R.op('sector.edit', p + '[' + m.changed[i].id + ']');
-  }
-  /* موقعٌ/طابق: في الخطة floors[i] وmonths[k].d[i] — وفي الجولة ["y-m-d"].d[i] */
+@@SYS:guard.sectors.plan@@  /* موقعٌ/طابق: في الخطة floors[i] وmonths[k].d[i] — وفي الجولة ["y-m-d"].d[i] */
   function classifyFloor(R, x, y, p, host, ctx) {
     x = isObj(x) ? x : {}; y = isObj(y) ? y : {};
     var ks = union(x, y), i, k;
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; if (deq(x[k], y[k])) continue;
       if (LENS_COLS[k]) { classifyLensCol(R, k, arr(x[k]), arr(y[k]), p + '.' + k, ctx); continue; }
-      if (k === 'sectors') { classifySectors(R, arr(x[k]), arr(y[k]), p + '.sectors'); continue; }
-      if (host === 'rounds') {
+@@SYS:guard.floor.sectors.plan@@      if (host === 'rounds') {
         if (k === 'ap') { R.op(y.ap ? 'round.approve' : 'round.reopen', p + '.ap'); continue; }
         R.op('round.edit', p + '.' + k); continue;                                                     /* hideZones/hidePaths/hideGates/hideMarks/showCodes */
       }
-      if (k === 'approved') { R.op(y.approved ? (p.indexOf('months') === 0 ? 'plan.approve' : 'site.approve') : 'plan.reopen', p + '.approved'); continue; }
-      if (k === 'iid' || k === 'img' || k === 'imgW' || k === 'imgH') { R.op('map.replace', p + '.' + k); continue; }
-      if (k === 'mpu') { R.op('map.calibrate', p + '.mpu'); continue; }
-      if (k === 'dens') { R.op('lens.dens.threshold.configure', p + '.dens', 'v24.3 F-06'); continue; }
-      R.op('site.edit', p + '.' + k);                                                                   /* name · num · chip · chipTone · create · hide* · showCodes */
-    }
+@@SYS:guard.floor.plan@@    }
   }
   function normMonth(v) { if (Array.isArray(v)) return { c: 1, d: v }; return isObj(v) ? v : {}; }
   function normLock(v) { if (v === true || v === 1) return { ap: 1 }; return isObj(v) ? v : {}; }
@@ -136,33 +124,7 @@ var KIVO_GUARDS = (function (B, R) {
     var ks = union(x, y), i; for (i = 0; i < ks.length; i++) { var k = ks[i]; if (k === 'ap' || k === 'mo' || k === 'dopen' || k === 'dshut' || k === 'auto' || k === 'perm') continue; if (!deq(x[k], y[k])) R.res(p + '.' + k, 'unlisted-lock-field'); }
   }
   var C = {};
-  /* ═══ الخطة التشغيلية ═══ */
-  C['bassam_plan_v1'] = function (R, a, b, ctx) {
-    a = isObj(a) ? a : {}; b = isObj(b) ? b : {};
-    var m = matchById(arr(a.floors), arr(b.floors), ID.floors), i, k;
-    for (i = 0; i < m.added.length; i++) R.op('site.create', 'floors[' + m.added[i].id + ']');
-    for (i = 0; i < m.removed.length; i++) R.op('site.delete', 'floors[' + m.removed[i].id + ']');
-    for (i = 0; i < m.changed.length; i++) classifyFloor(R, m.changed[i].a, m.changed[i].b, 'floors[' + m.changed[i].id + ']', 'plan', ctx);
-    var cols = ['zones', 'gates', 'marks', 'paths'];
-    for (i = 0; i < cols.length; i++) if (!deq(a[cols[i]], b[cols[i]])) classifyLensCol(R, cols[i], arr(a[cols[i]]), arr(b[cols[i]]), cols[i], ctx);   /* مرآةُ الموقع النشط في الجذر */
-    var ma = isObj(a.months) ? a.months : {}, mb = isObj(b.months) ? b.months : {}, ks = union(ma, mb);
-    for (i = 0; i < ks.length; i++) {
-      k = ks[i]; if (deq(ma[k], mb[k])) continue;
-      if (ma[k] === undefined) { R.op('plan.create', 'months[' + k + ']'); continue; }
-      if (mb[k] === undefined) { R.op('plan.delete', 'months[' + k + ']'); continue; }
-      var x = normMonth(ma[k]), y = normMonth(mb[k]);
-      if (!!x.mo !== !!y.mo) R.op(y.mo ? 'plan.reopen' : 'plan.approve', 'months[' + k + '].mo');
-      var mm = matchById(arr(x.d), arr(y.d), ID.floors), q;
-      for (q = 0; q < mm.added.length; q++) R.op('site.create', 'months[' + k + '].d[' + mm.added[q].id + ']');
-      for (q = 0; q < mm.removed.length; q++) R.op('site.delete', 'months[' + k + '].d[' + mm.removed[q].id + ']');
-      for (q = 0; q < mm.changed.length; q++) classifyFloor(R, mm.changed[q].a, mm.changed[q].b, 'months[' + k + '].d[' + mm.changed[q].id + ']', 'plan', ctx);
-    }
-    var da = isObj(a.delMonths) ? a.delMonths : {}, db = isObj(b.delMonths) ? b.delMonths : {}; ks = union(da, db);
-    for (i = 0; i < ks.length; i++) { if (deq(da[ks[i]], db[ks[i]])) continue; R.op(db[ks[i]] === undefined ? 'plan.create' : 'plan.delete', 'delMonths[' + ks[i] + ']'); }
-    if (!deq(a.cfg, b.cfg)) R.tec('cfg'); if (!deq(a.pMig, b.pMig)) R.tec('pMig');
-    ks = union(a, b); for (i = 0; i < ks.length; i++) { k = ks[i]; if (k === 'floors' || k === 'months' || k === 'delMonths' || k === 'cfg' || k === 'pMig' || LENS_COLS[k]) continue; if (!deq(a[k], b[k])) R.res(k, 'unknown-root-key'); }
-  };
-  /* ═══ الجولات اليومية ═══ */
+@@SYS:guard.classify.plan@@  /* ═══ الجولات اليومية ═══ */
   function classifyShAp(R, x, y, p) { x = isObj(x) ? x : {}; y = isObj(y) ? y : {}; var ks = union(x, y), i; for (i = 0; i < ks.length; i++) { if (deq(x[ks[i]], y[ks[i]])) continue; var on = isObj(y[ks[i]]) && !!y[ks[i]].ap; R.op(on ? 'round.approve' : 'round.reopen', p + '[' + ks[i] + ']'); } }
   function classifyDay(R, x, y, k, ctx) {
     if (x === undefined) { R.op('round.create', k); return; }

@@ -1265,7 +1265,7 @@
      "byResource"
     ],
     "key": "bassam_tasks_v1",
-    "after": 3,
+    "after": 2,
     "seq": 30,
     "value": {
      "items": "tasksItems",
@@ -1403,7 +1403,7 @@
      "byResource"
     ],
     "key": "bassam_tasks_v1",
-    "after": 30,
+    "after": 26,
     "seq": 2,
     "value": {
      "scope": "dept",
@@ -1433,7 +1433,7 @@
      "byResource"
     ],
     "key": "bassam_tasks_locks_v1",
-    "after": 30,
+    "after": 26,
     "seq": 3,
     "value": {
      "scope": "dept",
@@ -1515,7 +1515,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · task.month.reopen · task.reopen)"
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · report.reopen · task.month.reopen · task.reopen)"
    },
    {
     "path": [
@@ -1523,7 +1523,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · report.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
     "with": [
      "award",
      "dstats"
@@ -1535,20 +1535,8 @@
      "DateRange",
      "evidence"
     ],
-    "set": "rounds/dreport/plan/tasks: أقفالٌ واجهية"
-   },
-   {
-    "path": [
-     "migration",
-     "DateRange",
-     "evidence"
-    ],
-    "set": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport/plan/tasks: أقفالٌ واجهية",
-    "with": [
-     "dstats",
-     "irshad",
-     "seized"
-    ]
+    "sub": ": أقفالٌ واجهية",
+    "by": "/tasks: أقفالٌ واجهية"
    }
   ],
   "guard-bindings": [
@@ -1708,7 +1696,7 @@
     "path": [
      "decisions"
     ],
-    "after": 10,
+    "after": 8,
     "seq": 0,
     "value": {
      "id": "D-11",
@@ -1721,7 +1709,7 @@
     "path": [
      "decisions"
     ],
-    "after": 10,
+    "after": 8,
     "seq": 1,
     "value": {
      "id": "D-12",

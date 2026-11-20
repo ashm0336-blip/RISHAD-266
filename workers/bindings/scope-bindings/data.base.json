@@ -55,7 +55,7 @@
   "DateRange": {
    "status": "as-is-ui-only",
    "confidence": "medium",
-   "evidence": "rounds/dreport/plan: أقفالٌ واجهية"
+   "evidence": "rounds/dreport: أقفالٌ واجهية"
   },
   "Source": {
    "status": "as-is-enforced",
@@ -748,11 +748,9 @@
    "owner": "lens.zones",
    "type": "access",
    "g": "exists",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_zone_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -780,11 +778,9 @@
    "owner": "lens.zones",
    "type": "create",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_zone_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -812,11 +808,9 @@
    "owner": "lens.zones",
    "type": "edit",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_zone_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -844,11 +838,9 @@
    "owner": "lens.zones",
    "type": "operation",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_zone_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -876,11 +868,9 @@
    "owner": "lens.zones",
    "type": "operation",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_zone_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -908,11 +898,9 @@
    "owner": "lens.zones",
    "type": "delete",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_zone_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -958,9 +946,8 @@
    "owner": "lens.paths",
    "type": "access",
    "g": "exists",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
     "bassam_rounds_v1"
    ],
    "dims": {
@@ -983,9 +970,8 @@
    "owner": "lens.paths",
    "type": "create",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
     "bassam_rounds_v1"
    ],
    "dims": {
@@ -1008,9 +994,8 @@
    "owner": "lens.paths",
    "type": "edit",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
     "bassam_rounds_v1"
    ],
    "dims": {
@@ -1033,9 +1018,8 @@
    "owner": "lens.paths",
    "type": "operation",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
     "bassam_rounds_v1"
    ],
    "dims": {
@@ -1058,9 +1042,8 @@
    "owner": "lens.paths",
    "type": "operation",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
     "bassam_rounds_v1"
    ],
    "dims": {
@@ -1086,9 +1069,8 @@
    "owner": "lens.paths",
    "type": "delete",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
     "bassam_rounds_v1"
    ],
    "dims": {
@@ -1129,11 +1111,9 @@
    "owner": "lens.gates",
    "type": "access",
    "g": "exists",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_gate_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1161,11 +1141,9 @@
    "owner": "lens.gates",
    "type": "create",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_gate_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1193,11 +1171,9 @@
    "owner": "lens.gates",
    "type": "edit",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_gate_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1225,11 +1201,9 @@
    "owner": "lens.gates",
    "type": "operation",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_gate_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1257,11 +1231,9 @@
    "owner": "lens.gates",
    "type": "delete",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_gate_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1307,11 +1279,9 @@
    "owner": "lens.marks",
    "type": "access",
    "g": "exists",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_mark_kinds_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1339,11 +1309,9 @@
    "owner": "lens.marks",
    "type": "create",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_mark_kinds_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1371,11 +1339,9 @@
    "owner": "lens.marks",
    "type": "edit",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_mark_kinds_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1403,11 +1369,9 @@
    "owner": "lens.marks",
    "type": "operation",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_mark_kinds_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1435,11 +1399,9 @@
    "owner": "lens.marks",
    "type": "delete",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_mark_kinds_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1487,8 +1449,7 @@
    "g": "exists",
    "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_rounds_v1",
-    "bassam_plan_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1518,8 +1479,7 @@
    "g": "to-bind",
    "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_rounds_v1",
-    "bassam_plan_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -1595,10 +1555,8 @@
    "owner": "lens.dens",
    "type": "operation",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -1614,7 +1572,7 @@
     ],
     "Shift": [
      "na",
-     "no-shift-identity (plan)"
+     "no-shift-identity"
     ],
     "DateRange": [
      "periodLock"
@@ -1626,11 +1584,9 @@
    "owner": "lens.zones",
    "type": "access",
    "g": "exists",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_zone_opts_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -2249,11 +2205,9 @@
    "owner": "lens.marks",
    "type": "operation",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
-    "bassam_rounds_v1",
-    "bassam_mark_kinds_v1"
+    "bassam_rounds_v1"
    ],
    "dims": {
     "Department": [
@@ -2399,9 +2353,8 @@
    "owner": "lens.dist",
    "type": "edit",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
+   "res": "bassam_rounds_v1",
    "resources": [
-    "bassam_plan_v1",
     "bassam_rounds_v1"
    ],
    "dims": {
@@ -2448,10 +2401,8 @@
    "owner": "lens.gates",
    "type": "operation",
    "g": "to-bind",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2466,10 +2417,8 @@
    "owner": "lens.zones",
    "type": "view",
    "g": "exists",
-   "res": "bassam_zone_opts_v1",
-   "resources": [
-    "bassam_zone_opts_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2481,10 +2430,8 @@
    "owner": "lens.zones",
    "type": "create",
    "g": "exists",
-   "res": "bassam_zone_opts_v1",
-   "resources": [
-    "bassam_zone_opts_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2496,10 +2443,8 @@
    "owner": "lens.zones",
    "type": "edit",
    "g": "exists",
-   "res": "bassam_zone_opts_v1",
-   "resources": [
-    "bassam_zone_opts_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2511,10 +2456,8 @@
    "owner": "lens.zones",
    "type": "delete",
    "g": "exists",
-   "res": "bassam_zone_opts_v1",
-   "resources": [
-    "bassam_zone_opts_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2526,10 +2469,8 @@
    "owner": "lens.gates",
    "type": "view",
    "g": "exists",
-   "res": "bassam_gate_opts_v1",
-   "resources": [
-    "bassam_gate_opts_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2541,10 +2482,8 @@
    "owner": "lens.gates",
    "type": "create",
    "g": "exists",
-   "res": "bassam_gate_opts_v1",
-   "resources": [
-    "bassam_gate_opts_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2556,10 +2495,8 @@
    "owner": "lens.gates",
    "type": "edit",
    "g": "exists",
-   "res": "bassam_gate_opts_v1",
-   "resources": [
-    "bassam_gate_opts_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2571,10 +2508,8 @@
    "owner": "lens.gates",
    "type": "delete",
    "g": "exists",
-   "res": "bassam_gate_opts_v1",
-   "resources": [
-    "bassam_gate_opts_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2586,10 +2521,8 @@
    "owner": "lens.marks",
    "type": "view",
    "g": "exists",
-   "res": "bassam_mark_kinds_v1",
-   "resources": [
-    "bassam_mark_kinds_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2601,10 +2534,8 @@
    "owner": "lens.marks",
    "type": "create",
    "g": "exists",
-   "res": "bassam_mark_kinds_v1",
-   "resources": [
-    "bassam_mark_kinds_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2616,10 +2547,8 @@
    "owner": "lens.marks",
    "type": "edit",
    "g": "exists",
-   "res": "bassam_mark_kinds_v1",
-   "resources": [
-    "bassam_mark_kinds_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2631,10 +2560,8 @@
    "owner": "lens.marks",
    "type": "delete",
    "g": "exists",
-   "res": "bassam_mark_kinds_v1",
-   "resources": [
-    "bassam_mark_kinds_v1"
-   ],
+   "res": "",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -3008,25 +2935,6 @@
   }
  ],
  "byResource": {
-  "bassam_plan_v1": {
-   "items": "planItems",
-   "evidence": "floors[f:sid] · months[y-m].d[f:sid] · zones(code)/gates(id|num)/marks(id|label)/paths(code) · emp[] · approved · months[].mo",
-   "lock": "plan: شهرٌ منقضٍ بلا mo · موقعٌ معتمد (approved) — واجهةٌ فقط اليوم",
-   "dims": {
-    "Department": "keyDept",
-    "Branch": "branchCeiling",
-    "Site": "floorSid",
-    "Zone/Element": "elementId",
-    "Assigned": "elementEmp",
-    "DateRange": "periodLock"
-   },
-   "na": {
-    "Shift": "no-shift-identity (plan)",
-    "Own": "no-owner-identity",
-    "Source": "department-resource",
-    "Global": "no-record-scope"
-   }
-  },
   "bassam_rounds_v1": {
    "items": "roundsItems",
    "evidence": "[\"y-m-d\"].d[#i] (الموقع بالموضع — مرآةُ floors) · العناصر · emp[] · ap · shAp[shift] · m:y-m {ap,mo,dopen,dshut}",
@@ -3313,7 +3221,7 @@
   },
   {
    "term": "reopen",
-   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen)",
+   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · report.reopen)",
    "notA": "ليس فتحَ نافذةٍ زمنية للاستدراك (retro.open)",
    "classifier": "mo:1 / زوالُ ap ⇒ *.reopen — لا يُصنَّف retro.open أبداً"
   },
@@ -3613,183 +3521,6 @@
       "cap": "planning/readiness:view",
       "key": "ready.view",
       "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_plan_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "lens.zones.view",
-     "lens.paths.view",
-     "lens.gates.view",
-     "lens.marks.view",
-     "lens.dist.view",
-     "round.view",
-     "field.view",
-     "report.view",
-     "report.indicators.view",
-     "emp.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "lens.zones.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "lens.paths.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "lens.gates.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "lens.marks.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "lens.dist.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "emps/data:view",
-      "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_zone_opts_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "lens.zones.view",
-     "ref.zone.type.view",
-     "round.view",
-     "field.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "lens.zones.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_gate_opts_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "lens.gates.view",
-     "ref.gate.type.view",
-     "round.view",
-     "field.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "lens.gates.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_mark_kinds_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "lens.marks.view",
-     "ref.mark.kind.view",
-     "round.view",
-     "field.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "lens.marks.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
      },
      {
       "cap": "admin/backup:view",
@@ -4327,10 +4058,6 @@
     "field.view": {
      "resources": [
       "bassam_rounds_v1",
-      "bassam_plan_v1",
-      "bassam_zone_opts_v1",
-      "bassam_gate_opts_v1",
-      "bassam_mark_kinds_v1",
       "bassam_dayshift_v1",
       "bassam_dayfocus_v1",
       "bassam_dreport_v1",
@@ -4447,31 +4174,7 @@
   "readKindOutsideRoutes": [
    {
     "key": "lens.zones.indicators.view",
-    "resource": "bassam_plan_v1",
-    "owner": "lens.zones",
-    "atoms": [
-     "daily/kpiZones:view"
-    ],
-    "dispositions": [
-     "replaced_by_reference"
-    ],
-    "note": "لا ورقةَ AS‑IS تقرأ المورد بهذا المفتاح (RD_REG/cap) — البياناتُ تصل بورقة المضيف؛ ليس مسارَ قراءةٍ مستقلاً (host-read)"
-   },
-   {
-    "key": "lens.zones.indicators.view",
     "resource": "bassam_rounds_v1",
-    "owner": "lens.zones",
-    "atoms": [
-     "daily/kpiZones:view"
-    ],
-    "dispositions": [
-     "replaced_by_reference"
-    ],
-    "note": "لا ورقةَ AS‑IS تقرأ المورد بهذا المفتاح (RD_REG/cap) — البياناتُ تصل بورقة المضيف؛ ليس مسارَ قراءةٍ مستقلاً (host-read)"
-   },
-   {
-    "key": "lens.zones.indicators.view",
-    "resource": "bassam_zone_opts_v1",
     "owner": "lens.zones",
     "atoms": [
      "daily/kpiZones:view"

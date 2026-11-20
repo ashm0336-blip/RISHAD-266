@@ -1356,7 +1356,7 @@
      "byResource"
     ],
     "key": "bassam_award_v1",
-    "after": 4,
+    "after": 3,
     "seq": 4,
     "value": {
      "items": "awardItems",
@@ -1384,7 +1384,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · dstats.*.reopen · award.res.reopen)",
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · report.reopen · dstats.*.reopen · award.res.reopen)",
     "with": [
      "dstats"
     ]
@@ -1569,7 +1569,7 @@
      "byResource"
     ],
     "key": "bassam_award_v1",
-    "after": 30,
+    "after": 26,
     "seq": 12,
     "value": {
      "scope": "dept",
@@ -1611,7 +1611,7 @@
      "byResource"
     ],
     "key": "bassam_award_docs_v1",
-    "after": 30,
+    "after": 26,
     "seq": 13,
     "value": {
      "scope": "dept",
@@ -1653,7 +1653,7 @@
      "byResource"
     ],
     "key": "bassam_award_docs_v2",
-    "after": 30,
+    "after": 26,
     "seq": 14,
     "value": {
      "scope": "dept",
@@ -1841,7 +1841,7 @@
     "path": [
      "decisions"
     ],
-    "after": 10,
+    "after": 8,
     "seq": 2,
     "value": {
      "id": "D-13",

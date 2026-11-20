@@ -2450,8 +2450,8 @@
      "DateRange",
      "evidence"
     ],
-    "sub": "dreport/plan",
-    "by": "dreport/plan/staffing"
+    "sub": ": أقفالٌ واجهية",
+    "by": "/staffing: أقفالٌ واجهية"
    },
    {
     "path": [
@@ -2510,7 +2510,7 @@
      "byResource"
     ],
     "key": "bassam_staffing_v3",
-    "after": 3,
+    "after": 2,
     "seq": 10,
     "value": {
      "items": "staffingItems",
@@ -2537,7 +2537,7 @@
      "byResource"
     ],
     "key": "bassam_staffing_v2",
-    "after": 3,
+    "after": 2,
     "seq": 20,
     "value": {
      "items": "staffingItems",
@@ -2896,7 +2896,7 @@
      "field.view",
      "resources"
     ],
-    "after": 10,
+    "after": 6,
     "seq": 10,
     "value": "bassam_staffing_v3"
    }
@@ -2987,7 +2987,7 @@
     "path": [
      "decisions"
     ],
-    "after": 14,
+    "after": 12,
     "seq": 10,
     "value": {
      "id": "D-18",

@@ -2510,7 +2510,7 @@
      "byResource"
     ],
     "key": "bassam_seized_v1",
-    "after": 3,
+    "after": 2,
     "seq": 50,
     "value": {
      "items": "reportItems",
@@ -2648,7 +2648,7 @@
      "byResource"
     ],
     "key": "bassam_seized_v1",
-    "after": 30,
+    "after": 26,
     "seq": 7,
     "value": {
      "scope": "dept",
@@ -2684,7 +2684,7 @@
      "byResource"
     ],
     "key": "bassam_seized_cat_v1",
-    "after": 30,
+    "after": 26,
     "seq": 8,
     "value": {
      "scope": "dept",
@@ -2732,7 +2732,7 @@
      "byResource"
     ],
     "key": "bassam_seized_acts_v1",
-    "after": 30,
+    "after": 26,
     "seq": 9,
     "value": {
      "scope": "dept",
@@ -2774,7 +2774,7 @@
      "byResource"
     ],
     "key": "bassam_seized_locs_v1",
-    "after": 30,
+    "after": 26,
     "seq": 10,
     "value": {
      "scope": "dept",
@@ -2816,7 +2816,7 @@
      "byResource"
     ],
     "key": "bassam_seized_jew_v1",
-    "after": 30,
+    "after": 26,
     "seq": 11,
     "value": {
      "scope": "dept",
@@ -2884,7 +2884,7 @@
      "byResource"
     ],
     "key": "bassam_seized_retro_v1",
-    "after": 45,
+    "after": 41,
     "seq": 16,
     "value": {
      "scope": "dept-state",
