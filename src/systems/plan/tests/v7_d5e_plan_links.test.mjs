@@ -126,8 +126,10 @@ test('① rounds commands write exactly what the Plan page used to write into th
   const now = c.KIVO.BassamCal.hPartsRiyadh(new Date());
   const cases = [
     ['daily.month.clear@1', (t) => ({ y: t.y, m: t.m }), (rel, read, t) => oldMonthClear(read, rel, t), [{ y: now.y, m: now.m }, { y: now.y - 1, m: now.m }, { y: 1300, m: 1 }]],
-    ['daily.site.remove@1', (t) => ({ index: t.i }), (rel, read, t) => oldSiteRemove(read, rel, t), [{ i: 0 }, { i: 1 }, { i: 5 }]],
-    ['daily.sites.pad@1', (a) => ({ sites: a }), (rel, read, a) => oldSitesPad(c.KIVO, read, rel, a), [[{ sid: 'A' }, { sid: 'B' }, { sid: 'TEST_ONLY_NEW' }], [{ sid: 'A' }], [{}, {}, {}, { sid: 'D' }]]],
+    /* V7 · د5-هـ (t4): الحذفُ والإكمالُ بمعرّف الموقع sid لا بموضعه — يساويان القديمَ حرفاً حين تحمل الأيامُ والمواقعُ معرّفاتٍ متّسقة (كما هنا: TEST_ONLY_S<i> في الموضع i)؛
+       ما يختلف فيه الموضعُ عن المعرّف (إعادةُ ترتيب · طابقٌ بلا sid) يختبره src/systems/daily/tests/v7_d5e_rounds_sid_migration.test.mjs */
+    ['daily.site.remove@1', (t) => ({ index: t.i, sid: 'TEST_ONLY_S' + t.i }), (rel, read, t) => oldSiteRemove(read, rel, t), [{ i: 0 }, { i: 1 }, { i: 5 }]],
+    ['daily.sites.pad@1', (a) => ({ sites: a }), (rel, read, a) => oldSitesPad(c.KIVO, read, rel, a), [[{ sid: 'TEST_ONLY_S0' }, { sid: 'TEST_ONLY_S1' }, { sid: 'TEST_ONLY_NEW' }], [{ sid: 'TEST_ONLY_S0' }], [{ sid: 'TEST_ONLY_S0' }, { sid: 'TEST_ONLY_S1' }, { sid: 'TEST_ONLY_S2' }, { sid: 'D' }]]],
   ];
   for (const [name, payload, old, inputs] of cases)
     for (const input of inputs) {

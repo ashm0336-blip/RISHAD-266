@@ -1659,12 +1659,37 @@ var KIVO_IDENTITY_MIGRATION = (function (M, S, R) {
     rep.summary = { plan: rep.counts.plan, snapshots: strip(rep.counts.snapshots), rounds: strip(rep.counts.rounds), roundsFloors: strip(rep.counts.roundsFloors), emp: rep.counts.emp, mirror: rep.counts.mirror, writeSet: { keys: rep.writeSet.keys.length, ops: rep.writeSet.ops, tierA: rep.writeSet.tierA, tierB: rep.writeSet.tierB, byOp: rep.writeSet.byOp, hash: rep.writeSet.hash }, gates: rep.gates };
     return rep;
   }
+  /* V7 · د5-هـ (t4): ترحيلُ هوية الموقع — يطبّق من مجموعة الكتابة (tier A) عملياتِ sid وحدها (kind 'sid' · op 'set'): طابقُ الخطة بلا sid (IP‑01) ·
+     لقطةُ الشهر الجاري (IP‑02) · طوابقُ الحاويات التاريخية exact/high (البند ٣ — برهانُ النسب الموضعي هو الموضعُ الوحيد الذي يُعتمد فيه الموضع). uid/emp لا تُمسّ هنا.
+     medium (tier B) وambiguous/unlinked لا تُكتب ويُبلَّغ عنها صفاً صفاً (rows). متساوي الأثر: الإعادةُ على الناتج لا تجد عمليةً. الرجوع: sidRollback (عكسُ العمليات بحراسة القيمة). */
+  function sidMigration(input, H) {
+    input = obj(input); var rep = rehearse(input, H), byDept = obj(input.byDept), keys = [], done = {}, pend = {};
+    rep.writeSet.keys.forEach(function (K) {
+      var ops = K.ops.filter(function (o) { return o.kind === 'sid' && o.op === 'set' && (AUTO[o.cls] || o.cls === 'assign'); }).map(function (o) { return { op: o.op, path: o.path.slice(), p: o.p, to: o.to, cls: o.cls, basis: o.basis || '' }; });
+      var val = obj(byDept[K.dept])[K.resource]; if (!ops.length || val == null) return;
+      var before = clone(val), after = applyOps(clone(val), ops), inv = invertOps(ops), bJ = JSON.stringify(before), aJ = JSON.stringify(after), back = JSON.stringify(applyOps(clone(after), inv));
+      ops.forEach(function (o) { done[K.dept + '|' + o.p] = o; });
+      keys.push({ key: K.key, resource: K.resource, dept: K.dept, rev: K.before.rev, ops: ops, inverse: inv, before: before, after: after, beforeSha256: sha256Hex(bJ), afterSha256: sha256Hex(aJ), roundTrip: back === bJ });
+    });
+    rep.pending.forEach(function (x) { if (x.kind === 'sid') pend[x.dept + '|' + x.p] = x; });
+    var rows = rep.floors.map(function (r) { var p = r.container === 'snapshot' ? null : r.key + '.d[' + r.idx + '].sid', q = [p, 'months.' + r.key + '.d[' + r.idx + '].sid', 'months.' + r.key + '[' + r.idx + '].sid'], o = null, w = null;
+      for (var j = 0; j < q.length; j++) if (q[j]) { o = o || done[r.dept + '|' + q[j]] || null; w = w || pend[r.dept + '|' + q[j]] || null; }
+      return { dept: r.dept, container: r.container, key: r.key, idx: r.idx, cls: r.cls, hadSid: !!r.hasSid, action: r.hasSid ? 'kept' : o ? 'assigned' : w ? 'pending' : 'left', sid: o ? o.to : null, targetSid: r.targetSid || null, basis: r.basis }; });
+    var hash = sha256Hex(canonJSON(keys.map(function (k) { return { key: k.key, before: k.beforeSha256, after: k.afterSha256, ops: k.ops.map(function (o) { return [o.p, o.to]; }) }; })));
+    return { seed: rep.seed, hash: hash, keys: keys, rows: rows, ops: keys.reduce(function (n, k) { return n + k.ops.length; }, 0), pending: rep.pending.filter(function (x) { return x.kind === 'sid'; }), gates: rep.gates, rollbackVerified: keys.every(function (k) { return k.roundTrip; }) };
+  }
+  /* الرجوعُ لمفتاحٍ واحد: كلُّ مسارٍ كُتب يجب أن يحمل القيمةَ المكتوبة نفسَها (وإلا drift — لا رجوعَ جزئي)، ثم عكسُ العمليات ⇒ القيمةُ السابقة حرفاً */
+  function sidRollback(value, entry) {
+    var cur = clone(value), ops = arr(obj(entry).ops);
+    for (var i = 0; i < ops.length; i++) if (getAt(cur, ops[i].path) !== ops[i].to) throw new Error('drift: ' + ops[i].p);
+    return applyOps(cur, arr(entry.inverse).length ? entry.inverse : invertOps(ops));
+  }
   function cls0() { var o = { elements: 0, alreadyUid: 0, conflict: 0 }; for (var i = 0; i < CLS.length; i++) o[CLS[i]] = 0; return o; }
   function strip(o) { var r = {}; for (var k in o) r[k] = o[k]; return r; }
   function countOps(ops) { var o = {}; for (var i = 0; i < ops.length; i++) { var k = ops[i].op + ':' + ops[i].cls; o[k] = (o[k] || 0) + 1; } return o; }
   function validate() { var errs = []; if (sha256Hex('abc') !== 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad') errs.push('sha256 self-test'); if (sha256Hex('') !== 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855') errs.push('sha256 empty'); if (!/^u[0-9a-z]{25}$/.test(uidCandidate('00'.repeat(32), 'x', 0))) errs.push('uid shape'); if (!/^s_[0-9a-z]{14}$/.test(sidCandidate('00'.repeat(32), 'x', 0))) errs.push('sid shape'); return { ok: !errs.length, errors: errs }; }
   return { version: M.version, docSha256: M.docSha256, phase: 4.5, mode: 'rehearsal (dry-run)', writes: 0, classes: CLS.slice(), auto: Object.keys(AUTO), pending: Object.keys(PENDING), model: M.model || null, lineageRules: M.lineageRules || null, codeInvariance: M.codeInvariance || null, rollbackDesign: M.rollback || null, gatesSpec: M.gates || null, sidClosureGates: M.sidClosureGates || null, decisions: M.decisions || null,
-           rehearse: rehearse, sha256Hex: sha256Hex, uidCandidate: uidCandidate, sidCandidate: sidCandidate, structuralEq: structuralEq, floorLineage: floorLineage, elemLineage: elemLineage, indexFloor: indexFloor, geoSet: geoSet, stableSet: stableSet, applyOps: applyOps, invertOps: invertOps, canonJSON: canonJSON, empResolver: empResolver, validate: validate, NEAR: NEAR };
+           rehearse: rehearse, sidMigration: sidMigration, sidRollback: sidRollback, sha256Hex: sha256Hex, uidCandidate: uidCandidate, sidCandidate: sidCandidate, structuralEq: structuralEq, floorLineage: floorLineage, elemLineage: elemLineage, indexFloor: indexFloor, geoSet: geoSet, stableSet: stableSet, applyOps: applyOps, invertOps: invertOps, canonJSON: canonJSON, empResolver: empResolver, validate: validate, NEAR: NEAR };
 })(KIVO_IDENTITY_MIGRATION_DATA, KIVO_SCOPE, KIVO_REGISTRY);
 
 /* ════ دوالُّ عامّة تستعملها أجزاءُ القاعدة — كانت تسكن في أجزاء أنظمةٍ بعينها (V7 · المرحلة 2 · الحزمة أ: نقلٌ حرفيٌّ بلا تغيير سلوك) ════

@@ -619,7 +619,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     const t = this.state,
       e = t.year + "-" + t.month + "-" + Math.min(t.day, this.hMonthDays(t.year, t.month)),
       s = (t.rounds || {})[e],
-      n = s && Array.isArray(s.d) ? s.d[t.floor >= 0 ? t.floor : 0] : null,
+      n = s && Array.isArray(s.d) ? this._rdAt(s.d, t.floor) || null : null,
       i = this._covKind || "gates";
     return (n && n[i]) || [];
   }
@@ -800,22 +800,24 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   _planSyncPreview(t, e) {
     if (!Array.isArray(t) || !t.length) return null;
     const s = [];
-    let n = 0;
-    const bySid =
-      (e || []).length && (e || []).every((t) => t && t.sid)
-        ? (() => {
-            const t = {};
-            return (
-              (e || []).forEach((e) => {
-                t[String(e.sid)] = e;
-              }),
-              t
-            );
-          })()
-        : null;
+    let n = 0,
+      u9 = 0;
+    /* V7 · د5-هـ (t4): طابقُ لقطة الخطة يُطابَق بطابق يوم الجولة بمعرّفه sid وحده — كان بالموضع حين خلا طابقٌ من sid.
+       طابقُ لقطةٍ بلا sid «غير مربوط»: يُعرض صفاً صريحاً ولا يُحسب ولا يُطبَّق (لا يُطابَق بالموضع) */
+    const bySid = (() => {
+      const t = {};
+      return (
+        (e || []).forEach((e) => {
+          e && e.sid && (t[String(e.sid)] = e);
+        }),
+        t
+      );
+    })();
     return (
       t.forEach((t, i) => {
-        const o = bySid ? (t && t.sid ? bySid[String(t.sid)] || null : (e || [])[i]) : (e || [])[i],
+        if (!(t && t.sid))
+          return void (u9++, s.push({ name: ((t && t.name) || "الموقع " + (i + 1)) + " (غير مربوط بمعرّف — لا يُطبَّق)", add: "0", upd: "0", del: "0" }));
+        const o = bySid[String(t.sid)] || null,
           r = (t, e, s, n) => {
             const u = {};
             (s || []).forEach((t) => {
@@ -854,7 +856,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         ((n += c + f + (a.upd + l.upd + d.upd)),
           s.push({ name: (t.name || "الموقع " + (i + 1)) + (o ? "" : " (جديد)"), add: String(c), upd: String(g), del: String(f) }));
       }),
-      { rows: s, total: n }
+      { rows: s, total: n, unlinked: u9 }
     );
   }
   _planSyncApply(t) {
@@ -908,20 +910,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           })
         );
       },
-      bySid =
-        (l.d || []).length && (l.d || []).every((t) => t && t.sid)
-          ? (() => {
-              const t = {};
-              return (
-                (l.d || []).forEach((e) => {
-                  t[String(e.sid)] = e;
-                }),
-                t
-              );
-            })()
-          : null;
+      /* V7 · د5-هـ (t4): بمعرّف الموقع sid وحده (كان بالموضع حين خلا طابقٌ من sid) — طابقُ لقطةٍ بلا sid لا يُطبَّق، وطابقُ اليوم بلا sid لا يُمسّ */
+      bySid = (() => {
+        const t = {};
+        return (
+          (l.d || []).forEach((e) => {
+            e && e.sid && (t[String(e.sid)] = e);
+          }),
+          t
+        );
+      })();
+    let u9 = 0;
     (o.forEach((t, e) => {
-      const s = bySid ? (t && t.sid ? bySid[String(t.sid)] || null : l.d[e]) : l.d[e];
+      if (!(t && t.sid)) return void u9++;
+      const s = bySid[String(t.sid)] || null;
       s
         ? ((s.zones = d(t.zones, s.zones, this._psKeyZ.bind(this), ["emp", "count", "pc", "off"]).map((t) => ({
             ...t,
@@ -944,7 +946,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 sid: t.sid,
               }),
             );
-            bySid && t && t.sid ? l.d.push(s) : (l.d[e] = s);
+            l.d.push(s);
           })();
     }),
       (l.synced = Date.now()),
@@ -952,8 +954,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       this.saveRounds(r),
       this.setState({ planSync: null, dsSel: null, selMulti: [], dsHovZ: null, dsHovG: null, dsHovM: null }),
       this._opAck(
-        "حُدِّثت جولة اليوم من الخطة — التسكين وحالات الأبواب والقراءات كما هي",
-        "ok",
+        "حُدِّثت جولة اليوم من الخطة — التسكين وحالات الأبواب والقراءات كما هي" +
+          (u9 ? " · " + u9 + " موقع في الخطة بلا معرّف لم يُطبَّق (غير مربوط)" : ""),
+        u9 ? "warn" : "ok",
       ));
   }
   _leafIdx(t, e) {
@@ -1393,6 +1396,40 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       r
     );
   }
+  /* V7 · د5-هـ (t4): الموقعُ المختار (state.floor = موضعُه في قائمة مواقع الخطة) يُطابَق بطابق يوم الجولة بمعرّفه sid لا بموضعه (كـKIVO.BassamRound.siteAt) —
+     موقعٌ لا طابقَ له بمعرّفه لا يُعرض فيه طابقٌ آخر ولا يُكتب؛ وبلا مواقع خطة (غيابُها) الطابقُ f من اليوم نفسِه (لا ربطَ بخطة) */
+  _sidIx(t, e) {
+    if (!Array.isArray(t) || null == e || "" === e) return -1;
+    for (let s = 0; s < t.length; s++) if (t[s] && null != t[s].sid && "" !== t[s].sid && String(t[s].sid) === String(e)) return s;
+    return -1;
+  }
+  _sidFloors() {
+    try {
+      const p = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k));
+      return p && Array.isArray(p.floors) ? p.floors : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  _rdIx(t, e) {
+    if (!Array.isArray(t)) return -1;
+    const s = this._sidFloors(),
+      n = e >= 0 ? e : 0;
+    if (!s || !s.length) return n < t.length ? n : -1;
+    return this._sidIx(t, s[n] && s[n].sid);
+  }
+  _rdAt(t, e) {
+    const s = this._rdIx(t, e);
+    return s >= 0 ? t[s] : void 0;
+  }
+  /* موقعٌ «غير مربوط»: لا طابقَ له بمعرّفه لأن المعرّفَ غائب (عن موقع الخطة أو عن طابقٍ في اليوم) — يُعرض صراحةً ولا يُطابَق بالموضع */
+  _rdUnlinked(t, e) {
+    if (!Array.isArray(t) || !t.length || this._rdAt(t, e)) return 0;
+    const F = this._sidFloors(),
+      n = t.filter((x) => x && !(null != x.sid && "" !== x.sid)).length,
+      f = F && F[e >= 0 ? e : 0];
+    return F && F.length && (!(f && f.sid) || n) ? Math.max(1, n) : 0;
+  }
   _updRoundAt(t, e) {
     const s = this.state,
       n = s.year + "-" + s.month + "-" + Math.min(s.day, this.hMonthDays(s.year, s.month)),
@@ -1405,7 +1442,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {
       return !1;
     }
-    const a = r.d[t];
+    const a = r.d[this._rdIx(r.d, t)];
     return !!a && (e(a, r), (i[n] = r), this.saveRounds(i), !0);
   }
   _updRound(t) {
@@ -1420,7 +1457,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {
       return;
     }
-    const r = o.d[e.floor >= 0 ? e.floor : 0];
+    const r = this._rdAt(o.d, e.floor);
     if (r && (t(r, o), (n[s] = o), this.saveRounds(n), this._dsGeomJson(i) !== this._dsGeomJson(o))) {
       const t = this._dsHistMerge;
       ((this._dsHistMerge = null),
@@ -1646,6 +1683,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         plan.floors[index].approved
       )
         return false;
+      const sid9 = plan.floors[index].sid;   /* V7 · د5-هـ (t4): يُحذف من أيام الجولات بمعرّفه لا بموضعه */
       plan.floors.splice(index, 1);
       Object.values(plan.months || {}).forEach((entry) => {
         const rows = Array.isArray(entry) ? entry : entry && entry.d;
@@ -1660,8 +1698,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       });
       const rounds = JSON.parse(JSON.stringify(this.state.rounds || {}));
       Object.values(rounds).forEach((rec) => {
-        if (rec && Array.isArray(rec.d) && rec.d.length > index)
-          rec.d.splice(index, 1);
+        if (rec && Array.isArray(rec.d))
+          for (let i = rec.d.length - 1; i >= 0; i--) 0 === this._sidIx([rec.d[i]], sid9) && rec.d.splice(i, 1);
       });
       const changes = this._opWith({}, "plan.doc.set@1", { value: plan });
       changes.bassam_rounds_v1 = rounds;
@@ -2057,7 +2095,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     const t = this.state,
       e = t.year + "-" + t.month + "-" + Math.min(t.day, this.hMonthDays(t.year, t.month)),
       s = (t.rounds || {})[e],
-      n = s && Array.isArray(s.d) ? s.d[t.floor >= 0 ? t.floor : 0] : null;
+      n = s && Array.isArray(s.d) ? this._rdAt(s.d, t.floor) || null : null;
     return n && Array.isArray(n.zones) ? n.zones : [];
   }
   openZoneEditor(t, e) {
@@ -2190,7 +2228,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           ? "اليوم انقضى — مقفل تلقائياً · عرض فقط (نقرة مزدوجة على كرت اليوم لفتحه)"
           : "اليوم مقفل يدوياً — عرض فقط (نقرة مزدوجة على كرت اليوم لفتحه)",
       };
-    const s = R.d[f];
+    const s = this._rdAt(R.d, f),
+      u9 = this._rdUnlinked(R.d, f);
+    if (u9)
+      return {
+        locked: !0,
+        kind: "unlinked",
+        text: "هذا الموقع غير مربوط بجولة اليوم بمعرّف الموقع — لا يُطابَق بالموضع · عرض فقط حتى يربطه ترحيلُ الهوية (" + u9 + " طابق بلا معرّف)",
+      };
     if (s && s.ap)
       return { locked: !0, kind: "site", text: "هذا الموقع معتمد في جولة اليوم — عرض فقط · افتح قفله من قائمة «الموقع النشط»" };
     let j = null;
@@ -2213,7 +2258,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       s = (t.rounds || {})[e];
     if (!s || !Array.isArray(s.d) || s.ap) return !1;
     if (this.isMonthAp(t.rounds, t.year, t.month)) return !1;
-    const n = s.d[t.floor >= 0 ? t.floor : 0];
+    const n = this._rdAt(s.d, t.floor);
     return !(!n || n.ap);
   }
   _dsCanEditZones() {
@@ -2225,14 +2270,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       s = (t.rounds || {})[e];
     if (!s || !Array.isArray(s.d) || s.ap) return !1;
     if (this.isMonthAp(t.rounds, t.year, t.month)) return !1;
-    const n = s.d[t.floor >= 0 ? t.floor : 0];
+    const n = this._rdAt(s.d, t.floor);
     return !(!n || n.ap);
   }
   _curFloorMarks() {
     const t = this.state,
       e = t.year + "-" + t.month + "-" + Math.min(t.day, this.hMonthDays(t.year, t.month)),
       s = (t.rounds || {})[e],
-      n = s && Array.isArray(s.d) ? s.d[t.floor >= 0 ? t.floor : 0] : null;
+      n = s && Array.isArray(s.d) ? this._rdAt(s.d, t.floor) || null : null;
     return n && Array.isArray(n.marks) ? n.marks : [];
   }
   _dsAddMarkAt(t) {
@@ -2477,7 +2522,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     const t = this.state,
       e = t.year + "-" + t.month + "-" + Math.min(t.day, this.hMonthDays(t.year, t.month)),
       s = (t.rounds || {})[e],
-      n = s && Array.isArray(s.d) ? s.d[t.floor >= 0 ? t.floor : 0] : null;
+      n = s && Array.isArray(s.d) ? this._rdAt(s.d, t.floor) || null : null;
     return n && Array.isArray(n.paths) ? n.paths : [];
   }
   _dsOpenPathEditor(t, e) {
@@ -7220,13 +7265,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       K = !(!R || !R.ap),
       U = R && Array.isArray(R.d) ? R.d : null,
       X =
-        (U && U.map((t) => !(!t || !t.ap)), G || Z || !!(U && U[f] && U[f].ap)),
+        (U && U.map((t) => !(!t || !t.ap)), G || Z || !!(U && this._rdAt(U, f) && this._rdAt(U, f).ap)),
       J = H || X,
       V = R && R.shAp && j ? R.shAp[j] : null,
       q = !!(V && V.ap && Array.isArray(V.snap)),
       Q = !(!U || J || q);
-    let _ = U ? U[f] || { zones: [], gates: [], paths: [] } : P ? P[f] || { zones: [], gates: [], paths: [] } : null;
-    q && (_ = V.snap[f] || { zones: [], gates: [], paths: [], marks: [] });
+    /* V7 · د5-هـ (t4): طابقُ اليوم ولقطةُ الوردية بمعرّف الموقع (P لقطةُ شهر الخطة تبقى بترتيب الخطة نفسِها) */
+    let _ = U ? this._rdAt(U, f) || { zones: [], gates: [], paths: [] } : P ? P[f] || { zones: [], gates: [], paths: [] } : null;
+    q && (_ = this._rdAt(V.snap, f) || { zones: [], gates: [], paths: [], marks: [] });
     const $ = !(_ && !0 === _.hidePaths),
       tt = !(_ && !0 === _.hideZones),
       et = !(_ && !0 === _.hideMarks),
@@ -13539,7 +13585,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           const t = s.dsGateFly,
             e = KIVO.BassamField,
             n = t && t.kind && e && -1 !== e.KINDS.indexOf(t.kind) ? t.kind : "gates",
-            i = "gates" === n ? pe : (((R && R.d) || [])[f] || {})[n] || [];
+            i = "gates" === n ? pe : (this._rdAt((R && R.d) || [], f) || {})[n] || [];   /* V7 · د5-هـ (t4): بمعرّف الموقع */
           if (!t || !i[t.i]) return { dsGateFlyOn: !1 };
           const o = i[t.i];
           return {
@@ -18974,15 +19020,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                       entry.c = plan.floors.length;
                   });
                   rounds = JSON.parse(JSON.stringify(this.state.rounds || {}));
+                  /* V7 · د5-هـ (t4): يُكمَّل كلُّ يوم بمواقع الخطة التي لا يحمل معرّفَها — لا بالعدد والموضع */
                   Object.values(rounds).forEach((rec) => {
                     if (rec && Array.isArray(rec.d))
-                      while (rec.d.length <= index)
-                        rec.d.push({
-                          sid: plan.floors[rec.d.length].sid,
-                          zones: [],
-                          gates: [],
-                          paths: [],
-                        });
+                      plan.floors.forEach((site) => {
+                        site && site.sid && this._sidIx(rec.d, site.sid) < 0 &&
+                          rec.d.push({
+                            sid: site.sid,
+                            zones: [],
+                            gates: [],
+                            paths: [],
+                          });
+                      });
                   });
                 }
                 const changes = this._opWith({}, "plan.doc.set@1", { value: plan });

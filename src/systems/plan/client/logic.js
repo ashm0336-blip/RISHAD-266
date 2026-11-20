@@ -12470,7 +12470,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 }
               } catch (t) {}
               const r = i[s + "-" + n + "-" + a],
-                l = r && Array.isArray(r.d) ? r.d : null;
+                l = r && Array.isArray(r.d) ? r.d : null,
+                /* V7 · د5-هـ (t4): موقعُ يوم الجولة يُطابَق بموقع الخطة ولقطتها بمعرّفه sid لا بموضعه — طابقٌ بلا sid أو بمعرّفِ موقعٍ ليس في الخطة «غير مربوط» فلا يُنسخ اليوم */
+                U9 = l ? l.filter((x) => x && !(null != x.sid && "" !== x.sid && (this.state.floors || []).some((f) => f && String(f.sid) === String(x.sid)))).length : 0;
+              if (l && U9)
+                return void this.bsToast(
+                  "يوم الجولة فيه " + U9 + " موقع غير مربوط بمعرّف الموقع — لا يُطابَق بالموضع؛ اختر يوماً آخر أو استخدم «نسخ من شهر سابق».",
+                );
               if (!l)
                 return void this.bsToast(
                   "لا توجد جولة متابعة يومية ليوم " +
@@ -12496,9 +12502,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   this._mData(this.state.planMonths, s + "-" + n) ||
                   this.state.floors ||
                   [];
-              e = JSON.parse(JSON.stringify(l)).map((t, e) => {
-                const s = h[e] || {},
-                  n = (this.state.floors || [])[e] || {};
+              const S9 = (L9, t) => (L9 || []).find((x) => x && null != x.sid && String(x.sid) === String(t.sid)) || {};
+              e = JSON.parse(JSON.stringify(l)).map((t) => {
+                const s = S9(h, t),
+                  n = S9(this.state.floors, t);
                 return {
                   sid: s.sid || n.sid || void 0,
                   name: void 0 !== s.name ? s.name : n.name,
@@ -16970,7 +16977,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         });
         try {
           /* V7 · د5-هـ: الموقعُ يُحذف من أيام الجولات بأمر مالكها داخل حفظنا */
-          KIVO.bus.call("daily.site.remove@1", { index: t.i }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
+          /* V7 · د5-هـ (t4): يُحذف بمعرّفه sid لا بموضعه */
+          KIVO.bus.call("daily.site.remove@1", { index: t.i, sid: (this.state.floors[t.i] || {}).sid }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
         } catch (t) {}
         let a = this.state.floor;
         a === t.i ? (a = 0) : a > t.i && a--;

@@ -9,8 +9,9 @@
      read     daily.names@1()             { مفتاحُ مورد الجولات: اسمُه للعرض } — لرسالة «لم يُحدَّث معه».
      command  daily.sites.patch@1 { site }  كلُّ موقعٍ غير معتمد في يومٍ غير معتمد من اليوم فصاعداً ← site(موقع).
      command  daily.month.clear@1 { y, m }  يحذف أيامَ الشهر وعلامتَه.
-     command  daily.site.remove@1 { index } يحذف الموقعَ بموضعه من كل يوم.
-     command  daily.sites.pad@1 { sites }   يكمّل مواقعَ كل يومٍ غير معتمد من اليوم فصاعداً حتى عدد sites (بهويّاتها sid).
+     command  daily.site.remove@1 { index, sid } يحذف الموقعَ بمعرّفه sid من كل يوم (V7 · د5-هـ t4: لا بموضعه؛ index للتوافق فقط ولا يُقرأ).
+     command  daily.sites.pad@1 { sites }   يُلحق بكل يومٍ غير معتمد من اليوم فصاعداً كلَّ موقعٍ من sites لا يحمل اليومُ معرّفَه sid (t4: لا بالعدد والموضع).
+              الطابقُ بلا sid في يومٍ لا يُطابَق بموضعه ولا يُمسّ — يُعدّ في الردّ (unlinked) ويربطه ترحيلُ الهوية.
    V7 · د5-هـ (r4) — روابطُ التقرير اليومي:
      read     daily.resources@1()          [مفتاحُ مورد الجولات] — لمن ينتظر تغيّرَه دون أن يسمّيه.
      command  daily.spot.set@1 { day, rec } يضع سجلَّ يوم الجولة day (بعد تسكين موظفٍ أو رفعه من التقرير) ويكتب الوثيقة.
@@ -81,33 +82,36 @@
     return { ok: 1, changed: changed };
   });
 
+  /* V7 · د5-هـ (t4): عددُ طوابق الأيام بلا sid — لا تُطابَق بالموضع، فتُعدّ في الردّ صراحةً */
+  function unlinkedIn(rec) { return KIVO.BassamRound && KIVO.BassamRound.unlinked ? KIVO.BassamRound.unlinked(rec.d).length : 0; }
   bus.command('daily.site.remove@1', function (payload, draft) {
     drafted('daily.site.remove@1', draft);
-    var rounds = draft.get(KEY), index = payload.index;
+    var rounds = draft.get(KEY), sid = payload.sid, unlinked = 0;
     if (!(rounds && typeof rounds === 'object')) return { ok: 1, changed: false };
     Object.keys(rounds).forEach(function (key) {
       var rec = rounds[key];
-      if (rec && Array.isArray(rec.d) && rec.d.length > index) rec.d.splice(index, 1);
+      if (!(rec && Array.isArray(rec.d))) return;
+      if (KIVO.BassamRound && KIVO.BassamRound.removeBySid) KIVO.BassamRound.removeBySid(rec.d, sid);
+      unlinked += unlinkedIn(rec);
     });
     draft.set(KEY, rounds);   /* كما كان: تُكتب الوثيقةُ مع حذف الموقع ولو لم يحمله يوم */
-    return { ok: 1, changed: true };
+    return { ok: 1, changed: true, unlinked: unlinked };
   });
 
   bus.command('daily.sites.pad@1', function (payload, draft) {
     drafted('daily.sites.pad@1', draft);
-    var rounds = draft.get(KEY), sites = payload.sites || [], changed = false;
-    if (rounds && typeof rounds === 'object') {
+    var rounds = draft.get(KEY), sites = payload.sites || [], changed = false, unlinked = 0;
+    if (rounds && typeof rounds === 'object' && KIVO.BassamRound && KIVO.BassamRound.padBySid) {
       Object.keys(rounds).forEach(function (key) {
         var rec = rounds[key];
-        if (rec && Array.isArray(rec.d) && !rec.ap && keyNow(key))
-          while (rec.d.length < sites.length) {
-            rec.d.push({ zones: [], gates: [], marks: [], paths: [], sid: (sites[rec.d.length] || {}).sid });
-            changed = true;
-          }
+        if (rec && Array.isArray(rec.d) && !rec.ap && keyNow(key)) {
+          if (KIVO.BassamRound.padBySid(rec.d, sites).added) changed = true;
+          unlinked += unlinkedIn(rec);
+        }
       });
       if (changed) draft.set(KEY, rounds);
     }
-    return { ok: 1, changed: changed };
+    return { ok: 1, changed: changed, unlinked: unlinked };
   });
 
   /* ── V7 · د5-هـ (r4): التقرير اليومي ── */
