@@ -40,7 +40,7 @@
   "Shift": {
    "status": "unmigrated",
    "confidence": "medium",
-   "evidence": "الدليلُ: وردية الموظف في الجدول الشهري (staffing_v3[y-m][ekey].shift) — رئيسُ الوردية مقيدٌ بورديته والمديرُ غيرُ مقيد (v24.4 §7)"
+   "evidence": "الدليلُ: وردية الموظف — رئيسُ الوردية مقيدٌ بورديته والمديرُ غيرُ مقيد (v24.4 §7)"
   },
   "Assigned": {
    "status": "as-is-enforced",
@@ -55,7 +55,7 @@
   "DateRange": {
    "status": "as-is-ui-only",
    "confidence": "medium",
-   "evidence": "rounds/dreport/plan/staffing: أقفالٌ واجهية"
+   "evidence": "rounds/dreport/plan: أقفالٌ واجهية"
   },
   "Source": {
    "status": "as-is-enforced",
@@ -77,11 +77,8 @@
    "res": "bassam_employees_v1",
    "resources": [
     "bassam_employees_v1",
-    "bassam_staffing_v3",
     "bassam_dreport_v1",
-    "bassam_options_v1",
-    "bassam_staffing_locks_v1",
-    "bassam_perm_limit_v1"
+    "bassam_options_v1"
    ],
    "dims": {
     "Department": [
@@ -2701,7 +2698,6 @@
    "res": "bassam_dreport_v1",
    "resources": [
     "bassam_dreport_v1",
-    "bassam_staffing_v3",
     "bassam_rounds_v1"
    ],
    "dims": {
@@ -3447,44 +3443,6 @@
     "Global": "no-record-scope"
    }
   },
-  "bassam_staffing_v3": {
-   "items": "staffingItems",
-   "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
-   "lock": "staffing: locks[y-m] === true (قفلٌ صريح) · {mo:1} مفتوح — من موردٍ آخر (قد يغيب الدليل → unknown)",
-   "dims": {
-    "Department": "keyDept",
-    "Branch": "branchCeiling",
-    "Shift": "rowShift",
-    "DateRange": "periodLock"
-   },
-   "na": {
-    "Site": "no-site-identity",
-    "Zone/Element": "no-element-identity",
-    "Assigned": "no-assignment-field",
-    "Own": "no-owner-identity",
-    "Source": "department-resource",
-    "Global": "no-record-scope"
-   }
-  },
-  "bassam_staffing_v2": {
-   "items": "staffingItems",
-   "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
-   "lock": "staffing: locks[y-m] === true (قفلٌ صريح) · {mo:1} مفتوح — من موردٍ آخر (قد يغيب الدليل → unknown)",
-   "dims": {
-    "Department": "keyDept",
-    "Branch": "branchCeiling",
-    "Shift": "rowShift",
-    "DateRange": "periodLock"
-   },
-   "na": {
-    "Site": "no-site-identity",
-    "Zone/Element": "no-element-identity",
-    "Assigned": "no-assignment-field",
-    "Own": "no-owner-identity",
-    "Source": "department-resource",
-    "Global": "no-record-scope"
-   }
-  },
   "bassam_employees_v1": {
    "items": "employeeItems",
    "evidence": "[eid|nid|name] · هويةُ السجل = مفتاحُ الموظف (empKeyOf)",
@@ -3733,7 +3691,7 @@
   },
   {
    "term": "reopen",
-   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen)",
+   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen)",
    "notA": "ليس فتحَ نافذةٍ زمنية للاستدراك (retro.open)",
    "classifier": "mo:1 / زوالُ ap ⇒ *.reopen — لا يُصنَّف retro.open أبداً"
   },
@@ -3791,8 +3749,8 @@
   },
   {
    "dim": "Shift",
-   "evidence": "ورديةُ السجل (roster[].shift · staffing[ekey].shift · reports[].shift) ضدّ القيمة الصريحة؛ المدير بلا قيد (v24.4 §7 — لم يتغيّر)",
-   "result": "غيرُ مهاجرة ⇒ unknown (+ دليلُ الجدول الشهري match/mismatch)"
+   "evidence": "ورديةُ السجل (roster[].shift · reports[].shift) ضدّ القيمة الصريحة؛ المدير بلا قيد (v24.4 §7 — لم يتغيّر)",
+   "result": "غيرُ مهاجرة ⇒ unknown"
   },
   {
    "dim": "Assigned",
@@ -4029,224 +3987,6 @@
       "cap": "emps/data:view",
       "key": "ref.employment_type.view",
       "source": "explicit-read"
-     },
-     {
-      "cap": "planning:view",
-      "key": null,
-      "source": "no-atom"
-     },
-     {
-      "cap": "planning/readiness:view",
-      "key": "ready.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_staffing_v3": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "emp.view",
-     "plan.view",
-     "round.view",
-     "field.view",
-     "report.view",
-     "report.indicators.view",
-     "ready.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "emps/data:view",
-      "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "planning:view",
-      "key": null,
-      "source": "no-atom"
-     },
-     {
-      "cap": "planning/readiness:view",
-      "key": "ready.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_staffing_v2": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "ready.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "planning:view",
-      "key": null,
-      "source": "no-atom"
-     },
-     {
-      "cap": "planning/readiness:view",
-      "key": "ready.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_staffing_snap_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability",
-    "keys": [
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_staffing_locks_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "report.view",
-     "report.indicators.view",
-     "emp.view",
-     "plan.view",
-     "ready.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "emps/data:view",
-      "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "planning:view",
-      "key": null,
-      "source": "no-atom"
-     },
-     {
-      "cap": "planning/readiness:view",
-      "key": "ready.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_callsigns_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "report.view",
-     "report.indicators.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_perm_limit_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "report.view",
-     "report.indicators.view",
-     "ready.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
      },
      {
       "cap": "planning:view",
@@ -5106,8 +4846,7 @@
       "bassam_dayfocus_v1",
       "bassam_dreport_v1",
       "bassam_employees_v1",
-      "bassam_shift_options_v1",
-      "bassam_staffing_v3"
+      "bassam_shift_options_v1"
      ],
      "kind": "rule",
      "asis": "daily/field:view (RD_REG)",

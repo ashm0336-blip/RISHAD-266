@@ -33,13 +33,10 @@
     "kind": "read",
     "resources": [
      "bassam_employees_v1",
-     "bassam_staffing_v3",
      "bassam_dreport_v1",
-     "bassam_options_v1",
-     "bassam_staffing_locks_v1",
-     "bassam_perm_limit_v1"
+     "bassam_options_v1"
     ],
-    "detail": "قراءة bassam_employees_v1, bassam_staffing_v3, bassam_dreport_v1, bassam_options_v1, bassam_staffing_locks_v1, bassam_perm_limit_v1 بورقة planning/readiness (RD_REG/DS_READ)",
+    "detail": "قراءة bassam_employees_v1, bassam_dreport_v1, bassam_options_v1 بورقة planning/readiness (RD_REG/DS_READ)",
     "status": "exists"
    },
    "scopeDims": [
@@ -4276,7 +4273,7 @@
      "bassam_dayshift_v1",
      "bassam_dayfocus_v1"
     ],
-    "detail": "bassam_staffing_v3 via dreport:'CS_ONLY' — حقل cs فقط",
+    "detail": "via dreport:'CS_ONLY' — حقل cs فقط",
     "status": "exists"
    },
    "scopeDims": [
@@ -4887,8 +4884,7 @@
    "grant": "assignable",
    "status": "active",
    "asisMap": [
-    "role:mgr",
-    "staff:edit(منح قالب)"
+    "role:mgr"
    ],
    "references": [
     "emps/data",
@@ -4898,8 +4894,7 @@
    "uiOnly": false,
    "v23": [],
    "mergedFrom": [
-    "tpl.apply",
-    "staff.permission.assign"
+    "tpl.apply"
    ],
    "splitFrom": null,
    "managedIn": null,
@@ -4917,7 +4912,6 @@
     "kind": "read",
     "resources": [
      "bassam_dreport_v1",
-     "bassam_staffing_v3",
      "bassam_rounds_v1"
     ],
     "detail": "قراءة بورقة dreport (RD_REG) — كانت daily/kpiDaily:view تشترط dreport:view",

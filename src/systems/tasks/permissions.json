@@ -1265,8 +1265,8 @@
      "byResource"
     ],
     "key": "bassam_tasks_v1",
-    "after": 5,
-    "seq": 0,
+    "after": 3,
+    "seq": 30,
     "value": {
      "items": "tasksItems",
      "evidence": "[\"y-m-d\"][row] · row[14] المكلَّف · row[13] المعرّف · أقفالُ bassam_tasks_locks_v1",
@@ -1346,9 +1346,12 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 6,
+    "after": 7,
     "seq": 0,
-    "value": "task.view"
+    "value": "task.view",
+    "needs": [
+     "staff"
+    ]
    },
    {
     "path": [
@@ -1357,13 +1360,16 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 6,
+    "after": 7,
     "seq": 0,
     "value": {
      "cap": "tasks:view",
      "key": "task.view",
      "source": "reference-read"
-    }
+    },
+    "needs": [
+     "staff"
+    ]
    },
    {
     "path": [
@@ -1397,7 +1403,7 @@
      "byResource"
     ],
     "key": "bassam_tasks_v1",
-    "after": 36,
+    "after": 30,
     "seq": 2,
     "value": {
      "scope": "dept",
@@ -1427,7 +1433,7 @@
      "byResource"
     ],
     "key": "bassam_tasks_locks_v1",
-    "after": 36,
+    "after": 30,
     "seq": 3,
     "value": {
      "scope": "dept",
@@ -1509,7 +1515,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · task.reopen)"
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · task.month.reopen · task.reopen)"
    },
    {
     "path": [
@@ -1517,7 +1523,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · staff.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (plan.reopen · round.reopen · report.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
     "with": [
      "award",
      "dstats"
@@ -1529,7 +1535,7 @@
      "DateRange",
      "evidence"
     ],
-    "set": "rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية"
+    "set": "rounds/dreport/plan/tasks: أقفالٌ واجهية"
    },
    {
     "path": [
@@ -1537,7 +1543,7 @@
      "DateRange",
      "evidence"
     ],
-    "set": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport/plan/staffing/tasks: أقفالٌ واجهية",
+    "set": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport/plan/tasks: أقفالٌ واجهية",
     "with": [
      "dstats",
      "irshad",

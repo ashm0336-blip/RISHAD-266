@@ -1345,6 +1345,127 @@
     "after": 25,
     "seq": 1,
     "value": "ff.module.staff.enabled"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": "bassam_staffing_v3"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 3,
+    "seq": 10,
+    "value": "bassam_staffing_locks_v1"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 3,
+    "seq": 20,
+    "value": "bassam_perm_limit_v1"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "guard",
+     "detail"
+    ],
+    "sub": "bassam_employees_v1, ",
+    "by": "bassam_employees_v1, bassam_staffing_v3, "
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "guard",
+     "detail"
+    ],
+    "sub": "bassam_options_v1 ",
+    "by": "bassam_options_v1, bassam_staffing_locks_v1, bassam_perm_limit_v1 "
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "report.callsign.assign"
+     },
+     "guard",
+     "detail"
+    ],
+    "sub": "via dreport",
+    "by": "bassam_staffing_v3 via dreport"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "perm.assign"
+     },
+     "asisMap"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": "staff:edit(منح قالب)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "perm.assign"
+     },
+     "mergedFrom"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": "staff.permission.assign"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "report.indicators.view"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": "bassam_staffing_v3"
    }
   ],
   "scope-bindings": [
@@ -2188,188 +2309,6 @@
     "path": [
      "readBindings",
      "byResource",
-     "bassam_staffing_v3",
-     "keys"
-    ],
-    "after": 1,
-    "seq": 1,
-    "value": "staff.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_v3",
-     "routes"
-    ],
-    "after": 1,
-    "seq": 1,
-    "value": {
-     "cap": "staff:view",
-     "key": "staff.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_v2",
-     "keys"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": "staff.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_v2",
-     "routes"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": {
-     "cap": "staff:view",
-     "key": "staff.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_snap_v1",
-     "keys"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": "staff.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_snap_v1",
-     "routes"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": {
-     "cap": "staff:view",
-     "key": "staff.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_locks_v1",
-     "keys"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": "staff.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_staffing_locks_v1",
-     "routes"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": {
-     "cap": "staff:view",
-     "key": "staff.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_callsigns_v1",
-     "keys"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": "staff.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_callsigns_v1",
-     "keys"
-    ],
-    "after": 0,
-    "seq": 2,
-    "value": "ref.callsign.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_callsigns_v1",
-     "routes"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": {
-     "cap": "staff:view",
-     "key": "staff.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_callsigns_v1",
-     "routes"
-    ],
-    "after": 0,
-    "seq": 2,
-    "value": {
-     "cap": "staff:view",
-     "key": "ref.callsign.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_limit_v1",
-     "keys"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": "staff.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_limit_v1",
-     "routes"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": {
-     "cap": "staff:view",
-     "key": "staff.view",
-     "source": "explicit-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
      "bassam_dreport_v1",
      "keys"
     ],
@@ -2495,6 +2434,483 @@
      "key": "staff.view",
      "source": "reference-read"
     }
+   },
+   {
+    "path": [
+     "migration",
+     "Shift",
+     "evidence"
+    ],
+    "sub": "وردية الموظف —",
+    "by": "وردية الموظف في الجدول الشهري (staffing_v3[y-m][ekey].shift) —"
+   },
+   {
+    "path": [
+     "migration",
+     "DateRange",
+     "evidence"
+    ],
+    "sub": "dreport/plan",
+    "by": "dreport/plan/staffing"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "resources"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": "bassam_staffing_v3"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "resources"
+    ],
+    "after": 3,
+    "seq": 10,
+    "value": "bassam_staffing_locks_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "resources"
+    ],
+    "after": 3,
+    "seq": 20,
+    "value": "bassam_perm_limit_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "report.indicators.view"
+     },
+     "resources"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": "bassam_staffing_v3"
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_staffing_v3",
+    "after": 3,
+    "seq": 10,
+    "value": {
+     "items": "staffingItems",
+     "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
+     "lock": "staffing: locks[y-m] === true (قفلٌ صريح) · {mo:1} مفتوح — من موردٍ آخر (قد يغيب الدليل → unknown)",
+     "dims": {
+      "Department": "keyDept",
+      "Branch": "branchCeiling",
+      "Shift": "rowShift",
+      "DateRange": "periodLock"
+     },
+     "na": {
+      "Site": "no-site-identity",
+      "Zone/Element": "no-element-identity",
+      "Assigned": "no-assignment-field",
+      "Own": "no-owner-identity",
+      "Source": "department-resource",
+      "Global": "no-record-scope"
+     }
+    }
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_staffing_v2",
+    "after": 3,
+    "seq": 20,
+    "value": {
+     "items": "staffingItems",
+     "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
+     "lock": "staffing: locks[y-m] === true (قفلٌ صريح) · {mo:1} مفتوح — من موردٍ آخر (قد يغيب الدليل → unknown)",
+     "dims": {
+      "Department": "keyDept",
+      "Branch": "branchCeiling",
+      "Shift": "rowShift",
+      "DateRange": "periodLock"
+     },
+     "na": {
+      "Site": "no-site-identity",
+      "Zone/Element": "no-element-identity",
+      "Assigned": "no-assignment-field",
+      "Own": "no-owner-identity",
+      "Source": "department-resource",
+      "Global": "no-record-scope"
+     }
+    }
+   },
+   {
+    "path": [
+     "terminology",
+     4,
+     "means"
+    ],
+    "sub": "report.reopen",
+    "by": "report.reopen · staff.reopen"
+   },
+   {
+    "path": [
+     "readPolicy",
+     4,
+     "evidence"
+    ],
+    "sub": "roster[].shift",
+    "by": "roster[].shift · staffing[ekey].shift"
+   },
+   {
+    "path": [
+     "readPolicy",
+     4,
+     "result"
+    ],
+    "sub": "⇒ unknown",
+    "by": "⇒ unknown (+ دليلُ الجدول الشهري match/mismatch)"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_staffing_v3",
+    "after": 20,
+    "seq": 20,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "emp.view",
+      "staff.view",
+      "plan.view",
+      "round.view",
+      "field.view",
+      "report.view",
+      "report.indicators.view",
+      "ready.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "emps/data:view",
+       "key": "emp.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "staff:view",
+       "key": "staff.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "plan:view",
+       "key": "plan.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "daily/rounds:view",
+       "key": "round.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "daily/field:view",
+       "key": "field.view",
+       "source": "special:field.view"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.indicators.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "planning:view",
+       "key": null,
+       "source": "no-atom"
+      },
+      {
+       "cap": "planning/readiness:view",
+       "key": "ready.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_staffing_v2",
+    "after": 20,
+    "seq": 30,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "staff.view",
+      "ready.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "staff:view",
+       "key": "staff.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "planning:view",
+       "key": null,
+       "source": "no-atom"
+      },
+      {
+       "cap": "planning/readiness:view",
+       "key": "ready.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_staffing_snap_v1",
+    "after": 20,
+    "seq": 40,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability",
+     "keys": [
+      "staff.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "staff:view",
+       "key": "staff.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_staffing_locks_v1",
+    "after": 20,
+    "seq": 50,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "staff.view",
+      "report.view",
+      "report.indicators.view",
+      "emp.view",
+      "plan.view",
+      "ready.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "staff:view",
+       "key": "staff.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.indicators.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "emps/data:view",
+       "key": "emp.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "plan:view",
+       "key": "plan.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "planning:view",
+       "key": null,
+       "source": "no-atom"
+      },
+      {
+       "cap": "planning/readiness:view",
+       "key": "ready.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_callsigns_v1",
+    "after": 20,
+    "seq": 60,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "staff.view",
+      "ref.callsign.view",
+      "report.view",
+      "report.indicators.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "staff:view",
+       "key": "staff.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "staff:view",
+       "key": "ref.callsign.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.indicators.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_perm_limit_v1",
+    "after": 20,
+    "seq": 70,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "staff.view",
+      "report.view",
+      "report.indicators.view",
+      "ready.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "staff:view",
+       "key": "staff.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.indicators.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "planning:view",
+       "key": null,
+       "source": "no-atom"
+      },
+      {
+       "cap": "planning/readiness:view",
+       "key": "ready.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "special",
+     "keys",
+     "field.view",
+     "resources"
+    ],
+    "after": 10,
+    "seq": 10,
+    "value": "bassam_staffing_v3"
    }
   ],
   "guard-bindings": [
@@ -2554,6 +2970,75 @@
      "type": "operation",
      "guardKind": "cap"
     }
+   },
+   {
+    "path": [
+     "shadowOnly",
+     {
+      "by": "key",
+      "eq": "import.run"
+     },
+     "res"
+    ],
+    "sub": "bassam_options_v1 · ",
+    "by": "bassam_options_v1 · bassam_staffing_v3 · "
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "res"
+    ],
+    "sub": ")",
+    "by": " · staffing)"
+   },
+   {
+    "path": [
+     "decisions"
+    ],
+    "after": 14,
+    "seq": 10,
+    "value": {
+     "id": "D-18",
+     "topic": "staffing: الحقول بلا مفتاح",
+     "status": "معلَن (باقٍ)",
+     "text": "leaves/perm (إجازات/استئذانات الموظف في الشهر) → staff.rest · ظهورُ صفِّ موظفٍ في شهرٍ قائم → staff.shift.assign · staff.move بلا مسارٍ مستقل (الورديةُ حقلٌ واحد)."
+    }
+   },
+   {
+    "path": [
+     "counts",
+     "emittedKeys"
+    ],
+    "add": 9
+   },
+   {
+    "path": [
+     "counts",
+     "coveredResources"
+    ],
+    "add": 3
+   }
+  ],
+  "build-bindings": [
+   {
+    "path": [
+     "importRes"
+    ],
+    "after": 2,
+    "seq": 10,
+    "value": "bassam_staffing_v3"
+   },
+   {
+    "path": [
+     "importRes"
+    ],
+    "after": 2,
+    "seq": 20,
+    "value": "bassam_staffing_locks_v1"
    }
   ]
  }
