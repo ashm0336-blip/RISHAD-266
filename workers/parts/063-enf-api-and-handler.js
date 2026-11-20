@@ -63,6 +63,7 @@ async function enfMigPlan(env, seed, opts) {
     revs = reference ? reference.inputRevs : Object.assign({},await revsAll(env),capture.revs), i, d;
   if (capture.guards.length) await env.DB.batch(capture.guards);
   if (opts.parts && opts.parts.indexOf('scope-retire') !== -1) return await enfRetirePlan(env, seed, now, T, keys, revs, capture, reference);
+  if (opts.parts && opts.parts.indexOf(ENF_SID_PART) !== -1) return await enfSidPlan(env, seed, now, T, keys, revs, capture);   /* د5-هـ */
   var users = parseJson(keys[K_USERS], []);
   if (!Array.isArray(users)) users = [];
   var plan = { version: ENF_VER, seed: seed, today: T, generated: now, writes: [], identity: null, perm: { grants: [], decisions: [] }, warnings: [] };
@@ -124,11 +125,36 @@ async function enfRetirePlan(env, seed, now, T, keys, revs, capture, reference) 
 }
 /* أجزاءُ الترحيل المقبولة: perm (الهوية حُذفت · RISHAD-266 P6) — و«scope-retire» وحدها لا تُخلط بغيرها (scope: بذرُ السقف القديم أُزيل · RISHAD-266) */
 function enfMigParts(raw) {
-  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART; });
-  if (p.indexOf(ENF_RETIRE_PART) !== -1 && p.length > 1) return null;
+  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART || x === ENF_SID_PART; });
+  if ((p.indexOf(ENF_RETIRE_PART) !== -1 || p.indexOf(ENF_SID_PART) !== -1) && p.length > 1) return null;   /* د5-هـ: «site-sid» وحدها كذلك */
   return p;
 }
-var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطوة تقاعد سقف النطاق القديم (scope-retire) تُطلب وحدها — أعد الطلب بـ parts=scope-retire فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
+/* V7 · د5-هـ (م3) · «site-sid»: ترحيلُ هوية الموقع — كلُّ طابقٍ في الجولات ولقطةِ الشهر يحمل sid طابقه في الخطة، فتُطابَق الجولاتُ بالمعرّف لا بالموضع.
+   مجموعةُ الكتابة من KIVO_IDENTITY_MIGRATION.sidMigration (الطبقةُ المؤكدة وحدها: exact · high · assign)؛ medium وambiguous وunlinked تُبلَّغ ولا تُكتب.
+   المسارُ نفسُه: الخطةُ حتمية (البذرة · لحظةُ التوليد · القيم ونسخُها) فتغيّرٌ بينها وبين التطبيق ⇒ plan-changed؛ لقطةٌ كاملة قبل الكتابة،
+   والرجوعُ بالمسار القائم (rollback). الثانيةُ على بياناتٍ مرحَّلة بلا كتابة (applied:0). مُدخلُ البروفة واحدٌ لها وللبروفة (/api/identity-rehearsal). */
+var ENF_SID_PART = 'site-sid';
+function enfIdentInput(keysR) {
+  var byDeptR = {}, deptsR = parseJson(keysR[K_DEPTS], []), usersR = parseJson(keysR[K_USERS], []), dri;
+  if (!Array.isArray(deptsR)) deptsR = []; if (!Array.isArray(usersR)) usersR = [];
+  for (dri = 0; dri < deptsR.length; dri++) { var dIdR = deptsR[dri] && deptsR[dri].id; if (!dIdR) continue; var preR = 'bsdept:' + dIdR + ':';
+    byDeptR[dIdR] = { plan: parseJson(keysR[preR + 'bassam_plan_v1'], null), rounds: parseJson(keysR[preR + 'bassam_rounds_v1'], null), employees: parseJson(keysR[preR + 'bassam_employees_v1'], []) }; }
+  var rawR = {}; Object.keys(keysR).forEach(function (kk) { if (/^bsdept:[^:]+:bassam_(plan|rounds)_v1$/.test(kk)) rawR[kk] = keysR[kk]; });
+  return { depts: deptsR, users: usersR, byDept: byDeptR, raw: rawR };
+}
+async function enfSidPlan(env, seed, now, T, keys, revs, capture) {
+  var I = enfIdentInput(keys), W = {}, sig = [ENF_SID_PART, seed];
+  var M = KIVO_IDENTITY_MIGRATION.sidMigration({ depts: I.depts, users: I.users, byDept: I.byDept }, { seed: seed, seedSource: 'authz-migrate', now: now, today: T, raw: I.raw, revs: revs });
+  var plan = { version: ENF_VER, seed: seed, today: T, generated: now, parts: [ENF_SID_PART], writes: [],
+    sid: { hash: M.hash, ops: M.ops, rows: M.rows.slice(0, 500), pending: M.pending.slice(0, 200), gates: M.gates } };
+  M.keys.forEach(function (k) { var v = JSON.stringify(k.after); W[k.key] = { v: v, kind: ENF_SID_PART };
+    plan.writes.push({ k: k.key, kind: ENF_SID_PART, bytes: v.length, existed: true, rev: revs[k.key] || 0, ops: k.ops.length });
+    sig.push(k.key + '\u0001' + (revs[k.key] || 0) + '\u0001' + v); });
+  plan.hash = await enfSha(sig.join('\u0002'));
+  plan.counts = { writes: plan.writes.length, sidOps: M.ops, pending: M.pending.length, rollbackVerified: !!M.rollbackVerified };
+  return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots };
+}
+var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطوتا تقاعد سقف النطاق القديم (scope-retire) وترحيل هوية الموقع (site-sid) تُطلب كلٌّ منهما وحدها — أعد الطلب بها فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
 /* Pure revision preparation: allocation is written only after every source
    witness, inside the same batch as migration/snapshot/audit or rollback. */
 async function enfMigCounterPlan(env) {
@@ -215,7 +241,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     }
     var flag = JSON.stringify({ applied: true, at: now, by: ident.uid, snap: snap, hash: b.hash, inferable: !!b.inferable });   /* المعرّفُ لا اسمُ المستخدم */
     if (retire2 && R2.retireMeta != null) st2.push(env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind(ENF_RETIRE_META));
-    if (!retire2 && parts2.length) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('authz_perm_mig', flag));
+    if (!retire2 && parts2.length) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(parts2[0] === ENF_SID_PART ? 'authz_id_mig' : 'authz_perm_mig', flag));   /* د5-هـ: علامةُ الهوية لـ«site-sid» */
     st2.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: 'migration', keys: parts2.join(','), scope: 'writes=' + R2.plan.writes.length, decision: 'allow', why: 'apply', reason: snap, path: '/api/authz-migrate', ip: ident.ip }));
     var conflict2=await enfMigBatch(env,guards2.concat([counter2.statement],st,st2));
     if(conflict2)return conflict2;
@@ -641,15 +667,11 @@ export default {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
           if (request.method !== 'GET') return json({ ok: 0, err: 'rehearsal is read-only (GET)' }, 405);
           try {
-            var captureR = await opCaptureReferences(env, await kvAll(env, 'kv')), keysR = captureR.keys, revsR = Object.assign({},await revsAll(env),captureR.revs), byDeptR = {}, deptsR = parseJson(keysR[K_DEPTS], []), usersR = parseJson(keysR[K_USERS], []), dri;
-            if (!Array.isArray(deptsR)) deptsR = []; if (!Array.isArray(usersR)) usersR = [];
-            for (dri = 0; dri < deptsR.length; dri++) { var dIdR = deptsR[dri] && deptsR[dri].id; if (!dIdR) continue; var preR = 'bsdept:' + dIdR + ':';
-              byDeptR[dIdR] = { plan: parseJson(keysR[preR + 'bassam_plan_v1'], null), rounds: parseJson(keysR[preR + 'bassam_rounds_v1'], null), employees: parseJson(keysR[preR + 'bassam_employees_v1'], []) }; }
+            var captureR = await opCaptureReferences(env, await kvAll(env, 'kv')), keysR = captureR.keys, revsR = Object.assign({},await revsAll(env),captureR.revs), IR = enfIdentInput(keysR);
             var seedQ = String(url.searchParams.get('seed') || ''), seedR = '', seedSrcR = 'crypto.getRandomValues';
             if (/^[0-9a-f]{64}$/i.test(seedQ)) { seedR = seedQ.toLowerCase(); seedSrcR = 'query (replay)'; }
             else { var sbR = new Uint8Array(32), sbi; crypto.getRandomValues(sbR); for (sbi = 0; sbi < 32; sbi++) seedR += (sbR[sbi] < 16 ? '0' : '') + sbR[sbi].toString(16); }
-            var rawR = {}; Object.keys(keysR).forEach(function (kk) { if (/^bsdept:[^:]+:bassam_(plan|rounds)_v1$/.test(kk)) rawR[kk] = keysR[kk]; });
-            var rpR = KIVO_IDENTITY_MIGRATION.rehearse({ depts: deptsR, users: usersR, byDept: byDeptR }, { seed: seedR, seedSource: seedSrcR, now: nowX, today: dsToday(nowX), raw: rawR, revs: revsR });
+            var rpR = KIVO_IDENTITY_MIGRATION.rehearse({ depts: IR.depts, users: IR.users, byDept: IR.byDept }, { seed: seedR, seedSource: seedSrcR, now: nowX, today: dsToday(nowX), raw: IR.raw, revs: revsR });
             if (captureR.guards.length) await env.DB.batch(captureR.guards);
             return json({ ok: 1, worker: WORKER_VER, rehearsal: rpR });
           } catch (eIR) { return json({ ok: 0, err: String(eIR && eIR.message || eIR) }, 500); }
