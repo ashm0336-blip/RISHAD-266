@@ -1,0 +1,15 @@
+{
+ "_note": "V7 · د5-د2 · مجموعة g4: تسجيلُ ملف القراءات المعلنة 534-staff-g4.js في كتل الهيكل · وقطعةُ «|staffing» في مفاتيح التحديث الحيّ لصفحة المضبوطات (داخل قطعة المضبوطات نفسِها)",
+ "blocks.shell.staff": {
+  "order": 40,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/staff/client/534-staff-g4.js\",\n   \"kind\": \"js\",\n   \"line\": 10495,\n   \"new\": \"V7 · د5-د2: قراءاتُ الجدول الشهري المعلنة لبرامجَ أخرى (الجدول · الأقفال · الرموز · التفعيل · أسماء الموارد)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "shell.blocks.staff": {
+  "order": 40,
+  "text": "@@KIVO_BLOCK:systems/staff/client/534-staff-g4.js@@\n"
+ },
+ "root.liveKeys.seized.staff": {
+  "order": 10,
+  "text": "|staffing"
+ }
+}

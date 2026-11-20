@@ -442,7 +442,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   onDutyToday() {
     const t = this.loadEmps();
-    if (!this.bsOn("staff"))
+    if (!KIVO.bus.read("staff.enabled@1", this))   /* V7 · د5-د2: يجيب مالكُ الجدول؛ بغيابه كالمعطَّل: كلُّ الموظفين بلا وردية */
       return t.map((t) => ({
         id: KIVO.BassamEmp ? KIVO.BassamEmp.key(t) : t.eid || t.nid || t.name,
         name: t.name,
@@ -451,7 +451,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }));
     let e = {};
     try {
-      const t = this._tkLS("bassam_staffing_v3");
+      const t = KIVO.bus.read("staff.schedule@1", (k) => this._tkLS(k));
       t && "object" == typeof t && (e = t);
     } catch (t) {}
     const n = this.hToday(),

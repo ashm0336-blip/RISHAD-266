@@ -503,7 +503,7 @@ function szDayContext(ctx, q, clock) {
     });
   });
   var report = (szReference(ctx, "bassam_dreport_v1") || {})[key],
-    staff = (szReference(ctx, "bassam_staffing_v3") || {})[y + "-" + m] || {},
+    staff = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
     round = (szReference(ctx, "bassam_rounds_v1") || {})[key],
     shifts = [],
     rows = {},

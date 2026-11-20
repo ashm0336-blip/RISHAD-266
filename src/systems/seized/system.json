@@ -146,7 +146,7 @@
   },
   "root.liveKeys": {
    "order": 20,
-   "text": "seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, "
+   "text": "seized: /seized|employees@@SYS:root.liveKeys.seized.staff@@|shift_options|dreport|rounds|dayshift/, "
   },
   "root.landing.systems": {
    "order": 20,

@@ -10,6 +10,7 @@
   "files": [
    "client/530-emp-day-facts.js",
    "client/531-staff-links.js",
+   "client/534-staff-g4.js",
    "client/helmet.css",
    "client/logic.js",
    "client/meta.json",
@@ -18,6 +19,12 @@
  },
  "server": {
   "parts": [
+   {
+    "file": "server/044-staff-g4.js",
+    "after": "016b-server-bus.js",
+    "order": 10,
+    "new": "V7 · د5-د2: قراءاتُ الجدول الشهري المعلنة على ناقل الخادم (المهام · المضبوطات · الاسترشاد)"
+   },
    {
     "file": "server/019p1-scheduling-staff.js",
     "after": "019p0-scheduling-base.js",

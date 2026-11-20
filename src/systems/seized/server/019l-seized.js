@@ -204,12 +204,10 @@ var SZ_CONTEXT = {
     return szError("seized-" + c, s);
   },
   extraKeys: function (d) {
-    return [
-      "bassam_dreport_v1",
-      "bassam_rounds_v1",
-      "bassam_staffing_locks_v1",
-      "bassam_dayshift_v1",
-    ].map(function (k) {
+    /* V7 · د5-د2: موردُ أقفال الجدول يسمّيه مالكُه (في موضعه نفسه)؛ بغيابه لا يُلتقط */
+    return ["bassam_dreport_v1", "bassam_rounds_v1"]
+      .concat(srvBusRead("staff.resources@1", "locks") || [], ["bassam_dayshift_v1"])
+      .map(function (k) {
       return "bsdept:" + d + ":" + k;
     });
   },

@@ -47,8 +47,8 @@ Object.assign(Component.prototype, {
   },
   /* ورديةُ الموظف في شهر المهمة من الجدول الشهري (كما يقرؤها المنتقي — tkPickModel) */
   _tkShiftMap(y, m) {
-    if (!this.bsOn("staff")) return {};
-    const t = this._tkLS("bassam_staffing_v3"),
+    if (!KIVO.bus.read("staff.enabled@1", this)) return {};   /* V7 · د5-د2: بغياب مالك الجدول لا وردياتٍ في المرشِّح */
+    const t = KIVO.bus.read("staff.schedule@1", (k) => this._tkLS(k)),
       all = t && "object" === typeof t ? t : {};
     return (all && all[y + "-" + m]) || {};
   },

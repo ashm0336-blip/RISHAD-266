@@ -4551,7 +4551,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   _kStaffAll() {
     try {
-      const t = this._opRead("bassam_staffing_v3"),
+      const t = KIVO.bus.read("staff.schedule@1", (k) => this._opRead(k)),   /* V7 · د5-د2: المالكُ يقرأ بمسودة الصفحة — بغيابه {} */
         e = t && "object" == typeof t ? t : {};
       return e;
     } catch (t) {
@@ -7910,7 +7910,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     })();
     let Ct = {};
     try {
-      const t = this._opRead("bassam_staffing_v3");
+      const t = KIVO.bus.read("staff.schedule@1", (k) => this._opRead(k));   /* V7 · د5-د2 */
       t &&
         "object" == typeof t &&
         (Ct = t);

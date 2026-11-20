@@ -100,6 +100,19 @@ def view_tabs(path):
         if not depth: end = m.end() + t.start(); break
     return [[('*' if '{{' in name else name.strip()), icon] for icon, name in re.findall(r'data-i="(i-[0-9a-f]{8})"></svg>\s*</div>\s*<span[^>]*>([^<]+)</span>', src[m.end():end])]
 
+def bus_read_resources(S, d, module):
+    """V7 · د5-د2: مواردُ Operations التي تحتاجها صفحةٌ عبر قراءاتٍ معلنة على الناقل. الصفحةُ لا تسمّي مفتاحَ برنامجٍ آخر: تسأل بالاسم
+       (KIVO.bus.read('مالك.شيء@N')) والمالكُ الحاضر يعلن في عقده (contract.json ← readResources) ما تحتاجه كلُّ قراءةٍ محمَّلاً قبل الرسم.
+       بغياب المالك لا عقدَ فلا مورد."""
+    import glob
+    table = {}
+    for p in sorted(glob.glob(os.path.join(S, 'systems', '*', 'contract.json'))):
+        for name, keys in (json.load(open(p, encoding='utf-8')).get('readResources') or {}).items():
+            if not name.startswith('_'): table[name] = keys
+    if not table: return []
+    logic = ''.join(open(os.path.join(d, f), encoding='utf-8').read() for f in ['logic.js'] + (module.get('logicParts') or []) if os.path.isfile(os.path.join(d, f)))
+    return [k for name in sorted(table) if ('"' + name + '"') in logic or ("'" + name + "'") in logic for k in table[name]]
+
 # ── KIVO_247 · AUD-015: manifest الصفحات → كتلة الواجهة + PG_REG في جزء الخادم ─────────────────────────────────────────
 def gen_manifest(S):
     M = json.load(open(os.path.join(S, layout(S)['pagesManifest']), encoding='utf-8'))
@@ -121,6 +134,7 @@ def gen_manifest(S):
         if not os.path.isfile(meta_path): continue
         module = json.load(open(meta_path, encoding='utf-8'))
         keys = [k for k in module.get('charter', {}).get('data', []) if re.fullmatch(r'bassam_[a-z0-9_]+', k)]
+        keys += bus_read_resources(S, dirs[slug], module)   # V7 · د5-د2: ما تحتاجه قراءاتُها المعلنة من مالكٍ حاضر
         data['operationsReadSets'][module['name']] = sorted(set(keys))
         data['pageComponents'][module['name']] = slug
         tabs = view_tabs(os.path.join(dirs[slug], 'view.html'))

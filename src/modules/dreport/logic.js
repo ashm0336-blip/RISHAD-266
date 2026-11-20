@@ -315,7 +315,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   rpStaffLive() {
     try {
-      var t = KIVO.__BS_SRV.operations.get("bassam_staffing_v3");
+      var t = KIVO.bus.read("staff.schedule@1");   /* V7 · د5-د2: قراءةٌ معلنة من مالك الجدول — بغيابه undefined ⇒ {} */
       return t && "object" == typeof t ? t : {};
     } catch (t) {
       return {};
@@ -904,7 +904,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   drStaffApproved(t, r) {
     try {
-      var e = KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1");
+      var e = KIVO.bus.read("staff.locks@1");   /* V7 · د5-د2: بغياب مالك الجدول لا شهرَ معتمداً */
       return !(!e || !0 !== e[t + "-" + r]);
     } catch (t) {
       return !1;
@@ -988,7 +988,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     }));
                 } catch (t) {}
                 if (!await this.rpSave(t, { op: "pull", day: this.DK(), shift: r }, draft => {
-                  ["bassam_staffing_locks_v1", "bassam_staffing_v3", "bassam_employees_v1", "bassam_shift_options_v1"].forEach(name => draft.get(name));
+                  KIVO.bus.read("staff.locks@1", draft); KIVO.bus.read("staff.schedule@1", draft);   /* V7 · د5-د2: المالكُ يقرأ مفتاحيه في مسودتنا (اعتمادُ القراءة كما كان) */
+                  ["bassam_employees_v1", "bassam_shift_options_v1"].forEach(name => draft.get(name));
                   this._drPrepareDefaultShift(draft, r);
                   this._drRoundResult = KIVO.BassamRound && this.bsOn("daily/rounds")
                     ? KIVO.BassamRound.prepareEnsure(draft, this.state.rpY, this.state.rpM, this.state.rpD) : null;
@@ -1153,7 +1154,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       p && (o.def = { color: p.color || "#b99751", tStart: p.tStart || "", tEnd: p.tEnd || "" }));
                   }
                   if (!await this.rpSave(t, { op: "continue", day: this.DK(), shift: r, from: n.d }, draft => {
-                    ["bassam_staffing_locks_v1", "bassam_staffing_v3", "bassam_shift_options_v1"].forEach(name => draft.get(name));
+                    KIVO.bus.read("staff.locks@1", draft); KIVO.bus.read("staff.schedule@1", draft);   /* V7 · د5-د2 */
+                    ["bassam_shift_options_v1"].forEach(name => draft.get(name));
                     this._drPrepareDefaultShift(draft, r);
                     this._drRoundResult = KIVO.BassamRound && this.bsOn("daily/rounds")
                       ? KIVO.BassamRound.prepareEnsure(draft, this.state.rpY, this.state.rpM, this.state.rpD) : null;
@@ -1361,7 +1363,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   drCsList() {
     try {
-      var t = KIVO.__BS_SRV.operations.get("bassam_callsigns_v1");
+      var t = KIVO.bus.read("staff.callsigns@1");   /* V7 · د5-د2: بغياب مالك الرموز القائمةُ فارغة */
       if (Array.isArray(t))
         return t.filter(function (t) {
           return "string" == typeof t && t.trim();
@@ -2360,7 +2362,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           T = e.lvk || "",
           E = e.perm || [],
           D = E.length >= at,
-          M = L && r.bsOn("staff"),
+          M = L && !!KIVO.bus.read("staff.enabled@1", r),   /* V7 · د5-د2: هل الجدولُ مفعَّل — يجيب مالكُه؛ بغيابه لا */
           A = e.rest.map(function (t) {
             return {
               name: t,
@@ -3528,7 +3530,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       rpLockedCell: A,
       rpNoStaff: !x && !T && 0 === i.length,
       rpNoStaffMsg:
-        r.bsOn && !r.bsOn("staff")
+        r.bsOn && !KIVO.bus.read("staff.enabled@1", r)
           ? "⚠ التقرير اليومي يُسحب من الجدول الشهري — وهو غير مفعّل في سقف هذه الإدارة."
           : "⚠ لا يوجد تسكينٌ لهذا الشهر في «الجدول الشهري» — أنشئ الجدول أولاً.",
       rpCreate: function () {

@@ -102,8 +102,8 @@ function irMutationData(ctx, b, before, now) {
     var matches = employees.filter(function (e) { return isObj(e) && e.eid === out.eid; });
     if (matches.length !== 1) throw irError('irshad-employee');
     if (create || out.eid !== before.eid) out.name = String(matches[0].name || 'بدون اسم');
-    if (capOnDept(ctx.A, ctx.d, 'staff')) {
-      var month = ctx.refs.staffing[ctx.d], schedule = isObj(month) && month[out.y + '-' + out.m], row = isObj(schedule) && schedule[out.eid];
+    if (srvBusRead('staff.enabled@1', ctx.A, ctx.d)) {   /* V7 · د5-د2: بغياب مالك الجدول كالمعطَّل — لا تحقّقَ من الوردية */
+      var month = srvBusRead('staff.scheduleRef@1', ctx), schedule = isObj(month) && month[out.y + '-' + out.m], row = isObj(schedule) && schedule[out.eid];
       if (!isObj(row) || row.shift !== out.shift || (Array.isArray(row.rest) && row.rest.indexOf(out.d) >= 0))
         throw irError('irshad-employee-shift');
     }
