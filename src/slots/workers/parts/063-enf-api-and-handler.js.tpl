@@ -310,6 +310,7 @@ async function enfTestApi(self, env, request, A, url) {
   if (!enfTestHostOk(env, url)) return json({ ok: 0, err: 'not-found' }, 404);   /* KIVO_244 · ADR-004: مضيفُ Preview المعلن وحده — ولا Production أبداً */
   if (A.u.role !== 'super' || A.enfTest) return json({ ok: 0, err: 'forbidden' }, 403);
   await enfTestSweep(env);                                                         /* كنسٌ دفاعي لجلسات اختبارٍ تركها طلبٌ مقطوع */
+  if (url.pathname === '/api/demo-data') return await enfDemoApi(env, request, A);   /* V7 · د5-هـ (م6): بياناتُ العرض — الحرّاسُ أعلاه نفسُها */
   var rb = await bodyRead(request, '/api/authz-test'); if (rb.res) return rb.res; var b = rb.v;   /* KIVO_264 · SOT-101: مخطّطُ الجسم بعد حرّاس الأداة (البيئة · المضيف · مدير النظام) */
   var users = (await usersList(env)) || [], tu = users.filter(function (x) { return x && x.id === String(b.uid || ''); })[0];
   if (!enfIsTestUser(tu)) return json({ ok: 0, err: 'not-a-test-user' }, 403);
@@ -332,7 +333,295 @@ async function enfTestApi(self, env, request, A, url) {
   finally { try { await env.DB.prepare('DELETE FROM sess WHERE tok = ?1').bind(tok).run(); } catch (e2) { swallow('sess-delete', e2, env.__rid); } }
   return json(out);
 }
-/* @@KIVO_TEST_TOOL_END */
+/* ── V7 · د5-هـ (م6): بياناتُ عرضٍ تجريبية TEST_ONLY تملأ كلَّ نظامٍ حاضر وتُحذف بأمرٍ واحد يعيد القاعدةَ كما كانت ──
+   POST /api/demo-data {act:'preview'|'seed'|'remove'|'status', reveal?, force?} — خلف حرّاس أداة الاختبار نفسِها (enfTestApi: الإنفاذ ∧ KIVO_TEST_FIXTURE=allow
+   ∧ مضيفُ الاختبار ∧ مديرُ المنصة) وداخلَ منطقتها، فتنزعها tools/prod_strip.py من حزمة الإنتاج. المعرّفاتُ tst_demo_* والأسماءُ «TEST_ONLY · ».
+   الزرع: شجرةُ إداراتٍ تجريبية (عامة · إدارتان · قسم) · حساباتٌ موسومة test:'TEST_ONLY' (كلماتُ مرورها تُولَّد هنا وتُعاد مرةً واحدة لمن طلبها) · موظفون ·
+   ومحتوى كلِّ نظامٍ حاضر بكاتبه الحقيقي (قطعةُ demo.provide في مجلد النظام — النظامُ الغائب لا يقدّم شيئاً). قبل الكتابة وبعدها تُمسح الجداول
+   (غيرُ السجلات) فيُحفظ بيانٌ (meta 'tst_demo_manifest'): الصفوفُ المضافة · القيمُ السابقة لما تغيّر · بصمةُ السجلات المشتركة قبل الدمج.
+   الحذف: ما في البيان وحده، والسجلاتُ المشتركة تُعاد بنزع عناصر العرض ثم مطابقةِ بصمتها السابقة — انحرافٌ ⇒ رفضٌ إلا بـforce. */
+var DEMO_PRE = 'tst_demo_', DEMO_GLOB = 'tst_demo_*', DEMO_KGLOB = 'bsdept:tst_demo_*', DEMO_TAG = 'TEST_ONLY · ', DEMO_MK = 'tst_demo_manifest';
+/* السجلاتُ والأدلةُ والجلساتُ والعدّاداتُ الذاتية والصورُ خارج المقارنة (السجلاتُ قد تبقى بعد الحذف) */
+var DEMO_SKIP = { aud: 1, audit: 1, sec: 1, authz: 1, authz_snap: 1, authz_snaps: 1, restore_operations: 1, restore_preimage: 1, restore_snapshot_manifest: 1,
+  sess: 1, guard: 1, imgs: 1, imgown: 1, imgref: 1, d1_migrations: 1, sqlite_sequence: 1 };
+var DEMO_SHARED = [K_USERS, K_DEPTS, K_GDEPTS, K_PERM];
+var DEMO_PROVIDERS = [];
+function demoProvide(p) { DEMO_PROVIDERS.push(p); }
+function demoH(s) { s = String(s); var h1 = 0xdeadbeef, h2 = 0x41c6ce57, i, c; for (i = 0; i < s.length; i++) { c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0'); }
+function demoIsDemo(x) { return typeof x === 'string' && x.indexOf(DEMO_PRE) === 0; }
+/* ── المسح: الجداولُ بأعمدتها ومفتاحها؛ «النطاق» = صفوفُ إدارات العرض (department_id · مفاتيحُ bsdept:tst_demo_*)، و«العام» = بقيةُ الجداول كاملةً ── */
+async function demoTables(env) {
+  var names = ((await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all()).results || [])
+    .map(function (r) { return r.name; }).filter(function (n) { return !DEMO_SKIP[n] && /^[A-Za-z0-9_]+$/.test(n); });
+  var info = await env.DB.batch(names.map(function (n) { return env.DB.prepare('PRAGMA table_info(' + n + ')'); }));
+  return names.map(function (n, i) {
+    var cols = (info[i].results || []).map(function (c) { return { name: c.name, pk: c.pk }; }), pk = cols.filter(function (c) { return c.pk > 0; }).sort(function (a, b) { return a.pk - b.pk; }).map(function (c) { return c.name; });
+    var hasDept = cols.some(function (c) { return c.name === 'department_id'; });
+    /* scoped: صفوفُ العرض وحدها · global: ما سواها كاملاً (لا يُمسح عامُّ جدولٍ ذي إدارة ولا kv — لا يكتب الزرعُ فيهما خارج نطاقه، والسجلاتُ المشتركة بالدمج) */
+    var scoped = hasDept ? 'department_id GLOB ?1' : (n === 'kv' || n === 'revs') ? 'k GLOB ?1' : null, scopedArg = hasDept ? DEMO_GLOB : DEMO_KGLOB;
+    var global = hasDept || n === 'kv' ? null : n === 'revs' ? 'NOT (k GLOB ?1)' : n === 'meta' ? 'k <> ?1' : '1 = 1', globalArg = n === 'revs' ? DEMO_KGLOB : n === 'meta' ? DEMO_MK : null;
+    return { name: n, cols: cols.map(function (c) { return c.name; }), pk: pk.length ? pk : ['rowid'], scoped: scoped, scopedArg: scopedArg, global: global, globalArg: globalArg };
+  });
+}
+async function demoScan(env, tables) {
+  var st = [], at = [];
+  tables.forEach(function (t) {
+    var sel = 'SELECT ' + (t.pk[0] === 'rowid' ? 'rowid AS __rowid, ' : '') + '* FROM ' + t.name + ' WHERE ';
+    if (t.scoped) { st.push(env.DB.prepare(sel + t.scoped).bind(t.scopedArg)); at.push([t, 'scoped']); }
+    if (t.global) { var q = env.DB.prepare(sel + t.global); st.push(t.globalArg == null ? q : q.bind(t.globalArg)); at.push([t, 'global']); }
+  });
+  var res = st.length ? await env.DB.batch(st) : [], out = {};
+  at.forEach(function (x, i) {
+    var t = x[0], o = out[t.name] = out[t.name] || { scoped: {}, global: {} };
+    (res[i].results || []).forEach(function (r) {
+      var key = JSON.stringify(t.pk.map(function (c) { return c === 'rowid' ? r.__rowid : r[c]; })), row = t.cols.map(function (c) { return r[c] === undefined ? null : r[c]; });
+      o[x[1]][key] = { h: demoH(JSON.stringify(row)), row: row };
+    });
+  });
+  return out;
+}
+/* ── السجلاتُ المشتركة: نزعُ عناصر العرض (عنصرُ مصفوفةٍ معرّفُه tst_demo_* · مفتاحُ كائنٍ tst_demo_*) وحذفُ ما أنشأه الزرعُ من حاوياتٍ إن فرغت ── */
+function demoStrip(v, created) {
+  if (Array.isArray(v)) return v.filter(function (x) { return !(isObj(x) && demoIsDemo(x.id)); });
+  if (!isObj(v)) return v;
+  var o = {};
+  Object.keys(v).forEach(function (k) {
+    if (demoIsDemo(k)) return;
+    var x = v[k];
+    if (isObj(x)) { var y = {}; Object.keys(x).forEach(function (q) { if (!demoIsDemo(q)) y[q] = x[q]; }); x = y; if ((created || []).indexOf(k) >= 0 && !Object.keys(x).length) return; }
+    o[k] = x;
+  });
+  return o;
+}
+async function demoKvRows(env, keys) {
+  var r = (await env.DB.prepare('SELECT k, seq, v FROM kv WHERE k IN (SELECT value FROM json_each(?1)) ORDER BY k, seq').bind(JSON.stringify(keys)).all()).results || [], out = {};
+  keys.forEach(function (k) { out[k] = { raw: null, lens: [] }; });
+  r.forEach(function (x) { var o = out[x.k]; o.raw = (o.raw || '') + x.v; o.lens.push(String(x.v).length); });
+  return out;
+}
+/* كتابةُ قيمةٍ بتقطيعٍ معلوم (أطوالُ القطع السابقة) فتعود صفوفُ kv بايتاً — وإلا تقطيعُ الكاتب المعتاد */
+function demoKvPut(env, k, text, lens) {
+  var sum = (lens || []).reduce(function (a, b) { return a + b; }, 0);
+  if (!lens || !lens.length || sum !== text.length) return kvPutStmts(env, 'kv', k, text);
+  var st = [env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(k)], at = 0;
+  lens.forEach(function (n, i) { st.push(env.DB.prepare('INSERT INTO kv (k, seq, v) VALUES (?1, ?2, ?3)').bind(k, i, text.slice(at, at + n))); at += n; });
+  return st;
+}
+function demoRandDigits(n) { var b = new Uint8Array(n), s = '', i; crypto.getRandomValues(b); for (i = 0; i < n; i++) s += String(b[i] % 10); return s.charAt(0) === '0' ? '7' + s.slice(1) : s; }
+/* ── السياق: ما يحتاجه كلُّ نظامٍ ليكتب محتواه — اليومُ الهجري · الإدارات · الموظفون · الورديات · المواقعُ (نموذجُ الطوابق المشترك) ── */
+function demoContext(now) {
+  var t = pfHijriAt(now); if (!t || !t.y) throw new Error('demo-clock');
+  var T = { y: t.y, m: t.m, d: t.d }, P = T.m > 1 ? { y: T.y, m: T.m - 1 } : { y: T.y - 1, m: 12 }, days = [];
+  for (var i = 0; i < 3 && T.d - i >= 1; i++) days.push({ y: T.y, m: T.m, d: T.d - i });
+  var D = { g: DEMO_PRE + 'g', d1: DEMO_PRE + 'd1', d2: DEMO_PRE + 'd2', s1: DEMO_PRE + 's1' };
+  var shifts = [{ name: 'TEST_ONLY-A', color: '#2563eb', tStart: '06:00', tEnd: '14:00' }, { name: 'TEST_ONLY-B', color: '#16a34a', tStart: '14:00', tEnd: '22:00' }];
+  var emps = {}; [[D.d1, 1, 4], [D.d2, 2, 2], [D.s1, 3, 1]].forEach(function (x) {
+    var list = []; for (var j = 1; j <= x[2]; j++) list.push({ eid: DEMO_PRE + 'e' + x[1] + j, name: DEMO_TAG + 'موظف ' + x[1] + '-' + j, empno: '99' + x[1] + '000' + j, nid: '19' + x[1] + '000000' + j,
+      type: DEMO_TAG + 'رسمي', work: DEMO_TAG + 'مراقب' });
+    emps[x[0]] = list; });
+  function zone(k, i, emp) { var x0 = i * 20; return { uid: 'tstdz' + k + i, code: 'DZ' + k + i, name: DEMO_TAG + 'مصلى ' + k + '-' + (i + 1), d: 'M' + x0 + ' 0 L' + (x0 + 10) + ' 0 L' + (x0 + 10) + ' 10 L' + x0 + ' 10 Z', cx: x0 + 5, cy: 5, area: 100, emp: emp }; }
+  function site(d, k, nm, num) {
+    var e = (emps[d] || []).map(function (x) { return x.eid; });
+    return { sid: 'tstds' + k, name: DEMO_TAG + nm, num: num, zones: [zone(k, 0, e.slice(0, 2)), zone(k, 1, e.slice(2, 3)), zone(k, 2, [])],
+      gates: [{ uid: 'tstdg' + k, id: 'DG' + k, num: String(num), x: 10 * num, y: 10, emp: e.slice(0, 1) }],
+      marks: [{ uid: 'tstdm' + k, id: 'DM' + k, label: DEMO_TAG + 'معلم ' + k, x: 3, y: 4 * num, emp: [] }],
+      paths: [{ uid: 'tstdp' + k, id: 'DP' + k, pts: [{ x: 0, y: 0 }, { x: 5, y: 5 * num }], active: true }] };
+  }
+  var sites = {}; sites[D.d1] = [site(D.d1, 11, 'موقع تجريبي ١', 1), site(D.d1, 12, 'موقع تجريبي ٢', 2)]; sites[D.d2] = [site(D.d2, 21, 'موقع الإدارة ٢', 1)];
+  return { now: now, today: T, prev: P, days: days, mk: T.y + '-' + T.m, pmk: P.y + '-' + P.m, pre: DEMO_PRE, tag: DEMO_TAG, depts: D, units: [D.d1, D.d2], emps: emps, shifts: shifts, sites: sites,
+    copy: function (o) { return JSON.parse(JSON.stringify(o)); } };
+}
+/* ── الخطة: الإداراتُ والحساباتُ والصلاحياتُ (دمجاً) ثم قطعُ الأنظمة — بلا كتابة ── */
+async function demoBuild(env, A, opt) {
+  var C = demoContext(Date.now()), D = C.depts, out = { guards: [], st: [], revKeys: [], counts: {}, caps: ['emps', 'admin', 'planning', 'kpis'], users: [], secrets: [] };
+  var cur = await demoKvRows(env, DEMO_SHARED), revRows = (await env.DB.prepare('SELECT k, rev FROM revs WHERE k IN (SELECT value FROM json_each(?1))').bind(JSON.stringify(DEMO_SHARED)).all()).results || [];
+  var revOf = {}; revRows.forEach(function (r) { revOf[r.k] = r.rev; });
+  var users = parseJson(cur[K_USERS].raw || '[]', null), depts = parseJson(cur[K_DEPTS].raw || '[]', null), gdepts = parseJson(cur[K_GDEPTS].raw || '[]', null), perms = parseJson(cur[K_PERM].raw || '{}', null);
+  if (!Array.isArray(users) || !Array.isArray(depts) || !Array.isArray(gdepts) || !isObj(perms)) throw new Error('demo-shared-shape');
+  /* لا يُزرع فوق بقايا: أيُّ معرّفٍ tst_demo_* أو اسمِ دخولٍ مستعمل ⇒ رفض */
+  var taken = {}; users.forEach(function (u) { if (u && u.un) taken[String(u.un)] = 1; });
+  if (users.concat(depts, gdepts).some(function (x) { return x && demoIsDemo(x.id); })) throw new Error('demo-residue');
+  /* الحسابات: مديرا الإدارتين + موظفان (حسابُ الموظف مربوطٌ بسجله) — كلمةُ المرور تُولَّد ولا تُكتب إلا بصمتُها */
+  var acc = [['m1', D.d1, 'mgr:' + D.d1, { mgr: 1 }, 'مدير الإدارة التجريبية ١'], ['m2', D.d2, 'mgr:' + D.d2, { mgr: 1 }, 'مدير الإدارة التجريبية ٢'],
+    ['e11', D.d1, C.emps[D.d1][0].eid, {}, 'موظف 1-1'], ['e12', D.d1, C.emps[D.d1][1].eid, {}, 'موظف 1-2'], ['e21', D.d2, C.emps[D.d2][0].eid, {}, 'موظف 2-1']];
+  var newUsers = [];
+  for (var i = 0; i < acc.length; i++) {
+    var a = acc[i], un = '00000990' + String(10 + i), pw = demoRandDigits(6);   /* شكلُ كلمات مرور المنصة (6 أرقام) */
+    if (taken[un]) throw new Error('demo-username-taken');
+    var u = { id: DEMO_PRE + 'u_' + a[0], un: un, name: DEMO_TAG + a[4], role: 'staff', deptId: a[1], ekey: a[2], ph: opt.dry ? '' : await hashPw(pw), mc: 0, dis: 0, test: 'TEST_ONLY' };
+    Object.assign(u, a[3]); newUsers.push(u); out.users.push(u.id);
+    if (opt.reveal) out.secrets.push({ id: u.id, un: un, pw: pw, role: a[3].mgr ? 'mgr' : 'staff', dept: a[1] });
+  }
+  C.users = newUsers.map(function (u) { return { id: u.id, un: u.un, name: u.name, ekey: u.ekey, deptId: u.deptId, mgr: !!u.mgr }; });
+  /* الأنظمة: كلُّ قطعةٍ تضيف جملها بكاتبها، وصفحاتِها إلى caps */
+  C.op = async function (key, value) {   /* موردٌ تشغيلي: كاتبُه الحقيقي (opChangeStatements) على إدارةٍ جديدة */
+    var p = await opChangeStatements(env, key, JSON.stringify(value), { base: 0 });
+    out.guards.push.apply(out.guards, p.guards); out.st.push.apply(out.st, p.statements); out.revKeys.push.apply(out.revKeys, p.revisionKeys);
+  };
+  C.count = function (sys, what, n) { (out.counts[sys] = out.counts[sys] || {})[what] = ((out.counts[sys] || {})[what] || 0) + n; };
+  C.out = out;
+  /* القاعدة: الموظفون وخياراتهم والورديات لكل إدارة */
+  for (var d in C.emps) {
+    await C.op('bsdept:' + d + ':bassam_employees_v1', C.emps[d]); C.count('base', 'employees', C.emps[d].length);
+    await C.op('bsdept:' + d + ':bassam_shift_options_v1', C.shifts); C.count('base', 'shifts', C.shifts.length);
+    await C.op('bsdept:' + d + ':bassam_options_v1', { type: [DEMO_TAG + 'رسمي'], work: [DEMO_TAG + 'مراقب'] });
+  }
+  for (var p = 0; p < DEMO_PROVIDERS.length; p++) {
+    var P = DEMO_PROVIDERS[p]; (P.caps || []).forEach(function (c) { if (out.caps.indexOf(c) < 0) out.caps.push(c); });
+    await P.seed(env, C, out); if (!out.counts[P.sys]) out.counts[P.sys] = {};
+  }
+  /* إشعاراتٌ لحسابات العرض وحدها (نوعُ القاعدة «إضافة موظف») */
+  var plans = [];
+  C.units.forEach(function (d) { (C.emps[d] || []).slice(0, 2).forEach(function (e, j) {
+    var m = nfMessage(nfScope(d), DEMO_PRE + 'n' + d.slice(DEMO_PRE.length) + j, 'event', { department: d, type: 'emp_add', category: 'emp', priority: 'info', channel: 'bell', title: DEMO_TAG + 'إضافة موظف',
+      body: DEMO_TAG + 'أُضيف ' + e.name + ' إلى موظفي الإدارة', created_at: C.now - j * 60000, author_key: String(A.u.ekey || A.u.id), author_name: DEMO_TAG + 'أداة العرض', action_text: '', link: '', server_origin: 1 });
+    plans.push({ m: m, targets: nfTargetRows(m.scope, m.id, { e: [], r: ['mgr'] }), once: '' }); }); });
+  if (plans.length) { out.st.push.apply(out.st, nfInsertPlans(env, plans)); C.count('base', 'notifications', plans.length); }
+  /* السجلاتُ المشتركة: دمجٌ يُتحقَّق أنه يُنزع فيعود كما كان */
+  var created = [];
+  var nextPerms = JSON.parse(JSON.stringify(perms));
+  ['caps', 'emps'].forEach(function (s) { if (!isObj(nextPerms[s])) { nextPerms[s] = {}; created.push(s); } });
+  [D.g, D.d1, D.d2, D.s1].forEach(function (d) { nextPerms.caps[d] = out.caps.slice(); });
+  var next = {};
+  next[K_USERS] = users.concat(newUsers);
+  next[K_GDEPTS] = gdepts.concat([{ id: D.g, name: DEMO_TAG + 'إدارة عامة تجريبية', kind: 'إدارة عامة' }]);
+  next[K_DEPTS] = depts.concat([{ id: D.d1, name: DEMO_TAG + 'إدارة تجريبية ١', gid: D.g }, { id: D.d2, name: DEMO_TAG + 'إدارة تجريبية ٢', gid: D.g }, { id: D.s1, name: DEMO_TAG + 'قسم تجريبي ١', gid: D.d1, kind: 'قسم' }]);
+  next[K_PERM] = nextPerms;
+  var shared = {};
+  DEMO_SHARED.forEach(function (k) {
+    var raw = cur[k].raw, prevNorm = raw == null ? null : JSON.stringify(JSON.parse(raw)), text = JSON.stringify(next[k]);
+    if (JSON.stringify(demoStrip(next[k], k === K_PERM ? created : [])) !== (prevNorm == null ? JSON.stringify(k === K_PERM ? {} : []) : prevNorm)) throw new Error('demo-irreversible-merge');
+    shared[k] = { prevSha: raw == null ? null : demoH(raw), prevNormSha: prevNorm == null ? null : demoH(prevNorm), prevLens: cur[k].lens, created: k === K_PERM ? created : [], afterSha: demoH(text), rev: revOf[k] || 0 };
+    out.guards.push(revGuard(env, k, revOf[k] || 0));
+    out.st.push.apply(out.st, kvPutStmts(env, 'kv', k, text)); out.revKeys.push(k);
+  });
+  out.shared = shared; out.C = C;
+  out.counts.base = Object.assign(out.counts.base || {}, { departments: 4, accounts: newUsers.length });
+  return out;
+}
+function demoRevStmts(env, keys) {
+  var st = [env.DB.prepare("INSERT INTO meta(k,v)VALUES('rev',CAST((SELECT MAX(n)+1 FROM(SELECT COALESCE(MAX(rev),0)n FROM revs UNION ALL SELECT COALESCE(CAST(v AS INTEGER),0)FROM meta WHERE k='rev'))AS TEXT))ON CONFLICT(k)DO UPDATE SET v=excluded.v")];
+  enfUniq(keys).forEach(function (k) { st.push(env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,(SELECT CAST(v AS INTEGER)FROM meta WHERE k='rev'))ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(k)); });
+  return st;
+}
+async function demoManifest(env) { var r = await env.DB.prepare('SELECT v FROM meta WHERE k = ?1').bind(DEMO_MK).first(); return r ? parseJson(r.v, null) : null; }
+function demoManifestStmt(env, m) { return env.DB.prepare('INSERT INTO meta(k,v) VALUES(?1,?2) ON CONFLICT(k) DO UPDATE SET v=excluded.v').bind(DEMO_MK, JSON.stringify(m)); }
+/* الفرقُ بين مسحين: المضافُ (مفتاحُه وبصمتُه) · المتغيّرُ (قيمتُه السابقة وبصمتُه بعد) · المحذوفُ (قيمتُه السابقة) */
+function demoDiff(tables, a, b, own) {
+  var m = { added: {}, changed: {}, deleted: {}, foreign: 0 };
+  tables.forEach(function (t) {
+    var A0 = a[t.name] || { scoped: {}, global: {} }, B0 = b[t.name] || { scoped: {}, global: {} };
+    ['scoped', 'global'].forEach(function (part) {
+      var x = A0[part], y = B0[part];
+      Object.keys(y).forEach(function (k) {
+        if (!x[k]) {
+          /* صفٌّ عامٌّ أُضيف بلا وسم العرض = كتابةٌ متزامنةٌ من غيرنا ⇒ لا يدخل البيان (لا يُحذف أبداً) */
+          var mine = t.name === 'revs' && (own || []).indexOf(y[k].row[t.cols.indexOf('k')]) >= 0;   /* نسخةُ مفتاحٍ كتبه الزرعُ نفسُه */
+          if (part === 'global' && !mine && JSON.stringify(y[k].row).indexOf(DEMO_PRE) < 0 && JSON.stringify(y[k].row).indexOf('TEST_ONLY') < 0) { m.foreign++; return; }
+          (m.added[t.name] = m.added[t.name] || []).push([k, y[k].h, part]);
+        } else if (x[k].h !== y[k].h) (m.changed[t.name] = m.changed[t.name] || []).push([k, y[k].h, x[k].row]);
+      });
+      Object.keys(x).forEach(function (k) { if (!y[k]) (m.deleted[t.name] = m.deleted[t.name] || []).push([k, x[k].row]); });
+    });
+  });
+  return m;
+}
+function demoPkWhere(t) { return '(' + t.pk.map(function (c, i) { return t.name + '.' + c + " IS json_extract(j.value, '$[" + i + "]')"; }).join(' AND ') + ')'; }
+function demoChunks(list, n) { var o = []; for (var i = 0; i < list.length; i += n) o.push(list.slice(i, i + n)); return o; }
+async function demoSeed(env, A, b) {
+  var have = await demoManifest(env);
+  if (have) return { status: 409, body: { ok: 0, err: 'demo-already-seeded', msg: 'بياناتُ العرض مزروعةٌ مسبقاً — احذفها أولاً (act:remove)', at: have.at, counts: have.counts } };
+  var tables = await demoTables(env), before = await demoScan(env, tables);
+  var residue = tables.filter(function (t) { return Object.keys((before[t.name] || {}).scoped || {}).length; }).map(function (t) { return t.name; });
+  if (residue.length) return { status: 409, body: { ok: 0, err: 'demo-residue', msg: 'في القاعدة صفوفُ عرضٍ بلا بيان — لا يُزرع فوقها', tables: residue } };
+  var plan;
+  try { plan = await demoBuild(env, A, { reveal: !!b.reveal }); } catch (e) { return { status: 409, body: { ok: 0, err: String(e && e.message || e).slice(0, 80) } }; }
+  var pending = { v: 1, state: 'pending', at: Date.now(), by: A.u.id, depts: [plan.C.depts.g, plan.C.depts.d1, plan.C.depts.d2, plan.C.depts.s1], users: plan.users, shared: plan.shared, counts: plan.counts };
+  var st = plan.guards.concat([env.DB.prepare('SELECT CASE WHEN EXISTS(SELECT 1 FROM meta WHERE k = ?1) THEN json_extract(\'{}\', \'KIVO_REV_CONFLICT\') END').bind(DEMO_MK)], plan.st, demoRevStmts(env, plan.revKeys), [demoManifestStmt(env, pending)]);
+  try { await env.DB.batch(st); } catch (e) { if (isRevConflict(e)) return { status: 409, body: { ok: 0, err: 'conflict' } }; throw e; }
+  var after = await demoScan(env, tables), diff = demoDiff(tables, before, after, plan.revKeys);
+  var man = Object.assign({}, pending, { state: 'seeded', added: diff.added, changed: diff.changed, deleted: diff.deleted });
+  await env.DB.batch([demoManifestStmt(env, man)]);
+  var out = { ok: 1, act: 'seed', counts: plan.counts, rows: demoCountRows(diff.added), foreign: diff.foreign, depts: pending.depts, accounts: plan.C.users.map(function (u) { return { id: u.id, un: u.un, dept: u.deptId, mgr: u.mgr }; }) };
+  if (b.reveal) out.secrets = plan.secrets;   /* مرةً واحدة، في جسم الردّ وحده — لا تُسجَّل ولا تُحفظ */
+  return { status: 200, body: out };
+}
+function demoCountRows(added) { var o = {}; Object.keys(added || {}).forEach(function (t) { o[t] = added[t].length; }); return o; }
+async function demoRemove(env, A, b) {
+  var man = await demoManifest(env);
+  if (!man) return { status: 200, body: { ok: 1, act: 'remove', noop: 1, msg: 'لا بياناتَ عرضٍ مزروعة' } };
+  var tables = await demoTables(env), now = await demoScan(env, tables), byName = {}, drift = [], st = [], kept = [];
+  tables.forEach(function (t) { byName[t.name] = t; });
+  var force = !!b.force, partial = man.state !== 'seeded';
+  if (partial && !force) drift.push({ kind: 'manifest-pending' });
+  /* (1) صفوفُ النطاق: ما ليس في البيان (أضافه مختبِرٌ في إدارات العرض) انحراف */
+  tables.forEach(function (t) {
+    if (!t.scoped) return;
+    var listed = {}; ((man.added || {})[t.name] || []).forEach(function (x) { if (x[2] === 'scoped') listed[x[0]] = x[1]; });
+    var extra = Object.keys((now[t.name] || {}).scoped || {}).filter(function (k) { return listed[k] === undefined; });
+    if (extra.length && !partial) drift.push({ kind: 'extra-rows', table: t.name, n: extra.length });
+    if (Object.keys((now[t.name] || {}).scoped || {}).length) st.push(env.DB.prepare('DELETE FROM ' + t.name + ' WHERE ' + t.scoped).bind(t.scopedArg));
+  });
+  /* (2) الصفوفُ العامة المضافة: تُحذف بمفاتيحها · المتغيّرة تُعاد إن لم يمسّها أحدٌ بعد الزرع (العدّادات تمضي) · المحذوفة تُعاد */
+  var later = 0;
+  tables.forEach(function (t) {
+    if (!t.global) return;
+    var n = t.name, listed = {};
+    ((man.added || {})[n] || []).forEach(function (x) { if (x[2] === 'global') listed[x[0]] = x[1]; });
+    /* صفٌّ عامٌّ مفتاحُه يحمل tst_demo_ ملكُ العرض (ومنه ما كتبه النظامُ بعد الزرع: نقاطُ تشغيلٍ لإدارةٍ تجريبية · إشعاراتُها) ⇒ يُحذف دائماً؛
+       وصفٌّ مضافٌ بلا ذلك يُحذف بمفتاحه — إلا نسخةً أو عدّاداً تغيّر بعد الزرع (كتبه غيرُنا بعده) فيبقى */
+    var keys = Object.keys(listed).filter(function (k) { var c = ((now[n] || {}).global || {})[k]; if (k.indexOf(DEMO_PRE) < 0 && (n === 'revs' || n === 'meta') && c && c.h !== listed[k]) { kept.push(n + ' ' + k); return false; } return true; });
+    Object.keys((now[n] || {}).global || {}).forEach(function (k) { if (k.indexOf(DEMO_PRE) >= 0 && listed[k] === undefined) { keys.push(k); later++; } });
+    demoChunks(keys.map(function (k) { return JSON.parse(k); }), 200).forEach(function (part) { st.push(env.DB.prepare('DELETE FROM ' + n + ' WHERE EXISTS (SELECT 1 FROM json_each(?1) AS j WHERE ' + demoPkWhere(t) + ')').bind(JSON.stringify(part))); });
+  });
+  function putRow(t, row) { var cols = t.cols; return env.DB.prepare('INSERT OR REPLACE INTO ' + t.name + ' (' + cols.join(',') + ') SELECT ' + cols.map(function (c, i) { return "json_extract(?1, '$[" + i + "]')"; }).join(',')).bind(JSON.stringify(row)); }
+  Object.keys(man.changed || {}).forEach(function (n) {
+    var t = byName[n]; if (!t) return;
+    man.changed[n].forEach(function (x) { var c = ((now[n] || {}).global || {})[x[0]] || ((now[n] || {}).scoped || {})[x[0]]; if (c && c.h === x[1]) st.push(putRow(t, x[2])); else kept.push(n + ' ' + x[0]); });
+  });
+  Object.keys(man.deleted || {}).forEach(function (n) { var t = byName[n]; if (!t) return; man.deleted[n].forEach(function (x) { var c = ((now[n] || {}).global || {})[x[0]]; if (!c) st.push(putRow(t, x[1])); }); });
+  /* (3) السجلاتُ المشتركة: نزعُ عناصر العرض ثم مطابقةُ البصمة السابقة */
+  var cur = await demoKvRows(env, DEMO_SHARED), sharedOut = {};
+  DEMO_SHARED.forEach(function (k) {
+    var info = (man.shared || {})[k]; if (!info) return;
+    var v = parseJson(cur[k].raw == null ? 'null' : cur[k].raw, null), stripped = demoStrip(v, info.created), text = JSON.stringify(stripped);
+    if (info.prevSha == null) {   /* لم يكن السجلُّ قبل الزرع: يُحذف إن لم يبقَ فيه إلا العرض، وإلا فانحراف (force يُبقي ما أُضيف بعده) */
+      if (cur[k].raw == null || text === JSON.stringify(k === K_PERM ? {} : [])) { st.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(k)); sharedOut[k] = 'deleted'; return; }
+      if (!force) drift.push({ kind: 'shared-drift', key: k });
+      st.push.apply(st, kvPutStmts(env, 'kv', k, text)); sharedOut[k] = 'stripped'; return;
+    }
+    var exact = demoH(text) === info.prevSha, same = exact || demoH(text) === info.prevNormSha;
+    if (!same && !force) drift.push({ kind: 'shared-drift', key: k, note: 'تغيّر السجلُّ المشترك بعد الزرع — force يكتب الحاليَّ منزوعاً منه العرضُ وحده' });
+    st.push.apply(st, demoKvPut(env, k, text, exact ? info.prevLens : null)); sharedOut[k] = exact ? 'exact' : same ? 'equal-json' : 'stripped';
+  });
+  if (drift.length && !force) return { status: 409, body: { ok: 0, err: 'demo-drift', msg: 'تغيّرت بياناتُ العرض أو السجلاتُ المشتركة بعد الزرع — لم يُحذف شيء (force للحذف رغم ذلك)', drift: drift } };
+  /* جلساتُ حسابات العرض (إن دخلها أحد) تُنهى، ثم البيانُ نفسُه — في دفعةٍ واحدة */
+  st.push(env.DB.prepare('DELETE FROM sess WHERE uid GLOB ?1').bind(DEMO_GLOB));
+  st.push(env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind(DEMO_MK));
+  await env.DB.batch([env.DB.prepare('PRAGMA defer_foreign_keys = ON')].concat(st));
+  return { status: 200, body: { ok: 1, act: 'remove', removed: demoCountRows(man.added), laterRows: later, shared: sharedOut, keptCounters: kept, forced: force && drift.length ? drift : undefined } };
+}
+async function demoStatus(env) {
+  var man = await demoManifest(env), tables = await demoTables(env), now = await demoScan(env, tables), rows = {};
+  tables.forEach(function (t) { var n = Object.keys((now[t.name] || {}).scoped || {}).length; if (n) rows[t.name] = n; });
+  return { status: 200, body: { ok: 1, act: 'status', seeded: !!man, state: man ? man.state : null, at: man ? man.at : null, counts: man ? man.counts : null, demoRows: rows,
+    systems: DEMO_PROVIDERS.map(function (p) { return p.sys; }) } };
+}
+async function enfDemoApi(env, request, A) {
+  var rb = await bodyRead(request, '/api/demo-data'); if (rb.res) return rb.res; var b = rb.v || {};
+  var act = String(b.act || 'status'), r;
+  if (act === 'status') r = await demoStatus(env);
+  else if (act === 'preview') {   /* معاينةٌ بلا كتابة */
+    var p; try { p = await demoBuild(env, A, { dry: 1 }); } catch (e) { return json({ ok: 0, err: String(e && e.message || e).slice(0, 80) }, 409); }
+    r = { status: 200, body: { ok: 1, act: 'preview', counts: p.counts, statements: p.st.length, systems: DEMO_PROVIDERS.map(function (x) { return x.sys; }), seeded: !!(await demoManifest(env)) } };
+  } else if (act === 'seed') r = await demoSeed(env, A, b);
+  else if (act === 'remove') r = await demoRemove(env, A, b);
+  else return json({ ok: 0, err: 'act' }, 400);
+  return json(r.body, r.status);
+}
+@@SYS:demo.provide@@/* @@KIVO_TEST_TOOL_END */
 /* الاستدراك في وضع الإنفاذ: super ∨ المفتاحُ الصريح (D3-01 — بعد ترحيل الصلاحيات لا يكفي approve) */
 function enfRetroMay(A, d, sys) { if (A.u.role === 'super') return true; return !!d && deptInScope(A, d) && enfHeld(A, d, RETRO[sys].key); }
 /* سجلُّ الأنشطة: الإدارةُ كاملةً لحامل audit.view فيها (أو مدير النظام) · تاريخُ كيانٍ واحد لمن في نطاق الإدارة (والأسطرُ تمرّ بعقد القراءة) */
@@ -872,7 +1161,7 @@ export default {
         var AMG = await actorOf(env, ss.uid); if (!AMG) return json({ ok: 0, err: 'session' }, 401);
         return await enfMigrateApi(env, request, AMG, url, reqMeta(request));
       }
-      if (enfEnvOn(env) && path === '/api/authz-test' && request.method === 'POST') {
+      if (enfEnvOn(env) && (path === '/api/authz-test' || path === '/api/demo-data') && request.method === 'POST') {
         var ATS = await actorOf(env, ss.uid); if (!ATS) return json({ ok: 0, err: 'session' }, 401);
         return await enfTestApi(this, env, request, ATS, url);
       }

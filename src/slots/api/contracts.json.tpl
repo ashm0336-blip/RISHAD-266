@@ -1035,6 +1035,56 @@
       }
     },
     {
+      "path": "/api/demo-data",
+      "methods": [
+        "POST"
+      ],
+      "access": "enforce",
+      "request": {
+        "act": "preview|seed|remove|status",
+        "reveal?": "boolean — كلماتُ مرور حسابات العرض في الرد مرةً واحدة (seed)",
+        "force?": "boolean — الحذفُ رغم الانحراف (remove)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "act"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "bad-body",
+          "note": "بعد حرّاس الأداة (البيئة · المضيف · مدير النظام)",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/demo-data"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "غيرُ مدير المنصة"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "بلا KIVO_TEST_FIXTURE=allow أو مضيفٍ غير مسموح — وحزمةُ الإنتاج بلا الأداة أصلاً (tools/prod_strip.py)"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "demo-already-seeded · demo-residue · demo-drift · conflict"
+        }
+      }
+    },
+    {
       "path": "/api/authz-test",
       "methods": [
         "POST"
