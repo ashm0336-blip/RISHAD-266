@@ -45,7 +45,7 @@ test('إطارُ الطباعة يُحذف عند afterprint (ومهلةٌ قص�
 });
 
 test('صفحةُ المؤشرات المطبوعة = لوحةُ «مؤشرات الإدارة»: لا أيقونةَ مكبَّرة ولا بطاقةَ منزَّلة إلى أسفل الصفحة', () => {
-  const lg = fs.readFileSync(path.join(SRC, 'modules', 'daily', 'logic.js'), 'utf8');
+  const lg = fs.readFileSync(path.join(SRC, 'systems', 'daily', 'client', 'logic.js'), 'utf8');
   const fit = lg.slice(lg.indexOf('  _kpiPrintFit(t) {'), lg.indexOf('  _kpiPrintFit(t) {') + 9000);
   assert.match(fit, /h = h0 && \/width:\\s\*136px\/\.test\(h0\.getAttribute\("style"\) \|\| ""\) && \/height:\\s\*136px\/\.test\(h0\.getAttribute\("style"\) \|\| ""\) \? h0 : null;/, 'تكبيرُ 136→196 للحلقة وحدها');
   assert.match(fit, /\(d\.style\.justifyContent = "flex-start"\)/);
@@ -55,7 +55,7 @@ test('صفحةُ المؤشرات المطبوعة = لوحةُ «مؤشرات �
 });
 
 test('مؤشراتُ التقرير المطبوع تتبع يومَ الجولة المطبوعة — لا آخرَ اختيارٍ في اللوحة ولا «كل الفترة» (قرار المالك 2026-11-11)', () => {
-  const lg = fs.readFileSync(path.join(SRC, 'modules', 'daily', 'logic.js'), 'utf8');
+  const lg = fs.readFileSync(path.join(SRC, 'systems', 'daily', 'client', 'logic.js'), 'utf8');
   const body = lg.slice(lg.indexOf('  _kpiPrintBody() {'), lg.indexOf('  _kpiPrintFit(t) {'));
   assert.match(body, /const t = this\._kpiPrintSel\(\)\.filter\(\(t\) => t\.y === st\.year && t\.m === st\.month && t\.d === dd\);/);
   assert.match(body, /dd = Math\.min\(st\.day, this\.hMonthDays\(st\.year, st\.month\)\);/, 'اليومُ مقصوصٌ بطول الشهر كما في سطر التذييل');
@@ -64,7 +64,7 @@ test('مؤشراتُ التقرير المطبوع تتبع يومَ الجول�
 });
 
 test('ملفٌّ خفيف: توهّجُ خلفية لوحة المؤشرات (blur واللمعة) لا يُطبع — النقشُ والتدرّجُ باقيان', () => {
-  const lg = fs.readFileSync(path.join(SRC, 'modules', 'daily', 'logic.js'), 'utf8');
+  const lg = fs.readFileSync(path.join(SRC, 'systems', 'daily', 'client', 'logic.js'), 'utf8');
   const fit = lg.slice(lg.indexOf('  _kpiPrintFit(t) {'), lg.indexOf('  _kpiPrintFit(t) {') + 3000);
   assert.match(fit, /\/pointer-events:\\s\*none\/\.test\(gs\) && \/inset:\\s\*0\/\.test\(gs\) && \(g\.style\.display = "none"\);/);
   /* الطبقةُ المستهدفة هي أولُ أبناء اللوحة في القالب: غلافٌ بلا محتوى فيه طبقتا blur واللمعة */
