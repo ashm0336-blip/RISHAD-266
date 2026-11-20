@@ -17,7 +17,7 @@
   },
   {
    "key": "import.run",
-   "res": "bassam_employees_v1 (+ bassam_options_v1 · bassam_staffing_v3 · bassam_shift_options_v1 · مسحُ import.replace في الحفظة)",
+   "res": "bassam_employees_v1 (+ bassam_options_v1 · bassam_shift_options_v1 · مسحُ import.replace في الحفظة)",
    "where": "Phase 3: marker صريح في الطلب ops[k] = {op:\"import.run\", mode:\"add|update|replace\", n} يضبطه BassamEmpImp.commit عبر __BS_OP_MODE — لا استدلالَ بالشكل",
    "how": "كلُّ مفتاحٍ يحمل العلامةَ يُطلَب له import.run فوقَ مفاتيح موردِه (الحكمُ المستهدف: import.run ∧ حرّاسُ المورد)؛ الشكلُ الجماعي «2+ موظفين» بلا علامة يُحصى heuristicWithoutMarker للقياس فقط — ظلٌّ فقط",
    "asis": "الواجهة: can(\"emps\",\"add\"|\"edit\") · الخادم: emps/data (create/edit) — لا admin/import:add (تبقى كما هي)",
@@ -485,7 +485,7 @@
   },
   {
    "key": "emp.record.bulk.delete",
-   "res": "bassam_employees_v1 (+ تنظيفات dreport {} · staffing)",
+   "res": "bassam_employees_v1 (+ تنظيفات dreport {})",
    "where": "زوالُ ≥2 سجلٍّ في كتابةٍ واحدة أو القائمةُ تصير [] · والتنظيفاتُ المرافقة بسياق empsEmpty",
    "how": "عدُّ الكيانات الزائلة في الكتابة الواحدة",
    "asis": "emps/data:del (+ wipeAllowed→emps)",
@@ -678,12 +678,6 @@
    "text": "report.day.delete مفتاحٌ مستقل (exists · asis dreport:del) — المصنِّف يُخرجه بدل __unmapped."
   },
   {
-   "id": "D-18",
-   "topic": "staffing: الحقول بلا مفتاح",
-   "status": "معلَن (باقٍ)",
-   "text": "leaves/perm (إجازات/استئذانات الموظف في الشهر) → staff.rest · ظهورُ صفِّ موظفٍ في شهرٍ قائم → staff.shift.assign · staff.move بلا مسارٍ مستقل (الورديةُ حقلٌ واحد)."
-  },
-  {
    "id": "D-19",
    "topic": "رصدُ الميدان",
    "status": "حُسم في v24.3 (F-14) — مؤجَّل لمرحلة Data Scope",
@@ -705,8 +699,8 @@
   "shadowOnly": 2,
   "duplicatesJustified": 2,
   "duplicatesUnjustified": 0,
-  "emittedKeys": 80,
-  "coveredResources": 12,
+  "emittedKeys": 71,
+  "coveredResources": 9,
   "decisions": 20
  }
 }

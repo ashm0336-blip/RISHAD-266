@@ -1598,8 +1598,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_v1",
-    "after": 5,
-    "seq": 1,
+    "after": 3,
+    "seq": 40,
     "value": {
      "items": "reportItems",
      "evidence": "reports[id].{y,m,d} · loc (ref.irshad.location) · shift · G‑08 + نوافذُ الاستدراك (D3‑07)",
@@ -1664,9 +1664,12 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 6,
+    "after": 7,
     "seq": 1,
-    "value": "ir.rec.view"
+    "value": "ir.rec.view",
+    "needs": [
+     "staff"
+    ]
    },
    {
     "path": [
@@ -1675,13 +1678,16 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 6,
+    "after": 7,
     "seq": 1,
     "value": {
      "cap": "irshad/records:view",
      "key": "ir.rec.view",
      "source": "reference-read"
-    }
+    },
+    "needs": [
+     "staff"
+    ]
    },
    {
     "path": [
@@ -1715,7 +1721,7 @@
      "byResource"
     ],
     "key": "bassam_irshad_v1",
-    "after": 36,
+    "after": 30,
     "seq": 4,
     "value": {
      "scope": "dept",
@@ -1751,7 +1757,7 @@
      "byResource"
     ],
     "key": "bassam_irshad_langs_v1",
-    "after": 36,
+    "after": 30,
     "seq": 5,
     "value": {
      "scope": "dept",
@@ -1793,7 +1799,7 @@
      "byResource"
     ],
     "key": "bassam_irshad_locs_v1",
-    "after": 36,
+    "after": 30,
     "seq": 6,
     "value": {
      "scope": "dept",
@@ -1861,7 +1867,7 @@
      "byResource"
     ],
     "key": "bassam_irshad_retro_v1",
-    "after": 51,
+    "after": 45,
     "seq": 15,
     "value": {
      "scope": "dept-state",

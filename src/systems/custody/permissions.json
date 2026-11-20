@@ -762,7 +762,7 @@
      "byResource"
     ],
     "key": "bassam_custody_v1",
-    "after": 6,
+    "after": 4,
     "seq": 3,
     "value": {
      "items": "custodyItems",
@@ -791,7 +791,7 @@
     ],
     "key": "bassam_custody_v1",
     "after": 20,
-    "seq": 1,
+    "seq": 10,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -921,7 +921,7 @@
      },
      "res"
     ],
-    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · staffing)"
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [])"
    },
    {
     "path": [
@@ -932,7 +932,7 @@
      },
      "res"
     ],
-    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · award.recs [] · staffing)",
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · award.recs [])",
     "with": [
      "award"
     ]
@@ -943,7 +943,7 @@
     "path": [
      "importRes"
     ],
-    "after": 7,
+    "after": 5,
     "seq": 0,
     "value": "bassam_custody_v1"
    }
