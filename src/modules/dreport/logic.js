@@ -295,7 +295,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   rpKeyOf(t) {
     return KIVO.BassamEmp && KIVO.BassamEmp.key ? KIVO.BassamEmp.key(t) : t.eid || t.nid || t.name || "";
   }
-  rpStaffLive() {
+  rpSchedLive() {
     try {
       var t = KIVO.bus.read("staff.schedule@1");   /* V7 · د5-د2: قراءةٌ معلنة من مالك الجدول — بغيابه undefined ⇒ {} */
       return t && "object" == typeof t ? t : {};
@@ -303,8 +303,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       return {};
     }
   }
-  rpStaff() {
-    return this.rpStaffLive();
+  rpSched() {
+    return this.rpSchedLive();
   }
   async drCsPersist(t, r) {
     /* V7 · د5-د: رمزُ النداء يكتبه مالكُه (الجدول الشهري) بأمرٍ معلن داخل مسودتنا — التقريرُ لا يكتب مفتاحَ الجدول. */
@@ -313,7 +313,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return await this._drCommit({ op: "callsign", month: e, employee: t, value: r }, draft => { KIVO.bus.call("staff.callsign.set@1", { month: e, changes: [{ ekey: t, cs: r }] }, draft); });
   }
   drBucketFor(t, r) {
-    return this.rpStaff()[t + "-" + r] || {};
+    return this.rpSched()[t + "-" + r] || {};
   }
   rpMonthBucket() {
     return this.drBucketFor(this.state.rpY, this.state.rpM);
@@ -884,7 +884,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     return e.shifts[r];
   }
-  drStaffApproved(t, r) {
+  drSchedApproved(t, r) {
     try {
       var e = KIVO.bus.read("staff.locks@1");   /* V7 · د5-د2: بغياب مالك الجدول لا شهرَ معتمداً */
       return !(!e || !0 !== e[t + "-" + r]);
@@ -915,7 +915,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       r = this.drCurShift();
     if (r) {
       var e = this.MONTHS[this.state.rpM - 1] || "";
-      if (this.drStaffApproved(this.state.rpY, this.state.rpM))
+      if (this.drSchedApproved(this.state.rpY, this.state.rpM))
         if (this.drLockedDay(t, this.state.rpY, this.state.rpM, this.state.rpD))
           this.bsToast("اليوم مقفل — افتحه من نافذة الاستدراك أولاً", "warn");
         else {
@@ -3510,8 +3510,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       rpHasReport: x,
       rpCanEdit: L,
       rpLockedCell: A,
-      rpNoStaff: !x && !T && 0 === i.length,
-      rpNoStaffMsg:
+      rpNoSched: !x && !T && 0 === i.length,
+      rpNoSchedMsg:
         r.bsOn && !KIVO.bus.read("staff.enabled@1", r)
           ? "⚠ التقرير اليومي يُسحب من الجدول الشهري — وهو غير مفعّل في سقف هذه الإدارة."
           : "⚠ لا يوجد تسكينٌ لهذا الشهر في «الجدول الشهري» — أنشئ الجدول أولاً.",
@@ -3673,7 +3673,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       shTableOn: x && !(!E || !E.pulled),
       shPullHint: "جدول " + (o || "الوردية") + " لم يُسحب بعد — " + KIVO.BassamCount(sr.length, "موظف") + " في الجدول الشهري",
       /* KIVO_265 · فحص القبول: كان الزرُّ يبدو صامتاً حين الجدولُ الشهري مسودة (رسالةٌ عابرة وحدها) — السببُ ظاهرٌ الآن تحت الزرّ دائماً */
-      shPullDraft: !this.drStaffApproved(t.rpY, t.rpM),
+      shPullDraft: !this.drSchedApproved(t.rpY, t.rpM),
       shPullDraftMsg: "الجدول الشهري لشهر " + (this.MONTHS[t.rpM - 1] || "") + " ما زال مسودة — اعتمده أولاً من صفحة «الجدول الشهري» بنقرة مزدوجة على كرت الشهر، ثم يُسحب جدول " + (o || "الوردية"),
       ...((yr = o ? r.drLastRepOf(o) : null),
       (br = !(!yr || !yr.ap)),

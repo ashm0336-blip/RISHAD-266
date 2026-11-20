@@ -95,6 +95,7 @@ function world(extra = {}) {
       },
     },
   });
+  vm.runInContext(fs.readFileSync("src/i18n/385-calendar.js", "utf8"), C);   /* V7 · د5-د2: التقويمُ الموحّد — «اليوم» (يومُ الرياض) منه */
   vm.runInContext(planSource + "\nglobalThis.TestComponent=Component;", C);
   const component = new C.TestComponent();
   component.bsToast = (...args) => seen.toasts.push(args);

@@ -12,7 +12,7 @@ async function tkEligCtx(env, A, d) {
   var g = async function (n) { return parseJson(await opResourceGet(env, 'bsdept:' + d + ':' + n), null); };
   /* V7 · د5-د2: الجدولُ وأقفالُه قراءتان معلنتان من مالكهما (بالترتيب نفسه)؛ بغيابه null ⇒ «بانتظار التحقق: لا جدول» كما لو لم يُنشأ جدول */
   var sb = async function (n) { var v = await srvBusRead(n, env, d); return v === undefined ? null : v; };
-  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), staff: await sb('staff.schedule@1'), locks: await sb('staff.locks@1'),
+  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), sched: await sb('staff.schedule@1'), locks: await sb('staff.locks@1'),
     shifts: await g('bassam_shift_options_v1'), rep: await g('bassam_dreport_v1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
   C.detail = A && A.u ? (A.u.role === 'super' || !!srvBusRead('staff.readable@1', A, d)) : false;
   /* KIVO_265 · F-3 (RBAC_AUDIT_265): عناوينُ المهام المتعارضة (conf[].t) لمن يقرأ مخزنَ المهام (task.view) وحده — كان حاملُ task.create/assign بلا task.view يقرؤها */
@@ -40,7 +40,7 @@ function tkToks(emp, emps) {
 }
 /* صفُّ الموظف في شهر الجدول — المعرّفُ أولاً ثم الصيغُ القديمة (BassamEmp.entryKey) — قراءةٌ للحكم لا إسنادٌ بالاسم */
 function tkEntryOf(C, ym, emp) {
-  var bk = isObj(C.staff) && isObj(C.staff[ym]) ? C.staff[ym] : null; if (!bk) return { bk: null, e: null };
+  var bk = isObj(C.sched) && isObj(C.sched[ym]) ? C.sched[ym] : null; if (!bk) return { bk: null, e: null };
   var t = tkToks(emp, C.emps); for (var i = 0; i < t.length; i++) if (isObj(bk[t[i].v])) return { bk: bk, e: bk[t[i].v], by: t[i].by };
   return { bk: bk, e: null };
 }

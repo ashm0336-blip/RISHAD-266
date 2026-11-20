@@ -351,12 +351,12 @@ async function meSelfRoutes(request, env, path, ss) {
   if (hist && url.searchParams.has('ym')) { ymQ = meYm(url.searchParams.get('ym'), C); if (!ymQ) return json({ ok: 0, err: 'bad-ym' }, 400); }
   var rl = await rlHit(env, 'me', u.id, ME_RL);
   if (rl) return tooMany(rl);
-  var acct = meAccount(u, depts), staff = meStaffEligible(u);
+  var acct = meAccount(u, depts), eligible = meStaffEligible(u);
   var secQ = hist ? env.DB.prepare("SELECT ts, act, detail, target FROM sec WHERE act IN ('" + ME_SEC.join("','") + "') AND target LIKE ?1 ESCAPE '\\' ORDER BY ts DESC, id DESC LIMIT 60")
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
-  var minQ = hist && staff ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
+  var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (staff) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; I = meIdent(u, D, users); }
+  if (eligible) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; I = meIdent(u, D, users); }
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: @@SYS:me.bucket.day|empty="{}"@@, rep: (D && D.dreport && D.dreport[T0.dk]) || null, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
@@ -385,7 +385,7 @@ async function meSelfRoutes(request, env, path, ss) {
     month: null, days: [], sites: { month: [], runs: [], plan: false, planApproved: null }, changes: [], evidence: { reports: 0, approved: 0, rounds: 0, auditSince: null },
     moves: { ev: 'none', items: [], note: ME_NO_MOVES } };
   if (minQ) res.evidence.auditSince = (ex[1] && ex[1].results && ex[1].results[0] && ex[1].results[0].t) || null;
-  if (staff && I.toks.length) {
+  if (eligible && I.toks.length) {
     var H = pfHist({ ym: ym, days: pfMonthDays(y, m), upto: upto, toks: I.toks, @@SYS:me.arg.staff.hist@@dreport: D.dreport, plan: D.plan, rounds: D.rounds, opts: D.opts });
     res.month = H.month; res.days = H.days; res.sites = H.sites;
     res.evidence.reports = H.evidence.reports; res.evidence.approved = H.evidence.approved; res.evidence.rounds = H.evidence.rounds;

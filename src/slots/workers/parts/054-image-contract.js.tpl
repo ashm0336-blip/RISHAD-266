@@ -1559,14 +1559,14 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var CLEAN_RES = { @@SYS:cleanup.cleanRes.staff@@@@SYS:cleanup.cleanRes.tasks@@
                     @@SYS:cleanup.cleanRes.custody@@@@SYS:cleanup.cleanRes.award@@ 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var protOp = '';
-  var hasEmp = {}, hasClean = {}, hasStaff = {};
+  var hasEmp = {}, hasClean = {}, hasSched = {};
   for (k in set) {
     var rnP = resName(k), dP = parseKey(k).dept; if (!dP) continue;
     if (rnP === 'bassam_employees_v1') hasEmp[dP] = k;
     if (CLEAN_RES[rnP]) hasClean[dP] = 1;
 @@SYS:save.protOp.roster.staff@@  }
   for (var dQ in hasEmp) if (hasClean[dQ]) protOp = 'empDelete';
-  for (var dR in shRenCtx) if (hasStaff[dR]) protOp = protOp || 'shiftRename';
+  for (var dR in shRenCtx) if (hasSched[dR]) protOp = protOp || 'shiftRename';
   if (!protOp) for (k in set) {
     var rnQ = resName(k);
     if (@@SYS:save.renameRes.custody@@rnQ !== 'bassam_employees_v1') continue;

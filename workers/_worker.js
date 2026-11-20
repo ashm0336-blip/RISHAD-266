@@ -15834,7 +15834,7 @@ function szDayContext(ctx, q, clock) {
     });
   });
   var report = (szReference(ctx, "bassam_dreport_v1") || {})[key],
-    staff = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
+    sched = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
     round = (szReference(ctx, "bassam_rounds_v1") || {})[key],
     shifts = [],
     rows = {},
@@ -15856,7 +15856,7 @@ function szDayContext(ctx, q, clock) {
           return null;
         var e = index[String(r.ekey)],
           assignment =
-            staff[r.ekey] || (e && (staff[e.eid] || staff[e.nid])) || {},
+            sched[r.ekey] || (e && (sched[e.eid] || sched[e.nid])) || {},
           rest = (s.rest && s.rest[r.ekey]) || assignment.rest || [];
         if (
           weekday &&
@@ -15942,7 +15942,7 @@ function szDayContext(ctx, q, clock) {
       });
     });
     if (!mine) {
-      var monthly = staff[my ? my.eid : me.ekey] || (my && staff[my.nid]);
+      var monthly = sched[my ? my.eid : me.ekey] || (my && sched[my.nid]);
       mine = (monthly && monthly.shift) || "";
     }
     dayShift = mine;
@@ -25740,15 +25740,15 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var CLEAN_RES = { 'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1, 'bassam_tasks_v1': 1,
                     'bassam_custody_v1': 1, 'bassam_award_v1': 1, 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var protOp = '';
-  var hasEmp = {}, hasClean = {}, hasStaff = {};
+  var hasEmp = {}, hasClean = {}, hasSched = {};
   for (k in set) {
     var rnP = resName(k), dP = parseKey(k).dept; if (!dP) continue;
     if (rnP === 'bassam_employees_v1') hasEmp[dP] = k;
     if (CLEAN_RES[rnP]) hasClean[dP] = 1;
-    if (rnP === 'bassam_staffing_v3' || rnP === 'bassam_staffing_v2') hasStaff[dP] = 1;
+    if (rnP === 'bassam_staffing_v3' || rnP === 'bassam_staffing_v2') hasSched[dP] = 1;
   }
   for (var dQ in hasEmp) if (hasClean[dQ]) protOp = 'empDelete';
-  for (var dR in shRenCtx) if (hasStaff[dR]) protOp = protOp || 'shiftRename';
+  for (var dR in shRenCtx) if (hasSched[dR]) protOp = protOp || 'shiftRename';
   if (!protOp) for (k in set) {
     var rnQ = resName(k);
     if (rnQ !== 'bassam_custody_v1' && rnQ !== 'bassam_employees_v1') continue;
@@ -27872,12 +27872,12 @@ async function meSelfRoutes(request, env, path, ss) {
   if (hist && url.searchParams.has('ym')) { ymQ = meYm(url.searchParams.get('ym'), C); if (!ymQ) return json({ ok: 0, err: 'bad-ym' }, 400); }
   var rl = await rlHit(env, 'me', u.id, ME_RL);
   if (rl) return tooMany(rl);
-  var acct = meAccount(u, depts), staff = meStaffEligible(u);
+  var acct = meAccount(u, depts), eligible = meStaffEligible(u);
   var secQ = hist ? env.DB.prepare("SELECT ts, act, detail, target FROM sec WHERE act IN ('" + ME_SEC.join("','") + "') AND target LIKE ?1 ESCAPE '\\' ORDER BY ts DESC, id DESC LIMIT 60")
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
-  var minQ = hist && staff ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
+  var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (staff) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; I = meIdent(u, D, users); }
+  if (eligible) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; I = meIdent(u, D, users); }
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: (D && D.staffing && D.staffing[T0.ym]) || {}, rep: (D && D.dreport && D.dreport[T0.dk]) || null, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
@@ -27906,7 +27906,7 @@ async function meSelfRoutes(request, env, path, ss) {
     month: null, days: [], sites: { month: [], runs: [], plan: false, planApproved: null }, changes: [], evidence: { reports: 0, approved: 0, rounds: 0, auditSince: null },
     moves: { ev: 'none', items: [], note: ME_NO_MOVES } };
   if (minQ) res.evidence.auditSince = (ex[1] && ex[1].results && ex[1].results[0] && ex[1].results[0].t) || null;
-  if (staff && I.toks.length) {
+  if (eligible && I.toks.length) {
     var H = pfHist({ ym: ym, days: pfMonthDays(y, m), upto: upto, toks: I.toks, months: D.staffing, locks: D.locks, dreport: D.dreport, plan: D.plan, rounds: D.rounds, opts: D.opts });
     res.month = H.month; res.days = H.days; res.sites = H.sites;
     res.evidence.reports = H.evidence.reports; res.evidence.approved = H.evidence.approved; res.evidence.rounds = H.evidence.rounds;
@@ -29354,7 +29354,7 @@ async function tkEligCtx(env, A, d) {
   var g = async function (n) { return parseJson(await opResourceGet(env, 'bsdept:' + d + ':' + n), null); };
   /* V7 · د5-د2: الجدولُ وأقفالُه قراءتان معلنتان من مالكهما (بالترتيب نفسه)؛ بغيابه null ⇒ «بانتظار التحقق: لا جدول» كما لو لم يُنشأ جدول */
   var sb = async function (n) { var v = await srvBusRead(n, env, d); return v === undefined ? null : v; };
-  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), staff: await sb('staff.schedule@1'), locks: await sb('staff.locks@1'),
+  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), sched: await sb('staff.schedule@1'), locks: await sb('staff.locks@1'),
     shifts: await g('bassam_shift_options_v1'), rep: await g('bassam_dreport_v1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
   C.detail = A && A.u ? (A.u.role === 'super' || !!srvBusRead('staff.readable@1', A, d)) : false;
   /* KIVO_265 · F-3 (RBAC_AUDIT_265): عناوينُ المهام المتعارضة (conf[].t) لمن يقرأ مخزنَ المهام (task.view) وحده — كان حاملُ task.create/assign بلا task.view يقرؤها */
@@ -29382,7 +29382,7 @@ function tkToks(emp, emps) {
 }
 /* صفُّ الموظف في شهر الجدول — المعرّفُ أولاً ثم الصيغُ القديمة (BassamEmp.entryKey) — قراءةٌ للحكم لا إسنادٌ بالاسم */
 function tkEntryOf(C, ym, emp) {
-  var bk = isObj(C.staff) && isObj(C.staff[ym]) ? C.staff[ym] : null; if (!bk) return { bk: null, e: null };
+  var bk = isObj(C.sched) && isObj(C.sched[ym]) ? C.sched[ym] : null; if (!bk) return { bk: null, e: null };
   var t = tkToks(emp, C.emps); for (var i = 0; i < t.length; i++) if (isObj(bk[t[i].v])) return { bk: bk, e: bk[t[i].v], by: t[i].by };
   return { bk: bk, e: null };
 }

@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "f16d807e32a4596ef5b3db8d6cacee7d139c8da33aa6ccfd15dcc368de6f16ce",
+  "sha256": "32f19a69c46f5d145ff98bab7bfef92d5a08a93368d28999a354e44c5b5e728c",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -449,7 +449,7 @@
         16000
       ],
       "bytes": 21871,
-      "sha256": "9c115087f284a5620dbe65d23e896e2417cb34ce5c1e3b06da3efb5304e53bea"
+      "sha256": "26b2e7acbae8098a674aaf9cbd5de324559b3daf60f2b905402e3513e4280230"
     },
     {
       "file": "../../src/systems/seized/server/019l-seized-dashboard.js",
@@ -1011,7 +1011,7 @@
         26113
       ],
       "bytes": 201309,
-      "sha256": "bd77121c83ae6bb9fddb6c61436431e9b26fb949521b0493770ee3d3b2770576",
+      "sha256": "c235f893694c4f67196f02e2959443a3214945b16ce22d7808233f71306f6e44",
       "head": "/* ══ R169-CC · عقدُ الصورة الأصلية ══════════════════════════════════════════"
     },
     {
@@ -1110,8 +1110,8 @@
         27507,
         27922
       ],
-      "bytes": 32417,
-      "sha256": "6339ca3bbe92134abc0aee5349ab57a086ea116b18af359dcec7201242fb6da9",
+      "bytes": 32429,
+      "sha256": "aeeb5a93b256c5a31a82bd2f819e37e706836ea97b227b723bf860b3f3682641",
       "head": "/* ═══ KIVO_264 · «ملفي» — مسارا القراءة الذاتية (OD-3): GET /api/me/today · GET /api/me/history?ym=YYYY-M ═══"
     },
     {
@@ -1169,7 +1169,7 @@
       "file": "../../src/systems/tasks/server/072-task-elig.js",
       "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — الأهليةُ وقتَ التنفيذ من الجدول الشهري (GET /api/tasks/eligibility)",
       "bytes": 17176,
-      "sha256": "c09e57f68e6e3e625b4c37ad2496cdf4b82377312ee95a043f7c4de835c22d0d",
+      "sha256": "ea5db86f52fb56d30891b4e2a329b6fa13da7a15023bf3f94bdf3d4ed6ec8844",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══",
       "lines": [
         29343,

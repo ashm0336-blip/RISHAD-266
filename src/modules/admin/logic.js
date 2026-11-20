@@ -77,7 +77,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }));
     const mgs = safe(() => (n ? A.groupManagers(o) : A.deptManagers(o)) || [], []),
       capSt = this._capStateTxt(o),
-      staff = n ? 0 : safe(() => A.users().filter((u) => "staff" === u.role && u.deptId === o && !u.mgr).length, 0),
+      accts = n ? 0 : safe(() => A.users().filter((u) => "staff" === u.role && u.deptId === o && !u.mgr).length, 0),
       units = n ? safe(() => (D.deptsUnder(o) || []).length, 0) : 0,
       step = (t, st, ok, tab) => ({ t, st, cls: ok ? "ok" : "wn", mark: ok ? "✓" : "!", goOn: !!tab, goLbl: "cap" === tab ? "فتح سقف الصفحات" : "فتح الحسابات", go: () => tab && this.setState({ sysTab: tab }) });
     return {
@@ -92,7 +92,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         step("المسؤول", mgs.length ? "معيَّن: " + mgs.map((m) => m.name || m.un).join("، ") : "لم يُعيَّن بعد", mgs.length > 0, "emps"),
         n
           ? step("الإدارات التابعة", KIVO.BassamCount(units, "إدارة") + " تحتها", units > 0, "")
-          : step("الحسابات", KIVO.BassamCount(staff, "حساب موظف"), !0, "emps"),
+          : step("الحسابات", KIVO.BassamCount(accts, "حساب موظف"), !0, "emps"),
       ],
     };
   }
@@ -7798,7 +7798,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ...(() => {
                     const A = KIVO.BassamAuth || null,
                       list = n ? (A && A.groupManagers ? A.groupManagers(o) : []) : A && A.deptManagers ? A.deptManagers(o) : [];
-                    const staff = n
+                    const accts = n
                       ? 0
                       : (A && A.users ? A.users() : []).filter((t) => "staff" === t.role && t.deptId === o && !t.mgr).length;
                     const K = n ? this._gmKind(o) : "";
@@ -7823,7 +7823,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       mgNone: 0 === list.length,
                       mgStaffTxt: n
                         ? KIVO.BassamCount(kids, "إدارة") + " في هذا الفرع"
-                        : KIVO.BassamCount(staff, "موظف") + " " + KIVO.BassamCount.agr(staff, "له", "لهما", "لهم") + " حساب دخول",
+                        : KIVO.BassamCount(accts, "موظف") + " " + KIVO.BassamCount.agr(accts, "له", "لهما", "لهم") + " حساب دخول",
                       mgTitle: n ? "مديرو " + K : "مديرو " + (t.isSection && t.isSection(o) ? "القسم" : "الإدارة"),
                       mgSub: n
                         ? "ينتقلون بين إدارات الفرع كلها ويرثون سقف كل إدارة كاملاً · أكثر من مدير مسموح"

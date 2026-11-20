@@ -2919,7 +2919,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           const r = e.need - e.net,
             n = t[0];
           ne.push({
-            cap: "staff&plan&dist",
+            cap: _bsSched + "&plan&dist",   /* V7 · د5-د2: ورقةُ الجدول بالناقل */
             s: "critical",
             title: "عجز اليوم في " + e.nm + " — " + KIVO.BassamCount(r, "موظف") + "",
             action:
@@ -2950,7 +2950,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           .slice(0, 1)
           .forEach((t) => {
             ne.push({
-              cap: "staff&plan&dist",
+              cap: _bsSched + "&plan&dist",   /* V7 · د5-د2: ورقةُ الجدول بالناقل */
               s: "warning",
               title: t.nm + " بلا احتياط اليوم",
               action:
@@ -3221,7 +3221,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       hijriShort: KIVO.BassamCal.hText(e, { day: "numeric", month: "long", year: "numeric" }),
       hijriChip: KIVO.BassamCal.hText(e, { month: "long", year: "numeric" }),
       assignPct: String(z),
-      rdStaffOn: _bsCapOk(_bsSched),
+      rdSchedOn: _bsCapOk(_bsSched),
       netCovOn: G && rt.length > 0 && _bsCapOk(_bsSched + "&plan&dist"),
       netCovNoNeed: G && rt.length > 0 && _bsCapOk(_bsSched + "&plan&dist") && !rt.some((t) => t.need > 0),
       netCovSub:

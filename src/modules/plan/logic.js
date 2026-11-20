@@ -2426,7 +2426,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   _mKey(t, e) {
     return t + "-" + e;
   }
-  _stageStaffOk(t, e) {
+  _stageSchedOk(t, e) {
     return !0;
   }
   _snapshot(t) {
@@ -12287,17 +12287,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         return {
           hasMonthPlan: n,
           noMonthPlan: !n,
-          stageLocked: !this._stageStaffOk(e.year, e.month) && !n,
+          stageLocked: !this._stageSchedOk(e.year, e.month) && !n,
           noPlanTitle:
-            this._stageStaffOk(e.year, e.month) || n
+            this._stageSchedOk(e.year, e.month) || n
               ? "لا توجد خطة لشهر " + a + " " + e.year + " هـ"
               : "مرحلة التشغيل الميداني لشهر " + a + " مقفلة",
           noPlanSub:
-            this._stageStaffOk(e.year, e.month) || n
+            this._stageSchedOk(e.year, e.month) || n
               ? "كل شهر له خطته المستقلة — أنشئ خطة هذا الشهر من الصفر أو انسخها من شهر سابق."
               : "تُفتح بعد اعتماد الجدول الشهري لشهر " + a + " — أكمل المرحلة الأولى: وزّع الموظفين على الورديات واعتمد الشهر، ثم عد هنا.",
           addPlanLabel: "إضافة خطة لشهر " + a,
-          planAddAllowed: !this.monthAutoLocked(e.year, e.month) && (this._stageStaffOk(e.year, e.month) || n),
+          planAddAllowed: !this.monthAutoLocked(e.year, e.month) && (this._stageSchedOk(e.year, e.month) || n),
           planAddLockedHint: this.monthAutoLocked(e.year, e.month),
           planAddOn: !!r,
           planAddOpenDo: () => {

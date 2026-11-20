@@ -130,7 +130,7 @@
  },
  "save.protOp.roster.staff": {
   "order": 10,
-  "text": "    if (rnP === 'bassam_staffing_v3' || rnP === 'bassam_staffing_v2') hasStaff[dP] = 1;\n"
+  "text": "    if (rnP === 'bassam_staffing_v3' || rnP === 'bassam_staffing_v2') hasSched[dP] = 1;\n"
  },
  "enf.ver.staff": {
   "order": 10,
