@@ -74,5 +74,9 @@
  "nf.denyPages.daily": {
   "order": 10,
   "text": "  daily: \"المتابعة اليومية\","
+ },
+ "ns.owned.daily": {
+  "order": 10,
+  "text": ""
  }
 }

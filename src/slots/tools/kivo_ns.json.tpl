@@ -22,7 +22,7 @@
   "__BS_AUD_MODE",
   "__BS_OP_MODE",
   "BassamPurge",
-  "BassamStaffSnap"
+  "BassamStaffSnap"@@SYS:ns.owned.daily|empty=",\n  \"BassamField\",\n  \"BassamRound\""@@
  ],
  "extra": [
   "__dcLogicDefs",

@@ -188,7 +188,7 @@ RESERVED = set()   # أسماءُ فتحاتٍ يستهلكها مولِّدٌ �
 
 REGEN = [  # ما يُعاد توليدُه حين يتبدّل حضورُ نظام — بالترتيب (generate أولاً: السجلاتُ تسبق من يقرؤها)
     ['tools/generate.py', '--src', 'src'], ['tools/icons.py', 'extract', '--src', 'src'], ['tools/icons.py', 'index', '--src', 'src'],
-    ['tools/route_registry.py', '--write'], ['tools/api_routes.py', '--write'], ['tools/ux_states.py'], ['node:tools/gen_types.mjs'],
+    ['tools/route_registry.py', '--write'], ['tools/api_routes.py', '--write'], ['tools/ux_states.py'], ['node:tools/kivo_ns.mjs', 'tools/kivo_ns.json', '--layer'], ['node:tools/gen_types.mjs'],   # د5-هـ: طبقةُ الأسماء العامة تُسقط أسماءَ نظامٍ غائب (kivo_ns.json ← retired بقطعته)
     ['tools/perm_tree.py', 'emit'],            # د3: شجرةُ الصلاحيات (perm-tree24.json) من السجلّ المجموع والصفحات الحاضرة — قبل المواثيق لأنها تقرؤها
     ['tools/module_charter.py', '--write'],   # حقلُ «data» في مواثيق الوحدات مشتقٌّ من المصدر المولَّد
     ['tools/generate.py', '--src', 'src'],     # بيانُ الصفحات (manifests) مشتقٌّ من المواثيق — يُولَّد بعدها

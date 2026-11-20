@@ -24,18 +24,20 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
   try {
     /* مدير الإدارة: صفحتي · الموظفون · الإعدادات وتبويباتها */
     const m = await openAs(b, lab, LAB.mgrA, LAB.pw);
-    for (const h of ['#/profile', '#/employees', '#/daily', '#/kpis', '#/admin'].concat(adminTabs.map((t) => '#/admin/' + t))) {
+    const HAS_DAILY = PAGES.pages.some((p) => p.key === 'daily');   /* د5-هـ: المتابعةُ اليومية نظامٌ — بغيابها لا صفحتُها، والتقريرُ اليومي صفحةٌ عليا */
+    for (const h of ['#/profile', '#/employees'].concat(HAS_DAILY ? ['#/daily'] : PAGES.pages.some((p) => p.key === 'dreport') ? ['#/dreport'] : [], ['#/kpis', '#/admin'], adminTabs.map((t) => '#/admin/' + t))) {
       await m.go(h, 2800); const st = await m.page.evaluate(() => ({ hash: location.hash, text: (document.querySelector('main') || document.body).innerText.length }));
       assert.ok(st.text > 40, h + ': الصفحة رُسمت (' + JSON.stringify(st) + ')');
     }
     const side = await m.page.evaluate(() => [...document.querySelectorAll('aside.bsb a[data-key]')].map((a) => a.getAttribute('data-key')));
     /* د4-ب: «المتابعة اليومية» رُسمت فعلاً بشريط تبويباتها (خطأٌ في حساب قيم الصفحة لا يظهر خطأَ صفحة، فيُفحص المرسوم نفسُه) */
     const exactIn = (t) => m.page.evaluate((t) => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === t), t);
-    await m.go('#/daily', 2800); assert.ok((await exactIn('التقرير اليومي')) || (await exactIn('الجولات اليومية')), 'المتابعة اليومية: شريطُ التبويبات مرسوم');
+    if (HAS_DAILY) { await m.go('#/daily', 2800); assert.ok((await exactIn('التقرير اليومي')) || (await exactIn('الجولات اليومية')), 'المتابعة اليومية: شريطُ التبويبات مرسوم'); }
+    else assert.equal(side.includes('daily'), false, 'بغياب المتابعة لا رابطَ لها في القائمة');
     /* د4-ب: بغياب المهام — لا تبويبَها في «المتابعة اليومية»، ولا بطاقةَ «مهامك» في «صفحتي»، ولا لوحةَ مؤشراتها */
     if (!SYSTEMS.includes('tasks')) {
       const exact = (t) => m.page.evaluate((t) => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === t), t);
-      await m.go('#/daily', 2800); assert.equal(await exact('المهام'), false, 'لا تبويبَ «المهام» في المتابعة اليومية');
+      if (HAS_DAILY) { await m.go('#/daily', 2800); assert.equal(await exact('المهام'), false, 'لا تبويبَ «المهام» في المتابعة اليومية'); }
       await m.go('#/profile', 2800); assert.equal(await m.page.evaluate(() => !!document.querySelector('[data-pf-tasks]')), false, 'لا بطاقةَ «مهامك» في صفحتي');
       await m.go('#/kpis', 2800); assert.equal(await exact('مؤشرات المهام'), false, 'لا لوحةَ «مؤشرات المهام»');
     }
