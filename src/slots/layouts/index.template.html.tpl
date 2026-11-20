@@ -83,7 +83,7 @@
 @@KIVO_BLOCK:permissions/334-perm-tree-tpl.js@@
 @@KIVO_BLOCK:auth/335-identity-gate.js@@
 @@KIVO_BLOCK:permissions/340-registry-v24-9.js@@
-@@KIVO_BLOCK:permissions/350-perm-v2-shadow.js@@
+@@KIVO_BLOCK:permissions/345-perm44.js@@
 @@KIVO_BLOCK:services/360-bassam-idb.js@@
 @@KIVO_BLOCK:auth/370-backup-crypto.js@@
 @@KIVO_BLOCK:i18n/380-hijri-fallback.js@@

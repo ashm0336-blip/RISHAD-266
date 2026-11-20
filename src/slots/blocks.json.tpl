@@ -481,12 +481,13 @@
   },
   {
    "closeTag": "</script>",
-   "id": "permissions/350-perm-v2-shadow.js",
+   "id": "permissions/345-perm44.js",
    "kind": "js",
    "line": 8047,
+   "new": "V7 · د5-هـ (44): محرّكُ الأدوار KIVO.Perm44 (مولَّد: registry/perm44-*.js · generate.py) — حلّ محلَّ طبقة الظلّ 350 المحذوفة",
    "openTag": "<script>",
-   "origBytes": 4280,
-   "origSha256": "5ec7e50ecd0eeb2ff4234d85735841bdf310a55073f8f533443108a2bb757222"
+   "origBytes": null,
+   "origSha256": null
   },
   {
    "closeTag": "</script>",

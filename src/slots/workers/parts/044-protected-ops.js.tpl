@@ -32,6 +32,8 @@ function canWrite(A, k, newVal, curVal, ctx) {
   var u = A.u;
   /* RISHAD-266: سقفُ النطاق القديم أُلغي (059 scopeRetiredWhy) — كان «unknown» هنا؛ السببُ الآن باسمه */
   if (parseKey(k).dept && resName(k) === ENF_SCOPE_RES) { var srw = scopeRetiredWhy(A, newVal, ctx); return srw ? { ok: false, why: srw, detail: SCOPE_RETIRED_DETAIL } : { ok: true }; }
+  /* V7 · د5-هـ (44): سجلُّ المنح خاملٌ في الوضع القديم — يُكتب ضمن حفظة أدوارٍ ومطابقاً لها وحدها (057b) · وإلا مجهولٌ كما كان */
+  if (parseKey(k).dept && resName(k) === ENF_GRANTS_RES) { var p4g = perm44LegacyGrantsWhy(A, k, newVal, curVal); return p4g ? { ok: false, why: p4g } : { ok: true }; }
   /* سجل الموارد يسبق كل شيء: ما لا سياسة له لا يُكتب — ولا يُستثنى منه دور */
   var R0 = resOf(k);
   if (!R0) return { ok: false, why: 'unknown' };
@@ -83,6 +85,7 @@ function canWrite(A, k, newVal, curVal, ctx) {
      يُقرأ «لا يكتب شيئاً» فيُحرم من كل مفتاحٍ تقنيّ، فيتكرّر الرفض ومعه تنبيهُه.
      وهو جذرُ الكتابات الخلفية على bassam_notif_sys_v1. */
   if (rule9 === 'tech') { var wpT = writePages(A, P.dept); return (wpT === null || wpT.length) ? { ok: true } : { ok: false, why: 'view' }; }
+  if (rule9 === 'perm44') { var p4r = perm44RolesWhy(A, k, newVal, curVal); return p4r ? { ok: false, why: p4r } : { ok: true }; }   /* V7 · د5-هـ (44) */
   if (rule9) return { ok: false, why: rule9 };            /* users · perms · notif · flag · selfdev فُحصت أعلاه */
   /* العملية تُستنتج من القيمة نفسها ثم يُشترط امتلاك كل فعلٍ فيها */
   /* حذف المفتاح كله يُعرف من القيمة بلا مقارنةٍ أصلاً، ومَن يملك أفعال الكتابة

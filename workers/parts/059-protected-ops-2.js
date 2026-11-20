@@ -224,7 +224,7 @@ function enfSheetKeys(A, d, t, sheet, el) {
 }
 /* ── المنحُ الصريح (bsdept:<d>:bassam_grants_v1): مديرُ الإدارة (perm.assign) لموظفي إدارته لا لنفسه — مفتاحٌ قابلٌ للمنح · داخل سقف الإدارة · يملكه المانح؛
    الإسقاطُ (minus) لأيّ مفتاحٍ نشط · مديرُ النظام بلا قيد المانح · حذفُ السجل كلِّه لمدير النظام وحده ── */
-var ENF_GRANT_FIELDS = { plus: 1, minus: 1, at: 1, by: 1, src: 1 };
+var ENF_GRANT_FIELDS = { plus: 1, minus: 1, at: 1, by: 1, src: 1, until: 1 };   /* V7 · د5-هـ (44): until = انتهاءُ الاستثناء {مفتاح: ms} */
 function enfGrantsWrite(A, k, newVal, curVal, ctx) {
   var P = parseKey(k), d = P.dept, sup = A.u.role === 'super';
   if (!d) return enfNo('scope', { structural: 1 });
@@ -250,6 +250,7 @@ function enfGrantsWrite(A, k, newVal, curVal, ctx) {
       if (!isObj(gb)) return enfNo('shape', { detail: e });
       for (q in gb) if (!ENF_GRANT_FIELDS[q]) return enfNo('shape', { detail: e + '.' + q });
       if ((gb.plus !== undefined && !Array.isArray(gb.plus)) || (gb.minus !== undefined && !Array.isArray(gb.minus))) return enfNo('shape', { detail: e });
+      if (gb.until !== undefined && (!isObj(gb.until) || Object.keys(gb.until).some(function (x) { return typeof gb.until[x] !== 'number'; }))) return enfNo('shape', { detail: e + '.until' });
     }
     if (!sup) { var lw = enfMinusLiftWhy(A, d, e, eo[e], gb, ctx && ctx.pa); if (lw) return enfNo('grant', { detail: lw + ' (grantor does not hold it)' }); }   /* الجولة 2 · M-D · R3-4 */
     if (gb === undefined) continue;

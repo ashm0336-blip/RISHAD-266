@@ -1443,6 +1443,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);
+  audIn = audIn.filter(function (e) { return e.etype !== 'perm44'; });   /* V7 · د5-هـ (44): أحداثُ «سجل الصلاحيات» يكتبها الخادمُ وحده (057b perm44AudEv) */
   /* PRIVACY batch (019u header · privIn/privPermsStale): hidden parts come back from the stored value BEFORE any context or rule, so every rule
      judges the value as it will be written; a registry built on another projection (body.pscope) and a changed hidden reference stop here (pvNo9). */
   var pvNo9 = nmap();
@@ -1595,6 +1596,19 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var infQ = {}; alignOld(EQ, aQ, bQ, infQ);
     if (infQ.ren) { protOp = 'custodyRename'; break; }
     if (infQ.adopt) { protOp = 'adopt'; break; }
+  }
+  /* V7 · د5-هـ (44): سجلُّ الأدوار ومنحُه المترجَم — قيمتاهما كما ستُكتبان (من الطلب، وإلا المخزَّن) لكل وحدةٍ تمسّها الحفظة، قبل أيّ حكم (057b perm44Pair);
+     والحفظةُ التي تحمل سجلَّ الأدوار ذرّية: إمّا السجلّان معاً أو لا شيء */
+  A.__p44 = null;
+  var p44D9 = nmap(), del9s = del.map(String);
+  Object.keys(set).concat(del9s).forEach(function (kk) { var dd = parseKey(kk).dept, rn = resName(kk); if (dd && (rn === PERM44_RES || rn === ENF_GRANTS_RES)) p44D9[dd] = 1; });
+  for (var dq44 in p44D9) {
+    var rk44 = perm44Key(dq44), gk44 = enfGrantsKey(dq44), rc44 = await opResourceGet(env, rk44), gc44 = await opResourceGet(env, gk44);
+    var rIn44 = Object.prototype.hasOwnProperty.call(set, rk44) || del9s.indexOf(rk44) !== -1, gIn44 = Object.prototype.hasOwnProperty.call(set, gk44) || del9s.indexOf(gk44) !== -1;
+    (A.__p44 = A.__p44 || nmap())[dq44] = { rolesCur: rc44, grantsCur: gc44, rolesInBatch: rIn44, grantsInBatch: gIn44,
+      roles: rIn44 ? (Object.prototype.hasOwnProperty.call(set, rk44) && set[rk44] != null ? String(set[rk44]) : null) : rc44,
+      grants: gIn44 ? (Object.prototype.hasOwnProperty.call(set, gk44) && set[gk44] != null ? String(set[gk44]) : null) : gc44 };
+    if (rIn44) protOp = protOp || 'perm44';
   }
   var todo = [];
   /* F01 · الأقسام: سجلّا الهيكل (الوحدات ثم العقد) يُحكم عليهما قبل كلِّ مفتاح — فوحدةٌ جديدةٌ في الحفظة وحدةٌ لمفاتيحها أيّاً كان ترتيبُها؛
@@ -1909,6 +1923,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
         etype: 'dataset', eid: resName(pd.k), ename: resName(pd.k), act: 'changed', ctx: '',
         bef: '', aft: audClip(pd.k === K_USERS ? jsonDiff(stripPh(pd.cur || '[]'), stripPh(pd.v || '[]')) : jsonDiff(pd.cur, pd.v), AUD_STR),
         ip: ident.ip, dev: ident.dev, city: ident.city }));
+      /* V7 · د5-هـ (44): «سجل الصلاحيات» — فرقٌ منظَّم (من · ماذا · من → إلى · المتأثرون) لكل حفظة أدوارٍ أو سقف */
+      if (resName(pd.k) === PERM44_RES || pd.k === K_PERM) { try { var p44e9 = perm44AudEv(pd.k, pd.cur, pd.act === 'del' ? null : pd.v, rev); if (p44e9) pd.g.push(audEvStmt(env, Object.assign(p44e9, { ts: now, uid: ident.uid, un: ident.un, dept: dA9, rev: rev, ip: ident.ip, dev: ident.dev, city: ident.city }))); } catch (e44) { swallow('perm44-aud', e44, env.__rid); } }
       /* حذفُ مفتاحٍ كامل (حذفُ إدارة مثلاً): حدثٌ على مستوى مجموعة البيانات ليبقى أثرُه */
       if (pd.act === 'del') pd.g.push(audEvStmt(env, { cid: 'del_' + rev + '_' + pd.k.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40), ts: now, uid: ident.uid, un: ident.un, dept: dA9, k: pd.k, rev: rev, etype: 'dataset', eid: pd.k, ename: resName(pd.k), act: 'deleted', ctx: '', bef: '', aft: '', ip: ident.ip, dev: ident.dev, city: ident.city }));
     }

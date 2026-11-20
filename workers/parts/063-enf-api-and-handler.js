@@ -890,6 +890,11 @@ export default {
         return await enfTestApi(this, env, request, ATS, url);
       }
       /* ── سحب مفاتيح بعينها بأحدث قيمها — للتحديث الحي بلا إعادة تحميل ── */
+      /* V7 · د5-هـ (44): «اختبار الوصول» و«سجل الصلاحيات» — للقراءة فقط (مديرُ المنصة أو مديرُ الوحدة) — 057b perm44Route */
+      if (path === '/api/perm44/check' || path === '/api/perm44/log') {
+        var AP44 = await actorOf(env, ss.uid); if (!AP44) return json({ ok: 0, err: 'session' }, 401);
+        return await perm44Route(env, request, url, AP44, path);
+      }
       if (path === '/api/get') return await getRoute(env, url, ss);
 
       /* ── سجل التدقيق: من غيّر ماذا ومتى — لمدير النظام، ولمدير الإدارة على مفاتيح إدارته ── */

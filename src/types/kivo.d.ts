@@ -181,6 +181,8 @@ export interface KivoResources {
   "bassam_platform_v1": unknown;
   /** dept · قاعدة: tech */
   "bassam_profile_v1": unknown;
+  /** dept · قاعدة: perm44 */
+  "bassam_roles_v1": unknown;
   /** dept · الورقة: daily/rounds · اعتماد: *.shAp، *.shAp.*، *.ap، *.auto، *.mo، *.d.*.ap، *.dopen، *.dopen.*، *.dshut، *.dshut.* */
   "bassam_rounds_v1": Record<string, unknown>;
   /** dept · الورقة: seized/records */

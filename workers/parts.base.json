@@ -559,6 +559,14 @@
    "head": "/* ══ (1) فهارسُ السجل — تُبنى مرّةً لكل نسخةٍ من الخادم ══ */"
   },
   {
+   "file": "057b-perm44.js",
+   "generated": "permissions/registry/perm44-levels.json + perm44-core.js + perm44-server.js + manifests/pages.json → محرّكُ الأدوار في الخادم (V7 · د5-هـ 44 · tools/generate.py)",
+   "head": "/* ═══ V7 · د5-هـ (44) — محرّكُ الأدوار (الخادم): مولَّدٌ بأداة tools/generate.py من permissions/registry/perm44-levels.json (جدولُ المستويات) و",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
    "file": "058-enf-scope.js",
    "lines": null,
    "bytes": null,

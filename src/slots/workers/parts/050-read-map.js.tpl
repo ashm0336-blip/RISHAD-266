@@ -61,6 +61,7 @@ function canRead0(A, k) {
   var P = parseKey(k);
 @@SYS:authz.read.dstats@@  if (!P.dept) return P.name !== K_NSYS;                     /* السجلات العامة (الإدارات، الحسابات بلا بصمات، الصلاحيات) — عدا تنبيهات مدير النظام */
   if (!deptInScope(A, P.dept)) return false;                 /* إدارةٌ أخرى: لا شيء */
+  if (P.name === ENF_GRANTS_RES) return isMgrOf(A, P.dept);   /* V7 · د5-هـ (44): سجلُّ المنح (خاملٌ هنا) لمدير الوحدة — كالإنفاذ (061) */
   /* READ-01: النطاقُ وحدَه لا يكفي — الورقةُ تُسأل هنا كما تُسأل في الكتابة */
   var R = resOf(k);
   if (!R) return false;                                      /* مورد مجهول = رفض */

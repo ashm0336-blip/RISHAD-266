@@ -14,7 +14,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
     if (!(X.restore && !isNodeId(A, P.dept))) return enfNo('unit', { detail: P.dept });
     (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1; enfMemoDrop(A, String(P.dept));
   }
-  if (P.dept && rn === ENF_GRANTS_RES) return enfGrantsWrite(A, k, newVal, curVal, ctx);   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ctx.pa */
+  if (P.dept && rn === ENF_GRANTS_RES) { var gw9 = enfGrantsWrite(A, k, newVal, curVal, ctx), p4g9 = gw9.ok ? perm44GrantsWhy(A, P.dept) : ''; return p4g9 ? enfNo(p4g9) : gw9; }   /* V7 · د5-هـ (44): منحُ الدور = سجلُّ الأدوار */   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ctx.pa */
   var R0 = resOf(k);
   if (!R0) return enfNo('unknown');
   if (R0.scope === 'device') return enfNo('device');
@@ -39,6 +39,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
   if (FLAG_KEYS[nm]) return isMgrOf(A, P.dept) ? enfOk([]) : enfNo('flag');
   var rule9 = R0.rule || '';
   if (rule9 === 'tech') return enfAnyWriterDept(A, P.dept) ? enfOk([]) : enfNo('view');
+  if (rule9 === 'perm44') { var p4r9 = perm44RolesWhy(A, k, newVal, curVal); return p4r9 ? enfNo(p4r9) : enfOk(['perm.assign']); }   /* V7 · د5-هـ (44) */
   if (rule9) return enfNo(rule9);
   if (newVal == null) return enfNo('keydel');
   var E9 = entOf(k), O9 = opsOf(k);

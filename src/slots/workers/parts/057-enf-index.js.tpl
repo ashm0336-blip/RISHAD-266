@@ -135,7 +135,8 @@ function enfGrantOf(A, d) {
   var ek = A.u.ekey ? String(A.u.ekey) : '', rec = A.__grants[d], g = ek && rec ? rec.emp[ek] : null, out = { plus: {}, minus: {}, has: false }, i;
   if (isObj(g)) {
     out.has = true;
-    if (Array.isArray(g.plus)) for (i = 0; i < g.plus.length; i++) out.plus[String(g.plus[i])] = 1;
+    var un9 = isObj(g.until) ? g.until : null, now9 = Date.now();   /* V7 · د5-هـ (44): الاستثناءُ المؤقّت ينتهي وقتَ القرار */
+    if (Array.isArray(g.plus)) for (i = 0; i < g.plus.length; i++) if (!(un9 && typeof un9[String(g.plus[i])] === 'number' && un9[String(g.plus[i])] <= now9)) out.plus[String(g.plus[i])] = 1;
     if (Array.isArray(g.minus)) for (i = 0; i < g.minus.length; i++) out.minus[String(g.minus[i])] = 1;
   }
   return (c[d] = out);

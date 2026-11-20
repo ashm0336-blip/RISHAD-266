@@ -281,10 +281,12 @@ function rsSaveAudit(env, plan, A, meta, sid) {
     supplied = supplied.filter(function (e) {
       return !/^tk/i.test(e.cid);
     });
+  supplied = supplied.filter(function (e) { return e.etype !== 'perm44'; });   /* V7 · د5-هـ (44): «سجل الصلاحيات» يكتبه الخادمُ وحده */
   plan.kv.pend.forEach(function (pd) {
     var incoming = supplied.filter(function (e) {
       return e.k === pd.k;
     });
+    if (resName(pd.k) === PERM44_RES || pd.k === K_PERM) { try { var p44 = perm44AudEv(pd.k, pd.cur, pd.act === 'del' ? null : pd.v, sid + '_' + rows.length); if (p44) incoming = incoming.concat([p44]); } catch (e44) { swallow('perm44-aud', e44); } }
     if (!incoming.length)
       incoming = [
         {
