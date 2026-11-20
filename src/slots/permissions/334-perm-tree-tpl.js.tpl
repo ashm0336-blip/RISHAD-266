@@ -254,7 +254,7 @@
       if ((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper())) return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد — اللوحاتُ كلُّها مهما كان السقفُ والعدسات */
       if (!sk) return can(pk, 'view');   /* V7 P4 · G6: لوحةُ صفحةٍ كاملة (مرجعٌ بلا «/» في refs — «مؤشرات المهام») يمنحها مفتاحُ عرض الصفحة نفسُه */
       if (!canSub(pk, sk, 'view')) return false;
-@@SYS:tree.kpiPanel.daily@@@@SYS:tree.kpiPanel.dreport|empty="      if (sk === 'kpiDaily') return false;   /* V7 · د5-هـ: بلا التقرير اليومي لا لوحةَ له */\n"@@      return true;
+@@SYS:tree.kpiPanel.daily@@      return true;
     } catch (e) { return false; }   /* KIVO_261 (المراجعةُ المستقلة): العطلُ يُخفي (كما كان فحصُ الرابط في الغلاف) لا يُظهر */
   }
   KIVO.BassamPerm = { keyCap: keyCap, keyOn: keyOn, canW: canW, navOrder: navOrder, orderRows: orderRows, siteMap: siteMap, PAGE_KEYS: PAGE_KEYS, PAGE_REG: PAGE_REG, NAV_REG: NAV_REG, NAV2PERM: NAV2PERM, PERM2NAV: PERM2NAV, ALL_ACTS: ALL_ACTS, deptAccountsCount: deptAccountsCount, purgeDeptAccounts: purgeDeptAccounts, deptCap: deptCap, setDeptCap: setDeptCap, rawCap: rawCap, hasCap: hasCap, effCap: effCap, seedCapFrom: seedCapFrom, seedSectionCap: I.seedSectionCap, dropNodeCap: I.dropNodeCap, capOrphans: I.capOrphans,    patternSeed: patternSeed, _bust: function(){ I._pmMemo = null; },

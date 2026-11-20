@@ -30,7 +30,8 @@
   "read.map.rounds",
   "read.reader.daily",
   "pages.under.daily",
-  "lens.hosts.sep.daily"
+  "lens.hosts.sep.daily",
+  "tree.kpiPanel.dreport"
  ],
  "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
  "templates": [

@@ -5,7 +5,8 @@
  },
  "tree.kpiPanel.dreport": {
   "order": 10,
-  "text": "      if (sk === 'kpiDaily') return can('dreport', 'view');\n"
+  "text": "      if (sk === 'kpiDaily') return can('dreport', 'view');\n",
+  "host": "daily"
  },
  "root.live.planning.dreport": {
   "order": 10,

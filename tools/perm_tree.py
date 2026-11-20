@@ -54,6 +54,11 @@ def derive():
         if not m: continue
         if cname in ABSENT: continue
         label, oid = strip(m.group(1)), strip(m.group(2)); kind = strip(td[2]); route = strip(td[3])
+        # د5-هـ: حاويةُ صفحةٍ غابت صفحتُها (نظامُها غائب) وفيها صفحاتٌ حاضرة (التقرير اليومي · المهام تحت «المتابعة اليومية»): أوراقُ الغائب تُتخطّى،
+        #        والصفحةُ الحاضرة تصير حاويةَ نفسِها (صفحةً عليا كما في pages.json). بحضور الحاوية لا يتغيّر شيء.
+        if CONT_KIND.get(cname, 'page') == 'page' and cname not in PGN:
+            if '/' in oid and oid.split('/')[0] not in PG and oid not in owners: LEAF_ABSENT.append(oid); continue
+            if '/' not in oid and oid in PG: cname = PG[oid]['name']
         # د4-ب: ورقةٌ هي صفحةٌ تحت حاويةٍ حاضرة (مثل «المهام» تحت «المتابعة اليومية») — إن غابت من pages.json ومن مالكي السجلّ معاً فنظامُها غائب: تُتخطّى.
         #        الغيابُ الجزئي (صفحةٌ بلا مالكها أو مالكٌ بلا صفحته) يبقى مخالفةً كما كان.
         if '/' not in oid and CONT_KIND.get(cname, 'page') == 'page' and oid not in PG and oid not in owners: LEAF_ABSENT.append(oid); continue
