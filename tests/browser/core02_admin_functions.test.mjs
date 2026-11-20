@@ -31,11 +31,21 @@ import { chromium, openAs } from './lab_browser.mjs';
 const FIX = new URL('./fixtures/core02_admin_before.json', import.meta.url);
 const CAPTURE = process.env.KIVO_CORE02_CAPTURE || '';
 const SHOTS_ONLY = !!process.env.KIVO_CORE02_SHOTS_ONLY;
-const SYS_TABS = ['overview', 'sec', 'users', 'perms', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
-const DEPT_TABS = ['backup', 'oplog', 'shifts', 'ptpls'];
+/* V7 · د5-هـ (44) (قرار المالك — حذفٌ نهائيّ): «خريطة الصلاحيات» (#/sysadmin/perms) · صفحةُ «الوحدات» (plat/mods) ومحرّرُ «ترتيب الصفحات»
+   · «قوالب الصلاحيات» (#/admin/ptpls). ما سُجّل لها في اللقطة القديمة لا يُطالَب به هنا (DELETED44 — بأسمائه حرفاً، لا بنمط)، ويُثبَّت غيابُه.
+   الصلاحياتُ تُدار من تبويب «الصلاحيات» في «الإدارات» (مجموعة v2). */
+const DELETED_SYS = ['perms'];
+const DELETED44 = {
+  plat: { headings: ['الوحدات', 'وحدات المنصة', 'القوائم المرجعية', 'ترتيب الصفحات'], actions: ['الوحدات', 'أعلى', 'أسفل'],
+    fields: ['control:ترتيب الصفحات', 'control:الخطة التشغيلية', 'control:المتابعة اليومية', 'control:جائزة التميز', 'control:نظام الاسترشاد', 'control:نظام المضبوطات'] },
+  overview: { actions: ['الوحدات'] },
+};
+const gone44 = (t, kind, x) => !!(DELETED44[t] && (DELETED44[t][kind] || []).includes(x));
+const SYS_TABS = ['overview', 'sec', 'users', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
+const DEPT_TABS = ['backup', 'oplog', 'shifts'];
 /* V7 · د1-د (تصوّرٌ معتمد): تبويبُ «استيراد بيانات» حُذف من الإعدادات — الاستيرادُ صار في «بيانات الموظفين» (ملفات ← استيراد من Excel)
    ويغطّيه tests/browser/v7_d1d_emp_import.test.mjs. مدخلُه في اللقطة القديمة (FX.dept.import) لا يُطالَب به هنا، ويُثبَّت غيابُه. */
-const MOVED_DEPT = ['import'];
+const MOVED_DEPT = ['import', 'ptpls'];   /* V7 · د5-هـ (44): «قوالب الصلاحيات» حُذفت */
 /* The ONLY place a recorded label may change: old normalised text → new normalised text (CORE-02 display names).
    A rename applies to whole items and to the words inside an item. Add an entry only for an approved rename, never to hide a loss. */
 const RENAMES = {
@@ -84,8 +94,7 @@ const OLD_NAMES = ['مدير النظام', 'المشرف العام', 'مشرف
    heading and its own item selected (aria-current="page"); الرئيسية is a single item with no heading, and إعدادات المنصة is selected
    with one of its sections. */
 const NAV = {
-  overview: ['الرئيسية'], depts: ['الإدارة المؤسسية', 'الإدارات'], users: ['الإدارة المؤسسية', 'مراقبة الحسابات'], perms: ['الإدارة المؤسسية', 'خريطة الصلاحيات'],
-  plat: ['إعدادات المنصة'], sec: ['الأمن والرقابة', 'الأمن'], oplog: ['الأمن والرقابة', 'سجل الأنشطة والتغييرات'],
+  overview: ['الرئيسية'], depts: ['الإدارة المؤسسية', 'الإدارات'], users: ['الإدارة المؤسسية', 'مراقبة الحسابات'],   plat: ['إعدادات المنصة'], sec: ['الأمن والرقابة', 'الأمن'], oplog: ['الأمن والرقابة', 'سجل الأنشطة والتغييرات'],
   backup: ['البيانات والاستمرارية', 'النسخة الاحتياطية'], histimp: ['البيانات والاستمرارية', 'استيراد البيانات التاريخية'],
 };
 /* the selected nav labels without a count badge («الأمن #») */
@@ -252,7 +261,7 @@ async function world() {
   lab.revs = () => JSON.stringify(DB.q("SELECT k,rev FROM revs WHERE k<>'bassam_notifications_domain_v1' ORDER BY k"));
   return lab;
 }
-const GRP = { overview: 'home', depts: 'org', users: 'org', perms: 'org', plat: 'plat', sec: 'sec', oplog: 'sec', backup: 'data', histimp: 'data' };
+const GRP = { overview: 'home', depts: 'org', users: 'org', plat: 'plat', sec: 'sec', oplog: 'sec', backup: 'data', histimp: 'data' };
 async function nav2(page, vn) {
   /* CORE-02 S7: one primary navigation — the console sidebar. Every tab is one item; the platform settings tab opens on a section */
   const hash = () => page.evaluate(() => location.hash);
@@ -340,7 +349,7 @@ if (CAPTURE) {
     try {
       s = await sess(b, lab, 'super', DESKTOP, writes); s.page.setDefaultTimeout(15000);
       const rev0 = lab.revs();
-      assert.deepEqual(Object.keys(FX.sys), SYS_TABS, 'the fixture covers all nine admin tabs');
+      assert.deepEqual(Object.keys(FX.sys).filter((t) => !DELETED_SYS.includes(t)), SYS_TABS, 'the fixture covers all eight kept admin tabs');
       assert.deepEqual(Object.keys(NAV).sort(), [...SYS_TABS].sort(), 'every admin tab has its place in the two-level navigation');
       const nowBy = {}, moved = [];
       for (const t of SYS_TABS) {
@@ -349,7 +358,7 @@ if (CAPTURE) {
         nowBy[t] = now;
         assert.ok(opened(t, states[0]), t + ': the tab opened (recorded «' + rec.selected + '») shows ' + JSON.stringify(NAV[t]) + ' selected (now ' + JSON.stringify(states[0].selected) + ')');
         for (const kind of ['headings', 'actions', 'fields']) {
-          const miss = missing(rec[kind], now, kind).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x] && moved.push([t, x, MOVED[t][x]]))).filter((x) => !(kind === 'headings' && merged(t, x, now)));
+          const miss = missing(rec[kind], now, kind).filter((x) => !gone44(t, kind, x)).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x] && moved.push([t, x, MOVED[t][x]]))).filter((x) => !(kind === 'headings' && merged(t, x, now)));
           assert.deepEqual(miss, [], t + ': every recorded ' + kind + ' still reachable');
         }
         /* CORE-02 step 2: the display names — no old name for the top role or the admin interface is shown anywhere on the page */
@@ -359,7 +368,8 @@ if (CAPTURE) {
       }
       /* CORE-02 step 5: every link of the removed quick-links strip is still reachable at its destination */
       const side = (await s.page.evaluate(collect)).side;
-      assert.equal(side.length, 17, 'the console sidebar holds 17 destinations (' + JSON.stringify(side) + ')');
+      assert.equal(side.length, 15, 'the console sidebar holds 15 destinations (' + JSON.stringify(side) + ')');
+      for (const x of ['خريطة الصلاحيات', 'الوحدات']) assert.ok(!side.includes(x), 'V7 · د5-هـ (44): «' + x + '» is deleted');
       for (const [from, x, to] of moved) assert.ok(to.startsWith('=') ? nowBy[from].actions.has(to.slice(1)) : to === 'aside' ? side.includes(x) : (NAV[to].includes(x) || side.includes(x) || variants(x).some((v) => nowBy[to].actions.has(v))), from + ': «' + x + '» (moved) is still reachable ' + (to === 'aside' ? 'in the console sidebar' : 'on ' + to));
       /* CORE-02 step 2: the page is titled «المنصة / مركز إدارة رشاد», the sidebar link reads «مركز إدارة رشاد», the user card reads «مسؤول المنصة» */
       assert.equal((await s.page.textContent('.bs-crumb')).replace(/\s+/g, ' ').trim(), 'المنصة / مركز إدارة رشاد', 'crumb names the admin interface');
@@ -369,7 +379,7 @@ if (CAPTURE) {
       for (const t of SYS_TABS) {
         await s.page.goto(lab.base + '/#/sysadmin/' + t, { waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(4500);
         const r = await s.page.evaluate(collect), h = await s.page.evaluate(() => location.hash);
-        if (t === 'plat') assert.match(h, /^#\/sysadmin\/plat\/(id|mods|notif|login|side|print|app|about|setup)$/, t + ': the deep link opens the platform settings on a section (the last one opened) and names it in the address');
+        if (t === 'plat') assert.match(h, /^#\/sysadmin\/plat\/(id|notif|login|side|print|app|about|setup)$/, t + ': the deep link opens the platform settings on a section (the last one opened) and names it in the address');
         else if (t === 'depts') assert.match(h, /^#\/sysadmin\/org(\/[^/]+)?$/, t + ': the recorded #/sysadmin/depts opens and is written as #/sysadmin/org — with the unit still selected in this page (a same-document address change keeps the selection; V7 P0)');
         else assert.equal(h, '#/sysadmin/' + t, t + ': the deep link stays on its address');
         assert.ok(opened(t, r), t + ': the deep link opens ' + JSON.stringify(NAV[t]) + ' (recorded «' + FX.sys[t].selected + '»; now ' + JSON.stringify(r.selected) + ')');
@@ -445,7 +455,7 @@ if (CAPTURE) {
           const s = await sess(b, lab, who, view, writes); s.page.setDefaultTimeout(15000);
           try {
             await theme(s.page, th);
-            for (const t of Object.keys(rec).filter((t) => scope !== 'dept' || !MOVED_DEPT.includes(t))) {
+            for (const t of Object.keys(rec).filter((t) => (scope !== 'dept' || !MOVED_DEPT.includes(t)) && (scope !== 'sys' || !DELETED_SYS.includes(t)))) {
               await s.go(base + t, 3500);
               const each = async (st) => {
                 const a = await s.page.evaluate(audit), at = vn + ' ' + scope + '/' + t + (st === 'base' ? '' : ' › ' + st);
@@ -455,7 +465,7 @@ if (CAPTURE) {
               };
               const states = await probes(s.page, scope, t, each), now = union(states);
               for (const kind of ['headings', 'actions', 'fields']) {
-                const miss = missing(rec[t][kind], now, kind).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x])).filter((x) => !(kind === 'headings' && scope === 'sys' && merged(t, x, now)));
+                const miss = missing(rec[t][kind], now, kind).filter((x) => !(scope === 'sys' && gone44(t, kind, x))).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x])).filter((x) => !(kind === 'headings' && scope === 'sys' && merged(t, x, now)));
                 if (miss.length) bad.push(vn + ' ' + scope + '/' + t + ': not reachable (' + kind + '): ' + miss.join(' · '));
               }
             }
