@@ -62,7 +62,7 @@ function enfOk(keys, x) { var o = { ok: true, keys: keys || [] }; if (x) for (va
    (اختبارٌ حارس: tests/unit/v7_fix_super_gate.test.mjs) — نوعٌ جديد غيرُ مصنَّف يُفشله. */
 var ENF_SUPER_KEEPS = { shape: 'شكلُ البيانات', unknown: 'موردٌ غير معروف', device: 'مفتاحُ جهاز', unit: 'معرّفٌ ليس وحدةَ بيانات', 'unit-delete-route': 'حذفُ الوحدات له مسارُه',
   keydel: 'حذفُ المفتاح كلِّه', append: 'سجلٌّ يُلحق به ولا يُعدَّل', users: 'شكلُ سجل الحسابات', perms: 'شكلُ سجل الصلاحيات', ph: 'بصمةُ كلمة المرور', self: 'حسابُ الفاعل نفسِه',
-  target: 'هدفُ منحٍ غير صالح', grant: 'منحٌ غير صالح', cap: 'منحٌ خارج سقف الإدارة', 'scope-retired': 'حقلٌ قديمٌ أُلغي', dstats: 'شكلُ الإحصائيات اليومية', unmapped: 'انتقالٌ محجوزٌ لا عمليةَ حيّةً له' };
+  target: 'هدفُ منحٍ غير صالح', grant: 'منحٌ غير صالح', cap: 'منحٌ خارج سقف الإدارة', 'scope-retired': 'حقلٌ قديمٌ أُلغي', @@SYS:enf.why.dstats@@unmapped: 'انتقالٌ محجوزٌ لا عمليةَ حيّةً له' };
 var ENF_SUPER_LIFTS = { perm: 1, scope: 1, 'scope-unknown': 1, reason: 1, residual: 1, unbound: 1, dept: 1, view: 1, flag: 1, own: 1, mgr: 1, 'super': 1 };
 function enfSuperGate(A, out) {
   if (!out || out.ok || !A || !A.u || A.u.role !== 'super') return out;

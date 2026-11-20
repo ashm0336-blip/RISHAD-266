@@ -734,6 +734,10 @@
   "activity.taskId.export": {
    "order": 10,
    "text": " taskId: taskId,"
+  },
+  "oc.names.tasks.1": {
+   "order": 10,
+   "file": "slots/oc.names.tasks.1.frag"
   }
  }
 }

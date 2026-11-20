@@ -407,6 +407,10 @@
   "save.movedPath.dstats": {
    "order": 10,
    "text": "'/api/dstats'"
+  },
+  "enf.why.dstats": {
+   "order": 10,
+   "text": "dstats: 'شكلُ الإحصائيات اليومية', "
   }
  }
 }
