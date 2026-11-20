@@ -563,6 +563,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "services/421-round-links.js",
+   "kind": "js",
+   "line": 8899,
+   "new": "V7 · د5-هـ: ما توفّره الجولاتُ اليومية لغيرها عبر الناقل (قراءات · أوامر داخل مسودة المستدعي)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "services/430-store-broadcast.js",
    "kind": "js",
    "line": 8960,
@@ -689,6 +699,16 @@
    "kind": "js",
    "line": 10495,
    "new": "V7 · د5-د2: قراءاتُ الجدول الشهري المعلنة لبرامجَ أخرى (الجدول · الأقفال · الرموز · التفعيل · أسماء الموارد)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/plan/client/404-plan-p4.js",
+   "kind": "js",
+   "line": 10495,
+   "new": "V7 · د5-هـ: قراءاتُ التشغيل الميداني وأوامرُه المعلنة لبرامجَ أخرى (الخطة · خيارات المصليات · خيارات الأبواب)",
    "openTag": "<script>",
    "origBytes": null,
    "origSha256": null

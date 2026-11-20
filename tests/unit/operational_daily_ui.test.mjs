@@ -157,6 +157,9 @@ function world(extra = {}) {
     },
   });
   calendar(C);
+  /* V7 · د5-هـ: الناقل وروابطُ الخطة والجولات عليه — الجولاتُ تقرأ الخطةَ بالاسم وتكتب فيها بأوامر مالكها */
+  for (const file of ["src/core/060-bus.js", "src/systems/plan/client/404-plan-p4.js", "src/services/421-round-links.js"])
+    vm.runInContext(fs.readFileSync(file, "utf8"), C);
   vm.runInContext(source + "\nglobalThis.TestComponent=Component;", C);
   const component = new C.TestComponent();
   component.bsToast = (...args) => seen.toasts.push(args);

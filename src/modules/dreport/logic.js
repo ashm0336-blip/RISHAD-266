@@ -2210,7 +2210,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     var rr = (function () {
         var r = { gates: {}, zones: {}, marks: {} };
         try {
-          var e = ((KIVO.__BS_SRV.operations.get("bassam_plan_v1") || {}).months || {})[t.rpY + "-" + t.rpM];
+          var e = ((KIVO.bus.read("plan.doc@1") || {}).months || {})[t.rpY + "-" + t.rpM];   /* V7 · د5-هـ: قراءةٌ معلنة من مالك الخطة — بغيابه لا احتياج */
           ((e && (Array.isArray(e) ? e : e.d)) || []).forEach(function (t) {
             ((t.gates || []).forEach(function (t) {
               var e = String(null == t.num ? "" : t.num).trim();

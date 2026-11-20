@@ -75,6 +75,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     this._opLastSave = this._opCommit({ [name]: value });
     return this._opLastSave;
   }
+  /* V7 · د5-هـ: ما يملكه التشغيلُ الميداني (الخطة · خياراتُ المصليات والأبواب) يكتبه مالكُه بأمرٍ معلن داخل حفظنا — مسودتُنا: نقرأ بقارئ الصفحة
+     ونضمّ ما يكتبه إلى تغييرات الحفظ نفسِه (طلبٌ واحد ذرّي). بغياب المالك لا يُضمّ شيء. */
+  _opSink(target) {
+    return { get: (k) => this._opRead(k), set: (k, v) => (target[k] = v) };
+  }
+  _opWith(related, command, payload) {
+    const out = { ...related };
+    KIVO.bus.call(command, payload, this._opSink(out));
+    return out;
+  }
+  _opOwnerWrite(command, payload) {
+    const changes = this._opWith({}, command, payload);
+    this._opLastSave = Object.keys(changes).length ? this._opCommit(changes) : Promise.resolve({ ok: 0, err: "absent" });
+    return this._opLastSave;
+  }
   async _opAck(message, tone) {
     const result = this._opLastSave && (await this._opLastSave);
     if (result && result.ok === 1) this.bsAck(message, tone);
@@ -325,12 +340,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           state.vdrag
         )
           return;
+        const [planKey, zoneKey] = KIVO.bus.read("plan.resources@1", "doc", "zoneOpts") || [];   /* V7 · د5-هـ: مفاتيحُ الخطة من مالكها — بغيابه لا شيء يطابق */
         if (this._opDrafts) delete this._opDrafts[e];
-        if (e === "bassam_plan_v1") {
+        if (e === planKey) {
           this.setState({ fimgs: {} });
           this._loadFloorImgs();
         }
-        if (e === "bassam_zone_opts_v1")
+        if (e === zoneKey)
           this.setState({ zoneOpts: this.loadZoneOpts() });
         if (this._opService().resources.indexOf(e) >= 0)
           this.setState((state) => ({ extTick: (state.extTick || 0) + 1 }));
@@ -338,12 +354,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           try {
             this.setState({ rounds: this.loadRounds() });
           } catch (t) {}
-        ("bassam_plan_v1" !== e &&
+        (planKey !== e &&
           "bassam_dreport_v1" !== e &&
           "bassam_dayshift_v1" !== e) ||
           ((this._drAp9 = null),
           this.setState((t) => ({ extTick: (t.extTick || 0) + 1 })),
-          "bassam_plan_v1" === e &&
+          planKey === e &&
             setTimeout(async () => {
               try {
                 const t = KIVO.BassamDayFocus && KIVO.BassamDayFocus.get();
@@ -846,7 +862,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       s = e.year + "-" + e.month + "-" + Math.min(e.day, this.hMonthDays(e.year, e.month));
     let n = null;
     try {
-      n = this._opRead("bassam_plan_v1");
+      n = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k));   /* V7 · د5-هـ */
     } catch (t) {}
     const i = n && n.months ? n.months[e.year + "-" + e.month] : null,
       o0 = i ? (Array.isArray(i) ? i : i.d) : null;
@@ -1621,7 +1637,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         this.permDeny();
         return false;
       }
-      const plan = this._opRead("bassam_plan_v1");
+      const plan = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k));   /* V7 · د5-هـ: بغياب الخطة لا موقعَ يُحذف */
       if (
         !plan ||
         !Array.isArray(plan.floors) ||
@@ -1647,10 +1663,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         if (rec && Array.isArray(rec.d) && rec.d.length > index)
           rec.d.splice(index, 1);
       });
-      this._opLastSave = this._opCommit({
-        bassam_plan_v1: plan,
-        bassam_rounds_v1: rounds,
-      });
+      const changes = this._opWith({}, "plan.doc.set@1", { value: plan });
+      changes.bassam_rounds_v1 = rounds;
+      this._opLastSave = this._opCommit(changes);
       const ack = await this._opLastSave;
       if (!ack || ack.ok !== 1) return false;
       let floor = this.state.floor;
@@ -1682,8 +1697,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   _loadFloorImgs() {
     try {
-      const plan = this._opRead("bassam_plan_v1"),
-        draft = this._opDrafts.bassam_plan_v1,
+      const plan = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)),
+        PK = (KIVO.bus.read("plan.resources@1", "doc") || [])[0],   /* V7 · د5-هـ: مسودةُ الخطة باسمها من مالكها */
+        draft = PK ? this._opDrafts[PK] : null,
         stamp = JSON.stringify(this._opService().context());
       if (!plan || !Array.isArray(plan.floors) || !KIVO.BassamIDB) return;
       plan.floors.forEach((floor, index) => {
@@ -1694,7 +1710,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           .then((image) => {
             if (!image || stamp !== JSON.stringify(this._opService().context()))
               return;
-            const fresh = draft.get("bassam_plan_v1"),
+            const fresh = KIVO.bus.read("plan.doc@1", draft),
               current = fresh && fresh.floors && fresh.floors[index];
             if (current && current.iid === iid && current.sid === sid)
               this.setState((state) => ({
@@ -1707,7 +1723,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   loadZoneOpts() {
     try {
-      const t = this._opRead("bassam_zone_opts_v1");
+      const t = KIVO.bus.read("plan.zoneOpts@1", (k) => this._opRead(k));   /* V7 · د5-هـ: بغياب الخطة الخياراتُ فارغة */
       if (t) {
         const e = t;
         if (e && "object" == typeof e) {
@@ -1763,7 +1779,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       return Promise.resolve({ ok: 0, err: "denied" });
     }
     this.setState({ zoneOpts: value });
-    return defer ? null : this._opWrite("bassam_zone_opts_v1", value);
+    return defer ? null : this._opOwnerWrite("plan.zoneOpts.set@1", { value });
   }
   _composeZoneCode(t, e, s, n, z) {
     const i = n || this.state.zoneOpts || {},
@@ -1870,7 +1886,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     this.saveZoneOpts(i, true);
     this._purgeOptEverywhere(
       [{ key: t, name: n }, ...o.map((name) => ({ key: "level", name }))],
-      { bassam_zone_opts_v1: i },
+      this._opWith({}, "plan.zoneOpts.set@1", { value: i }),
       ["region", "level", "ztype"].includes(t) ? i : null,
     );
   }
@@ -1886,7 +1902,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         return next;
       });
     };
-    const plan = this._opRead("bassam_plan_v1");
+    const plan = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k));
     if (plan && typeof plan === "object") {
       update(plan);
       (plan.floors || []).forEach(update);
@@ -1894,7 +1910,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         const rows = Array.isArray(entry) ? entry : entry && entry.d;
         if (Array.isArray(rows)) rows.forEach(update);
       });
-      related = { ...related, bassam_plan_v1: plan };
+      related = this._opWith(related, "plan.doc.set@1", { value: plan });   /* V7 · د5-هـ */
     }
     const rounds = JSON.parse(JSON.stringify(this.state.rounds || {}));
     Object.values(rounds).forEach((rec) => {
@@ -1990,11 +2006,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         return !e || e.indexOf(r) < 0 ? t : { ...t, n: this._optName(t), c: e.map((t) => (t === r ? s : t)) };
       })),
       this.saveZoneOpts(h, e || s !== r));
-    if (e) this._recomposeZoneCodes(h, { ...related, bassam_zone_opts_v1: h });
+    if (e) this._recomposeZoneCodes(h, this._opWith(related, "plan.zoneOpts.set@1", { value: h }));
     else if (s !== r)
-      this.saveRounds(related.bassam_rounds_v1 || this.state.rounds, {
-        bassam_zone_opts_v1: h,
-      });
+      this.saveRounds(related.bassam_rounds_v1 || this.state.rounds, this._opWith({}, "plan.zoneOpts.set@1", { value: h }));
   }
   _mkHatchPattern(t, e, s) {
     const n = React.createElement,
@@ -3077,20 +3091,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             rk: t.rk,
           },
           async () => {
-            const nextPlan = this._opRead("bassam_plan_v1") || {
+            const nextPlan = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)) || {
                 zones: [],
                 gates: [],
                 paths: [],
                 floors: [],
                 months: {},
               },
-              zoneBase = this._opRead("bassam_zone_opts_v1"),
-              gateBase = this._opRead("bassam_gate_opts_v1");
+              zoneBase = KIVO.bus.read("plan.zoneOpts@1", (k) => this._opRead(k)),
+              gateBase = KIVO.bus.read("plan.gateOpts@1", (k) => this._opRead(k));
             this._opRead("bassam_rounds_v1");
-            const related = {
-              bassam_zone_opts_v1: zoneBase || {},
-              bassam_gate_opts_v1: gateBase || {},
-            };
+            /* V7 · د5-هـ: الخطةُ وخياراتُها تُكتب بأوامر مالكها داخل هذا الحفظ — بغيابه يُستورد اليومُ وحده */
+            const related = this._opWith(this._opWith({}, "plan.zoneOpts.set@1", { value: zoneBase || {} }), "plan.gateOpts.set@1", { value: gateBase || {} });
             const i = 1e3,
           o = 600,
           r = (t) => Math.round(100 * t) / 100,
@@ -3305,7 +3317,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               };
             if ((await v(nextPlan)) === false)
               throw Error("operations-review-required");
-            related.bassam_plan_v1 = nextPlan;
+            KIVO.bus.call("plan.doc.set@1", { value: nextPlan }, this._opSink(related));
             const w = nextPlan.floors.map((floor) => ({
               sid: floor.sid,
               zones: [],
@@ -3334,7 +3346,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               const t = (s.lists && s.lists.lists) || {},
                 e = (() => {
                   try {
-                    const t = this._opRead("bassam_zone_opts_v1");
+                    const t = KIVO.bus.read("plan.zoneOpts@1", (k) => this._opRead(k));
                     return t && "object" == typeof t ? t : {};
                   } catch (t) {
                     return {};
@@ -3393,7 +3405,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               hg: 7,
             };
           }),
-                (related.bassam_zone_opts_v1 = i),
+                KIVO.bus.call("plan.zoneOpts.set@1", { value: i }, this._opSink(related)),
                 this.setState({ zoneOpts: i }),
                 w.forEach((t) => {
               let e = 0;
@@ -3405,7 +3417,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             }));
               const p = (() => {
                   try {
-                    const t = this._opRead("bassam_gate_opts_v1");
+                    const t = KIVO.bus.read("plan.gateOpts@1", (k) => this._opRead(k));
                     return t && "object" == typeof t ? t : {};
                   } catch (t) {
                     return {};
@@ -3429,7 +3441,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 (r(h.gtype, t.gtype), r(h.kind, t.kind), r(h.route, t.route), r(h.cls, t.cls), (t.cats || []).forEach((t) => r(h.cat, t)));
               }),
             ),
-                (related.bassam_gate_opts_v1 = h));
+                KIVO.bus.call("plan.gateOpts.set@1", { value: h }, this._opSink(related)));
             } catch (t) {}
             const S = { ...(this.state.rounds || {}) };
             S[t.rk] = {
@@ -4623,7 +4635,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         if (d[s]) return d[s];
         const n = { zones: {}, gates: {}, marks: {} };
         try {
-          const t = ((this._opRead("bassam_plan_v1") || {} || {}).months || {})[
+          const t = ((KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)) || {} || {}).months || {})[
             s
           ];
           ((t && (Array.isArray(t) ? t : t.d)) || []).forEach((t) => {
@@ -6914,7 +6926,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       m = Math.min(s.day, u);
     let x = null;
     try {
-      x = this._opRead("bassam_plan_v1");
+      x = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k));
     } catch (t) {}
     const b = this.MONTHS.map((t, e) => {
         const n = e + 1,
@@ -7240,7 +7252,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         const t = {};
         try {
           (
-            (((this._opRead("bassam_plan_v1") || {}).floors || [])[f] || {})
+            (((KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)) || {}).floors || [])[f] || {})
               .zones || []
           ).forEach((e) => {
             const s = +e.cap;
@@ -7374,7 +7386,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       gt = (t, e) => (e ? "#94a3b8" : null == t || "" === t || t < 40 ? "#22c55e" : t < 75 ? "#e5b563" : t <= 100 ? "#ef4444" : "#991b1b"),
       ft = (() => {
         try {
-          const t = this._opRead("bassam_zone_opts_v1");
+          const t = KIVO.bus.read("plan.zoneOpts@1", (k) => this._opRead(k));
           return t && t.zcatStyle && "object" == typeof t.zcatStyle
             ? t.zcatStyle
             : {};
@@ -13251,7 +13263,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           i = n && Array.isArray(n.d) ? n.d : [];
         let o = [];
         try {
-          o = (this._opRead("bassam_plan_v1") || {}).floors || [];
+          o = (KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)) || {}).floors || [];
         } catch (t) {}
         let r = i
           .map((t, e) =>
@@ -17280,7 +17292,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             : null,
         dsSectorNodes: (() => {
           try {
-            const t = this._opRead("bassam_plan_v1");
+            const t = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k));
             if (!t) return null;
             const e = t.months && t.months[s.year + "-" + s.month],
               n = e ? (Array.isArray(e) ? e : e.d) : null,
@@ -18900,7 +18912,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               async () => {
                 if (!(this.PC("add") || this.PC("edit") || this.PC("del")))
                   throw Error("denied");
-                const plan = this._opRead("bassam_plan_v1");
+                const plan = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k));   /* V7 · د5-هـ: بغياب الخطة لا موقع */
                 if (!plan || !Array.isArray(plan.floors))
                   throw Error("operations-review-required");
                 const editing = modal.mode === "edit",
@@ -18973,7 +18985,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         });
                   });
                 }
-                const changes = { bassam_plan_v1: plan };
+                const changes = this._opWith({}, "plan.doc.set@1", { value: plan });
                 if (rounds) changes.bassam_rounds_v1 = rounds;
                 return {
                   changes,

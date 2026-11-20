@@ -106,7 +106,8 @@ def bus_read_resources(S, d, module):
        بغياب المالك لا عقدَ فلا مورد."""
     import glob
     table = {}
-    for p in sorted(glob.glob(os.path.join(S, 'systems', '*', 'contract.json'))):
+    # V7 · د5-هـ: وعقودُ البرامج التي لم تُفصل بعد (src/contracts/<key>.json — الجولات) تعلن readResources كذلك
+    for p in sorted(glob.glob(os.path.join(S, 'systems', '*', 'contract.json'))) + sorted(q for q in glob.glob(os.path.join(S, 'contracts', '*.json')) if not os.path.basename(q).startswith('_')):
         for name, keys in (json.load(open(p, encoding='utf-8')).get('readResources') or {}).items():
             if not name.startswith('_'): table[name] = keys
     if not table: return []
