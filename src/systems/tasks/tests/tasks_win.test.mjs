@@ -4,6 +4,7 @@
      · التسليم: بعد المهلة + late مرفوضٌ 409 late (والمسودّةُ doc تبقى) · وداخل السماح يُقبل ويُسجَّل «متأخر»
      · المهمةُ غيرُ المبدوءة «منقضية» بعد المهلة + late لا بعد المهلة وحدها (late 0 ⇒ expired فور المهلة)
      · الأداءُ (العمود 6) من المهلة: قبلها «في الوقت/مبكر» · بعدها «متأخر» · وإعادةُ الإسناد تنقل win */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, KT, TAG, stored, putKV, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';

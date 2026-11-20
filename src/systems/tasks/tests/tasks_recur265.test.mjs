@@ -11,6 +11,7 @@
      (ح) التحويلُ إلى متكررة (start): مهمةٌ مسندةٌ لمرة ومهمةٌ جماعية تولِّدان كالمنشأة · وصاحبُها من حوّلها بسجل الخادم (rec_start) · وما لا يُحوَّل 409
      (ط) H-1 باقٍ: x.rec مزوَّرةٌ بحفظٍ خامّ تُرفض ولا تولِّد · وrec.by مزوَّرٌ باستعادة مدير النظام (ومعه حدثٌ مزوَّر) لا يولِّد باسم غيره
      (ي) الصلاحيات: الموظفُ 403 على كلّ عملية · الإنشاءُ بلا الإسناد لا ينشئ متكررةً لمكلَّف · بلا التعديل 403 · بلا الإنشاء لا تحويل · ومن يملك الإضافةَ والتعديل يدير التكرارَ كلَّه */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, KT, D, DAY, PDAY, TAG, stored, putKV, hij, MID, HR, wdOf, ymOf, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
