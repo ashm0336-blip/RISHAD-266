@@ -24,7 +24,7 @@ const ROOT = path.resolve(new URL('../..', import.meta.url).pathname);
    staff.permLimit@1 · staff.shiftUsage@1 · shifts.renamed@1 عميلاً وخادماً) فحُذفت استثناءاتُها ⇒ 390 / 954؛ ثم صفوفُ صلاحياته (22 مفتاحاً وروابطُها) من سجلّ القاعدة إلى permissions.json في مجلده ⇒ 387 / 850؛ ثم تبويبُه في حاوية الخطة التشغيلية قطعةً في مجلده (قالبُ الحاوية انتقل إلى src/slots فتبدّل مسارُ استثناءَي «plan» الباقيَين — لا رابطَ جديد) ⇒ 386 / 849. */
 /* د5-د2: اكتمل فصلُ الجدول الشهري (لا مفتاحَ له ولا اسمَ في القاعدة، وقراءاتُ البرامج الأخرى له معلنة staff.*@1) مع عدٍّ أشدّ لأسماء البرامج
    (قاعدةٌ مكتوبة لكل ورود — قرار المراجع 3). السقف 386 / 849 ⇒ 239 / 674. لم يُرفع. */
-const CEILING = { entries: 137, lines: 315 };   /* د5-هـ (م1): 239/674 → 137/315 بفصل التشغيل الميداني */
+const CEILING = { entries: 68, lines: 152 };   /* د5-هـ: 239/674 → 137/315 (م1 الخطة) → 68/152 (م2 التقرير اليومي) */
 
 const scan = () => JSON.parse(execFileSync('python3', [path.join(ROOT, 'tools/contracts.py'), '--src', path.join(ROOT, 'src'), '--scan'], { encoding: 'utf8', maxBuffer: 1 << 26 }));
 const allowed = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/isolation/exceptions.json'), 'utf8')).exceptions;
