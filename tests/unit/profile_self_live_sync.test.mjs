@@ -191,7 +191,7 @@ async function profile(t, { holdFirst = false, responseChange } = {}) {
   page.bsToast = () => {}; page.componentDidMount(); await drain();
   t.after(() => { release?.(); page.componentWillUnmount(); time.clear(); T.dispose(); assert.deepEqual(errors, []); });
   const todayRequests = () => requests.filter(request => request.path === '/api/me/today');
-  const facts = () => page.pfMine({ user: control.user, emps: [], staffing: {}, locks: {}, dreport: {}, plan: {}, rounds: {}, opts: [], readable: false }).M;
+  const facts = () => page.pfMine({ user: control.user, emps: [], staffing: {}, locks: {}, reports: {}, plan: {}, rounds: {}, opts: [], readable: false }).M;
   return { B, T, W, K, time, page, control, requests, todayRequests, hints, operations, facts, release: () => release?.(), held: () => held, used: bundle.used };
 }
 

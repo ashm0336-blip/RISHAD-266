@@ -126,6 +126,6 @@
  },
  "me.arg.dreport": {
   "order": 10,
-  "text": "dreport: D.dreport, "
+  "text": "reports: D.dreport, "
  }
 }

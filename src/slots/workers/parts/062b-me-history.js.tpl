@@ -214,7 +214,7 @@ function pfWeek(o) {
   var out = [], t, T, bk, ent, f, toks = o.toks || [];
   for (t = 6; t >= 0; t--) {
     T = pfHijriAt(o.end - t * 86400000); bk = (o.months && o.months[T.ym]) || {}; ent = pfEntry(bk, toks);
-    f = pfDay({ bucket: bk, rep: (o.dreport && o.dreport[T.dk]) || null, toks: toks, wd: T.wd, opts: o.opts });
+    f = pfDay({ bucket: bk, rep: (o.reports && o.reports[T.dk]) || null, toks: toks, wd: T.wd, opts: o.opts });
     out.push({ dk: T.dk, ym: T.ym, d: T.d, m: T.m, y: T.y, wd: T.wd, today: t === 0, sched: ent ? pfRestOn(ent.rest, T.wd) : null,
       act: f.report.mine ? { code: f.status.code, approved: f.report.approved } : null, any: f.report.any });
   }
@@ -223,9 +223,9 @@ function pfWeek(o) {
 /* إحصاءُ الشهر من التقارير اليومية التي ورد فيها الموظف وحده */
 function pfMon(o) {
   var c = { pr: 0, ab: 0, pm: 0, lv: 0, tout: 0, n: 0, ap: 0 }, pre = o.ym + '-', toks = o.toks || [], bk = (o.months && o.months[o.ym]) || {};
-  Object.keys(o.dreport || {}).forEach(function (k) {
+  Object.keys(o.reports || {}).forEach(function (k) {
     if (k.indexOf(pre) !== 0 || !/^\d+$/.test(k.slice(pre.length))) return;
-    var f = pfDay({ bucket: bk, rep: o.dreport[k], toks: toks, wd: '', opts: o.opts });
+    var f = pfDay({ bucket: bk, rep: o.reports[k], toks: toks, wd: '', opts: o.opts });
     if (!f.report.mine) return;
     c.n++; if (f.report.approved) c.ap++;
     if (c[f.status.st] != null) c[f.status.st]++;
@@ -240,7 +240,7 @@ function pfHist(o) {
     def: def ? { tStart: def.tStart, tEnd: def.tEnd } : null, defEv: def ? (def.src === 'month' ? (locked ? 'saved_approved' : 'saved_open') : 'current') : 'none', ev: ent ? (locked ? 'saved_approved' : 'saved_open') : 'none' };
   var days = [], runs = [], last = null, nRep = 0, nAp = 0, nRnd = 0, upto = o.upto == null ? 31 : o.upto;
   (o.days || []).forEach(function (x) {
-    var dk = ym + '-' + x.d, f = pfDay({ bucket: bucket, rep: (o.dreport && o.dreport[dk]) || null, toks: toks, wd: x.wd, opts: o.opts });
+    var dk = ym + '-' + x.d, f = pfDay({ bucket: bucket, rep: (o.reports && o.reports[dk]) || null, toks: toks, wd: x.wd, opts: o.opts });
     var row = { d: x.d, wd: x.wd, sched: { rest: ent ? pfRestOn(ent.rest, x.wd) : null, shift: (ent && ent.shift) || '' }, act: null, rep: 'none', ev: x.d > upto ? 'future' : 'none' };
     if (x.d <= upto && f.report.mine) {
       row.act = { st: f.status.st, kind: f.status.kind, sh: f.shift.name, rest: f.rest.src === 'report' ? pfRestOn(f.rest.days, x.wd) : null, restSrc: f.rest.dayChanged ? 'day' : f.rest.src === 'report' ? 'sched' : '',
