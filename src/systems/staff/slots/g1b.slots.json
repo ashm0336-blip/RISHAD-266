@@ -1,0 +1,163 @@
+{
+ "_note": "V7 · د5-د2 (المجموعة g1b): قطعُ الجدول الشهري في أجزاء الخادم العامة (سجل الموارد · خريطة القراءة · الكيانات · عمليات الدومين · الإنفاذ · permv4 · تنظيف أثر الموظف).",
+ "res.emp.via.staff": {
+  "order": 10,
+  "text": ", via: { staff: 'EMP_FIELDS' }"
+ },
+ "res.reg.staff": {
+  "order": 10,
+  "text": "  /* ── الجدول الشهري ── */\n  'bassam_staffing_v3':        { scope: 'dept', cap: 'staff', via: { dreport: 'CS_ONLY' } },\n  'bassam_staffing_v2':        { scope: 'dept', cap: 'staff' },\n  'bassam_staffing_snap_v1':   { scope: 'dept', cap: 'staff', via: { dreport: 'SNAP_CS_ONLY' } },\n  'bassam_staffing_locks_v1':  { scope: 'dept', cap: 'staff' },\n  'bassam_callsigns_v1':       { scope: 'dept', cap: 'staff' },\n  'bassam_perm_limit_v1':      { scope: 'dept', cap: ['staff', 'dreport'] },\n"
+ },
+ "ent.reg.callsigns.staff": {
+  "order": 10,
+  "text": "  'bassam_callsigns_v1':      { empty: '[]', primRoot: 1 },\n"
+ },
+ "ent.reg.staff": {
+  "order": 10,
+  "text": "  /* ── الجدول الشهري ── */\n  'bassam_staffing_v3':       { map: 1, sub: 'map', empty: '{}' },\n  'bassam_staffing_v2':       { map: 1, sub: 'map', empty: '{}' },\n  'bassam_staffing_snap_v1':  { map: 1, empty: '{}' },\n  'bassam_staffing_locks_v1': { map: 1, empty: '{}' },\n"
+ },
+ "ops.reg.locks.staff": {
+  "order": 10,
+  "text": "  'bassam_staffing_locks_v1':  { approve: ['**'] },\n"
+ },
+ "ops.reg.limit.staff": {
+  "order": 10,
+  "text": "  'bassam_perm_limit_v1':      { approve: ['**'] },\n"
+ },
+ "read.ops.staff": {
+  "order": 10,
+  "text": "'staff',"
+ },
+ "read.map.roster.staff": {
+  "order": 10,
+  "text": "  'bassam_staffing_v3':        RD_OPS,\n"
+ },
+ "read.map.reader.staff.1": {
+  "order": 10,
+  "text": ", 'staff'"
+ },
+ "read.map.reader.staff.2": {
+  "order": 10,
+  "text": ", 'staff'"
+ },
+ "read.map.reader.staff.3": {
+  "order": 10,
+  "text": ", 'staff'"
+ },
+ "read.map.reader.staff.4": {
+  "order": 10,
+  "text": ", 'staff'"
+ },
+ "read.map.reader.staff.5": {
+  "order": 10,
+  "text": ", 'staff'"
+ },
+ "read.map.locks.staff": {
+  "order": 10,
+  "text": "  'bassam_staffing_locks_v1':  ['staff', 'dreport', 'emps/data', 'plan', 'planning', 'planning/readiness'],\n  'bassam_perm_limit_v1':      ['staff', 'dreport', 'planning', 'planning/readiness'],\n"
+ },
+ "read.map.staff": {
+  "order": 10,
+  "text": "  /* ── التوزيع ── */\n  'bassam_staffing_v2':        ['staff', 'planning', 'planning/readiness'],\n  'bassam_staffing_snap_v1':   ['staff'],\n  'bassam_callsigns_v1':       ['staff', 'dreport'],\n"
+ },
+ "bd.ctx.keys.staff": {
+  "order": 10,
+  "text": "'bsdept:' + d + ':bassam_staffing_v3', "
+ },
+ "bd.ctx.pv4.staff": {
+  "order": 10,
+  "text": "staffing: refs.staffing[d]"
+ },
+ "oc.read.refs.staff": {
+  "order": 10,
+  "text": "'bassam_staffing_v3', "
+ },
+ "priv.gender.keys.staff": {
+  "order": 10,
+  "text": "'staff.view', "
+ },
+ "priv.gender.leaves.staff": {
+  "order": 10,
+  "text": "'staff:view', "
+ },
+ "priv.tokRes.staff": {
+  "order": 10,
+  "text": "bassam_staffing_v3: 1, bassam_staffing_v2: 1, bassam_staffing_snap_v1: 1, "
+ },
+ "empGone.staff.fn": {
+  "order": 10,
+  "file": "slots/empGone.staff.fn.frag"
+ },
+ "empGone.map.staff": {
+  "order": 10,
+  "text": "  'bassam_staffing_v3': staffGoneOk, 'bassam_staffing_v2': staffGoneOk,\n"
+ },
+ "permv4.ctx.roster.staff": {
+  "order": 10,
+  "text": ", staffing = pv4.staffing || null"
+ },
+ "permv4.locks.ctx.staff": {
+  "order": 10,
+  "text": "staffing: pv4.staffingLocks"
+ },
+ "permv4.actorShift.staff": {
+  "order": 10,
+  "text": "function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; }"
+ },
+ "permv4.locks.load.staff": {
+  "order": 10,
+  "text": "    if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && o.staffingLocks === undefined) o.staffingLocks = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_locks_v1'), {}) || {};\n"
+ },
+ "permv4.roster.own.staff": {
+  "order": 10,
+  "text": " || rn === 'bassam_staffing_v3'"
+ },
+ "permv4.roster.load.staff": {
+  "order": 10,
+  "text": " && o.staffing === undefined) o.staffing = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_v3'), null);"
+ },
+ "permv4.read.pv4.staff": {
+  "order": 10,
+  "text": "staffing: parseJson(refs['bsdept:' + d + ':bassam_staffing_v3'], null)"
+ },
+ "cleanup.ctxRes.staff": {
+  "order": 10,
+  "text": "'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1,"
+ },
+ "cleanup.cleanRes.staff": {
+  "order": 10,
+  "text": "'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1,"
+ },
+ "save.protOp.roster.staff": {
+  "order": 10,
+  "text": "    if (rnP === 'bassam_staffing_v3' || rnP === 'bassam_staffing_v2') hasStaff[dP] = 1;\n"
+ },
+ "enf.ver.staff": {
+  "order": 10,
+  "text": " · az-staffing"
+ },
+ "enf.refCrud.options.staff": {
+  "order": 10,
+  "text": ", crud('ref.work_type')"
+ },
+ "enf.refCrud.callsign.staff": {
+  "order": 10,
+  "text": " 'bassam_callsigns_v1': crud('ref.callsign'),"
+ },
+ "enf.uncov.staff": {
+  "order": 10,
+  "text": "    'bassam_perm_limit_v1': all(['staff.permission_limit.set']),\n    'bassam_staffing_snap_v1': all(['staff.lock', 'staff.reopen', 'staff.callsign.assign', 'report.callsign.assign']),\n"
+ },
+ "enf.via.staff": {
+  "order": 10,
+  "file": "slots/enf.via.staff.frag"
+ },
+ "enf.refs.init.staff": {
+  "order": 10,
+  "text": "staffing: {}, "
+ },
+ "enf.refs.load.staff": {
+  "order": 10,
+  "text": "  for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await opResourceGet(env, sk)); out.staffing[d] = parseJson(raw, null); }\n"
+ }
+}

@@ -64,7 +64,7 @@ function privPersonalOk(A, d) {
 }
 /* readers of the two pages that use gender operationally (distribution of the shift) */
 function privGenderOk(A, d) {
-  return privPersonalOk(A, d) || privMemo(A, '__privG', d, function () { return privHeld(A, d, ['staff.view', 'report.view'], ['staff:view', 'dreport:view']); });
+  return privPersonalOk(A, d) || privMemo(A, '__privG', d, function () { return privHeld(A, d, [@@SYS:priv.gender.keys.staff@@'report.view'], [@@SYS:priv.gender.leaves.staff@@'dreport:view']); });
 }
 function privSelfRec(A, e) {
   var ek = String((A && A.u && A.u.ekey) || '');
@@ -268,7 +268,7 @@ function privPermsStale(A, ps, nRaw, cRaw) {
   return privPermsOmits(A, parseJson(String(nRaw), null), parseJson(String(cRaw), null)) ? 'perms-stale-client' : '';
 }
 /* (4) references by nid */
-var PRIV_TOK_RES = { bassam_staffing_v3: 1, bassam_staffing_v2: 1, bassam_staffing_snap_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1, bassam_dreport_v1: 1@@SYS:priv.tokRes.tasks@@ };
+var PRIV_TOK_RES = { @@SYS:priv.tokRes.staff@@bassam_plan_v1: 1, bassam_rounds_v1: 1, bassam_dreport_v1: 1@@SYS:priv.tokRes.tasks@@ };
 var PRIV_NO = { privacy: 'hidden' };   /* privIn: the incoming value changes a hidden reference ⇒ refused (054) */
 /* { M: nid→eid, R: eid→nid } of the records of unit d whose nid the actor does not receive, or null; have: raw values by key */
 function privTok(A, d, have) {

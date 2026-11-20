@@ -300,6 +300,14 @@
   {
    "tpl": "workers/parts/062b-me-history.js.tpl",
    "out": "workers/parts/062b-me-history.js"
+  },
+  {
+   "tpl": "workers/parts/019k-business-context.js.tpl",
+   "out": "workers/parts/019k-business-context.js"
+  },
+  {
+   "tpl": "workers/parts/019r-operational-storage.js.tpl",
+   "out": "workers/parts/019r-operational-storage.js"
   }
  ]
 }

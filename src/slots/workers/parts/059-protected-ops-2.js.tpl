@@ -7,13 +7,11 @@ var ENF_UNCOV = (function () {
   function join() { var o = { add: [], edit: [], del: [] }, i, a; for (i = 0; i < arguments.length; i++) for (a in o) o[a] = o[a].concat(arguments[i][a] || []); return o; }
   function all(keys) { return { add: keys, edit: keys, del: keys, approve: keys }; }
   return {
-    'bassam_options_v1': join(crud('ref.employment_type'), crud('ref.work_type')),
+    'bassam_options_v1': join(crud('ref.employment_type')@@SYS:enf.refCrud.options.staff@@),
     'bassam_zone_opts_v1': crud('ref.zone.type'), 'bassam_gate_opts_v1': crud('ref.gate.type'), 'bassam_mark_kinds_v1': crud('ref.mark.kind'),
     'bassam_shift_options_v1': crud('ref.shift'),
-@@SYS:enf.refCrud.records@@    'bassam_leave_kinds_v1': crud('ref.leave_type'), 'bassam_callsigns_v1': crud('ref.callsign'),
-@@SYS:enf.refCrud.award@@    'bassam_perm_limit_v1': all(['staff.permission_limit.set']),
-    'bassam_staffing_snap_v1': all(['staff.lock', 'staff.reopen', 'staff.callsign.assign', 'report.callsign.assign']),
-    'bassam_dayshift_v1': all(['round.edit', 'report.edit', 'round.create', 'report.create']),
+@@SYS:enf.refCrud.records@@    'bassam_leave_kinds_v1': crud('ref.leave_type'),@@SYS:enf.refCrud.callsign.staff@@
+@@SYS:enf.refCrud.award@@@@SYS:enf.uncov.staff@@    'bassam_dayshift_v1': all(['round.edit', 'report.edit', 'round.create', 'report.create']),
     'bassam_dayfocus_v1': all(['round.edit', 'report.edit', 'round.create', 'report.create']),
     'bassam_dr_grp_v1': all(['report.edit', 'report.create'])
   };
@@ -25,21 +23,7 @@ function enfVia(A, k, rn, d, curVal, newVal, ctx) {
   if (curVal == null || newVal == null) return null;
   var ds = null, i, f, need = {};
   function diffs() { if (!ds) ds = walkDiff(curVal, newVal); return ds; }
-  /* EMP_FIELDS: الجدولُ الشهري يكتب في سجل الموظفين حقلَي نوع العمل/التوظيف (والهوية القانونية eid) وحدها */
-  if (rn === 'bassam_employees_v1' && diffs().length && diffs().every(EMP_FIELDS)) {
-    for (i = 0; i < ds.length; i++) { f = ds[i].p.split('.').pop(); if (f === 'work') need['staff.work_type.assign'] = 1; else if (f === 'type') need['staff.employment_type.assign'] = 1; }
-    var ks = Object.keys(need);
-    if (!ks.length) return enfHeld(A, d, 'staff.work_type.assign') || enfHeld(A, d, 'staff.employment_type.assign') ? { keys: [enfHeld(A, d, 'staff.work_type.assign') ? 'staff.work_type.assign' : 'staff.employment_type.assign'], tag: 'via:EMP_FIELDS(eid)' } : null;
-    for (i = 0; i < ks.length; i++) if (!enfHeld(A, d, ks[i])) return null;
-    return { keys: ks, tag: 'via:EMP_FIELDS' };
-  }
-  /* CS_ONLY · SNAP_CS_ONLY: التقريرُ اليومي يُسند رمزَ النداء في الجدول (حقل cs وحده) */
-  if ((rn === 'bassam_staffing_v3' && diffs().length && diffs().every(CS_ONLY)) || (rn === 'bassam_staffing_snap_v1' && diffs().length && diffs().every(SNAP_CS_ONLY))) {
-    if (enfHeld(A, d, 'report.callsign.assign')) return { keys: ['report.callsign.assign'], tag: 'via:CS_ONLY' };
-    if (enfHeld(A, d, 'staff.callsign.assign')) return { keys: ['staff.callsign.assign'], tag: 'via:CS_ONLY(staff)' };
-    return null;
-  }
-  /* SEED_ONLY: بذرُ قوالب الصلاحيات الافتراضية لأول مرّة (القائمةُ فارغة) من صفحة التقرير */
+@@SYS:enf.via.staff@@  /* SEED_ONLY: بذرُ قوالب الصلاحيات الافتراضية لأول مرّة (القائمةُ فارغة) من صفحة التقرير */
   if (rn === 'bassam_perm_tpls_v1' && diffs().length && diffs().every(SEED_ONLY)) {
     var sk = ['tpl.create', 'report.create', 'report.edit'];
     for (i = 0; i < sk.length; i++) if (enfHeld(A, d, sk[i])) return { keys: [sk[i]], tag: 'via:SEED_ONLY' };

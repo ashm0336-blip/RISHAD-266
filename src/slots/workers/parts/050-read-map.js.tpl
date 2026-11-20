@@ -4,24 +4,17 @@
    وسجلّاتُ المضبوطات والإرشاد والجائزة والعهدة والمهام لا تقرؤها إلا صفحتُها. ومَن مُنح «النسخ
    الاحتياطية» يقرأ كلَّ مجموعات إدارته لأن النسخةَ لا تُصدَّر ناقصة. */
 var RD_ANY = ['admin/backup'];            /* ورقةٌ تقرأ كلَّ مجموعات الإدارة */
-var RD_OPS = ['emps/data','staff','plan','daily/rounds','daily/field','dreport'@@SYS:read.ops.tasks@@@@SYS:read.ops@@,'planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
+var RD_OPS = ['emps/data',@@SYS:read.ops.staff@@'plan','daily/rounds','daily/field','dreport'@@SYS:read.ops.tasks@@@@SYS:read.ops@@,'planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
 var RD_REG = {
   /* ── مراجعُ مشتركة: تُقرأ من كل صفحةٍ تشغيليّة لتعرض اسماً أو ورديّة ── */
   'bassam_employees_v1':       RD_OPS,
   'bassam_shift_options_v1':   RD_OPS.concat(['admin/shifts']),
-  'bassam_staffing_v3':        RD_OPS,
-  'bassam_dreport_v1':         ['dreport', 'daily/rounds', 'daily/field', 'emps/data'@@SYS:read.map.dreport@@, 'staff'@@SYS:read.map.reader.tasks.1@@, 'planning', 'planning/readiness'],
-  'bassam_options_v1':         ['emps/data', 'staff'@@SYS:read.map.reader.tasks.2@@, 'planning', 'planning/readiness'],
-  'bassam_perm_tpls_v1':       ['admin/ptpls', 'dreport', 'emps/data', 'plan', 'staff'@@SYS:read.map.reader.tasks.3@@, 'planning', 'planning/readiness'],
-  'bassam_perm_tpls_named_v1': ['admin/ptpls', 'staff'],
-  'bassam_staffing_locks_v1':  ['staff', 'dreport', 'emps/data', 'plan', 'planning', 'planning/readiness'],
-  'bassam_perm_limit_v1':      ['staff', 'dreport', 'planning', 'planning/readiness'],
-  /* ── الموظفون ── */
-@@SYS:readMap.custody@@  /* ── التوزيع ── */
-  'bassam_staffing_v2':        ['staff', 'planning', 'planning/readiness'],
-  'bassam_staffing_snap_v1':   ['staff'],
-  'bassam_callsigns_v1':       ['staff', 'dreport'],
-  /* ── الخطة التشغيلية والمتابعة اليومية: بنيةُ الموقع تُقرأ من صفحتَيه ومن التقرير ── */
+@@SYS:read.map.roster.staff@@  'bassam_dreport_v1':         ['dreport', 'daily/rounds', 'daily/field', 'emps/data'@@SYS:read.map.dreport@@@@SYS:read.map.reader.staff.1@@@@SYS:read.map.reader.tasks.1@@, 'planning', 'planning/readiness'],
+  'bassam_options_v1':         ['emps/data'@@SYS:read.map.reader.staff.2@@@@SYS:read.map.reader.tasks.2@@, 'planning', 'planning/readiness'],
+  'bassam_perm_tpls_v1':       ['admin/ptpls', 'dreport', 'emps/data', 'plan'@@SYS:read.map.reader.staff.3@@@@SYS:read.map.reader.tasks.3@@, 'planning', 'planning/readiness'],
+  'bassam_perm_tpls_named_v1': ['admin/ptpls'@@SYS:read.map.reader.staff.4@@],
+@@SYS:read.map.locks.staff@@  /* ── الموظفون ── */
+@@SYS:readMap.custody@@@@SYS:read.map.staff@@  /* ── الخطة التشغيلية والمتابعة اليومية: بنيةُ الموقع تُقرأ من صفحتَيه ومن التقرير ── */
   'bassam_plan_v1':            ['plan', 'daily/rounds', 'daily/field', 'dreport', 'emps/data'],
   'bassam_zone_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],
   'bassam_gate_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],
@@ -31,7 +24,7 @@ var RD_REG = {
   'bassam_dayfocus_v1':        ['daily/rounds', 'daily/field', 'dreport'],
   /* ── التقرير اليومي ── */
   'bassam_dr_grp_v1':          ['dreport'],
-  'bassam_leave_kinds_v1':     ['dreport', 'staff'],
+  'bassam_leave_kinds_v1':     ['dreport'@@SYS:read.map.reader.staff.5@@],
 @@SYS:read.map.tasks@@@@SYS:read.map.systems@@  /* ── الإعدادات ── */
   'bassam_last_export_v1':     ['admin/backup']
 };

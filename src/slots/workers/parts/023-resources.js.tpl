@@ -28,16 +28,9 @@ var RES_REG = {
   /* R187: «مجموعات | قائمة» في الجدول الشهري — تفضيلُ عرضٍ لهذا الجهاز (لكل إدارة) */
   'bassam_st_grp_v1':          { scope: 'device' },
   /* ── موظفو الإدارة ── */
-  'bassam_employees_v1':       { scope: 'dept', cap: 'emps/data', via: { staff: 'EMP_FIELDS' }, self: 'email' },
+  'bassam_employees_v1':       { scope: 'dept', cap: 'emps/data'@@SYS:res.emp.via.staff@@, self: 'email' },
   'bassam_options_v1':         { scope: 'dept', cap: 'emps/data' },
-@@SYS:res.custody@@  /* ── الجدول الشهري ── */
-  'bassam_staffing_v3':        { scope: 'dept', cap: 'staff', via: { dreport: 'CS_ONLY' } },
-  'bassam_staffing_v2':        { scope: 'dept', cap: 'staff' },
-  'bassam_staffing_snap_v1':   { scope: 'dept', cap: 'staff', via: { dreport: 'SNAP_CS_ONLY' } },
-  'bassam_staffing_locks_v1':  { scope: 'dept', cap: 'staff' },
-  'bassam_callsigns_v1':       { scope: 'dept', cap: 'staff' },
-  'bassam_perm_limit_v1':      { scope: 'dept', cap: ['staff', 'dreport'] },
-  /* ── التشغيل الميداني ── */
+@@SYS:res.custody@@@@SYS:res.reg.staff@@  /* ── التشغيل الميداني ── */
   'bassam_plan_v1':            { scope: 'dept', cap: 'plan', via: { 'emps/data': 'EMP_REFS' } },
   'bassam_zone_opts_v1':       { scope: 'dept', cap: 'plan' },
   'bassam_gate_opts_v1':       { scope: 'dept', cap: 'plan' },

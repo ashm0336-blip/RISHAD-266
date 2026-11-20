@@ -72,7 +72,7 @@ function permv4Read(A, k, value, oldOk, where, budget, refs) {
   var selMode = !keys.length ? 'no-read-key' : (held.length ? 'held' : (oldOk ? 'gap:allowed-without-selected-key' : 'route-probe:asis-deny'));
   var useKeys = held.length ? held : keys, srcs = [];
   for (i = 0; i < useKeys.length; i++) srcs.push(RK.sources[useKeys[i]] || 'unbound');
-  var pv4 = (refs && d) ? { staffing: parseJson(refs['bsdept:' + d + ':bassam_staffing_v3'], null) } : {};
+  var pv4 = (refs && d) ? { @@SYS:permv4.read.pv4.staff@@ } : {};
   var cx4 = permv4Ctx(A, d, k, okMap, { pv4: pv4 }); cx4.read = true; cx4.readMaxItems = PV4_READ_MAX;
   var R = KIVO_SCOPE.evaluateRead(useKeys, cx4.actor, rn, v, cx4);
   if (budget) { budget.items += R.items; budget.reads++; }
