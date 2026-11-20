@@ -190,7 +190,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
     this._storeLisDr = (t) => {
       try {
-        "bassam_rounds_v1" !== ((t && t.detail && t.detail.key) || "") ||
+        -1 === (KIVO.bus.read("rounds.resources@1") || []).indexOf((t && t.detail && t.detail.key) || "") ||   /* V7 · د5-هـ: مفتاحُ الجولات من مالكها — بغيابه لا شيء يطابق */
           this._drWriting ||
           this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
       } catch (t) {}
@@ -484,7 +484,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   drRounds() {
     try {
-      const t = KIVO.__BS_SRV.operations.get("bassam_rounds_v1");
+      const t = KIVO.bus.read("rounds.days@1");   /* V7 · د5-هـ: أيامُ الجولات من مالكها — بغيابه undefined ⇒ {} (لا جولة) */
       return t && "object" == typeof t ? t : {};
     } catch (t) {
       return {};
@@ -512,7 +512,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     ((r.on = !!t), this.drGrpSave(r));
   }
   async drRoundsSave(t, intent = t) {
-    return await this._drCommit(intent, draft => draft.set("bassam_rounds_v1", t));
+    /* V7 · د5-هـ: يومُ الجولة يكتبه مالكُه بأمرٍ معلن داخل مسودة التقرير (طلبٌ واحد) — بغيابه لا يُرسل شيء */
+    const day = this.drRoundKey(), rec = t[day];
+    return await this._drCommit(intent, draft => {
+      const done = KIVO.bus.call("rounds.spot.set@1", { day, rec }, draft);
+      if (!done || done.ok !== 1) throw Error("rounds-absent");
+    });
   }
   drRoundKey() {
     return this.state.rpY + "-" + this.state.rpM + "-" + this.state.rpD;
@@ -973,8 +978,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   KIVO.bus.read("staff.locks@1", draft); KIVO.bus.read("staff.schedule@1", draft);   /* V7 · د5-د2: المالكُ يقرأ مفتاحيه في مسودتنا (اعتمادُ القراءة كما كان) */
                   ["bassam_employees_v1", "bassam_shift_options_v1"].forEach(name => draft.get(name));
                   this._drPrepareDefaultShift(draft, r);
-                  this._drRoundResult = KIVO.BassamRound && this.bsOn("daily/rounds")
-                    ? KIVO.BassamRound.prepareEnsure(draft, this.state.rpY, this.state.rpM, this.state.rpD) : null;
+                  const pulled = { y: this.state.rpY, m: this.state.rpM, d: this.state.rpD, shift: r };
+                  KIVO.bus.participate("dreport.pulled@1", pulled, draft);   /* V7 · د5-هـ: الجولاتُ تُنشئ جولةَ اليوم في المسودة نفسِها وتكتب نتيجتَها في pulled.round */
+                  this._drRoundResult = pulled.round || null;
                 })) return;
                 this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
                 this.bsAck("سُحب جدول " + r + " — " + KIVO.BassamCount(a.length, "موظف") + "", "ok");
@@ -1139,8 +1145,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     KIVO.bus.read("staff.locks@1", draft); KIVO.bus.read("staff.schedule@1", draft);   /* V7 · د5-د2 */
                     ["bassam_shift_options_v1"].forEach(name => draft.get(name));
                     this._drPrepareDefaultShift(draft, r);
-                    this._drRoundResult = KIVO.BassamRound && this.bsOn("daily/rounds")
-                      ? KIVO.BassamRound.prepareEnsure(draft, this.state.rpY, this.state.rpM, this.state.rpD) : null;
+                    const pulled = { y: this.state.rpY, m: this.state.rpM, d: this.state.rpD, shift: r, from: n.d };
+                    KIVO.bus.participate("dreport.pulled@1", pulled, draft);   /* V7 · د5-هـ: كالسحب */
+                    this._drRoundResult = pulled.round || null;
                   })) return;
                   this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
                   this.bsAck("تُوبع من تقرير يوم " + n.d + " — " + KIVO.BassamCount(a.length, "موظف") + "", "ok");
@@ -1391,10 +1398,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!await this.rpSave(r, { op: "shift-approval", day: this.DK(), shift: e, value: !!t }, draft => {
         if (t) this._drPrepareDefaultShift(draft, e);
         this._drRoundApproval = null;
-        if (KIVO.BassamRound && this.bsOn("daily/rounds")) {
-          if (t) KIVO.BassamRound.prepareEnsure(draft, this.state.rpY, this.state.rpM, this.state.rpD);
-          this._drRoundApproval = KIVO.BassamRound.prepareShiftAp(draft, this.state.rpY, this.state.rpM, this.state.rpD, e, t ? 1 : 0);
-        }
+        const approval = { y: this.state.rpY, m: this.state.rpM, d: this.state.rpD, shift: e, value: !!t };
+        KIVO.bus.participate("dreport.shiftApproved@1", approval, draft);   /* V7 · د5-هـ: الجولاتُ تعتمد جولةَ الوردية أو تفتحها في المسودة نفسِها ← approval.round */
+        this._drRoundApproval = approval.round || null;
       })) return false;
       this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
       if (t) this._drNotifyDefaultShift(e);

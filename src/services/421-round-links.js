@@ -10,7 +10,14 @@
      command  rounds.sites.patch@1 { site }  كلُّ موقعٍ غير معتمد في يومٍ غير معتمد من اليوم فصاعداً ← site(موقع).
      command  rounds.month.clear@1 { y, m }  يحذف أيامَ الشهر وعلامتَه.
      command  rounds.site.remove@1 { index } يحذف الموقعَ بموضعه من كل يوم.
-     command  rounds.sites.pad@1 { sites }   يكمّل مواقعَ كل يومٍ غير معتمد من اليوم فصاعداً حتى عدد sites (بهويّاتها sid). */
+     command  rounds.sites.pad@1 { sites }   يكمّل مواقعَ كل يومٍ غير معتمد من اليوم فصاعداً حتى عدد sites (بهويّاتها sid).
+   V7 · د5-هـ (r4) — روابطُ التقرير اليومي:
+     read     rounds.resources@1()          [مفتاحُ مورد الجولات] — لمن ينتظر تغيّرَه دون أن يسمّيه.
+     command  rounds.spot.set@1 { day, rec } يضع سجلَّ يوم الجولة day (بعد تسكين موظفٍ أو رفعه من التقرير) ويكتب الوثيقة.
+     participant dreport.pulled@1 { y, m, d, shift, from? }   سحبُ وردية التقرير (أو متابعتُها): تُنشأ جولةُ اليوم في المسودة نفسِها (prepareEnsure)
+                 والنتيجةُ تُكتب على الحدث نفسِه event.round ليقرأها الناشرُ لإشعاره. لا تُنشأ إن أُطفئت «الجولات» (daily/rounds) في الإدارة.
+     participant dreport.shiftApproved@1 { y, m, d, shift, value }   اعتمادُ الوردية أو فتحُها: value ⇒ تُنشأ الجولةُ أولاً، ثم تُعتمد جولةُ الوردية
+                 أو تُفتح (prepareShiftAp) ← event.round. */
 (function () {
   var bus = KIVO.bus, KEY = 'bassam_rounds_v1';
   function via(how) {
@@ -41,6 +48,7 @@
     return KIVO.BassamRound && KIVO.BassamRound.lensFilter ? KIVO.BassamRound.lensFilter(sites) : sites;
   });
   bus.provide('rounds.names@1', function () { var o = {}; o[KEY] = 'الجولات اليومية'; return o; });
+  bus.provide('rounds.resources@1', function () { return [KEY]; });
 
   bus.command('rounds.sites.patch@1', function (payload, draft) {
     drafted('rounds.sites.patch@1', draft);
@@ -100,5 +108,26 @@
       if (changed) draft.set(KEY, rounds);
     }
     return { ok: 1, changed: changed };
+  });
+
+  /* ── V7 · د5-هـ (r4): التقرير اليومي ── */
+  bus.command('rounds.spot.set@1', function (payload, draft) {
+    drafted('rounds.spot.set@1', draft);
+    var rounds = draft.get(KEY);
+    rounds = rounds && typeof rounds === 'object' ? rounds : {};
+    rounds[payload.day] = payload.rec;
+    draft.set(KEY, rounds);
+    return { ok: 1, changed: true };
+  });
+  /* «الجولات» مفعَّلةٌ في الإدارة النشطة؟ — الشرطُ نفسُه الذي كان التقريرُ يسأله (bsOn("daily/rounds")) */
+  function roundsOn() { try { var P = KIVO.BassamPerm; return !P || !P.on || !!P.on('daily/rounds'); } catch (e) { return true; } }
+  bus.participant('dreport.pulled@1', function (event, draft) {
+    if (!(KIVO.BassamRound && roundsOn())) return;
+    event.round = KIVO.BassamRound.prepareEnsure(draft, event.y, event.m, event.d);
+  });
+  bus.participant('dreport.shiftApproved@1', function (event, draft) {
+    if (!(KIVO.BassamRound && roundsOn())) return;
+    if (event.value) KIVO.BassamRound.prepareEnsure(draft, event.y, event.m, event.d);
+    event.round = KIVO.BassamRound.prepareShiftAp(draft, event.y, event.m, event.d, event.shift, event.value ? 1 : 0);
   });
 })();

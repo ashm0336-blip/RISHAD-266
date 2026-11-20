@@ -1,0 +1,74 @@
+{
+ "daily.addr.1.dreport": {
+  "order": 10,
+  "text": " || \"dreport\" === x"
+ },
+ "daily.addr.list.dreport": {
+  "order": 10,
+  "text": ", \"dreport\""
+ },
+ "daily.addr.2.dreport": {
+  "order": 10,
+  "text": "\"dreport\" === t"
+ },
+ "daily.addr.3.dreport": {
+  "order": 10,
+  "text": " || \"dreport\" === n.dsTab"
+ },
+ "daily.kpiDaily.dreport": {
+  "order": 10,
+  "text": "      if (\"kpiDaily\" === t) return !e || !e.can || !!e.can(\"dreport\", \"view\");\n"
+ },
+ "daily.can.dreport": {
+  "order": 10,
+  "text": "      qn = (() => {\n        try {\n          const t = KIVO.BassamPerm;\n          return !t || !t.can || !!t.can(\"dreport\", \"view\");\n        } catch (t) {\n          return !0;\n        }\n      })(),\n"
+ },
+ "daily.pick.dreport": {
+  "order": 10,
+  "text": "\"dreport\" === s.dsTab ? \"dreport\" : "
+ },
+ "daily.fb.1.dreport": {
+  "order": 10,
+  "text": "qn ? \"dreport\" : "
+ },
+ "daily.fb.2.dreport": {
+  "order": 10,
+  "text": "      \"dreport\" !== $n || qn || ($n = Qn ? \"kpi\" : @@SYS:daily.fallback.2.tasks|empty=\"\\\"rounds\\\"\"@@),\n"
+ },
+ "daily.fb.3.dreport": {
+  "order": 10,
+  "text": "qn ? \"dreport\" : "
+ },
+ "daily.tabVals.1.dreport": {
+  "order": 10,
+  "text": "        dsOnDr: \"dreport\" === $n,\n"
+ },
+ "daily.tabVals.2.dreport": {
+  "order": 10,
+  "text": "        dsDrTabStyle: ti(\"dreport\" === $n),\n        dsDrTabIcon: ei(\"dreport\" === $n),\n        dsDrTabLbl: si(\"dreport\" === $n),\n"
+ },
+ "daily.tabVals.3.dreport": {
+  "order": 10,
+  "text": "        dsGoDr: () => this.setState({ dsTab: \"dreport\" }),\n"
+ },
+ "daily.tabVals.4.dreport": {
+  "order": 10,
+  "text": "        dsDrTabShow: qn,\n"
+ },
+ "daily.tabBar.dreport": {
+  "order": 10,
+  "text": " + (qn ? 1 : 0)"
+ },
+ "daily.fb.4.dreport": {
+  "order": 10,
+  "text": "qn ? \"dreport\" : "
+ },
+ "daily.view.tab.dreport": {
+  "order": 10,
+  "file": "slots/daily.view.tab.dreport.frag"
+ },
+ "daily.view.mount.dreport": {
+  "order": 10,
+  "text": "<!-- ═══ تبويب «التقرير اليومي» — يستورد صفحته كما تستورد «الخطة التشغيلية» جدولها ═══ -->\n<sc-if value=\"{{dsOnDr}}\" hint-placeholder-val=\"{{ false }}\">\n<dc-import name=\"Daily Report\" hint-size=\"100%,1100px\"></dc-import>\n</sc-if>\n"
+ }
+}

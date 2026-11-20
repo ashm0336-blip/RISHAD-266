@@ -593,7 +593,7 @@
   },
   "daily.guard.tasks": {
    "order": 10,
-   "text": ",\n      \"tasks\" !== $n || TKn || ($n = Qn ? \"kpi\" : qn ? \"dreport\" : \"rounds\")"
+   "text": ",\n      \"tasks\" !== $n || TKn || ($n = Qn ? \"kpi\" : @@SYS:daily.fb.4.dreport@@\"rounds\")"
   },
   "daily.fallback.2.tasks": {
    "order": 10,

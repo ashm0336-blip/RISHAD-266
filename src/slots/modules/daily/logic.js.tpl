@@ -184,7 +184,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     try {
       if (this.props && this.props.solo) return;
       const o = KIVO.__BS_OPEN_TAB,
-        hv = (x) => ("rounds" === x || "dreport" === x@@SYS:daily.addr.1.tasks@@ ? x : "");
+        hv = (x) => ("rounds" === x@@SYS:daily.addr.1.dreport@@@@SYS:daily.addr.1.tasks@@ ? x : "");
       if (!o || o.page !== "daily") {
         const sd = this.__bsSeeded;
         sd && void 0 !== sd.dsTab && ((this.__bsSeeded = null), this._bsHT(hv(this.state.dsTab)));
@@ -194,10 +194,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       this.__bsSeeded = null;
       const t = o.tab,
         P = KIVO.BassamPerm || {},
-        V = ["rounds", "dreport"@@SYS:daily.addr.list.tasks@@];
+        V = ["rounds"@@SYS:daily.addr.list.dreport@@@@SYS:daily.addr.list.tasks@@];
       const ok =
         -1 !== V.indexOf(t) &&
-        ("dreport" === t@@SYS:daily.addr.2.tasks@@
+        (@@SYS:daily.addr.2.dreport|empty="!1"@@@@SYS:daily.addr.2.tasks@@
           ? P.can
             ? P.can(t, "view")
             : !0
@@ -219,7 +219,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         this._bsHT(
           (() => {
             const n = { ...this.state, ...t };
-            return "rounds" === n.dsTab || "dreport" === n.dsTab@@SYS:daily.addr.3.tasks@@ ? n.dsTab : "";
+            return "rounds" === n.dsTab@@SYS:daily.addr.3.dreport@@@@SYS:daily.addr.3.tasks@@ ? n.dsTab : "";
           })(),
         );
     } catch (x) {}
@@ -355,7 +355,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             this.setState({ rounds: this.loadRounds() });
           } catch (t) {}
         (planKey !== e &&
-          "bassam_dreport_v1" !== e &&
+          (KIVO.bus.read("dreport.resources@1", "doc") || [])[0] !== e &&   /* V7 · د5-هـ: مفتاحُ التقرير من مالكه — بغيابه لا شيء يطابق */
           "bassam_dayshift_v1" !== e) ||
           ((this._drAp9 = null),
           this.setState((t) => ({ extTick: (t.extTick || 0) + 1 })),
@@ -364,7 +364,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               try {
                 const t = KIVO.BassamDayFocus && KIVO.BassamDayFocus.get();
                 if (!t) return;
-                const e = (this._opRead("bassam_dreport_v1") || {} || {})[
+                const e = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[
                   t.y + "-" + t.m + "-" + t.d
                 ];
                 if (!(e && e.shifts && Object.keys(e.shifts).some((t) => e.shifts[t] && e.shifts[t].pulled))) return;
@@ -4533,7 +4533,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   _kRep() {
     try {
-      const t = this._opRead("bassam_dreport_v1");
+      const t = KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k));
       return t && "object" == typeof t ? t : {};
     } catch (t) {
       return {};
@@ -5765,8 +5765,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       const L = (k) => this._kOn(k);
       if ("kpiOcc" === t) return L("zones") && L("dens");
       if ("kpiZones" === t) return L("zones");
-      if ("kpiDaily" === t) return !e || !e.can || !!e.can("dreport", "view");
-      return !0;
+@@SYS:daily.kpiDaily.dreport|empty="      if (\"kpiDaily\" === t) return !1;\n"@@      return !0;
     } catch (t) {
       return !0;
     }
@@ -7175,7 +7174,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         if (t && t.k === N) return t.m;
         const e = {};
         try {
-          const t = (this._opRead("bassam_dreport_v1") || {} || {})[N];
+          const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[N];
           t &&
             t.shifts &&
             Object.keys(t.shifts).forEach((s) => {
@@ -8602,7 +8601,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         const b = {};
         let k = !1;
         try {
-          const t = (this._opRead("bassam_dreport_v1") || {} || {})[
+          const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[
             T + "-" + s.month + "-" + m
           ];
           t &&
@@ -8643,7 +8642,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             });
         } catch (t) {}
         try {
-          const t = (this._opRead("bassam_dreport_v1") || {} || {})[
+          const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[
               T + "-" + s.month + "-" + m
             ],
             e = t && t.shifts && x ? t.shifts[x] : null,
@@ -12421,7 +12420,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             tin: {},
           };
           try {
-            const t = (this._opRead("bassam_dreport_v1") || {} || {})[N];
+            const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[N];
             t &&
               t.shifts &&
               Object.keys(t.shifts).length &&
@@ -13466,20 +13465,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       Jn = Kn && this._dsTabOn("kpiZones"),
       Vn =
         this._dsTabOn("rounds") && (this.bsLensOn("zones") || this.bsLensOn("gates") || this.bsLensOn("marks") || this.bsLensOn("paths")),
-      qn = (() => {
-        try {
-          const t = KIVO.BassamPerm;
-          return !t || !t.can || !!t.can("dreport", "view");
-        } catch (t) {
-          return !0;
-        }
-      })(),
-@@SYS:daily.can.tasks@@      Qn = Un || Xn || Jn,
+@@SYS:daily.can.dreport@@@@SYS:daily.can.tasks@@      Qn = Un || Xn || Jn,
       _n = this.props && -1 !== ["kpiDaily", "kpiOcc", "kpiZones"].indexOf(this.props.solo) ? this.props.solo : "";
-    let $n = _n || "kpi" === s.dsTab ? "kpi" : "dreport" === s.dsTab ? "dreport" : @@SYS:daily.pick.tasks@@"rounds";
-    ("kpi" !== $n || Qn || ($n = qn ? "dreport" : @@SYS:daily.fallback.1.tasks|empty="\"rounds\""@@),
-      "dreport" !== $n || qn || ($n = Qn ? "kpi" : @@SYS:daily.fallback.2.tasks|empty="\"rounds\""@@),
-      "rounds" !== $n || Vn || ($n = Qn ? "kpi" : qn ? "dreport" : @@SYS:daily.fallback.3.tasks@@"rounds")@@SYS:daily.guard.tasks@@);
+    let $n = _n || "kpi" === s.dsTab ? "kpi" : @@SYS:daily.pick.dreport@@@@SYS:daily.pick.tasks@@"rounds";
+    ("kpi" !== $n || Qn || ($n = @@SYS:daily.fb.1.dreport@@@@SYS:daily.fallback.1.tasks|empty="\"rounds\""@@),
+@@SYS:daily.fb.2.dreport@@      "rounds" !== $n || Vn || ($n = Qn ? "kpi" : @@SYS:daily.fb.3.dreport@@@@SYS:daily.fallback.3.tasks@@"rounds")@@SYS:daily.guard.tasks@@);
     /* الموجة 1 · DG-08: الانتقالُ للألوان والظلّ وحدها — لا يُحرَّك العرضُ والحشوةُ حين تنطبق قواعدُ الشريط (كان يُحرّك 204→140px على الجوال فيقفز الشريط) */
     const ti = (t) =>
         "position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border-radius:12px;transition:background-color .3s,border-color .3s,color .3s,box-shadow .3s;flex-shrink:0;min-width:170px;cursor:pointer;font-family:'Cairo',sans-serif;border:1px solid " +
@@ -13495,23 +13485,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       ni = {
         dsOnKpi: "kpi" === $n,
         dsOnRounds: "rounds" === $n,
-        dsOnDr: "dreport" === $n,
-@@SYS:daily.tabVals.tasks@@        dsKpiTabStyle: ti("kpi" === $n),
+@@SYS:daily.tabVals.1.dreport@@@@SYS:daily.tabVals.tasks@@        dsKpiTabStyle: ti("kpi" === $n),
         dsKpiTabIcon: ei("kpi" === $n),
         dsKpiTabLbl: si("kpi" === $n),
         dsRoundsTabStyle: ti("rounds" === $n),
         dsRoundsTabIcon: ei("rounds" === $n),
         dsRoundsTabLbl: si("rounds" === $n),
-        dsDrTabStyle: ti("dreport" === $n),
-        dsDrTabIcon: ei("dreport" === $n),
-        dsDrTabLbl: si("dreport" === $n),
-        dsGoKpi: () => this.setState({ dsTab: "kpi" }),
+@@SYS:daily.tabVals.2.dreport@@        dsGoKpi: () => this.setState({ dsTab: "kpi" }),
         dsGoRounds: () => this.setState({ dsTab: "rounds" }),
-        dsGoDr: () => this.setState({ dsTab: "dreport" }),
-        dsKpiTabShow: Qn,
+@@SYS:daily.tabVals.3.dreport@@        dsKpiTabShow: Qn,
         dsRoundsTabShow: Vn,
-        dsDrTabShow: qn,
-        dsTabBarShow: !_n && (Qn ? 1 : 0) + (Vn ? 1 : 0) + (qn ? 1 : 0)@@SYS:daily.tabBar.tasks@@ > 1,
+@@SYS:daily.tabVals.4.dreport@@        dsTabBarShow: !_n && (Qn ? 1 : 0) + (Vn ? 1 : 0)@@SYS:daily.tabBar.dreport@@@@SYS:daily.tabBar.tasks@@ > 1,
         dsPmNoteOn: "rounds" === $n,
       };
     return (
@@ -17920,7 +17904,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           let y = !1,
             x = {};
           try {
-            const t = (this._opRead("bassam_dreport_v1") || {} || {})[
+            const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[
               T + "-" + s.month + "-" + m
             ];
             t &&

@@ -355,7 +355,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             this.setState({ rounds: this.loadRounds() });
           } catch (t) {}
         (planKey !== e &&
-          "bassam_dreport_v1" !== e &&
+          (KIVO.bus.read("dreport.resources@1", "doc") || [])[0] !== e &&   /* V7 · د5-هـ: مفتاحُ التقرير من مالكه — بغيابه لا شيء يطابق */
           "bassam_dayshift_v1" !== e) ||
           ((this._drAp9 = null),
           this.setState((t) => ({ extTick: (t.extTick || 0) + 1 })),
@@ -364,7 +364,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               try {
                 const t = KIVO.BassamDayFocus && KIVO.BassamDayFocus.get();
                 if (!t) return;
-                const e = (this._opRead("bassam_dreport_v1") || {} || {})[
+                const e = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[
                   t.y + "-" + t.m + "-" + t.d
                 ];
                 if (!(e && e.shifts && Object.keys(e.shifts).some((t) => e.shifts[t] && e.shifts[t].pulled))) return;
@@ -4533,7 +4533,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   _kRep() {
     try {
-      const t = this._opRead("bassam_dreport_v1");
+      const t = KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k));
       return t && "object" == typeof t ? t : {};
     } catch (t) {
       return {};
@@ -7175,7 +7175,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         if (t && t.k === N) return t.m;
         const e = {};
         try {
-          const t = (this._opRead("bassam_dreport_v1") || {} || {})[N];
+          const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[N];
           t &&
             t.shifts &&
             Object.keys(t.shifts).forEach((s) => {
@@ -8602,7 +8602,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         const b = {};
         let k = !1;
         try {
-          const t = (this._opRead("bassam_dreport_v1") || {} || {})[
+          const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[
             T + "-" + s.month + "-" + m
           ];
           t &&
@@ -8643,7 +8643,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             });
         } catch (t) {}
         try {
-          const t = (this._opRead("bassam_dreport_v1") || {} || {})[
+          const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[
               T + "-" + s.month + "-" + m
             ],
             e = t && t.shifts && x ? t.shifts[x] : null,
@@ -12421,7 +12421,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             tin: {},
           };
           try {
-            const t = (this._opRead("bassam_dreport_v1") || {} || {})[N];
+            const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[N];
             t &&
               t.shifts &&
               Object.keys(t.shifts).length &&
@@ -17935,7 +17935,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           let y = !1,
             x = {};
           try {
-            const t = (this._opRead("bassam_dreport_v1") || {} || {})[
+            const t = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[
               T + "-" + s.month + "-" + m
             ];
             t &&

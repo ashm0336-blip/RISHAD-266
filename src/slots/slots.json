@@ -1,6 +1,8 @@
 {
  "note": "V7 · د2 — قوالبُ الفتحات: tpl (في src/slots) ← out (من جذر المستودع). الناتجُ مولَّدٌ بـtools/systems.py (يستدعيه tools/generate.py) ولا يُحرَّر يدوياً؛ التعديلُ في القالب أو في قطع الأنظمة (system.json ← slots).",
  "optional": [
+  "daily.fb.4.dreport",
+  "daily.fallback.2.tasks",
   "bd.awardIndex",
   "root.liveKeys.seized.staff",
   "read.map.reader.plan.2"

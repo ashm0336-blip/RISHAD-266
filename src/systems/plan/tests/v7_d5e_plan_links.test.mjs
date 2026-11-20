@@ -210,7 +210,9 @@ test('⑤ sources: Plan names no rounds key or service; rounds and the daily rep
   for (const f of ['src/slots/modules/daily/logic.js.tpl', 'src/modules/daily/logic.js', 'src/services/420-round-factory.js', 'src/services/421-round-links.js', 'src/services/520-field-monitor.js', 'src/systems/dreport/client/logic.js'])
     assert.doesNotMatch(rd(f), /bassam_(?:plan|zone_opts|gate_opts)_v1/, f);
   const contract = JSON.parse(rd('src/systems/plan/contract.json')), rounds = JSON.parse(rd('src/contracts/rounds.json'));
-  for (const n of Object.keys(rounds.provides.commands)) assert.ok(contract.consumes[n] && contract.consumes[n].absent, n);
+  /* د5-هـ (r4): وأمرُ الجولات للتقرير اليومي (rounds.spot.set@1) يعلن غيابَه مستهلكُه — عقدُ التقرير */
+  const dreport = JSON.parse(rd('src/systems/dreport/contract.json'));
+  for (const n of Object.keys(rounds.provides.commands)) assert.ok((contract.consumes[n] && contract.consumes[n].absent) || (dreport.consumes[n] && dreport.consumes[n].absent), n);
   /* د5-هـ (دمج p3): كلُّ أمرٍ للخطة له مستهلكٌ أعلن غيابَه — الجولات (عقدها)، أو عُدّةُ الصفحات في القاعدة (_base.json ← consumes) لأمر أنواع المعالم */
   const base = JSON.parse(rd('src/contracts/_base.json')).consumes || {};
   for (const n of Object.keys(contract.provides.commands)) assert.ok((rounds.consumes[n] && rounds.consumes[n].absent) || (base[n] && base[n].absent), n);
