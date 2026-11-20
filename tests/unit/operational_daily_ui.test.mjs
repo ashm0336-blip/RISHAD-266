@@ -8,6 +8,7 @@ import vm from "node:vm";
 import * as acorn from "acorn";
 import { clone, operations, floor } from "./operational_ui_fx.mjs";
 import { SCHED_PARTS } from './sched_parts.mjs';   /* V7 · د5-د: أجزاءُ الجدولة من سجلّها */
+import { calendar, callers } from './cal_kit.mjs';   /* V7 · د5-د2: التقويم الموحّد */
 const source = fs.readFileSync("src/modules/daily/logic.js", "utf8"),
   ast = acorn.parse(source, { ecmaVersion: "latest" }),
   codec = vm.createContext({});
@@ -105,7 +106,7 @@ function world(extra = {}) {
   }
   const KIVO = {
     __BS_SRV: { operations: op.service },
-    BassamPageKit: { base: () => Base },
+    BassamPageKit: { base: () => callers(Base, () => KIVO) },   /* V7 · د5-د2: مناديات التقويم كما تعطيها العُدّة */
     BassamPerm: { can: () => true, lensOn: () => true },
     BassamAuth: {
       user: () => ({
@@ -155,6 +156,7 @@ function world(extra = {}) {
       },
     },
   });
+  calendar(C);
   vm.runInContext(source + "\nglobalThis.TestComponent=Component;", C);
   const component = new C.TestComponent();
   component.bsToast = (...args) => seen.toasts.push(args);

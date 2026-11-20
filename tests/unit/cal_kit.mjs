@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const CAL_FILE = path.join(ROOT, 'src/i18n/385-calendar.js');
-const NAMES = ['hParts', 'hGreg', 'hGregMonthLabel', 'hGregYearRange', 'hToday'];
+const NAMES = ['hParts', 'hGreg', 'hGregMonthLabel', 'hGregYearRange', 'hToday', 'hMonthDays'];   /* د5-د2: وعددُ أيام الشهر (العُدّة ترثه منادياً) */
 
 /* يحمّل الخدمة في سياقٍ جاهز (vm.createContext) فيه KIVO */
 export function calendar(ctx) { vm.runInContext(fs.readFileSync(CAL_FILE, 'utf8'), ctx, { filename: '385-calendar.js' }); return ctx; }

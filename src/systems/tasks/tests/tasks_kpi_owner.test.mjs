@@ -12,6 +12,7 @@ function load(now = { y: 1448, m: 5, d: 10 }, store = {}, scope = { state: 'read
   function Component() { this.state = {}; this.props = { solo: 'kpi' }; }
   Component.prototype.setState = function (p) { Object.assign(this.state, p); };
   const KIVO = { BassamHijri: { now: () => now }, __BS_SRV: { operations: { get: (k) => (k === 'bassam_tasks_v1' ? store : null) } }, BassamDepts: { context: () => scope } };
+  new Function('KIVO', fs.readFileSync(path.join(SRC, 'i18n/385-calendar.js'), 'utf8'))(KIVO);   /* V7 · د5-د2: التقويمُ الموحّد — الصفحةُ تسأله (الساعةُ المثبَّتة عبر BassamHijri كما كانت) */
   new Function('Component', 'KIVO', fs.readFileSync(path.join(SRC, 'systems/tasks/client/logic-kpi.js'), 'utf8'))(Component, KIVO);
   return new Component();
 }

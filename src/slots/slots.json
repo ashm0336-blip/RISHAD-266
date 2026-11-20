@@ -1,7 +1,8 @@
 {
  "note": "V7 · د2 — قوالبُ الفتحات: tpl (في src/slots) ← out (من جذر المستودع). الناتجُ مولَّدٌ بـtools/systems.py (يستدعيه tools/generate.py) ولا يُحرَّر يدوياً؛ التعديلُ في القالب أو في قطع الأنظمة (system.json ← slots).",
  "optional": [
-  "bd.awardIndex"
+  "bd.awardIndex",
+  "root.liveKeys.seized.staff"
  ],
  "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
  "templates": [
