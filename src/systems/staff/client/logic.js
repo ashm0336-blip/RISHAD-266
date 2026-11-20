@@ -274,7 +274,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       stPmApprove: this.PC("approve"),
       stPmExport: this.PC("export"),
       bsPtplOn: this.bsOn("admin/ptpls"),
-      mkDayCap: this.bsOn("dreport"),
+      mkDayCap: !!KIVO.bus.read("dreport.usable@1"),   /* V7 · د5-هـ: ورقةُ التقرير اليومي يجيب عنها مالكُه؛ بغيابه مطفأة */
       bsNever: !1,
       stPmWrite: t,
       stPmReadOnly: !t,
@@ -398,7 +398,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   drpLoad() {
     try {
-      const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1");
+      const t = KIVO.bus.read("dreport.doc@1");   /* V7 · د5-هـ: التقريرُ يُسأل مالكُه بالاسم؛ بغيابه لا أيامَ مسحوبة */
       return t && "object" == typeof t ? t : {};
     } catch (t) {
       return {};
@@ -816,7 +816,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "bassam_employees_v1",
         "bassam_staffing_locks_v1",
         "bassam_shift_options_v1",
-        "bassam_dreport_v1",
+        ...(KIVO.bus.read("dreport.resources@1", "doc") || []),   /* V7 · د5-هـ: موردُ التقرير يسمّيه مالكُه؛ بغيابه لا يدخل التوقيع */
         "bassam_perms_v1",
         "bassam_options_v1",
         "bassam_callsigns_v1",
@@ -2678,7 +2678,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             : "لا يوجد جدول في " + this.mkLabel(e) + " للنسخ منه",
           ...(() => {
             const s = this.drpApprovedDays(+e.split("-")[0], +e.split("-")[1]),
-              r = s.length > 0 && this.bsOn("dreport"),
+              r = s.length > 0 && !!KIVO.bus.read("dreport.usable@1"),
               n = t.day || (s[0] ? s[0].key : ""),
               i = s.find((t) => t.key === n) || null,
               o = i ? Object.keys(this.drpDayPlan(i.key)).length : 0,

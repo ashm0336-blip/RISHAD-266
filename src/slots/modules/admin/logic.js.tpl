@@ -1524,8 +1524,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ({
         bassam_employees_v1: "قائمة الموظفين",
 @@SYS:admin.keyLabels.staff@@        bassam_rounds_v1: "الجولات اليومية",
-        bassam_dreport_v1: "التقرير اليومي",
-@@SYS:admin.keyLabels.plan@@@@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
+@@SYS:admin.keyLabels.dreport@@@@SYS:admin.keyLabels.plan@@@@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
         bassam_perms_v1: "الصلاحيات",
         bassam_depts_v1: "الإدارات",
 @@SYS:admin.keyLabels@@@@SYS:admin.keyLabels.custody@@      }[s] || (KL ? KL.label(s) : "بيانات المنصة")) + (e ? " · " + this.adDept(e[1]) : "")
@@ -5114,7 +5113,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!pg || !(pg.tabs || []).length) return null;
     const lensArr = Array.isArray(dr.lenses) ? dr.lenses : KIVO.BassamPerm.deptLenses ? KIVO.BassamPerm.deptLenses(did) : [],
       C = P24.ceil(did, { cap: dr.cap, subs: dr.subs || {}, tabs: dr.tabs || {}, lenses: lensArr }),
-      want = { kpiDaily: P24.leafOn(C, "dreport"), kpiOcc: C.lens("dens") && P24.lensHosted("dens", C), kpiZones: C.lens("zones") && P24.lensHosted("zones", C) },
+      want = { kpiDaily: @@SYS:admin.kpiDaily.dreport|empty="!1"@@, kpiOcc: C.lens("dens") && P24.lensHosted("dens", C), kpiZones: C.lens("zones") && P24.lensHosted("zones", C) },
       has = -1 !== (dr.cap || []).indexOf("daily"),
       cur = Array.isArray((dr.tabs || {}).daily) ? dr.tabs.daily.slice() : has ? pg.tabs.map((t) => t.key) : [];
     let ch = !1;
@@ -8374,8 +8373,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             const r = (a.filter((t) => t.id === s)[0] || {}).name || "",
               i = {
                 bassam_employees_v1: "الموظفون",
-@@SYS:admin.resLabels.custody@@@@SYS:admin.resLabels.staff@@                bassam_leave_kinds_v1: "كتالوج أنواع الإجازات",
-                bassam_shift_options_v1: "خيارات الورديات",
+@@SYS:admin.resLabels.custody@@@@SYS:admin.resLabels.staff@@@@SYS:admin.resLabels.dreport@@                bassam_shift_options_v1: "خيارات الورديات",
 @@SYS:admin.wipe.labels.plan@@                bassam_rounds_v1: "الجولات اليومية",
 @@SYS:admin.wipe.labels.plan.opts@@@@SYS:admin.wipe.labels.tasks@@@@SYS:admin.wipe.labels@@                bassam_options_v1: "الخيارات العامة",
                 bassam_profile_v1: "الملف التعريفي",

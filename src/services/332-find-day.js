@@ -274,7 +274,7 @@
         var me = null; emps.forEach(function(e){ if (me || !e) return; if (keyOf(e) === u.ekey || toksOf(e).indexOf(u.ekey) !== -1) me = e; });
         var myKey = me ? keyOf(me) : u.ekey;
         var found = '';
-        var rec = (J9('bassam_dreport_v1', {}) || {})[y + '-' + m + '-' + d];
+        var rec = (KIVO.bus.read('dreport.doc@1') || {})[y + '-' + m + '-' + d];   /* V7 · د5-هـ: التقريرُ يُسأل مالكُه بالاسم؛ بغيابه لا يومَ مسحوب */
         if (rec && rec.shifts) Object.keys(rec.shifts).forEach(function(nm){
           if (found) return; var sr = rec.shifts[nm]; if (!sr || !sr.pulled) return;
           (sr.roster || []).forEach(function(x){ if (found || !x || !x.ekey) return;

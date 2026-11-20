@@ -215,7 +215,7 @@
   /* ═══ مفتاح التخزين → مفتاح القدرة التي يخصّها (لتجميع أسماء المجموعات في النسخ والمسح حسب سقف الإدارة) ═══ */
   var KEY_CAP = { bassam_employees_v1:'emps', bassam_options_v1:'emps',@@SYS:perm.keyCap.custody@@@@SYS:tree.keyCap.staff@@
     bassam_shift_options_v1:'admin/shifts', bassam_perm_tpls_v1:'admin/ptpls',
-@@SYS:tree.keyCap.plan@@    bassam_rounds_v1:'daily/rounds', bassam_dreport_v1:'dreport', bassam_dr_grp_v1:'dreport', bassam_leave_kinds_v1:'dreport'@@SYS:tree.keyCap|sep=",\n"|pre=",\n"|post=" };"|empty=" };"@@
+@@SYS:tree.keyCap.plan@@    bassam_rounds_v1:'daily/rounds'@@SYS:tree.keyCap.dreport@@@@SYS:tree.keyCap|sep=",\n"|pre=",\n"|post=" };"|empty=" };"@@
   function keyCap(k){ var b = String(k || '').replace(/^bsdept:[^:]+:/, '').replace(/:.*$/, ''); return KEY_CAP[b] || ''; }
   function keyOn(k, did){ try { if ((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper())) return true; /* V7 · د1-ج: مدير المنصة بلا قيد */ var c = keyCap(k); return c ? onCap(c, did) : true; } catch (e) { return true; } }
   /* R188: «هل يملك المستخدمُ الحاليُّ الكتابةَ في هذا المورد؟» — من ورقته (keyCap) وأفعاله. تُسأل قبل أي كتابةٍ
@@ -256,8 +256,7 @@
       if (!canSub(pk, sk, 'view')) return false;
       if (sk === 'kpiOcc') return onCap('zones') && onCap('dens');
       if (sk === 'kpiZones') return onCap('zones');
-      if (sk === 'kpiDaily') return can('dreport', 'view');
-      return true;
+@@SYS:tree.kpiPanel.dreport|empty="      if (sk === 'kpiDaily') return false;   /* V7 · د5-هـ: بلا التقرير اليومي لا لوحةَ له */\n"@@      return true;
     } catch (e) { return false; }   /* KIVO_261 (المراجعةُ المستقلة): العطلُ يُخفي (كما كان فحصُ الرابط في الغلاف) لا يُظهر */
   }
   KIVO.BassamPerm = { keyCap: keyCap, keyOn: keyOn, canW: canW, navOrder: navOrder, orderRows: orderRows, siteMap: siteMap, PAGE_KEYS: PAGE_KEYS, PAGE_REG: PAGE_REG, NAV_REG: NAV_REG, NAV2PERM: NAV2PERM, PERM2NAV: PERM2NAV, ALL_ACTS: ALL_ACTS, deptAccountsCount: deptAccountsCount, purgeDeptAccounts: purgeDeptAccounts, deptCap: deptCap, setDeptCap: setDeptCap, rawCap: rawCap, hasCap: hasCap, effCap: effCap, seedCapFrom: seedCapFrom, seedSectionCap: I.seedSectionCap, dropNodeCap: I.dropNodeCap, capOrphans: I.capOrphans,    patternSeed: patternSeed, _bust: function(){ I._pmMemo = null; },

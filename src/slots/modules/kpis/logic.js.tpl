@@ -11,8 +11,7 @@ class Component extends DCLogic {
       const L = (k) => !r || !r.on || !!r.on(k);
       if ("kpiOcc" === t) return L("zones") && L("dens");
       if ("kpiZones" === t) return L("zones");
-      if ("kpiDaily" === t) return !r || !r.can || !!r.can("dreport", "view");
-      return !0;
+@@SYS:kpis.okOf.dreport|empty="      if (\"kpiDaily\" === t) return !1;   /* V7 · د5-هـ: بلا التقرير اليومي لا لوحةَ له */\n"@@      return !0;
     } catch (n) {
       return !0;
     }

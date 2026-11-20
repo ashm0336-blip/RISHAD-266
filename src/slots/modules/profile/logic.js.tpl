@@ -19,7 +19,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
            على الأكثر كلَّ ١٠ ثوانٍ مهما تتابعت الأحداث (كلُّ جلبٍ يقرأ مفاتيحَ الإدارة في الخادم)، ومفاتيحُ لا تمسّ يومي (المهام · التنبيهات …) لا تجلب */
         const keys = ev && ev.detail && ev.detail.keys,
           ks = Array.isArray(keys) ? keys.map(String) : [],
-          REL = ["bassam_employees_v1",@@SYS:profile.rel.staff@@ "bassam_dreport_v1",@@SYS:profile.rel.plan@@ "bassam_rounds_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
+          REL = ["bassam_employees_v1",@@SYS:profile.rel.staff@@@@SYS:profile.rel.dreport@@@@SYS:profile.rel.plan@@ "bassam_rounds_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
         if (ks.length && !ks.some((k) => REL.some((r) => k === r || k.slice(-r.length - 1) === ":" + r))) return;
         this.pfMeInvalidate();
       }));
@@ -188,7 +188,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       m = +p[2],
       upto = 12 * y + m < 12 * T.y + T.m ? 31 : y === T.y && m === T.m ? T.d : 0,
       H = toks.length
-        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), dreport: this.LS("bassam_dreport_v1", {}), plan: this.LB("plan.doc@1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
+        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), dreport: this.LB("dreport.doc@1", {}), plan: this.LB("plan.doc@1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
         : null;
     return {
       ok: 1,
@@ -354,8 +354,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       e = [
         "bassam_employees_v1",
 @@SYS:profile.data.key.staff@@        "bassam_shift_options_v1",
-        "bassam_dreport_v1",
-        "bassam_rounds_v1",
+@@SYS:profile.data.key.dreport@@        "bassam_rounds_v1",
 @@SYS:profile.data.key.plan@@@@SYS:profile.data.key.tasks@@        "bassam_dayshift_v1",
 @@SYS:profile.data.key.staff.locks@@        "bassam_auth_users_v1",
       ];
@@ -564,7 +563,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       u0 = this.LB("staff.months@1", {}),
       u = u0 && "object" == typeof u0 ? u0 : {},
       LK = this.LB("staff.locks@1", {}),
-      B = this.LS("bassam_dreport_v1", {}),
+      B = this.LB("dreport.doc@1", {}),   /* V7 · د5-هـ: التقريرُ يملكه برنامجُه — بالناقل؛ بغيابه أو حجبه لا تقرير */
       RND = this.LS("bassam_rounds_v1", {}),
       Z = this.LB("plan.doc@1", {}),   /* V7 · د5-د2: الخطةُ يملكها التشغيلُ الميداني — بالناقل؛ بغيابه أو حجبها لا خطة */
       GO = this.LS("bassam_shift_options_v1", []);
@@ -1329,7 +1328,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       S = null != d && null != g;
     const bsRd = this.bsOn("daily/rounds") && (this.bsLensOn("zones") || this.bsLensOn("gates") || this.bsLensOn("marks") || this.bsLensOn("paths")),
       bsSt = !!KIVO.bus.read("staff.usable@1"),
-      bsDr = this.bsOn("dreport"),
+      bsDr = !!KIVO.bus.read("dreport.usable@1"),   /* V7 · د5-هـ: ورقةُ التقرير اليومي يجيب عنها مالكُه؛ بغيابه مطفأة */
       bsDi = this.bsLensOn("dist"),
       bsPl = !!KIVO.bus.read("plan.usable@1");   /* V7 · د5-د2: ورقةُ التشغيل الميداني يجيب عنها مالكُه؛ بغيابه مطفأة */
     let b = "none";
@@ -1703,9 +1702,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       r.monTitle = "هذا الشهر — " + f[i.T.m - 1] + " " + i.T.y;
       r.weekSub = "اعتماد التقرير اليومي آخر ٧ أيام";
       r.weekLegend = "✓ معتمد · ! مسحوب بلا اعتماد · — لم يُسحب";
-      r.goWeekOn = this.can("dreport", "view");
-      r.goWeek = () => this.go("dreport");
-      r.goWeekTxt = "التفاصيل ←";
+@@SYS:profile.goWeek.dreport|empty="      r.goWeekOn = !1;\n      r.goWeek = () => {};\n"@@      r.goWeekTxt = "التفاصيل ←";
     }
     r.restBoxOn = !!i.isStaff;
     r.daySub = i.shiftRef ? i.shiftRef + (i.sdef && i.sdef.tStart ? " · " + i.sdef.tStart + " ← " + i.sdef.tEnd : "") : "لم تُسند وردية اليوم بعد";
