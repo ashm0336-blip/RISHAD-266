@@ -2335,7 +2335,7 @@ var NF_DENY_WIN_MS = 60000,
 /* prettier-ignore */
 var NF_DENY_PAGES = {
   @@SYS:nf.denyPages.dstats@@emps: "موظفو الإدارة", planning: "الخطة التشغيلية", @@SYS:nf.denyPages.staff@@@@SYS:nf.denyPages.plan@@
-  daily: "المتابعة اليومية",@@SYS:nf.denyPages.dreport@@@@SYS:nf.denyPages.tasks@@@@SYS:nf.denyPages.2@@
+@@SYS:nf.denyPages.daily@@@@SYS:nf.denyPages.dreport@@@@SYS:nf.denyPages.tasks@@@@SYS:nf.denyPages.2@@
   @@SYS:nf.denyPages.3@@links: "مواقع ذات صلة", help: "المساعدة", admin: "الإعدادات",
 };
 /* prettier-ignore */

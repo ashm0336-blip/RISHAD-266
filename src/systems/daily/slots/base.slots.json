@@ -70,5 +70,9 @@
  "nfo.watch.daily": {
   "order": 10,
   "file": "slots/nfo.watch.daily.frag"
+ },
+ "nf.denyPages.daily": {
+  "order": 10,
+  "text": "  daily: \"المتابعة اليومية\","
  }
 }

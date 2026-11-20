@@ -188,6 +188,23 @@ test('د5-هـ · الحقنُ السلبية لكل نظامٍ مفصول بق�
   assert.deepEqual(residue([['src/modules/profile/logic.js', 'const r = KIVO.bus.read("dreport.doc@1", "granted");']], gone), [], 'ضابط: الاسمُ المعلن يُمحى');
 });
 
+test('د5-هـ · الحقنُ السلبية لكل نظامٍ مفصول بقاعدة: daily', () => {
+  if (!fs.existsSync(path.join(FULL, 'systems', 'daily', 'system.json'))) return;
+  const gone = ['daily'];
+  const INJ = {
+    'قراءة bassam_rounds_v1 مباشرة (عميل)': ['src/modules/profile/logic.js', 'const r = KIVO.__BS_SRV.operations.get("bassam_rounds_v1");'],
+    'قراءة bassam_rounds_v1 مباشرة (خادم)': ['workers/parts/063-enf-api-and-handler.js', 'var r = await opResourceGet(env, "bsdept:" + d + ":bassam_rounds_v1");'],
+    'استيراد من systems/daily/': ['src/layouts/root-logic.js', 'import { x } from "../systems/daily/client/logic.js";'],
+    'اسمُ صفحة البرنامج': ['src/layouts/root-logic.js', 'mount("Daily Sessions");'],
+    'ورقةُ الجولات': ['src/modules/employees/logic.js', 'if (this._on("daily/rounds")) x();'],
+    'خدمةُ المصنع': ['src/modules/profile/logic.js', 'KIVO.BassamRound.prepareEnsure(draft, 1448, 2, 1);'],
+    'اسمُ ناقلٍ لم يعلنه المالك': ['src/modules/profile/logic.js', 'const r = KIVO.bus.read("daily.secret@1");'],
+  };
+  for (const [name, [at, line]] of Object.entries(INJ)) assert.ok(residue([[at, line]], gone).length > 0, 'الحقنة مرّت بلا كشف: ' + name);
+  /* ضابط: «daily» بمعنى آخر (الإحصاء اليومي · تكرارُ المهمة) والمعلنُ من أسماء ناقله يمرّان */
+  for (const line of ['if (domains.dailyStats) x();', "if (rec.t === 'daily') next();", 'const r = KIVO.bus.read("daily.days@1", via);']) assert.deepEqual(residue([['workers/parts/019d-atomic-restore.js', line]], gone), [], 'ضابط: ' + line);
+});
+
 /* د5-هـ · قاعدةُ اسم الناقل المعلن (bus_rule.mjs): الشرطُ ② لملفات القاعدة على الشجرة الكاملة، والحقنُ السلبية للشرط ① */
 test('د5-هـ · اسمُ الناقل: كلُّ اسمِ نظامٍ في ملف قاعدة معلنٌ في _base.json ← consumes بغيابه وملفه، ولا إعلانَ بائت', () => {
   const root0 = path.dirname(FULL);

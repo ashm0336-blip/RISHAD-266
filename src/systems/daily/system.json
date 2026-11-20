@@ -8,10 +8,11 @@
   "Daily[ -]Sessions",
   "modules/daily/",
   "systems/daily/",
-  "\\bdaily/(?:rounds|field)\\b",
-  "\\bdaily\\.[A-Za-z]+@[0-9]",
+  "\\bdaily/(?:rounds|field|kpi[A-Za-z]+)\\b",
+  "\\bdaily\\.[A-Za-z.]+@[0-9]",
   "BassamRound\\b",
-  "BassamField"
+  "BassamField\\b",
+  "\\b(?:is|go|n|t)Daily\\b"
  ],
  "note": "V7 · د5-هـ (م3): المتابعةُ اليومية (الجولات · رصد الميدان) في مجلدها. منطقُ صفحتها قالبٌ في مجلدها (templates) تُحقن فيه قطعُ التقرير اليومي والمهام. روابطُه مع غيره في contract.json.",
  "client": {
