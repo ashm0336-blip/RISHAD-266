@@ -17208,19 +17208,28 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         ? "نطاق" + (SS.lead ? " · المسؤول: " + SS.lead : "")
         : (Wt && { men: "مصلى رجال", women: "مصلى نساء", service: "خدمات" }[Wt.cat]) || "",
       assignGroups: (() => {
-        const T = {};
+        /* V7 · د5-هـ (44): مجموعاتُ الإسناد بأدوار الإدارة (محرّك الأدوار KIVO.Perm44) — قوالبُ الصلاحيات حُذفت؛ بغياب المحرّك: بلا مجموعات */
+        const T = {},
+          P4 = KIVO.Perm44,
+          D4 = (() => {
+            try {
+              return (KIVO.BassamDepts && KIVO.BassamDepts.active && KIVO.BassamDepts.active()) || "";
+            } catch (t) {
+              return "";
+            }
+          })();
         let L = [];
         try {
-          const t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-          Array.isArray(t) && (L = t);
+          const t = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(D4) : [];
+          Array.isArray(t) && (L = t.filter((x) => x && x.id));
         } catch (t) {}
-        const PM = KIVO.BassamPerm,
-          EM = KIVO.BassamEmp;
+        const EM = KIVO.BassamEmp;
         f.forEach((t) => {
           if (!t || !t.name) return;
           try {
             const e = EM && EM.key ? EM.key(t) : t.eid || t.nid || t.name,
-              s = PM && PM.tplOfEmp ? PM.tplOfEmp(e) : "",
+              q = P4 && "function" === typeof P4.roleOf ? P4.roleOf(e, D4) : null,
+              s = q ? q.id : "",
               n = s ? L.findIndex((t) => t.id === s) : -1;
             T[t.name] = { tpl: n >= 0 ? L[n].name : "", ord: n >= 0 ? n : s ? 98 : 99 };
           } catch (t) {}

@@ -1,9 +1,9 @@
 /* KIVO_265 · TSK-5 — المهامُّ المتكررة ظاهرةٌ في شجرة الصلاحيات الحالية بلا مفتاحٍ ولا صفحةٍ ولا رقاقةٍ جديدة (سجلُّ v24.9 مجمَّد):
-   منطقُ الإدارة الحقيقي (src/modules/admin/logic.js · t24Rows/tskRecLegacy) في vm فوق السجلّ والبيان المولَّدَين الحقيقيَّين (340 · 255) —
+   منطقُ الإدارة الحقيقي (src/modules/admin/logic.js · t24Rows) في vm فوق السجلّ والبيان المولَّدَين الحقيقيَّين (340 · 255) —
    ومحرّكُ p24 بديلٌ يقول «داخل السقف/قابلٌ للمنح» (الحسابُ نفسُه يثبته k256perm في المتصفح مقابل الخادم):
      (أ) ورقةُ «المهام» (المفرودة) تحمل ملاحظةَ التكرار بأسماء المفاتيح من السجلّ نفسِه (فتطابق الرقاقات) — والرقاقاتُ هي مفاتيحُ السجلّ حرفاً
      (ب) تلميحُ task.create / task.edit / task.assign يُلحق ما يشمله كلٌّ منها في التكرار (سقفُ الإدارة · المنحُ للموظف) — ولا غيرُها · وسابقةُ «يظهر في» باقية
-     (ج) شجرةُ الأفعال الستة (legacy): تلميحُ مربّع ورقة «المهام» وحده يُلحق «إضافة/تعديل» — والبنيةُ (الصفوف · الأفعال) كما هي */
+     (ج) حُذفت (V7 · د5-هـ 44): شجرةُ الأفعال الستة (legacy) في نافذة صلاحيات الموظف وقوالب الصلاحيات حُذفت معهما — ومعها tskRecLegacy */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -79,23 +79,3 @@ for (const mode of ['cap', 'emp', 'tpl']) {
   });
 }
 
-test('(ج) شجرةُ الأفعال الستة (legacy): تلميحُ مربّع «المهام» وحده يذكر التكرار بـ«إضافة»/«تعديل» — والصفوفُ والأفعالُ كما هي', needs('tasks'), () => {
-  const c = Object.create(C.prototype);
-  assert.equal(typeof c.tskRecLegacy, 'function', 'tskRecLegacy موجودة');
-  const acts = () => ['view', 'add', 'edit', 'del', 'approve', 'export'].map((k) => ({ k, name: k, on: !1 }));
-  const mk = () => [
-    { kind: 'cont', isCont: !0, isLeaf: !1, key: 'daily', name: 'المتابعة اليومية' },
-    { kind: 'leaf', isLeaf: !0, isCont: !1, key: 'tasks', name: 'المهام', child: !0, chkTip: 'إلغاء كل الأفعال', acts: acts() },
-    { kind: 'leaf', isLeaf: !0, isCont: !1, key: 'dreport', name: 'التقرير اليومي', child: !0, chkTip: 'إلغاء كل الأفعال', acts: acts() },
-  ];
-  const before = mk(), out = c.tskRecLegacy(mk());
-  assert.equal(out.length, before.length, 'لا صفَّ يُضاف ولا يُحذف');
-  assert.equal(out[1].chkTip, 'إلغاء كل الأفعال · التكرار: إنشاءُ مهمةٍ متكررة = «إضافة» (+ «تعديل» لمكلَّفيها) · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «تعديل»');
-  assert.equal(out[2].chkTip, before[2].chkTip, 'الأوراقُ الأخرى كما هي');
-  out.forEach((r, i) => {
-    const { chkTip: a, ...ra } = r, { chkTip: b, ...rb } = before[i];
-    assert.deepEqual(JSON.parse(JSON.stringify(ra)), JSON.parse(JSON.stringify(rb)), 'لا يتغيّر في الصفّ إلا التلميح: ' + r.key);
-  });
-  assert.deepEqual(J(c.tskRecLegacy([])), []);
-  assert.deepEqual(c.tskRecLegacy(undefined), undefined);
-});

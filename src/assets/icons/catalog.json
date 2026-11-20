@@ -587,7 +587,7 @@
   "i-3a0791fe": {
    "body": "<rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"></path>",
    "uses": {
-    "modules/admin/view.html": 7,
+    "modules/admin/view.html": 4,
     "systems/daily/client/view.html": 1,
     "systems/dreport/client/view.html": 3,
     "systems/dstats/client/view.html": 1,
@@ -711,7 +711,7 @@
   "i-44077fec": {
    "body": "<path d=\"M3 7h6l2 2h10v11H3z\"></path>",
    "uses": {
-    "modules/admin/view.html": 7
+    "modules/admin/view.html": 2
    },
    "viewBox": "0 0 24 24"
   },
@@ -1035,7 +1035,6 @@
   "i-5f1a581b": {
    "body": "<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "systems/award/client/view.html": 5,
     "systems/daily/client/view.html": 3,
     "systems/irshad/client/view.html": 6,
@@ -1487,13 +1486,6 @@
     "systems/staff/client/view.html": 1
    },
    "viewBox": "0 0 96 96"
-  },
-  "i-8b8b72f3": {
-   "body": "<path d=\"{{m.p}}\"></path>",
-   "uses": {
-    "modules/admin/view.html": 1
-   },
-   "viewBox": "0 0 24 24"
   },
   "i-8bade8ae": {
    "body": "<path d=\"m9 11 3 3L22 4\"></path><path d=\"M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11\"></path>",
@@ -2127,7 +2119,7 @@
   "i-b8548f13": {
    "body": "<circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M12 16v-4\"></path><path d=\"M12 8h.01\"></path>",
    "uses": {
-    "modules/admin/view.html": 3,
+    "modules/admin/view.html": 2,
     "modules/employees/view.html": 1,
     "systems/award/client/view.html": 1,
     "systems/daily/client/view.html": 2,
@@ -2175,13 +2167,6 @@
     "modules/employees/view.html": 1
    },
    "viewBox": "0 0 96 96"
-  },
-  "i-bacf48e3": {
-   "body": "<circle cx=\"9\" cy=\"6\" r=\"1.6\"></circle><circle cx=\"15\" cy=\"6\" r=\"1.6\"></circle><circle cx=\"9\" cy=\"12\" r=\"1.6\"></circle><circle cx=\"15\" cy=\"12\" r=\"1.6\"></circle><circle cx=\"9\" cy=\"18\" r=\"1.6\"></circle><circle cx=\"15\" cy=\"18\" r=\"1.6\"></circle>",
-   "uses": {
-    "modules/admin/view.html": 1
-   },
-   "viewBox": "0 0 24 24"
   },
   "i-bad807cf": {
    "body": "<path d=\"M12 2v10\"></path><path d=\"M18.4 6.6a9 9 0 1 1-12.77.04\"></path>",
@@ -2271,7 +2256,7 @@
   "i-c37d9e39": {
    "body": "<path d=\"M20 6 9 17l-5-5\"></path>",
    "uses": {
-    "modules/admin/view.html": 16,
+    "modules/admin/view.html": 4,
     "modules/employees/view.html": 16,
     "systems/award/client/view.html": 6,
     "systems/daily/client/view.html": 9,
@@ -2374,7 +2359,7 @@
   "i-c92915c6": {
    "body": "<path d=\"m6 9 6 6 6-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 15,
+    "modules/admin/view.html": 6,
     "modules/employees/view.html": 14,
     "systems/award/client/view.html": 3,
     "systems/daily/client/view.html": 10,
@@ -2468,7 +2453,7 @@
   "i-d16c7afd": {
    "body": "<circle cx=\"11\" cy=\"11\" r=\"7\"></circle><path d=\"m21 21-4.3-4.3\"></path>",
    "uses": {
-    "modules/admin/view.html": 3
+    "modules/admin/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -2691,7 +2676,7 @@
   "i-e448ef4a": {
    "body": "<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"></path><path d=\"m9 12 2 2 4-4\"></path>",
    "uses": {
-    "modules/admin/view.html": 2
+    "modules/admin/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -2850,7 +2835,6 @@
   "i-f2d2d0f8": {
    "body": "<path d=\"m18 15-6-6-6 6\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "systems/daily/client/view.html": 7,
     "systems/irshad/client/view.html": 4,
     "systems/plan/client/view.html": 4,

@@ -1,6 +1,6 @@
 /* RISHAD CORE-02 S7 — «مركز إدارة رشاد» as its own space, in a real browser over the built package (lab: TEST_ONLY data, no network).
    (A) the platform administrator lands in the console; its sidebar holds the console navigation only (no operational pages, no unit
-       picker, no «+ قسم», no help group); every one of the 17 destinations is one sidebar item: clicking it writes its own address,
+       picker, no «+ قسم», no help group); every one of the 15 destinations (V7 · د5-هـ 44: perms · plat/mods deleted) is one sidebar item: clicking it writes its own address,
        marks exactly that item current, shows its title as the page h2 and moves the focus there; every address opens cold
        (#/sysadmin/plat and an unknown section open «هوية المنصة»); Back moves between console pages;
    (B) an unsaved platform draft is marked in the sidebar, survives a move inside the console, and leaving asks first (cancel keeps it);
@@ -12,7 +12,7 @@
    (S8) «الرئيسية»: a skeleton (never «٠») while /api/overview is held back, then the four status cards with the lab's real counts; each
        card link, «عرض الكل» and «إرسال تعميم» land on their page; a failed read shows a status row and no «تحديث» button; phone fits;
    (P) parity with develop@625dac6: an active lock beyond Home's first five failed-sign-in rows keeps «فكّ القفل»; the users row menu
-       «تعديل الصلاحيات» opens «الإدارات» on the account's unit (Back returns); the security log search keeps the typed text and filters;
+       «تعديل الصلاحيات» opens the people section of the unit's «الصلاحيات» tab (V7 · د5-هـ 44; Back returns); the security log search keeps the typed text and filters;
    (ACC) the collapsible accordion sidebar: each group header is a button (aria-expanded · aria-controls); a deep link opens the group of
        its page (one per group) and only that one; a header opens/closes a group without navigating (Enter, Space, a click), arrows move
        between the visible controls, a collapsed group holding the current page is marked; Back and an in-page link reopen the right
@@ -32,8 +32,9 @@ import { chromium, openAs } from './lab_browser.mjs';
 
 const BEFORE = JSON.parse(fs.readFileSync(new URL('./fixtures/core01_nav_before.json', import.meta.url), 'utf8')).roles;
 const MOBILE = { viewport: { width: 390, height: 844 }, context: { isMobile: true, hasTouch: true, deviceScaleFactor: 1 } };
-const DEST = [['overview', null, 'الرئيسية'], ['depts', null, 'الإدارات'], ['users', null, 'مراقبة الحسابات'], ['perms', null, 'خريطة الصلاحيات'],
-  ['plat', 'id', 'هوية المنصة'], ['plat', 'mods', 'الوحدات'], ['plat', 'notif', 'التنبيهات والتعاميم'], ['plat', 'login', 'شاشة تسجيل الدخول'],
+/* V7 · د5-هـ (44): «خريطة الصلاحيات» (perms) و«الوحدات» (plat/mods) حُذفتا بقرار المالك — 15 وجهة */
+const DEST = [['overview', null, 'الرئيسية'], ['depts', null, 'الإدارات'], ['users', null, 'مراقبة الحسابات'],
+  ['plat', 'id', 'هوية المنصة'], ['plat', 'notif', 'التنبيهات والتعاميم'], ['plat', 'login', 'شاشة تسجيل الدخول'],
   ['plat', 'side', 'القوائم'], ['plat', 'print', 'الطباعة والتقارير'], ['plat', 'app', 'تطبيق الجوال'], ['plat', 'about', 'حول المنصة'],
   ['sec', null, 'الأمن'], ['oplog', null, 'سجل الأنشطة والتغييرات'], ['backup', null, 'النسخة الاحتياطية'], ['plat', 'setup', 'التهيئة والاستعادة'],
   ['histimp', null, 'استيراد البيانات التاريخية']];
@@ -73,7 +74,7 @@ const state = (page) => page.evaluate(() => {
     ov: document.documentElement.scrollWidth - document.documentElement.clientWidth };
 });
 
-test('(A)(B) platform administrator: the console, its 17 destinations, deep links, Back, drafts, exit and return, the rail', { timeout: 900000 }, async () => {
+test('(A)(B) platform administrator: the console, its 15 destinations, deep links, Back, drafts, exit and return, the rail', { timeout: 900000 }, async () => {
   const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null;
   try {
     s = await openAs(b, lab, LAB.superUn, LAB.superPw, { onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
@@ -88,7 +89,7 @@ test('(A)(B) platform administrator: the console, its 17 destinations, deep link
     assert.equal((await page.textContent('aside.bsb .s-space .nlbl')).trim(), 'مركز إدارة رشاد');
     assert.equal(await page.getAttribute('aside.bsb nav.s-nav', 'aria-label'), 'مركز إدارة رشاد');
     assert.ok((await page.textContent('aside.bsb .s-ur')).includes('مسؤول المنصة'), 'the user card');
-    assert.equal(await page.locator('aside.bsb [data-con-tab]').count(), 17, '17 destinations');
+    assert.equal(await page.locator('aside.bsb [data-con-tab]').count(), 15, '15 destinations');
     assert.deepEqual(await page.$$eval('aside.bsb .s-cgh', (e) => e.map((x) => x.textContent.trim())), ['الإدارة المؤسسية', 'إعدادات المنصة', 'الأمن والرقابة', 'البيانات والاستمرارية'], 'the group headings');
     assert.equal(await page.locator('main [role=tablist], main .adm-tabbar').count(), 0, 'no tab strip in the page');
     /* every destination: one click → its address, one current item, its title, the focus on the title */
@@ -139,14 +140,14 @@ test('(A)(B) platform administrator: the console, its 17 destinations, deep link
     await page.locator('aside.bsb .s-exit').click(); await page.waitForTimeout(3000);
     assert.equal((await state(page)).hash, '#/tasks', 'no draft: no question, back to the last operational page');
     /* the rail: one icon per group, a group reopens on its last item, the operational collapse state untouched */
-    await s.go('#/sysadmin/perms', 3000);
+    await s.go('#/sysadmin/users', 3000);
     await s.go('#/sysadmin/backup', 3000);
     await page.click('aside.bsb .s-tog2'); await page.waitForTimeout(600);
     st = await state(page); assert.match(st.cls, /\bcx\b/);
     assert.equal(await page.locator('aside.bsb .s-cgi').count(), 4, 'one icon per group (with Home: five)');
     assert.equal(await page.locator('aside.bsb .s-ci:visible').count(), 1, 'only Home stays as an icon');
     await page.locator('aside.bsb .s-cgi[aria-label="الإدارة المؤسسية"]').click(); await page.waitForTimeout(1200);
-    assert.equal((await state(page)).hash, '#/sysadmin/perms', 'the group reopens on its last item');
+    assert.equal((await state(page)).hash, '#/sysadmin/users', 'the group reopens on its last item');
     await page.mouse.move(700, 600);   /* the pointer rested on the rail icon, now over an operational link: the tooltip portal (600) holds a hovered link's title */
     await s.go('#/kpis', 2500);
     assert.deepEqual(await links(page), BEFORE.super['#/kpis'], 'the operational sidebar keeps its own collapse state');
@@ -171,7 +172,7 @@ test('(C)(D) phone drawer; a unit manager keeps #/admin; an employee is refused 
         await page.click('.bs-burger'); await page.waitForTimeout(700);
         const open = await page.evaluate(() => { const r = document.querySelector('aside.bsb').getBoundingClientRect(); return r.right > 0 && r.left < innerWidth && r.width > 200; });
         assert.ok(open, 'the drawer opens');
-        assert.equal(await page.locator('aside.bsb [data-con-tab]').count(), 17, 'the drawer holds the console tree');
+        assert.equal(await page.locator('aside.bsb [data-con-tab]').count(), 15, 'the drawer holds the console tree');
         assert.equal(await page.locator('aside.bsb .s-dept, aside.bsb a[data-key]').count(), 0);
         await (await reach(page, ['plat', 'notif'])).click(); await page.waitForTimeout(1500);
         const st = await state(page);
@@ -354,7 +355,7 @@ test('(S9) every destination × phone / tablet / desktop × light / dark: no ove
 
 /* CORE-02 S10 — accessibility and keyboard. A keyboard-only walk (Tab order = the sidebar's visual order, Enter opens the page and puts the
    focus on its h2, Shift+Tab returns to the sidebar); the focus ring on the dark sidebar and every sidebar text pair measured in the page
-   (light and dark); one h1, one h2 and no skipped heading level on all 17 pages, one current item and no aria-selected in the sidebar;
+   (light and dark); one h1, one h2 and no skipped heading level on all 15 pages, one current item and no aria-selected in the sidebar;
    dialogs: named, focus inside, Tab stays inside, Escape closes and the focus returns to the opener (a manager dialog and the exit
    confirmation); reduced motion stops the collapse slide; the phone drawer in both modes: the burger states aria-expanded, opening moves
    the focus to the current page, Escape closes it and returns to the burger. Nothing is saved. */
@@ -395,7 +396,7 @@ test('(S10) keyboard walk, focus ring and contrast, headings, dialogs, reduced m
         assert.deepEqual(order.map((o) => o.t), ['الرئيسية', ...H, 'exit', 'user'], 'Tab order on Home: «الرئيسية», the four headers, the exit, the user card');
         for (const o of order) assert.ok(o.ring >= 3, 'light: the focus ring on «' + o.t + '» is ' + o.ring + ':1 (≥3)');
         await page.click('#con-gh-plat'); await page.waitForTimeout(300);
-        order = await walk(15);
+        order = await walk(7 + DEST.filter((d) => d[0] === 'plat' && d[1] !== 'setup').length);   /* V7 · د5-هـ (44): «الوحدات» حُذفت — العددُ من القائمة (كان 15) */
         assert.deepEqual(order.map((o) => o.t), ['الرئيسية', H[0], H[1], ...DEST.filter((d) => d[0] === 'plat' && d[1] !== 'setup').map((d) => d[2]), H[2], H[3], 'exit', 'user'], 'an open group: its items, in order, right after its header');
         for (const o of order) assert.ok(o.ring >= 3, 'light: the focus ring on «' + o.t + '» is ' + o.ring + ':1 (≥3)');
         /* Enter on an item opens it and puts the focus on the page title; Shift+Tab goes back into the sidebar */
@@ -498,7 +499,7 @@ test('(R) review of S10: sidebar fits 1366×900, gold edge, Back after in-page l
       const n = document.querySelector('aside.bsb .s-nav'), all = [...document.querySelectorAll('aside.bsb [data-con-tab]')], it = [...document.querySelectorAll('aside.bsb [data-con-tab], aside.bsb .s-cgh')].filter((e) => e.getClientRects().length), nb = n.getBoundingClientRect(), last = it[it.length - 1].getBoundingClientRect();
       return { n: all.length, lastBot: Math.round(last.bottom), navBot: Math.round(nb.bottom), sh: n.scrollHeight, ch: n.clientHeight, shadow: getComputedStyle(document.querySelector('aside.bsb')).boxShadow };
     });
-    assert.equal(fit.n, 17);
+    assert.equal(fit.n, 15);
     assert.ok(fit.lastBot <= fit.navBot, '1366×900: the last visible console control (bottom ' + fit.lastBot + ') is inside the sidebar (bottom ' + fit.navBot + ')');
     assert.ok(fit.sh <= fit.ch + 1, '1366×900: the console navigation does not scroll (' + fit.sh + ' / ' + fit.ch + ')');
     assert.match(fit.shadow, /2px 0px 0px 0px inset|inset 2px 0px 0px/, 'gold edge on the page-facing edge (' + fit.shadow + ')');
@@ -575,16 +576,17 @@ test('(P) parity with 625dac6: a late active lock keeps «فكّ القفل» on
     assert.ok(writes.some((w) => /^POST \/api\/guard\/unlock .*u:test_only_late_lock/.test(w)), '«فكّ القفل» asks the server to lift that lock: ' + writes.join(' ; '));
     assert.equal(DB.q('SELECT gk FROM guard WHERE gk=?1 AND until>?2', 'p:test_only_late_lock|6.6.6.6', Date.now()).length, 0, 'the lock is lifted');
     writes.length = 0;
-    /* U14 · users row menu «تعديل الصلاحيات»: «الإدارات» on the account's unit; Back returns to the accounts */
+    /* U14 · users row menu «تعديل الصلاحيات» — V7 · د5-هـ (44): the people section of the unit's «الصلاحيات» tab (the dialog was deleted); Back returns */
     for (const [who, unit] of [['TEST_ONLY موظف أ', 'TEST_ONLY إدارة أ'], ['TEST_ONLY مدير ب', 'TEST_ONLY إدارة ب']]) {
       await s.go('#/sysadmin/users', 4000);
       const row = page.locator('main .adm-tr.g-us', { hasText: who }).filter({ has: page.locator('.adm-rmb') }).last();
       await row.locator('.adm-rmb').first().click(); await page.waitForTimeout(600);
+      await page.evaluate(() => { window.__h44 = []; addEventListener('hashchange', (e) => window.__h44.push(new URL(e.newURL).hash)); });
       await row.locator('[data-bs-dd]').getByText('تعديل الصلاحيات', { exact: true }).click(); await page.waitForTimeout(2500);
       const st1 = await state(page);
-      assert.match(st1.hash, /^#\/sysadmin\/org\/TEST_ONLY_[AB]$/, who + ': «تعديل الصلاحيات» opens «الإدارات» on the unit (V7 P0: its address names it)');
-      assert.deepEqual(st1.cur, ['الإدارات']);
-      assert.equal(await page.evaluate(() => (document.getElementById('bsSelName') || {}).value ?? null), unit, who + ': the account\'s unit is selected');
+      /* the address the menu writes (the «الصلاحيات» tab is group v2's: until it is merged the page settles on the unit's page) */
+      assert.ok((await page.evaluate(() => window.__h44)).some((h) => /^#\/sysadmin\/org\/TEST_ONLY_[AB]\/perm\/people$/.test(h)), who + ': «تعديل الصلاحيات» opens the people section of the unit\'s «الصلاحيات» tab');
+      void st1; void unit;   /* the selected page of that address is v2's «الصلاحيات» route — asserted where that tab is tested */
       await page.goBack(); await page.waitForTimeout(1500);
       assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/users', who + ': Back returns to the accounts');
     }
@@ -633,7 +635,7 @@ test('(ACC) accordion sidebar: deep links per group, toggle without navigation, 
           assert.deepEqual(openOf(st), [], 'Home: every group collapsed');
           assert.deepEqual(st.vis, ['الرئيسية'], 'Home: only «الرئيسية» among the items');
           /* deep link (a real load) per group: that group alone opens, its current item is visible */
-          for (const [hash, g, t] of [['#/sysadmin/perms', 'org', 'خريطة الصلاحيات'], ['#/sysadmin/plat/print', 'plat', 'الطباعة والتقارير'], ['#/sysadmin/oplog', 'sec', 'سجل الأنشطة والتغييرات'], ['#/sysadmin/plat/setup', 'data', 'التهيئة والاستعادة']]) {
+          for (const [hash, g, t] of [['#/sysadmin/users', 'org', 'مراقبة الحسابات'], ['#/sysadmin/plat/print', 'plat', 'الطباعة والتقارير'], ['#/sysadmin/oplog', 'sec', 'سجل الأنشطة والتغييرات'], ['#/sysadmin/plat/setup', 'data', 'التهيئة والاستعادة']]) {
             await page.goto('about:blank'); await page.goto(lab.base + '/' + hash, { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(3500);
             st = await acc(page);
             assert.deepEqual(openOf(st), [g], hash + ': its group opens, and only it');
@@ -644,7 +646,7 @@ test('(ACC) accordion sidebar: deep links per group, toggle without navigation, 
           await page.click('#con-gh-org'); await page.waitForTimeout(300);
           st = await acc(page);
           assert.equal(st.hash, '#/sysadmin/plat/setup', 'a header click does not navigate');
-          assert.deepEqual(openOf(st), ['org']); assert.deepEqual(st.vis, ['الرئيسية', 'الإدارات', 'مراقبة الحسابات', 'خريطة الصلاحيات']);
+          assert.deepEqual(openOf(st), ['org']); assert.deepEqual(st.vis, ['الرئيسية', 'الإدارات', 'مراقبة الحسابات']);
           assert.ok(st.hdr.data.cur && st.hdr.data.desc === 'con-gh-cur', 'the collapsed group of the current page is marked and described');
           assert.equal(await page.evaluate(() => document.getElementById('con-gh-cur').textContent), 'الصفحة الحالية ضمن هذه المجموعة');
           assert.deepEqual(st.cur, [['التهيئة والاستعادة', false]], 'still exactly one current item (inside the collapsed group)');
@@ -766,10 +768,7 @@ test('(CON) consistency: tone rule for counts, one count tile, one status style,
     const stl = await page.evaluate(() => [...document.querySelectorAll('main .adm-st3 > .adm-pl-box')].map((bx) => { const e = bx.querySelector('.adm-pl-cap + *'); return [e.className, getComputedStyle(e).color, getComputedStyle(e).fontSize]; }));
     assert.equal(stl.length, 3);
     for (const x of stl) { assert.equal(x[0], 'adm-pl-stl', 'every readiness state uses the status line'); assert.deepEqual(x.slice(1), stl[0].slice(1), 'same colour and size'); }
-    await s.go('#/sysadmin/perms', 3500);
-    const emp = await page.evaluate(() => [...document.querySelectorAll('main .adm-none')].filter((e) => e.offsetParent).map((e) => [e.textContent.trim(), e.closest('section').querySelectorAll('.adm-th').length]));
-    assert.ok(emp.some((x) => x[0] === 'لا قوالب بعد'), 'the lab has no templates');
-    for (const [t, n] of emp) assert.equal(n, 0, '«' + t + '»: no column header over an empty list');
+    /* V7 · د5-هـ (44): the templates list of «خريطة الصلاحيات» was deleted with the tab — the empty-list rule stays checked on Home (R) */
     /* activity log, desktop */
     await s.go('#/sysadmin/oplog', 3500);
     const fl = () => page.evaluate(() => [...document.querySelectorAll('main .adm-flt > .adm-flt-r')].map((r) => { const l = r.querySelector('.adm-flt-l'), gp = r.querySelector('[role="group"]'), lr = l.getBoundingClientRect(), gr = gp.getBoundingClientRect();

@@ -4860,48 +4860,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           const e = s(t);
           return "active" === e ? 0 : "frozen" === e ? 1 : 2;
         },
-        e = (() => {
-          try {
-            const t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-            return Array.isArray(t) ? t : [];
-          } catch (t) {
-            return [];
-          }
-        })(),
-        r = (t) =>
-          Object.keys(t || {})
-            .filter((e) => (t[e] || []).length)
-            .sort()
-            .map((e) => e + ":" + (t[e] || []).slice().sort().join(","))
-            .join("|"),
-        a =
-          ((() => {
-            try {
-              const t = KIVO.BassamPerm;
-              return t ? t.deptCap() : [];
-            } catch (t) {
-              return [];
-            }
-          })(),
-          e.map((t) => {
-            const e = KIVO.BassamPerm;
-            return e && e.tplSig ? e.tplSig(t.perms) : r(t.perms || {});
-          })),
+        /* V7 · د5-هـ (44): الترتيبُ بترتيب أدوار الإدارة (محرّك الأدوار) — من لا دور له في آخرها */
+        e = this.PERM_ROLES(),
         i = (t) => {
-          try {
-            const n = KIVO.BassamPerm;
-            if (!n || !n.empPerms || !t) return 99;
-            const i = r(n.empPerms(t) || {});
-            if (!i) return 99;
-            const o = n.tplOfEmp ? n.tplOfEmp(t) : "";
-            if (o) {
-              const t = e.findIndex((t) => t.id === o);
-              if (-1 !== t) return t;
-            }
-            return 98;
-          } catch (t) {
-            return 99;
-          }
+          const q = t ? this.PERM_ROLE_OF(t) : null,
+            k = q ? e.findIndex((x) => x.id === q.id) : -1;
+          return -1 === k ? 99 : k;
         },
         l = new Intl.Collator("ar", { sensitivity: "base", numeric: !0 });
       n = [...n].sort((e, r) => t(e) - t(r) || i(o(e)) - i(o(r)) || l.compare(String(e.name || ""), String(r.name || "")));
@@ -4951,18 +4915,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             f = KIVO.BassamPerm || null,
             b = f && "none" !== r ? f.empPerms(a) : {},
             A = Object.keys(b).filter((t) => (b[t] || []).length).length,
-            x = (() => {
-              if (!A || !_bsCapOk("admin/ptpls")) return "";
-              const t = this.PERM_TPLS(),
-                r = f && f.tplOfEmp ? f.tplOfEmp(a) : "";
-              if (r) {
-                const e = t.find((t) => t.id === r);
-                if (e) return e.name;
-              }
-              return "";
-            })();
+            /* V7 · د5-هـ (44): اسمُ الصلاحية = اسمُ الدور الممنوح (permLabel ← محرّك الأدوار) */
+            x = "none" !== r && KIVO.Perm44 && m && m.permLabel ? m.permLabel(a) || "" : "";
           return {
-            permLabel: "none" === r ? "—" : h ? "مدير الإدارة ★" : A ? x : "بلا صلاحيات",
+            permLabel: "none" === r ? "—" : h ? "مدير الإدارة ★" : x || (A ? "صلاحيات مخصّصة" : "بلا صلاحيات"),
             permTip:
               "none" === r
                 ? "لا صلاحيات بلا حساب دخول — فعّل الحساب أولاً"
@@ -4970,9 +4926,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? "مدير الإدارة — يدير حسابات موظفيها وصلاحياتهم ويمنحهم مما يملكه؛ وصفحاتُه كما في ورقته ما لم يوسّعها مسؤول المنصة"
                   : f && f.deptCap().length
                     ? A
-                      ? (x ? x + " — " : "") + "متاح له " + KIVO.BassamCount(A, "صفحة") + " · الضبط من الجدول الشهري"
+                      ? (x ? x + " — " : "") + "الضبط من الجدول الشهري أو «الصلاحيات» في «الإدارات»"
                       : "لم تُمنح له أي صفحة بعد — من قائمة حساب الدخول ← الصلاحيات"
-                    : "لم يُحدَّد سقف صفحات لهذه الإدارة — حدّده من: مركز إدارة رشاد ← الإدارات ← سقف الصفحات",
+                    : "لم يُحدَّد سقف هذه الإدارة — يحدّده مسؤول المنصة من: مركز إدارة رشاد ← الإدارات ← الصلاحيات ← الأنظمة",
             permBadgeStyle:
               "font-size:12px;font-weight:400;white-space:nowrap;color:" +
               (h ? "var(--fg-x9a7e40)" : "none" !== r && A ? "#141414" : "#cbd5e1"),

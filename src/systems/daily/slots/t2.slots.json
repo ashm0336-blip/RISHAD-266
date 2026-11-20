@@ -148,10 +148,6 @@
   "order": 10,
   "text": "                bassam_rounds_v1: \"الجولات اليومية\",\r\n"
  },
- "admin.lift.owner.daily": {
-  "order": 10,
-  "text": "\"daily/rounds\" === e.owner"
- },
  "admin.cap24.daily": {
   "order": 10,
   "file": "slots/admin.cap24.daily.frag"

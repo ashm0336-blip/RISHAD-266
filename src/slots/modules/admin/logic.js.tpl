@@ -436,469 +436,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
     );
   }
-  tpRead() {
-    try {
-      const t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-      if (Array.isArray(t)) {
-        const e = KIVO.BassamPerm;
-        return e && e.tplsMigrate ? e.tplsMigrate(t) : t;
-      }
-    } catch (t) {}
-    return [];
-  }
-  tpWrite(t) {
-    try {
-      localStorage.setItem("bassam_perm_tpls_v1", JSON.stringify(t));
-    } catch (t) {}
-    this.setState({ tpTick: (this.state.tpTick || 0) + 1 });
-  }
-  tpHolders(t) {
-    try {
-      const e = KIVO.BassamPerm,
-        s = KIVO.BassamDepts;
-      if (!e || !e.tplHolders) return [];
-      const a = s && s.active ? s.active() : "";
-      return e.tplHolders(t, a);
-    } catch (t) {
-      return [];
-    }
-  }
-  tpNewDo() {
-    if (!this.PC("add")) return void this.bsToast("صلاحيتك على الإعدادات لا تسمح بالإضافة", "warn");
-    const t = String(this.state.tpNew || "").trim();
-    if (!t) return void this.bsToast("اكتب اسم القالب أولاً", "warn");
-    const e = this.tpRead();
-    if (e.some((e) => (e.name || "") === t)) return void this.bsToast("قالب بهذا الاسم موجود", "warn");
-    const s = "t" + Date.now().toString(36);
-    (this.tpWrite(e.concat([this.t24On() ? { id: s, name: t, perms: {}, keys24: [], lens: [] } : { id: s, name: t, perms: {} }])),
-      this.setState(Object.assign({ tpNew: "", tpSel: s, tpDraft: {}, tpName: t }, this.t24On() ? { tpLens: [], tp24Draft: null, tp24Exp: {}, tp24Leaf: {} } : {})),
-      this.bsToast("أُنشئ قالب «" + t + "» فارغاً — حدّد أوراقه ثم احفظ", "ok"));
-  }
-  tpExpand(t) {
-    try {
-      const e = KIVO.BassamPerm,
-        s = KIVO.BassamDepts;
-      if (e && e.expandPerms) return e.expandPerms(t || {}, s && s.active ? s.active() : "");
-    } catch (t) {}
-    return JSON.parse(JSON.stringify(t || {}));
-  }
-  tpLensOf(t) {
-    const e = KIVO.BassamPerm;
-    let s = [];
-    try {
-      s = (e && e.deptLenses && e.deptLenses()) || [];
-    } catch (t) {}
-    return t && Array.isArray(t.lens) ? t.lens.filter((t) => -1 !== s.indexOf(t)) : s.slice();
-  }
-  tpOpen(t) {
-    const e = this.tpRead().filter((e) => e.id === t)[0];
-    this.setState({ tpSel: t, tpDraft: e ? this.tpExpand(e.perms) : {}, tpName: (e && e.name) || "", tpLens: this.tpLensOf(e), tpExp: {}, tp24Draft: null, tp24Exp: {}, tp24Leaf: {} });
-  }
-  tpMove(t, e) {
-    if (!this.PC("edit")) return void this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn");
-    const s = this.tpRead();
-    if (null == t || null == e || t === e || t < 0 || e < 0 || t >= s.length || e >= s.length) return;
-    const a = s.splice(t, 1)[0];
-    (s.splice(e, 0, a), this.tpWrite(s));
-  }
-  tpSupOn(t) {
-    try {
-      return !(!KIVO.BassamSup || !KIVO.BassamSup.isSupTpl(t));
-    } catch (t) {
-      return !1;
-    }
-  }
-  tpSupTog(t) {
-    if (!this.PC("edit")) return void this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn");
-    const e = this.tpRead(),
-      s = e.filter((e) => e.id === t)[0];
-    if (!s) return;
-    const a = !this.tpSupOn(s);
-    (this.tpWrite(e.map((e) => (e.id === t ? Object.assign({}, e, { sup: a }) : e))),
-      this.bsAck(
-        a
-          ? "وُسم «" + (s.name || "") + "» إشرافياً — حاملوه خارج التوزيع والتغطية"
-          : "رُفع الوسم الإشرافي عن «" + (s.name || "") + "» — حاملوه يدخلون التوزيع",
-        "ok",
-      ));
-  }
-  tpSave() {
-    if (!this.PC("edit")) return void this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn");
-    const t = this.state.tpSel;
-    if (!t) return;
-    const e = String(this.state.tpName || "").trim();
-    if (!e) return void this.bsToast("اسم القالب لا يكون فارغاً", "warn");
-    const s = this.tpRead();
-    if (s.some((s) => s.id !== t && (s.name || "") === e)) return void this.bsToast("قالب آخر يحمل هذا الاسم", "warn");
-    const r = Array.isArray(this.state.tpLens) ? this.state.tpLens.slice() : this.tpLensOf(s.filter((e) => e.id === t)[0]);
-    /* caps-own (F07): a save under a narrowed ceiling keeps the template's out-of-ceiling items — its switched-off lenses, its latent leaves
-       and (enforce) its latent keys — so widening the ceiling restores it exactly */
-    const P0 = KIVO.BassamPerm,
-      d0 = KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : "",
-      c0 = s.filter((e) => e.id === t)[0] || {},
-      dl0 = (P0 && P0.deptLenses && P0.deptLenses(d0)) || [];
-    (Array.isArray(c0.lens) ? c0.lens : []).forEach((k) => -1 === dl0.indexOf(k) && -1 === r.indexOf(k) && r.push(k));
-    /* KIVO_256 · وضعُ الإنفاذ: القالبُ مفاتيحُ v24.9 (keys24) — وورقتُه القديمة (perms) أوسعُ تغطيةٍ لا تتجاوزها (النظامُ القديم بعد Kill Switch لا يمنح أكثر) */
-    let k24 = null,
-      a = this.state.tpDraft || {};
-    if (this.t24On()) {
-      const P = KIVO.BassamPerm,
-        dd = KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : "",
-        C = P.p24.ceil(dd),
-        cur = s.filter((e) => e.id === t)[0],
-        dr = this.state.tp24Draft || this.tp24Base(cur, dd, C),
-        tg = { role: "staff", mgr: !1 };
-      k24 = Object.keys(dr)
-        .filter((k) => dr[k] && P.p24.grantable(k, C, tg))
-        .concat(((cur && cur.keys24) || []).filter((k) => !P.p24.keyOn(k, C)))
-        .sort();
-      const E = {};
-      k24.forEach((k) => (E[k] = !0));
-      a = P.p24.cover(E);
-    }
-    if (P0 && P0.latentLeaves) {
-      const lt = P0.latentLeaves(c0.perms, d0),
-        un = (x, y) => ["view", "add", "edit", "del", "approve", "export"].filter((q) => (x || []).indexOf(q) !== -1 || (y || []).indexOf(q) !== -1);
-      a = Object.assign({}, a);
-      Object.keys(lt).forEach((k) => (a[k] = un(a[k], lt[k])));
-      /* an old-format template keyed by a container page (all its tabs): unchanged ⇒ the container key is kept as it was; edited ⇒ its live
-         leaves from the editor and its switched-off tabs with the container's actions (exactly what it granted — nothing wider) */
-      const cp0 = c0.perms || {};
-      Object.keys(cp0).forEach((K) => {
-        const A0 = cp0[K] || [];
-        if (!P0.isContainer || !P0.isContainer(K) || !A0.length) return;
-        const ex = P0.expandPerms({ [K]: A0 }, d0),
-          srt = (x) => JSON.stringify((x || []).slice().sort());
-        if (Object.keys(ex).every((l) => srt(a[l]) === srt(A0)) && !Object.keys(a).some((l) => 0 === l.indexOf(K + "/") && !ex[l])) {
-          Object.keys(ex).forEach((l) => delete a[l]);
-          a[K] = A0.slice();
-        } else (P0.leafKeysOf(K) || []).forEach((l) => ex[l] || (a[l] = un(a[l], A0)));
-      });
-      const ord = {};
-      Object.keys(cp0).concat(Object.keys(a)).forEach((k) => k in a && (ord[k] = a[k]));
-      a = ord;
-    }
-    const i = this.tpHolders(t),
-      tid = t;
-    this.tpWrite(
-      s.map((s) =>
-        s.id === t ? Object.assign({}, s, { name: e, perms: JSON.parse(JSON.stringify(a)), lens: r }, k24 ? { keys24: k24 } : {}) : s,
-      ),
-    );
-    k24 && this.setState({ tp24Draft: null });
-    let n = 0;
-    try {
-      const t = KIVO.BassamPerm,
-        e = KIVO.BassamDepts,
-        s = e && e.active ? e.active() : "";
-      i.forEach((e) => {
-        const i = t.setEmpPerms(e, a, s);
-        (i && i.ok && (n++, t.setEmpTpl && t.setEmpTpl(e, tid, s)), t.setEmpLens && t.setEmpLens(e, r, s));
-      });
-    } catch (t) {}
-    this.bsAck("حُفظ القالب" + (i.length ? " وسرى على " + n + " من حامليه (" + i.length + ")" : " — لا حامل له بعد"), "ok");
-  }
-  tpAskDel() {
-    if (!this.PC("del")) return void this.bsToast("صلاحيتك على الإعدادات لا تسمح بالحذف", "warn");
-    const t = this.state.tpSel;
-    if (!t) return;
-    const e = this.tpRead().filter((e) => e.id === t)[0];
-    e && this.setState({ tpDel: { id: t, name: e.name || "", n: this.tpHolders(t).length } });
-  }
-  tpDelDo() {
-    const t = this.state.tpDel;
-    if (t) {
-      try {
-        const e = KIVO.BassamPerm,
-          s = KIVO.BassamDepts,
-          a = s && s.active ? s.active() : "";
-        e && e.dropEmpTpl && this.tpHolders(t.id).forEach((t) => e.dropEmpTpl(t, a));
-      } catch (t) {}
-      (this.tpWrite(this.tpRead().filter((e) => e.id !== t.id)),
-        this.setState({ tpDel: null, tpSel: "", tpDraft: null, tpName: "" }),
-        this.bsAck("حُذف قالب «" + t.name + "»" + (t.n ? " — بقيت صلاحيات " + t.n + " من حامليه كما هي" : ""), "ok"));
-    }
-  }
-  /* KIVO_265 · TSK-5 — التكرارُ في شجرة الأفعال الستة (الوضعُ القديم legacy) بلا مفتاحٍ ولا بنيةٍ جديدة: «إضافة» على «المهام» تنشئ المهمةَ المتكررة
-     (و«تعديل» لمكلَّفيها: task.assign ← tasks:edit) و«تعديل» تدير تكرارَها — يُلحق بتلميح مربّع ورقة «المهام» وحده (src/permissions لا تُمسّ) */
-  tskRecLegacy(rows) {
-    const N = (KIVO.BassamPerm && KIVO.BassamPerm.ACT_NAMES) || {},
-      ad = N.add || "إضافة",
-      ed = N.edit || "تعديل";
-    (rows || []).forEach((r) => {
-@@SYS:admin.tree.capTip.tasks@@    });
-    return rows;
-  }
-  tpVals() {
-    const V24 = this.t24On(),
-      t = this.state,
-      e = this.tpRead(),
-      s = this.PC("edit"),
-      a = KIVO.BassamPerm,
-      r = KIVO.BassamDepts,
-      i = r && r.active ? r.active() : "",
-      n = a && a.deptCap ? a.deptCap(i) : [],
-      o = e.filter((e) => e.id === t.tpSel)[0] || null,
-      p = t.tpDraft || {},
-      l = o ? this.tpExpand(o.perms) : {},
-      d = Array.isArray(t.tpLens) ? t.tpLens : this.tpLensOf(o),
-      c = this.tpLensOf(o),
-      g =
-        !!o &&
-        (JSON.stringify(p) !== JSON.stringify(l) ||
-          String(t.tpName || "") !== String(o.name || "") ||
-          JSON.stringify(d.slice().sort()) !== JSON.stringify(c.slice().sort())),
-      h =
-        o && a && a.treeModel
-          ? a.treeModel({
-              did: i,
-              draft: p,
-              expanded: t.tpExp || {},
-              canEdit: s,
-              hideOut: !0,
-              cb: {
-                expand: (e) => {
-                  const s = Object.assign({}, t.tpExp || {});
-                  ((s[e] = !s[e]), this.setState({ tpExp: s }));
-                },
-                togLeaf: (t, e) => this.setState({ tpDraft: a.togLeafIn(p, t, e) }),
-                togAct: (t, e) => this.setState({ tpDraft: a.togActIn(p, t, e) }),
-              },
-            })
-          : null;
-    const RET = {
-      tpRows: e.map((e, s) => {
-        const a = Object.keys(this.tpExpand(e.perms)).length,
-          r = this.tpHolders(e.id).length,
-          i = this.tpSupOn(e);
-        return {
-          id: e.id,
-          name: e.name || "—",
-          on: e.id === t.tpSel,
-          empty: 0 === a,
-          idx: String(s + 1),
-          metaTxt: (V24 && Array.isArray(e.keys24) ? (e.keys24.length ? KIVO.BassamCount(e.keys24.length, "صلاحية") + "" : "فارغ") : a ? KIVO.BassamCount(a, "ورقة") + "" : "فارغ") + " · " + (r ? KIVO.BassamCount(r, "حامل") + "" : "بلا حاملين"),
-          rowStyle:
-            "display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--bd-xf1f3f5);background:" +
-            (t.tpOver === s ? "var(--bg-a185151810p16)" : e.id === t.tpSel ? "var(--bg-a185151810p08)" : "var(--bg-xffffff)") +
-            (t.tpDrag === s ? ";opacity:.45" : ""),
-          style:
-            "flex:1;min-width:0;text-align:right;padding:0;border:0;background:transparent;cursor:pointer;font-family:'Cairo',sans-serif",
-          open: () => this.tpOpen(e.id),
-          supOn: i,
-          supOff: !i,
-          supTip:
-            "إشرافي — لا يُسكَّن على المواقع: من مُنح هذا القالب يخرج من عدسة التوزيع وحالة التغطية في الجولات اليومية ولا يُحسب في التغطية",
-          supStyle:
-            "flex-shrink:0;height:24px;padding:0 8px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:9.5px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid " +
-            (i
-              ? "rgba(185,151,81,0.5);background:var(--bg-a185151810p12);color:var(--fg-x8a6f35)"
-              : "#E1E1E1;background:var(--bg-xffffff);color:var(--fg-x94a3b8)"),
-          supTog: (t) => {
-            (t && t.stopPropagation && t.stopPropagation(), this.tpSupTog(e.id));
-          },
-          up: (t) => {
-            (t && t.stopPropagation && t.stopPropagation(), this.tpMove(s, s - 1));
-          },
-          down: (t) => {
-            (t && t.stopPropagation && t.stopPropagation(), this.tpMove(s, s + 1));
-          },
-          dragStart: (t) => {
-            try {
-              ((t.dataTransfer.effectAllowed = "move"), t.dataTransfer.setData("text/plain", String(s)));
-            } catch (t) {}
-            this.setState({ tpDrag: s });
-          },
-          dragOver: (t) => {
-            t.preventDefault();
-            try {
-              t.dataTransfer.dropEffect = "move";
-            } catch (t) {}
-            this.state.tpOver !== s && this.setState({ tpOver: s });
-          },
-          dragEnd: () => this.setState({ tpDrag: null, tpOver: null }),
-          drop: (t) => {
-            t.preventDefault();
-            let e = this.state.tpDrag;
-            try {
-              const s = t.dataTransfer.getData("text/plain");
-              "" !== s && (e = +s);
-            } catch (t) {}
-            (this.setState({ tpDrag: null, tpOver: null }), this.tpMove(e, s));
-          },
-        };
-      }),
-      tpEmpty: !e.length,
-      tpNew: t.tpNew || "",
-      onTpNew: (t) => this.setState({ tpNew: t.target.value }),
-      tpNewDo: () => this.tpNewDo(),
-      tpWrite: s,
-      tpReadOnly: !s,
-      tpSelOn: !!o,
-      tpPick: !o,
-      tpName: t.tpName || "",
-      onTpName: (t) => this.setState({ tpName: t.target.value }),
-      tpCapOn: n.length > 0,
-      tpCapNote: n.length
-        ? "الشجرة محصورة بسقف صفحات إدارتك — ما هو خارجه لا يُمنح ولا يُعرض."
-        : "سقف صفحات إدارتك فارغ — راجع مسؤول المنصة قبل بناء القوالب.",
-      tpRows2: h ? this.tskRecLegacy(h.rows) : [],
-      tpCountTxt: h ? h.pagesOn + " من " + KIVO.BassamCount(h.pagesTot, "ورقة", "g") + "" : "",
-      tpExpAll: () => {
-        const t = {};
-        ((h && h.allExpanded) ||
-          ((a && a.PAGE_REG) || []).forEach((e) => {
-            t[e.key] = !0;
-          }),
-          this.setState({ tpExp: t }));
-      },
-      tpExpAllLbl: h && h.allExpanded ? "طيّ الكل" : "فرد الكل",
-      tpClear: () => this.setState({ tpDraft: {} }),
-      tpLensOnBox:
-        !!o && ((a && a.LENS_REG) || []).filter((t) => -1 !== ((a.deptLenses && a.deptLenses(i)) || []).indexOf(t.key)).length > 0,
-      tpLensCountTxt: (function () {
-        try {
-          const t = (a.deptLenses && a.deptLenses(i)) || [];
-          return d.filter((e) => -1 !== t.indexOf(e)).length + "/" + t.length;
-        } catch (t) {
-          return "";
-        }
-      })(),
-      tpLensRows:
-        o && a && a.LENS_REG
-          ? a.LENS_REG.filter((t) => {
-              try {
-                return -1 !== ((a.deptLenses && a.deptLenses(i)) || []).indexOf(t.key);
-              } catch (t) {
-                return !1;
-              }
-            }).map((t) => {
-              const e = -1 !== d.indexOf(t.key);
-              return {
-                key: t.key,
-                name: t.name,
-                on: e,
-                toggle: () => {
-                  s
-                    ? this.setState((e) => {
-                        const s = Array.isArray(e.tpLens) ? e.tpLens.slice() : d.slice(),
-                          a = s.indexOf(t.key);
-                        return (-1 === a ? s.push(t.key) : s.splice(a, 1), { tpLens: s });
-                      })
-                    : this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn");
-                },
-                style:
-                  "display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:9999px;font-size:11px;font-weight:600;font-family:'Cairo',sans-serif;cursor:" +
-                  (s ? "pointer" : "default") +
-                  ";border:1px solid " +
-                  (e
-                    ? "rgba(14,116,144,0.45);background:var(--bg-a141161440p07);color:var(--fg-x0e7490)"
-                    : "#e2e8f0;background:var(--bg-xffffff);color:var(--fg-x94a3b8)"),
-                box:
-                  "width:12px;height:12px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid " +
-                  (e
-                    ? "#0e7490;background:var(--bg-x0e7490);color:var(--fg-xffffff)"
-                    : "#CBD5E1;background:var(--bg-xffffff);color:transparent"),
-              };
-            })
-          : [],
-      tpDirty: g,
-      tpDirtyTxt: g ? "تغييرات لم تُحفظ" : "",
-      tpDirtyStyle: "margin-left:auto;font-size:11px;font-weight:700;color:" + (g ? "var(--fg-xb45309)" : "transparent"),
-      tpSaveStyle:
-        "height:36px;padding:0 18px;border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:" +
-        (g ? "pointer" : "default") +
-        ";font-family:'Cairo',sans-serif;background:" +
-        (g ? "var(--bg-xb99751)" : "var(--bg-xe5e7eb)") +
-        ";color:" +
-        (g ? "var(--fg-xffffff)" : "var(--fg-x9ca3af)"),
-      tpSaveDo: () => this.tpSave(),
-      tpDelDoAsk: () => this.tpAskDel(),
-      tpSegClose:
-        "height:32px;padding:0 13px;border-radius:10px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);color:var(--fg-x53565a);font-family:'Cairo',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px",
-      tpDelOn: !!t.tpDel,
-      tpDelName: t.tpDel ? t.tpDel.name : "",
-      tpDelNote: t.tpDel
-        ? t.tpDel.n
-          ? "يحمله " +
-            KIVO.BassamCount(t.tpDel.n, "موظف") +
-            " — " +
-            KIVO.BassamCount.agr(
-              t.tpDel.n,
-              "حذف القالب لا يسحب صلاحياته، تبقى كما هي وتُنسب له لا للقالب.",
-              "حذف القالب لا يسحب صلاحياتهما، تبقى كما هي وتُنسب لهما لا للقالب.",
-              "حذف القالب لا يسحب صلاحياتهم، تبقى كما هي وتُنسب لهم لا للقالب.",
-            )
-          : "لا يحمله أحد — حذفه بلا أثر."
-        : "",
-      tpDelCancel: () => this.setState({ tpDel: null }),
-      tpDelGo: () => this.tpDelDo(),
-      tpV24: !1,
-      tpLegacy: !0,
-      /* V7 P3 · المحرّر الموحّد: ما سيُضاف وما سيُسحب من القالب قبل الحفظ (ويسري على حامليه) */
-      ...this._edReview(g && a && a.sheetDiff ? a.sheetDiff(l, p) : null, "tp", g ? [c, d] : null),
-    };
-    /* ═══ KIVO_256 · وضعُ الإنفاذ: القالبُ مفاتيحُ v24.9 (keys24) على شجرة الوثيقة — والورقةُ القديمة تُشتقّ منها (تغطيةٌ لا تتجاوزها) ═══ */
-    if (V24 && o && a && a.p24) {
-      const C = a.p24.ceil(i),
-        b24 = this.tp24Base(o, i, C),
-        dr = t.tp24Draft || b24,
-        tg = { role: "staff", mgr: !1 },
-        md = this.t24Rows({
-          mode: s ? "tpl" : "view",
-          ceil: C,
-          on: dr,
-          lens: d,
-          exp: t.tp24Exp || {},
-          leafExp: t.tp24Leaf || {},
-          canEdit: s,
-          target: tg,
-          hideOut: !0,
-          platOff: this.t24PlatOff(),
-          cb: {
-            togKey: (k) => {
-              const r = this.t24TogKey(dr, d, k);
-              this.setState({ tp24Draft: r.on, tpLens: r.lens });
-            },
-            togLeaf: (l, v) => {
-              const r = this.t24TogLeaf(dr, d, l, v, C, tg);
-              this.setState({ tp24Draft: r.on, tpLens: r.lens });
-            },
-            expand: (id) => this.setState({ tp24Exp: { ...(this.state.tp24Exp || {}), [id]: !(this.state.tp24Exp || {})[id] } }),
-            leafExpand: (id) => this.setState({ tp24Leaf: { ...(this.state.tp24Leaf || {}), [id]: !(this.state.tp24Leaf || {})[id] } }),
-          },
-        }),
-        g24 =
-          this.t24Sig(dr) !== this.t24Sig(b24) ||
-          String(t.tpName || "") !== String(o.name || "") ||
-          JSON.stringify(d.slice().sort()) !== JSON.stringify(c.slice().sort());
-      Object.assign(RET, {
-        tpV24: !0,
-        tpLegacy: !1,
-        ...this._edReview(g24 && a.keyDiff ? a.keyDiff(b24, dr) : null, "tp", g24 ? [c, d] : null),
-        tpRows24: md.rows,
-        tpCount24: md.nOn + " من " + KIVO.BassamCount(md.nTot, "صلاحية", "g"),
-        tpExpAll24Lbl: md.allExpanded ? "طيّ الكل" : "فرد الكل",
-        tpExpAll24: () => this.setState({ tp24Exp: this.t24ExpAll(md) }),
-        tpClear: () => this.setState({ tp24Draft: {}, tpLens: [] }),
-        tpCapNote: n.length
-          ? "شجرةُ v24.9 محصورةٌ بسقف إدارتك — القالبُ مفاتيحُ تُمنح لحامليه كما هي، وما خارج السقف لا يُعرض ولا يُمنح."
-          : "سقف صفحات إدارتك فارغ — راجع مسؤول المنصة قبل بناء القوالب.",
-        tpLensOnBox: !1,
-        tpDirty: g24,
-        tpDirtyTxt: g24 ? "تغييرات لم تُحفظ" : "",
-        tpDirtyStyle: "margin-left:auto;font-size:11px;font-weight:700;color:" + (g24 ? "var(--fg-xb45309)" : "transparent"),
-        tpSaveStyle:
-          "height:36px;padding:0 18px;border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:" +
-          (g24 ? "pointer" : "default") +
-          ";font-family:'Cairo',sans-serif;background:" +
-          (g24 ? "var(--bg-xb99751)" : "var(--bg-xe5e7eb)") +
-          ";color:" +
-          (g24 ? "var(--fg-xffffff)" : "var(--fg-x9ca3af)"),
-      });
-    }
-    return RET;
-  }
   state = {
     rowMenu: null,
     admTab: "",
@@ -907,16 +444,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     shDel: null,
     shRen: null,
     shTick: 0,
-    tpSel: "",
-    tpDraft: null,
-    tpName: "",
-    tpNew: "",
-    tpDel: null,
-    tpExp: {},
-    tpTick: 0,
-    tpDrag: null,
-    tpOver: null,
-    tpLens: null,
     plTab: "id",
     plDraft: null,
     plPv: "",
@@ -935,8 +462,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     usF: "all",
     usMenu: null,
     usTmp: null,
-    pmQ: "",
-    adPmLog: null,
     adOv: null,
     adPres: null,
     adSec: null,
@@ -983,28 +508,25 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   adLoad(t) {
     if (!this.adOnSrv()) return;
     const e = this.state.admTab;
-    if ("overview" !== e && "sec" !== e && "users" !== e && "perms" !== e && !t) return;
+    if ("overview" !== e && "sec" !== e && "users" !== e && !t) return;
     const s = Date.now();
     if (!t && this._adLast && s - this._adLast < 4e3) return;
     this._adLast = s;
     const a = [this.adFetch("/api/presence"), this.adFetch("/api/overview")];
-    if ((("perms" === e || t) && a.push(this.adFetch("/api/sec?limit=30&kind=perm")), "sec" === e || t)) {
+    if ("sec" === e || t) {
       const t = this.state,
         r = "today" === (t.adSecPeriod || "today") ? this._adDay0(s) : "7d" === t.adSecPeriod ? s - 6048e5 : s - 2592e6,
         k = this._adSecKind(t.adSecKind);
       /* نوعٌ يطابق فلتر الخادم كما هو يُرسَل إليه؛ وما يضمّ أحداثاً لا يعرفها فلترُ الخادم (الاستعادة · التهيئة · تعذّر التحقق) يُقرأ كلُّه ويُصفّى هنا */
       a.push(this.adFetch("/api/sec?limit=" + (t.adSecLim || 100) + "&since=" + r + (k && k.srv ? "&kind=" + k.k : "")));
     }
-    const r = "perms" === e || t;
     Promise.all(a).then((t) => {
       const e = t[0],
         s = t[1],
-        a = r ? t[2] : null,
-        i = r ? t[3] : t[2],
+        i = t[2],
         n = { adTick: (this.state.adTick || 0) + 1, adErr: !(e && e.ok && s && s.ok) };
       (e && e.ok && (n.adPres = e),
         s && s.ok && ((n.adOv = s), (this._adOk = Date.now()), this.state.adPol || (n.adPol = Object.assign({}, s.policy || {}))),
-        a && a.ok && (n.adPmLog = a.rows || []),
         i && i.ok && (n.adSec = i.rows || []),
         this.setState(n),
         this._adRetry(n.adErr));
@@ -1038,71 +560,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* CORE-02: الانتقالُ إلى تبويبٍ من تبويبات مركز الإدارة التسعة — ما كانت تفعله أزرارُ الشريط القديم كلٌّ على حدة، في موضعٍ واحد:
      تبويباتُ الخادم الأربعة بـ adGo (قراءةٌ + المؤقّت) · المنصة تقرأ حالة مفتاح الاستعادة · السجلُّ يُحمَّل · والباقي تبديلٌ فقط */
   _admGo(k) {
-    "overview" === k || "sec" === k || "users" === k || "perms" === k
+    "overview" === k || "sec" === k || "users" === k
       ? this.adGo(k)
       : "plat" === k
         ? this.setState({ admTab: "plat" }, () => this.plRkLoad())
         : "oplog" === k
           ? this.setState({ admTab: "oplog" }, () => this.audLoad(!0))
           : this.setState({ admTab: k });
-  }
-  /* V7 P4 · G8/G14 — «وحدات المنصة» من البيان (pages.json): كلُّ صفحةٍ لها activation صفٌّ (لا قائمةَ يدوية) — always مقفلة ·
-     platSwitch = لها مفتاحُ إطفاءٍ هنا اليوم · platLock = مقفلةٌ بسببٍ معلن · وما سواها يُعرض بلا مفتاح. الوصفُ والعدّادُ من بنية الصفحة
-     (تبويباتُها وصفحاتُها) وسقوف الإدارات — لا نصوصَ قديمة. off: mods.off · tg: نمطُ المفتاح */
-  _plMods(off, tg) {
-    let pages = [];
-    try {
-      pages = KIVO.KIVO_MANIFEST.clone("pages");
-    } catch (t) {
-      return [];
-    }
-    const P = KIVO.BassamPerm,
-      under = (k) => pages.filter((q) => q.under === k),
-      depts = (() => {
-        try {
-          return KIVO.BassamDepts.list();
-        } catch (t) {
-          return [];
-        }
-      })(),
-      uses = (p) => {
-        try {
-          return depts.filter((d) => (P.deptCap(d.id) || []).some((e) => e === p.key || under(p.key).some((q) => q.key === e))).length;
-        } catch (t) {
-          return 0;
-        }
-      };
-    return pages
-      .filter((p) => p.activation)
-      .map((p) => {
-        const isOff = off.indexOf(p.key) >= 0,
-          sw = !0 === p.platSwitch && "toggle" === p.activation,
-          n = uses(p),
-          host = p.under ? pages.filter((q) => q.key === p.under)[0] : null,
-          why = "always" === p.activation ? "دائمة — لا تُطفأ" : p.platLock ? "لا تُطفأ — " + p.platLock : sw ? "" : "لا مفتاحَ إطفاءٍ لها هنا",
-          kids = (p.subs || [])
-            .concat(p.tabs || [])
-            .concat(under(p.key))
-            .map((x) => x.name);
-        return {
-          k: p.key,
-          name: p.name,
-          sub: (host ? ["تحت «" + host.name + "»"] : []).concat(kids).join(" · "),
-          sw: sw,
-          activation: p.activation,
-          why: why,
-          whyOn: !!why,
-          note: isOff
-            ? "مطفأة"
-            : n
-              ? KIVO.BassamCount(n, "إدارة") + " " + KIVO.BassamCount.agr(n, "تستخدمها", "تستخدمانها", "تستخدمها")
-              : "لا إدارة تستخدمها",
-          tg: tg(!isOff) + (sw ? "" : ";opacity:.35;cursor:not-allowed"),
-          style:
-            "display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bd-xeceef1);border-radius:11px;background:var(--bg-xffffff);margin-bottom:6px;" +
-            (isOff ? "opacity:.6" : ""),
-        };
-      });
   }
   /* V7 P4 · G9 — تبويباتُ «مركز إدارة رشاد»: القائمةُ الواحدة [المفتاح · المجموعة · العنوان · يعمل مع الخادم وحده] — منها ترتيبُ التبويبات
      وعناوينُ الصفحات (_conHead) وصفوفُ المركز في «خريطة المنصة» (_siteMap). عنوانُ «plat» من أقسامه (PL_SECS) */
@@ -1111,7 +575,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ["overview", "", "الرئيسية", 1],
       ["sec", "sec", "الأمن", 1],
       ["users", "org", "مراقبة الحسابات", 1],
-      ["perms", "org", "خريطة الصلاحيات", 1],
       ["plat", "plat", "", 0],
       ["depts", "org", "الإدارات", 0],
       ["oplog", "sec", "سجل الأنشطة والتغييرات", 1],
@@ -1161,7 +624,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "الترويسة والتذييل",
         "M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z",
       ],
-      ["mods", "الوحدات", "تفعيل أقسام المنصة", "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"],
       [
         "setup",
         "التهيئة والاستعادة",
@@ -1267,17 +729,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* التعديلُ والصلاحيات نافذتان في صفحة العقدة: هناك تُفتحان، ومن «مراقبة الحسابات» يُفتح تبويبُ حسابات عقدة الحساب */
   _acctOpen(a, what, here) {
     const u = this._acctUnit(a);
+    /* V7 · د5-هـ (44): «تعديل الصلاحيات» يفتح قسم «الأشخاص» في تبويب «الصلاحيات» لوحدة الحساب — نافذةُ صلاحيات الموظف حُذفت */
+    if ("perm" === what) {
+      if (!u) return void this._ovGo("depts");
+      try {
+        location.hash = "#/sysadmin/org/" + encodeURIComponent(u) + "/perm/people";
+      } catch (e) {}
+      return;
+    }
     if (!here) return void (u ? this._orgNav(u, "emps") : this._ovGo("depts"));
     if ("edit" === what) return void ("gm" === a.role ? this.gmOpen(u, a.id) : this.mgrOpen(u, a.id));
-    const A = KIVO.BassamAuth;
-    this.setState({
-      upUid: a.id,
-      upGmDept: "gm" === a.role && A && A.groupDepts ? ((A.groupDepts(a.gid) || [])[0] || {}).id || "" : "",
-      upDraft: null,
-      upLensDraft: null,
-      upFor: "",
-      upExp: {},
-    });
   }
   _acctMenu(a, X, here) {
     const s = KIVO.BassamAuth,
@@ -1336,7 +797,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   const u = this._acctUnit(a),
                     t = gm ? s.removeGroupManager(u, a.id) : s.removeDeptManager(u, a.id);
                   t && t.ok
-                    ? (this.setState({ upUid: this.state.upUid === a.id ? "" : this.state.upUid }), this.bsAck("حُذف حساب «" + (nm || "المدير") + "»", "ok"))
+                    ? (this.setState({ tick: (this.state.tick || 0) + 1 }), this.bsAck("حُذف حساب «" + (nm || "المدير") + "»", "ok"))
                     : this.bsToast((t && t.err) || "تعذّر الحذف", "warn");
                 },
               ),
@@ -1434,6 +895,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
   }
   adRole(t) {
+    /* V7 · د5-هـ (44): الموظفُ (لا المدير) يُعرض باسم دوره الممنوح (permLabel ← محرّك الأدوار) قبل المسمّى الحرّ — بحضور المحرّك */
+    if (t && "staff" === t.role && !t.mgr && t.ekey && KIVO.Perm44 && KIVO.BassamAuth && KIVO.BassamAuth.permLabel && !(KIVO.BassamAuth.isMgrKey && KIVO.BassamAuth.isMgrKey(t.ekey))) {
+      const L = KIVO.BassamAuth.permLabel(t.ekey, t.deptId);
+      if (L) return L;
+    }
     const T = t && "super" !== t.role ? String(t.title || "").trim() : "";
     if (T) return T;
     return (
@@ -1494,7 +960,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       nr = KIVO.BassamNotif && KIVO.BassamNotif.status ? String(KIVO.BassamNotif.status().rev) : "";   /* CORE-02 S8: «أحداث المنصة الأخيرة» */
     } catch (t) {}
-    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.pmQ, t.adSecQ, tag(t.adPol), t.adPolMsg, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres), t.pmLens, t.pmDid, t.pmUid, tag(t.pmExp), tag(t.pmLeaf)].join("|") + "|n" + nr;   /* V7 P4: عدسةُ الخريطة وفردُها */
+    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.adSecQ, tag(t.adPol), t.adPolMsg, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|") + "|n" + nr;   /* V7 · د5-هـ (44): مدخلاتُ تبويب الخريطة المحذوف حُذفت معه */
   }
   _adMemo(n, f) {
     const k = this._adKey(),
@@ -1766,7 +1232,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         app: ["app"],
         side: ["side", "top"],
         print: ["print"],
-        mods: ["mods"],
         setup: [],
         about: ["about"],
       }[t] || []
@@ -2073,7 +1538,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           plOnApp: "app" === l,
           plOnSide: "side" === l,
           plOnPrint: "print" === l,
-          plOnMods: "mods" === l,
           plOnSetup: "setup" === l,
           plOnAbout: "about" === l,
           plMapRows:
@@ -2151,56 +1615,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             kt: "about.guides." + e + ".t",
             ku: "about.guides." + e + ".u",
           })),
-          plNav: f.map((t, e) => {
-            const s = u.indexOf(t) >= 0,
-              a = b.indexOf(t) >= 0;
-            return {
-              i: String(e),
-              k: t,
-              name: h[t] || t,
-              note: a ? "مطفأة من الوحدات" : s ? "مخفية من القائمة" : "",
-              tg: c(!s && !a),
-              style:
-                "display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bd-xeceef1);border-radius:11px;background:var(--bg-xffffff);margin-bottom:6px;" +
-                (s || a ? "opacity:.6" : ""),
-            };
-          }),
-          plUp: (t) => {
-            const e = +t.target.closest("[data-k]").getAttribute("data-k");
-            if (e <= 0) return;
-            const s = f.slice();
-            (([s[e - 1], s[e]] = [s[e], s[e - 1]]), this.plSetPath("side.order", s));
-          },
-          plDown: (t) => {
-            const e = +t.target.closest("[data-k]").getAttribute("data-k");
-            if (e >= f.length - 1) return;
-            const s = f.slice();
-            (([s[e + 1], s[e]] = [s[e], s[e + 1]]), this.plSetPath("side.order", s));
-          },
-          plHideTog: (t) => {
-            const e = t.target.closest("[data-k]").getAttribute("data-k"),
-              s = u.slice(),
-              a = s.indexOf(e);
-            (a >= 0 ? s.splice(a, 1) : s.push(e), this.plSetPath("side.hidden", s));
-          },
-          plMods: this._plMods(b, c),
-          plModTog: (t) => {
-            const e = t.target.closest("[data-k]").getAttribute("data-k");
-            /* V7 P4: المفتاحُ لما يحمل platSwitch في البيان وحده (ما كان يُطفأ قبلُ) — «موظفو الإدارة» مقفلةٌ بسببها المعلن */
-            if (!this._plMods(b, c).some((m) => m.k === e && m.sw)) return;
-            const s = b.slice(),
-              a = s.indexOf(e);
-            (a >= 0 ? s.splice(a, 1) : s.push(e), this.plSetPath("mods.off", s));
-          },
           plFoot:
             {
               notif: "الشجرة تُقرأ من سجل الأحداث في الكود — أي حدث يُضاف للمنصة يظهر هنا تلقائياً · التعاميم العامة لمسؤول المنصة وحده",
               id: "الشعار يُحفظ مع الإعدادات في الخادم — لا ملفات خارجية",
               login: "التغيير هنا لا يمسّ حسابات أحد",
               app: "يعمل كتطبيق ويب تقدّمي (PWA) — نفس المنصة ونفس الحساب، بلا نشر في المتاجر",
-              side: "الترتيب والإخفاء على مستوى المنصة كلها · صلاحيات الإدارات تبقى الحكم الأخير",
+              side: "على مستوى المنصة كلها · صلاحيات الإدارات تبقى الحكم الأخير",
               print: "اليوم كل صفحة تطبع بترويستها الخاصة — هذه تُضاف فوقها موحّدةً",
-              mods: "إطفاء وحدة لا يحذف بياناتها",
               setup: "كل ما في هذه الصفحة يُسجَّل في سجل الأمن",
               about: "زر «المساعدة» أسفل القائمة يفتح هذه البطاقة لكل مستخدم",
             }[l] || "",
@@ -2228,7 +1650,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 app: ["app"],
                 side: ["side", "top"],
                 print: ["print"],
-                mods: ["mods"],
                 setup: [],
                 about: ["about"],
               })[l] || []
@@ -2245,7 +1666,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             go: () => this.setState({ plPv: t[0] }, () => this.plPvPost()),
             style: g(
               (r.plPv ||
-                { id: "login", login: "login", app: "phone", side: "side", print: "print", mods: "side", setup: "login", about: "login" }[
+                { id: "login", login: "login", app: "phone", side: "side", print: "print", setup: "login", about: "login" }[
                   l
                 ]) === t[0],
             ),
@@ -2442,7 +1863,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (w.plRkPrint = () => this.plRkPrint(i.name)));
     const v =
       r.plPv ||
-      { id: "login", login: "login", app: "phone", side: "side", print: "print", mods: "side", setup: "login", about: "login" }[l];
+      { id: "login", login: "login", app: "phone", side: "side", print: "print", setup: "login", about: "login" }[l];
     return ((w.pvLogin = "login" === v), (w.pvSide = "side" === v), (w.pvPhone = "phone" === v), (w.pvPrint = "print" === v), w);
   }
   _adUsersVals0() {
@@ -2525,83 +1946,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         S(w(m[7]), "بصيغة كلمة مرور قديمة", w(m[7]) ? "warn" : "", "old", "لا يستطيع الدخول حتى تُعاد كلمة مروره"),
       ],
       /* V7 P2: الصفُّ وقائمةُ أفعاله من _acctRow — المصدرُ نفسُه لتبويب «المسؤولون والحسابات» في صفحة العقدة */
-      v = b.map((a) => this._acctRow(a, X, !1)),
-      _ = (a && a.PAGE_REG) || [],
-      O = _.map((t) => ({ key: t.key, name: t.name })),
-      D = r ? r.list() : [],
-      /* CORE-02 · سقوفُ الإدارات وقوالبُها والمصفوفة تُحسب حين يُفتح تبويبها وحده (كانت تُحسب مع كل رسمٍ لمراقبة الحسابات) */
-      pmOn = "perms" === t.admTab,
-      pmOff = pmOn ? this.t24PlatOff() : [],
-      T = pmOn ? D.map((t) => this._pmCapRow(t, a, _, pmOff)) : [],
-      A = pmOn ? this._pmTplRows(D, a, _) : [],
-      P = { view: "ع", edit: "ت", add: "إ", del: "ح", approve: "ا", export: "ص" },
-      B = String(t.pmQ || "")
-        .trim()
-        .toLowerCase(),
-      E = (t) => this._pmEff(t, a, pmOff),
-      /* «حسابات الإدارة» (role dept) أُلغيت — لا تُنشأ ولا تُعدَّل وتُحذف بزرّ «تنظيف» في الإدارات؛ لا تُعرض صفوفاً في المصفوفة */
-      pmLegacy = pmOn ? o.filter((t) => !t.dis && "dept" === t.role).length : 0,
-      M = (pmOn ? o : [])
-        .filter((t) => !t.dis && "dept" !== t.role)
-        .filter(
-          (t) => !B || KIVO.BassamFind.dig([t.name, t.un, this.adUnit(t)].join(" ").toLowerCase()).indexOf(KIVO.BassamFind.dig(B)) >= 0,
-        ),
-      N = M.slice(0, 200).map((t) => {
-        const e = E(t);
-        return {
-          ini: h(t.name),
-          name: t.name || t.un,
-          sub: this.adSub(t),
-          cells: _.map((t) => {
-            const s = e[t.key] || [],
-              a = s.length
-                ? ["view", "edit", "approve", "export"]
-                    .filter((t) => s.indexOf(t) >= 0)
-                    .map((t) => P[t])
-                    .join(" ")
-                : "—",
-              /* درجةُ الخلية تلوّنها بصنفٍ على الرموز الدلالية (.adm-cell[data-lvl]) — كانت ألواناً سداسية ثابتة */
-              r = s.length ? (s.indexOf("approve") >= 0 ? "approve" : s.indexOf("edit") >= 0 ? "edit" : "view") : "";
-            return {
-              t: a,
-              tip: s.length
-                ? t.name +
-                  ": " +
-                  s
-                    .map((t) => ({ view: "عرض", add: "إضافة", edit: "تعديل", del: "حذف", approve: "اعتماد", export: "تصدير" })[t] || t)
-                    .join("، ")
-                : t.name + ": لا شيء",
-              lvl: r,
-            };
-          }),
-        };
-      }),
-      R = (t.adPmLog || []).map((t) => {
-        const s = this.adSecTxt(t),
-          a = (String(t.detail || "").match(/emps=([^;]*)/) || [])[1] || "",
-          r = a
-            ? a
-                .split(",")
-                .map((t) => {
-                  const e = t.split(":"),
-                    s = e[0],
-                    a = e[1],
-                    r = o.filter((t) => t.ekey === a && t.deptId === s)[0];
-                  return (
-                    (r ? r.name || r.un : a) +
-                    (e[2]
-                      ? " ← " +
-                        e[2]
-                          .split("|")
-                          .map((t) => (_.filter((e) => e.key === t)[0] || { name: t }).name)
-                          .join("، ")
-                      : " ← لا شيء")
-                  );
-                })
-                .join(" ؛ ")
-            : "";
-        return { txt: s.t + (r ? ": " + r : ""), who: t.name || t.un || "—", when: this.adWhen(t.ts, e), whenTip: this.adFull(t.ts) };
-      });
+      v = b.map((a) => this._acctRow(a, X, !1));
     return {
       usCards: x,
       usFilters: y,
@@ -2660,59 +2005,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           (navigator.clipboard.writeText(t.usTmp.pw), this.bsToast("نُسخت", "ok"));
         } catch (t) {}
       },
-      ...this._pmMap(
-        pmOn,
-        D,
-        o.filter((t) => !t.dis && "dept" !== t.role),
-      ),
-      pmCaps: T,
-      pmTpls: A,
-      pmTplEmpty: !A.length, pmTplHas: !!A.length,
-      pmCols: O,
-      pmRows: N,
-      pmQ: t.pmQ || "",
-      pmOnQ: (t) => this.setState({ pmQ: t.target.value }),
-      pmFoot: N.length + " من " + KIVO.BassamCount(M.length, "حساب|نشط", "g") + "",
-      pmCutOn: M.length > N.length,
-      pmCut: "تُعرض أول " + N.length + " حساب من " + M.length + " — ضيّق البحث بالاسم، أو صدّر الجدول ليشمل الحسابات كلها",
-      pmLegacyOn: pmLegacy > 0,
-      pmLegacy: KIVO.BassamCount(pmLegacy, "حساب|إدارة|قديم", "g") + " لا يُعرض هنا: «حسابات الإدارة» أُلغيت — احذفها من تبويب «الإدارات» بزرّ «تنظيف»",
-      pmAzOn: pmOn && !!(a && a.authz && a.authz()),
-      pmExport: () => {
-        const t = (t) => '"' + String(null == t ? "" : t).replace(/"/g, '""') + '"',
-          e = [
-            ["المستخدم", "الدور", "الإدارة"]
-              .concat(_.map((t) => t.name))
-              .map(t)
-              .join(","),
-          ];
-        M.forEach((s) => {
-          const a = E(s);
-          e.push(
-            [s.name, this.adRole(s), this.adUnit(s)]
-              .concat(_.map((t) => (a[t.key] || []).join("+")))
-              .map(t)
-              .join(","),
-          );
-        });
-        try {
-          const t = new Blob(["\ufeff" + e.join("\n")], { type: "text/csv;charset=utf-8" }),
-            s = document.createElement("a");
-          ((s.href = URL.createObjectURL(t)),
-            (s.download = "مصفوفة-الصلاحيات-" + new Date().toISOString().slice(0, 10) + ".csv"),
-            document.body.appendChild(s),
-            s.click(),
-            setTimeout(() => {
-              (URL.revokeObjectURL(s.href), s.remove());
-            }, 800));
-        } catch (t) {
-          this.bsToast("تعذّر التصدير", "warn");
-        }
-      },
-      /* أعمدةُ المصفوفة بعدد الصفحات المسجّلة — العرضُ وحده ينتقل من المنطق، والألوانُ أصنافٌ في helmet.css */
-      pmGrid: "grid-template-columns:200px repeat(" + _.length + ",1fr)",
-      pmLog: R,
-      pmLogEmpty: !R.length,
     };
   }
   /* KIVO_265 · حادثةُ الصور (البند 6) · CORE-01: «صحة التخزين» في نظرة عامة — من /api/overview imgs · أسماءُ الإدارات من السجل المحلي */
@@ -3741,16 +3033,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     this._deptDeleteBusy = true;
     try {
-      let result = await this._wpCall(draft.dept, draft.ticket, actor, "delete");
+      /* V7 · د5-هـ (44): السببُ يُسأل قبل الإرسال لا بعد رفضه (مدير المنصة لا يُسأل أبداً) — والطلبُ يُرسل مرّةً واحدة؛ الإلغاءُ لا يُرسل شيئاً */
+      const pre = await this._reasonFirst("bsdept:" + draft.dept + ":bassam_employees_v1", draft.reasonKeys || []);
+      if (!pre.go) return;
+      if (pre.reason && draft.ticket.reason !== pre.reason) draft.ticket = { ...draft.ticket, reason: pre.reason };
+      const result = await this._wpCall(draft.dept, draft.ticket, actor, "delete");
       const srv = KIVO.__BS_SRV;
-      if (!result.ok && result.err === "reason" && srv && typeof srv.askReason === "function") {
-        const reason = await new Promise(resolve => srv.askReason(result.reasonKey, result.reasonKeys, resolve));
-        if (this._wpActor() !== actor || this._deptDeleteDraft !== draft) return;
-        if (typeof reason !== "string" || !reason.trim()) return this.bsToast("أُلغي إدخال السبب؛ تأكيد الحذف محفوظ ولم يُعتمد تغيير", "warn");
-        const random = new Uint8Array(20); window.crypto.getRandomValues(random);
-        draft.ticket = { ...draft.ticket, requestId: "deptdel-" + Array.from(random, value => value.toString(16).padStart(2, "0")).join(""), reason: reason.trim() };
-        result = await this._wpCall(draft.dept, draft.ticket, actor, "delete");
-      }
       if (!result.ok) {
         draft.uncertain = ["network", "receipt", "server", "session"].includes(result.err); draft.needsReview = result.err === "conflict";
         return this.bsToast(draft.needsReview ? "تغيّرت بيانات الإدارة؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُحذف الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
@@ -3767,6 +3055,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } finally { this._deptDeleteBusy = false; }
   }
 
+  /* V7 · د5-هـ (44): «اسأل أولاً ثم أرسل» لمسارات الخادم المحمية — مدير المنصة معفًى دائماً (لا نافذة)، وبغيره تُفتح نافذةُ السبب (280 reasonFirst)
+     قبل أي طلب: { go:false } عند الإلغاء فلا يُرسل شيء · { go:true, reason } بعده */
+  _reasonFirst(k, keys) {
+    const srv = KIVO.__BS_SRV;
+    if (!srv || (srv.reasonExempt && srv.reasonExempt()) || typeof srv.reasonFirst !== "function" || !(keys && keys.length)) return Promise.resolve({ go: true, reason: "" });
+    return new Promise(resolve => srv.reasonFirst(k, keys, resolve));
+  }
   _wpActor() {
     const auth = KIVO.BassamAuth, user = auth && auth.user && auth.user(), boot = window.__BS_BOOT || {};
     return user && user.role === "super" && auth.isSuper() && boot.srv === 1 && boot.cf === 1 && String(boot.uid || "") === String(user.id) ? String(user.id) : null;
@@ -3844,16 +3139,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     let ticket = this._wpTicket;
     this._wpBusy = true; this.setState({ wpBusy: true, wpMsg: "جارٍ انتظار تأكيد مسح الإدارة من الخادم…" });
     try {
-      let result = await this._wpCall(dept, ticket.body, actor);
+      /* V7 · د5-هـ (44): السببُ قبل الإرسال (مدير المنصة لا يُسأل) — طلبٌ واحد؛ الإلغاءُ لا يُرسل شيئاً ولا يُظهر رفضاً */
+      const pre = await this._reasonFirst("bsdept:" + dept + ":bassam_employees_v1", ticket.reasonKeys || []);
+      if (!pre.go) return void this.setState({ wpMsg: "" });
+      if (pre.reason && ticket.body.reason !== pre.reason) { ticket = { ...ticket, body: { ...ticket.body, reason: pre.reason } }; this._wpTicket = ticket; }
+      const result = await this._wpCall(dept, ticket.body, actor);
       const srv = KIVO.__BS_SRV;
-      if (!result.ok && result.err === "reason" && srv && typeof srv.askReason === "function") {
-        const reason = await new Promise(resolve => srv.askReason(result.reasonKey, result.reasonKeys, resolve));
-        if (this._wpActor() !== actor || this.state.wpDid !== dept) return;
-        if (typeof reason !== "string" || !reason.trim()) return void this.setState({ wpMsg: "أُلغي إدخال السبب؛ تأكيد المسح محفوظ ولم يُعتمد تغيير" });
-        const random = new Uint8Array(20); window.crypto.getRandomValues(random);
-        ticket = { ...ticket, body: { ...ticket.body, requestId: "wipe-" + Array.from(random, value => value.toString(16).padStart(2, "0")).join(""), reason: reason.trim() } };
-        this._wpTicket = ticket; result = await this._wpCall(dept, ticket.body, actor);
-      }
       if (!result.ok) {
         this._wpUncertain = ["network", "receipt", "server", "session"].includes(result.err);
         return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "reason" ? "يشترط الخادم سبباً لهذا الإجراء؛ تأكيد المسح محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });
@@ -3873,50 +3164,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._wpTicket = null; this.setState({ wpDid: "", wpTxt: "", wpMsg: "" });
   }
 
-  _upDeptOf(t) {
-    if (!t) return "";
-    if ("gm" !== t.role) return t.deptId;
-    const e = KIVO.BassamAuth,
-      s = e && e.groupDepts ? e.groupDepts(t.gid) : [],
-      a = this.state.upGmDept;
-    return s.some((t) => t.id === a) ? a : (s[0] || {}).id || "";
-  }
-  _upDraft(t) {
-    const e = this.state;
-    if (e.upDraft && e.upFor === t) return JSON.parse(JSON.stringify(e.upDraft));
-    const s = KIVO.BassamAuth,
-      a = KIVO.BassamPerm,
-      r = (s && s.users ? s.users() : []).filter((e) => e.id === t)[0];
-    return r && a ? JSON.parse(JSON.stringify(a.empPerms(r.ekey, this._upDeptOf(r)) || {})) : {};
-  }
-  upTog(t, e, s) {
-    this.setState({ upDraft: KIVO.BassamPerm.togActIn(this._upDraft(t), e, s), upFor: t });
-  }
-  upAll(t, e, s) {
-    this.setState({ upDraft: KIVO.BassamPerm.togLeafIn(this._upDraft(t), e, s), upFor: t });
-  }
-  _upLens(t, e) {
-    const s = this.state;
-    if (s.upLensDraft && s.upFor === t) return s.upLensDraft.slice();
-    const a = KIVO.BassamPerm;
-    return a && a.empLens ? a.empLens(e.ekey, this._upDeptOf(e)) : [];
-  }
-  upSave(t, e, s) {
-    const a = KIVO.BassamPerm;
-    if (!a || !a.setEmpPerms) return;
-    const dd = this._upDeptOf(t),
-      isM = !!t.mgr || "gm" === t.role;
-    let r;
-    if (isM && a.capAllPerms && a.clearEmpPerms && JSON.stringify(a.derivePages ? e : e) === JSON.stringify(a.capAllPerms(dd))) {
-      r = a.clearEmpPerms(t.ekey, dd);
-      r && r.ok && a.setEmpPerms && (r = { ok: !0 });
-    } else r = a.setEmpPerms(t.ekey, e, dd);
-    r && r.ok
-      ? (Array.isArray(s) && a.setEmpLens && a.setEmpLens(t.ekey, s, this._upDeptOf(t)),
-        this.setState({ upDraft: null, upLensDraft: null, upFor: "", tick: (this.state.tick || 0) + 1 }),
-        this.bsAck("حُفظت صلاحيات «" + (t.name || "المستخدم") + "»", "ok"))
-      : this.bsToast((r && r.err) || "تعذّر حفظ الصلاحيات");
-  }
   userDel(t, e, s) {
     const a = KIVO.BassamAuth;
     if (!a) return;
@@ -3928,7 +3175,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!y) return;
       const n = s ? a.removeDeptManager(e) : a.removeStaffAccount(t.ekey, e);
       n && n.ok
-        ? (this.setState({ tick: (this.state.tick || 0) + 1, upUid: "" }), this.bsAck("حُذف حساب «" + r + "»", "ok"))
+        ? (this.setState({ tick: (this.state.tick || 0) + 1 }), this.bsAck("حُذف حساب «" + r + "»", "ok"))
         : this.bsToast((n && n.err) || "تعذّر الحذف");
     });
   }
@@ -4741,249 +3988,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     (md.ids || []).forEach((id) => (e[id] = !md.allExpanded));
     return e;
   }
-  /* ── نافذةُ صلاحيات المستخدم في وضع الإنفاذ: الحالةُ الفعلية مفتاحاً مفتاحاً (= الخادم) والحفظُ فرقٌ صريح ── */
-  /* V7 P4: الحسابُ يرث سقفَ إدارته (مديرٌ بلا ورقةٍ خاصة) — العبارةُ نفسُها لنافذة الحساب وللخريطة */
-  _upInh(n, o) {
-    const r = KIVO.BassamPerm;
-    return (!!n.mgr || "gm" === n.role) && r && r.hasOwnSheet && !r.hasOwnSheet(n.ekey, o);
-  }
-  /* V7 P4: الفعليُّ لحسابٍ في إدارته {C السقف · tgt · eff = p24.effective (= الخادم)} — مسارٌ واحد لنافذة الحساب (up24Model) ولعرض «الفعلي» في الخريطة */
-  _p24Of(n, o, inh) {
-    const P24 = KIVO.BassamPerm.p24,
-      C = P24.ceil(o),
-      isMgr = !!n.mgr || "gm" === n.role;
-    return {
-      C: C,
-      isMgr: isMgr,
-      tgt: { role: n.role, mgr: isMgr },
-      eff: P24.effective({ did: o, ekey: n.ekey, inherit: inh, ceil: C, mgr: isMgr }) || { keys: {}, T: {}, lens: [], plus: [], minus: [] },
-    };
-  }
-  up24Model(n, o, inh, edit) {
-    const st = this.state,
-      i = n.id,
-      E0 = this._p24Of(n, o, inh),
-      C = E0.C,
-      ed = !!edit && "super" !== n.role && "dept" !== n.role && !!n.ekey,
-      eff = E0.eff,
-      base = eff.keys,
-      draft = ed && st.up24Draft && st.upFor === i ? st.up24Draft : base,
-      lensBase = eff.lens,
-      lensNow = ed && st.upLensDraft && st.upFor === i ? st.upLensDraft : lensBase,
-      tgt = E0.tgt,
-      md = this.t24Rows({
-        mode: ed ? "emp" : "view",
-        ceil: C,
-        on: draft,
-        lens: lensNow,
-        exp: st.up24Exp || {},
-        leafExp: st.up24Leaf || {},
-        canEdit: ed,
-        target: tgt,
-        platOff: this.t24PlatOff(),
-        cb: {
-          togKey: (k) => {
-            const r = this.t24TogKey(draft, lensNow, k);
-            this.setState({ up24Draft: r.on, upLensDraft: r.lens, upFor: i });
-          },
-          togLeaf: (l, v) => {
-            const r = this.t24TogLeaf(draft, lensNow, l, v, C, tgt);
-            this.setState({ up24Draft: r.on, upLensDraft: r.lens, upFor: i });
-          },
-          expand: (id) => this.setState({ up24Exp: { ...(this.state.up24Exp || {}), [id]: !(this.state.up24Exp || {})[id] } }),
-          leafExpand: (id) => this.setState({ up24Leaf: { ...(this.state.up24Leaf || {}), [id]: !(this.state.up24Leaf || {})[id] } }),
-        },
-      }),
-      dK = this.t24Sig(draft) !== this.t24Sig(base),
-      dL = this.t24Sig(lensNow) !== this.t24Sig(lensBase),
-      nDiff = (() => {
-        const a = {};
-        Object.keys(draft).concat(Object.keys(base)).forEach((k) => (a[k] = 1));
-        return Object.keys(a).filter((k) => !!draft[k] !== !!base[k]).length;
-      })();
-    return { md, eff, draft, base, lensNow, lensBase, ed, C, tgt, dirty: ed && (dK || dL), nDiff, dL };
-  }
-  /* ═══ V7 P3 · المحرّر الموحّد — لوحتان مشتركتان لنافذة الحساب وقوالب الإدارة (القديمُ والإنفاذ):
-     _edReview: ما سيُضاف وما سيُسحب قبل الحفظ · _edSources: الصلاحيةُ الفعلية ومصدرُها (السقف · الدور · التوريث · القالب · المنحُ المباشر ·
-     المنحُ الصريح · المشتقّ). قراءةٌ فقط من الدوال القائمة — لا مخزنَ ولا قرارَ تفويضٍ هنا. ═══ */
-  _edReview(df, pre, lensPair) {
-    const LR = (KIVO.BassamPerm && KIVO.BassamPerm.LENS_REG) || [],
-      ln = (k) => "عدسة «" + ((LR.filter((x) => x.key === k)[0] || {}).name || k) + "»",
-      add = [],
-      drop = [];
-    df &&
-      (df.add.forEach((x) => add.push(x.name + (x.acts ? " — " + x.acts.join("، ") : ""))),
-      df.drop.forEach((x) => drop.push(x.name + (x.acts ? " — " + (x.whole ? "كلُّها" : x.acts.join("، ")) : ""))));
-    if (lensPair) {
-      const [b, d] = lensPair;
-      d.filter((k) => -1 === b.indexOf(k)).forEach((k) => add.push(ln(k)));
-      b.filter((k) => -1 === d.indexOf(k)).forEach((k) => drop.push(ln(k)));
-    }
-    const cut = (L) => (L.length > 8 ? L.slice(0, 8).concat(["و" + (L.length - 8) + " أخرى"]) : L);
-    return {
-      [pre + "RevOn"]: add.length + drop.length > 0,
-      [pre + "RevAddOn"]: add.length > 0,
-      [pre + "RevDropOn"]: drop.length > 0,
-      [pre + "RevAdd"]: cut(add).map((t) => ({ t })),
-      [pre + "RevDrop"]: cut(drop).map((t) => ({ t })),
-      [pre + "RevHead"]: "قبل الحفظ: " + (add.length ? "سيُضاف " + KIVO.BassamCount(add.length, "بند") : "") + (add.length && drop.length ? " · " : "") + (drop.length ? "سيُسحب " + KIVO.BassamCount(drop.length, "بند") : ""),
-    };
-  }
-  _edSources(o) {
-    const P = KIVO.BassamPerm,
-      A = KIVO.BassamAuth,
-      n = o.user || {},
-      out = [];
-    try {
-      const cs = this._capStateTxt(o.did);
-      out.push({ k: "السقف", v: cs.short || cs.txt || "—" });
-    } catch (t) {}
-    const role =
-      "super" === n.role
-        ? "مسؤول المنصة — يحمل كل ما في السقف"
-        : "dept" === n.role
-          ? "حساب الإدارة — سقفُ الإدارة كاملاً بالدور"
-          : "gm" === n.role
-            ? (A && A.gmRoleLabel ? A.gmRoleLabel(n.gid) : "مدير إدارة عامة") + " — يرث سقفَ الإدارة النشطة"
-            : n.mgr
-              ? "مدير الإدارة — يرث سقفَ إدارته"
-              : "موظف";
-    out.push({ k: "الدور", v: role });
-    if ("super" !== n.role && "dept" !== n.role) {
-      let base = "";
-      if (o.inh) base = "توريثُ سقف الإدارة — بلا ورقةٍ خاصة";
-      else {
-        const has = Object.keys(o.sheet || {}).some((k) => (o.sheet[k] || []).length);
-        let tn = "";
-        try {
-          const id = has && P.tplOfEmp ? P.tplOfEmp(n.ekey, o.did) : "";
-          tn = id ? ((P.tplsList ? P.tplsList(o.did) : []).filter((t) => t.id === id)[0] || {}).name || "" : "";
-        } catch (t) {}
-        base = !has ? "بلا منح" : tn ? "قالب «" + tn + "»" : "منحٌ مباشر — ورقةٌ خاصة";
-      }
-      out.push({ k: "الأساس", v: base });
-    }
-    if (o.eff) {
-      const pl = (o.eff.plus || []).length,
-        mi = (o.eff.minus || []).length,
-        DV = (P.p24 && P.p24.DERIVE) || {},
-        /* المشتقُّ يتبع مصدرَه الممنوح فعلاً أياً كان مصدرُ المنح (ورقةٌ أو منحٌ صريح) — كان يُقرأ من ترجمة الورقة وحدها فيُعرض «لا شيء» لمن مُنح
-           field.view من المحرّر وهو يحمل المشتقّةَ الثلاثة (القبولُ الحيّ لـV7 P3). تُعرض بأسمائها ومصدرِها، وأنها كتابةُ حالةٍ على المسنَد إليه */
-        RG = (KIVO.KIVO_REGISTRY && KIVO.KIVO_REGISTRY.byKey) || {},
-        lb = (k) => (RG[k] && RG[k].label) || k,
-        dvs = Object.keys(DV).filter((s) => o.eff.keys[s]),
-        dvk = dvs.reduce((a, s) => a.concat(DV[s]), []).filter((k, i, a) => a.indexOf(k) === i && o.eff.keys[k]),
-        /* «المسندة إليه فقط» تُقال للمحصور وحده (= 057 enfFieldOnly): ليس مديراً ولا وارثاً، ولا يحمل كتابةً صريحةً غيرَ مشتقّة على الجولات أو عدساتها.
-           كانت تُقال لكل حامل — والمديرُ والمشرفُ يكتبان حالةَ كل العناصر (لقطةُ المالك من Preview Test). لغير المحصور لا يُدّعى حصر */
-        dvx = {},
-        lift = (k) => { const e = RG[k]; return !!e && "active" === e.status && !dvx[k] && 0 !== k.indexOf("ref.") && "access" !== e.type && "view" !== e.type && "capability" !== e.type && (@@SYS:admin.lift.owner.daily|empty="!1"@@ || "lens" === e.ownerKind); },
-        conf = (Object.keys(DV).forEach((s) => DV[s].forEach((k) => (dvx[k] = 1))), "staff" === n.role && !o.mgr && !o.inh && !Object.keys(o.eff.keys || {}).some((k) => o.eff.keys[k] && lift(k)));
-      out.push({ k: "المنح الصريح", v: pl || mi ? (pl ? "+" + KIVO.BassamCount(pl, "مفتاح") : "") + (pl && mi ? " · " : "") + (mi ? "−" + KIVO.BassamCount(mi, "مفتاح") : "") + (o.eff.src ? " (" + (/^tpl:/.test(o.eff.src) ? "من قالب" : o.eff.src) + ")" : "") : "لا شيء فوق الأساس" });
-      out.push({ k: "المفاتيح المشتقة", v: dvk.length ? dvk.map(lb).join(" · ") + " — من «" + dvs.map(lb).join("» و«") + "»" + (conf ? "، وتكتب حالة العناصر المسندة إليه فقط" : "") : "لا شيء" });
-      out.push({ k: "الفعلي", v: KIVO.BassamCount(Object.keys(o.eff.keys || {}).length, "صلاحية") });
-    }
-    if ("number" === typeof o.lensOn) out.push({ k: "العدسات", v: KIVO.BassamCount(o.lensOn, "عدسة") });
-    return out;
-  }
-  up24Save(n, o, m) {
-    const P = KIVO.BassamPerm,
-      P24 = P && P.p24;
-    if (!P24 || !m || !m.ed) return;
-    const delta = P24.delta(m.draft, m.eff.T, m.C, m.lensNow, m.tgt),
-      r = P24.setGrant(n.ekey, o, delta);
-    if (!r || !r.ok) return void this.bsToast((r && r.err) || "تعذّر حفظ الصلاحيات");
-    let lr = { ok: !0 };
-    m.dL && P.setEmpLens && (lr = P.setEmpLens(n.ekey, m.lensNow, o));
-    if (lr && !1 === lr.ok) return void this.bsToast(lr.err || "تعذّر حفظ العدسات");
-    this.setState({ up24Draft: null, upLensDraft: null, upFor: "", tick: (this.state.tick || 0) + 1 });
-    const dr = (r.dropped || []).length;
-    this.bsAck(
-      "حُفظت صلاحيات «" + (n.name || "المستخدم") + "»" + (dr ? " — عدا " + KIVO.BassamCount(dr, "مفتاح") + " لا تحملها أنت فلا تمنحها" : ""),
-      dr ? "warn" : "ok",
-    );
-  }
-  /* ═══ V7 P4 — خريطةُ الأنظمة والصلاحيات (تبويب «خريطة الصلاحيات») ═══
-     عرضُ قراءةٍ للشجرة نفسِها التي تُحرَّر بها السقوفُ وصلاحياتُ الحسابات والقوالب (t24Struct ← t24Rows{map}) — لا تعريفَ ثانياً:
-       plat  الإتاحةُ على المنصة: كلُّ ما في السجلّ، وما أطفأته المنصة (mods.off) خارجٌ           (سقفٌ كامل ∧ p24.ceil يقصّ المطفأ)
-       cap   سقفُ وحدةٍ مختارة: p24.ceil(الوحدة) كما يطبّقه المحرّك
-       user  الفعليُّ لحسابٍ مختار: p24.effective (= قرار الخادم) بمسار نافذة الحساب نفسِه (_p24Of)
-     في وضع الإنفاذ وحده (قرارُ المالك): خارجَه لا يُحسب قرارٌ على مستوى المفتاح فتُعرض ملاحظةٌ بالسبب. المفاتيحُ مطويّةٌ ابتداءً
-     (الحاوياتُ ثم الأوراق تُفرد عند الطلب) فلا يثقل الرسم. */
-  _pmMap(on, depts, users) {
-    const none = { pmMapOn: !1, pmMapOff: !1, pmMapWhy: "", pmMapRows: [], pmMapLenses: [], pmMapDepts: [], pmMapUsers: [], pmMapCapOn: !1, pmMapUserOn: !1 };
-    if (!on) return none;
-    if (!this.t24On())
-      return Object.assign(none, {
-        pmMapOff: !0,
-        pmMapWhy:
-          "خريطةُ المفاتيح تُعرض في وضع الإنفاذ وحده: خارجَه يحكم المحرّكُ القديم (صفحة × فعل) ولا يُحسب قرارٌ على مستوى المفتاح، فعرضُ المفاتيح هنا قد يخالف ما يُطبَّق فعلاً. المرجعُ حينها المصفوفةُ أدناه وسقوفُ الإدارات.",
-      });
-    const st = this.state,
-      P = KIVO.BassamPerm,
-      S = this.t24Struct(),
-      lens = st.pmLens || "plat",
-      did = st.pmDid && depts.some((d) => d.id === st.pmDid) ? st.pmDid : (depts[0] || {}).id || "",
-      uid = st.pmUid && users.some((u) => u.id === st.pmUid) ? st.pmUid : (users[0] || {}).id || "",
-      n = users.filter((u) => u.id === uid)[0] || null,
-      exp = st.pmExp || {},
-      lx = st.pmLeaf || {},
-      base = {
-        map: !0,
-        exp: exp,
-        leafExp: lx,
-        canEdit: !1,
-        target: {},
-        platOff: this.t24PlatOff(),
-        cb: {
-          expand: (id) => this.setState({ pmExp: { ...(this.state.pmExp || {}), [id]: !(this.state.pmExp || {})[id] } }),
-          leafExpand: (id) => this.setState({ pmLeaf: { ...(this.state.pmLeaf || {}), [id]: !(this.state.pmLeaf || {})[id] } }),
-        },
-      },
-      sum = (f) => S.reduce((a, c) => a + c.leaves.reduce((b, l) => b + f(l), 0), 0);
-    let md, sub;
-    if ("user" === lens && n) {
-      const o = this._upDeptOf(n),
-        E = this._p24Of(n, o, this._upInh(n, o));
-      md = this.t24Rows(Object.assign(base, { mode: "view", ceil: E.C, on: E.eff.keys, lens: E.eff.lens, target: E.tgt }));
-      sub = "ما يحمله «" + (n.name || n.un) + "» فعلاً مفتاحاً مفتاحاً كما يحسبه الخادم: السقف، ثم ورقتُه أو قالبُه، ثم المنحُ والسحبُ الصريحان وبواباتُ العدسات — يُعدَّل من «تعديل الصلاحيات» في حسابه";
-    } else if ("cap" === lens && did) {
-      md = this.t24Rows(Object.assign(base, { mode: "cap", ceil: P.p24.ceil(did) }));
-      sub = "ما يدخل سقفَ «" + (depts.filter((d) => d.id === did)[0] || {}).name + "» بعد ما أطفأته المنصة — يُعدَّل من «سقف الصفحات» في صفحة الوحدة";
-    } else {
-      md = this.t24Rows(
-        Object.assign(base, {
-          mode: "cap",
-          ceil: P.p24.ceil("", { cap: P.PAGE_KEYS.slice(), lenses: P.LENS_KEYS.slice() }),
-          capWords: ["متاحٌ على المنصة", "مطفأٌ من المنصة"],
-        }),
-      );
-      sub = "كلُّ ما في السجلّ؛ وما أطفأته المنصة باهتٌ بشارة «مطفأة من المنصة» — يُعدَّل من «إعدادات المنصة ← الوحدات»";
-    }
-    return {
-      pmMapOn: !0,
-      pmMapOff: !1,
-      pmMapWhy: "",
-      pmMapRows: md.rows,
-      pmMapSub: sub,
-      pmMapStat:
-        "الأنظمة " + S.systems.length + " · الأوراق " + sum(() => 1) + " · المفاتيح النشطة " + sum((l) => l.keys.length) + " · المحجوزة " + sum((l) => l.reserved.length),
-      pmMapLenses: [
-        ["plat", "الإتاحة على المنصة"],
-        ["cap", "سقف وحدة"],
-        ["user", "الفعلي لحساب"],
-      ].map((x) => ({ k: x[0], t: x[1], on: lens === x[0], go: () => this.setState({ pmLens: x[0] }) })),
-      pmMapCapOn: "cap" === lens,
-      pmMapUserOn: "user" === lens,
-      pmMapDid: did,
-      pmMapDepts: depts.map((d) => ({ v: d.id, t: d.name })),
-      pmMapSetDid: (ev) => this.setState({ pmDid: ev.target.value }),
-      pmMapUid: uid,
-      pmMapUsers: users.map((u) => ({ v: u.id, t: (u.name || u.un) + " — " + this.adUnit(u) })),
-      pmMapSetUid: (ev) => this.setState({ pmUid: ev.target.value }),
-      pmMapExpAll: () => this.setState({ pmExp: this.t24ExpAll(md) }),
-      pmMapExpLbl: md.allExpanded ? "طيّ الكل" : "فرد الكل",
-    };
-  }
   /* الحاوياتُ المطفأة على مستوى المنصة (القوائم/الوحدات) */
   t24PlatOff() {
     try {
@@ -4992,107 +3996,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {
       return [];
     }
-  }
-  /* ── CORE-02 · مصفوفةُ الصلاحيات = قرارُ محرّك 331 لكل حساب، لا تفرّعٌ خاصّ بالوحدة ──
-     myPerms في 331 تُجيب عن الحساب المسجَّل وحده (cur · curDept)، فلا مدخلَ عامّاً لحسابٍ آخر؛ والصفُّ هنا يستدعي الدوالَّ المصدَّرة نفسَها
-     التي تركّبها myPerms لدور ذلك الحساب وبالترتيب نفسِه — ولا يحكم بنفسه على صفحةٍ أو فعل:
-       • مسؤول المنصة: myPerms نفسُها (العارضُ مسؤولُ المنصة، ونتيجتُها لا تتعلّق إلا بالإدارة النشطة وإعدادات المنصة)
-       • مدير الإدارة (staff بمفتاح mgr:): بلا ورقةٍ مخزَّنة ⇐ capAllPerms(إدارته) · بورقةٍ ⇐ empPagePerms
-       • مدير الإدارة العامة: القاعدةُ نفسُها في كل إدارةٍ من فرعه (deptsUnder) — والخلية اجتماعُها (ما يملكه في أيٍّ منها)
-       • الموظف: empPagePerms(مفتاحه، إدارته)
-     ثم يسقط ما أطفأته المنصة كما تسقطه myPerms (t24PlatOff = mods.off عدا admin). وفي وضع الإنفاذ يقصّ الخادمُ بالمفاتيح فوق ذلك (pmAzOn).
-     tests/unit/core02_perm_matrix_parity.test.mjs يقارن كلَّ خلية بـ myPerms في عميل الحساب نفسه. */
-  _pmEff(u, P, off) {
-    if (!u || !P) return {};
-    if ("super" === u.role) return P.myPerms ? P.myPerms() : {};
-    const A = KIVO.BassamAuth,
-      one = (d) => (P.hasOwnSheet(u.ekey, d) ? P.empPagePerms(u.ekey, d) : P.capAllPerms(d)),
-      out = {},
-      add = (m) =>
-        Object.keys(m || {}).forEach((k) => {
-          const L = (out[k] = out[k] || []);
-          (m[k] || []).forEach((x) => L.indexOf(x) < 0 && L.push(x));
-        });
-    try {
-      if ("gm" === u.role) {
-        (u.gid && KIVO.BassamDepts.deptsUnder ? KIVO.BassamDepts.deptsUnder(u.gid) || [] : []).forEach((d) => add(one(d)));
-      } else if ("staff" === u.role && A && A.isMgrKey && A.isMgrKey(u.ekey)) add(one(u.deptId));
-      else if (u.ekey) add(P.empPagePerms(u.ekey, u.deptId));
-    } catch (t) {
-      return {};
-    }
-    (off || []).forEach((k) => delete out[k]);
-    return out;
-  }
-  /* سقفُ الإدارة كما يطبّقه المحرّك: p24.ceil يقصّ deptCap بما أطفأته المنصة (= deptCapOf في الخادم 021) — والمطفأُ يُذكر باسمه */
-  _pmCapRow(t, P, reg, off) {
-    const nm = (k) => (reg.filter((e) => e.key === k)[0] || { name: k }).name,
-      cap = P ? P.deptCap(t.id) : [],
-      C = P && P.p24 && P.p24.ceil ? P.p24.ceil(t.id) : null,
-      isOn = (k) => (C ? C.page(k) : off.indexOf(k) === -1),
-      on = cap.filter(isOn),
-      dis = cap.filter((k) => !isOn(k)),
-      s = P && P.deptLenses ? P.deptLenses(t.id) : [];
-    return {
-      name: t.name,
-      pages: on.map(nm).join(" · ") || "— لا صفحات",
-      offOn: dis.length > 0,
-      offTxt: "معطّلة على مستوى المنصة: " + dis.map(nm).join(" · "),
-      lenses: KIVO.BassamCount(s.length, "عدسة") + "",
-      go: () => {
-        this._orgNav(t.id, "cap");
-      },
-    };
-  }
-  /* قوالبُ كل إدارة وحاملوها من واجهة BassamPerm (tplsList · tplHolders) — لا قراءةَ مباشرة للتخزين */
-  _pmTplRows(D, P, reg) {
-    const out = [],
-      AC = { view: "ع", add: "إ", edit: "ت", del: "ح", approve: "ا", export: "ص" },
-      nm = (k) => (reg.filter((e) => e.key === k)[0] || { name: k }).name;
-    D.forEach((d) => {
-      let L = [];
-      try {
-        L = (P && P.tplsList ? P.tplsList(d.id) : []) || [];
-      } catch (t) {
-        L = [];
-      }
-      L.forEach((e) => {
-        /* حاملوه يُعرفون من موظفي الإدارة (tplHolders) — وما لم تُقرأ قائمتهم بعد في هذه الجلسة يُقال ذلك ولا يُعرض صفرٌ مضلّل */
-        let n = "—";
-        try {
-          n = P.tplHolders ? String((P.tplHolders(e.id, d.id) || []).length) : "—";
-        } catch (t) {
-          n = "—";
-        }
-        const g = Object.keys(e.perms || {})
-          .filter((k) => (e.perms[k] || []).length)
-          .map((k) => nm(k) + " (" + (e.perms[k] || []).map((x) => AC[x] || x).join("") + ")")
-          .join(" · ");
-        out.push({
-          name: e.name || e.id,
-          dept: d.name,
-          sup: !!e.sup,
-          grant: g || "لا شيء",
-          n,
-          nTip: "—" === n ? "يظهر العدد بعد فتح بيانات موظفي هذه الإدارة في هذه الجلسة" : "من مُنح القالب أو تطابق صلاحياته صلاحياتِه",
-        });
-      });
-    });
-    return out;
-  }
-  /* ── قوالبُ الصلاحيات في وضع الإنفاذ: القالبُ يحمل مفاتيحه (keys24) وورقتَه القديمة المغطّاة (perms — لا تتجاوزها أبداً) ── */
-  tp24Base(tp, did, C) {
-    const P24 = KIVO.BassamPerm.p24,
-      tgt = { role: "staff", mgr: !1 },
-      out = {};
-    if (!tp) return out;
-    if (Array.isArray(tp.keys24)) {
-      tp.keys24.forEach((k) => P24.grantable(k, C, tgt) && (out[k] = !0));
-      return out;
-    }
-    const T = P24.translate(this.tpExpand(tp.perms || {}), C);
-    Object.keys(T).forEach((k) => P24.grantable(k, C, tgt) && (out[k] = !0));
-    return out;
   }
   /* ── سقفُ الإدارة في وضع الإنفاذ: الورقة ← (الصفحة · التبويب · العدسة) في المسودّة نفسِها، ولوحاتُ «مؤشرات المتابعة» القديمة تتبع مفاتيحَها ── */
   cap24Leaf(l) {
@@ -7501,7 +6404,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   .map((t) => t[0])
             : ["backup"];
         const c = !(!window.__BS_BOOT || !window.__BS_BOOT.cf),
-          g = ["backup", "oplog", "shifts", "ptpls"]
+          g = ["backup", "oplog", "shifts"]
             .filter((t) => {
               try {
                 return !KIVO.BassamPerm || !KIVO.BassamPerm.subOn || KIVO.BassamPerm.subOn("admin", t);
@@ -7549,7 +6452,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           admOnOverview: o && "overview" === d,
           admOnSec: o && "sec" === d,
           admOnUsers: o && "users" === d,
-          admOnPerms: o && "perms" === d,
           ...av,
           admOnBackup: "backup" === d,
           admOnAud: o && "oplog" === d,
@@ -7569,13 +6471,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           dTabBkOn: -1 !== g.indexOf("backup"),
           dTabLgOn: -1 !== g.indexOf("oplog"),
           dTabSfOn: -1 !== g.indexOf("shifts"),
-          dTabTpOn: -1 !== g.indexOf("ptpls"),
           showDeptSf: "dept" === i && "shifts" === h,
-          showDeptTp: "dept" === i && "ptpls" === h,
           dTabGoSf: () => this.setState({ deptTab: "shifts" }),
-          dTabGoTp: () => this.setState({ deptTab: "ptpls" }),
           ...("dept" === i && "shifts" === h ? this.sfVals() : {}),
-          ...("dept" === i && "ptpls" === h ? this.tpVals() : {}),
           dbkExport: () => {
             KIVO.BassamDeptBackup && KIVO.BassamDeptBackup.export();
           },
@@ -8399,265 +7297,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               wpGo: () => this.wpGo(s, r),
               wpClose: () => this.wpClose(),
             };
-          })(),
-          ...(() => {
-            const a = KIVO.BassamAuth || null,
-              r = KIVO.BassamPerm || null,
-              i = e.upUid || "",
-              n = i ? (a && a.users ? a.users() : []).filter((t) => t.id === i)[0] : null;
-            if (!n) return { upOn: !1, upRows: [], upHas: !1, upEmpty: !1, upEdit: !1, upClose: () => this.setState({ upUid: "" }) };
-            const o = this._upDeptOf(n),
-              p = "gm" === n.role,
-              l = p && a && a.groupDepts ? a.groupDepts(n.gid) : [],
-              d = r ? r.deptCap(o) : [],
-              c = !!n.mgr,
-              g = !!(a && a.isSuper && a.isSuper()),
-              inh = this._upInh(n, o),
-              h = inh && r.capAllPerms ? r.capAllPerms(o) : r && r.empPerms ? r.empPerms(n.ekey, o) : {},
-              m = g && e.upDraft && e.upFor === i ? e.upDraft : h,
-              f = r && r.empLens ? r.empLens(n.ekey, o) : [],
-              u = g && e.upLensDraft && e.upFor === i ? e.upLensDraft : f,
-              b = g && (JSON.stringify(m) !== JSON.stringify(h) || JSON.stringify(u.slice().sort()) !== JSON.stringify(f.slice().sort())),
-              w = (r && r.PAGE_REG) || [],
-              y = (() => {
-                try {
-                  let a = null;
-                  try {
-                    a = KIVO.__BS_SRV.operations.reference("bsdept:" + o + ":bassam_employees_v1");
-                  } catch (t) {
-                    this.scLoadReferences(o, false);
-                  }
-                  if ((Array.isArray(a) || (a = []), o === s))
-                    try {
-                      const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
-                      Array.isArray(t) && t.length > a.length && (a = t);
-                    } catch (t) {}
-                  return a.filter((t) => (t.eid || t.name) === n.ekey)[0] || null;
-                } catch (t) {
-                  return null;
-                }
-              })(),
-              S = e.upExp || {},
-              x =
-                r && r.treeModel
-                  ? r.treeModel({
-                      did: o,
-                      draft: m,
-                      lens: u,
-                      expanded: S,
-                      canEdit: g,
-                      cb: {
-                        togAct: (t, e) => this.upTog(i, t, e),
-                        togLeaf: (t, e) => this.upAll(i, t, e),
-                        expand: (t) => this.setState({ upExp: { ...(this.state.upExp || {}), [t]: !(this.state.upExp || {})[t] } }),
-                        togLens: (t) => {
-                          const e = this._upLens(i, n),
-                            s = e.indexOf(t);
-                          (-1 === s ? e.push(t) : e.splice(s, 1), this.setState({ upLensDraft: e, upFor: i }));
-                        },
-                      },
-                    })
-                  : { rows: [], lensRows: [], pagesOn: 0, pagesTot: 0, lensOnN: 0, lensTot: 0, capEmpty: !0, allExpanded: !1 },
-              k = (() => {
-                const t = {};
-                return (
-                  Object.keys(m)
-                    .concat(Object.keys(h))
-                    .forEach((e) => {
-                      t[e] = 1;
-                    }),
-                  Object.keys(t).filter((t) => JSON.stringify(m[t] || []) !== JSON.stringify(h[t] || [])).length
-                );
-              })();
-            const RET = {
-              upOn: !0,
-              upTitle: "صلاحيات — " + ((y && y.name) || n.name || "—"),
-              upRoleLbl:
-                ("super" !== n.role && String(n.title || "").trim()) ||
-                (p
-                  ? KIVO.BassamAuth && KIVO.BassamAuth.gmRoleLabel
-                    ? KIVO.BassamAuth.gmRoleLabel(n.gid)
-                    : "مدير إدارة عامة"
-                  : c
-                    ? "مدير الإدارة"
-                    : "موظف"),
-              upRoleStyle:
-                "font-size:10px;font-weight:600;padding:3px 10px;border-radius:9999px;white-space:nowrap;" +
-                (c
-                  ? "background:var(--bg-a185151810p16);border:1px solid var(--bd-a185151810p4);color:var(--fg-x8a6f35)"
-                  : "background:var(--bg-xffffff);border:1px solid var(--bd-xe2e8f0);color:var(--fg-x53565a)"),
-              upNoteStyle: c
-                ? "background:var(--bg-a201112420p07);border:1px solid var(--bd-a201112420p3);border-radius:11px;padding:10px 12px;font-size:11px;font-weight:400;color:var(--fg-xc9702a);line-height:1.8"
-                : "background:var(--bg-a185151810p09);border:1px solid var(--bd-a185151810p25);border-radius:11px;padding:10px 12px;font-size:11px;font-weight:400;color:var(--fg-x8a6f35);line-height:1.8",
-              upGmOn: p && l.length > 0,
-              upGmRows: l.map((t) => ({
-                name: t.name,
-                on: t.id === o,
-                style: KIVO.BassamMix ? KIVO.BassamMix.tabStyle(t.id === o, l.length) : "",
-                pick: () => {
-                  t.id !== o && this.setState({ upGmDept: t.id, upDraft: null, upLensDraft: null, upFor: "", up24Draft: null });
-                },
-              })),
-              upNote: g
-                ? p
-                  ? inh
-                    ? "مدير " +
-                      this._gmKind(n.gid) +
-                      " يرث سقف إدارة «" +
-                      ((l.filter((t) => t.id === o)[0] || {}).name || "") +
-                      "» كاملاً — التأشير أدناه هو حاله الآن؛ وأي تضييق تحفظه هنا يسري في هذه الإدارة وحدها، و«إعادة إلى التوريث» تعيده إلى سقفها كاملاً."
-                    : "لمدير " +
-                      this._gmKind(n.gid) +
-                      " ورقة مضيَّقة في إدارة «" +
-                      ((l.filter((t) => t.id === o)[0] || {}).name || "") +
-                      "» — «إعادة إلى التوريث» تعيده إلى سقفها كاملاً."
-                  : c
-                    ? inh
-                      ? "مدير الإدارة يرث سقف إدارته كاملاً — التأشير أدناه هو حاله الآن؛ وأي تضييق تحفظه هنا يسري عليه، و«إعادة إلى التوريث» تعيده إلى سقف الإدارة كاملاً."
-                      : "للمدير ورقة مضيَّقة — «إعادة إلى التوريث» تعيده إلى سقف الإدارة كاملاً."
-                    : "الحاوية بلا تأشير — تظهر في قائمة الموظف تلقائياً متى مُنح صفحةً واحدة تحتها. مربع الصفحة يمنح «عرض» وحده، وبقية الأفعال تختارها صراحةً من رقاقاتها؛ وما مُنح قبلُ يبقى كما هو. راجع ما سيُضاف وما سيُسحب قبل الحفظ. ما هو خارج سقف الإدارة يبقى مقفلاً."
-                : c
-                  ? "لتعديل صلاحيات المدير سجّل الدخول كمسؤول المنصة."
-                  : "الضبط الفعلي لصلاحيات الموظف من صفحة الموظفين بيد مدير إدارته — وهذه الشاشة للعرض.",
-              upTplOn: g && d.length > 0,
-              upTplRows: (() => {
-                if (!g || !d.length) return [];
-                let t = [];
-                try {
-                  const e = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-                  Array.isArray(e) && (t = e);
-                } catch (t) {}
-                return t.map((t) => ({
-                  name: t.name,
-                  apply: () => {
-                    const e = r.expandPerms(t.perms || {}, o),
-                      s = {};
-                    (Object.keys(e).forEach((t) => {
-                      -1 !== d.indexOf(r.splitLeaf(t).page) && (s[t] = e[t].slice());
-                    }),
-                      this.setState({ upDraft: s, upFor: i }));
-                  },
-                }));
-              })(),
-              upTplClear: () => this.setState({ upDraft: {}, upFor: i }),
-              upEdit: g,
-              upEmpty: 0 === d.length,
-              upEmptyMsg: "سقف هذه الإدارة فارغ — فعّل لها صفحات أولاً من تبويب «سقف الصفحات»",
-              upHas: d.length > 0,
-              upRows: this.tskRecLegacy(x.rows),
-              upLensRows: x.lensRows,
-              upCountTxt: x.pagesOn + " من " + KIVO.BassamCount(x.pagesTot, "صفحة", "g") + "",
-              upLensCountTxt: x.lensOnN + "/" + x.lensTot,
-              upExpAllLbl: x.allExpanded ? "طيّ الكل" : "فرد الكل",
-              upExpAll: () => {
-                const t = !x.allExpanded,
-                  e = {};
-                (w.forEach((s) => {
-                  !s.under && r.isContainer(s.key) && (e[s.key] = t);
-                }),
-                  this.setState({ upExp: e }));
-              },
-              /* V7 P3: «تحديد الكل» يمنح العرض وحده لكل ورقةٍ بلا منح داخل السقف — وما مُنح قبلُ يبقى كما هو */
-              upAllDo: () => {
-                if (!g) return;
-                const t = [];
-                (r.leafReg().forEach((e) => {
-                  -1 !== d.indexOf(e.page) &&
-                    ((e.sub && -1 === r.deptSubs(o, e.page).concat(r.deptTabs(o, e.page)).indexOf(e.sub)) || t.push(e.key));
-                }),
-                  this.setState({ upDraft: r.viewAllIn(m, t), upFor: i }));
-              },
-              /* V7 P3: العودةُ إلى توريث سقف الإدارة صراحةً (كانت بتأشير الأفعال الستة في كل ورقة) — المسودّةُ = السقفُ كاملاً فيحذف الحفظُ ورقتَه */
-              upInhOn: !!(g && (c || p) && !inh && r && r.capAllPerms),
-              upInhDo: () => {
-                g && r && r.capAllPerms && this.setState({ upDraft: r.capAllPerms(o), upFor: i });
-              },
-              upNoneDo: () => {
-                g && this.setState({ upDraft: {}, upFor: i });
-              },
-              upBarBorder: b ? "rgba(201,112,42,0.35)" : "#E1E1E1",
-              upBarBg: b ? "rgba(255,247,237,0.97)" : "#FAFBFC",
-              upDirtyTxt: g ? (b ? "● تغييرات غير محفوظة" + (k ? " — " + KIVO.BassamCount(k, "صفحة") + "" : "") : "✓ محفوظ") : "",
-              upDirtyStyle: "flex:1;font-size:11px;font-weight:600;color:" + (b ? "var(--fg-xc9702a)" : "var(--fg-x94a3b8)"),
-              upSaveStyle:
-                "height:36px;border:0;border-radius:10px;padding:0 18px;font-size:12px;font-weight:600;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;" +
-                (b
-                  ? "cursor:pointer;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));box-shadow:0 5px 14px -5px rgba(138,111,53,0.7)"
-                  : "cursor:default;opacity:.4;background:var(--bg-x94a3b8)"),
-              upSave: () => {
-                b && this.upSave(n, m, u);
-              },
-              upClose: () => this.setState({ upUid: "", upDraft: null, upLensDraft: null, upFor: "", upExp: {}, up24Draft: null, up24Exp: {}, up24Leaf: {} }),
-              upV24: !1,
-              upLegacy: !0,
-              ...(() => {
-                /* المراجعة على الأوراق وحدها (العودةُ إلى التوريث مسودّتُها capAllPerms بمفاتيح الحاويات) — والعدساتُ معها */
-                if (!(g && b && r && r.sheetDiff)) return this._edReview(null, "up");
-                const lf = (x) => Object.keys(x || {}).reduce((a, k) => (r.isContainer && r.isContainer(k) ? a : ((a[k] = x[k]), a)), {}),
-                  dL = JSON.stringify(u.slice().sort()) !== JSON.stringify(f.slice().sort());
-                return this._edReview(r.sheetDiff(lf(h), lf(m)), "up", dL ? [f, u] : null);
-              })(),
-              upSrcRows: this._edSources({ did: o, user: n, inh: inh, mgr: c || p, sheet: h, lensOn: f.length }),
-            };
-            /* ═══ KIVO_256 · وضعُ الإنفاذ: شجرةُ v24.9 مفتاحاً مفتاحاً — الحالةُ الفعلية كما يحسبها الخادم، والحفظُ فرقٌ صريح (plus/minus) فوق الورقة ═══ */
-            if (this.t24On()) {
-              const M = this.up24Model(n, o, inh, g),
-                P24 = r.p24,
-                dirty = M.dirty;
-              Object.assign(RET, {
-                upV24: !0,
-                upLegacy: !1,
-                upEdit: M.ed,
-                upRows24: M.md.rows,
-                upCount24: M.md.nOn + " من " + KIVO.BassamCount(M.md.nTot, "صلاحية", "g"),
-                upExpAll24Lbl: M.md.allExpanded ? "طيّ الكل" : "فرد الكل",
-                upExpAll24: () => this.setState({ up24Exp: this.t24ExpAll(M.md) }),
-                /* V7 P3: «تحديد الكل» = مفتاحُ العرض وحده لكل ورقةٍ بلا مفتاحٍ ممنوح (والعدسةُ المستضافة ببوابتها وعرضِها) — وما مُنح قبلُ يبقى كما هو */
-                upAllDo: () => {
-                  if (!M.ed) return;
-                  const L0 = (r.deptLenses ? r.deptLenses(o) : []).filter((x) => M.C.lens(x) && P24.lensHosted(x, M.C)),
-                    v = this.t24ViewAll(M.draft, M.lensNow, M.C, M.tgt, L0);
-                  this.setState({ up24Draft: v.on, upLensDraft: v.lens, upFor: i });
-                },
-                ...this._edReview(M.dirty && r.keyDiff ? r.keyDiff(M.base, M.draft) : null, "up", M.dL ? [M.lensBase, M.lensNow] : null),
-                upSrcRows: this._edSources({ did: o, user: n, inh: inh, mgr: M.tgt.mgr, sheet: h, lensOn: M.lensBase.length, eff: M.eff }),
-                upInhOn: !1,
-                upNoneDo: () => {
-                  M.ed && this.setState({ up24Draft: {}, upLensDraft: [], upFor: i });
-                },
-                upTplOn: M.ed && d.length > 0,
-                upTplRows: M.ed
-                  ? (r.tplsList ? r.tplsList(o) : []).map((tp) => ({
-                      name: tp.name,
-                      apply: () => {
-                        const dl = r.deptLenses ? r.deptLenses(o) : [];
-                        this.setState({ up24Draft: this.tp24Base(tp, o, M.C), upLensDraft: Array.isArray(tp.lens) ? tp.lens.filter((x) => -1 !== dl.indexOf(x)) : dl.slice(), upFor: i });
-                      },
-                    }))
-                  : [],
-                upTplClear: () => {
-                  M.ed && this.setState({ up24Draft: {}, upLensDraft: [], upFor: i });
-                },
-                upNote: M.ed
-                  ? "شجرةُ v24.9: الحاويةُ لا تُمنح — المفاتيحُ على الأوراق والعدسات. مربّعُ الورقة يمنح مفتاحَ العرض وحده، وبقيةُ المفاتيح تختارها صراحةً، ومفتاحُ العرض شرطُ باقيها؛ وما مُنح قبلُ يبقى كما هو. راجع ما سيُضاف وما سيُسحب قبل الحفظ؛ وافتح الورقةَ (السهم) لتمنح أو تُسقط مفتاحاً بعينه. ما خارج سقف الإدارة مقفل، ومفاتيحُ الدور والذات لا تُمنح. الحفظُ يُكتب منحاً صريحاً فوق ورقته القديمة فلا يمسّها."
-                  : g
-                    ? "حسابٌ لا تُمنح مفاتيحُه من هنا (مسؤول المنصة يحمل كلَّ ما في السقف · حسابُ الإدارة بالدور) — والشجرةُ للعرض."
-                    : "الضبط الفعلي لصلاحيات الموظف من صفحة الموظفين بيد مدير إدارته — وهذه الشاشةُ للعرض: الحالةُ الفعلية كما يحسبها الخادم.",
-                upBarBorder: dirty ? "var(--warning-border)" : "var(--border-default)",
-                upBarBg: dirty ? "var(--warning-bg)" : "var(--bg-surface-2)",
-                upDirtyTxt: M.ed ? (dirty ? "● تغييرات غير محفوظة" + (M.nDiff ? " — " + KIVO.BassamCount(M.nDiff, "مفتاح") : "") : "✓ محفوظ") : "",
-                upDirtyStyle: "flex:1;font-size:11px;font-weight:600;color:" + (dirty ? "var(--fg-xc9702a)" : "var(--fg-x94a3b8)"),
-                upSaveStyle:
-                  "height:36px;border:0;border-radius:10px;padding:0 18px;font-size:12px;font-weight:600;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;" +
-                  (dirty
-                    ? "cursor:pointer;background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));box-shadow:0 5px 14px -5px var(--brand-glow)"
-                    : "cursor:default;opacity:.4;background:var(--bg-x94a3b8)"),
-                upSave: () => {
-                  dirty && this.up24Save(n, o, M);
-                },
-              });
-            }
-            return RET;
           })(),
           deptMsg2: e.deptMsg || "",
           actDeptName: t.activeName(),

@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "69f0aab0e7ee2568b57446dc38f494e082805301bff30e62e2eea2766efb53f6",
+  "sha256": "5cd32d38d8fd03f8218c7ad1bb082aad0503ae166881134ef70851726e3ea169",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -1222,10 +1222,10 @@
       "file": "063-enf-api-and-handler.js",
       "lines": [
         30054,
-        31185
+        31242
       ],
-      "bytes": 119409,
-      "sha256": "2e49b71db33650fa7b06cb0b27e9bf83a9f6dbce2a9bfbadd6048fdee75db42e",
+      "bytes": 125112,
+      "sha256": "2a9f7c051cde0f5d36fc89462e6b933f9124faeeb372e4ee5a99d61b69ad5849",
       "head": "/* ══ (6) الواجهات: حالةُ الإنفاذ · سجلُّ القرارات · الترحيلُ والرجوع (هوية → نطاق → صلاحيات) · جلسةُ اختبارٍ داخلية (Preview) ══ */"
     }
   ]

@@ -1,7 +1,7 @@
 /* RISHAD CORE-02 S7 — «مركز إدارة رشاد» as its own space in the app shell (client only; permissions, routes and server unchanged).
-     (1) the one map (_sysNav in root-logic.js): the nine admin tabs once each, the nine platform sections once each, in the approved
+     (1) the one map (_sysNav in root-logic.js): the eight admin tabs once each, the eight platform sections once each, in the approved
          five groups; «التهيئة والاستعادة» lives under البيانات والاستمرارية; the labels are the page titles the admin page shows;
-     (2) the template: the operational sidebar (unit picker, «+ قسم», the eight page links, «مواقع ذات صلة», «الإعدادات») sits unchanged
+     (2) the template: the operational sidebar (unit picker — «+ قسم» deleted in V7 · د5-هـ 44 —, the eight page links, «مواقع ذات صلة», «الإعدادات») sits unchanged
          inside sc-if sbOps; the console block holds none of them;
      (3) console mode is for the platform administrator on #/sysadmin only; every operational page — super included — keeps the class,
          the header offset and the collapse state it had (conCx never touches sidebarOpen);
@@ -12,7 +12,7 @@
      (7) the collapsible accordion: each group header is a real <button> (aria-expanded · aria-controls → its list, which is hidden when
          collapsed); one group open at a time, following the address (cold load, Back, in-page link); a header toggles without
          navigating and writes nothing to storage; a collapsed group holding the current page is marked; the rail closes every list;
-         every one of the 17 destinations is reachable (its group opens on its address, or the group header opens it).
+         every one of the 15 destinations is reachable (V7 · د5-هـ 44: perms · plat/mods deleted) (its group opens on its address, or the group header opens it).
      (8) consistency pass (owner request): the accounts tiles use the tone rule of Home's «الحسابات» card (ordinary count neutral,
          a warning only when non-zero, the same warning for the same metric); «التنبيهات والتعاميم» counts are the shared count tile
          (.adm-ov-kpi, no fixed hex colour, a tone only when non-zero); the three readiness states share .adm-pl-stl; a list with no rows
@@ -31,22 +31,23 @@ const T = rd('layouts/index.template.html'), R = rd('layouts/root-logic.js'), P 
 const L = rd('modules/admin/logic.js'), V = rd('modules/admin/view.html'), C = rd('modules/admin/helmet.css'), PG = rd('pages/Admin.dc.html');
 /* values built inside the vm are of another realm: compare as data */
 const J = (x) => JSON.parse(JSON.stringify(x)), deq = (a, b, m) => assert.deepEqual(J(a), J(b), m);
-const SYS_TABS = ['overview', 'depts', 'users', 'perms', 'plat', 'sec', 'oplog', 'backup', 'histimp'];
-const PL = ['id', 'mods', 'notif', 'login', 'side', 'print', 'app', 'about', 'setup'];
-const ALL = ['overview', 'sec', 'users', 'perms', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
+/* V7 · د5-هـ (44): «خريطة الصلاحيات» (perms) و«الوحدات» (plat/mods) حُذفتا — ثمانيةُ تبويبات وثمانيةُ أقسام */
+const SYS_TABS = ['overview', 'depts', 'users', 'plat', 'sec', 'oplog', 'backup', 'histimp'];
+const PL = ['id', 'notif', 'login', 'side', 'print', 'app', 'about', 'setup'];
+const ALL = ['overview', 'sec', 'users', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
 
-test('(1) the one map: nine tabs and nine platform sections once each, five groups in order, setup under data', needs('dstats'), () => {
+test('(1) the one map: eight tabs and eight platform sections once each, five groups in order, setup under data', needs('dstats'), () => {
   const W = world({ hash: '#/sysadmin/overview' });
   const N = W.c._sysNav();
   deq(Object.keys(N), ['home', 'org', 'plat', 'sec', 'data']);
   const all = Object.values(N).flat();
   const keys = all.map((x) => x[0] + '/' + (x[1] || ''));
   assert.equal(new Set(keys).size, keys.length, 'no destination twice');
-  assert.equal(all.length, 17, '17 destinations');
+  assert.equal(all.length, 15, '15 destinations');
   deq([...new Set(all.map((x) => x[0]))].sort(), [...SYS_TABS].sort(), 'every admin tab, once');
   deq(all.filter((x) => x[0] === 'plat').map((x) => x[1]).sort(), [...PL].sort(), 'every platform section, once');
   deq(N.data.map((x) => x[1] || x[0]), ['backup', 'setup', 'histimp'], '«التهيئة والاستعادة» in البيانات والاستمرارية');
-  deq(N.plat.slice(0, 3).map((x) => x[2]), ['هوية المنصة', 'الوحدات', 'التنبيهات والتعاميم'], 'the three most-used settings first');
+  deq(N.plat.slice(0, 2).map((x) => x[2]), ['هوية المنصة', 'التنبيهات والتعاميم'], 'the most-used settings first');
   /* the labels are the titles the admin page gives itself (_conHead · plVals) */
   for (const [g, items] of Object.entries(N)) for (const x of items) {
     const re = x[0] === 'plat' ? new RegExp('"' + x[1] + '",\\s*"' + x[2] + '"') : new RegExp('\\["' + x[0] + '", (""|"' + g + '"), "' + x[2] + '", [01]\\]');   /* V7 P4: the titles live in the one tab list CON_TABS() [key · group · title · server-only] that _conHead reads */
@@ -55,7 +56,7 @@ test('(1) the one map: nine tabs and nine platform sections once each, five grou
   /* review of S10: PL_KEYS is derived from the one section list (PL_SECS), which also titles each section's page */
   assert.match(L, /PL_KEYS\(\) \{\s*return this\.PL_SECS\(\)\.map\(\(x\) => x\[0\]\);/, 'PL_KEYS derived from PL_SECS');
   const secs = L.slice(L.indexOf('  PL_SECS() {'), L.indexOf('  PL_KEYS() {'));
-  deq([...secs.matchAll(/\[\s*"([a-z]+)",\s*"/g)].map((m) => m[1]).sort(), [...PL].sort(), 'the admin page knows the same nine sections');
+  deq([...secs.matchAll(/\[\s*"([a-z]+)",\s*"/g)].map((m) => m[1]).sort(), [...PL].sort(), 'the admin page knows the same eight sections');
   assert.match(L, /p = this\.PL_SECS\(\),/, 'plVals reads the same list');
 });
 
@@ -63,7 +64,8 @@ test('(2) template: the operational sidebar is unchanged inside sc-if sbOps; the
   const ops0 = T.indexOf('<sc-if value="{{sbOps}}" hint-placeholder-val="{{ true }}">'), con0 = T.indexOf('<sc-if value="{{sbConsole}}" hint-placeholder-val="{{ false }}">');
   assert.ok(ops0 > 0 && con0 > ops0, 'both blocks in the one aside');
   const ops = T.slice(ops0, con0), con = T.slice(con0, T.indexOf('</nav>'));
-  for (const s of ['class="s-dept"', 'class="s-secadd"', 'class="s-ghead"', 'مواقع ذات صلة', '{{goAdmin}}']) assert.ok(ops.includes(s), 'operational block keeps ' + s);
+  for (const s of ['class="s-dept"', 'class="s-ghead"', 'مواقع ذات صلة', '{{goAdmin}}']) assert.ok(ops.includes(s), 'operational block keeps ' + s);
+  assert.ok(!ops.includes('s-secadd'), 'V7 · د5-هـ (44): «+ قسم» is deleted from the side menu (sections are added from «الإدارات» only)');
   deq([...ops.matchAll(/data-key="([a-z]+)"/g)].map((m) => m[1]), ['kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award'], 'the eight page links, in order');
   for (const s of ['data-key', 's-dept', 's-secadd', 'مواقع ذات صلة', 'goAdmin']) assert.ok(!con.includes(s), 'console block has no ' + s);
   for (const g of ['org', 'plat', 'sec', 'data']) assert.ok(con.includes('aria-labelledby="con-gh-' + g + '"') && con.includes('id="con-gh-' + g + '"'), 'group ' + g + ' labelled by its heading');
@@ -111,7 +113,7 @@ test('(3b) the console items: availability from the admin page, selection from t
   await Promise.resolve();
   v = W.vals();
   const items = ['org', 'plat', 'sec', 'data'].flatMap((g) => v.con[g].items);
-  assert.equal(items.length + (v.con.home.show ? 1 : 0), 17);
+  assert.equal(items.length + (v.con.home.show ? 1 : 0), 15);   /* V7 · د5-هـ (44): perms · plat/mods حُذفتا */
   const cur = items.filter((i) => i.cur === 'page');
   deq(cur.map((i) => i.t), ['التنبيهات والتعاميم'], 'exactly one current item');
   assert.equal(cur[0].href, '#/sysadmin/plat/notif');
@@ -128,11 +130,11 @@ test('(3b) the console items: availability from the admin page, selection from t
   deq(v.con.org.items.map((i) => i.tab), ['depts']);
   deq(v.con.data.items.map((i) => i.sub || i.tab), ['backup', 'setup', 'histimp']);
   /* the collapsed rail: a group opens on its last item */
-  W.c._conSync({ avail: ALL, tab: 'perms', sub: 'id', secBadge: 0, dirty: [], dirtyN: 0 });
-  W.ctx.location.hash = '#/sysadmin/perms'; W.vals();
+  W.c._conSync({ avail: ALL, tab: 'users', sub: 'id', secBadge: 0, dirty: [], dirtyN: 0 });
+  W.ctx.location.hash = '#/sysadmin/users'; W.vals();
   W.ctx.location.hash = '#/sysadmin/backup'; v = W.vals();
   v.con.org.railGo({ preventDefault() {} });
-  assert.equal(W.ctx.location.hash, '#/sysadmin/perms', 'the group reopens on its last item');
+  assert.equal(W.ctx.location.hash, '#/sysadmin/users', 'the group reopens on its last item');
 });
 
 test('(4) conSync: deduplicated by signature and deferred (no setState during the admin render)', async () => {
@@ -210,7 +212,8 @@ test('(6) review of S10: sidebar fits, gold edge faces the page, one history pat
   assert.match(L, /admGoBackup: \(\) => this\._ovGo\("backup"\)/);
   assert.match(L, /go: go\("backup"\)/); assert.match(L, /go: go\("sec", \{ adSecKind: "denied" \}\)/);
   /* V7 P1: both «تعديل» links open the unit's own page (#/sysadmin/org/<id> — a history entry) on the tab they edit */
-  assert.match(L, /this\._orgNav\(t\.id, "cap"\)/, '«تعديل» in the permission map → the ceiling tab');
+  /* V7 · د5-هـ (44): the permission map is deleted (its «تعديل» link with it); «تعديل الصلاحيات» opens v2's people section */
+  assert.match(L, /location\.hash = "#\/sysadmin\/org\/" \+ encodeURIComponent\(u\) \+ "\/perm\/people"/, '«تعديل الصلاحيات» → #/sysadmin/org/<unit>/perm/people');
   /* V7 P2: the account menu is one (_acctMenu); from «مراقبة الحسابات» edit and permissions open the account's node page on «المسؤولون والحسابات» */
   assert.match(L, /p\.push\(\{ t: "تعديل الصلاحيات", go: \(\) => this\._acctOpen\(a, "perm", here\) \}\)/, '«تعديل الصلاحيات» → _acctOpen');
   assert.match(L, /if \(!here\) return void \(u \? this\._orgNav\(u, "emps"\) : this\._ovGo\("depts"\)\);/, 'outside the node page: the account\'s node, accounts tab');
@@ -324,9 +327,8 @@ test('(8) consistency: one tone rule for counts, one count tile, one status line
   assert.equal((rd3.match(/class="adm-pl-stl"/g) || []).length, 4, 'backup admin (on/off), recovery key and backup share .adm-pl-stl');
   assert.doesNotMatch(rd3, /color:var\(--fg-x92400e\)"><span[^>]*><\/span>غير موجود/);
   /* empty lists: no header */
-  assert.match(V, /<sc-if value="\{\{pmTplHas\}\}"[^>]*><div class="adm-tr adm-th g-tpl"/);
   assert.match(V, /<sc-if value="\{\{secHas\}\}"[^>]*><div class="adm-tr adm-th g-sec"/);
-  assert.match(L, /pmTplEmpty: !A\.length, pmTplHas: !!A\.length/); assert.match(L, /secEmpty: !B\.length, secHas: !!B\.length/);
+  assert.match(L, /secEmpty: !B\.length, secHas: !!B\.length/);   /* V7 · د5-هـ (44): the templates list (pmTplHas) is deleted with the permission map */
   /* activity-log filters */
   assert.match(L, /sc\.site\r?\n\s+\? h\("button", \{ key: key, type: "button", className: "adm-chip", "aria-pressed": on \? "true" : "false", onClick: go \}, txt\)/);
   for (const g of ['"e", "الكيان", "adm-chips adm-flt-c", fEt', '"a", "الفعل", "adm-chips adm-flt-c", fAct', '"q", "البحث", "adm-flt-f", [fDept, fUid, fQ, fSite]'])
@@ -338,5 +340,5 @@ test('(8) consistency: one tone rule for counts, one count tile, one status line
   const ph = C.slice(C.lastIndexOf('@media (max-width:640px){'));
   assert.match(ph, /\.adm-flt-r\{grid-template-columns:minmax\(0,1fr\)/, 'phone: label above its group');
   assert.ok(C.indexOf('.adm-flt-c,.adm-flt-f{') < C.indexOf('@media (max-width:640px){.adm-chips{'), 'the phone chip row (scrolls sideways) comes after the wrapping rule');
-  assert.ok(PG.includes('adm-flt') && PG.includes('pmTplHas'), 'the generated page is current');
+  assert.ok(PG.includes('adm-flt') && PG.includes('secHas'), 'the generated page is current');
 });

@@ -528,7 +528,7 @@ class Component extends DCLogic {
   /* أي صفحة يخصّها هذا المفتاح؟ (مفتاح غير معروف = كل الصفحات احتياطاً) */
   _liveTouches(keys, page) {
     const MAP = {
-      employees: /employees|options|custody|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|perm_tpls|perm_limit|employees/,
+      employees: /employees|options|custody|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|roles|perm_limit|employees/,
       plan: /plan_v1|zone_opts|gate_opts|mark_kinds|employees/, planning: /plan_v1|staffing|employees|rounds|dreport/,
       irshad: /irshad/, seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, award: /award|employees/, profile: /auth_users|employees|staffing|shift_options|tasks|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
       admin: /depts|gdepts|auth_users|perms|platform|last_export/, sysadmin: /depts|gdepts|auth_users|perms|platform|last_export/
@@ -932,8 +932,8 @@ class Component extends DCLogic {
   _sysNav() {
     return {
       home: [["overview", null, "الرئيسية"]],
-      org: [["depts", null, "الإدارات"], ["users", null, "مراقبة الحسابات"], ["perms", null, "خريطة الصلاحيات"]],
-      plat: [["plat", "id", "هوية المنصة"], ["plat", "mods", "الوحدات"], ["plat", "notif", "التنبيهات والتعاميم"],
+      org: [["depts", null, "الإدارات"], ["users", null, "مراقبة الحسابات"]],
+      plat: [["plat", "id", "هوية المنصة"], ["plat", "notif", "التنبيهات والتعاميم"],
         ["plat", "login", "شاشة تسجيل الدخول", 1], ["plat", "side", "القوائم"], ["plat", "print", "الطباعة والتقارير"], ["plat", "app", "تطبيق الجوال"],
         ["plat", "about", "حول المنصة", 1]],
       sec: [["sec", null, "الأمن"], ["oplog", null, "سجل الأنشطة والتغييرات"]],
@@ -1230,24 +1230,8 @@ class Component extends DCLogic {
         const meU = KIVO.BassamAuth && KIVO.BassamAuth.user() ? KIVO.BassamAuth.user() : null;
         const secU = !isSuper0 && !gmU && meU && D.switchUnits ? D.switchUnits(meU) : [];
         const isSuper = isSuper0 || !!gmU || secU.length > 1;
-        /* RISHAD266 (قرار المالك): «+ قسم» بجوار المبدّل حين تكون الوحدةُ النشطة إدارةً أمّاً (لا قسماً) — لمديرها نفسِه (حسابُ الإدارة أو مديرٌ بشارة) ولمدير المنصة.
-           يعمل على الإدارة النشطة وحدها، ولا يفتح شجرةَ المنصة لمدير الإدارة؛ والخادمُ يحكم (018 deptSecMgrWhy) */
-        const realSuper = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.user() && KIVO.BassamAuth.isSuper());
-        const secAddOn = !!act && !!D.sectionAdd && !(D.isSection && D.isSection(act)) && (realSuper || !!(meU && meU.deptId === act && (meU.role === "dept" || (meU.role === "staff" && meU.mgr))));
+        /* V7 · د5-هـ (44): زرُّ «+ قسم» في القائمة الجانبية حُذف — الأقسامُ يضيفها مدير المنصة من «الإدارات» وحدها (والخادمُ يرفض غيرَه) */
         return {
-          secAddOn,
-          secAdd: async (ev) => {
-            try { ev && ev.stopPropagation && ev.stopPropagation(); } catch (e) {}
-            if (!(await this._unsavedGuard())) return;   /* CORE-01: التعديلاتُ المعلّقة تُحفظ أولاً — لا تضيع مع إعادة التحميل */
-            const nm = await this.cfmAsk({ title: "إضافة قسم", msg: "قسمٌ جديد تحت «" + (D.activeName() || deptLabel) + "». سقفُه يبدأ نسخةً من سقف الإدارة، وتديره من «الصلاحيات».", input: "اسم القسم", ok: "إضافة" });
-            if (!nm) return;
-            const r = D.sectionAdd({ name: nm, deptId: act });
-            if (!r || !r.ok) { this.bkToast("لم يُضف القسم: " + ((r && r.err) || "تعذّر الإنشاء")); return; }
-            this.bkToast("جارٍ حفظ القسم «" + nm + "»…");
-            const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} };
-            /* المراجعة المستقلة: لا إعادةَ تحميلٍ إن لم يُحفظ — تبقى رسالةُ الرفض أو الانتظار ظاهرة */
-            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok !== true) this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true); else go(); }, () => this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true));
-          },
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
           doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },
           deptName: deptLabel,

@@ -2,7 +2,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _businessSpec() {
     return { prefix: "sz", path: "/api/seized", logical: "bassam_seized_v1", resources: ["reports", "catalog", "actions", "locations", "jew", "retro"], rows: "rows",
       views: ["records", "calendar", "catalogs", "dashboard", "context", "retro"], /* V7 · د5-د2: مواردُ الجدول الشهري يسمّيها مالكُها (staff.resources@1)؛ بغيابه لا موردَ منها يُنتظر تغيّرُه */
-      changed: { test: name => /^bassam_(?:seized(?:_cat|_acts|_locs|_jew|_retro)?|employees|rounds|shift_options|dayshift|grants|perm_tpls|perms|auth_users|depts|gdepts|platform)_v[0-9]+$/.test(name)
+      changed: { test: name => /^bassam_(?:seized(?:_cat|_acts|_locs|_jew|_retro)?|employees|rounds|shift_options|dayshift|grants|roles|perms|auth_users|depts|gdepts|platform)_v[0-9]+$/.test(name)
         || (KIVO.bus.read("staff.resources@1", "schedule", "legacy", "snap", "locks") || []).indexOf(name) !== -1
         || (KIVO.bus.read("dreport.resources@1", "doc") || []).indexOf(name) !== -1 } };   /* V7 · د5-هـ: وموردُ التقرير اليومي يسمّيه مالكُه */
   }

@@ -6,8 +6,6 @@
   /* ← من الأجزاء السابقة */
   var D = I.D, K_SESS = I.K_SESS, K_USERS = I.K_USERS, RAW = I.RAW, cur = I.cur, curDept = I.curDept, isMgrKey = I.isMgrKey, isSuper = I.isSuper,
       requireMgr = I.requireMgr;
-  /* → من أجزاءٍ لاحقة (تُستدعى وقتَ النداء لا التحميل) */
-  function tplsList() { return I.tplsList.apply(this, arguments); }
   /* ═══ نظام الصلاحيات — مستويان ═══
      bassam_perms_v1 = { caps: { deptId: [pageKeys] }, emps: { deptId: { ekey: { pageKey: [acts] } } } }
      سقف الإدارة (مدير النظام) ثم صلاحيات الموظف داخله (المشرف أو مدير الإدارة).
@@ -478,26 +476,6 @@
     o.emps[d] = o.emps[d] || {}; o.emps[d][ekey] = clean; permSave(o);
     return { ok:true };
   }
-  /* هوية القالب الممنوح — تُحفظ صراحةً لأن استنتاجها من الصفحات يخلط بين
-     قالبين يحملان نفس الصفحات فيظهر الأوّل منهما لكل من مُنح أيّاً منهما. */
-  function empTpl(ekey, did){
-    var o = permStore(), d = did || curDept();
-    var v = ((o.tplOf || {})[d] || {})[ekey];
-    return typeof v === 'string' ? v : '';
-  }
-  function setEmpTpl(ekey, tplId, did){
-    var o = permStore(), d = isSuper() ? (did || curDept()) : curDept();
-    o.tplOf = o.tplOf || {}; o.tplOf[d] = o.tplOf[d] || {};
-    if (tplId) o.tplOf[d][ekey] = tplId; else delete o.tplOf[d][ekey];
-    permSave(o);
-    /* KIVO_256 (الإنفاذُ وحده): المنحُ الصريح يتبع القالب */
-    var g24 = p24AfterTpl(ekey, tplId, d);
-    return (g24 && g24.ok === false) ? { ok:true, grantErr: g24.err } : { ok:true };
-  }
-  function dropEmpTpl(ekey, did){
-    var o = permStore(), d = did || curDept();
-    if (o.tplOf && o.tplOf[d] && o.tplOf[d][ekey] !== undefined) { delete o.tplOf[d][ekey]; permSave(o); }
-  }
   function clearEmpPerms(ekey, did){
     var g = requireMgr(); if (g) return g;
     var o = permStore(), d = isSuper() ? (did || curDept()) : curDept();
@@ -807,32 +785,22 @@
     var L = Array.isArray(lens) ? lens : empLens(ekey, d);
     return p24SetGrant(ekey, d, p24Delta(E, p24Translate(sheet || empPerms(ekey, d), C), C, L, tgt), src);
   }
-  /* بعد منح قالب: keys24 ⇒ فرقُه بالضبط؛ وإلا يُرفع المنحُ السابق */
-  function p24AfterTpl(ekey, tplId, d){
-    if (!azZ() || !ekey || !p24R()) return null;
-    try {
-      var tp = tplId ? tplsList(d).filter(function(t){ return t.id === tplId; })[0] : null;
-      if (tp && Array.isArray(tp.keys24)) { var dl = deptLenses(d); return p24Apply(ekey, d, tp.keys24, null, 'tpl:' + tp.id, Array.isArray(tp.lens) ? tp.lens.filter(function(k){ return dl.indexOf(k) !== -1; }) : dl); }
-      if (p24GrantsRec(d).emp[ekey]) return p24SetGrant(ekey, d, { plus: [], minus: [] });
-    } catch(e){ /* منحُ القالب (الورقة) تمّ — والمنحُ الصريح يُضبط في الحفظ التالي */ }
-    return null;
-  }
   /* → للأجزاء الأخرى */
   I.ALL_ACTS = ALL_ACTS; I.K_PERM = K_PERM; I.LENS_KEYS = LENS_KEYS; I.LENS_REG = LENS_REG; I.NAV2PERM = NAV2PERM; I.NAV_REG = NAV_REG;
   I.P24_DERIVE = P24_DERIVE; I.PAGE_KEYS = PAGE_KEYS; I.PAGE_OF = PAGE_OF; I.PAGE_REG = PAGE_REG; I.PERM2NAV = PERM2NAV; I.azKey = azKey;
   I.azZ = azZ; I.can = can; I.canSub = canSub; I.capAllPerms = capAllPerms; I.capSetAnywhere = capSetAnywhere; I.cleanLeafPerms = cleanLeafPerms;
   I.clearEmpPerms = clearEmpPerms; I.deptCap = deptCap; I.deptLenses = deptLenses; I.deptSubs = deptSubs; I.deptTabs = deptTabs;
-  I.derivePages = derivePages; I.dropEmpPerms = dropEmpPerms; I.dropEmpTpl = dropEmpTpl; I.effCap = effCap; I.empLens = empLens;
-  I.empPagePerms = empPagePerms; I.empPerms = empPerms; I.empTpl = empTpl; I.expandPerms = expandPerms; I.hasCap = hasCap;
+  I.derivePages = derivePages; I.dropEmpPerms = dropEmpPerms; I.effCap = effCap; I.empLens = empLens;
+  I.empPagePerms = empPagePerms; I.empPerms = empPerms; I.expandPerms = expandPerms; I.hasCap = hasCap;
   I.hasOwnSheet = hasOwnSheet; I.isContainer = isContainer; I.leafKeysOf = leafKeysOf; I.leafReg = leafReg; I.onAny = onAny; I.onCap = onCap;
-  I.p24AfterTpl = p24AfterTpl; I.p24Apply = p24Apply; I.p24Assignable = p24Assignable; I.p24Ceil = p24Ceil; I.p24Cover = p24Cover;
+  I.p24Apply = p24Apply; I.p24Assignable = p24Assignable; I.p24Ceil = p24Ceil; I.p24Cover = p24Cover;
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
   I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.capOwnOf = capOwnOf; I.capState = capState; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
   I.patternSeed = patternSeed; I.permSave = permSave; I.dropNodeCap = dropNodeCap; I.capOrphans = capOrphans;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;
-  I.setEmpTpl = setEmpTpl; I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;
+  I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;
   I.visiblePages = visiblePages;
   Object.defineProperty(I, "_pmMemo", { get: function () { return _pmMemo; }, set: function (v) { _pmMemo = v; }, configurable: true });
   Object.defineProperty(I, "lensOn", { get: function () { return lensOn; }, set: function (v) { lensOn = v; }, configurable: true });

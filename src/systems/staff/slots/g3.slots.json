@@ -57,7 +57,7 @@
  },
  "root.liveKeys.staff": {
   "order": 10,
-  "text": " staffing: /staffing|shift_options|callsigns|leave_kinds|perm_tpls|perm_limit|employees/,"
+  "text": " staffing: /staffing|shift_options|callsigns|leave_kinds|roles|perm_limit|employees/,"
  },
  "root.live.planning.staff": {
   "order": 10,

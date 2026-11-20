@@ -113,7 +113,7 @@
         <b dir="ltr" style="position:relative;z-index:2;font-size:30px;font-weight:700;line-height:1;color:var(--fg-x1d4ed8);font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{skTVal}}</b>
         <span dir="ltr" style="position:absolute;bottom:-7px;z-index:3;font-size:9.5px;font-weight:700;color:var(--fg-x1d4ed8);font-family:'Cairo',sans-serif;font-feature-settings:'tnum';background:var(--bg-xffffff);border:1px solid var(--bd-a29782160p28);box-shadow:var(--shadow-card);border-radius:9999px;padding:1.5px 10px;white-space:nowrap">{{skTPct}}</span>
       </div>
-      <span class="bs-tip-host" style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--fg-x53565a);margin-top:16px;white-space:nowrap">الصلاحيات<span class="bs-tip">حاملو قوالب الصلاحيات وعددهم من إجمالي الموظفين — القالب يُمنح لأصحاب حسابات الدخول من عمود «الصلاحيات» في هذا الجدول، وتفصيل كل قالب في الصفوف بجانبه.</span></span>
+      <span class="bs-tip-host" style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--fg-x53565a);margin-top:16px;white-space:nowrap">الصلاحيات<span class="bs-tip">حاملو الأدوار وعددهم من إجمالي الموظفين — الدور يُسند لأصحاب حسابات الدخول من عمود «الصلاحيات» في هذا الجدول، وتفصيل كل دور في الصفوف بجانبه.</span></span>
       <i style="display:block;width:82px;height:1px;margin:6px 0 5px;background:linear-gradient(90deg,var(--bg-a29782160),var(--bg-a29782160p42),var(--bg-a29782160))"></i>
       <span style="font-size:9px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{skTSub}}</span>
     </div>
@@ -375,7 +375,7 @@
         <option value="on">تكليف المحددين</option>
         <option value="off">إلغاء تكليف المحددين</option>
       </select>
-      <select onChange="{{onBulkTpl}}" title="إسناد قالب صلاحية للموظفين المحددين — تُثبت لمن له حساب دخول مفعّل" style="height:32px;font-size:11px;font-weight:400;color:var(--fg-x8a6f35);background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p4);border-radius:10px;padding:0 8px;cursor:pointer;font-family:'Cairo',sans-serif;outline:none;max-width:185px">
+      <select onChange="{{onBulkTpl}}" title="إسناد دور للموظفين المحددين — يُثبت لمن له حساب دخول مفعّل" style="height:32px;font-size:11px;font-weight:400;color:var(--fg-x8a6f35);background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p4);border-radius:10px;padding:0 8px;cursor:pointer;font-family:'Cairo',sans-serif;outline:none;max-width:185px">
         <option value="">إسناد صلاحية…</option>
         <sc-for list="{{bulkTplOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.name}}</option></sc-for>
       </select>
@@ -545,7 +545,7 @@
                     <span style="flex:1">بلا صلاحيات</span>
                     <sc-if value="{{e.pmNoneSel}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" data-i="i-c37d9e39"></svg></sc-if>
                   </div>
-                  <sc-if value="{{e.pmEmptyOn}}" hint-placeholder-val="{{ false }}"><div data-pm="empty" style="padding:10px 9px;font-size:10.5px;line-height:1.7;color:var(--fg-x94a3b8)">لا قوالب بعد — أنشئها من الإعدادات ← قوالب الصلاحيات، وحدّد أوراق كل قالب بنفسك</div></sc-if>
+                  <sc-if value="{{e.pmEmptyOn}}" hint-placeholder-val="{{ false }}"><div data-pm="empty" style="padding:10px 9px;font-size:10.5px;line-height:1.7;color:var(--fg-x94a3b8)">لا أدوار بعد — تُنشأ من «الإدارات» ← «الصلاحيات» ← الأدوار</div></sc-if>
                   <sc-for list="{{e.pmOpts}}" as="o" hint-placeholder-count="4">
                   <div data-pm="opt" onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
                     <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{o.name}}</span>

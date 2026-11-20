@@ -2,7 +2,7 @@
    The node page tab reuses the «مراقبة الحسابات» table: the same row (account · username · role · unit · status · last sign-in · added)
    and ONE action menu (_acctMenu) built for both places, each action on its existing KIVO.BassamAuth handler:
      · تعديل بيانات المدير (general / unit managers) · تجميد الحساب / إعادة التفعيل (setDisById, acctFixedWhy first)
-     · إعادة تعيين كلمة المرور (one confirmation → the temporary-password dialog) · تعديل الصلاحيات (the permissions dialog)
+     · إعادة تعيين كلمة المرور (one confirmation → the temporary-password dialog) · تعديل الصلاحيات (V7 · د5-هـ 44: the people section of the «الصلاحيات» tab — the dialog was deleted)
      · إنهاء جلساته الآن (when signed in) · حذف حساب المدير / حذف حساب الدخول (by kind, one confirmation).
    Scope: a unit lists its own accounts (and its sections'), a supervisory node its general managers and its branch's accounts,
    managers first. From «مراقبة الحسابات», «تعديل بيانات المدير» and «تعديل الصلاحيات» open the account's node page on this tab
@@ -71,13 +71,15 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     await p.keyboard.press('Escape');
 
     /* node tab: the dialogs open in place */
-    await pick(NODE, 'TEST_ONLY مدير أ', 'تعديل الصلاحيات');
-    assert.match(await p.locator('[role=dialog]').last().innerText(), /صلاحيات/, 'permissions dialog'); await p.keyboard.press('Escape'); await p.waitForTimeout(500);
-    if (await p.locator('[role=dialog]').count()) { await p.locator('[role=dialog] button', { hasText: /إغلاق|إلغاء/ }).last().click().catch(() => {}); await p.waitForTimeout(400); }
-    await pick(NODE, 'TEST_ONLY موظف أ', 'تعديل الصلاحيات');
-    assert.match(await p.locator('[role=dialog]').last().innerText(), /صلاحيات/, 'an employee\'s permissions open in the same dialog');
-    await p.keyboard.press('Escape'); await p.waitForTimeout(500);
-    if (await p.locator('[role=dialog]').count()) { await p.locator('[role=dialog] button', { hasText: /إغلاق|إلغاء/ }).last().click().catch(() => {}); await p.waitForTimeout(400); }
+    /* V7 · د5-هـ (44): نافذةُ صلاحيات الموظف حُذفت — «تعديل الصلاحيات» يفتح قسم «الأشخاص» في تبويب «الصلاحيات» لوحدة الحساب (مجموعة v2) */
+    for (const who of ['TEST_ONLY مدير أ', 'TEST_ONLY موظف أ']) {
+      await p.evaluate(() => { window.__h44 = []; addEventListener('hashchange', (e) => window.__h44.push(new URL(e.newURL).hash)); });
+      await pick(NODE, who, 'تعديل الصلاحيات'); await p.waitForTimeout(1200);
+      /* the address the menu writes (the tab itself is group v2's: until it is merged the page settles on the unit's page) */
+      assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_A/perm/people'), who + ': → the people section of the unit\'s «الصلاحيات» tab');
+      assert.equal(await p.locator('[role=dialog]').count(), 0, who + ': no permissions dialog');
+      await s.go('#/sysadmin/org/TEST_ONLY_A', 3000); await tab('المسؤولون والحسابات');
+    }
     await pick(NODE, 'TEST_ONLY مدير أ', 'تعديل بيانات المدير');
     assert.equal(await p.locator('[role=dialog] input[placeholder="1XXXXXXXXX"]').count(), 1, 'the manager dialog'); await p.keyboard.press('Escape'); await p.waitForTimeout(500);
     if (await p.locator('[role=dialog] input[placeholder="1XXXXXXXXX"]').count()) { await p.locator('[role=dialog] button', { hasText: /إلغاء|إغلاق/ }).last().click(); await p.waitForTimeout(400); }
@@ -111,8 +113,10 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     /* from «مراقبة الحسابات»: edit and permissions open the account's node page on this tab */
     for (const item of ['تعديل بيانات المدير', 'تعديل الصلاحيات']) {
       await s.go('#/sysadmin/users', 3500);
+      await p.evaluate(() => { window.__h44 = []; addEventListener('hashchange', (e) => window.__h44.push(new URL(e.newURL).hash)); });
       await pick(ALL, 'TEST_ONLY مدير ب', item); await p.waitForTimeout(1500);
-      assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B', item + ' → unit B'); assert.equal(await cur(), 'المسؤولون والحسابات');
+      if (item === 'تعديل الصلاحيات') assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_B/perm/people'), item + ' → unit B, people section (V7 · د5-هـ 44)');
+      else { assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B', item + ' → unit B'); assert.equal(await cur(), 'المسؤولون والحسابات'); }
       await p.goBack(); await p.waitForTimeout(1500); assert.equal(await H(), '#/sysadmin/users', 'Back returns');
     }
     assert.deepEqual(s.errs, [], 'no page errors');
