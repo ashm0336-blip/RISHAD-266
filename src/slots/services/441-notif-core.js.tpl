@@ -8,9 +8,9 @@
   var TO = { own:'صاحبه', lead:'رئيس الوردية', mgr:'مدير الإدارة أو القسم', sys:'مسؤول المنصة' };
   var LV = { info:'معلومة', act:'يحتاج إجراء', urg:'عاجل' };
   var CH = { bell:'الجرس', toast:'الجرس + توست فوري' };
-  var KC = { emp:'#7c3aed', acct:'#dc2626',@@SYS:nfc.kind.color.tasks@@@@SYS:nfc.kind.color.custody@@ staff:'#b45309', plan:'#0f8f80', ready:'#4d7c0f', rep:'#b45309', round:'#1d6fd6', kpi:'#9f1239',@@SYS:nfc.kind.color@@ perm:'#8A6F35', sec:'#dc2626', sys:'#334155', bc:'#1d6fd6' };
-  var KN = { emp:'الموظفون', acct:'الحسابات',@@SYS:nfc.kind.name.tasks@@@@SYS:nfc.kind.name.custody@@ staff:'الجدول', plan:'الميداني', ready:'الجاهزية', rep:'التقارير', round:'الجولات', kpi:'المؤشرات',@@SYS:nfc.kind.name@@ perm:'الصلاحيات', sec:'الأمان', sys:'المنصة', bc:'التعاميم' };
-  var KI = { emp:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8', acct:'M15 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M3 21v-2a4 4 0 0 1 4-4h4M16 16l2 2 4-4',@@SYS:nfc.kind.icon.tasks@@@@SYS:nfc.kind.icon.custody@@ staff:'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z', plan:'M1 6v16l7-4 8 4 7-4V2l-7 4-8-4zM8 2v16M16 6v16', ready:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 8v4l3 3', rep:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4', round:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v4M12 16h.01', kpi:'M3 3v18h18M7 14l4-4 4 4 5-5',@@SYS:nfc.kind.icon@@ perm:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', sec:'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4',
+  var KC = { emp:'#7c3aed', acct:'#dc2626',@@SYS:nfc.kind.color.tasks@@@@SYS:nfc.kind.color.custody@@@@SYS:nfc.kind.color.staff@@ plan:'#0f8f80', ready:'#4d7c0f', rep:'#b45309', round:'#1d6fd6', kpi:'#9f1239',@@SYS:nfc.kind.color@@ perm:'#8A6F35', sec:'#dc2626', sys:'#334155', bc:'#1d6fd6' };
+  var KN = { emp:'الموظفون', acct:'الحسابات',@@SYS:nfc.kind.name.tasks@@@@SYS:nfc.kind.name.custody@@@@SYS:nfc.kind.name.staff@@ plan:'الميداني', ready:'الجاهزية', rep:'التقارير', round:'الجولات', kpi:'المؤشرات',@@SYS:nfc.kind.name@@ perm:'الصلاحيات', sec:'الأمان', sys:'المنصة', bc:'التعاميم' };
+  var KI = { emp:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8', acct:'M15 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M3 21v-2a4 4 0 0 1 4-4h4M16 16l2 2 4-4',@@SYS:nfc.kind.icon.tasks@@@@SYS:nfc.kind.icon.custody@@@@SYS:nfc.kind.icon.staff@@ plan:'M1 6v16l7-4 8 4 7-4V2l-7 4-8-4zM8 2v16M16 6v16', ready:'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 8v4l3 3', rep:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4', round:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v4M12 16h.01', kpi:'M3 3v18h18M7 14l4-4 4 4 5-5',@@SYS:nfc.kind.icon@@ perm:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', sec:'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4',
       sys:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z', bc:'M3 11l18-5v12L3 13v-2zM11.6 16.8a3 3 0 1 1-5.8-1.6' };
   function L(id,k,name,when,on,to,lvl,chan,txt,go){ return { id:id, k:k, name:name, when:when, on:on, to:to, lvl:lvl, chan:chan, txt:txt, go:go }; }
 var REG = [
@@ -33,19 +33,7 @@ var REG = [
    L('acct_tpl','acct','منح قالب صلاحيات لموظف','فور المنح',true,['own'],'info','bell','مُنحت قالب «{القالب}» — {العدد} صفحات','')]},
 @@SYS:nfc.reg.tasks@@@@SYS:nfc.reg.custody@@]},
  {key:'planning',name:'الخطة التشغيلية',icon:'🗓',subs:[
-  {name:'الجدول الشهري',k:'staff',leaves:[
-   L('st_shift','staff','تغيير وردية موظف في الجدول','فور الحفظ',true,['lead','mgr'],'info','bell','تغيّرت وردية {الاسم} في {الشهر} من {القديم} إلى {الجديد} — بواسطة {المُعدّل}','افتح الجدول الشهري'),
-   L('st_rest','staff','تغيير أيام راحة موظف في الجدول','فور الحفظ',true,['lead','mgr'],'info','bell','أيام راحة {الاسم} في {الشهر} صارت: {الأيام} — بواسطة {المُعدّل}','افتح الجدول الشهري'),
-   L('st_loc','staff','تغيير موقع موظف في الجدول','فور الحفظ',true,['lead','mgr'],'info','bell','موقع {الاسم} في {اليوم} صار «{الموقع}» بدل «{القديم}»','افتح الجدول الشهري'),
-   L('st_leave','staff','تسجيل استئذان أو إجازة في الجدول','فور التسجيل',true,['lead','mgr'],'info','bell','سُجّل لـ{الاسم} {النوع} يوم {اليوم} بواسطة {المُعدّل}','افتح الجدول الشهري'),
-   L('st_lead','staff','تعيين رئيس أو نائب في الجدول','فور التعيين',true,['lead','mgr'],'info','bell','عُيّن {الاسم} {الدور} لـ{الوردية} في {الشهر}','افتح الجدول الشهري'),
-   L('st_pub','staff','نشر جدول شهر جديد','فور النشر',true,['lead','mgr'],'info','toast','نُشر جدول {الشهر} — {العدد} موظفاً موزَّعين','افتح الجدول الشهري'),
-   L('st_lock','staff','اعتماد الشهر وقفله / فك الاعتماد','فور التغيير',true,['lead','mgr'],'info','bell','{الفعل} جدول {الشهر} بواسطة {المُعدّل}',''),
-   L('st_gap','staff','نقص في تسكين وردية الغد','الساعة 16:00 يومياً',true,['lead','mgr'],'act','toast','الوردية {الوردية} غداً ينقصها {العدد} على المواقع الحرجة','افتح الجدول الشهري'),
-   L('st_dup','staff','تعارض تسكين (موظف في موقعين)','عند الحفظ',true,['mgr'],'urg','toast','{الاسم} مسكّن في «{الموقع1}» و«{الموقع2}» يوم {اليوم}','افتح الجدول الشهري'),
-   L('st_rest2','staff','تجاوز حدّ الراحات الأسبوعي','عند المحاولة',false,['lead','mgr'],'info','bell','محاولة منح راحة ثالثة في أسبوع لـ{الاسم} — رُفضت',''),
-   L('st_shdef','staff','تعريف وردية أُضيف أو عُدّل أو حُذف','فور الحفظ',true,['lead','mgr'],'info','bell','{الفعل} وردية «{الوردية}» — {التفصيل} · بواسطة {المُعدّل}','افتح الإعدادات')]},
-  {name:'التشغيل الميداني',k:'plan',leaves:[
+@@SYS:nfc.reg.staff@@  {name:'التشغيل الميداني',k:'plan',leaves:[
    L('pl_chg','plan','تعديل الخطة الميدانية لموقع','فور الحفظ',true,['lead','mgr'],'info','bell','عُدّلت خطة «{الموقع}»: {التفصيل}','افتح التشغيل الميداني'),
    L('pl_cap','plan','تغيير سعة موقع أو إغلاقه','فور الحفظ',true,['lead','mgr'],'act','toast','{الموقع}: {التفصيل} بواسطة {المُعدّل}','افتح التشغيل الميداني'),
    L('pl_mark','plan','علامة أو مسار جديد','فور الإضافة',false,['lead'],'info','bell','أُضيف {النوع} «{الاسم}» في {الموقع}',''),
@@ -119,7 +107,7 @@ var REG = [
   var LEAVES = []; var LEAF_OF = {};
   REG.forEach(function(c){ c.subs.forEach(function(s){ s.leaves.forEach(function(l){ l.page = c.key; l.sub = s.name; LEAVES.push(l); LEAF_OF[l.id] = l; }); }); });
   /* أين تُفتح كل صفحة من زر «افتح» */
-  var GO_NAV = { 'افتح الموظفين':'employees',@@SYS:nfc.goNav.tasks@@ 'افتح العهد':'employees', 'افتح السند':'employees', 'افتح المستودع':'employees', 'افتح الجدول الشهري':'staffing', 'افتح التشغيل الميداني':'plan', 'افتح الجولات':'daily', 'افتح الخريطة':'daily', 'افتح مؤشرات الجاهزية':'kpis', 'افتح التقرير':'dreport', 'افتح المؤشرات':'kpis', 'افتح الإشغال':'kpis',@@SYS:nfc.goNav.seized@@ 'افتح لوحة المؤشرات':'kpis',@@SYS:nfc.goNav.award@@ 'الأمان':'profile', 'سجل الأمن':'sysadmin', 'الأمن':'sysadmin', 'افتح الصلاحيات':'employees', 'افتح سجل الحركة':'admin', 'النسخة الاحتياطية':'admin', 'افتح الإعدادات':'admin', 'افتح الإدارات':'sysadmin', 'المنصة':'sysadmin', 'ما الجديد':'help', 'افتح صفحتي':'profile', 'افتح التعميم':'',
+  var GO_NAV = { 'افتح الموظفين':'employees',@@SYS:nfc.goNav.tasks@@ 'افتح العهد':'employees', 'افتح السند':'employees', 'افتح المستودع':'employees',@@SYS:nfc.goNav.staff@@ 'افتح التشغيل الميداني':'plan', 'افتح الجولات':'daily', 'افتح الخريطة':'daily', 'افتح مؤشرات الجاهزية':'kpis', 'افتح التقرير':'dreport', 'افتح المؤشرات':'kpis', 'افتح الإشغال':'kpis',@@SYS:nfc.goNav.seized@@ 'افتح لوحة المؤشرات':'kpis',@@SYS:nfc.goNav.award@@ 'الأمان':'profile', 'سجل الأمن':'sysadmin', 'الأمن':'sysadmin', 'افتح الصلاحيات':'employees', 'افتح سجل الحركة':'admin', 'النسخة الاحتياطية':'admin', 'افتح الإعدادات':'admin', 'افتح الإدارات':'sysadmin', 'المنصة':'sysadmin', 'ما الجديد':'help', 'افتح صفحتي':'profile', 'افتح التعميم':'',
       'قرأت وفهمت':'' };
 
   var GO_KPI = { 'افتح مؤشرات الجاهزية': ['planning', 'readiness'], 'افتح المؤشرات': ['daily', 'kpiDaily'], 'افتح الإشغال': ['daily', 'kpiOcc']@@SYS:nfc.goKpi.seized@@ };

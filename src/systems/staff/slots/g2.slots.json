@@ -1,0 +1,147 @@
+{
+ "_note": "V7 · د5-د2 (مجموعة g2): قطعُ الجدول الشهري في التنبيهات (019 · 441 · 442) وانتقال الموظف (019c) و«ملفي» (062b).",
+ "nf.types.staff": {
+  "order": 10,
+  "file": "slots/nf.types.staff.frag"
+ },
+ "nf.cap.staff": {
+  "order": 10,
+  "text": "  staff: \"staff\",\n"
+ },
+ "nf.capId.staff": {
+  "order": 10,
+  "text": "st_shdef: \"admin/shifts\", "
+ },
+ "nf.refs.staff": {
+  "order": 10,
+  "text": "\"staffing_v3\", "
+ },
+ "nf.shift.staff": {
+  "order": 10,
+  "file": "slots/nf.shift.staff.frag"
+ },
+ "nf.denyPages.staff": {
+  "order": 10,
+  "text": "staff: \"الجدول الشهري\", "
+ },
+ "nf.denyRecs.staff.grp": {
+  "order": 10,
+  "text": " bassam_st_grp_v1: \"مجموعات الجدول الشهري\","
+ },
+ "nf.denyRecs.staff": {
+  "order": 10,
+  "text": "  bassam_staffing_v3: \"الجدول الشهري\", bassam_staffing_v2: \"الجدول الشهري (صيغة قديمة)\", bassam_staffing_snap_v1: \"بيان الشهر\",\n  bassam_staffing_locks_v1: \"أقفال الجدول الشهري\", bassam_callsigns_v1: \"رموز النداء\", bassam_perm_limit_v1: \"ترقية الصلاحيات\",\n"
+ },
+ "emp.keys.staff": {
+  "order": 10,
+  "text": "  'bassam_staffing_v2',\n  'bassam_staffing_v3',\n  'bassam_staffing_locks_v1',\n"
+ },
+ "emp.cleanup.staffParam": {
+  "order": 10,
+  "text": ", staffOn"
+ },
+ "emp.cleanup.staff.rows": {
+  "order": 10,
+  "file": "slots/emp.cleanup.staff.rows.frag"
+ },
+ "emp.cleanup.staff.wipe": {
+  "order": 10,
+  "file": "slots/emp.cleanup.staff.wipe.frag"
+ },
+ "emp.schedule.fn": {
+  "order": 10,
+  "file": "slots/emp.schedule.fn.frag"
+ },
+ "emp.flags.staff": {
+  "order": 10,
+  "text": "  values.__staffOn = input.intent === 'delete' || capOnDept(A, d, 'staff');\n"
+ },
+ "emp.cleanup.staffArg": {
+  "order": 10,
+  "text": ", values.__staffOn"
+ },
+ "emp.replace.staff": {
+  "order": 10,
+  "text": "  if (replace && values.__staffOn) {\n    var mk = input.import.year + '-' + input.import.month;\n    delete values.bassam_staffing_locks_v1[mk];\n  }\n"
+ },
+ "emp.schedule.call": {
+  "order": 10,
+  "text": "    empApplySchedule(values, input.import, validKeys, result);\n"
+ },
+ "me.keys.staff": {
+  "order": 10,
+  "text": "'bassam_staffing_v3', 'bassam_staffing_locks_v1', "
+ },
+ "me.data.staff": {
+  "order": 10,
+  "text": "staffing: P('bassam_staffing_v3', {}), locks: P('bassam_staffing_locks_v1', {}), "
+ },
+ "me.changes.fn": {
+  "order": 10,
+  "file": "slots/me.changes.fn.frag"
+ },
+ "me.range.staff": {
+  "order": 10,
+  "text": "  Object.keys(D.staffing || {}).forEach(function (k) { var p = /^(\\d+)-(\\d+)$/.exec(k); if (p && pfEntry(D.staffing[k], toks)) see(+p[1], +p[2]); });\n"
+ },
+ "me.bucket.day": {
+  "order": 10,
+  "text": "(D && D.staffing && D.staffing[T0.ym]) || {}"
+ },
+ "me.bucket.today": {
+  "order": 10,
+  "text": "(D.staffing || {})[T.ym] || {}"
+ },
+ "me.arg.staff": {
+  "order": 10,
+  "text": "staffing: D.staffing, "
+ },
+ "me.arg.staff.hist": {
+  "order": 10,
+  "text": "staffing: D.staffing, locks: D.locks, "
+ },
+ "me.changes.staff": {
+  "order": 10,
+  "text": "    var q = env.DB.prepare(\"SELECT ts, uid, act, bef, aft FROM aud WHERE dept = ?1 AND etype = 'staffing' AND ctx LIKE ?2 AND eid IN (\" + I.toks.map(function (_, n) { return '?' + (n + 3); }).join(',') + ') ORDER BY ts DESC, id DESC LIMIT 120');\n    var ra = await q.bind.apply(q, [u.deptId, '%\"plan\":\"' + ym + '\"%'].concat(I.toks)).all();\n    res.changes = meChanges((ra && ra.results) || [], users);\n"
+ },
+ "nfc.kind.color.staff": {
+  "order": 10,
+  "text": " staff:'#b45309',"
+ },
+ "nfc.kind.name.staff": {
+  "order": 10,
+  "text": " staff:'الجدول',"
+ },
+ "nfc.kind.icon.staff": {
+  "order": 10,
+  "text": " staff:'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',"
+ },
+ "nfc.reg.staff": {
+  "order": 10,
+  "file": "slots/nfc.reg.staff.frag"
+ },
+ "nfc.goNav.staff": {
+  "order": 10,
+  "text": " 'افتح الجدول الشهري':'staffing',"
+ },
+ "nfo.watch.staff.shdef": {
+  "order": 10,
+  "file": "slots/nfo.watch.staff.shdef.frag"
+ },
+ "nfo.watch.staff": {
+  "order": 10,
+  "file": "slots/nfo.watch.staff.frag"
+ },
+ "nfo.restBase.staff": {
+  "order": 10,
+  "text": "try { var st = J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}) || {}; var mk = day.split('-').slice(0, 2).join('-'); var e = (st[mk] || {})[ek]; return e && Array.isArray(e.rest) ? e.rest : []; } catch(e){ return []; }"
+ },
+ "nfo.tick.staff": {
+  "order": 10,
+  "file": "slots/nfo.tick.staff.frag"
+ },
+ "nf.feed.known.staff": {
+  "order": 10,
+  "text": ""
+ }
+}

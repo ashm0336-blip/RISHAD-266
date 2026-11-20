@@ -296,6 +296,10 @@
   {
    "tpl": "workers/parts/019p9-scheduling-registry.js.tpl",
    "out": "workers/parts/019p9-scheduling-registry.js"
+  },
+  {
+   "tpl": "workers/parts/062b-me-history.js.tpl",
+   "out": "workers/parts/062b-me-history.js"
   }
  ]
 }

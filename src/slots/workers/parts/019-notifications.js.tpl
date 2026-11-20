@@ -172,139 +172,7 @@ var NF_TYPES = {
     txt: "مُنحت قالب «{القالب}» — {العدد} صفحات",
     go: "",
   },
-@@SYS:nf.types.tasks@@@@SYS:nf.types.custody@@  st_shift: {
-    id: "st_shift",
-    k: "staff",
-    name: "تغيير وردية موظف في الجدول",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "تغيّرت وردية {الاسم} في {الشهر} من {القديم} إلى {الجديد} — بواسطة {المُعدّل}",
-    go: "افتح الجدول الشهري",
-  },
-  st_rest: {
-    id: "st_rest",
-    k: "staff",
-    name: "تغيير أيام راحة موظف في الجدول",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "أيام راحة {الاسم} في {الشهر} صارت: {الأيام} — بواسطة {المُعدّل}",
-    go: "افتح الجدول الشهري",
-  },
-  st_loc: {
-    id: "st_loc",
-    k: "staff",
-    name: "تغيير موقع موظف في الجدول",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "موقع {الاسم} في {اليوم} صار «{الموقع}» بدل «{القديم}»",
-    go: "افتح الجدول الشهري",
-  },
-  st_leave: {
-    id: "st_leave",
-    k: "staff",
-    name: "تسجيل استئذان أو إجازة في الجدول",
-    when: "فور التسجيل",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "سُجّل لـ{الاسم} {النوع} يوم {اليوم} بواسطة {المُعدّل}",
-    go: "افتح الجدول الشهري",
-  },
-  st_lead: {
-    id: "st_lead",
-    k: "staff",
-    name: "تعيين رئيس أو نائب في الجدول",
-    when: "فور التعيين",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "عُيّن {الاسم} {الدور} لـ{الوردية} في {الشهر}",
-    go: "افتح الجدول الشهري",
-  },
-  st_pub: {
-    id: "st_pub",
-    k: "staff",
-    name: "نشر جدول شهر جديد",
-    when: "فور النشر",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "toast",
-    txt: "نُشر جدول {الشهر} — {العدد} موظفاً موزَّعين",
-    go: "افتح الجدول الشهري",
-  },
-  st_lock: {
-    id: "st_lock",
-    k: "staff",
-    name: "اعتماد الشهر وقفله / فك الاعتماد",
-    when: "فور التغيير",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل} جدول {الشهر} بواسطة {المُعدّل}",
-    go: "",
-  },
-  st_gap: {
-    id: "st_gap",
-    k: "staff",
-    name: "نقص في تسكين وردية الغد",
-    when: "الساعة 16:00 يومياً",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "act",
-    chan: "toast",
-    txt: "الوردية {الوردية} غداً ينقصها {العدد} على المواقع الحرجة",
-    go: "افتح الجدول الشهري",
-  },
-  st_dup: {
-    id: "st_dup",
-    k: "staff",
-    name: "تعارض تسكين (موظف في موقعين)",
-    when: "عند الحفظ",
-    on: true,
-    to: ["mgr"],
-    lvl: "urg",
-    chan: "toast",
-    txt: "{الاسم} مسكّن في «{الموقع1}» و«{الموقع2}» يوم {اليوم}",
-    go: "افتح الجدول الشهري",
-  },
-  st_rest2: {
-    id: "st_rest2",
-    k: "staff",
-    name: "تجاوز حدّ الراحات الأسبوعي",
-    when: "عند المحاولة",
-    on: false,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "محاولة منح راحة ثالثة في أسبوع لـ{الاسم} — رُفضت",
-    go: "",
-  },
-  st_shdef: {
-    id: "st_shdef",
-    k: "staff",
-    name: "تعريف وردية أُضيف أو عُدّل أو حُذف",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل} وردية «{الوردية}» — {التفصيل} · بواسطة {المُعدّل}",
-    go: "افتح الإعدادات",
-  },
-  pl_chg: {
+@@SYS:nf.types.tasks@@@@SYS:nf.types.custody@@@@SYS:nf.types.staff@@  pl_chg: {
     id: "pl_chg",
     k: "plan",
     name: "تعديل الخطة الميدانية لموقع",
@@ -985,14 +853,13 @@ var NF_REV = "bassam_notifications_domain_v1",
 var NF_GLOBAL = ["bassam_notif_sys_v1", "bassam_bc_v1", "bassam_notif_cfg_v1"];
 var NF_CAP = {
   emp: "emps",
-@@SYS:nf.cap.tasks@@@@SYS:nf.cap.custody@@  staff: "staff",
-  plan: "plan",
+@@SYS:nf.cap.tasks@@@@SYS:nf.cap.custody@@@@SYS:nf.cap.staff@@  plan: "plan",
   ready: "planning/readiness",
   rep: "dreport",
   round: "daily/rounds",
 @@SYS:nf.cap@@  perm: "admin/ptpls",
 };
-var NF_CAP_ID = { kp_att: "daily/kpiDaily", kp_occ: "daily/kpiOcc", st_shdef: "admin/shifts", fd_obs: "daily/field" };
+var NF_CAP_ID = { kp_att: "daily/kpiDaily", kp_occ: "daily/kpiOcc", @@SYS:nf.capId.staff@@fd_obs: "daily/field" };
 var NF_MESSAGE_COLS = [
   "scope",
   "id",
@@ -1242,7 +1109,7 @@ async function nfRefs(env, A, only) {
   (A.depts || []).forEach(function (d) {
     if (d && d.id && (!only || only.indexOf(d.id) >= 0) && !refs[d.id]) {
       refs[d.id] = {};
-      ["employees_v1", "staffing_v3", "dreport_v1", "perm_tpls_v1"].forEach(function (s) {
+      ["employees_v1", @@SYS:nf.refs.staff@@"dreport_v1", "perm_tpls_v1"].forEach(function (s) {
         keys.push("bsdept:" + d.id + ":bassam_" + s);
       });
     }
@@ -1281,30 +1148,7 @@ function nfLeader(A, u, d, refs) {
   return !!(t && (t.sup === true || (t.sup === undefined && /رئيس|نائب/.test(t.name || ""))));
 }
 function nfShift(u, d, refs) {
-  var r = refs[d] || {},
-    st = r.staffing_v3 || {},
-    months = Object.keys(st)
-      .filter(function (k) {
-        return /^\d+-\d+$/.test(k);
-      })
-      .sort(function (a, b) {
-        var x = a.split("-").map(Number),
-          y = b.split("-").map(Number);
-        return y[0] - x[0] || y[1] - x[1];
-      }),
-    m = months[0];
-  if (!m) return "";
-  var e = (Array.isArray(r.employees_v1) ? r.employees_v1 : []).filter(function (x) {
-      return x && (x.eid || x.name) === u.ekey;
-    })[0],
-    keys = e ? [e.nid, e.eid, u.ekey] : [u.ekey];
-  for (var i = 0; i < keys.length; i++) {
-    var v = keys[i] && st[m][keys[i]];
-    if (v && v.shift) return String(v.shift);
-  }
-  return "";
-}
-function nfOwn(m, targets, u, refs) {
+@@SYS:nf.shift.staff|empty="  return \"\";\n}\n"@@function nfOwn(m, targets, u, refs) {
   var a = targets
     .filter(function (t) {
       return t.kind === "employee";
@@ -2022,7 +1866,7 @@ async function nfFeedRows(env, A, opts) {
   if (A.u.role === "super" && !opts.all) where += " AND (m.department='' OR m.department=?6 OR m.category IN ('sys','sec'))";
   bind.push(opts.dept || A.u.deptId || "");
   where += " AND json_valid(?5) AND ?6 IS NOT NULL";
-@@SYS:nf.feed.known.award|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.custody|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.irshad|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.seized|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.tasks|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@  var from =
+@@SYS:nf.feed.known.award|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.custody|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.irshad|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.seized|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.tasks|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.staff|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@  var from =
       " FROM notification_messages m LEFT JOIN notification_user_state s ON s.account_uid=?1 AND s.message_scope=m.scope AND s.message_id=m.id WHERE ",
     pin = "CASE WHEN m.pinned=1 AND COALESCE(s.read_at,0)=0 THEN 1 ELSE 0 END",
     cursor = opts.cursor || "",
@@ -2865,7 +2709,7 @@ var NF_DENY_WIN_MS = 60000,
   NF_DENY_REC_OTHER = "بيانات المنصة";
 /* prettier-ignore */
 var NF_DENY_PAGES = {
-  @@SYS:nf.denyPages.dstats@@emps: "موظفو الإدارة", planning: "الخطة التشغيلية", staff: "الجدول الشهري", plan: "التشغيل الميداني",
+  @@SYS:nf.denyPages.dstats@@emps: "موظفو الإدارة", planning: "الخطة التشغيلية", @@SYS:nf.denyPages.staff@@plan: "التشغيل الميداني",
   daily: "المتابعة اليومية", dreport: "التقرير اليومي",@@SYS:nf.denyPages.tasks@@@@SYS:nf.denyPages.2@@
   @@SYS:nf.denyPages.3@@links: "مواقع ذات صلة", help: "المساعدة", admin: "الإعدادات",
 };
@@ -2874,11 +2718,9 @@ var NF_DENY_RECS = {
   bassam_auth_users_v1: "حسابات الدخول", bassam_perms_v1: "الصلاحيات", bassam_depts_v1: "الإدارات", bassam_gdepts_v1: "الهيكل التنظيمي",
   bassam_platform_v1: "إعدادات المنصة", bassam_struct_seed_v1: "تهيئة الهيكل التنظيمي", bassam_perm_admsubs_v2: "ترقية الصلاحيات",
   bassam_session_v1: "الجلسة", bassam_theme: "المظهر", bassam_active_dept_v1: "الإدارة النشطة", bassam_fresh_login_v1: "راية أول دخول",
-  bassam_notif_mute_v1: "كتم التنبيهات", bassam_page_v1: "الصفحة المحفوظة", bassam_st_grp_v1: "مجموعات الجدول الشهري",
+  bassam_notif_mute_v1: "كتم التنبيهات", bassam_page_v1: "الصفحة المحفوظة",@@SYS:nf.denyRecs.staff.grp@@
   bassam_employees_v1: "قائمة الموظفين", bassam_options_v1: "خيارات الموظفين",@@SYS:nf.denyRecs.custody@@
-  bassam_staffing_v3: "الجدول الشهري", bassam_staffing_v2: "الجدول الشهري (صيغة قديمة)", bassam_staffing_snap_v1: "بيان الشهر",
-  bassam_staffing_locks_v1: "أقفال الجدول الشهري", bassam_callsigns_v1: "رموز النداء", bassam_perm_limit_v1: "ترقية الصلاحيات",
-  bassam_plan_v1: "الخطة التشغيلية", bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب",
+@@SYS:nf.denyRecs.staff@@  bassam_plan_v1: "الخطة التشغيلية", bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب",
   bassam_mark_kinds_v1: "أنواع المعالم", bassam_rounds_v1: "الجولات اليومية", bassam_dayshift_v1: "الوردية المختارة",
   bassam_dayfocus_v1: "اليوم المختار", bassam_dreport_v1: "التقرير اليومي", bassam_dr_grp_v1: "مجموعات التقرير اليومي",
   bassam_leave_kinds_v1: "أنواع الإجازات",@@SYS:nf.denyRecs.tasks@@@@SYS:nf.denyRecs.1@@
