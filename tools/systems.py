@@ -148,7 +148,9 @@ def outputs(S, systems=None):
     for t in manifest(S, systems):
         src = open(t['path'], encoding='utf-8', newline='').read()
         out[t['out']] = expand(src, frags, used).encode('utf-8')
-    orphan = sorted(set(frags) - used - RESERVED - optional(S))
+    present = {d['key'] for d in systems}
+    hosted = {name for d in systems for name, v in (d.get('slots') or {}).items() for it in (v if isinstance(v, list) else [v]) if it.get('host') and it['host'] not in present}   # د5-هـ: قطعةٌ لقالب نظامٍ غائب
+    orphan = sorted(set(frags) - used - RESERVED - optional(S) - hosted)
     if orphan: raise SystemExit('✘ systems: قطعٌ بلا فتحة في أي قالب: ' + ', '.join(orphan))
     return out
 
