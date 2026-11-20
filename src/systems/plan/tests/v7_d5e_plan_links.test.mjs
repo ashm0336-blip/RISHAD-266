@@ -211,7 +211,7 @@ test('⑤ sources: Plan names no rounds key or service; rounds and the daily rep
   for (const n of ['daily.sites.patch@1', 'daily.month.clear@1', 'daily.site.remove@1', 'daily.sites.pad@1', 'daily.days@1', 'daily.lensFilter@1', 'daily.names@1']) assert.ok(plan.includes('"' + n + '"'), n);
   for (const f of ['src/systems/daily/client/logic.js.tpl', 'src/systems/daily/client/logic.js', 'src/systems/daily/client/420-round-factory.js', 'src/systems/daily/client/421-round-links.js', 'src/systems/daily/client/520-field-monitor.js', 'src/systems/dreport/client/logic.js'])
     assert.doesNotMatch(rd(f), /bassam_(?:plan|zone_opts|gate_opts)_v1/, f);
-  const contract = JSON.parse(rd('src/systems/plan/contract.json')), rounds = JSON.parse(rd('src/contracts/rounds.json'));
+  const contract = JSON.parse(rd('src/systems/plan/contract.json')), rounds = JSON.parse(rd('src/systems/daily/contract.json'));
   /* د5-هـ (r4): وأمرُ الجولات للتقرير اليومي (daily.spot.set@1) يعلن غيابَه مستهلكُه — عقدُ التقرير */
   const dreport = JSON.parse(rd('src/systems/dreport/contract.json'));
   for (const n of Object.keys(rounds.provides.commands)) assert.ok((contract.consumes[n] && contract.consumes[n].absent) || (dreport.consumes[n] && dreport.consumes[n].absent), n);
