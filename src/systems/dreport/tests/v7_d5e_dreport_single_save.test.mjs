@@ -189,7 +189,7 @@ test('⑤ sources: the report names no rounds key or service; rounds take part t
     assert.match(code, new RegExp('KIVO\\.bus\\.participate\\("' + n.replace('.', '\\.') + '"'));
     assert.match(links, new RegExp("bus\\.participant\\('" + n.replace('.', '\\.') + "'"));
   }
-  const dr = JSON.parse(rd('src/systems/dreport/contract.json')), rounds = JSON.parse(rd('src/contracts/rounds.json'));
+  const dr = JSON.parse(rd('src/systems/dreport/contract.json')), rounds = JSON.parse(rd('src/systems/daily/contract.json'));
   assert.deepEqual(Object.keys(dr.provides.events), ['dreport.pulled@1', 'dreport.shiftApproved@1']);
   for (const n of ['daily.days@1', 'daily.resources@1', 'daily.spot.set@1']) assert.ok(dr.consumes[n] && dr.consumes[n].absent, n);
   assert.ok(rounds.provides.commands['daily.spot.set@1'] && rounds.provides.read['daily.resources@1']);

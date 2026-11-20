@@ -2064,7 +2064,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               ? t.shift.localeCompare(r.shift, "ar")
               : t.name.localeCompare(r.name, "ar");
       });
-    var bsRd = r.bsOn("daily/rounds") && (r.bsLensOn("zones") || r.bsLensOn("gates") || r.bsLensOn("marks")),
+    var bsRd = !!KIVO.bus.read("daily.roundsOn@1") &&   /* V7 · د5-هـ: «الجولات» مفعَّلة؟ يجيب مالكُها؛ بغيابه مطفأة */
+      (r.bsLensOn("zones") || r.bsLensOn("gates") || r.bsLensOn("marks")),
       bsTp = r.bsOn("admin/ptpls"),
       Et = [
         { k: "onspot", t: bsRd ? "حاضرون على مواقعهم" : "حاضرون", c: "#059669", sub: bsRd ? "من جولة اليوم" : "" },

@@ -745,6 +745,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "systems/daily/client/423-daily-t3.js",
+   "kind": "js",
+   "line": 10497,
+   "new": "V7 · د5-هـ: قراءاتٌ معلنة من المتابعة اليومية للتقرير اليومي والجدول الشهري («الجولات» مفعَّلة؟ · صفحتُها في الصلاحيات)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
    "line": 10494,

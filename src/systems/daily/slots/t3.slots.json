@@ -1,0 +1,10 @@
+{
+ "blocks.shell.daily.t3": {
+  "order": 10,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/daily/client/423-daily-t3.js\",\n   \"kind\": \"js\",\n   \"line\": 10497,\n   \"new\": \"V7 · د5-هـ: قراءاتٌ معلنة من المتابعة اليومية للتقرير اليومي والجدول الشهري («الجولات» مفعَّلة؟ · صفحتُها في الصلاحيات)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "shell.blocks.daily.t3": {
+  "order": 10,
+  "text": "@@KIVO_BLOCK:systems/daily/client/423-daily-t3.js@@\n"
+ }
+}

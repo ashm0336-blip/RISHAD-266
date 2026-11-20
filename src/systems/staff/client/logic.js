@@ -205,7 +205,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           { k: "emps", n: "موظفو الإدارة", acts: e.emps },
           { k: "staff", n: "الجدول الشهري", acts: s },
           { k: "plan", n: "الخطة التشغيلية", acts: s },
-          { k: "daily", n: "المتابعة اليومية", acts: s },
+          /* V7 · د5-هـ: صفحةُ المتابعة اليومية من مالكها؛ بغيابه لا صفّ */
+          ...[].concat(KIVO.bus.read("daily.permPage@1") || []).map((p) => ({ k: p.k, n: p.n, acts: s })),
           { k: "admin", n: "الإعدادات", acts: e.admin },
         ];
   }
