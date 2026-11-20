@@ -22,8 +22,7 @@
      recreate a KV document or fall through to persistent device storage. */
   function relationalKey9(k) { return /^(?:bsdept:[^:\s]+:)?bassam_(?:@@SYS:store.relational.dstats@@@@SYS:store.relational.systems|post="notif(?:_cfg|_sys)?|bc)_v1$/"|empty="notif(?:_cfg|_sys)?|bc)_v1$/"@@.test(k)@@SYS:store.relational.awardDocs@@; }
   var operationResources9 = Object.freeze([
-    'bassam_employees_v1', 'bassam_options_v1', 'bassam_staffing_v3', 'bassam_staffing_v2',
-    'bassam_staffing_snap_v1', 'bassam_staffing_locks_v1', 'bassam_callsigns_v1', 'bassam_perm_limit_v1',
+    'bassam_employees_v1', 'bassam_options_v1',@@SYS:store.opResources.staff@@
     'bassam_shift_options_v1', 'bassam_plan_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1',
     'bassam_mark_kinds_v1', 'bassam_rounds_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1',
     'bassam_dreport_v1', 'bassam_dr_grp_v1', 'bassam_leave_kinds_v1'@@SYS:store.opResources.tasks@@
@@ -184,21 +183,19 @@
      kind: data = محتوى يعمل عليه المستخدم · tech = مفتاح تقني للجهاز أو الجلسة (يُسمّى بالعربية ولا يُعدّ «تعديلاً») */
   KIVO.BassamKeyLabels = (function(){
     var M = {
-      bassam_employees_v1:["قائمة الموظفين"], bassam_staffing_v3:["الجدول الشهري"], bassam_staffing_v2:["الجدول الشهري (صيغة قديمة)"], bassam_staffing_snap_v1:["بيان الشهر"],
-      bassam_staffing_locks_v1:["أقفال الجدول الشهري"], bassam_rounds_v1:["الجولات اليومية"], bassam_dreport_v1:["التقرير اليومي"], bassam_dr_grp_v1:["مجموعات التقرير اليومي"],
+      bassam_employees_v1:["قائمة الموظفين"],@@SYS:store.keyLabels.staff@@ bassam_rounds_v1:["الجولات اليومية"], bassam_dreport_v1:["التقرير اليومي"], bassam_dr_grp_v1:["مجموعات التقرير اليومي"],
       bassam_plan_v1:["الخطة التشغيلية"], bassam_zone_opts_v1:["خيارات المصليات"], bassam_gate_opts_v1:["خيارات الأبواب"], bassam_mark_kinds_v1:["أنواع المعالم"],
       @@SYS:store.keyLabels.tasks@@@@SYS:store.keyLabels.custody@@
-@@SYS:store.keyLabels@@      bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"], bassam_leave_kinds_v1:["أنواع الإجازات"], bassam_callsigns_v1:["رموز النداء"],
+@@SYS:store.keyLabels@@      bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"], bassam_leave_kinds_v1:["أنواع الإجازات"],@@SYS:store.keyLabels.staff.callsigns@@
       bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"],
       bassam_depts_v1:["الإدارات"], bassam_gdepts_v1:["الهيكل التنظيمي"], bassam_platform_v1:["إعدادات المنصة"], bassam_profile_v1:["الملف الشخصي"],
       bassam_media:["الصور والملفات"], bassam_notifications_domain_v1:["التنبيهات والتعاميم"],
       bassam_last_export_v1:["آخر تصدير"], bassam_last_full_export_v1:["آخر نسخة شاملة"],
       /* تقنية */
-      bassam_session_v1:["الجلسة","tech"], bassam_active_dept_v1:["الإدارة النشطة","tech"], bassam_page_v1:["الصفحة المحفوظة","tech"], bassam_st_grp_v1:["مجموعات الجدول الشهري","tech"], bassam_theme:["المظهر","tech"],
+      bassam_session_v1:["الجلسة","tech"], bassam_active_dept_v1:["الإدارة النشطة","tech"], bassam_page_v1:["الصفحة المحفوظة","tech"],@@SYS:store.keyLabels.staff.tech@@ bassam_theme:["المظهر","tech"],
       bassam_dayfocus_v1:["اليوم المختار","tech"], bassam_dayshift_v1:["الوردية المختارة","tech"], bassam_notif_dev_v1:["جهاز التنبيهات","tech"], bassam_notif_mute_v1:["كتم التنبيهات","tech"],
       bassam_fresh_login_v1:["راية أول دخول","tech"], bassam_first_boot_v1:["أول تشغيل","tech"], bassam_demo_purged_v1:["تنظيف البيانات التجريبية","tech"], bassam_struct_seed_v1:["تهيئة الهيكل التنظيمي","tech"],
-      bassam_perm_admsubs_v2:["ترقية الصلاحيات","tech"], bassam_perm_help_v1:["ترقية الصلاحيات","tech"], bassam_perm_irshad_cap_v1:["ترقية الصلاحيات","tech"], bassam_perm_leaf_v1:["ترقية الصلاحيات","tech"],
-      bassam_perm_limit_v1:["ترقية الصلاحيات","tech"], bassam_perm_mgr_explicit_v1:["ترقية الصلاحيات","tech"], bassam_perm_seized_cap_v1:["ترقية الصلاحيات","tech"]
+      bassam_perm_admsubs_v2:["ترقية الصلاحيات","tech"], bassam_perm_help_v1:["ترقية الصلاحيات","tech"], bassam_perm_irshad_cap_v1:["ترقية الصلاحيات","tech"], bassam_perm_leaf_v1:["ترقية الصلاحيات","tech"],@@SYS:store.keyLabels.staff.limit@@ bassam_perm_mgr_explicit_v1:["ترقية الصلاحيات","tech"], bassam_perm_seized_cap_v1:["ترقية الصلاحيات","tech"]
     };
     function unscope(k){ var m = /^bsdept:([^:]+):(.+)$/.exec(String(k || "")); return m ? m[2] : String(k || ""); }
     function base(k){ return unscope(k).replace(/:.*$/, ""); }   /* bassam_page_v1:d1 → bassam_page_v1 */
@@ -1623,7 +1620,7 @@
        وعدساتُها · ورقتي فيها · الوحداتُ المطفأة. مديرُ النظام يقرأ كلَّ شيءٍ فنصيبُه ثابت. والنطاقُ والمنحُ في الإنفاذ يحكمها وصفُ صلاحياتي
        (authzSync9 · az) لا هذا المفتاح. PROJ9 نسخةٌ من ENF_PROJ في الخادم (061-enf-read.js) — يُضاف إليها bassam_tasks_v1 إن صار الخادمُ يُسقطها. */
     var SLICEK9 = /^bassam_(perms|auth_users|depts|gdepts|platform)_v1$/;
-    var PROJ9 = { bassam_staffing_v2: 1, bassam_staffing_v3: 1, bassam_dreport_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1 };
+    var PROJ9 = { @@SYS:store.proj.staff@@bassam_dreport_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1 };
     function pj9(k, dflt) { try { var v = JSON.parse(mem[k] || "null"); return v == null ? dflt : v; } catch (e) { return dflt; } }   /* قيمةٌ تالفة ⇒ الافتراض */
     function slice9() {
       var U = pj9("bassam_auth_users_v1", []), me = null, i;

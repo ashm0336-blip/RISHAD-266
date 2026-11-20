@@ -528,9 +528,9 @@ class Component extends DCLogic {
   /* أي صفحة يخصّها هذا المفتاح؟ (مفتاح غير معروف = كل الصفحات احتياطاً) */
   _liveTouches(keys, page) {
     const MAP = {
-      employees: /employees|options@@SYS:root.resPage.custody@@|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|perm_tpls|perm_limit|employees/,
-      plan: /plan_v1|zone_opts|gate_opts|mark_kinds|employees/, planning: /plan_v1|staffing|employees|rounds|dreport/,
-      @@SYS:root.liveKeys@@profile: /auth_users|employees|staffing|shift_options@@SYS:root.live.profile.tasks@@|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
+      employees: /employees|options@@SYS:root.resPage.custody@@|perms|auth_users/,@@SYS:root.liveKeys.staff@@
+      plan: /plan_v1|zone_opts|gate_opts|mark_kinds|employees/, planning: /plan_v1@@SYS:root.live.planning.staff@@|employees|rounds|dreport/,
+      @@SYS:root.liveKeys@@profile: /auth_users|employees@@SYS:root.live.profile.staff@@|shift_options@@SYS:root.live.profile.tasks@@|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
       admin: /depts|gdepts|auth_users|perms|platform|last_export/, sysadmin: /depts|gdepts|auth_users|perms|platform|last_export/
     };
     const re = MAP[page]; if (!re) return true;
@@ -1106,7 +1106,7 @@ class Component extends DCLogic {
     const sbOpen = sbConsole && wide ? !this.state.conCx : open;
     const slide = (this.__sbToggled && wide) ? (sbOpen ? "animation:bsSlideOpen .3s ease-in-out;" : "animation:bsSlideClose .3s ease-in-out;") : "";
     /* مفتاح الصفحة في منظومة الصلاحيات مقابل مفتاح التنقل */
-    const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps", staffing: "staff", plan: "plan", daily: "daily",@@SYS:root.navPerm.tasks@@@@SYS:root.navPerm.irshad@@ admin: "admin" };
+    const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps",@@SYS:root.navPerm.staff@@ plan: "plan", daily: "daily",@@SYS:root.navPerm.tasks@@@@SYS:root.navPerm.irshad@@ admin: "admin" };
     const _pOK = (pk) => { try { if (pk === "admin" && KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) return true; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
     const _pAny = (ks) => ks.some(_pOK);
     /* «مدير النظام»: لمدير النظام وحده (كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة) */
@@ -1127,10 +1127,10 @@ class Component extends DCLogic {
     // كانت «إدارة الموظفين» غلافاً بلا محتوى: شريط تبويبات يستضيف ثلاث صفحات، فتصل
     // إلى وجهتك بنقرتين ويُكتب لك مسارٌ من مستويين لمكانٍ واحد. حُذف الغلاف وصارت
     // الصفحات الثلاث عناصر مستقلة في القائمة الجانبية بترتيب سير العمل نفسه.
-    const inPlanning = ["employees","staffing","plan","daily"@@SYS:root.inPlanning.tasks@@@@SYS:root.inPlanning@@].includes(a);
+    const inPlanning = ["employees",@@SYS:root.inPlanning.staff@@"plan","daily"@@SYS:root.inPlanning.tasks@@@@SYS:root.inPlanning@@].includes(a);
     /* F01: اسمُ الصفحة بنوع الوحدة النشطة — «موظفو القسم» · «مؤشرات القسم» حين تكون قسماً */
     const _ua = (() => { try { const D = KIVO.BassamDepts; return D && D.unitAl ? D.unitAl(D.active()) : "الإدارة"; } catch (e) { return "الإدارة"; } })();
-    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", @@SYS:root.labels.tasks@@@@SYS:root.labels@@links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
+    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua,@@SYS:root.labels.staff@@ plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", @@SYS:root.labels.tasks@@@@SYS:root.labels@@links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
     return {
       sidebarOpen: open,
       lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",
@@ -1176,8 +1176,7 @@ class Component extends DCLogic {
         return {
           nKpis: "n" + (a === "kpis" ? " on" : "") + (_kpiAny ? "" : " gone"), tKpis: labels.kpis,
 @@SYS:root.navVals.dstats@@          nEmployees: cls("employees", "emps"), tEmployees: tip("emps"),
-          nStaffing: cls("staffing", "staff"), tStaffing: tip("staff"),
-          nPlan: cls("plan", "plan"), tPlan: tip("plan"),
+@@SYS:root.navVals.staff@@          nPlan: cls("plan", "plan"), tPlan: tip("plan"),
           nDaily: cls("daily", "daily"), tDaily: tip("daily"),
           nDreport: cls("dreport", "dreport"), tDreport: tip("dreport"),
           /* كانت مربوطة بـ«الجدول الشهري» وحده فتختفي عمّن له «التشغيل الميداني» فقط */
@@ -1355,7 +1354,7 @@ class Component extends DCLogic {
       goAdmin: () => { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); }, goProfile: (ev) => { try { if (ev && ev.target && ev.target.closest && ev.target.closest(".s-logout")) return; } catch (e) {} go("profile")(); }, bsVerTxt: "الإصدار " + (KIVO.__BS_VER || ""),
       pageName: this._pageNames()[a] || "لوحة التحكم",
       isKpis: ap === "kpis",@@SYS:root.is.dstats@@
-      isEmployees: ap === "employees", isStaffing: ap === "staffing", isDaily: ap === "daily", isDreport: ap === "dreport", isPlanning: ap === "planning", @@SYS:root.is.tasks@@@@SYS:root.is.systems@@isSysAdmin: ap === "sysadmin", isPlan: ap === "plan", isAdmin: ap === "admin", isProfile: ap === "profile", isPlaceholder: !this.state.navPending && !["kpis",@@SYS:root.known.dstats@@"employees","planning","staffing","plan","daily","dreport",@@SYS:root.known.tasks@@@@SYS:root.known.systems@@"admin","sysadmin","profile","links"].includes(a),
+      isEmployees: ap === "employees",@@SYS:root.is.staff@@ isDaily: ap === "daily", isDreport: ap === "dreport", isPlanning: ap === "planning", @@SYS:root.is.tasks@@@@SYS:root.is.systems@@isSysAdmin: ap === "sysadmin", isPlan: ap === "plan", isAdmin: ap === "admin", isProfile: ap === "profile", isPlaceholder: !this.state.navPending && !["kpis",@@SYS:root.known.dstats@@"employees","planning",@@SYS:root.known.staff@@"plan","daily","dreport",@@SYS:root.known.tasks@@@@SYS:root.known.systems@@"admin","sysadmin","profile","links"].includes(a),
       isLinks: ap === "links",
       ...((() => {
         /* «مواقع ذات صلة» — قائمة روابط تُقرأ من إعدادات المنصة (links) ويحرّرها مدير النظام من الصفحة نفسها */

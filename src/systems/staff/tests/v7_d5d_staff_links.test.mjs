@@ -20,6 +20,7 @@ function client({ store = {}, on = true, links = true } = {}) {
   const ctx = vm.createContext({ KIVO, console, Intl, Date, Math, JSON, Object, Array, isFinite, parseInt, Error });
   vm.runInContext(rd('src/core/060-bus.js'), ctx);
   if (links) vm.runInContext(rd('src/systems/staff/client/531-staff-links.js'), ctx);
+  if (links) vm.runInContext(rd('src/systems/staff/client/533-staff-g3.js'), ctx);
   return { KIVO, ctx, bus: KIVO.bus };
 }
 function draftOf(store) { const w = {}; return { get: (k) => (k in w ? w[k] : k in store ? copy(store[k]) : null), set: (k, v) => { w[k] = copy(v); }, written: w }; }

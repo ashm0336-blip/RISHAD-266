@@ -91,7 +91,7 @@
      الذاكرة تحدّثت، ثم يختفي عند إعادة التحميل لأن الكتابة فشلت ولم يُبلَّغ أحد.
      الإنذار هنا عند مصدر الكتابة الوحيد فيغطي كل المسارات الحالية والمستقبلية،
      ثم يُعاد رمي الاستثناء كما هو حتى لا يتغيّر منطق التراجع القائم. */
-  var LABELS = { 'bassam_employees_v1':'قائمة الموظفين', 'bassam_staffing_v3':'الجدول الشهري', 'bassam_staffing_snap_v1':'بيان الشهر',
+  var LABELS = { 'bassam_employees_v1':'قائمة الموظفين',@@SYS:deptStore.labels.staff@@
                  'bassam_rounds_v1':'جولات المتابعة اليومية',@@SYS:deptStore.labels.tasks@@
                  'bassam_plan_v1':'الخطة التشغيلية' };
   var warned = 0;
@@ -222,7 +222,7 @@
     permSlice: function(pm, id, PP, mode, pageKeys, lensKeys){
       if (!id || !PP || typeof PP !== 'object' || Array.isArray(PP)) return null;
       pm = (pm && typeof pm === 'object' && !Array.isArray(pm)) ? pm : {};
-      var KP = Array.isArray(pageKeys) && pageKeys.length ? pageKeys : ['emps','staff','plan','daily',@@SYS:deptStore.pageKeys.tasks@@'admin'];
+      var KP = Array.isArray(pageKeys) && pageKeys.length ? pageKeys : ['emps',@@SYS:deptStore.pageKeys.staff@@'plan','daily',@@SYS:deptStore.pageKeys.tasks@@'admin'];
       var KL = Array.isArray(lensKeys) && lensKeys.length ? lensKeys : ['paths','gates','marks','dist','dens'];
       pm.caps = pm.caps || {}; pm.emps = pm.emps || {};
       var hasCur = (pm.caps[id] || []).length > 0 || Object.keys(pm.emps[id] || {}).length > 0;
