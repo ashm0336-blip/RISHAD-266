@@ -1938,6 +1938,70 @@
      "key": "plan.view",
      "source": "reference-read"
     }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 0,
+    "value": "plan.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 0,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "keys"
+    ],
+    "after": 4,
+    "seq": 0,
+    "value": "plan.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "routes"
+    ],
+    "after": 4,
+    "seq": 0,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
    }
   ],
   "guard-bindings": [

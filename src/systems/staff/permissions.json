@@ -2600,7 +2600,6 @@
      "keys": [
       "emp.view",
       "staff.view",
-      "plan.view",
       "round.view",
       "field.view",
       "report.view",
@@ -2618,11 +2617,6 @@
        "cap": "staff:view",
        "key": "staff.view",
        "source": "explicit-read"
-      },
-      {
-       "cap": "plan:view",
-       "key": "plan.view",
-       "source": "reference-read"
       },
       {
        "cap": "daily/rounds:view",
@@ -2750,7 +2744,6 @@
       "report.view",
       "report.indicators.view",
       "emp.view",
-      "plan.view",
       "ready.view",
       "backup.view"
      ],
@@ -2773,11 +2766,6 @@
       {
        "cap": "emps/data:view",
        "key": "emp.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "plan:view",
-       "key": "plan.view",
        "source": "reference-read"
       },
       {

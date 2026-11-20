@@ -1474,7 +1474,7 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 3,
     "value": "award.res.view",
     "needs": [
@@ -1488,7 +1488,7 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 4,
     "value": "award.new.view",
     "needs": [
@@ -1502,7 +1502,7 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 5,
     "value": "award.doc.view",
     "needs": [
@@ -1516,7 +1516,7 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 3,
     "value": {
      "cap": "award/res:view",
@@ -1534,7 +1534,7 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 4,
     "value": {
      "cap": "award/new:view",
@@ -1552,7 +1552,7 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 5,
     "value": {
      "cap": "award/doc:view",

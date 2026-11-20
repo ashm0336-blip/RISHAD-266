@@ -1346,7 +1346,7 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 0,
     "value": "task.view",
     "needs": [
@@ -1360,7 +1360,7 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 0,
     "value": {
      "cap": "tasks:view",

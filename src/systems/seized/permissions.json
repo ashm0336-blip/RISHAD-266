@@ -2565,7 +2565,7 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 2,
     "value": "sz.rec.view",
     "needs": [
@@ -2579,7 +2579,7 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 7,
+    "after": 6,
     "seq": 2,
     "value": {
      "cap": "seized/records:view",
