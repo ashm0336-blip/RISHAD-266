@@ -568,17 +568,18 @@ export default {
 
       /* نبض التعرف — تستعمله الاختبارات ولا يكشف شيئاً */
       /* الهوية العامة — لشاشة الدخول وأي عميل قبل الجلسة */
-      if (path === '/api/brand') return json({ ok: 1, brand: brandPublic(await platGet(env)), ver: WORKER_VER, rk: (await metaGet(env, 'rk')) ? 1 : 0 });
+      /* V7 · د5-هـ: لا إصدارَ للخادم في الهوية العامة (لا يقرؤه عميل؛ الواجهةُ تحمل KIVO.__BS_VER وrelease_check يقرأ الحزمة) */
+      if (path === '/api/brand') return json({ ok: 1, brand: brandPublic(await platGet(env)), rk: (await metaGet(env, 'rk')) ? 1 : 0 });
 
       if (path === '/api/ping') {
-        var us0 = await usersList(env), pingOut = { ok: 1, cf: 1, ver: WORKER_VER, commit: WORKER_COMMIT, fresh: isVirgin(us0) ? 1 : 0 };   /* V7 · د1: commit — 002 WORKER_COMMIT */
+        var us0 = await usersList(env), pingOut = { ok: 1, cf: 1, fresh: isVirgin(us0) ? 1 : 0 };   /* V7 · د5-هـ: الإصدارُ والالتزام (002 WORKER_VER · WORKER_COMMIT) في فرع مدير النظام وحده */
         /* KIVO_244 · AUD-004: الأعدادُ (الحسابات · الجلسات · المراجعة) لمدير النظام وحده — لا إفشاءَ بلا جلسة؛ وفي وضع الحماية النبضُ المختصر فقط */
         /* KIVO_261 · SOT-145 (الجاهزية): في وضع الحماية الخادمُ حيٌّ (ok:1) لكنه غيرُ جاهز — كلُّ قراءةٍ وكتابة 503 — فيُعلَن ready:0 · mode:'protect'
            (كان النبضُ «ok:1» وحده فلا يفرّق المراقبُ بين السليم والمعطَّل) · ولمدير النظام: schemaOk = المخطّطُ المختوم في D1 = المعروفُ لهذا الإصدار */
         if (env.__enfm && env.__enfm.mode === 'unavailable') { pingOut.ready = 0; pingOut.mode = 'protect'; }
         else {
           var sP = await session(env, request), aP = sP ? await actorOf(env, sP.uid) : null;
-          if (aP && aP.u && aP.u.role === 'super') { var sc = await env.DB.prepare('SELECT COUNT(*) AS n FROM sess').first(); pingOut.users = us0 ? us0.length : 0; pingOut.rev = await curRev(env); pingOut.sess = sc ? sc.n : 0; pingOut.schema = KIVO_SCHEMA_VERSION; pingOut.schemaDb = await metaGet(env, 'schema_version'); pingOut.schemaOk = String(pingOut.schemaDb) === String(KIVO_SCHEMA_VERSION) ? 1 : 0; pingOut.ready = pingOut.schemaOk; }   /* KIVO_249: إصدارُ المخطّط (المعروف · المختوم في meta) لمدير النظام */
+          if (aP && aP.u && aP.u.role === 'super') { var sc = await env.DB.prepare('SELECT COUNT(*) AS n FROM sess').first(); pingOut.users = us0 ? us0.length : 0; pingOut.rev = await curRev(env); pingOut.sess = sc ? sc.n : 0; pingOut.schema = KIVO_SCHEMA_VERSION; pingOut.schemaDb = await metaGet(env, 'schema_version'); pingOut.schemaOk = String(pingOut.schemaDb) === String(KIVO_SCHEMA_VERSION) ? 1 : 0; pingOut.ready = pingOut.schemaOk; pingOut.ver = WORKER_VER; pingOut.commit = WORKER_COMMIT; }   /* KIVO_249: إصدارُ المخطّط (المعروف · المختوم في meta) لمدير النظام */
         }
         return json(pingOut);
       }

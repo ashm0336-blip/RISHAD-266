@@ -17,7 +17,8 @@ test('العاملُ المولَّد: سطرُ العلامة مرّةً واح
   const src = fs.readFileSync(WORKER, 'utf8'), m = src.match(MARK);
   assert.equal(m && m.length, 1, 'سطرٌ واحد');
   assert.equal(m[0], "var WORKER_COMMIT = 'unpacked';   // @@KIVO_COMMIT@@");
-  assert.match(src, /pingOut = \{ ok: 1, cf: 1, ver: WORKER_VER, commit: WORKER_COMMIT, fresh:/);
+  assert.match(src, /pingOut = \{ ok: 1, cf: 1, fresh:/);
+  assert.match(src, /pingOut\.ver = WORKER_VER; pingOut\.commit = WORKER_COMMIT;/, 'الإصدارُ والالتزامُ في فرع مدير النظام وحده');
 });
 
 test('المقارنة: سطرُ الرقم وحده يُتجاهل · أيُّ سطرٍ آخر أو ملفٍّ آخر فرق · غيابُ العلامة أو تكرارُها فرق', () => {

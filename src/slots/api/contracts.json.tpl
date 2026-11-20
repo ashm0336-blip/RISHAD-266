@@ -63,7 +63,6 @@
           "keys": [
             "ok",
             "brand",
-            "ver",
             "rk"
           ]
         }
@@ -80,11 +79,11 @@
           "keys": [
             "ok",
             "cf",
-            "ver",
-            "commit",
             "fresh"
           ],
           "super_extra": [
+            "ver",
+            "commit",
             "users",
             "rev",
             "sess",

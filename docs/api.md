@@ -8,8 +8,8 @@
 
 | المسار | الطريقة | الوصول | الغرض | ملاحظات KIVO_244 |
 |---|---|---|---|---|
-| `/api/brand` | GET | عام | الهوية العامة لشاشة الدخول `{ok, brand, ver, rk}` | متاح حتى في وضع الحماية |
-| `/api/ping` | GET | عام | نبض `{ok, cf, ver, fresh}`؛ في وضع الحماية يُضاف `ready:0, mode:'protect'` (KIVO_261 · ADR-025)؛ لمدير النظام يُضاف `users, rev, sess, schema, schemaDb, schemaOk, ready` (إصدارُ المخطّط المعروف والمختوم · KIVO_249) | AUD-004: لا أعداد بلا جلسة |
+| `/api/brand` | GET | عام | الهوية العامة لشاشة الدخول `{ok, brand, rk}` | متاح حتى في وضع الحماية |
+| `/api/ping` | GET | عام | نبض `{ok, cf, fresh}`؛ في وضع الحماية يُضاف `ready:0, mode:'protect'` (KIVO_261 · ADR-025)؛ لمدير النظام يُضاف `ver, commit, users, rev, sess, schema, schemaDb, schemaOk, ready` (إصدارُ الخادم والتزامُه · V7 د5-هـ؛ إصدارُ المخطّط المعروف والمختوم · KIVO_249) | AUD-004: لا أعداد بلا جلسة |
 | `/api/recover` | POST | عام | استعادة دخول مدير النظام بمفتاح الاستعادة (`{key, pw}`) | محروس بحارس المحاولات |
 | `/api/login` | POST | عام | `{u, p}` → `{ok, uid, role, deptId, mustChange}` + كوكي | قفل بعد 5 محاولات |
 | `/api/logout` | GET / POST | عام | إنهاء الجلسة ومسح الكوكي (GET يعيد توجيهاً 303 إلى `/`؛ بلا جلسة: 200 عاطل) | متاح في وضع الحماية · POST بلا جسم (KIVO_264) |
@@ -115,8 +115,8 @@
 ## أشكالُ الاستجابة (AUD-026 · `tests/unit/api_shapes.test.mjs`)
 | المسار | الشكل |
 |---|---|
-| `GET /api/brand` | `{ok:1, brand:{login,app}, ver, rk:0|1}` |
-| `GET /api/ping` | `{ok:1, cf:1, ver, fresh}` (+ وضعُ الحماية `ready:0, mode` · + لمدير النظام `users, rev, sess, schema, schemaDb, schemaOk, ready`) |
+| `GET /api/brand` | `{ok:1, brand:{login,app}, rk:0|1}` |
+| `GET /api/ping` | `{ok:1, cf:1, fresh}` (+ وضعُ الحماية `ready:0, mode` · + لمدير النظام `ver, commit, users, rev, sess, schema, schemaDb, schemaOk, ready`) |
 | `POST /api/login` | نجاح `{ok:1, uid, role, deptId, mustChange}` + كوكي · فشل `{ok:0, err}` (رسالةٌ واحدة للحساب المجهول وكلمة المرور الخاطئة) |
 | `GET /api/whoami` · `/api/me` | `{ok:1, uid}` · `{ok:1, now, sess:[{mine,ts,la,dev,city,active}], events:[…], lastLogin, thisLogin}` |
 | `GET /api/me/today` | `{ok:1, v:1, day:{y,m,d,dk,ym,wd,op:'calendar'|'night'}, account:{id,role,deptId,dept,mgr,appointed}, identity:{linked, by:'eid'|'nid'|'none', keyed, rec:{name?,gender?,nid?,empno?,phone?,email?,type?,work?}|null}, facts:{known, cs, shift:{name,src,sched,def}, rest:{days,sched,today,src,dayChanged}, muk:{v,src}, status:{code,st,src,to,tin,tfrom,kind}, report:{any,mine,approved,sh}, month:{locked,has}}|null, site:{official,officialN,draft,draftN,today,todayN,same,plan,round,planYm}|null, mates:[اسم] (لموظفٍ مرتبطٍ بسجلّه وحده — غيرُ المرتبط `[]`), matesN, week:[7×{dk,ym,d,m,y,wd,today,sched,act:{code,approved}|null,any}], mon:{pr,ab,pm,lv,tout,n,ap}|null}` — عنصرُ الموقع `{fi,kind,i,uid,label,short,floor,sid,loc,closed}`؛ لا مفاتيحَ موظفين ولا أسماءَ دخول؛ وغيرُ الموظف (مديرُ الإدارة المعيَّن · المديرُ العام · مديرُ النظام) `facts/site/mon: null` |
