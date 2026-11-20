@@ -57,19 +57,7 @@
   };
   /* تعريفات الورديات وقوالب الصلاحيات صارت صفحتين في إعدادات الإدارة — ولكل
      تغييرٍ فيهما حدثه، فلا فعلَ في المنصة بلا مدخلٍ في الشجرة. */
-  WATCH['bassam_shift_options_v1'] = function(did, o, n){
-    o = Array.isArray(o) ? o : []; n = Array.isArray(n) ? n : [];
-    if (!o.length && n.length > 1) return;   /* بذر الورديات الافتراضية ليس فعلَ مستخدم */
-    var d = diffList(o, n, function(x){ return x && x.name; });
-    var tm = function(x){ return (x && x.tStart && x.tEnd) ? (x.tStart + ' ← ' + x.tEnd) : 'بلا وقت'; };
-    d.added.forEach(function(x){ emit('st_shdef', { dept: did, vars: { 'الفعل': 'أُضيفت', 'الوردية': x.name, 'التفصيل': tm(x), 'المُعدّل': who() } }); });
-    d.removed.forEach(function(x){ emit('st_shdef', { dept: did, vars: { 'الفعل': 'حُذفت', 'الوردية': x.name, 'التفصيل': tm(x), 'المُعدّل': who() } }); });
-    d.both.forEach(function(p){ var a = p[0], b = p[1]; if (eq(a, b)) return;
-      var ch = []; if (tm(a) !== tm(b)) ch.push('الوقت ' + tm(a) + ' ← ' + tm(b)); if ((a.color||'') !== (b.color||'')) ch.push('اللون');
-      if (!ch.length) return;
-      emit('st_shdef', { dept: did, vars: { 'الفعل': 'عُدّلت', 'الوردية': b.name, 'التفصيل': ch.join(' · '), 'المُعدّل': who() } }); });
-  };
-  WATCH['bassam_perm_tpls_v1'] = function(did, o, n){
+@@SYS:nfo.watch.staff.shdef@@  WATCH['bassam_perm_tpls_v1'] = function(did, o, n){
     o = Array.isArray(o) ? o : []; n = Array.isArray(n) ? n : [];
     if (!o.length && n.length > 1) return;   /* بذر القوالب الافتراضية عند أول فتح ليس فعلَ مستخدم */
     var d = diffList(o, n, function(x){ return x && x.id; });
@@ -84,25 +72,7 @@
   };
   /* الجدول الشهري تخطيطٌ بين مدير الإدارة ورؤساء الورديات — تنبيهاته لهم وحدهم، ولا يصل الموظفَ شيء منه؛ تشغيله يبدأ بسحب التقرير اليومي */
   function empName(did, key){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []) || []; var e = emps.filter(function(x){ return x.eid === key || x.nid === key || x.name === key; })[0]; return e ? e.name : String(key); } catch(e){ return String(key); } }
-  var locTxt = function(v){ try { if (v == null) return '—'; if (typeof v === 'string' || typeof v === 'number') return String(v); if (Array.isArray(v)) { var a = v.map(function(x){ return (x && typeof x === 'object') ? (x.name || x.label || x.code || '') : String(x == null ? '' : x); }).filter(Boolean); return a.length ? a.join('، ') : 'موقع آخر'; } if (typeof v === 'object') return v.name || v.label || v.code || 'موقع آخر'; } catch(e){} return 'موقع آخر'; };
-  WATCH['bassam_staffing_v3'] = function(did, o, n){
-    o = o || {}; n = n || {};
-    Object.keys(n).forEach(function(mk){ if (!/^\d+-\d+$/.test(mk)) return; var om = o[mk] || {}, nm = n[mk] || {}; var mon = monLbl(mk);
-      var rows = Object.keys(nm).filter(function(k){ return k.indexOf('__') !== 0 && nm[k] && typeof nm[k] === 'object'; });
-      var newMonth = !o[mk] && rows.length >= 5;
-      if (newMonth) { emit('st_pub', { dept: did, vars: { 'الشهر': mon, 'العدد': rows.length, 'المُعدّل': who() } }); return; }
-      rows.forEach(function(ek){ var a = om[ek] || {}, b = nm[ek] || {}; var nm1 = empName(did, ek);
-        if ((a.shift || '') !== (b.shift || '') && b.shift && Object.keys(a).length) emit('st_shift', { dept: did, vars: { 'الاسم': nm1, 'الشهر': mon, 'القديم': a.shift || '—', 'الجديد': b.shift, 'المُعدّل': who() } });
-        if (!eq(a.rest || [], b.rest || []) && Object.keys(a).length) emit('st_rest', { dept: did, vars: { 'الاسم': nm1, 'الشهر': mon, 'الأيام': (b.rest || []).join('، ') || 'بلا راحة', 'المُعدّل': who() } });
-        if (!eq(a.loc || a.locs || null, b.loc || b.locs || null) && (b.loc || b.locs)) emit('st_loc', { dept: did, vars: { 'الاسم': nm1, 'اليوم': mon, 'الموقع': locTxt(b.loc || b.locs), 'القديم': (a.loc || a.locs) ? locTxt(a.loc || a.locs) : '—' } });
-        var la = (a.leaves || []).length, lb = (b.leaves || []).length; if (lb > la) { var lv = b.leaves[lb - 1] || {}; emit('st_leave', { dept: did, vars: { 'الاسم': nm1, 'النوع': lv.kind || lv.k || 'استئذان', 'اليوم': (lv.d || lv.fd || '') + ' ' + mon, 'المُعدّل': who() } }); }
-        if ((a.lead || '') !== (b.lead || '') && b.lead) emit('st_lead', { dept: did, vars: { 'الاسم': nm1, 'الدور': ({ chief:'رئيساً', deputy:'نائباً', lead:'رئيساً' }[b.lead] || (/[\u0600-\u06FF]/.test(String(b.lead)) ? b.lead : 'قائداً')), 'الوردية': b.shift || '', 'الشهر': mon } }); });
-      /* اعتماد الشهر / قفله */
-      var oa = !!(om.__lock || om.__ap), na = !!(nm.__lock || nm.__ap); if (oa !== na) emit('st_lock', { dept: did, vars: { 'الفعل': na ? 'اعتُمد وقُفل' : 'فُكّ اعتماد', 'الشهر': mon, 'المُعدّل': who() } });
-    });
-  };
-  WATCH['bassam_staffing_locks_v1'] = function(did, o, n){ o = o || {}; n = n || {}; Object.keys(n).forEach(function(mk){ if (eq(o[mk], n[mk])) return; var locked = n[mk] === true || (n[mk] && n[mk].lock); var was = o[mk] === true || (o[mk] && o[mk].lock); if (!!locked !== !!was) emit('st_lock', { dept: did, vars: { 'الفعل': locked ? 'اعتُمد وقُفل' : 'فُكّ اعتماد', 'الشهر': monLbl(mk), 'المُعدّل': who() } }); }); };
-@@SYS:nfo.watch.tasks@@  // Custody notifications belong to the typed server transaction; no retired KV observer.
+@@SYS:nfo.watch.staff@@@@SYS:nfo.watch.tasks@@  // Custody notifications belong to the typed server transaction; no retired KV observer.
   WATCH['bassam_dreport_v1'] = function(did, o, n){
     o = o || {}; n = n || {}; var today = todayKey().key; var isToday = function(day){ return day === today; }; var LB = { pr:'حاضر', ab:'غياب', pm:'استئذان', lv:'إجازة', tea:'استراحة', cls:'مغلق', rest:'راحة', rs:'راحة', tr:'محوَّل', ex:'مستثنى', late:'تأخر' };
     var changedDays = Object.keys(n).filter(function(day){ return /^\d+-\d+-\d+$/.test(day) && !eq(o[day], n[day]); });
@@ -135,7 +105,7 @@
     try { var p = day.split('-').map(Number); var fmt = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }); var t = new Date(); for (var i = -400; i <= 400; i++) { var d = new Date(t.getTime() + i * 86400000); var parts = {}; fmt.formatToParts(d).forEach(function(x){ parts[x.type] = x.value; }); if (+parts.year === p[0] && +parts.month === p[1] && +parts.day === p[2]) return WD[d.getDay()]; } } catch(e){} return '';
   }
   function isRestOn(rest, wdn){ return !!wdn && (rest || []).some(function(r){ return r === wdn || ('ال' + r) === wdn || r === ('ال' + wdn); }); }
-  function restBase(did, day, ek){ try { var st = J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}) || {}; var mk = day.split('-').slice(0, 2).join('-'); var e = (st[mk] || {})[ek]; return e && Array.isArray(e.rest) ? e.rest : []; } catch(e){ return []; } }
+  function restBase(did, day, ek){ @@SYS:nfo.restBase.staff|empty="return [];"@@ }
   function pmCount(rep, day, ek){ var mk = day.split('-').slice(0, 2).join('-'); var n = 0; Object.keys(rep || {}).forEach(function(d){ if (d.indexOf(mk + '-') !== 0) return; var sh = (rep[d] || {}).shifts || {}; var hit = false; Object.keys(sh).forEach(function(s2){ ((sh[s2] || {}).roster || []).forEach(function(r){ if (r && r.ekey === ek && r.st === 'pm') hit = true; }); }); if (hit) n++; }); return n; }
   function ekeyByName(did, name){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []); var e = (emps || []).filter(function(x){ return x.name === name || x.eid === name || x.nid === name; })[0]; if (!e) return ''; try { var E = KIVO.BassamEmp; if (E && E.key) return E.key(e) || ''; } catch (e2) {} return e.eid || e.nid || e.name || ''; } catch(e){ return ''; } }
   function ekeyOfTok(did, tok){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []) || []; var e = emps.filter(function(x){ return x.eid === tok || x.nid === tok || x.name === tok; })[0]; return e ? (e.eid || e.name) : String(tok); } catch(e){ return String(tok); } }
@@ -258,8 +228,7 @@
       /* التقرير: مسحوب بلا اعتماد قبل نهاية الوردية بساعة */
       try { var dr = J(rawGet('bsdept:' + did + ':bassam_dreport_v1'), {}); var day = dr[T.y + '-' + T.m + '-' + T.d]; var shifts = J(rawGet('bsdept:' + did + ':bassam_shift_options_v1'), []) || []; if (day && day.shifts) Object.keys(day.shifts).forEach(function(sh){ var s = day.shifts[sh]; if (!s.pulled || s.ap) return; var so = (shifts || []).filter(function(x){ return (x.name || x) === sh; })[0]; var end = so && so.tEnd; if (!end) return; var m = /^(\d+):(\d+)/.exec(end); if (!m) return; var endMin = +m[1] * 60 + +m[2], nowMin = hh * 60 + now.getMinutes(); if (endMin - nowMin > 0 && endMin - nowMin <= 60) emit('rep_late', { dept: did, vars: { 'الوردية': sh, 'الوقت': end }, once: 'rep_late:' + T.key + ':' + sh }); }); } catch(e){}
       /* نقص الغد */
-      if (hh >= 16) try { var stf = J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}); var mon = stf[T.y + '-' + T.m] || {}; var cnt = {}; Object.keys(mon).forEach(function(ek){ var r = mon[ek]; if (!r || typeof r !== 'object' || ek.indexOf('__') === 0) return; cnt[r.shift] = (cnt[r.shift] || 0) + 1; }); var vals = Object.keys(cnt).map(function(k){ return cnt[k]; }); var avg = vals.length ? vals.reduce(function(a, b){ return a + b; }, 0) / vals.length : 0; Object.keys(cnt).forEach(function(sh){ if (avg && cnt[sh] < avg * 0.5) emit('st_gap', { dept: did, vars: { 'الوردية': sh, 'العدد': Math.ceil(avg * 0.5 - cnt[sh]) }, once: 'gap:' + T.key + ':' + sh }); }); } catch(e){}
-      /* العهد المتأخرة */
+@@SYS:nfo.tick.staff@@      /* العهد المتأخرة */
       // No custody history polling on the client; due notices require server support.
       /* ملخص الاسترشاد اليومي 23:30 */
       /* ملخص المستودع الأسبوعي — السبت */

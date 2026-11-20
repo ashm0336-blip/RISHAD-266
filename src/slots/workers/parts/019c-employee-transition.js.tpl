@@ -4,10 +4,7 @@
 var EMP_TRANSITION_RELATED = [
   'bassam_employees_v1',
   'bassam_options_v1',
-  'bassam_staffing_v2',
-  'bassam_staffing_v3',
-  'bassam_staffing_locks_v1',
-  'bassam_plan_v1',
+@@SYS:emp.keys.staff@@  'bassam_plan_v1',
   'bassam_rounds_v1',
 @@SYS:emp.keys.tasks@@  'bassam_dreport_v1',
   'bassam_shift_options_v1',
@@ -159,7 +156,7 @@ function empPrunePermissions(p, d, users, A) {
     if (!live.has(k)) empDropPermission(p, d, k);
   });
 }
-function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
+function empCleanupValues(values, removed, after, replace, wipe@@SYS:emp.cleanup.staffParam@@) {
   var drop = new Set(cuRemovedHolderKeys(removed, after)),
     names = new Set(
       after.map(function (e) {
@@ -177,20 +174,7 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
         })
       : a;
   };
-  if (staffOn)
-    ['bassam_staffing_v2', 'bassam_staffing_v3'].forEach(function (n) {
-      var st = values[n];
-      if (!isObj(st)) return;
-      Object.keys(st).forEach(function (k) {
-        var b = st[k];
-        if (drop.has(k) && isObj(b) && (b.shift !== undefined || b.rest !== undefined)) delete st[k];
-        else if (isObj(b))
-          drop.forEach(function (x) {
-            delete b[x];
-          });
-      });
-    });
-  function fd(v) {
+@@SYS:emp.cleanup.staff.rows@@  function fd(v) {
     if (!isObj(v)) return;
     ['zones', 'gates'].forEach(function (n) {
       if (Array.isArray(v[n]))
@@ -216,127 +200,10 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
       if (rounds[k] && Array.isArray(rounds[k].d)) rounds[k].d.forEach(fd);
     });
 @@SYS:emp.cleanup.tasks@@  if (replace || wipe) {
-    if (staffOn) {
-      var st = values.bassam_staffing_v3,
-        lk = values.bassam_staffing_locks_v1;
-      if (!isObj(st)) st = {};
-      if (!isObj(lk)) lk = {};
-      Object.keys(st).forEach(function (m) {
-        var b = st[m];
-        if (!isObj(b)) {
-          delete st[m];
-          delete lk[m];
-          return;
-        }
-        Object.keys(b).forEach(function (k) {
-          if (k !== '__shifts') delete b[k];
-        });
-        if (
-          !Object.keys(b).some(function (k) {
-            return k !== '__shifts';
-          })
-        ) {
-          delete st[m];
-          delete lk[m];
-        }
-      });
-      values.bassam_staffing_v3 = st;
-      values.bassam_staffing_locks_v1 = lk;
-    }
-    if (values.__dreportOn) values.bassam_dreport_v1 = {};
+@@SYS:emp.cleanup.staff.wipe@@    if (values.__dreportOn) values.bassam_dreport_v1 = {};
   }
 }
-function empApplySchedule(values, meta, validKeys, result) {
-  var rows = meta.schedule || [];
-  if (!rows.length) return;
-  if (!values.__staffOn) {
-    result.warnings.push('schedule-disabled');
-    return;
-  }
-  var mk = meta.year + '-' + meta.month,
-    locks = values.bassam_staffing_locks_v1 || {};
-  if (locks[mk]) {
-    result.warnings.push('schedule-locked');
-    return;
-  }
-  var options = values.bassam_shift_options_v1;
-  if (
-    !Array.isArray(options) ||
-    !options.length ||
-    !options.every(function (x) {
-      return x && x.name && x.color;
-    })
-  )
-    options = [
-      { name: 'الوردية الأولى', color: '#b99751' },
-      { name: 'الوردية الثانية', color: '#0891b2' },
-      { name: 'الوردية الثالثة', color: '#4f46e5' },
-      { name: 'الوردية الرابعة', color: '#166534' },
-    ];
-  var palette = ['#be185d', '#166534', '#7c3aed', '#b45309', '#0e7490'],
-    days = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
-    st = values.bassam_staffing_v3 || {},
-    bucket = st[mk] || {},
-    newOpt = 0,
-    nShift = 0;
-  rows.forEach(function (sr) {
-    empShape(sr, ['key', 'shift', 'rest', 'cs', 'muk']);
-    if (typeof sr.key !== 'string' || !validKeys.has(sr.key)) throw cuError('employee-transition-schedule-key');
-    ['shift', 'rest', 'cs', 'muk'].forEach(function (k) {
-      if (sr[k] !== undefined && typeof sr[k] !== 'string' && !(k === 'muk' && typeof sr[k] === 'boolean'))
-        throw cuError('employee-transition-schedule-shape');
-    });
-    var entry = Object.assign({}, bucket[sr.key] || {});
-    if (sr.shift) {
-      var n = sr.shift.trim(),
-        o = options.find(function (x) {
-          return x.name === n || x.name === 'ال' + n || 'ال' + x.name === n;
-        });
-      if (!o && n.length >= 2) {
-        o = { name: n, color: palette[(options.length + newOpt) % palette.length] };
-        options = options.concat([o]);
-        newOpt++;
-      }
-      if (o) {
-        entry.shift = o.name;
-        nShift++;
-      } else result.warnings.push('schedule-shift-unknown');
-    }
-    if (sr.rest) {
-      var txt = sr.rest.replace(/[أإآ]/g, 'ا'),
-        found = [];
-      days.forEach(function (d) {
-        var bare = d.replace(/^ال/, '').replace(/[أإآ]/g, 'ا').replace(/ة$/, '[ةه]'),
-          m = txt.match(new RegExp('(?:ال)?' + bare));
-        if (m) found.push({ d: d, at: m.index });
-      });
-      found.sort(function (a, b) {
-        return a.at - b.at;
-      });
-      var unique = Array.from(
-        new Set(
-          found.map(function (x) {
-            return x.d;
-          }),
-        ),
-      );
-      if (unique.length) entry.rest = unique;
-    }
-    if (sr.cs) entry.cs = sr.cs.trim();
-    if (sr.muk !== undefined && String(sr.muk).trim()) {
-      var m = String(sr.muk).trim().replace(/[أإآ]/g, 'ا').replace(/ّ/g, '');
-      entry.muk = /^(نعم|مكلف|منتدب|صح|صحيح|✓|✔|x|yes|true|1)$/i.test(m);
-    }
-    delete entry.leaves;
-    if (entry.muk === undefined) entry.muk = false;
-    bucket[sr.key] = entry;
-  });
-  st[mk] = bucket;
-  values.bassam_staffing_v3 = st;
-  if (newOpt || nShift) values.bassam_shift_options_v1 = options;
-  result.counts.schedule = rows.length;
-}
-function empCleanTemplate(A, d, sheet) {
+@@SYS:emp.schedule.fn@@function empCleanTemplate(A, d, sheet) {
   var clean = {},
     src = expandPermsOf(A, d, sheet || {}),
     cap = deptCapOf(A, d);
@@ -558,14 +425,9 @@ async function empPrepareTransition(env, A, input) {
   });
   /* Ordinary delete called 590 cleanup without skip flags; only import replace
      skips disabled modules. The canonical resource guards still decide writes. */
-  values.__staffOn = input.intent === 'delete' || capOnDept(A, d, 'staff');
-  values.__dreportOn = input.intent === 'delete' || capOnDept(A, d, 'dreport');
-  empCleanupValues(values, replace ? before : removed, after, replace, wipe, values.__staffOn);
-  if (replace && values.__staffOn) {
-    var mk = input.import.year + '-' + input.import.month;
-    delete values.bassam_staffing_locks_v1[mk];
-  }
-  values.bassam_employees_v1 = after;
+@@SYS:emp.flags.staff@@  values.__dreportOn = input.intent === 'delete' || capOnDept(A, d, 'dreport');
+  empCleanupValues(values, replace ? before : removed, after, replace, wipe@@SYS:emp.cleanup.staffArg@@);
+@@SYS:emp.replace.staff@@  values.bassam_employees_v1 = after;
   if (input.options !== undefined) {
     empShape(input.options, ['type', 'work']);
     ['type', 'work'].forEach(function (k) {
@@ -667,8 +529,7 @@ async function empPrepareTransition(env, A, input) {
     throw cuError('employee-transition-account-proposal-ineligible');
   var validKeys = new Set(after.map(empStableKey));
   if (input.intent === 'import') {
-    empApplySchedule(values, input.import, validKeys, result);
-    empApplyTemplates(A, d, values, p, users, input.import, validKeys, result);
+@@SYS:emp.schedule.call|empty="    if ((input.import.schedule || []).length) result.warnings.push('schedule-disabled');   /* V7 · د5-د2: بلا مالك الجدول لا يُستورد تسكين — التحذيرُ نفسُه والجدولُ مطفأ */\n"@@    empApplyTemplates(A, d, values, p, users, input.import, validKeys, result);
   }
   EMP_TRANSITION_RELATED.forEach(function (n) {
     if (n === 'bassam_perm_tpls_v1') return;
