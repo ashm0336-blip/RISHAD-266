@@ -1,0 +1,6 @@
+  ops_staffing_month_employee_perm_empty: { t: "ops_staffing_month_employee_leaves_empty", e: null },
+  ops_staffing_month_employee_rest: { t: "ops_staffing_month_employee_perm_days", e: null },
+  ops_staffing_month_shifts: { t: "ops_staffing_month_shifts", e: null },
+  ops_staffing_month_shifts_definition: { t: "ops_staffing_month_shifts_definition", e: "ops_staffing_month_shifts_definition" },
+  ops_staffing_month_shifts_entry: { t: "ops_staffing_month_shifts_entry", e: null },
+  ops_staffing_month_shifts_entry_choice_0: { t: "ops_staffing_month_shifts_entry_choice_0", e: "ops_staffing_month_shifts_entry_choice_0" },
