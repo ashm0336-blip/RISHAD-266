@@ -1,8 +1,8 @@
 /* RISHAD V7 P1 — the organisation structure page and a page per node, in the isolated lab (TEST_ONLY data, no network).
    #/sysadmin/org is the structure page: the tree alone, searchable, expandable and collapsible. A row opens the node's own page
    #/sysadmin/org/<id> (the P0 address), whose tabs follow its nature:
-     · a supervisory node («عقدة إشرافية»): نظرة عامة · المسؤولون والحسابات (V7 P2) · سقف الصفحات — no data tab (a node holds no data);
-     · an operational unit («إدارة تشغيلية» / «قسم تشغيلي»): نظرة عامة · المسؤولون والحسابات · سقف الصفحات · البيانات.
+     · a supervisory node («عقدة إشرافية»): نظرة عامة · المسؤولون والحسابات (V7 P2) · الصلاحيات (V7 · د5-هـ 44: in place of «سقف الصفحات») — no data tab (a node holds no data);
+     · an operational unit («إدارة تشغيلية» / «قسم تشغيلي»): نظرة عامة · المسؤولون والحسابات · الصلاحيات · البيانات.
    The overview gathers the node's place and actions, what sits under it (links to their pages) and the setup checklist (links to the tab
    that does each step). «العودة إلى الهيكل» and the browser Back return to the tree. Deleting a node that still has anything under it is
    refused BEFORE any confirmation (it used to ask, then refuse); the server keeps refusing it on its own (tests/unit/v7_p0_node_integrity).
@@ -52,7 +52,7 @@ test('V7 P1 · structure page, node pages by nature, overview links, delete refu
     /* a supervisory node: its own page, no data tab */
     await p.locator('main .tr-rw', { hasText: 'TEST_ONLY إدارة عامة' }).first().click(); await p.waitForTimeout(1500);
     assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_G', 'a row click opens the node page'); assert.equal(await SEL(), 'TEST_ONLY إدارة عامة');
-    let t = await tabs(); assert.deepEqual(t.map((x) => x[0]).filter((x) => /نظرة عامة|سقف الصفحات|البيانات/.test(x)), ['نظرة عامة', 'سقف الصفحات'], 'node tabs: ' + JSON.stringify(t));
+    let t = await tabs(); assert.deepEqual(t.map((x) => x[0]).filter((x) => /نظرة عامة|الصلاحيات|البيانات/.test(x)), ['نظرة عامة', 'الصلاحيات'], 'node tabs: ' + JSON.stringify(t));
     assert.equal(t[0][1], 'true', 'the overview tab is selected'); assert.equal(await p.locator('main .dl-bk').count(), 1);
     assert.equal((await p.locator('main .nt').innerText()).trim(), 'عقدة إشرافية', 'the nature of a node');
     assert.equal(await p.locator('main .tr-rw').count(), 0, 'the tree is not shown on a node page');
@@ -67,13 +67,13 @@ test('V7 P1 · structure page, node pages by nature, overview links, delete refu
     /* a link under the node opens the unit's page: an operational unit with a data tab */
     await p.locator('main section[aria-label="ما تحتها"] a', { hasText: 'TEST_ONLY إدارة أ' }).click(); await p.waitForTimeout(1500);
     assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ');
-    t = await tabs(); assert.deepEqual(t.map((x) => x[0]).filter((x) => /نظرة عامة|سقف الصفحات|البيانات/.test(x)), ['نظرة عامة', 'سقف الصفحات', 'البيانات'], 'unit tabs: ' + JSON.stringify(t));
+    t = await tabs(); assert.deepEqual(t.map((x) => x[0]).filter((x) => /نظرة عامة|الصلاحيات|البيانات/.test(x)), ['نظرة عامة', 'الصلاحيات', 'البيانات'], 'unit tabs: ' + JSON.stringify(t));
     assert.ok(t.some((x) => /^المسؤولون والحسابات/.test(x[0])), 'the accounts tab (V7 P2: «المسؤولون والحسابات»)');
     assert.equal((await p.locator('main .nt').innerText()).trim(), 'إدارة تشغيلية');
     /* the setup checklist leads to the tab that does the step */
-    await p.locator('main section[aria-label="قائمة التهيئة"] button', { hasText: 'فتح سقف الصفحات' }).click(); await p.waitForTimeout(900);
-    assert.deepEqual((await tabs()).filter((x) => x[1] === 'true').map((x) => x[0]), ['سقف الصفحات'], 'the checklist opened the ceiling tab');
-    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A', 'the address still names the unit');
+    await p.locator('main section[aria-label="قائمة التهيئة"] button', { hasText: 'فتح الصلاحيات' }).click(); await p.waitForTimeout(900);
+    assert.deepEqual((await tabs()).filter((x) => x[1] === 'true').map((x) => x[0]), ['الصلاحيات'], 'the checklist opened the permissions tab (its systems = the ceiling)');
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A/perm/systems', 'the address still names the unit (and the permissions section)');
     /* the data tab: the four unit data actions with their recorded titles */
     await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click(); await p.waitForTimeout(600);
     for (const ti of ['نسخة الإدارة — تصدير كل بيانات هذه الإدارة إلى ملف', 'استيراد نسخة احتياطية إلى هذه الإدارة — دمج أو استبدال', 'مسح البيانات — يفرّغ الإدارة من كل بياناتها ويبقيها في الهيكل'])
@@ -121,10 +121,10 @@ test('V7 P1 · phone (390×844) light and dark: the structure page and every nod
     assert.deepEqual(bad, [], 'phone light and dark');
     /* keyboard: a tab is a focusable button, Enter selects it; «العودة إلى الهيكل» works with Enter */
     await s.go('#/sysadmin/org/TEST_ONLY_A', 2000);
-    const cap = p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'سقف الصفحات' }).first();
+    const cap = p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'الصلاحيات' }).first();
     await cap.focus(); assert.ok(await cap.evaluate((e) => e === document.activeElement), 'a tab button takes the focus');
     await p.keyboard.press('Enter'); await p.waitForTimeout(600);
-    assert.deepEqual((await tabs()).filter((x) => x[1] === 'true').map((x) => x[0]), ['سقف الصفحات'], 'Enter selects the tab');
+    assert.deepEqual((await tabs()).filter((x) => x[1] === 'true').map((x) => x[0]), ['الصلاحيات'], 'Enter selects the tab');
     await p.locator('main .dl-bk').focus(); await p.keyboard.press('Enter'); await p.waitForTimeout(1200);
     assert.equal(await H(), '#/sysadmin/org', 'Enter on «العودة إلى الهيكل» opens the structure page');
     assert.deepEqual(s.errs, [], 'no page errors');

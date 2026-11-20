@@ -62,7 +62,7 @@ class Component extends DCLogic {
   _sysTabOf(seg) { return seg === "org" ? "depts" : seg; }
   _hashOrgId() {
     try {
-      const m = /^#\/sysadmin\/org\/([^/?#]+)$/.exec(String(location.hash || "")); if (!m) return "";
+      const m = /^#\/sysadmin\/org\/([^/?#]+)(?:\/perm\/(?:systems|roles|people|log))?$/.exec(String(location.hash || "")); if (!m) return "";   /* V7 · د5-هـ (44): وذيلُ «الصلاحيات» */
       const id = decodeURIComponent(m[1]);
       return id.length <= 128 && !/[\u0000-\u001f<>"'`\\]/.test(id) ? id : "";
     } catch (e) { return ""; }
