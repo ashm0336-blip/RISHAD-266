@@ -5,7 +5,7 @@
      · identifiers معرّفاتٌ بأسمائها واحداً واحداً، ولكلٍّ سببُه (isStaff · staffMap · plainStaff …): تُمحى بحدود الكلمة كاملةً، لا بادئةً ولا جزءاً.
    ولا شيءَ غير ذلك: لا نمطَ عام ولا بادئة. وما لا تغطيه القاعدة يبقى في مداخل الملفات الحرفية (entries) كما كان.
    عددُ المداخل مثبَّتٌ في LIMITS أدناه: ينزل ولا يرتفع، وكلُّ مدخلٍ جديد يحتاج موافقةَ المراجع. */
-export const LIMITS = { skipFiles: 1, patterns: 1, entries: 47, matches: 109, rolePatterns: 4, identifiers: 19 };
+export const LIMITS = { skipFiles: 1, patterns: 1, entries: 45, matches: 103, rolePatterns: 4, identifiers: 19, roles: 2 };   /* د5-هـ: +1 قاعدة (plan · substring:false) بانتظار موافقة المراجع؛ ونقصت مداخلُ منطق الخطة (صار نظاماً) */
 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
 
@@ -45,5 +45,6 @@ export function allowCounts(allow) {
     skipFiles: allow.skipFiles.length, patterns: allow.patterns.length, entries: allow.entries.length,
     matches: allow.entries.reduce((a, e) => a + e.match.length, 0),
     rolePatterns: roles.reduce((a, r) => a + (r.patterns || []).length, 0), identifiers: roles.reduce((a, r) => a + (r.identifiers || []).length, 0),
+    roles: roles.length,
   };
 }

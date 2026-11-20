@@ -124,7 +124,9 @@ test('د3 · الحذف: الشجرةُ كما تبنيها صفحةُ الإع�
    ما يبقى معلنٌ بسببه في tests/removal/names.allow.json (مقطعٌ بعينه في ملفٍ بعينه)؛ أيُّ ذكرٍ خارج القائمة يُفشل الاختبار. */
 /* اسمُ نظامٍ غائب في سطرٍ من القاعدة بعد القائمة وقاعدة الدور: [«ملف:سطر …»] — يستعمله الاختبارُ والحقنُ السلبية معاً */
 function residue(files, gone) {
-  const extra = gone.flatMap((k) => JSON.parse(fs.readFileSync(path.join(FULL, 'systems', k, 'system.json'), 'utf8')).names || []), find = finder(gone, extra);
+  /* د5-هـ: نظامٌ مفتاحُه كلمةٌ عامة (roles ← substring:false — plan) لا يُبحث عن مقطعه؛ تُبحث أسماؤه المميِّزة (system.json ← names) — بقاعدةٍ مكتوبة */
+  const noSub = new Set((ALLOW.roles || []).filter((r) => r.substring === false).map((r) => r.name));
+  const extra = gone.flatMap((k) => JSON.parse(fs.readFileSync(path.join(FULL, 'systems', k, 'system.json'), 'utf8')).names || []), find = finder(gone.filter((k) => !noSub.has(k)), extra);
   const skip = new Set(ALLOW.skipFiles.map((x) => x.file)), bad = [];
   for (const [rel, text] of files) {
     if (skip.has(rel)) continue;
@@ -156,6 +158,20 @@ test('د5-د2 · قائمةُ الاستثناء لا تكبر: أعدادُها
 
 /* د5-د2 · قرار المراجع 3 — حقنٌ سلبية إلزامية: كلُّ حقنةٍ في ملفٍ من القاعدة يجب أن يكشفها البحثُ مع القاعدة؛ وسطرُ دورٍ خالص لا يُكشف.
    تُفحص كأن الجدولَ غائب (gone = staff) في كل شجرة — المستودع ونسخُ الحذف — لأن رموزَه تُقرأ من الشجرة الكاملة. لو مرّت حقنةٌ فالقاعدةُ مرفوضة. */
+/* د5-هـ · قرار المراجع 4: الحقنُ السلبية لكل نظامٍ مفصول — قراءةُ مفتاحه مباشرةً · الاستيرادُ من مجلده · وسطرٌ يبدو معنىً آخر للكلمة ويقرأ مفتاحَه — كلٌّ يُكشف */
+test('د5-هـ · الحقنُ السلبية لكل نظامٍ مفصول بقاعدة: plan', () => {
+  if (!fs.existsSync(path.join(FULL, 'systems', 'plan', 'system.json'))) return;
+  const at = 'workers/parts/063-enf-api-and-handler.js', gone = ['plan'];
+  const INJ = {
+    'قراءة bassam_plan_v1 مباشرة': 'var p = await opResourceGet(env, "bsdept:" + d + ":bassam_plan_v1");',
+    'استيراد من modules/plan/': 'import { x } from "../modules/plan/logic.js";',
+    'خطةُ تنفيذٍ تقرأ مفتاح الخطة': 'var plan = { guards: [], statements: [] }; plan.statements.push(opRead("bassam_plan_v1"));',
+    'اسمُ صفحة البرنامج': 'mount("Operational Plan");',
+  };
+  for (const [name, line] of Object.entries(INJ)) assert.ok(residue([[at, line]], gone).length > 0, 'الحقنة مرّت بلا كشف: ' + name);
+  assert.deepEqual(residue([[at, 'var plan = { guards: [], statements: [] }; plan.guards.push(g);']], gone), [], 'ضابط: «خطةُ تنفيذ» بلا مفتاح البرنامج');
+});
+
 test('د5-د2 · الحقنُ السلبية: قراءةُ مفتاح الجدول · الاستيرادُ من مجلده · سطرٌ يبدو سطرَ دورٍ ويقرأ الجدول — كلٌّ يُفشل البحث', () => {
   if (!fs.existsSync(path.join(FULL, 'systems', 'staff', 'system.json'))) return;
   const at = 'src/layouts/root-logic.js', gone = ['staff'];

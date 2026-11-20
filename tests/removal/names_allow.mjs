@@ -31,7 +31,8 @@ export function staleAllow(allow, root, src) {
   const base = scanned.filter((rel) => !rel.startsWith('src/systems/'));   /* أجزاءُ الأنظمة نفسُها ليست من القاعدة */
   /* د5-د2: أجزاءُ خادم البرامج الأخرى في ترتيب الضمّ يفحصها البحثُ أيضاً (مستهلكو نظامٍ غائب) — فمدخلٌ لملفٍ منها يُتحقَّق من موضعه كغيره ('*' يبقى للقاعدة وحدها) */
   const disk = new Map(scanned.map((rel) => [rel, noComments(fs.readFileSync(path.join(root, rel), 'utf8')).split('\n')]));
-  const views = cases.map((c) => ({ NAME: { test: ((f) => (t) => !!f(t))(finder(c.gone, c.names)) }, lines: (rel) => (c.files[rel] === undefined ? disk.get(rel) : noComments(c.files[rel]).split('\n')) }));
+  const noSub = new Set((allow.roles || []).filter((r) => r.substring === false).map((r) => r.name));   /* د5-هـ: كما في الاختبار */
+  const views = cases.map((c) => ({ NAME: { test: ((f) => (t) => !!f(t))(finder(c.gone.filter((k) => !noSub.has(k)), c.names)) }, lines: (rel) => (c.files[rel] === undefined ? disk.get(rel) : noComments(c.files[rel]).split('\n')) }));
   const out = [], known = new Set(scanned);
   for (const s of allow.skipFiles) {
     if (!known.has(s.file)) out.push('skipFiles: ' + s.file + ' ليس من الملفات المبحوث فيها');
