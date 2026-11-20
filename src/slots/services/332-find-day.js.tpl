@@ -241,12 +241,12 @@
       var u = A && A.user ? A.user() : null; if (!u || u.role === 'super') return true;
       /* مرآة قاعدة الخادم: صفحات الكتابة = أوراق الموظف (بصفحتها الحاوية) داخل سقف الإدارة — ومدير الإدارة/العقدة يملك سقفها كله */
       var cap = P.deptCap() || [];
-      var capOk = cap.indexOf('daily') !== -1@@SYS:findday.cap.dreport@@;
+      var capOk = @@SYS:findday.cap.daily|empty="false"@@@@SYS:findday.cap.dreport@@;
       if (u.role === 'dept' || u.role === 'gm') return capOk;
       var sheet = (P.hasOwnSheet && P.hasOwnSheet(u.ekey)) ? (P.empPerms(u.ekey) || {}) : null;
       if (!sheet) return capOk;
       var acts = ['add','edit','del','approve'];
-      return Object.keys(sheet).some(function(k){ var pk = String(k).split('/')[0]; return (pk === 'daily'@@SYS:findday.pk.dreport@@) && cap.indexOf(pk) !== -1 && (sheet[k] || []).some(function(a){ return acts.indexOf(a) !== -1; }); });
+      return Object.keys(sheet).some(function(k){ var pk = String(k).split('/')[0]; return (@@SYS:findday.pk.daily|empty="false"@@@@SYS:findday.pk.dreport@@) && cap.indexOf(pk) !== -1 && (sheet[k] || []).some(function(a){ return acts.indexOf(a) !== -1; }); });
     } catch(e){ return true; }
   }
 

@@ -4,6 +4,8 @@ const _bsSched = "@staff.usable@1";
 const _bsPlan = "@plan.usable@1";
 /* V7 · د5-هـ: ورقةُ التقرير اليومي كذلك — يجيب عنها مالكُه بالناقل؛ بغيابه مطفأة */
 const _bsDr = "@dreport.usable@1";
+/* V7 · د5-هـ: ورقةُ الجولات (المتابعة اليومية) كذلك — يجيب عنها مالكُه بالناقل؛ بغيابه مطفأة */
+const _bsRd = "@daily.usable@1";
 function _bsCapOk(c) {
   try {
     const P = KIVO.BassamPerm;
@@ -3390,7 +3392,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         } catch (t) {}
         return {};
       })(),
-      v = r("bassam_rounds_v1", {}),
+      v = (() => {
+        try {
+          const t = KIVO.bus.read("daily.days@1", (k) => r(k, {}));   /* V7 · د5-هـ: أيامُ الجولات من مالكها؛ بغيابه لا جولة */
+          if (null != t) return t;
+        } catch (t) {}
+        return {};
+      })(),
       w = i.length,
       S = (t) => String(t || "").replace("الوردية ", ""),
       k = (t) => {
@@ -3886,7 +3894,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "٪ · التقرير مصدر «من على رأس العمل فعلاً» — وبدونه الغياب لا يُرى.",
         },
         {
-          cap: "daily/rounds",
+          cap: _bsRd,
           nm: "توثيق الجولات الميدانية — " + H + " من " + KIVO.BassamCount(R, "يوم", "g") + "",
           p: n(H, R),
           tip:
@@ -3899,7 +3907,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "٪ · الجولة حال الميدان كما شوهد لا كما خُطّط — منها يُتعلَّم للغد.",
         },
         {
-          cap: "daily/rounds",
+          cap: _bsRd,
           nm: "اعتماد الجولات — قفل سجل اليوم",
           p: H ? n(q, H) : 0,
           tip:
@@ -3995,7 +4003,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               p3: _on(_bsPlan) && _on("dist"),
               p4: _on(_bsSched),
               p5: _on(_bsPlan) && _on("dist"),
-              p6: _on(_bsDr) || _on("daily/rounds"),
+              p6: _on(_bsDr) || _on(_bsRd),
             })[t.key] && t.rows.length,
         )
         .map((t, e) => ({ ...t, n: ["١", "٢", "٣", "٤", "٥", "٦"][e], pct: re(t.rows) })),
@@ -4456,7 +4464,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }),
       Q < R &&
         Fe.push({
-          cap: _bsDr + "|daily/rounds",
+          cap: _bsDr + "|" + _bsRd,
           s: "warning",
           title: "حوّل المتابعة إلى عادةٍ يومية بثلاث لبنات",
           action:
@@ -4642,7 +4650,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "احتياج الشهر": _on(_bsPlan) && _on("dist"),
             "مجدولون على الورديات": _on(_bsSched),
             "موزّعون على المواقع": _on(_bsPlan) && _on("dist"),
-            "أيام موثّقة بجولة": _on("daily/rounds"),
+            "أيام موثّقة بجولة": _on(_bsRd),
           })[t.label] !== !1,
       ),
       rdStepsN: String(_nS),

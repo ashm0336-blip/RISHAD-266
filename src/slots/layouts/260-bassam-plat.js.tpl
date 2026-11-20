@@ -8,7 +8,7 @@
     name: "المنصة التشغيلية", short: "المنصة", org: "", logo: "", themeDef: "light",
     login: { rights: "جميع الحقوق محفوظة © {م}", title: "", desc: "منظومة رقمية متكاملة تجمع إدارات الحرم المكي الشريف في مكان واحد — كل إدارة ببياناتها وصلاحياتها المستقلة، بدخول موحد واحد.", footer: "AL HARAMAIN", legal: "", sub: "سجّل دخولك للمتابعة إلى لوحة التحكم", state: "منصة مؤسَّسة — الدخول بالحسابات المسجّلة فيها", helpStaff: "موظف أو مدير إدارة؟ تواصل مع مدير إدارتك — يعيد تعيين كلمة مرورك من شاشته في ثوانٍ.", helpNoKey: "لم يُنشأ مفتاح استعادة لهذه المنصة بعد — يُنشأ من مركز إدارة رشاد ← البيانات والاستمرارية ← التهيئة والاستعادة.", showVer: true, remember: true, help: true },
     app: { name: "", statusBar: "light", install: true },
-    side: { order: ["kpis", "emps", "planning", "daily"@@SYS:plat.sideOrder@@], hidden: [], ver: true, help: true, links: true },
+    side: { order: ["kpis", "emps", "planning"@@SYS:plat.sideOrder@@], hidden: [], ver: true, help: true, links: true },
     links: [],   /* «مواقع ذات صلة»: [{ t: العنوان, u: الرابط, d: الوصف }] يحرّرها مدير النظام من الصفحة نفسها */
     top: { theme: true, crumb: "full" },
     print: { l1: "", l2: "", l3: "", logoPos: "right", footer: "", date: true, who: true, paper: "" },

@@ -9,9 +9,7 @@ class Component extends DCLogic {
       if (r && r.kpiPanelOk) return !!r.kpiPanelOk(n, t);   /* KIVO_261: المصدرُ الواحد مع رابط القائمة (334) */
       if (r && r.canSub && !r.canSub(n, t, "view")) return !1;
       const L = (k) => !r || !r.on || !!r.on(k);
-      if ("kpiOcc" === t) return L("zones") && L("dens");
-      if ("kpiZones" === t) return L("zones");
-@@SYS:kpis.okOf.dreport|empty="      if (\"kpiDaily\" === t) return !1;   /* V7 · د5-هـ: بلا التقرير اليومي لا لوحةَ له */\n"@@      return !0;
+@@SYS:kpis.okOf.daily@@@@SYS:kpis.okOf.dreport|empty="      if (\"kpiDaily\" === t) return !1;   /* V7 · د5-هـ: بلا التقرير اليومي لا لوحةَ له */\n"@@      return !0;
     } catch (n) {
       return !0;
     }
@@ -20,10 +18,7 @@ class Component extends DCLogic {
     const n = this,
       t = [
         { k: "read", pk: "planning", sk: "readiness" },
-        { k: "dy", pk: "daily", sk: "kpiDaily" },
-        { k: "occ", pk: "daily", sk: "kpiOcc" },
-        { k: "zn", pk: "daily", sk: "kpiZones" },
-@@SYS:kpis.panels.mid@@@@SYS:kpis.panels.tasks@@@@SYS:kpis.panels.tail@@      ],
+@@SYS:kpis.panels.daily@@@@SYS:kpis.panels.mid@@@@SYS:kpis.panels.tasks@@@@SYS:kpis.panels.tail@@      ],
       r = {};
     t.forEach(function (t) {
       r[t.k] = n._okOf(t.pk, t.sk);

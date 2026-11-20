@@ -668,7 +668,7 @@
 
   /* ═══ KIVO_256 · SOT-003/004/010 — مفاتيحُ v24.9 (وضعُ الإنفاذ): الفعليُّ = ترجمةُ الورقة المقصوصة بالسقف + plus − minus داخل السقف وبوابة العدسة
      (= enfHeld0 · enfKeyOnCeiling · ENF_DERIVE · ENF_COMPAT في الخادم). التحريرُ فرقٌ صريح في bsdept:<d>:bassam_grants_v1 — الورقةُ القديمة لا تُمسّ. ═══ */
-  var P24_DERIVE = { 'field.view': ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change'] };   /* = ENF_DERIVE */
+  var P24_DERIVE = {@@SYS:p24.derive.daily|pre=" "|post=" "@@};   /* = ENF_DERIVE */
   @@SYS:p24.compat|sep=", "|pre="var P24_COMPAT = { "|post=" };"|empty="var P24_COMPAT = {};"@@   /* = ENF_COMPAT */
   var P24_LEAF_RE = /^([A-Za-z]+(?:\/[A-Za-z]+)?):(view|add|edit|del|approve|export)$/, P24_LENSES = LENS_KEYS.slice();   /* KIVO_259 · AUD-030: = عدساتُ الإضافات (LENS_REG ← plugins/lenses — كانت قائمةً حرفيّة بالترتيب نفسِه) */
   function p24R(){ var R = KIVO.KIVO_REGISTRY; return (R && R.byKey && R.owners && R.atoms && R.translate && R.keys) ? R : null; }

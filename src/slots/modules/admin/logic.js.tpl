@@ -1523,8 +1523,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return (
       ({
         bassam_employees_v1: "قائمة الموظفين",
-@@SYS:admin.keyLabels.staff@@        bassam_rounds_v1: "الجولات اليومية",
-@@SYS:admin.keyLabels.dreport@@@@SYS:admin.keyLabels.plan@@@@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
+@@SYS:admin.keyLabels.staff@@@@SYS:admin.keyLabels.daily@@@@SYS:admin.keyLabels.dreport@@@@SYS:admin.keyLabels.plan@@@@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
         bassam_perms_v1: "الصلاحيات",
         bassam_depts_v1: "الإدارات",
 @@SYS:admin.keyLabels@@@@SYS:admin.keyLabels.custody@@      }[s] || (KL ? KL.label(s) : "بيانات المنصة")) + (e ? " · " + this.adDept(e[1]) : "")
@@ -4877,7 +4876,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         /* «المسندة إليه فقط» تُقال للمحصور وحده (= 057 enfFieldOnly): ليس مديراً ولا وارثاً، ولا يحمل كتابةً صريحةً غيرَ مشتقّة على الجولات أو عدساتها.
            كانت تُقال لكل حامل — والمديرُ والمشرفُ يكتبان حالةَ كل العناصر (لقطةُ المالك من Preview Test). لغير المحصور لا يُدّعى حصر */
         dvx = {},
-        lift = (k) => { const e = RG[k]; return !!e && "active" === e.status && !dvx[k] && 0 !== k.indexOf("ref.") && "access" !== e.type && "view" !== e.type && "capability" !== e.type && ("daily/rounds" === e.owner || "lens" === e.ownerKind); },
+        lift = (k) => { const e = RG[k]; return !!e && "active" === e.status && !dvx[k] && 0 !== k.indexOf("ref.") && "access" !== e.type && "view" !== e.type && "capability" !== e.type && (@@SYS:admin.lift.owner.daily|empty="!1"@@ || "lens" === e.ownerKind); },
         conf = (Object.keys(DV).forEach((s) => DV[s].forEach((k) => (dvx[k] = 1))), "staff" === n.role && !o.mgr && !o.inh && !Object.keys(o.eff.keys || {}).some((k) => o.eff.keys[k] && lift(k)));
       out.push({ k: "المنح الصريح", v: pl || mi ? (pl ? "+" + KIVO.BassamCount(pl, "مفتاح") : "") + (pl && mi ? " · " : "") + (mi ? "−" + KIVO.BassamCount(mi, "مفتاح") : "") + (o.eff.src ? " (" + (/^tpl:/.test(o.eff.src) ? "من قالب" : o.eff.src) + ")" : "") : "لا شيء فوق الأساس" });
       out.push({ k: "المفاتيح المشتقة", v: dvk.length ? dvk.map(lb).join(" · ") + " — من «" + dvs.map(lb).join("» و«") + "»" + (conf ? "، وتكتب حالة العناصر المسندة إليه فقط" : "") : "لا شيء" });
@@ -5107,29 +5106,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* لوحاتُ «مؤشرات المتابعة» الثلاث (أوراقٌ قديمة تحت المتابعة اليومية — ليست أوراقاً في v24): مؤشراتُ التشغيل اليومي ← التقرير اليومي ·
      الإشغال ← عدسةُ الكثافة · المصليات ← عدسةُ المصليات (بمضيفٍ على السقف) — فيبقى شكلُ الواجهة القديم مطابقاً لمفاتيح السقف */
   _cap24Synced(dr, did) {
-    const P24 = KIVO.BassamPerm && KIVO.BassamPerm.p24;
-    if (!P24 || !dr) return null;
-    const pg = this._pages().filter((p) => "daily" === p.key)[0];
-    if (!pg || !(pg.tabs || []).length) return null;
-    const lensArr = Array.isArray(dr.lenses) ? dr.lenses : KIVO.BassamPerm.deptLenses ? KIVO.BassamPerm.deptLenses(did) : [],
-      C = P24.ceil(did, { cap: dr.cap, subs: dr.subs || {}, tabs: dr.tabs || {}, lenses: lensArr }),
-      want = { kpiDaily: @@SYS:admin.kpiDaily.dreport|empty="!1"@@, kpiOcc: C.lens("dens") && P24.lensHosted("dens", C), kpiZones: C.lens("zones") && P24.lensHosted("zones", C) },
-      has = -1 !== (dr.cap || []).indexOf("daily"),
-      cur = Array.isArray((dr.tabs || {}).daily) ? dr.tabs.daily.slice() : has ? pg.tabs.map((t) => t.key) : [];
-    let ch = !1;
-    Object.keys(want).forEach((k) => {
-      if (!pg.tabs.some((t) => t.key === k)) return;
-      const i = cur.indexOf(k);
-      want[k] && -1 === i && (cur.push(k), (ch = !0));
-      !want[k] && -1 !== i && (cur.splice(i, 1), (ch = !0));
-    });
-    if (!ch) return null;
-    const cap = dr.cap.slice(),
-      subs = Object.assign({}, dr.subs),
-      tabs = Object.assign({}, dr.tabs || {}, { daily: cur });
-    this._capNormalize(cap, subs, tabs);
-    return { cap: cap, subs: subs, tabs: tabs, lenses: Array.isArray(dr.lenses) ? dr.lenses.slice() : dr.lenses };
-  }
+@@SYS:admin.cap24.daily|empty="    return null;   /* V7 · د5-هـ: بلا المتابعة اليومية لا لوحاتِ متابعة تُزامَن */\r\n"@@  }
   cap24Sync() {
     const t = this.state.capDraft;
     if (!t || !this.state.sysSel) return;
@@ -8374,8 +8351,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               i = {
                 bassam_employees_v1: "الموظفون",
 @@SYS:admin.resLabels.custody@@@@SYS:admin.resLabels.staff@@@@SYS:admin.resLabels.dreport@@                bassam_shift_options_v1: "خيارات الورديات",
-@@SYS:admin.wipe.labels.plan@@                bassam_rounds_v1: "الجولات اليومية",
-@@SYS:admin.wipe.labels.plan.opts@@@@SYS:admin.wipe.labels.tasks@@@@SYS:admin.wipe.labels@@                bassam_options_v1: "الخيارات العامة",
+@@SYS:admin.wipe.labels.plan@@@@SYS:admin.wipe.labels.daily@@@@SYS:admin.wipe.labels.plan.opts@@@@SYS:admin.wipe.labels.tasks@@@@SYS:admin.wipe.labels@@                bassam_options_v1: "الخيارات العامة",
                 bassam_profile_v1: "الملف التعريفي",
               };
             let n = [];

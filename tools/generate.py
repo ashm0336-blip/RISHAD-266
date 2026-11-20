@@ -123,6 +123,9 @@ def bus_read_resources(S, d, module):
 def gen_manifest(S):
     M = json.load(open(os.path.join(S, layout(S)['pagesManifest']), encoding='utf-8'))
     data = {k: (M[k] if k != 'lenses' else lenses_of(S, M)) for k in ('version', 'pages', 'containers', 'lenses', 'tabAddr', 'navOrder', 'navNames', 'routeNames')}
+    # V7 · د5-هـ: صفحةٌ أبوها غائب (نظامٌ محذوف) صفحةٌ عليا في سجل الواجهة — under يُسقط حين لا صفحةَ بمفتاحه
+    pkeys = {p['key'] for p in M['pages']}
+    data['pages'] = [p if p.get('under') in pkeys or 'under' not in p else {k: v for k, v in p.items() if k != 'under'} for p in M['pages']]
     # V7 P4: module · activation · requires (CORE-01) ship to the client manifest — the systems map, «الوحدات» and the panel
     # conditions are derived from them (no hand lists). The server's PG_REG below still takes the structure alone.
     # The module charter is already the data-ownership source of truth. Export
@@ -156,7 +159,6 @@ def gen_manifest(S):
           '  return { version: M.version, clone: function (k) { if (!(k in M)) throw new Error("KIVO_MANIFEST: unknown key " + k); return clone(M[k]); }, keys: Object.keys(M) };\n'
           '})(' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ');\n')
     # PG_REG في الخادم: السطور بين لافتة «سجل الصفحات» و var PG_OF — بالصيغة الحرفية القائمة
-    keys = {p['key'] for p in M['pages']}
     def pg(p):
         o = "  { key: '" + p['key'] + "'"
         if p.get('subs'): o += ", subs: [" + ', '.join("'" + x['key'] + "'" for x in p['subs']) + "]"
@@ -164,7 +166,7 @@ def gen_manifest(S):
         # KIVO_261 (SOT-003): offPage على الأوراق كلِّها (subs وtabs) — الواجهةُ (isOffPage) تقرأ الاثنين، فالخادمُ مثلُها (كان tabs وحدها)
         off = [x['key'] for x in (p.get('subs') or []) + (p.get('tabs') or []) if x.get('offPage')]
         if off: o += ", off: [" + ', '.join("'" + x + "'" for x in off) + "]"
-        if p.get('under') in keys: o += ", under: '" + p['under'] + "'"   # V7 · د5-هـ: أبٌ غائب ⇒ صفحةٌ عليا
+        if p.get('under') in pkeys: o += ", under: '" + p['under'] + "'"   # V7 · د5-هـ: أبٌ غائب ⇒ صفحةٌ عليا
         return o + ' }'
     reg = 'var PG_REG = [\n' + ',\n'.join(pg(p) for p in M['pages']) + '\n];\n'
     return {norm(layout(S)['pageManifestBlock']): js.encode('utf-8')}, reg

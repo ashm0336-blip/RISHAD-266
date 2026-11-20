@@ -130,6 +130,26 @@
     "src/modules/employees/logic.js",
     "src/modules/profile/logic.js"
    ]
+  },
+  "daily.usable@1": {
+   "absent": "بلا المتابعة اليومية: ورقةُ الجولات مطفأة — صفوفُ توثيق الجولات واعتمادها وخطوتُها لا تظهر في جاهزية الموظفين، ولوحاتُ الجولات لا تُحسب في «ملفي»",
+   "files": [
+    "src/modules/employees/logic.js",
+    "src/modules/profile/logic.js"
+   ]
+  },
+  "daily.days@1": {
+   "absent": "بلا المتابعة اليومية: لا أيامَ جولات — جاهزيةُ الموظفين لا تعدّ أياماً موثّقة بجولة، و«ملفي» لا يرى جولة اليوم (لا موقعَ منها ولا رصدَ ميداني) ولا جولاتٍ في السجل",
+   "files": [
+    "src/modules/employees/logic.js",
+    "src/modules/profile/logic.js"
+   ]
+  },
+  "daily.resources@1": {
+   "absent": "بلا المتابعة اليومية: لا موردَ جولاتٍ يُسأل عن حجبه — خريطةُ «ملفي» لا تُعدّ محجوبة بسببه",
+   "files": [
+    "src/modules/profile/logic.js"
+   ]
   }
  },
  "consumes_note": "V7 · د5-هـ: ما تسأل عنه ملفاتُ القاعدة أنظمةً على الناقل، بسلوك غيابه وملفاته — يفحصه tests/removal/bus_rule.mjs (baseBusProblems) على الشجرة الكاملة، وبه يُمحى الاسمُ المعلن من فحص البقايا حين يغيب مالكه"

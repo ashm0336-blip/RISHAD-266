@@ -529,15 +529,15 @@ class Component extends DCLogic {
   _liveTouches(keys, page) {
     const MAP = {
       employees: /employees|options@@SYS:root.resPage.custody@@|perms|auth_users/,@@SYS:root.liveKeys.staff@@
-      @@SYS:root.liveKeys.plan@@planning: /@@SYS:root.live.planning.plan|empty="employees"@@@@SYS:root.live.planning.staff@@|employees|rounds@@SYS:root.live.planning.dreport@@/,
-      @@SYS:root.liveKeys@@profile: /auth_users|employees@@SYS:root.live.profile.staff@@|shift_options@@SYS:root.live.profile.tasks@@@@SYS:root.live.profile.dreport@@|rounds@@SYS:root.live.profile.plan@@|dayshift|platform/, links: /^$/,
+      @@SYS:root.liveKeys.plan@@planning: /@@SYS:root.live.planning.plan|empty="employees"@@@@SYS:root.live.planning.staff@@|employees@@SYS:root.live.planning.daily@@@@SYS:root.live.planning.dreport@@/,
+      @@SYS:root.liveKeys@@profile: /auth_users|employees@@SYS:root.live.profile.staff@@|shift_options@@SYS:root.live.profile.tasks@@@@SYS:root.live.profile.dreport@@@@SYS:root.live.profile.daily@@@@SYS:root.live.profile.plan@@|dayshift|platform/, links: /^$/,
       admin: /depts|gdepts|auth_users|perms|platform|last_export/, sysadmin: /depts|gdepts|auth_users|perms|platform|last_export/
     };
     const re = MAP[page]; if (!re) return true;
     return keys.some(k => { const nm = String(k).replace(/^bsdept:[^:]+:/, ""); return re.test(nm) || !/^bassam_/.test(nm); });
   }
   _liveQueue(keys, foreign) {
-    const SELF = { daily: 1, @@SYS:root.self.dreport@@@@SYS:root.self.tasks@@sysadmin: 1, admin: 1 };   /* تستمع بنفسها أو تقرأ المخزن مع كل رسم (مدير النظام يحدّث نفسه دورياً) */
+    const SELF = { @@SYS:root.self.daily@@@@SYS:root.self.dreport@@@@SYS:root.self.tasks@@sysadmin: 1, admin: 1 };   /* تستمع بنفسها أو تقرأ المخزن مع كل رسم (مدير النظام يحدّث نفسه دورياً) */
     const a = this.state.active;
     if (!a || SELF[a] || !this._liveTouches(keys, a)) return;
     /* تُجمَع المفاتيحُ الواصلة حتى تُطبَّق دفعةً واحدة */
@@ -1069,7 +1069,7 @@ class Component extends DCLogic {
   async _goOps() {
     if (!(await this._conLeaveOk())) return false;
     const last = this.__lastOps && this._pageAllowed(this.__lastOps);
-    const k = last || (this._kpisOk(1) ? "kpis" : ([@@SYS:root.landing.dstats@@"employees", "planning", "daily", @@SYS:root.landing.systems@@"links"].find((x) => this._pageAllowed(x)) || "profile"));
+    const k = last || (this._kpisOk(1) ? "kpis" : ([@@SYS:root.landing.dstats@@"employees", "planning", @@SYS:root.landing.daily@@@@SYS:root.landing.systems@@"links"].find((x) => this._pageAllowed(x)) || "profile"));
     try { KIVO.BassamNav.go(k, true); } catch (e) {}
     /* رابطُ الخروج يزول مع شريط المركز فيسقط التركيزُ إلى body: يُنقل إلى الصفحة الحالية في الشريط التشغيلي (والدرجُ يُغلق ⇒ زرُّ القائمة) — ما لم يتحرّك المستخدم */
     const f = (n) => { try { const ae = document.activeElement; if (ae && ae !== document.body && !(ae.closest && ae.closest("aside.bsb"))) return;
@@ -1106,7 +1106,7 @@ class Component extends DCLogic {
     const sbOpen = sbConsole && wide ? !this.state.conCx : open;
     const slide = (this.__sbToggled && wide) ? (sbOpen ? "animation:bsSlideOpen .3s ease-in-out;" : "animation:bsSlideClose .3s ease-in-out;") : "";
     /* مفتاح الصفحة في منظومة الصلاحيات مقابل مفتاح التنقل */
-    const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps",@@SYS:root.navPerm.staff@@@@SYS:root.navPerm.plan@@ daily: "daily",@@SYS:root.navPerm.tasks@@@@SYS:root.navPerm.irshad@@ admin: "admin" };
+    const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps",@@SYS:root.navPerm.staff@@@@SYS:root.navPerm.plan@@@@SYS:root.navPerm.daily@@@@SYS:root.navPerm.tasks@@@@SYS:root.navPerm.irshad@@ admin: "admin" };
     const _pOK = (pk) => { try { if (pk === "admin" && KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) return true; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
     const _pAny = (ks) => ks.some(_pOK);
     /* «مدير النظام»: لمدير النظام وحده (كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة) */
@@ -1127,10 +1127,10 @@ class Component extends DCLogic {
     // كانت «إدارة الموظفين» غلافاً بلا محتوى: شريط تبويبات يستضيف ثلاث صفحات، فتصل
     // إلى وجهتك بنقرتين ويُكتب لك مسارٌ من مستويين لمكانٍ واحد. حُذف الغلاف وصارت
     // الصفحات الثلاث عناصر مستقلة في القائمة الجانبية بترتيب سير العمل نفسه.
-    const inPlanning = ["employees",@@SYS:root.inPlanning.staff@@@@SYS:root.inPlanning.plan@@"daily"@@SYS:root.inPlanning.tasks@@@@SYS:root.inPlanning@@].includes(a);
+    const inPlanning = ["employees",@@SYS:root.inPlanning.staff@@@@SYS:root.inPlanning.plan@@@@SYS:root.inPlanning.daily|empty="null"@@@@SYS:root.inPlanning.tasks@@@@SYS:root.inPlanning@@].includes(a);
     /* F01: اسمُ الصفحة بنوع الوحدة النشطة — «موظفو القسم» · «مؤشرات القسم» حين تكون قسماً */
     const _ua = (() => { try { const D = KIVO.BassamDepts; return D && D.unitAl ? D.unitAl(D.active()) : "الإدارة"; } catch (e) { return "الإدارة"; } })();
-    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua,@@SYS:root.labels.staff@@@@SYS:root.labels.plan@@ daily:"المتابعة اليومية",@@SYS:root.labels.dreport@@ planning:"الخطة التشغيلية", @@SYS:root.labels.tasks@@@@SYS:root.labels@@links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
+    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua,@@SYS:root.labels.staff@@@@SYS:root.labels.plan@@@@SYS:root.labels.daily@@@@SYS:root.labels.dreport@@ planning:"الخطة التشغيلية", @@SYS:root.labels.tasks@@@@SYS:root.labels@@links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
     return {
       sidebarOpen: open,
       lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",
@@ -1176,8 +1176,7 @@ class Component extends DCLogic {
         return {
           nKpis: "n" + (a === "kpis" ? " on" : "") + (_kpiAny ? "" : " gone"), tKpis: labels.kpis,
 @@SYS:root.navVals.dstats@@          nEmployees: cls("employees", "emps"), tEmployees: tip("emps"),
-@@SYS:root.navVals.staff@@@@SYS:root.navVals.plan@@          nDaily: cls("daily", "daily"), tDaily: tip("daily"),
-@@SYS:root.navVals.dreport@@          /* كانت مربوطة بـ«الجدول الشهري» وحده فتختفي عمّن له «التشغيل الميداني» فقط */
+@@SYS:root.navVals.staff@@@@SYS:root.navVals.plan@@@@SYS:root.navVals.daily@@@@SYS:root.navVals.dreport@@          /* كانت مربوطة بـ«الجدول الشهري» وحده فتختفي عمّن له «التشغيل الميداني» فقط */
           nPlanning: "n" + (a === "planning" ? " on" : "") + (_pAny(["planning"@@SYS:root.planning.perms@@]) ? "" : " gone") + (outOf("planning")@@SYS:root.planning.out@@ ? " out" : ""), tPlanning: tip("planning"),
           @@SYS:root.navVals.systems@@          nLinks: cls("links", "links"), tLinks: tip("links"),
           tAdmin: outOf("admin")
@@ -1336,7 +1335,7 @@ class Component extends DCLogic {
           cfmIcCls: c.danger ? "is-danger" : "",
           cfmYes: () => { match && this.cfmClose(true); }, cfmNo: () => this.cfmClose(false) }; })(),
       ...this._nfVals(),
-      @@SYS:root.go.plan@@goDaily: go("daily"), @@SYS:root.go.dreport@@goPlanning: go("planning"), @@SYS:root.go.systems@@goLinks: go("links"),
+      @@SYS:root.go.plan@@@@SYS:root.go.daily@@@@SYS:root.go.dreport@@goPlanning: go("planning"), @@SYS:root.go.systems@@goLinks: go("links"),
       ...((() => {
         let pr = null;
         try { if (KIVO.BassamAuth && KIVO.BassamAuth.display) pr = KIVO.BassamAuth.display(); } catch (e) {}
@@ -1352,7 +1351,7 @@ class Component extends DCLogic {
       goAdmin: () => { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); }, goProfile: (ev) => { try { if (ev && ev.target && ev.target.closest && ev.target.closest(".s-logout")) return; } catch (e) {} go("profile")(); }, bsVerTxt: "الإصدار " + (KIVO.__BS_VER || ""),
       pageName: this._pageNames()[a] || "لوحة التحكم",
       isKpis: ap === "kpis",@@SYS:root.is.dstats@@
-      isEmployees: ap === "employees",@@SYS:root.is.staff@@ isDaily: ap === "daily",@@SYS:root.is.dreport@@ isPlanning: ap === "planning", @@SYS:root.is.tasks@@@@SYS:root.is.systems@@isSysAdmin: ap === "sysadmin",@@SYS:root.is.plan@@ isAdmin: ap === "admin", isProfile: ap === "profile", isPlaceholder: !this.state.navPending && !["kpis",@@SYS:root.known.dstats@@"employees","planning",@@SYS:root.known.staff@@@@SYS:root.known.plan@@"daily",@@SYS:root.known.dreport@@@@SYS:root.known.tasks@@@@SYS:root.known.systems@@"admin","sysadmin","profile","links"].includes(a),
+      isEmployees: ap === "employees",@@SYS:root.is.staff@@@@SYS:root.is.daily@@@@SYS:root.is.dreport@@ isPlanning: ap === "planning", @@SYS:root.is.tasks@@@@SYS:root.is.systems@@isSysAdmin: ap === "sysadmin",@@SYS:root.is.plan@@ isAdmin: ap === "admin", isProfile: ap === "profile", isPlaceholder: !this.state.navPending && !["kpis",@@SYS:root.known.dstats@@"employees","planning",@@SYS:root.known.staff@@@@SYS:root.known.plan@@@@SYS:root.known.daily@@@@SYS:root.known.dreport@@@@SYS:root.known.tasks@@@@SYS:root.known.systems@@"admin","sysadmin","profile","links"].includes(a),
       isLinks: ap === "links",
       ...((() => {
         /* «مواقع ذات صلة» — قائمة روابط تُقرأ من إعدادات المنصة (links) ويحرّرها مدير النظام من الصفحة نفسها */

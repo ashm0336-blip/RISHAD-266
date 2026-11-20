@@ -745,6 +745,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "systems/daily/client/422-daily-t2.js",
+   "kind": "js",
+   "line": 10497,
+   "new": "V7 · د5-هـ: قراءةٌ معلنة من المتابعة اليومية لصفحات القاعدة (ورقةُ الجولات مفعَّلة؟)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
    "line": 10494,
