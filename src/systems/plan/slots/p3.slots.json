@@ -138,5 +138,9 @@
  "shell.blocks.plan.p3": {
   "order": 10,
   "text": "@@KIVO_BLOCK:systems/plan/client/403-plan-p3.js@@\n"
+ },
+ "bk.labels.plan": {
+  "order": 10,
+  "text": "bassam_plan_v1: 'الخطة', "
  }
 }

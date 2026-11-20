@@ -130,7 +130,7 @@
     if (!Array.isArray(missing) || !missing.length) return '';
     var names = {};
     try { (KIVO.BassamDepts.list() || []).forEach(function (d) { if (d && d.id) names[d.id] = d.name || d.id; }); } catch (e) {}
-    @@SYS:bk.labels|sep=" "|pre="var label = { "|post=" bassam_plan_v1"|empty="var label = { bassam_plan_v1"@@: 'الخطة', bassam_rounds_v1: 'الجولات'@@SYS:bk.labels.tasks@@ };
+    var label = { @@SYS:bk.labels|sep=" "|post=" "@@@@SYS:bk.labels.plan@@bassam_rounds_v1: 'الجولات'@@SYS:bk.labels.tasks@@ };
     var place = function (at) { var i = String(at).lastIndexOf(':'), d = at.slice(0, i), r = at.slice(i + 1); return (d ? '«' + (names[d] || d) + '» ' : '') + (label[r] || r); };
     return ' تحذير: ' + missing.length + ' صورة يشير إليها سجلٌّ ولم تعد موجودة على الخادم — تُخطّيت والنسخة أُنشئت بدونها: ' +
       missing.slice(0, 20).map(function (m) { return m.id + ' (' + (m.at || []).map(place).join('، ') + ')'; }).join(' · ') + (missing.length > 20 ? ' · …' : '') + '.';

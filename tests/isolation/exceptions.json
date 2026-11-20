@@ -1,5 +1,5 @@
 {
- "note": "V7 · د5 — قائمةُ استثناءات اختبار العزل: كلُّ رابطٍ قائمٍ بين البرامج (وكلُّ ما تعرفه القاعدة عن برنامج) لم يتحوّل بعد إلى عقد. تتقلّص ولا تكبر: كلُّ خطوةٍ في د5 تحذف منها، وفي د5-ح تكون فارغة. المفتاح: «البرنامج|النوع|الملف|ما يُمَسّ» والقيمة عددُ الأسطر. الأنواع: read · write · import · bus (د5-ب) · call · dcimport · base-key · base-call · base-dcimport · base-name (أُضيفت مرةً واحدة في د5-ج بتوسيع الماسح). بعد د5-ج لا يُرفع السقف أبداً. · د5-هـ (م1): فصلُ التشغيل الميداني أنزلها 239/674 → 138/316. مواضعُ ترحيل الهوية (014 ← bassam_rounds_v1 · ووعاءُ 'rounds' في تقريره) ليست رابطاً جديداً: صار ملفُّ الترحيل قالباً في src/slots فدخل المسح وكان خارجه — موضعُه في الجولات يُنقل في م3. وعدساتُ اللوحة الست نُقلت من manifest.json إلى قالبها بالعدد نفسه.",
+ "note": "V7 · د5 — قائمةُ استثناءات اختبار العزل: كلُّ رابطٍ قائمٍ بين البرامج (وكلُّ ما تعرفه القاعدة عن برنامج) لم يتحوّل بعد إلى عقد. تتقلّص ولا تكبر: كلُّ خطوةٍ في د5 تحذف منها، وفي د5-ح تكون فارغة. المفتاح: «البرنامج|النوع|الملف|ما يُمَسّ» والقيمة عددُ الأسطر. الأنواع: read · write · import · bus (د5-ب) · call · dcimport · base-key · base-call · base-dcimport · base-name (أُضيفت مرةً واحدة في د5-ج بتوسيع الماسح). بعد د5-ج لا يُرفع السقف أبداً. · د5-هـ (م1): فصلُ التشغيل الميداني أنزلها 239/674 → 137/315. مواضعُ ترحيل الهوية (014 ← bassam_rounds_v1 · ووعاءُ 'rounds' في تقريره) ليست رابطاً جديداً: صار ملفُّ الترحيل قالباً في src/slots فدخل المسح وكان خارجه — موضعُه في الجولات يُنقل في م3. وعدساتُ اللوحة الست نُقلت من manifest.json إلى قالبها بالعدد نفسه.",
  "exceptions": {
   "base|base-call|src/slots/modules/admin/logic.js.tpl|BassamHistImport": 3,
   "base|base-call|src/slots/modules/admin/logic.js.tpl|DailyStats": 1,
@@ -38,7 +38,6 @@
   "base|base-key|src/slots/services/320-dept-storage.js.tpl|bassam_rounds_v1": 1,
   "base|base-key|src/slots/services/442-notif-observer.js.tpl|bassam_dreport_v1": 2,
   "base|base-key|src/slots/services/442-notif-observer.js.tpl|bassam_rounds_v1": 1,
-  "base|base-key|src/slots/services/548-atomic-backup.js.tpl|bassam_plan_v1": 1,
   "base|base-key|src/slots/services/548-atomic-backup.js.tpl|bassam_rounds_v1": 1,
   "base|base-key|src/slots/workers/bindings/guard-bindings/engine.js.tpl|bassam_dreport_v1": 1,
   "base|base-key|src/slots/workers/bindings/guard-bindings/engine.js.tpl|bassam_rounds_v1": 1,
