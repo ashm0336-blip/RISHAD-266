@@ -33,17 +33,13 @@ var RES_REG = {
 @@SYS:res.custody@@@@SYS:res.reg.staff@@@@SYS:res.reg.plan@@  /* ── المتابعة اليومية ── */
   /* اعتماد الجولة عمليةُ setShiftAp: أعلامُ الاعتماد وبياناتها التابعة وحدها.
      أمّا closed · cWhy · needN · off · dopen فرصدٌ تشغيليّ لا اعتماد. */
-  'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { dreport: 'NO_APPROVAL', 'emps/data': 'EMP_REFS' }, field: 'daily' },
-  'bassam_dayshift_v1':        { scope: 'dept', cap: ['daily/rounds', 'dreport'] },
-  'bassam_dayfocus_v1':        { scope: 'dept', cap: ['daily/rounds', 'dreport'] },
-  /* ── التقرير اليومي ── */
-  'bassam_dreport_v1':         { scope: 'dept', cap: 'dreport' },
-  'bassam_dr_grp_v1':          { scope: 'dept', cap: 'dreport' },
-  'bassam_leave_kinds_v1':     { scope: 'dept', cap: 'dreport' },
-  /* ── المهام ── */
+  'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { @@SYS:res.via.rounds.dreport@@'emps/data': 'EMP_REFS' }, field: 'daily' },
+  'bassam_dayshift_v1':        { scope: 'dept', cap: ['daily/rounds'@@SYS:read.reader.dreport@@] },
+  'bassam_dayfocus_v1':        { scope: 'dept', cap: ['daily/rounds'@@SYS:read.reader.dreport@@] },
+@@SYS:res.reg.dreport@@  /* ── المهام ── */
 @@SYS:res.reg.tasks@@@@SYS:res.reg.dept@@  /* ── الإعدادات: أوراقها لا صفحتها الأم ── */
   'bassam_shift_options_v1':   { scope: 'dept', cap: 'admin/shifts' },
-  'bassam_perm_tpls_v1':       { scope: 'dept', cap: 'admin/ptpls', via: { dreport: 'SEED_ONLY' } },
+  'bassam_perm_tpls_v1':       { scope: 'dept', cap: 'admin/ptpls'@@SYS:res.via.ptpls.dreport@@ },
   'bassam_perm_tpls_named_v1': { scope: 'dept', cap: 'admin/ptpls' },
   'bassam_last_export_v1':     { scope: 'dept', cap: 'admin/backup' },
   /* طابعُ النسخة الشاملة (كلُّ الإدارات): سجلُّ منصّةٍ عامٌّ يكتبه مديرُ النظام وحده — لا بياناتُ إدارة.

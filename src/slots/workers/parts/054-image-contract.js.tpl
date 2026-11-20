@@ -1444,7 +1444,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || A.u.role === 'super') continue;
     var rnPv = resName(k), dPv = parseKey(k).dept;
-    if (k !== K_PERM && rnPv !== 'bassam_employees_v1' && rnPv !== 'bassam_dreport_v1' && !(dPv && A.__privTok && A.__privTok[dPv])) continue;
+    if (k !== K_PERM && rnPv !== 'bassam_employees_v1'@@SYS:priv.res.cond.dreport@@ && !(dPv && A.__privTok && A.__privTok[dPv])) continue;
     var curPv = await opResourceGet(env, k); if (curPv == null) continue;
     if (k === K_PERM && (pvNo9[k] = privPermsStale(A, body && body.pscope, set[k], curPv))) continue;
     var pv9 = privIn(A, k, String(set[k]), curPv); if (pv9 === PRIV_NO) pvNo9[k] = 'privacy-hidden'; else set[k] = pv9;
@@ -1498,7 +1498,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* سياق الطلب لكل إدارةٍ يمسّها: سجل الموظفين كما سيصير بعد هذا الطلب —
      فارغاً كان أو ممتلئاً — ومفاتيحُه الحيّة التي يُقاس عليها ما زال وما بقي.
      يُحسب مرّةً واحدة لكل إدارة، ولا يُحسب لمن لا يحتاجه. */
-  var CTX_RES = { 'bassam_dreport_v1': 1, @@SYS:cleanup.ctxRes.custody@@@@SYS:cleanup.ctxRes.award@@ 'bassam_employees_v1': 1,
+  var CTX_RES = { @@SYS:cleanup.ctxRes.dreport@@@@SYS:cleanup.ctxRes.custody@@@@SYS:cleanup.ctxRes.award@@ 'bassam_employees_v1': 1,
                   @@SYS:cleanup.ctxRes.staff@@@@SYS:cleanup.ctxRes.tasks@@@@SYS:cleanup.ctxRes.plan@@ 'bassam_rounds_v1': 1 };
   var wipeCtx = {}, empCtx = {}, empRaw9 = {};
   for (k in set) {

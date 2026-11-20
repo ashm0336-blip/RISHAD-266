@@ -205,9 +205,7 @@
      "asisMap": [
       "staff:edit"
      ],
-     "references": [
-      "dreport"
-     ],
+     "references": [],
      "uiOnly": false,
      "v23": [
       "staff.rest"
@@ -580,9 +578,7 @@
      "asisMap": [
       "staff:edit"
      ],
-     "references": [
-      "dreport"
-     ],
+     "references": [],
      "uiOnly": false,
      "v23": [
       "staff.callsign.assign"
@@ -929,7 +925,6 @@
       "staff:view"
      ],
      "references": [
-      "dreport",
       "daily/rounds"
      ],
      "uiOnly": false,
@@ -1187,22 +1182,6 @@
      "registry",
      {
       "by": "key",
-      "eq": "ref.leave_type.view"
-     },
-     "references"
-    ],
-    "after": 0,
-    "seq": 1,
-    "value": "staff",
-    "needs": [
-     "dreport"
-    ]
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "perm.assign"
      },
      "references"
@@ -1345,7 +1324,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 22,
+    "after": 21,
     "seq": 10,
     "value": "ff.module.staff.enabled"
    },
@@ -1373,7 +1352,7 @@
      "guard",
      "resources"
     ],
-    "after": 3,
+    "after": 2,
     "seq": 10,
     "value": "bassam_staffing_locks_v1"
    },
@@ -1387,7 +1366,7 @@
      "guard",
      "resources"
     ],
-    "after": 3,
+    "after": 2,
     "seq": 20,
     "value": "bassam_perm_limit_v1"
    },
@@ -1422,22 +1401,6 @@
      "registry",
      {
       "by": "key",
-      "eq": "report.callsign.assign"
-     },
-     "guard",
-     "detail"
-    ],
-    "sub": "via dreport",
-    "by": "bassam_staffing_v3 via dreport",
-    "needs": [
-     "dreport"
-    ]
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
       "eq": "perm.assign"
      },
      "asisMap"
@@ -1458,23 +1421,6 @@
     "after": 1,
     "seq": 10,
     "value": "staff.permission.assign"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "report.indicators.view"
-     },
-     "guard",
-     "resources"
-    ],
-    "after": 1,
-    "seq": 10,
-    "value": "bassam_staffing_v3",
-    "needs": [
-     "dreport"
-    ]
    }
   ],
   "scope-bindings": [
@@ -2318,58 +2264,6 @@
     "path": [
      "readBindings",
      "byResource",
-     "bassam_dreport_v1",
-     "keys"
-    ],
-    "after": 3,
-    "seq": 30,
-    "value": "staff.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_dreport_v1",
-     "routes"
-    ],
-    "after": 3,
-    "seq": 30,
-    "value": {
-     "cap": "staff:view",
-     "key": "staff.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_leave_kinds_v1",
-     "keys"
-    ],
-    "after": 0,
-    "seq": 40,
-    "value": "staff.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_leave_kinds_v1",
-     "routes"
-    ],
-    "after": 0,
-    "seq": 40,
-    "value": {
-     "cap": "staff:view",
-     "key": "staff.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
      "bassam_shift_options_v1",
      "keys"
     ],
@@ -2484,7 +2378,7 @@
      },
      "resources"
     ],
-    "after": 3,
+    "after": 2,
     "seq": 10,
     "value": "bassam_staffing_locks_v1"
    },
@@ -2497,33 +2391,17 @@
      },
      "resources"
     ],
-    "after": 3,
+    "after": 2,
     "seq": 20,
     "value": "bassam_perm_limit_v1"
-   },
-   {
-    "path": [
-     "bindings",
-     {
-      "by": "key",
-      "eq": "report.indicators.view"
-     },
-     "resources"
-    ],
-    "after": 1,
-    "seq": 10,
-    "value": "bassam_staffing_v3",
-    "needs": [
-     "dreport"
-    ]
    },
    {
     "path": [
      "byResource"
     ],
     "key": "bassam_staffing_v3",
-    "after": 2,
-    "seq": 10,
+    "after": 1,
+    "seq": 20,
     "value": {
      "items": "staffingItems",
      "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
@@ -2549,8 +2427,8 @@
      "byResource"
     ],
     "key": "bassam_staffing_v2",
-    "after": 2,
-    "seq": 20,
+    "after": 1,
+    "seq": 30,
     "value": {
      "items": "staffingItems",
      "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
@@ -2577,8 +2455,8 @@
      4,
      "means"
     ],
-    "sub": "report.reopen",
-    "by": "report.reopen · staff.reopen"
+    "sub": "round.reopen",
+    "by": "round.reopen · staff.reopen"
    },
    {
     "path": [
@@ -2860,7 +2738,7 @@
      "field.view",
      "resources"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 10,
     "value": "bassam_staffing_v3"
    }
@@ -2951,8 +2829,8 @@
     "path": [
      "decisions"
     ],
-    "after": 12,
-    "seq": 10,
+    "after": 11,
+    "seq": 20,
     "value": {
      "id": "D-18",
      "topic": "staffing: الحقول بلا مفتاح",

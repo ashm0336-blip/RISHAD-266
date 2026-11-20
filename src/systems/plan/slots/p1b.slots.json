@@ -6,7 +6,7 @@
  },
  "read.map.plan": {
   "order": 10,
-  "text": "  'bassam_plan_v1':            ['plan', 'daily/rounds', 'daily/field', 'dreport', 'emps/data'],\n  'bassam_zone_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],\n  'bassam_gate_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],\n  'bassam_mark_kinds_v1':      ['plan', 'daily/rounds', 'daily/field'],\n"
+  "text": "  'bassam_plan_v1':            ['plan', 'daily/rounds', 'daily/field'@@SYS:read.reader.dreport@@, 'emps/data'],\n  'bassam_zone_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],\n  'bassam_gate_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],\n  'bassam_mark_kinds_v1':      ['plan', 'daily/rounds', 'daily/field'],\n"
  },
  "read.map.reader.plan.1": {
   "order": 10,

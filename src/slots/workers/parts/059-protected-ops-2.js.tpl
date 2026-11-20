@@ -9,10 +9,9 @@ var ENF_UNCOV = (function () {
   return {
     'bassam_options_v1': join(crud('ref.employment_type')@@SYS:enf.refCrud.options.staff@@),
 @@SYS:enf.refCrud.plan@@    'bassam_shift_options_v1': crud('ref.shift'),
-@@SYS:enf.refCrud.records@@    'bassam_leave_kinds_v1': crud('ref.leave_type'),@@SYS:enf.refCrud.callsign.staff@@
-@@SYS:enf.refCrud.award@@@@SYS:enf.uncov.staff@@    'bassam_dayshift_v1': all(['round.edit', 'report.edit', 'round.create', 'report.create']),
-    'bassam_dayfocus_v1': all(['round.edit', 'report.edit', 'round.create', 'report.create']),
-    'bassam_dr_grp_v1': all(['report.edit', 'report.create'])
+@@SYS:enf.refCrud.records@@@@SYS:enf.uncov.leave.dreport@@@@SYS:enf.refCrud.callsign.staff@@
+@@SYS:enf.refCrud.award@@@@SYS:enf.uncov.staff@@    'bassam_dayshift_v1': all(['round.edit'@@SYS:enf.uncov.day.edit.dreport@@, 'round.create'@@SYS:enf.uncov.day.create.dreport@@]),
+    'bassam_dayfocus_v1': all(['round.edit'@@SYS:enf.uncov.day.edit.dreport@@, 'round.create'@@SYS:enf.uncov.day.create.dreport@@])@@SYS:enf.uncov.grp.dreport@@
   };
 })();
 /* السببُ المرافق للكتابة: body.why[k] (طبقةُ المزامنة) أو سببُ علامة العملية (الاستعادة) */
@@ -24,7 +23,7 @@ function enfVia(A, k, rn, d, curVal, newVal, ctx) {
   function diffs() { if (!ds) ds = walkDiff(curVal, newVal); return ds; }
 @@SYS:enf.via.staff@@  /* SEED_ONLY: بذرُ قوالب الصلاحيات الافتراضية لأول مرّة (القائمةُ فارغة) من صفحة التقرير */
   if (rn === 'bassam_perm_tpls_v1' && diffs().length && diffs().every(SEED_ONLY)) {
-    var sk = ['tpl.create', 'report.create', 'report.edit'];
+    var sk = ['tpl.create'@@SYS:enf.seed.keys.dreport@@];
     for (i = 0; i < sk.length; i++) if (enfHeld(A, d, sk[i])) return { keys: [sk[i]], tag: 'via:SEED_ONLY' };
     return null;
   }

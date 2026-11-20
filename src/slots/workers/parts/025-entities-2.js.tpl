@@ -25,13 +25,7 @@ var ENT = {
   'bassam_perm_tpls_v1':      { cols: [{ at: '', idf: ['id'], lock: ['id'] }], empty: '[]' },
   /* رايةُ ترحيلٍ تُكتب مرةً واحدة — بلا شكلٍ مفروض */
   'bassam_perm_tpls_named_v1':{ },
-@@SYS:ent.reg.callsigns.staff@@  /* drAddLeaveKind/drDelLeaveKind: كلتاهما محروستان بـPC("edit") في الواجهة */
-  'bassam_leave_kinds_v1':    { empty: '[]', primRoot: 1, primAct: 'edit' },
-@@SYS:ent.reg.staff@@@@SYS:ent.reg.tasks@@  /* ── التقرير اليومي ── */
-  'bassam_dreport_v1':        { map: 1, empty: '{}' },
-  /* drGrpPref: { on:true, closed:{…} } */
-  'bassam_dr_grp_v1':         { empty: '{}' },
-  /* ── الجولات ── */
+@@SYS:ent.reg.callsigns.staff@@@@SYS:ent.reg.leave.dreport@@@@SYS:ent.reg.staff@@@@SYS:ent.reg.tasks@@@@SYS:ent.reg.dreport@@  /* ── الجولات ── */
   'bassam_rounds_v1':         { map: 1, empty: '{}' },
   'bassam_dayshift_v1':       { map: 1, empty: '{}' },
   /* اليوم المختار: { y, m, d } */

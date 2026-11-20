@@ -659,7 +659,7 @@
      "guard",
      "detail"
     ],
-    "set": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي) — ويفتح awardCleanup/dreportCleanup حين يفرغ الموظفون"
+    "set": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي) — ويفتح awardCleanup حين يفرغ الموظفون"
    },
    {
     "path": [
@@ -671,8 +671,8 @@
      "guard",
      "resources"
     ],
-    "after": 1,
-    "seq": 0,
+    "after": 0,
+    "seq": 20,
     "value": "bassam_award_v1"
    },
    {
@@ -685,7 +685,7 @@
      "guard",
      "detail"
     ],
-    "set": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ التقرير اليومي وسجلات الجائزة بشكلها القانوني فقط (dreportCleanup · awardCleanup)"
+    "set": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ سجلات الجائزة بشكلها القانوني فقط (awardCleanup)"
    },
    {
     "path": [
@@ -996,15 +996,15 @@
     "path": [
      "featureFlags"
     ],
-    "after": 2,
-    "seq": 11,
+    "after": 1,
+    "seq": 111,
     "value": "ff.award.res.export"
    },
    {
     "path": [
      "featureFlags"
     ],
-    "after": 20,
+    "after": 19,
     "seq": 14,
     "value": "ff.award.doc.print"
    },
@@ -1012,7 +1012,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 23,
+    "after": 22,
     "seq": 50,
     "value": "ff.module.award.enabled"
    }
@@ -1347,8 +1347,8 @@
      },
      "resources"
     ],
-    "after": 1,
-    "seq": 0,
+    "after": 0,
+    "seq": 20,
     "value": "bassam_award_v1"
    },
    {
@@ -1356,7 +1356,7 @@
      "byResource"
     ],
     "key": "bassam_award_v1",
-    "after": 3,
+    "after": 2,
     "seq": 4,
     "value": {
      "items": "awardItems",
@@ -1384,7 +1384,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · report.reopen · dstats.*.reopen · award.res.reopen)",
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · dstats.*.reopen · award.res.reopen)",
     "with": [
      "dstats"
     ]
@@ -1569,8 +1569,8 @@
      "byResource"
     ],
     "key": "bassam_award_v1",
-    "after": 26,
-    "seq": 12,
+    "after": 23,
+    "seq": 140,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability + reference-read routes",
@@ -1611,8 +1611,8 @@
      "byResource"
     ],
     "key": "bassam_award_docs_v1",
-    "after": 26,
-    "seq": 13,
+    "after": 23,
+    "seq": 150,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability + reference-read routes",
@@ -1653,8 +1653,8 @@
      "byResource"
     ],
     "key": "bassam_award_docs_v2",
-    "after": 26,
-    "seq": 14,
+    "after": 23,
+    "seq": 160,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability + reference-read routes",
@@ -1835,7 +1835,7 @@
      },
      "res"
     ],
-    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · award.recs [])"
+    "set": "bassam_employees_v1 (+ تنظيفات award.recs [])"
    },
    {
     "path": [
@@ -1870,8 +1870,8 @@
     "path": [
      "importRes"
     ],
-    "after": 5,
-    "seq": 1,
+    "after": 4,
+    "seq": 30,
     "value": "bassam_award_v1"
    }
   ]

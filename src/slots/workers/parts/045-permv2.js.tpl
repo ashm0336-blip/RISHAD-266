@@ -36,7 +36,7 @@ function permv2How(A, k, newVal, curVal, ctx) {
     var E9 = entOf(k), O9 = opsOf(k), PA, PB, ha = 0, hb = 0;
     var PV = { a: function () { if (!ha) { ha = 1; PA = curVal == null ? undefined : parseJson(curVal, undefined); } return PA; },
                b: function () { if (!hb) { hb = 1; PB = parseJson(newVal, undefined); } return PB; } };
-    if (dreportCleanup(A, k, newVal, curVal, ctx)@@SYS:cleanup.custody.shadow@@@@SYS:cleanup.award.shadow@@) return 'cleanup';
+    if (@@SYS:cleanup.shadow.dreport|empty="false"@@@@SYS:cleanup.custody.shadow@@@@SYS:cleanup.award.shadow@@) return 'cleanup';
 @@SYS:move.custody.shadow@@    if (empGoneCleanup(A, k, newVal, curVal, ctx, PV)) return 'empGone';
     if (srvBusAccepts('shifts.renamed@1', A, k, newVal, curVal, ctx)) return 'shiftRename';
     if (holdsAllWrites(A, k, R0)) return 'holdsAll';
@@ -100,8 +100,7 @@ function permv2Bind(A, k, newVal, curVal, ctx, v) {
   if (v2ok === asisOk) { ST.agree++; for (i = 0; i < real.length; i++) ST.byKey[real[i]].agree++; try { permv3After(A, rn, P, a, b, res, real, okMap, asisOk, null, cx, ctx, v); } catch (e3a) { swallow('permv3-after', e3a); } try { permv4Write(A, k, rn, P, a, b, res, real, okMap, asisOk, null, cx, ctx, v, v2ok); } catch (e4a) { swallow('permv4-write', e4a); } return; }
   ST.disagree++; for (i = 0; i < real.length; i++) ST.byKey[real[i]].disagree++;
   var cat = permv2BindCat(A, k, newVal, curVal, ctx, v, real, missing, asisOk);
-  if (!asisOk && v2ok && anyG.length && rn === 'bassam_dreport_v1') { var qn = false; for (i = 0; i < anyG.length; i++) if (anyG[i].note.indexOf('permission_quota') !== -1) qn = true; if (qn) cat = 'design:rule-quota (F-03) — AS-IS يصنّف سجلَّ m:y-m الجديد add'; }
-  ST.byCat[cat] = (ST.byCat[cat] || 0) + 1;
+@@SYS:permv2.quota.cat.dreport@@  ST.byCat[cat] = (ST.byCat[cat] || 0) + 1;
   if (ST.samples.length < 60) ST.samples.push({ res: rn, keys: real, alt: res.alt, missing: missing, asis: asisOk, why: v.why || '', cat: cat, role: A.u.role, paths: res.ops.slice(0, 6).map(function (o) { return o.path; }) });
   try { permv3After(A, rn, P, a, b, res, real, okMap, asisOk, cat, cx, ctx, v); } catch (e3b) { swallow('permv3-after', e3b); }
   try { permv4Write(A, k, rn, P, a, b, res, real, okMap, asisOk, cat, cx, ctx, v, v2ok); } catch (e4b) { swallow('permv4-write', e4b); }
