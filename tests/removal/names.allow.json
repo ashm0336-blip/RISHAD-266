@@ -245,6 +245,316 @@
    ],
    "kind": "legit",
    "why": "الوسمُ العام نفسُه لإعادة التسمية في عقد الحفظ (قائمةُ الموظفين)؛ اسمٌ تاريخي لا منطقَ عهد."
+  },
+  {
+   "file": "workers/parts/017-authorize-core.js",
+   "match": [
+    "staff: ['ph']"
+   ],
+   "kind": "legit",
+   "why": "حقولُ الملف الشخصي التي يعدّلها صاحبُ الحساب بدوره: الموظفُ هاتفَه وحده (خريطةٌ بأسماء الأدوار)"
+  },
+  {
+   "file": "src/auth/330-auth.js",
+   "match": [
+    "staff: ['ph']",
+    "SELF_FIELDS.staff"
+   ],
+   "kind": "legit",
+   "why": "الخريطةُ نفسُها في خدمة الحسابات بالواجهة، والرجوعُ إلى حقول دور الموظف"
+  },
+  {
+   "file": "workers/parts/019-notifications.js",
+   "match": [
+    "a.indexOf(\"staff\")",
+    "value: \"staff\"",
+    "[\"mgr\", \"lead\", \"staff\"]"
+   ],
+   "kind": "legit",
+   "why": "استهدافُ التنبيه بالدور: «الموظفون» أحدُ أدوار الاستهداف (مدير · رئيس وردية · موظف)"
+  },
+  {
+   "file": "src/modules/admin/logic.js",
+   "match": [
+    "staff: t && t.mgr ? \"مدير الإدارة\" : \"موظف\"",
+    "staff: \"الموظفون\"",
+    "{ v: \"staff\", t: \"الموظفون الميدانيون\" }"
+   ],
+   "kind": "legit",
+   "why": "تسمياتُ الأدوار وخيارُ الدور في شاشة الإعدادات (حسابُ موظف)"
+  },
+  {
+   "file": "src/modules/plan/logic.js",
+   "match": [
+    "\"staff\" : \"gates\"",
+    "\"staff\" !== V",
+    "\"staff\" === V"
+   ],
+   "kind": "legit",
+   "why": "وضعُ عرض «الموظفين» في جدول التشغيل الميداني (V = staff · gates · marks …): قيمةُ تبويبٍ محلية لا اسمُ البرنامج"
+  },
+  {
+   "file": "src/modules/profile/logic.js",
+   "match": [
+    "\"staff\" === i",
+    "\"staff\" === r"
+   ],
+   "kind": "legit",
+   "why": "دورُ الحساب في «ملفي» محفوظٌ في متغيّرٍ محلي (i · r) ويُقارن بالدور"
+  },
+  {
+   "file": "*",
+   "match": [
+    "role=staff/deptId",
+    "يُطبَّق على staff/gm"
+   ],
+   "kind": "legit",
+   "why": "نثرُ الدور في وثائق الحراسة والبناء (يُطبَّق على حسابات الموظفين ومديري العموم) — في البيانات المولَّدة وأجزائها"
+  },
+  {
+   "file": "workers/parts/019o1-table-names.js",
+   "match": [
+    "ops_staffing_month_employee_perm_days_values",
+    "ops_staffing_month_employee_perm_days",
+    "ops_staffing_month_shifts_entry_choice_0",
+    "ops_staffing_month_shifts_definition",
+    "ops_staffing_month_employee_leaves_empty",
+    "ops_staffing_lock_open"
+   ],
+   "kind": "legit",
+   "why": "أسماءُ جداول D1 قائمةٌ حرفياً (قرار المراجع 1 · خريطةٌ ثابتة بلا ترحيل): أشكالٌ مشتركة تستعملها الخطةُ والجولات والمهام والقاعدة، سُمّيت تاريخياً باسم أول برنامجٍ عرّفها. أسماءُ أشكال الجدول وحده انتقلت إلى مجلده"
+  },
+  {
+   "file": "src/components/565-page-kit.js",
+   "match": [
+    "staff.permLimit@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/modules/admin/logic.js",
+   "match": [
+    "staff.shiftUsage@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/modules/daily/logic.js",
+   "match": [
+    "staff.dayFacts@1",
+    "staff.schedule@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/modules/dreport/logic.js",
+   "match": [
+    "staff.availText@1",
+    "staff.callsign.set@1",
+    "staff.callsigns@1",
+    "staff.enabled@1",
+    "staff.locks@1",
+    "staff.schedule@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/modules/employees/logic.js",
+   "match": [
+    "staff.locks@1",
+    "staff.months@1",
+    "staff.schedule@1",
+    "staff.usable@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/modules/plan/logic.js",
+   "match": [
+    "staff.dayFacts@1",
+    "staff.locks@1",
+    "staff.schedule@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/modules/profile/logic.js",
+   "match": [
+    "staff.locks@1",
+    "staff.months@1",
+    "staff.usable@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/services/332-find-day.js",
+   "match": [
+    "staff.months@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/services/590-employees-import.js",
+   "match": [
+    "staff.locks@1",
+    "staff.usable@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/systems/irshad/server/019i-irshad-operations.js",
+   "match": [
+    "staff.enabled@1",
+    "staff.scheduleRef@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/systems/seized/server/019l-seized-query.js",
+   "match": [
+    "staff.scheduleSeen@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/systems/seized/server/019l-seized.js",
+   "match": [
+    "staff.resources@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/systems/tasks/server/072-task-elig.js",
+   "match": [
+    "staff.locks@1",
+    "staff.readable@1",
+    "staff.schedule@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  },
+  {
+   "file": "src/systems/tasks/server/073-task-recur.js",
+   "match": [
+    "staff.readable@1"
+   ],
+   "kind": "legit",
+   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
+  }
+ ],
+ "roles": [
+  {
+   "name": "staff",
+   "kind": "legit",
+   "why": "«staff» دورُ الحساب (موظف) في المنصة كلها قبل أن يكون اسمَ مجلد الجدول الشهري. القاعدةُ ضيّقة وحرفية (قرار المراجع على د5-د): أنماطُ سطر الدور وحدها، ومعرّفاتٌ بأسمائها واحداً واحداً — ولا نمطَ عام ولا بادئة.",
+   "patterns": [
+    {
+     "re": "\\brole\\s*(?:===|!==)\\s*([\"'])staff\\1",
+     "why": "مقارنةُ دور الحساب: u.role === 'staff' · role !== 'staff'"
+    },
+    {
+     "re": "([\"'])staff\\1\\s*(?:===|!==)\\s*[A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*\\.role\\b",
+     "why": "المقارنةُ نفسُها مقلوبة: 'staff' === u.role"
+    },
+    {
+     "re": "\\brole\\s*:\\s*([\"'])staff\\1",
+     "why": "حسابٌ أو هدفُ تنبيهٍ بدوره: { role: 'staff' }"
+    },
+    {
+     "re": "\\bkind\\s*(?::|===|!==)\\s*([\"'])staff\\1",
+     "why": "نوعُ الفاعل في الإنفاذ (حسابُ موظف): { kind: 'staff' } · t.kind === 'staff'"
+    }
+   ],
+   "identifiers": [
+    {
+     "name": "isStaff",
+     "why": "BassamAuth.isStaff(u): هل الحسابُ حسابَ موظف (الدور)"
+    },
+    {
+     "name": "staffMap",
+     "why": "خريطةُ حسابات الموظفين بمفتاح الموظف في خدمة الحسابات"
+    },
+    {
+     "name": "activateStaff",
+     "why": "تفعيلُ حساب دخولٍ لموظف"
+    },
+    {
+     "name": "activateStaffMany",
+     "why": "تفعيلُ حسابات دخولٍ لعدة موظفين"
+    },
+    {
+     "name": "removeStaffAccount",
+     "why": "حذفُ حساب دخول موظف"
+    },
+    {
+     "name": "freezeStaff",
+     "why": "تجميدُ حساب دخول موظف"
+    },
+    {
+     "name": "setStaffMgr",
+     "why": "جعلُ حساب الموظف مديرَ إدارة أو إعادته"
+    },
+    {
+     "name": "staffIsMgr",
+     "why": "هل حسابُ الموظف مديرُ إدارة"
+    },
+    {
+     "name": "staffStatus",
+     "why": "حالةُ حساب دخول الموظف (مفعّل · مجمّد · بلا حساب)"
+    },
+    {
+     "name": "staffRec",
+     "why": "سجلُّ حساب الموظف في إدارته (خدمة الحسابات)"
+    },
+    {
+     "name": "plainStaff",
+     "why": "حسابُ موظفٍ عادي لا مدير (حراسةُ الحسابات)"
+    },
+    {
+     "name": "meStaffEligible",
+     "why": "هل صاحبُ «ملفي» حسابُ موظفٍ يُبنى له سجلُّه"
+    },
+    {
+     "name": "existingStaff",
+     "why": "حساباتُ الموظفين القائمة عند استيراد الموظفين"
+    },
+    {
+     "name": "staffAccountKeys",
+     "why": "مفاتيحُ حسابات الموظفين في سياق الحفظ الذري (الانتقال)"
+    },
+    {
+     "name": "helpStaff",
+     "why": "نصُّ مساعدة الدخول للموظف في إعداد المنصة"
+    },
+    {
+     "name": "bsGateHelpStaff",
+     "why": "عنصرُ ذلك النص في شاشة الدخول"
+    },
+    {
+     "name": "authNotStaff",
+     "why": "الحسابُ الداخل ليس حسابَ موظف (الغلاف)"
+    },
+    {
+     "name": "mgStaffTxt",
+     "why": "نصُّ عدد حسابات الموظفين في شاشة الإعدادات"
+    },
+    {
+     "name": "isStaffView",
+     "why": "«ملفي» يُعرض بصفة حساب موظف"
+    }
+   ]
   }
  ]
 }

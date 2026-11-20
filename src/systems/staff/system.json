@@ -3,6 +3,17 @@
  "kind": "system",
  "key": "staff",
  "name": "الجدول الشهري",
+ "names": [
+  "bassam_staffing",
+  "bassam_callsigns_v1",
+  "bassam_perm_limit_v1",
+  "[Ss]taffing",
+  "ops_staffing_",
+  "modules/staff/",
+  "systems/staff/",
+  "\\bstaff\\.[a-z_]+",
+  "\\bstaff\\.[A-Za-z]+@[0-9]"
+ ],
  "note": "V7 · د5-د: الجدولُ الشهري في مجلده. هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py): ما في المجلد، وموضعُ أجزاء الخادم في ترتيب الضمّ، والقطعُ التي تُحقن في فتحات القاعدة (slots). روابطُه مع غيره في contract.json.",
  "client": {
   "slug": "staff",

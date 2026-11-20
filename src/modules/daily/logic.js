@@ -4341,7 +4341,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         gateN: 0,
         pathN: 0,
         markN: 0,
-        staffObs: 0,
+        empObs: 0,
         dayN: [],
         dayOcc: [],
         dayCov: [],
@@ -4378,7 +4378,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             (i.pathN += Array.isArray(h.paths) ? h.paths.length : 0),
             (i.markN += Array.isArray(h.marks) ? h.marks.length : 0),
             c.forEach((h) => {
-              (i.zoneObs++, l++, h.emp && h.emp.length && (i.staffObs++, d++, (h.emp || []).forEach((t) => (i.emps[t] = 1))));
+              (i.zoneObs++, l++, h.emp && h.emp.length && (i.empObs++, d++, (h.emp || []).forEach((t) => (i.emps[t] = 1))));
               const c = String(null == h.code ? "" : h.code) || "#" + i.zoneObs,
                 g = String(h.ztype || "").trim() || "بلا نوع",
                 f = String(h.zcat || "").trim() || "بلا فئة";
@@ -4453,7 +4453,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     }),
       (i.occ = n(i.n, i.cap)),
       (i.covT = n(i.reads, i.slots)),
-      (i.stf = n(i.staffObs, i.zoneObs)),
+      (i.stf = n(i.empObs, i.zoneObs)),
       (i.empUniq = Object.keys(i.emps).length),
       (i.zones = Object.keys(i.uniq).map((t) => {
         const s = i.uniq[t],
@@ -4527,7 +4527,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       return {};
     }
   }
-  _kStaffAll() {
+  _kSchedAll() {
     try {
       const t = KIVO.bus.read("staff.schedule@1", (k) => this._opRead(k)),   /* V7 · د5-د2: المالكُ يقرأ بمسودة الصفحة — بغيابه {} */
         e = t && "object" == typeof t ? t : {};
@@ -4565,7 +4565,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   _kDataDy(t, e) {
     const s = this._kRep(),
-      n = this._kStaffAll(),
+      n = this._kSchedAll(),
       i = this._kShiftOpts(),
       o = (t, e) => (e ? Math.round((t / e) * 1e3) / 10 : 0),
       r = [

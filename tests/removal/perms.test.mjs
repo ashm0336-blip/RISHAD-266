@@ -13,6 +13,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { SRC, ROOT, PYTHON, SYSTEMS } from '../unit/harness.mjs';
 import { noComments, scanFiles, relOf, staleAllow, finder } from './names_allow.mjs';
+import { roleCleaner, staleRoles, allowCounts, LIMITS } from './role_rule.mjs';
 
 const FULL = process.env.KIVO_FULL_SRC || SRC;
 const rd = (...p) => fs.readFileSync(path.join(SRC, ...p), 'utf8');
@@ -46,6 +47,15 @@ const rxOf = (toks) => (toks.length ? new RegExp('(?<![\\w.])(' + toks.slice().s
 /* د4-ب: ورقةٌ اسمُها كلمةٌ واحدة (صفحةٌ مثل tasks) كلمةٌ عادية في الكود (متغيّر · جزءٌ من معرّف كتلةٍ مشتركة) — تُعدّ رمزاً في الكود حين تكون نصاً كاملاً بين علامتَي اقتباس وحده */
 const bareOwners = [...GT.owners].filter((o) => /^[a-z]+$/.test(o)), pathOwners = [...GT.owners].filter((o) => !/^[a-z]+$/.test(o));
 const RX_CODE = rxOf([...GT.keys, ...pathOwners, ...GT.flags]), RX_BARE = bareOwners.length ? new RegExp('([\'"])(' + bareOwners.map(esc).join('|') + ')\\1', 'g') : null, RX_DATA = rxOf([...GT.keys, ...GT.owners, ...GT.flags, ...sysRes]);
+/* د5-د2: القائمة وقاعدةُ الدور (role_rule.mjs) — تُطبَّق على كل ما تفحصه الاختباراتُ الثلاثة أدناه: سطرُ الدور يُمحى منه المقطعُ المقتبس وحده،
+   والمعرّفاتُ المسمّاة بحدود الكلمة، ومقاطعُ المداخل الحرفية لملفها؛ وبقيةُ السطر تُفحص */
+const ALLOW = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'removal', 'names.allow.json'), 'utf8'));
+const cleanFor = (rel, gone) => {
+  const role = roleCleaner(ALLOW.roles, gone), cuts = ALLOW.entries.filter((e) => e.file === '*' || e.file === rel).flatMap((e) => e.match).sort((a, b) => b.length - a.length);
+  const pats = ALLOW.patterns.map((x) => new RegExp(x.pattern, 'g'));
+  return (line) => { let rest = role(line); for (const q of pats) rest = rest.replace(q, '""'); for (const c of cuts) rest = rest.split(c).join(''); return rest; };
+};
+const cleanText = (rel, text, gone) => { const f = cleanFor(rel, gone); return text.split('\n').map(f).join('\n'); };
 const hits = (text, data) => { const RX = data ? RX_DATA : RX_CODE; const out = RX ? Array.from(text.matchAll(RX), (m) => m[1]) : []; if (!data && RX_BARE) for (const m of text.matchAll(RX_BARE)) out.push(m[2]); return [...new Set(out)]; };
 const label = '[' + (SYSTEMS.join(' · ') || 'لا نظام') + ']' + (GONE.length ? ' — الغائب: ' + GONE.join(' · ') : '');
 
@@ -56,7 +66,7 @@ test('د3 · الحذف: السجلُّ والشجرةُ وروابطُ الخا
     ['root', 'workers/bindings/scope-bindings/data.json'], ['root', 'workers/bindings/guard-bindings/data.json'], ['root', 'workers/bindings/build-bindings/data.json']];
   for (const [base, rel] of files) {
     const p = path.join(base === 'src' ? SRC : ROOT, rel); assert.ok(fs.existsSync(p), rel + ' موجود');
-    const js = /\.js$/.test(rel), text = js ? noComments(fs.readFileSync(p, 'utf8')) : fs.readFileSync(p, 'utf8');
+    const js = /\.js$/.test(rel), text = cleanText(rel, js ? noComments(fs.readFileSync(p, 'utf8')) : fs.readFileSync(p, 'utf8'), GONE);
     assert.deepEqual(hits(text, !js), [], rel + ': لا رمزَ لنظامٍ غائب');
   }
 });
@@ -65,7 +75,7 @@ test('د3 · الحذف: لا مفتاحَ نظامٍ غائب مكتوباً ف
   const parts = JSON.parse(fs.readFileSync(path.join(ROOT, 'workers', 'parts.json'), 'utf8')).parts.map((p) => path.join(ROOT, 'workers', 'parts', p.file));
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (['systems', 'slots', 'pages'].includes(e.name) ? [] : walk(path.join(d, e.name))) : (/\.js$/.test(e.name) ? [path.join(d, e.name)] : [])));
   const bad = [];
-  for (const f of parts.concat(walk(SRC))) { const h = hits(noComments(fs.readFileSync(f, 'utf8'))); if (h.length) bad.push(path.relative(ROOT, f) + ': ' + h.slice(0, 5).join(' ')); }
+  for (const f of parts.concat(walk(SRC))) { const h = hits(cleanText(relOf(ROOT, f), noComments(fs.readFileSync(f, 'utf8')), GONE)); if (h.length) bad.push(path.relative(ROOT, f) + ': ' + h.slice(0, 5).join(' ')); }
   assert.deepEqual(bad, [], 'أجزاءٌ تحمل رمزَ نظامٍ غائب');
 });
 
@@ -112,26 +122,53 @@ test('د3 · الحذف: الشجرةُ كما تبنيها صفحةُ الإع�
 
 /* V7 · د3 (تتمة) — بحثٌ نصي عن أسماء الأنظمة الغائبة (اسمُ المجلد حيث ورد، بأي حالة أحرف) في أجزاء الخادم وكتل الواجهة، خارج التعليقات.
    ما يبقى معلنٌ بسببه في tests/removal/names.allow.json (مقطعٌ بعينه في ملفٍ بعينه)؛ أيُّ ذكرٍ خارج القائمة يُفشل الاختبار. */
-test('د3 · الحذف: لا اسمَ لنظامٍ غائب في جزءٍ من القاعدة خارج قائمة الاستثناء المعلنة ' + label, () => {
-  const ALLOW = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'removal', 'names.allow.json'), 'utf8'));
-  for (const e of ALLOW.skipFiles.concat(ALLOW.patterns, ALLOW.entries)) { assert.ok(e.why && e.why.length > 20, 'لكل استثناءٍ سبب'); assert.equal(e.kind, 'legit', 'لا مؤجَّلَ في قائمة الاستثناء (د4-أ): ' + JSON.stringify(e.file || e.pattern)); }
-  /* د4-أ: كلُّ مدخلٍ في القائمة ما زال له موضع — يُفحص على الشجرة الكاملة (الأنظمةُ كلُّها حاضرة)، فيعمل في المستودع وفي كل نسخة حذف */
-  assert.deepEqual(staleAllow(ALLOW, path.dirname(FULL), FULL), [], 'مدخلٌ في قائمة الاستثناء بلا موضع');
-  if (!GONE.length) return;
-  /* د4-ب: مع مفتاح المجلد، الأسماءُ الأخرى التي يعلنها النظامُ الغائب (system.json ← names) */
-  const extra = GONE.flatMap((k) => JSON.parse(fs.readFileSync(path.join(FULL, 'systems', k, 'system.json'), 'utf8')).names || []), find = finder(GONE, extra);
-  const skip = new Set(ALLOW.skipFiles.map((x) => x.file)), pats = ALLOW.patterns.map((x) => new RegExp(x.pattern, 'g'));
-  const bad = [];
-  for (const f of scanFiles(ROOT, SRC)) {
-    const rel = relOf(ROOT, f); if (skip.has(rel)) continue;
-    const cuts = ALLOW.entries.filter((e) => e.file === '*' || e.file === rel).flatMap((e) => e.match).sort((a, b) => b.length - a.length);
-    noComments(fs.readFileSync(f, 'utf8')).split('\n').forEach((line, i) => {
+/* اسمُ نظامٍ غائب في سطرٍ من القاعدة بعد القائمة وقاعدة الدور: [«ملف:سطر …»] — يستعمله الاختبارُ والحقنُ السلبية معاً */
+function residue(files, gone) {
+  const extra = gone.flatMap((k) => JSON.parse(fs.readFileSync(path.join(FULL, 'systems', k, 'system.json'), 'utf8')).names || []), find = finder(gone, extra);
+  const skip = new Set(ALLOW.skipFiles.map((x) => x.file)), bad = [];
+  for (const [rel, text] of files) {
+    if (skip.has(rel)) continue;
+    const clean = cleanFor(rel, gone);
+    noComments(text).split('\n').forEach((line, i) => {
       if (!find(line)) return;
-      let rest = line; for (const p of pats) rest = rest.replace(p, '""'); for (const c of cuts) rest = rest.split(c).join('');
-      const m = find(rest); if (m) bad.push(rel + ':' + (i + 1) + ' «' + rest.slice(Math.max(0, m.index - 40), m.index + 50).trim() + '»');
+      const rest = clean(line), m = find(rest); if (m) bad.push(rel + ':' + (i + 1) + ' «' + rest.slice(Math.max(0, m.index - 40), m.index + 50).trim() + '»');
     });
   }
+  return bad;
+}
+test('د3 · الحذف: لا اسمَ لنظامٍ غائب في جزءٍ من القاعدة خارج قائمة الاستثناء المعلنة ' + label, () => {
+  for (const e of ALLOW.skipFiles.concat(ALLOW.patterns, ALLOW.entries, ALLOW.roles || [])) { assert.ok(e.why && e.why.length > 20, 'لكل استثناءٍ سبب'); assert.equal(e.kind, 'legit', 'لا مؤجَّلَ في قائمة الاستثناء (د4-أ): ' + JSON.stringify(e.file || e.pattern || e.name)); }
+  for (const r of ALLOW.roles || []) for (const x of (r.patterns || []).concat(r.identifiers || [])) assert.ok(x.why && x.why.length > 15, 'لكل نمطٍ ومعرّفٍ في قاعدة الدور سببُه: ' + (x.re || x.name));
+  /* د4-أ: كلُّ مدخلٍ في القائمة ما زال له موضع — يُفحص على الشجرة الكاملة (الأنظمةُ كلُّها حاضرة)، فيعمل في المستودع وفي كل نسخة حذف */
+  assert.deepEqual(staleAllow(ALLOW, path.dirname(FULL), FULL), [], 'مدخلٌ في قائمة الاستثناء بلا موضع');
+  const root0 = path.dirname(FULL); assert.deepEqual(staleRoles(ALLOW.roles, scanFiles(root0, FULL).map((f) => noComments(fs.readFileSync(f, 'utf8')))), [], 'نمطٌ أو معرّفٌ في قاعدة الدور بلا موضع');
+  if (!GONE.length) return;
+  const bad = residue(scanFiles(ROOT, SRC).map((f) => [relOf(ROOT, f), fs.readFileSync(f, 'utf8')]), GONE);
   assert.deepEqual(bad.slice(0, 25), [], bad.length + ' ذكراً لاسم نظامٍ غائب خارج قائمة الاستثناء');
+});
+
+/* د5-د2 · قرار المراجع 4: عددُ مداخل القائمة مثبَّتٌ — ينزل ولا يرتفع. مدخلٌ جديد = رفعُ LIMITS في role_rule.mjs = موافقةُ المراجع */
+test('د5-د2 · قائمةُ الاستثناء لا تكبر: أعدادُها ≤ المثبَّت', () => {
+  const now = allowCounts(ALLOW);
+  for (const k of Object.keys(LIMITS)) assert.ok(now[k] <= LIMITS[k], k + ': ' + now[k] + ' > المثبَّت ' + LIMITS[k] + ' — مدخلٌ جديد يحتاج موافقةَ المراجع');
+  assert.deepEqual(Object.keys(now).sort(), Object.keys(LIMITS).sort());
+});
+
+/* د5-د2 · قرار المراجع 3 — حقنٌ سلبية إلزامية: كلُّ حقنةٍ في ملفٍ من القاعدة يجب أن يكشفها البحثُ مع القاعدة؛ وسطرُ دورٍ خالص لا يُكشف.
+   تُفحص كأن الجدولَ غائب (gone = staff) في كل شجرة — المستودع ونسخُ الحذف — لأن رموزَه تُقرأ من الشجرة الكاملة. لو مرّت حقنةٌ فالقاعدةُ مرفوضة. */
+test('د5-د2 · الحقنُ السلبية: قراءةُ مفتاح الجدول · الاستيرادُ من مجلده · سطرٌ يبدو سطرَ دورٍ ويقرأ الجدول — كلٌّ يُفشل البحث', () => {
+  if (!fs.existsSync(path.join(FULL, 'systems', 'staff', 'system.json'))) return;
+  const at = 'src/layouts/root-logic.js', gone = ['staff'];
+  const INJ = {
+    'قراءة bassam_staffing_v3 مباشرة': 'var s = KIVO.__BS_SRV.operations.get("bassam_staffing_v3");',
+    'استيراد من modules/staff/': 'import { x } from "../modules/staff/logic.js";',
+    'سطرُ دورٍ يقرأ الجدول': 'if (u.role === "staff") rows = KIVO.__BS_SRV.operations.get("bassam_staffing_v3");',
+  };
+  for (const [name, line] of Object.entries(INJ)) assert.ok(residue([[at, line]], gone).length > 0, 'الحقنة مرّت بلا كشف: ' + name);
+  /* والقاعدةُ تُقبل لسطر الدور الخالص وحده */
+  assert.deepEqual(residue([[at, 'if (u.role === "staff") x();']], gone), [], 'سطرُ الدور الخالص');
+  /* ومعرّفٌ مسمّى لا يُستثنى إلا بحدود الكلمة: isStaffing ليس isStaff */
+  if ((ALLOW.roles || []).some((r) => (r.identifiers || []).some((x) => x.name === 'isStaff'))) assert.ok(residue([[at, 'var v = u.isStaffing;']], gone).length > 0, 'معرّفٌ أطول من المسمّى مرّ');
 });
 
 /* V7 · د4-أ · د4-ب — القطعةُ المشتركة المعلنة (src/systems/_shared/<key>): تبقى ما حضر أحدُ مالكيها. الأدواتُ لا تحذفها؛ يحذفها اختبارُ الحذف حين يغيب مالكوها */
