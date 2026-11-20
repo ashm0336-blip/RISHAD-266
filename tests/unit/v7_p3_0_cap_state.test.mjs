@@ -48,7 +48,7 @@ test('capState: open · inherit · own · independent · empty — from the exis
   assert.match(T, /capState: I\.capState,/, 'exported on KIVO.BassamPerm');
 });
 
-test('the admin center shows the state from that one source in the tree, the overview checklist and the ceiling editor', () => {
+test('the admin center shows the state from that one source in the tree and the overview checklist (V7 · د5-هـ 44: the ceiling editor was deleted)', () => {
   const f = fnSrc(L, '_capStateTxt', '\n  ');
   assert.match(f, /P\.capState\(o\)/, 'reads capState');
   assert.match(L, /step\("سقف الصفحات", capSt\.txt, capSt\.ok, "cap"\)/, 'checklist: its text and ✓/! from the source (open is not ✓)');
@@ -56,9 +56,9 @@ test('the admin center shows the state from that one source in the tree, the ove
   assert.doesNotMatch(L, /"موروثٌ من الأعلى"/, 'the P1 text that called every unit without a record «inherited» is gone');
   assert.match(L, /trCapTxt: this\._capStateTxt\(r\.id\)\.short,/, 'tree');
   assert.doesNotMatch(L, /: "السقف مفتوح";/, 'the tree no longer calls a limited unit «open»');
-  assert.match(L, /const cs = this\._capStateTxt\(o\);[^\n]*\s+return \{ capStateTxt: cs\.txt \? "المحفوظ: " \+ cs\.txt : "", capStateTone: cs\.tone, capStateOn: !!cs\.txt && !cs\.empty \};/, 'editor: the SAVED state; hidden when empty (capEmptyOn warns)');
-  assert.match(V, /<div class="capst" data-tone="\{\{capStateTone\}\}">\{\{capStateTxt\}\}<\/div>/, 'editor header line');
   assert.doesNotMatch(L, /subLine:/, 'the unrendered tree subtitle (a second ceiling count) is gone');
+  /* V7 · د5-هـ (44): رأسُ محرّر السقف وتنبيهُه حُذفا مع «سقف الصفحات» — والحالةُ نفسُها باقيةٌ في الشجرة وقائمة التهيئة */
+  assert.doesNotMatch(L, /capStateTxt:|capEmptyTxt:/, 'the deleted editor\'s header and alert are gone');
   /* the texts: open is a warning, never ✓ */
   const g = fnSrc(L, '_capOwnRecEmpty', '\n  ');
   const ctx = { KIVO: { BassamCount: (n) => String(n), BassamPerm: { PAGE_KEYS: ['emps', 'tasks', 'admin'], capState: () => ({ kind: 'open', independent: false, n: 14, all: 14, empty: false }) } } };
@@ -79,7 +79,6 @@ test('the admin center shows the state from that one source in the tree, the ove
   assert.equal(r.txt, 'السقف الفعلي فارغ بحكم سقوف الأصول — لا صفحة مفعّلة', 'inherited and empty: the ancestor'); assert.equal(r.short, 'السقف فارغ بحكم الأصول');
   r = run({ kind: 'own', independent: true, n: 0, all: 14, empty: true }, []);
   assert.equal(r.txt, 'سقفٌ خاصّ مستقلّ فارغ — لا صفحة مفعّلة لهذه الوحدة', 'independent and empty: its own record, no ancestor assumed');
-  assert.match(L, /capEmptyTxt:\s+this\._capOwnRecEmpty\(o\)\s+\? "سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة/, 'the editor alert picks its text by the same rule (own record empty ⇒ «tick pages»; otherwise the ancestors)');
 });
 
 test('the unused patterns are gone; the live seed keeps its behaviour (and a stored «أساسي» still wins)', needs('custody', 'tasks'), () => {

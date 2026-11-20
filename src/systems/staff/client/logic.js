@@ -232,13 +232,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   pmPick(t, e, s) {
     const n = s ? this.PERM_ROLES().filter((t) => t.id === s)[0] : null;
     if (s && !n) return void this.bsToast("الدور لم يعد موجوداً — أعد فتح القائمة", "warn");
-    /* V7 · د5-هـ (44): المسارُ الواحد لإسناد الدور (KIVO.Perm44.setPerson) — الدورُ يُترجَم داخل سقف الإدارة في المحرّك */
-    const a = this.PERM_ROLE_SET(t, n ? n.id : null);
-    if (a && !1 === a.ok) this.bsToast(a.err || "تعذّر حفظ الصلاحيات", "warn");
-    else {
-      (this.setState({ pmOpen: null, pmPos: null, permTick: (this.state.permTick || 0) + 1 }),
+    /* V7 · د5-هـ (44): المسارُ الواحد لإسناد الدور (KIVO.Perm44.assign — مسودةٌ واحدة) — الدورُ يُترجَم داخل سقف الإدارة في المحرّك */
+    this.setState({ pmOpen: null, pmPos: null });
+    return this.PERM_ROLE_SET(t, n ? n.id : null).then((a) => {
+      if (!a || !1 === a.ok) return void this.bsToast((a && a.err) || "تعذّر حفظ الصلاحيات", "warn");
+      (this.setState({ permTick: (this.state.permTick || 0) + 1 }),
         this.bsAck(n ? "أُسند إلى «" + (e || "الموظف") + "» دور «" + n.name + "»" : "سُحب دور «" + (e || "الموظف") + "»", "ok"));
-    }
+    });
   }
   _pmColOn() {
     return !!(KIVO.Perm44 && "function" === typeof KIVO.Perm44.rolesOf);
@@ -2103,20 +2103,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             if ("__none" !== e && !i) return;
             let a = 0,
               o = 0;
-            (r.forEach((t) => {
+            const M = {};
+            r.forEach((t) => {
               if (!n[t]) return void o++;
-              /* V7 · د5-هـ (44): الإسنادُ الجماعي بالمسار الواحد (KIVO.Perm44.setPerson) */
-              const q = this.PERM_ROLE_SET(t, i ? i.id : null);
-              (q && !1 === q.ok) || a++;
-            }),
-              this.setState({ permTick: (this.state.permTick || 0) + 1 }),
+              (M[t] = i ? i.id : null), a++;
+            });
+            /* V7 · د5-هـ (44): الإسنادُ الجماعي بالمسار الواحد — مسودةٌ واحدة لكل المحدَّدين تُثبَّت مرةً (KIVO.Perm44.assign) */
+            (a ? this.PERM_ROLE_SET(M) : Promise.resolve({ ok: !0 })).then((q) => {
+              if (q && !1 === q.ok) return void this.bsToast(q.err || "تعذّر حفظ الصلاحيات", "warn");
+              this.setState({ permTick: (this.state.permTick || 0) + 1 });
               this.bsToast(
                 (i
                   ? "أُسندت صلاحية «" + i.name + "» لـ " + KIVO.BassamCount(a, "موظف", "g") + ""
                   : "أُزيلت الصلاحية عن " + KIVO.BassamCount(a, "موظف", "g") + "") +
                   (o ? " — وتُخطِّي " + o + " بلا حساب دخول: الصلاحية تتطلب حساباً نشطاً" : ""),
                 o ? "warn" : "ok",
-              ));
+              );
+            });
           },
           bulkWorkOpts9: (() => {
             const t = {};

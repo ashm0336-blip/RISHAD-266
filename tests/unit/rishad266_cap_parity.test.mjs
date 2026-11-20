@@ -58,11 +58,8 @@ test('UI fails closed: when ancestors cannot be read, a unit without its own rec
   assert.deepEqual(S(client({ caps: { g1: [a] } }, 'd1', true)), []);
   assert.deepEqual(S(client({ caps: { d1: [a, b] } }, 'd1', true)), S([a, b]), 'its own record still shows');
 });
-test('admin editor: an own-flag unit without a record is still limited by its ancestors (no LIM bypass) · draft starts from the effective ceiling', () => {
-  const L = fs.readFileSync(path.join(SRC, 'modules/admin/logic.js'), 'utf8');
-  assert.ok(L.includes('t.capOwnOf(e.sysSel) && t.hasCap(e.sysSel))) return 0;') && L.includes('r.capOwnOf(o) && r.hasCap(o))) return null;'));
-  assert.ok(L.includes('e.rawCap && e.hasCap && e.hasCap(t) ? e.rawCap(t) : e.deptCap(t)'));
-});
+/* V7 · د5-هـ (44): حالةُ «admin editor: an own-flag unit … no LIM bypass · draft starts from the effective ceiling» حُذفت مع محرّر «سقف الصفحات» (LIM · المسودة) —
+   السقفُ يُضبط في «الصلاحيات ← الأنظمة» بالكتّاب القائمين في 331 (setDeptCap…)، والقاعدةُ نفسُها مثبَّتةٌ في الخادم أدناه (writePages · effCapOf). */
 
 /* RISHAD266 (قرار المالك على aae024c): الكتابة — سقفٌ فعليٌّ واحد ولا كتابةَ ضمنيةً لغياب السجل (018 writePages على دالة الخادم الحقيقية) */
 const { writePages } = await internals(['writePages']);

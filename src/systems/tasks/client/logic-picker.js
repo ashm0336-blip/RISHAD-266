@@ -61,7 +61,7 @@ Object.assign(Component.prototype, {
       n = KIVO.Perm44;
     let e = [];
     try {
-      const t = n && "function" === typeof n.rolesOf ? n.rolesOf(this._tkDept ? this._tkDept() : undefined) : [];
+      const t = n && "function" === typeof n.rolesOf ? (n.rolesOf(this._tkDept ? this._tkDept() : undefined) || {}).roles : [];   /* rolesOf → {roles, people} */
       Array.isArray(t) && (e = t.filter((x) => x && x.id));
     } catch (t) {}
     return (

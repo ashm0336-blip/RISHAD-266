@@ -20,7 +20,7 @@ function world(fetch){let uid=IDS.super,accept=true,reason='';const calls=[],con
   const page={state:{sysSel:D1,admArm:null},setState(value){this.state={...this.state,...value};},bsAck:(...args)=>acks.push(args),bsToast:(...args)=>toasts.push(args)};
   /* the shell always loads the shared Arabic counter (src/services/440-count.js); the page's messages use it */
   C.KIVO.BassamCount=COUNT;
-  for(const name of ['_wpActor','_wpCall','_businessBaseValid','deptDel','_deptDelGo']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,C);}
+  for(const name of ['_wpActor','_reasonFirst','_wpCall','_businessBaseValid','deptDel','_deptDelGo']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,C);}
   return {page,calls,confirmations,prompts,acks,toasts,writes,syncs,reloads,setReason(value){reason=value;},setConfirm(value){accept=value;},switchActor(){uid='TEST_ONLY_other_super';C.__BS_BOOT.uid=uid;}};
 }
 test('department deletion inventories the server and types the authoritative name before waiting for complete ACK',async()=>{
@@ -32,11 +32,8 @@ test('department lost receipt retries the exact ticket without a new inventory/c
 test('known department conflict requires another explicit inventory and typed confirmation',async()=>{
   let revision=4,conflict=true;const B=world(async(url,options)=>options.method==='GET'?response(inventory(revision)):conflict?response({ok:0,err:'conflict'},409):response(receipt(options)));await B.page.deptDel(target);const first=JSON.parse(B.calls.at(-1).options.body),n=B.calls.length;await B.page._deptDelGo(target);assert.equal(B.calls.length,n);revision=8;conflict=false;await B.page.deptDel(target);const last=JSON.parse(B.calls.at(-1).options.body);assert.equal(B.confirmations.length,2);assert.equal(last.base.custody,8);assert.notEqual(last.requestId,first.requestId);assert.equal(B.acks.length,1);
 });
-test('department reason cancellation preserves confirmation; accepted reason changes the ticket only after known rejection',async()=>{
-  let requireReason=true;const B=world(async(url,options)=>options.method==='GET'?response(inventory()):requireReason?response({ok:0,why:'reason',reasonKeys:['emp.record.bulk.delete']},403):response(receipt(options)));await B.page.deptDel(target);assert.equal(B.prompts.length,1);assert.equal(B.calls.filter(call=>call.options.method==='POST').length,1);assert.ok(B.page._deptDeleteDraft);assert.equal(B.acks.length,0);const first=JSON.parse(B.calls.at(-1).options.body);B.setReason('TEST_ONLY operator deletion reason');requireReason=false;
-  // The server must request a reason again before the client may issue a new ID.
-  let step=0;const old=B.page._wpCall;B.page._wpCall=async function(dept,body,actor,kind){if(body&&step++===0)return{ok:0,err:'reason',reasonKey:key,reasonKeys:['emp.record.bulk.delete']};return old.call(this,dept,body,actor,kind);};await B.page.deptDel(target);const final=JSON.parse(B.calls.at(-1).options.body);assert.notEqual(final.requestId,first.requestId);assert.equal(final.reason,'TEST_ONLY operator deletion reason');assert.equal(B.acks.length,1);assert.equal(B.confirmations.length,1);
-});
+/* V7 · د5-هـ (44 · قرار المالك 9): «department reason cancellation preserves confirmation; accepted reason changes the ticket only after known rejection» حُذفت — كانت تثبّت سؤالَ السبب بعد رفض الخادم؛ والمسارُ لمدير المنصة وحده (_wpActor)، وهو معفًى من السبب
+   خادماً وواجهةً (reasonExempt · _reasonFirst) فلا يُسأل ولا يُرفض بالسبب. السببُ قبل الإرسال مختبَرٌ في tests/unit/v7_d5e44_reason_first.test.mjs. */
 test('missing account counts, cancellation and stale principal cannot delete or display success',async()=>{
   const missing=world(async()=>response({...inventory(),counts:{keys:1,custody:2,notifications:1,irshad:4,seized:5,awards:6}}));await missing.page.deptDel(target);assert.equal(missing.confirmations.length,0);assert.equal(missing.calls.filter(call=>call.options.method==='POST').length,0);
   const cancelled=world(async()=>response(inventory()));cancelled.setConfirm(false);await cancelled.page.deptDel(target);assert.equal(cancelled.calls.filter(call=>call.options.method==='POST').length,0);assert.equal(cancelled.acks.length,0);

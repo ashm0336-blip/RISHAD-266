@@ -343,14 +343,6 @@
    "order": 10,
    "text": "                bassam_tasks_v1: \"المهام\",\r\n                bassam_tasks_locks_v1: \"اعتمادات المهام\",\r\n"
   },
-  "admin.tree.leafNote.tasks": {
-   "order": 10,
-   "text": "\"tasks\" === l.owner\r\n                        ? \"التكرار: إنشاءُ مهمةٍ متكررة = «\" + lab(\"task.create\") + \"» (+ «\" + lab(\"task.assign\") + \"») · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «\" + lab(\"task.edit\") + \"»\"\r\n                        : "
-  },
-  "admin.tree.recNotes.tasks": {
-   "order": 10,
-   "text": "        \"task.create\": \"يشمل إنشاءَ مهمةٍ لمرة واحدة أو متكررة (يومي · أسبوعي · شهري)\",\r\n        \"task.edit\": \"يشمل تعديلَ التكرار وإيقافَه مؤقتاً واستئنافَه وإنهاءَه، وتحويلَ مهمةٍ إلى متكررة مع «\" + lab(\"task.create\") + \"» و«\" + lab(\"task.assign\") + \"»\",\r\n        \"task.assign\": \"يشمل مكلَّفي المهمة المتكررة\",\r\n"
-  },
   "admin.keyLabels.tasks": {
    "order": 10,
    "text": "        bassam_tasks_v1: \"المهام\",\r\n"

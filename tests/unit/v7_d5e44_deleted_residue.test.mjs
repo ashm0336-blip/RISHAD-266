@@ -26,6 +26,10 @@ const NAMES = [
   'plOnMods', '_plMods', 'plModTog', 'plMods', 'plNav', 'plHideTog', 'plUp', 'plDown', '["plat", "mods"', '"mods", "الوحدات"', 'وحدات المنصة</', 'ترتيب الصفحات</',
   /* زرُّ «+ قسم» */
   'secAddOn', 'secAdd', 's-secadd',
+  /* V7 · د5-هـ (44 · التوحيد): تبويبُ «سقف الصفحات» ومحرّرُه وشجرتُه القديمة (الصفحة × الفعل · t24Rows) وقطعةُ المتابعة فيه */
+  'capTog', 'capSubTog', 'capTabTog', 'capLensTog', 'capLensAll', 'capExpand', 'capSave', 'capUndo', 'cap24Leaf', 'cap24Sync', '_cap24Synced', '_capNormalize',
+  'capOwnTog', '_loadDraft', 'capDraft', 'capBase', 'capOpenRows', 'capLegacy', 'capRows24', 'tabCapShow', 'onTabCap', 'goTabCap', 'حفظ السقف', 'admin.cap24.daily',
+  't24Rows', 't24TogLeaf', 't24ViewAll', 't24Add', 't24Drop', 't24Shown', 't24TogKey', 't24LeafKeys',
 ];
 const SKIP = /(^|\/)(systems\/[^/]+\/server|slots\/workers|slots\/tools|systems\/[^/]+\/permissions\.json|permissions\/registry|permissions\/340-registry|manifests\/perm-tree24\.json|types\/kivo\.d\.ts)/;
 function files(dir, out = []) {
@@ -58,18 +62,18 @@ test('no client writer of the templates or of the template assignment is left (t
   assert.deepEqual(hits, []);
 });
 
-test('the readers read roles: KIVO.Perm44 (rolesOf · roleOf · setPerson) and the role flag sup:true', () => {
+test('the readers read roles: KIVO.Perm44 (rolesOf → {roles} · roleOf · assign — one draft committed once) and the role flag sup:true', () => {
   const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
   const PK = rd('components/565-page-kit.js'), ST = rd('systems/staff/client/logic.js'), DR = rd('systems/dreport/client/logic.js'), PL = rd('systems/plan/client/logic.js'),
     TK = rd('systems/tasks/client/logic-picker.js'), EM = rd('modules/employees/logic.js'), PF = rd('modules/profile/logic.js'), T334 = rd('permissions/334-perm-tree-tpl.js'), AD = rd('modules/admin/logic.js');
-  assert.match(PK, /PERM_ROLES\(did\) \{/); assert.match(PK, /P4\.rolesOf\(this\._p44Dept\(did\)\)/); assert.match(PK, /P4\.roleOf\(ekey, this\._p44Dept\(did\)\)/); assert.match(PK, /P4\.setPerson\(ekey, roleId \|\| null, this\._p44Dept\(did\)\)/);
-  assert.match(ST, /this\.PERM_ROLE_SET\(t, n \? n\.id : null\)/, 'staff: the picker assigns a role'); assert.match(ST, /this\.PERM_ROLE_SET\(t, i \? i\.id : null\)/, 'staff: bulk assignment');
+  assert.match(PK, /PERM_ROLES\(did\) \{/); assert.match(PK, /P4\.rolesOf\(this\._p44Dept\(did\)\) : null, L = R && R\.roles/); assert.match(PK, /P4\.roleOf\(ekey, this\._p44Dept\(did\)\)/); assert.match(PK, /P4\.assign\(this\._p44Dept\(did\), map\)/);
+  assert.match(ST, /this\.PERM_ROLE_SET\(t, n \? n\.id : null\)/, 'staff: the picker assigns a role'); assert.match(ST, /\(a \? this\.PERM_ROLE_SET\(M\) : /, 'staff: bulk assignment — every selected person in one draft');
   assert.match(ST, /KIVO\.BassamSup\.isSupRole\(s\)/);
-  assert.match(DR, /P4\.setPerson\(t, l \? l\.id : null, this\.drDept\(\)\)/, 'dreport: the report assigns a role'); assert.match(DR, /P4\.rolesOf\(this\.drDept\(\)\)/);
-  assert.match(PL, /P4\.rolesOf\(D4\)/); assert.match(PL, /P4\.roleOf\(e, D4\)/);
+  assert.match(DR, /P4\.assign\(this\.drDept\(\), M4\)/, 'dreport: the report assigns a role'); assert.match(DR, /P4\.rolesOf\(this\.drDept\(\)\)/);
+  assert.match(PL, /\(P4\.rolesOf\(D4\) \|\| \{\}\)\.roles/); assert.match(PL, /P4\.roleOf\(e, D4\)/);
   assert.match(TK, /n\.rolesOf\(/); assert.match(TK, /n\.roleOf\(r,/); assert.match(TK, /this\._tkLS\("bassam_roles_v1"\)/);
   assert.match(EM, /this\.PERM_ROLES\(\)/); assert.match(EM, /m\.permLabel\(a\)/);
-  assert.match(PF, /P4\.rolesOf\(e\.deptId\)/); assert.match(PF, /P\.isSupRole\(t\)/); assert.match(PF, /P\.roleOf\(r\.ekey, e\.deptId\)/);
+  assert.match(PF, /\(P4\.rolesOf\(e\.deptId\) \|\| \{\}\)\.roles/); assert.match(PF, /P\.isSupRole\(t\)/); assert.match(PF, /P\.roleOf\(r\.ekey, e\.deptId\)/);
   assert.match(T334, /KIVO\.BassamSup = \{ roleOf: roleOf, isSupRole: isSupRole, isSup: isSup, supName: supName \}/);
   assert.doesNotMatch(T334, /رئيس\|نائب/, 'no runtime name rule for the supervisory crew');
   assert.match(AD, /location\.hash = "#\/sysadmin\/org\/" \+ encodeURIComponent\(u\) \+ "\/perm\/people"/, '«تعديل الصلاحيات» → the people section of the «الصلاحيات» tab');

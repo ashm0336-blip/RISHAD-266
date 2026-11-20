@@ -21,7 +21,7 @@ function world(fetch){
   const page={state:{wpDid:'',wpTxt:'',tick:0},setState(p){this.state={...this.state,...p};},bsAck:(...args)=>acks.push(args)};
   /* the shell always loads the shared Arabic counter (src/services/440-count.js); the page's messages use it */
   context.KIVO.BassamCount=COUNT;
-  for(const name of ['_wpActor','_wpCall','_businessBaseValid','wpOpen','wpReview','wpGo','wpClose']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,context);}
+  for(const name of ['_wpActor','_reasonFirst','_wpCall','_businessBaseValid','wpOpen','wpReview','wpGo','wpClose']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,context);}
   return {page,calls,acks,reloads,timers,prompts,syncs,setReason(value){reasonText=value;},switchActor(){uid='TEST_ONLY_other_super';context.__BS_BOOT.uid=uid;}};
 }
 function receipt(options,revision=5){const body=JSON.parse(options.body);return {ok:1,dept:body.dept,requestId:body.requestId,rev:revision,counts:{keys:1,custody:2,notifications:3,irshad:4,seized:5,awards:6}};}
@@ -48,12 +48,10 @@ test('malformed or stale-principal wipe receipts cannot close the confirmation o
     await B.page.wpOpen(DEPT);B.page.setState({wpTxt:'TEST_ONLY retained'});await B.page.wpGo(DEPT);assert.equal(B.acks.length,0,kind);assert.equal(B.page.state.wpDid,DEPT);assert.equal(B.page.state.wpTxt,'TEST_ONLY retained');assert.equal(B.reloads.length,0);
   }
 });
-test('wipe asks the original reason dialog only after explicit denial and retains the new body on uncertain retry',async()=>{
-  let posts=0;const B=world(async(url,options)=>{if(options.method==='GET')return response(inventory());posts++;if(posts===1)return response({ok:0,denied:{['bsdept:'+DEPT+':bassam_employees_v1']:{why:'reason',reasonKeys:['emp.record.bulk.delete']}}},403);if(posts===2)throw Error('TEST_ONLY uncertain reason receipt');return response(receipt(options));});B.setReason('TEST_ONLY approved by operator');await B.page.wpOpen(DEPT);B.page.setState({wpTxt:'TEST_ONLY retain'});await B.page.wpGo(DEPT);assert.equal(B.prompts.length,1);assert.equal(B.page.state.wpDid,DEPT);const calls=B.calls.filter(call=>call.options.method==='POST'),first=JSON.parse(calls[0].options.body),next=JSON.parse(calls[1].options.body);assert.notEqual(first.requestId,next.requestId);assert.equal(next.reason,'TEST_ONLY approved by operator');B.page.wpClose();await B.page.wpReview(DEPT);assert.equal(B.page.state.wpDid,DEPT);assert.equal(B.calls.at(-1).options.body,calls[1].options.body,'no hidden GET/rebase while receipt uncertain');await B.page.wpGo(DEPT);assert.equal(B.prompts.length,1);assert.equal(B.calls.at(-1).options.body,calls[1].options.body);assert.equal(B.acks.length,1);assert.deepEqual(B.syncs,[false]);assert.equal(B.reloads.length,0);
-});
-test('wipe reason cancellation preserves confirmation and does not invent a server reason',async()=>{
-  const B=world(async(url,options)=>options.method==='GET'?response(inventory()):response({ok:0,why:'reason',reasonKeys:['emp.record.bulk.delete']},403));await B.page.wpOpen(DEPT);B.page.setState({wpTxt:'TEST_ONLY retain'});await B.page.wpGo(DEPT);assert.equal(B.prompts.length,1);assert.equal(B.calls.filter(call=>call.options.method==='POST').length,1);assert.equal(B.page.state.wpTxt,'TEST_ONLY retain');assert.equal(B.acks.length,0);
-});
+/* V7 · د5-هـ (44 · قرار المالك 9): «wipe asks the original reason dialog only after explicit denial and retains the new body on uncertain retry» حُذفت — كانت تثبّت سؤالَ السبب بعد رفض الخادم؛ والمسارُ لمدير المنصة وحده (_wpActor)، وهو معفًى من السبب
+   خادماً وواجهةً (reasonExempt · _reasonFirst) فلا يُسأل ولا يُرفض بالسبب. السببُ قبل الإرسال مختبَرٌ في tests/unit/v7_d5e44_reason_first.test.mjs. */
+/* V7 · د5-هـ (44 · قرار المالك 9): «wipe reason cancellation preserves confirmation and does not invent a server reason» حُذفت — كانت تثبّت سؤالَ السبب بعد رفض الخادم؛ والمسارُ لمدير المنصة وحده (_wpActor)، وهو معفًى من السبب
+   خادماً وواجهةً (reasonExempt · _reasonFirst) فلا يُسأل ولا يُرفض بالسبب. السببُ قبل الإرسال مختبَرٌ في tests/unit/v7_d5e44_reason_first.test.mjs. */
 
 test('wipe rejects an inventory or receipt that omits the migrated Irshad domain',needs('irshad'), async()=>{
   const missing=inventory();delete missing.base.irshad;

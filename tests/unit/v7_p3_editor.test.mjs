@@ -1,8 +1,8 @@
 /* RISHAD V7 P3 — the unified permissions editor.
    V7 · د5-هـ (44): the account window, the unit's templates editor, the legacy page×action tree rules (togLeafIn · viewAllIn · sheetDiff · keyDiff)
    and the one template-grant processor (grantTpl · grantTplByName) were DELETED with the templates and the employee-permissions window —
-   their cases are deleted with them. What stays is the enforce tree of the kept ceiling editor: a new leaf grant is its first view key alone
-   (t24TogLeaf ⇒ p24.primView), a partial leaf is withdrawn by its checkbox, «تحديد الكل» grants by the tree's own rule (t24ViewAll). */
+   their cases are deleted with them. V7 · د5-هـ (44 · التوحيد): «سقف الصفحات» وشجرتُه (t24TogLeaf · t24ViewAll · t24Rows) حُذفت أيضاً —
+   فحُذفت حالاتُها؛ ويبقى هنا قاعدةُ المحرّك p24.primView (مفتاحُ العرض الأول لكل ورقة) في 334. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -33,10 +33,7 @@ test('enforce: a new leaf grant is its first view key alone (p24.primView) — e
   assert.equal(c.p24PrimView('lens.zones'), 'lens.zones.view');
   const owners = [...new Set(REG.registry.filter((e) => e.status === 'active' && e.grant === 'assignable' && e.ownerKind !== 'platform').map((e) => e.owner))];
   for (const o of owners) assert.ok(c.p24PrimView(o), 'a view key for ' + o);
-  const tl = fnSrc(L, 't24TogLeaf', '\n  ');
-  assert.match(tl, /P24\.primView\(l\.owner, l\.keys\)/); assert.match(tl, /this\.t24Add\(d, L, pv\)/); assert.doesNotMatch(tl, /ks\.forEach\(\(k\) => this\.t24Add/, 'no longer every key of the leaf');
-  assert.match(L, /o\.cb\.togLeaf\(l, !lOnState\)/, 'a partial leaf is withdrawn by its checkbox, never silently widened (was !all)');
-  const va = fnSrc(L, 't24ViewAll', '\n  ');
-  assert.match(va, /"plugin" === l\.type \? -1 !== \(lens \|\| \[\]\)\.indexOf\(l\.lens\) : ks\.some\(\(k\) => on\[k\] && !dv\[k\]\)/, 'granted = the tree\'s rule: a lens by its gate, a leaf by a non-derived key (independent review: derived keys made the result depend on leaf order)');
+  /* V7 · د5-هـ (44): شجرةُ المحرّر (t24TogLeaf · t24ViewAll) حُذفت مع «سقف الصفحات» */
+  assert.ok(!/\n  t24TogLeaf\(|\n  t24ViewAll\(|\n  t24Rows\(/.test(L), 'the legacy tree editor is gone from the admin page');
 });
 

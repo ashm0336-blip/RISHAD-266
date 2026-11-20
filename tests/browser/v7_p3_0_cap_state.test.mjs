@@ -1,7 +1,7 @@
 /* RISHAD V7 P3-0 — the ceiling state shown from one source, and seeding unchanged by the removal of the unused patterns (isolated lab,
    TEST_ONLY data). The lab's units all have a record; each case rewrites bassam_perms_v1 in the lab database before signing in.
      · open    (no record in unit B nor above it): tree «السقف مفتوح — لم يُضبط», checklist «مفتوح — لم يُضبط» as a warning (!, not ✓),
-               editor header the same warning;
+               (V7 · د5-هـ 44: the editor header and its empty alert were deleted with «سقف الصفحات» — their checks with them);
      · inherit (G has a record, B none): «يرث سقف الأصل · n من …» / «موروثٌ من الأصل …» ✓;
      · own     (A its own record): «سقفٌ خاصّ · n من …», independent adds «مستقلّ»; an empty record reads «السقف فارغ» as a warning.
    Seeding (the real client engine, after the removal): a child under an empty parent gets the «أساسي» record and an empty effective ceiling;
@@ -22,13 +22,10 @@ async function view(b, lab) {
   const s = await openAs(b, lab, LAB.superUn, LAB.superPw); s.page.setDefaultTimeout(15000); const p = s.page;
   const tree = async (name) => { await s.go('#/sysadmin/org', 2500); await p.locator('main a:has-text("فرد الكل")').click(); await p.waitForTimeout(400); return (await p.locator('main .tr-rw', { hasText: name }).first().innerText()).replace(/\s+/g, ' '); };
   const step = async (id) => { await s.go('#/sysadmin/org/' + id, 2500); const li = p.locator('main section[aria-label="قائمة التهيئة"] li', { hasText: 'سقف الصفحات' }).first(); return { txt: (await li.innerText()).replace(/\s+/g, ' '), cls: await li.getAttribute('class') }; };
-  const head = async (id) => { await s.go('#/sysadmin/org/' + id, 2500); await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'سقف الصفحات' }).click(); await p.waitForTimeout(800); const e = p.locator('main .capst').first(); return { txt: (await e.innerText()).trim(), tone: await e.getAttribute('data-tone') }; };
-  const emptyAlert = async (id) => { await s.go('#/sysadmin/org/' + id, 2500); await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'سقف الصفحات' }).click(); await p.waitForTimeout(800);
-    return p.evaluate(() => { const m = document.querySelector('main').innerText.split('\n').map((x) => x.trim()); return m.find((x) => /^سقف الصفحات فارغ — |^السقف الفعلي لهذه الإدارة فارغ/.test(x)) || ''; }); };
-  return { s, p, tree, step, head, emptyAlert };
+  return { s, p, tree, step };
 }
 
-test('V7 P3-0 · ceiling state from one source: open (warning), inherited, own, independent, empty — tree, checklist and editor agree', { timeout: 600000 }, async () => {
+test('V7 P3-0 · ceiling state from one source: open (warning), inherited, own, independent, empty — the tree and the checklist agree (V7 · د5-هـ 44: the ceiling editor was deleted)', { timeout: 600000 }, async () => {
   const lab = await startLab(); const b = await chromium.launch();
   try {
     /* open: no record in B nor above it */
@@ -36,35 +33,29 @@ test('V7 P3-0 · ceiling state from one source: open (warning), inherited, own, 
     let v = await view(b, lab);
     assert.match(await v.tree('TEST_ONLY إدارة ب'), /السقف مفتوح — لم يُضبط/, 'tree: open');
     let st = await v.step('TEST_ONLY_B'); assert.match(st.txt, /مفتوح — لم يُضبط/); assert.match(st.cls, /\bwn\b/, 'checklist: open is a warning, not ✓');
-    let h = await v.head('TEST_ONLY_B'); assert.match(h.txt, /^المحفوظ: مفتوح — لم يُضبط/); assert.equal(h.tone, 'warn', 'editor: warning tone');
     assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
     /* inherit (G capped, B no record) · own (A) · independent (A capOwn) */
     await setPerms(lab, (P) => { P.caps = { TEST_ONLY_G: ['tasks', 'emps', 'admin'], TEST_ONLY_A: ['tasks', 'emps', 'help'] }; P.capOwn = {}; });
     v = await view(b, lab);
     assert.match(await v.tree('TEST_ONLY إدارة ب'), /يرث سقف الأصل [·-] [3٣] من/, 'tree: inherited (3 pages of G)');
     st = await v.step('TEST_ONLY_B'); assert.match(st.txt, /موروثٌ من الأصل/); assert.match(st.cls, /\bok\b/);
-    h = await v.head('TEST_ONLY_B'); assert.match(h.txt, /^المحفوظ: موروثٌ من الأصل/); assert.equal(h.tone, '');
     assert.match(await v.tree('TEST_ONLY إدارة أ'), /سقفٌ خاصّ [·-] [2٢] من/, 'tree: own, cut by G (tasks, emps)');
-    h = await v.head('TEST_ONLY_A'); assert.match(h.txt, /^المحفوظ: سقفٌ خاصّ: [2٢] من/);
     assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
     await setPerms(lab, (P) => { P.capOwn = { TEST_ONLY_A: true }; });
     v = await view(b, lab);
     assert.match(await v.tree('TEST_ONLY إدارة أ'), /سقفٌ خاصّ [·-] [3٣] من .* [·-] مستقلّ/, 'tree: independent, its own 3 pages');
-    h = await v.head('TEST_ONLY_A'); assert.match(h.txt, /^المحفوظ: سقفٌ خاصّ مستقلّ: [3٣] من/);
     assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
     /* empty */
     await setPerms(lab, (P) => { P.caps = { TEST_ONLY_A: [] }; P.capOwn = {}; });
     v = await view(b, lab);
     assert.match(await v.tree('TEST_ONLY إدارة أ'), /السقف فارغ/);
     st = await v.step('TEST_ONLY_A'); assert.match(st.txt, /سقفٌ خاصّ فارغ — لا صفحة مفعّلة لهذه الوحدة/); assert.match(st.cls, /\bwn\b/);
-    let ea = await v.emptyAlert('TEST_ONLY_A'); assert.match(ea, /^سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة/, 'editor alert: its own empty record — tick pages');
     assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
     /* V7 P3-0 acceptance fix: an own NON-empty record under an empty ancestor — the emptiness comes from the ancestor */
     await setPerms(lab, (P) => { P.caps = { TEST_ONLY_G: [], TEST_ONLY_A: ['tasks', 'emps', 'admin'] }; P.capOwn = {}; });
     v = await view(b, lab);
     assert.match(await v.tree('TEST_ONLY إدارة أ'), /السقف فارغ بحكم الأصول/, 'tree: empty because of the ancestors');
     st = await v.step('TEST_ONLY_A'); assert.match(st.txt, /السقف الفعلي فارغ بحكم سقوف الأصول/); assert.doesNotMatch(st.txt, /سقفٌ خاصّ فارغ/); assert.match(st.cls, /\bwn\b/);
-    ea = await v.emptyAlert('TEST_ONLY_A'); assert.match(ea, /^السقف الفعلي لهذه الإدارة فارغ لأن سقف أصلٍ فوقها/, 'editor alert: the ancestor, not «tick pages»');
     /* inherited and empty (B has no record under G []) */
     assert.match(await v.tree('TEST_ONLY إدارة ب'), /السقف فارغ بحكم الأصول/);
     st = await v.step('TEST_ONLY_B'); assert.match(st.txt, /السقف الفعلي فارغ بحكم سقوف الأصول/);
@@ -73,7 +64,6 @@ test('V7 P3-0 · ceiling state from one source: open (warning), inherited, own, 
     await setPerms(lab, (P) => { P.caps = { TEST_ONLY_G: ['tasks'], TEST_ONLY_A: [] }; P.capOwn = { TEST_ONLY_A: true }; });
     v = await view(b, lab);
     st = await v.step('TEST_ONLY_A'); assert.match(st.txt, /سقفٌ خاصّ مستقلّ فارغ — لا صفحة مفعّلة لهذه الوحدة/);
-    ea = await v.emptyAlert('TEST_ONLY_A'); assert.match(ea, /^سقف الصفحات فارغ — لا صفحة مفعّلة لهذه الإدارة/);
     assert.deepEqual(v.s.errs, []); await v.s.ctx.close();
     /* showing the state wrote nothing */
     const before = JSON.stringify(readP(lab)); await lab.idle(); assert.equal(JSON.stringify(readP(lab)), before);

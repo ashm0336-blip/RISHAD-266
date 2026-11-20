@@ -110,10 +110,14 @@ function clientWith(state) {
   ctx.KIVO = {
     BassamDepts: { active: () => 'TEST_ONLY_d1', ancestorsOf: (d) => (state.anc[d] || []) },
     BassamAuth: { user: () => ({ id: 'TEST_ONLY_u', role: state.role || 'staff' }) },
+    /* V7 · د5-هـ (44): شكلُ 334 الحقيقي — محرّكُ السقف والترجمة تحت BassamPerm.p24 (ceil · leafOn · effective) */
     BassamPerm: {
-      p24Ceil: (d) => ({ page: (p) => (on[d] || []).includes(p), sub: (p) => (on[d] || []).includes(p), lens: () => true }),
-      p24LeafOn: (C, leaf) => C.page(leaf.split('/')[0]),
-      p24Effective: () => ({ T: state.T || {} }), hasOwnSheet: () => !!state.sheet, empPerms: () => state.sheet || {}, empTpl: () => null,
+      p24: {
+        ceil: (d) => ({ page: (p) => (on[d] || []).includes(p), sub: (p) => (on[d] || []).includes(p), lens: () => true }),
+        leafOn: (C, leaf) => C.page(leaf.split('/')[0]),
+        effective: () => ({ T: state.T || {} }),
+      },
+      hasOwnSheet: () => !!state.sheet, empPerms: () => state.sheet || {},
     },
     __BS_SRV: { flushAsync: async () => { ctx.flushed = writes.slice(); } },
   };
@@ -152,4 +156,19 @@ test('perm44 client: inherited ceiling · setRoles/setPerson fill one draft (rol
   const d2 = P.draft(D); P.setPerson(d2, D, 'TEST_ONLY_e1', null);
   assert.equal(d2.set[KG].emp.TEST_ONLY_e1, undefined);
   assert.equal(P.setRoles(P.draft(D), D, [{ id: '', name: 'x', sys: {} }]).ok, false, 'shape refused before anything is written');
+  /* V7 · د5-هـ (44): مساعدا المستهلكين — roleOf (كائنُ الدور) · assign (إسنادٌ جماعي بمسودةٍ واحدة تُثبَّت مرةً) */
+  assert.equal(P.roleOf('TEST_ONLY_e1', D).name, 'TEST_ONLY مراقب');
+  assert.equal(P.roleOf('TEST_ONLY_nobody', D), null);
+  W.writes.length = 0;
+  const a = await P.assign(D, { TEST_ONLY_e2: role.id, TEST_ONLY_e3: role.id, TEST_ONLY_e1: null });
+  assert.equal(a.ok, true); assert.equal(a.n, 3);
+  assert.deepEqual(Array.from(W.writes).sort(), [KG, KR].sort(), 'three people · one draft: the two records written once');
+  const g2 = JSON.parse(W.store.get(KG)).emp;
+  assert.deepEqual([!!g2.TEST_ONLY_e2, !!g2.TEST_ONLY_e3, !!g2.TEST_ONLY_e1], [true, true, false], 'grants compiled for the assigned, dropped for the unassigned');
+  assert.equal(P.roleOf('TEST_ONLY_e2', D).id, role.id);
+  assert.equal((await P.assign(D, { TEST_ONLY_e2: 'TEST_ONLY_nope' })).ok, false, 'an unknown role is refused before anything is written');
+  /* a refused save: 280 puts the stored value back ⇒ commit reports denied (no false success) */
+  W.ctx.KIVO.__BS_SRV.flushAsync = async () => { W.store.set(KR, '{"v":1,"roles":[],"people":{}}'); return true; };
+  const den = await P.assign(D, { TEST_ONLY_e4: role.id });
+  assert.equal(den.ok, false); assert.equal(den.err, 'denied'); assert.ok(Array.from(den.denied).includes(KR));
 });

@@ -1,5 +1,5 @@
 /* V7 · د5-هـ (44) — اسمُ الصلاحية في كل مكان = اسمُ الدور الممنوح (قرارُ المالك · SPEC44 البند 7) والطاقمُ الإشرافي بعلامة الدور sup:true.
-   الكتلُ الحقيقية (334 · منطقُ الإدارة · منطقُ «صفحتي») في node:vm، ومحرّكُ الأدوار بديلُ اختبار (perm44_stub.mjs) — TEST_ONLY:
+   الكتلُ الحقيقية (334 · منطقُ الإدارة · منطقُ «صفحتي») في node:vm، ومحرّكُ الأدوار الحقيقيُّ 345 فوق سجلَّي الوحدة (perm44_real.mjs) — TEST_ONLY:
      ① permLabel = اسمُ الدور | «صلاحيات مخصّصة» | «بلا صلاحيات» — وفرعُ «عدد الصفحات» محذوف؛ بغياب المحرّك: مخصّصةٌ أو بلا صلاحيات من المنح القائم
      ② الأماكنُ الأربعة: بطاقةُ المستخدم في القائمة الجانبية (BassamAuth.display) · بطاقةُ قائمة الحسابات (adRole) · سطرُ الدور في «صفحتي» ·
         سطرُ «الصلاحيات» في نافذة «الإدارة» — كلُّها من permLabel بإدارة الحساب
@@ -10,13 +10,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { SRC } from './harness.mjs';
-import { perm44Stub } from './perm44_stub.mjs';
+import { perm44Real, rolesKey, grantsKey } from './perm44_real.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const D = 'TEST_ONLY_d1';
-const DATA = () => ({ [D]: {
-  roles: [{ id: 'r_lead', name: 'TEST_ONLY رئيس الوردية', sup: true, sys: {} }, { id: 'r_view', name: 'TEST_ONLY مراقب', sup: false, sys: {} }],
-  people: { TEST_ONLY_e1: { role: 'r_lead' }, TEST_ONLY_e2: { role: 'r_view' } }, custom: { TEST_ONLY_e3: true } } });
+/* سجلّا الوحدة بشكل المحرّك: الأدوار + الأشخاص · ومنحٌ مترجَم لمن له استثناءٌ بلا دور (TEST_ONLY_e3 ⇒ «صلاحيات مخصّصة») */
+const DATA = () => ({
+  [rolesKey(D)]: { v: 1, roles: [{ id: 'r_lead', name: 'TEST_ONLY رئيس الوردية', sup: true, sys: {} }, { id: 'r_view', name: 'TEST_ONLY مراقب', sup: false, sys: {} }],
+    people: { TEST_ONLY_e1: { role: 'r_lead', ex: [] }, TEST_ONLY_e2: { role: 'r_view', ex: [] } } },
+  [grantsKey(D)]: { v: 1, emp: { TEST_ONLY_e3: { plus: ['task.view'], minus: [], src: 'p44:ex' } } } });
+const CTX = new WeakMap();
+const engine = (K, data) => perm44Real(CTX.get(K), data || DATA()).P4;
 
 function load334({ grants = {}, user = null } = {}) {
   const I = { cur: () => user, curDept: () => D, isMgrKey: (k) => /^mgr:/.test(String(k || '')), empPerms: (t) => grants[t] || {}, cleanLeafPerms: (v) => v,
@@ -25,6 +29,7 @@ function load334({ grants = {}, user = null } = {}) {
     localStorage: { getItem: () => null, setItem() {} }, location: { search: '' }, window: {} };
   vm.createContext(ctx);
   vm.runInContext(rd('services/490-emp-key.js'), ctx); vm.runInContext(rd('permissions/334-perm-tree-tpl.js'), ctx);
+  CTX.set(ctx.KIVO, ctx);
   return ctx.KIVO;
 }
 
@@ -35,7 +40,7 @@ test('① permLabel: اسمُ الدور · «صلاحيات مخصّصة» · �
   assert.equal(K.BassamAuth.permLabel('TEST_ONLY_none', D), 'بلا صلاحيات');
   assert.equal(K.BassamAuth.permLabel('', D), '');
   /* بالمحرّك */
-  K.Perm44 = perm44Stub(DATA());
+  engine(K);
   assert.equal(K.BassamAuth.permLabel('TEST_ONLY_e1', D), 'TEST_ONLY رئيس الوردية');
   assert.equal(K.BassamAuth.permLabel('TEST_ONLY_e3', D), 'صلاحيات مخصّصة');
   assert.equal(K.BassamAuth.permLabel('TEST_ONLY_e4', D), 'بلا صلاحيات');
@@ -46,13 +51,13 @@ test('① permLabel: اسمُ الدور · «صلاحيات مخصّصة» · �
 
 test('② المكان ١ — بطاقةُ المستخدم في القائمة الجانبية (BassamAuth.display ← permLabel بإدارة الحساب)', () => {
   const user = { id: 'TEST_ONLY_u', role: 'staff', deptId: D, ekey: 'TEST_ONLY_e2', name: 'TEST_ONLY موظف' };
-  const K = load334({ user }); K.Perm44 = perm44Stub(DATA());
+  const K = load334({ user }); engine(K);
   assert.equal(K.BassamAuth.display().role, 'TEST_ONLY مراقب');
   const RL = rd('layouts/root-logic.js'); assert.match(RL, /BassamAuth\.display\(\)/, 'القائمةُ الجانبية تعرض display().role');
 });
 
 test('② المكان ٢ — بطاقةُ قائمة الحسابات في «مراقبة الحسابات» (adRole): الموظفُ باسم دوره، والمديرُ كما كان', () => {
-  const K = load334(); K.Perm44 = perm44Stub(DATA());
+  const K = load334(); engine(K);
   const ctx = { KIVO: Object.assign(K, { BassamPageKit: { base: (B) => class extends B {} } }), JSON, Object, Array, String, Number, RegExp, Set, Map, Error, Math, Date, console };
   ctx.KIVO.BassamAuth.gmRoleLabel = () => 'TEST_ONLY gm';
   ctx.DCLogic = class { constructor() { this.state = {}; } setState() {} };
@@ -80,8 +85,8 @@ test('② المكانان ٣ و٤ — سطرُ الدور في «صفحتي» �
 test('③ BassamSup: الإشرافيُّ بعلامة الدور sup:true — لا استنتاجَ من الاسم · بغياب المحرّك لا أحد', () => {
   const K = load334();
   assert.equal(K.BassamSup.isSup('TEST_ONLY_e1', D), false, 'بلا محرّك: لا أحد');
-  const data = DATA(); data[D].roles.push({ id: 'r_name', name: 'TEST_ONLY رئيس بلا علامة', sup: false, sys: {} }); data[D].people.TEST_ONLY_e5 = { role: 'r_name' };
-  K.Perm44 = perm44Stub(data);
+  const data = DATA(), R = data[rolesKey(D)]; R.roles.push({ id: 'r_name', name: 'TEST_ONLY رئيس بلا علامة', sup: false, sys: {} }); R.people.TEST_ONLY_e5 = { role: 'r_name', ex: [] };
+  engine(K, data);
   assert.equal(K.BassamSup.isSup('TEST_ONLY_e1', D), true); assert.equal(K.BassamSup.supName('TEST_ONLY_e1', D), 'TEST_ONLY رئيس الوردية');
   assert.equal(K.BassamSup.isSup('TEST_ONLY_e2', D), false); assert.equal(K.BassamSup.supName('TEST_ONLY_e2', D), '');
   assert.equal(K.BassamSup.isSup('TEST_ONLY_e5', D), false, 'الاسمُ «رئيس…» وحده لا يجعله إشرافياً (الترحيلُ نقل الاستنتاجَ مرّةً واحدة)');

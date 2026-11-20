@@ -17220,7 +17220,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           })();
         let L = [];
         try {
-          const t = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(D4) : [];
+          const t = P4 && "function" === typeof P4.rolesOf ? (P4.rolesOf(D4) || {}).roles : [];   /* rolesOf → {roles, people} */
           Array.isArray(t) && (L = t.filter((x) => x && x.id));
         } catch (t) {}
         const EM = KIVO.BassamEmp;

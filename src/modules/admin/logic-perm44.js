@@ -43,16 +43,17 @@ Object.assign(Component.prototype, {
     const x = this._p44Lvls().filter((l) => l.v === k)[0];
     return x ? x.t : k ? String(k) : "";
   },
-  /* الأنظمةُ القابلةُ للتشغيل (sysList) — {k|key, n|name, page?}؛ page مفتاحُ السقف إن خالف المفتاح (مثل emps/custody) */
+  /* الأنظمةُ (sysList: {key, name, leaves, toggle}) — cap مفتاحُ السقف = ورقتُه الأولى (صفحتُه، مثل emps/custody) · tg: يُشغَّل ويُطفأ (toggle) */
   _p44Sys() {
     const raw = this._p44Try(() => this._p44E().sysList(), []);
     return (Array.isArray(raw) ? raw : [])
       .map((s) => ("string" === typeof s ? { k: s } : s || {}))
-      .map((s) => ({ k: s.k || s.key || "", n: s.n || s.name || this._p44Try(() => KIVO.BassamPerm.nameOf(s.k || s.key), "") || s.k || s.key, cap: s.page || s.cap || s.k || s.key }))
+      .map((s) => ({ k: s.k || s.key || "", n: s.n || s.name || this._p44Try(() => KIVO.BassamPerm.nameOf(s.k || s.key), "") || s.k || s.key, cap: s.page || s.cap || (s.leaves && s.leaves[0]) || s.k || s.key, tg: !1 !== s.toggle }))
       .filter((s) => s.k);
   },
   _p44PlatOff() {
-    return this._p44Try(() => (KIVO.BassamPlat.get().mods.off || []).filter((k) => "admin" !== k), []);
+    const pl = this._p44Try(() => KIVO.BassamPlat.get(), null);   /* المطفأُ على المنصة كلها — «admin» دائم (activation: always) */
+    return ((pl && pl.mods && pl.mods.off) || []).filter((k) => "admin" !== k);
   },
   /* النظامُ مفعّلٌ في الوحدة u؟ = غيرُ مطفأٍ على المنصة ∧ في سقفها الفعلي (سقفُها ∩ سقوفُ أصولها — 331 on) */
   _p44On(u, s, off) {
@@ -82,6 +83,16 @@ Object.assign(Component.prototype, {
     return (k) => {
       const s = S.filter((x) => x.k === k)[0];
       return !!s && this._p44On(did, s, off);
+    };
+  },
+  /* سقفُ المفاتيح للمحرّك (compileRole · effective): ceiling(did).key — القاعدةُ نفسُها في الخادم (perm44CeilingFn) */
+  _p44KeyCeil(did) {
+    const C = this._p44Try(() => this._p44E().ceiling(did), null),
+      on = this._p44Ceil(did);
+    return (k) => {
+      if (C && C.key && !C.key(k)) return !1;
+      const ss = this._p44Try(() => this._p44E().sysOfKey(k), null);
+      return !Array.isArray(ss) || !ss.length || ss.some((x) => on(x));
     };
   },
   _p44SupNow() {
@@ -127,14 +138,14 @@ Object.assign(Component.prototype, {
     setTimeout(() => this._p44Read(did), 0);
     return null;
   },
+  /* V7 · د5-هـ (44): سجلُّ الأدوار في المخزن المتزامن (ليس موردَ Operations) — rolesOf يقرؤه؛ وهنا إعادةُ قراءته بعد تحديث المخزن */
   async _p44Read(did) {
     let d = null;
     try {
-      const r = await KIVO.__BS_SRV.operations.read(["bsdept:" + did + ":bassam_roles_v1"]);
-      if (r && 1 === r.ok) {
-        const doc = this._p44Doc(did);
-        d = { did: did, base: JSON.parse(JSON.stringify(doc)), roles: doc.roles, people: doc.people };
-      }
+      const S = KIVO.__BS_SRV;
+      S && S.resync && (await S.resync(!1));
+      const doc = this._p44Doc(did);
+      d = { did: did, base: JSON.parse(JSON.stringify(doc)), roles: doc.roles, people: doc.people };
     } catch (e) {
       d = null;
     }
@@ -183,7 +194,7 @@ Object.assign(Component.prototype, {
     if (!0 === v) return "مفعّل";
     if (!1 === v) return "مطفأ";
     if ("string" === typeof v) return this.P44_LV()[v] ? this._p44LvName(v) : this._p44RoleName(v) || v;
-    if (Array.isArray(v)) return v.length ? v.map((x) => this._p44Txt(x && x.key ? x.key : x)).join("، ") : "—";
+    if (Array.isArray(v)) return v.length ? v.map((x) => (x && x.key ? this._p44Label(x.key) : "string" === typeof x ? this._p44Try(() => KIVO.BassamPerm.nameOf(x), "") || this._p44Txt(x) : this._p44Txt(x))).join("، ") : "—";
     if (v.lvl) return this._p44LvName(v.lvl) + (v.keys && "custom" === v.lvl ? " (" + v.keys.length + ")" : "");
     if (v.name) return v.name;
     if ("role" in v) return this._p44RoleName(v.role) || "بلا دور";
@@ -194,18 +205,22 @@ Object.assign(Component.prototype, {
       r = ((S.d && S.d.roles) || []).filter((x) => x.id === id)[0];
     return r ? r.name : "";
   },
-  /* اسمُ موضع التغيير: role:<id>[/sys/<sk>|/name|/desc] · person:<ekey>[/role|/ex] · ceil:<unit>/<sk> — أو حقلُه المسمّى (sys|key|person) */
+  /* اسمُ موضع التغيير بشكل فرق المحرّك (diff): what = role · name · desc · sup · sys (role, sys) · person · ex (person, key) —
+     وفرقُ السقف من الخادم (perm44CeilDiff): what = ceil.caps · ceil.subs · ceil.lenses (unit) */
   _p44What(c) {
     const w = String(c.what || ""),
-      sysN = (k) => (this._p44Sys().filter((s) => s.k === k)[0] || { n: this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[k].label, k) }).n;
-    let m;
-    if ((m = /^role:([^/]+)\/sys\/(.+)$/.exec(w))) return (this._p44RoleName(m[1]) || "دور") + " · " + sysN(m[2]);
-    if ((m = /^role:([^/]+)(?:\/(name|desc))?$/.exec(w))) return (this._p44RoleName(m[1]) || "دور") + (m[2] ? " · " + ("name" === m[2] ? "الاسم" : "الوصف") : "");
-    if ((m = /^person:([^/]+)(?:\/(role|ex))?$/.exec(w))) return this._p44PName(m[1]) + (m[2] ? " · " + ("role" === m[2] ? "الدور" : "استثناء") : "");
-    if ((m = /^ceil:([^/]+)\/(.+)$/.exec(w))) return sysN(m[2]);
+      sysN = (k) => (this._p44Sys().filter((s) => s.k === k)[0] || { n: this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[k].label, k) }).n,
+      rn = (id) => this._p44RoleName(id) || (c.to && c.to.name) || (c.from && c.from.name) || "دور",
+      un = (id) => this._p44Try(() => KIVO.BassamDepts.nodeOf(id).name, "") || id || "";
+    if ("sys" === w) return rn(c.role) + " · " + sysN(c.sys);
+    if ("name" === w || "desc" === w || "sup" === w) return rn(c.role) + " · " + { name: "الاسم", desc: "الوصف", sup: "إشرافي" }[w];
+    if ("role" === w) return (c.to ? (c.from ? "" : "دور جديد · ") : "حذف دور · ") + rn(c.role);
+    if ("person" === w) return this._p44PName(c.person) + " · الدور";
+    if ("ex" === w) return this._p44PName(c.person) + " · استثناء " + this._p44Label(c.key);
+    if (/^ceil\./.test(w)) return (un(c.unit) ? un(c.unit) + " · " : "") + ({ "ceil.caps": "الأنظمة", "ceil.subs": "الصفحات الفرعية", "ceil.lenses": "العدسات" }[w] || "السقف");
     if (c.sys) return sysN(c.sys);
     if (c.person) return this._p44PName(c.person);
-    if (c.key) return this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[c.key].label, c.key);
+    if (c.key) return this._p44Label(c.key);
     return w || "—";
   },
   _p44Users() {
@@ -224,12 +239,12 @@ Object.assign(Component.prototype, {
     return Array.isArray(all) ? all : [];
   },
   _p44Compile(role, did) {
-    const r = this._p44Try(() => this._p44E().compileRole(role, this._p44Ceil(did)), []);
+    const r = this._p44Try(() => this._p44E().compileRole(role, this._p44KeyCeil(did)), []);
     return Array.isArray(r) ? r : (r && (r.keys || r.plus)) || [];
   },
   /* مفاتيحُ الشخص الفعّالة الآن: (الدور ∪ الاستثناءاتُ السارية) ∩ السقف — effective */
   _p44Eff(rec, roles, did, now) {
-    const r = this._p44Try(() => this._p44E().effective(rec, roles, this._p44Ceil(did), now), []);
+    const r = this._p44Try(() => this._p44E().effective(rec, { roles: roles || [], people: {} }, this._p44KeyCeil(did), now), []);
     return Array.isArray(r) ? r : r instanceof Set ? Array.from(r) : (r && (r.keys || r.plus)) || [];
   },
   /* القائمةُ الجانبية لحامل المفاتيح: «صفحتي» ثم كلُّ نظامٍ مفعّلٍ في السقف له منها مفتاح — بمستوى الدور فيه */
@@ -310,7 +325,7 @@ Object.assign(Component.prototype, {
       nm = (id) => ("__plat" === id ? "المنصة كلها" : this._p44Try(() => D.nodeOf(id).name, "") || "—"),
       kind = (id) => ("__plat" === id ? "المنصة" : this._p44Try(() => D.nodeOf(id).kind, "") || (this._p44Try(() => D.isSection(id), !1) ? "قسم" : "إدارة")),
       off = this._p44PlatOff(),
-      sys = this._p44Sys(),
+      sys = this._p44Sys().filter((s) => s.tg),   /* ما يُشغَّل ويُطفأ وحده (toggle) — الدائمُ لا مفتاحَ له */
       dr = S.cap && S.cap.unit === u ? S.cap.on : {},
       depth = (id) => ("__plat" === id ? 0 : Math.min(4, anc.indexOf(id) !== -1 ? anc.indexOf(id) + 1 : id === did ? anc.length + 1 : anc.length + 2));
     const units = chain.map((id) => ({ n: nm(id), t: kind(id), on: id === u ? "true" : "false", dp: String(depth(id)), pick: () => this._p44Set({ unit: id, cap: null }) }));
@@ -394,6 +409,8 @@ Object.assign(Component.prototype, {
           if (dr[k]) {
             cap.indexOf(pk) === -1 && cap.push(pk);
             pg.under && cap.indexOf(pg.under) === -1 && cap.push(pg.under);
+            /* V7 · د5-هـ (44 · التوحيد): التشغيلُ عكسُ الإطفاء — الإطفاءُ يُسقط صفحاتِه التابعة، فالتشغيلُ يعيدها (إطفاءٌ ثم تشغيل = كما كان) */
+            reg.filter((p) => p.under === pk).forEach((p) => cap.indexOf(p.key) === -1 && cap.push(p.key));
             (pg.subs || []).length && P.setDeptSubs(u, pk, pg.subs.map((x) => x.key));
             (pg.tabs || []).length && P.setDeptTabs && P.setDeptTabs(u, pk, pg.tabs.map((x) => x.key));
           } else {
@@ -547,7 +564,9 @@ Object.assign(Component.prototype, {
       const r = await fetch("/api/perm44/check?d=" + encodeURIComponent(did) + "&role=" + encodeURIComponent(rid) + "&key=" + encodeURIComponent(key), { credentials: "same-origin", cache: "no-store" }),
         j = await r.json();
       if (!r.ok || !j || "boolean" !== typeof j.allow) throw Error("bad");
-      res = { ok: j.allow, mark: j.allow ? "✓" : "✕", cls: j.allow ? "ok" : "no", q: this._p44Label(key), why: String(j.why || (j.allow ? "مسموح" : "غير مسموح")) };
+      /* أسبابُ الخادم (perm44Decide) بالعربية */
+      const W = { role: "مسموح بمستوى الدور", exception: "مسموح باستثناء مؤقت", super: "مدير المنصة — بلا قيد", self: "متاح لكل صاحب حساب", level: "مستوى الدور لا يشمله", ceiling: "النظام مطفأ في سقف هذه الوحدة", "no-role": "لا دور بهذا المعرّف أو لا دور للشخص", mgr: "لمدير الإدارة وحده", "role-only": "يُمنح بالمنصب لا بالدور", "not-grantable": "لا يُمنح بالأدوار", "unknown-key": "فعلٌ غير معروف", reserved: "فعلٌ محجوز" };
+      res = { ok: j.allow, mark: j.allow ? "✓" : "✕", cls: j.allow ? "ok" : "no", q: this._p44Label(key), why: W[j.why] || String(j.why || (j.allow ? "مسموح" : "غير مسموح")) };
     } catch (e) {
       res = { ok: !1, mark: "!", cls: "err", q: this._p44Label(key), why: "تعذّر سؤال الخادم — أعد المحاولة" };
     }
@@ -581,16 +600,18 @@ Object.assign(Component.prototype, {
       intent = { k: "perm44", did: did, roles: roles, people: people };
     this._p44Set({ rev: { open: 1, busy: 1 } });
     let r = null;
+    /* V7 · د5-هـ (44): مسودةُ المحرّك الواحدة — السجلُّ كلُّه (الأدوار + الأشخاص) ثم المنحُ المترجَم لكل متأثر، وتُثبَّت مرةً (طلبُ حفظٍ واحد) */
     try {
-      r = await KIVO.__BS_SRV.operations.commit(this, "admin-perm44", intent, (draft) => {
-        E.setRoles(draft, did, roles);
-        aff.forEach((ek) => E.setPerson(draft, did, ek, people[ek] || { role: null, ex: [] }));
-      });
+      const dr = E.draft(did),
+        w = E.setRoles(dr, did, { v: 1, roles: roles, people: people });
+      r = w && !1 === w.ok ? { ok: !1, err: w.err } : await E.commit(dr);
+      this.__p44LastDraft = dr;
     } catch (e) {
       r = null;
     }
-    if (!r || 1 !== r.ok) {
-      const why = r && r.uncertain ? "لم يصل تأكيد الحفظ — المسودة باقية؛ أعد الحفظ للتحقق." : "لم يُحفظ التغيير — " + (this._p44Try(() => KIVO.__BS_SRV.operations.explain(r), "") || "راجع الصلاحية ثم أعد المحاولة.");
+    void intent;
+    if (!r || !r.ok) {
+      const why = r && "unsent" === r.err ? "لم يصل تأكيد الحفظ — المسودة باقية؛ أعد الحفظ للتحقق." : r && "denied" === r.err ? "رفض الخادم الحفظ — راجع الصلاحية ثم أعد المحاولة." : "لم يُحفظ التغيير — " + (r && r.err ? "(" + r.err + ") " : "") + "راجع الصلاحية ثم أعد المحاولة.";
       return void this._p44Set({ rev: { open: 1, err: why } });
     }
     this._p44Set((s) => ({ rev: null, d: s.d ? Object.assign({}, s.d, { base: { roles: roles, people: people } }) : s.d, log: null }));
@@ -709,7 +730,7 @@ Object.assign(Component.prototype, {
   },
   _p44Day(ms) {
     try {
-      return new Date(ms).toLocaleDateString("ar-SA-u-ca-islamic-umalqura", { day: "numeric", month: "long" });
+      return KIVO.BassamCal.hText(new Date(ms), { day: "numeric", month: "long" });   /* V7 · د5-هـ (44): التقويمُ من خدمته الواحدة (385) */
     } catch (e) {
       return new Date(ms).toISOString().slice(0, 10);
     }
@@ -725,8 +746,8 @@ Object.assign(Component.prototype, {
     const st = L ? L.st : "loading",
       f = S.lf || "all",
       kindOf = (e) => {
-        const w = String(((e.changes || [])[0] || {}).what || e.kind || "");
-        return /^ceil:/.test(w) || "cap" === e.kind ? "cap" : /^person:/.test(w) || "person" === e.kind ? "person" : "role";
+        const w = String(((e.changes || [])[0] || {}).what || "");
+        return /^ceil\./.test(w) ? "cap" : "person" === w || "ex" === w ? "person" : "role";
       },
       TG = { role: "دور", person: "شخص", cap: "سقف إدارة" },
       items = ((L && L.items) || []).filter((e) => "all" === f || kindOf(e) === f);
@@ -743,7 +764,8 @@ Object.assign(Component.prototype, {
       ].map((x) => ({ t: x[1], on: x[0] === f ? "true" : "false", pick: () => this._p44Set({ lf: x[0] }) })),
       p44LogItems: items.map((e) => {
         const k = kindOf(e),
-          who = String(e.whoName || this._p44Try(() => this._p44Users().filter((u) => u.id === e.who)[0].name, "") || e.who || "—");
+          wid = e.who && "object" === typeof e.who ? e.who.uid : e.who,
+          who = String((e.who && e.who.name) || this._p44Try(() => this._p44Users().filter((u) => u.id === wid)[0].name, "") || wid || "—");
         return {
           who: who,
           i: who.charAt(0) || "؟",
@@ -764,81 +786,52 @@ Object.assign(Component.prototype, {
       const r = await fetch("/api/perm44/log?d=" + encodeURIComponent(did) + "&limit=50", { credentials: "same-origin", cache: "no-store" }),
         j = await r.json();
       if (!r.ok) throw Error("bad");
-      items = Array.isArray(j) ? j : (j && (j.events || j.items)) || null;
+      items = j && 1 === j.ok && Array.isArray(j.rows) ? j.rows : null;   /* /api/perm44/log → {ok, rows} */
       if (!Array.isArray(items)) throw Error("bad");
     } catch (e) {
       items = null;
     }
     this._p44Set({ log: { did: did, st: items ? "ready" : "error", items: items || [] } });
   },
-  /* حمولةُ التراجع: كلُّ تغييرٍ معكوس (from ↔ to) على الموضع نفسه */
-  p44UndoOf(ev) {
-    return ((ev && ev.changes) || []).map((c) => Object.assign({}, c, { from: c.to, to: c.from }));
-  },
-  /* تطبيقُ تغييراتٍ على وثيقة الأدوار: كلُّ موضعٍ قيمتُه الآن يجب أن تساوي from — وإلا «تغيّر بعده» فلا تراجعَ صامت */
-  p44Apply(doc, changes) {
-    const out = JSON.parse(JSON.stringify(doc || { roles: [], people: {} })),
-      eq = (a, b) => JSON.stringify(a == null ? null : a) === JSON.stringify(b == null ? null : b);
-    out.roles = out.roles || [];
-    out.people = out.people || {};
-    for (const c of changes || []) {
-      const w = String(c.what || "");
-      let m;
-      if ((m = /^role:([^/]+)(?:\/(name|desc)|\/sys\/(.+))?$/.exec(w))) {
-        const i = out.roles.findIndex((r) => r.id === m[1]),
-          r = i === -1 ? null : out.roles[i];
-        if (!m[2] && !m[3]) {
-          if (!eq(r, c.from)) return { ok: !1 };
-          c.to == null ? i !== -1 && out.roles.splice(i, 1) : i === -1 ? out.roles.push(c.to) : (out.roles[i] = c.to);
-          continue;
-        }
-        if (!r) return { ok: !1 };
-        if (m[2]) {
-          if (!eq(r[m[2]], c.from)) return { ok: !1 };
-          r[m[2]] = c.to;
-          continue;
-        }
-        r.sys = r.sys || {};
-        if (!eq(r.sys[m[3]], c.from)) return { ok: !1 };
-        c.to == null ? delete r.sys[m[3]] : (r.sys[m[3]] = c.to);
-        continue;
-      }
-      if ((m = /^person:([^/]+)(?:\/(role|ex))?$/.exec(w))) {
-        const p = out.people[m[1]];
-        if (!m[2]) {
-          if (!eq(p, c.from)) return { ok: !1 };
-          c.to == null ? delete out.people[m[1]] : (out.people[m[1]] = c.to);
-          continue;
-        }
-        const q = (out.people[m[1]] = p || { role: null, ex: [] });
-        if (!eq(q[m[2]], c.from)) return { ok: !1 };
-        q[m[2]] = c.to;
-        continue;
-      }
-      return { ok: !1 };
-    }
-    return { ok: !0, doc: out };
-  },
+  /* «تراجع عن هذا التغيير»: السقفُ بمسار حفظه نفسِه (setDeptCap · setDeptSubs · setDeptLenses) ما دام كما تركه التغيير؛
+     والأدوارُ بعكس الفرق في المحرّك (undo — يرفض موضعاً تغيّر بعده) ثم المراجعةُ والحفظُ الواحد */
   _p44Undo(did, ev) {
-    const inv = this.p44UndoOf(ev),
-      cl = inv.filter((c) => /^ceil:[^/]+\/.+$/.test(String(c.what || "")));
-    /* تغييرُ سقفٍ: يُعاد بمسار حفظ السقف نفسِه، ما دام الموضعُ كما تركه ذلك التغيير */
-    if (cl.length && cl.length === inv.length) {
-      const by = {};
+    const ch = (ev && ev.changes) || [],
+      eq = (a, b) => JSON.stringify(a == null ? null : a) === JSON.stringify(b == null ? null : b),
+      drift = () => this.bsToast("تغيّر هذا الموضع بعد ذلك — لا يمكن التراجع عنه تلقائياً", "warn"),
+      cl = ch.filter((c) => /^ceil\./.test(String(c.what || "")));
+    if (cl.length && cl.length === ch.length) {
+      const P = KIVO.BassamPerm;
       for (const c of cl) {
-        const m = /^ceil:([^/]+)\/(.+)$/.exec(c.what),
-          s = this._p44Sys().filter((x) => x.k === m[2])[0];
-        if (!s || this._p44On(m[1], s) !== !!c.from) return void this.bsToast("تغيّر هذا الموضع بعد ذلك — لا يمكن التراجع عنه تلقائياً", "warn");
-        (by[m[1]] = by[m[1]] || {})[m[2]] = !!c.to;
+        const u = c.unit || did;
+        if ("ceil.caps" === c.what && !eq(P.hasCap(u) ? P.rawCap(u) : null, c.to)) return void drift();
+        if ("ceil.lenses" === c.what && !eq(this._p44Try(() => P.deptLenses(u), null), c.to)) return void drift();
       }
-      return void Object.keys(by).forEach((u) => this._p44CapSave(u, by[u]));
+      let r = { ok: !0 };
+      for (const c of cl) {
+        const u = c.unit || did;
+        if ("ceil.caps" === c.what) r = (r.ok && P.setDeptCap(u, c.from || [])) || r;
+        else if ("ceil.lenses" === c.what) r = (r.ok && P.setDeptLenses(u, c.from || [])) || r;
+        else if ("ceil.subs" === c.what) {
+          const F = c.from || {},
+            T = c.to || {};
+          Object.keys(Object.assign({}, F, T)).forEach((k) => {
+            if (!r.ok || eq(F[k], T[k])) return;
+            const tb = /^(.+):tabs$/.exec(k);
+            r = (tb ? P.setDeptTabs && P.setDeptTabs(u, tb[1], F[k] || []) : P.setDeptSubs(u, k, F[k] || [])) || r;
+          });
+        }
+      }
+      if (r && !1 === r.ok) return void this.bsToast(r.err || "لم يُحفظ", "err");
+      this._p44Set({ log: null });
+      return void this.bsToast("أُعيد السقف كما كان قبل هذا التغيير", "ok");
     }
     const S = this._p44S(),
-      d = S.d && S.d.did === did ? S.d : null;
+      d = S.d && S.d.did === did ? S.d : this._p44Ensure(did);
     if (!d) return void this.bsToast("افتح «الأدوار» مرةً لتحميلها ثم أعد التراجع", "warn");
     if (this._p44Dirty(d)) return void this.bsToast("في الأدوار تعديلٌ غير محفوظ — احفظه أو تراجع عنه أولاً", "warn");
-    const r = this.p44Apply(d.base, inv);
-    if (!r.ok) return void this.bsToast("تغيّر هذا الموضع بعد ذلك — لا يمكن التراجع عنه تلقائياً", "warn");
-    this._p44Set({ d: Object.assign({}, d, { roles: r.doc.roles, people: r.doc.people }), sub: "roles", rev: { open: 1 } });
+    const r = this._p44Try(() => this._p44E().undo({ v: 1, roles: d.base.roles, people: d.base.people }, ch.filter((c) => !/^ceil\./.test(String(c.what || "")))), null);
+    if (!r) return void drift();
+    this._p44Set((st) => ({ d: Object.assign({}, st.d || d, { roles: r.roles, people: r.people }), sub: "roles", rev: { open: 1 } }));
   },
 });

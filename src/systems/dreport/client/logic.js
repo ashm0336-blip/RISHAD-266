@@ -1203,7 +1203,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   drRoles() {
     try {
       var P4 = KIVO.Perm44,
-        L = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(this.drDept()) : [];
+        R = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(this.drDept()) : null,
+        L = R && R.roles;   /* rolesOf → {roles, people} */
       return Array.isArray(L) ? L.filter(function (r) { return r && r.id; }) : [];
     } catch (t) {
       return [];
@@ -1241,13 +1242,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               (this.rpEmps() || []).forEach(function (r) {
                 d.rpKeyOf(r) === t && (o = r.name || "");
               });
-              /* V7 · د5-هـ (44): «الصلاحية» في تقرير اليوم = دورُ الموظف — يُسند بالمسار الواحد KIVO.Perm44.setPerson (قوالبُ الصلاحيات حُذفت) */
+              /* V7 · د5-هـ (44): «الصلاحية» في تقرير اليوم = دورُ الموظف — يُسند بالمسار الواحد KIVO.Perm44.assign (مسودةٌ واحدة تُثبَّت مرةً) */
               var P4 = KIVO.Perm44,
                 p = this.drRoles(),
                 l = null;
               if (!r || (p.forEach(function (x) { x.id === r && (l = x); }), l)) {
-                var u = P4 && "function" === typeof P4.setPerson ? P4.setPerson(t, l ? l.id : null, this.drDept()) : { ok: !1, err: "محرّك الأدوار غير متاح" };
-                if (u && !1 === u.ok) this.bsToast(u.err || "تعذّر حفظ الصلاحيات", "warn");
+                var M4 = {};
+                M4[t] = l ? l.id : null;
+                this.setState({ drTpOpen: null });
+                return Promise.resolve(P4 && "function" === typeof P4.assign ? P4.assign(this.drDept(), M4) : { ok: !1, err: "محرّك الأدوار غير متاح" }).then(function (u) {
+                if (!u || !1 === u.ok) d.bsToast((u && "denied" === u.err ? "رفض الخادم حفظ الدور — راجع صلاحيتك" : u && u.err) || "تعذّر حفظ الصلاحيات", "warn");
                 else {
                   try {
                     var m = KIVO.BassamNotif;
@@ -1267,14 +1271,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       });
                     }
                   } catch (t) {}
-                  (this.setState({ drTpOpen: null, rpTick: (this.state.rpTick || 0) + 1 }),
-                    this.bsAck(
+                  (d.setState({ drTpOpen: null, rpTick: (d.state.rpTick || 0) + 1 }),
+                    d.bsAck(
                       l
                         ? "أُسند إلى " + (o || "الموظف") + " دور «" + (l.name || "") + "» — يسري فوراً في المنصة كلها"
                         : "سُحب دور " + (o || "الموظف") + " — فوراً وفي المنصة كلها",
                       "ok",
                     ));
                 }
+                });
               } else this.bsToast("الدور لم يعد موجوداً — أعد فتح القائمة", "warn");
             } else this.bsToast("لا حساب دخول لهذا الموظف — يُفعَّل من صفحة الموظفين أولاً", "warn");
           } else this.bsToast("منح الصلاحيات يتطلب صلاحية تحرير صفحة الموظفين", "warn");

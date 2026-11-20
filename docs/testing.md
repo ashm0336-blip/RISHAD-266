@@ -114,7 +114,6 @@
 | `tests/unit/migrations.test.mjs` | وحدة | ✔ | — |  |
 | `tests/unit/pack_prod.test.mjs` | وحدة | ✔ | — |  |
 | `tests/unit/perm_slice.test.mjs` | وحدة | ✔ | — |  |
-| `tests/unit/perm_tree_recur265.test.mjs` | وحدة | ✔ | — |  |
 | `tests/unit/perms_lensz.test.mjs` | وحدة | ✔ | — |  |
 | `tests/unit/ph_downgrade.test.mjs` | وحدة | ✔ | — |  |
 | `tests/unit/ph_exfil.test.mjs` | وحدة | ✔ | — |  |

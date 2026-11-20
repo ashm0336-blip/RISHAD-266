@@ -209,6 +209,8 @@ function kOf(d, name) { return 'bsdept:' + d + ':' + name; }
 function rd(k) { try { var v = localStorage.getItem(k); return v == null ? null : JSON.parse(v); } catch (e) { return null; } }
 function obj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
 function P() { return KIVO.BassamPerm || {}; }
+/* محرّكُ السقف والترجمة في 331 (BassamPerm.p24: ceil · leafOn · effective) */
+function P24() { var Pm = P(); return Pm.p24 || {}; }
 function curUser() { try { return KIVO.BassamAuth && KIVO.BassamAuth.user ? KIVO.BassamAuth.user() : null; } catch (e) { return null; } }
 function isSup() { var u = curUser(); return !!(u && u.role === 'super'); }
 /* السقفُ بالوراثة: سقفُ الوحدة ∩ سقفُ كلِّ سلف ∩ المطفأُ من المنصة (p24Ceil يُسقطه) — = perm44Ceiling في الخادم */
@@ -218,10 +220,10 @@ function chainOf(d) {
   return out;
 }
 function ceiling(did) {
-  var d = did || (KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : ''), Pm = P(), E = eng();
-  if (!Pm.p24Ceil || !Pm.p24LeafOn) return { on: E.sysList().map(function (s) { return s.key; }), key: function () { return true; } };
-  var Cs = chainOf(d).map(function (x) { return Pm.p24Ceil(x); });
-  var leafOn = function (leaf) { for (var i = 0; i < Cs.length; i++) if (!Pm.p24LeafOn(Cs[i], leaf)) return false; return true; };
+  var d = did || (KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : ''), Pm = P24(), E = eng();
+  if (!Pm.ceil || !Pm.leafOn) return { on: E.sysList().map(function (s) { return s.key; }), key: function () { return true; } };
+  var Cs = chainOf(d).map(function (x) { return Pm.ceil(x); });
+  var leafOn = function (leaf) { for (var i = 0; i < Cs.length; i++) if (!Pm.leafOn(Cs[i], leaf)) return false; return true; };
   var lensOn = function (L) { for (var i = 0; i < Cs.length; i++) if (!Cs[i].lens(L)) return false; return true; };
   var memo = {}, key = function (k) { if (memo[k] === undefined) memo[k] = E.keyOn(k, leafOn, lensOn); return memo[k]; };
   return { on: E.sysList().filter(function (s) { return E.sysOn(s.key, leafOn); }).map(function (s) { return s.key; }), key: key };
@@ -240,7 +242,7 @@ function dset(dr, d, name, v) {
 }
 /* T: ما تترجمه ورقتُه القديمة (أو وراثةُ المدير) — يُسقط في minus فيصير الفعليُّ في الإنفاذ = الدورَ وحده؛ والورقةُ القديمة لا تُمسّ */
 function legacyT(ekey, d) {
-  try { var Pm = P(); if (!Pm.p24Effective) return null; var inh = !!(Pm.hasOwnSheet && !Pm.hasOwnSheet(ekey, d) && String(ekey).slice(0, 4) === 'mgr:'); var x = Pm.p24Effective({ ekey: ekey, did: d, inherit: inh }); return x && x.T ? x.T : null; } catch (e) { return null; }
+  try { var Pm = P(), Q = P24(); if (!Q.effective) return null; var inh = !!(Pm.hasOwnSheet && !Pm.hasOwnSheet(ekey, d) && String(ekey).slice(0, 4) === 'mgr:'); var x = Q.effective({ ekey: ekey, did: d, inherit: inh }); return x && x.T ? x.T : null; } catch (e) { return null; }
 }
 function recompile(dr, d, rec, ekeys) {
   var E = eng(), C = ceiling(d).key, g = dget(dr, d, GRANTS), u = curUser(), now = Date.now();
@@ -271,12 +273,41 @@ function setPerson(dr, did, ekey, prec) {
   recompile(dr, d, rec, [e]);
   return { ok: true, rec: rec };
 }
-/* commit: يكتب مفاتيحَ المسودة في اللحظة نفسِها (طلبٌ واحد) ثم ينتظر حسمَه — {ok, denied?} */
+/* commit: يكتب مفاتيحَ المسودة في اللحظة نفسِها (طلبٌ واحد) ثم ينتظر حسمَه — {ok, keys, denied?}.
+   الرفضُ يعيد 280 فيه القيمةَ المحفوظة: فما لم يبقَ كما كُتب بعد الحسم مرفوض (denied) — لا نجاحَ كاذب */
 function commit(dr) {
   if (!dr || !obj(dr.set)) return Promise.resolve({ ok: false, err: 'draft' });
-  var ks = Object.keys(dr.set);
-  try { ks.forEach(function (k) { localStorage.setItem(k, JSON.stringify(dr.set[k])); }); } catch (e) { return Promise.resolve({ ok: false, err: String(e && e.message || e) }); }
-  var S = KIVO.__BS_SRV; return S && S.flushAsync ? Promise.resolve(S.flushAsync()).then(function () { return { ok: true, keys: ks }; }) : Promise.resolve({ ok: true, keys: ks });
+  var ks = Object.keys(dr.set), want = {}, S = KIVO.__BS_SRV, d0 = {};
+  ks.forEach(function (k) { d0[k] = S && S.denied ? S.denied(k) : 0; });
+  try { ks.forEach(function (k) { want[k] = JSON.stringify(dr.set[k]); localStorage.setItem(k, want[k]); }); } catch (e) { return Promise.resolve({ ok: false, err: String(e && e.message || e) }); }
+  return Promise.resolve(S && S.flushAsync ? S.flushAsync(15000) : true).then(function (sent) {
+    var denied = ks.filter(function (k) { var v = null; try { v = localStorage.getItem(k); } catch (e) { v = null; } return v !== want[k] || (S && S.denied ? S.denied(k) : 0) > d0[k]; });
+    if (denied.length) return { ok: false, keys: ks, denied: denied, err: 'denied' };
+    return sent === false ? { ok: false, keys: ks, err: 'unsent' } : { ok: true, keys: ks };
+  });
+}
+/* V7 · د5-هـ (44): مساعدان للمستهلكين (الجدول الشهري · التقرير اليومي · الخطة · المهام · صفحتي · BassamSup):
+   roleOf — كائنُ دور الشخص في وحدته أو null · assign — إسنادُ أدوارٍ لأشخاص {ekey: roleId|null} بمسودةٍ واحدة تُثبَّت مرةً (الأدوار + المنحُ المترجَم) */
+function activeDept() { try { return KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() || '' : ''; } catch (e) { return ''; } }
+function roleOf(ekey, did) {
+  var d = did || activeDept(); if (!ekey || !d) return null;
+  var rec = rolesOf(d), pr = rec.people[String(ekey)];
+  return pr ? eng().roleById(rec, pr.role) : null;
+}
+function assign(did, map) {
+  var d = String(did || activeDept()), dr = draft(d), rec = rolesOf(d), n = 0, e, r;
+  if (!d || !obj(map)) return Promise.resolve({ ok: false, err: 'args' });
+  for (e in map) {
+    var id = map[e] == null || map[e] === '' ? null : String(map[e]), pr = rec.people[e];
+    if (id && !eng().roleById(rec, id)) return Promise.resolve({ ok: false, err: 'no-role' });
+    if ((pr ? pr.role || null : null) === id) continue;
+    var ex = pr && Array.isArray(pr.ex) ? pr.ex : [];
+    r = setPerson(dr, d, e, id || ex.length ? { role: id, ex: ex } : null);   /* بلا دور ولا استثناء: يُحذف سجلُّه */
+    if (!r.ok) return Promise.resolve(r);
+    n++;
+  }
+  if (!n) return Promise.resolve({ ok: true, n: 0, keys: [] });
+  return commit(dr).then(function (x) { x.n = n; return x; });
 }
 /* اسمُ الصلاحية في كل مكان = اسمُ الدور الممنوح · «صلاحيات مخصّصة» لمن له منحٌ أو ورقةٌ بلا دور · «بلا صلاحيات» */
 function roleNameOf(ekey, did) {
@@ -290,7 +321,6 @@ function roleNameOf(ekey, did) {
     var Pm = P();
     if (Pm.hasOwnSheet && Pm.hasOwnSheet(e, d)) { var sh = Pm.empPerms ? Pm.empPerms(e, d) : {}; for (var k in sh) if (sh[k] && sh[k].length) return N.custom; return N.none; }
     if (e.slice(0, 4) === 'mgr:') return N.custom;   /* مديرٌ يرث سقفَ وحدته بلا دور */
-    if (Pm.empTpl && Pm.empTpl(e, d)) return N.custom;
   } catch (e0) { /* تعذّرت القراءة: بلا صلاحيات */ }
   return N.none;
 }
@@ -305,8 +335,11 @@ var API = {
   undo: function (cur, ch) { return eng().undo(cur, ch); },
   sysList: function () { return eng().sysList(); },
   sysKeys: function (s) { return eng().sysKeys(s); },
+  sysOfKey: function (k) { return eng().sysOfKey(k); },
   ceiling: ceiling,
   rolesOf: rolesOf,
+  roleOf: roleOf,
+  assign: assign,
   draft: draft,
   setPerson: setPerson,
   setRoles: setRoles,

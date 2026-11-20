@@ -663,7 +663,7 @@
       }
       PERM_ROLES(did) {
         try {
-          const P4 = KIVO.Perm44, L = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(this._p44Dept(did)) : [];
+          const P4 = KIVO.Perm44, R = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(this._p44Dept(did)) : null, L = R && R.roles;   /* rolesOf → {roles, people} */
           return Array.isArray(L) ? L.filter((r) => r && r.id) : [];
         } catch (t) {
           return [];
@@ -678,14 +678,17 @@
           return null;
         }
       }
-      /* إسنادُ دورٍ (أو سحبُه بـ null) — المسارُ الواحد KIVO.Perm44.setPerson (يكتب الدور والمنحَ المترجَم في حفظٍ واحد) */
+      /* إسنادُ دورٍ (أو سحبُه بـ null) — المسارُ الواحد KIVO.Perm44.assign: مسودةٌ واحدة تُثبَّت مرةً (الدورُ والمنحُ المترجَم معاً).
+         ekey مفتاحٌ واحد، أو خريطةٌ {ekey: roleId|null} للإسناد الجماعي في الحفظة نفسِها. يعيد وعداً بـ{ok, n, err?} */
       PERM_ROLE_SET(ekey, roleId, did) {
         const P4 = KIVO.Perm44;
-        if (!P4 || "function" != typeof P4.setPerson) return { ok: !1, err: "محرّك الأدوار غير متاح" };
+        if (!P4 || "function" != typeof P4.assign) return Promise.resolve({ ok: !1, err: "محرّك الأدوار غير متاح" });
+        const map = ekey && "object" === typeof ekey ? ekey : { [ekey]: roleId || null };
+        const why = (r) => (r && r.ok) || !r ? r : Object.assign({}, r, { err: "denied" === r.err ? "رفض الخادم حفظ الدور — راجع صلاحيتك" : "no-role" === r.err ? "الدور لم يعد موجوداً" : "تعذّر حفظ الدور" });
         try {
-          return P4.setPerson(ekey, roleId || null, this._p44Dept(did)) || { ok: !0 };
+          return Promise.resolve(P4.assign(this._p44Dept(did), map)).then(why, () => ({ ok: !1, err: "تعذّر حفظ الدور" }));
         } catch (t) {
-          return { ok: !1, err: "تعذّر حفظ الدور" };
+          return Promise.resolve({ ok: !1, err: "تعذّر حفظ الدور" });
         }
       }
     };

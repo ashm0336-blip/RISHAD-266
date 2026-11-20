@@ -148,10 +148,6 @@
   "order": 10,
   "text": "                bassam_rounds_v1: \"الجولات اليومية\",\r\n"
  },
- "admin.cap24.daily": {
-  "order": 10,
-  "file": "slots/admin.cap24.daily.frag"
- },
  "blocks.shell.daily.t2": {
   "order": 10,
   "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/daily/client/422-daily-t2.js\",\n   \"kind\": \"js\",\n   \"line\": 10497,\n   \"new\": \"V7 · د5-هـ: قراءةٌ معلنة من المتابعة اليومية لصفحات القاعدة (ورقةُ الجولات مفعَّلة؟)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"

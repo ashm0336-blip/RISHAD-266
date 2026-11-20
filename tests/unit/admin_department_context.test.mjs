@@ -276,7 +276,7 @@ test("the actual template gates every existing selected-detail action while leav
     "{{dhSwitch}}",
     "{{goTabData}}",   /* V7 P1: the «بيانات الإدارة» menu became the «البيانات» tab */
     "{{tabEmpsLbl}}",
-    "{{capSaveDo}}",
+    "{{p44SysSave}}",   /* V7 · د5-هـ (44): «حفظ السقف» حُذف مع «سقف الصفحات» — حفظُ الأنظمة في «الصلاحيات» داخل التفاصيل نفسها */
   ])
     assert.ok(selected.includes(binding), binding);
   assert.ok(view.includes("{{deptDetailMessage}}"));

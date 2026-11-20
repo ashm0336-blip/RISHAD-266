@@ -1,5 +1,6 @@
 /* RISHAD V7 P4 — «خريطة الأنظمة والصلاحيات»: one structure builder (admin t24Struct → t24Rows{map}) derived at run time from the
-   generated manifest (255 ← pages.json + lens plug-ins) and the registry (340 ← registry-v24.9.json). The real admin logic runs in a vm
+   generated manifest (255 ← pages.json + lens plug-ins) and the registry (340 ← registry-v24.9.json). V7 · د5-هـ (44 · التوحيد): t24Rows —
+   صفوفُ الخريطة والمحرّرات (A1 · A3 · صفوفُ A5 · «editors are untouched») — حُذفت مع «سقف الصفحات» وشجرتِه، فحُذفت حالاتُها؛ ويبقى t24Struct. The real admin logic runs in a vm
    over the real generated blocks; the p24 engine is a stand-in that says «inside the ceiling» (the engine itself is proven against the
    server elsewhere — A8, the browser test v7_p4_map, was deleted in V7 · د5-هـ 44 with the map tab). Acceptance criteria of the approved inventory:
      A1 every active key (255) appears exactly once in the full map; every reserved key (14) is shown marked; nothing outside the registry
@@ -26,9 +27,7 @@ const LENSES = fs.readdirSync(path.join(SRC, 'plugins', 'lenses')).filter((d) =>
   .map((d) => JSON.parse(rd('plugins', 'lenses', d, 'manifest.json'))).sort((a, b) => a.order - b.order);
 const KPI = PAGES.containers.find((c) => c.key === 'kpis');
 const ADMIN = rd('modules', 'admin', 'logic.js'), P331 = rd('permissions', '331-perm-model.js'), P333 = rd('manifests', '333-platform-map.js'), P334 = rd('permissions', '334-perm-tree-tpl.js');
-const ACTIVE = REG.registry.filter((e) => e.status === 'active').map((e) => e.key), RESERVED = REG.registry.filter((e) => e.status !== 'active').map((e) => e.key);
 const J = (x) => JSON.parse(JSON.stringify(x));
-const CLS = { system: 'نظام', container: 'حاوية', page: 'صفحة', tab: 'تبويب', panel: 'لوحة مؤشرات', lens: 'عدسة', platform: 'منصة', reference: 'مرجع' };
 
 function load() {
   const KIVO = {};
@@ -50,15 +49,6 @@ function load() {
 const { C, KIVO, ctx } = load();
 const page = () => Object.create(C.prototype);
 const STRUCT = page().t24Struct();
-/* the full map: every container and every leaf opened */
-function mapRows(mode) {
-  const c = page(), S = c.t24Struct(), exp = {}, lx = {};
-  S.forEach((x) => { exp[x.id] = 1; x.leaves.forEach((l) => { lx[l.owner] = 1; }); });
-  const md = c.t24Rows({ map: true, mode, ceil: { lens: () => true }, on: {}, lens: [], exp, leafExp: lx, canEdit: false, target: { role: 'staff', mgr: false } });
-  assert.equal(md.ok, true);
-  return Array.from(md.rows);   /* a test-realm array (the vm has its own Array) */
-}
-const entity = (r) => !r.isKeys && !r.isGroup;
 
 test('the manifest ships the system contract and the lens hosts to the client (the source of the map)', needsSys('award', 'dstats', 'seized', 'tasks'), () => {
   const M = KIVO.KIVO_MANIFEST.clone('pages');
@@ -66,19 +56,6 @@ test('the manifest ships the system contract and the lens hosts to the client (t
   assert.equal(M.filter((p) => p.module).length, 12, 'twelve systems (module)');
   assert.deepEqual(J(KIVO.KIVO_MANIFEST.clone('lenses')).map((l) => [l.key, l.hosts, l.indicators]), LENSES.map((m) => [m.key, m.hosts, (m.resources || {}).indicators || []]));
 });
-
-for (const mode of ['view', 'cap']) {
-  test('A1 [' + mode + '] every active key exactly once · every reserved key marked · nothing outside the registry', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
-    const chips = mapRows(mode).filter((r) => r.isKeys).flatMap((r) => r.keys);
-    const act = chips.filter((k) => k.kind !== 'resv').map((k) => k.k), res = chips.filter((k) => k.kind === 'resv').map((k) => k.k);
-    assert.equal(ACTIVE.length, 255); assert.equal(RESERVED.length, 14);
-    assert.deepEqual(act.slice().sort(), ACTIVE.slice().sort(), 'the active chips are the 255 active keys, each once');
-    assert.equal(new Set(act).size, act.length, 'no active key twice');
-    assert.deepEqual(res.slice().sort(), RESERVED.slice().sort(), 'the 14 reserved keys are shown, marked reserved');
-    assert.ok(chips.every((k) => REG.registry.some((e) => e.key === k.k)), 'no key outside the registry');
-    assert.ok(chips.filter((k) => k.kind === 'resv').every((k) => k.on === false && k.dis === true && /^محجوز/.test(k.tip)), 'a reserved chip says so and is never on');
-  });
-}
 
 test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · leaves · keys · reserved)', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
   assert.equal(REG.owners.length, 44);
@@ -89,40 +66,7 @@ test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · l
     return { id: c.id, kind: c.kind, page: c.page, nav: c.nav, leaves: c.kind === 'page' ? L : L.sort((a, b) => (a.owner < b.owner ? -1 : 1)) }; });
   assert.deepEqual(shape(J(STRUCT), (l) => l.type), shape(TREE.containers, (l) => l.kind));
   assert.equal(TREE.counts.leaves, 44); assert.equal(TREE.counts.keys, 255);
-  const owners = mapRows('view').filter((r) => r.isLeaf).map((r) => r.key);
-  assert.deepEqual(owners.slice().sort(), REG.owners.map((o) => o.id).sort(), 'the 44 owners, one leaf row each');
-  assert.equal(new Set(owners).size, 44);
-});
-
-test('A3 every row has exactly one derived class of the eight', needsSys('award', 'dstats', 'seized'), () => {
-  const rows = mapRows('view').filter(entity);
-  for (const r of rows) { assert.ok(CLS[r.cls], 'class of «' + r.name + '»: ' + r.cls); assert.equal(r.badge, CLS[r.cls], 'the badge is the class name: ' + r.name); }
-  const by = (cls) => rows.filter((r) => r.cls === cls).map((r) => r.key).sort();
-  const leafOf = (id) => { const [p, s] = id.split('/'); const pg = PAGES.pages.find((x) => x.key === p); return (pg.subs || []).concat(pg.tabs || []).find((x) => x.key === s); };
-  const owners = (kind) => REG.owners.filter((o) => o.kind === kind).map((o) => o.id).sort();
-  /* expected classes computed here from the sources (pages.json · registry), independently of the builder */
-  assert.deepEqual(by('system'), PAGES.pages.filter((p) => p.module).map((p) => 'sys:' + p.module).sort(), 'a system row per module (12)');
-  assert.deepEqual(by('container'), TREE.containers.map((c) => c.id).concat(PAGES.containers.map((c) => c.key)).sort(), 'the 13 containers + the display container');
-  assert.deepEqual(by('lens'), owners('lens')); assert.deepEqual(by('platform'), owners('platform')); assert.deepEqual(by('reference'), owners('reference'));
-  const pageOwners = owners('page');
-  assert.deepEqual(by('page'), pageOwners.filter((o) => !o.includes('/')), 'page = an owner that is a whole page');
-  assert.deepEqual(by('tab'), pageOwners.filter((o) => o.includes('/') && !KPI.refs.includes(o)), 'tab = a sub/tab owner that is not a KPI panel');
-  assert.deepEqual(by('panel'), KPI.refs.map((r) => (r.includes('/') ? r : r + '#panel')).sort(), 'panel = a ref of «مؤشرات الإدارة»');
-  assert.ok(pageOwners.filter((o) => o.includes('/')).every((o) => leafOf(o)), 'every sub/tab owner is a leaf of pages.json');
-  /* the class is derived, not written: the builder holds no page or owner name next to a class */
-  assert.equal(rows.filter((r) => r.cls === 'system').every((r) => PAGES.pages.some((p) => p.module && p.name === r.name)), true, 'a system is named by its page');
-});
-
-test('A3 the leaves are grouped under their system; the container stays a display level', needsSys('tasks'), () => {
-  const rows = mapRows('view').filter(entity);
-  const at = (key) => rows.findIndex((r) => r.key === key), sysBefore = (key) => { for (let i = at(key); i >= 0; i--) { if (rows[i].isSys) return rows[i].key; if (rows[i].isCont) return ''; } return ''; };
-  for (const p of PAGES.pages) {
-    const leaves = p.subs || p.tabs ? (p.subs || []).concat(p.tabs || []).map((x) => p.key + '/' + x.key).filter((id) => REG.owners.some((o) => o.id === id) || KPI.refs.includes(id)) : [p.key];
-    for (const id of leaves) assert.equal(sysBefore(id), p.module ? 'sys:' + p.module : '', id + ' sits under its system');
-  }
-  assert.equal(sysBefore('tasks#panel'), 'sys:tasks', 'the tasks panel sits under the tasks system');
-  const dailyC = at('daily'), next = rows.findIndex((r, i) => i > dailyC && r.isCont);
-  assert.deepEqual(rows.slice(dailyC + 1, next).filter((r) => r.isSys).map((r) => r.key), ['sys:daily', 'sys:dreport', 'sys:tasks'], '«المتابعة اليومية» shows its three systems');
+  assert.deepEqual(J(STRUCT).flatMap((c) => c.leaves.map((l) => l.owner)).sort(), REG.owners.map((o) => o.id).sort(), 'the 44 owners, one leaf each');
 });
 
 test('A4 lens hosts come from the lens manifests — no literal host list', () => {
@@ -144,34 +88,18 @@ test('Q5 parity: a lens manifest declares exactly the panels pages.json makes co
   assert.deepEqual(J(STRUCT.find((c) => c.id === 'lenses').leaves).map((l) => [l.lens, l.ind]), LENSES.map((m) => [m.key, (m.resources || {}).indicators || []]));
 });
 
-test('A5 the panels of the map = refs = the panels of kpis/logic.js · the shown conditions = kpiPanelOk', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
-  const rows = mapRows('view').filter((r) => r.cls === 'panel');
+test('A5 refs = the panels of kpis/logic.js · the conditions = kpiPanelOk (V7 · د5-هـ 44: the map rows were deleted with t24Rows)', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
   /* (1) one row per ref, and the KPIs page draws exactly those */
   const KL = rd('modules', 'kpis', 'logic.js');
   const drawn = [...KL.matchAll(/\{ k: "\w+", pk: "(\w+)", sk: "(\w*)" \}/g)].map((m) => m[1] + (m[2] ? '/' + m[2] : ''));
   assert.equal(drawn.length, 11);
   assert.deepEqual(drawn, KPI.refs, 'kpis/logic.js draws the refs of the container, in order');
-  assert.equal(rows.length, KPI.refs.length, 'as many panel rows as panels');
   assert.doesNotMatch(KL, /"tkKpi"/, 'the tasks panel has no rule of its own left in the KPIs page');
   /* (2) the conditions: the literal rules of kpiPanelOk (the extraction of tools/validate_schemas.py ⑤) */
   const body = /function kpiPanelOk\(pk, sk\)\{([\s\S]*?)\n  \}/.exec(P334)[1], rules = {};
   for (const m of body.matchAll(/if \(sk === '(\w+)'\) return ([^;]+);/g))
     rules[m[1]] = [...m[2].matchAll(/onCap\('(\w+)'\)/g)].map((x) => 'lens:lens:' + x[1]).concat([...m[2].matchAll(/\bcan\('(\w+)', 'view'\)/g)].map((x) => 'perm:' + x[1])).sort();
   assert.deepEqual(Object.keys(rules).sort(), ['kpiDaily', 'kpiOcc', 'kpiZones']);
-  for (const r of rows) {
-    const sk = r.key.includes('/') ? r.key.split('/')[1] : '';
-    assert.deepEqual(J(r.req).filter((x) => x.kind !== 'code').map((x) => x.kind + ':' + x.on).sort(), rules[sk] || [], 'conditions of ' + r.key);
-    if (rules[sk]) { assert.equal(r.reqOn, true); for (const x of r.req) assert.ok(r.reqTxt.includes(x.kind === 'lens' ? 'عدسة' : 'عرض «'), r.key + ' names its condition: ' + r.reqTxt); }
-  }
-  assert.match(rows.find((r) => r.key === 'daily/kpiOcc').reqTxt, /عدسة المصليات في سقف الوحدة وعدسة الكثافة في سقف الوحدة/, 'kpiOcc needs both lenses');
-  assert.match(rows.find((r) => r.key === 'daily/kpiDaily').reqTxt, /تظهر بشرط: عرض «التقرير اليومي»/);
-  /* (3) a panel without an owner names the key that grants it (and repeats no chip): the targets of its «view» atom */
-  for (const id of ['daily/kpiDaily', 'daily/kpiOcc', 'daily/kpiZones', 'tasks#panel']) {
-    const r = rows.find((x) => x.key === id), leaf = id.replace('#panel', '');
-    const want = [...new Set(Object.values(REG.atoms).filter((a) => a.leaf === leaf && a.act === 'view').flatMap((a) => a.targets))];
-    assert.ok(r.isPanel && want.length, id); assert.deepEqual(J(r.via), want, 'granting key of ' + id);
-    for (const k of want) assert.ok(r.reqTxt.includes(REG.registry.find((e) => e.key === k).label), id + ' names «' + k + '»');
-  }
   /* (4) kpiPanelOk serves the page-level ref through the page's own view right — no new leaf, no new key */
   assert.match(body, /if \(!sk\) return can\(pk, 'view'\);/);
   assert.equal(REG.registry.length, 269); assert.equal(PAGES.pages.find((p) => p.key === 'tasks').tabs, undefined);
@@ -249,18 +177,6 @@ test('review: siteMap keeps the «خادم فقط» badge (from CON_TABS[3]) and
   for (const w of ['الإدارة', 'بياناتي', 'الأمان', 'يومك', 'أسبوعك', 'رصد الميدان']) assert.ok(PV.includes('<b>' + w + '</b>'), 'the profile template still has «' + w + '»');
   const dl = PAGES.pages.find((p) => p.key === 'daily');
   assert.ok((dl.subs || []).concat(dl.tabs || []).some((x) => /^رصد الميدان/.test(x.name)), '«رصد الميدان» is a leaf of daily');
-});
-
-test('editors are untouched by the map: without o.map the rows are the tree rows as before (no system/panel rows, editor badges)', () => {
-  const c = page(), S = c.t24Struct(), exp = {}, lx = {};
-  S.forEach((x) => { exp[x.id] = 1; x.leaves.forEach((l) => { lx[l.owner] = 1; }); });
-  for (const mode of ['cap', 'emp', 'tpl', 'view']) {
-    const rows = Array.from(c.t24Rows({ mode, ceil: { lens: () => true }, on: {}, lens: [], exp, leafExp: lx, canEdit: true, target: { role: "staff", mgr: false } }).rows);
-    assert.equal(rows.filter((r) => r.isSys || r.isPanel || r.isShow).length, 0, mode + ': no map-only rows');
-    assert.deepEqual(rows.filter((r) => r.isLeaf).map((r) => r.key), J(S).flatMap((x) => x.leaves.map((l) => l.owner)), mode + ': leaves in the manifest order');
-    assert.deepEqual([...new Set(rows.filter((r) => r.isLeaf).map((r) => r.badge))].sort(), ['المنصة', 'تبويب', 'خارج الصفحة', 'صفحة', 'عدسة', 'مرجع'].sort(), mode + ': editor badges unchanged');
-    assert.ok(rows.filter((r) => r.isLeaf).every((r) => r.reqOn === false && r.reqTxt === ''), mode + ': no condition text in an editor');
-  }
 });
 
 test('A10 the new display code opens no storage key and no API route', () => {

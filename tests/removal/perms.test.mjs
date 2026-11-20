@@ -114,11 +114,9 @@ test('د3 · الحذف: الشجرةُ كما تبنيها صفحةُ الإع�
   assert.deepEqual(conts.map((c) => c.id), TREE.containers.map((c) => c.id), 'حاوياتُ الواجهة = حاوياتُ الشجرة الملتزَمة');
   assert.deepEqual(conts.flatMap((c) => c.leaves).sort(), REG.owners.map((o) => o.id).sort(), 'أوراقُ الواجهة = مالكو السجل كلُّهم، كلٌّ مرة');
   for (const k of GONE) assert.ok(!conts.some((c) => c.id === k || c.leaves.some((l) => l.split('/')[0] === k)), 'نظامٌ غائب في شجرة الواجهة: ' + k);
-  const c = page(), exp = {}, lx = {}; ST.forEach((x) => { exp[x.id] = 1; x.leaves.forEach((l) => { lx[l.owner] = 1; }); });
-  for (const mode of ['view', 'cap']) {
-    const md = c.t24Rows({ map: true, mode, ceil: { lens: () => true }, on: {}, lens: [], exp, leafExp: lx, canEdit: false, target: { role: 'staff', mgr: false } });
-    assert.equal(md.ok, true); assert.deepEqual(hits(JSON.stringify(Array.from(md.rows))), [], 'صفوفُ الخريطة (' + mode + ') بلا رمزِ نظامٍ غائب');
-  }
+  /* V7 · د5-هـ (44 · التوحيد): صفوفُ الخريطة والمحرّر (t24Rows) حُذفت مع «سقف الصفحات» وشجرتِه — فحُذف فحصُها؛ والبنيةُ (t24Struct) أعلاه.
+     والأنظمةُ في «الصلاحيات ← الأنظمة» من محرّك الأدوار (345 sysList) — بلا نظامٍ غائب: */
+  assert.deepEqual(hits(JSON.stringify(Array.from(ST))), [], 'البنيةُ بلا رمزِ نظامٍ غائب');
 });
 
 /* V7 · د3 (تتمة) — بحثٌ نصي عن أسماء الأنظمة الغائبة (اسمُ المجلد حيث ورد، بأي حالة أحرف) في أجزاء الخادم وكتل الواجهة، خارج التعليقات.
