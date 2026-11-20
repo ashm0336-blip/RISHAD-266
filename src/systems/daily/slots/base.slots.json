@@ -37,7 +37,7 @@
  },
  "pages.entry.daily": {
   "order": 10,
-  "text": "  {\n   \"key\": \"daily\",\n   \"module\": \"daily\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"requires\": [\n@@SYS:pages.daily.requires.dreport@@    {\"for\": \"daily/kpiOcc\", \"on\": \"lens:zones\", \"kind\": \"lens\"},\n    {\"for\": \"daily/kpiOcc\", \"on\": \"lens:dens\", \"kind\": \"lens\"},\n    {\"for\": \"daily/kpiZones\", \"on\": \"lens:zones\", \"kind\": \"lens\"}\n   ],\n   \"departmentComponents\": [\"Daily Sessions\"],\n   \"nav\": \"daily\",\n   \"name\": \"المتابعة اليومية\",\n   \"seq\": [\n    \"tab:kpiDaily\",\n    \"tab:kpiOcc\",\n    \"tab:kpiZones\",\n@@SYS:pages.daily.seq.dreport@@    \"tab:rounds\",\n@@SYS:pages.daily.seq.tasks@@    \"tab:field\"\n   ],\n   \"tabLabel\": \"التبويبات\",\n   \"tabs\": [\n    {\n     \"key\": \"kpiDaily\",\n     \"name\": \"مؤشرات المتابعة — التشغيل اليومي\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"kpiOcc\",\n     \"name\": \"مؤشرات المتابعة — الإشغال\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"kpiZones\",\n     \"name\": \"مؤشرات المتابعة — المصليات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"rounds\",\n     \"name\": \"الجولات اليومية\"\n    },\n    {\n     \"key\": \"field\",\n     \"name\": \"رصد الميدان — حالة الموقع واتجاه الحركة من صفحة الموظف\",\n     \"offPage\": true\n    }\n   ]\n  },\n"
+  "file": "slots/pages.entry.daily.frag"
  },
  "pages.tabAddr.daily.entry": {
   "order": 10,
