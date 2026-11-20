@@ -4,22 +4,18 @@
    وسجلّاتُ المضبوطات والإرشاد والجائزة والعهدة والمهام لا تقرؤها إلا صفحتُها. ومَن مُنح «النسخ
    الاحتياطية» يقرأ كلَّ مجموعات إدارته لأن النسخةَ لا تُصدَّر ناقصة. */
 var RD_ANY = ['admin/backup'];            /* ورقةٌ تقرأ كلَّ مجموعات الإدارة */
-var RD_OPS = ['emps/data',@@SYS:read.ops.staff@@'plan','daily/rounds','daily/field','dreport'@@SYS:read.ops.tasks@@@@SYS:read.ops@@,'planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
+var RD_OPS = ['emps/data',@@SYS:read.ops.staff@@@@SYS:read.ops.plan@@'daily/rounds','daily/field','dreport'@@SYS:read.ops.tasks@@@@SYS:read.ops@@,'planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
 var RD_REG = {
   /* ── مراجعُ مشتركة: تُقرأ من كل صفحةٍ تشغيليّة لتعرض اسماً أو ورديّة ── */
   'bassam_employees_v1':       RD_OPS,
   'bassam_shift_options_v1':   RD_OPS.concat(['admin/shifts']),
 @@SYS:read.map.roster.staff@@  'bassam_dreport_v1':         ['dreport', 'daily/rounds', 'daily/field', 'emps/data'@@SYS:read.map.dreport@@@@SYS:read.map.reader.staff.1@@@@SYS:read.map.reader.tasks.1@@, 'planning', 'planning/readiness'],
   'bassam_options_v1':         ['emps/data'@@SYS:read.map.reader.staff.2@@@@SYS:read.map.reader.tasks.2@@, 'planning', 'planning/readiness'],
-  'bassam_perm_tpls_v1':       ['admin/ptpls', 'dreport', 'emps/data', 'plan'@@SYS:read.map.reader.staff.3@@@@SYS:read.map.reader.tasks.3@@, 'planning', 'planning/readiness'],
+  'bassam_perm_tpls_v1':       ['admin/ptpls', 'dreport', 'emps/data'@@SYS:read.map.reader.plan.1@@@@SYS:read.map.reader.staff.3@@@@SYS:read.map.reader.tasks.3@@, 'planning', 'planning/readiness'],
   'bassam_perm_tpls_named_v1': ['admin/ptpls'@@SYS:read.map.reader.staff.4@@],
 @@SYS:read.map.locks.staff@@  /* ── الموظفون ── */
 @@SYS:readMap.custody@@@@SYS:read.map.staff@@  /* ── الخطة التشغيلية والمتابعة اليومية: بنيةُ الموقع تُقرأ من صفحتَيه ومن التقرير ── */
-  'bassam_plan_v1':            ['plan', 'daily/rounds', 'daily/field', 'dreport', 'emps/data'],
-  'bassam_zone_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],
-  'bassam_gate_opts_v1':       ['plan', 'daily/rounds', 'daily/field'],
-  'bassam_mark_kinds_v1':      ['plan', 'daily/rounds', 'daily/field'],
-  'bassam_rounds_v1':          ['daily/rounds', 'daily/field', 'dreport', 'emps/data', 'plan'@@SYS:read.map.rounds@@],
+@@SYS:read.map.plan@@  'bassam_rounds_v1':          ['daily/rounds', 'daily/field', 'dreport', 'emps/data'@@SYS:read.map.reader.plan.3@@@@SYS:read.map.rounds@@],
   'bassam_dayshift_v1':        ['daily/rounds', 'daily/field', 'dreport'],
   'bassam_dayfocus_v1':        ['daily/rounds', 'daily/field', 'dreport'],
   /* ── التقرير اليومي ── */

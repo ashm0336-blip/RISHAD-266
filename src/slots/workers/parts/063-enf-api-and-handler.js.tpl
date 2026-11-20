@@ -631,11 +631,11 @@ export default {
             var captureR = await opCaptureReferences(env, await kvAll(env, 'kv')), keysR = captureR.keys, revsR = Object.assign({},await revsAll(env),captureR.revs), byDeptR = {}, deptsR = parseJson(keysR[K_DEPTS], []), usersR = parseJson(keysR[K_USERS], []), dri;
             if (!Array.isArray(deptsR)) deptsR = []; if (!Array.isArray(usersR)) usersR = [];
             for (dri = 0; dri < deptsR.length; dri++) { var dIdR = deptsR[dri] && deptsR[dri].id; if (!dIdR) continue; var preR = 'bsdept:' + dIdR + ':';
-              byDeptR[dIdR] = { plan: parseJson(keysR[preR + 'bassam_plan_v1'], null), rounds: parseJson(keysR[preR + 'bassam_rounds_v1'], null), employees: parseJson(keysR[preR + 'bassam_employees_v1'], []) }; }
+              byDeptR[dIdR] = { @@SYS:ident.rehearse.plan@@rounds: parseJson(keysR[preR + 'bassam_rounds_v1'], null), employees: parseJson(keysR[preR + 'bassam_employees_v1'], []) }; }
             var seedQ = String(url.searchParams.get('seed') || ''), seedR = '', seedSrcR = 'crypto.getRandomValues';
             if (/^[0-9a-f]{64}$/i.test(seedQ)) { seedR = seedQ.toLowerCase(); seedSrcR = 'query (replay)'; }
             else { var sbR = new Uint8Array(32), sbi; crypto.getRandomValues(sbR); for (sbi = 0; sbi < 32; sbi++) seedR += (sbR[sbi] < 16 ? '0' : '') + sbR[sbi].toString(16); }
-            var rawR = {}; Object.keys(keysR).forEach(function (kk) { if (/^bsdept:[^:]+:bassam_(plan|rounds)_v1$/.test(kk)) rawR[kk] = keysR[kk]; });
+            var rawR = {}; Object.keys(keysR).forEach(function (kk) { if (/^bsdept:[^:]+:bassam_(@@SYS:ident.rehearse.raw.plan@@rounds)_v1$/.test(kk)) rawR[kk] = keysR[kk]; });
             var rpR = KIVO_IDENTITY_MIGRATION.rehearse({ depts: deptsR, users: usersR, byDept: byDeptR }, { seed: seedR, seedSource: seedSrcR, now: nowX, today: dsToday(nowX), raw: rawR, revs: revsR });
             if (captureR.guards.length) await env.DB.batch(captureR.guards);
             return json({ ok: 1, worker: WORKER_VER, rehearsal: rpR });
@@ -874,14 +874,14 @@ export default {
         }
         var limA = Math.min(200, Math.max(1, parseInt(qA.get('limit') || '60', 10) || 60));
         var deptA = String(qA.get('dept') || ''), etA = String(qA.get('etype') || ''), eidA = String(qA.get('eid') || '').slice(0, 80), actA = String(qA.get('act') || ''), uidA = String(qA.get('uid') || '');
-        var qqA = audLike(qA.get('q')).slice(0, 80), siteA = audLike(qA.get('site')).slice(0, 80), planA = audLike(qA.get('plan')).slice(0, 20), dayA = audLike(qA.get('day')).slice(0, 20);
+        var qqA = audLike(qA.get('q')).slice(0, 80), siteA = audLike(qA.get('site')).slice(0, 80), planA = @@SYS:aud.q.plan|empty="''"@@, dayA = audLike(qA.get('day')).slice(0, 20);
         var kA9 = String(qA.get('k') || '').slice(0, 160);   /* تاريخُ مجموعة بياناتٍ بعينها — يشمل أسطرَ legacy المرحَّلة */
         var sinceA9 = parseInt(qA.get('since') || '0', 10) || 0, beforeA9 = parseInt(qA.get('before') || '0', 10) || 0, curA = parseInt(qA.get('cursor') || '0', 10) || 0;
         if (etA && !AUD_TOK_RE.test(etA)) etA = ''; if (actA && !AUD_TOK_RE.test(actA)) actA = '';
         var entMode = !!(etA && eidA);
         if (AU.u.role !== 'super') { if (!deptA || !audCanDept(AU, deptA, entMode)) return json({ ok: 0, err: 'forbidden' }, 403); }
         var raA = await env.DB.prepare('SELECT id, ts, uid, un, dept, k, rev, etype, eid, ename, act, ctx, bef, aft, dev, city FROM aud WHERE (?2 = \'\' OR dept = ?2) AND (?3 = \'\' OR etype = ?3) AND (?4 = \'\' OR eid = ?4) AND (?5 = \'\' OR act = ?5) AND (?6 = \'\' OR uid = ?6) AND (?7 = 0 OR ts >= ?7) AND (?8 = 0 OR ts < ?8) AND (?9 = 0 OR id < ?9) AND (?10 = \'\' OR ename LIKE ?11 ESCAPE \'\\\' OR eid LIKE ?11 ESCAPE \'\\\') AND (?12 = \'\' OR ctx LIKE ?13 ESCAPE \'\\\') AND (?14 = \'\' OR ctx LIKE ?15 ESCAPE \'\\\') AND (?16 = \'\' OR ctx LIKE ?17 ESCAPE \'\\\') AND (?18 = \'\' OR k = ?18) ORDER BY id DESC LIMIT ?1')
-          .bind(limA + 1, deptA, etA, eidA, actA, uidA, sinceA9, beforeA9, curA, qqA, '%' + qqA + '%', siteA, '%"site":"' + siteA + '"%', planA, '%"plan":"' + planA + '"%', dayA, '%"day":"' + dayA + '"%', kA9).all();
+          .bind(limA + 1, deptA, etA, eidA, actA, uidA, sinceA9, beforeA9, curA, qqA, '%' + qqA + '%', siteA, '%"site":"' + siteA + '"%', planA, @@SYS:aud.ctx.plan|empty="''"@@, dayA, '%"day":"' + dayA + '"%', kA9).all();
         var rowsA = ((raA && raA.results) || []);
         var moreA = rowsA.length > limA; if (moreA) rowsA = rowsA.slice(0, limA);
         var byIdU = nmap(); AU.users.forEach(function (u) { if (u && u.id) byIdU[u.id] = u; });   /* KIVO_261: null-prototype */

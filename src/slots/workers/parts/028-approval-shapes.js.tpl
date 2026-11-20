@@ -52,20 +52,7 @@ var OP_SHAPE = {
     }
     return '';
   },
-  /* الخطة: علم الاعتماد منطقيّ، وعلم فتح الشهر واحدٌ لا غير */
-  plan: function (oa, nb) {
-    var fl = Array.isArray(nb.floors) ? nb.floors : [];
-    for (var i = 0; i < fl.length; i++) if (isObj(fl[i]) && ('approved' in fl[i]) && typeof fl[i].approved !== 'boolean') return 'approve';
-    var ms = isObj(nb.months) ? nb.months : {};
-    for (var m in ms) {
-      var mv = ms[m]; if (!isObj(mv)) continue;
-      if (('mo' in mv) && mv.mo !== 1) return 'approve';
-      var dd = Array.isArray(mv.d) ? mv.d : [];
-      for (var j = 0; j < dd.length; j++) if (isObj(dd[j]) && ('approved' in dd[j]) && typeof dd[j].approved !== 'boolean') return 'approve';
-    }
-    return '';
-  },
-@@SYS:approval.shape.award@@};
+@@SYS:approval.shape.plan@@@@SYS:approval.shape.award@@};
 function needAdd(n) { n.add = 1; } function needDel(n) { n.del = 1; } function needEdit(n) { n.edit = 1; }
 function idOf(x, idf) {
   if (!isObj(x)) return '';

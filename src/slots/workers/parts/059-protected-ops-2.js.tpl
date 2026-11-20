@@ -8,8 +8,7 @@ var ENF_UNCOV = (function () {
   function all(keys) { return { add: keys, edit: keys, del: keys, approve: keys }; }
   return {
     'bassam_options_v1': join(crud('ref.employment_type')@@SYS:enf.refCrud.options.staff@@),
-    'bassam_zone_opts_v1': crud('ref.zone.type'), 'bassam_gate_opts_v1': crud('ref.gate.type'), 'bassam_mark_kinds_v1': crud('ref.mark.kind'),
-    'bassam_shift_options_v1': crud('ref.shift'),
+@@SYS:enf.refCrud.plan@@    'bassam_shift_options_v1': crud('ref.shift'),
 @@SYS:enf.refCrud.records@@    'bassam_leave_kinds_v1': crud('ref.leave_type'),@@SYS:enf.refCrud.callsign.staff@@
 @@SYS:enf.refCrud.award@@@@SYS:enf.uncov.staff@@    'bassam_dayshift_v1': all(['round.edit', 'report.edit', 'round.create', 'report.create']),
     'bassam_dayfocus_v1': all(['round.edit', 'report.edit', 'round.create', 'report.create']),
@@ -50,7 +49,7 @@ function enfPlugOps(res) {
   for (var i = 0, m, o; i < res.ops.length; i++) {
     o = res.ops[i];
     if ((m = /(?:^|\.)([a-z]+)\[[^\]]*\]\.([A-Za-z0-9_]+)$/.exec(o.path)) && KIVO_LENS_PLUGINS.edit[m[1]] === o.key && ENF_PLUG_OPS.el[m[1] + '.' + m[2]]) o.key = ENF_PLUG_OPS.el[m[1] + '.' + m[2]];
-    else if ((o.key === 'site.edit' || o.key === 'round.edit') && (m = /\.([A-Za-z0-9_]+)$/.exec(o.path)) && ENF_PLUG_OPS.fl[m[1]]) o.key = ENF_PLUG_OPS.fl[m[1]];
+    else if ((@@SYS:enf.plugFloor.plan@@o.key === 'round.edit') && (m = /\.([A-Za-z0-9_]+)$/.exec(o.path)) && ENF_PLUG_OPS.fl[m[1]]) o.key = ENF_PLUG_OPS.fl[m[1]];
   }
   return res;
 }

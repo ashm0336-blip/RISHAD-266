@@ -268,7 +268,7 @@ function privPermsStale(A, ps, nRaw, cRaw) {
   return privPermsOmits(A, parseJson(String(nRaw), null), parseJson(String(cRaw), null)) ? 'perms-stale-client' : '';
 }
 /* (4) references by nid */
-var PRIV_TOK_RES = { @@SYS:priv.tokRes.staff@@bassam_plan_v1: 1, bassam_rounds_v1: 1, bassam_dreport_v1: 1@@SYS:priv.tokRes.tasks@@ };
+var PRIV_TOK_RES = { @@SYS:priv.tokRes.staff@@@@SYS:priv.tokRes.plan@@bassam_rounds_v1: 1, bassam_dreport_v1: 1@@SYS:priv.tokRes.tasks@@ };
 var PRIV_NO = { privacy: 'hidden' };   /* privIn: the incoming value changes a hidden reference ⇒ refused (054) */
 /* { M: nid→eid, R: eid→nid } of the records of unit d whose nid the actor does not receive, or null; have: raw values by key */
 function privTok(A, d, have) {

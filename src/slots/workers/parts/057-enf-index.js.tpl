@@ -73,7 +73,7 @@ function enfIx() {
     var o = R.owners[e.owner];
     if (e.ownerKind === 'page') ix.leaf[key] = e.owner;
     else if (e.ownerKind === 'reference') ix.leaf[key] = (o && o.managedIn) || leaves[0] || '';
-    else if (e.ownerKind === 'lens') ix.hosts[key] = leaves.length ? leaves : ['plan', 'daily/rounds'];
+    else if (e.ownerKind === 'lens') ix.hosts[key] = leaves.length ? leaves : [@@SYS:lens.hosts.plan@@'daily/rounds'];
     var rs = (e.guard && e.guard.resources) || [];
     for (j = 0; j < rs.length; j++) (ix.byRes[rs[j]] = ix.byRes[rs[j]] || []).push(key);
   }

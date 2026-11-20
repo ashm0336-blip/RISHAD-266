@@ -83,7 +83,7 @@ function enfToksOf(raw, ek) {
 function enfMine(V, emp) { if (!Array.isArray(emp)) return false; for (var i = 0; i < emp.length; i++) if (V.toks ? V.toks[String(emp[i])] : String(emp[i]) === V.ekey) return true; return false; }
 /* سجلُّ الموظفين لإدارات الجولات والخطة في الحفظ (refs بلا keys) */
 async function enfEmpsLoad(env, refs, ks) {
-  for (var i = 0; i < ks.length; i++) { var rn = resName(ks[i]), d = parseKey(ks[i]).dept; if (d && (rn === 'bassam_rounds_v1' || rn === 'bassam_plan_v1') && !(d in refs.emps)) refs.emps[d] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'); }
+  for (var i = 0; i < ks.length; i++) { var rn = resName(ks[i]), d = parseKey(ks[i]).dept; if (d && (rn === 'bassam_rounds_v1'@@SYS:enf.empsLoad.plan@@) && !(d in refs.emps)) refs.emps[d] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'); }
 }
 /* عنصرٌ كما يراه الفاعل: يُسقَط منه ما لا يراه (حالةُ الرصد خارج النطاق · التسكين بلا عدسة التوزيع · الكثافة بلا عدستها) */
 function enfElemMask(V, col, e, rounds) {
@@ -137,40 +137,7 @@ function enfFloorMerge(V, nf, cf, rounds) {
 function enfFloorBlank(V, fl) { var o = {}, c, f; if (!isObj(fl)) return o; for (c = 0; c < ENF_LENS_COLS.length; c++) { f = ENF_LENS_COLS[c]; if (fl[f] !== undefined) o[f] = V.lens[f] ? [] : fl[f]; } for (c = 0; c < ENF_LENS_FLOOR.length; c++) { f = ENF_LENS_FLOOR[c].field; if (fl[f] !== undefined && !V.lens[ENF_LENS_FLOOR[c].lens]) o[f] = fl[f]; } return o; }
 function enfMonthD(v) { return Array.isArray(v) ? { arr: true, d: v } : (isObj(v) && Array.isArray(v.d) ? { arr: false, d: v.d } : null); }
 var ENF_PROJ = {
-@@SYS:enf.proj.dstats@@  /* الخطة: سياقُ رسم (لا يُحجب طابقٌ ولا عنصر) — تُحجب العدساتُ المعطّلة وحقولُها (RISHAD-266: لا إسقاطَ بالموقع/العنصر بعد تقاعد سقف النطاق القديم) */
-  'bassam_plan_v1': {
-    on: function (V) { return enfAnyLensOff(V); },
-    proj: function (v, V) {
-      if (!isObj(v)) return v; var o = enfShallow(v), i;
-      if (Array.isArray(v.floors)) o.floors = v.floors.map(function (fl, i0) { return enfFloorProj(V, fl, false); });
-      if (isObj(v.months)) { var mo = {}, k; for (k in v.months) { var md = enfMonthD(v.months[k]); if (!md) { mo[k] = v.months[k]; continue; } var dd = md.d.map(function (fl, i1) { return enfFloorProj(V, fl, false); }); if (md.arr) mo[k] = dd; else { mo[k] = enfShallow(v.months[k]); mo[k].d = dd; } } o.months = mo; }
-      var root = enfFloorProj(V, enfColsOf(v), false);
-      for (i = 0; i < ENF_LENS_COLS.length; i++) if (v[ENF_LENS_COLS[i]] !== undefined) o[ENF_LENS_COLS[i]] = root[ENF_LENS_COLS[i]];
-      return o;
-    },
-    merge: function (c, n, V) {
-      if (!isObj(n) || !isObj(c)) return n; var o = enfShallow(n), i, k;
-      if (Array.isArray(n.floors) && Array.isArray(c.floors)) {
-        var cf = {}; c.floors.forEach(function (fl, i0) { cf[ENF_ID.floor(fl, i0)] = fl; });
-        o.floors = n.floors.map(function (fl, i1) { var id = ENF_ID.floor(fl, i1), x = cf[id]; return x ? enfFloorMerge(V, fl, x, false) : fl; });
-      }
-      if (isObj(n.months) && isObj(c.months)) {
-        var mo = enfShallow(n.months);
-        for (k in n.months) {
-          var mn = enfMonthD(n.months[k]), mc = enfMonthD(c.months[k]); if (!mn || !mc) continue;
-          var cm = {}; mc.d.forEach(function (fl, i2) { cm[ENF_ID.floor(fl, i2)] = fl; });
-          var dd = mn.d.map(function (fl, i3) { var id = ENF_ID.floor(fl, i3), x = cm[id]; return x ? enfFloorMerge(V, fl, x, false) : fl; });
-          if (mn.arr) mo[k] = dd; else { mo[k] = enfShallow(n.months[k]); mo[k].d = dd; }
-        }
-        o.months = mo;
-      }
-      var rn0 = enfColsOf(n), rc0 = enfColsOf(c);
-      var rm = enfFloorMerge(V, rn0, rc0, false);
-      for (i = 0; i < ENF_LENS_COLS.length; i++) { var col = ENF_LENS_COLS[i]; if (rm[col] !== undefined) o[col] = rm[col]; else delete o[col]; }
-      return o;
-    }
-  },
-  /* الجولات: كالخطة + راصدُ الميدان يرى حالةَ العناصر المسنَدة إليه وحدها (P4.2-05) — الحاوياتُ والهندسةُ وemp[] تبقى */
+@@SYS:enf.proj.dstats@@@@SYS:enf.proj.plan@@  /* الجولات: كالخطة + راصدُ الميدان يرى حالةَ العناصر المسنَدة إليه وحدها (P4.2-05) — الحاوياتُ والهندسةُ وemp[] تبقى */
   'bassam_rounds_v1': {
     on: function (V) { return V.restrict.Assigned || enfAnyLensOff(V); },
     proj: function (v, V) {
