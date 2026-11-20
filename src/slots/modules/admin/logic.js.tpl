@@ -1434,6 +1434,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
   }
   adRole(t) {
+    /* V7 · د5-هـ (44): الموظفُ (لا المدير) يُعرض باسم دوره الممنوح (permLabel ← محرّك الأدوار) قبل المسمّى الحرّ — بحضور المحرّك */
+    if (t && "staff" === t.role && !t.mgr && t.ekey && KIVO.Perm44 && KIVO.BassamAuth && KIVO.BassamAuth.permLabel && !(KIVO.BassamAuth.isMgrKey && KIVO.BassamAuth.isMgrKey(t.ekey))) {
+      const L = KIVO.BassamAuth.permLabel(t.ekey, t.deptId);
+      if (L) return L;
+    }
     const T = t && "super" !== t.role ? String(t.title || "").trim() : "";
     if (T) return T;
     return (
@@ -3741,16 +3746,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     this._deptDeleteBusy = true;
     try {
-      let result = await this._wpCall(draft.dept, draft.ticket, actor, "delete");
+      /* V7 · د5-هـ (44): السببُ يُسأل قبل الإرسال لا بعد رفضه (مدير المنصة لا يُسأل أبداً) — والطلبُ يُرسل مرّةً واحدة؛ الإلغاءُ لا يُرسل شيئاً */
+      const pre = await this._reasonFirst("bsdept:" + draft.dept + ":bassam_employees_v1", draft.reasonKeys || []);
+      if (!pre.go) return;
+      if (pre.reason && draft.ticket.reason !== pre.reason) draft.ticket = { ...draft.ticket, reason: pre.reason };
+      const result = await this._wpCall(draft.dept, draft.ticket, actor, "delete");
       const srv = KIVO.__BS_SRV;
-      if (!result.ok && result.err === "reason" && srv && typeof srv.askReason === "function") {
-        const reason = await new Promise(resolve => srv.askReason(result.reasonKey, result.reasonKeys, resolve));
-        if (this._wpActor() !== actor || this._deptDeleteDraft !== draft) return;
-        if (typeof reason !== "string" || !reason.trim()) return this.bsToast("أُلغي إدخال السبب؛ تأكيد الحذف محفوظ ولم يُعتمد تغيير", "warn");
-        const random = new Uint8Array(20); window.crypto.getRandomValues(random);
-        draft.ticket = { ...draft.ticket, requestId: "deptdel-" + Array.from(random, value => value.toString(16).padStart(2, "0")).join(""), reason: reason.trim() };
-        result = await this._wpCall(draft.dept, draft.ticket, actor, "delete");
-      }
       if (!result.ok) {
         draft.uncertain = ["network", "receipt", "server", "session"].includes(result.err); draft.needsReview = result.err === "conflict";
         return this.bsToast(draft.needsReview ? "تغيّرت بيانات الإدارة؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُحذف الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
@@ -3767,6 +3768,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } finally { this._deptDeleteBusy = false; }
   }
 
+  /* V7 · د5-هـ (44): «اسأل أولاً ثم أرسل» لمسارات الخادم المحمية — مدير المنصة معفًى دائماً (لا نافذة)، وبغيره تُفتح نافذةُ السبب (280 reasonFirst)
+     قبل أي طلب: { go:false } عند الإلغاء فلا يُرسل شيء · { go:true, reason } بعده */
+  _reasonFirst(k, keys) {
+    const srv = KIVO.__BS_SRV;
+    if (!srv || (srv.reasonExempt && srv.reasonExempt()) || typeof srv.reasonFirst !== "function" || !(keys && keys.length)) return Promise.resolve({ go: true, reason: "" });
+    return new Promise(resolve => srv.reasonFirst(k, keys, resolve));
+  }
   _wpActor() {
     const auth = KIVO.BassamAuth, user = auth && auth.user && auth.user(), boot = window.__BS_BOOT || {};
     return user && user.role === "super" && auth.isSuper() && boot.srv === 1 && boot.cf === 1 && String(boot.uid || "") === String(user.id) ? String(user.id) : null;
@@ -3844,16 +3852,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     let ticket = this._wpTicket;
     this._wpBusy = true; this.setState({ wpBusy: true, wpMsg: "جارٍ انتظار تأكيد مسح الإدارة من الخادم…" });
     try {
-      let result = await this._wpCall(dept, ticket.body, actor);
+      /* V7 · د5-هـ (44): السببُ قبل الإرسال (مدير المنصة لا يُسأل) — طلبٌ واحد؛ الإلغاءُ لا يُرسل شيئاً ولا يُظهر رفضاً */
+      const pre = await this._reasonFirst("bsdept:" + dept + ":bassam_employees_v1", ticket.reasonKeys || []);
+      if (!pre.go) return void this.setState({ wpMsg: "" });
+      if (pre.reason && ticket.body.reason !== pre.reason) { ticket = { ...ticket, body: { ...ticket.body, reason: pre.reason } }; this._wpTicket = ticket; }
+      const result = await this._wpCall(dept, ticket.body, actor);
       const srv = KIVO.__BS_SRV;
-      if (!result.ok && result.err === "reason" && srv && typeof srv.askReason === "function") {
-        const reason = await new Promise(resolve => srv.askReason(result.reasonKey, result.reasonKeys, resolve));
-        if (this._wpActor() !== actor || this.state.wpDid !== dept) return;
-        if (typeof reason !== "string" || !reason.trim()) return void this.setState({ wpMsg: "أُلغي إدخال السبب؛ تأكيد المسح محفوظ ولم يُعتمد تغيير" });
-        const random = new Uint8Array(20); window.crypto.getRandomValues(random);
-        ticket = { ...ticket, body: { ...ticket.body, requestId: "wipe-" + Array.from(random, value => value.toString(16).padStart(2, "0")).join(""), reason: reason.trim() } };
-        this._wpTicket = ticket; result = await this._wpCall(dept, ticket.body, actor);
-      }
       if (!result.ok) {
         this._wpUncertain = ["network", "receipt", "server", "session"].includes(result.err);
         return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "reason" ? "يشترط الخادم سبباً لهذا الإجراء؛ تأكيد المسح محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });

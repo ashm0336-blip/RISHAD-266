@@ -1192,6 +1192,31 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }
     }
   }
+  /* V7 · د5-هـ (44): أدوارُ الإدارة النشطة ودورُ الموظف — من محرّك الأدوار KIVO.Perm44 (بغيابه: لا أدوار) */
+  drDept() {
+    try {
+      return (KIVO.BassamDepts && KIVO.BassamDepts.active && KIVO.BassamDepts.active()) || "";
+    } catch (t) {
+      return "";
+    }
+  }
+  drRoles() {
+    try {
+      var P4 = KIVO.Perm44,
+        L = P4 && "function" == typeof P4.rolesOf ? P4.rolesOf(this.drDept()) : [];
+      return Array.isArray(L) ? L.filter(function (r) { return r && r.id; }) : [];
+    } catch (t) {
+      return [];
+    }
+  }
+  drRoleOf(k) {
+    try {
+      var P4 = KIVO.Perm44;
+      return (k && P4 && "function" == typeof P4.roleOf && P4.roleOf(k, this.drDept())) || null;
+    } catch (t) {
+      return null;
+    }
+  }
   drTpApply(t, r) {
     var e = KIVO.BassamPerm;
     if (e && e.setEmpPerms) {
@@ -1216,45 +1241,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               (this.rpEmps() || []).forEach(function (r) {
                 d.rpKeyOf(r) === t && (o = r.name || "");
               });
-              var p = [];
-              try {
-                var c = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-                Array.isArray(c) && (p = KIVO.BassamPerm && KIVO.BassamPerm.tplsMigrate ? KIVO.BassamPerm.tplsMigrate(c) : c);
-              } catch (t) {}
-              var l = null;
-              if (
-                !r ||
-                (p.forEach(function (t) {
-                  t.id === r && (l = t);
-                }),
-                l)
-              ) {
-                try {
-                  e.deptCap();
-                } catch (t) {}
-                /* V7 P3 · المعالجُ الواحد لمنح القالب (grantTpl) بالسلوك القائم هنا: القصُّ بالسقف وهويةُ القالب — بلا ضبط العدسات */
-                var u = e.grantTpl(t, l),
-                  h = (u && u.cut) || {};
+              /* V7 · د5-هـ (44): «الصلاحية» في تقرير اليوم = دورُ الموظف — يُسند بالمسار الواحد KIVO.Perm44.setPerson (قوالبُ الصلاحيات حُذفت) */
+              var P4 = KIVO.Perm44,
+                p = this.drRoles(),
+                l = null;
+              if (!r || (p.forEach(function (x) { x.id === r && (l = x); }), l)) {
+                var u = P4 && "function" == typeof P4.setPerson ? P4.setPerson(t, l ? l.id : null, this.drDept()) : { ok: !1, err: "محرّك الأدوار غير متاح" };
                 if (u && !1 === u.ok) this.bsToast(u.err || "تعذّر حفظ الصلاحيات", "warn");
                 else {
                   try {
                     var m = KIVO.BassamNotif;
                     if (m && m.emit) {
-                      var g = Object.keys(h)
-                          .filter(function (t) {
-                            return (h[t] || []).length;
-                          })
-                          .map(function (t) {
-                            try {
-                              return (e.nameOf && e.nameOf(t)) || t;
-                            } catch (r) {
-                              return t;
-                            }
-                          })
-                          .filter(function (t, r, e) {
-                            return t && e.indexOf(t) === r;
-                          }),
-                        y = "";
+                      var y = "";
                       try {
                         var b = KIVO.BassamAuth && KIVO.BassamAuth.display ? KIVO.BassamAuth.display() : "";
                         y = b && "object" == typeof b ? b.name || "" : String(b || "");
@@ -1262,29 +1260,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       m.emit("pm_chg", {
                         own: [t],
                         vars: {
-                          الفعل: l ? "صلاحيتك في تقرير اليوم صارت «" + (l.name || "") + "»:" : "سُحبت صلاحياتك من تقرير اليوم:",
-                          الصفحات: g.length ? g.join(" · ") : "بلا صفحات",
+                          الفعل: l ? "صلاحيتك في تقرير اليوم صارت «" + (l.name || "") + "»" : "سُحب دورك من تقرير اليوم",
+                          الصفحات: l ? "الدور «" + (l.name || "") + "»" : "بلا دور",
                           المُغيّر: y,
                         },
                       });
                     }
                   } catch (t) {}
                   (this.setState({ drTpOpen: null, rpTick: (this.state.rpTick || 0) + 1 }),
-                    !l || Object.keys(h).length
-                      ? this.bsAck(
-                          l
-                            ? "مُنح " + (o || "الموظف") + " قالب «" + (l.name || "") + "» — يسري فوراً في المنصة كلها"
-                            : "أزيلت صلاحيات " + (o || "الموظف") + " — فوراً وفي المنصة كلها",
-                          "ok",
-                        )
-                      : this.bsToast(
-                          "مُنح قالب «" +
-                            (l.name || "") +
-                            "» لكنه بلا أي صفحات ضمن سقف الإدارة — ستظهر الخانة «بدون صلاحية» حتى تُحدَّد صفحات القالب من الجدول الشهري أو يضبط مسؤول المنصة سقف صفحات الإدارة",
-                          "warn",
-                        ));
+                    this.bsAck(
+                      l
+                        ? "أُسند إلى " + (o || "الموظف") + " دور «" + (l.name || "") + "» — يسري فوراً في المنصة كلها"
+                        : "سُحب دور " + (o || "الموظف") + " — فوراً وفي المنصة كلها",
+                      "ok",
+                    ));
                 }
-              } else this.bsToast("القالب لم يعد موجوداً — أعد فتح القائمة", "warn");
+              } else this.bsToast("الدور لم يعد موجوداً — أعد فتح القائمة", "warn");
             } else this.bsToast("لا حساب دخول لهذا الموظف — يُفعَّل من صفحة الموظفين أولاً", "warn");
           } else this.bsToast("منح الصلاحيات يتطلب صلاحية تحرير صفحة الموظفين", "warn");
         }
@@ -1949,14 +1940,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           return {};
         }
       })(),
-      ft = (function () {
-        try {
-          var t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-          return Array.isArray(t) ? (KIVO.BassamPerm && KIVO.BassamPerm.tplsMigrate ? KIVO.BassamPerm.tplsMigrate(t) : t) : [];
-        } catch (t) {
-          return [];
-        }
-      })(),
+      /* V7 · د5-هـ (44): أدوارُ الإدارة (محرّك الأدوار) بدل قوالب الصلاحيات */
+      ft = this.drRoles(),
+      Rof = this.drRoleOf.bind(this),
       ht = function (t) {
         return Object.keys(t || {})
           .filter(function (r) {
@@ -1968,20 +1954,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           })
           .join("|");
       },
-      ut =
-        ((function () {
-          try {
-            var t = KIVO.BassamPerm;
-            return t ? t.deptCap() : [];
-          } catch (t) {
-            return [];
-          }
-        })(),
-        ft.map(function (t) {
-          var r = KIVO.BassamPerm;
-          return r && r.tplSig ? r.tplSig(t.perms) : ht(t.perms || {});
-        })),
       mt = function (t) {
+        var q = t ? Rof(t) : null;
+        if (q) return "role:" + q.id;
         try {
           var r = KIVO.BassamPerm;
           return r && r.empPerms && t ? ht(r.empPerms(t) || {}) : "";
@@ -1995,14 +1970,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       yt = function (t) {
         var r = mt(t);
         if (!r) return 99;
-        var e = (function (t) {
-          try {
-            var r = KIVO.BassamPerm;
-            return (r && r.tplOfEmp && t && r.tplOfEmp(t)) || "";
-          } catch (t) {
-            return "";
-          }
-        })(t);
+        var q = Rof(t),
+          e = q ? q.id : "";
         if (e) for (var n = 0; n < ft.length; n++) if (ft[n].id === e) return n;
         return 98;
       },
@@ -2015,25 +1984,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return !mt(t.ekey);
       });
     else if (t.drFpm && "all" !== t.drFpm) {
-      var kt = String(t.drFpm).slice(4),
-        St = [];
-      try {
-        var xt = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-        Array.isArray(xt) && (St = xt);
-      } catch (t) {}
-      var vt = St.filter(function (t) {
-          return t.id === kt;
-        })[0],
-        wt = vt ? vt.name : kt;
+      var kt = String(t.drFpm).slice(4);
       st = st.filter(function (t) {
-        try {
-          var r = KIVO.BassamSup;
-          if (r && r.tplOf) {
-            var e = r.tplOf(t.ekey);
-            if (e) return e.id === kt || e.name === wt;
-          }
-        } catch (t) {}
-        return bt(t.ekey) === wt;
+        var q = Rof(t.ekey);
+        return !!q && q.id === kt;
       });
     }
     var Ot = (E && E.leaders) || {},
@@ -2066,7 +2020,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       });
     var bsRd = !!KIVO.bus.read("daily.usable@1") &&   /* V7 · د5-هـ: «الجولات» مفعَّلة؟ يجيب مالكُها؛ بغيابه مطفأة */
       (r.bsLensOn("zones") || r.bsLensOn("gates") || r.bsLensOn("marks")),
-      bsTp = r.bsOn("admin/ptpls"),
+      bsTp = !!(KIVO.Perm44 && "function" == typeof KIVO.Perm44.rolesOf),   /* V7 · د5-هـ (44): عمودُ «الصلاحية» = الدور — يظهر بحضور محرّك الأدوار (كان بورقة قوالب الصلاحيات المحذوفة) */
       Et = [
         { k: "onspot", t: bsRd ? "حاضرون على مواقعهم" : "حاضرون", c: "#059669", sub: bsRd ? "من جولة اليوم" : "" },
         { k: "reserve", t: "حاضرون بلا موقع — الاحتياط", c: "#0e7490", sub: "جاهزون للتسكين" },
@@ -3162,54 +3116,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }),
       sr = o ? this.drRosterOf(o) : [],
       or = E && E.leaders ? E.leaders : { chief: "", deputy: "" },
-      dr = (function () {
-        try {
-          var t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-          return Array.isArray(t) ? (KIVO.BassamPerm && KIVO.BassamPerm.tplsMigrate ? KIVO.BassamPerm.tplsMigrate(t) : t) : [];
-        } catch (t) {
-          return [];
-        }
-      })(),
-      pr = function (t) {
-        return Object.keys(t || {})
-          .filter(function (r) {
-            return (t[r] || []).length;
-          })
-          .sort()
-          .map(function (r) {
-            return r + ":" + (t[r] || []).slice().sort().join(",");
-          })
-          .join("|");
-      },
-      cr =
-        ((function () {
-          try {
-            var t = KIVO.BassamPerm;
-            return (t && t.deptCap()) || [];
-          } catch (t) {
-            return [];
-          }
-        })(),
-        dr.map(function (t) {
-          var r = KIVO.BassamPerm;
-          return r && r.tplSig ? r.tplSig(t.perms) : pr(t.perms || {});
-        })),
+      /* V7 · د5-هـ (44): رئيسُ الوردية ونائبُه مقصوران على حاملي الدور الأول والثاني من أدوار الإدارة (كانا القالبين الأولين) */
+      dr = this.drRoles(),
+      Rof2 = this.drRoleOf.bind(this),
       lr = function (t) {
-        var r = (function (t) {
-          try {
-            var r = KIVO.BassamPerm;
-            return r && r.empPerms && t ? pr(r.empPerms(t) || {}) : "";
-          } catch (t) {
-            return "";
-          }
-        })(t);
-        if (!r) return -1;
-        var e = "";
-        try {
-          var n = KIVO.BassamPerm;
-          e = (n && n.tplOfEmp && t && n.tplOfEmp(t)) || "";
-        } catch (t) {}
-        if (e) for (var a = 0; a < dr.length; a++) if (dr[a].id === e) return a;
+        var q = t ? Rof2(t) : null;
+        if (q) for (var a = 0; a < dr.length; a++) if (dr[a].id === q.id) return a;
         return -1;
       },
       fr = {};
@@ -3419,7 +3331,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 (t.sel ? "background:var(--bg-a185151810p09);color:var(--fg-x9a7e40);font-weight:700" : "color:var(--fg-x141414)"),
             };
           }),
-          roleTip: dr[n] && dr[n].name ? "مقصور على أصحاب صلاحية «" + dr[n].name + "»" : "لم يُعرَّف قالب صلاحيات لهذا الدور بعد",
+          roleTip: dr[n] && dr[n].name ? "مقصور على أصحاب صلاحية «" + dr[n].name + "»" : "لم يُعرَّف دورٌ لهذا الموضع بعد",
           ddOpen: g,
           ddToggle: (function (t) {
             return function () {
@@ -3774,12 +3686,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "drFpm",
         "الصلاحية",
         (function () {
-          var t = [];
-          try {
-            var r = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-            Array.isArray(r) && (t = r);
-          } catch (t) {}
-          var e = [{ v: "all", name: "كل الصلاحيات" }];
+          var t = r.drRoles(),
+            e = [{ v: "all", name: "كل الصلاحيات" }];
           return (
             t.forEach(function (t) {
               e.push({ v: "tpl:" + t.id, name: t.name });
@@ -3940,7 +3848,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 color: t[n % t.length],
                 dash: Math.round(10 * Math.max(0.5, d - p)) / 10 + " " + Math.round(10 * a) / 10,
                 off: String(-Math.round(10 * i) / 10),
-                tip: (e.name || "قالب") + ": " + r[n] + " من " + Z,
+                tip: (e.name || "دور") + ": " + r[n] + " من " + Z,
               }),
                 (i += d));
             }
@@ -3954,7 +3862,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             rpPmRows: dr.map(function (e, n) {
               var a = 0 === n || 1 === n;
               return {
-                label: e.name || "قالب " + (n + 1),
+                label: e.name || "دور " + (n + 1),
                 n: String(r[n]),
                 color: r[n] ? t[n % t.length] : "#94a3b8",
                 pct: Z ? Math.round((100 * r[n]) / Z) + "٪" : "—",

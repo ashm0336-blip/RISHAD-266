@@ -316,7 +316,7 @@
             </div>
           </div>
 
-        <sc-if value="{{drPmOn}}" hint-placeholder-val="{{ true }}"><!-- ═══ كرت الصلاحيات — من في الوردية من كل قالب صلاحيات ═══ -->
+        <sc-if value="{{drPmOn}}" hint-placeholder-val="{{ true }}"><!-- ═══ كرت الصلاحيات — من في الوردية من كل دور ═══ -->
         <div style="display:flex;align-items:stretch;gap:10px;border:1px solid var(--bd-xeef0f2);border-radius:12px;padding:10px;background:linear-gradient(180deg,var(--bg-xffffff),var(--bg-xfcfcfd));box-shadow:var(--shadow-card);flex-wrap:wrap">
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px;min-width:110px">
             <div style="position:relative;width:96px;height:96px;display:grid;place-items:center;flex-shrink:0">
@@ -538,7 +538,7 @@
           </td>
           <td data-label="الرقم الوظيفي" style="display:none;padding:6px 8px;text-align:center"><span dir="ltr" style="font-size:12px;font-family:'Cairo',sans-serif;font-feature-settings:'tnum';font-weight:400;color:var(--fg-x141414)">{{e.empnoDisp}}</span></td>
           <td data-label="رقم الجوال" style="display:none;padding:6px 8px;text-align:center"><span dir="ltr" style="font-size:12px;font-family:'Cairo',sans-serif;font-feature-settings:'tnum';color:var(--fg-x475569)">{{e.phone}}</span></td>
-          <!-- ═══ الصلاحية: منحُ قالبٍ من التقرير مباشرة — نفس مخزن الجدول الشهري ═══ -->
+          <!-- ═══ الصلاحية: إسنادُ دورٍ من التقرير مباشرة — محرّك الأدوار نفسُه ═══ -->
           <sc-if value="{{drPmOn}}" hint-placeholder-val="{{ true }}"><td data-label="الصلاحية" style="padding:6px 8px;text-align:center">
             <div style="{{e.tpRel}}">
               <div style="display:flex;justify-content:center;align-items:center;min-height:24px">

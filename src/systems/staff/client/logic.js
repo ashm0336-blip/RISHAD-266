@@ -210,13 +210,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           { k: "admin", n: "الإعدادات", acts: e.admin },
         ];
   }
+  /* V7 · د5-هـ (44): عمودُ «الصلاحيات» = دورُ الموظف (محرّك الأدوار) — قوالبُ الصلاحيات حُذفت */
   _pmTplOf(t) {
-    const e = KIVO.BassamPerm;
-    try {
-      return e && e.tplOfEmp ? e.tplOfEmp(t) : "";
-    } catch (t) {
-      return "";
-    }
+    const r = this.PERM_ROLE_OF(t);
+    return r ? r.id : "";
   }
   pmGoOpen(t, e) {
     const s = this._pkMeasure(e);
@@ -233,31 +230,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ));
   }
   pmPick(t, e, s) {
-    const r = KIVO.BassamPerm;
-    if (!r) return;
-    const n = s ? this.PERM_TPLS().filter((t) => t.id === s)[0] : null;
-    if (s && !n) return void this.bsToast("القالب لم يعد موجوداً — أعد فتح القائمة", "warn");
-    const i = n && r.tplCut ? r.tplCut(n.perms || {}) : {};
-    if (n && !Object.keys(i).some((t) => (i[t] || []).length))
-      return void this.bsToast("القالب «" + n.name + "» بلا أوراق داخل سقف هذه الإدارة — أضف أوراقه من «قوالب الصلاحيات» أولاً", "warn");
-    /* V7 P3 · المعالجُ الواحد لمنح القالب (KIVO.BassamPerm.grantTpl) — بالسلوك القائم هنا: القصُّ بالسقف · هويةُ القالب · عدساتُه */
-    const a = r.grantTpl(t, n, void 0, { lens: !0 });
+    const n = s ? this.PERM_ROLES().filter((t) => t.id === s)[0] : null;
+    if (s && !n) return void this.bsToast("الدور لم يعد موجوداً — أعد فتح القائمة", "warn");
+    /* V7 · د5-هـ (44): المسارُ الواحد لإسناد الدور (KIVO.Perm44.setPerson) — الدورُ يُترجَم داخل سقف الإدارة في المحرّك */
+    const a = this.PERM_ROLE_SET(t, n ? n.id : null);
     if (a && !1 === a.ok) this.bsToast(a.err || "تعذّر حفظ الصلاحيات", "warn");
     else {
       (this.setState({ pmOpen: null, pmPos: null, permTick: (this.state.permTick || 0) + 1 }),
-        this.bsAck(
-          n
-            ? "مُنح «" + (e || "الموظف") + "» قالب «" + n.name + "» — " + KIVO.BassamCount(Object.keys(i).length, "ورقة") + ""
-            : "سُحبت صلاحيات «" + (e || "الموظف") + "»",
-          "ok",
-        ));
+        this.bsAck(n ? "أُسند إلى «" + (e || "الموظف") + "» دور «" + n.name + "»" : "سُحب دور «" + (e || "الموظف") + "»", "ok"));
     }
   }
   _pmCanSet() {
     return this._pcMemo("pmCanSet", () => {
       try {
         const t = KIVO.BassamPerm;
-        return !(!(t && t.can && t.can("admin", "view")) || (t.subOn && !t.subOn("admin", "ptpls")));
+        return !!(t && t.can && t.can("admin", "view"));
       } catch (t) {
         return !1;
       }
@@ -821,7 +808,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "bassam_perms_v1",
         "bassam_options_v1",
         "bassam_callsigns_v1",
-        "bassam_perm_tpls_v1",
+        "bassam_roles_v1",
       ];
       let o = "";
       for (const k of K) {
@@ -1001,17 +988,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           }
         })(),
         n = (() => {
-          try {
-            const e = KIVO.BassamPerm;
-            if (!e || !e.tplOfEmp) return "";
-            const s = KIVO.BassamEmp && KIVO.BassamEmp.key ? KIVO.BassamEmp.key(t) : t.eid || "",
-              o = e.tplOfEmp(s);
-            if (!o) return "";
-            const a = (e.tplsList ? e.tplsList() : []).find((t) => t.id === o);
-            return a ? a.name || "" : "";
-          } catch (t) {
-            return "";
-          }
+          const s = KIVO.BassamEmp && KIVO.BassamEmp.key ? KIVO.BassamEmp.key(t) : t.eid || "",
+            a = this.PERM_ROLE_OF(s);
+          return a ? a.name || "" : "";
         })(),
         i = KIVO.BassamEmp && KIVO.BassamEmp.key ? KIVO.BassamEmp.key(t) : t.eid || "",
         a = (() => {
@@ -1078,49 +1057,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return null == u[t.shift] ? 1 : 0;
       },
       y = (t) => (t.permsList && t.permsList.length ? 0 : t.hasAcct ? 1 : 2),
-      b = (() => {
-        try {
-          const t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-          return Array.isArray(t) ? t : [];
-        } catch (t) {
-          return [];
-        }
-      })(),
-      k = (t) =>
-        Object.keys(t || {})
-          .filter((e) => (t[e] || []).length)
-          .sort()
-          .map((e) => e + ":" + (t[e] || []).slice().sort().join(","))
-          .join("|"),
-      S =
-        ((() => {
-          try {
-            const t = KIVO.BassamPerm;
-            return t ? t.deptCap() : [];
-          } catch (t) {
-            return [];
-          }
-        })(),
-        b.map((t) => {
-          const e = KIVO.BassamPerm;
-          return e && e.tplSig ? e.tplSig(t.perms) : k(t.perms || {});
-        })),
+      /* V7 · د5-هـ (44): الترتيبُ بترتيب أدوار الإدارة — من لا دور له في آخرها */
+      b = this.PERM_ROLES(),
       w = (t) => {
-        try {
-          const e = KIVO.BassamPerm;
-          if (!e || !e.empPerms || !t) return 99;
-          const s = k(e.empPerms(t) || {});
-          if (!s) return 99;
-          const r = e.empTpl ? e.empTpl(t) : "";
-          if (r) {
-            const t = b.findIndex((t) => t.id === r);
-            if (-1 !== t) return t;
-          }
-          const n = S.indexOf(s);
-          return -1 === n ? 98 : n;
-        } catch (t) {
-          return 99;
-        }
+        const r = t ? this.PERM_ROLE_OF(t) : null,
+          i = r ? b.findIndex((x) => x.id === r.id) : -1;
+        return -1 === i ? 99 : i;
       };
     String(s.search || "").trim() ||
       h.sort((t, e) => {
@@ -1474,26 +1416,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           pmClearStyle:
             "display:flex;align-items:center;gap:9px;height:32px;padding:0 9px;border-radius:8px;font-size:11px;cursor:pointer;transition:background .12s;" +
             (e.tplName ? "color:var(--fg-x53565a)" : "background:var(--bg-a2452452450p8);color:var(--fg-x334155);font-weight:400"),
-          pmOpts: (s.pmOpen === e.ekeyPm ? this.PERM_TPLS() : [])
-            .filter(function (s) {
-              var c = KIVO.BassamPerm && KIVO.BassamPerm.tplCut ? KIVO.BassamPerm.tplCut(s.perms || {}) : s.perms || {};
-              return Object.keys(c).some(function (k) {
-                return (c[k] || []).length;
-              });
-            })
+          /* V7 · د5-هـ (44): قائمةُ الاختيار = أدوارُ الإدارة (لا قوالب) */
+          pmOpts: (s.pmOpen === e.ekeyPm ? this.PERM_ROLES() : [])
             .map(function (s) {
-              var r = s.id === t._pmTplOf(e.ekeyPm),
-                n = Object.keys(
-                  KIVO.BassamPerm && KIVO.BassamPerm.tplCut ? KIVO.BassamPerm.tplCut(s.perms || {}) : s.perms || {},
-                ).length;
+              var r = s.id === t._pmTplOf(e.ekeyPm);
               return {
                 name: s.name,
                 selected: r,
-                metaTxt: n ? KIVO.BassamCount(n, "ورقة") + "" : "فارغ",
-                metaStyle:
-                  "font-size:9.5px;font-weight:400;white-space:nowrap;flex-shrink:0;color:" +
-                  (n ? "var(--fg-x94a3b8)" : "var(--fg-xb45309)"),
-                supOn: !(!KIVO.BassamSup || !KIVO.BassamSup.isSupTpl(s)),
+                metaTxt: String(s.desc || ""),
+                metaStyle: "font-size:9.5px;font-weight:400;white-space:nowrap;flex-shrink:0;color:var(--fg-x94a3b8)",
+                supOn: !(!KIVO.BassamSup || !KIVO.BassamSup.isSupRole(s)),
                 pick: function () {
                   t.pmPick(e.ekeyPm, e.name, s.id);
                 },
@@ -1502,14 +1434,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   (r ? "background:var(--bg-a185151810p09);color:var(--fg-x9a7e40);font-weight:600" : "color:var(--fg-x141414)"),
               };
             }),
-          pmEmptyOn: s.pmOpen === e.ekeyPm && 0 === this.PERM_TPLS().length,
-          pmSrcTxt: "تُعرَّف القوالب في الإعدادات ← قوالب الصلاحيات",
+          pmEmptyOn: s.pmOpen === e.ekeyPm && 0 === this.PERM_ROLES().length,
+          pmSrcTxt: "تُعرَّف الأدوار في «الإدارات» ← «الصلاحيات» ← الأدوار",
           pmSrcLink: this._pmCanSet(),
           pmSrcGo: this._pmCanSet()
             ? () => {
                 this.setState({ pmOpen: null, pmPos: null });
                 try {
-                  KIVO.BassamNav.go("admin");
+                  location.hash = "#/sysadmin/org/" + encodeURIComponent(this._p44Dept()) + "/perm/roles";
                 } catch (t) {}
               }
             : null,
@@ -1976,63 +1908,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         { label: "غير مكلفين", color: "#cbd5e1", n: N - L, tip: "بلا تكليف هذا الشهر: " + (N - L) + " من " + N },
       ],
       yt = (() => {
-        let t = [];
-        try {
-          const e = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-          Array.isArray(e) && (t = e);
-        } catch (t) {}
-        let e = null,
-          s = {};
-        try {
-          e = KIVO.BassamPerm;
-        } catch (t) {}
+        /* V7 · د5-هـ (44): توزيعُ الأدوار — دورُ كل صاحب حساب من محرّك الأدوار (لا قوالب ولا بصمات) */
+        const t = this.PERM_ROLES();
+        let s = {};
         try {
           const t = KIVO.BassamAuth;
           s = (t && t.staffMap && t.staffMap()) || {};
         } catch (t) {}
-        const r = KIVO.BassamEmp && KIVO.BassamEmp.key ? KIVO.BassamEmp.key : (t) => t.eid || "",
-          n = (t) =>
-            Object.keys(t || {})
-              .filter((e) => (t[e] || []).length)
-              .sort()
-              .map((e) => e + ":" + (t[e] || []).slice().sort().join(","))
-              .join("|");
-        let i = [];
-        try {
-          i = (e && e.deptCap && e.deptCap()) || [];
-        } catch (t) {}
+        const r = KIVO.BassamEmp && KIVO.BassamEmp.key ? KIVO.BassamEmp.key : (t) => t.eid || "";
         const a = {};
         let l = 0,
           c = 0;
         o.forEach((o) => {
           const p = r(o);
           if (!s[p]) return void c++;
-          let h = "";
-          try {
-            if (e && e.empPerms) {
-              const s = n(e.empPerms(p) || {});
-              if (s) {
-                const r = e.empTpl ? e.empTpl(p) : "";
-                if (r) {
-                  const e = t.find((t) => t.id === r);
-                  e && (h = e.name);
-                }
-                if (!h)
-                  for (let e = 0; e < t.length; e++) {
-                    const r = {};
-                    if (
-                      (Object.keys(t[e].perms || {}).forEach((s) => {
-                        -1 !== i.indexOf(s) && (r[s] = t[e].perms[s]);
-                      }),
-                      n(r) === s)
-                    ) {
-                      h = t[e].name;
-                      break;
-                    }
-                  }
-              }
-            }
-          } catch (t) {}
+          const q = this.PERM_ROLE_OF(p),
+            h = q ? q.name || "" : "";
           h ? (a[h] = (a[h] || 0) + 1) : l++;
         });
         const p = ["#2f5f8a", "#4a97cf", "#9c3d6b", "#2f8f86", "#b45309", "#a5566e"],
@@ -2042,7 +1933,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               label: t.name,
               color: p[e % p.length],
               n: a[t.name],
-              tip: "قالب «" + t.name + "»: " + a[t.name] + " من " + N + " — يُمنح ويُبدَّل من عمود «الصلاحيات»",
+              tip: "دور «" + t.name + "»: " + a[t.name] + " من " + N + " — يُسند ويُبدَّل من عمود «الصلاحيات»",
             }));
         return (
           l &&
@@ -2050,7 +1941,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               label: "بدون صلاحية",
               color: "#cbd5e1",
               n: l,
-              tip: "أصحاب حساب دخول بلا قالب صلاحيات بعد: " + l + " من " + N + " — يُمنحون من عمود «الصلاحيات»",
+              tip: "أصحاب حساب دخول بلا دور بعد: " + l + " من " + N + " — يُسند إليهم من عمود «الصلاحيات»",
             }),
           c &&
             h.push({
@@ -2166,7 +2057,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           bulkShiftOpts: (this.state.shiftOpts || [])
             .map((t) => ({ v: "sh:" + t.name, name: t.name }))
             .concat([{ v: "__none", name: "بلا وردية — إزالة التسكين" }]),
-          bulkTplOpts: this.PERM_TPLS()
+          bulkTplOpts: this.PERM_ROLES()
             .map((t) => ({ v: t.id, name: t.name }))
             .concat([{ v: "__none", name: "بدون صلاحية — إزالة" }]),
           onBulkShift: async (t) => {
@@ -2196,8 +2087,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             const e = t.target.value;
             if (((t.target.value = ""), !e)) return;
             if (!this._stCanWrite()) return void this.bsToast("صلاحيتك على الجدول الشهري عرض فقط — راجع مدير الإدارة", "warn");
-            const s = KIVO.BassamPerm;
-            if (!s || !s.setEmpPerms) return;
             const r = u();
             if (!r.length) return;
             const n = (() => {
@@ -2207,16 +2096,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   return {};
                 }
               })(),
-              i = (s.deptCap && s.deptCap(), "__none" === e ? null : this.PERM_TPLS().find((t) => t.id === e));
+              i = "__none" === e ? null : this.PERM_ROLES().find((t) => t.id === e);
             if ("__none" !== e && !i) return;
             let a = 0,
               o = 0;
             (r.forEach((t) => {
               if (!n[t]) return void o++;
-              /* V7 P3 · المعالجُ الواحد (grantTpl) بالسلوك القائم للإسناد الجماعي: القصُّ بالسقف وهويةُ القالب — بلا ضبط العدسات */
-              try {
-                (s.grantTpl(t, i || null), a++);
-              } catch (t) {}
+              /* V7 · د5-هـ (44): الإسنادُ الجماعي بالمسار الواحد (KIVO.Perm44.setPerson) */
+              const q = this.PERM_ROLE_SET(t, i ? i.id : null);
+              (q && !1 === q.ok) || a++;
             }),
               this.setState({ permTick: (this.state.permTick || 0) + 1 }),
               this.bsToast(
@@ -2523,11 +2411,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "fPerm",
         "الصلاحية",
         (() => {
-          let t = [];
-          try {
-            const e = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-            Array.isArray(e) && (t = e);
-          } catch (t) {}
+          const t = this.PERM_ROLES();
           return [{ v: "all", name: "كل الصلاحيات" }]
             .concat(t.map((t) => ({ v: "tpl:" + t.name, name: t.name })))
             .concat(m ? [{ v: "none", name: "بدون صلاحية (" + m + ")" }] : [])

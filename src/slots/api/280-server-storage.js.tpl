@@ -1151,6 +1151,60 @@
     dlg9({ title: "هذا الإجراء يتطلب سبباً", desc: "التعديل على " + namesOf9(it) + " إجراءٌ حسّاس يُسجَّل سببُه في سجل التدقيق.", ok: "حفظ بالسبب", remember: true },
       function (r, rem) { if (r && rem) rsnMem9[sig] = r; cb(r || ""); });
   }
+  /* V7 · د5-هـ (44) · إصلاحُ نافذة السبب: «اسأل أولاً ثم أرسل مرّةً واحدة» — كتابةٌ يُعرف قبل إرسالها أنها تتطلب سبباً (مفتاحُ السجلّ audit.reason ·
+     قاعدةُ الخادم enfNo('reason')) لا تُرسل بلا سبب ثم تُرفض: تُعلَّق (hold9)، وتُفتح النافذة، و«حفظ بالسبب» يُرسلها مرّةً واحدة به (why)؛
+     و«إلغاء» لا يُرسل شيئاً ولا يُظهر رسالة رفض (تعود القيمة المحفوظة). مدير المنصة لا يُسأل أبداً، والوضعُ القديم (بلا إنفاذ) لا يطلب سبباً.
+     التنبّؤ: (أ) قواعدُ يسجّلها مالكُ المورد (reasonRule) · (ب) من السجلّ: كلُّ مفاتيح الكتابة التي يحملها المستخدم على هذا المورد مفاتيحُ سبب —
+     فلا سبيل لكتابته بلا سبب. ما لا يُتنبّأ به يبقى على المسار الاحتياطي (رفضُ الخادم ⇒ النافذة نفسُها، بلا رسالة رفض). */
+  var RSN_OFF9 = { "lens.zones.status.change": 1, "lens.gates.status.change": 1, "lens.marks.status.change": 1, "lens.paths.status.change": 1 };   /* نظيرُ 057 ENF_REASON_OFF */
+  var rsnRules9 = Object.create(null), rsnRes9 = null;
+  function exempt9() { try { var a9 = KIVO.BassamAuth, u9 = a9 && a9.user && a9.user(); return !!(u9 && u9.role === "super"); } catch (e) { return false; } }
+  function resName9(k) { return String(k || "").replace(/^bsdept:[^:]+:/, "").replace(/:.*$/, ""); }
+  function rsnByRes9() {
+    if (rsnRes9) return rsnRes9;
+    var R = KIVO.KIVO_REGISTRY || (typeof KIVO_REGISTRY !== "undefined" ? KIVO_REGISTRY : null), out = Object.create(null);   // eslint-disable-line no-undef
+    if (!R || !R.keys || !R.byKey) return out;
+    R.keys.forEach(function (key) {
+      var e = R.byKey[key]; if (!e || e.status !== "active" || e.type === "view" || e.type === "access") return;
+      ((e.guard && e.guard.resources) || []).forEach(function (rn) { (out[rn] = out[rn] || []).push({ k: key, r: !!(e.audit && e.audit.reason && !RSN_OFF9[key]) }); });
+    });
+    return (rsnRes9 = out);
+  }
+  /* مفاتيحُ السبب المتوقَّعة لكتابة المفتاح k الآن ([] = لا يُتوقَّع سبب) */
+  function rsnNeed9(k) {
+    var rn = resName9(k), out = [], i, L = rsnRules9[rn] || [];
+    var dm = /^bsdept:([^:]+):/.exec(String(k)), did = dm ? dm[1] : "";
+    for (i = 0; i < L.length; i++) { try { var r = L[i](baseVal[k] == null ? null : baseVal[k], (k in pSet) ? pSet[k] : null, k); if (Array.isArray(r)) r.forEach(function (x) { if (typeof x === "string" && out.indexOf(x) === -1) out.push(x); }); } catch (e) {} }
+    if (out.length) return out;
+    var PM = KIVO.BassamPerm, W = rsnByRes9()[rn] || [], held = [];
+    if (!PM || typeof PM.key !== "function" || !W.length) return out;
+    for (i = 0; i < W.length; i++) { var h = PM.key(W[i].k, did || undefined); if (h === null) return []; if (h) held.push(W[i]); }
+    if (held.length && held.every(function (x) { return x.r; })) held.forEach(function (x) { out.push(x.k); });
+    return out;
+  }
+  /* يعيد true إن عُلّقت الكتابةُ لسؤال السبب أولاً (فلا يُستدعى kick) */
+  function askFirst9(k) {
+    if (!KIVO.__BS_AUTHZ || exempt9() || why9[k] || hold9[k]) return false;
+    var keys = rsnNeed9(k); if (!keys.length) return false;
+    var sig = keys.slice().sort().join(",");
+    if (rsnMem9[sig]) { why9[k] = rsnMem9[sig]; return false; }
+    hold9[k] = 1;
+    dlg9({ title: "هذا الإجراء يتطلب سبباً", desc: "التعديل على «" + lbl(k) + "» إجراءٌ حسّاس يُسجَّل سببُه في سجل التدقيق.", ok: "حفظ بالسبب", remember: true }, function (r, rem) {
+      delete hold9[k];
+      if (r) { why9[k] = r; if (rem) rsnMem9[sig] = r; recount(); kick(); return; }
+      /* أُلغي: لا شيءَ يُرسل ولا رسالةَ رفض — القيمةُ المحفوظة تعود كما هي */
+      if (baseVal[k] != null) mem[k] = baseVal[k]; else delete mem[k];
+      delete pSet[k]; delete pDel[k]; unmark9(k); recount(); notify(k);
+      if (dirty) kick(); else settleWaiters(false);
+    });
+    return true;
+  }
+  /* نداءٌ صريح قبل عمليةٍ يعرف صاحبُها أنها تتطلب سبباً: cb({ go, reason }) — go=false عند الإلغاء (لا تُرسل)؛ السببُ يُعلَّم على k فتحمله الكتابةُ الأولى */
+  function reasonFirst9(k, keys, cb) {
+    k = String(k || "");
+    if (!KIVO.__BS_AUTHZ || exempt9()) { setTimeout(function () { cb({ go: true, reason: "" }); }, 0); return; }
+    askReason9(k, keys, function (r) { if (r && k) why9[k] = String(r).slice(0, 300); cb(r ? { go: true, reason: r } : { go: false, reason: "" }); });
+  }
   /* نافذةُ الاستدراك (D3-07): الفترةُ المغلقة تُفتح بسببٍ لمدةٍ افتراضية (24 ساعة) لإدارتك — ثم يُعاد إرسالُ التعديل كما هو */
   function retroSys9(k) { var n = String(k).replace(/^bsdept:[^:]+:/, ""); return @@SYS:store.retroSys@@""; }
   function retroAsk9(items) {
@@ -1455,6 +1509,7 @@
     if (devKey9(k) || !teamKey9(k)) return oSet.call(this, k, v);
     if (mem[k] === v) return;                     /* لا كتابة بلا تغيير */
     mem[k] = v; pSet[k] = v; delete pDel[k]; dirty = true;
+    if (askFirst9(k)) return;                     /* V7 · د5-هـ (44): السببُ أولاً ثم الإرسال */
     kick();
   };
   P.removeItem = function (k) {
@@ -1466,6 +1521,7 @@
     if (devKey9(k) || !teamKey9(k)) return oDel.call(this, k);
     if (!(k in mem)) return;
     delete mem[k]; pDel[k] = 1; delete pSet[k]; dirty = true;
+    if (askFirst9(k)) return;                     /* V7 · د5-هـ (44): السببُ أولاً ثم الإرسال */
     kick();
   };
   P.clear = function () {
@@ -1798,7 +1854,11 @@
     /* KIVO_265 · k265-fix: نافذةُ السبب لمسارات الخادم (askReason9) — إعادةُ فتح المهمة في الإنفاذ */
     askReason: askReason9,
     /* إصلاح (مدير المنصة لا يُطلب منه سبب): هل الحسابُ الحالي معفًى من نوافذ السبب؟ الخادمُ هو الحَكَم (016 reasonExempt) — هذه لئلا تُفتح نافذةٌ لا حاجة لها */
-    reasonExempt: function () { try { var a9 = KIVO.BassamAuth, u9 = a9 && a9.user && a9.user(); return !!(u9 && u9.role === "super"); } catch (e) { return false; } },
+    reasonExempt: exempt9,
+    /* V7 · د5-هـ (44): السببُ قبل الإرسال — reasonFirst(k, مفاتيحُ السبب, cb({go, reason})) · reasonRule(اسمُ المورد, fn(قديم, جديد, k) ⇒ [مفاتيحُ السبب]) يسجّلها مالكُ المورد */
+    reasonFirst: reasonFirst9,
+    reasonRule: function (rn, fn) { if (typeof rn === "string" && typeof fn === "function") (rsnRules9[rn] = rsnRules9[rn] || []).push(fn); },
+    reasonNeed: function (k) { return rsnNeed9(String(k || "")); },
     /* يُفرغ ما في الطابور ثم يغلق الباب — قبل إنهاء الجلسة. الوعدُ يُنتظر. */
     bye: function () { var p = flushAsync(5000); bye9 = true; try { imcClear9(); } catch (e) {} return p; },
     /* R169: للاختبار والتشخيص — أحداثُ ما في الطابور الآن */

@@ -52,11 +52,9 @@
       if (parts.length) emit('pm_chg', { dept: d, own: [ek], vars: { 'الفعل': '', 'الصفحات': parts.join(' · '), 'المُغيّر': who() } }); }); });
     var oc = o.caps || {}, nc = n.caps || {};
     Object.keys(nc).forEach(function(d){ if (eq(oc[d] || [], nc[d] || [])) return; var nm = function(k){ try { return P().nameOf(k); } catch(e){ return k; } }; var add = (nc[d] || []).filter(function(k){ return (oc[d] || []).indexOf(k) === -1; }), rem = (oc[d] || []).filter(function(k){ return (nc[d] || []).indexOf(k) === -1; }); var parts = []; if (add.length) parts.push('أُضيف ' + add.map(nm).join('، ')); if (rem.length) parts.push('سُحب ' + rem.map(nm).join('، ')); if (parts.length) emit('pm_cap', { dept: d, vars: { 'الفعل': parts.join(' · '), 'الصفحات': '' } }); });
-    var ot = o.tplOf || {}, nt = n.tplOf || {};
-    Object.keys(nt).forEach(function(d){ Object.keys(nt[d] || {}).forEach(function(ek){ if ((ot[d] || {})[ek] === nt[d][ek] || !nt[d][ek]) return; var L2 = J(rawGet('bsdept:' + d + ':bassam_perm_tpls_v1'), []) || []; var t = (L2 || []).filter(function(x){ return x.id === nt[d][ek]; })[0]; emit('acct_tpl', { dept: d, own: [ek], vars: { 'القالب': t ? t.name : 'قالب صلاحيات', 'العدد': t ? Object.keys(t.perms || {}).length : '' } }); }); });
   };
-  /* تعريفات الورديات وقوالب الصلاحيات صارت صفحتين في إعدادات الإدارة — ولكل
-     تغييرٍ فيهما حدثه، فلا فعلَ في المنصة بلا مدخلٍ في الشجرة. */
+  /* تعريفات الورديات صفحةٌ في إعدادات الإدارة — ولكل تغييرٍ فيها حدثه. V7 · د5-هـ (44): قوالبُ الصلاحيات حُذفت (مراقبُها معها) —
+     تغييراتُ الأدوار والإسناد يسجّلها «سجلُّ» تبويب «الصلاحيات». */
   WATCH['bassam_shift_options_v1'] = function(did, o, n){
     o = Array.isArray(o) ? o : []; n = Array.isArray(n) ? n : [];
     if (!o.length && n.length > 1) return;   /* بذر الورديات الافتراضية ليس فعلَ مستخدم */
@@ -68,19 +66,6 @@
       var ch = []; if (tm(a) !== tm(b)) ch.push('الوقت ' + tm(a) + ' ← ' + tm(b)); if ((a.color||'') !== (b.color||'')) ch.push('اللون');
       if (!ch.length) return;
       emit('st_shdef', { dept: did, vars: { 'الفعل': 'عُدّلت', 'الوردية': b.name, 'التفصيل': ch.join(' · '), 'المُعدّل': who() } }); });
-  };
-  WATCH['bassam_perm_tpls_v1'] = function(did, o, n){
-    o = Array.isArray(o) ? o : []; n = Array.isArray(n) ? n : [];
-    if (!o.length && n.length > 1) return;   /* بذر القوالب الافتراضية عند أول فتح ليس فعلَ مستخدم */
-    var d = diffList(o, n, function(x){ return x && x.id; });
-    var cnt = function(x){ return Object.keys((x && x.perms) || {}).length; };
-    d.added.forEach(function(x){ emit('pm_tpl', { dept: did, vars: { 'الفعل': 'أُنشئ', 'القالب': x.name, 'التفصيل': cnt(x) ? (KIVO.BassamCount(cnt(x), "ورقة")) : 'فارغ', 'المُعدّل': who() } }); });
-    d.removed.forEach(function(x){ emit('pm_tpl', { dept: did, vars: { 'الفعل': 'حُذف', 'القالب': x.name, 'التفصيل': cnt(x) ? (KIVO.BassamCount(cnt(x), "ورقة")) : 'فارغ', 'المُعدّل': who() } }); });
-    d.both.forEach(function(p){ var a = p[0], b = p[1]; if (eq(a, b)) return;
-      var ch = []; if ((a.name||'') !== (b.name||'')) ch.push('الاسم «' + (a.name||'') + '» ← «' + (b.name||'') + '»');
-      if (!eq(a.perms || {}, b.perms || {})) ch.push('الأوراق ' + cnt(a) + ' ← ' + cnt(b));
-      if (!ch.length) return;
-      emit('pm_tpl', { dept: did, vars: { 'الفعل': 'عُدّل', 'القالب': b.name, 'التفصيل': ch.join(' · '), 'المُعدّل': who() } }); });
   };
   /* الجدول الشهري تخطيطٌ بين مدير الإدارة ورؤساء الورديات — تنبيهاته لهم وحدهم، ولا يصل الموظفَ شيء منه؛ تشغيله يبدأ بسحب التقرير اليومي */
   function empName(did, key){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []) || []; var e = emps.filter(function(x){ return x.eid === key || x.nid === key || x.name === key; })[0]; return e ? e.name : String(key); } catch(e){ return String(key); } }

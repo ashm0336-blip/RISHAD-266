@@ -55,7 +55,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         const parts = /^bsdept:([^:]+):(.+)$/.exec(key);
         if (parts && parts[1] !== dept) return false;
         const name = parts ? parts[2] : key;
-        return /^bassam_irshad(?:_langs|_locs|_retro)?_v1$/.test(name) || /^bassam_(?:employees|shift_options|grants|perm_tpls)_v[0-9]+$/.test(name)
+        return /^bassam_irshad(?:_langs|_locs|_retro)?_v1$/.test(name) || /^bassam_(?:employees|shift_options|grants|roles)_v[0-9]+$/.test(name)
           || (KIVO.bus.read("staff.resources@1", "schedule", "legacy") || []).indexOf(name) !== -1;   /* V7 · د5-د2: مواردُ الجدول يسمّيها مالكُها */
       });
       if (!affected) return;

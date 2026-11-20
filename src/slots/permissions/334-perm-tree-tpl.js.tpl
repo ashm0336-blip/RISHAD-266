@@ -12,12 +12,12 @@
       clearEmpPerms = I.clearEmpPerms, countOrphanDeptAccounts = I.countOrphanDeptAccounts, cur = I.cur, curDept = I.curDept, curPub = I.curPub,
       deptAccountsCount = I.deptAccountsCount, deptCap = I.deptCap, deptLenses = I.deptLenses, deptManagerPub = I.deptManagerPub,
       deptManagersPub = I.deptManagersPub, deptSubs = I.deptSubs, deptTabs = I.deptTabs, derivePages = I.derivePages, dropEmpPerms = I.dropEmpPerms,
-      dropEmpTpl = I.dropEmpTpl, effCap = I.effCap, empLens = I.empLens, empPagePerms = I.empPagePerms, empPerms = I.empPerms, empTpl = I.empTpl,
+      effCap = I.effCap, empLens = I.empLens, empPagePerms = I.empPagePerms, empPerms = I.empPerms,
       expandPerms = I.expandPerms, freezeStaff = I.freezeStaff, gmDepts = I.gmDepts, gmKeyOf = I.gmKeyOf, gmRoleLabel = I.gmRoleLabel,
       groupManagerPub = I.groupManagerPub, groupManagersPub = I.groupManagersPub, hasCap = I.hasCap, hasOwnSheet = I.hasOwnSheet, hashPw = I.hashPw,
       isContainer = I.isContainer, isGmKey = I.isGmKey, isMgrKey = I.isMgrKey, isSuper = I.isSuper, leafKeysOf = I.leafKeysOf, leafReg = I.leafReg,
       login = I.login, mgrKeyOf = I.mgrKeyOf, navOrder = I.navOrder, needsPwChange = I.needsPwChange, onAny = I.onAny, onCap = I.onCap,
-      orderRows = I.orderRows, p24AfterTpl = I.p24AfterTpl, p24Apply = I.p24Apply, p24Assignable = I.p24Assignable, p24Ceil = I.p24Ceil,
+      orderRows = I.orderRows, p24Apply = I.p24Apply, p24Assignable = I.p24Assignable, p24Ceil = I.p24Ceil,
       p24Cover = I.p24Cover, p24Delta = I.p24Delta, p24Effective = I.p24Effective, p24GrantOf = I.p24GrantOf, p24Grantable = I.p24Grantable,
       p24Ix = I.p24Ix, p24KeyOn = I.p24KeyOn, p24LeafOn = I.p24LeafOn, p24LensHosted = I.p24LensHosted, p24LensOf = I.p24LensOf, p24R = I.p24R,
       p24SetGrant = I.p24SetGrant, p24Translate = I.p24Translate,
@@ -27,7 +27,7 @@
       removeBackupSuper = I.removeBackupSuper, removeDeptManager = I.removeDeptManager,
       removeGroupManager = I.removeGroupManager, removeStaffAccount = I.removeStaffAccount, roleTitle = I.roleTitle, seedCapFrom = I.seedCapFrom,
       setDeptCap = I.setDeptCap, setDeptLenses = I.setDeptLenses, setDeptManager = I.setDeptManager, setDeptManagerDis = I.setDeptManagerDis,
-      setDeptSubs = I.setDeptSubs, setDeptTabs = I.setDeptTabs, setEmpLens = I.setEmpLens, setEmpPerms = I.setEmpPerms, setEmpTpl = I.setEmpTpl,
+      setDeptSubs = I.setDeptSubs, setDeptTabs = I.setDeptTabs, setEmpLens = I.setEmpLens, setEmpPerms = I.setEmpPerms,
       setGroupManager = I.setGroupManager, setGroupManagerDis = I.setGroupManagerDis, setStaffMgr = I.setStaffMgr,
       setSuperAccount = I.setSuperAccount, siteMap = I.siteMap, splitLeaf = I.splitLeaf, staffIsMgr = I.staffIsMgr, staffMap = I.staffMap,
       staffStatus = I.staffStatus, subKeysOf = I.subKeysOf, subOn = I.subOn, tabKeysOf = I.tabKeysOf, tabOn = I.tabOn, taken = I.taken,
@@ -186,19 +186,6 @@
     for (var i = 0; i < ks.length; i++) { var e = R.byKey[ks[i]]; if (e && e.status === 'active' && e.owner === owner && (e.type === 'access' || e.type === 'view')) return ks[i]; }
     return '';
   }
-  /* منحُ قالبٍ (أو سحبُ المنح بلا قالب) — المعالجُ الواحد لنقاط الدخول كلها. خياراتُ كل نقطةٍ تحفظ سلوكَها القائم كما هو:
-     lens: تُضبط عدساتُ الموظف من القالب (الجدولُ الشهري فرداً) · refuseEmpty: قالبٌ بلا ورقةٍ داخل السقف لا يُمنح */
-  function grantTpl(ekey, tp, did, opt){
-    opt = opt || {};
-    if (!ekey) return { ok:false, err:'حسابٌ بلا مفتاح موظف' };
-    var d = isSuper() ? (did || curDept()) : curDept(), cut = tp ? tplCut(tp.perms || {}, d) : {};
-    var empty = !!tp && !Object.keys(cut).some(function(k){ return (cut[k] || []).length; });
-    if (empty && opt.refuseEmpty) return { ok:false, empty:true, err:'القالب «' + (tp.name || '') + '» بلا أوراق داخل سقف الإدارة' };
-    var r = setEmpPerms(ekey, cut, d); if (r && r.ok === false) return r;
-    if (opt.strict) setEmpTpl(ekey, tp ? tp.id : '', d); else try { setEmpTpl(ekey, tp ? tp.id : '', d); } catch(e){}   /* strict: عطلُه يُرفع للنداء (grantTplByName كما كان) */
-    if (opt.lens) try { var dl = deptLenses(d) || []; setEmpLens(ekey, tp && Array.isArray(tp.lens) ? tp.lens.filter(function(k){ return dl.indexOf(k) !== -1; }) : dl, d); } catch(e){}
-    return { ok:true, cut:cut, empty:empty, id: tp ? tp.id : '', name: tp ? tp.name : '' };
-  }
   /* ═══ التحديث الحيّ للصلاحيات: أي تغيير يصل من الخادم (أو من تبويب آخر) في الصلاحيات أو الحسابات أو الإدارات
      يُبطل النسخ المحفوظة في الذاكرة فوراً — كانت تبقى القديمة حتى إعادة التحميل ═══ */
   (function(){
@@ -214,7 +201,7 @@
   })();
   /* ═══ مفتاح التخزين → مفتاح القدرة التي يخصّها (لتجميع أسماء المجموعات في النسخ والمسح حسب سقف الإدارة) ═══ */
   var KEY_CAP = { bassam_employees_v1:'emps', bassam_options_v1:'emps',@@SYS:perm.keyCap.custody@@@@SYS:tree.keyCap.staff@@
-    bassam_shift_options_v1:'admin/shifts', bassam_perm_tpls_v1:'admin/ptpls',
+    bassam_shift_options_v1:'admin/shifts',
 @@SYS:tree.keyCap.plan@@@@SYS:tree.keyCap.daily|empty="    '':''"@@@@SYS:tree.keyCap.dreport@@@@SYS:tree.keyCap|sep=",\n"|pre=",\n"|post=" };"|empty=" };"@@
   function keyCap(k){ var b = String(k || '').replace(/^bsdept:[^:]+:/, '').replace(/:.*$/, ''); return KEY_CAP[b] || ''; }
   function keyOn(k, did){ try { if ((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper())) return true; /* V7 · د1-ج: مدير المنصة بلا قيد */ var c = keyCap(k); return c ? onCap(c, did) : true; } catch (e) { return true; } }
@@ -222,28 +209,6 @@
      لا يطلبها المستخدم (ترحيلٌ عند الفتح · إنشاءٌ تلقائيّ) فلا تُرسل كتابةٌ يرفضها الخادم ويُعيدها برسالةٍ حمراء */
   function canW(k, act){ try { var c = keyCap(k); if (!c) return true; return can(c, act || 'edit'); } catch (e) { return true; } }
 
-  /* ═══ أسماء القوالب المعتمدة (بطلب المستخدم): المسميات فقط تتغيّر، وأوراق كل قالب تبقى كما هي ═══
-     القديم: «مدير إدارة كامل» ← «رئيسـ / ـة الوردية» · «مشغّل ميداني» ← «نائبـ/ ـة رئيس الوردية» · «مشاهد فقط» ← «مراقبـ / ـة»
-     ويُضاف «إداريـ / ـة» و«ميدانيـ / ـة» بلا أوراق. الترتيب: رئيس · نائب · مراقب · إداري · ميداني — ثم ما سواها.
-     تُطبَّق لمرةٍ واحدة على قائمة كل إدارة (علامة في مخزنها) ولا تمسّ قالباً سبق أن أُعيدت تسميته يدوياً. */
-  var TPL_NAMES_FLAG = 'bassam_perm_tpls_named_v1';
-  var TPL_RENAME = { mgr: 'رئيسـ / ـة الوردية', field: 'نائبـ/ ـة رئيس الوردية', view: 'مراقبـ / ـة' };
-  var TPL_LEGACY = { mgr: 'مدير إدارة كامل', field: 'مشغّل ميداني', view: 'مشاهد فقط' };
-  var TPL_ORDER = ['رئيسـ / ـة الوردية', 'نائبـ/ ـة رئيس الوردية', 'مراقبـ / ـة', 'إداريـ / ـة', 'ميدانيـ / ـة'];
-  function tplsMigrate(list){
-    try {
-      if (!Array.isArray(list)) return list;
-      if (localStorage.getItem(TPL_NAMES_FLAG)) return list;
-      var out = list.map(function(t){ if (!t) return t; var nn = TPL_RENAME[t.id]; return (nn && t.name === TPL_LEGACY[t.id]) ? Object.assign({}, t, { name: nn }) : t; });
-      var have = {}; out.forEach(function(t){ if (t && t.name) have[t.name] = 1; });
-      TPL_ORDER.forEach(function(n){ if (!have[n]) out.push({ id: 't' + Date.now().toString(36) + Math.floor(1e4 * Math.random()).toString(36), name: n, perms: {} }); });
-      var rank = function(t){ var i = TPL_ORDER.indexOf(t && t.name); return i === -1 ? 99 : i; };
-      out = out.map(function(t, i){ return { t: t, i: i }; }).sort(function(a, b){ return rank(a.t) - rank(b.t) || a.i - b.i; }).map(function(x){ return x.t; });
-      localStorage.setItem('bassam_perm_tpls_v1', JSON.stringify(out));
-      localStorage.setItem(TPL_NAMES_FLAG, '1');
-      return out;
-    } catch (e) { return list; }
-  }
   /* R180: أوراقُ حاوية العرض من سجلّها — كلُّ ورقةٍ تُضاف إلى refs تدخل حارسَ الرابط والتنقّل تلقائياً */
   function navLeaves(key){ var g = NAV_REG.filter(function(x){ return x.key === key; })[0];
     return g ? (g.refs || []).map(function(r){ var sp = splitLeaf(r); return [sp.page, sp.sub]; }) : []; }
@@ -264,34 +229,21 @@
     empPerms: empPerms, setEmpPerms: setEmpPerms, clearEmpPerms: clearEmpPerms, empPagePerms: empPagePerms, capAllPerms: capAllPerms, hasOwnSheet: hasOwnSheet,
     isContainer: isContainer, leafKeysOf: leafKeysOf, leafReg: leafReg, splitLeaf: splitLeaf, expandPerms: expandPerms, derivePages: derivePages, canSub: canSub,
     empLens: empLens, setEmpLens: setEmpLens, treeModel: treeModel, nameOf: nameOf, togActIn: togActIn, togLeafIn: togLeafIn, ACT_NAMES: ACT_NAMES,
-    viewAllIn: viewAllIn, sheetDiff: sheetDiff, keyDiff: keyDiff, grantTpl: grantTpl,   /* V7 P3 · المحرّر الموحّد */
-    empTpl: empTpl, setEmpTpl: setEmpTpl, dropEmpTpl: dropEmpTpl,
-    tplCut: tplCut, tplSig: tplSig, permSig: permSig, grantTplByName: grantTplByName, tplsMigrate: tplsMigrate,
-    tplsList: tplsList, grantSig: grantSig, tplOfEmp: tplOfEmp, tplHolders: tplHolders,
+    viewAllIn: viewAllIn, sheetDiff: sheetDiff, keyDiff: keyDiff,   /* V7 P3 · المحرّر الموحّد */
     dropEmpPerms: dropEmpPerms, pruneOrphanEmpPerms: pruneOrphanEmpPerms,
     myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk,
     key: azKey, authz: function(){ return azZ(); },
-    p24: { R: p24R, ix: p24Ix, ceil: p24Ceil, leafOn: p24LeafOn, keyOn: p24KeyOn, lensHosted: p24LensHosted, translate: p24Translate, grantOf: p24GrantOf, grantable: p24Grantable, assignable: p24Assignable, effective: p24Effective, delta: p24Delta, cover: p24Cover, setGrant: p24SetGrant, apply: p24Apply, afterTpl: p24AfterTpl, lensOf: p24LensOf, DERIVE: P24_DERIVE, primView: p24PrimView } };
+    p24: { R: p24R, ix: p24Ix, ceil: p24Ceil, leafOn: p24LeafOn, keyOn: p24KeyOn, lensHosted: p24LensHosted, translate: p24Translate, grantOf: p24GrantOf, grantable: p24Grantable, assignable: p24Assignable, effective: p24Effective, delta: p24Delta, cover: p24Cover, setGrant: p24SetGrant, apply: p24Apply, lensOf: p24LensOf, DERIVE: P24_DERIVE, primView: p24PrimView } };
 
   /* ═══ الطاقم الإشرافي — من لا يُسكَّن على المواقع ═══
-     المعيار قالب الصلاحية الموسوم (سواء مُنح من الجدول الشهري أو التقرير اليومي)،
-     والافتراضي للقوالب القديمة يُستنتج من اسمها حتى يُوسم صراحةً. */
+     V7 · د5-هـ (44): المعيارُ علامةُ الدور sup:true (محرّك الأدوار KIVO.Perm44) — قوالبُ الصلاحيات حُذفت، وترحيلُها (perm44-roles) نقل
+     علامتَها (tp.sup أو الاستنتاجَ القديم من الاسم) إلى الدور مرّةً واحدة؛ فلا استنتاجَ من الاسم وقتَ التشغيل. بغياب المحرّك: لا أحد. */
   (function(){
-    var NAME_RX = /رئيس|نائب|إداري|اداري|مراقب/;
-    function tpls(){ try { var v = JSON.parse(localStorage.getItem('bassam_perm_tpls_v1')); return Array.isArray(v) ? v : []; } catch(e){ return []; } }
-    function isSupTpl(tp){ if (!tp) return false; if (tp.sup === true) return true; if (tp.sup === false) return false; return NAME_RX.test(String(tp.name || '')); }
-    function norm(o){ return Object.keys(o || {}).filter(function(k){ return (o[k] || []).length; }).sort().map(function(k){ return k + ':' + (o[k] || []).slice().sort().join(','); }).join('|'); }
-    /* قالب الموظف: الهوية المحفوظة أولاً ثم بصمة الصفحات — كما في الجدول الشهري والتقرير اليومي */
-    function tplOf(ekey){
-      var PM = KIVO.BassamPerm; if (!PM || !ekey || !PM.tplOfEmp) return null;
-      var id = ''; try { id = PM.tplOfEmp(ekey) || ''; } catch(e){}   /* R182: المصدرُ الواحد */
-      if (!id) return null;
-      var L = tpls(); for (var i = 0; i < L.length; i++) if (L[i].id === id) return L[i];
-      return null;
-    }
-    function isSup(ekey){ return isSupTpl(tplOf(ekey)); }
-    function supName(ekey){ var tp = tplOf(ekey); return (tp && isSupTpl(tp)) ? (tp.name || '') : ''; }
-    KIVO.BassamSup = { tpls: tpls, isSupTpl: isSupTpl, tplOf: tplOf, isSup: isSup, supName: supName };
+    function roleOf(ekey, did){ var P4 = KIVO.Perm44; if (!ekey || !P4 || typeof P4.roleOf !== 'function') return null; try { return P4.roleOf(ekey, did) || null; } catch(e){ return null; } }
+    function isSupRole(r){ return !!(r && r.sup === true); }
+    function isSup(ekey, did){ return isSupRole(roleOf(ekey, did)); }
+    function supName(ekey, did){ var r = roleOf(ekey, did); return isSupRole(r) ? String(r.name || '') : ''; }
+    KIVO.BassamSup = { roleOf: roleOf, isSupRole: isSupRole, isSup: isSup, supName: supName };
   })();
 
   /* ═══ مفتاح الاختيار الموحّد: ＋ للفارغ ونصٌّ منقّط للمختار ═══ */
@@ -300,87 +252,21 @@
     plus: function(canEdit, open){ return "width:22px;height:22px;border-radius:9999px;border:1px dashed " + (canEdit ? "#b99751;color:var(--fg-x9a7e40)" : "#cbd5e1;color:var(--fg-xcbd5e1)") + ";background:" + (open ? "var(--bg-a185151810p12)" : "transparent") + ";font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;padding:0;cursor:" + (canEdit ? "pointer" : "not-allowed"); }
   };
 
-  /* ═══ القالب مقصوصاً بسقف الإدارة — نسخةٌ واحدة ═══
-     القاعدة: القالب يُقصّ بصفحة الورقة لا بمفتاحها، فـ«daily/field» ورقةٌ تحت
-     «daily» ولا تسقط لأن «daily/field» ليست في السقف. كانت هذه السطر مكرّراً في
-     سبعة مواضع، فحين صُحّح في ثلاثة بقيت أربعةٌ تمنح قالباً «بلا صفحات».
-     tplCut: القالب بعد القصّ · tplSig: بصمته للمقارنة · permSig: بصمة صلاحيات موظف. */
-  /* منح قالب بالاسم — نفس مسار منتقي القالب في الجدول الشهري: قصّ بالسقف + تسجيل القالب + عدسات القالب */
-  function grantTplByName(ekey, name, did){
-    try {
-      var nm = String(name || '').trim(); if (!ekey || !nm) return { ok:false, err:'بلا اسم' };
-      var d = isSuper() ? (did || curDept()) : curDept();
-      var L = []; try { L = JSON.parse(RAW.getItem.call(localStorage, 'bsdept:' + d + ':bassam_perm_tpls_v1')) || []; } catch(e){ L = []; }
-      var norm = function(x){ return String(x || '').trim().replace(/\s+/g, ' '); };
-      var t = (L || []).filter(function(x){ return norm(x.name) === norm(nm); })[0];
-      if (!t) return { ok:false, err:'قالب غير معروف', unknown:true };
-      /* قالبٌ بلا ورقة واحدة داخل سقف هذه الإدارة لا يُمنح — منحُه وهمٌ لا يظهر في قائمة الصلاحيات (V7 P3: بالمعالج الواحد grantTpl) */
-      var r = grantTpl(ekey, t, d, { lens:true, refuseEmpty:true, strict:true }); if (!r || r.ok === false) return r;
-      return { ok:true, id:t.id, name:t.name };
-    } catch(e){ return { ok:false, err:'تعذّر المنح' }; }
-  }
-  function tplCut(perms, did){
-    var cap = deptCap(did) || {}, out = {};
-    var has = function (p) { return (cap.indexOf ? cap.indexOf(p) !== -1 : !!cap[p]); };
-    /* R180: قالبٌ حُفظ يوم كانت الصفحةُ بلا أوراق (مفتاحُ حاويةٍ مثل dstats) يُفرَد إلى أوراقها كما يُفرَد
-       عند المنح — فتبقى بصمتُه مطابقةً لمن مُنحه، ولا يتغيّر شيءٌ لقالبٍ أوراقُه صريحة */
-    var src = expandPerms(perms || {}, did || curDept());
-    Object.keys(src).forEach(function (k) { if (has(String(k).split('/')[0])) out[k] = (src[k] || []).slice(); });
-    return out;
-  }
-  function permSig(perms){
-    return Object.keys(perms || {}).filter(function (k) { return (perms[k] || []).length; }).sort()
-      .map(function (k) { return k + ':' + (perms[k] || []).slice().sort().join(','); }).join('|');
-  }
-  function tplSig(perms, did){ return permSig(tplCut(perms, did)); }
-  /* ═══ R182: قالبُ الموظف — مصدرٌ واحدٌ لكل الشاشات (الإعدادات · الجدول الشهري · الموظفون · التقرير اليومي · المهام
-     · التشغيل الميداني · الطاقم الإشرافي). كان يُحسب في كلٍّ منها بطريقته فتختلف الشاشاتُ في الموظف نفسِه. ═══ */
-  function tplsList(did){
-    var d = did || curDept(), L = [];
-    try { var raw = (RAW && RAW.getItem) ? RAW.getItem.call(localStorage, 'bsdept:' + d + ':bassam_perm_tpls_v1') : localStorage.getItem('bassam_perm_tpls_v1');
-      var v = JSON.parse(raw); if (Array.isArray(v)) L = v; } catch(e){}
-    /* قراءةٌ فقط — بلا ترحيل (tplsMigrate يكتب في التخزين عند أول قراءة، وللإدارة النشطة وحدها) */
-    return L.filter(function(t){ return t && t.id; });
-  }
-  /* بصمةُ القالب كما يُمنح فعلاً: مفرودٌ ومقصوصٌ بسقف الإدارة وأوراقِها المفعّلة، و«العرضُ شرطُ الباقي» — هي بصمةُ من مُنحه */
-  function grantSig(perms, did){ return permSig(cleanLeafPerms(perms || {}, did || curDept())); }
-  /* الإسنادُ الصريح أوّلاً (يفصل بين قالبين متطابقي الأوراق)، وإلا القالبُ الذي تطابق بصمتُه صلاحياتِ الموظف؛
-     ومن لا صلاحيات له لا قالبَ له */
-  function tplOfEmp(ekey, did, L){
-    if (!ekey) return '';
-    var d = did || curDept(), mine = permSig(empPerms(ekey, d) || {});
-    if (!mine) return '';
-    L = L || tplsList(d);
-    var ex = ''; try { ex = empTpl(ekey, d); } catch(e){}
-    if (ex && L.some(function(t){ return t.id === ex; })) return ex;
-    for (var i = 0; i < L.length; i++) if (grantSig(L[i].perms, d) === mine) return L[i].id;
-    return '';
-  }
-  function tplHolders(tplId, did){
-    var d = did || curDept(), L = tplsList(d), out = [], KE = KIVO.BassamEmp;
-    var list = KIVO.__BS_SRV.operations.reference('bsdept:' + d + ':bassam_employees_v1') || [];
-    list.forEach(function(x){ if (!x) return; var k = (KE && KE.key) ? KE.key(x) : (x.eid || x.nid || x.name);
-      if (k && out.indexOf(k) === -1 && tplOfEmp(k, d, L) === tplId) out.push(k); });
-    return out;
-  }
-  /* وصف صلاحية موظف بكلمة: اسم القالب الممنوح (أو المطابق بعد قصّه بسقف الإدارة)، وإلا عدد الصفحات، وإلا «بلا صلاحيات».
+  /* V7 · د5-هـ (44): اسمُ الصلاحية في كل مكان = اسمُ الدور الممنوح (محرّك الأدوار KIVO.Perm44.roleNameOf) — «صلاحيات مخصّصة» لمن له منحٌ بلا دور،
+     و«بلا صلاحيات» لمن لا منح له. فرعُ «عدد الصفحات» حُذف. بغياب المحرّك: مخصّصةٌ أو بلا صلاحيات من منحه القائم وحده.
      تُقرأ الصلاحيات تحت أي رمز للموظف (المفتاح الموحّد أو هويته أو اسمه) — لبيانات ما قبل توحيد المفاتيح. */
   function permLabel(ekey, did){
     try {
-      var PM = KIVO.BassamPerm; if (!PM || !PM.empPerms || !ekey) return '';
+      if (!ekey) return '';
+      var P4 = KIVO.Perm44;
+      if (P4 && typeof P4.roleNameOf === 'function') { var rn = P4.roleNameOf(ekey, did); if (rn) return String(rn); }
+      var PM = KIVO.BassamPerm; if (!PM || !PM.empPerms) return '';
       var toks = [ekey];
       try { var list = KIVO.__BS_SRV.operations.reference('bsdept:' + (did || curDept()) + ':bassam_employees_v1') || []; var KE = KIVO.BassamEmp;
         var e = list.filter(function(x){ return ((KE && KE.key) ? KE.key(x) : (x.eid || x.nid || x.name)) === ekey || x.eid === ekey || x.nid === ekey || x.name === ekey; })[0];
         if (e) [e.eid, e.nid, e.name].forEach(function(t){ if (t && toks.indexOf(t) === -1) toks.push(t); }); } catch(e0){}
-      var mineO = {}; for (var i = 0; i < toks.length; i++) { var o = PM.empPerms(toks[i], did) || {}; if (Object.keys(o).some(function(k){ return (o[k] || []).length; })) { mineO = o; break; } }
-      var mine = permSig(mineO); if (!mine) return 'بلا صلاحيات';
-      var L = []; try { var v = JSON.parse(localStorage.getItem('bassam_perm_tpls_v1')); if (Array.isArray(v)) L = v; } catch(e1){}
-      /* R182: قالبُ الموظف من المصدر الواحد (tplOfEmp) — بالرمز الذي وُجدت تحته صلاحياتُه */
-      var tk = ekey; for (var q = 0; q < toks.length; q++) { var oq = PM.empPerms(toks[q], did) || {}; if (Object.keys(oq).some(function(k){ return (oq[k] || []).length; })) { tk = toks[q]; break; } }
-      var tid = tplOfEmp(tk, did) || (tk !== ekey ? tplOfEmp(ekey, did) : '');
-      if (tid) { var TL = tplsList(did), h = TL.filter(function(x){ return x.id === tid; })[0]; if (h) return h.name; }
-      var n = Object.keys(mineO).filter(function(k){ return (mineO[k] || []).length; }).length;
-      return KIVO.BassamCount(n, 'صفحة');
+      for (var i = 0; i < toks.length; i++) { var o = PM.empPerms(toks[i], did) || {}; if (Object.keys(o).some(function(k){ return (o[k] || []).length; })) return 'صلاحيات مخصّصة'; }
+      return 'بلا صلاحيات';
     } catch(e){ return ''; }
   }
   KIVO.BassamAuth = {
@@ -501,7 +387,7 @@
       }
       if (u && u.role === 'gm') return { name: (u.name || gmRoleLabel(u.gid)), role: (roleTitle(u) || gmRoleLabel(u.gid)) };
       if (u && u.role === 'staff') {
-        /* بطلب المستخدم: تحت اسم الموظف صلاحيته (اسم القالب أو عدد صفحاته) لا كلمة «موظف» الثابتة */
+        /* بطلب المستخدم: تحت اسم الموظف صلاحيته لا كلمة «موظف» الثابتة — V7 · د5-هـ (44): اسمُ دوره الممنوح (permLabel) */
         /* مدير الإدارة المعيَّن من مدير النظام لا سجل موظف له — اسمه ومسمّاه
            من حسابه مباشرة، وإلا ظهر لنفسه «موظف» وهو مسؤول الإدارة */
         /* الدور «مدير الإدارة» مجرَّداً — اسم الإدارة معروضٌ فوقه في القائمة
@@ -515,7 +401,7 @@
           var emp2 = KE && KE.resolve ? KE.resolve(list2, u.ekey) : list2.filter(function(x){ return x && [x.eid, x.nid, x.name].indexOf(u.ekey) !== -1; })[0];
           if (emp2) nm2 = emp2.name || nm2;
         } catch(e2){}
-        var pl2 = ''; try { pl2 = permLabel(u.ekey); } catch(e3){}
+        var pl2 = ''; try { pl2 = permLabel(u.ekey, u.deptId); } catch(e3){}
         return { name: nm2, role: pl2 || 'موظف' };
       }
       /* كان: غياب الجلسة يسقط على هوية مدير النظام، فيرى الموظف نفسه «مدير النظام» */
@@ -535,5 +421,5 @@
      موظف بصفة مدير) والموظف: إدارتهم وحدها؛ مدير الإدارة العامة: إدارات
      مجموعته؛ مدير النظام: الكل. يُطبَّق عند التحميل وعلى كل تفعيل لاحق. */
   /* → للأجزاء الأخرى */
-  I.tplsList = tplsList; I.u0 = u0;
+  I.u0 = u0;
 })();

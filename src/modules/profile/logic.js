@@ -2387,7 +2387,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!e) return { pfDeptInfo: o, pfDeptSub: "" };
     const title = (() => {
       try {
-        return i.isSuper ? "مسؤول المنصة" : (AU && AU.myTitle && AU.myTitle()) || ("gm" === e.role ? (AU && AU.gmRoleLabel ? AU.gmRoleLabel() : "مدير إدارة عامة") : i.isAppt ? (this.deptIsSec(e.deptId) ? "مدير القسم" : "مدير الإدارة") : AU && AU.permLabel && e.ekey ? AU.permLabel(e.ekey) || "بلا صلاحيات" : "");
+        /* V7 · د5-هـ (44): «الصلاحيات» للموظف = اسمُ دوره الممنوح (permLabel ← محرّك الأدوار) — لا المسمّى الحرّ */
+        if (!i.isSuper && "staff" === e.role && !i.isAppt && AU && AU.permLabel && e.ekey) return AU.permLabel(e.ekey, e.deptId) || "بلا صلاحيات";
+        return i.isSuper ? "مسؤول المنصة" : (AU && AU.myTitle && AU.myTitle()) || ("gm" === e.role ? (AU && AU.gmRoleLabel ? AU.gmRoleLabel() : "مدير إدارة عامة") : i.isAppt ? (this.deptIsSec(e.deptId) ? "مدير القسم" : "مدير الإدارة") : AU && AU.permLabel && e.ekey ? AU.permLabel(e.ekey, e.deptId) || "بلا صلاحيات" : "");
       } catch (t) {
         return "";
       }
@@ -2455,9 +2457,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         String(null == t ? "" : t)
           .replace(/\s+/g, " ")
           .trim();
+    /* V7 · د5-هـ (44): الطاقمُ الإشرافي = حاملو الأدوار الموسومة sup:true (محرّك الأدوار) — قوالبُ الصلاحيات حُذفت */
     let tp = [];
     try {
-      tp = ((P && P.tpls && P.tpls()) || []).filter((t) => (P.isSupTpl ? P.isSupTpl(t) : !!t.sup));
+      const P4 = KIVO.Perm44;
+      tp = (P4 && "function" == typeof P4.rolesOf ? P4.rolesOf(e.deptId) || [] : []).filter((t) => t && t.id && P && P.isSupRole && P.isSupRole(t));
     } catch (t) {
       tp = [];
     }
@@ -2470,7 +2474,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           if (!r || !r.ekey) return;
           let x = null;
           try {
-            x = P.tplOf ? P.tplOf(r.ekey) : null;
+            x = P.roleOf ? P.roleOf(r.ekey, e.deptId) : null;
           } catch (q) {
             x = null;
           }
@@ -2478,7 +2482,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           const nm = (i.empOfTok && (i.empOfTok(r.ekey) || {}).name) || "";
           nm && !seen[nm] && ((seen[nm] = 1), names.push(nm));
         });
-        o.push(R("mgr", clean(t.name) || "قالب إشرافي", names.join(" · "), { w: "1" }));
+        o.push(R("mgr", clean(t.name) || "دور إشرافي", names.join(" · "), { w: "1" }));
       });
     return { pfDeptInfo: o, pfDeptSub: dn ? (this.deptIsSec(e.deptId) ? "قسمك: " : "إدارتك: ") + dn : "" };
   }
@@ -2636,12 +2640,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       p = (() => {
         try {
           if (i.isSuper) return "مسؤول المنصة";
-          const T = KIVO.BassamAuth && KIVO.BassamAuth.myTitle ? KIVO.BassamAuth.myTitle() : "";
-          if (T) return T;
-          if ("gm" === i.role) return KIVO.BassamAuth && KIVO.BassamAuth.gmRoleLabel ? KIVO.BassamAuth.gmRoleLabel() : "مدير إدارة عامة";
-          if (i.isAppt) return this.deptIsSec(e && e.deptId) ? "مدير القسم" : "مدير الإدارة";
           const t = KIVO.BassamAuth;
-          return (t && t.permLabel && e && e.ekey && t.permLabel(e.ekey)) || "";
+          /* V7 · د5-هـ (44): سطرُ الدور للموظف = اسمُ دوره الممنوح (permLabel ← محرّك الأدوار) — قبل المسمّى الحرّ */
+          if ("staff" === i.role && !i.isAppt && t && t.permLabel && e && e.ekey) { const L = t.permLabel(e.ekey, e.deptId); if (L) return L; }
+          const T = t && t.myTitle ? t.myTitle() : "";
+          if (T) return T;
+          if ("gm" === i.role) return t && t.gmRoleLabel ? t.gmRoleLabel() : "مدير إدارة عامة";
+          if (i.isAppt) return this.deptIsSec(e && e.deptId) ? "مدير القسم" : "مدير الإدارة";
+          return (t && t.permLabel && e && e.ekey && t.permLabel(e.ekey, e.deptId)) || "";
         } catch (t) {
           return "";
         }

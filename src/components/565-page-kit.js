@@ -653,15 +653,40 @@
   /* ── employees · staff (2) ── */
   T["employees+staff"] = function (B) {
     return class extends B {
-      PERM_TPLS() {
-        /* القوالب ورقةٌ بيضاء يكتبها المستخدم من «قوالب الصلاحيات» — لا قوالب مدمجة تُزرع */ try {
-          const t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-          if (Array.isArray(t)) {
-            const e = KIVO.BassamPerm;
-            return e && e.tplsMigrate ? e.tplsMigrate(t) : t;
-          }
-        } catch (t) {}
-        return [];
+      /* V7 · د5-هـ (44): أدوارُ الإدارة النشطة من محرّك الأدوار (KIVO.Perm44) — قوالبُ الصلاحيات حُذفت. بغياب المحرّك: لا أدوار ولا إسناد */
+      _p44Dept(did) {
+        try {
+          return did || (KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : "") || "";
+        } catch (t) {
+          return "";
+        }
+      }
+      PERM_ROLES(did) {
+        try {
+          const P4 = KIVO.Perm44, L = P4 && "function" == typeof P4.rolesOf ? P4.rolesOf(this._p44Dept(did)) : [];
+          return Array.isArray(L) ? L.filter((r) => r && r.id) : [];
+        } catch (t) {
+          return [];
+        }
+      }
+      /* دورُ الشخص (كائنُ الدور أو null) */
+      PERM_ROLE_OF(ekey, did) {
+        try {
+          const P4 = KIVO.Perm44;
+          return (ekey && P4 && "function" == typeof P4.roleOf && P4.roleOf(ekey, this._p44Dept(did))) || null;
+        } catch (t) {
+          return null;
+        }
+      }
+      /* إسنادُ دورٍ (أو سحبُه بـ null) — المسارُ الواحد KIVO.Perm44.setPerson (يكتب الدور والمنحَ المترجَم في حفظٍ واحد) */
+      PERM_ROLE_SET(ekey, roleId, did) {
+        const P4 = KIVO.Perm44;
+        if (!P4 || "function" != typeof P4.setPerson) return { ok: !1, err: "محرّك الأدوار غير متاح" };
+        try {
+          return P4.setPerson(ekey, roleId || null, this._p44Dept(did)) || { ok: !0 };
+        } catch (t) {
+          return { ok: !1, err: "تعذّر حفظ الدور" };
+        }
       }
     };
   };

@@ -528,7 +528,7 @@ class Component extends DCLogic {
   /* أي صفحة يخصّها هذا المفتاح؟ (مفتاح غير معروف = كل الصفحات احتياطاً) */
   _liveTouches(keys, page) {
     const MAP = {
-      employees: /employees|options|custody|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|perm_tpls|perm_limit|employees/,
+      employees: /employees|options|custody|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|roles|perm_limit|employees/,
       plan: /plan_v1|zone_opts|gate_opts|mark_kinds|employees/, planning: /plan_v1|staffing|employees|rounds|dreport/,
       irshad: /irshad/, seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, award: /award|employees/, profile: /auth_users|employees|staffing|shift_options|tasks|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
       admin: /depts|gdepts|auth_users|perms|platform|last_export/, sysadmin: /depts|gdepts|auth_users|perms|platform|last_export/
