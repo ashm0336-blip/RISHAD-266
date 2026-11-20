@@ -104,7 +104,7 @@
   }
   /* سنة الحقوق تُحسب من التاريخ لا تُكتب — فلا تتقادم */
   function yearG() { return String(new Date().getFullYear()); }
-  function yearH() { try { var y = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(new Date()); var m = /\d{4}/.exec(y); return m ? m[0] : ""; } catch (e) { return ""; } }
+  function yearH() { try { var m = /\d{4}/.exec(String(KIVO.BassamCal.hParts(new Date()).y)); return m ? m[0] : ""; } catch (e) { return ""; } }   /* V7 · د5-د2: السنةُ الهجرية من الخدمة */
   function rightsText(P) { var t = (P.login && typeof P.login.rights === "string") ? P.login.rights : DEF.login.rights; return String(t || "").replace(/\{م\}/g, yearG()).replace(/\{هـ\}/g, yearH() + " هـ").replace(/\{H\}/gi, yearH()).replace(/\{Y\}/gi, yearG()).trim(); }
   /* ── شاشة الدخول ── */
   var previewOverride = null, gateEl = null, gateEmblem = {};

@@ -16,7 +16,7 @@
      الغالب، وما عداه يُحسب بفارق الأيام عن اليوم الجاري في تقويم أم القرى */
   function wdOf(y, m, d) {
     try {
-      var H = KIVO.BassamHijri, T = H && H.now ? H.now(new Date()) : null;
+      var T = KIVO.BassamCal.hNow(new Date(), null);   /* V7 · د5-د2: «اليوم» من الخدمة الواحدة */
       if (T && +T.y === +y && +T.m === +m) { var dt = new Date(); dt.setDate(dt.getDate() + (+d - +T.d)); return wdName(dt); }
     } catch (e) {}
     return wdName(new Date());
@@ -84,7 +84,7 @@
       rec: rec, bucket: bucket, emps: emps, keyOf: keyOf, keyOfTok: keyOfTok, entryOf: entryOf, isRestOn: isRestOn,
       rowOf: rowOf, restOf: restOf, restToday: restToday, shiftOf: shiftOf, mukOf: mukOf, known: known };
   }
-  function today() { try { var T = KIVO.BassamHijri.now(new Date()); return of(T.y, T.m, T.d); } catch (e) { return of(0, 0, 0); } }
+  function today() { try { var T = KIVO.BassamCal.hNow(new Date()); return of(T.y, T.m, T.d); } catch (e) { return of(0, 0, 0); } }
   /* ── «متاح» و«غير متاح»: حالةٌ تُحسب ولا تُخزَّن ─────────────────────────────
      من لم يُؤشَّر له حضورٌ ولا غياب، وليس في راحةٍ ولا إجازة، فهو «متاح» داخل
      وقت ورديته المسندة و«غير متاح» خارجه — قبل أن تبدأ أو بعد أن تنتهي.

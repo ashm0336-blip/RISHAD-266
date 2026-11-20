@@ -195,50 +195,10 @@
     "ذو القعدة",
     "ذو الحجة",
   ];
-  _cuFmt() {
-    if (void 0 === this.__cuF)
-      try {
-        this.__cuF = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" });
-      } catch (t) {
-        this.__cuF = null;
-      }
-    return this.__cuF;
-  }
-  cuParts(t) {
-    const e = this._cuFmt().formatToParts(t),
-      r = (t) => +e.find((e) => e.type === t).value;
-    return { y: r("year"), m: r("month"), d: r("day") };
-  }
-  cuGreg(t, e, r) {
-    let n = new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (e - 1)) + (r - 1)));
-    try {
-      for (let a = 0; a < 12; a++) {
-        const a = this.cuParts(n);
-        if (a.y === t && a.m === e && a.d === r) return n;
-        const i = 354.367 * (a.y - t) + 29.5306 * (a.m - e) + (a.d - r);
-        n = new Date(n.getTime() - 864e5 * (Math.round(i) || (i > 0 ? 1 : -1)));
-      }
-    } catch (t) {}
-    return n;
-  }
-  cuGregMonthLabel(t, e) {
-    const r = t + "-" + e;
-    if (((this.__cuG = this.__cuG || {}), this.__cuG[r])) return this.__cuG[r];
-    let n = "";
-    try {
-      n = this.cuGreg(t, e, 15).toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
-    } catch (t) {}
-    return ((this.__cuG[r] = n), n);
-  }
-  cuGregYearRange(t) {
-    try {
-      const e = this.cuGreg(t, 1, 1).getFullYear(),
-        r = this.cuGreg(t, 12, 29).getFullYear();
-      return e === r ? e + " م" : e + " – " + r + " م";
-    } catch (t) {
-      return "";
-    }
-  }
+  /* V7 · د5-د2: تقويمُ العهد من الخدمة الواحدة (385-calendar) — كانت هنا نسخةٌ كاملة من الدوالّ الأربع */
+  cuGreg(t, e, r) { return KIVO.BassamCal.hGreg(t, e, r); }
+  cuGregMonthLabel(t, e) { return KIVO.BassamCal.hGregMonthLabel(t, e); }
+  cuGregYearRange(t) { return KIVO.BassamCal.hGregYearRange(t); }
   cuShiftOpts() {
     try {
       const t = KIVO.__BS_SRV.operations.text("bassam_shift_options_v1");
@@ -284,7 +244,7 @@
     const R = this.cuHijri0();
     return ((this._bsHjV = { y: R.y, m: R.m }), (this._bsHjT = N), R);
   }
-  cuHijri0() { return this.state.cuClock || (KIVO.BassamHijri && KIVO.BassamHijri.now ? KIVO.BassamHijri.now() : { y: 1448, m: 1, d: 1 }); }
+  cuHijri0() { return this.state.cuClock || KIVO.BassamCal.hNow(void 0, { y: 1448, m: 1, d: 1 }); }
   cuPast(t, e) {
     const r = this.cuHijri();
     return +t < r.y || (+t === r.y && +e < r.m);
@@ -397,7 +357,7 @@
     if (!s.length) return void this.bsToast("لا توجد أصناف بعهدة هذا الموظف في " + (this.CU_MONTHS[a - 1] || "") + " — لا سند للطباعة");
     let l = 1;
     try {
-      l = KIVO.BassamHijri ? KIVO.BassamHijri.now().d : 1;
+      l = KIVO.BassamCal.hNow(void 0, { d: 1 }).d;
     } catch (t) {}
     const d = (e.employees || []).findIndex((e) => (e.eid || e.name) === t) + 1,
       c = "#" + n + String(a).padStart(2, "0") + String(d).padStart(2, "0"),
@@ -871,7 +831,7 @@
       n = this.cuHijri();
     let a = 1;
     try {
-      a = KIVO.BassamHijri ? KIVO.BassamHijri.now().d : 1;
+      a = KIVO.BassamCal.hNow(void 0, { d: 1 }).d;
     } catch (t) {}
     const i = this.cuHeldAt(n.y, n.m, !1),
       o = (e.q || "").trim(),

@@ -2,11 +2,42 @@
    الأسماءُ كما هي (ds · cu · tk · ir) كي لا يتغيّر مستدعٍ ولا اختبار. تعتمد على: swallow (002) · parseJson · isObj (017) · hex (052) · pfHijriAt (062b). */
 /* ── من 020-dstats.js: «اليوم التشغيلي» الهجري للخادم (مهلةُ ثلاث ساعات) ── */
 var DS_GRACE = 3 * 3600 * 1000;
+/* ══ V7 · د5-د2: تقويمُ الخادم — موضعٌ واحد. لا جزءَ غير هذا يبني مُنسِّقَ أم القرى أو يحوّل هجرياً⇐ميلادياً (الخادمُ بلا KIVO فلا يصله تقويمُ الواجهة 385).
+   الاستثناءُ الوحيد: كتلةُ PF-CORE في 062b — نصٌّ واحدٌ حرفاً مع الواجهة (535) فلا تنادي غيرَها؛ ومطابقتُها لهذه الدوالّ مثبتةٌ في الاختبار.
+     calHijriAt(ms)          أجزاءُ التاريخ الهجري (أم القرى) لِلحظةٍ بتوقيت الرياض { y, m, d } — ترمي إن غاب دعمُ التقويم.
+     calHijriOk(o)           هل الأجزاءُ في مدى التقويم (سنة > 1300 · شهر 1–12 · يوم 1–30) — الفحصُ الذي كان منسوخاً عند كل مستعمل.
+     calRiyadhMid(ms)        منتصفُ ليل الرياض (UTC+3 ثابتاً) لليوم المدنيّ الذي فيه اللحظة.
+     calDayNum(k)            مفتاحُ يومٍ هجري «س-ش-ي» رقماً للمقارنة.
+     calHijriMid(k, near, hij)     منتصفُ ليل (الرياض) اليوم الهجري k: قفزةٌ تقريبية من near ثم تصحيحٌ يوماً يوماً (40 محاولة) — محفوظُ النتيجة؛ 0 إن لم يُعرف.
+     calHijriDayMid(k, near, hij)  مثلُها لكن في جوار near وحده (اليومُ نفسُه ± يوم) وإلا منتصفُ ليل near — **دالتان لا واحدة**: الأولى تبحث بعيداً وتعيد 0 عند
+                                   الفشل، والثانيةُ لا تبتعد عن near وتعيده عند الفشل؛ مستعملاهما يعتمدان على الفرق.
+     hij = دالةُ المستعمل التي تعيد { k } ليومٍ أو null (تسجّل خطأها بوسمها هي) ══ */
+var CAL_HFMT = null;
+function calHijriAt(ms) {
+  if (!CAL_HFMT) CAL_HFMT = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
+  var o = {}; CAL_HFMT.formatToParts(new Date(ms)).forEach(function (p) { o[p.type] = +p.value; });
+  return { y: o.year, m: o.month, d: o.day };
+}
+function calHijriOk(o) { return o.y > 1300 && o.m >= 1 && o.m <= 12 && o.d >= 1 && o.d <= 30; }
+function calRiyadhMid(t) { return Math.floor((t + 3 * 36e5) / 864e5) * 864e5 - 3 * 36e5; }
+function calDayNum(k) { var p = String(k).split('-'); return (+p[0]) * 10000 + (+p[1]) * 100 + (+p[2]); }
+var CAL_HMID = Object.create(null);   /* المفتاحُ اليومُ وحده: الناتجُ منتصفُ ليل الرياض لذلك اليوم الهجري أياً كان المستعمل ما دامت hij تعيد يومَ الرياض (المستعملُ الوحيد اليوم: المهام) */
+function calHijriMid(k, near, hij) {
+  var kN = String(k).replace(/-0(\d)/g, '-$1'); if (CAL_HMID[kN]) return CAL_HMID[kN];
+  var p = kN.split('-').map(Number), m = calRiyadhMid(near), H = hij(m + 12 * 36e5), q; if (!H || p.length !== 3) return 0;
+  m += Math.round((p[0] - H.y) * 354.37 + (p[1] - H.m) * 29.53 + (p[2] - H.d)) * 864e5;
+  for (q = 0; q < 40; q++) { H = hij(m + 12 * 36e5); if (!H) return 0; if (H.k === kN) { CAL_HMID[kN] = m; return m; } m += (calDayNum(kN) > calDayNum(H.k) ? 1 : -1) * 864e5; }
+  return 0;
+}
+function calHijriDayMid(k, near, hij) {
+  var kN = String(k).replace(/-0(\d)/g, '-$1'), m = calRiyadhMid(near), q, D, H;
+  for (q = 0; q < 3; q++) { D = m + [0, -864e5, 864e5][q]; H = hij(D + 12 * 36e5); if (H && H.k === kN) return D; }
+  return m;
+}
 function dsToday(now) {
   try {
-    var f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
-    var o = {}; f.formatToParts(new Date(now - DS_GRACE)).forEach(function (p) { o[p.type] = +p.value; });
-    if (o.year > 1300 && o.month >= 1 && o.month <= 12 && o.day >= 1 && o.day <= 30) return { y: o.year, m: o.month, d: o.day };
+    var o = calHijriAt(now - DS_GRACE);
+    if (calHijriOk(o)) return o;
   } catch (e) { swallow('dstats', e); }
   return null;
 }

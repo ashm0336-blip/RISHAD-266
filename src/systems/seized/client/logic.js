@@ -148,17 +148,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       this._szEnsureRetro();
     } finally { this._szRetroBusy = false; }
   }
-  hMonthDays(t, e) {
-    const s = t + "-" + e;
-    if (((this.__hd = this.__hd || {}), this.__hd[s])) return this.__hd[s];
-    let a = 30;
-    try {
-      const s = this.hGreg(t, e, 1),
-        r = this.hParts(new Date(s.getTime() + 25056e5));
-      a = r.y === t && r.m === e ? 30 : 29;
-    } catch (t) {}
-    return ((this.__hd[s] = a), a);
-  }
   SZ_VER = "النسخة الثالثة — 2026/07/02";
 
 

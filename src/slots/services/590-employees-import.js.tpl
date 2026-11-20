@@ -117,9 +117,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   /* الشهر الهجري الجاري — أساسُ المنتقي حين لا يختار المستعمل شهراً */
   function curHij() {
     try {
-      const n = new Date();
-      const y = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(n));
-      const m = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(n));
+      const h = KIVO.BassamCal.hParts(new Date()), y = h.y, m = h.m;   /* V7 · د5-د2 */
       if (y && m) return { y: y, m: m };
     } catch (e) {}
     return { y: 1448, m: 1 };
@@ -128,9 +126,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   function schedM() { return ST.m || curHij().m; }
   function curHijriKey() {
     try {
-      const n = new Date();
-      const y = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(n));
-      const m = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(n));
+      const h = KIVO.BassamCal.hParts(new Date()), y = h.y, m = h.m;   /* V7 · د5-د2 */
       if (y && m) return y + "-" + m;
     } catch (e) {}
     return "";

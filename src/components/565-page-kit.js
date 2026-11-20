@@ -717,18 +717,7 @@
   /* ── plan · staff (3) ── */
   T["plan+staff"] = function (B) {
     return class extends B {
-      curHijri() {
-        try {
-          const t = new Date();
-          return {
-            y: parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(t)),
-            m: parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(t)),
-          };
-        } catch (t) {
-          const e = KIVO.BassamHijri ? KIVO.BassamHijri.now() : { y: 1448, m: 2, d: 1 };
-          return { y: e.y, m: e.m };
-        }
-      }
+      curHijri() { const t = KIVO.BassamCal.hToday(); return { y: t.y, m: t.m }; }   /* V7 · د5-د2: سنةُ اليوم وشهرُه من الخدمة (كانت تبني مُنسِّقَين هنا — الناتجُ والتراجعُ هما هما) */
       gregOf(t, e) {
         return this.hGregMonthLabel(t, e + 1);
       }
@@ -748,6 +737,7 @@
       hGregMonthLabel(t, e) { return KIVO.BassamCal.hGregMonthLabel(t, e); }
       hGregYearRange(t) { return KIVO.BassamCal.hGregYearRange(t); }
       hToday() { return KIVO.BassamCal.hToday(); }
+      hMonthDays(t, e) { return KIVO.BassamCal.hMonthDays(t, e); }   /* V7 · د5-د2: كانت منسوخةً في سبع صفحات؛ صفحتا الحساب بالأيام تعيدان تعريفَها بنسخة الظهر */
     };
   }
   function base(DCLogic, names) {

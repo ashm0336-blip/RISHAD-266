@@ -190,9 +190,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
      أو علامةُ شهرٍ (m:y-m) هذا الشهرَ أو بعده. الأيامُ الماضية والمعتمدة لا تُمسّ (كانت تُرفض فترةً فيسقط حفظُ الخطة كلُّه). */
   _roundKeyNow(key) {
     try {
-      const parts = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { timeZone: "Asia/Riyadh", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date()),
-        part = (t) => +parts.find((p) => p.type === t).value,
-        now = { y: part("year"), m: part("month"), d: part("day") },
+      const now = KIVO.BassamCal.hPartsRiyadh(new Date()),   /* V7 · د5-د2: يومُ الرياض من الخدمة */
         m = /^(?:m:)?(\d+)-(\d+)(?:-(\d+))?$/.exec(String(key));
       if (!m) return !1;
       const y = +m[1],
@@ -451,14 +449,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     if (isNaN(dt.getTime())) return null;
     let h = {};
     try {
-      (
-        this.__olHF ||
-        (this.__olHF = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" }))
-      )
-        .formatToParts(dt)
-        .forEach((p) => {
-          h[p.type] = +p.value;
-        });
+      const p = KIVO.BassamCal.hParts(dt);   /* V7 · د5-د2 */
+      h = { year: p.y, month: p.m, day: p.d };
     } catch (e) {
       h = {};
     }
@@ -6213,17 +6205,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         this.setState({ gates: KIVO.BassamLeaf.removeIdx(this.state.gates, t.i), sel: null, selMulti: [] }, () => this.savePlan());
       }
   }
-  hMonthDays(t, e) {
-    const s = t + "-" + e;
-    if (((this.__hd = this.__hd || {}), this.__hd[s])) return this.__hd[s];
-    let n = 30;
-    try {
-      const s = this.hGreg(t, e, 1),
-        a = this.hParts(new Date(s.getTime() + 25056e5));
-      n = a.y === t && a.m === e ? 30 : 29;
-    } catch (t) {}
-    return ((this.__hd[s] = n), n);
-  }
   _secs() {
     const t = this.state,
       e = (t.floors || [])[t.floor];
@@ -6704,7 +6685,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {}
     const z = (() => {
         try {
-          const t = KIVO.BassamHijri && KIVO.BassamHijri.now ? KIVO.BassamHijri.now(new Date()) : null;
+          const t = KIVO.BassamCal.hNow(new Date(), null);
           return (t && KIVO.bus.read("staff.dayFacts@1", t.y, t.m, t.d)) || null;
         } catch (t) {
           return null;
@@ -15993,7 +15974,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           })(),
           repToday: (() => {
             try {
-              const t = KIVO.BassamHijri.now();
+              const t = KIVO.BassamCal.hNow();
               return (
                 t.d +
                 " " +

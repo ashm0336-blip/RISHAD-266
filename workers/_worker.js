@@ -1671,11 +1671,42 @@ var KIVO_IDENTITY_MIGRATION = (function (M, S, R) {
    الأسماءُ كما هي (ds · cu · tk · ir) كي لا يتغيّر مستدعٍ ولا اختبار. تعتمد على: swallow (002) · parseJson · isObj (017) · hex (052) · pfHijriAt (062b). */
 /* ── من 020-dstats.js: «اليوم التشغيلي» الهجري للخادم (مهلةُ ثلاث ساعات) ── */
 var DS_GRACE = 3 * 3600 * 1000;
+/* ══ V7 · د5-د2: تقويمُ الخادم — موضعٌ واحد. لا جزءَ غير هذا يبني مُنسِّقَ أم القرى أو يحوّل هجرياً⇐ميلادياً (الخادمُ بلا KIVO فلا يصله تقويمُ الواجهة 385).
+   الاستثناءُ الوحيد: كتلةُ PF-CORE في 062b — نصٌّ واحدٌ حرفاً مع الواجهة (535) فلا تنادي غيرَها؛ ومطابقتُها لهذه الدوالّ مثبتةٌ في الاختبار.
+     calHijriAt(ms)          أجزاءُ التاريخ الهجري (أم القرى) لِلحظةٍ بتوقيت الرياض { y, m, d } — ترمي إن غاب دعمُ التقويم.
+     calHijriOk(o)           هل الأجزاءُ في مدى التقويم (سنة > 1300 · شهر 1–12 · يوم 1–30) — الفحصُ الذي كان منسوخاً عند كل مستعمل.
+     calRiyadhMid(ms)        منتصفُ ليل الرياض (UTC+3 ثابتاً) لليوم المدنيّ الذي فيه اللحظة.
+     calDayNum(k)            مفتاحُ يومٍ هجري «س-ش-ي» رقماً للمقارنة.
+     calHijriMid(k, near, hij)     منتصفُ ليل (الرياض) اليوم الهجري k: قفزةٌ تقريبية من near ثم تصحيحٌ يوماً يوماً (40 محاولة) — محفوظُ النتيجة؛ 0 إن لم يُعرف.
+     calHijriDayMid(k, near, hij)  مثلُها لكن في جوار near وحده (اليومُ نفسُه ± يوم) وإلا منتصفُ ليل near — **دالتان لا واحدة**: الأولى تبحث بعيداً وتعيد 0 عند
+                                   الفشل، والثانيةُ لا تبتعد عن near وتعيده عند الفشل؛ مستعملاهما يعتمدان على الفرق.
+     hij = دالةُ المستعمل التي تعيد { k } ليومٍ أو null (تسجّل خطأها بوسمها هي) ══ */
+var CAL_HFMT = null;
+function calHijriAt(ms) {
+  if (!CAL_HFMT) CAL_HFMT = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
+  var o = {}; CAL_HFMT.formatToParts(new Date(ms)).forEach(function (p) { o[p.type] = +p.value; });
+  return { y: o.year, m: o.month, d: o.day };
+}
+function calHijriOk(o) { return o.y > 1300 && o.m >= 1 && o.m <= 12 && o.d >= 1 && o.d <= 30; }
+function calRiyadhMid(t) { return Math.floor((t + 3 * 36e5) / 864e5) * 864e5 - 3 * 36e5; }
+function calDayNum(k) { var p = String(k).split('-'); return (+p[0]) * 10000 + (+p[1]) * 100 + (+p[2]); }
+var CAL_HMID = Object.create(null);   /* المفتاحُ اليومُ وحده: الناتجُ منتصفُ ليل الرياض لذلك اليوم الهجري أياً كان المستعمل ما دامت hij تعيد يومَ الرياض (المستعملُ الوحيد اليوم: المهام) */
+function calHijriMid(k, near, hij) {
+  var kN = String(k).replace(/-0(\d)/g, '-$1'); if (CAL_HMID[kN]) return CAL_HMID[kN];
+  var p = kN.split('-').map(Number), m = calRiyadhMid(near), H = hij(m + 12 * 36e5), q; if (!H || p.length !== 3) return 0;
+  m += Math.round((p[0] - H.y) * 354.37 + (p[1] - H.m) * 29.53 + (p[2] - H.d)) * 864e5;
+  for (q = 0; q < 40; q++) { H = hij(m + 12 * 36e5); if (!H) return 0; if (H.k === kN) { CAL_HMID[kN] = m; return m; } m += (calDayNum(kN) > calDayNum(H.k) ? 1 : -1) * 864e5; }
+  return 0;
+}
+function calHijriDayMid(k, near, hij) {
+  var kN = String(k).replace(/-0(\d)/g, '-$1'), m = calRiyadhMid(near), q, D, H;
+  for (q = 0; q < 3; q++) { D = m + [0, -864e5, 864e5][q]; H = hij(D + 12 * 36e5); if (H && H.k === kN) return D; }
+  return m;
+}
 function dsToday(now) {
   try {
-    var f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
-    var o = {}; f.formatToParts(new Date(now - DS_GRACE)).forEach(function (p) { o[p.type] = +p.value; });
-    if (o.year > 1300 && o.month >= 1 && o.month <= 12 && o.day >= 1 && o.day <= 30) return { y: o.year, m: o.month, d: o.day };
+    var o = calHijriAt(now - DS_GRACE);
+    if (calHijriOk(o)) return o;
   } catch (e) { swallow('dstats', e); }
   return null;
 }
@@ -28381,12 +28412,11 @@ function tkPhase(r, now) {
   return 'new';
 }
 /* ── اليومُ الهجريّ (أم القرى · الرياض) ووقتُ اليوم بالدقائق — الرياضُ UTC+3 ثابتاً بلا توقيتٍ صيفي ── */
-var TK_HFMT = null;
+/* V7 · د5-د2: المُنسِّقُ وفحصُ المدى في تقويم الخادم الواحد (016: calHijriAt · calHijriOk) — هنا الشكلُ الذي تريده المهام (k · ym) ووسمُ خطئها */
 function tkHij(ms) {
   try {
-    if (!TK_HFMT) TK_HFMT = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
-    var o = {}; TK_HFMT.formatToParts(new Date(ms)).forEach(function (p) { o[p.type] = +p.value; });
-    if (o.year > 1300 && o.month >= 1 && o.month <= 12 && o.day >= 1 && o.day <= 30) return { y: o.year, m: o.month, d: o.day, k: o.year + '-' + o.month + '-' + o.day, ym: o.year + '-' + o.month };
+    var o = calHijriAt(ms);
+    if (calHijriOk(o)) return { y: o.y, m: o.m, d: o.d, k: o.y + '-' + o.m + '-' + o.d, ym: o.y + '-' + o.m };
   } catch (e) { swallow('tk-hij', e); }
   return null;
 }
@@ -28395,7 +28425,7 @@ function tkMinOfDay(ms) { return Math.floor(((ms / 60000) + 180) % 1440 + 1440) 
 function tkWdOf(ms) { return new Date(ms + 3 * 3600 * 1000).getUTCDay(); }           /* 0 = الأحد */
 var TK_WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 function tkHm(min) { min = ((min % 1440) + 1440) % 1440; var h = Math.floor(min / 60), m = min % 60; return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
-function tkDayNum(k) { var p = String(k).split('-'); return (+p[0]) * 10000 + (+p[1]) * 100 + (+p[2]); }
+function tkDayNum(k) { return calDayNum(k); }   /* V7 · د5-د2: في تقويم الخادم (016) */
 /* ── الهوية (مشتركةٌ مع 062c) — الموظفون بالمعرّف الثابت eid، ورقمُ الهوية مقبولٌ فريداً فقط؛ لا اسمَ أبداً ── */
 /* tkEmps → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 /* SR-2.2 · F-1 (المراجعةُ المستقلة لحزمة 242 — والعيبُ نفسُه هنا): سجلٌّ يحمل هذا المعرّفَ في حقله وحده — والمكرَّرُ (خطأُ إدخالٍ أو استيراد) لا يُعيد أوّلَ مطابِق */
@@ -29514,15 +29544,8 @@ function tkRecIn(v, k, keep) {
   return { rec: o };
 }
 /* KIVO_265 · البند 16: منتصفُ ليل (الرياض) يومٍ هجريّ k قرب الوقت near — قفزةٌ تقريبية (الشهرُ الهجري ≈ 29.53 يوماً) ثم تصحيحٌ يوماً يوماً؛ لا تحويلَ هجريّ⇐ميلاديّ
-   في العامل فيُشتقّ من tkHij وحده. النتيجةُ ثابتةٌ لليوم الواحد فتُحفظ (TK_HMID) */
-var TK_HMID = nmap();
-function tkHijMid(k, near) {
-  var kN = String(k).replace(/-0(\d)/g, '-$1'); if (TK_HMID[kN]) return TK_HMID[kN];
-  var p = kN.split('-').map(Number), m = tkRiyMid(near), H = tkHij(m + 12 * 36e5), q; if (!H || p.length !== 3) return 0;
-  m += Math.round((p[0] - H.y) * 354.37 + (p[1] - H.m) * 29.53 + (p[2] - H.d)) * 864e5;
-  for (q = 0; q < 40; q++) { H = tkHij(m + 12 * 36e5); if (!H) return 0; if (H.k === kN) { TK_HMID[kN] = m; return m; } m += (tkDayNum(kN) > tkDayNum(H.k) ? 1 : -1) * 864e5; }
-  return 0;
-}
+   في العامل فيُشتقّ من tkHij وحده. النتيجةُ ثابتةٌ لليوم الواحد فتُحفظ (CAL_HMID في 016 — V7 · د5-د2) */
+function tkHijMid(k, near) { return calHijriMid(k, near, tkHij); }   /* V7 · د5-د2: الحسابُ والحفظُ في تقويم الخادم (016) */
 /* dMid: منتصفُ ليل اليوم المدنيّ الذي يومُه الهجريّ H (لـevery وآخرِ الشهر — البند 16) */
 function tkRecDue(rec, H, wdi, dMid) {
   var n = tkDayNum(H.k); if (n < tkDayNum(rec.from)) return false; if (rec.to && n > tkDayNum(rec.to)) return false;
@@ -29556,14 +29579,10 @@ function tkSeries(S) {
   for (var id in ser) { var s0 = ser[id]; if (!s0.proto) { s0.proto = s0.any; s0.pk = s0.ak; } s0.rec = tkX(s0.proto).rec; }
   return { ser: ser, idem: idem };
 }
-function tkRiyMid(t) { return Math.floor((t + 3 * 36e5) / 864e5) * 864e5 - 3 * 36e5; }
+function tkRiyMid(t) { return calRiyadhMid(t); }   /* V7 · د5-د2: في تقويم الخادم (016) */
 /* KIVO_265 · S6 (مراجعةُ الخادم): منتصفُ ليل اليوم المدنيّ الذي يومُه الهجريّ dk — قريباً من الوقت s: يومُ الصفّ = يومُ بدايته ± يوم (071 kOk: حدودُ منتصف
    الليل والوردية الليلية). اليومُ الهجريّ هنا (أم القرى بتوقيت الرياض) يتبدّل عند منتصف الليل المدنيّ فيقابله يومٌ مدنيٌّ واحد */
-function tkRecDayMid(dk, s) {
-  var kN = String(dk).replace(/-0(\d)/g, '-$1'), m = tkRiyMid(s), q, D, H;
-  for (q = 0; q < 3; q++) { D = m + [0, -864e5, 864e5][q]; H = tkHij(D + 12 * 36e5); if (H && H.k === kN) return D; }
-  return m;
-}
+function tkRecDayMid(dk, s) { return calHijriDayMid(dk, s, tkHij); }   /* V7 · د5-د2 */
 /* KIVO_265 · L-3: هويةُ المصدر لكتابات التكرار في التدقيق والأمن — توليدٌ آليّ (لا عنوانَ الموظف الذي فتح «ملفي» ولا جهازُه) */
 var TK_REC_META = { ip: 'srv:recur', city: '', dev: 'srv:recur' };
 var TK_REC_TOMB_D = 40;                                                      /* أيامُ سجل الخادم التي يُبحث فيها عن نُسخٍ وُلّدت ثم حُذفت (L-5) */

@@ -61,17 +61,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
   }
   hGreg(t, e, s) { return KIVO.BassamCal.hGregNoon(t, e, s); }   /* V7 · د5-د: نسخةُ الساعة 12 — هذه الصفحة تحسب بالأيام (385-calendar) */
-  hMonthDays(t, r) {
-    const e = t + "-" + r;
-    if (((this.__hd = this.__hd || {}), this.__hd[e])) return this.__hd[e];
-    let n = 30;
-    try {
-      const e = this.hGreg(t, r, 1),
-        a = this.hParts(new Date(e.getFullYear(), e.getMonth(), e.getDate() + 29, 12));
-      n = a.y === t && a.m === r ? 30 : 29;
-    } catch (t) {}
-    return ((this.__hd[e] = n), n);
-  }
+  hMonthDays(t, r) { return KIVO.BassamCal.hMonthDaysNoon(t, r); }   /* V7 · د5-د2: نسخةُ الظهر — هذه الصفحة تحسب بالأيام (385-calendar) */
   dayPastDS(t, r, e) {
     let n;
     try {
@@ -84,15 +74,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   state = (() => {
     let t;
     try {
-      t = ((t) => {
-        const r = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-            year: "numeric",
-            month: "numeric",
-            day: "numeric",
-          }).formatToParts(t),
-          e = (t) => +r.find((r) => r.type === t).value;
-        return { y: e("year"), m: e("month"), d: e("day") };
-      })(new Date());
+      t = KIVO.BassamCal.hParts(new Date());   /* V7 · د5-د2 */
     } catch (r) {
       t = { y: 1448, m: 1, d: 1 };
     }
@@ -2329,7 +2311,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         (function () {
           try {
             var t = KIVO.BassamDayFocus ? KIVO.BassamDayFocus.get() : null,
-              r = KIVO.BassamHijri.now(new Date());
+              r = KIVO.BassamCal.hNow(new Date());
             return !t || (+t.y === +r.y && +t.m === +r.m && +t.d === +r.d);
           } catch (t) {
             return !1;

@@ -74,7 +74,7 @@ Object.assign(Component.prototype, {
   },
   _tkRiyadhClock(t) {
     try {
-      return new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-latn", { timeZone: "Asia/Riyadh", year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: !0 }).format(new Date(t));
+      return KIVO.BassamCal.hText(new Date(t), { timeZone: "Asia/Riyadh", year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: !0 });   /* V7 · د5-د2 */
     } catch (e) {
       return this.tkClock(t);
     }

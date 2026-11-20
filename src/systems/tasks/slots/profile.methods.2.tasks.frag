@@ -149,9 +149,9 @@
         new Intl.DateTimeFormat(loc, Object.assign({ timeZone: tz }, o)).formatToParts(d).forEach((p) => (q[p.type] = p.value));
         return q;
       };
-      const H = P("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" }),
+      const H = KIVO.BassamCal.hPartsRiyadh(d),   /* V7 · د5-د2: يومُ الرياض الهجري من الخدمة */
         G = P("en-u-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-      ((h = H.day + "/" + H.month + "/" + H.year + "هـ"), (g = G.day + "/" + G.month + "/" + G.year + "م"), (c = G.hour + ":" + G.minute));
+      ((h = H.d + "/" + H.m + "/" + H.y + "هـ"), (g = G.day + "/" + G.month + "/" + G.year + "م"), (c = G.hour + ":" + G.minute));
     } catch (t) {
       g = d.toISOString().slice(0, 16).replace("T", " ");
     }

@@ -1,16 +1,5 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","admin+profile+seized","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","award+irshad+seized","irshad+seized+tasks","dstats+irshad","irshad+seized"]) {
   static _irSessions = new WeakMap();
-  hMonthDays(t, e) {
-    const r = t + "-" + e;
-    if (((this.__hd = this.__hd || {}), this.__hd[r])) return this.__hd[r];
-    let a = 30;
-    try {
-      const r = this.hGreg(t, e, 1),
-        i = this.hParts(new Date(r.getTime() + 25056e5));
-      a = i.y === t && i.m === e ? 30 : 29;
-    } catch (t) {}
-    return ((this.__hd[r] = a), a);
-  }
   LANGS = [
     "العربية",
     "الإنجليزية",

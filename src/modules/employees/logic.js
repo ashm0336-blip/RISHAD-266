@@ -471,50 +471,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     "ذو القعدة",
     "ذو الحجة",
   ];
-  _cuFmt() {
-    if (void 0 === this.__cuF)
-      try {
-        this.__cuF = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" });
-      } catch (t) {
-        this.__cuF = null;
-      }
-    return this.__cuF;
-  }
-  cuParts(t) {
-    const e = this._cuFmt().formatToParts(t),
-      r = (t) => +e.find((e) => e.type === t).value;
-    return { y: r("year"), m: r("month"), d: r("day") };
-  }
-  cuGreg(t, e, r) {
-    let n = new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (e - 1)) + (r - 1)));
-    try {
-      for (let a = 0; a < 12; a++) {
-        const a = this.cuParts(n);
-        if (a.y === t && a.m === e && a.d === r) return n;
-        const i = 354.367 * (a.y - t) + 29.5306 * (a.m - e) + (a.d - r);
-        n = new Date(n.getTime() - 864e5 * (Math.round(i) || (i > 0 ? 1 : -1)));
-      }
-    } catch (t) {}
-    return n;
-  }
-  cuGregMonthLabel(t, e) {
-    const r = t + "-" + e;
-    if (((this.__cuG = this.__cuG || {}), this.__cuG[r])) return this.__cuG[r];
-    let n = "";
-    try {
-      n = this.cuGreg(t, e, 15).toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
-    } catch (t) {}
-    return ((this.__cuG[r] = n), n);
-  }
-  cuGregYearRange(t) {
-    try {
-      const e = this.cuGreg(t, 1, 1).getFullYear(),
-        r = this.cuGreg(t, 12, 29).getFullYear();
-      return e === r ? e + " م" : e + " – " + r + " م";
-    } catch (t) {
-      return "";
-    }
-  }
+  /* V7 · د5-د2: تقويمُ العهد من الخدمة الواحدة (385-calendar) — كانت هنا نسخةٌ كاملة من الدوالّ الأربع */
+  cuGreg(t, e, r) { return KIVO.BassamCal.hGreg(t, e, r); }
+  cuGregMonthLabel(t, e) { return KIVO.BassamCal.hGregMonthLabel(t, e); }
+  cuGregYearRange(t) { return KIVO.BassamCal.hGregYearRange(t); }
   cuShiftOpts() {
     try {
       const t = KIVO.__BS_SRV.operations.text("bassam_shift_options_v1");
@@ -560,7 +520,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const R = this.cuHijri0();
     return ((this._bsHjV = { y: R.y, m: R.m }), (this._bsHjT = N), R);
   }
-  cuHijri0() { return this.state.cuClock || (KIVO.BassamHijri && KIVO.BassamHijri.now ? KIVO.BassamHijri.now() : { y: 1448, m: 1, d: 1 }); }
+  cuHijri0() { return this.state.cuClock || KIVO.BassamCal.hNow(void 0, { y: 1448, m: 1, d: 1 }); }
   cuPast(t, e) {
     const r = this.cuHijri();
     return +t < r.y || (+t === r.y && +e < r.m);
@@ -673,7 +633,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!s.length) return void this.bsToast("لا توجد أصناف بعهدة هذا الموظف في " + (this.CU_MONTHS[a - 1] || "") + " — لا سند للطباعة");
     let l = 1;
     try {
-      l = KIVO.BassamHijri ? KIVO.BassamHijri.now().d : 1;
+      l = KIVO.BassamCal.hNow(void 0, { d: 1 }).d;
     } catch (t) {}
     const d = (e.employees || []).findIndex((e) => (e.eid || e.name) === t) + 1,
       c = "#" + n + String(a).padStart(2, "0") + String(d).padStart(2, "0"),
@@ -1147,7 +1107,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       n = this.cuHijri();
     let a = 1;
     try {
-      a = KIVO.BassamHijri ? KIVO.BassamHijri.now().d : 1;
+      a = KIVO.BassamCal.hNow(void 0, { d: 1 }).d;
     } catch (t) {}
     const i = this.cuHeldAt(n.y, n.m, !1),
       o = (e.q || "").trim(),
@@ -2157,9 +2117,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const e = t || new Date();
     let r = "";
     try {
-      r = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" }).format(
-        new Date(),
-      );
+      const h = KIVO.BassamCal.hParts(new Date());   /* V7 · د5-د2: يومُ اليوم الهجري من الخدمة — المفتاحُ بالصيغة نفسِها (شهر/يوم/سنة AH) */
+      r = h.m + "/" + h.d + "/" + h.y + " AH";
     } catch (t) {}
     return e.getHours() + "|" + r;
   }
@@ -2200,14 +2159,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         try {
           const e = KIVO.bus.read("staff.months@1", "copy");
           if (e && "object" == typeof e) {
-            const t = new Date();
-            return (
-              e[
-                parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(t)) +
-                  "-" +
-                  parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(t))
-              ] || {}
-            );
+            const t = KIVO.BassamCal.hParts(new Date());   /* V7 · د5-د2 */
+            return e[t.y + "-" + t.m] || {};
           }
         } catch (t) {}
         return {};
@@ -2238,13 +2191,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       l = (function () {
         try {
           const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
-            e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-              year: "numeric",
-              month: "numeric",
-              day: "numeric",
-            }).formatToParts(new Date()),
-            r = (t) => parseInt((e.find((e) => e.type === t) || {}).value, 10),
-            n = t[r("year") + "-" + r("month") + "-" + r("day")],
+            e = KIVO.BassamCal.hParts(new Date()),   /* V7 · د5-د2 */
+            n = t[e.y + "-" + e.m + "-" + e.d],
             a = {};
           return (
             n &&
@@ -2315,8 +2263,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     let P = 1448,
       T = 1;
     try {
-      ((P = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(e))),
-        (T = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(e))));
+      const t = KIVO.BassamCal.hParts(e);   /* V7 · د5-د2 */
+      ((P = t.y), (T = t.m));
     } catch (t) {}
     const I = !!o[P + "-" + T],
       j = Object.keys(o).filter((t) => o[t] && 0 === t.indexOf(P + "-")).length;
@@ -2527,7 +2475,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               (lt * dt.plan) / 100,
           )
         : 0,
-      pt = e.toLocaleDateString("ar-SA-u-ca-islamic-umalqura", { month: "long" }),
+      pt = KIVO.BassamCal.hText(e, { month: "long" }),
       mt = [
         {
           group: "جاهزية القوى العاملة — من الجدول الشهري",
@@ -3270,8 +3218,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       greeting: r >= 4 && r < 12 ? "صباح الخير" : r >= 12 && r < 17 ? "نهارك سعيد" : r >= 17 && r < 21 ? "مساء الخير" : "ليلة هانئة",
       timeShort: e.toLocaleTimeString("ar-SA-u-nu-latn", { hour: "2-digit", minute: "2-digit", hour12: !0 }),
       gregShort: e.toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", { weekday: "long", day: "numeric", month: "long" }),
-      hijriShort: e.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-latn", { day: "numeric", month: "long", year: "numeric" }),
-      hijriChip: e.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-latn", { month: "long", year: "numeric" }),
+      hijriShort: KIVO.BassamCal.hText(e, { day: "numeric", month: "long", year: "numeric" }),
+      hijriChip: KIVO.BassamCal.hText(e, { month: "long", year: "numeric" }),
       assignPct: String(z),
       rdStaffOn: _bsCapOk(_bsSched),
       netCovOn: G && rt.length > 0 && _bsCapOk(_bsSched + "&plan&dist"),
@@ -3395,13 +3343,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       s = 1,
       l = 1;
     try {
-      const t = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        }).formatToParts(e),
-        r = (e) => parseInt((t.find((t) => t.type === e) || {}).value, 10);
-      ((o = r("year")), (s = r("month")), (l = r("day")));
+      const t = KIVO.BassamCal.hParts(e);   /* V7 · د5-د2 */
+      ((o = t.y), (s = t.m), (l = t.d));
     } catch (t) {}
     const d = o + "-" + s,
       c = (() => {
@@ -4544,13 +4487,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       Te = (function () {
         try {
           const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
-            e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-              year: "numeric",
-              month: "numeric",
-              day: "numeric",
-            }).formatToParts(new Date()),
-            r = (t) => parseInt((e.find((e) => e.type === t) || {}).value, 10),
-            n = t[r("year") + "-" + r("month") + "-" + r("day")],
+            e = KIVO.BassamCal.hParts(new Date()),   /* V7 · د5-د2 */
+            n = t[e.y + "-" + e.m + "-" + e.d],
             a = {};
           return (
             n &&
@@ -4671,7 +4609,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ie.bd,
       rdMiss: pe,
       rdMonthLbl:
-        "مؤشر جاهزية التشغيل · " + e.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-latn", { month: "long", year: "numeric" }),
+        "مؤشر جاهزية التشغيل · " + KIVO.BassamCal.hText(e, { month: "long", year: "numeric" }),
       rdCols: ge,
       rdCalc: ue,
       rdTopTxt: se.name + " " + se.pct + "٪",

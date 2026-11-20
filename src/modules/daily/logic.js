@@ -3551,7 +3551,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     try {
       s = this.hParts(new Date());
     } catch (t) {
-      s = KIVO.BassamHijri ? KIVO.BassamHijri.now() : { y: 1448, m: 2, d: 1 };
+      s = KIVO.BassamCal.hNow(void 0, { y: 1448, m: 2, d: 1 });
     }
     return t < s.y || (t === s.y && e < s.m);
   }
@@ -3560,7 +3560,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     try {
       n = this.hParts(new Date());
     } catch (t) {
-      n = KIVO.BassamHijri ? KIVO.BassamHijri.now() : { y: 1448, m: 2, d: 1 };
+      n = KIVO.BassamCal.hNow(void 0, { y: 1448, m: 2, d: 1 });
     }
     return t < n.y || (t === n.y && e < n.m) || (t === n.y && e === n.m && s < n.d);
   }
@@ -3648,19 +3648,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     return (this.monthDaysAllAp(t, e, s) && !this.isMonthAp(t, e, s) && (t[this.mKey(e, s)] = { ap: 1, auto: 1 }), t);
   }
   state = (() => {
-    const t = (() => {
-      try {
-        const t = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-            year: "numeric",
-            month: "numeric",
-            day: "numeric",
-          }).formatToParts(new Date()),
-          e = (e) => +t.find((t) => t.type === e).value;
-        return { y: e("year"), m: e("month"), d: e("day") };
-      } catch (t) {
-        return KIVO.BassamHijri ? KIVO.BassamHijri.now() : { y: 1448, m: 2, d: 1 };
-      }
-    })();
+    const t = KIVO.BassamCal.hToday();   /* V7 · د5-د2: اليومُ من الخدمة (المُنسِّقُ والتراجعُ هما هما) */
     return {
       dsTab: "kpi",
       dsKpiSub: "dy",
@@ -3709,17 +3697,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     };
   })();
   hGreg(t, e, s) { return KIVO.BassamCal.hGregNoon(t, e, s); }   /* V7 · د5-د: نسخةُ الساعة 12 — هذه الصفحة تحسب بالأيام (385-calendar) */
-  hMonthDays(t, e) {
-    const s = t + "-" + e;
-    if (((this.__hd = this.__hd || {}), this.__hd[s])) return this.__hd[s];
-    let n = 30;
-    try {
-      const s = this.hGreg(t, e, 1),
-        i = this.hParts(new Date(s.getFullYear(), s.getMonth(), s.getDate() + 29, 12));
-      n = i.y === t && i.m === e ? 30 : 29;
-    } catch (t) {}
-    return ((this.__hd[s] = n), n);
-  }
+  hMonthDays(t, e) { return KIVO.BassamCal.hMonthDaysNoon(t, e); }   /* V7 · د5-د2: نسخةُ الظهر — هذه الصفحة تحسب بالأيام (385-calendar) */
   KGOLD = "#b99751";
   KGOLD_D = "#8A6F35";
   KGOLD_L = "var(--brand-light)";
@@ -6927,7 +6905,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         try {
           return this.hParts(new Date());
         } catch (t) {
-          return KIVO.BassamHijri ? KIVO.BassamHijri.now() : { y: 1448, m: 2, d: 1 };
+          return KIVO.BassamCal.hNow(void 0, { y: 1448, m: 2, d: 1 });
         }
       })(),
       f = s.floor >= 0 ? s.floor : 0,

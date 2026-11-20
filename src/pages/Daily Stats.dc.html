@@ -1109,14 +1109,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
             anMetH:"qaasideen", anMetN:"total", dzW:0, anTblOpen:false };
 
   /* ══ التقويم ══ */
-  _hf(){ try { return new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn",{year:"numeric",month:"numeric",day:"numeric"}); } catch(e){ return null; } }
-  hOfDate(dt){ const f=this._hf(); const o={}; f.formatToParts(dt).forEach(p=>o[p.type]=+p.value); return o; }
-  gOf(y,m,d){ const ck=this.__g||(this.__g={}), key=y+"|"+m+"|"+d; if(key in ck) return ck[key];
-    const f=this._hf(); if(!f) return (ck[key]=null); let lo=-40000,hi=40000,k=y*10000+m*100+d;
-    while(lo<=hi){ const mid=(lo+hi)>>1, dt=new Date(Date.UTC(1970,0,1+mid)), o=this.hOfDate(dt), kk=o.year*10000+o.month*100+o.day;
-      if(kk===k) return (ck[key]=dt); kk<k ? lo=mid+1 : hi=mid-1; } return (ck[key]=null); }
-  dim(y,m){ const ck=this.__dim||(this.__dim={}), key=y+"|"+m; if(ck[key]) return ck[key];
-    for(let d=31;d>=28;d--){ const g=this.gOf(y,m,d); if(g){ const o=this.hOfDate(g); if(o.year===y&&o.month===m&&o.day===d) return (ck[key]=d); } } return (ck[key]=29); }
+  /* V7 · د5-د2: حساباتُ التقويم من الخدمة الواحدة (385-calendar) — كانت هنا بمُنسِّقٍ وبحثٍ ثنائي خاصَّين. gOf = لحظةُ منتصف ليل UTC (تُقرأ بدوالّ UTC أدناه) */
+  hOfDate(dt){ const h=KIVO.BassamCal.hParts(dt); return { year:h.y, month:h.m, day:h.d }; }
+  gOf(y,m,d){ return KIVO.BassamCal.hGregUTC(y,m,d); }
+  dim(y,m){ return KIVO.BassamCal.hMonthDaysNoon(y,m,29); }
   mStart(y,i){ return this.gOf(y,i+1,1) || new Date(); }
   gTxt(y,m,d){ const g=this.gOf(y,m,d); return g ? g.getUTCDate()+"/"+(g.getUTCMonth()+1)+"/"+g.getUTCFullYear() : "—"; }
   gLong(y,m,d){ const g=this.gOf(y,m,d); if(!g) return "—";
@@ -1235,8 +1231,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   STX(st){ if(!st||!st.t) return null;
     const ck=this.__stx||(this.__stx={}), key=st.t+"|"+(st.x||0)+"|"+st.n; if(ck[key]) return ck[key];
     const dt=new Date(st.t); if(isNaN(dt.getTime())) return null;
-    let h={}; try { const f=this.__stf||(this.__stf=new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn",{year:"numeric",month:"numeric",day:"numeric"}));
-      f.formatToParts(dt).forEach(p=>h[p.type]=+p.value); } catch(e){ h={}; }
+    let h={}; try { h=this.hOfDate(dt); } catch(e){ h={}; }   /* V7 · د5-د2 */
     const wd=this.WDAYS[dt.getDay()]||"";
     let a=dt.getHours(); const mi=dt.getMinutes(), ap=a>=12?"م":"ص"; a%=12; if(a===0) a=12;
     const tm=String(a).padStart(2,"0")+":"+String(mi).padStart(2,"0")+" "+ap;

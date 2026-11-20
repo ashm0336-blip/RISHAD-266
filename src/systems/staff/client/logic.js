@@ -681,17 +681,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
     });
   }
-  hMonthDays(t, e) {
-    const s = t + "-" + e;
-    if (((this.__hd = this.__hd || {}), this.__hd[s])) return this.__hd[s];
-    let r = 30;
-    try {
-      const s = this.hGreg(t, e, 1),
-        n = this.hParts(new Date(s.getTime() + 25056e5));
-      r = n.y === t && n.m === e ? 30 : 29;
-    } catch (t) {}
-    return ((this.__hd[s] = r), r);
-  }
   healOrphanShifts(t) {
     t = t.slice();
     try {
@@ -1228,7 +1217,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       E = this.loadWkOpts(),
       _ = (() => {
         try {
-          const t = KIVO.BassamHijri.now(new Date());
+          const t = KIVO.BassamCal.hNow(new Date());
           return +t.y === +s.year && +t.m === +s.month;
         } catch (t) {
           return !1;

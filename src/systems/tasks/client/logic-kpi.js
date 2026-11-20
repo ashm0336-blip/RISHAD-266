@@ -52,11 +52,8 @@ Object.assign(Component.prototype, {
   },
   _tkNow() {
     try {
-      const H = KIVO.BassamHijri;
-      if (H && H.now) return H.now();
-      const q = {};
-      new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { timeZone: "Asia/Riyadh", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date()).forEach((t) => (q[t.type] = +t.value));
-      return { y: q.year, m: q.month, d: q.day };
+      const C = KIVO.BassamCal;   /* V7 · د5-د2: اليومُ من جدول الاحتياط، وبغيابه يومُ الرياض — كلاهما من الخدمة */
+      return C.hNow(void 0, null) || C.hPartsRiyadh(new Date());
     } catch (t) {
       return { y: 1447, m: 1, d: 1 };
     }

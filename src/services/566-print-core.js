@@ -181,7 +181,7 @@
     /* سطرُ التاريخ: «round» = يومُ الجولة المختار في الحالة (هجري) والموافقُ الميلادي بحثاً · «today» = اليوم (BassamHijri) والموافقُ اليوم */
     if (O.date === "today")
       try {
-        const t = KIVO.BassamHijri.now(),
+        const t = KIVO.BassamCal.hNow(),
           e = t.d + " " + (ctx.MONTHS[t.m - 1] || "") + " " + t.y + "هـ",
           s = new Date().toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" });
         o = e + " الموافق " + s;
@@ -194,18 +194,9 @@
           i = "جولة يوم " + n + " " + (ctx.MONTHS[e - 1] || "") + " " + t + "هـ";
         let r = "";
         try {
-          const s = Date.UTC(622, 6, 16),
-            i = new Date(s + Math.round(864e5 * (354.36667 * (t - 1) + 29.53 * (e - 1) + (n - 1)))),
-            o = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" });
-          for (let s = -30; s <= 30; s++) {
-            const a = new Date(i.getTime() + 864e5 * s),
-              l = o.formatToParts(a),
-              d = (t) => +l.find((e) => e.type === t).value;
-            if (d("year") === t && d("month") === e && d("day") === n) {
-              r = a.toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" });
-              break;
-            }
-          }
+          /* V7 · د5-د2: الموافقُ الميلادي من الخدمة الواحدة (كان هنا بحثٌ ±30 يوماً بمُنسِّقٍ خاص) — وإن لم يُعرف اليومُ تماماً فلا «الموافق» كما كان */
+          const a = KIVO.BassamCal.hGregExact(t, e, n);
+          a && (r = a.toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" }));
         } catch (t) {}
         o = i + (r ? " الموافق " + r : "");
       } catch (t) {}

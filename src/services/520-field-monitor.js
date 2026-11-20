@@ -115,25 +115,7 @@
     return dispatch(pending, false);
   }
   function hParts(dt) {
-    try {
-      var p = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-      }).formatToParts(dt || new Date());
-      var g = function (k) {
-        return +p.filter(function (x) {
-          return x.type === k;
-        })[0].value;
-      };
-      return { y: g("year"), m: g("month"), d: g("day") };
-    } catch (e) {
-      try {
-        return KIVO.BassamHijri.now(dt);
-      } catch (e2) {
-        return { y: 1448, m: 1, d: 1 };
-      }
-    }
+    return KIVO.BassamCal.hPartsSafe(dt);   /* V7 · د5-د2: المُنسِّقُ والتراجعُ (جدولُ الاحتياط ثم ثابت) في الخدمة — هما هما */
   }
   function todayKey() {
     var T = hParts(new Date());

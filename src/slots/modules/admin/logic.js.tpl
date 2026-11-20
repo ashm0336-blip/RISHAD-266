@@ -2262,9 +2262,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       s = new Date().getFullYear();
                     let a = "";
                     try {
-                      a = (/\d{4}/.exec(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(new Date())) || [
-                        "",
-                      ])[0];
+                      a = (/\d{4}/.exec(String(KIVO.BassamCal.hParts(new Date()).y)) || [""])[0];   /* V7 · د5-د2 */
                     } catch (t) {}
                     return String(e || "")
                       .replace(/\{م\}/g, s)
@@ -9529,13 +9527,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
       N = (t) => {
         try {
-          return new Date(t).toLocaleString("ar-SA-u-ca-islamic-umalqura-nu-latn", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            hour: "2-digit",
-            minute: "2-digit",
-          });
+          return KIVO.BassamCal.hText(new Date(t), { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });   /* V7 · د5-د2 */
         } catch (e) {
           return new Date(t).toLocaleString();
         }

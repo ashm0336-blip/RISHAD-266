@@ -35,17 +35,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }, 4200)));
     } catch (t) {}
   }
-  hMonthDays(t, e) {
-    const n = t + "-" + e;
-    if (((this.__hd = this.__hd || {}), this.__hd[n])) return this.__hd[n];
-    let a = 30;
-    try {
-      const n = this.hGreg(t, e, 1),
-        r = this.hParts(new Date(n.getTime() + 25056e5));
-      a = r.y === t && r.m === e ? 30 : 29;
-    } catch (t) {}
-    return ((this.__hd[n] = a), a);
-  }
   mStart(t, e) {
     return this.hGreg(t, e + 1, 1);
   }
@@ -62,13 +51,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       r = 2,
       s = 1;
     try {
-      const t = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        }).formatToParts(e),
-        n = (e) => +t.find((t) => t.type === e).value;
-      ((a = n("year")), (r = n("month")), (s = n("day")));
+      const t = KIVO.BassamCal.hParts(e);   /* V7 · د5-د2 */
+      ((a = t.y), (r = t.m), (s = t.d));
     } catch (t) {}
     const o = (t) => (t < 10 ? "0" + t : "" + t);
     return { wd: n, date: a + "/" + r + "/" + s + " هـ", time: o(e.getHours()) + ":" + o(e.getMinutes()), k: a + "-" + r + "-" + s };
@@ -153,16 +137,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   tkHParts(t) {
     try {
-      const e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        }).formatToParts(new Date(t)),
-        n = (t) => {
-          const n = e.find((e) => e.type === t);
-          return n ? +n.value : 0;
-        };
-      return { y: n("year"), m: n("month"), d: n("day") };
+      return KIVO.BassamCal.hParts(new Date(t));   /* V7 · د5-د2 */
     } catch (t) {
       return null;
     }
