@@ -87,14 +87,12 @@ function permv4Read(A, k, value, oldOk, where, budget, refs) {
   if (!oldOk) ST.asisDeny++;
   ST.bySelectionMode[selMode] = (ST.bySelectionMode[selMode] || 0) + 1; if (selMode.indexOf('gap') === 0) ST.allowedWithoutSelectedKey++;
   for (i = 0; i < useKeys.length; i++) { ST.bySelectedKey[useKeys[i]] = (ST.bySelectedKey[useKeys[i]] || 0) + 1; var sk = srcs[i].split(':')[0]; ST.byBindingSource[sk] = (ST.byBindingSource[sk] || 0) + 1; }
-  if (held.indexOf('field.view') !== -1) ST.fieldViewReads++;
-  if (!keys.length) { var nrk = RK.cls || 'unknown'; ST.byNoReadKeyClass[nrk] = (ST.byNoReadKeyClass[nrk] || 0) + 1; }
+@@SYS:pv4.fieldView.held.daily@@  if (!keys.length) { var nrk = RK.cls || 'unknown'; ST.byNoReadKeyClass[nrk] = (ST.byNoReadKeyClass[nrk] || 0) + 1; }
   for (i = 0; i < R.migrationNeeded.length; i++) ST.migrationNeededByDim[R.migrationNeeded[i]] = (ST.migrationNeededByDim[R.migrationNeeded[i]] || 0) + 1;
   for (i = 0; i < R.missingEvidence.length; i++) ST.missingEvidenceByDim[R.missingEvidence[i]] = (ST.missingEvidenceByDim[R.missingEvidence[i]] || 0) + 1;
   if (R.migrationNeeded.length) ST.migrationNeeded++; if (R.missingEvidence.length) ST.missingEvidence++;
   if (oldOk) pv4NoteUnknown(ST, A, d, R.migrationNeeded);   /* P4.2: unknown اليوم على قراءةٍ مقبولة قديماً — بحسب الفاعل والبُعد */
-  if (selMode !== 'held' && keys.indexOf('field.view') !== -1) ST.fieldViewProbeReads++;   /* P4.2‑07: field.view داخل قائمة التقييم بلا حملٍ (route-probe) — bySelectedKey[field.view] = fieldViewReads + fieldViewProbeReads */
-  /* التصنيفُ الرباعي للقراءة: الحكمُ القديم (الصلاحية + الإدارة) أولاً؛ ثم النطاقُ على السجلات */
+@@SYS:pv4.fieldView.probe.daily@@  /* التصنيفُ الرباعي للقراءة: الحكمُ القديم (الصلاحية + الإدارة) أولاً؛ ثم النطاقُ على السجلات */
   var kind, deptDeny = false, j;
   for (j = 0; j < R.denyDims.length; j++) if (R.denyDims[j] === 'Department' || R.denyDims[j] === 'Branch') deptDeny = true;
   if (!keys.length) kind = RK.known ? 'agree:no-read-key (I-06)' : 'unexpected:read-binding-unknown-resource';

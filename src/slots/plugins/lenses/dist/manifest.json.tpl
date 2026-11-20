@@ -6,7 +6,7 @@
  "label": "عدسة التوزيع",
  "order": 5,
  "owner": "lens.dist",
- "hosts": [@@SYS:lens.hosts.plan@@"daily/rounds"],
+ "hosts": [@@SYS:lens.hosts.plan@@@@SYS:lens.hosts.daily@@],
  "keys": {
   "own": ["lens.dist.enable", "lens.dist.view", "lens.dist.assign.edit", "lens.dist.need.edit"],
   "managedRefs": [],

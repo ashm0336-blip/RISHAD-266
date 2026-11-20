@@ -268,7 +268,7 @@ function privPermsStale(A, ps, nRaw, cRaw) {
   return privPermsOmits(A, parseJson(String(nRaw), null), parseJson(String(cRaw), null)) ? 'perms-stale-client' : '';
 }
 /* (4) references by nid */
-var PRIV_TOK_RES = { @@SYS:priv.tokRes.staff@@@@SYS:priv.tokRes.plan@@bassam_rounds_v1: 1@@SYS:priv.tokRes.dreport@@@@SYS:priv.tokRes.tasks@@ };
+var PRIV_TOK_RES = { @@SYS:priv.tokRes.staff@@@@SYS:priv.tokRes.plan@@@@SYS:priv.tokRes.daily|empty="...{}"@@@@SYS:priv.tokRes.dreport@@@@SYS:priv.tokRes.tasks@@ };
 var PRIV_NO = { privacy: 'hidden' };   /* privIn: the incoming value changes a hidden reference ⇒ refused (054) */
 /* { M: nid→eid, R: eid→nid } of the records of unit d whose nid the actor does not receive, or null; have: raw values by key */
 function privTok(A, d, have) {
@@ -345,7 +345,7 @@ function privTokIn(n, c, T, st) {
    grants register (read by the managers' permission page only). */
 async function privPrepDepts(env, A, ds) {
   if (!A || !A.u || A.u.role === 'super') return;
-  await privPrep(env, A, (ds || []).filter(function (d) { return d && deptInScope(A, d) && !privPersonalOk(A, d); }).map(function (d) { return 'bsdept:' + d + ':@@SYS:priv.carrier|empty="@@SYS:priv.carrier.dreport|empty=\"bassam_rounds_v1\"@@"@@'; }));
+  await privPrep(env, A, (ds || []).filter(function (d) { return d && deptInScope(A, d) && !privPersonalOk(A, d); }).map(function (d) { return 'bsdept:' + d + ':@@SYS:priv.carrier|empty="@@SYS:priv.carrier.dreport|empty=\"@@SYS:priv.carrier.daily|empty=\\\"' + (Object.keys(PRIV_TOK_RES)[0] || '') + '\\\"@@\"@@"@@'; }));
 }
 function privKeyOut(A, d, k) { var T = A && A.__privTok && A.__privTok[d]; return T && k != null && T.M[String(k)] !== undefined ? T.M[String(k)] : k; }
 /* an account row as a reader sees it (054 usersLens): its ekey projected */

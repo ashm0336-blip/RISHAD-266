@@ -211,7 +211,6 @@
     "admin/oplog:view"
    ],
    "references": [
-    "daily/rounds",
     "lens.zones",
     "lens.gates",
     "lens.marks",
@@ -257,7 +256,6 @@
     "admin/shifts:view"
    ],
    "references": [
-    "daily/rounds",
     "planning/readiness",
     "emps/data"
    ],
@@ -672,9 +670,7 @@
    "sensitive": false,
    "guard": {
     "kind": "read",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
+    "resources": [],
     "detail": "قراءة مجموعة zones في الخطة/الجولة بورقة المضيف + بوابة enable",
     "status": "exists"
    },
@@ -692,9 +688,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:view"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -715,10 +709,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "إضافة كيان في zones[] — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "إضافة كيان في zones[] — تصنيف المجموعة → lens.zones في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -735,9 +727,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:add"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -758,10 +748,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقول الخصائص في zones[] (غير الهندسية) — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "حقول الخصائص في zones[] (غير الهندسية) — تصنيف المجموعة → lens.zones في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -778,9 +766,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -801,10 +787,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "الحقول الهندسية في zones[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "الحقول الهندسية في zones[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.zones في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -821,9 +805,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -844,10 +826,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقول الحالة في zones[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "حقول الحالة في zones[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.zones في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -864,13 +844,8 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
-   "references": [
-    "daily/rounds",
-    "daily/field"
-   ],
+   "asisMap": [],
+   "references": [],
    "uiOnly": false,
    "v23": [
     "lens.zones.status.change"
@@ -890,10 +865,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "إزالة كيان من zones[] مع تبعاته — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "إزالة كيان من zones[] مع تبعاته — تصنيف المجموعة → lens.zones في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -910,9 +883,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:del"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1011,9 +982,7 @@
    "sensitive": false,
    "guard": {
     "kind": "read",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
+    "resources": [],
     "detail": "قراءة مجموعة paths في الخطة/الجولة بورقة المضيف + بوابة enable",
     "status": "exists"
    },
@@ -1029,9 +998,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:view"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1052,10 +1019,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "إضافة كيان في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "إضافة كيان في paths[] — تصنيف المجموعة → lens.paths في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1070,9 +1035,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:add"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1093,10 +1056,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقول الخصائص في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "حقول الخصائص في paths[] — تصنيف المجموعة → lens.paths في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1111,9 +1072,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1134,10 +1093,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "الحقول الهندسية في paths[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "الحقول الهندسية في paths[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.paths في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1152,9 +1109,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1175,9 +1130,7 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
+    "resources": [],
     "detail": "paths[].active (true/false — تفعيل/تعطيل المسار؛ الواجهة: side-panel toggle · bulk · peReverse لا يمسّه) — تغييرُ حالةٍ مستقلٌّ عن lens.paths.edit (الخصائص: type · dir · line · w · anim · hideLabel)",
     "status": "to-bind"
    },
@@ -1194,9 +1147,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1217,10 +1168,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "إزالة كيان من paths[] مع تبعاته — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "إزالة كيان من paths[] مع تبعاته — تصنيف المجموعة → lens.paths في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1235,9 +1184,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:del"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1371,9 +1318,7 @@
    "sensitive": false,
    "guard": {
     "kind": "read",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
+    "resources": [],
     "detail": "قراءة مجموعة gates في الخطة/الجولة بورقة المضيف + بوابة enable",
     "status": "exists"
    },
@@ -1391,9 +1336,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:view"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1414,10 +1357,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "إضافة كيان في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "إضافة كيان في gates[] — تصنيف المجموعة → lens.gates في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1434,9 +1375,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:add"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1457,10 +1396,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقول الخصائص في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "حقول الخصائص في gates[] — تصنيف المجموعة → lens.gates في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1477,9 +1414,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1500,10 +1435,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقول الحالة في gates[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "حقول الحالة في gates[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.gates في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1520,13 +1453,8 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
-   "references": [
-    "daily/rounds",
-    "daily/field"
-   ],
+   "asisMap": [],
+   "references": [],
    "uiOnly": false,
    "v23": [
     "lens.gates.status.change"
@@ -1546,10 +1474,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "إزالة كيان من gates[] مع تبعاته — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "إزالة كيان من gates[] مع تبعاته — تصنيف المجموعة → lens.gates في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1566,9 +1492,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:del"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1706,9 +1630,7 @@
    "sensitive": false,
    "guard": {
     "kind": "read",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
+    "resources": [],
     "detail": "قراءة مجموعة marks في الخطة/الجولة بورقة المضيف + بوابة enable",
     "status": "exists"
    },
@@ -1726,9 +1648,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:view"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1749,10 +1669,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "إضافة كيان في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "إضافة كيان في marks[] — تصنيف المجموعة → lens.marks في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1769,9 +1687,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:add"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1792,10 +1708,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقول الخصائص في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "حقول الخصائص في marks[] — تصنيف المجموعة → lens.marks في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1812,9 +1726,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1835,10 +1747,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "الحقول الهندسية في marks[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "الحقول الهندسية في marks[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.marks في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1855,9 +1765,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -1878,10 +1786,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "إزالة كيان من marks[] مع تبعاته — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "إزالة كيان من marks[] مع تبعاته — تصنيف المجموعة → lens.marks في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -1898,9 +1804,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:del"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -2038,9 +1942,7 @@
    "sensitive": false,
    "guard": {
     "kind": "read",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
+    "resources": [],
     "detail": "قراءة مجموعة dist في الخطة/الجولة بورقة المضيف + بوابة enable",
     "status": "exists"
    },
@@ -2058,9 +1960,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:view"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -2081,10 +1981,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان daily/rounds:edit عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — تصنيف المجموعة → lens.dist في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -2101,12 +1999,8 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
-   "references": [
-    "daily/rounds"
-   ],
+   "asisMap": [],
+   "references": [],
    "uiOnly": false,
    "v23": [
     "lens.dist.edit"
@@ -2166,7 +2060,7 @@
    "guard": {
     "kind": "none",
     "resources": [],
-    "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا اعتماد توزيع في المصدر؛ الاعتماد على الوردية/اليوم ملك الجولة (round.approve)",
+    "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا اعتماد توزيع في المصدر",
     "status": "reserved"
    },
    "scopeDims": [
@@ -2192,7 +2086,7 @@
    "mergedFrom": [],
    "splitFrom": null,
    "managedIn": null,
-   "reservedReason": "لا اعتماد توزيع في المصدر؛ الاعتماد على الوردية/اليوم ملك الجولة (round.approve)"
+   "reservedReason": "لا اعتماد توزيع في المصدر"
   },
   {
    "key": "lens.dist.report.view",
@@ -2282,9 +2176,7 @@
    "sensitive": false,
    "guard": {
     "kind": "read",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
+    "resources": [],
     "detail": "قراءة مجموعة dens في الخطة/الجولة بورقة المضيف + بوابة enable",
     "status": "exists"
    },
@@ -2302,9 +2194,7 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:view"
-   ],
+   "asisMap": [],
    "references": [],
    "uiOnly": false,
    "v23": [
@@ -2403,9 +2293,7 @@
    "sensitive": false,
    "guard": {
     "kind": "read",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
+    "resources": [],
     "detail": "قراءة بيانات العدسة بورقة المضيف (كانت ورقة daily/kpi*)",
     "status": "exists"
    },
@@ -2423,12 +2311,9 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/kpiZones:view"
-   ],
+   "asisMap": [],
    "references": [
-    "kpis",
-    "daily/rounds"
+    "kpis"
    ],
    "uiOnly": false,
    "v23": [
@@ -2449,9 +2334,7 @@
    "sensitive": false,
    "guard": {
     "kind": "read",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
+    "resources": [],
     "detail": "قراءة بيانات العدسة بورقة المضيف (كانت ورقة daily/kpi*)",
     "status": "exists"
    },
@@ -2469,12 +2352,9 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/kpiOcc:view"
-   ],
+   "asisMap": [],
    "references": [
-    "kpis",
-    "daily/rounds"
+    "kpis"
    ],
    "uiOnly": false,
    "v23": [
@@ -2516,7 +2396,6 @@
     "emps/data:view"
    ],
    "references": [
-    "daily/rounds",
     "planning/readiness"
    ],
    "uiOnly": false,
@@ -3049,10 +2928,8 @@
    "sensitive": true,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقول الحالة في marks[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "resources": [],
+    "detail": "حقول الحالة في marks[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.marks في classifyMutation",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -3069,13 +2946,8 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
-   "references": [
-    "daily/rounds",
-    "daily/field"
-   ],
+   "asisMap": [],
+   "references": [],
    "uiOnly": false,
    "v23": [
     "lens.marks.status.change"
@@ -3248,10 +3120,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقلا needN/needS على كيانات zones/gates/marks — كانت تحت daily/rounds:edit",
+    "resources": [],
+    "detail": "حقلا needN/needS على كيانات zones/gates/marks",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -3265,12 +3135,8 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
-   "references": [
-    "daily/rounds"
-   ],
+   "asisMap": [],
+   "references": [],
    "uiOnly": false,
    "v23": [],
    "mergedFrom": [],
@@ -3288,10 +3154,8 @@
    "sensitive": false,
    "guard": {
     "kind": "collection",
-    "resources": [
-     "bassam_rounds_v1"
-    ],
-    "detail": "حقلا count وpc.<prayer> على zones في يوم الجولة (_updRound · _densClearAt) — كانت تحت daily/rounds:edit",
+    "resources": [],
+    "detail": "حقلا count وpc.<prayer> على zones في يوم الجولة (_updRound · _densClearAt)",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -3307,12 +3171,8 @@
    },
    "grant": "assignable",
    "status": "active",
-   "asisMap": [
-    "daily/rounds:edit"
-   ],
-   "references": [
-    "daily/rounds"
-   ],
+   "asisMap": [],
+   "references": [],
    "uiOnly": false,
    "v23": [],
    "mergedFrom": [],
@@ -3377,9 +3237,7 @@
    "grant": "assignable",
    "status": "active",
    "asisMap": [],
-   "references": [
-    "daily/rounds"
-   ],
+   "references": [],
    "uiOnly": false,
    "v23": [],
    "mergedFrom": [],
@@ -3507,9 +3365,7 @@
    "grant": "assignable",
    "status": "active",
    "asisMap": [],
-   "references": [
-    "daily/rounds"
-   ],
+   "references": [],
    "uiOnly": false,
    "v23": [],
    "mergedFrom": [],
@@ -3637,9 +3493,7 @@
    "grant": "assignable",
    "status": "active",
    "asisMap": [],
-   "references": [
-    "daily/rounds"
-   ],
+   "references": [],
    "uiOnly": false,
    "v23": [],
    "mergedFrom": [],
@@ -4606,22 +4460,6 @@
    "resource": null
   },
   {
-   "id": "daily/rounds",
-   "kind": "page",
-   "label": "الجولات اليومية",
-   "manifest": "page",
-   "managedIn": null,
-   "resource": null
-  },
-  {
-   "id": "daily/field",
-   "kind": "page",
-   "label": "رصد الميدان",
-   "manifest": "page",
-   "managedIn": null,
-   "resource": null
-  },
-  {
    "id": "admin/backup",
    "kind": "page",
    "label": "النسخة الاحتياطية",
@@ -5206,7 +5044,6 @@
   "ff.report.indicators.export",
   "ff.emp.export",
   "ff.emp.print",
-  "ff.round.export",
   "ff.import.template.download",
   "ff.module.emps.enabled",
   "ff.module.planning.enabled",

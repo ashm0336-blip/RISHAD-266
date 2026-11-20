@@ -802,8 +802,8 @@
      },
      "references"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 50,
     "value": "irshad/records"
    },
    {
@@ -815,16 +815,16 @@
      },
      "references"
     ],
-    "after": 1,
-    "seq": 1,
+    "after": 0,
+    "seq": 50,
     "value": "irshad/records"
    },
    {
     "path": [
      "owners"
     ],
-    "after": 4,
-    "seq": 8,
+    "after": 2,
+    "seq": 70,
     "value": {
      "id": "irshad/dash",
      "kind": "page",
@@ -838,8 +838,8 @@
     "path": [
      "owners"
     ],
-    "after": 4,
-    "seq": 9,
+    "after": 2,
+    "seq": 80,
     "value": {
      "id": "irshad/records",
      "kind": "page",
@@ -1050,7 +1050,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 21,
+    "after": 20,
     "seq": 60,
     "value": "ff.module.irshad.enabled"
    }
@@ -1598,8 +1598,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_v1",
-    "after": 1,
-    "seq": 50,
+    "after": 0,
+    "seq": 70,
     "value": {
      "items": "reportItems",
      "evidence": "reports[id].{y,m,d} · loc (ref.irshad.location) · shift · G‑08 + نوافذُ الاستدراك (D3‑07)",
@@ -1695,7 +1695,7 @@
      "byResource"
     ],
     "key": "bassam_irshad_v1",
-    "after": 23,
+    "after": 22,
     "seq": 60,
     "value": {
      "scope": "dept",
@@ -1731,7 +1731,7 @@
      "byResource"
     ],
     "key": "bassam_irshad_langs_v1",
-    "after": 23,
+    "after": 22,
     "seq": 70,
     "value": {
      "scope": "dept",
@@ -1773,7 +1773,7 @@
      "byResource"
     ],
     "key": "bassam_irshad_locs_v1",
-    "after": 23,
+    "after": 22,
     "seq": 80,
     "value": {
      "scope": "dept",
@@ -1841,7 +1841,7 @@
      "byResource"
     ],
     "key": "bassam_irshad_retro_v1",
-    "after": 38,
+    "after": 37,
     "seq": 15,
     "value": {
      "scope": "dept-state",

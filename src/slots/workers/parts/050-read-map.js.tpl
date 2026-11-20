@@ -4,7 +4,7 @@
    وسجلّاتُ المضبوطات والإرشاد والجائزة والعهدة والمهام لا تقرؤها إلا صفحتُها. ومَن مُنح «النسخ
    الاحتياطية» يقرأ كلَّ مجموعات إدارته لأن النسخةَ لا تُصدَّر ناقصة. */
 var RD_ANY = ['admin/backup'];            /* ورقةٌ تقرأ كلَّ مجموعات الإدارة */
-var RD_OPS = ['emps/data',@@SYS:read.ops.staff@@@@SYS:read.ops.plan@@'daily/rounds','daily/field'@@SYS:read.ops.dreport@@@@SYS:read.ops.tasks@@@@SYS:read.ops@@,'planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
+var RD_OPS = ['emps/data',@@SYS:read.ops.staff@@@@SYS:read.ops.plan@@@@SYS:read.ops.daily|empty="...[]"@@@@SYS:read.ops.dreport@@@@SYS:read.ops.tasks@@@@SYS:read.ops@@,'planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
 var RD_REG = {
   /* ── مراجعُ مشتركة: تُقرأ من كل صفحةٍ تشغيليّة لتعرض اسماً أو ورديّة ── */
   'bassam_employees_v1':       RD_OPS,
@@ -14,9 +14,8 @@ var RD_REG = {
   'bassam_perm_tpls_named_v1': ['admin/ptpls'@@SYS:read.map.reader.staff.4@@],
 @@SYS:read.map.locks.staff@@  /* ── الموظفون ── */
 @@SYS:readMap.custody@@@@SYS:read.map.staff@@  /* ── الخطة التشغيلية والمتابعة اليومية: بنيةُ الموقع تُقرأ من صفحتَيه ومن التقرير ── */
-@@SYS:read.map.plan@@  'bassam_rounds_v1':          ['daily/rounds', 'daily/field'@@SYS:read.reader.dreport@@, 'emps/data'@@SYS:read.map.reader.plan.3@@@@SYS:read.map.rounds@@],
-  'bassam_dayshift_v1':        ['daily/rounds', 'daily/field'@@SYS:read.reader.dreport@@],
-  'bassam_dayfocus_v1':        ['daily/rounds', 'daily/field'@@SYS:read.reader.dreport@@],
+@@SYS:read.map.plan@@@@SYS:read.map.res.daily@@  'bassam_dayshift_v1':        [@@SYS:read.dayReaders.daily|empty="...[]"@@@@SYS:read.reader.dreport@@],
+  'bassam_dayfocus_v1':        [@@SYS:read.dayReaders.daily|empty="...[]"@@@@SYS:read.reader.dreport@@],
 @@SYS:read.map.reg.dreport@@@@SYS:read.map.tasks@@@@SYS:read.map.systems@@  /* ── الإعدادات ── */
   'bassam_last_export_v1':     ['admin/backup']
 };

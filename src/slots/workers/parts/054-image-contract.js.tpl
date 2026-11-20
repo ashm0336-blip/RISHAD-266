@@ -1475,7 +1475,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var enfAudRestore = false, enfAudHist = false;
     for (var ah9 = 0; ah9 < audIn.length; ah9++) if (audIn[ah9].etype === 'dataset') { if (audIn[ah9].act === 'restore') enfAudRestore = true;@@SYS:save.audHist.dstats@@ }
     ENFX = await enfSavePrep(env, A, body, set, del, audKeysOk, pv3M, pv3Restore, enfAudRestore, enfAudHist, pv3RetroCtx, pv4Refs);
-  } else if (A.u.ekey) for (var ob9 in set) { var od9 = parseKey(ob9).dept; if (od9 && resName(ob9) === 'bassam_rounds_v1') (A.__obsToks = A.__obsToks || nmap())[od9] = enfToksOf(await opResourceGet(env, 'bsdept:' + od9 + ':bassam_employees_v1'), String(A.u.ekey)); }   /* RISHAD266 (F24 في الوضع القديم): هويّاتُ راصد الميدان في التسكين — كالإنفاذ */
+  }@@SYS:save.obsToks.daily@@
   /* الرقمُ يُخصَّص بعد المرور كلِّه، حين يُعرف أن ثمّة ما يُنفَّذ فعلاً */
   var rev = 0, pend = [];
   var st = [], k, changed = 0, i;
@@ -1499,7 +1499,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      فارغاً كان أو ممتلئاً — ومفاتيحُه الحيّة التي يُقاس عليها ما زال وما بقي.
      يُحسب مرّةً واحدة لكل إدارة، ولا يُحسب لمن لا يحتاجه. */
   var CTX_RES = { @@SYS:cleanup.ctxRes.dreport@@@@SYS:cleanup.ctxRes.custody@@@@SYS:cleanup.ctxRes.award@@ 'bassam_employees_v1': 1,
-                  @@SYS:cleanup.ctxRes.staff@@@@SYS:cleanup.ctxRes.tasks@@@@SYS:cleanup.ctxRes.plan@@ 'bassam_rounds_v1': 1 };
+                  @@SYS:cleanup.ctxRes.staff@@@@SYS:cleanup.ctxRes.tasks@@@@SYS:cleanup.ctxRes.plan@@@@SYS:cleanup.ctxRes.daily@@ };
   var wipeCtx = {}, empCtx = {}, empRaw9 = {};
   for (k in set) {
     var rnW = resName(k);
@@ -1557,7 +1557,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* ══ مسحُ العمليات المحمية — من شكل الطلب لا من نتيجة الحكم ════════════
      فلو رُفض جزءُ العملية الآخر بقيت العملية «محمية» ورُدّ الطلب كاملاً. */
   var CLEAN_RES = { @@SYS:cleanup.cleanRes.staff@@@@SYS:cleanup.cleanRes.tasks@@
-                    @@SYS:cleanup.cleanRes.custody@@@@SYS:cleanup.cleanRes.award@@@@SYS:cleanup.cleanRes.plan@@ 'bassam_rounds_v1': 1 };
+                    @@SYS:cleanup.cleanRes.custody@@@@SYS:cleanup.cleanRes.award@@@@SYS:cleanup.cleanRes.plan@@@@SYS:cleanup.cleanRes.daily@@ };
   var protOp = '';
   var hasEmp = {}, hasClean = {}, hasSched = {};
   for (k in set) {
@@ -1659,8 +1659,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
        المصرَّح بها لا تتحوّل إلى «تعارض» لمجرّد قِدَم النسخة. */
     /* F-10 (من SR-2.3 · KIVO_242): حفظٌ خامٌّ لمخزن المهام لا يمحو أفعالَ الموظف التي لم يرها (tkKeepSelf في 070) — قبل الحكم فيُحكَم على ما سيُكتب؛
        لا للمسار الذاتي ولا لمسارات المهام في الخادم (opt.srv) ولا للاستعادة والاستيراد المخوَّلين على هذا المفتاح (G-1: tkKeepOff — كان أيُّ حدثٍ يدّعيه العميل يكفي) */
-@@SYS:save.keepSelf.tasks@@    if (!ENFX && it0.act === 'set' && it0.v != null && cur0 != null && d00 && resName(k0) === 'bassam_rounds_v1') it0.v = obsKeepOthers(A, d00, it0.v, cur0);   /* RISHAD266: راصد الميدان في الوضع القديم (018) */
-    var ctx0 = {
+@@SYS:save.keepSelf.tasks@@@@SYS:save.obsKeep.daily@@    var ctx0 = {
       empsEmpty: wipeCtx[d00] === true, emps: empCtx[d00] || null, shRen: shRenCtx[d00] || null,
       imp: !!d00 && actsHeldOn(A, d00, 'admin/import', ['del']),
       selfCur: k0 === K_USERS ? selfCurSt : null,                                 /* KIVO_264 · D14 */

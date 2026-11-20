@@ -1,17 +1,5 @@
 {
  "_note": "V7 · د5-هـ (t2): قطعُ المتابعة اليومية في ملفات العميل الأساسية وسجلّ الصفحات",
- "pages.entry.dreport.under.daily": {
-  "order": 10,
-  "text": ",\n   \"under\": \"daily\""
- },
- "pages.kpi.refs.daily": {
-  "order": 10,
-  "text": ",\n    \"daily/kpiDaily\",\n    \"daily/kpiOcc\",\n    \"daily/kpiZones\""
- },
- "pages.kpi.names.daily": {
-  "order": 10,
-  "text": ",\n    \"daily/kpiDaily\": \"مؤشرات التشغيل اليومي\",\n    \"daily/kpiOcc\": \"مؤشرات الإشغال\",\n    \"daily/kpiZones\": \"مؤشرات المصليات\""
- },
  "root.live.planning.daily": {
   "order": 10,
   "text": "|rounds"
@@ -123,10 +111,6 @@
  "deptStore.labels.daily": {
   "order": 10,
   "text": "\n                 'bassam_rounds_v1':'جولات المتابعة اليومية',"
- },
- "deptStore.pageKeys.daily": {
-  "order": 10,
-  "text": "'daily',"
  },
  "bk.labels.daily": {
   "order": 10,

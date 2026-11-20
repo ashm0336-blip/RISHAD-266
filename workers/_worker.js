@@ -1878,6 +1878,18 @@ srvBusProvide('dreport.resources@1', function () {
   var kinds = arguments.length ? Array.prototype.slice.call(arguments) : Object.keys(DREPORT_BUS_RES);
   return kinds.map(function (kind) { return DREPORT_BUS_RES[kind]; }).filter(Boolean);
 });
+/* ══ المتابعة اليومية (الجولات) — قراءاتٌ معلنة على ناقل الخادم لبرامجَ أخرى (V7 · د5-هـ · t1) ═══
+   المضبوطات (سياقُ اليوم) لا تسمّي موردَ الجولات: تسأل بالاسم (srvBusRead).
+   بغياب هذا الجزء القراءةُ undefined وسلوكُ المستهلك عند الغياب مكتوبٌ في عقده (consumes ← absent).
+     daily.daysSeen@1(ctx)    وثيقةُ الجولات كما يراها صاحبُ الطلب في السياق الملتقَط (canRead ثم الإسقاط) — أو null.
+     daily.resources@1()      [مفتاحُ مورد الجولات] — لمن يلتقطه في سياق الطلب دون أن يسمّيه. */
+var DAILY_BUS_RES = 'bassam_rounds_v1';
+srvBusProvide('daily.daysSeen@1', function (ctx) {
+  var k = 'bsdept:' + ctx.d + ':' + DAILY_BUS_RES;
+  if (!canRead(ctx.A, k)) return null;
+  return parseJson(enfProjectStr(ctx.A, k, ctx.rawKeys[k], ctx.refs), null);
+});
+srvBusProvide('daily.resources@1', function () { return [DAILY_BUS_RES]; });
 /* ═══ التفويض في الخادم ═══════════════════════════════════════════════════
    كانت البوابة تتحقق أن الحافظ مسجّل دخول فحسب، وتأخذ منه أي مفتاح بأي
    قيمة — فالصلاحيات كلها كانت تُطبَّق في المتصفح وحده. هنا تُعاد قراءة
@@ -14398,8 +14410,9 @@ var SZ_CONTEXT = {
   extraKeys: function (d) {
     /* V7 · د5-د2: موردُ أقفال الجدول يسمّيه مالكُه (في موضعه نفسه)؛ بغيابه لا يُلتقط */
     /* V7 · د5-هـ: وموردُ التقرير اليومي يسمّيه مالكُه (في موضعه نفسه)؛ بغيابه لا يُلتقط */
+    /* V7 · د5-هـ: وموردُ الجولات يسمّيه مالكُه (daily.resources@1)؛ بغيابه لا يُلتقط */
     return (srvBusRead("dreport.resources@1", "doc") || [])
-      .concat(["bassam_rounds_v1"], srvBusRead("staff.resources@1", "locks") || [], ["bassam_dayshift_v1"])
+      .concat(srvBusRead("daily.resources@1") || [], srvBusRead("staff.resources@1", "locks") || [], ["bassam_dayshift_v1"])
       .map(function (k) {
       return "bsdept:" + d + ":" + k;
     });
@@ -15879,7 +15892,7 @@ function szDayContext(ctx, q, clock) {
   });
   var report = (srvBusRead("dreport.docSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب مالك التقرير {} — لا تقريرَ لليوم */
     sched = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
-    round = (szReference(ctx, "bassam_rounds_v1") || {})[key],
+    round = (srvBusRead("daily.daysSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب المتابعة اليومية {} — لا جولةَ لليوم */
     shifts = [],
     rows = {},
     leaders = {},

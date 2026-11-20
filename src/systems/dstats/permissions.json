@@ -1232,7 +1232,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 19,
+    "after": 18,
     "seq": 15,
     "value": "ff.module.dstats.enabled"
    }
@@ -1599,7 +1599,7 @@
      "byResource"
     ],
     "key": "bassam_dstats_v1",
-    "after": 2,
+    "after": 1,
     "seq": 5,
     "value": {
      "items": "dstatsItems",

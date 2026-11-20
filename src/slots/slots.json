@@ -21,10 +21,16 @@
   "pages.daily.seq.tasks",
   "pages.tabAddr.daily.dreport",
   "pages.tabAddr.daily",
-  "pages.entry.dreport.under.daily",
   "nfc.reg.dreport",
   "nfc.reg.dreport.top",
-  "admin.kpiDaily.dreport"
+  "admin.kpiDaily.dreport",
+  "priv.carrier.daily",
+  "res.via.rounds.dreport",
+  "read.map.reader.plan.3",
+  "read.map.rounds",
+  "read.reader.daily",
+  "pages.under.daily",
+  "lens.hosts.sep.daily"
  ],
  "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
  "templates": [
@@ -367,6 +373,10 @@
   {
    "tpl": "workers/bindings/identity-migration/data.json.tpl",
    "out": "workers/bindings/identity-migration/data.json"
+  },
+  {
+   "tpl": "workers/parts/018-ancestry.js.tpl",
+   "out": "workers/parts/018-ancestry.js"
   }
  ]
 }

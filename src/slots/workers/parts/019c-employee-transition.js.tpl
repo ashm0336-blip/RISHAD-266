@@ -4,8 +4,7 @@
 var EMP_TRANSITION_RELATED = [
   'bassam_employees_v1',
   'bassam_options_v1',
-@@SYS:emp.keys.staff@@@@SYS:emp.keys.plan@@  'bassam_rounds_v1',
-@@SYS:emp.keys.tasks@@@@SYS:emp.keys.dreport@@  'bassam_shift_options_v1',
+@@SYS:emp.keys.staff@@@@SYS:emp.keys.plan@@@@SYS:emp.keys.daily@@@@SYS:emp.keys.tasks@@@@SYS:emp.keys.dreport@@  'bassam_shift_options_v1',
   'bassam_perm_tpls_v1',
   'bassam_grants_v1',
 ];
@@ -181,12 +180,7 @@ function empCleanupValues(values, removed, after, replace, wipe@@SYS:emp.cleanup
         });
     });
   }
-@@SYS:emp.cleanup.plan@@  var rounds = values.bassam_rounds_v1;
-  if (isObj(rounds))
-    Object.keys(rounds).forEach(function (k) {
-      if (rounds[k] && Array.isArray(rounds[k].d)) rounds[k].d.forEach(fd);
-    });
-@@SYS:emp.cleanup.tasks@@  if (replace || wipe) {
+@@SYS:emp.cleanup.plan@@@@SYS:emp.cleanup.daily@@@@SYS:emp.cleanup.tasks@@  if (replace || wipe) {
 @@SYS:emp.cleanup.staff.wipe@@@@SYS:emp.cleanup.wipe.dreport@@  }
 }
 @@SYS:emp.schedule.fn@@function empCleanTemplate(A, d, sheet) {

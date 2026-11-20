@@ -924,9 +924,7 @@
      "asisMap": [
       "staff:view"
      ],
-     "references": [
-      "daily/rounds"
-     ],
+     "references": [],
      "uiOnly": false,
      "v23": [
       "ref.callsign.view"
@@ -1324,7 +1322,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 21,
+    "after": 20,
     "seq": 10,
     "value": "ff.module.staff.enabled"
    },
@@ -2400,8 +2398,8 @@
      "byResource"
     ],
     "key": "bassam_staffing_v3",
-    "after": 1,
-    "seq": 20,
+    "after": 0,
+    "seq": 40,
     "value": {
      "items": "staffingItems",
      "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
@@ -2427,8 +2425,8 @@
      "byResource"
     ],
     "key": "bassam_staffing_v2",
-    "after": 1,
-    "seq": 30,
+    "after": 0,
+    "seq": 50,
     "value": {
      "items": "staffingItems",
      "evidence": "[\"y-m\"][ekey].shift (القديم والجديد) · __shifts · أقفالُ bassam_staffing_locks_v1 (تُحمَّل خادمياً)",
@@ -2455,8 +2453,8 @@
      4,
      "means"
     ],
-    "sub": "round.reopen",
-    "by": "round.reopen · staff.reopen"
+    "sub": "…",
+    "by": "… · staff.reopen"
    },
    {
     "path": [
@@ -2717,21 +2715,6 @@
      ],
      "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
     }
-   },
-   {
-    "path": [
-     "readBindings",
-     "special",
-     "keys",
-     "field.view",
-     "resources"
-    ],
-    "after": 5,
-    "seq": 10,
-    "value": "bassam_staffing_v3",
-    "needs": [
-     "daily"
-    ]
    }
   ],
   "guard-bindings": [
@@ -2820,7 +2803,7 @@
     "path": [
      "decisions"
     ],
-    "after": 11,
+    "after": 10,
     "seq": 20,
     "value": {
      "id": "D-18",

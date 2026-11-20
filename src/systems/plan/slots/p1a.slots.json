@@ -22,7 +22,7 @@
  },
  "lens.hosts.plan": {
   "order": 10,
-  "text": "\"plan\", "
+  "text": "\"plan\"@@SYS:lens.hosts.sep.daily@@"
  },
  "lens.res.plan": {
   "order": 10,

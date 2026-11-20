@@ -25,7 +25,7 @@
  },
  "pages.entry.dreport": {
   "order": 10,
-  "text": "  {\n   \"key\": \"dreport\",\n   \"module\": \"dreport\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Daily Report\"],\n   \"nav\": \"dreport\",\n   \"name\": \"التقرير اليومي\"@@SYS:pages.entry.dreport.under.daily@@\n  },\n"
+  "text": "  {\n   \"key\": \"dreport\",\n   \"module\": \"dreport\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Daily Report\"],\n   \"nav\": \"dreport\",\n   \"name\": \"التقرير اليومي\"@@SYS:pages.under.daily@@\n  },\n"
  },
  "pages.tabAddr.daily.dreport": {
   "order": 10,

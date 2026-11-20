@@ -51,7 +51,7 @@ function enfViewCtx(A, d, rn, refs) {
   var dims = ['Assigned', 'Source'], rs = { 'Shift': false, 'Site': false, 'Zone/Element': false }, j;
   for (j = 0; j < dims.length; j++) { var all = held.length > 0; for (i = 0; i < held.length && all; i++) if (enfDimsOf(held[i]).indexOf(dims[j]) === -1) all = false; rs[dims[j]] = all; }
   var V = { d: d, rn: rn, held: held, restrict: rs, sources: enfSources(A, 'read'), fieldOnly: enfFieldOnly(A, d), ekey: String(A.u.ekey || ''),
-    lens: {}, toks: rn === 'bassam_rounds_v1' && refs && refs.emps ? enfToksOf(refs.emps[d], String(A.u.ekey || '')) : null };
+    lens: {}, toks: @@SYS:enf.toks.daily|empty="null"@@ };
   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (KIVO_LENS_PLUGINS.keys) — بوابةُ كلٍّ منها بالمرجع نفسِه */
   for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = KIVO_BUILD.lensGate(A.perms, A.u, d, KIVO_LENS_PLUGINS.keys[li]).on;
   return (cache[ck] = V);
@@ -83,7 +83,7 @@ function enfToksOf(raw, ek) {
 function enfMine(V, emp) { if (!Array.isArray(emp)) return false; for (var i = 0; i < emp.length; i++) if (V.toks ? V.toks[String(emp[i])] : String(emp[i]) === V.ekey) return true; return false; }
 /* سجلُّ الموظفين لإدارات الجولات والخطة في الحفظ (refs بلا keys) */
 async function enfEmpsLoad(env, refs, ks) {
-  for (var i = 0; i < ks.length; i++) { var rn = resName(ks[i]), d = parseKey(ks[i]).dept; if (d && (rn === 'bassam_rounds_v1'@@SYS:enf.empsLoad.plan@@) && !(d in refs.emps)) refs.emps[d] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'); }
+  for (var i = 0; i < ks.length; i++) { var rn = resName(ks[i]), d = parseKey(ks[i]).dept; if (d && (@@SYS:enf.empsLoad.daily|empty="false"@@@@SYS:enf.empsLoad.plan@@) && !(d in refs.emps)) refs.emps[d] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'); }
 }
 /* عنصرٌ كما يراه الفاعل: يُسقَط منه ما لا يراه (حالةُ الرصد خارج النطاق · التسكين بلا عدسة التوزيع · الكثافة بلا عدستها) */
 function enfElemMask(V, col, e, rounds) {
@@ -137,31 +137,7 @@ function enfFloorMerge(V, nf, cf, rounds) {
 function enfFloorBlank(V, fl) { var o = {}, c, f; if (!isObj(fl)) return o; for (c = 0; c < ENF_LENS_COLS.length; c++) { f = ENF_LENS_COLS[c]; if (fl[f] !== undefined) o[f] = V.lens[f] ? [] : fl[f]; } for (c = 0; c < ENF_LENS_FLOOR.length; c++) { f = ENF_LENS_FLOOR[c].field; if (fl[f] !== undefined && !V.lens[ENF_LENS_FLOOR[c].lens]) o[f] = fl[f]; } return o; }
 function enfMonthD(v) { return Array.isArray(v) ? { arr: true, d: v } : (isObj(v) && Array.isArray(v.d) ? { arr: false, d: v.d } : null); }
 var ENF_PROJ = {
-@@SYS:enf.proj.dstats@@@@SYS:enf.proj.plan@@  /* الجولات: كالخطة + راصدُ الميدان يرى حالةَ العناصر المسنَدة إليه وحدها (P4.2-05) — الحاوياتُ والهندسةُ وemp[] تبقى */
-  'bassam_rounds_v1': {
-    on: function (V) { return V.restrict.Assigned || enfAnyLensOff(V); },
-    proj: function (v, V) {
-      if (!isObj(v)) return v; var o = {}, dk;
-      for (dk in v) {
-        var x = v[dk];
-        if (!KIVO_SCOPE._h.parseDay(dk) || !isObj(x) || !Array.isArray(x.d)) { o[dk] = x; continue; }
-        var x2 = enfShallow(x); x2.d = x.d.map(function (fl, i) { return enfFloorProj(V, fl, true); }); o[dk] = x2;
-      }
-      return o;
-    },
-    merge: function (c, n, V) {
-      if (!isObj(n) || !isObj(c)) return n; var o = enfShallow(n), dk;
-      for (dk in n) {
-        var nx = n[dk], cx = c[dk];
-        if (!KIVO_SCOPE._h.parseDay(dk) || !isObj(nx) || !Array.isArray(nx.d)) continue;
-        /* F24: يومٌ أو طابقٌ جديد يُقارن بطابقٍ بلا عناصر — فلا يُكتب فيه ما لا يراه الفاعل */
-        var cd = isObj(cx) && Array.isArray(cx.d) ? cx.d : [];
-        var x2 = enfShallow(nx); x2.d = nx.d.map(function (fl, i) { return i < cd.length && isObj(cd[i]) ? enfFloorMerge(V, fl, cd[i], true) : enfFloorMerge(V, fl, enfFloorBlank(V, fl), true); }); o[dk] = x2;
-      }
-      return o;
-    }
-  }
-};
+@@SYS:enf.proj.dstats@@@@SYS:enf.proj.plan@@@@SYS:enf.proj.daily@@};
 /* مرجعياتُ الإسقاط لطلب: جداولُ الورديات وسجلُّ الموظفين للإدارات المعنية — الشكلُ { recs, staffing, emps } ثابتٌ لمستدعيه (019k · 019r · 019t · 020 · 062 · 063)؛
    RISHAD-266: recs فارغٌ دائماً (سقفُ النطاق القديم أُلغي فلا يُقرأ سجلُّه) */
 async function enfRefsFor(env, depts, keys) {
@@ -194,7 +170,7 @@ function enfMergeChk(A, k, nextRaw, curRaw, refs) {
   if (n === undefined || c === undefined) throw new Error('enf-merge-parse');
   var m = PJ.merge(c, n, V);
   /* F24: الجولات — ما لا يراه الفاعل يعود من الخادم أو لا يُكتب (enfFloorMerge) فلا رفضَ لفرقٍ لم يصنعه (حالةٌ منسوخةٌ من الخطة · عنصران بلا uid · تسكينٌ برمزٍ قديم) */
-  if (rn !== 'bassam_rounds_v1' && !deq(PJ.proj(JSON.parse(JSON.stringify(m)), V), n)) out.hidden = true;
+  if (@@SYS:enf.mergeChk.daily|empty="true"@@ && !deq(PJ.proj(JSON.parse(JSON.stringify(m)), V), n)) out.hidden = true;
   out.v = deq(m, c) ? curRaw : JSON.stringify(m);
   return out;
 }

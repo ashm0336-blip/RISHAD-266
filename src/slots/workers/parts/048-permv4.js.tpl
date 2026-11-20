@@ -108,7 +108,7 @@ async function permv4RefsLoad(env, set, del) {
   for (i = 0; i < ks.length; i++) {
     k = ks[i]; var rn = resName(k), d = parseKey(k).dept; if (!d) continue;
     var o = out[d] = out[d] || {};
-@@SYS:permv4.locks.load.staff@@@@SYS:permv4.locks.load.tasks@@    if ((@@SYS:permv4.roster.res.dreport@@rn === 'bassam_rounds_v1'@@SYS:permv4.staffing.irshad@@@@SYS:permv4.roster.own.staff@@)@@SYS:permv4.roster.load.staff|empty=") { }"@@
+@@SYS:permv4.locks.load.staff@@@@SYS:permv4.locks.load.tasks@@    if ((@@SYS:permv4.roster.res.dreport@@@@SYS:permv4.roster.res.daily|empty="false"@@@@SYS:permv4.staffing.irshad@@@@SYS:permv4.roster.own.staff@@)@@SYS:permv4.roster.load.staff|empty=") { }"@@
   }
   return out;
 }

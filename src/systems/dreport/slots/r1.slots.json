@@ -78,7 +78,7 @@
  },
  "read.map.res.dreport": {
   "order": 10,
-  "text": "  'bassam_dreport_v1':         ['dreport', 'daily/rounds', 'daily/field', 'emps/data'@@SYS:read.map.dreport@@@@SYS:read.map.reader.staff.1@@@@SYS:read.map.reader.tasks.1@@, 'planning', 'planning/readiness'],\n"
+  "text": "  'bassam_dreport_v1':         ['dreport'@@SYS:read.reader.daily@@, 'emps/data'@@SYS:read.map.dreport@@@@SYS:read.map.reader.staff.1@@@@SYS:read.map.reader.tasks.1@@, 'planning', 'planning/readiness'],\n"
  },
  "read.map.reg.dreport": {
   "order": 10,

@@ -6,7 +6,7 @@
  "label": "عدسة المصليات",
  "order": 1,
  "owner": "lens.zones",
- "hosts": [@@SYS:lens.hosts.plan@@"daily/rounds"],
+ "hosts": [@@SYS:lens.hosts.plan@@@@SYS:lens.hosts.daily@@],
  "keys": {
   "own": ["lens.zones.enable", "lens.zones.view", "lens.zones.create", "lens.zones.data.edit", "lens.zones.geometry.edit", "lens.zones.status.change", "lens.zones.delete", "lens.zones.indicators.view", "ref.zone.type.view", "ref.zone.type.create", "ref.zone.type.edit", "ref.zone.type.delete"],
   "managedRefs": [],
@@ -26,7 +26,7 @@
    },
    "derived": ["cap"]
   },
-  "indicators": ["daily/kpiOcc", "daily/kpiZones"]
+  "indicators": [@@SYS:lens.ind.zones.daily@@]
  },
  "guards": {
   "enable": "lens.zones.enable",
