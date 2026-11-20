@@ -2339,6 +2339,7 @@ async function nfFeedRows(env, A, opts) {
   if (A.u.role === "super" && !opts.all) where += " AND (m.department='' OR m.department=?6 OR m.category IN ('sys','sec'))";
   bind.push(opts.dept || A.u.deptId || "");
   where += " AND json_valid(?5) AND ?6 IS NOT NULL";
+
   var from =
       " FROM notification_messages m LEFT JOIN notification_user_state s ON s.account_uid=?1 AND s.message_scope=m.scope AND s.message_id=m.id WHERE ",
     pin = "CASE WHEN m.pinned=1 AND COALESCE(s.read_at,0)=0 THEN 1 ELSE 0 END",

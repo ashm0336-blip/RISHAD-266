@@ -22,7 +22,9 @@ const ROOT = path.resolve(new URL('../..', import.meta.url).pathname);
    فنزل السقف من 452 / 1193 إلى 403 / 984 (base-name: 71 استثناءً / 249 سطراً ← 22 / 40). لم يُرفع. */
 /* د5-د (النقل والتحويل): الجدولُ الشهري في مجلده، وروابطُه صارت عقوداً (staff.callsign.set@1 · staff.dayFacts@1 · staff.availText@1 ·
    staff.permLimit@1 · staff.shiftUsage@1 · shifts.renamed@1 عميلاً وخادماً) فحُذفت استثناءاتُها ⇒ 390 / 954؛ ثم صفوفُ صلاحياته (22 مفتاحاً وروابطُها) من سجلّ القاعدة إلى permissions.json في مجلده ⇒ 387 / 850؛ ثم تبويبُه في حاوية الخطة التشغيلية قطعةً في مجلده (قالبُ الحاوية انتقل إلى src/slots فتبدّل مسارُ استثناءَي «plan» الباقيَين — لا رابطَ جديد) ⇒ 386 / 849. */
-const CEILING = { entries: 386, lines: 849 };
+/* د5-د2: اكتمل فصلُ الجدول الشهري (لا مفتاحَ له ولا اسمَ في القاعدة، وقراءاتُ البرامج الأخرى له معلنة staff.*@1) مع عدٍّ أشدّ لأسماء البرامج
+   (قاعدةٌ مكتوبة لكل ورود — قرار المراجع 3). السقف 386 / 849 ⇒ 239 / 674. لم يُرفع. */
+const CEILING = { entries: 239, lines: 674 };
 
 const scan = () => JSON.parse(execFileSync('python3', [path.join(ROOT, 'tools/contracts.py'), '--src', path.join(ROOT, 'src'), '--scan'], { encoding: 'utf8', maxBuffer: 1 << 26 }));
 const allowed = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/isolation/exceptions.json'), 'utf8')).exceptions;
@@ -152,7 +154,7 @@ const USE = {
   'active-page': 'var v = { isAlpha: ap === "alpha" };',
   'nav-item': 'var v = { nAlpha: cls("alphaNav", "alpha") };',
   'page-list': 'var order = ["kpis", "emps", "planning", "alpha"];',
-  'nav-perm': 'var NAVP = { employees: "emps", beta: "alpha" };',
+  'nav-perm': 'var NAVP = { staffing: "sched", beta: "alpha" };',
   'notif-leaf': "L('al_new','alpha','تنبيه','فور الحفظ',true,['own'],'info','bell','نص','افتح');",
   'dept-tabs': 'var a = (e && e.deptTabs && e.deptTabs(null, "alpha")) || [];',
   'shape': "var ops = { approve: ['*.ap'], shape: 'alpha' };",

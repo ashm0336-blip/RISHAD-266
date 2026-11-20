@@ -35,7 +35,7 @@ NAME_RULES = [
     ('use', 'active-page',  r'\bap\s*(?:={2,3}|!={1,2})\s*' + _Q),                                # الصفحةُ النشطة: ap === "x"
     ('use', 'nav-item',     r'\b(?:cls|tip)\(\s*' + _Q + r'|\bcls\(\s*["\']\w+["\']\s*,\s*' + _Q), # عنصرُ القائمة الجانبية: cls("x", …) · tip("x")
     ('use', 'page-list',    r'["\'](?:employees|planning|kpis|links|admin|emps)["\']\s*,[^\]\n]*' + _Q + r'|' + _Q + r'\s*,[^\]\n]*["\'](?:employees|planning|kpis|links|admin)["\']'),   # قائمةُ صفحات/أوراق صفحات (ترتيبُ القائمة · الهبوط · أوراقُ الإدارة)
-    ('use', 'nav-perm',     r'\b(?:employees|staffing|plan|daily|rep)\s*:\s*["\']\w+["\']\s*,?[^\n]*\b\w+\s*:\s*' + _Q + r'|(?:^|@@)\s*\w+\s*:\s*' + _Q + r'\s*,\s*$'),   # خريطةُ اسم ← ورقة: { staffing: "staff", plan: "plan" } · سطرُ خريطة «x: "x",»
+    ('use', 'nav-perm',     r'\b(?:employees|staffing|plan|daily|rep)\s*:\s*["\']\w+["\']\s*,?[^\n]*\b\w+\s*:\s*' + _Q + r'|(?:^|@@)\s*(?!role\b|kind\b)\w+\s*:\s*' + _Q + r'\s*,\s*$'),   # خريطةُ اسم ← ورقة: { staffing: "staff", plan: "plan" } · سطرُ خريطة «x: "x",»
     ('use', 'notif-leaf',   r'\bL\(\s*["\']\w+["\']\s*,\s*' + _Q),                                # نوعُ تنبيهٍ للبرنامج مكتوبٌ في القاعدة: L('pl_cap','plan',…)
     ('use', 'dept-tabs',    r'\bdeptTabs\([^)]*' + _Q),                                           # تبويباتُ صفحة البرنامج
     ('use', 'shape',        r'\bshape\s*:\s*' + _Q),                                              # شكلُ بيانات البرنامج في سجل عمليات الخادم
@@ -249,6 +249,8 @@ def scan(S):
             for n in sorted(fnames):
                 p = os.path.normpath(os.path.join(base, n))
                 if not n.endswith(BASE_EXT) or p in mine_files or p in gen or p in skip: continue
+                # د5-د2: ميثاقُ صفحة قاعدةٍ (meta.json ← charter.data) مشتقٌّ بأداةٍ من منطقها بعد حقن قطع الأنظمة — يذكر مفاتيحَ القطع المحقونة لا معرفةَ القاعدة؛ منطقُها يُمسح من قالبه
+                if n == 'meta.json' and os.path.exists(os.path.join(S, 'slots', os.path.relpath(os.path.join(base, 'logic.js'), S) + '.tpl')): continue
                 if any(p.startswith(os.path.normpath(os.path.join(S, f)) + os.sep) for f in folders.values()): continue
                 try: text = open(p, encoding='utf-8').read()
                 except UnicodeDecodeError: continue

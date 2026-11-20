@@ -213,7 +213,7 @@ function pfMates(o) {
 function pfWeek(o) {
   var out = [], t, T, bk, ent, f, toks = o.toks || [];
   for (t = 6; t >= 0; t--) {
-    T = pfHijriAt(o.end - t * 86400000); bk = (o.staffing && o.staffing[T.ym]) || {}; ent = pfEntry(bk, toks);
+    T = pfHijriAt(o.end - t * 86400000); bk = (o.months && o.months[T.ym]) || {}; ent = pfEntry(bk, toks);
     f = pfDay({ bucket: bk, rep: (o.dreport && o.dreport[T.dk]) || null, toks: toks, wd: T.wd, opts: o.opts });
     out.push({ dk: T.dk, ym: T.ym, d: T.d, m: T.m, y: T.y, wd: T.wd, today: t === 0, sched: ent ? pfRestOn(ent.rest, T.wd) : null,
       act: f.report.mine ? { code: f.status.code, approved: f.report.approved } : null, any: f.report.any });
@@ -222,7 +222,7 @@ function pfWeek(o) {
 }
 /* إحصاءُ الشهر من التقارير اليومية التي ورد فيها الموظف وحده */
 function pfMon(o) {
-  var c = { pr: 0, ab: 0, pm: 0, lv: 0, tout: 0, n: 0, ap: 0 }, pre = o.ym + '-', toks = o.toks || [], bk = (o.staffing && o.staffing[o.ym]) || {};
+  var c = { pr: 0, ab: 0, pm: 0, lv: 0, tout: 0, n: 0, ap: 0 }, pre = o.ym + '-', toks = o.toks || [], bk = (o.months && o.months[o.ym]) || {};
   Object.keys(o.dreport || {}).forEach(function (k) {
     if (k.indexOf(pre) !== 0 || !/^\d+$/.test(k.slice(pre.length))) return;
     var f = pfDay({ bucket: bk, rep: o.dreport[k], toks: toks, wd: '', opts: o.opts });
@@ -234,7 +234,7 @@ function pfMon(o) {
 }
 /* سجلُّ شهرٍ واحد من الحالة المحفوظة — كلُّ عنصرٍ بفئة دليله (saved_approved · saved_open · derived · current · none) */
 function pfHist(o) {
-  var toks = o.toks || [], ym = o.ym, bucket = (o.staffing && o.staffing[ym]) || {}, ent = pfEntry(bucket, toks);
+  var toks = o.toks || [], ym = o.ym, bucket = (o.months && o.months[ym]) || {}, ent = pfEntry(bucket, toks);
   var locked = !!(o.locks && o.locks[ym] === true), def = ent && ent.shift ? pfDef(bucket, ent.shift, o.opts) : null;
   var month = { has: !!ent, locked: locked, shift: (ent && ent.shift) || '', rest: ent && Array.isArray(ent.rest) ? ent.rest.slice() : [], muk: ent ? ent.muk === true : null,
     def: def ? { tStart: def.tStart, tEnd: def.tEnd } : null, defEv: def ? (def.src === 'month' ? (locked ? 'saved_approved' : 'saved_open') : 'current') : 'none', ev: ent ? (locked ? 'saved_approved' : 'saved_open') : 'none' };

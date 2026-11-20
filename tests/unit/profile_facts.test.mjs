@@ -121,7 +121,7 @@ test('(و) OD-4: الزملاء — العنصرُ نفسُه · ورديتي ·
 });
 test('(و) OD-4: الزملاءُ لموظفٍ مرتبطٍ بسجلّه وحده (today المحلي كالخادم) — حسابٌ بمفتاحٍ لا سجلَّ له يرى صفوفَه بلا اسمِ أحد', () => {
   const now = Date.now(), T = P.hijriAt(now), opts = [{ name: 'أ', tStart: '00:00', tEnd: '23:59' }];
-  const base = { emps: [{ eid: 'me', name: 'أنا' }, { eid: 'm1', name: 'زميل' }], staffing: { [T.ym]: { me: { shift: 'أ' }, gone: { shift: 'أ' }, m1: { shift: 'أ' } } }, dreport: {}, plan: {}, locks: {}, opts, now,
+  const base = { emps: [{ eid: 'me', name: 'أنا' }, { eid: 'm1', name: 'زميل' }], months: { [T.ym]: { me: { shift: 'أ' }, gone: { shift: 'أ' }, m1: { shift: 'أ' } } }, dreport: {}, plan: {}, locks: {}, opts, now,
     rounds: { [T.dk]: { d: [{ gates: [{ uid: 'g', num: '1', emp: ['me', 'gone', 'm1'] }], zones: [], marks: [] }] } } };
   const a = J(P.today(Object.assign({ user: { role: 'staff', ekey: 'me', deptId: 'd1' } }, base)));
   assert.deepEqual([a.identity.linked, a.mates, a.matesN], [true, ['زميل'], 1]);
@@ -133,12 +133,12 @@ test('(ز) «أسبوعك»: المجدولُ من جدول شهر ذلك الي
   let end = Date.now(); while (P.hijriAt(end).d !== 3) end -= DAY;   /* ثالثُ أيام شهرٍ هجري: أربعةُ أيامٍ من الشهر السابق في النافذة */
   const T = P.hijriAt(end), staffing = { [T.ym]: { e1: { shift: 'أ', rest: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] } } };
   const dreport = { [T.dk]: { shifts: { 'أ': { pulled: true, ap: 1, roster: [{ ekey: 'e1', st: 'pr' }] } } } };
-  const w = J(P.week({ end, toks: ['e1'], staffing, dreport, opts: [] }));
+  const w = J(P.week({ end, toks: ['e1'], months: staffing, dreport, opts: [] }));
   assert.equal(w.length, 7); assert.equal(w[6].dk, T.dk); assert.equal(w[6].today, true);
   w.forEach((c) => assert.equal(c.sched, c.ym === T.ym ? true : null, c.dk + ': لا سقوطَ إلى جدول شهرٍ آخر'));
   assert.equal(w.filter((c) => c.ym !== T.ym).length, 4);
   assert.deepEqual(w[6].act, { code: 'rest', approved: true }, 'تقريرُ اليوم المعتمد ورد فيه — ويومُه يومُ راحةٍ مجدولة'); assert.ok(w.slice(0, 6).every((c) => c.act === null), 'بلا تقرير ⇒ لا حالةَ فعلية');
-  const mon = J(S.pfMon({ ym: T.ym, toks: ['e1'], staffing, dreport: Object.assign({ [T.ym + '-1']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'e1', st: 'ab' }] } } }, [T.ym + '-2']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'x', st: 'pr' }] } } } }, dreport) }));
+  const mon = J(S.pfMon({ ym: T.ym, toks: ['e1'], months: staffing, dreport: Object.assign({ [T.ym + '-1']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'e1', st: 'ab' }] } } }, [T.ym + '-2']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'x', st: 'pr' }] } } } }, dreport) }));
   assert.deepEqual(mon, { pr: 1, ab: 1, pm: 0, lv: 0, tout: 0, n: 2, ap: 1 }, 'يومُ غيري لا يُحسب');
 });
 
@@ -146,7 +146,7 @@ function histWorld(upto) {
   const ym = '1447-9', days = P.monthDays(1447, 9), fri = days.filter((x) => x.wd === 'الجمعة').map((x) => x.d);
   const fg = (uid, num) => ({ name: 'م١', gates: [g(uid, num, ['e1'])], zones: [], marks: [] });
   const H = J(P.hist({ ym, days, upto, toks: ['e1'], opts: [{ name: 'أ', tStart: '06:00', tEnd: '14:00' }],
-    staffing: { [ym]: { e1: { shift: 'أ', rest: ['الجمعة'], muk: false } } }, locks: { [ym]: true },
+    months: { [ym]: { e1: { shift: 'أ', rest: ['الجمعة'], muk: false } } }, locks: { [ym]: true },
     dreport: { [ym + '-5']: { shifts: { 'أ': { pulled: true, ap: 1, roster: [{ ekey: 'e1', st: 'pr' }] } } }, [ym + '-6']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'e1', st: 'pm', pmk: 'مراجعة' }] } } } },
     rounds: { [ym + '-5']: { d: [fg('g1', '1')] }, [ym + '-6']: { d: [fg('g1', '1')], shAp: { 'أ': { ap: true, snap: [fg('g1', '1')] } } }, [ym + '-8']: { d: [fg('g2', '2')] }, [ym + '-9']: { d: [fg('g2', '2')] } },
     plan: { months: { [ym]: { d: [Object.assign(fg('g1', '1'), { approved: true })] } } } }));

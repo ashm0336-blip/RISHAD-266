@@ -20,6 +20,10 @@
   "key:bassam_shift_options_v1": {
    "absent": "موردُ قاعدةٍ حاضرٌ دائماً",
    "base": true
+  },
+  "key:bassam_staffing_v3": {
+   "absent": "بلا الجدول الشهري: مساراتُ قراءة الجائزة لمفتاحه لا تُضاف (needs: staff في permissions.json)، ولا يُمنح شيء عليه",
+   "why": "روابطُ القراءة في permissions.json تضيف مفتاحَ هذا النظام ومسارَه إلى مدخل مورد الجدول (تُطبَّق بحضور الجدول فقط)"
   }
  },
  "crossEffects": []

@@ -188,7 +188,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       m = +p[2],
       upto = 12 * y + m < 12 * T.y + T.m ? 31 : y === T.y && m === T.m ? T.d : 0,
       H = toks.length
-        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, staffing: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), dreport: this.LS("bassam_dreport_v1", {}), plan: this.LS("bassam_plan_v1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
+        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), dreport: this.LS("bassam_dreport_v1", {}), plan: this.LS("bassam_plan_v1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
         : null;
     return {
       ok: 1,
@@ -518,7 +518,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       srv = S.pfMe && S.pfMe.ok && this.pfMeSame(this._pfMeScope) ? S.pfMe : null;
     let loc = null;
     try {
-      loc = PF && o.user ? PF.today({ user: o.user, emps: o.emps, staffing: o.staffing, locks: o.locks, dreport: o.dreport, plan: o.plan, rounds: o.rounds, opts: o.opts, now: Date.now() }) : null;
+      loc = PF && o.user ? PF.today({ user: o.user, emps: o.emps, months: o.months, locks: o.locks, dreport: o.dreport, plan: o.plan, rounds: o.rounds, opts: o.opts, now: Date.now() }) : null;
     } catch (t) {
       loc = null;
     }
@@ -569,7 +569,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       RND = this.LS("bassam_rounds_v1", {}),
       Z = this.LS("bassam_plan_v1", {}),
       GO = this.LS("bassam_shift_options_v1", []);
-    const ME = l ? this.pfMine({ user: t, emps: y, staffing: u, locks: LK, dreport: B, plan: Z, rounds: RND, opts: GO, readable: null !== raw("bassam_employees_v1") && null !== rawSched() }) : null,
+    const ME = l ? this.pfMine({ user: t, emps: y, months: u, locks: LK, dreport: B, plan: Z, rounds: RND, opts: GO, readable: null !== raw("bassam_employees_v1") && null !== rawSched() }) : null,
       MM = ME && ME.M,
       F = MM ? MM.facts : null,
       SITE = MM ? MM.site : null,

@@ -215,7 +215,7 @@ function pfMates(o) {
 function pfWeek(o) {
   var out = [], t, T, bk, ent, f, toks = o.toks || [];
   for (t = 6; t >= 0; t--) {
-    T = pfHijriAt(o.end - t * 86400000); bk = (o.staffing && o.staffing[T.ym]) || {}; ent = pfEntry(bk, toks);
+    T = pfHijriAt(o.end - t * 86400000); bk = (o.months && o.months[T.ym]) || {}; ent = pfEntry(bk, toks);
     f = pfDay({ bucket: bk, rep: (o.dreport && o.dreport[T.dk]) || null, toks: toks, wd: T.wd, opts: o.opts });
     out.push({ dk: T.dk, ym: T.ym, d: T.d, m: T.m, y: T.y, wd: T.wd, today: t === 0, sched: ent ? pfRestOn(ent.rest, T.wd) : null,
       act: f.report.mine ? { code: f.status.code, approved: f.report.approved } : null, any: f.report.any });
@@ -224,7 +224,7 @@ function pfWeek(o) {
 }
 /* إحصاءُ الشهر من التقارير اليومية التي ورد فيها الموظف وحده */
 function pfMon(o) {
-  var c = { pr: 0, ab: 0, pm: 0, lv: 0, tout: 0, n: 0, ap: 0 }, pre = o.ym + '-', toks = o.toks || [], bk = (o.staffing && o.staffing[o.ym]) || {};
+  var c = { pr: 0, ab: 0, pm: 0, lv: 0, tout: 0, n: 0, ap: 0 }, pre = o.ym + '-', toks = o.toks || [], bk = (o.months && o.months[o.ym]) || {};
   Object.keys(o.dreport || {}).forEach(function (k) {
     if (k.indexOf(pre) !== 0 || !/^\d+$/.test(k.slice(pre.length))) return;
     var f = pfDay({ bucket: bk, rep: o.dreport[k], toks: toks, wd: '', opts: o.opts });
@@ -236,7 +236,7 @@ function pfMon(o) {
 }
 /* سجلُّ شهرٍ واحد من الحالة المحفوظة — كلُّ عنصرٍ بفئة دليله (saved_approved · saved_open · derived · current · none) */
 function pfHist(o) {
-  var toks = o.toks || [], ym = o.ym, bucket = (o.staffing && o.staffing[ym]) || {}, ent = pfEntry(bucket, toks);
+  var toks = o.toks || [], ym = o.ym, bucket = (o.months && o.months[ym]) || {}, ent = pfEntry(bucket, toks);
   var locked = !!(o.locks && o.locks[ym] === true), def = ent && ent.shift ? pfDef(bucket, ent.shift, o.opts) : null;
   var month = { has: !!ent, locked: locked, shift: (ent && ent.shift) || '', rest: ent && Array.isArray(ent.rest) ? ent.rest.slice() : [], muk: ent ? ent.muk === true : null,
     def: def ? { tStart: def.tStart, tEnd: def.tEnd } : null, defEv: def ? (def.src === 'month' ? (locked ? 'saved_approved' : 'saved_open') : 'current') : 'none', ev: ent ? (locked ? 'saved_approved' : 'saved_open') : 'none' };
@@ -280,7 +280,7 @@ function pfYmAdd(ym, k) { var p = /^(\d+)-(\d+)$/.exec(String(ym || '')), v; if 
 function pfYmCmp(a, b) { var p = /^(\d+)-(\d+)$/.exec(String(a || '')), q = /^(\d+)-(\d+)$/.exec(String(b || '')); return p && q ? (+p[1] * 12 + +p[2]) - (+q[1] * 12 + +q[2]) : 0; }
 /* «اليوم» محلياً بالشكل نفسِه الذي يعيده الخادم (/api/me/today) — لمن تصله المفاتيح، وللوضع المحلي */
 function pfTodayLocal(o) {
-  var u = o.user, emps = Array.isArray(o.emps) ? o.emps : [], L = pfLink(u, emps), toks = pfTokens(u, L.rec, emps), st = o.staffing || {}, dr = o.dreport || {};
+  var u = o.user, emps = Array.isArray(o.emps) ? o.emps : [], L = pfLink(u, emps), toks = pfTokens(u, L.rec, emps), st = o.months || {}, dr = o.dreport || {};
   var dayOf = function (T0) { return pfDay({ bucket: st[T0.ym] || {}, rep: dr[T0.dk] || null, toks: toks, wd: T0.wd, opts: o.opts }); };
   var T = toks.length ? pfOpDay(o.now, dayOf) : (function () { var x = pfHijriAt(o.now); x.op = 'calendar'; return x; })();
   var out = { ok: 1, v: 1, local: 1, day: { y: T.y, m: T.m, d: T.d, dk: T.dk, ym: T.ym, wd: T.wd, op: T.op }, identity: { linked: !!L.rec, by: L.by, keyed: toks.length > 0, rec: L.rec },
@@ -292,8 +292,8 @@ function pfTodayLocal(o) {
   var ms = el && L.rec ? pfMates({ el: el, toks: toks, emps: emps, bucket: st[T.ym] || {}, rep: dr[T.dk] || null, wd: T.wd, opts: o.opts, myShift: f.shift.name }) : [];
   out.els = S.els; delete S.els;
   out.facts = f; out.site = S; out.mates = ms.slice(0, 20); out.matesN = ms.length;
-  out.week = pfWeek({ end: T.op === 'night' ? o.now - 86400000 : o.now, toks: toks, staffing: st, dreport: dr, opts: o.opts });
-  out.mon = pfMon({ ym: T.ym, toks: toks, staffing: st, dreport: dr, opts: o.opts });
+  out.week = pfWeek({ end: T.op === 'night' ? o.now - 86400000 : o.now, toks: toks, months: st, dreport: dr, opts: o.opts });
+  out.mon = pfMon({ ym: T.ym, toks: toks, months: st, dreport: dr, opts: o.opts });
   return out;
 }
 /* نموذجُ عرض «السجل» من ردّ /api/me/history — أقسامٌ بعناصرَ لكلٍّ منها وسمُ دليله الإلزامي */

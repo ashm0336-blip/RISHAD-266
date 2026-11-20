@@ -94,11 +94,11 @@
  },
  "me.arg.staff": {
   "order": 10,
-  "text": "staffing: D.staffing, "
+  "text": "months: D.staffing, "
  },
  "me.arg.staff.hist": {
   "order": 10,
-  "text": "staffing: D.staffing, locks: D.locks, "
+  "text": "months: D.staffing, locks: D.locks, "
  },
  "me.changes.staff": {
   "order": 10,
