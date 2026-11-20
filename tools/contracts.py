@@ -131,6 +131,7 @@ def check(S):
             elif every[n] == k: bad.append(rel + ': يستهلك ما يوفّره هو: %s' % n)
         for n in (d['provides'].get('participants') or {}):
             if n in base_events and NAME.match(n): continue
+            if NAME.match(n) and every.get(n) is None and n.split('.')[0] not in docs: continue   # د5-هـ: مالكُ الحدث برنامجٌ غائب ⇒ لا ناشرَ فلا مشاركة — كقاعدة consumes أعلاه
             if not NAME.match(n) or every.get(n) is None or provided(docs[every[n]]['doc']).get(n) != 'events': bad.append(rel + ': يشارك في «%s» وليس حدثاً معلناً في عقد مالكه' % n)
     # موارد القاعدة المعلنة (src/contracts/_base.json): مفتاحٌ عامٌّ بلا مالكِ برنامج — لا يملكه عقدٌ ولا يُكرَّر
     B = base_registry(S)

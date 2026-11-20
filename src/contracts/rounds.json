@@ -26,6 +26,10 @@
    "rounds.site.remove@1": "{ index } داخل مسودة المستدعي — يحذف الموقعَ بموضعه من كل يوم ويكتب الوثيقة",
    "rounds.sites.pad@1": "{ sites } داخل مسودة المستدعي — يكمّل مواقعَ كل يومٍ غير معتمد اليومَ فصاعداً حتى عدد sites (بهويّاتها sid)؛ يُكتب إن تغيّر شيء",
    "rounds.spot.set@1": "{ day, rec } داخل مسودة المستدعي (التقرير اليومي بعد تسكين موظفٍ أو رفعه) — يضع سجلَّ يوم الجولة day ويكتب الوثيقة"
+  },
+  "participants": {
+   "dreport.pulled@1": "{ y, m, d, shift, from? } داخل مسودة التقرير عند سحب الوردية أو متابعتها: تُنشأ جولةُ اليوم (prepareEnsure) إن كانت «الجولات» مفعَّلة، والنتيجةُ على الحدث event.round",
+   "dreport.shiftApproved@1": "{ y, m, d, shift, value } داخل مسودة التقرير عند اعتماد الوردية أو فتحها: تُعتمد جولةُ الوردية أو تُفتح (prepareShiftAp)، والنتيجةُ على الحدث event.round"
   }
  },
  "consumes": {
@@ -70,7 +74,7 @@
   },
   {
    "what": "التقرير اليومي يسحب الوردية أو يعتمدها فتُنشأ جولةُ اليوم أو تُعتمد جولةُ الوردية؛ ويسكّن موظفاً على موقع فيُكتب يومُ الجولة",
-   "how": "يشارك في حدثَي التقرير dreport.pulled@1 · dreport.shiftApproved@1 (services/421-round-links.js ← bus.participant: تُنشأ جولةُ اليوم بـprepareEnsure وتُعتمد جولةُ الوردية أو تُفتح بـprepareShiftAp إن كانت «الجولات» daily/rounds مفعَّلة، والنتيجةُ على الحدث event.round) · commands ← rounds.spot.set@1 — كلُّه داخل مسودة التقرير: طلبٌ واحد ذرّي. لا يُعلن في provides.participants: فحصُ العقود يرفض مشاركاً في حدثِ مالكٍ غائب (حذفُ التقرير)"
+   "how": "يشارك في حدثَي التقرير dreport.pulled@1 · dreport.shiftApproved@1 (services/421-round-links.js ← bus.participant: تُنشأ جولةُ اليوم بـprepareEnsure وتُعتمد جولةُ الوردية أو تُفتح بـprepareShiftAp إن كانت «الجولات» daily/rounds مفعَّلة، والنتيجةُ على الحدث event.round) · commands ← rounds.spot.set@1 — كلُّه داخل مسودة التقرير: طلبٌ واحد ذرّي. معلنان في provides.participants"
   }
  ],
  "readResources": {
