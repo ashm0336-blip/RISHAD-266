@@ -1,0 +1,2119 @@
+{
+ "schema": 1,
+ "system": "daily",
+ "note": "V7 · د5: صلاحياتُ هذا النظام — صفوفُه في السجلّ (المفاتيح · الورقة · الذرّات · الأعلام) وروابطُه في الخادم (النطاق · الحراسة)، وما يضيفه إلى صفوف القاعدة. تجمعها tools/perm_parts.py مع القاعدة.",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 220,
+    "value": {
+     "key": "round.view",
+     "owner": "daily/rounds",
+     "ownerKind": "page",
+     "domain": "daily",
+     "label": "عرض الجولات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_rounds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "قراءة bassam_rounds_v1, bassam_dayshift_v1, bassam_dayfocus_v1 بورقة daily/rounds (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "daily/rounds:view"
+     ],
+     "references": [
+      "daily/field",
+      "profile"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "round.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 230,
+    "value": {
+     "key": "round.create",
+     "owner": "daily/rounds",
+     "ownerKind": "page",
+     "domain": "daily",
+     "label": "إنشاء جولة",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_rounds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "bassam_rounds_v1 يوم جديد (newAp: *.ap · *.mo) — add",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "daily/rounds:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "round.create"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 240,
+    "value": {
+     "key": "round.edit",
+     "owner": "daily/rounds",
+     "ownerKind": "page",
+     "domain": "daily",
+     "label": "تعديل بيانات الجولة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_rounds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "bassam_rounds_v1 بيانات الجولة نفسها (الوردية · اليوم · الملاحظات) — ما ليس عدسةً ولا اعتماداً",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "daily/rounds:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "round.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 250,
+    "value": {
+     "key": "round.delete",
+     "owner": "daily/rounds",
+     "ownerKind": "page",
+     "domain": "daily",
+     "label": "حذف جولة",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_rounds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "bassam_rounds_v1 حذف يوم (del)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "daily/rounds:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "round.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 260,
+    "value": {
+     "key": "round.approve",
+     "owner": "daily/rounds",
+     "ownerKind": "page",
+     "domain": "daily",
+     "label": "اعتماد الجولة",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_rounds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "اتجاهُ الاعتماد: [\"y-m-d\"].ap 0→1 · .d[i].ap 0→1 · .shAp[sh] → {ap:1,at,snap} · [\"m:y-m\"].ap يظهر (أو auto) · .mo يزول (إعادةُ قفل شهرٍ منقضٍ) · .dshut[d] يظهر · .dopen[d] يزول",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "daily/rounds:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "round.approve"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 270,
+    "value": {
+     "key": "round.reopen",
+     "owner": "daily/rounds",
+     "ownerKind": "page",
+     "domain": "daily",
+     "label": "إعادة فتح الجولة",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_rounds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "اتجاهُ الفتح: [\"y-m-d\"].ap 1→0 · .d[i].ap 1→0 · .shAp[sh] → {ap:0} · [\"m:y-m\"].ap يزول · .mo يظهر (شهرٌ منقضٍ فُتح بأثرٍ رجعي) · .dopen[d] يظهر · .dshut[d] يزول",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "daily/rounds:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "round.reopen"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 340,
+    "value": {
+     "key": "field.view",
+     "owner": "daily/field",
+     "ownerKind": "page",
+     "domain": "daily",
+     "label": "الوصول إلى رصد الميدان",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "rule",
+      "resources": [
+       "bassam_rounds_v1"
+      ],
+      "detail": "fieldObsOnly/dailyFieldOnly: الوصولُ للوحة؛ الكتابةُ الحقلية من daily/field تستهلك lens.zones.status.change · lens.gates.status.change · lens.marks.status.change بنطاق Assigned (العنصرُ الذي يحوي emp[] مفتاحَ الموظف) — لا تُنفَّذ الآن؛ تبقى لمرحلة Data Scope (F-14)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Assigned",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "daily/field:view"
+     ],
+     "references": [
+      "profile"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "field.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 73,
+    "seq": 280,
+    "value": {
+     "key": "round.sync.plan",
+     "owner": "daily/rounds",
+     "ownerKind": "page",
+     "domain": "daily",
+     "label": "تحديث الجولة من الخطة التشغيلية",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_rounds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "bassam_rounds_v1: استبدال مجموعات اليوم (zones/gates/marks/paths) من الخطة — شكل استبدال جماعي",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "daily/rounds:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "round.sync.plan"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 73,
+    "seq": 290,
+    "value": {
+     "key": "round.day.disable",
+     "owner": "daily/rounds",
+     "ownerKind": "page",
+     "domain": "daily",
+     "label": "تعطيل/إعادة تفعيل يوم الجولة",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): v24.3 (F-05): لا قدرة يومية حية في المصدر — لا حقل off على مستوى اليوم في bassam_rounds_v1؛ off على عناصر العدسات (zones/marks) هو lens.*.status.change ولا يُخلط به",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "round.day.disable"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "v24.3 (F-05): لا قدرة يومية حية في المصدر — لا حقل off على مستوى اليوم في bassam_rounds_v1؛ off على عناصر العدسات (zones/marks) هو lens.*.status.change ولا يُخلط به"
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 190,
+    "value": {
+     "leaf": "daily/rounds",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "round.view",
+      "lens.zones.view",
+      "lens.paths.view",
+      "lens.gates.view",
+      "lens.marks.view",
+      "lens.dist.view",
+      "lens.dens.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 200,
+    "value": {
+     "leaf": "daily/rounds",
+     "act": "add",
+     "disposition": "migrated",
+     "targets": [
+      "round.create",
+      "lens.zones.create",
+      "lens.paths.create",
+      "lens.gates.create",
+      "lens.marks.create"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 210,
+    "value": {
+     "leaf": "daily/rounds",
+     "act": "edit",
+     "disposition": "migrated",
+     "targets": [
+      "round.edit",
+      "round.sync.plan",
+      "lens.zones.status.change",
+      "lens.gates.status.change",
+      "lens.marks.status.change",
+      "lens.paths.status.change",
+      "lens.dist.assign.edit",
+      "lens.dist.need.edit",
+      "lens.dens.reading.record",
+      "lens.zones.data.edit",
+      "lens.zones.geometry.edit",
+      "lens.paths.edit",
+      "lens.paths.geometry.edit",
+      "lens.gates.edit",
+      "lens.marks.edit",
+      "lens.marks.geometry.edit"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 220,
+    "value": {
+     "leaf": "daily/rounds",
+     "act": "del",
+     "disposition": "migrated",
+     "targets": [
+      "round.delete",
+      "lens.zones.delete",
+      "lens.paths.delete",
+      "lens.gates.delete",
+      "lens.marks.delete"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 230,
+    "value": {
+     "leaf": "daily/rounds",
+     "act": "approve",
+     "disposition": "migrated",
+     "targets": [
+      "round.approve",
+      "round.reopen"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 240,
+    "value": {
+     "leaf": "daily/rounds",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.round.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 250,
+    "value": {
+     "leaf": "daily/field",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "field.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 260,
+    "value": {
+     "leaf": "daily/field",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 270,
+    "value": {
+     "leaf": "daily/field",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 280,
+    "value": {
+     "leaf": "daily/field",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 290,
+    "value": {
+     "leaf": "daily/field",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 300,
+    "value": {
+     "leaf": "daily/field",
+     "act": "export",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 310,
+    "value": {
+     "leaf": "daily/kpiDaily",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 320,
+    "value": {
+     "leaf": "daily/kpiDaily",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 330,
+    "value": {
+     "leaf": "daily/kpiDaily",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 340,
+    "value": {
+     "leaf": "daily/kpiDaily",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 350,
+    "value": {
+     "leaf": "daily/kpiDaily",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 360,
+    "value": {
+     "leaf": "daily/kpiDaily",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.report.indicators.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 370,
+    "value": {
+     "leaf": "daily/kpiOcc",
+     "act": "view",
+     "disposition": "replaced_by_reference",
+     "targets": [
+      "lens.dens.indicators.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 380,
+    "value": {
+     "leaf": "daily/kpiOcc",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 390,
+    "value": {
+     "leaf": "daily/kpiOcc",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 400,
+    "value": {
+     "leaf": "daily/kpiOcc",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 410,
+    "value": {
+     "leaf": "daily/kpiOcc",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 420,
+    "value": {
+     "leaf": "daily/kpiOcc",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.lens.dens.indicators.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 430,
+    "value": {
+     "leaf": "daily/kpiZones",
+     "act": "view",
+     "disposition": "replaced_by_reference",
+     "targets": [
+      "lens.zones.indicators.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 440,
+    "value": {
+     "leaf": "daily/kpiZones",
+     "act": "add",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 450,
+    "value": {
+     "leaf": "daily/kpiZones",
+     "act": "edit",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 460,
+    "value": {
+     "leaf": "daily/kpiZones",
+     "act": "del",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 470,
+    "value": {
+     "leaf": "daily/kpiZones",
+     "act": "approve",
+     "disposition": "obsolete",
+     "targets": []
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 480,
+    "value": {
+     "leaf": "daily/kpiZones",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.lens.zones.indicators.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 21,
+    "seq": 30,
+    "value": "ff.module.daily.enabled"
+   }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 220,
+    "value": {
+     "key": "round.view",
+     "owner": "daily/rounds",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_rounds_v1",
+     "resources": [
+      "bassam_rounds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 230,
+    "value": {
+     "key": "round.create",
+     "owner": "daily/rounds",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_rounds_v1",
+     "resources": [
+      "bassam_rounds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 240,
+    "value": {
+     "key": "round.edit",
+     "owner": "daily/rounds",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_rounds_v1",
+     "resources": [
+      "bassam_rounds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 250,
+    "value": {
+     "key": "round.delete",
+     "owner": "daily/rounds",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_rounds_v1",
+     "resources": [
+      "bassam_rounds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 260,
+    "value": {
+     "key": "round.approve",
+     "owner": "daily/rounds",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_rounds_v1",
+     "resources": [
+      "bassam_rounds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 270,
+    "value": {
+     "key": "round.reopen",
+     "owner": "daily/rounds",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_rounds_v1",
+     "resources": [
+      "bassam_rounds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 340,
+    "value": {
+     "key": "field.view",
+     "owner": "daily/field",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_rounds_v1",
+     "resources": [
+      "bassam_rounds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "Site": [
+       "floorSid"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 62,
+    "seq": 280,
+    "value": {
+     "key": "round.sync.plan",
+     "owner": "daily/rounds",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_rounds_v1",
+     "resources": [
+      "bassam_rounds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 30,
+    "value": "round.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 40,
+    "value": "field.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 30,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 40,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "round.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "keys"
+    ],
+    "after": 6,
+    "seq": 10,
+    "value": "field.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 10,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayshift_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": "round.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayshift_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": "field.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayshift_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayshift_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayfocus_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": "round.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayfocus_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": "field.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayfocus_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayfocus_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 30,
+    "value": "round.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 40,
+    "value": "field.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 30,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 40,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "special",
+     "keys"
+    ],
+    "key": "field.view",
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "resources": [
+      "bassam_rounds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1",
+      "bassam_employees_v1",
+      "bassam_shift_options_v1"
+     ],
+     "kind": "rule",
+     "asis": "daily/field:view (RD_REG)",
+     "primary": "bassam_rounds_v1",
+     "note": "راصدُ الميدان: مفتاحُ قراءةٍ فعلي لصفحة رصد الميدان (حارسُه rule — fieldObsOnly/dailyFieldOnly؛ لا يُحوَّل إلى read). يقرأ الجولة (Department · Assigned على emp[] · Shift · Site) وبنيةَ الموقع والمراجع التي ترسم صفحتَه كمرجع (RD_REG). Assigned يُقاس على عناصر الجولة/الخطة؛ Site/Shift غيرُ مهاجرة ⇒ unknown."
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 1,
+    "value": "round.view",
+    "needs": [
+     "dreport"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 2,
+    "value": "field.view",
+    "needs": [
+     "dreport"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 1,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "dreport"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 2,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    },
+    "needs": [
+     "dreport"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "keys"
+    ],
+    "after": 6,
+    "seq": 1,
+    "value": "round.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "keys"
+    ],
+    "after": 6,
+    "seq": 2,
+    "value": "field.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 1,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 2,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "lens.zones.view",
+     "source": "explicit-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 3,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "lens.paths.view",
+     "source": "explicit-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 4,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "lens.gates.view",
+     "source": "explicit-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 5,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "lens.marks.view",
+     "source": "explicit-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 6,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "lens.dist.view",
+     "source": "explicit-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 7,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_zone_opts_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": "round.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_zone_opts_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 2,
+    "value": "field.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_zone_opts_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_zone_opts_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 2,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "lens.zones.view",
+     "source": "explicit-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_zone_opts_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 3,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_gate_opts_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": "round.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_gate_opts_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 2,
+    "value": "field.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_gate_opts_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_gate_opts_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 2,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "lens.gates.view",
+     "source": "explicit-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_gate_opts_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 3,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_mark_kinds_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": "round.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_mark_kinds_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 2,
+    "value": "field.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_mark_kinds_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_mark_kinds_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 2,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "lens.marks.view",
+     "source": "explicit-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_mark_kinds_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 3,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 2,
+    "value": "round.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 3,
+    "value": "field.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 2,
+    "value": {
+     "cap": "daily/rounds:view",
+     "key": "round.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 3,
+    "value": {
+     "cap": "daily/field:view",
+     "key": "field.view",
+     "source": "special:field.view"
+    },
+    "needs": [
+     "staff"
+    ]
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 110,
+    "value": {
+     "key": "round.approve",
+     "res": "bassam_rounds_v1",
+     "where": "[\"y-m-d\"].ap 0→1 · .d[i].ap 0→1 · .shAp[sh] → {ap:1,at,snap} · [\"m:y-m\"].ap يظهر · .mo يزول · .dshut[d] يظهر · .dopen[d] يزول",
+     "how": "اتجاه الاعتماد (approveToggle · setShiftAp · _setMonthAp · _toggleDayLock)",
+     "asis": "daily/rounds:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "daily/rounds",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 120,
+    "value": {
+     "key": "round.reopen",
+     "res": "bassam_rounds_v1",
+     "where": "[\"y-m-d\"].ap 1→0 · .d[i].ap 1→0 · .shAp[sh] → {ap:0} · [\"m:y-m\"].ap يزول · .mo يظهر · .dopen[d] يظهر · .dshut[d] يزول",
+     "how": "اتجاه الفتح",
+     "asis": "daily/rounds:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "daily/rounds",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 25,
+    "seq": 30,
+    "value": {
+     "key": "round.sync.plan",
+     "res": "bassam_rounds_v1",
+     "where": "[\"y-m-d\"].synced = Date.now() مع استبدال d[i].{zones,gates,marks,paths} من الخطة",
+     "how": "حين يتغيّر synced في الحفظة تُطوى كلُّ فروق كيانات اليوم تحت هذا المفتاح وحده",
+     "asis": "daily/rounds:edit (الواجهة: _dsCanWrite)",
+     "decl": "",
+     "dup": "",
+     "owner": "daily/rounds",
+     "type": "operation",
+     "guardKind": "cap"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 26,
+    "seq": 70,
+    "value": {
+     "key": "round.edit",
+     "res": "bassam_rounds_v1",
+     "where": "[\"y-m-d\"].t · from · imp · d[i].hideZones/hidePaths/hideGates/hideMarks/showCodes · ظهور/زوال d[i] (موقعٌ أُضيف/حُذف في الخطة)",
+     "how": "ما ليس كياناً ولا اعتماداً ولا مزامنة",
+     "asis": "daily/rounds:edit",
+     "decl": "لا ملاحظاتَ ولا وردية داخل سجل الجولة في المصدر (الوردية في bassam_dayshift_v1)",
+     "dup": "",
+     "owner": "daily/rounds",
+     "type": "edit",
+     "guardKind": "cap"
+    }
+   }
+  ]
+ }
+}

@@ -28,30 +28,6 @@
  ],
  "bindings": [
   {
-   "key": "round.approve",
-   "res": "bassam_rounds_v1",
-   "where": "[\"y-m-d\"].ap 0→1 · .d[i].ap 0→1 · .shAp[sh] → {ap:1,at,snap} · [\"m:y-m\"].ap يظهر · .mo يزول · .dshut[d] يظهر · .dopen[d] يزول",
-   "how": "اتجاه الاعتماد (approveToggle · setShiftAp · _setMonthAp · _toggleDayLock)",
-   "asis": "daily/rounds:approve",
-   "decl": "",
-   "dup": "",
-   "owner": "daily/rounds",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
-   "key": "round.reopen",
-   "res": "bassam_rounds_v1",
-   "where": "[\"y-m-d\"].ap 1→0 · .d[i].ap 1→0 · .shAp[sh] → {ap:0} · [\"m:y-m\"].ap يزول · .mo يظهر · .dopen[d] يظهر · .dshut[d] يزول",
-   "how": "اتجاه الفتح",
-   "asis": "daily/rounds:approve",
-   "decl": "",
-   "dup": "",
-   "owner": "daily/rounds",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
    "key": "tpl.supervisory",
    "res": "bassam_perm_tpls_v1",
    "where": "[id].sup (boolean) — وسمُ «إشرافي» (tpSupTog)",
@@ -352,18 +328,6 @@
    "guardKind": "field"
   },
   {
-   "key": "round.sync.plan",
-   "res": "bassam_rounds_v1",
-   "where": "[\"y-m-d\"].synced = Date.now() مع استبدال d[i].{zones,gates,marks,paths} من الخطة",
-   "how": "حين يتغيّر synced في الحفظة تُطوى كلُّ فروق كيانات اليوم تحت هذا المفتاح وحده",
-   "asis": "daily/rounds:edit (الواجهة: _dsCanWrite)",
-   "decl": "",
-   "dup": "",
-   "owner": "daily/rounds",
-   "type": "operation",
-   "guardKind": "cap"
-  },
-  {
    "key": "emp.record.bulk.delete",
    "res": "bassam_employees_v1 (+ تنظيفات)",
    "where": "زوالُ ≥2 سجلٍّ في كتابةٍ واحدة أو القائمةُ تصير [] · والتنظيفاتُ المرافقة بسياق empsEmpty",
@@ -373,18 +337,6 @@
    "dup": "",
    "owner": "emps/data",
    "type": "operation",
-   "guardKind": "cap"
-  },
-  {
-   "key": "round.edit",
-   "res": "bassam_rounds_v1",
-   "where": "[\"y-m-d\"].t · from · imp · d[i].hideZones/hidePaths/hideGates/hideMarks/showCodes · ظهور/زوال d[i] (موقعٌ أُضيف/حُذف في الخطة)",
-   "how": "ما ليس كياناً ولا اعتماداً ولا مزامنة",
-   "asis": "daily/rounds:edit",
-   "decl": "لا ملاحظاتَ ولا وردية داخل سجل الجولة في المصدر (الوردية في bassam_dayshift_v1)",
-   "dup": "",
-   "owner": "daily/rounds",
-   "type": "edit",
    "guardKind": "cap"
   },
   {

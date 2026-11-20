@@ -1,0 +1,74 @@
+{
+ "modules.daily": {
+  "order": 10,
+  "text": "  {\n   \"name\": \"Daily Sessions\",\n   \"slug\": \"daily\",\n   \"minifiedSource\": true,\n   \"bytes\": 818608,\n   \"logicLines\": 20267\n  },\n"
+ },
+ "blocks.svc.daily.1": {
+  "order": 10,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/daily/client/420-round-factory.js\",\n   \"kind\": \"js\",\n   \"line\": 8899,\n   \"openTag\": \"<script>\",\n   \"origBytes\": 5761,\n   \"origSha256\": \"2df31e87dfe46cc6507354527b243a562b368381117b68dcda935951712afe06\"\n  },\n  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/daily/client/421-round-links.js\",\n   \"kind\": \"js\",\n   \"line\": 8899,\n   \"new\": \"V7 · د5-هـ: ما توفّره الجولاتُ اليومية لغيرها عبر الناقل (قراءات · أوامر داخل مسودة المستدعي)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "blocks.svc.daily.2": {
+  "order": 10,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/daily/client/520-field-monitor.js\",\n   \"kind\": \"js\",\n   \"line\": 10324,\n   \"openTag\": \"<script>\",\n   \"origBytes\": 15231,\n   \"origSha256\": \"9f832adfc8b1074f4de0fa14a2926b0702b581bf22f489a9816bfe681ad343be\"\n  },\n"
+ },
+ "blocks.pages.daily": {
+  "order": 10,
+  "text": "   {\n    \"b64Sha256\": \"18fd106f029402372a63ee7938a81c70cb1e20d3ca365afce5f18642c8e18ed9\",\n    \"bytes\": 818646,\n    \"file\": \"client/pages/Daily Sessions.dc.html\",\n    \"name\": \"Daily Sessions\",\n    \"sha256\": \"be3abc92554039fbf72e349c34a124f65444de98a30982645147f907212e4e00\"\n   },\n"
+ },
+ "blocks.order.daily": {
+  "order": 10,
+  "text": "   \"Daily Sessions\",\n"
+ },
+ "shell.svc.daily.1": {
+  "order": 10,
+  "text": "@@KIVO_BLOCK:systems/daily/client/420-round-factory.js@@\n@@KIVO_BLOCK:systems/daily/client/421-round-links.js@@\n"
+ },
+ "shell.svc.daily.2": {
+  "order": 10,
+  "text": "@@KIVO_BLOCK:systems/daily/client/520-field-monitor.js@@\n"
+ },
+ "shell.nav.daily": {
+  "order": 10,
+  "text": "      <a class=\"{{nDaily}}\" data-key=\"daily\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goDaily}}\" title=\"{{tDaily}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-9a375c7e\"></svg></span><span class=\"nlbl\">المتابعة اليومية</span></a>\n"
+ },
+ "shell.mounts.daily": {
+  "order": 10,
+  "text": "  <sc-if value=\"{{isDaily}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Daily Sessions\" hint-size=\"100%,1100px\"></dc-import>\n  </sc-if>\n"
+ },
+ "pages.entry.daily": {
+  "order": 10,
+  "text": "  {\n   \"key\": \"daily\",\n   \"module\": \"daily\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"requires\": [\n@@SYS:pages.daily.requires.dreport@@    {\"for\": \"daily/kpiOcc\", \"on\": \"lens:zones\", \"kind\": \"lens\"},\n    {\"for\": \"daily/kpiOcc\", \"on\": \"lens:dens\", \"kind\": \"lens\"},\n    {\"for\": \"daily/kpiZones\", \"on\": \"lens:zones\", \"kind\": \"lens\"}\n   ],\n   \"departmentComponents\": [\"Daily Sessions\"],\n   \"nav\": \"daily\",\n   \"name\": \"المتابعة اليومية\",\n   \"seq\": [\n    \"tab:kpiDaily\",\n    \"tab:kpiOcc\",\n    \"tab:kpiZones\",\n@@SYS:pages.daily.seq.dreport@@    \"tab:rounds\",\n@@SYS:pages.daily.seq.tasks@@    \"tab:field\"\n   ],\n   \"tabLabel\": \"التبويبات\",\n   \"tabs\": [\n    {\n     \"key\": \"kpiDaily\",\n     \"name\": \"مؤشرات المتابعة — التشغيل اليومي\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"kpiOcc\",\n     \"name\": \"مؤشرات المتابعة — الإشغال\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"kpiZones\",\n     \"name\": \"مؤشرات المتابعة — المصليات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"rounds\",\n     \"name\": \"الجولات اليومية\"\n    },\n    {\n     \"key\": \"field\",\n     \"name\": \"رصد الميدان — حالة الموقع واتجاه الحركة من صفحة الموظف\",\n     \"offPage\": true\n    }\n   ]\n  },\n"
+ },
+ "pages.tabAddr.daily.entry": {
+  "order": 10,
+  "text": ",\n  \"daily\": {\n   \"rounds\": 1@@SYS:pages.tabAddr.daily.dreport@@@@SYS:pages.tabAddr.daily@@\n  }"
+ },
+ "pages.navOrder.daily": {
+  "order": 10,
+  "text": ",\n  \"daily\""
+ },
+ "pages.navNames.daily": {
+  "order": 10,
+  "text": ",\n  \"daily\": \"المتابعة اليومية\""
+ },
+ "pages.routeNames.daily": {
+  "order": 10,
+  "text": "  \"daily\": \"المتابعة اليومية\",\n"
+ },
+ "ns.after.daily": {
+  "order": 10,
+  "text": "  \"src/systems/daily/client/logic.js\",\n"
+ },
+ "uxStates.daily": {
+  "order": 10,
+  "text": "  \"daily\": {\n   \"فارغ\": 60,\n   \"تحميل\": 9,\n   \"خطأ\": 18,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 3\n  },\n"
+ },
+ "budget.page.daily": {
+  "order": 10,
+  "text": "  \"page:Daily-Sessions\": 248394,\r\n"
+ },
+ "nfo.watch.daily": {
+  "order": 10,
+  "file": "slots/nfo.watch.daily.frag"
+ }
+}

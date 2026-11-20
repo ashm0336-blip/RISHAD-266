@@ -473,7 +473,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 230,
     "value": {
      "key": "site.approve",
@@ -524,7 +524,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 240,
     "value": {
      "key": "map.calibrate",
@@ -575,7 +575,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 250,
     "value": {
      "key": "sector.create",
@@ -626,7 +626,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 260,
     "value": {
      "key": "sector.edit",
@@ -677,7 +677,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 270,
     "value": {
      "key": "sector.delete",
@@ -3046,7 +3046,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 230,
     "value": {
      "key": "site.approve",
@@ -3080,7 +3080,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 240,
     "value": {
      "key": "map.calibrate",
@@ -3114,7 +3114,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 250,
     "value": {
      "key": "sector.create",
@@ -3148,7 +3148,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 260,
     "value": {
      "key": "sector.edit",
@@ -3182,7 +3182,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 270,
     "value": {
      "key": "sector.delete",
@@ -3245,7 +3245,7 @@
      "bassam_rounds_v1",
      "keys"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 10,
     "value": "plan.view"
    },
@@ -3256,7 +3256,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 10,
     "value": {
      "cap": "plan:view",
@@ -3271,7 +3271,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 20,
     "value": {
      "cap": "plan:view",
@@ -3286,7 +3286,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 30,
     "value": {
      "cap": "plan:view",
@@ -3301,7 +3301,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 40,
     "value": {
      "cap": "plan:view",
@@ -3316,7 +3316,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 50,
     "value": {
      "cap": "plan:view",
@@ -3331,7 +3331,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 60,
     "value": {
      "cap": "plan:view",
@@ -3346,7 +3346,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 70,
     "value": {
      "cap": "plan:view",
@@ -3414,7 +3414,7 @@
      "keys"
     ],
     "after": 2,
-    "seq": 0,
+    "seq": 1,
     "value": "plan.view",
     "needs": [
      "staff"
@@ -3428,7 +3428,7 @@
      "routes"
     ],
     "after": 2,
-    "seq": 0,
+    "seq": 1,
     "value": {
      "cap": "plan:view",
      "key": "plan.view",
@@ -4725,8 +4725,6 @@
       "lens.gates.view",
       "lens.marks.view",
       "lens.dist.view",
-      "round.view",
-      "field.view",
       "emp.view",
       "backup.view"
      ],
@@ -4762,41 +4760,6 @@
        "source": "explicit-read"
       },
       {
-       "cap": "daily/rounds:view",
-       "key": "round.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "lens.zones.view",
-       "source": "explicit-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "lens.paths.view",
-       "source": "explicit-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "lens.gates.view",
-       "source": "explicit-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "lens.marks.view",
-       "source": "explicit-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "lens.dist.view",
-       "source": "explicit-read"
-      },
-      {
-       "cap": "daily/field:view",
-       "key": "field.view",
-       "source": "special:field.view"
-      },
-      {
        "cap": "emps/data:view",
        "key": "emp.view",
        "source": "reference-read"
@@ -4825,8 +4788,6 @@
       "plan.view",
       "lens.zones.view",
       "ref.zone.type.view",
-      "round.view",
-      "field.view",
       "backup.view"
      ],
      "routes": [
@@ -4844,21 +4805,6 @@
        "cap": "plan:view",
        "key": "ref.zone.type.view",
        "source": "explicit-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "round.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "lens.zones.view",
-       "source": "explicit-read"
-      },
-      {
-       "cap": "daily/field:view",
-       "key": "field.view",
-       "source": "special:field.view"
       },
       {
        "cap": "admin/backup:view",
@@ -4884,8 +4830,6 @@
       "plan.view",
       "lens.gates.view",
       "ref.gate.type.view",
-      "round.view",
-      "field.view",
       "backup.view"
      ],
      "routes": [
@@ -4903,21 +4847,6 @@
        "cap": "plan:view",
        "key": "ref.gate.type.view",
        "source": "explicit-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "round.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "lens.gates.view",
-       "source": "explicit-read"
-      },
-      {
-       "cap": "daily/field:view",
-       "key": "field.view",
-       "source": "special:field.view"
       },
       {
        "cap": "admin/backup:view",
@@ -4943,8 +4872,6 @@
       "plan.view",
       "lens.marks.view",
       "ref.mark.kind.view",
-      "round.view",
-      "field.view",
       "backup.view"
      ],
      "routes": [
@@ -4962,21 +4889,6 @@
        "cap": "plan:view",
        "key": "ref.mark.kind.view",
        "source": "explicit-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "round.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "lens.marks.view",
-       "source": "explicit-read"
-      },
-      {
-       "cap": "daily/field:view",
-       "key": "field.view",
-       "source": "special:field.view"
       },
       {
        "cap": "admin/backup:view",
@@ -4997,7 +4909,10 @@
     ],
     "after": 1,
     "seq": 1,
-    "value": "bassam_plan_v1"
+    "value": "bassam_plan_v1",
+    "needs": [
+     "daily"
+    ]
    },
    {
     "path": [
@@ -5009,7 +4924,10 @@
     ],
     "after": 1,
     "seq": 2,
-    "value": "bassam_zone_opts_v1"
+    "value": "bassam_zone_opts_v1",
+    "needs": [
+     "daily"
+    ]
    },
    {
     "path": [
@@ -5021,7 +4939,10 @@
     ],
     "after": 1,
     "seq": 3,
-    "value": "bassam_gate_opts_v1"
+    "value": "bassam_gate_opts_v1",
+    "needs": [
+     "daily"
+    ]
    },
    {
     "path": [
@@ -5033,7 +4954,10 @@
     ],
     "after": 1,
     "seq": 4,
-    "value": "bassam_mark_kinds_v1"
+    "value": "bassam_mark_kinds_v1",
+    "needs": [
+     "daily"
+    ]
    },
    {
     "path": [
@@ -5137,8 +5061,8 @@
     "path": [
      "bindings"
     ],
-    "after": 27,
-    "seq": 1,
+    "after": 25,
+    "seq": 10,
     "value": {
      "key": "map.replace",
      "res": "bassam_plan_v1",
@@ -5156,8 +5080,8 @@
     "path": [
      "bindings"
     ],
-    "after": 27,
-    "seq": 2,
+    "after": 25,
+    "seq": 20,
     "value": {
      "key": "map.calibrate",
      "res": "bassam_plan_v1",

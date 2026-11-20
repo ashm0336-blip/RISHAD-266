@@ -22,8 +22,8 @@ function client({ store = {}, plan = true, rounds = true } = {}) {
   const ctx = vm.createContext({ KIVO, console, Intl, Date, Math, JSON, Object, Array, Error });
   vm.runInContext(rd('src/i18n/385-calendar.js'), ctx);
   vm.runInContext(rd('src/core/060-bus.js'), ctx);
-  vm.runInContext(rd('src/services/420-round-factory.js'), ctx);
-  if (rounds) vm.runInContext(rd('src/services/421-round-links.js'), ctx);
+  vm.runInContext(rd('src/systems/daily/client/420-round-factory.js'), ctx);
+  if (rounds) vm.runInContext(rd('src/systems/daily/client/421-round-links.js'), ctx);
   if (plan) vm.runInContext(rd('src/systems/plan/client/404-plan-p4.js'), ctx);
   return { KIVO, ctx, bus: KIVO.bus };
 }
@@ -104,12 +104,12 @@ function roundsAround(KIVO) {
 test('① rounds commands write exactly what the Plan page used to write into the rounds days itself', () => {
   const c = client(), store = { bassam_rounds_v1: roundsAround(c.KIVO) };
   const purgeSite = (floor) => ({ ...floor, zones: (floor.zones || []).map((z) => ({ ...z, region: '' })), gates: (floor.gates || []).map((g) => ({ ...g, loc: '', cats: [] })) });
-  /* rounds.sites.patch@1 = _purgeOptEverywhere (الجزءُ الخاص بالجولات) — related يُستبدل بنسخةٍ جديدة كما كان */
+  /* daily.sites.patch@1 = _purgeOptEverywhere (الجزءُ الخاص بالجولات) — related يُستبدل بنسخةٍ جديدة كما كان */
   for (const site of [purgeSite, (f) => f]) {
     const a = pageDraft(store), b = pageDraft(store), base = { bassam_gate_opts_v1: { loc: [] } };
     const want = oldPurge(c.KIVO, a.read, base, site);
     let related = base;
-    const r = c.bus.call('rounds.sites.patch@1', { site }, { get: (k) => b.read(k), set: (k, v) => (related = { ...related, [k]: v }) });
+    const r = c.bus.call('daily.sites.patch@1', { site }, { get: (k) => b.read(k), set: (k, v) => (related = { ...related, [k]: v }) });
     assert.equal(r.ok, 1);
     same(related, want); assert.deepEqual(Object.keys(related), Object.keys(want), 'ترتيبُ المفاتيح كما كان');
     assert.equal(JSON.stringify(related), JSON.stringify(want), 'البايتاتُ نفسُها');
@@ -122,12 +122,12 @@ test('① rounds commands write exactly what the Plan page used to write into th
     assert.equal(days[now.y + '-' + now.m + '-' + now.d].d[0].gates[0].loc, '', 'اليومُ يُنقّى');
     assert.equal(days[now.y + '-' + now.m + '-' + now.d].d[1].gates[0].loc, 'TEST_ONLY loc', 'الموقعُ المعتمد لا يُمسّ');
     assert.equal(days[(now.y + 1) + '-1-2'].d[0].gates[0].loc, 'TEST_ONLY loc', 'اليومُ المعتمد لا يُمسّ'); }
-  /* rounds.month.clear@1 = planDelDo · rounds.site.remove@1 = delFloorDo · rounds.sites.pad@1 = siteModalSave (إضافة) */
+  /* daily.month.clear@1 = planDelDo · daily.site.remove@1 = delFloorDo · daily.sites.pad@1 = siteModalSave (إضافة) */
   const now = c.KIVO.BassamCal.hPartsRiyadh(new Date());
   const cases = [
-    ['rounds.month.clear@1', (t) => ({ y: t.y, m: t.m }), (rel, read, t) => oldMonthClear(read, rel, t), [{ y: now.y, m: now.m }, { y: now.y - 1, m: now.m }, { y: 1300, m: 1 }]],
-    ['rounds.site.remove@1', (t) => ({ index: t.i }), (rel, read, t) => oldSiteRemove(read, rel, t), [{ i: 0 }, { i: 1 }, { i: 5 }]],
-    ['rounds.sites.pad@1', (a) => ({ sites: a }), (rel, read, a) => oldSitesPad(c.KIVO, read, rel, a), [[{ sid: 'A' }, { sid: 'B' }, { sid: 'TEST_ONLY_NEW' }], [{ sid: 'A' }], [{}, {}, {}, { sid: 'D' }]]],
+    ['daily.month.clear@1', (t) => ({ y: t.y, m: t.m }), (rel, read, t) => oldMonthClear(read, rel, t), [{ y: now.y, m: now.m }, { y: now.y - 1, m: now.m }, { y: 1300, m: 1 }]],
+    ['daily.site.remove@1', (t) => ({ index: t.i }), (rel, read, t) => oldSiteRemove(read, rel, t), [{ i: 0 }, { i: 1 }, { i: 5 }]],
+    ['daily.sites.pad@1', (a) => ({ sites: a }), (rel, read, a) => oldSitesPad(c.KIVO, read, rel, a), [[{ sid: 'A' }, { sid: 'B' }, { sid: 'TEST_ONLY_NEW' }], [{ sid: 'A' }], [{}, {}, {}, { sid: 'D' }]]],
   ];
   for (const [name, payload, old, inputs] of cases)
     for (const input of inputs) {
@@ -139,7 +139,7 @@ test('① rounds commands write exactly what the Plan page used to write into th
       same(b.cache, a.cache, name + ': المسودةُ نفسُها');
     }
   /* بلا وثيقة جولات: كما كان — لا كتابة */
-  for (const [name, payload] of [['rounds.sites.patch@1', { site: (f) => f }], ['rounds.month.clear@1', { y: 1, m: 1 }], ['rounds.site.remove@1', { index: 0 }], ['rounds.sites.pad@1', { sites: [{}] }]]) {
+  for (const [name, payload] of [['daily.sites.patch@1', { site: (f) => f }], ['daily.month.clear@1', { y: 1, m: 1 }], ['daily.site.remove@1', { index: 0 }], ['daily.sites.pad@1', { sites: [{}] }]]) {
     const got = {}; c.bus.call(name, payload, { get: () => null, set: (k, v) => (got[k] = v) }); assert.deepEqual(got, {}, name);
     assert.throws(() => c.bus.call(name, payload), /bus-draft-required/, name + ' يطلب مسودة');
   }
@@ -158,13 +158,13 @@ test('② plan commands write what the rounds page used to fold into its own sav
       assert.throws(() => c.bus.call(name, { value }), /bus-draft-required/);
     }
   /* صفحةُ الجولات: مساعداتُ الحفظ نفسُها في مصدرها */
-  const daily = rd('src/slots/modules/daily/logic.js.tpl');
+  const daily = rd('src/systems/daily/client/logic.js.tpl');
   assert.match(daily, /_opWith\(related, command, payload\) \{\s*const out = \{ \.\.\.related \};\s*KIVO\.bus\.call\(command, payload, this\._opSink\(out\)\);\s*return out;/);
 });
 
 test('③ declared reads use the caller\'s own reading path and fail the same way', () => {
   const store = { bassam_plan_v1: { floors: [{ sid: 'P' }] }, bassam_zone_opts_v1: { region: ['R'] }, bassam_gate_opts_v1: { loc: ['L'] }, bassam_rounds_v1: { '1448-1-1': { d: [] } } }, c = client({ store });
-  for (const [name, key] of [['plan.doc@1', 'bassam_plan_v1'], ['plan.zoneOpts@1', 'bassam_zone_opts_v1'], ['plan.gateOpts@1', 'bassam_gate_opts_v1'], ['rounds.days@1', 'bassam_rounds_v1']]) {
+  for (const [name, key] of [['plan.doc@1', 'bassam_plan_v1'], ['plan.zoneOpts@1', 'bassam_zone_opts_v1'], ['plan.gateOpts@1', 'bassam_gate_opts_v1'], ['daily.days@1', 'bassam_rounds_v1']]) {
     const page = pageDraft(store);
     assert.equal(c.bus.read(name, page.read), page.read(key), name + ': قارئُ الصفحة (النسخةُ نفسُها)');
     assert.deepEqual(page.reads, [key, key]);
@@ -177,9 +177,9 @@ test('③ declared reads use the caller\'s own reading path and fail the same wa
   same(client().bus.read('plan.resources@1', 'doc', 'zoneOpts'), ['bassam_plan_v1', 'bassam_zone_opts_v1']);
   /* العدساتُ = خدمةُ الجولات نفسُها */
   const sites = [{ zones: [{ emp: ['e'] }], gates: [{}], marks: [{}], paths: [{}] }], k = client();
-  same(k.bus.read('rounds.lensFilter@1', copy(sites)), k.KIVO.BassamRound.lensFilter(copy(sites)));
-  same(k.bus.read('rounds.lensFilter@1', copy(sites))[0].marks, [], 'عدسةُ المعالم مطفأة');
-  same(k.bus.read('rounds.names@1'), { bassam_rounds_v1: 'الجولات اليومية' });
+  same(k.bus.read('daily.lensFilter@1', copy(sites)), k.KIVO.BassamRound.lensFilter(copy(sites)));
+  same(k.bus.read('daily.lensFilter@1', copy(sites))[0].marks, [], 'عدسةُ المعالم مطفأة');
+  same(k.bus.read('daily.names@1'), { bassam_rounds_v1: 'الجولات اليومية' });
   /* الجولةُ الأولى في الشهر من خطة الشهر عبر plan.doc@1 داخل مسودة المصنع — وبغياب الخطة «noplan» */
   const month = { bassam_rounds_v1: {}, bassam_plan_v1: { floors: [{ sid: 'TEST_ONLY_SITE' }], months: { '1448-1': { d: [{ zones: [], gates: [], marks: [], paths: [] }] } } } };
   const draft = (s) => ({ get: (x) => copy(s[x]), set() {} });
@@ -190,7 +190,7 @@ test('③ declared reads use the caller\'s own reading path and fail the same wa
 test('④ owner absent: reads are undefined, commands report absence, nothing is written', () => {
   const store = { bassam_plan_v1: { floors: [] }, bassam_rounds_v1: { '1500-1-1': { d: [{}] } } };
   for (const [opts, names] of [[{ plan: false }, ['plan.doc@1', 'plan.zoneOpts@1', 'plan.gateOpts@1', 'plan.resources@1', 'plan.doc.set@1', 'plan.zoneOpts.set@1', 'plan.gateOpts.set@1']],
-    [{ rounds: false }, ['rounds.days@1', 'rounds.lensFilter@1', 'rounds.names@1', 'rounds.sites.patch@1', 'rounds.month.clear@1', 'rounds.site.remove@1', 'rounds.sites.pad@1']]]) {
+    [{ rounds: false }, ['daily.days@1', 'daily.lensFilter@1', 'daily.names@1', 'daily.sites.patch@1', 'daily.month.clear@1', 'daily.site.remove@1', 'daily.sites.pad@1']]]) {
     const c = client({ store, ...opts });
     for (const n of names) {
       const written = {}, read = [];
@@ -206,15 +206,15 @@ test('④ owner absent: reads are undefined, commands report absence, nothing is
 test('⑤ sources: Plan names no rounds key or service; rounds and the daily report name no Plan key', () => {
   const plan = rd('src/systems/plan/client/logic.js');
   assert.doesNotMatch(plan, /bassam_rounds_v1|KIVO\.BassamRound|_roundKeyNow/);
-  for (const n of ['rounds.sites.patch@1', 'rounds.month.clear@1', 'rounds.site.remove@1', 'rounds.sites.pad@1', 'rounds.days@1', 'rounds.lensFilter@1', 'rounds.names@1']) assert.ok(plan.includes('"' + n + '"'), n);
-  for (const f of ['src/slots/modules/daily/logic.js.tpl', 'src/modules/daily/logic.js', 'src/services/420-round-factory.js', 'src/services/421-round-links.js', 'src/services/520-field-monitor.js', 'src/systems/dreport/client/logic.js'])
+  for (const n of ['daily.sites.patch@1', 'daily.month.clear@1', 'daily.site.remove@1', 'daily.sites.pad@1', 'daily.days@1', 'daily.lensFilter@1', 'daily.names@1']) assert.ok(plan.includes('"' + n + '"'), n);
+  for (const f of ['src/systems/daily/client/logic.js.tpl', 'src/systems/daily/client/logic.js', 'src/systems/daily/client/420-round-factory.js', 'src/systems/daily/client/421-round-links.js', 'src/systems/daily/client/520-field-monitor.js', 'src/systems/dreport/client/logic.js'])
     assert.doesNotMatch(rd(f), /bassam_(?:plan|zone_opts|gate_opts)_v1/, f);
   const contract = JSON.parse(rd('src/systems/plan/contract.json')), rounds = JSON.parse(rd('src/contracts/rounds.json'));
-  /* د5-هـ (r4): وأمرُ الجولات للتقرير اليومي (rounds.spot.set@1) يعلن غيابَه مستهلكُه — عقدُ التقرير */
+  /* د5-هـ (r4): وأمرُ الجولات للتقرير اليومي (daily.spot.set@1) يعلن غيابَه مستهلكُه — عقدُ التقرير */
   const dreport = JSON.parse(rd('src/systems/dreport/contract.json'));
   for (const n of Object.keys(rounds.provides.commands)) assert.ok((contract.consumes[n] && contract.consumes[n].absent) || (dreport.consumes[n] && dreport.consumes[n].absent), n);
   /* د5-هـ (دمج p3): كلُّ أمرٍ للخطة له مستهلكٌ أعلن غيابَه — الجولات (عقدها)، أو عُدّةُ الصفحات في القاعدة (_base.json ← consumes) لأمر أنواع المعالم */
   const base = JSON.parse(rd('src/contracts/_base.json')).consumes || {};
   for (const n of Object.keys(contract.provides.commands)) assert.ok((rounds.consumes[n] && rounds.consumes[n].absent) || (base[n] && base[n].absent), n);
-  assert.deepEqual(contract.readResources['plan.doc@1'], ['bassam_plan_v1']); assert.deepEqual(rounds.readResources['rounds.days@1'], ['bassam_rounds_v1']);
+  assert.deepEqual(contract.readResources['plan.doc@1'], ['bassam_plan_v1']); assert.deepEqual(rounds.readResources['daily.days@1'], ['bassam_rounds_v1']);
 });

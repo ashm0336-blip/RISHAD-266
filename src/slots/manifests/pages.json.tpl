@@ -52,55 +52,7 @@
     }
    ]
   },
-@@SYS:pages.entry.staff@@@@SYS:pages.entry.plan@@  {
-   "key": "daily",
-   "module": "daily",
-   "activation": "toggle",
-   "platSwitch": true,
-   "requires": [
-@@SYS:pages.daily.requires.dreport@@    {"for": "daily/kpiOcc", "on": "lens:zones", "kind": "lens"},
-    {"for": "daily/kpiOcc", "on": "lens:dens", "kind": "lens"},
-    {"for": "daily/kpiZones", "on": "lens:zones", "kind": "lens"}
-   ],
-   "departmentComponents": ["Daily Sessions"],
-   "nav": "daily",
-   "name": "المتابعة اليومية",
-   "seq": [
-    "tab:kpiDaily",
-    "tab:kpiOcc",
-    "tab:kpiZones",
-@@SYS:pages.daily.seq.dreport@@    "tab:rounds",
-@@SYS:pages.daily.seq.tasks@@    "tab:field"
-   ],
-   "tabLabel": "التبويبات",
-   "tabs": [
-    {
-     "key": "kpiDaily",
-     "name": "مؤشرات المتابعة — التشغيل اليومي",
-     "offPage": true
-    },
-    {
-     "key": "kpiOcc",
-     "name": "مؤشرات المتابعة — الإشغال",
-     "offPage": true
-    },
-    {
-     "key": "kpiZones",
-     "name": "مؤشرات المتابعة — المصليات",
-     "offPage": true
-    },
-    {
-     "key": "rounds",
-     "name": "الجولات اليومية"
-    },
-    {
-     "key": "field",
-     "name": "رصد الميدان — حالة الموقع واتجاه الحركة من صفحة الموظف",
-     "offPage": true
-    }
-   ]
-  },
-@@SYS:pages.entry.dreport@@@@SYS:pages.entry.tasks@@@@SYS:pages.entry.systems@@  {
+@@SYS:pages.entry.staff@@@@SYS:pages.entry.plan@@@@SYS:pages.entry.daily@@@@SYS:pages.entry.dreport@@@@SYS:pages.entry.tasks@@@@SYS:pages.entry.systems@@  {
    "key": "links",
    "activation": "toggle",
    "nav": "links",
@@ -164,29 +116,23 @@
  ],
  "tabAddr": {
   "emps": 1,
-@@SYS:pages.tabAddr.award@@  "admin": 1,
-  "daily": {
-   "rounds": 1@@SYS:pages.tabAddr.daily.dreport@@@@SYS:pages.tabAddr.daily@@
-  }@@SYS:pages.tabAddr.tail@@
+@@SYS:pages.tabAddr.award@@  "admin": 1@@SYS:pages.tabAddr.daily.entry@@@@SYS:pages.tabAddr.tail@@
  },
  "navOrder": [
   "kpis",
 @@SYS:pages.navOrder.dstats@@  "emps",
-  "planning",
-  "daily"@@SYS:pages.navOrder.tail@@
+  "planning"@@SYS:pages.navOrder.daily@@@@SYS:pages.navOrder.tail@@
  ],
  "navNames": {
   "kpis": "مؤشرات الإدارة",
 @@SYS:pages.navNames.dstats@@  "emps": "موظفو الإدارة",
-  "planning": "الخطة التشغيلية",
-  "daily": "المتابعة اليومية"@@SYS:pages.navNames.tail@@
+  "planning": "الخطة التشغيلية"@@SYS:pages.navNames.daily@@@@SYS:pages.navNames.tail@@
  },
  "routeNames": {
   "kpis": "مؤشرات الإدارة",
 @@SYS:pages.routeNames.dstats@@  "employees": "موظفو الإدارة",
 @@SYS:pages.routeNames.staff@@@@SYS:pages.routeNames.plan@@  "planning": "الخطة التشغيلية",
-  "daily": "المتابعة اليومية",
-@@SYS:pages.routeNames.dreport@@@@SYS:pages.routeNames.tasks@@@@SYS:pages.routeNames.systems@@  "links": "مواقع ذات صلة",
+@@SYS:pages.routeNames.daily@@@@SYS:pages.routeNames.dreport@@@@SYS:pages.routeNames.tasks@@@@SYS:pages.routeNames.systems@@  "links": "مواقع ذات صلة",
   "help": "المساعدة",
   "admin": "الإعدادات",
   "sysadmin": "مركز إدارة رشاد",

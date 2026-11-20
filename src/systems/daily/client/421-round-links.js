@@ -4,16 +4,16 @@
    طلباً واحداً ذرّياً. بغياب هذا الملف القراءةُ تعيد undefined والأمرُ { ok:0, absent:1 } فلا يُكتب في الجولات شيء.
    قاعدةُ المالك (برومت 43 · الجذر 3): ما يأتي من الخطة إلى أيام الجولات محصورٌ في الحاضر والمستقبل غيرِ المعتمد — يومٌ (y-m-d) اليومَ أو بعده
    أو علامةُ شهرٍ (m:y-m) هذا الشهرَ أو بعده؛ الأيامُ الماضية والمعتمدة لا تُمسّ.
-     read     rounds.days@1(via?)          وثيقةُ الجولات { 'y-m-d': { ap, d:[موقع] }, 'm:y-m': {…} } (via كما في 404-plan-p4: مسودة أو قارئُ صفحة أو بلا).
-     read     rounds.lensFilter@1(sites)   المواقعُ بعد تصفيتها بعدسات سقف الإدارة (كما تُنسخ إلى الجولة).
-     read     rounds.names@1()             { مفتاحُ مورد الجولات: اسمُه للعرض } — لرسالة «لم يُحدَّث معه».
-     command  rounds.sites.patch@1 { site }  كلُّ موقعٍ غير معتمد في يومٍ غير معتمد من اليوم فصاعداً ← site(موقع).
-     command  rounds.month.clear@1 { y, m }  يحذف أيامَ الشهر وعلامتَه.
-     command  rounds.site.remove@1 { index } يحذف الموقعَ بموضعه من كل يوم.
-     command  rounds.sites.pad@1 { sites }   يكمّل مواقعَ كل يومٍ غير معتمد من اليوم فصاعداً حتى عدد sites (بهويّاتها sid).
+     read     daily.days@1(via?)          وثيقةُ الجولات { 'y-m-d': { ap, d:[موقع] }, 'm:y-m': {…} } (via كما في 404-plan-p4: مسودة أو قارئُ صفحة أو بلا).
+     read     daily.lensFilter@1(sites)   المواقعُ بعد تصفيتها بعدسات سقف الإدارة (كما تُنسخ إلى الجولة).
+     read     daily.names@1()             { مفتاحُ مورد الجولات: اسمُه للعرض } — لرسالة «لم يُحدَّث معه».
+     command  daily.sites.patch@1 { site }  كلُّ موقعٍ غير معتمد في يومٍ غير معتمد من اليوم فصاعداً ← site(موقع).
+     command  daily.month.clear@1 { y, m }  يحذف أيامَ الشهر وعلامتَه.
+     command  daily.site.remove@1 { index } يحذف الموقعَ بموضعه من كل يوم.
+     command  daily.sites.pad@1 { sites }   يكمّل مواقعَ كل يومٍ غير معتمد من اليوم فصاعداً حتى عدد sites (بهويّاتها sid).
    V7 · د5-هـ (r4) — روابطُ التقرير اليومي:
-     read     rounds.resources@1()          [مفتاحُ مورد الجولات] — لمن ينتظر تغيّرَه دون أن يسمّيه.
-     command  rounds.spot.set@1 { day, rec } يضع سجلَّ يوم الجولة day (بعد تسكين موظفٍ أو رفعه من التقرير) ويكتب الوثيقة.
+     read     daily.resources@1()          [مفتاحُ مورد الجولات] — لمن ينتظر تغيّرَه دون أن يسمّيه.
+     command  daily.spot.set@1 { day, rec } يضع سجلَّ يوم الجولة day (بعد تسكين موظفٍ أو رفعه من التقرير) ويكتب الوثيقة.
      participant dreport.pulled@1 { y, m, d, shift, from? }   سحبُ وردية التقرير (أو متابعتُها): تُنشأ جولةُ اليوم في المسودة نفسِها (prepareEnsure)
                  والنتيجةُ تُكتب على الحدث نفسِه event.round ليقرأها الناشرُ لإشعاره. لا تُنشأ إن أُطفئت «الجولات» (daily/rounds) في الإدارة.
      participant dreport.shiftApproved@1 { y, m, d, shift, value }   اعتمادُ الوردية أو فتحُها: value ⇒ تُنشأ الجولةُ أولاً، ثم تُعتمد جولةُ الوردية
@@ -43,15 +43,15 @@
       return false;
     }
   }
-  bus.provide('rounds.days@1', function (how) { return via(how); });
-  bus.provide('rounds.lensFilter@1', function (sites) {
+  bus.provide('daily.days@1', function (how) { return via(how); });
+  bus.provide('daily.lensFilter@1', function (sites) {
     return KIVO.BassamRound && KIVO.BassamRound.lensFilter ? KIVO.BassamRound.lensFilter(sites) : sites;
   });
-  bus.provide('rounds.names@1', function () { var o = {}; o[KEY] = 'الجولات اليومية'; return o; });
-  bus.provide('rounds.resources@1', function () { return [KEY]; });
+  bus.provide('daily.names@1', function () { var o = {}; o[KEY] = 'الجولات اليومية'; return o; });
+  bus.provide('daily.resources@1', function () { return [KEY]; });
 
-  bus.command('rounds.sites.patch@1', function (payload, draft) {
-    drafted('rounds.sites.patch@1', draft);
+  bus.command('daily.sites.patch@1', function (payload, draft) {
+    drafted('daily.sites.patch@1', draft);
     var rounds = draft.get(KEY), site = payload.site, changed = false;
     if (rounds && typeof rounds === 'object') {
       Object.keys(rounds).forEach(function (key) {
@@ -68,8 +68,8 @@
     return { ok: 1, changed: changed };
   });
 
-  bus.command('rounds.month.clear@1', function (payload, draft) {
-    drafted('rounds.month.clear@1', draft);
+  bus.command('daily.month.clear@1', function (payload, draft) {
+    drafted('daily.month.clear@1', draft);
     var rounds = draft.get(KEY), changed = false;
     if (rounds && typeof rounds === 'object') {
       var day = payload.y + '-' + payload.m + '-', mark = 'm:' + payload.y + '-' + payload.m;
@@ -81,8 +81,8 @@
     return { ok: 1, changed: changed };
   });
 
-  bus.command('rounds.site.remove@1', function (payload, draft) {
-    drafted('rounds.site.remove@1', draft);
+  bus.command('daily.site.remove@1', function (payload, draft) {
+    drafted('daily.site.remove@1', draft);
     var rounds = draft.get(KEY), index = payload.index;
     if (!(rounds && typeof rounds === 'object')) return { ok: 1, changed: false };
     Object.keys(rounds).forEach(function (key) {
@@ -93,8 +93,8 @@
     return { ok: 1, changed: true };
   });
 
-  bus.command('rounds.sites.pad@1', function (payload, draft) {
-    drafted('rounds.sites.pad@1', draft);
+  bus.command('daily.sites.pad@1', function (payload, draft) {
+    drafted('daily.sites.pad@1', draft);
     var rounds = draft.get(KEY), sites = payload.sites || [], changed = false;
     if (rounds && typeof rounds === 'object') {
       Object.keys(rounds).forEach(function (key) {
@@ -111,8 +111,8 @@
   });
 
   /* ── V7 · د5-هـ (r4): التقرير اليومي ── */
-  bus.command('rounds.spot.set@1', function (payload, draft) {
-    drafted('rounds.spot.set@1', draft);
+  bus.command('daily.spot.set@1', function (payload, draft) {
+    drafted('daily.spot.set@1', draft);
     var rounds = draft.get(KEY);
     rounds = rounds && typeof rounds === 'object' ? rounds : {};
     rounds[payload.day] = payload.rec;

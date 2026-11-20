@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "641a09c1584f5bb63f0231d6fda4186cbaf658228dbfb495a3e776db7b2b887d",
+  "sha256": "2ee1b5276cd1de6add2fa8ac11926ade71acaedb6c12a53a2e9534f5b89e8d6a",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -561,10 +561,19 @@
       "sha256": "4b9971ae3abcbc3b1103ed16537bbf27ef7f99ed07d7c878fe3e8a5ecf25a352"
     },
     {
-      "file": "../../src/systems/plan/server/019p2-scheduling-plan.js",
+      "file": "../../src/systems/daily/server/019p3-scheduling-rounds.js",
       "lines": [
         19134,
-        19159
+        19207
+      ],
+      "bytes": 1902,
+      "sha256": "159261c668df0268f0a01c6272489019756444bf9a89ae34870dcf6d9f1faa61"
+    },
+    {
+      "file": "../../src/systems/plan/server/019p2-scheduling-plan.js",
+      "lines": [
+        19208,
+        19233
       ],
       "bytes": 991,
       "sha256": "91b059dfb8cc920f2b2ef1c1cc89029addf0a5de326c3794f1b8d2f87413100e"
@@ -572,20 +581,11 @@
     {
       "file": "../../src/systems/plan/server/019p4-scheduling-plan-options.js",
       "lines": [
-        19160,
-        19230
+        19234,
+        19304
       ],
       "bytes": 1713,
       "sha256": "3acc4b3246719e08af7623987a9505b567ea67b39f8dfa7b8369ff5a073e9cb4"
-    },
-    {
-      "file": "019p3-scheduling-rounds.js",
-      "lines": [
-        19231,
-        19304
-      ],
-      "bytes": 1902,
-      "sha256": "159261c668df0268f0a01c6272489019756444bf9a89ae34870dcf6d9f1faa61"
     },
     {
       "file": "019p9-scheduling-registry.js",

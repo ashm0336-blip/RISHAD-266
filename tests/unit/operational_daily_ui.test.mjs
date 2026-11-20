@@ -9,7 +9,7 @@ import * as acorn from "acorn";
 import { clone, operations, floor } from "./operational_ui_fx.mjs";
 import { SCHED_PARTS } from './sched_parts.mjs';   /* V7 · د5-د: أجزاءُ الجدولة من سجلّها */
 import { calendar, callers } from './cal_kit.mjs';   /* V7 · د5-د2: التقويم الموحّد */
-const source = fs.readFileSync("src/modules/daily/logic.js", "utf8"),
+const source = fs.readFileSync("src/systems/daily/client/logic.js", "utf8"),
   ast = acorn.parse(source, { ecmaVersion: "latest" }),
   codec = vm.createContext({});
 for (const file of [
@@ -158,7 +158,7 @@ function world(extra = {}) {
   });
   calendar(C);
   /* V7 · د5-هـ: الناقل وروابطُ الخطة والجولات عليه — الجولاتُ تقرأ الخطةَ بالاسم وتكتب فيها بأوامر مالكها */
-  for (const file of ["src/core/060-bus.js", "src/systems/plan/client/404-plan-p4.js", "src/services/421-round-links.js"])
+  for (const file of ["src/core/060-bus.js", "src/systems/plan/client/404-plan-p4.js", "src/systems/daily/client/421-round-links.js"])
     vm.runInContext(fs.readFileSync(file, "utf8"), C);
   vm.runInContext(source + "\nglobalThis.TestComponent=Component;", C);
   const component = new C.TestComponent();
@@ -418,7 +418,7 @@ test("lost import ACK repeats one immutable request without another image upload
 test("Daily field action awaits actual520 ACK and displays no success for an uncertain result", async () => {
   const w = world();
   vm.runInContext(
-    fs.readFileSync("src/services/520-field-monitor.js", "utf8"),
+    fs.readFileSync("src/systems/daily/client/520-field-monitor.js", "utf8"),
     w.C,
   );
   w.component.state.dsGateFly = { kind: "gates", i: 0 };

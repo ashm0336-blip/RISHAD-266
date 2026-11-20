@@ -28,7 +28,7 @@ export function busCleaner(full, gone) {
 }
 
 /* ملفاتُ البرامج (ما يفحص tools/contracts.py إعلانَه): مجلداتُ الأنظمة + ما تدّعيه عقودُ src/contracts بحقل files أو مجلدُ وحدتها */
-const PENDING_DIRS = { rounds: 'modules/daily' };
+const PENDING_DIRS = {};
 export function programFile(src, rel) {
   if (rel.startsWith('src/systems/')) return true;
   const cdir = path.join(src, 'contracts');

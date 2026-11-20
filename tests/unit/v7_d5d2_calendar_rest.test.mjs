@@ -291,7 +291,7 @@ test('⑤ no other place computes the calendar: one client service, one server p
   const ONE = [
     ['src/components/565-page-kit.js', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDays\(t, e\);$/],
     ['src/components/565-page-kit.js', 'curHijri', /^const t = KIVO\.BassamCal\.hToday\(\); return \{ y: t\.y, m: t\.m \};$/],
-    ['src/slots/modules/daily/logic.js.tpl', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, e\);$/],
+    ['src/systems/daily/client/logic.js.tpl', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, e\);$/],
     ['src/systems/dreport/client/logic.js', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, r\);$/],
     ['src/systems/dstats/client/logic.js', 'hOfDate', /^const h=KIVO\.BassamCal\.hParts\(dt\); return \{ year:h\.y, month:h\.m, day:h\.d \};$/],
     ['src/systems/dstats/client/logic.js', 'gOf', /^return KIVO\.BassamCal\.hGregUTC\(y,m,d\);$/],
@@ -299,7 +299,7 @@ test('⑤ no other place computes the calendar: one client service, one server p
     ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGreg', /^return KIVO\.BassamCal\.hGreg\(t, e, r\);$/],
     ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregMonthLabel', /^return KIVO\.BassamCal\.hGregMonthLabel\(t, e\);$/],
     ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregYearRange', /^return KIVO\.BassamCal\.hGregYearRange\(t\);$/],
-    ['src/services/520-field-monitor.js', 'function hParts', /^return KIVO\.BassamCal\.hPartsSafe\(dt\);$/],
+    ['src/systems/daily/client/520-field-monitor.js', 'function hParts', /^return KIVO\.BassamCal\.hPartsSafe\(dt\);$/],
     ['src/systems/tasks/server/070-task-core.js', 'function tkDayNum', /^return calDayNum\(k\);$/],
     ['src/systems/tasks/server/073-task-recur.js', 'function tkHijMid', /^return calHijriMid\(k, near, tkHij\);$/],
     ['src/systems/tasks/server/073-task-recur.js', 'function tkRiyMid', /^return calRiyadhMid\(t\);$/],
@@ -314,7 +314,7 @@ test('⑤ no other place computes the calendar: one client service, one server p
   }
   /* لا صفحةَ ولا نظامَ يعرّف hMonthDays غير العُدّة وصفحتَي الظهر */
   const defs = files.filter((f) => /(?:^|\n)[ \t]*hMonthDays\s*\([^)]*\)\s*\{/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(ROOT, f).split(path.sep).join('/')).sort();
-  assert.deepEqual(defs, ['src/components/565-page-kit.js', 'src/modules/daily/logic.js', 'src/slots/modules/daily/logic.js.tpl', 'src/systems/dreport/client/logic.js']);   /* د5-هـ: مرتَّبة — التقريرُ في مجلده  */
+  assert.deepEqual(defs, ['src/components/565-page-kit.js', 'src/systems/daily/client/logic.js', 'src/systems/daily/client/logic.js.tpl', 'src/systems/dreport/client/logic.js']);   /* د5-هـ: مرتَّبة — التقريرُ في مجلده  */
   const service = read('src/i18n/385-calendar.js'), part = read('workers/parts/016-base-shared.js');
   for (const n of ['hPartsRiyadh', 'hNow', 'hText', 'hGregExact', 'hGregUTC', 'hMonthDays', 'hMonthDaysNoon', 'hWeekdayIndex']) { assert.match(service, new RegExp('function ' + n + '\\('), n); assert.match(service, new RegExp('\\b' + n + ': ' + n + '\\b'), n + ' مُصدَّرة'); }
   for (const n of ['calHijriAt', 'calHijriOk', 'calRiyadhMid', 'calDayNum', 'calHijriMid', 'calHijriDayMid', 'dsToday']) assert.match(part, new RegExp('function ' + n + '\\('), n);

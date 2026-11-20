@@ -122,9 +122,17 @@ def expand(text, frags, used=None):
         if not n or not MARK.search(text): break
     return text
 
-def manifest(S):
+def manifest(S, systems=None):
+    """القوالب: ما في src/slots/slots.json (tpl نسبةً إلى src/slots) — و V7 · د5-هـ: قوالبُ الأنظمة الحاضرة (system.json ← templates:
+       [{tpl, out}] نسبةً إلى مجلد النظام): ملفٌّ للنظام نفسِه تُحقن فيه قطعُ أنظمةٍ أخرى (صفحةُ المتابعة يضيف إليها التقريرُ والمهام تبويباتِهما)،
+       يغيب بغيابه. لكل مدخلٍ path (المسارُ الكامل للقالب) و out (نسبةً إلى جذر المستودع)."""
     p = os.path.join(S, 'slots', 'slots.json')
-    return json.load(open(p, encoding='utf-8'))['templates'] if os.path.isfile(p) else []
+    out = [dict(t, path=os.path.join(S, 'slots', t['tpl'])) for t in (json.load(open(p, encoding='utf-8'))['templates'] if os.path.isfile(p) else [])]
+    root = os.path.dirname(S)
+    for d in (load(S) if systems is None else systems):
+        for t in d.get('templates') or []:
+            out.append({'tpl': os.path.relpath(os.path.join(d['_dir'], t['tpl']), os.path.join(S, 'slots')).replace(os.sep, '/'), 'out': os.path.relpath(os.path.join(d['_dir'], t['out']), root).replace(os.sep, '/'), 'path': os.path.join(d['_dir'], t['tpl'])})
+    return out
 
 def optional(S):
     """فتحاتٌ علامتُها داخل قطعة نظامٍ آخر (slots.json ← optional): تغيب العلامةُ بغياب ذلك النظام، فقطعتُها ليست خطأً إملائياً."""
@@ -137,8 +145,8 @@ def outputs(S, systems=None):
     bad = problems(S, systems)
     if bad: raise SystemExit('✘ systems: ' + ' · '.join(bad))
     frags = fragments(S, systems); used = set(); out = {}
-    for t in manifest(S):
-        src = open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read()
+    for t in manifest(S, systems):
+        src = open(t['path'], encoding='utf-8', newline='').read()
         out[t['out']] = expand(src, frags, used).encode('utf-8')
     orphan = sorted(set(frags) - used - RESERVED - optional(S))
     if orphan: raise SystemExit('✘ systems: قطعٌ بلا فتحة في أي قالب: ' + ', '.join(orphan))
@@ -242,7 +250,7 @@ def main(argv):
         cases = [set(d['key'] for d in systems)] + [dependents(d['key']) for d in systems]
         for gone in [g for i, g in enumerate(cases) if g and g not in cases[:i]]:
             frags = fragments(S, [d for d in systems if d['key'] not in gone])
-            res.append({'gone': sorted(gone), 'names': [n for d in systems if d['key'] in gone for n in d.get('names') or []], 'files': {t['out']: expand(open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read(), frags) for t in manifest(S) if t['out'].endswith('.js')}})
+            res.append({'gone': sorted(gone), 'names': [n for d in systems if d['key'] in gone for n in d.get('names') or []], 'files': {t['out']: expand(open(t['path'], encoding='utf-8', newline='').read(), frags) for t in manifest(S, [d for d in systems if d['key'] not in gone]) if t['out'].endswith('.js')}})
         print(json.dumps(res, ensure_ascii=False)); return 0
     if '--list' in argv:
         print(json.dumps([{'key': d['key'], 'name': d.get('name'), 'requires': d.get('requires') or []} for d in systems], ensure_ascii=False)); return 0

@@ -8,8 +8,8 @@
     "path": [
      "registry"
     ],
-    "after": 8,
-    "seq": 32,
+    "after": 1,
+    "seq": 410,
     "value": {
      "key": "sz.dash.view",
      "owner": "seized/dash",
@@ -63,8 +63,8 @@
     "path": [
      "registry"
     ],
-    "after": 8,
-    "seq": 33,
+    "after": 1,
+    "seq": 420,
     "value": {
      "key": "sz.rec.view",
      "owner": "seized/records",
@@ -115,8 +115,8 @@
     "path": [
      "registry"
     ],
-    "after": 8,
-    "seq": 34,
+    "after": 1,
+    "seq": 430,
     "value": {
      "key": "sz.rec.create",
      "owner": "seized/records",
@@ -167,8 +167,8 @@
     "path": [
      "registry"
     ],
-    "after": 8,
-    "seq": 35,
+    "after": 1,
+    "seq": 440,
     "value": {
      "key": "sz.rec.edit",
      "owner": "seized/records",
@@ -219,8 +219,8 @@
     "path": [
      "registry"
     ],
-    "after": 8,
-    "seq": 36,
+    "after": 1,
+    "seq": 450,
     "value": {
      "key": "sz.rec.delete",
      "owner": "seized/records",
@@ -271,8 +271,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 63,
+    "after": 73,
+    "seq": 450,
     "value": {
      "key": "ref.seized.location.view",
      "owner": "seized/records",
@@ -319,8 +319,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 64,
+    "after": 73,
+    "seq": 460,
     "value": {
      "key": "ref.seized.location.create",
      "owner": "seized/records",
@@ -367,8 +367,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 65,
+    "after": 73,
+    "seq": 470,
     "value": {
      "key": "ref.seized.location.edit",
      "owner": "seized/records",
@@ -415,8 +415,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 66,
+    "after": 73,
+    "seq": 480,
     "value": {
      "key": "ref.seized.location.delete",
      "owner": "seized/records",
@@ -463,8 +463,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 67,
+    "after": 73,
+    "seq": 490,
     "value": {
      "key": "ref.seized.category.view",
      "owner": "seized/records",
@@ -511,8 +511,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 68,
+    "after": 73,
+    "seq": 500,
     "value": {
      "key": "ref.seized.category.create",
      "owner": "seized/records",
@@ -559,8 +559,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 69,
+    "after": 73,
+    "seq": 510,
     "value": {
      "key": "ref.seized.category.edit",
      "owner": "seized/records",
@@ -607,8 +607,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 70,
+    "after": 73,
+    "seq": 520,
     "value": {
      "key": "ref.seized.category.delete",
      "owner": "seized/records",
@@ -655,8 +655,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 71,
+    "after": 73,
+    "seq": 530,
     "value": {
      "key": "ref.seized.item.view",
      "owner": "seized/records",
@@ -703,8 +703,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 72,
+    "after": 73,
+    "seq": 540,
     "value": {
      "key": "ref.seized.item.create",
      "owner": "seized/records",
@@ -751,8 +751,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 73,
+    "after": 73,
+    "seq": 550,
     "value": {
      "key": "ref.seized.item.edit",
      "owner": "seized/records",
@@ -799,8 +799,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 74,
+    "after": 73,
+    "seq": 560,
     "value": {
      "key": "ref.seized.item.delete",
      "owner": "seized/records",
@@ -847,8 +847,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 75,
+    "after": 73,
+    "seq": 570,
     "value": {
      "key": "ref.seized.kind.view",
      "owner": "seized/records",
@@ -895,8 +895,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 76,
+    "after": 73,
+    "seq": 580,
     "value": {
      "key": "ref.seized.kind.create",
      "owner": "seized/records",
@@ -943,8 +943,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 77,
+    "after": 73,
+    "seq": 590,
     "value": {
      "key": "ref.seized.kind.edit",
      "owner": "seized/records",
@@ -991,8 +991,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 78,
+    "after": 73,
+    "seq": 600,
     "value": {
      "key": "ref.seized.kind.delete",
      "owner": "seized/records",
@@ -1039,8 +1039,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 79,
+    "after": 73,
+    "seq": 610,
     "value": {
      "key": "ref.seized.action.view",
      "owner": "seized/records",
@@ -1087,8 +1087,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 80,
+    "after": 73,
+    "seq": 620,
     "value": {
      "key": "ref.seized.action.create",
      "owner": "seized/records",
@@ -1135,8 +1135,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 81,
+    "after": 73,
+    "seq": 630,
     "value": {
      "key": "ref.seized.action.edit",
      "owner": "seized/records",
@@ -1183,8 +1183,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 82,
+    "after": 73,
+    "seq": 640,
     "value": {
      "key": "ref.seized.action.delete",
      "owner": "seized/records",
@@ -1231,8 +1231,8 @@
     "path": [
      "registry"
     ],
-    "after": 82,
-    "seq": 83,
+    "after": 73,
+    "seq": 650,
     "value": {
      "key": "sz.rec.bulk.delete",
      "owner": "seized/records",
@@ -1283,7 +1283,7 @@
     "path": [
      "registry"
     ],
-    "after": 85,
+    "after": 76,
     "seq": 40,
     "value": {
      "key": "sz.rec.retro.open",
@@ -1383,8 +1383,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 60,
+    "after": 12,
+    "seq": 670,
     "value": {
      "leaf": "seized/dash",
      "act": "view",
@@ -1398,8 +1398,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 61,
+    "after": 12,
+    "seq": 680,
     "value": {
      "leaf": "seized/dash",
      "act": "add",
@@ -1411,8 +1411,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 62,
+    "after": 12,
+    "seq": 690,
     "value": {
      "leaf": "seized/dash",
      "act": "edit",
@@ -1424,8 +1424,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 63,
+    "after": 12,
+    "seq": 700,
     "value": {
      "leaf": "seized/dash",
      "act": "del",
@@ -1437,8 +1437,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 64,
+    "after": 12,
+    "seq": 710,
     "value": {
      "leaf": "seized/dash",
      "act": "approve",
@@ -1450,8 +1450,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 65,
+    "after": 12,
+    "seq": 720,
     "value": {
      "leaf": "seized/dash",
      "act": "export",
@@ -1465,8 +1465,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 66,
+    "after": 12,
+    "seq": 730,
     "value": {
      "leaf": "seized/records",
      "act": "view",
@@ -1485,8 +1485,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 67,
+    "after": 12,
+    "seq": 740,
     "value": {
      "leaf": "seized/records",
      "act": "add",
@@ -1505,8 +1505,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 68,
+    "after": 12,
+    "seq": 750,
     "value": {
      "leaf": "seized/records",
      "act": "edit",
@@ -1525,8 +1525,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 69,
+    "after": 12,
+    "seq": 760,
     "value": {
      "leaf": "seized/records",
      "act": "del",
@@ -1546,8 +1546,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 70,
+    "after": 12,
+    "seq": 770,
     "value": {
      "leaf": "seized/records",
      "act": "approve",
@@ -1561,8 +1561,8 @@
     "path": [
      "atoms"
     ],
-    "after": 42,
-    "seq": 71,
+    "after": 12,
+    "seq": 780,
     "value": {
      "leaf": "seized/records",
      "act": "export",
@@ -1600,8 +1600,8 @@
     "path": [
      "featureFlags"
     ],
-    "after": 22,
-    "seq": 40,
+    "after": 21,
+    "seq": 70,
     "value": "ff.module.seized.enabled"
    }
   ],
@@ -1610,8 +1610,8 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
-    "seq": 31,
+    "after": 1,
+    "seq": 400,
     "value": {
      "key": "sz.dash.view",
      "owner": "seized/dash",
@@ -1649,8 +1649,8 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
-    "seq": 32,
+    "after": 1,
+    "seq": 410,
     "value": {
      "key": "sz.rec.view",
      "owner": "seized/records",
@@ -1684,8 +1684,8 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
-    "seq": 33,
+    "after": 1,
+    "seq": 420,
     "value": {
      "key": "sz.rec.create",
      "owner": "seized/records",
@@ -1719,8 +1719,8 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
-    "seq": 34,
+    "after": 1,
+    "seq": 430,
     "value": {
      "key": "sz.rec.edit",
      "owner": "seized/records",
@@ -1754,8 +1754,8 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
-    "seq": 35,
+    "after": 1,
+    "seq": 440,
     "value": {
      "key": "sz.rec.delete",
      "owner": "seized/records",
@@ -1789,8 +1789,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 62,
+    "after": 62,
+    "seq": 440,
     "value": {
      "key": "ref.seized.location.view",
      "owner": "seized/records",
@@ -1822,8 +1822,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 63,
+    "after": 62,
+    "seq": 450,
     "value": {
      "key": "ref.seized.location.create",
      "owner": "seized/records",
@@ -1855,8 +1855,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 64,
+    "after": 62,
+    "seq": 460,
     "value": {
      "key": "ref.seized.location.edit",
      "owner": "seized/records",
@@ -1888,8 +1888,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 65,
+    "after": 62,
+    "seq": 470,
     "value": {
      "key": "ref.seized.location.delete",
      "owner": "seized/records",
@@ -1921,8 +1921,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 66,
+    "after": 62,
+    "seq": 480,
     "value": {
      "key": "ref.seized.category.view",
      "owner": "seized/records",
@@ -1954,8 +1954,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 67,
+    "after": 62,
+    "seq": 490,
     "value": {
      "key": "ref.seized.category.create",
      "owner": "seized/records",
@@ -1987,8 +1987,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 68,
+    "after": 62,
+    "seq": 500,
     "value": {
      "key": "ref.seized.category.edit",
      "owner": "seized/records",
@@ -2020,8 +2020,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 69,
+    "after": 62,
+    "seq": 510,
     "value": {
      "key": "ref.seized.category.delete",
      "owner": "seized/records",
@@ -2053,8 +2053,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 70,
+    "after": 62,
+    "seq": 520,
     "value": {
      "key": "ref.seized.item.view",
      "owner": "seized/records",
@@ -2086,8 +2086,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 71,
+    "after": 62,
+    "seq": 530,
     "value": {
      "key": "ref.seized.item.create",
      "owner": "seized/records",
@@ -2119,8 +2119,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 72,
+    "after": 62,
+    "seq": 540,
     "value": {
      "key": "ref.seized.item.edit",
      "owner": "seized/records",
@@ -2152,8 +2152,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 73,
+    "after": 62,
+    "seq": 550,
     "value": {
      "key": "ref.seized.item.delete",
      "owner": "seized/records",
@@ -2185,8 +2185,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 74,
+    "after": 62,
+    "seq": 560,
     "value": {
      "key": "ref.seized.kind.view",
      "owner": "seized/records",
@@ -2218,8 +2218,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 75,
+    "after": 62,
+    "seq": 570,
     "value": {
      "key": "ref.seized.kind.create",
      "owner": "seized/records",
@@ -2251,8 +2251,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 76,
+    "after": 62,
+    "seq": 580,
     "value": {
      "key": "ref.seized.kind.edit",
      "owner": "seized/records",
@@ -2284,8 +2284,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 77,
+    "after": 62,
+    "seq": 590,
     "value": {
      "key": "ref.seized.kind.delete",
      "owner": "seized/records",
@@ -2317,8 +2317,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 78,
+    "after": 62,
+    "seq": 600,
     "value": {
      "key": "ref.seized.action.view",
      "owner": "seized/records",
@@ -2350,8 +2350,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 79,
+    "after": 62,
+    "seq": 610,
     "value": {
      "key": "ref.seized.action.create",
      "owner": "seized/records",
@@ -2383,8 +2383,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 80,
+    "after": 62,
+    "seq": 620,
     "value": {
      "key": "ref.seized.action.edit",
      "owner": "seized/records",
@@ -2416,8 +2416,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 81,
+    "after": 62,
+    "seq": 630,
     "value": {
      "key": "ref.seized.action.delete",
      "owner": "seized/records",
@@ -2449,8 +2449,8 @@
     "path": [
      "bindings"
     ],
-    "after": 70,
-    "seq": 82,
+    "after": 62,
+    "seq": 640,
     "value": {
      "key": "sz.rec.bulk.delete",
      "owner": "seized/records",
@@ -2484,7 +2484,7 @@
     "path": [
      "bindings"
     ],
-    "after": 73,
+    "after": 65,
     "seq": 40,
     "value": {
      "key": "sz.rec.retro.open",
@@ -2539,8 +2539,8 @@
      "bassam_employees_v1",
      "keys"
     ],
-    "after": 3,
-    "seq": 50,
+    "after": 1,
+    "seq": 90,
     "value": "sz.rec.view"
    },
    {
@@ -2550,8 +2550,8 @@
      "bassam_employees_v1",
      "routes"
     ],
-    "after": 3,
-    "seq": 50,
+    "after": 1,
+    "seq": 90,
     "value": {
      "cap": "seized/records:view",
      "key": "sz.rec.view",
@@ -2565,8 +2565,8 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 4,
-    "seq": 2,
+    "after": 2,
+    "seq": 8,
     "value": "sz.rec.view",
     "needs": [
      "staff"
@@ -2579,8 +2579,8 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 4,
-    "seq": 2,
+    "after": 2,
+    "seq": 8,
     "value": {
      "cap": "seized/records:view",
      "key": "sz.rec.view",
@@ -2597,7 +2597,7 @@
      "bassam_rounds_v1",
      "keys"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 20,
     "value": "sz.rec.view"
    },
@@ -2608,7 +2608,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 9,
+    "after": 7,
     "seq": 80,
     "value": {
      "cap": "seized/records:view",
@@ -2833,8 +2833,8 @@
      "bassam_shift_options_v1",
      "keys"
     ],
-    "after": 3,
-    "seq": 50,
+    "after": 1,
+    "seq": 90,
     "value": "sz.rec.view"
    },
    {
@@ -2844,8 +2844,8 @@
      "bassam_shift_options_v1",
      "routes"
     ],
-    "after": 3,
-    "seq": 50,
+    "after": 1,
+    "seq": 90,
     "value": {
      "cap": "seized/records:view",
      "key": "sz.rec.view",
@@ -2888,7 +2888,7 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
+    "after": 26,
     "seq": 40,
     "value": {
      "key": "sz.rec.bulk.delete",

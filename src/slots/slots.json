@@ -15,7 +15,12 @@
   "read.map.reader.staff.5",
   "enf.uncov.cs.dreport",
   "enf.via.cs.dreport",
-  "root.liveKeys.seized.dreport"
+  "root.liveKeys.seized.dreport",
+  "pages.daily.requires.dreport",
+  "pages.daily.seq.dreport",
+  "pages.daily.seq.tasks",
+  "pages.tabAddr.daily.dreport",
+  "pages.tabAddr.daily"
  ],
  "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
  "templates": [
@@ -262,14 +267,6 @@
   {
    "tpl": "services/320-dept-storage.js.tpl",
    "out": "src/services/320-dept-storage.js"
-  },
-  {
-   "tpl": "modules/daily/logic.js.tpl",
-   "out": "src/modules/daily/logic.js"
-  },
-  {
-   "tpl": "modules/daily/view.html.tpl",
-   "out": "src/modules/daily/view.html"
   },
   {
    "tpl": "modules/profile/logic.js.tpl",

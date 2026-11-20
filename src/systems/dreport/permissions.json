@@ -273,7 +273,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 140,
     "value": {
      "key": "report.transfer",
@@ -326,7 +326,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 150,
     "value": {
      "key": "report.att.absence",
@@ -379,7 +379,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 160,
     "value": {
      "key": "report.att.leave",
@@ -432,7 +432,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 170,
     "value": {
      "key": "report.att.late_in",
@@ -485,7 +485,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 180,
     "value": {
      "key": "report.att.early_out",
@@ -538,7 +538,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 190,
     "value": {
      "key": "report.callsign.assign",
@@ -591,7 +591,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 200,
     "value": {
      "key": "ref.leave_type.view",
@@ -640,7 +640,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 210,
     "value": {
      "key": "ref.leave_type.create",
@@ -689,7 +689,7 @@
     "path": [
      "registry"
     ],
-    "after": 80,
+    "after": 73,
     "seq": 220,
     "value": {
      "key": "ref.leave_type.delete",
@@ -738,7 +738,7 @@
     "path": [
      "registry"
     ],
-    "after": 84,
+    "after": 75,
     "seq": 10,
     "value": {
      "key": "report.day.delete",
@@ -782,7 +782,7 @@
     "path": [
      "registry"
     ],
-    "after": 85,
+    "after": 76,
     "seq": 10,
     "value": {
      "key": "report.indicators.view",
@@ -835,7 +835,7 @@
     "path": [
      "registry"
     ],
-    "after": 85,
+    "after": 76,
     "seq": 20,
     "value": {
      "key": "ref.leave_type.edit",
@@ -1046,19 +1046,28 @@
    {
     "path": [
      "atoms",
-     24,
+     {
+      "by": "leaf",
+      "eq": "daily/kpiDaily",
+      "and": {
+       "act": "view"
+      }
+     },
      "targets"
     ],
     "after": 0,
     "seq": 1,
-    "value": "report.indicators.view"
+    "value": "report.indicators.view",
+    "needs": [
+     "daily"
+    ]
    },
    {
     "path": [
      "featureFlags"
     ],
-    "after": 22,
-    "seq": 10,
+    "after": 21,
+    "seq": 40,
     "value": "ff.module.dreport.enabled"
    },
    {
@@ -1475,7 +1484,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 140,
     "value": {
      "key": "report.transfer",
@@ -1514,7 +1523,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 150,
     "value": {
      "key": "report.att.absence",
@@ -1553,7 +1562,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 160,
     "value": {
      "key": "report.att.leave",
@@ -1592,7 +1601,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 170,
     "value": {
      "key": "report.att.late_in",
@@ -1631,7 +1640,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 180,
     "value": {
      "key": "report.att.early_out",
@@ -1670,7 +1679,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 190,
     "value": {
      "key": "report.callsign.assign",
@@ -1709,7 +1718,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 200,
     "value": {
      "key": "ref.leave_type.view",
@@ -1746,7 +1755,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 210,
     "value": {
      "key": "ref.leave_type.create",
@@ -1783,7 +1792,7 @@
     "path": [
      "bindings"
     ],
-    "after": 69,
+    "after": 62,
     "seq": 220,
     "value": {
      "key": "ref.leave_type.delete",
@@ -1820,7 +1829,7 @@
     "path": [
      "bindings"
     ],
-    "after": 72,
+    "after": 64,
     "seq": 10,
     "value": {
      "key": "report.day.delete",
@@ -1845,7 +1854,7 @@
     "path": [
      "bindings"
     ],
-    "after": 73,
+    "after": 65,
     "seq": 10,
     "value": {
      "key": "report.indicators.view",
@@ -1874,7 +1883,7 @@
     "path": [
      "bindings"
     ],
-    "after": 73,
+    "after": 65,
     "seq": 20,
     "value": {
      "key": "ref.leave_type.edit",
@@ -1899,8 +1908,8 @@
      "bassam_employees_v1",
      "keys"
     ],
-    "after": 3,
-    "seq": 10,
+    "after": 1,
+    "seq": 50,
     "value": "report.view"
    },
    {
@@ -1910,8 +1919,8 @@
      "bassam_employees_v1",
      "keys"
     ],
-    "after": 3,
-    "seq": 20,
+    "after": 1,
+    "seq": 60,
     "value": "report.indicators.view"
    },
    {
@@ -1921,8 +1930,8 @@
      "bassam_employees_v1",
      "routes"
     ],
-    "after": 3,
-    "seq": 10,
+    "after": 1,
+    "seq": 50,
     "value": {
      "cap": "dreport:view",
      "key": "report.view",
@@ -1936,47 +1945,47 @@
      "bassam_employees_v1",
      "routes"
     ],
-    "after": 3,
+    "after": 1,
+    "seq": 60,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "keys"
+    ],
+    "after": 6,
+    "seq": 20,
+    "value": "report.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "keys"
+    ],
+    "after": 6,
+    "seq": 30,
+    "value": "report.indicators.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 6,
     "seq": 20,
     "value": {
      "cap": "dreport:view",
-     "key": "report.indicators.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_rounds_v1",
-     "keys"
-    ],
-    "after": 8,
-    "seq": 1,
-    "value": "report.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_rounds_v1",
-     "keys"
-    ],
-    "after": 8,
-    "seq": 2,
-    "value": "report.indicators.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_rounds_v1",
-     "routes"
-    ],
-    "after": 8,
-    "seq": 1,
-    "value": {
-     "cap": "dreport:view",
      "key": "report.view",
      "source": "reference-read"
     }
@@ -1988,8 +1997,8 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 8,
-    "seq": 2,
+    "after": 6,
+    "seq": 30,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2003,8 +2012,8 @@
      "bassam_dayshift_v1",
      "keys"
     ],
-    "after": 2,
-    "seq": 1,
+    "after": 0,
+    "seq": 30,
     "value": "report.view"
    },
    {
@@ -2014,8 +2023,8 @@
      "bassam_dayshift_v1",
      "keys"
     ],
-    "after": 2,
-    "seq": 2,
+    "after": 0,
+    "seq": 40,
     "value": "report.indicators.view"
    },
    {
@@ -2025,8 +2034,8 @@
      "bassam_dayshift_v1",
      "routes"
     ],
-    "after": 2,
-    "seq": 1,
+    "after": 0,
+    "seq": 30,
     "value": {
      "cap": "dreport:view",
      "key": "report.view",
@@ -2040,8 +2049,8 @@
      "bassam_dayshift_v1",
      "routes"
     ],
-    "after": 2,
-    "seq": 2,
+    "after": 0,
+    "seq": 40,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2055,8 +2064,8 @@
      "bassam_dayfocus_v1",
      "keys"
     ],
-    "after": 2,
-    "seq": 1,
+    "after": 0,
+    "seq": 30,
     "value": "report.view"
    },
    {
@@ -2066,8 +2075,8 @@
      "bassam_dayfocus_v1",
      "keys"
     ],
-    "after": 2,
-    "seq": 2,
+    "after": 0,
+    "seq": 40,
     "value": "report.indicators.view"
    },
    {
@@ -2077,8 +2086,8 @@
      "bassam_dayfocus_v1",
      "routes"
     ],
-    "after": 2,
-    "seq": 1,
+    "after": 0,
+    "seq": 30,
     "value": {
      "cap": "dreport:view",
      "key": "report.view",
@@ -2092,8 +2101,8 @@
      "bassam_dayfocus_v1",
      "routes"
     ],
-    "after": 2,
-    "seq": 2,
+    "after": 0,
+    "seq": 40,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2107,8 +2116,8 @@
      "bassam_shift_options_v1",
      "keys"
     ],
-    "after": 3,
-    "seq": 10,
+    "after": 1,
+    "seq": 50,
     "value": "report.view"
    },
    {
@@ -2118,8 +2127,8 @@
      "bassam_shift_options_v1",
      "keys"
     ],
-    "after": 3,
-    "seq": 20,
+    "after": 1,
+    "seq": 60,
     "value": "report.indicators.view"
    },
    {
@@ -2129,8 +2138,8 @@
      "bassam_shift_options_v1",
      "routes"
     ],
-    "after": 3,
-    "seq": 10,
+    "after": 1,
+    "seq": 50,
     "value": {
      "cap": "dreport:view",
      "key": "report.view",
@@ -2144,8 +2153,8 @@
      "bassam_shift_options_v1",
      "routes"
     ],
-    "after": 3,
-    "seq": 20,
+    "after": 1,
+    "seq": 60,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2211,8 +2220,8 @@
      "bassam_plan_v1",
      "keys"
     ],
-    "after": 8,
-    "seq": 0,
+    "after": 6,
+    "seq": 3,
     "value": "report.view",
     "needs": [
      "plan"
@@ -2225,8 +2234,8 @@
      "bassam_plan_v1",
      "keys"
     ],
-    "after": 8,
-    "seq": 1,
+    "after": 6,
+    "seq": 4,
     "value": "report.indicators.view",
     "needs": [
      "plan"
@@ -2239,8 +2248,8 @@
      "bassam_plan_v1",
      "routes"
     ],
-    "after": 13,
-    "seq": 0,
+    "after": 6,
+    "seq": 8,
     "value": {
      "cap": "dreport:view",
      "key": "report.view",
@@ -2257,8 +2266,8 @@
      "bassam_plan_v1",
      "routes"
     ],
-    "after": 13,
-    "seq": 1,
+    "after": 6,
+    "seq": 9,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2275,8 +2284,8 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 4,
-    "seq": 0,
+    "after": 2,
+    "seq": 4,
     "value": "report.view",
     "needs": [
      "staff"
@@ -2289,8 +2298,8 @@
      "bassam_staffing_v3",
      "keys"
     ],
-    "after": 4,
-    "seq": 0,
+    "after": 2,
+    "seq": 5,
     "value": "report.indicators.view",
     "needs": [
      "staff"
@@ -2303,8 +2312,8 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 4,
-    "seq": 0,
+    "after": 2,
+    "seq": 4,
     "value": {
      "cap": "dreport:view",
      "key": "report.view",
@@ -2321,8 +2330,8 @@
      "bassam_staffing_v3",
      "routes"
     ],
-    "after": 4,
-    "seq": 0,
+    "after": 2,
+    "seq": 5,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2340,7 +2349,7 @@
      "keys"
     ],
     "after": 1,
-    "seq": 0,
+    "seq": 1,
     "value": "report.view",
     "needs": [
      "staff"
@@ -2354,7 +2363,7 @@
      "keys"
     ],
     "after": 1,
-    "seq": 1,
+    "seq": 2,
     "value": "report.indicators.view",
     "needs": [
      "staff"
@@ -2368,7 +2377,7 @@
      "routes"
     ],
     "after": 1,
-    "seq": 0,
+    "seq": 1,
     "value": {
      "cap": "dreport:view",
      "key": "report.view",
@@ -2386,7 +2395,7 @@
      "routes"
     ],
     "after": 1,
-    "seq": 1,
+    "seq": 2,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2404,7 +2413,7 @@
      "keys"
     ],
     "after": 2,
-    "seq": 0,
+    "seq": 1,
     "value": "report.view",
     "needs": [
      "staff"
@@ -2418,7 +2427,7 @@
      "keys"
     ],
     "after": 2,
-    "seq": 1,
+    "seq": 2,
     "value": "report.indicators.view",
     "needs": [
      "staff"
@@ -2432,7 +2441,7 @@
      "routes"
     ],
     "after": 2,
-    "seq": 0,
+    "seq": 1,
     "value": {
      "cap": "dreport:view",
      "key": "report.view",
@@ -2450,7 +2459,7 @@
      "routes"
     ],
     "after": 2,
-    "seq": 1,
+    "seq": 2,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2468,7 +2477,7 @@
      "keys"
     ],
     "after": 1,
-    "seq": 0,
+    "seq": 1,
     "value": "report.view",
     "needs": [
      "staff"
@@ -2482,7 +2491,7 @@
      "keys"
     ],
     "after": 1,
-    "seq": 1,
+    "seq": 2,
     "value": "report.indicators.view",
     "needs": [
      "staff"
@@ -2496,7 +2505,7 @@
      "routes"
     ],
     "after": 1,
-    "seq": 0,
+    "seq": 1,
     "value": {
      "cap": "dreport:view",
      "key": "report.view",
@@ -2514,7 +2523,7 @@
      "routes"
     ],
     "after": 1,
-    "seq": 1,
+    "seq": 2,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2567,8 +2576,8 @@
      "bassam_dreport_v1",
      "keys"
     ],
-    "after": 5,
-    "seq": 10,
+    "after": 3,
+    "seq": 1,
     "value": "ir.rec.view",
     "needs": [
      "irshad"
@@ -2581,8 +2590,8 @@
      "bassam_dreport_v1",
      "keys"
     ],
-    "after": 5,
-    "seq": 20,
+    "after": 3,
+    "seq": 2,
     "value": "sz.rec.view",
     "needs": [
      "seized"
@@ -2595,8 +2604,8 @@
      "bassam_dreport_v1",
      "keys"
     ],
-    "after": 5,
-    "seq": 30,
+    "after": 3,
+    "seq": 3,
     "value": "staff.view",
     "needs": [
      "staff"
@@ -2609,8 +2618,8 @@
      "bassam_dreport_v1",
      "keys"
     ],
-    "after": 5,
-    "seq": 40,
+    "after": 3,
+    "seq": 4,
     "value": "task.view",
     "needs": [
      "tasks"
@@ -2623,8 +2632,8 @@
      "bassam_dreport_v1",
      "routes"
     ],
-    "after": 5,
-    "seq": 10,
+    "after": 3,
+    "seq": 1,
     "value": {
      "cap": "irshad/records:view",
      "key": "ir.rec.view",
@@ -2641,8 +2650,8 @@
      "bassam_dreport_v1",
      "routes"
     ],
-    "after": 5,
-    "seq": 20,
+    "after": 3,
+    "seq": 2,
     "value": {
      "cap": "seized/records:view",
      "key": "sz.rec.view",
@@ -2659,8 +2668,8 @@
      "bassam_dreport_v1",
      "routes"
     ],
-    "after": 5,
-    "seq": 30,
+    "after": 3,
+    "seq": 3,
     "value": {
      "cap": "staff:view",
      "key": "staff.view",
@@ -2677,8 +2686,8 @@
      "bassam_dreport_v1",
      "routes"
     ],
-    "after": 5,
-    "seq": 40,
+    "after": 3,
+    "seq": 4,
     "value": {
      "cap": "tasks:view",
      "key": "task.view",
@@ -2787,8 +2796,6 @@
      "keys": [
       "report.view",
       "report.indicators.view",
-      "round.view",
-      "field.view",
       "emp.view",
       "ready.view",
       "backup.view"
@@ -2803,16 +2810,6 @@
        "cap": "dreport:view",
        "key": "report.indicators.view",
        "source": "explicit-read"
-      },
-      {
-       "cap": "daily/rounds:view",
-       "key": "round.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "daily/field:view",
-       "key": "field.view",
-       "source": "special:field.view"
       },
       {
        "cap": "emps/data:view",
@@ -2926,7 +2923,10 @@
     ],
     "after": 3,
     "seq": 1,
-    "value": "bassam_dreport_v1"
+    "value": "bassam_dreport_v1",
+    "needs": [
+     "daily"
+    ]
    },
    {
     "path": [
@@ -2993,8 +2993,8 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
-    "seq": 140,
+    "after": 0,
+    "seq": 260,
     "value": {
      "key": "report.att.absence",
      "res": "bassam_dreport_v1",
@@ -3012,8 +3012,8 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
-    "seq": 150,
+    "after": 0,
+    "seq": 270,
     "value": {
      "key": "report.att.leave",
      "res": "bassam_dreport_v1",
@@ -3031,8 +3031,8 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
-    "seq": 160,
+    "after": 0,
+    "seq": 280,
     "value": {
      "key": "report.att.late_in",
      "res": "bassam_dreport_v1 (+ [\"m:y-m\"].perm[ekey])",
@@ -3050,8 +3050,8 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
-    "seq": 170,
+    "after": 0,
+    "seq": 290,
     "value": {
      "key": "report.att.early_out",
      "res": "bassam_dreport_v1 (+ [\"m:y-m\"].perm[ekey])",
@@ -3069,7 +3069,7 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
+    "after": 26,
     "seq": 60,
     "value": {
      "key": "report.transfer",

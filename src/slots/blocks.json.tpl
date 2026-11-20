@@ -552,26 +552,7 @@
    "origBytes": 7356,
    "origSha256": "55eba74a656ef8cdb4af1fa4f24b416361bf96ad55df0d30d4762d769874ef02"
   },
-  {
-   "closeTag": "</script>",
-   "id": "services/420-round-factory.js",
-   "kind": "js",
-   "line": 8899,
-   "openTag": "<script>",
-   "origBytes": 5761,
-   "origSha256": "2df31e87dfe46cc6507354527b243a562b368381117b68dcda935951712afe06"
-  },
-  {
-   "closeTag": "</script>",
-   "id": "services/421-round-links.js",
-   "kind": "js",
-   "line": 8899,
-   "new": "V7 · د5-هـ: ما توفّره الجولاتُ اليومية لغيرها عبر الناقل (قراءات · أوامر داخل مسودة المستدعي)",
-   "openTag": "<script>",
-   "origBytes": null,
-   "origSha256": null
-  },
-  {
+@@SYS:blocks.svc.daily.1@@  {
    "closeTag": "</script>",
    "id": "services/430-store-broadcast.js",
    "kind": "js",
@@ -655,16 +636,7 @@
    "origBytes": 2640,
    "origSha256": "c27e87ef9c7b90d83763f5f0b4258985ff871338a0cf8f587eead3ff74b9bbf7"
   },
-  {
-   "closeTag": "</script>",
-   "id": "services/520-field-monitor.js",
-   "kind": "js",
-   "line": 10324,
-   "openTag": "<script>",
-   "origBytes": 15231,
-   "origSha256": "9f832adfc8b1074f4de0fa14a2926b0702b581bf22f489a9816bfe681ad343be"
-  },
-@@SYS:blocks.shell.staff@@@@SYS:blocks.shell.plan.p3@@@@SYS:blocks.shell.plan.p4@@@@SYS:blocks.shell.dreport@@@@SYS:blocks.shell.dreport.r3@@  {
+@@SYS:blocks.svc.daily.2@@@@SYS:blocks.shell.staff@@@@SYS:blocks.shell.plan.p3@@@@SYS:blocks.shell.plan.p4@@@@SYS:blocks.shell.dreport@@@@SYS:blocks.shell.dreport.r3@@  {
    "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
@@ -914,14 +886,7 @@
     "name": "Employees",
     "sha256": "a9c411dfd74600407d2d6de818104d8c9896eb2567b8a8e3fad5183fefa4883b"
    },
-@@SYS:blocks.pages.tasks@@   {
-    "b64Sha256": "18fd106f029402372a63ee7938a81c70cb1e20d3ca365afce5f18642c8e18ed9",
-    "bytes": 818646,
-    "file": "client/pages/Daily Sessions.dc.html",
-    "name": "Daily Sessions",
-    "sha256": "be3abc92554039fbf72e349c34a124f65444de98a30982645147f907212e4e00"
-   },
-@@SYS:blocks.pages.plan@@@@SYS:blocks.pages.staff@@   {
+@@SYS:blocks.pages.tasks@@@@SYS:blocks.pages.daily@@@@SYS:blocks.pages.plan@@@@SYS:blocks.pages.staff@@   {
     "b64Sha256": "52e50939d94f3ab0cfc86f3ceab9c83c6e7183033504f326ca211d4031aa1508",
     "bytes": 581768,
     "file": "client/pages/Admin.dc.html",
@@ -952,8 +917,7 @@
   ],
   "order": [
    "Employees",
-@@SYS:blocks.order.tasks@@   "Daily Sessions",
-@@SYS:blocks.order.plan@@@@SYS:blocks.order.staff@@   "Admin",
+@@SYS:blocks.order.tasks@@@@SYS:blocks.order.daily@@@@SYS:blocks.order.plan@@@@SYS:blocks.order.staff@@   "Admin",
    "Profile",
 @@SYS:blocks.order.irshad@@@@SYS:blocks.order.award@@@@SYS:blocks.order.dreport@@   "Planning",
 @@SYS:blocks.order.seized@@   "KPIs"@@SYS:blocks.order.tail@@

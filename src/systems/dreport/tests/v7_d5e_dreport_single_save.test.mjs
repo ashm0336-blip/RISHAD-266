@@ -3,7 +3,7 @@
       وترتيبُها حرفاً بحرف كما يكتبها الكودُ القديم (نسخةٌ حرفية منه داخل هذا الملف تُحقن في منطق الصفحة مكانَ الجديد)، والإشعارُ نفسُه.
    ② بغياب الجولات (لا مشارك): التقريرُ وحده يُحفظ، بلا إشعار جولة. وبإطفاء «الجولات» في الإدارة: كذلك.
    ③ مشاركٌ يرمي: التعديلُ كلُّه يفشل ولا يُرسل شيء.
-   ④ تسكينُ موظفٍ من التقرير: أمرُ الجولات rounds.spot.set@1 داخل مسودة التقرير يكتب ما كان يُكتب؛ وبغياب الجولات لا يُرسل شيء.
+   ④ تسكينُ موظفٍ من التقرير: أمرُ الجولات daily.spot.set@1 داخل مسودة التقرير يكتب ما كان يُكتب؛ وبغياب الجولات لا يُرسل شيء.
    ⑤ المصادر: صفحةُ التقرير لا تسمّي مفتاحَ الجولات ولا خدمتَها. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -40,11 +40,11 @@ const SWAP = [
   [`    /* V7 · د5-هـ: يومُ الجولة يكتبه مالكُه بأمرٍ معلن داخل مسودة التقرير (طلبٌ واحد) — بغيابه لا يُرسل شيء */
     const day = this.drRoundKey(), rec = t[day];
     return await this._drCommit(intent, draft => {
-      const done = KIVO.bus.call("rounds.spot.set@1", { day, rec }, draft);
+      const done = KIVO.bus.call("daily.spot.set@1", { day, rec }, draft);
       if (!done || done.ok !== 1) throw Error("rounds-absent");
     });`,
    `    return await this._drCommit(intent, draft => draft.set("bassam_rounds_v1", t));`],
-  [`      const t = KIVO.bus.read("rounds.days@1");   /* V7 · د5-هـ: أيامُ الجولات من مالكها — بغيابه undefined ⇒ {} (لا جولة) */`,
+  [`      const t = KIVO.bus.read("daily.days@1");   /* V7 · د5-هـ: أيامُ الجولات من مالكها — بغيابه undefined ⇒ {} (لا جولة) */`,
    `      const t = KIVO.__BS_SRV.operations.get("bassam_rounds_v1");`],
 ];
 function oldLogic() {
@@ -98,8 +98,8 @@ function world({ store, rounds = true, roundsOn = true, legacy = false, links = 
   vm.runInContext(rd('src/i18n/385-calendar.js'), ctx);
   vm.runInContext(rd('src/components/565-page-kit.js'), ctx);
   vm.runInContext(rd('src/systems/plan/client/404-plan-p4.js'), ctx);
-  if (rounds) vm.runInContext(rd('src/services/420-round-factory.js'), ctx);
-  if (rounds && links) vm.runInContext(rd('src/services/421-round-links.js'), ctx);
+  if (rounds) vm.runInContext(rd('src/systems/daily/client/420-round-factory.js'), ctx);
+  if (rounds && links) vm.runInContext(rd('src/systems/daily/client/421-round-links.js'), ctx);
   if (thrower) KIVO.bus.participant(thrower, () => { throw Error('TEST_ONLY participant failure'); });
   const Component = vm.runInContext((legacy ? oldLogic() : LOGIC) + '\n;Component', ctx);
   const page = new Component();
@@ -168,7 +168,7 @@ test('③ a participant that throws fails the whole edit — nothing is sent', a
   }
 });
 
-test('④ spot toggle / set from the report: rounds.spot.set@1 inside the report draft writes what was written; rounds absent ⇒ nothing sent', async () => {
+test('④ spot toggle / set from the report: daily.spot.set@1 inside the report draft writes what was written; rounds absent ⇒ nothing sent', async () => {
   for (const act of [(p) => p.drToggleSpot('TEST_ONLY_E1', '0:zones:0', 'TEST_ONLY_A'), (p) => p.drToggleSpot('TEST_ONLY_E1', '0:gates:0', 'TEST_ONLY_A'), (p) => p.drSetSpot('TEST_ONLY_E1', '0:gates:0', 'TEST_ONLY_A'), (p) => p.drSetSpot('TEST_ONLY_E1', '', 'TEST_ONLY_A')]) {
     const [now, was] = await both({ store: () => baseStore({ round: true }) }, act);
     assert.equal(now.sends.length, 1);
@@ -184,14 +184,14 @@ test('④ spot toggle / set from the report: rounds.spot.set@1 inside the report
 test('⑤ sources: the report names no rounds key or service; rounds take part through declared names', () => {
   const code = LOGIC.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(code, /bassam_rounds_v1|KIVO\.BassamRound/);
-  const links = rd('src/services/421-round-links.js');
+  const links = rd('src/systems/daily/client/421-round-links.js');
   for (const n of ['dreport.pulled@1', 'dreport.shiftApproved@1']) {
     assert.match(code, new RegExp('KIVO\\.bus\\.participate\\("' + n.replace('.', '\\.') + '"'));
     assert.match(links, new RegExp("bus\\.participant\\('" + n.replace('.', '\\.') + "'"));
   }
   const dr = JSON.parse(rd('src/systems/dreport/contract.json')), rounds = JSON.parse(rd('src/contracts/rounds.json'));
   assert.deepEqual(Object.keys(dr.provides.events), ['dreport.pulled@1', 'dreport.shiftApproved@1']);
-  for (const n of ['rounds.days@1', 'rounds.resources@1', 'rounds.spot.set@1']) assert.ok(dr.consumes[n] && dr.consumes[n].absent, n);
-  assert.ok(rounds.provides.commands['rounds.spot.set@1'] && rounds.provides.read['rounds.resources@1']);
+  for (const n of ['daily.days@1', 'daily.resources@1', 'daily.spot.set@1']) assert.ok(dr.consumes[n] && dr.consumes[n].absent, n);
+  assert.ok(rounds.provides.commands['daily.spot.set@1'] && rounds.provides.read['daily.resources@1']);
   for (const n of ['dreport.doc@1', 'dreport.resources@1']) assert.ok(rounds.consumes[n] && rounds.consumes[n].absent, n);
 });

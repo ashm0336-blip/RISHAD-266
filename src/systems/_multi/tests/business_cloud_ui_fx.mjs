@@ -69,7 +69,7 @@ function browser(module, handler, currentClock = clock) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), W);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), W);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), W);
-  for (const f of ['src/services/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), W);   /* V7 · د5-هـ: روابطُ الخطة والجولات على الناقل */
+  for (const f of ['src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), W);   /* V7 · د5-هـ: روابطُ الخطة والجولات على الناقل */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), W);
   const pageKitBase = W.KIVO.BassamPageKit.base;
   W.KIVO.BassamPageKit.base = (base, traits) => class extends pageKitBase(base, traits) { hToday() { return currentClock; } };

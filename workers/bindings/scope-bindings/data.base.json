@@ -93,222 +93,6 @@
    }
   },
   {
-   "key": "round.view",
-   "owner": "daily/rounds",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_rounds_v1",
-   "resources": [
-    "bassam_rounds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "shApShift"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "Zone/Element": [
-     "elementId"
-    ]
-   }
-  },
-  {
-   "key": "round.create",
-   "owner": "daily/rounds",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_rounds_v1",
-   "resources": [
-    "bassam_rounds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "shApShift"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "Zone/Element": [
-     "elementId"
-    ]
-   }
-  },
-  {
-   "key": "round.edit",
-   "owner": "daily/rounds",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_rounds_v1",
-   "resources": [
-    "bassam_rounds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "shApShift"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "Zone/Element": [
-     "elementId"
-    ]
-   }
-  },
-  {
-   "key": "round.delete",
-   "owner": "daily/rounds",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_rounds_v1",
-   "resources": [
-    "bassam_rounds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "shApShift"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "Zone/Element": [
-     "elementId"
-    ]
-   }
-  },
-  {
-   "key": "round.approve",
-   "owner": "daily/rounds",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_rounds_v1",
-   "resources": [
-    "bassam_rounds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "shApShift"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "Zone/Element": [
-     "elementId"
-    ]
-   }
-  },
-  {
-   "key": "round.reopen",
-   "owner": "daily/rounds",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_rounds_v1",
-   "resources": [
-    "bassam_rounds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "shApShift"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "Zone/Element": [
-     "elementId"
-    ]
-   }
-  },
-  {
-   "key": "field.view",
-   "owner": "daily/field",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_rounds_v1",
-   "resources": [
-    "bassam_rounds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Assigned": [
-     "elementEmp"
-    ],
-    "Shift": [
-     "shApShift"
-    ],
-    "Site": [
-     "floorSid"
-    ]
-   }
-  },
-  {
    "key": "backup.view",
    "owner": "admin/backup",
    "type": "access",
@@ -1708,38 +1492,6 @@
    }
   },
   {
-   "key": "round.sync.plan",
-   "owner": "daily/rounds",
-   "type": "operation",
-   "g": "to-bind",
-   "res": "bassam_rounds_v1",
-   "resources": [
-    "bassam_rounds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "shApShift"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "Zone/Element": [
-     "elementId"
-    ]
-   }
-  },
-  {
    "key": "tpl.supervisory",
    "owner": "admin/ptpls",
    "type": "decision",
@@ -2922,8 +2674,6 @@
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
      "emp.view",
-     "round.view",
-     "field.view",
      "ready.view",
      "backup.view"
     ],
@@ -2932,16 +2682,6 @@
       "cap": "emps/data:view",
       "key": "emp.view",
       "source": "explicit-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
      },
      {
       "cap": "planning:view",
@@ -3003,23 +2743,16 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "round.view",
      "lens.zones.view",
      "lens.paths.view",
      "lens.gates.view",
      "lens.marks.view",
      "lens.dist.view",
      "lens.dens.view",
-     "field.view",
      "emp.view",
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "daily/rounds:view",
       "key": "lens.zones.view",
@@ -3051,11 +2784,6 @@
       "source": "explicit-read"
      },
      {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
-     },
-     {
       "cap": "emps/data:view",
       "key": "emp.view",
       "source": "reference-read"
@@ -3072,21 +2800,9 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "round.view",
-     "field.view",
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
-     },
      {
       "cap": "admin/backup:view",
       "key": "backup.view",
@@ -3099,21 +2815,9 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "round.view",
-     "field.view",
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
-     },
      {
       "cap": "admin/backup:view",
       "key": "backup.view",
@@ -3127,8 +2831,6 @@
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
      "emp.view",
-     "round.view",
-     "field.view",
      "ready.view",
      "ref.shift.view",
      "backup.view"
@@ -3138,16 +2840,6 @@
       "cap": "emps/data:view",
       "key": "emp.view",
       "source": "reference-read"
-     },
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
      },
      {
       "cap": "planning:view",
@@ -3348,19 +3040,6 @@
   },
   "special": {
    "keys": {
-    "field.view": {
-     "resources": [
-      "bassam_rounds_v1",
-      "bassam_dayshift_v1",
-      "bassam_dayfocus_v1",
-      "bassam_employees_v1",
-      "bassam_shift_options_v1"
-     ],
-     "kind": "rule",
-     "asis": "daily/field:view (RD_REG)",
-     "primary": "bassam_rounds_v1",
-     "note": "راصدُ الميدان: مفتاحُ قراءةٍ فعلي لصفحة رصد الميدان (حارسُه rule — fieldObsOnly/dailyFieldOnly؛ لا يُحوَّل إلى read). يقرأ الجولة (Department · Assigned على emp[] · Shift · Site) وبنيةَ الموقع والمراجع التي ترسم صفحتَه كمرجع (RD_REG). Assigned يُقاس على عناصر الجولة/الخطة؛ Site/Shift غيرُ مهاجرة ⇒ unknown."
-    },
     "backup.view": {
      "resources": "*dept",
      "kind": "read",

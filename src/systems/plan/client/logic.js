@@ -138,7 +138,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         if (side.length && side.length === bad.length) {
           delete this._opActions[action];
           this._opTicket = null;
-          const NAMES = { ...(KIVO.bus.read("rounds.names@1") || {}), bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب", bassam_mark_kinds_v1: "أنواع المعالم" };
+          const NAMES = { ...(KIVO.bus.read("daily.names@1") || {}), bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب", bassam_mark_kinds_v1: "أنواع المعالم" };
           let why = "";
           try {
             why = service.explain ? service.explain(result) : "";
@@ -3634,7 +3634,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         : floor.gates,
     });
     /* V7 · د5-هـ: أيامُ الجولات يغيّرها مالكُها بأمرٍ معلن داخل حفظنا (اليومَ فصاعداً غيرَ المعتمد) — بغيابه لا جولاتَ تُنقّى */
-    KIVO.bus.call("rounds.sites.patch@1", { site }, { get: (k) => this._opRead(k), set: (k, v) => (related = { ...related, [k]: v }) });
+    KIVO.bus.call("daily.sites.patch@1", { site }, { get: (k) => this._opRead(k), set: (k, v) => (related = { ...related, [k]: v }) });
     const months = {};
     Object.keys(this.state.planMonths || {}).forEach((key) => {
       const entry = this.state.planMonths[key],
@@ -12224,7 +12224,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           l = {};
         if (r)
           try {
-            const t = KIVO.bus.read("rounds.days@1", (k) => this._opRead(k));   /* V7 · د5-هـ: بغياب الجولات لا يومَ معتمداً */
+            const t = KIVO.bus.read("daily.days@1", (k) => this._opRead(k));   /* V7 · د5-هـ: بغياب الجولات لا يومَ معتمداً */
             if (t) {
               const e = t;
               e &&
@@ -12463,7 +12463,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 a = t.day || 1;
               let i = {};
               try {
-                const t = KIVO.bus.read("rounds.days@1", (k) => this._opRead(k));   /* V7 · د5-هـ: بغياب الجولات لا يومَ يُنسخ منه */
+                const t = KIVO.bus.read("daily.days@1", (k) => this._opRead(k));   /* V7 · د5-هـ: بغياب الجولات لا يومَ يُنسخ منه */
                 if (t) {
                   const e = t;
                   e && "object" == typeof e && (i = e);
@@ -12525,7 +12525,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 iid: void 0 !== t.iid ? t.iid : null,
               }));
             try {
-              KIVO.bus.has("rounds.lensFilter@1") && (e = KIVO.bus.read("rounds.lensFilter@1", e));   /* V7 · د5-هـ: بغياب الجولات تُنسخ المواقعُ كما هي */
+              KIVO.bus.has("daily.lensFilter@1") && (e = KIVO.bus.read("daily.lensFilter@1", e));   /* V7 · د5-هـ: بغياب الجولات تُنسخ المواقعُ كما هي */
             } catch (t) {}
             const n = { ...(this.state.planMonths || {}) };
             n[s] = {
@@ -12764,7 +12764,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               );
             try {
               /* V7 · د5-هـ: جولاتُ الشهر يحذفها مالكُها داخل حفظنا — بغيابه لا جولات */
-              KIVO.bus.call("rounds.month.clear@1", { y: t.y, m: t.m }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
+              KIVO.bus.call("daily.month.clear@1", { y: t.y, m: t.m }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
             } catch (t) {}
             this.setState(n, () => {
               (this.savePlan(_opRelated),
@@ -16970,7 +16970,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         });
         try {
           /* V7 · د5-هـ: الموقعُ يُحذف من أيام الجولات بأمر مالكها داخل حفظنا */
-          KIVO.bus.call("rounds.site.remove@1", { index: t.i }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
+          KIVO.bus.call("daily.site.remove@1", { index: t.i }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
         } catch (t) {}
         let a = this.state.floor;
         a === t.i ? (a = 0) : a > t.i && a--;
@@ -17137,7 +17137,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               ];
               try {
                 /* V7 · د5-هـ: أيامُ الجولات (اليومَ فصاعداً غيرَ المعتمد) تُكمَّل بالموقع الجديد بأمر مالكها داخل حفظنا */
-                KIVO.bus.call("rounds.sites.pad@1", { sites: a }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
+                KIVO.bus.call("daily.sites.pad@1", { sites: a }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
               } catch (t) {}
               this.setState(
                 {

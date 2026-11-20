@@ -53,7 +53,7 @@ const methods = (T, file, names) => vm.runInContext('({' + names.map(n => member
 
 /* Daily (rounds) page save path: the draft is captured when the page shows the loaded base (as the page does on load). */
 export function roundsPage(T) {
-  const M = methods(T, 'src/modules/daily/logic.js', ['_opCommit']), toasts = [];
+  const M = methods(T, 'src/systems/daily/client/logic.js', ['_opCommit']), toasts = [];
   const page = { _opService: () => T.ops, _opDrafts: { bassam_rounds_v1: T.ops.draft() }, bsToast: (m, tone) => toasts.push({ m: String(m), tone }) };
   page._opCommit = M._opCommit;
   /* save(edit): the edit is applied to the value this page loaded (its draft base), exactly what the page submits */

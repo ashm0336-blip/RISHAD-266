@@ -13,7 +13,7 @@ import json, os, re, sys
 
 KEY = re.compile(r'bassam_[a-z0-9_]+_v[0-9]+')
 NAME = re.compile(r'^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9]*)+@[1-9][0-9]*$')
-PENDING_DIRS = {'rounds': 'modules/daily'}   # برامجُ لم تُفصل بعد: مجلدُ وحدتها
+PENDING_DIRS = {}   # برامجُ لم تُفصل بعد: مجلدُ وحدتها
 SCAN_EXT = ('.js', '.html', '.json', '.frag', '.css')
 WRITE = [r'draft\.set\(\s*["\']%s', r'_opWrite\(\s*["\']%s', r'(?:related|_opRelated)\.%s\s*=', r'\.\.\.related,\s*%s\s*:', r'(?<![.\w"\'])%s\s*:\s*[A-Za-z_]', r'setItem\(\s*["\'][^"\']*%s', r'kvPut[A-Za-z]*\([^)]*%s']
 GLOBAL_DEF = re.compile(r'(?:KIVO|window)\.([A-Z][A-Za-z0-9_]{3,})\s*=(?!=)')
@@ -206,6 +206,7 @@ def scan(S):
         for p in files_of(S, e['dir'], (e['doc'] or {}).get('files') or ()):
             # ملفٌ يولَّد من قالب (src/slots/<المسار>.tpl): مصدرُ البرنامج هو القالب — المولَّدُ يحمل قطعَ أنظمةٍ أخرى محقونةً فلا يُمسح
             twin = os.path.join(S, 'slots', os.path.relpath(p, S) + '.tpl')
+            if not os.path.exists(twin): twin = p + '.tpl'   # د5-هـ: قالبُ النظام في مجلده (system.json ← templates)
             if os.path.exists(twin): p = twin
             try: texts[p] = open(p, encoding='utf-8').read().split('\n')
             except UnicodeDecodeError: continue

@@ -88,7 +88,7 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
   assert.doesNotMatch(plan, /flex-wrap\s*:\s*wrap/, 'حُذفت قاعدةُ الالتفاف سطرين');
   assert.doesNotMatch(plan, /\.bs-mapcard > \.bs-hbar/);
   assert.doesNotMatch(bare, /\.bs-canvas-header[^{]*\{[^}]*flex-wrap\s*:\s*wrap/);
-  for (const [f, group] of [['systems/plan/client/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/], ['modules/daily/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/]]) {
+  for (const [f, group] of [['systems/plan/client/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/], ['systems/daily/client/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/]]) {
     const v = rd(f), m = /<div class="([^"]*\bbs-canvas-header\b[^"]*)" style="([^"]*)">/.exec(v); assert.ok(m, f);
     assert.deepEqual(m[1].split(/\s+/), ['bs-hbar', 'bs-canvas-header'], f + ': bs-hbar بلا bs-wrap');
     assert.doesNotMatch(m[2], /flex-wrap/, f + ': لا flex-wrap مكتوباً على الترويسة');
@@ -105,7 +105,7 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
     assert.match(h, /<div class="bs-pop bs-canvas-site-menu" data-bs-site-menu="1">\s*<div class="bs-canvas-site-list">/, f);
     assert.doesNotMatch(v, /fldPopStyle/, f);
   }
-  for (const f of ['systems/plan/client/logic.js', 'modules/daily/logic.js']) {
+  for (const f of ['systems/plan/client/logic.js', 'systems/daily/client/logic.js']) {
     const l = rd(f);
     assert.doesNotMatch(l, /fldPopStyle/, f);
     assert.match(l, /fldToggle: \(\) => this\.setState\(\(t\) => \(\{ fldOpen: !t\.fldOpen \}\)\),/, f);
@@ -127,7 +127,7 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
   assert.match(dd, /workspace\.style\.setProperty\("--bs-canvas-panel-top", Math\.ceil\(top\) \+ "px"\)/);
   assert.match(dd, /root\.querySelectorAll\("\.bs-canvas-header"\)\.forEach\(watchHeader\)/);
   assert.match(dd, /menu\.hasAttribute\("data-bs-site-menu"\)/);
-  for (const f of ['systems/plan/client/view.html', 'modules/daily/view.html']) assert.match(rd(f), /<div class="bs-ws-row" style="\{\{wsStyle\}\}">/, f);
+  for (const f of ['systems/plan/client/view.html', 'systems/daily/client/view.html']) assert.match(rd(f), /<div class="bs-ws-row" style="\{\{wsStyle\}\}">/, f);
 });
 
 test('ES-9 · محرِّرُ الراحات لا يتجاوز الشاشة: عرضُه max-content بحدٍّ أقصى calc(100vw - 16px) وأيامُه تلتفّ — كان 452px فيخرج «سبت» عن جوال 390px (ولا طريقَ آخر للحذف باللمس)', () => {
@@ -150,7 +150,7 @@ test('ES-9 · محرِّرُ الراحات لا يتجاوز الشاشة: عر
 
 /* ── منطقُ الوحدات في vm ── */
 const SERVICES = ['src/services/060-percent-format.js', 'src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js',
-  'src/i18n/380-hijri-fallback.js', 'src/services/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/560-canvas-input.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/systems/staff/client/533-staff-g3.js', 'src/systems/plan/client/403-plan-p3.js', 'src/systems/staff/client/534-staff-g4.js', 'src/services/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
+  'src/i18n/380-hijri-fallback.js', 'src/systems/daily/client/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/560-canvas-input.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/systems/staff/client/533-staff-g3.js', 'src/systems/plan/client/403-plan-p3.js', 'src/systems/staff/client/534-staff-g4.js', 'src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
 function page(slug, o = {}) {
   const store = new Map(), KIVO = {}, toasts = [];
   const ctx = { KIVO, console, setTimeout: () => 0, clearTimeout: () => 0, setInterval: () => 0, clearInterval: () => 0, requestAnimationFrame: () => 0, cancelAnimationFrame() {}, performance: { now: () => 1 },

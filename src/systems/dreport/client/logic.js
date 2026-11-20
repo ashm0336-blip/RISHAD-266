@@ -190,7 +190,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
     this._storeLisDr = (t) => {
       try {
-        -1 === (KIVO.bus.read("rounds.resources@1") || []).indexOf((t && t.detail && t.detail.key) || "") ||   /* V7 · د5-هـ: مفتاحُ الجولات من مالكها — بغيابه لا شيء يطابق */
+        -1 === (KIVO.bus.read("daily.resources@1") || []).indexOf((t && t.detail && t.detail.key) || "") ||   /* V7 · د5-هـ: مفتاحُ الجولات من مالكها — بغيابه لا شيء يطابق */
           this._drWriting ||
           this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
       } catch (t) {}
@@ -484,7 +484,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   drRounds() {
     try {
-      const t = KIVO.bus.read("rounds.days@1");   /* V7 · د5-هـ: أيامُ الجولات من مالكها — بغيابه undefined ⇒ {} (لا جولة) */
+      const t = KIVO.bus.read("daily.days@1");   /* V7 · د5-هـ: أيامُ الجولات من مالكها — بغيابه undefined ⇒ {} (لا جولة) */
       return t && "object" == typeof t ? t : {};
     } catch (t) {
       return {};
@@ -515,7 +515,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     /* V7 · د5-هـ: يومُ الجولة يكتبه مالكُه بأمرٍ معلن داخل مسودة التقرير (طلبٌ واحد) — بغيابه لا يُرسل شيء */
     const day = this.drRoundKey(), rec = t[day];
     return await this._drCommit(intent, draft => {
-      const done = KIVO.bus.call("rounds.spot.set@1", { day, rec }, draft);
+      const done = KIVO.bus.call("daily.spot.set@1", { day, rec }, draft);
       if (!done || done.ok !== 1) throw Error("rounds-absent");
     });
   }

@@ -1,0 +1,61 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "daily",
+ "name": "المتابعة اليومية",
+ "names": [
+  "bassam_rounds_v1",
+  "Daily[ -]Sessions",
+  "modules/daily/",
+  "systems/daily/",
+  "\\bdaily/(?:rounds|field)\\b",
+  "\\bdaily\\.[A-Za-z]+@[0-9]",
+  "BassamRound\\b",
+  "BassamField"
+ ],
+ "note": "V7 · د5-هـ (م3): المتابعةُ اليومية (الجولات · رصد الميدان) في مجلدها. منطقُ صفحتها قالبٌ في مجلدها (templates) تُحقن فيه قطعُ التقرير اليومي والمهام. روابطُه مع غيره في contract.json.",
+ "client": {
+  "slug": "daily",
+  "component": "Daily Sessions",
+  "files": [
+   "client/420-round-factory.js",
+   "client/421-round-links.js",
+   "client/520-field-monitor.js",
+   "client/helmet.css",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "templates": [
+  {
+   "tpl": "client/logic.js.tpl",
+   "out": "client/logic.js"
+  },
+  {
+   "tpl": "client/view.html.tpl",
+   "out": "client/view.html"
+  }
+ ],
+ "server": {
+  "parts": [
+   {
+    "file": "server/019p3-scheduling-rounds.js",
+    "after": "019p5-scheduling-floors.js",
+    "order": 10
+   }
+  ]
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات — لا تُنقل"
+ },
+ "permissions": "permissions.json",
+ "tests": [],
+ "derived": [
+  "src/pages/Daily Sessions.dc.html"
+ ],
+ "sharedStaysInBase": [],
+ "slots": {}
+}

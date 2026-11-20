@@ -77,7 +77,7 @@ test('KD-09 · IRSZ-5 · --warning-on-strong على --warning-strong ≥ 4.5:1 �
 
 /* ── منطقُ الوحدات في vm ── */
 const SERVICES = ['src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
-  'src/services/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/560-canvas-input.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/systems/staff/client/533-staff-g3.js', 'src/systems/plan/client/403-plan-p3.js', 'src/systems/staff/client/534-staff-g4.js', 'src/services/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
+  'src/systems/daily/client/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/560-canvas-input.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/systems/staff/client/533-staff-g3.js', 'src/systems/plan/client/403-plan-p3.js', 'src/systems/staff/client/534-staff-g4.js', 'src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
 /* خريطةُ وقت التشغيل الحقيقية (110 · __BS_TOK) ومحوِّلٌ بقدرها: لونُ الخاصيّة ← var(--<حرفي>) كما يفعل __bsTokVal */
 const TOK = (() => { const s = fs.readFileSync(path.join(SRC, 'core/110-theme-prepaint.js'), 'utf8'); return JSON.parse(/KIVO\.__BS_TOK = (\{.*?\});\n/s.exec(s)[1]); })();
 function page(slug) {

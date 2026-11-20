@@ -49,7 +49,7 @@ test('PLAN-03 · DG-08: بطاقاتُ التبويب لا تُحرّك العر
   const tab = /#bsPtRoot \.pt-tab\{[^}]*\}/.exec(pl)[0], ico = /#bsPtRoot \.pt-ico\{[^}]*\}/.exec(pl)[0];
   assert.doesNotMatch(tab, /transition:all/); assert.match(tab, /transition:color \.3s,background-color \.3s,box-shadow \.3s,border-color \.3s/);
   assert.doesNotMatch(ico, /transition:all/); assert.match(ico, /transition:background-color \.3s,color \.3s/);
-  const dl = rd('modules/daily/logic.js');
+  const dl = rd('systems/daily/client/logic.js');
   const i = dl.indexOf('    const ti = (t) =>'), blk = dl.slice(i, dl.indexOf('si = (t) =>', i));
   assert.ok(i > 0, 'نمطُ بطاقة تبويب المتابعة اليومية');
   assert.doesNotMatch(blk, /transition:all/, 'لا transition:all على بطاقة التبويب ولا أيقونتها');

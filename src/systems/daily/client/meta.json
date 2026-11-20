@@ -17,10 +17,10 @@
    "#/daily"
   ],
   "ui": [
-   "src/modules/daily/view.html",
-   "src/modules/daily/helmet.css"
+   "src/systems/daily/client/view.html",
+   "src/systems/daily/client/helmet.css"
   ],
-  "domain": "src/modules/daily/logic.js",
+  "domain": "src/systems/daily/client/logic.js",
   "data": [
    "bassam_dayshift_v1",
    "bassam_employees_v1",

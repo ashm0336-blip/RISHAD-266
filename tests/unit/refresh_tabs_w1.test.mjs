@@ -91,7 +91,7 @@ test('المتابعة اليومية (DG-04 · R7 · DG-09): #/daily/rounds ي�
   const T = page('daily', ['_bsHR() {'], { state: { dsTab: 'kpi' }, self, perm: { can: (k) => k === 'tasks' }, kivo: { __BS_OPEN_TAB: { page: 'daily', tab: 'tasks' } } });
   T.c._bsHT = () => {}; T.c._bsHR();
   assert.equal(T.c.state.dsTab, 'tasks'); assert.equal(T.timers.length, 0);
-  const src = rd('modules/daily/logic.js');
+  const src = rd('systems/daily/client/logic.js');
   assert.equal(firstInRender(src, 'this._bsHR();'), 2);
   assert.doesNotMatch(method(src, '_bsHR() {'), /setTimeout|subOn/);
   assert.match(src, /Vn =\n\s+this\._dsTabOn\("rounds"\) && \(this\.bsLensOn\("zones"\) \|\| this\.bsLensOn\("gates"\) \|\| this\.bsLensOn\("marks"\) \|\| this\.bsLensOn\("paths"\)\),/, 'القاعدةُ نفسُها التي تُظهر التبويب');
@@ -225,7 +225,7 @@ function tasksPage() {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/plan/client/403-plan-p3.js'), 'utf8'), ctx);   /* V7 · د5-هـ: قراءاتُ التشغيل الميداني المعلنة */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), ctx);
-  for (const f of ['src/services/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);   /* V7 · د5-هـ: روابطُ الخطة والجولات على الناقل */
+  for (const f of ['src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);   /* V7 · د5-هـ: روابطُ الخطة والجولات على الناقل */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast() {} };
   KIVO.__BS_SRV = { operations: { resources: [], status: () => ({ state: 'idle', epoch: 0 }), context: () => null, state: () => 'ready', begin: () => ({ ok: true }), draft: () => null }, rev: () => 0 };

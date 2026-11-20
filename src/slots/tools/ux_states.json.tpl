@@ -8,14 +8,7 @@
    "بلا اتصال": 2,
    "أعد المحاولة": 5
   },
-@@SYS:uxStates.award@@  "daily": {
-   "فارغ": 60,
-   "تحميل": 9,
-   "خطأ": 18,
-   "بلا اتصال": 0,
-   "أعد المحاولة": 3
-  },
-@@SYS:uxStates.dreport@@@@SYS:uxStates.dstats@@  "employees": {
+@@SYS:uxStates.award@@@@SYS:uxStates.daily@@@@SYS:uxStates.dreport@@@@SYS:uxStates.dstats@@  "employees": {
    "فارغ": @@SYS:uxStates.employees.empty|empty="32"@@,
    "تحميل": 1,
    "خطأ": 10,

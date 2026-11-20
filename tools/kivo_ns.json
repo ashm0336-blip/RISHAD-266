@@ -50,7 +50,7 @@
   "src/permissions/331-perm-model.js",
   "src/layouts/root-logic.js",
   "src/services/566-print-core.js",
-  "src/modules/daily/logic.js",
+  "src/systems/daily/client/logic.js",
   "src/systems/plan/client/logic.js",
   "src/modules/admin/logic.js",
   "src/components/660-a11y-enhancer.js",

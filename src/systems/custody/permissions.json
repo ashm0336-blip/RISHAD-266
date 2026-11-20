@@ -377,7 +377,7 @@
     "path": [
      "registry"
     ],
-    "after": 84,
+    "after": 75,
     "seq": 30,
     "value": {
      "key": "ref.custody_type.view",
@@ -739,7 +739,7 @@
     "path": [
      "bindings"
     ],
-    "after": 72,
+    "after": 64,
     "seq": 20,
     "value": {
      "key": "ref.custody_type.view",
@@ -826,8 +826,8 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
-    "seq": 50,
+    "after": 0,
+    "seq": 170,
     "value": {
      "key": "cust.move.issue",
      "res": "bassam_custody_v1",
@@ -845,8 +845,8 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
-    "seq": 60,
+    "after": 0,
+    "seq": 180,
     "value": {
      "key": "cust.move.return",
      "res": "bassam_custody_v1",
@@ -864,8 +864,8 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
-    "seq": 70,
+    "after": 0,
+    "seq": 190,
     "value": {
      "key": "cust.move.damage",
      "res": "bassam_custody_v1",
@@ -883,8 +883,8 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
-    "seq": 80,
+    "after": 0,
+    "seq": 200,
     "value": {
      "key": "cust.move.lost",
      "res": "bassam_custody_v1",
