@@ -1756,8 +1756,8 @@ function lensesUpgradeOnly(a, b) {
      srvBusParticipant(name, fn) · srvBusAccepts(name, …args)
         مشاركٌ في تبعة حدثٍ يقع أثرُه في مورده: القاعدةُ تسأل «هل يقبل أحدٌ هذه الكتابة تبعةً للحدث؟» فيجيب مالكُ المورد المتأثّر.
         بلا مشاركٍ ⇒ false (لا تبعةَ تُقبل)، وليس خطأ.
-   التسجيلُ عند تحميل جزء البرنامج (أعلى ملفه)، فهذا الجزء يسبق أجزاءَ البرامج كلَّها في ترتيب الضمّ.
-   (شكلٌ واحد الآن لأنه المطلوب الوحيد؛ القراءةُ المعلنة تُضاف بالقواعد نفسها حين يحتاجها برنامج.) */
+     srvBusProvide(name, fn) · srvBusRead(name, …args)
+        قراءةٌ معلنة يوفّرها مالكُها (مزوّدٌ واحد لكل اسم). بلا مزوّدٍ ⇒ undefined، وسلوكُ المستهلك عند الغياب مكتوبٌ في عقده. */
 var SRV_BUS_NAME = /^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9]*)+@[1-9][0-9]*$/;
 var SRV_BUS_PARTICIPANTS = Object.create(null);
 function srvBusNamed(name) { if (typeof name !== 'string' || !SRV_BUS_NAME.test(name)) throw Error('bus-name: ' + String(name)); return name; }
@@ -1771,6 +1771,13 @@ function srvBusAccepts(name) {
   for (var i = 0; i < list.length; i++) if (list[i].apply(null, args) === true) return true;
   return false;
 }
+var SRV_BUS_READS = Object.create(null);
+function srvBusProvide(name, fn) {
+  srvBusNamed(name); if (typeof fn !== 'function') throw Error('bus-handler');
+  if (SRV_BUS_READS[name] && SRV_BUS_READS[name] !== fn) throw Error('bus-read-taken: ' + name);
+  SRV_BUS_READS[name] = fn;
+}
+function srvBusRead(name) { var fn = SRV_BUS_READS[srvBusNamed(name)]; return fn ? fn.apply(null, Array.prototype.slice.call(arguments, 1)) : undefined; }
 /* ═══ التفويض في الخادم ═══════════════════════════════════════════════════
    كانت البوابة تتحقق أن الحافظ مسجّل دخول فحسب، وتأخذ منه أي مفتاح بأي
    قيمة — فالصلاحيات كلها كانت تُطبَّق في المتصفح وحده. هنا تُعاد قراءة

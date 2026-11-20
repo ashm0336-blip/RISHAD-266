@@ -25,7 +25,17 @@ def load(S):
     """الأنظمةُ الحاضرة مرتَّبةً بالمفتاح؛ كلٌّ منها system.json مع _dir (مجلدُه)."""
     out = []
     for p in sorted(glob.glob(os.path.join(S, 'systems', '*', 'system.json'))):
-        d = json.load(open(p, encoding='utf-8')); d['_dir'] = os.path.dirname(p); out.append(d)
+        d = json.load(open(p, encoding='utf-8')); d['_dir'] = os.path.dirname(p)
+        # V7 · د5-د2: قطعُ النظام قد تتوزّع على ملفات مجموعات slots/<اسم>.slots.json ({اسمُ الفتحة: قطعة أو قائمة}) تُضمّ إلى slots في system.json —
+        #            لنظامٍ قطعُه بالمئات (الجدول الشهري). الاسمُ الواحد في ملفين: القائمتان تُضمّان (order يرتّب).
+        slots = dict(d.get('slots') or {})
+        for g in sorted(glob.glob(os.path.join(d['_dir'], 'slots', '*.slots.json'))):
+            for name, v in json.load(open(g, encoding='utf-8')).items():
+                if name == '_note': continue
+                add = v if isinstance(v, list) else [v]
+                slots[name] = ((slots[name] if isinstance(slots[name], list) else [slots[name]]) + add) if name in slots else v
+        if slots: d['slots'] = slots
+        out.append(d)
     return sorted(out, key=lambda d: d.get('key', ''))
 
 def shared(S):
