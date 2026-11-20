@@ -4,8 +4,7 @@
 var EMP_TRANSITION_RELATED = [
   'bassam_employees_v1',
   'bassam_options_v1',
-@@SYS:emp.keys.staff@@  'bassam_plan_v1',
-  'bassam_rounds_v1',
+@@SYS:emp.keys.staff@@@@SYS:emp.keys.plan@@  'bassam_rounds_v1',
 @@SYS:emp.keys.tasks@@  'bassam_dreport_v1',
   'bassam_shift_options_v1',
   'bassam_perm_tpls_v1',
@@ -183,18 +182,7 @@ function empCleanupValues(values, removed, after, replace, wipe@@SYS:emp.cleanup
         });
     });
   }
-  var pl = values.bassam_plan_v1;
-  if (isObj(pl)) {
-    fd(pl);
-    if (Array.isArray(pl.floors)) pl.floors.forEach(fd);
-    if (isObj(pl.months))
-      Object.keys(pl.months).forEach(function (k) {
-        var a = pl.months[k],
-          d = Array.isArray(a) ? a : a && a.d;
-        if (Array.isArray(d)) d.forEach(fd);
-      });
-  }
-  var rounds = values.bassam_rounds_v1;
+@@SYS:emp.cleanup.plan@@  var rounds = values.bassam_rounds_v1;
   if (isObj(rounds))
     Object.keys(rounds).forEach(function (k) {
       if (rounds[k] && Array.isArray(rounds[k].d)) rounds[k].d.forEach(fd);
