@@ -538,10 +538,6 @@
    "order": 10,
    "text": "  if (awardCleanup(A, k, newVal, curVal, ctx)) return { ok: true };\n"
   },
-  "cleanup.award.shadow": {
-   "order": 10,
-   "text": " || awardCleanup(A, k, newVal, curVal, ctx)"
-  },
   "empGone.award.fn": {
    "order": 10,
    "file": "slots/empGone.award.fn.frag"

@@ -435,10 +435,6 @@
    "order": 10,
    "text": "  manifest.domains.irshad = 1;\n"
   },
-  "retro.counters": {
-   "order": 10,
-   "text": "irshad: pv3Retro()"
-  },
   "retro.table": {
    "order": 10,
    "text": "irshad: { cap: 'irshad/records', key: 'ir.rec.retro.open', res: 'bassam_irshad_v1', state: 'bassam_irshad_retro_v1', name: 'الاسترشاد' }"

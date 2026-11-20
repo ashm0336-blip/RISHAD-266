@@ -50,7 +50,7 @@ function perm44RolesWhy(A, k, newVal, curVal) {
       if (c.what === 'sys' && c.to) sysEntries.push([c.sys, c.to]);
       if (c.what === 'role' && c.to && isObj(c.to.sys)) for (var s in c.to.sys) sysEntries.push([s, c.to.sys[s]]);
       for (j = 0; j < sysEntries.length; j++) {
-        var ks = E.keysFor(sysEntries[j][0], sysEntries[j][1].lvl, sysEntries[j][1].keys);
+        var ks = perm44KeysFor(sysEntries[j][0], sysEntries[j][1].lvl, sysEntries[j][1].keys);
         for (var q = 0; q < ks.length; q++) { if (!C(ks[q])) return 'cap'; if (!perm44Held(A, d, ks[q])) return 'grant'; }
       }
       if (c.what === 'ex' && c.to) { if (!E.grantable(c.to.key) || !C(c.to.key)) return 'cap'; if (!perm44Held(A, d, c.to.key)) return 'grant'; }
@@ -70,7 +70,7 @@ function perm44GrantsWhy(A, d) {
   for (e in emp) if (!deq(emp[e], emp0[e]) && isObj(emp[e]) && PERM44_SRC.test(String(emp[e].src || ''))) all[e] = 1;
   for (e in emp0) if (!deq(emp[e], emp0[e]) && isObj(emp0[e]) && PERM44_SRC.test(String(emp0[e].src || ''))) all[e] = 1;
   for (e in all) {
-    var want = people[e] ? E.effective(people[e], R, C, now) : { keys: [], role: null, live: [] }, g = emp[e];
+    var want = people[e] ? perm44Effective(people[e], R, C, now) : { keys: [], role: null, live: [] }, g = emp[e];
     var has = isObj(g) && Array.isArray(g.plus) ? g.plus.map(String).slice().sort() : [];
     if (!want.role && !want.live.length) { if (isObj(g) && PERM44_SRC.test(String(g.src || '')) && has.length) return 'p44-grants'; continue; }
     if (!isObj(g) || JSON.stringify(has) !== JSON.stringify(want.keys.slice().sort())) return 'p44-grants';
@@ -102,7 +102,7 @@ function perm44Decide(A, d, q) {
   var needMgr = (e.asisMap || []).indexOf('role:mgr') !== -1;
   if (q.role != null) {
     var role = E.roleById(R, String(q.role)); if (!role) return { allow: false, why: 'no-role' };
-    return E.compileRole(role, C).indexOf(key) !== -1 ? { allow: true, why: 'role' } : { allow: false, why: 'level' };
+    return perm44Compile(role, C).indexOf(key) !== -1 ? { allow: true, why: 'role' } : { allow: false, why: 'level' };
   }
   var rec = isObj(R.people) ? R.people[String(q.ekey || '')] : null;
   if (needMgr && !(q.target && q.target.mgr)) return { allow: false, why: 'mgr' };
@@ -145,7 +145,7 @@ async function perm44Route(env, request, url, A, path) {
     var rec = await opResourceGet(env, perm44Key(d)), target = null;
     if (ekey != null) { var tu = (A.users || []).filter(function (x) { return x && !x.dis && String(x.ekey || '') === String(ekey); })[0]; target = tu ? { role: tu.role, mgr: isMgrKey(tu.ekey) || !!tu.mgr } : { role: 'staff', mgr: isMgrKey(ekey) }; }
     var v = perm44Decide(A, d, { rolesRec: rec, role: role, ekey: ekey, key: key, target: target });
-    return json({ ok: 1, allow: !!v.allow, why: v.why });
+    return json({ ok: 1, allow: !!v.allow, why: v.why, on: perm44Ceiling(A, d).on });   /* on: الأنظمةُ المشغَّلة في سقف الوحدة بالوراثة */
   }
   if (path === '/api/perm44/log') {
     var lim = Math.min(200, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10) || 50));

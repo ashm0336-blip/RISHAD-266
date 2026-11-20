@@ -115,6 +115,7 @@ test('⑤ the server bus: the base asks by name; no participant means "no"; a ma
   for (const f of parts.filter((f) => !f.includes('/'))) assert.doesNotMatch(rd('workers/parts/' + f), /\bshiftRenameOk\b|\bshiftLeft\b/, f);
   assert.match(rd('workers/parts/059-protected-ops-2.js'), /srvBusAccepts\('shifts\.renamed\.cascade@1', rn, diffs, newVal, ctx\)/);
   assert.match(rd('src/systems/staff/server/041a-shift-rename.js'), /srvBusParticipant\('shifts\.renamed\.cascade@1', shiftRenameCascade\);/);
-  for (const f of ['workers/parts/044-protected-ops.js', 'workers/parts/045-permv2.js']) assert.match(rd(f), /srvBusAccepts\('shifts\.renamed@1', A, k, newVal, curVal, ctx\)/, f);
+  for (const f of ['workers/parts/044-protected-ops.js'])   /* V7 · د5-هـ (44): 045-permv2 (طبقةُ القياس الظلّية) حُذف */
+   assert.match(rd(f), /srvBusAccepts\('shifts\.renamed@1', A, k, newVal, curVal, ctx\)/, f);
   assert.doesNotMatch(rd('workers/parts/016b-server-bus.js').replace(/\/\*[\s\S]*?\*\//g, ''), /staff|plan|daily|rounds|dreport|tasks|seized|irshad|award|custody|dstats/, 'لا اسمَ برنامجٍ في الناقل');
 });

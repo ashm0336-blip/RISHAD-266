@@ -955,7 +955,7 @@ function usersPick(u, ek) {
   for (var i = 0; i < USERS_DIR_F.length; i++) { var f = USERS_DIR_F[i]; if ((f !== 'ekey' || ek || usersSynKey(u.ekey)) && Object.prototype.hasOwnProperty.call(u, f)) c[f] = u[f]; }
   return c;
 }
-/* القراءةُ بلا ظلّ القياس (permv2NoteRead في canRead) — الإسقاطُ لا يغيّر عدّاداتِ /api/permv2 */
+/* القراءةُ بلا مسار canRead العام (V7 · د5-هـ 44: ظلُّ القياس الذي كان فيه حُذف) */
 function usersReadsEmps(A, d) { var k = 'bsdept:' + d + ':bassam_employees_v1'; return A.enf ? canReadEnf(A, k) : canRead0(A, k); }
 /* عدسةُ الفاعل: سجلٌّ مخزَّن (بعد نزع البصمة والرقم) ⇒ هو نفسُه (يُرى كاملاً) · نسخةُ دليلٍ مقلَّصة · null (لا يُرسل) — الحكمُ مرةً لكل إدارة */
 function usersLens(A) {
@@ -1461,8 +1461,6 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      المحذوفة: 073) — والحفظُ الخامّ من العميل معرّفاتُه 'c…' (290). حدثٌ بمعرّف الخادم في حفظةٍ من العميل يُسقط ولا يُكتب (كان مستخدمٌ يملك الإضافةَ وحدها
      يُلغي موعدَ سلسلةِ غيره بحدث «أُنشئت» مزوَّر) — ومساراتُ الخادم (A.__tkSrv · tkSave: opt.srv — والمسارُ الذاتي منها) كما هي */
   if (!A.__tkSrv && !(opt && opt.srv)) audIn = audIn.filter(function (e) { return !/^tk/i.test(e.cid); });
-  /* R194 · Phase 2 (باقٍ في Phase 3 دليلاً مسانداً): حفظةُ استعادةِ نسخة من أحداث التدقيق (dataset · import|restore) — للظلّ فقط */
-  var pv2Restore = false; for (var pr9 = 0; pr9 < audIn.length; pr9++) if (audIn[pr9].etype === 'dataset' && (audIn[pr9].act === 'import' || audIn[pr9].act === 'restore')) pv2Restore = true;
   /* R196 · Phase 3: علاماتُ العمليات الصريحة (body.ops) — بياناتٌ غيرُ موثوقة تُعقَّم (KIVO_BUILD.markers) وتُقرأ للظلّ فقط؛ لا تصل إلى canWrite ولا إلى أي قاعدة */
   var pv3M = { ops: {}, n: 0, bad: 0, byOp: {} }; try { pv3M = KIVO_BUILD.markers(body && body.ops, audKeysOk); } catch (e3m) { swallow('pv3-markers', e3m, env.__rid); }
   var pv3Restore = null; for (var pm9 in pv3M.ops) if (pv3M.ops[pm9].op === 'backup.restore') { pv3Restore = pv3M.ops[pm9]; break; }
@@ -1726,9 +1724,6 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       evald.push({ conflict: 1, cur: cur0 }); continue;
     }
     if (ENFX) { var lr9 = enfLogRow(A, k0, vd0, '/api/save', { ip: ident.ip }); if (lr9) ENFX.log.push(lr9); }
-    /* R194…R203 — الظلّ: يقيس حكمَ السجل الحالي v24.9 (ربطُ الحرّاس + آلياتُ Phase 3 + نطاقُ Phase 4/4.1/4.1.1 — وPhase 4.2 جردٌ تجريبي لا يمسّ الكتابة — وPhase 4.3 هويةٌ ثابتة يقرؤها المحرّك — وPhase 4.4 بروفةُ ترحيلٍ لا تكتب — وPhase 4.5 تمهيدٌ مُدمَج هوية→نطاق لا يكتب) بجانب حكم canWrite ولا يغيّره؛ canWrite نفسُها لم تُمسّ.
-       علاماتُ العمليات (ops) وسياقُ الاستدراك يُضافان إلى ctx0 هنا — بعد صدور الحكم — فلا تراهما canWrite ولا أيُّ قاعدة */
-    try { ctx0.restore = !!(pv2Restore || pv3Restore); ctx0.op = pv3M.ops[k0] || null; ctx0.retroWin = pv3RetroCtx; ctx0.pv4 = pv4Refs[d00] || {}; if (!PERMV2.mute && !ENFX) permv2Bind(A, k0, it0.v, cur0, ctx0, vd0); } catch (e9b) { swallow('permv2-batch', e9b, env.__rid); }
     if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: ENFX || vd0.detail ? vd0 : null }); continue; }
     /* KIVO_259 · SR-8: اسمُ دخولٍ جديد (أو معدَّل) يصادم حساباً آخر ⇒ رفض — لكل الأدوار ومنها مدير النظام (الواجهةُ تمنعه أصلاً: taken · empHolder) */
     /* مراجعةُ التكامل W1-R2: ولغير مدير النظام يسمّي الرفضُ الصفوفَ المخالفة (dup) — مما أرسله الفاعلُ نفسُه وحده، لا من حسابٍ محجوب */
@@ -1805,8 +1800,6 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     protOp = protOp || 'capStale';
     for (i = 0; i < todo.length; i++) if (evald[i] && !evald[i].conflict && !evald[i].deny) evald[i] = { deny: 'perms', cur: evald[i].cur, x: { detail: 'stale-client: ' + CAP_STALE_MSG }, sd: 'perms · stale-client' };
   }
-  /* R196 · Phase 3 — حسابُ الحفظة ظلّياً (العلامات · سياسةُ الاستعادة) بعد تقييم كلِّ المفاتيح وقبل أي كتابة */
-  try { if (!PERMV2.mute && !ENFX) permv3Batch(A, set, del, evald, todo, pv3M, pv3Restore, pv2Restore); } catch (e3c) { swallow('permv3-batch', e3c, env.__rid); }
   if (protOp || planOnly) {
     /* مانعٌ واحدٌ يكفي: رفضاً كان أو تعارضاً — فالعملية المترابطة لا تُنفَّذ
        نصفَين. وتبقى معلومات التعارض في الردّ ليُعيد العميلُ المحاولة. */

@@ -60,14 +60,6 @@
   "order": 10,
   "text": "  if (dreportCleanup(A, k, newVal, curVal, ctx)) return { ok: true };\n"
  },
- "cleanup.shadow.dreport": {
-  "order": 10,
-  "text": "dreportCleanup(A, k, newVal, curVal, ctx)"
- },
- "permv2.quota.cat.dreport": {
-  "order": 10,
-  "text": "  if (!asisOk && v2ok && anyG.length && rn === 'bassam_dreport_v1') { var qn = false; for (i = 0; i < anyG.length; i++) if (anyG[i].note.indexOf('permission_quota') !== -1) qn = true; if (qn) cat = 'design:rule-quota (F-03) — AS-IS يصنّف سجلَّ m:y-m الجديد add'; }\n"
- },
  "permv4.roster.res.dreport": {
   "order": 10,
   "text": "rn === 'bassam_dreport_v1' || "

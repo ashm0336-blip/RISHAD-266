@@ -497,6 +497,75 @@
       }
     },
     {
+      "path": "/api/perm44/check",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "d": "id — الوحدة",
+        "role|ekey": "دورٌ أو شخص (أحدهما)",
+        "key": "مفتاحُ السجلّ"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "allow",
+            "why",
+            "on"
+          ],
+          "note": "V7 · د5-هـ (44): «اختبار الوصول» — القرارُ نفسُه الذي تُحكم به كتابةُ الأدوار (057b perm44Decide) · on: الأنظمةُ المشغَّلة في سقف الوحدة بالوراثة"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "unit · args"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "مديرُ المنصة أو مديرُ الوحدة وحدهما"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/perm44/log",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "d": "id — الوحدة",
+        "limit?": "1..200"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rows"
+          ],
+          "note": "V7 · د5-هـ (44): «سجل الصلاحيات» — rows[{id, at, who{uid,name}, unit, k, changes[{what, role?, sys?, person?, key?, unit?, from, to}], affected[], truncated}] من أحداث aud (etype perm44) التي يكتبها الخادمُ مع كلّ حفظة أدوارٍ أو سقف"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
       "path": "/api/retro",
       "methods": [
         "GET",
@@ -899,7 +968,6 @@
             "worker",
             "counts",
             "validation",
-            "stats",
             "scope",
             "guards"
           ]

@@ -22411,10 +22411,9 @@ function authorize0(A, key, act) {
   }
   return { ok: false, why: any ? 'act' : (Object.keys(perms).length ? 'page' : 'view') };
 }
-/* ═══ R193 · Phase 1 — الظلّ: authorize() يُبقي حكم النظام القديم حرفاً بحرف ويقيس معه حكم السجل الحالي v24.9 (v24.2 → v24.3 → v24.4 → v24.5 → v24.5.1 → v24.6 → v24.7 → v24.8 → v24.9؛ المفاتيحُ نفسُها منذ v24.3) ═══
-   لكل سؤالٍ (مورد · فعل): الأوراقُ القانونية للمورد (capForAct) → ذرّاتُها (ورقة:فعل) → مفاتيحُ v24.9 → هل يملكها الفاعل
-   بترجمة ورقته الحالية (myPermsOf مقصوصةً بسقف الإدارة كما يفعل authorize0)? يُحصى الاتفاقُ والاختلاف في الذاكرة فقط. */
-var PERMV2 = { stats: { calls: 0, reads: 0, agree: 0, obsolete: 0, design: 0, disagree: 0, skipped: 0, byWhy: {}, samples: [] }, validation: null };
+/* ═══ V7 · د5-هـ (44): طبقةُ القياس الظلّية PERMV2 (R193 · Phase 1 — عدّادُ «حكمُ السجلّ v24.9 بجانب القديم» في authorize · canRead · /api/permv2) حُذفت:
+   لم تحكم يوماً. يبقى هنا ما يحكم: authorize · canRead · authorizeActs (حكمُ النظام القديم كما هو حرفاً) و permv2Ctx — سياقُ ترجمة الورقة إلى مفاتيح v24.9
+   الذي تقرؤه أحكامٌ حيّة بالوضع القديم (019b3 · 019u · 047 · الجائزة · المهام · 057b perm44Held) — الاسمُ باقٍ توافقاً. ═══ */
 function permv2Ctx(A, d) {
   var c = A.__pv2 = A.__pv2 || {}; if (c[d]) return c[d];
   var sheet = myPermsOf(A, d), cut = {}, admFree = A.u.role === 'super', leaf;
@@ -22423,49 +22422,10 @@ function permv2Ctx(A, d) {
   ctx.translated = KIVO_REGISTRY.translate(cut);
   return (c[d] = ctx);
 }
-function permv2Note(A, key, act, v) {
-  if (PERMV2.mute) return;
-  var R = resOf(key); if (!R || R.scope !== 'dept' || R.rule) { PERMV2.stats.skipped++; return; }
-  var P = parseKey(key); if (!P.dept) { PERMV2.stats.skipped++; return; }
-  var caps = capForAct(R, act), ctx = permv2Ctx(A, P.dept), newOk = false, why = 'none', hit = '', i;
-  var dsg = false;
-  for (i = 0; i < caps.length; i++) { var r = KIVO_REGISTRY.atomOk(caps[i], act, ctx); if (r.design) dsg = true; if (r.ok === true) { newOk = true; why = r.why; hit = r.key; break; } if (r.ok === null) why = 'no-atom'; else if (r.why === 'obsolete') why = 'obsolete'; }
-  PERMV2.stats.calls++;
-  if (why === 'obsolete' && !newOk) { PERMV2.stats.obsolete++; return; }          /* ذرّةٌ ميتة منذ v24.3 (السجلُّ الحالي v24.9) — لا نظير بالتصميم */
-  if (newOk === !!v.ok) { PERMV2.stats.agree++; return; }
-  if (dsg) { PERMV2.stats.design++; return; }                                     /* ورقةٌ استُبدلت بمرجع — فرقٌ بالتصميم معلَن */
-  PERMV2.stats.disagree++;
-  var w = (v.ok ? 'old-ok/v2-no:' : 'old-no/v2-ok:') + why;
-  PERMV2.stats.byWhy[w] = (PERMV2.stats.byWhy[w] || 0) + 1;
-  if (PERMV2.stats.samples.length < 40) PERMV2.stats.samples.push({ res: resName(key), act: act, caps: caps, old: !!v.ok, oldWhy: v.why || v.cap || '', v2: newOk, v2Why: why, key: hit, role: A.u.role });
-}
-function authorize(A, key, act) {
-  var v = authorize0(A, key, act);
-  try { if (A && A.u) permv2Note(A, key, act, v); } catch (e) { swallow('permv2-note', e); }
-  return v;
-}
-/* القراءة كذلك تُقاس ظلّياً (الأوراقُ القارئة للمورد readCapsOf × view) — ولا تغيّر الحكم */
-function permv2NoteRead(A, k, r) {
-  if (PERMV2.mute) return;
-  var R = resOf(k); if (!R || R.scope !== 'dept' || R.rule) return;
-  var P = parseKey(k); if (!P.dept) return;
-  if (A.u.role === 'super') return;                                               /* مدير النظام يقرأ كل شيء في الطرفين */
-  var caps = readCapsOf(P.name, R), ctx = permv2Ctx(A, P.dept), newOk = false, why = 'none', i;
-  var dsg = false;
-  for (i = 0; i < caps.length; i++) { var q = KIVO_REGISTRY.atomOk(caps[i], 'view', ctx); if (q.design) dsg = true; if (q.ok === true) { newOk = true; why = q.why; break; } }
-  PERMV2.stats.reads++;
-  if (newOk === !!r) return;
-  if (dsg) { PERMV2.stats.design++; return; }
-  PERMV2.stats.disagree++;
-  var w = (r ? 'read-ok/v2-no:' : 'read-no/v2-ok:') + why;
-  PERMV2.stats.byWhy[w] = (PERMV2.stats.byWhy[w] || 0) + 1;
-  if (PERMV2.stats.samples.length < 40) PERMV2.stats.samples.push({ res: resName(k), act: 'read', caps: caps, old: !!r, v2: newOk, v2Why: why, role: A.u.role });
-}
+function authorize(A, key, act) { return authorize0(A, key, act); }
 function canRead(A, k) {
   if (A && A.enf) return canReadEnf(A, k);                                    /* KIVO_243: القراءة من سجل v24.9 */
-  var r = canRead0(A, k);
-  try { if (A && A.u) permv2NoteRead(A, k, r); } catch (e) { swallow('permv2-noteRead', e); }
-  return r;
+  return canRead0(A, k);
 }
 /* الكتابة: كل فعلٍ ظهر في التصنيف يجب أن يكون في يد الفاعل — لا «أيُّ فعل يكفي» */
 function authorizeActs(A, key, acts) {
@@ -22635,134 +22595,8 @@ function canWrite(A, k, newVal, curVal, ctx) {
   if (R9.self === 'task' && newVal != null && selfTaskOnly(A, newVal, curVal)) return { ok: true };
   return { ok: false, why: v9.why };
 }
-/* ═══ R194/R195/R196/R197/R198 · Phase 2 → 2.1 → 3 → 4 → 4.1 — Guard Binding (shadow): حكمُ canWrite للنظام القديم كما هو حرفاً بحرف، ويُقاس بجانبه حكمُ السجل الحالي v24.9 المبنيُّ على ربط الحرّاس ═══
-   يُستدعى من applySave بعد canWrite (التي لم تُمسّ). لكل كتابةٍ (مورد · قديم → جديد): المصنِّفُ (KIVO_GUARDS.classify) → مفاتيحُ v24.9 المطلوبة → هل يملكها الفاعل بترجمة ورقته
-   (permv2Ctx كما في Phase 1، مع decide: مفاتيحُ «role:mgr + ورقة» تشترط الاثنين كما في usersRule/permsRule)?
-   يُقارَن بحكم canWrite0 ويُحصى: اتفاق · اختلاف مصنَّف (تصميمٌ معلَن · خطأُ ربط · فارقٌ خشِن) · بقايا · بلا مفتاح. لا يغيّر الحكم. */
-PERMV2.bind = { calls: 0, compared: 0, agree: 0, disagree: 0, uncovered: 0, skipped: { size: 0, keydel: 0, shape: 0, invariant: 0, nokey: 0, tech: 0 },
-                residual: 0, residualSamples: [], unmapped: {}, byKey: {}, byAny: {}, byCat: {}, samples: [], nokeySamples: [], flags: { rejectNoReason: 0, restoreBatches: 0, anyOfGroups: 0 } };
-PERMV2.mute = 0;
-var PV2_SIZE = 300000;                                              /* سقفُ حجم القيمتَين معاً للتصنيف الظلّي (≈8ms على أكبر حمولةٍ مسموحة — حمايةُ وقت المعالج في Workers) */
-var PV2_PERM_WHY = { act: 1, page: 1, view: 1, 'super': 1, mgr: 1, cap: 1, grant: 1, self: 1 };   /* أسبابُ رفضٍ هي صلاحيةٌ لا ثابتٌ */
-function permv2Depts(A, rn, a, b, d) {
-  var ds = {}, i, k;
-  if (d) ds[d] = 1;
-  else if (rn === 'bassam_auth_users_v1') {
-    var la = Array.isArray(a) ? a : [], lb = Array.isArray(b) ? b : [], by = {};
-    for (i = 0; i < la.length; i++) if (la[i] && la[i].id) by[la[i].id] = la[i];
-    for (i = 0; i < lb.length; i++) { var u = lb[i]; if (!u || !u.id) continue; if (!deq(by[u.id], u)) { if (u.deptId) ds[u.deptId] = 1; if (by[u.id] && by[u.id].deptId) ds[by[u.id].deptId] = 1; } delete by[u.id]; }
-    for (k in by) if (by[k].deptId) ds[by[k].deptId] = 1;
-  } else if (rn === 'bassam_perms_v1') {
-    var sect = ['emps', 'tplOf', 'empLens', 'caps', 'subs', 'lenses'];
-    for (i = 0; i < sect.length; i++) { var xa = isObj(a) && isObj(a[sect[i]]) ? a[sect[i]] : {}, xb = isObj(b) && isObj(b[sect[i]]) ? b[sect[i]] : {}; for (k in xa) if (!deq(xa[k], xb[k])) ds[k] = 1; for (k in xb) if (!deq(xa[k], xb[k])) ds[k] = 1; }
-  } else if (rn === 'bassam_dstats_v1') { var dd = dsDepts(A); for (i = 0; i < dd.length; i++) ds[dd[i]] = 1; }
-  var out = []; for (k in ds) out.push(k);
-  if (!out.length && A.u.deptId) out.push(A.u.deptId);
-  return out;
-}
-/* إعادةُ اشتقاق فرع canWrite الذي أجاز الكتابة — للقراءة فقط، ولا تُستدعى إلا عند الاختلاف */
-function permv2How(A, k, newVal, curVal, ctx) {
-  PERMV2.mute++;
-  try {
-    var R0 = resOf(k), P = parseKey(k);
-    if (!R0) return 'unknown';
-    if (A.u.role === 'super' && R0.scope === 'global') return 'global-super';
-    if (!P.dept) return 'rule:' + (R0.rule || '');
-    if (R0.rule) return 'rule:' + R0.rule;
-    if (newVal == null) return 'keydel';
-    var E9 = entOf(k), O9 = opsOf(k), PA, PB, ha = 0, hb = 0;
-    var PV = { a: function () { if (!ha) { ha = 1; PA = curVal == null ? undefined : parseJson(curVal, undefined); } return PA; },
-               b: function () { if (!hb) { hb = 1; PB = parseJson(newVal, undefined); } return PB; } };
-    if (dreportCleanup(A, k, newVal, curVal, ctx) || custodyCleanup(A, k, newVal, curVal, ctx) || awardCleanup(A, k, newVal, curVal, ctx)) return 'cleanup';
-    var cmv = custodyMoveOp(A, k, curVal, newVal, PV); if (cmv === true) return 'custodyMove'; if (cmv === false) return 'custodyMove-deny';
-    if (empGoneCleanup(A, k, newVal, curVal, ctx, PV)) return 'empGone';
-    if (srvBusAccepts('shifts.renamed@1', A, k, newVal, curVal, ctx)) return 'shiftRename';
-    if (holdsAllWrites(A, k, R0)) return 'holdsAll';
-    var need = classifyMutation(R0, curVal, newVal, E9, O9, PV), acts = Object.keys(need); if (!acts.length) acts = ['edit'];
-    if (authorizeActs(A, k, acts).ok) return 'acts:' + acts.join('+');
-    if (R0.field === 'daily' && !need.keyDelete && (myPermsOf(A, P.dept)['daily/field'] || []).indexOf('view') !== -1 && capOnDept(A, P.dept, 'daily/field') && fieldObsOnly(A, newVal, curVal, P.dept)) return 'field';
-    var via = R0.via || {}, vp, diffs = null;
-    for (vp in via) { if (!actsHeldOn(A, P.dept, vp, acts)) continue; var fn = VIA_FN[via[vp]]; if (!fn) continue; if (!diffs) diffs = walkDiff(curVal, newVal); if (diffs.length && diffs.every(fn)) return 'via:' + vp; }
-    if (R0.self === 'email' && selfEmailOnly(A, newVal, curVal)) return 'selfEmail';
-    if (R0.self === 'task' && selfTaskOnly(A, newVal, curVal)) return 'selfTask';
-    return 'none:' + acts.join('+');
-  } catch (e) { return 'err'; } finally { PERMV2.mute--; }
-}
-function permv2BindCat(A, k, newVal, curVal, ctx, v, keys, missing, asisOk) {
-  var rn = resName(k), i, e;
-  if (asisOk) {
-    for (i = 0; i < missing.length; i++) { e = KIVO_REGISTRY.byKey[missing[i]]; if (e && e.grant === 'none') return 'design:reserved-key'; }
-    for (i = 0; i < missing.length; i++) { e = KIVO_REGISTRY.byKey[missing[i]]; if (e && !e.asisMap.length) return 'design:new-key (' + missing[i] + ')'; }
-    var how = permv2How(A, k, newVal, curVal, ctx);
-    if (how === 'field') return 'design:field-scope (D-19)';
-    if (how.indexOf('via:') === 0) return 'coarse:via-rule (' + how + ')';
-    if (how === 'selfEmail' || how === 'selfTask') return 'design:self-rule (' + how + ')';
-    if (how === 'cleanup' || how === 'empGone' || how === 'shiftRename') return 'design:cleanup-path (' + how + ')';
-    if (how === 'custodyMove') return 'error:asisMap (D-01)';
-    if (missing.indexOf('import.run') !== -1) return 'design:new-check import.run (D-15)';
-    if (how === 'global-super' || how.indexOf('rule:') === 0) return 'design:rule-vs-key (' + how + ')';
-    return 'coarse:legacy-wider (' + how + ')';
-  }
-  if (rn === 'bassam_custody_v1') for (i = 0; i < keys.length; i++) if (keys[i] === 'cust.move.return' || keys[i] === 'cust.move.damage' || keys[i] === 'cust.move.lost') return 'error:asisMap (D-01)';
-  return 'coarse:translation-wider (' + (v.why || '') + ')';
-}
-function permv2Bind(A, k, newVal, curVal, ctx, v) {
-  var ST = PERMV2.bind; ST.calls++; PERMV4.write.seen++;
-  var rn = resName(k);
-  if (KIVO_GUARDS.covers.indexOf(rn) === -1) { ST.uncovered++; return; }
-  if (newVal == null) { ST.skipped.keydel++; return; }
-  if (String(newVal).length + (curVal == null ? 0 : String(curVal).length) > PV2_SIZE) { ST.skipped.size++; return; }
-  var P = parseKey(k), E = entOf(k);
-  var a = curVal == null ? parseJson((E && E.empty) || 'null', null) : parseJson(curVal, null), b = parseJson(newVal, null);
-  if (b === null) { ST.skipped.shape++; return; }
-  /* KIVO_264 · KIVO-Tasks (الرقعة 06): التصنيفُ الظلّي يرى ما يراه الإنفاذ — هويةُ الذات على مخزن المهام من المسار الذاتي وحده (059 enfTaskSelfEkey) */
-  var cx = { dept: P.dept, actor: { id: A.u.id, ekey: rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : A.u.ekey, role: A.u.role }, imp: !!(ctx && ctx.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(ctx && ctx.restore),
-             op: (ctx && ctx.op && ctx.op.op) || '' };   /* Phase 3: علامةُ العملية الصريحة (للتصنيف الظلّي فقط) */
-  var res = KIVO_GUARDS.classify(rn, a, b, cx); if (!res) { ST.uncovered++; return; }
-  if (cx.restore) ST.flags.restoreBatches++;
-  var keys = res.keys(), i, q, real = [], key;
-  for (i = 0; i < keys.length; i++) { key = keys[i]; if (key.indexOf('__') === 0) { ST.unmapped[key] = (ST.unmapped[key] || 0) + 1; continue; } real.push(key); var s = ST.byKey[key] = ST.byKey[key] || { n: 0, agree: 0, disagree: 0 }; s.n++; }
-  for (i = 0; i < res.residual.length; i++) { ST.residual++; if (ST.residualSamples.length < 30) ST.residualSamples.push({ res: rn, path: res.residual[i].path, note: res.residual[i].note }); }
-  if (res.flags && res.flags.rejectNoReason) ST.flags.rejectNoReason += res.flags.rejectNoReason;
-  var anyG = res.any || []; for (i = 0; i < anyG.length; i++) { ST.flags.anyOfGroups++; var ag = anyG[i].keys.join('|'); ST.byAny[ag] = (ST.byAny[ag] || 0) + 1; }
-  if (!real.length && !res.alt.length && !anyG.length) { if (res.tech.length && !res.residual.length) ST.skipped.tech++; else { ST.skipped.nokey++; if (ST.nokeySamples.length < 20) ST.nokeySamples.push({ res: rn, keys: keys, tech: res.tech, asis: !!v.ok, why: v.why || '' }); } return; }
-  var asisOk = !!v.ok;
-  if (!asisOk && !PV2_PERM_WHY[v.why]) { ST.skipped.invariant++; if (PV4_SCOPE_WHY[v.why]) { try { permv4Early(A, k, rn, P, a, b, res, real, v, cx, ctx); } catch (e4e) { swallow('permv4-early', e4e); } } return; }          /* رفضٌ لثابتٍ (shape · append · ident · dslock …) لا لصلاحية — Phase 4: الرفضُ النطاقي (dept · dslock) يُقاس نطاقُه */
-  var depts = permv2Depts(A, rn, a, b, P.dept), ctxs = [];
-  if (A.u.role === 'super') ctxs.push({ 'super': true });
-  for (q = 0; q < depts.length; q++) ctxs.push(permv2Ctx(A, depts[q]));
-  if (!ctxs.length) ctxs.push({ sheet: {}, translated: KIVO_REGISTRY.translate({}) });
-  var v2ok = true, missing = [], okMap = {};
-  for (i = 0; i < real.length; i++) { var okK = false; for (q = 0; q < ctxs.length && !okK; q++) if (KIVO_GUARDS.decide(real[i], ctxs[q]).ok) okK = true; okMap[real[i]] = okK; if (!okK) { v2ok = false; missing.push(real[i]); } }
-  /* مجموعاتُ anyOf (قاعدةٌ خلفية مشتركة): يكفي مفتاحٌ واحدٌ من المجموعة */
-  for (i = 0; i < anyG.length; i++) { var okG = false, z; for (z = 0; z < anyG[i].keys.length && !okG; z++) for (q = 0; q < ctxs.length && !okG; q++) if (KIVO_GUARDS.decide(anyG[i].keys[z], ctxs[q]).ok) okG = true; if (!okG) { v2ok = false; missing.push('anyOf(' + anyG[i].keys.join('|') + ')'); } }
-  if (!v2ok && res.alt.length) for (i = 0; i < res.alt.length && !v2ok; i++) for (q = 0; q < ctxs.length && !v2ok; q++) if (KIVO_GUARDS.decide(res.alt[i], ctxs[q]).ok) { v2ok = true; missing = []; }
-  ST.compared++;
-  if (v2ok === asisOk) { ST.agree++; for (i = 0; i < real.length; i++) ST.byKey[real[i]].agree++; try { permv3After(A, rn, P, a, b, res, real, okMap, asisOk, null, cx, ctx, v); } catch (e3a) { swallow('permv3-after', e3a); } try { permv4Write(A, k, rn, P, a, b, res, real, okMap, asisOk, null, cx, ctx, v, v2ok); } catch (e4a) { swallow('permv4-write', e4a); } return; }
-  ST.disagree++; for (i = 0; i < real.length; i++) ST.byKey[real[i]].disagree++;
-  var cat = permv2BindCat(A, k, newVal, curVal, ctx, v, real, missing, asisOk);
-  if (!asisOk && v2ok && anyG.length && rn === 'bassam_dreport_v1') { var qn = false; for (i = 0; i < anyG.length; i++) if (anyG[i].note.indexOf('permission_quota') !== -1) qn = true; if (qn) cat = 'design:rule-quota (F-03) — AS-IS يصنّف سجلَّ m:y-m الجديد add'; }
-  ST.byCat[cat] = (ST.byCat[cat] || 0) + 1;
-  if (ST.samples.length < 60) ST.samples.push({ res: rn, keys: real, alt: res.alt, missing: missing, asis: asisOk, why: v.why || '', cat: cat, role: A.u.role, paths: res.ops.slice(0, 6).map(function (o) { return o.path; }) });
-  try { permv3After(A, rn, P, a, b, res, real, okMap, asisOk, cat, cx, ctx, v); } catch (e3b) { swallow('permv3-after', e3b); }
-  try { permv4Write(A, k, rn, P, a, b, res, real, okMap, asisOk, cat, cx, ctx, v, v2ok); } catch (e4b) { swallow('permv4-write', e4b); }
-}
-/* ═══ R196 · Phase 3 — Build Missing Guards (shadow): PERMV3 — أحكامُ TO-BE للـ10 to-build تُحسب وتُقارَن بحكم canWrite ولا تغيّره ═══
-   A) import.run: من علامةٍ صريحة في الطلب (ops) — لا استدلالَ بالشكل؛ TO-BE = import.run ∧ حرّاسُ المورد الحالية.
-   B) backup.restore: علامةٌ صريحة + سياسةُ super OR (role:mgr AND backup.restore) تُحسب للحفظة (wouldAllow/wouldDeny + السبب + missingReason).
-   C) lens.*.enable (6): حارسٌ مركزيّ ظلّي = سقفُ العدسة للإدارة ∧ عدساتُ الموظف ∧ مفتاحُ العملية — مصفوفةٌ لكل عدسة.
-   D/E) ir.rec.retro.open · sz.rec.retro.open: قاعدةُ الفترة المغلقة + نوافذُ الاستدراك (حالةٌ خادمية) — wouldBlock · wouldAllowRetro · retroWindowExpired · missingRetroPermission.
-   التصنيفُ الثلاثي لكل قياس: agree (الظلُّ = AS‑IS) · expected (اختلافٌ معلَنٌ بالتصميم) · unexpected (يجب أن يبقى 0). */
-function pv3Lens() { return { n: 0, cells: {}, agree: 0, expected: 0, unexpected: 0, byExpected: {}, samples: [] }; }
-function pv3Retro() { return { writes: 0, openPeriod: 0, closedPeriod: 0, wouldBlock: 0, wouldAllowRetro: 0, retroWindowExpired: 0, otherScope: 0, missingRetroPermission: 0, opens: 0, closes: 0, missingReason: 0, openDecisions: { agree: 0, disagree: 0 }, agree: 0, expected: 0, unexpected: 0, samples: [] }; }
-var PERMV3 = {
-  phase: 3, mode: 'shadow',
-  markers: { batches: 0, withOps: 0, accepted: 0, dropped: 0, byOp: {} },
-  importRun: { batches: 0, byMode: {}, keys: 0, wouldAllow: 0, wouldDeny: 0, byWhy: {}, heuristicWithoutMarker: 0, markerOutsideImportSet: 0, agree: 0, expected: 0, unexpected: 0, samples: [] },
-  restore: { batches: 0, byScope: {}, byWhy: {}, wouldAllow: 0, wouldDeny: 0, missingReason: 0, markerWithoutAud: 0, audWithoutMarker: 0, both: 0, keys: 0, agree: 0, expected: 0, unexpected: 0, samples: [] },
-  lens: { zones: pv3Lens(), paths: pv3Lens(), gates: pv3Lens(), marks: pv3Lens(), dist: pv3Lens(), dens: pv3Lens() },
-  retro: { irshad: pv3Retro(), seized: pv3Retro() }
-};
+/* ═══ V7 · د5-هـ (44): نوافذُ الاستدراك (ir.rec.retro.open · sz.rec.retro.open) — حالةٌ خادمية لكل (إدارة · نظام) يقرؤها /api/retro (047) والإنفاذ (062 enfSavePrep · 010 KIVO_SCOPE).
+   كانت هنا طبقةُ القياس الظلّية PERMV3 (R196 · Phase 3: عدّاداتُ import.run · backup.restore · بوابات العدسات · الاستدراك — permv3After · permv3Batch) — حُذفت: لم تحكم يوماً. ═══ */
 var RETRO = { irshad: { cap: 'irshad/records', key: 'ir.rec.retro.open', res: 'bassam_irshad_v1', state: 'bassam_irshad_retro_v1', name: 'الاسترشاد' },
               seized: { cap: 'seized/records', key: 'sz.rec.retro.open', res: 'bassam_seized_v1', state: 'bassam_seized_retro_v1', name: 'المضبوطات' } };
 var RETRO_SYS_OF = { 'bassam_irshad_v1': 'irshad', 'bassam_seized_v1': 'seized' };
@@ -22775,78 +22609,11 @@ async function retroState(env, d, sys) {
 /* من يفتح نافذةَ استدراك: مدير النظام، أو حاملُ approve على ورقة السجلات في الإدارة — ذرّةُ G‑08 نفسُها التي تفتح الشهرَ واجهياً اليوم (وهي ترجمةُ ir/sz.rec.retro.open) */
 function retroMay(A, d, sys) { if (A && A.enf) return enfRetroMay(A, d, sys); if (A.u.role === 'super') return true; return !!d && deptInScope(A, d) && actsHeldOn(A, d, RETRO[sys].cap, ['approve']); }
 function retroScopeKey(sc) { return sc.y + '-' + sc.m + (sc.d == null ? '' : '-' + sc.d); }
-/* سياقُ الاستدراك للحفظة: نوافذُ كلِّ (إدارة · نظام) تمسّه الكتابةُ — قراءةٌ واحدة لكلٍّ */
+/* سياقُ الاستدراك للحفظة: نوافذُ كلِّ (إدارة · نظام) تمسّه الكتابةُ — قراءةٌ واحدة لكلٍّ (الاسمُ باقٍ توافقاً: يقرؤه الإنفاذ والإحصائيات) */
 async function permv3RetroLoad(env, set, del) {
   var out = {}, k, i, ks = Object.keys(set || {}); for (i = 0; i < (del || []).length; i++) ks.push(String(del[i]));
   for (i = 0; i < ks.length; i++) { k = ks[i]; var sys = RETRO_SYS_OF[resName(k)]; if (!sys) continue; var d = parseKey(k).dept; if (!d) continue; var id = d + '|' + sys; if (out[id]) continue; out[id] = (await retroState(env, d, sys)).windows; }
   return out;
-}
-/* الآلياتُ على مستوى الكتابة الواحدة — تُستدعى من permv2Bind بعد الحكم والتصنيف */
-function permv3After(A, rn, P, a, b, res, real, okMap, asisOk, cat, cx, ctx, v) {
-  var i, L, key, d = P.dept || A.u.deptId || '';
-  /* C) Lens Enable Gates */
-  for (i = 0; i < real.length; i++) {
-    key = real[i]; L = KIVO_BUILD.lensOf(key); if (!L) continue;
-    var S = PERMV3.lens[L], g = KIVO_BUILD.lensGate(A.perms, A.u, d, L), opOk = !!okMap[key], shadow = g.on && opOk;
-    var cell = g.cell + (opOk ? 'P1' : 'P0'), C9 = S.cells[cell] = S.cells[cell] || { n: 0, asisOk: 0, asisDeny: 0, shadowAllow: 0, shadowDeny: 0, agree: 0, expected: 0, unexpected: 0 };
-    S.n++; C9.n++; if (asisOk) C9.asisOk++; else C9.asisDeny++; if (shadow) C9.shadowAllow++; else C9.shadowDeny++;
-    var kind;
-    if (shadow === asisOk) kind = 'agree';
-    else if (asisOk && !g.on) kind = 'expected:lens-disabled (' + (!g.deptOn ? 'dept' : 'emp') + ')';
-    else if (asisOk && g.on && !opOk && cat && cat.indexOf('design:') === 0) kind = 'expected:phase2.1 ' + cat;
-    else kind = 'unexpected';
-    if (kind === 'agree') { S.agree++; C9.agree++; } else if (kind.indexOf('expected:') === 0) { S.expected++; C9.expected++; S.byExpected[kind] = (S.byExpected[kind] || 0) + 1; } else { S.unexpected++; C9.unexpected++; }
-    if (S.samples.length < 24 && kind !== 'agree') S.samples.push({ key: key, res: rn, role: A.u.role, ekey: A.u.ekey, cell: cell, deptOn: g.deptOn, empOn: g.empOn, empSrc: g.empSrc, opPerm: opOk, asis: asisOk, shadow: shadow, kind: kind, cat: cat || '' });
-  }
-  /* A) import.run — من العلامة فقط؛ الشكلُ الجماعي يُحصى */
-  if (res.flags && res.flags.importHeuristic && cx.op !== 'import.run') PERMV3.importRun.heuristicWithoutMarker++;
-  if (cx.op === 'import.run') {
-    var IR = PERMV3.importRun; IR.keys++;
-    if (!KIVO_BUILD.isImportRes(rn)) IR.markerOutsideImportSet++;
-    var held = !!okMap['import.run'], toBe = held && asisOk, why = held ? 'held' : 'not-held';
-    if (held) IR.wouldAllow++; else IR.wouldDeny++; IR.byWhy[why] = (IR.byWhy[why] || 0) + 1;
-    var ik = toBe === asisOk ? 'agree' : (asisOk && !held ? 'expected:import.run-not-held (F-10)' : 'unexpected');
-    if (ik === 'agree') IR.agree++; else if (ik.indexOf('expected') === 0) IR.expected++; else IR.unexpected++;
-    if (IR.samples.length < 24 && ik !== 'agree') IR.samples.push({ res: rn, role: A.u.role, ekey: A.u.ekey, held: held, asis: asisOk, kind: ik, mode: (ctx && ctx.op && ctx.op.mode) || '' });
-  }
-  /* B) backup.restore — على مستوى المفتاح يُحصى فقط؛ السياسةُ على مستوى الحفظة في permv3Batch */
-  if (cx.restore) PERMV3.restore.keys++;
-  /* D/E) الاستدراك */
-  var sys = RETRO_SYS_OF[rn];
-  if (sys && ctx && ctx.retroWin) {
-    var RS = PERMV3.retro[sys], T = dsToday(Date.now()), now = Date.now(), dates = KIVO_BUILD.retroDates(a, b), wins = ctx.retroWin[d + '|' + sys] || [], closed = [], allCovered = true, anyExpired = false, anyOther = false, j;
-    RS.writes++;
-    for (j = 0; j < dates.length; j++) { var dt = dates[j]; if (!KIVO_BUILD.retroClosed(T, dt.y, dt.m, dt.d)) continue; var cv = KIVO_BUILD.retroCover(wins, dt.y, dt.m, dt.d, now); closed.push({ y: dt.y, m: dt.m, d: dt.d, kind: dt.kind, covered: cv.covered, expired: cv.expired, window: cv.window }); if (!cv.covered) { allCovered = false; if (cv.expired) anyExpired = true; else if (wins.length) anyOther = true; } }
-    if (!closed.length) { RS.openPeriod++; RS.agree++; return; }
-    RS.closedPeriod++;
-    var shadowR = asisOk && allCovered, rk;
-    if (allCovered) RS.wouldAllowRetro++; else if (anyExpired) RS.retroWindowExpired++; else { RS.wouldBlock++; if (anyOther) RS.otherScope++; }
-    rk = shadowR === asisOk ? 'agree' : (asisOk && !allCovered ? 'expected:closed-period (G-08 ' + (anyExpired ? 'retroWindowExpired' : 'wouldBlock') + ')' : 'unexpected');
-    if (rk === 'agree') RS.agree++; else if (rk.indexOf('expected') === 0) RS.expected++; else RS.unexpected++;
-    if (RS.samples.length < 30) RS.samples.push({ res: rn, role: A.u.role, ekey: A.u.ekey, dept: d, today: T, closed: closed.slice(0, 6), windows: wins.length, asis: asisOk, shadow: shadowR, kind: rk });
-  }
-}
-/* الآلياتُ على مستوى الحفظة — بعد تقييم كلِّ المفاتيح (لا كتابة بعدُ) */
-function permv3Batch(A, set, del, evald, todo, pv3M, pv3Restore, pv2Restore) {
-  var k, i, M = PERMV3.markers; M.batches++;
-  if (pv3M.n || pv3M.bad) M.withOps++; M.accepted += pv3M.n; M.dropped += pv3M.bad; for (k in pv3M.byOp) M.byOp[k] = (M.byOp[k] || 0) + pv3M.byOp[k];
-  var impMode = null; for (k in pv3M.ops) if (pv3M.ops[k].op === 'import.run') { impMode = pv3M.ops[k].mode || 'add'; break; }
-  if (impMode !== null) { PERMV3.importRun.batches++; PERMV3.importRun.byMode[impMode] = (PERMV3.importRun.byMode[impMode] || 0) + 1; }
-  if (!pv3Restore && !pv2Restore) return;
-  var RS = PERMV3.restore; RS.batches++;
-  if (pv3Restore && pv2Restore) RS.both++; else if (pv3Restore) RS.markerWithoutAud++; else RS.audWithoutMarker++;
-  var scope = pv3Restore ? (pv3Restore.scope || 'dept') : 'aud-only'; RS.byScope[scope] = (RS.byScope[scope] || 0) + 1;
-  var depts = {}, glob = false, ks = Object.keys(set || {}); for (i = 0; i < (del || []).length; i++) ks.push(String(del[i]));
-  for (i = 0; i < ks.length; i++) { var dd = parseKey(ks[i]).dept; if (dd) depts[dd] = 1; else glob = true; }
-  var isSuper = A.u.role === 'super', isMgr = !glob, hasKey = isSuper, d;
-  for (d in depts) { if (!isMgrOf(A, d)) isMgr = false; if (!isSuper && !KIVO_GUARDS.decide('backup.restore', permv2Ctx(A, d)).ok) hasKey = false; }
-  if (!Object.keys(depts).length) isMgr = false;
-  var pol = KIVO_BUILD.restorePolicy(isSuper, isMgr, hasKey, pv3Restore ? pv3Restore.reason : '');
-  if (pol.ok) RS.wouldAllow++; else RS.wouldDeny++; RS.byWhy[pol.finalWhy] = (RS.byWhy[pol.finalWhy] || 0) + 1; if (pol.missingReason) RS.missingReason++;
-  var asisBatchOk = true, denied = 0; for (i = 0; i < evald.length; i++) if (evald[i] && evald[i].deny) { asisBatchOk = false; denied++; }
-  var kind = pol.final === asisBatchOk ? 'agree' : (asisBatchOk && !pol.final ? 'expected:restore-policy (' + pol.finalWhy + ')' : 'unexpected');
-  if (kind === 'agree') RS.agree++; else if (kind.indexOf('expected') === 0) RS.expected++; else RS.unexpected++;
-  if (RS.samples.length < 24) RS.samples.push({ scope: scope, mode: pv3Restore ? (pv3Restore.mode || '') : '', role: A.u.role, ekey: A.u.ekey, depts: Object.keys(depts), global: glob, why: pol.why, finalWhy: pol.finalWhy, missingReason: pol.missingReason, asis: asisBatchOk, denied: denied, keys: ks.length, marker: !!pv3Restore, aud: !!pv2Restore, kind: kind });
 }
 /* ═══ /api/retro — نافذةُ الاستدراك (ir.rec.retro.open · sz.rec.retro.open): حالةٌ خادمية لكل (إدارة · نظام)، محدودةُ النطاق (شهرٌ أو يومٌ منقضٍ) والزمن (≤ RETRO_MAX_H) والفاعل (من الجلسة)، بسجلّ تدقيقٍ مستقل ═══
    لا تُنفَّذ قاعدةُ الرفض على الكتابات (Phase 3 ظلّ)؛ النافذةُ تُقاس بها wouldAllowRetro/wouldBlock فقط. الوصولُ: مدير النظام أو حاملُ approve (ذرّةُ G‑08 نفسُها). */
@@ -22866,9 +22633,7 @@ async function retroApiRun(env, request, A, url, meta) {
   var domainState=await adapter.snapshot(env,d);
   domainCtx.guards.push(adapter.retiredGuard(env));
   domainCtx.guards.push.apply(domainCtx.guards,domainState.guards);
-  var RS = PERMV3.retro[sys], may = retroMay(A, d, sys);
-  var tob = A.u.role === 'super' ? { ok: true, why: 'super' } : KIVO_GUARDS.decide(RETRO[sys].key, permv2Ctx(A, d));
-  if (!!tob.ok === may) RS.openDecisions.agree++; else RS.openDecisions.disagree++;
+  var may = retroMay(A, d, sys);   /* V7 · د5-هـ (44): عدّاداتُ القياس الظلّية (PERMV3.retro) وحكمُ «TO-BE» المقارَن حُذفا — الحكمُ هو retroMay */
   if (request.method === 'GET') {
     if (!may && !canRead(A, 'bsdept:' + d + ':' + RETRO[sys].res)) return json({ ok: 0, err: 'perm' }, 403);
     var stG = domainState.state;
@@ -22878,7 +22643,7 @@ async function retroApiRun(env, request, A, url, meta) {
   if (request.method !== 'POST') return json({ ok: 0, err: 'method' }, 405);
   var act = b.act === 'close' ? 'close' : 'open';
   if (!may && A.enf) { try { await enfInitDb(env); await enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: d, k: retroKey(d, sys), res: RETRO[sys].state, keys: RETRO[sys].key, decision: 'deny', why: 'perm', path: '/api/retro', ip: meta.ip }).run(); } catch (eL9) { swallow('retro-authz-log', eL9, env.__rid); } }
-  if (!may) { RS.missingRetroPermission++; await secLog(env, { ts: now, uid: A.u.id, un: A.u.un, act: 'denied', target: retroKey(d, sys), detail: 'retro.' + act + ':perm', ip: meta.ip, city: meta.city, dev: meta.dev }); return json({ ok: 0, err: 'perm', key: RETRO[sys].key }, 403); }
+  if (!may) { await secLog(env, { ts: now, uid: A.u.id, un: A.u.un, act: 'denied', target: retroKey(d, sys), detail: 'retro.' + act + ':perm', ip: meta.ip, city: meta.city, dev: meta.dev }); return json({ ok: 0, err: 'perm', key: RETRO[sys].key }, 403); }
   var st9 = domainState.state, w, scope;
   if (act === 'open') {
     var sc0 = isObj(b.scope) ? b.scope : {}, y = parseInt(sc0.y, 10), m = parseInt(sc0.m, 10), dd0 = (sc0.d == null || sc0.d === '') ? null : parseInt(sc0.d, 10);
@@ -22887,20 +22652,19 @@ async function retroApiRun(env, request, A, url, meta) {
     if (!T) return json({ ok: 0, err: 'today' }, 500);
     if (!KIVO_BUILD.retroClosed(T, y, m, dd0)) return json({ ok: 0, err: 'not-closed', today: T }, 400);          /* الفترةُ المفتوحة لا تحتاج استدراكاً */
     var hours = Number(b.hours); if (!(hours > 0)) hours = KIVO_BUILD.RETRO_DEF_H; hours = Math.min(KIVO_BUILD.RETRO_MAX_H, Math.max(1 / 3600, hours));
-    var reason = String(b.reason == null ? '' : b.reason).trim().slice(0, 300); if (!reason) RS.missingReason++;
+    var reason = String(b.reason == null ? '' : b.reason).trim().slice(0, 300);
     if (!reason && A.enf && !reasonExempt(A)) return json({ ok: 0, err: 'reason', key: RETRO[sys].key }, 400);      /* KIVO_243 · D3-03: السببُ إلزاميٌّ عند الإنفاذ */
     w = { id: 'rw' + now.toString(36) + Math.floor(Math.random() * 1e6).toString(36), scope: scope, by: { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || ''), name: String(A.u.name || '') }, at: now, until: now + Math.round(hours * 3600000), hours: hours, reason: reasonLogged(A, reason), reasonMissing: !reason };
     st9.windows.push(w); if (st9.windows.length > 200) st9.windows = st9.windows.slice(-200);
-    RS.opens++;
   } else {
     var id = String(b.id || ''); w = null; for (var q = 0; q < st9.windows.length; q++) if (st9.windows[q] && st9.windows[q].id === id) w = st9.windows[q];
     if (!w) return json({ ok: 0, err: 'not-found' }, 404);
     if (w.closedAt) { if (domainCtx) await env.DB.batch(domainCtx.guards); return json({ ok: 1, window: w, already: 1 }); }
-    w.closedAt = now; w.closedBy = { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || '') }; scope = w.scope; RS.closes++;
+    w.closedAt = now; w.closedBy = { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || '') }; scope = w.scope;
   }
   if (domainCtx) {
     await typedRetroCommit(domainCtx,sys,adapter,st9,w,scope,act,meta,now);
-    return json({ ok: 1, window: w, today: T, now: now, decision: { asis: may, toBe: !!tob.ok, why: tob.why || '' } });
+    return json({ ok: 1, window: w, today: T, now: now, decision: { asis: may } });
   }
 }
 async function typedRetroCommit(ctx, sys, adapter, state, window, scope, act, meta, now) {
@@ -22928,28 +22692,9 @@ function retroDomainAdapter(sys) {
     install:function(env,d,state){var domain=irConvert(d,{retro:state});return [env.DB.prepare('DELETE FROM irshad_retro_windows WHERE department_id=?1').bind(d)].concat(rsBulk(env,IR_TABLES.windows[0],IR_TABLES.windows[1],domain.rows.windows),irMarkResourceStatements(env,d,'retro'));},
   };
 }
-/* ═══ R197/R198 · Phase 4 → 4.1 — Data Scope Shadow Mode: PERMV4 = { write, read } — نطاقُ كلِّ كتابةٍ (evaluateWrite) وكلِّ قراءةٍ فعلية (evaluateRead · D4‑01) يُحسب بـKIVO_SCOPE ويُقارَن بالحكم القديم ولا يغيّره ═══
-   Phase 4.1 (v24.5): D4‑02/D4‑03 بدل AC‑01/AC‑02 (deny معلَن لمدير النظام على الفترات المقفلة/المغلقة بلا نافذة — السلوكُ الحالي كما هو) · D4‑04 ctx.deptCeiling (لا سجلَّ سقفٍ ⇒ unmigrated) · telemetry مستقل scope.write / scope.read.
-   السياقُ يُستخرج خادمياً: الإدارةُ من المفتاح · الفاعلُ من الجلسة · سقفُ الفرع من deptInScope/ancChain · اليومُ الهجري للخادم · نوافذُ الاستدراك ·
-   أقفالُ الجدول/المهام وجدولُ الورديات من D1 (قراءةٌ واحدة لكل إدارة) · قرارُ الصلاحية من Phase 2.1 (okMap) · بوابةُ العدسة من Phase 3.
-   علاماتُ العمليات (import.run · backup.restore) لا تمرّ إلى المحرّك أصلاً — لا تحدّد ولا توسّع النطاق.
-   التصنيفُ الرباعي لكل كتابة: agree · expected (design) · unknown/migration-needed · unexpected (يجب أن يبقى 0). */
-function pv4Cnt() { return { calls: 0, allow: 0, deny: 0, unknown: 0, notApplicable: 0 }; }
-var PERMV4 = {
-  phase: 4.1, mode: 'shadow',
-  /* الكتابة (Phase 4 كما اعتُمدت) — تحت write؛ scope.stats في /api/permv2 اسمٌ بديل لها للتوافق */
-  write: { phase: 4.1, patch: '4.5', mode: 'shadow', seen: 0, calls: 0, allow: 0, deny: 0, unknown: 0, notApplicable: 0, unknownByActor: {},
-    byDimension: {}, byPermission: {}, byResource: {}, byKind: {}, agree: 0, expectedMismatch: 0, unknownMigration: 0, unexpectedMismatch: 0,
-    missingEvidence: 0, missingEvidenceByDim: {}, migrationNeeded: 0, migrationNeededByDim: {}, transitions: 0, bulk: { writes: 0, items: 0, allowed: 0, denied: 0, unknown: 0, mixed: 0 },
-    lensFull: { n: 0, agree: 0, expected: 0, unknown: 0, unexpected: 0, byPart: { ceilingOff: 0, assignmentOff: 0, permissionOff: 0, scopeDeny: 0, scopeUnknown: 0 } },
-    decisions: {}, samples: [], unexpectedSamples: [], unknownSamples: [] },
-  /* القراءة (D4‑01) — مستقلةٌ تماماً عن الكتابة */
-  read: { phase: 4.1, patch: '4.5', mode: 'shadow', seen: 0, calls: 0, allow: 0, deny: 0, unknown: 0, notApplicable: 0, asisDeny: 0, noReadKey: 0, heldKeyReads: 0, nonHolderReads: 0, unknownByActor: {},
-    bySelectionMode: {}, bySelectedKey: {}, byBindingSource: {}, byNoReadKeyClass: {}, allowedWithoutSelectedKey: 0, fieldViewReads: 0, fieldViewProbeReads: 0,
-    byWhere: {}, byDimension: {}, byPermission: {}, byResource: {}, byKind: {}, agree: 0, expectedMismatch: 0, unknownMigration: 0, unexpectedMismatch: 0,
-    rows: { items: 0, allowed: 0, denied: 0, unknown: 0, notApplicable: 0 }, truncatedReads: 0, truncatedItems: 0, skippedBudget: 0,
-    missingEvidence: 0, missingEvidenceByDim: {}, migrationNeeded: 0, migrationNeededByDim: {}, samples: [], unexpectedSamples: [], unknownSamples: [] }
-};
+/* ═══ V7 · د5-هـ (44): سياقُ النطاق (permv4Ctx: الفاعل · سقفُ الفرع · اليومُ الهجري · نوافذُ الاستدراك · الأقفال · مصادرُ الإحصائيات) ومرجعياتُه المخزّنة (permv4RefsLoad) —
+   يقرؤهما الإنفاذ (058 enfScopeCtx · 062 enfSavePrep) والإحصائيات. كانت هنا طبقةُ القياس الظلّية PERMV4 (R197/R198 · Phase 4/4.1: عدّاداتُ نطاق الكتابة والقراءة —
+   permv4Write · permv4Early · و049 permv4Read) — حُذفت: لم تحكم يوماً. وفحصُ ربط القراءة (permv4ReadBindingCheck — تقريرُ /api/permv2) انتقل هنا من 049 المحذوف. ═══ */
 /* الفاعلُ وسقفُه (Branch ceiling → allowed Departments) — من الجلسة وسجل الإدارات لا من العميل */
 function permv4Actor(A) {
   var u = A.u, out = { id: u.id, ekey: String(u.ekey || ''), role: u.role, deptId: String(u.deptId || ''), mgr: !!u.mgr || String(u.ekey || '').slice(0, 4) === 'mgr:', gid: String(u.gid || '') };
@@ -22957,9 +22702,6 @@ function permv4Actor(A) {
   if (u.role !== 'super') { allowed = []; for (var i = 0; i < (A.depts || []).length; i++) { var d = A.depts[i]; if (d && d.id && deptInScope(A, d.id)) allowed.push(d.id); } if (!allowed.length && u.deptId && deptInScope(A, u.deptId)) allowed.push(u.deptId); }
   return { actor: out, allowedDepts: allowed };
 }
-/* P4.2 (v24.6): مفتاحُ الفاعل في عدّادات unknownByActor — فاعلو السقف (super · dept · gm · mgr) يُقرؤون بسقف الإدارة المستهدفة (role:…)، والموظفُ بمفتاحه؛ يُستهلك في Dry-Run لإسقاط ما سيُحسم */
-function pv4ActorKey(A, d) { var u = A.u, ceil = u.role === 'super' || u.role === 'dept' || u.role === 'gm' || !!u.mgr || String(u.ekey || '').slice(0, 4) === 'mgr:'; return (ceil ? 'role:' + u.role + (u.ekey ? ':' + u.ekey : '') : (u.ekey || ('u:' + u.id))) + '|' + (d || ''); }
-function pv4NoteUnknown(ST, A, d, dims) { if (!dims.length) return; var ak = pv4ActorKey(A, d), UA = ST.unknownByActor[ak] = ST.unknownByActor[ak] || {}, i; for (i = 0; i < dims.length; i++) UA[dims[i]] = (UA[dims[i]] || 0) + 1; }
 function permv4Sources(A) {
   var out = { haram: false, nabawi: false }, ds = dsDepts(A), s, i;
   if (A.u.role === 'super') return { haram: true, nabawi: true };
@@ -22976,63 +22718,6 @@ function permv4Ctx(A, d, k, okMap, ctx) {
            actorShift: function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; },
            held: okMap || {}, fieldOnly: !!d && enfFieldOnly(A, d), sources: permv4Sources(A), scopeValues: null, deptCeiling: permv4DeptCeiling };
 }
-function pv4Bump(o, r) { o.calls++; if (r === 'allow') o.allow++; else if (r === 'deny') o.deny++; else if (r === 'unknown') o.unknown++; else o.notApplicable++; }
-function permv4Write(A, k, rn, P, a, b, res, real, okMap, asisOk, cat, cx, ctx, v, v2ok) {
-  var ST = PERMV4.write; if (!real.length) return;
-  var d = P.dept || '', cx4 = permv4Ctx(A, d, k, okMap, ctx), W = KIVO_SCOPE.evaluateWrite(real, cx4.actor, rn, a, b, cx4), i, key, dm, r;
-  pv4Bump(ST, W.composite);
-  var BR = ST.byResource[rn] = ST.byResource[rn] || pv4Cnt(); pv4Bump(BR, W.composite);
-  for (key in W.perKey) { r = W.perKey[key]; var BP = ST.byPermission[key] = ST.byPermission[key] || pv4Cnt(); pv4Bump(BP, r.composite);
-    for (dm in r.results) { var BD = ST.byDimension[dm] = ST.byDimension[dm] || pv4Cnt(); pv4Bump(BD, r.results[dm].r); } }
-  for (i = 0; i < W.migrationNeeded.length; i++) ST.migrationNeededByDim[W.migrationNeeded[i]] = (ST.migrationNeededByDim[W.migrationNeeded[i]] || 0) + 1;
-  for (i = 0; i < W.missingEvidence.length; i++) ST.missingEvidenceByDim[W.missingEvidence[i]] = (ST.missingEvidenceByDim[W.missingEvidence[i]] || 0) + 1;
-  if (W.migrationNeeded.length) ST.migrationNeeded++; if (W.missingEvidence.length) ST.missingEvidence++;
-  if (asisOk) pv4NoteUnknown(ST, A, d, W.migrationNeeded);   /* P4.2: ما كان unknown اليوم على كتابةٍ مقبولة قديماً — بحسب الفاعل والبُعد (للإسقاط) */
-  ST.transitions += W.transitions.length;
-  if (W.items > 1) { ST.bulk.writes++; ST.bulk.items += W.items; ST.bulk.allowed += W.bulk.allowed; ST.bulk.denied += W.bulk.denied; ST.bulk.unknown += W.bulk.unknown; if (W.bulk.denied && (W.bulk.allowed || W.bulk.unknown)) ST.bulk.mixed++; }
-  /* بوابةُ العدسة (Phase 3) لمفاتيح العدسات في هذه الكتابة */
-  var lensKeys = 0, lensOff = '', L, g;
-  for (i = 0; i < real.length; i++) { L = KIVO_BUILD.lensOf(real[i]); if (!L) continue; lensKeys++; g = KIVO_BUILD.lensGate(A.perms, A.u, d, L); if (!g.on && !lensOff) lensOff = !g.deptOn ? 'ceiling' : 'assignment'; }
-  var permOk = !!v2ok, lensOk = !lensOff, scopeDeny = W.composite === 'deny', scopeUnk = W.composite === 'unknown', kind, whys = [];
-  for (key in W.perKey) { r = W.perKey[key]; for (i = 0; i < r.denyDims.length; i++) whys.push(r.denyDims[i] + '=' + r.results[r.denyDims[i]].why); }
-  var why = whys.join(' · ');
-  /* ترتيبُ الحسم: الصلاحيةُ (Phase 2.1) ← بوابةُ العدسة (Phase 3) ← النطاقُ deny ← النطاقُ unknown ← الاتفاق — كلُّ جزءٍ معروفٍ يُحسم قبل المجهول */
-  if (!permOk || !lensOk) {
-    if (!asisOk) kind = 'agree';
-    else if (!permOk) kind = (cat && cat.indexOf('design:') === 0) ? 'expected:phase2.1 ' + cat : 'unexpected:permission ' + (cat || '');
-    else kind = 'expected:lens-disabled (' + lensOff + ')';
-  } else if (scopeDeny) {
-    if (!asisOk) kind = 'agree';
-    else if (/closed-period|retro-window-expired/.test(why)) kind = A.u.role === 'super' ? 'expected:D4-03 super∧closed-period (no retro window)' : 'expected:D3-07 closed-period';
-    else if (/dslock/.test(why)) kind = A.u.role === 'super' ? 'expected:D4-02 super∧dslock (shadow deny until reopen)' : 'unexpected:scope ' + why;
-    else if (/locked-period/.test(why)) kind = 'expected:locked-period (ui-only lock · I-02/I-03)';
-    else kind = 'unexpected:scope ' + why;
-  } else if (scopeUnk) kind = 'unknown/migration-needed';
-  else kind = asisOk ? 'agree' : 'unexpected:asis-deny/shadow-allow (' + (v.why || '') + ')';
-  if (kind.indexOf('expected:D4-0') === 0) { var dcid = kind.slice(9, 14); ST.decisions[dcid] = (ST.decisions[dcid] || 0) + 1; }
-  ST.byKind[kind] = (ST.byKind[kind] || 0) + 1;
-  if (kind === 'agree') ST.agree++; else if (kind.indexOf('expected') === 0) ST.expectedMismatch++; else if (kind.indexOf('unknown') === 0) ST.unknownMigration++; else ST.unexpectedMismatch++;
-  var smp = { res: rn, keys: real.slice(0, 6), role: A.u.role, ekey: A.u.ekey, asis: asisOk, asisWhy: v.why || '', perm: permOk, lens: lensOff || 'on', scope: W.composite, denyDims: W.denyDims, unknownDims: W.unknownDims, why: why.slice(0, 300), kind: kind, items: W.items, bulk: W.bulk, transitions: W.transitions.slice(0, 3), migrationNeeded: W.migrationNeeded, missingEvidence: W.missingEvidence };
-  if (kind !== 'agree' && ST.samples.length < 80) ST.samples.push(smp);
-  if (kind.indexOf('unexpected') === 0 && ST.unexpectedSamples.length < 40) ST.unexpectedSamples.push(smp);
-  if (kind.indexOf('unknown') === 0 && ST.unknownSamples.length < 40) ST.unknownSamples.push(smp);
-  /* Lens Gate + Scope: القياسُ الكامل (Ceiling ∧ Assignment ∧ Permission ∧ Scope) بأجزائه */
-  if (lensKeys) {
-    var LF = ST.lensFull; LF.n++;
-    if (lensOff === 'ceiling') LF.byPart.ceilingOff++; if (lensOff === 'assignment') LF.byPart.assignmentOff++; if (!permOk) LF.byPart.permissionOff++; if (scopeDeny) LF.byPart.scopeDeny++; if (scopeUnk) LF.byPart.scopeUnknown++;
-    if (kind === 'agree') LF.agree++; else if (kind.indexOf('expected') === 0) LF.expected++; else if (kind.indexOf('unknown') === 0) LF.unknown++; else LF.unexpected++;
-  }
-}
-/* رفضُ AS‑IS لسببٍ نطاقيّ (dept · dslock) يسبق تصنيفَ Phase 2.1 (يُحصى invariant هناك) — يُقاس هنا نطاقُه أيضاً لئلا تغيب حالاتُ Department/Branch/DateRange المرفوضة عن القياس */
-var PV4_SCOPE_WHY = { dept: 1, dslock: 1 };
-function permv4Early(A, k, rn, P, a, b, res, real, v, cx, ctx) {
-  var okMap = {}, all = true, i, q, depts = permv2Depts(A, rn, a, b, P.dept), ctxs = [];
-  if (A.u.role === 'super') ctxs.push({ 'super': true });
-  for (q = 0; q < depts.length; q++) ctxs.push(permv2Ctx(A, depts[q]));
-  if (!ctxs.length) ctxs.push({ sheet: {}, translated: KIVO_REGISTRY.translate({}) });
-  for (i = 0; i < real.length; i++) { var okK = false; for (q = 0; q < ctxs.length && !okK; q++) if (KIVO_GUARDS.decide(real[i], ctxs[q]).ok) okK = true; okMap[real[i]] = okK; if (!okK) all = false; }
-  permv4Write(A, k, rn, P, a, b, res, real, okMap, false, null, cx, ctx, v, all);
-}
 /* مرجعياتُ النطاق المخزّنة (D1) لكل إدارةٍ تمسّها الحفظة: أقفالُ الجدول/المهام (الحالةُ قبل الحفظ) وجدولُ الورديات — قراءةٌ واحدة لكلٍّ */
 async function permv4RefsLoad(env, set, del) {
   var out = {}, k, i, ks = Object.keys(set || {}); for (i = 0; i < (del || []).length; i++) ks.push(String(del[i]));
@@ -23045,24 +22730,9 @@ async function permv4RefsLoad(env, set, del) {
   }
   return out;
 }
-/* ═══ D4‑01 (v24.5) — ظلُّ نطاق القراءة: يُستدعى بعد حكم canRead (canRead0 لم تُمسّ) في مسارَي القراءة الفعليين (حقنُ __BS_BOOT · /api/get).
-   لا يغيّر الحكمَ ولا البياناتِ المرتجعة: لا filtering · لا إخفاء rows · لا deny فعلي — قياسٌ ومقارنةٌ وtelemetry (PERMV4.read) فقط.
-   مفاتيحُ القراءة = جدولُ الربط الصريح (KIVO_SCOPE.readBindings[res] · P4.1.1‑01 — مولَّدٌ من مسارات AS‑IS: RD_REG · RD_ANY · DS_READ · rule · السجلاتُ العامة × ذرّات cap:view) لا guard.kind=read وحده؛
-   المختارُ للتقييم = المحمولُ منها (KIVO_REGISTRY.can بسياق الفاعل · selectionMode = held)؛ وإن لم يحمل شيئاً: قراءةٌ مرفوضةٌ قديماً ⇒ مسبارُ المسارات المعلَن (route-probe:asis-deny — كلُّ مفاتيح المورد المربوطة) · مقبولةٌ قديماً ⇒ فجوةُ ربطٍ unexpected (يجب 0).
-   القراءةُ Resource-level والبياناتُ سجلاتٌ متعددة ⇒ النطاقُ يُقاس على كل سجلٍّ (rows) — إذنُ المورد ليس إذناً لكل rows. غيرُ المهاجر unknown. ميزانيةُ العناصر لكل طلب تحمي زمنَ الخادم (skippedBudget معلَن). */
-/* سقفُ السجلات لكل قراءة وميزانيةُ الطلب (boot · /api/get): قِيس أثرُهما على بياناتٍ كبيرة (3 إدارات × مئات السجلات) ≈ +20 مللي ثانية للصفحة — المتجاوَز يُحصى truncated/skippedBudget ولا يُخفى.
-   P4.1.1‑04 (v24.5.1): هاتان ميزانيتا Shadow Telemetry فقط. عند Read Enforcement مستقبلاً لا يجوز تخطّي rows بسبب الميزانية ولا الاعتمادُ على truncated/skippedBudget في أي قرارٍ أمني؛
-   كلُّ record يُقيَّم أو يُرفض الطلبُ بأمان (fail-closed). لا Enforcement الآن. */
-var PV4_READ_MAX = 200, PV4_READ_BUDGET = 1000, PV4_READ_KEYS = null, PV4_READ_CHECK = null;
-/* P4.1.1‑01 (v24.5.1): مفاتيحُ القراءة لكل مورد من جدول الربط الصريح (KIVO_SCOPE.readBindings — مولَّدٌ من مسارات AS‑IS: RD_REG · RD_ANY · DS_READ · rule · السجلاتُ العامة × ذرّات cap:view
-   ومثبَّتٌ في الوثيقة v24.5.1) — لا من guard.kind = read وحده (كان يُسقط field.view: مفتاحَ قراءةٍ فعلياً لـbassam_rounds_v1 بحارس rule). */
-function permv4ReadKeys(rn) {
-  if (!PV4_READ_KEYS) PV4_READ_KEYS = {};
-  if (!PV4_READ_KEYS[rn]) PV4_READ_KEYS[rn] = KIVO_SCOPE.readKeysFor(rn);
-  return PV4_READ_KEYS[rn];
-}
 /* الفحصُ الحيّ: اشتقاقُ مسارات القراءة من RD_REG/RES_REG/DS_READ الحيّة × الذرّات (الخوارزميةُ نفسُها التي ولّدت الجدول) ومقارنتُها بالجدول الصريح — missing/extra يجب 0.
    يُحسب مرّةً عند أول طلب /api/permv2 ولا يدخل في أي حكم. */
+var PV4_READ_CHECK = null;
 function permv4ReadBindingCheck() {
   if (PV4_READ_CHECK) return PV4_READ_CHECK;
   var out = { ok: true, resources: 0, missing: [], extra: [], unknownResource: [], extraResource: [], stateKeys: [] }, RB = KIVO_SCOPE.readBindings && KIVO_SCOPE.readBindings.byResource, R = KIVO_REGISTRY, name, Rr, i, j;
@@ -23104,61 +22774,6 @@ function permv4ReadBindingCheck() {
   for (k in stateNames) if (!RB[k]) { out.missing.push(k + ':(state key not in table)'); out.ok = false; }
   PV4_READ_CHECK = out; return out;
 }
-function pv4ReadBudget() { return { items: 0, reads: 0 }; }
-function permv4Read(A, k, value, oldOk, where, budget, refs) {
-  var ST = PERMV4.read; ST.seen++;
-  if (!A || !A.u || isDeviceKey(k)) return;
-  if (budget && budget.items >= PV4_READ_BUDGET) { ST.skippedBudget++; return; }
-  var P = parseKey(k), rn = resName(k), d = P.dept || '', RK = permv4ReadKeys(rn), keys = RK.keys, i, key, dm, r;
-  var v = value == null ? null : (typeof value === 'string' ? parseJson(value, null) : value);
-  var cx = d ? permv2Ctx(A, d) : { 'super': A.u.role === 'super', mgr: false, sheet: {}, translated: KIVO_REGISTRY.translate({}) };
-  /* P4.1.1‑01: موردٌ منصّي بمفاتيح قراءة (الإحصائيات): الحملُ يُفحص على إدارات الفاعل نفسِها كما يفعل AS‑IS (dsHeld ⇐ dsDepts) — لا على ورقةٍ فارغة (كان ذلك يُسقط الحامل إلى fallback) */
-  var cxs = [cx]; if (!d && keys.length && A.u.role !== 'super') { var dd0 = dsDepts(A), ci; cxs = []; for (ci = 0; ci < dd0.length; ci++) cxs.push(permv2Ctx(A, dd0[ci])); if (!cxs.length) cxs = [cx]; }
-  var okMap = {}, held = [];
-  for (i = 0; i < keys.length; i++) { var hk = false, cj; for (cj = 0; cj < cxs.length && !hk; cj++) if (KIVO_REGISTRY.can(keys[i], cxs[cj]).ok) hk = true; okMap[keys[i]] = hk; if (hk) held.push(keys[i]); }
-  /* P4.1.1‑01: المختارُ للتقييم = المحمولُ من مفاتيح المورد المربوطة صراحةً (selectedReadKeys)؛ بلا مفتاحٍ محمول: قراءةٌ مرفوضةٌ قديماً ⇒ مسبارُ المسارات المعلَن (route-probe) · مقبولةٌ قديماً ⇒ فجوةُ ربطٍ (يجب 0) */
-  var selMode = !keys.length ? 'no-read-key' : (held.length ? 'held' : (oldOk ? 'gap:allowed-without-selected-key' : 'route-probe:asis-deny'));
-  var useKeys = held.length ? held : keys, srcs = [];
-  for (i = 0; i < useKeys.length; i++) srcs.push(RK.sources[useKeys[i]] || 'unbound');
-  var pv4 = (refs && d) ? { staffing: parseJson(refs['bsdept:' + d + ':bassam_staffing_v3'], null) } : {};
-  var cx4 = permv4Ctx(A, d, k, okMap, { pv4: pv4 }); cx4.read = true; cx4.readMaxItems = PV4_READ_MAX;
-  var R = KIVO_SCOPE.evaluateRead(useKeys, cx4.actor, rn, v, cx4);
-  if (budget) { budget.items += R.items; budget.reads++; }
-  pv4Bump(ST, R.composite);
-  var BW = ST.byWhere[where] = ST.byWhere[where] || pv4Cnt(); pv4Bump(BW, R.composite);
-  var BR = ST.byResource[rn] = ST.byResource[rn] || pv4Cnt(); pv4Bump(BR, R.composite);
-  for (key in R.perKey) { r = R.perKey[key]; var BP = ST.byPermission[key] = ST.byPermission[key] || pv4Cnt(); pv4Bump(BP, r.composite);
-    for (dm in r.results) { var BD = ST.byDimension[dm] = ST.byDimension[dm] || pv4Cnt(); pv4Bump(BD, r.results[dm].r); } }
-  ST.rows.items += R.rows.items; ST.rows.allowed += R.rows.allowed; ST.rows.denied += R.rows.denied; ST.rows.unknown += R.rows.unknown; ST.rows.notApplicable += R.rows.notApplicable;
-  if (R.truncated) { ST.truncatedReads++; ST.truncatedItems += R.truncated; }
-  if (!keys.length) ST.noReadKey++; if (held.length) ST.heldKeyReads++; else if (keys.length) ST.nonHolderReads++;
-  if (!oldOk) ST.asisDeny++;
-  ST.bySelectionMode[selMode] = (ST.bySelectionMode[selMode] || 0) + 1; if (selMode.indexOf('gap') === 0) ST.allowedWithoutSelectedKey++;
-  for (i = 0; i < useKeys.length; i++) { ST.bySelectedKey[useKeys[i]] = (ST.bySelectedKey[useKeys[i]] || 0) + 1; var sk = srcs[i].split(':')[0]; ST.byBindingSource[sk] = (ST.byBindingSource[sk] || 0) + 1; }
-  if (held.indexOf('field.view') !== -1) ST.fieldViewReads++;
-  if (!keys.length) { var nrk = RK.cls || 'unknown'; ST.byNoReadKeyClass[nrk] = (ST.byNoReadKeyClass[nrk] || 0) + 1; }
-  for (i = 0; i < R.migrationNeeded.length; i++) ST.migrationNeededByDim[R.migrationNeeded[i]] = (ST.migrationNeededByDim[R.migrationNeeded[i]] || 0) + 1;
-  for (i = 0; i < R.missingEvidence.length; i++) ST.missingEvidenceByDim[R.missingEvidence[i]] = (ST.missingEvidenceByDim[R.missingEvidence[i]] || 0) + 1;
-  if (R.migrationNeeded.length) ST.migrationNeeded++; if (R.missingEvidence.length) ST.missingEvidence++;
-  if (oldOk) pv4NoteUnknown(ST, A, d, R.migrationNeeded);   /* P4.2: unknown اليوم على قراءةٍ مقبولة قديماً — بحسب الفاعل والبُعد */
-  if (selMode !== 'held' && keys.indexOf('field.view') !== -1) ST.fieldViewProbeReads++;   /* P4.2‑07: field.view داخل قائمة التقييم بلا حملٍ (route-probe) — bySelectedKey[field.view] = fieldViewReads + fieldViewProbeReads */
-  /* التصنيفُ الرباعي للقراءة: الحكمُ القديم (الصلاحية + الإدارة) أولاً؛ ثم النطاقُ على السجلات */
-  var kind, deptDeny = false, j;
-  for (j = 0; j < R.denyDims.length; j++) if (R.denyDims[j] === 'Department' || R.denyDims[j] === 'Branch') deptDeny = true;
-  if (!keys.length) kind = RK.known ? 'agree:no-read-key (I-06)' : 'unexpected:read-binding-unknown-resource';
-  else if (selMode.indexOf('gap') === 0) kind = 'unexpected:read-binding-gap (allowed without selected key)';
-  else if (!oldOk) kind = 'agree:asis-deny';
-  else if (R.composite === 'allow' || R.composite === 'not_applicable') kind = 'agree';
-  else if (R.composite === 'deny') kind = deptDeny ? 'unexpected:read-scope ' + R.denyDims.join('/') : 'expected:D4-01 row-scope (' + R.denyDims.join('/') + ')';
-  else kind = 'unknown/migration-needed';
-  ST.byKind[kind] = (ST.byKind[kind] || 0) + 1;
-  if (kind.indexOf('agree') === 0) ST.agree++; else if (kind.indexOf('expected') === 0) ST.expectedMismatch++; else if (kind.indexOf('unknown') === 0) ST.unknownMigration++; else ST.unexpectedMismatch++;
-  var smp = { where: where, res: rn, key: k.length > 90 ? k.slice(0, 90) : k, role: A.u.role, ekey: A.u.ekey, asis: !!oldOk, keys: useKeys.slice(0, 8), selectedReadKeys: useKeys.slice(0, 8), readBindingSource: srcs.slice(0, 8), selectionMode: selMode, held: held.length, scope: R.composite, rows: R.rows, denyDims: R.denyDims, unknownDims: R.unknownDims, migrationNeeded: R.migrationNeeded, missingEvidence: R.missingEvidence, truncated: R.truncated, kind: kind };
-  if (kind.indexOf('agree') !== 0 && ST.samples.length < 60) ST.samples.push(smp);
-  if (kind.indexOf('unexpected') === 0 && ST.unexpectedSamples.length < 40) ST.unexpectedSamples.push(smp);
-  if (kind.indexOf('unknown') === 0 && ST.unknownSamples.length < 40) ST.unknownSamples.push(smp);
-}
-/* نطاق القراءة: ما يُحقن في الصفحة وما يُسحب لاحقاً */
 /* ══ R169-CC · READ-01: خريطةُ القراءة المرجعيّة ══════════════════════════
    الكتابةُ تُسأل عن ورقةِ المورد (cap)، والقراءةُ تُسأل عن الأوراق التي تقرؤه فعلاً — وهي تُستخرج من
    الصفحات نفسِها لا من الظنّ: دليلُ الموظفين وأسماءُ الورديات تقرؤها كلُّ صفحةٍ تشغيليّة لتكتب اسماً،
@@ -23258,7 +22873,6 @@ function canRead0(A, k) {
   if (!P.dept && P.name === K_DSTATS) return dsHeld(A, DS_READ, ['view']);
   if (!P.dept) return P.name !== K_NSYS;                     /* السجلات العامة (الإدارات، الحسابات بلا بصمات، الصلاحيات) — عدا تنبيهات مدير النظام */
   if (!deptInScope(A, P.dept)) return false;                 /* إدارةٌ أخرى: لا شيء */
-  if (P.name === ENF_GRANTS_RES) return isMgrOf(A, P.dept);   /* V7 · د5-هـ (44): سجلُّ المنح (خاملٌ هنا) لمدير الوحدة — كالإنفاذ (061) */
   /* READ-01: النطاقُ وحدَه لا يكفي — الورقةُ تُسأل هنا كما تُسأل في الكتابة */
   var R = resOf(k);
   if (!R) return false;                                      /* مورد مجهول = رفض */
@@ -25174,7 +24788,7 @@ function usersPick(u, ek) {
   for (var i = 0; i < USERS_DIR_F.length; i++) { var f = USERS_DIR_F[i]; if ((f !== 'ekey' || ek || usersSynKey(u.ekey)) && Object.prototype.hasOwnProperty.call(u, f)) c[f] = u[f]; }
   return c;
 }
-/* القراءةُ بلا ظلّ القياس (permv2NoteRead في canRead) — الإسقاطُ لا يغيّر عدّاداتِ /api/permv2 */
+/* القراءةُ بلا مسار canRead العام (V7 · د5-هـ 44: ظلُّ القياس الذي كان فيه حُذف) */
 function usersReadsEmps(A, d) { var k = 'bsdept:' + d + ':bassam_employees_v1'; return A.enf ? canReadEnf(A, k) : canRead0(A, k); }
 /* عدسةُ الفاعل: سجلٌّ مخزَّن (بعد نزع البصمة والرقم) ⇒ هو نفسُه (يُرى كاملاً) · نسخةُ دليلٍ مقلَّصة · null (لا يُرسل) — الحكمُ مرةً لكل إدارة */
 function usersLens(A) {
@@ -25680,8 +25294,6 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      المحذوفة: 073) — والحفظُ الخامّ من العميل معرّفاتُه 'c…' (290). حدثٌ بمعرّف الخادم في حفظةٍ من العميل يُسقط ولا يُكتب (كان مستخدمٌ يملك الإضافةَ وحدها
      يُلغي موعدَ سلسلةِ غيره بحدث «أُنشئت» مزوَّر) — ومساراتُ الخادم (A.__tkSrv · tkSave: opt.srv — والمسارُ الذاتي منها) كما هي */
   if (!A.__tkSrv && !(opt && opt.srv)) audIn = audIn.filter(function (e) { return !/^tk/i.test(e.cid); });
-  /* R194 · Phase 2 (باقٍ في Phase 3 دليلاً مسانداً): حفظةُ استعادةِ نسخة من أحداث التدقيق (dataset · import|restore) — للظلّ فقط */
-  var pv2Restore = false; for (var pr9 = 0; pr9 < audIn.length; pr9++) if (audIn[pr9].etype === 'dataset' && (audIn[pr9].act === 'import' || audIn[pr9].act === 'restore')) pv2Restore = true;
   /* R196 · Phase 3: علاماتُ العمليات الصريحة (body.ops) — بياناتٌ غيرُ موثوقة تُعقَّم (KIVO_BUILD.markers) وتُقرأ للظلّ فقط؛ لا تصل إلى canWrite ولا إلى أي قاعدة */
   var pv3M = { ops: {}, n: 0, bad: 0, byOp: {} }; try { pv3M = KIVO_BUILD.markers(body && body.ops, audKeysOk); } catch (e3m) { swallow('pv3-markers', e3m, env.__rid); }
   var pv3Restore = null; for (var pm9 in pv3M.ops) if (pv3M.ops[pm9].op === 'backup.restore') { pv3Restore = pv3M.ops[pm9]; break; }
@@ -25945,9 +25557,6 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       evald.push({ conflict: 1, cur: cur0 }); continue;
     }
     if (ENFX) { var lr9 = enfLogRow(A, k0, vd0, '/api/save', { ip: ident.ip }); if (lr9) ENFX.log.push(lr9); }
-    /* R194…R203 — الظلّ: يقيس حكمَ السجل الحالي v24.9 (ربطُ الحرّاس + آلياتُ Phase 3 + نطاقُ Phase 4/4.1/4.1.1 — وPhase 4.2 جردٌ تجريبي لا يمسّ الكتابة — وPhase 4.3 هويةٌ ثابتة يقرؤها المحرّك — وPhase 4.4 بروفةُ ترحيلٍ لا تكتب — وPhase 4.5 تمهيدٌ مُدمَج هوية→نطاق لا يكتب) بجانب حكم canWrite ولا يغيّره؛ canWrite نفسُها لم تُمسّ.
-       علاماتُ العمليات (ops) وسياقُ الاستدراك يُضافان إلى ctx0 هنا — بعد صدور الحكم — فلا تراهما canWrite ولا أيُّ قاعدة */
-    try { ctx0.restore = !!(pv2Restore || pv3Restore); ctx0.op = pv3M.ops[k0] || null; ctx0.retroWin = pv3RetroCtx; ctx0.pv4 = pv4Refs[d00] || {}; if (!PERMV2.mute && !ENFX) permv2Bind(A, k0, it0.v, cur0, ctx0, vd0); } catch (e9b) { swallow('permv2-batch', e9b, env.__rid); }
     if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: ENFX || vd0.detail ? vd0 : null }); continue; }
     /* KIVO_259 · SR-8: اسمُ دخولٍ جديد (أو معدَّل) يصادم حساباً آخر ⇒ رفض — لكل الأدوار ومنها مدير النظام (الواجهةُ تمنعه أصلاً: taken · empHolder) */
     /* مراجعةُ التكامل W1-R2: ولغير مدير النظام يسمّي الرفضُ الصفوفَ المخالفة (dup) — مما أرسله الفاعلُ نفسُه وحده، لا من حسابٍ محجوب */
@@ -26024,8 +25633,6 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     protOp = protOp || 'capStale';
     for (i = 0; i < todo.length; i++) if (evald[i] && !evald[i].conflict && !evald[i].deny) evald[i] = { deny: 'perms', cur: evald[i].cur, x: { detail: 'stale-client: ' + CAP_STALE_MSG }, sd: 'perms · stale-client' };
   }
-  /* R196 · Phase 3 — حسابُ الحفظة ظلّياً (العلامات · سياسةُ الاستعادة) بعد تقييم كلِّ المفاتيح وقبل أي كتابة */
-  try { if (!PERMV2.mute && !ENFX) permv3Batch(A, set, del, evald, todo, pv3M, pv3Restore, pv2Restore); } catch (e3c) { swallow('permv3-batch', e3c, env.__rid); }
   if (protOp || planOnly) {
     /* مانعٌ واحدٌ يكفي: رفضاً كان أو تعارضاً — فالعملية المترابطة لا تُنفَّذ
        نصفَين. وتبقى معلومات التعارض في الردّ ليُعيد العميلُ المحاولة. */
@@ -26838,7 +26445,7 @@ function perm44RolesWhy(A, k, newVal, curVal) {
       if (c.what === 'sys' && c.to) sysEntries.push([c.sys, c.to]);
       if (c.what === 'role' && c.to && isObj(c.to.sys)) for (var s in c.to.sys) sysEntries.push([s, c.to.sys[s]]);
       for (j = 0; j < sysEntries.length; j++) {
-        var ks = E.keysFor(sysEntries[j][0], sysEntries[j][1].lvl, sysEntries[j][1].keys);
+        var ks = perm44KeysFor(sysEntries[j][0], sysEntries[j][1].lvl, sysEntries[j][1].keys);
         for (var q = 0; q < ks.length; q++) { if (!C(ks[q])) return 'cap'; if (!perm44Held(A, d, ks[q])) return 'grant'; }
       }
       if (c.what === 'ex' && c.to) { if (!E.grantable(c.to.key) || !C(c.to.key)) return 'cap'; if (!perm44Held(A, d, c.to.key)) return 'grant'; }
@@ -26858,7 +26465,7 @@ function perm44GrantsWhy(A, d) {
   for (e in emp) if (!deq(emp[e], emp0[e]) && isObj(emp[e]) && PERM44_SRC.test(String(emp[e].src || ''))) all[e] = 1;
   for (e in emp0) if (!deq(emp[e], emp0[e]) && isObj(emp0[e]) && PERM44_SRC.test(String(emp0[e].src || ''))) all[e] = 1;
   for (e in all) {
-    var want = people[e] ? E.effective(people[e], R, C, now) : { keys: [], role: null, live: [] }, g = emp[e];
+    var want = people[e] ? perm44Effective(people[e], R, C, now) : { keys: [], role: null, live: [] }, g = emp[e];
     var has = isObj(g) && Array.isArray(g.plus) ? g.plus.map(String).slice().sort() : [];
     if (!want.role && !want.live.length) { if (isObj(g) && PERM44_SRC.test(String(g.src || '')) && has.length) return 'p44-grants'; continue; }
     if (!isObj(g) || JSON.stringify(has) !== JSON.stringify(want.keys.slice().sort())) return 'p44-grants';
@@ -26890,7 +26497,7 @@ function perm44Decide(A, d, q) {
   var needMgr = (e.asisMap || []).indexOf('role:mgr') !== -1;
   if (q.role != null) {
     var role = E.roleById(R, String(q.role)); if (!role) return { allow: false, why: 'no-role' };
-    return E.compileRole(role, C).indexOf(key) !== -1 ? { allow: true, why: 'role' } : { allow: false, why: 'level' };
+    return perm44Compile(role, C).indexOf(key) !== -1 ? { allow: true, why: 'role' } : { allow: false, why: 'level' };
   }
   var rec = isObj(R.people) ? R.people[String(q.ekey || '')] : null;
   if (needMgr && !(q.target && q.target.mgr)) return { allow: false, why: 'mgr' };
@@ -26933,7 +26540,7 @@ async function perm44Route(env, request, url, A, path) {
     var rec = await opResourceGet(env, perm44Key(d)), target = null;
     if (ekey != null) { var tu = (A.users || []).filter(function (x) { return x && !x.dis && String(x.ekey || '') === String(ekey); })[0]; target = tu ? { role: tu.role, mgr: isMgrKey(tu.ekey) || !!tu.mgr } : { role: 'staff', mgr: isMgrKey(ekey) }; }
     var v = perm44Decide(A, d, { rolesRec: rec, role: role, ekey: ekey, key: key, target: target });
-    return json({ ok: 1, allow: !!v.allow, why: v.why });
+    return json({ ok: 1, allow: !!v.allow, why: v.why, on: perm44Ceiling(A, d).on });   /* on: الأنظمةُ المشغَّلة في سقف الوحدة بالوراثة */
   }
   if (path === '/api/perm44/log') {
     var lim = Math.min(200, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10) || 50));
@@ -30441,6 +30048,7 @@ async function tkLazyJobs(env, request, d, withRec) {
   await tkDueLazy(env, request, d, seen.due === undefined ? null : seen.due);
 }
 /* ══ (6) الواجهات: حالةُ الإنفاذ · سجلُّ القرارات · الترحيلُ والرجوع (هوية → نطاق → صلاحيات) · جلسةُ اختبارٍ داخلية (Preview) ══ */
+var REG_VALIDATION = null;   /* V7 · د5-هـ (44): تحقّقُ السجلّ مرّةً لكل نسخةٍ من الخادم (تقريرُ /api/permv2) */
 /* ما يُرسل للواجهة عن فاعلٍ: المفاتيحُ المحمولة لكل إدارة (bitset على ترتيب السجل) · العدساتُ المفعّلة · مفاتيحُ المنح الصريح
    (RISHAD-266: ceil · me · sb — سقفُ النطاق القديم ونطاقُ الفاعل فيه وورديتُه المربوطة — أُزيلت مع تقاعده؛ لم تقرأها الواجهة) */
 function enfBits(A, d) {
@@ -30910,7 +30518,7 @@ async function getRoute(env, url, ss) {
   var wantAll = String(url.searchParams.get('keys') || '').split(',').filter(Boolean), want = wantAll.slice(0, GET_MAX);
   /* KIVO_264 · C2: الحدُّ 80 كما كان — والقطعُ صار معلَناً (more:1) بدل أن يُسقط الباقي صامتاً */
   var moreG = wantAll.length > GET_MAX && wantAll.slice(GET_MAX).some(function (k8) { return want.indexOf(k8) === -1; });
-  var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
+  var rvG = await revsAll(env), got = {}, refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
   var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
   if (want.indexOf(K_USERS) >= 0) await privPrepDepts(env, AG, (AG.depts || []).map(function (x) { return x && x.id; }));   /* 019u (9): the accounts lens maps an ekey that is a hidden nid */
@@ -30930,7 +30538,6 @@ async function getRoute(env, url, ss) {
     /* D4‑01 (v24.5): ظلُّ نطاق القراءة على ما سيُرجَع (أو على المورد وحده حين لا قيمة) — لا يمسّ got ولا الحكم */
     if (AG.enf && rdG && gv != null) { try { if (!refsG) refsG = await enfRefsFor(env, enfDeptsOf(AG), null); gv = enfProjectStr(AG, gk, gv, refsG); } catch (eGP) { continue; } }   /* fail-closed: لا قيمةَ ولا رقم — كمن لا يقرأ */
     if (rdG && gv != null) gv = privOut(AG, gk, gv);   /* PRIVACY batch (019u): bassam_perms_v1 by units/targets · personal fields by purpose */
-    try { if (!AG.enf) permv4Read(AG, gk, gv, rdG, 'get', pv4rg, null); } catch (e4rg) { swallow('permv4-read-get', e4rg, env.__rid); }
     got[gk] = { v: gv, rev: rvG[gk] || 0 };
   }
   var outG = { ok: 1, v: await curRev(env), keys: got }; if (moreG) outG.more = 1;
@@ -31091,16 +30698,15 @@ export default {
         /* R193…R203: سجلُّ v24.9 — نسختُه وبصمتُه وتحقّقُه الداخلي وعدّاداتُ الظلّ (Phase 1 · 2.1 · 3 · 4 · 4.1 · 4.1.1 · 4.2 · 4.3 · 4.4 · 4.5 — كتابةً وقراءةً + ربطُ القراءة + موديلُ الترحيل + موديلُ الهوية + بروفةُ ترحيل الهوية + التمهيدُ المُدمَج هوية→نطاق) — مدير النظام وحده؛ قراءةٌ لا أثر لها */
         if (path === '/api/permv2') {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
-          if (!PERMV2.validation) { try { PERMV2.validation = KIVO_REGISTRY.validate(); } catch (e9) { PERMV2.validation = { ok: false, err: String(e9 && e9.message || e9) }; } }
+          /* V7 · د5-هـ (44): تقريرُ السجلّ وروابطه (التحقق · الأعداد · النطاق · الحراسة · البناء) — عدّاداتُ القياس الظلّية (PERMV2 · PERMV3 · PERMV4) حُذفت معها */
+          if (!REG_VALIDATION) { try { REG_VALIDATION = KIVO_REGISTRY.validate(); } catch (e9) { REG_VALIDATION = { ok: false, err: String(e9 && e9.message || e9) }; } }
           var scopeV = null; try { scopeV = KIVO_SCOPE.validate(); } catch (e4v) { scopeV = { ok: false, err: String(e4v && e4v.message || e4v) }; }
-          return json({ ok: 1, version: KIVO_REGISTRY.version, docSha256: KIVO_REGISTRY.docSha256, status: KIVO_REGISTRY.status, phase: 4.1, mode: 'shadow', worker: WORKER_VER, counts: KIVO_REGISTRY.counts, validation: PERMV2.validation, stats: PERMV2.stats,
-                        scope: { version: KIVO_SCOPE.version, docSha256: KIVO_SCOPE.docSha256, phase: KIVO_SCOPE.phase, mode: KIVO_SCOPE.mode, dims: KIVO_SCOPE.DIMS, counts: KIVO_SCOPE.counts, validation: scopeV, migration: KIVO_SCOPE.migration, interpretations: KIVO_SCOPE.interpretations, conflicts: KIVO_SCOPE.conflicts, terminology: KIVO_SCOPE.terminology, readPolicy: KIVO_SCOPE.readPolicy, readMaxItems: PV4_READ_MAX, readBudget: PV4_READ_BUDGET, readBudgetPolicy: KIVO_SCOPE.readBudgetPolicy, bindings: KIVO_SCOPE.bindings.length,
+          return json({ ok: 1, version: KIVO_REGISTRY.version, docSha256: KIVO_REGISTRY.docSha256, status: KIVO_REGISTRY.status, phase: 4.1, mode: 'shadow', worker: WORKER_VER, counts: KIVO_REGISTRY.counts, validation: REG_VALIDATION,
+                        scope: { version: KIVO_SCOPE.version, docSha256: KIVO_SCOPE.docSha256, phase: KIVO_SCOPE.phase, mode: KIVO_SCOPE.mode, dims: KIVO_SCOPE.DIMS, counts: KIVO_SCOPE.counts, validation: scopeV, migration: KIVO_SCOPE.migration, interpretations: KIVO_SCOPE.interpretations, conflicts: KIVO_SCOPE.conflicts, terminology: KIVO_SCOPE.terminology, readPolicy: KIVO_SCOPE.readPolicy, readBudgetPolicy: KIVO_SCOPE.readBudgetPolicy, bindings: KIVO_SCOPE.bindings.length,
                                  identityRehearsal: { endpoint: '/api/identity-rehearsal', version: KIVO_IDENTITY_MIGRATION.version, docSha256: KIVO_IDENTITY_MIGRATION.docSha256, phase: KIVO_IDENTITY_MIGRATION.phase, mode: KIVO_IDENTITY_MIGRATION.mode, writes: 0, classes: KIVO_IDENTITY_MIGRATION.classes, auto: KIVO_IDENTITY_MIGRATION.auto, pending: KIVO_IDENTITY_MIGRATION.pending, thresholds: KIVO_IDENTITY_MIGRATION.model && KIVO_IDENTITY_MIGRATION.model.thresholds || null, sidClosureGates: KIVO_IDENTITY_MIGRATION.sidClosureGates || null, gates: (KIVO_IDENTITY_MIGRATION.gatesSpec || []).length, validation: (function () { try { return KIVO_IDENTITY_MIGRATION.validate(); } catch (eIV) { return { ok: false, err: String(eIV && eIV.message || eIV) }; } })() },
-                                 readBindings: { meta: KIVO_SCOPE.readBindings.meta, byResource: KIVO_SCOPE.readBindings.byResource, special: KIVO_SCOPE.readBindings.special, noReadKey: KIVO_SCOPE.readBindings.noReadKey, readKindOutsideRoutes: KIVO_SCOPE.readBindings.readKindOutsideRoutes || [] }, readBindingCheck: (function () { try { return permv4ReadBindingCheck(); } catch (e4c) { return { ok: false, err: String(e4c && e4c.message || e4c) }; } })(),
-                                 write: PERMV4.write, read: PERMV4.read, stats: PERMV4.write },
+                                 readBindings: { meta: KIVO_SCOPE.readBindings.meta, byResource: KIVO_SCOPE.readBindings.byResource, special: KIVO_SCOPE.readBindings.special, noReadKey: KIVO_SCOPE.readBindings.noReadKey, readKindOutsideRoutes: KIVO_SCOPE.readBindings.readKindOutsideRoutes || [] }, readBindingCheck: (function () { try { return permv4ReadBindingCheck(); } catch (e4c) { return { ok: false, err: String(e4c && e4c.message || e4c) }; } })()},
                         guards: { version: KIVO_GUARDS.version, phase: KIVO_GUARDS.phase, mode: KIVO_GUARDS.mode, counts: KIVO_GUARDS.counts, covers: KIVO_GUARDS.covers, bindings: KIVO_GUARDS.bindings.length, shadowOnly: KIVO_GUARDS.shadowOnly.length, decisions: KIVO_GUARDS.decisions.length },
-                        bind: PERMV2.bind,
-                        build: { version: KIVO_BUILD.version, phase: KIVO_BUILD.phase, mode: KIVO_BUILD.mode, counts: KIVO_BUILD.counts, bindings: KIVO_BUILD.bindings.map(function (x) { return { key: x.key, group: x.group, status: x.status, impl: x.impl }; }), lenses: KIVO_BUILD.LENSES, importRes: KIVO_BUILD.IMPORT_RES, retroMaxH: KIVO_BUILD.RETRO_MAX_H, stats: PERMV3 } });
+                        build: { version: KIVO_BUILD.version, phase: KIVO_BUILD.phase, mode: KIVO_BUILD.mode, counts: KIVO_BUILD.counts, bindings: KIVO_BUILD.bindings.map(function (x) { return { key: x.key, group: x.group, status: x.status, impl: x.impl }; }), lenses: KIVO_BUILD.LENSES, importRes: KIVO_BUILD.IMPORT_RES, retroMaxH: KIVO_BUILD.RETRO_MAX_H } });
         }
         /* RISHAD-266: /api/scope-dryrun (R200 · جردُ سقف النطاق القديم) أُزيل مع تقاعده، وتمهيدُ الهوية (/api/identity-preflight) مع 011/012/015/016 (RISHAD-266 P6) */
         /* R202 · Phase 4.4 — Identity Migration Rehearsal (مدير النظام وحده · GET · قراءةٌ فقط · writes = 0): يحمّل بيانات D1 الفعلية (الإدارات · الحسابات · الخطة · الجولات · الموظفون) ونصوصَها الخام وأرقامَ مراجعاتها
@@ -31518,12 +31124,11 @@ export default {
       if (keys[K_USERS] != null) keys[K_USERS] = usersNoOut(keys[K_USERS], AB);   /* KIVO_259 · SR-1: الرقمُ الوظيفي (كلمةُ المرور الأولى للمديرين) لصاحبه ولمدير النظام وحدهما */
       /* الفحصُ العميق 2026-10-21 (R4 · IRSZ-3 · DG-07 · AUX-14): والقائمةُ نفسُها بأقلّ امتياز — لا هويةَ ولا جوالَ ولا حسابَ لموظفي غير نطاقه (054 usersScopeOut) */
       if (keys[K_USERS] != null) { await privPrepDepts(env, AB, (AB.depts || []).map(function (x) { return x && x.id; })); keys[K_USERS] = usersScopeOut(keys[K_USERS], AB); }   /* 019u (9) */
-      var rvB = await revsAll(env), revsOut = {}, pv4rb = pv4ReadBudget();
+      var rvB = await revsAll(env), revsOut = {};
       var enfRB = AB.enf ? await enfRefsFor(env, enfDeptsOf(AB), keys) : null;
       for (var bk in keys) {
         var okB = canRead(AB, bk);
         /* D4‑01 (v24.5): ظلُّ نطاق القراءة — بعد الحكم، على القيمة كما ستُحقن أو كما كانت ستُحذف؛ لا يمسّ keys ولا الحكم */
-        try { if (!AB.enf) permv4Read(AB, bk, keys[bk], okB, 'boot', pv4rb, keys); } catch (e4rb) { swallow('permv4-read-boot', e4rb, env.__rid); }
         if (!okB) { delete keys[bk]; continue; }
         if (AB.enf) { try { keys[bk] = enfProjectStr(AB, bk, keys[bk], enfRB); } catch (eBP) { delete keys[bk]; continue; } }
         keys[bk] = privOut(AB, bk, keys[bk]);   /* PRIVACY batch (019u): SV01 — the permissions registry by units/targets */

@@ -388,10 +388,6 @@
    "order": 20,
    "text": "  manifest.domains.seized = 1;\n"
   },
-  "retro.counters": {
-   "order": 20,
-   "text": "seized: pv3Retro()"
-  },
   "retro.table": {
    "order": 20,
    "text": "seized: { cap: 'seized/records', key: 'sz.rec.retro.open', res: 'bassam_seized_v1', state: 'bassam_seized_retro_v1', name: 'المضبوطات' }"

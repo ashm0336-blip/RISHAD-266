@@ -75,8 +75,7 @@
    "absent": "بلا الجدول الشهري: لا مشاركَ في مسودة إعادة التسمية — تُحفظ خياراتُ الورديات وحدها، والخادمُ لا يقبل كتابةً في مفتاحٍ غائب",
    "files": [
     "src/modules/admin/logic.js",
-    "workers/parts/044-protected-ops.js",
-    "workers/parts/045-permv2.js"
+    "workers/parts/044-protected-ops.js"
    ]
   },
   "shifts.renamed.cascade@1": {

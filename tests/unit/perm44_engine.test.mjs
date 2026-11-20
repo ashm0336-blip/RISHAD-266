@@ -101,3 +101,55 @@ test('perm44: diff → changes/affected · undo restores · drift refuses', () =
   assert.equal(C.undo(drift, D.changes), null, 'drifted: refused');
   assert.equal(C.diff(a, a).changes.length, 0);
 });
+
+/* الواجهة: السقفُ بالوراثة (الوحدة ∩ كلُّ سلف) · setRoles/setPerson يكتبان السجلَّين في المسودة نفسِها · commit يكتبهما في لحظةٍ واحدة · roleNameOf */
+function clientWith(state) {
+  const store = new Map(Object.entries(state.store || {}).map(([k, v]) => [k, JSON.stringify(v)])), writes = [];
+  const ctx = { console, localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => { writes.push(k); store.set(k, String(v)); } } };
+  const on = state.on;   /* {unit: [pages on]} */
+  ctx.KIVO = {
+    BassamDepts: { active: () => 'TEST_ONLY_d1', ancestorsOf: (d) => (state.anc[d] || []) },
+    BassamAuth: { user: () => ({ id: 'TEST_ONLY_u', role: state.role || 'staff' }) },
+    BassamPerm: {
+      p24Ceil: (d) => ({ page: (p) => (on[d] || []).includes(p), sub: (p) => (on[d] || []).includes(p), lens: () => true }),
+      p24LeafOn: (C, leaf) => C.page(leaf.split('/')[0]),
+      p24Effective: () => ({ T: state.T || {} }), hasOwnSheet: () => !!state.sheet, empPerms: () => state.sheet || {}, empTpl: () => null,
+    },
+    __BS_SRV: { flushAsync: async () => { ctx.flushed = writes.slice(); } },
+  };
+  ctx.window = ctx; vm.createContext(ctx);
+  vm.runInContext(rd('src/permissions/340-registry-v24-9.js'), ctx);
+  vm.runInContext(rd('src/permissions/345-perm44.js'), ctx);
+  return { P: ctx.KIVO.Perm44, store, writes, ctx };
+}
+test('perm44 client: inherited ceiling · setRoles/setPerson fill one draft (roles + compiled grants) · commit · roleNameOf', async () => {
+  const D = 'TEST_ONLY_d1', KR = 'bsdept:' + D + ':bassam_roles_v1', KG = 'bsdept:' + D + ':bassam_grants_v1';
+  const all = ['dstats', 'emps', 'planning', 'staff', 'plan', 'daily', 'dreport', 'tasks', 'irshad', 'seized', 'award', 'links', 'help'];
+  const W = clientWith({ on: { [D]: all, TEST_ONLY_g1: all.filter((p) => p !== 'staff') }, anc: { [D]: ['TEST_ONLY_g1'] }, T: { 'plan.view': true, 'staff.view': true },
+    store: { [KG]: { v: 1, emp: { TEST_ONLY_other: { plus: ['plan.view'], minus: [], src: 'tpl:x' } } } } });
+  const P = W.P, S = server();
+  const C = P.ceiling(D);
+  assert.ok(!Array.from(C.on).includes('staff') && Array.from(C.on).includes('plan'), 'an ancestor switched «staff» off: off for the unit');
+  assert.equal(C.key(Array.from(P.keysFor('staff', 'view'))[0]), false);
+  const role = { id: 'TEST_ONLY_r', name: 'TEST_ONLY مراقب', sys: { plan: { lvl: 'input' }, staff: { lvl: 'full' } } };
+  const dr = P.draft(D);
+  assert.equal(P.setRoles(dr, D, [role]).ok, true);
+  assert.equal(P.setPerson(dr, D, 'TEST_ONLY_e1', { role: role.id, ex: [] }).ok, true);
+  const rec = dr.set[KR], g = dr.set[KG];
+  assert.ok(rec && g, 'both records in the same draft');
+  const want = Array.from(S.keysFor('plan', 'input'));
+  assert.deepEqual(Array.from(g.emp.TEST_ONLY_e1.plus), want, 'compiled = plan·input (staff is off by inheritance)');
+  assert.equal(g.emp.TEST_ONLY_e1.src, 'role:' + role.id);
+  assert.deepEqual(Array.from(g.emp.TEST_ONLY_e1.minus), want.includes('staff.view') ? [] : ['staff.view'], 'the legacy sheet beyond the role → minus');
+  assert.deepEqual(JSON.parse(JSON.stringify(g.emp.TEST_ONLY_other)), { plus: ['plan.view'], minus: [], src: 'tpl:x' }, 'other entries untouched');
+  assert.equal(W.store.get(KR), undefined, 'nothing written before commit');
+  const r = await P.commit(dr);
+  assert.equal(r.ok, true); assert.deepEqual(Array.from(W.ctx.flushed).sort(), [KG, KR].sort(), 'both keys written in the same tick, then flushed');
+  assert.equal(P.roleNameOf('TEST_ONLY_e1', D), 'TEST_ONLY مراقب');
+  assert.equal(P.roleNameOf('TEST_ONLY_other', D), 'صلاحيات مخصّصة');
+  assert.equal(P.roleNameOf('TEST_ONLY_nobody', D), 'بلا صلاحيات');
+  /* removing the person: the role-sourced entry goes with him */
+  const d2 = P.draft(D); P.setPerson(d2, D, 'TEST_ONLY_e1', null);
+  assert.equal(d2.set[KG].emp.TEST_ONLY_e1, undefined);
+  assert.equal(P.setRoles(P.draft(D), D, [{ id: '', name: 'x', sys: {} }]).ok, false, 'shape refused before anything is written');
+});

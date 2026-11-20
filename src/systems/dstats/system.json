@@ -228,17 +228,9 @@
    "order": 10,
    "text": "    if (P.name === K_DSTATS) { var S = enfSources(A, 'read'); return !!(S.haram || S.nabawi); }\n"
   },
-  "permv2.depts.dstats": {
-   "order": 10,
-   "text": " else if (rn === 'bassam_dstats_v1') { var dd = dsDepts(A); for (i = 0; i < dd.length; i++) ds[dd[i]] = 1; }"
-  },
   "permv4.read.dstats": {
    "order": 10,
    "text": "      if (name === K_DSTATS) { for (i = 0; i < DS_READ.length; i++) { var atD = R.atoms['dstats/' + DS_READ[i] + ':view']; for (j = 0; atD && j < atD.targets.length; j++) if (R.byKey[atD.targets[j]] && R.byKey[atD.targets[j]].status === 'active') expect.push(atD.targets[j]); } }\n"
-  },
-  "permv4.read.depts": {
-   "order": 10,
-   "text": "dsDepts(A)"
   },
   "permv4.sources.depts": {
    "order": 10,

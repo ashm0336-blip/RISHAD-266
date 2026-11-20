@@ -116,10 +116,6 @@
   "order": 10,
   "text": " && o.staffing === undefined) o.staffing = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_staffing_v3'), null);"
  },
- "permv4.read.pv4.staff": {
-  "order": 10,
-  "text": "staffing: parseJson(refs['bsdept:' + d + ':bassam_staffing_v3'], null)"
- },
  "cleanup.ctxRes.staff": {
   "order": 10,
   "text": "'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1,"

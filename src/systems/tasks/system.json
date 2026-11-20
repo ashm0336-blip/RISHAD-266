@@ -471,10 +471,6 @@
    "order": 10,
    "text": "bassam_tasks_v1"
   },
-  "permv2.selfEkey.tasks": {
-   "order": 10,
-   "text": "rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : "
-  },
   "enf.selfEkey.tasks": {
    "order": 10,
    "text": "rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : "
@@ -574,14 +570,6 @@
   "canWrite.selfRule.tasks": {
    "order": 10,
    "text": "  if (R9.self === 'task' && newVal != null && selfTaskOnly(A, newVal, curVal)) return { ok: true };\n"
-  },
-  "permv2.selfRule.tasks": {
-   "order": 10,
-   "text": "    if (R0.self === 'task' && selfTaskOnly(A, newVal, curVal)) return 'selfTask';\n"
-  },
-  "permv2.selfRule.how.tasks": {
-   "order": 10,
-   "text": " || how === 'selfTask'"
   },
   "daily.tabVals.tasks": {
    "order": 10,

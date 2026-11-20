@@ -1,4 +1,5 @@
 /* ══ (6) الواجهات: حالةُ الإنفاذ · سجلُّ القرارات · الترحيلُ والرجوع (هوية → نطاق → صلاحيات) · جلسةُ اختبارٍ داخلية (Preview) ══ */
+var REG_VALIDATION = null;   /* V7 · د5-هـ (44): تحقّقُ السجلّ مرّةً لكل نسخةٍ من الخادم (تقريرُ /api/permv2) */
 /* ما يُرسل للواجهة عن فاعلٍ: المفاتيحُ المحمولة لكل إدارة (bitset على ترتيب السجل) · العدساتُ المفعّلة · مفاتيحُ المنح الصريح
    (RISHAD-266: ceil · me · sb — سقفُ النطاق القديم ونطاقُ الفاعل فيه وورديتُه المربوطة — أُزيلت مع تقاعده؛ لم تقرأها الواجهة) */
 function enfBits(A, d) {
@@ -468,7 +469,7 @@ async function getRoute(env, url, ss) {
   var wantAll = String(url.searchParams.get('keys') || '').split(',').filter(Boolean), want = wantAll.slice(0, GET_MAX);
   /* KIVO_264 · C2: الحدُّ 80 كما كان — والقطعُ صار معلَناً (more:1) بدل أن يُسقط الباقي صامتاً */
   var moreG = wantAll.length > GET_MAX && wantAll.slice(GET_MAX).some(function (k8) { return want.indexOf(k8) === -1; });
-  var rvG = await revsAll(env), got = {}, pv4rg = pv4ReadBudget(), refsG = null;
+  var rvG = await revsAll(env), got = {}, refsG = null;
   /* KIVO_255 · AUD-037: قيمُ المفاتيح المقروءة تُجلب في جولةٍ واحدة بدل جولةٍ لكل مفتاح — الحكمُ لكل مفتاح كما هو */
   var rdKeys = want.filter(function (k9) { return !isDeviceKey(k9) && resName(k9) !== K_DSTATS && !nfLegacyKey(k9) && !cuLegacyKey(k9) && !irLegacyKey(k9) && !bdLegacyKey(k9) && !opIsResource(k9) && canRead(AG, k9); }), valsG = await kvMany(env, 'kv', rdKeys);
   if (want.indexOf(K_USERS) >= 0) await privPrepDepts(env, AG, (AG.depts || []).map(function (x) { return x && x.id; }));   /* 019u (9): the accounts lens maps an ekey that is a hidden nid */
@@ -488,7 +489,6 @@ async function getRoute(env, url, ss) {
     /* D4‑01 (v24.5): ظلُّ نطاق القراءة على ما سيُرجَع (أو على المورد وحده حين لا قيمة) — لا يمسّ got ولا الحكم */
     if (AG.enf && rdG && gv != null) { try { if (!refsG) refsG = await enfRefsFor(env, enfDeptsOf(AG), null); gv = enfProjectStr(AG, gk, gv, refsG); } catch (eGP) { continue; } }   /* fail-closed: لا قيمةَ ولا رقم — كمن لا يقرأ */
     if (rdG && gv != null) gv = privOut(AG, gk, gv);   /* PRIVACY batch (019u): bassam_perms_v1 by units/targets · personal fields by purpose */
-    try { if (!AG.enf) permv4Read(AG, gk, gv, rdG, 'get', pv4rg, null); } catch (e4rg) { swallow('permv4-read-get', e4rg, env.__rid); }
     got[gk] = { v: gv, rev: rvG[gk] || 0 };
   }
   var outG = { ok: 1, v: await curRev(env), keys: got }; if (moreG) outG.more = 1;
@@ -649,16 +649,15 @@ export default {
         /* R193…R203: سجلُّ v24.9 — نسختُه وبصمتُه وتحقّقُه الداخلي وعدّاداتُ الظلّ (Phase 1 · 2.1 · 3 · 4 · 4.1 · 4.1.1 · 4.2 · 4.3 · 4.4 · 4.5 — كتابةً وقراءةً + ربطُ القراءة + موديلُ الترحيل + موديلُ الهوية + بروفةُ ترحيل الهوية + التمهيدُ المُدمَج هوية→نطاق) — مدير النظام وحده؛ قراءةٌ لا أثر لها */
         if (path === '/api/permv2') {
           if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
-          if (!PERMV2.validation) { try { PERMV2.validation = KIVO_REGISTRY.validate(); } catch (e9) { PERMV2.validation = { ok: false, err: String(e9 && e9.message || e9) }; } }
+          /* V7 · د5-هـ (44): تقريرُ السجلّ وروابطه (التحقق · الأعداد · النطاق · الحراسة · البناء) — عدّاداتُ القياس الظلّية (PERMV2 · PERMV3 · PERMV4) حُذفت معها */
+          if (!REG_VALIDATION) { try { REG_VALIDATION = KIVO_REGISTRY.validate(); } catch (e9) { REG_VALIDATION = { ok: false, err: String(e9 && e9.message || e9) }; } }
           var scopeV = null; try { scopeV = KIVO_SCOPE.validate(); } catch (e4v) { scopeV = { ok: false, err: String(e4v && e4v.message || e4v) }; }
-          return json({ ok: 1, version: KIVO_REGISTRY.version, docSha256: KIVO_REGISTRY.docSha256, status: KIVO_REGISTRY.status, phase: 4.1, mode: 'shadow', worker: WORKER_VER, counts: KIVO_REGISTRY.counts, validation: PERMV2.validation, stats: PERMV2.stats,
-                        scope: { version: KIVO_SCOPE.version, docSha256: KIVO_SCOPE.docSha256, phase: KIVO_SCOPE.phase, mode: KIVO_SCOPE.mode, dims: KIVO_SCOPE.DIMS, counts: KIVO_SCOPE.counts, validation: scopeV, migration: KIVO_SCOPE.migration, interpretations: KIVO_SCOPE.interpretations, conflicts: KIVO_SCOPE.conflicts, terminology: KIVO_SCOPE.terminology, readPolicy: KIVO_SCOPE.readPolicy, readMaxItems: PV4_READ_MAX, readBudget: PV4_READ_BUDGET, readBudgetPolicy: KIVO_SCOPE.readBudgetPolicy, bindings: KIVO_SCOPE.bindings.length,
+          return json({ ok: 1, version: KIVO_REGISTRY.version, docSha256: KIVO_REGISTRY.docSha256, status: KIVO_REGISTRY.status, phase: 4.1, mode: 'shadow', worker: WORKER_VER, counts: KIVO_REGISTRY.counts, validation: REG_VALIDATION,
+                        scope: { version: KIVO_SCOPE.version, docSha256: KIVO_SCOPE.docSha256, phase: KIVO_SCOPE.phase, mode: KIVO_SCOPE.mode, dims: KIVO_SCOPE.DIMS, counts: KIVO_SCOPE.counts, validation: scopeV, migration: KIVO_SCOPE.migration, interpretations: KIVO_SCOPE.interpretations, conflicts: KIVO_SCOPE.conflicts, terminology: KIVO_SCOPE.terminology, readPolicy: KIVO_SCOPE.readPolicy, readBudgetPolicy: KIVO_SCOPE.readBudgetPolicy, bindings: KIVO_SCOPE.bindings.length,
                                  identityRehearsal: { endpoint: '/api/identity-rehearsal', version: KIVO_IDENTITY_MIGRATION.version, docSha256: KIVO_IDENTITY_MIGRATION.docSha256, phase: KIVO_IDENTITY_MIGRATION.phase, mode: KIVO_IDENTITY_MIGRATION.mode, writes: 0, classes: KIVO_IDENTITY_MIGRATION.classes, auto: KIVO_IDENTITY_MIGRATION.auto, pending: KIVO_IDENTITY_MIGRATION.pending, thresholds: KIVO_IDENTITY_MIGRATION.model && KIVO_IDENTITY_MIGRATION.model.thresholds || null, sidClosureGates: KIVO_IDENTITY_MIGRATION.sidClosureGates || null, gates: (KIVO_IDENTITY_MIGRATION.gatesSpec || []).length, validation: (function () { try { return KIVO_IDENTITY_MIGRATION.validate(); } catch (eIV) { return { ok: false, err: String(eIV && eIV.message || eIV) }; } })() },
-                                 readBindings: { meta: KIVO_SCOPE.readBindings.meta, byResource: KIVO_SCOPE.readBindings.byResource, special: KIVO_SCOPE.readBindings.special, noReadKey: KIVO_SCOPE.readBindings.noReadKey, readKindOutsideRoutes: KIVO_SCOPE.readBindings.readKindOutsideRoutes || [] }, readBindingCheck: (function () { try { return permv4ReadBindingCheck(); } catch (e4c) { return { ok: false, err: String(e4c && e4c.message || e4c) }; } })(),
-                                 write: PERMV4.write, read: PERMV4.read, stats: PERMV4.write },
+                                 readBindings: { meta: KIVO_SCOPE.readBindings.meta, byResource: KIVO_SCOPE.readBindings.byResource, special: KIVO_SCOPE.readBindings.special, noReadKey: KIVO_SCOPE.readBindings.noReadKey, readKindOutsideRoutes: KIVO_SCOPE.readBindings.readKindOutsideRoutes || [] }, readBindingCheck: (function () { try { return permv4ReadBindingCheck(); } catch (e4c) { return { ok: false, err: String(e4c && e4c.message || e4c) }; } })()},
                         guards: { version: KIVO_GUARDS.version, phase: KIVO_GUARDS.phase, mode: KIVO_GUARDS.mode, counts: KIVO_GUARDS.counts, covers: KIVO_GUARDS.covers, bindings: KIVO_GUARDS.bindings.length, shadowOnly: KIVO_GUARDS.shadowOnly.length, decisions: KIVO_GUARDS.decisions.length },
-                        bind: PERMV2.bind,
-                        build: { version: KIVO_BUILD.version, phase: KIVO_BUILD.phase, mode: KIVO_BUILD.mode, counts: KIVO_BUILD.counts, bindings: KIVO_BUILD.bindings.map(function (x) { return { key: x.key, group: x.group, status: x.status, impl: x.impl }; }), lenses: KIVO_BUILD.LENSES, importRes: KIVO_BUILD.IMPORT_RES, retroMaxH: KIVO_BUILD.RETRO_MAX_H, stats: PERMV3 } });
+                        build: { version: KIVO_BUILD.version, phase: KIVO_BUILD.phase, mode: KIVO_BUILD.mode, counts: KIVO_BUILD.counts, bindings: KIVO_BUILD.bindings.map(function (x) { return { key: x.key, group: x.group, status: x.status, impl: x.impl }; }), lenses: KIVO_BUILD.LENSES, importRes: KIVO_BUILD.IMPORT_RES, retroMaxH: KIVO_BUILD.RETRO_MAX_H } });
         }
         /* RISHAD-266: /api/scope-dryrun (R200 · جردُ سقف النطاق القديم) أُزيل مع تقاعده، وتمهيدُ الهوية (/api/identity-preflight) مع 011/012/015/016 (RISHAD-266 P6) */
         /* R202 · Phase 4.4 — Identity Migration Rehearsal (مدير النظام وحده · GET · قراءةٌ فقط · writes = 0): يحمّل بيانات D1 الفعلية (الإدارات · الحسابات · الخطة · الجولات · الموظفون) ونصوصَها الخام وأرقامَ مراجعاتها
@@ -1076,12 +1075,11 @@ export default {
       if (keys[K_USERS] != null) keys[K_USERS] = usersNoOut(keys[K_USERS], AB);   /* KIVO_259 · SR-1: الرقمُ الوظيفي (كلمةُ المرور الأولى للمديرين) لصاحبه ولمدير النظام وحدهما */
       /* الفحصُ العميق 2026-10-21 (R4 · IRSZ-3 · DG-07 · AUX-14): والقائمةُ نفسُها بأقلّ امتياز — لا هويةَ ولا جوالَ ولا حسابَ لموظفي غير نطاقه (054 usersScopeOut) */
       if (keys[K_USERS] != null) { await privPrepDepts(env, AB, (AB.depts || []).map(function (x) { return x && x.id; })); keys[K_USERS] = usersScopeOut(keys[K_USERS], AB); }   /* 019u (9) */
-      var rvB = await revsAll(env), revsOut = {}, pv4rb = pv4ReadBudget();
+      var rvB = await revsAll(env), revsOut = {};
       var enfRB = AB.enf ? await enfRefsFor(env, enfDeptsOf(AB), keys) : null;
       for (var bk in keys) {
         var okB = canRead(AB, bk);
         /* D4‑01 (v24.5): ظلُّ نطاق القراءة — بعد الحكم، على القيمة كما ستُحقن أو كما كانت ستُحذف؛ لا يمسّ keys ولا الحكم */
-        try { if (!AB.enf) permv4Read(AB, bk, keys[bk], okB, 'boot', pv4rb, keys); } catch (e4rb) { swallow('permv4-read-boot', e4rb, env.__rid); }
         if (!okB) { delete keys[bk]; continue; }
         if (AB.enf) { try { keys[bk] = enfProjectStr(AB, bk, keys[bk], enfRB); } catch (eBP) { delete keys[bk]; continue; } }
         keys[bk] = privOut(AB, bk, keys[bk]);   /* PRIVACY batch (019u): SV01 — the permissions registry by units/targets */

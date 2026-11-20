@@ -12,6 +12,7 @@ ALLOW = [  # (نمط · السبب) — المولَّدُ يُعاد توليد
     ('pages/*.dc.html',                 'مولَّد: tools/generate.py من src/modules/<وحدة>/{view.html,logic.js,helmet.css} (المصدرُ المقروء)'),
     ('manifests/255-page-manifest.js',  'مولَّد: tools/generate.py من src/manifests/pages.json'),
     ('permissions/340-registry-v24-9.js', 'مولَّد: tools/generate.py من registry/registry-v24.9.json'),
+    ('permissions/345-perm44.js', 'مولَّد: tools/generate.py من registry/perm44-levels.json + perm44-core.js (V7 · د5-هـ 44)'),
     ('styles/070-theme-tokens.css',     'مولَّد: tools/tokens.py من src/styles/tokens'),
     ('styles/080-theme-dark.css',       'مولَّد: tools/tokens.py من src/styles/tokens'),
     ('core/020-react-dom.js',           'مورَّد: react-dom 18.3.1 كما نُشر (docs/dependencies-policy.md)'),

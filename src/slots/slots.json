@@ -144,14 +144,6 @@
    "out": "workers/parts/061-enf-read.js"
   },
   {
-   "tpl": "workers/parts/045-permv2.js.tpl",
-   "out": "workers/parts/045-permv2.js"
-  },
-  {
-   "tpl": "workers/parts/049-permv4-read.js.tpl",
-   "out": "workers/parts/049-permv4-read.js"
-  },
-  {
    "tpl": "workers/parts/048-permv4.js.tpl",
    "out": "workers/parts/048-permv4.js"
   },

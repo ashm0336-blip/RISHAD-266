@@ -258,6 +258,8 @@ export interface KivoApi {
   "/api/save": { methods: "POST"; access: "actor"; responses: { "200": { ok: unknown; v: unknown; revs: unknown; denied: unknown; conflicts: unknown; atomic: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown; rid: unknown }; "503": { ok: unknown; err: unknown; msg: unknown } } };
   "/api/get": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; v: unknown; keys: unknown }; "409": { ok: unknown; err: unknown } } };
   "/api/changes": { methods: "GET"; access: "actor"; responses: { "200": { v: unknown; keys: unknown }; "409": { ok: unknown; err: unknown } } };
+  "/api/perm44/check": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; allow: unknown; why: unknown; on: unknown }; "400": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown } } };
+  "/api/perm44/log": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; rows: unknown }; "403": { ok: unknown; err: unknown } } };
   "/api/retro": { methods: "GET" | "POST"; access: "actor"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown } } };
   "/api/aud": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; rows: unknown; next: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown } } };
   "/api/imgs": { methods: "GET"; access: "actor"; responses: { "200": { [k: string]: unknown } } };
@@ -272,7 +274,7 @@ export interface KivoApi {
   "/api/recovery": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; key: unknown; used: unknown; backups: unknown; backupLastLogin: unknown } } };
   "/api/recovery/new": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
   "/api/reset": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
-  "/api/permv2": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; version: unknown; docSha256: unknown; status: unknown; phase: unknown; mode: unknown; worker: unknown; counts: unknown; validation: unknown; stats: unknown; scope: unknown; guards: unknown } } };
+  "/api/permv2": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; version: unknown; docSha256: unknown; status: unknown; phase: unknown; mode: unknown; worker: unknown; counts: unknown; validation: unknown; scope: unknown; guards: unknown } } };
   "/api/identity-rehearsal": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; worker: unknown; rehearsal: unknown } } };
   "/api/authz": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; ver: unknown; mode: unknown; env: unknown; d1: unknown; perm: unknown; scope: unknown; ident: unknown; fixture: unknown; me: unknown }; "404": { ok: unknown; err: unknown } } };
   "/api/authz/log": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; rows: unknown; totals: unknown }; "404": { ok: unknown; err: unknown } } };

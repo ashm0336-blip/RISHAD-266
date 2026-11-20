@@ -436,7 +436,7 @@
    "lines": null,
    "bytes": null,
    "sha256": null,
-   "head": "/* ═══ R193 · Phase 1 — الظلّ: authorize() يُبقي حكم النظام القديم حرفاً بحرف ويقيس معه حكم السجل الحالي v24.9 (v24.2 → v24.3 → v24.4 → v24.5 → v24.5.1 → v24.6 → v24.7 → v24.8 → v24.9؛ المفاتيحُ نفسُها منذ v24.3) ═══"
+   "head": "/* ═══ V7 · د5-هـ (44): طبقةُ القياس الظلّية PERMV2 (R193 · Phase 1 — عدّادُ «حكمُ السجلّ v24.9 بجانب القديم» في authorize · canRead · /api/permv2) حُذفت:"
   },
   {
    "file": "044-protected-ops.js",
@@ -446,18 +446,11 @@
    "head": "/* ══ العمليات المحمية ══════════════════════════════════════════════════════"
   },
   {
-   "file": "045-permv2.js",
-   "lines": null,
-   "bytes": null,
-   "sha256": null,
-   "head": "/* ═══ R194/R195/R196/R197/R198 · Phase 2 → 2.1 → 3 → 4 → 4.1 — Guard Binding (shadow): حكمُ canWrite للنظام القديم كما هو حرفاً بحرف، ويُقاس بجانبه حكمُ السجل الحالي v24.9 المبنيُّ على ربط الحرّاس ═══"
-  },
-  {
    "file": "046-kivo-build-3.js",
    "lines": null,
    "bytes": null,
    "sha256": null,
-   "head": "/* ═══ R196 · Phase 3 — Build Missing Guards (shadow): PERMV3 — أحكامُ TO-BE للـ10 to-build تُحسب وتُقارَن بحكم canWrite ولا تغيّره ═══"
+   "head": "/* ═══ V7 · د5-هـ (44): نوافذُ الاستدراك (ir.rec.retro.open · sz.rec.retro.open) — حالةٌ خادمية لكل (إدارة · نظام) يقرؤها /api/retro (047) والإنفاذ (062 enfSavePrep · 010 KIVO_SCOPE)."
   },
   {
    "file": "047-retro.js",
@@ -471,14 +464,7 @@
    "lines": null,
    "bytes": null,
    "sha256": null,
-   "head": "/* ═══ R197/R198 · Phase 4 → 4.1 — Data Scope Shadow Mode: PERMV4 = { write, read } — نطاقُ كلِّ كتابةٍ (evaluateWrite) وكلِّ قراءةٍ فعلية (evaluateRead · D4‑01) يُحسب بـKIVO_SCOPE ويُقارَن بالحكم القديم ولا يغيّره ═══"
-  },
-  {
-   "file": "049-permv4-read.js",
-   "lines": null,
-   "bytes": null,
-   "sha256": null,
-   "head": "/* ═══ D4‑01 (v24.5) — ظلُّ نطاق القراءة: يُستدعى بعد حكم canRead (canRead0 لم تُمسّ) في مسارَي القراءة الفعليين (حقنُ __BS_BOOT · /api/get)."
+   "head": "/* ═══ V7 · د5-هـ (44): سياقُ النطاق (permv4Ctx: الفاعل · سقفُ الفرع · اليومُ الهجري · نوافذُ الاستدراك · الأقفال · مصادرُ الإحصائيات) ومرجعياتُه المخزّنة (permv4RefsLoad) —"
   },
   {
    "file": "050-read-map.js",
