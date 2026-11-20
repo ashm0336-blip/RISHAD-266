@@ -118,14 +118,12 @@
       var dcopy = [],
         from = null,
         src = "plan";
-      /* KIVO_240 · IP‑03: إقفالُ هوية الموقع في الجولة المُنشأة — إن خلا طابقُ المصدر (لقطةُ الشهر أو الجولةُ السابقة) من sid فيُحلّ من طابق الخطة الحالي المقابل موضعياً (plan.floors[i].sid)؛ وإن حمل sid بقي كما هو */
+      /* KIVO_240 · IP‑03: الجولةُ المُنشأة تحمل sid طابقِ مصدرها (لقطةُ الشهر أو الجولةُ السابقة) كما هو.
+         V7 · د5-هـ (t4): لا حلَّ موضعياً من plan.floors[i] بعد اليوم — طابقُ مصدرٍ بلا sid يبقى بلا sid («غير مربوط») حتى يربطه ترحيلُ الهوية (sidMigration) ببرهان نسبه */
       /* V7 · د5-هـ: الخطةُ يقرؤها مالكُها (التشغيل الميداني) بطريق القراءة نفسِه (المسودة أو Operations) — بغيابه لا خطة («noplan») */
       var plan = (function () { var o = KIVO.bus.read("plan.doc@1", draft); return o && typeof o === "object" ? o : null; })();
-      var pfl = plan && Array.isArray(plan.floors) ? plan.floors : [];
-      var sidAt = function (i, x) {
-        if (x && x.sid) return x.sid;
-        var pf = pfl[i];
-        return pf && pf.sid ? pf.sid : undefined;
+      var sidAt = function (x) {
+        return sidOf(x) || undefined;
       };
       if (!any) {
         var ent = plan && plan.months ? plan.months[y + "-" + m] : null;
@@ -133,7 +131,7 @@
         if (!Array.isArray(pmd) || !pmd.length) return { status: "noplan" };
         try {
           dcopy = lensFilter(JSON.parse(JSON.stringify(pmd))).map(
-            function (x, i) {
+            function (x) {
               return {
                 zones: (x.zones || []).map(function (z) {
                   var o = Object.assign({}, z);
@@ -147,7 +145,7 @@
                 hidePaths: !!x.hidePaths,
                 hideGates: !!x.hideGates,
                 hideMarks: !!x.hideMarks,
-                sid: sidAt(i, x),
+                sid: sidAt(x),
               };
             },
           );
@@ -159,7 +157,7 @@
         from = s0.k;
         src = "round";
         try {
-          dcopy = JSON.parse(JSON.stringify(s0.r.d)).map(function (x, i) {
+          dcopy = JSON.parse(JSON.stringify(s0.r.d)).map(function (x) {
             return {
               zones: (x.zones || []).map(function (z) {
                 var o = Object.assign({}, z);
@@ -173,7 +171,7 @@
               hidePaths: !!x.hidePaths,
               hideGates: !!x.hideGates,
               hideMarks: !!x.hideMarks,
-              sid: sidAt(i, x),
+              sid: sidAt(x),
             };
           });
         } catch (e) {
@@ -305,7 +303,57 @@
       return o;
     });
   }
+  /* ── V7 · د5-هـ (t4): الموقعُ يُطابَق بمعرّفه sid لا بموضعه ──
+     sidIndex(list, sid)        موضعُ طابقِ list الذي يحمل sid (أو −1).
+     siteAt(list, floors, f)    موضعُ طابقِ list المقابل لموقع الخطة floors[f] بمعرّفه؛ موقعٌ بلا sid ⇒ −1 («غير مربوط»).
+                                بلا قائمة مواقع (لا خطة) لا موقعَ يُطابَق: f نفسُه من list (اختيارُ طابقٍ من اليوم لا ربطٌ بخطة).
+     unlinked(list)             مواضعُ طوابق list بلا sid — تُعرض صراحةً ولا تُطابَق بالموضع.
+     padBySid(d, sites, make?)  يُلحق بـd كلَّ موقعٍ من sites (بترتيبه) لا يحمل d معرّفَه (make(site) شكلُ الطابق الفارغ)؛ موقعٌ بلا sid لا يُلحق ⇒ { added, skipped }.
+     removeBySid(d, sid)        يحذف من d طوابقَ sid (الطابقُ بلا sid لا يُمسّ) ⇒ عددُ المحذوف. */
+  function sidOf(x) {
+    return x && typeof x === "object" && x.sid != null && x.sid !== "" ? String(x.sid) : null;
+  }
+  function sidIndex(list, sid) {
+    if (!Array.isArray(list) || sid == null || sid === "") return -1;
+    for (var i = 0; i < list.length; i++) if (sidOf(list[i]) === String(sid)) return i;
+    return -1;
+  }
+  function siteAt(list, floors, f) {
+    if (!Array.isArray(list)) return -1;
+    if (!Array.isArray(floors) || !floors.length) return f >= 0 && f < list.length ? f : -1;
+    return sidIndex(list, sidOf(floors[f]));
+  }
+  function unlinked(list) {
+    var out = [];
+    (Array.isArray(list) ? list : []).forEach(function (x, i) {
+      if (x && !sidOf(x)) out.push(i);
+    });
+    return out;
+  }
+  function padBySid(d, sites, make) {
+    var added = 0, skipped = 0;
+    if (!Array.isArray(d)) return { added: 0, skipped: 0 };
+    (Array.isArray(sites) ? sites : []).forEach(function (site) {
+      var sid = sidOf(site);
+      if (!sid) { skipped++; return; }
+      if (sidIndex(d, sid) >= 0) return;
+      d.push(typeof make === "function" ? make(site) : { zones: [], gates: [], marks: [], paths: [], sid: site.sid });
+      added++;
+    });
+    return { added: added, skipped: skipped };
+  }
+  function removeBySid(d, sid) {
+    var n = 0;
+    if (!Array.isArray(d) || sid == null || sid === "") return 0;
+    for (var i = d.length - 1; i >= 0; i--) if (sidOf(d[i]) === String(sid)) { d.splice(i, 1); n++; }
+    return n;
+  }
   KIVO.BassamRound = {
+    sidIndex: sidIndex,
+    siteAt: siteAt,
+    unlinked: unlinked,
+    padBySid: padBySid,
+    removeBySid: removeBySid,
     ensure: ensure,
     setShiftAp: setShiftAp,
     prepareEnsure: prepareEnsure,
