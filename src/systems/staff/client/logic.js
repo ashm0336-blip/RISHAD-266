@@ -240,6 +240,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         this.bsAck(n ? "أُسند إلى «" + (e || "الموظف") + "» دور «" + n.name + "»" : "سُحب دور «" + (e || "الموظف") + "»", "ok"));
     }
   }
+  _pmColOn() {
+    return !!(KIVO.Perm44 && "function" == typeof KIVO.Perm44.rolesOf);
+  }
   _pmCanSet() {
     return this._pcMemo("pmCanSet", () => {
       try {
@@ -261,7 +264,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       stPmDel: this.PC("del"),
       stPmApprove: this.PC("approve"),
       stPmExport: this.PC("export"),
-      bsPtplOn: this.bsOn("admin/ptpls"),
+      bsPtplOn: this._pmColOn(),   /* V7 · د5-هـ (44): عمودُ «الصلاحيات» = الدور — بحضور محرّك الأدوار (كان بورقة قوالب الصلاحيات المحذوفة) */
       mkDayCap: !!KIVO.bus.read("dreport.usable@1"),   /* V7 · د5-هـ: ورقةُ التقرير اليومي يجيب عنها مالكُه؛ بغيابه مطفأة */
       bsNever: !1,
       stPmWrite: t,
@@ -2659,7 +2662,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ],
           ]
             .concat(t)
-            .map(this.bsOn("admin/ptpls") ? (t) => t : (t) => t.filter((t, e) => 7 !== e));
+            .map(this._pmColOn() ? (t) => t : (t) => t.filter((t, e) => 7 !== e));
         try {
           KIVO.BassamXLSX
             ? KIVO.BassamXLSX.download(e, "staffing-" + kt + ".xlsx")
