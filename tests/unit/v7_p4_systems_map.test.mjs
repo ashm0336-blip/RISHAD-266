@@ -7,7 +7,7 @@
      A3 every row carries one derived class of {نظام، حاوية، صفحة، تبويب، لوحة مؤشرات، عدسة، منصة، مرجع}
      A4 lens hosts come from the lens manifests; no literal host list in admin/logic.js or 331; lens indicators = pages.json requires (Q5)
      A5 the panels of the map = containers.kpis.refs = the panels of kpis/logic.js; the shown conditions = the rules of kpiPanelOk
-     A6 «الوحدات» = the pages of pages.json that carry `activation` (no hand list); `always` is locked; only platSwitch pages have a switch
+     A6 (deleted in V7 · د5-هـ 44 with the «الوحدات» page)
      A7 siteMap has no literal centre-tab names; its centre rows = the admin page's one list (CON_TABS)
      A10 the new display code opens no storage key and no API route */
 import { test } from 'node:test';
@@ -177,30 +177,7 @@ test('A5 the panels of the map = refs = the panels of kpis/logic.js · the shown
   assert.equal(REG.registry.length, 269); assert.equal(PAGES.pages.find((p) => p.key === 'tasks').tabs, undefined);
 });
 
-test('A6 «الوحدات» = the pages that carry activation; always is locked; the switch is where it was', needsSys('award', 'dstats', 'seized', 'tasks'), () => {
-  const rows = Array.from(page()._plMods(["seized"], (on) => "TG:" + on));
-  const want = PAGES.pages.filter((p) => p.activation);
-  assert.equal(want.length, 14);
-  assert.deepEqual(rows.map((r) => [r.k, r.name, r.activation]), want.map((p) => [p.key, p.name, p.activation]), 'one row per page with activation, in the manifest order');
-  for (const r of rows) {
-    const p = want.find((x) => x.key === r.k);
-    assert.equal(r.sw, p.platSwitch === true && p.activation === 'toggle', r.k + ': switch');
-    if (p.activation === 'always') { assert.equal(r.sw, false); assert.match(r.why, /^دائمة — لا تُطفأ/); assert.match(r.tg, /cursor:not-allowed/); }
-    if (!r.sw) assert.ok(r.whyOn && r.why, r.k + ': a row without a switch says why'); else assert.equal(r.why, '');
-  }
-  assert.deepEqual(rows.filter((r) => r.sw).map((r) => r.k), ['planning', 'daily', 'irshad', 'seized', 'award'], 'the switchable units are the ones that were switchable');
-  const emps = rows.find((r) => r.k === 'emps');
-  assert.equal(emps.sw, false); assert.ok(emps.why.includes(PAGES.pages.find((p) => p.key === 'emps').platLock), 'emps is locked with its declared reason');
-  assert.equal(rows.find((r) => r.k === 'seized').note, 'مطفأة'); assert.equal(rows.find((r) => r.k === 'seized').tg.startsWith('TG:false'), true);
-  /* the description and the usage count come from the structure: «المهام» is counted under «المتابعة اليومية», not under «موظفو الإدارة» */
-  assert.equal(rows.find((r) => r.k === 'daily').sub, 'مؤشرات المتابعة — التشغيل اليومي · مؤشرات المتابعة — الإشغال · مؤشرات المتابعة — المصليات · الجولات اليومية · رصد الميدان — حالة الموقع واتجاه الحركة من صفحة الموظف · التقرير اليومي · المهام');
-  assert.match(rows.find((r) => r.k === 'tasks').sub, /^تحت «المتابعة اليومية»/);
-  assert.match(rows.find((r) => r.k === 'daily').note, /^2 /, 'daily: used by both units (u1 holds daily · u2 holds tasks under it)');
-  assert.match(rows.find((r) => r.k === 'emps').note, /^1 /, 'emps: u1 alone (tasks no longer counts for it)');
-  /* no hand list left */
-  assert.doesNotMatch(ADMIN, /\["planning", "الخطة التشغيلية"/); assert.doesNotMatch(ADMIN, /"بيانات الموظفين · المهام · العهد"/); assert.doesNotMatch(ADMIN, /if \("emps" === e\) return;/);
-  assert.match(ADMIN, /plMods: this\._plMods\(b, c\),/);
-});
+/* A6 «الوحدات» (the platform-units page _plMods) was DELETED in V7 · د5-هـ (44) — toggling systems moves to the «الصلاحيات» tab; its case is deleted with it. */
 
 /* 333 in a vm over the real manifest: its inputs from the permission model are stand-ins that say «inside the ceiling» */
 function siteMapOf(pg, centerIn) {
@@ -217,7 +194,7 @@ function siteMapOf(pg, centerIn) {
 
 test('A7 siteMap: the centre tabs come from the admin page\'s one list; lenses · platform · references from the tree builder', needsSys('dstats', 'seized', 'tasks'), () => {
   const pg = page(), tabs = J(pg.CON_TABS()), { rows, order } = siteMapOf(pg);
-  assert.deepEqual(J(tabs).map((t) => t[0]), ['overview', 'sec', 'users', 'perms', 'plat', 'depts', 'oplog', 'backup', 'histimp']);
+  assert.deepEqual(J(tabs).map((t) => t[0]), ['overview', 'sec', 'users', 'plat', 'depts', 'oplog', 'backup', 'histimp']);   /* V7 · د5-هـ (44): «perms» حُذف */
   for (const t of tabs) if (t[2]) assert.ok(!P333.includes(t[2]), '333 does not spell «' + t[2] + '»');
   /* («خادم فقط» is a badge label of the kind table and the profile windows are a commented literal — see the review test below) */
   for (const lit of ['نظرة عامة', 'هوية المنصة', "'links','help'", "['admin']"]) assert.ok(!P333.includes(lit), '333 no longer holds «' + lit + '»');
@@ -288,7 +265,7 @@ test('editors are untouched by the map: without o.map the rows are the tree rows
 
 test('A10 the new display code opens no storage key and no API route', () => {
   const body = (name) => { const i = ADMIN.indexOf('\n  ' + name + '('); assert.ok(i > 0, name); const j = ADMIN.indexOf('\n  }\r\n  ', i); return ADMIN.slice(i, j); };
-  for (const fn of ['_pmMap', '_plMods', '_siteMap', 'CON_TABS', '_p24Of', '_upInh', 't24Struct'])
+  for (const fn of ['_siteMap', 'CON_TABS', 't24Struct'])   /* V7 · د5-هـ (44): _pmMap · _plMods · _p24Of · _upInh حُذفت مع صفحاتها */
     assert.doesNotMatch(body(fn), /localStorage|sessionStorage|fetch\(|\/api\/|bassam_[a-z0-9_]+_v\d|__BS_SRV/, fn + ' reads the manifest, the registry and the permission model only');
   assert.doesNotMatch(P333.slice(P333.indexOf('function siteMap')), /localStorage|fetch\(|\/api\/|bassam_[a-z0-9_]+_v\d/);
   void ctx;

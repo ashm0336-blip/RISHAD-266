@@ -312,7 +312,7 @@ button.adm-ov-sr:focus-visible{outline:2px solid var(--focus-ring);outline-offse
 .adm-ov .c-ev[data-tone="bad"]>.d{background:var(--danger)}
 @media (max-width:1280px){.adm-ov-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:1024px){.adm-ov-cols--home{grid-template-columns:minmax(0,1fr)}}
-/* CORE-02 · الخطوة ٦: تصميمٌ موحّد لتبويبات الأمن ومراقبة الحسابات وخريطة الصلاحيات والنسخة الاحتياطية (وحوارا كلمة المرور والاستعادة الشاملة)
+/* CORE-02 · الخطوة ٦: تصميمٌ موحّد لتبويبات الأمن ومراقبة الحسابات والنسخة الاحتياطية (وحوارا كلمة المرور والاستعادة الشاملة)
    على مكوّنات CORE-01 (.bs-card · .bs-btn · .bs-dlg) والرموز الدلالية وحدها — فالداكنُ من الرموز نفسها؛ وعلى الجوال (≤640) تتكدّس صفوفُ الجداول
    الثابتة سطرين بدل أعمدةٍ تُعصر */
 button.adm-seg{border:0;background:transparent;font-family:var(--font-ui)}

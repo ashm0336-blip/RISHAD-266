@@ -22,7 +22,12 @@ test('the existing identity resolver displays a legacy token from typed employee
   vm.runInNewContext(source('src/services/490-emp-key.js'), context);
   vm.runInNewContext(source('src/permissions/334-perm-tree-tpl.js'), context);
   const displayed = context.KIVO.BassamAuth.display();
-  assert.equal(displayed.name, employees[0].name); assert.equal(displayed.role, templates[0].name);
+  /* V7 · د5-هـ (44): the permission name is the granted ROLE name (KIVO.Perm44.roleNameOf); templates were deleted. Without the role engine
+     a person with grants under the legacy token is «صلاحيات مخصّصة» — the token is still resolved, nothing is moved or granted */
+  assert.equal(displayed.name, employees[0].name); assert.equal(displayed.role, 'صلاحيات مخصّصة');
+  context.KIVO.Perm44 = { roleNameOf: (ek, d) => (ek === user.ekey && d === user.deptId ? templates[0].name : 'بلا صلاحيات') };
+  assert.equal(context.KIVO.BassamAuth.display().role, templates[0].name, 'with the role engine: the role name');
+  delete context.KIVO.Perm44;
   assert.equal(context.KIVO.BassamPerm.can('emps', 'edit'), false);
   assert.deepEqual(JSON.parse(JSON.stringify(context.KIVO.BassamPerm.empPerms('TEST_ONLY stable eid'))), {});
   assert.equal(JSON.stringify({ user, grants }), before); assert.deepEqual(writes, []);

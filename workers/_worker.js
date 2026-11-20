@@ -30140,6 +30140,7 @@ async function enfMigPlan(env, seed, opts) {
   if (capture.guards.length) await env.DB.batch(capture.guards);
   if (opts.parts && opts.parts.indexOf('scope-retire') !== -1) return await enfRetirePlan(env, seed, now, T, keys, revs, capture, reference);
   if (opts.parts && opts.parts.indexOf(ENF_SID_PART) !== -1) return await enfSidPlan(env, seed, now, T, keys, revs, capture);   /* د5-هـ */
+  if (opts.parts && opts.parts.indexOf(ENF_ROLES_PART) !== -1) return await enfRolesPlan(env, seed, now, T, keys, revs, capture);   /* د5-هـ (44) */
   var users = parseJson(keys[K_USERS], []);
   if (!Array.isArray(users)) users = [];
   var plan = { version: ENF_VER, seed: seed, today: T, generated: now, writes: [], identity: null, perm: { grants: [], decisions: [] }, warnings: [] };
@@ -30201,8 +30202,8 @@ async function enfRetirePlan(env, seed, now, T, keys, revs, capture, reference) 
 }
 /* أجزاءُ الترحيل المقبولة: perm (الهوية حُذفت · RISHAD-266 P6) — و«scope-retire» وحدها لا تُخلط بغيرها (scope: بذرُ السقف القديم أُزيل · RISHAD-266) */
 function enfMigParts(raw) {
-  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART || x === ENF_SID_PART; });
-  if ((p.indexOf(ENF_RETIRE_PART) !== -1 || p.indexOf(ENF_SID_PART) !== -1) && p.length > 1) return null;   /* د5-هـ: «site-sid» وحدها كذلك */
+  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART || x === ENF_SID_PART || x === ENF_ROLES_PART; });
+  if ((p.indexOf(ENF_RETIRE_PART) !== -1 || p.indexOf(ENF_SID_PART) !== -1 || p.indexOf(ENF_ROLES_PART) !== -1) && p.length > 1) return null;   /* د5-هـ: «site-sid» و«perm44-roles» وحدها كذلك */
   return p;
 }
 /* V7 · د5-هـ (م3) · «site-sid»: ترحيلُ هوية الموقع — كلُّ طابقٍ في الجولات ولقطةِ الشهر يحمل sid طابقه في الخطة، فتُطابَق الجولاتُ بالمعرّف لا بالموضع.
@@ -30230,7 +30231,63 @@ async function enfSidPlan(env, seed, now, T, keys, revs, capture) {
   plan.counts = { writes: plan.writes.length, sidOps: M.ops, pending: M.pending.length, rollbackVerified: !!M.rollbackVerified };
   return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots };
 }
-var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطوتا تقاعد سقف النطاق القديم (scope-retire) وترحيل هوية الموقع (site-sid) تُطلب كلٌّ منهما وحدها — أعد الطلب بها فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
+/* V7 · د5-هـ (44) · «perm44-roles»: ترحيلٌ لمرّةٍ واحدة من قوالب الصلاحيات (bsdept:<d>:bassam_perm_tpls_v1 · الإسنادُ bassam_perms_v1.tplOf[d][ekey])
+   إلى أدوار الإدارة (bsdept:<d>:bassam_roles_v1 = { v:1, roles:[{ id, name, desc, sup, sys:{ <نظام>: { lvl:'custom', keys:[…] } } }], people:{ <ekey>: { role, ex:[] } } }).
+   كلُّ قالبٍ دورٌ بمعرّفه واسمه؛ مفاتيحُه keys24 إن وُجدت وإلا ترجمةُ ورقته (KIVO_REGISTRY.translate) — مقسومةً على الأنظمة بمالك المفتاح (owner قبل «/»)
+   ومستواها «مخصّص»؛ والإشرافيُّ sup = tp.sup صراحةً، وإلا الاستنتاجُ القديم من الاسم (رئيس|نائب|إداري|مراقب) — لمرّةٍ واحدة هنا فلا استنتاجَ وقتَ التشغيل.
+   كلُّ إسنادٍ tplOf لقالبٍ موجود يصير دورَ الشخص. ما في سجلّ الأدوار من قبل يبقى كما هو (دورٌ بالمعرّف نفسه · شخصٌ له دور) — فالثانيةُ بلا كتابة.
+   لا يمسّ المنحَ ولا السقفَ ولا القوالبَ نفسَها (القرارُ النافذ لا يتغيّر)؛ عدساتُ القالب لا مقابلَ لها في الدور فتُبلَّغ ولا تُكتب.
+   المسارُ نفسُه: خطةٌ حتمية · لقطةٌ كاملة قبل الكتابة · رجوعٌ بالمسار القائم (rollback). */
+var ENF_ROLES_PART = 'perm44-roles', ENF_ROLES_RES = 'bassam_roles_v1', ENF_ROLES_SUP_RX = /رئيس|نائب|إداري|اداري|مراقب/;
+function enfRolesFromTpls(tpls, tplOf, prev) {
+  var R = KIVO_REGISTRY, rec = isObj(prev) ? JSON.parse(JSON.stringify(prev)) : { v: 1, roles: [], people: {} }, have = {}, rep = { roles: 0, people: 0, lensDropped: 0, unknownTpl: 0 }, i;
+  if (!Array.isArray(rec.roles)) rec.roles = []; if (!isObj(rec.people)) rec.people = {}; rec.v = 1;
+  rec.roles.forEach(function (r) { if (r && r.id) have[r.id] = 1; });
+  var ids = {};
+  for (i = 0; i < (Array.isArray(tpls) ? tpls : []).length; i++) {
+    var tp = tpls[i]; if (!isObj(tp) || !tp.id || typeof tp.id !== 'string') continue;
+    ids[tp.id] = 1; if (have[tp.id]) continue;
+    var ks = Array.isArray(tp.keys24) ? tp.keys24.map(String) : Object.keys(R.translate(isObj(tp.perms) ? tp.perms : {}).keys), sys = {};
+    ks.filter(function (k, n, a) { return a.indexOf(k) === n && R.byKey[k]; }).sort().forEach(function (k) {
+      var s = String(R.byKey[k].owner || '').split('/')[0]; if (!s) return;
+      (sys[s] = sys[s] || { lvl: 'custom', keys: [] }).keys.push(k);
+    });
+    var nm = String(tp.name || '').trim() || tp.id;
+    rec.roles.push({ id: tp.id, name: nm, desc: '', sup: tp.sup === true || (tp.sup !== false && ENF_ROLES_SUP_RX.test(nm)), sys: sys });
+    have[tp.id] = 1; rep.roles++;
+    if (Array.isArray(tp.lens) && tp.lens.length) rep.lensDropped++;
+  }
+  Object.keys(isObj(tplOf) ? tplOf : {}).sort().forEach(function (ek) {
+    var tid = tplOf[ek]; if (typeof tid !== 'string' || !tid) return;
+    if (!ids[tid]) { rep.unknownTpl++; return; }
+    var p = rec.people[ek]; if (isObj(p) && p.role) return;
+    rec.people[ek] = { role: tid, ex: isObj(p) && Array.isArray(p.ex) ? p.ex : [] }; rep.people++;
+  });
+  return { rec: rec, rep: rep };
+}
+async function enfRolesPlan(env, seed, now, T, keys, revs, capture) {
+  var W = {}, sig = [ENF_ROLES_PART, seed], perms = parseJson(keys[K_PERM], {}) || {}, tplOfAll = isObj(perms.tplOf) ? perms.tplOf : {}, ds = {}, i;
+  (parseJson(keys[K_DEPTS], []) || []).forEach(function (d) { if (d && d.id) ds[d.id] = 1; });
+  Object.keys(keys).forEach(function (k) { var m = /^bsdept:([^:]+):bassam_perm_tpls_v1$/.exec(k); if (m) ds[m[1]] = 1; });
+  var plan = { version: ENF_VER, seed: seed, today: T, generated: now, parts: [ENF_ROLES_PART], writes: [], roles: [] }, tot = { roles: 0, people: 0, lensDropped: 0, unknownTpl: 0 };
+  Object.keys(ds).sort().forEach(function (d) {
+    var tk = 'bsdept:' + d + ':bassam_perm_tpls_v1', rk = 'bsdept:' + d + ':' + ENF_ROLES_RES, tpls = parseJson(keys[tk], []), prev = parseJson(keys[rk], null);
+    if (!Array.isArray(tpls) || !tpls.length) return;
+    var X = enfRolesFromTpls(tpls, tplOfAll[d], prev), v = JSON.stringify(X.rec);
+    for (var q in tot) tot[q] += X.rep[q];
+    if (!X.rep.roles && !X.rep.people) return;
+    W[rk] = { v: v, kind: ENF_ROLES_PART };
+    plan.writes.push({ k: rk, kind: ENF_ROLES_PART, bytes: v.length, existed: keys[rk] != null, rev: revs[rk] || 0 });
+    plan.roles.push({ dept: d, roles: X.rep.roles, people: X.rep.people, lensDropped: X.rep.lensDropped, unknownTpl: X.rep.unknownTpl });
+    sig.push(rk + '\u0001' + (revs[rk] || 0) + '\u0001' + v);
+  });
+  for (i = 0; i < plan.writes.length; i++) { var tk2 = plan.writes[i].k.replace(':' + ENF_ROLES_RES, ':bassam_perm_tpls_v1'); sig.push(tk2 + '\u0001' + (revs[tk2] || 0)); }
+  sig.push(K_PERM + '\u0001' + (revs[K_PERM] || 0));
+  plan.hash = await enfSha(sig.join('\u0002'));
+  plan.counts = { writes: plan.writes.length, roles: tot.roles, people: tot.people, lensDropped: tot.lensDropped, unknownTpl: tot.unknownTpl };
+  return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots };
+}
+var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطواتُ تقاعد سقف النطاق القديم (scope-retire) وترحيل هوية الموقع (site-sid) وترحيل القوالب إلى الأدوار (perm44-roles) تُطلب كلٌّ منها وحدها — أعد الطلب بها فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
 /* Pure revision preparation: allocation is written only after every source
    witness, inside the same batch as migration/snapshot/audit or rollback. */
 async function enfMigCounterPlan(env) {
@@ -30317,7 +30374,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     }
     var flag = JSON.stringify({ applied: true, at: now, by: ident.uid, snap: snap, hash: b.hash, inferable: !!b.inferable });   /* المعرّفُ لا اسمُ المستخدم */
     if (retire2 && R2.retireMeta != null) st2.push(env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind(ENF_RETIRE_META));
-    if (!retire2 && parts2.length) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(parts2[0] === ENF_SID_PART ? 'authz_id_mig' : 'authz_perm_mig', flag));   /* د5-هـ: علامةُ الهوية لـ«site-sid» */
+    if (!retire2 && parts2.length && parts2[0] !== ENF_ROLES_PART) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(parts2[0] === ENF_SID_PART ? 'authz_id_mig' : 'authz_perm_mig', flag));   /* د5-هـ: علامةُ الهوية لـ«site-sid» */
     st2.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: 'migration', keys: parts2.join(','), scope: 'writes=' + R2.plan.writes.length, decision: 'allow', why: 'apply', reason: snap, path: '/api/authz-migrate', ip: ident.ip }));
     var conflict2=await enfMigBatch(env,guards2.concat([counter2.statement],st,st2));
     if(conflict2)return conflict2;
