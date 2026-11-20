@@ -46,7 +46,7 @@ test('ES-4 (بقيّة) · زرّا التحويل في التقرير اليو�
   assert.equal(tok('indigo-on', false).toUpperCase(), '#FFFFFF', 'الفاتحُ كما كان: أبيض');
   /* المرجع: طرفُ التدرّج القديم وحده دون الحدّ في السمتين، والأبيضُ على النيلي الداكن كذلك */
   assert.ok(cr('#FFFFFF', tok('bg-x6366f1', false)) < 3 && cr('#FFFFFF', tok('bg-x6366f1', true)) < 3 && cr('#FFFFFF', tok('bg-x4f46e5', true)) < 3.5);
-  const v = rd('modules/dreport/view.html'), s = moduleLogic('dreport');
+  const v = rd('systems/dreport/client/view.html'), s = moduleLogic('dreport');
   assert.match(v, /font-weight:600;background:var\(--bg-x4f46e5\);color:var\(--indigo-on\);border:0;cursor:pointer;font-family:'Cairo',sans-serif">نعم، حوّل<\/button>/);
   assert.match(s, /"cursor:pointer;background:var\(--bg-x4f46e5\);color:var\(--indigo-on\)"\n\s+: "cursor:default;background:var\(--bg-xcbd5e1\)"/);
   assert.doesNotMatch(v + s, /linear-gradient\(135deg,var\(--bg-x4f46e5\),var\(--bg-x6366f1\)\)/);

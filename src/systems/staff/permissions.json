@@ -381,7 +381,7 @@
     "path": [
      "registry"
     ],
-    "after": 83,
+    "after": 78,
     "seq": 1,
     "value": {
      "key": "staff.shift.assign",
@@ -436,8 +436,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 1,
+    "after": 80,
+    "seq": 10,
     "value": {
      "key": "staff.employment_type.assign",
      "owner": "staff",
@@ -489,8 +489,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 2,
+    "after": 80,
+    "seq": 20,
     "value": {
      "key": "staff.work_type.assign",
      "owner": "staff",
@@ -542,8 +542,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 3,
+    "after": 80,
+    "seq": 30,
     "value": {
      "key": "staff.callsign.assign",
      "owner": "staff",
@@ -597,8 +597,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 4,
+    "after": 80,
+    "seq": 40,
     "value": {
      "key": "staff.tasking.assign",
      "owner": "staff",
@@ -650,8 +650,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 5,
+    "after": 80,
+    "seq": 50,
     "value": {
      "key": "staff.bulk.delete",
      "owner": "staff",
@@ -703,8 +703,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 6,
+    "after": 80,
+    "seq": 60,
     "value": {
      "key": "ref.work_type.view",
      "owner": "staff",
@@ -751,8 +751,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 7,
+    "after": 80,
+    "seq": 70,
     "value": {
      "key": "ref.work_type.create",
      "owner": "staff",
@@ -799,8 +799,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 8,
+    "after": 80,
+    "seq": 80,
     "value": {
      "key": "ref.work_type.edit",
      "owner": "staff",
@@ -847,8 +847,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 9,
+    "after": 80,
+    "seq": 90,
     "value": {
      "key": "ref.work_type.delete",
      "owner": "staff",
@@ -895,8 +895,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 10,
+    "after": 80,
+    "seq": 100,
     "value": {
      "key": "ref.callsign.view",
      "owner": "staff",
@@ -946,8 +946,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 11,
+    "after": 80,
+    "seq": 110,
     "value": {
      "key": "ref.callsign.create",
      "owner": "staff",
@@ -994,8 +994,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 12,
+    "after": 80,
+    "seq": 120,
     "value": {
      "key": "ref.callsign.edit",
      "owner": "staff",
@@ -1042,8 +1042,8 @@
     "path": [
      "registry"
     ],
-    "after": 85,
-    "seq": 13,
+    "after": 80,
+    "seq": 130,
     "value": {
      "key": "ref.callsign.delete",
      "owner": "staff",
@@ -1090,8 +1090,8 @@
     "path": [
      "registry"
     ],
-    "after": 99,
-    "seq": 30,
+    "after": 84,
+    "seq": 40,
     "value": {
      "key": "staff.permission_limit.set",
      "owner": "staff",
@@ -1140,7 +1140,7 @@
      "references"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "staff"
    },
    {
@@ -1166,7 +1166,7 @@
      "references"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "staff"
    },
    {
@@ -1193,7 +1193,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "staff"
+    "value": "staff",
+    "needs": [
+     "dreport"
+    ]
    },
    {
     "path": [
@@ -1425,7 +1428,10 @@
      "detail"
     ],
     "sub": "via dreport",
-    "by": "bassam_staffing_v3 via dreport"
+    "by": "bassam_staffing_v3 via dreport",
+    "needs": [
+     "dreport"
+    ]
    },
    {
     "path": [
@@ -1465,7 +1471,10 @@
     ],
     "after": 1,
     "seq": 10,
-    "value": "bassam_staffing_v3"
+    "value": "bassam_staffing_v3",
+    "needs": [
+     "dreport"
+    ]
    }
   ],
   "scope-bindings": [
@@ -1725,7 +1734,7 @@
     "path": [
      "bindings"
     ],
-    "after": 72,
+    "after": 67,
     "seq": 1,
     "value": {
      "key": "staff.shift.assign",
@@ -1761,8 +1770,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 1,
+    "after": 69,
+    "seq": 10,
     "value": {
      "key": "staff.employment_type.assign",
      "owner": "staff",
@@ -1797,8 +1806,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 2,
+    "after": 69,
+    "seq": 20,
     "value": {
      "key": "staff.work_type.assign",
      "owner": "staff",
@@ -1833,8 +1842,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 3,
+    "after": 69,
+    "seq": 30,
     "value": {
      "key": "staff.callsign.assign",
      "owner": "staff",
@@ -1869,8 +1878,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 4,
+    "after": 69,
+    "seq": 40,
     "value": {
      "key": "staff.tasking.assign",
      "owner": "staff",
@@ -1905,8 +1914,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 5,
+    "after": 69,
+    "seq": 50,
     "value": {
      "key": "staff.bulk.delete",
      "owner": "staff",
@@ -1941,8 +1950,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 6,
+    "after": 69,
+    "seq": 60,
     "value": {
      "key": "ref.work_type.view",
      "owner": "staff",
@@ -1974,8 +1983,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 7,
+    "after": 69,
+    "seq": 70,
     "value": {
      "key": "ref.work_type.create",
      "owner": "staff",
@@ -2007,8 +2016,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 8,
+    "after": 69,
+    "seq": 80,
     "value": {
      "key": "ref.work_type.edit",
      "owner": "staff",
@@ -2040,8 +2049,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 9,
+    "after": 69,
+    "seq": 90,
     "value": {
      "key": "ref.work_type.delete",
      "owner": "staff",
@@ -2073,8 +2082,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 10,
+    "after": 69,
+    "seq": 100,
     "value": {
      "key": "ref.callsign.view",
      "owner": "staff",
@@ -2106,8 +2115,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 11,
+    "after": 69,
+    "seq": 110,
     "value": {
      "key": "ref.callsign.create",
      "owner": "staff",
@@ -2139,8 +2148,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 12,
+    "after": 69,
+    "seq": 120,
     "value": {
      "key": "ref.callsign.edit",
      "owner": "staff",
@@ -2172,8 +2181,8 @@
     "path": [
      "bindings"
     ],
-    "after": 74,
-    "seq": 13,
+    "after": 69,
+    "seq": 130,
     "value": {
      "key": "ref.callsign.delete",
      "owner": "staff",
@@ -2205,8 +2214,8 @@
     "path": [
      "bindings"
     ],
-    "after": 87,
-    "seq": 20,
+    "after": 72,
+    "seq": 30,
     "value": {
      "key": "staff.permission_limit.set",
      "owner": "staff",
@@ -2312,7 +2321,7 @@
      "bassam_dreport_v1",
      "keys"
     ],
-    "after": 5,
+    "after": 3,
     "seq": 30,
     "value": "staff.view"
    },
@@ -2323,7 +2332,7 @@
      "bassam_dreport_v1",
      "routes"
     ],
-    "after": 5,
+    "after": 3,
     "seq": 30,
     "value": {
      "cap": "staff:view",
@@ -2338,8 +2347,8 @@
      "bassam_leave_kinds_v1",
      "keys"
     ],
-    "after": 3,
-    "seq": 1,
+    "after": 0,
+    "seq": 40,
     "value": "staff.view"
    },
    {
@@ -2349,8 +2358,8 @@
      "bassam_leave_kinds_v1",
      "routes"
     ],
-    "after": 3,
-    "seq": 1,
+    "after": 0,
+    "seq": 40,
     "value": {
      "cap": "staff:view",
      "key": "staff.view",
@@ -2390,7 +2399,7 @@
      "bassam_perm_tpls_v1",
      "keys"
     ],
-    "after": 4,
+    "after": 2,
     "seq": 20,
     "value": "staff.view"
    },
@@ -2401,7 +2410,7 @@
      "bassam_perm_tpls_v1",
      "routes"
     ],
-    "after": 4,
+    "after": 2,
     "seq": 20,
     "value": {
      "cap": "staff:view",
@@ -2503,7 +2512,10 @@
     ],
     "after": 1,
     "seq": 10,
-    "value": "bassam_staffing_v3"
+    "value": "bassam_staffing_v3",
+    "needs": [
+     "dreport"
+    ]
    },
    {
     "path": [
@@ -2602,8 +2614,6 @@
       "staff.view",
       "round.view",
       "field.view",
-      "report.view",
-      "report.indicators.view",
       "ready.view",
       "backup.view"
      ],
@@ -2627,16 +2637,6 @@
        "cap": "daily/field:view",
        "key": "field.view",
        "source": "special:field.view"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.indicators.view",
-       "source": "explicit-read"
       },
       {
        "cap": "planning:view",
@@ -2741,8 +2741,6 @@
      "cls": "explicit read permission + explicit special read capability + reference-read routes",
      "keys": [
       "staff.view",
-      "report.view",
-      "report.indicators.view",
       "emp.view",
       "ready.view",
       "backup.view"
@@ -2752,16 +2750,6 @@
        "cap": "staff:view",
        "key": "staff.view",
        "source": "explicit-read"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.indicators.view",
-       "source": "reference-read"
       },
       {
        "cap": "emps/data:view",
@@ -2801,8 +2789,6 @@
      "keys": [
       "staff.view",
       "ref.callsign.view",
-      "report.view",
-      "report.indicators.view",
       "backup.view"
      ],
      "routes": [
@@ -2815,16 +2801,6 @@
        "cap": "staff:view",
        "key": "ref.callsign.view",
        "source": "explicit-read"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.indicators.view",
-       "source": "reference-read"
       },
       {
        "cap": "admin/backup:view",
@@ -2848,8 +2824,6 @@
      "cls": "explicit read permission + explicit special read capability + reference-read routes",
      "keys": [
       "staff.view",
-      "report.view",
-      "report.indicators.view",
       "ready.view",
       "backup.view"
      ],
@@ -2858,16 +2832,6 @@
        "cap": "staff:view",
        "key": "staff.view",
        "source": "explicit-read"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.indicators.view",
-       "source": "reference-read"
       },
       {
        "cap": "planning:view",
@@ -2944,7 +2908,7 @@
     "path": [
      "bindings"
     ],
-    "after": 35,
+    "after": 29,
     "seq": 10,
     "value": {
      "key": "staff.bulk.delete",

@@ -935,14 +935,7 @@
     "name": "Profile",
     "sha256": "af1c2e5dab42352c82d7278623963e26be9600c47fd914780bdc27378ef53151"
    },
-@@SYS:blocks.pages.irshad@@@@SYS:blocks.pages.award@@   {
-    "b64Sha256": "fbcf52ef83b260e078027f439a4719465269d467d9a055feb7d40efa064d31bb",
-    "bytes": 242108,
-    "file": "client/pages/Daily Report.dc.html",
-    "name": "Daily Report",
-    "sha256": "fe0b0a7c8bce136028048cd10c43d52f36a836c296b2492dd5d75a84afb9581d"
-   },
-   {
+@@SYS:blocks.pages.irshad@@@@SYS:blocks.pages.award@@@@SYS:blocks.pages.dreport@@   {
     "b64Sha256": "6f49a4140896745721e75a008214c0cd360a7536ba4df4db7c410a9813f255f3",
     "bytes": 7098,
     "file": "client/pages/Planning.dc.html",
@@ -962,8 +955,7 @@
 @@SYS:blocks.order.tasks@@   "Daily Sessions",
 @@SYS:blocks.order.plan@@@@SYS:blocks.order.staff@@   "Admin",
    "Profile",
-@@SYS:blocks.order.irshad@@@@SYS:blocks.order.award@@   "Daily Report",
-   "Planning",
+@@SYS:blocks.order.irshad@@@@SYS:blocks.order.award@@@@SYS:blocks.order.dreport@@   "Planning",
 @@SYS:blocks.order.seized@@   "KPIs"@@SYS:blocks.order.tail@@
   ],
   "zlibLevel": 9

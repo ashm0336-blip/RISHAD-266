@@ -28,30 +28,6 @@
  ],
  "bindings": [
   {
-   "key": "report.approve",
-   "res": "bassam_dreport_v1",
-   "where": "[\"y-m-d\"].shifts[sh].ap/apAt/apBy تظهر · [\"m:y-m\"].dshut[d] يظهر · [\"m:y-m\"].dopen[d] يزول",
-   "how": "اتجاه الاعتماد/الإغلاق (drSetAp · drToggleDayLock)",
-   "asis": "dreport:approve",
-   "decl": "",
-   "dup": "",
-   "owner": "dreport",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
-   "key": "report.reopen",
-   "res": "bassam_dreport_v1",
-   "where": "[\"y-m-d\"].shifts[sh].ap/apAt/apBy تزول · [\"m:y-m\"].dopen[d] يظهر · [\"m:y-m\"].dshut[d] يزول",
-   "how": "اتجاه الفتح",
-   "asis": "dreport:approve",
-   "decl": "",
-   "dup": "",
-   "owner": "dreport",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
    "key": "round.approve",
    "res": "bassam_rounds_v1",
    "where": "[\"y-m-d\"].ap 0→1 · .d[i].ap 0→1 · .shAp[sh] → {ap:1,at,snap} · [\"m:y-m\"].ap يظهر · .mo يزول · .dshut[d] يظهر · .dopen[d] يزول",
@@ -74,54 +50,6 @@
    "owner": "daily/rounds",
    "type": "decision",
    "guardKind": "ops"
-  },
-  {
-   "key": "report.att.absence",
-   "res": "bassam_dreport_v1",
-   "where": "shifts[sh].roster[ekey].st → \"ab\" (أو العودةُ منها إلى \"pr\")",
-   "how": "حقلُ الحالة على صف الموظف",
-   "asis": "dreport:edit (rpMark بلا PC)",
-   "decl": "إلغاءُ الحالة (العودةُ إلى pr) تُربط بمفتاح الحالة التي أُلغيت",
-   "dup": "",
-   "owner": "dreport",
-   "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "report.att.leave",
-   "res": "bassam_dreport_v1",
-   "where": "roster[ekey].st → \"lv\" (+ lvk نوعُ الإجازة من ref.leave_type)",
-   "how": "حقلُ الحالة",
-   "asis": "dreport:edit",
-   "decl": "",
-   "dup": "",
-   "owner": "dreport",
-   "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "report.att.late_in",
-   "res": "bassam_dreport_v1 (+ [\"m:y-m\"].perm[ekey])",
-   "where": "roster[ekey].st → \"pm\" مع pmk === \"in\" · والأثرُ الداخلي: سجلُّ النصاب الشهري [\"m:y-m\"].perm[ekey] (Backend Rule rule.report.permission_quota)",
-   "how": "حقلُ الحالة + نوعُ الاستئذان؛ تغيّرُ سجل النصاب وحدَه يُصنَّف anyOf(late_in, early_out) لا مفتاحاً مستقلاً",
-   "asis": "dreport:edit (الصف) · dreport:add لأول سجل m:y-m في الشهر (cmpMap) — فارقٌ خشِن موثَّق (F-03)",
-   "decl": "v24.3 (F-02/F-03): لا حالةَ استئذانٍ مستقلة؛ النصابُ أثرٌ داخليٌّ مسموحٌ لمن يملك late_in أو early_out بلا report.create ولا add عام",
-   "dup": "",
-   "owner": "dreport",
-   "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "report.att.early_out",
-   "res": "bassam_dreport_v1 (+ [\"m:y-m\"].perm[ekey])",
-   "where": "roster[ekey].st → \"pm\" مع pmk === \"out\" (الافتراضي) · والأثرُ الداخلي: سجلُّ النصاب الشهري",
-   "how": "حقلُ الحالة + نوعُ الاستئذان؛ سجلُّ النصاب anyOf(late_in, early_out)",
-   "asis": "dreport:edit (الصف) · dreport:add لأول سجل m:y-m",
-   "decl": "v24.3 (F-02/F-03): كما late_in",
-   "dup": "",
-   "owner": "dreport",
-   "type": "edit",
-   "guardKind": "field"
   },
   {
    "key": "tpl.supervisory",
@@ -445,18 +373,6 @@
    "dup": "",
    "owner": "emps/data",
    "type": "operation",
-   "guardKind": "cap"
-  },
-  {
-   "key": "report.transfer",
-   "res": "bassam_dreport_v1",
-   "where": "shifts[A].roster[ekey] يزول + shifts[A].tout[ekey]={to,why} · shifts[B].roster يظهر فيه {ekey, tin:1, tfrom, treason}",
-   "how": "نقلُ صفٍّ بين ورديتَين (rpTransfer)",
-   "asis": "dreport:edit (بلا PC في الواجهة)",
-   "decl": "",
-   "dup": "",
-   "owner": "dreport",
-   "type": "edit",
    "guardKind": "cap"
   },
   {

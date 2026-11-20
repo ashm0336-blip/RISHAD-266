@@ -36,8 +36,7 @@
  },
  "budget": {
   "page:Admin": 156600,
-@@SYS:budget.page.award@@  "page:Daily-Report": 54585,
-  "page:Daily-Sessions": 248394,
+@@SYS:budget.page.award@@@@SYS:budget.page.dreport@@  "page:Daily-Sessions": 248394,
 @@SYS:budget.page.dstats@@  "page:Employees": 164600,
 @@SYS:budget.page.irshad@@  "page:KPIs": 8000,
 @@SYS:budget.page.plan@@  "page:Planning": 3050,

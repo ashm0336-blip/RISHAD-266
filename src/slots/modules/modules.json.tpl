@@ -28,14 +28,7 @@
    "bytes": 157711,
    "logicLines": 2736
   },
-@@SYS:modules.irshad@@@@SYS:modules.award@@  {
-   "name": "Daily Report",
-   "slug": "dreport",
-   "minifiedSource": true,
-   "bytes": 242223,
-   "logicLines": 4400
-  },
-  {
+@@SYS:modules.irshad@@@@SYS:modules.award@@@@SYS:modules.dreport@@  {
    "name": "Planning",
    "slug": "planning",
    "minifiedSource": true,

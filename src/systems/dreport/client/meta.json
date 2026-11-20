@@ -17,10 +17,10 @@
    "#/dreport"
   ],
   "ui": [
-   "src/modules/dreport/view.html",
-   "src/modules/dreport/helmet.css"
+   "src/systems/dreport/client/view.html",
+   "src/systems/dreport/client/helmet.css"
   ],
-  "domain": "src/modules/dreport/logic.js",
+  "domain": "src/systems/dreport/client/logic.js",
   "data": [
    "bassam_dayshift_v1",
    "bassam_dr_grp_v1",

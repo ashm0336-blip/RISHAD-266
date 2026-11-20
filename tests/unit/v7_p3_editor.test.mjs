@@ -15,7 +15,7 @@ import { needs } from './harness.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
-const T = rd('src/permissions/334-perm-tree-tpl.js'), L = rd('src/modules/admin/logic.js'), ST = rd('src/systems/staff/client/logic.js'), DR = rd('src/modules/dreport/logic.js');
+const T = rd('src/permissions/334-perm-tree-tpl.js'), L = rd('src/modules/admin/logic.js'), ST = rd('src/systems/staff/client/logic.js'), DR = rd('src/systems/dreport/client/logic.js');
 const REG = JSON.parse(rd('src/permissions/registry/registry-v24.9.json'));
 function fnSrc(src, name, lead = '\n  function ') {
   const i = src.indexOf(lead + name + '('); assert.ok(i >= 0, name + ' exists');

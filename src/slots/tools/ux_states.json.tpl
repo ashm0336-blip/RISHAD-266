@@ -15,14 +15,7 @@
    "بلا اتصال": 0,
    "أعد المحاولة": 3
   },
-  "dreport": {
-   "فارغ": 19,
-   "تحميل": 0,
-   "خطأ": 5,
-   "بلا اتصال": 0,
-   "أعد المحاولة": 1
-  },
-@@SYS:uxStates.dstats@@  "employees": {
+@@SYS:uxStates.dreport@@@@SYS:uxStates.dstats@@  "employees": {
    "فارغ": @@SYS:uxStates.employees.empty|empty="32"@@,
    "تحميل": 1,
    "خطأ": 10,

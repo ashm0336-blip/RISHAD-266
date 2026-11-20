@@ -94,166 +94,6 @@
    }
   },
   {
-   "key": "report.view",
-   "owner": "dreport",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "report.create",
-   "owner": "dreport",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "report.edit",
-   "owner": "dreport",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "report.approve",
-   "owner": "dreport",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "report.reopen",
-   "owner": "dreport",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
    "key": "round.view",
    "owner": "daily/rounds",
    "type": "access",
@@ -1869,288 +1709,6 @@
    }
   },
   {
-   "key": "report.transfer",
-   "owner": "dreport",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "report.att.absence",
-   "owner": "dreport",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "report.att.leave",
-   "owner": "dreport",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "report.att.late_in",
-   "owner": "dreport",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "report.att.early_out",
-   "owner": "dreport",
-   "type": "edit",
-   "g": "to-bind",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "report.callsign.assign",
-   "owner": "dreport",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_dr_grp_v1",
-    "bassam_leave_kinds_v1",
-    "bassam_dayshift_v1",
-    "bassam_dayfocus_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (report)"
-    ]
-   }
-  },
-  {
-   "key": "ref.leave_type.view",
-   "owner": "dreport",
-   "type": "view",
-   "g": "exists",
-   "res": "bassam_leave_kinds_v1",
-   "resources": [
-    "bassam_leave_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (reference/setting)"
-    ]
-   }
-  },
-  {
-   "key": "ref.leave_type.create",
-   "owner": "dreport",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_leave_kinds_v1",
-   "resources": [
-    "bassam_leave_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (reference/setting)"
-    ]
-   }
-  },
-  {
-   "key": "ref.leave_type.delete",
-   "owner": "dreport",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_leave_kinds_v1",
-   "resources": [
-    "bassam_leave_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "DateRange": [
-     "na",
-     "no-period-identity (reference/setting)"
-    ],
-    "Shift": [
-     "na",
-     "no-shift-identity"
-    ],
-    "Site": [
-     "na",
-     "no-site-identity (reference/setting)"
-    ]
-   }
-  },
-  {
    "key": "round.sync.plan",
    "owner": "daily/rounds",
    "type": "operation",
@@ -2231,24 +1789,6 @@
    }
   },
   {
-   "key": "report.day.delete",
-   "owner": "dreport",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
    "key": "perm.assign",
    "owner": "perm",
    "type": "operation",
@@ -2263,43 +1803,6 @@
     ],
     "Branch": [
      "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "report.indicators.view",
-   "owner": "dreport",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1",
-    "bassam_rounds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "DateRange": [
-     "periodLock"
-    ],
-    "Shift": [
-     "reportShift"
-    ]
-   }
-  },
-  {
-   "key": "ref.leave_type.edit",
-   "owner": "dreport",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_leave_kinds_v1",
-   "resources": [
-    "bassam_leave_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
     ]
    }
   },
@@ -3443,8 +2946,6 @@
      "emp.view",
      "round.view",
      "field.view",
-     "report.view",
-     "report.indicators.view",
      "ready.view",
      "backup.view"
     ],
@@ -3463,16 +2964,6 @@
       "cap": "daily/field:view",
       "key": "field.view",
       "source": "special:field.view"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
      },
      {
       "cap": "planning:view",
@@ -3542,8 +3033,6 @@
      "lens.dist.view",
      "lens.dens.view",
      "field.view",
-     "report.view",
-     "report.indicators.view",
      "emp.view",
      "backup.view"
     ],
@@ -3589,16 +3078,6 @@
       "source": "special:field.view"
      },
      {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "explicit-read"
-     },
-     {
       "cap": "emps/data:view",
       "key": "emp.view",
       "source": "reference-read"
@@ -3617,8 +3096,6 @@
     "keys": [
      "round.view",
      "field.view",
-     "report.view",
-     "report.indicators.view",
      "backup.view"
     ],
     "routes": [
@@ -3631,16 +3108,6 @@
       "cap": "daily/field:view",
       "key": "field.view",
       "source": "special:field.view"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
      },
      {
       "cap": "admin/backup:view",
@@ -3656,8 +3123,6 @@
     "keys": [
      "round.view",
      "field.view",
-     "report.view",
-     "report.indicators.view",
      "backup.view"
     ],
     "routes": [
@@ -3672,16 +3137,6 @@
       "source": "special:field.view"
      },
      {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
-     },
-     {
       "cap": "admin/backup:view",
       "key": "backup.view",
       "source": "special:backup.view"
@@ -3693,8 +3148,6 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "report.view",
-     "report.indicators.view",
      "round.view",
      "field.view",
      "emp.view",
@@ -3702,16 +3155,6 @@
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "daily/rounds:view",
       "key": "round.view",
@@ -3749,21 +3192,9 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "report.view",
-     "report.indicators.view",
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
-     },
      {
       "cap": "admin/backup:view",
       "key": "backup.view",
@@ -3776,27 +3207,9 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "report.view",
-     "report.indicators.view",
-     "ref.leave_type.view",
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "ref.leave_type.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "admin/backup:view",
       "key": "backup.view",
@@ -3812,8 +3225,6 @@
      "emp.view",
      "round.view",
      "field.view",
-     "report.view",
-     "report.indicators.view",
      "ready.view",
      "ref.shift.view",
      "backup.view"
@@ -3833,16 +3244,6 @@
       "cap": "daily/field:view",
       "key": "field.view",
       "source": "special:field.view"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
      },
      {
       "cap": "planning:view",
@@ -3872,8 +3273,6 @@
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
      "tpl.view",
-     "report.view",
-     "report.indicators.view",
      "emp.view",
      "ready.view",
      "backup.view"
@@ -3883,16 +3282,6 @@
       "cap": "admin/ptpls:view",
       "key": "tpl.view",
       "source": "explicit-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
      },
      {
       "cap": "emps/data:view",

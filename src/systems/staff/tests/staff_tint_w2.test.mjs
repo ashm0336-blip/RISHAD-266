@@ -24,12 +24,12 @@ const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.9
 const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
 
 test('ES-5 · الجدول الشهري والتقرير اليومي: لونُ صفّ الراحة/الإجازة يُمرَّر في --bs-row-tint (رمزان دلاليّان هادئان) لا لونٌ صارخ على <tr> وحده', () => {
-  for (const [f, v] of [['systems/staff/client/logic.js', 'b'], ['modules/dreport/logic.js', 'O']]) {
+  for (const [f, v] of [['systems/staff/client/logic.js', 'b'], ['systems/dreport/client/logic.js', 'O']]) {
     const s = rd(f);
     assert.ok(s.includes('rowBg:\n            (' + v + ' ? "--bs-row-tint:var(--info-soft);background:var(--info-soft)" : e.onRest ? "--bs-row-tint:var(--warning-soft);background:var(--warning-soft)" : "") +'), f);
     assert.doesNotMatch(s, /background:var\(--bg-a2552512350p4\)"|background:var\(--bg-a2362542550p5\)"/, f + ': لا اللونان الصارخان في الصفّ');
   }
-  for (const v of ['systems/staff/client/view.html', 'modules/dreport/view.html']) assert.match(rd(v), /<tr style="[^"]*;\{\{e\.rowBg\}\}"/);
+  for (const v of ['systems/staff/client/view.html', 'systems/dreport/client/view.html']) assert.match(rd(v), /<tr style="[^"]*;\{\{e\.rowBg\}\}"/);
   /* وقتُ التشغيل يمرّر الخصائصَ المخصّصة (--x) كما هي إلى كائن النمط */
   assert.match(rd('core/050-dc-runtime.js'), /if \(prop\.startsWith\("--"\)\) \{ o\[prop\] = decl\.slice\(i \+ 1\)\.trim\(\); continue; \}/);
 });

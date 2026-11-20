@@ -58,8 +58,7 @@
    "activation": "toggle",
    "platSwitch": true,
    "requires": [
-    {"for": "daily/kpiDaily", "on": "dreport", "kind": "perm"},
-    {"for": "daily/kpiOcc", "on": "lens:zones", "kind": "lens"},
+@@SYS:pages.daily.requires.dreport@@    {"for": "daily/kpiOcc", "on": "lens:zones", "kind": "lens"},
     {"for": "daily/kpiOcc", "on": "lens:dens", "kind": "lens"},
     {"for": "daily/kpiZones", "on": "lens:zones", "kind": "lens"}
    ],
@@ -70,8 +69,7 @@
     "tab:kpiDaily",
     "tab:kpiOcc",
     "tab:kpiZones",
-    "page:dreport",
-    "tab:rounds",
+@@SYS:pages.daily.seq.dreport@@    "tab:rounds",
 @@SYS:pages.daily.seq.tasks@@    "tab:field"
    ],
    "tabLabel": "التبويبات",
@@ -102,16 +100,7 @@
     }
    ]
   },
-  {
-   "key": "dreport",
-   "module": "dreport",
-   "activation": "toggle",
-   "departmentComponents": ["Daily Report"],
-   "nav": "dreport",
-   "name": "التقرير اليومي",
-   "under": "daily"
-  },
-@@SYS:pages.entry.tasks@@@@SYS:pages.entry.systems@@  {
+@@SYS:pages.entry.dreport@@@@SYS:pages.entry.tasks@@@@SYS:pages.entry.systems@@  {
    "key": "links",
    "activation": "toggle",
    "nav": "links",
@@ -177,8 +166,7 @@
   "emps": 1,
 @@SYS:pages.tabAddr.award@@  "admin": 1,
   "daily": {
-   "rounds": 1,
-   "dreport": 1@@SYS:pages.tabAddr.daily@@
+   "rounds": 1@@SYS:pages.tabAddr.daily.dreport@@@@SYS:pages.tabAddr.daily@@
   }@@SYS:pages.tabAddr.tail@@
  },
  "navOrder": [
@@ -198,8 +186,7 @@
 @@SYS:pages.routeNames.dstats@@  "employees": "موظفو الإدارة",
 @@SYS:pages.routeNames.staff@@@@SYS:pages.routeNames.plan@@  "planning": "الخطة التشغيلية",
   "daily": "المتابعة اليومية",
-  "dreport": "التقرير اليومي",
-@@SYS:pages.routeNames.tasks@@@@SYS:pages.routeNames.systems@@  "links": "مواقع ذات صلة",
+@@SYS:pages.routeNames.dreport@@@@SYS:pages.routeNames.tasks@@@@SYS:pages.routeNames.systems@@  "links": "مواقع ذات صلة",
   "help": "المساعدة",
   "admin": "الإعدادات",
   "sysadmin": "مركز إدارة رشاد",

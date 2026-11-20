@@ -207,7 +207,7 @@ test('⑤ sources: Plan names no rounds key or service; rounds and the daily rep
   const plan = rd('src/systems/plan/client/logic.js');
   assert.doesNotMatch(plan, /bassam_rounds_v1|KIVO\.BassamRound|_roundKeyNow/);
   for (const n of ['rounds.sites.patch@1', 'rounds.month.clear@1', 'rounds.site.remove@1', 'rounds.sites.pad@1', 'rounds.days@1', 'rounds.lensFilter@1', 'rounds.names@1']) assert.ok(plan.includes('"' + n + '"'), n);
-  for (const f of ['src/slots/modules/daily/logic.js.tpl', 'src/modules/daily/logic.js', 'src/services/420-round-factory.js', 'src/services/421-round-links.js', 'src/services/520-field-monitor.js', 'src/modules/dreport/logic.js'])
+  for (const f of ['src/slots/modules/daily/logic.js.tpl', 'src/modules/daily/logic.js', 'src/services/420-round-factory.js', 'src/services/421-round-links.js', 'src/services/520-field-monitor.js', 'src/systems/dreport/client/logic.js'])
     assert.doesNotMatch(rd(f), /bassam_(?:plan|zone_opts|gate_opts)_v1/, f);
   const contract = JSON.parse(rd('src/systems/plan/contract.json')), rounds = JSON.parse(rd('src/contracts/rounds.json'));
   for (const n of Object.keys(rounds.provides.commands)) assert.ok(contract.consumes[n] && contract.consumes[n].absent, n);

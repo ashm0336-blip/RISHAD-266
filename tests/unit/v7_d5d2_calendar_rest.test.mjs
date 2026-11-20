@@ -292,7 +292,7 @@ test('⑤ no other place computes the calendar: one client service, one server p
     ['src/components/565-page-kit.js', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDays\(t, e\);$/],
     ['src/components/565-page-kit.js', 'curHijri', /^const t = KIVO\.BassamCal\.hToday\(\); return \{ y: t\.y, m: t\.m \};$/],
     ['src/slots/modules/daily/logic.js.tpl', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, e\);$/],
-    ['src/modules/dreport/logic.js', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, r\);$/],
+    ['src/systems/dreport/client/logic.js', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, r\);$/],
     ['src/systems/dstats/client/logic.js', 'hOfDate', /^const h=KIVO\.BassamCal\.hParts\(dt\); return \{ year:h\.y, month:h\.m, day:h\.d \};$/],
     ['src/systems/dstats/client/logic.js', 'gOf', /^return KIVO\.BassamCal\.hGregUTC\(y,m,d\);$/],
     ['src/systems/dstats/client/logic.js', 'dim', /^return KIVO\.BassamCal\.hMonthDaysNoon\(y,m,29\);$/],
@@ -314,7 +314,7 @@ test('⑤ no other place computes the calendar: one client service, one server p
   }
   /* لا صفحةَ ولا نظامَ يعرّف hMonthDays غير العُدّة وصفحتَي الظهر */
   const defs = files.filter((f) => /(?:^|\n)[ \t]*hMonthDays\s*\([^)]*\)\s*\{/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(ROOT, f).split(path.sep).join('/')).sort();
-  assert.deepEqual(defs, ['src/components/565-page-kit.js', 'src/modules/daily/logic.js', 'src/modules/dreport/logic.js', 'src/slots/modules/daily/logic.js.tpl']);
+  assert.deepEqual(defs, ['src/components/565-page-kit.js', 'src/modules/daily/logic.js', 'src/systems/dreport/client/logic.js', 'src/slots/modules/daily/logic.js.tpl']);
   const service = read('src/i18n/385-calendar.js'), part = read('workers/parts/016-base-shared.js');
   for (const n of ['hPartsRiyadh', 'hNow', 'hText', 'hGregExact', 'hGregUTC', 'hMonthDays', 'hMonthDaysNoon', 'hWeekdayIndex']) { assert.match(service, new RegExp('function ' + n + '\\('), n); assert.match(service, new RegExp('\\b' + n + ': ' + n + '\\b'), n + ' مُصدَّرة'); }
   for (const n of ['calHijriAt', 'calHijriOk', 'calRiyadhMid', 'calDayNum', 'calHijriMid', 'calHijriDayMid', 'dsToday']) assert.match(part, new RegExp('function ' + n + '\\('), n);

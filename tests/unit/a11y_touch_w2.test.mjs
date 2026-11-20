@@ -66,8 +66,8 @@ test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في
   assert.ok(tasks.includes('.tk-dayall{min-height:36px}') && tasks.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}'));
   const st = M('systems/staff/client/helmet.css', 'الموجة 2 · ES-9');
   assert.ok(st.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}') && st.includes('.st-restdd button{min-height:36px}'));
-  assert.ok(M('modules/dreport/helmet.css', 'الموجة 2 · DG-10').includes('.dr-trbox button{min-height:36px}'));
-  assert.equal((rd('modules/dreport/view.html').match(/<div class="dr-trbox" style="margin-top:6px;/g) || []).length, 2, 'منتقيا التحويل (الجدول والبطاقات)');
+  assert.ok(M('systems/dreport/client/helmet.css', 'الموجة 2 · DG-10').includes('.dr-trbox button{min-height:36px}'));
+  assert.equal((rd('systems/dreport/client/view.html').match(/<div class="dr-trbox" style="margin-top:6px;/g) || []).length, 2, 'منتقيا التحويل (الجدول والبطاقات)');
   const adm = M('modules/admin/helmet.css', 'الموجة 2 · AUX-13');
   assert.ok(adm.includes('[data-screen-label="إدارة الموقع"] button:not([style*="position: absolute"]){min-width:32px;min-height:32px}'));
   assert.ok(adm.includes('[data-screen-label="إدارة الموقع"] [data-sf=name][style*="cursor: pointer"]{min-height:32px;display:inline-flex;align-items:center}'));

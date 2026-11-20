@@ -473,8 +473,8 @@
     "path": [
      "registry"
     ],
-    "after": 94,
-    "seq": 1,
+    "after": 80,
+    "seq": 230,
     "value": {
      "key": "site.approve",
      "owner": "plan",
@@ -524,8 +524,8 @@
     "path": [
      "registry"
     ],
-    "after": 94,
-    "seq": 2,
+    "after": 80,
+    "seq": 240,
     "value": {
      "key": "map.calibrate",
      "owner": "plan",
@@ -575,8 +575,8 @@
     "path": [
      "registry"
     ],
-    "after": 94,
-    "seq": 3,
+    "after": 80,
+    "seq": 250,
     "value": {
      "key": "sector.create",
      "owner": "plan",
@@ -626,8 +626,8 @@
     "path": [
      "registry"
     ],
-    "after": 94,
-    "seq": 4,
+    "after": 80,
+    "seq": 260,
     "value": {
      "key": "sector.edit",
      "owner": "plan",
@@ -677,8 +677,8 @@
     "path": [
      "registry"
     ],
-    "after": 94,
-    "seq": 5,
+    "after": 80,
+    "seq": 270,
     "value": {
      "key": "sector.delete",
      "owner": "plan",
@@ -733,7 +733,7 @@
      },
      "references"
     ],
-    "after": 4,
+    "after": 3,
     "seq": 10,
     "value": "plan"
    },
@@ -772,7 +772,7 @@
      },
      "references"
     ],
-    "after": 2,
+    "after": 1,
     "seq": 1,
     "value": "plan"
    },
@@ -785,7 +785,7 @@
      },
      "references"
     ],
-    "after": 3,
+    "after": 2,
     "seq": 1,
     "value": "plan"
    },
@@ -3046,8 +3046,8 @@
     "path": [
      "bindings"
     ],
-    "after": 83,
-    "seq": 1,
+    "after": 69,
+    "seq": 230,
     "value": {
      "key": "site.approve",
      "owner": "plan",
@@ -3080,8 +3080,8 @@
     "path": [
      "bindings"
     ],
-    "after": 83,
-    "seq": 2,
+    "after": 69,
+    "seq": 240,
     "value": {
      "key": "map.calibrate",
      "owner": "plan",
@@ -3114,8 +3114,8 @@
     "path": [
      "bindings"
     ],
-    "after": 83,
-    "seq": 3,
+    "after": 69,
+    "seq": 250,
     "value": {
      "key": "sector.create",
      "owner": "plan",
@@ -3148,8 +3148,8 @@
     "path": [
      "bindings"
     ],
-    "after": 83,
-    "seq": 4,
+    "after": 69,
+    "seq": 260,
     "value": {
      "key": "sector.edit",
      "owner": "plan",
@@ -3182,8 +3182,8 @@
     "path": [
      "bindings"
     ],
-    "after": 83,
-    "seq": 5,
+    "after": 69,
+    "seq": 270,
     "value": {
      "key": "sector.delete",
      "owner": "plan",
@@ -3245,7 +3245,7 @@
      "bassam_rounds_v1",
      "keys"
     ],
-    "after": 11,
+    "after": 9,
     "seq": 10,
     "value": "plan.view"
    },
@@ -3256,7 +3256,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 11,
+    "after": 9,
     "seq": 10,
     "value": {
      "cap": "plan:view",
@@ -3271,7 +3271,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 11,
+    "after": 9,
     "seq": 20,
     "value": {
      "cap": "plan:view",
@@ -3286,7 +3286,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 11,
+    "after": 9,
     "seq": 30,
     "value": {
      "cap": "plan:view",
@@ -3301,7 +3301,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 11,
+    "after": 9,
     "seq": 40,
     "value": {
      "cap": "plan:view",
@@ -3316,7 +3316,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 11,
+    "after": 9,
     "seq": 50,
     "value": {
      "cap": "plan:view",
@@ -3331,7 +3331,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 11,
+    "after": 9,
     "seq": 60,
     "value": {
      "cap": "plan:view",
@@ -3346,7 +3346,7 @@
      "bassam_rounds_v1",
      "routes"
     ],
-    "after": 11,
+    "after": 9,
     "seq": 70,
     "value": {
      "cap": "plan:view",
@@ -3387,7 +3387,7 @@
      "bassam_perm_tpls_v1",
      "keys"
     ],
-    "after": 4,
+    "after": 2,
     "seq": 10,
     "value": "plan.view"
    },
@@ -3398,7 +3398,7 @@
      "bassam_perm_tpls_v1",
      "routes"
     ],
-    "after": 4,
+    "after": 2,
     "seq": 10,
     "value": {
      "cap": "plan:view",
@@ -3445,7 +3445,7 @@
      "bassam_staffing_locks_v1",
      "keys"
     ],
-    "after": 4,
+    "after": 2,
     "seq": 0,
     "value": "plan.view",
     "needs": [
@@ -3459,7 +3459,7 @@
      "bassam_staffing_locks_v1",
      "routes"
     ],
-    "after": 4,
+    "after": 2,
     "seq": 0,
     "value": {
      "cap": "plan:view",
@@ -4727,8 +4727,6 @@
       "lens.dist.view",
       "round.view",
       "field.view",
-      "report.view",
-      "report.indicators.view",
       "emp.view",
       "backup.view"
      ],
@@ -4797,16 +4795,6 @@
        "cap": "daily/field:view",
        "key": "field.view",
        "source": "special:field.view"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.view",
-       "source": "reference-read"
-      },
-      {
-       "cap": "dreport:view",
-       "key": "report.indicators.view",
-       "source": "reference-read"
       },
       {
        "cap": "emps/data:view",
@@ -5149,7 +5137,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 27,
     "seq": 1,
     "value": {
      "key": "map.replace",
@@ -5168,7 +5156,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 27,
     "seq": 2,
     "value": {
      "key": "map.calibrate",

@@ -65,7 +65,7 @@
   "src/modules/kpis/logic.js",
   "src/systems/award/client/logic.js",
   "src/services/441-notif-core.js",
-  "src/modules/dreport/logic.js",
+  "src/systems/dreport/client/logic.js",
   "src/services/332-find-day.js",
   "src/modules/profile/logic.js",
   "src/systems/staff/client/logic.js",

@@ -40,7 +40,7 @@ test('① the stored permission limit is read and applied — not the constant d
   assert.equal(kit({}, true).loadPermLimit(), 2, 'بلا حدٍّ محفوظ: الافتراضي');
   assert.equal(kit({ bassam_perm_limit_v1: '6' }, false).loadPermLimit(), 2, 'بغياب الجدول: الافتراضي');
   /* التطبيق: الصفحتان تأخذان الحدَّ من loadPermLimit وحده — المنعُ عند بلوغه */
-  const staff = rd('src/systems/staff/client/logic.js'), report = rd('src/modules/dreport/logic.js');
+  const staff = rd('src/systems/staff/client/logic.js'), report = rd('src/systems/dreport/client/logic.js');
   assert.match(staff, /permLimit: this\.loadPermLimit\(\)/); assert.match(staff, /s\.length >= this\.state\.permLimit/);
   assert.match(report, /d\.length >= this\.loadPermLimit\(\)/);
   assert.doesNotMatch(rd('src/components/565-page-kit.js'), /loadPermLimit\(\) \{\s*return this\.PERM_DEF_LIMIT;/, 'لا عودةَ للثابت');
@@ -93,7 +93,7 @@ test('④ without the schedule program nothing fails: a read is undefined, the c
   /* وبحضوره: القراءتان تمرّان إلى خدمة وقائع اليوم كما هي */
   const p = client(); assert.deepEqual(copy(p.bus.read('staff.dayFacts@1', 1448, 5, 9)), { y: 1448, m: 5, d: 9 }); assert.equal(p.bus.read('staff.availText@1', 'S', true), 'S:true');
   /* المستهلكون في المصدر لا يسمّون خدمةَ الجدول ولا يكتبون مفتاحَه */
-  for (const f of ['src/modules/dreport/logic.js', 'src/systems/plan/client/logic.js', 'src/slots/modules/daily/logic.js.tpl', 'src/slots/modules/admin/logic.js.tpl']) {
+  for (const f of ['src/systems/dreport/client/logic.js', 'src/systems/plan/client/logic.js', 'src/slots/modules/daily/logic.js.tpl', 'src/slots/modules/admin/logic.js.tpl']) {
     const s = rd(f); assert.doesNotMatch(s, /KIVO\.BassamDay\b/, f); assert.doesNotMatch(s, /draft\.set\("bassam_staffing_v3"/, f);
   }
 });

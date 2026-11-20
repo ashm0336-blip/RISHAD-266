@@ -377,8 +377,8 @@
     "path": [
      "registry"
     ],
-    "after": 99,
-    "seq": 20,
+    "after": 84,
+    "seq": 30,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",
@@ -739,8 +739,8 @@
     "path": [
      "bindings"
     ],
-    "after": 87,
-    "seq": 10,
+    "after": 72,
+    "seq": 20,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",
@@ -826,8 +826,8 @@
     "path": [
      "bindings"
     ],
-    "after": 4,
-    "seq": 8,
+    "after": 2,
+    "seq": 50,
     "value": {
      "key": "cust.move.issue",
      "res": "bassam_custody_v1",
@@ -845,8 +845,8 @@
     "path": [
      "bindings"
     ],
-    "after": 4,
-    "seq": 9,
+    "after": 2,
+    "seq": 60,
     "value": {
      "key": "cust.move.return",
      "res": "bassam_custody_v1",
@@ -864,8 +864,8 @@
     "path": [
      "bindings"
     ],
-    "after": 4,
-    "seq": 10,
+    "after": 2,
+    "seq": 70,
     "value": {
      "key": "cust.move.damage",
      "res": "bassam_custody_v1",
@@ -883,8 +883,8 @@
     "path": [
      "bindings"
     ],
-    "after": 4,
-    "seq": 11,
+    "after": 2,
+    "seq": 80,
     "value": {
      "key": "cust.move.lost",
      "res": "bassam_custody_v1",

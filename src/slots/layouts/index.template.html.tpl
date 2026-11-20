@@ -328,10 +328,7 @@
 @@SYS:shell.mounts.tasks@@  <sc-if value="{{isDaily}}" hint-placeholder-val="{{ false }}">
     <dc-import name="Daily Sessions" hint-size="100%,1100px"></dc-import>
   </sc-if>
-  <sc-if value="{{isDreport}}" hint-placeholder-val="{{ false }}">
-    <dc-import name="Daily Report" hint-size="100%,1100px"></dc-import>
-  </sc-if>
-  <sc-if value="{{isPlanning}}" hint-placeholder-val="{{ false }}">
+@@SYS:shell.mounts.dreport@@  <sc-if value="{{isPlanning}}" hint-placeholder-val="{{ false }}">
     <dc-import name="Planning" hint-size="100%,1200px"></dc-import>
   </sc-if>
   <sc-if value="{{isKpis}}" hint-placeholder-val="{{ false }}">
