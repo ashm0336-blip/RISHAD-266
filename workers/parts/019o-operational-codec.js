@@ -34,14 +34,24 @@ function ocFields(node) {
   if (node.kind === 'tuple') { var out = {}; (node.slots || []).forEach(function (s, i) { out[String(i)] = s; }); return out; }
   return node.kind === 'map' ? node.fixed || {} : {};
 }
-function ocPrepare(definitions) {
+/* V7 · د5-د2 (قرار المراجع 1 · خريطةُ أسماءٍ ثابتة): الأشكالُ المتطابقة تتشارك جدولاً واحداً، وكان اسمُه اسمَ **أول** تعريفٍ سُجّل —
+   فأسماءُ الجداول في D1 تتبع ترتيبَ التسجيل، وحذفُ برنامجٍ يبدّل أسماءَ جداول غيره. بـnames (019o1-table-names.js) كلُّ اسمٍ معلنٍ مثبَّتٌ على
+   اسم جدوله الحالي حرفياً { t: جدولُ الشكل (schema_id) · e: جدولُ الكيان في D1 } مهما كان الترتيب والحاضر. اسمٌ معلنٌ ليس في الخريطة ⇒
+   operations-unnamed-table (لا اسمَ يُشتقّ من الترتيب). بلا names: السلوكُ القديم (اختباراتُ المرمِّز بتعريفاتها الخاصة · وأداةُ المقارنة). */
+function ocPrepare(definitions, names) {
+  function named(declaredTable) {
+    if (!names) return null;
+    if (!ocOwn(names, declaredTable)) { var e = ocError('unnamed-table'); e.ocTable = declaredTable; throw e; }
+    return names[declaredTable];
+  }
   var tables = {}, nodes = new WeakSet(), resources = {}, order = [], declared = new Set(), signatures = new Map(), entities = {}, entitySignatures = new Map();
-  function entityFor(spec, scalarFields) {
+  function entityFor(spec, scalarFields, declaredTable) {
     var value = spec.node.kind === 'scalar', signature = value ? 'value:' + spec.node.type : JSON.stringify(scalarFields.map(function (key) { return [key, spec.fields[key].type]; }).sort());
     if (!value && !scalarFields.length) { spec.entityTable = null; return; }
-    var prior = entitySignatures.get(signature);
+    var prior = entitySignatures.get(signature), fixed = named(declaredTable);
+    if (fixed && (!fixed.e || (prior && prior !== fixed.e))) throw ocError('table-name-conflict');
     if (prior) { spec.entityTable = prior; return; }
-    var name = spec.table, columns = ['department_id', 'resource', 'row_key', 'entity_kind'];
+    var name = fixed ? ocIdentifier(fixed.e) : spec.table, columns = ['department_id', 'resource', 'row_key', 'entity_kind'];
     if (value) columns.push('value_kind', 'value_text', 'value_number');
     scalarFields.forEach(function (key) { var c = ocField(key); columns.push(c + '_kind', c + '_text', c + '_number', c + '_position'); });
     if (columns.length > 100) throw ocError('column-limit');
@@ -53,10 +63,13 @@ function ocPrepare(definitions) {
     nodes.add(node);
     var declaredTable = ocIdentifier(node.table || autoTable), signature = ocSignature(node);
     if (declared.has(declaredTable)) throw ocError('duplicate-table'); declared.add(declaredTable);
-    var prior = signatures.get(signature); if (prior) return prior;
-    var table = declaredTable, fields = ocFields(node), columns = OC_BASE_COLUMNS.slice();
+    var prior = signatures.get(signature), fixed = named(declaredTable);
+    if (fixed && prior && prior.table !== fixed.t) throw ocError('table-name-conflict');
+    if (prior) return prior;
+    var table = fixed ? ocIdentifier(fixed.t) : declaredTable, fields = ocFields(node), columns = OC_BASE_COLUMNS.slice();
     var spec = { table: table, node: node, parent: parent, fields: fields, fieldSpecs: {}, segments: [], children: {}, columns: columns, entry: null, patterns: [], choices: [] };
-    ocSet(tables, table, spec); order.push(spec); signatures.set(signature, spec);
+    if (names && ocOwn(tables, table)) throw ocError('table-name-conflict');
+    ocSet(tables, table, spec); order.push(spec); signatures.set(signature, spec); spec.declared = declaredTable;
     var fieldSpec = spec;
     Object.keys(fields).sort().forEach(function (key) {
       var child = fields[key], column = ocField(key);
@@ -67,7 +80,7 @@ function ocPrepare(definitions) {
         if (fieldSpec.columns.length + 4 > 100) {
           var segmentTable = ocIdentifier(table + '_fields_' + (spec.segments.length + 1));
           if (ocOwn(tables, segmentTable)) throw ocError('duplicate-table');
-          fieldSpec = { table: segmentTable, node: { kind: 'fields' }, parent: table, columns: OC_BASE_COLUMNS.slice(), fields: {}, scalarFields: [] };
+          fieldSpec = { declared: segmentTable, table: segmentTable, node: { kind: 'fields' }, parent: table, columns: OC_BASE_COLUMNS.slice(), fields: {}, scalarFields: [] };
           spec.segments.push(fieldSpec); ocSet(tables, segmentTable, fieldSpec); order.push(fieldSpec);
         }
         fieldSpec.columns.push(column + '_kind', column + '_text', column + '_number', column + '_position');
@@ -89,8 +102,8 @@ function ocPrepare(definitions) {
       if (!Array.isArray(node.choices) || !node.choices.length) throw ocError('union-definition');
       node.choices.forEach(function (choice, i) { spec.choices.push(visit(choice, table, table + '_choice_' + i)); });
     }
-    entityFor(spec, Object.keys(fields).filter(function (key) { return fields[key].kind === 'scalar' && spec.fieldSpecs[key] === spec; }).sort());
-    spec.segments.forEach(function (segment) { entityFor(segment, Object.keys(segment.fields).sort()); });
+    entityFor(spec, Object.keys(fields).filter(function (key) { return fields[key].kind === 'scalar' && spec.fieldSpecs[key] === spec; }).sort(), declaredTable);
+    spec.segments.forEach(function (segment) { entityFor(segment, Object.keys(segment.fields).sort(), segment.declared); });
     return spec;
   }
   definitions.forEach(function (definition) {

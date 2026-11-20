@@ -4,7 +4,7 @@ var OP_PREPARED = null;
 function opDefinitions() { return OC_SCHEDULING_RESOURCES.concat(OC_PEOPLE_TASK_RESOURCES); }
 function opRegistry() {
   if (!OP_PREPARED) {
-    var out = Object.create(null), all = ocPrepare(opDefinitions());
+    var out = Object.create(null), all = ocPrepare(opDefinitions(), OC_TABLE_NAMES);
     opDefinitions().forEach(function (definition) { out[definition.resource] = { definition: definition, prepared: ocForResource(all, definition.resource) }; });
     OP_PREPARED = out;
   }

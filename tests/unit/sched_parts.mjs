@@ -5,4 +5,4 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const SCHED_PARTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'workers', 'parts.json'), 'utf8')).parts.map((p) => p.file).filter((f) => /^019p/.test(path.basename(f)));
+export const SCHED_PARTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'workers', 'parts.json'), 'utf8')).parts.map((p) => p.file).filter((f) => /^019(o1|p)/.test(path.basename(f)))   /* د5-د2: ومعها خريطةُ أسماء الجداول (019o1) — التخزينُ يحضّر بها */;
