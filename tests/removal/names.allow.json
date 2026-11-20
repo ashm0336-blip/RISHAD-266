@@ -313,125 +313,6 @@
    ],
    "kind": "legit",
    "why": "أسماءُ جداول D1 قائمةٌ حرفياً (قرار المراجع 1 · خريطةٌ ثابتة بلا ترحيل): أشكالٌ مشتركة تستعملها الخطةُ والجولات والمهام والقاعدة، سُمّيت تاريخياً باسم أول برنامجٍ عرّفها. أسماءُ أشكال الجدول وحده انتقلت إلى مجلده"
-  },
-  {
-   "file": "src/components/565-page-kit.js",
-   "match": [
-    "staff.permLimit@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/modules/admin/logic.js",
-   "match": [
-    "staff.shiftUsage@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/modules/daily/logic.js",
-   "match": [
-    "staff.dayFacts@1",
-    "staff.schedule@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/modules/dreport/logic.js",
-   "match": [
-    "staff.availText@1",
-    "staff.callsign.set@1",
-    "staff.callsigns@1",
-    "staff.enabled@1",
-    "staff.locks@1",
-    "staff.schedule@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/modules/employees/logic.js",
-   "match": [
-    "staff.locks@1",
-    "staff.months@1",
-    "staff.schedule@1",
-    "staff.usable@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/modules/profile/logic.js",
-   "match": [
-    "staff.locks@1",
-    "staff.months@1",
-    "staff.usable@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/services/332-find-day.js",
-   "match": [
-    "staff.months@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/services/590-employees-import.js",
-   "match": [
-    "staff.locks@1",
-    "staff.usable@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/systems/irshad/server/019i-irshad-operations.js",
-   "match": [
-    "staff.enabled@1",
-    "staff.scheduleRef@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/systems/seized/server/019l-seized-query.js",
-   "match": [
-    "staff.scheduleSeen@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/systems/seized/server/019l-seized.js",
-   "match": [
-    "staff.resources@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/systems/tasks/server/072-task-elig.js",
-   "match": [
-    "staff.locks@1",
-    "staff.readable@1",
-    "staff.schedule@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
-  },
-  {
-   "file": "src/systems/tasks/server/073-task-recur.js",
-   "match": [
-    "staff.readable@1"
-   ],
-   "kind": "legit",
-   "why": "اسمٌ معلن على الناقل «مالك.شيء@إصدار» يسأل به المستهلكُ مالكَ الجدول، معلنٌ في عقد المالك (provides) وسلوكُ غيابه مكتوب (consumes ← absent أو عند الاستدعاء)"
   }
  ],
  "roles": [
@@ -540,8 +421,25 @@
    "name": "plan",
    "kind": "legit",
    "substring": false,
-   "why": "«plan» كلمةٌ إنجليزية عامة في الكود قبل أن تكون اسمَ مجلد التشغيل الميداني: «خطةُ التنفيذ» في الخادم (plan.guards · plan.statements · irQueryPlan · szPlan …) — 1664 وروداً في القاعدة أغلبُها ليس البرنامج. فلا يُبحث عن المقطع؛ يُبحث عن أسماء البرنامج المميِّزة كلها (system.json ← names: مفاتيحُه الأربعة · «Operational Plan» · مجلدُه · أسماءُ ناقله plan.*@N)، ومفاتيحُ صلاحياته وورقتُه المقتبسة 'plan' يفحصهما الاختباران 1 و2 كما هما. الحقنُ السلبية تثبت أن قراءةَ مفتاحه والاستيرادَ من مجلده وسطرَ «خطة تنفيذ» يقرأ مفتاحَه تُكشف كلُّها.",
-   "patterns": [],
+   "why": "«plan» كلمةٌ إنجليزية عامة في الكود قبل أن تكون اسمَ مجلد التشغيل الميداني: «خطةُ التنفيذ» في الخادم (plan.guards · plan.statements · irQueryPlan · szPlan …) — 1664 وروداً في القاعدة أغلبُها ليس البرنامج. فلا يُبحث عن المقطع؛ يُبحث عن أسماء البرنامج المميِّزة كلها (system.json ← names: مفاتيحُه الأربعة · «Operational Plan» · مجلدُه · أسماءُ ناقله plan.*@N — والمعلنُ منها يمحوه قاعدةُ اسم الناقل tests/removal/bus_rule.mjs بشرطيها)، ومفاتيحُ صلاحياته وورقتُه المقتبسة 'plan' يفحصهما الاختباران 1 و2 كما هما. الحقنُ السلبية تثبت أن قراءةَ مفتاحه والاستيرادَ من مجلده وسطرَ «خطة تنفيذ» يقرأ مفتاحَه تُكشف كلُّها.",
+   "patterns": [
+    {
+     "re": "(?:([\"'])act\\1 : ([\"'])plan\\2|([\"'])plan\\3 === A\\b|\\bo\\(([\"'])plan\\4, \"مخطط\"\\))",
+     "why": "وضعُ عرض التغطية في المتابعة اليومية: «مخطط» plan مقابل «فعلي» act (covMode) — قيمةٌ محلية في الواجهة، لا البرنامج"
+    },
+    {
+     "re": "(?:\\bsrc = ([\"'])plan\\1|([\"'])plan\\2 === n\\.src\\b)",
+     "why": "مصدرُ يوم الجولات المخزَّن في صفّه: src = 'plan' (أُخذت مواقعه من الخطة) — قيمةُ بياناتٍ في الجولات والتقرير تبقى ولو غاب البرنامج"
+    },
+    {
+     "re": "(?:'%\"plan\":\"'|([\"'])plan\\1 === k\\b|\\binp\\(([\"'])plan\\2, \"الشهر)",
+     "why": "حقلُ «الشهر» في سجل التدقيق: معاملُ البحث plan في واجهة التدقيق (063 ← qA.get('plan')) وحقلُ JSON في السجل — اسمُ حقلٍ في API لا البرنامج"
+    },
+    {
+     "re": "\\bact === ([\"'])plan\\1",
+     "why": "إجراءُ «خطة الترحيل» في مسار authz-migrate (063): act === 'plan' يعرض الخطةَ قبل التنفيذ — لا علاقة له بالتشغيل الميداني"
+    }
+   ],
    "identifiers": []
   }
  ]

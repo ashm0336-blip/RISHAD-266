@@ -5,7 +5,7 @@
      · identifiers معرّفاتٌ بأسمائها واحداً واحداً، ولكلٍّ سببُه (isStaff · staffMap · plainStaff …): تُمحى بحدود الكلمة كاملةً، لا بادئةً ولا جزءاً.
    ولا شيءَ غير ذلك: لا نمطَ عام ولا بادئة. وما لا تغطيه القاعدة يبقى في مداخل الملفات الحرفية (entries) كما كان.
    عددُ المداخل مثبَّتٌ في LIMITS أدناه: ينزل ولا يرتفع، وكلُّ مدخلٍ جديد يحتاج موافقةَ المراجع. */
-export const LIMITS = { skipFiles: 1, patterns: 1, entries: 45, matches: 103, rolePatterns: 4, identifiers: 19, roles: 2 };   /* د5-هـ: +1 قاعدة (plan · substring:false) بانتظار موافقة المراجع؛ ونقصت مداخلُ منطق الخطة (صار نظاماً) */
+export const LIMITS = { skipFiles: 1, patterns: 1, entries: 32, matches: 75, rolePatterns: 8, identifiers: 19, roles: 2 };   /* د5-هـ: المداخلُ 45→32 والمقاطع 103→75 (أسماءُ الناقل الحرفية الثلاثة عشر صارت قاعدةً مكتوبة: bus_rule.mjs) · +1 قاعدة (plan · substring:false) و+4 أنماط لقيمة 'plan' المحلية — بانتظار موافقة المراجع */
 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
 

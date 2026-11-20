@@ -14,6 +14,7 @@ import { spawnSync } from 'node:child_process';
 import { SRC, ROOT, PYTHON, SYSTEMS } from '../unit/harness.mjs';
 import { noComments, scanFiles, relOf, staleAllow, finder } from './names_allow.mjs';
 import { roleCleaner, staleRoles, allowCounts, LIMITS } from './role_rule.mjs';
+import { busCleaner, baseBusProblems } from './bus_rule.mjs';
 
 const FULL = process.env.KIVO_FULL_SRC || SRC;
 const rd = (...p) => fs.readFileSync(path.join(SRC, ...p), 'utf8');
@@ -51,7 +52,7 @@ const RX_CODE = rxOf([...GT.keys, ...pathOwners, ...GT.flags]), RX_BARE = bareOw
    والمعرّفاتُ المسمّاة بحدود الكلمة، ومقاطعُ المداخل الحرفية لملفها؛ وبقيةُ السطر تُفحص */
 const ALLOW = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'removal', 'names.allow.json'), 'utf8'));
 const cleanFor = (rel, gone) => {
-  const role = roleCleaner(ALLOW.roles, gone), cuts = ALLOW.entries.filter((e) => e.file === '*' || e.file === rel).flatMap((e) => e.match).sort((a, b) => b.length - a.length);
+  const bus = busCleaner(FULL, gone), role0 = roleCleaner(ALLOW.roles, gone), role = (l) => role0(bus(l)), cuts = ALLOW.entries.filter((e) => e.file === '*' || e.file === rel).flatMap((e) => e.match).sort((a, b) => b.length - a.length);
   const pats = ALLOW.patterns.map((x) => new RegExp(x.pattern, 'g'));
   return (line) => { let rest = role(line); for (const q of pats) rest = rest.replace(q, '""'); for (const c of cuts) rest = rest.split(c).join(''); return rest; };
 };
@@ -170,6 +171,21 @@ test('د5-هـ · الحقنُ السلبية لكل نظامٍ مفصول بق�
   };
   for (const [name, line] of Object.entries(INJ)) assert.ok(residue([[at, line]], gone).length > 0, 'الحقنة مرّت بلا كشف: ' + name);
   assert.deepEqual(residue([[at, 'var plan = { guards: [], statements: [] }; plan.guards.push(g);']], gone), [], 'ضابط: «خطةُ تنفيذ» بلا مفتاح البرنامج');
+});
+
+/* د5-هـ · قاعدةُ اسم الناقل المعلن (bus_rule.mjs): الشرطُ ② لملفات القاعدة على الشجرة الكاملة، والحقنُ السلبية للشرط ① */
+test('د5-هـ · اسمُ الناقل: كلُّ اسمِ نظامٍ في ملف قاعدة معلنٌ في _base.json ← consumes بغيابه وملفه، ولا إعلانَ بائت', () => {
+  const root0 = path.dirname(FULL);
+  assert.deepEqual(baseBusProblems(FULL, scanFiles(root0, FULL).map((f) => [relOf(root0, f), noComments(fs.readFileSync(f, 'utf8'))])), []);
+});
+test('د5-هـ · اسمُ الناقل: يُمحى المعلنُ وحده — اسمٌ لم يعلنه المالك · ومفتاحٌ بجواره · يُكشفان', () => {
+  for (const k of ['plan', 'staff']) {
+    if (!fs.existsSync(path.join(FULL, 'systems', k, 'contract.json'))) continue;
+    const at = 'src/modules/profile/logic.js', gone = [k], declared = k === 'plan' ? 'plan.doc@1' : 'staff.months@1', key = k === 'plan' ? 'bassam_plan_v1' : 'bassam_staffing_v3';
+    assert.deepEqual(residue([[at, 'const x = KIVO.bus.read("' + declared + '");']], gone), [], 'الاسمُ المعلن يُمحى: ' + declared);
+    assert.ok(residue([[at, 'const x = KIVO.bus.read("' + k + '.secret@1");']], gone).length > 0, 'اسمٌ لم يعلنه المالك مرّ: ' + k);
+    assert.ok(residue([[at, 'const x = KIVO.bus.read("' + declared + '") || KIVO.__BS_SRV.operations.get("' + key + '");']], gone).length > 0, 'مفتاحٌ بجوار اسمٍ معلن مرّ: ' + k);
+  }
 });
 
 test('د5-د2 · الحقنُ السلبية: قراءةُ مفتاح الجدول · الاستيرادُ من مجلده · سطرٌ يبدو سطرَ دورٍ ويقرأ الجدول — كلٌّ يُفشل البحث', () => {

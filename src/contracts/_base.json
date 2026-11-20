@@ -27,5 +27,95 @@
    "global": "BassamLeaf",
    "why": "نموذجُ «الباب الأم وفتحاته» — شكلُ الأبواب في الخطة وفي جولات اليوم المنسوخة منها؛ تستعمله المتابعةُ والتقرير و«ملفي» والمراقبُ الميداني ولو غاب التشغيلُ الميداني"
   }
- ]
+ ],
+ "consumes": {
+  "staff.usable@1": {
+   "absent": "بلا الجدول الشهري: الجدولُ مطفأ — الموظفون لا يعرضون أعمدة الوردية، و«ملفي» بلا وردية، والاستيرادُ لا يكتب ورديات",
+   "files": [
+    "src/modules/employees/logic.js",
+    "src/modules/profile/logic.js",
+    "src/services/590-employees-import.js"
+   ]
+  },
+  "staff.months@1": {
+   "absent": "بلا الجدول الشهري: لا أشهرَ مسكَّنة — لا ورديةَ لأي موظف في القائمة ولا في سجل «ملفي»، والبحثُ عن اليوم بلا جدول",
+   "files": [
+    "src/modules/employees/logic.js",
+    "src/modules/profile/logic.js",
+    "src/services/332-find-day.js"
+   ]
+  },
+  "staff.locks@1": {
+   "absent": "بلا الجدول الشهري: لا شهرَ معتمد — لا قفلَ يمنع تعديلاً ولا يُعرض",
+   "files": [
+    "src/modules/employees/logic.js",
+    "src/modules/profile/logic.js",
+    "src/services/590-employees-import.js"
+   ]
+  },
+  "staff.schedule@1": {
+   "absent": "بلا الجدول الشهري: الكلُّ «بدون وردية» في قائمة الموظفين",
+   "files": [
+    "src/modules/employees/logic.js"
+   ]
+  },
+  "staff.permLimit@1": {
+   "absent": "بلا الجدول الشهري: لا حدَّ استئذاناتٍ محفوظ — يُعرض الحدُّ الافتراضي",
+   "files": [
+    "src/components/565-page-kit.js"
+   ]
+  },
+  "staff.shiftUsage@1": {
+   "absent": "بلا الجدول الشهري: الوردية غيرُ مستعملة { on:false, records:0 } — تُعاد تسميتها أو تُحذف من الإعدادات بلا تحذير",
+   "files": [
+    "src/modules/admin/logic.js"
+   ]
+  },
+  "shifts.renamed@1": {
+   "absent": "بلا الجدول الشهري: لا مشاركَ في مسودة إعادة التسمية — تُحفظ خياراتُ الورديات وحدها، والخادمُ لا يقبل كتابةً في مفتاحٍ غائب",
+   "files": [
+    "src/modules/admin/logic.js",
+    "workers/parts/044-protected-ops.js",
+    "workers/parts/045-permv2.js"
+   ]
+  },
+  "shifts.renamed.cascade@1": {
+   "absent": "بلا الجدول الشهري: لا تبعةَ تُقبل — الخادمُ يعامل الكتابةَ كأي كتابةٍ عادية (ولا مفتاحَ جدولٍ يُكتب)",
+   "files": [
+    "workers/parts/059-protected-ops-2.js"
+   ]
+  },
+  "plan.usable@1": {
+   "absent": "بلا التشغيل الميداني: ورقتُه مطفأة — لا توزيعَ مواقع ولا أبوابَ في الموظفين، و«ملفي» بلا مواقع",
+   "files": [
+    "src/modules/employees/logic.js",
+    "src/modules/profile/logic.js"
+   ]
+  },
+  "plan.sites@1": {
+   "absent": "بلا التشغيل الميداني: لا مواقعَ للشهر — الجاهزيةُ وتوزيعُ المواقع فارغان",
+   "files": [
+    "src/modules/employees/logic.js"
+   ]
+  },
+  "plan.doc@1": {
+   "absent": "بلا التشغيل الميداني: لا خطة — سجلُّ «ملفي» بلا مواقع",
+   "files": [
+    "src/modules/profile/logic.js"
+   ]
+  },
+  "plan.markKinds@1": {
+   "absent": "بلا التشغيل الميداني: أنواعُ المعالم الافتراضية في نافذة المعلم",
+   "files": [
+    "src/components/565-page-kit.js"
+   ]
+  },
+  "plan.markKinds.set@1": {
+   "absent": "بلا التشغيل الميداني: إضافةُ نوع معلمٍ لا تُعرض (bus.has كاذب) ولا يُحفظ شيء",
+   "files": [
+    "src/components/565-page-kit.js"
+   ]
+  }
+ },
+ "consumes_note": "V7 · د5-هـ: ما تسأل عنه ملفاتُ القاعدة أنظمةً على الناقل، بسلوك غيابه وملفاته — يفحصه tests/removal/bus_rule.mjs (baseBusProblems) على الشجرة الكاملة، وبه يُمحى الاسمُ المعلن من فحص البقايا حين يغيب مالكه"
 }

@@ -40,6 +40,7 @@ NAME_RULES = [
     ('use', 'dept-tabs',    r'\bdeptTabs\([^)]*' + _Q),                                           # تبويباتُ صفحة البرنامج
     ('use', 'shape',        r'\bshape\s*:\s*' + _Q),                                              # شكلُ بيانات البرنامج في سجل عمليات الخادم
     ('use', 'scope-item',   r'\bid\s*:\s*' + _Q + r'\s*,\s*path\b'),                               # عنصرُ نطاقٍ باسم مورد البرنامج
+    ('use', 'ident-container', r'\bcontainer\s*:\s*' + _Q + r'|\b(?:propagate|canonEmp)\(\s*' + _Q + r'|,\s*' + _Q + r'\]\]\.forEach'),   # وعاءُ البرنامج في تقرير ترحيل الهوية (014): container: 'rounds' · propagate('rounds', …) · canonEmp('rounds', …) — معرفةُ القاعدة بالبرنامج (تُنقل قطعاً في مجلده حين يُفصل)
     ('use', 'container-tab', r'\b_tabOk\(\s*' + _Q + r'|\bPT_TABS\b'),                            # تبويبُ البرنامج في الحاوية (يبقى حتى يُنقل برنامجُه)
     # ── لا يُعدّ: مفتاحُ صلاحيةٍ مماثل · دورُ حساب · كلمةٌ لمعنى آخر — كلٌّ بقاعدته ──
     ('not', 'role',         r'\brole\b|\bkind\s*(?::|={2,3})\s*["\']staff["\']|["\']staff["\']\s*={2,3}\s*[a-z]\b|\{\s*v\s*:\s*["\']staff["\']'),   # دورُ الحساب staff: role · kind: 'staff' · "staff" === r · خيارُ الدور {v:"staff"}

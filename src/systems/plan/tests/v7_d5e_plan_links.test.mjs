@@ -211,6 +211,8 @@ test('⑤ sources: Plan names no rounds key or service; rounds and the daily rep
     assert.doesNotMatch(rd(f), /bassam_(?:plan|zone_opts|gate_opts)_v1/, f);
   const contract = JSON.parse(rd('src/systems/plan/contract.json')), rounds = JSON.parse(rd('src/contracts/rounds.json'));
   for (const n of Object.keys(rounds.provides.commands)) assert.ok(contract.consumes[n] && contract.consumes[n].absent, n);
-  for (const n of Object.keys(contract.provides.commands)) assert.ok(rounds.consumes[n] && rounds.consumes[n].absent, n);
+  /* د5-هـ (دمج p3): كلُّ أمرٍ للخطة له مستهلكٌ أعلن غيابَه — الجولات (عقدها)، أو عُدّةُ الصفحات في القاعدة (_base.json ← consumes) لأمر أنواع المعالم */
+  const base = JSON.parse(rd('src/contracts/_base.json')).consumes || {};
+  for (const n of Object.keys(contract.provides.commands)) assert.ok((rounds.consumes[n] && rounds.consumes[n].absent) || (base[n] && base[n].absent), n);
   assert.deepEqual(contract.readResources['plan.doc@1'], ['bassam_plan_v1']); assert.deepEqual(rounds.readResources['rounds.days@1'], ['bassam_rounds_v1']);
 });

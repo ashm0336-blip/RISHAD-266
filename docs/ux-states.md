@@ -24,10 +24,10 @@
 | daily (Daily Sessions) | 60 | 9 | 176 | 0 | 3 |
 | dreport (Daily Report) | 19 | 0 | 84 | 0 | 1 |
 | dstats (Daily Stats) | 14 | 1 | 37 | 0 | 0 |
-| employees (Employees) | 51 | 6 | 103 | 0 | 7 |
+| employees (Employees) | 51 | 6 | 105 | 0 | 7 |
 | irshad (Irshad) | 18 | 0 | 17 | 0 | 6 |
 | kpis (KPIs) | 1 | 0 | 2 | 0 | 1 |
-| plan (Operational Plan) | 58 | 10 | 113 | 0 | 4 |
+| plan (Operational Plan) | 58 | 10 | 112 | 0 | 4 |
 | planning (Planning) | 0 | 0 | 6 | 0 | 0 |
 | profile (Profile) | 31 | 18 | 103 | 0 | 11 |
 | seized (Seized) | 20 | 1 | 28 | 0 | 4 |
