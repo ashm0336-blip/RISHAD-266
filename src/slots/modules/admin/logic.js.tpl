@@ -1525,8 +1525,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         bassam_employees_v1: "قائمة الموظفين",
 @@SYS:admin.keyLabels.staff@@        bassam_rounds_v1: "الجولات اليومية",
         bassam_dreport_v1: "التقرير اليومي",
-        bassam_plan_v1: "الخطة التشغيلية",
-@@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
+@@SYS:admin.keyLabels.plan@@@@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
         bassam_perms_v1: "الصلاحيات",
         bassam_depts_v1: "الإدارات",
 @@SYS:admin.keyLabels@@@@SYS:admin.keyLabels.custody@@      }[s] || (KL ? KL.label(s) : "بيانات المنصة")) + (e ? " · " + this.adDept(e[1]) : "")
@@ -4709,7 +4708,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (typeof d !== "string" || !d || !registry || !registry.treeFlat().some(dept => dept.id === d)) return false;
     const ops = KIVO.__BS_SRV.operations, context = ops.context();
     if (!context) return false;
-    const keys = ["bassam_plan_v1", "bassam_employees_v1"].map(name => "bsdept:" + d + ":" + name),
+    const keys = [@@SYS:admin.scRefs.plan@@"bassam_employees_v1"].map(name => "bsdept:" + d + ":" + name),
       stamp = JSON.stringify([context, d]), entries = this._scopeReads || (this._scopeReads = new Map());
     if (ops.ready(keys)) {
       try { keys.forEach(k => ops.reference(k)); return true; } catch (error) {}
@@ -8377,12 +8376,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 bassam_employees_v1: "الموظفون",
 @@SYS:admin.resLabels.custody@@@@SYS:admin.resLabels.staff@@                bassam_leave_kinds_v1: "كتالوج أنواع الإجازات",
                 bassam_shift_options_v1: "خيارات الورديات",
-                bassam_plan_v1: "الخطة التشغيلية وخرائط المواقع",
-                bassam_rounds_v1: "الجولات اليومية",
-                bassam_zone_opts_v1: "كتالوج المصليات",
-                bassam_gate_opts_v1: "كتالوج البوابات",
-                bassam_mark_kinds_v1: "كتالوج أنواع المعالم",
-@@SYS:admin.wipe.labels.tasks@@@@SYS:admin.wipe.labels@@                bassam_options_v1: "الخيارات العامة",
+@@SYS:admin.wipe.labels.plan@@                bassam_rounds_v1: "الجولات اليومية",
+@@SYS:admin.wipe.labels.plan.opts@@@@SYS:admin.wipe.labels.tasks@@@@SYS:admin.wipe.labels@@                bassam_options_v1: "الخيارات العامة",
                 bassam_profile_v1: "الملف التعريفي",
               };
             let n = [];

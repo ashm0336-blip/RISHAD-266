@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "fef055780be7be10397bbdbc048f9addd4975f1397458b16a310e6aa74d0c291",
+  "sha256": "2948ab0dbc1ee30426707bb452ddc1b5bd1ea7c3b9ef903f02428d7c238cdd13",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -990,8 +990,8 @@
         23615,
         23633
       ],
-      "bytes": 1517,
-      "sha256": "c9d9c232bc2665d6f2a4f4072fb03f2f3a9c55c98569d0bff38a24a9a8beccfc"
+      "bytes": 1524,
+      "sha256": "48330b4d0e64b4bc9cd95c14656aab1da2ad6be971ac420f99c0d5d1d4b3129b"
     },
     {
       "file": "052-aud-events.js",

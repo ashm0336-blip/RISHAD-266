@@ -92,6 +92,8 @@ export function loadClient({ C, boot, jar = { cookie: '' }, blocks = ['280-serve
   T.run(blocks);
   /* V7 · د5-د: روابطُ الجدول الشهري على الناقل (ما كان الآخرون يقرؤونه ويكتبونه من مفاتيحه مباشرةً) — حاضرةٌ كما في الشجرة؛ staffLinks:false لاختبار غيابه */
   if (staffLinks !== false) { try { T.run(['531-staff-links.js', '533-staff-g3.js', '534-staff-g4.js']); } catch (e) { if (!/ENOENT|not found|غير موجود/i.test(String(e && e.message))) throw e; } }
+  /* V7 · د5-هـ: وقراءاتُ التشغيل الميداني المعلنة لصفحات القاعدة (حاضرةٌ كما في الشجرة؛ بغياب مجلده تُتخطّى) */
+  if (staffLinks !== false) { try { T.run(['403-plan-p3.js']); } catch (e) { if (!/ENOENT|not found|غير موجود/i.test(String(e && e.message))) throw e; } }
   /* V7 · د5-هـ: روابطُ التشغيل الميداني والجولات على الناقل — حاضرةٌ كما في الشجرة (ملفُّ الخطة يغيب بغياب برنامجه) */
   for (const b of ['421-round-links.js', '404-plan-p4.js']) { try { T.run([b]); } catch (e) { if (!/ENOENT|not found|غير موجود/i.test(String(e && e.message))) throw e; } }
   return T;

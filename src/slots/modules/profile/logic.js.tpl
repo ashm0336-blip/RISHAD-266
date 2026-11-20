@@ -19,7 +19,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
            على الأكثر كلَّ ١٠ ثوانٍ مهما تتابعت الأحداث (كلُّ جلبٍ يقرأ مفاتيحَ الإدارة في الخادم)، ومفاتيحُ لا تمسّ يومي (المهام · التنبيهات …) لا تجلب */
         const keys = ev && ev.detail && ev.detail.keys,
           ks = Array.isArray(keys) ? keys.map(String) : [],
-          REL = ["bassam_employees_v1",@@SYS:profile.rel.staff@@ "bassam_dreport_v1", "bassam_plan_v1", "bassam_rounds_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
+          REL = ["bassam_employees_v1",@@SYS:profile.rel.staff@@ "bassam_dreport_v1",@@SYS:profile.rel.plan@@ "bassam_rounds_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
         if (ks.length && !ks.some((k) => REL.some((r) => k === r || k.slice(-r.length - 1) === ":" + r))) return;
         this.pfMeInvalidate();
       }));
@@ -188,7 +188,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       m = +p[2],
       upto = 12 * y + m < 12 * T.y + T.m ? 31 : y === T.y && m === T.m ? T.d : 0,
       H = toks.length
-        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), dreport: this.LS("bassam_dreport_v1", {}), plan: this.LS("bassam_plan_v1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
+        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), dreport: this.LS("bassam_dreport_v1", {}), plan: this.LB("plan.doc@1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
         : null;
     return {
       ok: 1,
@@ -356,8 +356,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
 @@SYS:profile.data.key.staff@@        "bassam_shift_options_v1",
         "bassam_dreport_v1",
         "bassam_rounds_v1",
-        "bassam_plan_v1",
-@@SYS:profile.data.key.tasks@@        "bassam_dayshift_v1",
+@@SYS:profile.data.key.plan@@@@SYS:profile.data.key.tasks@@        "bassam_dayshift_v1",
 @@SYS:profile.data.key.staff.locks@@        "bassam_auth_users_v1",
       ];
     let s = (this.state.pfTick || 0) + "|" + (t ? t.id : "") + "|" + Math.floor(Date.now() / 6e4) + "|" + (this.state.pfMeAt || 0);
@@ -567,7 +566,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       LK = this.LB("staff.locks@1", {}),
       B = this.LS("bassam_dreport_v1", {}),
       RND = this.LS("bassam_rounds_v1", {}),
-      Z = this.LS("bassam_plan_v1", {}),
+      Z = this.LB("plan.doc@1", {}),   /* V7 · د5-د2: الخطةُ يملكها التشغيلُ الميداني — بالناقل؛ بغيابه أو حجبها لا خطة */
       GO = this.LS("bassam_shift_options_v1", []);
     const ME = l ? this.pfMine({ user: t, emps: y, months: u, locks: LK, dreport: B, plan: Z, rounds: RND, opts: GO, readable: null !== raw("bassam_employees_v1") && null !== rawSched() }) : null,
       MM = ME && ME.M,
@@ -748,13 +747,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         for (let ii = 0; ii < L.length; ii++) {
           const el = L[ii];
           if (!el) continue;
-          const hit = sx.uid ? String(el.uid || el.eid || "") === sx.uid : (("round" === src && Q) || ("plan" === src && at)) && fi === sx.fi && ii === sx.i;
+          const hit = sx.uid ? String(el.uid || el.eid || "") === sx.uid : (("round" === src && Q) || ("official" === src && at)) && fi === sx.fi && ii === sx.i;
           if (hit) return { fi: fi, kind: sx.kind, i: ii, x: el.x, y: el.y, label: sx.label, short: sx.short, loc: sx.loc, closed: "gates" === sx.kind ? !!el.closed : !!el.off };
         }
       }
       return null;
     };
-    const offEl = l && SITE ? findEl(SITE.official, "plan") : null,
+    const offEl = l && SITE ? findEl(SITE.official, "official") : null,
       tdEl = l && SITE ? findEl(SITE.today, "round") : null,
       lt = offEl ? Object.assign({ which: "official" }, offEl) : tdEl ? Object.assign({ which: "today" }, tdEl) : null,
       ltToday = offEl && tdEl && !(offEl.fi === tdEl.fi && offEl.kind === tdEl.kind && offEl.i === tdEl.i) ? tdEl : null;
@@ -1332,7 +1331,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       bsSt = !!KIVO.bus.read("staff.usable@1"),
       bsDr = this.bsOn("dreport"),
       bsDi = this.bsLensOn("dist"),
-      bsPl = this.bsOn("plan");
+      bsPl = !!KIVO.bus.read("plan.usable@1");   /* V7 · د5-د2: ورقةُ التشغيل الميداني يجيب عنها مالكُه؛ بغيابه مطفأة */
     let b = "none";
     S && (b = w < d ? "before" : w <= g ? "during" : "after");
     const restToday = !!(F && F.rest.today),

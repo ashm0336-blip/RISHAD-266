@@ -12,15 +12,19 @@
  "files": [],
  "provides": {
   "read": {
-   "plan.doc@1": "(via?) ← وثيقةُ الخطة { floors, months, zones, gates, marks, paths, … } كما هي مخزَّنة؛ via: مسودةُ المستدعي (تُسجَّل القراءةُ في حفظه) أو قارئُ صفحته (name ⇒ قيمة)، وبلا via قراءةُ Operations المباشرة (ترمي إن لم يُقرأ المورد)",
+   "plan.doc@1": "(via?) ← وثيقةُ الخطة { floors, months, zones, gates, marks, paths, … } كما هي مخزَّنة؛ via: مسودةُ المستدعي (تُسجَّل القراءةُ في حفظه) أو قارئُ صفحته (name ⇒ قيمة) أو granted ‏(undefined إن حُجبت) أو text ‏(نسخةٌ من نصّ المورد أو null)، وبلا via قراءةُ Operations المباشرة (ترمي إن لم يُقرأ المورد)",
    "plan.zoneOpts@1": "(via?) ← خياراتُ المصليات (region · level · ztype · zcat · zcatStyle · hMig) كما هي مخزَّنة",
    "plan.gateOpts@1": "(via?) ← خياراتُ الأبواب (loc · gtype · kind · route · cls · cat) كما هي مخزَّنة",
-   "plan.resources@1": "(…kinds) ← أسماءُ موارد الخطة بحسب النوع: doc · zoneOpts · gateOpts (بلا نوعٍ: كلُّها) — لمن ينتظر تغيّرَها دون أن يسمّيها"
+   "plan.resources@1": "(…kinds) ← أسماءُ موارد الخطة بحسب النوع: doc · zoneOpts · gateOpts (بلا نوعٍ: كلُّها) — لمن ينتظر تغيّرَها دون أن يسمّيها",
+   "plan.usable@1": "() ← هل التشغيلُ الميداني مفعَّلٌ في الإدارة النشطة (ورقتُه في سقف الإدارة) — لصفحات القاعدة التي تُظهر أو تُخفي ما يخصّه (client/403-plan-p3.js)",
+   "plan.sites@1": "(ym, how?) ← مواقعُ الشهر «سنة-شهر» (مصفوفةُ الشهر أو حقلُها d) أو null إن لم تكن له خطة — how: granted · text كما في plan.doc@1",
+   "plan.markKinds@1": "() ← نصُّ كتالوج أنواع المعالم كما هو مخزَّن (JSON) أو null — لعُدّة الصفحات المشتركة (نافذةُ المعلم)"
   },
   "commands": {
    "plan.doc.set@1": "{ value } داخل مسودة المستدعي — يكتب وثيقةَ الخطة كما أعدّها المستدعي (حذفُ موقع · إضافتُه · استيرادُ يوم · تنقيةُ خيار)؛ لا يقرأ قبل الكتابة",
    "plan.zoneOpts.set@1": "{ value } داخل مسودة المستدعي — يكتب خياراتِ المصليات",
-   "plan.gateOpts.set@1": "{ value } داخل مسودة المستدعي — يكتب خياراتِ الأبواب"
+   "plan.gateOpts.set@1": "{ value } داخل مسودة المستدعي — يكتب خياراتِ الأبواب",
+   "plan.markKinds.set@1": "{ kinds:[…] } داخل مسودة المستدعي — يكتب كتالوجَ أنواع المعالم كاملاً"
   }
  },
  "consumes": {
@@ -95,6 +99,12 @@
   ],
   "plan.gateOpts@1": [
    "bassam_gate_opts_v1"
+  ],
+  "plan.sites@1": [
+   "bassam_plan_v1"
+  ],
+  "plan.markKinds@1": [
+   "bassam_mark_kinds_v1"
   ]
  }
 }

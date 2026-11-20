@@ -92,8 +92,7 @@
      الإنذار هنا عند مصدر الكتابة الوحيد فيغطي كل المسارات الحالية والمستقبلية،
      ثم يُعاد رمي الاستثناء كما هو حتى لا يتغيّر منطق التراجع القائم. */
   var LABELS = { 'bassam_employees_v1':'قائمة الموظفين',@@SYS:deptStore.labels.staff@@
-                 'bassam_rounds_v1':'جولات المتابعة اليومية',@@SYS:deptStore.labels.tasks@@
-                 'bassam_plan_v1':'الخطة التشغيلية' };
+                 'bassam_rounds_v1':'جولات المتابعة اليومية',@@SYS:deptStore.labels.tasks@@@@SYS:deptStore.labels.plan@@ };
   var warned = 0;
   function isQuota(e){
     if (!e) return false;

@@ -44,9 +44,12 @@ for (const [slug, required] of [
     "source-derived " +
       slug +
       " charter includes its actual shared Operations dependencies",
-    needs('seized'), () => {
+    needs(...(slug === 'daily' ? ['seized', 'plan'] : ['seized'])), () => {
+      /* V7 · د5-هـ: كتالوجُ أنواع المعالم صار يُقرأ في عُدّة الصفحات بالناقل من مالكه (plan.markKinds@1) — فيصل الصفحةَ تحميلُه من
+         readResources في عقد المالك (tools/generate.py ← bus_read_resources) لا من الميثاق؛ الاعتمادُ المشترك نفسُه يُشترط قائماً */
       const data = python(
-        "print(json.dumps(M.derive(" + JSON.stringify(slug) + ')["data"]))',
+        "import os,generate as G,systems_paths as SP\nS=os.path.abspath('src');d=SP.module_dirs(S)[" + JSON.stringify(slug) + "]\n" +
+        "print(json.dumps(M.derive(" + JSON.stringify(slug) + ')["data"] + G.bus_read_resources(S,d,json.load(open(os.path.join(d,"meta.json"))))))',
       );
       for (const resource of required)
         assert.ok(data.includes(resource), slug + " omitted " + resource);

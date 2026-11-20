@@ -6,6 +6,8 @@
        بلا via            قراءةُ Operations المباشرة — ترمي ما كانت ترميه إن لم يُقرأ الموردُ أو مُنع (أو operations-read-required بلا خدمة).
        مسودة ({ get })    القراءةُ داخل مسودة المستدعي (draft.get): تسجّل اعتمادَ القراءة في حفظه الذرّي كما كان.
        دالة (name ⇒ قيمة)  قارئُ صفحة المستدعي (مسودةُ الصفحة): المالكُ يسمّي المفتاح والصفحةُ تقرأ بطريقتها.
+       "granted"          كالمباشرة، لكن undefined إن حُجبت القراءة (صفحاتُ القاعدة: ملفي).
+       "text"             نسخةٌ من نصّ المورد (JSON.parse) أو null.
      read     plan.doc@1(via?)            وثيقةُ الخطة { floors, months, zones, gates, … } كما هي مخزَّنة (أو undefined/null).
      read     plan.zoneOpts@1(via?)       خياراتُ المصليات (المناطق · الأدوار · الأنواع · الفئات وأنماطها).
      read     plan.gateOpts@1(via?)       خياراتُ الأبواب.
@@ -19,6 +21,9 @@
   function via(how, key) {
     if (typeof how === 'function') return how(key);
     if (how && typeof how.get === 'function') return how.get(key);
+    var S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (how === 'granted' && S && S.state(key) === 'denied') return undefined;
+    if (how === 'text' && S) { var t = S.text(key); return t == null ? null : JSON.parse(t); }
     var service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
     if (!service) throw Error('operations-read-required');
     return service.get(key);
