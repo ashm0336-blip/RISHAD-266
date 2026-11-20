@@ -42,8 +42,7 @@
    "nav": "planning",
    "name": "الخطة التشغيلية",
    "seq": [
-    "sub:readiness",
-@@SYS:pages.planning.seq.staff@@    "page:plan"
+    "sub:readiness"@@SYS:pages.planning.seq|sep=",\n"|pre=",\n"@@
    ],
    "subs": [
     {
@@ -53,16 +52,7 @@
     }
    ]
   },
-@@SYS:pages.entry.staff@@  {
-   "key": "plan",
-   "module": "plan",
-   "activation": "toggle",
-   "departmentComponents": ["Operational Plan"],
-   "nav": "plan",
-   "name": "التشغيل الميداني",
-   "under": "planning"
-  },
-  {
+@@SYS:pages.entry.staff@@@@SYS:pages.entry.plan@@  {
    "key": "daily",
    "module": "daily",
    "activation": "toggle",
@@ -206,8 +196,7 @@
  "routeNames": {
   "kpis": "مؤشرات الإدارة",
 @@SYS:pages.routeNames.dstats@@  "employees": "موظفو الإدارة",
-@@SYS:pages.routeNames.staff@@  "plan": "التشغيل الميداني",
-  "planning": "الخطة التشغيلية",
+@@SYS:pages.routeNames.staff@@@@SYS:pages.routeNames.plan@@  "planning": "الخطة التشغيلية",
   "daily": "المتابعة اليومية",
   "dreport": "التقرير اليومي",
 @@SYS:pages.routeNames.tasks@@@@SYS:pages.routeNames.systems@@  "links": "مواقع ذات صلة",

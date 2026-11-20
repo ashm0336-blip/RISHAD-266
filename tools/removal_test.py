@@ -20,7 +20,7 @@
 import os, sys, re, json, glob, shutil, subprocess, tempfile, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CASES = {'none': ['award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'], 'staff': ['staff'], 'award': ['award'], 'dstats': ['dstats'], 'seized': ['seized'], 'tasks': ['tasks'], 'custody': ['custody']}
+CASES = {'none': ['award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'], 'staff': ['staff'], 'plan': ['plan'], 'award': ['award'], 'dstats': ['dstats'], 'seized': ['seized'], 'tasks': ['tasks'], 'custody': ['custody']}
 
 def sh(cmd, cwd, env=None, timeout=3600):
     r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)

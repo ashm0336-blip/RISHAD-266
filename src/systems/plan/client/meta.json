@@ -17,10 +17,10 @@
    "#/plan"
   ],
   "ui": [
-   "src/modules/plan/view.html",
-   "src/modules/plan/helmet.css"
+   "src/systems/plan/client/view.html",
+   "src/systems/plan/client/helmet.css"
   ],
-  "domain": "src/modules/plan/logic.js",
+  "domain": "src/systems/plan/client/logic.js",
   "data": [
    "bassam_dayshift_v1",
    "bassam_dreport_v1",

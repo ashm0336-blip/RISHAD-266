@@ -94,10 +94,6 @@
    "order": 10,
    "text": "  {\n   \"key\": \"staff\",\n   \"module\": \"staff\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Staffing\"],\n   \"nav\": \"staffing\",\n   \"name\": \"الجدول الشهري\",\n   \"under\": \"planning\"\n  },\n"
   },
-  "pages.planning.seq.staff": {
-   "order": 10,
-   "text": "    \"page:staff\",\n"
-  },
   "pages.routeNames.staff": {
    "order": 10,
    "text": "  \"staffing\": \"الجدول الشهري\",\n"
@@ -124,7 +120,7 @@
   },
   "planning.tabs.reg": {
    "order": 10,
-   "text": "sched: \"staff\", "
+   "text": "sched: { page: \"staff\", go: \"goSched\", on: \"schedOn\", act: \"onSched\" }, "
   },
   "root.planning.perms.sp": {
    "order": 10,
@@ -141,6 +137,14 @@
   "oc.sched.resources": {
    "order": 10,
    "text": "  osSchemaStaffResources(),\n"
+  },
+  "pages.planning.seq": {
+   "order": 10,
+   "text": "    \"page:staff\""
+  },
+  "planning.css": {
+   "order": 10,
+   "file": "slots/planning.css.frag"
   }
  }
 }

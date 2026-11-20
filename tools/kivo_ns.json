@@ -51,7 +51,7 @@
   "src/layouts/root-logic.js",
   "src/services/566-print-core.js",
   "src/modules/daily/logic.js",
-  "src/modules/plan/logic.js",
+  "src/systems/plan/client/logic.js",
   "src/modules/admin/logic.js",
   "src/components/660-a11y-enhancer.js",
   "src/systems/tasks/client/logic.js",

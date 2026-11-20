@@ -242,19 +242,13 @@
    "sha256": null
   },
   {
-   "file": "019p2-scheduling-plan.js",
+   "file": "019p5-scheduling-floors.js",
    "lines": null,
    "bytes": null,
    "sha256": null
   },
   {
    "file": "019p3-scheduling-rounds.js",
-   "lines": null,
-   "bytes": null,
-   "sha256": null
-  },
-  {
-   "file": "019p4-scheduling-plan-options.js",
    "lines": null,
    "bytes": null,
    "sha256": null

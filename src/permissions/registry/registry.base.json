@@ -66,408 +66,6 @@
    "reservedReason": null
   },
   {
-   "key": "plan.view",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "عرض التشغيل الميداني",
-   "type": "access",
-   "sensitive": false,
-   "guard": {
-    "kind": "read",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "قراءة bassam_plan_v1, bassam_zone_opts_v1, bassam_gate_opts_v1, bassam_mark_kinds_v1 بورقة plan (RD_REG/DS_READ)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "none",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:view"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "plan.view"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "plan.create",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "إنشاء خطة جديدة",
-   "type": "create",
-   "sensitive": false,
-   "guard": {
-    "kind": "ops",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1 months.* (newAp: months.*.mo) — إنشاء شهر",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "diff",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:add"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "plan.create"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "plan.delete",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "حذف خطة",
-   "type": "delete",
-   "sensitive": true,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1: حذف شهر (del)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:del"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "plan.delete"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "site.create",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "إضافة موقع",
-   "type": "create",
-   "sensitive": false,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1 floors[] — إضافة طابق/موقع (add)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "diff",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:add"
-   ],
-   "references": [
-    "daily/rounds"
-   ],
-   "uiOnly": false,
-   "v23": [
-    "site.add"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "site.edit",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "تعديل بيانات الموقع",
-   "type": "edit",
-   "sensitive": false,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1 floors[].name/img/… (edit)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "diff",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:edit"
-   ],
-   "references": [
-    "daily/rounds"
-   ],
-   "uiOnly": false,
-   "v23": [
-    "site.edit"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "map.replace",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "رفع/استبدال الخريطة",
-   "type": "operation",
-   "sensitive": true,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1 floors[i].iid (معرّفُ صورة الخريطة) · imgW · imgH · chipTone — الصورةُ نفسُها في IndexedDB (BassamIDB) لا في السجل (siteModalSave)",
-    "status": "to-bind"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": true
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:edit"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "map.replace"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "site.delete",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "حذف موقع",
-   "type": "delete",
-   "sensitive": true,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1 floors[] (del) — تبعات على كيانات العدسات",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:del"
-   ],
-   "references": [
-    "daily/rounds"
-   ],
-   "uiOnly": false,
-   "v23": [
-    "site.delete"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "plan.approve",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "اعتماد الخطة",
-   "type": "decision",
-   "sensitive": true,
-   "guard": {
-    "kind": "ops",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "اتجاهُ الاعتماد: months.*.d[i].approved → true · months.*.mo يزول (إعادةُ قفل شهرٍ منقضٍ) · ومرآتُه floors[i].approved → true = site.approve",
-    "status": "to-bind"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:approve"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "plan.approve"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "plan.reopen",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "إعادة فتح خطة معتمدة",
-   "type": "decision",
-   "sensitive": true,
-   "guard": {
-    "kind": "ops",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "اتجاهُ الفتح: months.*.mo يظهر (شهرٌ منقضٍ فُتح بأثرٍ رجعي — retroDo/_setMonthOpen) · d[i].approved → false · floors[i].approved → false",
-    "status": "to-bind"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": true
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:approve"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "plan.reopen"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
    "key": "report.view",
    "owner": "dreport",
    "ownerKind": "page",
@@ -1209,8 +807,7 @@
     "dreport",
     "daily/rounds",
     "planning/readiness",
-    "emps/data",
-    "plan"
+    "emps/data"
    ],
    "uiOnly": false,
    "v23": [
@@ -1835,8 +1432,7 @@
    ],
    "references": [
     "daily/rounds",
-    "daily/field",
-    "plan"
+    "daily/field"
    ],
    "uiOnly": false,
    "v23": [
@@ -2518,8 +2114,7 @@
    ],
    "references": [
     "daily/rounds",
-    "daily/field",
-    "plan"
+    "daily/field"
    ],
    "uiOnly": false,
    "v23": [
@@ -3121,8 +2716,7 @@
    ],
    "references": [
     "dreport",
-    "daily/rounds",
-    "plan"
+    "daily/rounds"
    ],
    "uiOnly": false,
    "v23": [
@@ -3542,8 +3136,7 @@
    "references": [
     "dreport",
     "daily/rounds",
-    "planning/readiness",
-    "plan"
+    "planning/readiness"
    ],
    "uiOnly": false,
    "v23": [
@@ -4429,226 +4022,6 @@
    "reservedReason": null
   },
   {
-   "key": "site.approve",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "اعتماد/فتح موقع داخل الخطة",
-   "type": "decision",
-   "sensitive": true,
-   "guard": {
-    "kind": "ops",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "floors.*.approved",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:approve"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "site.approve"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "map.calibrate",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "معايرة مقياس خريطة الموقع",
-   "type": "operation",
-   "sensitive": true,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1 floors[i].mpu (مترٌ لكل وحدة خريطة) — المعايرة (saveCalibration → _setMpu)",
-    "status": "to-bind"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:edit"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "map.calibrate"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "sector.create",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "إضافة نطاق تشغيلي",
-   "type": "create",
-   "sensitive": false,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1 sectors[] (add)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "diff",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:add"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "sector.create"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "sector.edit",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "تعديل نطاق تشغيلي",
-   "type": "edit",
-   "sensitive": false,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1 sectors[] (edit)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "diff",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:edit"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "sector.edit"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "sector.delete",
-   "owner": "plan",
-   "ownerKind": "page",
-   "domain": "plan",
-   "label": "حذف نطاق تشغيلي",
-   "type": "delete",
-   "sensitive": true,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_plan_v1",
-     "bassam_zone_opts_v1",
-     "bassam_gate_opts_v1",
-     "bassam_mark_kinds_v1"
-    ],
-    "detail": "bassam_plan_v1 sectors[] (del)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch",
-    "Site",
-    "DateRange"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "plan:del"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "sector.delete"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
    "key": "round.sync.plan",
    "owner": "daily/rounds",
    "ownerKind": "page",
@@ -4808,8 +4181,7 @@
    ],
    "references": [
     "daily/rounds",
-    "daily/field",
-    "plan"
+    "daily/field"
    ],
    "uiOnly": false,
    "v23": [
@@ -5127,7 +4499,6 @@
     "plan:edit"
    ],
    "references": [
-    "plan",
     "daily/rounds"
    ],
    "uiOnly": false,
@@ -6517,14 +5888,6 @@
    "resource": null
   },
   {
-   "id": "plan",
-   "kind": "page",
-   "label": "التشغيل الميداني",
-   "manifest": "page",
-   "managedIn": null,
-   "resource": null
-  },
-  {
    "id": "dreport",
    "kind": "page",
    "label": "التقرير اليومي",
@@ -6819,100 +6182,6 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.ready.export"
-   ]
-  },
-  {
-   "leaf": "plan",
-   "act": "view",
-   "disposition": "migrated",
-   "targets": [
-    "plan.view",
-    "lens.zones.view",
-    "lens.paths.view",
-    "lens.gates.view",
-    "lens.marks.view",
-    "lens.dist.view",
-    "lens.dens.view",
-    "ref.zone.type.view",
-    "ref.gate.type.view",
-    "ref.mark.kind.view"
-   ]
-  },
-  {
-   "leaf": "plan",
-   "act": "add",
-   "disposition": "migrated",
-   "targets": [
-    "plan.create",
-    "site.create",
-    "sector.create",
-    "lens.zones.create",
-    "lens.paths.create",
-    "lens.gates.create",
-    "lens.marks.create",
-    "ref.zone.type.create",
-    "ref.gate.type.create",
-    "ref.mark.kind.create"
-   ]
-  },
-  {
-   "leaf": "plan",
-   "act": "edit",
-   "disposition": "migrated",
-   "targets": [
-    "site.edit",
-    "map.replace",
-    "map.calibrate",
-    "sector.edit",
-    "lens.zones.data.edit",
-    "lens.zones.geometry.edit",
-    "lens.paths.edit",
-    "lens.paths.geometry.edit",
-    "lens.paths.status.change",
-    "lens.gates.edit",
-    "lens.gates.geometry.edit",
-    "lens.marks.edit",
-    "lens.marks.geometry.edit",
-    "lens.dist.need.edit",
-    "lens.dens.threshold.configure",
-    "ref.zone.type.edit",
-    "ref.gate.type.edit",
-    "ref.mark.kind.edit"
-   ]
-  },
-  {
-   "leaf": "plan",
-   "act": "del",
-   "disposition": "migrated",
-   "targets": [
-    "plan.delete",
-    "site.delete",
-    "sector.delete",
-    "lens.zones.delete",
-    "lens.paths.delete",
-    "lens.gates.delete",
-    "lens.marks.delete",
-    "ref.zone.type.delete",
-    "ref.gate.type.delete",
-    "ref.mark.kind.delete"
-   ]
-  },
-  {
-   "leaf": "plan",
-   "act": "approve",
-   "disposition": "migrated",
-   "targets": [
-    "plan.approve",
-    "plan.reopen",
-    "site.approve"
-   ]
-  },
-  {
-   "leaf": "plan",
-   "act": "export",
-   "disposition": "converted_to_feature",
-   "targets": [
-    "ff.plan.export"
    ]
   },
   {
@@ -7507,9 +6776,6 @@
  ],
  "featureFlags": [
   "ff.ready.export",
-  "ff.plan.export",
-  "ff.plan.copy",
-  "ff.plan.fromday",
   "ff.report.export",
   "ff.backup.download",
   "ff.backup.upload",
@@ -7531,7 +6797,6 @@
   "ff.import.template.download",
   "ff.module.emps.enabled",
   "ff.module.planning.enabled",
-  "ff.module.plan.enabled",
   "ff.module.daily.enabled",
   "ff.module.dreport.enabled",
   "ff.module.admin.enabled",

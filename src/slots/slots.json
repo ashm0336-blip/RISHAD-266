@@ -313,6 +313,10 @@
   {
    "tpl": "workers/parts/019o1-table-names.js.tpl",
    "out": "workers/parts/019o1-table-names.js"
+  },
+  {
+   "tpl": "modules/planning/helmet.css.tpl",
+   "out": "src/modules/planning/helmet.css"
   }
  ]
 }

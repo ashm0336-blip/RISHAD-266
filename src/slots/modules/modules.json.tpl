@@ -14,14 +14,7 @@
    "bytes": 818608,
    "logicLines": 20267
   },
-  {
-   "name": "Operational Plan",
-   "slug": "plan",
-   "minifiedSource": true,
-   "bytes": 855494,
-   "logicLines": 19783
-  },
-@@SYS:modules.staff@@  {
+@@SYS:modules.plan@@@@SYS:modules.staff@@  {
    "name": "Admin",
    "slug": "admin",
    "minifiedSource": true,

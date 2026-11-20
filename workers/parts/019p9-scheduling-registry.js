@@ -3,4 +3,5 @@ var OC_SCHEDULING_RESOURCES = [].concat(
   osSchemaStaffResources(),
   osSchemaBaseResources(),
   osSchemaPlanResources(),
+  osSchemaRoundsResources(),
 );

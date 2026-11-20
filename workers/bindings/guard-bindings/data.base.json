@@ -28,30 +28,6 @@
  ],
  "bindings": [
   {
-   "key": "plan.approve",
-   "res": "bassam_plan_v1",
-   "where": "months[\"y-m\"].mo يزول (إعادة قفل شهرٍ منقضٍ) · months[\"y-m\"].d[i].approved → true",
-   "how": "اتجاه الاعتماد (OPS months.*.mo · months.*.d.*.approved)",
-   "asis": "plan:approve",
-   "decl": "v24.3 (F-04): mo:1 = شهرٌ منقضٍ فُتح بأثرٍ رجعي — ظهورُه reopen وزوالُه approve/lock (متوافقٌ الآن مع نصّ الوثيقة)",
-   "dup": "",
-   "owner": "plan",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
-   "key": "plan.reopen",
-   "res": "bassam_plan_v1",
-   "where": "months[\"y-m\"].mo يظهر · months[\"y-m\"].d[i].approved → false · floors[i].approved → false",
-   "how": "اتجاه الفتح",
-   "asis": "plan:approve",
-   "decl": "",
-   "dup": "",
-   "owner": "plan",
-   "type": "decision",
-   "guardKind": "ops"
-  },
-  {
    "key": "report.approve",
    "res": "bassam_dreport_v1",
    "where": "[\"y-m-d\"].shifts[sh].ap/apAt/apBy تظهر · [\"m:y-m\"].dshut[d] يظهر · [\"m:y-m\"].dopen[d] يزول",
@@ -446,30 +422,6 @@
    "owner": "lens.dens",
    "type": "operation",
    "guardKind": "field"
-  },
-  {
-   "key": "map.replace",
-   "res": "bassam_plan_v1",
-   "where": "floors[i].iid (معرّفُ صورة الخريطة في IndexedDB) · img · imgW · imgH · chipTone",
-   "how": "تغيّرُ معرّف الصورة أو أبعادها (siteModalSave)",
-   "asis": "plan:edit",
-   "decl": "",
-   "dup": "",
-   "owner": "plan",
-   "type": "operation",
-   "guardKind": "cap"
-  },
-  {
-   "key": "map.calibrate",
-   "res": "bassam_plan_v1",
-   "where": "floors[i].mpu (مترٌ لكل وحدة خريطة)",
-   "how": "تغيّرُ mpu وحدَه (dens صار lens.dens.threshold.configure)",
-   "asis": "plan:edit",
-   "decl": "",
-   "dup": "",
-   "owner": "plan",
-   "type": "operation",
-   "guardKind": "cap"
   },
   {
    "key": "round.sync.plan",

@@ -8,13 +8,7 @@
         <sc-if value="{{onRead}}" hint-placeholder-val="{{ true }}"><span style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--bg-xb99751)"></span></sc-if>
       </div>
       </sc-if>
-@@SYS:planning.tabs@@      <div onClick="{{goPlan}}" class="pt-tab pt-plan">
-        <div class="pt-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f046dc7d"></svg></div>
-        <span class="pt-lbl">التشغيل الميداني</span>
-        <span class="pt-ul"></span>
-      </div>
-    </div>
+@@SYS:planning.tabs@@    </div>
   </div>
   <sc-if value="{{onRead}}" hint-placeholder-val="{{ false }}"><dc-import name="Employees" solo="readiness" hint-size="100%,1100px"></dc-import></sc-if>
-@@SYS:planning.mounts@@  <sc-if value="{{planSeen}}" hint-placeholder-val="{{ false }}"><div id="bsPtPlan"><dc-import name="Operational Plan" hint-size="100%,1100px"></dc-import></div></sc-if>
-</div>
+@@SYS:planning.mounts@@</div>

@@ -183,18 +183,22 @@ test('الاسترشاد والمضبوطات (R7): #/irshad/records و#/seized/
 test('الخطة التشغيلية (PLAN-11): التبويبُ المزروع من حالة العرض (ptab) يُرسم في أوّل رسم ويُركِّب «التشغيل الميداني» — بحارس الصلاحية', () => {
   /* كان سجلُّ الحالة بمفتاح data-screen-label فتتصادم الحاويةُ و«التشغيل الميداني» (التسميةُ نفسُها) ويضيع ptab؛ الآن بمفتاح اسم المكوّن
      (اختبارُ الزرع في refresh_seed_w1). هنا: renderVals الحقيقية على حالةٍ مزروعة */
-  /* V7 · د5-د: تبويباتُ الحاوية سجلٌّ (PT_TABS) يُحقن من مجلدات البرامج — _tabOk الحقيقية تُستخرج مع renderVals */
-  const TABS = { sched: 'staff', plan: 'plan' };
-  const P = page('planning', ['renderVals() {', '_tabOk(t) {'], { state: { ptab: 'plan', planSeen: false }, self: { PT_TABS: TABS, _ptOk: () => true, _bsGo() {} } });
+  /* V7 · د5-د/د5-هـ: الحاويةُ عامة — سجلُّ التبويبات (PT_TABS) قطعٌ من مجلدات البرامج بشكلها { page · go · on · act · lazy }؛ تُستخرج الدوالُّ الحقيقية */
+  const TABS = { sched: { page: 'staff', go: 'goSched', on: 'schedOn', act: 'onSched' }, plan: { page: 'plan', go: 'goPlan', on: 'planSeen', act: 'onPlan', lazy: true } };
+  const M = ['renderVals() {', '_tabOk(t) {', '_ids() {'];
+  const P = page('planning', M, { state: { ptab: 'plan', seen: {} }, self: { PT_TABS: TABS, _ptOk: () => true, _bsGo() {} } });
   const V = P.c.renderVals();
-  assert.equal(V.ptab, 'plan'); assert.equal(V.onPlan, true); assert.equal(V.planSeen, true, '«التشغيل الميداني» يُركَّب بلا planSeen');
-  const Q = page('planning', ['renderVals() {', '_tabOk(t) {'], { state: { ptab: 'plan', planSeen: false }, self: { PT_TABS: TABS, _ptOk: (k) => k !== 'plan', _bsGo() {} } });
+  assert.equal(V.ptab, 'plan'); assert.equal(V.onPlan, true); assert.equal(V.planSeen, true, '«التشغيل الميداني» يُركَّب في أوّل رسم بلا علامة «رُئي»');
+  const Q = page('planning', M, { state: { ptab: 'plan', seen: {} }, self: { PT_TABS: TABS, _ptOk: (k) => k !== 'plan', _bsGo() {} } });
   /* وبغياب قطعة الجدول (لا تبويبَ له في السجل): الحاويةُ تعرض ما بقي بهدوء */
-  const R = page('planning', ['renderVals() {', '_tabOk(t) {'], { state: { ptab: null, planSeen: false }, self: { PT_TABS: { plan: 'plan' }, _ptOk: () => true, _bsGo() {} } }).c.renderVals();
-  assert.equal(R.schedOn, false); assert.equal(R.ptab, 'plan'); assert.equal(R.ptOn, 'plan', 'تبويبٌ واحد: الشريطُ يختفي بقاعدته');
+  const R = page('planning', M, { state: { ptab: null, seen: {} }, self: { PT_TABS: { plan: TABS.plan }, _ptOk: () => true, _bsGo() {} } }).c.renderVals();
+  assert.ok(!R.schedOn); assert.equal(R.ptab, 'plan'); assert.equal(R.ptOn, 'plan', 'تبويبٌ واحد: الشريطُ يختفي بقاعدته');
+  /* وبغياب القطع كلِّها: لا تبويب ولا خطأ */
+  const N = page('planning', M, { state: { ptab: null, seen: {} }, self: { PT_TABS: {}, _ptOk: () => true, _bsGo() {} } }).c.renderVals();
+  assert.equal(N.ptab, 'none'); assert.equal(N.ptOn, '');
   const W = Q.c.renderVals();
   assert.equal(W.ptab, 'sched', 'بلا صلاحية الخطة: الجدولُ الشهري'); assert.equal(W.planSeen, false);
-  assert.match(rd('modules/planning/logic.js'), /state = \{ ptab: null, planSeen: !1 \};/, 'ptab في الحالة الأولى (null يقبل الزرع)');
+  assert.match(rd('modules/planning/logic.js'), /state = \{ ptab: null, seen: \{\} \};/, 'ptab في الحالة الأولى (null يقبل الزرع)');
 });
 
 /* DG-14: صفحةُ المهام في vm بساعةٍ ثابتة (ظهرُ 2026-10-20 = 9 جمادى الأولى 1448) وبلا مهام */

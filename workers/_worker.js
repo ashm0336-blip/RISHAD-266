@@ -18951,6 +18951,8 @@ function osSchemaStaffResources() {
     },
   ];
 }
+// V7 · د5-هـ (م1): شكلُ الطابق وعناصره (أبواب · مصليات · مسارات · معالم · نطاقات) مشتركٌ بين الخطة وأيام الجولات المنسوخة منها — جزءُ قاعدة.
+// كان في جزء الخطة (019p2)؛ تبقى أيامُ الجولات تُقرأ وتُكتب بشكلها ولو غاب التشغيلُ الميداني.
 function osSchemaPoint(table) {
   return ocObject(table, osSchemaFields(["x", "y"]));
 }
@@ -19136,58 +19138,6 @@ function osSchemaPlan(table) {
   fields.cfg = ocObject(table + "_legacy_cfg", {});
   return ocObject(table, fields);
 }
-function osSchemaMonthControl(table) {
-  var fields = osSchemaFields(["ap", "mo", "auto", "perm"]);
-  fields.dopen = ocMap(table + "_open_days", ocScalar("scalar"));
-  fields.dshut = ocMap(table + "_closed_days", ocScalar("scalar"));
-  return ocUnion(table, [
-    ocScalar("scalar"),
-    ocObject(table + "_record", fields),
-  ]);
-}
-function osSchemaRoundDay(table) {
-  var fields = osSchemaFields([
-    "t",
-    "ap",
-    "auto",
-    "from",
-    "synced",
-    "off",
-  ]);
-  fields.imp = ocUnion(table + "_import", [
-    ocScalar("scalar"),
-    ocObject(table + "_import_source", osSchemaFields(["src", "day"])),
-  ]);
-  fields.d = osSchemaFloors(table + "_floors");
-  fields.shAp = ocMap(
-    table + "_shift_approvals",
-    ocObject(table + "_shift_approval", {
-      ap: ocScalar("scalar"),
-      at: ocScalar("scalar"),
-      byRep: ocScalar("scalar"),
-      snap: osSchemaFloors(table + "_approved_floors"),
-    }),
-  );
-  fields.mvLog = ocArray(
-    table + "_moves",
-    ocObject(
-      table + "_move",
-      osSchemaFields([
-        "t",
-        "kind",
-        "key",
-        "tok",
-        "fromI",
-        "toI",
-        "fromLbl",
-        "toLbl",
-        "by",
-        "name",
-      ]),
-    ),
-  );
-  return ocObject(table, fields);
-}
 function osSchemaOption(table) {
   return ocUnion(table, [
     ocScalar("scalar"),
@@ -19257,6 +19207,63 @@ function osSchemaPlanResources() {
       name: "markKinds",
       schema: osSchemaScalars("ops_mark_kinds"),
     },
+  ];
+}
+function osSchemaRoundDay(table) {
+  var fields = osSchemaFields([
+    "t",
+    "ap",
+    "auto",
+    "from",
+    "synced",
+    "off",
+  ]);
+  fields.imp = ocUnion(table + "_import", [
+    ocScalar("scalar"),
+    ocObject(table + "_import_source", osSchemaFields(["src", "day"])),
+  ]);
+  fields.d = osSchemaFloors(table + "_floors");
+  fields.shAp = ocMap(
+    table + "_shift_approvals",
+    ocObject(table + "_shift_approval", {
+      ap: ocScalar("scalar"),
+      at: ocScalar("scalar"),
+      byRep: ocScalar("scalar"),
+      snap: osSchemaFloors(table + "_approved_floors"),
+    }),
+  );
+  fields.mvLog = ocArray(
+    table + "_moves",
+    ocObject(
+      table + "_move",
+      osSchemaFields([
+        "t",
+        "kind",
+        "key",
+        "tok",
+        "fromI",
+        "toI",
+        "fromLbl",
+        "toLbl",
+        "by",
+        "name",
+      ]),
+    ),
+  );
+  return ocObject(table, fields);
+}
+function osSchemaMonthControl(table) {
+  var fields = osSchemaFields(["ap", "mo", "auto", "perm"]);
+  fields.dopen = ocMap(table + "_open_days", ocScalar("scalar"));
+  fields.dshut = ocMap(table + "_closed_days", ocScalar("scalar"));
+  return ocUnion(table, [
+    ocScalar("scalar"),
+    ocObject(table + "_record", fields),
+  ]);
+}
+// V7 · د5-هـ (م1): موردُ الجولات يسجّله جزؤها (كان في جزء خيارات الخطة 019p4).
+function osSchemaRoundsResources() {
+  return [
     {
       resource: "bassam_rounds_v1",
       name: "rounds",
@@ -19281,6 +19288,7 @@ var OC_SCHEDULING_RESOURCES = [].concat(
   osSchemaStaffResources(),
   osSchemaBaseResources(),
   osSchemaPlanResources(),
+  osSchemaRoundsResources(),
 );
 /* Operational source contracts only. Every container has its own fixed table.
    These descriptors preserve transport shape/order/absence/null; they do not

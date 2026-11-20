@@ -8,7 +8,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 37,
     "value": {
      "key": "award.new.view",
@@ -54,7 +54,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 38,
     "value": {
      "key": "award.new.create",
@@ -100,7 +100,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 39,
     "value": {
      "key": "award.res.view",
@@ -147,7 +147,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 40,
     "value": {
      "key": "award.res.edit",
@@ -194,7 +194,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 41,
     "value": {
      "key": "award.res.approve",
@@ -241,7 +241,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 42,
     "value": {
      "key": "award.res.reject",
@@ -288,7 +288,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 43,
     "value": {
      "key": "award.res.delete",
@@ -335,7 +335,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 44,
     "value": {
      "key": "award.doc.view",
@@ -385,7 +385,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 45,
     "value": {
      "key": "award.doc.create",
@@ -432,7 +432,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 46,
     "value": {
      "key": "award.doc.edit",
@@ -479,7 +479,7 @@
     "path": [
      "registry"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 47,
     "value": {
      "key": "award.doc.delete",
@@ -526,7 +526,7 @@
     "path": [
      "registry"
     ],
-    "after": 110,
+    "after": 96,
     "seq": 84,
     "value": {
      "key": "award.doc.reset",
@@ -573,7 +573,7 @@
     "path": [
      "registry"
     ],
-    "after": 113,
+    "after": 99,
     "seq": 10,
     "value": {
      "key": "award.res.reopen",
@@ -619,8 +619,8 @@
      },
      "references"
     ],
-    "after": 5,
-    "seq": 3,
+    "after": 4,
+    "seq": 20,
     "value": "award/res"
    },
    {
@@ -691,7 +691,7 @@
     "path": [
      "owners"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 12,
     "value": {
      "id": "award/new",
@@ -706,7 +706,7 @@
     "path": [
      "owners"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 13,
     "value": {
      "id": "award/res",
@@ -721,7 +721,7 @@
     "path": [
      "owners"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 14,
     "value": {
      "id": "award/doc",
@@ -736,7 +736,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 72,
     "value": {
      "leaf": "award/new",
@@ -751,7 +751,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 73,
     "value": {
      "leaf": "award/new",
@@ -766,7 +766,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 74,
     "value": {
      "leaf": "award/new",
@@ -779,7 +779,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 75,
     "value": {
      "leaf": "award/new",
@@ -792,7 +792,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 76,
     "value": {
      "leaf": "award/new",
@@ -805,7 +805,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 77,
     "value": {
      "leaf": "award/new",
@@ -818,7 +818,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 78,
     "value": {
      "leaf": "award/res",
@@ -833,7 +833,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 79,
     "value": {
      "leaf": "award/res",
@@ -846,7 +846,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 80,
     "value": {
      "leaf": "award/res",
@@ -861,7 +861,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 81,
     "value": {
      "leaf": "award/res",
@@ -876,7 +876,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 82,
     "value": {
      "leaf": "award/res",
@@ -892,7 +892,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 83,
     "value": {
      "leaf": "award/res",
@@ -907,7 +907,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 84,
     "value": {
      "leaf": "award/doc",
@@ -922,7 +922,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 85,
     "value": {
      "leaf": "award/doc",
@@ -937,7 +937,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 86,
     "value": {
      "leaf": "award/doc",
@@ -952,7 +952,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 87,
     "value": {
      "leaf": "award/doc",
@@ -968,7 +968,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 88,
     "value": {
      "leaf": "award/doc",
@@ -981,7 +981,7 @@
     "path": [
      "atoms"
     ],
-    "after": 54,
+    "after": 48,
     "seq": 89,
     "value": {
      "leaf": "award/doc",
@@ -996,7 +996,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 5,
+    "after": 2,
     "seq": 11,
     "value": "ff.award.res.export"
    },
@@ -1004,7 +1004,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 23,
+    "after": 20,
     "seq": 14,
     "value": "ff.award.doc.print"
    },
@@ -1012,7 +1012,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 19,
     "value": "ff.module.award.enabled"
    }
@@ -1022,7 +1022,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 36,
     "value": {
      "key": "award.new.view",
@@ -1047,7 +1047,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 37,
     "value": {
      "key": "award.new.create",
@@ -1072,7 +1072,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 38,
     "value": {
      "key": "award.res.view",
@@ -1100,7 +1100,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 39,
     "value": {
      "key": "award.res.edit",
@@ -1128,7 +1128,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 40,
     "value": {
      "key": "award.res.approve",
@@ -1156,7 +1156,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 41,
     "value": {
      "key": "award.res.reject",
@@ -1184,7 +1184,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 42,
     "value": {
      "key": "award.res.delete",
@@ -1212,7 +1212,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 43,
     "value": {
      "key": "award.doc.view",
@@ -1238,7 +1238,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 44,
     "value": {
      "key": "award.doc.create",
@@ -1264,7 +1264,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 45,
     "value": {
      "key": "award.doc.edit",
@@ -1290,7 +1290,7 @@
     "path": [
      "bindings"
     ],
-    "after": 22,
+    "after": 13,
     "seq": 46,
     "value": {
      "key": "award.doc.delete",
@@ -1316,7 +1316,7 @@
     "path": [
      "bindings"
     ],
-    "after": 98,
+    "after": 84,
     "seq": 83,
     "value": {
      "key": "award.doc.reset",
@@ -1396,7 +1396,7 @@
      "bassam_employees_v1",
      "keys"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 3,
     "value": "award.res.view"
    },
@@ -1407,7 +1407,7 @@
      "bassam_employees_v1",
      "keys"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 4,
     "value": "award.new.view"
    },
@@ -1418,7 +1418,7 @@
      "bassam_employees_v1",
      "keys"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 5,
     "value": "award.doc.view"
    },
@@ -1429,7 +1429,7 @@
      "bassam_employees_v1",
      "routes"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 3,
     "value": {
      "cap": "award/res:view",
@@ -1444,7 +1444,7 @@
      "bassam_employees_v1",
      "routes"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 4,
     "value": {
      "cap": "award/new:view",
@@ -1459,7 +1459,7 @@
      "bassam_employees_v1",
      "routes"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 5,
     "value": {
      "cap": "award/doc:view",
@@ -1696,7 +1696,7 @@
      "bassam_shift_options_v1",
      "keys"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 3,
     "value": "award.res.view"
    },
@@ -1707,7 +1707,7 @@
      "bassam_shift_options_v1",
      "keys"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 4,
     "value": "award.new.view"
    },
@@ -1718,7 +1718,7 @@
      "bassam_shift_options_v1",
      "keys"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 5,
     "value": "award.doc.view"
    },
@@ -1729,7 +1729,7 @@
      "bassam_shift_options_v1",
      "routes"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 3,
     "value": {
      "cap": "award/res:view",
@@ -1744,7 +1744,7 @@
      "bassam_shift_options_v1",
      "routes"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 4,
     "value": {
      "cap": "award/new:view",
@@ -1759,7 +1759,7 @@
      "bassam_shift_options_v1",
      "routes"
     ],
-    "after": 6,
+    "after": 5,
     "seq": 5,
     "value": {
      "cap": "award/doc:view",
@@ -1773,7 +1773,7 @@
     "path": [
      "bindings"
     ],
-    "after": 6,
+    "after": 4,
     "seq": 6,
     "value": {
      "key": "award.res.approve",
@@ -1792,7 +1792,7 @@
     "path": [
      "bindings"
     ],
-    "after": 6,
+    "after": 4,
     "seq": 7,
     "value": {
      "key": "award.res.reject",
@@ -1811,7 +1811,7 @@
     "path": [
      "bindings"
     ],
-    "after": 39,
+    "after": 35,
     "seq": 50,
     "value": {
      "key": "award.doc.reset",

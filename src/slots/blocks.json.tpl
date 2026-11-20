@@ -911,14 +911,7 @@
     "name": "Daily Sessions",
     "sha256": "be3abc92554039fbf72e349c34a124f65444de98a30982645147f907212e4e00"
    },
-   {
-    "b64Sha256": "b4eed90979c0e2fd824b2c1142e54220b2a471bed9aefc9fb2e346ce66f6c0d9",
-    "bytes": 855532,
-    "file": "client/pages/Operational Plan.dc.html",
-    "name": "Operational Plan",
-    "sha256": "8673ea459c3052cf7e1db354e1ddd2a1c50875a97eb39cad0c4fc783a01b11fa"
-   },
-@@SYS:blocks.pages.staff@@   {
+@@SYS:blocks.pages.plan@@@@SYS:blocks.pages.staff@@   {
     "b64Sha256": "52e50939d94f3ab0cfc86f3ceab9c83c6e7183033504f326ca211d4031aa1508",
     "bytes": 581768,
     "file": "client/pages/Admin.dc.html",
@@ -957,8 +950,7 @@
   "order": [
    "Employees",
 @@SYS:blocks.order.tasks@@   "Daily Sessions",
-   "Operational Plan",
-@@SYS:blocks.order.staff@@   "Admin",
+@@SYS:blocks.order.plan@@@@SYS:blocks.order.staff@@   "Admin",
    "Profile",
 @@SYS:blocks.order.irshad@@@@SYS:blocks.order.award@@   "Daily Report",
    "Planning",

@@ -59,7 +59,7 @@ test('ES-9 · مربّعاتُ التحديد في جدولَي الموظفين
 
 test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في الغلاف) — التشغيلُ الميداني ٣٦ وشارةُ حذف الشهر ٢٤ · «الشهر كاملاً» ٣٦ · إدارةُ الموقع ٣٢ — كلُّها على الإصبع وحده', needs('tasks'), () => {
   const M = (f, mark) => { const m = mediaAfter(rd(f), mark); assert.equal(m.head, '@media (pointer: coarse)', f); return strip(m.body).replace(/\s+/g, ' '); };
-  const plan = M('modules/plan/helmet.css', 'الموجة 2 · PLAN-06');
+  const plan = M('systems/plan/client/helmet.css', 'الموجة 2 · PLAN-06');
   assert.ok(plan.includes('.bs-mapcard button:not([style*="position: absolute"]), .bs-panel-shell button:not([style*="position: absolute"]){ min-width:36px; min-height:36px; }'));
   assert.ok(plan.includes('[title^="سيتم حذف"][style*="position: absolute"]{ min-width:24px; min-height:24px; }'));
   const tasks = M('systems/tasks/client/helmet.css', 'الموجة 2 · DG-10');
@@ -84,11 +84,11 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
   const inner = bare.indexOf('.bs-hbar>.bs-hbar{flex-shrink:1;min-width:0}'), own = bare.indexOf('.bs-canvas-header>.bs-hbar{flex-shrink:0;overflow:visible}');
   assert.ok(inner >= 0 && own > inner, 'قاعدةُ الترويسة بعد القاعدة العامة');
   /* لا قاعدةَ التفافٍ في وحدة الخطة، ولا في أيّ مكان لهذه الترويسة */
-  const plan = rd('modules/plan/helmet.css');
+  const plan = rd('systems/plan/client/helmet.css');
   assert.doesNotMatch(plan, /flex-wrap\s*:\s*wrap/, 'حُذفت قاعدةُ الالتفاف سطرين');
   assert.doesNotMatch(plan, /\.bs-mapcard > \.bs-hbar/);
   assert.doesNotMatch(bare, /\.bs-canvas-header[^{]*\{[^}]*flex-wrap\s*:\s*wrap/);
-  for (const [f, group] of [['modules/plan/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/], ['modules/daily/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/]]) {
+  for (const [f, group] of [['systems/plan/client/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/], ['modules/daily/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/]]) {
     const v = rd(f), m = /<div class="([^"]*\bbs-canvas-header\b[^"]*)" style="([^"]*)">/.exec(v); assert.ok(m, f);
     assert.deepEqual(m[1].split(/\s+/), ['bs-hbar', 'bs-canvas-header'], f + ': bs-hbar بلا bs-wrap');
     assert.doesNotMatch(m[2], /flex-wrap/, f + ': لا flex-wrap مكتوباً على الترويسة');
@@ -105,7 +105,7 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
     assert.match(h, /<div class="bs-pop bs-canvas-site-menu" data-bs-site-menu="1">\s*<div class="bs-canvas-site-list">/, f);
     assert.doesNotMatch(v, /fldPopStyle/, f);
   }
-  for (const f of ['modules/plan/logic.js', 'modules/daily/logic.js']) {
+  for (const f of ['systems/plan/client/logic.js', 'modules/daily/logic.js']) {
     const l = rd(f);
     assert.doesNotMatch(l, /fldPopStyle/, f);
     assert.match(l, /fldToggle: \(\) => this\.setState\(\(t\) => \(\{ fldOpen: !t\.fldOpen \}\)\),/, f);
@@ -127,7 +127,7 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
   assert.match(dd, /workspace\.style\.setProperty\("--bs-canvas-panel-top", Math\.ceil\(top\) \+ "px"\)/);
   assert.match(dd, /root\.querySelectorAll\("\.bs-canvas-header"\)\.forEach\(watchHeader\)/);
   assert.match(dd, /menu\.hasAttribute\("data-bs-site-menu"\)/);
-  for (const f of ['modules/plan/view.html', 'modules/daily/view.html']) assert.match(rd(f), /<div class="bs-ws-row" style="\{\{wsStyle\}\}">/, f);
+  for (const f of ['systems/plan/client/view.html', 'modules/daily/view.html']) assert.match(rd(f), /<div class="bs-ws-row" style="\{\{wsStyle\}\}">/, f);
 });
 
 test('ES-9 · محرِّرُ الراحات لا يتجاوز الشاشة: عرضُه max-content بحدٍّ أقصى calc(100vw - 16px) وأيامُه تلتفّ — كان 452px فيخرج «سبت» عن جوال 390px (ولا طريقَ آخر للحذف باللمس)', () => {

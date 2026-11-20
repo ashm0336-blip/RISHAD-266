@@ -377,7 +377,7 @@
     "path": [
      "registry"
     ],
-    "after": 113,
+    "after": 99,
     "seq": 20,
     "value": {
      "key": "ref.custody_type.view",
@@ -739,7 +739,7 @@
     "path": [
      "bindings"
     ],
-    "after": 101,
+    "after": 87,
     "seq": 10,
     "value": {
      "key": "ref.custody_type.view",
@@ -826,7 +826,7 @@
     "path": [
      "bindings"
     ],
-    "after": 6,
+    "after": 4,
     "seq": 8,
     "value": {
      "key": "cust.move.issue",
@@ -845,7 +845,7 @@
     "path": [
      "bindings"
     ],
-    "after": 6,
+    "after": 4,
     "seq": 9,
     "value": {
      "key": "cust.move.return",
@@ -864,7 +864,7 @@
     "path": [
      "bindings"
     ],
-    "after": 6,
+    "after": 4,
     "seq": 10,
     "value": {
      "key": "cust.move.damage",
@@ -883,7 +883,7 @@
     "path": [
      "bindings"
     ],
-    "after": 6,
+    "after": 4,
     "seq": 11,
     "value": {
      "key": "cust.move.lost",

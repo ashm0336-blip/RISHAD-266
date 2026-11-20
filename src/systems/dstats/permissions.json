@@ -1232,7 +1232,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 23,
+    "after": 20,
     "seq": 15,
     "value": "ff.module.dstats.enabled"
    }

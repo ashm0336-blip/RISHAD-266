@@ -1,0 +1,114 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "plan",
+ "name": "التشغيل الميداني",
+ "names": [
+  "bassam_plan_v1",
+  "bassam_zone_opts_v1",
+  "bassam_gate_opts_v1",
+  "bassam_mark_kinds_v1",
+  "modules/plan/",
+  "systems/plan/",
+  "Operational Plan",
+  "Operational-Plan"
+ ],
+ "note": "V7 · د5-هـ (م1): التشغيلُ الميداني في مجلده. هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py). روابطُه مع غيره في contract.json.",
+ "client": {
+  "slug": "plan",
+  "component": "Operational Plan",
+  "files": [
+   "client/helmet.css",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "server": {
+  "parts": [
+   {
+    "file": "server/019p2-scheduling-plan.js",
+    "after": "019p5-scheduling-floors.js",
+    "order": 20
+   },
+   {
+    "file": "server/019p4-scheduling-plan-options.js",
+    "after": "019p5-scheduling-floors.js",
+    "order": 30
+   }
+  ]
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات — لا تُنقل"
+ },
+ "permissions": "permissions.json",
+ "tests": [],
+ "derived": [
+  "src/pages/Operational Plan.dc.html"
+ ],
+ "sharedStaysInBase": [],
+ "slots": {
+  "modules.plan": {
+   "order": 10,
+   "text": "  {\n   \"name\": \"Operational Plan\",\n   \"slug\": \"plan\",\n   \"minifiedSource\": true,\n   \"bytes\": 855494,\n   \"logicLines\": 19783\n  },\n"
+  },
+  "blocks.pages.plan": {
+   "order": 10,
+   "text": "   {\n    \"b64Sha256\": \"b4eed90979c0e2fd824b2c1142e54220b2a471bed9aefc9fb2e346ce66f6c0d9\",\n    \"bytes\": 855532,\n    \"file\": \"client/pages/Operational Plan.dc.html\",\n    \"name\": \"Operational Plan\",\n    \"sha256\": \"8673ea459c3052cf7e1db354e1ddd2a1c50875a97eb39cad0c4fc783a01b11fa\"\n   },\n"
+  },
+  "blocks.order.plan": {
+   "order": 10,
+   "text": "   \"Operational Plan\",\n"
+  },
+  "shell.mounts.plan": {
+   "order": 10,
+   "text": "  <sc-if value=\"{{isPlan}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Operational Plan\" hint-size=\"100%,1100px\"></dc-import>\n  </sc-if>\n"
+  },
+  "pages.entry.plan": {
+   "order": 10,
+   "text": "  {\n   \"key\": \"plan\",\n   \"module\": \"plan\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Operational Plan\"],\n   \"nav\": \"plan\",\n   \"name\": \"التشغيل الميداني\",\n   \"under\": \"planning\"\n  },\n"
+  },
+  "pages.planning.seq": {
+   "order": 20,
+   "text": "    \"page:plan\""
+  },
+  "pages.routeNames.plan": {
+   "order": 10,
+   "text": "  \"plan\": \"التشغيل الميداني\",\n"
+  },
+  "budget.page.plan": {
+   "order": 10,
+   "text": "  \"page:Operational-Plan\": 241234,\r\n"
+  },
+  "ns.after.plan": {
+   "order": 10,
+   "text": "  \"src/systems/plan/client/logic.js\",\n"
+  },
+  "uxStates.plan": {
+   "order": 10,
+   "text": "  \"plan\": {\n   \"فارغ\": 57,\n   \"تحميل\": 8,\n   \"خطأ\": 11,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 1\n  },\n"
+  },
+  "oc.sched.resources.plan": {
+   "order": 10,
+   "text": "  osSchemaPlanResources(),\n"
+  },
+  "planning.tabs.reg": {
+   "order": 20,
+   "text": "plan: { page: \"plan\", go: \"goPlan\", on: \"planSeen\", act: \"onPlan\", lazy: !0 }, "
+  },
+  "planning.tabs": {
+   "order": 20,
+   "file": "slots/planning.tabs.frag"
+  },
+  "planning.mounts": {
+   "order": 20,
+   "file": "slots/planning.mounts.frag"
+  },
+  "planning.css": {
+   "order": 20,
+   "file": "slots/planning.css.frag"
+  }
+ }
+}

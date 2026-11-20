@@ -93,7 +93,7 @@ test('④ without the schedule program nothing fails: a read is undefined, the c
   /* وبحضوره: القراءتان تمرّان إلى خدمة وقائع اليوم كما هي */
   const p = client(); assert.deepEqual(copy(p.bus.read('staff.dayFacts@1', 1448, 5, 9)), { y: 1448, m: 5, d: 9 }); assert.equal(p.bus.read('staff.availText@1', 'S', true), 'S:true');
   /* المستهلكون في المصدر لا يسمّون خدمةَ الجدول ولا يكتبون مفتاحَه */
-  for (const f of ['src/modules/dreport/logic.js', 'src/modules/plan/logic.js', 'src/slots/modules/daily/logic.js.tpl', 'src/slots/modules/admin/logic.js.tpl']) {
+  for (const f of ['src/modules/dreport/logic.js', 'src/systems/plan/client/logic.js', 'src/slots/modules/daily/logic.js.tpl', 'src/slots/modules/admin/logic.js.tpl']) {
     const s = rd(f); assert.doesNotMatch(s, /KIVO\.BassamDay\b/, f); assert.doesNotMatch(s, /draft\.set\("bassam_staffing_v3"/, f);
   }
 });

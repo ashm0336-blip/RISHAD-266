@@ -67,22 +67,5 @@ function osSchemaPlanResources() {
       name: "markKinds",
       schema: osSchemaScalars("ops_mark_kinds"),
     },
-    {
-      resource: "bassam_rounds_v1",
-      name: "rounds",
-      schema: ocMap("ops_rounds", null, {
-        fixed: { __pMig: ocScalar("scalar") },
-        patterns: [
-          {
-            pattern: "^m:\\d{4}-\\d{1,2}$",
-            schema: osSchemaMonthControl("ops_round_month"),
-          },
-          {
-            pattern: "^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$",
-            schema: osSchemaRoundDay("ops_round_day"),
-          },
-        ],
-      }),
-    },
   ];
 }

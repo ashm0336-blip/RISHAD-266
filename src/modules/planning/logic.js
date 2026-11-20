@@ -1,13 +1,17 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planning+profile+seized+staff+tasks"]) {
-  state = { ptab: null, planSeen: !1 };
-  /* KIVO_261 (SOT-003/010 · كشفه k261tree): تبويبا الحاوية يتبعان صلاحيةَ المستخدم لا سقفَ الإدارة وحده — كان موظفٌ مُنح «الجدول الشهري»
-     وحده يرى تبويبَ «التشغيل الميداني» فارغاً بزرّ «إضافة خطة» (الخادمُ يرفض قراءتَه وكتابتَه) · ومثلُه بالعكس */
-  /* V7 · د5-د (قرار المراجع 1 · فتحاتُ البناء): تبويبُ كلِّ برنامجٍ قطعةٌ في مجلده تُحقن هنا وفي القالب — معرّفُ التبويب ← مفتاحُ صفحته.
-     الحاويةُ لا تسمّي برنامجاً منقولاً؛ بغياب القطعة يغيب التبويب بزرّه ومحتواه. («plan» يبقى هنا حتى يُنقل برنامجُه في د5-هـ.) */
-  PT_TABS = { sched: "staff", plan: "plan" };
+  state = { ptab: null, seen: {} };
+  /* KIVO_261 (SOT-003/010 · كشفه k261tree): تبويباتُ الحاوية تتبع صلاحيةَ المستخدم لا سقفَ الإدارة وحده.
+     V7 · د5-د/د5-هـ (قرار المراجع 1 · فتحاتُ البناء): الحاويةُ لا تعرف برنامجاً. كلُّ تبويبٍ قطعةٌ في مجلد برنامجه: سجلُّه هنا (PT_TABS) وزرُّه
+     وموضعُ تركيبه في القالب وأنماطُه في helmet.css. مدخلُ السجل: معرّفُ التبويب ← { page: مفتاحُ صفحته · go: اسمُ مُنادي الانتقال · on: اسمُ
+     شرط التركيب · act: اسمُ «هو المعروض» · lazy: لا يُركَّب حتى يُفتح أولَ مرة }. بغياب القطعة يغيب التبويب بزرّه ومحتواه؛ وبغياب القطع كلِّها
+     تغيب الحاويةُ من القائمة (سجلُّ الصفحات ← seq). الترتيبُ ترتيبُ السجل، والأولُ هو الافتراضي و«الجاهزية» تنتقل إليه. */
+  PT_TABS = { sched: { page: "staff", go: "goSched", on: "schedOn", act: "onSched" }, plan: { page: "plan", go: "goPlan", on: "planSeen", act: "onPlan", lazy: !0 },  };
+  _ids() {
+    return Object.keys(this.PT_TABS);
+  }
   _tabOk(t) {
     const k = this.PT_TABS[t];
-    return !!k && this._ptOk(k);
+    return !!k && this._ptOk(k.page);
   }
   _ptOk(k) {
     if (!this.bsOn(k)) return !1;
@@ -19,14 +23,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
     }
   }
   _bsGo(t) {
-    "read" === t && (t = "sched");
+    "read" === t && (t = this._ids()[0]);
     if (!this._tabOk(t)) return;
     const e = () => {
       try {
         window.dispatchEvent(new CustomEvent("bs:ptab-shown", { detail: t }));
       } catch (t) {}
     };
-    if ("plan" === t && !this.state.planSeen) return void this.setState({ ptab: t, planSeen: !0 }, e);
+    if (this.PT_TABS[t].lazy && !this.state.seen[t]) return void this.setState({ ptab: t, seen: Object.assign({}, this.state.seen, { [t]: !0 }) }, e);
     this.state.ptab = t;
     try {
       const s = document.getElementById("bsPtRoot");
@@ -39,7 +43,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
       ((this._pt = (t) => {
         try {
           const e = t && t.detail;
-          ("read" !== e && "sched" !== e && "plan" !== e) || this._bsGo(e);
+          ("read" === e || Object.prototype.hasOwnProperty.call(this.PT_TABS, e)) && this._bsGo(e);
         } catch (t) {}
       }),
         window.addEventListener("bs:ptab", this._pt));
@@ -52,11 +56,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
   }
   renderVals() {
     var t = this,
-      e = this.state.ptab || "sched";
-    "read" === e && (e = "sched");
-    var S = this._tabOk("sched"),
-      P = this._tabOk("plan");
-    ("sched" !== e || S || (e = P ? "plan" : "none"), "plan" !== e || P || (e = S ? "sched" : "none"));
+      ids = this._ids(),
+      ok = ids.filter(function (i) {
+        return t._tabOk(i);
+      }),
+      e = this.state.ptab || ids[0] || "none";
+    "read" === e && (e = ids[0] || "none");
+    ok.indexOf(e) < 0 && (e = ok[0] || "none");
     var n = function (t) {
         return (
           "position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border-radius:12px;transition:all .3s;flex-shrink:0;min-width:170px;cursor:pointer;font-family:'Cairo',sans-serif;border:1px solid " +
@@ -77,14 +83,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
           (t ? "font-weight:600;color:var(--fg-xb99751)" : "font-weight:400;color:var(--fg-x53565a)")
         );
       };
-    return {
+    var v = {
       ptab: e,
-      ptOn: (S ? "sched" : "") + (S && P ? " " : "") + (P ? "plan" : ""),   /* KIVO_261: «plan» وحدها بلا فراغٍ أوّل — كانت « plan» فلا تطابق قاعدةَ إخفاء الشريط ذي التبويب الواحد */
-      schedOn: S,
+      ptOn: ok.join(" "),   /* KIVO_261: المعرّفاتُ المتاحة بلا فراغٍ أوّل — قاعدةُ إخفاء الشريط ذي التبويب الواحد تطابقها */
       onRead: "read" === e,
-      onSched: "sched" === e,
-      onPlan: "plan" === e,
-      planSeen: P && (!!this.state.planSeen || "plan" === e),
       readAllowed: !1,
       readStyle: n("read" === e),
       readIcon: a("read" === e),
@@ -92,18 +94,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
       goRead: function () {
         t._bsGo("read");
       },
-      schedStyle: n("sched" === e),
-      schedIcon: a("sched" === e),
-      schedLbl: r("sched" === e),
-      planStyle: n("plan" === e),
-      planIcon: a("plan" === e),
-      planLbl: r("plan" === e),
-      goSched: function () {
-        t._bsGo("sched");
-      },
-      goPlan: function () {
-        t._bsGo("plan");
-      },
     };
+    ids.forEach(function (i) {
+      var T = t.PT_TABS[i], on = ok.indexOf(i) >= 0;
+      v[T.go] = function () {
+        t._bsGo(i);
+      };
+      v[T.on] = T.lazy ? on && (!!t.state.seen[i] || i === e) : on;
+      T.act && (v[T.act] = i === e);
+    });
+    return v;
   }
 }

@@ -319,10 +319,7 @@
   <sc-if value="{{isEmployees}}" hint-placeholder-val="{{ true }}">
     <dc-import name="Employees" hint-size="100%,1200px"></dc-import>
   </sc-if>
-@@SYS:shell.mounts.staff@@  <sc-if value="{{isPlan}}" hint-placeholder-val="{{ false }}">
-    <dc-import name="Operational Plan" hint-size="100%,1100px"></dc-import>
-  </sc-if>
-
+@@SYS:shell.mounts.staff@@@@SYS:shell.mounts.plan@@
   <sc-if value="{{isSysAdmin}}" hint-placeholder-val="{{ false }}">
     <dc-import name="Admin" hint-size="100%,1200px"></dc-import>
   </sc-if>

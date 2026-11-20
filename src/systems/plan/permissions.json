@@ -1,0 +1,2022 @@
+{
+ "schema": 1,
+ "system": "plan",
+ "note": "V7 · د5: صلاحياتُ هذا النظام — صفوفُه في السجلّ (المفاتيح · الورقة · الذرّات · الأعلام) وروابطُه في الخادم (النطاق · الحراسة)، وما يضيفه إلى صفوف القاعدة. تجمعها tools/perm_parts.py مع القاعدة.",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 80,
+    "value": {
+     "key": "plan.view",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "عرض التشغيل الميداني",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "قراءة bassam_plan_v1, bassam_zone_opts_v1, bassam_gate_opts_v1, bassam_mark_kinds_v1 بورقة plan (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "plan.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 90,
+    "value": {
+     "key": "plan.create",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "إنشاء خطة جديدة",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1 months.* (newAp: months.*.mo) — إنشاء شهر",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "plan.create"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 100,
+    "value": {
+     "key": "plan.delete",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "حذف خطة",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1: حذف شهر (del)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "plan.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 110,
+    "value": {
+     "key": "site.create",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "إضافة موقع",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1 floors[] — إضافة طابق/موقع (add)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:add"
+     ],
+     "references": [
+      "daily/rounds"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "site.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 120,
+    "value": {
+     "key": "site.edit",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "تعديل بيانات الموقع",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1 floors[].name/img/… (edit)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:edit"
+     ],
+     "references": [
+      "daily/rounds"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "site.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 130,
+    "value": {
+     "key": "map.replace",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "رفع/استبدال الخريطة",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1 floors[i].iid (معرّفُ صورة الخريطة) · imgW · imgH · chipTone — الصورةُ نفسُها في IndexedDB (BassamIDB) لا في السجل (siteModalSave)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "map.replace"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 140,
+    "value": {
+     "key": "site.delete",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "حذف موقع",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1 floors[] (del) — تبعات على كيانات العدسات",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:del"
+     ],
+     "references": [
+      "daily/rounds"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "site.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 150,
+    "value": {
+     "key": "plan.approve",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "اعتماد الخطة",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "اتجاهُ الاعتماد: months.*.d[i].approved → true · months.*.mo يزول (إعادةُ قفل شهرٍ منقضٍ) · ومرآتُه floors[i].approved → true = site.approve",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "plan.approve"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 160,
+    "value": {
+     "key": "plan.reopen",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "إعادة فتح خطة معتمدة",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "اتجاهُ الفتح: months.*.mo يظهر (شهرٌ منقضٍ فُتح بأثرٍ رجعي — retroDo/_setMonthOpen) · d[i].approved → false · floors[i].approved → false",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "plan.reopen"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 1,
+    "value": {
+     "key": "site.approve",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "اعتماد/فتح موقع داخل الخطة",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "floors.*.approved",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "site.approve"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 2,
+    "value": {
+     "key": "map.calibrate",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "معايرة مقياس خريطة الموقع",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1 floors[i].mpu (مترٌ لكل وحدة خريطة) — المعايرة (saveCalibration → _setMpu)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "map.calibrate"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 3,
+    "value": {
+     "key": "sector.create",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "إضافة نطاق تشغيلي",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1 sectors[] (add)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "sector.create"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 4,
+    "value": {
+     "key": "sector.edit",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "تعديل نطاق تشغيلي",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1 sectors[] (edit)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "sector.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 94,
+    "seq": 5,
+    "value": {
+     "key": "sector.delete",
+     "owner": "plan",
+     "ownerKind": "page",
+     "domain": "plan",
+     "label": "حذف نطاق تشغيلي",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_plan_v1",
+       "bassam_zone_opts_v1",
+       "bassam_gate_opts_v1",
+       "bassam_mark_kinds_v1"
+      ],
+      "detail": "bassam_plan_v1 sectors[] (del)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "plan:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "sector.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.shift.view"
+     },
+     "references"
+    ],
+    "after": 4,
+    "seq": 10,
+    "value": "plan"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.zones.status.change"
+     },
+     "references"
+    ],
+    "after": 2,
+    "seq": 1,
+    "value": "plan"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.gates.status.change"
+     },
+     "references"
+    ],
+    "after": 2,
+    "seq": 1,
+    "value": "plan"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.dist.assign.edit"
+     },
+     "references"
+    ],
+    "after": 2,
+    "seq": 1,
+    "value": "plan"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": "plan"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.marks.status.change"
+     },
+     "references"
+    ],
+    "after": 2,
+    "seq": 1,
+    "value": "plan"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.dist.need.edit"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "plan"
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 2,
+    "seq": 20,
+    "value": {
+     "id": "plan",
+     "kind": "page",
+     "label": "التشغيل الميداني",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 70,
+    "value": {
+     "leaf": "plan",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "plan.view",
+      "lens.zones.view",
+      "lens.paths.view",
+      "lens.gates.view",
+      "lens.marks.view",
+      "lens.dist.view",
+      "lens.dens.view",
+      "ref.zone.type.view",
+      "ref.gate.type.view",
+      "ref.mark.kind.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 80,
+    "value": {
+     "leaf": "plan",
+     "act": "add",
+     "disposition": "migrated",
+     "targets": [
+      "plan.create",
+      "site.create",
+      "sector.create",
+      "lens.zones.create",
+      "lens.paths.create",
+      "lens.gates.create",
+      "lens.marks.create",
+      "ref.zone.type.create",
+      "ref.gate.type.create",
+      "ref.mark.kind.create"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 90,
+    "value": {
+     "leaf": "plan",
+     "act": "edit",
+     "disposition": "migrated",
+     "targets": [
+      "site.edit",
+      "map.replace",
+      "map.calibrate",
+      "sector.edit",
+      "lens.zones.data.edit",
+      "lens.zones.geometry.edit",
+      "lens.paths.edit",
+      "lens.paths.geometry.edit",
+      "lens.paths.status.change",
+      "lens.gates.edit",
+      "lens.gates.geometry.edit",
+      "lens.marks.edit",
+      "lens.marks.geometry.edit",
+      "lens.dist.need.edit",
+      "lens.dens.threshold.configure",
+      "ref.zone.type.edit",
+      "ref.gate.type.edit",
+      "ref.mark.kind.edit"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 100,
+    "value": {
+     "leaf": "plan",
+     "act": "del",
+     "disposition": "migrated",
+     "targets": [
+      "plan.delete",
+      "site.delete",
+      "sector.delete",
+      "lens.zones.delete",
+      "lens.paths.delete",
+      "lens.gates.delete",
+      "lens.marks.delete",
+      "ref.zone.type.delete",
+      "ref.gate.type.delete",
+      "ref.mark.kind.delete"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 110,
+    "value": {
+     "leaf": "plan",
+     "act": "approve",
+     "disposition": "migrated",
+     "targets": [
+      "plan.approve",
+      "plan.reopen",
+      "site.approve"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 120,
+    "value": {
+     "leaf": "plan",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.plan.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 1,
+    "seq": 20,
+    "value": "ff.plan.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 1,
+    "seq": 30,
+    "value": "ff.plan.copy"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 1,
+    "seq": 40,
+    "value": "ff.plan.fromday"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 22,
+    "seq": 20,
+    "value": "ff.module.plan.enabled"
+   }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 80,
+    "value": {
+     "key": "plan.view",
+     "owner": "plan",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 90,
+    "value": {
+     "key": "plan.create",
+     "owner": "plan",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 100,
+    "value": {
+     "key": "plan.delete",
+     "owner": "plan",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 110,
+    "value": {
+     "key": "site.create",
+     "owner": "plan",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 120,
+    "value": {
+     "key": "site.edit",
+     "owner": "plan",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 130,
+    "value": {
+     "key": "map.replace",
+     "owner": "plan",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 140,
+    "value": {
+     "key": "site.delete",
+     "owner": "plan",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 150,
+    "value": {
+     "key": "plan.approve",
+     "owner": "plan",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 160,
+    "value": {
+     "key": "plan.reopen",
+     "owner": "plan",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 1,
+    "value": {
+     "key": "site.approve",
+     "owner": "plan",
+     "type": "decision",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 2,
+    "value": {
+     "key": "map.calibrate",
+     "owner": "plan",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 3,
+    "value": {
+     "key": "sector.create",
+     "owner": "plan",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 4,
+    "value": {
+     "key": "sector.edit",
+     "owner": "plan",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 83,
+    "seq": 5,
+    "value": {
+     "key": "sector.delete",
+     "owner": "plan",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_plan_v1",
+     "resources": [
+      "bassam_plan_v1",
+      "bassam_zone_opts_v1",
+      "bassam_gate_opts_v1",
+      "bassam_mark_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 20,
+    "value": "plan.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 20,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "plan.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.zones.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.paths.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 4,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.gates.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 5,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.marks.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 6,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.dist.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_zone_opts_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "plan.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_zone_opts_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_zone_opts_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.zones.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_zone_opts_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": {
+     "cap": "plan:view",
+     "key": "ref.zone.type.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_gate_opts_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "plan.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_gate_opts_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_gate_opts_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.gates.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_gate_opts_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": {
+     "cap": "plan:view",
+     "key": "ref.gate.type.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_mark_kinds_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "plan.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_mark_kinds_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_mark_kinds_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 2,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.marks.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_mark_kinds_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 3,
+    "value": {
+     "cap": "plan:view",
+     "key": "ref.mark.kind.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "keys"
+    ],
+    "after": 11,
+    "seq": 10,
+    "value": "plan.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 11,
+    "seq": 10,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 11,
+    "seq": 20,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.zones.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 11,
+    "seq": 30,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.paths.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 11,
+    "seq": 40,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.gates.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 11,
+    "seq": 50,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.marks.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 11,
+    "seq": 60,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.dist.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_rounds_v1",
+     "routes"
+    ],
+    "after": 11,
+    "seq": 70,
+    "value": {
+     "cap": "plan:view",
+     "key": "lens.dens.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 20,
+    "value": "plan.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 20,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_tpls_v1",
+     "keys"
+    ],
+    "after": 4,
+    "seq": 10,
+    "value": "plan.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_tpls_v1",
+     "routes"
+    ],
+    "after": 4,
+    "seq": 10,
+    "value": {
+     "cap": "plan:view",
+     "key": "plan.view",
+     "source": "reference-read"
+    }
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 70,
+    "value": {
+     "key": "plan.approve",
+     "res": "bassam_plan_v1",
+     "where": "months[\"y-m\"].mo يزول (إعادة قفل شهرٍ منقضٍ) · months[\"y-m\"].d[i].approved → true",
+     "how": "اتجاه الاعتماد (OPS months.*.mo · months.*.d.*.approved)",
+     "asis": "plan:approve",
+     "decl": "v24.3 (F-04): mo:1 = شهرٌ منقضٍ فُتح بأثرٍ رجعي — ظهورُه reopen وزوالُه approve/lock (متوافقٌ الآن مع نصّ الوثيقة)",
+     "dup": "",
+     "owner": "plan",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 80,
+    "value": {
+     "key": "plan.reopen",
+     "res": "bassam_plan_v1",
+     "where": "months[\"y-m\"].mo يظهر · months[\"y-m\"].d[i].approved → false · floors[i].approved → false",
+     "how": "اتجاه الفتح",
+     "asis": "plan:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "plan",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 33,
+    "seq": 1,
+    "value": {
+     "key": "map.replace",
+     "res": "bassam_plan_v1",
+     "where": "floors[i].iid (معرّفُ صورة الخريطة في IndexedDB) · img · imgW · imgH · chipTone",
+     "how": "تغيّرُ معرّف الصورة أو أبعادها (siteModalSave)",
+     "asis": "plan:edit",
+     "decl": "",
+     "dup": "",
+     "owner": "plan",
+     "type": "operation",
+     "guardKind": "cap"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 33,
+    "seq": 2,
+    "value": {
+     "key": "map.calibrate",
+     "res": "bassam_plan_v1",
+     "where": "floors[i].mpu (مترٌ لكل وحدة خريطة)",
+     "how": "تغيّرُ mpu وحدَه (dens صار lens.dens.threshold.configure)",
+     "asis": "plan:edit",
+     "decl": "",
+     "dup": "",
+     "owner": "plan",
+     "type": "operation",
+     "guardKind": "cap"
+    }
+   }
+  ]
+ }
+}

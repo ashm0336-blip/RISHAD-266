@@ -78,7 +78,7 @@ ok(oldonly == retained and all(_from_prev(u) for u in retained) and all(u in cur
 _SYSD = os.path.join(ROOT, 'src', 'systems')
 _SYS = [json.load(open(os.path.join(_SYSD, k, 'system.json'), encoding='utf-8')) for k in sorted(os.listdir(_SYSD)) if os.path.isfile(os.path.join(_SYSD, k, 'system.json'))] if os.path.isdir(_SYSD) else []
 N_JS = 70 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
-N_PG = 8 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة · د5-د: الجدولُ الشهري صار نظاماً بصفحته (8 للقاعدة)
+N_PG = 7 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة · د5-د: الجدولُ الشهري صار نظاماً بصفحته · د5-هـ: والتشغيلُ الميداني (7 للقاعدة)
 kinds = {}
 for u in files:
     if u in retained: continue   # أصولُ الإصدارات السابقة المُبقاة (أُثبتت أعلاه) لا تُعدّ في أصناف الإصدار الحالي

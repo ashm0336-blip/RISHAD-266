@@ -7,7 +7,7 @@ import fs from "node:fs";
 import vm from "node:vm";
 import * as acorn from "acorn";
 
-const planSource = fs.readFileSync("src/modules/plan/logic.js", "utf8");
+const planSource = fs.readFileSync("src/systems/plan/client/logic.js", "utf8");
 const ast = acorn.parse(planSource, { ecmaVersion: "latest" });
 
 function world(extra = {}) {

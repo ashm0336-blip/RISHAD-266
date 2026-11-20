@@ -94,249 +94,6 @@
    }
   },
   {
-   "key": "plan.view",
-   "owner": "plan",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "plan.create",
-   "owner": "plan",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "plan.delete",
-   "owner": "plan",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "site.create",
-   "owner": "plan",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "site.edit",
-   "owner": "plan",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "map.replace",
-   "owner": "plan",
-   "type": "operation",
-   "g": "to-bind",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "site.delete",
-   "owner": "plan",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "plan.approve",
-   "owner": "plan",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "plan.reopen",
-   "owner": "plan",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
    "key": "report.view",
    "owner": "dreport",
    "type": "access",
@@ -2438,141 +2195,6 @@
    }
   },
   {
-   "key": "site.approve",
-   "owner": "plan",
-   "type": "decision",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "map.calibrate",
-   "owner": "plan",
-   "type": "operation",
-   "g": "to-bind",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "sector.create",
-   "owner": "plan",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "sector.edit",
-   "owner": "plan",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
-   "key": "sector.delete",
-   "owner": "plan",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_plan_v1",
-   "resources": [
-    "bassam_plan_v1",
-    "bassam_zone_opts_v1",
-    "bassam_gate_opts_v1",
-    "bassam_mark_kinds_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ],
-    "Site": [
-     "floorSid"
-    ],
-    "DateRange": [
-     "periodLock"
-    ]
-   }
-  },
-  {
    "key": "round.sync.plan",
    "owner": "daily/rounds",
    "type": "operation",
@@ -3911,7 +3533,6 @@
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
      "emp.view",
-     "plan.view",
      "round.view",
      "field.view",
      "report.view",
@@ -3924,11 +3545,6 @@
       "cap": "emps/data:view",
       "key": "emp.view",
       "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
-      "source": "reference-read"
      },
      {
       "cap": "daily/rounds:view",
@@ -4010,7 +3626,6 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "plan.view",
      "lens.zones.view",
      "lens.paths.view",
      "lens.gates.view",
@@ -4024,36 +3639,6 @@
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.zones.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.paths.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.gates.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.marks.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.dist.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "daily/rounds:view",
       "key": "round.view",
@@ -4116,7 +3701,6 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "plan.view",
      "lens.zones.view",
      "ref.zone.type.view",
      "round.view",
@@ -4124,21 +3708,6 @@
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.zones.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "ref.zone.type.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "daily/rounds:view",
       "key": "round.view",
@@ -4166,7 +3735,6 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "plan.view",
      "lens.gates.view",
      "ref.gate.type.view",
      "round.view",
@@ -4174,21 +3742,6 @@
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.gates.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "ref.gate.type.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "daily/rounds:view",
       "key": "round.view",
@@ -4216,7 +3769,6 @@
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
-     "plan.view",
      "lens.marks.view",
      "ref.mark.kind.view",
      "round.view",
@@ -4224,21 +3776,6 @@
      "backup.view"
     ],
     "routes": [
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.marks.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "ref.mark.kind.view",
-      "source": "explicit-read"
-     },
      {
       "cap": "daily/rounds:view",
       "key": "round.view",
@@ -4277,7 +3814,6 @@
      "report.view",
      "report.indicators.view",
      "emp.view",
-     "plan.view",
      "backup.view"
     ],
     "routes": [
@@ -4335,41 +3871,6 @@
       "cap": "emps/data:view",
       "key": "emp.view",
       "source": "reference-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.zones.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.paths.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.gates.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.marks.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.dist.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "lens.dens.view",
-      "source": "explicit-read"
      },
      {
       "cap": "admin/backup:view",
@@ -4578,7 +4079,6 @@
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
     "keys": [
      "emp.view",
-     "plan.view",
      "round.view",
      "field.view",
      "report.view",
@@ -4591,11 +4091,6 @@
      {
       "cap": "emps/data:view",
       "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
       "source": "reference-read"
      },
      {
@@ -4649,7 +4144,6 @@
      "report.view",
      "report.indicators.view",
      "emp.view",
-     "plan.view",
      "ready.view",
      "backup.view"
     ],
@@ -4672,11 +4166,6 @@
      {
       "cap": "emps/data:view",
       "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
       "source": "reference-read"
      },
      {
