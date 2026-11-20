@@ -131,12 +131,12 @@ export async function world({ worker, mode = 'legacy', beforeCutover } = {}) {
   // The historical SQL seed must not recreate a retired business document in a
   // current database. Its actual canonical cutover preserves task/identity data.
   const schema = env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v;
-  if (['8','9','10'].includes(schema)) await installIrshadFixture(env);
-  if (['9','10'].includes(schema)) await installBusinessFixture(env);
+  if (['8','9','10','11'].includes(schema)) await installIrshadFixture(env);
+  if (['9','10','11'].includes(schema)) await installBusinessFixture(env);
   const seed = await tasksSeed(), store = seed ? seed.tasksStore() : null;
   await applySql(env.DB, p0Sql(store, seed));
   if (beforeCutover) await beforeCutover(env);   /* optional: shape the legacy KV seed before the real cutover (privacy_noeid) */
-  if (env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '10') await installOperationalFixture(env);
+  if (env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '11') await installOperationalFixture(env);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const login = async (un, pw) => { const r = await C.login(un, pw); if (!r.ok) throw new Error('login ' + un + ' ' + JSON.stringify(r.j)); return r; };
   return { env, C, su, login, store, mode };
@@ -150,7 +150,7 @@ let taskRequestSequence = 0;
 export function taskCommandBody(env, path, body) {
   const route = String(path).split('?')[0];
   if (!['/api/tasks/create','/api/tasks/settings','/api/tasks/recur'].includes(route) || !body || typeof body !== 'object' || Array.isArray(body) ||
-      env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v !== '10') return body;
+      env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v !== '11') return body;
   const next = { ...body }, own = key => Object.prototype.hasOwnProperty.call(body, key);
   if (!own('requestId')) next.requestId = 'TEST_ONLY_task_fixture_' + ++taskRequestSequence;
   if (!own('epoch')) next.epoch = Number(env.DB.q("SELECT v FROM meta WHERE k='restore_epoch'")[0]?.v || 0);
@@ -162,7 +162,7 @@ let operationRequestSequence = 0;
    value (including malformed metadata) so protocol/ACL negatives stay real. */
 export function operationSaveBody(env, path, body) {
   if (String(path).split('?')[0] !== '/api/save' || !body || typeof body !== 'object' || Array.isArray(body) ||
-      env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v !== '10') return body;
+      env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v !== '11') return body;
   const keys = Object.keys(body.set && typeof body.set === 'object' && !Array.isArray(body.set) ? body.set : {}).concat(Array.isArray(body.del) ? body.del : []);
   if (!keys.some(key => isOperationalFixtureKey(env,key))) return body;
   const next = { ...body }, own = key => Object.prototype.hasOwnProperty.call(body,key);

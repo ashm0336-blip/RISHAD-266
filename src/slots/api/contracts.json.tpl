@@ -213,6 +213,7 @@
         "GET"
       ],
       "access": "session",
+      "note": "V7 · د5-هـ (x1): sess[] = {sid (مِقبضُ الجلسة — بصمةٌ لا الرمز) · mine · ts · la · dev · br (المتصفح) · city · active} — لا رمزَ ولا IP",
       "responses": {
         "200": {
           "keys": [
@@ -249,6 +250,48 @@
           ],
           "err": "bad-body",
           "schema": "src/schemas/api/bodies.schema.json#/bodies//api/me/sess/kill"
+        }
+      }
+    },
+    {
+      "path": "/api/me/sess/kill-one",
+      "methods": [
+        "POST"
+      ],
+      "access": "session",
+      "note": "V7 · د5-هـ (x1): إنهاءُ جلسةٍ واحدة من جلسات صاحب الطلب بمِقبضها (قائمةُ «الجلسات والنشاط» · «ليس أنا» في تنبيه sc_dev) — مِقبضُ غيره 404 كالمجهول",
+      "request": {
+        "sid": "string(16 hex)",
+        "why": "'not-me' | null"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/me/sess/kill-one"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "not-found"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "current"
         }
       }
     },
@@ -747,6 +790,7 @@
       "request": {
         "sessH": "1..",
         "idleH": "0.25..",
+        "dispH": "1..72 (V7 · د5-هـ: مدةُ جلسة شاشة العرض)",
         "lockN": "3..",
         "lockMin": "1..",
         "pwMin": "6..",

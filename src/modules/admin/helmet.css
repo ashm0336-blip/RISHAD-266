@@ -368,6 +368,8 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 .adm-sm-t{font-size:11px}
 .adm-warn{color:var(--warning-text)}
 .adm-bad{color:var(--danger-text)}
+.adm-disp{color:var(--info-text);font-weight:700}
+.adm-dp{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;padding:10px 14px;border-bottom:1px solid var(--border-default)}
 .adm-brand{color:var(--brand-text)}
 .adm-tnum{font-feature-settings:'tnum'}
 .adm-none{padding:14px 16px;font-size:11.5px;color:var(--text-faint)}

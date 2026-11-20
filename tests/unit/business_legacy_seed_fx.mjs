@@ -12,7 +12,7 @@ export async function installBusinessFixture(env) {
   if (!AW) dropLegacyDocs(env.DB, 'award');
   const W = await (worker ||= candidateWorker((SZ ? ['SZ_RES','szPredicate','szLegacyPrepare'] : []).concat(AW ? ['AW_RES','awLegacyPredicate','awLegacyPrepare'] : [], ['bdGuardRetired']))), DB = env.DB;
   const version = DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v;
-  assert.ok(['9','10'].includes(version), 'Actual initialized seized/award tables are required');
+  assert.ok(['9','10','11'].includes(version), 'Actual initialized seized/award tables are required');
   const protectedRows = () => JSON.parse(JSON.stringify({
     keys: DB.q("SELECT k,seq,v FROM kv WHERE k IN('bassam_auth_users_v1','bassam_perms_v1') ORDER BY k,seq"),
     sessions: DB.q('SELECT * FROM sess ORDER BY tok'),

@@ -428,6 +428,7 @@ function sessUidMismatch(env, url, ss, path) {
   return json({ ok: 0, err: 'session-changed' }, 409);
 }
 /* ── ماذا تغيّر منذ نسختي؟ — تستعمله لافتة «تحديثات جديدة» (KIVO_264: نُقل من handle حرفاً + C2) ── */
+var LP_SESS_TICK = 2;   /* V7 · د5-هـ (x1): ثواني مراجعة الجلسة في انتظار /api/changes */
 async function changesRoute(env, url, ss) {
   var sxC = sessUidMismatch(env, url, ss, '/api/changes'); if (sxC) return sxC;
   var since = parseInt(url.searchParams.get('since') || '0', 10) || 0;
@@ -439,6 +440,8 @@ async function changesRoute(env, url, ss) {
       preOff(env);   /* KIVO_255 · AUD-037: الانتظارُ يقرأ رقمَ المراجعة حيّاً كلَّ ثانية — لا من لقطة أوّل الطلب */
       for (var wi = 0; wi < 25 && rv2 <= since; wi++) {
         await new Promise(function (rs) { setTimeout(rs, 1000); });
+        /* V7 · د5-هـ (x1): الجلسةُ تُراجَع داخل الانتظار كلَّ LP_SESS_TICK ثانية — جلسةٌ أُنهيت (خروج · «إنهاء» · «ليس أنا» · تجميد) تأخذ 401 خلال ثوانٍ لا بعد 25 */
+        if ((wi + 1) % LP_SESS_TICK === 0 && !(await (env.__rawDB || env.DB).prepare('SELECT 1 AS n FROM sess WHERE tok = ?1').bind(ss.tok).first())) return json({ ok: 0, err: 'session' }, 401);
         rv2 = await curRev(env);
       }
     } finally { lpLeave(ss.uid, lpT); }
@@ -592,6 +595,12 @@ export default {
          (الخروج وحده مستثنى — يُمسح الكوكي دائماً.) */
       var uLive = ((await usersList(env)) || []).filter(function (x) { return x && x.id === ss.uid; })[0];
       if (!uLive || uLive.dis) return json({ ok: 0, err: 'session' }, 401);
+      /* V7 · د5-هـ (x1): «شاشة العرض» (role:'display') تقرأ وحدها — كلُّ طلبٍ مغيِّر يُرفض هنا قبل أيّ معالج (الحفظ · المساراتُ المكتوبة · الصور ·
+         التنبيهات · الاستدراك) مهما حمل الجسم؛ ولا يبقى لها إلا إنهاءُ جلساتها هي (والخروجُ مسارٌ عام قبل هذا) */
+      if (uLive.role === 'display' && request.method !== 'GET' && request.method !== 'HEAD' && path !== '/api/me/sess/kill' && path !== '/api/me/sess/kill-one') {
+        logEv('warn', 'display-write', { rid: env.__rid, p: path, st: 403 });
+        return json({ ok: 0, err: 'forbidden', why: 'display' }, 403);
+      }
 
       /* ── مساراتُ الجلسة: whoami · «صفحتي» · جلساتي · فحصُ كلمة المرور — workers/parts/062a-auth-routes.js (SOT-096) ── */
       var nbS = await bodyNone(request, path, 'session'); if (nbS) return nbS;   /* KIVO_264 · SOT-101: «بلا جسم» (051b) */
@@ -666,7 +675,7 @@ export default {
         /* الحضور: كل جلسة حيّة مع صاحبها وآخر نشاطه وجهازه */
         if (path === '/api/presence') {
           var rs = await env.DB.prepare('SELECT tok, uid, ts, la, dev, city FROM sess WHERE la > ?1').bind(nowX - IDLE_MAX).all();
-          var rows = ((rs && rs.results) || []).filter(function (r) { return scopeOk(byId[r.uid]); });
+          var rows = ((rs && rs.results) || []).filter(function (r) { return scopeOk(byId[r.uid]) && !(byId[r.uid] && byId[r.uid].role === 'display'); });   /* V7 · د5-هـ (x1): شاشةُ العرض ليست حضوراً */
           var lastAct = {};
           try { var la = await env.DB.prepare("SELECT uid, MAX(ts) AS t, k, CASE WHEN act IN ('del', 'deleted') THEN 'del' ELSE 'set' END AS act FROM aud WHERE ts > ?1 GROUP BY uid").bind(nowX - 86400000).all();   /* KIVO_259 (إصلاح — كشفه التقييمُ المستقل): جدولُ audit لم يعد يُكتب منذ R169-CC (السجلُّ الموحّد aud) فكان «آخرُ نشاط» فارغاً دائماً */ ((la && la.results) || []).forEach(function (r) { lastAct[r.uid] = { t: r.t, k: r.k, act: r.act }; }); } catch (e) { swallow('audit-lastActive', e, env.__rid); }
           var byU = {};
@@ -767,6 +776,7 @@ export default {
             np.lockN = Math.min(20, Math.max(3, np.lockN || POL.lockN)); np.lockMin = Math.min(60, Math.max(1, np.lockMin || POL.lockMin)); np.pwMin = 6;   /* KIVO_259 (إصلاح — كشفه التدقيقُ المستقل): رقمُ مدير النظام 6 أرقام بالضبط (pwCheck) — كان المدخلُ يُقبل حتى 32 فيجعل كلَّ رقمٍ غيرَ صالح (قفلٌ تامّ) */ np.wrMin = Math.min(5000, Math.max(30, np.wrMin || POL.wrMin));   /* KIVO_255 · SOT-139 */
             /* v7-C · Issue 2 (ب): thrOn يقبل الصفر (إطفاء) — الحلقةُ أعلاه تُسقط الصفر؛ المتروكُ يبقى على قيمته */
             np.thrOn = bp.thrOn === undefined || bp.thrOn === null ? (POL.thrOn === 1 ? 1 : 0) : ((bp.thrOn === 1 || bp.thrOn === '1') ? 1 : 0);   /* the admin form posts its fields as text, like every other knob here (+bp[k]); true / 2 / '01' stay off */
+            np.dispH = Math.min(72, Math.max(1, np.dispH || POL.dispH || POLICY_DEF.dispH));   /* V7 · د5-هـ (x1): مدةُ جلسة شاشة العرض — بحدود sessH */
             np.thrN = Math.min(100, Math.max(5, np.thrN || POL.thrN)); np.thrWin = Math.min(120, Math.max(5, np.thrWin || POL.thrWin)); np.thrSec = Math.min(10, Math.max(1, np.thrSec || POL.thrSec));
             await env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('policy', JSON.stringify(np)).run();
             var rmP = reqMeta(request);
@@ -792,8 +802,9 @@ export default {
               env.DB.prepare('SELECT COUNT(*) AS n FROM sec WHERE act = ?1 AND ts >= ?2').bind('login_fail', dayTs),
               env.DB.prepare('SELECT COUNT(*) AS n FROM sec WHERE act = ?1 AND ts >= ?2').bind('denied', dayTs),
               env.DB.prepare("SELECT COUNT(*) AS n FROM guard WHERE until > ?1 AND gk NOT LIKE 'rl:%'").bind(nowX),
-              env.DB.prepare('SELECT COUNT(*) AS n FROM sess WHERE la > ?1').bind(nowX - PRESENCE_MS),
-              env.DB.prepare('SELECT COUNT(*) AS n FROM sess WHERE la > ?1').bind(nowX - IDLE_MAX),
+              /* V7 · د5-هـ (x1): شاشاتُ العرض ليست حضوراً */
+              env.DB.prepare('SELECT COUNT(*) AS n FROM sess WHERE la > ?1 AND uid NOT IN (SELECT value FROM json_each(?2))').bind(nowX - PRESENCE_MS, JSON.stringify(AX.users.filter(function (u) { return u && u.role === 'display'; }).map(function (u) { return u.id; }))),
+              env.DB.prepare('SELECT COUNT(*) AS n FROM sess WHERE la > ?1 AND uid NOT IN (SELECT value FROM json_each(?2))').bind(nowX - IDLE_MAX, JSON.stringify(AX.users.filter(function (u) { return u && u.role === 'display'; }).map(function (u) { return u.id; }))),
               env.DB.prepare('SELECT uid, MAX(ts) AS t FROM sec WHERE act = ?1 GROUP BY uid').bind('login_ok'),
               env.DB.prepare('SELECT un, COUNT(*) AS n, MAX(ts) AS t, MAX(city) AS city, MAX(dev) AS dev, MAX(detail) AS detail FROM sec WHERE act = ?1 AND ts >= ?2 GROUP BY un ORDER BY n DESC LIMIT 20').bind('login_fail', dayTs),
               env.DB.prepare('SELECT ts, uid, un, target FROM sec WHERE act = ?1 AND ts >= ?2 ORDER BY ts DESC LIMIT 200').bind('acct_add', nowX - 30 * 86400000),

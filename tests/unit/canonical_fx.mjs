@@ -198,7 +198,7 @@ async function fixtureWorld({ mode = 'enforce', through = null } = {}) {
   if (through) allowTestSchemaUpgrade(DB);
   /* RISHAD-266 · schema 10: the synthetic employee roster is an operational resource. Install it through the real
      cutover planner (same as tasks_fx/current_schema_fx) — the worker correctly refuses a KV copy of it. */
-  else if (DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '10') await installOperationalFixture(env, W);
+  else if (DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '11') await installOperationalFixture(env, W);
   const api = async (who, route, { method = 'GET', body } = {}) => {
     const headers = new Headers();
     if (who) headers.set('Cookie', 'bs_tok=TEST_ONLY_session_' + who);

@@ -575,6 +575,7 @@
        والفرق بين «لم تُخزَّن» و«خُزِّنت فارغة» محفوظٌ في المخزن نفسه، فلا حقلَ جديد.
        وفي الحالتين السقفُ هو الحدّ: تضييقه أو إطفاء ورقةٍ للإدارة يضيّق عليه معه. */
     if (u.role === 'dept') return capAllPerms(u.deptId);
+    if (u.role === 'display') { var cv = capAllPerms(u.deptId), dv = {}; Object.keys(cv).forEach(function(k){ if ((cv[k] || []).indexOf('view') !== -1) dv[k] = ['view']; }); return dv; }   /* V7 · د5-هـ (x1): شاشةُ العرض — سقفُ إدارتها قراءةً وحدها (يطابق 022 dispViewOf) */
     if (u.role === 'staff' && isMgrKey(u.ekey) && !hasOwnSheet(u.ekey, u.deptId)) return capAllPerms(u.deptId);
     /* مدير الإدارة العامة: صلاحياته في الإدارة النشطة وحدها — وهي من إداراته حتماً */
     /* مدير العقدة (إدارة عامة/قطاع/إدارة عليا): يرث سقف الإدارة النشطة كاملاً كمدير الإدارة — ما لم تُخزَّن له ورقة صريحة فيها (تضييق) — والإدارة من فرعه حتماً */

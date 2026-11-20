@@ -439,6 +439,8 @@
         /* خروج فوري كالمواقع الاحترافية: تنقّل واحد إلى /api/logout يُنهي الجلسة ويمسح الكوكي ويعيد إلى الجذر —
            لا طلب متزامن يعلّق الصفحة ثم إعادة تحميل ثانية */
         RAW.removeItem.call(localStorage, K_SESS);
+        /* V7 · د5-هـ (x1): التبويباتُ الأخرى في المتصفح نفسِه تعلم فوراً (حدثُ storage لمسح العلامة · وBroadcastChannel احتياطاً) — 335 يقفل شاشتها بلا رحلة خادم */
+        try { if (typeof BroadcastChannel === 'function') { var bc9 = new BroadcastChannel('bassam-session'); bc9.postMessage({ t: 'out' }); bc9.close(); } } catch (e6) {}
         /* ستارة فورية بلون بوابة الدخول تغطي الشاشة في اللحظة نفسها — فلا تبقى أي صفحة مرئية
            أثناء رحلة الخادم (صنف bs-locked بلا CSS بعد الدخول، فلا يكفي وحده) */
         try {
@@ -458,6 +460,7 @@
     needsPwChange: needsPwChange,
     setSuperAccount: setSuperAccount,
     upsertBackupSuper: upsertBackupSuper, removeBackupSuper: removeBackupSuper, backupSuper: backupSuper,
+    addDisplayAccount: I.addDisplayAccount, removeDisplayAccount: I.removeDisplayAccount,   /* V7 · د5-هـ (x1): «شاشة عرض» — لمسؤول المنصة */
     /* ── مدير الإدارة كحساب مستقل ── */
     mgrKeyOf: mgrKeyOf,
     isMgrKey: isMgrKey,

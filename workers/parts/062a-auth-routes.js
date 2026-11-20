@@ -94,21 +94,24 @@ async function authPublicRoutes(request, env, path, url) {
         loginStmts.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(K_USERS, rv2));
       }
       var tok = randTok(), now = Date.now(), rm = reqMeta(request);
-      loginStmts.push(env.DB.prepare('INSERT INTO sess (tok, uid, ts, la, dev, city) VALUES (?1, ?2, ?3, ?4, ?5, ?6)').bind(tok, u.id, now, now, rm.dev, rm.city));
+      /* RISHAD266 · دخولٌ من جهازٍ جديد يُحكم هنا عند الدخول (كان المتصفحُ يرسله عند فتح الصفحة بذاكرة المتصفح — فتكرّر): معرّفُ جهازٍ عشوائيّ لكل متصفح
+         (كعكةُ bs_dv · HttpOnly) يُقارن بدخولات الحساب في 180 يوماً من سجل الأمن؛ أولُ دخولٍ مسجَّل بمعرّفٍ يمرّ بلا تنبيه، وفشلُ التنبيه لا يُسقط الدخول.
+         V7 · د5-هـ (x1): المعرّفُ واسمُ المتصفح يُحفظان على صفّ الجلسة (ترحيل 0011) — لقائمة «الجلسات والنشاط» ولإنهاء جلسةٍ بعينها */
+      var dvB = /Edg\//.test(rm.ua) ? 'Edge' : /Firefox\//.test(rm.ua) ? 'Firefox' : /Chrome\//.test(rm.ua) ? 'Chrome' : /Safari\//.test(rm.ua) ? 'Safari' : 'متصفح', dvC = readCookie(request, 'bs_dv'), dvN = !/^[0-9a-f]{16}$/.test(dvC || '');
+      if (dvN) dvC = crypto.randomUUID().replace(/-/g, '').slice(0, 16); var dvS = 'dv:' + dvC;
+      loginStmts.push(env.DB.prepare('INSERT INTO sess (tok, uid, ts, la, dev, city, dv, br) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)').bind(tok, u.id, now, now, rm.dev, rm.city, dvC, dvB));
       try { await env.DB.batch(loginStmts); }
       catch (eL) { if (isRevConflict(eL)) continue; throw eL; }
 
       await guardReset(env, gkU); await guardOk(env, gkI, gkP);   /* v7-C · Issue 2 (ج): الزوجُ وعدّادُ الإنذار يُحذفان كما كانا؛ المصدرُ يُغتفر له عدُّ هذا الزوج وحده (guardOk · M1) */
-      /* RISHAD266 · دخولٌ من جهازٍ جديد يُحكم هنا عند الدخول (كان المتصفحُ يرسله عند فتح الصفحة بذاكرة المتصفح — فتكرّر): معرّفُ جهازٍ عشوائيّ لكل متصفح
-         (كعكةُ bs_dv · HttpOnly) يُقارن بدخولات الحساب في 180 يوماً من سجل الأمن؛ أولُ دخولٍ مسجَّل بمعرّفٍ يمرّ بلا تنبيه، وفشلُ التنبيه لا يُسقط الدخول */
-      var dvB = /Edg\//.test(rm.ua) ? 'Edge' : /Chrome\//.test(rm.ua) ? 'Chrome' : /Safari\//.test(rm.ua) ? 'Safari' : 'متصفح', dvC = readCookie(request, 'bs_dv'), dvN = !/^[0-9a-f]{16}$/.test(dvC || '');
-      if (dvN) dvC = crypto.randomUUID().replace(/-/g, '').slice(0, 16); var dvS = 'dv:' + dvC;
-      try { if (u.role !== 'super' && u.ekey && u.deptId) { var dvR = await env.DB.prepare("SELECT MAX(detail = ?2) n FROM sec WHERE act = 'login_ok' AND ts > ?3 AND uid = ?1 AND detail LIKE 'dv:%'").bind(u.id, dvS, now - 15552e6).first();
-        if (dvR && dvR.n === 0) { var Adv = await actorOf(env, u.id); if (Adv) await nfEmitEvents(env, Adv, [{ type: 'sc_dev', dept: u.deptId, own: [String(u.ekey)], vars: { 'الجهاز': (rm.dev === 'm' ? 'هاتف' : 'حاسوب') + ' · ' + dvB + (rm.city ? ' · ' + rm.city : ''), 'المدينة': rm.city || '' } }], true); } } } catch (eDv) { swallow('sc-dev', eDv, env.__rid); }
+      /* V7 · د5-هـ (x1): التنبيهُ يحمل مِقبضَ الجلسة الجديدة (link 'sess:<sid>' — بصمةٌ لا الرمز) ليُنهيها «ليس أنا» · مرةً لكل جهاز (once) · لا تنبيهَ لشاشة العرض */
+      try { if (u.role !== 'super' && u.role !== 'display' && u.ekey && u.deptId) { var dvR = await env.DB.prepare("SELECT MAX(detail = ?2) n FROM sec WHERE act = 'login_ok' AND ts > ?3 AND uid = ?1 AND detail LIKE 'dv:%'").bind(u.id, dvS, now - 15552e6).first();
+        if (dvR && dvR.n === 0) { var Adv = await actorOf(env, u.id); if (Adv) await nfEmitEvents(env, Adv, [{ type: 'sc_dev', dept: u.deptId, own: [String(u.ekey)], vars: { 'الجهاز': (rm.dev === 'm' ? 'هاتف' : 'حاسوب') + ' · ' + dvB + (rm.city ? ' · ' + rm.city : ''), 'المدينة': rm.city || '' }, link: 'sess:' + (await sessSid(tok)), once: 'sc_dev:' + u.id + ':' + dvC }], true); } } } catch (eDv) { swallow('sc-dev', eDv, env.__rid); }
       await secLog(env, { uid: u.id, un: u.un, act: 'login_ok', detail: dvS, ip: rm.ip, city: rm.city, dev: rm.dev });
       /* mc على السجل: كلمة مؤقتة عيّنها مدير النظام — تُفرض على أي دور */
-      var mustChange = !!u.mc || ((u.role === 'staff' || u.role === 'gm') ? false : (!pwCheck(pw, u.role) || !unCheck(u.un)));
-      var resL = json({ ok: 1, uid: u.id, role: u.role || '', deptId: u.deptId || '', mustChange: mustChange ? 1 : 0 }, 200, setCookie(tok, url));
+      var mustChange = u.role === 'display' ? false : !!u.mc || ((u.role === 'staff' || u.role === 'gm') ? false : (!pwCheck(pw, u.role) || !unCheck(u.un)));
+      var ckL = setCookie(tok, url); if (u.role === 'display') ckL['Set-Cookie'] = ckL['Set-Cookie'].replace(/Max-Age=\d+/, 'Max-Age=' + Math.floor(Math.max(SESSION_MAX, DISP_MAX) / 1000));   /* V7 · د5-هـ (x1): شاشةُ العرض بعمرها */
+      var resL = json({ ok: 1, uid: u.id, role: u.role || '', deptId: u.deptId || '', mustChange: mustChange ? 1 : 0 }, 200, ckL);
       if (dvN) resL.headers.append('Set-Cookie', setCookie(dvC, url)['Set-Cookie'].replace(/^[^=]*/, 'bs_dv').replace(/Max-Age=\d+/, 'Max-Age=63072000'));   /* سماتُ كعكة الجلسة نفسُها (Secure خارج المحلي) باسمها ومدّتها */
       return resL;
     }
@@ -145,6 +148,12 @@ async function authPublicRoutes(request, env, path, url) {
 
   return null;
 }
+/* V7 · د5-هـ (x1): مِقبضُ الجلسة — أوّلُ 16 hex من SHA-256 لرمزها: يُعرض ويُرسل بدل الرمز ولا يُعكس إليه */
+async function sessSid(tok) {
+  var h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('bs-sid:' + String(tok || '')))), o = '';
+  for (var i = 0; i < 8; i++) o += ('0' + h[i].toString(16)).slice(-2);
+  return o;
+}
 async function authSessionRoutes(request, env, path, ss) {
   /* جسّ الجلسة: هل كوكي هذا المتصفح حي عند الخادم؟ */
   if (path === '/api/whoami') return json({ ok: 1, uid: ss.uid });
@@ -158,11 +167,13 @@ async function authSessionRoutes(request, env, path, ss) {
     var nowM = Date.now(), tokM = readCookie(request, COOKIE) || '';
     /* KIVO_255 · AUD-037: الاستعلاماتُ الثلاثة مستقلةٌ — دفعةٌ واحدة بدل ثلاث جولات */
     var bM = await env.DB.batch([
-      env.DB.prepare('SELECT tok, ts, la, dev, city FROM sess WHERE uid = ?1 AND la > ?2 ORDER BY la DESC').bind(ss.uid, nowM - IDLE_MAX),
+      env.DB.prepare('SELECT tok, ts, la, dev, city, br FROM sess WHERE uid = ?1 AND la > ?2 ORDER BY la DESC').bind(ss.uid, nowM - IDLE_MAX),
       env.DB.prepare("SELECT ts, act, detail, city, dev FROM sec WHERE uid = ?1 AND act IN ('login_ok','login_fail','pw_change','sess_kill','logout') ORDER BY ts DESC, id DESC LIMIT 8").bind(ss.uid),
       env.DB.prepare("SELECT ts, city, dev FROM sec WHERE uid = ?1 AND act = 'login_ok' ORDER BY ts DESC LIMIT 2").bind(ss.uid)]);
     var rsM = bM[0], evM = bM[1], lastOk = bM[2];
-    var sessM = ((rsM && rsM.results) || []).map(function (r) { return { mine: r.tok === tokM, ts: r.ts, la: r.la, dev: r.dev || 'd', city: r.city || '', active: nowM - r.la <= PRESENCE_MS }; });
+    /* V7 · د5-هـ (x1): لكل جلسةٍ مِقبضُها sid (بصمةٌ لا الرمز — لإنهائها وحدها) والمتصفح br؛ لا رمزَ ولا IP */
+    var sessM = [], rowsM = (rsM && rsM.results) || [];
+    for (var iM = 0; iM < rowsM.length; iM++) { var rM = rowsM[iM]; sessM.push({ sid: await sessSid(rM.tok), mine: rM.tok === tokM, ts: rM.ts, la: rM.la, dev: rM.dev || 'd', br: rM.br || '', city: rM.city || '', active: nowM - rM.la <= PRESENCE_MS }); }
     var lo = ((lastOk && lastOk.results) || []);
     return json({ ok: 1, now: nowM, sess: sessM, events: ((evM && evM.results) || []), lastLogin: lo[1] || null, thisLogin: lo[0] || null });
   }
@@ -171,6 +182,21 @@ async function authSessionRoutes(request, env, path, ss) {
     await env.DB.prepare('DELETE FROM sess WHERE uid = ?1 AND tok <> ?2').bind(ss.uid, tokK).run();
     var rmMe = reqMeta(request); var uMe = ((await usersList(env)) || []).filter(function (x) { return x.id === ss.uid; })[0];
     await secLog(env, { uid: ss.uid, un: uMe ? uMe.un : '', act: 'sess_kill', target: JSON.stringify({ id: ss.uid, name: uMe ? (uMe.name || uMe.un) : '', self: 1 }), detail: 'self-others', ip: rmMe.ip, city: rmMe.city, dev: rmMe.dev });
+    return json({ ok: 1 });
+  }
+  /* V7 · د5-هـ (x1): إنهاءُ جلسةٍ واحدة من جلساتي بمِقبضها (قائمة «الجلسات والنشاط» · «ليس أنا» في تنبيه الجهاز الجديد).
+     يُبحث المِقبضُ في جلسات صاحب الطلب وحده — مِقبضُ غيره «غير موجود» كالمجهول (لا يُكشف وجودُه) · الجلسةُ الحالية تُنهى بالخروج لا هنا */
+  if (path === '/api/me/sess/kill-one' && request.method === 'POST') {
+    var rbO = await bodyRead(request, path); if (rbO.res) return rbO.res;
+    var sidO = String(rbO.v.sid || ''), tokO = readCookie(request, COOKIE) || '', hitO = '';
+    if (!/^[0-9a-f]{16}$/.test(sidO)) return json({ ok: 0, err: 'bad-body', at: 'sid' }, 400);
+    var rowsO = ((await env.DB.prepare('SELECT tok FROM sess WHERE uid = ?1').bind(ss.uid).all()).results) || [];
+    for (var iO = 0; iO < rowsO.length && !hitO; iO++) if ((await sessSid(rowsO[iO].tok)) === sidO) hitO = rowsO[iO].tok;
+    if (!hitO) return json({ ok: 0, err: 'not-found' }, 404);
+    if (hitO === tokO) return json({ ok: 0, err: 'current' }, 409);
+    await env.DB.prepare('DELETE FROM sess WHERE tok = ?1 AND uid = ?2').bind(hitO, ss.uid).run();
+    var rmO = reqMeta(request), uO = ((await usersList(env)) || []).filter(function (x) { return x.id === ss.uid; })[0];
+    await secLog(env, { uid: ss.uid, un: uO ? uO.un : '', act: 'sess_kill', target: JSON.stringify({ id: ss.uid, name: uO ? (uO.name || uO.un) : '', self: 1 }), detail: rbO.v.why === 'not-me' ? 'self-not-me' : 'self-one', ip: rmO.ip, city: rmO.city, dev: rmO.dev });
     return json({ ok: 1 });
   }
 

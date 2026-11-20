@@ -45,7 +45,7 @@ test('(ج) الأخطاءُ المعقودة: 400 bad-body لكل مخطّط · 
   /* KIVO_264 · SOT-101 (إفصاح — توسيعُ اختبار): مخطّطاتُ المسارات المغيِّرة الباقية (14 بدل 5). مساراتُ مدير النظام تُرسَل بجلسته — الصلاحيةُ قبل الشكل
      (الموظفُ 403 عليها، (أ) أعلاه)؛ ومسارا الإنفاذ (authz-migrate · authz-test) يُثبَت مخطّطاهما في بيئتهما: tests/unit/k264_sec_bodies.test.mjs */
   const bad = { '/api/dstats': null, '/api/notifications/act': { op: 17 }, '/api/save': { set: { bassam_depts_v1: 5 } }, '/api/login': { u: [] }, '/api/recover': { key: {} }, '/api/checkpw': { p: 1 }, '/api/sess/kill': { uid: true },
-    '/api/logout': { tok: 'x' }, '/api/me/sess/kill': { tok: 'x' }, '/api/retro': { res: 1 }, '/api/guard/unlock': { gk: 1 }, '/api/policy': null, '/api/recovery/new': { pw: 1 }, '/api/reset': null,
+    '/api/logout': { tok: 'x' }, '/api/me/sess/kill': { tok: 'x' }, '/api/me/sess/kill-one': { sid: 5 }, '/api/retro': { res: 1 }, '/api/guard/unlock': { gk: 1 }, '/api/policy': null, '/api/recovery/new': { pw: 1 }, '/api/reset': null,
     /* KIVO_264 · KIVO-Tasks (الرقعتان 02 · 05): «مهامي» ومساراتُ المسؤول — الشكلُ قبل الصلاحية (الموظفُ يرى 400 لا 403 لجسمٍ خاطئ) */
     '/api/me/tasks/act': { k: 5 }, '/api/tasks/create': { k: 5 }, '/api/tasks/review': { k: 5 }, '/api/tasks/extend': { k: 5 }, '/api/tasks/reassign': { k: 5 },
     '/api/tasks/cancel': { k: 5 }, '/api/tasks/relink': { k: 5 }, '/api/tasks/recur': { id: 5 }, '/api/tasks/recur/run': { day: 5 },

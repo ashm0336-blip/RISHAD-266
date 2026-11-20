@@ -48,7 +48,7 @@ function actualPick() {
 
 async function page(t, { visiblePolling = false } = {}) {
   const B = await world();
-  assert.equal(B.W.KIVO_SCHEMA_VERSION, 10);
+  assert.equal(B.W.KIVO_SCHEMA_VERSION, 11);
   await installOperationalFixture(B.env, B.W);
   // The general custody fixture omits the monthly-staff page. Declare this
   // synthetic test department's ceiling explicitly; keep real guards enabled.
