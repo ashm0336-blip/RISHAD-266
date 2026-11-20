@@ -690,8 +690,12 @@ class Component extends DCLogic {
       try { goOn = !!(await KIVO.bsConfirm({ title: "تعديلات لم تُحفظ بعد", msg: "لديك تعديلات لم يكتمل حفظها. نحفظها أولاً ثم نتابع.", ok: "احفظ وتابع", cancel: "ابقَ هنا" })); } catch (e) { goOn = false; }
       if (!goOn) return false;
     }
-    let ok = true;
+    let ok = true, d0 = 0;
+    try { d0 = S && S.denied ? +S.denied() || 0 : 0; } catch (e) {}
     if (S && S.flushAsync) { try { ok = (await S.flushAsync(4000)) === true; } catch (e) { ok = false; } }
+    /* V7 · د5-هـ (أمن ١): رُفض تعديلٌ أثناء الحفظ ⇒ لا انتقال — يبقى المستخدمُ أمام رسالة الرفض (لا «حُفظ» ولا تبديلٌ يمحوها) */
+    let refused = false; try { refused = !!(S && S.denied && (+S.denied() || 0) > d0); } catch (e) {}
+    if (!ok && refused) { this.bkToast("رُفض حفظ بعض تعديلاتك (السببُ في الرسالة) — لم ننتقل", true); return false; }
     if (!ok) { let still = true; try { still = !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch (e) { still = true; }
       if (still) { this.bkToast("لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ", true); return false; } }   /* لا تعديلَ معلَّق (جلسةٌ منتهية · عمليةٌ عالقة) ⇒ لا رسالةَ كاذبة ولا منع */
     return true;
@@ -1233,9 +1237,9 @@ class Component extends DCLogic {
             const r = D.sectionAdd({ name: nm, deptId: act });
             if (!r || !r.ok) { this.bkToast("لم يُضف القسم: " + ((r && r.err) || "تعذّر الإنشاء")); return; }
             this.bkToast("جارٍ حفظ القسم «" + nm + "»…");
-            const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} };
+            const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} }, d0 = S && S.denied ? +S.denied() || 0 : 0;
             /* المراجعة المستقلة: لا إعادةَ تحميلٍ إن لم يُحفظ — تبقى رسالةُ الرفض أو الانتظار ظاهرة */
-            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok !== true) this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true); else go(); }, () => this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true));
+            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok === true) go(); else if (S && S.denied && (+S.denied() || 0) > d0) this.bkToast("رُفض حفظ القسم «" + nm + "» — لم يُضف", true); else this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true); },   /* V7 · د5-هـ: الرفضُ لا يُعاد تلقائياً */ () => this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true));
           },
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
           doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },

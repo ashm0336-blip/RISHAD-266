@@ -45,9 +45,11 @@ test('حارسُ الخادم: نسخةٌ قديمة ببصمة p1$ وبرقمٍ
   await C.save(su.ck, { [K]: JSON.stringify(users()), 'bassam_depts_v1': JSON.stringify([{ id: 'A', name: 'أ' }]) });
   const wr = await C.login('writer', 'Wrt#11234'); assert.ok(wr.ok);
   const before = (await dbUsers(env)).find(u => u.id === 'wr').ph; assert.ok(before.startsWith('p2$'));
-  /* (أ) قائمةٌ قديمة (p1$) برقمٍ حديث: تُقبل الحقولُ الأخرى وتبقى البصمةُ المخزَّنة والجلسة */
+  /* (أ) قائمةٌ قديمة (p1$) برقمٍ حديث: تبقى البصمةُ المخزَّنة والجلسة. V7 · د5-هـ (أمن ١ · إفصاح — تعديلُ اختبار بقرار المالك): كانت تُقبل الحقولُ
+     الأخرى ويُعلَن المفتاحُ «محفوظاً» وقد أُسقطت البصمةُ صامتةً (إعادةُ ضبطٍ تبدو محفوظةً ولم تقع) — الآن يُرفض المفتاحُ بسببٍ صريح ولا يُكتب منه شيء */
   const s2 = await C.save(su.ck, { [K]: JSON.stringify(users().map(u => u.id === 'wr' ? { ...u, name: 'ك٢' } : u)) }); assert.equal(s2.status, 200); assert.ok(!(s2.j.conflicts && s2.j.conflicts[K]));
-  const l2 = await dbUsers(env); assert.equal(l2.find(u => u.id === 'wr').ph, before, 'p2$ محفوظة'); assert.equal(l2.find(u => u.id === 'wr').name, 'ك٢');
+  assert.ok(!(s2.j.revs && K in s2.j.revs), 'not reported saved'); assert.match(String(((s2.j.denied || {})[K] || {}).detail || ''), /^stale-client: /, 'refused with its reason');
+  const l2 = await dbUsers(env); assert.equal(l2.find(u => u.id === 'wr').ph, before, 'p2$ محفوظة'); assert.equal(l2.find(u => u.id === 'wr').name, 'ك', 'nothing of the refused list is written');
   assert.equal((await C.api('/api/whoami', { cookie: wr.ck })).status, 200, 'الجلسةُ حيّة');
   /* (ب) تعيينٌ مؤقت جديد من مدير النظام (p1$ + mc) يُقبل ويُبطل الجلسة (AUD-035) */
   const s3 = await C.save(su.ck, { [K]: JSON.stringify(l2.map(u => u.id === 'wr' ? { ...u, ph: 'p1$' + lh('Tmp123456'), mc: 1 } : u)) }); assert.equal(s3.status, 200);

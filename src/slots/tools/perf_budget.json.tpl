@@ -36,12 +36,12 @@
  },
  "budget": {
   "page:Admin": 156600,
-@@SYS:budget.page.award@@@@SYS:budget.page.dreport@@@@SYS:budget.page.daily@@@@SYS:budget.page.dstats@@  "page:Employees": 164700,
+@@SYS:budget.page.award@@@@SYS:budget.page.dreport@@@@SYS:budget.page.daily@@@@SYS:budget.page.dstats@@  "page:Employees": 165000,
 @@SYS:budget.page.irshad@@  "page:KPIs": 8000,
 @@SYS:budget.page.plan@@  "page:Planning": 3050,
   "page:Profile": 70000,
 @@SYS:budget.page.seized@@@@SYS:budget.page.staff@@@@SYS:budget.page.tasks@@  "shell:index.html": 30100,
-  "worker:_worker.js": 466000
+  "worker:_worker.js": 467400
  },
  "unifyBatch3Decision": {
   "date": "2026-11-02",
@@ -67,6 +67,8 @@
   "page:Employees d5e-m3": "د5-هـ (م3): 164600 إلى 164700 (هامش 2.06٪ على 161386 المقيس) — قراءاتُ الجولات صارت بالناقل (daily.days@1 · daily.usable@1).",
   "page:Employees": "د5-هـ (م1): 164037 إلى 164600 (هامش 2.01٪ على 161366 المقيس) — قاعدةُ برومت د5-هـ: هامشُ كل سقفٍ ≥ 2٪. الصفحةُ نقصت في م1 (163966 → 161366) وقراءاتُها للتشغيل الميداني صارت بالناقل؛ لم يكن الهامش (1.66٪) يبلغ 2٪.",
   "page:Award": "د5-هـ (م1): 47900 إلى 48300 (هامش 2.09٪ على 47312 المقيس) — القاعدةُ نفسها: كان الهامش 1.24٪، والصفحةُ لم تتغيّر في م1.",
+  "worker:_worker.js d5e-x2": "د5-هـ (أمن · x2): 466000 إلى 467400 (هامش 2.03٪ على 457903 المقيس) — القاعدةُ نفسها (≥ 2٪). زاد العاملُ بحارس مفتاح الاستعادة داخل الدفعات (rkGuard) وسببِ الرفض في إنذارَي الأمن وإعادةِ القراءة والحفظ التشغيلي مرّةً على لقطةٍ جديدة وصدقِ نتيجة الحفظ (ok:0 · رفضُ البصمة القديمة).",
+  "page:Employees d5e-x2": "د5-هـ (أمن · x2): 164700 إلى 165000 (هامش 2.11٪ على 161512 المقيس) — رسائلُ نجاح إجراءات الحسابات بعد إقرار الخادم (impAck).",
   "unchanged": "بقيةُ السقوف كما هي — كلٌّ هامشُه ≥ 2٪ (أدناها العامل 2.05٪ وPlanning 2.35٪ وSeized 2.36٪)."
  }
 }

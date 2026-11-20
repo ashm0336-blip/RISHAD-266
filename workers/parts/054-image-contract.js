@@ -1223,7 +1223,7 @@ function redactPh(s, where) {
   return out;
 }
 /* دمج الحفظ القادم من المتصفح: سجل وصل بلا ph يرث بصمته المخزونة */
-function mergeUsers(incomingJson, currentList, actorUid, rid) {
+function mergeUsers(incomingJson, currentList, actorUid, rid, info) {
   var inc;
   try { inc = JSON.parse(incomingJson); } catch (e) { return null; }
   if (!Array.isArray(inc) || !inc.length) return null;
@@ -1238,7 +1238,7 @@ function mergeUsers(incomingJson, currentList, actorUid, rid) {
     /* KIVO_253 · AUD-035 (ب): بصمةٌ قديمة p1$ لحسابٍ بصمتُه المخزَّنة p2$ = نسخةٌ قديمة لدى الكاتب لا كلمةٌ جديدة (العملاءُ يولّدون p2$ دائماً) —
        تُحفظ المخزَّنة فلا تُنزَّل البصمةُ ولا تُبطَل جلساتُ صاحبها؛ الاستثناء: تعيينٌ مؤقت جديد (mc يُرفع) أو صاحبُ الحساب نفسُه (سقوطُ متصفحٍ بلا WebCrypto) */
     if (u && u.id && u.ph && String(u.ph).indexOf('p2$') !== 0 && s && String(s.ph || '').indexOf('p2$') === 0 && u.ph !== s.ph
-        && !(u.mc && !s.mc) && u.id !== actorUid) { var c2 = {}; for (var k2 in u) c2[k2] = u[k2]; c2.ph = s.ph; stale++; return c2; }
+        && !(u.mc && !s.mc) && u.id !== actorUid) { var c2 = {}; for (var k2 in u) c2[k2] = u[k2]; c2.ph = s.ph; stale++; if (info) (info.stale = info.stale || []).push(u.name || u.un || u.id); return c2; }
     return u;
   });
   if (stale) logEv('warn', 'users-stale-ph', { rid: rid, n: stale });
@@ -1853,8 +1853,10 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (!verdict.ok) { out.denied[k] = usOut9(k, enfDenyInfo({ why: verdict.why, cur: curSafe(k, cur), rev: have }, ev), ev); if (!(opt && opt.quiet)) st.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'denied', target: k, detail: (ev && ev.sd) || verdict.why, ip: ident.ip, city: ident.city, dev: ident.dev })); continue; }
     if (it.act === 'set' && k === K_USERS) {
       if (curUsers === null) curUsers = await usersList(env);
-      var m = mergeUsers(v, curUsers, A.u.id, env.__rid);
+      var mInfo = {}, m = mergeUsers(v, curUsers, A.u.id, env.__rid, mInfo);
       if (m === null) { out.denied[k] = usOut9(k, { why: 'users', cur: curSafe(k, cur), rev: have }); continue; }
+      /* V7 · د5-هـ (أمن ١): البصمةُ القديمة كانت تُستبدل صامتةً بالمخزَّنة ويُعلَن المفتاحُ «محفوظاً» (إعادةُ ضبطٍ لم تقع) — الآن يُرفض بسببٍ يعرضه العميل */
+      if (mInfo.stale && mInfo.stale.length) { out.denied[k] = usOut9(k, { why: 'users', detail: 'stale-client: لم تُحفظ كلمةُ المرور الجديدة لحساب «' + String(mInfo.stale[0]).slice(0, 80) + '»' + (mInfo.stale.length > 1 ? ' و' + (mInfo.stale.length - 1) + ' غيره' : '') + ' — وصلت بصيغة تشفيرٍ قديمة لا تحلّ محلَّ المحفوظة؛ أعد التعيين بكلمةٍ مؤقتة', cur: curSafe(k, cur), rev: have }); continue; }
       /* من غيّر كلمة مروره بنفسه يسقط عنه علم «كلمة مؤقتة» */
       try { var mj = JSON.parse(m), cm = {}; (curUsers || []).forEach(function (x) { if (x && x.id) cm[x.id] = x; });
         mj.forEach(function (x) { if (x && x.id === A.u.id && x.mc && cm[x.id] && x.ph && x.ph !== cm[x.id].ph) delete x.mc; }); m = JSON.stringify(mj); } catch (e) { swallow('users-mc-strip', e, env.__rid); }

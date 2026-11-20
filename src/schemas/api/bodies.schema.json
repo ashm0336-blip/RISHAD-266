@@ -69,6 +69,11 @@
             "null"
           ],
           "maxLength": 1000
+        },
+        "ack": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9
         }
       }
     },
@@ -2211,7 +2216,7 @@
   },
   "notes": {
     "/api/me/tasks/act": "KIVO_264 · KIVO-Tasks: uid (C1 — 409 session-changed كـ/api/save) في هذا المسار ومسارات /api/tasks/* المغيِّرة كلِّها",
-    "/api/save": "KIVO_264: uid (C1 — 409 session-changed) · cur (D14 — كلمةُ المرور الحالية لتغيير اسم الدخول؛ لا تُخزَّن)",
+    "/api/save": "KIVO_264: uid (C1 — 409 session-changed) · cur (D14 — كلمةُ المرور الحالية لتغيير اسم الدخول؛ لا تُخزَّن) · V7 د5-هـ: ack=2 — العميلُ يفهم ok:0 لحفظٍ لم يُكتب منه مفتاح",
     "/api/logout": "بلا جسم: الفارغُ أو {} وحدهما (POST؛ وGET تنقّلٌ بلا جسم) — يُفحص قبل المعالج (063 bodyNone)",
     "/api/me/sess/kill": "بلا جسم: الفارغُ أو {} وحدهما (العميلُ يرسل {}) — يُفحص بعد الجلسة وقبل المعالج (063 bodyNone)",
     "/api/retro": "أشكالُ العميل: فتحٌ {res, dept, act:'open', scope:{y,m[,d]}, reason[, hours]} (280) · إغلاقٌ {act:'close', res, dept, id} — الأرقامُ تُقبل نصاً (parseInt في المعالج)",

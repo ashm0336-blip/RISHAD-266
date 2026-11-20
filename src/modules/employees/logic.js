@@ -1793,6 +1793,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   impToast(t) {
     (clearTimeout(this._impT), this.setState({ impToast: t }), (this._impT = setTimeout(() => this.setState({ impToast: "" }), 3200)));
   }
+  /* V7 · د5-هـ (أمن ١): رسالةُ النجاح بعد إقرار الخادم (كما bsAck في الإدارة) — الكتابةُ المحلية ليست حفظاً */
+  impAck(t) {
+    const A = KIVO.BassamAck;
+    return (A && A.ack ? Promise.resolve(A.ack()).catch(() => !1) : Promise.resolve(!0)).then((r) => {
+      r === !0 ? this.impToast(t) : this.impToast(r && r.denied ? "لم يُحفظ — رفضه الخادم" : (A && A.PENDING) || "لم يُحفظ بعد");
+      return r === !0;
+    });
+  }
   _rowMenu(t, e) {
     const r = (e || []).filter(Boolean),
       n = this.state.rowMenu === t;
@@ -5045,9 +5053,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               if (!e || !e.freezeStaff) return;
               const n = e.freezeStaff(a);
               (this.setState({ accOpen: null }),
-                this.impToast(
-                  n && n.ok ? "جُمِّد حساب " + t.name + " — لن يستطيع الدخول حتى تُعيد تفعيله" : (n && n.err) || "تعذّر التجميد",
-                ));
+                n && n.ok
+                  ? this.impAck("جُمِّد حساب " + t.name + " — لن يستطيع الدخول حتى تُعيد تفعيله")
+                  : this.impToast((n && n.err) || "تعذّر التجميد"));
             },
             /* دفعة الواجهات (2أ): حسابٌ مفتاحُه mgr: لا تُنزع عنه الشارة (الخادم: mgr-key) — يُحذف من صفحة الإدارات أو يبقى مديراً */
             accMgrShow: u && "active" === r && !(h && /^mgr:/.test(String(a || ""))),
@@ -5060,13 +5068,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               if (!e || !e.setStaffMgr) return;
               const r = e.setStaffMgr(a, !h);
               (this.setState({ accOpen: null, permTick: (this.state.permTick || 0) + 1 }),
-                this.impToast(
-                  r && r.ok
-                    ? h
-                      ? "أُلغي تعيين " + t.name + " مديراً — لم يعد يدير الحسابات والصلاحيات، وبقيت صفحاتُه كما في ورقته"
-                      : "عُيِّن " + t.name + " مديراً للإدارة — يدير حسابات موظفيها وصلاحياتهم ويمنحهم مما يملكه، وتبقى صفحاتُه كما في ورقته الحالية ما لم يوسّعها مسؤول المنصة"
-                    : (r && r.err) || "تعذّر التعيين",
-                ));
+                r && r.ok
+                  ? this.impAck(
+                      h
+                        ? "أُلغي تعيين " + t.name + " مديراً — لم يعد يدير الحسابات والصلاحيات، وبقيت صفحاتُه كما في ورقته"
+                        : "عُيِّن " + t.name + " مديراً للإدارة — يدير حسابات موظفيها وصلاحياتهم ويمنحهم مما يملكه، وتبقى صفحاتُه كما في ورقته الحالية ما لم يوسّعها مسؤول المنصة",
+                    )
+                  : this.impToast((r && r.err) || "تعذّر التعيين"));
             },
           };
         })(),
@@ -5954,7 +5962,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               l && l.ok ? t++ : n++;
             }),
               this.setState({ permTick: (this.state.permTick || 0) + 1 }),
-              this.impToast(
+              (t ? this.impAck.bind(this) : this.impToast.bind(this))(
                 "تجميد الحسابات: جُمِّد " +
                   t +
                   (e ? " · بلا حساب نشط " + e : "") +

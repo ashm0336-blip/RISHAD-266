@@ -417,7 +417,10 @@ async function saveRoute(env, request, path, ss) {
       catch (eT) { if (svTry || !operationalSave || !opFenceRetry(eT)) throw eT; }
     }
     if(operationalSave) return json(Object.assign({},r2,{ok:r2.ok===1?1:0,requestId:bs.requestId,epoch:bs.epoch,atomic:1}),r2.ok===1?200:Object.keys(r2.conflicts||{}).length?409:403);
-    return json({ ok: 1, v: r2.v, revs: r2.revs, denied: r2.denied, conflicts: r2.conflicts, atomic: r2.atomic || '' });
+    /* V7 · د5-هـ (أمن ١): لا ok:1 لحفظٍ لم يُكتب منه مفتاح — كلُّ مفتاحٍ طُلب رُفض أو تعارض ⇒ ok:0 (والنتيجةُ لكل مفتاح كما هي).
+       للعميل الذي يعلن فهمه (ack ≥ 2) وحده: صفحةٌ قديمة في نافذة الإصدارين ترى ok:0 إقراراً غيرَ صالح فتعيد الإرسالَ بلا نهاية (caps_own_stale) */
+    var svStop = Object.keys(r2.denied || {}).length + Object.keys(r2.conflicts || {}).length;
+    return json({ ok: bs.ack >= 2 && operationKeys.length && !Object.keys(r2.revs || {}).length && svStop ? 0 : 1, v: r2.v, revs: r2.revs, denied: r2.denied, conflicts: r2.conflicts, atomic: r2.atomic || '' });
   } catch (eS) {
     var guardSave=dbGuardFailure(eS);if(guardSave)return json({ok:0,err:guardSave.err},guardSave.status);
     /* فشل الحفظ يظهر باسمه في سجلات المشروع وفي فاحص الشبكة — لا صمت */
