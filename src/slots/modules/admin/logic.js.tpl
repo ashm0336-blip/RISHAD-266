@@ -18,7 +18,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* V7 P0: عنوانُ «الإدارات» #/sysadmin/org[/<id>] — المعرّفُ هو الاختيارُ الصريح (sysSel) متى كان عقدةً أو وحدةً قائمة، فيبقى بعد إعادة التحميل */
   _orgSeg() {
     const id = this._orgKnown(this.state.sysSel) ? this.state.sysSel : "";
-    return "org" + (id ? "/" + encodeURIComponent(id) : "");
+    return "org" + (id ? "/" + encodeURIComponent(id) + ("perm" === this.state.sysTab && this._p44SubNow ? "/perm/" + this._p44SubNow() : "") : "");   /* V7 · د5-هـ (44): …/perm/<القسم> */
   }
   _orgKnown(id) {
     try {
@@ -79,7 +79,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       capSt = this._capStateTxt(o),
       accts = n ? 0 : safe(() => A.users().filter((u) => "staff" === u.role && u.deptId === o && !u.mgr).length, 0),
       units = n ? safe(() => (D.deptsUnder(o) || []).length, 0) : 0,
-      step = (t, st, ok, tab) => ({ t, st, cls: ok ? "ok" : "wn", mark: ok ? "✓" : "!", goOn: !!tab, goLbl: "cap" === tab ? "فتح سقف الصفحات" : "فتح الحسابات", go: () => tab && this.setState({ sysTab: tab }) });
+      step = (t, st, ok, tab) => ({ t, st, cls: ok ? "ok" : "wn", mark: ok ? "✓" : "!", goOn: !!tab, goLbl: "cap" === tab ? "فتح الصلاحيات" : "فتح الحسابات", go: () => tab && this.setState("cap" === tab ? { sysTab: "perm", p44: { ...(this.state.p44 || {}), sub: "systems" } } : { sysTab: tab }) });   /* V7 · د5-هـ (44): السقفُ يُضبط في «الصلاحيات ← الأنظمة» */
     return {
       ovKids: kids,
       ovKidsOn: kids.length > 0,
@@ -7459,6 +7459,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         KIVO.__ADMIN_OPEN_TAB = null;
         KIVO.__ADMIN_OPEN_PSUB = null;
         KIVO.__ADMIN_OPEN_ORG = null;
+        /* V7 · د5-هـ (44): #/sysadmin/org/<id>/perm/<القسم> يفتح «الصلاحيات» على قسمه */
+        const osub = oid ? (/\/perm\/(systems|roles|people|log)$/.exec(String(location.hash || "")) || [])[1] : "";
+        oid && osub && ((this.__orgTab = "perm"), (this.state = { ...this.state, p44: { ...(this.state.p44 || {}), sub: osub } }));
         "depts" === q && p.includes(q) && (oid ? this._orgOpen(oid) : this._orgClose());
         p.includes(q) && (q !== e.admTab || (ps && ps !== e.plTab)) && (this.state = { ...this.state, admTab: q, ...(ps ? { plTab: ps } : {}) });
         p.includes(q) && setTimeout(() => (ps ? (this._plGo(ps), "setup" !== ps && this.plRkLoad()) : this._admGo(q)), 0);
@@ -7638,7 +7641,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               return { ...tree, deptDetailReady: false, deptDetailEmpty: true, deptDetailMessage: message, _sel: "" };
             }
             /* V7 P1: تبويباتُ صفحة العقدة — «نظرة عامة» افتراضاً · «البيانات» للإدارة والقسم وحدهما */
-            const l = ["ov", "emps", "cap", "data"].includes(e.sysTab) && !(n && "data" === e.sysTab) ? e.sysTab : "ov",
+            const l = ["ov", "emps", "cap", "perm", "data"].includes(e.sysTab) && !(n && "data" === e.sysTab) ? e.sysTab : "ov",
               d =
                 e.capDraft && e.sysSel === o
                   ? e.capDraft
@@ -7905,6 +7908,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               tabCapStyle: M("cap" === l),
               onTabEmps: "emps" === l,
               onTabCap: "cap" === l,
+              /* V7 · د5-هـ (44): «الصلاحيات» تحلّ محلّ «سقف الصفحات» في شريط التبويبات — لوحةُ السقف القديمة باقيةٌ بلا تبويب حتى تُحذف */
+              tabCapShow: !1,
+              goTabPerm: () => this.setState({ sysTab: "perm" }),
+              tabPermStyle: M("perm" === l),
+              onTabPerm: "perm" === l,
+              ...("perm" === l && this._p44Vals ? this._p44Vals(o, n, p) : {}),
               tabEmpsShow: !0,
               tabEmpsLbl: "المسؤولون والحسابات",   /* V7 P2: المديرون والحسابات في جدولٍ واحد لكل عقدة */
               ...(() => {
