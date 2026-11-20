@@ -54,7 +54,7 @@
  },
  "read.map.locks.staff": {
   "order": 10,
-  "text": "  'bassam_staffing_locks_v1':  ['staff', 'dreport', 'emps/data', 'plan', 'planning', 'planning/readiness'],\n  'bassam_perm_limit_v1':      ['staff', 'dreport', 'planning', 'planning/readiness'],\n"
+  "text": "  'bassam_staffing_locks_v1':  ['staff', 'dreport', 'emps/data'@@SYS:read.map.reader.plan.2@@, 'planning', 'planning/readiness'],\n  'bassam_perm_limit_v1':      ['staff', 'dreport', 'planning', 'planning/readiness'],\n"
  },
  "read.map.staff": {
   "order": 10,

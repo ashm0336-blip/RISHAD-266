@@ -38,7 +38,7 @@ function empGoneCleanup(A, k, newVal, curVal, ctx, PV) {
   if (newVal == null || curVal == null) return false;
   var rn = resName(k);
   var fn = GONE_FN[rn];
-  if (!fn && rn !== 'bassam_plan_v1' && rn !== 'bassam_rounds_v1') return false;
+  if (!fn && @@SYS:empGone.refs.plan@@rn !== 'bassam_rounds_v1') return false;
   if (!empCleanAllowed(A, parseKey(k).dept, ctx)) return false;
   if (fn) {
     var a = PV ? PV.a() : parseJson(curVal, null), b = PV ? PV.b() : parseJson(newVal, null);

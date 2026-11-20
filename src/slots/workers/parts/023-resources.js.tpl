@@ -30,12 +30,7 @@ var RES_REG = {
   /* ── موظفو الإدارة ── */
   'bassam_employees_v1':       { scope: 'dept', cap: 'emps/data'@@SYS:res.emp.via.staff@@, self: 'email' },
   'bassam_options_v1':         { scope: 'dept', cap: 'emps/data' },
-@@SYS:res.custody@@@@SYS:res.reg.staff@@  /* ── التشغيل الميداني ── */
-  'bassam_plan_v1':            { scope: 'dept', cap: 'plan', via: { 'emps/data': 'EMP_REFS' } },
-  'bassam_zone_opts_v1':       { scope: 'dept', cap: 'plan' },
-  'bassam_gate_opts_v1':       { scope: 'dept', cap: 'plan' },
-  'bassam_mark_kinds_v1':      { scope: 'dept', cap: 'plan' },
-  /* ── المتابعة اليومية ── */
+@@SYS:res.custody@@@@SYS:res.reg.staff@@@@SYS:res.reg.plan@@  /* ── المتابعة اليومية ── */
   /* اعتماد الجولة عمليةُ setShiftAp: أعلامُ الاعتماد وبياناتها التابعة وحدها.
      أمّا closed · cWhy · needN · off · dopen فرصدٌ تشغيليّ لا اعتماد. */
   'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { dreport: 'NO_APPROVAL', 'emps/data': 'EMP_REFS' }, field: 'daily' },

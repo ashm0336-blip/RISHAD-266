@@ -8,8 +8,7 @@
      الأقفال : أقفال الجدول الشهري والمهام وسقف الاستئذان — الموردُ كلُّه اعتماد
      الجائزة : انتقال حالة الترشيح (st) وحده اعتماد */
 var OPS = {
-  'bassam_plan_v1':            { approve: ['floors.*.approved', 'months.*.mo', 'months.*.d.*.approved'], newAp: ['months.*.mo'], shape: 'plan' },
-  'bassam_rounds_v1':          { approve: ['*.shAp', '*.shAp.*', '*.ap', '*.auto', '*.mo', '*.d.*.ap', '*.dopen', '*.dopen.*', '*.dshut', '*.dshut.*'], newAp: ['*.ap', '*.mo', '*.dopen.*', '*.dshut.*'], shape: 'rounds' },
+@@SYS:ops.reg.plan@@  'bassam_rounds_v1':          { approve: ['*.shAp', '*.shAp.*', '*.ap', '*.auto', '*.mo', '*.d.*.ap', '*.dopen', '*.dopen.*', '*.dshut', '*.dshut.*'], newAp: ['*.ap', '*.mo', '*.dopen.*', '*.dshut.*'], shape: 'rounds' },
   'bassam_dreport_v1':         { approve: ['*.shifts.*.ap', '*.shifts.*.apAt', '*.shifts.*.apBy', '*.dopen', '*.dopen.*', '*.dshut', '*.dshut.*'], newAp: ['*.dopen.*', '*.dshut.*'], shape: 'dreport' },
 @@SYS:ops.reg.locks.staff@@@@SYS:ops.reg.tasks@@@@SYS:ops.reg.limit.staff@@@@SYS:ops.reg@@};
 function opsOf(k) { return OPS[resName(k)] || null; }

@@ -36,13 +36,7 @@ var ENT = {
   'bassam_dayshift_v1':       { map: 1, empty: '{}' },
   /* اليوم المختار: { y, m, d } */
   'bassam_dayfocus_v1':       { empty: '{}' },
-  /* ── الخطة التشغيلية ── */
-  'bassam_plan_v1':           { cols: [{ at: 'gates', idf: ['id', 'num'] }, { at: 'zones', idf: ['id', 'name'] }, { at: 'marks', idf: ['id', 'name'] }, { at: 'floors', idf: ['id', 'n'] }], mapAt: 'months', empty: '{}' },
-  /* loadZoneOpts / loadGateOpts: كائنٌ فيه قوائمُ خياراتٍ بدائية */
-  'bassam_zone_opts_v1':      { empty: '{}' },
-  'bassam_gate_opts_v1':      { empty: '{}', prim: ['loc', 'gtype', 'kind', 'route', 'cls', 'cat'] },
-  'bassam_mark_kinds_v1':     { empty: '[]', primRoot: 1 },
-  /* ── طوابع التصدير ── */
+@@SYS:ent.reg.plan@@  /* ── طوابع التصدير ── */
   'bassam_last_export_v1':    { empty: '0' },
   'bassam_last_full_export_v1': { empty: '0' }
 };
