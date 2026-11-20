@@ -314,7 +314,7 @@ test('⑤ no other place computes the calendar: one client service, one server p
   }
   /* لا صفحةَ ولا نظامَ يعرّف hMonthDays غير العُدّة وصفحتَي الظهر */
   const defs = files.filter((f) => /(?:^|\n)[ \t]*hMonthDays\s*\([^)]*\)\s*\{/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(ROOT, f).split(path.sep).join('/')).sort();
-  assert.deepEqual(defs, ['src/components/565-page-kit.js', 'src/modules/daily/logic.js', 'src/systems/dreport/client/logic.js', 'src/slots/modules/daily/logic.js.tpl']);
+  assert.deepEqual(defs, ['src/components/565-page-kit.js', 'src/modules/daily/logic.js', 'src/slots/modules/daily/logic.js.tpl', 'src/systems/dreport/client/logic.js']);   /* د5-هـ: مرتَّبة — التقريرُ في مجلده  */
   const service = read('src/i18n/385-calendar.js'), part = read('workers/parts/016-base-shared.js');
   for (const n of ['hPartsRiyadh', 'hNow', 'hText', 'hGregExact', 'hGregUTC', 'hMonthDays', 'hMonthDaysNoon', 'hWeekdayIndex']) { assert.match(service, new RegExp('function ' + n + '\\('), n); assert.match(service, new RegExp('\\b' + n + ': ' + n + '\\b'), n + ' مُصدَّرة'); }
   for (const n of ['calHijriAt', 'calHijriOk', 'calRiyadhMid', 'calDayNum', 'calHijriMid', 'calHijriDayMid', 'dsToday']) assert.match(part, new RegExp('function ' + n + '\\('), n);
