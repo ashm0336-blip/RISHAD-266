@@ -685,6 +685,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "systems/staff/client/534-staff-g4.js",
+   "kind": "js",
+   "line": 10495,
+   "new": "V7 · د5-د2: قراءاتُ الجدول الشهري المعلنة لبرامجَ أخرى (الجدول · الأقفال · الرموز · التفعيل · أسماء الموارد)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
    "line": 10494,

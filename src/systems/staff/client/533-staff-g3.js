@@ -9,6 +9,8 @@
 (function () {
   var bus = KIVO.bus;
   function doc(key, how) {
+    if (typeof how === 'function') return how(key);                    /* د5-د2: قارئُ الصفحة السائلة (كما كانت تقرأ) */
+    if (how && typeof how.get === 'function') return how.get(key);       /* مسودةُ المستدعي: القراءةُ تُسجَّل في حفظه */
     var S = KIVO.__BS_SRV.operations;
     if (how === 'granted' && S.state(key) === 'denied') return undefined;
     if (how === 'ready') return S.state(key) === 'ready' ? S.get(key) : null;

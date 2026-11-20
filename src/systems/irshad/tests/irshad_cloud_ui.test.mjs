@@ -37,6 +37,7 @@ test('Irshad uses the existing page-kit toast with the same warning/success pres
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/core/060-bus.js'), 'utf8'), W);   /* V7 · د5-د: الناقل (قلب المنصة) وروابطُ الجدول الشهري عليه — الصفحاتُ تسأل بالاسم */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), W);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), W);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), W);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), W);
   vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
   const page = new W.TestComponent();
@@ -75,7 +76,9 @@ function browser(handler = async () => json({ ok: 0 }, 500)) {
     removeEventListener(type, fn) { events.get(type)?.delete(fn); },
     dispatchEvent(event) { for (const fn of events.get(event.type) || []) fn(event); },
     fetch: async (url, options = {}) => { calls.push({ url: String(url), options }); return handler(String(url), options); }, print() { notices.push('print'); } };
-  W.window = W; vm.createContext(W); calendar(W); vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
+  W.window = W; vm.createContext(W); calendar(W);
+  for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/534-staff-g4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), W);   /* V7 · د5-د2: الناقل (قلب المنصة) وقراءاتُ الجدول الشهري المعلنة عليه — الصفحةُ تسأل بالاسم */
+  vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
   const page = new W.TestComponent();
   page.bsToast = message => notices.push(message); page.bsAck = message => notices.push(message);
   page.state.irTab = 'records'; page.state.irYear = 1448; page.state.irMonth = 5; page.state.irDay = 19;

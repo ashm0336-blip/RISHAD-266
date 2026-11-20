@@ -94,8 +94,8 @@ Object.assign(Component.prototype, {
   tkPickModel(t) {
     const e = this.state,
       n = this.loadEmps(),
-      r = this.bsOn("staff"),
-      ST = r ? this._tkLS("bassam_staffing_v3") : null,
+      r = !!KIVO.bus.read("staff.enabled@1", this),   /* V7 · د5-د2: قراءتان معلنتان من مالك الجدول — بغيابه: لا جدول (كالمعطَّل) */
+      ST = r ? KIVO.bus.read("staff.schedule@1", (k) => this._tkLS(k)) : null,
       DR = this._tkLS("bassam_dreport_v1"),
       TP = this._tkLS("bassam_perm_tpls_v1"),
       SO = this._tkLS("bassam_shift_options_v1"),
@@ -465,9 +465,9 @@ Object.assign(Component.prototype, {
       AC = e.acceptRef ? this._tkAcctMap(this.loadEmps()) : null,
       TM = this._tkM() || {};
     return {
-      dutyEmpty: 0 === t.length && this.bsOn("staff"),
+      dutyEmpty: 0 === t.length && !!KIVO.bus.read("staff.enabled@1", this),
       dutyHas: t.length > 0,
-      dutyStaffOn: this.bsOn("staff"),
+      dutyStaffOn: !!KIVO.bus.read("staff.enabled@1", this),
       dutyWt: W ? " — مهمة لنوع العمل «" + W + "» فقط" : "",
       dutyList: t.map((t) => {
         const ac = AC && null != t.id ? AC[String(t.id)] || "" : "";

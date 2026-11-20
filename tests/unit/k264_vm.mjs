@@ -91,7 +91,7 @@ export function loadClient({ C, boot, jar = { cookie: '' }, blocks = ['280-serve
   };
   T.run(blocks);
   /* V7 · د5-د: روابطُ الجدول الشهري على الناقل (ما كان الآخرون يقرؤونه ويكتبونه من مفاتيحه مباشرةً) — حاضرةٌ كما في الشجرة؛ staffLinks:false لاختبار غيابه */
-  if (staffLinks !== false) { try { T.run(['531-staff-links.js', '533-staff-g3.js']); } catch (e) { if (!/ENOENT|not found|غير موجود/i.test(String(e && e.message))) throw e; } }
+  if (staffLinks !== false) { try { T.run(['531-staff-links.js', '533-staff-g3.js', '534-staff-g4.js']); } catch (e) { if (!/ENOENT|not found|غير موجود/i.test(String(e && e.message))) throw e; } }
   return T;
 }
 /* تبويباتُ متصفحٍ واحد: مخزنٌ أصليٌّ واحد خلفها، وكلُّ كتابةٍ أصليةٍ في تبويب تُطلق حدثَ storage في التبويبات الأخرى وحدها (كما في المتصفحات) */

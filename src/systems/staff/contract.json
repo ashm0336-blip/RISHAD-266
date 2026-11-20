@@ -2,7 +2,7 @@
  "schema": 1,
  "system": "staff",
  "version": 1,
- "note": "V7 · د5-د: عقدُ الجدول الشهري بعد نقله إلى مجلده. ما يوفّره مسجَّلٌ في client/531-staff-links.js (العميل) و server/041a-shift-rename.js (الخادم).",
+ "note": "V7 · د5-د: عقدُ الجدول الشهري بعد نقله إلى مجلده. ما يوفّره مسجَّلٌ في client/531-staff-links.js (العميل) و server/041a-shift-rename.js (الخادم). · د5-د2: القراءاتُ المعلنة للبرامج الأخرى في client/534-staff-g4.js و server/044-staff-g4.js.",
  "owns": [
   "bassam_staffing_v3",
   "bassam_staffing_v2",
@@ -21,7 +21,14 @@
    "staff.shiftUsage@1": "(shift) ← { on, records, months, locked[] }: هل الجدولُ مفعَّل، وكم مسكَّناً على الوردية وفي كم شهر، والأشهرُ المعتمدة منها",
    "staff.usable@1": "() ← هل الجدولُ مفعَّلٌ في الإدارة النشطة (ورقتُه في سقف الإدارة) — لصفحات القاعدة التي تُظهر أو تُخفي ما يخصّه (client/533-staff-g3.js)",
    "staff.months@1": "(how?) ← وثيقةُ الأشهر { سنة-شهر: { مفتاحُ الموظف: { shift, rest, cs, muk … } } } — how: بلا قيمة كما هي (ترمي إن لم تُقرأ) · copy نسخة مستقلة · granted ‏undefined إن حُجبت · ready ‏null ما لم تجهز",
-   "staff.locks@1": "(how?) ← الأشهرُ المعتمدة { سنة-شهر: true } — how كما في staff.months@1"
+   "staff.locks@1": "العميل: (how?) ← الأشهرُ المعتمدة { 'سنة-شهر': true } — how: بلا قيمة كما هي · copy نسخة · granted ‏undefined إن حُجبت · ready ‏null ما لم تجهز · أو مسودةُ المستدعي/قارئُ صفحته (تُسجَّل القراءة في حفظه). الخادم: (env, d) ← وعدٌ بها أو null",
+   "staff.schedule@1": "العميل: (via?) ← الجدولُ كلُّه { 'Y-M': { مفتاحُ الموظف: صفّ } } كما هو مخزَّن أو null؛ via: مسودةُ المستدعي (تُسجَّل القراءةُ في حفظه) أو قارئُ صفحته (name ⇒ قيمة)، وبلا via قراءةُ Operations المباشرة (ترمي إن لم يُقرأ المورد). الخادم: (env, d) ← وعدٌ بالجدول من المخزن التشغيلي أو null",
+   "staff.callsigns@1": "(via?) ← قائمةُ رموز النداء أو null",
+   "staff.enabled@1": "العميل: (page?) ← هل الجدولُ مفعَّلٌ في الإدارة النشطة (تُسأل bsOn الصفحة السائلة إن أُعطيت). الخادم: (A, d) ← هل هو مفعَّلٌ لصاحب الطلب في الإدارة",
+   "staff.resources@1": "(…kinds) ← أسماءُ موارد الجدول بحسب النوع: schedule · legacy · snap · locks · callsigns · permLimit (بلا نوعٍ: كلُّها) — لمن ينتظر تغيّرَها أو يلتقطها في سياقه دون أن يسمّيها",
+   "staff.readable@1": "الخادم: (A, d) ← هل يقرأ صاحبُ الطلب الجدولَ في الإدارة",
+   "staff.scheduleRef@1": "الخادم: (ctx) ← الجدولُ المرجعي في سياق الطلب الملتقَط (للحكم لا للعرض)",
+   "staff.scheduleSeen@1": "الخادم: (ctx) ← الجدولُ كما يراه صاحبُ الطلب في السياق الملتقَط (بعد الصلاحية والإسقاط) أو null"
   },
   "commands": {
    "staff.callsign.set@1": "{ month, changes:[{ ekey, cs, ifCs? }] } داخل مسودة المستدعي — يكتب حقل cs وحده في شهرٍ واحد؛ ifCs: يُغيَّر فقط إن كان الموظف ما زال يحمل ذلك الرمز"
@@ -54,5 +61,20 @@
    "what": "التقرير اليومي يسند رمزَ النداء فيُكتب في الجدول",
    "how": "commands ← staff.callsign.set@1 (داخل مسودة التقرير)"
   }
- ]
+ ],
+ "readResources": {
+  "_note": "V7 · د5-د2: ما تحتاجه كلُّ قراءةٍ معلنة من موارد Operations محمَّلةً قبل رسم الصفحة التي تستعملها — يضمّه tools/generate.py إلى operationsReadSets لتلك الصفحة (المستهلكُ لا يسمّي المفتاح)",
+  "staff.schedule@1": [
+   "bassam_staffing_v3"
+  ],
+  "staff.locks@1": [
+   "bassam_staffing_locks_v1"
+  ],
+  "staff.callsigns@1": [
+   "bassam_callsigns_v1"
+  ],
+  "staff.months@1": [
+   "bassam_staffing_v3"
+  ]
+ }
 }

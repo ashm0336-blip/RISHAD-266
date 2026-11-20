@@ -11,6 +11,7 @@
    "client/530-emp-day-facts.js",
    "client/531-staff-links.js",
    "client/533-staff-g3.js",
+   "client/534-staff-g4.js",
    "client/helmet.css",
    "client/logic.js",
    "client/meta.json",
@@ -29,6 +30,12 @@
     "after": "040-employee-delete-cleanup.js",
     "order": 10,
     "head": "/* ══ إعادة تسمية الوردية — تبعتُها في الجدول الشهري ═══════════════════════════"
+   },
+   {
+    "file": "server/044-staff-g4.js",
+    "after": "016b-server-bus.js",
+    "order": 10,
+    "new": "V7 · د5-د2: قراءاتُ الجدول الشهري المعلنة على ناقل الخادم (المهام · المضبوطات · الاسترشاد)"
    }
   ]
  },

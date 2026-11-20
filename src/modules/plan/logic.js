@@ -4107,11 +4107,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   _bsSig() {
     try {
-      const K = ["bassam_staffing_v3", "bassam_employees_v1", "bassam_staffing_locks_v1", "bassam_shift_options_v1", "bassam_perms_v1"];
+      /* V7 · د5-د2: الجدولُ وأقفالُه قراءتان معلنتان من مالكهما (بالترتيب نفسه)؛ بغيابه يدخلان البصمةَ فارغين */
+      const K = [["staff.schedule@1"], "bassam_employees_v1", ["staff.locks@1"], "bassam_shift_options_v1", "bassam_perms_v1"];
       let o = "";
       for (const k of K) {
-        const v =
-          this._opService().resources.indexOf(k) >= 0
+        const v = Array.isArray(k)
+          ? (KIVO.bus.has(k[0]) ? JSON.stringify(KIVO.bus.read(k[0], (n) => this._opRead(n))) : "")
+          : this._opService().resources.indexOf(k) >= 0
             ? JSON.stringify(this._opRead(k))
             : localStorage.getItem(k) || "";
         let h = 5381;
@@ -6623,7 +6625,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     });
     let m = {};
     try {
-      const t = this._opRead("bassam_staffing_v3");
+      const t = KIVO.bus.read("staff.schedule@1", (k) => this._opRead(k));   /* V7 · د5-د2: المالكُ يقرأ بمسودة الصفحة — بغيابه {} */
       if (t) {
         const e = t;
         e &&

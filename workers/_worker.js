@@ -1778,6 +1778,32 @@ function srvBusProvide(name, fn) {
   SRV_BUS_READS[name] = fn;
 }
 function srvBusRead(name) { var fn = SRV_BUS_READS[srvBusNamed(name)]; return fn ? fn.apply(null, Array.prototype.slice.call(arguments, 1)) : undefined; }
+/* ══ الجدول الشهري — قراءاتٌ معلنة على ناقل الخادم لبرامجَ أخرى (V7 · د5-د2) ═══
+   المهام (أهليةُ الإسناد) والمضبوطات (سياقُ اليوم) والاسترشاد (ورديةُ الموظف) لا تسمّي مفاتيحَ الجدول: تسأل بالاسم (srvBusRead).
+   بغياب هذا الجزء القراءةُ undefined وسلوكُ المستهلك عند الغياب مكتوبٌ في عقده (consumes ← absent).
+     staff.schedule@1(env, d)      وعدٌ بالجدول كلِّه من المخزن التشغيلي (أو null) — قراءةُ خادمٍ بلا إسقاط: المستهلكُ يحكم بها ولا يعرضها.
+     staff.locks@1(env, d)         وعدٌ بالأشهر المعتمدة (أو null).
+     staff.readable@1(A, d)        هل يقرأ صاحبُ الطلب الجدولَ في الإدارة (canRead) — لتفصيل السبب.
+     staff.enabled@1(A, d)         هل الجدولُ مفعَّلٌ لصاحب الطلب في الإدارة (مفتاحُ النظام).
+     staff.scheduleRef@1(ctx)      الجدولُ المرجعي في سياق الطلب الملتقَط (ctx.refs) — للحكم لا للعرض.
+     staff.scheduleSeen@1(ctx)     الجدولُ كما يراه صاحبُ الطلب في السياق الملتقَط (canRead ثم الإسقاط) — أو null.
+     staff.resources@1(…kinds)     أسماءُ موارد الجدول بحسب النوع: schedule · legacy · snap · locks · callsigns · permLimit (بلا نوعٍ: كلُّها). */
+var STAFF_BUS_RES = { schedule: 'bassam_staffing_v3', legacy: 'bassam_staffing_v2', snap: 'bassam_staffing_snap_v1', locks: 'bassam_staffing_locks_v1', callsigns: 'bassam_callsigns_v1', permLimit: 'bassam_perm_limit_v1' };
+function staffBusKey(d, kind) { return 'bsdept:' + d + ':' + STAFF_BUS_RES[kind]; }
+srvBusProvide('staff.schedule@1', async function (env, d) { return parseJson(await opResourceGet(env, staffBusKey(d, 'schedule')), null); });
+srvBusProvide('staff.locks@1', async function (env, d) { return parseJson(await opResourceGet(env, staffBusKey(d, 'locks')), null); });
+srvBusProvide('staff.readable@1', function (A, d) { return canRead(A, staffBusKey(d, 'schedule')); });
+srvBusProvide('staff.enabled@1', function (A, d) { return capOnDept(A, d, 'staff'); });
+srvBusProvide('staff.scheduleRef@1', function (ctx) { return ctx.refs.staffing[ctx.d]; });
+srvBusProvide('staff.scheduleSeen@1', function (ctx) {
+  var k = staffBusKey(ctx.d, 'schedule');
+  if (!canRead(ctx.A, k)) return null;
+  return parseJson(enfProjectStr(ctx.A, k, ctx.rawKeys[k], ctx.refs), null);
+});
+srvBusProvide('staff.resources@1', function () {
+  var kinds = arguments.length ? Array.prototype.slice.call(arguments) : Object.keys(STAFF_BUS_RES);
+  return kinds.map(function (kind) { return STAFF_BUS_RES[kind]; }).filter(Boolean);
+});
 /* ═══ التفويض في الخادم ═══════════════════════════════════════════════════
    كانت البوابة تتحقق أن الحافظ مسجّل دخول فحسب، وتأخذ منه أي مفتاح بأي
    قيمة — فالصلاحيات كلها كانت تُطبَّق في المتصفح وحده. هنا تُعاد قراءة
@@ -13753,8 +13779,8 @@ function irMutationData(ctx, b, before, now) {
     var matches = employees.filter(function (e) { return isObj(e) && e.eid === out.eid; });
     if (matches.length !== 1) throw irError('irshad-employee');
     if (create || out.eid !== before.eid) out.name = String(matches[0].name || 'بدون اسم');
-    if (capOnDept(ctx.A, ctx.d, 'staff')) {
-      var month = ctx.refs.staffing[ctx.d], schedule = isObj(month) && month[out.y + '-' + out.m], row = isObj(schedule) && schedule[out.eid];
+    if (srvBusRead('staff.enabled@1', ctx.A, ctx.d)) {   /* V7 · د5-د2: بغياب مالك الجدول كالمعطَّل — لا تحقّقَ من الوردية */
+      var month = srvBusRead('staff.scheduleRef@1', ctx), schedule = isObj(month) && month[out.y + '-' + out.m], row = isObj(schedule) && schedule[out.eid];
       if (!isObj(row) || row.shift !== out.shift || (Array.isArray(row.rest) && row.rest.indexOf(out.d) >= 0))
         throw irError('irshad-employee-shift');
     }
@@ -14295,12 +14321,10 @@ var SZ_CONTEXT = {
     return szError("seized-" + c, s);
   },
   extraKeys: function (d) {
-    return [
-      "bassam_dreport_v1",
-      "bassam_rounds_v1",
-      "bassam_staffing_locks_v1",
-      "bassam_dayshift_v1",
-    ].map(function (k) {
+    /* V7 · د5-د2: موردُ أقفال الجدول يسمّيه مالكُه (في موضعه نفسه)؛ بغيابه لا يُلتقط */
+    return ["bassam_dreport_v1", "bassam_rounds_v1"]
+      .concat(srvBusRead("staff.resources@1", "locks") || [], ["bassam_dayshift_v1"])
+      .map(function (k) {
       return "bsdept:" + d + ":" + k;
     });
   },
@@ -15778,7 +15802,7 @@ function szDayContext(ctx, q, clock) {
     });
   });
   var report = (szReference(ctx, "bassam_dreport_v1") || {})[key],
-    staff = (szReference(ctx, "bassam_staffing_v3") || {})[y + "-" + m] || {},
+    staff = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
     round = (szReference(ctx, "bassam_rounds_v1") || {})[key],
     shifts = [],
     rows = {},
@@ -29286,7 +29310,7 @@ async function tasksMgmtRoutes(request, env, path, ss) {
   }
 }
 /* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══
-   المصدرُ المعتمد: الخطةُ التشغيلية ← الجدولُ الشهري (bassam_staffing_v3[Y-M][مفتاح الموظف]: shift · rest[] · perm[] · leaves[] · muk)
+   المصدرُ المعتمد: الخطةُ التشغيلية ← الجدولُ الشهري (staff.schedule@1 ← [Y-M][مفتاح الموظف]: shift · rest[] · perm[] · leaves[] · muk)
    + أوقاتُ الورديات (bassam_shift_options_v1: tStart/tEnd — الليليةُ تعبر منتصف الليل فيومُها يومُ بدئها) + تقريرُ اليوم المسحوب
    (bassam_dreport_v1: غياب ab · إجازة lv · استئذان pm) + مهامُه الأخرى (التعارض) + صلاحياتُه التشغيلية التي تحتاجها المهمة (needs).
    النتيجة لكل (موظف × موعد): «متاح» · «غير متاح» (بالسبب) · «بانتظار التحقق» (لا جدول · لا صفّ · لا وقتَ للوردية · استئذان · تتجاوز الوردية).
@@ -29297,9 +29321,11 @@ async function tasksMgmtRoutes(request, env, path, ss) {
 var TK_EL_OK = 'متاح', TK_EL_NO = 'غير متاح', TK_EL_WAIT = 'بانتظار التحقق';
 async function tkEligCtx(env, A, d) {
   var g = async function (n) { return parseJson(await opResourceGet(env, 'bsdept:' + d + ':' + n), null); };
-  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), staff: await g('bassam_staffing_v3'), locks: await g('bassam_staffing_locks_v1'),
+  /* V7 · د5-د2: الجدولُ وأقفالُه قراءتان معلنتان من مالكهما (بالترتيب نفسه)؛ بغيابه null ⇒ «بانتظار التحقق: لا جدول» كما لو لم يُنشأ جدول */
+  var sb = async function (n) { var v = await srvBusRead(n, env, d); return v === undefined ? null : v; };
+  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), staff: await sb('staff.schedule@1'), locks: await sb('staff.locks@1'),
     shifts: await g('bassam_shift_options_v1'), rep: await g('bassam_dreport_v1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
-  C.detail = A && A.u ? (A.u.role === 'super' || canRead(A, 'bsdept:' + d + ':bassam_staffing_v3')) : false;
+  C.detail = A && A.u ? (A.u.role === 'super' || !!srvBusRead('staff.readable@1', A, d)) : false;
   /* KIVO_265 · F-3 (RBAC_AUDIT_265): عناوينُ المهام المتعارضة (conf[].t) لمن يقرأ مخزنَ المهام (task.view) وحده — كان حاملُ task.create/assign بلا task.view يقرؤها */
   C.view = A && A.u ? (A.u.role === 'super' || canRead(A, tkK(d))) : false;
   return C;
@@ -29661,7 +29687,7 @@ async function tkRecurRoute(env, request, A, url, b) {
   var due = null; if (typeof tkDueRun === 'function') { TK_DUE_LAST[d] = Date.now(); try { due = await tkDueRun(env, request, d); } catch (eD) { swallow('tk-due', eD); } }   /* KIVO_265 · البند 10 (074) */
   if (typeof tkGateStamp === 'function') await tkGateStamp(env, typeof tkDueRun === 'function' ? ['rec', 'due'] : ['rec'], d, Date.now());   /* الفحصُ العميق · R8: جرى الآن ⇒ لا يعيده «ملفي» في عزلةٍ أخرى قبل مهلته */
   /* KIVO_265 · M-1: السببُ التفصيليّ لمن يقرأ الجدولَ الشهري وحده (كتَفصيل الأهلية في 072 tkEligCtx) — ولغيره الحكمُ المجرّد (دفاعٌ ثانٍ فوق tkEligCtx) */
-  var sched = A.u.role === 'super' || canRead(A, 'bsdept:' + d + ':bassam_staffing_v3');
+  var sched = A.u.role === 'super' || !!srvBusRead('staff.readable@1', A, d);   /* V7 · د5-د2: بغياب مالك الجدول الحكمُ المجرّد لغير المدير العام */
   var sk = rep.skipped.map(function (s1) { return { id: s1.id, k: s1.k, ekey: s1.ekey, why: sched ? s1.why : s1.gen }; });
   return json({ ok: 1, created: rep.created, skipped: sk, denied: rep.denied, series: rep.series, due: due });
 }

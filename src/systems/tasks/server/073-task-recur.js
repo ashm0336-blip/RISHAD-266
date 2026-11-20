@@ -228,7 +228,7 @@ async function tkRecurRoute(env, request, A, url, b) {
   var due = null; if (typeof tkDueRun === 'function') { TK_DUE_LAST[d] = Date.now(); try { due = await tkDueRun(env, request, d); } catch (eD) { swallow('tk-due', eD); } }   /* KIVO_265 · البند 10 (074) */
   if (typeof tkGateStamp === 'function') await tkGateStamp(env, typeof tkDueRun === 'function' ? ['rec', 'due'] : ['rec'], d, Date.now());   /* الفحصُ العميق · R8: جرى الآن ⇒ لا يعيده «ملفي» في عزلةٍ أخرى قبل مهلته */
   /* KIVO_265 · M-1: السببُ التفصيليّ لمن يقرأ الجدولَ الشهري وحده (كتَفصيل الأهلية في 072 tkEligCtx) — ولغيره الحكمُ المجرّد (دفاعٌ ثانٍ فوق tkEligCtx) */
-  var sched = A.u.role === 'super' || canRead(A, 'bsdept:' + d + ':bassam_staffing_v3');
+  var sched = A.u.role === 'super' || !!srvBusRead('staff.readable@1', A, d);   /* V7 · د5-د2: بغياب مالك الجدول الحكمُ المجرّد لغير المدير العام */
   var sk = rep.skipped.map(function (s1) { return { id: s1.id, k: s1.k, ekey: s1.ekey, why: sched ? s1.why : s1.gen }; });
   return json({ ok: 1, created: rep.created, skipped: sk, denied: rep.denied, series: rep.series, due: due });
 }

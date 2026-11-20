@@ -264,7 +264,7 @@
       r = e.map((t) => t.name);
     let n = {};
     try {
-      n = KIVO.__BS_SRV.operations.get("bassam_staffing_v3") || {};
+      n = KIVO.bus.read("staff.schedule@1") || {};   /* V7 · د5-د2: قراءةٌ معلنة — بغياب مالك الجدول الكلُّ «بدون وردية» */
     } catch (t) {}
     const a = n[KIVO.BassamEmpImp ? KIVO.BassamEmpImp.curHijriKey() : ""] || {},
       i = {};
