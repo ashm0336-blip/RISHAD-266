@@ -1835,6 +1835,24 @@ srvBusProvide('staff.resources@1', function () {
   var kinds = arguments.length ? Array.prototype.slice.call(arguments) : Object.keys(STAFF_BUS_RES);
   return kinds.map(function (kind) { return STAFF_BUS_RES[kind]; }).filter(Boolean);
 });
+/* ══ التقرير اليومي — قراءاتٌ معلنة على ناقل الخادم لبرامجَ أخرى (V7 · د5-هـ · r2) ═══
+   المهام (أهليةُ الإسناد) والمضبوطات (سياقُ اليوم) لا تسمّي موردَ التقرير: تسأل بالاسم (srvBusRead).
+   بغياب هذا الجزء القراءةُ undefined وسلوكُ المستهلك عند الغياب مكتوبٌ في عقده (consumes ← absent).
+     dreport.doc@1(env, d)         وعدٌ بوثيقة التقرير كلِّها من المخزن التشغيلي (أو null) — قراءةُ خادمٍ بلا إسقاط: المستهلكُ يحكم بها ولا يعرضها.
+     dreport.docSeen@1(ctx)        وثيقةُ التقرير كما يراها صاحبُ الطلب في السياق الملتقَط (canRead ثم الإسقاط) — أو null.
+     dreport.resources@1(…kinds)   أسماءُ موارد التقرير بحسب النوع: doc · leaveKinds (بلا نوعٍ: كلُّها). */
+var DREPORT_BUS_RES = { doc: 'bassam_dreport_v1', leaveKinds: 'bassam_leave_kinds_v1' };
+function dreportBusKey(d, kind) { return 'bsdept:' + d + ':' + DREPORT_BUS_RES[kind]; }
+srvBusProvide('dreport.doc@1', async function (env, d) { return parseJson(await opResourceGet(env, dreportBusKey(d, 'doc')), null); });
+srvBusProvide('dreport.docSeen@1', function (ctx) {
+  var k = dreportBusKey(ctx.d, 'doc');
+  if (!canRead(ctx.A, k)) return null;
+  return parseJson(enfProjectStr(ctx.A, k, ctx.rawKeys[k], ctx.refs), null);
+});
+srvBusProvide('dreport.resources@1', function () {
+  var kinds = arguments.length ? Array.prototype.slice.call(arguments) : Object.keys(DREPORT_BUS_RES);
+  return kinds.map(function (kind) { return DREPORT_BUS_RES[kind]; }).filter(Boolean);
+});
 /* ═══ التفويض في الخادم ═══════════════════════════════════════════════════
    كانت البوابة تتحقق أن الحافظ مسجّل دخول فحسب، وتأخذ منه أي مفتاح بأي
    قيمة — فالصلاحيات كلها كانت تُطبَّق في المتصفح وحده. هنا تُعاد قراءة
@@ -14354,8 +14372,9 @@ var SZ_CONTEXT = {
   },
   extraKeys: function (d) {
     /* V7 · د5-د2: موردُ أقفال الجدول يسمّيه مالكُه (في موضعه نفسه)؛ بغيابه لا يُلتقط */
-    return ["bassam_dreport_v1", "bassam_rounds_v1"]
-      .concat(srvBusRead("staff.resources@1", "locks") || [], ["bassam_dayshift_v1"])
+    /* V7 · د5-هـ: وموردُ التقرير اليومي يسمّيه مالكُه (في موضعه نفسه)؛ بغيابه لا يُلتقط */
+    return (srvBusRead("dreport.resources@1", "doc") || [])
+      .concat(["bassam_rounds_v1"], srvBusRead("staff.resources@1", "locks") || [], ["bassam_dayshift_v1"])
       .map(function (k) {
       return "bsdept:" + d + ":" + k;
     });
@@ -15833,7 +15852,7 @@ function szDayContext(ctx, q, clock) {
       if (k) index[String(k)] = e;
     });
   });
-  var report = (szReference(ctx, "bassam_dreport_v1") || {})[key],
+  var report = (srvBusRead("dreport.docSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب مالك التقرير {} — لا تقريرَ لليوم */
     sched = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
     round = (szReference(ctx, "bassam_rounds_v1") || {})[key],
     shifts = [],
@@ -29361,9 +29380,10 @@ var TK_EL_OK = 'متاح', TK_EL_NO = 'غير متاح', TK_EL_WAIT = 'بانت�
 async function tkEligCtx(env, A, d) {
   var g = async function (n) { return parseJson(await opResourceGet(env, 'bsdept:' + d + ':' + n), null); };
   /* V7 · د5-د2: الجدولُ وأقفالُه قراءتان معلنتان من مالكهما (بالترتيب نفسه)؛ بغيابه null ⇒ «بانتظار التحقق: لا جدول» كما لو لم يُنشأ جدول */
+  /* V7 · د5-هـ: وتقريرُ اليوم قراءةٌ معلنة من مالكه (dreport.doc@1)؛ بغيابه null ⇒ لا غيابَ ولا إجازةَ ولا استئذانَ من التقرير */
   var sb = async function (n) { var v = await srvBusRead(n, env, d); return v === undefined ? null : v; };
   var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), sched: await sb('staff.schedule@1'), locks: await sb('staff.locks@1'),
-    shifts: await g('bassam_shift_options_v1'), rep: await g('bassam_dreport_v1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
+    shifts: await g('bassam_shift_options_v1'), rep: await sb('dreport.doc@1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
   C.detail = A && A.u ? (A.u.role === 'super' || !!srvBusRead('staff.readable@1', A, d)) : false;
   /* KIVO_265 · F-3 (RBAC_AUDIT_265): عناوينُ المهام المتعارضة (conf[].t) لمن يقرأ مخزنَ المهام (task.view) وحده — كان حاملُ task.create/assign بلا task.view يقرؤها */
   C.view = A && A.u ? (A.u.role === 'super' || canRead(A, tkK(d))) : false;

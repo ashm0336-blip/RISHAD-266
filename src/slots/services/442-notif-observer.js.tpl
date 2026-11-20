@@ -73,34 +73,7 @@
   /* الجدول الشهري تخطيطٌ بين مدير الإدارة ورؤساء الورديات — تنبيهاته لهم وحدهم، ولا يصل الموظفَ شيء منه؛ تشغيله يبدأ بسحب التقرير اليومي */
   function empName(did, key){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []) || []; var e = emps.filter(function(x){ return x.eid === key || x.nid === key || x.name === key; })[0]; return e ? e.name : String(key); } catch(e){ return String(key); } }
 @@SYS:nfo.watch.staff@@@@SYS:nfo.watch.tasks@@  // Custody notifications belong to the typed server transaction; no retired KV observer.
-  WATCH['bassam_dreport_v1'] = function(did, o, n){
-    o = o || {}; n = n || {}; var today = todayKey().key; var isToday = function(day){ return day === today; }; var LB = { pr:'حاضر', ab:'غياب', pm:'استئذان', lv:'إجازة', tea:'استراحة', cls:'مغلق', rest:'راحة', rs:'راحة', tr:'محوَّل', ex:'مستثنى', late:'تأخر' };
-    var changedDays = Object.keys(n).filter(function(day){ return /^\d+-\d+-\d+$/.test(day) && !eq(o[day], n[day]); });
-    if (changedDays.length > 3) return;                    /* استيراد أو تهيئة تاريخية لا تُنتج تنبيهات تشغيل */
-    changedDays.forEach(function(day){ var od = (o[day] || {}).shifts || {}, nd = (n[day] || {}).shifts || {};
-      Object.keys(nd).forEach(function(sh){ var a = od[sh] || {}, b = nd[sh] || {}; var vday = day.replace(/-/g, '/');
-        if (!a.pulled && b.pulled) { emit('rep_pull', { dept: did, vars: { 'الوردية': sh, 'اليوم': vday, 'المُعدّل': who() } }); if (b.cont) emit('rep_cont', { dept: did, vars: { 'الوردية': sh, 'اليوم': b.cont } });
-          /* الاحتساب يبدأ هنا: كل موظف في الكشف يعرف ورديته اليوم — أو أن اليوم راحته */
-          var ld0 = b.leaders || {}; var lead = [ld0.chief ? 'رئيس: ' + ld0.chief : '', ld0.deputy ? 'نائب: ' + ld0.deputy : ''].filter(Boolean).join(' · ') || '—';
-          var tm = (b.def && (b.def.tStart || b.def.tEnd)) ? '(' + (b.def.tStart || '') + ' → ' + (b.def.tEnd || '') + ')' : '';
-          var wdn = wdName(day); var restMap = (b.rest && typeof b.rest === 'object') ? b.rest : {};
-          if (isToday(day)) (b.roster || []).forEach(function(r){ if (!r || !r.ekey) return; var rest = Array.isArray(restMap[r.ekey]) ? restMap[r.ekey] : restBase(did, day, r.ekey);
-            if ((r.st || 'pr') === 'pr' && isRestOn(rest, wdn)) emit('rep_restday', { dept: did, own: [r.ekey], vars: { 'اليوم': wdn + ' ' + vday, 'الوردية': sh } });
-            else emit('rep_today', { dept: did, own: [r.ekey], vars: { 'الوردية': sh, 'الوقت': tm, 'القيادة': lead, 'اليوم': vday } }); }); }
-        /* أيام الراحة تُعدَّل داخل التقرير */
-        var ra = (a.rest && typeof a.rest === 'object') ? a.rest : {}, rb = (b.rest && typeof b.rest === 'object') ? b.rest : {};
-        if (isToday(day)) Object.keys(rb).forEach(function(ek){ if (a.pulled && !eq(ra[ek] || null, rb[ek] || null)) emit('rep_rest', { dept: did, own: [ek], vars: { 'الوردية': sh, 'الأيام': (rb[ek] || []).join('، ') || 'بلا راحة', 'المُعدّل': who() } }); });
-        if (!!a.ap !== !!b.ap) { var pct = ''; try { var rs = b.roster || []; pct = rs.length ? Math.round(rs.filter(function(r){ return r.st === 'pr' || r.st === 'tin'; }).length / rs.length * 100) : ''; } catch(e){} emit('rep_ok', { dept: did, vars: { 'الفعل': b.ap ? 'اعتُمد' : 'فُكّ اعتماد', 'الوردية': sh, 'النسبة': pct } });
-          if (b.ap && isToday(day)) (b.roster || []).forEach(function(r){ if (r && r.ekey) emit('rep_ap', { dept: did, own: [r.ekey], vars: { 'الوردية': sh, 'اليوم': vday, 'الحالة': LB[r.st || 'pr'] || 'حاضر' } }); }); if (b.ap && pct !== '' && pct < 80) emit('kp_att', { dept: did, vars: { 'الوردية': sh, 'النسبة': pct, 'الحد': 80 } }); }
-        var la = a.leaders || {}, lb = b.leaders || {}; ['chief','deputy'].forEach(function(role){ if ((la[role] || '') !== (lb[role] || '') && lb[role]) { var ek = ekeyByName(did, lb[role]); emit('rep_lead', { dept: did, own: ek ? [ek] : [], vars: { 'الدور': role === 'chief' ? 'رئيس' : 'نائب رئيس', 'الوردية': sh, 'الاسم': lb[role] } }); } });
-        var pm = {}; (a.roster || []).forEach(function(r){ pm[r.ekey] = r; });
-        (b.roster || []).forEach(function(r){ var p = pm[r.ekey]; if (p && p.st === r.st && (p.loc || '') === (r.loc || '')) return;
-          if ((!p || p.st !== r.st) && (r.st === 'ab' || r.st === 'pm' || r.st === 'lv')) { emit('rep_att', { dept: did, own: [r.ekey], vars: { 'الحالة': LB[r.st] || 'مؤشَّر', 'الوردية': sh, 'اليوم': vday } });
-            if (r.st === 'pm') { var q = pmCount(n, day, r.ekey); if (q >= 2) emit('rep_quota', { dept: did, own: [r.ekey], vars: { 'الاسم': r.name || empName(did, r.ekey), 'الشهر': monLbl(day.split('-').slice(0, 2).join('-')), 'العدد': q, 'الحد': 2 }, once: 'quota:' + day.split('-').slice(0, 2).join('-') + ':' + r.ekey }); } }
-          if (r.tin && (!p || !p.tin)) emit('rep_mv', { dept: did, own: [r.ekey], vars: { 'الوردية': sh, 'الموقع': r.loc || r.tfrom || '—', 'المُعدّل': who() } });
-          else if (p && (p.loc || '') !== (r.loc || '') && r.loc) emit('rep_here', { dept: did, own: [r.ekey], vars: { 'الموقع': r.loc, 'الوردية': sh } }); }); }); });
-  };
-  var WD = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+@@SYS:nfo.watch.dreport@@  var WD = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   function wdName(day){ /* اسم يوم الأسبوع لتاريخ هجري y-m-d بالتقويم أم القرى */
     try { var p = day.split('-').map(Number); return WD[KIVO.BassamCal.hWeekdayIndex(p[0], p[1], p[2], 400)] || ''; } catch(e){} return '';   /* V7 · د5-د2: البحثُ (±400 يوماً) صار في الخدمة */
   }
@@ -199,9 +172,7 @@
     if (isMgr() || isSuper()) {
       /* المضبوطات: قطع محفوظة أكثر من 30 يوماً */
       /* المهام: «يقترب موعدها» و«متأخرة» صار يُصدرهما الخادمُ مرةً واحدة لكل صفّ (KIVO_265 · البند 10 — workers/parts/074-task-due.js) ولو لم تكن المنصةُ مفتوحةً عند المسؤول — فلا إصدارَ هنا */
-      /* التقرير: مسحوب بلا اعتماد قبل نهاية الوردية بساعة */
-      try { var dr = J(rawGet('bsdept:' + did + ':bassam_dreport_v1'), {}); var day = dr[T.y + '-' + T.m + '-' + T.d]; var shifts = J(rawGet('bsdept:' + did + ':bassam_shift_options_v1'), []) || []; if (day && day.shifts) Object.keys(day.shifts).forEach(function(sh){ var s = day.shifts[sh]; if (!s.pulled || s.ap) return; var so = (shifts || []).filter(function(x){ return (x.name || x) === sh; })[0]; var end = so && so.tEnd; if (!end) return; var m = /^(\d+):(\d+)/.exec(end); if (!m) return; var endMin = +m[1] * 60 + +m[2], nowMin = hh * 60 + now.getMinutes(); if (endMin - nowMin > 0 && endMin - nowMin <= 60) emit('rep_late', { dept: did, vars: { 'الوردية': sh, 'الوقت': end }, once: 'rep_late:' + T.key + ':' + sh }); }); } catch(e){}
-      /* نقص الغد */
+@@SYS:nfo.tick.dreport@@      /* نقص الغد */
 @@SYS:nfo.tick.staff@@      /* العهد المتأخرة */
       // No custody history polling on the client; due notices require server support.
       /* ملخص الاسترشاد اليومي 23:30 */

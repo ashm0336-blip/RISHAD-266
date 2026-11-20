@@ -45,7 +45,7 @@
    kept: a record equal to the stored one is the stored object); a hidden part PRESENT in the incoming value is left as sent, so the
    existing rules judge it (an unauthorised change is denied, never silently applied). Super: unchanged both ways. */
 var PRIV_EMP_F = ['nid', 'phone', 'email', 'empno', 'contact'];
-var PRIV_EMP_RES = 'bassam_employees_v1', PRIV_DR_RES = 'bassam_dreport_v1', PRIV_PERM_KEY = 'bassam_perms_v1';
+var PRIV_EMP_RES = 'bassam_employees_v1', PRIV_DR_RES = @@SYS:priv.drRes.dreport|empty="null"@@, PRIV_PERM_KEY = 'bassam_perms_v1';
 var PRIV_PERM_EMPK = { emps: 1, tplOf: 1, empLens: 1 }, PRIV_PERM_UNITK = { caps: 1, subs: 1, lenses: 1, capOwn: 1 };   /* capOwn: caps-own per-unit mode (021) */
 function privOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 function privPut(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true }); }   /* «__proto__» stays data */
@@ -64,7 +64,7 @@ function privPersonalOk(A, d) {
 }
 /* readers of the two pages that use gender operationally (distribution of the shift) */
 function privGenderOk(A, d) {
-  return privPersonalOk(A, d) || privMemo(A, '__privG', d, function () { return privHeld(A, d, [@@SYS:priv.gender.keys.staff@@'report.view'], [@@SYS:priv.gender.leaves.staff@@'dreport:view']); });
+  return privPersonalOk(A, d) || privMemo(A, '__privG', d, function () { return privHeld(A, d, [@@SYS:priv.gender.keys.staff@@@@SYS:priv.gender.keys.dreport@@], [@@SYS:priv.gender.leaves.staff@@@@SYS:priv.gender.leaves.dreport@@]); });
 }
 function privSelfRec(A, e) {
   var ek = String((A && A.u && A.u.ekey) || '');
@@ -268,7 +268,7 @@ function privPermsStale(A, ps, nRaw, cRaw) {
   return privPermsOmits(A, parseJson(String(nRaw), null), parseJson(String(cRaw), null)) ? 'perms-stale-client' : '';
 }
 /* (4) references by nid */
-var PRIV_TOK_RES = { @@SYS:priv.tokRes.staff@@@@SYS:priv.tokRes.plan@@bassam_rounds_v1: 1, bassam_dreport_v1: 1@@SYS:priv.tokRes.tasks@@ };
+var PRIV_TOK_RES = { @@SYS:priv.tokRes.staff@@@@SYS:priv.tokRes.plan@@bassam_rounds_v1: 1@@SYS:priv.tokRes.dreport@@@@SYS:priv.tokRes.tasks@@ };
 var PRIV_NO = { privacy: 'hidden' };   /* privIn: the incoming value changes a hidden reference ⇒ refused (054) */
 /* { M: nid→eid, R: eid→nid } of the records of unit d whose nid the actor does not receive, or null; have: raw values by key */
 function privTok(A, d, have) {
@@ -345,7 +345,7 @@ function privTokIn(n, c, T, st) {
    grants register (read by the managers' permission page only). */
 async function privPrepDepts(env, A, ds) {
   if (!A || !A.u || A.u.role === 'super') return;
-  await privPrep(env, A, (ds || []).filter(function (d) { return d && deptInScope(A, d) && !privPersonalOk(A, d); }).map(function (d) { return 'bsdept:' + d + ':@@SYS:priv.carrier|empty="bassam_dreport_v1"@@'; }));
+  await privPrep(env, A, (ds || []).filter(function (d) { return d && deptInScope(A, d) && !privPersonalOk(A, d); }).map(function (d) { return 'bsdept:' + d + ':@@SYS:priv.carrier|empty="@@SYS:priv.carrier.dreport|empty=\"bassam_rounds_v1\"@@"@@'; }));
 }
 function privKeyOut(A, d, k) { var T = A && A.__privTok && A.__privTok[d]; return T && k != null && T.M[String(k)] !== undefined ? T.M[String(k)] : k; }
 /* an account row as a reader sees it (054 usersLens): its ekey projected */

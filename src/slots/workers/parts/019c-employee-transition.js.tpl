@@ -5,8 +5,7 @@ var EMP_TRANSITION_RELATED = [
   'bassam_employees_v1',
   'bassam_options_v1',
 @@SYS:emp.keys.staff@@@@SYS:emp.keys.plan@@  'bassam_rounds_v1',
-@@SYS:emp.keys.tasks@@  'bassam_dreport_v1',
-  'bassam_shift_options_v1',
+@@SYS:emp.keys.tasks@@@@SYS:emp.keys.dreport@@  'bassam_shift_options_v1',
   'bassam_perm_tpls_v1',
   'bassam_grants_v1',
 ];
@@ -188,8 +187,7 @@ function empCleanupValues(values, removed, after, replace, wipe@@SYS:emp.cleanup
       if (rounds[k] && Array.isArray(rounds[k].d)) rounds[k].d.forEach(fd);
     });
 @@SYS:emp.cleanup.tasks@@  if (replace || wipe) {
-@@SYS:emp.cleanup.staff.wipe@@    if (values.__dreportOn) values.bassam_dreport_v1 = {};
-  }
+@@SYS:emp.cleanup.staff.wipe@@@@SYS:emp.cleanup.wipe.dreport@@  }
 }
 @@SYS:emp.schedule.fn@@function empCleanTemplate(A, d, sheet) {
   var clean = {},
@@ -413,8 +411,7 @@ async function empPrepareTransition(env, A, input) {
   });
   /* Ordinary delete called 590 cleanup without skip flags; only import replace
      skips disabled modules. The canonical resource guards still decide writes. */
-@@SYS:emp.flags.staff@@  values.__dreportOn = input.intent === 'delete' || capOnDept(A, d, 'dreport');
-  empCleanupValues(values, replace ? before : removed, after, replace, wipe@@SYS:emp.cleanup.staffArg@@);
+@@SYS:emp.flags.staff@@@@SYS:emp.flags.dreport@@  empCleanupValues(values, replace ? before : removed, after, replace, wipe@@SYS:emp.cleanup.staffArg@@);
 @@SYS:emp.replace.staff@@  values.bassam_employees_v1 = after;
   if (input.options !== undefined) {
     empShape(input.options, ['type', 'work']);

@@ -1,0 +1,131 @@
+{
+ "_note": "V7 · د5-هـ (r2): أشكالُ موارد التقرير اليومي في عقود مصدر العمليات (019q) وأسماءُ جداولها وحدها في خريطة الأسماء (019o1) — تغيب بغيابه.",
+ "oc.people.reportCodec.dreport": {
+  "order": 10,
+  "file": "slots/oc.people.reportCodec.dreport.frag"
+ },
+ "oc.people.reportResources.dreport": {
+  "order": 10,
+  "file": "slots/oc.people.reportResources.dreport.frag"
+ },
+ "oc.names.dreport.1": {
+  "order": 30,
+  "text": "  ops_daily_reports: { t: \"ops_daily_reports\", e: null },\n"
+ },
+ "oc.names.dreport.2": {
+  "order": 30,
+  "text": "  ops_leave_kinds: { t: \"ops_employment_types\", e: null },\n"
+ },
+ "oc.names.dreport.3": {
+  "order": 30,
+  "file": "slots/oc.names.dreport.3.frag"
+ },
+ "nf.types.dreport": {
+  "order": 10,
+  "file": "slots/nf.types.dreport.frag"
+ },
+ "nf.cap.dreport": {
+  "order": 10,
+  "text": "  rep: \"dreport\",\n"
+ },
+ "nf.refs.dreport": {
+  "order": 10,
+  "text": "\"dreport_v1\", "
+ },
+ "nf.leader.dreport": {
+  "order": 10,
+  "text": ",\n    dr = r.dreport_v1 || {},\n    names = {};\n  Object.keys(dr).forEach(function (k) {\n    if (!/^\\d+-\\d+-\\d+$/.test(k)) return;\n    var sh = (dr[k] && dr[k].shifts) || {};\n    Object.keys(sh).forEach(function (s) {\n      var l = sh[s].leaders || {};\n      if (l.chief) names[l.chief] = 1;\n      if (l.deputy) names[l.deputy] = 1;\n    });\n  });\n  if (u.name && names[u.name]) return true;\n"
+ },
+ "nf.denyPages.dreport": {
+  "order": 10,
+  "text": " dreport: \"التقرير اليومي\","
+ },
+ "nf.denyRecs.dreport": {
+  "order": 10,
+  "text": " bassam_dreport_v1: \"التقرير اليومي\", bassam_dr_grp_v1: \"مجموعات التقرير اليومي\",\n  bassam_leave_kinds_v1: \"أنواع الإجازات\","
+ },
+ "nfc.kind.color.dreport": {
+  "order": 10,
+  "text": " rep:'#b45309',"
+ },
+ "nfc.kind.name.dreport": {
+  "order": 10,
+  "text": " rep:'التقارير',"
+ },
+ "nfc.kind.icon.dreport": {
+  "order": 10,
+  "text": " rep:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',"
+ },
+ "nfc.reg.dreport": {
+  "order": 10,
+  "file": "slots/nfc.reg.dreport.frag"
+ },
+ "nfc.goNav.dreport": {
+  "order": 10,
+  "text": " 'افتح التقرير':'dreport',"
+ },
+ "nfo.watch.dreport": {
+  "order": 10,
+  "file": "slots/nfo.watch.dreport.frag"
+ },
+ "nfo.tick.dreport": {
+  "order": 10,
+  "file": "slots/nfo.tick.dreport.frag"
+ },
+ "emp.keys.dreport": {
+  "order": 10,
+  "text": "  'bassam_dreport_v1',\n"
+ },
+ "emp.cleanup.wipe.dreport": {
+  "order": 10,
+  "text": "    if (values.__dreportOn) values.bassam_dreport_v1 = {};\n"
+ },
+ "emp.flags.dreport": {
+  "order": 10,
+  "text": "  values.__dreportOn = input.intent === 'delete' || capOnDept(A, d, 'dreport');\n"
+ },
+ "priv.drRes.dreport": {
+  "order": 10,
+  "text": "'bassam_dreport_v1'"
+ },
+ "priv.gender.keys.dreport": {
+  "order": 10,
+  "text": "'report.view'"
+ },
+ "priv.gender.leaves.dreport": {
+  "order": 10,
+  "text": "'dreport:view'"
+ },
+ "priv.tokRes.dreport": {
+  "order": 10,
+  "text": ", bassam_dreport_v1: 1"
+ },
+ "priv.carrier.dreport": {
+  "order": 10,
+  "text": "bassam_dreport_v1"
+ },
+ "me.keys.dreport": {
+  "order": 10,
+  "text": "'bassam_dreport_v1', "
+ },
+ "me.data.dreport": {
+  "order": 10,
+  "text": "dreport: P('bassam_dreport_v1', {}),"
+ },
+ "me.range.dreport": {
+  "order": 10,
+  "text": "  Object.keys(D.dreport || {}).forEach(function (k) { var p = /^(\\d+)-(\\d+)-(\\d+)$/.exec(k); if (!p || (best && +p[1] * 12 + +p[2] >= best.v)) return; if (pfDay({ bucket: {}, rep: D.dreport[k], toks: toks, wd: '' }).report.mine) see(+p[1], +p[2]); });\n"
+ },
+ "me.rep.day.dreport": {
+  "order": 10,
+  "text": "(D && D.dreport && D.dreport[T0.dk]) || null"
+ },
+ "me.rep.today.dreport": {
+  "order": 10,
+  "text": "(D.dreport || {})[T.dk] || null"
+ },
+ "me.arg.dreport": {
+  "order": 10,
+  "text": "dreport: D.dreport, "
+ }
+}

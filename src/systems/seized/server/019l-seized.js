@@ -205,8 +205,9 @@ var SZ_CONTEXT = {
   },
   extraKeys: function (d) {
     /* V7 · د5-د2: موردُ أقفال الجدول يسمّيه مالكُه (في موضعه نفسه)؛ بغيابه لا يُلتقط */
-    return ["bassam_dreport_v1", "bassam_rounds_v1"]
-      .concat(srvBusRead("staff.resources@1", "locks") || [], ["bassam_dayshift_v1"])
+    /* V7 · د5-هـ: وموردُ التقرير اليومي يسمّيه مالكُه (في موضعه نفسه)؛ بغيابه لا يُلتقط */
+    return (srvBusRead("dreport.resources@1", "doc") || [])
+      .concat(["bassam_rounds_v1"], srvBusRead("staff.resources@1", "locks") || [], ["bassam_dayshift_v1"])
       .map(function (k) {
       return "bsdept:" + d + ":" + k;
     });

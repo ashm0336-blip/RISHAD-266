@@ -25,7 +25,14 @@
   ]
  },
  "server": {
-  "parts": []
+  "parts": [
+   {
+    "file": "server/044d-dreport-r2.js",
+    "after": "016b-server-bus.js",
+    "order": 20,
+    "new": "V7 · د5-هـ: قراءاتُ التقرير اليومي المعلنة على ناقل الخادم (المهام · المضبوطات)"
+   }
+  ]
  },
  "migrations": {
   "files": [],

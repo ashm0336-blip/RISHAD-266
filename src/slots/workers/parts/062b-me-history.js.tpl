@@ -271,7 +271,7 @@ function pfHist(o) {
 /* ── KIVO_264 · مسارا القراءة الذاتية: التوجيهُ والقراءةُ والإخراج ── */
 var ME_RL = 120;                 /* طلباتٌ في الدقيقة لكل حساب (المساران معاً) — قراءةٌ ذاتيةٌ لا كتابة */
 var ME_HIST_MAX = 60000;         /* سقفُ حجم ردّ «السجل» بالبايت — ما زاد يُقصّ من التغييرات المسجّلة أولاً */
-var ME_KEYS = ['bassam_employees_v1', @@SYS:me.keys.staff@@'bassam_dreport_v1', @@SYS:me.keys.plan@@'bassam_rounds_v1', 'bassam_shift_options_v1'];
+var ME_KEYS = ['bassam_employees_v1', @@SYS:me.keys.staff@@@@SYS:me.keys.dreport@@@@SYS:me.keys.plan@@'bassam_rounds_v1', 'bassam_shift_options_v1'];
 function meStaffEligible(u) { return !!(u && u.role === 'staff' && u.deptId && !pfIsMgrKey(u.ekey)); }
 /* A private snapshot is readable independently of operational-page grants.
    Signal only its existing dependencies, never their names or business data. */
@@ -318,7 +318,7 @@ async function meDeptData(env, deptId, extra) {
     rs = await env.DB.batch(capture.guards.concat(extra || [])),
     kj = capture.keys, P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
   return { emps: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_employees_v1'], []); return Array.isArray(a) ? a : []; })(),
-    @@SYS:me.data.staff@@dreport: P('bassam_dreport_v1', {}),@@SYS:me.data.plan@@
+    @@SYS:me.data.staff@@@@SYS:me.data.dreport@@@@SYS:me.data.plan@@
     rounds: P('bassam_rounds_v1', {}), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
 }
 function meIdent(u, D, users) {
@@ -337,8 +337,7 @@ function meMoves(rows, uid, depts) {
 }
 function meRange(D, toks, T) {
   var best = null, see = function (y, m) { var v = y * 12 + m; if (!best || v < best.v) best = { v: v, y: y, m: m }; };
-@@SYS:me.range.staff@@  Object.keys(D.dreport || {}).forEach(function (k) { var p = /^(\d+)-(\d+)-(\d+)$/.exec(k); if (!p || (best && +p[1] * 12 + +p[2] >= best.v)) return; if (pfDay({ bucket: {}, rep: D.dreport[k], toks: toks, wd: '' }).report.mine) see(+p[1], +p[2]); });
-  return { first: best ? best.y + '-' + best.m : T.ym, cur: T.ym };
+@@SYS:me.range.staff@@@@SYS:me.range.dreport@@  return { first: best ? best.y + '-' + best.m : T.ym, cur: T.ym };
 }
 async function meSelfRoutes(request, env, path, ss) {
   if (request.method !== 'GET') return json({ ok: 0, err: 'read-only' }, 405);
@@ -358,14 +357,14 @@ async function meSelfRoutes(request, env, path, ss) {
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
   if (eligible) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; I = meIdent(u, D, users); }
   else if (extra.length) ex = await env.DB.batch(extra);
-  var dayOf = function (T0) { return pfDay({ bucket: @@SYS:me.bucket.day|empty="{}"@@, rep: (D && D.dreport && D.dreport[T0.dk]) || null, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
+  var dayOf = function (T0) { return pfDay({ bucket: @@SYS:me.bucket.day|empty="{}"@@, rep: @@SYS:me.rep.day.dreport|empty="null"@@, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
   var ident = { linked: !!I.L.rec, by: I.L.by, keyed: I.toks.length > 0 };
   if (!hist) {
     var out = { ok: 1, v: 1, day: { y: T.y, m: T.m, d: T.d, dk: T.dk, ym: T.ym, wd: T.wd, op: T.op }, account: acct, identity: Object.assign({ rec: meRec(I.L.rec) }, ident),
       facts: null, site: null, mates: [], matesN: 0, week: [], mon: null };
     if (I.toks.length) {
-      var bk = @@SYS:me.bucket.today|empty="{}"@@, rp = (D.dreport || {})[T.dk] || null, f = dayOf(T);
+      var bk = @@SYS:me.bucket.today|empty="{}"@@, rp = @@SYS:me.rep.today.dreport|empty="null"@@, f = dayOf(T);
       var S = pfSite({ plan: D.plan, round: (D.rounds || {})[T.dk] || null, ym: T.ym, toks: I.toks });
       f.month = { locked: !!(D.locks && D.locks[T.ym] === true), has: !!pfEntry(bk, I.toks) };
       var el = S.els.today || S.els.official;
@@ -373,8 +372,8 @@ async function meSelfRoutes(request, env, path, ss) {
       var ms = el && I.L.rec ? pfMates({ el: el, toks: I.toks, emps: D.emps, bucket: bk, rep: rp, wd: T.wd, opts: D.opts, myShift: f.shift.name }) : [];
       delete S.els;
       out.facts = f; out.site = S; out.mates = ms.slice(0, 20); out.matesN = ms.length;
-      out.week = pfWeek({ end: T.op === 'night' ? now - 86400000 : now, toks: I.toks, @@SYS:me.arg.staff@@dreport: D.dreport, opts: D.opts });
-      out.mon = pfMon({ ym: T.ym, toks: I.toks, @@SYS:me.arg.staff@@dreport: D.dreport, opts: D.opts });
+      out.week = pfWeek({ end: T.op === 'night' ? now - 86400000 : now, toks: I.toks, @@SYS:me.arg.staff@@@@SYS:me.arg.dreport@@opts: D.opts });
+      out.mon = pfMon({ ym: T.ym, toks: I.toks, @@SYS:me.arg.staff@@@@SYS:me.arg.dreport@@opts: D.opts });
     }
     return json(out);
   }
@@ -386,7 +385,7 @@ async function meSelfRoutes(request, env, path, ss) {
     moves: { ev: 'none', items: [], note: ME_NO_MOVES } };
   if (minQ) res.evidence.auditSince = (ex[1] && ex[1].results && ex[1].results[0] && ex[1].results[0].t) || null;
   if (eligible && I.toks.length) {
-    var H = pfHist({ ym: ym, days: pfMonthDays(y, m), upto: upto, toks: I.toks, @@SYS:me.arg.staff.hist@@dreport: D.dreport, plan: D.plan, rounds: D.rounds, opts: D.opts });
+    var H = pfHist({ ym: ym, days: pfMonthDays(y, m), upto: upto, toks: I.toks, @@SYS:me.arg.staff.hist@@@@SYS:me.arg.dreport@@plan: D.plan, rounds: D.rounds, opts: D.opts });
     res.month = H.month; res.days = H.days; res.sites = H.sites;
     res.evidence.reports = H.evidence.reports; res.evidence.approved = H.evidence.approved; res.evidence.rounds = H.evidence.rounds;
     res.range = meRange(D, I.toks, T);
