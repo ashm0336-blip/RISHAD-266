@@ -96,6 +96,9 @@ function world(extra = {}) {
     },
   });
   vm.runInContext(fs.readFileSync("src/i18n/385-calendar.js", "utf8"), C);   /* V7 · د5-د2: التقويمُ الموحّد — «اليوم» (يومُ الرياض) منه */
+  /* V7 · د5-هـ: الناقل وروابطُ الخطة والجولات عليه — الخطةُ تكتب في الجولات بأوامر مالكها، والجولاتُ تقرأ الخطةَ بالاسم */
+  for (const file of ["src/core/060-bus.js", "src/systems/plan/client/404-plan-p4.js", "src/services/421-round-links.js"])
+    vm.runInContext(fs.readFileSync(file, "utf8"), C);
   vm.runInContext(planSource + "\nglobalThis.TestComponent=Component;", C);
   const component = new C.TestComponent();
   component.bsToast = (...args) => seen.toasts.push(args);

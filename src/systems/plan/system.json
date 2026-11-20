@@ -18,6 +18,7 @@
   "slug": "plan",
   "component": "Operational Plan",
   "files": [
+   "client/404-plan-p4.js",
    "client/helmet.css",
    "client/logic.js",
    "client/meta.json",

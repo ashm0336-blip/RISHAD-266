@@ -119,7 +119,8 @@
         from = null,
         src = "plan";
       /* KIVO_240 · IP‑03: إقفالُ هوية الموقع في الجولة المُنشأة — إن خلا طابقُ المصدر (لقطةُ الشهر أو الجولةُ السابقة) من sid فيُحلّ من طابق الخطة الحالي المقابل موضعياً (plan.floors[i].sid)؛ وإن حمل sid بقي كما هو */
-      var plan = load("bassam_plan_v1", draft);
+      /* V7 · د5-هـ: الخطةُ يقرؤها مالكُها (التشغيل الميداني) بطريق القراءة نفسِه (المسودة أو Operations) — بغيابه لا خطة («noplan») */
+      var plan = (function () { var o = KIVO.bus.read("plan.doc@1", draft); return o && typeof o === "object" ? o : null; })();
       var pfl = plan && Array.isArray(plan.floors) ? plan.floors : [];
       var sidAt = function (i, x) {
         if (x && x.sid) return x.sid;

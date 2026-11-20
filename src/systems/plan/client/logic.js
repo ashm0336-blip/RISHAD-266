@@ -138,7 +138,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         if (side.length && side.length === bad.length) {
           delete this._opActions[action];
           this._opTicket = null;
-          const NAMES = { bassam_rounds_v1: "الجولات اليومية", bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب", bassam_mark_kinds_v1: "أنواع المعالم" };
+          const NAMES = { ...(KIVO.bus.read("rounds.names@1") || {}), bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب", bassam_mark_kinds_v1: "أنواع المعالم" };
           let why = "";
           try {
             why = service.explain ? service.explain(result) : "";
@@ -186,21 +186,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       return { ok: 0, err: "review-required" };
     }
   }
-  /* برومت 43 · الجذر 3: الكتابةُ العابرة من الخطة إلى «الجولات اليومية» محصورةٌ في الحاضر والمستقبل — مفتاحُ يومٍ (y-m-d) اليومَ أو بعده،
-     أو علامةُ شهرٍ (m:y-m) هذا الشهرَ أو بعده. الأيامُ الماضية والمعتمدة لا تُمسّ (كانت تُرفض فترةً فيسقط حفظُ الخطة كلُّه). */
-  _roundKeyNow(key) {
-    try {
-      const now = KIVO.BassamCal.hPartsRiyadh(new Date()),   /* V7 · د5-د2: يومُ الرياض من الخدمة */
-        m = /^(?:m:)?(\d+)-(\d+)(?:-(\d+))?$/.exec(String(key));
-      if (!m) return !1;
-      const y = +m[1],
-        mo = +m[2],
-        d = null == m[3] ? null : +m[3];
-      return y !== now.y ? y > now.y : mo !== now.m ? mo > now.m : null == d || d >= now.d;
-    } catch (e) {
-      return !1;
-    }
-  }
+  /* V7 · د5-هـ: قاعدةُ «اليومَ فصاعداً» للكتابة العابرة في أيام الجولات (برومت 43 · الجذر 3) صارت عند مالكها: src/services/421-round-links.js */
   _opWrite(name, value) {
     this._opLastSave = this._opCommit({ [name]: value });
     return this._opLastSave;
@@ -3647,21 +3633,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         ? (floor.gates || []).map((value) => update(value, "gates"))
         : floor.gates,
     });
-    const rounds = this._opRead("bassam_rounds_v1");
-    if (rounds && typeof rounds === "object") {
-      let changed = false;
-      Object.keys(rounds).forEach((key) => {
-        const rec = rounds[key];
-        if (rec && Array.isArray(rec.d) && !rec.ap && this._roundKeyNow(key)) {
-          rec.d = rec.d.map((floor) => {
-            if (!floor || floor.ap) return floor;
-            changed = true;
-            return site(floor);
-          });
-        }
-      });
-      if (changed) related = { ...related, bassam_rounds_v1: rounds };
-    }
+    /* V7 · د5-هـ: أيامُ الجولات يغيّرها مالكُها بأمرٍ معلن داخل حفظنا (اليومَ فصاعداً غيرَ المعتمد) — بغيابه لا جولاتَ تُنقّى */
+    KIVO.bus.call("rounds.sites.patch@1", { site }, { get: (k) => this._opRead(k), set: (k, v) => (related = { ...related, [k]: v }) });
     const months = {};
     Object.keys(this.state.planMonths || {}).forEach((key) => {
       const entry = this.state.planMonths[key],
@@ -12251,7 +12224,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           l = {};
         if (r)
           try {
-            const t = this._opRead("bassam_rounds_v1");
+            const t = KIVO.bus.read("rounds.days@1", (k) => this._opRead(k));   /* V7 · د5-هـ: بغياب الجولات لا يومَ معتمداً */
             if (t) {
               const e = t;
               e &&
@@ -12490,7 +12463,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 a = t.day || 1;
               let i = {};
               try {
-                const t = this._opRead("bassam_rounds_v1");
+                const t = KIVO.bus.read("rounds.days@1", (k) => this._opRead(k));   /* V7 · د5-هـ: بغياب الجولات لا يومَ يُنسخ منه */
                 if (t) {
                   const e = t;
                   e && "object" == typeof e && (i = e);
@@ -12552,7 +12525,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 iid: void 0 !== t.iid ? t.iid : null,
               }));
             try {
-              KIVO.BassamRound && KIVO.BassamRound.lensFilter && (e = KIVO.BassamRound.lensFilter(e));
+              KIVO.bus.has("rounds.lensFilter@1") && (e = KIVO.bus.read("rounds.lensFilter@1", e));   /* V7 · د5-هـ: بغياب الجولات تُنسخ المواقعُ كما هي */
             } catch (t) {}
             const n = { ...(this.state.planMonths || {}) };
             n[s] = {
@@ -12790,15 +12763,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 f && f.iid && DI[f.iid] && !ST[f.iid] ? { ...f, iid: null, img: null, imgW: 0, imgH: 0, mpu: null } : f,
               );
             try {
-              const e = this._opRead("bassam_rounds_v1");
-              if (e && "object" == typeof e) {
-                const s = t.y + "-" + t.m + "-";
-                let n = !1;
-                (Object.keys(e).forEach((a) => {
-                  (0 !== a.indexOf(s) && a !== "m:" + t.y + "-" + t.m) || (delete e[a], (n = !0));
-                }),
-                  n && (_opRelated.bassam_rounds_v1 = e));
-              }
+              /* V7 · د5-هـ: جولاتُ الشهر يحذفها مالكُها داخل حفظنا — بغيابه لا جولات */
+              KIVO.bus.call("rounds.month.clear@1", { y: t.y, m: t.m }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
             } catch (t) {}
             this.setState(n, () => {
               (this.savePlan(_opRelated),
@@ -17003,14 +16969,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           n[e] = { c: 1, d: a.filter((e, s) => s !== t.i) };
         });
         try {
-          const e = this._opRead("bassam_rounds_v1");
-          e &&
-            "object" == typeof e &&
-            (Object.keys(e).forEach((s) => {
-              const n = e[s];
-              n && Array.isArray(n.d) && n.d.length > t.i && n.d.splice(t.i, 1);
-            }),
-            (_opRelated.bassam_rounds_v1 = e));
+          /* V7 · د5-هـ: الموقعُ يُحذف من أيام الجولات بأمر مالكها داخل حفظنا */
+          KIVO.bus.call("rounds.site.remove@1", { index: t.i }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
         } catch (t) {}
         let a = this.state.floor;
         a === t.i ? (a = 0) : a > t.i && a--;
@@ -17176,17 +17136,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 },
               ];
               try {
-                const t = this._opRead("bassam_rounds_v1");
-                if (t && "object" == typeof t) {
-                  let e = !1;
-                  (Object.keys(t).forEach((s) => {
-                  const n = t[s];
-                  if (n && Array.isArray(n.d) && !n.ap && this._roundKeyNow(s))   /* برومت 43 · الجذر 3: اليومَ وما بعده غيرَ المعتمد فقط */
-                    for (; n.d.length < a.length; )
-                      (n.d.push({ zones: [], gates: [], marks: [], paths: [], sid: (a[n.d.length] || {}).sid }), (e = !0));
-                }),
-                    e && (_opRelated.bassam_rounds_v1 = t));
-                }
+                /* V7 · د5-هـ: أيامُ الجولات (اليومَ فصاعداً غيرَ المعتمد) تُكمَّل بالموقع الجديد بأمر مالكها داخل حفظنا */
+                KIVO.bus.call("rounds.sites.pad@1", { sites: a }, { get: (k) => this._opRead(k), set: (k, v) => (_opRelated[k] = v) });
               } catch (t) {}
               this.setState(
                 {

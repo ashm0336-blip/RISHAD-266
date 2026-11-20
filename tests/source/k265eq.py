@@ -75,9 +75,10 @@ ok(oldonly == retained and all(_from_prev(u) for u in retained) and all(u in cur
 # V7 · د2-ب · د4-ب: الأعدادُ أدناه = القاعدة + ما تصرّح به الأنظمةُ الحاضرة (src/systems/<key>/system.json). بالأنظمة الخمسة: js 73 · صفحات 14.
 #   القاعدة: 69 سكربتاً في الغلاف و9 صفحات (د4-ب: صفحةُ المهام وكتلتاها 545 · 546 صارت من نظام المهام · د4-ج: 547 صارت من نظام العهد). كلُّ نظامٍ حاضر يضيف صفحةً (نصاً ومنطقاً)،
 #   وسكربتاتِ الغلاف التي في ملفات واجهته (‎client/NNN-*.js‎).
+#   د5-هـ: القاعدة 71 = 70 + 421-round-links (ما توفّره الجولاتُ لغيرها عبر الناقل — الجولاتُ لم تُفصل بعد فملفُّها من القاعدة).
 _SYSD = os.path.join(ROOT, 'src', 'systems')
 _SYS = [json.load(open(os.path.join(_SYSD, k, 'system.json'), encoding='utf-8')) for k in sorted(os.listdir(_SYSD)) if os.path.isfile(os.path.join(_SYSD, k, 'system.json'))] if os.path.isdir(_SYSD) else []
-N_JS = 70 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
+N_JS = 71 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
 N_PG = 7 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة · د5-د: الجدولُ الشهري صار نظاماً بصفحته · د5-هـ: والتشغيلُ الميداني (7 للقاعدة)
 kinds = {}
 for u in files:

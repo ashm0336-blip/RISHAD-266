@@ -1,0 +1,11 @@
+{
+ "_note": "V7 · د5-هـ · مجموعة p4: تسجيلُ ملف القراءات والأوامر المعلنة 404-plan-p4.js (الخطة · خياراتُ المصليات والأبواب) في كتل الهيكل — بعد كتل الجدول الشهري",
+ "blocks.shell.plan.p4": {
+  "order": 10,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/plan/client/404-plan-p4.js\",\n   \"kind\": \"js\",\n   \"line\": 10495,\n   \"new\": \"V7 · د5-هـ: قراءاتُ التشغيل الميداني وأوامرُه المعلنة لبرامجَ أخرى (الخطة · خيارات المصليات · خيارات الأبواب)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "shell.blocks.plan.p4": {
+  "order": 10,
+  "text": "@@KIVO_BLOCK:systems/plan/client/404-plan-p4.js@@\n"
+ }
+}
