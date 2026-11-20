@@ -173,6 +173,21 @@ test('د5-هـ · الحقنُ السلبية لكل نظامٍ مفصول بق�
   assert.deepEqual(residue([[at, 'var plan = { guards: [], statements: [] }; plan.guards.push(g);']], gone), [], 'ضابط: «خطةُ تنفيذ» بلا مفتاح البرنامج');
 });
 
+test('د5-هـ · الحقنُ السلبية لكل نظامٍ مفصول بقاعدة: dreport', () => {
+  if (!fs.existsSync(path.join(FULL, 'systems', 'dreport', 'system.json'))) return;
+  const gone = ['dreport'];
+  const INJ = {
+    'قراءة bassam_dreport_v1 مباشرة (عميل)': ['src/modules/profile/logic.js', 'const r = KIVO.__BS_SRV.operations.get("bassam_dreport_v1");'],
+    'قراءة bassam_dreport_v1 مباشرة (خادم)': ['workers/parts/063-enf-api-and-handler.js', 'var r = await opResourceGet(env, "bsdept:" + d + ":bassam_dreport_v1");'],
+    'استيراد من systems/dreport/': ['src/layouts/root-logic.js', 'import { x } from "../systems/dreport/client/logic.js";'],
+    'اسمُ صفحة البرنامج': ['src/layouts/root-logic.js', 'mount("Daily Report");'],
+    'ورقةُ البرنامج': ['src/permissions/334-perm-tree-tpl.js', 'if (can("dreport", "view")) x();'],
+    'اسمُ ناقلٍ لم يعلنه المالك': ['src/modules/profile/logic.js', 'const r = KIVO.bus.read("dreport.secret@1");'],
+  };
+  for (const [name, [at, line]] of Object.entries(INJ)) assert.ok(residue([[at, line]], gone).length > 0, 'الحقنة مرّت بلا كشف: ' + name);
+  assert.deepEqual(residue([['src/modules/profile/logic.js', 'const r = KIVO.bus.read("dreport.doc@1", "granted");']], gone), [], 'ضابط: الاسمُ المعلن يُمحى');
+});
+
 /* د5-هـ · قاعدةُ اسم الناقل المعلن (bus_rule.mjs): الشرطُ ② لملفات القاعدة على الشجرة الكاملة، والحقنُ السلبية للشرط ① */
 test('د5-هـ · اسمُ الناقل: كلُّ اسمِ نظامٍ في ملف قاعدة معلنٌ في _base.json ← consumes بغيابه وملفه، ولا إعلانَ بائت', () => {
   const root0 = path.dirname(FULL);
