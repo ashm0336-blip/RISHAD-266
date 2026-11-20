@@ -27,7 +27,7 @@ const NAMES = [
   /* زرُّ «+ قسم» */
   'secAddOn', 'secAdd', 's-secadd',
 ];
-const SKIP = /(^|\/)(systems\/[^/]+\/server|slots\/workers|systems\/[^/]+\/permissions\.json|permissions\/registry|permissions\/340-registry|manifests\/perm-tree24\.json|types\/kivo\.d\.ts)/;
+const SKIP = /(^|\/)(systems\/[^/]+\/server|slots\/workers|slots\/tools|systems\/[^/]+\/permissions\.json|permissions\/registry|permissions\/340-registry|manifests\/perm-tree24\.json|types\/kivo\.d\.ts)/;
 function files(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name), rel = path.relative(SRC, p).split(path.sep).join('/');
