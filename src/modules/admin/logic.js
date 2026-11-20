@@ -1873,11 +1873,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const t = this.state.plRkPw;
     t
       ? (this.setState({ plBusy: !0, plRkMsg: "", plRkInfo: "" }),
-        this.adFetch("/api/recovery/new", { pw: t }).then((t) => {
+        /* V7 · د5-هـ: keepErr — تعارضُ الإصدار المتزامن (409) يُعرض بسببه لا «تعذّر»، وتُعاد قراءةُ حالة المفتاح */
+        this.adFetch("/api/recovery/new", { pw: t }, !0).then((t) => {
           (this.setState({ plBusy: !1 }),
             t && t.ok
               ? (this.setState({ plRkKey: t.key, plRkAskOn: !0, plRkPw: "" }), this.plRkLoad())
-              : this.setState({ plRkMsg: (t && t.err) || "تعذّر" }));
+              : (this.setState({ plRkMsg: (t && t.err) || "تعذّر" }), t && "rk-changed" === t.why && this.plRkLoad()));
         }))
       : this.setState({ plRkMsg: "أدخل كلمة مرورك" });
   }
@@ -2004,7 +2005,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             confirm: t.confirm,
             keepBrand: !!t.keepBrand,
             admin: { un: t.un, name: t.name, pw: t.pw },
-          }).then((e) => {
+          }, !0).then((e) => {   /* V7 · د5-هـ: keepErr — سببُ التعارض (409) يُعرض */
             if ((this.setState({ plBusy: !1 }), e && e.ok)) {
               const go = () => {
                 try {

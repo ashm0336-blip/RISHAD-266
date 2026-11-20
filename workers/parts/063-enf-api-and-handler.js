@@ -750,7 +750,7 @@ export default {
         if (path === '/api/recovery/new' && request.method === 'POST') {
           if (!superX) return json({ ok: 0, err: 'forbidden' }, 403);
           var rbn = await bodyRead(request, path); if (rbn.res) return rbn.res; var bn = rbn.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
-          var gkN = 'pw:' + AX.u.id;
+          var gkN = 'pw:' + AX.u.id, rkPrev = await metaGet(env, 'rk');   /* V7 · د5-هـ: المفتاحُ السابق كما قُرئ أوّلَ الطلب — يُحرس في الدفعة */
           if (await guardLeft(env, gkN) > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر قليلاً' });
           var okN = await verifyPw(String(bn.pw == null ? '' : bn.pw), AX.u.ph);
           if (okN === 'unsupported') return json({ ok: 0, err: ERR_ITER });
@@ -759,12 +759,14 @@ export default {
           var keyN = newRecoveryKey(), hN = await hashKey(keyN), rmN = reqMeta(request);
           /* المفتاح يفتح حساب مدير النظام الرئيسي (لا الاحتياطي) */
           var mainSu = AX.users.filter(function (x) { return x.role === 'super' && !x.bk; })[0] || AX.u;
-          await env.DB.batch([
+          /* V7 · د5-هـ (أمن ٢): إصداران متزامنان ⇒ واحدٌ يفوز والآخر 409 — لا يُعرض مفتاحٌ أبطله إصدارٌ آخر صامتاً */
+          try { await env.DB.batch([
+            rkGuard(env, rkPrev),
             env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk', hN),
             env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk_uid', mainSu.id),
             env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk_meta', JSON.stringify({ ts: nowX, by: AX.u.un, uid: mainSu.id })),
             env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind('rk_used')
-          ]);
+          ]); } catch (eN) { if (isRkConflict(eN)) return json({ ok: 0, err: 'تغيّر مفتاح الاستعادة أثناء الإصدار (إصدارٌ آخر أو استعمال) — لم يُنشأ مفتاح، أعد التحميل', why: 'rk-changed' }, 409); throw eN; }
           await secLog(env, { uid: AX.u.id, un: AX.u.un, act: 'recovery_key', detail: 'new', ip: rmN.ip, city: rmN.city, dev: rmN.dev });
           return json({ ok: 1, key: keyN, uid: mainSu.id, un: mainSu.un });
         }

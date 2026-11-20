@@ -227,7 +227,7 @@ export type KivoDeptKey<R extends KivoResourceName = KivoResourceName> = `bsdept
 export interface KivoApi {
   "/api/brand": { methods: "GET"; access: "public"; responses: { "200": { ok: unknown; brand: unknown; rk: unknown } } };
   "/api/ping": { methods: "GET"; access: "public"; responses: { "200": { ok: unknown; cf: unknown; fresh: unknown } } };
-  "/api/recover": { methods: "POST"; access: "public"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
+  "/api/recover": { methods: "POST"; access: "public"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "409": { ok: unknown; err: unknown } } };
   "/api/login": { methods: "POST"; access: "public"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
   "/api/logout": { methods: "GET" | "POST"; access: "public"; responses: { "200": { ok: unknown }; "303": { [k: string]: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
   "/api/whoami": { methods: "GET"; access: "session"; responses: { "200": { ok: unknown; uid: unknown } } };
@@ -268,8 +268,8 @@ export interface KivoApi {
   "/api/policy": { methods: "GET" | "POST"; access: "super"; responses: { "200": { ok: unknown; policy: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
   "/api/overview": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; now: unknown; policy: unknown; oldHash: unknown; imgs: unknown; failsToday: unknown; deniedToday: unknown; lockedNow: unknown; activeNow: unknown; sessions: unknown; lastLogin: unknown; fails: unknown; added: unknown } } };
   "/api/recovery": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; key: unknown; used: unknown; backups: unknown; backupLastLogin: unknown } } };
-  "/api/recovery/new": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
-  "/api/reset": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
+  "/api/recovery/new": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "409": { ok: unknown; err: unknown } } };
+  "/api/reset": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "409": { ok: unknown; err: unknown } } };
   "/api/permv2": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; version: unknown; docSha256: unknown; status: unknown; phase: unknown; mode: unknown; worker: unknown; counts: unknown; validation: unknown; stats: unknown; scope: unknown; guards: unknown } } };
   "/api/identity-rehearsal": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; worker: unknown; rehearsal: unknown } } };
   "/api/authz": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; ver: unknown; mode: unknown; env: unknown; d1: unknown; perm: unknown; scope: unknown; ident: unknown; fixture: unknown; me: unknown }; "404": { ok: unknown; err: unknown } } };

@@ -12219,6 +12219,7 @@ async function rsResetRoute(env, request, path, url, AX, superX) {
   var phZ = await hashPw(pwZ);
   var usersZ = [{ id: 'su', un: unZ, ph: phZ, name: nmZ, role: 'super', mc: 1 }];
   var stZ = [
+    rkGuard(env, rkZ),   /* V7 · د5-هـ (أمن ٢): المفتاحُ الذي أجاز التهيئة ما زال المخزَّن (لم تستهلكه استعادةٌ ولا تهيئةٌ متزامنة) */
     env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
     env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
     env.DB.prepare('DELETE FROM irshad_requests'), env.DB.prepare('DELETE FROM irshad_report_languages'), env.DB.prepare('DELETE FROM irshad_reports'), env.DB.prepare('DELETE FROM irshad_catalog_entries'), env.DB.prepare('DELETE FROM irshad_retro_windows'),
@@ -12243,7 +12244,7 @@ async function rsResetRoute(env, request, path, url, AX, superX) {
   stZ.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rev', '1'));
   if(!Number.isSafeInteger(env.__restoreEpoch)||env.__restoreEpoch>=Number.MAX_SAFE_INTEGER)throw dbGuardError('db-restore-epoch-invalid');
   stZ.push(env.DB.prepare("INSERT INTO meta(k,v) VALUES('restore_epoch',?1) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(env.__restoreEpoch+1)),env.DB.prepare('DELETE FROM sec'),audEvStmt(env, { cid: 'reset_' + Date.now().toString(36), ts: Date.now(), uid: AX.u.id, un: AX.u.un, dept: '', k: 'system', rev: 1, etype: 'system', eid: 'platform', ename: 'المنصة', act: 'reset', ctx: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ }), bef: '', aft: '' }),secStmt(env, { uid: AX.u.id, un: AX.u.un, act: 'reset', detail: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ, byName: AX.u.name || '' }), ip: rmZ.ip, city: rmZ.city, dev: rmZ.dev }));
-  await env.DB.batch(stZ);
+  try { await env.DB.batch(stZ); } catch (eZ) { if (isRkConflict(eZ)) return json({ ok: 0, err: 'مفتاح الاستعادة استُعمل أو تغيّر أثناء التهيئة — لم يُنفَّذ شيء', why: 'rk-changed' }, 409); throw eZ; }
   return json({ ok: 1 }, 200, clearCookie(url));
 }
 /* Backup normalization. Read/validate only: the existing restore compiler
@@ -27403,6 +27404,10 @@ function enfSnapStmts(env, snap, kind, A, items, revs, meta) {
    يثبته tests/unit/{session_lifecycle,adversarial,auth_routes}.test.mjs وحزمُ البوابة. دورةُ حياة الجلسة كاملةً في docs/security.md §الجلسة.
    authPublicRoutes: قبل الجلسة — استعادةُ مدير النظام بالمفتاح · الدخول دون تهيئة حساب تلقائي · الخروج (GET تنقّلاً · POST)
    authSessionRoutes: بجلسةٍ صالحة وحسابٍ قائم — whoami · «صفحتي» (/api/me) · إنهاءُ جلساتي الأخرى · فحصُ كلمة المرور الحالية */
+/* V7 · د5-هـ (أمن ٢): حارسُ مفتاح الاستعادة داخل الدفعة — يُخفق (فتُلغى الدفعةُ كلُّها) إن لم يعد meta.rk ما تحقّق منه الطلب (have؛ '' = لا مفتاح):
+   مفتاحٌ يُستعمل مرّةً واحدة ولو تزامن طلبان · الاستعادةُ لا تحذف مفتاحاً أحدث · إصداران متزامنان: واحدٌ يفوز · التهيئةُ بمفتاحٍ لم يُستهلك */
+function rkGuard(env, have) { return env.DB.prepare("SELECT CASE WHEN COALESCE((SELECT v FROM meta WHERE k = 'rk'), '') != ?1 THEN json_extract('{}', 'KIVO_RK_CONFLICT') END AS g").bind(have || ''); }
+function isRkConflict(e) { return /KIVO_RK_CONFLICT/.test(String((e && (e.message || e.cause && e.cause.message)) || e)); }
 async function authPublicRoutes(request, env, path, url) {
   /* ── استعادة دخول مدير النظام بمفتاح الاستعادة — من شاشة الدخول، بلا جلسة ── */
   if (path === '/api/recover' && request.method === 'POST') {
@@ -27424,7 +27429,7 @@ async function authPublicRoutes(request, env, path, url) {
     if (!tgt) return json({ ok: 0, err: 'لا يوجد حساب مدير نظام' });
     var phR = await hashPw(npw);
     var usR2 = usR.map(function (x) { return x.id === tgt.id ? Object.assign({}, x, { ph: phR, dis: 0, mc: 0 }) : x; });
-    var stR = [revGuard(env, K_USERS, usRv)].concat(kvPutStmts(env, 'kv', K_USERS, JSON.stringify(usR2)));   /* a concurrent account save or recovery since the read ⇒ nothing written, key kept */
+    var stR = [rkGuard(env, rkH), revGuard(env, K_USERS, usRv)].concat(kvPutStmts(env, 'kv', K_USERS, JSON.stringify(usR2)));   /* a concurrent account save or recovery since the read ⇒ nothing written, key kept */
     var rvR = await nextRev(env);
     stR.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(K_USERS, rvR));
     stR.push(env.DB.prepare('DELETE FROM meta WHERE k IN (?1, ?2, ?3)').bind('rk', 'rk_uid', 'rk_meta'));   /* يُبطل بعد الاستعمال */
@@ -27432,7 +27437,9 @@ async function authPublicRoutes(request, env, path, url) {
     stR.push(env.DB.prepare('DELETE FROM sess WHERE uid = ?1').bind(tgt.id));
     stR.push(env.DB.prepare('DELETE FROM guard WHERE gk IN (?1, ?2)').bind('u:' + String(tgt.un).toLowerCase(), gkR));
     try { await env.DB.batch(stR); }
-    catch (eR) { if (isRevConflict(eR)) return json({ ok: 0, err: 'تغيّرت الحسابات أثناء الاستعادة — لم يُحفظ شيء، أعد المحاولة' }, 409); throw eR; }
+    catch (eR) {
+      if (isRkConflict(eR)) return json({ ok: 0, err: 'مفتاح الاستعادة استُعمل أو تغيّر أثناء الاستعادة — لم يُحفظ شيء', why: 'rk-changed' }, 409);   /* V7 · د5-هـ */
+      if (isRevConflict(eR)) return json({ ok: 0, err: 'تغيّرت الحسابات أثناء الاستعادة — لم يُحفظ شيء، أعد المحاولة' }, 409); throw eR; }
     await secLog(env, { uid: tgt.id, un: tgt.un, act: 'recover_ok', detail: 'password-reset-by-recovery-key', ip: rmR.ip, city: rmR.city, dev: rmR.dev });
     return json({ ok: 1, un: tgt.un });
   }
@@ -30849,7 +30856,7 @@ export default {
         if (path === '/api/recovery/new' && request.method === 'POST') {
           if (!superX) return json({ ok: 0, err: 'forbidden' }, 403);
           var rbn = await bodyRead(request, path); if (rbn.res) return rbn.res; var bn = rbn.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
-          var gkN = 'pw:' + AX.u.id;
+          var gkN = 'pw:' + AX.u.id, rkPrev = await metaGet(env, 'rk');   /* V7 · د5-هـ: المفتاحُ السابق كما قُرئ أوّلَ الطلب — يُحرس في الدفعة */
           if (await guardLeft(env, gkN) > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر قليلاً' });
           var okN = await verifyPw(String(bn.pw == null ? '' : bn.pw), AX.u.ph);
           if (okN === 'unsupported') return json({ ok: 0, err: ERR_ITER });
@@ -30858,12 +30865,14 @@ export default {
           var keyN = newRecoveryKey(), hN = await hashKey(keyN), rmN = reqMeta(request);
           /* المفتاح يفتح حساب مدير النظام الرئيسي (لا الاحتياطي) */
           var mainSu = AX.users.filter(function (x) { return x.role === 'super' && !x.bk; })[0] || AX.u;
-          await env.DB.batch([
+          /* V7 · د5-هـ (أمن ٢): إصداران متزامنان ⇒ واحدٌ يفوز والآخر 409 — لا يُعرض مفتاحٌ أبطله إصدارٌ آخر صامتاً */
+          try { await env.DB.batch([
+            rkGuard(env, rkPrev),
             env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk', hN),
             env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk_uid', mainSu.id),
             env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk_meta', JSON.stringify({ ts: nowX, by: AX.u.un, uid: mainSu.id })),
             env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind('rk_used')
-          ]);
+          ]); } catch (eN) { if (isRkConflict(eN)) return json({ ok: 0, err: 'تغيّر مفتاح الاستعادة أثناء الإصدار (إصدارٌ آخر أو استعمال) — لم يُنشأ مفتاح، أعد التحميل', why: 'rk-changed' }, 409); throw eN; }
           await secLog(env, { uid: AX.u.id, un: AX.u.un, act: 'recovery_key', detail: 'new', ip: rmN.ip, city: rmN.city, dev: rmN.dev });
           return json({ ok: 1, key: keyN, uid: mainSu.id, un: mainSu.un });
         }
