@@ -27,7 +27,7 @@
     var emps = J('bassam_employees_v1', []); if (!Array.isArray(emps)) emps = [];
     var staffing = J('bassam_staffing_v3', {}) || {};
     var bucket = staffing[YM] || {};
-    var rep = J('bassam_dreport_v1', {}) || {};
+    var rep = KIVO.bus.read('dreport.doc@1', 'granted') || {};   /* V7 · د5-هـ: التقريرُ يُسأل مالكُه؛ بغيابه أو حجبه لا يومَ مسحوب */
     var rec = rep[DK] || null;
     var pulled = (rec && rec.shifts) ? Object.keys(rec.shifts).filter(function (sn) { return rec.shifts[sn] && rec.shifts[sn].pulled; }) : [];
     var repToday = pulled.length > 0;

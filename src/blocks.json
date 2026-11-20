@@ -735,6 +735,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "systems/dreport/client/407-dreport-r3.js",
+   "kind": "js",
+   "line": 10497,
+   "new": "V7 · د5-هـ: قراءةٌ معلنة من التقرير اليومي لصفحات القاعدة والجدول الشهري (ورقتُه مفعَّلة؟)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
    "line": 10494,

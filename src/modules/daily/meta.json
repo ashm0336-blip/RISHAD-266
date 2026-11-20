@@ -23,7 +23,6 @@
   "domain": "src/modules/daily/logic.js",
   "data": [
    "bassam_dayshift_v1",
-   "bassam_dreport_v1",
    "bassam_employees_v1",
    "bassam_rounds_v1",
    "bassam_shift_options_v1"

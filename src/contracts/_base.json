@@ -115,6 +115,21 @@
    "files": [
     "src/components/565-page-kit.js"
    ]
+  },
+  "dreport.doc@1": {
+   "absent": "بلا التقرير اليومي: لا تقرير — لا إجازاتِ اليوم ولا نسبَ سحبٍ وحضور في الموظفين، و«ملفي» بلا أيامٍ مسحوبة ولا «أسبوعك» المعتمد، ووردية الموظف من الجدول وحده",
+   "files": [
+    "src/modules/employees/logic.js",
+    "src/modules/profile/logic.js",
+    "src/services/332-find-day.js"
+   ]
+  },
+  "dreport.usable@1": {
+   "absent": "بلا التقرير اليومي: ورقتُه مطفأة — صفوفُ التقرير ومؤشراتُه لا تظهر في جاهزية الموظفين، وخانةُ «الحالة» لا تظهر في «ملفي»",
+   "files": [
+    "src/modules/employees/logic.js",
+    "src/modules/profile/logic.js"
+   ]
   }
  },
  "consumes_note": "V7 · د5-هـ: ما تسأل عنه ملفاتُ القاعدة أنظمةً على الناقل، بسلوك غيابه وملفاته — يفحصه tests/removal/bus_rule.mjs (baseBusProblems) على الشجرة الكاملة، وبه يُمحى الاسمُ المعلن من فحص البقايا حين يغيب مالكه"

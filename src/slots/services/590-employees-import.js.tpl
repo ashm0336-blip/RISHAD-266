@@ -743,8 +743,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
             ": " +
             [
               impSched() ? "الجدول الشهري بكل أشهره" : "",
-              impOn("dreport") ? "التقارير اليومية بكل أيامها ودفاتر استئذاناتها" : "",
-              "تسكينات الخطة التشغيلية والجولات اليومية",
+@@SYS:import.summary.dreport@@              "تسكينات الخطة التشغيلية والجولات اليومية",
 @@SYS:import.summary.tasks@@              "حسابات الدخول والصلاحيات",
 @@SYS:import.summary.custody@@@@SYS:import.summary.award@@            ]
               .filter(Boolean)

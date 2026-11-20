@@ -96,7 +96,7 @@ Object.assign(Component.prototype, {
       n = this.loadEmps(),
       r = !!KIVO.bus.read("staff.enabled@1", this),   /* V7 · د5-د2: قراءتان معلنتان من مالك الجدول — بغيابه: لا جدول (كالمعطَّل) */
       ST = r ? KIVO.bus.read("staff.schedule@1", (k) => this._tkLS(k)) : null,
-      DR = this._tkLS("bassam_dreport_v1"),
+      DR = KIVO.bus.read("dreport.doc@1", (k) => this._tkLS(k)),   /* V7 · د5-هـ: تقريرُ اليوم بالناقل؛ بغيابه لا تأشيرَ غيابٍ ولا إجازة */
       TP = this._tkLS("bassam_perm_tpls_v1"),
       SO = this._tkLS("bassam_shift_options_v1"),
       uv = (() => {

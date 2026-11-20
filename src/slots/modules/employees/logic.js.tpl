@@ -2,6 +2,8 @@
 const _bsSched = "@staff.usable@1";
 /* V7 · د5-د2: ورقةُ التشغيل الميداني كذلك — يجيب عنها مالكُه بالناقل؛ بغيابه مطفأة */
 const _bsPlan = "@plan.usable@1";
+/* V7 · د5-هـ: ورقةُ التقرير اليومي كذلك — يجيب عنها مالكُه بالناقل؛ بغيابه مطفأة */
+const _bsDr = "@dreport.usable@1";
 function _bsCapOk(c) {
   try {
     const P = KIVO.BassamPerm;
@@ -657,7 +659,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       s = i.map((t) => t.name),
       l = (function () {
         try {
-          const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
+          const t = KIVO.bus.read("dreport.doc@1") || {},   /* V7 · د5-هـ: التقريرُ بالناقل؛ بغيابه لا تقرير */
             e = KIVO.BassamCal.hParts(new Date()),   /* V7 · د5-د2 */
             n = t[e.y + "-" + e.m + "-" + e.d],
             a = {};
@@ -866,7 +868,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       et = (() => {
         const t = { rate: {}, days: 0 };
         try {
-          const e = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
+          const e = KIVO.bus.read("dreport.doc@1") || {},   /* V7 · د5-هـ: التقريرُ بالناقل؛ بغيابه لا تقرير */
             r = Object.keys(e).filter((t) => 0 !== t.indexOf("m:") && 0 !== t.indexOf("__") && e[t] && e[t].shifts);
           r.sort((t, e) => {
             const r = t.split("-").map(Number),
@@ -1846,7 +1848,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     f.forEach((t) => {
       ((t.gates || []).forEach((t) => b.push(t)), (A += (t.zones || []).length), (x += (t.marks || []).length));
     });
-    const y = r("bassam_dreport_v1", {}),
+    const y = (() => {
+        try {
+          const t = KIVO.bus.read("dreport.doc@1", "text");   /* V7 · د5-هـ: نسخةٌ من التقرير بالناقل؛ بغيابه لا تقرير */
+          if (null != t) return t;
+        } catch (t) {}
+        return {};
+      })(),
       v = r("bassam_rounds_v1", {}),
       w = i.length,
       S = (t) => String(t || "").replace("الوردية ", ""),
@@ -2326,7 +2334,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ],
       ee = [
         {
-          cap: "dreport",
+          cap: _bsDr,
           nm: "سحب تقرير الورديات — " + X + " من " + R * h.length,
           p: n(X, R * h.length),
           tip:
@@ -2367,7 +2375,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             " مسجّلة · الاعتماد يحوّل الجولة سجلاً مقفولاً يُحاسَب عليه — والمسودة تُعدَّل بلا أثر.",
         },
         {
-          cap: "dreport",
+          cap: _bsDr,
           nm: "تأشير الإجازات — " + KIVO.BassamCount(K, "تأشيرة") + " هذا الشهر",
           p: K > 0 ? 100 : 0,
           tip:
@@ -2378,7 +2386,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ") · تُسجَّل من قائمة التأشير بنوعها ليومها فقط، فيسقط صاحبها من عدّ يومه بدل أن يظهر «غائباً» ظلماً.",
         },
         {
-          cap: "dreport",
+          cap: _bsDr,
           nm: "اكتمال دورة اليوم — الثلاثة معاً",
           p: n(Q, R),
           tip:
@@ -2452,7 +2460,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               p3: _on(_bsPlan) && _on("dist"),
               p4: _on(_bsSched),
               p5: _on(_bsPlan) && _on("dist"),
-              p6: _on("dreport") || _on("daily/rounds"),
+              p6: _on(_bsDr) || _on("daily/rounds"),
             })[t.key] && t.rows.length,
         )
         .map((t, e) => ({ ...t, n: ["١", "٢", "٣", "٤", "٥", "٦"][e], pct: re(t.rows) })),
@@ -2913,7 +2921,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }),
       Q < R &&
         Fe.push({
-          cap: "dreport|daily/rounds",
+          cap: _bsDr + "|daily/rounds",
           s: "warning",
           title: "حوّل المتابعة إلى عادةٍ يومية بثلاث لبنات",
           action:
@@ -2956,7 +2964,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })),
       Te = (function () {
         try {
-          const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
+          const t = KIVO.bus.read("dreport.doc@1") || {},   /* V7 · د5-هـ: التقريرُ بالناقل؛ بغيابه لا تقرير */
             e = KIVO.BassamCal.hParts(new Date()),   /* V7 · د5-د2 */
             n = t[e.y + "-" + e.m + "-" + e.d],
             a = {};

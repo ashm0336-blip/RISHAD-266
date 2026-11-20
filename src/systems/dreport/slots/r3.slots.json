@@ -1,0 +1,130 @@
+{
+ "tree.keyCap.dreport": {
+  "order": 10,
+  "text": ", bassam_dreport_v1:'dreport', bassam_dr_grp_v1:'dreport', bassam_leave_kinds_v1:'dreport'"
+ },
+ "tree.kpiPanel.dreport": {
+  "order": 10,
+  "text": "      if (sk === 'kpiDaily') return can('dreport', 'view');\n"
+ },
+ "root.live.planning.dreport": {
+  "order": 10,
+  "text": "|dreport"
+ },
+ "root.live.profile.dreport": {
+  "order": 10,
+  "text": "|dreport"
+ },
+ "root.self.dreport": {
+  "order": 10,
+  "text": "dreport: 1, "
+ },
+ "root.labels.dreport": {
+  "order": 10,
+  "text": " dreport:\"التقرير اليومي\","
+ },
+ "root.navVals.dreport": {
+  "order": 10,
+  "text": "          nDreport: cls(\"dreport\", \"dreport\"), tDreport: tip(\"dreport\"),\n"
+ },
+ "root.go.dreport": {
+  "order": 10,
+  "text": "goDreport: go(\"dreport\"), "
+ },
+ "root.is.dreport": {
+  "order": 10,
+  "text": " isDreport: ap === \"dreport\","
+ },
+ "root.known.dreport": {
+  "order": 10,
+  "text": "\"dreport\","
+ },
+ "root.liveKeys.seized.dreport": {
+  "order": 10,
+  "text": "|dreport"
+ },
+ "store.opResources.dreport": {
+  "order": 10,
+  "text": ",\n    'bassam_dreport_v1', 'bassam_dr_grp_v1', 'bassam_leave_kinds_v1'"
+ },
+ "store.keyLabels.dreport": {
+  "order": 10,
+  "text": " bassam_dreport_v1:[\"التقرير اليومي\"], bassam_dr_grp_v1:[\"مجموعات التقرير اليومي\"],"
+ },
+ "store.keyLabels.dreport.lk": {
+  "order": 10,
+  "text": " bassam_leave_kinds_v1:[\"أنواع الإجازات\"],"
+ },
+ "store.identity.dreport": {
+  "order": 10,
+  "text": "      bassam_dreport_v1: { \"*.shifts.*.roster\": \"ekey\" },\n"
+ },
+ "store.proj.dreport": {
+  "order": 10,
+  "text": "bassam_dreport_v1: 1, "
+ },
+ "activity.entities.dreport": {
+  "order": 10,
+  "text": " dreport: 'التقرير اليومي',"
+ },
+ "activity.filter.dreport": {
+  "order": 10,
+  "text": " ['dreport', 'التقرير اليومي'],"
+ },
+ "imgref.empty.dreport.lk": {
+  "order": 10,
+  "text": " bassam_leave_kinds_v1: '[]',"
+ },
+ "imgref.empty.dreport": {
+  "order": 10,
+  "text": "bassam_dreport_v1: '{}', bassam_dr_grp_v1: '{}', "
+ },
+ "import.summary.dreport": {
+  "order": 10,
+  "text": "              impOn(\"dreport\") ? \"التقارير اليومية بكل أيامها ودفاتر استئذاناتها\" : \"\",\n"
+ },
+ "kpis.okOf.dreport": {
+  "order": 10,
+  "text": "      if (\"kpiDaily\" === t) return !r || !r.can || !!r.can(\"dreport\", \"view\");\n"
+ },
+ "admin.keyLabels.dreport": {
+  "order": 10,
+  "text": "        bassam_dreport_v1: \"التقرير اليومي\",\r\n"
+ },
+ "admin.kpiDaily.dreport": {
+  "order": 10,
+  "text": "P24.leafOn(C, \"dreport\")"
+ },
+ "admin.resLabels.dreport": {
+  "order": 10,
+  "text": "                bassam_leave_kinds_v1: \"كتالوج أنواع الإجازات\",\r\n"
+ },
+ "profile.rel.dreport": {
+  "order": 10,
+  "text": " \"bassam_dreport_v1\","
+ },
+ "profile.data.key.dreport": {
+  "order": 10,
+  "text": "        \"bassam_dreport_v1\",\n"
+ },
+ "profile.goWeek.dreport": {
+  "order": 10,
+  "text": "      r.goWeekOn = this.can(\"dreport\", \"view\");\n      r.goWeek = () => this.go(\"dreport\");\n"
+ },
+ "findday.cap.dreport": {
+  "order": 10,
+  "text": " || cap.indexOf('dreport') !== -1"
+ },
+ "findday.pk.dreport": {
+  "order": 10,
+  "text": " || pk === 'dreport'"
+ },
+ "blocks.shell.dreport.r3": {
+  "order": 10,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/dreport/client/407-dreport-r3.js\",\n   \"kind\": \"js\",\n   \"line\": 10497,\n   \"new\": \"V7 · د5-هـ: قراءةٌ معلنة من التقرير اليومي لصفحات القاعدة والجدول الشهري (ورقتُه مفعَّلة؟)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "shell.blocks.dreport.r3": {
+  "order": 10,
+  "text": "@@KIVO_BLOCK:systems/dreport/client/407-dreport-r3.js@@\n"
+ }
+}
