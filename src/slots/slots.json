@@ -5,7 +5,8 @@
   "daily.fallback.2.tasks",
   "bd.awardIndex",
   "root.liveKeys.seized.staff",
-  "read.map.reader.plan.2"
+  "read.map.reader.plan.2",
+  "priv.carrier.dreport"
  ],
  "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
  "templates": [

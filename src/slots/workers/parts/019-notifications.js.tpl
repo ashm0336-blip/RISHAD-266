@@ -184,175 +184,7 @@ var NF_TYPES = {
     txt: "جاهزية {الشهر} {النسبة}٪ — تحت الحد {الحد}٪ ({السبب})",
     go: "افتح مؤشرات الجاهزية",
   },
-  rep_pull: {
-    id: "rep_pull",
-    k: "rep",
-    name: "سحب تقرير الوردية",
-    when: "فور السحب",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "سُحب تقرير {الوردية} ليوم {اليوم} بواسطة {المُعدّل}",
-    go: "افتح التقرير",
-  },
-  rep_late: {
-    id: "rep_late",
-    k: "rep",
-    name: "تقرير مسحوب لم يُعتمد",
-    when: "قبل انتهاء الوردية بساعة",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "urg",
-    chan: "toast",
-    txt: "تقرير {الوردية} لم يُعتمد — تنتهي الوردية {الوقت}",
-    go: "افتح التقرير",
-  },
-  rep_ok: {
-    id: "rep_ok",
-    k: "rep",
-    name: "اعتماد التقرير / فك الاعتماد",
-    when: "فور التغيير",
-    on: true,
-    to: ["mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل} تقرير {الوردية} · حضور {النسبة}٪",
-    go: "افتح التقرير",
-  },
-  rep_att: {
-    id: "rep_att",
-    k: "rep",
-    name: "تأشيرك في التقرير (غياب / تأخر / استئذان)",
-    when: "فور التأشير",
-    on: true,
-    to: ["own"],
-    lvl: "act",
-    chan: "toast",
-    txt: "أُشّر لك «{الحالة}» في تقرير {الوردية} {اليوم} — اعترض خلال 24 ساعة",
-    go: "افتح التقرير",
-  },
-  rep_diff: {
-    id: "rep_diff",
-    k: "rep",
-    name: "تغيّر الجدول بعد سحب التقرير",
-    when: "عند الاكتشاف",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "act",
-    chan: "bell",
-    txt: "جدول {الوردية} تغيّر بعد سحب التقرير: {التفصيل}",
-    go: "افتح التقرير",
-  },
-  rep_here: {
-    id: "rep_here",
-    k: "rep",
-    name: "تسكينك اليوم في موقع مختلف",
-    when: "عند السحب",
-    on: true,
-    to: ["own"],
-    lvl: "act",
-    chan: "toast",
-    txt: "اليوم أنت في «{الموقع}» ({الوردية})",
-    go: "افتح التقرير",
-  },
-  rep_mv: {
-    id: "rep_mv",
-    k: "rep",
-    name: "تحويلك إلى وردية أو موقع آخر من التقرير",
-    when: "فور التحويل",
-    on: true,
-    to: ["own", "lead"],
-    lvl: "act",
-    chan: "toast",
-    txt: "حُوّلت إلى {الوردية} — «{الموقع}» بواسطة {المُعدّل}",
-    go: "افتح التقرير",
-  },
-  rep_today: {
-    id: "rep_today",
-    k: "rep",
-    name: "ورديتك اليوم (عند سحب التقرير)",
-    when: "فور السحب",
-    on: true,
-    to: ["own"],
-    lvl: "info",
-    chan: "toast",
-    txt: "ورديتك اليوم {الوردية} {الوقت} · القيادة: {القيادة}",
-    go: "افتح صفحتي",
-  },
-  rep_restday: {
-    id: "rep_restday",
-    k: "rep",
-    name: "اليوم راحتك (عند سحب التقرير)",
-    when: "فور السحب",
-    on: true,
-    to: ["own"],
-    lvl: "info",
-    chan: "bell",
-    txt: "اليوم {اليوم} راحتك — لست على وردية {الوردية}",
-    go: "افتح صفحتي",
-  },
-  rep_rest: {
-    id: "rep_rest",
-    k: "rep",
-    name: "تغيير أيام راحتك في التقرير",
-    when: "فور التغيير",
-    on: true,
-    to: ["own", "lead"],
-    lvl: "act",
-    chan: "toast",
-    txt: "أيام راحتك في تقرير {الوردية} صارت: {الأيام} — بواسطة {المُعدّل}",
-    go: "افتح صفحتي",
-  },
-  rep_ap: {
-    id: "rep_ap",
-    k: "rep",
-    name: "اعتماد تقرير ورديتك — حالتك",
-    when: "فور الاعتماد",
-    on: true,
-    to: ["own"],
-    lvl: "info",
-    chan: "bell",
-    txt: "اعتُمد تقرير {الوردية} ليوم {اليوم} — حالتك: {الحالة}",
-    go: "افتح صفحتي",
-  },
-  rep_quota: {
-    id: "rep_quota",
-    k: "rep",
-    name: "اكتمال نصاب استئذانات الشهر (من التقارير)",
-    when: "عند التأشير",
-    on: true,
-    to: ["own", "lead", "mgr"],
-    lvl: "act",
-    chan: "bell",
-    txt: "{الاسم} بلغ نصاب الاستئذان لشهر {الشهر} ({العدد} من {الحد})",
-    go: "افتح التقرير",
-  },
-  rep_cont: {
-    id: "rep_cont",
-    k: "rep",
-    name: "متابعة تقرير من يوم سابق",
-    when: "فور المتابعة",
-    on: false,
-    to: ["mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "تقرير {الوردية} تُوبع من تقرير يوم {اليوم}",
-    go: "افتح التقرير",
-  },
-  rep_lead: {
-    id: "rep_lead",
-    k: "rep",
-    name: "تغيير قيادة الوردية في التقرير",
-    when: "فور التغيير",
-    on: true,
-    to: ["own", "mgr"],
-    lvl: "act",
-    chan: "bell",
-    txt: "{الدور} {الوردية} اليوم: {الاسم}",
-    go: "افتح التقرير",
-  },
-  rn_start: {
+@@SYS:nf.types.dreport@@  rn_start: {
     id: "rn_start",
     k: "round",
     name: "بدء جولة / إغلاقها",
@@ -758,8 +590,7 @@ var NF_GLOBAL = ["bassam_notif_sys_v1", "bassam_bc_v1", "bassam_notif_cfg_v1"];
 var NF_CAP = {
   emp: "emps",
 @@SYS:nf.cap.tasks@@@@SYS:nf.cap.custody@@@@SYS:nf.cap.staff@@@@SYS:nf.cap.plan@@  ready: "planning/readiness",
-  rep: "dreport",
-  round: "daily/rounds",
+@@SYS:nf.cap.dreport@@  round: "daily/rounds",
 @@SYS:nf.cap@@  perm: "admin/ptpls",
 };
 var NF_CAP_ID = { kp_att: "daily/kpiDaily", kp_occ: "daily/kpiOcc", @@SYS:nf.capId.staff@@fd_obs: "daily/field" };
@@ -1012,7 +843,7 @@ async function nfRefs(env, A, only) {
   (A.depts || []).forEach(function (d) {
     if (d && d.id && (!only || only.indexOf(d.id) >= 0) && !refs[d.id]) {
       refs[d.id] = {};
-      ["employees_v1", @@SYS:nf.refs.staff@@"dreport_v1", "perm_tpls_v1"].forEach(function (s) {
+      ["employees_v1", @@SYS:nf.refs.staff@@@@SYS:nf.refs.dreport@@"perm_tpls_v1"].forEach(function (s) {
         keys.push("bsdept:" + d.id + ":bassam_" + s);
       });
     }
@@ -1031,20 +862,7 @@ function nfLeader(A, u, d, refs) {
   // Preserve the established rule: leadership in any stored report, then the
   // explicitly supervised template. Restricting reports to today is a policy change.
   if (u.role !== "staff") return false;
-  var r = refs[d] || {},
-    dr = r.dreport_v1 || {},
-    names = {};
-  Object.keys(dr).forEach(function (k) {
-    if (!/^\d+-\d+-\d+$/.test(k)) return;
-    var sh = (dr[k] && dr[k].shifts) || {};
-    Object.keys(sh).forEach(function (s) {
-      var l = sh[s].leaders || {};
-      if (l.chief) names[l.chief] = 1;
-      if (l.deputy) names[l.deputy] = 1;
-    });
-  });
-  if (u.name && names[u.name]) return true;
-  var id = (((A.perms || {}).tplOf || {})[d] || {})[u.ekey],
+  var r = refs[d] || {}@@SYS:nf.leader.dreport|empty=";\n"@@  var id = (((A.perms || {}).tplOf || {})[d] || {})[u.ekey],
     t = (Array.isArray(r.perm_tpls_v1) ? r.perm_tpls_v1 : []).filter(function (x) {
       return x && x.id === id;
     })[0];
@@ -2614,7 +2432,7 @@ var NF_DENY_WIN_MS = 60000,
 /* prettier-ignore */
 var NF_DENY_PAGES = {
   @@SYS:nf.denyPages.dstats@@emps: "موظفو الإدارة", planning: "الخطة التشغيلية", @@SYS:nf.denyPages.staff@@@@SYS:nf.denyPages.plan@@
-  daily: "المتابعة اليومية", dreport: "التقرير اليومي",@@SYS:nf.denyPages.tasks@@@@SYS:nf.denyPages.2@@
+  daily: "المتابعة اليومية",@@SYS:nf.denyPages.dreport@@@@SYS:nf.denyPages.tasks@@@@SYS:nf.denyPages.2@@
   @@SYS:nf.denyPages.3@@links: "مواقع ذات صلة", help: "المساعدة", admin: "الإعدادات",
 };
 /* prettier-ignore */
@@ -2625,8 +2443,7 @@ var NF_DENY_RECS = {
   bassam_notif_mute_v1: "كتم التنبيهات", bassam_page_v1: "الصفحة المحفوظة",@@SYS:nf.denyRecs.staff.grp@@
   bassam_employees_v1: "قائمة الموظفين", bassam_options_v1: "خيارات الموظفين",@@SYS:nf.denyRecs.custody@@
 @@SYS:nf.denyRecs.staff@@@@SYS:nf.denyRecs.plan|empty=" "@@ bassam_rounds_v1: "الجولات اليومية", bassam_dayshift_v1: "الوردية المختارة",
-  bassam_dayfocus_v1: "اليوم المختار", bassam_dreport_v1: "التقرير اليومي", bassam_dr_grp_v1: "مجموعات التقرير اليومي",
-  bassam_leave_kinds_v1: "أنواع الإجازات",@@SYS:nf.denyRecs.tasks@@@@SYS:nf.denyRecs.1@@
+  bassam_dayfocus_v1: "اليوم المختار",@@SYS:nf.denyRecs.dreport@@@@SYS:nf.denyRecs.tasks@@@@SYS:nf.denyRecs.1@@
   @@SYS:nf.denyRecs.2@@
   @@SYS:nf.denyRecs.3@@
   @@SYS:nf.denyRecs.4@@

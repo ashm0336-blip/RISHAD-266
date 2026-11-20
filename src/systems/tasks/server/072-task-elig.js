@@ -11,9 +11,10 @@ var TK_EL_OK = 'متاح', TK_EL_NO = 'غير متاح', TK_EL_WAIT = 'بانت�
 async function tkEligCtx(env, A, d) {
   var g = async function (n) { return parseJson(await opResourceGet(env, 'bsdept:' + d + ':' + n), null); };
   /* V7 · د5-د2: الجدولُ وأقفالُه قراءتان معلنتان من مالكهما (بالترتيب نفسه)؛ بغيابه null ⇒ «بانتظار التحقق: لا جدول» كما لو لم يُنشأ جدول */
+  /* V7 · د5-هـ: وتقريرُ اليوم قراءةٌ معلنة من مالكه (dreport.doc@1)؛ بغيابه null ⇒ لا غيابَ ولا إجازةَ ولا استئذانَ من التقرير */
   var sb = async function (n) { var v = await srvBusRead(n, env, d); return v === undefined ? null : v; };
   var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), sched: await sb('staff.schedule@1'), locks: await sb('staff.locks@1'),
-    shifts: await g('bassam_shift_options_v1'), rep: await g('bassam_dreport_v1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
+    shifts: await g('bassam_shift_options_v1'), rep: await sb('dreport.doc@1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
   C.detail = A && A.u ? (A.u.role === 'super' || !!srvBusRead('staff.readable@1', A, d)) : false;
   /* KIVO_265 · F-3 (RBAC_AUDIT_265): عناوينُ المهام المتعارضة (conf[].t) لمن يقرأ مخزنَ المهام (task.view) وحده — كان حاملُ task.create/assign بلا task.view يقرؤها */
   C.view = A && A.u ? (A.u.role === 'super' || canRead(A, tkK(d))) : false;

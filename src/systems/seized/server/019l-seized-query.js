@@ -502,7 +502,7 @@ function szDayContext(ctx, q, clock) {
       if (k) index[String(k)] = e;
     });
   });
-  var report = (szReference(ctx, "bassam_dreport_v1") || {})[key],
+  var report = (srvBusRead("dreport.docSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب مالك التقرير {} — لا تقريرَ لليوم */
     sched = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
     round = (szReference(ctx, "bassam_rounds_v1") || {})[key],
     shifts = [],
