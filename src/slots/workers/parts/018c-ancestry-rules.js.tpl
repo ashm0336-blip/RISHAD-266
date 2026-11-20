@@ -432,7 +432,7 @@ function permsGrantWhy(A, d, eo, en, to, tn, lo, ln) {
 }
 /* هل تحمل الورقةُ (الموسَّعة) صفحةً تعمل عليها العدسةُ L؟ (مضيفو مفتاح lens.<L>.view في فهرس الإنفاذ — الخطة والجولات افتراضاً) */
 function permLensHosted(sheet, L) {
-  var hs = enfIx().hosts['lens.' + L + '.view'] || [@@SYS:lens.hosts.plan@@'daily/rounds'];
+  var hs = enfIx().hosts['lens.' + L + '.view'] || [@@SYS:enf.lens.hosts.plan@@'daily/rounds'];
   for (var i = 0; i < hs.length; i++) for (var pk in sheet) if ((pk === hs[i] || pk.indexOf(hs[i] + '/') === 0) && (sheet[pk] || []).length) return true;
   return false;
 }
