@@ -33,10 +33,9 @@
     "kind": "read",
     "resources": [
      "bassam_employees_v1",
-     "bassam_dreport_v1",
      "bassam_options_v1"
     ],
-    "detail": "قراءة bassam_employees_v1, bassam_dreport_v1, bassam_options_v1 بورقة planning/readiness (RD_REG/DS_READ)",
+    "detail": "قراءة bassam_employees_v1, bassam_options_v1 بورقة planning/readiness (RD_REG/DS_READ)",
     "status": "exists"
    },
    "scopeDims": [
@@ -2401,7 +2400,7 @@
     "resources": [
      "bassam_rounds_v1"
     ],
-    "detail": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان daily/rounds:edit وdreport عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation (كان daily/rounds:edit)",
+    "detail": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان daily/rounds:edit عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation (كان daily/rounds:edit)",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -2983,7 +2982,7 @@
      "bassam_employees_v1",
      "bassam_options_v1"
     ],
-    "detail": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي) — ويفتح dreportCleanup حين يفرغ الموظفون",
+    "detail": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي)",
     "status": "to-bind"
    },
    "scopeDims": [
@@ -3539,10 +3538,8 @@
    "sensitive": true,
    "guard": {
     "kind": "rule",
-    "resources": [
-     "bassam_dreport_v1"
-    ],
-    "detail": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ التقرير اليومي بشكله القانوني فقط (dreportCleanup)",
+    "resources": [],
+    "detail": "wipeAllowed → 'import' (كان admin/import:del)",
     "status": "exists"
    },
    "scopeDims": [
@@ -5827,7 +5824,6 @@
  ],
  "featureFlags": [
   "ff.ready.export",
-  "ff.report.export",
   "ff.backup.download",
   "ff.backup.upload",
   "ff.audit.export",

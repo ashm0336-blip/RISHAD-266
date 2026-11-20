@@ -1232,7 +1232,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 20,
+    "after": 19,
     "seq": 15,
     "value": "ff.module.dstats.enabled"
    }
@@ -1244,7 +1244,7 @@
      "DateRange",
      "evidence"
     ],
-    "set": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds/dreport: أقفالٌ واجهية",
+    "set": "dstats: الخادمُ يفرض dslock · irshad/seized: G‑08 واجهةٌ + نوافذُ الاستدراك (Phase 3) · rounds: أقفالٌ واجهية",
     "with": [
      "irshad",
      "seized"
@@ -1599,7 +1599,7 @@
      "byResource"
     ],
     "key": "bassam_dstats_v1",
-    "after": 3,
+    "after": 2,
     "seq": 5,
     "value": {
      "items": "dstatsItems",

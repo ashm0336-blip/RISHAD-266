@@ -6,7 +6,7 @@
  },
  "res.reg.staff": {
   "order": 10,
-  "text": "  /* ── الجدول الشهري ── */\n  'bassam_staffing_v3':        { scope: 'dept', cap: 'staff', via: { dreport: 'CS_ONLY' } },\n  'bassam_staffing_v2':        { scope: 'dept', cap: 'staff' },\n  'bassam_staffing_snap_v1':   { scope: 'dept', cap: 'staff', via: { dreport: 'SNAP_CS_ONLY' } },\n  'bassam_staffing_locks_v1':  { scope: 'dept', cap: 'staff' },\n  'bassam_callsigns_v1':       { scope: 'dept', cap: 'staff' },\n  'bassam_perm_limit_v1':      { scope: 'dept', cap: ['staff', 'dreport'] },\n"
+  "text": "  /* ── الجدول الشهري ── */\n  'bassam_staffing_v3':        { scope: 'dept', cap: 'staff'@@SYS:res.via.cs.dreport@@ },\n  'bassam_staffing_v2':        { scope: 'dept', cap: 'staff' },\n  'bassam_staffing_snap_v1':   { scope: 'dept', cap: 'staff'@@SYS:res.via.snap.dreport@@ },\n  'bassam_staffing_locks_v1':  { scope: 'dept', cap: 'staff' },\n  'bassam_callsigns_v1':       { scope: 'dept', cap: 'staff' },\n  'bassam_perm_limit_v1':      { scope: 'dept', cap: ['staff'@@SYS:read.reader.dreport@@] },\n"
  },
  "ent.reg.callsigns.staff": {
   "order": 10,
@@ -54,11 +54,11 @@
  },
  "read.map.locks.staff": {
   "order": 10,
-  "text": "  'bassam_staffing_locks_v1':  ['staff', 'dreport', 'emps/data'@@SYS:read.map.reader.plan.2@@, 'planning', 'planning/readiness'],\n  'bassam_perm_limit_v1':      ['staff', 'dreport', 'planning', 'planning/readiness'],\n"
+  "text": "  'bassam_staffing_locks_v1':  ['staff'@@SYS:read.reader.dreport@@, 'emps/data'@@SYS:read.map.reader.plan.2@@, 'planning', 'planning/readiness'],\n  'bassam_perm_limit_v1':      ['staff'@@SYS:read.reader.dreport@@, 'planning', 'planning/readiness'],\n"
  },
  "read.map.staff": {
   "order": 10,
-  "text": "  /* ── التوزيع ── */\n  'bassam_staffing_v2':        ['staff', 'planning', 'planning/readiness'],\n  'bassam_staffing_snap_v1':   ['staff'],\n  'bassam_callsigns_v1':       ['staff', 'dreport'],\n"
+  "text": "  /* ── التوزيع ── */\n  'bassam_staffing_v2':        ['staff', 'planning', 'planning/readiness'],\n  'bassam_staffing_snap_v1':   ['staff'],\n  'bassam_callsigns_v1':       ['staff'@@SYS:read.reader.dreport@@],\n"
  },
  "bd.ctx.keys.staff": {
   "order": 10,
@@ -146,7 +146,7 @@
  },
  "enf.uncov.staff": {
   "order": 10,
-  "text": "    'bassam_perm_limit_v1': all(['staff.permission_limit.set']),\n    'bassam_staffing_snap_v1': all(['staff.lock', 'staff.reopen', 'staff.callsign.assign', 'report.callsign.assign']),\n"
+  "text": "    'bassam_perm_limit_v1': all(['staff.permission_limit.set']),\n    'bassam_staffing_snap_v1': all(['staff.lock', 'staff.reopen', 'staff.callsign.assign'@@SYS:enf.uncov.cs.dreport@@]),\n"
  },
  "enf.via.staff": {
   "order": 10,

@@ -804,7 +804,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 19,
+    "after": 18,
     "seq": 12,
     "value": "ff.task.export"
    },
@@ -812,7 +812,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 23,
+    "after": 22,
     "seq": 20,
     "value": "ff.module.tasks.enabled"
    }
@@ -1265,8 +1265,8 @@
      "byResource"
     ],
     "key": "bassam_tasks_v1",
-    "after": 2,
-    "seq": 30,
+    "after": 1,
+    "seq": 40,
     "value": {
      "items": "tasksItems",
      "evidence": "[\"y-m-d\"][row] · row[14] المكلَّف · row[13] المعرّف · أقفالُ bassam_tasks_locks_v1",
@@ -1374,37 +1374,11 @@
    {
     "path": [
      "readBindings",
-     "byResource",
-     "bassam_dreport_v1",
-     "keys"
-    ],
-    "after": 3,
-    "seq": 40,
-    "value": "task.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_dreport_v1",
-     "routes"
-    ],
-    "after": 3,
-    "seq": 40,
-    "value": {
-     "cap": "tasks:view",
-     "key": "task.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
      "byResource"
     ],
     "key": "bassam_tasks_v1",
-    "after": 26,
-    "seq": 2,
+    "after": 23,
+    "seq": 40,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -1433,8 +1407,8 @@
      "byResource"
     ],
     "key": "bassam_tasks_locks_v1",
-    "after": 26,
-    "seq": 3,
+    "after": 23,
+    "seq": 50,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -1515,7 +1489,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · report.reopen · task.month.reopen · task.reopen)"
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · task.month.reopen · task.reopen)"
    },
    {
     "path": [
@@ -1523,7 +1497,7 @@
      4,
      "means"
     ],
-    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · report.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
+    "set": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · task.month.reopen · dstats.*.reopen · task.reopen · award.res.reopen)",
     "with": [
      "award",
      "dstats"

@@ -3,7 +3,15 @@
  "optional": [
   "bd.awardIndex",
   "root.liveKeys.seized.staff",
-  "read.map.reader.plan.2"
+  "read.map.reader.plan.2",
+  "res.via.cs.dreport",
+  "res.via.snap.dreport",
+  "read.map.dreport",
+  "read.map.reader.staff.1",
+  "read.map.reader.tasks.1",
+  "read.map.reader.staff.5",
+  "enf.uncov.cs.dreport",
+  "enf.via.cs.dreport"
  ],
  "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
  "templates": [

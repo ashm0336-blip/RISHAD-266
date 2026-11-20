@@ -1034,23 +1034,23 @@
     "path": [
      "featureFlags"
     ],
-    "after": 2,
-    "seq": 7,
+    "after": 1,
+    "seq": 107,
     "value": "ff.ir.dash.export"
    },
    {
     "path": [
      "featureFlags"
     ],
-    "after": 2,
-    "seq": 8,
+    "after": 1,
+    "seq": 108,
     "value": "ff.ir.rec.export"
    },
    {
     "path": [
      "featureFlags"
     ],
-    "after": 23,
+    "after": 22,
     "seq": 30,
     "value": "ff.module.irshad.enabled"
    }
@@ -1598,8 +1598,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_v1",
-    "after": 2,
-    "seq": 40,
+    "after": 1,
+    "seq": 50,
     "value": {
      "items": "reportItems",
      "evidence": "reports[id].{y,m,d} · loc (ref.irshad.location) · shift · G‑08 + نوافذُ الاستدراك (D3‑07)",
@@ -1692,37 +1692,11 @@
    {
     "path": [
      "readBindings",
-     "byResource",
-     "bassam_dreport_v1",
-     "keys"
-    ],
-    "after": 3,
-    "seq": 10,
-    "value": "ir.rec.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_dreport_v1",
-     "routes"
-    ],
-    "after": 3,
-    "seq": 10,
-    "value": {
-     "cap": "irshad/records:view",
-     "key": "ir.rec.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
      "byResource"
     ],
     "key": "bassam_irshad_v1",
-    "after": 26,
-    "seq": 4,
+    "after": 23,
+    "seq": 60,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -1757,8 +1731,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_langs_v1",
-    "after": 26,
-    "seq": 5,
+    "after": 23,
+    "seq": 70,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -1799,8 +1773,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_locs_v1",
-    "after": 26,
-    "seq": 6,
+    "after": 23,
+    "seq": 80,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -1867,7 +1841,7 @@
      "byResource"
     ],
     "key": "bassam_irshad_retro_v1",
-    "after": 41,
+    "after": 38,
     "seq": 15,
     "value": {
      "scope": "dept-state",

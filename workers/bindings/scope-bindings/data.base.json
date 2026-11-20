@@ -55,7 +55,7 @@
   "DateRange": {
    "status": "as-is-ui-only",
    "confidence": "medium",
-   "evidence": "rounds/dreport: أقفالٌ واجهية"
+   "evidence": "rounds: أقفالٌ واجهية"
   },
   "Source": {
    "status": "as-is-enforced",
@@ -77,7 +77,6 @@
    "res": "bassam_employees_v1",
    "resources": [
     "bassam_employees_v1",
-    "bassam_dreport_v1",
     "bassam_options_v1"
    ],
    "dims": {
@@ -1811,10 +1810,8 @@
    "owner": "admin/import",
    "type": "operation",
    "g": "exists",
-   "res": "bassam_dreport_v1",
-   "resources": [
-    "bassam_dreport_v1"
-   ],
+   "res": "*",
+   "resources": [],
    "dims": {
     "Department": [
      "keyDept"
@@ -2457,25 +2454,6 @@
     "Global": "no-record-scope"
    }
   },
-  "bassam_dreport_v1": {
-   "items": "dreportItems",
-   "evidence": "[\"y-m-d\"].shifts[shift] · roster[ekey] · ap/apAt/apBy · m:y-m {ap,mo,dopen,dshut,perm}",
-   "lock": "dreport: m:y-m + shifts[sh].ap — واجهةٌ فقط اليوم",
-   "dims": {
-    "Department": "keyDept",
-    "Branch": "branchCeiling",
-    "Shift": "reportShift",
-    "DateRange": "periodLock"
-   },
-   "na": {
-    "Site": "no-site-identity (report)",
-    "Zone/Element": "no-element-identity",
-    "Assigned": "no-assignment-field",
-    "Own": "no-owner-identity",
-    "Source": "department-resource",
-    "Global": "no-record-scope"
-   }
-  },
   "bassam_employees_v1": {
    "items": "employeeItems",
    "evidence": "[eid|nid|name] · هويةُ السجل = مفتاحُ الموظف (empKeyOf)",
@@ -2724,7 +2702,7 @@
   },
   {
    "term": "reopen",
-   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen · report.reopen)",
+   "means": "إعادةُ فتح سجل/يوم/شهر ضمن دورة العمل (round.reopen)",
    "notA": "ليس فتحَ نافذةٍ زمنية للاستدراك (retro.open)",
    "classifier": "mo:1 / زوالُ ap ⇒ *.reopen — لا يُصنَّف retro.open أبداً"
   },
@@ -3144,80 +3122,6 @@
     ],
     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
    },
-   "bassam_dreport_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "round.view",
-     "field.view",
-     "emp.view",
-     "ready.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "daily/rounds:view",
-      "key": "round.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "daily/field:view",
-      "key": "field.view",
-      "source": "special:field.view"
-     },
-     {
-      "cap": "emps/data:view",
-      "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "planning:view",
-      "key": null,
-      "source": "no-atom"
-     },
-     {
-      "cap": "planning/readiness:view",
-      "key": "ready.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_dr_grp_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_leave_kinds_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
    "bassam_shift_options_v1": {
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
@@ -3449,7 +3353,6 @@
       "bassam_rounds_v1",
       "bassam_dayshift_v1",
       "bassam_dayfocus_v1",
-      "bassam_dreport_v1",
       "bassam_employees_v1",
       "bassam_shift_options_v1"
      ],
