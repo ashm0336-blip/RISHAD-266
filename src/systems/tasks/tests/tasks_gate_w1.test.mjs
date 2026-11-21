@@ -8,6 +8,7 @@
      (د) الاستطلاعُ (since) يمسح ولا يولّد — كما كان · والتشغيلُ الصريح من صفحة المهام يختم الطابعين
      (هـ) التذكيرُ (task_soon) يصل مرةً واحدة من القراءة الأولى ولا يتكرر عبر العزلات
    البياناتُ اصطناعيةٌ كلُّها (tasks_fx · TEST_ONLY). */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';

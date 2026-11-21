@@ -270,6 +270,11 @@
           var wait9 = (window.__BS_BOOT && window.__BS_BOOT.cf && srv9 && srv9.flushAsync)
             ? srv9.flushAsync(12000) : Promise.resolve(true);
           return wait9.then(function (okSv) {
+            if (window.__BS_BOOT && window.__BS_BOOT.cf && !okSv && dn9() > d09) {   /* V7 · د5-هـ: flushAsync يعيد false للمرفوض — الرفضُ باسمه (كما كان) لا «تحقق من اتصالك» */
+              say('انتهت مهلةُ تغيير كلمة المرور الأولى في هذه الجلسة — سجّل الدخول من جديد ثم غيّرها');
+              setTimeout(function(){ location.href = '/api/logout'; }, 3500);
+              return;
+            }
             if (window.__BS_BOOT && window.__BS_BOOT.cf && !okSv) {
               sv.disabled = false;
               say('تعذّر حفظ كلمة المرور في الخادم — تحقق من اتصالك وحاول من جديد');

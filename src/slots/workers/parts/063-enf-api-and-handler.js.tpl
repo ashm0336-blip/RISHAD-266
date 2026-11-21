@@ -468,9 +468,17 @@ async function saveRoute(env, request, path, ss) {
     var operationKeys=Object.keys(bs.set||{}).concat(bs.del||[]), operationalSave=operationKeys.some(opIsResource);
     if(operationalSave && (typeof bs.requestId!=='string'||!/^[-A-Za-z0-9_]{8,100}$/.test(bs.requestId)||!Number.isSafeInteger(bs.epoch)||bs.epoch<0||operationKeys.some(function(k){return !bs.base||!Number.isSafeInteger(bs.base[k])||bs.base[k]<0;})))
       return json({ok:0,err:'operations-request-envelope'},400);
-    var r2 = await applySave(env, bs, A1, reqMeta(request));
+    /* V7 · د5-هـ (أمن ٣): حفظُ موردٍ تشغيلي يُعاد مرّةً واحدة إن أخفق سياجُ مرجعه بكتابةٍ متزامنة (لم يُكتب شيء — الدفعةُ ذرّية): الإعادةُ لقطةٌ جديدة
+       تعيد الحكمَ بالسلطة الحالية وتقارن «base» العميل بالنسخة الحالية — فتعديلُ المورد نفسِه يبقى تعارضاً (409)، والكتابةُ غيرُ ذات الصلة لا تُفشله. */
+    for (var svTry = 0; ; svTry++) {
+      try { var r2 = await applySave(env, bs, A1, reqMeta(request)); break; }
+      catch (eT) { if (svTry || !operationalSave || !opFenceRetry(eT)) throw eT; }
+    }
     if(operationalSave) return json(Object.assign({},r2,{ok:r2.ok===1?1:0,requestId:bs.requestId,epoch:bs.epoch,atomic:1}),r2.ok===1?200:Object.keys(r2.conflicts||{}).length?409:403);
-    return json({ ok: 1, v: r2.v, revs: r2.revs, denied: r2.denied, conflicts: r2.conflicts, atomic: r2.atomic || '' });
+    /* V7 · د5-هـ (أمن ١): لا ok:1 لحفظٍ لم يُكتب منه مفتاح — كلُّ مفتاحٍ طُلب رُفض أو تعارض ⇒ ok:0 (والنتيجةُ لكل مفتاح كما هي).
+       للعميل الذي يعلن فهمه (ack ≥ 2) وحده: صفحةٌ قديمة في نافذة الإصدارين ترى ok:0 إقراراً غيرَ صالح فتعيد الإرسالَ بلا نهاية (caps_own_stale) */
+    var svStop = Object.keys(r2.denied || {}).length + Object.keys(r2.conflicts || {}).length;
+    return json({ ok: bs.ack >= 2 && operationKeys.length && !Object.keys(r2.revs || {}).length && svStop ? 0 : 1, v: r2.v, revs: r2.revs, denied: r2.denied, conflicts: r2.conflicts, atomic: r2.atomic || '' });
   } catch (eS) {
     var guardSave=dbGuardFailure(eS);if(guardSave)return json({ok:0,err:guardSave.err},guardSave.status);
     /* فشل الحفظ يظهر باسمه في سجلات المشروع وفي فاحص الشبكة — لا صمت */
@@ -624,17 +632,18 @@ export default {
 
       /* نبض التعرف — تستعمله الاختبارات ولا يكشف شيئاً */
       /* الهوية العامة — لشاشة الدخول وأي عميل قبل الجلسة */
-      if (path === '/api/brand') return json({ ok: 1, brand: brandPublic(await platGet(env)), ver: WORKER_VER, rk: (await metaGet(env, 'rk')) ? 1 : 0 });
+      /* V7 · د5-هـ: لا إصدارَ للخادم في الهوية العامة (لا يقرؤه عميل؛ الواجهةُ تحمل KIVO.__BS_VER وrelease_check يقرأ الحزمة) */
+      if (path === '/api/brand') return json({ ok: 1, brand: brandPublic(await platGet(env)), rk: (await metaGet(env, 'rk')) ? 1 : 0 });
 
       if (path === '/api/ping') {
-        var us0 = await usersList(env), pingOut = { ok: 1, cf: 1, ver: WORKER_VER, commit: WORKER_COMMIT, fresh: isVirgin(us0) ? 1 : 0 };   /* V7 · د1: commit — 002 WORKER_COMMIT */
+        var us0 = await usersList(env), pingOut = { ok: 1, cf: 1, fresh: isVirgin(us0) ? 1 : 0 };   /* V7 · د5-هـ: الإصدارُ والالتزام (002 WORKER_VER · WORKER_COMMIT) في فرع مدير النظام وحده */
         /* KIVO_244 · AUD-004: الأعدادُ (الحسابات · الجلسات · المراجعة) لمدير النظام وحده — لا إفشاءَ بلا جلسة؛ وفي وضع الحماية النبضُ المختصر فقط */
         /* KIVO_261 · SOT-145 (الجاهزية): في وضع الحماية الخادمُ حيٌّ (ok:1) لكنه غيرُ جاهز — كلُّ قراءةٍ وكتابة 503 — فيُعلَن ready:0 · mode:'protect'
            (كان النبضُ «ok:1» وحده فلا يفرّق المراقبُ بين السليم والمعطَّل) · ولمدير النظام: schemaOk = المخطّطُ المختوم في D1 = المعروفُ لهذا الإصدار */
         if (env.__enfm && env.__enfm.mode === 'unavailable') { pingOut.ready = 0; pingOut.mode = 'protect'; }
         else {
           var sP = await session(env, request), aP = sP ? await actorOf(env, sP.uid) : null;
-          if (aP && aP.u && aP.u.role === 'super') { var sc = await env.DB.prepare('SELECT COUNT(*) AS n FROM sess').first(); pingOut.users = us0 ? us0.length : 0; pingOut.rev = await curRev(env); pingOut.sess = sc ? sc.n : 0; pingOut.schema = KIVO_SCHEMA_VERSION; pingOut.schemaDb = await metaGet(env, 'schema_version'); pingOut.schemaOk = String(pingOut.schemaDb) === String(KIVO_SCHEMA_VERSION) ? 1 : 0; pingOut.ready = pingOut.schemaOk; }   /* KIVO_249: إصدارُ المخطّط (المعروف · المختوم في meta) لمدير النظام */
+          if (aP && aP.u && aP.u.role === 'super') { var sc = await env.DB.prepare('SELECT COUNT(*) AS n FROM sess').first(); pingOut.users = us0 ? us0.length : 0; pingOut.rev = await curRev(env); pingOut.sess = sc ? sc.n : 0; pingOut.schema = KIVO_SCHEMA_VERSION; pingOut.schemaDb = await metaGet(env, 'schema_version'); pingOut.schemaOk = String(pingOut.schemaDb) === String(KIVO_SCHEMA_VERSION) ? 1 : 0; pingOut.ready = pingOut.schemaOk; pingOut.ver = WORKER_VER; pingOut.commit = WORKER_COMMIT; }   /* KIVO_249: إصدارُ المخطّط (المعروف · المختوم في meta) لمدير النظام */
         }
         return json(pingOut);
       }
@@ -801,7 +810,7 @@ export default {
         if (path === '/api/recovery/new' && request.method === 'POST') {
           if (!superX) return json({ ok: 0, err: 'forbidden' }, 403);
           var rbn = await bodyRead(request, path); if (rbn.res) return rbn.res; var bn = rbn.v;   /* KIVO_264 · SOT-101 · E5: null كان 500 */
-          var gkN = 'pw:' + AX.u.id;
+          var gkN = 'pw:' + AX.u.id, rkPrev = await metaGet(env, 'rk');   /* V7 · د5-هـ: المفتاحُ السابق كما قُرئ أوّلَ الطلب — يُحرس في الدفعة */
           if (await guardLeft(env, gkN) > 0) return json({ ok: 0, err: 'محاولات كثيرة — انتظر قليلاً' });
           var okN = await verifyPw(String(bn.pw == null ? '' : bn.pw), AX.u.ph);
           if (okN === 'unsupported') return json({ ok: 0, err: ERR_ITER });
@@ -810,12 +819,14 @@ export default {
           var keyN = newRecoveryKey(), hN = await hashKey(keyN), rmN = reqMeta(request);
           /* المفتاح يفتح حساب مدير النظام الرئيسي (لا الاحتياطي) */
           var mainSu = AX.users.filter(function (x) { return x.role === 'super' && !x.bk; })[0] || AX.u;
-          await env.DB.batch([
+          /* V7 · د5-هـ (أمن ٢): إصداران متزامنان ⇒ واحدٌ يفوز والآخر 409 — لا يُعرض مفتاحٌ أبطله إصدارٌ آخر صامتاً */
+          try { await env.DB.batch([
+            rkGuard(env, rkPrev),
             env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk', hN),
             env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk_uid', mainSu.id),
             env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rk_meta', JSON.stringify({ ts: nowX, by: AX.u.un, uid: mainSu.id })),
             env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind('rk_used')
-          ]);
+          ]); } catch (eN) { if (isRkConflict(eN)) return json({ ok: 0, err: 'تغيّر مفتاح الاستعادة أثناء الإصدار (إصدارٌ آخر أو استعمال) — لم يُنشأ مفتاح، أعد التحميل', why: 'rk-changed' }, 409); throw eN; }
           await secLog(env, { uid: AX.u.id, un: AX.u.un, act: 'recovery_key', detail: 'new', ip: rmN.ip, city: rmN.city, dev: rmN.dev });
           return json({ ok: 1, key: keyN, uid: mainSu.id, un: mainSu.un });
         }

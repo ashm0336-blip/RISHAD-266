@@ -533,6 +533,7 @@
     for (k in pSet) base[k] = krev[k] || 0;
     var o9 = { set: pSet, del: dl, base: base, aud: audEvents9(pSet) }, w9 = null;
     if (UID9) o9.uid = UID9;                         /* KIVO_264 · D-3 (C1): الخادمُ يردّ 409 session-changed إن لم تعد هويةَ الكوكي */
+    o9.ack = 2;                                      /* V7 · د5-هـ (أمن ١): يفهم ok:0 لحفظٍ لم يُكتب منه مفتاح (saveAck9) */
     var A9 = KIVO.__BS_I && KIVO.__BS_I.auth, c9 = (A9 && typeof A9.saveCur === "function" && ("bassam_auth_users_v1" in pSet)) ? A9.saveCur("bassam_auth_users_v1") : null;
     if (c9) o9.cur = c9;                             /* KIVO_264 · D14: كلمةُ المرور الحالية لتغيير اسم دخول صاحب الحساب (330 saveCur — في الذاكرة ≤ 120 ث · لا تُخزَّن) */
     if (uscope9 && (KU9 in pSet)) o9.uscope = uscope9;
@@ -1274,7 +1275,10 @@
   function saveAck9(j, snap) {
     var obj = function (v) { return !!v && typeof v === "object" && !Array.isArray(v); };
     var rev = function (v) { return Number.isSafeInteger(v) && v >= 0; };
-    if (!obj(j) || (j.ok !== undefined && j.ok !== 1 && j.ok !== true)) return false;
+    /* V7 · د5-هـ (أمن ١): ok:0 = لم يُحفظ مفتاح (رُفض كلُّ ما طُلب أو تعارض) — إقرارٌ صالح إن لم يحمل مفتاحاً محفوظاً وحمل مانعاً */
+    var none9 = !!obj(j) && j.ok === 0;
+    if (!obj(j) || (j.ok !== undefined && j.ok !== 1 && j.ok !== true && !none9)) return false;
+    if (none9 && obj(j.revs) && Object.keys(j.revs).length) return false;
     var seen = Object.create(null), kinds = ["revs", "denied", "conflicts"], count = 0, stopped = 0, i, k, value;
     for (i = 0; i < kinds.length; i++) {
       var kind = kinds[i], map = j[kind];
@@ -1295,7 +1299,7 @@
         seen[k] = 1; count++;
       }
     }
-    if (!count) return false;
+    if (!count || (none9 && !stopped)) return false;
     /* رفضُ عملية ذرّية يعيد فقط الموانع؛ settle يعيد بقية اللقطة إلى الطابور. */
     if (j.atomic && stopped) return true;
     for (k in snap.set) if (!seen[k]) return false;
@@ -1354,10 +1358,10 @@
         if (j === undefined || sx9) return;           /* عولج أعلاه أو عُزلت الجلسة أثناء الطلب */
         if (!saveAck9(j, snap)) throw new Error("invalid-save-acknowledgement");
         inflight = null;
-        var again = settle(j, snap);
+        var again = settle(j, snap), dn9n = Object.keys(j.denied || {}).length;
         warn(false); fails = 0;
         if (again) { kick(); settleWaiters(false); return; }
-        settleWaiters(!dirty);
+        settleWaiters(!dirty && !dn9n);   /* V7 · د5-هـ (أمن ١): مفتاحٌ رُفض ليس حفظاً — خرج من الطابور لكنه لم يُحفظ */
         kickIfDirty();
       })
       .catch(function (e) {

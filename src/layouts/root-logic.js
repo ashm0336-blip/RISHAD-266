@@ -705,8 +705,12 @@ class Component extends DCLogic {
       try { goOn = !!(await KIVO.bsConfirm({ title: "تعديلات لم تُحفظ بعد", msg: "لديك تعديلات لم يكتمل حفظها. نحفظها أولاً ثم نتابع.", ok: "احفظ وتابع", cancel: "ابقَ هنا" })); } catch (e) { goOn = false; }
       if (!goOn) return false;
     }
-    let ok = true;
+    let ok = true, d0 = 0;
+    try { d0 = S && S.denied ? +S.denied() || 0 : 0; } catch (e) {}
     if (S && S.flushAsync) { try { ok = (await S.flushAsync(4000)) === true; } catch (e) { ok = false; } }
+    /* V7 · د5-هـ (أمن ١): رُفض تعديلٌ أثناء الحفظ ⇒ لا انتقال — يبقى المستخدمُ أمام رسالة الرفض (لا «حُفظ» ولا تبديلٌ يمحوها) */
+    let refused = false; try { refused = !!(S && S.denied && (+S.denied() || 0) > d0); } catch (e) {}
+    if (!ok && refused) { this.bkToast("رُفض حفظ بعض تعديلاتك (السببُ في الرسالة) — لم ننتقل", true); return false; }
     if (!ok) { let still = true; try { still = !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch (e) { still = true; }
       if (still) { this.bkToast("لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ", true); return false; } }   /* لا تعديلَ معلَّق (جلسةٌ منتهية · عمليةٌ عالقة) ⇒ لا رسالةَ كاذبة ولا منع */
     return true;

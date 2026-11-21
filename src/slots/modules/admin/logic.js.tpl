@@ -492,6 +492,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return null;
   }
   /* CORE-02 (B2): keepErr — the refusal body (err · msg · field) instead of null, so its reason can be shown */
+  /* V7 · د5-هـ (أمن ١): تبديلُ الإدارة بعد حفظٍ صادقٍ وحده — كان يُعاد التحميلُ أيّاً كانت نتيجةُ الحفظ (رفضاً أو انقطاعاً) فيضيع التعديلُ أو رسالةُ رفضه.
+     الحفظُ أولاً؛ ثم التبديلُ وإعادةُ التحميل إن صدق، أو لم يبقَ ما يُحفظ ولم يُرفض شيء */
+  _adSwitchDept(setActive) {
+    const S = KIVO.__BS_SRV, d0 = S && S.denied ? +S.denied() || 0 : 0,
+      pend = () => { try { return !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch (e) { return !0; } };
+    (S && S.flushAsync ? Promise.resolve(S.flushAsync(4e3)).catch(() => !1) : Promise.resolve(!0)).then((ok) => {
+      const refused = !!(S && S.denied && (+S.denied() || 0) > d0);
+      if (ok !== !0 && (refused || pend())) return void this.bsToast(refused ? "رُفض حفظ بعض تعديلاتك — لم يُبدَّل" : "لم تُحفظ تعديلاتك بعد — لم يُبدَّل حتى تُحفظ", "err");
+      setActive();
+      location.reload();
+    });
+  }
   adFetch(t, e, keepErr) {
     return fetch(t, e ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(e) } : {})
       .then((t) => (t.ok ? t.json() : keepErr ? t.json().catch(() => null) : null))
@@ -1356,11 +1368,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const t = this.state.plRkPw;
     t
       ? (this.setState({ plBusy: !0, plRkMsg: "", plRkInfo: "" }),
-        this.adFetch("/api/recovery/new", { pw: t }).then((t) => {
+        /* V7 · د5-هـ: keepErr — تعارضُ الإصدار المتزامن (409) يُعرض بسببه لا «تعذّر»، وتُعاد قراءةُ حالة المفتاح */
+        this.adFetch("/api/recovery/new", { pw: t }, !0).then((t) => {
           (this.setState({ plBusy: !1 }),
             t && t.ok
               ? (this.setState({ plRkKey: t.key, plRkAskOn: !0, plRkPw: "" }), this.plRkLoad())
-              : this.setState({ plRkMsg: (t && t.err) || "تعذّر" }));
+              : (this.setState({ plRkMsg: (t && t.err) || "تعذّر" }), t && "rk-changed" === t.why && this.plRkLoad()));
         }))
       : this.setState({ plRkMsg: "أدخل كلمة مرورك" });
   }
@@ -1487,7 +1500,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             confirm: t.confirm,
             keepBrand: !!t.keepBrand,
             admin: { un: t.un, name: t.name, pw: t.pw },
-          }).then((e) => {
+          }, !0).then((e) => {   /* V7 · د5-هـ: keepErr — سببُ التعارض (409) يُعرض */
             if ((this.setState({ plBusy: !1 }), e && e.ok)) {
               const go = () => {
                 try {
@@ -5758,14 +5771,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       this.setState({ admGrpFlip: e, ndOpen: !0, ndPid: o, ndName: "", ndKind: "", ndNewKind: "", ndMsg: "" }, () => this._orgHome()));
                   },
                   dhSwitch: () => {
-                    (t.setActive(o),
-                      (KIVO.__BS_SRV && KIVO.__BS_SRV.flushAsync
-                        ? Promise.resolve(KIVO.__BS_SRV.flushAsync(4e3)).catch(() => {})
-                        : Promise.resolve()
-                      ).then(
-                        () => location.reload(),
-                        () => location.reload(),
-                      ));
+                    this._adSwitchDept(() => t.setActive(o));
                   },
                   dhExp: () => {
                     KIVO.BassamDeptBackup && KIVO.BassamDeptBackup.export();
@@ -6311,14 +6317,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   isActive: r.id === s,
                   notActive: r.id !== s,
                   switchTo: () => {
-                    (t.setActive(r.id),
-                      (KIVO.__BS_SRV && KIVO.__BS_SRV.flushAsync
-                        ? Promise.resolve(KIVO.__BS_SRV.flushAsync(4e3)).catch(() => {})
-                        : Promise.resolve()
-                      ).then(
-                        () => location.reload(),
-                        () => location.reload(),
-                      ));
+                    this._adSwitchDept(() => t.setActive(r.id));
                   },
                   onName: (t) => this.setState({ ["dnm_" + r.id]: t.target.value }),
                   rename: (e) => {
@@ -6331,14 +6330,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     } else this.setState({ ["dnm_" + r.id]: r.name });
                   },
                   activate: () => {
-                    (t.setActive(r.id),
-                      (KIVO.__BS_SRV && KIVO.__BS_SRV.flushAsync
-                        ? Promise.resolve(KIVO.__BS_SRV.flushAsync(4e3)).catch(() => {})
-                        : Promise.resolve()
-                      ).then(
-                        () => location.reload(),
-                        () => location.reload(),
-                      ));
+                    this._adSwitchDept(() => t.setActive(r.id));
                   },
                 };
               });

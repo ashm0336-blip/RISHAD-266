@@ -1,6 +1,7 @@
 /* KIVO_265 · قفلُ اليوم في الخادم (مراجعةُ ما قبل النشر): اليومُ المُغلق بيده (true على «y-m-d» في bassam_tasks_locks_v1) لا تُضاف إليه مهامٌ جديدة —
    /api/tasks/create يُرفض بـ409 locked برسالةٍ صريحة، و/api/tasks/recur/run يتخطّاه (ويذكره في skipped) — في الوضعين القديم والإنفاذ.
    والقفلُ بانقضاء اليوم يبقى في الواجهة وحدها (المسؤول يعتمد ويمدّد ويعيد الإسناد على قفل الشهر)، والموظفُ لا يتأثّر. بياناتٌ اصطناعية (TEST_ONLY). */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, D, DAY, TOMORROW, KT, stored, putKV, hij, HR, replaceOperationalFixture, taskCommandBody } from './tasks_fx.mjs';

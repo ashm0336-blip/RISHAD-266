@@ -135,11 +135,14 @@ async function rsReferenceSnapshot(env, uid, options) {
     scope: scope,
   };
 }
-/* Base witnesses: the full kv/meta tables, or exactly the scoped predicate sets (rows read later carry their own, in scope.late). */
+/* Base witnesses: the full kv/meta tables, or exactly the scoped predicate sets (rows read later carry their own, in scope.late).
+   V7 · د5-هـ (أمن ٣): طوابعُ حارس المهام (tkg:<kind>:<dept> — 074 tkGateStamp) خارج الشاهد: محايدةٌ للمخبأ (052 dbGuardCacheNeutral)، تُقرأ وتُكتب
+   بـ__rawDB وحدها ولا يبني عليها المرجعُ قراراً — فكتابتُها كلَّ 5–10 دقائق كانت تحوّل حفظاً أو قراءةً لا تمسّها إلى 409. تبقى في اللقطة كما كانت. */
+var RS_FENCE_META = "substr(k,1,4)<>'tkg:'";
 function rsReferenceBase(env, reference, meta) {
   var scope = reference.scope, later = new Set(scope ? scope.later : []),
-    rows = (meta ? reference.metaRows : reference.inputRows).filter(function (row) { return !later.has(row.k); });
-  if (meta) return scope ? rsWitness(env, 'meta', ['k', 'v'], rows, RS_SCOPE_META, [scope.arg]) : rsWitness(env, 'meta', ['k', 'v'], rows, "k<>'rev'");
+    rows = (meta ? reference.metaRows : reference.inputRows).filter(function (row) { return !later.has(row.k) && !(meta && String(row.k).slice(0, 4) === 'tkg:'); });
+  if (meta) return scope ? rsWitness(env, 'meta', ['k', 'v'], rows, RS_SCOPE_META + ' AND ' + RS_FENCE_META, [scope.arg]) : rsWitness(env, 'meta', ['k', 'v'], rows, "k<>'rev' AND " + RS_FENCE_META);
   return scope ? rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, RS_SCOPE_KV, [scope.arg]) : rsWitness(env, 'kv', ['k', 'seq', 'v'], rows);
 }
 /* Position in a scoped reference's lazily grown witnesses; rsReferenceSince returns what was read after it. */

@@ -63,7 +63,6 @@
           "keys": [
             "ok",
             "brand",
-            "ver",
             "rk"
           ]
         }
@@ -80,11 +79,11 @@
           "keys": [
             "ok",
             "cf",
-            "ver",
-            "commit",
             "fresh"
           ],
           "super_extra": [
+            "ver",
+            "commit",
             "users",
             "rev",
             "sess",
@@ -125,6 +124,14 @@
           ],
           "err": "bad-body",
           "schema": "src/schemas/api/bodies.schema.json#/bodies//api/recover"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "why": "rk-changed",
+          "note": "V7 · د5-هـ: مفتاحُ الاستعادة استُعمل أو تغيّر بين التحقّق والكتابة (why: rk-changed) — أو تغيّرت الحسابات (بلا why) · لا يُكتب شيء"
         }
       }
     },
@@ -959,6 +966,14 @@
           "err": "bad-body",
           "note": "KIVO_264 · E5: null كان 500",
           "schema": "src/schemas/api/bodies.schema.json#/bodies//api/recovery/new"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "why": "rk-changed",
+          "note": "V7 · د5-هـ: إصدارٌ متزامن أو استعمالٌ غيّر المفتاحَ السابق — لا يُنشأ مفتاح"
         }
       }
     },
@@ -990,6 +1005,14 @@
           "err": "bad-body",
           "note": "KIVO_264 · E5: null كان 500",
           "schema": "src/schemas/api/bodies.schema.json#/bodies//api/reset"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "why": "rk-changed",
+          "note": "V7 · د5-هـ: المفتاحُ الذي أجاز التهيئة استُهلك قبل كتابتها — لا يُنفَّذ شيء"
         }
       },
       "note": "محروسة — لا تُنفَّذ في اختبار العقد"

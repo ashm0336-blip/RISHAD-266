@@ -6,6 +6,7 @@
          (صاحبُ السلسلة = حدثُ «أُنشئت» للسلسلة بمعرّفها وحده)
      (ج) ولا تراجع: السلسلةُ الحقيقية (من /api/tasks/create) تولِّد كما كانت
    بياناتٌ اصطناعية وحدها (tasks_fx · TEST_ONLY). */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, MATE, KT, D, TAG, stored, hij, HR, taskCommandBody, operationSaveBody } from './tasks_fx.mjs';

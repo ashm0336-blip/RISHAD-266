@@ -6,6 +6,7 @@
            كان يُكتب فيقرأ الزميلُ صورةَ إثبات غيره (P0) — بالوضعين في شهرٍ مفتوح (والإنفاذُ في الشهر المقفل يمنعه النطاقُ وحده)
    والتحقّقُ من b7538e2 (verify_b7538e2.md): (V-5) إسنادُ صفٍّ بدأه من حُذف كما تكتبه الصفحةُ الآن («بانتظار الاستلام» كاملاً) يمضي ويراه المكلَّفُ غيرَ مقبول
            (الإصلاحُ في الواجهة — tasks_page_verify265 (V-5) يُخفق على b7538e2) */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, KT, KE, TAG, DAY, PDAY, stored, putKV, row, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';

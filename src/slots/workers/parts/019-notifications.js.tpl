@@ -205,7 +205,7 @@ var NF_TYPES = {
     to: ["own", "sys"],
     lvl: "urg",
     chan: "toast",
-    txt: "{العدد} محاولات فاشلة على حساب {الاسم} من {IP}",
+    txt: "{العدد} محاولات فاشلة على حساب {الاسم} من {IP} — السبب: {السبب}",
     go: "سجل الأمن",
   },
   sc_pw: {
@@ -277,7 +277,7 @@ var NF_TYPES = {
     to: ["sys"],
     lvl: "urg",
     chan: "toast",
-    txt: "{الفعل} مفتاح الاستعادة من {IP} — {النتيجة}",
+    txt: "{الفعل} مفتاح الاستعادة من {IP} — {النتيجة} {السبب}",
     go: "الأمن",
   },
   pm_chg: {
@@ -2575,6 +2575,7 @@ async function nfSecurityPoll(env, A) {
     max = last,
     fails = {},
     failId = {},
+    failWhy = {},
     denyOpen = {},
     denyAll = [];
   rows.forEach(function (r) {
@@ -2586,6 +2587,8 @@ async function nfSecurityPoll(env, A) {
       var k = r.target || r.un;
       fails[k] = (fails[k] || 0) + 1;
       failId[k] = r.id;
+      var fw = failWhy[k] || (failWhy[k] = {});
+      fw[r.detail || ""] = (fw[r.detail || ""] || 0) + 1;
       return;
     }
     if (r.act === "lock" || r.act === "guard_unlock") {
@@ -2596,10 +2599,12 @@ async function nfSecurityPoll(env, A) {
       vars = { التفصيل: r.detail || "", المُعدّل: r.un || "" };
     } else if (["recovery_key", "recover_ok", "recover_fail"].indexOf(r.act) >= 0) {
       type = "sc_rk";
+      /* V7 · د5-هـ: المحاولةُ الفاشلة «رُفض» (كانت «استُخدم») وسببُها من sec.detail (bad-key · no-key — 062a) */
       vars = {
-        الفعل: r.act === "recovery_key" ? "أُنشئ" : "استُخدم",
+        الفعل: r.act === "recovery_key" ? "أُنشئ" : r.act === "recover_fail" ? "رُفض" : "استُخدم",
         IP: r.ip || "",
         النتيجة: r.act === "recover_fail" ? "محاولة فاشلة" : "نجح",
+        السبب: r.act === "recover_fail" ? "(السبب: " + (NF_RK_WHY[r.detail] || r.detail || "غير معروف") + ")" : "",
       };
     } else if (r.act === "denied") {
       var gk = [r.uid, r.target, r.detail].join("\u0001"),
@@ -2634,15 +2639,19 @@ async function nfSecurityPoll(env, A) {
     (
       (
         await env.DB.prepare(
-          "SELECT un,ip,COUNT(*) c FROM sec WHERE act='login_fail' AND ts>?1 AND un IN (SELECT value FROM json_each(?2)) GROUP BY un,ip ORDER BY c DESC,ip",
+          "SELECT un,ip,COUNT(*) c,SUM(detail='bad-pw') bad_pw,SUM(detail='no-user') no_user,SUM(detail='frozen') frozen,SUM(COALESCE(detail,'') NOT IN ('bad-pw','no-user','frozen')) other FROM sec WHERE act='login_fail' AND ts>?1 AND un IN (SELECT value FROM json_each(?2)) GROUP BY un,ip ORDER BY c DESC,ip",
         )
           .bind(nowF - NF_FAIL_WIN_MS, JSON.stringify(failNames))
           .all()
       ).results || []
     ).forEach(function (x) {
-      var b = byName[x.un] || (byName[x.un] = { n: 0, ips: [] });
+      var b = byName[x.un] || (byName[x.un] = { n: 0, ips: [], why: {} });
       b.n += x.c;
       if (x.ip) b.ips.push(x.ip);
+      ["bad-pw", "no-user", "frozen"].forEach(function (d) {
+        if (x[d.replace("-", "_")]) b.why[d] = (b.why[d] || 0) + x[d.replace("-", "_")];
+      });
+      if (x.other) b.why[""] = (b.why[""] || 0) + x.other;
     });
   }
   /* المراجعة المستقلة (L2): إنذارُ العناوين المختلفة لحسابٍ قائمٍ فقط — رشُّ أسماءٍ لا وجودَ لها من عناوين قليلة كان يولّد إنذاراً عاجلاً لكل اسم.
@@ -2686,6 +2695,7 @@ async function nfSecurityPoll(env, A) {
             b.ips.length > 1
               ? b.ips.length + " عناوين مختلفة: " + b.ips.slice(0, 5).join("، ") + (b.ips.length > 5 ? " …" : "")
               : b.ips[0] || "",
+          السبب: nfFailWhy(b.n >= fails[k] ? b.why : failWhy[k]),
         },
         once: fails[k] >= 5 ? "fail:" + k + ":" + Math.floor(nowF / 600000) : "fail:" + k + ":ips:" + failId[k],
       });
@@ -2715,6 +2725,19 @@ async function nfSecurityPoll(env, A) {
     ).results || [];
   for (var i = 0; i < due.length; i++) await nfRemind(env, A, due[i].id, undefined, true);
   return result;
+}
+/* V7 · د5-هـ: أسبابُ الرفض في إنذارَي الأمن — sec.detail (062a) نصّاً مقروءاً */
+var NF_RK_WHY = { "bad-key": "المفتاح غير صحيح", "no-key": "لا يوجد مفتاح استعادة مُصدَر" },
+  NF_FAIL_WHY = { "bad-pw": "كلمة مرور خاطئة", "no-user": "اسم مستخدم غير موجود", frozen: "حساب موقوف" };
+function nfFailWhy(w) {
+  return Object.keys(w || {})
+    .sort(function (a, b) {
+      return w[b] - w[a] || (a < b ? -1 : 1);
+    })
+    .map(function (d) {
+      return (NF_FAIL_WHY[d] || "سبب غير معروف") + " ×" + w[d];
+    })
+    .join("، ");
 }
 async function nfAction(env, A, body) {
   var op = body.op;

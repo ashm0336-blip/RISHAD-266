@@ -69,6 +69,11 @@
             "null"
           ],
           "maxLength": 1000
+        },
+        "ack": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9
         }
       }
     },
@@ -807,7 +812,7 @@
     }
   },
   "notes": {
-@@SYS:bodies.notes.tasks@@    "/api/save": "KIVO_264: uid (C1 — 409 session-changed) · cur (D14 — كلمةُ المرور الحالية لتغيير اسم الدخول؛ لا تُخزَّن)",
+@@SYS:bodies.notes.tasks@@    "/api/save": "KIVO_264: uid (C1 — 409 session-changed) · cur (D14 — كلمةُ المرور الحالية لتغيير اسم الدخول؛ لا تُخزَّن) · V7 د5-هـ: ack=2 — العميلُ يفهم ok:0 لحفظٍ لم يُكتب منه مفتاح",
     "/api/logout": "بلا جسم: الفارغُ أو {} وحدهما (POST؛ وGET تنقّلٌ بلا جسم) — يُفحص قبل المعالج (063 bodyNone)",
     "/api/me/sess/kill": "بلا جسم: الفارغُ أو {} وحدهما (العميلُ يرسل {}) — يُفحص بعد الجلسة وقبل المعالج (063 bodyNone)",
     "/api/me/sess/kill-one": "V7 · د5-هـ (x1): {sid: مِقبضُ الجلسة من /api/me أو من تنبيه sc_dev (16 hex) · why: 'not-me' من «ليس أنا»} — جلسةُ صاحب الطلب وحده",

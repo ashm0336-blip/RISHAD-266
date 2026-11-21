@@ -894,6 +894,7 @@ async function rsResetRoute(env, request, path, url, AX, superX) {
   var phZ = await hashPw(pwZ);
   var usersZ = [{ id: 'su', un: unZ, ph: phZ, name: nmZ, role: 'super', mc: 1 }];
   var stZ = [
+    rkGuard(env, rkZ),   /* V7 · د5-هـ (أمن ٢): المفتاحُ الذي أجاز التهيئة ما زال المخزَّن (لم تستهلكه استعادةٌ ولا تهيئةٌ متزامنة) */
     env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
     env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
     env.DB.prepare('DELETE FROM irshad_requests'), env.DB.prepare('DELETE FROM irshad_report_languages'), env.DB.prepare('DELETE FROM irshad_reports'), env.DB.prepare('DELETE FROM irshad_catalog_entries'), env.DB.prepare('DELETE FROM irshad_retro_windows'),
@@ -918,6 +919,6 @@ async function rsResetRoute(env, request, path, url, AX, superX) {
   stZ.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rev', '1'));
   if(!Number.isSafeInteger(env.__restoreEpoch)||env.__restoreEpoch>=Number.MAX_SAFE_INTEGER)throw dbGuardError('db-restore-epoch-invalid');
   stZ.push(env.DB.prepare("INSERT INTO meta(k,v) VALUES('restore_epoch',?1) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(env.__restoreEpoch+1)),env.DB.prepare('DELETE FROM sec'),audEvStmt(env, { cid: 'reset_' + Date.now().toString(36), ts: Date.now(), uid: AX.u.id, un: AX.u.un, dept: '', k: 'system', rev: 1, etype: 'system', eid: 'platform', ename: 'المنصة', act: 'reset', ctx: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ }), bef: '', aft: '' }),secStmt(env, { uid: AX.u.id, un: AX.u.un, act: 'reset', detail: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ, byName: AX.u.name || '' }), ip: rmZ.ip, city: rmZ.city, dev: rmZ.dev }));
-  await env.DB.batch(stZ);
+  try { await env.DB.batch(stZ); } catch (eZ) { if (isRkConflict(eZ)) return json({ ok: 0, err: 'مفتاح الاستعادة استُعمل أو تغيّر أثناء التهيئة — لم يُنفَّذ شيء', why: 'rk-changed' }, 409); throw eZ; }
   return json({ ok: 1 }, 200, clearCookie(url));
 }

@@ -35,8 +35,8 @@
 **Server-Timing** (KIVO_255): كلُّ ردّ `/api/*` وكلُّ غلاف يحمل `Server-Timing: app;dur=<ms>` — يظهر في DevTools (Network → Timing) ويقرؤه سكربتُ التحقق على Preview، فيُفصل زمنُ الخادم عن زمن الشبكة دون الحاجة إلى السجل.
 
 ## 3) الصحةُ والجاهزية (SOT-145)
-- `/api/brand` — هويةٌ عامة بلا جلسة: `{ ok, brand, ver, rk }` — إن ردّ 200 فالعاملُ حيّ والقاعدةُ تُقرأ.
-- `/api/ping` — نبضٌ: `{ ok, cf, ver, fresh }` (+ أعدادٌ لمدير النظام وحده). `no-db` (503) = القاعدةُ غيرُ مربوطة · `worker-error` (500) = عطلٌ في العامل · `authz_unavailable` (503) = وضعُ الحماية.
+- `/api/brand` — هويةٌ عامة بلا جلسة: `{ ok, brand, rk }` — إن ردّ 200 فالعاملُ حيّ والقاعدةُ تُقرأ.
+- `/api/ping` — نبضٌ: `{ ok, cf, fresh }` (+ الإصدارُ `ver, commit` والأعدادُ لمدير النظام وحده). `no-db` (503) = القاعدةُ غيرُ مربوطة · `worker-error` (500) = عطلٌ في العامل · `authz_unavailable` (503) = وضعُ الحماية.
 - الجاهزيةُ بعد النشر: `tools/release_check.py` قبل النشر، و`reports/k25N/preview/verify_*.json` بعده (brand/ver · `__BS_VER` · CSP · الأيقونات · schema · nav15) — `docs/runbooks/health.md`.
 
 ## 4) معرّفُ الطلب (SOT-144)

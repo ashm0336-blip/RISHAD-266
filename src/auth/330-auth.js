@@ -586,8 +586,17 @@
       var list = rawUsers() || [];
       if (rec) writeUsers(list.map(function(x){ return x.id === rec.id ? Object.assign({}, x, { un:un, alt:alt, ph:ph, name:nm||x.name, dis:0 }) : x; }));
       else writeUsers(list.concat([{ id:newId('s'), un:un, alt:alt, ph:ph, role:'staff', deptId:did, ekey:ekey, name:nm||'موظف', dis:0 }]));
-      return { ok:true };
+      return ackedW9();
     });
+  }
+  /* V7 · د5-هـ (أمن ١): التفعيلُ يعود بعد إقرار الخادم (BassamAck) لا بعد الكتابة المحلية — كان «فُعِّل» يظهر وإن رفضه الخادم.
+     true ⇒ {ok:true} · رفض ⇒ {ok:false, denied} (السببُ أعلنته طبقةُ التخزين) · بلا إقرارٍ بعد ⇒ {ok:false, pending} بنصّ الانتظار */
+  function ackedW9(){
+    var A = KIVO.BassamAck; if (!A || typeof A.ack !== 'function') return { ok:true };
+    return A.ack(8000).then(function(r){
+      if (r === true) return { ok:true };
+      return r && r.denied ? { ok:false, denied:true, err:'لم يُحفظ — رفضه الخادم' } : { ok:false, pending:true, err:A.PENDING };
+    }, function(){ return { ok:false, pending:true, err:A.PENDING }; });
   }
   /* ═══ تفعيل دفعة واحدة — للتفعيل التلقائي عند اكتمال الشروط: تُجزَّأ كلمات المرور كلها ثم
      يُكتب جدول الحسابات مرة واحدة (لا حفظة لكل موظف) — فاستيرادُ مئات الموظفين لا يجمّد المتصفح ولا يغرق الخادم */

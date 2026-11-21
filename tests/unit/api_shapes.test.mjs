@@ -10,9 +10,9 @@ function shape(j, spec, name) {
   return bad;
 }
 const SPEC = {
-  '/api/brand': { ok: 'number', brand: 'object', ver: 'string', rk: 'number' },
-  '/api/ping': { ok: 'number', cf: 'number', ver: 'string', fresh: 'number' },
-  '/api/ping#super': { users: 'number', rev: 'number', sess: 'number', schema: 'number', schemaDb: 'string' },
+  '/api/brand': { ok: 'number', brand: 'object', rk: 'number' },
+  '/api/ping': { ok: 'number', cf: 'number', fresh: 'number' },
+  '/api/ping#super': { users: 'number', rev: 'number', sess: 'number', schema: 'number', schemaDb: 'string', ver: 'string', commit: 'string' },
   '/api/whoami': { ok: 'number', uid: 'string' },
   '/api/me': { ok: 'number', now: 'number', sess: 'array', events: 'array', lastLogin: 'object|null', thisLogin: 'object|null' },
   '/api/get': { ok: 'number', v: 'number', keys: 'object' },
