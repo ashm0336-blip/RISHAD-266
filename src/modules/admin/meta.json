@@ -40,6 +40,7 @@
    "bassam_employees_v1",
    "bassam_gate_opts_v1",
    "bassam_gdepts_v1",
+   "bassam_grants_v1",
    "bassam_irshad_langs_v1",
    "bassam_irshad_locs_v1",
    "bassam_irshad_v1",
@@ -52,7 +53,6 @@
    "bassam_plan_v1",
    "bassam_platform_v1",
    "bassam_profile_v1",
-   "bassam_roles_v1",
    "bassam_rounds_v1",
    "bassam_seized_acts_v1",
    "bassam_seized_cat_v1",
@@ -116,6 +116,7 @@
    "tests/unit/refresh_tabs_w1.test.mjs",
    "tests/unit/tabaddr_coverage.test.mjs",
    "tests/unit/v7_d1c_super_unbounded.test.mjs",
+   "tests/unit/v7_d5e44_perm_page.test.mjs",
    "tests/unit/v7_p3_0_cap_state.test.mjs",
    "tests/unit/v7_ux_page_states.test.mjs"
   ]
