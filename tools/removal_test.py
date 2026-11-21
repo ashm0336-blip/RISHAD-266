@@ -150,7 +150,7 @@ def units(copy, env, jobs):
     return len(files), bad, tot
 
 def run_case(name, opts):
-    gone = CASES[name]; copy = tempfile.mkdtemp(prefix='kivo-removal-' + re.sub(r'[^\w+-]', '_', name) + '-'); res = []; ok = True; log = []; t0 = time.time()
+    gone = CASES[name]; copy = tempfile.mkdtemp(prefix=re.sub(r'[^\w+-]', '_', name) + '-', dir=opts['base']); res = []; ok = True; log = []; t0 = time.time()
     # V7 · د5-ح (rmall): الحالاتُ تتوازى (--jobs) — سطورُ الحالة تُجمع وتُطبع كتلةً واحدة عند انتهائها فلا تتداخل
     def step(label, good, note=''):
         nonlocal ok; ok = ok and good; res.append((label, good, note)); log.append('  %s %s%s' % ('✔' if good else '✘', label, (' — ' + note) if note else ''))
@@ -232,11 +232,14 @@ def main(argv):
     for n in names:
         if n not in CASES: print('حالةٌ غير معروفة: ' + n + ' (' + ' · '.join(['all'] + list(CASES)) + ')'); return 2
     jobs = int(argv[argv.index('--jobs') + 1]) if '--jobs' in argv else 2
-    opts = {'units': '--units' in argv, 'nobrowser': '--no-browser' in argv, 'nocheck': '--no-check' in argv, 'keep': '--keep' in argv, 'jobs': jobs}
+    # V7 · د5-ح (rmall): نسخُ الحالات داخل مجلدٍ واحدٍ خاصٍّ بهذا التشغيل (kivo-rmrun-*) — لا تطالها تنقيةُ «/tmp/kivo-removal-*» من تشغيلٍ آخر متزامن
+    base = tempfile.mkdtemp(prefix='kivo-rmrun-')
+    opts = {'units': '--units' in argv, 'nobrowser': '--no-browser' in argv, 'nocheck': '--no-check' in argv, 'keep': '--keep' in argv, 'jobs': jobs, 'base': base}
     print('══ اختبارُ الحذف: %d حالة · %d بالتوازي%s ══' % (len(names), jobs, ' · بلا متصفح' if opts['nobrowser'] else ''), flush=True)
     with ThreadPoolExecutor(max_workers=max(1, jobs)) as ex:
         futs = {n: ex.submit(run_case, n, opts) for n in names}
         results = {n: futs[n].result() for n in names}
+    if not opts['keep']: shutil.rmtree(base, ignore_errors=True)
     print('══ اختبارُ الحذف: ' + ' · '.join('%s %s' % (n, '✔' if ok else '✘') for n, ok in results.items()) + ' ══')
     return 0 if all(results.values()) else 1
 
