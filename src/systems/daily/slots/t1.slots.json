@@ -90,7 +90,7 @@
  },
  "res.reg.daily": {
   "order": 10,
-  "text": "  /* ── المتابعة اليومية ── */\n  /* اعتماد الجولة عمليةُ setShiftAp: أعلامُ الاعتماد وبياناتها التابعة وحدها.\n     أمّا closed · cWhy · needN · off · dopen فرصدٌ تشغيليّ لا اعتماد. */\n  'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { @@SYS:res.via.rounds.dreport@@'emps/data': 'EMP_REFS' }, field: 'daily' },\n"
+  "text": "  /* ── المتابعة اليومية ── */\n  /* اعتماد الجولة عمليةُ setShiftAp: أعلامُ الاعتماد وبياناتها التابعة وحدها.\n     أمّا closed · cWhy · needN · off · dopen فرصدٌ تشغيليّ لا اعتماد. */\n  'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { @@SYS:res.via.rounds.dreport@@'emps/data': 'EMP_REFS' }, field: 'daily' },\n  /* V7 · د5-ح (13): أرشيفُ الجولات — يُقرأ بسياسة الجولات حرفاً (RES_READ_AS) ولا يكتبه العميل (srv): خطوةُ الأرشفة وحدها (dailyArcPend · rounds-arc) */\n  'bassam_rounds_arc_v1':      { scope: 'dept', cap: 'daily/rounds', srv: 1 },\n"
  },
  "res.dayCap.daily": {
   "order": 10,
@@ -98,7 +98,7 @@
  },
  "ent.reg.daily": {
   "order": 10,
-  "text": "  'bassam_rounds_v1':         { map: 1, empty: '{}' },\n"
+  "text": "  'bassam_rounds_v1':         { map: 1, empty: '{}' },\n  'bassam_rounds_arc_v1':     { map: 1, empty: '{}' },\n"
  },
  "ops.reg.daily": {
   "order": 10,
@@ -206,11 +206,11 @@
  },
  "me.keys.daily": {
   "order": 10,
-  "text": "'bassam_rounds_v1', "
+  "text": "'bassam_rounds_v1', 'bassam_rounds_arc_v1', "
  },
  "me.data.daily": {
   "order": 10,
-  "text": "rounds: P('bassam_rounds_v1', {}), "
+  "text": "rounds: Object.assign({}, P('bassam_rounds_arc_v1', {}), P('bassam_rounds_v1', {})), "
  },
  "ident.rehearse.daily": {
   "order": 10,

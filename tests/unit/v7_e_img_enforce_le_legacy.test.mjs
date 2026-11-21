@@ -244,7 +244,7 @@ test('IMAGES: enforce allows nothing that legacy refuses — every actor × reco
    compared after every attempt. */
 const WU = workerUnderTest();
 const FKP = 'bassam_perms_v1', DM = ['0000000101', '70101'], FACC = ['0000000118', '70118'], FACC_E = 'tst_e_field';
-const DEPT_RECORDS = Object.keys(RES_REG).filter((n) => RES_REG[n].scope === 'dept');
+const DEPT_RECORDS = Object.keys(RES_REG).filter((n) => RES_REG[n].scope === 'dept' && !RES_REG[n].srv);   /* V7 · د5-ح (13): srv (أرشيفُ الجولات) لا يكتبه العميلُ أصلاً — لا حفظةَ تربط صورة */
 const capsOf = (R) => [].concat(R.cap || [], R.capAdd || []);
 const relevant = (leaf) => DEPT_RECORDS.filter((n) => capsOf(RES_REG[n]).includes(leaf) || REG.some((e) => e.status === 'active' && atomsOf(e).some(([l]) => l === leaf) && ((e.guard || {}).resources || []).includes(n)));
 const ROUNDS_WRITES = DEPT_RECORDS.filter((n) => capsOf(RES_REG[n]).includes('daily/rounds'));

@@ -57,6 +57,7 @@ function resOnCeiling(A, d, R) {
   return false;
 }
 function canRead0(A, k) {
+  k = resReadAs(k);                                          /* V7 · د5-ح (13): 023 RES_READ_AS */
   if (A.u.role === 'super') return true;
   var P = parseKey(k);
 @@SYS:authz.read.dstats@@  if (!P.dept) return P.name !== K_NSYS;                     /* السجلات العامة (الإدارات، الحسابات بلا بصمات، الصلاحيات) — عدا تنبيهات مدير النظام */

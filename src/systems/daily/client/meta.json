@@ -24,6 +24,7 @@
   "data": [
    "bassam_dayshift_v1",
    "bassam_employees_v1",
+   "bassam_rounds_arc_v1",
    "bassam_rounds_v1",
    "bassam_shift_options_v1"
   ],
@@ -75,6 +76,7 @@
    "gate:theme248.mjs",
    "gate:visual.mjs",
    "gate:zcodes.mjs",
+   "src/systems/daily/tests/v7_d5h_rounds_archive_page.test.mjs",
    "tests/unit/refresh_tabs_w1.test.mjs",
    "tests/unit/v7_d1c_super_unbounded.test.mjs",
    "tests/unit/v7_p4_systems_map.test.mjs"

@@ -110,23 +110,23 @@
  },
  "deptStore.labels.daily": {
   "order": 10,
-  "text": "\n                 'bassam_rounds_v1':'جولات المتابعة اليومية',"
+  "text": "\n                 'bassam_rounds_v1':'جولات المتابعة اليومية', 'bassam_rounds_arc_v1':'أرشيف جولات المتابعة اليومية (الأشهر المقفلة)',"
  },
  "bk.labels.daily": {
   "order": 10,
-  "text": "bassam_rounds_v1: 'الجولات'"
+  "text": "bassam_rounds_v1: 'الجولات', bassam_rounds_arc_v1: 'أرشيف الجولات'"
  },
  "imgref.empty.daily": {
   "order": 10,
-  "text": "bassam_rounds_v1: '{}', "
+  "text": "bassam_rounds_v1: '{}', bassam_rounds_arc_v1: '{}', "
  },
  "store.opResources.daily": {
   "order": 10,
-  "text": " 'bassam_rounds_v1',"
+  "text": " 'bassam_rounds_v1', 'bassam_rounds_arc_v1',"
  },
  "store.keyLabels.daily": {
   "order": 10,
-  "text": " bassam_rounds_v1:[\"الجولات اليومية\"],"
+  "text": " bassam_rounds_v1:[\"الجولات اليومية\"], bassam_rounds_arc_v1:[\"أرشيف الجولات اليومية\"],"
  },
  "store.identity.daily": {
   "order": 10,
@@ -138,15 +138,15 @@
  },
  "store.proj.daily": {
   "order": 10,
-  "text": "bassam_rounds_v1: 1"
+  "text": "bassam_rounds_v1: 1, bassam_rounds_arc_v1: 1"
  },
  "admin.keyLabels.daily": {
   "order": 10,
-  "text": "        bassam_rounds_v1: \"الجولات اليومية\",\r\n"
+  "text": "        bassam_rounds_v1: \"الجولات اليومية\",\r\n        bassam_rounds_arc_v1: \"أرشيف الجولات اليومية\",\r\n"
  },
  "admin.wipe.labels.daily": {
   "order": 10,
-  "text": "                bassam_rounds_v1: \"الجولات اليومية\",\r\n"
+  "text": "                bassam_rounds_v1: \"الجولات اليومية\",\r\n                bassam_rounds_arc_v1: \"أرشيف الجولات اليومية\",\r\n"
  },
  "blocks.shell.daily.t2": {
   "order": 10,
@@ -162,11 +162,11 @@
  },
  "profile.rel.daily": {
   "order": 10,
-  "text": " \"bassam_rounds_v1\","
+  "text": " \"bassam_rounds_v1\", \"bassam_rounds_arc_v1\","
  },
  "profile.data.key.daily": {
   "order": 10,
-  "text": "        \"bassam_rounds_v1\",\n"
+  "text": "        \"bassam_rounds_v1\",\n        \"bassam_rounds_arc_v1\",\n"
  },
  "profile.spot.daily": {
   "order": 10,

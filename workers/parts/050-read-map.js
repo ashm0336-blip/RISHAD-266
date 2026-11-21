@@ -91,6 +91,7 @@ function resOnCeiling(A, d, R) {
   return false;
 }
 function canRead0(A, k) {
+  k = resReadAs(k);                                          /* V7 · د5-ح (13): 023 RES_READ_AS */
   if (A.u.role === 'super') return true;
   var P = parseKey(k);
   /* R181: الإحصائياتُ اليومية عامّةٌ للحرمين لكنها لا تُقرأ إلا بورقةٍ منها — كانت تُعطى لكلِّ من دخل المنصة */

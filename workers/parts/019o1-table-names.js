@@ -298,6 +298,7 @@ var OC_TABLE_NAMES = {
   ops_round_month_open_days: { t: "ops_plan_deleted_months", e: null },
   ops_round_month_record: { t: "ops_round_month_record", e: "ops_round_month_record" },
   ops_rounds: { t: "ops_rounds", e: "ops_rounds" },
+  ops_rounds_arc: { t: "ops_rounds", e: "ops_rounds" },
   ops_shift_option: { t: "ops_staffing_month_shifts_definition", e: "ops_staffing_month_shifts_definition" },
   ops_shift_options: { t: "ops_shift_options", e: null },
   ops_staffing: { t: "ops_staffing", e: null },

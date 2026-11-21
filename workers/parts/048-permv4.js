@@ -50,6 +50,7 @@ function permv4ReadBindingCheck() {
   var SP = (KIVO_SCOPE.readBindings && KIVO_SCOPE.readBindings.special) || { keys: {}, rule: {} };
   for (name in RES_REG) {
     Rr = RES_REG[name]; if (Rr.scope === 'device') continue;
+    if (Object.prototype.hasOwnProperty.call(RES_READ_AS, name)) continue;   /* V7 · د5-ح (13): يُقرأ بربط موردٍ آخر حرفاً (023 RES_READ_AS) — لا ربطَ له في الجدول */
     var expect = [];
     if (Rr.scope === 'global') {
       if (name === K_DSTATS) { for (i = 0; i < DS_READ.length; i++) { var atD = R.atoms['dstats/' + DS_READ[i] + ':view']; for (j = 0; atD && j < atD.targets.length; j++) if (R.byKey[atD.targets[j]] && R.byKey[atD.targets[j]].status === 'active') expect.push(atD.targets[j]); } }

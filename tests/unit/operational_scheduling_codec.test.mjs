@@ -141,8 +141,8 @@ function floor() {
   };
 }
 test("fourteen declared scheduling resources have unique closed tables and D1-safe column counts", () => {
-  assert.equal(definitions.length, 14);
-  assert.equal(new Set(definitions.map((d) => d.resource)).size, 14);
+  assert.equal(definitions.length, 15);   /* V7 · د5-ح (13): + أرشيفُ الجولات (شكلُ الجولات · جداولُها) */
+  assert.equal(new Set(definitions.map((d) => d.resource)).size, 15);
   const p = allPrepared,
     tables = C.ocPhysicalTables(p);
   assert.equal(p.order.length, new Set(p.order.map((s) => s.table)).size);

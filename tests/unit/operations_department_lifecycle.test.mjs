@@ -233,7 +233,7 @@ test("whole-department inventory fences all21 including absent resources; protec
     resources = W.opDefinitions().map(
       (def) => "bsdept:" + d + ":" + def.resource,
     );
-  assert.equal(resources.length, 21);
+  assert.equal(resources.length, 22);   /* V7 · د5-ح (13): + أرشيفُ الجولات */
   assert.ok(
     resources.every((key) => Number.isSafeInteger(inventory.base.kv[key])),
   );

@@ -66,6 +66,7 @@ async function enfMigPlan(env, seed, opts) {
   if (opts.parts && opts.parts.indexOf('scope-retire') !== -1) return await enfRetirePlan(env, seed, now, T, keys, revs, capture, reference);
   if (opts.parts && opts.parts.indexOf(ENF_SID_PART) !== -1) return await enfSidPlan(env, seed, now, T, keys, revs, capture);   /* د5-هـ */
   if (opts.parts && opts.parts.indexOf(ENF_ROLES_PART) !== -1) return await enfRolesPlan(env, seed, now, T, keys, revs, capture);   /* د5-هـ (44) */
+  if (opts.parts && opts.parts.indexOf(DAILY_ARC_PART) !== -1) return await dailyArcMigPlan(env, seed, now, T, keys, revs, capture);   /* V7 · د5-ح (13) */
   var users = parseJson(keys[K_USERS], []);
   if (!Array.isArray(users)) users = [];
   var plan = { version: ENF_VER, seed: seed, today: T, generated: now, writes: [], identity: null, perm: { grants: [], decisions: [] }, warnings: [] };
@@ -126,9 +127,11 @@ async function enfRetirePlan(env, seed, now, T, keys, revs, capture, reference) 
   return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots, retireMeta: mv };
 }
 /* أجزاءُ الترحيل المقبولة: perm (الهوية حُذفت · RISHAD-266 P6) — و«scope-retire» وحدها لا تُخلط بغيرها (scope: بذرُ السقف القديم أُزيل · RISHAD-266) */
+/* V7 · د5-ح (13): أجزاءٌ منفردة تسجّلها الأنظمةُ لبياناتها (rounds-arc — أرشيفُ الجولات · مجلدُ المتابعة اليومية) — كلٌّ منها وحده، بلا علامة meta (اللقطةُ أثرُها) */
+var ENF_SOLO_EXTRA = [DAILY_ARC_PART];
 function enfMigParts(raw) {
-  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART || x === ENF_SID_PART || x === ENF_ROLES_PART; });
-  if ((p.indexOf(ENF_RETIRE_PART) !== -1 || p.indexOf(ENF_SID_PART) !== -1 || p.indexOf(ENF_ROLES_PART) !== -1) && p.length > 1) return null;   /* د5-هـ: «site-sid» و«perm44-roles» وحدها كذلك */
+  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART || x === ENF_SID_PART || x === ENF_ROLES_PART || ENF_SOLO_EXTRA.indexOf(x) !== -1; });
+  if ((p.indexOf(ENF_RETIRE_PART) !== -1 || p.indexOf(ENF_SID_PART) !== -1 || p.indexOf(ENF_ROLES_PART) !== -1 || p.some(function (x) { return ENF_SOLO_EXTRA.indexOf(x) !== -1; })) && p.length > 1) return null;   /* د5-هـ: «site-sid» و«perm44-roles» وحدها كذلك */
   return p;
 }
 /* V7 · د5-هـ (م3) · «site-sid»: ترحيلُ هوية الموقع — كلُّ طابقٍ في الجولات ولقطةِ الشهر يحمل sid طابقه في الخطة، فتُطابَق الجولاتُ بالمعرّف لا بالموضع.
@@ -212,7 +215,7 @@ async function enfRolesPlan(env, seed, now, T, keys, revs, capture) {
   plan.counts = { writes: plan.writes.length, roles: tot.roles, people: tot.people, lensDropped: tot.lensDropped, unknownTpl: tot.unknownTpl };
   return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots };
 }
-var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطواتُ تقاعد سقف النطاق القديم (scope-retire) وترحيل هوية الموقع (site-sid) وترحيل القوالب إلى الأدوار (perm44-roles) تُطلب كلٌّ منها وحدها — أعد الطلب بها فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
+var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطواتُ تقاعد سقف النطاق القديم (scope-retire) وترحيل هوية الموقع (site-sid) وترحيل القوالب إلى الأدوار (perm44-roles) وأجزاءُ الأنظمة المنفردة (كأرشفة الجولات) تُطلب كلٌّ منها وحدها — أعد الطلب بها فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
 /* Pure revision preparation: allocation is written only after every source
    witness, inside the same batch as migration/snapshot/audit or rollback. */
 async function enfMigCounterPlan(env) {
@@ -299,7 +302,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     }
     var flag = JSON.stringify({ applied: true, at: now, by: ident.uid, snap: snap, hash: b.hash, inferable: !!b.inferable });   /* المعرّفُ لا اسمُ المستخدم */
     if (retire2 && R2.retireMeta != null) st2.push(env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind(ENF_RETIRE_META));
-    if (!retire2 && parts2.length && parts2[0] !== ENF_ROLES_PART) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(parts2[0] === ENF_SID_PART ? 'authz_id_mig' : 'authz_perm_mig', flag));   /* د5-هـ: علامةُ الهوية لـ«site-sid» */
+    if (!retire2 && parts2.length && parts2[0] !== ENF_ROLES_PART && ENF_SOLO_EXTRA.indexOf(parts2[0]) === -1) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(parts2[0] === ENF_SID_PART ? 'authz_id_mig' : 'authz_perm_mig', flag));   /* د5-هـ: علامةُ الهوية لـ«site-sid» */
     st2.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: 'migration', keys: parts2.join(','), scope: 'writes=' + R2.plan.writes.length, decision: 'allow', why: 'apply', reason: snap, path: '/api/authz-migrate', ip: ident.ip }));
     var conflict2=await enfMigBatch(env,guards2.concat([counter2.statement],st,st2));
     if(conflict2)return conflict2;

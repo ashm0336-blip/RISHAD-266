@@ -4,7 +4,8 @@
    طلباً واحداً ذرّياً. بغياب هذا الملف القراءةُ تعيد undefined والأمرُ { ok:0, absent:1 } فلا يُكتب في الجولات شيء.
    قاعدةُ المالك (برومت 43 · الجذر 3): ما يأتي من الخطة إلى أيام الجولات محصورٌ في الحاضر والمستقبل غيرِ المعتمد — يومٌ (y-m-d) اليومَ أو بعده
    أو علامةُ شهرٍ (m:y-m) هذا الشهرَ أو بعده؛ الأيامُ الماضية والمعتمدة لا تُمسّ.
-     read     daily.days@1(via?)          وثيقةُ الجولات { 'y-m-d': { ap, d:[موقع] }, 'm:y-m': {…} } (via كما في 404-plan-p4: مسودة أو قارئُ صفحة أو بلا).
+     read     daily.days@1(via?)          وثيقةُ الجولات { 'y-m-d': { ap, d:[موقع] }, 'm:y-m': {…} } (via كما في 404-plan-p4: مسودة أو قارئُ صفحة أو بلا)
+                                          — V7 · د5-ح (13): ومعها أيامُ الأشهر المقفلة من أرشيفها (bassam_rounds_arc_v1) تحت أيام الحيّ.
      read     daily.lensFilter@1(sites)   المواقعُ بعد تصفيتها بعدسات سقف الإدارة (كما تُنسخ إلى الجولة).
      read     daily.names@1()             { مفتاحُ مورد الجولات: اسمُه للعرض } — لرسالة «لم يُحدَّث معه».
      command  daily.sites.patch@1 { site }  كلُّ موقعٍ غير معتمد في يومٍ غير معتمد من اليوم فصاعداً ← site(موقع).
@@ -20,13 +21,25 @@
      participant dreport.shiftApproved@1 { y, m, d, shift, value }   اعتمادُ الوردية أو فتحُها: value ⇒ تُنشأ الجولةُ أولاً، ثم تُعتمد جولةُ الوردية
                  أو تُفتح (prepareShiftAp) ← event.round. */
 (function () {
-  var bus = KIVO.bus, KEY = 'bassam_rounds_v1';
+  var bus = KIVO.bus, KEY = 'bassam_rounds_v1', ARC = 'bassam_rounds_arc_v1';
   function via(how) {
     if (typeof how === 'function') return how(KEY);
     if (how && typeof how.get === 'function') return how.get(KEY);
     var service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
     if (!service) throw Error('operations-read-required');
     return service.get(KEY);
+  }
+  /* V7 · د5-ح (13): أيامُ الأشهر المقفلة في أرشيف الجولات (ينقلها الخادم) — القراءةُ تراها تحت أيام الحيّ (الحيُّ يغلب).
+     الأرشيفُ غيرُ محمَّلٍ أو محجوب ⇒ الحيُّ وحده كما كان. الأوامرُ أدناه تكتب الحيَّ وحده (مسودةُ المستدعي): الأيامُ المؤرشفة تاريخٌ لا يُمسّ */
+  function withArc(how, live) {
+    /* من الخدمة لا من مسودة المستدعي أو قارئه: الأرشيفُ لا يدخل أساسَ حفظاته (ولا يُطلب منه ما لم يحمّله) */
+    var arc = null;
+    try { arc = KIVO.__BS_SRV && KIVO.__BS_SRV.operations ? KIVO.__BS_SRV.operations.get(ARC) : null; } catch (e) { arc = null; }
+    if (!arc || typeof arc !== 'object' || !Object.keys(arc).length) return live;
+    var out = {};
+    Object.keys(arc).forEach(function (k) { if (/^\d+-\d+-\d+/.test(k)) out[k] = arc[k]; });
+    if (live && typeof live === 'object') Object.keys(live).forEach(function (k) { out[k] = live[k]; });
+    return out;
   }
   function drafted(name, draft) {
     if (!draft || typeof draft.get !== 'function' || typeof draft.set !== 'function') throw Error('bus-draft-required: ' + name);
@@ -44,12 +57,12 @@
       return false;
     }
   }
-  bus.provide('daily.days@1', function (how) { return via(how); });
+  bus.provide('daily.days@1', function (how) { return withArc(how, via(how)); });
   bus.provide('daily.lensFilter@1', function (sites) {
     return KIVO.BassamRound && KIVO.BassamRound.lensFilter ? KIVO.BassamRound.lensFilter(sites) : sites;
   });
   bus.provide('daily.names@1', function () { var o = {}; o[KEY] = 'الجولات اليومية'; return o; });
-  bus.provide('daily.resources@1', function () { return [KEY]; });
+  bus.provide('daily.resources@1', function () { return [KEY, ARC]; });   /* V7 · د5-ح (13): والأرشيفُ — من ينتظر تغيّرَ الأيام */
 
   bus.command('daily.sites.patch@1', function (payload, draft) {
     drafted('daily.sites.patch@1', draft);

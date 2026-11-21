@@ -10815,6 +10815,7 @@ async function rsPrepare(env, A, body, meta, internal) {
           !(pd.k === K_USERS && JSON.stringify(cuCanonical(parseJson(pd.v, []))) === JSON.stringify(cuCanonical(parseJson(pd.cur, []))));
   });
   rsPhysicalDeletes(kv, reference, physicalDeletes);
+  await dailyArcPend(env, kv, reference);   /* V7 · د5-ح (13): نسخةٌ قديمة (الأيامُ كلُّها في الجولات) تُستعاد مقسومةً بين الحيّ والأرشيف */
   var plan = {
     body: body,
     author: A,
@@ -11736,6 +11737,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       operationReadGuards.push(revGuard(env,readKey,readBase));
     }
   }
+  await dailyArcPre(env, body);   /* V7 · د5-ح (13): الجولاتُ وثيقةٌ منطقية (الأرشيفُ تحت الحيّ) لأحكام الحفظ — 019p3 */
   var kv = await applySave(env, body, A, meta, Object.assign({}, opt, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN }));
   kv.revs = kv.revs || reference.inputRevs;
   if (opt.__serverDepartmentWipes) {
@@ -11766,6 +11768,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   }
   if (!transition.transitions.length && !opt.__serverDepartmentWipes && !opt.__employeeRequestId && !operationalSave && !referenceDependentSave)
     return await applySave(env, body, A, meta, Object.assign({}, opt, { __cuPass: RESTORE_INTERNAL_TOKEN }));
+  await dailyArcPend(env, kv, reference);   /* V7 · د5-ح (13): أيامُ الأشهر المقفلة إلى أرشيف الجولات في الدفعة نفسِها */
   kv.pend = kv.pend.filter(function (pd) {
     var changed = pd.act === 'del' ? pd.cur != null : pd.v !== pd.cur;
     // Canonical merges can turn an authorized write into a no-op (notably a
@@ -18762,6 +18765,7 @@ var OC_TABLE_NAMES = {
   ops_round_month_open_days: { t: "ops_plan_deleted_months", e: null },
   ops_round_month_record: { t: "ops_round_month_record", e: "ops_round_month_record" },
   ops_rounds: { t: "ops_rounds", e: "ops_rounds" },
+  ops_rounds_arc: { t: "ops_rounds", e: "ops_rounds" },
   ops_shift_option: { t: "ops_staffing_month_shifts_definition", e: "ops_staffing_month_shifts_definition" },
   ops_shift_options: { t: "ops_shift_options", e: null },
   ops_staffing: { t: "ops_staffing", e: null },
@@ -19274,7 +19278,146 @@ function osSchemaRoundsResources() {
         ],
       }),
     },
+    /* V7 · د5-ح (13): أرشيفُ الجولات — أيامُ الأشهر المقفلة. شكلُه شكلُ الجولات حرفاً فيشارك جداولَها (الصفوفُ بمفتاح المورد)،
+       فلا جدولَ جديدَ ولا ترحيلَ D1: اسمُه الجذريُّ وحده في خريطة الأسماء (ops_rounds_arc ← ops_rounds). يكتبه خطوةُ الأرشفة وحدها (dailyArcPend · rounds-arc). */
+    {
+      resource: DAILY_ARC_RES,
+      name: "rounds_arc",
+      late: 1,   /* نسخٌ احتياطية قبل هذه الحزمة لا تحمله: يُستعاد منها فارغاً (019t opValidateBackupDomains) */
+      schema: ocMap("ops_rounds_arc", null, {
+        fixed: { __pMig: ocScalar("scalar") },
+        patterns: [
+          {
+            pattern: "^m:\\d{4}-\\d{1,2}$",
+            schema: osSchemaMonthControl("ops_round_month"),
+          },
+          {
+            pattern: "^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$",
+            schema: osSchemaRoundDay("ops_round_day"),
+          },
+        ],
+      }),
+    },
   ];
+}
+/* ══ V7 · د5-ح (13) · أرشيفُ الجولات: الحلُّ الجذري لملفٍّ يكبر مع الأيام ══════════════════════════════
+   ملفُّ الجولات الحيّ (bsdept:<d>:bassam_rounds_v1) يحمل الأشهرَ المفتوحة وحدها + علاماتِ الأشهر كلِّها (m:y-m صغيرة: حالةُ الإقفال نفسُها)؛
+   وأيامُ الشهر المقفل في الأرشيف (bsdept:<d>:bassam_rounds_arc_v1) بالشكل نفسِه { 'y-m-d': يوم }.
+   الشهرُ مقفلٌ للأرشفة (dailyArcClosed) — مرآةُ isMonthAp في الصفحة مع هامش شهر:
+     ① علامتُه ap (اعتمادُ الشهر صراحةً · أو تلقائياً حين اعتُمدت أيامُه كلُّها) ⇒ مقفل؛
+     ② وإلا فتحُه صراحةً (mo) أو يومٌ مفتوحٌ فيه (dopen) ⇒ مفتوح؛
+     ③ وإلا الشهرُ قبل الشهر الماضي (يومُ الرياض بهامش DS_GRACE) ⇒ مقفل — الشهرُ الماضي يبقى حيّاً (وردياتُ الليل · الاعتمادُ المتأخر).
+   خطوةُ الأرشفة (dailyArcStep) دالّةٌ نقية: أيامُ الشهر المقفل من الحيّ إلى الأرشيف (الحيُّ يغلب)، وأيامُ الأرشيف لشهرٍ عاد مفتوحاً (أُعيد فتحُه)
+   إلى الحيّ (الحيُّ يغلب) — فتطبيقُها مرّتين لا يغيّر شيئاً (idempotent). تجري في حفظة الجولات نفسِها (dailyArcPend · الدفعةُ الذرّية الواحدة)
+   وفي ترحيل «rounds-arc» المحمي لما سبقها. لا يكتب الأرشيفَ العميلُ أبداً (RES_REG srv) — يُقرأ بسياسة الجولات حرفاً (RES_READ_AS). */
+var DAILY_ARC_RES = 'bassam_rounds_arc_v1', DAILY_ARC_PART = 'rounds-arc';
+function dailyArcDay(k) {
+  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:-.+)?$/.exec(String(k));
+  return m ? { y: +m[1], m: +m[2], mk: 'm:' + (+m[1]) + '-' + (+m[2]) } : null;
+}
+function dailyArcClosed(ctrl, y, m, T) {
+  var c = isObj(ctrl) ? ctrl : null;
+  if (c && c.ap) return true;
+  if (c && (c.mo || (isObj(c.dopen) && Object.keys(c.dopen).length))) return false;
+  return !!(T && T.y > 0 && T.m > 0 && (y * 12 + m) <= (T.y * 12 + T.m) - 2);
+}
+function dailyArcStep(live, arc, T) {
+  var L = {}, R = {}, moved = [], back = [], gone = Object.create(null), k, p;
+  live = isObj(live) ? live : {}; arc = isObj(arc) ? arc : {};
+  for (k in arc) if (Object.prototype.hasOwnProperty.call(arc, k)) R[k] = arc[k];
+  for (k in live) {
+    if (!Object.prototype.hasOwnProperty.call(live, k)) continue;
+    p = dailyArcDay(k);
+    if (p && dailyArcClosed(live[p.mk], p.y, p.m, T)) { R[k] = live[k]; moved.push(k); gone[k] = 1; }
+    else L[k] = live[k];
+  }
+  for (k in R) {
+    if (gone[k] || !Object.prototype.hasOwnProperty.call(R, k)) continue;
+    p = dailyArcDay(k);
+    if (p && dailyArcClosed(live[p.mk], p.y, p.m, T)) continue;
+    if (!Object.prototype.hasOwnProperty.call(L, k)) L[k] = R[k];
+    delete R[k]; back.push(k);
+  }
+  return { live: L, arc: R, moved: moved, back: back };
+}
+/* الحفظُ (019e rsSaveCommit) — الجولاتُ وثيقةٌ منطقيةٌ واحدة = الأرشيفُ تحت الحيّ؛ والتخزينُ وحده مقسوم:
+   ① dailyArcPre (قبل applySave): لكل مفتاح جولاتٍ في الحفظة تُحمَّل نسختا الحيّ والأرشيف في مرجع الحفظة (مسيَّجتين)، ويصير «الحاليُّ» الذي تراه
+      أحكامُ الحفظ كلُّها (الخصوصية · الدمجُ عند الكتابة · التصنيفُ · الأقفال) الوثيقةَ المنطقية — فاليومُ المؤرشف ليس «جديداً» ولا «محذوفاً» عندها.
+   ② dailyArcFill (في applySave بعد الدمج عند الكتابة · قبل الحكم): يومٌ مؤرشف، أو يومٌ حيٌّ في شهرٍ مقفل، غاب عمّا أرسله العميلُ (الصفحةُ لا ترسل
+      ما لم يتغيّر من الأرشيف) يبقى كما هو — الغيابُ ليس حذفاً؛ وما أُرسل منه يغلب.
+   ③ dailyArcPend (بعد الحكم · قبل تصفية غير المتغيّر): القيمةُ المقبولة تُقسم بخطوة الأرشفة إلى الحيّ (الأشهرُ المفتوحة + العلامات) والأرشيف
+      (الأشهرُ المقفلة) — كتابتان في الدفعة الذرّية نفسِها بنسختيهما المقروءتين (حارسُ النسخة يرفض التزامن)، ويعود المرجعُ إلى المخزَّن.
+   الردُّ يسمّي ما طلبه العميلُ وحده (revs ← plan.operationKeys). والاستعادةُ (019d) تقسم ما تستعيده بالخطوة نفسِها (③ بلا ①②). */
+async function dailyArcPre(env, body) {
+  var set = (body && body.set) || {}, cap = env.__opCapture, T = dsToday(Date.now()), k;
+  if (!cap || !cap.keys || !env.__pre || !env.__pre.live) return;
+  for (k in set) {
+    if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || resName(k) !== 'bassam_rounds_v1') continue;
+    var d = parseKey(k).dept; if (!d) continue;
+    var ak = 'bsdept:' + d + ':' + DAILY_ARC_RES, liveRaw = await opResourceGet(env, k), arcRaw = await opResourceGet(env, ak);
+    if (!Object.prototype.hasOwnProperty.call(cap.keys, k)) continue;   /* مرجعٌ لا يحمل القيمة: لا وثيقةَ منطقية — الخطوةُ ③ وحدها كما في الاستعادة */
+    var live = parseJson(liveRaw, null), arc = parseJson(arcRaw, null), keep = Object.create(null), L = {}, q, p;
+    if (!isObj(arc)) arc = {};
+    for (q in arc) if (Object.prototype.hasOwnProperty.call(arc, q) && dailyArcDay(q)) { keep[q] = 1; L[q] = arc[q]; }
+    if (isObj(live)) for (q in live) {
+      if (!Object.prototype.hasOwnProperty.call(live, q)) continue;
+      p = dailyArcDay(q); if (p && dailyArcClosed(live[p.mk], p.y, p.m, T)) keep[q] = 1;
+      L[q] = live[q];
+    }
+    (env.__dailyArc = env.__dailyArc || Object.create(null))[k] = { live: liveRaw, keep: keep };
+    if (Object.keys(arc).length && isObj(live)) cap.keys[k] = JSON.stringify(L);
+  }
+}
+function dailyArcFill(env, k, v, cur) {
+  var X = env.__dailyArc && env.__dailyArc[k]; if (!X || v == null || cur == null) return v;
+  var n = parseJson(v, null), c = parseJson(cur, null), add = 0, q;
+  if (!isObj(n) || !isObj(c)) return v;
+  for (q in X.keep) if (!Object.prototype.hasOwnProperty.call(n, q) && Object.prototype.hasOwnProperty.call(c, q)) { n[q] = c[q]; add++; }
+  return add ? JSON.stringify(n) : v;
+}
+async function dailyArcPend(env, kv, reference) {
+  var T = dsToday(Date.now()), cap = env.__opCapture, n = kv.pend.length, i;
+  for (i = 0; i < n; i++) {
+    var pd = kv.pend[i];
+    if (!pd || resName(pd.k) !== 'bassam_rounds_v1') continue;
+    var d = parseKey(pd.k).dept; if (!d) continue;
+    var X = env.__dailyArc && env.__dailyArc[pd.k];
+    if (X) { pd.cur = X.live; if (cap && cap.keys) cap.keys[pd.k] = X.live; }   /* المرجعُ يعود إلى المخزَّن — والحاليُّ للمقارنة والتدقيق هو الحيُّ المخزَّن */
+    if (pd.act !== 'set' || pd.v == null) continue;
+    var ak = 'bsdept:' + d + ':' + DAILY_ARC_RES, ap = kv.pend.filter(function (x) { return x && x.k === ak; })[0] || null;
+    var live = parseJson(pd.v, null); if (!isObj(live)) continue;
+    /* الاستعادةُ تحمل الأرشيفَ كما في النسخة (ap): الخطوةُ عليه نفسِه — والعميلُ لا يحمله أبداً (srv يرفضه قبل هنا) */
+    var arcRaw = ap ? (ap.act === 'set' ? ap.v : null) : await opResourceGet(env, ak), arc0 = parseJson(arcRaw, null), S = dailyArcStep(live, arc0, T);
+    pd.v = JSON.stringify(S.live);
+    if (ap) { if (S.moved.length || S.back.length) { ap.act = 'set'; ap.v = JSON.stringify(S.arc); } continue; }
+    if (deq(S.arc, isObj(arc0) ? arc0 : {})) continue;
+    var have = cap && cap.revs && Object.prototype.hasOwnProperty.call(cap.revs, ak) ? cap.revs[ak] : ((reference && reference.inputRevs && reference.inputRevs[ak]) || 0);
+    kv.pend.push({ k: ak, act: 'set', cur: arcRaw == null ? null : arcRaw, v: JSON.stringify(S.arc), have: have, kvS: [], secS: [], dep9: false, img9: null });
+  }
+}
+/* ترحيلُ «rounds-arc» (063 /api/authz-migrate · مديرُ المنصة وحده · بيئةُ الإنفاذ): ينقل الأيامَ المقفلة الموجودة قبل هذه الحزمة — المسارُ المحميّ نفسُه:
+   خطةٌ حتمية (البذرة · لحظةُ التوليد · القيم ونسخُها) ⇒ تغيّرٌ بينها وبين التطبيق = plan-changed؛ لقطةٌ كاملة (الحيّ والأرشيف) قبل الكتابة؛ الرجوعُ يعيدهما حرفاً.
+   الثانيةُ بلا كتابة (applied:0). لكل إدارة: الأيامُ المنقولة وحجمُ الملف الحيّ قبل/بعد. */
+async function dailyArcMigPlan(env, seed, now, T, keys, revs, capture) {
+  var W = {}, sig = [DAILY_ARC_PART, seed], tot = { moved: 0, back: 0, liveBefore: 0, liveAfter: 0 };
+  var plan = { version: ENF_VER, seed: seed, today: T, generated: now, parts: [DAILY_ARC_PART], writes: [], arc: [] };
+  Object.keys(keys).filter(function (k) { return /^bsdept:[^:]+:bassam_rounds_v1$/.test(k); }).sort().forEach(function (lk) {
+    var d = parseKey(lk).dept, ak = 'bsdept:' + d + ':' + DAILY_ARC_RES, live = parseJson(keys[lk], null);
+    if (!isObj(live)) return;
+    var S = dailyArcStep(live, parseJson(keys[ak], {}), T);
+    if (!S.moved.length && !S.back.length) return;
+    var lv = JSON.stringify(S.live), av = JSON.stringify(S.arc);
+    [[lk, lv], [ak, av]].forEach(function (x) {
+      W[x[0]] = { v: x[1], kind: DAILY_ARC_PART };
+      plan.writes.push({ k: x[0], kind: DAILY_ARC_PART, bytes: x[1].length, existed: keys[x[0]] != null, rev: revs[x[0]] || 0 });
+      sig.push(x[0] + '\u0001' + (revs[x[0]] || 0) + '\u0001' + (keys[x[0]] == null ? '\u0000' : keys[x[0]]) + '\u0001' + x[1]);
+    });
+    tot.moved += S.moved.length; tot.back += S.back.length; tot.liveBefore += String(keys[lk]).length; tot.liveAfter += lv.length;
+    plan.arc.push({ dept: d, moved: S.moved.slice(0, 400), back: S.back.slice(0, 400), liveBefore: String(keys[lk]).length, liveAfter: lv.length });
+  });
+  plan.hash = await enfSha(sig.join('\u0002'));
+  plan.counts = { writes: plan.writes.length, moved: tot.moved, back: tot.back, liveBefore: tot.liveBefore, liveAfter: tot.liveAfter };
+  return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots };
 }
 function osSchemaPlanMonth(table) {
   return ocUnion(table, [
@@ -20091,6 +20234,14 @@ function opValidateBackupDomains(domains,departments) {
     if(!expected.has(key)||seen.has(key))throw rsError('restore-operations-scope');seen.add(key);
     decodedDomains.push(decoded);
   });
+  /* V7 · د5-ح (13): موردٌ أُضيف بعد نسخٍ قائمة (تعريفُه late — أرشيفُ الجولات) يغيب عن النسخة القديمة فيُستعاد فارغاً (أيامُها كلُّها في موردها الحيّ)؛
+     وغيابُ غيره نقصٌ كما كان */
+  expected.forEach(function(key){
+    if(seen.has(key))return;
+    var info=opInfo(key);
+    if(!info.definition.late)throw rsError('restore-incomplete-operations');
+    seen.add(key);decodedDomains.push({key:key,domain:ocConvert(info.prepared,info.dept,info.resource,undefined,false),info:info});
+  });
   if(seen.size!==expected.size)throw rsError('restore-incomplete-operations');
   return decodedDomains;
 }
@@ -20634,6 +20785,7 @@ function privCustodyHolder(A, d, h, empRaw) {
 /* ── entry points: raw JSON text in, raw JSON text out (unchanged text when nothing is hidden) ── */
 function privOut(A, k, raw, have) {
   if (raw == null || !A || !A.u || A.u.role === 'super') return raw;
+  k = resReadAs(k);   /* V7 · د5-ح (13): 023 RES_READ_AS */
   var P = parseKey(k), rn = resName(k), v, p, T;
   if (!P.dept && P.name === PRIV_PERM_KEY) { v = parseJson(raw, undefined); if (v === undefined) return raw; p = privPermsOut(A, v); }
   else if (P.dept && (rn === PRIV_EMP_RES || rn === PRIV_DR_RES || PRIV_TOK_RES[rn])) {
@@ -21334,6 +21486,8 @@ var RES_REG = {
   /* اعتماد الجولة عمليةُ setShiftAp: أعلامُ الاعتماد وبياناتها التابعة وحدها.
      أمّا closed · cWhy · needN · off · dopen فرصدٌ تشغيليّ لا اعتماد. */
   'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { dreport: 'NO_APPROVAL', 'emps/data': 'EMP_REFS' }, field: 'daily' },
+  /* V7 · د5-ح (13): أرشيفُ الجولات — يُقرأ بسياسة الجولات حرفاً (RES_READ_AS) ولا يكتبه العميل (srv): خطوةُ الأرشفة وحدها (dailyArcPend · rounds-arc) */
+  'bassam_rounds_arc_v1':      { scope: 'dept', cap: 'daily/rounds', srv: 1 },
   'bassam_dayshift_v1':        { scope: 'dept', cap: ['daily/rounds', 'dreport'] },
   'bassam_dayfocus_v1':        { scope: 'dept', cap: ['daily/rounds', 'dreport'] },
   /* ── التقرير اليومي ── */
@@ -21388,6 +21542,18 @@ var RES_REG = {
   'bassam_demo_purged_v1':     { scope: 'dept', rule: 'tech' },
   'bassam_profile_v1':         { scope: 'dept', rule: 'tech' }
 };
+/* V7 · د5-ح (13): موردٌ يُقرأ بسياسة موردٍ آخر حرفاً — أوراقُه وسقفُه ومفاتيحُ قراءته وإسقاطاتُه وخصوصيتُه (canRead · canRead0 · canReadEnf ·
+   enfProjectStr · privOut) — يسجّله مالكُه (أرشيفُ الجولات بسياسة الجولات). ولا يكتبه العميلُ: srv في RES_REG (044 canWrite · 060 · 042 authorize0) —
+   تكتبه خطوةُ خادمٍ وحدها، والاستعادةُ الخادمية المتحقَّقة (A.__srvRst) تعيده كما في النسخة. */
+var RES_READ_AS = {
+  'bassam_rounds_arc_v1': 'bassam_rounds_v1'
+};
+function resReadAs(k) {
+  var t = Object.prototype.hasOwnProperty.call(RES_READ_AS, resName(k)) ? RES_READ_AS[resName(k)] : null, P;
+  if (!t) return k;
+  P = parseKey(k);
+  return P.dept ? 'bsdept:' + P.dept + ':' + t : k;
+}
 /* اسم المورد من المفتاح: bsdept:<d>:<name> ثم ما قبل أوّل نقطتين (notif_dev_v1:uid) */
 function resName(k) { return String(parseKey(k).name).replace(/:.*$/, ''); }
 function resOf(k) { return RES_REG[resName(k)] || null; }
@@ -21466,6 +21632,7 @@ var ENT = {
   'bassam_dr_grp_v1':         { empty: '{}' },
   /* ── الجولات ── */
   'bassam_rounds_v1':         { map: 1, empty: '{}' },
+  'bassam_rounds_arc_v1':     { map: 1, empty: '{}' },
   'bassam_dayshift_v1':       { map: 1, empty: '{}' },
   /* اليوم المختار: { y, m, d } */
   'bassam_dayfocus_v1':       { empty: '{}' },
@@ -22449,6 +22616,7 @@ function authorize0(A, key, act) {
   var R = resOf(key);
   if (!R) return { ok: false, why: 'unknown' };                  /* مورد مجهول = رفض */
   if (R.scope === 'device') return { ok: false, why: 'device' };
+  if (R.srv) return { ok: false, why: 'srv' };                    /* V7 · د5-ح (13): تكتبه خطوةُ خادمٍ وحدها (023 RES_READ_AS) */
   var P = parseKey(key);
   if (R.scope === 'global') {
     if (P.dept) return { ok: false, why: 'scope' };
@@ -22486,6 +22654,7 @@ function permv2Ctx(A, d) {
 }
 function authorize(A, key, act) { return authorize0(A, key, act); }
 function canRead(A, k) {
+  k = resReadAs(k);                                                            /* V7 · د5-ح (13): أرشيفُ الجولات بسياسة الجولات (023 RES_READ_AS) */
   if (A && A.enf) return canReadEnf(A, k);                                    /* KIVO_243: القراءة من سجل v24.9 */
   return canRead0(A, k);
 }
@@ -22556,6 +22725,8 @@ function canWrite(A, k, newVal, curVal, ctx) {
   var P = parseKey(k);
   /* F01: مديرُ النظام يحذف مفاتيحَ وحدةٍ أزالها سجلُّ الوحدات في الحفظة نفسِها أو لم تعد وحدة (تنظيفُ اليتيم — 018 unitGoneOf) */
   if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return { ok: true };
+  /* V7 · د5-ح (13): موردٌ تكتبه خطوةُ خادمٍ وحدها (srv · 023 RES_READ_AS) — لا يكتبه أحدٌ من العميل ولا مديرُ المنصة؛ والاستعادةُ الخادمية المتحقَّقة تعيده */
+  if (R0.srv) return A.__srvRst ? { ok: true } : { ok: false, why: 'srv' };
   /* AD-7: ولا يكتب في معرّفٍ ليس وحدةَ بيانات — إلا وحدةً عرّفها سجلُّ الوحدات المقبولُ في الحفظة نفسِها، أو استعادةً لمعرّفٍ ليس عقدة */
   if (P.dept && newVal != null && u.role === 'super' && !isUnitId(A, P.dept)) {
     if (!(ctx && ctx.rst && !isNodeId(A, P.dept))) return { ok: false, why: 'unit' };
@@ -22806,6 +22977,7 @@ function permv4ReadBindingCheck() {
   var SP = (KIVO_SCOPE.readBindings && KIVO_SCOPE.readBindings.special) || { keys: {}, rule: {} };
   for (name in RES_REG) {
     Rr = RES_REG[name]; if (Rr.scope === 'device') continue;
+    if (Object.prototype.hasOwnProperty.call(RES_READ_AS, name)) continue;   /* V7 · د5-ح (13): يُقرأ بربط موردٍ آخر حرفاً (023 RES_READ_AS) — لا ربطَ له في الجدول */
     var expect = [];
     if (Rr.scope === 'global') {
       if (name === K_DSTATS) { for (i = 0; i < DS_READ.length; i++) { var atD = R.atoms['dstats/' + DS_READ[i] + ':view']; for (j = 0; atD && j < atD.targets.length; j++) if (R.byKey[atD.targets[j]] && R.byKey[atD.targets[j]].status === 'active') expect.push(atD.targets[j]); } }
@@ -22929,6 +23101,7 @@ function resOnCeiling(A, d, R) {
   return false;
 }
 function canRead0(A, k) {
+  k = resReadAs(k);                                          /* V7 · د5-ح (13): 023 RES_READ_AS */
   if (A.u.role === 'super') return true;
   var P = parseKey(k);
   /* R181: الإحصائياتُ اليومية عامّةٌ للحرمين لكنها لا تُقرأ إلا بورقةٍ منها — كانت تُعطى لكلِّ من دخل المنصة */
@@ -24164,7 +24337,7 @@ function imgNo(A, o, why) {
 /* كتابةُ الصورة = كتابةُ مورد مالكها. لا anyWriter، ولا دورٌ يعلو على سجل الموارد. */
 function imgWriteOk(A, k) {
   if (A && A.enf) return enfImgWriteOk(A, k);                                 /* KIVO_243 */
-  var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
+  var R8 = resOf(k); if (!R8 || R8.scope === 'device' || R8.srv) return false;   /* V7 · د5-ح (13): srv لا يكتبه العميل */
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
   if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
@@ -25620,6 +25793,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       ctx0.imp = !!d00 && enfHeld(A, d00, 'import.replace');
       ctx0.enf = enfCtxFor(ENFX, k0, d00);
     }
+    if (it0.act === 'set' && resName(k0) === 'bassam_rounds_v1') it0.v = dailyArcFill(env, k0, it0.v, cur0);   /* V7 · د5-ح (13): غيابُ يومٍ مؤرشف ليس حذفاً — 019p3 */
     if (i < regN9) regRst9[i] = ENFX ? !!(ctx0.enf && ctx0.enf.restore) : !!ctx0.rst;   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */
     var vd0 = ENFX && ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ENFX && ctx0.enfHidden ? enfSuperGate(A, enfNo('scope', { detail: ctx0.enfHidden })) : canWrite(A, k0, it0.v, cur0, ctx0));
     /* KIVO_265 · المراجعةُ الموحّدة (R-4): أحكامُ مخزن المهام الخامّ (018 taskRawWhy) تقيس الحفظةَ على القيمة الحالية — فعلى base قديمٍ قد يكون الحكمُ
@@ -25970,7 +26144,7 @@ function enfOk(keys, x) { var o = { ok: true, keys: keys || [] }; if (x) for (va
    أو من فحص الكتابة (canWrite) يمرّ من هنا: إن كان الفاعلُ مديرَ المنصة والرفضُ «قيداً» رُفع (يُسجَّل ما رُفع في lifted). ويبقى حتى له ما هو
    «سلامةُ بيانات» لا صلاحية — القائمةُ ENF_SUPER_KEEPS — وما وُسم invariant أو structural. كلُّ نوع رفضٍ في الخادم يجب أن يُصنَّف في إحدى القائمتين
    (اختبارٌ حارس: tests/unit/v7_fix_super_gate.test.mjs) — نوعٌ جديد غيرُ مصنَّف يُفشله. */
-var ENF_SUPER_KEEPS = { shape: 'شكلُ البيانات', unknown: 'موردٌ غير معروف', device: 'مفتاحُ جهاز', unit: 'معرّفٌ ليس وحدةَ بيانات', 'unit-delete-route': 'حذفُ الوحدات له مسارُه',
+var ENF_SUPER_KEEPS = { shape: 'شكلُ البيانات', srv: 'موردٌ تكتبه خطوةُ خادمٍ وحدها (V7 · د5-ح: أرشيفُ الجولات)', unknown: 'موردٌ غير معروف', device: 'مفتاحُ جهاز', unit: 'معرّفٌ ليس وحدةَ بيانات', 'unit-delete-route': 'حذفُ الوحدات له مسارُه',
   keydel: 'حذفُ المفتاح كلِّه', append: 'سجلٌّ يُلحق به ولا يُعدَّل', users: 'شكلُ سجل الحسابات', perms: 'شكلُ سجل الصلاحيات', ph: 'بصمةُ كلمة المرور', self: 'حسابُ الفاعل نفسِه',
   target: 'هدفُ منحٍ غير صالح', grant: 'منحٌ غير صالح', cap: 'منحٌ خارج سقف الإدارة', 'scope-retired': 'حقلٌ قديمٌ أُلغي', 'p44-grants': 'منحُ الدور لا يطابق سجلَّ الأدوار', dstats: 'شكلُ الإحصائيات اليومية', unmapped: 'انتقالٌ محجوزٌ لا عمليةَ حيّةً له' };
 var ENF_SUPER_LIFTS = { perm: 1, scope: 1, 'scope-unknown': 1, reason: 1, residual: 1, unbound: 1, dept: 1, view: 1, flag: 1, own: 1, mgr: 1, 'super': 1 };
@@ -27032,6 +27206,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
   var R0 = resOf(k);
   if (!R0) return enfNo('unknown');
   if (R0.scope === 'device') return enfNo('device');
+  if (R0.srv) return A.__srvRst ? enfOk(['backup.restore']) : enfNo('srv', { structural: 1 });   /* V7 · د5-ح (13): تكتبه خطوةُ خادمٍ وحدها (044) — بنيويٌّ: لا يرفعه مديرُ المنصة */
   if (!P.dept) {
     if (R0.scope !== 'global') return enfNo('scope', { structural: 1 });
     if (P.name === K_USERS) return newVal == null ? enfNo('users') : enfUsersWrite(A, k, newVal, curVal, ctx, X);
@@ -27072,7 +27247,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
 }
 /* «authorize» في وضع الإنفاذ لمن يسأل عن فعلٍ على مورد (رقمُ المراجعة · صاحبُ الصورة): أيُّ مفتاحٍ كتابيٍّ مربوطٍ بالمورد محمول */
 function enfImgWriteOk(A, k) {
-  var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
+  var R8 = resOf(k); if (!R8 || R8.scope === 'device' || R8.srv) return false;   /* V7 · د5-ح (13): srv لا يكتبه العميل */
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
   if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
@@ -27089,6 +27264,7 @@ function enfImgWriteOk(A, k) {
    fail-closed (P4.1.1-04): لا ميزانيةَ تتخطّى سجلاً — أيُّ خطأٍ في الإسقاط ⇒ القراءةُ مرفوضة. ══ */
 function canReadEnf(A, k) {
   if (!A || !A.u) return false;
+  k = resReadAs(k);                                                          /* V7 · د5-ح (13): 023 RES_READ_AS */
   var u = A.u, P = parseKey(k), rn = resName(k), i;
   if (u.role === 'super') return true;                                       /* مديرُ النظام يقرأ كلَّ شيء (Global) — كما AS‑IS */
   if (!P.dept) {
@@ -27313,6 +27489,7 @@ async function enfRefsFor(env, depts, keys) {
 /* الإسقاطُ على نصّ قيمةٍ كما ستُرسل — يرمي عند الخطأ (fail-closed: المستدعي يرفض القراءة) */
 function enfProjectStr(A, k, raw, refs) {
   if (raw == null || !A || A.u.role === 'super') return raw;
+  k = resReadAs(k);   /* V7 · د5-ح (13): الأرشيفُ بإسقاط الجولات نفسِه (023 RES_READ_AS) */
   var P = parseKey(k), rn = resName(k), PJ = ENF_PROJ[rn];
   if (!PJ) return raw;
   var V = enfViewCtx(A, P.dept || (A.u.deptId || ''), rn, refs);
@@ -27924,7 +28101,7 @@ function pfHist(o) {
 /* ── KIVO_264 · مسارا القراءة الذاتية: التوجيهُ والقراءةُ والإخراج ── */
 var ME_RL = 120;                 /* طلباتٌ في الدقيقة لكل حساب (المساران معاً) — قراءةٌ ذاتيةٌ لا كتابة */
 var ME_HIST_MAX = 60000;         /* سقفُ حجم ردّ «السجل» بالبايت — ما زاد يُقصّ من التغييرات المسجّلة أولاً */
-var ME_KEYS = ['bassam_employees_v1', 'bassam_staffing_v3', 'bassam_staffing_locks_v1', 'bassam_dreport_v1', 'bassam_plan_v1', 'bassam_rounds_v1', 'bassam_shift_options_v1'];
+var ME_KEYS = ['bassam_employees_v1', 'bassam_staffing_v3', 'bassam_staffing_locks_v1', 'bassam_dreport_v1', 'bassam_plan_v1', 'bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_shift_options_v1'];
 function meStaffEligible(u) { return !!(u && u.role === 'staff' && u.deptId && !pfIsMgrKey(u.ekey)); }
 /* A private snapshot is readable independently of operational-page grants.
    Signal only its existing dependencies, never their names or business data. */
@@ -27972,7 +28149,7 @@ async function meDeptData(env, deptId, extra) {
     kj = capture.keys, P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
   return { emps: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_employees_v1'], []); return Array.isArray(a) ? a : []; })(),
     staffing: P('bassam_staffing_v3', {}), locks: P('bassam_staffing_locks_v1', {}), dreport: P('bassam_dreport_v1', {}), plan: P('bassam_plan_v1', {}),
-    rounds: P('bassam_rounds_v1', {}), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
+    rounds: Object.assign({}, P('bassam_rounds_arc_v1', {}), P('bassam_rounds_v1', {})), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
 }
 function meIdent(u, D, users) {
   var L = pfLink(u, D ? D.emps : []);
@@ -30224,6 +30401,7 @@ async function enfMigPlan(env, seed, opts) {
   if (opts.parts && opts.parts.indexOf('scope-retire') !== -1) return await enfRetirePlan(env, seed, now, T, keys, revs, capture, reference);
   if (opts.parts && opts.parts.indexOf(ENF_SID_PART) !== -1) return await enfSidPlan(env, seed, now, T, keys, revs, capture);   /* د5-هـ */
   if (opts.parts && opts.parts.indexOf(ENF_ROLES_PART) !== -1) return await enfRolesPlan(env, seed, now, T, keys, revs, capture);   /* د5-هـ (44) */
+  if (opts.parts && opts.parts.indexOf(DAILY_ARC_PART) !== -1) return await dailyArcMigPlan(env, seed, now, T, keys, revs, capture);   /* V7 · د5-ح (13) */
   var users = parseJson(keys[K_USERS], []);
   if (!Array.isArray(users)) users = [];
   var plan = { version: ENF_VER, seed: seed, today: T, generated: now, writes: [], identity: null, perm: { grants: [], decisions: [] }, warnings: [] };
@@ -30284,9 +30462,11 @@ async function enfRetirePlan(env, seed, now, T, keys, revs, capture, reference) 
   return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots, retireMeta: mv };
 }
 /* أجزاءُ الترحيل المقبولة: perm (الهوية حُذفت · RISHAD-266 P6) — و«scope-retire» وحدها لا تُخلط بغيرها (scope: بذرُ السقف القديم أُزيل · RISHAD-266) */
+/* V7 · د5-ح (13): أجزاءٌ منفردة تسجّلها الأنظمةُ لبياناتها (rounds-arc — أرشيفُ الجولات · مجلدُ المتابعة اليومية) — كلٌّ منها وحده، بلا علامة meta (اللقطةُ أثرُها) */
+var ENF_SOLO_EXTRA = [DAILY_ARC_PART];
 function enfMigParts(raw) {
-  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART || x === ENF_SID_PART || x === ENF_ROLES_PART; });
-  if ((p.indexOf(ENF_RETIRE_PART) !== -1 || p.indexOf(ENF_SID_PART) !== -1 || p.indexOf(ENF_ROLES_PART) !== -1) && p.length > 1) return null;   /* د5-هـ: «site-sid» و«perm44-roles» وحدها كذلك */
+  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART || x === ENF_SID_PART || x === ENF_ROLES_PART || ENF_SOLO_EXTRA.indexOf(x) !== -1; });
+  if ((p.indexOf(ENF_RETIRE_PART) !== -1 || p.indexOf(ENF_SID_PART) !== -1 || p.indexOf(ENF_ROLES_PART) !== -1 || p.some(function (x) { return ENF_SOLO_EXTRA.indexOf(x) !== -1; })) && p.length > 1) return null;   /* د5-هـ: «site-sid» و«perm44-roles» وحدها كذلك */
   return p;
 }
 /* V7 · د5-هـ (م3) · «site-sid»: ترحيلُ هوية الموقع — كلُّ طابقٍ في الجولات ولقطةِ الشهر يحمل sid طابقه في الخطة، فتُطابَق الجولاتُ بالمعرّف لا بالموضع.
@@ -30370,7 +30550,7 @@ async function enfRolesPlan(env, seed, now, T, keys, revs, capture) {
   plan.counts = { writes: plan.writes.length, roles: tot.roles, people: tot.people, lensDropped: tot.lensDropped, unknownTpl: tot.unknownTpl };
   return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots };
 }
-var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطواتُ تقاعد سقف النطاق القديم (scope-retire) وترحيل هوية الموقع (site-sid) وترحيل القوالب إلى الأدوار (perm44-roles) تُطلب كلٌّ منها وحدها — أعد الطلب بها فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
+var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطواتُ تقاعد سقف النطاق القديم (scope-retire) وترحيل هوية الموقع (site-sid) وترحيل القوالب إلى الأدوار (perm44-roles) وأجزاءُ الأنظمة المنفردة (كأرشفة الجولات) تُطلب كلٌّ منها وحدها — أعد الطلب بها فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
 /* Pure revision preparation: allocation is written only after every source
    witness, inside the same batch as migration/snapshot/audit or rollback. */
 async function enfMigCounterPlan(env) {
@@ -30457,7 +30637,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     }
     var flag = JSON.stringify({ applied: true, at: now, by: ident.uid, snap: snap, hash: b.hash, inferable: !!b.inferable });   /* المعرّفُ لا اسمُ المستخدم */
     if (retire2 && R2.retireMeta != null) st2.push(env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind(ENF_RETIRE_META));
-    if (!retire2 && parts2.length && parts2[0] !== ENF_ROLES_PART) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(parts2[0] === ENF_SID_PART ? 'authz_id_mig' : 'authz_perm_mig', flag));   /* د5-هـ: علامةُ الهوية لـ«site-sid» */
+    if (!retire2 && parts2.length && parts2[0] !== ENF_ROLES_PART && ENF_SOLO_EXTRA.indexOf(parts2[0]) === -1) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(parts2[0] === ENF_SID_PART ? 'authz_id_mig' : 'authz_perm_mig', flag));   /* د5-هـ: علامةُ الهوية لـ«site-sid» */
     st2.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: 'migration', keys: parts2.join(','), scope: 'writes=' + R2.plan.writes.length, decision: 'allow', why: 'apply', reason: snap, path: '/api/authz-migrate', ip: ident.ip }));
     var conflict2=await enfMigBatch(env,guards2.concat([counter2.statement],st,st2));
     if(conflict2)return conflict2;

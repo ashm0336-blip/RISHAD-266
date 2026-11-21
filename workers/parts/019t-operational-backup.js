@@ -18,6 +18,14 @@ function opValidateBackupDomains(domains,departments) {
     if(!expected.has(key)||seen.has(key))throw rsError('restore-operations-scope');seen.add(key);
     decodedDomains.push(decoded);
   });
+  /* V7 · د5-ح (13): موردٌ أُضيف بعد نسخٍ قائمة (تعريفُه late — أرشيفُ الجولات) يغيب عن النسخة القديمة فيُستعاد فارغاً (أيامُها كلُّها في موردها الحيّ)؛
+     وغيابُ غيره نقصٌ كما كان */
+  expected.forEach(function(key){
+    if(seen.has(key))return;
+    var info=opInfo(key);
+    if(!info.definition.late)throw rsError('restore-incomplete-operations');
+    seen.add(key);decodedDomains.push({key:key,domain:ocConvert(info.prepared,info.dept,info.resource,undefined,false),info:info});
+  });
   if(seen.size!==expected.size)throw rsError('restore-incomplete-operations');
   return decodedDomains;
 }

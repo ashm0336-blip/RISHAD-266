@@ -47,6 +47,7 @@ function permv4ReadBindingCheck() {
   var SP = (KIVO_SCOPE.readBindings && KIVO_SCOPE.readBindings.special) || { keys: {}, rule: {} };
   for (name in RES_REG) {
     Rr = RES_REG[name]; if (Rr.scope === 'device') continue;
+    if (Object.prototype.hasOwnProperty.call(RES_READ_AS, name)) continue;   /* V7 · د5-ح (13): يُقرأ بربط موردٍ آخر حرفاً (023 RES_READ_AS) — لا ربطَ له في الجدول */
     var expect = [];
     if (Rr.scope === 'global') {
 @@SYS:permv4.read.dstats@@    } else if (Rr.rule) { expect = (SP.rule[name] && SP.rule[name].keys) || []; }

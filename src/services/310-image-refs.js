@@ -23,7 +23,7 @@
     bassam_seized_v1: '{"reports":[]}', bassam_seized_cat_v1: '{"ver":1,"cats":[]}', bassam_seized_acts_v1: '[]', bassam_seized_locs_v1: '[]', bassam_seized_jew_v1: '[]',
     bassam_shift_options_v1: '[]', bassam_perm_tpls_v1: '[]', bassam_perm_tpls_named_v1: '{}', bassam_callsigns_v1: '[]', bassam_leave_kinds_v1: '[]', bassam_perm_limit_v1: '{}',
     bassam_staffing_v3: '{}', bassam_staffing_v2: '{}', bassam_staffing_snap_v1: '{}', bassam_staffing_locks_v1: '{}',
-    bassam_tasks_v1: '{}', bassam_tasks_locks_v1: '{}', bassam_dreport_v1: '{}', bassam_dr_grp_v1: '{}', bassam_rounds_v1: '{}', bassam_dayshift_v1: '{}', bassam_dayfocus_v1: '{}',
+    bassam_tasks_v1: '{}', bassam_tasks_locks_v1: '{}', bassam_dreport_v1: '{}', bassam_dr_grp_v1: '{}', bassam_rounds_v1: '{}', bassam_rounds_arc_v1: '{}', bassam_dayshift_v1: '{}', bassam_dayfocus_v1: '{}',
     bassam_plan_v1: '{"zones":[],"gates":[],"marks":[],"paths":[],"floors":[],"months":{}}', bassam_zone_opts_v1: '{}', bassam_gate_opts_v1: '{}', bassam_mark_kinds_v1: '[]', bassam_last_export_v1: '0', bassam_last_full_export_v1: '0'
   };
 })();

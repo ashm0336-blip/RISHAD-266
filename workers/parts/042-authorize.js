@@ -5,6 +5,7 @@ function authorize0(A, key, act) {
   var R = resOf(key);
   if (!R) return { ok: false, why: 'unknown' };                  /* مورد مجهول = رفض */
   if (R.scope === 'device') return { ok: false, why: 'device' };
+  if (R.srv) return { ok: false, why: 'srv' };                    /* V7 · د5-ح (13): تكتبه خطوةُ خادمٍ وحدها (023 RES_READ_AS) */
   var P = parseKey(key);
   if (R.scope === 'global') {
     if (P.dept) return { ok: false, why: 'scope' };
