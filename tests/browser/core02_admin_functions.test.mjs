@@ -67,6 +67,9 @@ const MOVED_DEPT = ['import', 'ptpls'];   /* V7 · د5-هـ (44): «قوالب �
    A rename applies to whole items and to the words inside an item. Add an entry only for an approved rename, never to hide a loss. */
 const RENAMES = {
   'مدير النظام': 'مسؤول المنصة',
+  /* V7 · د5-ح (القفل): حاويةُ «الحساب والأمان» في دليل التنبيهات صارت 10 أنواع بدل 11 (حُذف acct_tpl «منح قالب صلاحيات لموظف» مع القوالب) —
+     فتمييزُ العدد العربي صار «تنبيهات» بدل «تنبيهاً». الحاويةُ نفسُها باقية في مكانها */
+  '🔐 الحساب والأمان حاوية # من # تنبيهاً': '🔐 الحساب والأمان حاوية # من # تنبيهات',
 };
 /* CORE-02 step 5: the overview's quick-links strip repeated the tab bar and was removed. Each of its six links must still be reachable
    at its destination: the platform sub-tab (a recorded action of #/sysadmin/plat) or the admin tab itself (its place in NAV, whose
