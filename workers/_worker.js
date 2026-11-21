@@ -30654,7 +30654,7 @@ async function demoBuild(env, A, opt) {
     if (taken[un]) throw new Error('demo-username-taken');
     var u = { id: DEMO_PRE + 'u_' + a[0], un: un, name: DEMO_TAG + a[4], role: 'staff', deptId: a[1], ekey: a[2], ph: opt.dry ? '' : await hashPw(pw), mc: 0, dis: 0, test: 'TEST_ONLY' };
     Object.assign(u, a[3]); newUsers.push(u); out.users.push(u.id);
-    if (opt.reveal) out.secrets.push({ id: u.id, un: un, pw: pw, role: a[3].mgr ? 'mgr' : 'staff', dept: a[1] });
+    if (opt.reveal) out.secrets.push({ id: u.id, un: un, pw: pw, role: u.mgr ? 'mgr' : u.role, dept: a[1] });
   }
   C.users = newUsers.map(function (u) { return { id: u.id, un: u.un, name: u.name, ekey: u.ekey, deptId: u.deptId, mgr: !!u.mgr }; });
   /* الأنظمة: كلُّ قطعةٍ تضيف جملها بكاتبها، وصفحاتِها إلى caps */
