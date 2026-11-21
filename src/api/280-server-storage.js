@@ -198,7 +198,7 @@
       bassam_seized_v1:["نظام المضبوطات"], bassam_seized_cat_v1:["قائمة ممنوعات المضبوطات"], bassam_seized_acts_v1:["إجراءات المضبوطات"], bassam_seized_locs_v1:["مواقع المضبوطات"], bassam_seized_jew_v1:["أنواع قطع المجوهرات"],
       bassam_award_v1:["جائزة التميز"], bassam_award_docs_v1:["المراجع المعتمدة للجائزة (قديم)"], bassam_award_docs_v2:["المراجع المعتمدة للجائزة"],
       bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"], bassam_leave_kinds_v1:["أنواع الإجازات"], bassam_callsigns_v1:["رموز النداء"],
-      bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"],
+      bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"], bassam_roles_v1:["أدوار الصلاحيات"],
       bassam_depts_v1:["الإدارات"], bassam_gdepts_v1:["الهيكل التنظيمي"], bassam_platform_v1:["إعدادات المنصة"], bassam_profile_v1:["الملف الشخصي"],
       bassam_media:["الصور والملفات"], bassam_notifications_domain_v1:["التنبيهات والتعاميم"],
       bassam_last_export_v1:["آخر تصدير"], bassam_last_full_export_v1:["آخر نسخة شاملة"],

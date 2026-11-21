@@ -50,17 +50,12 @@ test('successful flush ⇒ setActive then one reload (after the flush, not befor
   assert.equal(clean.confirms.length, 0, 'nothing pending: no question'); assert.equal(clean.reloads.length, 1);
 });
 
-test('the picker row and «+ قسم» both go through the guard', async () => {
+test('the picker row goes through the guard (V7 · د5-هـ 44: «+ قسم» was deleted — sections are added by the platform admin from «الإدارات»)', async () => {
   const R = rd('layouts/root-logic.js');
   assert.match(R, /pick: \(\) => \{ this\.setState\(\{ deptOpen: false \}\); if \(d\.id !== act\) this\._switchUnit\(d\.id, d\.name\); \}/);
   assert.doesNotMatch(R, /\.then\(go, go\)/, 'no reload on a failed flush');
   assert.doesNotMatch(R, /D\.setActive\(d\.id\); this\.setState/, 'setActive is not called before the flush');
-  assert.match(R, /if \(!\(await this\._unsavedGuard\(\)\)\) return;   \/\* CORE-01/);
-  /* «+ قسم» with a failed flush: no name prompt, no section, no reload */
-  const o = { dirty: true, result: false };
-  const W = world({ srv: srv(o) });
-  let added = 0; W.KIVO.BassamDepts.sectionAdd = () => { added++; return { ok: true }; }; W.KIVO.BassamDepts.isSection = () => false;
-  const v = W.vals(); assert.equal(v.secAddOn, true);
-  await v.secAdd(); await settle();
-  assert.equal(added, 0); assert.equal(W.reloads.length, 0); assert.ok(!W.c.state.cfm, 'no name dialog');
+  assert.match(R, /if \(!\(await this\._unsavedGuard\(\)\)\) return false;/, '_switchUnit flushes first');
+  const W = world({ srv: srv({ dirty: true, result: false }) });
+  const v = W.vals(); assert.equal(v.secAddOn, undefined, 'no «+ قسم» flag'); assert.equal(v.secAdd, undefined, 'no «+ قسم» handler');
 });
