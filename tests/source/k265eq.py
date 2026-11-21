@@ -79,7 +79,12 @@ ok(oldonly == retained and all(_from_prev(u) for u in retained) and all(u in cur
 #   د5-هـ (م3): القاعدة 68 = 71 − 420-round-factory · 421-round-links · 520-field-monitor (صارت في مجلد المتابعة اليومية فتُعدّ من كتل الأنظمة).
 _SYSD = os.path.join(ROOT, 'src', 'systems')
 _SYS = [json.load(open(os.path.join(_SYSD, k, 'system.json'), encoding='utf-8')) for k in sorted(os.listdir(_SYSD)) if os.path.isfile(os.path.join(_SYSD, k, 'system.json'))] if os.path.isdir(_SYSD) else []
-N_JS = 68 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
+#   V7 · د5-ح: القاعدة 67 = 68 − 566-print-core (صارت قطعةً مشتركة src/systems/_shared/print) — وتُعدّ كتلُ الغلاف لكل قطعةٍ مشتركة حضر أحدُ مالكيها
+#   (shared.json ← slots «shell.blocks.*»: ملفٌّ .js من files)، فالعددُ مشتقٌّ من الحاضر لا رقماً ثابتاً.
+_SHD = os.path.join(_SYSD, '_shared'); _KEYS = {d.get('key') for d in _SYS}
+_SHARED = [json.load(open(os.path.join(_SHD, k, 'shared.json'), encoding='utf-8')) for k in sorted(os.listdir(_SHD)) if os.path.isfile(os.path.join(_SHD, k, 'shared.json'))] if os.path.isdir(_SHD) else []
+N_SH = sum(1 for p in _SHARED if set(p.get('owners') or []) & _KEYS and any(n.startswith('shell.blocks.') for n in (p.get('slots') or {})) for f in p.get('files') or [] if f.endswith('.js'))
+N_JS = 67 + N_SH + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
 N_PG = 5 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة · د5-د: الجدولُ الشهري صار نظاماً بصفحته · د5-هـ: والتشغيلُ الميداني · والتقريرُ اليومي · والمتابعةُ اليومية (5 للقاعدة)
 kinds = {}
 for u in files:
