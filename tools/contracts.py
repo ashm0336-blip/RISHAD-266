@@ -398,7 +398,7 @@ def scan(S):
     try:
         for x in json.load(open(os.path.join(os.path.dirname(S), 'tests', 'removal', 'names.allow.json'), encoding='utf-8')).get('skipFiles', []): skip.add(os.path.normpath(os.path.join(os.path.dirname(S), x['file'])))
     except Exception: pass
-    roots = [S, os.path.join(os.path.dirname(S), 'workers', 'parts')]
+    roots = [S, os.path.join(os.path.dirname(S), 'workers', 'parts'), os.path.join(os.path.dirname(S), 'workers', 'bindings')]   # د5-ح: وبياناتُ روابط الخادم (data.base.json) — كانت خارج المسح فسكن فيها مفتاحُ الجدول (st_grp)
     names = sorted(set(os.path.basename(f) for f in folders.values()) | set(folders))   # أسماءُ البرامج ومجلداتها (staff · plan · daily · rounds · dreport · tasks …)
     tally = {}
     NAMEQ = re.compile(r'["\'](' + '|'.join(re.escape(n) for n in names) + r')["\']') if names else None

@@ -2583,13 +2583,6 @@
     "routes": [],
     "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
    },
-   "bassam_st_grp_v1": {
-    "scope": "device",
-    "cls": "device-excluded",
-    "keys": [],
-    "routes": [],
-    "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
-   },
    "bassam_employees_v1": {
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",

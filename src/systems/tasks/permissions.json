@@ -1377,7 +1377,7 @@
      "byResource"
     ],
     "key": "bassam_tasks_v1",
-    "after": 22,
+    "after": 21,
     "seq": 40,
     "value": {
      "scope": "dept",
@@ -1407,7 +1407,7 @@
      "byResource"
     ],
     "key": "bassam_tasks_locks_v1",
-    "after": 22,
+    "after": 21,
     "seq": 50,
     "value": {
      "scope": "dept",

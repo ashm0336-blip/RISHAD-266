@@ -2480,7 +2480,7 @@
      "byResource"
     ],
     "key": "bassam_staffing_v3",
-    "after": 20,
+    "after": 19,
     "seq": 20,
     "value": {
      "scope": "dept",
@@ -2527,7 +2527,7 @@
      "byResource"
     ],
     "key": "bassam_staffing_v2",
-    "after": 20,
+    "after": 19,
     "seq": 30,
     "value": {
      "scope": "dept",
@@ -2568,7 +2568,7 @@
      "byResource"
     ],
     "key": "bassam_staffing_snap_v1",
-    "after": 20,
+    "after": 19,
     "seq": 40,
     "value": {
      "scope": "dept",
@@ -2598,7 +2598,7 @@
      "byResource"
     ],
     "key": "bassam_staffing_locks_v1",
-    "after": 20,
+    "after": 19,
     "seq": 50,
     "value": {
      "scope": "dept",
@@ -2645,7 +2645,7 @@
      "byResource"
     ],
     "key": "bassam_callsigns_v1",
-    "after": 20,
+    "after": 19,
     "seq": 60,
     "value": {
      "scope": "dept",
@@ -2681,7 +2681,7 @@
      "byResource"
     ],
     "key": "bassam_perm_limit_v1",
-    "after": 20,
+    "after": 19,
     "seq": 70,
     "value": {
      "scope": "dept",
@@ -2714,6 +2714,22 @@
       }
      ],
      "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_st_grp_v1",
+    "after": 17,
+    "seq": 10,
+    "value": {
+     "scope": "device",
+     "cls": "device-excluded",
+     "keys": [],
+     "routes": [],
+     "note": "تفضيلاتُ جهاز — لا تُحقن ولا تُسحب (isDeviceKey)؛ خارج القياس"
     }
    }
   ],
