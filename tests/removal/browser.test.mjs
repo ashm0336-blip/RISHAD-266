@@ -34,6 +34,18 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
     const exactIn = (t) => m.page.evaluate((t) => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === t), t);
     if (HAS_DAILY) { await m.go('#/daily', 2800); assert.ok((await exactIn('التقرير اليومي')) || (await exactIn('الجولات اليومية')), 'المتابعة اليومية: شريطُ التبويبات مرسوم'); }
     else assert.equal(side.includes('daily'), false, 'بغياب المتابعة لا رابطَ لها في القائمة');
+    /* V7 · د5-ح (بند 8): التقريرُ اليومي تبويبٌ تحت المتابعة بحضورها (القائمةُ كما هي، بلا رابطٍ له)، وبغيابها له رابطُه الظاهر في القائمة يفتح صفحتَه */
+    const HAS_DR = PAGES.pages.some((p) => p.key === 'dreport');
+    if (HAS_DAILY || !HAS_DR) assert.equal(side.includes('dreport'), false, 'بحضور المتابعة (أو بغياب التقرير) لا رابطَ مستقلّاً للتقرير اليومي في القائمة');
+    else {
+      assert.ok(PAGES.navOrder.includes('dreport') && PAGES.navNames.dreport === 'التقرير اليومي', 'بغياب المتابعة: التقريرُ في ترتيب القائمة وأسمائها');
+      await m.go('#/profile', 2400);
+      const ln = await m.page.evaluate(() => { const a = document.querySelector('aside.bsb a[data-key="dreport"]'); if (!a) return null; const r = a.getBoundingClientRect(), cs = getComputedStyle(a); return { cls: a.className, text: a.textContent.trim(), shown: cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0 }; });
+      assert.ok(ln && ln.shown && ln.text === 'التقرير اليومي' && !/\bgone\b/.test(ln.cls), 'بغياب المتابعة: رابطُ «التقرير اليومي» ظاهرٌ في القائمة (' + JSON.stringify(ln) + ')');
+      await m.page.click('aside.bsb a[data-key="dreport"]'); await m.page.waitForTimeout(2400);
+      const at = await m.page.evaluate(() => ({ hash: location.hash, on: (document.querySelector('aside.bsb a[data-key="dreport"]') || {}).className || '' }));
+      assert.ok(/^#\/dreport/.test(at.hash) && /\bon\b/.test(at.on), 'الرابطُ يفتح صفحةَ التقرير ويُعلَّم نشطاً (' + JSON.stringify(at) + ')');
+    }
     /* د4-ب: بغياب المهام — لا تبويبَها في «المتابعة اليومية»، ولا بطاقةَ «مهامك» في «صفحتي»، ولا لوحةَ مؤشراتها */
     if (!SYSTEMS.includes('tasks')) {
       const exact = (t) => m.page.evaluate((t) => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === t), t);

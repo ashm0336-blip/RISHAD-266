@@ -14,6 +14,7 @@ import { PYTHON, makeTestEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, apply
 import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
 import {installBusinessFixture} from './business_legacy_seed_fx.mjs';
 import {installOperationalFixture,inspectOperationalFixture,isOperationalFixtureKey,replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
+import {canonicalWorker} from './canonical_fx.mjs';
 export {replaceOperationalFixture};
 
 export const TAG = 'TEST_ONLY';
@@ -119,11 +120,27 @@ const SHELL = (w) => { const d = path.join(path.dirname(w), 'index.html'); retur
 let inst = 0;
 /* د4-ب: بذرةُ نظام المهام (مخزنُ 56 صفاً وصورتا التوثيق) — تُستورد من مجلد النظام إن حضر؛ بغيابه العالَمُ بلا مخزن مهام */
 export async function tasksSeed() { return hasSystem('tasks') ? import(pathToFileURL(path.join(SRC, 'systems', 'tasks', 'tests', 'tasks_seed.mjs')).href) : null; }
-export async function world({ worker, mode = 'legacy', beforeCutover } = {}) {
+/* V7 · د5-ح (بند 10): lightWorker (اختياري، لملفٍّ يبني عشراتِ العوالم في عمليةٍ واحدة). بلاه يحمّل كلُّ عالمٍ العاملَ وحدةَ ES جديدة
+   (import بمعرّفٍ فريد — ولا تُحرَّر وحدةٌ أبداً) ويحمّل تحويلُ البذرة (installOperationalFixture) العاملَ القانوني مرةً أخرى من عنوان data:
+   (والعنوانُ نفسُه بضعةُ ميغابايتات يبقى في سجلّ الوحدات)، فيبلغ ملفٌّ كهذا حدَّ الذاكرة الافتراضي (~2GB). معه:
+     · العاملُ نسخةٌ جديدة لكل عالم كما كان (حالةُ الوحدة فيه — علامةُ التهيئة _initOk وذاكراتُها — لا تُشارَك بين العوالم)، لكنها تُقيَّم
+       دالةً صارمة (النصُّ نفسُه حرفاً، و«export default» وحده يصير «return») فتُحرَّر مع عالمها؛
+     · العاملُ القانوني لتحويل البذرة نسخةٌ واحدة في العملية (دوالُّ تحويلٍ على قاعدة العالم الممرَّرة؛ لا يخدم طلباً).
+   سائرُ الملفات كما هي. */
+const LIGHT_SRC = new Map(); let LIGHT_CANON = null;
+function lightInstance(file) {
+  if (!LIGHT_SRC.has(file)) {
+    const src = fs.readFileSync(file, 'utf8'), at = src.split(/^export default \{/m);
+    if (at.length !== 2 || /^\s*(import|export)\s/m.test(at[0] + at[1])) throw new Error('lightWorker: the worker must be one script with a single «export default {»: ' + file);
+    LIGHT_SRC.set(file, '"use strict";\n' + at[0] + 'return {' + at[1]);
+  }
+  return new Function(LIGHT_SRC.get(file))();
+}
+export async function world({ worker, mode = 'legacy', beforeCutover, lightWorker = false } = {}) {
   const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};
   const env = makeTestEnv(EX);
   if (worker) {
-    env.__worker = (await import(pathToFileURL(path.resolve(worker)).href + '?tasks_inst=' + (++inst))).default;
+    env.__worker = lightWorker ? lightInstance(path.resolve(worker)) : (await import(pathToFileURL(path.resolve(worker)).href + '?tasks_inst=' + (++inst))).default;
     const html = fs.readFileSync(SHELL(worker), 'utf8');
     env.ASSETS = { fetch: async (req) => { const u = new URL(req.url); return (u.pathname === '/' || u.pathname === '/index.html') ? new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }) : new Response('not found', { status: 404 }); } };
   }
@@ -138,7 +155,7 @@ export async function world({ worker, mode = 'legacy', beforeCutover } = {}) {
   const seed = await tasksSeed(), store = seed ? seed.tasksStore() : null;
   await applySql(env.DB, p0Sql(store, seed));
   if (beforeCutover) await beforeCutover(env);   /* optional: shape the legacy KV seed before the real cutover (privacy_noeid) */
-  if (env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '11') await installOperationalFixture(env);
+  if (env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '11') await installOperationalFixture(env, lightWorker ? await (LIGHT_CANON ||= canonicalWorker()) : undefined);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const login = async (un, pw) => { const r = await C.login(un, pw); if (!r.ok) throw new Error('login ' + un + ' ' + JSON.stringify(r.j)); return r; };
   return { env, C, su, login, store, mode };

@@ -1559,7 +1559,7 @@ async function nfRefs(env, A, only) {
   (A.depts || []).forEach(function (d) {
     if (d && d.id && (!only || only.indexOf(d.id) >= 0) && !refs[d.id]) {
       refs[d.id] = {};
-      ["employees_v1", "staffing_v3", "dreport_v1", "perm_tpls_v1"].forEach(function (s) {
+      ["employees_v1", "staffing_v3", "dreport_v1", "roles_v1", "shift_options_v1"].forEach(function (s) {
         keys.push("bsdept:" + d.id + ":bassam_" + s);
       });
     }
@@ -1574,28 +1574,41 @@ async function nfRefs(env, A, only) {
   A.__nfRefs = refs;
   return refs;
 }
+/* V7 · د5-ح (بند 11): رئيسُ الوردية = من له صلاحيةٌ إشرافية الآن (دورُه في سجلّ أدوار وحدته bassam_roles_v1 يحمل sup:true — العلامةُ نفسُها
+   التي يقرؤها KIVO.BassamSup في الواجهة، ونقلها ترحيلُ perm44-roles من القوالب) وورد رئيساً أو نائباً في تقرير ورديته هو لليوم التشغيلي
+   بتوقيت الرياض (pfOpDay · pfDay: الورديةُ الليلية التي بدأت أمس ولم تنتهِ يومُها يومُ بدئها؛ ورديتُه من صفّه في التقرير المسحوب وإلا من جدوله).
+   كان يكفي ورودُه في أيّ تقريرٍ مخزَّن ولو قبل شهور، أو قالبٌ إشرافيّ بلا تقرير. الناتجُ قائمةُ وردياته التي يرأسها اليوم (واحدةٌ أو لا شيء)،
+   وبها تصله تنبيهاتُ ورديته وحدها (هدفُ «lead:<الوردية>» — nfLeadTargets). بغياب التقرير اليومي لا رئيسَ وردية. */
+function nfSupNow(r, u) {
+  var rec = r && isObj(r.roles_v1) ? r.roles_v1 : null, pr = rec && isObj(rec.people) ? rec.people[String(u.ekey)] : null, i;
+  if (!isObj(pr) || !pr.role || !Array.isArray(rec.roles)) return false;
+  for (i = 0; i < rec.roles.length; i++) if (rec.roles[i] && rec.roles[i].id === pr.role) return rec.roles[i].sup === true;
+  return false;
+}
+function nfLeadShifts(A, u, d, refs) {
+  if (!u || u.role !== "staff" || u.ekey == null || u.ekey === "") return [];
+  var r = refs[d] || {}, memo = r.__nfLead || Object.defineProperty(r, "__nfLead", { value: {} }).__nfLead, mk = String(u.id) + "\u0001" + String(u.ekey);
+  if (memo[mk]) return memo[mk];
+  var dr = r.dreport_v1;
+  if (!isObj(dr) || !nfSupNow(r, u)) return (memo[mk] = []);
+  var emps = Array.isArray(r.employees_v1) ? r.employees_v1 : [], L = pfLink(u, emps), toks = pfTokens(u, L.rec, emps),
+    st = isObj(r.staffing_v3) ? r.staffing_v3 : {}, opts = Array.isArray(r.shift_options_v1) ? r.shift_options_v1 : [],
+    dayOf = function (T0) { return pfDay({ bucket: isObj(st[T0.ym]) ? st[T0.ym] : {}, rep: isObj(dr[T0.dk]) ? dr[T0.dk] : null, toks: toks, wd: T0.wd, opts: opts }); };
+  if (!toks.length) return (memo[mk] = []);
+  var T = pfOpDay(Date.now(), dayOf), sh = String(dayOf(T).shift.name || ""), rep = dr[T.dk],
+    s = sh && isObj(rep) && isObj(rep.shifts) && isObj(rep.shifts[sh]) ? rep.shifts[sh] : null, l = s && isObj(s.leaders) ? s.leaders : {},
+    me = [u.name, L.rec && L.rec.name, L.rec && L.rec.eid, u.ekey].filter(function (x) { return x != null && String(x).trim() !== ""; }).map(String);
+  return (memo[mk] = ["chief", "deputy"].some(function (x) { return l[x] != null && me.indexOf(String(l[x])) >= 0; }) ? [sh] : []);
+}
 function nfLeader(A, u, d, refs) {
-  // Preserve the established rule: leadership in any stored report, then the
-  // explicitly supervised template. Restricting reports to today is a policy change.
-  if (u.role !== "staff") return false;
-  var r = refs[d] || {},
-    dr = r.dreport_v1 || {},
-    names = {};
-  Object.keys(dr).forEach(function (k) {
-    if (!/^\d+-\d+-\d+$/.test(k)) return;
-    var sh = (dr[k] && dr[k].shifts) || {};
-    Object.keys(sh).forEach(function (s) {
-      var l = sh[s].leaders || {};
-      if (l.chief) names[l.chief] = 1;
-      if (l.deputy) names[l.deputy] = 1;
-    });
-  });
-  if (u.name && names[u.name]) return true;
-  var id = (((A.perms || {}).tplOf || {})[d] || {})[u.ekey],
-    t = (Array.isArray(r.perm_tpls_v1) ? r.perm_tpls_v1 : []).filter(function (x) {
-      return x && x.id === id;
-    })[0];
-  return !!(t && (t.sup === true || (t.sup === undefined && /رئيس|نائب/.test(t.name || ""))));
+  return nfLeadShifts(A, u, d, refs).length > 0;
+}
+/* هدفُ الرئيس لحدثٍ يحمل ورديته (vars.الوردية): «lead:<الوردية>» فلا يصل رئيسَ ورديةٍ أخرى؛ وبلا وردية «lead» لكل رئيس ورديةٍ اليوم */
+var NF_LEAD_SHIFT = "lead:";
+function nfLeadTargets(toR, vars) {
+  var sh = isObj(vars) && typeof vars["الوردية"] === "string" ? vars["الوردية"].trim() : "";
+  if (!sh || sh.length > 120) return toR;
+  return toR.map(function (x) { return x === "lead" ? NF_LEAD_SHIFT + sh : x; });
 }
 function nfShift(u, d, refs) {
   var r = refs[d] || {},
@@ -1710,7 +1723,8 @@ function nfTargetHit(A, m, targets, u, refs) {
       roles.indexOf("all") >= 0 ||
       (roles.indexOf("sys") >= 0 && u.role === "super") ||
       (roles.indexOf("mgr") >= 0 && u.role !== "super" && isMgrOf(Object.assign({}, A, { u: u }), m.department || u.deptId)) ||
-      (roles.indexOf("lead") >= 0 && nfLeader(A, u, m.department || u.deptId, refs));
+      ((roles.indexOf("lead") >= 0 || roles.some(function (x) { return x.indexOf(NF_LEAD_SHIFT) === 0; })) &&
+        nfLeadShifts(A, u, m.department || u.deptId, refs).some(function (sh) { return roles.indexOf("lead") >= 0 || roles.indexOf(NF_LEAD_SHIFT + sh) >= 0; }));
   return !!(
     hit &&
     (u.role === "super" ||
@@ -2285,7 +2299,7 @@ async function nfAudience(env, A, opts) {
     var roles = ["all"];
     if (u.role === "super") roles.push("sys");
     else if (isMgrOf(A, d)) roles.push("mgr");
-    if (nfLeader(A, u, d, refs)) roles.push("lead");
+    nfLeadShifts(A, u, d, refs).forEach(function (sh) { roles.push("lead", NF_LEAD_SHIFT + sh); });   /* V7 · د5-ح: رئيسُ ورديته اليوم — العامّ وورديتُه وحدها */
     Object.keys(NF_TYPES)
       .concat(["bc_dept"])
       .forEach(function (type) {
@@ -2660,9 +2674,9 @@ async function nfPlanEvents(env, A, events, internal) {
     if (it.once !== undefined) nfStr(it.once, 500, false);
     if (it.at !== undefined) nfTime(it.at);
     var toE = T.to.indexOf("own") >= 0 ? own : [],
-      toR = T.to.filter(function (r) {
+      toR = nfLeadTargets(T.to.filter(function (r) {
         return r !== "own";
-      }),
+      }), it.vars),
       sys = toR.length === 1 && toR[0] === "sys" && !toE.length && A.u.role === "super";
     if (!sys && (!d || !deptInScope(A, d))) throw nfErr("notification-scope", 403);
     var selfOnly =

@@ -34,7 +34,7 @@
  },
  "nf.leader.dreport": {
   "order": 10,
-  "text": ",\n    dr = r.dreport_v1 || {},\n    names = {};\n  Object.keys(dr).forEach(function (k) {\n    if (!/^\\d+-\\d+-\\d+$/.test(k)) return;\n    var sh = (dr[k] && dr[k].shifts) || {};\n    Object.keys(sh).forEach(function (s) {\n      var l = sh[s].leaders || {};\n      if (l.chief) names[l.chief] = 1;\n      if (l.deputy) names[l.deputy] = 1;\n    });\n  });\n  if (u.name && names[u.name]) return true;\n"
+  "text": "r.dreport_v1"
  },
  "nf.denyPages.dreport": {
   "order": 10,

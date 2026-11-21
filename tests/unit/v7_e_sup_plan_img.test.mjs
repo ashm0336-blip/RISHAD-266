@@ -15,7 +15,7 @@
    two lens keys hosted by the plan alone (lens.gates.geometry.edit · lens.dens.threshold.configure — unchanged, as measured before).
    The rounds image is not changed for anyone.
    Every cell compares the stored image bytes before and after the attempt — not only the HTTP status. */
-import test from 'node:test';
+import test, { afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -56,9 +56,15 @@ const bytes = async (W, id) => {
 };
 const own = (W, id) => W.env.DB.q('SELECT st, k FROM imgown WHERE img = ?', id)[0] || null;
 
+/* V7 · د5-ح (بند 10): كان الملفُّ يبني أكثرَ من مئة عالم، كلٌّ يحمّل العاملَ مرتين (وحداتُ ES لا تُحرَّر) فينفد حدُّ الذاكرة الافتراضي (~2GB)
+   على جهازٍ عادي. الآن (world · lightWorker): العاملُ نسخةٌ جديدة لكل عالم كما كان لكنها تُحرَّر معه، والعاملُ القانوني لتحويل البذرة
+   نسخةٌ واحدة؛ وقاعدةُ كل عالمٍ تُغلق بعد اختباره فلا تبقى مراجعُها. الخلايا والتأكيداتُ كما هي. */
+const OPEN = [];
+afterEach(() => { while (OPEN.length) { const DB = OPEN.pop(); try { DB.db.close(); } catch (e) { /* أُغلقت */ } } });
 /* a world where the unit manager has uploaded two site maps and bound one to the plan and one to today's round — by saving them */
 async function scene(mode, setup) {
-  const W = await world({ worker: WU.file, mode }), DB = W.env.DB, x = mode.slice(0, 1) + (++seq).toString(36);
+  const W = await world({ worker: WU.file, mode, lightWorker: true }), DB = W.env.DB, x = mode.slice(0, 1) + (++seq).toString(36);
+  OPEN.push(DB);
   const P = read(DB, KP); P.emps = P.emps || {}; P.emps[D] = P.emps[D] || {};
   setup({ sheet: (s) => { if (s === null) delete P.emps[D][ACC_E]; else P.emps[D][ACC_E] = s; }, grant: (plus) => put(DB, KGR, { v: 1, emp: { [ACC_E]: { plus, minus: [], at: 1, by: 'TEST_ONLY' } } }) });
   put(DB, KP, P);
