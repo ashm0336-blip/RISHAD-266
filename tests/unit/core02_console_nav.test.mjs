@@ -213,7 +213,7 @@ test('(6) review of S10: sidebar fits, gold edge faces the page, one history pat
   assert.match(L, /go: go\("backup"\)/); assert.match(L, /go: go\("sec", \{ adSecKind: "denied" \}\)/);
   /* V7 P1: both «تعديل» links open the unit's own page (#/sysadmin/org/<id> — a history entry) on the tab they edit */
   /* V7 · د5-هـ (44): the permission map is deleted (its «تعديل» link with it); «تعديل الصلاحيات» opens v2's people section */
-  assert.match(L, /location\.hash = "#\/sysadmin\/org\/" \+ encodeURIComponent\(u\) \+ "\/perm\/people"/, '«تعديل الصلاحيات» → #/sysadmin/org/<unit>/perm/people');
+  assert.match(L, /const h = "#\/sysadmin\/org\/" \+ encodeURIComponent\(u\) \+ "\/perm\/people";\s*this\.__orgPend = h;\s*location\.hash = h;/, '«تعديل الصلاحيات» → #/sysadmin/org/<unit>/perm/people');
   /* V7 P2: the account menu is one (_acctMenu); from «مراقبة الحسابات» edit and permissions open the account's node page on «المسؤولون والحسابات» */
   assert.match(L, /p\.push\(\{ t: "تعديل الصلاحيات", go: \(\) => this\._acctOpen\(a, "perm", here\) \}\)/, '«تعديل الصلاحيات» → _acctOpen');
   assert.match(L, /if \(!here\) return void \(u \? this\._orgNav\(u, "emps"\) : this\._ovGo\("depts"\)\);/, 'outside the node page: the account\'s node, accounts tab');
