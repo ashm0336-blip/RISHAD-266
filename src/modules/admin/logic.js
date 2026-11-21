@@ -472,7 +472,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* CORE-02 (B2): نطاقاتُ نموذج سياسات الأمن — نفسُها في الخادم (001 POLICY_RANGE): [الأدنى، الأعلى، عددٌ صحيح]. القيمةُ خارجها تُرفض باسمها
      قبل التأكيد، ولا يُعرض «حُفظت» إلا بعد قبول الخادم */
   _adPolRange() {
-    return { sessH: [1, 72, 1], idleH: [0.25, 24, 0], lockN: [3, 20, 1], lockMin: [1, 60, 1], pwMin: [6, 6, 1], wrMin: [30, 5000, 1], thrOn: [0, 1, 1], thrN: [5, 100, 1], thrWin: [5, 120, 1], thrSec: [1, 10, 1] };
+    return { sessH: [1, 72, 1], idleH: [0.25, 24, 0], dispH: [1, 72, 1], lockN: [3, 20, 1], lockMin: [1, 60, 1], pwMin: [6, 6, 1], wrMin: [30, 5000, 1], thrOn: [0, 1, 1], thrN: [5, 100, 1], thrWin: [5, 120, 1], thrSec: [1, 10, 1] };
   }
   _adPolBadOf(k, x) {
     const r = this._adPolRange()[k];
@@ -486,7 +486,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     for (const k of Object.keys(R))
       if (this._adPolBadOf(k, p && p[k])) {
         const r = R[k],
-          l = { sessH: "مدة الجلسة القصوى", idleH: "الخمول قبل الخروج", lockN: "محاولات قبل القفل", lockMin: "مدة القفل القصوى", pwMin: "الحد الأدنى لكلمة المرور", wrMin: "سقف الحفظ في الدقيقة", thrOn: "إبطاء الحساب المستهدف (0 مطفأ · 1 مفعّل)", thrN: "عناوين مختلفة قبل الإبطاء", thrWin: "نافذة احتساب العناوين", thrSec: "مهلة الإبطاء" }[k];
+          l = { sessH: "مدة الجلسة القصوى", idleH: "الخمول قبل الخروج", dispH: "مدة جلسة شاشة العرض", lockN: "محاولات قبل القفل", lockMin: "مدة القفل القصوى", pwMin: "الحد الأدنى لكلمة المرور", wrMin: "سقف الحفظ في الدقيقة", thrOn: "إبطاء الحساب المستهدف (0 مطفأ · 1 مفعّل)", thrN: "عناوين مختلفة قبل الإبطاء", thrWin: "نافذة احتساب العناوين", thrSec: "مهلة الإبطاء" }[k];
         return { k: k, msg: l + (r[0] === r[1] ? " ثابت: " + r[0] : ": أدخل " + (r[2] ? "عدداً صحيحاً" : "رقماً") + " من " + r[0] + " إلى " + r[1]) };
       }
     return null;
@@ -736,6 +736,32 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!here) return void (u ? this._orgNav(u, "emps") : this._ovGo("depts"));
     if ("edit" === what) return void ("gm" === a.role ? this.gmOpen(u, a.id) : this.mgrOpen(u, a.id));
   }
+  /* V7 · د5-هـ (x1): «شاشة عرض» — حسابُ قراءةٍ وحدها مربوطٌ بإدارة، ينشئه مسؤولُ المنصة من «مراقبة الحسابات» (330 addDisplayAccount) */
+  _dpVals(t) {
+    const A = KIVO.BassamAuth,
+      sup = !!(A && A.isSuper && A.isSuper()),
+      f = t.dpForm || null;
+    let ds = [];
+    try { ds = (KIVO.BassamDepts.list() || []).map((d) => ({ id: d.id, name: d.name || d.id, sel: !!f && f.deptId === d.id })); } catch (e) { ds = []; }
+    const set = (k) => (ev) => this.setState({ dpForm: Object.assign({}, this.state.dpForm || {}, { [k]: ev && ev.target ? ev.target.value : "" }), dpMsg: "" });
+    return {
+      dpCan: sup,
+      dpOpen: sup && !!f,
+      dpToggle: () => this.setState({ dpForm: this.state.dpForm ? null : { un: "", name: "", pw: "", deptId: (ds[0] || {}).id || "" }, dpMsg: "" }),
+      dpF: f || { un: "", name: "", pw: "", deptId: "" },
+      dpDepts: ds,
+      dpOnUn: set("un"), dpOnName: set("name"), dpOnPw: set("pw"), dpOnDept: set("deptId"),
+      dpMsg: t.dpMsg || "",
+      dpMsgOn: !!t.dpMsg,
+      dpSave: () => {
+        const F = this.state.dpForm || {};
+        if (!A || !A.addDisplayAccount) return;
+        A.addDisplayAccount({ un: F.un, name: F.name, pw: F.pw, deptId: F.deptId }).then((r) => {
+          r && r.ok ? (this.setState({ dpForm: null, dpMsg: "" }), this.bsAck("أُنشئت شاشة العرض — تدخل باسمها وكلمتها وتقرأ إدارتها فقط", "ok")) : this.setState({ dpMsg: (r && r.err) || "تعذّر" });
+        });
+      },
+    };
+  }
   _acctMenu(a, X, here) {
     const s = KIVO.BassamAuth,
       o = X.g[a.id],
@@ -776,6 +802,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           },
         })),
       o && !o.mine && p.push({ t: "إنهاء جلساته الآن", go: () => this._adKill(a) }),
+      /* V7 · د5-هـ (x1): حذفُ شاشة العرض — لمسؤول المنصة */
+      "display" === a.role &&
+        p.push({
+          t: "حذف شاشة العرض",
+          danger: !0,
+          go: () =>
+            this._adAsk({ title: "حذف شاشة العرض", msg: "حذف حساب «" + nm + "» نهائياً؟ تخرج الشاشةُ فوراً ولا يعود الحساب صالحاً للدخول.", ok: "حذف الحساب", danger: !0 }, () => {
+              const t = s.removeDisplayAccount(a.id);
+              t && t.ok ? this.bsAck("حُذفت شاشة العرض", "ok") : this.bsToast((t && t.err) || "تعذّر", "warn");
+            }),
+        }),
       ("staff" === a.role || gm) && p.push({ t: "تعديل الصلاحيات", go: () => this._acctOpen(a, "perm", here) }),
       gm || mk
         ? p.push({
@@ -836,9 +873,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       /* ما كانت تعرضه بطاقةُ المدير: اسمُ المستخدم البديل والرقمُ الوظيفي — تلميحٌ على اسم الحساب */
       whoTip: [a.alt ? "أو " + a.alt : "", a.empno || a.no ? "الرقم الوظيفي " + (a.empno || a.no) : ""].filter(Boolean).join(" · "),
       avTone: a.dis ? "mute" : "",
-      flagOn: !(!d[a.id] && !a.mc),
-      flag: d[a.id] ? "كلمة مرور بصيغة قديمة — أعد تعيينها" : "كلمة مؤقتة — يغيّرها عند الدخول",
-      flagCls: d[a.id] ? "adm-bad" : "adm-warn",
+      /* V7 · د5-هـ (x1): شارةُ «شاشة عرض» — قراءةٌ فقط */
+      flagOn: "display" === a.role || !(!d[a.id] && !a.mc),
+      flag: d[a.id] ? "كلمة مرور بصيغة قديمة — أعد تعيينها" : "display" === a.role ? "شاشة عرض · قراءة فقط" : "كلمة مؤقتة — يغيّرها عند الدخول",
+      flagCls: d[a.id] ? "adm-bad" : "display" === a.role ? "adm-disp" : "adm-warn",
       un: a.un || "—",
       role: this.adRole(a),
       dept: "super" === a.role ? "الإدارة العامة" : this.adUnit(a) || "—",
@@ -904,6 +942,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         dept: "مدير الإدارة",
         gm: KIVO.BassamAuth && KIVO.BassamAuth.gmRoleLabel ? KIVO.BassamAuth.gmRoleLabel(t && t.gid) : "مدير إدارة عامة",
         staff: t && t.mgr ? "مدير الإدارة" : "موظف",
+        display: "شاشة عرض",   /* V7 · د5-هـ (x1) */
       }[(t && t.role) || ""] || ""
     );
   }
@@ -956,7 +995,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       nr = KIVO.BassamNotif && KIVO.BassamNotif.status ? String(KIVO.BassamNotif.status().rev) : "";   /* CORE-02 S8: «أحداث المنصة الأخيرة» */
     } catch (t) {}
-    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.adSecQ, tag(t.adPol), t.adPolMsg, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres)].join("|") + "|n" + nr;   /* V7 · د5-هـ (44): مدخلاتُ تبويب الخريطة المحذوف حُذفت معه */
+    return [A && A.usersVer ? A.usersVer() : 0, KIVO.__dcWorld || 0, KIVO.__dcWrite || 0, Math.floor(Date.now() / 6e4), d, t.usF, t.usQ, t.adSecQ, tag(t.adPol), t.adPolMsg, t.rowMenu, t.admTab, t.adErr, tag(t.usTmp), tag(t.rmItems), tag(t.adOv), tag(t.adPres), tag(t.dpForm), t.dpMsg].join("|") + "|n" + nr;   /* V7 · د5-هـ (44): مدخلاتُ تبويب الخريطة المحذوف حُذفت معه · V7 · د5-هـ (أمن): + نموذجُ شاشة العرض ورسالتُها */
   }
   _adMemo(n, f) {
     const k = this._adKey(),
@@ -1966,6 +2005,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       usEmpty: !v.length,
       usFoot: v.length + " من " + KIVO.BassamCount(o.length, "حساب", "g") + "",
       usNote: "آخر دخول وتاريخ الإضافة من سجل الأمن — يبدأ من رفع هذا الإصدار",
+      ...this._dpVals(t),
       usExport: () => {
         const t = (t) => '"' + String(null == t ? "" : t).replace(/"/g, '""') + '"',
           e = [["الاسم", "اسم المستخدم", "الدور", "الإدارة", "الحالة", "آخر دخول"].map(t).join(",")];
@@ -2356,6 +2396,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       j = [
         ["sessH", "مدة الجلسة القصوى", "ساعة"],
         ["idleH", "الخمول قبل الخروج", "ساعة"],
+        ["dispH", "مدة جلسة «شاشة العرض» (قراءة فقط)", "ساعة"],   /* V7 · د5-هـ (x1): 1–72 كحدود مدة الجلسة */
         ["lockN", "محاولات قبل القفل", "محاولة"],
         ["lockMin", "مدة القفل القصوى", "دقيقة"],
         ["pwMin", "الحد الأدنى لكلمة مرور الحسابات الإدارية (ثابت)", "خانة"],

@@ -39,6 +39,7 @@
 | `/api/me` | GET | session — جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد | `062a-auth-routes.js` `authSessionRoutes` |
 | `/api/me/history` | GET | session — جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد | `062a-auth-routes.js` `authSessionRoutes` · `062b-me-history.js` `meSelfRoutes` |
 | `/api/me/sess/kill` | POST | session — جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد | `062a-auth-routes.js` `authSessionRoutes` |
+| `/api/me/sess/kill-one` | POST | session — جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد | `062a-auth-routes.js` `authSessionRoutes` |
 | `/api/me/tasks` | GET | session — جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد | `062c-me-tasks.js` `meTasksRoutes` |
 | `/api/me/tasks/act` | POST | session — جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد | `062c-me-tasks.js` `meTasksRoutes` |
 | `/api/me/tasks/img` | GET | session — جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد | `062c-me-tasks.js` `meTasksRoutes` |

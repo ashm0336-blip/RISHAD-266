@@ -14,7 +14,7 @@ const workerSha = createHash('sha256').update(fs.readFileSync('workers/_worker.j
 console.log('Actual Operations HTTP Worker SHA256 ' + workerSha);
 async function world() {
   const B = await canonicalWorld();
-  assert.equal(B.W.KIVO_SCHEMA_VERSION, 10);
+  assert.equal(B.W.KIVO_SCHEMA_VERSION, 11);
   await installOperationalFixture(B.env, B.W);
   const W = await candidateWorker(['rsReferenceSnapshot', 'opDefinitions', 'opInfo']);
   return { ...B, W };

@@ -29,6 +29,7 @@
   var K_USERS = 'bassam_auth_users_v1', K_SESS = 'bassam_session_v1';
   var SESSION_MAX = 12 * 3600 * 1000;   /* عمر الجلسة الأقصى */
   var IDLE_MAX    = 2  * 3600 * 1000;   /* الخمول الأقصى — محطات العمليات مشتركة */
+  var DISP_MAX9   = 72 * 3600 * 1000;   /* V7 · د5-هـ (x1): سقفُ جلسة «شاشة العرض» في الواجهة = أعلى حدود السياسة (dispH ≤ 72 س) — الخادمُ يحكم بقيمتها */
   /* 100,000 تكرار: سقف Web Crypto في خادم Cloudflare — أعلى منه لا يتحقق منه الخادم أصلاً */
   var PW_MIN = 6, PBKDF2_ITER = 100000;      /* الحد الأدنى لرقم مدير النظام وحساب الإدارة (أرقام) */
 
@@ -125,7 +126,7 @@
       if (String(v.uid) !== B9.uid) return null;
       var now = Date.now();
       /* كان `ts` يُكتب ولا يُقرأ أبداً — الجلسة صالحة إلى الأبد على جهاز مشترك */
-      if (!v.ts || now - v.ts > SESSION_MAX) { _ssObj = null; RAW.removeItem.call(localStorage, K_SESS); return null; }
+      if (!v.ts || now - v.ts > (v.disp ? DISP_MAX9 : SESSION_MAX)) { _ssObj = null; RAW.removeItem.call(localStorage, K_SESS); return null; }
       if (v.la && now - v.la > IDLE_MAX)      { _ssObj = null; RAW.removeItem.call(localStorage, K_SESS); return null; }
       return v;
     } catch(e){ _ssObj = null; return null; }
@@ -143,7 +144,7 @@
     var u = userById(ss.uid);   /* فهرسٌ لا مسح — انظر uIx */
     if (!u) return null;
     /* إعادة التحقق من الإدارة في كل استدعاء لا عند الدخول فقط */
-    if ((u.role === 'dept' || u.role === 'staff') && (!u.deptId || !D.has(u.deptId))) return null;
+    if ((u.role === 'dept' || u.role === 'staff' || u.role === 'display') && (!u.deptId || !D.has(u.deptId))) return null;
     if (u.role === 'gm' && !gmDepts(u.gid).length) return null;   /* إدارة عامة حُذفت أو بلا إدارات */
     /* التجميد يسري على الجلسة الحيّة فوراً — لا عند الدخول القادم فقط. بدونه يبقى
        المجمَّد يعمل حتى تنقضي جلسته وقد تمتد ساعات */
@@ -174,7 +175,7 @@
           .then(function(cookieOk){
             if (!cookieOk) return { ok:false, err:'متصفحك يحجب ملفات الارتباط (الكوكيز) فلا تثبت الجلسة — اسمح بها لهذا الموقع أو استخدم متصفحاً آخر' };
             var now = Date.now();
-            RAW.setItem.call(localStorage, K_SESS, JSON.stringify({ uid: j.uid, ts: now, la: now, mc: j.mustChange ? 1 : 0 }));
+            RAW.setItem.call(localStorage, K_SESS, JSON.stringify(Object.assign({ uid: j.uid, ts: now, la: now, mc: j.mustChange ? 1 : 0 }, j.role === 'display' ? { disp: 1 } : {})));   /* V7 · د5-هـ (x1): علامةُ شاشة العرض لعمر جلستها */
             /* الإدارة النشطة تُكتب مباشرة: سجلّ الإدارات قد لا يكون وصل المتصفح قبل الدخول، وكان الشرط يُسقطها صامتاً */
             if (j.deptId) { try { RAW.setItem.call(localStorage, 'bassam_active_dept_v1', String(j.deptId)); } catch (e4) {} if (D.has(j.deptId)) D.setActive(j.deptId); }
             else if (j.role === 'gm') { var ug = (rawUsers()||[]).filter(function(x){ return x.id === j.uid; })[0]; if (ug) gmEnsureActive(ug); }
@@ -252,13 +253,35 @@
     writeUsers((rawUsers()||[]).filter(function(x){ return !(x.role==='super' && x.bk); }));
     return { ok:true };
   }
+  /* V7 · د5-هـ (x1): «شاشة عرض» — حسابُ قراءةٍ وحدها مربوطٌ بإدارةٍ واحدة (role 'display' · بلا مفتاح موظف ولا تغيير إجباري لكلمة المرور).
+     ينشئه مسؤولُ المنصة وحده (والخادمُ يرفضه لغيره: 018c usersRule 'mgr') · ويرفض الخادمُ كلَّ كتابةٍ له (063) */
+  function addDisplayAccount(o){
+    var g = requireSuper(); if (g) return Promise.resolve(g);
+    var un = String((o&&o.un)||'').trim(), nm = String((o&&o.name)||'').trim(), pw = (o&&o.pw)||'', did = String((o&&o.deptId)||'');
+    var ucd = unCheck(un); if (!ucd.ok) return Promise.resolve({ ok:false, err:ucd.msg });
+    if (!nm) return Promise.resolve({ ok:false, err:'اسم الشاشة مطلوب' });
+    if (!did || !D.has(did)) return Promise.resolve({ ok:false, err:'اختر الإدارة التي تعرضها الشاشة' });
+    if (taken(un, '')) return Promise.resolve({ ok:false, err:'اسم المستخدم مستخدم لحساب آخر' });
+    var c = pwCheck(pw, 'super'); if (!c.ok) return Promise.resolve({ ok:false, err:c.msg });
+    return hashPw(pw).then(function(ph){
+      writeUsers((rawUsers()||[]).concat([{ id:newId('u'), un:un, ph:ph, name:nm, role:'display', deptId:did, dis:0 }]));
+      return { ok:true };
+    });
+  }
+  function removeDisplayAccount(id){
+    var g = requireSuper(); if (g) return g;
+    var list = rawUsers()||[], hit = list.filter(function(x){ return x.id === id && x.role === 'display'; })[0];
+    if (!hit) return { ok:false, err:'الحساب غير موجود' };
+    writeUsers(list.filter(function(x){ return x.id !== id; }));
+    return { ok:true };
+  }
   function backupSuper(){ var b = (rawUsers()||[]).filter(function(x){ return x.role==='super' && x.bk; })[0]; return b ? { id:b.id, un:b.un, name:b.name, dis:!!b.dis } : null; }
   /* تُستدعى بعد استعادة نسخة شاملة: كانت الحسابات تبقى مربوطة بمعرّفات إدارات
      لم تعد موجودة، فيُقفل كل مديري الإدارات خارج النظام بلا وسيلة إصلاح */
   function pruneDeptAccounts(validIds){
     var ok = {}; (validIds||[]).forEach(function(x){ ok[x] = 1; });
     var before = (rawUsers()||[]).length;
-    writeUsers((rawUsers()||[]).filter(function(x){ return (x.role !== 'dept' && x.role !== 'staff') || ok[x.deptId]; }));
+    writeUsers((rawUsers()||[]).filter(function(x){ return (x.role !== 'dept' && x.role !== 'staff' && x.role !== 'display') || ok[x.deptId]; }));
     return before - (rawUsers()||[]).length;
   }
   function countOrphanDeptAccounts(validIds){
@@ -740,6 +763,6 @@
   I.setDeptManager = setDeptManager; I.setDeptManagerDis = setDeptManagerDis; I.setGroupManager = setGroupManager;
   I.setGroupManagerDis = setGroupManagerDis; I.setStaffMgr = setStaffMgr; I.setSuperAccount = setSuperAccount; I.staffIsMgr = staffIsMgr;
   I.staffMap = staffMap; I.staffStatus = staffStatus; I.taken = taken; I.touch = touch; I.unCheck = unCheck; I.upsertBackupSuper = upsertBackupSuper;
-  I.writeUsers = writeUsers; I.acctFixedWhy = acctFixedWhy;
+  I.writeUsers = writeUsers; I.acctFixedWhy = acctFixedWhy; I.addDisplayAccount = addDisplayAccount; I.removeDisplayAccount = removeDisplayAccount;
   Object.defineProperty(I, "_usersMemo", { get: function () { return _usersMemo; }, set: function (v) { _usersMemo = v; }, configurable: true });
 })();

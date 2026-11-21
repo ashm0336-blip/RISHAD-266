@@ -39,7 +39,7 @@ for(const mode of ['legacy','enforce']){
     // Reuse the actual atomic cutover plans (irshad → business → operations) in this isolated test DB only.
     // Do not reintroduce a runtime KV adapter. RISHAD-266: the worker is schema 10, the cutover includes Irshad.
     await installCurrentSchemaFixture(env);
-    assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'10');
+    assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'11');
     assert.equal(env.DB.q("SELECT name FROM d1_migrations WHERE name='0008_irshad'").length,1);
     assert.equal(env.DB.q("SELECT k FROM meta WHERE k='schema_upgrade_permit_v1'").length,0);
     assert.equal(env.DB.q("SELECT k FROM kv WHERE k GLOB '*bassam_irshad*'").length,0,'No retired IR KV is re-created');

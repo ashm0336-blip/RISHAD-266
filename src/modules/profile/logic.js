@@ -243,6 +243,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           this._pfAlive && (this.setState({ pfSrvBusy: !1 }), this.bsToast("تعذّر الاتصال بالخادم"));
         }));
   }
+  /* V7 · د5-هـ (x1): إنهاءُ جلسةٍ واحدة من القائمة */
+  pfKillOne(sid) {
+    this.isCF() && sid && !this.state.pfSrvBusy &&
+      (this.setState({ pfSrvBusy: !0 }),
+      fetch("/api/me/sess/kill-one", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sid: sid }) })
+        .then((t) => t.json().catch(() => null))
+        .then((t) => {
+          this._pfAlive && (this.setState({ pfSrvBusy: !1 }), t && t.ok ? (this.bsToast("أُنهيت تلك الجلسة", "ok"), this.pfSrvLoad()) : (this.bsToast(t && "not-found" === t.err ? "انتهت تلك الجلسة من قبل" : "تعذّر إنهاء الجلسة — حاول مجدداً"), this.pfSrvLoad()));
+        })
+        .catch(() => { this._pfAlive && (this.setState({ pfSrvBusy: !1 }), this.bsToast("تعذّر الاتصال بالخادم")); }));
+  }
   pfImg(t) {
     if (!t) return "";
     const e = this.state.pfImgs || {};
@@ -2233,6 +2244,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!o || "profile" !== o.page) return;
       KIVO.__BS_OPEN_TAB = null;
       "history" === o.tab && setTimeout(() => this._pfAlive && this.pfOpenHist("all", ""), 0);
+      "acct" === o.tab && setTimeout(() => this._pfAlive && this.setState({ pfPanel: "acct", pfMsg: "", pfAccMsg: "" }), 0);   /* V7 · د5-هـ (x1): «ليس أنا» ← تغيير كلمة المرور */
     } catch (t) {
       KIVO.__BS_OPEN_TAB = null;
     }
@@ -3091,7 +3103,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (x.sess || [])
         .slice()
         .sort((t, e) => (e.mine ? 1 : 0) - (t.mine ? 1 : 0) || e.la - t.la)
-        .forEach((t) => L.push({ dev: "m" === t.dev ? "جوال" : "حاسوب", isM: "m" === t.dev, where: [t.mine ? "هذا الجهاز" : "", t.city].filter(Boolean).join(" · "), when: t.mine ? "الآن" : t.active ? "نشط الآن" : this.rel(t.la), mine: !!t.mine }));
+        /* V7 · د5-هـ (x1): لكل جلسةٍ الجهازُ والمتصفح · المدينة · البدء · آخرُ نشاط · «الحالية» — و«إنهاء» لكلٍّ عدا الحالية (بمِقبضها sid) */
+        .forEach((t) => L.push({ dev: ("m" === t.dev ? "جوال" : "حاسوب") + (t.br ? " · " + t.br : ""), isM: "m" === t.dev, where: [t.mine ? "هذا الجهاز" : "", t.city].filter(Boolean).join(" · "), when: t.mine ? "الآن" : t.active ? "نشط الآن" : this.rel(t.la), since: t.ts ? "بدأت " + this.rel(t.ts) : "", last: t.mine || t.active ? "" : "آخر نشاط " + this.rel(t.la), mine: !!t.mine, sid: t.sid || "" }));
     else {
       let t = 0;
       try {
@@ -3102,7 +3115,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
       L.push({ dev: /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "جوال" : "حاسوب", isM: /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent), where: "هذا الجهاز", when: t ? "منذ " + this.clock(t) : "الآن", mine: !0 });
     }
-    ((r.sess = L.map((t) => ({ ...t, isD: !t.isM }))),
+    ((r.sess = L.map((t) => ({ ...t, isD: !t.isM, canKill: !t.mine && !!t.sid, kill: () => this.pfKillOne(t.sid) }))),
       (r.sessOthers = L.filter((t) => !t.mine).length),
       (r.sessHasOthers = r.sessOthers > 0),
       (r.sessKillTxt = a.pfSrvBusy ? "جارٍ الإنهاء…" : "إنهاء الجلسات الأخرى (" + r.sessOthers + ")"),

@@ -146,6 +146,26 @@
       "type": "object",
       "additionalProperties": false
     },
+    "/api/me/sess/kill-one": {
+      "type": "object",
+      "properties": {
+        "sid": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "why": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 16
+        }
+      },
+      "required": [
+        "sid"
+      ],
+      "additionalProperties": false
+    },
     "/api/retro": {
       "type": "object",
       "properties": {
@@ -260,6 +280,14 @@
       "type": "object",
       "properties": {
         "sessH": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ],
+          "maxLength": 16
+        },
+        "dispH": {
           "type": [
             "number",
             "string",
@@ -782,6 +810,7 @@
 @@SYS:bodies.notes.tasks@@    "/api/save": "KIVO_264: uid (C1 — 409 session-changed) · cur (D14 — كلمةُ المرور الحالية لتغيير اسم الدخول؛ لا تُخزَّن)",
     "/api/logout": "بلا جسم: الفارغُ أو {} وحدهما (POST؛ وGET تنقّلٌ بلا جسم) — يُفحص قبل المعالج (063 bodyNone)",
     "/api/me/sess/kill": "بلا جسم: الفارغُ أو {} وحدهما (العميلُ يرسل {}) — يُفحص بعد الجلسة وقبل المعالج (063 bodyNone)",
+    "/api/me/sess/kill-one": "V7 · د5-هـ (x1): {sid: مِقبضُ الجلسة من /api/me أو من تنبيه sc_dev (16 hex) · why: 'not-me' من «ليس أنا»} — جلسةُ صاحب الطلب وحده",
     "/api/retro": "أشكالُ العميل: فتحٌ {res, dept, act:'open', scope:{y,m[,d]}, reason[, hours]} (280) · إغلاقٌ {act:'close', res, dept, id} — الأرقامُ تُقبل نصاً (parseInt في المعالج)",
     "/api/policy": "حقولُ نموذج السياسات نصوصٌ من e.target.value أو أرقام (src/modules/admin/logic.js) — المعالجُ يحوّلها ويحدّها",
     "/api/authz-test": "body (الطلبُ المنفَّذ بهوية حساب الاختبار) بلا قيد شكل — المسارُ المستهدف يفحصه بمخطّطه",

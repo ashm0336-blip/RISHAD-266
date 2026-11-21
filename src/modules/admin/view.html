@@ -269,8 +269,18 @@
 <section class="bs-card adm-card adm-card--menu" aria-label="مراقبة الحسابات — كل الإدارات">
   <div class="adm-ov-hd">
     <div><small><b>كل الإدارات</b> · نظرة رقابية على كل حسابات المنصة: من دخل ومتى، ومن أُضيف، ومن جُمّد · فتح الحسابات ومنح الصلاحيات من «الإدارات ← المستخدمون»</small></div>
-    <div class="adm-tools"><button type="button" class="bs-btn adm-sm" onClick="{{usExport}}">تصدير</button></div>
+    <div class="adm-tools"><sc-if value="{{dpCan}}" hint-placeholder-val="{{ false }}"><button type="button" class="bs-btn adm-sm" onClick="{{dpToggle}}" aria-expanded="{{dpOpen}}">+ شاشة عرض</button></sc-if><button type="button" class="bs-btn adm-sm" onClick="{{usExport}}">تصدير</button></div>
   </div>
+  <!-- V7 · د5-هـ (x1): «شاشة عرض» — حسابُ قراءةٍ وحدها لإدارةٍ واحدة (لمسؤول المنصة) -->
+  <sc-if value="{{dpOpen}}" hint-placeholder-val="{{ false }}">
+  <div class="adm-dp" role="group" aria-label="إضافة شاشة عرض">
+    <input value="{{dpF.name}}" onChange="{{dpOnName}}" placeholder="اسم الشاشة (مثال: شاشة غرفة العمليات)" aria-label="اسم الشاشة" class="adm-pl-in">
+    <input value="{{dpF.un}}" onChange="{{dpOnUn}}" dir="ltr" inputMode="numeric" placeholder="اسم المستخدم (10 أرقام)" aria-label="اسم المستخدم" class="adm-pl-in">
+    <input type="password" value="{{dpF.pw}}" onChange="{{dpOnPw}}" dir="ltr" inputMode="numeric" placeholder="كلمة المرور (6 أرقام)" aria-label="كلمة المرور" class="adm-pl-in">
+    <select value="{{dpF.deptId}}" onChange="{{dpOnDept}}" aria-label="الإدارة المعروضة" class="adm-pl-in"><sc-for list="{{dpDepts}}" as="d" hint-placeholder-count="3"><option value="{{d.id}}">{{d.name}}</option></sc-for></select>
+    <div style="grid-column:1 / -1;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button type="button" class="bs-btn bs-btn--primary adm-sm" onClick="{{dpSave}}">إنشاء شاشة العرض</button><small class="adm-mute">تقرأ الإدارةَ المختارة فقط ولا تكتب شيئاً · بلا تنبيه أجهزة ولا حضور · مدةُ جلستها من «السياسات»</small><sc-if value="{{dpMsgOn}}" hint-placeholder-val="{{ false }}"><span class="adm-bad adm-xs" role="status">{{dpMsg}}</span></sc-if></div>
+  </div>
+  </sc-if>
   <div class="adm-bar">
     <input type="search" class="adm-q" value="{{usQ}}" onChange="{{usOnQ}}" placeholder="بحث بالاسم أو اسم المستخدم أو الإدارة…" aria-label="بحث بالاسم أو اسم المستخدم أو الإدارة…">
     <div role="group" aria-label="تصفية الحسابات" class="adm-tools adm-chips"><sc-for list="{{usFilters}}" as="k" hint-placeholder-count="7"><button type="button" class="adm-chip" aria-pressed="{{k.on}}" onClick="{{k.go}}">{{k.t}}</button></sc-for></div>

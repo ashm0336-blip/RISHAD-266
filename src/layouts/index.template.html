@@ -555,6 +555,7 @@
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><small style="font-size:10px;color:var(--fg-x94a3b8)">{{r.at}}</small><sc-if value="{{r.hasDept}}" hint-placeholder-val="{{ false }}"><small style="font-size:10px;color:var(--fg-x94a3b8)">· {{r.deptName}}</small></sc-if>
             <sc-if value="{{r.needAck}}" hint-placeholder-val="{{ false }}"><span style="margin-right:auto;font-size:10.5px;font-weight:700;color:var(--text-on-brand);background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));border-radius:8px;padding:3px 10px">✓ قرأت وفهمت</span></sc-if>
             <sc-if value="{{r.hasGo}}" hint-placeholder-val="{{ false }}"><span style="margin-right:auto;font-size:10.5px;font-weight:700;color:var(--fg-x8a6f35);background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p45);border-radius:8px;padding:3px 10px">{{r.go}} ←</span></sc-if>
+            <sc-if value="{{r.notMeOn}}" hint-placeholder-val="{{ false }}"><button type="button" sc-camel-on-click="{{r.notMe}}" style="font-family:inherit;font-size:10.5px;font-weight:700;color:var(--fg-xdc2626);background:var(--bg-xffffff);border:1px solid var(--bd-a22038380p25);border-radius:8px;padding:3px 10px;cursor:pointer">ليس أنا — أنهِ الجلسة</button></sc-if>
           </div>
         </div>
       </div>
@@ -592,6 +593,7 @@
   <sc-if value="{{nfToastUrg}}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border-radius:50%;background:var(--bg-xf87171);box-shadow:0 0 0 4px rgba(248,113,113,.25);flex-shrink:0"></span><b>عاجل:</b></sc-if>
   <span style="min-width:0"><b>{{nfToastT}}</b> — {{nfToastB}}</span>
   <sc-if value="{{nfToastHasGo}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfToastOpen}}" style="margin-right:6px;font-weight:700;color:var(--fg-xf3e4bc);border:1px solid var(--bd-a2432281880p5);border-radius:8px;padding:2px 10px;cursor:pointer;white-space:nowrap">{{nfToastGo}}</span></sc-if>
+  <sc-if value="{{nfToastNotMeOn}}" hint-placeholder-val="{{ false }}"><button type="button" sc-camel-on-click="{{nfToastNotMe}}" style="font-family:inherit;font-size:12px;font-weight:700;color:var(--fg-xffffff);background:var(--bg-xdc2626);border:0;border-radius:8px;padding:2px 10px;cursor:pointer;white-space:nowrap">ليس أنا</button></sc-if>
   <sc-if value="{{nfToastHasMore}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfToastAll}}" style="font-size:10.5px;color:var(--fg-a2552552550p7);cursor:pointer;white-space:nowrap">{{nfToastMore}} أخرى</span></sc-if>
   <span sc-camel-on-click="{{nfToastClose}}" style="cursor:pointer;color:var(--fg-a2552552550p6);padding:0 4px">×</span>
 </div>

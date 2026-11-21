@@ -14,7 +14,7 @@
     var u = cur(); if (!u) return null; if (u.role === 'super') return id;
     /* F01: مديرُ الإدارة (حسابُها · حاملُ الشارة) يقف في أقسام إدارته كما في إدارته — والخادمُ يحكم (018 secMgrOf) */
     if ((u.role === 'dept' || (u.role === 'staff' && u.mgr)) && id && D.parentDeptOf && D.parentDeptOf(id) === u.deptId) return id;
-    if (u.role === 'dept' || u.role === 'staff') return u.deptId || null;
+    if (u.role === 'dept' || u.role === 'staff' || u.role === 'display') return u.deptId || null;   /* V7 · د5-هـ (x1): شاشةُ العرض في إدارتها وحدها */
     if (u.role === 'gm') { var gd = gmDepts(u.gid); return gd.some(function(d){ return d.id === id; }) ? id : ((gd[0] || {}).id || null); }
     return null;
   });
@@ -56,6 +56,10 @@
       timer = setInterval(check, 30000);
       try { document.addEventListener('visibilitychange', function(){ if (!document.hidden) check(); }); } catch(e){}
       try { window.addEventListener('focus', check); } catch(e){}
+      /* V7 · د5-هـ (x1): الخروجُ في تبويبٍ آخر من المتصفح نفسِه يُقفل هذا التبويب فوراً — مسحُ علامة الجلسة (storage) أو رسالةُ BroadcastChannel؛
+         بلا رحلة خادم (الكوكي مشتركٌ بين التبويبات فالجلسةُ انتهت هنا أيضاً) */
+      try { window.addEventListener('storage', function(e){ if (e && (e.key === K_SESS || e.key === null) && !e.newValue) check(); }); } catch(e){}
+      try { if (typeof BroadcastChannel === 'function') new BroadcastChannel('bassam-session').onmessage = function(m){ if (m && m.data && m.data.t === 'out') { try { RAW.removeItem.call(localStorage, K_SESS); } catch(e2){} check(); } }; } catch(e){}
     })();
     return;                                        /* مسجّل دخول — التطبيق يعمل */
   }

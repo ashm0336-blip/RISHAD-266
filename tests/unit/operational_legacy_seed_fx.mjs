@@ -10,7 +10,7 @@ export async function installOperationalFixture(env, worker) {
   /* Idempotent per isolated env: a shared world (canonical_fx) may already have run the canonical cutover. */
   if (installed.has(env)) return { documents: 0, already: true };
   const DB = env.DB, W = worker || await canonicalWorker();
-  assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, '10');
+  assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, '11');
   const protectedState = () => ({
     keys: clone(DB.q("SELECT k,seq,v FROM kv WHERE k IN('bassam_auth_users_v1','bassam_perms_v1') ORDER BY k,seq")),
     sessions: clone(DB.q('SELECT * FROM sess ORDER BY tok')),
@@ -32,7 +32,7 @@ export async function adoptOperationalFixture(env, worker) {
   assert.ok(env.DB instanceof D1Shim, 'Isolated in-memory fixture SQLite only');
   if (installed.has(env)) return { already: true };
   const W = worker || await canonicalWorker();
-  assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, '10');
+  assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, '11');
   await W.opGuardRetired(env);
   installed.set(env, W);
   return { adopted: true };

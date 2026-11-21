@@ -62,8 +62,8 @@ export async function seizedWorker() {
             "\nexport {SZ_RES,SZ_NAMES,SZ_TABLES,SZ_REQUEST_COLS,szConvert,szInflate,szEmptyDomain,szValidateDomain,szInstallStatements,szDomainPlan,szLegacyPrepare,szExportDomain,szRetroSnapshot,szRetroStatements,szRevs,szRevisionGuards,szRetiredGuard,szQueryContext,szQueryScope,hSeizedGet,hSeizedAct,szPermission,szDayContext,enfViewCtx,ENF_PROJ,actorOf,kvPutStmts,preOff,cuClock,initDb,migrateDb,KIVO_MIGRATIONS,KIVO_SCHEMA_VERSION,MIG_TABLE};\n//# sourceURL=canonical-seized-domain.mjs",
         ).toString("base64")
     ).then((module) => {
-      assert.equal(module.KIVO_SCHEMA_VERSION, 10);
-      assert.equal(module.KIVO_MIGRATIONS.length, 10);
+      assert.equal(module.KIVO_SCHEMA_VERSION, 11);
+      assert.equal(module.KIVO_MIGRATIONS.length, 11);
       // Test-only inspection convenience, not a production Worker export.
       return Object.freeze({
         ...module,

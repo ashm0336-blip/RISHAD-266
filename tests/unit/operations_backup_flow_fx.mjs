@@ -28,7 +28,7 @@ export function sourcePart(file, type, name) {
 }
 export async function world() {
   const B = await canonicalWorld();
-  assert.equal(B.W.KIVO_SCHEMA_VERSION, 10);
+  assert.equal(B.W.KIVO_SCHEMA_VERSION, 11);
   await installOperationalFixture(B.env, B.W);
   return B;
 }

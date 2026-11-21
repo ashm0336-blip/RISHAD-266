@@ -358,8 +358,21 @@ class Component extends DCLogic {
     const cand = fresh.filter(x => x.chan === "toast" || x.lvl === "urg" || x.isBc || x.bcDept).filter(x => x.lvl === "urg" || !mute);
     if (!cand.length) return;
     const x = cand.sort((a, b) => (b.lvl === "urg" ? 1 : 0) - (a.lvl === "urg" ? 1 : 0))[0];
-    this.setState({ nfToast: { id: x.id, t: x.t, b: x.b, urg: x.lvl === "urg", go: x.ack && !x.acked ? "قرأت وفهمت" : (x.go || ""), n: cand.length } });
+    this.setState({ nfToast: { id: x.id, t: x.t, b: x.b, urg: x.lvl === "urg", go: x.ack && !x.acked ? "قرأت وفهمت" : (x.go || ""), n: cand.length, notMe: this._nfSid(x) ? 1 : 0 } });
     clearTimeout(this._nfToastT); this._nfToastT = setTimeout(() => this.setState({ nfToast: null }), x.lvl === "urg" ? 9000 : 5000);
+  }
+  /* V7 · د5-هـ (x1): «ليس أنا» على تنبيه الجهاز الجديد (sc_dev) — يحمل مِقبضَ تلك الجلسة (link 'sess:<sid>') فيُنهيها وحدها ثم يعرض تغييرَ كلمة المرور */
+  _nfSid(x) { const m = x && x.type === "sc_dev" && /^sess:([0-9a-f]{16})$/.exec(String(x.link || "")); return m ? m[1] : ""; }
+  async _nfNotMe(x) {
+    const sid = this._nfSid(x); if (!sid) return;
+    this.setState({ nfToast: null });
+    let j = null;
+    try { const r = await fetch("/api/me/sess/kill-one", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sid: sid, why: "not-me" }) }); j = await r.json().catch(() => null); } catch (e) { this.bkToast("لا اتصال — حاول مجددًا بعد قليل", 4000); return; }
+    if (!j || (!j.ok && j.err !== "not-found")) { this.bkToast(j && j.err === "current" ? "هذه جلستك الحالية — استعمل «تسجيل الخروج»" : "تعذّر إنهاء الجلسة — حاول مجددًا", 4000); return; }
+    try { const NF = KIVO.BassamNotif; if (NF && NF.markRead) await NF.markRead(x.id); } catch (e) { /* القراءةُ علامةٌ لا شرط */ }
+    const y = await KIVO.bsConfirm({ title: j.ok ? "أُنهيت تلك الجلسة" : "انتهت تلك الجلسة من قبل", msg: "خرج ذلك الجهاز من حسابك. إن لم تكن أنت فغيّر كلمة المرور الآن.", ok: "تغيير كلمة المرور", cancel: "لاحقاً" });
+    if (!y) return;
+    KIVO.__BS_OPEN_TAB = { page: "profile", tab: "acct" }; this._savePage("profile"); this.setState({ active: "profile", nfOpen: false, sidebarOpen: false });
   }
   async _nfWork(run) {
     try {
@@ -412,6 +425,7 @@ class Component extends DCLogic {
       rows.push({ key: x.id, isGrp: false, isItem: true, t: x.t, b: x.b, at: ago(x.at), un: x.un, isUrg: x.lvl === "urg", isAct: x.lvl === "act", go: x.go, hasGo: !!x.go && !(x.ack && !x.acked) && (!NF.goOk || NF.goOk(x)), needAck: !!(x.ack && !x.acked), icoPath: NF.KI[x.k] || NF.KI.sys, icoStyle: "width:34px;height:34px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid " + c + "33;background:" + c + "14;color:" + c,
         rowStyle: "display:flex;gap:11px;padding:12px 14px 12px 12px;border-bottom:1px solid var(--bd-xf1f3f5);position:relative;cursor:pointer;" + (x.un ? "background:var(--bg-a185151810p05);" : "") + (x.pin && x.un ? "border-right:3px solid var(--bd-xb99751);" : ""),
         dotStyle: "position:absolute;right:5px;top:19px;width:6px;height:6px;border-radius:50%;background:var(--bg-xb99751);" + (x.un ? "" : "display:none"),
+        notMeOn: !!this._nfSid(x), notMe: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this._nfNotMe(x); },
         deptName: x.deptName || "", hasDept: !!x.deptName, canDel: !(x.ack && !x.acked), open: () => this._nfOpenItem(x), del: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this._nfWork(()=>NF.dismiss(x.id)); } }); });
     const kinds=Object.keys(counters.byKind).map(k=>({key:k,name:NF.KN[k] || k,style:"font-size:10px;font-weight:600;padding:2px 9px;border-radius:9999px;cursor:pointer;border:1px solid " + (kf[k] ? "rgba(14,116,144,.4);background:var(--bg-a141161440p07);color:var(--fg-x0e7490)" : "#e2e8f0;background:var(--bg-xffffff);color:var(--fg-x94a3b8)"),toggle:()=>this._nfReload({nfKinds:{...(this.state.nfKinds || {}),[k]:!(this.state.nfKinds || {})[k]}})}));
     const seg = (on) => "flex:1;text-align:center;padding:5px 0;border-radius:8px;font-size:10.5px;font-weight:700;cursor:pointer;" + (on ? "background:var(--bg-xffffff);color:var(--fg-x8a6f35);box-shadow:var(--shadow-card)" : "color:var(--fg-x94a3b8)");
@@ -488,6 +502,7 @@ class Component extends DCLogic {
       nfToastOn: !!tt, nfToastT: tt ? tt.t : "", nfToastB: tt ? tt.b : "", nfToastUrg: !!(tt && tt.urg), nfToastGo: tt ? tt.go : "", nfToastHasGo: !!(tt && tt.go), nfToastMore: tt && tt.n > 1 ? ("+" + (tt.n - 1)) : "", nfToastHasMore: !!(tt && tt.n > 1),
       nfToastOpen: () => { const t = this.state.nfToast; if (!t) return; let x = null; try { x = NF.list().filter(y => y.id === t.id)[0]; } catch (e) {} if (x) this._nfOpenItem(x); this.setState({ nfToast: null }); },
       nfToastClose: () => this.setState({ nfToast: null }),
+      nfToastNotMeOn: !!(tt && tt.notMe), nfToastNotMe: () => { const t = this.state.nfToast; let x = null; try { x = t ? NF.list().filter(y => y.id === t.id)[0] : null; } catch (e) {} if (x) this._nfNotMe(x); },
       nfToastAll: () => this.setState({ nfToast: null, nfOpen: true })
     };
     function knob(on) { return "position:absolute;top:2px;" + (on ? "right:17px" : "right:2px") + ";width:14px;height:14px;border-radius:9999px;background:var(--bg-xffffff);box-shadow:var(--shadow-card);transition:.2s"; }

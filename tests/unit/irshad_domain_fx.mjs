@@ -21,7 +21,7 @@ export async function candidateWorker(extraExports=[]) {
 }
 export function authorizeCandidateUpgrade(DB,W) {
   assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'7');
-  assert.equal(W.KIVO_MIGRATIONS.length,10);
+  assert.equal(W.KIVO_MIGRATIONS.length,11);
   assert.equal(W.KIVO_MIGRATIONS[7].name,'0008_irshad','Keep testing the actual migration8 cutover before the later schema9 domains');
   assert.equal(DB.q("SELECT k FROM meta WHERE k='schema_upgrade_permit_v1'").length,0);
   allowTestSchemaUpgrade(DB);
@@ -32,7 +32,7 @@ export async function world({legacy=false,authorize=true,mode='enforce',extraExp
     W=await candidateWorker(extraExports);
   if(!legacy)await installOperationalFixture(base.env);
   if(legacy&&!authorize)base.DB.exec("DELETE FROM meta WHERE k='schema_upgrade_permit_v1'");
-  assert.equal(W.KIVO_SCHEMA_VERSION,10,'Actual canonical schema10 includes the unchanged Irshad migration8 and the later business/operations cutovers');
+  assert.equal(W.KIVO_SCHEMA_VERSION,11,'Actual canonical schema10 includes the unchanged Irshad migration8 and the later business/operations cutovers');
   return {...base,canonicalW:base.W,W};
 }
 export async function seed(B,docs,dept=D1) {

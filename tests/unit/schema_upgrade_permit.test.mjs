@@ -91,7 +91,7 @@ test('a failure after permit deletion rolls back the deletion and every statemen
   B.DB.failIf = sql => /^INSERT OR IGNORE INTO d1_migrations/.test(sql) && stamp(B.DB) === String(N);
   await assert.rejects(B.W.migrateDb(B.env), /injected failure/); B.DB.failIf = null;
   assert.equal(stamp(B.DB), String(N - 1)); assert.equal(readPermit(B.DB), raw);
-  assert.equal(B.DB.q("SELECT COUNT(*) n FROM sqlite_master WHERE name='ops_nodes'")[0].n, 0, 'final (0010) migration tables rolled back');
+  assert.equal(B.DB.q("SELECT COUNT(*) n FROM pragma_table_info('sess') WHERE name IN ('dv','br')")[0].n, 0, 'final (0011) migration columns rolled back');   /* V7 · د5-هـ: الترحيلُ الأخير صار 0011 */
   assert.equal(B.DB.q("SELECT COUNT(*) n FROM d1_migrations WHERE name=?", last)[0].n, 0);
   await B.W.migrateDb(B.env); assert.equal(stamp(B.DB), String(B.W.KIVO_MIGRATIONS.length)); assert.equal(readPermit(B.DB), undefined);
 });

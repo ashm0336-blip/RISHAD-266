@@ -227,6 +227,14 @@ var KIVO_MIGRATIONS = [
    "DELETE FROM meta WHERE k='operations_cutover_ready'",
    "INSERT INTO meta(k,v)VALUES('schema_version','10')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
   ]
+ },
+ {
+  "name": "0011_session_device",
+  "sql": [
+   "ALTER TABLE sess ADD COLUMN dv TEXT",
+   "ALTER TABLE sess ADD COLUMN br TEXT",
+   "INSERT INTO meta(k,v)VALUES('schema_version','11')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
+  ]
  }
 ];
-var KIVO_SCHEMA_VERSION = 10;
+var KIVO_SCHEMA_VERSION = 11;

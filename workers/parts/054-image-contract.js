@@ -1256,8 +1256,10 @@ async function session(env, req) {
   if (P && P.live && P.hasSess && P.tok === tok) s = P.sess;
   else s = await env.DB.prepare('SELECT tok, uid, ts, la, dev FROM sess WHERE tok = ?1').bind(tok).first();
   if (!s) return null;
-  var now = Date.now();
-  if (now - s.ts > SESSION_MAX || now - s.la > IDLE_MAX || (s.dev === 'test' && now - s.ts > ENF_TEST_TTL)) {   /* KIVO_244 · ADR-004: جلسةُ الاختبار تنتهي بعد ENF_TEST_TTL مهما بقيت في الجدول */
+  var now = Date.now(), lim = SESSION_MAX;
+  /* V7 · د5-هـ (x1): «شاشة العرض» (role:'display') عمرُها DISP_MAX (سياسةُ dispH) — يُسأل عن الدور بعد تجاوز العمر العادي وحده */
+  if (now - s.ts > lim && DISP_MAX > lim && now - s.ts <= DISP_MAX && ((await usersList(env)) || []).some(function (x) { return x && x.id === s.uid && x.role === 'display'; })) lim = DISP_MAX;
+  if (now - s.ts > lim || now - s.la > IDLE_MAX || (s.dev === 'test' && now - s.ts > ENF_TEST_TTL)) {   /* KIVO_244 · ADR-004: جلسةُ الاختبار تنتهي بعد ENF_TEST_TTL مهما بقيت في الجدول */
     await env.DB.prepare('DELETE FROM sess WHERE tok = ?1').bind(tok).run();
     return null;
   }
