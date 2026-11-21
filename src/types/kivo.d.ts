@@ -183,6 +183,8 @@ export interface KivoResources {
   "bassam_profile_v1": unknown;
   /** dept */
   "bassam_roles_v1": unknown;
+  /** dept · الورقة: daily/rounds */
+  "bassam_rounds_arc_v1": Record<string, unknown>;
   /** dept · الورقة: daily/rounds · اعتماد: *.shAp، *.shAp.*، *.ap، *.auto، *.mo، *.d.*.ap، *.dopen، *.dopen.*، *.dshut، *.dshut.* */
   "bassam_rounds_v1": Record<string, unknown>;
   /** dept · الورقة: seized/records */

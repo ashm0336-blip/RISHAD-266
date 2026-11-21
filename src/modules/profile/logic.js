@@ -20,7 +20,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
            على الأكثر كلَّ ١٠ ثوانٍ مهما تتابعت الأحداث (كلُّ جلبٍ يقرأ مفاتيحَ الإدارة في الخادم)، ومفاتيحُ لا تمسّ يومي (المهام · التنبيهات …) لا تجلب */
         const keys = ev && ev.detail && ev.detail.keys,
           ks = Array.isArray(keys) ? keys.map(String) : [],
-          REL = ["bassam_employees_v1", "bassam_staffing_v3", "bassam_staffing_locks_v1", "bassam_dreport_v1", "bassam_plan_v1", "bassam_rounds_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
+          REL = ["bassam_employees_v1", "bassam_staffing_v3", "bassam_staffing_locks_v1", "bassam_dreport_v1", "bassam_plan_v1", "bassam_rounds_v1", "bassam_rounds_arc_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
         if (ks.length && !ks.some((k) => REL.some((r) => k === r || k.slice(-r.length - 1) === ":" + r))) return;
         this.pfMeInvalidate();
       }));
@@ -395,6 +395,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "bassam_shift_options_v1",
         "bassam_dreport_v1",
         "bassam_rounds_v1",
+        "bassam_rounds_arc_v1",
         "bassam_plan_v1",
         "bassam_tasks_v1",
         "bassam_dayshift_v1",

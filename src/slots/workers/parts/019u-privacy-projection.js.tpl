@@ -406,6 +406,7 @@ async function privRestoreBlanks(env, cur, keys, domains) {
 @@SYS:privacy.custody.fns@@/* ── entry points: raw JSON text in, raw JSON text out (unchanged text when nothing is hidden) ── */
 function privOut(A, k, raw, have) {
   if (raw == null || !A || !A.u || A.u.role === 'super') return raw;
+  k = resReadAs(k);   /* V7 · د5-ح (13): 023 RES_READ_AS */
   var P = parseKey(k), rn = resName(k), v, p, T;
   if (!P.dept && P.name === PRIV_PERM_KEY) { v = parseJson(raw, undefined); if (v === undefined) return raw; p = privPermsOut(A, v); }
   else if (P.dept && (rn === PRIV_EMP_RES || rn === PRIV_DR_RES || PRIV_TOK_RES[rn])) {

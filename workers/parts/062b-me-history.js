@@ -271,7 +271,7 @@ function pfHist(o) {
 /* ── KIVO_264 · مسارا القراءة الذاتية: التوجيهُ والقراءةُ والإخراج ── */
 var ME_RL = 120;                 /* طلباتٌ في الدقيقة لكل حساب (المساران معاً) — قراءةٌ ذاتيةٌ لا كتابة */
 var ME_HIST_MAX = 60000;         /* سقفُ حجم ردّ «السجل» بالبايت — ما زاد يُقصّ من التغييرات المسجّلة أولاً */
-var ME_KEYS = ['bassam_employees_v1', 'bassam_staffing_v3', 'bassam_staffing_locks_v1', 'bassam_dreport_v1', 'bassam_plan_v1', 'bassam_rounds_v1', 'bassam_shift_options_v1'];
+var ME_KEYS = ['bassam_employees_v1', 'bassam_staffing_v3', 'bassam_staffing_locks_v1', 'bassam_dreport_v1', 'bassam_plan_v1', 'bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_shift_options_v1'];
 function meStaffEligible(u) { return !!(u && u.role === 'staff' && u.deptId && !pfIsMgrKey(u.ekey)); }
 /* A private snapshot is readable independently of operational-page grants.
    Signal only its existing dependencies, never their names or business data. */
@@ -319,7 +319,7 @@ async function meDeptData(env, deptId, extra) {
     kj = capture.keys, P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
   return { emps: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_employees_v1'], []); return Array.isArray(a) ? a : []; })(),
     staffing: P('bassam_staffing_v3', {}), locks: P('bassam_staffing_locks_v1', {}), dreport: P('bassam_dreport_v1', {}), plan: P('bassam_plan_v1', {}),
-    rounds: P('bassam_rounds_v1', {}), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
+    rounds: Object.assign({}, P('bassam_rounds_arc_v1', {}), P('bassam_rounds_v1', {})), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
 }
 function meIdent(u, D, users) {
   var L = pfLink(u, D ? D.emps : []);

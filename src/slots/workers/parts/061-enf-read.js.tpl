@@ -6,6 +6,7 @@
    fail-closed (P4.1.1-04): لا ميزانيةَ تتخطّى سجلاً — أيُّ خطأٍ في الإسقاط ⇒ القراءةُ مرفوضة. ══ */
 function canReadEnf(A, k) {
   if (!A || !A.u) return false;
+  k = resReadAs(k);                                                          /* V7 · د5-ح (13): 023 RES_READ_AS */
   var u = A.u, P = parseKey(k), rn = resName(k), i;
   if (u.role === 'super') return true;                                       /* مديرُ النظام يقرأ كلَّ شيء (Global) — كما AS‑IS */
   if (!P.dept) {
@@ -149,6 +150,7 @@ async function enfRefsFor(env, depts, keys) {
 /* الإسقاطُ على نصّ قيمةٍ كما ستُرسل — يرمي عند الخطأ (fail-closed: المستدعي يرفض القراءة) */
 function enfProjectStr(A, k, raw, refs) {
   if (raw == null || !A || A.u.role === 'super') return raw;
+  k = resReadAs(k);   /* V7 · د5-ح (13): الأرشيفُ بإسقاط الجولات نفسِه (023 RES_READ_AS) */
   var P = parseKey(k), rn = resName(k), PJ = ENF_PROJ[rn];
   if (!PJ) return raw;
   var V = enfViewCtx(A, P.dept || (A.u.deptId || ''), rn, refs);

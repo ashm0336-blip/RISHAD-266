@@ -62,6 +62,7 @@ var ENT = {
   'bassam_dr_grp_v1':         { empty: '{}' },
   /* ── الجولات ── */
   'bassam_rounds_v1':         { map: 1, empty: '{}' },
+  'bassam_rounds_arc_v1':     { map: 1, empty: '{}' },
   'bassam_dayshift_v1':       { map: 1, empty: '{}' },
   /* اليوم المختار: { y, m, d } */
   'bassam_dayfocus_v1':       { empty: '{}' },

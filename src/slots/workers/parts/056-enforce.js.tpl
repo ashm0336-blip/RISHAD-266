@@ -60,7 +60,7 @@ function enfOk(keys, x) { var o = { ok: true, keys: keys || [] }; if (x) for (va
    أو من فحص الكتابة (canWrite) يمرّ من هنا: إن كان الفاعلُ مديرَ المنصة والرفضُ «قيداً» رُفع (يُسجَّل ما رُفع في lifted). ويبقى حتى له ما هو
    «سلامةُ بيانات» لا صلاحية — القائمةُ ENF_SUPER_KEEPS — وما وُسم invariant أو structural. كلُّ نوع رفضٍ في الخادم يجب أن يُصنَّف في إحدى القائمتين
    (اختبارٌ حارس: tests/unit/v7_fix_super_gate.test.mjs) — نوعٌ جديد غيرُ مصنَّف يُفشله. */
-var ENF_SUPER_KEEPS = { shape: 'شكلُ البيانات', unknown: 'موردٌ غير معروف', device: 'مفتاحُ جهاز', unit: 'معرّفٌ ليس وحدةَ بيانات', 'unit-delete-route': 'حذفُ الوحدات له مسارُه',
+var ENF_SUPER_KEEPS = { shape: 'شكلُ البيانات', srv: 'موردٌ تكتبه خطوةُ خادمٍ وحدها (V7 · د5-ح: أرشيفُ الجولات)', unknown: 'موردٌ غير معروف', device: 'مفتاحُ جهاز', unit: 'معرّفٌ ليس وحدةَ بيانات', 'unit-delete-route': 'حذفُ الوحدات له مسارُه',
   keydel: 'حذفُ المفتاح كلِّه', append: 'سجلٌّ يُلحق به ولا يُعدَّل', users: 'شكلُ سجل الحسابات', perms: 'شكلُ سجل الصلاحيات', ph: 'بصمةُ كلمة المرور', self: 'حسابُ الفاعل نفسِه',
   target: 'هدفُ منحٍ غير صالح', grant: 'منحٌ غير صالح', cap: 'منحٌ خارج سقف الإدارة', 'scope-retired': 'حقلٌ قديمٌ أُلغي', 'p44-grants': 'منحُ الدور لا يطابق سجلَّ الأدوار', @@SYS:enf.why.dstats@@unmapped: 'انتقالٌ محجوزٌ لا عمليةَ حيّةً له' };
 var ENF_SUPER_LIFTS = { perm: 1, scope: 1, 'scope-unknown': 1, reason: 1, residual: 1, unbound: 1, dept: 1, view: 1, flag: 1, own: 1, mgr: 1, 'super': 1 };

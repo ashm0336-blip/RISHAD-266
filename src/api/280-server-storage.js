@@ -25,7 +25,7 @@
     'bassam_employees_v1', 'bassam_options_v1', 'bassam_staffing_v3', 'bassam_staffing_v2',
     'bassam_staffing_snap_v1', 'bassam_staffing_locks_v1', 'bassam_callsigns_v1', 'bassam_perm_limit_v1',
     'bassam_shift_options_v1', 'bassam_plan_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1',
-    'bassam_mark_kinds_v1', 'bassam_rounds_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1',
+    'bassam_mark_kinds_v1', 'bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1',
     'bassam_dreport_v1', 'bassam_dr_grp_v1', 'bassam_leave_kinds_v1', 'bassam_tasks_v1', 'bassam_tasks_locks_v1'
   ]);
   function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '')) !== -1; }
@@ -191,7 +191,7 @@
   KIVO.BassamKeyLabels = (function(){
     var M = {
       bassam_employees_v1:["قائمة الموظفين"], bassam_staffing_v3:["الجدول الشهري"], bassam_staffing_v2:["الجدول الشهري (صيغة قديمة)"], bassam_staffing_snap_v1:["بيان الشهر"],
-      bassam_staffing_locks_v1:["أقفال الجدول الشهري"], bassam_rounds_v1:["الجولات اليومية"], bassam_dreport_v1:["التقرير اليومي"], bassam_dr_grp_v1:["مجموعات التقرير اليومي"],
+      bassam_staffing_locks_v1:["أقفال الجدول الشهري"], bassam_rounds_v1:["الجولات اليومية"], bassam_rounds_arc_v1:["أرشيف الجولات اليومية"], bassam_dreport_v1:["التقرير اليومي"], bassam_dr_grp_v1:["مجموعات التقرير اليومي"],
       bassam_plan_v1:["الخطة التشغيلية"], bassam_zone_opts_v1:["خيارات المصليات"], bassam_gate_opts_v1:["خيارات الأبواب"], bassam_mark_kinds_v1:["أنواع المعالم"],
       bassam_tasks_v1:["المهام"], bassam_tasks_locks_v1:["أقفال المهام"], bassam_custody_v1:["عهد الموظفين"],
       bassam_irshad_v1:["نظام الاسترشاد"], bassam_irshad_langs_v1:["لغات الاسترشاد"], bassam_irshad_locs_v1:["مواقع الاسترشاد"],
@@ -1693,7 +1693,7 @@
        وعدساتُها · ورقتي فيها · الوحداتُ المطفأة. مديرُ النظام يقرأ كلَّ شيءٍ فنصيبُه ثابت. والنطاقُ والمنحُ في الإنفاذ يحكمها وصفُ صلاحياتي
        (authzSync9 · az) لا هذا المفتاح. PROJ9 نسخةٌ من ENF_PROJ في الخادم (061-enf-read.js) — يُضاف إليها bassam_tasks_v1 إن صار الخادمُ يُسقطها. */
     var SLICEK9 = /^bassam_(perms|auth_users|depts|gdepts|platform)_v1$/;
-    var PROJ9 = { bassam_staffing_v2: 1, bassam_staffing_v3: 1, bassam_dreport_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1 };
+    var PROJ9 = { bassam_staffing_v2: 1, bassam_staffing_v3: 1, bassam_dreport_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1, bassam_rounds_arc_v1: 1 };
     function pj9(k, dflt) { try { var v = JSON.parse(mem[k] || "null"); return v == null ? dflt : v; } catch (e) { return dflt; } }   /* قيمةٌ تالفة ⇒ الافتراض */
     function slice9() {
       var U = pj9("bassam_auth_users_v1", []), me = null, i;

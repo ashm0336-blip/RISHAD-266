@@ -1203,7 +1203,7 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
           !(pd.k === K_USERS && JSON.stringify(cuCanonical(parseJson(pd.v, []))) === JSON.stringify(cuCanonical(parseJson(pd.cur, []))));
   });
   rsPhysicalDeletes(kv, reference, physicalDeletes);
-  var plan = {
+@@SYS:restore.pend.daily@@  var plan = {
     body: body,
     author: A,
     fingerprint: fingerprint,

@@ -261,7 +261,7 @@ function imgNo(A, o, why) {
 /* كتابةُ الصورة = كتابةُ مورد مالكها. لا anyWriter، ولا دورٌ يعلو على سجل الموارد. */
 function imgWriteOk(A, k) {
   if (A && A.enf) return enfImgWriteOk(A, k);                                 /* KIVO_243 */
-  var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
+  var R8 = resOf(k); if (!R8 || R8.scope === 'device' || R8.srv) return false;   /* V7 · د5-ح (13): srv لا يكتبه العميل */
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
   if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
@@ -1717,6 +1717,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       ctx0.imp = !!d00 && enfHeld(A, d00, 'import.replace');
       ctx0.enf = enfCtxFor(ENFX, k0, d00);
     }
+    if (it0.act === 'set' && resName(k0) === 'bassam_rounds_v1') it0.v = dailyArcFill(env, k0, it0.v, cur0);   /* V7 · د5-ح (13): غيابُ يومٍ مؤرشف ليس حذفاً — 019p3 */
     if (i < regN9) regRst9[i] = ENFX ? !!(ctx0.enf && ctx0.enf.restore) : !!ctx0.rst;   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */
     var vd0 = ENFX && ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ENFX && ctx0.enfHidden ? enfSuperGate(A, enfNo('scope', { detail: ctx0.enfHidden })) : canWrite(A, k0, it0.v, cur0, ctx0));
     /* KIVO_265 · المراجعةُ الموحّدة (R-4): أحكامُ مخزن المهام الخامّ (018 taskRawWhy) تقيس الحفظةَ على القيمة الحالية — فعلى base قديمٍ قد يكون الحكمُ

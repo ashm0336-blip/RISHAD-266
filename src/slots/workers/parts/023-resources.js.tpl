@@ -62,6 +62,17 @@ var RES_REG = {
   'bassam_demo_purged_v1':     { scope: 'dept', rule: 'tech' },
   'bassam_profile_v1':         { scope: 'dept', rule: 'tech' }
 };
+/* V7 · د5-ح (13): موردٌ يُقرأ بسياسة موردٍ آخر حرفاً — أوراقُه وسقفُه ومفاتيحُ قراءته وإسقاطاتُه وخصوصيتُه (canRead · canRead0 · canReadEnf ·
+   enfProjectStr · privOut) — يسجّله مالكُه (أرشيفُ الجولات بسياسة الجولات). ولا يكتبه العميلُ: srv في RES_REG (044 canWrite · 060 · 042 authorize0) —
+   تكتبه خطوةُ خادمٍ وحدها، والاستعادةُ الخادمية المتحقَّقة (A.__srvRst) تعيده كما في النسخة. */
+var RES_READ_AS = {
+@@SYS:res.readAs@@};
+function resReadAs(k) {
+  var t = Object.prototype.hasOwnProperty.call(RES_READ_AS, resName(k)) ? RES_READ_AS[resName(k)] : null, P;
+  if (!t) return k;
+  P = parseKey(k);
+  return P.dept ? 'bsdept:' + P.dept + ':' + t : k;
+}
 /* اسم المورد من المفتاح: bsdept:<d>:<name> ثم ما قبل أوّل نقطتين (notif_dev_v1:uid) */
 function resName(k) { return String(parseKey(k).name).replace(/:.*$/, ''); }
 function resOf(k) { return RES_REG[resName(k)] || null; }

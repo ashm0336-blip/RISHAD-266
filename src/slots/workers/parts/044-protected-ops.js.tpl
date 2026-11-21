@@ -55,6 +55,8 @@ function canWrite(A, k, newVal, curVal, ctx) {
   var P = parseKey(k);
   /* F01: مديرُ النظام يحذف مفاتيحَ وحدةٍ أزالها سجلُّ الوحدات في الحفظة نفسِها أو لم تعد وحدة (تنظيفُ اليتيم — 018 unitGoneOf) */
   if (P.dept && newVal == null && u.role === 'super' && unitGoneOf(A, P.dept)) return { ok: true };
+  /* V7 · د5-ح (13): موردٌ تكتبه خطوةُ خادمٍ وحدها (srv · 023 RES_READ_AS) — لا يكتبه أحدٌ من العميل ولا مديرُ المنصة؛ والاستعادةُ الخادمية المتحقَّقة تعيده */
+  if (R0.srv) return A.__srvRst ? { ok: true } : { ok: false, why: 'srv' };
   /* AD-7: ولا يكتب في معرّفٍ ليس وحدةَ بيانات — إلا وحدةً عرّفها سجلُّ الوحدات المقبولُ في الحفظة نفسِها، أو استعادةً لمعرّفٍ ليس عقدة */
   if (P.dept && newVal != null && u.role === 'super' && !isUnitId(A, P.dept)) {
     if (!(ctx && ctx.rst && !isNodeId(A, P.dept))) return { ok: false, why: 'unit' };

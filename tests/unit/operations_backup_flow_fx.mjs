@@ -133,8 +133,9 @@ export function assertManifest4(C, file, departments, kind) {
   assert.equal(file.version, 4); assert.equal(file.manifest.version, 4); assert.equal(file.manifest.scope, kind);
   assert.deepEqual(file.manifest.departments.slice().sort(), departments.slice().sort());
   assert.equal(file.manifest.domains.operations, 1);
-  assert.equal(file.domains.operations.length, 21 * departments.length);
-  for (const dept of departments) assert.equal(file.domains.operations.filter(domain => domain.scope.departmentId === dept).length, 21);
+  /* V7 · د5-ح (13): 22 = الـ21 + أرشيفُ الجولات (bassam_rounds_arc_v1) */
+  assert.equal(file.domains.operations.length, 22 * departments.length);
+  for (const dept of departments) assert.equal(file.domains.operations.filter(domain => domain.scope.departmentId === dept).length, 22);
   assert.equal(Object.keys(file.data).some(key => C.K.__BS_SRV.operations.resources.includes(key.replace(/^bsdept:[^:]+:/, ''))), false);
   assert.deepEqual(file.idbImages, {});
   for (const route of ['irshad', 'seized', 'award', 'operations'])

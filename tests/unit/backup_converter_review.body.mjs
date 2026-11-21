@@ -168,8 +168,8 @@ test('modern manifest requires its exact declared key/dept/domain coverage and p
   assert.equal(out.keys.bassam_auth_users_v1, raw);
   assert.equal(out.summary.legacy, false);
   assert.deepEqual(out.summary.emptyDomains.filter(name=>!name.startsWith('operations:')), ['seized:'+D1,'seized:'+D2,'awards:'+D1,'awards:'+D2,'awards:']);
-  assert.equal(out.summary.emptyDomains.filter(name=>name.startsWith('operations:')).length,42,'Both declared departments explicitly account for all21 missing operational resources');
-  assert.equal(out.domains.operations.length,42);
+  assert.equal(out.summary.emptyDomains.filter(name=>name.startsWith('operations:')).length,44,'Both declared departments explicitly account for all22 missing operational resources (V7 · د5-ح: + أرشيفُ الجولات)');
+  assert.equal(out.domains.operations.length,44);
   assert.ok(out.domains.operations.every(domain=>domain.rows.ops_nodes.length===0));
   assert.equal(out.manifest.version,4,'Historical manifest2 is upgraded once at the import boundary');
   for (const mutate of [

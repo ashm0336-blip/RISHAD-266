@@ -18,6 +18,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
   var R0 = resOf(k);
   if (!R0) return enfNo('unknown');
   if (R0.scope === 'device') return enfNo('device');
+  if (R0.srv) return A.__srvRst ? enfOk(['backup.restore']) : enfNo('srv', { structural: 1 });   /* V7 · د5-ح (13): تكتبه خطوةُ خادمٍ وحدها (044) — بنيويٌّ: لا يرفعه مديرُ المنصة */
   if (!P.dept) {
     if (R0.scope !== 'global') return enfNo('scope', { structural: 1 });
     if (P.name === K_USERS) return newVal == null ? enfNo('users') : enfUsersWrite(A, k, newVal, curVal, ctx, X);
@@ -58,7 +59,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
 }
 /* «authorize» في وضع الإنفاذ لمن يسأل عن فعلٍ على مورد (رقمُ المراجعة · صاحبُ الصورة): أيُّ مفتاحٍ كتابيٍّ مربوطٍ بالمورد محمول */
 function enfImgWriteOk(A, k) {
-  var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
+  var R8 = resOf(k); if (!R8 || R8.scope === 'device' || R8.srv) return false;   /* V7 · د5-ح (13): srv لا يكتبه العميل */
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
   if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */

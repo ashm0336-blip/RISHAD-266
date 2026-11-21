@@ -11,6 +11,7 @@ function permv2Ctx(A, d) {
 }
 function authorize(A, key, act) { return authorize0(A, key, act); }
 function canRead(A, k) {
+  k = resReadAs(k);                                                            /* V7 · د5-ح (13): أرشيفُ الجولات بسياسة الجولات (023 RES_READ_AS) */
   if (A && A.enf) return canReadEnf(A, k);                                    /* KIVO_243: القراءة من سجل v24.9 */
   return canRead0(A, k);
 }

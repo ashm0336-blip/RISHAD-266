@@ -169,7 +169,7 @@ async function exportFile(B) {
 
 test('Manifest4 exports every Operations resource including absent domains and restores through the real atomic HTTP path', needs('award', 'custody', 'dstats', 'seized', 'tasks'), async () => {
   const B = await world(), protectedBefore = identity(B), file = await exportFile(B), original = copy(file), definitions = B.W.opDefinitions();
-  assert.equal(definitions.length, 21); assert.equal(file.domains.operations.length, definitions.length * file.manifest.departments.length);
+  assert.equal(definitions.length, 22);   /* V7 · د5-ح (13): + أرشيفُ الجولات */ assert.equal(file.domains.operations.length, definitions.length * file.manifest.departments.length);
   const actual = new Set(file.domains.operations.map(domain => scoped(domain.resource, domain.scope.departmentId)));
   assert.equal(actual.size, file.domains.operations.length);
   for (const dept of file.manifest.departments) for (const def of definitions) assert.ok(actual.has(scoped(def.resource, dept)));

@@ -12,6 +12,36 @@
     var o = draft ? draft.get(k) : operations().get(k);
     return o && typeof o === "object" ? o : null;
   }
+  /* ── V7 · د5-ح (13): أرشيفُ الجولات (bassam_rounds_arc_v1) — أيامُ الأشهر المقفلة ينقلها الخادمُ من الملف الحيّ في حفظة الجولات نفسِها.
+     arcOf()                 الأرشيفُ كما حمّلته خدمةُ Operations (غيرُ محمَّلٍ أو محجوب ⇒ null).
+     arcShut(rounds, arc, y, m)  شهرٌ له أيامٌ في الأرشيف ولم يُفتح (لا mo ولا يومٌ مفتوح) — لا تُنشأ فيه جولةٌ ولا تُعتمد («mlock»)، فلا يُكتب
+                             فوق يومٍ مؤرشفٍ بنسخةٍ جديدة من الخطة.
+     liveOnly(rounds, arc)   الجولاتُ بلا أيام الأرشيف التي لم تتغيّر — لا تُرسل (غيابُها ليس حذفاً: الخادمُ يبقيها · dailyArcFill). ── */
+  function arcOf() {
+    try {
+      return load("bassam_rounds_arc_v1", null);   /* من الخدمة لا من مسودة المستدعي: الأرشيفُ لا يدخل أساسَ حفظته */
+    } catch (e) {
+      return null;
+    }
+  }
+  function arcShut(rounds, arc, y, m) {
+    if (!arc) return false;
+    var pre = y + "-" + m + "-",
+      mrec = (rounds || {})["m:" + y + "-" + m];
+    if (mrec && (mrec.mo || (mrec.dopen && Object.keys(mrec.dopen).length))) return false;
+    return Object.keys(arc).some(function (k) {
+      return k.indexOf(pre) === 0;
+    });
+  }
+  function liveOnly(rounds, arc) {
+    if (!arc || !rounds || typeof rounds !== "object") return rounds;
+    var out = {};
+    Object.keys(rounds).forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(arc, k) && JSON.stringify(arc[k]) === JSON.stringify(rounds[k])) return;
+      out[k] = rounds[k];
+    });
+    return out;
+  }
   function failure(ack, ticket) {
     return {
       status:
@@ -95,13 +125,14 @@
       m = +m;
       d = +d;
       if (!(y > 0 && m > 0 && d > 0)) return { status: "bad" };
-      var rounds = load("bassam_rounds_v1", draft) || {};
+      var rounds = load("bassam_rounds_v1", draft) || {},
+        arc = arcOf();
       var rk = y + "-" + m + "-" + d;
-      var cur = rounds[rk];
+      var cur = rounds[rk] || (arc && arc[rk]);   /* V7 · د5-ح (13): يومٌ مؤرشفٌ موجود */
       if (cur && Array.isArray(cur.d) && cur.d.length)
         return { status: "exists", key: rk };
       var mrec = rounds["m:" + y + "-" + m];
-      if (mrec && mrec.ap) return { status: "mlock" };
+      if ((mrec && mrec.ap) || arcShut(rounds, arc, y, m)) return { status: "mlock" };
       var prev = null,
         later = null,
         any = false;
@@ -182,7 +213,7 @@
       if (from) rec.from = from;
       rec.auto = 1;
       rounds[rk] = rec;
-      draft.set("bassam_rounds_v1", rounds);
+      draft.set("bassam_rounds_v1", liveOnly(rounds, arc));
       return {
         status: "created",
         key: rk,
@@ -221,12 +252,14 @@
       m = +m;
       d = +d;
       if (!(y > 0 && m > 0 && d > 0) || !name) return { status: "bad" };
-      var rounds = load("bassam_rounds_v1", draft) || {};
+      var rounds = load("bassam_rounds_v1", draft) || {},
+        arc = arcOf();
       var rk = y + "-" + m + "-" + d;
-      var rec = rounds[rk];
-      if (!rec || !Array.isArray(rec.d)) return { status: "noround" };
       var mrec = rounds["m:" + y + "-" + m];
-      if (mrec && mrec.ap) return { status: "mlock" };
+      if ((mrec && mrec.ap) || (!rounds[rk] && arcShut(rounds, arc, y, m))) return { status: "mlock" };
+      /* V7 · د5-ح (13): يومُ شهرٍ أُعيد فتحُه ولم تعد أيامُه من الأرشيف بعد — يُكتب في الحيّ (الخادمُ يبقيه حيّاً) */
+      var rec = rounds[rk] || (arc && arc[rk] ? JSON.parse(JSON.stringify(arc[rk])) : null);
+      if (!rec || !Array.isArray(rec.d)) return { status: "noround" };
       rec.shAp = Object.assign({}, rec.shAp || {});
       if (on) {
         var snap;
@@ -246,7 +279,7 @@
         rec.shAp[name] = { ap: 1, at: at, snap: snap, byRep: 1 };
       } else rec.shAp[name] = { ap: 0 };
       rounds[rk] = rec;
-      draft.set("bassam_rounds_v1", rounds);
+      draft.set("bassam_rounds_v1", liveOnly(rounds, arc));
       return { status: on ? "approved" : "opened", key: rk };
     } catch (error) {
       return {
@@ -359,5 +392,6 @@
     prepareEnsure: prepareEnsure,
     prepareShiftAp: prepareShiftAp,
     lensFilter: lensFilter,
+    liveOnly: liveOnly,
   };
 })();

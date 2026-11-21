@@ -1268,6 +1268,7 @@ async function rsPrepare(env, A, body, meta, internal) {
           !(pd.k === K_USERS && JSON.stringify(cuCanonical(parseJson(pd.v, []))) === JSON.stringify(cuCanonical(parseJson(pd.cur, []))));
   });
   rsPhysicalDeletes(kv, reference, physicalDeletes);
+  await dailyArcPend(env, kv, reference);   /* V7 · د5-ح (13): نسخةٌ قديمة (الأيامُ كلُّها في الجولات) تُستعاد مقسومةً بين الحيّ والأرشيف */
   var plan = {
     body: body,
     author: A,

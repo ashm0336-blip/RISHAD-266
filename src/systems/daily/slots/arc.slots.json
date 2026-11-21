@@ -1,0 +1,31 @@
+{
+ "_note": "V7 · د5-ح (13): أرشيفُ الجولات — قطعُ المتابعة اليومية في أجزاء الخادم العامة (القراءةُ بسياسة الجولات · خطوةُ الأرشفة في الحفظ والاستعادة · ترحيلُ rounds-arc).",
+ "res.readAs": {
+  "order": 10,
+  "text": "  'bassam_rounds_arc_v1': 'bassam_rounds_v1'\n"
+ },
+ "save.pre.daily": {
+  "order": 10,
+  "text": "  await dailyArcPre(env, body);   /* V7 · د5-ح (13): الجولاتُ وثيقةٌ منطقية (الأرشيفُ تحت الحيّ) لأحكام الحفظ — 019p3 */\n"
+ },
+ "save.fill.daily": {
+  "order": 10,
+  "text": "    if (it0.act === 'set' && resName(k0) === 'bassam_rounds_v1') it0.v = dailyArcFill(env, k0, it0.v, cur0);   /* V7 · د5-ح (13): غيابُ يومٍ مؤرشف ليس حذفاً — 019p3 */\n"
+ },
+ "save.pend.daily": {
+  "order": 10,
+  "text": "  await dailyArcPend(env, kv, reference);   /* V7 · د5-ح (13): أيامُ الأشهر المقفلة إلى أرشيف الجولات في الدفعة نفسِها */\n"
+ },
+ "restore.pend.daily": {
+  "order": 10,
+  "text": "  await dailyArcPend(env, kv, reference);   /* V7 · د5-ح (13): نسخةٌ قديمة (الأيامُ كلُّها في الجولات) تُستعاد مقسومةً بين الحيّ والأرشيف */\n"
+ },
+ "migrate.solo.daily": {
+  "order": 10,
+  "text": "DAILY_ARC_PART"
+ },
+ "migrate.plan.daily": {
+  "order": 10,
+  "text": "  if (opts.parts && opts.parts.indexOf(DAILY_ARC_PART) !== -1) return await dailyArcMigPlan(env, seed, now, T, keys, revs, capture);   /* V7 · د5-ح (13) */\n"
+ }
+}

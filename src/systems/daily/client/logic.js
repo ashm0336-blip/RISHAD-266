@@ -20,6 +20,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   async _opCommit(changes) {
     try {
+      /* V7 · د5-ح (13): أيامُ الأرشيف التي لم تتغيّر لا تُرسل مع الجولات (_dsLiveOnly) — الخادمُ يملك نقلها */
+      if (changes && changes.bassam_rounds_v1 && typeof this._dsLiveOnly === "function") changes = { ...changes, bassam_rounds_v1: this._dsLiveOnly(changes.bassam_rounds_v1) };
       const service = this._opService(),
         names = Object.keys(changes).sort(),
         action = "daily:" + names.join("|");
@@ -350,7 +352,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           this.setState({ zoneOpts: this.loadZoneOpts() });
         if (this._opService().resources.indexOf(e) >= 0)
           this.setState((state) => ({ extTick: (state.extTick || 0) + 1 }));
-        if ("bassam_rounds_v1" === e && !this._dsWriting)
+        if (("bassam_rounds_v1" === e || "bassam_rounds_arc_v1" === e) && !this._dsWriting)   /* V7 · د5-ح (13): والأرشيفُ (نقلُ الخادم) */
           try {
             this.setState({ rounds: this.loadRounds() });
           } catch (t) {}
@@ -3544,10 +3546,47 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         try {
           KIVO.BassamAudit && KIVO.BassamAudit.stampRounds(t, !1);
         } catch (e9) {}
-        return t;
+        return this._dsMerged(t);
       }
     } catch (t) {}
     return {};
+  }
+  /* ── V7 · د5-ح (13): أرشيفُ الجولات (bassam_rounds_arc_v1) — أيامُ الأشهر المقفلة ينقلها الخادمُ من الملف الحيّ في حفظة الجولات نفسِها.
+     الصفحةُ (المؤشرات · العرض · الطباعة · التصدير) تراها مع الحيّ (_dsMerged — الحيُّ يغلب)، ولا تكتب الأرشيفَ أبداً: الحفظُ يُسقط من الجولات
+     كلَّ يومٍ مؤرشفٍ لم يتغيّر (_dsLiveOnly)؛ ويومٌ مؤرشفٌ تغيّر (حذفُ موقعٍ من كل الأيام مثلاً) يُرسل فيعيده الخادمُ إلى الأرشيف كما أُرسل. ── */
+  _dsArc() {
+    try {
+      /* من الخدمة لا من مسودة الصفحة: الأرشيفُ لا يدخل أساسَ حفظة الجولات */
+      const a = this._opService().get("bassam_rounds_arc_v1");
+      if (a && "object" == typeof a) {
+        try {
+          KIVO.BassamAudit && KIVO.BassamAudit.stampRounds(a, !1);
+        } catch (e9) {}
+        return a;
+      }
+    } catch (t) {}
+    return {};
+  }
+  _dsMerged(live) {
+    const a = this._dsArc(),
+      keys = Object.keys(a);
+    if (!keys.length) return live || {};
+    const o = {};
+    keys.forEach((k) => {
+      if (/^\d+-\d+-\d+/.test(k)) o[k] = a[k];
+    });
+    return Object.assign(o, live || {});
+  }
+  _dsLiveOnly(value) {
+    if (!value || "object" != typeof value) return value;
+    const a = this._dsArc(),
+      o = {};
+    if (!Object.keys(a).length) return value;
+    Object.keys(value).forEach((k) => {
+      if (Object.prototype.hasOwnProperty.call(a, k) && JSON.stringify(a[k]) === JSON.stringify(value[k])) return;
+      o[k] = value[k];
+    });
+    return o;
   }
   PC(t) {
     try {
@@ -3588,7 +3627,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     try {
       KIVO.BassamAudit && KIVO.BassamAudit.stampRounds(value, true);
     } catch (error) {}
-    this.setState({ rounds: value });
+    this.setState({ rounds: this._dsMerged(value) });   /* V7 · د5-ح (13): قيمةٌ من الحيّ وحده لا تُخفي أيامَ الأرشيف */
     this._opLastSave = this._opCommit({ ...related, bassam_rounds_v1: value });
     try {
       return await this._opLastSave;

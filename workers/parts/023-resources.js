@@ -50,6 +50,8 @@ var RES_REG = {
   /* اعتماد الجولة عمليةُ setShiftAp: أعلامُ الاعتماد وبياناتها التابعة وحدها.
      أمّا closed · cWhy · needN · off · dopen فرصدٌ تشغيليّ لا اعتماد. */
   'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { dreport: 'NO_APPROVAL', 'emps/data': 'EMP_REFS' }, field: 'daily' },
+  /* V7 · د5-ح (13): أرشيفُ الجولات — يُقرأ بسياسة الجولات حرفاً (RES_READ_AS) ولا يكتبه العميل (srv): خطوةُ الأرشفة وحدها (dailyArcPend · rounds-arc) */
+  'bassam_rounds_arc_v1':      { scope: 'dept', cap: 'daily/rounds', srv: 1 },
   'bassam_dayshift_v1':        { scope: 'dept', cap: ['daily/rounds', 'dreport'] },
   'bassam_dayfocus_v1':        { scope: 'dept', cap: ['daily/rounds', 'dreport'] },
   /* ── التقرير اليومي ── */
@@ -104,6 +106,18 @@ var RES_REG = {
   'bassam_demo_purged_v1':     { scope: 'dept', rule: 'tech' },
   'bassam_profile_v1':         { scope: 'dept', rule: 'tech' }
 };
+/* V7 · د5-ح (13): موردٌ يُقرأ بسياسة موردٍ آخر حرفاً — أوراقُه وسقفُه ومفاتيحُ قراءته وإسقاطاتُه وخصوصيتُه (canRead · canRead0 · canReadEnf ·
+   enfProjectStr · privOut) — يسجّله مالكُه (أرشيفُ الجولات بسياسة الجولات). ولا يكتبه العميلُ: srv في RES_REG (044 canWrite · 060 · 042 authorize0) —
+   تكتبه خطوةُ خادمٍ وحدها، والاستعادةُ الخادمية المتحقَّقة (A.__srvRst) تعيده كما في النسخة. */
+var RES_READ_AS = {
+  'bassam_rounds_arc_v1': 'bassam_rounds_v1'
+};
+function resReadAs(k) {
+  var t = Object.prototype.hasOwnProperty.call(RES_READ_AS, resName(k)) ? RES_READ_AS[resName(k)] : null, P;
+  if (!t) return k;
+  P = parseKey(k);
+  return P.dept ? 'bsdept:' + P.dept + ':' + t : k;
+}
 /* اسم المورد من المفتاح: bsdept:<d>:<name> ثم ما قبل أوّل نقطتين (notif_dev_v1:uid) */
 function resName(k) { return String(parseKey(k).name).replace(/:.*$/, ''); }
 function resOf(k) { return RES_REG[resName(k)] || null; }
