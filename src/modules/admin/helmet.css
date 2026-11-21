@@ -497,7 +497,7 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 .bs-mdgrid > *{min-width:0}
 .bs-subseg.org-tabs{max-width:calc(100% - 32px)}
 @media (max-width:600px){ .bs-subseg.org-tabs{flex-wrap:wrap!important;overflow-x:visible} }
-/* V7 P2 · «المسؤولون والحسابات»: جدولُ «مراقبة الحسابات» (adm-tr g-us) داخل صفحة العقدة — إطارٌ بلا قصٍّ لقائمة أفعال الصف */
+/* V7 P2 · V7 · د5-ح: بطاقةُ «مدير الوحدة» في «الصلاحيات ← الأدوار»: جدولُ «مراقبة الحسابات» (adm-tr g-us) داخل صفحة العقدة — إطارٌ بلا قصٍّ لقائمة أفعال الصف */
 .mk .ac7-t{margin-top:10px;border:1px solid var(--border-default);border-radius:12px;background:var(--bg-surface)}
 .mk .ac7-t .adm-bar{border-radius:12px 12px 0 0}
 .mk .ac7-t .adm-foot{border-radius:0 0 12px 12px}
@@ -584,7 +584,9 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 .p44-chips button[aria-checked="true"]{background:var(--bg-inverse);border-color:var(--bg-inverse);color:var(--text-on-inverse)}
 .p44-ex{display:flex;gap:8px;align-items:center;padding:8px 10px;margin-bottom:6px;border-radius:10px;background:var(--info-bg);border:1px solid var(--info-border)}.p44-ex[data-live="false"]{opacity:.6}.p44-ex span{flex:1;min-width:0}.p44-ex small{display:block;color:var(--text-secondary)}
 .p44-exf .p44-fld{flex:none}.p44-exf{display:flex;flex-direction:column;gap:8px;padding:10px;margin:6px 0;border:1px solid var(--border-default);border-radius:10px;background:var(--bg-surface)}
-.p44-rev{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:14px;border:1px solid var(--border-brand);background:var(--bg-elevated);box-shadow:var(--shadow-elevated)}.p44-rev h4{margin:0;font-size:14px}
+/* V7 · د5-ح: «مراجعة قبل الحفظ» نافذةٌ (bs-dlg-box · adm-dlg) — لا صندوقَ أسفل الصفحة */
+.p44-rev{display:flex;flex-direction:column;gap:8px}.p44-rev .ft{margin-top:6px}
+.p44-nodes a{color:var(--brand-text);font-weight:700;text-decoration:underline;cursor:pointer}
 .p44-ch{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}.p44-ch li{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.p44-ch li>span:first-child{min-width:140px;color:var(--text-secondary)}.p44-ch s{color:var(--text-faint)}
 .p44-log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}.p44-log>li{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}.p44-lf{margin-bottom:4px}
 .p44-empty{padding:18px;border:1px dashed var(--border-default);border-radius:12px;color:var(--text-secondary);text-align:center;line-height:1.8}

@@ -134,10 +134,10 @@ Object.assign(Component.prototype, {
     if (!did) return;
     Object.assign(v, this._p44Vals(did, !1, null));
   },
+  /* V7 · د5-ح: الأقسامُ الأربعة لكل ناظر — مديرُ الإدارة يرى «الأنظمة» قراءةً (المفعّلُ في سقفه وحده)، وافتراضيُّه «الأدوار» (عملُه) */
   _p44SubNow() {
-    const s = this._p44S().sub,
-      ok = "mgr" === this._p44Viewer() ? ["roles", "people", "log"] : ["systems", "roles", "people", "log"];
-    return ok.indexOf(s) !== -1 ? s : ok[0];
+    const s = this._p44S().sub;
+    return ["systems", "roles", "people", "log"].indexOf(s) !== -1 ? s : "mgr" === this._p44Viewer() ? "roles" : "systems";
   },
   _p44Go(sub) {
     this._p44Set({ sub: sub, rev: null, exForm: null });
@@ -215,6 +215,10 @@ Object.assign(Component.prototype, {
     });
     return out.sort();
   },
+  /* V7 · د5-ح: سطرُ المتأثرين — «لا يتأثر أحد الآن» حين لا أحد، وإلا العددُ الفعلي بمطابقته (BassamCount) */
+  p44AffLine(n, pre) {
+    return n ? (pre || "يتأثر") + " " + KIVO.BassamCount(n, "شخص") : "لا يتأثر أحد الآن";
+  },
   /* فرقُ المراجعة من المحرّك (diff) — مصفوفةٌ أو {changes, affected}؛ كلُّ تغييرٍ {what|sys|key|person, from, to} */
   _p44DiffOf(before, after) {
     const r = this._p44Try(() => this._p44E().diff(before, after), []);
@@ -239,9 +243,31 @@ Object.assign(Component.prototype, {
   },
   /* اسمُ موضع التغيير بشكل فرق المحرّك (diff): what = role · name · desc · sup · sys (role, sys) · person · ex (person, key) —
      وفرقُ السقف من الخادم (perm44CeilDiff): what = ceil.caps · ceil.subs · ceil.lenses (unit) */
+  _p44SysName(k) {
+    return (this._p44Sys().filter((s) => s.k === k)[0] || { n: this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[k].label, k) }).n;
+  },
+  /* V7 · د5-ح: صفوفُ عرض التغييرات (المراجعة والسجل) — إنشاءُ الدور أو حذفُه يُفصَّل بأنظمته ومستوياتها صفّاً لكل نظام
+     (كان «دور جديد» وحده فلا يُعرف متى أُضيف نظامٌ له). عرضٌ وحده: التغييراتُ نفسُها (للتراجع) كما هي */
+  p44Rows(ch) {
+    const out = [];
+    (ch || []).forEach((c) => {
+      if (!c) return;
+      out.push({ what: this._p44What(c), from: this._p44Txt(c.from), to: this._p44Txt(c.to) });
+      const r = "role" === c.what ? c.to || c.from : null;
+      if (!r || "object" !== typeof r) return;
+      const mk = !!c.to,
+        nm = this._p44RoleName(c.role) || r.name || "دور",
+        S = r.sys && "object" === typeof r.sys ? r.sys : {},
+        ks = Object.keys(S);
+      ks.forEach((k) => out.push({ what: nm + " · " + this._p44SysName(k), from: mk ? "—" : this._p44Txt(S[k]), to: mk ? this._p44Txt(S[k]) : "—" }));
+      mk && !ks.length && out.push({ what: nm + " · الأنظمة", from: "—", to: "بلا أنظمة" });
+      r.sup && out.push({ what: nm + " · إشرافي", from: mk ? "—" : "نعم", to: mk ? "نعم" : "—" });
+    });
+    return out;
+  },
   _p44What(c) {
     const w = String(c.what || ""),
-      sysN = (k) => (this._p44Sys().filter((s) => s.k === k)[0] || { n: this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[k].label, k) }).n,
+      sysN = (k) => this._p44SysName(k),
       rn = (id) => this._p44RoleName(id) || (c.to && c.to.name) || (c.from && c.from.name) || "دور",
       un = (id) => this._p44Try(() => KIVO.BassamDepts.nodeOf(id).name, "") || id || "";
     if ("sys" === w) return rn(c.role) + " · " + sysN(c.sys);
@@ -308,7 +334,7 @@ Object.assign(Component.prototype, {
         ["plat", "مدير المنصة"],
         ["mgr", "مدير الإدارة"],
       ].map((x) => ({ t: x[1], on: x[0] === viewer ? "true" : "false", pick: () => this._p44Set({ viewer: x[0], sel: "plat" === x[0] ? S.sel : "__super" === S.sel ? "" : S.sel, rev: null }) })),
-      p44Subs: (mgrV ? [] : [["systems", "الأنظمة"]]).concat([["roles", "الأدوار"], ["people", "الأشخاص"], ["log", "السجل"]]).map((x) => ({
+      p44Subs: [["systems", "الأنظمة"], ["roles", "الأدوار"], ["people", "الأشخاص"], ["log", "السجل"]].map((x) => ({
         t: x[1],
         cur: x[0] === sub ? "page" : "false",
         on: x[0] === sub,
@@ -320,17 +346,24 @@ Object.assign(Component.prototype, {
       p44OnLog: "log" === sub,
       p44Head: { systems: "الأنظمة", roles: "الأدوار", people: "الأشخاص", log: "السجل" }[sub],
       p44Lead: {
-        systems: "ما تطفئه في مستوى يختفي من كل ما تحته، ولا يراه مديرها أصلاً.",
+        systems: mgrV ? "الأنظمة المفعّلة لإدارتك — يضبطها مدير المنصة، وما لا يظهر هنا غير متاح لإدارتك." : "ما تطفئه في مستوى يختفي من كل ما تحته، ولا يراه مديرها أصلاً.",
         roles: "ابنِ الدور مرة واحدة وأسنده لمن تريد. ما تراه هنا هو ما يقبله الخادم.",
         people: "لكل شخص دور واحد. الاستثناء نادر، ويظهر بوضوح حتى لا يُنسى.",
         log: "كل تغيير: من غيّر، ماذا تغيّر، ومن تأثّر — مع رجوع بضغطة.",
       }[sub],
       p44NoEng: !E,
+      p44Keep: (ev) => {
+        try {
+          ev.stopPropagation();
+        } catch (e) {}
+      },
     };
     if (!E) return v;
-    if ("systems" === sub) return Object.assign(v, this._p44SysVals(did));
-    if (isNode) return Object.assign(v, { p44NodeOnly: !0 });
+    if ("systems" === sub) return Object.assign(v, this._p44SysVals(did, mgrV));
     if ("log" === sub) return Object.assign(v, this._p44LogVals(did));
+    /* V7 · د5-ح: العقدةُ الإشرافية (قطاع · إدارة عامة) تحمل الأقسامَ الأربعة كالإدارة والقسم: أدوارُها البطاقتان الثابتتان
+       (مدير المنصة · مدير الوحدة) — والأدوارُ المخصّصة تُبنى في كل إدارة أو قسم تحتها — وأشخاصُها حساباتُ فرعها */
+    if (isNode) return Object.assign(v, "roles" === sub ? this._p44RoleVals(did, { did: did, base: { roles: [], people: {} }, roles: [], people: {} }, mgrV, !0) : this._p44NodePeopleVals(did));
     const d = this._p44Ensure(did),
       L = this._p44S().ld;
     if (!d) return Object.assign(v, { p44Loading: !L || "error" !== L.st, p44Err: !!L && "error" === L.st, p44Retry: () => this._p44Retry(did) });
@@ -339,15 +372,64 @@ Object.assign(Component.prototype, {
     Object.assign(v, {
       p44Dirty: dirty,
       p44DirtyTxt: dirty ? KIVO.BassamCount(this._p44DiffOf(d.base, { roles: d.roles, people: d.people }).length || 1, "تغيير|غير محفوظ") : "",
-      p44AffTxt: KIVO.BassamCount(aff.length, "شخص"),
+      p44AffTxt: this.p44AffLine(aff.length, "يتأثر بها"),
       p44Undo: () => this._p44Upd((x) => ((x.roles = x.base.roles), (x.people = x.base.people))),
       p44Review: () => this._p44Set({ rev: { open: 1 } }),
       ...this._p44RevVals(d, aff),
     });
-    return Object.assign(v, "roles" === sub ? this._p44RoleVals(did, d, mgrV) : this._p44PeopleVals(did, d));
+    return Object.assign(v, "roles" === sub ? this._p44RoleVals(did, d, mgrV, !1) : this._p44PeopleVals(did, d));
+  },
+  /* V7 · د5-ح: فتحُ قسمٍ من «الصلاحيات» لوحدةٍ أخرى بعنوانها (#/sysadmin/org/<id>/perm/<قسم>) — العنوانُ المنتظَر يُحترم حتى تُفتح (كما _orgNav) */
+  p44Open(unit, sub, extra) {
+    if (!unit) return;
+    this.state = { ...this.state, p44: Object.assign({}, this.state.p44 || {}, { sub: sub, rev: null, exForm: null }, extra || {}) };
+    try {
+      const h = "#/sysadmin/org/" + encodeURIComponent(unit) + "/perm/" + sub;
+      this.__orgPend = h;
+      String(location.hash || "") === h ? this.setState({ tick: (this.state.tick || 0) + 1 }) : (location.hash = h);
+    } catch (e) {}
+  },
+  /* حاملو «مدير الوحدة»: مديرو الإدارة أو القسم (deptManagers) · ومديرو العقدة العامّون (groupManagers) */
+  _p44Mgrs(did, isNode) {
+    const A = KIVO.BassamAuth || {};
+    return this._p44Try(() => (isNode ? A.groupManagers(did) : A.deptManagers(did)) || [], []);
+  },
+  /* ③ أشخاصُ العقدة الإشرافية: حساباتُ فرعها كلُّها (المديرون العامّون بعقدتهم · وغيرُهم بإدارته أو قسمه) — يُفتح كلٌّ في «الأشخاص» لوحدته */
+  _p44NodePeopleVals(did) {
+    const D = KIVO.BassamDepts,
+      S = this._p44S(),
+      X = this._acctCtx ? this._p44Try(() => this._acctCtx(), { l: {}, now: Date.now() }) : { l: {}, now: Date.now() },
+      ids = { [did]: 1 },
+      q = String(S.q || "").trim();
+    this._p44Try(() => (D.descendantsOf ? D.descendantsOf(did) : D.deptsUnder(did)) || [], []).forEach((x) => (ids["string" === typeof x ? x : x && x.id] = 1));
+    const unitOf = (u) => ("gm" === u.role ? u.gid : u.deptId) || "",
+      all = this._p44Users().filter((u) => u && "super" !== u.role && !!ids[unitOf(u)]),
+      shown = all.filter((u) => !q || (String(u.name || "") + " " + (u.un || "") + " " + (u.empno || u.no || "")).indexOf(q) !== -1);
+    return {
+      p44NodePeople: !0,
+      p44PQ: S.q || "",
+      p44PQSet: (ev) => this._p44Set({ q: String((ev && ev.target && ev.target.value) || "") }),
+      p44NPRows: shown.map((u) => {
+        const un = unitOf(u),
+          gm = "gm" === u.role;
+        return {
+          n: u.name || u.un,
+          id: u.empno || u.no || u.un || "",
+          i: String(u.name || "؟").trim().charAt(0) || "؟",
+          role: gm || u.mgr ? "مدير الوحدة" : (this.adRole && this._p44Try(() => this.adRole(u), "")) || "—",
+          unit: (this.adUnit && this._p44Try(() => this.adUnit(u), "")) || this._p44Try(() => D.nodeOf(un).name, "") || "—",
+          last: X.l[u.id] && this.adWhen ? this.adWhen(X.l[u.id], X.now) : "لم يدخل",
+          go: () => (gm || u.mgr ? this.p44Open(un, "roles", { sel: "__mgr" }) : this.p44Open(un, "people", { pSel: u.ekey || "" })),
+        };
+      }),
+      p44NPEmpty: !shown.length,
+      p44NPEmptyTxt: all.length ? "لا أحد يطابق البحث" : "لا حسابات في هذا الفرع بعد",
+      p44NPFoot: KIVO.BassamCount(all.length, "حساب") + " في العقدة وفرعها — يُضبط دورُ كلٍّ منهم في «الأشخاص» لوحدته",
+    };
   },
   /* ① الأنظمة: وحداتُ السلسلة (المنصة ← الأصول ← الوحدة ← أقسامها) · مفتاحٌ لكل نظام · ما يراه المدير · أثرُ الحفظ */
-  _p44SysVals(did) {
+  _p44SysVals(did, mgrV) {
+    if (mgrV) return this._p44SysRO(did);
     const D = KIVO.BassamDepts,
       S = this._p44S(),
       anc = this._p44Try(() => (D.ancestorsOf(did) || []).slice(), []),
@@ -394,15 +476,63 @@ Object.assign(Component.prototype, {
         path: chain.slice(0, chain.indexOf(u)).map(nm).join(" / ") || "أعلى الهيكل",
         inh: "__plat" === u ? "المنصة كلها: النظام المطفأ هنا يختفي من كل الإدارات ومن الأدوار ومن القوائم." : "يتبع ما فوقه: ما أُطفئ هناك يظهر مقفلاً هنا ولا يُفعَّل.",
       },
-      p44SysRows: rows,
+      p44SysCtl: !0,
+      p44SysRows: rows.map((r) => Object.assign(r, { sw: !0 })),
       p44SysNone: !rows.length,
+      p44SysNoneTxt: "لا أنظمة قابلة للتشغيل في هذه المنصة.",
       p44SysNav: nav,
+      p44SysNavT: "ما يراه مدير هذه الإدارة",
       p44SysOnN: String(rows.filter((r) => r.isOn).length),
       p44SysPeople: String(people),
       p44SysDirty: dirtyN > 0,
       p44SysDirtyTxt: KIVO.BassamCount(dirtyN, "تغيير|غير محفوظ"),
-      p44SysUndo: () => this._p44Set({ cap: null }),
-      p44SysSave: () => this._p44CapSave(u, dr),
+      p44SysUndo: () => this._p44Set({ cap: null, rev: null }),
+      /* V7 · د5-ح: «مراجعة وحفظ» تفتح نافذةَ المراجعة (الملخّص · «حفظ» · «رجوع») — والحفظُ منها بمساره القائم */
+      p44SysReview: () => this._p44Set({ rev: { open: 1, kind: "sys" } }),
+      ...this._p44SysRevVals(u, dr, nm(u), people),
+    };
+  },
+  /* V7 · د5-ح: «الأنظمة» لمدير الإدارة قراءةً — المفعّلُ في سقف وحدته وحده (السقفُ بالوراثة ∩ المنصة)، بلا مفاتيح ولا شريط حفظ؛
+     والمطفأُ لا يظهر له أبداً (لا صفّاً ولا قفلاً ولا اسماً) */
+  _p44SysRO(did) {
+    const D = KIVO.BassamDepts,
+      off = this._p44PlatOff(),
+      rows = this._p44Sys()
+        .filter((s) => s.tg && this._p44On(did, s, off))
+        .map((s) => ({ k: s.k, n: s.n, on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّل لإدارتك", flip: () => {} })),
+      people = this._p44Users().filter((x) => x.deptId === did || this._p44Try(() => (D.ancestorsOf(x.deptId) || []).indexOf(did) !== -1, !1)).length;
+    return {
+      p44SysRO: !0,
+      p44SysCtl: !1,
+      p44Units: [],
+      p44Unit: { n: this._p44Try(() => D.nodeOf(did).name, "") || "—", path: "إدارتك", inh: "يضبط الأنظمةَ مدير المنصة — ما يظهر هنا وحده متاحٌ لإدارتك ولأدوار موظفيها." },
+      p44SysRows: rows,
+      p44SysNone: !rows.length,
+      p44SysNoneTxt: "لا نظام مفعّل لإدارتك بعد — يفعّله مدير المنصة.",
+      p44SysNav: ["صفحتي"].concat(rows.map((r) => r.n)),
+      p44SysNavT: "قائمة إدارتك",
+      p44SysOnN: String(rows.length),
+      p44SysPeople: String(people),
+      p44SysDirty: !1,
+      p44RevOn: !1,
+    };
+  },
+  /* مراجعةُ الأنظمة: لكل نظامٍ تغيّر «الوحدة · النظام: مفعّل ← مطفأ» ومن يتأثر (من في الوحدة وما تحتها) */
+  _p44SysRevVals(u, dr, unitName, people) {
+    const R = this._p44S().rev,
+      ks = Object.keys(dr || {});
+    if (!R || !R.open || "sys" !== R.kind || !ks.length) return { p44RevOn: !1 };
+    return {
+      p44RevOn: !0,
+      p44RevRows: ks.map((k) => ({ what: unitName + " · " + this._p44SysName(k), from: dr[k] ? "مطفأ" : "مفعّل", to: dr[k] ? "مفعّل" : "مطفأ" })),
+      p44RevAff: [],
+      p44RevAffTxt: this.p44AffLine(people) + (people ? " في هذه الوحدة وما تحتها" : ""),
+      p44RevNote: "إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل.",
+      p44RevBusy: !1,
+      p44RevErr: R.err || "",
+      p44RevClose: () => this._p44Set({ rev: null }),
+      p44RevOut: () => this._p44Set({ rev: null }),
+      p44RevSave: () => this._p44CapSave(u, dr),
     };
   },
   /* حفظُ السقف بمساره القائم (مسؤولُ المنصة وحده — 331 setDeptCap يرفض غيرَه): التفعيلُ يضيف الصفحةَ بتبويباتها وصفحاتها، والإطفاءُ يزيلها
@@ -455,32 +585,61 @@ Object.assign(Component.prototype, {
     } catch (e) {
       r = { ok: !1, err: "تعذّر حفظ الأنظمة" };
     }
-    if (r && !1 === r.ok) return void this.bsToast(r.err || "لم يُحفظ", "err");
-    this._p44Set({ cap: null });
+    /* V7 · د5-ح: الرفضُ يبقى في نافذة المراجعة بسببه (المسودةُ كما هي) · والنجاحُ يغلقها */
+    if (r && !1 === r.ok) return void this._p44Set({ rev: { open: 1, kind: "sys", err: r.err || "لم يُحفظ" } });
+    this._p44Set({ cap: null, rev: null });
     this.bsToast("حُفظت أنظمة «" + ("__plat" === u ? "المنصة كلها" : this._p44Try(() => KIVO.BassamDepts.nodeOf(u).name, "")) + "» — البيانات باقية كما هي", "ok");
   },
   /* ② الأدوار */
-  _p44RoleVals(did, d, mgrV) {
+  _p44RoleVals(did, d, mgrV, isNode) {
     const S = this._p44S(),
       on = this._p44Ceil(did),
       sys = this._p44Sys().filter((s) => on(s.k)) /* مديرُ الإدارة لا يرى نظاماً مطفأً في سقفه — ولا مديرُ المنصة في محرّر دورٍ لهذه الإدارة */,
       holders = (id) => Object.keys(d.people || {}).filter((ek) => (d.people[ek] || {}).role === id).length,
-      sel = "__super" === S.sel && !mgrV ? "__super" : (d.roles.filter((r) => r.id === S.sel)[0] || d.roles[0] || { id: mgrV ? "" : "__super" }).id,
+      mgrs = this._p44Mgrs(did, isNode),
+      sel = "__super" === S.sel && !mgrV ? "__super" : "__mgr" === S.sel ? "__mgr" : (d.roles.filter((r) => r.id === S.sel)[0] || d.roles[0] || { id: isNode ? "__mgr" : mgrV ? "" : "__super" }).id,
       isSup = "__super" === sel,
-      role = isSup ? null : d.roles.filter((r) => r.id === sel)[0] || null,
-      list = (mgrV ? [] : [{ id: "__super", name: "مدير المنصة", sub: "صلاحية كاملة · بلا قيد", lock: !0 }]).concat(
-        d.roles.map((r) => ({ id: r.id, name: r.name || "بلا اسم", sub: (holders(r.id) ? KIVO.BassamCount(holders(r.id), "شخص") : "بلا حاملين") + (r.sup ? " · إشرافي" : "") })),
-      );
+      isMgr = "__mgr" === sel,
+      role = isSup || isMgr ? null : d.roles.filter((r) => r.id === sel)[0] || null,
+      /* V7 · د5-ح: بطاقةٌ ثابتة «مدير الوحدة» (مثل «مدير المنصة») بحامليها — حلّت محلَّ تبويب العقدة القديم للمسؤولين والحسابات */
+      list = (mgrV ? [] : [{ id: "__super", name: "مدير المنصة", sub: "صلاحية كاملة · بلا قيد", lock: !0 }])
+        .concat([{ id: "__mgr", name: "مدير الوحدة", sub: (mgrs.length ? KIVO.BassamCount(mgrs.length, "شخص") : "بلا حاملين") + " · كامل داخل السقف", lock: !0 }])
+        .concat(d.roles.map((r) => ({ id: r.id, name: r.name || "بلا اسم", sub: (holders(r.id) ? KIVO.BassamCount(holders(r.id), "شخص") : "بلا حاملين") + (r.sup ? " · إشرافي" : "") })));
     const v = {
       p44RoleList: list.map((r) => ({ n: r.name, sub: r.sub, lock: !!r.lock, on: r.id === sel ? "true" : "false", pick: () => this._p44Set({ sel: r.id, cmp: "", chk: null }) })),
       p44RoleN: String(list.length),
       p44RoleNew: () => this._p44NewRole(null),
+      p44RoleNewOn: !isNode,
+      p44NodeRoles: !!isNode,
+      p44NodeUnits: isNode
+        ? this._p44Try(() => KIVO.BassamDepts.deptsUnder(did) || [], []).map((id) => ({
+            n: this._p44Try(() => KIVO.BassamDepts.nodeOf(id).name, "") || id,
+            href: "#/sysadmin/org/" + encodeURIComponent(id) + "/perm/roles",
+            go: (ev) => {
+              ev && ev.preventDefault && ev.preventDefault();
+              this.p44Open(id, "roles", { sel: "" });
+            },
+          }))
+        : [],
       p44IsSup: isSup,
-      p44NotSup: !isSup && !!role,
-      p44NoRole: !isSup && !role,
+      p44IsMgr: isMgr,
+      p44NotSup: !isSup && !isMgr && !!role,
+      p44NoRole: !isSup && !isMgr && !role,
       p44Lvls: this._p44Lvls(),
     };
     if (isSup) return Object.assign(v, { p44Role: { n: "مدير المنصة", d: "صاحب المنصة: لا قيد عليه في أي نظام أو إدارة.", badge: "دور النظام" }, p44Nav: [{ n: "كل الأنظمة", l: "بلا قيد" }] });
+    /* «مدير الوحدة»: في «مركز إدارة رشاد» جدولُ حسابات الوحدة كما كان (الصفُّ وقائمةُ أفعاله الواحدة _acctRow: اسمُ الدخول · الكلمة المؤقتة بعد إقرار الخادم ·
+       التجميد · إعادة التعيين) وزرُّ «+» لمدير المنصة وحده؛ وفي عرض المدير حاملوه قراءةً */
+    if (isMgr)
+      return Object.assign(v, {
+        p44Role: { n: "مدير الوحدة", d: "يعمل بكامل سقف وحدته ويعتمد جداولها وتقاريرها — يعيّنه مدير المنصة وحده.", badge: "دور النظام", members: mgrs.length ? KIVO.BassamCount(mgrs.length, "شخص") + " " + KIVO.BassamCount.agr(mgrs.length, "يحمل", "يحملان", "يحملون") + " هذا الدور" : "لا يحمل هذا الدور أحد بعد" },
+        p44Nav: [{ n: "كل الأنظمة المفعّلة لوحدته", l: "كامل داخل السقف" }],
+        p44MgrFull: !mgrV && !this.__p44Dept,
+        p44MgrRO: mgrV || !!this.__p44Dept,
+        p44MgrAddOn: this._p44SupNow() && !mgrV,
+        p44MgrHold: mgrs.map((m) => ({ n: m.name || m.un || "—", st: m.dis ? "موقوف" : "نشط" })),
+        p44MgrNone: !mgrs.length,
+      });
     if (!role) return Object.assign(v, { p44Nav: [{ n: "صفحتي", l: "" }] });   /* بلا دورٍ مختار: لا يرى إلا «صفحتي» */
     const keysAll = (k) => this._p44Keys(k),
       upd = (fn) =>
@@ -534,7 +693,7 @@ Object.assign(Component.prototype, {
       ),
       ck = chk.key && chkKeys.some((x) => x.v === chk.key) ? chk.key : (chkKeys[0] || {}).v || "";
     return Object.assign(v, {
-      p44Role: { n: role.name || "بلا اسم", d: role.desc || "", badge: role.sup ? "دور إشرافي" : "دور", members: KIVO.BassamCount(holders(role.id), "شخص") + " يحملون هذا الدور" },
+      p44Role: { n: role.name || "بلا اسم", d: role.desc || "", badge: role.sup ? "دور إشرافي" : "دور", members: holders(role.id) ? KIVO.BassamCount(holders(role.id), "شخص") + " " + KIVO.BassamCount.agr(holders(role.id), "يحمل", "يحملان", "يحملون") + " هذا الدور" : "لا يحمل هذا الدور أحد بعد" },
       p44RoleName: role.name || "",
       p44RoleNameSet: (ev) => upd((r) => (r.name = String((ev && ev.target && ev.target.value) || "").slice(0, 60))),
       p44RoleDesc: role.desc || "",
@@ -607,16 +766,19 @@ Object.assign(Component.prototype, {
   /* المراجعة قبل الحفظ: الفرقُ (diff) ومن يتأثر — ثم حفظٌ واحد */
   _p44RevVals(d, aff) {
     const R = this._p44S().rev;
-    if (!R || !R.open) return { p44RevOn: !1 };
+    if (!R || !R.open || "sys" === R.kind) return { p44RevOn: !1 };
     const ch = this._p44DiffOf(d.base, { roles: d.roles, people: d.people });
+    /* V7 · د5-ح: نافذةٌ في وسط الشاشة (bs-dlg: التركيزُ داخلها · Tab لا يخرج · Escape = «رجوع») — لا تُغلق والحفظُ جارٍ */
     return {
       p44RevOn: !0,
-      p44RevRows: ch.map((c) => ({ what: this._p44What(c), from: this._p44Txt(c.from), to: this._p44Txt(c.to) })),
+      p44RevRows: this.p44Rows(ch),
       p44RevAff: aff.map((ek) => this._p44PName(ek)),
-      p44RevAffN: KIVO.BassamCount(aff.length, "شخص"),
+      p44RevAffTxt: this.p44AffLine(aff.length) + (aff.length ? ":" : ""),
+      p44RevNote: "",
       p44RevBusy: !!R.busy,
       p44RevErr: R.err || "",
-      p44RevClose: () => this._p44Set({ rev: null }),
+      p44RevClose: () => R.busy || this._p44Set({ rev: null }),
+      p44RevOut: () => this._p44S().rev && this._p44S().rev.busy ? void 0 : this._p44Set({ rev: null }),
       p44RevSave: () => this._p44Save(),
     };
   },
@@ -647,7 +809,7 @@ Object.assign(Component.prototype, {
       return void this._p44Set({ rev: { open: 1, err: why } });
     }
     this._p44Set((s) => ({ rev: null, d: s.d ? Object.assign({}, s.d, { base: { roles: roles, people: people } }) : s.d, log: null }));
-    this.bsToast("حُفظت الصلاحيات — " + KIVO.BassamCount(aff.length, "شخص") + " يتأثر", "ok");
+    this.bsToast("حُفظت الصلاحيات — " + this.p44AffLine(aff.length), "ok");
   },
   /* ③ الأشخاص */
   _p44PeopleVals(did, d) {
@@ -821,9 +983,9 @@ Object.assign(Component.prototype, {
           i: who.charAt(0) || "؟",
           tag: TG[k],
           kind: k,
-          ch: (e.changes || []).map((c) => ({ sys: this._p44What(c), from: this._p44Txt(c.from), to: this._p44Txt(c.to) })),
+          ch: this.p44Rows(e.changes).map((c) => ({ sys: c.what, from: c.from, to: c.to })),
           when: e.at && this.adFull ? this._p44Try(() => this.adFull(e.at), "") : "",
-          aff: (e.affected || []).length ? KIVO.BassamCount(e.affected.length, "شخص") : "لا أحد",
+          aff: (e.affected || []).length ? "يتأثر " + KIVO.BassamCount(e.affected.length, "شخص") : "لم يتأثر أحد",
           undoOn: !!(e.changes || []).length && !("cap" === k && "mgr" === this._p44Viewer()),   /* السقفُ لمدير المنصة وحده */
           undo: () => this._p44Undo(did, e),
         };

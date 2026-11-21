@@ -54,8 +54,7 @@
   var styleEl = null, lastSig = "";
   function apply() {
     var P = get(), H = document.documentElement;
-    var sup = false; try { sup = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()); } catch (eS) {}
-    var sig = JSON.stringify(P) + (sup ? "|super" : "");   /* V7 · د1-ج: الإخفاءُ يتبع الحساب، فيدخل التوقيع */
+    var sig = JSON.stringify(P);   /* V7 · د5-ح: الإخفاءُ لا يتبع الحساب بعد الآن (المطفأُ لا يراه أحد) */
     /* العنوان والبيانات الوصفية */
     try { if (document.title !== P.name) document.title = P.name; } catch (e) {}
     var appName = P.app.name || P.name;
@@ -72,7 +71,7 @@
     if (sig !== lastSig) {
       var css = "";
       var order = (P.side.order || []).filter(function (k) { return NAVKEYS.indexOf(k) >= 0; }); NAVKEYS.forEach(function (k, i) { if (order.indexOf(k) >= 0) return; var prev = i > 0 ? order.indexOf(NAVKEYS[i - 1]) : -1; order.splice(prev + 1, 0, k); });   /* رابط جديد لم يُرتَّب بعد يقف خلف سابقه في القالب لا في الذيل */
-      NAVKEYS.forEach(function (k) { var pos = order.indexOf(k); var hide = (P.side.hidden || []).indexOf(k) >= 0 || (!sup && (P.mods.off || []).indexOf(k) >= 0);   /* V7 · د1-ج (قرار صاحب المنصة): الوحدةُ المطفأة على مستوى المنصة تظهر لمدير المنصة وحده */ css += 'aside.bsb .s-nav .grp > a[data-key="' + k + '"]{order:' + pos + (hide ? ";display:none!important" : "") + "}\n"; });   /* CORE-01: بمفتاح الرابط (data-key) لا بموضعه في القالب */
+      NAVKEYS.forEach(function (k) { var pos = order.indexOf(k); var hide = (P.side.hidden || []).indexOf(k) >= 0 || (P.mods.off || []).indexOf(k) >= 0;   /* V7 · د5-ح (قرار المالك): الوحدةُ المطفأة على مستوى المنصة لا تظهر لأحد — ولا لمدير المنصة (كانت له وحده · د1-ج) */ css += 'aside.bsb .s-nav .grp > a[data-key="' + k + '"]{order:' + pos + (hide ? ";display:none!important" : "") + "}\n"; });   /* CORE-01: بمفتاح الرابط (data-key) لا بموضعه في القالب */
       if (P.print.paper) css += "@media print{@page{size:" + ({ a4p: "A4 portrait", a4l: "A4 landscape", a3l: "A3 landscape" }[P.print.paper] || "auto") + "}}\n";
       if (!styleEl) { styleEl = document.createElement("style"); styleEl.id = "bs-plat-css"; (document.head || document.documentElement).appendChild(styleEl); }
       styleEl.textContent = css;

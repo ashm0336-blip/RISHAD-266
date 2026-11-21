@@ -379,7 +379,7 @@
   }
   function tabOn(pk, tk){
     try {
-      if (isSuper()) return true;   /* V7 · د1-ج: مدير المنصة بلا قيد */
+      if (isSuper()) return !supHidden(pk) && !supHidden(pk + '/' + tk);   /* V7 · د1-ج: مدير المنصة بلا قيد — د5-ح: إلا المطفأ */
       if (deptTabs(null, pk).indexOf(tk) === -1) return false;
       return can(pk + '/' + tk, 'view');
     } catch (e) { return false; }
@@ -389,7 +389,7 @@
      ومدير النظام يرى كل شيء كبقية المنظومة. */
   function subOn(pk, sk){
     try {
-      if (isSuper()) return true;   /* V7 · د1-ج: مدير المنصة بلا قيد */
+      if (isSuper()) return PAGE_OF[sk] && PAGE_OF[sk].under === pk ? !supHidden(sk) : !supHidden(pk) && !supHidden(pk + '/' + sk);   /* V7 · د1-ج: بلا قيد — د5-ح: إلا المطفأ (الصفحةُ الساكنة بصفحتها) */
       /* الصفحة الساكنة تحت هذه الحاوية تبويبٌ فيها — يتبع صلاحية صفحته (مفتاحها المستقل) */
       var q = PAGE_OF[sk]; if (q && q.under === pk) return can(sk, 'view');
       if (deptSubs(null, pk).indexOf(sk) === -1) return false;
@@ -399,7 +399,7 @@
   /* هل تملك الجلسة الحالية فعلاً على ورقة بعينها؟ */
   /* مدير النظام والوحدة المختارة: ورقةُ صفحةٍ داخل سقفها كما ضبطتها الوحدة؛ وورقةُ صفحةٍ خارجه تُرى عرضاً ما رُئيت صفحتُها (myPerms: والمطفأةُ على المنصة لا تُرى) — والكتابةُ بالسقف وحده */
   function supSees(pk, sk){ return onCap(pk + '/' + sk) || (!onCap(pk) && leafKeysOf(pk).indexOf(pk + '/' + sk) !== -1 && can(pk, 'view')); }
-  function canSub(pk, sk, act){ try { if (isSuper()) return true;   /* V7 · د1-ج: مدير المنصة بلا قيد */ if (deptSubs(null, pk).concat(deptTabs(null, pk)).indexOf(sk) === -1) return false; return can(pk + '/' + sk, act || 'view'); } catch (e) { return false; } }
+  function canSub(pk, sk, act){ try { if (isSuper()) return PAGE_OF[sk] && PAGE_OF[sk].under === pk ? !supHidden(sk) : !supHidden(pk) && !supHidden(pk + '/' + sk);   /* V7 · د1-ج: مدير المنصة بلا قيد — د5-ح: إلا المطفأ */ if (deptSubs(null, pk).concat(deptTabs(null, pk)).indexOf(sk) === -1) return false; return can(pk + '/' + sk, act || 'view'); } catch (e) { return false; } }
 
   function deptLenses(did){
     var o = permStore(), d = did || curDept();
@@ -564,10 +564,33 @@
   }
   /* الوحدات المطفأة على مستوى المنصة (مدير النظام ← المنصة ← الوحدات): لا تظهر لأحد ولا تُفتح — حتى لمدير النظام
      حتى يعيد تفعيلها؛ تبقى بياناتها محفوظة */
+  /* V7 · د5-ح (قرار المالك): النظامُ المطفأ لا يراه أحد — ولا مديرُ المنصة. المطفأُ على المنصة (mods.off) يغيب عن المنصة كلها،
+     والمطفأُ في سقف الإدارة النشطة (بالوراثة — KIVO.Perm44.ceiling) يغيب داخل مساحتها ويبقى حيث هو مفعّل. يُقصّ العرضُ وحده
+     (القائمة · العناوين · أشرطةُ الصفحات · التبويبات): ما سواه بلا قيد لمدير المنصة كما كان (د1-ج)؛ وموضعُ المطفأ الوحيد «الصلاحيات ← الأنظمة» */
+  var _supOff = {};
+  function supOffLeaves(){
+    var out = {}, E = KIVO.Perm44, i;
+    try {
+      if (!E || !E.sysList || !E.ceiling) return out;
+      var off = p24Off(), on = E.ceiling(curDept()).on || [], S = E.sysList();
+      for (i = 0; i < S.length; i++) {
+        var s = S[i]; if (!s || s.toggle === false || s.key === 'admin') continue;
+        if (off.indexOf(s.key) !== -1 || on.indexOf(s.key) === -1) (s.leaves || []).forEach(function(l){ out[l] = 1; });
+      }
+    } catch(e){ return {}; }
+    return out;
+  }
+  function supHidden(key){ return !!(isSuper() && (myPerms(), _supOff[key])); }
   var _myPerms0 = myPerms;
   myPerms = function(){
     var all = _myPerms0();
-    if (isSuper()) return all;   /* V7 · د1-ج (قرار صاحب المنصة): الوحدةُ المطفأة على مستوى المنصة لا تقيّد مدير المنصة */
+    if (isSuper()) {
+      _supOff = supOffLeaves();
+      Object.keys(_supOff).forEach(function(l){ delete all[l]; if (PAGE_KEYS.indexOf(l) !== -1) leafKeysOf(l).forEach(function(x){ delete all[x]; }); });
+      /* حاويةٌ مطفأة تسكنها صفحةٌ مفعّلة (كالخطة التشغيلية والجدولُ تحتها): تُفتح للعرض كي تصل الصفحة — القاعدةُ نفسُها لغيره (derivePages) */
+      PAGE_REG.forEach(function(p){ if (p.under && all[p.key] && all[p.key].length && !all[p.under]) all[p.under] = ['view']; });
+      return all;
+    }
     try { var off = (KIVO.BassamPlat && KIVO.BassamPlat.get().mods.off) || []; for (var i = 0; i < off.length; i++) if (off[i] !== 'admin') { delete all[off[i]]; leafKeysOf(off[i]).forEach(function(l){ delete all[l]; }); } } catch(e){}
     return all;
   };

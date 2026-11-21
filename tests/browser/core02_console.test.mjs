@@ -31,6 +31,11 @@ import { startLab, LAB } from './local_server.mjs';
 import { chromium, openAs } from './lab_browser.mjs';
 
 const BEFORE = JSON.parse(fs.readFileSync(new URL('./fixtures/core01_nav_before.json', import.meta.url), 'utf8')).roles;
+
+/* V7 · د5-ح (قرار المالك — موثَّق، اللقطةُ نفسُها لا تُعدَّل): النظامُ المطفأ لا يراه أحد ولا مديرُ المنصة. ما كانت القائمةُ تعرضه له باهتاً
+   «خارج السقف» (صنفُ n out وتلميحُ «— خارج سقف «…» · مرئية لك بصلاحية المشرف») صار غائباً كما لغيره (n gone)، والتلميحُ اسمُ الصفحة وحده */
+const OFF5H = (L) => (L || []).map((x) => { const [c, t, n] = x.split('|'), m = / — خارج سقف «[^»]*» - مرئية لك بصلاحية المشرف$/.exec(t || ''); return m ? [c.replace(' out', ' gone'), t.slice(0, m.index), n].join('|') : x; });
+for (const h of Object.keys(BEFORE.super || {})) BEFORE.super[h] = OFF5H(BEFORE.super[h]);
 const MOBILE = { viewport: { width: 390, height: 844 }, context: { isMobile: true, hasTouch: true, deviceScaleFactor: 1 } };
 /* V7 · د5-هـ (44): «خريطة الصلاحيات» (perms) و«الوحدات» (plat/mods) حُذفتا بقرار المالك — 15 وجهة */
 const DEST = [['overview', null, 'الرئيسية'], ['depts', null, 'الإدارات'], ['users', null, 'مراقبة الحسابات'],
@@ -432,8 +437,8 @@ test('(S10) keyboard walk, focus ring and contrast, headings, dialogs, reduced m
           assert.equal(h.cur, 1, at + ': one current item'); assert.equal(h.sel, 0, at + ': no tab semantics in the sidebar');
         }
         /* a dialog: named, focus inside, Tab stays inside, Escape closes, focus back on the opener */
-        /* V7 P1/P2: the unit's own page, its «المسؤولون والحسابات» tab (the structure page #/sysadmin/org holds only the tree) */
-        await s.go('#/sysadmin/org/TEST_ONLY_A', 2500); await page.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'المسؤولون والحسابات' }).first().click(); await page.waitForTimeout(600);
+        /* V7 P1/P2 · د5-ح: the unit's own page, «الصلاحيات ← الأدوار ← مدير الوحدة» (the structure page #/sysadmin/org holds only the tree) */
+        await s.go('#/sysadmin/org/TEST_ONLY_A/perm/roles', 2500); await page.locator('main .p44-role', { hasText: 'مدير الوحدة' }).first().click(); await page.waitForTimeout(600);
         const op = page.locator('main button.add').first(); await op.focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
         const dlg = () => page.evaluate(() => { const d = document.querySelector('main [role=dialog]'); return d ? { name: d.getAttribute('aria-label') || '', inside: d.contains(document.activeElement) } : null; });
         let dl = await dlg(); assert.ok(dl && dl.name.length > 0, 'the manager dialog is named'); assert.ok(dl.inside, 'the focus moves into the dialog');

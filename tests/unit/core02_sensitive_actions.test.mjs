@@ -149,8 +149,8 @@ const CASES = [
   ['end all other sessions', 'secKillAll', '', (w) => ({ i: 'TEST_ONLY_me' }), (w) => w.calls.act.length],
   ['freeze an account (accounts menu)', 'go', 's.setDisById(a.id, !a.dis)', (w) => ({ fx: '', a: { id: 'TEST_ONLY_u1', name: 'TEST_ONLY', dis: 0 }, s: { setDisById: (...x) => (w.calls.dis.push(x), { ok: 1 }) } }), (w) => w.calls.dis.length],
   ['unfreeze an account (overview)', 'unfreeze', '', (w) => ({ s: { id: 'TEST_ONLY_u1', name: 'TEST_ONLY' }, a: { setDisById: (...x) => (w.calls.dis.push(x), { ok: 1 }) }, t: {} }), (w) => w.calls.dis.length],
-  /* V7 P2: the node tab «المسؤولون والحسابات» uses the same row menu as «مراقبة الحسابات» (_acctMenu) — one freeze handler for every account */
-  ['freeze / unfreeze a manager (node accounts tab — the same menu)', 'go', 's.setDisById(a.id, !a.dis)', (w) => ({ fx: '', a: { id: 'TEST_ONLY_m', name: 'TEST_ONLY', role: 'staff', deptId: 'TEST_ONLY_A', ekey: 'mgr:TEST_ONLY_A', dis: 0 }, s: { setDisById: (...x) => (w.calls.dis.push(x), { ok: 1 }) } }), (w) => w.calls.dis.length],
+  /* V7 P2 · د5-ح: the «مدير الوحدة» card (الصلاحيات ← الأدوار — was the node accounts tab) uses the same row menu as «مراقبة الحسابات» (_acctMenu) — one freeze handler for every account */
+  ['freeze / unfreeze a manager (the «مدير الوحدة» card — the same menu)', 'go', 's.setDisById(a.id, !a.dis)', (w) => ({ fx: '', a: { id: 'TEST_ONLY_m', name: 'TEST_ONLY', role: 'staff', deptId: 'TEST_ONLY_A', ekey: 'mgr:TEST_ONLY_A', dis: 0 }, s: { setDisById: (...x) => (w.calls.dis.push(x), { ok: 1 }) } }), (w) => w.calls.dis.length],
   ['save the security policies', 'secPolSave', '', () => ({}), (w) => w.calls.fetch.length],
   ['clean up the legacy unit accounts', 'oldAccDo', '', () => ({ i: 2 }), (w) => w.calls.purge.length],
   ['delete a unit node', 'dhDel', 'nodeDel', (w) => ({ n: true, o: 'TEST_ONLY_G', p: { name: 'TEST_ONLY' }, t: { nodeDel: (x) => (w.calls.nodeDel.push(x), { ok: 1 }), list: () => [] } }), (w) => w.calls.nodeDel.length + w.calls.rmMgr.length],
@@ -209,5 +209,5 @@ test('delete a node that has a general manager: refused with guidance, nothing a
   const fn = w.page.handler('dhDel', 'nodeDel', { n: true, o: 'TEST_ONLY_G', p: { name: 'TEST_ONLY', kind: 'إدارة عامة' }, t: { nodeDel: (x) => (w.calls.nodeDel.push(x), { ok: 1 }), list: () => [] } });
   fn(); for (let i = 0; i < 4; i++) await tick();
   assert.equal(w.calls.confirm.length, 0, 'no question'); assert.deepEqual(w.calls.nodeDel, []); assert.deepEqual(w.calls.rmMgr, []);
-  assert.equal(w.calls.toast.length, 1); assert.match(w.calls.toast[0][0], /احذفه أولاً من «المسؤولون والحسابات» ثم احذف العقدة/); assert.equal(w.calls.toast[0][1], 'warn');
+  assert.equal(w.calls.toast.length, 1); assert.match(w.calls.toast[0][0], /احذفه أولاً من «الصلاحيات ← الأدوار ← مدير الوحدة» ثم احذف العقدة/); assert.equal(w.calls.toast[0][1], 'warn');
 });

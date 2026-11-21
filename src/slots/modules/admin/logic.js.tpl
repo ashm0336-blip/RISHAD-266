@@ -37,7 +37,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this.__orgTab = "";
     if (id === this.state.sysSel) return void (tab !== this.state.sysTab && (this.state = { ...this.state, sysTab: tab }));
     const node = (KIVO.BassamDepts.nodes() || []).some((x) => x && x.id === id);
-    this.state = { ...this.state, sysSel: id, sysTab: tab, ndQ: "" };   /* V7 P2: بحثُ «المسؤولون والحسابات» لكل صفحة عقدة */
+    this.state = { ...this.state, sysSel: id, sysTab: tab, ndQ: "" };   /* V7 P2 · د5-ح: بحثُ حسابات الوحدة (بطاقة «مدير الوحدة») لكل صفحة عقدة */
     setTimeout(() => (node ? this.nodePick(id) : this.sysPick(id), this.state.sysSel === id && this.state.sysTab !== tab && this.setState({ sysTab: tab })), 0);
   }
   /* V7 P1: صفحةُ عقدةٍ بعنوانها — انتقالٌ حقيقيّ في سجلّ المتصفح (الرجوعُ يعود إلى الهيكل أو الصفحة السابقة) */
@@ -78,7 +78,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       capSt = this._capStateTxt(o),
       accts = n ? 0 : safe(() => A.users().filter((u) => "staff" === u.role && u.deptId === o && !u.mgr).length, 0),
       units = n ? safe(() => (D.deptsUnder(o) || []).length, 0) : 0,
-      step = (t, st, ok, tab) => ({ t, st, cls: ok ? "ok" : "wn", mark: ok ? "✓" : "!", goOn: !!tab, goLbl: "cap" === tab ? "فتح الصلاحيات" : "فتح الحسابات", go: () => tab && this.setState("cap" === tab ? { sysTab: "perm", p44: { ...(this.state.p44 || {}), sub: "systems" } } : { sysTab: tab }) });   /* V7 · د5-هـ (44): السقفُ يُضبط في «الصلاحيات ← الأنظمة» */
+      step = (t, st, ok, tab) => ({ t, st, cls: ok ? "ok" : "wn", mark: ok ? "✓" : "!", goOn: !!tab, goLbl: "cap" === tab ? "فتح الصلاحيات" : "فتح «مدير الوحدة»", go: () => tab && this.setState({ sysTab: "perm", p44: { ...(this.state.p44 || {}), rev: null, ...("cap" === tab ? { sub: "systems" } : { sub: "roles", sel: "__mgr" }) } }) });   /* V7 · د5-هـ (44): السقفُ يُضبط في «الصلاحيات ← الأنظمة» · د5-ح: والمسؤولُ والحسابات في «الصلاحيات ← الأدوار ← مدير الوحدة» */
     return {
       ovKids: kids,
       ovKidsOn: kids.length > 0,
@@ -88,10 +88,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         step("تعريف العقدة", (p.kind || (n ? "عقدة" : "إدارة")) + " · في الهيكل", !0, ""),
         /* V7 P3-0: الحالةُ من مصدرٍ واحد (_capStateTxt ← BassamPerm.capState) — «مفتوح — لم يُضبط» تنبيهٌ لا علامةُ تمام */
         step("الصلاحيات", capSt.txt, capSt.ok, "cap"),   /* V7 · د5-هـ (44 · المدير): الخطوةُ تفتح «الصلاحيات ← الأنظمة» فاسمُها اسمُ التبويب */
-        step("المسؤول", mgs.length ? "معيَّن: " + mgs.map((m) => m.name || m.un).join("، ") : "لم يُعيَّن بعد", mgs.length > 0, "emps"),
+        step("المسؤول", mgs.length ? "معيَّن: " + mgs.map((m) => m.name || m.un).join("، ") : "لم يُعيَّن بعد", mgs.length > 0, "mgr"),
         n
           ? step("الإدارات التابعة", KIVO.BassamCount(units, "إدارة") + " تحتها", units > 0, "")
-          : step("الحسابات", KIVO.BassamCount(accts, "حساب موظف"), !0, "emps"),
+          : step("الحسابات", KIVO.BassamCount(accts, "حساب موظف"), !0, "mgr"),
       ],
     };
   }
@@ -703,7 +703,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       run,
     );
   }
-  /* V7 P2 · حسابٌ واحد بقائمة أفعالٍ واحدة: «مراقبة الحسابات» وتبويب «المسؤولون والحسابات» في صفحة العقدة يبنيان صفوفهما من هنا.
+  /* V7 P2 · حسابٌ واحد بقائمة أفعالٍ واحدة: «مراقبة الحسابات» وبطاقةُ «مدير الوحدة» (الصلاحيات ← الأدوار · د5-ح) في صفحة العقدة يبنيان صفوفهما من هنا.
      كلُّ فعلٍ معالجُه القائم في KIVO.BassamAuth، والخادمُ يقرّر (044 usersA1Why · 059 enfUsersWrite · requireSuper) — لا معالجَ موازٍ،
      وعرضُ الحساب لا يمنح حقَّ تعديله: الأفعالُ نفسُها تُرفض خارج تفويضها في الخادم */
   _acctCtx() {
@@ -730,7 +730,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _acctUnit(a) {
     return a ? ("gm" === a.role ? a.gid : a.deptId) || "" : "";
   }
-  /* التعديلُ والصلاحيات نافذتان في صفحة العقدة: هناك تُفتحان، ومن «مراقبة الحسابات» يُفتح تبويبُ حسابات عقدة الحساب */
+  /* التعديلُ والصلاحيات نافذتان في صفحة العقدة: هناك تُفتحان، ومن «مراقبة الحسابات» تُفتح بطاقةُ «مدير الوحدة» لعقدة الحساب (د5-ح) */
   _acctOpen(a, what, here) {
     const u = this._acctUnit(a);
     /* V7 · د5-هـ (44): «تعديل الصلاحيات» يفتح قسم «الأشخاص» في تبويب «الصلاحيات» لوحدة الحساب — نافذةُ صلاحيات الموظف حُذفت */
@@ -744,7 +744,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       } catch (e) {}
       return;
     }
-    if (!here) return void (u ? this._orgNav(u, "emps") : this._ovGo("depts"));
+    if (!here) return void (u ? this.p44Open(u, "roles", { sel: "__mgr" }) : this._ovGo("depts"));   /* V7 · د5-ح: «الصلاحيات ← الأدوار ← مدير الوحدة» */
     if ("edit" === what) return void ("gm" === a.role ? this.gmOpen(u, a.id) : this.mgrOpen(u, a.id));
   }
   /* V7 · د5-هـ (x1): «شاشة عرض» — حسابُ قراءةٍ وحدها مربوطٌ بإدارة، ينشئه مسؤولُ المنصة من «مراقبة الحسابات» (330 addDisplayAccount) */
@@ -1992,7 +1992,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         S(w(m[4]), "خامل ٩٠ يوماً", "mute", "idle"),
         S(w(m[7]), "بصيغة كلمة مرور قديمة", w(m[7]) ? "warn" : "", "old", "لا يستطيع الدخول حتى تُعاد كلمة مروره"),
       ],
-      /* V7 P2: الصفُّ وقائمةُ أفعاله من _acctRow — المصدرُ نفسُه لتبويب «المسؤولون والحسابات» في صفحة العقدة */
+      /* V7 P2: الصفُّ وقائمةُ أفعاله من _acctRow — المصدرُ نفسُه لبطاقة «مدير الوحدة» في صفحة العقدة (د5-ح) */
       v = b.map((a) => this._acctRow(a, X, !1));
     return {
       usCards: x,
@@ -2727,7 +2727,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     Promise.resolve(e.setDeptManager(i)).then((t) => {
       t && t.ok
         ? (this.mgrClose(),
-          this.setState({ tick: (this.state.tick || 0) + 1, sysTab: "emps", usrPage: 1 }),
+          this.setState({ tick: (this.state.tick || 0) + 1, sysTab: "perm", p44: { ...(this.state.p44 || {}), sub: "roles", sel: "__mgr", rev: null }, usrPage: 1 }),   /* V7 · د5-ح: حاملو «مدير الوحدة» */
           this.bsAck(
             t.replaced
               ? "حُدِّثت بيانات مدير " + (this.adDept(i.deptId) ? "«" + this.adDept(i.deptId) + "»" : "الإدارة")
@@ -5533,8 +5533,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch(t) { /* لا يمنع العرض — يُتجاوز بصمت */ }
     try {
       "dept" === i && KIVO.__ADMIN_OPEN_DTAB && ((dq = KIVO.__ADMIN_OPEN_DTAB), (KIVO.__ADMIN_OPEN_DTAB = null));
-      /* V7 · د5-هـ (44 · المدير): #/admin/perm/<roles|people|log> يفتح «الصلاحيات» على قسمه */
-      const psub = "perm" === dq ? (/^#\/admin\/perm\/(roles|people|log)$/.exec(String(location.hash || "")) || [])[1] : "";
+      /* V7 · د5-هـ (44 · المدير): #/admin/perm/<systems|roles|people|log> يفتح «الصلاحيات» على قسمه (د5-ح: و«الأنظمة» قراءةً) */
+      const psub = "perm" === dq ? (/^#\/admin\/perm\/(systems|roles|people|log)$/.exec(String(location.hash || "")) || [])[1] : "";
       psub && (this.state = { ...this.state, p44: { ...(this.state.p44 || {}), sub: psub } });
     } catch(t) { /* لا يمنع العرض — يُتجاوز بصمت */ }
     const dt = dq && g.includes(dq) ? dq : e.deptTab,
@@ -5709,7 +5709,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               return { ...tree, deptDetailReady: false, deptDetailEmpty: true, deptDetailMessage: message, _sel: "" };
             }
             /* V7 P1: تبويباتُ صفحة العقدة — «نظرة عامة» افتراضاً · «البيانات» للإدارة والقسم وحدهما */
-            const l = ["ov", "emps", "perm", "data"].includes(e.sysTab) && !(n && "data" === e.sysTab) ? e.sysTab : "ov";
+            const l = ["ov", "perm", "data"].includes(e.sysTab) && !(n && "data" === e.sysTab) ? e.sysTab : "ov";   /* V7 · د5-ح: لا تبويبَ مستقلّاً للمسؤولين والحسابات — بطاقةُ «مدير الوحدة» في «الصلاحيات ← الأدوار» */
             try {
               if (!n) KIVO.__BS_SRV.operations.reference("bsdept:" + o + ":bassam_employees_v1");
             } catch (t) {
@@ -5791,7 +5791,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       ? 0
                       : (A && A.users ? A.users() : []).filter((t) => "staff" === t.role && t.deptId === o && !t.mgr).length;
                     const K = n ? this._gmKind(o) : "";
-                    /* V7 P2 · «المسؤولون والحسابات»: جدولُ «مراقبة الحسابات» نفسُه (_acctRow · قائمة الأفعال الواحدة) مصفّىً بنطاق العقدة —
+                    /* V7 P2 · د5-ح · بطاقةُ «مدير الوحدة» (الصلاحيات ← الأدوار): جدولُ «مراقبة الحسابات» نفسُه (_acctRow · قائمة الأفعال الواحدة) مصفّىً بنطاق العقدة —
                        حساباتُ العقدة وما تحتها في الهيكل (المدير العام بعقدته gid، وغيرُه بإدارته أو قسمه deptId)، المسؤولون أولاً */
                     const X = this._acctCtx(),
                       ids = { [o]: 1 };
@@ -5807,7 +5807,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                         .filter((a) => !q || KIVO.BassamFind.dig([a.name, a.un, a.alt, this.adUnit(a), this.adRole(a)].join(" ").toLowerCase()).indexOf(q) >= 0)
                         .sort((a, b) => rank(a) - rank(b) || String(a.name || "").localeCompare(String(b.name || ""), "ar"));
                     return {
-                      mgCount: String(scope.length),
                       mgHas: list.length > 0,
                       mgNone: 0 === list.length,
                       mgStaffTxt: n
@@ -5842,7 +5841,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       const kd = (t.childrenOf && t.childrenOf(o)) || [];
                       if (kd.length) return void this.bsToast("تحت «" + p.name + "» " + KIVO.BassamCount(kd.length, "تابع") + " — انقلها أو احذفها أولاً ثم احذف العقدة", "warn");
                       const m = KIVO.BassamAuth && KIVO.BassamAuth.groupManagers ? KIVO.BassamAuth.groupManagers(o).length : 0;
-                      if (m) return void this.bsToast("لـ«" + p.name + "» " + KIVO.BassamCount(m, "حساب مدير") + " — احذفه أولاً من «المسؤولون والحسابات» ثم احذف العقدة", "warn");
+                      if (m) return void this.bsToast("لـ«" + p.name + "» " + KIVO.BassamCount(m, "حساب مدير") + " — احذفه أولاً من «الصلاحيات ← الأدوار ← مدير الوحدة» ثم احذف العقدة", "warn");
                       return void this._adAsk(
                         {
                           title: "حذف «" + p.name + "»",
@@ -5919,7 +5918,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     : (t.save(a.map((t) => (t.id === o ? { ...t, name: s } : t))), this.setState({ ["dnm_" + o]: void 0, deptMsg2: "" }));
                 } else this.setState({ ["dnm_" + o]: void 0 });
               },
-              goTabEmps: () => this.setState({ sysTab: "emps" }),
               goTabOv: () => this.setState({ sysTab: "ov" }),
               goTabData: () => this.setState({ sysTab: "data" }),
               onTabOv: "ov" === l,
@@ -5930,15 +5928,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               selNature: n ? "عقدة إشرافية" : t.isSection && t.isSection(o) ? "قسم تشغيلي" : "إدارة تشغيلية",
               selNatureCls: n ? "sup" : "opr",
               ...this._orgOvVals(t, o, n, p),
-              tabEmpsStyle: M("emps" === l),
-              onTabEmps: "emps" === l,
               /* V7 · د5-هـ (44): «الصلاحيات» حلّت محلّ «سقف الصفحات» — لوحةُ السقف وشجرتُها القديمة (صفحة × فعل) حُذفتا؛ السقفُ يُضبط في «الصلاحيات ← الأنظمة» */
               goTabPerm: () => this.setState({ sysTab: "perm" }),
               tabPermStyle: M("perm" === l),
               onTabPerm: "perm" === l,
               ...("perm" === l && !this.__p44Dept && this._p44Vals ? this._p44Vals(o, n, p) : {}),
-              tabEmpsShow: !0,
-              tabEmpsLbl: "المسؤولون والحسابات",   /* V7 P2: المديرون والحسابات في جدولٍ واحد لكل عقدة */
               _sel: o,
             };
           })(),

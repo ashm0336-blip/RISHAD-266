@@ -60,8 +60,8 @@ test('CORE-02 step 3: sensitive actions ask first, the recovery key dialog holds
     await row.locator('[data-bs-dd]').getByText('تجميد الحساب', { exact: true }).click();
     await cancelDialog(page, 'freeze an account', 'تجميد الحساب');
 
-    /* V7 P1/P2: unit A's own page, its «المسؤولون والحسابات» tab lists TEST_ONLY مدير أ — the row menu (the same as «مراقبة الحسابات») deletes */
-    await s.go('#/sysadmin/org/TEST_ONLY_A', 4500); await main(page).locator('[aria-label="أقسام صفحة العقدة"] button', { hasText: 'المسؤولون والحسابات' }).first().click(); await page.waitForTimeout(800);
+    /* V7 P1/P2 · د5-ح: unit A's own page, «الصلاحيات ← الأدوار ← مدير الوحدة» lists TEST_ONLY مدير أ — the row menu (the same as «مراقبة الحسابات») deletes */
+    await s.go('#/sysadmin/org/TEST_ONLY_A/perm/roles', 4500); await main(page).locator('.p44-role', { hasText: 'مدير الوحدة' }).first().click(); await page.waitForTimeout(800);
     const mrow = main(page).locator('.mk .adm-tr.g-us', { hasText: 'TEST_ONLY مدير أ' }).filter({ has: page.locator('.adm-rmb') }).first();
     await mrow.locator('.adm-rmb').click(); await page.waitForTimeout(500);
     await mrow.locator('[data-bs-dd]').getByText('حذف حساب المدير', { exact: true }).click();

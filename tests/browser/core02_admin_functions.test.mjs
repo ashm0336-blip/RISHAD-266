@@ -81,10 +81,12 @@ const MOVED = {
      (its four items — نسخة الإدارة · استيراد · مسح البيانات · حذف — stay recorded actions, checked as such), and «طيّ لوحة التفاصيل»
      became «العودة إلى الهيكل» (the structure page: the tree) */
   depts: { 'بيانات الإدارة: نسخة - استيراد - مسح - حذف': '=البيانات', 'طيّ لوحة التفاصيل': '=العودة إلى الهيكل',
-    /* V7 P2: the accounts tab is «المسؤولون والحسابات» — the «مراقبة الحسابات» table, one row menu per account (_acctMenu); the manager
+    /* V7 P2: the accounts tab became the «مراقبة الحسابات» table, one row menu per account (_acctMenu); the manager
        card's icon buttons are that menu's items (same handlers: setDisById · resetPwById → the temporary-password dialog · the permissions
-       dialog · removeDeptManager); «تعديل بيانات المدير» keeps its name */
-    'حسابات الإدارة #': '=المسؤولون والحسابات #', 'إيقاف الحساب مؤقتاً — يمنع الدخول بلا حذف': '=تجميد الحساب',
+       dialog · removeDeptManager); «تعديل بيانات المدير» keeps its name.
+       V7 · د5-ح (قرار المالك): the node tab was deleted — the same table is the fixed card «مدير الوحدة» of «الصلاحيات ← الأدوار»,
+       reached by the «الصلاحيات» tab (its menu items are probed there below) */
+    'حسابات الإدارة #': '=الصلاحيات', 'إيقاف الحساب مؤقتاً — يمنع الدخول بلا حذف': '=تجميد الحساب',
     'كلمة مرور مؤقتة — تُسلَّم له ويُطلب تغييرها عند أول دخول': '=إعادة تعيين كلمة المرور', 'الصلاحيات — يرث سقف الإدارة كاملاً، والتضييق اختياري': '=تعديل الصلاحيات',
     'حذف حساب المدير — تبقى الإدارة وبياناتها': '=حذف حساب المدير' },
   /* CORE-02 S7: the nine platform sections were in-page tabs; each is now a named item of the console sidebar (#/sysadmin/plat/<sub>) —
@@ -129,7 +131,8 @@ function collect() {
     if (!vis(e) || e.closest('.bs-sr-only')) continue;
     if (e.matches('input,select,textarea')) {
       if (e.type === 'hidden') continue;
-      const lab = e.getAttribute('aria-label') || (e.labels && e.labels[0] && e.labels[0].textContent) || e.placeholder || e.title || '';
+      /* V7 · د5-ح: مرورُ المؤشر ينقل title إلى data-tip (600-tooltip-portal) — الاسمُ نفسُه؛ صار الحقلُ تحت نقرة الصف بعدما قصر شريطُ التبويبات */
+      const lab = e.getAttribute('aria-label') || (e.labels && e.labels[0] && e.labels[0].textContent) || e.placeholder || e.title || e.getAttribute('data-tip') || '';
       const kind = e.matches('select') ? 'select' : e.matches('textarea') ? 'textarea' : (e.type === 'checkbox' || e.type === 'radio') ? 'toggle' : 'input';
       const t = norm(lab); if (keep(t)) out.fields.add(kind + ':' + t);
       continue;
@@ -228,11 +231,15 @@ async function probes(page, scope, tab, each) {
     if (await all.count()) { await all.click({ timeout: 10000 }); await page.waitForTimeout(400); }
     const row = page.locator('main.bs-main .tr-rw', { hasText: 'TEST_ONLY إدارة أ' }).first();
     if (await row.count()) { await row.click({ timeout: 10000 }); await page.waitForTimeout(2000); await snap('node'); }
-    for (const label of ['الصلاحيات', 'المسؤولون والحسابات', 'البيانات']) {   /* V7 · د5-هـ (44): «الصلاحيات» مكانَ «سقف الصفحات» */
+    for (const label of ['الصلاحيات', 'البيانات']) {   /* V7 · د5-هـ (44): «الصلاحيات» مكانَ «سقف الصفحات» */
       const b = page.locator('main.bs-main [aria-label="أقسام صفحة العقدة"] button', { hasText: label }).first();
       if (await b.count()) { await b.click({ timeout: 10000 }); await page.waitForTimeout(700); await snap('tab:' + label); }
-      /* V7 P2: the accounts tab is the «مراقبة الحسابات» table — its manager row's action menu holds the former card buttons */
-      if (label === 'المسؤولون والحسابات') {
+      /* V7 P2 · د5-ح: the accounts table («مراقبة الحسابات» rows) is the «مدير الوحدة» card of «الصلاحيات ← الأدوار» — its manager row's action menu holds the former card buttons */
+      if (label === 'الصلاحيات') {
+        const rs = page.locator('main.bs-main nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأدوار' }).first();
+        if (await rs.count()) { await rs.click({ timeout: 10000 }); await page.waitForTimeout(600); }
+        const mc = page.locator('main.bs-main .p44-role', { hasText: 'مدير الوحدة' }).first();
+        if (await mc.count()) { await mc.click({ timeout: 10000 }); await page.waitForTimeout(600); await snap('card:مدير الوحدة'); }
         const r = page.locator('main.bs-main .mk .adm-tr.g-us', { hasText: 'TEST_ONLY مدير أ' }).filter({ has: page.locator('.adm-rmb') }).first();
         if (await r.count()) { await r.locator('.adm-rmb').click({ timeout: 10000 }); await page.waitForTimeout(500); await snap('tab-menu:' + label); await page.keyboard.press('Escape'); await page.waitForTimeout(300); }
       }

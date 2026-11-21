@@ -1,8 +1,10 @@
 /* RISHAD V7 P1 — the organisation structure page and a page per node, in the isolated lab (TEST_ONLY data, no network).
    #/sysadmin/org is the structure page: the tree alone, searchable, expandable and collapsible. A row opens the node's own page
    #/sysadmin/org/<id> (the P0 address), whose tabs follow its nature:
-     · a supervisory node («عقدة إشرافية»): نظرة عامة · المسؤولون والحسابات (V7 P2) · الصلاحيات (V7 · د5-هـ 44: in place of «سقف الصفحات») — no data tab (a node holds no data);
-     · an operational unit («إدارة تشغيلية» / «قسم تشغيلي»): نظرة عامة · المسؤولون والحسابات · الصلاحيات · البيانات.
+     · a supervisory node («عقدة إشرافية»): نظرة عامة · الصلاحيات (V7 · د5-هـ 44: in place of «سقف الصفحات») — no data tab (a node holds no data);
+     · an operational unit («إدارة تشغيلية» / «قسم تشغيلي»): نظرة عامة · الصلاحيات · البيانات.
+     V7 · د5-ح: the node tab of managers and accounts was deleted — its content is the fixed card «مدير الوحدة» of «الصلاحيات ← الأدوار»;
+     every unit kind carries «الصلاحيات» with its four sections.
    The overview gathers the node's place and actions, what sits under it (links to their pages) and the setup checklist (links to the tab
    that does each step). «العودة إلى الهيكل» and the browser Back return to the tree. Deleting a node that still has anything under it is
    refused BEFORE any confirmation (it used to ask, then refuse); the server keeps refusing it on its own (tests/unit/v7_p0_node_integrity).
@@ -54,6 +56,17 @@ test('V7 P1 · structure page, node pages by nature, overview links, delete refu
     assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_G', 'a row click opens the node page'); assert.equal(await SEL(), 'TEST_ONLY إدارة عامة');
     let t = await tabs(); assert.deepEqual(t.map((x) => x[0]).filter((x) => /نظرة عامة|الصلاحيات|البيانات/.test(x)), ['نظرة عامة', 'الصلاحيات'], 'node tabs: ' + JSON.stringify(t));
     assert.equal(t[0][1], 'true', 'the overview tab is selected'); assert.equal(await p.locator('main .dl-bk').count(), 1);
+    assert.deepEqual(t.map((x) => x[0]), ['نظرة عامة', 'الصلاحيات'], 'V7 · د5-ح: no separate accounts tab');
+    /* V7 · د5-ح ①: the supervisory node carries the four sections — its roles are the two fixed cards, its people its branch */
+    await s.go('#/sysadmin/org/TEST_ONLY_G/perm/roles', 2000);
+    assert.deepEqual(await p.locator('main nav[aria-label="أقسام الصلاحيات"] button').allInnerTexts(), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل'], 'four sections on a node');
+    assert.deepEqual((await p.locator('main .p44 .p44-role b').allInnerTexts()).map((x) => x.trim()), ['مدير المنصة', 'مدير الوحدة'], 'the two fixed cards');
+    assert.equal(await p.locator('main .p44 .mk.ac7').count(), 1, 'its «مدير الوحدة» card holds the accounts table');
+    await s.go('#/sysadmin/org/TEST_ONLY_G/perm/people', 1500);
+    assert.ok((await p.locator('main .p44 section[aria-label="أشخاص الفرع"] tbody tr').count()) >= 1, 'its branch\'s people');
+    await s.go('#/sysadmin/org/TEST_ONLY_G/perm/log', 1500);
+    assert.equal(await p.locator('main .p44 .bs-retry').count(), 0, 'its log loads');
+    await s.go('#/sysadmin/org/TEST_ONLY_G', 1500);
     assert.equal((await p.locator('main .nt').innerText()).trim(), 'عقدة إشرافية', 'the nature of a node');
     assert.equal(await p.locator('main .tr-rw').count(), 0, 'the tree is not shown on a node page');
     const kids = await p.locator('main section[aria-label="ما تحتها"] a').allInnerTexts();
@@ -68,7 +81,12 @@ test('V7 P1 · structure page, node pages by nature, overview links, delete refu
     await p.locator('main section[aria-label="ما تحتها"] a', { hasText: 'TEST_ONLY إدارة أ' }).click(); await p.waitForTimeout(1500);
     assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ');
     t = await tabs(); assert.deepEqual(t.map((x) => x[0]).filter((x) => /نظرة عامة|الصلاحيات|البيانات/.test(x)), ['نظرة عامة', 'الصلاحيات', 'البيانات'], 'unit tabs: ' + JSON.stringify(t));
-    assert.ok(t.some((x) => /^المسؤولون والحسابات/.test(x[0])), 'the accounts tab (V7 P2: «المسؤولون والحسابات»)');
+    assert.ok(!t.some((x) => /المسؤولون والحسابات/.test(x[0])), 'V7 · د5-ح: the accounts tab is deleted (its content: «الصلاحيات ← الأدوار ← مدير الوحدة»)');
+    /* the checklist's manager step opens the «مدير الوحدة» card */
+    await p.locator('main section[aria-label="قائمة التهيئة"] button', { hasText: 'فتح «مدير الوحدة»' }).first().click(); await p.waitForTimeout(900);
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A/perm/roles');
+    assert.equal(await p.locator('main .p44 .p44-role[aria-pressed="true"]', { hasText: 'مدير الوحدة' }).count(), 1, 'the card is selected');
+    await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'نظرة عامة' }).first().click(); await p.waitForTimeout(600);
     assert.equal((await p.locator('main .nt').innerText()).trim(), 'إدارة تشغيلية');
     /* the setup checklist leads to the tab that does the step */
     await p.locator('main section[aria-label="قائمة التهيئة"] button', { hasText: 'فتح الصلاحيات' }).click(); await p.waitForTimeout(900);
