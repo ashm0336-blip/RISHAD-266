@@ -70,7 +70,7 @@
  },
  "nf.denyRecs.daily": {
   "order": 10,
-  "text": "bassam_rounds_v1: \"الجولات اليومية\", "
+  "text": "bassam_rounds_v1: \"الجولات اليومية\", bassam_rounds_arc_v1: \"أرشيف الجولات اليومية\", "
  },
  "emp.keys.daily": {
   "order": 10,

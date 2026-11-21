@@ -16,6 +16,10 @@
   "order": 10,
   "text": "\"staffing_v3\", "
  },
+ "nf.lead.staffing.staff": {
+  "order": 10,
+  "text": "isObj(r.staffing_v3) ? r.staffing_v3 : {}"
+ },
  "nf.shift.staff": {
   "order": 10,
   "file": "slots/nf.shift.staff.frag"

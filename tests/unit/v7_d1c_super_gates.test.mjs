@@ -49,6 +49,8 @@ for (const mode of ['enforce']) {
     for (const r of RES) {
       const R = W.RES_REG[r], k = 'bsdept:' + D + ':' + r;
       chk(W.resOnCeiling(A, D, R), 'resOnCeiling ' + r);
+      /* V7 · د5-ح (13): موردٌ تكتبه خطوةُ خادمٍ وحدها (srv — أرشيفُ الجولات) لا يكتبه أحدٌ من العميل ولا مديرُ المنصة — فلا تُكتب صورتُه؛ ويُثبَّت رفضُه */
+      if (R.srv) { assert.equal(W.imgWriteOk(A, k), false, 'srv: ' + r); continue; }
       chk(W.imgWriteOk(A, k), 'imgWriteOk ' + r);   /* كتابةُ الصورة = كتابةُ مورد مالكها (054 · 060 enfImgWriteOk) */
       /* V7 · د5-ح: authorize0 (حكمُ الوضع القديم) حُذف */
     }

@@ -6280,7 +6280,7 @@ var NF_DENY_RECS = {
   bassam_staffing_v3: "الجدول الشهري", bassam_staffing_v2: "الجدول الشهري (صيغة قديمة)", bassam_staffing_snap_v1: "بيان الشهر",
   bassam_staffing_locks_v1: "أقفال الجدول الشهري", bassam_callsigns_v1: "رموز النداء", bassam_perm_limit_v1: "ترقية الصلاحيات",
   bassam_plan_v1: "الخطة التشغيلية", bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب",
-  bassam_mark_kinds_v1: "أنواع المعالم", bassam_rounds_v1: "الجولات اليومية", bassam_dayshift_v1: "الوردية المختارة",
+  bassam_mark_kinds_v1: "أنواع المعالم", bassam_rounds_v1: "الجولات اليومية", bassam_rounds_arc_v1: "أرشيف الجولات اليومية", bassam_dayshift_v1: "الوردية المختارة",
   bassam_dayfocus_v1: "اليوم المختار", bassam_dreport_v1: "التقرير اليومي", bassam_dr_grp_v1: "مجموعات التقرير اليومي",
   bassam_leave_kinds_v1: "أنواع الإجازات", bassam_tasks_v1: "المهام", bassam_tasks_locks_v1: "أقفال المهام", bassam_irshad_v1: "نظام الاسترشاد",
   bassam_irshad_langs_v1: "لغات الاسترشاد", bassam_irshad_locs_v1: "مواقع الاسترشاد", bassam_seized_v1: "نظام المضبوطات",
@@ -6333,6 +6333,7 @@ var NF_DENY_WHY = {
   shape: "قيمة خارج الحدود المسموحة طولاً أو شكلاً", unmapped: "تعديل غير مصنَّف رُفض احتياطاً", residual: "تعديل غير مصنَّف رُفض احتياطاً",
   unbound: "تعديل غير مصنَّف رُفض احتياطاً", keydel: "حذف السجل كاملاً غير مسموح", append: "السجل يقبل الإضافة فقط ولا يُعدَّل ما سبق فيه",
   unknown: "سجل لا يعرفه الخادم", device: "تفضيل خاص بالجهاز لا يُحفظ في الخادم",
+  srv: "سجلٌّ تكتبه خطوةُ خادمٍ وحدها (كأرشيف الجولات) — لا يُكتب من الصفحة",   /* V7 · د5-ح (13): 023 RES_READ_AS · 060 */
   session: "جلسة غير صالحة", base: "الطلب لم يذكر نسخة السجل التي بُني عليها",
   flag: "راية تهيئة يكتبها مدير الإدارة وحده", tech: "راية تهيئة لا يكتبها إلا من له كتابة في الإدارة",
   selfdev: "سجل جهاز التنبيهات لصاحبه وحده", notif: "سجل التنبيهات القديم لم يعد يُكتب", "domain-moved": "السجل انتقل إلى مسار خاص ولا يُحفظ بالحفظ العام",

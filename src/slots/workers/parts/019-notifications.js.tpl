@@ -755,7 +755,7 @@ function nfLeadShifts(A, u, d, refs) {
   var dr = @@SYS:nf.leader.dreport|empty="null"@@;
   if (!isObj(dr) || !nfSupNow(r, u)) return (memo[mk] = []);
   var emps = Array.isArray(r.employees_v1) ? r.employees_v1 : [], L = pfLink(u, emps), toks = pfTokens(u, L.rec, emps),
-    st = isObj(r.staffing_v3) ? r.staffing_v3 : {}, opts = Array.isArray(r.shift_options_v1) ? r.shift_options_v1 : [],
+    st = @@SYS:nf.lead.staffing.staff|empty="{}"@@, opts = Array.isArray(r.shift_options_v1) ? r.shift_options_v1 : [],
     dayOf = function (T0) { return pfDay({ bucket: isObj(st[T0.ym]) ? st[T0.ym] : {}, rep: isObj(dr[T0.dk]) ? dr[T0.dk] : null, toks: toks, wd: T0.wd, opts: opts }); };
   if (!toks.length) return (memo[mk] = []);
   var T = pfOpDay(Date.now(), dayOf), sh = String(dayOf(T).shift.name || ""), rep = dr[T.dk],
@@ -2399,6 +2399,7 @@ var NF_DENY_WHY = {
   shape: "قيمة خارج الحدود المسموحة طولاً أو شكلاً", unmapped: "تعديل غير مصنَّف رُفض احتياطاً", residual: "تعديل غير مصنَّف رُفض احتياطاً",
   unbound: "تعديل غير مصنَّف رُفض احتياطاً", keydel: "حذف السجل كاملاً غير مسموح", append: "السجل يقبل الإضافة فقط ولا يُعدَّل ما سبق فيه",
   unknown: "سجل لا يعرفه الخادم", device: "تفضيل خاص بالجهاز لا يُحفظ في الخادم",
+  srv: "سجلٌّ تكتبه خطوةُ خادمٍ وحدها (كأرشيف الجولات) — لا يُكتب من الصفحة",   /* V7 · د5-ح (13): 023 RES_READ_AS · 060 */
   session: "جلسة غير صالحة", base: "الطلب لم يذكر نسخة السجل التي بُني عليها",
   flag: "راية تهيئة يكتبها مدير الإدارة وحده", tech: "راية تهيئة لا يكتبها إلا من له كتابة في الإدارة",
   selfdev: "سجل جهاز التنبيهات لصاحبه وحده", notif: "سجل التنبيهات القديم لم يعد يُكتب", "domain-moved": "السجل انتقل إلى مسار خاص ولا يُحفظ بالحفظ العام",

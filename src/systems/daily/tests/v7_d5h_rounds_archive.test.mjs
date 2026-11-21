@@ -76,7 +76,8 @@ test('[enforce] rounds-arc: خطة ← تطبيق (يوماً يوماً) ← ل
   /* ① */
   assert.equal((await plan(W, '', W.dm)).status, 403, 'مديرُ الإدارة لا يخطّط');
   const legacy = await world('legacy');
-  assert.equal((await plan(legacy)).status, 404, 'خارج بيئة الإنفاذ: not-enforce-env');
+  /* V7 · د5-ح (القفل): /api/authz-migrate متاحٌ في كل بيئة لمدير المنصة (لا بوابةَ بيئة) — فيخطّط على قاعدةٍ لم تُرحَّل بعد كما في الإنفاذ */
+  const lp = await plan(legacy); assert.equal(lp.status, 200, JSON.stringify(lp.j).slice(0, 200)); assert.deepEqual(lp.j.plan.parts, ['rounds-arc']);
   const mixed = await plan(W, ',perm'); assert.equal(mixed.status, 400); assert.equal(mixed.j.err, 'parts-mixed');
   const p1 = await plan(W); assert.equal(p1.status, 200, JSON.stringify(p1.j).slice(0, 300)); const P1 = p1.j.plan;
   assert.deepEqual(P1.parts, ['rounds-arc']); assert.deepEqual(P1.writes.map((w) => w.k).sort(), [KA, KR].sort(), 'الحيُّ والأرشيفُ وحدهما');

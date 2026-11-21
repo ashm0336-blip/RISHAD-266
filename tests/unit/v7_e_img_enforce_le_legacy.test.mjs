@@ -43,7 +43,7 @@ import { world, workerUnderTest, D as FXD, PNG as FXPNG, TAG, stored, taskComman
 import { needs } from './harness.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const { PG_KEYS, RES_REG, pgLeaves, ACTS_ALL, WRITE_ACTS } = await internals(['PG_KEYS', 'RES_REG', 'pgLeaves', 'ACTS_ALL', 'WRITE_ACTS']);
+const { PG_KEYS, RES_REG, pgLeaves, ACTS_ALL, WRITE_ACTS, RES_READ_AS } = await internals(['PG_KEYS', 'RES_REG', 'pgLeaves', 'ACTS_ALL', 'WRITE_ACTS', 'RES_READ_AS']);
 const REGJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/permissions/registry/registry-v24.9.json'), 'utf8')), REG = REGJ.registry;
 const KG = 'bassam_gdepts_v1', KD = 'bassam_depts_v1', KU = 'bassam_auth_users_v1', KP = 'bassam_perms_v1';
 const put = (DB, k, v) => { DB.db.prepare('DELETE FROM kv WHERE k = ?').run(k); DB.db.prepare('INSERT INTO kv (k, seq, v) VALUES (?, 0, ?)').run(k, JSON.stringify(v)); DB.db.prepare('INSERT INTO revs (k, rev) VALUES (?, 1) ON CONFLICT(k) DO UPDATE SET rev = rev + 1').run(k); };
@@ -167,6 +167,11 @@ function violations(L, E) {
     const refs = L[id] ? [id] : GRANT_REF[id]; assert.ok(refs && refs.every((r) => L[r]), id + ': a legacy counterpart exists (' + refs + ')');
     for (const cell of Object.keys(E[id])) for (let i = 0; i < E[id][cell].length; i++) {
       compared++;
+      /* V7 · د5-ح: سجلٌّ وُلد بعد المرجع (20e6571) لا عمودَ له في الجدول القديم — أرشيفُ الجولات يُقرأ بسياسة الجولات (023 RES_READ_AS)، فيُقارن بعمودها.
+         وما لا نظيرَ له: الإنفاذُ لا يسمح فيه بشيءٍ أصلاً (أشدّ من المقارنة) */
+      let lc = cell; if (!refs.some((r) => L[r][lc])) for (const [a, b] of Object.entries(RES_READ_AS || {})) if (lc.endsWith(a)) lc = lc.slice(0, -a.length) + b;
+      if (!refs.some((r) => L[r][lc])) { if (E[id][cell][i] === 'Y') (out[cell + ' · ' + opName(cell, i) + ' (no legacy baseline)'] = out[cell + ' · ' + opName(cell, i) + ' (no legacy baseline)'] || []).push(id); continue; }
+      if (lc !== cell) { if (E[id][cell][i] === 'Y' && !refs.some((r) => L[r][lc][i] === 'Y')) (out[cell + ' · ' + opName(cell, i)] = out[cell + ' · ' + opName(cell, i)] || []).push(id); continue; }
       if (E[id][cell][i] === 'Y' && !refs.some((r) => L[r][cell][i] === 'Y')) (out[cell + ' · ' + opName(cell, i)] = out[cell + ' · ' + opName(cell, i)] || []).push(id);
     }
   }
