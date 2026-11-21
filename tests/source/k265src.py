@@ -23,7 +23,9 @@ git = lambda *a: subprocess.run(['git'] + list(a), capture_output=True, text=Tru
 run = lambda cmd: subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
 print('╔═ (ب) الثوابت ═╗')
 pc = run([sys.executable, 'tools/plugins.py', 'check'])
-ok(pc.returncode == 0 and '6 عدسة' in pc.stdout, '★ tools/plugins.py check (AUD-030)', pc.stdout.strip().split('\n')[-1][:200])
+# V7 · د5-ح: العدساتُ قطعةٌ مشتركة (src/systems/_shared/lenses ← plugins/<key>/manifest.json.tpl) تغيب بغياب مضيفَيها — عددُها من قوالبها الحاضرة لا رقماً ثابتاً
+_LP = os.path.join(ROOT, 'src', 'systems', '_shared', 'lenses', 'plugins'); N_LENS = len([k for k in os.listdir(_LP) if os.path.isfile(os.path.join(_LP, k, 'manifest.json.tpl'))]) if os.path.isdir(_LP) else 0
+ok(pc.returncode == 0 and (str(N_LENS) + ' عدسة') in pc.stdout, '★ tools/plugins.py check (AUD-030)', pc.stdout.strip().split('\n')[-1][:200])
 pt = run([sys.executable, 'tools/perm_tree.py', 'check'])
 ok(pt.returncode == 0, '★ شجرةُ v24.9 = الاشتقاق (perm-tree24.json)', pt.stdout.strip()[-140:])
 tc = run([sys.executable, 'tools/tokens.py', 'check', 'src'])

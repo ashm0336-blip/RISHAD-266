@@ -79,7 +79,7 @@ test('(2) no print-core code in the base: the core lives in src/systems/_shared/
   const piece = JSON.parse(fs.readFileSync(path.join(SRC, 'systems', '_shared', 'print', 'shared.json'), 'utf8'));
   assert.deepEqual(piece.owners, ['daily', 'plan']); assert.deepEqual(piece.files, ['566-print-core.js']);
   for (const k of piece.owners.filter((o) => SYSTEMS.includes(o)))
-    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(SRC, 'systems', k, 'system.json'), 'utf8')).shared, ['print'], k + ' declares the piece');
+    assert.ok(JSON.parse(fs.readFileSync(path.join(SRC, 'systems', k, 'system.json'), 'utf8')).shared.includes('print'), k + ' declares the piece');   /* V7 · د5-ح: ومعها قطعةُ العدسات */
   /* the generated shell holds it exactly once (both owners present = one block) */
   const T = fs.readFileSync(path.join(SRC, 'layouts', 'index.template.html'), 'utf8'), B = fs.readFileSync(path.join(SRC, 'blocks.json'), 'utf8');
   assert.equal(T.split('@@KIVO_BLOCK:systems/_shared/print/566-print-core.js@@').length - 1, 1, 'one block in the shell');
@@ -108,5 +108,6 @@ print(json.dumps(out, ensure_ascii=False))`;
   }
   assert.equal(o.both.shell, 0, 'both gone: no block'); assert.equal(o.both.blocks, 0); assert.deepEqual(o.both.after, []);
   assert.equal(o.both.retired, true, 'both gone: KIVO.BassamPrintCore leaves the public names layer');
-  assert.deepEqual(o.both.problems, ['قطعة مشتركة بلا مالك: src/systems/_shared/print — احذفها'], 'both gone: the check asks for the piece to be deleted (the removal test deletes it)');
+  assert.ok(o.both.problems.includes('قطعة مشتركة بلا مالك: src/systems/_shared/print — احذفها'), 'both gone: the check asks for the piece to be deleted (the removal test deletes it)');
+  assert.deepEqual(o.both.problems.filter((x) => !/^قطعة مشتركة بلا مالك: src\/systems\/_shared\/(print|lenses) — احذفها$/.test(x)), [], 'and nothing else (the lenses piece goes with the same owners)');
 });
