@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 
-const source = fs.readFileSync("src/modules/admin/logic.js", "utf8");
+const source = fs.readFileSync("src/modules/admin/logic.js", "utf8") + "\n" + fs.readFileSync("src/modules/admin/logic-perm44.js", "utf8");   /* V7 · د5-هـ (44 · المدير): وجزءُ «الصلاحيات» (p44Mount يحرس كتلتَها) */
 const view = fs.readFileSync("src/modules/admin/view.html", "utf8");
 const clone = (value) => JSON.parse(JSON.stringify(value));
 function fixture({
@@ -204,6 +204,12 @@ test("stale invented d1 and collapsed detail state cannot create a fake departme
   assert.equal(values.dhSwitch, undefined);
   assert.equal(values.dhDel, undefined);
   assert.equal(values.capSaveDo, undefined);
+  /* V7 · د5-هـ (44 · المدير): ولا صفحةَ «الصلاحيات» بلا تفاصيل جاهزة، ولو كان تبويبُها المطلوب */
+  B.page.state.sysTab = "perm";
+  const pv = B.render();
+  assert.equal(pv.deptDetailReady, false);
+  assert.equal(pv.p44Show, false);
+  assert.equal(pv.p44SysSave, undefined);
 });
 
 test("real registered departments and actual hierarchy nodes retain their existing detail types and actions", () => {
@@ -276,9 +282,12 @@ test("the actual template gates every existing selected-detail action while leav
     "{{dhSwitch}}",
     "{{goTabData}}",   /* V7 P1: the «بيانات الإدارة» menu became the «البيانات» tab */
     "{{tabEmpsLbl}}",
-    "{{p44SysSave}}",   /* V7 · د5-هـ (44): «حفظ السقف» حُذف مع «سقف الصفحات» — حفظُ الأنظمة في «الصلاحيات» داخل التفاصيل نفسها */
   ])
     assert.ok(selected.includes(binding), binding);
+  /* V7 · د5-هـ (44 · المدير): «الصلاحيات» (ومنها حفظُ الأنظمة p44SysSave) صفحةٌ واحدة يعرضها موضعان — صفحةُ العقدة وإعداداتُ الإدارة —
+     فكتلتُها خارج هذه الكتلة، وحارسُها p44Show: في «مركز إدارة رشاد» = تبويبُها مع تفاصيلَ جاهزة (deptDetailReady) — الحالةُ تُثبَّت أدناه */
+  const p44 = view.indexOf('<sc-if value="{{p44Show}}"');
+  assert.ok(p44 > end && view.indexOf("{{p44SysSave}}") > p44, "the permissions page (with its systems save) sits under its own guard {{p44Show}}");
   assert.ok(view.includes("{{deptDetailMessage}}"));
   assert.ok(
     view.indexOf("{{deptCount}}") > end,

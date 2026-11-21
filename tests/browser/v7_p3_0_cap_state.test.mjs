@@ -21,7 +21,7 @@ async function setPerms(lab, f) {
 async function view(b, lab) {
   const s = await openAs(b, lab, LAB.superUn, LAB.superPw); s.page.setDefaultTimeout(15000); const p = s.page;
   const tree = async (name) => { await s.go('#/sysadmin/org', 2500); await p.locator('main a:has-text("فرد الكل")').click(); await p.waitForTimeout(400); return (await p.locator('main .tr-rw', { hasText: name }).first().innerText()).replace(/\s+/g, ' '); };
-  const step = async (id) => { await s.go('#/sysadmin/org/' + id, 2500); const li = p.locator('main section[aria-label="قائمة التهيئة"] li', { hasText: 'سقف الصفحات' }).first(); return { txt: (await li.innerText()).replace(/\s+/g, ' '), cls: await li.getAttribute('class') }; };
+  const step = async (id) => { await s.go('#/sysadmin/org/' + id, 2500); const li = p.locator('main section[aria-label="قائمة التهيئة"] li', { hasText: 'الصلاحيات' }).first();   /* V7 · د5-هـ (44 · المدير): الخطوةُ «الصلاحيات» (كانت «سقف الصفحات») */ return { txt: (await li.innerText()).replace(/\s+/g, ' '), cls: await li.getAttribute('class') }; };
   return { s, p, tree, step };
 }
 

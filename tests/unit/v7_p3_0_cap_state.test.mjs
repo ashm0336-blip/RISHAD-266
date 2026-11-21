@@ -51,7 +51,7 @@ test('capState: open · inherit · own · independent · empty — from the exis
 test('the admin center shows the state from that one source in the tree and the overview checklist (V7 · د5-هـ 44: the ceiling editor was deleted)', () => {
   const f = fnSrc(L, '_capStateTxt', '\n  ');
   assert.match(f, /P\.capState\(o\)/, 'reads capState');
-  assert.match(L, /step\("سقف الصفحات", capSt\.txt, capSt\.ok, "cap"\)/, 'checklist: its text and ✓/! from the source (open is not ✓)');
+  assert.match(L, /step\("الصلاحيات", capSt\.txt, capSt\.ok, "cap"\)/, 'checklist: its text and ✓/! from the source (open is not ✓) — V7 · د5-هـ (44 · المدير): the step is named after the tab it opens (was «سقف الصفحات»)');
   assert.match(L, /capSt = this\._capStateTxt\(o\),/);
   assert.doesNotMatch(L, /"موروثٌ من الأعلى"/, 'the P1 text that called every unit without a record «inherited» is gone');
   assert.match(L, /trCapTxt: this\._capStateTxt\(r\.id\)\.short,/, 'tree');

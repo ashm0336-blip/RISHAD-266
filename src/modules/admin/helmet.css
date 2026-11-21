@@ -503,9 +503,10 @@ button.adm-sw:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2
 .capst{padding:8px 12px;margin-bottom:12px;border-radius:12px;border:1px solid var(--border-default);font-size:11.5px;font-weight:700;color:var(--text-secondary);background:var(--bg-surface-2)}
 .capst[data-tone="warn"]{color:var(--warning-text);background:var(--warning-bg);border-color:var(--warning-border)}
 /* V7 · د5-هـ (44) · تبويب «الصلاحيات»: الأنظمة · الأدوار · الأشخاص · السجل (رموزٌ دلالية وحدها — السمتان من 070/080) */
-.p44{padding:14px 16px 18px;border-top:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:var(--text-primary)}
+.p44{padding:14px 16px 18px;border:1px solid var(--border-default);border-radius:16px;background:var(--bg-card);box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:var(--text-primary)}
 .p44-top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
 .p44-ttl{flex:1 1 320px;min-width:0}.p44-ttl h3{margin:0;font-size:16px;font-weight:800}.p44-ttl p{margin:2px 0 0;color:var(--text-secondary)}
+.p44-note.p44-self{color:var(--warning-text);border-color:var(--warning-border);background:var(--warning-bg)}
 .p44-chip{display:inline-block;margin-top:6px;padding:2px 12px;border-radius:999px;background:var(--brand-soft);color:var(--brand-text);font-size:11.5px}
 .p44-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .p44-as{display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:11.5px}

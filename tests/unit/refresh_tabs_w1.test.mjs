@@ -122,7 +122,7 @@ test('الإعدادات (R1 · AUX-06): #/admin/import|ptpls|shifts|oplog — �
   const ry = Y.c._admTabsNow('site', true, ['overview', 'sec', 'depts'], g);
   assert.equal(ry.l, 'sec'); assert.equal(Y.c.state.admTab, 'sec'); Y.timers.splice(0).forEach((f) => f()); assert.equal(go, 'sec');
   const src = rd('modules/admin/logic.js'), rv = src.slice(src.indexOf('\n  renderVals() {'));
-  const iT = rv.indexOf('this._admTabsNow(i, n, p, g)'), iH = rv.indexOf('this._hashTab("admin", h)');
+  const iT = rv.indexOf('this._admTabsNow(i, n, p, g)'), iH = rv.indexOf('this._hashTab("admin", "perm" === h ? "perm/" + this._p44SubNow() : h)');   /* V7 · د5-هـ (44 · المدير): و«الصلاحيات» بقسمها (#/admin/perm/<قسم>) */
   assert.ok(iT > 0 && iH > iT, 'العنوانُ يُكتب بعد حلّ التبويب المطلوب (لا #/admin/backup)');
   assert.doesNotMatch(src, /setTimeout\(\s*\(\) =>\s*this\.setState\(\{ deptTab: q \}/);
 });

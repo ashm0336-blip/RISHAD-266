@@ -87,7 +87,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ovSteps: [
         step("تعريف العقدة", (p.kind || (n ? "عقدة" : "إدارة")) + " · في الهيكل", !0, ""),
         /* V7 P3-0: الحالةُ من مصدرٍ واحد (_capStateTxt ← BassamPerm.capState) — «مفتوح — لم يُضبط» تنبيهٌ لا علامةُ تمام */
-        step("سقف الصفحات", capSt.txt, capSt.ok, "cap"),
+        step("الصلاحيات", capSt.txt, capSt.ok, "cap"),   /* V7 · د5-هـ (44 · المدير): الخطوةُ تفتح «الصلاحيات ← الأنظمة» فاسمُها اسمُ التبويب */
         step("المسؤول", mgs.length ? "معيَّن: " + mgs.map((m) => m.name || m.un).join("، ") : "لم يُعيَّن بعد", mgs.length > 0, "emps"),
         n
           ? step("الإدارات التابعة", KIVO.BassamCount(units, "إدارة") + " تحتها", units > 0, "")
@@ -5494,6 +5494,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch(t) { /* لا يمنع العرض — يُتجاوز بصمت */ }
     try {
       "dept" === i && KIVO.__ADMIN_OPEN_DTAB && ((dq = KIVO.__ADMIN_OPEN_DTAB), (KIVO.__ADMIN_OPEN_DTAB = null));
+      /* V7 · د5-هـ (44 · المدير): #/admin/perm/<roles|people|log> يفتح «الصلاحيات» على قسمه */
+      const psub = "perm" === dq ? (/^#\/admin\/perm\/(roles|people|log)$/.exec(String(location.hash || "")) || [])[1] : "";
+      psub && (this.state = { ...this.state, p44: { ...(this.state.p44 || {}), sub: psub } });
     } catch(t) { /* لا يمنع العرض — يُتجاوز بصمت */ }
     const dt = dq && g.includes(dq) ? dq : e.deptTab,
       h = g.includes(dt) ? dt : g[0] || "backup";
@@ -5517,6 +5520,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ...(() => {
         const i = "undefined" != typeof window && "site" === KIVO.__ADMIN_MODE ? "site" : "dept",
           n = "site" === i && s,
+          pm = ((this.__p44Dept = "dept" === i), "dept" === i && this.p44DeptUnit ? !!this.p44DeptUnit() : !1),   /* V7 · د5-هـ (44 · المدير): «الصلاحيات» لمدير الوحدة النشطة */
           o = n && !(!window.__BS_BOOT || !window.__BS_BOOT.cf),
           p = n
             ? o
@@ -5534,14 +5538,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 return !0;
               }
             })
-            .filter((t) => "oplog" !== t || c),
+            .filter((t) => "oplog" !== t || c)
+            .concat(pm ? ["perm"] : []),
           { l, h } = this._admTabsNow(i, n, p, g),
           d = p.includes(l) ? l : n ? "depts" : "backup",
           av = this.adVals();
         const ps = "plat" === d ? (this.PL_KEYS().includes(this.state.plTab) ? this.state.plTab : "id") : null,
           pv = n && "plat" === d ? this.plVals() : {};
         try {
-          "dept" === i ? this._hashTab("admin", h) : n && this._hashTab("sysadmin", ps ? "plat/" + ps : "depts" === d ? this._orgSeg() : d);
+          "dept" === i ? this._hashTab("admin", "perm" === h ? "perm/" + this._p44SubNow() : h) : n && this._hashTab("sysadmin", ps ? "plat/" + ps : "depts" === d ? this._orgSeg() : d);
         } catch (t) {}
         /* CORE-02 S7: ما تعرضه الصفحة يُنشر لشريط «مركز إدارة رشاد» (التوافرُ قاعدةُ p هنا وحدها) — بعد كتابة العنوان */
         try {
@@ -5595,6 +5600,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           dTabSfOn: -1 !== g.indexOf("shifts"),
           showDeptSf: "dept" === i && "shifts" === h,
           dTabGoSf: () => this.setState({ deptTab: "shifts" }),
+          /* V7 · د5-هـ (44 · المدير): «الصلاحيات» — الأدوار · الأشخاص · السجل لوحدته وحدها (#/admin/perm/<القسم>) */
+          dTabPmOn: -1 !== g.indexOf("perm"),
+          showDeptPerm: "dept" === i && "perm" === h,
+          dTabGoPerm: () => this.setState({ deptTab: "perm" }),
           ...("dept" === i && "shifts" === h ? this.sfVals() : {}),
           dbkExport: () => {
             KIVO.BassamDeptBackup && KIVO.BassamDeptBackup.export();
@@ -5895,7 +5904,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               goTabPerm: () => this.setState({ sysTab: "perm" }),
               tabPermStyle: M("perm" === l),
               onTabPerm: "perm" === l,
-              ...("perm" === l && this._p44Vals ? this._p44Vals(o, n, p) : {}),
+              ...("perm" === l && !this.__p44Dept && this._p44Vals ? this._p44Vals(o, n, p) : {}),
               tabEmpsShow: !0,
               tabEmpsLbl: "المسؤولون والحسابات",   /* V7 P2: المديرون والحسابات في جدولٍ واحد لكل عقدة */
               _sel: o,
@@ -6581,6 +6590,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       __end: 0,
     };
     /* CORE-02: خطوةُ «النسخة قبل التهيئة» في «التهيئة والاستعادة» تستدعي دالةَ النسخة الشاملة نفسها (exportBackup) — لا نسخةً منها */
+    this.p44Mount && this.p44Mount(v, !!this.__p44Dept, !!v.showDeptPerm);   /* V7 · د5-هـ (44 · المدير): صفحةُ «الصلاحيات» الواحدة في النمطين */
     return (v.plRsNext && ((v.plRsNext = () => this.plRsNext(v.exportBackup)), (v.plRsBkAgain = () => this.plRsBackup(v.exportBackup))), v);
   }
   async nfLoadManagement(more) {
