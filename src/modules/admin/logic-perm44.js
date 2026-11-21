@@ -105,15 +105,8 @@ Object.assign(Component.prototype, {
   /* V7 · د5-هـ (44 · المدير): من يرى «الصلاحيات» في إعدادات وحدةٍ did — قاعدةُ الخادم نفسُها (018 isMgrOf · secMgrOf):
      مديرُ المنصة · حسابُ الإدارة أو حاملُ شارة المدير في وحدته أو في قسمٍ من إدارته · المديرُ العام لوحدةٍ تحت عقدته — لا الموظفُ العادي.
      D: { parentDeptOf, ancestorsOf } من خدمة الهيكل */
-  p44MgrOf(u, did, D) {
-    if (!u || !did) return !1;
-    if ("super" === u.role) return !0;
-    const par = this._p44Try(() => D.parentDeptOf(did), "") || "",
-      mine = !!u.deptId && (u.deptId === did || par === u.deptId);
-    if ("dept" === u.role) return mine;
-    if ("staff" === u.role) return !!u.mgr && mine;
-    if ("gm" === u.role) return !!u.gid && this._p44Try(() => (D.ancestorsOf(did) || []).indexOf(u.gid) !== -1, !1);
-    return !1;
+  p44MgrOf(u, did) {
+    return !!this._p44Try(() => this._p44E().mgrOf(u, did), !1);   /* V7 · د5-ح: القاعدةُ في المحرّك (KIVO.Perm44.mgrOf) — مصدرٌ واحد مع الرأس الثابت */
   },
   /* وحدةُ «الصلاحيات» في إعدادات الإدارة: الوحدةُ النشطة إن كان المستخدمُ مديرَها — وإلا "" (لا تبويب).
      V7 · د5-ح (القفل): لا وضعَ قديماً — المديرُ يقرأ سجلَّ المنح في كل بيئة، فيُفتح له التبويبُ بقاعدة isMgrOf وحدها */

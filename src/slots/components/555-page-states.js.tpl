@@ -252,7 +252,11 @@
         if (other) { if (can(other.key)) out.push({ name: other.name, key: other.nav }); }
         else if (leaf && !leaf.offPage && !leaf.noTab && can(page.key, leaf.key)) out.push({ name: leaf.name, key: leaf.key });   /* V7 · د1-د: noTab = ورقةُ صلاحيةٍ باقية بلا تبويبٍ مرسوم (admin/import — الاستيرادُ صار في صفحة الموظفين) */
       });
-      (page.shellTabs || []).forEach(function (t) { if (can(page.key, t.as)) out.push({ name: t.name, key: "" }); });
+      (page.shellTabs || []).forEach(function (t) {
+        /* V7 · د5-ح: when:"unitMgr" — تبويبٌ ترسمه الصفحة لمدير الوحدة النشطة وحده («الصلاحيات» في الإعدادات) بقاعدة المحرّك نفسِها */
+        var ok = false; try { ok = t.when === "unitMgr" ? !!(KIVO.Perm44 && KIVO.Perm44.unitMgr && KIVO.Perm44.unitMgr()) : can(page.key, t.as); } catch (e) { ok = false; }
+        if (ok) out.push({ name: t.name, key: t.tab || "" });
+      });
     }
     if (out.length < 2) return [];
     var drawn = mf.strips[slug] || [], place = function (n) { for (var j = 0; j < drawn.length; j++) if (drawn[j][0] === n) return j; return -1; }, any = drawn.length && drawn[0][0] === "*" ? drawn[0][1] : "";

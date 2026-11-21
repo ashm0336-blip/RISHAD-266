@@ -70,6 +70,13 @@
    "activation": "always",
    "nav": "admin",
    "name": "الإعدادات",
+   "shellTabs": [
+    {
+     "name": "الصلاحيات",
+     "when": "unitMgr",
+     "tab": "perm"
+    }
+   ],
    "subs": [
     {
      "key": "backup",

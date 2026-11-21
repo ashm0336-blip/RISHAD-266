@@ -25,9 +25,13 @@ const DEVELOP = {
 
 test('pages.json without the display-only field is develop\'s pages.json; the field sits on one page and names a leaf that exists', needs('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
   const M = JSON.parse(read('src/manifests/pages.json')), withField = M.pages.filter((p) => p.shellTabs);
-  assert.deepEqual(withField.map((p) => p.key), ['emps']);
-  assert.deepEqual(withField[0].shellTabs, [{ name: 'مستودع العهد', as: 'custody' }]);
-  assert.ok(withField[0].subs.some((s) => s.key === 'custody' && !s.offPage), 'it follows an existing leaf of its page');
+  /* V7 · د5-ح: وحقلٌ على «الإعدادات» — تبويبُ «الصلاحيات» الذي ترسمه الصفحةُ لمدير الوحدة (when: unitMgr = KIVO.Perm44.unitMgr)، لا ورقةَ له في الشجرة */
+  assert.deepEqual(withField.map((p) => p.key).sort(), ['admin', 'emps']);
+  const emps = withField.find((p) => p.key === 'emps'), adm = withField.find((p) => p.key === 'admin');
+  assert.deepEqual(emps.shellTabs, [{ name: 'مستودع العهد', as: 'custody' }]);
+  assert.ok(emps.subs.some((s) => s.key === 'custody' && !s.offPage), 'it follows an existing leaf of its page');
+  assert.deepEqual(adm.shellTabs, [{ name: 'الصلاحيات', when: 'unitMgr', tab: 'perm' }]);
+  assert.ok(!adm.subs.some((s) => s.key === 'perm'), 'the manager tab is not a permission leaf');
   /* V7 · د1-د: حقلُ عرضٍ ثانٍ — noTab على ورقةٍ واحدة (admin/import: ورقةُ صلاحيةٍ باقية بلا تبويبٍ مرسوم بعد نقل الاستيراد إلى صفحة الموظفين) */
   const noTab = M.pages.flatMap((p) => (p.subs || []).filter((x) => x.noTab !== undefined).map((x) => p.key + '/' + x.key + '=' + x.noTab));
   /* V7 · د5-ح (القفل): ورقةُ admin/ptpls حُذفت من pages.json مع موردها — الترحيلُ perm44-roles يقرأ القوالبَ خاماً من D1 */

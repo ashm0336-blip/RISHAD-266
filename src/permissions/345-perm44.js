@@ -288,6 +288,18 @@ function commit(dr) {
 }
 /* V7 · د5-هـ (44): مساعدان للمستهلكين (الجدول الشهري · التقرير اليومي · الخطة · المهام · صفحتي · BassamSup):
    roleOf — كائنُ دور الشخص في وحدته أو null · assign — إسنادُ أدوارٍ لأشخاص {ekey: roleId|null} بمسودةٍ واحدة تُثبَّت مرةً (الأدوار + المنحُ المترجَم) */
+/* V7 · د5-ح: «مديرُ الوحدة» قاعدةٌ واحدة — تقرؤها صفحةُ الإعدادات (تبويبُ «الصلاحيات») والرأسُ الثابت (KIVO.PageStates) فلا يختلفان */
+function mgrOf(u, did) {
+  if (!u || !did) return false;
+  if (u.role === 'super') return true;
+  var D = KIVO.BassamDepts, par = '', anc = [];
+  try { par = (D && D.parentDeptOf ? D.parentDeptOf(did) : '') || ''; } catch (e) { par = ''; }
+  var mine = !!u.deptId && (u.deptId === did || par === u.deptId);
+  if (u.role === 'dept') return mine;
+  if (u.role === 'staff') return !!u.mgr && mine;
+  if (u.role === 'gm') { try { anc = (D && D.ancestorsOf ? D.ancestorsOf(did) : []) || []; } catch (e) { anc = []; } return !!u.gid && anc.indexOf(u.gid) !== -1; }
+  return false;
+}
 function activeDept() { try { return KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() || '' : ''; } catch (e) { return ''; } }
 function roleOf(ekey, did) {
   var d = did || activeDept(); if (!ekey || !d) return null;
@@ -345,6 +357,7 @@ var API = {
   setRoles: setRoles,
   commit: commit,
   isSuper: isSup,
+  mgrOf: mgrOf, unitMgr: function () { return mgrOf(curUser(), activeDept()); },
   names: function () { return JSON.parse(JSON.stringify(eng().names)); },
   RES: RES
 };
