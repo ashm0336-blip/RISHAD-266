@@ -23270,7 +23270,7 @@ var KIVO_SCHEMA_VERSION = 11;
    هذه النسخةُ مطابقةٌ له حرفاً (يفرضها tests/unit/body_schemas.test.mjs) — فالقاعدةُ واحدةٌ مكتوبةٌ مرةً، قابلةٌ للاختبار بلا واجهة.
    bodyCheck(route, body) ⇒ null (سليم) أو موضعُ أوّل مخالفة ('set.<k>' · 'base.<k>' · 'del[3]' …) — والمسارُ يردّ 400 {ok:0, err:'bad-body', at}
    قبل أيّ قراءةٍ أو كتابة. كان الخادمُ يحوّل القيمةَ غيرَ النصية بـString() فيُخزَّن «[object Object]» في المفتاح (سلامةُ البيانات). */
-var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/award/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"docsV1":{"minimum":0,"type":"integer"},"docsV2":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"records":{"minimum":0,"type":"integer"}},"required":["epoch","records","docsV1","docsV2"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"document":{"type":"object"},"id":{"type":"string"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"status":{"type":"string"},"uid":{"type":"string"},"version":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/irshad/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"epoch":{"minimum":0,"type":"integer"},"languages":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","languages","locations","retro"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"id":{"type":"string"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"},"values":{"type":"array"},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill-one":{"additionalProperties":false,"properties":{"sid":{"maxLength":16,"type":"string"},"why":{"maxLength":16,"type":["string","null"]}},"required":["sid"],"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"dispH":{"maxLength":16,"type":["number","string","null"]},"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"thrN":{"maxLength":16,"type":["number","string","null"]},"thrOn":{"maxLength":16,"type":["number","string","null"]},"thrSec":{"maxLength":16,"type":["number","string","null"]},"thrWin":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"ack":{"maximum":9,"minimum":0,"type":"integer"},"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"epoch":{"minimum":0,"type":"integer"},"ops":{"type":["object","array","null"]},"requestId":{"maxLength":100,"type":"string"},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/seized/act":{"additionalProperties":false,"properties":{"act":{"type":"string"},"base":{"additionalProperties":false,"properties":{"actions":{"minimum":0,"type":"integer"},"catalog":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"jew":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","catalog","actions","locations","jew","retro"],"type":"object"},"data":{"type":"object"},"day":{"minimum":1,"type":"integer"},"dept":{"type":"string"},"from":{"type":"string"},"id":{"type":"string"},"image":{"type":"string"},"index":{"type":"integer"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"to":{"type":"string"},"uid":{"type":"string"},"value":{"type":["object","array"]},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"epoch":{"minimum":0,"type":"integer"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e","requestId","epoch"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op","requestId","epoch","base"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"edit":{"additionalProperties":false,"properties":{"desc":{"maxLength":4000,"type":"string"},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"prio":{"type":["string","null"]},"s":{"type":"number"},"t":{"maxLength":300,"type":"string"},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","desc","prio","s","e"],"type":"object"},"ekey":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"recur":{"additionalProperties":false,"properties":{"id":{"maxLength":40,"type":["number","string"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]}},"required":["op"],"type":"object"},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k","requestId","epoch","base"],"type":"object"}};
+var KIVO_BODY_SCHEMAS = {"/api/admin/dept-delete":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/admin/dept-wipe":{"additionalProperties":false,"properties":{"base":{"type":"object"},"dept":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/authz-migrate":{"properties":{"act":{"maxLength":32,"type":["string","null"]},"force":{"type":["boolean","null"]},"generated":{"maxLength":20,"type":["number","string","null"]},"hash":{"maxLength":128,"type":["string","null"]},"inferable":{"type":["boolean","integer","null"]},"parts":{"items":{"maxLength":16,"type":"string"},"maxItems":8,"type":["array","null"]},"seed":{"maxLength":128,"type":["string","null"]},"snap":{"maxLength":128,"type":["string","null"]}},"type":"object"},"/api/authz-test":{"properties":{"method":{"maxLength":10,"type":["string","null"]},"path":{"maxLength":2000,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]},"vals":{"items":{"maxLength":300,"type":"string"},"maxItems":200,"type":["array","null"]}},"type":"object"},"/api/award/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"docsV1":{"minimum":0,"type":"integer"},"docsV2":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"records":{"minimum":0,"type":"integer"}},"required":["epoch","records","docsV1","docsV2"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"document":{"type":"object"},"id":{"type":"string"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"status":{"type":"string"},"uid":{"type":"string"},"version":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/backup/restore":{"additionalProperties":false,"properties":{"backup":{"type":"object"},"base":{"type":"object"},"delete":{"type":["array","null"]},"domains":{"type":"object"},"keys":{"type":["object","null"]},"legacyConsent":{"type":"boolean"},"manifest":{"type":"object"},"mode":{"type":"string"},"permissionSlice":{"type":"object"},"phase":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"scope":{"type":"object"},"uid":{"type":"string"},"version":{"minimum":0,"type":"integer"}},"type":"object"},"/api/checkpw":{"properties":{"p":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/custody/act":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"color":{"type":"string"},"condition":{"type":"string"},"dept":{"type":"string"},"holderKey":{"type":"string"},"issueId":{"type":"string"},"item":{"type":"object"},"itemId":{"type":"string"},"kind":{"type":"string"},"lines":{"type":"array"},"note":{"type":"string"},"op":{"type":"string"},"patch":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/demo-data":{"additionalProperties":false,"properties":{"act":{"maxLength":10,"type":"string"},"force":{"type":"boolean"},"reveal":{"type":"boolean"}},"type":"object"},"/api/dstats":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"data":{"additionalProperties":false,"properties":{"haram":{"type":"object"},"locks":{"type":"object"},"nabawi":{"type":"object"}},"type":"object"},"operation":{"maxLength":40,"type":"string"},"ops":{"type":"object"},"reason":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["base","data"],"type":"object"},"/api/employees/transition":{"additionalProperties":false,"properties":{"accountProposals":{"type":"array"},"base":{"type":"object"},"deleteMode":{"type":"string"},"dept":{"type":"string"},"finalRows":{"type":"array"},"import":{"type":"object"},"intent":{"type":"string"},"options":{"type":"object"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"}},"type":"object"},"/api/guard/unlock":{"properties":{"all":{"type":["integer","boolean","null"]},"gk":{"maxLength":300,"type":["string","null"]},"gks":{"items":{"maxLength":300,"type":"string"},"maxItems":1000,"type":["array","null"]}},"type":"object"},"/api/irshad/act":{"additionalProperties":false,"properties":{"base":{"additionalProperties":false,"properties":{"epoch":{"minimum":0,"type":"integer"},"languages":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","languages","locations","retro"],"type":"object"},"data":{"type":"object"},"dept":{"type":"string"},"id":{"type":"string"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"uid":{"type":"string"},"values":{"type":"array"},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/login":{"properties":{"p":{"maxLength":1000,"type":["string","null"]},"u":{"maxLength":200,"type":"string"}},"type":"object"},"/api/logout":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill":{"additionalProperties":false,"type":"object"},"/api/me/sess/kill-one":{"additionalProperties":false,"properties":{"sid":{"maxLength":16,"type":"string"},"why":{"maxLength":16,"type":["string","null"]}},"required":["sid"],"type":"object"},"/api/me/tasks/act":{"additionalProperties":false,"properties":{"act":{"maxLength":8,"type":"string"},"i":{"minimum":0,"type":["integer","null"]},"id":{"maxLength":40,"type":["number","string"]},"idem":{"maxLength":40,"type":["string","null"]},"imgs":{"items":{"maxLength":80,"type":"string"},"maxItems":4,"type":["array","null"]},"k":{"maxLength":10,"type":"string"},"meta":{"items":{"additionalProperties":false,"properties":{"acc":{"minimum":0,"type":["number","null"]},"at":{"minimum":1,"type":"number"},"img":{"maxLength":80,"type":["string","null"]},"lat":{"type":["number","null"]},"lng":{"type":["number","null"]}},"required":["at"],"type":"object"},"maxItems":4,"type":["array","null"]},"note":{"maxLength":1000,"type":["string","null"]},"rm":{"items":{"maxLength":80,"type":"string"},"maxItems":12,"type":["array","null"]},"steps":{"additionalProperties":{"type":"boolean"},"type":["object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","act"],"type":"object"},"/api/notifications/act":{"additionalProperties":false,"properties":{"action":{"maxLength":40,"type":"string"},"all":{"type":"boolean"},"at":{"minimum":0,"type":"integer"},"b":{"type":"object"},"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":180,"type":"string"},"events":{"items":{"type":"object"},"maxItems":200,"type":"array"},"id":{"maxLength":800,"type":"string"},"link":{"maxLength":500,"type":"string"},"once":{"maxLength":500,"type":"string"},"onlyRead":{"type":"boolean"},"op":{"maxLength":40,"type":"string"},"own":{"items":{"maxLength":200,"type":"string"},"maxItems":20000,"type":"array"},"patch":{"type":"object"},"preview":{"type":"boolean"},"reset":{"type":"boolean"},"target":{"type":"object"},"title":{"maxLength":400,"type":"string"},"type":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"vars":{"type":"object"}},"required":["op"],"type":"object"},"/api/policy":{"properties":{"dispH":{"maxLength":16,"type":["number","string","null"]},"idleH":{"maxLength":16,"type":["number","string","null"]},"lockMin":{"maxLength":16,"type":["number","string","null"]},"lockN":{"maxLength":16,"type":["number","string","null"]},"pwMin":{"maxLength":16,"type":["number","string","null"]},"sessH":{"maxLength":16,"type":["number","string","null"]},"thrN":{"maxLength":16,"type":["number","string","null"]},"thrOn":{"maxLength":16,"type":["number","string","null"]},"thrSec":{"maxLength":16,"type":["number","string","null"]},"thrWin":{"maxLength":16,"type":["number","string","null"]},"wrMin":{"maxLength":16,"type":["number","string","null"]}},"type":"object"},"/api/recover":{"properties":{"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/recovery/new":{"properties":{"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/reset":{"properties":{"admin":{"properties":{"name":{"maxLength":120,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]},"un":{"maxLength":64,"type":["string","null"]}},"type":["object","null"]},"confirm":{"maxLength":50,"type":["string","null"]},"keepBrand":{"type":["boolean","integer","null"]},"key":{"maxLength":200,"type":["string","null"]},"pw":{"maxLength":1000,"type":["string","null"]}},"type":"object"},"/api/retro":{"properties":{"act":{"maxLength":16,"type":["string","null"]},"dept":{"maxLength":200,"type":["string","null"]},"hours":{"maxLength":16,"type":["number","string","null"]},"id":{"maxLength":100,"type":["string","null"]},"reason":{"maxLength":4000,"type":["string","null"]},"res":{"maxLength":64,"type":["string","null"]},"scope":{"properties":{"d":{"maxLength":8,"type":["integer","string","null"]},"m":{"maxLength":8,"type":["integer","string","null"]},"y":{"maxLength":8,"type":["integer","string","null"]}},"type":["object","null"]}},"type":"object"},"/api/save":{"properties":{"ack":{"maximum":9,"minimum":0,"type":"integer"},"aud":{"type":["array","object","null"]},"base":{"additionalProperties":{"minimum":0,"type":"integer"},"type":"object"},"cur":{"maxLength":1000,"type":["string","null"]},"del":{"items":{"maxLength":300,"type":"string"},"maxItems":5000,"type":"array"},"epoch":{"minimum":0,"type":"integer"},"ops":{"type":["object","array","null"]},"requestId":{"maxLength":100,"type":"string"},"set":{"additionalProperties":{"type":"string"},"type":"object"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"type":["object","null"]}},"type":"object"},"/api/seized/act":{"additionalProperties":false,"properties":{"act":{"type":"string"},"base":{"additionalProperties":false,"properties":{"actions":{"minimum":0,"type":"integer"},"catalog":{"minimum":0,"type":"integer"},"epoch":{"minimum":0,"type":"integer"},"jew":{"minimum":0,"type":"integer"},"locations":{"minimum":0,"type":"integer"},"reports":{"minimum":0,"type":"integer"},"retro":{"minimum":0,"type":"integer"}},"required":["epoch","reports","catalog","actions","locations","jew","retro"],"type":"object"},"data":{"type":"object"},"day":{"minimum":1,"type":"integer"},"dept":{"type":"string"},"from":{"type":"string"},"id":{"type":"string"},"image":{"type":"string"},"index":{"type":"integer"},"kind":{"type":"string"},"month":{"type":"integer"},"op":{"type":"string"},"reason":{"type":"string"},"requestId":{"type":"string"},"to":{"type":"string"},"uid":{"type":"string"},"value":{"type":["object","array"]},"year":{"type":"integer"}},"required":["dept","requestId","base","op"],"type":"object"},"/api/sess/kill":{"properties":{"all":{"type":["boolean","integer","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/cancel":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":"string"}},"required":["k","id","why"],"type":"object"},"/api/tasks/create":{"additionalProperties":false,"properties":{"asg":{"items":{"maxLength":80,"type":"string"},"maxItems":50,"type":["array","null"]},"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"desc":{"maxLength":4000,"type":["string","null"]},"e":{"type":"number"},"epoch":{"minimum":0,"type":"integer"},"force":{"type":["boolean","null"]},"grpL":{"maxLength":120,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"needs":{"items":{"maxLength":80,"type":"string"},"maxItems":8,"type":["array","null"]},"pol":{"type":["object","null"]},"prio":{"maxLength":10,"type":["string","null"]},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"s":{"type":"number"},"shift":{"additionalProperties":false,"properties":{"name":{"maxLength":80,"type":"string"}},"type":["object","null"]},"t":{"maxLength":300,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","s","e","requestId","epoch"],"type":"object"},"/api/tasks/extend":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","e"],"type":"object"},"/api/tasks/reassign":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"e":{"type":["number","null"]},"force":{"type":["boolean","null"]},"from":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/recur":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dept":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":["string","null"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"row":{"maxLength":40,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"required":["op","requestId","epoch","base"],"type":"object"},"/api/tasks/recur/run":{"additionalProperties":false,"properties":{"day":{"maxLength":10,"type":["string","null"]},"dept":{"maxLength":80,"type":["string","null"]},"uid":{"maxLength":200,"type":["string","null"]}},"type":"object"},"/api/tasks/relink":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"from":{"maxLength":160,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"to":{"maxLength":80,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]}},"required":["k","id","from","to"],"type":"object"},"/api/tasks/reopen":{"additionalProperties":false,"properties":{"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id"],"type":"object"},"/api/tasks/review":{"additionalProperties":false,"properties":{"decision":{"maxLength":8,"type":"string"},"dept":{"maxLength":80,"type":["string","null"]},"ekey":{"maxLength":80,"type":"string"},"id":{"maxLength":40,"type":["number","string"]},"k":{"maxLength":10,"type":"string"},"uid":{"maxLength":200,"type":["string","null"]},"why":{"maxLength":200,"type":["string","null"]}},"required":["k","id","ekey","decision"],"type":"object"},"/api/tasks/settings":{"additionalProperties":false,"properties":{"base":{"minimum":0,"type":"integer"},"dec":{"minimum":0,"type":["integer","null"]},"dept":{"maxLength":80,"type":["string","null"]},"edit":{"additionalProperties":false,"properties":{"desc":{"maxLength":4000,"type":"string"},"e":{"type":"number"},"ekey":{"maxLength":80,"type":["string","null"]},"k":{"maxLength":10,"type":"string"},"prio":{"type":["string","null"]},"s":{"type":"number"},"t":{"maxLength":300,"type":"string"},"wt":{"maxLength":80,"type":["string","null"]}},"required":["k","t","desc","prio","s","e"],"type":"object"},"ekey":{"maxLength":80,"type":["string","null"]},"epoch":{"minimum":0,"type":"integer"},"grp":{"maxLength":60,"type":["string","null"]},"id":{"maxLength":40,"type":["number","string","null"]},"k":{"maxLength":10,"type":"string"},"pol":{"type":["object","null"]},"recur":{"additionalProperties":false,"properties":{"id":{"maxLength":40,"type":["number","string"]},"op":{"maxLength":8,"type":"string"},"rec":{"additionalProperties":false,"properties":{"md":{"maxLength":4,"minimum":1,"type":["integer","string","null"]},"n":{"minimum":1,"type":["integer","null"]},"open":{"minimum":0,"type":["integer","boolean","null"]},"t":{"maxLength":8,"type":"string"},"to":{"maxLength":10,"type":["string","null"]},"wd":{"items":{"minimum":0,"type":"integer"},"maxItems":7,"type":["array","null"]}},"type":["object","null"]},"row":{"maxLength":40,"type":["string","null"]}},"required":["op"],"type":"object"},"requestId":{"maxLength":100,"minLength":8,"type":"string"},"rv":{"maxLength":10,"type":["string","object","null"]},"uid":{"maxLength":200,"type":["string","null"]},"win":{"additionalProperties":false,"properties":{"early":{"maximum":240,"minimum":0,"type":["number","null"]},"late":{"maximum":24,"minimum":0,"type":["number","null"]}},"type":["object","null"]}},"required":["k","requestId","epoch","base"],"type":"object"}};
 function bodyTypeOk(t, v) {
   var ts = Array.isArray(t) ? t : [t], i;
   for (i = 0; i < ts.length; i++) {
@@ -30507,6 +30507,7 @@ async function enfTestApi(self, env, request, A, url) {
   if (!enfTestHostOk(env, url)) return json({ ok: 0, err: 'not-found' }, 404);   /* KIVO_244 · ADR-004: مضيفُ Preview المعلن وحده — ولا Production أبداً */
   if (A.u.role !== 'super' || A.enfTest) return json({ ok: 0, err: 'forbidden' }, 403);
   await enfTestSweep(env);                                                         /* كنسٌ دفاعي لجلسات اختبارٍ تركها طلبٌ مقطوع */
+  if (url.pathname === '/api/demo-data') return await enfDemoApi(env, request, A);   /* V7 · د5-هـ (م6): بياناتُ العرض — الحرّاسُ أعلاه نفسُها */
   var rb = await bodyRead(request, '/api/authz-test'); if (rb.res) return rb.res; var b = rb.v;   /* KIVO_264 · SOT-101: مخطّطُ الجسم بعد حرّاس الأداة (البيئة · المضيف · مدير النظام) */
   var users = (await usersList(env)) || [], tu = users.filter(function (x) { return x && x.id === String(b.uid || ''); })[0];
   if (!enfIsTestUser(tu)) return json({ ok: 0, err: 'not-a-test-user' }, 403);
@@ -30529,6 +30530,424 @@ async function enfTestApi(self, env, request, A, url) {
   finally { try { await env.DB.prepare('DELETE FROM sess WHERE tok = ?1').bind(tok).run(); } catch (e2) { swallow('sess-delete', e2, env.__rid); } }
   return json(out);
 }
+/* ── V7 · د5-هـ (م6): بياناتُ عرضٍ تجريبية TEST_ONLY تملأ كلَّ نظامٍ حاضر وتُحذف بأمرٍ واحد يعيد القاعدةَ كما كانت ──
+   POST /api/demo-data {act:'preview'|'seed'|'remove'|'status', reveal?, force?} — خلف حرّاس أداة الاختبار نفسِها (enfTestApi: الإنفاذ ∧ KIVO_TEST_FIXTURE=allow
+   ∧ مضيفُ الاختبار ∧ مديرُ المنصة) وداخلَ منطقتها، فتنزعها tools/prod_strip.py من حزمة الإنتاج. المعرّفاتُ tst_demo_* والأسماءُ «TEST_ONLY · ».
+   الزرع: شجرةُ إداراتٍ تجريبية (عامة · إدارتان · قسم) · حساباتٌ موسومة test:'TEST_ONLY' (كلماتُ مرورها تُولَّد هنا وتُعاد مرةً واحدة لمن طلبها) · موظفون ·
+   ومحتوى كلِّ نظامٍ حاضر بكاتبه الحقيقي (قطعةُ demo.provide في مجلد النظام — النظامُ الغائب لا يقدّم شيئاً). قبل الكتابة وبعدها تُمسح الجداول
+   (غيرُ السجلات) فيُحفظ بيانٌ (meta 'tst_demo_manifest'): الصفوفُ المضافة · القيمُ السابقة لما تغيّر · بصمةُ السجلات المشتركة قبل الدمج.
+   الحذف: ما في البيان وحده، والسجلاتُ المشتركة تُعاد بنزع عناصر العرض ثم مطابقةِ بصمتها السابقة — انحرافٌ ⇒ رفضٌ إلا بـforce. */
+var DEMO_PRE = 'tst_demo_', DEMO_GLOB = 'tst_demo_*', DEMO_KGLOB = 'bsdept:tst_demo_*', DEMO_TAG = 'TEST_ONLY · ', DEMO_MK = 'tst_demo_manifest';
+/* السجلاتُ والأدلةُ والجلساتُ والعدّاداتُ الذاتية والصورُ خارج المقارنة (السجلاتُ قد تبقى بعد الحذف) */
+var DEMO_SKIP = { aud: 1, audit: 1, sec: 1, authz: 1, authz_snap: 1, authz_snaps: 1, restore_operations: 1, restore_preimage: 1, restore_snapshot_manifest: 1,
+  sess: 1, guard: 1, imgs: 1, imgown: 1, imgref: 1, d1_migrations: 1, sqlite_sequence: 1 };
+var DEMO_SHARED = [K_USERS, K_DEPTS, K_GDEPTS, K_PERM];
+var DEMO_PROVIDERS = [];
+function demoProvide(p) { DEMO_PROVIDERS.push(p); }
+function demoH(s) { s = String(s); var h1 = 0xdeadbeef, h2 = 0x41c6ce57, i, c; for (i = 0; i < s.length; i++) { c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0'); }
+function demoIsDemo(x) { return typeof x === 'string' && x.indexOf(DEMO_PRE) === 0; }
+/* ── المسح: الجداولُ بأعمدتها ومفتاحها؛ «النطاق» = صفوفُ إدارات العرض (department_id · مفاتيحُ bsdept:tst_demo_*)، و«العام» = بقيةُ الجداول كاملةً ── */
+async function demoTables(env) {
+  var names = ((await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all()).results || [])
+    .map(function (r) { return r.name; }).filter(function (n) { return !DEMO_SKIP[n] && /^[A-Za-z0-9_]+$/.test(n); });
+  var info = await env.DB.batch(names.map(function (n) { return env.DB.prepare('PRAGMA table_info(' + n + ')'); }));
+  return names.map(function (n, i) {
+    var cols = (info[i].results || []).map(function (c) { return { name: c.name, pk: c.pk }; }), pk = cols.filter(function (c) { return c.pk > 0; }).sort(function (a, b) { return a.pk - b.pk; }).map(function (c) { return c.name; });
+    var hasDept = cols.some(function (c) { return c.name === 'department_id'; });
+    /* scoped: صفوفُ العرض وحدها · global: ما سواها كاملاً (لا يُمسح عامُّ جدولٍ ذي إدارة ولا kv — لا يكتب الزرعُ فيهما خارج نطاقه، والسجلاتُ المشتركة بالدمج) */
+    var scoped = hasDept ? 'department_id GLOB ?1' : (n === 'kv' || n === 'revs') ? 'k GLOB ?1' : null, scopedArg = hasDept ? DEMO_GLOB : DEMO_KGLOB;
+    var global = hasDept || n === 'kv' ? null : n === 'revs' ? 'NOT (k GLOB ?1)' : n === 'meta' ? 'k <> ?1' : '1 = 1', globalArg = n === 'revs' ? DEMO_KGLOB : n === 'meta' ? DEMO_MK : null;
+    return { name: n, cols: cols.map(function (c) { return c.name; }), pk: pk.length ? pk : ['rowid'], scoped: scoped, scopedArg: scopedArg, global: global, globalArg: globalArg };
+  });
+}
+async function demoScan(env, tables) {
+  var st = [], at = [];
+  tables.forEach(function (t) {
+    var sel = 'SELECT ' + (t.pk[0] === 'rowid' ? 'rowid AS __rowid, ' : '') + '* FROM ' + t.name + ' WHERE ';
+    if (t.scoped) { st.push(env.DB.prepare(sel + t.scoped).bind(t.scopedArg)); at.push([t, 'scoped']); }
+    if (t.global) { var q = env.DB.prepare(sel + t.global); st.push(t.globalArg == null ? q : q.bind(t.globalArg)); at.push([t, 'global']); }
+  });
+  var res = st.length ? await env.DB.batch(st) : [], out = {};
+  at.forEach(function (x, i) {
+    var t = x[0], o = out[t.name] = out[t.name] || { scoped: {}, global: {} };
+    (res[i].results || []).forEach(function (r) {
+      var key = JSON.stringify(t.pk.map(function (c) { return c === 'rowid' ? r.__rowid : r[c]; })), row = t.cols.map(function (c) { return r[c] === undefined ? null : r[c]; });
+      o[x[1]][key] = { h: demoH(JSON.stringify(row)), row: row };
+    });
+  });
+  return out;
+}
+/* ── السجلاتُ المشتركة: نزعُ عناصر العرض (عنصرُ مصفوفةٍ معرّفُه tst_demo_* · مفتاحُ كائنٍ tst_demo_*) وحذفُ ما أنشأه الزرعُ من حاوياتٍ إن فرغت ── */
+function demoStrip(v, created) {
+  if (Array.isArray(v)) return v.filter(function (x) { return !(isObj(x) && demoIsDemo(x.id)); });
+  if (!isObj(v)) return v;
+  var o = {};
+  Object.keys(v).forEach(function (k) {
+    if (demoIsDemo(k)) return;
+    var x = v[k];
+    if (isObj(x)) { var y = {}; Object.keys(x).forEach(function (q) { if (!demoIsDemo(q)) y[q] = x[q]; }); x = y; if ((created || []).indexOf(k) >= 0 && !Object.keys(x).length) return; }
+    o[k] = x;
+  });
+  return o;
+}
+async function demoKvRows(env, keys) {
+  var r = (await env.DB.prepare('SELECT k, seq, v FROM kv WHERE k IN (SELECT value FROM json_each(?1)) ORDER BY k, seq').bind(JSON.stringify(keys)).all()).results || [], out = {};
+  keys.forEach(function (k) { out[k] = { raw: null, lens: [] }; });
+  r.forEach(function (x) { var o = out[x.k]; o.raw = (o.raw || '') + x.v; o.lens.push(String(x.v).length); });
+  return out;
+}
+/* كتابةُ قيمةٍ بتقطيعٍ معلوم (أطوالُ القطع السابقة) فتعود صفوفُ kv بايتاً — وإلا تقطيعُ الكاتب المعتاد */
+function demoKvPut(env, k, text, lens) {
+  var sum = (lens || []).reduce(function (a, b) { return a + b; }, 0);
+  if (!lens || !lens.length || sum !== text.length) return kvPutStmts(env, 'kv', k, text);
+  var st = [env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(k)], at = 0;
+  lens.forEach(function (n, i) { st.push(env.DB.prepare('INSERT INTO kv (k, seq, v) VALUES (?1, ?2, ?3)').bind(k, i, text.slice(at, at + n))); at += n; });
+  return st;
+}
+function demoRandDigits(n) { var b = new Uint8Array(n), s = '', i; crypto.getRandomValues(b); for (i = 0; i < n; i++) s += String(b[i] % 10); return s.charAt(0) === '0' ? '7' + s.slice(1) : s; }
+/* ── السياق: ما يحتاجه كلُّ نظامٍ ليكتب محتواه — اليومُ الهجري · الإدارات · الموظفون · الورديات · المواقعُ (نموذجُ الطوابق المشترك) ── */
+function demoContext(now) {
+  var t = pfHijriAt(now); if (!t || !t.y) throw new Error('demo-clock');
+  var T = { y: t.y, m: t.m, d: t.d }, P = T.m > 1 ? { y: T.y, m: T.m - 1 } : { y: T.y - 1, m: 12 }, days = [];
+  for (var i = 0; i < 3 && T.d - i >= 1; i++) days.push({ y: T.y, m: T.m, d: T.d - i });
+  var D = { g: DEMO_PRE + 'g', d1: DEMO_PRE + 'd1', d2: DEMO_PRE + 'd2', s1: DEMO_PRE + 's1' };
+  var shifts = [{ name: 'TEST_ONLY-A', color: '#2563eb', tStart: '06:00', tEnd: '14:00' }, { name: 'TEST_ONLY-B', color: '#16a34a', tStart: '14:00', tEnd: '22:00' }];
+  var emps = {}; [[D.d1, 1, 4], [D.d2, 2, 2], [D.s1, 3, 1]].forEach(function (x) {
+    var list = []; for (var j = 1; j <= x[2]; j++) list.push({ eid: DEMO_PRE + 'e' + x[1] + j, name: DEMO_TAG + 'موظف ' + x[1] + '-' + j, empno: '99' + x[1] + '000' + j, nid: '19' + x[1] + '000000' + j,
+      type: DEMO_TAG + 'رسمي', work: DEMO_TAG + 'مراقب' });
+    emps[x[0]] = list; });
+  function zone(k, i, emp) { var x0 = i * 20; return { uid: 'tstdz' + k + i, code: 'DZ' + k + i, name: DEMO_TAG + 'مصلى ' + k + '-' + (i + 1), d: 'M' + x0 + ' 0 L' + (x0 + 10) + ' 0 L' + (x0 + 10) + ' 10 L' + x0 + ' 10 Z', cx: x0 + 5, cy: 5, area: 100, emp: emp }; }
+  function site(d, k, nm, num) {
+    var e = (emps[d] || []).map(function (x) { return x.eid; });
+    return { sid: 'tstds' + k, name: DEMO_TAG + nm, num: num, zones: [zone(k, 0, e.slice(0, 2)), zone(k, 1, e.slice(2, 3)), zone(k, 2, [])],
+      gates: [{ uid: 'tstdg' + k, id: 'DG' + k, num: String(num), x: 10 * num, y: 10, emp: e.slice(0, 1) }],
+      marks: [{ uid: 'tstdm' + k, id: 'DM' + k, label: DEMO_TAG + 'معلم ' + k, x: 3, y: 4 * num, emp: [] }],
+      paths: [{ uid: 'tstdp' + k, id: 'DP' + k, pts: [{ x: 0, y: 0 }, { x: 5, y: 5 * num }], active: true }] };
+  }
+  var sites = {}; sites[D.d1] = [site(D.d1, 11, 'موقع تجريبي ١', 1), site(D.d1, 12, 'موقع تجريبي ٢', 2)]; sites[D.d2] = [site(D.d2, 21, 'موقع الإدارة ٢', 1)];
+  return { now: now, today: T, prev: P, days: days, mk: T.y + '-' + T.m, pmk: P.y + '-' + P.m, pre: DEMO_PRE, tag: DEMO_TAG, depts: D, units: [D.d1, D.d2], emps: emps, shifts: shifts, sites: sites,
+    copy: function (o) { return JSON.parse(JSON.stringify(o)); } };
+}
+/* ── الخطة: الإداراتُ والحساباتُ والصلاحياتُ (دمجاً) ثم قطعُ الأنظمة — بلا كتابة ── */
+async function demoBuild(env, A, opt) {
+  var C = demoContext(Date.now()), D = C.depts, out = { guards: [], st: [], revKeys: [], counts: {}, caps: ['emps', 'admin', 'planning', 'kpis'], users: [], secrets: [] };
+  var cur = await demoKvRows(env, DEMO_SHARED), revRows = (await env.DB.prepare('SELECT k, rev FROM revs WHERE k IN (SELECT value FROM json_each(?1))').bind(JSON.stringify(DEMO_SHARED)).all()).results || [];
+  var revOf = {}; revRows.forEach(function (r) { revOf[r.k] = r.rev; });
+  var users = parseJson(cur[K_USERS].raw || '[]', null), depts = parseJson(cur[K_DEPTS].raw || '[]', null), gdepts = parseJson(cur[K_GDEPTS].raw || '[]', null), perms = parseJson(cur[K_PERM].raw || '{}', null);
+  if (!Array.isArray(users) || !Array.isArray(depts) || !Array.isArray(gdepts) || !isObj(perms)) throw new Error('demo-shared-shape');
+  /* لا يُزرع فوق بقايا: أيُّ معرّفٍ tst_demo_* أو اسمِ دخولٍ مستعمل ⇒ رفض */
+  var taken = {}; users.forEach(function (u) { if (u && u.un) taken[String(u.un)] = 1; });
+  if (users.concat(depts, gdepts).some(function (x) { return x && demoIsDemo(x.id); })) throw new Error('demo-residue');
+  /* الحسابات: مديرا الإدارتين + موظفان (حسابُ الموظف مربوطٌ بسجله) — كلمةُ المرور تُولَّد ولا تُكتب إلا بصمتُها */
+  var acc = [['m1', D.d1, 'mgr:' + D.d1, { mgr: 1 }, 'مدير الإدارة التجريبية ١'], ['m2', D.d2, 'mgr:' + D.d2, { mgr: 1 }, 'مدير الإدارة التجريبية ٢'],
+    ['e11', D.d1, C.emps[D.d1][0].eid, {}, 'موظف 1-1'], ['e12', D.d1, C.emps[D.d1][1].eid, {}, 'موظف 1-2'], ['e21', D.d2, C.emps[D.d2][0].eid, {}, 'موظف 2-1']];
+  var newUsers = [];
+  for (var i = 0; i < acc.length; i++) {
+    var a = acc[i], un = '00000990' + String(10 + i), pw = demoRandDigits(6);   /* شكلُ كلمات مرور المنصة (6 أرقام) */
+    if (taken[un]) throw new Error('demo-username-taken');
+    var u = { id: DEMO_PRE + 'u_' + a[0], un: un, name: DEMO_TAG + a[4], role: 'staff', deptId: a[1], ekey: a[2], ph: opt.dry ? '' : await hashPw(pw), mc: 0, dis: 0, test: 'TEST_ONLY' };
+    Object.assign(u, a[3]); newUsers.push(u); out.users.push(u.id);
+    if (opt.reveal) out.secrets.push({ id: u.id, un: un, pw: pw, role: a[3].mgr ? 'mgr' : 'staff', dept: a[1] });
+  }
+  C.users = newUsers.map(function (u) { return { id: u.id, un: u.un, name: u.name, ekey: u.ekey, deptId: u.deptId, mgr: !!u.mgr }; });
+  /* الأنظمة: كلُّ قطعةٍ تضيف جملها بكاتبها، وصفحاتِها إلى caps */
+  C.op = async function (key, value) {   /* موردٌ تشغيلي: كاتبُه الحقيقي (opChangeStatements) على إدارةٍ جديدة */
+    var p = await opChangeStatements(env, key, JSON.stringify(value), { base: 0 });
+    out.guards.push.apply(out.guards, p.guards); out.st.push.apply(out.st, p.statements); out.revKeys.push.apply(out.revKeys, p.revisionKeys);
+  };
+  C.count = function (sys, what, n) { (out.counts[sys] = out.counts[sys] || {})[what] = ((out.counts[sys] || {})[what] || 0) + n; };
+  C.out = out;
+  /* القاعدة: الموظفون وخياراتهم والورديات لكل إدارة */
+  for (var d in C.emps) {
+    await C.op('bsdept:' + d + ':bassam_employees_v1', C.emps[d]); C.count('base', 'employees', C.emps[d].length);
+    await C.op('bsdept:' + d + ':bassam_shift_options_v1', C.shifts); C.count('base', 'shifts', C.shifts.length);
+    await C.op('bsdept:' + d + ':bassam_options_v1', { type: [DEMO_TAG + 'رسمي'], work: [DEMO_TAG + 'مراقب'] });
+  }
+  for (var p = 0; p < DEMO_PROVIDERS.length; p++) {
+    var P = DEMO_PROVIDERS[p]; (P.caps || []).forEach(function (c) { if (out.caps.indexOf(c) < 0) out.caps.push(c); });
+    await P.seed(env, C, out); if (!out.counts[P.sys]) out.counts[P.sys] = {};
+  }
+  /* إشعاراتٌ لحسابات العرض وحدها (نوعُ القاعدة «إضافة موظف») */
+  var plans = [];
+  C.units.forEach(function (d) { (C.emps[d] || []).slice(0, 2).forEach(function (e, j) {
+    var m = nfMessage(nfScope(d), DEMO_PRE + 'n' + d.slice(DEMO_PRE.length) + j, 'event', { department: d, type: 'emp_add', category: 'emp', priority: 'info', channel: 'bell', title: DEMO_TAG + 'إضافة موظف',
+      body: DEMO_TAG + 'أُضيف ' + e.name + ' إلى موظفي الإدارة', created_at: C.now - j * 60000, author_key: String(A.u.ekey || A.u.id), author_name: DEMO_TAG + 'أداة العرض', action_text: '', link: '', server_origin: 1 });
+    plans.push({ m: m, targets: nfTargetRows(m.scope, m.id, { e: [], r: ['mgr'] }), once: '' }); }); });
+  if (plans.length) { out.st.push.apply(out.st, nfInsertPlans(env, plans)); C.count('base', 'notifications', plans.length); }
+  /* السجلاتُ المشتركة: دمجٌ يُتحقَّق أنه يُنزع فيعود كما كان */
+  var created = [];
+  var nextPerms = JSON.parse(JSON.stringify(perms));
+  ['caps', 'emps'].forEach(function (s) { if (!isObj(nextPerms[s])) { nextPerms[s] = {}; created.push(s); } });
+  [D.g, D.d1, D.d2, D.s1].forEach(function (d) { nextPerms.caps[d] = out.caps.slice(); });
+  var next = {};
+  next[K_USERS] = users.concat(newUsers);
+  next[K_GDEPTS] = gdepts.concat([{ id: D.g, name: DEMO_TAG + 'إدارة عامة تجريبية', kind: 'إدارة عامة' }]);
+  next[K_DEPTS] = depts.concat([{ id: D.d1, name: DEMO_TAG + 'إدارة تجريبية ١', gid: D.g }, { id: D.d2, name: DEMO_TAG + 'إدارة تجريبية ٢', gid: D.g }, { id: D.s1, name: DEMO_TAG + 'قسم تجريبي ١', gid: D.d1, kind: 'قسم' }]);
+  next[K_PERM] = nextPerms;
+  var shared = {};
+  DEMO_SHARED.forEach(function (k) {
+    var raw = cur[k].raw, prevNorm = raw == null ? null : JSON.stringify(JSON.parse(raw)), text = JSON.stringify(next[k]);
+    if (JSON.stringify(demoStrip(next[k], k === K_PERM ? created : [])) !== (prevNorm == null ? JSON.stringify(k === K_PERM ? {} : []) : prevNorm)) throw new Error('demo-irreversible-merge');
+    shared[k] = { prevSha: raw == null ? null : demoH(raw), prevNormSha: prevNorm == null ? null : demoH(prevNorm), prevLens: cur[k].lens, created: k === K_PERM ? created : [], afterSha: demoH(text), rev: revOf[k] || 0 };
+    out.guards.push(revGuard(env, k, revOf[k] || 0));
+    out.st.push.apply(out.st, kvPutStmts(env, 'kv', k, text)); out.revKeys.push(k);
+  });
+  out.shared = shared; out.C = C;
+  out.counts.base = Object.assign(out.counts.base || {}, { departments: 4, accounts: newUsers.length });
+  return out;
+}
+function demoRevStmts(env, keys) {
+  var st = [env.DB.prepare("INSERT INTO meta(k,v)VALUES('rev',CAST((SELECT MAX(n)+1 FROM(SELECT COALESCE(MAX(rev),0)n FROM revs UNION ALL SELECT COALESCE(CAST(v AS INTEGER),0)FROM meta WHERE k='rev'))AS TEXT))ON CONFLICT(k)DO UPDATE SET v=excluded.v")];
+  enfUniq(keys).forEach(function (k) { st.push(env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,(SELECT CAST(v AS INTEGER)FROM meta WHERE k='rev'))ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(k)); });
+  return st;
+}
+async function demoManifest(env) { var r = await env.DB.prepare('SELECT v FROM meta WHERE k = ?1').bind(DEMO_MK).first(); return r ? parseJson(r.v, null) : null; }
+function demoManifestStmt(env, m) { return env.DB.prepare('INSERT INTO meta(k,v) VALUES(?1,?2) ON CONFLICT(k) DO UPDATE SET v=excluded.v').bind(DEMO_MK, JSON.stringify(m)); }
+/* الفرقُ بين مسحين: المضافُ (مفتاحُه وبصمتُه) · المتغيّرُ (قيمتُه السابقة وبصمتُه بعد) · المحذوفُ (قيمتُه السابقة) */
+function demoDiff(tables, a, b, own) {
+  var m = { added: {}, changed: {}, deleted: {}, foreign: 0 };
+  tables.forEach(function (t) {
+    var A0 = a[t.name] || { scoped: {}, global: {} }, B0 = b[t.name] || { scoped: {}, global: {} };
+    ['scoped', 'global'].forEach(function (part) {
+      var x = A0[part], y = B0[part];
+      Object.keys(y).forEach(function (k) {
+        if (!x[k]) {
+          /* صفٌّ عامٌّ أُضيف بلا وسم العرض = كتابةٌ متزامنةٌ من غيرنا ⇒ لا يدخل البيان (لا يُحذف أبداً) */
+          var mine = t.name === 'revs' && (own || []).indexOf(y[k].row[t.cols.indexOf('k')]) >= 0;   /* نسخةُ مفتاحٍ كتبه الزرعُ نفسُه */
+          if (part === 'global' && !mine && JSON.stringify(y[k].row).indexOf(DEMO_PRE) < 0 && JSON.stringify(y[k].row).indexOf('TEST_ONLY') < 0) { m.foreign++; return; }
+          (m.added[t.name] = m.added[t.name] || []).push([k, y[k].h, part]);
+        } else if (x[k].h !== y[k].h) (m.changed[t.name] = m.changed[t.name] || []).push([k, y[k].h, x[k].row]);
+      });
+      Object.keys(x).forEach(function (k) { if (!y[k]) (m.deleted[t.name] = m.deleted[t.name] || []).push([k, x[k].row]); });
+    });
+  });
+  return m;
+}
+function demoPkWhere(t) { return '(' + t.pk.map(function (c, i) { return t.name + '.' + c + " IS json_extract(j.value, '$[" + i + "]')"; }).join(' AND ') + ')'; }
+function demoChunks(list, n) { var o = []; for (var i = 0; i < list.length; i += n) o.push(list.slice(i, i + n)); return o; }
+async function demoSeed(env, A, b) {
+  var have = await demoManifest(env);
+  if (have) return { status: 409, body: { ok: 0, err: 'demo-already-seeded', msg: 'بياناتُ العرض مزروعةٌ مسبقاً — احذفها أولاً (act:remove)', at: have.at, counts: have.counts } };
+  var tables = await demoTables(env), before = await demoScan(env, tables);
+  var residue = tables.filter(function (t) { return Object.keys((before[t.name] || {}).scoped || {}).length; }).map(function (t) { return t.name; });
+  if (residue.length) return { status: 409, body: { ok: 0, err: 'demo-residue', msg: 'في القاعدة صفوفُ عرضٍ بلا بيان — لا يُزرع فوقها', tables: residue } };
+  var plan;
+  try { plan = await demoBuild(env, A, { reveal: !!b.reveal }); } catch (e) { return { status: 409, body: { ok: 0, err: String(e && e.message || e).slice(0, 80) } }; }
+  var pending = { v: 1, state: 'pending', at: Date.now(), by: A.u.id, depts: [plan.C.depts.g, plan.C.depts.d1, plan.C.depts.d2, plan.C.depts.s1], users: plan.users, shared: plan.shared, counts: plan.counts };
+  var st = plan.guards.concat([env.DB.prepare('SELECT CASE WHEN EXISTS(SELECT 1 FROM meta WHERE k = ?1) THEN json_extract(\'{}\', \'KIVO_REV_CONFLICT\') END').bind(DEMO_MK)], plan.st, demoRevStmts(env, plan.revKeys), [demoManifestStmt(env, pending)]);
+  try { await env.DB.batch(st); } catch (e) { if (isRevConflict(e)) return { status: 409, body: { ok: 0, err: 'conflict' } }; throw e; }
+  var after = await demoScan(env, tables), diff = demoDiff(tables, before, after, plan.revKeys);
+  var man = Object.assign({}, pending, { state: 'seeded', added: diff.added, changed: diff.changed, deleted: diff.deleted });
+  await env.DB.batch([demoManifestStmt(env, man)]);
+  var out = { ok: 1, act: 'seed', counts: plan.counts, rows: demoCountRows(diff.added), foreign: diff.foreign, depts: pending.depts, accounts: plan.C.users.map(function (u) { return { id: u.id, un: u.un, dept: u.deptId, mgr: u.mgr }; }) };
+  if (b.reveal) out.secrets = plan.secrets;   /* مرةً واحدة، في جسم الردّ وحده — لا تُسجَّل ولا تُحفظ */
+  return { status: 200, body: out };
+}
+function demoCountRows(added) { var o = {}; Object.keys(added || {}).forEach(function (t) { o[t] = added[t].length; }); return o; }
+async function demoRemove(env, A, b) {
+  var man = await demoManifest(env);
+  if (!man) return { status: 200, body: { ok: 1, act: 'remove', noop: 1, msg: 'لا بياناتَ عرضٍ مزروعة' } };
+  var tables = await demoTables(env), now = await demoScan(env, tables), byName = {}, drift = [], st = [], kept = [];
+  tables.forEach(function (t) { byName[t.name] = t; });
+  var force = !!b.force, partial = man.state !== 'seeded';
+  if (partial && !force) drift.push({ kind: 'manifest-pending' });
+  /* (1) صفوفُ النطاق: ما ليس في البيان (أضافه مختبِرٌ في إدارات العرض) انحراف */
+  tables.forEach(function (t) {
+    if (!t.scoped) return;
+    var listed = {}; ((man.added || {})[t.name] || []).forEach(function (x) { if (x[2] === 'scoped') listed[x[0]] = x[1]; });
+    var extra = Object.keys((now[t.name] || {}).scoped || {}).filter(function (k) { return listed[k] === undefined; });
+    if (extra.length && !partial) drift.push({ kind: 'extra-rows', table: t.name, n: extra.length });
+    if (Object.keys((now[t.name] || {}).scoped || {}).length) st.push(env.DB.prepare('DELETE FROM ' + t.name + ' WHERE ' + t.scoped).bind(t.scopedArg));
+  });
+  /* (2) الصفوفُ العامة المضافة: تُحذف بمفاتيحها · المتغيّرة تُعاد إن لم يمسّها أحدٌ بعد الزرع (العدّادات تمضي) · المحذوفة تُعاد */
+  var later = 0;
+  tables.forEach(function (t) {
+    if (!t.global) return;
+    var n = t.name, listed = {};
+    ((man.added || {})[n] || []).forEach(function (x) { if (x[2] === 'global') listed[x[0]] = x[1]; });
+    /* صفٌّ عامٌّ مفتاحُه يحمل tst_demo_ ملكُ العرض (ومنه ما كتبه النظامُ بعد الزرع: نقاطُ تشغيلٍ لإدارةٍ تجريبية · إشعاراتُها) ⇒ يُحذف دائماً؛
+       وصفٌّ مضافٌ بلا ذلك يُحذف بمفتاحه — إلا نسخةً أو عدّاداً تغيّر بعد الزرع (كتبه غيرُنا بعده) فيبقى */
+    var keys = Object.keys(listed).filter(function (k) { var c = ((now[n] || {}).global || {})[k]; if (k.indexOf(DEMO_PRE) < 0 && (n === 'revs' || n === 'meta') && c && c.h !== listed[k]) { kept.push(n + ' ' + k); return false; } return true; });
+    Object.keys((now[n] || {}).global || {}).forEach(function (k) { if (k.indexOf(DEMO_PRE) >= 0 && listed[k] === undefined) { keys.push(k); later++; } });
+    demoChunks(keys.map(function (k) { return JSON.parse(k); }), 200).forEach(function (part) { st.push(env.DB.prepare('DELETE FROM ' + n + ' WHERE EXISTS (SELECT 1 FROM json_each(?1) AS j WHERE ' + demoPkWhere(t) + ')').bind(JSON.stringify(part))); });
+  });
+  function putRow(t, row) { var cols = t.cols; return env.DB.prepare('INSERT OR REPLACE INTO ' + t.name + ' (' + cols.join(',') + ') SELECT ' + cols.map(function (c, i) { return "json_extract(?1, '$[" + i + "]')"; }).join(',')).bind(JSON.stringify(row)); }
+  Object.keys(man.changed || {}).forEach(function (n) {
+    var t = byName[n]; if (!t) return;
+    man.changed[n].forEach(function (x) { var c = ((now[n] || {}).global || {})[x[0]] || ((now[n] || {}).scoped || {})[x[0]]; if (c && c.h === x[1]) st.push(putRow(t, x[2])); else kept.push(n + ' ' + x[0]); });
+  });
+  Object.keys(man.deleted || {}).forEach(function (n) { var t = byName[n]; if (!t) return; man.deleted[n].forEach(function (x) { var c = ((now[n] || {}).global || {})[x[0]]; if (!c) st.push(putRow(t, x[1])); }); });
+  /* (3) السجلاتُ المشتركة: نزعُ عناصر العرض ثم مطابقةُ البصمة السابقة */
+  var cur = await demoKvRows(env, DEMO_SHARED), sharedOut = {};
+  DEMO_SHARED.forEach(function (k) {
+    var info = (man.shared || {})[k]; if (!info) return;
+    var v = parseJson(cur[k].raw == null ? 'null' : cur[k].raw, null), stripped = demoStrip(v, info.created), text = JSON.stringify(stripped);
+    if (info.prevSha == null) {   /* لم يكن السجلُّ قبل الزرع: يُحذف إن لم يبقَ فيه إلا العرض، وإلا فانحراف (force يُبقي ما أُضيف بعده) */
+      if (cur[k].raw == null || text === JSON.stringify(k === K_PERM ? {} : [])) { st.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(k)); sharedOut[k] = 'deleted'; return; }
+      if (!force) drift.push({ kind: 'shared-drift', key: k });
+      st.push.apply(st, kvPutStmts(env, 'kv', k, text)); sharedOut[k] = 'stripped'; return;
+    }
+    var exact = demoH(text) === info.prevSha, same = exact || demoH(text) === info.prevNormSha;
+    if (!same && !force) drift.push({ kind: 'shared-drift', key: k, note: 'تغيّر السجلُّ المشترك بعد الزرع — force يكتب الحاليَّ منزوعاً منه العرضُ وحده' });
+    st.push.apply(st, demoKvPut(env, k, text, exact ? info.prevLens : null)); sharedOut[k] = exact ? 'exact' : same ? 'equal-json' : 'stripped';
+  });
+  if (drift.length && !force) return { status: 409, body: { ok: 0, err: 'demo-drift', msg: 'تغيّرت بياناتُ العرض أو السجلاتُ المشتركة بعد الزرع — لم يُحذف شيء (force للحذف رغم ذلك)', drift: drift } };
+  /* جلساتُ حسابات العرض (إن دخلها أحد) تُنهى، ثم البيانُ نفسُه — في دفعةٍ واحدة */
+  st.push(env.DB.prepare('DELETE FROM sess WHERE uid GLOB ?1').bind(DEMO_GLOB));
+  st.push(env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind(DEMO_MK));
+  await env.DB.batch([env.DB.prepare('PRAGMA defer_foreign_keys = ON')].concat(st));
+  return { status: 200, body: { ok: 1, act: 'remove', removed: demoCountRows(man.added), laterRows: later, shared: sharedOut, keptCounters: kept, forced: force && drift.length ? drift : undefined } };
+}
+async function demoStatus(env) {
+  var man = await demoManifest(env), tables = await demoTables(env), now = await demoScan(env, tables), rows = {};
+  tables.forEach(function (t) { var n = Object.keys((now[t.name] || {}).scoped || {}).length; if (n) rows[t.name] = n; });
+  return { status: 200, body: { ok: 1, act: 'status', seeded: !!man, state: man ? man.state : null, at: man ? man.at : null, counts: man ? man.counts : null, demoRows: rows,
+    systems: DEMO_PROVIDERS.map(function (p) { return p.sys; }) } };
+}
+async function enfDemoApi(env, request, A) {
+  var rb = await bodyRead(request, '/api/demo-data'); if (rb.res) return rb.res; var b = rb.v || {};
+  var act = String(b.act || 'status'), r;
+  if (act === 'status') r = await demoStatus(env);
+  else if (act === 'preview') {   /* معاينةٌ بلا كتابة */
+    var p; try { p = await demoBuild(env, A, { dry: 1 }); } catch (e) { return json({ ok: 0, err: String(e && e.message || e).slice(0, 80) }, 409); }
+    r = { status: 200, body: { ok: 1, act: 'preview', counts: p.counts, statements: p.st.length, systems: DEMO_PROVIDERS.map(function (x) { return x.sys; }), seeded: !!(await demoManifest(env)) } };
+  } else if (act === 'seed') r = await demoSeed(env, A, b);
+  else if (act === 'remove') r = await demoRemove(env, A, b);
+  else return json({ ok: 0, err: 'act' }, 400);
+  return json(r.body, r.status);
+}
+/* V7 · د5-هـ (م6): بياناتُ العرض — الجائزة: ترشيحاتُ موظفي الإدارة (awConvert → awInstallStatements) */
+demoProvide({ sys: 'award', caps: ['award'], seed: async function (env, C, out) {
+  for (var i = 0; i < C.units.length; i++) {
+    var d = C.units[i], emps = C.emps[d] || [], recs = emps.slice(0, 3).map(function (e, j) {
+      return { id: C.pre + 'aw_' + d.slice(C.pre.length) + '_' + j, ekey: e.eid, cat: C.tag + 'فئة', hij: C.today.y + '-' + C.today.m + '-' + C.today.d, score: 70 + j, st: 'قيد التحكيم', declName: e.name };
+    });
+    if (!recs.length) continue;
+    var domain = awConvert(d, { records: { recs: recs } });
+    out.st.push.apply(out.st, awInstallStatements(env, domain)); C.count('award', 'nominations', recs.length);
+  }
+} });
+/* V7 · د5-هـ (م6): بياناتُ العرض — العُهَد: أصنافٌ وتسليمٌ لموظفي الإدارة (cuConvert → cuBulk) */
+demoProvide({ sys: 'custody', caps: [], seed: async function (env, C, out) {
+  for (var i = 0; i < C.units.length; i++) {
+    var d = C.units[i], emps = C.emps[d] || [], T = C.today;
+    var doc = { items: [{ name: C.tag + 'جهاز لاسلكي', qty: 5 }, { name: C.tag + 'سترة', qty: 10 }],
+      moves: emps.slice(0, 2).map(function (e, j) { return { t: 'out', eid: e.eid, item: j ? C.tag + 'سترة' : C.tag + 'جهاز لاسلكي', ser: 'TST-D' + (i + 1) + '0' + (j + 1), y: T.y, m: T.m, d: T.d }; }) };
+    var rows = cuConvert(d, doc);
+    Object.keys(CU_TABLES).forEach(function (k) { out.st.push.apply(out.st, cuBulk(env, CU_TABLES[k][0], CU_TABLES[k][1], rows[k])); });
+    C.count('custody', 'items', rows.items.length); C.count('custody', 'issued', rows.moves.length);
+  }
+} });
+/* V7 · د5-هـ (م6): بياناتُ العرض — الجولاتُ اليومية: أيامٌ من الشهر الحالي على مواقع الإدارة، بحالات رصدٍ مفتوحة ومغلقة */
+demoProvide({ sys: 'daily', caps: ['daily'], seed: async function (env, C) {
+  for (var i = 0; i < C.units.length; i++) {
+    var d = C.units[i], floors = C.sites[d] || [], doc = {}; if (!floors.length) continue;
+    C.days.forEach(function (day, k) {
+      var fs = C.copy(floors);
+      fs.forEach(function (f) { if (f.zones[0]) Object.assign(f.zones[0], { fst: 'open', fAt: C.now - k * 864e5 }); if (f.zones[1]) Object.assign(f.zones[1], { fst: 'closed', cWhy: C.tag + 'صيانة', fAt: C.now - k * 864e5 + 1000 }); });
+      doc[day.y + '-' + day.m + '-' + day.d] = { t: C.now - k * 864e5, d: fs, shAp: {} };
+    });
+    await C.op('bsdept:' + d + ':bassam_rounds_v1', doc); C.count('daily', 'days', C.days.length);
+  }
+} });
+/* V7 · د5-هـ (م6): بياناتُ العرض — التقريرُ اليومي: أيامٌ بورديتين وحضورِ موظفي الإدارة (الأقدمُ معتمَد) */
+demoProvide({ sys: 'dreport', caps: ['dreport'], seed: async function (env, C) {
+  for (var i = 0; i < C.units.length; i++) {
+    var d = C.units[i], emps = C.emps[d] || [], doc = {}; if (!emps.length) continue;
+    C.days.forEach(function (day, k) {
+      var shifts = {};
+      C.shifts.forEach(function (s, j) {
+        var roster = emps.filter(function (e, q) { return q % C.shifts.length === j; }).map(function (e) { return { ekey: e.eid, st: 'pr', shift: s.name }; });
+        shifts[s.name] = Object.assign({ pulled: true, roster: roster }, k > 0 ? { ap: 1, apAt: day.d + '/' + day.m, apBy: C.tag + 'مدير' } : {});
+      });
+      doc[day.y + '-' + day.m + '-' + day.d] = { created: C.now - k * 864e5, shifts: shifts };
+    });
+    await C.op('bsdept:' + d + ':bassam_dreport_v1', doc); C.count('dreport', 'days', C.days.length);
+  }
+} });
+/* V7 · د5-هـ (م6): بياناتُ العرض — الإحصائياتُ اليومية (سجلٌّ عامٌّ للمنصة): أيامٌ من الشهر الحالي الخاليةُ وحدها تُملأ بقيمٍ موسومة TEST_ONLY،
+   ولا يُمسّ يومٌ له قيمة (dsDomainStatements من فارغٍ إلى أيام العرض — إدراجٌ لا استبدال) */
+demoProvide({ sys: 'dstats', caps: ['dstats'], seed: async function (env, C, out) {
+  var cur = (await dsDomainRead(env)).data, next = { haram: {}, nabawi: {}, locks: {} }, n = 0;
+  DS_SITES.forEach(function (site, s) {
+    C.days.forEach(function (day, k) {
+      var key = day.y + '-' + String(day.m).padStart(2, '0') + '-' + String(day.d).padStart(2, '0');
+      if (cur[site] && cur[site][key] !== undefined) return;
+      next[site][key] = { worshippers: 1000 * (s + 1) + 10 * k, umrah: 100 + k, __m: { t: 'TEST_ONLY' } }; n++;
+    });
+  });
+  if (!n) return;
+  out.st.push.apply(out.st, dsDomainStatements(env, { haram: {}, nabawi: {}, locks: {} }, next)); out.revKeys.push(K_DSTATS); C.count('dstats', 'days', n);
+} });
+/* V7 · د5-هـ (م6): بياناتُ العرض — الإرشاد: تقاريرُ اليوم والأيام السابقة بلغاتها ومواقعها، بكاتب النظام (irConvert → irInstallStatements) */
+demoProvide({ sys: 'irshad', caps: ['irshad'], seed: async function (env, C, out) {
+  for (var i = 0; i < C.units.length; i++) {
+    var d = C.units[i], emps = C.emps[d] || [], reports = [];
+    C.days.forEach(function (day, k) {
+      emps.slice(0, 3).forEach(function (e, j) {
+        reports.push({ id: C.pre + 'ir_' + d.slice(C.pre.length) + '_' + k + j, y: day.y, m: day.m, d: day.d, ts: C.now - k * 864e5 - j * 60000, shift: C.shifts[j % C.shifts.length].name,
+          eid: e.eid, name: e.name, loc: C.tag + 'موقع إرشاد', actor: C.tag + 'أداة العرض', bro: 2 + j, pros: j % 2, pol: 0, langs: [{ lang: C.tag + 'لغة', count: 3 + j }] });
+      });
+    });
+    var domain = irConvert(d, { reports: { reports: reports }, languages: [C.tag + 'لغة'], locations: [C.tag + 'موقع إرشاد'] });
+    out.st.push.apply(out.st, irInstallStatements(env, domain)); C.count('irshad', 'reports', reports.length);
+  }
+} });
+/* V7 · د5-هـ (م6): بياناتُ العرض — الخطةُ التشغيلية: مواقعُ (طوابق) بمصلياتها وبواباتها ومعالمها ومساراتها لكل إدارةٍ تجريبية، وخطةُ الشهر */
+demoProvide({ sys: 'plan', caps: ['plan'], seed: async function (env, C) {
+  for (var i = 0; i < C.units.length; i++) {
+    var d = C.units[i], floors = C.sites[d] || []; if (!floors.length) continue;
+    var doc = { floors: C.copy(floors), months: {}, zones: C.copy(floors[0].zones), gates: C.copy(floors[0].gates), marks: C.copy(floors[0].marks), paths: C.copy(floors[0].paths) };
+    doc.months[C.mk] = { c: 1, d: C.copy(floors) };
+    await C.op('bsdept:' + d + ':bassam_plan_v1', doc); C.count('plan', 'sites', floors.length);
+    C.count('plan', 'zones', floors.reduce(function (n, f) { return n + f.zones.length; }, 0));
+  }
+} });
+/* V7 · د5-هـ (م6): بياناتُ العرض — المضبوطات: فهرسٌ وإجراءات ومواقع، وتقاريرُ بأصنافها لأيام الشهر (szConvert → szInstallStatements) */
+demoProvide({ sys: 'seized', caps: ['seized'], seed: async function (env, C, out) {
+  for (var i = 0; i < C.units.length; i++) {
+    var d = C.units[i], emps = C.emps[d] || [], reports = [];
+    C.days.forEach(function (day, k) {
+      reports.push({ id: C.pre + 'sz_' + d.slice(C.pre.length) + '_' + k, y: day.y, m: day.m, d: day.d, ts: C.now - k * 864e5, loc: C.tag + 'موقع ضبط', no: C.tag + 'محضر ' + (k + 1), note: '',
+        shift: C.shifts[0].name, eid: emps[0] ? emps[0].eid : '', name: emps[0] ? emps[0].name : '', actor: C.tag + 'أداة العرض',
+        items: [{ id: 23, n: 2 + k, val: 0, act: 'sto', kind: '', kindTxt: '', photos: [] }, { id: 24, n: 1, val: 100, act: 'sto', kind: '', kindTxt: '', photos: [] }] });
+    });
+    var domain = szConvert(d, { catalog: { ver: 1, cats: [{ name: C.tag + 'نقد', color: '#123456', items: [{ id: 23, name: C.tag + 'عملة', unit: 'sar' }, { id: 24, name: C.tag + 'جهاز', unit: 'pc' }] }] },
+      actions: [{ k: 'sto', name: C.tag + 'محفوظ' }], locations: [C.tag + 'موقع ضبط'], jew: [C.tag + 'نوع'], reports: { reports: reports } });
+    out.st.push.apply(out.st, szInstallStatements(env, domain)); C.count('seized', 'reports', reports.length);
+  }
+} });
+/* V7 · د5-هـ (م6): بياناتُ العرض — جدولُ التشغيل: وردياتُ موظفي كلِّ إدارةٍ تجريبية للشهر الحالي والسابق */
+demoProvide({ sys: 'staff', caps: ['staff'], seed: async function (env, C) {
+  for (var i = 0; i < C.units.length; i++) {
+    var d = C.units[i], month = {}, n = 0;
+    (C.emps[d] || []).forEach(function (e, j) { month[e.eid] = { shift: C.shifts[j % C.shifts.length].name, rest: [], leaves: {}, perm: {}, cs: '', muk: false }; n++; });
+    var doc = {}; doc[C.mk] = month; doc[C.pmk] = C.copy(month);
+    await C.op('bsdept:' + d + ':bassam_staffing_v3', doc); C.count('staff', 'assignments', n * 2);
+  }
+} });
+/* V7 · د5-هـ (م6): بياناتُ العرض — المهام: مهامٌ اليوم وأمس لموظفي الإدارة (تنتظر · جارية · منجزة) ومهمةٌ عامة */
+demoProvide({ sys: 'tasks', caps: ['tasks'], seed: async function (env, C) {
+  var H = 3600 * 1000, seq = 0;
+  function row(o) {   /* الشكلُ القائم (22 عموداً) — العمود 13 هويةُ الصف · 14 مفتاحُ المسند */
+    var nm = o.e ? o.e.name : '';
+    return [C.tag + o.title, '', 'normal', o.st || 'pending', 'normal', 'مضافة', o.perf || null, o.e ? [nm.charAt(0)] : [], nm, C.tag + 'أداة العرض', 60, o.acc || null, o.fin || null,
+      C.now - 864e5 * 30 + (++seq) * 1000, o.e ? o.e.eid : null, o.s || null, o.f || null, null, null, null, null, null];
+  }
+  for (var i = 0; i < C.units.length; i++) {
+    var d = C.units[i], emps = C.emps[d] || [], doc = {}, n = 0, T = C.days[0], Y = C.days[1] || C.days[0];
+    var DT = T.y + '-' + T.m + '-' + T.d, DY = Y.y + '-' + Y.m + '-' + Y.d;
+    doc[DT] = []; if (DY !== DT) doc[DY] = [];
+    emps.forEach(function (e, j) {
+      doc[DT].push(row({ title: 'مهمة اليوم ' + (j + 1), e: e, st: j % 2 ? 'in_progress' : 'pending', acc: j % 2 ? C.now - H / 2 : null, s: C.now - H, f: C.now + 3 * H })); n++;
+      doc[DY].push(row({ title: 'مهمة أمس ' + (j + 1), e: e, st: 'done', acc: C.now - 25 * H, fin: C.now - 24.5 * H, perf: ['on_time', 'في الوقت'], s: C.now - 26 * H, f: C.now - 24 * H })); n++;
+    });
+    doc[DT].push(row({ title: 'مهمة عامة', s: C.now - H, f: C.now + 5 * H })); n++;
+    await C.op('bsdept:' + d + ':bassam_tasks_v1', doc); C.count('tasks', 'tasks', n);
+  }
+} });
 /* @@KIVO_TEST_TOOL_END */
 /* الاستدراك في وضع الإنفاذ: super ∨ المفتاحُ الصريح (D3-01 — بعد ترحيل الصلاحيات لا يكفي approve) */
 function enfRetroMay(A, d, sys) { if (A.u.role === 'super') return true; return !!d && deptInScope(A, d) && enfHeld(A, d, RETRO[sys].key); }
@@ -31102,7 +31521,7 @@ export default {
         var AMG = await actorOf(env, ss.uid); if (!AMG) return json({ ok: 0, err: 'session' }, 401);
         return await enfMigrateApi(env, request, AMG, url, reqMeta(request));
       }
-      if (enfEnvOn(env) && path === '/api/authz-test' && request.method === 'POST') {
+      if (enfEnvOn(env) && (path === '/api/authz-test' || path === '/api/demo-data') && request.method === 'POST') {
         var ATS = await actorOf(env, ss.uid); if (!ATS) return json({ ok: 0, err: 'session' }, 401);
         return await enfTestApi(this, env, request, ATS, url);
       }

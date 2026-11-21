@@ -56,7 +56,7 @@ test('(ج) الأخطاءُ المعقودة: 400 bad-body لكل مخطّط · 
     '/api/custody/act': { op: 17 }, '/api/irshad/act': { op: 17 }, '/api/seized/act': { op: 17 }, '/api/award/act': { op: 17 }, '/api/employees/transition': { intent: 17 },
     '/api/admin/dept-wipe': { dept: 17 }, '/api/admin/dept-delete': { dept: 17 },
     '/api/backup/restore': { mode: 17 } };
-  const ENF_ONLY = ['/api/authz-migrate', '/api/authz-test'];
+  const ENF_ONLY = ['/api/authz-migrate', '/api/authz-test', '/api/demo-data'];   /* V7 · د5-هـ (م6): أداةُ بيانات العرض — مخطّطُها في بيئتها: tests/unit/v7_d5e_demo_data.test.mjs */
   for (const p of Object.keys(B)) {
     if (ENF_ONLY.includes(p)) continue;
     assert.ok(bad[p] !== undefined, 'جسمٌ خاطئٌ للاختبار: ' + p);

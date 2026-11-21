@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "4e21b3ce281459aa917c28deb907c670f51af4fa5e0cfd0ecbf6c389bd25efd9",
+  "sha256": "98852b3dd1b6c04cea00b837ba6e2382c560ccb33a9318cbcf179367a9e95f69",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -979,8 +979,8 @@
         23269,
         23327
       ],
-      "bytes": 22973,
-      "sha256": "20359954f451c393903e58a84f18aac323c9ab7bbe67c0e966a5134eaf1922a6",
+      "bytes": 23146,
+      "sha256": "3eaf0dc68e640754068be4a18bf467d34dfb1ab3fb5304b09242de4d6c7bf795",
       "head": "/* ═══ KIVO_263 · SOT-101 — مخطّطاتُ أجسام الطلبات المغيِّرة: المصدرُ src/schemas/api/bodies.schema.json (JSON Schema) ═══"
     },
     {
@@ -1222,10 +1222,10 @@
       "file": "063-enf-api-and-handler.js",
       "lines": [
         30140,
-        31350
+        31769
       ],
-      "bytes": 129430,
-      "sha256": "f314530169154a44182786df267d19de1204a0cd7ac754a89d7ed57566ca45d1",
+      "bytes": 169505,
+      "sha256": "f87b3866dafa08704cf1fa7bfa48ee0b62ebfb61ee27fca24ccdb033981d575f",
       "head": "/* ══ (6) الواجهات: حالةُ الإنفاذ · سجلُّ القرارات · الترحيلُ والرجوع (هوية → نطاق → صلاحيات) · جلسةُ اختبارٍ داخلية (Preview) ══ */"
     }
   ]

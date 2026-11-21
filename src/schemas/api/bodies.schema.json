@@ -1584,6 +1584,22 @@
         }
       }
     },
+    "/api/demo-data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "act": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "reveal": {
+          "type": "boolean"
+        },
+        "force": {
+          "type": "boolean"
+        }
+      }
+    },
     "/api/authz-test": {
       "type": "object",
       "properties": {
@@ -2250,6 +2266,7 @@
     "/api/me/sess/kill-one": "V7 · د5-هـ (x1): {sid: مِقبضُ الجلسة من /api/me أو من تنبيه sc_dev (16 hex) · why: 'not-me' من «ليس أنا»} — جلسةُ صاحب الطلب وحده",
     "/api/retro": "أشكالُ العميل: فتحٌ {res, dept, act:'open', scope:{y,m[,d]}, reason[, hours]} (280) · إغلاقٌ {act:'close', res, dept, id} — الأرقامُ تُقبل نصاً (parseInt في المعالج)",
     "/api/policy": "حقولُ نموذج السياسات نصوصٌ من e.target.value أو أرقام (src/modules/admin/logic.js) — المعالجُ يحوّلها ويحدّها",
+    "/api/demo-data": "V7 · د5-هـ (م6): act = preview · seed · remove · status (غيرُها 400 act) · reveal: كلماتُ مرور حسابات العرض مرةً واحدة في الرد · force: الحذفُ رغم الانحراف",
     "/api/authz-test": "body (الطلبُ المنفَّذ بهوية حساب الاختبار) بلا قيد شكل — المسارُ المستهدف يفحصه بمخطّطه",
     "/api/img/": "عقدٌ خامّ لا JSON — raw['/api/img/']"
   }
