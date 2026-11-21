@@ -4,6 +4,7 @@
    python3 tools/removal_test.py [all | none | award | dstats | seized | tasks | custody]... [--units] [--no-browser] [--no-check] [--keep] [--jobs N]
      none   حذفُ الأنظمة كلِّها معاً (الستة)        award · dstats · seized · tasks · custody   حذفُ نظامٍ واحد      all = الحالاتُ الست (الافتراضي)
      (الاسترشاد لا يُحذف وحده: المضبوطات تتطلبه — requires في system.json)
+     plan+daily   V7 · د5-ح: حذفُ مالكَي نواة الطباعة معاً (src/systems/_shared/print تُحذف معهما — لا كودَ طباعةٍ في القاعدة)
    لكل حالة، في نسخةٍ مؤقتة من شجرة العمل خارج المستودع (لا يُمسّ المستودع):
      ① حذفُ المجلد ثم  tools/systems.py --regen  (يعيد التوليد ويحذف ما وُلّد للنظام الغائب)
      ② لا جزءَ من القاعدة يذكر اسماً معرَّفاً في أجزاء خادم نظامٍ غائب (خارج التعليقات والنصوص)
@@ -20,7 +21,7 @@
 import os, sys, re, json, glob, shutil, subprocess, tempfile, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CASES = {'none': ['award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'], 'staff': ['staff'], 'plan': ['plan'], 'dreport': ['dreport'], 'daily': ['daily'], 'award': ['award'], 'dstats': ['dstats'], 'seized': ['seized'], 'tasks': ['tasks'], 'custody': ['custody']}
+CASES = {'none': ['award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'], 'staff': ['staff'], 'plan': ['plan'], 'dreport': ['dreport'], 'daily': ['daily'], 'plan+daily': ['daily', 'plan'], 'award': ['award'], 'dstats': ['dstats'], 'seized': ['seized'], 'tasks': ['tasks'], 'custody': ['custody']}
 
 def sh(cmd, cwd, env=None, timeout=3600):
     r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)

@@ -874,7 +874,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/566-print-core.js",
+   "id": "systems/_shared/print/566-print-core.js",
    "kind": "js",
    "line": 10752,
    "openTag": "<script>",

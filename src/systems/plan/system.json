@@ -14,6 +14,9 @@
   "\\bplan\\.[A-Za-z]+@[0-9]"
  ],
  "note": "V7 · د5-هـ (م1): التشغيلُ الميداني في مجلده. هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py). روابطُه مع غيره في contract.json.",
+ "shared": [
+  "print"
+ ],
  "client": {
   "slug": "plan",
   "component": "Operational Plan",

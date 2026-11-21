@@ -1,6 +1,6 @@
 /* RISHAD CORE-02 S7 — «مركز إدارة رشاد» as its own space, in a real browser over the built package (lab: TEST_ONLY data, no network).
    (A) the platform administrator lands in the console; its sidebar holds the console navigation only (no operational pages, no unit
-       picker, no «+ قسم», no help group); every one of the 15 destinations (V7 · د5-هـ 44: perms · plat/mods deleted) is one sidebar item: clicking it writes its own address,
+       picker, no «+ قسم», no help group); every one of the 14 destinations (V7 · د5-هـ 44: perms · plat/mods deleted; V7 · د5-ح: plat/print deleted) is one sidebar item: clicking it writes its own address,
        marks exactly that item current, shows its title as the page h2 and moves the focus there; every address opens cold
        (#/sysadmin/plat and an unknown section open «هوية المنصة»); Back moves between console pages;
    (B) an unsaved platform draft is marked in the sidebar, survives a move inside the console, and leaving asks first (cancel keeps it);
@@ -37,10 +37,10 @@ const BEFORE = JSON.parse(fs.readFileSync(new URL('./fixtures/core01_nav_before.
 const OFF5H = (L) => (L || []).map((x) => { const [c, t, n] = x.split('|'), m = / — خارج سقف «[^»]*» - مرئية لك بصلاحية المشرف$/.exec(t || ''); return m ? [c.replace(' out', ' gone'), t.slice(0, m.index), n].join('|') : x; });
 for (const h of Object.keys(BEFORE.super || {})) BEFORE.super[h] = OFF5H(BEFORE.super[h]);
 const MOBILE = { viewport: { width: 390, height: 844 }, context: { isMobile: true, hasTouch: true, deviceScaleFactor: 1 } };
-/* V7 · د5-هـ (44): «خريطة الصلاحيات» (perms) و«الوحدات» (plat/mods) حُذفتا بقرار المالك — 15 وجهة */
+/* V7 · د5-هـ (44): «خريطة الصلاحيات» (perms) و«الوحدات» (plat/mods) حُذفتا بقرار المالك · V7 · د5-ح: و«الطباعة والتقارير» (plat/print) — 14 وجهة */
 const DEST = [['overview', null, 'الرئيسية'], ['depts', null, 'الإدارات'], ['users', null, 'مراقبة الحسابات'],
   ['plat', 'id', 'هوية المنصة'], ['plat', 'notif', 'التنبيهات والتعاميم'], ['plat', 'login', 'شاشة تسجيل الدخول'],
-  ['plat', 'side', 'القوائم'], ['plat', 'print', 'الطباعة والتقارير'], ['plat', 'app', 'تطبيق الجوال'], ['plat', 'about', 'حول المنصة'],
+  ['plat', 'side', 'القوائم'], ['plat', 'app', 'تطبيق الجوال'], ['plat', 'about', 'حول المنصة'],
   ['sec', null, 'الأمن'], ['oplog', null, 'سجل الأنشطة والتغييرات'], ['backup', null, 'النسخة الاحتياطية'], ['plat', 'setup', 'التهيئة والاستعادة'],
   ['histimp', null, 'استيراد البيانات التاريخية']];
 /* V7 P0: «الإدارات» عنوانُها #/sysadmin/org (والقديم #/sysadmin/depts يُقرأ ثم يُكتب الجديد) */
@@ -79,7 +79,7 @@ const state = (page) => page.evaluate(() => {
     ov: document.documentElement.scrollWidth - document.documentElement.clientWidth };
 });
 
-test('(A)(B) platform administrator: the console, its 15 destinations, deep links, Back, drafts, exit and return, the rail', { timeout: 900000 }, async () => {
+test('(A)(B) platform administrator: the console, its 14 destinations, deep links, Back, drafts, exit and return, the rail', { timeout: 900000 }, async () => {
   const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null;
   try {
     s = await openAs(b, lab, LAB.superUn, LAB.superPw, { onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
@@ -94,7 +94,7 @@ test('(A)(B) platform administrator: the console, its 15 destinations, deep link
     assert.equal((await page.textContent('aside.bsb .s-space .nlbl')).trim(), 'مركز إدارة رشاد');
     assert.equal(await page.getAttribute('aside.bsb nav.s-nav', 'aria-label'), 'مركز إدارة رشاد');
     assert.ok((await page.textContent('aside.bsb .s-ur')).includes('مسؤول المنصة'), 'the user card');
-    assert.equal(await page.locator('aside.bsb [data-con-tab]').count(), 15, '15 destinations');
+    assert.equal(await page.locator('aside.bsb [data-con-tab]').count(), 14, '14 destinations');
     assert.deepEqual(await page.$$eval('aside.bsb .s-cgh', (e) => e.map((x) => x.textContent.trim())), ['الإدارة المؤسسية', 'إعدادات المنصة', 'الأمن والرقابة', 'البيانات والاستمرارية'], 'the group headings');
     assert.equal(await page.locator('main [role=tablist], main .adm-tabbar').count(), 0, 'no tab strip in the page');
     /* every destination: one click → its address, one current item, its title, the focus on the title */
@@ -177,7 +177,7 @@ test('(C)(D) phone drawer; a unit manager keeps #/admin; an employee is refused 
         await page.click('.bs-burger'); await page.waitForTimeout(700);
         const open = await page.evaluate(() => { const r = document.querySelector('aside.bsb').getBoundingClientRect(); return r.right > 0 && r.left < innerWidth && r.width > 200; });
         assert.ok(open, 'the drawer opens');
-        assert.equal(await page.locator('aside.bsb [data-con-tab]').count(), 15, 'the drawer holds the console tree');
+        assert.equal(await page.locator('aside.bsb [data-con-tab]').count(), 14, 'the drawer holds the console tree');
         assert.equal(await page.locator('aside.bsb .s-dept, aside.bsb a[data-key]').count(), 0);
         await (await reach(page, ['plat', 'notif'])).click(); await page.waitForTimeout(1500);
         const st = await state(page);
@@ -360,7 +360,7 @@ test('(S9) every destination × phone / tablet / desktop × light / dark: no ove
 
 /* CORE-02 S10 — accessibility and keyboard. A keyboard-only walk (Tab order = the sidebar's visual order, Enter opens the page and puts the
    focus on its h2, Shift+Tab returns to the sidebar); the focus ring on the dark sidebar and every sidebar text pair measured in the page
-   (light and dark); one h1, one h2 and no skipped heading level on all 15 pages, one current item and no aria-selected in the sidebar;
+   (light and dark); one h1, one h2 and no skipped heading level on all 14 pages, one current item and no aria-selected in the sidebar;
    dialogs: named, focus inside, Tab stays inside, Escape closes and the focus returns to the opener (a manager dialog and the exit
    confirmation); reduced motion stops the collapse slide; the phone drawer in both modes: the burger states aria-expanded, opening moves
    the focus to the current page, Escape closes it and returns to the burger. Nothing is saved. */
@@ -499,12 +499,12 @@ test('(R) review of S10: sidebar fits 1366×900, gold edge, Back after in-page l
   try {
     s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: 1366, height: 900 }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
     const page = s.page;
-    await s.go('#/sysadmin/plat/id', 3500);   /* the accordion: the largest group (إعدادات المنصة, 8 items) open — the longest the sidebar gets */
+    await s.go('#/sysadmin/plat/id', 3500);   /* the accordion: the largest group (إعدادات المنصة, 6 items) open — the longest the sidebar gets */
     const fit = await page.evaluate(() => {
       const n = document.querySelector('aside.bsb .s-nav'), all = [...document.querySelectorAll('aside.bsb [data-con-tab]')], it = [...document.querySelectorAll('aside.bsb [data-con-tab], aside.bsb .s-cgh')].filter((e) => e.getClientRects().length), nb = n.getBoundingClientRect(), last = it[it.length - 1].getBoundingClientRect();
       return { n: all.length, lastBot: Math.round(last.bottom), navBot: Math.round(nb.bottom), sh: n.scrollHeight, ch: n.clientHeight, shadow: getComputedStyle(document.querySelector('aside.bsb')).boxShadow };
     });
-    assert.equal(fit.n, 15);
+    assert.equal(fit.n, 14);
     assert.ok(fit.lastBot <= fit.navBot, '1366×900: the last visible console control (bottom ' + fit.lastBot + ') is inside the sidebar (bottom ' + fit.navBot + ')');
     assert.ok(fit.sh <= fit.ch + 1, '1366×900: the console navigation does not scroll (' + fit.sh + ' / ' + fit.ch + ')');
     assert.match(fit.shadow, /2px 0px 0px 0px inset|inset 2px 0px 0px/, 'gold edge on the page-facing edge (' + fit.shadow + ')');
@@ -640,7 +640,7 @@ test('(ACC) accordion sidebar: deep links per group, toggle without navigation, 
           assert.deepEqual(openOf(st), [], 'Home: every group collapsed');
           assert.deepEqual(st.vis, ['الرئيسية'], 'Home: only «الرئيسية» among the items');
           /* deep link (a real load) per group: that group alone opens, its current item is visible */
-          for (const [hash, g, t] of [['#/sysadmin/users', 'org', 'مراقبة الحسابات'], ['#/sysadmin/plat/print', 'plat', 'الطباعة والتقارير'], ['#/sysadmin/oplog', 'sec', 'سجل الأنشطة والتغييرات'], ['#/sysadmin/plat/setup', 'data', 'التهيئة والاستعادة']]) {
+          for (const [hash, g, t] of [['#/sysadmin/users', 'org', 'مراقبة الحسابات'], ['#/sysadmin/plat/side', 'plat', 'القوائم'], ['#/sysadmin/oplog', 'sec', 'سجل الأنشطة والتغييرات'], ['#/sysadmin/plat/setup', 'data', 'التهيئة والاستعادة']]) {
             await page.goto('about:blank'); await page.goto(lab.base + '/' + hash, { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(3500);
             st = await acc(page);
             assert.deepEqual(openOf(st), [g], hash + ': its group opens, and only it');

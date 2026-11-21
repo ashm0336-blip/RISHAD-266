@@ -16,6 +16,9 @@
   "\\b(?:is|go|n|t)Daily\\b"
  ],
  "note": "V7 · د5-هـ (م3): المتابعةُ اليومية (الجولات · رصد الميدان) في مجلدها. منطقُ صفحتها قالبٌ في مجلدها (templates) تُحقن فيه قطعُ التقرير اليومي والمهام. روابطُه مع غيره في contract.json.",
+ "shared": [
+  "print"
+ ],
  "client": {
   "slug": "daily",
   "component": "Daily Sessions",

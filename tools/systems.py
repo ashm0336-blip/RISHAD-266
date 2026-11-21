@@ -77,6 +77,10 @@ def problems(S, systems=None):
         if p.get('key') != s or p.get('kind') != 'shared': bad.append('_shared/%s/shared.json: key/kind' % s)
         for f in p.get('files') or []:
             if not os.path.isfile(os.path.join(p['_dir'], f)): bad.append('_shared/%s: %s غير موجود' % (s, f))
+        for name, v in (p.get('slots') or {}).items():   # V7 · د5-ح: قطعُ القطعة المشتركة كقطع النظام (text أو file)
+            for it in (v if isinstance(v, list) else [v]):
+                if ('text' in it) == ('file' in it): bad.append('_shared/%s: slots.%s يحمل text أو file (واحداً منهما)' % (s, name))
+                elif 'file' in it and not os.path.isfile(os.path.join(p['_dir'], it['file'])): bad.append('_shared/%s: slots.%s ← %s غير موجود' % (s, name, it['file']))
         if not set(p.get('owners') or []) & set(keys): bad.append('قطعة مشتركة بلا مالك: %s — احذفها' % os.path.relpath(p['_dir'], os.path.dirname(S)).replace(os.sep, '/'))
         for o in p.get('owners') or []:
             if o in keys and s not in (next(d for d in systems if d.get('key') == o).get('shared') or []): bad.append('%s: مالكٌ للقطعة المشتركة «%s» ولا يعلنها (shared)' % (o, s))
@@ -91,7 +95,11 @@ def problems(S, systems=None):
 def fragments(S, systems=None):
     """{name: [(order, key, {text[, first, last, only]})]} مرتَّبةً — نصُّ القطعة من system.json أو من ملفٍ في مجلد النظام."""
     systems = load(S) if systems is None else systems; out = {}
-    for d in systems:
+    # V7 · د5-ح: قطعُ القطعة المشتركة (shared.json ← slots) تُحقن مرّةً واحدة ما حضر أحدُ مالكيها — كتلةٌ في الغلاف يحتاجها نظامان (نواةُ الطباعة)
+    #            لا تتكرّر بحضورهما معاً ولا تبقى في القاعدة بغيابهما. مفتاحُها في الترتيب «_shared/<key>».
+    present = {d.get('key') for d in systems}
+    owners = [dict(p, key='_shared/' + k) for k, p in sorted(shared(S).items()) if set(p.get('owners') or []) & present]
+    for d in list(systems) + owners:
         for name, v in (d.get('slots') or {}).items():
             for it in (v if isinstance(v, list) else [v]):
                 text = it['text'] if 'text' in it else open(os.path.join(d['_dir'], it['file']), encoding='utf-8', newline='').read()

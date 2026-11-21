@@ -22,7 +22,7 @@
   "__BS_AUD_MODE",
   "__BS_OP_MODE",
   "BassamPurge",
-  "BassamStaffSnap"@@SYS:ns.owned.daily|empty=",\n  \"BassamField\",\n  \"BassamRound\""@@
+  "BassamStaffSnap"@@SYS:ns.owned.daily|empty=",\n  \"BassamField\",\n  \"BassamRound\""@@@@SYS:ns.owned.print|empty=",\n  \"BassamPrintCore\""@@
  ],
  "extra": [
   "__dcLogicDefs",
@@ -49,8 +49,7 @@
   "src/services/320-dept-storage.js",
   "src/permissions/331-perm-model.js",
   "src/layouts/root-logic.js",
-  "src/services/566-print-core.js",
-@@SYS:ns.after.daily@@@@SYS:ns.after.plan@@  "src/modules/admin/logic.js",
+@@SYS:ns.after.print@@@@SYS:ns.after.daily@@@@SYS:ns.after.plan@@  "src/modules/admin/logic.js",
   "src/components/660-a11y-enhancer.js",
 @@SYS:ns.after.tasks@@  "src/api/280-server-storage.js",
   "src/auth/330-auth.js",

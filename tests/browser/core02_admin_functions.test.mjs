@@ -49,7 +49,15 @@ const DELETED44 = {
     ...['الإحصائيات اليومية', 'الإعدادات', 'الخطة التشغيلية', 'العدسات', 'المتابعة اليومية', 'المراجع المستقلة', 'المساعدة', 'المنصة', 'جائزة التميز', 'مواقع ذات صلة', 'موظفو الإدارة', 'نظام الاسترشاد', 'نظام المضبوطات']
       .map((n) => 'فرد «' + n + '» وعرض أوراقها')] },
 };
-const gone44 = (t, kind, x) => !!(DELETED44[t] && (DELETED44[t][kind] || []).includes(x));
+/* V7 · د5-ح (قرار المالك 13 نوفمبر — حذفٌ بلا أثر): قسمُ «الطباعة والتقارير — الترويسة والتذييل» (#/sysadmin/plat/print) ومعاينتُه «الطباعة».
+   ما سُجّل له في اللقطة القديمة لا يُطالَب به (بأسمائه حرفاً)، ويُثبَّت غيابُه من الشريط الجانبي (وغيابُه من المصدر: tests/unit/v7_d5h_print_residue.test.mjs). */
+const DELETED_D5H = {
+  plat: { headings: ['الطباعة والتقارير', 'الترويسة الموحّدة', 'التذييل'],
+    actions: ['الطباعة والتقارير', 'الطباعة', 'يمين', 'وسط', 'يسار', 'بلا شعار', 'كما تحدده كل صفحة', 'A# عمودي', 'A# أفقي'],   /* «A4 عمودي · A4 أفقي · A3 أفقي» بعد تطبيع الأرقام */
+    fields: ['input:السطر الأول - فارغ = اسم الجهة أو المنصة', 'input:السطر الثاني - مثال: الإدارة العامة لإدارة الحشود', 'input:السطر الثالث - {الإدارة} و{الصفحة} تُملآن تلقائياً',
+      'input:نص التذييل', 'control:تاريخ الطباعة ووقتها', 'control:اسم من طبع'] },
+};
+const gone44 = (t, kind, x) => !!(DELETED44[t] && (DELETED44[t][kind] || []).includes(x)) || !!(DELETED_D5H[t] && (DELETED_D5H[t][kind] || []).includes(x));
 const SYS_TABS = ['overview', 'sec', 'users', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
 const DEPT_TABS = ['backup', 'oplog', 'shifts'];
 /* V7 · د1-د (تصوّرٌ معتمد): تبويبُ «استيراد بيانات» حُذف من الإعدادات — الاستيرادُ صار في «بيانات الموظفين» (ملفات ← استيراد من Excel)
@@ -91,7 +99,7 @@ const MOVED = {
     'حذف حساب المدير — تبقى الإدارة وبياناتها': '=حذف حساب المدير' },
   /* CORE-02 S7: the nine platform sections were in-page tabs; each is now a named item of the console sidebar (#/sysadmin/plat/<sub>) —
      «التهيئة والاستعادة» under البيانات والاستمرارية, the other eight under إعدادات المنصة */
-  plat: { 'هوية المنصة': 'aside', 'شاشة تسجيل الدخول': 'aside', 'تطبيق الجوال': 'aside', 'القوائم': 'aside', 'الطباعة والتقارير': 'aside', 'الوحدات': 'aside', 'التهيئة والاستعادة': 'aside', 'التنبيهات والتعاميم': 'aside', 'حول المنصة': 'aside' },
+  plat: { 'هوية المنصة': 'aside', 'شاشة تسجيل الدخول': 'aside', 'تطبيق الجوال': 'aside', 'القوائم': 'aside', 'الوحدات': 'aside', 'التهيئة والاستعادة': 'aside', 'التنبيهات والتعاميم': 'aside', 'حول المنصة': 'aside' },
 };
 /* CORE-02 review of S10 (intended): a card title that only repeated the page title (h2) was dropped; the recorded heading is the h2
    named here, which must be shown. The ONLY place a recorded heading may merge into the page title; never add an entry to hide a loss. */
@@ -384,8 +392,9 @@ if (CAPTURE) {
       }
       /* CORE-02 step 5: every link of the removed quick-links strip is still reachable at its destination */
       const side = (await s.page.evaluate(collect)).side;
-      assert.equal(side.length, 15, 'the console sidebar holds 15 destinations (' + JSON.stringify(side) + ')');
+      assert.equal(side.length, 14, 'the console sidebar holds 14 destinations (' + JSON.stringify(side) + ')');
       for (const x of ['خريطة الصلاحيات', 'الوحدات']) assert.ok(!side.includes(x), 'V7 · د5-هـ (44): «' + x + '» is deleted');
+      assert.ok(!side.includes('الطباعة والتقارير'), 'V7 · د5-ح: «الطباعة والتقارير» is deleted');
       for (const [from, x, to] of moved) assert.ok(to.startsWith('=') ? nowBy[from].actions.has(to.slice(1)) : to === 'aside' ? side.includes(x) : (NAV[to].includes(x) || side.includes(x) || variants(x).some((v) => nowBy[to].actions.has(v))), from + ': «' + x + '» (moved) is still reachable ' + (to === 'aside' ? 'in the console sidebar' : 'on ' + to));
       /* CORE-02 step 2: the page is titled «المنصة / مركز إدارة رشاد», the sidebar link reads «مركز إدارة رشاد», the user card reads «مسؤول المنصة» */
       assert.equal((await s.page.textContent('.bs-crumb')).replace(/\s+/g, ' ').trim(), 'المنصة / مركز إدارة رشاد', 'crumb names the admin interface');

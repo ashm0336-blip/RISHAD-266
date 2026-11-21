@@ -2865,7 +2865,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     }
   }
   _buildPrintDoc(t) {
-    /* KIVO_258 · AUD-013: نواةُ الطباعة المشتركة (src/services/566-print-core.js) بخيارات هذه الوحدة */
+    /* KIVO_258 · AUD-013: نواةُ الطباعة المشتركة (src/systems/_shared/print/566-print-core.js — V7 · د5-ح: خرجت من القاعدة) بخيارات هذه الوحدة */
     return KIVO.BassamPrintCore.build(this, t, { date: "round", kpi: !0, ver: "v1.0.577", logo: '<img src="@@KIVO_INLINE:img/haramain-print.png@@" alt="الحرمين" style="height:100%;width:auto;display:block"/>' });
   }
   _zLabelFit(t) {
