@@ -403,6 +403,10 @@
   "enf.why.dstats": {
    "order": 10,
    "text": "dstats: 'شكلُ الإحصائيات اليومية', "
+  },
+  "admin.methods.histimp": {
+   "order": 10,
+   "file": "slots/admin.histimp.frag"
   }
  }
 }

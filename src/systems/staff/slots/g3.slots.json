@@ -122,5 +122,9 @@
  "shell.blocks.staff": {
   "order": 20,
   "text": "@@KIVO_BLOCK:systems/staff/client/533-staff-g3.js@@\n"
+ },
+ "store.devGroups": {
+  "order": 10,
+  "text": "\"bassam_st_grp_v1\""
  }
 }

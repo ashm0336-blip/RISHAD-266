@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019r-operational-storage.js.tpl */
 /* Canonical SQL resource access and row compiler. Policy engines consume a
    derived projection in memory; no operational JSON is read/written in KV. */
 var OP_PREPARED = null;

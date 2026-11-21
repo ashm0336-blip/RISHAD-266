@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/api/280-server-storage.js.tpl */
 /* RISHAD 266 — واجهة سحابية فقط.
    لا يوجد خادم محلي ولا وضع عرض يعمل بقاعدة بيانات المتصفح.
    غياب تهيئة الخادم يعني فشلًا مغلقًا، دون فتح مخزن أعمال محلي أو اعتراض واجهة Storage. */
@@ -35,11 +36,11 @@
                 bassam_con_cx_v1: 1 };   /* CORE-02 S7: طيُّ شريط «مركز إدارة رشاد» تفضيلُ جهازٍ كالسمة — لا يُرسل للخادم */
   /* «آخر صفحة مفتوحة» تفضيلُ جهازٍ لا بيانات فريق: كانت تُرسل للخادم — وعند الخروج
      تُرسل بعد إنهاء الجلسة فتُرفض (401) ويومض شريط «انتهت جلستك» قبل إعادة التحميل */
-  /* R187: «مجموعات | قائمة» في الجدول الشهري (bassam_st_grp_v1، لكل إدارة) تفضيلُ عرضٍ لهذا الجهاز كذلك —
-     لا يُرسل للخادم، فلا يُرفض لمن صلاحيتُه عرضٌ فقط ولا يُفرض على الزملاء. R188: ومثلُه في التقرير اليومي (bassam_dr_grp_v1)
-     — كان مشتركاً للإدارة على الخادم فيُرفض لمن صلاحيتُه عرضٌ ويعود؛ تسجيلُه في الخادم باقٍ كما هو لا يُستعمل */
+  /* R187 · R188: تفضيلُ عرضٍ لكل إدارة («مجموعات | قائمة» في صفحات الأنظمة) تفضيلُ جهازٍ كذلك — لا يُرسل للخادم، فلا يُرفض لمن صلاحيتُه
+     عرضٌ فقط ولا يُفرض على الزملاء. V7 · د5-ح: مفاتيحُها يعلنها كلُّ نظامٍ في قطعته (store.devGroups) — القاعدةُ لا تسمّيها */
+  var DEVG9 = ["bassam_st_grp_v1", "bassam_dr_grp_v1"];
   /* KIVO_264 · D-5: «اليوم المختار» لكل مستخدمٍ على جهازه (bassam_dayfocus_v1:<الحساب>) — لا يُرسل للخادم ولا يُفرض على الزملاء */
-  function devKey9(k) { return !!DEVK9[k] || /(^|:)bassam_page_v1:/.test(k) || /(^|:)bassam_(st|dr)_grp_v1$/.test(k) || /(^|:)bassam_dayfocus_v1:/.test(k); }
+  function devKey9(k) { return !!DEVK9[k] || /(^|:)bassam_page_v1:/.test(k) || DEVG9.indexOf(String(k).split(":").pop()) !== -1 || /(^|:)bassam_dayfocus_v1:/.test(k); }
   /* KIVO_244 · AUD-003: قائمةُ المفاتيح التي يجوز أن تُزامَن مع الخادم — مفاتيحُ الفريق وحدها (bassam_* أو bsdept:<إدارة>:bassam_*).
      أيُّ مفتاحٍ آخر (أداةٌ · امتدادُ متصفح · سكربتُ مراقبة) يبقى في مخزن هذا الجهاز ولا يُرسل أصلاً — فلا يُنتج قرارَ authz ولا تنبيهَ رفض
      (الحادثةُ المسجَّلة على Preview: k243_rows_* ⇒ 363 رفضاً و400 تنبيه). الخادمُ يبقى حَكَماً ثانياً يرفض المجهول لو وصله. */
@@ -1691,7 +1692,7 @@
        (/api/changes?since=0 حتى 50 صفحة) — ولو كان التغييرُ لموظفٍ في إدارةٍ أخرى. الآن يُقارن «نصيبي» منها قبل السحب وبعده، ولا يُعاد السردُ
        إلا إن تغيّر: سجلُّ حسابي (الدور · الإدارة · العقدة · الرقم · الإدارة المُدارة · التجميد) · إداراتُ نطاقي وسلسلةُ أسلافها · سقوفُها وفروعُها
        وعدساتُها · ورقتي فيها · الوحداتُ المطفأة. مديرُ النظام يقرأ كلَّ شيءٍ فنصيبُه ثابت. والنطاقُ والمنحُ في الإنفاذ يحكمها وصفُ صلاحياتي
-       (authzSync9 · az) لا هذا المفتاح. PROJ9 نسخةٌ من ENF_PROJ في الخادم (061-enf-read.js) — يُضاف إليها bassam_tasks_v1 إن صار الخادمُ يُسقطها. */
+       (authzSync9 · az) لا هذا المفتاح. PROJ9 نسخةٌ من ENF_PROJ في الخادم (061-enf-read.js) — يُضاف إليها موردُ أيِّ نظامٍ يُسقطه الخادم بقطعته (store.proj). */
     var SLICEK9 = /^bassam_(perms|auth_users|depts|gdepts|platform)_v1$/;
     var PROJ9 = { bassam_staffing_v2: 1, bassam_staffing_v3: 1, bassam_dreport_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1 };
     function pj9(k, dflt) { try { var v = JSON.parse(mem[k] || "null"); return v == null ? dflt : v; } catch (e) { return dflt; } }   /* قيمةٌ تالفة ⇒ الافتراض */
@@ -1894,6 +1895,7 @@
     resync: function (proj) { return readSetHook9 ? readSetHook9(!!proj) : Promise.resolve({ ok: 0, err: 'read-unavailable' }); },
     operations: Object.freeze({
       resources: operationResources9,
+      device: devKey9,   /* V7 · د5-ح: مفتاحُ جهازٍ لا يُطلب من الخادم (030 pageData) — بدل أن تعرف القاعدةُ مفاتيحَ الأنظمة */
       context: operationContext9,
       departmentContext: operationDepartmentContext9,
       snapshot: function () { return operationSnapshot9 && operationSame9(operationSnapshot9) ? operationClone9(operationSnapshot9) : null; },

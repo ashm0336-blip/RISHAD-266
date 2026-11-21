@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/services/548-atomic-backup.js.tpl */
 /* One backup transport for admin, department settings and the authenticated gate.
    Files/tickets remain in memory. No local storage overlay or image upload. */
 (function () {

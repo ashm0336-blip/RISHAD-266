@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/services/320-dept-storage.js.tpl */
 
 (function(){
   /* لا يكفي وصول بيانات الإقلاع: يجب تثبيت مخزن السحابة أولاً، وإلا كانت
@@ -24,7 +25,7 @@
   function tabAct(){ try { var ss = window.sessionStorage; return ss ? SSG.call(ss, ACT_K) : null; } catch(e){ return null; } }
   function tabActSet(v){ try { var ss = window.sessionStorage; if (!ss) return; if (v == null) SSD.call(ss, ACT_K); else SSS.call(ss, ACT_K, String(v)); } catch(e){ /* مخزنُ الجلسة ممنوع — تبقى قيمةُ الجهاز وحدها */ } }
 
-  /* R180: bassam_dstats_v1 — «الإحصائيات اليومية» صُمّمت مفتاحاً عامّاً واحداً للحرمين (R170) لكنه لم يُدرج
+  /* R180: مفتاحُ «الإحصائيات اليومية» صُمّم مفتاحاً عامّاً واحداً للحرمين (R170) لكنه لم يُدرج
      هنا، فكانت كتابتُه تذهب إلى الإدارة النشطة: لكلِّ إدارةٍ نسخةٌ، ولا يقرؤها الخادمُ لغير مدير النظام */
   var GLOBAL = { 'bassam_depts_v1':1, 'bassam_gdepts_v1':1, 'bassam_active_dept_v1':1, 'bassam_theme':1, 'bassam_auth_users_v1':1, 'bassam_session_v1':1, 'bassam_perms_v1':1, 'bassam_platform_v1':1, 'bassam_notif_mute_v1':1 };
   var PREFIX = 'bsdept:';

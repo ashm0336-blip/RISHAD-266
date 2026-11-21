@@ -139,6 +139,26 @@ def optional(S):
     p = os.path.join(S, 'slots', 'slots.json')
     return set(json.load(open(p, encoding='utf-8')).get('optional', [])) if os.path.isfile(p) else set()
 
+HEADER = 'ملف مولَّد — لا يُحرَّر يدوياً، المصدر: %s'
+def headed(text, out, tpl):
+    """V7 · د5-ح: ترويسةُ «ملف مولَّد» في رأس كل ناتجٍ من قالب (بصيغة تعليق ملفه) — كانت تُترك لشرط المطابقة البايتية مع الإصدار السابق، ولم يعد قائماً.
+       js · css: /* … */ (في helmet.css بعد <style>) · html: <!-- … --> (بعد سطر DOCTYPE إن وُجد) · json: مفتاحٌ أولُ "$comment" (لا تعليقَ في JSON؛
+       ‎$comment تعليقٌ معتمَد في JSON Schema ومخطّطاتُ هذه الملفات تقبله). غيرُها بلا ترويسة."""
+    h = HEADER % tpl
+    eol = '\r\n' if text.split('\n', 1)[0].endswith('\r') else '\n'
+    if out.endswith('.js'): return '/* ' + h + ' */' + eol + text
+    if out.endswith('.css'):
+        return ('<style>/* ' + h + ' */' + text[len('<style>'):]) if text.startswith('<style>') else '/* ' + h + ' */' + eol + text
+    if out.endswith('.html'):
+        if text[:9].upper() == '<!DOCTYPE':
+            first, rest = text.split('\n', 1); return first + '\n' + '<!-- ' + h + ' -->' + eol + rest
+        return '<!-- ' + h + ' -->' + eol + text
+    if out.endswith('.json'):
+        m = re.match(r'\{(\r?\n)([ \t]*)', text)
+        if not m: raise SystemExit('✘ systems: %s — ناتجُ JSON لا يبدأ بـ«{» وسطرٍ جديد فلا موضعَ للترويسة' % out)
+        return '{' + m.group(1) + m.group(2) + '"$comment": ' + json.dumps(h, ensure_ascii=False) + ',' + m.group(1) + text[m.end(1):]
+    return text
+
 def outputs(S, systems=None):
     """{المسارُ نسبةً إلى جذر المستودع: bytes} لكل قالبٍ مسجَّل — ويرفض قطعةً لا فتحةَ لها (خطأٌ إملائي في الاسم)."""
     systems = load(S) if systems is None else systems
@@ -147,7 +167,7 @@ def outputs(S, systems=None):
     frags = fragments(S, systems); used = set(); out = {}
     for t in manifest(S, systems):
         src = open(t['path'], encoding='utf-8', newline='').read()
-        out[t['out']] = expand(src, frags, used).encode('utf-8')
+        out[t['out']] = headed(expand(src, frags, used), t['out'], os.path.relpath(t['path'], os.path.dirname(S)).replace(os.sep, '/')).encode('utf-8')
     present = {d['key'] for d in systems}
     hosted = {name for d in systems for name, v in (d.get('slots') or {}).items() for it in (v if isinstance(v, list) else [v]) if it.get('host') and it['host'] not in present}   # د5-هـ: قطعةٌ لقالب نظامٍ غائب
     orphan = sorted(set(frags) - used - RESERVED - optional(S) - hosted)
@@ -261,8 +281,12 @@ def main(argv):
         for b in bad: print('  ✘ ' + b)
         print('✘ systems: %d مخالفة' % len(bad)); return 1
     out = outputs(S, systems); root = os.path.dirname(S); diff = []
+    srcs = {t['out']: os.path.relpath(t['path'], root).replace(os.sep, '/') for t in manifest(S, systems)}
     for rel, data in sorted(out.items()):
         p = os.path.join(root, rel); cur = open(p, 'rb').read() if os.path.isfile(p) else None
+        # V7 · د5-ح: الملتزَمُ يحمل ترويسةَ «ملف مولَّد» باسم قالبه — تحريرٌ يدويٌّ حذفها أو ملفٌّ نُسخ من غير قالبه يُكشف باسمه
+        if '--write' not in argv and cur is not None and rel.endswith(('.js', '.css', '.html', '.json')) and (HEADER % srcs[rel]).encode('utf-8') not in cur[:600]:
+            print('  ✘ ' + rel + ': بلا ترويسة «ملف مولَّد — … المصدر: ' + srcs[rel] + '»')
         if cur == data: continue
         diff.append(rel)
         if '--write' in argv:

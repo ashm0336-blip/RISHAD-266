@@ -83,7 +83,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(stale.status === 409 && stale.j.conflicts && stale.j.conflicts[k], 'نسخةٌ قديمة ⇒ تعارض لا كتابة: ' + JSON.stringify(stale.j).slice(0, 160));
     assert.deepEqual((await opGet(C, su.ck, k)).v.type, ['v2'], 'القيمةُ الأحدث باقية');
     const huge = await opSave(C, env, su.ck, { [k]: JSON.stringify({ type: ['x'.repeat(999999)], work: [] }) }, { [k]: cur.rev });
-    assert.ok(huge.status === 413 || huge.status === 200, 'حمولة < 8MB تُعالج أو تُرفض بوضوح: ' + huge.status);
+    assert.ok(huge.status === 413 || huge.status === 200, 'حمولة < 16MB تُعالج أو تُرفض بوضوح: ' + huge.status);
   });
   test('[' + mode + '] المسار: مفاتيحُ شكلٍ خاطئ (اجتياز · طويلة · فارغة) تُرفض · طرقٌ غيرُ مسموحة · جسمٌ أكبر من الحد 413', async () => {
     const { C, su, emp } = await world(EX);

@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/modules/planning/logic.js.tpl */
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planning+profile+seized+staff+tasks"]) {
   state = { ptab: null, seen: {} };
   /* KIVO_261 (SOT-003/010 · كشفه k261tree): تبويباتُ الحاوية تتبع صلاحيةَ المستخدم لا سقفَ الإدارة وحده.

@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/modules/profile/logic.js.tpl */
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","admin+profile+seized"]) {
   /* KIVO_264 · «ملفي»: pfMe = ردُّ /api/me/today (حقائقُ يومي من الخادم بهويةٍ يقرّرها الخادم) · pfHist = ردودُ /api/me/history لكل شهر ·
      histYm/histType = مرشّحا «السجل» · spotAll = «+N» الزملاء داخل الصفحة نفسِها (لا تنقّل) */

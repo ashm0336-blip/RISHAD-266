@@ -155,5 +155,13 @@
  "enf.refs.load.staff": {
   "order": 10,
   "text": "  for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await opResourceGet(env, sk)); out.staffing[d] = parseJson(raw, null); }\n"
+ },
+ "res.reg.device": {
+  "order": 10,
+  "text": "  /* R187: «مجموعات | قائمة» في الجدول الشهري — تفضيلُ عرضٍ لهذا الجهاز (لكل إدارة) */\n  'bassam_st_grp_v1':          { scope: 'device' },\n"
+ },
+ "res.deviceDept": {
+  "order": 10,
+  "text": "'bassam_st_grp_v1': 1"
  }
 }

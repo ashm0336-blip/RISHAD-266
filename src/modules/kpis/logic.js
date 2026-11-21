@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/modules/kpis/logic.js.tpl */
 class Component extends DCLogic {
   state = { ktab: null };
   _okOf(n, t) {

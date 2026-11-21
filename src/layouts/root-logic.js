@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/layouts/root-logic.js.tpl */
 
 class Component extends DCLogic {
   /* حالةُ الزينة (شريطٌ، تنبيهٌ، جرس، حوارُ النسخ) لا تعني الصفحاتَ في شيء —

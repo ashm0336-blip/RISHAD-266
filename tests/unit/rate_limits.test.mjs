@@ -29,10 +29,14 @@ test('قفلُ الدخول: 5 محاولاتٍ خاطئة من مصدرٍ تق�
   for (const gk of keys) { const u = await C.api('/api/guard/unlock', { method: 'POST', cookie: su.ck, body: { gk } }); assert.equal(u.j.ok, 1, 'فكّ ' + gk + ': ' + JSON.stringify(u.j).slice(0, 80)); }
   const after = await C.api('/api/login', { method: 'POST', body: { u: 'admin', p: 'admin' }, headers: ip('7.7.7.7') }); assert.equal(after.j.ok, 1, 'بعد الفكّ يدخل');
 });
-test('حدودُ الجسم: /api/save 8 MB · الصور 512 KB (Content-Length) · والطلبُ المقطَّع يُحدّ بعد القراءة', async () => {
+test('حدودُ الجسم: /api/save 16 MB (كالإنتاج — د5-ح) · الصور 512 KB (Content-Length) · والطلبُ المقطَّع يُحدّ بعد القراءة', async () => {
   const env = makeEnv(); const C = client(env); const su = await C.login('admin', 'admin');
-  const a = await C.api('/api/save', { method: 'POST', cookie: su.ck, body: '{}', headers: { 'Content-Length': String(8 * 1024 * 1024 + 1) } }); assert.equal(a.status, 413);
+  const a = await C.api('/api/save', { method: 'POST', cookie: su.ck, body: '{}', headers: { 'Content-Length': String(16 * 1024 * 1024 + 1) } }); assert.equal(a.status, 413);
   const b = await C.api('/api/img/abc', { method: 'POST', cookie: su.ck, body: '{}', headers: { 'Content-Length': String(512 * 1024 + 1) } }); assert.equal(b.status, 413);
-  const big = JSON.stringify({ set: { 'bsdept:dR:bassam_options_v1': 'x'.repeat(8 * 1024 * 1024) }, del: [], base: {} });
+  const big = JSON.stringify({ set: { 'bsdept:dR:bassam_options_v1': 'x'.repeat(16 * 1024 * 1024) }, del: [], base: {} });
   const c = await C.req('/api/save', { method: 'POST', body: big, headers: { cookie: su.ck, 'Content-Type': 'application/json', origin: 'http://x', 'Transfer-Encoding': 'chunked' } }); assert.equal(c.status, 413, 'المقطَّع يُحدّ بعد القراءة: ' + c.status);
+  /* V7 · د5-ح: ما بين الحدّ القديم (8MB) والجديد (16MB) يُقبل — بالإعلان (Content-Length) ومقطَّعاً بعد القراءة */
+  const mid = JSON.stringify({ set: { 'bsdept:dR:bassam_options_v1': JSON.stringify({ type: ['TEST_ONLY'], work: [], pad: 'x'.repeat(10 * 1024 * 1024) }) }, del: [], base: {} });
+  const d = await C.req('/api/save', { method: 'POST', body: mid, headers: { cookie: su.ck, 'Content-Type': 'application/json', origin: 'http://x', 'Transfer-Encoding': 'chunked' } }); assert.notEqual(d.status, 413, '10MB مقطَّعاً ليس فوق الحدّ: ' + d.status);
+  const e = await C.api('/api/save', { method: 'POST', cookie: su.ck, body: '{}', headers: { 'Content-Length': String(12 * 1024 * 1024) } }); assert.notEqual(e.status, 413, '12MB معلَناً ليس فوق الحدّ: ' + e.status);
 });

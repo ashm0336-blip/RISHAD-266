@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019-notifications.js.tpl */
 /* Typed notification domain. The static type defaults are mirrored from 441 REG;
    parity is tested. No notification business document is stored in KV. */
 function notifRule() {

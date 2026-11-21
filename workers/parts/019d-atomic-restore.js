@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019d-atomic-restore.js.tpl */
 /* Department-scoped reference (RISHAD-266 · s1): a request that reads or writes the
    data of named departments snapshots only the platform-global kv rows, the kv rows
    and dept-shaped meta rows (irshad:<d>:… · tkg:…:<d>) of those departments, and the

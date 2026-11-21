@@ -8,8 +8,13 @@
   consumes    ما يستهلكه من غيره: اسمٌ مُصدَّر يوفّره عقدٌ آخر، أو «key:<مفتاح>» لقراءة مفتاحٍ يملكه غيرُه أو القاعدة — ولكلٍّ سلوكُ الغياب (absent)
   crossEffects  آثارُه العابرة (نصّ)
 الماسح (تقريبٌ ساكن بالمفتاح الحرفي — حدٌّ أدنى): لكل برنامجٍ وملفاته، كلُّ سطرٍ يذكر مفتاحاً يملكه برنامجٌ آخر ولم يُعلَن في consumes خرقٌ
-(read أو write بحسب نمط السطر)، وكلُّ إشارةٍ إلى مجلد برنامجٍ آخر (import)، وكلُّ نداءٍ للناقل باسمٍ غير معلن (bus)."""
-import json, os, re, sys
+(read أو write بحسب نمط السطر)، وكلُّ إشارةٍ إلى مجلد برنامجٍ آخر (import)، وكلُّ نداءٍ للناقل باسمٍ غير معلن (bus).
+V7 · د5-ح (القفل) — وما كان أعمى عنه: أحداثُ الصفحة (dom · base-dom) · المفتاحُ المبنيُّ بلا ذكره حرفاً (dynkey · base-dynkey) ·
+روابطُ سجلّ الصلاحيات في غير المفتاح (perm · base-perm) · سياساتُ via. والإعلاناتُ المقابلة في consumes:
+  dom:<الحدث> {from: مالكُه, absent}   (ومالكُه يعلنه في provides.dom)
+  perm:<برنامج> {absent}               عملياتُ permissions.json تمسّ صفوفَه أو أوراقَه أو روابطَه (needs/with) — إعلانٌ بلا عمليةٍ تمسّه خلل
+  via:<مفتاح> {absent}                 كتابةٌ محدودة (via) في موردٍ يملكه غيري"""
+import glob, json, os, re, sys
 
 KEY = re.compile(r'bassam_[a-z0-9_]+_v[0-9]+')
 NAME = re.compile(r'^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9]*)+@[1-9][0-9]*$')
@@ -63,6 +68,93 @@ DCIMPORT = re.compile(r'<dc-import\s+name="([^"{]+)"')
 BASE_EXT = ('.js', '.html', '.json', '.css', '.tpl')
 BASE_SKIP_DIRS = ('pages', 'contracts', 'systems', 'schemas', 'fonts', 'img', 'assets')   # صفحاتٌ مولَّدة · العقود نفسُها · مجلدات البرامج (تُمسح مع برامجها)
 BUS = re.compile(r'KIVO\.bus\.(provide|read|command|call|subscribe|publish|participant|participate|has)\(\s*["\']([^"\']+)["\']')
+# ── V7 · د5-ح (القفل): ما كان الماسحُ أعمى عنه (44_د5-ب §76 · 45_د5-ج §90) ──
+# (1) أحداثُ الصفحة (DOM) بين البرامج: حدثٌ مسمّى (فيه «:» أو «-») يُطلقه برنامجٌ (new CustomEvent/Event("…")) ويستمع له غيرُه (add/removeEventListener("…")).
+#     مالكُ الحدث مَن يُطلقه؛ ما تُطلقه القاعدة حدثُ قاعدة يستمع له من شاء. مستمعٌ في برنامجٍ آخر بلا «dom:<الحدث>» في consumes ⇒ dom ·
+#     مستمعٌ في القاعدة لحدثٍ لا يُطلقه إلا برنامج ⇒ base-dom.
+DOM_FIRE = re.compile(r'\bnew\s+(?:Custom)?Event\(\s*["\']([A-Za-z][\w]*[:\-][\w:\-]+)["\']')
+DOM_LISTEN = re.compile(r'\b(?:add|remove)EventListener\(\s*["\']([A-Za-z][\w]*[:\-][\w:\-]+)["\']')
+# (2) الوصولُ غيرُ الحرفي للمفاتيح: بديلٌ في تعبيرٍ نمطي (bassam_(st|dr)_grp_v1 · bassam_(?:a|b)_v) وذيلُ مفتاحٍ في قائمةٍ تُبنى منها المفاتيح
+#     ("rounds_v1" ثم "bassam_" + s) — يُحلّ إلى مفاتيح ويُعامَل كذكرها: dynkey (برنامج) · base-dynkey (القاعدة).
+DYN_ALT = re.compile(r'bassam_\((?:\?:)?([a-z0-9_|]+)\)([a-z0-9_]*)')
+DYN_TAIL = re.compile(r'["\'`]([a-z][a-z0-9_]*_v[0-9]+)["\'`]')
+# (3) روابطُ سجلّ الصلاحيات في غير المفتاح: عمليةٌ في permissions.json تستهدف صفَّ برنامجٍ آخر أو ورقتَه أو تذكره (needs · with · references ·
+#     managedIn · owner · leaf · asisMap · targets) ⇒ perm (بلا «perm:<البرنامج>» في consumes) · وما في بيانات القاعدة يذكر ورقةَ برنامج ⇒ base-perm ·
+#     وسياسةُ via: منحُ برنامجٍ كتابةً محدودة في موردٍ يملكه غيرُه (قطعتُه تُحقن في سطر المورد، أو via: { <برنامج>: … }) ⇒ via (بلا «via:<المفتاح>»).
+VIA_LIT = re.compile(r'\bvia\s*:\s*\{\s*([^}]*)')
+VIA_NAME = re.compile(r'["\']?([A-Za-z][\w/]*)["\']?\s*:')
+MARK_USE = re.compile(r'@@SYS:([A-Za-z0-9_.\-]+)')
+PERM_FIELDS = ('references', 'managedIn', 'owner', 'leaf', 'asisMap', 'targets', 'mergedFrom', 'splitFrom')
+
+DOM_NAME = re.compile(r'[A-Za-z][\w]*[:\-][\w:\-]+')
+_PCTX = {}
+def perm_ctx(S, docs):
+    if S not in _PCTX: _PCTX[S] = perm_index(S) + (set(docs),)
+    return _PCTX[S]
+def perm_doc(S, e):
+    pp = os.path.join(S, e['dir'], 'permissions.json') if e.get('dir') else ''
+    return json.load(open(pp, encoding='utf-8')) if pp and os.path.exists(pp) else {}
+
+def dyn_keys(line, owner):
+    """المفاتيحُ المملوكة التي يبنيها السطرُ بلا ذكرها حرفاً."""
+    out = set()
+    for alts, tail in DYN_ALT.findall(line):
+        for a in alts.split('|'):
+            cand = 'bassam_' + a + tail
+            out |= {k for k in owner if k == cand or (re.fullmatch(r'.*_v', cand) and k.startswith(cand) and re.fullmatch(r'[0-9]+', k[len(cand):]))}
+    for t in DYN_TAIL.findall(line):
+        if not t.startswith('bassam_') and ('bassam_' + t) in owner: out.add('bassam_' + t)
+    return out
+
+def perm_index(S):
+    """مالكو بيانات الصلاحيات: {مفتاحُ الصف: البرنامج} و{معرّفُ الورقة/المالك: البرنامج} — القاعدةُ «base»."""
+    rows, ids = {}, {}
+    bp = os.path.join(S, 'permissions', 'registry', 'registry.base.json')
+    if os.path.exists(bp):
+        B = json.load(open(bp, encoding='utf-8'))
+        for r in B.get('registry') or []: rows[r['key']] = 'base'; ids.setdefault(r.get('owner'), 'base')
+        for o in B.get('owners') or []: ids[o['id']] = 'base'
+    for p in sorted(glob.glob(os.path.join(S, 'systems', '*', 'permissions.json'))):
+        d = json.load(open(p, encoding='utf-8')); k = d.get('system')
+        for ops in (d.get('docs') or {}).values():
+            for e in ops:
+                v = e.get('value')
+                if e.get('path') == ['registry'] and isinstance(v, dict): rows[v['key']] = k; ids.setdefault(v.get('owner'), k)
+                elif e.get('path') == ['owners'] and isinstance(v, dict): ids[v['id']] = k
+                elif e.get('path') == ['bindings'] and isinstance(v, dict) and 'key' in v: rows.setdefault(v['key'], k)
+    ids.pop(None, None)
+    return rows, ids
+
+def id_owner(v, ids, programs):
+    v = str(v).split(':')[0]
+    if v in ids: return ids[v]
+    head = v.split('/')[0]
+    return ids.get(head) or (head if head in programs else None)
+
+def perm_links(k, d, rows, ids, programs):
+    """[(البرنامج الآخر, وصف)] لكل عمليةٍ في permissions.json لبرنامج k تمسّ بياناتِ برنامجٍ آخر."""
+    out = []
+    for doc, ops in (d.get('docs') or {}).items():
+        for e in ops:
+            hit = set()
+            for st in e.get('path') or []:
+                if isinstance(st, dict):
+                    o = rows.get(st.get('eq')) if st.get('by') == 'key' else id_owner(st.get('eq'), ids, programs)
+                    if o: hit.add(o)
+            hit |= set(e.get('needs') or []) | set(e.get('with') or [])
+            last = [x for x in (e.get('path') or []) if isinstance(x, str)]
+            def walk(v, ctx):
+                if isinstance(v, dict):
+                    for a, b in v.items(): walk(b, a)
+                elif isinstance(v, list):
+                    for b in v: walk(b, ctx)
+                elif isinstance(v, str) and ctx in PERM_FIELDS:
+                    o = rows.get(v) if ctx in ('targets', 'mergedFrom', 'splitFrom') else id_owner(v, ids, programs)
+                    if o: hit.add(o)
+            for f in ('value', 'set'):
+                if f in e: walk(e[f], last[-1] if last else '')
+            for o in sorted(hit - {k, 'base'}): out.append((o, doc))
+    return out
 
 def load(S):
     out = {}
@@ -105,9 +197,12 @@ def check(S):
             elif key in owner: bad.append(rel + ': المفتاح %s يملكه «%s» أيضاً — لا يملك المفتاحَ برنامجان' % (key, owner[key]))
             else: owner[key] = k
         for kind, table in d['provides'].items():
-            if kind not in ('read', 'events', 'commands', 'participants') or not isinstance(table, dict): bad.append(rel + ': provides.%s غير معروف' % kind); continue
+            if kind not in ('read', 'events', 'commands', 'participants', 'dom') or not isinstance(table, dict): bad.append(rel + ': provides.%s غير معروف' % kind); continue
             for n in table:
                 if kind == 'participants': continue
+                if kind == 'dom':   # د5-ح: حدثُ صفحةٍ (DOM) يُطلقه البرنامج ويستمع له غيرُه — اسمُه كما يُطلَق، بوصف
+                    if not DOM_NAME.fullmatch(n) or not str(table[n]).strip(): bad.append(rel + ': provides.dom «%s» اسمُ حدثٍ غير صحيح أو بلا وصف' % n)
+                    continue
                 if not NAME.match(n) or not n.startswith(k + '.'): bad.append(rel + ': الاسم «%s» يجب أن يكون «%s.شيء@N»' % (n, k))
                 elif n in every: bad.append(rel + ': الاسم «%s» يوفّره «%s» أيضاً' % (n, every[n]))
                 else: every[n] = k
@@ -124,6 +219,16 @@ def check(S):
             if n.startswith('key:'):
                 if not KEY.fullmatch(n[4:]): bad.append(rel + ': مفتاحٌ بشكلٍ غير صحيح: %s' % n)
                 elif owner.get(n[4:]) == k: bad.append(rel + ': يستهلك مفتاحاً يملكه هو: %s' % n)
+            elif n.startswith('perm:'):   # د5-ح: عملياتُ صلاحياتي تمسّ بياناتِ صلاحيات برنامجٍ آخر (needs/with) — بغيابه تُهمل
+                if not re.fullmatch(r'[a-z]+', n[5:]) or n[5:] == k: bad.append(rel + ': perm:<برنامجٌ آخر> — %s' % n)
+                elif n[5:] in docs and not any(o == n[5:] for o, _ in perm_links(k, perm_doc(S, e), *perm_ctx(S, docs))): bad.append(rel + ': «%s» معلنٌ ولا عمليةَ صلاحياتٍ تمسّه — احذفه' % n)
+            elif n.startswith('via:'):    # د5-ح: سياسةُ via — كتابةٌ محدودة في موردٍ يملكه غيري
+                if not KEY.fullmatch(n[4:]): bad.append(rel + ': مفتاحٌ بشكلٍ غير صحيح: %s' % n)
+                elif owner.get(n[4:]) == k: bad.append(rel + ': via على موردٍ يملكه هو: %s' % n)
+            elif n.startswith('dom:'):    # د5-ح: الاستماعُ لحدث صفحةٍ يُطلقه برنامجٌ آخر — from مالكُه
+                src = str(spec.get('from', '')) if isinstance(spec, dict) else ''
+                if not DOM_NAME.fullmatch(n[4:]) or not re.fullmatch(r'[a-z]+', src) or src == k: bad.append(rel + ': dom:<حدث> يلزمه from (برنامجٌ آخر): %s' % n)
+                elif src in docs and n[4:] not in (((docs[src]['doc'] or {}).get('provides') or {}).get('dom') or {}): bad.append(rel + ': يستمع لـ«%s» ولا يعلنه عقدُ مالكه الحاضر «%s» (provides.dom)' % (n[4:], src))
             elif not NAME.match(n): bad.append(rel + ': اسمٌ بشكلٍ غير صحيح في consumes: %s' % n)
             elif n not in every:
                 # د5-د: مالكُ الاسم (ما قبل النقطة الأولى) برنامجٌ غائب ⇒ ليس خللاً — سلوكُ الغياب (absent) مكتوبٌ أعلاه وهو ما يجري. مالكٌ حاضر لا يوفّره ⇒ خلل.
@@ -193,6 +298,37 @@ def derived(S):
         if m: out.add(os.path.normpath(os.path.join(S, m.group(1))))
     return out
 
+def pieces(S):
+    """{اسمُ الفتحة: [(النظام, النص)]} — قطعُ الأنظمة (system.json ← slots · slots/*.slots.json)، لتتبّع ما يُحقن في سطر موردٍ لغيره (via)."""
+    out = {}
+    for sj in sorted(glob.glob(os.path.join(S, 'systems', '*', 'system.json'))):
+        dd = os.path.dirname(sj); k = os.path.basename(dd)
+        try: slots = dict(json.load(open(sj, encoding='utf-8')).get('slots') or {})
+        except Exception: continue
+        for g in sorted(glob.glob(os.path.join(dd, 'slots', '*.slots.json'))):
+            for name, v in json.load(open(g, encoding='utf-8')).items():
+                if name != '_note': slots.setdefault(name, []); slots[name] = (slots[name] if isinstance(slots[name], list) else [slots[name]]) + (v if isinstance(v, list) else [v])
+        for name, v in slots.items():
+            for it in (v if isinstance(v, list) else [v]):
+                t = it.get('text') if 'text' in it else (open(os.path.join(dd, it['file']), encoding='utf-8').read() if os.path.exists(os.path.join(dd, it.get('file', ''))) else '')
+                out.setdefault(name, []).append((k, t or ''))
+    return out
+
+def via_grants(line, owner, frags, programs, ids):
+    """[(المستفيد, المفتاح)]: سياسةُ via في سطر موردٍ تمنح برنامجاً غيرَ مالكه — قطعةُ برنامجٍ محقونةٌ في السطر (فيها via أو السطرُ فيه via) أو via: { <برنامج>: … } حرفاً."""
+    if '\\n' in line: return [x for sub in line.split('\\n') for x in via_grants(sub, owner, frags, programs, ids)]   # قطعةٌ في JSON: كلُّ سطرٍ من نصّها وحده
+    keys = [x for x in KEY.findall(line) if x in owner]
+    if not keys or 'via' not in line: return []
+    out = []
+    for m in MARK_USE.findall(line):
+        for sysk, text in frags.get(m, []):
+            if 'via' in text or 'via' in line: out += [(sysk, x) for x in keys]
+    for body in VIA_LIT.findall(line):
+        for g in VIA_NAME.findall(body):
+            o = id_owner(g, ids, programs)
+            if o and o != 'base': out += [(o, x) for x in keys]
+    return [(g, x) for g, x in out if owner.get(x) != g]
+
 def scan(S):
     docs, owner, every, bad = check(S)
     found = {}
@@ -216,6 +352,11 @@ def scan(S):
     for p, lines in texts.items():
         for line in lines:
             for g in GLOBAL_DEF.findall(line): glob_owner.setdefault(g, mine_files[os.path.normpath(p)])
+    programs = set(docs)
+    frags = pieces(S); prow, pids = perm_index(S)
+    dom = []   # (البرنامج أو base, rel, fire|listen, الاسم)
+    uses, bdefs = {}, {}   # د5-ح: {الخدمة: {المستعمِل: rel}} · {ملفُّ القاعدة: خدماتُه}
+    vias = {}  # (المستفيد, المفتاح) ← rel
     for p, lines in texts.items():
         k = mine_files[os.path.normpath(p)]; d = docs[k]['doc'] or {}
         declared = set(d.get('consumes') or {}); mine = provided(d); parts = set((d.get('provides') or {}).get('participants') or {})
@@ -224,16 +365,33 @@ def scan(S):
             for key in set(KEY.findall(line)):
                 o = owner.get(key)
                 if o is None or o == k or ('key:' + key) in declared: continue
-                add(k, 'write' if any(re.search(w % re.escape(key), line) for w in WRITE) else 'read', rel, key)
+                wk = 'write' if any(re.search(w % re.escape(key), line) for w in WRITE) else 'read'
+                if wk == 'read' and ('via:' + key) in declared: continue   # د5-ح: سياسةُ via المعلنة تذكر موردَها (لا تُجيز كتابتَه حرفاً)
+                add(k, wk, rel, key)
+            for key in dyn_keys(line, owner) - set(KEY.findall(line)):   # د5-ح: مفتاحٌ يُبنى بلا ذكره حرفاً
+                o = owner.get(key)
+                if o is None or o == k or ('key:' + key) in declared: continue
+                add(k, 'dynkey', rel, key)
+            for n in DOM_FIRE.findall(line): dom.append((k, rel, 'fire', n))
+            for n in DOM_LISTEN.findall(line): dom.append((k, rel, 'listen', n))
+            for g, key in via_grants(line, owner, frags, programs, pids): vias.setdefault((g, key), []).append(rel)
             for other, folder in folders.items():
                 if other != k and (folder + '/') in line.replace('\\', '/'): add(k, 'import', rel, other)
             for g in set(GLOBAL_USE.findall(line)):
+                uses.setdefault(g, {}).setdefault(k, rel)   # د5-ح: مَن يستعمل الخدمةَ العامة (لكشف قاعدةٍ لا يستعملها إلا برنامج)
                 if g in glob_owner and glob_owner[g] != k: add(k, 'call', rel, g)   # استدعاءُ خدمةِ برنامجٍ آخر
             for c in DCIMPORT.findall(line):
                 if c in comp and comp[c] != k: add(k, 'dcimport', rel, c)            # تضمينُ صفحةِ برنامجٍ آخر
             for verb, name in BUS.findall(line):
                 ok = name in mine if verb in ('provide', 'command', 'publish') else name in parts if verb == 'participant' else (name in declared or name in mine)
                 if not ok: add(k, 'bus', rel, verb + ' ' + name)
+    # د5-ح: روابطُ سجلّ الصلاحيات (permissions.json) — عمليةٌ لكل سطر
+    for k, e in docs.items():
+        pp = os.path.join(S, e['dir'], 'permissions.json') if e['dir'] else ''
+        if not pp or not os.path.exists(pp): continue
+        declared = set((e['doc'] or {}).get('consumes') or {})
+        for o, doc in perm_links(k, json.load(open(pp, encoding='utf-8')), prow, pids, programs):
+            if ('perm:' + o) not in declared: add(k, 'perm', e['dir'] + '/permissions.json', o)
     # ── ما تعرفه القاعدة عن البرامج: كلُّ ملفِ مصدرٍ ليس لبرنامجٍ ولا مولَّداً ──
     gen = derived(S)
     skip = set()
@@ -264,8 +422,16 @@ def scan(S):
                 for li, line in enumerate(lines):
                     for key in set(KEY.findall(line)):
                         if key in owner: add('base', 'base-key', rel, key)
+                    for key in dyn_keys(line, owner) - set(KEY.findall(line)):
+                        add('base', 'base-dynkey', rel, key)
+                    for nm in DOM_FIRE.findall(line): dom.append(('base', rel, 'fire', nm))
+                    for nm in DOM_LISTEN.findall(line): dom.append(('base', rel, 'listen', nm))
+                    for g, key in via_grants(line, owner, frags, programs, pids): vias.setdefault((g, key), []).append(rel)
                     for g in set(GLOBAL_USE.findall(line)):
                         if g in glob_owner: add('base', 'base-call', rel, g)
+                        uses.setdefault(g, {}).setdefault('base:' + rel, rel)
+                    for g in GLOBAL_DEF.findall(bare[li] if n.endswith(('.js', '.tpl')) else line):
+                        if g not in glob_owner: bdefs.setdefault(rel, set()).add(g)
                     for c in DCIMPORT.findall(line):
                         if c in comp: add('base', 'base-dcimport', rel, c)
                     if NAMEQ and n.endswith(('.js', '.tpl')) and not n.endswith(('.json.tpl', '.html.tpl')):
@@ -273,6 +439,41 @@ def scan(S):
                             kind, rid = name_class(bare[li], nm)
                             tally[(kind, rid)] = tally.get((kind, rid), 0) + 1
                             if kind == 'use': add('base', 'base-name', rel, nm)
+    # د5-ح: بياناتُ صلاحيات القاعدة (السجلّ · ملفاتُ الروابط) تذكر ورقةَ برنامجٍ أو صفَّه
+    root = os.path.dirname(S)
+    for bp in [os.path.join(S, 'permissions', 'registry', 'registry.base.json')] + sorted(glob.glob(os.path.join(root, 'workers', 'bindings', '*', 'data.base.json'))):
+        if not os.path.exists(bp): continue
+        hits = []
+        def bwalk(v, ctx):
+            if isinstance(v, dict):
+                for a, b in v.items(): bwalk(b, a)
+            elif isinstance(v, list):
+                for b in v: bwalk(b, ctx)
+            elif isinstance(v, str) and ctx in PERM_FIELDS:
+                o = prow.get(v) if ctx in ('targets', 'mergedFrom', 'splitFrom') else id_owner(v, pids, programs)
+                if o and o != 'base': hits.append(o)
+        bwalk(json.load(open(bp, encoding='utf-8')), '')
+        for o in hits: add('base', 'base-perm', os.path.relpath(bp, root).replace(os.sep, '/'), o)
+    # د5-ح: سياساتُ via — المستفيدُ يعلن «via:<المفتاح>»
+    for (g, key), rels in sorted(vias.items()):
+        if g not in docs or ('via:' + key) in ((docs[g]['doc'] or {}).get('consumes') or {}): continue
+        for rel in rels: add(g, 'via', rel, key)
+    # د5-ح (إضافةُ المالك): قاعدةٌ لا يستعملها إلا برنامج — ملفُّ قاعدةٍ يعرّف خدماتٍ عامة (KIVO.X = …) كلُّ مستعمليها خارجه برامج (واحدٌ أو أكثر)
+    #    مكانُه مجلدُ ذلك البرنامج أو src/systems/_multi لا القاعدة ⇒ base-only (المستعمِلون في «ما يُمَسّ»). المعلنُ موردَ قاعدةٍ مشتركاً (_base.json ← services) مستثنى.
+    shared_ok = {x.get('global') for x in ((base_registry(S) or {}).get('services') or [])} | {os.path.basename(x.get('file', '')) for x in ((base_registry(S) or {}).get('services') or [])}
+    for rel, gs in sorted(bdefs.items()):
+        if os.path.basename(rel).replace('.tpl', '') in shared_ok or gs & shared_ok: continue
+        who = {u for g in gs for u in (uses.get(g) or {}) if u != 'base:' + rel}
+        if who and all(not u.startswith('base:') for u in who): add('base', 'base-only', rel, '+'.join(sorted(who)))
+    # د5-ح: أحداثُ الصفحة — مالكُ الحدث مَن يُطلقه
+    firers = {}
+    for who, rel, kind, nm in dom:
+        if kind == 'fire': firers.setdefault(nm, set()).add(who)
+    for who, rel, kind, nm in dom:
+        f = firers.get(nm, set())
+        if kind != 'listen' or not f or 'base' in f or who in f: continue
+        if who == 'base': add('base', 'base-dom', rel, nm); continue
+        if ('dom:' + nm) not in ((docs[who]['doc'] or {}).get('consumes') or {}): add(who, 'dom', rel, nm)
     return {'errors': bad, 'violations': found, 'names': {k[0] + (':' + k[1] if k[1] else ''): v for k, v in sorted(tally.items())}}
 
 def main():

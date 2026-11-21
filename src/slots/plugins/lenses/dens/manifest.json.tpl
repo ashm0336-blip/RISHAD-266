@@ -30,7 +30,7 @@
  },
  "guards": {
   "enable": "lens.dens.enable",
-  "resources": [@@SYS:lens.res.plan@@"bassam_rounds_v1"]
+  "resources": [@@SYS:lens.res|sep=", "@@]
  },
  "tests": ["tests/unit/plugins.test.mjs", "cfbench/k256perm.mjs", "cfbench/p411scope.mjs", "cfbench/p41term.mjs"]
 }

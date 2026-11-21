@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/bindings/identity-migration/engine.js.tpl */
 var KIVO_IDENTITY_MIGRATION = (function (M, S, R) {
   'use strict';
   /* ═══ Phase 4.4 (v24.8) + Phase 4.5 (v24.9 · IP‑01/IP‑02: إقفالُ هوية الموقع sid للطوابق الحالية ولقطة الشهر الجاري) — Identity Migration Rehearsal: محرّكُ بروفة ترحيل الهوية — قراءةٌ فقط (writes = 0) · حتميٌّ (البذرةُ + البيانات ⇒ مجموعةُ كتابةٍ واحدة) ═══

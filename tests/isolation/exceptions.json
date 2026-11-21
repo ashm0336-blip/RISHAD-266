@@ -1,26 +1,6 @@
 {
- "note": "V7 · د5 — قائمةُ استثناءات اختبار العزل: كلُّ رابطٍ قائمٍ بين البرامج (وكلُّ ما تعرفه القاعدة عن برنامج) لم يتحوّل بعد إلى عقد. تتقلّص ولا تكبر: كلُّ خطوةٍ في د5 تحذف منها، وفي د5-ح تكون فارغة. المفتاح: «البرنامج|النوع|الملف|ما يُمَسّ» والقيمة عددُ الأسطر. الأنواع: read · write · import · bus (د5-ب) · call · dcimport · base-key · base-call · base-dcimport · base-name (أُضيفت مرةً واحدة في د5-ج بتوسيع الماسح). بعد د5-ج لا يُرفع السقف أبداً. · د5-هـ (م1): فصلُ التشغيل الميداني أنزلها 239/674 → 137/315. مواضعُ ترحيل الهوية (014 ← bassam_rounds_v1 · ووعاءُ 'rounds' في تقريره) ليست رابطاً جديداً: صار ملفُّ الترحيل قالباً في src/slots فدخل المسح وكان خارجه — موضعُه في الجولات يُنقل في م3. وعدساتُ اللوحة الست نُقلت من manifest.json إلى قالبها بالعدد نفسه. · د5-هـ (م2): فصلُ التقرير اليومي أنزلها 137/315 → 68/152. نُقل مدخلُ 332 إلى قالبه (src/slots/services/332-find-day.js.tpl ← daily) بالعدد نفسه. وموضعٌ ثانٍ لمفتاح الجولات في 019u ليس رابطاً جديداً بمعنى الاستعمال: المورد الحامل لرموز الإسقاط بغياب المهام والتقرير معاً هو موردُ الجولات (موردُ الرموز الوحيد في القاعدة PRIV_TOK_RES) — يُنقل مع الجولات في م3. · د5-هـ (م3): فصلُ المتابعة اليومية أنزلها 68/152 → 22/26.",
+ "note": "V7 · د5 — قائمةُ استثناءات اختبار العزل: كلُّ رابطٍ قائمٍ بين البرامج (وكلُّ ما تعرفه القاعدة عن برنامج) لم يتحوّل بعد إلى عقد. تتقلّص ولا تكبر: كلُّ خطوةٍ في د5 تحذف منها، وفي د5-ح تكون فارغة. المفتاح: «البرنامج|النوع|الملف|ما يُمَسّ» والقيمة عددُ الأسطر. الأنواع: read · write · import · bus (د5-ب) · call · dcimport · base-key · base-call · base-dcimport · base-name (أُضيفت مرةً واحدة في د5-ج بتوسيع الماسح). بعد د5-ج لا يُرفع السقف أبداً. · د5-هـ (م1): فصلُ التشغيل الميداني أنزلها 239/674 → 137/315. مواضعُ ترحيل الهوية (014 ← bassam_rounds_v1 · ووعاءُ 'rounds' في تقريره) ليست رابطاً جديداً: صار ملفُّ الترحيل قالباً في src/slots فدخل المسح وكان خارجه — موضعُه في الجولات يُنقل في م3. وعدساتُ اللوحة الست نُقلت من manifest.json إلى قالبها بالعدد نفسه. · د5-هـ (م2): فصلُ التقرير اليومي أنزلها 137/315 → 68/152. نُقل مدخلُ 332 إلى قالبه (src/slots/services/332-find-day.js.tpl ← daily) بالعدد نفسه. وموضعٌ ثانٍ لمفتاح الجولات في 019u ليس رابطاً جديداً بمعنى الاستعمال: المورد الحامل لرموز الإسقاط بغياب المهام والتقرير معاً هو موردُ الجولات (موردُ الرموز الوحيد في القاعدة PRIV_TOK_RES) — يُنقل مع الجولات في م3. · د5-هـ (م3): فصلُ المتابعة اليومية أنزلها 68/152 → 22/26. · د5-ح (القفل): القائمةُ فارغة — 21/25 → 0/0: لوحةُ «استيراد البيانات التاريخية» قطعةُ الإحصائيات في مركز الإدارة · مفاتيحُ تفضيل الجهاز لكل إدارة قطعٌ من أنظمتها (store.devGroups · res.reg.device · res.deviceDept) · مواردُ حارس العدسات قطعٌ (lens.res) · وما بقي ذكرٌ لمفاتيح البرامج في تعليقات القاعدة أُعيدت صياغتُه. ووُسِّع الماسح لما كان أعمى عنه (أحداثُ الصفحة dom/base-dom · الوصولُ غير الحرفي dynkey/base-dynkey · روابطُ سجلّ الصلاحيات perm/base-perm · سياساتُ via) — وما كشفه صار عقداً (consumes: perm:<برنامج> · via:<مفتاح>). لا يُضاف إليها شيءٌ بعد اليوم: السقفُ صفر. · د5-ح (إضافةُ المالك — base-only): مدخلٌ واحدٌ مؤقّت: services/566-print-core.js (لا يستعمله إلا التشغيلُ الميداني والمتابعة) — ينقله فرعُ «print» إلى src/systems/_multi؛ عند الدمج يصير المدخلُ بائتاً فيُحذف ويُنزل السقفُ إلى 0/0 (اختبارُ «القائمة تتقلّص» يفرض ذلك).",
  "exceptions": {
-  "base|base-call|src/slots/modules/admin/logic.js.tpl|BassamHistImport": 3,
-  "base|base-call|src/slots/modules/admin/logic.js.tpl|DailyStats": 1,
-  "base|base-key|src/slots/api/280-server-storage.js.tpl|bassam_dr_grp_v1": 1,
-  "base|base-key|src/slots/api/280-server-storage.js.tpl|bassam_st_grp_v1": 1,
-  "base|base-key|src/slots/api/280-server-storage.js.tpl|bassam_tasks_v1": 1,
-  "base|base-key|src/slots/services/320-dept-storage.js.tpl|bassam_dstats_v1": 1,
-  "base|base-key|src/slots/workers/parts/019u-privacy-projection.js.tpl|bassam_dreport_v1": 1,
-  "base|base-key|src/slots/workers/parts/023-resources.js.tpl|bassam_st_grp_v1": 1,
-  "base|base-key|src/slots/workers/parts/057-enf-index.js.tpl|bassam_gate_opts_v1": 1,
-  "base|base-key|src/slots/workers/parts/057-enf-index.js.tpl|bassam_mark_kinds_v1": 1,
-  "base|base-key|src/slots/workers/parts/057-enf-index.js.tpl|bassam_plan_v1": 2,
-  "base|base-key|src/slots/workers/parts/057-enf-index.js.tpl|bassam_rounds_v1": 1,
-  "base|base-key|src/slots/workers/parts/057-enf-index.js.tpl|bassam_zone_opts_v1": 1,
-  "base|base-key|workers/parts/002-seclog.js|bassam_st_grp_v1": 2,
-  "tasks|read|systems/tasks/server/072-task-elig.js|bassam_dreport_v1": 1,
-  "base|base-key|src/slots/plugins/lenses/dens/manifest.json.tpl|bassam_rounds_v1": 1,
-  "base|base-key|src/slots/plugins/lenses/dist/manifest.json.tpl|bassam_rounds_v1": 1,
-  "base|base-key|src/slots/plugins/lenses/gates/manifest.json.tpl|bassam_rounds_v1": 1,
-  "base|base-key|src/slots/plugins/lenses/marks/manifest.json.tpl|bassam_rounds_v1": 1,
-  "base|base-key|src/slots/plugins/lenses/paths/manifest.json.tpl|bassam_rounds_v1": 1,
-  "base|base-key|src/slots/plugins/lenses/zones/manifest.json.tpl|bassam_rounds_v1": 1
+  "base|base-only|src/services/566-print-core.js|daily+plan": 1
  }
 }

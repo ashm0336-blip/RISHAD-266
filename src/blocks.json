@@ -1,4 +1,5 @@
 {
+ "$comment": "ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/blocks.json.tpl",
  "assets": {
   "fonts/almarai-800-arabic.woff2": {
    "bytes": 33328,
@@ -528,7 +529,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/390-kpi-primitives.js",
+   "id": "systems/_multi/client/390-kpi-primitives.js",
    "kind": "js",
    "line": 8530,
    "openTag": "<script>",
@@ -855,7 +856,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "components/560-canvas-input.js",
+   "id": "systems/_multi/client/560-canvas-input.js",
    "kind": "js",
    "line": 10752,
    "openTag": "<script>",
@@ -975,7 +976,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "components/640-map-tooltip.js",
+   "id": "systems/_multi/client/640-map-tooltip.js",
    "kind": "js",
    "line": 15119,
    "openTag": "<script>",

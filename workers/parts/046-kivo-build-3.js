@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/046-kivo-build-3.js.tpl */
 /* ═══ V7 · د5-هـ (44): نوافذُ الاستدراك (ir.rec.retro.open · sz.rec.retro.open) — حالةٌ خادمية لكل (إدارة · نظام) يقرؤها /api/retro (047) والإنفاذ (062 enfSavePrep · 010 KIVO_SCOPE).
    كانت هنا طبقةُ القياس الظلّية PERMV3 (R196 · Phase 3: عدّاداتُ import.run · backup.restore · بوابات العدسات · الاستدراك — permv3After · permv3Batch) — حُذفت: لم تحكم يوماً. ═══ */
 var RETRO = { irshad: { cap: 'irshad/records', key: 'ir.rec.retro.open', res: 'bassam_irshad_v1', state: 'bassam_irshad_retro_v1', name: 'الاسترشاد' },

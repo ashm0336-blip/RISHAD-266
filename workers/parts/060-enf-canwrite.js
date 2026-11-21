@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/060-enf-canwrite.js.tpl */
 /* مفتاحُ سجلّ الإنفاذ لحذف بقايا وحدةٍ أُزيلت — مفتاحُ كتابة سجلّ الوحدات نفسُه (sys.*) */
 function enfUnitDelKeys() { var gk = enfIx().byRes[K_DEPTS] || [], gs = gk.filter(function (x) { return x.indexOf('sys.') === 0; }); return gs.length ? [gs[0]] : ['sys.modules.toggle']; }
 /* ══ canWrite في وضع الإنفاذ — البنيةُ نفسُها، والقرارُ من السجل ══ */

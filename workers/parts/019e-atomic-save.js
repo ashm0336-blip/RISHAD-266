@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019e-atomic-save.js.tpl */
 /* Existing save workflows use the SAME private applySave preparation and the
    SAME atomic rsCommit executor. No client may select a trusted transition. */
 function rsSaveNeedsAtomic(body) {

@@ -247,5 +247,9 @@
  "lens.ind.dens.daily": {
   "order": 10,
   "text": "\"daily/kpiOcc\""
+ },
+ "lens.res": {
+  "order": 20,
+  "text": "\"bassam_rounds_v1\""
  }
 }

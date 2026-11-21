@@ -127,5 +127,9 @@
  "shell.blocks.dreport.r3": {
   "order": 10,
   "text": "@@KIVO_BLOCK:systems/dreport/client/407-dreport-r3.js@@\n"
+ },
+ "store.devGroups": {
+  "order": 20,
+  "text": "\"bassam_dr_grp_v1\""
  }
 }

@@ -88,8 +88,7 @@
 @@KIVO_BLOCK:auth/370-backup-crypto.js@@
 @@KIVO_BLOCK:i18n/380-hijri-fallback.js@@
 @@KIVO_BLOCK:i18n/385-calendar.js@@
-@@KIVO_BLOCK:services/390-kpi-primitives.js@@
-@@KIVO_BLOCK:services/400-shift-need.js@@
+@@SYS:shell.multi.390@@@@KIVO_BLOCK:services/400-shift-need.js@@
 @@KIVO_BLOCK:services/410-gate-units.js@@
 @@SYS:shell.svc.daily.1@@@@KIVO_BLOCK:services/430-store-broadcast.js@@
 @@KIVO_BLOCK:services/440-count.js@@
@@ -107,8 +106,7 @@
 @@KIVO_BLOCK:components/550-bassam-busy.js@@
 @@KIVO_BLOCK:styles/555-page-states.css@@
 @@KIVO_BLOCK:components/555-page-states.js@@
-@@KIVO_BLOCK:components/560-canvas-input.js@@
-@@KIVO_BLOCK:components/565-page-kit.js@@
+@@SYS:shell.multi.560@@@@KIVO_BLOCK:components/565-page-kit.js@@
 @@KIVO_BLOCK:services/566-print-core.js@@
 @@KIVO_BLOCK:services/570-bassam-xlsx.js@@
 @@SYS:shell.blocks.after570@@@@KIVO_BLOCK:services/590-employees-import.js@@
@@ -555,8 +553,7 @@
 @@KIVO_BLOCK:components/610-map-wheel.js@@
 @@KIVO_BLOCK:components/620-no-select.js@@
 @@KIVO_BLOCK:components/630-popover-place.js@@
-@@KIVO_BLOCK:components/640-map-tooltip.js@@
-
+@@SYS:shell.multi.640@@
 @@KIVO_BLOCK:components/650-dropdown-unify.js@@
 
 @@KIVO_BLOCK:components/660-a11y-enhancer.js@@

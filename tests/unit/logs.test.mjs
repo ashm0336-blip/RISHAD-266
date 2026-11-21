@@ -46,10 +46,10 @@ test('رفضُ المصدر (403) وتجاوزُ الحجم (413): تحذيرٌ 
   const env = makeTestEnv(); const C = client(env); await C.api('/api/brand');
   const cap = capture(); let a, b; try {
     a = await C.api('/api/login', { method: 'POST', body: { u: 'x', p: 'y' }, headers: { origin: 'http://evil' } });
-    b = await C.api('/api/save', { method: 'POST', body: '{}', headers: { 'Content-Length': String(9 * 1024 * 1024) } });
+    b = await C.api('/api/save', { method: 'POST', body: '{}', headers: { 'Content-Length': String(17 * 1024 * 1024) } });   /* V7 · د5-ح: فوق حدّ الحفظ 16MB */
   } finally { cap.stop(); }
   assert.equal(a.status, 403); assert.equal(a.j.rid, a.h.get('X-Kivo-Rid')); const o = cap.rows.find(x => x.ev === 'origin-reject'); assert.ok(o && o.lvl === 'warn' && o.rid === a.j.rid && o.st === 403 && o.p === '/api/login');
-  assert.equal(b.status, 413); const t = cap.rows.find(x => x.ev === 'body-too-large'); assert.ok(t && t.lvl === 'warn' && t.rid === b.j.rid && t.cl === 9 * 1024 * 1024);
+  assert.equal(b.status, 413); const t = cap.rows.find(x => x.ev === 'body-too-large'); assert.ok(t && t.lvl === 'warn' && t.rid === b.j.rid && t.cl === 17 * 1024 * 1024);
 });
 test('الاستثناءُ المبتلَع عمداً (سجلُّ الأمن يفشل أثناء الخروج) ⇒ تحذيرُ swallowed بوسمه ولا يُسقط الطلب', S150, async () => {
   const env = makeTestEnv(); const C = client(env); const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
