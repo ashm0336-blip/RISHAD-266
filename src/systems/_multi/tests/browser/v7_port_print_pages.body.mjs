@@ -11,9 +11,9 @@
         image: the panel's gold bottom border is there, right above the clip edge, on every site page of both files. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startLab, LAB } from './local_server.mjs';
-import { chromium, openAs } from './lab_browser.mjs';
-import { replaceOperationalFixture } from '../unit/operational_legacy_seed_fx.mjs';
+import { startLab, LAB } from '../../../../../tests/browser/local_server.mjs';
+import { chromium, openAs } from '../../../../../tests/browser/lab_browser.mjs';
+import { replaceOperationalFixture } from '../../../../../tests/unit/operational_legacy_seed_fx.mjs';
 
 const A = 'TEST_ONLY_A', KPLAN = 'bsdept:' + A + ':bassam_plan_v1', KROUNDS = 'bsdept:' + A + ':bassam_rounds_v1';
 const zone = (n) => ({ uid: 'TEST_ONLY_z' + n, name: 'TEST_ONLY', code: '0' + n, ser: '0' + n, cat: 'men', d: n === 1 ? 'M100 100 L400 100 L400 250 L100 250 Z' : 'M100 100 L900 100 L900 500 L100 500 Z', cx: 250, cy: 175, emp: [] });

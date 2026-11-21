@@ -715,17 +715,7 @@
    "origSha256": null,
    "new": "KIVO_257 · AUD-012"
   },
-  {
-   "closeTag": "</script>",
-   "id": "services/566-print-core.js",
-   "kind": "js",
-   "line": 10752,
-   "openTag": "<script>",
-   "origBytes": null,
-   "origSha256": null,
-   "new": "KIVO_258 · AUD-013"
-  },
-  {
+@@SYS:blocks.shell.print@@  {
    "closeTag": "</script>",
    "id": "services/570-bassam-xlsx.js",
    "kind": "js",

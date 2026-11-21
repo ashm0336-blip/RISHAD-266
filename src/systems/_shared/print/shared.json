@@ -1,0 +1,32 @@
+{
+ "schema": 1,
+ "kind": "shared",
+ "key": "print",
+ "name": "نواةُ الطباعة المشتركة بين «التشغيل الميداني» و«المتابعة اليومية»",
+ "owners": [
+  "daily",
+  "plan"
+ ],
+ "files": [
+  "566-print-core.js"
+ ],
+ "slots": {
+  "shell.blocks.print": {
+   "order": 0,
+   "text": "@@KIVO_BLOCK:systems/_shared/print/566-print-core.js@@\n"
+  },
+  "blocks.shell.print": {
+   "order": 0,
+   "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/_shared/print/566-print-core.js\",\n   \"kind\": \"js\",\n   \"line\": 10752,\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null,\n   \"new\": \"KIVO_258 · AUD-013\"\n  },\n"
+  },
+  "ns.after.print": {
+   "order": 0,
+   "text": "  \"src/systems/_shared/print/566-print-core.js\",\n"
+  },
+  "ns.owned.print": {
+   "order": 0,
+   "text": ""
+  }
+ },
+ "note": "V7 · د5-ح (قرار المالك 13 نوفمبر): نواةُ الطباعة (KIVO.BassamPrintCore) خرجت من القاعدة (كانت src/services/566-print-core.js) — لا تحتاجها إلا صفحتا التشغيل الميداني والمتابعة اليومية. كتلةٌ في الغلاف في موضعها نفسِه (بعد 565-page-kit) عبر قطعِ slots هنا: tools/systems.py يحقنها مرّةً واحدة ما حضر أحدُ مالكيها (لا تتكرّر بحضورهما معاً)، وتغيب بغيابهما ومعها اسمُها من طبقة الأسماء العامة (ns.owned.print ← retired). يحذفها اختبارُ الحذف حين يغيب المالكان (tools/removal_test.py plan+daily)."
+}

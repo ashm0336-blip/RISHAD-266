@@ -623,12 +623,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ],
       ["side", "القوائم", "القائمة الجانبية والشريط العلوي", "M3 4h18v16H3zM15 4v16"],
       [
-        "print",
-        "الطباعة والتقارير",
-        "الترويسة والتذييل",
-        "M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z",
-      ],
-      [
         "setup",
         "التهيئة والاستعادة",
         "الطوارئ والتسليم",
@@ -1277,7 +1271,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         login: ["login"],
         app: ["app"],
         side: ["side", "top"],
-        print: ["print"],
         setup: [],
         about: ["about"],
       }[t] || []
@@ -1584,7 +1577,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           plOnLogin: "login" === l,
           plOnApp: "app" === l,
           plOnSide: "side" === l,
-          plOnPrint: "print" === l,
           plOnSetup: "setup" === l,
           plOnAbout: "about" === l,
           plMapRows:
@@ -1669,7 +1661,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               login: "التغيير هنا لا يمسّ حسابات أحد",
               app: "يعمل كتطبيق ويب تقدّمي (PWA) — نفس المنصة ونفس الحساب، بلا نشر في المتاجر",
               side: "على مستوى المنصة كلها · صلاحيات الإدارات تبقى الحكم الأخير",
-              print: "اليوم كل صفحة تطبع بترويستها الخاصة — هذه تُضاف فوقها موحّدةً",
               setup: "كل ما في هذه الصفحة يُسجَّل في سجل الأمن",
               about: "زر «المساعدة» أسفل القائمة يفتح هذه البطاقة لكل مستخدم",
             }[l] || "",
@@ -1696,7 +1687,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 login: ["login"],
                 app: ["app"],
                 side: ["side", "top"],
-                print: ["print"],
                 setup: [],
                 about: ["about"],
               })[l] || []
@@ -1707,13 +1697,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ["login", "الدخول"],
             ["side", "القائمة"],
             ["phone", "الجوال"],
-            ["print", "الطباعة"],
           ].map((t) => ({
             t: t[1],
             go: () => this.setState({ plPv: t[0] }, () => this.plPvPost()),
             style: g(
               (r.plPv ||
-                { id: "login", login: "login", app: "phone", side: "side", print: "print", setup: "login", about: "login" }[
+                { id: "login", login: "login", app: "phone", side: "side", setup: "login", about: "login" }[
                   l
                 ]) === t[0],
             ),
@@ -1751,19 +1740,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             })),
           pvAppName: i.app.name || i.name,
           pvBarStyle: "height:6px;background:" + (a.STATUS[i.app.statusBar] || a.STATUS.light),
-          pvPrHead:
-            "display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--bd-x141414);padding-bottom:8px;" +
-            ("center" === i.print.logoPos
-              ? "flex-direction:column;text-align:center"
-              : "left" === i.print.logoPos
-                ? "flex-direction:row-reverse"
-                : ""),
-          pvPrLogo: "none" !== i.print.logoPos,
-          pvPrL1: i.print.l1 || i.org || i.name,
-          pvPrL3: String(i.print.l3 || "{الإدارة} · {الصفحة}")
-            .replace("{الإدارة}", "إدارة الأبواب")
-            .replace("{الصفحة}", "التقرير اليومي"),
-          pvPrRight: [i.print.who ? "طُبع بواسطة مدير الإدارة" : "", i.print.date ? "١٤٤٨/٣/٢٣ 06:31" : ""].filter(Boolean).join(" · "),
           plBkForm: r.plBkForm,
           plBkMsg: r.plBkMsg,
           plBkMsgOn: !!r.plBkMsg,
@@ -1834,8 +1810,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       "side.help",
       "side.ver",
       "top.theme",
-      "print.date",
-      "print.who",
     ].forEach((t) => {
       w["tg_" + t.replace(".", "_")] = c(!!this.plGetPath(i, t));
       w["tgOn_" + t.replace(".", "_")] = !!this.plGetPath(i, t);   /* CORE-02 · الخطوة ٦: المفتاحُ زرٌّ role=switch وحالتُه aria-checked */
@@ -1844,8 +1818,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ["themeDef", ["light", "dark", "auto"]],
         ["app.statusBar", ["light", "dark", "gold"]],
         ["top.crumb", ["full", "page", "none"]],
-        ["print.logoPos", ["right", "center", "left", "none"]],
-        ["print.paper", ["", "a4p", "a4l", "a3l"]],
       ].forEach((t) =>
         t[1].forEach((e) => {
           w["sg_" + t[0].replace(".", "_") + "_" + e] = g(String(this.plGetPath(i, t[0]) || "") === e);
@@ -1910,8 +1882,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (w.plRkPrint = () => this.plRkPrint(i.name)));
     const v =
       r.plPv ||
-      { id: "login", login: "login", app: "phone", side: "side", print: "print", setup: "login", about: "login" }[l];
-    return ((w.pvLogin = "login" === v), (w.pvSide = "side" === v), (w.pvPhone = "phone" === v), (w.pvPrint = "print" === v), w);
+      { id: "login", login: "login", app: "phone", side: "side", setup: "login", about: "login" }[l];
+    return ((w.pvLogin = "login" === v), (w.pvSide = "side" === v), (w.pvPhone = "phone" === v), w);
   }
   _adUsersVals0() {
     const t = this.state,

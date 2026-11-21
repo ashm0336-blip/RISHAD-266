@@ -49,7 +49,7 @@
   "src/services/320-dept-storage.js",
   "src/permissions/331-perm-model.js",
   "src/layouts/root-logic.js",
-  "src/services/566-print-core.js",
+  "src/systems/_shared/print/566-print-core.js",
   "src/systems/daily/client/logic.js",
   "src/systems/plan/client/logic.js",
   "src/modules/admin/logic.js",

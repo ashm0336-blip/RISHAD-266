@@ -1,16 +1,18 @@
 /* ══ طباعةُ الخريطة والمؤشرات — PDF احترافي بالتصميم نفسِه (قرار المالك 2026-11-11) ══
-   نواةُ الطباعة المشتركة (src/services/566-print-core.js — «التشغيل الميداني» و«المتابعة اليومية»):
+   نواةُ الطباعة المشتركة (src/systems/_shared/print/566-print-core.js — «التشغيل الميداني» و«المتابعة اليومية»):
+   V7 · د5-ح: خرجت النواةُ من القاعدة إلى قطعةٍ مشتركة، وانتقل هذا الاختبارُ معها (كان tests/unit/print_vector.test.mjs) — يعمل ما حضر أحدُ مالكيها،
+   وما يقرأ منطقَ «المتابعة اليومية» يُتخطّى بغيابها.
    (1) الخريطةُ صورةٌ واحدة عاليةُ الدقّة بخطّ المنصة واتجاهها (الرسمُ المتّجه أثقل الملفَّ على الموقع الحقيقي — يبقى بخيار O.vector).
        كان خطُّ Cairo المتغيّر (font-weight:400 900) لا يطابق شرطَ تضمين الخط (800 حرفاً) فتُرسم النصوصُ بخطّ النظام وبترتيبٍ معكوس.
    (2) خطوطُ الوثيقة تُنتظر قبل الطباعة بمهلة.
    (3) إطارُ الطباعة يُحذف عند afterprint لا بمؤقّتٍ قصير بعد استدعاء print().
-   node --test tests/unit/print_vector.test.mjs */
+   node --test src/systems/_multi/tests/print_vector.test.mjs */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SRC, moduleDir } from './harness.mjs';
-const core = fs.readFileSync(path.join(SRC, 'services', '566-print-core.js'), 'utf8');
+import { SRC, moduleDir, SYSTEMS, needs } from '../../../../tests/unit/harness.mjs';
+const core = fs.readFileSync(path.join(SRC, 'systems', '_shared', 'print', '566-print-core.js'), 'utf8');
 
 test('الخريطةُ صورةٌ واحدة عاليةُ الدقّة (ملفٌّ خفيف) بخطّ المنصة واتجاهها — والمتّجهُ بخيارٍ صريح وحده', () => {
   const guard = core.indexOf('if (O.vector || !O.dialog) return void e();');
@@ -25,7 +27,7 @@ test('الخريطةُ صورةٌ واحدة عاليةُ الدقّة (ملفٌ
   /* موقعٌ بعد آخر لا كلُّها معاً */
   assert.match(core, /\[\]\.reduce\.call\(\s*x\.querySelectorAll\("\.pg \.mcv svg"\),/);
   assert.doesNotMatch(core, /Promise\.all\(\s*\[\]\.map\.call\(\s*x\.querySelectorAll\("\.pg \.mcv svg"\)/);
-  for (const m of ['plan', 'daily']) {
+  for (const m of ['plan', 'daily'].filter((k) => SYSTEMS.includes(k))) {   /* V7 · د5-ح: المالكُ الحاضر وحده */
     const lg = fs.readFileSync(path.join(moduleDir(m), 'logic.js'), 'utf8');
     const call = /BassamPrintCore\.build\(this, t, \{([^\n]*)\}\)/.exec(lg); assert.ok(call, m + ': نداءُ النواة');
     assert.doesNotMatch(call[1].split('logo:')[0], /vector\s*:/, m + ': لا يطلب المتّجه');
@@ -44,7 +46,7 @@ test('إطارُ الطباعة يُحذف عند afterprint (ومهلةٌ قص�
   assert.doesNotMatch(ok, /m\.remove\(\);\s*\} catch \(t\) \{\}\s*\}, 1200\);/, 'لا حذفَ للإطار بمؤقّت 1.2 ث في مسار النجاح');
 });
 
-test('صفحةُ المؤشرات المطبوعة = لوحةُ «مؤشرات الإدارة»: لا أيقونةَ مكبَّرة ولا بطاقةَ منزَّلة إلى أسفل الصفحة', () => {
+test('صفحةُ المؤشرات المطبوعة = لوحةُ «مؤشرات الإدارة»: لا أيقونةَ مكبَّرة ولا بطاقةَ منزَّلة إلى أسفل الصفحة', needs('daily'), () => {
   const lg = fs.readFileSync(path.join(SRC, 'systems', 'daily', 'client', 'logic.js'), 'utf8');
   const fit = lg.slice(lg.indexOf('  _kpiPrintFit(t) {'), lg.indexOf('  _kpiPrintFit(t) {') + 9000);
   assert.match(fit, /h = h0 && \/width:\\s\*136px\/\.test\(h0\.getAttribute\("style"\) \|\| ""\) && \/height:\\s\*136px\/\.test\(h0\.getAttribute\("style"\) \|\| ""\) \? h0 : null;/, 'تكبيرُ 136→196 للحلقة وحدها');
@@ -54,7 +56,7 @@ test('صفحةُ المؤشرات المطبوعة = لوحةُ «مؤشرات �
   assert.match(lg, /'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var\(--fg-xa79878\)"/);
 });
 
-test('مؤشراتُ التقرير المطبوع تتبع يومَ الجولة المطبوعة — لا آخرَ اختيارٍ في اللوحة ولا «كل الفترة» (قرار المالك 2026-11-11)', () => {
+test('مؤشراتُ التقرير المطبوع تتبع يومَ الجولة المطبوعة — لا آخرَ اختيارٍ في اللوحة ولا «كل الفترة» (قرار المالك 2026-11-11)', needs('daily'), () => {
   const lg = fs.readFileSync(path.join(SRC, 'systems', 'daily', 'client', 'logic.js'), 'utf8');
   const body = lg.slice(lg.indexOf('  _kpiPrintBody() {'), lg.indexOf('  _kpiPrintFit(t) {'));
   assert.match(body, /const t = this\._kpiPrintSel\(\)\.filter\(\(t\) => t\.y === st\.year && t\.m === st\.month && t\.d === dd\);/);
@@ -63,7 +65,7 @@ test('مؤشراتُ التقرير المطبوع تتبع يومَ الجول�
   assert.match(body, /if \(!t\.length\) return "";/, 'يومٌ بلا جولة ⇒ لا صفحةَ مؤشرات');
 });
 
-test('ملفٌّ خفيف: توهّجُ خلفية لوحة المؤشرات (blur واللمعة) لا يُطبع — النقشُ والتدرّجُ باقيان', () => {
+test('ملفٌّ خفيف: توهّجُ خلفية لوحة المؤشرات (blur واللمعة) لا يُطبع — النقشُ والتدرّجُ باقيان', needs('daily'), () => {
   const lg = fs.readFileSync(path.join(SRC, 'systems', 'daily', 'client', 'logic.js'), 'utf8');
   const fit = lg.slice(lg.indexOf('  _kpiPrintFit(t) {'), lg.indexOf('  _kpiPrintFit(t) {') + 3000);
   assert.match(fit, /\/pointer-events:\\s\*none\/\.test\(gs\) && \/inset:\\s\*0\/\.test\(gs\) && \(g\.style\.display = "none"\);/);

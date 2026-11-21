@@ -30,9 +30,10 @@ test('(2) one page title, section titles h3, platform sections on token classes;
   assert.match(SITE, /<div class="\{\{conPhCls\}\}">[\s\S]*?<h2 tabindex="-1">\{\{conTitle\}\}<\/h2>/, 'the h2 is the console header title');
   assert.equal(n(SITE, /aria-level=/g), 0, 'no aria-level patches: real heading levels');
   /* V7 · د5-هـ (44): 24 → 21 — أقسامُ المنصة الثلاثة لـ«الوحدات» و«ترتيب الصفحات» حُذفت معهما */
-  assert.ok(n(SITE, /<h3 class="adm-pl-h">/g) >= 21, 'every platform section title is an h3');
+  /* V7 · د5-ح: 21 → 19 — قسما «الترويسة الموحّدة» و«التذييل» حُذفا مع «الطباعة والتقارير» */
+  assert.ok(n(SITE, /<h3 class="adm-pl-h">/g) >= 19, 'every platform section title is an h3');
   assert.equal(n(SITE, /<h2 style=/g), 0);
-  assert.equal(n(SITE, /class="adm-pl-sec"/g), 21, 'the platform sections use .adm-pl-sec');   /* V7 · د5-هـ (44): 24 → 21 (الوحدات · ترتيب الصفحات حُذفا) */
+  assert.equal(n(SITE, /class="adm-pl-sec"/g), 19, 'the platform sections use .adm-pl-sec');   /* V7 · د5-هـ (44): 24 → 21 (الوحدات · ترتيب الصفحات حُذفا) · V7 · د5-ح: 21 → 19 (الترويسة الموحّدة · التذييل) */
   assert.ok(n(SITE, /class="adm-pl-in"/g) >= 34, 'platform text fields use .adm-pl-in');
   /* ratchet: S9 took the console view from 878 inline styles / 377 inline font sizes to these; they may only go down */
   const st = n(SITE, /\sstyle="/g), fs = n(SITE, /font-size/g);

@@ -11,7 +11,6 @@
     side: { order: ["kpis", "emps", "planning", "daily", "irshad", "seized", "award"], hidden: [], ver: true, help: true, links: true },
     links: [],   /* «مواقع ذات صلة»: [{ t: العنوان, u: الرابط, d: الوصف }] يحرّرها مدير النظام من الصفحة نفسها */
     top: { theme: true, crumb: "full" },
-    print: { l1: "", l2: "", l3: "", logoPos: "right", footer: "", date: true, who: true, paper: "" },
     mods: { off: [] },
     about: { license: "", licType: "", support: "", phone: "", msg: "", whatsnew: "", guides: [{ t: "دليل مسؤول المنصة", u: "" }, { t: "دليل مدير الإدارة", u: "" }, { t: "دليل الموظف", u: "" }, { t: "دليل التشغيل والرفع", u: "" }] }
   };
@@ -34,7 +33,7 @@
     var r = raw();
     if (r === cacheRaw && cache) return cache;
     var o = null; try { o = r ? JSON.parse(r) : null; } catch (e) { o = null; }
-    cache = merge(DEF, isObj(o) ? o : {}); cacheRaw = r; return cache;
+    cache = merge(DEF, isObj(o) ? o : {}); delete cache.print; cacheRaw = r; return cache;   /* V7 · د5-ح: قسمُ الطباعة في مركز الإدارة حُذف — مفتاحُه المخزَّن قديماً لا يُقرأ */
   }
   /* CORE-02 (B1): اسمُ المنصة مطلوب — الفارغُ والمسافاتُ وحدها (ومحارفُ الاتجاه والعرض الصفري) لا تُحفظ؛ والخادمُ يرفضه كذلك (044 platNameWhy) */
   var NAME_REQ = "اسم المنصة مطلوب — اكتب اسماً قبل الحفظ";
@@ -43,7 +42,8 @@
     var sup = false; try { sup = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()); } catch (e) {}
     if (!sup) return { ok: false, err: "إعدادات المنصة لمسؤول المنصة وحده" };
     if (next && Object.prototype.hasOwnProperty.call(next, "name") && blankName(next.name)) return { ok: false, err: NAME_REQ, field: "name" };   /* CORE-02 (B1) */
-    try { localStorage.setItem(K, JSON.stringify(merge(DEF, next || {}))); } catch (e) { return { ok: false, err: "تعذّر الحفظ" }; }
+    var o = merge(DEF, next || {}); delete o.print;   /* V7 · د5-ح: ولا يُكتب ثانيةً — أوّلُ حفظٍ لإعدادات المنصة يُسقطه من المخزَّن */
+    try { localStorage.setItem(K, JSON.stringify(o)); } catch (e) { return { ok: false, err: "تعذّر الحفظ" }; }
     cache = null; apply(); return { ok: true };
   }
   function ver() { return KIVO.__BS_VER || ""; }
@@ -73,7 +73,6 @@
       var css = "";
       var order = (P.side.order || []).filter(function (k) { return NAVKEYS.indexOf(k) >= 0; }); NAVKEYS.forEach(function (k, i) { if (order.indexOf(k) >= 0) return; var prev = i > 0 ? order.indexOf(NAVKEYS[i - 1]) : -1; order.splice(prev + 1, 0, k); });   /* رابط جديد لم يُرتَّب بعد يقف خلف سابقه في القالب لا في الذيل */
       NAVKEYS.forEach(function (k) { var pos = order.indexOf(k); var hide = (P.side.hidden || []).indexOf(k) >= 0 || (!sup && (P.mods.off || []).indexOf(k) >= 0);   /* V7 · د1-ج (قرار صاحب المنصة): الوحدةُ المطفأة على مستوى المنصة تظهر لمدير المنصة وحده */ css += 'aside.bsb .s-nav .grp > a[data-key="' + k + '"]{order:' + pos + (hide ? ";display:none!important" : "") + "}\n"; });   /* CORE-01: بمفتاح الرابط (data-key) لا بموضعه في القالب */
-      if (P.print.paper) css += "@media print{@page{size:" + ({ a4p: "A4 portrait", a4l: "A4 landscape", a3l: "A3 landscape" }[P.print.paper] || "auto") + "}}\n";
       if (!styleEl) { styleEl = document.createElement("style"); styleEl.id = "bs-plat-css"; (document.head || document.documentElement).appendChild(styleEl); }
       styleEl.textContent = css;
       /* أيقونات الجوال والمتصفح من شعار المنصة إن رُفع. بيانُ التثبيت ملفٌّ ثابتٌ من الأصل نفسه (/manifest.webmanifest — KIVO_242):
@@ -166,25 +165,6 @@
       }).catch(function () { rb.disabled = false; m.textContent = "لا اتصال — حاول مجددًا بعد قليل"; });
     });
   }
-  /* ── الطباعة: ترويسة موحّدة وتذييل ── */
-  function printOn() {
-    var P = get(); if (!P.print.l1 && !P.print.l2 && !P.logo && !P.org && !P.print.footer && !P.print.date && !P.print.who) return;
-    var main = document.querySelector("main.bs-main") || document.querySelector("main"); if (!main) return;
-    printOff();
-    var l1 = P.print.l1 || P.org || P.name, l2 = P.print.l2, l3 = P.print.l3;
-    try { var D = KIVO.BassamDepts, dn = D && D.activeName ? D.activeName() : ""; var pg = (document.querySelector(".bs-topbar > div:first-child > div:last-child > span") || {}).textContent || ""; l3 = String(l3 || "{الإدارة} · {الصفحة}").replace("{الإدارة}", dn).replace("{الصفحة}", pg).replace(/^\s*(?:[·•]\s*|-\s+)|(?:\s*[·•]|\s+-)\s*$/g, ""); } catch (e) {}
-    var h = document.createElement("div"); h.id = "bs-plat-print";
-    var cls = P.print.logoPos === "center" ? "c" : P.print.logoPos === "left" ? "l" : "";
-    h.innerHTML = '<div class="h ' + cls + '">' + (P.logo && P.print.logoPos !== "none" ? '<img src="' + esc(P.logo) + '" alt="">' : "") + '<div><div class="t1">' + esc(l1) + "</div>" + (l2 ? '<div class="t2">' + esc(l2) + "</div>" : "") + (l3 ? '<div class="t3">' + esc(l3) + "</div>" : "") + "</div></div>";
-    main.insertBefore(h, main.firstChild);
-    var who = ""; try { var A = KIVO.BassamAuth, u = A && A.user ? A.user() : null; who = u ? (u.name || u.un || "") : ""; } catch (e) {}
-    var parts = []; if (P.print.footer) parts.push(esc(P.print.footer)); var right = [];
-    if (P.print.who && who) right.push("طُبع بواسطة " + esc(who)); if (P.print.date) { try { var HJ = KIVO.BassamHijri && KIVO.BassamHijri.fmt ? KIVO.BassamHijri.fmt(new Date()) : new Date().toLocaleDateString("ar-SA-u-nu-latn"); right.push(HJ + " " + new Date().toTimeString().slice(0, 5)); } catch (e) {} }
-    var f = document.createElement("div"); f.id = "bs-plat-printfoot"; f.innerHTML = "<span>" + parts.join(" · ") + "</span><span>" + right.join(" · ") + "</span>"; main.appendChild(f);
-  }
-  function printOff() { ["bs-plat-print", "bs-plat-printfoot"].forEach(function (id) { var e = document.getElementById(id); if (e) e.remove(); }); }
-  window.addEventListener("beforeprint", function () { try { printOn(); } catch (e) {} });
-  window.addEventListener("afterprint", function () { try { printOff(); } catch (e) {} });
   /* ── دعوة التثبيت على الجوال ── */
   var deferredPrompt = null;
   window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferredPrompt = e; setTimeout(installBar, 1500); });

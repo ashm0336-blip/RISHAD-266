@@ -14,20 +14,6 @@ aside.bsb .s-nav .grp:first-of-type{display:flex;flex-direction:column}
 aside.bsb .s-nav .grp:first-of-type > .s-ghead{order:-20}
 aside.bsb .s-nav .grp:first-of-type > .s-deptdd{order:-19}
 a.n.bs-plat-help .ni{color:var(--brand-fg)}
-#bs-plat-print{display:none}
-@media print{
-  #bs-plat-print{display:block!important;font-family:var(--font-ui);color:var(--text-primary);margin:0 0 10px}
-  #bs-plat-print .h{display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--border-inverse);padding-bottom:8px}
-  #bs-plat-print .h.c{flex-direction:column;text-align:center;gap:6px}
-  #bs-plat-print .h.l{flex-direction:row-reverse}
-  #bs-plat-print img{width:56px;height:56px;object-fit:contain}
-  #bs-plat-print .t1{font-size:14px;font-weight:800}
-  #bs-plat-print .t2{font-size:12px;color:var(--text-secondary)}
-  #bs-plat-print .t3{font-size:11px;color:var(--text-secondary)}
-  #bs-plat-print .f{display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);border-top:1px solid var(--border-strong);margin-top:10px;padding-top:5px}
-  #bs-plat-printfoot{display:flex!important;justify-content:space-between;font-size:10px;color:var(--text-secondary);border-top:1px solid var(--border-strong);margin-top:12px;padding-top:5px;font-family:var(--font-ui)}
-}
-#bs-plat-printfoot{display:none}
 .bs-plat-ov{position:fixed;inset:0;z-index:2147482000;background:var(--bg-overlay);display:flex;align-items:center;justify-content:center;font-family:var(--font-ui)}
 .bs-plat-card{background:var(--bg-surface);border-radius:18px;padding:22px 24px;width:min(480px,92vw);box-shadow:var(--shadow-elevated);color:var(--text-primary);max-height:88vh;overflow:auto}
 .bs-plat-card h3{margin:0 0 4px;font-size:16px;font-weight:800}

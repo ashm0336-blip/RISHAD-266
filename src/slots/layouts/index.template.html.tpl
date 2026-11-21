@@ -109,8 +109,7 @@
 @@KIVO_BLOCK:components/555-page-states.js@@
 @@KIVO_BLOCK:components/560-canvas-input.js@@
 @@KIVO_BLOCK:components/565-page-kit.js@@
-@@KIVO_BLOCK:services/566-print-core.js@@
-@@KIVO_BLOCK:services/570-bassam-xlsx.js@@
+@@SYS:shell.blocks.print@@@@KIVO_BLOCK:services/570-bassam-xlsx.js@@
 @@SYS:shell.blocks.after570@@@@KIVO_BLOCK:services/590-employees-import.js@@
 <x-dc>
 <helmet>

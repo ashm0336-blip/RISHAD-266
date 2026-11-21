@@ -1,5 +1,5 @@
 /* RISHAD CORE-02 S7 — «مركز إدارة رشاد» as its own space in the app shell (client only; permissions, routes and server unchanged).
-     (1) the one map (_sysNav in root-logic.js): the eight admin tabs once each, the eight platform sections once each, in the approved
+     (1) the one map (_sysNav in root-logic.js): the eight admin tabs once each, the seven platform sections once each, in the approved
          five groups; «التهيئة والاستعادة» lives under البيانات والاستمرارية; the labels are the page titles the admin page shows;
      (2) the template: the operational sidebar (unit picker — «+ قسم» deleted in V7 · د5-هـ 44 —, the eight page links, «مواقع ذات صلة», «الإعدادات») sits unchanged
          inside sc-if sbOps; the console block holds none of them;
@@ -33,17 +33,18 @@ const L = rd('modules/admin/logic.js'), V = rd('modules/admin/view.html'), C = r
 const J = (x) => JSON.parse(JSON.stringify(x)), deq = (a, b, m) => assert.deepEqual(J(a), J(b), m);
 /* V7 · د5-هـ (44): «خريطة الصلاحيات» (perms) و«الوحدات» (plat/mods) حُذفتا — ثمانيةُ تبويبات وثمانيةُ أقسام */
 const SYS_TABS = ['overview', 'depts', 'users', 'plat', 'sec', 'oplog', 'backup', 'histimp'];
-const PL = ['id', 'notif', 'login', 'side', 'print', 'app', 'about', 'setup'];
+/* V7 · د5-ح (قرار المالك 13 نوفمبر): «الطباعة والتقارير — الترويسة والتذييل» (plat/print) حُذف — سبعةُ أقسام */
+const PL = ['id', 'notif', 'login', 'side', 'app', 'about', 'setup'];
 const ALL = ['overview', 'sec', 'users', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
 
-test('(1) the one map: eight tabs and eight platform sections once each, five groups in order, setup under data', needs('dstats'), () => {
+test('(1) the one map: eight tabs and seven platform sections once each, five groups in order, setup under data', needs('dstats'), () => {
   const W = world({ hash: '#/sysadmin/overview' });
   const N = W.c._sysNav();
   deq(Object.keys(N), ['home', 'org', 'plat', 'sec', 'data']);
   const all = Object.values(N).flat();
   const keys = all.map((x) => x[0] + '/' + (x[1] || ''));
   assert.equal(new Set(keys).size, keys.length, 'no destination twice');
-  assert.equal(all.length, 15, '15 destinations');
+  assert.equal(all.length, 14, '14 destinations');
   deq([...new Set(all.map((x) => x[0]))].sort(), [...SYS_TABS].sort(), 'every admin tab, once');
   deq(all.filter((x) => x[0] === 'plat').map((x) => x[1]).sort(), [...PL].sort(), 'every platform section, once');
   deq(N.data.map((x) => x[1] || x[0]), ['backup', 'setup', 'histimp'], '«التهيئة والاستعادة» in البيانات والاستمرارية');
@@ -56,7 +57,7 @@ test('(1) the one map: eight tabs and eight platform sections once each, five gr
   /* review of S10: PL_KEYS is derived from the one section list (PL_SECS), which also titles each section's page */
   assert.match(L, /PL_KEYS\(\) \{\s*return this\.PL_SECS\(\)\.map\(\(x\) => x\[0\]\);/, 'PL_KEYS derived from PL_SECS');
   const secs = L.slice(L.indexOf('  PL_SECS() {'), L.indexOf('  PL_KEYS() {'));
-  deq([...secs.matchAll(/\[\s*"([a-z]+)",\s*"/g)].map((m) => m[1]).sort(), [...PL].sort(), 'the admin page knows the same eight sections');
+  deq([...secs.matchAll(/\[\s*"([a-z]+)",\s*"/g)].map((m) => m[1]).sort(), [...PL].sort(), 'the admin page knows the same seven sections');
   assert.match(L, /p = this\.PL_SECS\(\),/, 'plVals reads the same list');
 });
 
@@ -113,7 +114,7 @@ test('(3b) the console items: availability from the admin page, selection from t
   await Promise.resolve();
   v = W.vals();
   const items = ['org', 'plat', 'sec', 'data'].flatMap((g) => v.con[g].items);
-  assert.equal(items.length + (v.con.home.show ? 1 : 0), 15);   /* V7 · د5-هـ (44): perms · plat/mods حُذفتا */
+  assert.equal(items.length + (v.con.home.show ? 1 : 0), 14);   /* V7 · د5-هـ (44): perms · plat/mods حُذفتا · V7 · د5-ح: plat/print */
   const cur = items.filter((i) => i.cur === 'page');
   deq(cur.map((i) => i.t), ['التنبيهات والتعاميم'], 'exactly one current item');
   assert.equal(cur[0].href, '#/sysadmin/plat/notif');

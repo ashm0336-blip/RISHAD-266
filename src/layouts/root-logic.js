@@ -953,7 +953,7 @@ class Component extends DCLogic {
       home: [["overview", null, "الرئيسية"]],
       org: [["depts", null, "الإدارات"], ["users", null, "مراقبة الحسابات"]],
       plat: [["plat", "id", "هوية المنصة"], ["plat", "notif", "التنبيهات والتعاميم"],
-        ["plat", "login", "شاشة تسجيل الدخول", 1], ["plat", "side", "القوائم"], ["plat", "print", "الطباعة والتقارير"], ["plat", "app", "تطبيق الجوال"],
+        ["plat", "login", "شاشة تسجيل الدخول", 1], ["plat", "side", "القوائم"], ["plat", "app", "تطبيق الجوال"],
         ["plat", "about", "حول المنصة", 1]],
       sec: [["sec", null, "الأمن"], ["oplog", null, "سجل الأنشطة والتغييرات"]],
       data: [["backup", null, "النسخة الاحتياطية"], ["plat", "setup", "التهيئة والاستعادة"], ["histimp", null, "استيراد البيانات التاريخية"]],

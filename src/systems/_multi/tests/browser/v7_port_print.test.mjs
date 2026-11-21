@@ -2,7 +2,8 @@
    SCOPE — read before trusting this test: the lab has NO operational plan and no site map («لا توجد خطة»), so the print control
    (the printer button on the map toolbar of «التشغيل الميداني» / «المتابعة اليومية») is not rendered and is NOT clicked here.
    What IS exercised, in a real Chromium on the built app, signed in as the platform administrator: the real shared print core
-   (KIVO.BassamPrintCore.build — src/services/566-print-core.js) with two SYNTHETIC captured sites (a rectangle and one label each),
+   (KIVO.BassamPrintCore.build — src/systems/_shared/print/566-print-core.js; V7 · د5-ح: the core left the base for a piece shared by plan + daily,
+   and this test moved with it from tests/browser/ — it runs while either owner is present, on that owner's page) with two SYNTHETIC captured sites (a rectangle and one label each),
    through the real pipeline: print document → embedded platform fonts → every page drawn as one image → hand-written PDF → download.
    Asserted: a download event with a .pdf name, a %PDF- header, one A3 page and one JPEG per site, no print dialog, no frame left.
    Not covered here: the button → capture → build wiring of the two modules, real maps, the indicators page, tablets. */
@@ -11,18 +12,20 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { startLab, LAB } from './local_server.mjs';
-import { chromium, openAs } from './lab_browser.mjs';
+import { startLab, LAB } from '../../../../../tests/browser/local_server.mjs';
+import { chromium, openAs } from '../../../../../tests/browser/lab_browser.mjs';
+import { hasSystem } from '../../../../../tests/unit/harness.mjs';
+const OWNER = hasSystem('plan') ? 'plan' : hasSystem('daily') ? 'daily' : '';   /* V7 · د5-ح: the page of a present owner (the core is in the shell while one is present) */
 
-test('V7 port · print core: two synthetic sites → a two-page PDF is downloaded, no print dialog', { timeout: 600000 }, async () => {
+test('V7 port · print core: two synthetic sites → a two-page PDF is downloaded, no print dialog', { timeout: 600000, skip: OWNER ? false : 'نظامٌ غير حاضر: plan + daily' }, async () => {
   const lab = await startLab();
   /* a UTF-8 locale for the browser process: with an empty LANG headless Chromium replaces any non-ASCII download name by «download» */
   const b = await chromium.launch({ env: Object.assign({}, process.env, { LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' }) });
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'print-'));
   try {
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw, { context: { acceptDownloads: true } }); const p = s.page;
-    await s.go('#/plan', 5000);
-    assert.equal(await p.locator('button[title^="طباعة الخريطة"]').count(), 0, 'the lab has no plan: if the control is rendered now, click it in this test instead of calling the core');
+    await s.go('#/' + OWNER, 5000);
+    if (OWNER === 'plan') assert.equal(await p.locator('button[title^="طباعة الخريطة"]').count(), 0, 'the lab has no plan: if the control is rendered now, click it in this test instead of calling the core');
     assert.equal(await p.evaluate(() => typeof (window.KIVO && KIVO.BassamPrintCore && KIVO.BassamPrintCore.build)), 'function');
     const dl = p.waitForEvent('download', { timeout: 120000 });
     await p.evaluate(() => {
