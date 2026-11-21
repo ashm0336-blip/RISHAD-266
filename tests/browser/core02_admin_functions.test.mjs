@@ -131,7 +131,8 @@ function collect() {
     if (!vis(e) || e.closest('.bs-sr-only')) continue;
     if (e.matches('input,select,textarea')) {
       if (e.type === 'hidden') continue;
-      const lab = e.getAttribute('aria-label') || (e.labels && e.labels[0] && e.labels[0].textContent) || e.placeholder || e.title || '';
+      /* V7 · د5-ح: مرورُ المؤشر ينقل title إلى data-tip (600-tooltip-portal) — الاسمُ نفسُه؛ صار الحقلُ تحت نقرة الصف بعدما قصر شريطُ التبويبات */
+      const lab = e.getAttribute('aria-label') || (e.labels && e.labels[0] && e.labels[0].textContent) || e.placeholder || e.title || e.getAttribute('data-tip') || '';
       const kind = e.matches('select') ? 'select' : e.matches('textarea') ? 'textarea' : (e.type === 'checkbox' || e.type === 'radio') ? 'toggle' : 'input';
       const t = norm(lab); if (keep(t)) out.fields.add(kind + ':' + t);
       continue;

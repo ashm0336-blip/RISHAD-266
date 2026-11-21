@@ -1170,25 +1170,14 @@ class Component extends DCLogic {
       showAdminGrp: !!((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || _pOK("admin")),
       /* حراسة الصلاحيات: الصفحة غير المتاحة يختفي رابطها (class "n gone")
          ويُردّ الانتقال إليها بأي طريق. مدير النظام يرى كل شيء. */
-      /* ═══ صدق القائمة الجانبية أمام مدير النظام ═══
-         مدير النظام فوق كل السقوف فتبقى كل الصفحات مفتوحة له — وكان ذلك يجعل
-         القائمة ثابتة مهما بدّل الإدارة، فلا يعرف ما هو مفعّل فعلاً لكل إدارة.
-         الآن: ما هو داخل سقف الإدارة النشطة يظهر عادياً، وما هو خارجه يظهر
-         باهتاً بنقطة تنبيه وتلميح يوضّح السبب — ويبقى قابلاً للفتح، لأن إخفاءه
-         يحبس المشرف داخل إدارة سقفها فارغ بلا طريق لتعديله. */
+      /* ═══ V7 · د5-ح (قرار المالك): النظامُ المطفأ لا يراه أحد — ولا مديرُ المنصة ═══
+         المطفأُ على المنصة يغيب عن المنصة كلها، والمطفأُ لإدارةٍ يغيب داخل مساحتها (الإدارةُ النشطة) — فالقائمةُ تتبع myPerms
+         (331: مديرُ المنصة يُقصّ بما أُطفئ) ولا عرضَ باهتاً بنقطة «خارج السقف». موضعُه الوحيد «الصلاحيات ← الأنظمة» لمدير المنصة. */
       ...(() => {
-        const P = KIVO.BassamPerm, A = KIVO.BassamAuth;
-        const sup = !!(A && A.isSuper && A.isSuper());
-        let cap = [];
-        try { cap = (P && P.deptCap) ? P.deptCap() : []; } catch (e) { cap = []; }
-        const dn = (KIVO.BassamDepts && KIVO.BassamDepts.activeName && KIVO.BassamDepts.activeName()) || "هذه الإدارة";
+        const P = KIVO.BassamPerm;
         const NM = {}; try { (P.PAGE_REG || []).forEach(x => NM[x.key] = x.name); } catch (e) {}
-        const outOf = (pk) => sup && cap.indexOf(pk) === -1;
-        const cls = (navKey, pk) => "n" + (a === navKey ? " on" : "")
-          + (_pOK(pk) ? "" : " gone") + (outOf(pk) ? " out" : "");
-        const tip = (pk) => outOf(pk)
-          ? ((NM[pk] || "") + " — خارج سقف «" + dn + "» · مرئية لك بصلاحية المشرف")
-          : (NM[pk] || "");
+        const cls = (navKey, pk) => "n" + (a === navKey ? " on" : "") + (_pOK(pk) ? "" : " gone");
+        const tip = (pk) => NM[pk] || "";
         /* «مؤشرات الإدارة» حاويةُ عرضٍ لأوراقٍ قائمة بمفاتيحها — فظهورُها من
            ملك واحدةٍ منها، لا من مفتاحٍ جديدٍ لها */
         const _kpiAny = this._kpisOk();
@@ -1196,16 +1185,14 @@ class Component extends DCLogic {
           nKpis: "n" + (a === "kpis" ? " on" : "") + (_kpiAny ? "" : " gone"), tKpis: labels.kpis,
 @@SYS:root.navVals.dstats@@          nEmployees: cls("employees", "emps"), tEmployees: tip("emps"),
 @@SYS:root.navVals.staff@@@@SYS:root.navVals.plan@@@@SYS:root.navVals.daily@@@@SYS:root.navVals.dreport@@          /* كانت مربوطة بـ«الجدول الشهري» وحده فتختفي عمّن له «التشغيل الميداني» فقط */
-          nPlanning: "n" + (a === "planning" ? " on" : "") + (_pAny(["planning"@@SYS:root.planning.perms@@]) ? "" : " gone") + (outOf("planning")@@SYS:root.planning.out@@ ? " out" : ""), tPlanning: tip("planning"),
+          nPlanning: "n" + (a === "planning" ? " on" : "") + (_pAny(["planning"@@SYS:root.planning.perms@@]) ? "" : " gone"), tPlanning: tip("planning"),
           @@SYS:root.navVals.systems@@          nLinks: cls("links", "links"), tLinks: tip("links"),
-          tAdmin: outOf("admin")
-            ? ("الإعدادات — خارج سقف «" + dn + "» · مرئية لك بصلاحية المشرف")
-            : "الإعدادات — نسخة الإدارة الاحتياطية",
+          tAdmin: "الإعدادات — نسخة الإدارة الاحتياطية",
         };
       })(),
       /* الإعدادات تتبع صلاحية admin — تختفي إن أُطفئت للإدارة، إلا للمشرف
          العام فيراها دائماً (لا يُحبس أحد خارج النسخ الاحتياطي). */
-      nAdmin: "n" + (a === "admin" ? " on" : "") + (((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || _pOK("admin")) ? "" : " gone") + ((() => { try { const P = KIVO.BassamPerm, A = KIVO.BassamAuth; return (A && A.isSuper && A.isSuper() && P && P.deptCap().indexOf("admin") === -1) ? " out" : ""; } catch (e) { return ""; } })()),
+      nAdmin: "n" + (a === "admin" ? " on" : "") + (((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || _pOK("admin")) ? "" : " gone"),
       nSysAdmin: "n" + (a === "sysadmin" ? " on" : ""),
       goSysAdmin: goSys,
       /* الطبقة المعتمة تظهر مع الشريط المفتوح — والـCSS يقصرها على الشاشات الصغيرة */

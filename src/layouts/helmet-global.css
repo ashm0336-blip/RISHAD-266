@@ -567,11 +567,6 @@ main .bs-canvas-header button:not([style*="position: absolute"]){min-width:44px;
 .bsb .n:hover{background:var(--bg-gold-50-a8-v2);color:var(--text-secondary)}
 /* بند «خارج سقف الإدارة النشطة»: يظهر لمدير النظام وحده — باهت مع نقطة تنبيه،
    ويبقى قابلاً للفتح (لا يُخفى) حتى لا يُحبس المشرف داخل إدارة سقفها فارغ. */
-.bsb .n.out{opacity:.45}
-.bsb .n.out .ni{filter:grayscale(1)}
-.bsb .n.out:hover{opacity:.85}
-.bsb .n.out::after{content:"";position:absolute;left:8px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:var(--warning-strong);box-shadow:0 0 0 2px rgba(201,112,42,.18)}
-.bsb.cx .n.out::after{left:3px;top:8px;transform:none}
 /* البند النشط: خطّ جانبيّ ذهبيّ وتظليل متدرّج ينساب منه — نمط شارتَي «أعلى/أدنى»
    في لوحة الكانفس، بدل الإطار المحيط. اللون الذهبي كما هو. */
 .bsb .n.on{background:linear-gradient(to left,var(--tone-gold-50-a16),var(--bg-gold-50-a0));color:var(--brand-text);border:1px solid transparent;border-right:3px solid var(--border-brand);border-radius:0 9px 9px 0;font-weight:700}
