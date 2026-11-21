@@ -120,7 +120,7 @@ async function sweep(W) {
   return R;
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('V7 · د1-ج · ' + mode + ': مدير المنصة على إدارةٍ سقفُها فارغ ووحداتُها مطفأة — لا رفضَ لسبب صلاحية في أي مسار قراءة أو كتابة', { ...needs('award', 'custody', 'seized', 'tasks'), timeout: 600000 }, async (t) => {
     const W = await build(mode);
     const R = await sweep(W);

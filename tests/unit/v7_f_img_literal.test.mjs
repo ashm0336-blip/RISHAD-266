@@ -175,7 +175,7 @@ both(test, 'P6 · such a spelling in a typed record\'s text with an odd-shaped c
 
 /* ── the other writers: the same acceptance of honest text (the fourth review refused it) ─────────────────────────────────────── */
 const esc1 = '\\u0041bc';                                                    /* one escaped letter: A = 'A' */
-for (const mode of ['legacy', 'enforce']) test('task note · an employee\'s note carrying a \\u escape of an id character is accepted and stored as written [' + mode + ']', { ...needs('tasks'), timeout: 600000 }, async () => {
+for (const mode of ['enforce']) test('task note · an employee\'s note carrying a \\u escape of an id character is accepted and stored as written [' + mode + ']', { ...needs('tasks'), timeout: 600000 }, async () => {
   const W = await tasksWorld({ mode }), dm = await W.login('0000000101', '70101'), me = await W.login(ME.un, ME.pw);
   const post = (ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });
   const s = Date.now() - HR, cr = await post(dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' lit', s, e: s + 3 * HR, asg: [ME.eid], rv: 'none' }); assert.equal(cr.status, 200);

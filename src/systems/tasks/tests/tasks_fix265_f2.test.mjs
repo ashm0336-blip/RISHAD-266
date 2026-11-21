@@ -19,18 +19,11 @@ const show = (r) => JSON.stringify({ st: r.status, revs: r.j && r.j.revs, denied
 const RST = (why) => ({ ops: { [KT]: { op: 'backup.restore', scope: 'dept', mode: 'replace', reason: why } }, aud: [{ cid: 'f2r' + Date.now().toString(36), k: KT, etype: 'dataset', act: 'restore', eid: 'bassam_tasks_v1', ename: 'bassam_tasks_v1' }], why: { [KT]: why } });
 const genOf = (W, rec) => { let n = 0; const S = stored(W.env, KT); for (const d in S) for (const r of S[d] || []) if (Array.isArray(r) && r[23] && r[23].rec && r[23].rec.id === rec) n++; return n; };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {   /* V7 · د5-ح: لا وضعَ قديماً */
   const M = '[' + mode + '] ';
 
-  if (mode === 'legacy') test(M + '(أ) علامةُ الاستعادة من مدير الإدارة لا تفتح العمودَ 23 في القديم ⇒ task-x', async () => {
-    const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM), s = Date.now() + 2 * HR;
-    const c = await post(W, dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' F-2', s, e: s + HR, asg: [], rv: 'none' }); assert.equal(c.status, 200, show(c));
-    const k = c.j.rows[0].k, id = c.j.rows[0].id, g = await getKT(W, dm.ck), S = g.resources[KT], i = S[k].findIndex((r) => r[13] === id);
-    S[k][i] = S[k][i].slice(); S[k][i][23] = Object.assign({}, S[k][i][23], { by: { u: SUP_UID, e: '', n: TAG + ' مزوَّر' } });
-    const r = await post(W, dm.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g.base[KT] } }, RST(TAG + ' استعادة')));
-    assert.equal(r.j && r.j.denied && r.j.denied[KT] && r.j.denied[KT].why, 'task-x', show(r));
-    assert.notEqual((stored(W.env, KT)[k].find((q) => q[13] === id)[23].by || {}).u, SUP_UID, 'x كما هي');
-  });
+  /* V7 · د5-ح (القفل): حالة «[legacy] (أ) علامةُ الاستعادة من مدير الإدارة … في القديم ⇒ task-x» حُذفت — تثبّت حكمَ الوضع القديم (taskSrvExempt) المحذوف */
+
 
   test(M + '(ب) نموذجُ سلسلةٍ يُنسب إلى المشرف بطابع مهمةٍ له (العمود 22) لا يولِّد شيئاً باسمه', async () => {
     const W = await world({ worker: WU.file, mode }); const sup = await W.login(...SUP), s = Date.now() + 2 * HR;

@@ -17,7 +17,7 @@ function seed() {
   return fs.readFileSync(out + '/test_seed.sql', 'utf8');
 }
 const QS = { '/api/changes': '?since=0', '/api/get': '?keys=bassam_depts_v1', '/api/aud': '?limit=3' };
-const BODY = { '/api/sess/kill': { uid: 'nobody' }, '/api/guard/unlock': { gk: 'u:x' }, '/api/recovery/new': { pw: 'x' }, '/api/reset': { pw: 'x', confirm: 'x' }, '/api/policy': {}, '/api/permv2': {} };
+const BODY = { '/api/sess/kill': { uid: 'nobody' }, '/api/guard/unlock': { gk: 'u:x' }, '/api/recovery/new': { pw: 'x' }, '/api/reset': { pw: 'x', confirm: 'x' }, '/api/policy': {} };
 async function world() {
   const env = makeTestEnv(); const C = client(env);
   assert.ok((await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN)).ok);
@@ -36,7 +36,7 @@ test('(أ)(ب) الصلاحيةُ لكل مسارٍ في العقد — موظف
     else if (r.access === 'session') { const x = await call(C, r, emp.ck); assert.ok(x.status === 200 || (x.status === 400 && r.path !== '/api/whoami'), 'موظف ⇐ ' + r.path + ': ' + x.status); seen.session++; }
     else if (r.access === 'enforce') { const x = await call(C, r, emp.ck); assert.equal(x.status, 404, 'الوضعُ القديم ⇐ ' + r.path + ': ' + x.status); seen.enforce++; }
   }
-  assert.ok(seen.super >= 10 && seen.session >= 3 && seen.enforce >= 4, JSON.stringify(seen));
+  assert.ok(seen.super >= 10 && seen.session >= 3 && seen.enforce >= 2, JSON.stringify(seen));   /* V7 · د5-ح: واجهاتُ الإنفاذ والترحيل صارت session/super في كل بيئة — يبقى «enforce» أداةَ الاختبار وحدها */
 });
 test('(ج) الأخطاءُ المعقودة: 400 bad-body لكل مخطّط · 405 · 404', since(163), async () => {
   const { C, emp } = await world();

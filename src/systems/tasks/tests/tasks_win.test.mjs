@@ -21,7 +21,7 @@ async function mk(W, ck, o) {
 const rowOf = (W, id) => Object.values(stored(W.env, KT)).flat().find((r) => Array.isArray(r) && r[13] === id);
 const mine = async (W, ck, id) => ((await get(W, ck, '/api/me/tasks')).j.rows || []).find((r) => String(r.id) === String(id));
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'الإنشاء: win يُحفظ في العمود 23 ويظهر للموظف (from/to) · الحدودُ تُرفض 400 · null = الافتراضي · ويُعدَّل من /api/tasks/settings', async () => {

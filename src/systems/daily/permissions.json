@@ -373,7 +373,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 280,
     "value": {
      "key": "round.sync.plan",
@@ -425,7 +425,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 290,
     "value": {
      "key": "round.day.disable",
@@ -3376,7 +3376,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 280,
     "value": {
      "key": "round.sync.plan",
@@ -5658,8 +5658,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 270,
+    "after": 0,
+    "seq": 560,
     "value": {
      "key": "round.sync.plan",
      "res": "bassam_rounds_v1",
@@ -5677,7 +5677,7 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
+    "after": 1,
     "seq": 70,
     "value": {
      "key": "round.edit",
@@ -5709,7 +5709,7 @@
     "path": [
      "decisions"
     ],
-    "after": 8,
+    "after": 7,
     "seq": 30,
     "value": {
      "id": "D-19",

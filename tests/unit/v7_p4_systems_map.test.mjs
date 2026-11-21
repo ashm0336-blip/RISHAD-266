@@ -58,15 +58,15 @@ test('the manifest ships the system contract and the lens hosts to the client (t
 });
 
 test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · leaves · keys · reserved)', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
-  assert.equal(REG.owners.length, 44);
+  assert.equal(REG.owners.length, 43);   /* V7 · د5-ح: مالكُ admin/ptpls حُذف */
   assert.deepEqual(J(STRUCT).map((c) => c.id), TREE.containers.map((c) => c.id), 'the same containers in the same order');
   /* leaves and keys: the keys of a leaf in the registry order; the reserved ones as a set; the leaves of a page container in the
      manifest order (the platform owners are listed in the registry order by the builder and in the document order by the tree file) */
   const shape = (cs, kindOf) => cs.map((c) => { const L = c.leaves.map((l) => ({ owner: l.owner, kind: kindOf(l).replace('page_under', 'page'), keys: l.keys, reserved: l.reserved.slice().sort() }));
     return { id: c.id, kind: c.kind, page: c.page, nav: c.nav, leaves: c.kind === 'page' ? L : L.sort((a, b) => (a.owner < b.owner ? -1 : 1)) }; });
   assert.deepEqual(shape(J(STRUCT), (l) => l.type), shape(TREE.containers, (l) => l.kind));
-  assert.equal(TREE.counts.leaves, 44); assert.equal(TREE.counts.keys, 255);
-  assert.deepEqual(J(STRUCT).flatMap((c) => c.leaves.map((l) => l.owner)).sort(), REG.owners.map((o) => o.id).sort(), 'the 44 owners, one leaf each');
+  assert.equal(TREE.counts.leaves, 43); assert.equal(TREE.counts.keys, 250);   /* V7 · د5-ح: ورقةُ admin/ptpls ومفاتيحُها الخمسة حُذفت */
+  assert.deepEqual(J(STRUCT).flatMap((c) => c.leaves.map((l) => l.owner)).sort(), REG.owners.map((o) => o.id).sort(), 'the 43 owners, one leaf each');
 });
 
 test('A4 lens hosts come from the lens manifests — no literal host list', () => {
@@ -102,7 +102,7 @@ test('A5 refs = the panels of kpis/logic.js · the conditions = kpiPanelOk (V7 �
   assert.deepEqual(Object.keys(rules).sort(), ['kpiDaily', 'kpiOcc', 'kpiZones']);
   /* (4) kpiPanelOk serves the page-level ref through the page's own view right — no new leaf, no new key */
   assert.match(body, /if \(!sk\) return can\(pk, 'view'\);/);
-  assert.equal(REG.registry.length, 269); assert.equal(PAGES.pages.find((p) => p.key === 'tasks').tabs, undefined);
+  assert.equal(REG.registry.length, 264 /* V7 · د5-ح: 269 − صفوفُ tpl.* الخمسة لورقة admin/ptpls المحذوفة */); assert.equal(PAGES.pages.find((p) => p.key === 'tasks').tabs, undefined);
 });
 
 /* A6 «الوحدات» (the platform-units page _plMods) was DELETED in V7 · د5-هـ (44) — toggling systems moves to the «الصلاحيات» tab; its case is deleted with it. */

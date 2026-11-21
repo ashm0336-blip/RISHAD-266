@@ -310,7 +310,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 300,
     "value": {
      "key": "task.accept",
@@ -360,7 +360,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 310,
     "value": {
      "key": "task.finish",
@@ -410,7 +410,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 320,
     "value": {
      "key": "task.reopen",
@@ -460,7 +460,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 330,
     "value": {
      "key": "task.month.lock",
@@ -510,7 +510,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 340,
     "value": {
      "key": "task.month.reopen",
@@ -560,7 +560,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 350,
     "value": {
      "key": "task.bulk.delete",
@@ -610,7 +610,7 @@
     "path": [
      "registry"
     ],
-    "after": 54,
+    "after": 49,
     "seq": 10,
     "value": {
      "key": "self.task.respond",
@@ -1032,7 +1032,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 290,
     "value": {
      "key": "task.accept",
@@ -1067,7 +1067,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 300,
     "value": {
      "key": "task.finish",
@@ -1102,7 +1102,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 310,
     "value": {
      "key": "task.reopen",
@@ -1137,7 +1137,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 320,
     "value": {
      "key": "task.month.lock",
@@ -1172,7 +1172,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 330,
     "value": {
      "key": "task.month.reopen",
@@ -1207,7 +1207,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 340,
     "value": {
      "key": "task.bulk.delete",
@@ -1242,7 +1242,7 @@
     "path": [
      "bindings"
     ],
-    "after": 54,
+    "after": 49,
     "seq": 10,
     "value": {
      "key": "self.task.respond",
@@ -1459,32 +1459,6 @@
    },
    {
     "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "keys"
-    ],
-    "after": 2,
-    "seq": 30,
-    "value": "task.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "routes"
-    ],
-    "after": 2,
-    "seq": 30,
-    "value": {
-     "cap": "tasks:view",
-     "key": "task.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
      "terminology",
      {
       "by": "term",
@@ -1657,7 +1631,7 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
+    "after": 1,
     "seq": 20,
     "value": {
      "key": "task.bulk.delete",

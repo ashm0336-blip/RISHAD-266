@@ -675,7 +675,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 0,
+    "seq": 10,
     "value": {
      "leaf": "dstats/haram",
      "act": "view",
@@ -690,7 +690,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 20,
     "value": {
      "leaf": "dstats/haram",
      "act": "add",
@@ -705,7 +705,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 2,
+    "seq": 30,
     "value": {
      "leaf": "dstats/haram",
      "act": "edit",
@@ -720,7 +720,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 3,
+    "seq": 40,
     "value": {
      "leaf": "dstats/haram",
      "act": "del",
@@ -735,7 +735,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 4,
+    "seq": 50,
     "value": {
      "leaf": "dstats/haram",
      "act": "approve",
@@ -751,7 +751,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 5,
+    "seq": 60,
     "value": {
      "leaf": "dstats/haram",
      "act": "export",
@@ -766,7 +766,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 6,
+    "seq": 70,
     "value": {
      "leaf": "dstats/nabawi",
      "act": "view",
@@ -781,7 +781,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 7,
+    "seq": 80,
     "value": {
      "leaf": "dstats/nabawi",
      "act": "add",
@@ -796,7 +796,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 8,
+    "seq": 90,
     "value": {
      "leaf": "dstats/nabawi",
      "act": "edit",
@@ -811,7 +811,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 9,
+    "seq": 100,
     "value": {
      "leaf": "dstats/nabawi",
      "act": "del",
@@ -826,7 +826,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 10,
+    "seq": 110,
     "value": {
      "leaf": "dstats/nabawi",
      "act": "approve",
@@ -842,7 +842,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 11,
+    "seq": 120,
     "value": {
      "leaf": "dstats/nabawi",
      "act": "export",
@@ -857,7 +857,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 12,
+    "seq": 130,
     "value": {
      "leaf": "dstats/anHaram",
      "act": "view",
@@ -872,7 +872,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 13,
+    "seq": 140,
     "value": {
      "leaf": "dstats/anHaram",
      "act": "add",
@@ -885,7 +885,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 14,
+    "seq": 150,
     "value": {
      "leaf": "dstats/anHaram",
      "act": "edit",
@@ -898,7 +898,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 15,
+    "seq": 160,
     "value": {
      "leaf": "dstats/anHaram",
      "act": "del",
@@ -911,7 +911,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 16,
+    "seq": 170,
     "value": {
      "leaf": "dstats/anHaram",
      "act": "approve",
@@ -924,7 +924,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 17,
+    "seq": 180,
     "value": {
      "leaf": "dstats/anHaram",
      "act": "export",
@@ -939,7 +939,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 18,
+    "seq": 190,
     "value": {
      "leaf": "dstats/anNabawi",
      "act": "view",
@@ -954,7 +954,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 19,
+    "seq": 200,
     "value": {
      "leaf": "dstats/anNabawi",
      "act": "add",
@@ -967,7 +967,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 20,
+    "seq": 210,
     "value": {
      "leaf": "dstats/anNabawi",
      "act": "edit",
@@ -980,7 +980,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 21,
+    "seq": 220,
     "value": {
      "leaf": "dstats/anNabawi",
      "act": "del",
@@ -993,7 +993,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 22,
+    "seq": 230,
     "value": {
      "leaf": "dstats/anNabawi",
      "act": "approve",
@@ -1006,7 +1006,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 23,
+    "seq": 240,
     "value": {
      "leaf": "dstats/anNabawi",
      "act": "export",
@@ -1021,7 +1021,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 24,
+    "seq": 250,
     "value": {
      "leaf": "dstats/anCmp",
      "act": "view",
@@ -1036,7 +1036,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 25,
+    "seq": 260,
     "value": {
      "leaf": "dstats/anCmp",
      "act": "add",
@@ -1049,7 +1049,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 26,
+    "seq": 270,
     "value": {
      "leaf": "dstats/anCmp",
      "act": "edit",
@@ -1062,7 +1062,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 27,
+    "seq": 280,
     "value": {
      "leaf": "dstats/anCmp",
      "act": "del",
@@ -1075,7 +1075,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 28,
+    "seq": 290,
     "value": {
      "leaf": "dstats/anCmp",
      "act": "approve",
@@ -1088,7 +1088,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 29,
+    "seq": 300,
     "value": {
      "leaf": "dstats/anCmp",
      "act": "export",
@@ -1103,7 +1103,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 30,
+    "seq": 310,
     "value": {
      "leaf": "dstats/anTime",
      "act": "view",
@@ -1118,7 +1118,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 31,
+    "seq": 320,
     "value": {
      "leaf": "dstats/anTime",
      "act": "add",
@@ -1131,7 +1131,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 32,
+    "seq": 330,
     "value": {
      "leaf": "dstats/anTime",
      "act": "edit",
@@ -1144,7 +1144,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 33,
+    "seq": 340,
     "value": {
      "leaf": "dstats/anTime",
      "act": "del",
@@ -1157,7 +1157,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 34,
+    "seq": 350,
     "value": {
      "leaf": "dstats/anTime",
      "act": "approve",
@@ -1170,7 +1170,7 @@
      "atoms"
     ],
     "after": 0,
-    "seq": 35,
+    "seq": 360,
     "value": {
      "leaf": "dstats/anTime",
      "act": "export",
@@ -1687,7 +1687,7 @@
     ],
     "key": "bassam_dstats_v1",
     "after": 5,
-    "seq": 0,
+    "seq": 10,
     "value": {
      "scope": "global",
      "cls": "explicit read permission",

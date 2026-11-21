@@ -389,9 +389,9 @@ test('the manager\'s tab: never for a plain employee (nor by the address); the p
   S.page.state.deptTab = 'perm'; v = S.render();
   assert.equal(v.p44Show, true); assert.equal(v.p44MgrV, true); assert.equal(v.p44ViewOn, false);
   assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل']);
-  /* legacy (non-enforce) mode: the manager cannot read the grants record there — no tab for him (decision for the lock stage); super keeps it */
+  /* V7 · د5-ح (القفل · البند 9): لا وضعَ قديماً — التبويبُ يُفتح للمدير بقاعدة isMgrOf وحدها، أيّاً كان وصفُ الوضع في الواجهة (كان مخفيّاً له في الوضع القديم) */
   const L = deptWorld(MGR, { mode: 'legacy' });
-  assert.equal(L.render().dTabPmOn, false, 'no tab for the manager in legacy mode');
+  assert.equal(L.render().dTabPmOn, true, 'the manager has the tab: no legacy mode any more');
   const LS = deptWorld({ id: 'TEST_ONLY_OWNER', role: 'super' }, { mode: 'legacy' });
   assert.equal(LS.render().dTabPmOn, true);
 });

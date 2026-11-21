@@ -526,7 +526,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 660,
     "value": {
      "key": "award.doc.reset",
@@ -573,8 +573,8 @@
     "path": [
      "registry"
     ],
-    "after": 29,
-    "seq": 30,
+    "after": 24,
+    "seq": 690,
     "value": {
      "key": "award.res.reopen",
      "owner": "award/res",
@@ -1316,7 +1316,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 650,
     "value": {
      "key": "award.doc.reset",
@@ -1814,7 +1814,7 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
+    "after": 1,
     "seq": 50,
     "value": {
      "key": "award.doc.reset",

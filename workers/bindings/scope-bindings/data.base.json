@@ -241,82 +241,6 @@
    }
   },
   {
-   "key": "tpl.view",
-   "owner": "admin/ptpls",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1",
-    "bassam_perm_tpls_named_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "tpl.create",
-   "owner": "admin/ptpls",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1",
-    "bassam_perm_tpls_named_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "tpl.edit",
-   "owner": "admin/ptpls",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1",
-    "bassam_perm_tpls_named_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "tpl.delete",
-   "owner": "admin/ptpls",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1",
-    "bassam_perm_tpls_named_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
    "key": "import.view",
    "owner": "admin/import",
    "type": "access",
@@ -574,24 +498,6 @@
    "dims": {
     "Global": [
      "globalScope"
-    ]
-   }
-  },
-  {
-   "key": "tpl.supervisory",
-   "owner": "admin/ptpls",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
     ]
    }
   },
@@ -1589,65 +1495,6 @@
      {
       "cap": "admin/shifts:view",
       "key": "ref.shift.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_perm_tpls_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "tpl.view",
-     "emp.view",
-     "ready.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "admin/ptpls:view",
-      "key": "tpl.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "emps/data:view",
-      "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "planning:view",
-      "key": null,
-      "source": "no-atom"
-     },
-     {
-      "cap": "planning/readiness:view",
-      "key": "ready.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_perm_tpls_named_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "tpl.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "admin/ptpls:view",
-      "key": "tpl.view",
       "source": "explicit-read"
      },
      {

@@ -239,7 +239,7 @@ async function opReadOnce(env, url, session) {
     wanted.forEach(function (key) {
       if (!eligible.has(key)||!canRead(A, key)) { denied.push(key); return; }
       var raw = reference.inputKeys[key];
-      if (A.enf && raw != null) raw = enfProjectStr(A, key, raw, enfRefs);
+      if (raw != null) raw = enfProjectStr(A, key, raw, enfRefs);
       raw = privOut(A, key, raw, reference.inputKeys);   // PRIVACY batch (019u): personal fields by purpose · old nid references as eid
       if (raw == null) absent.push(key); else resources[key] = JSON.parse(raw);
       base[key] = reference.inputRevs[key] || 0;

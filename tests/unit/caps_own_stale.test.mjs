@@ -80,7 +80,7 @@ async function save(W, who, vals) {
   return { ok: ks.every((k) => r.j.revs && r.j.revs[k]), denied: r.j.denied || {}, show: JSON.stringify(r.j).slice(0, 300) };
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'the ' + OLD_REV + ' client narrows a ceiling (pages · tabs · lenses): the trimming request is refused whole, D1 byte-identical, the page is told', needs('award', 'dstats', 'seized', 'tasks'), async () => {

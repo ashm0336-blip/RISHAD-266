@@ -74,7 +74,7 @@ test('saved custody snapshots still relink a recreated employee and expose an or
 });
 
 test('accepting the snapshot does not broaden add, edit, department or session permissions in either mode',async()=>{
-  for(const mode of ['legacy','enforce']){
+  for(const mode of ['enforce']){
     const A=await custodyWorld(mode),itemId=await createType(A),before=typed(A);
     for(const who of ['noView','manager2','employee2']){
       const result=await act(A,'issue',{itemId,holderKey:EKEYS.employee1},who);assert.equal(result.status,403,mode+': '+who);assert.equal(result.json.ok,0);assert.equal(result.json.rev,undefined);assert.deepEqual(typed(A),before);

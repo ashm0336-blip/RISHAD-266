@@ -21,7 +21,7 @@ const mk = (W, ck, o = {}) => { const s = o.s || (Date.now() + HR), e = o.e || (
 const staff = async (W, k, ek, entry) => { const S = stored(W.env, KS) || {}; const ym = ymOf(k); S[ym] = S[ym] || {}; S[ym][ek] = Object.assign({ shift: 'TST-A', rest: [], cs: '', muk: false }, entry || {}); await replaceOperationalFixture(W.env, KS, S); };
 async function upImg(W, ck, id) { const r = await W.C.api('/api/img/' + id, { method: 'PUT', cookie: ck, body: PNG, headers: { 'Content-Type': 'text/plain' } }); assert.equal(r.status, 200, 'رفعُ ' + id); return id; }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   test(M + 'AT-01 تأكيدُ الاستلام مستقلٌّ عن بدء التنفيذ (ack لا يبدأ عدّاد التنفيذ) — والصفُّ القديم كذلك', async () => {
     const W = await world({ worker: WU.file, mode }); const me = await W.login(ME.un, ME.pw);

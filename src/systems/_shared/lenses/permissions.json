@@ -8,7 +8,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 10,
     "value": {
      "key": "lens.zones.enable",
@@ -54,7 +54,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 20,
     "value": {
      "key": "lens.zones.view",
@@ -100,7 +100,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 30,
     "value": {
      "key": "lens.zones.create",
@@ -146,7 +146,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 40,
     "value": {
      "key": "lens.zones.data.edit",
@@ -192,7 +192,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 50,
     "value": {
      "key": "lens.zones.geometry.edit",
@@ -238,7 +238,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 60,
     "value": {
      "key": "lens.zones.status.change",
@@ -284,7 +284,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 70,
     "value": {
      "key": "lens.zones.delete",
@@ -330,7 +330,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 80,
     "value": {
      "key": "lens.zones.report.view",
@@ -376,7 +376,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 90,
     "value": {
      "key": "lens.paths.enable",
@@ -422,7 +422,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 100,
     "value": {
      "key": "lens.paths.view",
@@ -466,7 +466,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 110,
     "value": {
      "key": "lens.paths.create",
@@ -510,7 +510,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 120,
     "value": {
      "key": "lens.paths.edit",
@@ -554,7 +554,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 130,
     "value": {
      "key": "lens.paths.geometry.edit",
@@ -598,7 +598,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 140,
     "value": {
      "key": "lens.paths.status.change",
@@ -643,7 +643,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 150,
     "value": {
      "key": "lens.paths.delete",
@@ -687,7 +687,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 160,
     "value": {
      "key": "lens.paths.kpi.view",
@@ -731,7 +731,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 170,
     "value": {
      "key": "lens.paths.report.view",
@@ -775,7 +775,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 180,
     "value": {
      "key": "lens.gates.enable",
@@ -821,7 +821,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 190,
     "value": {
      "key": "lens.gates.view",
@@ -867,7 +867,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 200,
     "value": {
      "key": "lens.gates.create",
@@ -913,7 +913,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 210,
     "value": {
      "key": "lens.gates.edit",
@@ -959,7 +959,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 220,
     "value": {
      "key": "lens.gates.status.change",
@@ -1005,7 +1005,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 230,
     "value": {
      "key": "lens.gates.delete",
@@ -1051,7 +1051,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 240,
     "value": {
      "key": "lens.gates.kpi.view",
@@ -1097,7 +1097,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 250,
     "value": {
      "key": "lens.gates.report.view",
@@ -1143,7 +1143,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 260,
     "value": {
      "key": "lens.marks.enable",
@@ -1189,7 +1189,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 270,
     "value": {
      "key": "lens.marks.view",
@@ -1235,7 +1235,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 280,
     "value": {
      "key": "lens.marks.create",
@@ -1281,7 +1281,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 290,
     "value": {
      "key": "lens.marks.edit",
@@ -1327,7 +1327,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 300,
     "value": {
      "key": "lens.marks.geometry.edit",
@@ -1373,7 +1373,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 310,
     "value": {
      "key": "lens.marks.delete",
@@ -1419,7 +1419,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 320,
     "value": {
      "key": "lens.marks.kpi.view",
@@ -1465,7 +1465,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 330,
     "value": {
      "key": "lens.marks.report.view",
@@ -1511,7 +1511,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 340,
     "value": {
      "key": "lens.dist.enable",
@@ -1557,7 +1557,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 350,
     "value": {
      "key": "lens.dist.view",
@@ -1603,7 +1603,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 360,
     "value": {
      "key": "lens.dist.assign.edit",
@@ -1649,7 +1649,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 370,
     "value": {
      "key": "lens.dist.redistribute",
@@ -1695,7 +1695,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 380,
     "value": {
      "key": "lens.dist.approve",
@@ -1741,7 +1741,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 390,
     "value": {
      "key": "lens.dist.report.view",
@@ -1787,7 +1787,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 400,
     "value": {
      "key": "lens.dens.enable",
@@ -1833,7 +1833,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 410,
     "value": {
      "key": "lens.dens.view",
@@ -1879,7 +1879,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 420,
     "value": {
      "key": "lens.dens.threshold.configure",
@@ -1925,7 +1925,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 430,
     "value": {
      "key": "lens.dens.report.view",
@@ -1971,7 +1971,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 440,
     "value": {
      "key": "lens.zones.indicators.view",
@@ -2019,7 +2019,7 @@
     "path": [
      "registry"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 450,
     "value": {
      "key": "lens.dens.indicators.view",
@@ -2067,8 +2067,8 @@
     "path": [
      "registry"
     ],
-    "after": 29,
-    "seq": 10,
+    "after": 24,
+    "seq": 670,
     "value": {
      "key": "lens.marks.status.change",
      "owner": "lens.marks",
@@ -2113,7 +2113,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 10,
     "value": {
      "key": "lens.dist.need.edit",
@@ -2154,7 +2154,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 20,
     "value": {
      "key": "lens.dens.reading.record",
@@ -2197,7 +2197,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 30,
     "value": {
      "key": "lens.gates.geometry.edit",
@@ -2237,7 +2237,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 40,
     "value": {
      "key": "ref.zone.type.view",
@@ -2276,7 +2276,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 50,
     "value": {
      "key": "ref.zone.type.create",
@@ -2315,7 +2315,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 60,
     "value": {
      "key": "ref.zone.type.edit",
@@ -2354,7 +2354,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 70,
     "value": {
      "key": "ref.zone.type.delete",
@@ -2393,7 +2393,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 80,
     "value": {
      "key": "ref.gate.type.view",
@@ -2432,7 +2432,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 90,
     "value": {
      "key": "ref.gate.type.create",
@@ -2471,7 +2471,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 100,
     "value": {
      "key": "ref.gate.type.edit",
@@ -2510,7 +2510,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 110,
     "value": {
      "key": "ref.gate.type.delete",
@@ -2549,7 +2549,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 120,
     "value": {
      "key": "ref.mark.kind.view",
@@ -2588,7 +2588,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 130,
     "value": {
      "key": "ref.mark.kind.create",
@@ -2627,7 +2627,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 140,
     "value": {
      "key": "ref.mark.kind.edit",
@@ -2666,7 +2666,7 @@
     "path": [
      "registry"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 150,
     "value": {
      "key": "ref.mark.kind.delete",
@@ -2705,7 +2705,7 @@
     "path": [
      "owners"
     ],
-    "after": 17,
+    "after": 16,
     "seq": 10,
     "value": {
      "id": "lens.zones",
@@ -2720,7 +2720,7 @@
     "path": [
      "owners"
     ],
-    "after": 17,
+    "after": 16,
     "seq": 20,
     "value": {
      "id": "lens.paths",
@@ -2735,7 +2735,7 @@
     "path": [
      "owners"
     ],
-    "after": 17,
+    "after": 16,
     "seq": 30,
     "value": {
      "id": "lens.gates",
@@ -2750,7 +2750,7 @@
     "path": [
      "owners"
     ],
-    "after": 17,
+    "after": 16,
     "seq": 40,
     "value": {
      "id": "lens.marks",
@@ -2765,7 +2765,7 @@
     "path": [
      "owners"
     ],
-    "after": 17,
+    "after": 16,
     "seq": 50,
     "value": {
      "id": "lens.dist",
@@ -2780,7 +2780,7 @@
     "path": [
      "owners"
     ],
-    "after": 17,
+    "after": 16,
     "seq": 60,
     "value": {
      "id": "lens.dens",
@@ -2937,7 +2937,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 10,
     "value": {
      "key": "lens.zones.enable",
@@ -2962,7 +2962,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 20,
     "value": {
      "key": "lens.zones.view",
@@ -2997,7 +2997,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 30,
     "value": {
      "key": "lens.zones.create",
@@ -3032,7 +3032,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 40,
     "value": {
      "key": "lens.zones.data.edit",
@@ -3067,7 +3067,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 50,
     "value": {
      "key": "lens.zones.geometry.edit",
@@ -3102,7 +3102,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 60,
     "value": {
      "key": "lens.zones.status.change",
@@ -3137,7 +3137,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 70,
     "value": {
      "key": "lens.zones.delete",
@@ -3172,7 +3172,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 80,
     "value": {
      "key": "lens.paths.enable",
@@ -3197,7 +3197,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 90,
     "value": {
      "key": "lens.paths.view",
@@ -3226,7 +3226,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 100,
     "value": {
      "key": "lens.paths.create",
@@ -3255,7 +3255,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 110,
     "value": {
      "key": "lens.paths.edit",
@@ -3284,7 +3284,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 120,
     "value": {
      "key": "lens.paths.geometry.edit",
@@ -3313,7 +3313,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 130,
     "value": {
      "key": "lens.paths.status.change",
@@ -3345,7 +3345,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 140,
     "value": {
      "key": "lens.paths.delete",
@@ -3374,7 +3374,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 150,
     "value": {
      "key": "lens.gates.enable",
@@ -3399,7 +3399,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 160,
     "value": {
      "key": "lens.gates.view",
@@ -3434,7 +3434,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 170,
     "value": {
      "key": "lens.gates.create",
@@ -3469,7 +3469,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 180,
     "value": {
      "key": "lens.gates.edit",
@@ -3504,7 +3504,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 190,
     "value": {
      "key": "lens.gates.status.change",
@@ -3539,7 +3539,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 200,
     "value": {
      "key": "lens.gates.delete",
@@ -3574,7 +3574,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 210,
     "value": {
      "key": "lens.marks.enable",
@@ -3599,7 +3599,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 220,
     "value": {
      "key": "lens.marks.view",
@@ -3634,7 +3634,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 230,
     "value": {
      "key": "lens.marks.create",
@@ -3669,7 +3669,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 240,
     "value": {
      "key": "lens.marks.edit",
@@ -3704,7 +3704,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 250,
     "value": {
      "key": "lens.marks.geometry.edit",
@@ -3739,7 +3739,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 260,
     "value": {
      "key": "lens.marks.delete",
@@ -3774,7 +3774,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 270,
     "value": {
      "key": "lens.dist.enable",
@@ -3799,7 +3799,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 280,
     "value": {
      "key": "lens.dist.view",
@@ -3834,7 +3834,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 290,
     "value": {
      "key": "lens.dist.assign.edit",
@@ -3869,7 +3869,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 300,
     "value": {
      "key": "lens.dens.enable",
@@ -3894,7 +3894,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 310,
     "value": {
      "key": "lens.dens.view",
@@ -3929,7 +3929,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 320,
     "value": {
      "key": "lens.dens.threshold.configure",
@@ -3965,7 +3965,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 330,
     "value": {
      "key": "lens.zones.indicators.view",
@@ -4000,7 +4000,7 @@
     "path": [
      "bindings"
     ],
-    "after": 15,
+    "after": 11,
     "seq": 340,
     "value": {
      "key": "lens.dens.indicators.view",
@@ -4035,8 +4035,8 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
-    "seq": 10,
+    "after": 24,
+    "seq": 660,
     "value": {
      "key": "lens.marks.status.change",
      "owner": "lens.marks",
@@ -4070,7 +4070,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 10,
     "value": {
      "key": "lens.dist.need.edit",
@@ -4096,7 +4096,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 20,
     "value": {
      "key": "lens.dens.reading.record",
@@ -4128,7 +4128,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 30,
     "value": {
      "key": "lens.gates.geometry.edit",
@@ -4151,7 +4151,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 40,
     "value": {
      "key": "ref.zone.type.view",
@@ -4171,7 +4171,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 50,
     "value": {
      "key": "ref.zone.type.create",
@@ -4191,7 +4191,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 60,
     "value": {
      "key": "ref.zone.type.edit",
@@ -4211,7 +4211,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 70,
     "value": {
      "key": "ref.zone.type.delete",
@@ -4231,7 +4231,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 80,
     "value": {
      "key": "ref.gate.type.view",
@@ -4251,7 +4251,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 90,
     "value": {
      "key": "ref.gate.type.create",
@@ -4271,7 +4271,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 100,
     "value": {
      "key": "ref.gate.type.edit",
@@ -4291,7 +4291,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 110,
     "value": {
      "key": "ref.gate.type.delete",
@@ -4311,7 +4311,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 120,
     "value": {
      "key": "ref.mark.kind.view",
@@ -4331,7 +4331,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 130,
     "value": {
      "key": "ref.mark.kind.create",
@@ -4351,7 +4351,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 140,
     "value": {
      "key": "ref.mark.kind.edit",
@@ -4371,7 +4371,7 @@
     "path": [
      "bindings"
     ],
-    "after": 33,
+    "after": 28,
     "seq": 150,
     "value": {
      "key": "ref.mark.kind.delete",
@@ -4432,8 +4432,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 10,
+    "after": 0,
+    "seq": 300,
     "value": {
      "key": "lens.zones.create",
      "res": "",
@@ -4451,8 +4451,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 20,
+    "after": 0,
+    "seq": 310,
     "value": {
      "key": "lens.zones.data.edit",
      "res": "",
@@ -4470,8 +4470,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 30,
+    "after": 0,
+    "seq": 320,
     "value": {
      "key": "lens.zones.geometry.edit",
      "res": "",
@@ -4489,8 +4489,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 40,
+    "after": 0,
+    "seq": 330,
     "value": {
      "key": "lens.zones.status.change",
      "res": "",
@@ -4508,8 +4508,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 50,
+    "after": 0,
+    "seq": 340,
     "value": {
      "key": "lens.zones.delete",
      "res": "",
@@ -4527,8 +4527,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 60,
+    "after": 0,
+    "seq": 350,
     "value": {
      "key": "lens.paths.create",
      "res": "",
@@ -4546,8 +4546,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 70,
+    "after": 0,
+    "seq": 360,
     "value": {
      "key": "lens.paths.edit",
      "res": "",
@@ -4565,8 +4565,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 80,
+    "after": 0,
+    "seq": 370,
     "value": {
      "key": "lens.paths.geometry.edit",
      "res": "",
@@ -4584,8 +4584,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 90,
+    "after": 0,
+    "seq": 380,
     "value": {
      "key": "lens.paths.status.change",
      "res": "",
@@ -4603,8 +4603,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 100,
+    "after": 0,
+    "seq": 390,
     "value": {
      "key": "lens.paths.delete",
      "res": "",
@@ -4622,8 +4622,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 110,
+    "after": 0,
+    "seq": 400,
     "value": {
      "key": "lens.gates.create",
      "res": "",
@@ -4641,8 +4641,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 120,
+    "after": 0,
+    "seq": 410,
     "value": {
      "key": "lens.gates.edit",
      "res": "",
@@ -4660,8 +4660,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 130,
+    "after": 0,
+    "seq": 420,
     "value": {
      "key": "lens.gates.geometry.edit",
      "res": "",
@@ -4679,8 +4679,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 140,
+    "after": 0,
+    "seq": 430,
     "value": {
      "key": "lens.gates.status.change",
      "res": "",
@@ -4698,8 +4698,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 150,
+    "after": 0,
+    "seq": 440,
     "value": {
      "key": "lens.gates.delete",
      "res": "",
@@ -4717,8 +4717,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 160,
+    "after": 0,
+    "seq": 450,
     "value": {
      "key": "lens.marks.create",
      "res": "",
@@ -4736,8 +4736,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 170,
+    "after": 0,
+    "seq": 460,
     "value": {
      "key": "lens.marks.edit",
      "res": "",
@@ -4755,8 +4755,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 180,
+    "after": 0,
+    "seq": 470,
     "value": {
      "key": "lens.marks.geometry.edit",
      "res": "",
@@ -4774,8 +4774,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 190,
+    "after": 0,
+    "seq": 480,
     "value": {
      "key": "lens.marks.status.change",
      "res": "",
@@ -4793,8 +4793,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 200,
+    "after": 0,
+    "seq": 490,
     "value": {
      "key": "lens.marks.delete",
      "res": "",
@@ -4812,8 +4812,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 210,
+    "after": 0,
+    "seq": 500,
     "value": {
      "key": "lens.dist.assign.edit",
      "res": " (+ mvLog)",
@@ -4831,8 +4831,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 220,
+    "after": 0,
+    "seq": 510,
     "value": {
      "key": "lens.dist.need.edit",
      "res": "",
@@ -4850,8 +4850,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 230,
+    "after": 0,
+    "seq": 520,
     "value": {
      "key": "lens.dens.reading.record",
      "res": "",
@@ -4869,8 +4869,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 240,
+    "after": 0,
+    "seq": 530,
     "value": {
      "key": "lens.dens.threshold.configure",
      "res": "",

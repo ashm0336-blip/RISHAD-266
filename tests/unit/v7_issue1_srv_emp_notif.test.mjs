@@ -82,7 +82,7 @@ const NEW = (n) => ({ eid: 'tst_e_new' + n, name: 'TEST_ONLY · جديد ' + n, 
 const addOne = (v) => v.concat([NEW(1)]);
 const DM1 = 'TEST_ONLY · مدير الإدارة ١';
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   /* ── b · recipients unchanged (runs on e34fa23 too, see header) ── */
   test('V7 #1 srv · ' + mode + ': each employee notification reaches exactly the accounts that received it on e34fa23', async () => {
     const x = await mk(mode), want = RECIPIENTS[mode];
@@ -230,7 +230,7 @@ test('V7 #1 srv: the browser observer has no employee-register watcher and emits
 });
 
 /* ── second independent review of 9a37718 ── */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('V7 #1 srv · ' + mode + ': a stale tab\'s batch [st_lock, emp_edit] keeps its st_lock and raises no «denied»; a very long employee name is bounded in the notice', async () => {
     const x = await mk(mode), before = x.denied();
     const r = await x.api('tst_dm1', '/api/notifications/act', { method: 'POST', body: { uid: 'tst_dm1', op: 'emit-batch', events: [{ type: 'st_lock', dept: D, vars: { 'الشهر': 'TEST_ONLY' } }, { type: 'emp_edit', dept: D, own: ['tst_e_emp1'], vars: {} }] } });

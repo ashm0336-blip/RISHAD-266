@@ -5,7 +5,7 @@
    (b) split requests: the narrowing accepted first, then a second request that drops latent items (sheet leaf · lens · grant key · template
        leaf/lens/key · container template rewritten without its switched-off tab) ⇒ refused, D1 byte-identical
    (c) a filtered (privacy-projected) view of a manager keeps latent items when it saves; the same view without them is refused
-   (d) explicit deletions stay allowed: a whole sheet, lens list, grant entry, template; a manager's in-ceiling leaf; the system administrator's
+   (d) explicit deletions stay allowed: a whole sheet, lens list, grant entry (V7 · د5-ح: whole template removed — no writer); a manager's in-ceiling leaf; the system administrator's
        clearLatent request. TEST_ONLY. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -77,7 +77,7 @@ async function scene(mode) {
   return Object.assign(W, { aw });
 }
 /* V7 · د5-هـ (44): the templates editor (tpOpen · tpSave) is deleted — templates became roles (perm44-roles); its re-save step is gone */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(a) narrow → re-save sheet, lens list and grants → widen: everything as it was (the stored templates are untouched)', needs('award', 'tasks'), async () => {
@@ -111,11 +111,14 @@ for (const mode of ['legacy', 'enforce']) {
       'a template switched-off lens': () => { const T = cp(stored(W.env, TPK)); T[0].lens = ['zones']; return { [TPK]: T }; },
       'a container template rewritten without its switched-off tab': () => { const T = cp(stored(W.env, TPK)); T[1].perms = { 'emps/data': ['view'], tasks: ['view'] }; return { [TPK]: T }; }
     };
+    /* V7 · د5-ح: سجلُّ القوالب لا كاتبَ له في الخادم — يُرفض «unknown» قبل حارس الكامن؛ يُقرأ للترحيل ويُتقاعد بـ /api/authz-migrate (tpls-retire) */
+    const TPL_TRIES = new Set(['a template leaf outside the ceiling', 'a template switched-off lens', 'a container template rewritten without its switched-off tab', 'a template key outside the ceiling']);
     if (mode === 'enforce') tries['a grant key outside the ceiling'] = () => { const G = cp(stored(W.env, GK)); G.emp[EK].plus = G.emp[EK].plus.slice(1); return { [GK]: G }; };
     if (mode === 'enforce') tries['a template key outside the ceiling'] = () => { const T = cp(stored(W.env, TPK)); T[0].keys24 = ['task.view']; return { [TPK]: T }; };
     for (const [n, f] of Object.entries(tries)) {
       const r = await save(W, 'su', f());
       assert.ok(!r.ok, n + ' — accepted: ' + r.show);
+      if (TPL_TRIES.has(n)) { assert.equal(r.why, 'unknown', n); continue; }
       assert.equal(r.why, 'perms', n); assert.match(r.detail, /^latent: .* \| لم يُحفظ شيء/, n);
     }
     assert.equal(all(W), s0, 'nothing written');
@@ -147,8 +150,10 @@ for (const mode of ['legacy', 'enforce']) {
     v = await got(W, 'dm1', KP); delete v.emps[D][EK];
     assert.ok((await save(W, 'su', { [KP]: Object.assign(cp(stored(W.env, KP)), { emps: Object.assign(cp(stored(W.env, KP).emps), { [D]: v.emps[D] }) }) })).ok, 'a sheet holding latent leaves, whole');
     if (mode === 'enforce') { const G = cp(stored(W.env, GK)); delete G.emp[EK]; const rg = await save(W, 'su', { [GK]: G }); assert.ok(rg.ok, 'a whole grant entry — ' + rg.show); }   /* explicit grants: enforce only */
-    const T = cp(stored(W.env, TPK)).slice(1);
-    assert.ok((await save(W, 'su', { [TPK]: T })).ok, 'a whole template');
+    /* V7 · د5-ح: كانت «a whole template» مقبولةً لمدير النظام — حُذف كاتبُ القوالب؛ لا يحذفها أحدٌ بالحفظ، والسجلُّ المخزَّن يبقى كما هو للترحيل */
+    const T0 = JSON.stringify(stored(W.env, TPK)), T = cp(stored(W.env, TPK)).slice(1), rt = await save(W, 'su', { [TPK]: T });
+    assert.ok(!rt.ok && rt.why === 'unknown', 'the retired templates record has no writer — ' + rt.show);
+    assert.equal(JSON.stringify(stored(W.env, TPK)), T0, 'the stored templates are untouched');
     v = await got(W, 'dm1', KP); delete v.emps[D].tst_e_sup1['irshad/records']; v.emps[D].tst_e_imp = Object.assign({}, v.emps[D].tst_e_imp);
     P = cp(stored(W.env, KP)); P.emps[D].tst_e_sup1['award/res'] = ['view']; assert.ok((await save(W, 'su', { [KP]: P }, { clearLatent: true })).ok, 'setup: a latent leaf');
     v = await got(W, 'dm1', KP); delete v.emps[D].tst_e_sup1['award/res'];

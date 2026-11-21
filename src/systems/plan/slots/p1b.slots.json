@@ -8,10 +8,6 @@
   "order": 10,
   "text": "  'bassam_plan_v1':            ['plan'@@SYS:read.reader.daily@@@@SYS:read.reader.dreport@@, 'emps/data'],\n  'bassam_zone_opts_v1':       ['plan'@@SYS:read.reader.daily@@],\n  'bassam_gate_opts_v1':       ['plan'@@SYS:read.reader.daily@@],\n  'bassam_mark_kinds_v1':      ['plan'@@SYS:read.reader.daily@@],\n"
  },
- "read.map.reader.plan.1": {
-  "order": 10,
-  "text": ", 'plan'"
- },
  "read.map.reader.plan.2": {
   "order": 10,
   "text": ", 'plan'"
@@ -35,10 +31,6 @@
  "approval.shape.plan": {
   "order": 10,
   "file": "slots/approval.shape.plan.frag"
- },
- "empGone.refs.plan": {
-  "order": 10,
-  "text": "rn !== 'bassam_plan_v1' && "
  },
  "deptStore.pageKeys.plan": {
   "order": 10,

@@ -22,7 +22,7 @@ async function put(w, ck, list) {
 const listOf = async (w, ck) => JSON.parse((await w.C.api('/api/get?keys=' + KU, { cookie: ck })).j.keys[KU].v);
 const dep = (id, un) => ({ id, un, ph: PH('583914', id), name: 'TEST_ONLY · حساب إدارة', role: 'dept', deptId: 'tst_d1', dis: 0, test: 'TEST_ONLY' });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] F19 · حسابُ «الإدارة» (dept) لا يُنشأ ولا يُغيَّر إليه ولا يُعدَّل — لأحدٍ ولو مدير النظام · والقائمُ كما خُزِّن يُحفظ ويُحذف', async () => {
     const w = await world({ mode }), su = w.su.ck;
     let r = await put(w, su, (await listOf(w, su)).concat([dep('x_dep1', '1888888891')]));

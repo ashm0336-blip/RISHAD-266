@@ -44,12 +44,7 @@ function enfVia(A, k, rn, d, curVal, newVal, ctx) {
     if (enfHeld(A, d, 'staff.callsign.assign')) return { keys: ['staff.callsign.assign'], tag: 'via:CS_ONLY(staff)' };
     return null;
   }
-  /* SEED_ONLY: بذرُ قوالب الصلاحيات الافتراضية لأول مرّة (القائمةُ فارغة) من صفحة التقرير */
-  if (rn === 'bassam_perm_tpls_v1' && diffs().length && diffs().every(SEED_ONLY)) {
-    var sk = ['tpl.create', 'report.create', 'report.edit'];
-    for (i = 0; i < sk.length; i++) if (enfHeld(A, d, sk[i])) return { keys: [sk[i]], tag: 'via:SEED_ONLY' };
-    return null;
-  }
+
   /* تبعةُ إعادة تسمية الوردية (عمليةٌ محمية): حقلُ shift وحده من الاسم القديم إلى الجديد، ولا يبقى صفٌّ على القديم — بمفتاح ref.shift.edit */
   if (ctx && ctx.shRen && srvBusAccepts('shifts.renamed.cascade@1', rn, diffs, newVal, ctx))
     return enfHeld(A, d, 'ref.shift.edit') ? { keys: ['ref.shift.edit'], tag: 'cascade:shiftRename' } : null;   /* V7 · د5-د: مالكُ المورد المتأثّر يقرّر أنها تبعةٌ تامّة (ناقل الخادم) */

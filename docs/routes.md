@@ -18,7 +18,7 @@
 | `#/award` | جائزة التميز | `award` | `award` | P.can("award","view") ⇐ award.doc.view، award.new.view، award.res.view | في القائمة · العنوانُ يحمل التبويب #/award/<تبويب> | `new` · `res` · `doc` |
 | `#/links` | مواقع ذات صلة | `links` | `shell (src/layouts)` | ورقةُ الصفحة «links» (P.can("links","view")) — links.view | رابطٌ في التذييل/القائمة الثانوية | — |
 | `#/help` | المساعدة | `help` | `shell (src/layouts)` | ورقةُ الصفحة «help» (P.can("help","view")) — help.view | رابطٌ في التذييل/القائمة الثانوية | — |
-| `#/admin` | الإعدادات | `admin` | `admin` | P.can("admin","view") ⇐ audit.view، backup.view، import.view، tpl.view | رابطٌ في التذييل/القائمة الثانوية · العنوانُ يحمل التبويب #/admin/<تبويب> | `backup` · `oplog` · `shifts` · `ptpls` · `import` |
+| `#/admin` | الإعدادات | `admin` | `admin` | P.can("admin","view") ⇐ audit.view، backup.view، import.view | رابطٌ في التذييل/القائمة الثانوية · العنوانُ يحمل التبويب #/admin/<تبويب> | `backup` · `oplog` · `shifts` · `import` |
 | `#/profile` | صفحتي | `profile` | `profile` | كلُّ صاحب جلسة (الصفحةُ الشخصية · المرتدُّ الأخير) | خارج القائمة — من قائمة المستخدم | — |
 | `#/sysadmin` | مركز إدارة رشاد | `sysadmin` | `admin` | مسؤول المنصة وحده (isSuper) — وإلا لا يُفتح | من القائمة الجانبية «🛡 مركز إدارة رشاد» · #/sysadmin/<تبويب> | — |
 | `#/kpis` | مؤشرات الإدارة | `kpis` | `kpis` | من يملك ورقةً من أوراق لوحاتها (navLeaves("kpis") · kpiPanelOk) — مدير النظام دائماً | حاويةُ عرضٍ في القائمة (navOrder) | — |

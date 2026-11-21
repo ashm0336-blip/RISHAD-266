@@ -16,8 +16,10 @@ const ROUTE = { award: '/api/award?dept=TEST_ONLY_d1', dstats: '/api/dstats', ir
 
 test('د2-ب · الحذف: الخادمُ بالأنظمة الحاضرة [' + (SYSTEMS.join(' · ') || 'لا نظام') + '] يجيب على الطرق الأساسية، ومساراتُ الغائب 404', { timeout: 120000 }, async () => {
   const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'rm-')), f = path.join(dir, 'w.mjs');
-  fs.writeFileSync(f, fs.readFileSync(WORKER, 'utf8'));
-  let W; try { W = (await import(pathToFileURL(f).href)).default; } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  /* V7 · د5-ح: تقريرُ السجلّ (المسارُ القديم لمدير النظام) حُذف — يُقرأ السجلُّ وروابطُه وفحصُ ربط القراءة من الخادم المولَّد نفسِه:
+     النسخةُ المؤقتة تُصدِّر كائناتِه (KIVO_REGISTRY · KIVO_SCOPE · KIVO_GUARDS · permv4ReadBindingCheck) بسطرٍ يُلحق بها وحدها */
+  fs.writeFileSync(f, fs.readFileSync(WORKER, 'utf8') + '\nexport { KIVO_REGISTRY as __REG, KIVO_SCOPE as __SCOPE, KIVO_GUARDS as __GUARDS, permv4ReadBindingCheck as __RBC };\n');
+  let W, M; try { M = await import(pathToFileURL(f).href); W = M.default; } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   const env = makeTestEnv(), errs = []; let cookie = '';
   const log = console.log; console.log = (x) => { try { const j = JSON.parse(x); if (j.ev === 'worker-error' || j.ev === 'save-failed') errs.push(j.p + ': ' + j.err); } catch (e) {} };
   const call = async (p, o = {}) => { const a = await W.fetch(new Request('https://t.example' + p, Object.assign({ headers: Object.assign({ 'Content-Type': 'application/json' }, cookie ? { Cookie: cookie } : {}) }, o)), env, { waitUntil() {}, passThroughOnException() {} }); const t = await a.text(); const sc = a.headers.get('set-cookie'); if (sc) cookie = sc.split(';')[0]; let j = null; try { j = JSON.parse(t); } catch (e) {} return { s: a.status, j, t: t.slice(0, 200) }; };
@@ -36,19 +38,21 @@ test('د2-ب · الحذف: الخادمُ بالأنظمة الحاضرة [' + 
     r = await call('/api/backup/restore?scope=full&uid=' + encodeURIComponent(uid)); assert.equal(r.s, 200, 'مرجعُ النسخة والاستعادة ' + r.t);
     const base = r.j.base || {};
     for (const [k, name] of [['dstats', 'dailyStats'], ['irshad', 'irshad'], ['seized', 'seized'], ['award', 'awards'], ['custody', 'custody']]) assert.equal(Object.prototype.hasOwnProperty.call(base, name), SYSTEMS.includes(k), 'أساسُ الاستعادة يذكر مجال ' + name + ' بحضور نظامه فقط');
-    /* د3: تقريرُ الصلاحيات — السجلُّ المجموع يصحّ في الخادم، وأعدادُه = المحسوب من السجل المولَّد، وروابطُ النطاق والحراسة بعدد الحاضر */
-    r = await call('/api/permv2'); assert.equal(r.s, 200, 'permv2 ' + r.t.slice(0, 200));
+    /* د3: تقريرُ الصلاحيات — السجلُّ المجموع يصحّ في الخادم، وأعدادُه = المحسوب من السجل المولَّد، وروابطُ النطاق والحراسة بعدد الحاضر.
+       V7 · د5-ح: من كائنات الخادم المولَّد نفسِه (لا مسارَ تقريرٍ بعد اليوم — المسارُ القديم 404 كأيّ مسارٍ مجهول) */
+    r = await call('/api/permv2'); assert.equal(r.s, 404, 'تقريرُ السجلّ القديم حُذف ' + r.t.slice(0, 200));
     const REG = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry-v24.9.json'), 'utf8')), act = REG.registry.filter((e) => e.status === 'active');
-    assert.equal(r.j.validation && r.j.validation.ok, true, 'validate في الخادم: ' + JSON.stringify(r.j.validation && r.j.validation.errors));
-    assert.deepEqual(r.j.counts, REG.counts, 'أعدادُ الخادم = أعدادُ السجل المولَّد');
-    assert.equal(r.j.counts.securityActive, act.length); assert.equal(r.j.counts.owners, REG.owners.length); assert.equal(r.j.counts.atoms, REG.atoms.length);
-    assert.equal(r.j.counts.reserved, REG.registry.length - act.length); assert.equal(r.j.counts.reference, REG.registry.filter((e) => e.key.startsWith('ref.')).length);
-    assert.equal(r.j.scope.bindings, act.length, 'روابطُ النطاق = المفاتيحُ النشطة'); assert.equal(r.j.scope.counts.keys, act.length);
-    assert.equal(r.j.scope.validation && r.j.scope.validation.ok, true, 'تحقّقُ النطاق: ' + JSON.stringify(r.j.scope.validation).slice(0, 400));
-    assert.equal(r.j.scope.readBindingCheck && r.j.scope.readBindingCheck.ok, true, 'تحقّقُ ربط القراءة: ' + JSON.stringify(r.j.scope.readBindingCheck).slice(0, 400));
-    assert.equal(r.j.guards.bindings, act.filter((e) => e.guard.status === 'to-bind').length, 'روابطُ الحراسة = المفاتيحُ التي حارسُها «للربط»');
-    assert.equal(r.j.guards.counts.bindings, r.j.guards.bindings);
-    assert.equal(r.j.guards.counts.coveredResources, r.j.guards.covers.length, 'المواردُ التي لها مصنِّف = المعدودُ (نصيبُ القاعدة + الأنظمة الحاضرة)');
+    const V = M.__REG.validate(), SV = M.__SCOPE.validate(), RBC = M.__RBC(), G = M.__GUARDS;
+    assert.equal(V && V.ok, true, 'validate في الخادم: ' + JSON.stringify(V && V.errors));
+    assert.deepEqual(M.__REG.counts, REG.counts, 'أعدادُ الخادم = أعدادُ السجل المولَّد');
+    assert.equal(M.__REG.counts.securityActive, act.length); assert.equal(M.__REG.counts.owners, REG.owners.length); assert.equal(M.__REG.counts.atoms, REG.atoms.length);
+    assert.equal(M.__REG.counts.reserved, REG.registry.length - act.length); assert.equal(M.__REG.counts.reference, REG.registry.filter((e) => e.key.startsWith('ref.')).length);
+    assert.equal(M.__SCOPE.bindings.length, act.length, 'روابطُ النطاق = المفاتيحُ النشطة'); assert.equal(M.__SCOPE.counts.keys, act.length);
+    assert.equal(SV && SV.ok, true, 'تحقّقُ النطاق: ' + JSON.stringify(SV).slice(0, 400));
+    assert.equal(RBC && RBC.ok, true, 'تحقّقُ ربط القراءة: ' + JSON.stringify(RBC).slice(0, 400));
+    assert.equal(G.bindings.length, act.filter((e) => e.guard.status === 'to-bind').length, 'روابطُ الحراسة = المفاتيحُ التي حارسُها «للربط»');
+    assert.equal(G.counts.bindings, G.bindings.length);
+    assert.equal(G.counts.coveredResources, G.covers.length, 'المواردُ التي لها مصنِّف = المعدودُ (نصيبُ القاعدة + الأنظمة الحاضرة)');
     r = await call('/'); assert.equal(r.s, 200, 'الغلاف');
     for (const k of ALL) { r = await call(ROUTE[k]); assert.equal(r.s, SYSTEMS.includes(k) ? 200 : 404, ROUTE[k] + ' ← ' + r.s + ' ' + r.t); }
   } finally { console.log = log; }

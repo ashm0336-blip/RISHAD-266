@@ -16,13 +16,13 @@ async function put(env, k, v) {
 }
 const server = (env, k) => { const r = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k); return r.length ? r.map(x => x.v).join('') : null; };
 // Keep 96 live KV resources; custody and Irshad have typed APIs/invalidation.
-const RES = ['bassam_perm_tpls_v1', 'bassam_perm_tpls_named_v1', 'bassam_last_export_v1', 'bassam_perm_help_v1', 'bassam_perm_leaf_v1', 'bassam_perm_admsubs_v2', 'bassam_perm_mgr_explicit_v1', 'bassam_grants_v1'];   /* schema 10: dept resources still served by the generic KV queue (operations/seized/award moved to typed APIs) */
+const RES = ['bassam_last_export_v1', 'bassam_perm_help_v1', 'bassam_perm_leaf_v1', 'bassam_perm_admsubs_v2', 'bassam_perm_mgr_explicit_v1', 'bassam_grants_v1'];   /* schema 10: dept resources still served by the generic KV queue (operations/seized/award moved to typed APIs) */
 
-for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-1: 96 مفتاحاً تغيّرت عند زميل ⇒ كلُّها تصل التبويبَ المفتوح (لا تتوقف عند 80)', async () => {
+for (const mode of ['enforce']) test('[' + mode + '] D-1: 96 مفتاحاً تغيّرت عند زميل ⇒ كلُّها تصل التبويبَ المفتوح (لا تتوقف عند 80)', async () => {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
-  const depts = Array.from({ length: 12 }, (_, i) => ({ id: 'dz' + i, name: 'TEST_ONLY إدارة ' + i }));
+  const depts = Array.from({ length: 16 }, (_, i) => ({ id: 'dz' + i, name: 'TEST_ONLY إدارة ' + i }));   /* V7 · د5-ح: موردا القوالب حُذفا — 16 × 6 = 96 */
   assert.equal((await C.save(su.ck, { bassam_depts_v1: JSON.stringify(depts) })).j.ok, 1);
   const keys = []; for (const d of depts) for (const r of RES) keys.push('bsdept:' + d.id + ':' + r);
   for (const k of keys) await put(env, k, JSON.stringify({ test: 'TEST_ONLY', gen: 0 }));

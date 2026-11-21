@@ -92,10 +92,6 @@
   "order": 10,
   "text": "'report.view'"
  },
- "priv.gender.leaves.dreport": {
-  "order": 10,
-  "text": "'dreport:view'"
- },
  "priv.tokRes.dreport": {
   "order": 10,
   "text": ", bassam_dreport_v1: 1"

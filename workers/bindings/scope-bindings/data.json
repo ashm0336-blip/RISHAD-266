@@ -2137,82 +2137,6 @@
    }
   },
   {
-   "key": "tpl.view",
-   "owner": "admin/ptpls",
-   "type": "access",
-   "g": "exists",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1",
-    "bassam_perm_tpls_named_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "tpl.create",
-   "owner": "admin/ptpls",
-   "type": "create",
-   "g": "exists",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1",
-    "bassam_perm_tpls_named_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "tpl.edit",
-   "owner": "admin/ptpls",
-   "type": "edit",
-   "g": "exists",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1",
-    "bassam_perm_tpls_named_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
-   "key": "tpl.delete",
-   "owner": "admin/ptpls",
-   "type": "delete",
-   "g": "exists",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1",
-    "bassam_perm_tpls_named_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
    "key": "import.view",
    "owner": "admin/import",
    "type": "access",
@@ -5267,24 +5191,6 @@
    }
   },
   {
-   "key": "tpl.supervisory",
-   "owner": "admin/ptpls",
-   "type": "decision",
-   "g": "to-bind",
-   "res": "bassam_perm_tpls_v1",
-   "resources": [
-    "bassam_perm_tpls_v1"
-   ],
-   "dims": {
-    "Department": [
-     "keyDept"
-    ],
-    "Branch": [
-     "branchCeiling"
-    ]
-   }
-  },
-  {
    "key": "lens.marks.status.change",
    "owner": "lens.marks",
    "type": "operation",
@@ -6460,8 +6366,8 @@
   }
  },
  "counts": {
-  "keys": 255,
-  "pairs": 869,
+  "keys": 250,
+  "pairs": 859,
   "dims": 10,
   "evaluators": 10,
   "resources": 17,
@@ -6485,13 +6391,13 @@
     "na": 0
    },
    "Department": {
-    "keys": 218,
-    "evaluator": 218,
+    "keys": 213,
+    "evaluator": 213,
     "na": 0
    },
    "Branch": {
-    "keys": 191,
-    "evaluator": 191,
+    "keys": 186,
+    "evaluator": 186,
     "na": 0
    },
    "Shift": {
@@ -6520,7 +6426,7 @@
     "na": 4
    }
   },
-  "evaluatorPairs": 760,
+  "evaluatorPairs": 750,
   "naPairs": 109
  },
  "interpretations": [
@@ -8455,101 +8361,6 @@
     ],
     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
    },
-   "bassam_perm_tpls_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "tpl.view",
-     "report.view",
-     "report.indicators.view",
-     "emp.view",
-     "plan.view",
-     "staff.view",
-     "task.view",
-     "ready.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "admin/ptpls:view",
-      "key": "tpl.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "dreport:view",
-      "key": "report.indicators.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "emps/data:view",
-      "key": "emp.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "plan:view",
-      "key": "plan.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "tasks:view",
-      "key": "task.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "planning:view",
-      "key": null,
-      "source": "no-atom"
-     },
-     {
-      "cap": "planning/readiness:view",
-      "key": "ready.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
-   "bassam_perm_tpls_named_v1": {
-    "scope": "dept",
-    "cls": "explicit read permission + explicit special read capability + reference-read routes",
-    "keys": [
-     "tpl.view",
-     "staff.view",
-     "backup.view"
-    ],
-    "routes": [
-     {
-      "cap": "admin/ptpls:view",
-      "key": "tpl.view",
-      "source": "explicit-read"
-     },
-     {
-      "cap": "staff:view",
-      "key": "staff.view",
-      "source": "reference-read"
-     },
-     {
-      "cap": "admin/backup:view",
-      "key": "backup.view",
-      "source": "special:backup.view"
-     }
-    ],
-    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
-   },
    "bassam_last_export_v1": {
     "scope": "dept",
     "cls": "explicit read permission",
@@ -8878,23 +8689,23 @@
    }
   ],
   "meta": {
-   "resources": 69,
-   "routes": 244,
+   "resources": 67,
+   "routes": 231,
    "byClass": {
     "intentionally no-read-key / session-global": 15,
     "explicit read permission": 3,
     "super-only (denied by name)": 1,
     "device-excluded": 8,
-    "explicit read permission + explicit special read capability + reference-read routes": 23,
+    "explicit read permission + explicit special read capability + reference-read routes": 21,
     "explicit read permission + explicit special read capability": 12,
     "explicit special read capability (rule)": 5,
     "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)": 2
    },
    "bySource": {
-    "explicit-read": 106,
-    "reference-read": 80,
-    "special": 46,
-    "no-atom": 9,
+    "explicit-read": 104,
+    "reference-read": 72,
+    "special": 44,
+    "no-atom": 8,
     "special-rule": 3
    },
    "worker": "pk235",

@@ -93,30 +93,7 @@ test('A3a: مَن كُتب فوق تعديله يُبلَّغ عند السحب 
 /* RISHAD-266 · قرارُ المالك (d) 2026-11-03: الجولاتُ موردٌ تشغيليّ (Operations) — لا دمجَ ثلاثيّاً متقاعداً ولا «اعتُمدت قيمتك»/«بعد حفظك»:
    السباقُ على الخانة نفسِها يُحسم بتعارضٍ صريح للحافظ اللاحق، وقيمةُ الأسبق باقيةٌ لم يُكتب فوقها شيءٌ بصمت. الكتابةُ فوقها لا تكون
    إلا بعد أن يقرأ اللاحقُ قيمةَ الأسبق ويعيد المحاولة عن قصد، وعندها يرى الأسبقُ القيمةَ الجديدة بإعادة القراءة. (كان الاختبارُ يشترط الدمجَ المتقاعد.) */
-test('[legacy] A3a (طرفٌ لطرف · قرار المالك d): سباقٌ على الخانة نفسِها — الحافظُ اللاحق يُرفض بتعارضٍ صريح، ولا يُكتب فوق الأسبق إلا بعد إعادة القراءة', async () => {
-  const Wd = await world('legacy'), name = 'bassam_rounds_v1', K = KR;
-  const A = await tab(Wd, '0000000111', '70111'), B = await tab(Wd, '0000000114', '70114');
-  try {
-    const cell = (v) => { const d = Object.keys(v)[0]; return v[d].d[0].zones[1].cWhy; };
-    const ed = (why) => (v) => { const d = Object.keys(v)[0]; v[d].d[0].zones[1].cWhy = why; return v; };
-    assert.equal((await A.ops.read([K])).ok, 1); assert.equal((await B.ops.read([K])).ok, 1);
-    const pA = roundsPage(A), pB = roundsPage(B);
-    assert.equal((await pA.save(ed('TEST_ONLY سبب A'))).ok, 1, 'الأسبقُ يُعتمد');
-    const rB = await pB.save(ed('TEST_ONLY سبب B'));
-    assert.deepEqual({ ok: rB.ok, err: rB.err, status: rB.status, uncertain: rB.uncertain }, { ok: 0, err: 'conflict', status: 409, uncertain: false }, 'اللاحقُ: تعارضٌ صريح');
-    assert.equal(B.ops.status(rB.ticket).state, 'conflict');
-    assert.equal(cell(Wd.server(K)), 'TEST_ONLY سبب A', 'قيمةُ الأسبق باقية — لم يُكتب فوقها شيء');
-    assert.equal(pB.toasts.length, 1); assert.equal(pB.toasts[0].tone, 'warn'); assert.match(pB.toasts[0].m, /حفظ غيرُك هذا السجلَّ قبلك[\s\S]*لم تُحفظ مسودتك[\s\S]*أعد تحميل الصفحة/, 'اللاحقُ يُبلَّغ أن تعديله لم يُحفظ');
-    assert.deepEqual(pA.toasts, [], 'الأسبقُ لم يُكتب فوقه فلا يُبلَّغ بشيء');
-    await sleep(100);
-    for (const T of [A, B]) assert.doesNotMatch(pageText(T.W), /اعتُمدت قيمتك|بعد حفظك/, 'لا شريطَ دمجٍ متقاعد: لم يُدمج شيءٌ ولم يُكتب فوق أحد');
-    /* اللاحقُ يعيد القراءة فيرى قيمةَ الأسبق، ثم يعيد المحاولة عن قصد من صفحةٍ أُعيد تحميلها */
-    assert.equal((await B.ops.read([K])).ok, 1); assert.equal(cell(B.ops.get(name)), 'TEST_ONLY سبب A', 'اللاحقُ يرى قيمةَ الأسبق قبل أن يقرّر');
-    assert.equal((await roundsPage(B).save(ed('TEST_ONLY سبب B'))).ok, 1, 'المحاولةُ بعد القراءة تُعتمد');
-    assert.equal(cell(Wd.server(K)), 'TEST_ONLY سبب B');
-    assert.equal((await A.ops.read([K])).ok, 1); assert.equal(cell(A.ops.get(name)), 'TEST_ONLY سبب B', 'والأسبقُ يرى القيمةَ الجديدة بإعادة القراءة');
-  } finally { A.dispose(); B.dispose(); }
-});
+/* V7 · د5-ح (القفل): حُذفت حالةٌ «[legacy]» تثبّت مسارَ القرار القديم المحذوف: A3a (طرفٌ لطرف · قرار المالك d): سباقٌ على الخانة نفسِها — الحافظُ اللاحق يُرفض بتعارضٍ صر… */
 
 test('A3b: تبويبٌ آخر للحساب نفسِه طرفٌ آخر — تعارضُ الخانة نفسِها يُعلَن ولا يُكتم (c.self)', async () => {
   const K = 'bsdept:d1:bassam_perm_help_v1';
@@ -255,29 +232,4 @@ test('A6: «اليوم المختار» حين يرفض المخزنان الك�
   try { assert.equal(T2.W.KIVO.BassamDayFocus.get(), null, 'لا يرث يومَ المستخدم السابق في التبويب'); } finally { T2.dispose(); }
 });
 
-test('[legacy] A7: تغييرُ صلاحياتٍ في إدارةٍ أخرى لا يدفع هذا التبويبَ إلى إعادة سرد كلّ ما يراه — ومديرُ النظام لا يحتاجها أصلاً', async () => {
-  const env = makeTestEnv({ KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
-  const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
-  await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
-  await applySql(env.DB, fixture().seed);
-  await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
-  const U = await C.login('0000000113', '70113'); assert.ok(U.ok, 'tst_emp1 في tst_d1');
-  const A = loadClient({ C, boot: (await C.boot(U.ck)).boot, jar: { cookie: U.ck } });
-  const S = loadClient({ C, boot: (await C.boot(su.ck)).boot, jar: { cookie: su.ck } });
-  const listed = (T) => T.urls.filter(u => /\/api\/changes\?since=0(&|$)/.test(u.url)).length;
-  try {
-    await sleep(1500);
-    const P = JSON.parse((await C.api('/api/get?keys=bassam_perms_v1', { cookie: su.ck })).j.keys.bassam_perms_v1.v);
-    P.emps.tst_d2 = P.emps.tst_d2 || {}; P.emps.tst_d2.tst_e_emp2 = Object.assign({}, P.emps.tst_d2.tst_e_emp2 || {}, { tasks: ['view'] });
-    const sv = await C.save(su.ck, { bassam_perms_v1: JSON.stringify(P) }); assert.ok(sv.j.revs, 'صلاحياتُ موظفٍ في tst_d2');
-    /* privacy projection (019u): a tst_d1 employee never receives tst_d2 sheets — the change reaches the tab as a revision, not as foreign data */
-    assert.ok(await until(() => A.W.__BS_BOOT.v >= sv.j.v && S.W.__BS_BOOT.v >= sv.j.v, 5000), 'وصلت التبويب');
-    assert.equal(JSON.parse(A.get('bassam_perms_v1')).emps.tst_d2, undefined, 'ولا تُكشف صلاحياتُ إدارةٍ أخرى للموظف');
-    /* positive delivery: the super tab S receives the tst_d2 sheet itself (content, not only a revision bump) */
-    assert.ok(await until(() => { const sp = JSON.parse(S.get('bassam_perms_v1') || 'null'); return !!(sp && sp.emps && sp.emps.tst_d2 && sp.emps.tst_d2.tst_e_emp2 && sp.emps.tst_d2.tst_e_emp2.tasks); }, 5000), 'وصلت تبويبَ مدير النظام');
-    assert.deepEqual(JSON.parse(S.get('bassam_perms_v1')).emps.tst_d2.tst_e_emp2.tasks, ['view'], 'ورقةُ tst_d2 كما حُفظت');
-    await sleep(900);
-    assert.equal(listed(A), 0, 'لا إعادةَ سردٍ لموظفٍ في tst_d1');
-    assert.equal(listed(S), 0, 'ولا لمدير النظام');
-  } finally { A.dispose(); S.dispose(); }
-});
+/* V7 · د5-ح (القفل): حُذفت حالةٌ «[legacy]» تثبّت مسارَ القرار القديم المحذوف: A7: تغييرُ صلاحياتٍ في إدارةٍ أخرى لا يدفع هذا التبويبَ إلى إعادة سرد كلّ ما يراه — ومديرُ… */

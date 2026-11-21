@@ -293,8 +293,7 @@
   "bassam_perms_v1",
   "bassam_dreport_v1",
   "bassam_custody_v1",
-  "bassam_award_v1",
-  "bassam_perm_tpls_v1"
+  "bassam_award_v1"
  ],
  "retroMaxH": 72,
  "retroDefH": 24

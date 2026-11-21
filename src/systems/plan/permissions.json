@@ -467,7 +467,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 230,
     "value": {
      "key": "site.approve",
@@ -518,7 +518,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 240,
     "value": {
      "key": "map.calibrate",
@@ -569,7 +569,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 250,
     "value": {
      "key": "sector.create",
@@ -620,7 +620,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 260,
     "value": {
      "key": "sector.edit",
@@ -671,7 +671,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 270,
     "value": {
      "key": "sector.delete",
@@ -3440,7 +3440,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 230,
     "value": {
      "key": "site.approve",
@@ -3474,7 +3474,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 240,
     "value": {
      "key": "map.calibrate",
@@ -3508,7 +3508,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 250,
     "value": {
      "key": "sector.create",
@@ -3542,7 +3542,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 260,
     "value": {
      "key": "sector.edit",
@@ -3576,7 +3576,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 270,
     "value": {
      "key": "sector.delete",
@@ -3652,32 +3652,6 @@
     ],
     "after": 1,
     "seq": 20,
-    "value": {
-     "cap": "plan:view",
-     "key": "plan.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "keys"
-    ],
-    "after": 2,
-    "seq": 10,
-    "value": "plan.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "routes"
-    ],
-    "after": 2,
-    "seq": 10,
     "value": {
      "cap": "plan:view",
      "key": "plan.view",
@@ -5575,8 +5549,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 250,
+    "after": 0,
+    "seq": 540,
     "value": {
      "key": "map.replace",
      "res": "bassam_plan_v1",
@@ -5594,8 +5568,8 @@
     "path": [
      "bindings"
     ],
-    "after": 1,
-    "seq": 260,
+    "after": 0,
+    "seq": 550,
     "value": {
      "key": "map.calibrate",
      "res": "bassam_plan_v1",

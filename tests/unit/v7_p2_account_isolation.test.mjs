@@ -38,7 +38,7 @@ async function world(mode) {
 const ids = (j) => { const v = j && j.keys && j.keys[KU] && j.keys[KU].v; return v ? JSON.parse(v) : null; };
 const refused = (r) => r.status >= 400 || !!(r.j && r.j.denied && r.j.denied[KU]);
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] reads are scoped by unit and role, and never carry a password hash', async () => {
     const { C } = await world(mode);
     const seen = {};

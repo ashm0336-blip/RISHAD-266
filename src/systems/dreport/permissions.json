@@ -273,7 +273,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 140,
     "value": {
      "key": "report.transfer",
@@ -326,7 +326,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 150,
     "value": {
      "key": "report.att.absence",
@@ -379,7 +379,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 160,
     "value": {
      "key": "report.att.leave",
@@ -432,7 +432,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 170,
     "value": {
      "key": "report.att.late_in",
@@ -485,7 +485,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 180,
     "value": {
      "key": "report.att.early_out",
@@ -538,7 +538,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 190,
     "value": {
      "key": "report.callsign.assign",
@@ -591,7 +591,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 200,
     "value": {
      "key": "ref.leave_type.view",
@@ -640,7 +640,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 210,
     "value": {
      "key": "ref.leave_type.create",
@@ -689,7 +689,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 220,
     "value": {
      "key": "ref.leave_type.delete",
@@ -738,8 +738,8 @@
     "path": [
      "registry"
     ],
-    "after": 29,
-    "seq": 20,
+    "after": 24,
+    "seq": 680,
     "value": {
      "key": "report.day.delete",
      "owner": "dreport",
@@ -782,7 +782,7 @@
     "path": [
      "registry"
     ],
-    "after": 30,
+    "after": 25,
     "seq": 10,
     "value": {
      "key": "report.indicators.view",
@@ -831,7 +831,7 @@
     "path": [
      "registry"
     ],
-    "after": 30,
+    "after": 25,
     "seq": 20,
     "value": {
      "key": "ref.leave_type.edit",
@@ -881,19 +881,6 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "dreport"
-   },
-   {
-    "path": [
-     "registry",
-     {
-      "by": "key",
-      "eq": "tpl.view"
-     },
-     "references"
-    ],
-    "after": 1,
-    "seq": 1,
     "value": "dreport"
    },
    {
@@ -1466,7 +1453,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 140,
     "value": {
      "key": "report.transfer",
@@ -1505,7 +1492,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 150,
     "value": {
      "key": "report.att.absence",
@@ -1544,7 +1531,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 160,
     "value": {
      "key": "report.att.leave",
@@ -1583,7 +1570,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 170,
     "value": {
      "key": "report.att.late_in",
@@ -1622,7 +1609,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 180,
     "value": {
      "key": "report.att.early_out",
@@ -1661,7 +1648,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 190,
     "value": {
      "key": "report.callsign.assign",
@@ -1700,7 +1687,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 200,
     "value": {
      "key": "ref.leave_type.view",
@@ -1737,7 +1724,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 210,
     "value": {
      "key": "ref.leave_type.create",
@@ -1774,7 +1761,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 220,
     "value": {
      "key": "ref.leave_type.delete",
@@ -1811,8 +1798,8 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
-    "seq": 20,
+    "after": 24,
+    "seq": 670,
     "value": {
      "key": "report.day.delete",
      "owner": "dreport",
@@ -1836,7 +1823,7 @@
     "path": [
      "bindings"
     ],
-    "after": 30,
+    "after": 25,
     "seq": 10,
     "value": {
      "key": "report.indicators.view",
@@ -1864,7 +1851,7 @@
     "path": [
      "bindings"
     ],
-    "after": 30,
+    "after": 25,
     "seq": 20,
     "value": {
      "key": "ref.leave_type.edit",
@@ -2084,58 +2071,6 @@
     ],
     "after": 1,
     "seq": 60,
-    "value": {
-     "cap": "dreport:view",
-     "key": "report.indicators.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "keys"
-    ],
-    "after": 1,
-    "seq": 1,
-    "value": "report.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "keys"
-    ],
-    "after": 1,
-    "seq": 2,
-    "value": "report.indicators.view"
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "routes"
-    ],
-    "after": 1,
-    "seq": 1,
-    "value": {
-     "cap": "dreport:view",
-     "key": "report.view",
-     "source": "reference-read"
-    }
-   },
-   {
-    "path": [
-     "readBindings",
-     "byResource",
-     "bassam_perm_tpls_v1",
-     "routes"
-    ],
-    "after": 1,
-    "seq": 2,
     "value": {
      "cap": "dreport:view",
      "key": "report.indicators.view",
@@ -2989,7 +2924,7 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
+    "after": 1,
     "seq": 60,
     "value": {
      "key": "report.transfer",
@@ -3062,7 +2997,7 @@
     "path": [
      "decisions"
     ],
-    "after": 8,
+    "after": 7,
     "seq": 10,
     "value": {
      "id": "D-17",

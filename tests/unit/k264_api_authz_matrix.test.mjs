@@ -20,7 +20,7 @@ import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { replaceOperationalFixture, inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { needs as needsSys } from './harness.mjs';
 
-const MODES = ['legacy', 'enforce'];
+const MODES = ['enforce'];
 const ACC = { gm: ['0000000103', '70103', 'tst_gm1'], dm1: ['0000000101', '70101', 'tst_dm1'], dm2: ['0000000102', '70102', 'tst_dm2'], dm3: ['0000000104', '70104', 'tst_dm3'],
   sup1: ['0000000111', '70111', 'tst_sup1'], emp1: ['0000000113', '70113', 'tst_emp1'], fld: ['0000000118', '70118', 'tst_fld'], emp2: ['0000000121', '70121', 'tst_emp2'], frozen: ['0000000112', '70112', 'tst_supB'] };
 const SUPERS = ['su', 'sa'], ACTIVE = ['su', 'sa', 'gm', 'dm1', 'dm2', 'dm3', 'sup1', 'emp1', 'fld', 'emp2'], NON_SUPER = ACTIVE.filter(w => !SUPERS.includes(w));

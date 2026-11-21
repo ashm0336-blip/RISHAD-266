@@ -182,7 +182,7 @@ for (const [mode, src] of OBSERVERS) {
     assert.equal(g.status, 403, 'a non-proof new image: ' + JSON.stringify(g.j)); assert.deepEqual(g.j, { ok: 0, err: 'forbidden' });   /* V7-F: the unified refusal (was why:'none') */
   });
 }
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] a bound image, for real: uploaded, bound by saving the record that shows it, then put/delete follow the write of that record', { timeout: 300000 }, async () => {
     const W = await world({ worker: WU.file, mode }), DB = W.env.DB, x = mode.slice(0, 1);
     const dm = await W.login(...DM), ob = await W.login(...OBS), no = await W.login(NONE.un, NONE.pw);
@@ -258,7 +258,7 @@ const OBS_BEFORE_V7D = { OPEN: 'YYYYYYbbYYYY', FULL: 'YYYYYYbbYYYY', BASIC: 'vvn
 const SUP_BEFORE_V7E = { OPEN: 'YYYYYYbbYYYY', FULL: 'YYYYYYbbYYYY', BASIC: 'vvnYbbbbbbbb' };
 const BEFORE = { obs: OBS_BEFORE_V7D, obsG: OBS_BEFORE_V7D, view: { OPEN: 'YYYYYYbbbbbb', FULL: 'YYYYYYbbbbbb', BASIC: 'vvnYbbbbbbbb' }, none: { OPEN: 'YYYYYYbbbbbb', FULL: 'YYYYYYbbbbbb', BASIC: 'vvnYbbbbbbbb' } };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] the writer matrix: actor × unit ceiling × operation, by HTTP outcome', { timeout: 600000 }, async () => {
     const got = table(await matrix(mode));
     if (process.env.V7C_PRINT) console.log(mode + ' ' + JSON.stringify(got));

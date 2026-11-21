@@ -8,11 +8,11 @@
 | `/api/admin/dept-delete` | GET / POST | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `055-sec-headers.js` `bodyLimit` · `063-enf-api-and-handler.js` `handle` |
 | `/api/admin/dept-wipe` | GET / POST | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `055-sec-headers.js` `bodyLimit` · `063-enf-api-and-handler.js` `handle` |
 | `/api/aud` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
-| `/api/authz` | GET | enforce — بيئةُ الإنفاذ (enfEnvOn: المتغيّر KIVO_AUTHZ_MODE = enforce وحده، ومنها Production — config/wrangler.toml) ∧ مديرُ النظام · و/api/authz-test وحده يشترط أداةَ الاختبار (KIVO_TEST_FIXTURE + مضيف Test) ويُنزع من Production | `063-enf-api-and-handler.js` `enfAuthzApi` · `063-enf-api-and-handler.js` `handle` |
-| `/api/authz-migrate` | POST | enforce — بيئةُ الإنفاذ (enfEnvOn: المتغيّر KIVO_AUTHZ_MODE = enforce وحده، ومنها Production — config/wrangler.toml) ∧ مديرُ النظام · و/api/authz-test وحده يشترط أداةَ الاختبار (KIVO_TEST_FIXTURE + مضيف Test) ويُنزع من Production | `063-enf-api-and-handler.js` `handle` |
-| `/api/authz-test` | POST | enforce — بيئةُ الإنفاذ (enfEnvOn: المتغيّر KIVO_AUTHZ_MODE = enforce وحده، ومنها Production — config/wrangler.toml) ∧ مديرُ النظام · و/api/authz-test وحده يشترط أداةَ الاختبار (KIVO_TEST_FIXTURE + مضيف Test) ويُنزع من Production | `063-enf-api-and-handler.js` `handle` |
-| `/api/authz/log` | GET | enforce — بيئةُ الإنفاذ (enfEnvOn: المتغيّر KIVO_AUTHZ_MODE = enforce وحده، ومنها Production — config/wrangler.toml) ∧ مديرُ النظام · و/api/authz-test وحده يشترط أداةَ الاختبار (KIVO_TEST_FIXTURE + مضيف Test) ويُنزع من Production | `063-enf-api-and-handler.js` `enfAuthzApi` · `063-enf-api-and-handler.js` `handle` |
-| `/api/authz/snaps` | GET | enforce — بيئةُ الإنفاذ (enfEnvOn: المتغيّر KIVO_AUTHZ_MODE = enforce وحده، ومنها Production — config/wrangler.toml) ∧ مديرُ النظام · و/api/authz-test وحده يشترط أداةَ الاختبار (KIVO_TEST_FIXTURE + مضيف Test) ويُنزع من Production | `063-enf-api-and-handler.js` `enfAuthzApi` · `063-enf-api-and-handler.js` `handle` |
+| `/api/authz` | GET | session — جلسةٌ صالحة (session) وحسابٌ قائمٌ غيرُ مجمَّد | `063-enf-api-and-handler.js` `enfAuthzApi` · `063-enf-api-and-handler.js` `handle` |
+| `/api/authz-migrate` | POST | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
+| `/api/authz-test` | POST | enforce — أداةُ الاختبار الداخلية (enfEnvOn: KIVO_AUTHZ_MODE = enforce ∧ KIVO_TEST_FIXTURE = allow — Preview وحدها) ∧ مديرُ النظام — V7 · د5-ح: واجهاتُ الإنفاذ والترحيل في كل بيئة (session/super) | `063-enf-api-and-handler.js` `handle` |
+| `/api/authz/log` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `enfAuthzApi` · `063-enf-api-and-handler.js` `handle` |
+| `/api/authz/snaps` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `enfAuthzApi` · `063-enf-api-and-handler.js` `handle` |
 | `/api/award` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/award/act` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/award/export` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
@@ -23,7 +23,7 @@
 | `/api/custody` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/custody/act` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `055-sec-headers.js` `bodyLimit` · `063-enf-api-and-handler.js` `handle` |
 | `/api/custody/export` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
-| `/api/demo-data` | POST | enforce — بيئةُ الإنفاذ (enfEnvOn: المتغيّر KIVO_AUTHZ_MODE = enforce وحده، ومنها Production — config/wrangler.toml) ∧ مديرُ النظام · و/api/authz-test وحده يشترط أداةَ الاختبار (KIVO_TEST_FIXTURE + مضيف Test) ويُنزع من Production | `063-enf-api-and-handler.js` `handle` |
+| `/api/demo-data` | POST | enforce — أداةُ الاختبار الداخلية (enfEnvOn: KIVO_AUTHZ_MODE = enforce ∧ KIVO_TEST_FIXTURE = allow — Preview وحدها) ∧ مديرُ النظام — V7 · د5-ح: واجهاتُ الإنفاذ والترحيل في كل بيئة (session/super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/dstats` | GET / POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `055-sec-headers.js` `bodyLimit` · `063-enf-api-and-handler.js` `handle` |
 | `/api/employees/transition` | GET / POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `055-sec-headers.js` `bodyLimit` · `063-enf-api-and-handler.js` `handle` |
 | `/api/get` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
@@ -54,10 +54,9 @@
 | `/api/overview` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/perm44/check` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `057b-perm44.js` `perm44Route` · `063-enf-api-and-handler.js` `handle` |
 | `/api/perm44/log` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `057b-perm44.js` `perm44Route` · `063-enf-api-and-handler.js` `handle` |
-| `/api/permv2` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/ping` | GET | public — بلا جلسة (حارسُ المحاولات/المصدر حيث يلزم) | `063-enf-api-and-handler.js` `handle` |
 | `/api/policy` | GET / POST | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
-| `/api/presence` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
+| `/api/presence` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/recover` | POST | public — بلا جلسة (حارسُ المحاولات/المصدر حيث يلزم) | `062a-auth-routes.js` `authPublicRoutes` |
 | `/api/recovery` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/recovery/new` | POST | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
@@ -68,7 +67,7 @@
 | `/api/seized` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/seized/act` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/seized/export` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
-| `/api/sess/kill` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
+| `/api/sess/kill` | POST | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/tasks/cancel` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `071-task-mgmt.js` `tasksMgmtRoutes` |
 | `/api/tasks/create` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `071-task-mgmt.js` `tasksMgmtRoutes` |
 | `/api/tasks/eligibility` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `071-task-mgmt.js` `tasksMgmtRoutes` |

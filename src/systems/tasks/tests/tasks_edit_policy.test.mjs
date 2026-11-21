@@ -12,7 +12,7 @@ const variants=[
  {name:'unassigned historical proof never transfers',allow:false,ekey:null,state:'in_progress',ack:true,started:true,proof:true,why:'task-asg'},
  {name:'a newly assigned employee must still have an active account',allow:false,ekey:null,state:'pending',inactive:true,why:'task-acct'}
 ];
-for(const mode of ['legacy','enforce'])for(const[vi,variant]of variants.entries())test('['+mode+'] Atomic task edit matches canonical raw policy: '+variant.name,async()=>{
+for(const mode of ['enforce'])for(const[vi,variant]of variants.entries())test('['+mode+'] Atomic task edit matches canonical raw policy: '+variant.name,async()=>{
  const B=await world({worker:WCUR,mode}),W=await candidateWorker(['applySave','RESTORE_INTERNAL_TOKEN','rsReferenceSnapshot']);
  try{
   const dm=await B.login('0000000101','70101'),now=Date.now(),id=1760000885000+vi,original=row({id,title:'TEST_ONLY edit control',eid:variant.ekey,name:variant.ekey?ME.name:'',s:now-60000,e:now+3600000,st:variant.state,

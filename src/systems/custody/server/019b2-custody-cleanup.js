@@ -35,32 +35,25 @@ async function cuCleanupPermission(env, A, dept, intent, oldEmployees, newEmploy
   set[key] = JSON.stringify(after);
   keys[key] = 1;
   why[key] = String(reason || '');
-  if (A.enf) {
-    var ops = {};
-    if (intent === 'import-replace') ops[key] = { op: 'import.run', mode: 'replace', reason: String(reason || '') };
-    var markers = KIVO_BUILD.markers(ops, keys),
-      X = await enfSavePrep(env, A, { why: why }, set, [], keys, markers, null, false, false, {}, {});
-    ctx.enf = enfCtxFor(X, key, dept);
-    if (intent === 'import-replace') ctx.enf.imp = true;
-    if (X.batchDeny) throw cuError('custody-denied', 403);
-  }
+  /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
+  var ops = {};
+  if (intent === 'import-replace') ops[key] = { op: 'import.run', mode: 'replace', reason: String(reason || '') };
+  var markers = KIVO_BUILD.markers(ops, keys),
+    X = await enfSavePrep(env, A, { why: why }, set, [], keys, markers, null, false, false, {}, {});
+  ctx.enf = enfCtxFor(X, key, dept);
+  if (intent === 'import-replace') ctx.enf.imp = true;
+  if (X.batchDeny) throw cuError('custody-denied', 403);
   if (!before.moves.length) {
-    var held = A.enf
-      ? intent === 'import-replace'
-        ? enfHeld(A, dept, 'import.replace')
-        : enfHeld(A, dept, 'emp.record.delete') || enfHeld(A, dept, 'emp.record.bulk.delete')
-      : intent === 'import-replace'
-        ? actsHeldOn(A, dept, 'admin/import', ['del'])
-        : empCleanAllowed(A, dept, ctx);
+    var held = intent === 'import-replace'
+      ? enfHeld(A, dept, 'import.replace')
+      : enfHeld(A, dept, 'emp.record.delete') || enfHeld(A, dept, 'emp.record.bulk.delete');
     if (intent !== 'dept-wipe' && !held) throw cuError('custody-denied', 403);
     return;
   }
   // This server-only workflow has already constrained the deletion through 040
   // and the trusted intent. Raw history writes remain append-only. Invoke the
   // existing operation classifier directly for this protected cleanup operation.
-  var verdict = A.enf
-    ? enfSuperGate(A, enfDecide(A, key, CU_RESOURCE, dept, before, after, JSON.stringify(before), JSON.stringify(after), ctx, ctx.enf))   /* برومت 43 · الجذر 1 (056) */
-    : canWrite(A, key, JSON.stringify(after), JSON.stringify(before), ctx);
+  var verdict = enfSuperGate(A, enfDecide(A, key, CU_RESOURCE, dept, before, after, JSON.stringify(before), JSON.stringify(after), ctx, ctx.enf));   /* برومت 43 · الجذر 1 (056) */
   if (!verdict.ok) throw cuError('custody-cleanup-permission', 403);
   if (intent === 'dept-wipe') {
     var empty = { items: [], moves: [] },

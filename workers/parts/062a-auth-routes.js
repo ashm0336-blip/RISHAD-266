@@ -91,6 +91,8 @@ async function authPublicRoutes(request, env, path, url) {
       if (good !== true) { if (isLegacy(u.ph)) await verifyPw(pw, PW_DUMMY()); await guardFail(env, gkP); await guardFail(env, gkI); await guardCount(env, gkU); await secLog(env, { uid: u.id, un: un, act: 'login_fail', detail: 'bad-pw', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'اسم المستخدم أو كلمة المرور غير صحيحة' }); }
       if (u.dis) { await secLog(env, { uid: u.id, un: un, act: 'login_fail', detail: 'frozen', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: 'الحساب غير نشط — راجع مدير الإدارة' }); }
 
+      /* V7 · د5-ح (القفل): قاعدةٌ لم تُرحَّل بعد — لا جلسةَ لغير مدير المنصة (الحسابُ لا يعمل قبل الترحيل) بالرسالة الصريحة نفسِها (056) */
+      if (enfUnmigratedFor(env.__enfm, u)) { await secLog(env, { uid: u.id, un: un, act: 'login_fail', detail: 'authz-unmigrated', ip: rmF.ip, city: rmF.city, dev: rmF.dev }); return json({ ok: 0, err: ENF_UNMIG_MSG }); }
       var loginStmts = [revGuard(env, K_USERS, usersRev)];
       if (isLegacy(u.ph)) {
         var nh = await hashPw(pw);

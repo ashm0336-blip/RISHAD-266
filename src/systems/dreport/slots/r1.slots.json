@@ -24,10 +24,6 @@
   "order": 10,
   "text": "  /* ── التقرير اليومي ── */\n  'bassam_dreport_v1':         { scope: 'dept', cap: 'dreport' },\n  'bassam_dr_grp_v1':          { scope: 'dept', cap: 'dreport' },\n  'bassam_leave_kinds_v1':     { scope: 'dept', cap: 'dreport' },\n"
  },
- "res.via.ptpls.dreport": {
-  "order": 10,
-  "text": ", via: { dreport: 'SEED_ONLY' }"
- },
  "res.via.cs.dreport": {
   "order": 10,
   "text": ", via: { dreport: 'CS_ONLY' }"
@@ -51,14 +47,6 @@
  "approval.shape.dreport": {
   "order": 10,
   "file": "slots/approval.shape.dreport.frag"
- },
- "cleanup.dreport.fn": {
-  "order": 10,
-  "file": "slots/cleanup.dreport.fn.frag"
- },
- "cleanup.dreport.call": {
-  "order": 10,
-  "text": "  if (dreportCleanup(A, k, newVal, curVal, ctx)) return { ok: true };\n"
  },
  "permv4.roster.res.dreport": {
   "order": 10,
@@ -99,10 +87,6 @@
  "enf.uncov.grp.dreport": {
   "order": 10,
   "text": ",\n    'bassam_dr_grp_v1': all(['report.edit', 'report.create'])"
- },
- "enf.seed.keys.dreport": {
-  "order": 10,
-  "text": ", 'report.create', 'report.edit'"
  },
  "enf.uncov.cs.dreport": {
   "order": 10,

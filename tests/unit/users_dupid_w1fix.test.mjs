@@ -25,7 +25,7 @@ const show = (s) => JSON.stringify(s.j).slice(0, 260);
 const dupFirst = (L, id, patch) => { const o = []; for (const u of L) { if (u.id === id) o.push(Object.assign({}, u, patch)); o.push(u); } return o; };
 const secDup = (W) => W.env.DB.q("SELECT detail FROM sec WHERE act = 'denied' AND target = ?", K).filter((r) => /dup-id/.test(r.detail)).length;
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ–د) المعرّفُ المكرَّر: نسخةٌ معدَّلةٌ قبل الأصل تُرفض (dup-id) ولا تمسّ المخزَّن ولا تمنح دخولاً — والحفظُ العاديُّ يمضي', async () => {
@@ -96,7 +96,7 @@ for (const mode of ['legacy', 'enforce']) {
 }
 
 test('(و) الدفاعُ في العمق: usersRule (القديم) وenfUsersWrite (الإنفاذ) يرفضان قائمةً مكرَّرةً معدَّلةً ولو وصلتهما بلا بوابة 054', async () => {
-  const I = await internals(['actorFromKeys', 'usersRule', 'enfUsersWrite']);
+  const I = await internals(['actorFromKeys', 'enfUsersWrite']);
   const P2 = (c) => 'p2$100000$' + c.repeat(32) + '$' + c.repeat(64);
   const L = [
     { id: 'su', un: '1000000001', ph: P2('a'), name: 'TEST_ONLY su', role: 'super' },
@@ -106,9 +106,7 @@ test('(و) الدفاعُ في العمق: usersRule (القديم) وenfUsersWr
   const keys = { [K]: JSON.stringify(L), bassam_depts_v1: JSON.stringify([{ id: 'd1', name: 'd1' }]), bassam_gdepts_v1: '[]', bassam_perms_v1: JSON.stringify({ caps: { d1: ['emps'] } }), bassam_platform_v1: '{}' };
   const A = I.actorFromKeys(keys, 'st1'), cur = JSON.stringify(L);
   const atk = JSON.stringify([L[0], L[1], Object.assign({}, L[2], { role: 'super' }), L[2]]);
-  const r1 = I.usersRule(A, atk, cur, {}); assert.equal(r1.ok, false, 'usersRule: ' + JSON.stringify(r1)); assert.equal(r1.why, 'users');
   const r2 = I.enfUsersWrite(A, K, atk, cur, {}, {}); assert.equal(r2.ok, false, 'enfUsersWrite: ' + JSON.stringify(r2));
   /* التكرارُ القديمُ كما هو (كلُّ نسخةٍ مخزَّنة) لا يُرفض بهذا الحكم */
   const legacy = L.concat([L[1]]), same = JSON.stringify(legacy.map((u) => u.id === 'st1' ? Object.assign({}, u, { ph: P2('e') }) : u));
-  assert.equal(I.usersRule(A, same, JSON.stringify(legacy), {}).ok, true, 'التكرارُ القديمُ وكلمةُ المرور');
 });

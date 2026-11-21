@@ -40,7 +40,7 @@ async function moveUnderGm(W, id) {
 const inDept = (W, d) => stored(W.env, K).filter((u) => u.deptId === d).length;
 const secStale = (W) => W.env.DB.q("SELECT detail FROM sec WHERE act = 'denied' AND target = ?", K).filter((r) => /users-stale-client/.test(r.detail)).length;
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) قائمةٌ مُسقَطةٌ بلا بصمة بعد نقل إدارةٍ تحت عقدة المدير ⇒ رفضٌ مسمّى لا حذف · صفرُ حسابٍ محذوف · سطرٌ أمنيّ', async () => {

@@ -407,14 +407,6 @@
    "order": 10,
    "text": ", 'tasks'"
   },
-  "read.map.reader.tasks.3": {
-   "order": 10,
-   "text": ", 'tasks'"
-  },
-  "canWrite.rawWhy.tasks": {
-   "order": 10,
-   "text": "  if (nm === 'bassam_tasks_v1') { var xw9 = taskRawWhy(A, PV9.a(), PV9.b(), P.dept, ctx); if (xw9) return { ok: false, why: xw9 }; }\n"
-  },
   "enf.canWrite.rawWhy.tasks": {
    "order": 10,
    "text": "  if (rn === 'bassam_tasks_v1') { var xwE = taskRawWhy(A, a, b, P.dept, ctx); if (xwE) return enfNo(xwE); }\n"
@@ -438,10 +430,6 @@
   "changes.tasks": {
    "order": 10,
    "text": "  if (meTasksChanged(AC, (ch && ch.results) || [], vC)) outC.tasksChanged = 1;\n"
-  },
-  "empGone.tasks.fn": {
-   "order": 10,
-   "file": "slots/empGone.tasks.fn.frag"
   },
   "emp.cleanup.tasks": {
    "order": 10,
@@ -554,10 +542,6 @@
   "contracts.tasks": {
    "order": 10,
    "file": "slots/contracts.tasks.frag"
-  },
-  "canWrite.selfRule.tasks": {
-   "order": 10,
-   "text": "  if (R9.self === 'task' && newVal != null && selfTaskOnly(A, newVal, curVal)) return { ok: true };\n"
   },
   "daily.tabVals.tasks": {
    "order": 10,
@@ -703,10 +687,6 @@
    "order": 10,
    "text": " + (TKn ? 1 : 0)",
    "host": "daily"
-  },
-  "empGone.map": {
-   "order": 10,
-   "text": "'bassam_tasks_v1': tasksGoneOk"
   },
   "emp.confirm.tasks": {
    "order": 10,

@@ -38,7 +38,7 @@ async function setup(mode) {
 }
 const nSeries = (W, id) => Object.values(stored(W.env, KT) || {}).flat().filter((r) => Array.isArray(r) && r[23] && r[23].rec && r[23].rec.id === id).length;
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ)(ب) القراءةُ الأولى تولّد وتختم الطابعين · وعزلةٌ جديدة في المهلة لا تعيدهما — جولاتٌ أقلّ والصفوفُ نفسُها', async () => {

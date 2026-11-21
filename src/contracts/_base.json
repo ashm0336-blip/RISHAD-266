@@ -13,7 +13,7 @@
   }
  ],
  "events": {
-  "shifts.renamed@1": "{ from, to, deleting } — أُعيدت تسميةُ وردية أو حُذفت في خيارات الورديات (مورد قاعدة: bassam_shift_options_v1، صفحة الإعدادات). تُنادى داخل مسودة التغيير نفسها (KIVO.bus.participate) فيضيف كلُّ مشاركٍ تبعتَه إليها؛ ونظيرُها في الخادم srvBusAccepts('shifts.renamed@1', …) يسأل: هل يقبل مشاركٌ هذه الكتابةَ تبعةً؟ بلا مشارك: لا تبعة.",
+  "shifts.renamed@1": "{ from, to, deleting } — أُعيدت تسميةُ وردية أو حُذفت في خيارات الورديات (مورد قاعدة: bassam_shift_options_v1، صفحة الإعدادات). تُنادى داخل مسودة التغيير نفسها (KIVO.bus.participate) فيضيف كلُّ مشاركٍ تبعتَه إليها؛ والخادمُ يسأل بنظيرها shifts.renamed.cascade@1 (V7 · د5-ح: سؤالُ الوضع القديم بهذا الاسم حُذف). بلا مشارك: لا تبعة.",
   "shifts.renamed.cascade@1": "(resource, diffs, newValue, ctx) — في وضع الإنفاذ بالخادم: هل هذه الكتابةُ في موردٍ ما تبعةٌ تامّة لإعادة تسمية وردية؟ يجيب مالكُ المورد المتأثّر (srvBusAccepts)؛ المفتاحُ المطلوب (ref.shift.edit) قرارُ القاعدة. بلا مشارك: ليست تبعة."
  },
  "services": [
@@ -79,8 +79,7 @@
   "shifts.renamed@1": {
    "absent": "بلا الجدول الشهري: لا مشاركَ في مسودة إعادة التسمية — تُحفظ خياراتُ الورديات وحدها، والخادمُ لا يقبل كتابةً في مفتاحٍ غائب",
    "files": [
-    "src/modules/admin/logic.js",
-    "workers/parts/044-protected-ops.js"
+    "src/modules/admin/logic.js"
    ]
   },
   "shifts.renamed.cascade@1": {

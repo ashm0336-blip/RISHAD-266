@@ -31,7 +31,7 @@ async function mk(W, ck, o) {                                                   
   return { k: k1, id };
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) soon: بقي ≤ ساعة ⇒ task_soon للمكلَّف مرةً واحدة — من قراءة «مهامي» والاستطلاع وفتح صفحة المهام', async () => {

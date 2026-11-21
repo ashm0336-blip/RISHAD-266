@@ -84,7 +84,7 @@ test('V7 P3-0 · seeding after the pattern removal: empty parent ⇒ «أساس�
     await ev((id) => KIVO.BassamPerm.setDeptCap(id, []), root.id); await flush();
     const kid = await ev((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY ابن', kind: 'قطاع', pid }), root.id); await flush();
     assert.deepEqual(readP(lab).caps[kid.id].slice().sort(), BASIC, 'under an empty parent: the «أساسي» record');
-    assert.deepEqual(readP(lab).subs[kid.id], { emps: ['data', 'custody'], planning: ['readiness'], admin: ['shifts', 'backup', 'ptpls', 'import'] }, 'and its inner tabs');
+    assert.deepEqual(readP(lab).subs[kid.id], { emps: ['data', 'custody'], planning: ['readiness'], admin: ['shifts', 'backup', 'import'] }, 'and its inner tabs');   /* V7 · د5-ح: بلا «قوالب الصلاحيات» */
     assert.deepEqual(readP(lab).lenses[kid.id], [], 'and its lenses');
     assert.deepEqual(await eff(kid.id), [], 'its effective ceiling is empty (the parent)');
     await ev(([id, all]) => KIVO.BassamPerm.setDeptCap(id, all), [root.id, ALL]); await flush();

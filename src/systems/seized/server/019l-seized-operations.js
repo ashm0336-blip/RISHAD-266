@@ -23,15 +23,7 @@ function szAuthority(ctx, b, affectedItems) {
     if (
       !deptInScope(ctx.A, ctx.d) ||
       !resOnCeiling(ctx.A, ctx.d, resOf(k)) ||
-      !(ctx.A.enf
-        ? enfResWriter(ctx.A, ctx.d, resName(k))
-        : authorizeActs(ctx.A, k, [
-            b.op === "create"
-              ? "add"
-              : b.op.indexOf("delete") === 0
-                ? "del"
-                : "edit",
-          ]).ok)
+      !enfResWriter(ctx.A, ctx.d, resName(k)) /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
     )
       throw szError("seized-denied", 403);
   });
@@ -56,7 +48,7 @@ async function szReceipt(ctx, b, fingerprint) {
   if (
     !Number.isSafeInteger(r.result_n) ||
     r.result_n < 0 ||
-    r.permission_mode !== (ctx.A.enf ? "enforce" : "legacy")
+    r.permission_mode !== "enforce" /* V7 · د5-ح: إيصالُ الوضع القديم لا يُعاد بعد القفل */
   )
     throw szError("seized-receipt-invalid", 503);
   var required = parseJson(r.permission_keys, null);
@@ -65,31 +57,14 @@ async function szReceipt(ctx, b, fingerprint) {
     required.length > 1000 ||
     new Set(required).size !== required.length ||
     required.some(function (k) {
-      if (typeof k !== "string") return true;
-      if (r.permission_mode === "enforce") return !KIVO_REGISTRY.byKey[k];
-      var p = k.split(":");
-      return (
-        p.length !== 2 ||
-        SZ_NAMES.indexOf(p[0]) < 0 ||
-        ["add", "edit", "del", "approve"].indexOf(p[1]) < 0
-      );
+      return typeof k !== "string" || !KIVO_REGISTRY.byKey[k];
     })
   )
     throw szError("seized-receipt-invalid", 503);
   szAuthority(ctx, b, r.result_n);
   if (
-    ctx.A.enf &&
     required.some(function (k) {
       return !enfHeld(ctx.A, ctx.d, k);
-    })
-  )
-    throw szError("seized-denied", 403);
-  if (
-    !ctx.A.enf &&
-    required.some(function (k) {
-      var p = k.split(":");
-      return !authorizeActs(ctx.A, szKey(ctx.d, SZ_NAMES.indexOf(p[0])), [p[1]])
-        .ok;
     })
   )
     throw szError("seized-denied", 403);
@@ -123,25 +98,24 @@ async function szPermission(ctx, resource, before, after, reason) {
   set[k] = JSON.stringify(after);
   keys[k] = 1;
   if (reason) body.why[k] = reason;
-  var X = ctx.A.enf
-      ? await enfSavePrep(
-          ctx.env,
-          ctx.A,
-          body,
-          set,
-          [],
-          keys,
-          KIVO_BUILD.markers({}, keys),
-          null,
-          false,
-          false,
-          retroWin,
-          pv4,
-        )
-      : null,
-    c = X ? { enf: enfCtxFor(X, k, ctx.d) } : {},
+  /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
+  var X = await enfSavePrep(
+      ctx.env,
+      ctx.A,
+      body,
+      set,
+      [],
+      keys,
+      KIVO_BUILD.markers({}, keys),
+      null,
+      false,
+      false,
+      retroWin,
+      pv4,
+    ),
+    c = { enf: enfCtxFor(X, k, ctx.d) },
     decision =
-      X && X.batchDeny
+      X.batchDeny
         ? enfNo(X.batchDeny.why, X.batchDeny)
         : canWrite(
             ctx.A,
@@ -155,24 +129,10 @@ async function szPermission(ctx, resource, before, after, reason) {
     e.szDecision = decision;
     throw e;
   }
-  var actualActs = [];
-  if (!ctx.A.enf) {
-    actualActs = Object.keys(
-      classifyMutation(
-        resOf(k),
-        before === undefined ? null : JSON.stringify(before),
-        JSON.stringify(after),
-        entOf(k),
-        opsOf(k),
-      ),
-    );
-    if (!actualActs.length) actualActs = ["edit"];
-  }
   return {
     guards: retro.guards,
     decision: decision,
     key: k,
-    actualActs: actualActs,
     resource: resource,
   };
 }
@@ -983,16 +943,12 @@ async function hSeizedAct(env, actor, b, meta) {
       b.op,
       n,
       id,
-      A.enf ? "enforce" : "legacy",
+      "enforce",
       JSON.stringify(
         Array.from(
           new Set(
             permissions.flatMap(function (p) {
-              return A.enf
-                ? p.decision.keys || []
-                : p.actualActs.map(function (act) {
-                    return p.resource + ":" + act;
-                  });
+              return p.decision.keys || [];
             }),
           ),
         ).sort(),
@@ -1019,8 +975,7 @@ async function hSeizedAct(env, actor, b, meta) {
     ),
   );
   permissions.forEach(function (p) {
-    var log =
-      A.enf && enfLogRow(A, p.key, p.decision, "/api/seized/act", meta || {});
+    var log = enfLogRow(A, p.key, p.decision, "/api/seized/act", meta || {});
     if (log) statements.push(enfLogStmt(env, log));
   });
   try {

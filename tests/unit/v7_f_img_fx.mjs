@@ -7,7 +7,7 @@ export const WU = workerUnderTest();
 export const K_USERS = 'bassam_auth_users_v1', K_DEPTS = 'bassam_depts_v1';
 export const D2 = 'tst_d2', DAYMS = 864e5;
 export const dk = (d, r) => 'bsdept:' + d + ':bassam_' + r + '_v1';
-export const MODES = ['legacy', 'enforce'];
+export const MODES = ['enforce'];
 export const WHO = { mgr: ['0000000101', '70101'], mgr2: ['0000000102', '70102'], gm: ['0000000103', '70103'], mgr3: ['0000000104', '70104'], emp2: ['0000000121', '70121'], staff: ['0000000111', '70111'] };
 let seq = 0;
 export const uniq = (mode) => mode.slice(0, 1) + (++seq).toString(36) + Date.now().toString(36).slice(-4);

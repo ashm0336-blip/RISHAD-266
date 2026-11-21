@@ -377,8 +377,8 @@
     "path": [
      "registry"
     ],
-    "after": 29,
-    "seq": 40,
+    "after": 24,
+    "seq": 700,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",
@@ -436,7 +436,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 36,
+    "seq": 10,
     "value": {
      "leaf": "emps/custody",
      "act": "view",
@@ -452,7 +452,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 37,
+    "seq": 20,
     "value": {
      "leaf": "emps/custody",
      "act": "add",
@@ -468,7 +468,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 38,
+    "seq": 30,
     "value": {
      "leaf": "emps/custody",
      "act": "edit",
@@ -487,7 +487,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 39,
+    "seq": 40,
     "value": {
      "leaf": "emps/custody",
      "act": "del",
@@ -502,7 +502,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 40,
+    "seq": 50,
     "value": {
      "leaf": "emps/custody",
      "act": "approve",
@@ -515,7 +515,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 41,
+    "seq": 60,
     "value": {
      "leaf": "emps/custody",
      "act": "export",
@@ -739,8 +739,8 @@
     "path": [
      "bindings"
     ],
-    "after": 29,
-    "seq": 30,
+    "after": 24,
+    "seq": 680,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",

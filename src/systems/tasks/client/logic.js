@@ -2966,7 +2966,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             e.newAdvTouched ? this._tkAdvBody() : {}, RP.op ? { recur: Object.assign({}, RP) } : {});
           if (body.recur) { delete body.recur.ask; delete body.recur.err; }
           ["uid", "dept", "epoch", "base", "requestId"].forEach((key) => delete body[key]);
-          const response = await this._tkCommandApi("/api/tasks/settings", body, "newTaskOpen");
+          let response = await this._tkCommandApi("/api/tasks/settings", body, "newTaskOpen");
+          /* V7 · د5-ح (القفل): في الإنفاذ وحده يطلب الخادمُ سبباً لما يعيد المهمةَ «بانتظار الاستلام» (task.reopen: إسنادُ المعتذَر عنها) — نافذةُ السبب
+             نفسُها من طبقة التخزين (280 askReason) ثم يُعاد الطلبُ بالسبب كإعادة الفتح؛ والإلغاءُ يُبقي المسودة */
+          const SR = KIVO.__BS_SRV;
+          if (response.j && response.j.why === "reason" && SR && SR.askReason) {
+            const why = await new Promise((done) => SR.askReason("bsdept:" + (this._tkDept() || "") + ":bassam_tasks_v1", response.j.reasonKeys || ["task.reopen"], done));
+            if (!why) return void this.bsToast("لم تُحفظ تعديلات المهمة لعدم كتابة سبب — المسودة باقية", "warn");
+            response = await this._tkCommandApi("/api/tasks/settings", Object.assign({}, body, { why: why }), "newTaskOpen");
+          }
           if (response.j && response.j.ok === 1) {
             this.setState({ newTaskOpen: false, editRef: null });
             if (body.recur) this._tkRecAck(body.recur.op, response.j.recurrence);

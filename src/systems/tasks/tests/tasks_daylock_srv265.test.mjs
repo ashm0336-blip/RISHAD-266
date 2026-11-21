@@ -8,7 +8,7 @@ import { world, workerUnderTest, ME, D, DAY, TOMORROW, KT, stored, putKV, hij, H
 
 const WU = workerUnderTest();
 const KL = 'bsdept:' + D + ':bassam_tasks_locks_v1';
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test(`[${mode}] اليومُ المُغلق بيده: الإنشاءُ يُرفض والتكرارُ يتخطّاه — واليومُ المفتوح يقبل`, async t => {
     // This scenario needs two future hours in the SAME operational day. At
     // 01:00 Riyadh, +2h correctly belongs to the following (closed) day.

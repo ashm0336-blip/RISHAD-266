@@ -69,7 +69,7 @@ let EMPN = 0;
 const addEmp = (W, ck, d, tag) => { const L = stored(W.env, E(d)) || []; return save(W, ck, { [E(d)]: L.concat([{ eid: 'tst_e_x_' + tag, name: TAG + ' · ' + tag, empno: String(79000 + (++EMPN)) }]) }); };
 const custody = (W, ck, uid, d) => W.C.api('/api/custody?' + new URLSearchParams({ dept: d, uid }), { cookie: ck });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'F01 (1) إنشاءُ قسم: مدير النظام وحده (V7 · د5-هـ 44) — مديرُ الإدارة الأم وبذرُ سقفه · والشكلُ المخالف ومن لا يدير الإدارة مرفوضون', needs('dstats'), async () => {
@@ -240,7 +240,7 @@ for (const mode of ['legacy', 'enforce']) {
    (أ) إدارةٌ فيها أقسام لا تُحذف — ولا متتابعاً بحذف أقسامها معها في حفظةٍ واحدة (dept-has-sections)
    (ب) الحذفُ النهائيّ للوحدة لمدير المنصة من مسار الحذف الذرّي وحده — الحفظُ العاديّ (ولو من مدير المنصة) لا يحذف وحدة (unit-delete-route)، ولا حذفُ السجل كلِّه
    (ج) القسمُ يضيفه مديرُ إدارته الأم أو مديرُ المنصة — لا مديرُ عقدةٍ أعلى (gm) */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   test(M + 'RISHAD266 أقسام (أ)(ب): لا حذفَ متتابع ولا حذفَ وحدةٍ بالحفظ العادي — والحذفُ الذرّيّ لمدير المنصة باقٍ', async () => {
     const { W, S } = await setup(mode);
@@ -272,7 +272,7 @@ for (const mode of ['legacy', 'enforce']) {
 /* RISHAD266 · مراجعة المالك على aae024c: علامةُ الاستعادة القادمة من العميل في الحفظ العادي (body.ops backup.restore + سبب) لا تمنح استثناءً من سلامة العلاقات —
    حذفُ وحدةٍ بها مرفوض (unit-delete-route) ولا تبقى حساباتٌ أو مفاتيحُ يتيمة. الاستعادةُ الخادمية المتحقَّقة (019d) تحذف وتنظّف — يغطّيها atomic_restore_review
    («full replacement derives removed department account/session pruning …») */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] RISHAD266 أقسام: علامةُ استعادةٍ من العميل في حفظٍ عادي لا تحذف وحدة ولا تترك يتيماً', async () => {
     const { W, S } = await setup(mode);
     const L0 = stored(W.env, KD), before = JSON.stringify(L0), users0 = JSON.stringify(stored(W.env, K)), keys0 = W.env.DB.q('SELECT COUNT(*) n FROM kv WHERE k LIKE ?', 'bsdept:' + S2 + ':%')[0].n;

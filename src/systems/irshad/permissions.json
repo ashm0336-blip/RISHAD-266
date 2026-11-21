@@ -310,7 +310,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 360,
     "value": {
      "key": "ref.irshad.location.view",
@@ -359,7 +359,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 370,
     "value": {
      "key": "ref.irshad.location.create",
@@ -408,7 +408,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 380,
     "value": {
      "key": "ref.irshad.location.edit",
@@ -457,7 +457,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 390,
     "value": {
      "key": "ref.irshad.location.delete",
@@ -506,7 +506,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 400,
     "value": {
      "key": "ref.irshad.language.view",
@@ -555,7 +555,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 410,
     "value": {
      "key": "ref.irshad.language.create",
@@ -604,7 +604,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 420,
     "value": {
      "key": "ref.irshad.language.edit",
@@ -653,7 +653,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 430,
     "value": {
      "key": "ref.irshad.language.delete",
@@ -702,7 +702,7 @@
     "path": [
      "registry"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 440,
     "value": {
      "key": "ir.rec.bulk.delete",
@@ -753,7 +753,7 @@
     "path": [
      "registry"
     ],
-    "after": 30,
+    "after": 25,
     "seq": 30,
     "value": {
      "key": "ir.rec.retro.open",
@@ -1240,7 +1240,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 350,
     "value": {
      "key": "ref.irshad.location.view",
@@ -1277,7 +1277,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 360,
     "value": {
      "key": "ref.irshad.location.create",
@@ -1314,7 +1314,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 370,
     "value": {
      "key": "ref.irshad.location.edit",
@@ -1351,7 +1351,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 380,
     "value": {
      "key": "ref.irshad.location.delete",
@@ -1388,7 +1388,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 390,
     "value": {
      "key": "ref.irshad.language.view",
@@ -1425,7 +1425,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 400,
     "value": {
      "key": "ref.irshad.language.create",
@@ -1462,7 +1462,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 410,
     "value": {
      "key": "ref.irshad.language.edit",
@@ -1499,7 +1499,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 420,
     "value": {
      "key": "ref.irshad.language.delete",
@@ -1536,7 +1536,7 @@
     "path": [
      "bindings"
     ],
-    "after": 28,
+    "after": 24,
     "seq": 430,
     "value": {
      "key": "ir.rec.bulk.delete",
@@ -1572,7 +1572,7 @@
     "path": [
      "bindings"
     ],
-    "after": 30,
+    "after": 25,
     "seq": 30,
     "value": {
      "key": "ir.rec.retro.open",
@@ -1844,8 +1844,8 @@
      "byResource"
     ],
     "key": "bassam_irshad_retro_v1",
-    "after": 36,
-    "seq": 15,
+    "after": 34,
+    "seq": 10,
     "value": {
      "scope": "dept-state",
      "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
@@ -1874,7 +1874,7 @@
     "path": [
      "bindings"
     ],
-    "after": 2,
+    "after": 1,
     "seq": 30,
     "value": {
      "key": "ir.rec.bulk.delete",

@@ -1,5 +1,4 @@
 /* ══ (6) الواجهات: حالةُ الإنفاذ · سجلُّ القرارات · الترحيلُ والرجوع (هوية → نطاق → صلاحيات) · جلسةُ اختبارٍ داخلية (Preview) ══ */
-var REG_VALIDATION = null;   /* V7 · د5-هـ (44): تحقّقُ السجلّ مرّةً لكل نسخةٍ من الخادم (تقريرُ /api/permv2) */
 /* ما يُرسل للواجهة عن فاعلٍ: المفاتيحُ المحمولة لكل إدارة (bitset على ترتيب السجل) · العدساتُ المفعّلة · مفاتيحُ المنح الصريح
    (RISHAD-266: ceil · me · sb — سقفُ النطاق القديم ونطاقُ الفاعل فيه وورديتُه المربوطة — أُزيلت مع تقاعده؛ لم تقرأها الواجهة) */
 function enfBits(A, d) {
@@ -33,11 +32,10 @@ async function enfAuthzApi(env, request, A, url, path) {
   var M = env.__enfm || await enfModeOf(env);
   if (path === '/api/authz') {
     var out = { ok: 1, ver: ENF_VER, mode: M.mode, env: M.env, d1: M.d1 || null, perm: M.perm, scope: M.scope, ident: M.ident, fixture: M.fixture };
-    if (A.enf) out.me = enfMe(A, await enfRefsFor(env, enfDeptsOf(A), null));
+    out.me = enfMe(A, await enfRefsFor(env, enfDeptsOf(A), null));
     return json(out);
   }
   if (A.u.role !== 'super') return json({ ok: 0, err: 'forbidden' }, 403);
-  if (!M.env) return json({ ok: 0, err: 'not-enforce-env' }, 404);
   await enfInitDb(env);
   if (path === '/api/authz/log') {
     var q = url.searchParams, lim = Math.min(500, Math.max(1, parseInt(q.get('limit') || '100', 10) || 100)), before = parseInt(q.get('before') || '0', 10) || 0;
@@ -66,6 +64,7 @@ async function enfMigPlan(env, seed, opts) {
   if (opts.parts && opts.parts.indexOf('scope-retire') !== -1) return await enfRetirePlan(env, seed, now, T, keys, revs, capture, reference);
   if (opts.parts && opts.parts.indexOf(ENF_SID_PART) !== -1) return await enfSidPlan(env, seed, now, T, keys, revs, capture);   /* د5-هـ */
   if (opts.parts && opts.parts.indexOf(ENF_ROLES_PART) !== -1) return await enfRolesPlan(env, seed, now, T, keys, revs, capture);   /* د5-هـ (44) */
+  if (opts.parts && opts.parts.indexOf(ENF_TPLS_PART) !== -1) return await enfTplsPlan(env, seed, now, T, keys, revs, capture);   /* د5-ح */
 @@SYS:migrate.plan.daily@@  var users = parseJson(keys[K_USERS], []);
   if (!Array.isArray(users)) users = [];
   var plan = { version: ENF_VER, seed: seed, today: T, generated: now, writes: [], identity: null, perm: { grants: [], decisions: [] }, warnings: [] };
@@ -125,12 +124,32 @@ async function enfRetirePlan(env, seed, now, T, keys, revs, capture, reference) 
   plan.counts = { writes: ks.length, scopeRecords: ks.length, metaFlag: mv != null ? 1 : 0 };
   return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots, retireMeta: mv };
 }
+/* V7 · د5-ح (القفل) · «tpls-retire»: تقاعدُ قوالب الصلاحيات المخزّنة — موردُها حُذف من الخادم (لا قارئَ ولا كاتبَ ولا تصنيف)، فبقاءُ صفوفها في D1
+   مفاتيحُ «مجهولة» تمنع حذفَ الوحدة ومسحَها (019e unit-unknown). كلُّ مفتاح kv بصيغة bsdept:<d>:bassam_perm_tpls_v1 · bsdept:<d>:bassam_perm_tpls_named_v1
+   (والاسمان بلا إدارة إن وُجدا) يُحذف بلقطةٍ كاملة ورجوعٍ بالمسار القائم (rollback) — مثل «scope-retire» حرفاً. الشرط: ترحيلُ «perm44-roles» لا يبقى له
+   ما يكتبه (القوالبُ مصدرُه الوحيد — تُقرأ خاماً من D1 قبل هذه الخطوة). الإسنادُ tplOf في bassam_perms_v1 بيانٌ يبقى ولا يُقرأ بعد الترحيل. */
+var ENF_TPLS_PART = 'tpls-retire', ENF_TPLS_RES = { bassam_perm_tpls_v1: 1, bassam_perm_tpls_named_v1: 1 };
+function enfTplsKey(k) { k = String(k); return !!ENF_TPLS_RES[resName(k)] && (k.indexOf('bsdept:') === 0 || !!ENF_TPLS_RES[k]); }
+async function enfTplsPlan(env, seed, now, T, keys, revs, capture) {
+  var ks = Object.keys(keys).filter(enfTplsKey).sort(), W = {}, sig = [ENF_TPLS_PART, seed], i;
+  var RP = await enfRolesPlan(env, seed, now, T, keys, revs, capture), pending = RP.plan.writes.length;
+  var plan = { version: ENF_VER, seed: seed, today: T, generated: now, parts: [ENF_TPLS_PART], writes: [], retire: { keys: ks.slice(0, 200) }, rolesPending: pending };
+  for (i = 0; i < ks.length && !pending; i++) {
+    W[ks[i]] = { v: null, kind: ENF_TPLS_PART };
+    plan.writes.push({ k: ks[i], kind: ENF_TPLS_PART, op: 'delete', bytes: String(keys[ks[i]]).length, existed: true, rev: revs[ks[i]] || 0 });
+    sig.push(ks[i] + '\u0001' + (revs[ks[i]] || 0) + '\u0001' + keys[ks[i]]);
+  }
+  sig.push('roles-pending\u0001' + pending);
+  plan.hash = await enfSha(sig.join('\u0002'));
+  plan.counts = { writes: plan.writes.length, templateRecords: ks.length, rolesPending: pending };
+  return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots };
+}
 /* أجزاءُ الترحيل المقبولة: perm (الهوية حُذفت · RISHAD-266 P6) — و«scope-retire» وحدها لا تُخلط بغيرها (scope: بذرُ السقف القديم أُزيل · RISHAD-266) */
 /* V7 · د5-ح (13): أجزاءٌ منفردة تسجّلها الأنظمةُ لبياناتها (rounds-arc — أرشيفُ الجولات · مجلدُ المتابعة اليومية) — كلٌّ منها وحده، بلا علامة meta (اللقطةُ أثرُها) */
 var ENF_SOLO_EXTRA = [@@SYS:migrate.solo.daily|sep=", "@@];
 function enfMigParts(raw) {
-  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART || x === ENF_SID_PART || x === ENF_ROLES_PART || ENF_SOLO_EXTRA.indexOf(x) !== -1; });
-  if ((p.indexOf(ENF_RETIRE_PART) !== -1 || p.indexOf(ENF_SID_PART) !== -1 || p.indexOf(ENF_ROLES_PART) !== -1 || p.some(function (x) { return ENF_SOLO_EXTRA.indexOf(x) !== -1; })) && p.length > 1) return null;   /* د5-هـ: «site-sid» و«perm44-roles» وحدها كذلك */
+  var p = raw.filter(function (x) { return x === 'perm' || x === ENF_RETIRE_PART || x === ENF_SID_PART || x === ENF_ROLES_PART || x === ENF_TPLS_PART || ENF_SOLO_EXTRA.indexOf(x) !== -1; });
+  if ((p.indexOf(ENF_RETIRE_PART) !== -1 || p.indexOf(ENF_SID_PART) !== -1 || p.indexOf(ENF_ROLES_PART) !== -1 || p.indexOf(ENF_TPLS_PART) !== -1 || p.some(function (x) { return ENF_SOLO_EXTRA.indexOf(x) !== -1; })) && p.length > 1) return null;   /* د5-هـ: «site-sid» و«perm44-roles» وحدها كذلك · د5-ح: «tpls-retire» وأجزاءُ الأنظمة المنفردة كذلك */
   return p;
 }
 /* V7 · د5-هـ (م3) · «site-sid»: ترحيلُ هوية الموقع — كلُّ طابقٍ في الجولات ولقطةِ الشهر يحمل sid طابقه في الخطة، فتُطابَق الجولاتُ بالمعرّف لا بالموضع.
@@ -214,7 +233,7 @@ async function enfRolesPlan(env, seed, now, T, keys, revs, capture) {
   plan.counts = { writes: plan.writes.length, roles: tot.roles, people: tot.people, lensDropped: tot.lensDropped, unknownTpl: tot.unknownTpl };
   return { plan: plan, W: W, keys: keys, revs: revs, guards: capture.guards, snapshots: capture.snapshots };
 }
-var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطواتُ تقاعد سقف النطاق القديم (scope-retire) وترحيل هوية الموقع (site-sid) وترحيل القوالب إلى الأدوار (perm44-roles) وأجزاءُ الأنظمة المنفردة (كأرشفة الجولات) تُطلب كلٌّ منها وحدها — أعد الطلب بها فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
+var ENF_PARTS_MIXED = { ok: 0, err: 'parts-mixed', msg: 'خطواتُ تقاعد سقف النطاق القديم (scope-retire) وترحيل هوية الموقع (site-sid) وترحيل القوالب إلى الأدوار (perm44-roles) وتقاعد القوالب (tpls-retire) وأجزاءُ الأنظمة المنفردة (كأرشفة الجولات) تُطلب كلٌّ منها وحدها — أعد الطلب بها فقط، ثم اطلب أجزاء الترحيل الأخرى في طلب منفصل' };
 /* Pure revision preparation: allocation is written only after every source
    witness, inside the same batch as migration/snapshot/audit or rollback. */
 async function enfMigCounterPlan(env) {
@@ -245,16 +264,22 @@ async function enfMigBatch(env, statements) {
     throw error;
   }
 }
+/* V7 · د5-ح: سلامةُ السجلّ (validate · ربطُ القراءة) — تظهر في حالة الترحيل ويشترطها التفعيل */
+function enfRegistryOk() {
+  var v = { ok: false }, rb = { ok: false };
+  try { v = KIVO_REGISTRY.validate(); } catch (e) { v = { ok: false, err: String(e && e.message || e) }; }
+  try { rb = permv4ReadBindingCheck(); } catch (e2) { rb = { ok: false, err: String(e2 && e2.message || e2) }; }
+  return { ok: !!(v && v.ok && rb && rb.ok), validation: !!(v && v.ok), readBinding: !!(rb && rb.ok) };
+}
 async function enfMigrateApi(env, request, A, url, meta) {
   if (A.u.role !== 'super') return json({ ok: 0, err: 'forbidden' }, 403);
-  if (!enfEnvOn(env)) return json({ ok: 0, err: 'not-enforce-env' }, 404);
   await enfInitDb(env);
   var q = url.searchParams, b = {};
   if (request.method === 'POST') { var rb = await bodyRead(request, '/api/authz-migrate'); if (rb.res) return rb.res; b = rb.v; }   /* KIVO_264 · SOT-101: مخطّطُ الجسم (كان غيرُ الكائن يُحوَّل {} صامتاً) */
   var act = String(request.method === 'POST' ? b.act : (q.get('act') || 'status'));
   if (act === 'status') {
     var M = await enfModeOf(env), s = await env.DB.prepare('SELECT snap, ts, uid, un, kind, n, restored, rts FROM authz_snaps ORDER BY ts DESC LIMIT 50').all();
-    return json({ ok: 1, mode: M.mode, env: M.env, d1: M.d1, perm: M.perm, scope: M.scope, ident: M.ident, snaps: (s && s.results) || [] });
+    return json({ ok: 1, mode: M.mode, env: M.env, d1: M.d1, perm: M.perm, scope: M.scope, ident: M.ident, registry: enfRegistryOk(), snaps: (s && s.results) || [] });
   }
   if (act === 'plan') {
     var seedQ = String(q.get('seed') || ''), seed = /^[0-9a-f]{64}$/i.test(seedQ) ? seedQ.toLowerCase() : enfSeed();
@@ -265,6 +290,25 @@ async function enfMigrateApi(env, request, A, url, meta) {
   }
   if (request.method !== 'POST') return json({ ok: 0, err: 'method' }, 405);
   var now = Date.now(), ident = { uid: A.u.id, un: String(A.u.un || ''), ip: meta.ip || '', dev: meta.dev || '', city: meta.city || '' };
+  /* V7 · د5-ح (القفل): «activate» — يختم القاعدةَ enforce (meta.authz_mode) بعد ترحيل الصلاحيات فيعمل الجميع بالمحرّك النافذ.
+     الشرط: ترحيلُ «perm» طُبّق (العلامة authz_perm_mig) أو خطتُه الآن بلا كتابة (لا ما يُرحَّل). يُسجَّل في سجلّ القرارات. الرجوع: سطرُ meta بقيمةٍ أخرى
+     (UPDATE meta SET v='legacy' WHERE k='authz_mode') ⇒ «unmigrated» من الطلب التالي (مديرُ المنصة وحده) — لا يعود نظامٌ قديم. */
+  if (act === 'activate') {
+    var MA = await enfModeOf(env);
+    if (MA.mode === 'unavailable') return json({ ok: 0, err: 'authz_unavailable' }, 503);
+    if (MA.mode === 'enforce') return json({ ok: 1, mode: 'enforce', already: 1 });
+    /* سلامةُ السجلّ قبل القفل: تحقّقُه الداخلي وربطُ القراءة (048 permv4ReadBindingCheck) — سجلٌّ مكسور لا يُقفل عليه */
+    var RGV = enfRegistryOk(); if (!RGV.ok) return json({ ok: 0, err: 'registry-invalid', registry: RGV }, 409);
+    if (!(MA.perm && MA.perm.applied)) {
+      var PA = await enfMigPlan(env, enfSeed(), { parts: ['perm'] });
+      if (PA.plan.writes.length) return json({ ok: 0, err: 'perm-pending', msg: 'رحّل الصلاحيات أولاً (parts: perm — plan ثم apply) ثم أعد التفعيل', writes: PA.plan.writes.length }, 409);
+    }
+    var actSt = [env.DB.prepare("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v = 'enforce'"),
+      enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: 'activate', keys: 'authz_mode', scope: 'was=' + String(MA.d1 == null ? '' : MA.d1).slice(0, 20), decision: 'allow', why: 'activate', reason: '', path: '/api/authz-migrate', ip: ident.ip })];
+    await env.DB.batch(actSt);
+    preOff(env);
+    return json({ ok: 1, mode: 'enforce', was: MA.d1 == null ? null : MA.d1 });
+  }
   if (act === 'apply') {
     if (!/^[0-9a-f]{64}$/i.test(String(b.seed || '')) || !/^[0-9a-f]{64}$/.test(String(b.hash || ''))) return json({ ok: 0, err: 'seed-hash' }, 400);
     var gen = +b.generated; if (!(gen > 0) || gen > now || now - gen > 24 * 3600 * 1000) return json({ ok: 0, err: 'generated' }, 400);   /* لحظةُ الخطة: خلال 24 ساعة */
@@ -276,6 +320,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     if(A.u.role !== 'super')return json({ok:0,err:'forbidden'},403);
     var R2 = await enfMigPlan(env, String(b.seed).toLowerCase(), { inferable: !!b.inferable, parts: parts2, now: gen, reference:reference2 });
     if (R2.plan.hash !== b.hash) return json({ ok: 0, err: 'plan-changed', hash: R2.plan.hash }, 409);
+    if (R2.plan.rolesPending) return json({ ok: 0, err: 'roles-pending', msg: 'رحّل القوالب إلى الأدوار أولاً (parts: perm44-roles) ثم أعد هذه الخطوة', rolesPending: R2.plan.rolesPending }, 409);
     if (!R2.plan.writes.length && !(retire2 && R2.retireMeta != null)) return json({ ok: 1, applied: 0, plan: R2.plan.counts });
     if (retire2 && R2.retireMeta != null && String(R2.retireMeta).length > 2000) return json({ ok: 0, err: 'retire-meta-large', msg: 'علامة authz_scope_mig أطول من أن تُحفظ في اللقطة — لم يُحذف شيء؛ راجع قيمتها في جدول meta قبل إعادة المحاولة' }, 409);
     var counter2 = await enfMigCounterPlan(env), rev = counter2.rev,
@@ -301,7 +346,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
     }
     var flag = JSON.stringify({ applied: true, at: now, by: ident.uid, snap: snap, hash: b.hash, inferable: !!b.inferable });   /* المعرّفُ لا اسمُ المستخدم */
     if (retire2 && R2.retireMeta != null) st2.push(env.DB.prepare('DELETE FROM meta WHERE k = ?1').bind(ENF_RETIRE_META));
-    if (!retire2 && parts2.length && parts2[0] !== ENF_ROLES_PART && ENF_SOLO_EXTRA.indexOf(parts2[0]) === -1) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(parts2[0] === ENF_SID_PART ? 'authz_id_mig' : 'authz_perm_mig', flag));   /* د5-هـ: علامةُ الهوية لـ«site-sid» */
+    if (!retire2 && parts2.length && parts2[0] !== ENF_ROLES_PART && parts2[0] !== ENF_TPLS_PART && ENF_SOLO_EXTRA.indexOf(parts2[0]) === -1) st2.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind(parts2[0] === ENF_SID_PART ? 'authz_id_mig' : 'authz_perm_mig', flag));   /* د5-هـ: علامةُ الهوية لـ«site-sid» */
     st2.push(enfLogStmt(env, { ts: now, uid: ident.uid, un: ident.un, role: 'super', k: 'authz-migrate', res: 'migration', keys: parts2.join(','), scope: 'writes=' + R2.plan.writes.length, decision: 'allow', why: 'apply', reason: snap, path: '/api/authz-migrate', ip: ident.ip }));
     var conflict2=await enfMigBatch(env,guards2.concat([counter2.statement],st,st2));
     if(conflict2)return conflict2;
@@ -717,8 +762,10 @@ function changesCut(rows, max) {
 }
 /* /api/changes في بيئة الإنفاذ: am = وضعُ الخادم الآن · az = تغيّر ما تُحسب منه مفاتيحُ الفاعل (الصلاحيات · الحسابات · الهيكل · المنصة · منحُ إداراته) */
 var ENF_AZ_GLOBAL = { bassam_perms_v1: 1, bassam_auth_users_v1: 1, bassam_depts_v1: 1, bassam_gdepts_v1: 1, bassam_platform_v1: 1 };
+/* V7 · د5-ح: وضعُ القرار كما يراه العميل — المحرّكُ النافذ وحده («enforce»؛ ومديرُ المنصة في «unmigrated» يعمل به كذلك) */
+function enfAm(env) { var M = env.__enfm; return enfDecides(M) ? 'enforce' : (M ? M.mode : 'unavailable'); }
 function enfChangesOut(env, A, v, keys, all) {
-  var out = { v: v, keys: keys, am: env.__enfm ? env.__enfm.mode : 'legacy' }, ds = {}, i;
+  var out = { v: v, keys: keys, am: enfAm(env) }, ds = {}, i;
   enfDeptsOf(A).forEach(function (d) { ds[d] = 1; });
   for (i = 0; i < all.length; i++) {
     var k = String(all[i]), P = parseKey(k);
@@ -803,7 +850,7 @@ async function changesRoute(env, url, ss) {
       }
     } finally { lpLeave(ss.uid, lpT); }
   }
-  if (rv2 <= since) return json(enfEnvOn(env) ? { v: rv2, keys: [], am: env.__enfm ? env.__enfm.mode : 'legacy' } : { v: rv2, keys: [] });
+  if (rv2 <= since) return json({ v: rv2, keys: [], am: enfAm(env) });
   var AC = await actorOf(env, ss.uid);
   if (!AC) return json({ ok: 0, err: 'session' }, 401);
   var ch = await env.DB.prepare('SELECT k, rev FROM revs WHERE rev > ?1 ORDER BY rev, k').bind(since).all();
@@ -814,7 +861,7 @@ async function changesRoute(env, url, ss) {
      إلى الأبد (استعادة · استيراد · تبويبٌ خامل). الآن: مرتّبةٌ بالمراجعة وتُقطع عند CHANGES_MAX مما يراه الفاعلُ على حدود مراجعةٍ كاملة
      (حفظةٌ واحدة لا تُشطر — قد تتجاوز الحدَّ وحدها) ⇒ more:1 و v = آخرُ مراجعةٍ مضمَّنة: مؤشّرٌ آمن يُطلب به الباقي فوراً. بلا قطع: الشكلُ كما كان. */
   var cutC = changesCut(rowsC, CHANGES_MAX), ksC = cutC.keys, vC = cutC.more ? cutC.v : rv2, allC = ((ch && ch.results) || []).map(function (r) { return r.k; });
-  var outC = enfEnvOn(env) ? enfChangesOut(env, AC, vC, ksC, allC) : { v: vC, keys: ksC };
+  var outC = enfChangesOut(env, AC, vC, ksC, allC);
   if (meSnapshotChanged(AC, (ch && ch.results) || [], vC)) outC.meChanged = 1;
 @@SYS:changes.tasks@@  if (cutC.more) outC.more = 1;
   return json(outC);
@@ -919,7 +966,8 @@ export default {
       env = await preAttach(env, request, 'api');   /* KIVO_255 · AUD-037: لقطةُ مقدّمة الطلب في جولةِ D1 واحدة (السياسة · الإنفاذ · الجلسة · الحسابات · الصلاحيات · الإدارات · المنصة · المراجعات) */
       var POL = await loadPolicy(env);
       /* KIVO_243: وضعُ الإنفاذ = ENV ∧ D1 — يُقرأ لكل طلبٍ في بيئة الإنفاذ وحدها؛ Production بلا المتغيّر لا تقرأ شيئاً ولا يتغيّر فيها مسار */
-      if (enfEnvOn(env)) { var ENFM = await enfModeOf(env); env = Object.assign({}, env, { __enfm: ENFM, __enf: ENFM.mode === 'enforce' ? ENFM : null }); if (ENFM.mode === 'unavailable') { var uaR = await enfUnavailable(env, request, path); if (uaR) return uaR; } }   /* KIVO_244 · ADR-003 */
+      /* V7 · د5-ح (القفل): الوضعُ يُقرأ لكل طلبٍ في كل بيئة — المحرّكُ النافذ يقرّر دائماً (لا وضعَ قديماً) */
+      var ENFM = await enfModeOf(env); env = Object.assign({}, env, { __enfm: ENFM, __enf: enfDecides(ENFM) ? ENFM : null }); if (ENFM.mode === 'unavailable') { var uaR = await enfUnavailable(env, request, path); if (uaR) return uaR; }   /* KIVO_244 · ADR-003 */
 
       /* نبض التعرف — تستعمله الاختبارات ولا يكشف شيئاً */
       /* الهوية العامة — لشاشة الدخول وأي عميل قبل الجلسة */
@@ -952,6 +1000,8 @@ export default {
          (الخروج وحده مستثنى — يُمسح الكوكي دائماً.) */
       var uLive = ((await usersList(env)) || []).filter(function (x) { return x && x.id === ss.uid; })[0];
       if (!uLive || uLive.dis) return json({ ok: 0, err: 'session' }, 401);
+      /* V7 · د5-ح: قاعدةٌ لم تُرحَّل بعد ⇒ مديرُ المنصة وحده يعمل (ليرحّل)؛ وغيرُه 503 برسالةٍ صريحة — لا قرارَ قديماً ولا سماحَ صامتاً */
+      if (enfUnmigratedFor(env.__enfm, uLive)) return await enfUnmigrated(env, request, path);
       /* V7 · د5-هـ (x1): «شاشة العرض» (role:'display') تقرأ وحدها — كلُّ طلبٍ مغيِّر يُرفض هنا قبل أيّ معالج (الحفظ · المساراتُ المكتوبة · الصور ·
          التنبيهات · الاستدراك) مهما حمل الجسم؛ ولا يبقى لها إلا إنهاءُ جلساتها هي (والخروجُ مسارٌ عام قبل هذا) */
       if (uLive.role === 'display' && request.method !== 'GET' && request.method !== 'HEAD' && path !== '/api/me/sess/kill' && path !== '/api/me/sess/kill-one') {
@@ -988,30 +1038,18 @@ export default {
       }
       /* ═══ شاشة مدير النظام: الحضور · الجلسات · الأمن · السياسات · الملخّص ═══ */
       var isAdminPath = path === '/api/presence' || path === '/api/sec' || path === '/api/sess/kill' || path === '/api/guard' || path === '/api/guard/unlock' || path === '/api/policy' || path === '/api/overview'
-        || path === '/api/recovery' || path === '/api/recovery/new' || path === '/api/reset' || path === '/api/permv2' || path === '/api/identity-rehearsal';
+        || path === '/api/recovery' || path === '/api/recovery/new' || path === '/api/reset' || path === '/api/identity-rehearsal';
       if (isAdminPath) {
         var AX = await actorOf(env, ss.uid);
         if (!AX) return json({ ok: 0, err: 'session' }, 401);
         var nowX = Date.now();
         var superX = AX.u.role === 'super';
-        if (AX.enf && !superX) return json({ ok: 0, err: 'forbidden', why: 'sys' }, 403);       /* KIVO_243: sys.security.view · sys.sessions.kill = role:super */
+        if (!superX) return json({ ok: 0, err: 'forbidden', why: 'sys' }, 403);       /* KIVO_243: sys.security.view · sys.sessions.kill = role:super · V7 · د5-ح (القفل): دائماً */
         var scopeOk = function (u) { if (superX) return true; if (!u) return false; return u.id === AX.u.id || (u.role === 'staff' && isMgrOf(AX, u.deptId || '')); };
         var byId = nmap(); AX.users.forEach(function (u) { if (u && u.id) byId[u.id] = u; });   /* KIVO_261: null-prototype */
         var pubU = function (u) { return u ? { id: u.id, name: u.name || u.un || '', un: u.un || '', role: u.role || '', deptId: u.deptId || '', ekey: u.ekey || '', mgr: !!u.mgr, dis: !!u.dis } : null; };
 
-        /* R193…R203: سجلُّ v24.9 — نسختُه وبصمتُه وتحقّقُه الداخلي وعدّاداتُ الظلّ (Phase 1 · 2.1 · 3 · 4 · 4.1 · 4.1.1 · 4.2 · 4.3 · 4.4 · 4.5 — كتابةً وقراءةً + ربطُ القراءة + موديلُ الترحيل + موديلُ الهوية + بروفةُ ترحيل الهوية + التمهيدُ المُدمَج هوية→نطاق) — مدير النظام وحده؛ قراءةٌ لا أثر لها */
-        if (path === '/api/permv2') {
-          if (!superX) return json({ ok: 0, err: 'لمدير النظام وحده' }, 403);
-          /* V7 · د5-هـ (44): تقريرُ السجلّ وروابطه (التحقق · الأعداد · النطاق · الحراسة · البناء) — عدّاداتُ القياس الظلّية (PERMV2 · PERMV3 · PERMV4) حُذفت معها */
-          if (!REG_VALIDATION) { try { REG_VALIDATION = KIVO_REGISTRY.validate(); } catch (e9) { REG_VALIDATION = { ok: false, err: String(e9 && e9.message || e9) }; } }
-          var scopeV = null; try { scopeV = KIVO_SCOPE.validate(); } catch (e4v) { scopeV = { ok: false, err: String(e4v && e4v.message || e4v) }; }
-          return json({ ok: 1, version: KIVO_REGISTRY.version, docSha256: KIVO_REGISTRY.docSha256, status: KIVO_REGISTRY.status, phase: 4.1, mode: 'shadow', worker: WORKER_VER, counts: KIVO_REGISTRY.counts, validation: REG_VALIDATION,
-                        scope: { version: KIVO_SCOPE.version, docSha256: KIVO_SCOPE.docSha256, phase: KIVO_SCOPE.phase, mode: KIVO_SCOPE.mode, dims: KIVO_SCOPE.DIMS, counts: KIVO_SCOPE.counts, validation: scopeV, migration: KIVO_SCOPE.migration, interpretations: KIVO_SCOPE.interpretations, conflicts: KIVO_SCOPE.conflicts, terminology: KIVO_SCOPE.terminology, readPolicy: KIVO_SCOPE.readPolicy, readBudgetPolicy: KIVO_SCOPE.readBudgetPolicy, bindings: KIVO_SCOPE.bindings.length,
-                                 identityRehearsal: { endpoint: '/api/identity-rehearsal', version: KIVO_IDENTITY_MIGRATION.version, docSha256: KIVO_IDENTITY_MIGRATION.docSha256, phase: KIVO_IDENTITY_MIGRATION.phase, mode: KIVO_IDENTITY_MIGRATION.mode, writes: 0, classes: KIVO_IDENTITY_MIGRATION.classes, auto: KIVO_IDENTITY_MIGRATION.auto, pending: KIVO_IDENTITY_MIGRATION.pending, thresholds: KIVO_IDENTITY_MIGRATION.model && KIVO_IDENTITY_MIGRATION.model.thresholds || null, sidClosureGates: KIVO_IDENTITY_MIGRATION.sidClosureGates || null, gates: (KIVO_IDENTITY_MIGRATION.gatesSpec || []).length, validation: (function () { try { return KIVO_IDENTITY_MIGRATION.validate(); } catch (eIV) { return { ok: false, err: String(eIV && eIV.message || eIV) }; } })() },
-                                 readBindings: { meta: KIVO_SCOPE.readBindings.meta, byResource: KIVO_SCOPE.readBindings.byResource, special: KIVO_SCOPE.readBindings.special, noReadKey: KIVO_SCOPE.readBindings.noReadKey, readKindOutsideRoutes: KIVO_SCOPE.readBindings.readKindOutsideRoutes || [] }, readBindingCheck: (function () { try { return permv4ReadBindingCheck(); } catch (e4c) { return { ok: false, err: String(e4c && e4c.message || e4c) }; } })()},
-                        guards: { version: KIVO_GUARDS.version, phase: KIVO_GUARDS.phase, mode: KIVO_GUARDS.mode, counts: KIVO_GUARDS.counts, covers: KIVO_GUARDS.covers, bindings: KIVO_GUARDS.bindings.length, shadowOnly: KIVO_GUARDS.shadowOnly.length, decisions: KIVO_GUARDS.decisions.length },
-                        build: { version: KIVO_BUILD.version, phase: KIVO_BUILD.phase, mode: KIVO_BUILD.mode, counts: KIVO_BUILD.counts, bindings: KIVO_BUILD.bindings.map(function (x) { return { key: x.key, group: x.group, status: x.status, impl: x.impl }; }), lenses: KIVO_BUILD.LENSES, importRes: KIVO_BUILD.IMPORT_RES, retroMaxH: KIVO_BUILD.RETRO_MAX_H } });
-        }
+        /* V7 · د5-ح: تقريرُ السجلّ وروابطه لمدير النظام حُذف مع طبقات الظلّ — يفحصها اختبارُ الحذف من الخادم المولَّد نفسِه (tests/removal/server.test.mjs) */
         /* RISHAD-266: /api/scope-dryrun (R200 · جردُ سقف النطاق القديم) أُزيل مع تقاعده، وتمهيدُ الهوية (/api/identity-preflight) مع 011/012/015/016 (RISHAD-266 P6) */
         /* R202 · Phase 4.4 — Identity Migration Rehearsal (مدير النظام وحده · GET · قراءةٌ فقط · writes = 0): يحمّل بيانات D1 الفعلية (الإدارات · الحسابات · الخطة · الجولات · الموظفون) ونصوصَها الخام وأرقامَ مراجعاتها
            ويستدعي KIVO_IDENTITY_MIGRATION.rehearse ببذرةٍ آمنة (crypto.getRandomValues · 32 بايت؛ أو seed=<64 hex> في الاستعلام لإعادة إنتاج بروفةٍ سابقة حرفاً بحرف) — لا يكتب شيئاً في D1 ولا يمسّ أي حكم؛ الناتجُ مجموعةُ كتابةٍ مقترحة وتصنيفُ نسبٍ وتصميمُ رجوع فحسب */
@@ -1233,11 +1271,11 @@ export default {
       }
 
       /* KIVO_243 — حالةُ الإنفاذ · سجلُّ القرارات · الترحيلُ والرجوع · جلسةُ الاختبار الداخلية (بيئة الإنفاذ وحدها) */
-      if (enfEnvOn(env) && (path === '/api/authz' || path === '/api/authz/log' || path === '/api/authz/snaps')) {
+      if (path === '/api/authz' || path === '/api/authz/log' || path === '/api/authz/snaps') {
         var AZ = await actorOf(env, ss.uid); if (!AZ) return json({ ok: 0, err: 'session' }, 401);
         return await enfAuthzApi(env, request, AZ, url, path);
       }
-      if (enfEnvOn(env) && path === '/api/authz-migrate') {
+      if (path === '/api/authz-migrate') {
         var AMG = await actorOf(env, ss.uid); if (!AMG) return json({ ok: 0, err: 'session' }, 401);
         return await enfMigrateApi(env, request, AMG, url, reqMeta(request));
       }
@@ -1402,9 +1440,12 @@ export default {
     env = await preAttach(env, request, 'shell');   /* KIVO_255 · AUD-037: الغلافُ بجلسة — السياسةُ والإنفاذُ والجلسةُ والمراجعاتُ في جولةٍ واحدة (kv كلُّها تُجلب بجولةٍ واحدة أصلاً) */
     await loadPolicy(env);
     var enfUA = false;
-    if (enfEnvOn(env)) { var ENFP = await enfModeOf(env); enfUA = ENFP.mode === 'unavailable'; env = Object.assign({}, env, { __enfm: ENFP, __enf: ENFP.mode === 'enforce' ? ENFP : null }); }   /* KIVO_243 · KIVO_244 ADR-003 */
+    var ENFP = await enfModeOf(env); enfUA = ENFP.mode === 'unavailable'; env = Object.assign({}, env, { __enfm: ENFP, __enf: enfDecides(ENFP) ? ENFP : null });   /* KIVO_243 · KIVO_244 ADR-003 · V7 · د5-ح: كل بيئة */
     if (enfUA) { try { var rmUA = reqMeta(request); await secLog(env, { act: 'authz_unavailable', detail: 'GET /', ip: rmUA.ip, city: rmUA.city, dev: rmUA.dev }); } catch (eUA) { swallow('unavailable-seclog', eUA, env.__rid); } }
     var s3 = enfUA ? null : await session(env, request);   /* وضعُ الحماية: لا جلسةَ ولا بيانات — شاشةُ الدخول مع الإشعار (boot.authz = 'unavailable') */
+    /* V7 · د5-ح: قاعدةٌ لم تُرحَّل — جلسةُ غيرِ مدير المنصة لا تحمل بيانات: شاشةُ الدخول مع الإشعار (boot.authz = 'unmigrated') */
+    var enfUM = ENFP.mode === 'unmigrated';
+    if (s3 && enfUM && enfUnmigratedFor(ENFP, ((await usersList(env)) || []).filter(function (x) { return x && x.id === s3.uid; })[0] || null)) s3 = null;
     var boot;
     /* معاينة شاشة الدخول (داخل إطار في مدير النظام ← المنصة): تُقدَّم كزائر بلا بيانات مهما كانت الجلسة */
     if (url.searchParams.get('bsPreview') === 'login') s3 = null;
@@ -1414,11 +1455,12 @@ export default {
       for (var retiredNf in keys) if (nfLegacyKey(retiredNf)) delete keys[retiredNf];
 @@SYS:boot.retired.custody@@@@SYS:boot.strip.irshad@@      for (var retiredBusiness in keys) if (bdLegacyKey(retiredBusiness)) delete keys[retiredBusiness];
       for (var retiredOperational in keys) if (opIsResource(retiredOperational)) delete keys[retiredOperational];
+      for (var retiredTp in keys) if (enfTplsKey(retiredTp)) delete keys[retiredTp];   /* V7 · د5-ح: قوالبُ الصلاحيات (موردٌ حُذف — يقرؤها الترحيلُ خاماً وحده) */
 @@SYS:boot.strip.dstats@@      for (var dk in keys) if (isDeviceKey(dk)) delete keys[dk];
       if (keys[K_USERS] != null) keys[K_USERS] = stripPh(keys[K_USERS]);
       /* نطاق القراءة: كلٌّ يحمل بيانات إدارته (ومدير النظام الكل) — لا تُحقن إدارات الغير */
       var AB = actorFromKeys(keys, s3.uid) || await actorOf(env, s3.uid);
-      if (AB && env.__enf) { AB.enf = env.__enf; if (!AB.__grants) enfAttachGrantsKeys(AB, keys); }   /* KIVO_243 */
+      if (AB) { AB.enf = env.__enf || ENF_CLOSED; if (!AB.__grants) enfAttachGrantsKeys(AB, keys); }   /* KIVO_243 · V7 · د5-ح: دائماً */
       if (!AB) {
         /* جلسةٌ حيّة لحسابٍ حُذف أو جُمّد: لا فاعل ⇒ لا بيانات. وكان الشرط
            «if (AB && !canRead(...))» يُسقط التصفية كلها عند غياب الفاعل فتُحقن
@@ -1430,17 +1472,17 @@ export default {
       /* الفحصُ العميق 2026-10-21 (R4 · IRSZ-3 · DG-07 · AUX-14): والقائمةُ نفسُها بأقلّ امتياز — لا هويةَ ولا جوالَ ولا حسابَ لموظفي غير نطاقه (054 usersScopeOut) */
       if (keys[K_USERS] != null) { await privPrepDepts(env, AB, (AB.depts || []).map(function (x) { return x && x.id; })); keys[K_USERS] = usersScopeOut(keys[K_USERS], AB); }   /* 019u (9) */
       var rvB = await revsAll(env), revsOut = {};
-      var enfRB = AB.enf ? await enfRefsFor(env, enfDeptsOf(AB), keys) : null;
+      var enfRB = await enfRefsFor(env, enfDeptsOf(AB), keys);
       for (var bk in keys) {
         var okB = canRead(AB, bk);
         /* D4‑01 (v24.5): ظلُّ نطاق القراءة — بعد الحكم، على القيمة كما ستُحقن أو كما كانت ستُحذف؛ لا يمسّ keys ولا الحكم */
         if (!okB) { delete keys[bk]; continue; }
-        if (AB.enf) { try { keys[bk] = enfProjectStr(AB, bk, keys[bk], enfRB); } catch (eBP) { delete keys[bk]; continue; } }
+        try { keys[bk] = enfProjectStr(AB, bk, keys[bk], enfRB); } catch (eBP) { delete keys[bk]; continue; }
         keys[bk] = privOut(AB, bk, keys[bk]);   /* PRIVACY batch (019u): SV01 — the permissions registry by units/targets */
         revsOut[bk] = rvB[bk] || 0;
       }
       boot = { srv: 1, cf: 1, v: await curRev(env), uid: s3.uid, keys: keys, revs: revsOut, rk: (await metaGet(env, 'rk')) ? 1 : 0 };
-      if (AB.enf) boot.authz = enfMe(AB, enfRB);                                     /* KIVO_243: المفاتيحُ المحمولة لكل إدارة · العدسات · النطاق */
+      boot.authz = enfMe(AB, enfRB);                                     /* KIVO_243: المفاتيحُ المحمولة لكل إدارة · العدسات · النطاق — V7 · د5-ح: دائماً */
       if (keys[K_USERS] != null) { var usB = usersLensFp(AB); if (usB) boot.uscope = usB; }
       if (keys[K_PERM] != null) { var psB = privPermsFp(AB); if (psB) boot.pscope = psB; }   /* PRIVACY batch (019u) */   /* مراجعةُ التكامل W1-R1: بصمةُ عدسة القائمة المحقونة (054 usersLensFp) */
       }
@@ -1449,6 +1491,7 @@ export default {
       var usX = await usersList(env);
       boot = { srv: 1, cf: 1, auth: 'need', fresh: isVirgin(usX) ? 1 : 0, keys: {}, brand: brandPublic(await platGet(env)), rk: (await metaGet(env, 'rk')) ? 1 : 0 };
       if (enfUA) { boot.authz = 'unavailable'; boot.notice = ENF_UNAVAIL_MSG; }   /* KIVO_244 · ADR-003 */
+      else if (enfUM) { boot.authz = 'unmigrated'; boot.notice = ENF_UNMIG_MSG; }   /* V7 · د5-ح */
     }
     /* الحقن بالبثّ: HTMLRewriter محرّكٌ أصليّ يمرّ على البايتات مروراً ولا يبني نصاً
        جديداً — فيسقط أثقل ثلاث عمليات كانت في الطلب: فكّ ترميز ٢.٥ مليون حرف،

@@ -84,11 +84,6 @@
      "name": "الورديات"
     },
     {
-     "key": "ptpls",
-     "name": "قوالب الصلاحيات",
-     "noTab": true
-    },
-    {
      "key": "import",
      "name": "استيراد بيانات",
      "noTab": true

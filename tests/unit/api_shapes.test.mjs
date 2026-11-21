@@ -25,7 +25,6 @@ const SPEC = {
   '/api/policy': { ok: 'number', policy: 'object' },
   '/api/overview': { ok: 'number', now: 'number', policy: 'object', failsToday: 'number', deniedToday: 'number', lockedNow: 'number', activeNow: 'number', sessions: 'number', lastLogin: 'object', fails: 'array' },
   '/api/recovery': { ok: 'number', key: 'string|null', used: 'object|null', backups: 'array', backupLastLogin: 'number' },
-  '/api/permv2': { ok: 'number', version: 'string', docSha256: 'string', status: 'string' },
   /* RISHAD-266: /api/scope-dryrun أُزيل مع تقاعد سقف النطاق القديم */
   '/api/identity-rehearsal': { ok: 'number', worker: 'string', rehearsal: 'object' },
 };
@@ -37,7 +36,7 @@ test('أشكالُ الاستجابة لـ18 مساراً كما في docs/api.m
   bad.push(...shape(await get('/api/brand'), SPEC['/api/brand'], 'brand'));
   const pa = await get('/api/ping'); bad.push(...shape(pa, SPEC['/api/ping'], 'ping')); for (const k of Object.keys(SPEC['/api/ping#super'])) if (k in pa) bad.push('ping(anon) يحمل ' + k);
   bad.push(...shape(await get('/api/ping', { cookie: su.ck }), Object.assign({}, SPEC['/api/ping'], SPEC['/api/ping#super']), 'ping(super)'));
-  for (const p of ['/api/whoami', '/api/me', '/api/aud', '/api/presence', '/api/sec', '/api/guard', '/api/policy', '/api/overview', '/api/recovery', '/api/permv2', '/api/identity-rehearsal']) bad.push(...shape(await get(p, { cookie: su.ck }), SPEC[p], p));
+  for (const p of ['/api/whoami', '/api/me', '/api/aud', '/api/presence', '/api/sec', '/api/guard', '/api/policy', '/api/overview', '/api/recovery', '/api/identity-rehearsal']) bad.push(...shape(await get(p, { cookie: su.ck }), SPEC[p], p));
   /* RISHAD-266 P6: the integrated identity preflight was removed with 011/012/015/016 — the route no longer answers with data */
   { const gone = await C.api('/api/identity-preflight', { cookie: su.ck }); if (gone.status === 200 || (gone.j && gone.j.preflight)) bad.push('identity-preflight: removed route still answers ' + gone.status); }
   const g = await get('/api/get?keys=bassam_depts_v1,nope', { cookie: su.ck }); bad.push(...shape(g, SPEC['/api/get'], 'get'));

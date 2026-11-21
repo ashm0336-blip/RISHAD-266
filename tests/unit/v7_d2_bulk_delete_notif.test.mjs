@@ -35,7 +35,7 @@ async function mk(mode) {
     return post(who, { uid: ids[who], dept, intent: 'delete', deleteMode, requestId: 'TEST_ONLY_d2_tr_' + (++seq), base: c.base, finalRows: c.employees.filter(keep), reason: 'TEST_ONLY ' + deleteMode }); };
   const replace = async (who, dept, rows) => { const c = await context(who, dept, 'import');
     return post(who, { uid: ids[who], dept, intent: 'import', requestId: 'TEST_ONLY_d2_imp_' + (++seq), base: c.base, finalRows: rows(c.employees), options: c.options,
-      import: { mode: 'replace', year: c.clock.y, month: c.clock.m, schedule: [], templates: [] }, reason: 'TEST_ONLY replace' }); };
+      import: { mode: 'replace', year: c.clock.y, month: c.clock.m, schedule: [] }, reason: 'TEST_ONLY replace' }); };
   const msgs = () => { const t = env.DB.q('SELECT scope,message_id,kind,value FROM notification_targets'); return env.DB.q("SELECT * FROM notification_messages WHERE category='emp' ORDER BY created_at,id").map((m) => Object.assign({}, m, {
     own: t.filter((x) => x.scope === m.scope && x.message_id === m.id && x.kind === 'employee').map((x) => x.value).sort(), roles: t.filter((x) => x.scope === m.scope && x.message_id === m.id && x.kind === 'role').map((x) => x.value).sort() })); };
   const of = (type) => msgs().filter((m) => m.type === type);
@@ -48,7 +48,7 @@ const NEW = (n) => ({ eid: 'tst_e_new' + n, name: 'TEST_ONLY · جديد ' + n, 
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 const isNew = (e, a, b) => { const m = /^tst_e_new(\d+)$/.exec(e.eid || ''); return !!m && +m[1] >= a && +m[1] <= b; };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   /* ── the reproduction (fails on 09a5fe8: six emp_del) ── */
   test('V7 D2 · ' + mode + ': one save removing six employees yields exactly one aggregated notice and no emp_del; removing four yields four emp_del', async () => {
     const x = await mk(mode);

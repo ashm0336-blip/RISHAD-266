@@ -41,7 +41,7 @@ async function world(mode) {
   };
   return { env, C, su, self };
 }
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] الموظفُ ومديرُ الإدارة المعيَّن: كلمةُ المرور وحدها — لا اسمَ دخولٍ ولا بديلَ ولا اسمَ ولا بريدَ ولا جوال (ولو بكلمة المرور الحالية)', K264, async () => {
     const { C, self } = await world(mode);
     for (const [who, un, pw, uid] of [['موظف', '0000000113', '70113', 'tst_emp1'], ['مدير إدارة معيَّن', '0000000101', '70101', 'tst_dm1']]) {

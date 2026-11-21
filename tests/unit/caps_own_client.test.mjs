@@ -74,7 +74,7 @@ async function ceiling(c, x) {
   assert.equal(c.denied(), 0, 'the worker accepted every save');
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'narrow then widen (pages · tabs · lenses) from the real client: stored sheets, lens lists, template ids and explicit grants stay byte-identical in D1', needs('award', 'irshad', 'tasks'), async () => {

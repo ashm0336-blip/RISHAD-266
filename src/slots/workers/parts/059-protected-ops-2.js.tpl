@@ -21,12 +21,7 @@ function enfVia(A, k, rn, d, curVal, newVal, ctx) {
   if (curVal == null || newVal == null) return null;
   var ds = null, i, f, need = {};
   function diffs() { if (!ds) ds = walkDiff(curVal, newVal); return ds; }
-@@SYS:enf.via.staff@@  /* SEED_ONLY: بذرُ قوالب الصلاحيات الافتراضية لأول مرّة (القائمةُ فارغة) من صفحة التقرير */
-  if (rn === 'bassam_perm_tpls_v1' && diffs().length && diffs().every(SEED_ONLY)) {
-    var sk = ['tpl.create'@@SYS:enf.seed.keys.dreport@@];
-    for (i = 0; i < sk.length; i++) if (enfHeld(A, d, sk[i])) return { keys: [sk[i]], tag: 'via:SEED_ONLY' };
-    return null;
-  }
+@@SYS:enf.via.staff@@
   /* تبعةُ إعادة تسمية الوردية (عمليةٌ محمية): حقلُ shift وحده من الاسم القديم إلى الجديد، ولا يبقى صفٌّ على القديم — بمفتاح ref.shift.edit */
   if (ctx && ctx.shRen && srvBusAccepts('shifts.renamed.cascade@1', rn, diffs, newVal, ctx))
     return enfHeld(A, d, 'ref.shift.edit') ? { keys: ['ref.shift.edit'], tag: 'cascade:shiftRename' } : null;   /* V7 · د5-د: مالكُ المورد المتأثّر يقرّر أنها تبعةٌ تامّة (ناقل الخادم) */

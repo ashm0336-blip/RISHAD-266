@@ -29,9 +29,7 @@ async function irReceipt(env, A, b, fingerprint) {
 function irReceiptAuthority(ctx, b) {
   var k = irKey(ctx.d, IR_RES_NAMES.indexOf(irActResource(b))), A = ctx.A;
   if (!deptInScope(A, ctx.d) || !resOnCeiling(A, ctx.d, resOf(k))) throw irError('irshad-denied', 403);
-  var permitted = A.enf ? enfResWriter(A, ctx.d, resName(k)) :
-    authorizeActs(A, k, [b.op === 'create' ? 'add' : b.op.indexOf('delete') === 0 ? 'del' : 'edit']).ok;
-  if (!permitted) throw irError('irshad-denied', 403);
+  if (!enfResWriter(A, ctx.d, resName(k))) throw irError('irshad-denied', 403);   /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
 }
 async function irRetroSnapshot(env, d) {
   var out = await env.DB.batch([
@@ -57,14 +55,13 @@ async function irPermission(ctx, resource, before, after, reason) {
     retroWin = {}, pv4 = {};
   retroWin[ctx.d + '|irshad'] = retro.state.windows;
   pv4[ctx.d] = ctx.pv4;
-  var set = {}, keys = {}, body = { why: {} }, X = null, c = {};
+  var set = {}, keys = {}, body = { why: {} }, c = {};
   set[k] = JSON.stringify(after); keys[k] = 1;
   if (reason) body.why[k] = reason;
-  if (ctx.A.enf) {
-    X = await enfSavePrep(ctx.env, ctx.A, body, set, [], keys, KIVO_BUILD.markers({}, keys), null, false, false, retroWin, pv4);
-    c.enf = enfCtxFor(X, k, ctx.d);
-  }
-  var result = X && X.batchDeny ? enfNo(X.batchDeny.why, X.batchDeny) :
+  /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
+  var X = await enfSavePrep(ctx.env, ctx.A, body, set, [], keys, KIVO_BUILD.markers({}, keys), null, false, false, retroWin, pv4);
+  c.enf = enfCtxFor(X, k, ctx.d);
+  var result = X.batchDeny ? enfNo(X.batchDeny.why, X.batchDeny) :
     canWrite(ctx.A, k, JSON.stringify(after), JSON.stringify(before), c);
   if (!result.ok) {
     var error = irError('irshad-denied', 403);
@@ -217,7 +214,7 @@ async function irAct(env, A, b, meta) {
   statements.push(env.DB.prepare("INSERT INTO aud(cid,ts,uid,un,dept,k,rev,etype,eid,ename,act,ctx,bef,aft,ip,dev,city)VALUES(?1,?2,?3,?4,?5,?6,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),'dataset',?7,'irshad',?8,?9,'','',?10,?11,?12)").bind(
     'irshad_' + randTok(), now, A.u.id, String(A.u.un || ''), ctx.d, k, resultId || b.requestId, b.op,
     JSON.stringify({ requestId: b.requestId, n: n, reason: reason }), (meta && meta.ip) || '', (meta && meta.dev) || '', (meta && meta.city) || ''));
-  var authzLog = A.enf && enfLogRow(A, k, permission.decision, '/api/irshad/act', meta || {});
+  var authzLog = enfLogRow(A, k, permission.decision, '/api/irshad/act', meta || {});
   if (authzLog) statements.push(enfLogStmt(env, authzLog));
   try { await env.DB.batch(guards.concat(statements)); }
   catch (error) {

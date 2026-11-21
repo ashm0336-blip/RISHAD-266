@@ -105,7 +105,7 @@ test('canonical parts initialize typed custody without editing source files', as
   assert.equal(W.DB.q("SELECT COUNT(*) n FROM kv WHERE k GLOB '*bassam_custody_v1'")[0].n, 0);
 });
 
-for (const mode of ['legacy', 'enforce'])
+for (const mode of ['enforce'])
   test(mode + ': original add/edit/view and department rules govern explicit operations', async () => {
     const W = await world(mode),
       id = await item(W, 2),
@@ -604,7 +604,7 @@ async function commitPlanWithEmployees(W, plan, newEmployees, extra = []) {
   return W.DB.batch([...guards, ...mutation, ...finish]);
 }
 
-for (const mode of ['legacy', 'enforce'])
+for (const mode of ['enforce'])
   test(mode + ': employee cleanup uses the original delete grant, targets only removed holders and preserves prior orphans', async () => {
     const W = await world(mode),
       id = await item(W, 5);

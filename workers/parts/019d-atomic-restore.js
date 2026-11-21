@@ -116,13 +116,12 @@ async function rsReferenceSnapshot(env, uid, options) {
   var currentActor = actorFromKeys(inputKeys, uid);
   if (!currentActor) throw rsError('session', 401);
   var currentMode = await enfModeOf(env);
-  if (currentMode.mode === 'unavailable') throw rsError('authz-unavailable', 503);
-  if (currentMode.mode === 'enforce') {
-    currentActor.enf = currentMode;
-    // The actor's explicit grants of every department it reaches (a sector manager's branch) are part of its authority.
-    if (scope) await rsScopeKV(env, (currentActor.u.role === 'super' ? [] : enfDeptsOf(currentActor)).map(enfGrantsKey));
-    enfAttachGrantsKeys(currentActor, inputKeys);
-  }
+  if (currentMode.mode === 'unavailable' || enfUnmigratedFor(currentMode, currentActor.u)) throw rsError('authz-unavailable', 503);   /* V7 · د5-ح: «unmigrated» لغير مدير المنصة كذلك */
+  /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده — لا فرعَ قديماً */
+  currentActor.enf = currentMode;
+  // The actor's explicit grants of every department it reaches (a sector manager's branch) are part of its authority.
+  if (scope) await rsScopeKV(env, (currentActor.u.role === 'super' ? [] : enfDeptsOf(currentActor)).map(enfGrantsKey));
+  enfAttachGrantsKeys(currentActor, inputKeys);
   return {
     env: env,
     A: currentActor,

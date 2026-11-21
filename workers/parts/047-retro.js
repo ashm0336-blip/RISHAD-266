@@ -26,7 +26,7 @@ async function retroApiRun(env, request, A, url, meta) {
   }
   if (request.method !== 'POST') return json({ ok: 0, err: 'method' }, 405);
   var act = b.act === 'close' ? 'close' : 'open';
-  if (!may && A.enf) { try { await enfInitDb(env); await enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: d, k: retroKey(d, sys), res: RETRO[sys].state, keys: RETRO[sys].key, decision: 'deny', why: 'perm', path: '/api/retro', ip: meta.ip }).run(); } catch (eL9) { swallow('retro-authz-log', eL9, env.__rid); } }
+  if (!may) { try { await enfInitDb(env); await enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: d, k: retroKey(d, sys), res: RETRO[sys].state, keys: RETRO[sys].key, decision: 'deny', why: 'perm', path: '/api/retro', ip: meta.ip }).run(); } catch (eL9) { swallow('retro-authz-log', eL9, env.__rid); } }
   if (!may) { await secLog(env, { ts: now, uid: A.u.id, un: A.u.un, act: 'denied', target: retroKey(d, sys), detail: 'retro.' + act + ':perm', ip: meta.ip, city: meta.city, dev: meta.dev }); return json({ ok: 0, err: 'perm', key: RETRO[sys].key }, 403); }
   var st9 = domainState.state, w, scope;
   if (act === 'open') {
@@ -37,7 +37,7 @@ async function retroApiRun(env, request, A, url, meta) {
     if (!KIVO_BUILD.retroClosed(T, y, m, dd0)) return json({ ok: 0, err: 'not-closed', today: T }, 400);          /* الفترةُ المفتوحة لا تحتاج استدراكاً */
     var hours = Number(b.hours); if (!(hours > 0)) hours = KIVO_BUILD.RETRO_DEF_H; hours = Math.min(KIVO_BUILD.RETRO_MAX_H, Math.max(1 / 3600, hours));
     var reason = String(b.reason == null ? '' : b.reason).trim().slice(0, 300);
-    if (!reason && A.enf && !reasonExempt(A)) return json({ ok: 0, err: 'reason', key: RETRO[sys].key }, 400);      /* KIVO_243 · D3-03: السببُ إلزاميٌّ عند الإنفاذ */
+    if (!reason && !reasonExempt(A)) return json({ ok: 0, err: 'reason', key: RETRO[sys].key }, 400);      /* KIVO_243 · D3-03: السببُ إلزاميٌّ عند الإنفاذ */
     w = { id: 'rw' + now.toString(36) + Math.floor(Math.random() * 1e6).toString(36), scope: scope, by: { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || ''), name: String(A.u.name || '') }, at: now, until: now + Math.round(hours * 3600000), hours: hours, reason: reasonLogged(A, reason), reasonMissing: !reason };
     st9.windows.push(w); if (st9.windows.length > 200) st9.windows = st9.windows.slice(-200);
   } else {
@@ -60,7 +60,7 @@ async function typedRetroCommit(ctx, sys, adapter, state, window, scope, act, me
       JSON.stringify({ sys: sys, scope: scope, key: RETRO[sys].key }),
       JSON.stringify(act === 'open' ? { until: window.until, hours: window.hours, reason: window.reason, by: window.by.un } : { closedAt: window.closedAt, by: String(A.u.un || '') }),
       meta.ip || '', meta.dev || '', meta.city || ''));
-  if (A.enf) statements.push(enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: ctx.d,
+  statements.push(enfLogStmt(env, { uid: A.u.id, un: String(A.u.un || ''), role: A.u.role, dept: ctx.d,
     k: key, res: RETRO[sys].state, keys: RETRO[sys].key, scope: retroScopeKey(scope), decision: 'allow', why: act,
     reason: act === 'open' ? (window.reason || '') : '', path: '/api/retro', ip: meta.ip }));
   await env.DB.batch(ctx.guards.concat(statements));

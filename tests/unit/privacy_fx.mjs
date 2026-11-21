@@ -55,4 +55,4 @@ export async function save(w, ck, set, base) {
 }
 export const rec = (list, eid) => (Array.isArray(list) ? list : []).find(e => e && e.eid === eid);
 export const drRow = (doc, w) => ((((doc || {})[w.drRow.dk] || {}).shifts || {})[w.drRow.sh] || { roster: [] }).roster.find(r => r.ekey === w.drRow.ekey);
-export const MODES = ['legacy', 'enforce'];
+export const MODES = ['enforce'];

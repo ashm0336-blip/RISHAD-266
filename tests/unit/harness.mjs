@@ -147,6 +147,8 @@ export function makeLegacyTestEnv(extra = {}) {
   env.DB.exec('CREATE TABLE d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
   env.DB.db.prepare('INSERT INTO d1_migrations(name) VALUES(?)').run('0001_baseline');
   allowTestSchemaUpgrade(env.DB);
+  /* V7 · د5-ح (القفل): القاعدةُ التاريخية بعد تفعيل القفل (act:'activate') — بلا هذا السطر تكون «unmigrated» (غيرُ مدير المنصة مرفوض) */
+  env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO NOTHING");
   return seedLegacyTestAdmin(env);
 }
 let _n = 0;

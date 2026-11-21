@@ -60,7 +60,7 @@ async function page(W, ck, storeJson, emps, users) {
 }
 const usersOf = (W) => stored(W.env, 'bassam_auth_users_v1').filter((u) => u.deptId === D).map((u) => ({ id: u.id, role: u.role, deptId: u.deptId, ekey: u.ekey, dis: u.dis, mgr: u.mgr }));
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) R-2 «قبولٌ نيابةً»: بلا حساب · معطَّل · برقم الهوية معلَّمون بالسبب ولا يُختارون — والنشطُ يُختار', async () => {

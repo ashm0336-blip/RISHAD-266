@@ -13,6 +13,14 @@ const response = (value) =>
   new Response(JSON.stringify(value), {
     headers: { "Content-Type": "application/json" },
   });
+/* V7 · د5-ح (القفل): لا وضعَ قديماً — المحرّكُ النافذ يطلب سبباً لمفاتيح السبب (task.reopen · task.month.reopen …). الصفحةُ الحقيقية تسأله قبل
+   الإرسال من طبقة التخزين (280 «السبب أولاً» · why9 ⇒ body.why) وهي غائبةٌ عن vm — فيحمل كلُّ حفظٍ هنا سبباً اصطناعياً TEST_ONLY لكل مفتاح (كما يكتبه المستخدم) */
+function withReason(route, options = {}) {
+  if (route !== '/api/save' || !options.body || (options.method || 'GET') === 'GET') return options;
+  const body = JSON.parse(options.body), why = Object.assign({}, body.why || {});
+  Object.keys(body.set || {}).concat(body.del || []).forEach((k) => { if (!why[k]) why[k] = 'TEST_ONLY سببٌ مكتوبٌ في نافذة السبب'; });
+  return { ...options, body: JSON.stringify({ ...body, why }) };
+}
 export async function attachTaskOperations(
   ctx,
   {
@@ -21,15 +29,17 @@ export async function attachTaskOperations(
     ck,
     uid = "tst_dm1",
     dept = "tst_d1",
-    askReason,
+    /* V7 · د5-ح: نافذةُ السبب (280 askReason) محاكاةً على الخادم الحقيقي — يكتب المستخدمُ سبباً TEST_ONLY */
+    askReason = W ? (k, keys, cb) => setTimeout(() => cb("TEST_ONLY سببٌ مكتوبٌ في نافذة السبب"), 0) : undefined,
   } = {},
 ) {
   ctx.crypto = globalThis.crypto;
+  if (W && typeof ctx.fetch === 'function') { const f0 = ctx.fetch; ctx.fetch = (route, options) => f0(route, withReason(String(route), options)); }   /* V7 · د5-ح: والحفظُ من الصفحة مباشرةً كذلك */
   const base = new Map(),
     calls = [];
   let v = 1;
   const C = W
-    ? { req: (route, options) => W.C.req(route, { ...options, cookie: ck }) }
+    ? { req: (route, options) => W.C.req(route, { ...withReason(route, options), cookie: ck }) }
     : {
         req: async (route, options = {}) => {
           if (route.startsWith("/api/operations/read?")) {

@@ -105,6 +105,9 @@ export function withPatch(w, patchFile) {
     /* V7 · د5-هـ (44): مقطعٌ لجزءٍ حُذف كلُّه مع ميزته (طبقاتُ الظلّ 045 · 049) لا موضعَ له — يُعدّ مدمجاً؛ وبقيةُ المقاطع تُتحقّق كما هي */
     if (h.file && /^workers\/parts\//.test(h.file) && !fs.existsSync(path.join(ROOT, h.file))) { merged++; continue; }
     const A = h.a.join('\n'), B = h.b.join('\n');
+    /* V7 · د5-ح (القفل): مقطعٌ يعدّل دالّةً حُذفت كلُّها مع مسار القرار القديم (selfTaskOnly …) لا موضعَ له — يُعدّ مدمجاً */
+    const gone = (A.match(/function ([A-Za-z_$][\w$]*)\(/g) || []).map((x) => x.slice(9, -1)).filter((n) => !src.includes('function ' + n + '('));
+    if (gone.length && out.split(A).length !== 2) { merged++; continue; }
     if (out.split(B).length === 2 && out.split(A).length !== 2) { merged++; continue; }
     if (out.split(A).length !== 2) throw new Error(patchFile + ': مقطعٌ غيرُ فريد أو غائب — أعد بناء الرقعة على خط الأساس');
     out = out.replace(A, () => B);

@@ -242,7 +242,6 @@ async function imgRefsOfKey(env, k) {
   var r = await env.DB.prepare('SELECT img FROM imgref WHERE k = ?1').bind(k).all();
   return ((r && r.results) || []).map(function (x) { return x.img; });
 }
-function imgDeptWriter(A, d) { var wp = writePages(A, d); return wp === null || wp.length > 0; }
 /* V7-F · owner decisions 1+3 — the ORIGINAL unit of an orphan is imgown.dept, and it only counts while that unit still exists and was never
    deleted since the image was orphaned: a unit delete stamps its orphans IMG_GONE (019e), so a unit or section created later under the same id
    inherits nothing. Then: an orphan is re-bound only by a record of that unit (its own undo inside the grace) or by the platform admin. */
@@ -259,17 +258,7 @@ function imgNo(A, o, why) {
   return { ok: false, why: why, open: why === 'inuse' || !!(o && o.dept && o.uid !== IMG_GONE && imgUnitLive(A, o.dept) && deptInScope(A, o.dept)) };
 }
 /* كتابةُ الصورة = كتابةُ مورد مالكها. لا anyWriter، ولا دورٌ يعلو على سجل الموارد. */
-function imgWriteOk(A, k) {
-  if (A && A.enf) return enfImgWriteOk(A, k);                                 /* KIVO_243 */
-  var R8 = resOf(k); if (!R8 || R8.scope === 'device' || R8.srv) return false;   /* V7 · د5-ح (13): srv لا يكتبه العميل */
-  var P8 = parseKey(k);
-  if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
-  if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
-  if (!deptInScope(A, P8.dept)) return false;
-  if (R8.rule) return imgDeptWriter(A, P8.dept);
-  if (R8.p44) return isMgrOf(A, P8.dept);   /* V7 · د5-هـ (44): صورةُ سجلّ الأدوار تتبع كاتبَه (مديرُ الوحدة) */
-  return authorize(A, k, 'edit').ok || authorize(A, k, 'add').ok || authorize(A, k, 'del').ok;
-}
+function imgWriteOk(A, k) { return enfImgWriteOk(A, k); }   /* KIVO_243 · V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
 /* mode: 'read' | 'put' | 'del' — الحكمُ من المالك وحده */
 async function imgVerdict(env, A, ik, mode) {
   if (!A || !A.u) return { ok: false, why: 'session' };
@@ -955,7 +944,7 @@ function usersPick(u, ek) {
   return c;
 }
 /* القراءةُ بلا مسار canRead العام (V7 · د5-هـ 44: ظلُّ القياس الذي كان فيه حُذف) */
-function usersReadsEmps(A, d) { var k = 'bsdept:' + d + ':bassam_employees_v1'; return A.enf ? canReadEnf(A, k) : canRead0(A, k); }
+function usersReadsEmps(A, d) { return canReadEnf(A, 'bsdept:' + d + ':bassam_employees_v1'); }   /* V7 · د5-ح: المحرّكُ النافذ وحده */
 /* عدسةُ الفاعل: سجلٌّ مخزَّن (بعد نزع البصمة والرقم) ⇒ هو نفسُه (يُرى كاملاً) · نسخةُ دليلٍ مقلَّصة · null (لا يُرسل) — الحكمُ مرةً لكل إدارة */
 function usersLens(A) {
   var memo = nmap();
@@ -1471,20 +1460,17 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var pv3RetroCtx = {}; try { pv3RetroCtx = await permv3RetroLoad(env, set, del); } catch (e3r) { swallow('pv3-retroLoad', e3r, env.__rid); }
   /* R197 · Phase 4: مرجعياتُ النطاق المخزّنة (أقفالُ الجدول/المهام · جدولُ الورديات) لكل إدارة — للظلّ فقط */
   var pv4Refs = {}; try { pv4Refs = await permv4RefsLoad(env, set, del); } catch (e4r) { swallow('pv4-refsLoad', e4r, env.__rid); }
-  /* KIVO_243 · الإنفاذ: سياقُ الحفظة (سجلّاتُ النطاق · جداولُ الورديات · الأسباب · سياستا الاستيراد والاستعادة) — في وضع الإنفاذ وحده */
-  var ENFX = null;
-  if (A.enf) {
-    var enfAudRestore = false, enfAudHist = false;
-    for (var ah9 = 0; ah9 < audIn.length; ah9++) if (audIn[ah9].etype === 'dataset') { if (audIn[ah9].act === 'restore') enfAudRestore = true;@@SYS:save.audHist.dstats@@ }
-    ENFX = await enfSavePrep(env, A, body, set, del, audKeysOk, pv3M, pv3Restore, enfAudRestore, enfAudHist, pv3RetroCtx, pv4Refs);
-  }@@SYS:save.obsToks.daily@@
+  /* KIVO_243 · الإنفاذ: سياقُ الحفظة (سجلّاتُ النطاق · جداولُ الورديات · الأسباب · سياستا الاستيراد والاستعادة) — V7 · د5-ح (القفل): دائماً */
+  var enfAudRestore = false, enfAudHist = false;
+  for (var ah9 = 0; ah9 < audIn.length; ah9++) if (audIn[ah9].etype === 'dataset') { if (audIn[ah9].act === 'restore') enfAudRestore = true;@@SYS:save.audHist.dstats@@ }
+  var ENFX = await enfSavePrep(env, A, body, set, del, audKeysOk, pv3M, pv3Restore, enfAudRestore, enfAudHist, pv3RetroCtx, pv4Refs);
   /* الرقمُ يُخصَّص بعد المرور كلِّه، حين يُعرف أن ثمّة ما يُنفَّذ فعلاً */
   var rev = 0, pend = [];
   var st = [], k, changed = 0, i;
   var revs = await revsAll(env);
   var out = { revs: {}, denied: {}, conflicts: {} };
   /* READ-01: لا تُسلَّم قيمةٌ حاليةٌ إلا لمن يقرأ المفتاح — الرفضُ لا يكون قناةَ تسريب */
-  var curSafe = function (kq, cq) { if (!canRead(A, kq)) return null; if (ENFX && cq != null) { try { cq = enfProjectStr(A, kq, cq, ENFX.refs); } catch (eP9) { return null; } } if (kq === K_USERS && cq != null) cq = usersScopeOut(usersNoOut(stripPh(cq), A), A); return privOut(A, kq, cq); };   /* KIVO_248 · AUD-033: القيمةُ الحالية في denied/conflicts كانت تحمل بصمات كلمات المرور — تُنزع كما في /api/get والإقلاع · KIVO_254 (ج): لكل الأدوار بلا استثناء (كان مدير النظام يُستثنى) */
+  var curSafe = function (kq, cq) { if (!canRead(A, kq)) return null; if (cq != null) { try { cq = enfProjectStr(A, kq, cq, ENFX.refs); } catch (eP9) { return null; } } if (kq === K_USERS && cq != null) cq = usersScopeOut(usersNoOut(stripPh(cq), A), A); return privOut(A, kq, cq); };   /* KIVO_248 · AUD-033: القيمةُ الحالية في denied/conflicts كانت تحمل بصمات كلمات المرور — تُنزع كما في /api/get والإقلاع · KIVO_254 (ج): لكل الأدوار بلا استثناء (كان مدير النظام يُستثنى) */
   var curUsers = null, now = Date.now();
   var ident = { uid: A.u.id, un: String(A.u.un || ''), ip: (ip && ip.ip) || '', city: (ip && ip.city) || '', dev: (ip && ip.dev) || '' };
   /* KIVO_264 · D14 · OD-7: حفظةٌ تغيّر اسمَ دخول صاحبها (un/alt) ⇒ كلمةُ المرور الحالية «cur» في جسمها تُفحص هنا مرّةً (PBKDF2 غيرُ متزامن) — والحكمُ في selfAcctWhy (018) */
@@ -1607,7 +1593,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      في حفظةٍ واحدة، ورفعُ الإسقاط يُحكم بما سيحمله الموظفُ بعد الحفظ (059 enfMinusLiftWhy) — فتُقيَّم الصلاحياتُ أوّلاً، وتُعطى سجلاتُ المنح صلاحياتِ ما بعد
      الحفظ إن قُبلت (pa9) وإلا المخزَّنة؛ ومنحٌ حُكم بها لا يُكتب إلا إن كُتبت هي في الحفظة نفسها (حارسُ نسختها في مجموعته: dep9) */
   var pa9 = null, paOn9 = false;
-  if (A.enf && A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_PERM) && todo.some(function (t) { return resName(t.k) === ENF_GRANTS_RES; })) {
+  if (A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_PERM) && todo.some(function (t) { return resName(t.k) === ENF_GRANTS_RES; })) {
     paOn9 = true; var rk9 = function (x) { return x.act !== 'set' ? 0 : (x.k === K_DEPTS || x.k === K_GDEPTS) ? 2 : x.k === K_PERM ? 1 : 0; }; todo.sort(function (x, y) { return rk9(y) - rk9(x); });
   }
   /* «… (الجولة 2)» · R3-2: ربطُ حسابٍ بمفتاحٍ يحمل منحاً صريحاً باقياً يُحكم كمنح (018 usersGrantWhy) — سجلاتُ المنح لكلّ الوحدات تُقرأ مرّةً لحفظ الحسابات */
@@ -1630,9 +1616,9 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var w9 = regPairWhy(A, todo[j].k, todo[j].v, e9.cur, regRst9[j], todo[1 - j].k);
     if (!w9) return;
     batchRegUndo(A, regMks9[j]);
-    var vn9 = ENFX ? enfNo(w9) : null;
+    var vn9 = enfNo(w9);
     evald[j] = { deny: w9, cur: e9.cur, x: vn9 };
-    if (ENFX) { var lp9 = enfLogRow(A, todo[j].k, vn9, '/api/save', { ip: ident.ip }); if (lp9) ENFX.log.push(lp9); }
+    var lp9 = enfLogRow(A, todo[j].k, vn9, '/api/save', { ip: ident.ip }); if (lp9) ENFX.log.push(lp9);
   };
   for (i = 0; i < todo.length; i++) {
     regUndo9(i - 1);
@@ -1645,13 +1631,13 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
     /* PRIVACY batch (019u): registry built on another projection ⇒ conflict with the current one (usOut9: pscope · why) · projection without
        pscope omitting a visible entry, or a changed hidden reference ⇒ refused — nothing of it is judged or written */
-    if (it0.act === 'set' && pvNo9[k0] && !(ENFX && ENFX.batchDeny)) { evald.push(pvNo9[k0] === 'scope' ? { conflict: 1, cur: cur0 } : { deny: pvNo9[k0], cur: cur0, sd: pvNo9[k0] }); continue; }
+    if (it0.act === 'set' && pvNo9[k0] && !ENFX.batchDeny) { evald.push(pvNo9[k0] === 'scope' ? { conflict: 1, cur: cur0 } : { deny: pvNo9[k0], cur: cur0, sd: pvNo9[k0] }); continue; }
     if (it0.act === 'set' && k0 === K_USERS && A.u.role !== 'super') {
       /* مراجعةُ التكامل W1-R1: قائمةٌ بُنيت على عدسةٍ غير عدسته الآن (usStale9) ⇒ تعارضٌ قبل usersNoIn/usersScopeIn/canWrite — فلا يُحكم على إسقاطٍ قديم
          ولا يُكتب منه شيء (ما صار يراه ولم يصله لا يُحسب حذفاً). ورفضُ الدفعة كلِّها في الإنفاذ (batchDeny) يبقى رفضاً
          مراجعةُ التكامل R3-ORDER (منخفض): والتعارضُ قبل بوابة المعرّف المكرَّر — كان تكرارٌ قديمٌ مختلفُ النسخ صارت نسخُه المحجوبةُ مرئيةً بتغيّر العدسة
          يُرفض «dup-id» (سطرٌ أمنيٌّ زائفٌ وإعادةٌ كاملة) بدل التعارض. لا يكتب التعارضُ شيئاً، والمعادُ ببصمةٍ حديثة يمرّ بالبوابة كاملةً (فيُرفض ويُسجَّل إن خالف) */
-      if (usStale9 && !(ENFX && ENFX.batchDeny)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
+      if (usStale9 && !ENFX.batchDeny) { evald.push({ conflict: 1, cur: cur0 }); continue; }
       /* مراجعةُ التكامل W1-CRIT: معرّفٌ مكرَّرٌ في الواردة ⇒ رفضٌ (السجلُّ الأمنيّ: dup-id) إلا تكراراً قديماً لم يُمسّ (usersDupIdIn) — قبل كلّ تحويلٍ وحكم وبالوضعين */
       var dI9 = usersDupIdIn(it0.v, cur0, A);
       if (dI9.id != null) { evald.push({ deny: 'users', cur: cur0, x: { detail: 'dup-id' }, sd: 'users · dup-id ' + String(dI9.id).slice(0, 80) }); continue; }
@@ -1662,7 +1648,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
          (يعود العميلُ القديم إلى قيمة الخادم ويعيد المستخدمُ التحميل) — والقائمةُ الكاملة القديمة والمُسقَطةُ التي لا تحذف شيئاً تمضيان كما كانتا */
       if (!(typeof (body && body.uscope) === 'string' && body.uscope !== '') && usersOmitsSeen(it0.v, cur0, A)) {
         /* وعلى نسخةٍ قديمة (عبارةُ فحص النسخة نفسُها): تعارضٌ بالإسقاط الحالي — يدمجه العميلُ القديمُ (merge3) فيحمل ما صار يراه ويعيد بنسخةٍ حديثة */
-        if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0) && !(ENFX && ENFX.batchDeny)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
+        if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0) && !ENFX.batchDeny) { evald.push({ conflict: 1, cur: cur0 }); continue; }
         evald.push({ deny: 'users', cur: cur0, x: { detail: 'users-stale-client' }, sd: 'users · users-stale-client' }); continue;
       }
     }
@@ -1674,7 +1660,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
        المصرَّح بها لا تتحوّل إلى «تعارض» لمجرّد قِدَم النسخة. */
     /* F-10 (من SR-2.3 · KIVO_242): حفظٌ خامٌّ لمخزن المهام لا يمحو أفعالَ الموظف التي لم يرها (tkKeepSelf في 070) — قبل الحكم فيُحكَم على ما سيُكتب؛
        لا للمسار الذاتي ولا لمسارات المهام في الخادم (opt.srv) ولا للاستعادة والاستيراد المخوَّلين على هذا المفتاح (G-1: tkKeepOff — كان أيُّ حدثٍ يدّعيه العميل يكفي) */
-@@SYS:save.keepSelf.tasks@@@@SYS:save.obsKeep.daily@@    var ctx0 = {
+@@SYS:save.keepSelf.tasks@@    var ctx0 = {
       empsEmpty: wipeCtx[d00] === true, emps: empCtx[d00] || null, shRen: shRenCtx[d00] || null,
       imp: !!d00 && actsHeldOn(A, d00, 'admin/import', ['del']),
       selfCur: k0 === K_USERS ? selfCurSt : null,                                 /* KIVO_264 · D14 */
@@ -1685,21 +1671,19 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
 @@SYS:save.ctx.tasks@@      ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null,  /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
       dw: !!(d00 && opt && Array.isArray(opt.__serverDepartmentWipes) && opt.__serverDepartmentWipes.indexOf(d00) !== -1)   /* RISHAD-266: مسحُ الإدارة أو حذفُها في الخادم (059 scopeRetiredWhy) */
     };
-    if (ENFX) {
-      /* merge-on-write: ما يُحجب عن الفاعل في القراءة يعود من القيمة الحالية قبل التصنيف — فلا يمحوه ولا يكتب فيه */
-      /* …ومحاولةُ الكتابة في المحجوب (أو فشلُ الدمج) رفضٌ صريح — fail-closed */
-      if (it0.act === 'set' && it0.v != null && cur0 != null) { try { var mc9 = enfMergeChk(A, k0, it0.v, cur0, ENFX.refs); it0.v = mc9.v; if (mc9.hidden) ctx0.enfHidden = 'hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)'; } catch (eM9) { ctx0.enfHidden = 'merge-failed'; } }
-      ctx0.imp = !!d00 && enfHeld(A, d00, 'import.replace');
-      ctx0.enf = enfCtxFor(ENFX, k0, d00);
-    }
-@@SYS:save.fill.daily@@    if (i < regN9) regRst9[i] = ENFX ? !!(ctx0.enf && ctx0.enf.restore) : !!ctx0.rst;   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */
-    var vd0 = ENFX && ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ENFX && ctx0.enfHidden ? enfSuperGate(A, enfNo('scope', { detail: ctx0.enfHidden })) : canWrite(A, k0, it0.v, cur0, ctx0));
+    /* merge-on-write: ما يُحجب عن الفاعل في القراءة يعود من القيمة الحالية قبل التصنيف — فلا يمحوه ولا يكتب فيه */
+    /* …ومحاولةُ الكتابة في المحجوب (أو فشلُ الدمج) رفضٌ صريح — fail-closed */
+    if (it0.act === 'set' && it0.v != null && cur0 != null) { try { var mc9 = enfMergeChk(A, k0, it0.v, cur0, ENFX.refs); it0.v = mc9.v; if (mc9.hidden) ctx0.enfHidden = 'hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)'; } catch (eM9) { ctx0.enfHidden = 'merge-failed'; } }
+    ctx0.imp = !!d00 && enfHeld(A, d00, 'import.replace');
+    ctx0.enf = enfCtxFor(ENFX, k0, d00);
+@@SYS:save.fill.daily@@    if (i < regN9) regRst9[i] = !!(ctx0.enf && ctx0.enf.restore);   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */
+    var vd0 = ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ctx0.enfHidden ? enfSuperGate(A, enfNo('scope', { detail: ctx0.enfHidden })) : canWrite(A, k0, it0.v, cur0, ctx0));
     /* KIVO_265 · المراجعةُ الموحّدة (R-4): أحكامُ مخزن المهام الخامّ (018 taskRawWhy) تقيس الحفظةَ على القيمة الحالية — فعلى base قديمٍ قد يكون الحكمُ
        أثرَ ما كتبه الخادمُ أو غيرُه بعد قراءتها (تمديدٌ في 23 · حذفُ صفٍّ · إعادةُ إسناد) لا فعلَها هي. ولا كتابةَ على base قديمٍ أصلاً (فحصُ النسخة أدناه)
        ⇒ تعارضٌ يدمجه العميلُ ثم يعيد الإرسالَ بنسخةٍ حديثة فيُحكم عليه كاملاً (والرفضُ حينها صريح). كانت تُرفض «task-x» فتُسقط الواجهةُ تعديلاتِ
        المفتاح كلَّها («صلاحيتك لا تشمله») */
-@@SYS:save.staleConflict.tasks@@    if (ENFX) { var lr9 = enfLogRow(A, k0, vd0, '/api/save', { ip: ident.ip }); if (lr9) ENFX.log.push(lr9); }
-    if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: ENFX || vd0.detail ? vd0 : null }); continue; }
+@@SYS:save.staleConflict.tasks@@    var lr9 = enfLogRow(A, k0, vd0, '/api/save', { ip: ident.ip }); if (lr9) ENFX.log.push(lr9);
+    if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: vd0 }); continue; }
     /* KIVO_259 · SR-8: اسمُ دخولٍ جديد (أو معدَّل) يصادم حساباً آخر ⇒ رفض — لكل الأدوار ومنها مدير النظام (الواجهةُ تمنعه أصلاً: taken · empHolder) */
     /* مراجعةُ التكامل W1-R2: ولغير مدير النظام يسمّي الرفضُ الصفوفَ المخالفة (dup) — مما أرسله الفاعلُ نفسُه وحده، لا من حسابٍ محجوب */
     if (it0.act === 'set' && k0 === K_USERS) {
@@ -1750,7 +1734,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       img0 = seen0;
     }
     if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
-    evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa, img9: img0 });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
+    evald.push({ ok: 1, cur: cur0, keys: vd0.keys, dep9: !!ctx0.pa, img9: img0 });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
   if (todo.length === regN9) { regUndo9(todo.length - 1); regPair9(); }               /* F01: حفظةٌ فيها السجلّان وحدهما */
   /* V7 · issue #4 (018 nodeCapSweep): the node registry was accepted ⇒ the ceiling records of the nodes it removes go in this same save, and a
@@ -1793,15 +1777,15 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
         if (!(opt && opt.quiet)) st.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'denied', target: todo[i].k, detail: ev1.sd || ev1.deny, ip: ident.ip, city: ident.city, dev: ident.dev }));
       }
       out.atomic = protOp;                                          /* عمليةٌ محمية رُدَّت كاملة */
-      if (ENFX) for (var lz = 0; lz < ENFX.log.length; lz++) st.push(enfLogStmt(env, ENFX.log[lz]));
-      if(planOnly)return Object.assign(out,{__plan:1,ok:0,protectedOp:protOp,authzRows:ENFX?ENFX.log:[]});
+      for (var lz = 0; lz < ENFX.log.length; lz++) st.push(enfLogStmt(env, ENFX.log[lz]));
+      if(planOnly)return Object.assign(out,{__plan:1,ok:0,protectedOp:protOp,authzRows:ENFX.log});
       for (var jz = 0; jz < st.length; jz += 90) await env.DB.batch(st.slice(jz, jz + 90));
       out.v = rev - 1;
       return out;
     }
   }
   /* KIVO_243 · §12: نسخةُ ما قبل العملية للاستعادة والاستبدال (import.replace) — تُكتب قبل أي تغيير في الدفعة نفسِها */
-  if (ENFX && !planOnly) {
+  if (!planOnly) {
     var snapIt = [], replace9 = false;
     for (i = 0; i < todo.length; i++) { var ev9 = evald[i]; if (!ev9 || !ev9.ok) continue; if (ev9.keys && ev9.keys.indexOf('import.replace') !== -1) replace9 = true; }
     if (ENFX.restore || replace9) for (i = 0; i < todo.length; i++) if (evald[i] && evald[i].ok) snapIt.push({ k: todo[i].k, cur: evald[i].cur });
@@ -1864,11 +1848,11 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     changed++;
   }
   if (ncM9) out.__nc = ncM9;
-  if(planOnly)return {__plan:1,ok:!Object.keys(out.denied).length&&!Object.keys(out.conflicts).length,protectedOp:protOp,pend:pend,out:out,revs:revs,ident:ident,authzRows:ENFX ? ENFX.log : []};
+  if(planOnly)return {__plan:1,ok:!Object.keys(out.denied).length&&!Object.keys(out.conflicts).length,protectedOp:protOp,pend:pend,out:out,revs:revs,ident:ident,authzRows:ENFX.log};
   /* لحظةُ التخصيص: بعد أن عُرف أن ثمّة تغييراً واحداً على الأقل سيُنفَّذ */
   if (changed) {
     rev = await nextRev(env);
-    if (ENFX && out.snap) st.push(env.DB.prepare("UPDATE authz_snaps SET meta = json_set(COALESCE(meta, '{}'), '$.rev', ?2) WHERE snap = ?1").bind(out.snap, rev));   /* KIVO_243: رقمُ العملية — لكشف الانجراف عند الرجوع */
+    if (out.snap) st.push(env.DB.prepare("UPDATE authz_snaps SET meta = json_set(COALESCE(meta, '{}'), '$.rev', ?2) WHERE snap = ?1").bind(out.snap, rev));   /* KIVO_243: رقمُ العملية — لكشف الانجراف عند الرجوع */
     for (var p9 = 0; p9 < pend.length; p9++) {
       var pd = pend[p9];
       /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ (dep9) يُكتب بعد أن كُتبت هي بنسخة هذه الحفظة — وإلا تعارض */
@@ -1899,7 +1883,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       if (pd.act === 'del') pd.g.push(audEvStmt(env, { cid: 'del_' + rev + '_' + pd.k.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40), ts: now, uid: ident.uid, un: ident.un, dept: dA9, k: pd.k, rev: rev, etype: 'dataset', eid: pd.k, ename: resName(pd.k), act: 'deleted', ctx: '', bef: '', aft: '', ip: ident.ip, dev: ident.dev, city: ident.city }));
     }
   }
-  if (ENFX) for (var lw9 = 0; lw9 < ENFX.log.length; lw9++) st.push(enfLogStmt(env, ENFX.log[lw9]));
+  for (var lw9 = 0; lw9 < ENFX.log.length; lw9++) st.push(enfLogStmt(env, ENFX.log[lw9]));
   /* العباراتُ العامة (لقطةُ الاستعادة · سجلُّ الرفض · رقمُ اللقطة · سجلُّ الإنفاذ) أوّلاً، ثم مجموعاتُ المفاتيح — دفعات مقسّمة: دفعة D1 الواحدة لها سقف عبارات */
   for (var j0 = 0; j0 < st.length; j0 += 90) await env.DB.batch(st.slice(j0, j0 + 90));
   if (changed) {
@@ -1922,7 +1906,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   } else out.v = await curRev(env);
   /* بعد ثبوت الكتابة لا قبلها: الملكيةُ والاستعمالُ يتبعان الحالة المستقرّة */
   if (changed && imgTouch.length) await imgSync(env, A, imgTouch);
-  if (ENFX) await enfLogPrune(env);
+  await enfLogPrune(env);
   return opt && opt.__cuPass === RESTORE_INTERNAL_TOKEN ? out : nodeCapAck(out);   /* issue #4: inside rsSaveCommit the caller answers (above) */
 }
 

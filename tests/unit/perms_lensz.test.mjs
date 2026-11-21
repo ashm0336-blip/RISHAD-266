@@ -15,7 +15,7 @@ function seedSql() {
   return fs.readFileSync(out + '/test_seed.sql', 'utf8');
 }
 const K = 'bassam_perms_v1';
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};
   test('[' + mode + '] lensZ: الموظفُ لا يكتب فيها إلا ترقيةَ الغياب إلى 1 · لا قيمةَ أخرى ولا حجماً', async () => {
     const env = makeTestEnv(EX); const C = client(env);

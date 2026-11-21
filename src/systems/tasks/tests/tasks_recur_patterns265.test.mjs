@@ -87,7 +87,7 @@ test('(أ) tkRecDue monthly md "last": آخرُ يومٍ في شهر 29 وشهر
 });
 
 /* ── (ب) على العامل الحقيقي ── */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(ب) every n=3: التوليدُ يولّد كلَّ ثالث يومٍ من البدء في الأفق وحده · لا تكرارَ عند إعادة التشغيل · والتعديلُ إلى n=5 يُلغي ما خرج ويولّد الناقص', async () => {

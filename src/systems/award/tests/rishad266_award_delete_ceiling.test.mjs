@@ -53,7 +53,7 @@ async function world(mode, opts = {}) {
   return { env, C, S, awardRows, ids, del };
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {   /* V7 · د5-ح (القفل): حالاتُ [legacy] حُذفت — تثبّت حكمَ الوضع القديم (إيصال legacy:del) المحذوف */
   test(`[${mode}] (أ) خارجَ السقف: حذفُ السجلّ الوحيد في إدارةٍ سقفُها بلا «الجائزة» ⇒ 403 والصفوفُ كما هي`, async () => {
     const W = await world(mode);
     assert.deepEqual(W.ids('tst_d2'), ['tstaw9']);

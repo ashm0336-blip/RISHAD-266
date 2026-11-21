@@ -27,7 +27,7 @@ async function world(extra = {}) {
 const opv = async (C, ck, k) => { const j = (await C.api('/api/operations/read?keys=' + encodeURIComponent(k), { cookie: ck })).j; const r = (j.resources || {})[k]; return { v: r == null ? null : JSON.stringify(r), rev: (j.base || {})[k] || 0 }; };
 const opSave = async (C, env, ck, k, v) => { const rev = (await opv(C, ck, k)).rev; return C.api('/api/save', { method: 'POST', cookie: ck, body: operationSaveBody(env, '/api/save', { set: { [k]: v }, del: [], base: { [k]: rev } }) }); };
 const getv = async (C, ck, k) => ((await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: ck })).j.keys || {})[k];
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};
   test('[' + mode + '] emp-dup: هويةُ حسابِ إدارةٍ أخرى تُرفض في قائمة موظفي tst_d1 · والفريدُ يُقبل', async () => {
     const { env, C, su } = await world(EX);

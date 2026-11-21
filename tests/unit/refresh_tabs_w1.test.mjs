@@ -97,9 +97,9 @@ test('المتابعة اليومية (DG-04 · R7 · DG-09): #/daily/rounds ي�
   assert.match(src, /Vn =\n\s+this\._dsTabOn\("rounds"\) && \(this\.bsLensOn\("zones"\) \|\| this\.bsLensOn\("gates"\) \|\| this\.bsLensOn\("marks"\) \|\| this\.bsLensOn\("paths"\)\),/, 'القاعدةُ نفسُها التي تُظهر التبويب');
 });
 
-test('الإعدادات (R1 · AUX-06): #/admin/import|ptpls|shifts|oplog — التبويبُ في أوّل رسم ولا يُكتب #/admin/backup · سجلُّ الحركة يُحمَّل مرة', () => {
-  const g = ['backup', 'oplog', 'shifts', 'ptpls', 'import'];
-  for (const tab of ['import', 'ptpls', 'shifts']) {
+test('الإعدادات (R1 · AUX-06): #/admin/import|shifts|oplog — التبويبُ في أوّل رسم ولا يُكتب #/admin/backup · سجلُّ الحركة يُحمَّل مرة', () => {
+  const g = ['backup', 'oplog', 'shifts', 'import'];   /* V7 · د5-ح: ورقةُ «قوالب الصلاحيات» حُذفت */
+  for (const tab of ['import', 'shifts']) {
     const P = page('admin', ['_admTabsNow(i, n, p, g) {'], { state: { admTab: 'depts', deptTab: 'backup' }, kivo: { __ADMIN_OPEN_DTAB: tab } });
     const r = P.c._admTabsNow('dept', false, ['backup'], g);
     assert.equal(r.h, tab, 'التبويبُ المعروض في الرسم الأول'); assert.equal(P.c.state.deptTab, tab); assert.equal(P.KIVO.__ADMIN_OPEN_DTAB, null);

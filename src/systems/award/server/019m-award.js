@@ -297,15 +297,10 @@ async function hAwardGet(env,A,url){
 }
 async function awPermission(ctx,index,before,after,reason){
   var k=awKey(ctx.d,index),set={},keys={},body={why:{}},X=null,c={};set[k]=JSON.stringify(after);keys[k]=1;if(reason)body.why[k]=reason;
-  if(ctx.A.enf){var pv={};pv[ctx.d]=ctx.pv4;X=await enfSavePrep(ctx.env,ctx.A,body,set,[],keys,KIVO_BUILD.markers({},keys),null,false,false,{},pv);c.enf=enfCtxFor(X,k,ctx.d);}
-  var decision=X&&X.batchDeny?enfNo(X.batchDeny.why,X.batchDeny):canWrite(ctx.A,k,JSON.stringify(after),before===undefined?null:JSON.stringify(before),c);
+  var pv={};pv[ctx.d]=ctx.pv4;X=await enfSavePrep(ctx.env,ctx.A,body,set,[],keys,KIVO_BUILD.markers({},keys),null,false,false,{},pv);c.enf=enfCtxFor(X,k,ctx.d);   // V7 · د5-ح (القفل): المحرّكُ النافذ وحده
+  var decision=X.batchDeny?enfNo(X.batchDeny.why,X.batchDeny):canWrite(ctx.A,k,JSON.stringify(after),before===undefined?null:JSON.stringify(before),c);
   if(!decision.ok){var e=awError('denied',403);e.awDecision=decision;throw e;}
-  var checks;if(ctx.A.enf)checks=(decision.keys||[]).map(function(key){return {kind:'enforce',key:key};});
-  else{var acts=Object.keys(classifyMutation(resOf(k),before===undefined?null:JSON.stringify(before),JSON.stringify(after),entOf(k),opsOf(k)));if(!acts.length)acts=['edit'];checks=acts.map(function(act){return {kind:'legacy',key:act};});
-    // RISHAD-266 owner decision (e) 2026-11-03: legacy award writes need the same proof the receipt replay already demands
-    // (awReplay) and enforce applies: the award page on the department ceiling AND every classified act held. No cleanup
-    // exception (038 awardCleanup / admin/import:del) widens a direct /api/award/act command in legacy mode.
-    if(!resOnCeiling(ctx.A,ctx.d,resOf(k))||checks.some(function(c){return !authorize(ctx.A,k,c.key).ok;})){var le=awError('denied',403);le.awDecision={ok:false,why:'perms'};throw le;}}
+  var checks=(decision.keys||[]).map(function(key){return {kind:'enforce',key:key};});
   return {decision:decision,checks:checks};
 }
 async function awReceiptRows(env,A,b){var result=await env.DB.batch([
@@ -317,10 +312,9 @@ async function awReplay(ctx,b,fingerprint,found){
   var row=found.receipt;if(!row)return null;if(row.fingerprint!==fingerprint)throw awError('request-reused',409);
   if(!Number.isSafeInteger(row.permission_count)||row.permission_count<0||found.checks.length!==row.permission_count||found.checks.some(function(c,i){return c.position!==i||typeof c.permission_key!=='string';}))throw awError('receipt-permission-proof-invalid',503);
   var index=AW_RES.indexOf(resName(row.resource_key));if(index<0||row.resource_key!==awKey(ctx.d,index)||!resOnCeiling(ctx.A,ctx.d,resOf(row.resource_key)))throw awError('denied',403);
-  var mode=ctx.A.enf?'enforce':'legacy';if(row.permission_mode!==mode)throw awError('receipt-authority-changed',409);
-  if(mode==='enforce'){
-    if(!enfResWriter(ctx.A,ctx.d,AW_RES[index])||found.checks.some(function(c){return c.check_kind!=='enforce'||!KIVO_GUARDS.decide(c.permission_key,permv2Ctx(ctx.A,ctx.d)).ok;}))throw awError('denied',403);
-  }else if(!found.checks.length||found.checks.some(function(c){return c.check_kind!=='legacy'||!authorize(ctx.A,row.resource_key,c.permission_key).ok;}))throw awError('denied',403);
+  // V7 · د5-ح (القفل): إيصالٌ كُتب بالوضع القديم لا يُعاد تشغيله بعد القفل (receipt-authority-changed) — المحرّكُ النافذ وحده
+  if(row.permission_mode!=='enforce')throw awError('receipt-authority-changed',409);
+  if(!enfResWriter(ctx.A,ctx.d,AW_RES[index])||found.checks.some(function(c){return c.check_kind!=='enforce'||!KIVO_GUARDS.decide(c.permission_key,permv2Ctx(ctx.A,ctx.d)).ok;}))throw awError('denied',403);
   var where='department_id=?1 AND account_uid=?2 AND request_id=?3',args=[ctx.d,ctx.A.u.id,b.requestId];
   await ctx.env.DB.batch(ctx.guards.concat([awRetiredGuard(ctx.env),rsEpochGuard(ctx.env.DB,b.base.epoch)],
     rsWitness(ctx.env,'award_requests',AW_REQUEST_COLS,[row],where,args),rsWitness(ctx.env,'award_request_checks',AW_CHECK_COLS,found.checks,where,args)));
@@ -395,10 +389,10 @@ async function hAwardAct(env,A,b,meta){
   }
   var permission=await awPermission(ctx,index,beforeValue,afterValue,reason),nf=await awEventPlan(ctx,b,beforeRecord,afterRecord);guards.push.apply(guards,nf.guards);
   statements.push.apply(statements,bdBumpStatements(env,key,nf.active>0));statements.push.apply(statements,nf.statements);
-  statements.push(env.DB.prepare("INSERT INTO award_requests(department_id,account_uid,request_id,fingerprint,resource_key,resource_rev,operation,result_n,result_id,permission_mode,permission_count,created_at)VALUES(?1,?2,?3,?4,?5,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),?6,1,?7,?8,?9,?10)").bind(ctx.d,A.u.id,b.requestId,fingerprint,key,b.op,resultId,A.enf?'enforce':'legacy',permission.checks.length,now));
+  statements.push(env.DB.prepare("INSERT INTO award_requests(department_id,account_uid,request_id,fingerprint,resource_key,resource_rev,operation,result_n,result_id,permission_mode,permission_count,created_at)VALUES(?1,?2,?3,?4,?5,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),?6,1,?7,?8,?9,?10)").bind(ctx.d,A.u.id,b.requestId,fingerprint,key,b.op,resultId,'enforce',permission.checks.length,now));
   statements.push.apply(statements,rsBulk(env,'award_request_checks',AW_CHECK_COLS,permission.checks.map(function(c,i){return {department_id:ctx.d,account_uid:A.u.id,request_id:b.requestId,position:i,check_kind:c.kind,permission_key:c.key};})));
   statements.push(env.DB.prepare("INSERT INTO aud(cid,ts,uid,un,dept,k,rev,etype,eid,ename,act,ctx,bef,aft,ip,dev,city)VALUES(?1,?2,?3,?4,?5,?6,CAST((SELECT v FROM meta WHERE k='rev')AS INTEGER),'dataset',?7,'award',?8,?9,'','',?10,?11,?12)").bind('award_'+randTok(),now,A.u.id,String(A.u.un||''),ctx.d,key,resultId||b.requestId,b.op,JSON.stringify({requestId:b.requestId,reason:reason,n:1}),(meta&&meta.ip)||'',(meta&&meta.dev)||'',(meta&&meta.city)||''));
-  var authz=A.enf&&enfLogRow(A,key,permission.decision,'/api/award/act',meta||{});if(authz)statements.push(enfLogStmt(env,authz));
+  var authz=enfLogRow(A,key,permission.decision,'/api/award/act',meta||{});if(authz)statements.push(enfLogStmt(env,authz));
   try{await env.DB.batch(guards.concat(statements));}
   catch(error){preOff(env);var fresh=await awQueryContext(env,A,b.dept,{write:true}),receipt=await awReceiptRows(fresh.env,fresh.A,b),ack=await awReplay(fresh,b,fingerprint,receipt);if(ack)return ack;
     if(isRevConflict(error)||/KIVO_AWARD_TARGET_CHANGED|KIVO_RESTORE_TARGET|UNIQUE constraint/.test(String(error)))throw awError('conflict',409);throw error;}

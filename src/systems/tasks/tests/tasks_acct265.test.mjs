@@ -34,7 +34,7 @@ async function seed(W) {
 function setDis(W, uid, dis) { const U = stored(W.env, 'bassam_auth_users_v1'); U.find((u) => u.id === uid).dis = dis; putKV(W.env, 'bassam_auth_users_v1', U); }
 const body = (asg, extra) => { const s = Date.now() + 2 * HR; return Object.assign({ k: hij(s), t: TAG + ' اختبارُ الحساب النشط', s, e: s + HR, asg, rv: 'none' }, extra || {}); };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) الأهلية: بلا حساب ⇒ «غير متاح» قاطع بسببه · حسابٌ معطَّل ⇒ قاطع بسببه · نشطٌ لم يدخل قطّ ⇒ ليس قاطعاً', async () => {

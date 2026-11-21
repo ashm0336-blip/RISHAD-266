@@ -46,12 +46,6 @@
     "file": "server/019b4-custody-restore.js",
     "after": "019b3-restore-permission.js",
     "order": 10
-   },
-   {
-    "file": "server/039-custody-moves.js",
-    "after": "038-domain-cleanups.js",
-    "order": 10,
-    "head": "/* ══ حركات العهد: عمليتان مجاليّتان بفعليهما كما في الواجهة ══════════════════"
    }
   ]
  },
@@ -112,25 +106,9 @@
    "order": 10,
    "text": "  'bassam_custody_v1':         ['emps/custody'],\n"
   },
-  "cleanup.custody.fn": {
-   "order": 10,
-   "file": "slots/cleanup.custody.fn.frag"
-  },
   "empGone.custody.fn": {
    "order": 10,
    "file": "slots/empGone.custody.fn.frag"
-  },
-  "empGone.map": {
-   "order": 20,
-   "text": "'bassam_custody_v1': custodyGoneOk"
-  },
-  "cleanup.custody.call": {
-   "order": 10,
-   "text": "  if (custodyCleanup(A, k, newVal, curVal, ctx)) return { ok: true };\n"
-  },
-  "move.custody.call": {
-   "order": 10,
-   "text": "  var cmv9 = custodyMoveOp(A, k, curVal, newVal, PV9);\n  if (cmv9 === true) return { ok: true };\n  if (cmv9 === false) return { ok: false, why: 'act' };\n"
   },
   "nf.types.custody": {
    "order": 10,

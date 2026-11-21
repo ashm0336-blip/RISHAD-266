@@ -51,7 +51,8 @@ test('التكرارُ داخل الدفعة يُرفض · والقديمُ ال
 });
 
 test('الربط: حارس التكرار الخادمي قائم، والاستيراد يرسل مسودته لمسار الانتقال الخادمي', () => {
-  assert.match(rd('workers/parts/044-protected-ops.js'), /nm === 'bassam_employees_v1'\) \{ var xd9 = empDupWhy\(A, PV9\.a\(\), PV9\.b\(\), P\.dept, ctx\); if \(xd9\) return \{ ok: false, why: xd9 \}; \}/);
+  /* V7 · د5-ح: حُذف تثبيتُ حارس 044 (المسارُ القديم لـ canWrite حُذف)؛ الحارسُ الوحيد هو حارسُ الإنفاذ 060 أدناه */
+  assert.doesNotMatch(rd('workers/parts/044-protected-ops.js'), /var xd9 = empDupWhy/);
   assert.match(rd('workers/parts/060-enf-canwrite.js'), /rn === 'bassam_employees_v1'\) \{ var xdE = empDupWhy\(A, a, b, P\.dept, ctx\); if \(xdE\) return enfNo\(xdE\); \}/);
   const c = rd('workers/parts/054-image-contract.js');
   assert.match(c, /var edCtx9 = null;/); assert.match(c, /if \(!chg9\) continue;/, 'لا قراءةَ لبقية الإدارات بلا هويةٍ جديدة');
@@ -63,7 +64,7 @@ test('الربط: حارس التكرار الخادمي قائم، والاست
 
 test('الاستيراد الفعلي يرفض هوية حساب إدارة أخرى قبل أي كتابة، في وضعي الصلاحيات', async () => {
   const {world, D1, D2, IDS} = await import('./canonical_fx.mjs');
-  for (const mode of ['legacy', 'enforce']) {
+  for (const mode of ['enforce']) {
     const f = await world({mode});
     const foreign = f.users.find(u => u.deptId === D2 && /^\d{10}$/.test(u.un));
     assert.ok(foreign, 'حساب تركيبي لإدارة أخرى');
@@ -73,7 +74,7 @@ test('الاستيراد الفعلي يرفض هوية حساب إدارة أخ
     const r = await f.api('super','/api/employees/transition',{method:'POST',body:{
       uid:IDS.super,dept:D1,intent:'import',requestId:'TEST_ONLY_foreign_import',base:c.json.base,
       finalRows:c.json.employees.concat([{eid:'TEST_ONLY_foreign_collision',name:'TEST_ONLY collision',nid:foreign.un,empno:''}]),
-      import:{mode:'add',year:1448,month:1,schedule:[],templates:[]},accountProposals:[]
+      import:{mode:'add',year:1448,month:1,schedule:[]},accountProposals:[]
     }});
     assert.equal(r.json.ok, 0, JSON.stringify(r.json));
     assert.match(JSON.stringify(r.json), /emp-dup/);
