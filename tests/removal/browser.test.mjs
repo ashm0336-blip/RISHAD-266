@@ -39,7 +39,12 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
     const side = await m.page.evaluate(() => [...document.querySelectorAll('aside.bsb a[data-key]')].map((a) => a.getAttribute('data-key')));
     /* د4-ب: «المتابعة اليومية» رُسمت فعلاً بشريط تبويباتها (خطأٌ في حساب قيم الصفحة لا يظهر خطأَ صفحة، فيُفحص المرسوم نفسُه) */
     const exactIn = (t) => m.page.evaluate((t) => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === t), t);
-    if (HAS_DAILY) { await m.go('#/daily', 2800); assert.ok((await exactIn('التقرير اليومي')) || (await exactIn('الجولات اليومية')), 'المتابعة اليومية: شريطُ التبويبات مرسوم'); }
+    if (HAS_DAILY) {
+      await m.go('#/daily', 2800);
+      /* V7 · د5-ح (rmall): بغياب التقرير والمهام معاً (only:daily) تبويبٌ واحد «الجولات» بلا شريط — يُفحص المرسومُ نفسُه: تقويمُ الجولات بأيامه المسجّلة */
+      if (SYSTEMS.includes('dreport') || SYSTEMS.includes('tasks')) assert.ok((await exactIn('التقرير اليومي')) || (await exactIn('الجولات اليومية')), 'المتابعة اليومية: شريطُ التبويبات مرسوم');
+      else await m.page.waitForFunction(() => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === 'يوماً مسجّلاً'), null, { timeout: 60000 });
+    }
     else assert.equal(side.includes('daily'), false, 'بغياب المتابعة لا رابطَ لها في القائمة');
     /* V7 · د5-ح (بند 8): التقريرُ اليومي تبويبٌ تحت المتابعة بحضورها (القائمةُ كما هي، بلا رابطٍ له)، وبغيابها له رابطُه الظاهر في القائمة يفتح صفحتَه */
     const HAS_DR = PAGES.pages.some((p) => p.key === 'dreport');
