@@ -29,7 +29,8 @@ test('pages.json without the display-only field is develop\'s pages.json; the fi
   assert.ok(withField[0].subs.some((s) => s.key === 'custody' && !s.offPage), 'it follows an existing leaf of its page');
   /* V7 · د1-د: حقلُ عرضٍ ثانٍ — noTab على ورقةٍ واحدة (admin/import: ورقةُ صلاحيةٍ باقية بلا تبويبٍ مرسوم بعد نقل الاستيراد إلى صفحة الموظفين) */
   const noTab = M.pages.flatMap((p) => (p.subs || []).filter((x) => x.noTab !== undefined).map((x) => p.key + '/' + x.key + '=' + x.noTab));
-  assert.deepEqual(noTab, ['admin/import=true']);
+  /* V7 · د5-هـ (44): وadmin/ptpls — تبويبُ «قوالب الصلاحيات» حُذف، وورقتُه باقيةٌ للمسار القديم الحيّ والترحيل (perm44-roles) حتى قفل د5-ح */
+  assert.deepEqual(noTab, ['admin/ptpls=true', 'admin/import=true']);
   for (const p of M.pages) { delete p.shellTabs; for (const x of p.subs || []) delete x.noTab; }
   assert.equal(sha(Buffer.from(canon(M))), DEVELOP.pages, 'every other value of pages.json is as on develop');
 });

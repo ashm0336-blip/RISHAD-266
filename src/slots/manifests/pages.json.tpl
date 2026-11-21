@@ -85,7 +85,8 @@
     },
     {
      "key": "ptpls",
-     "name": "قوالب الصلاحيات"
+     "name": "قوالب الصلاحيات",
+     "noTab": true
     },
     {
      "key": "import",

@@ -184,7 +184,7 @@
       bassam_employees_v1:["قائمة الموظفين"],@@SYS:store.keyLabels.staff@@@@SYS:store.keyLabels.daily@@@@SYS:store.keyLabels.dreport@@
 @@SYS:store.keyLabels.plan@@      @@SYS:store.keyLabels.tasks@@@@SYS:store.keyLabels.custody@@
 @@SYS:store.keyLabels@@      bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"],@@SYS:store.keyLabels.dreport.lk@@@@SYS:store.keyLabels.staff.callsigns@@
-      bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"],
+      bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"], bassam_roles_v1:["أدوار الصلاحيات"],
       bassam_depts_v1:["الإدارات"], bassam_gdepts_v1:["الهيكل التنظيمي"], bassam_platform_v1:["إعدادات المنصة"], bassam_profile_v1:["الملف الشخصي"],
       bassam_media:["الصور والملفات"], bassam_notifications_domain_v1:["التنبيهات والتعاميم"],
       bassam_last_export_v1:["آخر تصدير"], bassam_last_full_export_v1:["آخر نسخة شاملة"],
