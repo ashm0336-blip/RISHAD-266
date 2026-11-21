@@ -12,7 +12,7 @@ const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
 const elig = (W, ck) => { const now = Date.now(); return W.C.api('/api/tasks/eligibility?ekeys=' + encodeURIComponent(ME.eid) + '&s=' + (now - 2 * HR) + '&e=' + (now + 5 * HR), { cookie: ck }); };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) حاملُ task.create بلا task.view ⇒ conf بلا عناوين مهام الزميل — والعددُ والتحذيرُ كما هما', async () => {

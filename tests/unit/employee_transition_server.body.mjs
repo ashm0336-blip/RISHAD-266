@@ -60,7 +60,7 @@ test('context requires original employee action and exposes revisions without cu
   await assert.rejects(t.context('employee2'), (e) => e.cuStatus === 403);
   await assert.rejects(t.context('frozen'), (e) => e.cuStatus === 403);
 });
-for (const mode of ['legacy', 'enforce'])
+for (const mode of ['enforce'])
   test(mode + ': selected last delete retains unrelated ledgers; all delete explicitly empties the full history', async () => {
     const t = await world(mode),
       emp = { eid: 'TEST_ONLY_last', name: 'TEST_ONLY last', nid: '1900000001' },
@@ -127,7 +127,7 @@ test('autoactivation preserves existing frozen credentials and manager accounts 
       intent: 'import',
       deleteMode: undefined,
       finalRows: c.employees.concat([extra]),
-      import: { mode: 'add', year: 1448, month: 1, schedule: [], templates: [] },
+      import: { mode: 'add', year: 1448, month: 1, schedule: [] },
       accountProposals: [{ ekey: extra.eid, ph: 'p2$100000$' + 'c'.repeat(32) + '$' + 'd'.repeat(64) }],
     }),
     users = JSON.parse(out.body.set.bassam_auth_users_v1);
@@ -150,7 +150,7 @@ test('account proposal cannot change an existing frozen account, target another 
   const t = await world(),
     c = await t.context('super', 'import'),
     ph = 'p2$100000$' + 'c'.repeat(32) + '$' + 'd'.repeat(64),
-    body = { intent: 'import', deleteMode: undefined, import: { mode: 'update', year: 1448, month: 1, schedule: [], templates: [] } };
+    body = { intent: 'import', deleteMode: undefined, import: { mode: 'update', year: 1448, month: 1, schedule: [] } };
   for (const proposal of [
     { ekey: EKEYS.frozen, ph },
     { ekey: EKEYS.employee2, ph },
@@ -176,7 +176,7 @@ test('import context and commit retain the original add AND mode-action policy; 
         intent: 'import',
         deleteMode: undefined,
         finalRows: c.employees.concat([{ eid: 'TEST_ONLY_no_account_new', name: 'TEST_ONLY no account' }]),
-        import: { mode: 'update', year: 1448, month: 1, schedule: [], templates: [] },
+        import: { mode: 'update', year: 1448, month: 1, schedule: [] },
       },
       'employee1',
     );
@@ -187,7 +187,7 @@ test('import context and commit retain the original add AND mode-action policy; 
   await assert.rejects(
     t.prepare(
       add,
-      { intent: 'import', deleteMode: undefined, import: { mode: 'update', year: 1448, month: 1, schedule: [], templates: [] } },
+      { intent: 'import', deleteMode: undefined, import: { mode: 'update', year: 1448, month: 1, schedule: [] } },
       'employee1',
     ),
     (e) => e.cuStatus === 403,
@@ -278,7 +278,7 @@ test('legacy employee role field is refused fail-closed by the closed typed reco
   assert.equal(snap(), before);
 });
 
-test('legacy import schedule mapping and template policy use the server scope and reject foreign employee keys', async () => {
+test('import schedule mapping uses the server scope (template policy deleted — V7 · د5-ح) and reject foreign employee keys', async () => {
   const t = await world(),
     p = copy(t.keys.bassam_perms_v1);
   p.caps[D1].push('staff');
@@ -290,7 +290,6 @@ test('legacy import schedule mapping and template policy use the server scope an
       year: 1448,
       month: 3,
       schedule: [{ key: c.employees[0].eid, shift: 'TEST_ONLY shift', rest: 'الجمعة والسبت', cs: 'TEST_ONLY', muk: 'نعم' }],
-      templates: [],
     };
   const out = await t.prepare(c, { intent: 'import', deleteMode: undefined, import: imp }),
     row = JSON.parse(out.body.set[key('bassam_staffing_v3')])['1448-3'][c.employees[0].eid];

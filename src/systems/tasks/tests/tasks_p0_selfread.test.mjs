@@ -41,7 +41,7 @@ async function managerAssigns(W, dm, title = 'P0 — مهمة جديدة من ا
   return sn.j.id;
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + (WU.patched ? ' · موزِّعُ 062a مطبَّقٌ للاختبار' : '') + '] ';
 
   test(M + 'P0 — السلسلة: إنشاء ← إسناد ← حفظ ← تنبيه ← «مهامي» للموظف بلا task.view', async () => {

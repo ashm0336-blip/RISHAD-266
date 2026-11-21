@@ -40,7 +40,7 @@ const protoOf = (W, id) => {                                                    
 };
 const RST = (why) => ({ ops: { [KT]: { op: 'backup.restore', scope: 'dept', mode: 'replace', reason: why } }, why: { [KT]: why } });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) الأسبوعيُّ بيومين والشهريّ — و«days» اسمُه القديم: لا تُولَّد إلا مواعيدُ القاعدة · ومرّتين ⇒ لا شيء', async () => {

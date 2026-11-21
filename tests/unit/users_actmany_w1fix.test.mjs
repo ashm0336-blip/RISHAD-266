@@ -19,7 +19,7 @@ const DM = { un: '0000000101', pw: '70101', uid: 'tst_dm1' };
 const P2 = (c) => 'p2$100000$' + c.repeat(32) + '$' + 'e'.repeat(64);
 const MSG = 'رقم الهوية أو الجوال مستخدمٌ في حسابٍ آخر';
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) الخادم: رفضُ الدفعة يسمّي صفَّ الفاعل المصادم وحده (dup) — لا الحسابَ المحجوب — والمخزَّنُ كما هو', async () => {

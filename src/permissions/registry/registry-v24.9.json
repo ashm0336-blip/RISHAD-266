@@ -3665,170 +3665,6 @@
    "reservedReason": null
   },
   {
-   "key": "tpl.view",
-   "owner": "admin/ptpls",
-   "ownerKind": "page",
-   "domain": "admin",
-   "label": "عرض القوالب",
-   "type": "access",
-   "sensitive": false,
-   "guard": {
-    "kind": "read",
-    "resources": [
-     "bassam_perm_tpls_v1",
-     "bassam_perm_tpls_named_v1"
-    ],
-    "detail": "قراءة bassam_perm_tpls_v1, bassam_perm_tpls_named_v1 بورقة admin/ptpls (RD_REG/DS_READ)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch"
-   ],
-   "audit": {
-    "record": "none",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "admin/ptpls:view"
-   ],
-   "references": [
-    "staff",
-    "emps/data",
-    "dreport"
-   ],
-   "uiOnly": false,
-   "v23": [
-    "tpl.view"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "tpl.create",
-   "owner": "admin/ptpls",
-   "ownerKind": "page",
-   "domain": "admin",
-   "label": "إنشاء قالب",
-   "type": "create",
-   "sensitive": false,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_perm_tpls_v1",
-     "bassam_perm_tpls_named_v1"
-    ],
-    "detail": "bassam_perm_tpls_named_v1 (add)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch"
-   ],
-   "audit": {
-    "record": "diff",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "admin/ptpls:add"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "tpl.add"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "tpl.edit",
-   "owner": "admin/ptpls",
-   "ownerKind": "page",
-   "domain": "admin",
-   "label": "تعديل القالب",
-   "type": "edit",
-   "sensitive": false,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_perm_tpls_v1",
-     "bassam_perm_tpls_named_v1"
-    ],
-    "detail": "bassam_perm_tpls_v1/_named_v1 (edit) بما فيه الترتيب",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch"
-   ],
-   "audit": {
-    "record": "diff",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "admin/ptpls:edit"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "tpl.edit"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
-   "key": "tpl.delete",
-   "owner": "admin/ptpls",
-   "ownerKind": "page",
-   "domain": "admin",
-   "label": "حذف قالب",
-   "type": "delete",
-   "sensitive": true,
-   "guard": {
-    "kind": "cap",
-    "resources": [
-     "bassam_perm_tpls_v1",
-     "bassam_perm_tpls_named_v1"
-    ],
-    "detail": "bassam_perm_tpls_named_v1 (del)",
-    "status": "exists"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "admin/ptpls:del"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "tpl.delete"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
    "key": "import.view",
    "owner": "admin/import",
    "ownerKind": "page",
@@ -9224,45 +9060,6 @@
    "reservedReason": null
   },
   {
-   "key": "tpl.supervisory",
-   "owner": "admin/ptpls",
-   "ownerKind": "page",
-   "domain": "admin",
-   "label": "تعيين/إلغاء وسم إشرافي للقالب",
-   "type": "decision",
-   "sensitive": true,
-   "guard": {
-    "kind": "field",
-    "resources": [
-     "bassam_perm_tpls_v1"
-    ],
-    "detail": "bassam_perm_tpls_v1[].sup (boolean) — وسمُ «إشرافي» للقالب (tpSupTog)؛ bassam_perm_tpls_named_v1 رايةُ ترحيلٍ لا مالكَ للوسم",
-    "status": "to-bind"
-   },
-   "scopeDims": [
-    "Department",
-    "Branch"
-   ],
-   "audit": {
-    "record": "line",
-    "reason": false
-   },
-   "grant": "assignable",
-   "status": "active",
-   "asisMap": [
-    "admin/ptpls:edit"
-   ],
-   "references": [],
-   "uiOnly": false,
-   "v23": [
-    "tpl.supervisory"
-   ],
-   "mergedFrom": [],
-   "splitFrom": null,
-   "managedIn": null,
-   "reservedReason": null
-  },
-  {
    "key": "lens.marks.status.change",
    "owner": "lens.marks",
    "ownerKind": "lens",
@@ -9488,7 +9285,6 @@
    "references": [
     "staff",
     "emps/data",
-    "admin/ptpls",
     "sysadmin"
    ],
    "uiOnly": false,
@@ -11414,14 +11210,6 @@
    "resource": null
   },
   {
-   "id": "admin/ptpls",
-   "kind": "page",
-   "label": "قوالب الصلاحيات",
-   "manifest": "page",
-   "managedIn": null,
-   "resource": null
-  },
-  {
    "id": "admin/import",
    "kind": "page",
    "label": "استيراد بيانات",
@@ -12951,51 +12739,6 @@
    "targets": []
   },
   {
-   "leaf": "admin/ptpls",
-   "act": "view",
-   "disposition": "migrated",
-   "targets": [
-    "tpl.view"
-   ]
-  },
-  {
-   "leaf": "admin/ptpls",
-   "act": "add",
-   "disposition": "migrated",
-   "targets": [
-    "tpl.create"
-   ]
-  },
-  {
-   "leaf": "admin/ptpls",
-   "act": "edit",
-   "disposition": "migrated",
-   "targets": [
-    "tpl.edit",
-    "tpl.supervisory"
-   ]
-  },
-  {
-   "leaf": "admin/ptpls",
-   "act": "del",
-   "disposition": "migrated",
-   "targets": [
-    "tpl.delete"
-   ]
-  },
-  {
-   "leaf": "admin/ptpls",
-   "act": "approve",
-   "disposition": "obsolete",
-   "targets": []
-  },
-  {
-   "leaf": "admin/ptpls",
-   "act": "export",
-   "disposition": "obsolete",
-   "targets": []
-  },
-  {
    "leaf": "admin/import",
    "act": "view",
    "disposition": "migrated",
@@ -13173,27 +12916,27 @@
   "ff.module.kpis.enabled"
  ],
  "counts": {
-  "securityActive": 255,
-  "assignable": 231,
+  "securityActive": 250,
+  "assignable": 226,
   "roleOrSelf": 24,
   "reserved": 14,
   "reference": 64,
   "referenceOwned": 4,
   "plugin": 50,
-  "pageOwned": 177,
+  "pageOwned": 172,
   "platform": 24,
-  "owners": 44,
+  "owners": 43,
   "ownersByKind": {
-   "page": 29,
+   "page": 28,
    "platform": 8,
    "lens": 6,
    "reference": 1
   },
-  "atoms": 192,
-  "references": 83,
+  "atoms": 186,
+  "references": 79,
   "guards": {
-   "exists": 174,
-   "toBind": 71,
+   "exists": 170,
+   "toBind": 70,
    "toBuild": 10
   }
  }

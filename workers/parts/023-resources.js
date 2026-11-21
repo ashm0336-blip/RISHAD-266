@@ -77,8 +77,7 @@ var RES_REG = {
   'bassam_award_docs_v2':      { scope: 'dept', cap: 'award/doc' },
   /* ── الإعدادات: أوراقها لا صفحتها الأم ── */
   'bassam_shift_options_v1':   { scope: 'dept', cap: 'admin/shifts' },
-  'bassam_perm_tpls_v1':       { scope: 'dept', cap: 'admin/ptpls', via: { dreport: 'SEED_ONLY' } },
-  'bassam_perm_tpls_named_v1': { scope: 'dept', cap: 'admin/ptpls' },
+
   'bassam_last_export_v1':     { scope: 'dept', cap: 'admin/backup' },
   /* طابعُ النسخة الشاملة (كلُّ الإدارات): سجلُّ منصّةٍ عامٌّ يكتبه مديرُ النظام وحده — لا بياناتُ إدارة.
      كان scope:'dept' فيُرفض مفتاحُه العامُّ (why=super) ويضيع الطابع عند التحديث. */

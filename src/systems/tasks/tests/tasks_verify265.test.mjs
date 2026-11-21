@@ -22,7 +22,7 @@ const deniedWhy = (r) => (r.j && r.j.denied && r.j.denied[KT] ? r.j.denied[KT].w
 const show = (r) => JSON.stringify(r.j || r).slice(0, 260);
 async function raw(W, ck, mut, extra) { const g = await get(W, ck, "/api/operations/read?keys=" + encodeURIComponent(KT)); const S = g.j.resources[KT]; mut(S); return post(W, ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g.j.base[KT] } }, extra || {})); }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   const WHY = (ks) => (mode === 'enforce' ? { why: Object.fromEntries(ks.map((k) => [k, 'TEST_ONLY سببٌ كما ترسله نافذةُ السبب'])) } : {});
 

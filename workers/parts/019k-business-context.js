@@ -40,9 +40,9 @@ async function bdQueryContext(env, actor, d, definition, options) {
     A = actorFromKeys(raw, actor.u.id);
   if (!A || (!global && (!deptInScope(A, d) || !(A.depts || []).some(function (department) { return department && String(department.id) === d; }))))
     throw fail('denied', 403);
-  if (mode.mode === 'unavailable') throw fail('context', 503);
-  if (mode.mode === 'enforce') { A.enf = mode; enfAttachGrantsKeys(A, raw); }
-  captured.__enf = A.enf || null;
+  if (mode.mode === 'unavailable' || enfUnmigratedFor(mode, A.u)) throw fail('context', 503);   /* V7 · د5-ح: «unmigrated» لغير مدير المنصة كذلك */
+  A.enf = mode; enfAttachGrantsKeys(A, raw);   /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
+  captured.__enf = A.enf;
   if (!options.write && !canRead(A, resourceKeys[0])) throw fail('denied', 403);
   var refs = await enfRefsFor(captured, global ? [] : [d], raw),
     base = { epoch: natural(meta.restore_epoch == null ? 0 : Number(meta.restore_epoch)) },

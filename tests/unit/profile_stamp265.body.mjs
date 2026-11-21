@@ -127,7 +127,7 @@ test('(3) الالتقاط كاملاً: بموقعٍ مسموح ⇒ الصور�
   assert.ok(await until(() => (P2.c.state.tkImgs || []).length === 2)); assert.equal(n, 2); assert.equal(P2.c._tkGeoC.v.lat, 24.7136, 'قيمةٌ واحدةٌ مذكورة');
 });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] (4) الخادم: meta مع submit ⇒ r21.meta بترتيب الصور · proof.meta في القراءة · فاسدٌ ⇒ 400 at:meta · حذفُ المسودّة يُسقطها · حفظُ المدير لا يمسّها', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);

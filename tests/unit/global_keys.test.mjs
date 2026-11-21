@@ -14,7 +14,7 @@ function seedSql() {
   return fs.readFileSync(out + '/test_seed.sql', 'utf8');
 }
 const GLOBAL = (() => { const t = fs.readFileSync(path.join(ROOT, 'workers/parts/023-resources.js'), 'utf8'); return [...t.matchAll(/'([a-z0-9_]+)':\s*\{ scope: 'global'/g)].map(m => m[1]); })();
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};
   test('[' + mode + '] المفاتيحُ العامة (' + GLOBAL.length + '): قيمةٌ عبثية أو ضخمة من موظفٍ أو مدير إدارة لا تُكتب أبداً', async () => {
     assert.ok(GLOBAL.length >= 15, 'المفاتيحُ العامة من السجلّ: ' + GLOBAL.length);

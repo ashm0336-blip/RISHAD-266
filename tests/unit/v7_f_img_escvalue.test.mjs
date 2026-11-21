@@ -107,7 +107,7 @@ both(test, 'a · typed save: a floor name carrying such text is accepted and rea
   assert.equal(W.env.DB.q('SELECT COUNT(*) n FROM imgref WHERE k = ?', K)[0].n, 0, 'honest text names no image');
 });
 
-for (const mode of ['legacy', 'enforce']) test('a · task note: an employee\'s note carrying such text is accepted and stored as written [' + mode + ']', { ...needsSys('tasks'), timeout: 600000 }, async () => {
+for (const mode of ['enforce']) test('a · task note: an employee\'s note carrying such text is accepted and stored as written [' + mode + ']', { ...needsSys('tasks'), timeout: 600000 }, async () => {
   const W = await tasksWorld({ mode }), dm = await W.login('0000000101', '70101'), me = await W.login(ME.un, ME.pw);
   const post = (ck, p, body) => W.C.api(p, { method: 'POST', cookie: ck, body: taskCommandBody(W.env, p, body) });
   const s = Date.now() - HR, cr = await post(dm.ck, '/api/tasks/create', { k: hij(s), t: TAG + ' ev', s, e: s + 3 * HR, asg: [ME.eid], rv: 'none' }); assert.equal(cr.status, 200);

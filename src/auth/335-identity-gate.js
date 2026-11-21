@@ -308,7 +308,7 @@
       if (!B9 || !B9.cf) return;
       var el9 = document.getElementById('bsSrvState');
       if (!el9) return;
-      if (B9.authz === 'unavailable') {   /* KIVO_244 · ADR-003: وضعُ الحماية — الخادمُ لم يستطع التحقق من وضع الصلاحيات فلا دخولَ ولا بيانات حتى يعود */
+      if (B9.authz === 'unavailable' || B9.authz === 'unmigrated') {   /* KIVO_244 · ADR-003: وضعُ الحماية — الخادمُ لم يستطع التحقق من وضع الصلاحيات فلا دخولَ ولا بيانات حتى يعود · V7 · د5-ح: «لم تُرحَّل بعد» (مديرُ المنصة وحده يدخل) */
         el9.textContent = B9.notice || 'النظام في وضع الحماية: تعذّر التحقق من وضع الصلاحيات مؤقتاً — أعد المحاولة بعد قليل.';
         el9.style.color = 'var(--warning-text)'; el9.style.display = ''; el9.dataset.fresh = '1';
       } else if (B9.fresh) {

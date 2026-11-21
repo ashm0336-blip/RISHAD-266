@@ -13,7 +13,7 @@ test('super inbox avoids business reference reads while recipient statistics sti
   W.DB.prepare = sql => {
     const statement = prepare(sql), bind = statement.bind.bind(statement);
     statement.bind = (...args) => {
-      if (/SELECT.*\bkv\b/i.test(sql) && args.some(value => typeof value === 'string' && /^bsdept:[^:]+:bassam_(employees_v1|staffing_v3|dreport_v1|perm_tpls_v1)$/.test(value))) referenceReads++;
+      if (/SELECT.*\bkv\b/i.test(sql) && args.some(value => typeof value === 'string' && /^bsdept:[^:]+:bassam_(employees_v1|staffing_v3|dreport_v1|roles_v1)$/.test(value))) referenceReads++;
       return bind(...args);
     };
     return statement;

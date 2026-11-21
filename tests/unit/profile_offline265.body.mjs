@@ -57,7 +57,7 @@ const mkTask = (W, ck, t, extra) => post(W, ck, '/api/tasks/create', Object.assi
 async function wipe(W, eid) { const S = stored(W.env, KT); for (const d in S) S[d] = S[d].filter((r) => !(Array.isArray(r) && r[14] === eid)); await replaceOperationalFixture(W.env, KT, S); }
 const toasts = (P) => P.c.__toasts || [];
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] offline proof keeps the profile fields and image metadata; reconnection and reopening do not submit; explicit retry saves', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM); await wipe(W, ME.eid);

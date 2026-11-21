@@ -16,7 +16,7 @@ async function setup() {
 }
 /* schema 10: options/callsigns are typed operational resources (their race is covered by the operations envelope tests); the KV compare-and-swap
    under test applies to the remaining /api/save KV resources */
-const K = 'bassam_platform_v1', K2 = 'bsdept:dA:bassam_perm_tpls_v1';
+const K = 'bassam_platform_v1', K2 = 'bsdept:dA:bassam_last_export_v1';   /* V7 · د5-ح: كان bassam_perm_tpls_v1 (حُذف كاتبُه) — موردُ إدارةٍ عاديّ */
 const getRev = async (C, ck, k) => { const r = await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: ck }); const it = (r.j.keys || {})[k] || {}; return { v: it.v, rev: it.rev || 0 }; };
 const saveRaw = (C, ck, set, base) => C.api('/api/save', { method: 'POST', cookie: ck, body: { set, del: [], base } });
 

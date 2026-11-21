@@ -1,6 +1,6 @@
 /* ═══ V7 · د5-هـ (44): سياقُ النطاق (permv4Ctx: الفاعل · سقفُ الفرع · اليومُ الهجري · نوافذُ الاستدراك · الأقفال · مصادرُ الإحصائيات) ومرجعياتُه المخزّنة (permv4RefsLoad) —
    يقرؤهما الإنفاذ (058 enfScopeCtx · 062 enfSavePrep) والإحصائيات. كانت هنا طبقةُ القياس الظلّية PERMV4 (R197/R198 · Phase 4/4.1: عدّاداتُ نطاق الكتابة والقراءة —
-   permv4Write · permv4Early · و049 permv4Read) — حُذفت: لم تحكم يوماً. وفحصُ ربط القراءة (permv4ReadBindingCheck — تقريرُ /api/permv2) انتقل هنا من 049 المحذوف. ═══ */
+   permv4Write · permv4Early · و049 permv4Read) — حُذفت: لم تحكم يوماً. وفحصُ ربط القراءة (permv4ReadBindingCheck) انتقل هنا من 049 المحذوف — V7 · د5-ح: يفحصه اختبارُ الحذف، وتقريرُه لمدير النظام حُذف. ═══ */
 /* الفاعلُ وسقفُه (Branch ceiling → allowed Departments) — من الجلسة وسجل الإدارات لا من العميل */
 function permv4Actor(A) {
   var u = A.u, out = { id: u.id, ekey: String(u.ekey || ''), role: u.role, deptId: String(u.deptId || ''), mgr: !!u.mgr || String(u.ekey || '').slice(0, 4) === 'mgr:', gid: String(u.gid || '') };
@@ -37,7 +37,7 @@ async function permv4RefsLoad(env, set, del) {
   return out;
 }
 /* الفحصُ الحيّ: اشتقاقُ مسارات القراءة من RD_REG/RES_REG/DS_READ الحيّة × الذرّات (الخوارزميةُ نفسُها التي ولّدت الجدول) ومقارنتُها بالجدول الصريح — missing/extra يجب 0.
-   يُحسب مرّةً عند أول طلب /api/permv2 ولا يدخل في أي حكم. */
+   يُحسب مرّةً عند أول طلب ولا يدخل في أي حكم — V7 · د5-ح: يستدعيه اختبارُ الحذف من الخادم المولَّد نفسِه (tests/removal/server.test.mjs). */
 var PV4_READ_CHECK = null;
 function permv4ReadBindingCheck() {
   if (PV4_READ_CHECK) return PV4_READ_CHECK;

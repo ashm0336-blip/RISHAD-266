@@ -59,7 +59,7 @@ async function world(mode) {
 const txt = (j) => JSON.stringify(j);
 
 test('(١) tst_emp1: يومُه من صفوفه وحدها — بالمعرّف الثابت · ولا مفتاحَ ولا اسمَ لغيره ولا اسمَ دخول ولا بصمة', G, async () => {
-  for (const mode of ['legacy', 'enforce']) {
+  for (const mode of ['enforce']) {
     const W = await world(mode), ck = await W.login('0000000113', '70113');
     const r = await W.get('/api/me/today', ck), j = r.j;
     assert.equal(r.status, 200, mode + ': ' + txt(j).slice(0, 200));
@@ -136,7 +136,7 @@ test('(٤) لا ربطَ بالاسم أبداً — وحسابٌ قديمٌ م�
 });
 
 test('(٤ب) رقمُ هويةٍ مكرَّر في سجلّ الإدارة (خطأُ إدخال) لا يُسند بياناتِ زميلٍ إلى أحد — لا رمزاً للمرتبط ولا مفتاحاً لغير المرتبط (مراجعةُ SR-2.1 · F-1)', G, async () => {
-  for (const mode of ['legacy', 'enforce']) {
+  for (const mode of ['enforce']) {
     const W = await world(mode), DUP = '1888888888';
     const ph = stored(W.env, 'bassam_auth_users_v1').find((u) => u.id === 'tst_emp1').ph;
     await edit(W.env, K('bassam_employees_v1'), (v) => { v.find((e) => e.eid === 'tst_e_emp1').nid = DUP; v.find((e) => e.eid === 'tst_e_imp').nid = DUP; });

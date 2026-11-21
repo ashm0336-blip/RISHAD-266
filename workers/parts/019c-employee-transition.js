@@ -12,7 +12,6 @@ var EMP_TRANSITION_RELATED = [
   'bassam_tasks_v1',
   'bassam_dreport_v1',
   'bassam_shift_options_v1',
-  'bassam_perm_tpls_v1',
   'bassam_grants_v1',
 ];
 function empTransitionKey(d, n) {
@@ -53,9 +52,7 @@ function empActionAllowed(A, d, intent) {
     })
   )
     throw cuError('employee-transition-forbidden', 403);
-  var ok = A.enf
-    ? enfHeld(A, d, intent === 'delete' ? 'emp.record.delete' : 'emp.record.create')
-    : actsHeldOn(A, d, 'emps/data', [intent === 'delete' ? 'del' : 'add']);
+  var ok = enfHeld(A, d, intent === 'delete' ? 'emp.record.delete' : 'emp.record.create');   /* V7 · د5-ح: المحرّكُ النافذ وحده */
   if (!ok) throw cuError('employee-transition-forbidden', 403);
 }
 async function empTransitionSource(env) {
@@ -349,133 +346,7 @@ function empApplySchedule(values, meta, validKeys, result) {
   if (newOpt || nShift) values.bassam_shift_options_v1 = options;
   result.counts.schedule = rows.length;
 }
-function empCleanTemplate(A, d, sheet) {
-  var clean = {},
-    src = expandPermsOf(A, d, sheet || {}),
-    cap = deptCapOf(A, d);
-  Object.keys(src).forEach(function (k) {
-    var sp = pgSplit(k);
-    if (cap.indexOf(sp.page) < 0) return;
-    if (sp.sub) {
-      if (
-        deptSubsOf(A, d, sp.page)
-          .concat(deptTabsOf(A, d, sp.page))
-          .indexOf(sp.sub) < 0
-      )
-        return;
-    } else if (pgIsContainer(sp.page) || !PG_OF[sp.page]) return;
-    var acts = (src[k] || []).filter(function (a) {
-      return ACTS_ALL.indexOf(a) >= 0;
-    });
-    if (acts.length) {
-      if (acts.indexOf('view') < 0) acts.push('view');
-      clean[k] = acts;
-    }
-  });
-  return clean;
-}
-function empApplyTemplates(A, d, values, p, users, meta, validKeys, result) {
-  var rows = meta.templates || [];
-  if (!rows.length) return;
-  if (!capOnDept(A, d, 'admin/ptpls')) {
-    result.warnings.push('templates-disabled');
-    return;
-  }
-  if (!isMgrOf(A, d)) {
-    result.warnings.push('templates-manager-required');
-    return;
-  }
-  var templates = values.bassam_perm_tpls_v1 || [],
-    lens = (p.lenses || {})[d];
-  var accountByKey = new Map();
-  users.forEach(function (u) {
-    if (u && u.role === 'staff' && u.deptId === d) accountByKey.set(u.ekey, u);
-  });
-  if (!Array.isArray(lens))
-    lens = Object.keys(enfIx().lens)
-      .map(function (k) {
-        return enfIx().lens[k];
-      })
-      .filter(function (v, i, a) {
-        return a.indexOf(v) === i;
-      });
-  var grants = values.bassam_grants_v1;
-  if (!isObj(grants) || !isObj(grants.emp)) grants = { v: 1, emp: {} };
-  rows.forEach(function (row) {
-    empShape(row, ['key', 'name']);
-    if (typeof row.key !== 'string' || !validKeys.has(row.key) || typeof row.name !== 'string')
-      throw cuError('employee-transition-template-key');
-    var norm = function (n) {
-        return String(n || '')
-          .trim()
-          .replace(/\s+/g, ' ');
-      },
-      t = templates.find(function (t) {
-        return norm(t.name) === norm(row.name);
-      });
-    if (!t) {
-      result.warnings.push('template-unknown');
-      return;
-    }
-    var cut = empCleanTemplate(A, d, t.perms);
-    if (!Object.keys(cut).length) {
-      result.warnings.push('template-empty');
-      return;
-    }
-    ['emps', 'tplOf', 'empLens'].forEach(function (n) {
-      p[n] = p[n] || {};
-      p[n][d] = p[n][d] || {};
-    });
-    p.emps[d][row.key] = cut;
-    p.tplOf[d][row.key] = t.id;
-    p.empLens[d][row.key] = Array.isArray(t.lens)
-      ? t.lens.filter(function (k) {
-          return lens.indexOf(k) >= 0;
-        })
-      : lens.slice();
-    if (A.enf) {
-      if (A.u.role !== 'super' && A.u.ekey === row.key) {
-        result.warnings.push('template-self-grant-unchanged');
-        return;
-      }
-      if (Array.isArray(t.keys24)) {
-        var target = accountByKey.get(row.key) || { role: 'staff', deptId: d, ekey: row.key },
-          targetA = Object.assign({}, A, { u: target, perms: p, __enfT: null, __enfH: null }),
-          translated = enfTranslated(targetA, d).keys,
-          E = new Set(t.keys24),
-          prev = (grants.emp[row.key] || {}).plus || [],
-          plus = [],
-          minus = [];
-        KIVO_REGISTRY.keys.forEach(function (k) {
-          var e = KIVO_REGISTRY.byKey[k],
-            ix = enfIx();
-          if (
-            !e ||
-            e.status !== 'active' ||
-            e.grant !== 'assignable' ||
-            /^lens\.[a-z]+\.enable$/.test(k) ||
-            (ix.needMgr[k] && (ix.atomless[k] || !isMgrKey(row.key))) ||
-            !enfKeyOnCeiling(A, d, k)
-          )
-            return;
-          var L = ix.lens[k];
-          if (L && p.empLens[d][row.key].indexOf(L) < 0) return;
-          var T = !!translated[k] && !(enfPermMigrated(A) && ENF_COMPAT[k]);
-          if (E.has(k) && !T) {
-            if (A.u.role === 'super' || prev.indexOf(k) >= 0 || enfHeld(A, d, k)) plus.push(k);
-            else result.warnings.push('template-unheld-key-omitted');
-          }
-          if (T && !E.has(k)) minus.push(k);
-        });
-        if (plus.length || minus.length)
-          grants.emp[row.key] = { plus: plus.sort(), minus: minus.sort(), at: Date.now(), by: A.u.id, src: 'tpl:' + t.id };
-        else delete grants.emp[row.key];
-      } else delete grants.emp[row.key];
-    }
-    result.counts.templates++;
-  });
-  if (A.enf) values.bassam_grants_v1 = grants;
-}
+/* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — لا يمنح الاستيرادُ صلاحياتٍ بعمود «الصلاحيات» بعد اليوم؛ الأدوارُ تُسنَد من «الصلاحيات ← الأشخاص» */
 async function empPrepareTransition(env, A, input) {
   if (!A || !A.u) throw cuError('employee-transition-forbidden', 403);
   empShape(input, [
@@ -525,7 +396,7 @@ async function empPrepareTransition(env, A, input) {
     )
       throw cuError('employee-transition-shape');
   } else {
-    empShape(input.import, ['mode', 'year', 'month', 'schedule', 'templates']);
+    empShape(input.import, ['mode', 'year', 'month', 'schedule']);
     if (
       !['add', 'update', 'replace'].includes(mode) ||
       !Number.isInteger(input.import.year) ||
@@ -534,19 +405,13 @@ async function empPrepareTransition(env, A, input) {
       input.import.month < 1 ||
       input.import.month > 12 ||
       !Array.isArray(input.import.schedule) ||
-      !Array.isArray(input.import.templates) ||
       input.deleteMode !== undefined
     )
       throw cuError('employee-transition-import-shape');
     var act = replace ? 'del' : mode === 'update' ? 'edit' : 'add';
-    if (
-      !(A.enf
-        ? enfHeld(A, d, { del: 'emp.record.delete', edit: 'emp.record.edit', add: 'emp.record.create' }[act])
-        : actsHeldOn(A, d, 'emps/data', [act]))
-    )
+    if (!enfHeld(A, d, { del: 'emp.record.delete', edit: 'emp.record.edit', add: 'emp.record.create' }[act]))
       throw cuError('employee-transition-forbidden', 403);
-    if (replace && !(A.enf ? enfHeld(A, d, 'import.replace') : actsHeldOn(A, d, 'admin/import', ['del'])))
-      throw cuError('employee-transition-forbidden', 403);
+    if (replace && !enfHeld(A, d, 'import.replace')) throw cuError('employee-transition-forbidden', 403);
   }
   /* PRIVACY (019u): the context reached a delete-only holder projected (019e GET) — hidden fields come back from storage before any
      rule; one sent with another value, or an unknown 'nx:' token, is refused (lossless, never silently applied) */
@@ -561,7 +426,7 @@ async function empPrepareTransition(env, A, input) {
     base = Object.assign(Object.create(null), input.base.kv),
     ops = {},
     result = {
-      counts: { removed: removed.length, employees: after.length, accountsCreated: 0, accountsRemoved: 0, schedule: 0, templates: 0 },
+      counts: { removed: removed.length, employees: after.length, accountsCreated: 0, accountsRemoved: 0, schedule: 0 },
       warnings: [],
     };
   EMP_TRANSITION_RELATED.forEach(function (n) {
@@ -679,13 +544,10 @@ async function empPrepareTransition(env, A, input) {
     })
   )
     throw cuError('employee-transition-account-proposal-ineligible');
-  var validKeys = new Set(after.map(empStableKey));
   if (input.intent === 'import') {
-    empApplySchedule(values, input.import, validKeys, result);
-    empApplyTemplates(A, d, values, p, users, input.import, validKeys, result);
+    empApplySchedule(values, input.import, new Set(after.map(empStableKey)), result);
   }
   EMP_TRANSITION_RELATED.forEach(function (n) {
-    if (n === 'bassam_perm_tpls_v1') return;
     // An absent ledger has no rows to clean. Do not turn cleanup into an
     // unrelated resource creation solely by materializing its empty shape.
     if (original[n] === null && isObj(values[n]) && !Object.keys(values[n]).length) return;

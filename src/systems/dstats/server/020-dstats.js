@@ -18,17 +18,6 @@ function dsDepts(A) {
   (A.depts || []).forEach(function (x) { var d = x && x.id; if (d && d !== u.deptId && secMgrOf(A, d)) out.push(d); });
   return out;
 }
-function dsHeld(A, sites, acts) {
-  var ds = dsDepts(A);
-  for (var s = 0; s < sites.length; s++) for (var i = 0; i < ds.length; i++) if (actsHeldOn(A, ds[i], 'dstats/' + sites[s], acts)) return true;
-  return false;
-}
-function dsHasNum(r) {
-  if (!isObj(r)) return r != null && r !== '';
-  for (var f in r) if (f !== '__m' && f !== '__f' && r[f] != null && r[f] !== '') return true;
-  return false;
-}
-function dsDays(m) { var o = {}; for (var k in m) if (dsHasNum(m[k])) o[k] = m[k]; return o; }
 function dsStampOk(x) { return isObj(x) && Object.keys(x).length <= 6; }
 function dsDayOk(r) {
   if (!isObj(r)) return false;
@@ -52,69 +41,8 @@ function dsLockOk(v) {
   }
   return true;
 }
-/* R183 (الملاحظة ٩): أقفالُ الأيام والأشهر — قاعدةُ الشاشة نفسُها (dayLocked · mLocked في «الإحصائيات اليومية»):
-     locks["haram|1448-4"] = true (شكلٌ قديم = معتمد) أو { ap: معتمد · mo: شهرٌ منقضٍ فُتح بأثر رجعي ·
-     dopen: أيامٌ منقضية فُتحت · dshut: أيامٌ لم تنقضِ أُقفلت يدوياً }. */
-/* DS_GRACE → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 /* dsToday → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
-function dsLockRec(L, site, y, m) { var v = isObj(L) ? L[site + '|' + y + '-' + m] : undefined; return v === true ? { ap: 1 } : (isObj(v) ? v : {}); }
-function dsLockedIn(L, site, y, m, d, T) {
-  var r = dsLockRec(L, site, y, m);
-  if (r.ap) return true;
-  var mPast = !!T && (y < T.y || (y === T.y && m < T.m)), dPast = mPast || (!!T && y === T.y && m === T.m && d < T.d);
-  if (mPast && !r.mo) return true;
-  return dPast ? !(isObj(r.dopen) && r.dopen[d]) : !!(isObj(r.dshut) && r.dshut[d]);
-}
-/* الأيامُ التي تغيّرت أرقامُها (إضافةً أو تعديلاً أو حذفاً) — مقفلةٌ قبل الحفظ وبعده معاً ⇒ مرفوضة */
-function dsLockHit(site, a9, b9, oL, nL, T) {
-  var A9 = dsDays(a9), B9 = dsDays(b9), ks = {}, q;
-  Object.keys(A9).concat(Object.keys(B9)).forEach(function (x) { ks[x] = 1; });
-  for (q in ks) {
-    if (deq(A9[q], B9[q])) continue;
-    var mq = /^(\d{4})-(\d{2})-(\d{2})$/.exec(q); if (!mq) continue;
-    var y = +mq[1], m = +mq[2], d = +mq[3];
-    if (dsLockedIn(oL, site, y, m, d, T) && dsLockedIn(nL, site, y, m, d, T)) return q;
-  }
-  return '';
-}
-function dstatsRule(A, newJson, curJson) {
-  var n = parseJson(newJson, null), o = curJson == null ? {} : parseJson(curJson, null);
-  if (!isObj(n) || !isObj(o)) return { ok: false, why: 'dstats' };
-  var need = {}, top = {}, k, q, lockQ = '', T9 = dsToday(Date.now());
-  Object.keys(n).concat(Object.keys(o)).forEach(function (x) { top[x] = 1; });
-  for (k in top) {
-    if (deq(o[k], n[k])) continue;
-    if (DS_SITES.indexOf(k) !== -1) {
-      var a9 = o[k] === undefined ? {} : o[k], b9 = n[k] === undefined ? {} : n[k];
-      if (!isObj(a9) || !isObj(b9)) return { ok: false, why: 'dstats' };
-      for (q in b9) if (!deq(a9[q], b9[q]) && (!/^\d{4}-\d{2}-\d{2}$/.test(q) || !dsDayOk(b9[q]))) return { ok: false, why: 'dstats' };
-      if (!lockQ) lockQ = dsLockHit(k, a9, b9, o.locks, n.locks, T9);
-      var m9 = {}; cmpMap(dsDays(a9), dsDays(b9), m9, '');
-      for (q in m9) (need[k] = need[k] || {})[q] = 1;
-      continue;
-    }
-    if (k === 'locks') {
-      var la = o.locks === undefined ? {} : o.locks, lb = n.locks === undefined ? {} : n.locks;
-      if (!isObj(la) || !isObj(lb)) return { ok: false, why: 'dstats' };
-      var lk = {}; Object.keys(la).concat(Object.keys(lb)).forEach(function (x) { lk[x] = 1; });
-      for (q in lk) {
-        if (deq(la[q], lb[q])) continue;
-        var mq = /^(haram|nabawi)\|\d{4}-\d{1,2}$/.exec(String(q));
-        if (!mq) return { ok: false, why: 'super' };
-        if (!dsLockOk(lb[q])) return { ok: false, why: 'dstats' };
-        (need[mq[1]] = need[mq[1]] || {}).approve = 1;
-      }
-      continue;
-    }
-    return { ok: false, why: 'super' };                /* ما سوى المسجدين والأقفال لمدير النظام وحده */
-  }
-  var ss = Object.keys(need);
-  /* حفظٌ لا يغيّر يوماً ولا قفلاً يُعامل تعديلاً — قاعدةُ النواة نفسُها */
-  if (!ss.length) return dsHeld(A, DS_SITES, ['edit']) ? { ok: true } : { ok: false, why: 'act' };
-  for (var i = 0; i < ss.length; i++) if (!dsHeld(A, [ss[i]], Object.keys(need[ss[i]]))) return { ok: false, why: 'act' };
-  if (lockQ) return { ok: false, why: 'dslock' };
-  return { ok: true };
-}
+/* DS_GRACE → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 
 /* Daily statistics is an independent relational domain. K_DSTATS remains a permission/audit
    resource identifier only; no business document is read from or written to kv. */
@@ -205,12 +133,12 @@ function dsDomainStatements(env, before, after) {
 }
 async function dsDomainView(env, A, data, refs) {
   var raw = JSON.stringify(data);
-  if (A.enf) raw = enfProjectStr(A, K_DSTATS, raw, refs || await enfRefsFor(env, enfDeptsOf(A), null));
+  raw = enfProjectStr(A, K_DSTATS, raw, refs || await enfRefsFor(env, enfDeptsOf(A), null));
   return JSON.parse(raw);
 }
 async function dsDomainDeny(env, A, why, ip, verdict) {
   var meta = ip || {}, v = verdict || enfNo(why), st = [secStmt(env, { uid: A.u.id, act: 'denied', target: K_DSTATS, detail: why, ip: meta.ip || '', city: meta.city || '', dev: meta.dev || '' })];
-  if (A.enf) { var row = enfLogRow(A, K_DSTATS, v, '/api/dstats', meta); if (row) st.push(enfLogStmt(env, row)); }
+  var row = enfLogRow(A, K_DSTATS, v, '/api/dstats', meta); if (row) st.push(enfLogStmt(env, row));
   await env.DB.batch(st);
   return { status: 403, body: { ok: 0, err: 'denied', why: why, reasonKeys: v.reasonKeys || v.keys || [] } };
 }
@@ -218,24 +146,23 @@ async function dsDomainCommit(env, A, body, ip) {
   if (!canRead(A, K_DSTATS)) return await dsDomainDeny(env, A, 'view', ip);
   if (body.operation !== undefined && body.operation !== 'historical-import') return { status: 400, body: { ok: 0, err: 'operation' } };
   if (!dsDomainShape(body.data)) return { status: 400, body: { ok: 0, err: 'dstats-shape' } };
-  var current = await dsDomainRead(env), cur = JSON.stringify(current.data), raw = JSON.stringify(body.data), refs = null, X = null, ctx = {};
+  var current = await dsDomainRead(env), cur = JSON.stringify(current.data), raw = JSON.stringify(body.data), refs = null, ctx = {};
   var set = {}; set[K_DSTATS] = raw; var keys = {}; keys[K_DSTATS] = 1;
   var markers = KIVO_BUILD.markers(body.ops || {}, keys), restore = markers.ops[K_DSTATS] && markers.ops[K_DSTATS].op === 'backup.restore' ? markers.ops[K_DSTATS] : null;
   if (restore) return { status: 400, body: { ok: 0, err: 'full-restore-unsupported' } };
   var historical = body.operation === 'historical-import';
   /* Historical import is the existing super-only operation, with its mandatory reason. */
   if (historical && A.u.role !== 'super') return await dsDomainDeny(env, A, 'super', ip, enfNo('super', { keys: ['sys.histimp.run'], reasonKeys: ['sys.histimp.run'] }));   /* لمدير المنصة وحده — ولا يُطلب منه سبب */
-  if (A.enf) {
-    var why = {}; why[K_DSTATS] = String(body.reason || '').trim();
-    X = await enfSavePrep(env, A, { why: why }, set, [], keys, markers, restore, false, historical, await permv3RetroLoad(env, set, []), await permv4RefsLoad(env, set, []));
-    X.refs = await enfRefsFor(env, enfDeptsOf(A), null);
-    refs = X.refs;
-    var merged = enfMergeChk(A, K_DSTATS, raw, cur, refs); if (merged.hidden) return await dsDomainDeny(env, A, 'scope', ip); raw = merged.v;
-    ctx.enf = enfCtxFor(X, K_DSTATS, '');
-  }
+  /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
+  var why = {}; why[K_DSTATS] = String(body.reason || '').trim();
+  var X = await enfSavePrep(env, A, { why: why }, set, [], keys, markers, restore, false, historical, await permv3RetroLoad(env, set, []), await permv4RefsLoad(env, set, []));
+  X.refs = await enfRefsFor(env, enfDeptsOf(A), null);
+  refs = X.refs;
+  var merged = enfMergeChk(A, K_DSTATS, raw, cur, refs); if (merged.hidden) return await dsDomainDeny(env, A, 'scope', ip); raw = merged.v;
+  ctx.enf = enfCtxFor(X, K_DSTATS, '');
   /* Canonical numeric lock flags prevent true/1 presentation changes being misclassified. */
   var next = dsDomainInflate(dsDomainRows(JSON.parse(raw))); raw = JSON.stringify(next);
-  var verdict = X && X.batchDeny ? enfNo(X.batchDeny.why, X.batchDeny) : canWrite(A, K_DSTATS, raw, cur, ctx);
+  var verdict = X.batchDeny ? enfNo(X.batchDeny.why, X.batchDeny) : canWrite(A, K_DSTATS, raw, cur, ctx);
   if (!verdict.ok) return await dsDomainDeny(env, A, verdict.why, ip, verdict);
   if (body.base !== current.rev) return { status: 409, body: { ok: 0, err: 'conflict', rev: current.rev, data: await dsDomainView(env, A, current.data, refs) } };
   var st = dsDomainStatements(env, current.data, next);

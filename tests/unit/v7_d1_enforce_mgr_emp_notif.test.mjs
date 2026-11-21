@@ -89,7 +89,7 @@ async function produce(x, who = 'tst_dm1') {
   assert.deepEqual(x.msgs().map((m) => m.type).sort(), ['emp_add', 'emp_del', 'emp_edit', 'emp_imp', 'emp_type']);
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   /* ── the reproduction (fails on 09a5fe8 in enforce: the manager's feed is empty) ── */
   test('V7 D1 · ' + mode + ': the unit manager adds an employee through the real save → his own feed contains «emp_add»', async () => {
     const x = await mk(mode), before = x.denied();

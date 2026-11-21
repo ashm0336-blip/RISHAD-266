@@ -55,12 +55,6 @@ export interface IrshadReport {
   id: string;
   [field: string]: unknown;
 }
-/** bassam_perm_tpls_v1 (الجذر) · حقولٌ إضافية تُحتمل (سجلّاتٌ قديمة) */
-export interface PermTpl {
-  id: string;
-  name: string;
-  [field: string]: unknown;
-}
 /** bassam_seized_acts_v1 (الجذر) · حقولٌ إضافية تُحتمل (سجلّاتٌ قديمة) */
 export interface SeizedAct {
   id?: string;
@@ -169,10 +163,6 @@ export interface KivoResources {
   "bassam_perm_mgr_explicit_v1": unknown;
   /** global · قاعدة: super */
   "bassam_perm_seized_cap_v1": unknown;
-  /** dept · الورقة: admin/ptpls */
-  "bassam_perm_tpls_named_v1": Record<string, unknown>;
-  /** dept · الورقة: admin/ptpls */
-  "bassam_perm_tpls_v1": PermTpl[];
   /** global · قاعدة: perms */
   "bassam_perms_v1": unknown;
   /** dept · الورقة: plan · اعتماد: floors.*.approved، months.*.mo، months.*.d.*.approved */
@@ -265,9 +255,9 @@ export interface KivoApi {
   "/api/aud": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; rows: unknown; next: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown } } };
   "/api/imgs": { methods: "GET"; access: "actor"; responses: { "200": { [k: string]: unknown } } };
   "/api/img/": { methods: "GET" | "PUT" | "DELETE"; access: "actor"; responses: { "200": { ok: unknown }; "409": { ok: unknown; err: unknown }; "415": { ok: unknown; err: unknown }; "429": { ok: unknown; err: unknown; retry: unknown } } };
-  "/api/presence": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; now: unknown; active: unknown; list: unknown } } };
+  "/api/presence": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; now: unknown; active: unknown; list: unknown } } };
   "/api/sec": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; rows: unknown } } };
-  "/api/sess/kill": { methods: "POST"; access: "actor"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "403": { ok: unknown; err: unknown } } };
+  "/api/sess/kill": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "403": { ok: unknown; err: unknown } } };
   "/api/guard": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; now: unknown; rows: unknown } } };
   "/api/guard/unlock": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown } } };
   "/api/policy": { methods: "GET" | "POST"; access: "super"; responses: { "200": { ok: unknown; policy: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
@@ -275,12 +265,11 @@ export interface KivoApi {
   "/api/recovery": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; key: unknown; used: unknown; backups: unknown; backupLastLogin: unknown } } };
   "/api/recovery/new": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "409": { ok: unknown; err: unknown } } };
   "/api/reset": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "409": { ok: unknown; err: unknown } } };
-  "/api/permv2": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; version: unknown; docSha256: unknown; status: unknown; phase: unknown; mode: unknown; worker: unknown; counts: unknown; validation: unknown; scope: unknown; guards: unknown } } };
   "/api/identity-rehearsal": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; worker: unknown; rehearsal: unknown } } };
-  "/api/authz": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; ver: unknown; mode: unknown; env: unknown; d1: unknown; perm: unknown; scope: unknown; ident: unknown; fixture: unknown; me: unknown }; "404": { ok: unknown; err: unknown } } };
-  "/api/authz/log": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; rows: unknown; totals: unknown }; "404": { ok: unknown; err: unknown } } };
-  "/api/authz/snaps": { methods: "GET"; access: "enforce"; responses: { "200": { ok: unknown; rows: unknown }; "404": { ok: unknown; err: unknown } } };
-  "/api/authz-migrate": { methods: "POST"; access: "enforce"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown }; "404": { ok: unknown; err: unknown } } };
+  "/api/authz": { methods: "GET"; access: "session"; responses: { "200": { ok: unknown; ver: unknown; mode: unknown; env: unknown; d1: unknown; perm: unknown; scope: unknown; ident: unknown; fixture: unknown; me: unknown }; "404": { ok: unknown; err: unknown } } };
+  "/api/authz/log": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; rows: unknown; totals: unknown }; "404": { ok: unknown; err: unknown } } };
+  "/api/authz/snaps": { methods: "GET"; access: "super"; responses: { "200": { ok: unknown; rows: unknown }; "404": { ok: unknown; err: unknown } } };
+  "/api/authz-migrate": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown }; "404": { ok: unknown; err: unknown } } };
   "/api/demo-data": { methods: "POST"; access: "enforce"; responses: { "200": { ok: unknown; act: unknown }; "400": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "404": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown } } };
   "/api/authz-test": { methods: "POST"; access: "enforce"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown }; "404": { ok: unknown; err: unknown } } };
   "/api/dstats": { methods: "GET" | "POST"; access: "actor"; responses: { "200": { ok: unknown; rev: unknown; data: unknown }; "400": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown } } };

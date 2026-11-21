@@ -50,9 +50,9 @@ var PRIV_PERM_EMPK = { emps: 1, tplOf: 1, empLens: 1 }, PRIV_PERM_UNITK = { caps
 function privOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 function privPut(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true }); }   /* «__proto__» stays data */
 function privCopy(o) { var r = {}, k; for (k in o) if (privOwn(o, k)) privPut(r, k, o[k]); return r; }
-/* per-actor, per-unit decision cache · one of the enforcement keys ek (or legacy 'page:act' lk) held in unit d */
+/* per-actor, per-unit decision cache · one of the enforcement keys ek held in unit d (V7 · د5-ح: المحرّكُ النافذ وحده) */
 function privMemo(A, slot, d, fn) { var c = A[slot] || (A[slot] = nmap()); return c[d] !== undefined ? c[d] : (c[d] = !!fn()); }
-function privHeld(A, d, ek, lk) { return A.enf ? ek.some(function (k) { return enfHeld(A, d, k); }) : lk.some(function (k) { var i = k.lastIndexOf(':'); return actsHeldOn(A, d, k.slice(0, i), [k.slice(i + 1)]); }); }
+function privHeld(A, d, ek) { return ek.some(function (k) { return enfHeld(A, d, k); }); }
 /* arr.map(fn), the same array when no element changed */
 function privMap(arr, fn) { var ch = 0, o = arr.map(function (x, i) { var y = fn(x, i); if (y !== x) ch++; return y; }); return ch ? o : arr; }
 /* holder of the employees-data write actions, or manager of the unit */
@@ -60,11 +60,11 @@ function privPersonalOk(A, d) {
   if (!A || !A.u) return false;
   if (A.u.role === 'super') return true;
   if (!d || !deptInScope(A, d)) return false;
-  return privMemo(A, '__privP', d, function () { return isMgrOf(A, d) || privHeld(A, d, ['emp.record.create', 'emp.record.edit'], ['emps/data:add', 'emps/data:edit']); });
+  return privMemo(A, '__privP', d, function () { return isMgrOf(A, d) || privHeld(A, d, ['emp.record.create', 'emp.record.edit']); });
 }
 /* readers of the two pages that use gender operationally (distribution of the shift) */
 function privGenderOk(A, d) {
-  return privPersonalOk(A, d) || privMemo(A, '__privG', d, function () { return privHeld(A, d, ['staff.view', 'report.view'], ['staff:view', 'dreport:view']); });
+  return privPersonalOk(A, d) || privMemo(A, '__privG', d, function () { return privHeld(A, d, ['staff.view', 'report.view']); });
 }
 function privSelfRec(A, e) {
   var ek = String((A && A.u && A.u.ekey) || '');
@@ -505,10 +505,8 @@ function bkExportOk(A, d) {
   if (A.u.role === 'dept') return false;
   if (!d || !deptInScope(A, d)) return false;
   return privMemo(A, '__bkX', d, function () {
-    if (!privHeld(A, d, ['backup.view'], ['admin/backup:view'])) return false;
-    if (isMgrOf(A, d) || privHeld(A, d, ['backup.create', 'backup.restore'], ['admin/backup:add', 'admin/backup:edit'])) return true;
-    if (A.enf) return false;
-    try { return KIVO_GUARDS.decide('backup.restore', permv2Ctx(A, d)).ok; } catch (e) { return false; }
+    if (!privHeld(A, d, ['backup.view'])) return false;
+    return isMgrOf(A, d) || privHeld(A, d, ['backup.create', 'backup.restore']);
   });
 }
 /* backup.view as a read key of every department collection (RD_ANY · readKeysFor): only for its own stamp, or for an exporter */

@@ -35,8 +35,7 @@ var RES_REG = {
 @@SYS:res.reg.dreport@@  /* ── المهام ── */
 @@SYS:res.reg.tasks@@@@SYS:res.reg.dept@@  /* ── الإعدادات: أوراقها لا صفحتها الأم ── */
   'bassam_shift_options_v1':   { scope: 'dept', cap: 'admin/shifts' },
-  'bassam_perm_tpls_v1':       { scope: 'dept', cap: 'admin/ptpls'@@SYS:res.via.ptpls.dreport@@ },
-  'bassam_perm_tpls_named_v1': { scope: 'dept', cap: 'admin/ptpls' },
+
   'bassam_last_export_v1':     { scope: 'dept', cap: 'admin/backup' },
   /* طابعُ النسخة الشاملة (كلُّ الإدارات): سجلُّ منصّةٍ عامٌّ يكتبه مديرُ النظام وحده — لا بياناتُ إدارة.
      كان scope:'dept' فيُرفض مفتاحُه العامُّ (why=super) ويضيع الطابع عند التحديث. */

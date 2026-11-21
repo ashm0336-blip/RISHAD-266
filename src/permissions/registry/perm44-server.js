@@ -20,13 +20,12 @@ function perm44Ceiling(A, d) {
   var E = perm44E(), lf = perm44LeafOn(A, d);
   return { on: E.sysList().filter(function (s) { return E.sysOn(s.key, lf); }).map(function (s) { return s.key; }), key: perm44CeilingFn(A, d) };
 }
-/* هل يحمل الفاعلُ المفتاحَ في الوحدة؟ — بالوضعين: الإنفاذُ enfHeld · والقديمُ ترجمةُ ورقته (permv2Ctx ⇒ KIVO_REGISTRY.can — كما tkHeld) */
+/* هل يحمل الفاعلُ المفتاحَ في الوحدة؟ — الإنفاذُ enfHeld (V7 · د5-ح: وحده؛ حُذفت ترجمةُ الورقة للوضع القديم) */
 function perm44Held(A, d, k) {
   if (!A || !A.u) return false;
   if (A.u.role === 'super') return true;
   if (!d) return false;
-  if (A.enf) return enfHeld(A, d, k);
-  try { return !!KIVO_REGISTRY.can(k, permv2Ctx(A, d)).ok; } catch (e) { return false; }
+  return enfHeld(A, d, k);   /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
 }
 function perm44Rec(v) { var o = typeof v === 'string' ? parseJson(v, null) : v; return isObj(o) ? o : null; }
 /* قيمتا السجلّين كما ستُكتبان في هذه الحفظة (054 يملأ A.__p44 قبل الحكم: من الطلب، وإلا المخزَّن) */
@@ -76,17 +75,6 @@ function perm44GrantsWhy(A, d) {
     if (!isObj(g) || JSON.stringify(has) !== JSON.stringify(want.keys.slice().sort())) return 'p44-grants';
   }
   return '';
-}
-/* سجلُّ المنح في حفظةٍ: مدخلٌ مصدرُه دور يُكتب مع سجلّ الأدوار ومطابقاً له (perm44GrantsWhy) — بالوضعين. والوضعُ القديم (لا يقرأ المنحَ قرارٌ فيه):
-   يُكتب فقط ضمن حفظة أدوار، من مدير المنصة أو مدير الوحدة (كان مجهولاً لا يكتبه أحد — لا يتغيّر به حكمٌ قائم) */
-function perm44LegacyGrantsWhy(A, k, newVal, curVal) {
-  var d = parseKey(k).dept, sup = A.u.role === 'super', P = perm44Pair(A, d);
-  if (!d) return 'scope';
-  if (!P || !P.rolesInBatch) return 'unknown';
-  if (!sup && (!deptInScope(A, d) || !isMgrOf(A, d))) return 'unknown';
-  if (newVal == null) return sup ? '' : 'super';
-  var n = perm44Rec(newVal); if (!n || !isObj(n.emp)) return 'shape';
-  return perm44GrantsWhy(A, d);
 }
 /* «اختبار الوصول»: القرارُ نفسُه الذي تُحكم به الكتابة — {allow, why} */
 function perm44Decide(A, d, q) {

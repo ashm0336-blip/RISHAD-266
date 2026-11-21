@@ -77,7 +77,7 @@ async function editTitleOfDoneTask(logicSrc, mode) {
   return { row, sent, img: W.env.DB.q('SELECT k FROM imgs WHERE k = ?', IMG_ME).length };
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] (أ) العيبُ على KIVO_263: واجهتُه تُسقط التوثيق (العمود 21) عند تعديل عنوانِ مهمةٍ منجزة — والخادمُ (F-10) يعيده ولا يكنس الصورة', { skip: ref263 ? false : 'لا تاريخ git (KIVO_263)' }, async () => {
     const r = await editTitleOfDoneTask(ref263, mode);
     assert.equal(r.sent.length, 20, 'العيبُ في واجهة 263: الصفُّ المعدَّل يُرسل بـ20 عموداً'); assert.equal(r.sent[21], undefined, 'والتوثيقُ ساقطٌ ممّا ترسله');

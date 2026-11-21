@@ -75,7 +75,7 @@ async function startAndSubmit(P, W, id, x) {
   return R;
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] (1·2·3) التسليمُ بلا مراجِع ⇒ منجزةٌ تخرج من «الحالية» (بـ tkFocus وبدونه) · «لا توجد لديك مهام حالية» بعد التحميل وحده · والسجلُّ بإثباتها وسجلِّها', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);

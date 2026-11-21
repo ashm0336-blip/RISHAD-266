@@ -373,7 +373,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 69,
     "seq": 280,
     "value": {
      "key": "round.sync.plan",
@@ -425,7 +425,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 69,
     "seq": 290,
     "value": {
      "key": "round.day.disable",
@@ -3063,7 +3063,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 58,
     "seq": 280,
     "value": {
      "key": "round.sync.plan",
@@ -5160,7 +5160,7 @@
     "path": [
      "bindings"
     ],
-    "after": 25,
+    "after": 24,
     "seq": 30,
     "value": {
      "key": "round.sync.plan",
@@ -5179,7 +5179,7 @@
     "path": [
      "bindings"
     ],
-    "after": 26,
+    "after": 25,
     "seq": 70,
     "value": {
      "key": "round.edit",
@@ -5211,7 +5211,7 @@
     "path": [
      "decisions"
     ],
-    "after": 10,
+    "after": 9,
     "seq": 30,
     "value": {
      "id": "D-19",

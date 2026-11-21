@@ -43,12 +43,7 @@ test('[enforce] إعادةُ الفتح بالسبب ⇒ تمضي والسببُ
   const a = reopened(W); assert.equal(a.length, 1); assert.equal(JSON.parse(a[0].aft).why, WHY, 'السببُ في حدث التدقيق');
 });
 
-test('[legacy] إعادةُ الفتح بلا سبب ⇒ تمضي كما كان (لا سببَ مطلوب)', async () => {
-  const { W, dm } = await done('legacy');
-  const r = await post(W, dm.ck, '/api/tasks/reopen', { k: DAY, id: ID, ekey: ME.eid });
-  assert.equal(r.status, 200, JSON.stringify(r.j)); assert.equal(row(W)[3], 'in_progress');
-  assert.equal(reopened(W).length, 1, 'بحدث تدقيق');
-});
+/* V7 · د5-ح (القفل): حالة «[legacy] إعادةُ الفتح بلا سبب ⇒ تمضي» حُذفت — تثبّت إعفاءَ الوضع القديم من السبب (المحذوف) */
 
 /* الصفحةُ لمدير الإدارة في vm (كما في tasks_page_review265) — وطبقةُ التخزين بنافذة سببٍ محاكاة: askReason(k, keys, cb) يردّ answer */
 const LOGIC = moduleLogic('tasks');

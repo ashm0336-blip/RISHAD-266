@@ -1,4 +1,6 @@
-/* V7 · د1-ب · مستلمو تنبيهات الصفحات الحاوية (irshad · seized · award) في وضع الإنفاذ = مستلموها في الوضع القديم لنفس الصلاحيات.
+/* V7 · د5-ح (القفل): الوضعُ القديم حُذف — المرجعُ صار ما سلّمه يومَ وُجد: v7_d1b_container_recipients.gold.json (أُخذ من العامل 20e6571 بالوضع القديم
+   على هذا العالم نفسِه TEST_ONLY؛ والاختبارُ يومها أثبت أن الإنفاذ يطابقه). الإنفاذُ وحده يُقرأ الآن ويُقارن بالمرجع حرفاً.
+   V7 · د1-ب · مستلمو تنبيهات الصفحات الحاوية (irshad · seized · award) في وضع الإنفاذ = مستلموها في الوضع القديم لنفس الصلاحيات.
    قبل الإصلاح: nfPage في الإنفاذ يبحث عن ذرّة «الصفحة:view»، والحاويات لا ذرّة لها (ذرّاتها على أوراقها)، فلا يُحسب مستلمٌ غيرُ مدير المنصة.
    العالمُ نفسه (TEST_ONLY · SQLite في الذاكرة) يُقرأ مرّتين: مرةً في الوضع القديم ومرةً في الإنفاذ. لكلّ قارئ، مجموعةُ تنبيهات الحاويات
    في جرسه يجب أن تتطابق في الوضعين. emps لها معالجةٌ خاصة لم تتغيّر؛ تُقارن هنا شاهداً فقط. */
@@ -75,30 +77,30 @@ async function feed(W, env, uid, dept, kind) {   /* فئةٌ واحدة في ك�
   return { status: r.status, items: (j.items || []).map((x) => x.type + '@' + (x.dept || '') + '#' + x.id).sort() };
 }
 
-test('V7 · د1-ب: irshad · seized · award — نفسُ الصلاحيات في الوضعين ⇒ نفسُ المستلمين', { timeout: 300000 }, async () => {
-  const W = await load(), WE = await load();
-  const L = await world(W, 'legacy'), E = await world(WE, 'enforce');
-  const cat = (it) => W.NF_TYPES[it.split('@')[0]].k;
+const GOLD = JSON.parse(fs.readFileSync(new URL('./v7_d1b_container_recipients.gold.json', import.meta.url), 'utf8'));
+test('V7 · د1-ب: irshad · seized · award — مستلمو الإنفاذ = مستلمي الوضع القديم لنفس الصلاحيات (المرجعُ المحفوظ)', { timeout: 300000 }, async () => {
+  const WE = await load(), E = await world(WE, 'enforce');
+  const cat = (it) => WE.NF_TYPES[it.split('@')[0]].k;
   const seenLegacy = { irshad: 0, box: 0, award: 0 }; let compared = 0;
-  for (const uid of L.who) for (const dept of ['', ...D]) {
+  for (const uid of E.who) for (const dept of ['', ...D]) {
     for (const c of CONTAINER) {
-      const a = await feed(W, L.env, uid, dept, c), b = await feed(WE, E.env, uid, dept, c);
-      assert.equal(b.status, a.status, uid + ' ' + dept + ' status');   /* قارئُ إدارةٍ أخرى يُرفض (403) في الوضعين */
+      const a = GOLD[uid + '|' + dept + '|' + c], b = await feed(WE, E.env, uid, dept, c);
+      assert.ok(a, 'مرجعٌ لكل حالة');
+      assert.equal(b.status, a.status, uid + ' ' + dept + ' status');   /* قارئُ إدارةٍ أخرى يُرفض (403) */
       if (a.status === 200) compared++;
-      const x = a.items.filter((i) => cat(i) === c), y = b.items.filter((i) => cat(i) === c);
+      const x = a.items, y = b.items.filter((i) => cat(i) === c);
       if (uid !== 'TEST_ONLY_super') seenLegacy[c] += x.length;
       assert.deepEqual(y, x, uid + ' dept=' + (dept || '-') + ' فئة ' + c + ': مستلمو الإنفاذ ≠ مستلمي الوضع القديم');
     }
   }
-  /* الاختبارُ ذو معنى: في الوضع القديم يستلم غيرُ مدير المنصة تنبيهاتٍ من الحاويات الثلاث */
   assert.ok(compared >= 30, 'مقارناتٌ ناجحة: ' + compared);
-  for (const c of CONTAINER) assert.ok(seenLegacy[c] > 0, 'الوضع القديم يسلّم ' + c + ' لغير مدير المنصة');
+  for (const c of CONTAINER) assert.ok(seenLegacy[c] > 0, 'المرجعُ يسلّم ' + c + ' لغير مدير المنصة');
 });
 
-test('V7 · د1-ب: emps (المعالجةُ الخاصة) لم تتغيّر — مستلموها في الإنفاذ = في القديم، والمدير يقرؤها', { timeout: 300000 }, async () => {
-  const W = await load(), WE = await load(); const L = await world(W, 'legacy'), E = await world(WE, 'enforce');
+test('V7 · د1-ب: emps (المعالجةُ الخاصة) لم تتغيّر — مستلموها في الإنفاذ = المرجع، والمدير يقرؤها', { timeout: 300000 }, async () => {
+  const WE = await load(), E = await world(WE, 'enforce');
   let mgr = 0;
-  for (const uid of L.who) { const a = await feed(W, L.env, uid, D[0], 'emp'), b = await feed(WE, E.env, uid, D[0], 'emp');
+  for (const uid of E.who) { const a = GOLD[uid + '|' + D[0] + '|emp'], b = await feed(WE, E.env, uid, D[0], 'emp');
     assert.equal(b.status, a.status, uid); assert.deepEqual(b.items, a.items, uid + ': emps');
     if (uid === 'TEST_ONLY_m0') mgr = b.items.length; }
   assert.ok(mgr > 0, 'مديرُ الإدارة يقرأ تنبيهات الموظفين في الإنفاذ');

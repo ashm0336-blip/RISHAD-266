@@ -28,18 +28,6 @@
  ],
  "bindings": [
   {
-   "key": "tpl.supervisory",
-   "res": "bassam_perm_tpls_v1",
-   "where": "[id].sup (boolean) — وسمُ «إشرافي» (tpSupTog)",
-   "how": "تغيّرُ حقل sup وحده على قالبٍ قائم",
-   "asis": "admin/ptpls:edit",
-   "decl": "",
-   "dup": "",
-   "owner": "admin/ptpls",
-   "type": "decision",
-   "guardKind": "field"
-  },
-  {
    "key": "lens.zones.create",
    "res": "",
    "where": "كيانٌ يظهر في zones[] (الهوية: code → ser → name → id/eid)",
@@ -468,12 +456,6 @@
    "text": "to-build بعلامةٍ صريحة من الواجهة (Phase 3: ops[k].op = import.run من BassamEmpImp.commit)؛ الاستدلالُ «2+ سجلّ» صار علماً للقياس لا مصدراً للمفتاح؛ AS‑IS يمرّ بـemps/data."
   },
   {
-   "id": "D-16",
-   "topic": "tpl.supervisory",
-   "status": "حُسم في v24.3 (F-07)",
-   "text": "الحقلُ bassam_perm_tpls_v1[].sup."
-  },
-  {
    "id": "D-20",
    "topic": "حذفُ حسابِ دخول",
    "status": "معلَن (باقٍ)",
@@ -489,8 +471,8 @@
   "shadowOnly": 2,
   "duplicatesJustified": 2,
   "duplicatesUnjustified": 0,
-  "emittedKeys": 41,
-  "coveredResources": 6,
+  "emittedKeys": 37,
+  "coveredResources": 4,
   "decisions": 20
  }
 }

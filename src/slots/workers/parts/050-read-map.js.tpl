@@ -10,8 +10,6 @@ var RD_REG = {
   'bassam_employees_v1':       RD_OPS,
   'bassam_shift_options_v1':   RD_OPS.concat(['admin/shifts']),
 @@SYS:read.map.roster.staff@@@@SYS:read.map.res.dreport@@  'bassam_options_v1':         ['emps/data'@@SYS:read.map.reader.staff.2@@@@SYS:read.map.reader.tasks.2@@, 'planning', 'planning/readiness'],
-  'bassam_perm_tpls_v1':       ['admin/ptpls'@@SYS:read.reader.dreport@@, 'emps/data'@@SYS:read.map.reader.plan.1@@@@SYS:read.map.reader.staff.3@@@@SYS:read.map.reader.tasks.3@@, 'planning', 'planning/readiness'],
-  'bassam_perm_tpls_named_v1': ['admin/ptpls'@@SYS:read.map.reader.staff.4@@],
 @@SYS:read.map.locks.staff@@  /* ── الموظفون ── */
 @@SYS:readMap.custody@@@@SYS:read.map.staff@@  /* ── الخطة التشغيلية والمتابعة اليومية: بنيةُ الموقع تُقرأ من صفحتَيه ومن التقرير ── */
 @@SYS:read.map.plan@@@@SYS:read.map.res.daily@@  'bassam_dayshift_v1':        [@@SYS:read.dayReaders.daily|empty="...[]"@@@@SYS:read.reader.dreport@@],
@@ -19,24 +17,7 @@ var RD_REG = {
 @@SYS:read.map.reg.dreport@@@@SYS:read.map.tasks@@@@SYS:read.map.systems@@  /* ── الإعدادات ── */
   'bassam_last_export_v1':     ['admin/backup']
 };
-/* ما يُرى دون أن يُقرأ: رقمُ المراجعة وحدَه ═══════════════════════════════
-   مَن يملك كتابةً في موردٍ لا يقرؤه (مسارا التنظيف الشاملان: «حذف الكل واستيراد» و«حذف جميع الموظفين»
-   يكتبان الشكلَ الفارغ في موارد صفحاتٍ أخرى) يحتاج رقمَ مراجعته ليُحترم عقدُ التعارض R167 — لا قيمتَه.
-   فيُعطى الرقمَ عارياً والقيمةُ لا تُرسل أبداً. */
-var WR_ACTS = ['add', 'edit', 'del', 'approve'];
-function canSee(A, k) {
-  if (A && A.enf) return canSeeEnf(A, k);                                     /* KIVO_243 */
-  if (canRead(A, k)) return true;
-  var P = parseKey(k); if (!P.dept || !deptInScope(A, P.dept)) return false;
-  var R = resOf(k); if (!R || R.scope !== 'dept') return false;
-  if (R.rule || R.p44) return true;
-  for (var i = 0; i < WR_ACTS.length; i++) if (authorize(A, k, WR_ACTS[i]).ok) return true;
-  /* الأوراقُ الثلاث التي تكتب عملياتُها المحميّةُ في موارد صفحاتٍ أخرى بحكم التبعة:
-     «حذف الكل واستيراد» · «حذف جميع الموظفين» (تنظيفُ أثره في العهد والمهام والجائزة والخطة والتوزيع) ·
-     «الورديات» (إعادةُ التسمية وتبعتُها في الجدول الشهري). حاملُها يرى رقمَ المراجعة لا القيمة. */
-  return actsHeldOn(A, P.dept, 'admin/import', ['del']) || actsHeldOn(A, P.dept, 'emps/data', ['del'])
-      || actsHeldOn(A, P.dept, 'admin/shifts', ['edit']);
-}
+function canSee(A, k) { return canSeeEnf(A, k); }   /* KIVO_243 · V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
 /* أوراقُ قراءةِ المورد: خريطتُه إن كانت، وإلا ورقةُ كتابته — ومعها دائماً ورقةُ النسخ الاحتياطية */
 function readCapsOf(name, R) {
   var rd = RD_REG[name];
@@ -46,7 +27,7 @@ function readCapsOf(name, R) {
 }
 /* سقفُ الإدارة أولاً: صفحةُ المورد نفسِه (cap · capAdd) على سقف الإدارة d؟ — صفحةٌ خارجَ السقف (أو وحدةٌ مطفأةٌ على مستوى المنصة) لا يقرؤها
    أحدٌ في الإدارة، ولا صاحبُ «النسخ الاحتياطية» ولا قارئُ المراجع المشتركة، فالقراءةُ لا تتجاوز سقفَ إدارتها؛ وموردٌ بلا صفحة (قاعدةٌ خاصة) بلا سقف.
-   KIVO_264 · QA-264-D1: القاعدةُ نفسُها للوضعين — canRead0 (أدناه، بلا تغيير سلوك) وcanReadEnf (061) الذي كان يكتفي بأيّ مفتاح قراءةٍ محمول
+   KIVO_264 · QA-264-D1: القاعدةُ نفسُها للوضعين — canReadEnf (061 — V7 · د5-ح: وحده؛ حُذف حكمُ الوضع القديم canRead0) الذي كان يكتفي بأيّ مفتاح قراءةٍ محمول
    (backup.view …) فيقرأ مديرُ الإدارة ومديرُ الفرع قيمةَ صفحةٍ خارج سقف الإدارة أو وحدةٍ مطفأة. */
 function resOnCeiling(A, d, R) {
   if (A && A.u && A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
@@ -54,28 +35,6 @@ function resOnCeiling(A, d, R) {
   if (R.capAdd) own = own.concat([R.capAdd]);
   if (!own.length) return true;
   for (var i = 0; i < own.length; i++) if (capOnDept(A, d, own[i])) return true;
-  return false;
-}
-function canRead0(A, k) {
-  if (A.u.role === 'super') return true;
-  var P = parseKey(k);
-@@SYS:authz.read.dstats@@  if (!P.dept) return P.name !== K_NSYS;                     /* السجلات العامة (الإدارات، الحسابات بلا بصمات، الصلاحيات) — عدا تنبيهات مدير النظام */
-  if (!deptInScope(A, P.dept)) return false;                 /* إدارةٌ أخرى: لا شيء */
-  /* READ-01: النطاقُ وحدَه لا يكفي — الورقةُ تُسأل هنا كما تُسأل في الكتابة */
-  var R = resOf(k);
-  if (!R) return false;                                      /* مورد مجهول = رفض */
-  if (R.scope !== 'dept') return false;                      /* مفتاحٌ عامٌّ أو جهازيٌّ بادئتُه إدارة: لا */
-  if (R.rule || R.p44) return true;                          /* تنبيهاتٌ وملفٌّ شخصيّ: سياستُها الخاصة تحرسها · وسجلُّ الأدوار (V7 · د5-هـ 44) */
-  /* سقفُ الإدارة أولاً: صفحةٌ خارجَ سقف الإدارة (أو وحدةٌ مطفأةٌ على مستوى المنصة) لا يقرؤها أحدٌ فيها —
-     ولا صاحبُ «النسخ الاحتياطية»، فالنسخةُ لا تتجاوز سقفَ إدارتها. (KIVO_264: الفحصُ نفسُه حرفاً في resOnCeiling — مشتركٌ مع الإنفاذ) */
-  if (!resOnCeiling(A, P.dept, R)) return false;
-  var caps = readCapsOf(P.name, R), perms = myPermsOf(A, P.dept);
-  for (var i = 0; i < caps.length; i++) {
-    var c = caps[i];
-    if (!capOnDept(A, P.dept, c)) continue;                  /* خارجَ سقف الإدارة أو وحدةٌ مطفأة */
-    if (RD_ANY.indexOf(c) !== -1 && !bkReadAnyOk(A, P.dept, P.name)) continue;   /* IP39 (019u): «النسخ الاحتياطية» عرضاً وحده لا يفتح مجموعات الإدارة — لمن يصدّرها */
-    if ((perms[c] || []).indexOf('view') !== -1) return true;
-  }
   return false;
 }
 

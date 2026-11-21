@@ -20,7 +20,7 @@ function seedSql() {
 }
 const K = 'bsdept:tst_d1:bassam_irshad_v1';
 
-for (const mode of ['legacy', 'enforce']) test('(C1 · القراءة) [' + mode + '] ?uid= يخالف صاحبَ الجلسة ⇒ 409 session-changed على /api/changes و/api/get بلا قراءةٍ ولا انتظار · المطابقُ والغائبُ كما كانا', { ...FIX, ...needs('irshad') }, async () => {
+for (const mode of ['enforce']) test('(C1 · القراءة) [' + mode + '] ?uid= يخالف صاحبَ الجلسة ⇒ 409 session-changed على /api/changes و/api/get بلا قراءةٍ ولا انتظار · المطابقُ والغائبُ كما كانا', { ...FIX, ...needs('irshad') }, async () => {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());

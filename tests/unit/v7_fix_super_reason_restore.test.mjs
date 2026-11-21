@@ -12,7 +12,8 @@ import { world } from './atomic_restore_review_fx.mjs';
 import { D1, IDS, EKEYS } from './notifications_review_fx.mjs';
 
 const NONE = 'بلا سبب (مدير المنصة)';
-const K = 'bsdept:' + D1 + ':bassam_perm_tpls_v1', GK = 'bsdept:' + D1 + ':bassam_grants_v1';
+/* V7 · د5-ح: كان K سجلَّ القوالب bassam_perm_tpls_v1 (أُسقط من النسخ الاحتياطية وحُذف كاتبُه) — مكانه موردُ KV عاديّ للإدارة بسقف admin/backup، يُبذر في fresh */
+const K = 'bsdept:' + D1 + ':bassam_last_export_v1', GK = 'bsdept:' + D1 + ':bassam_grants_v1';
 const ALL = needs('award', 'custody', 'dstats', 'irshad', 'seized');   /* the restore file carries every domain */
 const GRANT = JSON.stringify({ v: 1, emp: { [EKEYS.manager1]: { plus: ['backup.restore'], minus: [] } } });
 const tpl = (mark) => JSON.stringify([{ id: 'TEST_ONLY_supervisory_template', name: 'TEST_ONLY restored by ' + mark, sup: true }]);
@@ -25,6 +26,7 @@ after(() => { if (process.env.KIVO_REASON_OUT) fs.writeFileSync(process.env.KIVO
 async function fresh() {
   const B = await world();
   await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', GK, GRANT));
+  await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', K, tpl('seed')).concat([B.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=1').bind(K)]));   /* V7 · د5-ح: بذرُ المورد البديل */
   return B;
 }
 /* one restore through POST /api/backup/restore: the file differs from the stored data in one KV value (the template name) */

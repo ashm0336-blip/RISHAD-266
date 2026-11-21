@@ -74,7 +74,7 @@ async function opExport(env,request,url,session) {
         for(var def of opDefinitions()){
           var k='bsdept:'+d+':'+def.resource,raw=reference.inputKeys[k];
           if(!canRead(A,k))throw rsError('operations-export-permission',403);
-          if(A.enf&&raw!=null)raw=enfProjectStr(A,k,raw,refs);
+          if(raw!=null)raw=enfProjectStr(A,k,raw,refs);
           var raw0=raw;raw=privOut(A,k,raw,reference.inputKeys);   // PRIVACY batch (019u): exports follow the read rule · the copy marked redacted
           var prepared=opPrepared(def.resource),domain=ocConvert(prepared,d,def.resource,raw==null?undefined:JSON.parse(raw),raw!=null),dom=opBackupDomain(prepared,domain);
           if(raw!==raw0){dom.redacted=true;redacted.push(d+':'+def.resource);}

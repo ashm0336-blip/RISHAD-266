@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { internals } from './internals.mjs';
 
-const I = await internals(['actorFromKeys', 'usersScopeOut', 'usersScopeIn', 'usersNoOut', 'usersNoIn', 'stripPh', 'mergeUsers']);
+const I = await internals(['enfAttachGrantsKeys', 'actorFromKeys', 'usersScopeOut', 'usersScopeIn', 'usersNoOut', 'usersNoIn', 'stripPh', 'mergeUsers']);
 const TAG = 'TEST_ONLY';
 function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
 const D = ['wd1', 'wd2', 'wd3', 'wd4'];
@@ -47,6 +47,8 @@ function keysOf(L) {
     bassam_platform_v1: '{}'
   };
 }
+/* V7 · د5-ح (القفل): الفاعلُ كما يبنيه الخادم خارج مسار الطلب — بوضع الإنفاذ ومنحه الصريح من المفاتيح نفسِها (enfAttachGrantsKeys)؛ بلا ذلك لا قرارَ له */
+const actor = (L, uid) => { const K = keysOf(L), A = I.actorFromKeys(K, uid); if (A) { A.enf = { mode: 'enforce' }; I.enfAttachGrantsKeys(A, K); } return A; };
 /* ما يصل الفاعلَ — كما في الإقلاع و/api/get حرفاً */
 const seen = (raw, A) => I.usersScopeOut(I.usersNoOut(I.stripPh(raw), A), A);
 /* ما يُحكم عليه — كما في applySave قبل الحكم (وبه يُقاس «لا كتابةَ بلا تغيير») · وما يُكتب بعد القبول (mergeUsers: البصمةُ الغائبة تُورَث) */
@@ -60,7 +62,7 @@ test('(أ) القائمةُ كما وصلت كلَّ فاعلٍ تعود الم�
     const L = makeList(r), raw = JSON.stringify(L);
     for (const [role, uid] of Object.entries(ACTORS)) {
       if (!L.some((u) => u.id === uid)) continue;
-      const A = I.actorFromKeys(keysOf(L), uid); assert.ok(A, role + ': فاعل');
+      const A = actor(L, uid); assert.ok(A, role + ': فاعل');
       const v = seen(raw, A); assert.equal(merged(v, raw, A), raw, role + ' #' + t + ': المخزَّنُ حرفاً'); checked++;
     }
   }
@@ -74,7 +76,7 @@ test('(ب)(ج) تعديلاتٌ عشوائية مما يملكه كلُّ فاع
     const L = makeList(r), raw = JSON.stringify(L);
     for (const [role, uid] of Object.entries(ACTORS)) {
       if (!L.some((u) => u.id === uid)) continue;
-      const A = I.actorFromKeys(keysOf(L), uid), V = JSON.parse(seen(raw, A));
+      const A = actor(L, uid), V = JSON.parse(seen(raw, A));
       if (role === 'sup') assert.ok(V.some((u) => u.id === 'ws_wd2_1' && u.ekey && !u.un), 'المشرفُ يرى زميله بلا أرقام (الإعدادُ ذو معنى)');
       const own = (u) => !!(u && u.id && u.role === 'staff' && !u.mgr && !/^mgr:/.test(String(u.ekey || '')));   /* حساباتُ موظفي إداراته (ما يحكم usersRule بأنه يملكه) */
       const exp = JSON.parse(raw), out = V.map((u) => Object.assign({}, u)), touched = new Set();

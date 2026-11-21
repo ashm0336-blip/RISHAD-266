@@ -377,7 +377,7 @@
     "path": [
      "registry"
     ],
-    "after": 75,
+    "after": 70,
     "seq": 30,
     "value": {
      "key": "ref.custody_type.view",
@@ -739,7 +739,7 @@
     "path": [
      "bindings"
     ],
-    "after": 64,
+    "after": 59,
     "seq": 20,
     "value": {
      "key": "ref.custody_type.view",

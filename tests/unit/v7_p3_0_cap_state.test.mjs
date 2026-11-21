@@ -91,7 +91,7 @@ test('the unused patterns are gone; the live seed keeps its behaviour (and a sto
   const SEED = /var SEED_BASIC = (\{[^\n]+\});/.exec(M)[1];
   const run = (store) => vm.runInNewContext('var SEED_BASIC = ' + SEED + ';(' + sb + ')()', { permStore: () => store, JSON, Array });
   assert.deepEqual(run({}).cap, ['emps', 'tasks', 'planning', 'staff', 'links', 'help', 'admin'], 'the built-in «أساسي» (unchanged)');
-  assert.deepEqual(run({}).subs, { emps: ['data', 'custody'], planning: ['readiness'], admin: ['shifts', 'backup', 'ptpls', 'import'] });
+  assert.deepEqual(run({}).subs, { emps: ['data', 'custody'], planning: ['readiness'], admin: ['shifts', 'backup', 'import'] });   /* V7 · د5-ح: بلا ورقة «قوالب الصلاحيات» */
   assert.deepEqual(run({ patterns: { basic: { cap: ['help'], subs: {}, tabs: {}, lenses: [] } } }).cap, ['help'], 'a stored patterns.basic wins, as before');
   assert.deepEqual(run({ patterns: { basic: { cap: 'x' } } }).cap.length, 7, 'a malformed stored pattern falls back');
   assert.ok(!/والجذر يبدأ فارغاً/.test(M), 'the stale comment («the root starts empty») is corrected');

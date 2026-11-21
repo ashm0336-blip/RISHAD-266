@@ -15,7 +15,7 @@ const setDis = (W, uid, dis) => { const U = stored(W.env, KU); U.find((u) => u.i
 const find = (S, id, eid) => { for (const d in S) for (const r of (S[d] || [])) if (Array.isArray(r) && r[13] === id && r[14] === eid) return r; return null; };
 const show = (r) => JSON.stringify({ st: r.status, revs: r.j && r.j.revs, denied: r.j && r.j.denied && Object.fromEntries(Object.entries(r.j.denied).map(([k, v]) => [k, v && v.why])) });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   /* حفظةُ مدير النظام: سجلُّ الحسابات (fu) + صفٌّ جديدٌ لـMATE في مخزن المهام — في دفعةٍ واحدة */
   const batch = async (W, id, fu) => {

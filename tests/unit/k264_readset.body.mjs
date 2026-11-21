@@ -22,7 +22,7 @@ async function setup(mode) {
   return { env, C, su, getK };
 }
 
-for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-4: منحُ صفحةٍ وسحبُ أخرى يُطبَّقان على بيانات التبويب المفتوح بلا إعادة تحميل', needs('tasks'), async () => {
+for (const mode of ['enforce']) test('[' + mode + '] D-4: منحُ صفحةٍ وسحبُ أخرى يُطبَّقان على بيانات التبويب المفتوح بلا إعادة تحميل', needs('tasks'), async () => {
   const { C, su, getK } = await setup(mode);
   const U = await C.login('0000000113', '70113'); assert.ok(U.ok, 'tst_emp1');
   let P = await getK('bassam_perms_v1'); delete P.emps.tst_d1.tst_e_emp1.tasks;
@@ -68,20 +68,7 @@ for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-4: منحُ ص�
   } finally { ir.dispose(); A.dispose(); }
 });
 
-test('[legacy] D-4: تغييرُ صلاحيات موظفٍ آخر لا يمسّ بياناتِ هذا التبويب', async () => {
-  const { C, su, getK } = await setup('legacy');
-  const U = await C.login('0000000113', '70113'); assert.ok(U.ok);
-  const b = await C.boot(U.ck); const before = Object.keys(b.boot.keys).sort();
-  const A = loadClient({ C, boot: b.boot, jar: { cookie: U.ck } });
-  try {
-    await sleep(1500);
-    const P = await getK('bassam_perms_v1'); P.emps.tst_d1.tst_e_supB = Object.assign({}, P.emps.tst_d1.tst_e_supB || {}, { tasks: ['view'] });
-    assert.ok((await C.save(su.ck, { bassam_perms_v1: JSON.stringify(P) })).j.revs);
-    await sleep(2600);
-    const now = before.filter(k => A.get(k) != null);
-    assert.deepEqual(now, before, 'كلُّ ما كان مقروءاً باقٍ');
-  } finally { A.dispose(); }
-});
+/* V7 · د5-ح (القفل): حُذفت حالةٌ «[legacy]» تثبّت مسارَ القرار القديم المحذوف: D-4: تغييرُ صلاحيات موظفٍ آخر لا يمسّ بياناتِ هذا التبويب', async () => {… */
 
 /* Retired requirement (removed test '[enforce] D-4: توسيعُ نطاق الوردية لموظفٍ يجدّد بياناتِه المُسقَطة بالنطاق'):
    it widened the Shift scope of the legacy scope ceiling bsdept:tst_d1:bassam_scope_v1 and expected more Irshad rows.

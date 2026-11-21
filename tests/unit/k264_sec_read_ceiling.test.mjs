@@ -73,7 +73,7 @@ async function readable(C, ck, why) {
 const EXP_CEIL = { su: L, gm: ['d1.seized', 'd1.award', 'd2.irshad'], dm1: ['d1.seized', 'd1.award'], dm2: ['d2.irshad'], sup1: ['d1.award'], emp2: ['d2.irshad'] };
 const EXP_OFF = { su: L, gm: ['d1.award', 'd2.irshad'], dm1: ['d1.award'], dm2: ['d2.irshad'], sup1: ['d1.award'], emp2: ['d2.irshad'] };
 
-for (const mode of ['legacy', 'enforce']) test('QA-264-D1 [' + mode + '] صفحةٌ خارج سقف الإدارة ووحدةٌ مطفأةٌ على مستوى المنصة: لا قيمةَ لأحدٍ في الإدارة (ولا عبر backup.view) — والضابطُ داخل السقف يُقرأ كما كان', { ...FIX, ...needs('award', 'seized') }, async () => {
+for (const mode of ['enforce']) test('QA-264-D1 [' + mode + '] صفحةٌ خارج سقف الإدارة ووحدةٌ مطفأةٌ على مستوى المنصة: لا قيمةَ لأحدٍ في الإدارة (ولا عبر backup.view) — والضابطُ داخل السقف يُقرأ كما كان', { ...FIX, ...needs('award', 'seized') }, async () => {
   const { env, C, S } = await world(mode);
   /* (أ) سقفُ الإدارة وحده */
   for (const who of Object.keys(EXP_CEIL)) assert.deepEqual(await readable(C, S[who], mode + ' ' + who), EXP_CEIL[who], mode + ' (أ) ' + who + ': المقروء');

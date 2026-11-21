@@ -51,7 +51,7 @@ async function addD7(W) {
   assert.ok(s.j.revs && s.j.revs[KD], 'إضافةُ الإدارة: ' + show(s));
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) بصمةُ العدسة واحدةٌ في الإقلاع و/api/get ومسار الحفظ لكلّ دور — ولا بصمةَ لمدير النظام — وتتغيّر بتغيّر العدسة', async () => {

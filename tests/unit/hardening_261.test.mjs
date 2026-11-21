@@ -29,7 +29,7 @@ async function world(mode) {
   const put = async (ck, k, obj) => { const before = val(k); const r = await C.save(ck, { [k]: typeof obj === 'string' ? obj : JSON.stringify(obj) }); const denied = !!(r.j.denied || {})[k] || r.status >= 400; return { r, denied, changed: val(k) !== before }; };
   return { env, C, su, emp, mgr, val, put };
 }
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] AUD-055: lenses في bassam_perms_v1 — نصٌّ أو مصفوفةٌ أو رقم من غير مدير النظام مرفوضٌ ولو كانت المخزَّنةُ {} أو غائبة · ترقيةُ «المناطق» تبقى', async () => {
     const W = await world(mode); const K = 'bassam_perms_v1';
     const P = () => JSON.parse(W.val(K));
@@ -74,7 +74,7 @@ for (const mode of ['legacy', 'enforce']) {
     const g = await W.put(W.mgr.ck, K, p2); assert.ok(!g.denied && g.changed, 'منحٌ سليمٌ داخل السقف مقبول: ' + JSON.stringify(g.r.j).slice(0, 200));
   });
 }
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] AUD-057/أمن (الجولة الثانية): معرّفُ حسابٍ خبيث (__proto__/constructor/prototype) يُرفض — لا تخطّي فحصٍ ولا تصعيدُ صلاحية', async () => {
     const W = await world(mode); const K = 'bassam_auth_users_v1';
     const g = await W.C.api('/api/get?keys=' + K, { cookie: W.emp.ck }); const list = JSON.parse(g.j.keys[K].v), rev = g.j.keys[K].rev;
@@ -97,7 +97,7 @@ for (const mode of ['legacy', 'enforce']) {
   });
 }
 test('AUD-056: بادئةُ المعرّف tst_ محجوزة — حسابٌ جديدٌ بها مرفوضٌ بلا أداة الاختبار (legacy) · مقبولٌ حيث هي مفعَّلة (enforce + allow)', async () => {
-  for (const mode of ['legacy', 'enforce']) {
+  for (const mode of ['enforce']) {
     const W = await world(mode); const KU = 'bassam_auth_users_v1';
     const u0 = JSON.parse(W.val(KU));
     const nu = { id: 'tst_evil', un: '0000000999', name: 'حسابٌ بمعرّفٍ محجوز', role: 'staff', deptId: 'tst_d1', ekey: 'tst_e_aud056', dis: 0 };   /* KIVO_265 · F-1/R-24: مفتاحٌ لا يحمله حسابٌ نشط (كان tst_e_emp1 — له حسابُه النشط tst_emp1) */

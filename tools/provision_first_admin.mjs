@@ -40,7 +40,9 @@ export function makeSql({ username, name, password, salt = randomBytes(16) }) {
     `-- No default accounts. Re-running fails at the primary-key constraint.\n` +
     `INSERT INTO kv (k, seq, v) VALUES (${sqlLiteral(USER_KEY)}, 0, ${sqlLiteral(users)});\n` +
     `INSERT INTO revs (k, rev) VALUES (${sqlLiteral(USER_KEY)}, 1);\n` +
-    `INSERT INTO meta (k, v) VALUES ('rev', '1') ON CONFLICT(k) DO NOTHING;\n`;
+    `INSERT INTO meta (k, v) VALUES ('rev', '1') ON CONFLICT(k) DO NOTHING;\n` +
+    // V7 · د5-ح (القفل): القاعدةُ الجديدة تولد على محرّك الإنفاذ — لا بياناتِ صلاحياتٍ قديمة فيها تُرحَّل.
+    `INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO NOTHING;\n`;
 }
 
 function arg(flag) { const n = process.argv.indexOf(flag); return n < 0 ? null : process.argv[n + 1]; }

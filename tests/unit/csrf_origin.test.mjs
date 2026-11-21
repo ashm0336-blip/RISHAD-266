@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeLegacyTestEnv as makeEnv, client } from './harness.mjs';
 const WRITES = ['/api/login', '/api/recover', '/api/me/sess/kill', '/api/checkpw', '/api/save', '/api/sess/kill', '/api/guard/unlock', '/api/recovery/new', '/api/reset', '/api/policy', '/api/retro', '/api/logout', '/api/authz-migrate', '/api/authz-test', '/api/img/x'];
-const READS = ['/api/whoami', '/api/me', '/api/get?keys=bassam_depts_v1', '/api/changes?since=0', '/api/aud', '/api/presence', '/api/sec', '/api/guard', '/api/recovery', '/api/permv2', '/api/overview'];
+const READS = ['/api/whoami', '/api/me', '/api/get?keys=bassam_depts_v1', '/api/changes?since=0', '/api/aud', '/api/presence', '/api/sec', '/api/guard', '/api/recovery', '/api/overview'];
 test('كلُّ كتابةٍ تُرفض 403 origin مع Origin غريب أو Sec-Fetch-Site: cross-site — قبل الجلسة والجسم', async () => {
   const env = makeEnv(); const C = client(env); const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   const bad = [];

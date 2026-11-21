@@ -64,7 +64,7 @@ async function runWith(W, during) {
   } finally { DB.prepare = orig; DB.batch = batch; }
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'S1 إيقافٌ · إنهاءٌ · تعديلٌ حُفظ أثناء التوليد: لا نسخةَ بالقاعدة القديمة بعده', async () => {

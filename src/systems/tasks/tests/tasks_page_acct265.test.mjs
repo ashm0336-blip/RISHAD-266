@@ -63,7 +63,7 @@ async function pageFor(W, ck, users) {
 const usersOf = (W) => stored(W.env, 'bassam_auth_users_v1').filter((u) => u.deptId === D).map((u) => ({ id: u.id, role: u.role, deptId: u.deptId, ekey: u.ekey, dis: u.dis, mgr: u.mgr }));
 const pickOf = (c, day) => { const M = c.tkPickModel(day); const all = {}; (M.groups || []).forEach((g) => g.emps.forEach((e) => { all[e.id] = e; })); return all; };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) منتقي المكلَّفين: بلا حساب ومعطَّل معلَّمان بالسبب ولا يُختاران · النشطُ غيرُ معلَّم · بلا قائمة حسابات لا تعليمَ في الواجهة', async () => {

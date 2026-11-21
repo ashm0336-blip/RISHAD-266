@@ -204,11 +204,15 @@ test('the OPEN exception is pinned literally (owner decision 2026-11-12, option 
 });
 
 let SW = null;
-const sweeps = (t) => SW || (SW = quiet(async () => ({ L: await sweep('legacy', t), E: await sweep('enforce', t) })));
+/* V7 · د5-ح (القفل): الوضعُ القديم حُذف فلا يُقاس عموده — المرجعُ ما قيس منه على العامل 20e6571 بالعالم نفسِه (v7_e_img_enforce_le_legacy.gold.json ·
+   sweep · binds). عمودُ الإنفاذ يُقاس حيّاً كما كان ويُقارن بالمرجع بالقاعدة نفسِها (enforce لا يسمح بما رفضه legacy) */
+const GOLD = JSON.parse(fs.readFileSync(new URL('./v7_e_img_enforce_le_legacy.gold.json', import.meta.url), 'utf8'));
+const sweeps = (t) => SW || (SW = quiet(async () => ({ L: { table: GOLD.sweep, cells: GOLD.sweepCells }, E: await sweep('enforce', t) })));
 
 test('the sweep is not vacuous: the lists are derived and both modes allow real writers', { ...needs('award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'), timeout: 1800000 }, async (t) => {
   const { L, E } = await sweeps(t);
-  assert.ok(LEAVES.length >= 40 && ASSIGN.length >= 231 && RECORDS.length >= 68 + 41, 'pages/leaves, assignable keys and records are read from the server and the registry');
+  /* V7 · د5-ح: ورقةُ admin/ptpls (−1) ومفاتيحُ tpl.* الخمسة (−5) وسجلّا القوالب في الوحدة والوحدة المفتوحة (−4) حُذفت */
+  assert.ok(LEAVES.length >= 39 && ASSIGN.length >= 226 && RECORDS.length >= 68 + 41 - 4, 'pages/leaves, assignable keys and records are read from the server and the registry');
   for (const rn of ['bassam_plan_v1', 'bassam_rounds_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1', 'bassam_mark_kinds_v1', 'bassam_tasks_v1', 'bassam_seized_v1', 'bassam_dreport_v1', 'bassam_dayshift_v1', 'bassam_employees_v1', 'bassam_profile_v1']) assert.ok(RECORDS.some((r) => r.id === rn), rn);
   for (const T of [L.table, E.table]) {
     assert.equal(T['s plan:edit'].bassam_plan_v1, 'YYY'); assert.equal(T['s daily/rounds:edit'].bassam_rounds_v1, 'YYY'); assert.equal(T['s tasks:edit'].bassam_tasks_v1, 'YYY');
@@ -316,7 +320,7 @@ async function binds(mode, t) {
   return { out, saves };
 }
 let BN = null;
-const bindSweeps = (t) => BN || (BN = quiet(async () => ({ L: await binds('legacy', t), E: await binds('enforce', t) })));
+const bindSweeps = (t) => BN || (BN = quiet(async () => ({ L: { out: GOLD.binds, saves: GOLD.bindSaves }, E: await binds('enforce', t) })));
 
 test('IMAGES · bind by a record save: enforce accepts no foreign image that legacy refuses «imgown»', { timeout: 1800000 }, async (t) => {
   const { L, E } = await bindSweeps(t), viol = {}, other = {}; let compared = 0;

@@ -109,13 +109,13 @@ test('⑤ the server bus: the base asks by name; no participant means "no"; a ma
   assert.equal(vm.runInContext("srvBusAccepts('shifts.renamed@1', 7, 2)", ctx), true);
   assert.deepEqual(copy(vm.runInContext('seen', ctx)), [[1, 2], [7, 2]]);
   /* جزءُ الجدول يسجّل نفسَه، وأجزاءُ القاعدة تسأل بالاسم */
-  assert.match(rd('src/systems/staff/server/041a-shift-rename.js'), /srvBusParticipant\('shifts\.renamed@1', shiftRenameOk\);/);
+  assert.match(rd('src/systems/staff/server/041a-shift-rename.js'), /srvBusParticipant\('shifts\.renamed\.cascade@1', shiftRenameCascade\);/);   /* V7 · د5-ح: مشاركُ الوضع القديم shiftRenameOk حُذف */
   const parts = JSON.parse(rd('workers/parts.json')).parts.map((p) => p.file);
   assert.ok(parts.indexOf('016b-server-bus.js') !== -1 && parts.indexOf('016b-server-bus.js') < parts.findIndex((f) => /041a-shift-rename/.test(f)), 'الناقل يسبق جزءَ الجدول');
   for (const f of parts.filter((f) => !f.includes('/'))) assert.doesNotMatch(rd('workers/parts/' + f), /\bshiftRenameOk\b|\bshiftLeft\b/, f);
   assert.match(rd('workers/parts/059-protected-ops-2.js'), /srvBusAccepts\('shifts\.renamed\.cascade@1', rn, diffs, newVal, ctx\)/);
   assert.match(rd('src/systems/staff/server/041a-shift-rename.js'), /srvBusParticipant\('shifts\.renamed\.cascade@1', shiftRenameCascade\);/);
-  for (const f of ['workers/parts/044-protected-ops.js'])   /* V7 · د5-هـ (44): 045-permv2 (طبقةُ القياس الظلّية) حُذف */
-   assert.match(rd(f), /srvBusAccepts\('shifts\.renamed@1', A, k, newVal, curVal, ctx\)/, f);
+  /* V7 · د5-ح (القفل): سؤالُ الوضع القديم srvBusAccepts('shifts.renamed@1', …) في 044 canWrite حُذف مع فرعه — لا جزءَ يسأل به في الخادم */
+  for (const f of JSON.parse(rd('workers/parts.json')).parts.map((p) => p.file).filter((x) => !x.includes('/'))) assert.doesNotMatch(rd('workers/parts/' + f), /srvBusAccepts\('shifts\.renamed@1'/, f);
   assert.doesNotMatch(rd('workers/parts/016b-server-bus.js').replace(/\/\*[\s\S]*?\*\//g, ''), /staff|plan|daily|rounds|dreport|tasks|seized|irshad|award|custody|dstats/, 'لا اسمَ برنامجٍ في الناقل');
 });

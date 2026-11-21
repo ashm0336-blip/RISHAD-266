@@ -751,7 +751,7 @@
       "methods": [
         "GET"
       ],
-      "access": "actor",
+      "access": "super",
       "responses": {
         "200": {
           "keys": [
@@ -784,7 +784,7 @@
       "methods": [
         "POST"
       ],
-      "access": "actor",
+      "access": "super",
       "request": {
         "uid": "string",
         "all?": "1"
@@ -1018,30 +1018,6 @@
       "note": "محروسة — لا تُنفَّذ في اختبار العقد"
     },
     {
-      "path": "/api/permv2",
-      "methods": [
-        "GET"
-      ],
-      "access": "super",
-      "responses": {
-        "200": {
-          "keys": [
-            "ok",
-            "version",
-            "docSha256",
-            "status",
-            "phase",
-            "mode",
-            "worker",
-            "counts",
-            "validation",
-            "scope",
-            "guards"
-          ]
-        }
-      }
-    },
-    {
       "path": "/api/identity-rehearsal",
       "methods": [
         "GET"
@@ -1062,7 +1038,7 @@
       "methods": [
         "GET"
       ],
-      "access": "enforce",
+      "access": "session",
       "responses": {
         "200": {
           "keys": [
@@ -1092,7 +1068,7 @@
       "methods": [
         "GET"
       ],
-      "access": "enforce",
+      "access": "super",
       "responses": {
         "200": {
           "keys": [
@@ -1114,7 +1090,7 @@
       "methods": [
         "GET"
       ],
-      "access": "enforce",
+      "access": "super",
       "responses": {
         "200": {
           "keys": [
@@ -1135,7 +1111,7 @@
       "methods": [
         "POST"
       ],
-      "access": "enforce",
+      "access": "super",
       "request": {
         "act": "apply | rollback (POST) · status | plan (GET ?act=)",
         "seed": "hex64",

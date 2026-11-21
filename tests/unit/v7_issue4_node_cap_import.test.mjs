@@ -57,7 +57,7 @@ async function restricted(W, m) {
 }
 const recOf = (P, id) => Object.fromEntries(['caps', 'subs', 'lenses', 'capOwn'].filter((f) => P[f] && Object.prototype.hasOwnProperty.call(P[f], id)).map((f) => [f, P[f][id]]));
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'control: before the import U2 is open (no record on it or above it) — the grant the later cases must refuse is accepted here', needs('seized'), async () => {

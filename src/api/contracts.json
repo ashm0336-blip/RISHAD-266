@@ -1118,7 +1118,8 @@
         "epoch": "عدد صحيح؛ حقبة الاستعادة المؤكدة",
         "base": "عدد صحيح؛ مراجعة مورد المهام عند فتح المسودة",
         "edit": "اختياري: {k,t,desc,prio,s,e,ekey?,wt?} لتعديل الحقول الحالية؛ هوية المصدر k/id/ekey أو grp في الجذر",
-        "recur": "اختياري: {op,id?,rec?,row?} من عقد التكرار القائم؛ يُنفذ مع edit/settings في معاملة واحدة"
+        "recur": "اختياري: {op,id?,rec?,row?} من عقد التكرار القائم؛ يُنفذ مع edit/settings في معاملة واحدة",
+        "why": "اختياري (V7 · د5-ح): سببُ نافذة 280 حين يطلب الإنفاذُ سبباً (task.reopen: إسنادُ المعتذَر عنها بالتعديل)"
       },
       "responses": {
         "200": {
@@ -1963,7 +1964,7 @@
       "methods": [
         "GET"
       ],
-      "access": "actor",
+      "access": "super",
       "responses": {
         "200": {
           "keys": [
@@ -1996,7 +1997,7 @@
       "methods": [
         "POST"
       ],
-      "access": "actor",
+      "access": "super",
       "request": {
         "uid": "string",
         "all?": "1"
@@ -2230,30 +2231,6 @@
       "note": "محروسة — لا تُنفَّذ في اختبار العقد"
     },
     {
-      "path": "/api/permv2",
-      "methods": [
-        "GET"
-      ],
-      "access": "super",
-      "responses": {
-        "200": {
-          "keys": [
-            "ok",
-            "version",
-            "docSha256",
-            "status",
-            "phase",
-            "mode",
-            "worker",
-            "counts",
-            "validation",
-            "scope",
-            "guards"
-          ]
-        }
-      }
-    },
-    {
       "path": "/api/identity-rehearsal",
       "methods": [
         "GET"
@@ -2274,7 +2251,7 @@
       "methods": [
         "GET"
       ],
-      "access": "enforce",
+      "access": "session",
       "responses": {
         "200": {
           "keys": [
@@ -2304,7 +2281,7 @@
       "methods": [
         "GET"
       ],
-      "access": "enforce",
+      "access": "super",
       "responses": {
         "200": {
           "keys": [
@@ -2326,7 +2303,7 @@
       "methods": [
         "GET"
       ],
-      "access": "enforce",
+      "access": "super",
       "responses": {
         "200": {
           "keys": [
@@ -2347,7 +2324,7 @@
       "methods": [
         "POST"
       ],
-      "access": "enforce",
+      "access": "super",
       "request": {
         "act": "apply | rollback (POST) · status | plan (GET ?act=)",
         "seed": "hex64",

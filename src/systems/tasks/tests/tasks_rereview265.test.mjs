@@ -28,7 +28,7 @@ const G = 1760000000110;                                                        
 /* تنظيفُ حذف الموظف كما تكتبه الواجهة (590 cleanupAssignments): خاناتُ الإسناد 7 · 8 · 14 تُفرَّغ لصفوف المحذوف */
 const cleanup = (S, eid, name) => { let n = 0; for (const d in S) S[d] = S[d].map((r) => { if (!Array.isArray(r) || !(r[14] === eid || r[8] === name)) return r; n++; const q = r.slice(); q[7] = []; q[8] = ''; q[14] = ''; return q; }); return n; };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   const WHY = (ks) => (mode === 'enforce' ? { why: Object.fromEntries(ks.map((k) => [k, 'TEST_ONLY سببٌ كما ترسله نافذةُ السبب'])) } : {});
 

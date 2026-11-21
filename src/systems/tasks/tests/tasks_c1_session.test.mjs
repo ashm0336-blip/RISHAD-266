@@ -9,7 +9,7 @@ import { world, workerUnderTest, ME, MATE, KT, DAY, stored, rowsOf, taskCommandB
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'];
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] C1: uid ≠ صاحب الجلسة ⇒ 409 session-changed بلا أثر · uid صاحبها أو غيابُه ⇒ كما كان', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login('0000000101', '70101');

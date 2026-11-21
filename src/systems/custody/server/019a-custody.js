@@ -331,22 +331,18 @@ async function cuAuthority(env, A, d, op, meta) {
   }
   var k = cuKey(d),
     ctx = {},
-    X = null,
     set = {},
     keys = {};
   set[k] = JSON.stringify(after);
   keys[k] = 1;
-  if (A.enf) {
-    X = await enfSavePrep(env, A, {}, set, [], keys, KIVO_BUILD.markers({}, keys), null, false, false, {}, {});
-    ctx.enf = enfCtxFor(X, k, '');
-  }
-  var v = X && X.batchDeny ? enfNo(X.batchDeny.why, X.batchDeny) : canWrite(A, k, JSON.stringify(after), JSON.stringify(before), ctx);
+  /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
+  var X = await enfSavePrep(env, A, {}, set, [], keys, KIVO_BUILD.markers({}, keys), null, false, false, {}, {});
+  ctx.enf = enfCtxFor(X, k, '');
+  var v = X.batchDeny ? enfNo(X.batchDeny.why, X.batchDeny) : canWrite(A, k, JSON.stringify(after), JSON.stringify(before), ctx);
   if (v.ok) return v;
   var st = [secStmt(env, { uid: A.u.id, act: 'denied', target: k, detail: 'custody:' + op, ip: (meta && meta.ip) || '' })];
-  if (A.enf) {
-    var log = enfLogRow(A, k, v, '/api/custody/act', meta || {});
-    if (log) st.push(enfLogStmt(env, log));
-  }
+  var log = enfLogRow(A, k, v, '/api/custody/act', meta || {});
+  if (log) st.push(enfLogStmt(env, log));
   await env.DB.batch(st);
   throw cuError('custody-denied', 403);
 }

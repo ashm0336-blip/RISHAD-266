@@ -35,6 +35,7 @@ function world() {
     reqMeta: () => ({ ip: 'unit-test', city: '', dev: '' }),
     secAr: String, secLog: async () => {}, setCookie: (token) => ({ 'Set-Cookie': 'fixture=' + token }),
     redactPh: (value) => value, swallow: () => {},
+    enfUnmigratedFor: () => false, ENF_UNMIG_MSG: 'TEST_ONLY',   /* V7 · د5-ح: بوابةُ «unmigrated» في الدخول (056) — هذا العالمُ مختومٌ enforce */
   });
   const storage = read('workers/parts/054-image-contract.js');
   vm.runInContext(read('workers/parts/052-aud-events.js') + '\n' +

@@ -253,7 +253,7 @@
      أزرارُ المحرّر) أُزيلت لأنها لم تكن معروضةً ولا مستدعاة. يبقى هذا البذرُ لأبٍ سقفُه الفعليُّ فارغ (seedCapFrom): سقفُ الابن
      الفعليُّ فارغٌ لحظتَها بحكم التقاطع، ويحدّه «أساسي» إن وُسِّع سقفُ الأب لاحقاً — بلا سجلٍّ لورث التوسعةَ كلَّها (اختبارُ التكافؤ).
      ونمطٌ «أساسي» محفوظٌ في السجل (patterns.basic — كتبته واجهةٌ سابقة) يبقى هو المرجع كما كان. */
-  var SEED_BASIC = { cap:['emps',@@SYS:perm.seed.cap.tasks@@'planning',@@SYS:perm.seed.cap.staff@@'links','help','admin'], subs:{ emps:['data'@@SYS:perm.seed.subs.custody@@], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{}, lenses:[] };
+  var SEED_BASIC = { cap:['emps',@@SYS:perm.seed.cap.tasks@@'planning',@@SYS:perm.seed.cap.staff@@'links','help','admin'], subs:{ emps:['data'@@SYS:perm.seed.subs.custody@@], planning:['readiness'], admin:['shifts','backup','import'] }, tabs:{}, lenses:[] };
   function seedBasic(){ var p = (permStore().patterns || {}).basic; return JSON.parse(JSON.stringify((p && Array.isArray(p.cap)) ? p : SEED_BASIC)); }
   function patternSeed(did){
     var pt = seedBasic(); var o = permStore(); o.caps[did] = pt.cap.slice(); permSave(o);
@@ -432,13 +432,7 @@
     o.empLens[d][ekey] = (Array.isArray(arr) ? arr : []).filter(function(k){ return dl.indexOf(k) !== -1; }).concat(lat);
     permSave(o); return { ok:true };
   }
-  function lensOn(key, did){
-    if (isSuper()) return true;                        /* V7 · د1-ج: مدير المنصة بلا قيد — العدساتُ كلُّها */
-    if (deptLenses(did).indexOf(key) === -1) return false;
-    var u = cur(); if (!u) return false;
-    if (u.role === 'staff' || u.role === 'gm') return empLens(u.ekey, did || curDept()).indexOf(key) !== -1;
-    return true;
-  }
+  /* V7 · د5-ح (القفل): العدسةُ من المفاتيح المحمولة من الخادم وحدها (lensOn أدناه بعد azZ) — لا حكمَ قديماً بالسقف والورقة */
   /* صلاحيات الموظف على مستوى الأوراق — الشكل القديم (مفتاح حاوية) يُوسَّع عند القراءة */
   function empPerms(ekey, did){
     var d = did || curDept();
@@ -590,10 +584,10 @@
     if (key !== null) { _mpKey = key; _mpVal = { v: v, u: I._usersMemo, p: _pmMemo }; }
     return v;
   };
-  /* ═══ KIVO_243 · الإنفاذ: الواجهةُ تتبع المفاتيحَ المحمولة من الخادم (window.__BS_AUTHZ — وضعُ الإنفاذ وحده) ═══
+  /* ═══ KIVO_243 · الإنفاذ: الواجهةُ تتبع المفاتيحَ المحمولة من الخادم (window.__BS_AUTHZ — V7 · د5-ح: دائماً؛ لا وضعَ قديماً) ═══
      الورقةُ القديمة (AS‑IS) تبقى مصدرَ الشكل (أيُّ صفحةٍ وتبويب)، وكلُّ «ورقة:فعل» فيها يبقى فقط إن حُمل أيُّ مفتاحٍ تُترجَم إليه
      (سقفُ الإدارة · بوابةُ العدسة · المنحُ والإسقاطُ الصريحان · الدور) — وذرّةٌ بلا مفتاحٍ في السجل تبقى كما هي (الخادمُ يحكم على كل حال).
-     بلا __BS_AUTHZ لا يتغيّر شيء: myPerms · lensOn كما في KIVO_242. */
+     بلا __BS_AUTHZ لا يُعرض شيءٌ لغير مدير المنصة (fail-closed — V7 · د5-ح). */
   function azZ(){ var Z = KIVO.__BS_AUTHZ; return (Z && Z.mode === 'enforce' && Z.depts && typeof Z.depts === 'object') ? Z : null; }
   var _azBits = { h: null, set: null };
   function azHeld(did){
@@ -609,8 +603,10 @@
   var _myPerms2 = myPerms, _azMemo = { a: null, h: null, v: null };
   myPerms = function(){
     var all = _myPerms2();
-    if (!azZ() || isSuper()) return all;
-    var H = azHeld(curDept()); if (H === null) return all;
+    if (isSuper()) return all;
+    /* V7 · د5-ح (القفل): بلا وصفٍ من الخادم (أو سجلٍّ لا يطابقه) لا يُعرض شيء — لا عودةَ إلى الورقة القديمة وحدها */
+    if (!azZ()) return {};
+    var H = azHeld(curDept()); if (H === null) return {};
     if (_azMemo.a === all && _azMemo.h === H) return _azMemo.v;
     var R = KIVO.KIVO_REGISTRY, leaves = {};
     Object.keys(all).forEach(function(k){
@@ -637,8 +633,11 @@
     _azMemo = { a: all, h: H, v: v };
     return v;
   };
-  var _lensOn0 = lensOn;
-  lensOn = function(key, did){ var Z = azZ(); if (!Z) return _lensOn0(key, did); var x = Z.depts[did || curDept()]; return !!(x && Array.isArray(x.lens) && x.lens.indexOf(key) !== -1); };
+  function lensOn(key, did){
+    if (isSuper()) return true;                        /* V7 · د1-ج: مدير المنصة بلا قيد — العدساتُ كلُّها */
+    var Z = azZ(); if (!Z) return false;               /* V7 · د5-ح (القفل): المفاتيحُ المحمولة وحدها */
+    var x = Z.depts[did || curDept()]; return !!(x && Array.isArray(x.lens) && x.lens.indexOf(key) !== -1);
+  }
   function can(pageKey, act){
     var a = myPerms()[pageKey];
     return !!(a && a.length && a.indexOf(act || 'view') !== -1);

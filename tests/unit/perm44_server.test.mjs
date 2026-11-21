@@ -44,7 +44,7 @@ async function world(mode) {
 }
 const denied = (r) => (r.j && r.j.denied && typeof r.j.denied === 'object') ? r.j.denied : {};
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('perm44 server (' + mode + '): roles + compiled grants saved together · mismatch refused atomically · log · check', async () => {
     const S = await world(mode), E = engine();
     const role = { id: 'TEST_ONLY_r_view', name: 'TEST_ONLY مشاهد الخطة', sys: { plan: { lvl: 'view' } } };

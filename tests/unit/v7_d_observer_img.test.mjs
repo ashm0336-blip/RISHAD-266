@@ -114,13 +114,7 @@ test('[enforce] the unit manager is unchanged', { timeout: 300000 }, async () =>
   assert.deepEqual(await run('enforce', () => {}, 'dm'), ALL);
 });
 
-test('[legacy] unchanged: the observer is refused, the stored sheet decides', { timeout: 300000 }, async () => {
-  assert.deepEqual(await run('legacy', (x) => x.sheet({ 'daily/field': ['view'] })), REFUSED, 'observer');
-  assert.deepEqual(await run('legacy', (x) => x.sheet({ daily: ['view'] })), REFUSED, 'view-only page-level sheet');
-  assert.deepEqual(await run('legacy', (x) => x.sheet({ 'daily/field': ['view'], 'daily/rounds': ['view', 'edit'] })), LEGACY_SUP, 'supervisor sheet (pinned as measured on 09a5fe8)');
-  assert.deepEqual(SUP, LEGACY_SUP, 'V7-E: the enforce supervisor row is the legacy one');
-  assert.deepEqual(await run('legacy', () => {}, 'dm'), ALL, 'unit manager');
-});
+/* V7 · د5-ح (القفل): حُذفت حالةٌ «[legacy]» تثبّت مسارَ القرار القديم المحذوف: unchanged: the observer is refused, the stored sheet decides', { timeout: 300000 }, async … */
 const LEGACY_SUP = { 'put@plan': '403:bound', 'del@plan': '403:bound', 'put@rounds': 'Y', 'del@rounds': 'Y', 'new img': 'Y', tech: 'Y', proof: 'Y' };
 
 /* the rule itself, called directly: fail-closed when the grants record cannot be read (as v7_sec_field_failclosed for enfFieldOnly) */

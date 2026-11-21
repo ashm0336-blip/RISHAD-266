@@ -40,7 +40,6 @@
    "bassam_employees_v1",
    "bassam_gate_opts_v1",
    "bassam_gdepts_v1",
-   "bassam_grants_v1",
    "bassam_irshad_langs_v1",
    "bassam_irshad_locs_v1",
    "bassam_irshad_v1",
@@ -72,7 +71,6 @@
    "admin/backup",
    "admin/import",
    "admin/oplog",
-   "admin/ptpls",
    "admin/shifts"
   ],
   "tests": [

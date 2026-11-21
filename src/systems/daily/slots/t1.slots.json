@@ -104,14 +104,6 @@
   "order": 10,
   "text": "  'bassam_rounds_v1':          { approve: ['*.shAp', '*.shAp.*', '*.ap', '*.auto', '*.mo', '*.d.*.ap', '*.dopen', '*.dopen.*', '*.dshut', '*.dshut.*'], newAp: ['*.ap', '*.mo', '*.dopen.*', '*.dshut.*'], shape: 'rounds' },\n"
  },
- "empGone.refs.daily": {
-  "order": 10,
-  "text": "rn !== 'bassam_rounds_v1'"
- },
- "canWrite.field.daily": {
-  "order": 10,
-  "text": "  /* ═══ رصد الميدان: قدرةٌ تشغيلية مخصوصة لا كتابةٌ عامة ═══\n     نصّ المنصة صريحٌ أن «عرض» يكفي للرصد (canField تعتمد tabOn('daily','field')).\n     فتُستعاد الصفة كما هي، لكن محصورةً في عمليةٍ واحدة لا تتعدّاها:\n       • الفاعل يملك daily/field:view في هذه الإدارة\n       • و fieldObsOnly تُثبت أن كل موضعٍ تغيّر هو حقلُ رصدٍ من FIELD_KEYS\n         داخل موقعٍ مسكَّنٍ للموظف نفسه (day.d.N.(gates|zones|marks).M.field)\n       • فلا موقعٌ يُضاف ولا يُحذف، ولا تسكينُ غيره يُمسّ، ولا بقيةُ الجولة،\n         ولا مفتاحٌ يُحذف — لأن شكل المسار نفسه يمنع ذلك.\n     وهي لا تُعطي add ولا del ولا approve على المورد. */\n  if (R9.field === 'daily' && newVal != null && !need9.keyDelete\n      && (myPermsOf(A, P.dept)['daily/field'] || []).indexOf('view') !== -1\n      && capOnDept(A, P.dept, 'daily/field')\n      && fieldObsOnly(A, newVal, curVal, P.dept)) return { ok: true };\n"
- },
  "permv4.roster.res.daily": {
   "order": 10,
   "text": "rn === 'bassam_rounds_v1'"
@@ -132,10 +124,6 @@
   "order": 10,
   "text": ", 'daily/rounds', 'daily/field'"
  },
- "save.obsToks.daily": {
-  "order": 10,
-  "text": " else if (A.u.ekey) for (var ob9 in set) { var od9 = parseKey(ob9).dept; if (od9 && resName(ob9) === 'bassam_rounds_v1') (A.__obsToks = A.__obsToks || nmap())[od9] = enfToksOf(await opResourceGet(env, 'bsdept:' + od9 + ':bassam_employees_v1'), String(A.u.ekey)); }   /* RISHAD266 (F24 في الوضع القديم): هويّاتُ راصد الميدان في التسكين — كالإنفاذ */"
- },
  "cleanup.ctxRes.daily": {
   "order": 10,
   "text": " 'bassam_rounds_v1': 1"
@@ -143,10 +131,6 @@
  "cleanup.cleanRes.daily": {
   "order": 10,
   "text": " 'bassam_rounds_v1': 1"
- },
- "save.obsKeep.daily": {
-  "order": 10,
-  "text": "    if (!ENFX && it0.act === 'set' && it0.v != null && cur0 != null && d00 && resName(k0) === 'bassam_rounds_v1') it0.v = obsKeepOthers(A, d00, it0.v, cur0);   /* RISHAD266: راصد الميدان في الوضع القديم (018) */\n"
  },
  "enf.derive.daily": {
   "order": 10,

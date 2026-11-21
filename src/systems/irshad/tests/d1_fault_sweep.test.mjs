@@ -27,7 +27,7 @@ function seedSql(){
 const D1='tst_d1',D2='tst_d2',K1='bsdept:'+D1+':bassam_irshad_v1',K2='bsdept:'+D2+':bassam_irshad_v1',KP='bassam_perms_v1';
 const UID='tst_emp1',EID='tst_e_emp1';
 const copy=v=>JSON.parse(JSON.stringify(v));
-for(const mode of ['legacy','enforce']){
+for(const mode of ['enforce']){
   const EX=mode==='enforce'?{KIVO_AUTHZ_MODE:'enforce',KIVO_TEST_FIXTURE:'allow'}:{};
   test('['+mode+'] مسحُ أعطال D1 عبارةً عبارة: لا قراءةَ خارج النطاق · لا كتابةَ ممنوعة · لا كتابةَ جزئية · لا نجاحَ بلا أثر',async()=>{
     const env=makeTestEnv(EX),C=client(env);

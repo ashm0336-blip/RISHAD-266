@@ -30,7 +30,7 @@ const own = (W, img) => W.env.DB.q('SELECT st, k, ts FROM imgown WHERE img = ?',
 const inStore = (W, img) => W.env.DB.q('SELECT COUNT(*) AS n FROM imgs WHERE k = ?', img)[0].n > 0;
 const rowOf = (S, id) => { for (const d in S) { const r = (S[d] || []).find((q) => Array.isArray(q) && q[13] === id); if (r) return { d, r, i: S[d].indexOf(r) }; } return null; };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'task-own: حفظُ المدير لا يُنقص توثيقَ الموظف — صورةٌ تغيب · تسليمٌ يُنزع · بدءٌ يُنزع ⇒ مرفوض · وتعديلُ العنوان مع التوثيق كما هو يمرّ', async () => {

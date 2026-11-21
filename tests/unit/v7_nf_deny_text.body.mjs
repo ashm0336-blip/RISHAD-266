@@ -92,8 +92,9 @@ const TEXT = {
   [KPLAT]: ['إعدادات المنصة', '', 'تعديل'], [KCU]: ['عهد الموظفين', 'موظفو الإدارة', 'تعديل'], [KDS]: ['الإحصائيات اليومية', 'الإحصائيات اليومية', 'تعديل'],
   [KRETRO]: ['نافذة استدراك الاسترشاد', 'نظام الاسترشاد', 'فتح'], [KNF]: ['التنبيهات والتعاميم', '', 'الوصول إلى'],
 };
+/* V7 · د5-ح: رمزا page · act للمسار القديم حُذفا من الخادم ومن جدول العبارات */
 const WHY = {
-  page: 'صلاحيته على هذه الصفحة عرضٌ فقط', act: 'صلاحيته على هذه الصفحة لا تشمل هذا الإجراء', view: 'صلاحيته عرضٌ فقط', perm: 'صلاحيته لا تشمل هذا الإجراء',
+  view: 'صلاحيته عرضٌ فقط', perm: 'صلاحيته لا تشمل هذا الإجراء',
   residual: 'تعديل غير مصنَّف رُفض احتياطاً', super: 'الإجراء لمسؤول المنصة وحده', reason: 'هذه العملية تتطلب ذكر السبب',
   'custody:type-create': 'صلاحيته لا تشمل هذا الإجراء في عهد الموظفين', 'retro.open:perm': 'لا يملك صلاحية فتح نافذة الاستدراك أو إغلاقها',
   dept: 'السجل يخصّ إدارة أخرى', 'notification-scope': 'خارج نطاقه في التنبيهات', 'notification-export-permission': 'لا يملك صلاحية تصدير التنبيهات',
@@ -122,7 +123,7 @@ function groups(rows) {
 }
 const ACTOR = { nfd_emp: EMP + ' (موظف — ' + UNIT + ')', nfd_mgr: MGR + ' (مدير الإدارة — ' + UNIT + ')' };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('V7 nf-deny · ' + mode + ': every logging site of a refused write → the bell names the actor (name · role · unit), the record, the page and an Arabic reason — no key, no code, no Latin', needsSys('custody', 'dstats'), async () => {
     const x = await mk(mode);
     for (const k of Object.keys(SITES)) await SITES[k](x);
@@ -290,7 +291,7 @@ test('V7 nf-deny · record labels and pages cannot drift from the client (KIVO.B
     bassam_irshad_retro_v1: 'نافذة استدراك الاسترشاد', bassam_seized_retro_v1: 'نافذة استدراك المضبوطات',   /* server-side state of /api/retro */
     /* review L3: registered keys the client has no label for (retired notification stores · a device key · a one-time flag) */
     bassam_notif_cfg_v1: 'إعدادات التنبيهات (سجل قديم)', bassam_notif_sys_v1: 'تنبيهات المنصة (سجل قديم)', bassam_bc_v1: 'التعاميم (سجل قديم)',
-    bassam_notif_v1: 'تنبيهات الإدارة (سجل قديم)', bslg_v1: 'عدّاد محاولات الدخول على الجهاز', bassam_perm_tpls_named_v1: 'راية إعادة تسمية قوالب الصلاحيات',
+    bassam_notif_v1: 'تنبيهات الإدارة (سجل قديم)', bslg_v1: 'عدّاد محاولات الدخول على الجهاز',
   };
   /* no registered key falls back to the generic label */
   assert.deepEqual(Object.keys(W.RES_REG).filter((k) => !Object.prototype.hasOwnProperty.call(W.NF_DENY_RECS, k)), [], 'registered keys without a record label');
@@ -389,7 +390,7 @@ function reasonCodes(src) {
 test('V7 nf-deny · every reason code that exists in the server source has an Arabic phrase (and only Arabic)', needsSys('custody', 'dstats'), async () => {
   const { W, src } = await internals(), codes = reasonCodes(src);
   assert.ok(codes.size >= 80, 'the enumeration found the codes: ' + codes.size);
-  for (const must of ['perm', 'reason', 'page', 'view', 'super', 'scope', 'custody:…', 'retro.…', 'custody-transition', 'notification-scope', 'restore-policy', 'import-allowlist', 'task-x', 'users · dup-id …', 'perms-stale-client', 'privacy-hidden'])
+  for (const must of ['perm', 'reason', 'view', 'super', 'scope', 'custody:…', 'retro.…', 'custody-transition', 'notification-scope', 'restore-policy', 'import-allowlist', 'task-x', 'users · dup-id …', 'perms-stale-client', 'privacy-hidden'])
     assert.ok(codes.has(must), 'enumeration sanity: ' + must);
   const missing = [], table = [];
   for (const [code, how] of [...codes].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
@@ -451,7 +452,7 @@ function craft(x) {
 }
 const RBODY = (actor) => 'حاول ' + actor + ' تعديل «الجولات اليومية» في صفحة «المتابعة اليومية»، ورُفض الطلب: صلاحيته لا تشمل هذا الإجراء.';
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('V7 nf-deny · review M1 · ' + mode + ': a unit manager renames a staff account through the real save — the bell cannot be made to read as a second attempt by someone else', async () => {
     const x = await mk(mode);
     const g = await x.api('mgr', '/api/get?keys=bassam_auth_users_v1'), ent = g.j.keys.bassam_auth_users_v1, U = JSON.parse(ent.v ?? ent.val);
@@ -603,7 +604,7 @@ const FORGE = {
 };
 const UFORGE = 'س) تعديل ‹الصلاحيات› — (مسؤول المنصة';
 
-for (const mode of ['legacy', 'enforce']) test('V7 nf-deny · review-2 (1)(5) · ' + mode + ': no punctuation survives in a name, a unit name or a node kind — the sentence frame cannot be forged', async () => {
+for (const mode of ['enforce']) test('V7 nf-deny · review-2 (1)(5) · ' + mode + ': no punctuation survives in a name, a unit name or a node kind — the sentence frame cannot be forged', async () => {
   const x = await mk(mode), c = craft(x);
   const depts = stored(x.env, 'bassam_depts_v1'); depts.push({ id: 'u_forge', name: UFORGE, gid: 'tst_g1' }, { id: 'u_long', name: 'ع'.repeat(4001), gid: 'tst_g1' }); putKV(x.env, 'bassam_depts_v1', depts);
   const nodes = stored(x.env, 'bassam_gdepts_v1') || []; nodes.push({ id: 'n_k1', name: 'الفرع', kind: '{السبب}«x») — (حاول، سعد: تعديل' }, { id: 'n_k2', name: 'الفرع', kind: 'ع'.repeat(300) }, { id: 'n_k3', name: UFORGE, kind: 'وكالة' }); putKV(x.env, 'bassam_gdepts_v1', nodes);

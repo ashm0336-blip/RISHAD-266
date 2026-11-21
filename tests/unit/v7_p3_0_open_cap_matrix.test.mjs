@@ -20,7 +20,8 @@ const put = (DB, k, v) => { DB.db.prepare('DELETE FROM kv WHERE k = ?').run(k); 
 const read = (DB, k) => JSON.parse(DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k).map((r) => r.v).join('') || 'null');
 const BASIC = ['emps', 'tasks', 'planning', 'staff', 'links', 'help', 'admin'];
 const UNITS = { OPEN: null, FULL: PG_KEYS.slice(), BASIC };
-const KV = [['bassam_perm_tpls_named_v1', 'admin/ptpls', '[]'], ['bassam_last_export_v1', 'admin/backup', '{"t":1}'], ['bassam_profile_v1', 'tech rule', '{}'], ['bassam_first_boot_v1', 'tech rule', '{"t":1}']];
+/* V7 · د5-ح: حُذف صفُّ bassam_perm_tpls_named_v1 (admin/ptpls) — الورقةُ ومواردُها حُذفت */
+const KV = [['bassam_last_export_v1', 'admin/backup', '{"t":1}'], ['bassam_profile_v1', 'tech rule', '{}'], ['bassam_first_boot_v1', 'tech rule', '{"t":1}']];
 async function matrix(mode) {
   const out = {};
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}), DB = env.DB;
@@ -72,7 +73,7 @@ async function matrix(mode) {
 
 const OUTSIDE_BASIC = ['ops read plan (plan)', 'ops read rounds (daily/rounds)', 'ops read dreport (dreport)', 'irshad read (irshad)', 'seized read (seized)', 'ops write bassam_zone_opts_v1 (plan)', 'ops write bassam_dayfocus_v1 (daily/rounds|dreport)'];
 const LEGACY_GAP = ['write bassam_profile_v1 (tech rule)', 'write bassam_first_boot_v1 (tech rule)', 'image upload (new, dept)'];
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] a manager without a sheet: OPEN (no cap record) is served like FULL (every page) — except the documented legacy gap', { ...needs('custody', 'seized', 'tasks'), timeout: 300000 }, async () => {
     const out = await matrix(mode);
     for (const [k, v] of Object.entries(out)) {
@@ -86,6 +87,6 @@ for (const mode of ['legacy', 'enforce']) {
       if (OUTSIDE_BASIC.includes(k)) assert.notEqual(v.BASIC, 'yes', k + ': refused outside «أساسي»');
       else assert.equal(v.BASIC, 'yes', k + ': allowed inside «أساسي» · ' + JSON.stringify(v));
     }
-    assert.ok(Object.keys(out).length >= 20, 'the matrix covers ' + Object.keys(out).length + ' cases');
+    assert.ok(Object.keys(out).length >= 19 /* V7 · د5-ح: 21 حالةً − قراءةُ القوالب وكتابتُها (المورد حُذف) */, 'the matrix covers ' + Object.keys(out).length + ' cases');
   });
 }

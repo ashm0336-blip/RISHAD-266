@@ -50,14 +50,6 @@ function selfAcctWhy(A, a, b, st) {
   if (!eqExcept(a, b, allow)) return 'self';
   return selfLoginWhy(a, b, st);
 }
-/* مديرُ النظام في المسار القديم حرٌّ في السجلات العامة (044 — كما كان) عدا اسمَ دخوله هو: الصيغةُ وكلمةُ المرور الحالية (أو الدخولُ الأوّل الإجباري).
-   (في الإنفاذ يمرّ مديرُ النظام بـ selfAcctWhy كغيره — قائمتُه الحقولُ الستّ كما كانت SELF_FIELDS هناك) */
-function superSelfWhy(A, newJson, curJson, ctx) {
-  var inc = parseJson(newJson, null), cur = parseJson(curJson, null), me = A.u.id;
-  if (!Array.isArray(inc) || !Array.isArray(cur)) return null;
-  var a = cur.filter(function (x) { return x && x.id === me; })[0], b = inc.filter(function (x) { return x && x.id === me; })[0];
-  return a && b ? selfLoginWhy(a, b, ctx && ctx.selfCur) : null;
-}
 /* مراجعةُ التكامل W1-CRIT (دفاعٌ في العمق): الحكمُ أدناه على آخر نسخةٍ من المعرّف والدخولُ (actorOf · /api/login) يأخذ أوّلَها — فمعرّفٌ مكرَّرٌ في القائمة
    الواردة كلُّ نسخةٍ منه نسخةٌ مخزَّنةٌ كما هي (عدا ph الغائب و«no» المورَّث) وإلا 'users'. البوابةُ لكلّ حفظٍ قبلها في 054 applySave (usersDupIdIn) */
 /* مراجعةُ التكامل (الجولة الثانية · كبوابة 054 usersDupIdIn): R2-LEGACYLOCK — نسخٌ واردةٌ متطابقةٌ حرفاً لا تزيد على المخزَّنة المتطابقة تُقبل (الأولى هي
@@ -79,47 +71,6 @@ function usersDupCopyWhy(inc, cur) {
     for (i = 0; i < bs.length; i++) { x = bs[i]; if (!cs2.some(function (a) { return asC(x, a); })) return 'users'; }
   }
   return '';
-}
-/* الحسابات: الموظف على كلمة مروره وحدها، والمدير على حسابات موظفيه في نطاقه */
-function usersRule(A, newJson, curJson, ctx) {
-  var inc = parseJson(newJson, null), cur = parseJson(curJson, []);
-  if (!Array.isArray(inc)) return { ok: false, why: 'users' };
-  if (inc.some(function (x) { return !x || !x.id || badAcctId(x.id); })) return { ok: false, why: 'users' };   /* KIVO_261: معرّفٌ خبيثٌ (__proto__…) أو بلا معرّف */
-  var dcw = usersDupCopyWhy(inc, cur); if (dcw) return { ok: false, why: dcw };                                /* مراجعةُ التكامل W1-CRIT */
-  var byA = nmap(), byB = nmap(), ids = nmap(), k, mgrEk = null;                                               /* null-prototype: «__proto__» خاصيّةٌ عادية تُفحص */
-  (Array.isArray(cur) ? cur : []).forEach(function (x) { if (x && x.id) { byA[x.id] = x; ids[x.id] = 1; } });
-  inc.forEach(function (x) { if (x && x.id) { byB[x.id] = x; ids[x.id] = 1; } else return; });
-  for (k in ids) {
-    var a = byA[k], b = byB[k];
-    if (a && b && eqExcept(a, b, ['ph']) && (!b.ph || b.ph === a.ph)) continue;   /* لم يتغيّر (ph الغائب يُورَث) */
-    if (k === A.u.id) {                                                            /* سجلّي: حقولُ دوري وحدها (KIVO_264 · D14) — لا دوري ولا نطاقي */
-      var sw = selfAcctWhy(A, a, b, ctx && ctx.selfCur);
-      if (!sw && userRecOk(b) && phNewOk(a, b)) continue;   /* KIVO_261 · AUD-057 · KIVO_262: وبصمةٌ حديثة */
-      return { ok: false, why: sw || 'self' };
-    }
-    var d = (a && a.deptId) || (b && b.deptId) || '';
-    if (!isMgrOf(A, d)) return { ok: false, why: 'mgr' };
-    /* إدارةُ الحسابات ليست صفةَ منصبٍ بل صلاحيةٌ فعلية على «بيانات الموظفين»:
-       الإنشاء add · التعديل والتجميد وإعادة التعيين edit · الحذف del.
-       فمديرٌ ورقتُه الصريحة لا تشملها لا يُنشئ حساباً ولا يجمّده. */
-    var act0 = (a && b) ? 'edit' : (b ? 'add' : 'del');
-    if (!actsHeldOn(A, d, 'emps/data', [act0])) return { ok: false, why: 'act' };
-    if (a && (a.role !== 'staff' || a.mgr || a.deptId !== d)) return { ok: false, why: 'mgr' };
-    if (b && (b.role !== 'staff' || b.mgr || b.deptId !== d)) return { ok: false, why: 'mgr' };
-    /* «فحص الصلاحيات العميق (2026-10-21)» · D1: مفتاحُ الحساب mgr:/gm: صفةُ منصبٍ — به يرث الحسابُ سقفَ الوحدة كلَّه (022 myPermsOf) ويُعامَل
-       ممثّلاً لسقف النطاق (010) — فكان مديرٌ ضيّق عليه مديرُ النظام يُنشئ حساباً «staff» مفتاحُه mgr:<d>:N فيرث ما سُحب منه.
-       فلا يُنشئه غيرُ مدير النظام، ولا يغيّر إليه مفتاحاً، ولا يعدّل حساباً يحمله (والحذفُ يبقى كما كان)
-       «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · M-B · L3: ومفتاحٌ يحمله حسابُ مديرٍ قائم (رقمُ هوية مديرِ عقدةٍ قديم · مفتاحُ حامل الشارة —
-       نشطاً أو مجمَّداً) مفتاحُ مديرٍ كذلك؛ والحسابُ القائمُ بمفتاح مديرٍ يجمّده المديرُ ويحذفه (والجولة 3 · R3-1: لا يفكّ تجميدَه) — usersEkeyWhy */
-    if (!mgrEk) mgrEk = usersMgrEkSet(cur);
-    var ekw = usersEkeyWhy(a, b, mgrEk); if (ekw) return { ok: false, why: ekw };
-    if (usersGrantWhy(A, a, b, ctx && ctx.gx)) return { ok: false, why: 'grant' };   /* «… المرحلة 0 (الجولة 2)» · R3-2: منحٌ صريحٌ باقٍ على المفتاح */
-    if (usersSheetWhy(A, a, b, ctx && ctx.gx, false)) return { ok: false, why: 'grant' };   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2: وورقةٌ باقية */
-    if (b && !userRecOk(b)) return { ok: false, why: 'shape' };                     /* KIVO_261 · AUD-057 */
-    if (!phNewOk(a, b)) return { ok: false, why: 'ph' };                              /* KIVO_262: بصمةٌ حديثة وحدها */
-  }
-  var a1w = usersA1Why(inc, cur); if (a1w) return { ok: false, why: a1w };   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · I4w — بعد أحكام الصفوف (D1 «ekey» أوّلاً) */
-  return { ok: true };
 }
 /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · M-B: مفاتيحُ المديرين في قائمة الحسابات المخزَّنة — كلُّ مفتاحٍ يحمله حسابٌ مدير (دورُه غيرُ staff:
    gm · dept · super — أو يحمل الشارة mgr) نشطاً كان أو مجمَّداً. مفتاحُ mgr:/gm: صفةُ منصبٍ بنفسه (usersSynKey) ولا يحتاج حساباً */
@@ -164,7 +115,6 @@ function usersA1Why(inc, cur) {
   }
   return '';
 }
-function usersA1Of(newJson, curJson) { var inc = parseJson(newJson, null); return Array.isArray(inc) ? usersA1Why(inc, parseJson(curJson, [])) : ''; }
 /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-2: مفاتيحُ المديرين تُعرف من الحسابات المخزَّنة — فإذا حذف مديرُ النظام مديرَ عقدةٍ قديماً أو مديراً
    بدوره (مفتاحُه بلا بادئة) بقي مدخلُه في سجلّ المنح الصريح (bsdept:<d>:bassam_grants_v1) فيُنشئ مديرُ الإدارة حساباً بذلك المفتاح فيرث منحَه.
    الآن: ربطُ حسابٍ بمفتاحٍ لغير مدير النظام (إنشاؤه أو تغييرُ مفتاحه) يُحكم كمنح — كلُّ مفتاح plus نشطٍ قابلٍ للمنح في مدخلٍ باقٍ لذلك المفتاح يحمله الكاتبُ
@@ -222,7 +172,7 @@ function usersSheetWhy(A, a, b, GX, keys) {
     for (var key in ks) if (mi.indexOf(key) === -1 && !enfHeld(B, d, key)) { out = key + ' (grantor does not hold it)'; break; }
   }
   if (!out) {
-    /* ما في الورقة خارجَ سقف الوحدة لا يمنح شيئاً (يُقصّ عند القراءة — authorize0) فلا يُحكم */
+    /* ما في الورقة خارجَ سقف الوحدة لا يمنح شيئاً (يُقصّ عند القراءة — capOnDept) فلا يُحكم */
     var C = permOnAll(A), src = expandPermsOf(C, d, sh), cut = nmap(), leaf;
     for (leaf in src) if (capOnDept(C, d, leaf)) cut[leaf] = src[leaf];
     one[ek] = cut; if (el !== undefined) { ln = nmap(); ln[ek] = el; }

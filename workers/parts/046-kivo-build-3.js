@@ -10,7 +10,7 @@ async function retroState(env, d, sys) {
   throw rsError('retro-resource');
 }
 /* من يفتح نافذةَ استدراك: مدير النظام، أو حاملُ approve على ورقة السجلات في الإدارة — ذرّةُ G‑08 نفسُها التي تفتح الشهرَ واجهياً اليوم (وهي ترجمةُ ir/sz.rec.retro.open) */
-function retroMay(A, d, sys) { if (A && A.enf) return enfRetroMay(A, d, sys); if (A.u.role === 'super') return true; return !!d && deptInScope(A, d) && actsHeldOn(A, d, RETRO[sys].cap, ['approve']); }
+function retroMay(A, d, sys) { return enfRetroMay(A, d, sys); }   /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
 function retroScopeKey(sc) { return sc.y + '-' + sc.m + (sc.d == null ? '' : '-' + sc.d); }
 /* سياقُ الاستدراك للحفظة: نوافذُ كلِّ (إدارة · نظام) تمسّه الكتابةُ — قراءةٌ واحدة لكلٍّ (الاسمُ باقٍ توافقاً: يقرؤه الإنفاذ والإحصائيات) */
 async function permv3RetroLoad(env, set, del) {

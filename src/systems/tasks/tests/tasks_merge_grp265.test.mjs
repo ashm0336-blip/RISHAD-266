@@ -38,7 +38,7 @@ test('(أ) يومٌ فيه مهمةٌ جماعية: إضافةُ المدير و
   } finally { T.dispose(); }
 });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] (ب) الموظفون يقبلون وينهون ويُنقضى كلَّ صفوف اليوم ثم يحفظ المديرُ من صفحةٍ قديمة: إضافتُه وتعديلاته باقية', { timeout: 120000 }, async () => {
     const WU = workerUnderTest(), H = 3600e3, { M3, T } = client();
     try {

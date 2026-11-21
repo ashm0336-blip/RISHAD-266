@@ -25,7 +25,7 @@ async function grant(W,leaf){const g=await W.C.api('/api/get?keys='+KP,{cookie:W
  const s=await W.C.api('/api/save',{method:'POST',cookie:W.dm.ck,body});return (s.j.revs&&s.j.revs[KP])?'OPEN(accepted)':'restricted('+(((s.j.denied||{})[KP]||{}).why||JSON.stringify(s.j).slice(0,120))+')';}
 const has=(W)=>['caps','subs','lenses','capOwn'].filter(f=>{const P=stored(W.env,KP);return P[f]&&Object.prototype.hasOwnProperty.call(P[f],X);}).join(',')||'-';
 const den=(r)=>r.status+' denied='+JSON.stringify(r.j.denied||{}).slice(0,160)+' conf='+Object.keys(r.j.conflicts||{});
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('V7 #4 · ' + mode + ': a restore-flagged save that removes a node with a unit still under it keeps the node\'s ceiling — the unit stays restricted', async () => {
     const W = await scene(mode);
     let r = await save(W, W.su.ck, { [KG]: gX(W), [KD]: dX(W), [KP]: raw(W.env, KP) }, 'import');

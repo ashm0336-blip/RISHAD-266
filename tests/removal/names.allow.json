@@ -231,14 +231,6 @@
    "why": "نصُّ تنبيه الرفض لسببٍ يكتبه الحفظُ الذرّي في القاعدة (019e)؛ يتبع رمزَ القاعدة لا نظامَ العهد."
   },
   {
-   "file": "workers/parts/044-protected-ops.js",
-   "match": [
-    "'custodyRename'"
-   ],
-   "kind": "legit",
-   "why": "وسمٌ عام لإعادة التسمية المتتالية (rename cascade) يُستعمل لقائمة الموظفين أيضاً — اسمٌ تاريخي لا منطقَ عهد (الملف 33: يبقى)."
-  },
-  {
    "file": "workers/parts/054-image-contract.js",
    "match": [
     "'custodyRename'"

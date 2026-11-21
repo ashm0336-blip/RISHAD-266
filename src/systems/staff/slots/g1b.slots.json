@@ -40,14 +40,6 @@
   "order": 10,
   "text": ", 'staff'"
  },
- "read.map.reader.staff.3": {
-  "order": 10,
-  "text": ", 'staff'"
- },
- "read.map.reader.staff.4": {
-  "order": 10,
-  "text": ", 'staff'"
- },
  "read.map.reader.staff.5": {
   "order": 10,
   "text": ", 'staff'"
@@ -76,21 +68,9 @@
   "order": 10,
   "text": "'staff.view', "
  },
- "priv.gender.leaves.staff": {
-  "order": 10,
-  "text": "'staff:view', "
- },
  "priv.tokRes.staff": {
   "order": 10,
   "text": "bassam_staffing_v3: 1, bassam_staffing_v2: 1, bassam_staffing_snap_v1: 1, "
- },
- "empGone.staff.fn": {
-  "order": 10,
-  "file": "slots/empGone.staff.fn.frag"
- },
- "empGone.map.staff": {
-  "order": 10,
-  "text": "  'bassam_staffing_v3': staffGoneOk, 'bassam_staffing_v2': staffGoneOk,\n"
  },
  "permv4.ctx.roster.staff": {
   "order": 10,

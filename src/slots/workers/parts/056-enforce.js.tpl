@@ -1,21 +1,28 @@
 /* ═════════════════════════════════════════════════════════════════════════════════════════════════════════
-   ║  KIVO_243 · ENFORCE — سجلُّ الصلاحيات v24.9 مصدرُ القرار النافذ (بيئة Preview وحدها)                    ║
+   ║  KIVO_243 · ENFORCE — سجلُّ الصلاحيات v24.9 مصدرُ القرار النافذ (كلُّ بيئة — V7 · د5-ح: القفل)          ║
    ═════════════════════════════════════════════════════════════════════════════════════════════════════════
-   القرار:  ENV (KIVO_AUTHZ_MODE = enforce)  ∧  D1 (meta.authz_mode = enforce)  ⇒  الإنفاذ
-            وأيُّ حالةٍ غيرِها (متغيّرٌ غائب · قيمةٌ أخرى · سطرٌ غائب · خطأُ قراءة)  ⇒  النظامُ القديم حرفاً بحرف.
-   • Production بلا المتغيّر ⇒ لا قراءةَ لـD1 لأجله أصلاً، ولا يتغيّر مسارٌ واحد من مسارات KIVO_242.
-   • مفتاحُ الطوارئ: UPDATE meta SET v = 'legacy' WHERE k = 'authz_mode' ⇒ يعود النظامُ القديم من الطلب التالي بلا نشر.
-   • كلُّ خطّافٍ في الكود القائم مشروطٌ بـ A.enf (لا يُضبط إلا في وضع الإنفاذ) — فالمسارُ القديم لا يرى شيئاً جديداً.
+   V7 · د5-ح (القفل): لا وضعَ قديماً بعد اليوم — الخادمُ يقرّر بمحرّك الإنفاذ وحده في كل بيئة، بلا متغيّر بيئة. سطرُ D1 meta.authz_mode يقول
+   هل نُقلت بياناتُ القاعدة إليه:
+     • 'enforce'                        ⇒ «enforce»: المحرّكُ يقرّر للجميع.
+     • غائبٌ أو أيُّ قيمةٍ أخرى ('legacy') ⇒ «unmigrated» (fail-closed بحالةٍ معلنة): مديرُ المنصة وحده يدخل ويعمل (بالمحرّك نفسِه) ليرحّل
+       (/api/authz-migrate: perm · perm44-roles … ثم act:'activate')، وكلُّ طلبٍ لغيره 503 authz_unmigrated برسالةٍ صريحة — لا سماحَ صامتاً
+       ولا قفلَ صامتاً، ولا مسارَ قديماً يقرّر.
+     • تعذّرُ القراءة                    ⇒ «unavailable» (وضعُ الحماية · ADR-003) كما كان.
+   • القاعدةُ الجديدة تولد مقفلة: أداةُ المدير الأول (tools/provision_first_admin.mjs) تكتب authz_mode='enforce' — لا بياناتٍ قديمة فيها تُرحَّل.
+   • KIVO_AUTHZ_MODE لم يعد مفتاحَ المحرّك؛ يبقى شرطاً لأداة الاختبار وحدها (enfFixtureOn) كما كانت (Preview وحدها).
    الأجزاء: (1) الوضع والمفاتيح المحمولة · (2) النطاق · (3) الكتابة · (4) القراءة والإسقاط والدمج · (5) الحفظة والتدقيق ·
             (6) واجهاتُ الحالة والترحيل والرجوع · (7) حقنُ الإقلاع. */
 var ENF_VER = 'KIVO_265 · enforce 2 (fail-closed · host-guard · ph-strip · schema · logs · sess · pre · ph-new · first-plan · read-ceiling · self-fields@@SYS:enf.ver.staff@@@@SYS:enf.ver.tasks@@)';
 var ENF_SCOPE_RES = 'bassam_scope_v1';
 function enfEnvOn(env) { return !!(env && String(env.KIVO_AUTHZ_MODE || '').trim().toLowerCase() === 'enforce'); }
+/* V7 · د5-ح: المحرّكُ يقرّر في «enforce» و«unmigrated» (والثانيةُ لمدير المنصة وحده — enfUnmigratedFor) */
+function enfDecides(M) { return !!M && (M.mode === 'enforce' || M.mode === 'unmigrated'); }
+function enfUnmigratedFor(M, u) { return !!M && M.mode === 'unmigrated' && !(u && u.role === 'super'); }
+var ENF_CLOSED = { mode: 'closed', closed: 1, ver: ENF_VER };   /* فاعلٌ خارج مسار الطلب: المحرّكُ يقرّر بلا سماحٍ زائد (017 actorOf) */
 /* أداةُ بيانات الاختبار وجلسةُ الاختبار الداخلية: متغيّرٌ مستقلّ يُضبط لـPreview وحدها — لا أثر له بلا وضع الإنفاذ في ENV */
 function enfFixtureOn(env) { return enfEnvOn(env) && String(env.KIVO_TEST_FIXTURE || '').trim().toLowerCase() === 'allow'; }
 async function enfModeOf(env) {
-  var out = { mode: 'legacy', env: enfEnvOn(env), d1: null, perm: null, scope: null, ident: null, fixture: enfFixtureOn(env), ver: ENF_VER };
-  if (!out.env) return out;
+  var out = { mode: 'unmigrated', env: enfEnvOn(env), d1: null, perm: null, scope: null, ident: null, fixture: enfFixtureOn(env), ver: ENF_VER };
   try {
     var rows, i, P = env.__pre;
     if (P && P.live && P.meta) rows = ['authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig'].filter(function (k) { return P.meta[k] != null; }).map(function (k) { return { k: k, v: P.meta[k] }; });   /* KIVO_255 · AUD-037: من لقطة الطلب (جُلبت بدفعةٍ واحدة) — تعذّرُ الجلب يُبقي اللقطةَ غائبةً فيُقرأ هنا مباشرةً كما قبل 255 (fail-closed كما هو) */
@@ -28,10 +35,18 @@ async function enfModeOf(env) {
       else if (k === 'authz_id_mig') out.ident = parseJson(v, null);
     }
   } catch (e) { out.d1 = null; out.err = 'meta'; out.unavailable = 1; }
-  /* KIVO_244 · ADR-003 (SOT-172 / AUD-001): تعذّرُ قراءة meta في بيئة الإنفاذ ⇒ وضعُ الحماية «unavailable» (fail-closed) لا legacy —
-     الإيقافُ المقصود وحده (سطرٌ يُقرأ بنجاح بقيمة غير enforce) يعيد النظامَ القديم. Production بلا المتغيّر لا تصل هنا أصلاً. */
-  out.mode = out.unavailable ? 'unavailable' : (out.d1 === 'enforce' ? 'enforce' : 'legacy');
+  /* KIVO_244 · ADR-003 (SOT-172 / AUD-001): تعذّرُ قراءة meta ⇒ وضعُ الحماية «unavailable» (fail-closed).
+     V7 · د5-ح: وسطرٌ يُقرأ بقيمة غير enforce (أو غائب) ⇒ «unmigrated» — لا نظامَ قديماً يعود. */
+  out.mode = out.unavailable ? 'unavailable' : (out.d1 === 'enforce' ? 'enforce' : 'unmigrated');
   return out;
+}
+/* ── V7 · د5-ح: «لم تُرحَّل بعد» — قاعدةٌ لم تُختم enforce: غيرُ مدير المنصة يُرفض بلا تنفيذ برسالةٍ صريحة (503) حتى يُكمل مديرُ المنصة الترحيل ── */
+var ENF_UNMIG_MSG = 'الصلاحيات قيد النقل إلى النظام الجديد: لا يعمل الحساب حتى يُكمل مدير المنصة الترحيل. لم يُنفَّذ الطلب.';
+async function enfUnmigrated(env, request, path) {
+  var rm = reqMeta(request);
+  await secLog(env, { act: 'authz_unmigrated', detail: (request.method + ' ' + path).slice(0, 120), ip: rm.ip, city: rm.city, dev: rm.dev });
+  logEv('warn', 'authz-unmigrated', { rid: env.__rid, m: request.method, p: path, st: 503 });
+  return json({ ok: 0, err: 'authz_unmigrated', msg: ENF_UNMIG_MSG, rid: env.__rid }, 503, { 'Retry-After': '60' });
 }
 /* ── وضعُ الحماية (ADR-003): ما يُسمح به بلا قرار صلاحيات = ما لا يمسّ البيانات (الهوية العامة · النبض المختصر · الخروج)؛ وكلُّ ما سواه 503 بلا تنفيذ ── */
 var ENF_UNAVAIL_OPEN = { '/api/brand': 1, '/api/ping': 1, '/api/logout': 1 };

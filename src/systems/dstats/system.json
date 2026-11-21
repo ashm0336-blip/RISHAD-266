@@ -212,14 +212,6 @@
    "order": 10,
    "text": "      for (var retiredDs in keys) if (resName(retiredDs) === K_DSTATS) delete keys[retiredDs];\n"
   },
-  "authz.read.dstats": {
-   "order": 10,
-   "text": "  /* R181: الإحصائياتُ اليومية عامّةٌ للحرمين لكنها لا تُقرأ إلا بورقةٍ منها — كانت تُعطى لكلِّ من دخل المنصة */\n  if (!P.dept && P.name === K_DSTATS) return dsHeld(A, DS_READ, ['view']);\n"
-  },
-  "authz.write.dstats": {
-   "order": 10,
-   "text": "    /* R180: الإحصائيات اليومية — أوراقُ المسجدين تحكم كتابتَها، وحذفُ المفتاح كلِّه لمدير النظام وحده */\n    if (P.name === K_DSTATS) return newVal == null ? { ok: false, why: 'super' } : dstatsRule(A, newVal, curVal);\n"
-  },
   "enf.write.dstats": {
    "order": 10,
    "text": "    if (P.name === K_DSTATS) return newVal == null ? enfNo('keydel') : enfDstatsWrite(A, k, newVal, curVal, ctx, X);\n"

@@ -39,7 +39,7 @@ async function world(EX) {
 }
 const leaked = (list, me) => (list || []).filter(u => u && u.id !== me && Object.prototype.hasOwnProperty.call(u, 'no')).map(u => u.id + '=' + u.no);
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};
 
   test('[' + mode + '] SR-1 (أ) الإقلاعُ و/api/get: لا رقمَ وظيفيَّ لحساب غيرك — إلا لمدير النظام · وصاحبُ الحساب يرى رقمَه', async () => {

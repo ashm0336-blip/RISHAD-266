@@ -42,9 +42,6 @@ var ENT = {
   /* sfRead: [{ name, color, tStart, tEnd }] — الاسم هويةٌ، وإعادة تسميته عملية edit */
   'bassam_shift_options_v1':  { cols: [{ at: '', idf: ['name'], lock: ['name'] }], empty: '[]',
                                 rename: { at: '', field: 'name' } },
-  'bassam_perm_tpls_v1':      { cols: [{ at: '', idf: ['id'], lock: ['id'] }], empty: '[]' },
-  /* رايةُ ترحيلٍ تُكتب مرةً واحدة — بلا شكلٍ مفروض */
-  'bassam_perm_tpls_named_v1':{ },
   'bassam_callsigns_v1':      { empty: '[]', primRoot: 1 },
   /* drAddLeaveKind/drDelLeaveKind: كلتاهما محروستان بـPC("edit") في الواجهة */
   'bassam_leave_kinds_v1':    { empty: '[]', primRoot: 1, primAct: 'edit' },

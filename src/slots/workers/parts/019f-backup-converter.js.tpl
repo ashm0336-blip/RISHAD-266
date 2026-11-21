@@ -344,6 +344,10 @@ async function rsConvertBackup(env, A, file, opt) {
   @@SYS:bc.retired.custody|empty="[]"@@.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
+  /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها) */
+  Object.keys(keys).forEach(function (k) {
+    if (enfTplsKey(k)) delete keys[k];
+  });
   opConvertBackupBoundary(keys,domains,deptIds,scope,source,modern?file.manifest.version:0,summary);
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
   // its existing hash, final-owner and session policy for the eventual commit.

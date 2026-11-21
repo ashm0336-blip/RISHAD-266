@@ -41,7 +41,7 @@ const PROFILES = [
   ['no grant', LAB.empA, {}, ['#/profile', '#/profile'], false],
 ];
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {   /* V7 · د5-ح (القفل): لا وضعَ قديماً — حالةُ legacy حُذفت (تثبّت مسارَ القرار القديم المحذوف) */
   test('landing · ' + mode + ': as before P4 for every profile; the «مؤشرات الإدارة» link stays for a holder of «المهام» alone', { timeout: 900000 }, async () => {
     const lab = await startLab({ mode }); const b = await chromium.launch();
     try {

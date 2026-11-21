@@ -62,7 +62,7 @@ const show = (s) => JSON.stringify(s.j).slice(0, 300);
 /* المخزَّنُ = السابقُ بعد تعديلٍ واحد بعينه (fn على نسخةٍ منه) — الترتيبُ وكلُّ الحقول */
 const sameExcept = (before, after, fn, msg) => { const exp = JSON.parse(JSON.stringify(before)); fn(exp); assert.deepEqual(after, exp, msg); };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) الإسقاطُ لكلّ دور في الإقلاع و/api/get: مديرُ النظام كاملاً · مديرُ الفرع وحسابُ الإدارة ومديرُ الإدارة نطاقُهم · المشرفُ زملاؤه بلا أرقام · الموظفُ نفسُه ومديروه', async () => {

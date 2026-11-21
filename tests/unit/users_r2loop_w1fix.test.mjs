@@ -57,7 +57,7 @@ const round1 = (ids) => (j) => {
   o.denied = Object.assign({}, o.denied, { [K]: { why: 'users', cur: cf.cur, rev: cf.rev, uscope: cf.uscope, dup: ids } }); return o;
 };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) الخادم: تصادمٌ على أساسٍ قديم ⇒ تعارضٌ بالإسقاط الحالي لا رفض · والمعادُ يُقبل · وعلى أساسٍ حديث ما زال رفضاً بالصفّ', async () => {

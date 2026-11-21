@@ -22,7 +22,7 @@ const imgN = (W, id) => W.env.DB.q('SELECT COUNT(*) AS n FROM imgs WHERE k = ?',
 const mark = (act) => [{ cid: 'g1' + act + Date.now().toString(36), k: KT, etype: 'dataset', act, eid: 'bassam_tasks_v1', ename: 'bassam_tasks_v1' }];
 const show = (r) => JSON.stringify({ st: r.status, revs: r.j && r.j.revs, denied: r.j && r.j.denied && Object.fromEntries(Object.entries(r.j.denied).map(([k, v]) => [k, v && v.why])) });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   const why = mode === 'enforce' ? { why: { [KT]: TAG + ' G-1' } } : {};
   /* حفظةُ المشرف على النسخة الحالية بعد تعديل صفّ الموظف المنجز fn(r) — بعلامةٍ مزوَّرة act */

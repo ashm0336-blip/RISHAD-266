@@ -1108,18 +1108,6 @@ var NF_TYPES = {
     txt: "سقف إدارتك: {الفعل} {الصفحات} — بواسطة مدير النظام",
     go: "افتح الصلاحيات",
   },
-  pm_tpl: {
-    id: "pm_tpl",
-    k: "perm",
-    name: "قالب صلاحيات أُنشئ أو عُدّل أو حُذف",
-    when: "فور الحفظ",
-    on: true,
-    to: ["mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل} قالب «{القالب}» — {التفصيل} · بواسطة {المُعدّل}",
-    go: "افتح الإعدادات",
-  },
   sy_dept: {
     id: "sy_dept",
     k: "sys",
@@ -1307,7 +1295,6 @@ var NF_CAP = {
   irshad: "irshad",
   box: "seized",
   award: "award",
-  perm: "admin/ptpls",
 };
 var NF_CAP_ID = { kp_att: "daily/kpiDaily", kp_occ: "daily/kpiOcc", st_shdef: "admin/shifts", fd_obs: "daily/field" };
 var NF_MESSAGE_COLS = [
@@ -1559,7 +1546,7 @@ async function nfRefs(env, A, only) {
   (A.depts || []).forEach(function (d) {
     if (d && d.id && (!only || only.indexOf(d.id) >= 0) && !refs[d.id]) {
       refs[d.id] = {};
-      ["employees_v1", "staffing_v3", "dreport_v1", "perm_tpls_v1"].forEach(function (s) {
+      ["employees_v1", "staffing_v3", "dreport_v1", "roles_v1"].forEach(function (s) {   /* V7 · د5-ح: أدوارُ الإدارة (sup) بدل قوالب الصلاحيات المحذوفة */
         keys.push("bsdept:" + d.id + ":bassam_" + s);
       });
     }
@@ -1576,8 +1563,9 @@ async function nfRefs(env, A, only) {
 }
 function nfLeader(A, u, d, refs) {
   // Preserve the established rule: leadership in any stored report, then the
-  // explicitly supervised template. Restricting reports to today is a policy change.
+  // explicitly supervisory role. Restricting reports to today is a policy change.
   if (u.role !== "staff") return false;
+  /* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — الإشرافيُّ دورُ الإدارة الموسوم sup:true (bassam_roles_v1: people[ekey].role → roles[].sup) */
   var r = refs[d] || {},
     dr = r.dreport_v1 || {},
     names = {};
@@ -1591,11 +1579,11 @@ function nfLeader(A, u, d, refs) {
     });
   });
   if (u.name && names[u.name]) return true;
-  var id = (((A.perms || {}).tplOf || {})[d] || {})[u.ekey],
-    t = (Array.isArray(r.perm_tpls_v1) ? r.perm_tpls_v1 : []).filter(function (x) {
-      return x && x.id === id;
+  var R4 = isObj(r.roles_v1) ? r.roles_v1 : {}, p4 = isObj(R4.people) ? R4.people[u.ekey] : null,
+    t = (Array.isArray(R4.roles) ? R4.roles : []).filter(function (x) {
+      return x && p4 && x.id === p4.role;
     })[0];
-  return !!(t && (t.sup === true || (t.sup === undefined && /رئيس|نائب/.test(t.name || ""))));
+  return !!(t && t.sup === true);
 }
 function nfShift(u, d, refs) {
   var r = refs[d] || {},
@@ -1641,36 +1629,35 @@ function nfOwn(m, targets, u, refs) {
 function nfPage(A, d, type, cat, act) {
   var page = NF_CAP_ID[type] || NF_CAP[cat];
   if (A.u.role === "super") return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
+  /* V7 · د5-ح: تنبيهاتُ الصلاحيات (pm_chg · pm_cap) كانت تُحرس بورقة «قوالب الصلاحيات» المحذوفة — صارت لمدير الوحدة (isMgrOf) كتبويب «الصلاحيات» نفسِه */
+  if (cat === "perm") return !!d && deptInScope(A, d) && isMgrOf(A, d);
   if (!page) return !["sys", "sec"].includes(cat);
   if (!d || !deptInScope(A, d) || !capOnDept(A, d, page)) return false;
   if (page.indexOf("admin/") === 0 && act === "view" && isMgrOf(A, d)) return true;
-  if (A.enf) {
-    /* RISHAD-266 · owner decision («مدير الإدارة في enforce يقرأ إشعارات الموظفين الموجّهة للمديرين»): «emps» is a container page with
-       no registry atom, so the lookup below never answered for the «emp» category and no manager read these in enforce. READ only,
-       and only for the manager role of this unit: the legacy rule itself (the manager's sheet holds «view» on the container — a
-       manager with his own narrower sheet does not) ∧ the enforce key emp.view still held (an explicit «minus» keeps dropping it).
-       Scope and the unit ceiling were checked above. Nothing else is opened: a non-manager, whatever key or leaf he holds, gets
-       false as before, and the emit path never comes here for this category (clients are dropped, the server plans internally). */
-    if (cat === "emp" && page === NF_CAP.emp)
-      return act === "view" && isMgrOf(A, d) && actsHeldOn(A, d, page, [act]) && enfHeld(A, d, "emp.view");
-    var atom = KIVO_REGISTRY.atoms[page + ":" + act];
-    /* V7 · د1-ب: الصفحةُ الحاوية (irshad · seized · award) لا ذرّةَ لها في السجل — ذرّاتُها على أوراقها — فكان لا يُحسب لها مستلمٌ في الإنفاذ.
-       المستلمون الآن هم مستلمو الوضع القديم لنفس الصلاحيات (ورقةُ القارئ تحمل الفعلَ على الحاوية) ∧ يحمل في الإنفاذ ذرّةَ ورقةٍ واحدةٍ منها
-       على الأقل (فالإسقاطُ الصريح في الإنفاذ يبقى نافذاً). emps عولجت أعلاه ولا تصل إلى هنا. */
-    if (!atom && pgIsContainer(page))
-      return actsHeldOn(A, d, page, [act]) && pgLeaves(page).some(function (leaf) {
-        var la = KIVO_REGISTRY.atoms[leaf + ":" + act];
-        return !!(la && la.targets && la.targets.some(function (k) { return enfHeld(A, d, k); }));
-      });
-    return !!(
-      atom &&
-      atom.targets &&
-      atom.targets.some(function (k) {
-        return enfHeld(A, d, k);
-      })
-    );
-  }
-  return actsHeldOn(A, d, page, [act]);
+  /* RISHAD-266 · owner decision («مدير الإدارة في enforce يقرأ إشعارات الموظفين الموجّهة للمديرين»): «emps» is a container page with
+     no registry atom, so the lookup below never answered for the «emp» category and no manager read these in enforce. READ only,
+     and only for the manager role of this unit: the legacy rule itself (the manager's sheet holds «view» on the container — a
+     manager with his own narrower sheet does not) ∧ the enforce key emp.view still held (an explicit «minus» keeps dropping it).
+     Scope and the unit ceiling were checked above. Nothing else is opened: a non-manager, whatever key or leaf he holds, gets
+     false as before, and the emit path never comes here for this category (clients are dropped, the server plans internally). */
+  if (cat === "emp" && page === NF_CAP.emp)
+    return act === "view" && isMgrOf(A, d) && actsHeldOn(A, d, page, [act]) && enfHeld(A, d, "emp.view");
+  var atom = KIVO_REGISTRY.atoms[page + ":" + act];
+  /* V7 · د1-ب: الصفحةُ الحاوية (irshad · seized · award) لا ذرّةَ لها في السجل — ذرّاتُها على أوراقها — فكان لا يُحسب لها مستلمٌ في الإنفاذ.
+     المستلمون الآن هم مستلمو الوضع القديم لنفس الصلاحيات (ورقةُ القارئ تحمل الفعلَ على الحاوية) ∧ يحمل في الإنفاذ ذرّةَ ورقةٍ واحدةٍ منها
+     على الأقل (فالإسقاطُ الصريح في الإنفاذ يبقى نافذاً). emps عولجت أعلاه ولا تصل إلى هنا. */
+  if (!atom && pgIsContainer(page))
+    return actsHeldOn(A, d, page, [act]) && pgLeaves(page).some(function (leaf) {
+      var la = KIVO_REGISTRY.atoms[leaf + ":" + act];
+      return !!(la && la.targets && la.targets.some(function (k) { return enfHeld(A, d, k); }));
+    });
+  return !!(
+    atom &&
+    atom.targets &&
+    atom.targets.some(function (k) {
+      return enfHeld(A, d, k);
+    })
+  );
 }
 function nfTargetHit(A, m, targets, u, refs) {
   if (m.kind === "broadcast") {
@@ -3038,7 +3025,7 @@ async function nfBroadcastCreate(env, A, body) {
     dept = body.op === "dept-broadcast",
     d = body.dept || A.u.deptId || "";
   if (dept) {
-    if (!d || !deptInScope(A, d) || (A.enf ? !enfHeld(A, d, "notif.dept.broadcast") : !isMgrOf(A, d)))
+    if (!d || !deptInScope(A, d) || !enfHeld(A, d, "notif.dept.broadcast"))
       throw nfErr("notification-broadcast-permission", 403);
     nfArr(b.emps || [], 20000).forEach(function (x) {
       nfStr(x, 200, false);
@@ -3203,7 +3190,7 @@ var NF_DENY_RECS = {
   bassam_irshad_langs_v1: "لغات الاسترشاد", bassam_irshad_locs_v1: "مواقع الاسترشاد", bassam_seized_v1: "نظام المضبوطات",
   bassam_seized_cat_v1: "قائمة ممنوعات المضبوطات", bassam_seized_acts_v1: "إجراءات المضبوطات", bassam_seized_locs_v1: "مواقع المضبوطات",
   bassam_seized_jew_v1: "أنواع قطع المجوهرات", bassam_award_v1: "جائزة التميز", bassam_award_docs_v1: "المراجع المعتمدة للجائزة (قديم)",
-  bassam_award_docs_v2: "المراجع المعتمدة للجائزة", bassam_shift_options_v1: "الورديات", bassam_perm_tpls_v1: "قوالب الصلاحيات", bassam_roles_v1: "أدوار الصلاحيات",
+  bassam_award_docs_v2: "المراجع المعتمدة للجائزة", bassam_shift_options_v1: "الورديات", bassam_roles_v1: "أدوار الصلاحيات",
   bassam_last_export_v1: "آخر تصدير", bassam_last_full_export_v1: "آخر نسخة شاملة", bassam_notif_dev_v1: "جهاز التنبيهات",
   bassam_perm_help_v1: "ترقية الصلاحيات", bassam_perm_irshad_cap_v1: "ترقية الصلاحيات", bassam_perm_seized_cap_v1: "ترقية الصلاحيات",
   bassam_perm_leaf_v1: "ترقية الصلاحيات", bassam_perm_mgr_explicit_v1: "ترقية الصلاحيات", bassam_first_boot_v1: "أول تشغيل",
@@ -3211,19 +3198,20 @@ var NF_DENY_RECS = {
   /* not in the client's list */
   bassam_dstats_v1: "الإحصائيات اليومية", bassam_irshad_retro_v1: "نافذة استدراك الاسترشاد", bassam_seized_retro_v1: "نافذة استدراك المضبوطات",
   bassam_notif_cfg_v1: "إعدادات التنبيهات (سجل قديم)", bassam_notif_sys_v1: "تنبيهات المنصة (سجل قديم)", bassam_bc_v1: "التعاميم (سجل قديم)",
-  bassam_notif_v1: "تنبيهات الإدارة (سجل قديم)", bslg_v1: "عدّاد محاولات الدخول على الجهاز", bassam_perm_tpls_named_v1: "راية إعادة تسمية قوالب الصلاحيات",
+  bassam_notif_v1: "تنبيهات الإدارة (سجل قديم)", bslg_v1: "عدّاد محاولات الدخول على الجهاز",
 };
 /* prettier-ignore */
 var NF_DENY_WHY = {
   /* permission and scope */
   perm: "صلاحيته لا تشمل هذا الإجراء", "no-atom": "صلاحيته لا تشمل هذا الإجراء", none: "لا صلاحية له تتيح هذا الإجراء",
-  act: "صلاحيته على هذه الصفحة لا تشمل هذا الإجراء", page: "صلاحيته على هذه الصفحة عرضٌ فقط", view: "صلاحيته عرضٌ فقط",
+  /* V7 · د5-ح: حُذفت رموزُ المسار القديم act · page · dslock · rule · noop — لم يعد الخادم يُصدرها */
+  view: "صلاحيته عرضٌ فقط",
   cap: "الصفحة خارج سقف إدارته", dept: "السجل يخصّ إدارة أخرى", scope: "خارج نطاقه (المسنَد إليه أو المصدر أو الفترة)",
   "scope-unknown": "تعذّر التحقق من قفل الفترة لهذا التعديل", "scope-retired": "سقف النطاق القديم أُلغي ولا يُحفظ",
   super: "الإجراء لمسؤول المنصة وحده", "super-only": "الإجراء لمسؤول المنصة وحده", sys: "الإجراء لمسؤول المنصة وحده",
   mgr: "الإجراء لمدير الإدارة", role: "دوره لا يسمح بهذا الإجراء", "mgr-without-sheet": "مدير لم تُمنح له هذه الصلاحية في ورقته",
   feature: "الميزة غير ممنوحة له", reserved: "صلاحية محجوزة لم تُفعَّل بعد", obsolete: "صلاحية أُلغيت ولم تعد تُمنح",
-  deny: "لم يسمح به نظام الصلاحيات", reason: "هذه العملية تتطلب ذكر السبب", dslock: "اليوم أو الشهر مقفل", own: "السجل لصاحبه وحده",
+  deny: "لم يسمح به نظام الصلاحيات", reason: "هذه العملية تتطلب ذكر السبب", own: "السجل لصاحبه وحده",
   "restore-policy": "الاستعادة لمسؤول المنصة أو لمدير الإدارة الممنوح مفتاحها", "import-allowlist": "السجل خارج قائمة الاستيراد المسموحة",
   /* accounts and permissions registers */
   users: "جدول الحسابات لم يُقبل", "users · dup-id ": "جدول الحسابات لم يُقبل لتكرار معرّف حساب",
@@ -3248,8 +3236,8 @@ var NF_DENY_WHY = {
   /* shape of the record */
   shape: "قيمة خارج الحدود المسموحة طولاً أو شكلاً", unmapped: "تعديل غير مصنَّف رُفض احتياطاً", residual: "تعديل غير مصنَّف رُفض احتياطاً",
   unbound: "تعديل غير مصنَّف رُفض احتياطاً", keydel: "حذف السجل كاملاً غير مسموح", append: "السجل يقبل الإضافة فقط ولا يُعدَّل ما سبق فيه",
-  unknown: "سجل لا يعرفه الخادم", device: "تفضيل خاص بالجهاز لا يُحفظ في الخادم", rule: "للسجل سياسة خاصة لا تسمح بهذا الإجراء",
-  noop: "طلب بلا إجراء محدَّد", session: "جلسة غير صالحة", base: "الطلب لم يذكر نسخة السجل التي بُني عليها",
+  unknown: "سجل لا يعرفه الخادم", device: "تفضيل خاص بالجهاز لا يُحفظ في الخادم",
+  session: "جلسة غير صالحة", base: "الطلب لم يذكر نسخة السجل التي بُني عليها",
   flag: "راية تهيئة يكتبها مدير الإدارة وحده", tech: "راية تهيئة لا يكتبها إلا من له كتابة في الإدارة",
   selfdev: "سجل جهاز التنبيهات لصاحبه وحده", notif: "سجل التنبيهات القديم لم يعد يُكتب", "domain-moved": "السجل انتقل إلى مسار خاص ولا يُحفظ بالحفظ العام",
   dstats: "صلاحيته لا تشمل هذا التعديل في الإحصائيات اليومية",

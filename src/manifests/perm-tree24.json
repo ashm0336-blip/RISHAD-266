@@ -601,23 +601,6 @@
      "sub": "shifts"
     },
     {
-     "owner": "admin/ptpls",
-     "label": "قوالب الصلاحيات",
-     "kind": "tab",
-     "route": "#/admin/ptpls",
-     "ownerKind": "page",
-     "keys": [
-      "tpl.view",
-      "tpl.create",
-      "tpl.edit",
-      "tpl.delete",
-      "tpl.supervisory"
-     ],
-     "reserved": [],
-     "page": "admin",
-     "sub": "ptpls"
-    },
-    {
      "owner": "admin/import",
      "label": "استيراد بيانات",
      "kind": "tab",
@@ -925,7 +908,7 @@
  },
  "counts": {
   "containers": 13,
-  "leaves": 44,
-  "keys": 255
+  "leaves": 43,
+  "keys": 250
  }
 }

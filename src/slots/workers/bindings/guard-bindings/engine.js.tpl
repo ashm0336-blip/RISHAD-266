@@ -1,7 +1,7 @@
 var KIVO_GUARDS = (function (B, R) {
   'use strict';
   /* ═══ R200 · Phase 4.2 — Guard Binding (shadow) على v24.5.1 (المصنِّفُ كما في Phase 3): يُصنِّف كلَّ كتابةٍ (قديم → جديد) إلى مفاتيح v24.5.1 المطلوبة — للقياس فقط ═══
-     لا يحكم: الحكمُ النافذ للنظام القديم (canWrite0). النتيجةُ تُقارَن وتُحصى في الذاكرة ثم تُقرأ من /api/permv2. */
+     V7 · د5-ح (القفل): المصنِّفُ يُستدعى من محرّك الإنفاذ (059 enfDecide) — لا حكمَ قديماً ولا عدّاداتِ ظلّ ولا تقريرَ لها. */
   function isObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
   function arr(x) { return Array.isArray(x) ? x : []; }
   function deq(a, b) {
@@ -189,15 +189,6 @@ var KIVO_GUARDS = (function (B, R) {
       for (q = 0; q < dk.length; q++) if (!deq(x[dk[q]], y[dk[q]])) R.op('sys.ceiling.set', k + '[' + dk[q] + ']');
     }
   };
-  /* ═══ قوالبُ الصلاحيات ═══ */
-  C['bassam_perm_tpls_v1'] = function (R, a, b) {
-    var la = arr(a), lb = arr(b), i, m = matchById(la, lb, function (e) { return isObj(e) && e.id != null ? 't:' + e.id : null; });
-    for (i = 0; i < m.added.length; i++) R.op('tpl.create', '[' + m.added[i].id + ']');
-    for (i = 0; i < m.removed.length; i++) R.op('tpl.delete', '[' + m.removed[i].id + ']');
-    for (i = 0; i < m.changed.length; i++) { var c = m.changed[i], ks = union(c.a, c.b), q, f = []; for (q = 0; q < ks.length; q++) if (!deq(c.a[ks[q]], c.b[ks[q]])) f.push(ks[q]); if (f.indexOf('sup') !== -1) R.op('tpl.supervisory', '[' + c.id + '].sup'); var rest = f.filter(function (z) { return z !== 'sup'; }); if (rest.length) R.op('tpl.edit', '[' + c.id + '].' + rest.join('/')); }
-    if (!m.added.length && !m.removed.length && !m.changed.length && !deq(la, lb)) R.op('tpl.edit', '[] reorder');
-  };
-  C['bassam_perm_tpls_named_v1'] = function (R) { R.tec('migration-flag'); };
   /* ═══ الاسترشاد · المضبوطات ═══ */
   function recBulk(prefix) {
     return function (R, a, b) {

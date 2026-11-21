@@ -37,7 +37,7 @@ function plant(W, id, patch, atEnd) {
 }
 const mapId = (L, id, f) => L.map((u) => u.id === id ? f(u) : u);
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) R2-LEGACYLOCK: تكرارٌ متطابق — كلمةُ مرور صاحبه وتجميدُ مديره وفكُّه تُقبل · والنسختان تُكتبان متطابقتين', async () => {
@@ -134,16 +134,16 @@ for (const mode of ['legacy', 'enforce']) {
 }
 
 test('(هـ) الدفاعُ في العمق: usersRule (القديم) وenfUsersWrite (الإنفاذ) — إسقاطُ نسخةٍ من تكرارٍ مختلف رفض · ونسختان متطابقتان معدَّلتان تُقبلان', async () => {
-  const I = await internals(['actorFromKeys', 'usersRule', 'enfUsersWrite']);
+  const I = await internals(['actorFromKeys', 'enfUsersWrite']);
   const P2 = (c) => 'p2$100000$' + c.repeat(32) + '$' + c.repeat(64);
   const su = { id: 'su', un: '1000000001', ph: P2('a'), name: 'TEST_ONLY su', role: 'super' };
   const dm = { id: 'dm', un: '1000000002', ph: P2('b'), name: 'TEST_ONLY dm', role: 'staff', deptId: 'd1', ekey: 'mgr:d1', mgr: true };
   const st = { id: 'st1', un: '1000000004', ph: P2('d'), name: 'TEST_ONLY st', role: 'staff', deptId: 'd1', ekey: 'e1', dis: 0 };
   const keysOf = (L) => ({ [K]: JSON.stringify(L), bassam_depts_v1: JSON.stringify([{ id: 'd1', name: 'd1' }]), bassam_gdepts_v1: '[]', bassam_perms_v1: JSON.stringify({ caps: { d1: ['emps'] } }), bassam_platform_v1: '{}' });
-  const both = (A, inc, cur, why) => {
-    const r1 = I.usersRule(A, JSON.stringify(inc), JSON.stringify(cur), {}), r2 = I.enfUsersWrite(A, K, JSON.stringify(inc), JSON.stringify(cur), {}, {});
-    if (why) { assert.equal(r1.ok, false, why + ' usersRule: ' + JSON.stringify(r1)); assert.equal(r1.why, 'users', why); assert.equal(r2.ok, false, why + ' enfUsersWrite: ' + JSON.stringify(r2)); }
-    else { assert.equal(r1.ok, true, 'usersRule: ' + JSON.stringify(r1)); assert.equal(r2.ok, true, 'enfUsersWrite: ' + JSON.stringify(r2)); }
+  const both = (A, inc, cur, why) => {   /* V7 · د5-ح: usersRule (القديم) حُذف مع مساره — يبقى حكمُ الإنفاذ enfUsersWrite */
+    const r2 = I.enfUsersWrite(A, K, JSON.stringify(inc), JSON.stringify(cur), {}, {});
+    if (why) { assert.equal(r2.ok, false, why + ' enfUsersWrite: ' + JSON.stringify(r2)); }
+    else { assert.equal(r2.ok, true, 'enfUsersWrite: ' + JSON.stringify(r2)); }
   };
   /* R2-SUBSET: المخزَّن st (موظف) ثم st بصفة مدير */
   const stM = Object.assign({}, st, { mgr: true, ekey: 'mgr:d1' }), curD = [su, dm, st, stM], A1 = I.actorFromKeys(keysOf(curD), 'st1');

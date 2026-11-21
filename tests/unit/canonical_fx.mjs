@@ -128,7 +128,6 @@ function fixtureKeys() {
         [D1]: { [EKEYS.employee1]: sheet, [EKEYS.leader]: sheet, [EKEYS.noView]: {}, [EKEYS.frozen]: sheet },
         [D2]: { [EKEYS.employee2]: sheet },
       },
-      tplOf: { [D1]: { [EKEYS.leader]: 'TEST_ONLY_supervisory_template' } },
     },
     bassam_platform_v1: {},
     ['bsdept:' + D1 + ':bassam_employees_v1']: users
@@ -137,7 +136,8 @@ function fixtureKeys() {
     ['bsdept:' + D2 + ':bassam_employees_v1']: users
       .filter((u) => u.deptId === D2 && !u.mgr)
       .map((u) => ({ eid: u.ekey, name: u.name, nid: u.un })),
-    ['bsdept:' + D1 + ':bassam_perm_tpls_v1']: [{ id: 'TEST_ONLY_supervisory_template', name: 'TEST_ONLY renamed template', sup: true }],
+    /* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — الطاقمُ الإشرافيُّ دورُ الإدارة الموسوم sup:true (019 nfLeader · BassamSup) */
+    ['bsdept:' + D1 + ':bassam_roles_v1']: { v: 1, roles: [{ id: 'TEST_ONLY_supervisory_template', name: 'TEST_ONLY renamed template', desc: '', sup: true, sys: {} }], people: { [EKEYS.leader]: { role: 'TEST_ONLY_supervisory_template', ex: [] } } },
   };
   return { users, keys };
 }

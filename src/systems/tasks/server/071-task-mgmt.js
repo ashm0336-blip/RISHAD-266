@@ -10,7 +10,7 @@
      POST /api/tasks/reassign  {k,id,from,to,why,e?,force?}                نسخةٌ جديدة للمكلَّف الجديد · القديمةُ «أُعيد إسنادها» بسجلّها وإثباتها
      POST /api/tasks/cancel    {k,id,ekey?,why}                            إلغاءٌ منطقيّ — لا حذفَ للصفّ ولا لصوره
      POST /api/tasks/relink    {k,id,from,to}                              ربطٌ يدويٌّ لصفٍّ «غير مرتبط» (اسمٌ/رقمٌ قديم) بسجلّ موظف — ق4: يدويٌّ وحده
-     POST /api/tasks/settings  {k,id|grp,ekey?,pol?,rv?,dec?,win?}         KIVO_265 · H-1: إعداداتُ المهمة (سياسةُ الإثبات · المراجِع · الاعتذار · نافذةُ التنفيذ win) في العمود 23
+     POST /api/tasks/settings  {k,id|grp,ekey?,pol?,rv?,dec?,win?,why?}       KIVO_265 · H-1: إعداداتُ المهمة (سياسةُ الإثبات · المراجِع · الاعتذار · نافذةُ التنفيذ win) في العمود 23
      POST /api/tasks/reopen    {k,id,ekey?,why?}                           KIVO_265 · H-1: إعادةُ فتح منجزة (وقرارُ المراجعة «أُعيدت» إن كان لها تسليم)
      GET  /api/tasks/group?id=<r17>                                        ملخّصُ المهمة الجماعية الفرديُّ والجماعي (task.view)
      GET  /api/tasks/linkage[?ym=]                                         الصفوفُ «غير المرتبطة» (اسم · مجهول · رقمُ هويةٍ مكرّر) والمرتبطةُ بالهوية وقتَ القراءة */
@@ -412,6 +412,8 @@ async function tkEditPrepare(env, A, b, d, K, S, rev) {
   if (!S2[b.k].length) delete S2[b.k];
   S2[edit.k] = (Array.isArray(S2[edit.k]) ? S2[edit.k] : []).concat(rows);
   var body = { set: {}, base: {} }; body.set[K] = JSON.stringify(S2); body.base[K] = rev;
+  /* V7 · د5-ح (القفل): الإنفاذُ وحده يقرّر — إسنادُ المعتذَر عنها بالتعديل يعيدها «بانتظار الاستلام» (task.reopen) فيطلب سبباً؛ سببُ نافذة 280 (askReason) يصل هنا */
+  if (tkWhyOf(b)) { body.why = {}; body.why[K] = tkWhyOf(b); }
   var rawActor = Object.assign({}, A); delete rawActor.__tkSrv; delete rawActor.__tkSelf;
   var permission = await applySave(env, body, rawActor, {}, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN });
   if (!permission.ok) {
@@ -454,6 +456,7 @@ async function tkEditSettingsCommand(env, request, A, b) {
       plan.S2 = recPlan.S2; plan.aud = plan.aud.concat(recPlan.aud); plan.result.recurrence = recPlan.result;
       if (!plan.result.n) plan.result.n = recPlan.result.n;
     }
+    if (tkWhyOf(b)) plan.why = tkWhyOf(b);   /* V7 · د5-ح: سببُ نافذة 280 للحفظ النهائي (tkSave · R.why) كإعادة الفتح */
     return plan;
   }, null, command);
   if (R.err) return R.err;

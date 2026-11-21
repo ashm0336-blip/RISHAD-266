@@ -23,7 +23,7 @@ async function loadWorker() {
   try { return await import(pathToFileURL(f).href); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
-export async function startLab({ port = 0, mode = 'enforce' } = {}) {   /* V7 P3: mode 'legacy' for the six-action editor (default unchanged) */
+export async function startLab({ port = 0, mode = 'enforce' } = {}) {   /* V7 · د5-ح (القفل): الوضعُ enforce وحده يعمل لغير مدير المنصة — قيمةٌ أخرى = unmigrated */
   const W = await loadWorker();
   const env = makeTestEnv({ KIVO_AUTHZ_MODE: mode });
   await W.initDb(env);
