@@ -34,7 +34,7 @@
     "lab:sys:261": "cd cfbench && node k261sys.mjs ../pk261/_worker.js ../pk261 && node k261tamper.mjs ../pk261/_worker.js ../pk261",
     "build:265": "node tools/build_chain.mjs 265 --current",
     "check:265": "node tools/build_chain.mjs 265 --check-current",
-    "test:removal": "python3 tools/removal_test.py all",
+    "test:removal": "python3 tools/removal_test.py all --jobs 2",
     "test:real": "KIVO_WORKER=$PWD/workers/_worker.js KIVO_DIST=$PWD/pk265 KIVO_SRC=$PWD/src node --no-warnings --test --test-concurrency=1 tests/browser/v7_real_scenarios.test.mjs tests/browser/v7_fix_save_chain_latency.test.mjs tests/browser/v7_fix_cancel_placed.test.mjs tests/browser/v7_fix_save_rebase.test.mjs tests/browser/v7_fix_live_no_remount.test.mjs tests/browser/v7_fix_super_reason_map.test.mjs",
     "test:unit:265": "KIVO_WORKER=$PWD/workers/_worker.js KIVO_DIST=$PWD/pk265 KIVO_SRC=$PWD/src node --no-warnings --test tests/unit/*.test.mjs tests/isolation/*.test.mjs src/systems/*/tests/*.test.mjs",
     "test:coverage:265": "node tools/engine_coverage.mjs tools/engine_coverage.json pk265 --json reports/k265/engine_coverage.json",

@@ -33,6 +33,8 @@ jobs:
         with: { python-version: '3.12' }
       - name: deps (pinned)
         run: npm ci --ignore-scripts && pip install jsonschema==4.26.0
+      - name: Chromium for the browser tests among the system unit tests (src/systems/*/tests — e.g. the boundary tests *_boundary.test.mjs · V7 · د5-ح)
+        run: npx playwright install --with-deps chromium
       - name: current release number (from src/core/270-bs-ver.js)
         id: ver
         run: echo "n=$(bash tools/release_n.sh)" >> "$GITHUB_OUTPUT"
@@ -49,11 +51,33 @@ jobs:
       - name: secrets scan (official tree + built package)
         run: python3 tools/sec/secrets_scan.py pk${{ steps.ver.outputs.n }}
       - name: unit tests on the built candidate
+        env: { KIVO_PLAYWRIGHT: '${{ github.workspace }}/node_modules/' }   # tests/browser/lab_browser.mjs: Playwright من المستودع (npm ci) لا من التثبيت العام
         run: KIVO_WORKER=$PWD/workers/_worker.js KIVO_DIST=$PWD/pk${{ steps.ver.outputs.n }} KIVO_SRC=$PWD/src node --no-warnings --test tests/unit/*.test.mjs src/systems/*/tests/*.test.mjs
       - uses: actions/upload-artifact@v4
         with: { name: 'pk${{ steps.ver.outputs.n }}-dist', path: 'pk${{ steps.ver.outputs.n }}', retention-days: 30 }
       - uses: actions/upload-artifact@v4
         with: { name: 'pk${{ steps.ver.outputs.n }}-manifest', path: 'pk${{ steps.ver.outputs.n }}.MANIFEST.sha256' }
+  # V7 · د5-ح (rmall): اختبارُ الحذف الكامل مع المتصفح — كلُّ نظامٍ من العشرة وحده (ومعه من يتطلّبه) · none (العشرةُ معاً) · plan+daily ·
+  # only:plan · only:dreport · only:daily — في نسخٍ مؤقتة خارج المستودع: ① الحذف والتوليد ② لا اسمَ غائب ③ البناء والفحص ④ الخادم والصلاحيات
+  # ⑤ المتصفح واختباراتُ الحدود (tools/removal_test.py · npm run test:removal). Chromium كما في full-gate.
+  removal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22.22.0' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: deps (pinned) + Chromium
+        run: npm ci --ignore-scripts && npx playwright install --with-deps chromium && pip install jsonschema==4.26.0
+      - name: removal test — all cases, with browser (2 cases in parallel)
+        shell: bash   # bash -eo pipefail: رمزُ خروج الاختبار يعبر tee
+        env: { KIVO_PLAYWRIGHT: '${{ github.workspace }}/node_modules/' }
+        run: npm run -s test:removal 2>&1 | tee removal.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: removal-test, path: removal.txt, if-no-files-found: ignore }
   full-gate:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.gate == 'full'
     runs-on: ubuntu-24.04

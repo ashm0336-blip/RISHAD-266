@@ -14,8 +14,12 @@ import { startLab, LAB } from '../browser/local_server.mjs';
 import { chromium, openAs } from '../browser/lab_browser.mjs';
 import { SYSTEMS, SRC } from '../unit/harness.mjs';
 
-const ALL = ['award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'];
-const SIDE = ALL.filter((k) => k !== 'tasks' && k !== 'custody');   /* المهام بلا رابطٍ في القائمة الجانبية: تبويبٌ تحت «المتابعة اليومية» ولوحةٌ في المؤشرات وبطاقةٌ في «ملفي» */
+/* V7 · د5-ح (rmall): الأنظمةُ العشرة من الشجرة الكاملة (KIVO_FULL_SRC) — لا قائمةَ ثابتة تنسى نظاماً */
+const FULL = process.env.KIVO_FULL_SRC || SRC;
+const ALL = fs.readdirSync(path.join(FULL, 'systems')).filter((k) => fs.existsSync(path.join(FULL, 'systems', k, 'system.json'))).sort();
+/* المهام بلا رابطٍ في القائمة الجانبية: تبويبٌ تحت «المتابعة اليومية» ولوحةٌ في المؤشرات وبطاقةٌ في «ملفي» · العهدُ تبويبٌ في الموظفين ·
+   الجدولُ الشهري والتشغيلُ الميداني تحت حاويتهما «الخطة التشغيلية» (planning) · التقريرُ اليومي يُفحص أدناه (رابطُه بغياب المتابعة وحدها) */
+const SIDE = ALL.filter((k) => !['tasks', 'custody', 'staff', 'plan', 'dreport'].includes(k));
 const PAGES = JSON.parse(fs.readFileSync(path.join(SRC, 'manifests', 'pages.json'), 'utf8'));
 const adminTabs = ((PAGES.pages.find((p) => p.key === 'admin') || {}).subs || []).filter((s) => !s.noTab).map((s) => s.key);
 
@@ -26,13 +30,21 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
     const m = await openAs(b, lab, LAB.mgrA, LAB.pw);
     const HAS_DAILY = PAGES.pages.some((p) => p.key === 'daily');   /* د5-هـ: المتابعةُ اليومية نظامٌ — بغيابها لا صفحتُها، والتقريرُ اليومي صفحةٌ عليا */
     for (const h of ['#/profile', '#/employees'].concat(HAS_DAILY ? ['#/daily'] : PAGES.pages.some((p) => p.key === 'dreport') ? ['#/dreport'] : [], ['#/kpis', '#/admin'], adminTabs.map((t) => '#/admin/' + t))) {
-      await m.go(h, 2800); const st = await m.page.evaluate(() => ({ hash: location.hash, text: (document.querySelector('main') || document.body).innerText.length }));
+      /* V7 · د5-ح (rmall): تحت حِمل البوابة (حالتان بالتوازي) تُنتظر الصفحةُ مرسومةً فعلاً (نصٌّ في main بلا هيكل تحميل) لا مهلةً ثابتة */
+      await m.page.evaluate((x) => { location.hash = x; }, h);
+      await m.page.waitForFunction(() => { const x = document.querySelector('main') || document.body; return x.innerText.length > 40 && !x.querySelector('[data-bs-skeleton], .bs-skel-page'); }, null, { timeout: 60000 }).catch(() => {});
+      const st = await m.page.evaluate(() => ({ hash: location.hash, text: (document.querySelector('main') || document.body).innerText.length }));
       assert.ok(st.text > 40, h + ': الصفحة رُسمت (' + JSON.stringify(st) + ')');
     }
     const side = await m.page.evaluate(() => [...document.querySelectorAll('aside.bsb a[data-key]')].map((a) => a.getAttribute('data-key')));
     /* د4-ب: «المتابعة اليومية» رُسمت فعلاً بشريط تبويباتها (خطأٌ في حساب قيم الصفحة لا يظهر خطأَ صفحة، فيُفحص المرسوم نفسُه) */
     const exactIn = (t) => m.page.evaluate((t) => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === t), t);
-    if (HAS_DAILY) { await m.go('#/daily', 2800); assert.ok((await exactIn('التقرير اليومي')) || (await exactIn('الجولات اليومية')), 'المتابعة اليومية: شريطُ التبويبات مرسوم'); }
+    if (HAS_DAILY) {
+      await m.go('#/daily', 2800);
+      /* V7 · د5-ح (rmall): بغياب التقرير والمهام معاً (only:daily) تبويبٌ واحد «الجولات» بلا شريط — يُفحص المرسومُ نفسُه: تقويمُ الجولات بأيامه المسجّلة */
+      if (SYSTEMS.includes('dreport') || SYSTEMS.includes('tasks')) assert.ok((await exactIn('التقرير اليومي')) || (await exactIn('الجولات اليومية')), 'المتابعة اليومية: شريطُ التبويبات مرسوم');
+      else await m.page.waitForFunction(() => [...(document.querySelector('main') || document.body).querySelectorAll('span,b')].some((x) => x.textContent.trim() === 'يوماً مسجّلاً'), null, { timeout: 60000 });
+    }
     else assert.equal(side.includes('daily'), false, 'بغياب المتابعة لا رابطَ لها في القائمة');
     /* V7 · د5-ح (بند 8): التقريرُ اليومي تبويبٌ تحت المتابعة بحضورها (القائمةُ كما هي، بلا رابطٍ له)، وبغيابها له رابطُه الظاهر في القائمة يفتح صفحتَه */
     const HAS_DR = PAGES.pages.some((p) => p.key === 'dreport');
@@ -74,6 +86,10 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
       assert.equal(del.after, del.before - 1, 'نقص الموظفون واحداً'); assert.equal(del.base.includes('custody'), false, 'مرجعُ طلب الانتقال بلا base.custody: ' + del.base);
     }
     for (const k of SIDE) assert.equal(side.includes(k), SYSTEMS.includes(k), 'رابطُ «' + k + '» في القالب بحضور نظامه فقط — ' + JSON.stringify(side));
+    /* V7 · د5-ح (rmall): «الخطة التشغيلية» صفحةُ قاعدة (مؤشراتُ الجاهزية) — تبقى في القائمة وتُرسم بغياب الجدول الشهري والتشغيل الميداني معاً */
+    assert.ok(side.includes('planning'), 'رابطُ «الخطة التشغيلية» (صفحةُ قاعدة) في القائمة — ' + JSON.stringify(side));
+    await m.page.evaluate(() => { location.hash = '#/planning'; });
+    await m.page.waitForFunction(() => (document.querySelector('main') || document.body).innerText.length > 40, null, { timeout: 60000 });   /* يرمي بانقضاء المهلة: الصفحةُ لم تُرسم */
     for (const k of ALL.filter((x) => !SYSTEMS.includes(x))) { await m.go('#/' + k, 2500); const comp = await m.page.evaluate(() => (document.querySelector('main') || document.body).innerText.length); assert.ok(comp >= 0, '#/' + k + ' لا يُسقط الصفحة'); }
     assert.deepEqual(m.errs, [], 'مدير الإدارة: لا أخطاء صفحة');
     await m.ctx.close();
