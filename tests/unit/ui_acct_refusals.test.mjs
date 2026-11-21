@@ -118,3 +118,22 @@ test('حسابُ الإدارة الملغى: لا upsertDeptAccount/removeDeptA
   assert.ok(/function setDeptManager\(/.test(auth) && /function removeDeptManager\(/.test(auth) && /deptManager/.test(adm), 'مسارُ مدير الإدارة العادي باقٍ');
   assert.ok(/oldAccDo/.test(adm) && /purgeDeptAccounts/.test(auth), 'وتنظيفُ الحسابات القديمة الظاهر في الصفحة باقٍ');
 });
+
+/* V7 · د5-هـ (أمن ١ — كشفه tests/browser/v7_p2_accounts): الكلمةُ المؤقتة تُعرض بعد إقرار الخادم وحده — رفضٌ أو تأخّرٌ ⇒ ok:false بسببٍ، ولا كلمةَ تُسلَّم.
+   تشغيلُ resetPwById الحقيقي (من 334) في سياقٍ معزول بحساباتٍ اصطناعية TEST_ONLY */
+test('أمن ١ · resetPwById: الكلمةُ المؤقتة بعد إقرار الخادم — رفضٌ أو تأخّر ⇒ لا كلمة', async () => {
+  const T = rdS('permissions/334-perm-tree-tpl.js');
+  const i = T.indexOf('resetPwById: function'), j = T.indexOf('/* تجميد أو إعادة تفعيل أي حساب', i); assert.ok(i > 0 && j > i);
+  const body = T.slice(i, j).trim().replace(/,\s*$/, '');
+  const run = async (ackResult) => {
+    const writes = [], users = [{ id: 'TEST_ONLY_u1', role: 'staff', ph: 'old' }];
+    const ctx = { window: { crypto: { getRandomValues: (a) => { a[0] = 123456; a[1] = 42; return a; } } }, Math, String, Object, Promise, Uint32Array,
+      isSuper: () => true, rawUsers: () => users, I: { acctFixedWhy: () => '' }, hashPw: (p) => Promise.resolve('h:' + p), writeUsers: (l) => writes.push(l),
+      KIVO: { BassamAck: { ack: () => Promise.resolve(ackResult) } } };
+    const api = vm.runInNewContext('({ ' + body + ' })', ctx);
+    return { r: await api.resetPwById('TEST_ONLY_u1'), writes };
+  };
+  const ok = await run(true); assert.equal(ok.r.ok, true); assert.match(ok.r.pw, /^Tmp\d{8}$/); assert.equal(ok.writes.length, 1);
+  const den = await run({ denied: true }); assert.equal(den.r.ok, false); assert.equal(den.r.pw, undefined, 'no password on refusal'); assert.match(den.r.err, /رفض الخادم/);
+  const late = await run(false); assert.equal(late.r.ok, false); assert.equal(late.r.pw, undefined, 'no password while unsaved'); assert.match(late.r.err, /لم تُحفظ/);
+});

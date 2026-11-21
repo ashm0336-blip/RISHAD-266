@@ -160,7 +160,13 @@
       var tmp = 'Tmp' + digits;
       return hashPw(tmp).then(function(ph){
         writeUsers((rawUsers()||[]).map(function(x){ return x.id === uid ? Object.assign({}, x, { ph: ph, mc: 1, dis: 0 }) : x; }));
-        return { ok:true, pw: tmp };
+        /* V7 · د5-هـ (أمن ١): الكلمةُ المؤقتة تُعرض بعد إقرار الخادم (BassamAck) لا بعد الكتابة المحلية — كانت تُعرض وإن رُفض الحفظ أو تأخّر
+           فيُسلَّم صاحبُ الحساب كلمةً لا تعمل */
+        var A = KIVO.BassamAck; if (!A || typeof A.ack !== 'function') return { ok:true, pw: tmp };
+        return Promise.resolve(A.ack()).catch(function(){ return false; }).then(function(r){
+          if (r === true) return { ok:true, pw: tmp };
+          return { ok:false, err: r && r.denied ? 'رفض الخادم حفظ الكلمة المؤقتة — لم تتغيّر كلمة المرور' : 'لم تُحفظ الكلمة المؤقتة بعد — لم تتغيّر كلمة المرور، أعد المحاولة' };
+        });
       });
     },
     /* تجميد أو إعادة تفعيل أي حساب بمعرّفه — لمدير النظام (شاشة مدير النظام ← نظرة عامة) */
