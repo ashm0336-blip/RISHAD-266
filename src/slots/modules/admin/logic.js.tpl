@@ -3265,18 +3265,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         const z = String(h).split("/");
         return PG[z[0]] ? route(PG[z[0]], z[1]) : "";
       };
-    out.push({
-      id: "lenses",
-      label: "العدسات",
-      kind: "plugins",
-      page: null,
-      nav: null,
-      leaves: byKind("lens").map((id) => {
-        const ln = id.replace(/^lens\./, ""),
-          hs = (lensOf(ln).hosts || []).slice();
-        return leaf(id, lbl(id), "plugin", hs.map(hostRoute).filter(Boolean).join(" · "), { lens: ln, hosts: hs, ind: (lensOf(ln).indicators || []).slice() });
-      }),
+    /* V7 · د5-ح: حاويةُ العدسات ما وُجدت عدسة — قطعتُها (src/systems/_shared/lenses) تغيب بغياب مضيفَيها فلا حاويةَ فارغة */
+    const lensLeaves = byKind("lens").map((id) => {
+      const ln = id.replace(/^lens\./, ""),
+        hs = (lensOf(ln).hosts || []).slice();
+      return leaf(id, lbl(id), "plugin", hs.map(hostRoute).filter(Boolean).join(" · "), { lens: ln, hosts: hs, ind: (lensOf(ln).indicators || []).slice() });
     });
+    lensLeaves.length && out.push({ id: "lenses", label: "العدسات", kind: "plugins", page: null, nav: null, leaves: lensLeaves });
     out.push({ id: "platform", label: "المنصة", kind: "platform", page: null, nav: null, leaves: byKind("platform").map((id) => leaf(id, lbl(id), "platform", "")) });
     out.push({
       id: "refs",

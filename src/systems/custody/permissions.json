@@ -9,7 +9,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 12,
+    "seq": 130,
     "value": {
      "key": "cust.view",
      "owner": "emps/custody",
@@ -55,7 +55,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 13,
+    "seq": 140,
     "value": {
      "key": "ref.custody_type.create",
      "owner": "emps/custody",
@@ -101,7 +101,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 14,
+    "seq": 150,
     "value": {
      "key": "ref.custody_type.edit",
      "owner": "emps/custody",
@@ -147,7 +147,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 15,
+    "seq": 160,
     "value": {
      "key": "cust.move.issue",
      "owner": "emps/custody",
@@ -194,7 +194,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 16,
+    "seq": 170,
     "value": {
      "key": "cust.move.return",
      "owner": "emps/custody",
@@ -240,7 +240,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 17,
+    "seq": 180,
     "value": {
      "key": "cust.move.damage",
      "owner": "emps/custody",
@@ -286,7 +286,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 18,
+    "seq": 190,
     "value": {
      "key": "cust.move.lost",
      "owner": "emps/custody",
@@ -332,7 +332,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 19,
+    "seq": 200,
     "value": {
      "key": "ref.custody_type.delete",
      "owner": "emps/custody",
@@ -377,8 +377,8 @@
     "path": [
      "registry"
     ],
-    "after": 75,
-    "seq": 30,
+    "after": 29,
+    "seq": 40,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",
@@ -421,7 +421,7 @@
      "owners"
     ],
     "after": 1,
-    "seq": 6,
+    "seq": 10,
     "value": {
      "id": "emps/custody",
      "kind": "page",
@@ -530,7 +530,7 @@
      "featureFlags"
     ],
     "after": 0,
-    "seq": 6,
+    "seq": 70,
     "value": "ff.cust.export"
    }
   ],
@@ -540,7 +540,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 12,
+    "seq": 130,
     "value": {
      "key": "cust.view",
      "owner": "emps/custody",
@@ -565,7 +565,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 13,
+    "seq": 140,
     "value": {
      "key": "ref.custody_type.create",
      "owner": "emps/custody",
@@ -590,7 +590,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 14,
+    "seq": 150,
     "value": {
      "key": "ref.custody_type.edit",
      "owner": "emps/custody",
@@ -615,7 +615,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 15,
+    "seq": 160,
     "value": {
      "key": "cust.move.issue",
      "owner": "emps/custody",
@@ -640,7 +640,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 16,
+    "seq": 170,
     "value": {
      "key": "cust.move.return",
      "owner": "emps/custody",
@@ -665,7 +665,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 17,
+    "seq": 180,
     "value": {
      "key": "cust.move.damage",
      "owner": "emps/custody",
@@ -690,7 +690,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 18,
+    "seq": 190,
     "value": {
      "key": "cust.move.lost",
      "owner": "emps/custody",
@@ -715,7 +715,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 19,
+    "seq": 200,
     "value": {
      "key": "ref.custody_type.delete",
      "owner": "emps/custody",
@@ -739,8 +739,8 @@
     "path": [
      "bindings"
     ],
-    "after": 64,
-    "seq": 20,
+    "after": 29,
+    "seq": 30,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",

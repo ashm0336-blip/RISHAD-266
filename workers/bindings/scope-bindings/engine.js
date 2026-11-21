@@ -104,7 +104,7 @@ var KIVO_SCOPE = (function (S, R) {
   };
   /* KIVO_238 · IH‑01: طابقُ الجولة ذو sid يحمل هويةَ الخطة نفسَها (f:<sid>) — وإلا الهويةُ القديمة rounds:<name|num|#i> */
   function roundsSite(fl, idx) { fl = obj(fl); if (fl.sid != null && fl.sid !== '') return 'f:' + fl.sid; return 'rounds:' + (fl.name || fl.num || idx); }
-  var LENS_COLS = ['zones', 'gates', 'marks', 'paths'], EMP_COLS = { zones: 1, gates: 1, marks: 1 };
+  var LENS_COLS = ['zones', 'gates', 'marks', 'paths'], EMP_COLS = { zones: 1, gates: 1, marks: 1 };   /* V7 · د5-ح: من قطعة العدسات — فارغان بغياب مضيفَيها */
   function it(o) { o.kind = o.kind || 'changed'; o.what = o.what || 'record'; return o; }
   function kindOf(x, y) { return x === undefined ? 'added' : (y === undefined ? 'removed' : 'changed'); }
   function empOf(e) { return isObj(e) && Array.isArray(e.emp) ? e.emp.map(String) : []; }

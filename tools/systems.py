@@ -136,8 +136,11 @@ def manifest(S, systems=None):
        يغيب بغيابه. لكل مدخلٍ path (المسارُ الكامل للقالب) و out (نسبةً إلى جذر المستودع)."""
     p = os.path.join(S, 'slots', 'slots.json')
     out = [dict(t, path=os.path.join(S, 'slots', t['tpl'])) for t in (json.load(open(p, encoding='utf-8'))['templates'] if os.path.isfile(p) else [])]
-    root = os.path.dirname(S)
-    for d in (load(S) if systems is None else systems):
+    root = os.path.dirname(S); systems = load(S) if systems is None else systems
+    # V7 · د5-ح: وقوالبُ القطعة المشتركة (shared.json ← templates) ما حضر أحدُ مالكيها — إضافاتُ العدسات تغيب بغياب مضيفَيها
+    present = {d.get('key') for d in systems}
+    pieces = [p for _, p in sorted(shared(S).items()) if set(p.get('owners') or []) & present]
+    for d in list(systems) + pieces:
         for t in d.get('templates') or []:
             out.append({'tpl': os.path.relpath(os.path.join(d['_dir'], t['tpl']), os.path.join(S, 'slots')).replace(os.sep, '/'), 'out': os.path.relpath(os.path.join(d['_dir'], t['out']), root).replace(os.sep, '/'), 'path': os.path.join(d['_dir'], t['tpl'])})
     return out
@@ -237,7 +240,23 @@ def prune(S):
     order = {os.path.basename(e['file']) for e in parts_order(S, PD)}
     for f in sorted(glob.glob(os.path.join(PD, '*.js'))):
         if os.path.basename(f) not in base and os.path.basename(f) not in order: gone.append(f)
-    for f in gone: os.remove(f); print('  − ' + os.path.relpath(f, root) + ' (مولَّدٌ لنظامٍ غائب — حُذف)')
+    gone += prune_plugins(S, dry=True)
+    for f in gone:
+        os.remove(f); print('  − ' + os.path.relpath(f, root) + ' (مولَّدٌ لنظامٍ غائب — حُذف)')
+        dd = os.path.dirname(f)
+        while dd != S and os.path.isdir(dd) and not os.listdir(dd): os.rmdir(dd); dd = os.path.dirname(dd)
+    return gone
+
+def prune_plugins(S, dry=False):
+    """V7 · د5-ح: ملفُّ إضافةٍ مولَّدٌ (src/plugins/<نوع>/<key>/manifest.json) لا قالبَ حاضراً له — قطعتُه غابت بغياب مالكيها.
+       يُحذف قبل إعادة التوليد (أدواتُ السجلّ والشجرة تقرأ الإضافات) — dry: يعيد القائمة فقط."""
+    root = os.path.dirname(S); outs = {os.path.normpath(os.path.join(root, t['out'])) for t in manifest(S)}
+    gone = [f for f in sorted(glob.glob(os.path.join(S, 'plugins', '*', '*', 'manifest.json'))) if os.path.normpath(f) not in outs]
+    if not dry:
+        for f in gone:
+            os.remove(f); print('  − ' + os.path.relpath(f, root) + ' (إضافةٌ مولَّدةٌ لقطعةٍ غائبة — حُذفت)')
+            dd = os.path.dirname(f)
+            while dd != S and os.path.isdir(dd) and not os.listdir(dd): os.rmdir(dd); dd = os.path.dirname(dd)
     return gone
 
 def regen(S):
@@ -263,6 +282,7 @@ def regen(S):
 def main(argv):
     S = os.path.abspath(argv[argv.index('--src') + 1]) if '--src' in argv else os.path.join(ROOT, 'src')
     if '--regen' in argv:
+        prune_plugins(S)
         rc = regen(S)
         if rc == 0: prune(S)
         return rc

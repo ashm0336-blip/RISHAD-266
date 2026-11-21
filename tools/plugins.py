@@ -83,8 +83,13 @@ def check(S):
     except Exception as e:
         V = None; E('المخطّط: ' + str(e)[:120])
     P = load(S)
-    if not P: E('لا عدسةَ معلنة في ' + lay(S)['plugins'] + '/lenses'); return errs, info
     R = registry(S); byKey = {e['key']: e for e in R['registry']}; owners = {o['id']: o for o in R['owners']}
+    if not P:
+        # V7 · د5-ح: العدساتُ قطعةٌ مشتركة (src/systems/_shared/lenses) تغيب بغياب مضيفَيها — فلا إضافةَ ولا مالكَ عدسةٍ في السجلّ
+        lo = sorted(o['id'] for o in R['owners'] if o.get('kind') == 'lens')
+        if lo: E('لا عدسةَ معلنة في ' + lay(S)['plugins'] + '/lenses ومالكو العدسات في السجلّ: ' + ', '.join(lo))
+        else: info.append('لا عدسة: قطعةُ العدسات غائبةٌ بغياب مضيفَيها (plan · daily) — والسجلُّ بلا مالكِ عدسة')
+        return errs, info
     seen = {'order': {}, 'name': {}, 'seq': {}, 'field': {}}
     keysAll = {m.get('key') for m in P}
     colNames = {m['resources']['column']['name'] for m in P if m.get('resources', {}).get('column')}

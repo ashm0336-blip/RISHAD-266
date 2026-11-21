@@ -379,8 +379,8 @@
     "path": [
      "registry"
     ],
-    "after": 71,
-    "seq": 1,
+    "after": 26,
+    "seq": 10,
     "value": {
      "key": "staff.shift.assign",
      "owner": "staff",
@@ -434,7 +434,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 10,
     "value": {
      "key": "staff.employment_type.assign",
@@ -487,7 +487,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 20,
     "value": {
      "key": "staff.work_type.assign",
@@ -540,7 +540,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 30,
     "value": {
      "key": "staff.callsign.assign",
@@ -593,7 +593,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 40,
     "value": {
      "key": "staff.tasking.assign",
@@ -646,7 +646,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 50,
     "value": {
      "key": "staff.bulk.delete",
@@ -699,7 +699,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 60,
     "value": {
      "key": "ref.work_type.view",
@@ -747,7 +747,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 70,
     "value": {
      "key": "ref.work_type.create",
@@ -795,7 +795,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 80,
     "value": {
      "key": "ref.work_type.edit",
@@ -843,7 +843,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 90,
     "value": {
      "key": "ref.work_type.delete",
@@ -891,7 +891,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 100,
     "value": {
      "key": "ref.callsign.view",
@@ -939,7 +939,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 110,
     "value": {
      "key": "ref.callsign.create",
@@ -987,7 +987,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 120,
     "value": {
      "key": "ref.callsign.edit",
@@ -1035,7 +1035,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 130,
     "value": {
      "key": "ref.callsign.delete",
@@ -1083,8 +1083,8 @@
     "path": [
      "registry"
     ],
-    "after": 75,
-    "seq": 40,
+    "after": 29,
+    "seq": 50,
     "value": {
      "key": "staff.permission_limit.set",
      "owner": "staff",
@@ -1322,7 +1322,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 20,
+    "after": 12,
     "seq": 10,
     "value": "ff.module.staff.enabled"
    },
@@ -1678,8 +1678,8 @@
     "path": [
      "bindings"
     ],
-    "after": 60,
-    "seq": 1,
+    "after": 26,
+    "seq": 10,
     "value": {
      "key": "staff.shift.assign",
      "owner": "staff",
@@ -1714,7 +1714,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 10,
     "value": {
      "key": "staff.employment_type.assign",
@@ -1750,7 +1750,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 20,
     "value": {
      "key": "staff.work_type.assign",
@@ -1786,7 +1786,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 30,
     "value": {
      "key": "staff.callsign.assign",
@@ -1822,7 +1822,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 40,
     "value": {
      "key": "staff.tasking.assign",
@@ -1858,7 +1858,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 50,
     "value": {
      "key": "staff.bulk.delete",
@@ -1894,7 +1894,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 60,
     "value": {
      "key": "ref.work_type.view",
@@ -1927,7 +1927,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 70,
     "value": {
      "key": "ref.work_type.create",
@@ -1960,7 +1960,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 80,
     "value": {
      "key": "ref.work_type.edit",
@@ -1993,7 +1993,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 90,
     "value": {
      "key": "ref.work_type.delete",
@@ -2026,7 +2026,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 100,
     "value": {
      "key": "ref.callsign.view",
@@ -2059,7 +2059,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 110,
     "value": {
      "key": "ref.callsign.create",
@@ -2092,7 +2092,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 120,
     "value": {
      "key": "ref.callsign.edit",
@@ -2125,7 +2125,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 130,
     "value": {
      "key": "ref.callsign.delete",
@@ -2158,8 +2158,8 @@
     "path": [
      "bindings"
     ],
-    "after": 64,
-    "seq": 30,
+    "after": 29,
+    "seq": 40,
     "value": {
      "key": "staff.permission_limit.set",
      "owner": "staff",
@@ -2450,7 +2450,10 @@
    {
     "path": [
      "terminology",
-     4,
+     {
+      "by": "term",
+      "eq": "reopen"
+     },
      "means"
     ],
     "sub": "…",
@@ -2776,7 +2779,7 @@
     "path": [
      "bindings"
     ],
-    "after": 26,
+    "after": 2,
     "seq": 10,
     "value": {
      "key": "staff.bulk.delete",
@@ -2819,7 +2822,7 @@
     "path": [
      "decisions"
     ],
-    "after": 10,
+    "after": 8,
     "seq": 20,
     "value": {
      "id": "D-18",

@@ -190,12 +190,13 @@ import plugins as _PL
 LENS_PART = '006a-lens-plugins.js'
 def lenses_of(S, M):
     P = _PL.load(S)
-    if not P: return M['lenses']                      # التخطيطُ الانتقالي: pages.json.lenses
+    if not P: return M.get('lenses', [])             # التخطيطُ الانتقالي: pages.json.lenses · V7 · د5-ح: أو لا عدسة (قطعتُها غائبة)
     if 'lenses' in M: raise SystemExit('pages.json.lenses and plugins/lenses both present — one source only (ADR-018)')
     # V7 P4: hosts · indicators reach the client (the lens rows of the map and the host fallback of 331 read them — no literal host list)
     return [{'key': m['key'], 'name': m['name'], 'hosts': m['hosts'], 'indicators': (m.get('resources') or {}).get('indicators', [])} for m in P]
 def gen_lens_part(S):
-    if not _PL.load(S): return {}
+    if not _PL.load(S) and 'lenses' in json.load(open(os.path.join(S, layout(S)['pagesManifest']), encoding='utf-8')): return {}   # التخطيطُ الانتقالي
+    # V7 · د5-ح: بلا عدسة (قطعتُها غائبة بغياب مضيفَيها) يُولَّد الجدولُ فارغاً — طبقةُ الإنفاذ تقرؤه كما هو
     js = ('/* ═══ KIVO_259 · AUD-030 · SOT-089 — العدساتُ إضافات: مولَّدٌ من plugins/lenses/<key>/manifest.json بأداة tools/generate.py (tools/plugins.py)؛ لا يُحرَّر يدوياً.\n'
           '   تستهلكه طبقةُ الإنفاذ وحدها: ربطُ مفتاح العدسة بعدستها (enfIx) · أعمدةُ العناصر وأقنعةُ حقول العدسات في الإسقاط والدمج (061) · عدساتُ /api/authz me · إعادةُ تصنيف\n'
           '   حقول العدسات الجديدة. الوحداتُ المرجعية v24.9 (الحرّاس 006 · البناء 008) كما هي — وجداولُها = هذا الملف للعدسات المضمَّنة فيها (tools/plugins.py ④). ═══ */\n'

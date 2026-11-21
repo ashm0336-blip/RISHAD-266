@@ -1,0 +1,72 @@
+{
+ "schema": 1,
+ "kind": "shared",
+ "key": "lenses",
+ "name": "عدساتُ الخريطة المشتركة بين «التشغيل الميداني» و«المتابعة اليومية»",
+ "owners": [
+  "daily",
+  "plan"
+ ],
+ "files": [],
+ "templates": [
+  {
+   "tpl": "plugins/zones/manifest.json.tpl",
+   "out": "../../../plugins/lenses/zones/manifest.json"
+  },
+  {
+   "tpl": "plugins/paths/manifest.json.tpl",
+   "out": "../../../plugins/lenses/paths/manifest.json"
+  },
+  {
+   "tpl": "plugins/gates/manifest.json.tpl",
+   "out": "../../../plugins/lenses/gates/manifest.json"
+  },
+  {
+   "tpl": "plugins/marks/manifest.json.tpl",
+   "out": "../../../plugins/lenses/marks/manifest.json"
+  },
+  {
+   "tpl": "plugins/dist/manifest.json.tpl",
+   "out": "../../../plugins/lenses/dist/manifest.json"
+  },
+  {
+   "tpl": "plugins/dens/manifest.json.tpl",
+   "out": "../../../plugins/lenses/dens/manifest.json"
+  }
+ ],
+ "slots": {
+  "build.lenses": {
+   "order": 0,
+   "text": "'zones', 'paths', 'gates', 'marks', 'dist', 'dens'"
+  },
+  "guard.lens.geom": {
+   "order": 0,
+   "text": " zones: { d: 1, hs: 1, cx: 1, cy: 1, rawA: 1, kind: 1, unp: 1 }, paths: { pts: 1 }, gates: { x: 1, y: 1, unp: 1 }, marks: { x: 1, y: 1, unp: 1 } "
+  },
+  "guard.lens.cols": {
+   "order": 0,
+   "text": " zones: 1, gates: 1, marks: 1, paths: 1 "
+  },
+  "guard.lens.editKey": {
+   "order": 0,
+   "text": " zones: 'lens.zones.data.edit', gates: 'lens.gates.edit', marks: 'lens.marks.edit', paths: 'lens.paths.edit' "
+  },
+  "scope.lens.cols": {
+   "order": 0,
+   "text": "'zones', 'gates', 'marks', 'paths'"
+  },
+  "scope.lens.empCols": {
+   "order": 0,
+   "text": " zones: 1, gates: 1, marks: 1 "
+  },
+  "enf.reasonOff.lens": {
+   "order": 0,
+   "text": " 'lens.zones.status.change': 1, 'lens.gates.status.change': 1, 'lens.marks.status.change': 1, 'lens.paths.status.change': 1 "
+  },
+  "client.reasonOff.lens": {
+   "order": 0,
+   "text": " \"lens.zones.status.change\": 1, \"lens.gates.status.change\": 1, \"lens.marks.status.change\": 1, \"lens.paths.status.change\": 1 "
+  }
+ },
+ "note": "V7 · د5-ح: العدساتُ الست (zones · paths · gates · marks · dist · dens) خرجت من القاعدة — لا مضيفَ لها إلا صفحتا التشغيل الميداني والمتابعة اليومية. تبقى ما حضر أحدُهما وتغيب بغيابهما: إضافاتُها (plugins/lenses/<key>/manifest.json) · صفوفُها في وثائق الصلاحيات (permissions.json — tools/perm_parts.py) · جداولُها في محرّكات الروابط (قطعُ slots). يحذفها اختبارُ الحذف حين يغيب المالكان (tools/removal_test.py plan+daily)."
+}

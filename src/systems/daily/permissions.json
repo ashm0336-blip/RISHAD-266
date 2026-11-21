@@ -373,7 +373,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 280,
     "value": {
      "key": "round.sync.plan",
@@ -425,7 +425,7 @@
     "path": [
      "registry"
     ],
-    "after": 73,
+    "after": 28,
     "seq": 290,
     "value": {
      "key": "round.day.disable",
@@ -909,7 +909,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 20,
+    "after": 12,
     "seq": 30,
     "value": "ff.module.daily.enabled"
    },
@@ -989,7 +989,7 @@
      },
      "references"
     ],
-    "after": 2,
+    "after": 1,
     "seq": 1,
     "value": "daily/rounds",
     "needs": [
@@ -1070,7 +1070,7 @@
      "references"
     ],
     "after": 0,
-    "seq": 1,
+    "seq": 10,
     "value": "daily/rounds"
    },
    {
@@ -1098,7 +1098,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1111,7 +1114,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:view"
+    "value": "daily/rounds:view",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1125,7 +1131,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1138,7 +1147,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:add"
+    "value": "daily/rounds:add",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1152,7 +1164,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1165,7 +1180,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1179,7 +1197,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1192,7 +1213,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1206,7 +1230,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1219,7 +1246,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1232,7 +1262,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1245,7 +1278,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "daily/field"
+    "value": "daily/field",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1259,7 +1295,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1272,7 +1311,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:del"
+    "value": "daily/rounds:del",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1286,7 +1328,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1299,7 +1344,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:view"
+    "value": "daily/rounds:view",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1313,7 +1361,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1326,7 +1377,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:add"
+    "value": "daily/rounds:add",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1340,7 +1394,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1353,7 +1410,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1367,7 +1427,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1380,7 +1443,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1394,7 +1460,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1407,7 +1476,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1421,7 +1493,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1434,7 +1509,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:del"
+    "value": "daily/rounds:del",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1448,7 +1526,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1461,7 +1542,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:view"
+    "value": "daily/rounds:view",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1475,7 +1559,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1488,7 +1575,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:add"
+    "value": "daily/rounds:add",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1502,7 +1592,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1515,7 +1608,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1529,7 +1625,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1542,7 +1641,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1555,7 +1657,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1568,7 +1673,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "daily/field"
+    "value": "daily/field",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1582,7 +1690,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1595,7 +1706,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:del"
+    "value": "daily/rounds:del",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1609,7 +1723,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1622,7 +1739,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:view"
+    "value": "daily/rounds:view",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1636,7 +1756,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1649,7 +1772,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:add"
+    "value": "daily/rounds:add",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1663,7 +1789,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1676,7 +1805,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1690,7 +1822,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1703,7 +1838,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1717,7 +1855,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1730,7 +1871,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:del"
+    "value": "daily/rounds:del",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1744,7 +1888,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1757,7 +1904,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:view"
+    "value": "daily/rounds:view",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1771,7 +1921,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1784,7 +1937,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1797,7 +1953,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1811,7 +1970,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1824,7 +1986,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:view"
+    "value": "daily/rounds:view",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1838,7 +2003,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1851,7 +2019,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/kpiZones:view"
+    "value": "daily/kpiZones:view",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1864,7 +2035,10 @@
     ],
     "after": 1,
     "seq": 1,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1878,7 +2052,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1891,7 +2068,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/kpiOcc:view"
+    "value": "daily/kpiOcc:view",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1904,7 +2084,10 @@
     ],
     "after": 1,
     "seq": 1,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1931,7 +2114,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1944,7 +2130,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1957,7 +2146,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1970,7 +2162,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "daily/field"
+    "value": "daily/field",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1984,7 +2179,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -1997,7 +2195,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2010,7 +2211,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2024,7 +2228,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2037,7 +2244,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/rounds:edit"
+    "value": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2050,7 +2260,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2063,7 +2276,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2076,7 +2292,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2089,7 +2308,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "daily/rounds"
+    "value": "daily/rounds",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2125,7 +2347,7 @@
     "path": [
      "featureFlags"
     ],
-    "after": 17,
+    "after": 9,
     "seq": 10,
     "value": "ff.round.export"
    },
@@ -2139,7 +2361,10 @@
      "guard",
      "detail"
     ],
-    "set": "إضافة كيان في zones[] — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)"
+    "set": "إضافة كيان في zones[] — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2153,6 +2378,7 @@
     ],
     "set": "إضافة كيان في zones[] — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2166,7 +2392,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقول الخصائص في zones[] (غير الهندسية) — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)"
+    "set": "حقول الخصائص في zones[] (غير الهندسية) — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2180,6 +2409,7 @@
     ],
     "set": "حقول الخصائص في zones[] (غير الهندسية) — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2193,7 +2423,10 @@
      "guard",
      "detail"
     ],
-    "set": "الحقول الهندسية في zones[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)"
+    "set": "الحقول الهندسية في zones[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2207,6 +2440,7 @@
     ],
     "set": "الحقول الهندسية في zones[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2220,7 +2454,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقول الحالة في zones[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)"
+    "set": "حقول الحالة في zones[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2234,6 +2471,7 @@
     ],
     "set": "حقول الحالة في zones[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2247,7 +2485,10 @@
      "guard",
      "detail"
     ],
-    "set": "إزالة كيان من zones[] مع تبعاته — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)"
+    "set": "إزالة كيان من zones[] مع تبعاته — تصنيف المجموعة → lens.zones في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2261,6 +2502,7 @@
     ],
     "set": "إزالة كيان من zones[] مع تبعاته — تصنيف المجموعة → lens.zones في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2274,7 +2516,10 @@
      "guard",
      "detail"
     ],
-    "set": "إضافة كيان في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)"
+    "set": "إضافة كيان في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2288,6 +2533,7 @@
     ],
     "set": "إضافة كيان في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2301,7 +2547,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقول الخصائص في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)"
+    "set": "حقول الخصائص في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2315,6 +2564,7 @@
     ],
     "set": "حقول الخصائص في paths[] — تصنيف المجموعة → lens.paths في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2328,7 +2578,10 @@
      "guard",
      "detail"
     ],
-    "set": "الحقول الهندسية في paths[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)"
+    "set": "الحقول الهندسية في paths[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2342,6 +2595,7 @@
     ],
     "set": "الحقول الهندسية في paths[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.paths في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2355,7 +2609,10 @@
      "guard",
      "detail"
     ],
-    "set": "إزالة كيان من paths[] مع تبعاته — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)"
+    "set": "إزالة كيان من paths[] مع تبعاته — تصنيف المجموعة → lens.paths في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2369,6 +2626,7 @@
     ],
     "set": "إزالة كيان من paths[] مع تبعاته — تصنيف المجموعة → lens.paths في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2382,7 +2640,10 @@
      "guard",
      "detail"
     ],
-    "set": "إضافة كيان في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)"
+    "set": "إضافة كيان في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2396,6 +2657,7 @@
     ],
     "set": "إضافة كيان في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2409,7 +2671,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقول الخصائص في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)"
+    "set": "حقول الخصائص في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2423,6 +2688,7 @@
     ],
     "set": "حقول الخصائص في gates[] — تصنيف المجموعة → lens.gates في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2436,7 +2702,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقول الحالة في gates[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)"
+    "set": "حقول الحالة في gates[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2450,6 +2719,7 @@
     ],
     "set": "حقول الحالة في gates[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.gates في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2463,7 +2733,10 @@
      "guard",
      "detail"
     ],
-    "set": "إزالة كيان من gates[] مع تبعاته — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)"
+    "set": "إزالة كيان من gates[] مع تبعاته — تصنيف المجموعة → lens.gates في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2477,6 +2750,7 @@
     ],
     "set": "إزالة كيان من gates[] مع تبعاته — تصنيف المجموعة → lens.gates في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2490,7 +2764,10 @@
      "guard",
      "detail"
     ],
-    "set": "إضافة كيان في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)"
+    "set": "إضافة كيان في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2504,6 +2781,7 @@
     ],
     "set": "إضافة كيان في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2517,7 +2795,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقول الخصائص في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)"
+    "set": "حقول الخصائص في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2531,6 +2812,7 @@
     ],
     "set": "حقول الخصائص في marks[] — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2544,7 +2826,10 @@
      "guard",
      "detail"
     ],
-    "set": "الحقول الهندسية في marks[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)"
+    "set": "الحقول الهندسية في marks[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2558,6 +2843,7 @@
     ],
     "set": "الحقول الهندسية في marks[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2571,7 +2857,10 @@
      "guard",
      "detail"
     ],
-    "set": "إزالة كيان من marks[] مع تبعاته — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)"
+    "set": "إزالة كيان من marks[] مع تبعاته — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2585,6 +2874,7 @@
     ],
     "set": "إزالة كيان من marks[] مع تبعاته — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2598,7 +2888,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان daily/rounds:edit عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation (كان daily/rounds:edit)"
+    "set": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان daily/rounds:edit عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2612,6 +2905,7 @@
     ],
     "set": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان daily/rounds:edit وdreport عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation (كان daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "dreport"
     ]
    },
@@ -2627,6 +2921,7 @@
     ],
     "set": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان daily/rounds:edit عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2642,6 +2937,7 @@
     ],
     "set": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان daily/rounds:edit وdreport عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "dreport",
      "plan"
     ]
@@ -2656,7 +2952,10 @@
      "guard",
      "detail"
     ],
-    "set": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا اعتماد توزيع في المصدر؛ الاعتماد على الوردية/اليوم ملك الجولة (round.approve)"
+    "set": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا اعتماد توزيع في المصدر؛ الاعتماد على الوردية/اليوم ملك الجولة (round.approve)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2667,7 +2966,10 @@
      },
      "reservedReason"
     ],
-    "set": "لا اعتماد توزيع في المصدر؛ الاعتماد على الوردية/اليوم ملك الجولة (round.approve)"
+    "set": "لا اعتماد توزيع في المصدر؛ الاعتماد على الوردية/اليوم ملك الجولة (round.approve)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2679,7 +2981,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقول الحالة في marks[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)"
+    "set": "حقول الحالة في marks[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.marks في classifyMutation (كان daily/rounds:edit)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2693,6 +2998,7 @@
     ],
     "set": "حقول الحالة في marks[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.marks في classifyMutation (كان plan:edit/daily/rounds:edit)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2706,7 +3012,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقلا needN/needS على كيانات zones/gates/marks — كانت تحت daily/rounds:edit"
+    "set": "حقلا needN/needS على كيانات zones/gates/marks — كانت تحت daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -2720,6 +3029,7 @@
     ],
     "set": "حقلا needN/needS على كيانات zones/gates/marks — كانت تحت plan:edit و daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -2733,7 +3043,10 @@
      "guard",
      "detail"
     ],
-    "set": "حقلا count وpc.<prayer> على zones في يوم الجولة (_updRound · _densClearAt) — كانت تحت daily/rounds:edit"
+    "set": "حقلا count وpc.<prayer> على zones في يوم الجولة (_updRound · _densClearAt) — كانت تحت daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -3063,7 +3376,7 @@
     "path": [
      "bindings"
     ],
-    "after": 62,
+    "after": 28,
     "seq": 280,
     "value": {
      "key": "round.sync.plan",
@@ -4216,6 +4529,7 @@
     "seq": 1,
     "value": "daily/kpiZones:view",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -4236,6 +4550,7 @@
     "seq": 1,
     "value": "daily/kpiZones:view",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -4250,7 +4565,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4263,7 +4581,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4276,7 +4597,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4289,7 +4613,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4302,7 +4629,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4315,7 +4645,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4328,7 +4661,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4341,7 +4677,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4354,7 +4693,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4367,7 +4709,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4380,7 +4725,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4393,7 +4741,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4406,7 +4757,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4419,7 +4773,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4432,7 +4789,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4445,7 +4805,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4458,7 +4821,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4471,7 +4837,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4484,7 +4853,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4497,7 +4869,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4510,7 +4885,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4523,7 +4901,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4536,7 +4917,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4549,7 +4933,10 @@
     ],
     "after": 0,
     "seq": 10,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4562,7 +4949,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4575,7 +4965,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4588,7 +4981,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4601,7 +4997,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4614,7 +5013,10 @@
     ],
     "after": 0,
     "seq": 20,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4627,7 +5029,10 @@
     ],
     "after": 0,
     "seq": 1,
-    "value": "bassam_rounds_v1"
+    "value": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4783,7 +5188,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4794,7 +5202,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4805,7 +5216,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4816,7 +5230,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4827,7 +5244,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4838,7 +5258,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4849,7 +5272,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4860,7 +5286,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4871,7 +5300,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4882,7 +5314,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4893,7 +5328,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4904,7 +5342,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4915,7 +5356,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4926,7 +5370,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4937,7 +5384,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4948,7 +5398,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4959,7 +5412,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4970,7 +5426,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4981,7 +5440,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -4992,7 +5454,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5003,7 +5468,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5014,7 +5482,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5025,7 +5496,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5036,7 +5510,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5047,7 +5524,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5058,7 +5538,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5069,7 +5552,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5080,7 +5566,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5091,7 +5580,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5102,12 +5594,18 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
      "terminology",
-     4,
+     {
+      "by": "term",
+      "eq": "reopen"
+     },
      "means"
     ],
     "sub": "…",
@@ -5160,8 +5658,8 @@
     "path": [
      "bindings"
     ],
-    "after": 25,
-    "seq": 30,
+    "after": 1,
+    "seq": 270,
     "value": {
      "key": "round.sync.plan",
      "res": "bassam_rounds_v1",
@@ -5179,7 +5677,7 @@
     "path": [
      "bindings"
     ],
-    "after": 26,
+    "after": 2,
     "seq": 70,
     "value": {
      "key": "round.edit",
@@ -5199,7 +5697,7 @@
      "decisions"
     ],
     "after": 3,
-    "seq": 1,
+    "seq": 10,
     "value": {
      "id": "D-04",
      "topic": "round.day.disable",
@@ -5211,7 +5709,7 @@
     "path": [
      "decisions"
     ],
-    "after": 10,
+    "after": 8,
     "seq": 30,
     "value": {
      "id": "D-19",
@@ -5229,7 +5727,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5242,6 +5743,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5254,7 +5756,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)"
+    "set": "daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5267,6 +5772,7 @@
     ],
     "set": "plan:add / daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5279,7 +5785,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5292,6 +5801,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5304,7 +5814,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5317,6 +5830,7 @@
     ],
     "set": "plan:edit / daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5329,7 +5843,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5342,6 +5859,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5354,7 +5872,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5367,6 +5888,7 @@
     ],
     "set": "plan:edit / daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5379,7 +5901,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5392,6 +5917,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5404,7 +5930,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit · أو daily/field:view عبر fieldObsOnly (الموقعُ مسكَّنٌ للفاعل) — v24.3 (F-14): الرصدُ يستهلك هذا المفتاح بنطاق Assigned (مؤجَّل لمرحلة Data Scope)"
+    "set": "daily/rounds:edit · أو daily/field:view عبر fieldObsOnly (الموقعُ مسكَّنٌ للفاعل) — v24.3 (F-14): الرصدُ يستهلك هذا المفتاح بنطاق Assigned (مؤجَّل لمرحلة Data Scope)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5415,7 +5944,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5428,6 +5960,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5440,7 +5973,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:del"
+    "set": "daily/rounds:del",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5453,6 +5989,7 @@
     ],
     "set": "plan:del / daily/rounds:del",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5465,7 +6002,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5478,6 +6018,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5490,7 +6031,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)"
+    "set": "daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5503,6 +6047,7 @@
     ],
     "set": "plan:add / daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5515,7 +6060,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5528,6 +6076,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5540,7 +6089,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5553,6 +6105,7 @@
     ],
     "set": "plan:edit / daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5565,7 +6118,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5578,6 +6134,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5590,7 +6147,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5603,6 +6163,7 @@
     ],
     "set": "plan:edit / daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5615,7 +6176,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5628,6 +6192,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5640,7 +6205,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5653,6 +6221,7 @@
     ],
     "set": "plan:edit / daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5665,7 +6234,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5678,6 +6250,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5690,7 +6263,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:del"
+    "set": "daily/rounds:del",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5703,6 +6279,7 @@
     ],
     "set": "plan:del / daily/rounds:del",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5715,7 +6292,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5728,6 +6308,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5740,7 +6321,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)"
+    "set": "daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5753,6 +6337,7 @@
     ],
     "set": "plan:add / daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5765,7 +6350,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5778,6 +6366,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5790,7 +6379,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5803,6 +6395,7 @@
     ],
     "set": "plan:edit / daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5815,7 +6408,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5828,6 +6424,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5840,7 +6437,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5853,6 +6453,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5865,7 +6466,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit · أو daily/field:view عبر fieldObsOnly (الموقعُ مسكَّنٌ للفاعل) — v24.3 (F-14): الرصدُ يستهلك هذا المفتاح بنطاق Assigned (مؤجَّل لمرحلة Data Scope)"
+    "set": "daily/rounds:edit · أو daily/field:view عبر fieldObsOnly (الموقعُ مسكَّنٌ للفاعل) — v24.3 (F-14): الرصدُ يستهلك هذا المفتاح بنطاق Assigned (مؤجَّل لمرحلة Data Scope)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5876,7 +6480,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5889,6 +6496,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5901,7 +6509,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:del"
+    "set": "daily/rounds:del",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5914,6 +6525,7 @@
     ],
     "set": "plan:del / daily/rounds:del",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5926,7 +6538,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5939,6 +6554,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5951,7 +6567,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)"
+    "set": "daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5964,6 +6583,7 @@
     ],
     "set": "plan:add / daily/rounds:add (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -5976,7 +6596,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -5989,6 +6612,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6001,7 +6625,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6014,6 +6641,7 @@
     ],
     "set": "plan:edit / daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6026,7 +6654,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6039,6 +6670,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6051,7 +6683,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6064,6 +6699,7 @@
     ],
     "set": "plan:edit / daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6076,7 +6712,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6089,6 +6728,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6101,7 +6741,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit · أو daily/field:view عبر fieldObsOnly (الموقعُ مسكَّنٌ للفاعل) — v24.3 (F-14): الرصدُ يستهلك هذا المفتاح بنطاق Assigned (مؤجَّل لمرحلة Data Scope)"
+    "set": "daily/rounds:edit · أو daily/field:view عبر fieldObsOnly (الموقعُ مسكَّنٌ للفاعل) — v24.3 (F-14): الرصدُ يستهلك هذا المفتاح بنطاق Assigned (مؤجَّل لمرحلة Data Scope)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6112,7 +6755,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6125,6 +6771,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6137,7 +6784,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:del"
+    "set": "daily/rounds:del",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6150,6 +6800,7 @@
     ],
     "set": "plan:del / daily/rounds:del",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6162,7 +6813,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X) (+ mvLog)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X) (+ mvLog)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6175,6 +6829,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X) (+ mvLog)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6187,7 +6842,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6200,6 +6858,7 @@
     ],
     "set": "daily/rounds:edit (وplan:edit في الخطة)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6212,7 +6871,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)"
+    "set": "bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6225,6 +6887,7 @@
     ],
     "set": "bassam_plan_v1 (floors[i].X · months[k].d[i].X · الجذر) و bassam_rounds_v1 ([\"y-m-d\"].d[i].X)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6237,7 +6900,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6250,6 +6916,7 @@
     ],
     "set": "plan:edit / daily/rounds:edit",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6262,7 +6929,10 @@
      },
      "res"
     ],
-    "set": "bassam_rounds_v1"
+    "set": "bassam_rounds_v1",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6275,6 +6945,7 @@
     ],
     "set": "bassam_rounds_v1 (و bassam_plan_v1 عند التصفير)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6287,7 +6958,10 @@
      },
      "asis"
     ],
-    "set": "daily/rounds:edit"
+    "set": "daily/rounds:edit",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6314,7 +6988,10 @@
      },
      "asis_today"
     ],
-    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6327,6 +7004,7 @@
     ],
     "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6339,7 +7017,10 @@
      },
      "asis_today"
     ],
-    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6352,6 +7033,7 @@
     ],
     "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6364,7 +7046,10 @@
      },
      "asis_today"
     ],
-    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6377,6 +7062,7 @@
     ],
     "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6389,7 +7075,10 @@
      },
      "asis_today"
     ],
-    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6402,6 +7091,7 @@
     ],
     "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6414,7 +7104,10 @@
      },
      "asis_today"
     ],
-    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6427,6 +7120,7 @@
     ],
     "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    },
@@ -6439,7 +7133,10 @@
      },
      "asis_today"
     ],
-    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)"
+    "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+    "needs": [
+     "_shared/lenses"
+    ]
    },
    {
     "path": [
@@ -6452,6 +7149,7 @@
     ],
     "set": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (plan:edit · daily/rounds:edit …) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
     "needs": [
+     "_shared/lenses",
      "plan"
     ]
    }

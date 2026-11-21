@@ -80,7 +80,7 @@ L.push('export type KivoNavKey = ' + M.navOrder.map(q).join(' | ') + ';');
 /* KIVO_259 · AUD-030 (ADR-018): العدساتُ من الإضافات (src/plugins/lenses/<key>/manifest.json) — pages.json لم يعد يحملها */
 const PLUG = path.join(ROOT, 'src/plugins/lenses');
 const LENSES = M.lenses || (fs.existsSync(PLUG) ? fs.readdirSync(PLUG).filter(k => fs.existsSync(path.join(PLUG, k, 'manifest.json'))).map(k => JSON.parse(fs.readFileSync(path.join(PLUG, k, 'manifest.json'), 'utf8'))).sort((a, b) => a.order - b.order || (a.key < b.key ? -1 : 1)) : []);
-L.push('export type KivoLensKey = ' + LENSES.map(x => q(x.key)).join(' | ') + ';');
+L.push('export type KivoLensKey = ' + (LENSES.map(x => q(x.key)).join(' | ') || 'never') + ';');   /* V7 · د5-ح: بلا عدسة (قطعتُها غائبة) */
 L.push('/** عدسةٌ كإضافة — src/plugins/lenses/<key>/manifest.json (المخطّط src/schemas/lens-plugin.schema.json) */');
 L.push('export interface KivoLensPlugin { schema: 1; kind: "lens"; key: KivoLensKey; name: string; label: string; order: number; owner: string; hosts: string[];',
        '  keys: { own: string[]; managedRefs: string[]; reserved: string[] };',

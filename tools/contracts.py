@@ -114,7 +114,11 @@ def perm_index(S):
         B = json.load(open(bp, encoding='utf-8'))
         for r in B.get('registry') or []: rows[r['key']] = 'base'; ids.setdefault(r.get('owner'), 'base')
         for o in B.get('owners') or []: ids[o['id']] = 'base'
-    for p in sorted(glob.glob(os.path.join(S, 'systems', '*', 'permissions.json'))):
+    # V7 · د5-ح: صلاحياتُ القطعة المشتركة (src/systems/_shared/<key>/permissions.json — system «_shared/<key>») ملكُ مالكيها معاً:
+    #            ما يمسّها من مالكٍ لها ليس رابطاً، ومن غيره رابطٌ بمالكيها (يعلنه perm:<مالك>)
+    for sj in sorted(glob.glob(os.path.join(S, 'systems', '_shared', '*', 'shared.json'))):
+        SHARED_OWNERS['_shared/' + os.path.basename(os.path.dirname(sj))] = set(json.load(open(sj, encoding='utf-8')).get('owners') or [])
+    for p in sorted(glob.glob(os.path.join(S, 'systems', '*', 'permissions.json'))) + sorted(glob.glob(os.path.join(S, 'systems', '_shared', '*', 'permissions.json'))):
         d = json.load(open(p, encoding='utf-8')); k = d.get('system')
         for ops in (d.get('docs') or {}).values():
             for e in ops:
@@ -125,6 +129,7 @@ def perm_index(S):
     ids.pop(None, None)
     return rows, ids
 
+SHARED_OWNERS = {}
 def id_owner(v, ids, programs):
     v = str(v).split(':')[0]
     if v in ids: return ids[v]
@@ -153,6 +158,8 @@ def perm_links(k, d, rows, ids, programs):
                     if o: hit.add(o)
             for f in ('value', 'set'):
                 if f in e: walk(e[f], last[-1] if last else '')
+            for x in [h for h in hit if h in SHARED_OWNERS]:   # د5-ح: القطعةُ المشتركة ⇒ مالكوها (ومالكُها نفسُه ليس رابطاً)
+                hit.discard(x); hit |= (set() if k in SHARED_OWNERS[x] else SHARED_OWNERS[x])
             for o in sorted(hit - {k, 'base'}): out.append((o, doc))
     return out
 

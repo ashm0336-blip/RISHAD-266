@@ -336,28 +336,8 @@
    "out": "src/modules/planning/helmet.css"
   },
   {
-   "tpl": "plugins/lenses/zones/manifest.json.tpl",
-   "out": "src/plugins/lenses/zones/manifest.json"
-  },
-  {
-   "tpl": "plugins/lenses/paths/manifest.json.tpl",
-   "out": "src/plugins/lenses/paths/manifest.json"
-  },
-  {
-   "tpl": "plugins/lenses/gates/manifest.json.tpl",
-   "out": "src/plugins/lenses/gates/manifest.json"
-  },
-  {
-   "tpl": "plugins/lenses/marks/manifest.json.tpl",
-   "out": "src/plugins/lenses/marks/manifest.json"
-  },
-  {
-   "tpl": "plugins/lenses/dist/manifest.json.tpl",
-   "out": "src/plugins/lenses/dist/manifest.json"
-  },
-  {
-   "tpl": "plugins/lenses/dens/manifest.json.tpl",
-   "out": "src/plugins/lenses/dens/manifest.json"
+   "tpl": "workers/bindings/build-bindings/engine.js.tpl",
+   "out": "workers/bindings/build-bindings/engine.js"
   },
   {
    "tpl": "workers/bindings/identity-migration/engine.js.tpl",

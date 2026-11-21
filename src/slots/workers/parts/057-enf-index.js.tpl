@@ -41,7 +41,7 @@ function enfFieldOnly(A, d) {
    (المصلى · البوابة · المعلم · المسار — حقولُ الحالة: fst · flow · closed · off …) لم يعد يطلب سبباً إلزامياً. الصلاحيةُ والنطاقُ يُحكمان كما كانا،
    والفعلُ يُسجَّل في سجل التدقيق كما كان؛ السببُ وحده لم يعد شرطاً للحفظ. المرجعُ v24.9 (audit.reason في السجلّ) لا يُمسّ — الاستثناءُ هنا في فهرس الإنفاذ.
    باقيةٌ بسببها: رفعُ الخريطة واستبدالُها (map.replace) · إعادةُ فتح الخطة المعتمدة (plan.reopen) · وسائرُ مفاتيح السبب */
-var ENF_REASON_OFF = { 'lens.zones.status.change': 1, 'lens.gates.status.change': 1, 'lens.marks.status.change': 1, 'lens.paths.status.change': 1 };
+var ENF_REASON_OFF = {@@SYS:enf.reasonOff.lens@@};   /* V7 · د5-ح: مفاتيحُ حالة العدسات من قطعتها (src/systems/_shared/lenses) — فارغٌ بغياب مضيفَيها */
 /* KIVO_259 · AUD-030 (ADR-018): عدسةُ مفتاحٍ من الإضافات (KIVO_LENS_PLUGINS) — للعدسات الجديدة خارج المرجع v24.9 (KIVO_BUILD.LENSES)؛
    المضمَّنةُ يعيدها المرجعُ نفسُه أولاً فلا يتغيّر شيءٌ لها. بوابةُ عدسة الإضافة = بوابةُ المرجع (KIVO_BUILD.lensGate عامّةٌ لأيّ عدسة). */
 function enfPlugLensOf(key) { var m = /^lens\.([a-z]+)\./.exec(String(key || '')); return m && KIVO_LENS_PLUGINS.keys.indexOf(m[1]) !== -1 ? m[1] : null; }

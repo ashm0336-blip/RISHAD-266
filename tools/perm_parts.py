@@ -48,6 +48,16 @@ def declared(S):
             d = _load(p)
             if d.get('system') != k: raise SystemExit('✘ %s: system = %r ≠ اسم المجلد' % (p, d.get('system')))
             out[k] = d.get('docs', {})
+    # V7 · د5-ح (العدسات): القطعةُ المشتركة src/systems/_shared/<key>/permissions.json تُطبَّق ما حضر أحدُ مالكيها (shared.json ← owners)،
+    #            باسم «_shared/<key>» — صفوفُها إدراجٌ كإدراج الأنظمة، وعملياتُ الأنظمة التي تمسّ صفوفَها تحمل needs: ["_shared/<key>"].
+    present = set(out) | set(systems(S)); sd = os.path.join(S, 'systems', '_shared')
+    for k in sorted(os.listdir(sd)) if os.path.isdir(sd) else []:
+        p = os.path.join(sd, k, 'permissions.json'); sj = os.path.join(sd, k, 'shared.json')
+        if not (os.path.isfile(p) and os.path.isfile(sj)): continue
+        if not set(_load(sj).get('owners') or []) & present: continue
+        d = _load(p)
+        if d.get('system') != '_shared/' + k: raise SystemExit('✘ %s: system = %r ≠ _shared/%s' % (p, d.get('system'), k))
+        out['_shared/' + k] = d.get('docs', {})
     return out
 
 def _walk(node, path, where):
@@ -111,11 +121,19 @@ def apply(base, ops_by_sys, name='?'):
     """القاعدة + عمليات الأنظمة الحاضرة → الوثيقة المجموعة. المسارات تُحلّ على القاعدة قبل أي إدراج.
        V7 · د5-د2: عمليةٌ تحمل needs تستهدف مدخلاً يملكه نظامٌ آخر — تُهمل بغيابه، وتُطبَّق في جولةٍ ثانية على ما جمعته الأولى."""
     doc = copy.deepcopy(base); present = set(ops_by_sys)
-    late = {k: [op for op in v if op.get('needs') and all(n in present for n in op['needs'])] for k, v in ops_by_sys.items()}
-    first = {k: [op for op in v if not op.get('needs')] for k, v in ops_by_sys.items()}
-    if any(late.values()): first = copy.deepcopy(first)   # الجولةُ الثانية تُدرج داخل قيمٍ أدرجتها الأولى: نسخةٌ كي لا تتبدّل عملياتُ المصدر
-    _round(doc, first, present, name)
-    if any(late.values()): _round(doc, late, present, name)
+    ops_by_sys = copy.deepcopy(ops_by_sys)   # الجولاتُ التالية تُدرج داخل قيمٍ أدرجتها السابقة: نسخةٌ كي لا تتبدّل عملياتُ المصدر
+    # V7 · د5-ح: الجولة = عددُ ما تنتظره العملية: needs نظامٍ آخر (+1) · needs قطعةٍ مشتركة «_shared/…» (+1) — فما يمسّ صفاً أدرجته القطعةُ
+    #            يُطبَّق بعد إدراجه، وما ينتظر نظاماً أدرج داخل صفّ القطعة يُطبَّق بعدهما. بلا قطعة: جولتان كما كانتا.
+    def lvl(op):
+        n = op.get('needs') or []
+        return (1 if any(not x.startswith('_shared/') for x in n) else 0) + (1 if any(x.startswith('_shared/') for x in n) else 0)
+    top = 0; rounds = {}
+    for k, v in ops_by_sys.items():
+        for op in v:
+            if op.get('needs') and not all(n in present for n in op['needs']): continue
+            L = lvl(op); top = max(top, L); rounds.setdefault(L, {}).setdefault(k, []).append(op)
+    for L in range(top + 1):
+        if L in rounds: _round(doc, rounds[L], present, name)
     return doc
 
 # ── الأعداد: تُحسب من المجموع (بالأنظمة الأربعة = المكتوب في الوثيقة المرجعية) ──────────────────────────────────────

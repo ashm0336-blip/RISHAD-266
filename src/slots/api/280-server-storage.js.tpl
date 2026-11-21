@@ -1157,7 +1157,7 @@
      و«إلغاء» لا يُرسل شيئاً ولا يُظهر رسالة رفض (تعود القيمة المحفوظة). مدير المنصة لا يُسأل أبداً، والوضعُ القديم (بلا إنفاذ) لا يطلب سبباً.
      التنبّؤ: (أ) قواعدُ يسجّلها مالكُ المورد (reasonRule) · (ب) من السجلّ: كلُّ مفاتيح الكتابة التي يحملها المستخدم على هذا المورد مفاتيحُ سبب —
      فلا سبيل لكتابته بلا سبب. ما لا يُتنبّأ به يبقى على المسار الاحتياطي (رفضُ الخادم ⇒ النافذة نفسُها، بلا رسالة رفض). */
-  var RSN_OFF9 = { "lens.zones.status.change": 1, "lens.gates.status.change": 1, "lens.marks.status.change": 1, "lens.paths.status.change": 1 };   /* نظيرُ 057 ENF_REASON_OFF */
+  var RSN_OFF9 = {@@SYS:client.reasonOff.lens@@};   /* نظيرُ 057 ENF_REASON_OFF · V7 · د5-ح: من قطعة العدسات */
   var rsnRules9 = Object.create(null), rsnRes9 = null;
   function exempt9() { try { var a9 = KIVO.BassamAuth, u9 = a9 && a9.user && a9.user(); return !!(u9 && u9.role === "super"); } catch (e) { return false; } }
   function resName9(k) { return String(k || "").replace(/^bsdept:[^:]+:/, "").replace(/:.*$/, ""); }

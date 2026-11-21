@@ -59,7 +59,7 @@ var KIVO_GUARDS = (function (B, R) {
   }
   /* ═══ العدسات: أصنافُ الحقول (من الواجهة الفعلية — Operational Plan · Daily Sessions · BassamField) ═══ */
   var FIELD_KEYS = { fst: 1, flow: 1, fAt: 1, fBy: 1, fKind: 1, fLog: 1, closed: 1, off: 1, cAt: 1, cAtMs: 1, cWhy: 1, cBy: 1 };
-  var GEOM = { zones: { d: 1, hs: 1, cx: 1, cy: 1, rawA: 1, kind: 1, unp: 1 }, paths: { pts: 1 }, gates: { x: 1, y: 1, unp: 1 }, marks: { x: 1, y: 1, unp: 1 } };
+  var GEOM = { zones: { d: 1, hs: 1, cx: 1, cy: 1, rawA: 1, kind: 1, unp: 1 }, paths: { pts: 1 }, gates: { x: 1, y: 1, unp: 1 }, marks: { x: 1, y: 1, unp: 1 } };   /* V7 · د5-ح: جداولُ العدسات من قطعتها (src/systems/_shared/lenses) — فارغةٌ بغياب مضيفَيها */
   var DIST_ASSIGN = { emp: 1 }, DIST_NEED = { needN: 1, needS: 1, uniNeed: 1 }, DENS = { count: 1, pc: 1 }, DERIVED_Z = { cap: 1 };
   var LENS_COLS = { zones: 1, gates: 1, marks: 1, paths: 1 };
   var EDIT_KEY = { zones: 'lens.zones.data.edit', gates: 'lens.gates.edit', marks: 'lens.marks.edit', paths: 'lens.paths.edit' };

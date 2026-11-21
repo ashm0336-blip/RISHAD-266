@@ -101,7 +101,7 @@ var KIVO_SCOPE = (function (S, R) {
     paths: function (e) { if (!isObj(e)) return null; var u = uidOf(e); if (u) return u; var v = e.id || e.code || e.name; return v == null || v === '' ? null : 'p:' + v; },
     floors: function (e, i) { if (!isObj(e)) return '#' + i; var v = e.sid || e.id; return v == null || v === '' ? '#' + i : 'f:' + v; }
   };
-@@SYS:scope.site.daily@@  var LENS_COLS = ['zones', 'gates', 'marks', 'paths'], EMP_COLS = { zones: 1, gates: 1, marks: 1 };
+@@SYS:scope.site.daily@@  var LENS_COLS = [@@SYS:scope.lens.cols@@], EMP_COLS = {@@SYS:scope.lens.empCols@@};   /* V7 · د5-ح: من قطعة العدسات — فارغان بغياب مضيفَيها */
   function it(o) { o.kind = o.kind || 'changed'; o.what = o.what || 'record'; return o; }
   function kindOf(x, y) { return x === undefined ? 'added' : (y === undefined ? 'removed' : 'changed'); }
   function empOf(e) { return isObj(e) && Array.isArray(e.emp) ? e.emp.map(String) : []; }
