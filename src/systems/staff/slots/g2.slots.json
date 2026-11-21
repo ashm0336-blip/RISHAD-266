@@ -16,6 +16,10 @@
   "order": 10,
   "text": "\"staffing_v3\", "
  },
+ "nf.lead.staff": {
+  "order": 10,
+  "text": "r.staffing_v3"
+ },
  "nf.shift.staff": {
   "order": 10,
   "file": "slots/nf.shift.staff.frag"

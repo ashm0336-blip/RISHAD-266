@@ -43,6 +43,11 @@ def main(argv):
             if hit: allowed += 1; used.add(hit)
             else: bad.append(f'{p}:{i} ({len(ln):,} بايت)')
     stale = [pat for pat, _ in ALLOW if pat not in used]
+    # V7 · د5-ح (rmall): في نسخة اختبار الحذف (KIVO_FULL_SRC = الشجرةُ الكاملة) قد يقصر ملفٌّ مولَّد بغياب أنظمةٍ يُولَّد منها (345-perm44.js بغياب العشرة)؛
+    # فالاستثناءُ «لا يطابق شيئاً» هناك فقط إن لم يبقَ ملفٌّ يطابق نمطَه — والشجرةُ الكاملة تفحصه كما كان (سطرٌ طويلٌ فعلاً)
+    if os.environ.get('KIVO_FULL_SRC') and os.path.realpath(os.environ['KIVO_FULL_SRC']) != os.path.realpath(src):
+        files = [os.path.relpath(p, src).replace(os.sep, '/') for p in tracked(src)]
+        stale = [pat for pat in stale if not any(fnmatch.fnmatch(f, pat) for f in files)]
     for b in bad: print('  ✘ سطرٌ طويلٌ في مصدرٍ يُحرَّر يدوياً:', b)
     for s in stale: print('  ✘ استثناءٌ لا يطابق شيئاً (يُحذف من القائمة):', s)
     print(f'النتيجة: {allowed} سطراً طويلاً كلُّها في مولَّدٍ/مورَّدٍ معلن ({len(used)} نمطاً) · {len(bad) + len(stale)} مخالفة')
