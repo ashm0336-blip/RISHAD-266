@@ -526,16 +526,7 @@
    "origBytes": null,
    "origSha256": null
   },
-  {
-   "closeTag": "</script>",
-   "id": "services/390-kpi-primitives.js",
-   "kind": "js",
-   "line": 8530,
-   "openTag": "<script>",
-   "origBytes": 19273,
-   "origSha256": "443ae381e50d1696e09e93b7ced7473b6689f6ce1ee652fad220528bcb37b46a"
-  },
-  {
+@@SYS:blocks.shell.multi.390@@  {
    "closeTag": "</script>",
    "id": "services/400-shift-need.js",
    "kind": "js",
@@ -696,16 +687,7 @@
    "origBytes": null,
    "origSha256": null
   },
-  {
-   "closeTag": "</script>",
-   "id": "components/560-canvas-input.js",
-   "kind": "js",
-   "line": 10752,
-   "openTag": "<script>",
-   "origBytes": 42000,
-   "origSha256": "9949817de1a53ad004add085145296360aeebf3fa7a7f018b018a1b819234a3f"
-  },
-  {
+@@SYS:blocks.shell.multi.560@@  {
    "closeTag": "</script>",
    "id": "components/565-page-kit.js",
    "kind": "js",
@@ -797,16 +779,7 @@
    "origBytes": 4953,
    "origSha256": "bb4ff3ddc3a96e0bb4b03df8c8ef4d1f5806cda50e300e37dbcf530301d85480"
   },
-  {
-   "closeTag": "</script>",
-   "id": "components/640-map-tooltip.js",
-   "kind": "js",
-   "line": 15119,
-   "openTag": "<script>",
-   "origBytes": 12523,
-   "origSha256": "308bae1243297760bdeaeab216f7057ee98542a90c0f8b95899065d341b1dab7"
-  },
-  {
+@@SYS:blocks.shell.multi.640@@  {
    "closeTag": "</script>",
    "id": "components/650-dropdown-unify.js",
    "kind": "js",

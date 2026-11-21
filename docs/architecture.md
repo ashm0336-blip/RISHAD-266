@@ -10,7 +10,7 @@
   `enforce` مثبت على Preview؛ راجع Playbook لدليل النشر الحالي). الإعداداتُ: `docs/config.md` · `config/env.schema.json` · `config/wrangler.toml` (بلا أسرار).
 - **البيانات** (`migrations/*.sql` · ADR-011): `kv(k, seq, v)` كتلُ JSON مقسَّمة بمراجعات `revs` · `imgs/imgown/imgref` الصور · `meta` (السياسات · الوضع ·
   المفاتيح) · `sess` الجلسات · `guard` الحرّاس · `sec` سجلُّ الأمن · `aud` سجلُّ الأنشطة (إلحاقٌ فقط) · `authz/authz_snap/authz_snaps` قراراتُ الإنفاذ ونسخُها ·
-  `d1_migrations`. الحدود: 8 MB للحفظة الواحدة · سقفُ الحفظ لكل حساب في الدقيقة (سياسة `wrMin`).
+  `d1_migrations`. الحدود: 16 MB للحفظة الواحدة (كالإنتاج) · سقفُ الحفظ لكل حساب في الدقيقة (سياسة `wrMin`).
 
 ## المستودع (ADR-020 · AUD-029)
 **الرسمي 15 مدخلاً** — `src` · `workers` · `public` · `migrations` · `config` · `tools` · `tests` · `docs` · `.github` · `package.json` · `package-lock.json` ·

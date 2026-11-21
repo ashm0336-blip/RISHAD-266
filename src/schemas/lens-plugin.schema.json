@@ -5,6 +5,7 @@
  "type": "object", "additionalProperties": false,
  "required": ["schema", "kind", "key", "name", "label", "order", "owner", "hosts", "keys", "resources", "guards", "tests"],
  "properties": {
+  "$comment": {"type": "string", "description": "V7 · د5-ح: ترويسةُ «ملف مولَّد» — الملفُّ مولَّدٌ من قالبه (tools/systems.py)"},
   "schema": {"const": 1},
   "kind": {"const": "lens"},
   "key": {"type": "string", "pattern": "^[a-z]{2,12}$"},

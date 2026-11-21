@@ -18,8 +18,8 @@ var COOKIE = 'bs_tok';
 /* مفاتيح جهازٍ لا فريق: لا تُقبل حفظاً ولا تُحقن — لكل متصفح نسخته */
 var DEVICE_KEYS = { 'bassam_session_v1':1, 'bslg_v1':1, 'bassam_theme':1, 'bassam_active_dept_v1':1, 'bassam_fresh_login_v1':1 };
 /* «آخر صفحة مفتوحة» (bassam_page_v1:…) تفضيلُ جهاز كذلك — لا يُخزَّن ولا يُحقن */
-/* R187: و«مجموعات | قائمة» في الجدول الشهري (bassam_st_grp_v1، لكل إدارة) تفضيلُ عرضٍ لهذا الجهاز كذلك */
-function isDeviceKey(k) { return !!DEVICE_KEYS[k] || /(^|:)bassam_page_v1:/.test(String(k)) || /(^|:)bassam_st_grp_v1$/.test(String(k)); }
+/* R187: وتفضيلاتُ العرض لكل إدارة كذلك — V7 · د5-ح: مفاتيحُها في DEVICE_DEPT_KEYS (023) يعلنها كلُّ نظامٍ بقطعته، فالقاعدةُ لا تسمّيها */
+function isDeviceKey(k) { return !!DEVICE_KEYS[k] || /(^|:)bassam_page_v1:/.test(String(k)) || (typeof DEVICE_DEPT_KEYS === 'object' && DEVICE_DEPT_KEYS[String(k).split(':').pop()] === 1); }
 var PW_MIN = 6;
 var WORKER_VER = '2026.10.14-165';
 /* V7 · د1: رقمُ التزام البناء — لا يُكتب في ملفٍّ متتبَّع (الملفُّ لا يعرف التزامَه): tools/pack.py يحقنه في _worker.js داخل الحزمة وحدها

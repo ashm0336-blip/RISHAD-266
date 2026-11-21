@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/bindings/guard-bindings/engine.js.tpl */
 var KIVO_GUARDS = (function (B, R) {
   'use strict';
   /* ═══ R200 · Phase 4.2 — Guard Binding (shadow) على v24.5.1 (المصنِّفُ كما في Phase 3): يُصنِّف كلَّ كتابةٍ (قديم → جديد) إلى مفاتيح v24.5.1 المطلوبة — للقياس فقط ═══

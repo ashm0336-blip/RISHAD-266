@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/bindings/scope-bindings/engine.js.tpl */
 var KIVO_SCOPE = (function (S, R) {
   'use strict';
   /* ═══ R197/R198 · Phase 4 → 4.1 — Data Scope Shadow Mode: محرّكُ النطاق المركزي (ES5 · بلا I/O) ═══

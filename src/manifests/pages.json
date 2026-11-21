@@ -1,4 +1,5 @@
 {
+ "$comment": "ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/manifests/pages.json.tpl",
  "version": 1,
  "generated": "tools/generate.py → manifests/255-page-manifest.js + PG_REG في الخادم",
  "notes": [

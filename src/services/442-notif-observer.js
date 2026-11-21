@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/services/442-notif-observer.js.tpl */
 /* ═══ التنبيهاتُ والتعاميم — المراقب: استنتاجُ الأحداث من فروق المخازن · الفحصُ الدوري · التشغيل ═══
    KIVO_257 · AUD-010: جزءٌ 2/2 من «src/services/440-notifications.js (الـIIFE الثالثة)» السابقة — مقسومةً بالمسؤولية بـtools/split_iife.mjs (tools/split/440-notifications.json)؛
    التبعياتُ بين الأجزاء صريحةٌ هنا وعبر المساحة الداخلية window.__BS_I.notif وحدها. */

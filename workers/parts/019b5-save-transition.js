@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019b5-save-transition.js.tpl */
 /* The caller supplies an internal applySave plan after canonical authorization.
    Client fields cannot mint serverDepartmentWipes or a validated kvPlan. */
 async function cuPlanSaveTransition(env, A, body, kvPlan) {

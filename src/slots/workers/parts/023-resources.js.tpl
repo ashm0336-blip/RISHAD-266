@@ -5,6 +5,8 @@
    rule : سياسةٌ خاصة تسبق الأوراق (users · perms · notif · flag · self · tech)
    via  : منحٌ محدودٌ بالحقول من ورقةٍ أخرى — لا يتحوّل إلى كتابة المورد كاملاً
    ولا يوجد «افتراضي»: ما ليس هنا يُرفض. */
+/* V7 · د5-ح: تفضيلاتُ جهازٍ لكل إدارة (bsdept:<d>:<المفتاح>) يعلنها كلُّ نظامٍ بقطعته — يقرؤها isDeviceKey (002) فلا تُقبل حفظاً ولا تُحقن */
+var DEVICE_DEPT_KEYS = { @@SYS:res.deviceDept@@ };
 var RES_REG = {
   /* ── سجلات المنصة العامة ── */
   'bassam_auth_users_v1':      { scope: 'global', rule: 'users' },
@@ -25,9 +27,7 @@ var RES_REG = {
   'bassam_fresh_login_v1':     { scope: 'device' },
   'bassam_notif_mute_v1':      { scope: 'device' },
   'bassam_page_v1':            { scope: 'device' },
-  /* R187: «مجموعات | قائمة» في الجدول الشهري — تفضيلُ عرضٍ لهذا الجهاز (لكل إدارة) */
-  'bassam_st_grp_v1':          { scope: 'device' },
-  /* ── موظفو الإدارة ── */
+@@SYS:res.reg.device@@  /* ── موظفو الإدارة ── */
   'bassam_employees_v1':       { scope: 'dept', cap: 'emps/data'@@SYS:res.emp.via.staff@@, self: 'email' },
   'bassam_options_v1':         { scope: 'dept', cap: 'emps/data' },
 @@SYS:res.custody@@@@SYS:res.reg.staff@@@@SYS:res.reg.plan@@@@SYS:res.reg.daily@@  'bassam_dayshift_v1':        { scope: 'dept', cap: [@@SYS:res.dayCap.daily|empty="...[]"@@@@SYS:read.reader.dreport@@] },

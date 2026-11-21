@@ -19,7 +19,7 @@
             token too and are marked redacted.
          gender: kept also for readers of the monthly schedule (staff) and the daily report (dreport): both pages count and show the
                  male/female distribution of the shift (modules/staff/logic.js · modules/dreport/logic.js). Removed elsewhere.
-   (2) Daily report bsdept:<d>:bassam_dreport_v1 — roster rows carry a copy of empno (pulled from the register): same rule as (1).
+   (2) Daily report (its per-department report resource) — roster rows carry a copy of empno (pulled from the register): same rule as (1).
    (2b) Custody read (/api/custody · 019a): each row carries the holder's nid/empno snapshot — same rule as (1).
    (3) Permissions registry bassam_perms_v1 — a non-super actor receives: caps/subs/lenses of the units in his scope and their
        ancestor nodes; emps/tplOf/empLens of a unit he manages for himself and for every employee he may administer (permTargetOk ·

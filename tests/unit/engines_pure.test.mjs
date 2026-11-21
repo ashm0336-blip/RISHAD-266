@@ -88,7 +88,7 @@ test('ترويساتُ الأمن: nosniff · SAMEORIGIN · HSTS خارج localh
   const l = W.secHeaders(new URL('http://localhost:8787/api/ping'), false);
   assert.equal(l['Strict-Transport-Security'], undefined, 'لا HSTS على localhost'); assert.equal(l['Content-Security-Policy'], undefined, 'لا CSP لغير HTML');
   assert.equal(W.isLocal(new URL('http://127.0.0.1:9/')), true); assert.equal(W.isLocal(new URL('https://localhost/')), false);
-  assert.equal(W.bodyLimit('/api/save'), 8 * 1024 * 1024); assert.equal(W.bodyLimit('/api/img/x'), 512 * 1024); assert.equal(W.bodyLimit('/api/login'), 64 * 1024);
+  assert.equal(W.bodyLimit('/api/save'), 16 * 1024 * 1024);   /* V7 · د5-ح: كالإنتاج */ assert.equal(W.bodyLimit('/api/img/x'), 512 * 1024); assert.equal(W.bodyLimit('/api/login'), 64 * 1024);
 });
 test('حارسُ مضيف أداة الاختبار (ADR-004): Production مرفوضٌ دائماً · KIVO_TEST_HOST بالضبط · وإلا test.* أو مضيفٌ محلي', () => {
   const U = (h) => new URL('https://' + h + '/api/authz-test');

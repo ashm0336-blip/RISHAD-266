@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019n-business-integration.js.tpl */
 /* Shared cutover/backup integration for the two schema9 business domains.
    This is the only adapter to the existing atomic restore compiler. */
 function bdDefinitions() {

@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/permissions/334-perm-tree-tpl.js.tpl */
 /* ═══ شجرةُ صلاحيات الموظف · القوالب · الواجهتان العامتان BassamPerm وBassamAuth ═══
    KIVO_257 · AUD-010: جزءٌ 5/6 من «src/auth/330-auth-perm.js» السابقة — مقسومةً بالمسؤولية بـtools/split_iife.mjs (tools/split/330-auth-perm.json)؛
    التبعياتُ بين الأجزاء صريحةٌ هنا وعبر المساحة الداخلية window.__BS_I.auth وحدها. */

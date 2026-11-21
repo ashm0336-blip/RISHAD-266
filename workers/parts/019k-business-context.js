@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019k-business-context.js.tpl */
 /* Shared capture of current authority, scope and revision witnesses.
    Domain definitions are server constants; no business document or device storage. */
 async function bdQueryContext(env, actor, d, definition, options) {

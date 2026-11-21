@@ -1,0 +1,33 @@
+{
+ "_note": "V7 · د5-ح (إضافةُ المالك): كودٌ عامٌّ لا يستعمله إلا التشغيلُ الميداني والمتابعةُ اليومية (طبقةُ إدخال الكانفس · تلميحُ الخريطة · بدائياتُ المؤشرات) — يسكن src/systems/_multi/client ويُحمَّل في الغلاف ما حضر أحدُهما: المتابعةُ تحمله (text)، والخطةُ تحمله وحدها (only) — لا يُحمَّل مرتين.",
+ "blocks.shell.multi.560": {
+  "order": 20,
+  "text": "",
+  "only": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/_multi/client/560-canvas-input.js\",\n   \"kind\": \"js\",\n   \"line\": 10752,\n   \"openTag\": \"<script>\",\n   \"origBytes\": 42000,\n   \"origSha256\": \"9949817de1a53ad004add085145296360aeebf3fa7a7f018b018a1b819234a3f\"\n  },\n"
+ },
+ "shell.multi.560": {
+  "order": 20,
+  "text": "",
+  "only": "@@KIVO_BLOCK:systems/_multi/client/560-canvas-input.js@@\n"
+ },
+ "blocks.shell.multi.640": {
+  "order": 20,
+  "text": "",
+  "only": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/_multi/client/640-map-tooltip.js\",\n   \"kind\": \"js\",\n   \"line\": 15119,\n   \"openTag\": \"<script>\",\n   \"origBytes\": 12523,\n   \"origSha256\": \"308bae1243297760bdeaeab216f7057ee98542a90c0f8b95899065d341b1dab7\"\n  },\n"
+ },
+ "shell.multi.640": {
+  "order": 20,
+  "text": "",
+  "only": "@@KIVO_BLOCK:systems/_multi/client/640-map-tooltip.js@@\n"
+ },
+ "blocks.shell.multi.390": {
+  "order": 20,
+  "text": "",
+  "only": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/_multi/client/390-kpi-primitives.js\",\n   \"kind\": \"js\",\n   \"line\": 8530,\n   \"openTag\": \"<script>\",\n   \"origBytes\": 19273,\n   \"origSha256\": \"443ae381e50d1696e09e93b7ced7473b6689f6ce1ee652fad220528bcb37b46a\"\n  },\n"
+ },
+ "shell.multi.390": {
+  "order": 20,
+  "text": "",
+  "only": "@@KIVO_BLOCK:systems/_multi/client/390-kpi-primitives.js@@\n"
+ }
+}

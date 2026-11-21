@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/modules/admin/logic.js.tpl */
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","admin+profile+seized","admin+seized"]) {
   bsOn(t, e) {
     try {
@@ -3643,6 +3644,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       this.bsToast("تعذّر التصدير", "warn");
     }
   }
+  /* V7 · د5-ح: «استيراد البيانات التاريخية» في مركز الإدارة — منطقُها خدمتا هذا النظام (BassamHistImport · DailyStats)، فهي قطعتُه لا معرفةُ القاعدة به */
   /* ═══ R185: «استيراد البيانات التاريخية» — لوحةُ موقع الإحصائيات القديم (HistoricalImportPanel) منقولةً عنصراً عنصراً ═══
    الكروتُ والشاراتُ والجداولُ والأوضاعُ والحواراتُ ونصوصُها وترتيبُها ومقاساتُها كما في الأصل؛ والألوانُ من لوحة هوية المنصة
    (فاتح/داكن) بأقرب درجةٍ لدرجة الأصل. التحليلُ والتنفيذُ في المتصفح (BassamHistImport) بمنطق خادم الموقع القديم حرفاً. */
@@ -5653,7 +5655,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           /* مراجعة S10: كلُّ انتقالٍ داخل المركز عبر _ovGo (BassamNav.conGo) — عنوانٌ جديد في السجلّ فيعمل زرُّ الرجوع */
           admGoBackup: () => this._ovGo("backup"),
           admOnHist: n && "histimp" === d,
-          hiNode: n && "histimp" === d ? this.hiNode() : null,
+          hiNode: n && "histimp" === d && this.hiNode ? this.hiNode() : null,   /* V7 · د5-ح: اللوحةُ قطعةُ الإحصائيات (admin.methods.histimp) — تغيب بغيابها */
         };
       })(),
       ...(() => {

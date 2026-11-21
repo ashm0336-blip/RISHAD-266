@@ -32,6 +32,7 @@ test('pages.json without the display-only field is develop\'s pages.json; the fi
   /* V7 · د5-هـ (44): وadmin/ptpls — تبويبُ «قوالب الصلاحيات» حُذف، وورقتُه باقيةٌ للمسار القديم الحيّ والترحيل (perm44-roles) حتى قفل د5-ح */
   assert.deepEqual(noTab, ['admin/ptpls=true', 'admin/import=true']);
   for (const p of M.pages) { delete p.shellTabs; for (const x of p.subs || []) delete x.noTab; }
+  delete M.$comment;   /* V7 · د5-ح: ترويسةُ «ملف مولَّد» (tools/systems.py) — تعليقٌ لا قيمة */
   assert.equal(sha(Buffer.from(canon(M))), DEVELOP.pages, 'every other value of pages.json is as on develop');
 });
 

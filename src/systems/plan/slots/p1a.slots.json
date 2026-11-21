@@ -24,8 +24,8 @@
   "order": 10,
   "text": "\"plan\"@@SYS:lens.hosts.sep.daily@@"
  },
- "lens.res.plan": {
+ "lens.res": {
   "order": 10,
-  "text": "\"bassam_plan_v1\", "
+  "text": "\"bassam_plan_v1\""
  }
 }

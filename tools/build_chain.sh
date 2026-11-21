@@ -44,6 +44,7 @@ PY
     node tools/gen_types.mjs --check
     "$PY" tools/build.py --src src --mode split --pages lazy --minify-worker --out "$OUT" --verify
     "$PY" tests/source/k265eq.py "$OUT"
+    "$PY" tests/source/k265src.py "$OUT"   # V7 · د5-ح: براهينُ المصدر للشجرة الحالية (كانت خارج كلّ سلسلة — المراجع 30 · البند 7)
     "$PY" tools/sec/secrets_scan.py "$OUT"
     exit 0
   fi

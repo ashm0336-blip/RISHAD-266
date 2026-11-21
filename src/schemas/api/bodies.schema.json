@@ -1,4 +1,5 @@
 {
+  "$comment": "ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/schemas/api/bodies.schema.json.tpl",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "kivo:api/bodies",
   "title": "KIVO — أجسامُ طلبات /api المغيِّرة (SOT-101 · KIVO_263 · KIVO_264: المساراتُ المغيِّرة كلُّها)",

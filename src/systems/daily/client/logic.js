@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/systems/daily/client/logic.js.tpl */
 class Component extends KIVO.BassamPageKit.base(DCLogic, [
   "admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks",
   "daily+dreport+dstats+irshad+plan+seized+staff+tasks",

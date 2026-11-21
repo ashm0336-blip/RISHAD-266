@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019u-privacy-projection.js.tpl */
 /* ══ PRIVACY batch (SV09 · IP07 · IP10 · IP39 · SV01): least-privilege projection of personal data and of the permissions registry ══
    One place for the rule; every read route calls privOut() on the value it is about to send (both modes, every role but super),
    and applySave calls privIn() before any rule so a client that saves what it received projected never erases the hidden parts.
@@ -19,7 +20,7 @@
             token too and are marked redacted.
          gender: kept also for readers of the monthly schedule (staff) and the daily report (dreport): both pages count and show the
                  male/female distribution of the shift (modules/staff/logic.js · modules/dreport/logic.js). Removed elsewhere.
-   (2) Daily report bsdept:<d>:bassam_dreport_v1 — roster rows carry a copy of empno (pulled from the register): same rule as (1).
+   (2) Daily report (its per-department report resource) — roster rows carry a copy of empno (pulled from the register): same rule as (1).
    (2b) Custody read (/api/custody · 019a): each row carries the holder's nid/empno snapshot — same rule as (1).
    (3) Permissions registry bassam_perms_v1 — a non-super actor receives: caps/subs/lenses of the units in his scope and their
        ancestor nodes; emps/tplOf/empLens of a unit he manages for himself and for every employee he may administer (permTargetOk ·

@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/047-retro.js.tpl */
 /* ═══ /api/retro — نافذةُ الاستدراك (ir.rec.retro.open · sz.rec.retro.open): حالةٌ خادمية لكل (إدارة · نظام)، محدودةُ النطاق (شهرٌ أو يومٌ منقضٍ) والزمن (≤ RETRO_MAX_H) والفاعل (من الجلسة)، بسجلّ تدقيقٍ مستقل ═══
    لا تُنفَّذ قاعدةُ الرفض على الكتابات (Phase 3 ظلّ)؛ النافذةُ تُقاس بها wouldAllowRetro/wouldBlock فقط. الوصولُ: مدير النظام أو حاملُ approve (ذرّةُ G‑08 نفسُها). */
 async function retroApi(env, request, A, url, meta) {

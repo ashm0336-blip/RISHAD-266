@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019f-backup-converter.js.tpl */
 /* Backup normalization. Read/validate only: the existing restore compiler
    remains the only writer and the only source of authorization/account policy. */
 function rsBCFail(code) {

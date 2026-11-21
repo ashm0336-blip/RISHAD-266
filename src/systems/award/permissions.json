@@ -1569,7 +1569,7 @@
      "byResource"
     ],
     "key": "bassam_award_v1",
-    "after": 22,
+    "after": 21,
     "seq": 140,
     "value": {
      "scope": "dept",
@@ -1611,7 +1611,7 @@
      "byResource"
     ],
     "key": "bassam_award_docs_v1",
-    "after": 22,
+    "after": 21,
     "seq": 150,
     "value": {
      "scope": "dept",
@@ -1653,7 +1653,7 @@
      "byResource"
     ],
     "key": "bassam_award_docs_v2",
-    "after": 22,
+    "after": 21,
     "seq": 160,
     "value": {
      "scope": "dept",

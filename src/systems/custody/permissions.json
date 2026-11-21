@@ -790,7 +790,7 @@
      "byResource"
     ],
     "key": "bassam_custody_v1",
-    "after": 20,
+    "after": 19,
     "seq": 10,
     "value": {
      "scope": "dept",

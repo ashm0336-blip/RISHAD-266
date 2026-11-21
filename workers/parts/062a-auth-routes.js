@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/062a-auth-routes.js.tpl */
 /* ═══ KIVO_263 · SOT-096 — مساراتُ المصادقة والجلسة في طبقةٍ واحدةٍ معروفة (كانت أسطراً داخل handle في 063) ═══
    النقلُ حرفيّ: الكتلُ نفسُها بترتيبها وبالدوال نفسِها (json · guard* · secLog · verifyPw · hashPw · setCookie · …)، فالسلوكُ واحد —
    يثبته tests/unit/{session_lifecycle,adversarial,auth_routes}.test.mjs وحزمُ البوابة. دورةُ حياة الجلسة كاملةً في docs/security.md §الجلسة.

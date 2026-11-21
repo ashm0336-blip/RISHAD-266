@@ -66,6 +66,6 @@
   "src/modules/employees/logic.js",
   "src/services/360-bassam-idb.js",
 @@SYS:ns.after.irshad@@@@SYS:ns.after.seized@@  "src/components/450-pull-refresh.js",
-  "src/components/560-canvas-input.js"@@SYS:ns.after.tail@@
+  "src/systems/_multi/client/560-canvas-input.js"@@SYS:ns.after.tail@@
  ]
 }

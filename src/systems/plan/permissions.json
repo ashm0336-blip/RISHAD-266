@@ -4310,7 +4310,7 @@
      "readBindings",
      "byResource"
     ],
-    "after": 20,
+    "after": 19,
     "key": "bassam_plan_v1",
     "seq": 80,
     "value": {
@@ -4376,7 +4376,7 @@
      "readBindings",
      "byResource"
     ],
-    "after": 20,
+    "after": 19,
     "key": "bassam_zone_opts_v1",
     "seq": 90,
     "value": {
@@ -4418,7 +4418,7 @@
      "readBindings",
      "byResource"
     ],
-    "after": 20,
+    "after": 19,
     "key": "bassam_gate_opts_v1",
     "seq": 100,
     "value": {
@@ -4460,7 +4460,7 @@
      "readBindings",
      "byResource"
     ],
-    "after": 20,
+    "after": 19,
     "key": "bassam_mark_kinds_v1",
     "seq": 110,
     "value": {

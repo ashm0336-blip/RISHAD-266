@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019c-employee-transition.js.tpl */
 /* STAGED: server-owned effects of 590/setEmp and 330/activateStaffMany.
    This module only reads and prepares canonical applySave input. It neither
    commits nor allocates revisions. The common compiler owns the sole batch. */

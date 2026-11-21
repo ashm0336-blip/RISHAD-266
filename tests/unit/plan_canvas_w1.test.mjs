@@ -15,8 +15,8 @@ import { ROOT, moduleLogic } from './harness.mjs';
 import { operations } from './operational_ui_fx.mjs';
 
 const LOGIC = process.env.PLAN_LOGIC ? fs.readFileSync(process.env.PLAN_LOGIC, 'utf8') : moduleLogic('plan');
-const SERVICES = ['src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
-  'src/systems/daily/client/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/560-canvas-input.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/systems/staff/client/533-staff-g3.js', 'src/systems/plan/client/403-plan-p3.js', 'src/systems/staff/client/534-staff-g4.js', 'src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
+const SERVICES = ['src/systems/_multi/client/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
+  'src/systems/daily/client/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/systems/_multi/client/560-canvas-input.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/systems/staff/client/533-staff-g3.js', 'src/systems/plan/client/403-plan-p3.js', 'src/systems/staff/client/534-staff-g4.js', 'src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
 const KP = 'bassam_plan_v1';
 
 function page(o = {}) {
