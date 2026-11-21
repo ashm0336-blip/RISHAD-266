@@ -127,11 +127,16 @@ test('① systems: a unit row per system, locked by the platform or an ancestor;
   assert.equal(v.p44SysOnN, '2'); assert.equal(v.p44SysPeople, '4');
   row('plan').flip(); v = W.render(); assert.equal(v.p44SysDirty, false, 'a locked system does not flip');
   row('tasks').flip(); v = W.render(); assert.equal(v.p44SysDirty, true); assert.equal(row('tasks').on, 'false');
-  v.p44SysSave();
+  /* V7 · د5-ح: «مراجعة وحفظ» تفتح نافذةَ المراجعة (الملخّص · حفظ · رجوع) — لا كتابةَ قبل «حفظ» */
+  v.p44SysReview(); v = W.render();
+  assert.equal(v.p44RevOn, true); assert.deepEqual(J(v.p44RevRows), [{ what: 'TEST_ONLY إدارة · المهام', from: 'مفعّل', to: 'مطفأ' }], 'the change summary');
+  assert.equal(v.p44RevAffTxt, 'يتأثر 4 شخص في هذه الوحدة وما تحتها'); assert.deepEqual(J(W.capW), [], 'nothing written before «حفظ»');
+  v.p44RevSave();
   assert.deepEqual(J(W.capW), [[DID, ['staff', 'plan']]], 'tasks dropped from this unit\'s own ceiling record — data untouched');
+  assert.equal(W.render().p44RevOn, false, 'the dialog closes after the save');
   /* the platform level: mods.off */
   v = W.render(); v.p44Units[0].pick(); v = W.render();
-  assert.equal(v.p44Unit.n, 'المنصة كلها'); v.p44SysRows.find((r) => r.k === 'plan').flip(); W.render().p44SysSave();
+  assert.equal(v.p44Unit.n, 'المنصة كلها'); v.p44SysRows.find((r) => r.k === 'plan').flip(); W.render().p44SysReview(); W.render().p44RevSave();
   assert.deepEqual(J(W.platW.at(-1).mods.off), [], 'turning plan back on platform-wide');
 });
 
@@ -145,7 +150,7 @@ test('② roles: a level change is a dirty draft; review names the diff and the 
   v = W.render();
   assert.equal(v.p44Dirty, true); assert.equal(staff().lv, 'edit'); assert.match(staff().sub, /تعديل/);
   assert.deepEqual(J(v.p44Nav), [{ n: 'صفحتي', l: '' }, { n: 'الجدول الشهري', l: 'تعديل' }, { n: 'المهام', l: 'إدخال' }], 'the holder\'s menu, live');
-  assert.match(v.p44AffTxt, /^1 /, 'one holder affected');
+  assert.match(v.p44AffTxt, /^يتأثر بها 1 /, 'one holder affected');
   v.p44Review(); v = W.render();
   assert.equal(v.p44RevOn, true);
   assert.deepEqual(J(v.p44RevRows), [{ what: 'TEST_ONLY مراقب · الجدول الشهري', from: 'مشاهدة فقط', to: 'تعديل' }], 'the engine\'s diff, named');
@@ -165,7 +170,7 @@ test('② roles: a level change is a dirty draft; review names the diff and the 
   /* undo of unsaved work, copy, new, compare */
   staff().flip(); v = W.render(); assert.equal(v.p44Dirty, true); v.p44Undo(); assert.equal(W.render().p44Dirty, false);
   W.render().p44RoleCopy(); v = W.render();
-  assert.match(v.p44RoleName, /^نسخة من TEST_ONLY مراقب$/); assert.equal(v.p44RoleList.length, 4, 'super + 2 + the copy');
+  assert.match(v.p44RoleName, /^نسخة من TEST_ONLY مراقب$/); assert.equal(v.p44RoleList.length, 5, 'super + the unit manager (V7 · د5-ح) + 2 + the copy');
   v.p44CmpSet({ target: { value: 'r_sh' } }); v = W.render();
   assert.equal(v.p44CmpOn, true); assert.deepEqual(J(v.p44CmpRows.filter((r) => r.diff === 'true').map((r) => r.n)), ['المهام']);
   /* custom = an explicit key list, starting from the previous level's keys */
@@ -182,7 +187,7 @@ test('a department manager never sees a system that is OFF in his ceiling — no
   const W = world({ caps: { [DID]: ['staff', 'tasks'] } });   /* plan + seized OFF for this unit */
   const v = W.sub('roles', { viewer: 'mgr', sel: 'r_obs' });
   assert.equal(v.p44MgrV, true);
-  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأدوار', 'الأشخاص', 'السجل'], 'no «الأنظمة» for the manager');
+  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل'], 'V7 · د5-ح: «الأنظمة» for the manager too (read-only)');
   assert.deepEqual(J(names(v.p44SysEd)), ['الجدول الشهري', 'المهام']);
   const offKeys = W.E.sysKeys('plan').concat(W.E.sysKeys('seized'));
   assert.ok(!JSON.stringify(v.p44Nav).includes('التشغيل') && !v.p44ChkKeys.some((x) => offKeys.includes(x.v)), 'nor in the menu or the access test');
@@ -193,7 +198,8 @@ test('a department manager never sees a system that is OFF in his ceiling — no
   /* a real (non-super) viewer is the manager view, whatever was chosen */
   const M = world({ caps: { [DID]: ['staff'] }, sup: false });
   const mv = M.sub('systems', { viewer: 'plat' });
-  assert.equal(mv.p44MgrV, true); assert.equal(mv.p44OnSys, false); assert.equal(mv.p44OnRoles, true); assert.equal(mv.p44ViewOn, false);
+  assert.equal(mv.p44MgrV, true); assert.equal(mv.p44OnSys, true); assert.equal(mv.p44SysRO, true, 'V7 · د5-ح: read-only'); assert.equal(mv.p44ViewOn, false);
+  assert.deepEqual(J(mv.p44SysRows.map((r) => [r.n, r.sw])), [['الجدول الشهري', false]], 'only what is ON in his ceiling, no switch');
 });
 
 test('the platform-admin card: «صلاحية كاملة بلا أي قيد», no editor, nothing granted', () => {
@@ -354,8 +360,8 @@ test('the manager\'s tab: offered in his settings, the same page in the manager 
   v.dTabGoPerm(); v = W.render();
   assert.equal(v.showDeptPerm, true); assert.equal(v.p44Show, true);
   assert.equal(v.p44MgrV, true); assert.equal(v.p44ViewOn, false, 'no view-as');
-  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأدوار', 'الأشخاص', 'السجل'], 'no «الأنظمة»');
-  assert.equal(W.hashes.at(-1), 'admin/perm/roles', 'the address names the section');
+  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل'], 'V7 · د5-ح: «الأنظمة» read-only too');
+  assert.equal(W.hashes.at(-1), 'admin/perm/roles', 'the address names the section (his default: «الأدوار»)');
   v = W.sub('roles', { sel: 'r_obs', viewer: 'plat' });
   assert.equal(v.p44MgrV, true, 'the manager view whatever was chosen');
   assert.deepEqual(J(v.p44SysEd.map((r) => r.n)), ['الجدول الشهري', 'المهام'], 'the role editor: only the systems ON in his ceiling');
@@ -382,7 +388,7 @@ test('the manager\'s tab: never for a plain employee (nor by the address); the p
   const S = deptWorld({ id: 'TEST_ONLY_OWNER', role: 'super' });
   S.page.state.deptTab = 'perm'; v = S.render();
   assert.equal(v.p44Show, true); assert.equal(v.p44MgrV, true); assert.equal(v.p44ViewOn, false);
-  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأدوار', 'الأشخاص', 'السجل']);
+  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل']);
   /* legacy (non-enforce) mode: the manager cannot read the grants record there — no tab for him (decision for the lock stage); super keeps it */
   const L = deptWorld(MGR, { mode: 'legacy' });
   assert.equal(L.render().dTabPmOn, false, 'no tab for the manager in legacy mode');
@@ -420,4 +426,164 @@ test('the manager\'s log: no ceiling change (the platform admin\'s) and no chang
   assert.equal(v.p44LogItems.length, 1, 'only the event with a visible change');
   assert.deepEqual(J(v.p44LogItems[0].ch.map((c) => c.sys)), ['TEST_ONLY مراقب · المهام']);
   assert.ok(!JSON.stringify(J(v.p44LogItems)).includes('التشغيل'), 'the OFF system is not named');
+});
+
+/* ── V7 · د5-ح: ملاحظاتُ تجربة المالك على Preview (البنود ١–٦ من «أ») ── */
+const logic = fs.readFileSync(SRC + '/slots/modules/admin/logic.js.tpl', 'utf8');
+function nodeWorld(opts) {
+  const W = world(opts);
+  W.KIVO.BassamDepts.deptsUnder = (id) => (id === NODE ? [DID, SEC] : id === DID ? [SEC] : []);
+  W.KIVO.BassamDepts.descendantsOf = (id) => (id === NODE ? [DID, SEC] : id === DID ? [SEC] : []);
+  W.KIVO.BassamDepts.parentDeptOf = (id) => (id === SEC ? DID : '');
+  W.KIVO.BassamAuth.groupManagers = (id) => (id === NODE ? [{ id: 'TEST_ONLY_gm', name: 'TEST_ONLY المدير العام', role: 'gm', gid: NODE }] : []);
+  W.page.state.sysSel = NODE;
+  return W;
+}
+
+test('V7 · د5-ح ① every unit kind (sector node · department · section) carries «الصلاحيات» with its four sections, scoped to it', async () => {
+  for (const [id, label] of [[NODE, 'قطاع'], [DID, 'إدارة'], [SEC, 'قسم']]) {
+    const W = nodeWorld(); W.page.state.sysSel = id;
+    const seen = []; W.C.fetch = async (u) => { seen.push(u); return { ok: true, json: async () => ({ ok: 1, rows: [] }) }; };
+    for (const [sub, on] of [['systems', 'p44OnSys'], ['roles', 'p44OnRoles'], ['people', 'p44OnPeople'], ['log', 'p44OnLog']]) {
+      const v = W.sub(sub, { viewer: 'plat' });
+      assert.equal(v.p44Show, true, label + ' ' + sub + ': the tab is shown');
+      assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل'], label + ': four sections');
+      assert.equal(v[on], true, label + ' ' + sub);
+      assert.equal(v.p44NodeOnly, undefined, label + ': no «open a unit below» placeholder');
+    }
+    await new Promise((r) => setTimeout(r, 5));
+    assert.ok(seen.some((u) => u === '/api/perm44/log?d=' + encodeURIComponent(id) + '&limit=50'), label + ': its own log');
+  }
+  assert.doesNotMatch(view, /p44NodeOnly/, 'the node placeholder is deleted');
+  /* the sector: its roles are the two fixed cards (custom roles live in each unit below — linked), its people are its branch's accounts */
+  const N = nodeWorld();
+  let v = N.sub('roles', { viewer: 'plat' });
+  assert.deepEqual(J(v.p44RoleList.map((r) => r.n)), ['مدير المنصة', 'مدير الوحدة']); assert.equal(v.p44IsMgr, true, 'opens on «مدير الوحدة»');
+  assert.equal(v.p44RoleNewOn, false, 'no «+ دور جديد» on a supervisory node'); assert.equal(v.p44NodeRoles, true);
+  assert.deepEqual(J(v.p44NodeUnits.map((u) => [u.n, u.href])), [['TEST_ONLY إدارة', '#/sysadmin/org/TEST_ONLY_D/perm/roles'], ['TEST_ONLY قسم', '#/sysadmin/org/TEST_ONLY_D_S/perm/roles']]);
+  assert.deepEqual(J(v.p44MgrHold), [{ n: 'TEST_ONLY المدير العام', st: 'نشط' }], 'its general manager holds the card');
+  v = N.sub('people');
+  assert.equal(v.p44NodePeople, true);
+  assert.deepEqual(J(v.p44NPRows.map((r) => [r.n, r.role])), [['TEST_ONLY سعد', 'موظف'], ['TEST_ONLY فهد', 'موظف'], ['TEST_ONLY ريم', 'موظف'], ['TEST_ONLY المدير', 'مدير الوحدة']]);
+  N.C.location.hash = '#/sysadmin/org/' + NODE + '/perm/people';
+  v.p44NPRows[0].go();
+  assert.equal(N.C.location.hash, '#/sysadmin/org/TEST_ONLY_D/perm/people', 'a person opens in «الأشخاص» of his unit');
+  assert.equal(N.page.state.p44.pSel, 'TEST_ONLY_e1');
+});
+
+test('V7 · د5-ح ② «مدير الوحدة»: a fixed card with its holders; the old node tab moved into it as is; only the platform admin adds', () => {
+  const W = world();
+  W.KIVO.BassamAuth.deptManagers = () => [{ id: 'TEST_ONLY_m', name: 'TEST_ONLY المدير', role: 'staff', mgr: 1, deptId: DID }];
+  let v = W.sub('roles', { viewer: 'plat', sel: '__mgr' });
+  assert.deepEqual(J(v.p44RoleList.slice(0, 2).map((r) => [r.n, r.lock])), [['مدير المنصة', true], ['مدير الوحدة', true]], 'beside «مدير المنصة»');
+  assert.match(v.p44RoleList[1].sub, /^1 شخص · كامل داخل السقف$/);
+  assert.equal(v.p44IsMgr, true); assert.equal(v.p44NotSup, false); assert.equal(v.p44NoRole, false); assert.equal(v.p44SysEd, undefined, 'no level editor');
+  assert.equal(v.p44MgrFull, true, 'the accounts table (the old tab\'s content)'); assert.equal(v.p44MgrAddOn, true, 'the platform admin adds');
+  assert.equal(v.mgTitle, 'مديرو الإدارة'); assert.equal(typeof v.mgAdd, 'function'); assert.ok(Array.isArray(v.ndRows), 'the same rows (_acctRow)');
+  assert.equal(v.mgCount, undefined, 'the tab badge is gone');
+  /* the manager view: holders read-only, no add, no accounts table */
+  v = W.sub('roles', { viewer: 'mgr', sel: '__mgr' });
+  assert.equal(v.p44IsMgr, true); assert.equal(v.p44MgrFull, false); assert.equal(v.p44MgrRO, true); assert.equal(v.p44MgrAddOn, false);
+  assert.deepEqual(J(v.p44MgrHold), [{ n: 'TEST_ONLY المدير', st: 'نشط' }]);
+  /* the view: the card holds the old block (accounts table · row menu · + gated to the platform admin); the node tab is gone without residue */
+  const card = view.slice(view.indexOf('<sc-if value="{{p44IsMgr}}"'), view.indexOf('<sc-if value="{{p44NodeRoles}}"'));
+  assert.match(card, /<div class="mk ac7">[\s\S]*<sc-if value="\{\{p44MgrAddOn\}\}"[^>]*><button class="add" onClick="\{\{mgAdd\}\}"[\s\S]*\{\{ndRows\}\}[\s\S]*\{\{u\.rmItems\}\}[\s\S]*\{\{ndFoot\}\}[\s\S]*\{\{mgStaffTxt\}\}/, 'the whole block, as is');
+  for (const b of ['{{ndFoot}}', '{{mgStaffTxt}}', '{{ndRows}}', 'class="mk ac7"']) assert.equal(view.split(b).length, 2, b + ': once, inside the card');
+  const tags = (x, t) => (x.match(new RegExp('<' + t + '[\\s>]', 'g')) || []).length - (x.match(new RegExp('</' + t + '>', 'g')) || []).length;
+  for (const t of ['sc-if', 'sc-for', 'div', 'section']) assert.equal(tags(card, t), 0, 'the card is balanced: ' + t);
+  for (const re of [/المسؤولون والحسابات/, /TabEmps|tabEmps|onTabEmps|mgCount/]) { assert.doesNotMatch(view, re); assert.doesNotMatch(logic, re); }
+  assert.doesNotMatch(logic, /"emps" === l|sysTab: "emps"|_orgNav\(u, "emps"\)/, 'no route or state for the old tab');
+  /* the overview checklist and «مراقبة الحسابات» open the card */
+  W.page.state.sysTab = 'ov';
+  const st = W.render().ovSteps.find((x) => x.t === 'المسؤول');
+  assert.equal(st.goLbl, 'فتح «مدير الوحدة»'); st.go();
+  assert.equal(W.page.state.sysTab, 'perm'); assert.equal(W.page.state.p44.sub, 'roles'); assert.equal(W.page.state.p44.sel, '__mgr');
+  W.C.location.hash = '#/sysadmin/users';
+  W.page._acctOpen({ id: 'TEST_ONLY_m', role: 'staff', deptId: DID }, 'edit', false);
+  assert.equal(W.C.location.hash, '#/sysadmin/org/TEST_ONLY_D/perm/roles'); assert.equal(W.page.state.p44.sel, '__mgr');
+});
+
+test('V7 · د5-ح ③ the department manager sees «الأنظمة» read-only: only what is ON in his ceiling, no switches, never an OFF one', () => {
+  for (const mk of [() => world({ caps: { [DID]: ['staff', 'tasks'] } }), () => deptWorld(MGR)]) {
+    const W = mk();
+    if (W.hashes) W.page.state.deptTab = 'perm';
+    const v = W.sub('systems', { viewer: 'mgr' });
+    assert.equal(v.p44OnSys, true); assert.equal(v.p44SysRO, true); assert.equal(v.p44SysCtl, false);
+    assert.deepEqual(J(v.p44SysRows.map((r) => [r.n, r.on, r.sw, r.locked])), [['الجدول الشهري', 'true', false, false], ['المهام', 'true', false, false]]);
+    assert.deepEqual(J(v.p44Units), [], 'no unit chain to switch'); assert.equal(v.p44SysDirty, false); assert.equal(v.p44SysReview, undefined, 'nothing to save');
+    const txt = JSON.stringify(J(v));
+    for (const off of ['التشغيل الميداني', 'المضبوطات', 'مطفأ']) assert.ok(!txt.includes(off), 'never shown: ' + off);
+  }
+  assert.match(view, /<sc-if value="\{\{s\.sw\}\}"[^>]*><button type="button" class="p44-sw" role="switch"/, 'the switch exists only where it can flip');
+  assert.match(logic, /\/\^#\\\/admin\\\/perm\\\/\(systems\|roles\|people\|log\)\$\//, 'the manager\'s own tab opens «الأنظمة» by its address');
+});
+
+test('V7 · د5-ح ④ «مراجعة قبل الحفظ» is a centered dialog (summary · حفظ · رجوع) in systems, roles and people — closes after the save', async () => {
+  const dlg = view.slice(view.indexOf('<sc-if value="{{p44RevOn}}"'), view.indexOf('<!-- ④ السجل -->'));
+  assert.match(dlg, /<div class="bs-dlg bs-dlg--modal" onClick="\{\{p44RevOut\}\}">\s*<div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="p44RevT" class="bs-dlg-box[^"]*p44-rev" onClick="\{\{p44Keep\}\}">/, 'the platform dialog (focus inside · Tab trapped · Escape = a click on the layer)');
+  assert.match(dlg, /id="p44RevT">مراجعة قبل الحفظ<[\s\S]*\{\{p44RevRows\}\}[\s\S]*onClick="\{\{p44RevSave\}\}"[^>]*>حفظ<[\s\S]*onClick="\{\{p44RevClose\}\}">رجوع</);
+  assert.doesNotMatch(view, /class="p44-rev" role="region"/, 'no box at the bottom of the page');
+  assert.equal((view.match(/\{\{p44RevOn\}\}/g) || []).length, 1, 'one dialog for the three sections');
+  /* roles: open · Escape (the layer) = back · open · save ⇒ closed */
+  const W = world();
+  W.sub('roles', { viewer: 'plat', sel: 'r_obs' }).p44SysEd.find((s) => s.k === 'staff').setLv({ target: { value: 'edit' } });
+  let v = W.render(); v.p44Review(); v = W.render(); assert.equal(v.p44RevOn, true);
+  v.p44RevOut(); v = W.render(); assert.equal(v.p44RevOn, false, 'Escape / the layer = «رجوع»'); assert.equal(v.p44Dirty, true, 'the draft stays');
+  v.p44Review(); v = W.render();
+  W.page.state.p44.rev.busy = 1; W.render().p44RevOut(); assert.equal(W.render().p44RevOn, true, 'not closed while saving'); W.page.state.p44.rev.busy = 0;
+  await W.render().p44RevSave(); v = W.render(); assert.equal(v.p44RevOn, false, 'closed after the save'); assert.equal(v.p44Dirty, false);
+  /* people: the same dialog */
+  const P = world();
+  P.sub('people', { pSel: 'TEST_ONLY_e3' }).p44PRoles.find((c) => c.t === 'TEST_ONLY مراقب').pick();
+  v = P.render(); v.p44Review(); v = P.render();
+  assert.equal(v.p44RevOn, true); assert.deepEqual(J(v.p44RevRows), [{ what: 'TEST_ONLY ريم · الدور', from: '—', to: 'TEST_ONLY مراقب' }]);
+  await v.p44RevSave(); assert.equal(P.render().p44RevOn, false);
+  /* systems: a refusal stays in the dialog with its reason; nothing toasted */
+  const S = world();
+  S.KIVO.BassamPerm.setDeptCap = () => ({ ok: false, err: 'TEST_ONLY مرفوض' });
+  S.sub('systems').p44SysRows.find((r) => r.k === 'tasks').flip();
+  S.render().p44SysReview(); S.render().p44RevSave(); v = S.render();
+  assert.equal(v.p44RevOn, true); assert.equal(v.p44RevErr, 'TEST_ONLY مرفوض'); assert.equal(v.p44SysDirty, true, 'the draft stays');
+});
+
+test('V7 · د5-ح ⑤ the affected count: «لا يتأثر أحد الآن» when nobody holds the role, else the real count', async () => {
+  const W = world();
+  W.sub('roles', { viewer: 'plat', sel: 'r_obs' }).p44RoleNew();
+  let v = W.render();
+  assert.equal(v.p44AffTxt, 'لا يتأثر أحد الآن'); assert.equal(v.p44Role.members, 'لا يحمل هذا الدور أحد بعد');
+  v.p44Review(); v = W.render(); assert.equal(v.p44RevAffTxt, 'لا يتأثر أحد الآن'); assert.deepEqual(J(v.p44RevAff), []);
+  assert.equal(W.page.p44AffLine(0), 'لا يتأثر أحد الآن'); assert.equal(W.page.p44AffLine(3), 'يتأثر 3 شخص'); assert.equal(W.page.p44AffLine(2, 'يتأثر بها'), 'يتأثر بها 2 شخص');
+  await v.p44RevSave(); assert.ok(W.toasts.some((t) => t[0] === 'حُفظت الصلاحيات — لا يتأثر أحد الآن'));
+  const X = world(); X.sub('roles', { sel: 'r_obs' });
+  X.C.fetch = async () => ({ ok: true, json: async () => ({ ok: 1, rows: [{ id: 'TEST_ONLY_z', at: 1, who: { uid: 'x', name: 'TEST_ONLY' }, unit: DID, affected: [], changes: [{ what: 'name', role: 'r_obs', from: 'أ', to: 'ب' }] }] }) });
+  await X.page._p44LogLoad(DID);
+  assert.equal(X.sub('log').p44LogItems[0].aff, 'لم يتأثر أحد');
+  assert.doesNotMatch(view, /يتأثر بها \{\{p44AffTxt\}\}|يتأثر \{\{p44RevAffN\}\}|يتأثر \{\{e\.aff\}\}/, 'no «يتأثر» glued before a count that may be empty');
+});
+
+test('V7 · د5-ح ⑥ creating a role is logged with its systems and their levels (the engine\'s diff carries the role)', async () => {
+  const W = world();
+  const before = { v: 1, roles: [], people: {} }, role = { id: 'TEST_ONLY_rn', name: 'TEST_ONLY جديد', sys: { tasks: { lvl: 'input' }, staff: { lvl: 'view' } }, sup: true };
+  const ch = W.E.diff(before, { v: 1, roles: [role], people: {} }).changes;
+  assert.deepEqual(J(ch.map((c) => c.what)), ['role'], 'one engine change for the new role — it carries the role with its systems');
+  W.C.fetch = async () => ({ ok: true, json: async () => ({ ok: 1, rows: [{ id: 'TEST_ONLY_ev', at: 1, who: { uid: 'x', name: 'TEST_ONLY' }, unit: DID, affected: [], changes: ch }] }) });
+  await W.page._p44LogLoad(DID);
+  const v = W.sub('log');
+  assert.deepEqual(J(v.p44LogItems[0].ch.map((c) => [c.sys, c.from, c.to])), [
+    ['دور جديد · TEST_ONLY جديد', '—', 'TEST_ONLY جديد'],
+    ['TEST_ONLY جديد · المهام', '—', 'إدخال'],
+    ['TEST_ONLY جديد · الجدول الشهري', '—', 'مشاهدة فقط'],
+    ['TEST_ONLY جديد · إشرافي', '—', 'نعم'],
+  ]);
+  assert.equal(v.p44LogItems[0].undoOn, true, 'undo still uses the change itself');
+  /* a deleted role: its systems back to «—»; a new role without systems says so */
+  assert.deepEqual(J(W.page.p44Rows([{ what: 'role', role: 'TEST_ONLY_rn', from: { id: 'TEST_ONLY_rn', name: 'TEST_ONLY جديد', sys: { tasks: { lvl: 'full' } } }, to: null }]).map((r) => [r.what, r.from, r.to])),
+    [['حذف دور · TEST_ONLY جديد', 'TEST_ONLY جديد', '—'], ['TEST_ONLY جديد · المهام', 'كامل', '—']]);
+  assert.deepEqual(J(W.page.p44Rows([{ what: 'role', role: 'q', from: null, to: { id: 'q', name: 'TEST_ONLY فارغ', sys: {} } }]).map((r) => r.to)), ['TEST_ONLY فارغ', 'بلا أنظمة']);
+  /* the review before saving a new role names them too */
+  const R = world();
+  R.sub('roles', { viewer: 'plat' }).p44RoleNew();
+  R.render().p44SysEd.find((s) => s.k === 'tasks').flip();
+  const rv = R.render(); rv.p44Review();
+  assert.deepEqual(J(R.render().p44RevRows.map((r) => [r.what, r.to])), [['دور جديد · دور جديد', 'دور جديد'], ['دور جديد · المهام', 'مشاهدة فقط']]);
 });

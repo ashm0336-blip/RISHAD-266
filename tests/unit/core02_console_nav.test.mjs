@@ -214,9 +214,9 @@ test('(6) review of S10: sidebar fits, gold edge faces the page, one history pat
   /* V7 P1: both «تعديل» links open the unit's own page (#/sysadmin/org/<id> — a history entry) on the tab they edit */
   /* V7 · د5-هـ (44): the permission map is deleted (its «تعديل» link with it); «تعديل الصلاحيات» opens v2's people section */
   assert.match(L, /const h = "#\/sysadmin\/org\/" \+ encodeURIComponent\(u\) \+ "\/perm\/people";\s*this\.__orgPend = h;\s*location\.hash = h;/, '«تعديل الصلاحيات» → #/sysadmin/org/<unit>/perm/people');
-  /* V7 P2: the account menu is one (_acctMenu); from «مراقبة الحسابات» edit and permissions open the account's node page on «المسؤولون والحسابات» */
+  /* V7 P2: the account menu is one (_acctMenu); from «مراقبة الحسابات» edit opens the account's node page — V7 · د5-ح: on «الصلاحيات ← الأدوار ← مدير الوحدة» (the node tab was deleted) */
   assert.match(L, /p\.push\(\{ t: "تعديل الصلاحيات", go: \(\) => this\._acctOpen\(a, "perm", here\) \}\)/, '«تعديل الصلاحيات» → _acctOpen');
-  assert.match(L, /if \(!here\) return void \(u \? this\._orgNav\(u, "emps"\) : this\._ovGo\("depts"\)\);/, 'outside the node page: the account\'s node, accounts tab');
+  assert.match(L, /if \(!here\) return void \(u \? this\.p44Open\(u, "roles", \{ sel: "__mgr" \}\) : this\._ovGo\("depts"\)\);/, 'outside the node page: the account\'s node, its «مدير الوحدة» card');
   /* the group names: Admin keeps its own copy (V5), equal to the shell's */
   const gt = /GT = (\{[^}]+\})/.exec(R), g = /const G = (\{[^}]+\})/.exec(L);
   deq(JSON.parse(g[1].replace(/(\w+):/g, '"$1":')), JSON.parse(gt[1].replace(/(\w+):/g, '"$1":')), 'same four group names');

@@ -76,6 +76,7 @@ test('V7 · د5-هـ (44) · «الصلاحيات»: super sees four sections an
     await P('section[aria-label="اختبار الوصول"] button', { hasText: 'اسأل الخادم' }).click(); await p.waitForTimeout(500);
     assert.match(await P('.p44-res').innerText(), /مسموح بمستوى الدور|مستوى الدور لا يشمله/, 'the server\'s answer (perm44Decide), in Arabic');
     await P('.p44-bar button', { hasText: 'مراجعة وحفظ' }).click(); await p.waitForTimeout(400);
+    assert.equal(await P('[role=dialog][aria-modal="true"].p44-rev').count(), 1, 'V7 · د5-ح: the review is a modal dialog');
     const rev = await P('.p44-rev').innerText();
     assert.match(rev, /TEST_ONLY مراقب [·-] المهام/); assert.match(rev, /إدخال/); assert.match(rev, /تعديل/); assert.match(rev, /TEST_ONLY موظف أ/);
     await shot(p, 'p44_3_roles_review');
@@ -96,9 +97,14 @@ test('V7 · د5-هـ (44) · «الصلاحيات»: super sees four sections an
     assert.equal(await P('.p44-log > li').count(), 2);
     assert.equal(await P('.p44-log button', { hasText: 'تراجع عن هذا التغيير' }).count(), 2);
     await shot(p, 'p44_5_log');
-    /* view as the department manager: no «الأنظمة», no OFF system, no platform-admin role */
+    /* view as the department manager: «الأنظمة» read-only (V7 · د5-ح — was hidden), no OFF system, no platform-admin role */
     await P('[aria-label="شاهد الصفحة كـ"] button', { hasText: 'مدير الإدارة' }).click(); await p.waitForTimeout(400);
-    assert.deepEqual(await subs(), ['الأدوار', 'الأشخاص', 'السجل']);
+    assert.deepEqual(await subs(), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل']);
+    await P('nav button', { hasText: 'الأنظمة' }).first().click(); await p.waitForTimeout(500);
+    assert.deepEqual((await P('.p44-row b').allInnerTexts()).map((x) => x.trim()), ['الإحصائيات اليومية', 'عهد الموظفين', 'الجدول الشهري', 'التشغيل الميداني', 'المتابعة اليومية', 'التقرير اليومي', 'المهام'], 'only what is ON in his ceiling');
+    assert.equal(await P('button.p44-sw').count(), 0, 'no switches'); assert.equal(await P('.p44-row[data-on="false"]').count(), 0, 'never an OFF one');
+    assert.equal(await P('aside[aria-label="الهيكل"]').count(), 0, 'no unit chain');
+    await shot(p, 'p44_6a_systems_as_manager');
     await P('nav button', { hasText: 'الأدوار' }).first().click(); await p.waitForTimeout(500);
     const txt = await P('').innerText();
     for (const off of ['الاسترشاد', 'المضبوطات', 'جائزة']) assert.ok(!new RegExp(off).test(txt), 'an OFF system is never shown to the manager: ' + off);

@@ -32,7 +32,11 @@ test('V7 · د5-هـ (44 · المدير) · the department manager builds a rol
     const row = P(s.page, '.p44-row', { hasText: OFF.n }).first();
     assert.equal(await row.getAttribute('data-on'), 'true', OFF.n + ' is ON for A before');
     await P(s.page, 'button.p44-sw[aria-label="' + OFF.n + '"]').click(); await s.page.waitForTimeout(200);
-    await P(s.page, '.p44-bar button', { hasText: 'حفظ الأنظمة' }).click(); await settle(lab, s.page, 1500);
+    /* V7 · د5-ح: «مراجعة وحفظ» ⇒ نافذةُ المراجعة ⇒ «حفظ» */
+    await P(s.page, '.p44-bar button', { hasText: 'مراجعة وحفظ' }).click(); await P(s.page, '[role=dialog].p44-rev').waitFor();
+    assert.match(await P(s.page, '[role=dialog].p44-rev').innerText(), new RegExp(OFF.n + '[\\s\\S]*مفعّل[\\s\\S]*مطفأ'), 'the summary names the system');
+    await P(s.page, '[role=dialog].p44-rev button', { hasText: 'حفظ' }).click(); await settle(lab, s.page, 1500);
+    assert.equal(await P(s.page, '.p44-rev').count(), 0, 'the dialog closes after the save');
     assert.ok(!(kv(lab, 'bassam_perms_v1').caps[A] || []).includes(OFF.k), 'the ceiling record of A no longer holds ' + OFF.k);
     await s.ctx.close();
 
@@ -45,11 +49,20 @@ test('V7 · د5-هـ (44 · المدير) · the department manager builds a rol
     assert.ok(tabs.includes('الصلاحيات'), 'his settings offer «الصلاحيات»: ' + JSON.stringify(tabs));
     await p.locator('main .adm-tabbar--d [role=tab]', { hasText: 'الصلاحيات' }).click(); await p.waitForTimeout(700);
     assert.equal(await p.evaluate(() => location.hash), '#/admin/perm/roles');
-    assert.deepEqual(await P(p, 'nav[aria-label="أقسام الصلاحيات"] button').allInnerTexts(), ['الأدوار', 'الأشخاص', 'السجل'], 'no «الأنظمة» — the ceiling is the platform admin\'s');
+    assert.deepEqual(await P(p, 'nav[aria-label="أقسام الصلاحيات"] button').allInnerTexts(), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل'], 'V7 · د5-ح: «الأنظمة» too (read-only)');
     assert.equal(await P(p, '[aria-label="شاهد الصفحة كـ"]').count(), 0, 'no view-as');
     assert.match(await P(p, '').first().innerText(), /أدوار موظفي إدارتك فقط/);
     const ceil = await p.evaluate((d) => { const E = KIVO.Perm44, on = E.ceiling(d).on; return E.sysList().filter((x) => on.includes(x.key)).map((x) => x.name); }, A);
     assert.ok(!ceil.includes(OFF.n) && ceil.includes('المهام'), 'his ceiling (engine): ' + JSON.stringify(ceil));
+    /* V7 · د5-ح: «الأنظمة» قراءةً — المفعّلُ في سقفه وحده (القابلُ للتشغيل)، بلا مفاتيح، ولا يظهر المطفأ */
+    await P(p, 'nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأنظمة' }).click(); await p.waitForTimeout(500);
+    assert.equal(await p.evaluate(() => location.hash), '#/admin/perm/systems');
+    const tg = await p.evaluate(() => KIVO.Perm44.sysList().filter((x) => x.toggle !== false).map((x) => x.name));
+    assert.deepEqual((await P(p, '.p44-row b').allInnerTexts()).map((x) => x.trim()), ceil.filter((n) => tg.includes(n)), 'only the systems ON in his ceiling');
+    assert.equal(await P(p, '.p44-row[data-on="false"]').count(), 0); assert.equal(await P(p, 'button.p44-sw').count(), 0, 'no switches');
+    assert.equal(await P(p, '.p44-bar').count(), 0, 'nothing to save');
+    assert.ok(!(await P(p, '').first().innerText()).includes(OFF.n), 'the OFF system is not shown');
+    await P(p, 'nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأدوار' }).click(); await p.waitForTimeout(500);
     await shot(p, 'mgr_1_roles_empty');
 
     /* (ج) a role at «إدخال» for one system */

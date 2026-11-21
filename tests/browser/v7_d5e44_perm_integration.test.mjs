@@ -39,7 +39,7 @@ async function pickUnit(s, unit) {
   if (!/\/perm\/systems$/.test(await p.evaluate(() => location.hash))) { await s.go('#/sysadmin/org/' + A + '/perm/systems', 2500); }
   await P(p, '.p44-unit', { hasText: unit }).first().click(); await p.waitForTimeout(300);
 }
-/* يجعل صفوفَ «الأنظمة» لوحدةٍ (الإدارة أو أصلها) كما في want ({اسم: مفعّل}) ثم «حفظ الأنظمة» — بالواجهة وحدها؛ المقفلُ من أصلٍ يُترك لأصله */
+/* يجعل صفوفَ «الأنظمة» لوحدةٍ (الإدارة أو أصلها) كما في want ({اسم: مفعّل}) ثم «مراجعة وحفظ» ← «حفظ» — بالواجهة وحدها؛ المقفلُ من أصلٍ يُترك لأصله */
 async function setSystems(lab, s, want, unit = UA) {
   const p = s.page;
   await pickUnit(s, unit);
@@ -50,7 +50,9 @@ async function setSystems(lab, s, want, unit = UA) {
     if (r.on !== on && !r.locked) { await P(p, 'button.p44-sw[aria-label="' + n + '"]').click(); await p.waitForTimeout(150); flipped++; }
   }
   if (!flipped) return 0;
-  await P(p, '.p44-bar button', { hasText: 'حفظ الأنظمة' }).click();
+  /* V7 · د5-ح: المراجعةُ نافذةٌ — «مراجعة وحفظ» ثم «حفظ» فيها */
+  await P(p, '.p44-bar button', { hasText: 'مراجعة وحفظ' }).click(); await P(p, '[role=dialog].p44-rev').waitFor();
+  await P(p, '[role=dialog].p44-rev button', { hasText: 'حفظ' }).click();
   await settle(lab, p, 1200);
   return flipped;
 }
@@ -69,8 +71,24 @@ test('V7 · د5-هـ (44) · real engine + real server: build a role, save, relo
     await P(p, 'button[aria-label="تفعيل المهام لهذا الدور"]').click(); await p.waitForTimeout(300);
     await P(p, 'select[aria-label="مستوى المهام"]').selectOption('edit'); await p.waitForTimeout(300);
     assert.match(await P(p, 'aside[aria-label="المعاينة"] .p44-menu').first().innerText(), /المهام\s*تعديل/, 'what the holder sees, live');
+    /* V7 · د5-ح ⑤: دورٌ لا يحمله أحد ⇒ «لا يتأثر أحد الآن» (لا «يتأثر · شخص» بلا رقم) */
+    assert.match(await P(p, '.p44-bar').innerText(), /لا يتأثر أحد الآن/);
     await P(p, '.p44-bar button', { hasText: 'مراجعة وحفظ' }).click(); await p.waitForTimeout(400);
-    assert.match(await P(p, '.p44-rev').innerText(), new RegExp('دور جديد [·-] ' + ROLE));
+    /* V7 · د5-ح ④: المراجعةُ نافذةٌ منبثقة في وسط الشاشة — التركيزُ داخلها، وEscape = «رجوع» (المسودةُ باقية) */
+    const dlg = P(p, '[role=dialog][aria-modal="true"].p44-rev');
+    assert.equal(await dlg.count(), 1, 'a modal dialog');
+    await p.waitForFunction(() => !!(document.activeElement && document.activeElement.closest('[role=dialog].p44-rev')), null, { timeout: 3000 }).catch(() => {});
+    assert.ok(await p.evaluate(() => !!(document.activeElement && document.activeElement.closest('[role=dialog].p44-rev'))), 'focus is inside the dialog');
+    const ctr = await dlg.evaluate((el) => { const r = el.getBoundingClientRect(); return [Math.abs(r.left + r.width / 2 - innerWidth / 2), Math.abs(r.top + r.height / 2 - innerHeight / 2)]; });
+    assert.ok(ctr[0] < 4 && ctr[1] < 4, 'centered on the screen: ' + JSON.stringify(ctr));
+    for (let i = 0; i < 6; i++) await p.keyboard.press('Tab');
+    assert.ok(await p.evaluate(() => !!(document.activeElement && document.activeElement.closest('[role=dialog].p44-rev'))), 'Tab stays inside');
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    assert.equal(await P(p, '.p44-rev').count(), 0, 'Escape = «رجوع»'); assert.equal(await P(p, '.p44-bar').count(), 1, 'the draft stays');
+    await P(p, '.p44-bar button', { hasText: 'مراجعة وحفظ' }).click(); await p.waitForTimeout(400);
+    const revTxt = await P(p, '.p44-rev').innerText();
+    assert.match(revTxt, new RegExp('دور جديد [·-] ' + ROLE));
+    assert.match(revTxt, new RegExp(ROLE + ' [·-] المهام[\\s\\S]*تعديل'), 'V7 · د5-ح ⑥: the new role\'s systems and levels');
     saves.length = 0;
     await P(p, '.p44-rev button', { hasText: 'حفظ' }).last().click(); await settle(lab, p, 2500);
     assert.equal(saves.length, 1, 'one save request');
@@ -105,9 +123,13 @@ test('V7 · د5-هـ (44) · real engine + real server: build a role, save, relo
     const items = P(p, '.p44-log > li');
     assert.ok((await items.count()) >= 2, 'the log lists the changes');
     assert.match(await items.first().innerText(), new RegExp('TEST_ONLY موظف أ[\\s\\S]*' + ROLE), 'the latest: the assignment, by name');
+    /* V7 · د5-ح ⑥: سجلُّ إنشاء الدور يذكر أنظمته ومستوياتها (لا «دور جديد» وحده) */
+    const made = await items.nth(1).innerText();
+    assert.match(made, new RegExp('دور جديد [·-] ' + ROLE), 'the creation entry'); assert.match(made, new RegExp(ROLE + ' [·-] المهام[\\s\\S]*تعديل'), 'names its system and level: ' + made);
     await items.first().locator('button', { hasText: 'تراجع عن هذا التغيير' }).click(); await p.waitForTimeout(600);
     assert.match(await P(p, '.p44-rev').innerText(), new RegExp(ROLE + '[\\s\\S]*←[\\s\\S]*—'), 'undo opens the review with the inverse (role → none), unsaved');
     await P(p, '.p44-rev button', { hasText: 'رجوع' }).click(); await P(p, '.p44-bar button', { hasText: 'تراجع' }).click(); await p.waitForTimeout(300);
+    assert.equal(await P(p, '.p44-rev').count(), 0, 'رجوع closes the dialog');
     /* the employee: the side user card and «صفحتي» say the role */
     const e = await openAs(b, lab, LAB.empA, LAB.pw);
     assert.match(await e.page.locator('aside.bsb').innerText(), new RegExp(ROLE), 'the side user card');
