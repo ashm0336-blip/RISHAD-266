@@ -29,7 +29,7 @@ async function clock(start, fn) {
   finally { globalThis.Date = RealDate; }
 }
 async function fixture({ items = true, weekly = true, ageDays = 40, now } = {}) {
-  const B = await world({ schema: 10 });
+  const B = await world({ schema: 11 });
   if (weekly) await B.DB.prepare("INSERT INTO notification_type_overrides(type_id,enabled)VALUES('bx_wk',1)").run();
   if (items) {
     const docs = seizedDocs('due_gate');

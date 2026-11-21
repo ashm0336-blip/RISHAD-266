@@ -12,7 +12,7 @@ import { candidateWorker } from '../../../../tests/unit/irshad_domain_fx.mjs';
 import { needs } from '../../../../tests/unit/harness.mjs';
 
 async function setup(t) {
-  const B = await world({ schema: 10 }); t.after(() => B.DB.db.close());
+  const B = await world({ schema: 11 }); t.after(() => B.DB.db.close());
   const perms = clone(B.keys.bassam_perms_v1);
   Object.values(perms.caps).forEach(caps => caps.push('seized', 'award'));
   Object.assign(perms.emps[D1][EKEYS.employee1], { 'seized/records': ['view', 'add', 'edit', 'del'], 'seized/dash': ['view'],

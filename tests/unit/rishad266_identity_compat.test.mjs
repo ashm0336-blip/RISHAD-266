@@ -24,6 +24,7 @@ function declaration(source, name) {
 function world() {
   const DB = new D1Shim();
   DB.exec(read('migrations/0001_baseline.sql'));
+  DB.exec(read('migrations/0011_session_device.sql'));   /* V7 · د5-هـ (x1): the login route writes the device columns of sess */
   const context = vm.createContext({
     crypto: webcrypto, TextEncoder, Response, Uint8Array,
     PBKDF2_ITER: 100000, PBKDF2_MAX: 100000, PW_MIN: 6, CHUNK: 80000,
