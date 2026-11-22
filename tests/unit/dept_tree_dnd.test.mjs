@@ -79,7 +79,11 @@ test('الربط: ondrop في خريطة أحداث المحرّك · صفوفُ
   assert.match(v, /class="og-hint"/);
   const l = rd('src/modules/org/logic.js');
   assert.match(l, /_ogDragProps\(id\)/); assert.match(l, /pos = y < 0\.3 \* h \? "before" : y > 0\.7 \* h \? "after" : leaf \? \(y < h \/ 2 \? "before" : "after"\) : "inside"/, 'الثلثُ الأعلى قبل · الأسفل بعد · الوسطُ تحت (لا «تحت» لإدارة)');
-  assert.match(l, /D\.moveNode\(s, id, pos\)/);
+  /* V7 · د6 (قرار المالك REPLY2 · 1): الإفلاتُ لا ينقل مباشرةً — يفتح نافذةَ «نقل إلى…» معبّأةً بموضعه، والنقلُ بالموضع نفسِه (moveNode) عند التأكيد وحده */
+  assert.match(l, /s && o && o\.id === id && this\._ogDndMove\(s, id, o\.pos\)/, 'الإفلاتُ يفتح النافذة');
+  const dm = l.slice(l.indexOf('  _ogDndMove('), l.indexOf('  _ogMoveEffect('));
+  assert.match(dm, /ogDlg: \{ k: "move"/); assert.doesNotMatch(dm, /moveNode|D\.save|nodeSet/, 'لا حفظَ عند الإفلات');
+  assert.match(l, /const r = D\.moveNode\(inf\.id, dnd\.ref, dnd\.pos\)/, 'التأكيدُ ينقل بموضع الإفلات (قبل · بعد · داخل)');
   assert.match(l, /drag = struct && !inf\.root \? this\._ogDragProps\(b\.id\) : \{\}/, 'كلُّ صفٍّ عدا «المنصة كلها» — ولمدير المنصة في المركز وحده');
   assert.doesNotMatch(rd('src/modules/admin/logic.js') + rd('src/modules/admin/view.html'), /_trDragProps|tr-rw|trDragStart/, 'لا نسخةَ ثانية في صفحة الإعدادات');
   const c = rd('src/modules/org/helmet.css');
