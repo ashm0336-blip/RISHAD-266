@@ -664,6 +664,11 @@ Object.assign(Component.prototype, {
       ck = chk.key && chkKeys.some((x) => x.v === chk.key) ? chk.key : (chkKeys[0] || {}).v || "";
     return Object.assign(v, {
       p44Role: { n: role.name || "بلا اسم", d: role.desc || "", badge: role.sup ? "دور إشرافي" : "دور", members: holders(role.id) ? KIVO.BassamCount(holders(role.id), "شخص") + " " + KIVO.BassamCount.agr(holders(role.id), "يحمل", "يحملان", "يحملون") + " هذا الدور" : "لا يحمل هذا الدور أحد بعد" },
+      /* V7 · د6 (ب7): «حاملو الدور» بأسمائهم من المسودة نفسِها (عددُهم = holders) — كلٌّ يُفتح في «الأشخاص» لوحدته مختاراً */
+      p44RoleHold: Object.keys(d.people || {})
+        .filter((ek) => (d.people[ek] || {}).role === role.id)
+        .map((ek) => ({ n: this._p44PName(ek), go: () => this.p44Open(did, "people", { pSel: ek, exForm: null }) })),
+      p44RoleHoldNone: !holders(role.id),
       p44RoleName: role.name || "",
       p44RoleNameSet: (ev) => upd((r) => (r.name = String((ev && ev.target && ev.target.value) || "").slice(0, 60))),
       p44RoleDesc: role.desc || "",
@@ -774,7 +779,7 @@ Object.assign(Component.prototype, {
     const E = this._p44E(),
       S = this._p44S(),
       d = S.d;
-    if (!E || !d || (S.rev && S.rev.busy)) return;
+    if (!E || !d || (S.rev && S.rev.busy)) return !1;   /* V7 · د6: يعيد true حين حُفظ — يقرؤه p44EdSave (مصدرُ التعديلات غير المحفوظة) */
     const did = d.did,
       aff = this.p44Affected(d),
       roles = JSON.parse(JSON.stringify(d.roles)),
@@ -794,10 +799,39 @@ Object.assign(Component.prototype, {
     void intent;
     if (!r || !r.ok) {
       const why = r && "unsent" === r.err ? "لم يصل تأكيد الحفظ — المسودة باقية؛ أعد الحفظ للتحقق." : r && "denied" === r.err ? "رفض الخادم الحفظ — راجع الصلاحية ثم أعد المحاولة." : "لم يُحفظ التغيير — " + (r && r.err ? "(" + r.err + ") " : "") + "راجع الصلاحية ثم أعد المحاولة.";
-      return void this._p44Set({ rev: { open: 1, err: why } });
+      return this._p44Set({ rev: { open: 1, err: why } }), !1;
     }
     this._p44Set((s) => ({ rev: null, d: s.d ? Object.assign({}, s.d, { base: { roles: roles, people: people } }) : s.d, log: null }));
     this.bsToast("حُفظت الصلاحيات — " + this.p44AffLine(aff.length), "ok");
+    return !0;
+  },
+  /* V7 · د6 (ب11 — لحارس التعديلات غير المحفوظة): مسودةُ «الأدوار» و«الأشخاص» الواحدة (state.p44.d لوحدةٍ واحدة) مصدرٌ يُسجَّل بنداءٍ واحد،
+     مثلاً registry.add(this.p44DirtySource()). dirty() تزامني · review() يفتح «مراجعة قبل الحفظ» نفسَها (true إن فُتحت) · save() حفظٌ مباشر
+     بالمسار نفسِه (Promise<boolean>) · discard() يعيد المسودة إلى المحفوظ. التبويبان يتشاركان المسودة: الانتقالُ بينهما في الوحدة نفسِها لا يُضيّع شيئاً */
+  p44DirtySource() {
+    return {
+      id: "p44-roles",
+      label: "الأدوار والأشخاص",
+      tabs: ["roles", "people"],
+      unit: () => (this._p44S().d || {}).did || "",
+      dirty: () => this.p44EdDirty(),
+      review: () => this.p44EdReview(),
+      save: () => this.p44EdSave(),
+      discard: () => this.p44EdDiscard(),
+    };
+  },
+  p44EdDirty() {
+    return this._p44Dirty(this._p44S().d);
+  },
+  p44EdReview() {
+    return this.p44EdDirty() ? (this._p44Set({ rev: { open: 1 } }), !0) : !1;
+  },
+  async p44EdSave() {
+    return this.p44EdDirty() ? !!(await this._p44Save()) : !0;
+  },
+  p44EdDiscard() {
+    this._p44Upd((x) => ((x.roles = x.base.roles), (x.people = x.base.people)));
+    this._p44Set({ rev: null, exForm: null });
   },
   /* ③ الأشخاص */
   _p44PeopleVals(did, d) {
@@ -872,6 +906,8 @@ Object.assign(Component.prototype, {
     return Object.assign(v, {
       p44PSel: { n: sel.name || sel.un, i: String(sel.name || "؟").trim().charAt(0) || "؟", id: sel.empno || sel.no || sel.un || "", role: roleOf(sel), mgr: !!sel.mgr },
       p44PMgr: !!sel.mgr,
+      /* V7 · د6 (قرار المالك — الرد 2 · ٣): سطرٌ واحد فوق قائمته الحقيقية، وصفاً لا بديلاً عنها */
+      p44PMgrLine: sel.mgr ? "مدير الوحدة · كامل داخل سقف وحدته" : "",
       p44PSelf: self(sel),
       p44PEdit: !sel.mgr && !self(sel),
       p44PRoles: [{ id: null, name: "بلا دور" }].concat(roles).map((x) => ({ t: x.name || "بلا اسم", on: (r.role || null) === x.id ? "true" : "false", pick: () => setRec((p) => (p.role = x.id)) })),
