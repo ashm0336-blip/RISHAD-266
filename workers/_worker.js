@@ -13985,11 +13985,11 @@ async function rsImportRoute(env, request, ss) {
     if (op === 'commit') out.imagesNew = stage.fresh.length;
     return json(out);
   } catch (e) {
-    var failed = rsErrorResponse(e), final = failed && failed.status < 500 && failed.status !== 409;
+    var failed = rsErrorResponse(e), final = failed && failed.status < 500 && (failed.status !== 409 || (!!e.rs && e.rs !== 'conflict' && e.rs !== 'restore-epoch-changed'));
     try {
       /* كائناتٌ وُضعت لاعتمادٍ لم يتمّ: تُزال ما لم يظهر لمعرّفها صفٌّ (رفعٌ آخر سبق) */
       for (var k of (stage && stage.put) || []) if ((await kvGet(env, 'imgs', k)) === null) await imgDropR2(env, k);
-      if (sid && (final || e.rs === 'import-incomplete')) await rsiDrop(env, sid).run();   /* رفضٌ نهائي ⇒ يُنظَّف المؤقت؛ التعارضُ (409) وخطأُ الخادم يُبقيانه لإعادة المحاولة */
+      if (sid && final) await rsiDrop(env, sid).run();   /* رفضٌ نهائي ⇒ يُنظَّف المؤقت؛ تعارضُ النسخ (conflict · restore-epoch-changed) وخطأُ الخادم يُبقيانه لإعادة المحاولة */
     } catch (e2) { swallow('import-clean', e2, env && env.__rid); }
     if (failed) return failed;
     throw e;

@@ -258,7 +258,7 @@
     return { ok: 1 };
   }
   function gone(result) {
-    return !result.ok && !result.uncertain && result.err !== 'conflict';
+    return !result.ok && !result.uncertain && result.err !== 'conflict' && result.err !== 'restore-epoch-changed';   /* كما يحكم الخادم (019g): التعارضُ يُبقي المؤقت */
   }
   async function prepare(file, options) {
     var stamp = context(),
