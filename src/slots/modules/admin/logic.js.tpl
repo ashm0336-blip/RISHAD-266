@@ -4164,7 +4164,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   _admTabsNow(i, n, p, g) {
     const e = this.state,
-      rdy = "dept" !== i || this._dPermReady();
+      rdy = "dept" !== i || (() => { try { return !KIVO.BassamPerm || !KIVO.BassamPerm.ready || !!KIVO.BassamPerm.ready(); } catch (x) { return !0; } })();   /* = _dPermReady */
     let l = e.admTab,
       dq = null;
     try {
