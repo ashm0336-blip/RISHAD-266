@@ -10064,12 +10064,29 @@ function rsNFValidate(domain, scope) {
   });
   return out;
 }
+/* V7 · د6: عمودُ النطاق لكل جدول تنبيهات (الإعداداتُ ونقاطُ التتبّع للمنصة — لا نطاقَ إدارة لها) وقراءةُ صفوف نطاقاتٍ مسمّاة وحدها */
+function rsNFScopeCol(n) {
+  return n === 'states' ? 'message_scope' : n === 'overrides' || n === 'checkpoints' ? '' : 'scope';
+}
+function rsNFScopeWhere(n, only) {
+  return rsNFScopeCol(n) + ' IN (' + only.map(function (_, i) { return '?' + (i + 1); }).join(',') + ')';
+}
+async function rsNFReadScoped(env, only) {
+  var names = Object.keys(NF_TABLES).filter(rsNFScopeCol),
+    b = await env.DB.batch(names.map(function (n) { return rsBound(env.DB.prepare('SELECT * FROM ' + NF_TABLES[n][0] + ' WHERE ' + rsNFScopeWhere(n, only)), only); })),
+    o = { version: 1, overrides: [], checkpoints: [] };
+  names.forEach(function (n, i) { o[n] = b[i].results || []; });
+  return o;
+}
 async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
   rsShape(base, ['rev', 'configRev', 'broadcastRev']);
   ['rev', 'configRev', 'broadcastRev'].forEach(function (k) {
     rsNat(base[k]);
   });
-  var before = await nfRead(env),
+  /* V7 · د6: استعادةُ إدارةٍ لا تقرأ تنبيهاتِ المنصة كلِّها: صفوفُ نطاقها وحده (ونطاقِ ما يُنشأ معها) — تُقرأ وتُحرس وتُلتقط وتُحذف ثم تُدرج،
+     وما سواها لا يُمسّ (كان يُحذف ويُعاد كما هو). النتيجةُ في الجداول هي هي؛ والكلفةُ تتبع تنبيهاتِ الإدارة لا المنصة. */
+  var only = scope.kind === 'dept' ? ['d:' + scope.departmentId].concat((newDepts || []).map(function (d) { return 'd:' + d; })) : null,
+    before = only ? await rsNFReadScoped(env, only) : await nfRead(env),
     next = rsNFValidate(domain, scope),
     guards = [revGuard(env, NF_REV, base.rev), revGuard(env, NF_CFG_REV, base.configRev), revGuard(env, NF_BC_REV, base.broadcastRev)],
     st = [],
@@ -10095,7 +10112,8 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
   Object.keys(NF_TABLES).forEach(function (n) {
     var spec = NF_TABLES[n],
       rows = before[n];
-    guards.push.apply(guards, rsWitness(env, spec[0], spec[1], rows));
+    if (only && !rsNFScopeCol(n)) return;
+    guards.push.apply(guards, only ? rsWitness(env, spec[0], spec[1], rows, rsNFScopeWhere(n, only), only) : rsWitness(env, spec[0], spec[1], rows));
     snaps.push({ domain: 'notifications', table: spec[0], rows: rows });
     if (mode === 'merge') next[n] = rsMergeRows(rows, next[n], spec[1], pks[n]);
     else if (scope.kind === 'dept')
@@ -10106,13 +10124,15 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
         .concat(next[n]);
   });
   ['states', 'targets', 'messages', 'dedup', 'overrides', 'checkpoints'].forEach(function (n) {
-    st.push(env.DB.prepare('DELETE FROM ' + NF_TABLES[n][0]));
+    if (only && !rsNFScopeCol(n)) return;
+    st.push(only ? rsBound(env.DB.prepare('DELETE FROM ' + NF_TABLES[n][0] + ' WHERE ' + rsNFScopeWhere(n, only)), only) : env.DB.prepare('DELETE FROM ' + NF_TABLES[n][0]));
   });
   ['messages', 'targets', 'states', 'dedup', 'overrides', 'checkpoints'].forEach(function (n) {
+    if (only && !rsNFScopeCol(n)) return;
     st.push.apply(st, rsBulk(env, NF_TABLES[n][0], NF_TABLES[n][1], next[n]));
   });
   var unchanged = Object.keys(NF_TABLES).every(function (n) {
-    return rsSameRows(before[n], next[n]);
+    return (only && !rsNFScopeCol(n)) || rsSameRows(before[n], next[n]);
   });
   var revisionKeys = unchanged ? [] : [NF_REV];
   if (!unchanged && !rsSameRows(before.overrides, next.overrides)) revisionKeys.push(NF_CFG_REV);
@@ -13918,7 +13938,8 @@ var RSI_BUDGET = 40;
 async function rsiHeavy(env, s, n, legacy, sliced) {
   var fam = [];
   sliced.forEach(function (k) { fam = fam.concat(RSI_SLICE[k][1]); });
-  var nodes = await (s.kind === 'dept' ? env.DB.prepare('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource NOT IN (SELECT value FROM json_each(?2))').bind(s.departmentId, JSON.stringify(fam)) : env.DB.prepare('SELECT COUNT(*) n FROM ops_nodes')).first('n'),
+  /* V7 · د6: وتنبيهاتُ الإدارة القائمة (خطةُ تنبيهات الإدارة تقرأ نطاقَها وحده — 019d rsNFPlan) تُعدّ كالعقد */
+  var nodes = await (s.kind === 'dept' ? env.DB.prepare("SELECT (SELECT COUNT(*) FROM ops_nodes WHERE department_id=?1 AND resource NOT IN (SELECT value FROM json_each(?2)))+(SELECT COUNT(*) FROM notification_messages WHERE scope=?3)+(SELECT COUNT(*) FROM notification_targets WHERE scope=?3)+(SELECT COUNT(*) FROM notification_user_state WHERE message_scope=?3) n").bind(s.departmentId, JSON.stringify(fam), 'd:' + s.departmentId) : env.DB.prepare('SELECT COUNT(*) n FROM ops_nodes')).first('n'),
     cost = (n / 1e6) * (legacy ? 16 : 7) + nodes * 0.02;
   if (cost > RSI_BUDGET) throw Object.assign(rsError('import-too-heavy', 413), { details: { cost: Math.round(cost), budget: RSI_BUDGET, chars: n, nodes: nodes, kind: s.kind } });
 }

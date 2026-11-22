@@ -36,7 +36,8 @@ var RSI_BUDGET = 40;
 async function rsiHeavy(env, s, n, legacy, sliced) {
   var fam = [];
   sliced.forEach(function (k) { fam = fam.concat(RSI_SLICE[k][1]); });
-  var nodes = await (s.kind === 'dept' ? env.DB.prepare('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource NOT IN (SELECT value FROM json_each(?2))').bind(s.departmentId, JSON.stringify(fam)) : env.DB.prepare('SELECT COUNT(*) n FROM ops_nodes')).first('n'),
+  /* V7 · د6: وتنبيهاتُ الإدارة القائمة (خطةُ تنبيهات الإدارة تقرأ نطاقَها وحده — 019d rsNFPlan) تُعدّ كالعقد */
+  var nodes = await (s.kind === 'dept' ? env.DB.prepare("SELECT (SELECT COUNT(*) FROM ops_nodes WHERE department_id=?1 AND resource NOT IN (SELECT value FROM json_each(?2)))+(SELECT COUNT(*) FROM notification_messages WHERE scope=?3)+(SELECT COUNT(*) FROM notification_targets WHERE scope=?3)+(SELECT COUNT(*) FROM notification_user_state WHERE message_scope=?3) n").bind(s.departmentId, JSON.stringify(fam), 'd:' + s.departmentId) : env.DB.prepare('SELECT COUNT(*) n FROM ops_nodes')).first('n'),
     cost = (n / 1e6) * (legacy ? 16 : 7) + nodes * 0.02;
   if (cost > RSI_BUDGET) throw Object.assign(rsError('import-too-heavy', 413), { details: { cost: Math.round(cost), budget: RSI_BUDGET, chars: n, nodes: nodes, kind: s.kind } });
 }
