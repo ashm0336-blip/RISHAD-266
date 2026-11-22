@@ -70,7 +70,7 @@
  },
  "tree.kpiPanel.daily": {
   "order": 10,
-  "text": "      if (sk === 'kpiOcc') return onCap('zones') && onCap('dens');\n      if (sk === 'kpiZones') return onCap('zones');\n@@SYS:tree.kpiPanel.dreport|empty=\"      if (sk === 'kpiDaily') return false;   /* V7 · د5-هـ: بلا التقرير اليومي لا لوحةَ له */\\n\"@@"
+  "text": "      if (sk === 'kpiOcc') return onCap('zones', did) && onCap('dens', did);\n      if (sk === 'kpiZones') return onCap('zones', did);\n@@SYS:tree.kpiPanel.dreport|empty=\"      if (sk === 'kpiDaily') return false;   /* V7 · د5-هـ: بلا التقرير اليومي لا لوحةَ له */\\n\"@@"
  },
  "p24.derive.daily": {
   "order": 10,

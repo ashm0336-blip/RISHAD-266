@@ -92,9 +92,9 @@ class Component extends DCLogic {
       const OK = Object.assign({ profile: null, sysadmin: null, kpis: null }, (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || {});
       if (!(v in OK)) return "";
       const sup = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());
-      if (v === "help" && sup) return v;
+      /* V7 · د5-ح (قرار المالك): «المساعدة» و«مؤشرات الإدارة» بلا استثناءٍ لمدير المنصة — المطفأُ لا يُفتح لأحد (صلاحياتُه في 331 بلا المطفأ) */
       if (v === "kpis") {
-        if (!KIVO.BassamPerm || sup) return v;
+        if (!KIVO.BassamPerm) return v;
         return this._kpisOk() ? v : "";
       }
       const pk = OK[v];
@@ -1126,7 +1126,10 @@ class Component extends DCLogic {
     const slide = (this.__sbToggled && wide) ? (sbOpen ? "animation:bsSlideOpen .3s ease-in-out;" : "animation:bsSlideClose .3s ease-in-out;") : "";
     /* مفتاح الصفحة في منظومة الصلاحيات مقابل مفتاح التنقل */
     const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps",@@SYS:root.navPerm.staff@@@@SYS:root.navPerm.plan@@@@SYS:root.navPerm.daily@@@@SYS:root.navPerm.tasks@@@@SYS:root.navPerm.irshad@@ admin: "admin" };
-    const _pOK = (pk) => { try { if (pk === "admin" && KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) return true; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
+    /* V7 · د5-ح: القائمةُ الجانبية من مصدرٍ واحد — BassamPerm.menuFor (334) على صلاحيات الجلسة؛ وهو نفسُه يبني «ما يراه مدير هذه الإدارة» في «الصلاحيات ← الأنظمة».
+       «الإعدادات» دائمةٌ في صلاحيات مدير المنصة (331) فلا استثناءَ له هنا */
+    const _menu = (() => { try { const m = {}; KIVO.BassamPerm.menuFor().forEach((x) => { m[x.k] = x.on; }); return m; } catch (e) { return null; } })();
+    const _pOK = (pk) => { try { if (_menu && pk in _menu) return !!_menu[pk]; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
     const _pAny = (ks) => ks.some(_pOK);
     /* «مدير النظام»: لمدير النظام وحده (كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة) */
     const goSys = () => this._goSys();
@@ -1167,7 +1170,7 @@ class Component extends DCLogic {
       authNotStaff: !(KIVO.BassamAuth && KIVO.BassamAuth.isStaff && KIVO.BassamAuth.isStaff()),
       /* مجموعة «الإعدادات» كانت محجوبة عن كل موظف — حتى مدير الإدارة المأذون.
          الآن تتبع الصلاحية نفسها: مدير النظام دائماً، وغيره بصلاحية admin. */
-      showAdminGrp: !!((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || _pOK("admin")),
+      showAdminGrp: !!_pOK("admin"),
       /* حراسة الصلاحيات: الصفحة غير المتاحة يختفي رابطها (class "n gone")
          ويُردّ الانتقال إليها بأي طريق. مدير النظام يرى كل شيء. */
       /* ═══ V7 · د5-ح (قرار المالك): النظامُ المطفأ لا يراه أحد — ولا مديرُ المنصة ═══
@@ -1180,19 +1183,18 @@ class Component extends DCLogic {
         const tip = (pk) => NM[pk] || "";
         /* «مؤشرات الإدارة» حاويةُ عرضٍ لأوراقٍ قائمة بمفاتيحها — فظهورُها من
            ملك واحدةٍ منها، لا من مفتاحٍ جديدٍ لها */
-        const _kpiAny = this._kpisOk();
+        const _kpiAny = _menu && "kpis" in _menu ? !!_menu.kpis : this._kpisOk();
         return {
           nKpis: "n" + (a === "kpis" ? " on" : "") + (_kpiAny ? "" : " gone"), tKpis: labels.kpis,
 @@SYS:root.navVals.dstats@@          nEmployees: cls("employees", "emps"), tEmployees: tip("emps"),
 @@SYS:root.navVals.staff@@@@SYS:root.navVals.plan@@@@SYS:root.navVals.daily@@@@SYS:root.navVals.dreport@@          /* كانت مربوطة بـ«الجدول الشهري» وحده فتختفي عمّن له «التشغيل الميداني» فقط */
-          nPlanning: "n" + (a === "planning" ? " on" : "") + (_pAny(["planning"@@SYS:root.planning.perms@@]) ? "" : " gone"), tPlanning: tip("planning"),
+          nPlanning: "n" + (a === "planning" ? " on" : "") + ((_menu && "planning" in _menu ? _menu.planning : _pAny(["planning"@@SYS:root.planning.perms@@])) ? "" : " gone"), tPlanning: tip("planning"),
           @@SYS:root.navVals.systems@@          nLinks: cls("links", "links"), tLinks: tip("links"),
           tAdmin: "الإعدادات — نسخة الإدارة الاحتياطية",
         };
       })(),
-      /* الإعدادات تتبع صلاحية admin — تختفي إن أُطفئت للإدارة، إلا للمشرف
-         العام فيراها دائماً (لا يُحبس أحد خارج النسخ الاحتياطي). */
-      nAdmin: "n" + (a === "admin" ? " on" : "") + (((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || _pOK("admin")) ? "" : " gone"),
+      /* الإعدادات تتبع صلاحية admin (دائمةٌ لمدير المنصة في صلاحياته — 331) — لا يُحبس أحد خارج النسخ الاحتياطي */
+      nAdmin: "n" + (a === "admin" ? " on" : "") + (_pOK("admin") ? "" : " gone"),
       nSysAdmin: "n" + (a === "sysadmin" ? " on" : ""),
       goSysAdmin: goSys,
       /* الطبقة المعتمة تظهر مع الشريط المفتوح — والـCSS يقصرها على الشاشات الصغيرة */

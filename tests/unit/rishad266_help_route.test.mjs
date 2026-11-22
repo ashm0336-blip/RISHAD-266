@@ -85,7 +85,11 @@ test('a legacy saved help page is consumed once and an empty page ceiling falls 
   assert.equal(W.root.state.active,'profile');assert.equal(W.location.hash,'#/profile');assert.ok(W.nodes.has('bs-plat-about'));
 });
 
-test('the platform administrator keeps the same help access as the existing sidebar dialog',()=>{
+/* V7 · د5-ح (قرار المالك — كان: «مدير المنصة يفتح المساعدة دائماً»): المطفأُ لا يراه أحد ولا مديرُ المنصة؛ صلاحياتُه (331) كلُّ شيءٍ إلا المطفأ،
+   فـ«المساعدة» تتبع can('help') له كغيره — مسموحةٌ: تُفتح · مطفأةٌ: لا تُفتح */
+test('the platform administrator follows the same help rule: open when help is on, never when it is OFF',()=>{
   const W=world({superUser:true,help:false});W.mount();
-  assert.ok(W.nodes.has('bs-plat-about'));assert.equal(W.root.state.active,'tasks');assert.equal(W.location.hash,'#/tasks');
+  assert.equal(W.nodes.has('bs-plat-about'),false);assert.notEqual(W.root.state.active,'help');assert.equal(W.location.hash,'#/tasks');
+  const O=world({superUser:true,help:true});O.mount();
+  assert.ok(O.nodes.has('bs-plat-about'));assert.equal(O.root.state.active,'tasks');
 });

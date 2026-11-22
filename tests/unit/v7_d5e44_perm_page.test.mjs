@@ -59,6 +59,9 @@ function world({ caps = { [DID]: ['staff', 'plan', 'tasks'] }, off = [], doc, su
       on, subOn: () => true, capState: () => null, deptSubs: () => [], setDeptSubs: () => ({ ok: true }), setDeptTabs: () => ({ ok: true }),
       setDeptCap: (u, c) => (capW.push([u, c.slice()]), { ok: true }),
       nameOf: (k) => k,
+      /* V7 · د5-ح: مصدرُ القائمة الجانبية الواحد (334 menuFor على صلاحيات مدير الوحدة mgrPerms) — هنا بديلُه من السقف المصطنع */
+      mgrPerms: (u) => ({ TEST_ONLY_unit: u }),
+      menuFor: (P, d) => ['emps', 'staff', 'plan', 'tasks', 'links', 'admin'].map((k) => ({ k, n: 'TEST_ONLY ' + k, on: k === 'emps' || k === 'admin' || (!plat.mods.off.includes(k) && on(k, P.TEST_ONLY_unit)), hid: k === 'links' })),
       /* سقفُ الوحدة لمحرّك الأدوار (= 331 p24Ceil · p24LeafOn): سجلُّها إن وُجد، والمطفأُ من المنصة خارجه */
       p24: { ceil: (u) => ({ page: (k) => !plat.mods.off.includes(k) && (!Array.isArray(caps0[u]) || caps0[u].includes(k)), sub: () => true, lens: () => true }), leafOn: (C0, leaf) => C0.page(String(leaf).split('/')[0]) },
     },
@@ -122,7 +125,8 @@ test('① systems: a unit row per system, locked by the platform or an ancestor;
   assert.equal(row('plan').locked, true); assert.equal(row('plan').by, 'المنصة'); assert.equal(row('plan').on, 'false');
   assert.equal(row('seized').locked, true); assert.equal(row('seized').by, 'TEST_ONLY قطاع', 'off in the sector ⇒ locked here');
   assert.equal(row('staff').on, 'true'); assert.equal(row('staff').locked, false);
-  assert.deepEqual(J(v.p44SysNav), ['صفحتي', 'الجدول الشهري', 'المهام'], 'what this unit\'s manager sees (the real system names)');
+  /* V7 · د5-ح (قرار المالك): البطاقةُ = قائمتُه الجانبية الفعلية كاملةً (الدائمةُ معها) من مصدر القائمة نفسِه — لا قائمةَ محسوبةً على حدة */
+  assert.deepEqual(J(v.p44SysNav), [{ k: 'profile', n: 'صفحتي' }, { k: 'emps', n: 'TEST_ONLY emps' }, { k: 'staff', n: 'TEST_ONLY staff' }, { k: 'tasks', n: 'TEST_ONLY tasks' }, { k: 'admin', n: 'TEST_ONLY admin' }], 'his real side menu: «صفحتي» + menuFor(mgrPerms(unit)) on and not hidden — the permanent pages included');
   assert.deepEqual(J(v.p44SysRows.map((r) => r.k)), J(W.E.sysList().filter((x) => x.toggle !== false).map((x) => x.key)), 'a row per toggleable system of the engine (the always-on ones have no switch)');
   assert.equal(v.p44SysOnN, '2'); assert.equal(v.p44SysPeople, '4');
   row('plan').flip(); v = W.render(); assert.equal(v.p44SysDirty, false, 'a locked system does not flip');

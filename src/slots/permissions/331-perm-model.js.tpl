@@ -657,7 +657,15 @@
     return v;
   };
   function lensOn(key, did){
-    if (isSuper()) return true;                        /* V7 · د1-ج: مدير المنصة بلا قيد — العدساتُ كلُّها */
+    /* V7 · د1-ج: مدير المنصة بلا قيد — العدساتُ كلُّها؛ د5-ح (قرار المالك): إلا المطفأة — عدسةٌ أُطفئت في سقف الوحدة أو أحد أصولها،
+       أو لم يبقَ لها مضيفٌ مفعّل (صفحاتُها مطفأة) لا تظهر له في تلك الوحدة */
+    if (isSuper()) {
+      var dd = did || curDept(), ch = [dd];
+      try { ch = ch.concat((KIVO.BassamDepts.ancestorsOf ? KIVO.BassamDepts.ancestorsOf(dd) : []) || []); } catch (e) {}
+      for (var i = 0; i < ch.length; i++) if (ch[i] && deptLenses(ch[i]).indexOf(key) === -1) return false;
+      var hs = lensHosts(key);
+      return !hs.length || (dd !== curDept()) || hs.some(function(h){ return !supHidden(h); });
+    }
     var Z = azZ(); if (!Z) return false;               /* V7 · د5-ح (القفل): المفاتيحُ المحمولة وحدها */
     var x = Z.depts[did || curDept()]; return !!(x && Array.isArray(x.lens) && x.lens.indexOf(key) !== -1);
   }

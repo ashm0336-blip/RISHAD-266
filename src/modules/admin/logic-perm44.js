@@ -434,12 +434,10 @@ Object.assign(Component.prototype, {
       dr = S.cap && S.cap.unit === u ? S.cap.on : {},
       depth = (id) => ("__plat" === id ? 0 : Math.min(4, anc.indexOf(id) !== -1 ? anc.indexOf(id) + 1 : id === did ? anc.length + 1 : anc.length + 2));
     const units = chain.map((id) => ({ n: nm(id), t: kind(id), on: id === u ? "true" : "false", dp: String(depth(id)), pick: () => this._p44Set({ unit: id, cap: null }) }));
-    const nav = ["صفحتي"],
-      rows = sys.map((s) => {
+    const rows = sys.map((s) => {
         const by = this._p44Lock(u, s, off),
           was = !by && this._p44On(u, s, off),
           on = by ? !1 : s.k in dr ? !!dr[s.k] : was;
-        on && nav.push(s.n);
         return {
           k: s.k,
           n: s.n,
@@ -471,7 +469,7 @@ Object.assign(Component.prototype, {
       p44SysRows: rows.map((r) => Object.assign(r, { sw: !0 })),
       p44SysNone: !rows.length,
       p44SysNoneTxt: "لا أنظمة قابلة للتشغيل في هذه المنصة.",
-      p44SysNav: nav,
+      p44SysNav: this.p44NavOf("__plat" === u ? did : u),
       p44SysNavT: "ما يراه مدير هذه الإدارة",
       p44SysOnN: String(rows.filter((r) => r.isOn).length),
       p44SysPeople: String(people),
@@ -482,6 +480,14 @@ Object.assign(Component.prototype, {
       p44SysReview: () => this._p44Set({ rev: { open: 1, kind: "sys" } }),
       ...this._p44SysRevVals(u, dr, nm(u), people),
     };
+  },
+  /* V7 · د5-ح (قرار المالك): «ما يراه مدير هذه الإدارة / قائمة إدارتك» = قائمتُه الجانبية الفعلية كاملةً (الدائمةُ معها) من المصدر الذي تُرسم منه
+     القائمةُ الجانبية نفسُه (BassamPerm.menuFor — root-logic يرسم منه) على صلاحيات مدير الوحدة (mgrPerms) — لا قائمةَ محسوبةً على حدة.
+     تعرض المحفوظ: تغييرٌ غيرُ محفوظ يظهر فيها بعد «حفظ» */
+  p44NavOf(u) {
+    const P = KIVO.BassamPerm,
+      head = [{ k: "profile", n: "صفحتي" }];
+    return head.concat(this._p44Try(() => P.menuFor(P.mgrPerms(u), u).filter((x) => x.on && !x.hid).map((x) => ({ k: x.k, n: x.n })), []));
   },
   /* V7 · د5-ح: «الأنظمة» لمدير الإدارة قراءةً — المفعّلُ في سقف وحدته وحده (السقفُ بالوراثة ∩ المنصة)، بلا مفاتيح ولا شريط حفظ؛
      والمطفأُ لا يظهر له أبداً (لا صفّاً ولا قفلاً ولا اسماً) */
@@ -500,7 +506,7 @@ Object.assign(Component.prototype, {
       p44SysRows: rows,
       p44SysNone: !rows.length,
       p44SysNoneTxt: "لا نظام مفعّل لإدارتك بعد — يفعّله مدير المنصة.",
-      p44SysNav: ["صفحتي"].concat(rows.map((r) => r.n)),
+      p44SysNav: this.p44NavOf(did),
       p44SysNavT: "قائمة إدارتك",
       p44SysOnN: String(rows.length),
       p44SysPeople: String(people),

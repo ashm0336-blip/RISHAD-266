@@ -85,16 +85,46 @@
     return g ? (g.refs || []).map(function(r){ var sp = splitLeaf(r); return [sp.page, sp.sub]; }) : []; }
   /* KIVO_261 · SOT-003/010 (كشفه k261tree): هل تُرسم لوحةُ «مؤشرات الإدارة» هذه للمستخدم؟ — الورقةُ ∧ شروطُ اللوحة نفسُها (كانت في وحدة المؤشرات وحدها،
      فمن مُنح «مؤشرات التشغيل اليومي» دون «التقرير اليومي» يرى رابطَ «مؤشرات الإدارة» إلى صفحةٍ تقول «لا مؤشرات ممنوحة لك»). مصدرٌ واحد للرابط والصفحة. */
-  function kpiPanelOk(pk, sk){
+  /* V7 · د5-ح (قرار المالك): لا استثناءَ لمدير المنصة — صلاحياتُه (myPerms) كلُّ شيءٍ إلا المطفأ على المنصة أو لهذه الإدارة، فلوحةُ نظامٍ مطفأ لا تُرسم لأحد.
+     P (اختياري): صلاحياتُ غيره {ورقة: [أفعال]} — لقائمة «ما يراه مدير هذه الإدارة» (menuFor) بالقاعدة نفسِها · did: وحدتُه */
+  function kpiPanelOk(pk, sk, P, did){
     try {
-      if ((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper())) return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد — اللوحاتُ كلُّها مهما كان السقفُ والعدسات */
-      if (!sk) return can(pk, 'view');   /* V7 P4 · G6: لوحةُ صفحةٍ كاملة (مرجعٌ بلا «/» في refs — «مؤشرات المهام») يمنحها مفتاحُ عرض الصفحة نفسُه */
-      if (!canSub(pk, sk, 'view')) return false;
-      if (sk === 'kpiOcc') return onCap('zones') && onCap('dens');
-      if (sk === 'kpiZones') return onCap('zones');
-      if (sk === 'kpiDaily') return can('dreport', 'view');
+      var pv = P ? function(k){ return !!(P[k] && P[k].indexOf('view') !== -1); } : null;
+      if (!sk) return pv ? pv(pk) : can(pk, 'view');   /* V7 P4 · G6: لوحةُ صفحةٍ كاملة (مرجعٌ بلا «/» في refs — «مؤشرات المهام») يمنحها مفتاحُ عرض الصفحة نفسُه */
+      if (!(pv ? pv(pk + '/' + sk) : canSub(pk, sk, 'view'))) return false;
+      if (sk === 'kpiOcc') return onCap('zones', did) && onCap('dens', did);
+      if (sk === 'kpiZones') return onCap('zones', did);
+      if (sk === 'kpiDaily') return pv ? pv('dreport') : can('dreport', 'view');
       return true;
     } catch (e) { return false; }   /* KIVO_261 (المراجعةُ المستقلة): العطلُ يُخفي (كما كان فحصُ الرابط في الغلاف) لا يُظهر */
+  }
+  /* ═══ V7 · د5-ح (قرار المالك): القائمةُ الجانبية من مصدرٍ واحد ═══
+     menuFor(P, did) — روابطُ القائمة الجانبية بترتيبها (navOrder: العمل · المراجع · الإدارة) لحامل الصلاحيات P في الوحدة did:
+     الرابطُ ظاهرٌ إن ملك عرضَ صفحته (الحاويةُ: عرضُها أو عرضُ صفحةٍ تسكنها · «مؤشرات الإدارة»: لوحةٌ واحدة تُرسم له · «المساعدة»: ومعها إعدادُ المنصة).
+     P غائب ⇒ صلاحياتُ الجلسة نفسها (myPerms) — والغلافُ يرسم القائمة منها (root-logic _navMenu) فالقائمتان واحدة.
+     hid: أخفاه إعدادُ المنصة (side.hidden) فلا يُرسم وإن ملكه */
+  function menuFor(P, did){
+    var perms = P || I.myPerms(), NO = I.navOrder(), out = [], pl = null;
+    try { pl = KIVO.BassamPlat && KIVO.BassamPlat.get && KIVO.BassamPlat.get(); } catch (e) {}
+    var hiddenSide = (pl && pl.side && pl.side.hidden) || [], helpSide = !(pl && pl.side && pl.side.help === false);
+    var pv = function(k){ return !!(perms[k] && perms[k].indexOf('view') !== -1); };
+    var nameOf0 = function(k){ var p = PAGE_OF[k]; if (p) return p.name; var g = NAV_REG.filter(function(x){ return x.key === k; })[0]; return g ? g.name : k; };
+    NO.groups.forEach(function(g){ g.keys.forEach(function(k){
+      var on;
+      if (k === 'kpis') on = navLeaves('kpis').some(function(x){ return kpiPanelOk(x[0], x[1], P || null, did); });
+      else if (isContainer(k) || PAGE_REG.some(function(p){ return p.under === k; })) on = pv(k) || PAGE_REG.some(function(p){ return p.under === k && pv(p.key); });
+      else on = pv(k);
+      if (k === 'help') on = on && helpSide;
+      out.push({ k: k, n: nameOf0(k), on: !!on, hid: hiddenSide.indexOf(k) !== -1 });
+    }); });
+    return out;
+  }
+  /* صلاحياتُ مدير وحدةٍ did (بلا ورقةٍ مخزّنة — يرث سقفَها كاملاً) كما تحسبها 331 لحسابه: سقفُ الوحدة ∖ المطفأ على المنصة */
+  function mgrPerms(did){
+    var all = capAllPerms(did), off = [];
+    try { off = (KIVO.BassamPlat.get().mods || {}).off || []; } catch (e) {}
+    off.forEach(function(k){ if (k === 'admin') return; delete all[k]; leafKeysOf(k).forEach(function(l){ delete all[l]; }); });
+    return all;
   }
   KIVO.BassamPerm = { keyCap: keyCap, keyOn: keyOn, canW: canW, navOrder: navOrder, orderRows: orderRows, siteMap: siteMap, PAGE_KEYS: PAGE_KEYS, PAGE_REG: PAGE_REG, NAV_REG: NAV_REG, NAV2PERM: NAV2PERM, PERM2NAV: PERM2NAV, ALL_ACTS: ALL_ACTS, deptAccountsCount: deptAccountsCount, purgeDeptAccounts: purgeDeptAccounts, deptCap: deptCap, setDeptCap: setDeptCap, rawCap: rawCap, hasCap: hasCap, effCap: effCap, seedCapFrom: seedCapFrom, seedSectionCap: I.seedSectionCap, dropNodeCap: I.dropNodeCap, capOrphans: I.capOrphans,    patternSeed: patternSeed, _bust: function(){ I._pmMemo = null; },
     on: onCap, onAny: onAny, capSetAnywhere: capSetAnywhere, capState: I.capState, capOwnOf: I.capOwnOf, setCapOwn: I.setCapOwn, latentLeaves: I.latentLeaves, LENS_KEYS: LENS_KEYS, LENS_REG: LENS_REG, deptLenses: deptLenses, setDeptLenses: setDeptLenses, lensOn: I.lensOn,
@@ -104,7 +134,7 @@
     isContainer: isContainer, leafKeysOf: leafKeysOf, leafReg: leafReg, splitLeaf: splitLeaf, expandPerms: expandPerms, derivePages: derivePages, canSub: canSub,
     empLens: empLens, setEmpLens: setEmpLens, nameOf: nameOf, ACT_NAMES: ACT_NAMES,
     dropEmpPerms: dropEmpPerms, pruneOrphanEmpPerms: pruneOrphanEmpPerms,
-    myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk,
+    myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk, menuFor: menuFor, mgrPerms: mgrPerms,
     key: azKey, authz: function(){ return azZ(); },
     p24: { R: p24R, ix: p24Ix, ceil: p24Ceil, leafOn: p24LeafOn, keyOn: p24KeyOn, lensHosted: p24LensHosted, translate: p24Translate, grantOf: p24GrantOf, grantable: p24Grantable, assignable: p24Assignable, effective: p24Effective, delta: p24Delta, cover: p24Cover, setGrant: p24SetGrant, apply: p24Apply, lensOf: p24LensOf, DERIVE: P24_DERIVE, primView: p24PrimView } };
 

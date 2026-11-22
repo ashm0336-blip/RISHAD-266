@@ -115,11 +115,11 @@ def _core01(S, M):
                 continue
             lf = leaf(ref)
             if not lf or not lf.get('offPage'): err.append(c['key'] + '.refs: «' + ref + '» ليست ورقةً offPage')
-    # ⑤ اعتمادياتُ perm/lens = قواعدُ kpiPanelOk الحرفية في 334 (شيفرةٌ وإعلانٌ لا يفترقان)
-    body = re.search(r'function kpiPanelOk\(pk, sk\)\{([\s\S]*?)\n  \}', R('permissions', '334-perm-tree-tpl.js'))
+    # ⑤ اعتمادياتُ perm/lens = قواعدُ kpiPanelOk الحرفية في 334 (شيفرةٌ وإعلانٌ لا يفترقان) — د5-ح: التوقيعُ (pk, sk, P, did) ووحدةُ onCap(…, did)
+    body = re.search(r'function kpiPanelOk\(pk, sk(?:, P, did)?\)\{([\s\S]*?)\n  \}', R('permissions', '334-perm-tree-tpl.js'))
     lit = set()
     for sk, expr in re.findall(r"if \(sk === '(\w+)'\) return ([^;]+);", body.group(1) if body else ''):
-        lit |= {(sk, 'lens:' + x, 'lens') for x in re.findall(r"onCap\('(\w+)'\)", expr)}
+        lit |= {(sk, 'lens:' + x, 'lens') for x in re.findall(r"onCap\('(\w+)'(?:, did)?\)", expr)}
         lit |= {(sk, x, 'perm') for x in re.findall(r"\bcan\('(\w+)', 'view'\)", expr)}
     dec = {(f.split('/')[1], on, k) for f, on, k in reqs if k != 'code'}
     if not lit and dec: err.append('334 kpiPanelOk: لم تُقرأ قواعدُه')   # د5-هـ: بغياب المتابعة لا اعتماديةَ معلنة ولا قاعدة — اتساقٌ لا خلل

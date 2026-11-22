@@ -72,6 +72,6 @@ test('ownership: Tasks owns the code and the panel; the KPIs viewer imports it a
      sidebar link, the route and the tab agree. The KPIs viewer keeps only a fallback for a missing engine. */
   assert.match(r('modules/kpis/logic.js'), /\{ k: "tk", pk: "tasks", sk: "" \}/, 'the tasks tab is drawn from the page-level ref');
   assert.match(r('modules/kpis/logic.js'), /if \(!t && !\(r && r\.kpiPanelOk\)\) return !r \|\| !r\.can \? !0 : !!r\.can\(n, "view"\);/, 'fallback without the engine: tasks · view');
-  assert.match(r('permissions/334-perm-tree-tpl.js'), /if \(!sk\) return can\(pk, 'view'\);/, 'tab visibility rule: whoever can view «المهام»');
+  assert.match(r('permissions/334-perm-tree-tpl.js'), /if \(!sk\) return pv \? pv\(pk\) : can\(pk, 'view'\);/, 'tab visibility rule: whoever can view «المهام» (V7 · د5-ح: or the given holder\'s rights, for the manager-menu card)');
   assert.ok(JSON.parse(r('manifests/pages.json')).containers.find((c) => c.key === 'kpis').refs.includes('tasks'));
 });

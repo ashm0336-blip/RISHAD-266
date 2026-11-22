@@ -88,8 +88,8 @@
       var co = aside.querySelector(".s-txt .s-co"); if (co && co.textContent !== P.name) co.textContent = P.name;
       var mk = aside.querySelector(".s-mark"); if (mk) { if (mk.getAttribute("title") !== P.name) mk.setAttribute("title", P.name); var im = mk.querySelector("img.bs-plat-img"); if (P.logo) { if (!im) { im = document.createElement("img"); im.className = "bs-plat-img"; im.alt = ""; mk.appendChild(im); } if (im.getAttribute("src") !== P.logo) im.src = P.logo; } else if (im) im.remove(); }
       var nav = aside.querySelector(".s-nav"), hg = nav && nav.querySelector(".bs-plat-helpgrp");
-      /* «المساعدة» صفحة في سجل الصلاحيات: تظهر لمن له عرضها (مدير النظام دائماً) وإعداد المنصة يطفئها للجميع */
-      var helpOk = false; try { var PM9 = KIVO.BassamPerm; helpOk = !PM9 || !PM9.can || (KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || PM9.can('help', 'view'); } catch (e9) { helpOk = true; }
+      /* «المساعدة» صفحة في سجل الصلاحيات: تظهر لمن له عرضها وإعداد المنصة يطفئها للجميع — V7 · د5-ح: بلا استثناءٍ لمدير المنصة (المطفأُ لا يراه أحد) */
+      var helpOk = false; try { var PM9 = KIVO.BassamPerm; helpOk = !PM9 || !PM9.can || PM9.can('help', 'view'); } catch (e9) { helpOk = true; }
       /* KIVO_254 (AUD-020 · لوحة المفاتيح): رابطُ «المساعدة» <a> بلا href كروابط التنقّل — role="link" وtabindex="0" يدخلانه ترتيبَ Tab ويُفتح بـEnter (المُحسِّن 660) */
       /* CORE-02 S7: في مساحة «مركز إدارة رشاد» لا مجموعةَ مساعدة — المساعدةُ هناك في «حول المنصة» والجرس */
       if (aside.classList.contains("bsb--console")) { if (hg) hg.remove(); }

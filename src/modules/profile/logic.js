@@ -320,7 +320,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   can(t, e) {
     try {
       const s = KIVO.BassamPerm;
-      return !(s && s.can && !(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) && !s.can(t, e || "view"));
+      /* V7 · د5-ح (قرار المالك): بلا استثناءٍ لمدير المنصة — صلاحياتُه (331) كلُّ شيءٍ إلا المطفأ، فقطعُ «صفحتي» لنظامٍ مطفأ لا تُرسم له */
+      return !(s && s.can && !s.can(t, e || "view"));
     } catch (t) {
       return !0;
     }

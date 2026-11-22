@@ -96,12 +96,12 @@ test('A5 refs = the panels of kpis/logic.js · the conditions = kpiPanelOk (V7 �
   assert.deepEqual(drawn, KPI.refs, 'kpis/logic.js draws the refs of the container, in order');
   assert.doesNotMatch(KL, /"tkKpi"/, 'the tasks panel has no rule of its own left in the KPIs page');
   /* (2) the conditions: the literal rules of kpiPanelOk (the extraction of tools/validate_schemas.py ⑤) */
-  const body = /function kpiPanelOk\(pk, sk\)\{([\s\S]*?)\n  \}/.exec(P334)[1], rules = {};
+  const body = /function kpiPanelOk\(pk, sk(?:, P, did)?\)\{([\s\S]*?)\n  \}/.exec(P334)[1], rules = {};
   for (const m of body.matchAll(/if \(sk === '(\w+)'\) return ([^;]+);/g))
-    rules[m[1]] = [...m[2].matchAll(/onCap\('(\w+)'\)/g)].map((x) => 'lens:lens:' + x[1]).concat([...m[2].matchAll(/\bcan\('(\w+)', 'view'\)/g)].map((x) => 'perm:' + x[1])).sort();
+    rules[m[1]] = [...m[2].matchAll(/onCap\('(\w+)'(?:, did)?\)/g)].map((x) => 'lens:lens:' + x[1]).concat([...m[2].matchAll(/\bcan\('(\w+)', 'view'\)/g)].map((x) => 'perm:' + x[1])).sort();
   assert.deepEqual(Object.keys(rules).sort(), ['kpiDaily', 'kpiOcc', 'kpiZones']);
   /* (4) kpiPanelOk serves the page-level ref through the page's own view right — no new leaf, no new key */
-  assert.match(body, /if \(!sk\) return can\(pk, 'view'\);/);
+  assert.match(body, /if \(!sk\) return pv \? pv\(pk\) : can\(pk, 'view'\);/);   /* V7 · د5-ح: أو صلاحياتُ حاملٍ مُعطاة (بطاقة قائمة المدير) */
   assert.equal(REG.registry.length, 264 /* V7 · د5-ح: 269 − صفوفُ tpl.* الخمسة لورقة admin/ptpls المحذوفة */); assert.equal(PAGES.pages.find((p) => p.key === 'tasks').tabs, undefined);
 });
 

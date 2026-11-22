@@ -140,7 +140,9 @@ var REG = [
     try {
       var nav = goNav(x); if (!nav) return true;
       var u = me(); if (!u) return false;
-      if (u.role === 'super' || nav === 'profile' || nav === 'help') return true;
+      if (nav === 'profile') return true;
+      /* V7 · د5-ح (قرار المالك): مديرُ المنصة بلا استثناءٍ في الأنظمة — صلاحياتُه (331) كلُّ شيءٍ إلا المطفأ؛ والمركزُ والإعداداتُ له */
+      if (u.role === 'super' && (nav === 'sysadmin' || nav === 'admin')) return true;
       if (nav === 'sysadmin') return false;
       if (nav === 'admin') return isMgr();
       var Pm = P(); if (!Pm || !Pm.can) return true;
@@ -284,6 +286,8 @@ var REG = [
     return view.items.filter(function(x){
       if (x.exp && x.exp < Date.now()) return false;
       if (x.at > Date.now()) return false;
+      /* V7 · د5-ح: تنبيهُ نظامٍ مطفأ في مساحة الإدارة النشطة لا يُعرض لمدير المنصة (goOk بصلاحياته المقصوصة بالمطفأ) */
+      if (sup && (!x.dept || x.dept === c.dept) && x.k !== 'sys' && x.k !== 'sec' && !x.isBc && !goOk(x)) return false;
       return !sup || all || !x.dept || x.dept === c.dept || x.k === 'sys' || x.k === 'sec' || x.isBc;
     }).map(function(x){return JSON.parse(JSON.stringify(x));}).sort(function(a,b){ return ((b.pin && b.un) ? 1 : 0) - ((a.pin && a.un) ? 1 : 0) || b.at - a.at; });
   }

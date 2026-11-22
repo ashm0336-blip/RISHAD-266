@@ -1036,8 +1036,8 @@
       </ul>
     </section>
     <aside class="p44-side" aria-label="المعاينة">
-      <section class="p44-card"><h4>{{p44SysNavT}}</h4><small>قائمته، وفي صفحة الصلاحيات عنده هذه الأنظمة فقط</small>
-        <ul class="p44-menu"><sc-for list="{{p44SysNav}}" as="m" hint-placeholder-count="5"><li><i aria-hidden="true"></i><span>{{m}}</span></li></sc-for></ul>
+      <section class="p44-card" aria-label="القائمة الجانبية لمدير الوحدة"><h4>{{p44SysNavT}}</h4><small>قائمتُه الجانبية كما تُرسم له الآن (المحفوظ)</small>
+        <ul class="p44-menu"><sc-for list="{{p44SysNav}}" as="m" hint-placeholder-count="5"><li data-k="{{m.k}}"><i aria-hidden="true"></i><span>{{m.n}}</span></li></sc-for></ul>
       </section>
       <sc-if value="{{p44SysCtl}}" hint-placeholder-val="{{ true }}">
       <section class="p44-card"><h4>أثر الحفظ</h4>
