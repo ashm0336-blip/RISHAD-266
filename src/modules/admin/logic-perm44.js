@@ -53,7 +53,8 @@ Object.assign(Component.prototype, {
   },
   _p44PlatOff() {
     const pl = this._p44Try(() => KIVO.BassamPlat.get(), null);   /* المطفأُ على المنصة كلها — «admin» دائم (activation: always) */
-    return ((pl && pl.mods && pl.mods.off) || []).filter((k) => "admin" !== k);
+    const raw = ((pl && pl.mods && pl.mods.off) || []).filter((k) => "admin" !== k);
+    return this._p44Try(() => KIVO.Perm44.offClosure(raw), raw);   /* V7 · د6: مع ما يسكن حاوياتِه (الإغلاقُ الواحد في المحرّك المشترك) */
   },
   /* النظامُ مفعّلٌ في الوحدة u؟ = غيرُ مطفأٍ على المنصة ∧ في سقفها الفعلي (سقفُها ∩ سقوفُ أصولها — 331 on) */
   _p44On(u, s, off) {

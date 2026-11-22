@@ -150,6 +150,7 @@ var API = {
   diff: function (a, b) { return eng().diff(a, b); },
   undo: function (cur, ch) { return eng().undo(cur, ch); },
   sysList: function () { return eng().sysList(); },
+  offClosure: function (list) { return eng().offClosure(list); },   /* V7 · د6: إغلاقُ المطفأ على المنصة (المحرّكُ المشترك) */
   sysKeys: function (s) { return eng().sysKeys(s); },
   sysOfKey: function (k) { return eng().sysOfKey(k); },
   ceiling: ceiling,
