@@ -120,11 +120,59 @@
     return out;
   }
   /* صلاحياتُ مدير وحدةٍ did (بلا ورقةٍ مخزّنة — يرث سقفَها كاملاً) كما تحسبها 331 لحسابه: سقفُ الوحدة ∖ المطفأ على المنصة */
-  function mgrPerms(did){
-    var all = capAllPerms(did), off = [];
-    try { off = (KIVO.BassamPlat.get().mods || {}).off || []; } catch (e) {}
-    off.forEach(function(k){ if (k === 'admin') return; delete all[k]; leafKeysOf(k).forEach(function(l){ delete all[l]; }); });
-    return all;
+  function mgrPerms(did){ return I.platCut(capAllPerms(did)); }   /* V7 · د6 (أ1): القصُّ نفسُه الذي في myPerms (331 platCut) */
+  /* ═══ V7 · د6 (أ1 — قرار المالك): «ما يراه حاملٌ» من مصدرٍ واحد ═══
+     القائمةُ الجانبية الفعلية · «ما يراه مدير هذه الإدارة» · «ماذا يرى حامل الدور» · «ما يراه الآن» للشخص: كلُّها seenBy(h) = menuFor(holderPerms(h), h.did)
+     — القواعدُ قواعدُ menuFor وحدها، والفرقُ الوحيد بين الحاملين مجموعةُ الصلاحيات التي تُغذّى بها:
+       { kind: 'session' }                      الجلسةُ نفسُها (myPerms — من مفاتيح الخادم)
+       { kind: 'mgr', did }                     مديرُ الوحدة did (يرث سقفَها كاملاً)
+       { kind: 'role', did, keys }              حاملُ دورٍ في did: keys = مفاتيحُ الدور المترجَمة داخل السقف (KIVO.Perm44.compileRole) — بلا ورقةٍ قديمة
+       { kind: 'person', did, ekey, mgr, keys } شخصٌ بعينه: المحفوظُ له (ورقتُه · منحُه · استثناءاتُه السارية) — أو keys: مفاتيحُه الفعّالة من مسودة
+                                                المحرّر (KIVO.Perm44.effective) قبل الحفظ · mgr: حسابُه يحمل شارةَ المدير
+     وصلاحياتُ غير الجلسة تُشتقّ بقاعدة الجلسة نفسِها (331 heldPerms) من المفاتيح التي كان الخادمُ سيحملها له (057 enfHeld0: السقف · العدسة ·
+     الترجمة + المنح − الإسقاط · مهلةُ الاستثناء) — واختبارُ tests/unit/v7_d6_one_menu_source يطابقها بجواب الخادم لكل حساب. */
+  function holderKeys(did, ekey, mgr, inherit, sheet){
+    var G = p24GrantOf(ekey, did), now = Date.now(), un = G.until;
+    var plus = G.plus.filter(function(k){ return !(un && typeof un[k] === 'number' && un[k] <= now); });   /* استثناءٌ انتهت مهلتُه لا يُحمل (057 enfGrantOf) */
+    var E = p24Effective({ ekey: ekey, did: did, mgr: mgr, sheet: sheet, inherit: inherit, grant: { plus: plus, minus: G.minus, src: G.src } }) || { keys: {} };
+    return { keys: E.keys, plus: plus };
+  }
+  /* مفاتيحُ لا تُمنح بالورقة ولا بالدور ويحملها صاحبُها بحكم موضعه (057 enfHeld0: self للجميع · role:mgr لمدير الوحدة) */
+  function standingKeys(H, mgr){
+    var R = p24R(), ix = p24Ix(); if (!R || !ix) return H;
+    R.keys.forEach(function(k){
+      var e = R.byKey[k]; if (!e || e.status !== 'active' || ix.superOnly[k]) return;
+      if (e.grant === 'self' || (e.grant === 'role' && ix.needMgr[k] && mgr)) H[k] = true;
+    });
+    return H;
+  }
+  function keysPerms(did, all, keys, plus, mgr){
+    var H = {}, C = null;
+    try { C = KIVO.Perm44 && KIVO.Perm44.ceiling ? KIVO.Perm44.ceiling(did).key : null; } catch (e) { C = null; }
+    (keys || []).forEach(function(k){ if (!C || C(k)) H[k] = true; });   /* السقفُ بالوراثة ∩ المنصة — ما كان الخادمُ ليحمله خارجَه */
+    if (!plus) plus = Object.keys(H);   /* = perm44 grantOf: منحُ صاحب الدور أو الاستثناء (plus) هو مفاتيحُه الفعّالة كلُّها */
+    return I.heldPerms(I.platCut(all || {}), standingKeys(H, mgr), plus);
+  }
+  function holderPerms(h){
+    h = h || {};
+    var kind = h.kind || 'session', d = h.did || curDept();
+    if (kind === 'session') return I.myPerms();
+    if (kind === 'mgr') return mgrPerms(d);
+    if (kind === 'role') return keysPerms(d, null, h.keys || [], null, false);
+    if (kind === 'person') {
+      var ek = String(h.ekey || ''), mgr = h.mgr !== undefined ? !!h.mgr : isMgrKey(ek), inherit = mgr && !hasOwnSheet(ek, d);
+      var sheet = inherit ? capAllPerms(d) : empPerms(ek, d), all = inherit ? capAllPerms(d) : derivePages(empPerms(ek, d));
+      if (Array.isArray(h.keys)) return keysPerms(d, all, h.keys, null, mgr);
+      var K = holderKeys(d, ek, mgr, inherit, sheet);
+      return keysPerms(d, all, Object.keys(K.keys), K.plus, mgr);
+    }
+    return {};
+  }
+  /* صفوفُ القائمة كاملةً [{ k, n, on, hid }] — للجلسة menuFor() نفسُها (بلا P: لوحاتُ المؤشرات تُسأل من الجلسة) */
+  function menuOf(h){ var kind = (h && h.kind) || 'session'; return kind === 'session' ? menuFor() : menuFor(holderPerms(h), (h && h.did) || curDept()); }
+  /* ما يُرسم له فعلاً: «صفحتي» (لكل صاحب حساب) ثم الروابطُ المملوكة غيرُ المخفيّة بإعداد المنصة — [{ k, n }] */
+  function seenBy(h){
+    return [{ k: 'profile', n: 'صفحتي' }].concat(menuOf(h).filter(function(x){ return x.on && !x.hid; }).map(function(x){ return { k: x.k, n: x.n }; }));
   }
   KIVO.BassamPerm = { keyCap: keyCap, keyOn: keyOn, canW: canW, navOrder: navOrder, orderRows: orderRows, siteMap: siteMap, PAGE_KEYS: PAGE_KEYS, PAGE_REG: PAGE_REG, NAV_REG: NAV_REG, NAV2PERM: NAV2PERM, PERM2NAV: PERM2NAV, ALL_ACTS: ALL_ACTS, deptAccountsCount: deptAccountsCount, purgeDeptAccounts: purgeDeptAccounts, deptCap: deptCap, setDeptCap: setDeptCap, rawCap: rawCap, hasCap: hasCap, effCap: effCap, seedCapFrom: seedCapFrom, seedSectionCap: I.seedSectionCap, dropNodeCap: I.dropNodeCap, capOrphans: I.capOrphans, _bust: function(){ I._pmMemo = null; },
     on: onCap, onAny: onAny, capSetAnywhere: capSetAnywhere, capState: I.capState, capOwnOf: I.capOwnOf, setCapOwn: I.setCapOwn, latentLeaves: I.latentLeaves, LENS_KEYS: LENS_KEYS, LENS_REG: LENS_REG, deptLenses: deptLenses, setDeptLenses: setDeptLenses, lensOn: I.lensOn,
@@ -134,7 +182,7 @@
     isContainer: isContainer, leafKeysOf: leafKeysOf, leafReg: leafReg, splitLeaf: splitLeaf, expandPerms: expandPerms, derivePages: derivePages, canSub: canSub,
     empLens: empLens, setEmpLens: setEmpLens, nameOf: nameOf, ACT_NAMES: ACT_NAMES,
     dropEmpPerms: dropEmpPerms, pruneOrphanEmpPerms: pruneOrphanEmpPerms,
-    myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk, menuFor: menuFor, mgrPerms: mgrPerms,
+    myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk, menuFor: menuFor, mgrPerms: mgrPerms, holderPerms: holderPerms, menuOf: menuOf, seenBy: seenBy,
     /* V7 · د5-ح: هل حُسمت صلاحياتُ الجلسة؟ — مديرُ المنصة دائماً · وغيرُه حين تصل مفاتيحُ الخادم (__BS_AUTHZ) فلا تُرسم صفحةٌ قبل قرارها */
     ready: function(){ try { return !!(isSuper() || (I.azZ && I.azZ())); } catch (e) { return true; } },
     key: azKey, authz: function(){ return azZ(); },

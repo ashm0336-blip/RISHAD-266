@@ -296,19 +296,17 @@ Object.assign(Component.prototype, {
     const r = this._p44Try(() => this._p44E().effective(rec, { roles: roles || [], people: {} }, this._p44KeyCeil(did), now), []);
     return Array.isArray(r) ? r : r instanceof Set ? Array.from(r) : (r && (r.keys || r.plus)) || [];
   },
-  /* القائمةُ الجانبية لحامل المفاتيح: «صفحتي» ثم كلُّ نظامٍ مفعّلٍ في السقف له منها مفتاح — بمستوى الدور فيه */
-  _p44Menu(keys, role, did, extra) {
-    const on = this._p44Ceil(did),
-      set = new Set(keys || []),
-      out = [{ n: "صفحتي", l: "" }];
-    this._p44Sys().forEach((s) => {
-      if (!on(s.k)) return;
-      const ks = this._p44Keys(s.k),
-        n = ks.length ? ks.filter((k) => set.has(k)).length : 0,
-        lv = role && role.sys && role.sys[s.k] ? this._p44LvName(role.sys[s.k].lvl) : "";
-      n && out.push({ n: s.n, l: lv || (extra ? "استثناء" : "") });
+  /* V7 · د6 (أ1): «ماذا يرى حامل الدور» و«ما يراه الآن» = قائمتُه الجانبية الفعلية من المصدر الواحد BassamPerm.seenBy (334) — لا قائمةَ أنظمةٍ محسوبةً
+     على حدة. keys: مفاتيحُ الدور (compileRole) أو مفاتيحُ الشخص الفعّالة من المسودة (effective)؛ person: الحسابُ المختار — وبلا keys يُقرأ المحفوظُ له
+     (ورقتُه · منحُه · استثناءاتُه السارية · وراثةُ المدير). l: مستوى الدور في نظام الرابط، أو «استثناء» لنظامٍ خارج دوره */
+  _p44Menu(keys, role, did, person) {
+    const sysK = new Set(this._p44Sys().map((s) => s.k)),
+      h = person ? { kind: "person", did: did, ekey: person.ekey, mgr: !!person.mgr } : { kind: "role", did: did, keys: keys || [] };
+    person && Array.isArray(keys) && (h.keys = keys);
+    return this._p44Try(() => KIVO.BassamPerm.seenBy(h), [{ k: "profile", n: "صفحتي" }]).map((x) => {
+      const lv = role && role.sys && role.sys[x.k] ? this._p44LvName(role.sys[x.k].lvl) : "";
+      return { n: x.n, l: lv || (person && Array.isArray(keys) && sysK.has(x.k) ? "استثناء" : "") };
     });
-    return out;
   },
   /* ── الأقسام ── */
   _p44Vals(did, isNode, node) {
@@ -485,9 +483,8 @@ Object.assign(Component.prototype, {
      القائمةُ الجانبية نفسُه (BassamPerm.menuFor — root-logic يرسم منه) على صلاحيات مدير الوحدة (mgrPerms) — لا قائمةَ محسوبةً على حدة.
      تعرض المحفوظ: تغييرٌ غيرُ محفوظ يظهر فيها بعد «حفظ» */
   p44NavOf(u) {
-    const P = KIVO.BassamPerm,
-      head = [{ k: "profile", n: "صفحتي" }];
-    return head.concat(this._p44Try(() => P.menuFor(P.mgrPerms(u), u).filter((x) => x.on && !x.hid).map((x) => ({ k: x.k, n: x.n })), []));
+    /* V7 · د6 (أ1): المصدرُ الواحد لكل «ما يراه حامل» — BassamPerm.seenBy (334) */
+    return this._p44Try(() => KIVO.BassamPerm.seenBy({ kind: "mgr", did: u }), [{ k: "profile", n: "صفحتي" }]);
   },
   /* V7 · د5-ح: «الأنظمة» لمدير الإدارة قراءةً — المفعّلُ في سقف وحدته وحده (السقفُ بالوراثة ∩ المنصة)، بلا مفاتيح ولا شريط حفظ؛
      والمطفأُ لا يظهر له أبداً (لا صفّاً ولا قفلاً ولا اسماً) */
@@ -892,7 +889,7 @@ Object.assign(Component.prototype, {
         del: () => setRec((p) => p.ex.splice(i, 1)),
       })).filter((x) => x.vis),
       p44PExNone: !(r.ex || []).length,
-      p44PNav: sel.mgr ? [{ n: "كل الأنظمة المفعّلة لإدارته", l: "كامل داخل السقف" }] : this._p44Menu(eff, rl, did, !0),
+      p44PNav: this._p44Menu(sel.mgr || !(d.people || {})[sel.ekey] ? null : eff, sel.mgr ? null : rl, did, sel),   /* V7 · د6 (أ1): المديرُ ومن لا سجلَّ دورٍ له: المحفوظُ لهما من المصدر نفسِه */
       p44ExAdd: () => this._p44Set({ exForm: { key: (exKeys[0] || {}).v || "", until: "", note: "" } }),
       p44ExFormOn: !!ef,
       p44ExKeys: exKeys,

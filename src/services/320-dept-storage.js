@@ -513,8 +513,43 @@
          ولا خطوةَ ضبطٍ منسيّة تُظهر الشاشة معطّلةً بلا سبب ظاهر */
       /* V7 · القضية #4 (قرار المالك): عقدةٌ تُنشأ يدوياً لا تحمل بقايا سقفٍ خُزّن لمعرّفها من قبل — تُحذف البقايا أولاً ثم يُبذر السقفُ من الأب.
          (كان seedCapFrom يُبقيها: «له سقفٌ مسبقاً — لا يُلمس»؛ والخادمُ يُبقي كلَّ سجلٍّ تحمله الحفظةُ لعقدةٍ تضيفها — 018 nodeCapSweep) */
-      try { var P = KIVO.BassamPerm; if (P && P.dropNodeCap) P.dropNodeCap(id); if (P && P.seedCapFrom) P.seedCapFrom(id, pid); } catch(e){}
-      return { ok: true, id: id };
+      /* V7 · د6 (ب4): العقدةُ الجديدة تبدأ وأنظمتُها مطفأة — o.seed: 'off' (الافتراضي) أو 'parent' (أنظمةُ الأب نفسُها) — 331 seedCapFrom.
+         وإن تعذّر ضبطُ أنظمتها تُسحب العقدة ولا تُترك بلا سجلّ (فغيابُ السجلّ يفتحها) */
+      var sd = this._seedNew(id, pid, o.seed, true);
+      if (!sd.ok) { this.saveNodes(this.nodes().filter(function(n){ return n.id !== id; })); invalidate(); return { ok: false, err: sd.err }; }
+      return { ok: true, id: id, seed: sd.seed };
+    },
+    /* V7 · د6 (ب4): ضبطُ أنظمة وحدةٍ أُنشئت للتوّ (عقدة · إدارة) — مصدرٌ واحد لمسارات الإنشاء كلِّها؛ drop: بقايا سقفٍ لمعرّفٍ عاد تُحذف أولاً (القضية #4) */
+    _seedNew: function(id, pid, seed, drop) {
+      var sd = null;
+      try { var P = KIVO.BassamPerm; if (drop && P && P.dropNodeCap) P.dropNodeCap(id); sd = P && P.seedCapFrom ? P.seedCapFrom(id, pid || null, { seed: seed }) : null; } catch(e){ sd = null; }
+      if (!sd || !sd.ok) return { ok: false, err: (sd && sd.err) || 'تعذّر ضبط أنظمة الوحدة الجديدة — لم تُنشأ' };
+      return { ok: true, seed: sd.kept ? 'kept' : sd.seed };
+    },
+    /* V7 · د6 (ب4): إنشاءُ إدارة (وعاءُ بيانات) تحت عقدةٍ فوقية أو في الجذر — كان في منطق الصفحة (سجلُّ الوحدات + البذر)؛ القاعدةُ نفسُها: placeWhy ·
+       freshId · الاسمُ فريدٌ في الهيكل · o: { name, pid, seed: 'off' | 'parent' } */
+    deptAdd: function(o) {
+      o = o || {};
+      var nm = String(o.name || '').trim(); if (!nm) return { ok: false, err: 'الاسم مطلوب' };
+      var pid = o.pid || null;
+      if (pid && !this.nodeOf(pid)) return { ok: false, err: 'الأب غير موجود' };
+      var why = this.placeWhy({ id: '', dept: true }, pid); if (why) return { ok: false, err: why };
+      if (this.nodes().some(function(n){ return n.name === nm; }) || reg().some(function(d){ return d.name === nm; }))
+        return { ok: false, err: 'يوجد في الهيكل ما يحمل هذا الاسم' };
+      var id = this.freshId('d'), it = { id: id, name: nm }; if (pid) it.gid = pid;
+      this.save(reg().concat([it]));
+      var sd = this._seedNew(id, pid, o.seed, false);
+      if (!sd.ok) { this.save(reg().filter(function(d){ return d.id !== id; })); return { ok: false, err: sd.err }; }
+      return { ok: true, id: id, seed: sd.seed };
+    },
+    /* V7 · د6 (ب3 · ب4): مدخلٌ واحد لنافذة «إضافة إلى الهيكل» — o: { name, kind, pid, seed } · النوعُ يحدّد المسار: «قسم» sectionAdd (pid = إدارتُه) ·
+       «إدارة» deptAdd · وما سواهما عقدةٌ فوقية nodeAdd. seed: 'off' (الافتراضي — أنظمتُها مطفأةٌ كلُّها) | 'parent' (أنظمةُ العقدة الأب نفسُها) */
+    unitAdd: function(o) {
+      o = o || {};
+      var kind = String(o.kind || '').trim();
+      if (kind === this.NODE_KIND_SEC) return this.sectionAdd({ name: o.name, deptId: o.pid || '', seed: o.seed });
+      if (kind === this.NODE_KIND_DEPT) return this.deptAdd({ name: o.name, pid: o.pid || null, seed: o.seed });
+      return this.nodeAdd({ name: o.name, kind: kind, pid: o.pid || null, seed: o.seed });
     },
     nodeSave: function(id, o) {
       o = o || {};
@@ -557,7 +592,7 @@
       return { ok: true };
     },
     /* ══ F01 · إنشاءُ قسم ══ مديرُ النظام أو مديرُ الإدارة الأم (والخادمُ يحكم: 018 deptShapeWhy/deptSecMgrWhy). تحت إدارةٍ مباشرةً، واسمُه فريدٌ في
-       الهيكل كله. والسقف: سجلٌّ صريحٌ caps[<القسم>] لقطةً من سقف الإدارة الأم الفعليّ (seedCapFrom) — في الحفظة نفسِها مع سجلّ الوحدات. */
+       الهيكل كله. والسقف: سجلٌّ صريحٌ caps[<القسم>] — V7 · د6 (ب4): أنظمتُه مطفأةٌ افتراضاً أو أنظمةُ إدارته الأم (o.seed) — في الحفظة نفسِها مع سجلّ الوحدات. */
     sectionAdd: function(o) {
       o = o || {};
       var nm = String(o.name || '').trim(); if (!nm) return { ok: false, err: 'الاسم مطلوب' };
@@ -570,11 +605,13 @@
         return { ok: false, err: 'يوجد في الهيكل ما يحمل هذا الاسم' };
       var id = this.freshId('s');
       this.save(reg().concat([{ id: id, name: nm, gid: did, kind: this.NODE_KIND_SEC }]));
-      /* السقف: لقطةٌ من سقف الإدارة الأم الفعليّ (seedSectionCap) — ولو لم يكن لها سجلٌّ خاصّ وكان لأسلافها؛ cap: 'snap' · 'kept' · 'open' · 'none' */
-      var cap = 'none';
-      try { var P = KIVO.BassamPerm, sd = P && P.seedSectionCap ? P.seedSectionCap(id, did) : (P && P.seedCapFrom ? P.seedCapFrom(id, did) : null);
-        cap = !sd || !sd.ok ? 'none' : sd.kept ? 'kept' : sd.open ? 'open' : 'snap'; } catch(e){ cap = 'none'; }
-      return { ok: true, id: id, cap: cap };
+      /* V7 · د6 (ب4): القسمُ الجديد بالاختيار نفسِه والافتراضيِّ نفسِه (331 seedSectionCap) — o.seed: 'off' أنظمتُه مطفأةٌ كلُّها · 'parent' أنظمةُ إدارته
+         الأم المفعّلة؛ cap: 'off' · 'parent' · 'kept'. كان: لقطةً من سقف الإدارة الأم ('snap') أو بلا سجلّ ('open' · 'none'). وإن تعذّر ضبطُها يُسحب القسم */
+      var sd = null;
+      try { var P = KIVO.BassamPerm; sd = P && P.seedSectionCap ? P.seedSectionCap(id, did, { seed: o.seed }) : null; } catch(e){ sd = null; }
+      if (!sd || !sd.ok) { this.save(reg().filter(function(d){ return d.id !== id; })); return { ok: false, err: (sd && sd.err) || 'تعذّر ضبط أنظمة القسم الجديد — لم يُنشأ' }; }
+      var cap = sd.kept ? 'kept' : sd.seed;
+      return { ok: true, id: id, cap: cap, seed: cap };
     },
     /* ══ KIVO_265 · طلبُ المالك (2026-10-19): السحبُ والإفلات في الشجرة ═══════════
        نقلُ عقدةٍ (فوقيةٍ أو إدارة) بالنسبة إلى عقدةٍ أخرى: inside = تحتها (تصير أباها) ·
@@ -680,7 +717,7 @@
       function node(name, kind, pid){
         var ex = self.nodes().filter(function(n){ return n.name === name; })[0];
         if (ex) return ex.id;
-        var r = self.nodeAdd({ name: name, kind: kind, pid: pid });
+        var r = self.nodeAdd({ name: name, kind: kind, pid: pid, seed: 'parent' });   /* V7 · د6 (ب4): زرعُ الهيكل الافتراضي يبقى مفعَّلاً كما كان (الأبُ المفتوح ⇒ كلُّ المفعّل على المنصة) — اختيارٌ صريح لا افتراضيّ */
         if (r.ok) out.nodes++;
         return r.ok ? r.id : null;
       }
@@ -693,7 +730,7 @@
           if (ex) { if (!ex.gid) { self.setDeptParent(ex.id, gid); out.linked++; } return; }
           var id = 'd' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
           self.save(reg().concat([{ id: id, name: nm, gid: gid }]));
-          try { var P = KIVO.BassamPerm; if (P && P.seedCapFrom) P.seedCapFrom(id, gid); } catch(e){}
+          if (!self._seedNew(id, gid, 'parent', false).ok) { self.save(reg().filter(function(d){ return d.id !== id; })); return; }   /* V7 · د6 (ب4) */
           out.depts++;
         });
       });

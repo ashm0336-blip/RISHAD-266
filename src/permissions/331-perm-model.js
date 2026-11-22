@@ -575,6 +575,11 @@
   /* V7 · د5-ح (قرار المالك): النظامُ المطفأ لا يراه أحد — ولا مديرُ المنصة. المطفأُ على المنصة (mods.off) يغيب عن المنصة كلها،
      والمطفأُ في سقف الإدارة النشطة (بالوراثة — KIVO.Perm44.ceiling) يغيب داخل مساحتها ويبقى حيث هو مفعّل. يُقصّ العرضُ وحده
      (القائمة · العناوين · أشرطةُ الصفحات · التبويبات): ما سواه بلا قيد لمدير المنصة كما كان (د1-ج)؛ وموضعُ المطفأ الوحيد «الصلاحيات ← الأنظمة» */
+  /* V7 · د6 (أ1): قصُّ المطفأ على المنصة من ورقة صلاحيات — دالةٌ واحدة للجلسة (myPerms) ولمن تُحسب قائمتُه لغيره (334 holderPerms · mgrPerms) */
+  function platCut(all){
+    try { var off = (KIVO.BassamPlat && KIVO.BassamPlat.get().mods.off) || []; for (var i = 0; i < off.length; i++) if (off[i] !== 'admin') { delete all[off[i]]; leafKeysOf(off[i]).forEach(function(l){ delete all[l]; }); } } catch(e){}
+    return all;
+  }
   var _supOff = {};
   function supOffLeaves(){
     var out = {}, E = KIVO.Perm44, i;
@@ -599,8 +604,7 @@
       PAGE_REG.forEach(function(p){ if (p.under && all[p.key] && all[p.key].length && !all[p.under]) all[p.under] = ['view']; });
       return all;
     }
-    try { var off = (KIVO.BassamPlat && KIVO.BassamPlat.get().mods.off) || []; for (var i = 0; i < off.length; i++) if (off[i] !== 'admin') { delete all[off[i]]; leafKeysOf(off[i]).forEach(function(l){ delete all[l]; }); } } catch(e){}
-    return all;
+    return platCut(all);
   };
   /* ذاكرةُ myPerms: تُحسَب مرةً ما ثبتت مدخلاتُها كلُّها (نصُّ الجلسة · سجلُّ الحسابات ·
      الإدارةُ النشطة · مخزنُ الصلاحيات · سجلّا الإدارات والهيكل · إعداداتُ المنصة)
@@ -639,14 +643,9 @@
     _azBits = { h: x.h, set: set }; return set;
   }
   function azKey(k, did){ var H = azHeld(did); return H === null ? null : !!H[k]; }
-  var _myPerms2 = myPerms, _azMemo = { a: null, h: null, v: null };
-  myPerms = function(){
-    var all = _myPerms2();
-    if (isSuper()) return all;
-    /* V7 · د5-ح (القفل): بلا وصفٍ من الخادم (أو سجلٍّ لا يطابقه) لا يُعرض شيء — لا عودةَ إلى الورقة القديمة وحدها */
-    if (!azZ()) return {};
-    var H = azHeld(curDept()); if (H === null) return {};
-    if (_azMemo.a === all && _azMemo.h === H) return _azMemo.v;
+  /* V7 · د6 (أ1): ما يبقى من ورقةٍ all لحامل المفاتيح H (+ ذرّاتُ المنح الصريح plus) — القاعدةُ التي تُحسب بها صلاحياتُ الجلسة من مفاتيح الخادم، دالةً واحدة:
+     تُغذّى بمفاتيح الجلسة (myPerms أدناه) أو بمفاتيح حاملٍ آخر (334 holderPerms: حاملُ دور · شخصٌ بعينه) فتخرج القائمتان من الحساب نفسِه */
+  function heldPerms(all, H, plus){
     var R = KIVO.KIVO_REGISTRY, leaves = {};
     Object.keys(all).forEach(function(k){
       if (isContainer(k)) return;
@@ -663,12 +662,23 @@
       if (acts.length) leaves[k] = acts.concat(ff);
     });
     /* المنحُ الصريح (plus) يضيف أفعالَ ذرّاته — الورقةُ القديمة لا تعرفه (مثل: حذفُ المحاضر لموظفٍ بلا ورقة حذف) */
-    var x = azZ().depts[curDept()], plus = x && Array.isArray(x.p) ? x.p : [];
+    plus = Array.isArray(plus) ? plus : [];
     if (plus.length && R && R.atoms) Object.keys(R.atoms).forEach(function(ak){
       var at = R.atoms[ak]; if (!at || !at.leaf || !at.act || !at.targets) return;
       for (var i = 0; i < plus.length; i++) if (at.targets.indexOf(plus[i]) !== -1 && H[plus[i]]) { var L = leaves[at.leaf] || (leaves[at.leaf] = []); if (L.indexOf(at.act) === -1) L.push(at.act); break; }
     });
-    var v = derivePages(leaves);
+    return derivePages(leaves);
+  }
+  var _myPerms2 = myPerms, _azMemo = { a: null, h: null, v: null };
+  myPerms = function(){
+    var all = _myPerms2();
+    if (isSuper()) return all;
+    /* V7 · د5-ح (القفل): بلا وصفٍ من الخادم (أو سجلٍّ لا يطابقه) لا يُعرض شيء — لا عودةَ إلى الورقة القديمة وحدها */
+    if (!azZ()) return {};
+    var H = azHeld(curDept()); if (H === null) return {};
+    if (_azMemo.a === all && _azMemo.h === H) return _azMemo.v;
+    var x = azZ().depts[curDept()];
+    var v = heldPerms(all, H, x && Array.isArray(x.p) ? x.p : []);
     _azMemo = { a: all, h: H, v: v };
     return v;
   };
@@ -762,7 +772,7 @@
   }
   function p24GrantsRaw(did){ try { return RAW.getItem.call(localStorage, 'bsdept:' + (did || curDept()) + ':bassam_grants_v1'); } catch(e){ return null; } }
   function p24GrantsRec(did){ try { var v = JSON.parse(p24GrantsRaw(did)); return (v && typeof v === 'object' && v.emp && typeof v.emp === 'object' && !Array.isArray(v.emp)) ? v : { v: 1, emp: {} }; } catch(e){ return { v: 1, emp: {} }; } }
-  function p24GrantOf(ekey, did){ var g = p24GrantsRec(did).emp[ekey] || {}; return { plus: Array.isArray(g.plus) ? g.plus.slice() : [], minus: Array.isArray(g.minus) ? g.minus.slice() : [], src: typeof g.src === 'string' ? g.src : '' }; }
+  function p24GrantOf(ekey, did){ var g = p24GrantsRec(did).emp[ekey] || {}; return { plus: Array.isArray(g.plus) ? g.plus.slice() : [], minus: Array.isArray(g.minus) ? g.minus.slice() : [], src: typeof g.src === 'string' ? g.src : '', until: (g.until && typeof g.until === 'object' && !Array.isArray(g.until)) ? g.until : null }; }   /* V7 · د6 (أ1): until — مهلةُ الاستثناء المؤقت (057 enfGrantOf) */
   /* يُمنح بالفرق؟ (لا بوابةُ عدسة · ولا role:mgr لغير المدير أو بلا ذرّة) */
   function p24Grantable(k, C, tgt){
     var R = p24R(), ix = p24Ix(); if (!R || !ix) return false; var e = R.byKey[k];
@@ -844,7 +854,7 @@
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
   I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.capOwnOf = capOwnOf; I.capState = capState; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
-  I.permSave = permSave; I.dropNodeCap = dropNodeCap; I.capOrphans = capOrphans;
+  I.permSave = permSave; I.platCut = platCut; I.heldPerms = heldPerms; I.dropNodeCap = dropNodeCap; I.capOrphans = capOrphans;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;
   I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;
