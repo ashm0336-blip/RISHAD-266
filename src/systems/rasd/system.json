@@ -3,7 +3,8 @@
  "kind": "system",
  "key": "rasd",
  "name": "نظام رصد الحالات",
- "note": "V7 · د6 (م7): نظامُ «رصد الحالات» — نظامٌ مستقلٌّ في مجلده بالنمط نفسِه للمضبوطات: يقرؤه tools/systems.py وقتَ البناء (القطعُ في فتحات القاعدة) وtools/perm_parts.py (صلاحياتُه). بياناتُه مفتاحا إدارةٍ في المخزن السحابي (bassam_rasd_v1 · bassam_rasd_opts_v1) بصيغة Production نفسِها، فلا جزءَ خادمٍ خاصّاً به: السياسةُ والقراءةُ والكيانُ والحراسةُ قطعٌ في سجلّات القاعدة. حذفُ المجلد يُخرجه كاملاً.",
+ "optIn": true,
+ "note": "V7 · د6 (م7): نظامُ «رصد الحالات» — نظامٌ مستقلٌّ في مجلده بالنمط نفسِه للمضبوطات: يقرؤه tools/systems.py وقتَ البناء (القطعُ في فتحات القاعدة) وtools/perm_parts.py (صلاحياتُه). بياناتُه مفتاحا إدارةٍ في المخزن السحابي (bassam_rasd_v1 · bassam_rasd_opts_v1) بصيغة Production نفسِها، والسياسةُ والقراءةُ والكيانُ والحراسةُ قطعٌ في سجلّات القاعدة؛ وجزءُ خادمه الوحيد محوّلُ نوافذ الاستدراك (server/047r) لآلية 047 القائمة. حذفُ المجلد يُخرجه كاملاً.",
  "client": {
   "slug": "rasd",
   "component": "Rasd",
@@ -15,7 +16,13 @@
   ]
  },
  "server": {
-  "parts": []
+  "parts": [
+   {
+    "file": "server/047r-rasd-retro.js",
+    "after": "047-retro.js",
+    "order": 10
+   }
+  ]
  },
  "migrations": {
   "files": [],
@@ -27,6 +34,7 @@
   "tests/rasd_logic.test.mjs",
   "tests/rasd_server.test.mjs",
   "tests/rasd_import.test.mjs",
+  "tests/rasd_retro.test.mjs",
   "tests/rasd_fx.mjs",
   "tests/browser/rasd_page.test.mjs"
  ],
@@ -36,11 +44,11 @@
  "slots": {
   "modules.tail": {
    "order": 20,
-   "text": ",\n  {\n   \"name\": \"Rasd\",\n   \"slug\": \"rasd\",\n   \"minifiedSource\": true,\n   \"bytes\": 193794,\n   \"logicLines\": 1758\n  }"
+   "text": ",\n  {\n   \"name\": \"Rasd\",\n   \"slug\": \"rasd\",\n   \"minifiedSource\": true,\n   \"bytes\": 196201,\n   \"logicLines\": 1810\n  }"
   },
   "blocks.pages.tail": {
    "order": 20,
-   "text": ",\n   {\n    \"b64Sha256\": \"3d865f217a418b553d69e37ccf19766a5244d4b291a792f8066ccde8898e4499\",\n    \"bytes\": 193794,\n    \"file\": \"client/pages/Rasd.dc.html\",\n    \"name\": \"Rasd\",\n    \"sha256\": \"332e64e0400648893988969a5bd94f19ee2e5630ee19a2c52799e513cfcb0b6e\"\n   }"
+   "text": ",\n   {\n    \"b64Sha256\": \"e2c1e365fdfeb1a7b9ef161d89515c0a8507f5e851a6eaf7eee23b0616ff074f\",\n    \"bytes\": 196201,\n    \"file\": \"client/pages/Rasd.dc.html\",\n    \"name\": \"Rasd\",\n    \"sha256\": \"275f82c5a5821f8cf9620f0c33eff4325f7d55b0564b959e34859fdb4de52187\"\n   }"
   },
   "blocks.order.tail": {
    "order": 20,
@@ -48,11 +56,11 @@
   },
   "budget.page.rasd": {
    "order": 10,
-   "text": "  \"page:Rasd\": 40500,\r\n"
+   "text": "  \"page:Rasd\": 41400,\r\n"
   },
   "budget.decisions": {
    "order": 10,
-   "text": " \"d6RasdDecision\": {\r\n  \"date\": \"2026-11-22\",\r\n  \"scope\": \"V7 · د6 (م7 رصد الحالات): سقفٌ جديد لصفحة النظام page:Rasd = 40500 بايت gzip (هامش ≥ 2% على 39588 المقيس). صفحةٌ كسولة تُحمَّل عند فتح «نظام رصد الحالات» أو لوحته في «مؤشرات الإدارة» وحدهما. لم يُرفع سقفٌ قائم.\"\r\n },\r\n"
+   "text": " \"d6RasdDecision\": {\r\n  \"date\": \"2026-11-22\",\r\n  \"scope\": \"V7 · د6 (م7 رصد الحالات): سقفٌ جديد لصفحة النظام page:Rasd = 41400 بايت gzip (هامش ≥ 2% على 40566 المقيس). صفحةٌ كسولة تُحمَّل عند فتح «نظام رصد الحالات» أو لوحته في «مؤشرات الإدارة» وحدهما. لم يُرفع سقفٌ قائم.\"\r\n },\r\n"
   },
   "uxStates.tail": {
    "order": 20,
@@ -64,7 +72,7 @@
   },
   "pages.entry.systems": {
    "order": 25,
-   "text": "  {\n   \"key\": \"rasd\",\n   \"module\": \"rasd\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"openOff\": true,\n   \"departmentComponents\": [\"Rasd\"],\n   \"nav\": \"rasd\",\n   \"name\": \"نظام رصد الحالات\",\n   \"subs\": [\n    {\n     \"key\": \"dash\",\n     \"name\": \"لوحة المؤشرات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"records\",\n     \"name\": \"السجلات\"\n    }\n   ]\n  },\n"
+   "text": "  {\n   \"key\": \"rasd\",\n   \"module\": \"rasd\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"departmentComponents\": [\"Rasd\"],\n   \"nav\": \"rasd\",\n   \"name\": \"نظام رصد الحالات\",\n   \"subs\": [\n    {\n     \"key\": \"dash\",\n     \"name\": \"لوحة المؤشرات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"records\",\n     \"name\": \"السجلات\"\n    }\n   ]\n  },\n"
   },
   "pages.kpi.refs.mid": {
    "order": 30,
@@ -197,6 +205,48 @@
   "nfo.watch": {
    "order": 10,
    "file": "slots/nfo.watch.frag"
+  },
+  "retro.table": {
+   "order": 30,
+   "text": "rasd: { cap: 'rasd/records', key: 'rz.rec.retro.open', res: 'bassam_rasd_v1', state: 'bassam_rasd_retro_v1', name: 'رصد الحالات' }"
+  },
+  "retro.sysOf": {
+   "order": 30,
+   "text": "'bassam_rasd_v1': 'rasd'"
+  },
+  "retro.state": {
+   "order": 30,
+   "text": "  if (sys === 'rasd') return await rzRetroState(env, d);\n"
+  },
+  "retro.adapter": {
+   "order": 10,
+   "text": "  if (sys === 'rasd') return rzRetroAdapter();\n"
+  },
+  "scope.retroSys": {
+   "order": 30,
+   "text": "res === 'bassam_rasd_v1' ? 'rasd' : "
+  },
+  "store.retroSys": {
+   "order": 30,
+   "text": "n === \"bassam_rasd_v1\" ? \"rasd\" : "
+  },
+  "store.retroKey": {
+   "order": 15,
+   "text": "w.res === \"rasd\" ? \"rz.rec.retro.open\" : ",
+   "last": "w.res === \"rasd\" ? \"rz.rec.retro.open\" : \"\"",
+   "only": "w.res === \"rasd\" ? \"rz.rec.retro.open\" : \"\""
+  },
+  "enf.compat": {
+   "order": 30,
+   "text": "'rz.rec.retro.open': 'rasd/records:approve'"
+  },
+  "p24.compat": {
+   "order": 30,
+   "text": "'rz.rec.retro.open': 1"
+  },
+  "nf.labels.retro": {
+   "order": 30,
+   "text": "bassam_rasd_retro_v1: \"نافذة استدراك رصد الحالات\","
   },
   "res.reg.dept": {
    "order": 25,

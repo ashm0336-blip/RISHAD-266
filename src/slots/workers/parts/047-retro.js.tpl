@@ -67,5 +67,5 @@ async function typedRetroCommit(ctx, sys, adapter, state, window, scope, act, me
 }
 
 function retroDomainAdapter(sys) {
-@@SYS:retro.adapter.seized@@@@SYS:retro.adapter.guard|pre="  "|post="throw rsError('retro-resource');"|empty="  throw rsError('retro-resource');"@@
+@@SYS:retro.adapter@@@@SYS:retro.adapter.seized@@@@SYS:retro.adapter.guard|pre="  "|post="throw rsError('retro-resource');"|empty="  throw rsError('retro-resource');"@@
 @@SYS:retro.adapter.irshad@@}

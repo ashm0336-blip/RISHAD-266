@@ -68,6 +68,7 @@ async function typedRetroCommit(ctx, sys, adapter, state, window, scope, act, me
 }
 
 function retroDomainAdapter(sys) {
+  if (sys === 'rasd') return rzRetroAdapter();
   if(sys==='seized')return {context:szQueryContext,snapshot:szRetroSnapshot,install:szRetroStatements,retired:szGuardRetired,retiredGuard:szRetiredGuard};
   if(sys!=='irshad')throw rsError('retro-resource');
   return {

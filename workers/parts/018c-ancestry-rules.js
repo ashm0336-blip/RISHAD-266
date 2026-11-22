@@ -249,7 +249,7 @@ function permsRule(A, newJson, curJson) {
        على مستوى المنصة مفتاحُ تشغيلٍ لا سقف) لا السجلُّ الخامّ caps[d] الذي يقرأ الغائبَ «لا شيء» — فكان كلُّ قالبٍ يعطيه المديرُ في وحدةٍ مفتوحة
        يُرفض «خارج السقف». والأوراقُ التي تغيّرت في هذا الحفظ وحدها: ورقةٌ قديمةٌ لموظفٍ آخر لا تُسقط حفظاً لا شأن له بها.
        مفتاح الورقة «pk/sk» يُحكم بصفحته الحاوية */
-    var cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : PG_OPEN.slice();
+    var cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : pgOpen();
     /* caps-own · latent grants: a leaf outside the ceiling stays stored (read-time narrowing), so only what the save ADDS outside it is
        refused — a leaf or action the owner did not hold in his stored sheet before (the same key); kept or narrowed latent leaves pass.
        The same for lenses switched off for the unit: kept in an explicit list, never added to one */

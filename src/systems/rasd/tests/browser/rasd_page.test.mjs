@@ -14,7 +14,8 @@ const T0 = (lab) => ({ DB: lab.env.DB, lab });
 const click = (page, sel, text) => page.evaluate(([sel, text]) => { const el = [...document.querySelectorAll(sel)].find((x) => x.textContent.trim() === text && x.getClientRects().length); if (!el) return false; el.click(); return true; }, [sel, text]);
 const field = async (page, label) => { const ok = await page.evaluate((label) => { const w = [...document.querySelectorAll('main div')].find((d) => d.firstElementChild && d.firstElementChild.textContent.trim().startsWith(label) && d.querySelector(':scope > button')); if (!w) return false; w.querySelector(':scope > button').click(); return true; }, label); assert.ok(ok, 'field «' + label + '» not found'); await page.waitForTimeout(250); };
 const pick = async (page, text) => { assert.ok(await click(page, '[role=listbox] div span', text), 'option «' + text + '» not found'); await page.waitForTimeout(250); };
-const text = (page) => page.evaluate(() => document.querySelector('main').innerText);
+/* نصُّ الصفحة بأرقامٍ لاتينية وبلا علامات الاتجاه (طبقةُ العرض تكتب الأرقام عربيةً) */
+const text = (page) => page.evaluate(() => document.querySelector('main').innerText.replace(/[\u2066-\u2069\u202a-\u202e\u200e\u200f]/g, '').replace(/[٠-٩]/g, (x) => '٠١٢٣٤٥٦٧٨٩'.indexOf(x)));
 
 test('rasd · ① الصفحةُ والمحضرُ والقوائم والسجلُّ والكروت والتنبيه والسجلّ واللوحة ونسخةُ الإدارة — ② مطفأٌ لا يظهر منه شيء — ③ الوحدةُ المفتوحة', { timeout: 600000 }, async () => {
   const lab = await startLab(), T = T0(lab);
@@ -59,6 +60,34 @@ test('rasd · ① الصفحةُ والمحضرُ والقوائم والسجل�
     await p.waitForTimeout(1500);
     const feed = await s.api('/api/notifications?uid=' + encodeURIComponent(await p.evaluate(() => window.__BS_BOOT.uid)));
     assert.match(JSON.stringify(feed.j || feed), /حرج — ازدحام/, 'urgent rz_hot not in the manager feed');
+    /* فتحُ الشهر المقفل من الواجهة (نقرةٌ مزدوجة لحامل approve ← سببٌ ← نافذةُ استدراكٍ على الخادم) ثم تسجيلُ حالةٍ في يومٍ منه */
+    const prev = await p.evaluate(() => { const t = KIVO.BassamCal.hToday(); return t.m > 1 ? { y: t.y, m: t.m - 1 } : { y: t.y - 1, m: 12 }; });
+    const MN = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
+    if (prev.m === 12) await click(p, 'main button[title="السنة السابقة"]', '');   /* محرم: الشهرُ السابق في السنة الماضية */
+    assert.ok(await p.evaluate((name) => { const el = [...document.querySelectorAll('main [title*="انقضى"]')].find((d) => d.querySelector('p') && d.querySelector('p').textContent.trim() === name); if (!el) return false; el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); return true; }, MN[prev.m - 1]), 'the locked previous month card');
+    await p.locator('textarea:visible').last().waitFor({ timeout: 10000 });
+    await p.locator('textarea:visible').last().fill('TEST_ONLY استدراك من الواجهة');
+    const opened = p.waitForResponse((r) => /\/api\/retro\b/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 });
+    assert.ok(await click(p, 'button', 'حفظ بالسبب'), 'the reason dialog');
+    assert.equal((await opened).status(), 200);
+    await p.waitForTimeout(1500);
+    const st = readK(T.DB, key(A, 'bassam_rasd_retro_v1'));
+    assert.ok(st && st.windows.some((w) => w.scope.y === prev.y && w.scope.m === prev.m && w.scope.d == null && !w.closedAt), 'no server window for the opened month');
+    assert.ok(await p.evaluate(() => { const el = [...document.querySelectorAll('main .bs-daystrip > div')].find((d) => d.firstElementChild && d.firstElementChild.textContent.replace(/[^0-9٠-٩]/g, '').replace(/[٠-٩]/g, (x) => '٠١٢٣٤٥٦٧٨٩'.indexOf(x)) === '1'); if (!el) return false; el.click(); return true; }), 'day 1 of the opened month');
+    await p.waitForTimeout(500);
+    assert.match(await text(p), /محضر رصد — يوم 1 /);
+    await field(p, 'المنطقة'); await pick(p, 'الأبواب');
+    await field(p, 'الدور / المستوى'); await pick(p, 'الأرضي');
+    await p.locator('input[aria-label="الموقع التفصيلي"]').click(); await p.waitForTimeout(300); await pick(p, 'باب الملك فهد');
+    await field(p, 'نوع الحالة'); await pick(p, 'ازدحام');
+    await field(p, 'الإجراء المتخذ'); await pick(p, 'تنظيم حركة');
+    assert.ok(await click(p, '[role=radio]', 'منخفض'));
+    const saved2 = p.waitForResponse((r) => /\/api\/save\b/.test(r.url()) && r.request().method() === 'POST' && /bassam_rasd_v1/.test(r.request().postData() || ''), { timeout: 15000 });
+    assert.ok(await click(p, 'main button', 'إضافة'));
+    const r2 = await saved2; assert.equal(r2.status(), 200);
+    await p.waitForTimeout(1200);
+    assert.ok(readK(T.DB, key(A, REC)).reports.some((x) => x.y === prev.y && x.m === prev.m && x.d === 1), 'the case in the opened month was not stored');
+    await s.go('#/rasd', 2500);
     /* «سجل الحركة» يحمل الحفظ */
     assert.ok(T.DB.q('SELECT COUNT(*) n FROM aud WHERE k=?1', key(A, REC))[0].n >= 1, 'no activity-log line for the save');
     /* قائمةٌ تُدار من داخلها: إضافةُ نوع ثم تعديلُ اسمه — يسري على السجل */
@@ -103,7 +132,7 @@ test('rasd · ① الصفحةُ والمحضرُ والقوائم والسجل�
     const feed2 = await s2.api('/api/notifications?uid=' + encodeURIComponent(await p2.evaluate(() => window.__BS_BOOT.uid)));
     assert.ok(!/حرج — ازدحام/.test(JSON.stringify(feed2.j || feed2)), 'a notification of the switched-off system is shown');
     assert.ok(!/رصد الحالات/.test(await p2.evaluate(() => (document.querySelector('aside') || document.body).innerText)), 'the side menu names the switched-off system');
-    assert.equal(readK(T.DB, key(A, REC)).reports.length, 1, 'switching off removed stored data');
+    assert.equal(readK(T.DB, key(A, REC)).reports.length, 2, 'switching off removed stored data');
     await s2.ctx.close();
 
     /* ③ وحدةٌ مفتوحة (لا سجلَّ سقفٍ فيها ولا في أصلها): النظامُ الجديد لا يُفتح ضمناً، وبقيةُ الأنظمة مفتوحة */
@@ -112,6 +141,22 @@ test('rasd · ① الصفحةُ والمحضرُ والقوائم والسجل�
     const on = await p3.evaluate(() => ({ rasd: KIVO.BassamPerm.on('rasd'), irshad: KIVO.BassamPerm.on('irshad'), seized: KIVO.BassamPerm.on('seized'), state: KIVO.BassamPerm.capState ? KIVO.BassamPerm.capState().kind : '' }));
     assert.deepEqual(on, { rasd: false, irshad: true, seized: true, state: 'open' });
     assert.equal(await p3.locator('aside [data-key="rasd"]:visible').count(), 0);
+    /* نظامٌ مصطنع يعلن optIn — «جائزة التميز» في قائمة الأنظمة التي يحملها غلافُ هذه الجلسة وحدها: القاعدةُ الواحدة في الواجهة تطفئه في الوحدة المفتوحة */
+    let swapped = 0;
+    const s4 = await openAs(b, lab, LAB.mgrA, LAB.pw, { onPage: (pg) => pg.route('**/*', async (route) => {
+      if (/\/api\//.test(route.request().url())) return route.continue().catch(() => {});
+      let r; try { r = await route.fetch(); } catch (e) { return route.abort().catch(() => {}); }
+      const ct = r.headers()['content-type'] || '';
+      if (!/html|javascript/.test(ct)) return route.fulfill({ response: r }).catch(() => {});
+      let body = await r.text(); const n0 = body.length;
+      body = body.replace('{"key":"award","name":"جائزة التميز"', '{"key":"award","optIn":true,"name":"جائزة التميز"'); if (body.length !== n0) swapped++;
+      return route.fulfill({ response: r, body }).catch(() => {});
+    }) });
+    assert.ok(swapped > 0, 'the systems list was not found in the shell');
+    const syn = await s4.page.evaluate(() => ({ list: KIVO.Perm44.sysList().filter((x) => x.optIn).map((x) => x.key).sort(), cap: KIVO.BassamPerm.deptCap(KIVO.BassamDepts.active()) }));
+    assert.deepEqual(syn.list, ['award', 'rasd']);
+    assert.ok(!syn.cap.includes('award') && !syn.cap.includes('rasd') && syn.cap.includes('irshad') && syn.cap.includes('seized') && syn.cap.includes('daily'), 'client open ceiling with a synthetic optIn system: ' + JSON.stringify(syn.cap));
+    await s4.ctx.close();
     await s3.ctx.close();
   } finally { await b.close(); await lab.close(); }
 });

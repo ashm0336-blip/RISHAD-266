@@ -17,7 +17,7 @@ import { holdersWorld, clientOf, applyState, addHolder, offRecord, KP, T, S, G, 
 const SYS = ['tasks', 'staff', 'irshad', 'daily', 'award', 'custody', 'dstats'];
 const OFF = offRecord(), PERMANENT = ['profile', 'emps', 'admin'];
 const FULL = ['profile', 'kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award', 'links', 'help', 'admin'];
-/* V7 · د6 (رصد الحالات): نظامٌ أُعلن openOff لا يدخل السقفَ المفتوح (وحدةٌ بلا سجلّ هي وأصولُها) — فـFULL قائمةُ الوحدة المفتوحة كما كانت،
+/* V7 · د6 (رصد الحالات · قرار المالك): نظامٌ أعلن optIn في system.json لا يدخل السقفَ المفتوح (وحدةٌ بلا سجلّ هي وأصولُها) — فـFULL قائمةُ الوحدة المفتوحة كما كانت،
    وFULL_ON قائمةُ وحدةٍ سجلُّها (أو سجلُّ أصلها) يحمل كلَّ الصفحات */
 const OPEN_OFF = fs.existsSync(new URL('../../src/systems/rasd/system.json', import.meta.url)) ? ['rasd'] : [];
 const FULL_ON = FULL.flatMap((k) => (k === 'seized' ? [k].concat(OPEN_OFF) : [k]));
@@ -122,7 +122,7 @@ test('V7 · د6 · ب4 — «نفس أنظمة العقدة الأب»: the pare
   /* الأبُ المفتوح بلا سجلّ ⇒ كلُّ المفعّل على المنصة — وإطفاءُ المنصة يسري عليه */
   const o = await create(W, (c) => c.K.BassamDepts.unitAdd({ name: T + 'إدارة تحت مفتوح', kind: 'إدارة', pid: NO, seed: 'parent' }));
   pm = stored(W.env, KP);
-  assert.deepEqual(pm.caps[o.id], OFF.all.filter((k) => !OPEN_OFF.includes(k)), 'open parent: a record with every page (V7 · د6: but a system declared openOff, OFF in the open parent itself)'); assert.equal(pm.subs && pm.subs[o.id], undefined, 'nothing OFF ⇒ no sections record');
+  assert.deepEqual(pm.caps[o.id], OFF.all.filter((k) => !OPEN_OFF.includes(k)), 'open parent: a record with every page (V7 · د6: but a system declared optIn, OFF in the open parent itself)'); assert.equal(pm.subs && pm.subs[o.id], undefined, 'nothing OFF ⇒ no sections record');
   assert.equal(Object.prototype.hasOwnProperty.call(pm.caps, NO), false, 'the open parent itself gets no record'); assert.equal(Object.prototype.hasOwnProperty.call(pm.caps, OP), false);
   await addHolder(W, 'om', o.id, true);
   assert.deepEqual(await seenBy(W, 'om', o.id), FULL, 'everything that is ON on the platform');

@@ -1228,14 +1228,14 @@
     askReason9(k, keys, function (r) { if (r && k) why9[k] = String(r).slice(0, 300); cb(r ? { go: true, reason: r } : { go: false, reason: "" }); });
   }
   /* نافذةُ الاستدراك (D3-07): الفترةُ المغلقة تُفتح بسببٍ لمدةٍ افتراضية (24 ساعة) لإدارتك — ثم يُعاد إرسالُ التعديل كما هو */
-  function retroSys9(k) { var n = String(k).replace(/^bsdept:[^:]+:/, ""); return n === "bassam_irshad_v1" ? "irshad" : n === "bassam_seized_v1" ? "seized" : ""; }
+  function retroSys9(k) { var n = String(k).replace(/^bsdept:[^:]+:/, ""); return n === "bassam_irshad_v1" ? "irshad" : n === "bassam_seized_v1" ? "seized" : n === "bassam_rasd_v1" ? "rasd" : ""; }
   function retroAsk9(items) {
     holdKeys9(items);
     var PMr = KIVO.BassamPerm, per = {}, it, m, re = /(?:closed-period[^(]*|retro-window-expired )\((?:old|new):(\d{4})-(\d{1,2})(?:-\d{1,2})?\)/g;
     for (var i = 0; i < items.length; i++) { it = items[i]; var sys = retroSys9(it.k), dept = (String(it.k).match(/^bsdept:([^:]+):/) || [])[1] || "";
       while ((m = re.exec(String(it.d.detail || "")))) per[sys + "|" + dept + "|" + m[1] + "-" + m[2]] = { res: sys, dept: dept, y: +m[1], m: +m[2] }; re.lastIndex = 0; }
     var ws = Object.keys(per).map(function (q) { return per[q]; });
-    var keyOf = function (w) { return w.res === "seized" ? "sz.rec.retro.open" : "ir.rec.retro.open"; };
+    var keyOf = function (w) { return w.res === "seized" ? "sz.rec.retro.open" : w.res === "rasd" ? "rz.rec.retro.open" : "ir.rec.retro.open"; };
     if (!ws.length || ws.some(function (w) { return !(PMr && PMr.key && PMr.key(keyOf(w), w.dept)); })) { releaseKeys9(items, false, "الفترةُ مغلقة — تعديلُها يتطلب نافذة استدراك يفتحها من يملك مفتاحها (" + (ws.length ? keyOf(ws[0]) : "retro.open") + ")"); return; }
     var lblP = ws.map(function (w) { return w.y + "/" + w.m; }).join("، ");
     dlg9({ title: "الفترة مغلقة — فتحُ نافذة استدراك", desc: "التعديل على " + namesOf9(items) + " يقع في فترةٍ مغلقة (" + lblP + "). تُفتح نافذةُ استدراكٍ لإدارتك 24 ساعة وتُسجَّل باسمك وسببها، ثم يُعاد الحفظ.", ok: "فتح النافذة والحفظ", remember: false }, function (r) {

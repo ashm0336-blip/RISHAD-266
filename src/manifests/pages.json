@@ -245,7 +245,6 @@
    "module": "rasd",
    "activation": "toggle",
    "platSwitch": true,
-   "openOff": true,
    "departmentComponents": ["Rasd"],
    "nav": "rasd",
    "name": "نظام رصد الحالات",

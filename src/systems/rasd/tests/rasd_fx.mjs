@@ -33,6 +33,9 @@ export async function lab() {
   T.as = async (un, pw) => { const s = await T.login(un, pw); s.uid = s.uid || T.DB.q('SELECT uid FROM sess ORDER BY rowid DESC LIMIT 1')[0].uid; return s; };
   /* حفظٌ مصنوعٌ يدوياً (بلا الواجهة) لمفتاحٍ واحد بمراجعته الحالية */
   T.save = (who, k, value) => T.call('/api/save', { ck: who.ck, body: { uid: who.uid, set: { [k]: JSON.stringify(value) }, del: [], base: { [k]: revOf(T.DB, k) } } });
+  /* اليومُ الهجري للخادم (dsToday) كما يعلنه /api/retro — الحالاتُ المكتوبة فيه في فترةٍ مفتوحة */
+  T.today = async () => { const r = await T.call('/api/retro?res=rasd&dept=' + A, { ck: T.su.ck }); if (!r.j || !r.j.today) throw new Error('today: ' + r.t.slice(0, 200)); return r.j.today; };
+  T.retro = (who, body) => T.call('/api/retro', { ck: who.ck, body: { uid: who.uid, res: 'rasd', dept: A, ...body } });
   T.get = (who, keys) => T.call('/api/get?keys=' + encodeURIComponent([].concat(keys).join(',')), { ck: who.ck });
   return T;
 }
@@ -45,7 +48,7 @@ export function report(i, over = {}) {
     impact: ['منخفض', 'متوسط', 'عالٍ', 'حرج'][i % 4], act: i % 2 ? 'إبلاغ جهة مختصة' : 'تنظيم حركة', party: i % 2 ? 'العمليات المشتركة' : 'لم يتم الإبلاغ', notes: i % 2 ? 'TEST_ONLY ملاحظة ' + i : '', att: null,
   }, over);
 }
-export const REPORTS = (n = 6) => ({ reports: Array.from({ length: n }, (_, i) => report(i)) });
+export const REPORTS = (n = 6, day) => ({ reports: Array.from({ length: n }, (_, i) => report(i, day ? { y: day.y, m: day.m, d: day.d } : {})) });
 export const OPTS = () => ({
   zone: [{ n: 'الأبواب', c: '#0e7490' }, { n: 'TEST_ONLY منطقة', c: '#9c3d6b' }, { n: 'أخرى', c: '#b45309' }],
   floor: [{ n: 'الأرضي', c: '#0e7490' }], type: [{ n: 'ممنوعات', c: '#0e7490' }, { n: 'ازدحام', c: '#9c3d6b' }, { n: 'أخرى', c: '#b45309' }],

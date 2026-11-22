@@ -302,8 +302,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       rzYear: t.y,
       rzMonth: t.m,
       rzDay: t.d,
-      rzOpenMonths: {},
-      rzOpenDays: {},
+      rzRetro: null,
       rzDraft: this.emptyDraft(),
       rzErr: {},
       rzSaveErrMsg: "",
@@ -376,7 +375,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       onRec = "records" === h && rOk,
       link = !!(rOk && this.PC("view")),
       c = { rzOnDash: onDash, rzOnRecords: onRec, irRecLinkOn: link, irRecLinkOff: !link, ...pv };
-    onRec && Object.assign(c, this._rzCalVals());
+    onRec && (this._rzEnsureRetro(), Object.assign(c, this._rzCalVals()));
     onDash && Object.assign(c, this._rzDashVals());
     return c;
   }
@@ -1060,6 +1059,62 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     };
   }
 
+  /* ═══ V7 · د6 (قرار المالك): فتحُ الشهر أو اليوم المقفل نافذةُ استدراكٍ على الخادم بالآلية القائمة (/api/retro · res=rasd) — كالمضبوطات والاسترشاد:
+     النقرةُ المزدوجة لحامل approve تفتح نافذةً بسبب (مديرُ المنصة بلا سؤال) أو تغلقها، والحفظُ في فترةٍ مغلقة بلا نافذةٍ سارية يرفضه الخادم ═══ */
+  _rzRetroCtx() {
+    try {
+      const boot = window.__BS_BOOT || {}, d = KIVO.BassamDepts && KIVO.BassamDepts.active && KIVO.BassamDepts.active();
+      return boot.uid && d ? { uid: String(boot.uid), dept: String(d), key: boot.uid + "\0" + d } : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  _rzEnsureRetro(force) {
+    const c = this._rzRetroCtx();
+    if (!c || (!force && this._rzRetroFor === c.key)) return;
+    this._rzRetroFor = c.key;
+    fetch("/api/retro?" + new URLSearchParams({ uid: c.uid, dept: c.dept, res: "rasd" }), { credentials: "same-origin", cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => { const n = this._rzRetroCtx(); n && n.key === c.key && j && j.ok && Array.isArray(j.windows) && this.setState({ rzRetro: { windows: j.windows } }); })
+      .catch(() => { this._rzRetroFor = ""; });
+  }
+  _rzWins() {
+    const r = this.state.rzRetro, now = Date.now();
+    return r ? r.windows.filter((w) => w && w.scope && !w.closedAt && w.until > now) : [];
+  }
+  _rzWinOf(y, m, d) {
+    return this._rzWins().find((w) => w.scope.y === y && w.scope.m === m && (w.scope.d == null ? d == null : w.scope.d === d)) || null;
+  }
+  _rzCovers(y, m, d) {
+    return this._rzWins().some((w) => w.scope.y === y && w.scope.m === m && (w.scope.d == null || w.scope.d === d));
+  }
+  async _rzRetroToggle(scope) {
+    if (!this.PC("approve")) return void this.permDeny();
+    const c = this._rzRetroCtx();
+    if (!c || this._rzRetroBusy) return;
+    if (!this.state.rzRetro) return void (this.bsToast("انتظر قراءة نافذة الاستدراك من الخادم ثم أعد المحاولة"), this._rzEnsureRetro(!0));
+    this._rzRetroBusy = !0;
+    try {
+      const w = this._rzWinOf(scope.y, scope.m, scope.d),
+        body = { uid: c.uid, dept: c.dept, res: "rasd", act: w ? "close" : "open", ...(w ? { id: w.id } : { scope: scope }) };
+      if (!w) {
+        const srv = KIVO.__BS_SRV, exempt = !!(srv && srv.reasonExempt && srv.reasonExempt());
+        if (!exempt && !(srv && typeof srv.askReason === "function")) return void this.bsToast("تعذّر طلب سبب الاستدراك؛ لم تُفتح النافذة");
+        body.reason = exempt ? "" : await new Promise((ok) => srv.askReason("bsdept:" + c.dept + ":bassam_rasd_v1", ["rz.rec.retro.open"], ok));
+        if (!body.reason && !exempt) return;
+      }
+      const r = await fetch("/api/retro?uid=" + encodeURIComponent(c.uid), { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+        j = await r.json().catch(() => null);
+      if (!r.ok || !j || !j.ok) this.bsToast(r.status === 403 ? "فتحُ الفترة المقفلة للاستدراك يحتاج صلاحية الاعتماد — راجع مدير الإدارة" : "تعذّر " + (w ? "إغلاق" : "فتح") + " نافذة الاستدراك");
+      else this.bsAck(w ? "أُغلقت نافذة الاستدراك" : "فُتحت الفترة للاستدراك", "ok");
+    } catch (e) {
+      this.bsToast("تعذّر الاتصال بالخادم — لم تتغيّر نافذة الاستدراك");
+    } finally {
+      this._rzRetroBusy = !1;
+      this._rzEnsureRetro(!0);
+    }
+  }
+
   /* ═══ صفحةُ السجلات: شريطُ السنة والأشهر · شريطُ الأيام بقفله ونقرةِ الاستدراك المزدوجة · كروتُ الشهر ═══ */
   _rzCalVals() {
     const t = this.state,
@@ -1069,8 +1124,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       all = this.loadRasd().reports || [],
       cnt = (y, m, d) => all.filter((r) => r.y === y && (null == m || r.m === m) && (null == d || r.d === d)).length,
       nowM = 12 * e.y + e.m,
-      OM = t.rzOpenMonths || {},
-      OD = t.rzOpenDays || {},
       AP = this.PC("approve"),
       NOAP = "فتحُ الشهر أو اليوم المقفل للاستدراك وإعادةُ قفله تحتاج صلاحية الاعتماد — راجع مدير الإدارة",
       FILE = ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6"],
@@ -1080,7 +1133,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         sel = M === m,
         key = Y + "-" + m,
         past = 12 * Y + m < nowM,
-        open = !!OM[key],
+        open = !!this._rzWinOf(Y, m, null),
         locked = past && !open,
         k = cnt(Y, m),
         cases = KIVO.BassamCount(k, "حالة") + "";
@@ -1122,18 +1175,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             : k
               ? cases + " في " + name
               : "لا حالات مرصودة في " + name,
-        click: () => this.setState(sel ? fresh : { ...fresh, rzOpenMonths: {}, rzOpenDays: {}, rzLedgerPage: 1 }),
+        click: () => this.setState(sel ? fresh : { ...fresh, rzLedgerPage: 1 }),
         dbl: (ev) => {
           ev && ev.stopPropagation && ev.stopPropagation();
           if (!AP) return void ((locked || (past && open)) && this.bsToast(NOAP));
-          locked ? this.setState({ rzOpenMonths: { [key]: !0 }, rzOpenDays: {}, rzYear: Y, rzMonth: m }) : past && open && this.setState({ rzOpenMonths: {} });
+          (locked || (past && open)) && (this.setState({ rzYear: Y, rzMonth: m }), this._rzRetroToggle({ y: Y, m: m, d: null }));
         },
       };
     });
     const selM = 12 * Y + M,
-      mKey = Y + "-" + M,
       mPast = selM < nowM,
-      mLocked = mPast && !OM[mKey],
+      mLocked = mPast && !this._rzWinOf(Y, M, null),
       nDays = this.hMonthDays(Y, M),
       g1 = this.hGreg(Y, M, 1),
       g0 = new Date(g1.getFullYear(), g1.getMonth(), g1.getDate(), 12),
@@ -1143,11 +1195,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const k = cnt(Y, M, i),
         sel = i === t.rzDay,
         today = isCurM && i === e.d,
-        dk = Y + "-" + M + "-" + i,
         past = mPast || (selM === nowM && i < e.d),
         fut = selM > nowM || (isCurM && i > e.d),
-        lockC = mLocked || (past && !OD[dk]),
-        lockO = !lockC && past && !!OD[dk];
+        covered = this._rzCovers(Y, M, i),
+        lockC = mLocked || (past && !covered),
+        lockO = !lockC && past && covered;
       let bg = "var(--bg-xffffff)",
         fg = "var(--fg-x53565a)",
         bd = "2px solid var(--bd-xe1e1e1)";
@@ -1171,11 +1223,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         tip:
           "يوم " + i + " " + this.MONTHS[M - 1] + " " + Y + " هـ — الموافق " + gl + " م" + (k ? " — " + KIVO.BassamCount(k, "حالة") : " — لا حالات") +
           (lockC ? " — انقضى، مقفل · " + (AP ? "نقرة مزدوجة لفتحه" : "فتحه يحتاج صلاحية الاعتماد") : lockO ? " — مفتوح للاستدراك" + (AP ? " · نقرة مزدوجة لإغلاقه" : "") : fut ? " — لم يأتِ بعد" : ""),
-        click: () => this.setState(sel ? { rzDay: i } : { rzDay: i, rzOpenDays: {}, rzDelAsk: null }),
+        click: () => this.setState(sel ? { rzDay: i } : { rzDay: i, rzDelAsk: null }),
         dbl: (ev) => {
           ev && ev.stopPropagation && ev.stopPropagation();
           if (!AP) return void ((mLocked || past) && this.bsToast(NOAP));
-          mLocked ? this.setState({ rzOpenMonths: { [mKey]: !0 }, rzOpenDays: {} }) : past && this.setState((s) => ({ rzOpenDays: s.rzOpenDays && s.rzOpenDays[dk] ? {} : { [dk]: !0 } }));
+          mLocked ? this._rzRetroToggle({ y: Y, m: M, d: null }) : past && this._rzRetroToggle({ y: Y, m: M, d: this._rzWinOf(Y, M, null) ? null : i });
         },
         style:
           "position:relative;height:24px;flex:1 1 auto;min-width:28px;padding:0 3px;border-radius:4px;font-size:8px;font-weight:" + (sel ? "900" : "700") +
@@ -1186,7 +1238,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const D = t.rzDay,
       dPast = mPast || (selM === nowM && D < e.d),
       dFut = selM > nowM || (isCurM && D > e.d),
-      dayLocked = !mLocked && dPast && !OD[Y + "-" + M + "-" + D],
+      dayLocked = !mLocked && dPast && !this._rzCovers(Y, M, D),
       monthRows = all.filter((r) => r.y === Y && r.m === M),
       opts = this.loadRzOpts();
     return {
@@ -1197,9 +1249,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       rzBadgeStyle:
         "display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;border-radius:9999px;padding:4px 12px;font-family:'Cairo',sans-serif;border:1px solid " +
         (isCurM ? "var(--bd-a185151810p35);color:var(--fg-x9a7e40);background:var(--bg-a185151810p12)" : "var(--bd-a1481631840p35);color:var(--fg-x64748b);background:var(--bg-a1481631840p1)"),
-      rzPrevYear: () => this.setState({ rzYear: Y - 1, rzOpenMonths: {}, rzOpenDays: {}, rzLedgerPage: 1 }),
-      rzNextYear: () => this.setState({ rzYear: Y + 1, rzOpenMonths: {}, rzOpenDays: {}, rzLedgerPage: 1 }),
-      rzGoCurrent: () => this.setState({ rzYear: e.y, rzMonth: e.m, rzDay: e.d, rzOpenMonths: {}, rzOpenDays: {}, rzLedgerPage: 1 }),
+      rzPrevYear: () => this.setState({ rzYear: Y - 1, rzLedgerPage: 1 }),
+      rzNextYear: () => this.setState({ rzYear: Y + 1, rzLedgerPage: 1 }),
+      rzGoCurrent: () => this.setState({ rzYear: e.y, rzMonth: e.m, rzDay: e.d, rzLedgerPage: 1 }),
       rzDays: days,
       rzSelDateLabel: D + " " + this.MONTHS[M - 1] + " " + Y + " هـ",
       rzLegendLockTxt: AP ? "انقضى — مقفل · نقرة مزدوجة لفتحه" : "انقضى — مقفل",

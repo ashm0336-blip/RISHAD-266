@@ -278,21 +278,25 @@
   {
    "key": "rz.rec.retro.open",
    "group": "D — retro (rasd)",
-   "mechanism": "قفلٌ زمنيٌّ في الواجهة: الشهرُ أو اليومُ المنقضي مقفلٌ للإدخال، ويفتحه للاستدراك حاملُ rz.rec.retro.open (⇐ rasd/records:approve) بنقرةٍ مزدوجة على بطاقته — حالةٌ في الصفحة لا نافذةٌ خادمية (كما في Production)",
-   "inputs": "اليومُ الهجري (KIVO.BassamCal.hToday) · تاريخُ اليوم المختار في شريط الأيام · قرارُ rasd/records:approve",
-   "shadow_rule": "لا قاعدةَ رفضٍ خادمية لهذا النظام — DateRange للمورد بلا نموذج قفل (allow no-temporal-lock)",
-   "asis_today": "القفلُ حالةُ واجهةٍ فقط (rzOpenMonths/rzOpenDays بنقرةٍ مزدوجة لحامل approve)",
-   "expected_mismatch": "لا شيء — لا قاعدةَ خادمية تُقاس لهذا النظام",
-   "impl": [],
-   "tests": [
-    "src/systems/rasd/tests/rasd_logic.test.mjs"
+   "mechanism": "حالةٌ خادمية لفترة الاستدراك بالآلية القائمة: bsdept:<d>:bassam_rasd_retro_v1 = { windows: [...] } تُفتح وتُغلق عبر POST /api/retro (شهرٌ أو يومٌ منقضٍ · ≤ 72 ساعة · سببٌ وسطرُ تدقيق) — محوّلُها server/047r-rasd-retro.js",
+   "inputs": "اليومُ الهجري للخادم (dsToday) · تواريخُ الحالات المتأثرة (y·m·d) · نوافذُ الإدارة · قرارُ rz.rec.retro.open (⇐ rasd/records:approve)",
+   "shadow_rule": "كتابةٌ تمسّ حالةً في فترةٍ مغلقة بلا نافذةٍ سارية تغطّيها ⇒ رفض (010 DateRange · RETRO_SYS)",
+   "asis_today": "الواجهةُ تفتح بنقرةٍ مزدوجة لحامل approve نافذةً خادمية (POST /api/retro) وتغلقها كذلك",
+   "expected_mismatch": "لا شيء",
+   "impl": [
+    "retroClosed",
+    "retroCover",
+    "rzRetroAdapter"
    ],
-   "api": "—",
-   "status": "ui-only",
+   "tests": [
+    "src/systems/rasd/tests/rasd_retro.test.mjs"
+   ],
+   "api": "GET/POST /api/retro (res: rasd)",
+   "status": "built",
    "owner": "rasd/records",
    "label": "فتح شهر/يوم مقفل للاستدراك",
    "guardKind": "rule-new",
-   "guardStatus": "to-build",
+   "guardStatus": "built",
    "asisMap": [
     "rasd/records:approve"
    ],

@@ -1,5 +1,5 @@
 /* V7 · د6 (رصد الحالات) — الخادمُ الحقيقي (العاملُ المبنيّ على SQLite في الذاكرة · TEST_ONLY):
-   ① النظامُ مطفأٌ افتراضياً لكل وحدة قائمة — سجلٌّ صريح بلا «rasd» وسلسلةٌ مفتوحة بلا سجلّ (openOff) — ويُفعَّل بسقف الوحدة وحده
+   ① النظامُ مطفأٌ افتراضياً لكل وحدة قائمة — سجلٌّ صريح بلا «rasd» وسلسلةٌ مفتوحة بلا سجلّ (optIn في system.json) — ويُفعَّل بسقف الوحدة وحده
    ② الخادمُ يرفض الطلبَ المصنوع يدوياً ممّن لا يملك الصلاحية (موظفٌ بلا دور · مديرُ وحدةٍ أخرى · مديرٌ والنظامُ مطفأ لوحدته) — والمخزَّن لا يتغيّر
    ③ القراءة: لا يصل مفتاحُ النظام لمن لا يقرؤه · ④ «سجل الحركة» يسجّل الحفظ · ⑤ التنبيهُ العاجل (rz_hot) يُقبل والنظامُ مفعّل ولا يُعرض والنظامُ مطفأ */
 import test from 'node:test';
@@ -14,12 +14,12 @@ test('rasd · ① مطفأٌ افتراضياً لكل وحدة قائمة (سج
   try {
     const su = T.su, mgr = await T.as(LAB.mgrA, LAB.pw), emp = await T.as(LAB.empA, LAB.pw), mgrB = await T.as(LAB.mgrB, LAB.pw);
     su.uid = su.uid || T.DB.q("SELECT uid FROM sess ORDER BY rowid LIMIT 1")[0].uid;
-    const K = key(A, REC), doc = REPORTS(3);
+    const K = key(A, REC), doc = REPORTS(3, await T.today());   /* اليومُ الحالي: فترةٌ مفتوحة (القفلُ الزمني في rasd_retro.test.mjs) */
     /* ① سجلُّ الوحدة صريحٌ بلا «rasd» (كما في المختبر وكما تكون الوحدات القائمة) ⇒ مطفأ: مديرُ الوحدة نفسُه لا يكتب */
     const off = await T.save(mgr, K, doc);
     assert.ok(denied(off, K), 'manager wrote rasd while it is OFF for his unit: ' + off.t.slice(0, 200));
     assert.equal(readK(T.DB, K), null);
-    /* سلسلةٌ مفتوحة (لا سجلَّ في الوحدة ولا في أصولها): النظامُ الجديد لا يُفتح ضمناً (openOff) — وبقيةُ الأنظمة مفتوحةٌ كما كانت */
+    /* سلسلةٌ مفتوحة (لا سجلَّ في الوحدة ولا في أصولها): النظامُ الجديد لا يُفتح ضمناً (optIn في system.json) — وبقيةُ الأنظمة مفتوحةٌ كما كانت */
     const P0 = readK(T.DB, 'bassam_perms_v1'), P1 = JSON.parse(JSON.stringify(P0));
     delete P1.caps[A]; delete P1.caps[G];
     await putK(T, 'bassam_perms_v1', P1);
@@ -33,7 +33,7 @@ test('rasd · ① مطفأٌ افتراضياً لكل وحدة قائمة (سج
     assert.equal(on.status, 200, on.t.slice(0, 300)); assert.equal(on.j.ok, 1); assert.deepEqual(on.j.denied || {}, {});
     assert.deepEqual(readK(T.DB, K), doc);
     /* ② موظفٌ بلا دور — طلبٌ مصنوع يدوياً يضيف حالة: مرفوض */
-    const forged = { reports: doc.reports.concat([report(9, { byName: 'TEST_ONLY مزوّر' })]) };
+    const forged = { reports: doc.reports.concat([report(9, { byName: 'TEST_ONLY مزوّر', y: doc.reports[0].y, m: doc.reports[0].m, d: doc.reports[0].d })]) };
     const e1 = await T.save(emp, K, forged);
     assert.ok(denied(e1, K), 'employee without permission wrote rasd: ' + e1.t.slice(0, 200));
     /* مديرُ وحدةٍ أخرى يكتب مفتاحَ هذه الوحدة: مرفوض */
@@ -59,7 +59,7 @@ test('rasd · ① مطفأٌ افتراضياً لكل وحدة قائمة (سج
 test('rasd · ③ القراءةُ لمن يملكها وحده · ④ «سجل الحركة» يسجّل الحفظ', async () => {
   const T = await lab();
   try {
-    const mgr = await T.as(LAB.mgrA, LAB.pw), emp = await T.as(LAB.empA, LAB.pw), K = key(A, REC), doc = REPORTS(2);
+    const mgr = await T.as(LAB.mgrA, LAB.pw), emp = await T.as(LAB.empA, LAB.pw), K = key(A, REC), doc = REPORTS(2, await T.today());
     await rasdOn(T, A, true);
     const w = await T.save(mgr, K, doc);
     assert.equal(w.status, 200, w.t.slice(0, 200)); assert.deepEqual(w.j.denied || {}, {});

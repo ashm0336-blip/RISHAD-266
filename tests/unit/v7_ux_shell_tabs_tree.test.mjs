@@ -17,11 +17,11 @@ const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const canon = (v) => Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}' : JSON.stringify(v);
 const DEVELOP = {
   /* V7 · د6 (رصد الحالات): البصماتُ الثلاث تُحدَّث بإضافة النظام — صفحتُه في pages.json · صفوفُه في السجلّ · سطرُه في PG_REG؛ لا تغييرَ غيرها */
-  pages: '878a0d8c5a92eecf4bbe03ccec42e52d2c66c058c55c70d62740eb6829c7a0b5',
+  pages: '02c8d8c7b02b9cc81d23d34a3b4d5b79f46f276873194b452480c480a8629462',
   /* V7 · د5-ح (القفل): السجلُّ وPG_REG بعد حذف ورقة «قوالب الصلاحيات» ومفاتيحِ tpl.* الخمسة (وحدها — v7_d5h_deleted_residue) */
-  registryJson: '773bcb538dc9e2592a775e3c49547932396048aa77c30994049362a2700bdbad',
-  registryBlock: '8728a878fbac1286968f71e2ab3c309fda2ad27a1d9e6fca71a0e1f5cc9de98b',
-  serverPages: 'cf5fe5dcb746fc7d410efcc3d175dd32301b2987bc13ec28abf36d65b42233b2',
+  registryJson: '33728b5d14bf873258e13eab2a45bc09bd0008264e6e9f2b2b60fc7c6e659b1c',
+  registryBlock: '8ef92834583e829b4e0b8e8f78a662012a0be2e11dacaf117b1cc5f4e48f3bed',
+  serverPages: 'a4437bfe74d7424890b2a20e960f843f888d129a4627ae46aac252d8b9301f82',
 };
 
 test('pages.json without the display-only field is develop\'s pages.json; the field sits on one page and names a leaf that exists', needs('award', 'custody', 'dstats', 'rasd', 'seized', 'tasks'), () => {

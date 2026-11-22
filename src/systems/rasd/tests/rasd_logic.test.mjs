@@ -162,7 +162,7 @@ test('rasd · الصلاحيات في الواجهة: بلا «add» لا محض
   assert.match(W.toasts.join(' '), /لا تشمل هذا الإجراء/);
   /* شهرٌ منقضٍ: النقرةُ المزدوجة بلا approve لا تفتحه */
   const past = v.rzMonths.find((m) => /انقضى/.test(m.tip));
-  if (past) { past.dbl({}); eq(p.state.rzOpenMonths, {}); }
+  if (past) { const n = W.toasts.length; past.dbl({}); assert.ok(W.toasts.length > n && /الاعتماد|لا تشمل/.test(W.toasts.slice(n).join(' ')), 'a locked month opened without approve'); }
   const D = new (Object.getPrototypeOf(p).constructor)({ solo: 'dash' });
   D.bsToast = () => {};
   const dv = D.renderVals();

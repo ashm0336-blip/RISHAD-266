@@ -9933,7 +9933,7 @@
     "resources": [
      "bassam_rasd_v1"
     ],
-    "detail": "فتحُ الشهر أو اليوم المنقضي للاستدراك في واجهة رصد الحالات (نقرةٌ مزدوجة على بطاقته) = super OR rz.rec.retro.open (⇐ rasd/records:approve) — كما في Production: قفلٌ زمنيٌّ في الواجهة، ولا نافذةَ استدراكٍ خادمية لهذا النظام",
+    "detail": "قاعدة قفل زمني خادمية (الآلية القائمة D3‑01/D3‑02/D3‑07): فتحُ نافذة الاستدراك وإغلاقُها عبر /api/retro = super OR rz.rec.retro.open (⇐ rasd/records:approve) بنطاق Department + DateRange، بسببٍ وتدقيق؛ أيُّ كتابةٍ على حالةٍ في فترةٍ مغلقة تحتاج نافذةً ساريةً تغطّيها",
     "status": "exists"
    },
    "scopeDims": [

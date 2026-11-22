@@ -6502,7 +6502,7 @@
   "bassam_rasd_v1": {
    "items": "reportItems",
    "evidence": "reports[id].{y,m,d} · zone · spot (ref.rasd.list) · قفلُ الواجهة على اليوم الهجري",
-   "lock": "rasd: لا نافذةَ استدراكٍ خادمية — القفلُ الزمني في الواجهة (G‑08) ويفتحه حاملُ rz.rec.retro.open كما في Production",
+   "lock": "rasd: الفترةُ المغلقة (G‑08 على اليوم الهجري) ∧ نافذةُ استدراكٍ سارية (bassam_rasd_retro_v1) — D3‑07",
    "dims": {
     "Department": "keyDept",
     "Branch": "branchCeiling",
@@ -8874,6 +8874,13 @@
     "routes": [],
     "note": "حالةُ نوافذ استدراك المضبوطات (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات المضبوطات) — لا مفتاحَ قراءةٍ مستقلاً"
    },
+   "bassam_rasd_retro_v1": {
+    "scope": "dept-state",
+    "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+    "keys": [],
+    "routes": [],
+    "note": "حالةُ نوافذ استدراك رصد الحالات: مفتاحُ إدارةٍ خارج RES_REG ⇒ لغير super رفض؛ مسارُ القراءة المعلَن GET /api/retro"
+   },
    "bassam_roles_v1": {
     "scope": "dept",
     "cls": "explicit read permission",
@@ -9021,6 +9028,11 @@
     "state": "RETRO.seized.state",
     "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
     "note": "حالةُ نوافذ استدراك المضبوطات (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات المضبوطات) — لا مفتاحَ قراءةٍ مستقلاً"
+   },
+   "bassam_rasd_retro_v1": {
+    "state": "RETRO.rasd.state",
+    "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+    "note": "حالةُ نوافذ استدراك رصد الحالات — قراءتُها GET /api/retro"
    }
   },
   "readKindOutsideRoutes": [
@@ -9074,7 +9086,7 @@
    }
   ],
   "meta": {
-   "resources": 69,
+   "resources": 70,
    "routes": 238,
    "byClass": {
     "intentionally no-read-key / session-global": 15,
@@ -9084,7 +9096,7 @@
     "explicit read permission + explicit special read capability + reference-read routes": 21,
     "explicit read permission + explicit special read capability": 14,
     "explicit special read capability (rule)": 5,
-    "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)": 2
+    "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)": 3
    },
    "bySource": {
     "explicit-read": 109,

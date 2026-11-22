@@ -24,7 +24,7 @@ var PG_REG = [
   { key: 'tasks', under: 'daily' },
   { key: 'irshad', subs: ['dash', 'records'], off: ['dash'] },
   { key: 'seized', subs: ['dash', 'records'], off: ['dash'] },
-  { key: 'rasd', subs: ['dash', 'records'], off: ['dash'], openOff: 1 },
+  { key: 'rasd', subs: ['dash', 'records'], off: ['dash'] },
   { key: 'award', subs: ['new', 'res', 'doc'] },
   { key: 'links' },
   { key: 'help' },
@@ -32,8 +32,13 @@ var PG_REG = [
 ];
 var PG_OF = {}, PG_KEYS = [];
 PG_REG.forEach(function (p) { PG_OF[p.key] = p; PG_KEYS.push(p.key); });
-/* V7 · د6: السقفُ المفتوح بلا ما أعلنه نظامُه openOff — نظامٌ جديد لا يُفتح ضمناً لوحدةٍ لم يُضبط سقفُها (= 331 PAGE_OPEN) */
-var PG_OPEN = PG_KEYS.filter(function (k) { return !PG_OF[k].openOff; });
+/* V7 · د6 (قرار المالك): السقفُ المفتوح = كلُّ الصفحات إلا صفحاتِ الأنظمة التي أعلنت optIn في system.json (قائمةُ الأنظمة الواحدة KIVO_PERM44_DATA
+   — 057b) — «لا يفتحها السقفُ المفتوح؛ تُفعَّل صراحةً فقط». = 331 pageOpen */
+function pgOpen() {
+  var off = {};
+  try { (KIVO_PERM44_DATA.systems || []).forEach(function (s) { if (s && s.optIn === true && s.leaves && s.leaves[0] && String(s.leaves[0]).indexOf('/') === -1) off[s.leaves[0]] = 1; }); } catch (e) { off = {}; }
+  return PG_KEYS.filter(function (k) { return !off[k]; });
+}
 var ACTS_ALL = ['view', 'add', 'edit', 'del', 'approve', 'export'];
 function pgIsContainer(pk) { var p = PG_OF[pk]; return !!(p && ((p.subs && p.subs.length) || (p.tabs && p.tabs.length))); }
 function pgLeaves(pk) {
@@ -148,7 +153,7 @@ function capSetAnywhereOf(A, d) { return hasCapOf(A, d) || ancChain(A, d).some(f
 /* غياب السجل في الإدارة وأسلافها = السقف مفتوح — نصُّ شاشة الصلاحيات نفسه.
    والوحدة المطفأة على مستوى المنصة تسقط من السقف مهما كان الدور. */
 function deptCapOf(A, d) {
-  var c = capSetAnywhereOf(A, d) ? effCapOf(A, d) : PG_OPEN.slice();
+  var c = capSetAnywhereOf(A, d) ? effCapOf(A, d) : pgOpen();
   if (A.off && A.off.length) c = c.filter(function (k) { return A.off.indexOf(k) === -1; });
   return c;
 }
