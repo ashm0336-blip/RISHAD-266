@@ -44,6 +44,13 @@
    "logicLines": 10385
   },
   {
+   "name": "Org",
+   "slug": "org",
+   "minifiedSource": true,
+   "bytes": 0,
+   "logicLines": 0
+  },
+  {
    "name": "Profile",
    "slug": "profile",
    "minifiedSource": true,

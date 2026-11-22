@@ -54,22 +54,17 @@ class Component extends DCLogic {
   _hashSub() {
     try { const m = /^#\/[a-z]+\/[a-z]+\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
   }
-  /* V7 P0: «الإدارات» في المركز عنوانُها #/sysadmin/org[/<معرّف العقدة أو الوحدة>] — والتبويبُ في الصفحة اسمُه depts كما هو.
+  /* V7 · د6: «الإدارات والصلاحيات» عنوانُها #/sysadmin/org/<الوحدة>/<التبويب> — يقرؤه ويكتبه مصدرٌ واحد (KIVO.BassamOrgRoute · صفحةُ الشاشة)،
+     والإطارُ يعرف منه المقطعَ الأول وحده (org ⇐ التبويب depts)؛ المعرّفُ والتبويبُ لا يُقرآن هنا.
+     V7 P0: «الإدارات» في المركز عنوانُها #/sysadmin/org[/<معرّف العقدة أو الوحدة>] — والتبويبُ في الصفحة اسمُه depts كما هو.
      العنوانُ القديم #/sysadmin/depts يُقرأ بالقاعدة نفسها (مقطعٌ يُترجَم) ثم تكتب الصفحةُ العنوانَ الجديد. المعرّفُ مُرمَّزٌ (encodeURIComponent):
      المعرّفاتُ المخزَّنة ليست صيغةً واحدة (n…/d…/s… بأساس 36 · والمستورَدةُ قديماً بأحرفٍ كبيرة وشرطة سفلية) — فلا يُفترض شكلُها؛
      والصفحةُ لا تفتح إلا معرّفاً موجوداً في الهيكل، والرابطُ لا يمنح شيئاً: «مركز إدارة رشاد» لمسؤول المنصة وحده (_pageAllowed) والخادمُ هو الحَكَم */
   _sysSeg(tab) { return tab === "depts" ? "org" : tab; }
   _sysTabOf(seg) { return seg === "org" ? "depts" : seg; }
-  _hashOrgId() {
-    try {
-      const m = /^#\/sysadmin\/org\/([^/?#]+)(?:\/perm\/(?:systems|roles|people|log))?$/.exec(String(location.hash || "")); if (!m) return "";   /* V7 · د5-هـ (44): وذيلُ «الصلاحيات» */
-      const id = decodeURIComponent(m[1]);
-      return id.length <= 128 && !/[\u0000-\u001f<>"'`\\]/.test(id) ? id : "";
-    } catch (e) { return ""; }
-  }
   /* ذيل العنوان لصفحتَي الإعدادات ومدير النظام يُمرَّر لصفحة الإعدادات عبر خطّافيها (القائم __ADMIN_OPEN_TAB والجديد __ADMIN_OPEN_DTAB) */
   _applyHashTab(key) {
-    try { const t = this._hashTab(); if (!t) return; if (key === "sysadmin") { KIVO.__ADMIN_OPEN_TAB = this._sysTabOf(t); KIVO.__ADMIN_OPEN_PSUB = t === "plat" ? this._hashSub() || null : null; KIVO.__ADMIN_OPEN_ORG = t === "org" ? this._hashOrgId() || null : null; } else if (key === "admin") KIVO.__ADMIN_OPEN_DTAB = t; else KIVO.__BS_OPEN_TAB = { page: key, tab: t }; } catch (e) {}
+    try { const t = this._hashTab(); if (!t) return; if (key === "sysadmin") { KIVO.__ADMIN_OPEN_TAB = this._sysTabOf(t); KIVO.__ADMIN_OPEN_PSUB = t === "plat" ? this._hashSub() || null : null; } else if (key === "admin") KIVO.__ADMIN_OPEN_DTAB = t; else KIVO.__BS_OPEN_TAB = { page: key, tab: t }; } catch (e) {}
   }
   _hashWrite(key, push) {
     try {
@@ -185,12 +180,23 @@ class Component extends DCLogic {
       this._hashWrite(this.state.active, false);
       this._onHash = () => { try {
         const k = this._hashKey(); if (!k) return;
+        /* V7 · د6: عنوانٌ تغيّر (رجوعٌ · عنوانٌ مكتوب · رابط) وفي شاشة «الإدارات والصلاحيات» تغييرٌ غيرُ محفوظ — يُعاد عنوانُها ويُسأل حارسُها أولاً،
+           سواءٌ كانت الوجهةُ وحدةً أو تبويباً آخر فيها أو صفحةً أخرى. ما تنتقل إليه الشاشةُ نفسُها (go) عنوانٌ قبلته فلا يُسأل عنه مرتين */
+        if (!this.__conAsked && this._orgDirty()) {
+          const O = KIVO.BassamOrg, keep = O.href ? O.href() : "";
+          if (keep && String(location.hash || "") !== keep) {
+            const want = location.href;
+            try { history.replaceState(null, "", location.pathname + location.search + keep); } catch (e) {}
+            Promise.resolve(O.canLeave({ leave: true, href: want })).then((y) => { if (!y) return; try { history.replaceState(null, "", want); } catch (e) {} this.__conAsked = true; try { this._onHash(); } finally { this.__conAsked = false; } });
+            return;
+          }
+        }
         if (k === this.state.active) { this._applyHashTab(k); this.setState({ hashTick: Date.now() }); return; }
         const ok = this._pageAllowed(k);
         if (!ok) { this._hashWrite(this.state.active, false); return; }
         /* مراجعة S10: الخروجُ من المركز بالرجوع أو بعنوانٍ مكتوب ومسوّداتُ إعدادات المنصة غيرُ محفوظة — يبقى العنوانُ على المركز ويُسأل أولاً
            (السؤالُ نفسُه في _conLeaveOk لكل مخرج) */
-        if (ok !== "sysadmin" && !this.__conAsked && this._conDirty()) {
+        if (ok !== "sysadmin" && !this.__conAsked && this._platDirty()) {
           const want = location.href, lc = this.__lastCon || ["overview", null];
           KIVO.__ADMIN_MODE = "site";
           try { history.replaceState(null, "", location.pathname + location.search + "#/sysadmin/" + this._sysSeg(lc[0]) + (lc[1] ? "/" + lc[1] : "")); } catch (e) {}
@@ -947,7 +953,7 @@ class Component extends DCLogic {
   _sysNav() {
     return {
       home: [["overview", null, "الرئيسية"]],
-      org: [["depts", null, "الإدارات"], ["users", null, "مراقبة الحسابات"]],
+      org: [["depts", null, "الإدارات والصلاحيات"], ["users", null, "مراقبة الحسابات"]],   /* V7 · د6 (ب1): كان «الإدارات» — يفتح الشاشةَ الواحدة مباشرةً */
       plat: [["plat", "id", "هوية المنصة"], ["plat", "notif", "التنبيهات والتعاميم"],
         ["plat", "login", "شاشة تسجيل الدخول", 1], ["plat", "side", "القوائم"], ["plat", "app", "تطبيق الجوال"],
         ["plat", "about", "حول المنصة", 1]],
@@ -1077,12 +1083,21 @@ class Component extends DCLogic {
   /* «مساحة العمل التشغيلية»: آخرُ صفحةٍ تشغيلية فُتحت، وإلا أولُ صفحةٍ متاحة — والوحدةُ النشطة كما هي.
      مسوّداتُ إعدادات المنصة في حالة الصفحة وحدها: تُفقد بالخروج، فيُسأل المستخدم أولاً */
   /* مسوّداتُ إعدادات المنصة غيرُ المحفوظة والصفحةُ صفحةُ المركز */
-  _conDirty() {
+  _platDirty() {
     return this.state.active === "sysadmin" && ((this.__con || {}).dirtyN | 0) > 0;
+  }
+  _conDirty() {
+    return this._platDirty() || this._orgDirty();
+  }
+  /* V7 · د6: تغييرٌ غيرُ محفوظ في شاشة «الإدارات والصلاحيات» (في المركز أو في إعدادات المدير) — الشاشةُ تجيب (KIVO.BassamOrg.dirty) والسؤالُ سؤالُها
+     (canLeave): كلُّ مخرجٍ يسأل _conLeaveOk يمرّ به، والعنوانُ المكتوب أو الرجوع يُعاد إلى عنوانها حتى تجيب (_onHash) */
+  _orgDirty() {
+    try { const O = KIVO.BassamOrg; return !!(O && O.dirty && O.dirty()); } catch (e) { return false; }
   }
   /* سؤالٌ واحد قبل مغادرة المركز بمسوّداتٍ غير محفوظة — لكل مخرج: «مساحة العمل التشغيلية» · الرجوع والعنوان المكتوب · الجرس · بطاقة المستخدم */
   async _conLeaveOk() {
-    if (!this._conDirty()) return true;
+    if (this._orgDirty()) { try { if (!(await KIVO.BassamOrg.canLeave({ leave: true }))) return false; } catch (e) { return false; } }
+    if (!this._platDirty()) return true;
     try { return !!(await KIVO.bsConfirm({ title: "تغييرات غير محفوظة", msg: "لديك تغييرات غير محفوظة في إعدادات المنصة، والخروج يتجاهلها.", ok: "اخرج دون حفظ", cancel: "البقاء", danger: true })); } catch (e) { return false; }
   }
   async _goOps() {

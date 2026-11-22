@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/* V7 · د6 · شاشة «الإدارات والصلاحيات»: العمودان (الشجرة يميناً · الوحدة يساراً) — رموزٌ دلالية وحدها (السمتان من 070/080).
+   العرضُ الضيّق (ب13): عمودٌ واحد · الشجرةُ لوحةٌ من الأسفل يفتحها زرُّ الوحدة · التبويباتُ شريطٌ يُسحب أفقياً · أهدافُ اللمس 44px */
+.og{font-family:'Cairo',sans-serif;color:var(--text-primary);font-size:12.5px;line-height:1.7}
+.og button,.og select,.og input{font-family:inherit}
+.og button:focus-visible,.og a:focus-visible,.og select:focus-visible,.og input:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+.og-grid{display:grid;grid-template-columns:minmax(0,46fr) minmax(0,54fr);gap:14px;align-items:start}
+.og-treewrap{display:contents}
+.og-tree{position:sticky;top:12px;max-height:calc(100vh - 110px);display:flex;flex-direction:column;min-width:0;border:1px solid var(--border-default);border-radius:16px;background:var(--bg-card);box-shadow:var(--shadow-card);overflow:hidden}
+.og-sheet-hd,.og-ub{display:none}
+.og-tb,.og-sb,.og-flt,.og-bulk{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border-subtle)}
+.og-cnt{font-weight:800;margin-inline-end:auto}.og-cnt b{font-weight:700;color:var(--text-muted)}
+.og-b{min-height:34px;padding:0 12px;border:1px solid var(--border-default);border-radius:9px;background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:700;cursor:pointer}
+.og-b:hover{border-color:var(--border-brand);color:var(--brand-text)}
+.og-add,.og-b--p{background:var(--brand-primary);border-color:var(--brand-primary);color:var(--text-on-brand)}
+.og-add:hover,.og-b--p:hover{color:var(--text-on-brand)}
+.og-b--dz{color:var(--danger-text);border-color:var(--danger-border);margin-inline-start:auto}
+.og-b--dz:hover{background:var(--danger);border-color:var(--danger);color:var(--text-on-fill)}
+.og-q{flex:1 1 150px;min-width:0;min-height:34px;box-sizing:border-box;border:1px solid var(--border-default);border-radius:9px;padding:0 10px;background:var(--bg-input);color:var(--text-primary);font-size:12px}
+.og-l{min-height:34px;border:0;background:transparent;color:var(--brand-text);font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.og-flt button{min-height:30px;padding:0 11px;border:1px solid var(--border-default);border-radius:999px;background:var(--bg-card);color:var(--text-secondary);font-size:11.5px;cursor:pointer}
+.og-flt button span{color:var(--text-muted);font-weight:700}
+.og-flt button[aria-pressed="true"]{border-color:var(--border-brand);background:var(--selected-bg);color:var(--brand-text);font-weight:700}
+.og-bulk{background:var(--bg-inverse);color:var(--text-on-inverse)}.og-bulk span{flex:1 1 120px;font-weight:700}
+.og-hint{font-size:10.5px;color:var(--text-faint);padding:5px 14px 0;line-height:1.6}
+.og-th,.og-rw{display:flex;align-items:center;gap:6px}
+.og-th{padding:7px 14px 5px;font-size:10.5px;font-weight:700;color:var(--text-muted)}
+.og-c-nm{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px}
+.og-c-kd{flex:none;width:82px;text-align:center}
+.og-c-n{flex:none;width:50px;text-align:center;font-variant-numeric:tabular-nums}
+.og-c-mg{flex:none;width:66px;text-align:center;font-size:11px;font-weight:700;white-space:nowrap}
+.og-rows{flex:1 1 auto;min-height:120px;overflow-y:auto;overflow-x:hidden;padding:2px 8px 8px}
+/* صفٌّ واحد لكل وحدة في إطارٍ مستقل · المختارةُ بإطارٍ ذهبي */
+.og-rw{position:relative;min-height:40px;margin:4px 0;padding:3px 8px;border:1px solid var(--border-default);border-radius:10px;background:var(--bg-surface);cursor:pointer;box-sizing:border-box}
+.og-rw:hover{background:var(--bg-gold-50-a7)}
+.og-rw.sel{border-color:var(--brand-primary);outline:1.5px solid var(--brand-primary);outline-offset:-2px;background:var(--bg-gold-50-a12)}
+.og-rw.root{background:var(--bg-surface-2);font-weight:800}
+.og-rw.dragging{opacity:.45}
+.og-rw.dz-before{box-shadow:inset 0 2.5px 0 var(--brand-primary)}
+.og-rw.dz-after{box-shadow:inset 0 -2.5px 0 var(--brand-primary)}
+.og-rw.dz-inside{background:var(--bg-gold-50-a14);outline:1.5px dashed var(--brand-primary);outline-offset:-2px}
+/* خطوطُ التوصيل: خطٌّ رأسيٌّ لكل مستوى فوق الصف ومرفقٌ أفقيٌّ إلى اسمه */
+.og-ln{flex:none;align-self:stretch;width:0;margin:-4px 0;position:relative;background-image:linear-gradient(to left,var(--border-default) 1px,transparent 1px);background-size:16px 100%;background-position:right 7px top}
+.og-rw.d1 .og-ln{width:16px}.og-rw.d2 .og-ln{width:32px}.og-rw.d3 .og-ln{width:48px}.og-rw.d4 .og-ln{width:64px}.og-rw.d5 .og-ln{width:80px}.og-rw.d6 .og-ln{width:96px}
+.og-ln::after{content:"";position:absolute;top:50%;inset-inline-end:0;width:8px;border-top:1px solid var(--border-default)}
+.og-rw.d0 .og-ln::after{display:none}
+.og-ck{flex:none;width:18px;height:18px;padding:0;border:1.5px solid var(--border-default);border-radius:5px;background:var(--bg-card);cursor:pointer;position:relative}
+.og-ck[aria-checked="true"]{background:var(--brand-primary);border-color:var(--brand-primary)}
+.og-ck[aria-checked="true"]::after{content:"";position:absolute;inset:2px 5px 4px;border:solid var(--text-on-brand);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.og-cv{flex:none;width:22px;height:22px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--text-muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.og-cv:hover{background:var(--bg-surface-3);color:var(--text-primary)}
+.og-cv svg{transition:transform .15s;transform:rotate(-90deg)}
+.og-rw[aria-expanded="false"] .og-cv svg{transform:rotate(90deg)}
+.og-cv--x{cursor:default}
+.og-nm{min-width:0;padding:0;border:0;background:transparent;color:inherit;font-size:12.5px;font-weight:inherit;text-align:start;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.og-cur{flex:none;font-size:10px;font-weight:700;color:var(--success-text);background:var(--bg-green-25-a8);border:1px solid var(--bd-green-25-a30);border-radius:999px;padding:0 7px;white-space:nowrap}
+/* شارةُ النوع بلونٍ لكل نوع */
+.og-kd{display:inline-block;max-width:100%;box-sizing:border-box;font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;background:var(--bg-surface-3);color:var(--text-secondary)}
+.og-kd[data-k="root"]{background:var(--bg-inverse);color:var(--brand-light)}
+.og-kd[data-k="top"]{background:var(--brand-soft);color:var(--brand-text)}
+.og-kd[data-k="sector"]{background:var(--bg-gold-50-a14);color:var(--brand-text)}
+.og-kd[data-k="gen"]{background:var(--bg-blue-50-a8);color:var(--info-text)}
+.og-kd[data-k="dept"]{background:var(--bg-green-25-a10);color:var(--success-text)}
+.og-kd[data-k="sec"]{background:var(--bg-orange-40-a12);color:var(--warning-text)}
+.og-c-mg[data-has="true"],.og-mg[data-has="true"]{color:var(--success-text)}
+.og-c-mg[data-has="false"],.og-mg[data-has="false"]{color:var(--warning-text)}
+.og-none{padding:22px 12px;text-align:center;color:var(--text-secondary);border:1px dashed var(--border-default);border-radius:12px;margin-top:6px}
+.og-exp{padding:9px 12px;border-top:1px solid var(--border-subtle)}.og-exp .og-b{width:100%}
+/* الوحدةُ المختارة */
+.og-unit{min-width:0;display:flex;flex-direction:column;gap:12px}
+.og-hd{padding:12px 16px;border:1px solid var(--border-default);border-radius:16px;background:var(--bg-card);box-shadow:var(--shadow-card)}
+.og-path{font-size:11px;color:var(--text-muted);font-weight:600;min-height:18px}
+.og-ttl{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.og-ttl h3{margin:0;font-size:17px;font-weight:800;min-width:0;overflow-wrap:anywhere}
+.og-mg{font-size:11px;font-weight:700;border-radius:999px;padding:1px 9px;background:var(--bg-surface-3)}
+.og-ttl .og-b{margin-inline-start:auto}
+.og-tabs{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--bg-surface-3);overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.og-tab{flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:9px;color:var(--text-secondary);font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap;cursor:pointer}
+.og-tab:hover{color:var(--text-primary)}
+.og-tab[aria-selected="true"]{background:var(--bg-card);color:var(--brand-text);font-weight:800;box-shadow:var(--shadow-soft)}
+/* نظرة عامة */
+.og-ov{display:flex;flex-direction:column;gap:12px}
+.og-card{border:1px solid var(--border-default);border-radius:14px;padding:12px 14px;background:var(--bg-card)}
+.og-card h4{margin:0 0 8px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px}
+.og-n{font-size:11px;font-weight:700;color:var(--text-muted)}
+.og-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.og-sumc{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:64px;padding:8px 12px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--bg-surface);color:var(--text-primary);text-align:start;cursor:pointer}
+.og-sumc:hover{border-color:var(--border-brand)}
+.og-sumc small{font-size:11px;color:var(--text-muted);font-weight:700}.og-sumc b{font-size:15px;font-weight:800;overflow-wrap:anywhere}.og-sumc span{font-size:11px;color:var(--text-secondary)}
+.og-pos{margin:0 0 8px;color:var(--text-secondary)}.og-pos b{color:var(--text-primary);overflow-wrap:anywhere}
+.og-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.og-note{margin:8px 0 0;font-size:11.5px;color:var(--text-secondary);line-height:1.8}
+.og-kids{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.og-kids li{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.og-kids a{color:var(--brand-text);font-weight:700;text-decoration:none;min-width:0;overflow-wrap:anywhere}
+.og-kids a:hover{text-decoration:underline}
+/* قائمةُ التهيئة: خطواتٌ في صفٍّ واحد */
+.og-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.og-steps button{width:100%;height:100%;min-height:64px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--bg-surface);color:var(--text-primary);cursor:pointer;text-align:center}
+.og-steps button:hover{border-color:var(--border-brand)}
+.og-steps .mk{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;background:var(--warning-bg);color:var(--warning-text)}
+.og-steps li[data-ok="true"] .mk{background:var(--bg-green-25-a10);color:var(--success-text)}
+.og-steps b{font-size:12px}.og-steps small{font-size:10.5px;color:var(--text-secondary);line-height:1.5}
+.og-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* نوافذُ أفعال الهيكل (bs-dlg-box) */
+.og-dlg{padding:20px 22px;text-align:start;width:min(520px,100%)}
+.og-dlg .t{display:block;margin:0 0 10px;font-size:15px;font-weight:800}
+.og-dlg .m{margin:0 0 10px;font-size:12px;line-height:1.9;color:var(--text-secondary)}
+.og-dlg .fl{display:block;margin-bottom:10px}
+.og-dlg .fl>span{display:block;margin-bottom:4px;font-size:11.5px;font-weight:600;color:var(--text-secondary)}
+.og-dlg .fl input,.og-dlg .fl select{width:100%;min-height:40px;box-sizing:border-box;border:1px solid var(--border-default);border-radius:9px;padding:0 12px;background:var(--bg-input);color:var(--text-primary);font-size:13px}
+.og-dlg .ft{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-subtle)}
+.og-radio{display:flex;flex-wrap:wrap;gap:6px}
+.og-radio button{min-height:36px;padding:0 12px;border:1px solid var(--border-default);border-radius:9px;background:var(--bg-card);color:var(--text-primary);font-size:12px;cursor:pointer}
+.og-radio button[aria-checked="true"]{background:var(--bg-inverse);border-color:var(--bg-inverse);color:var(--text-on-inverse);font-weight:700}
+.og-err{margin:0 0 8px;padding:8px 11px;border-radius:9px;border:1px solid var(--warning-border);background:var(--warning-bg);color:var(--warning-text);font-size:12px;line-height:1.8}
+.og [data-org-tab]:empty{display:none}
+/* ═══ ب13 · العرض الضيّق: عمودٌ واحد · زرُّ الوحدة يفتح الشجرة لوحةً من الأسفل · أهدافُ اللمس 44px ═══ */
+@media (max-width:1280px){
+  .og-grid{grid-template-columns:minmax(0,1fr)}
+  .og-ub{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;margin-bottom:10px;padding:8px 14px;border:1px solid var(--border-brand);border-radius:14px;background:var(--bg-card);color:var(--text-primary);text-align:start;cursor:pointer;box-shadow:var(--shadow-card)}
+  .og-ub-t{flex:1;min-width:0;display:flex;flex-direction:column}.og-ub-t b{font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.og-ub-t small{font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .og-ub-k{flex:none;font-size:11.5px;font-weight:700;color:var(--brand-text)}
+  .og-treewrap{display:none}
+  .og[data-og-sheet="true"] .og-treewrap{display:flex;position:fixed;inset:0;z-index:var(--z-modal);align-items:flex-end;justify-content:center;background:var(--bg-overlay)}
+  .og[data-og-sheet="true"] .og-tree{position:relative;top:auto;width:min(720px,100%);max-height:88vh;max-height:88dvh;border-radius:18px 18px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:var(--shadow-elevated)}
+  .og-sheet-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border-subtle)}.og-sheet-hd b{font-size:14px}
+  .og-hint{display:none}
+  .og-b,.og-l,.og-q,.og-flt button,.og-tab,.og-radio button,.og-dlg .fl input,.og-dlg .fl select{min-height:44px}
+  .og-rw{min-height:48px}
+  .og-cv{width:44px;height:44px;margin:-2px 0}
+  .og-ck{width:24px;height:24px;margin:10px}
+  .og-ck[aria-checked="true"]::after{inset:3px 7px 6px}
+  .og-nm{min-height:44px}
+  .og-kids a{display:inline-flex;align-items:center;min-height:44px}
+  .og-dlg{width:100%}
+}
+@media (max-width:640px){
+  .og-th{display:none}
+  .og-rw{flex-wrap:wrap;row-gap:0;padding-bottom:6px}
+  .og-c-nm{flex:1 1 60%}
+  .og-rw .og-c-kd{width:auto;margin-inline-start:auto}
+  .og-rw .og-c-n,.og-rw .og-c-mg{width:auto;min-width:0;font-size:11px;color:var(--text-secondary);padding-inline-end:10px}
+  .og-rw .og-c-n[data-og-col="kids"]{margin-inline-start:44px}
+  .og-rw .og-c-n[data-og-col="kids"]::before{content:"تحتها ";color:var(--text-muted)}
+  .og-rw .og-c-n[data-og-col="people"]::before{content:"الأشخاص ";color:var(--text-muted)}
+  .og-rw .og-c-n[data-og-col="systems"]::before{content:"الأنظمة ";color:var(--text-muted)}
+  .og-rw.d1 .og-ln{width:10px}.og-rw.d2 .og-ln{width:20px}.og-rw.d3 .og-ln{width:30px}.og-rw.d4 .og-ln{width:40px}.og-rw.d5 .og-ln{width:50px}.og-rw.d6 .og-ln{width:60px}
+  .og-ln{background-size:10px 100%;background-position:right 4px top;align-self:auto;height:44px;margin:0}
+  .og-sum{grid-template-columns:minmax(0,1fr)}
+  .og-steps{grid-template-columns:repeat(5,minmax(96px,1fr));overflow-x:auto;padding-bottom:4px}
+  .og-b--dz{margin-inline-start:0}
+}
+/* V7 · د5-هـ (44) · تبويب «الصلاحيات»: الأنظمة · الأدوار · الأشخاص · السجل (رموزٌ دلالية وحدها — السمتان من 070/080) */
+.p44{padding:14px 16px 18px;border:1px solid var(--border-default);border-radius:16px;background:var(--bg-card);box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:var(--text-primary)}
+.p44-top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.p44-ttl{flex:1 1 320px;min-width:0}.p44-ttl h3{margin:0;font-size:16px;font-weight:800}.p44-ttl p{margin:2px 0 0;color:var(--text-secondary)}
+.p44-note.p44-self{color:var(--warning-text);border-color:var(--warning-border);background:var(--warning-bg)}
+.p44-chip{display:inline-block;margin-top:6px;padding:2px 12px;border-radius:999px;background:var(--brand-soft);color:var(--brand-text);font-size:11.5px}
+.p44-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.p44-as{display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:11.5px}
+.p44-seg{display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--bg-surface-3)}
+.p44-seg button{min-height:32px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--text-secondary);font:inherit;font-size:12px;cursor:pointer}
+.p44-seg button[aria-pressed="true"],.p44-seg button[aria-current="page"]{background:var(--bg-card);color:var(--text-primary);font-weight:700;box-shadow:var(--shadow-soft)}
+.p44 button:focus-visible,.p44 select:focus-visible,.p44 input:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+.p44-grid{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
+.p44-card{background:var(--bg-card);border:1px solid var(--border-default);border-radius:14px;padding:12px}
+.p44-card h4{margin:0;font-size:13px;font-weight:800;display:flex;align-items:center;gap:6px}.p44-card>small{display:block;color:var(--text-muted);font-size:11px;margin:2px 0 8px}
+.p44-rail{flex:1 1 200px;max-width:250px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.p44-main{flex:999 1 420px;min-width:0}
+.p44-side{flex:1 1 240px;max-width:320px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.p44-cap{font-size:11px;font-weight:700;color:var(--text-muted);margin:2px 0 6px}
+.p44-role{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:6px 10px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--text-primary);font:inherit;text-align:start;cursor:pointer}
+.p44-role[aria-pressed="true"]{border-color:var(--border-brand);background:var(--selected-bg)}
+.p44-rh{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;color:var(--text-muted);font-size:11.5px}
+.p44-add{min-height:32px;padding:0 10px;border:1px dashed var(--border-brand);border-radius:8px;background:transparent;color:var(--brand-text);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.p44-f{flex:1;min-width:0;display:flex;flex-direction:column}.p44-f small{color:var(--text-muted);font-size:11px}
+.p44-hd{padding:0 0 10px;border-bottom:1px solid var(--border-subtle);margin-bottom:8px}.p44-hd small{color:var(--text-muted)}.p44-hd h4{font-size:15px}.p44-hd p{margin:4px 0 0;color:var(--text-secondary)}
+.p44-note{margin:6px 0 0;padding:6px 10px;border-radius:9px;background:var(--bg-surface);border:1px solid var(--border-subtle);color:var(--text-secondary);font-size:11.5px}
+.p44-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.p44-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--bg-surface)}
+.p44-row[data-on="true"]{background:var(--bg-card);border-color:var(--border-brand-soft)}
+.p44-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none;background:var(--bg-surface-3);color:var(--text-muted)}
+.p44-row[data-on="true"] .p44-ic{background:var(--brand-soft);color:var(--brand-text)}
+.p44-lock{font-size:11px;color:var(--warning-text);background:var(--warning-bg);border-radius:999px;padding:1px 9px}
+.p44-sw{position:relative;width:42px;height:24px;flex:none;border:0;padding:0;border-radius:999px;background:var(--neutral-fill);cursor:pointer}
+.p44-sw::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:18px;height:18px;border-radius:50%;background:var(--bg-card);box-shadow:var(--shadow-soft);transition:inset-inline-start .15s}
+.p44-sw[aria-checked="true"]{background:var(--brand-primary)}.p44-sw[aria-checked="true"]::after{inset-inline-start:21px}
+.p44-sw:disabled{opacity:.4;cursor:not-allowed}.p44-sw.p44-sm{width:34px;height:20px}.p44-sw.p44-sm::after{width:14px;height:14px}.p44-sw.p44-sm[aria-checked="true"]::after{inset-inline-start:17px}
+.p44-menu{list-style:none;margin:6px 0 0;padding:6px;display:flex;flex-direction:column;gap:2px;border-radius:12px;background:var(--bg-inverse)}
+.p44-menu li{display:flex;align-items:center;gap:8px;padding:5px 9px;color:var(--text-on-inverse);font-size:12px}.p44-menu li span{flex:1}.p44-menu li small{color:var(--text-inverse-muted);font-size:11px}
+.p44-menu i{width:6px;height:6px;border-radius:50%;background:var(--brand-light);flex:none}
+.p44-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.p44-kpis div{border:1px solid var(--border-subtle);border-radius:10px;padding:6px 10px}.p44-kpis b{font-size:17px}.p44-kpis small{display:block;color:var(--text-muted);font-size:11px}
+.p44-bar{position:sticky;bottom:12px;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 12px;border-radius:13px;background:var(--bg-inverse);color:var(--text-on-inverse);box-shadow:var(--shadow-elevated)}
+.p44-bar span{flex:1 1 220px}.p44-bar button{min-height:36px;padding:0 14px;border-radius:9px;font:inherit;font-weight:700;cursor:pointer}
+.p44-bar .u{border:1px solid var(--border-inverse);background:transparent;color:var(--text-on-inverse)}.p44-bar .s{border:0;background:var(--brand-primary);color:var(--text-on-brand)}
+.p44-badge{font-size:11px;font-weight:700;border-radius:999px;padding:1px 9px;background:var(--bg-inverse);color:var(--brand-light)}
+.p44-super{display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:12px;background:var(--brand-soft);border:1px solid var(--border-brand-soft);color:var(--brand-text)}
+.p44-super b{font-size:14px;color:var(--text-primary)}.p44-super p{margin:4px 0 0;color:var(--text-secondary)}.p44-super svg{flex:none}
+.p44-ed{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.p44-fld{display:flex;flex-direction:column;gap:3px;flex:1 1 180px;min-width:0;font-size:11px;color:var(--text-muted)}
+.p44-fld input,.p44-fld select,.p44-lv select{min-height:36px;border:1px solid var(--border-default);border-radius:9px;background:var(--bg-input);color:var(--text-primary);font:inherit;font-size:12.5px;padding:0 9px;min-width:0;max-width:100%}
+.p44-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.p44-b{min-height:34px;padding:0 12px;border:1px solid var(--border-default);border-radius:9px;background:var(--bg-card);color:var(--text-primary);font:inherit;font-size:12px;cursor:pointer}
+.p44-b.s{background:var(--brand-primary);border-color:var(--brand-primary);color:var(--text-on-brand);font-weight:700}.p44-b.dz{color:var(--danger-text);border-color:var(--danger-border)}.p44-b:disabled{opacity:.5;cursor:wait}
+.p44-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px;padding:6px 10px;border-radius:10px;background:var(--bg-surface)}.p44-strip span{flex:1}
+.p44-strip button{min-height:30px;border:0;background:transparent;color:var(--brand-text);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.p44-lv{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)}
+.p44-keys{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;padding-top:4px}
+.p44-key{min-height:32px;padding:0 10px;border:1px solid var(--border-default);border-radius:999px;background:var(--bg-card);color:var(--text-secondary);font:inherit;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.p44-key[aria-pressed="true"]{border-color:var(--border-brand);background:var(--selected-bg);color:var(--text-primary)}
+.p44-sens{font-size:10px;font-weight:700;color:var(--danger-text);background:var(--danger-bg);border-radius:999px;padding:0 6px}
+.p44-cmp{margin-top:12px;padding-top:10px;border-top:1px solid var(--border-subtle)}
+.p44-tb{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}.p44-tb th{text-align:start;font-weight:700;color:var(--text-muted);font-size:11px;padding:7px 9px;background:var(--bg-surface)}
+.p44-tb td{padding:7px 9px;border-top:1px solid var(--border-subtle)}.p44-tb tr[data-diff="true"] td{background:var(--warning-soft)}
+.p44-res{display:flex;gap:10px;align-items:flex-start;margin-top:8px;padding:9px;border-radius:10px;background:var(--danger-bg)}.p44-res[data-k="ok"]{background:var(--success-bg)}
+.p44-res>span:first-child{width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;font-weight:800;color:var(--text-on-fill);background:var(--danger)}.p44-res[data-k="ok"]>span:first-child{background:var(--success)}
+.p44-res b,.p44-res small{display:block}.p44-mute{color:var(--text-muted);font-size:11.5px}
+.p44-side>.p44-card,.p44-side{gap:10px}.p44-side .p44-b{margin-top:6px}
+.p44-bar2{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}.p44-bar2 input{flex:1 1 220px;max-width:340px;min-height:36px}
+.p44-seg2{display:flex;flex-wrap:wrap;gap:6px}.p44-seg2 button{min-height:32px;padding:0 12px;border:1px solid var(--border-default);border-radius:999px;background:var(--bg-card);color:var(--text-secondary);font:inherit;font-size:12px;cursor:pointer}
+.p44-seg2 button[aria-pressed="true"]{border-color:var(--border-brand);background:var(--selected-bg);color:var(--brand-text)}
+.p44-scroll{overflow-x:auto}.p44-people{min-width:560px}.p44-people tr[aria-selected="true"] td{background:var(--selected-bg)}
+.p44-who{display:flex;align-items:center;gap:9px;border:0;background:transparent;padding:0;font:inherit;color:inherit;text-align:start;cursor:pointer}.p44-who small{display:block;color:var(--text-muted);font-size:11px}
+.p44-av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none;font-weight:800;color:var(--text-on-brand);background:var(--brand-primary)}
+.p44-pill{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 9px;background:var(--bg-surface-3);color:var(--text-secondary)}.p44-pill.ex,.p44-pill[data-k="person"]{background:var(--info-bg);color:var(--info-text)}.p44-pill[data-k="cap"]{background:var(--plum-bg);color:var(--plum-text)}.p44-pill[data-k="role"]{background:var(--brand-soft);color:var(--brand-text)}
+.p44-chips{display:flex;flex-wrap:wrap;gap:6px}.p44-chips button{min-height:32px;padding:0 12px;border:1px solid var(--border-default);border-radius:9px;background:var(--bg-card);color:var(--text-primary);font:inherit;font-size:12px;cursor:pointer}
+.p44-chips button[aria-checked="true"]{background:var(--bg-inverse);border-color:var(--bg-inverse);color:var(--text-on-inverse)}
+.p44-ex{display:flex;gap:8px;align-items:center;padding:8px 10px;margin-bottom:6px;border-radius:10px;background:var(--info-bg);border:1px solid var(--info-border)}.p44-ex[data-live="false"]{opacity:.6}.p44-ex span{flex:1;min-width:0}.p44-ex small{display:block;color:var(--text-secondary)}
+.p44-exf .p44-fld{flex:none}.p44-exf{display:flex;flex-direction:column;gap:8px;padding:10px;margin:6px 0;border:1px solid var(--border-default);border-radius:10px;background:var(--bg-surface)}
+/* V7 · د5-ح: «مراجعة قبل الحفظ» نافذةٌ (bs-dlg-box · adm-dlg) — لا صندوقَ أسفل الصفحة */
+.p44-rev{display:flex;flex-direction:column;gap:8px}.p44-rev .ft{margin-top:6px}
+.p44-nodes a{color:var(--brand-text);font-weight:700;text-decoration:underline;cursor:pointer}
+.p44-ch{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}.p44-ch li{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.p44-ch li>span:first-child{min-width:140px;color:var(--text-secondary)}.p44-ch s{color:var(--text-faint)}
+.p44-log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}.p44-log>li{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}.p44-lf{margin-bottom:4px}
+.p44-empty{padding:18px;border:1px dashed var(--border-default);border-radius:12px;color:var(--text-secondary);text-align:center;line-height:1.8}
+@media (max-width:640px){.p44{padding:12px 10px}.p44-rail,.p44-side{max-width:none}.p44-ch li>span:first-child{min-width:0}}
+</style>
+</helmet>
+<!-- V7 · د6 · شاشة «الإدارات والصلاحيات» (ب1): صفحةٌ مستقلة تُحمَّل عند فتحها — تركّبها صفحةُ الإعدادات في موضعين بالمكوّن نفسه:
+     «مركز إدارة رشاد ← الإدارة المؤسسية» (#/sysadmin/org/<الوحدة>/<التبويب>) و«الإعدادات ← الصلاحيات» لمدير الوحدة (#/admin/perm/<الوحدة>/<التبويب>).
+     العمودان (RTL): اليمين شجرةُ الهيكل (تبقى مركَّبةً مع تبديل الوحدة والتبويب) · اليسار الوحدةُ المختارة: رأسٌ ثم التبويبات.
+     الوحدةُ والتبويبُ من العنوان وحده (logic.js _ogRoute)، وكلُّ تنقّلٍ يمرّ بـ go(unit, tab) وحارسه canLeave().
+     نقاطُ التركيب: كلُّ تبويبٍ قسمٌ مستقلّ هنا (data-org-tab) تملؤه دالةٌ واحدة في logic.js (ogTab…) — تُعدَّل كلٌّ على حدة. -->
+<div dir="rtl" data-screen-label="الإدارات والصلاحيات" class="og" data-og-mode="{{ogMode}}" data-og-unit="{{ogUnitSeg}}" data-og-tab="{{ogTab}}" data-og-sheet="{{ogSheetAttr}}">
+
+<sc-if value="{{ogNoneOn}}" hint-placeholder-val="{{ false }}"><div class="p44-empty" role="status" data-og-state="none">{{ogNoneTxt}}</div></sc-if>
+<sc-if value="{{ogOn}}" hint-placeholder-val="{{ true }}">
+
+<!-- ب2 · ب13: عند العرض الضيق الشجرةُ زرٌّ أعلى الصفحة يحمل اسمَ الوحدة ومسارَها ويفتحها لوحةً من الأسفل -->
+<button type="button" class="og-ub" aria-haspopup="dialog" aria-expanded="{{ogSheetAttr}}" onClick="{{ogSheetOpen}}" title="اختر وحدة من الهيكل">
+  <span class="og-ub-t"><b>{{ogU.name}}</b><small>{{ogU.pathTxt}}</small></span>
+  <span class="og-ub-k">تغيير الوحدة</span>
+</button>
+
+<div class="og-grid">
+
+<!-- ═══ ب2 · الشجرة ═══ -->
+<div class="og-treewrap" onClick="{{ogSheetOut}}">
+<aside class="og-tree" aria-label="شجرة الهيكل" onClick="{{ogKeep}}">
+  <div class="og-sheet-hd"><b>اختر وحدة</b><button type="button" class="og-b" onClick="{{ogSheetClose}}">إغلاق</button></div>
+  <div class="og-tb">
+    <span class="og-cnt">الوحدات <b dir="ltr">{{ogUnitCount}}</b></span>
+    <sc-if value="{{ogStructOn}}" hint-placeholder-val="{{ true }}">
+    <button type="button" class="og-b og-add" data-og-act="add" onClick="{{ogAddOpen}}" title="إضافة إلى الهيكل: إدارة عليا · قطاع · إدارة عامة · إدارة · قسم · وحدة">+ إضافة</button>
+    </sc-if>
+    <sc-if value="{{sdShow}}" hint-placeholder-val="{{ false }}">
+    <button type="button" class="og-b" onClick="{{sdGo}}" title="يزرع الهيكل الافتراضي للقطاع: الإدارة العليا ← القطاع ← 4 إدارات عامة ← 14 إدارة — وما وُجد باسمه يُربط ولا يُنشأ من جديد">{{sdLbl}}</button>
+    </sc-if>
+  </div>
+  <div class="og-sb">
+    <input type="search" class="og-q" value="{{ogQ}}" onInput="{{ogOnQ}}" onChange="{{ogOnQ}}" placeholder="ابحث في الهيكل…" aria-label="ابحث في الهيكل" autocomplete="off">
+    <button type="button" class="og-l" data-og-act="expand" onClick="{{ogExpandAll}}">فرد الكل</button>
+    <button type="button" class="og-l" data-og-act="collapse" onClick="{{ogCollapseAll}}">طيّ الكل</button>
+  </div>
+  <div class="og-flt" role="group" aria-label="فلاتر الشجرة">
+    <sc-for list="{{ogFilters}}" as="f" hint-placeholder-count="3"><button type="button" data-og-flt="{{f.k}}" aria-pressed="{{f.on}}" onClick="{{f.pick}}">{{f.t}} <span>{{f.n}}</span></button></sc-for>
+  </div>
+  <!-- تحديد متعدد: الشريطُ يظهر عند تحديد وحدة فأكثر — التطبيقُ يمرّ بـ«مراجعة قبل الحفظ» (خطّاف orgBulkApply · الحدث bs:org-bulk) -->
+  <sc-if value="{{ogBulkOn}}" hint-placeholder-val="{{ false }}">
+  <div class="og-bulk" role="region" aria-label="الوحدات المحددة">
+    <span>{{ogBulkTxt}}</span>
+    <button type="button" class="og-b" data-og-bulk="on" onClick="{{ogBulkEnable}}">تفعيل أنظمة للمحدد</button>
+    <button type="button" class="og-b" data-og-bulk="off" onClick="{{ogBulkDisable}}">إطفاء أنظمة للمحدد</button>
+    <button type="button" class="og-b" data-og-bulk="clear" onClick="{{ogBulkClear}}">إلغاء التحديد</button>
+  </div>
+  </sc-if>
+  <!-- KIVO_265 · طلبُ المالك: السحبُ والإفلات — قبل/بعد صفٍّ للترتيب، وعلى وسطه للنقل تحته (باقٍ · والنقلُ بنافذة «نقل إلى…» أيضاً) -->
+  <sc-if value="{{ogDndOn}}" hint-placeholder-val="{{ true }}">
+  <div class="og-hint">اسحب صفاً وأفلته: على طرف صفٍّ آخر (أعلاه أو أسفله) للترتيب، أو على وسطه لنقله تحته</div>
+  </sc-if>
+  <div class="og-th" aria-hidden="true"><span class="og-c-nm">الوحدة</span><span class="og-c-kd">النوع</span><span class="og-c-n">تحتها</span><span class="og-c-mg">المدير</span><span class="og-c-n">الأشخاص</span><span class="og-c-n">الأنظمة</span></div>
+  <div class="og-rows" role="tree" aria-label="الهيكل">
+    <sc-for list="{{ogRows}}" as="r" hint-placeholder-count="4">
+    <div class="og-rw {{r.cls}}" role="treeitem" aria-level="{{r.level}}" aria-selected="{{r.sel}}" aria-expanded="{{r.exp}}" data-og-id="{{r.seg}}" data-og-kind="{{r.kindKey}}" draggable="{{r.drag}}" onDragStart="{{r.trDragStart}}" onDragOver="{{r.trDragOver}}" onDragLeave="{{r.trDragLeave}}" onDrop="{{r.trDrop}}" onDragEnd="{{r.trDragEnd}}" onClick="{{r.pick}}" title="{{r.tip}}">
+      <span class="og-ln" aria-hidden="true"></span>
+      <sc-if value="{{r.chkOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-ck" role="checkbox" aria-checked="{{r.chk}}" aria-label="تحديد {{r.name}}" onClick="{{r.chkFlip}}"></button></sc-if>
+      <sc-if value="{{r.kidsOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="og-cv" aria-label="طيّ أو فتح ما تحت {{r.name}}" onClick="{{r.toggle}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button></sc-if>
+      <sc-if value="{{r.leaf}}" hint-placeholder-val="{{ true }}"><span class="og-cv og-cv--x" aria-hidden="true"></span></sc-if>
+      <span class="og-c-nm"><button type="button" class="og-nm" onClick="{{r.pick}}">{{r.name}}</button><sc-if value="{{r.cur}}" hint-placeholder-val="{{ false }}"><span class="og-cur">الحالية</span></sc-if></span>
+      <span class="og-c-kd"><span class="og-kd" data-k="{{r.kindKey}}">{{r.kind}}</span></span>
+      <span class="og-c-n" data-og-col="kids" title="ما تحتها مباشرةً">{{r.kids}}</span>
+      <span class="og-c-mg" data-og-col="mgr" data-has="{{r.mgrHas}}">{{r.mgr}}</span>
+      <span class="og-c-n" data-og-col="people" title="{{r.peopleTip}}">{{r.people}}</span>
+      <span class="og-c-n" data-og-col="systems" dir="ltr" title="{{r.sysTip}}">{{r.sys}}</span>
+    </div>
+    </sc-for>
+    <sc-if value="{{ogRowsNone}}" hint-placeholder-val="{{ false }}"><div class="og-none" role="status">{{ogRowsNoneTxt}}</div></sc-if>
+  </div>
+  <sc-if value="{{ogExportOn}}" hint-placeholder-val="{{ true }}">
+  <div class="og-exp"><button type="button" class="og-b" data-og-act="export-all" onClick="{{ogExportAll}}">تصدير النسخة الشاملة — كل الإدارات</button></div>
+  </sc-if>
+</aside>
+</div>
+
+<!-- ═══ ب1 · الوحدة المختارة: الرأس ثم التبويبات ═══ -->
+<section class="og-unit" aria-label="الوحدة المختارة">
+  <header class="og-hd">
+    <div class="og-path" data-og="path">{{ogU.pathTxt}}</div>
+    <div class="og-ttl">
+      <h3 data-og="name">{{ogU.name}}</h3>
+      <span class="og-kd" data-k="{{ogU.kindKey}}" data-og="kind">{{ogU.kind}}</span>
+      <span class="og-mg" data-has="{{ogU.mgrHas}}" data-og="mgr">{{ogU.mgrTxt}}</span>
+      <sc-if value="{{ogU.cur}}" hint-placeholder-val="{{ false }}"><span class="og-cur">الحالية</span></sc-if>
+      <sc-if value="{{ogU.switchOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="og-b" data-og-act="switch" onClick="{{ogSwitch}}">التبديل إليها</button></sc-if>
+    </div>
+  </header>
+  <div class="og-tabs" role="tablist" aria-label="تبويبات الوحدة">
+    <sc-for list="{{ogTabs}}" as="t" hint-placeholder-count="7"><a role="tab" class="og-tab" href="{{t.href}}" data-og-tab-btn="{{t.k}}" aria-selected="{{t.on}}" onClick="{{t.go}}">{{t.t}}</a></sc-for>
+  </div>
+
+  <!-- ══════════ نقطة التركيب · نظرة عامة (ب10 · logic.js ogTabOverview) ══════════ -->
+  <sc-if value="{{ogOnOverview}}" hint-placeholder-val="{{ true }}">
+  <div class="og-ov" data-org-tab="overview">
+    <section class="og-card" aria-label="ملخّص الوحدة">
+      <h4>ملخّص الوحدة</h4>
+      <div class="og-sum"><sc-for list="{{ogSum}}" as="c" hint-placeholder-count="3"><button type="button" class="og-sumc" data-og-sum="{{c.k}}" onClick="{{c.go}}"><small>{{c.t}}</small><b>{{c.v}}</b><span>{{c.s}}</span></button></sc-for></div>
+    </section>
+    <section class="og-card" aria-label="الموضع وأفعال الوحدة">
+      <h4>الموضع وأفعال الوحدة</h4>
+      <p class="og-pos">الموضع: <b data-og="pos">{{ogPosTxt}}</b></p>
+      <sc-if value="{{ogActsOn}}" hint-placeholder-val="{{ true }}">
+      <div class="og-acts">
+        <sc-if value="{{ogActAddOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b og-b--p" data-og-act="add-under" onClick="{{ogAddUnder}}">+ إضافة تحتها</button></sc-if>
+        <sc-if value="{{ogActEditOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b" data-og-act="rename" onClick="{{ogRenameOpen}}">إعادة التسمية</button></sc-if>
+        <sc-if value="{{ogActEditOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b" data-og-act="move" onClick="{{ogMoveOpen}}">نقل إلى…</button></sc-if>
+        <sc-if value="{{ogActEditOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b og-b--dz" data-og-act="delete" onClick="{{ogDelOpen}}">{{ogDelLbl}}</button></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ogActsNote}}" hint-placeholder-val="{{ false }}"><p class="og-note">{{ogActsNote}}</p></sc-if>
+    </section>
+    <section class="og-card" aria-label="ما تحتها">
+      <h4>ما تحتها <span class="og-n">{{ogKidsN}}</span></h4>
+      <sc-if value="{{ogKidsOn}}" hint-placeholder-val="{{ true }}">
+      <ul class="og-kids"><sc-for list="{{ogKids}}" as="k" hint-placeholder-count="2"><li><a href="{{k.href}}" onClick="{{k.go}}">{{k.name}}</a><span class="og-kd" data-k="{{k.kindKey}}">{{k.kind}}</span></li></sc-for></ul>
+      </sc-if>
+      <sc-if value="{{ogKidsNone}}" hint-placeholder-val="{{ false }}"><p class="og-note">لا شيء تحتها بعد.</p></sc-if>
+    </section>
+    <sc-if value="{{ogStepsOn}}" hint-placeholder-val="{{ true }}">
+    <section class="og-card" aria-label="قائمة التهيئة">
+      <h4>قائمة التهيئة</h4>
+      <ol class="og-steps"><sc-for list="{{ogSteps}}" as="s" hint-placeholder-count="5"><li data-og-step="{{s.k}}" data-ok="{{s.ok}}"><button type="button" onClick="{{s.go}}" title="{{s.tip}}"><span class="mk" aria-hidden="true">{{s.mark}}</span><b>{{s.t}}</b><small>{{s.st}}</small><span class="og-sr">{{s.sr}}</span></button></li></sc-for></ol>
+    </section>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ تبويباتُ «الصلاحيات» القائمة (د5-هـ 44) منقولةً كما هي: الرأسُ المشترك ثم قسمٌ لكل تبويب ══════════ -->
+  <sc-if value="{{p44Show}}" hint-placeholder-val="{{ false }}">
+  <div class="p44" aria-label="{{p44Head}}">
+    <div class="p44-top">
+      <div class="p44-ttl">
+        <h3>{{p44Head}} · {{ogU.name}}</h3>
+        <p>{{p44Lead}}</p>
+        <sc-if value="{{p44MgrV}}" hint-placeholder-val="{{ false }}"><span class="p44-chip">أدوار موظفي إدارتك فقط · تظهر هنا الأنظمة المفعّلة لإدارتك وحدها</span></sc-if>
+      </div>
+      <div class="p44-ctl">
+        <sc-if value="{{p44ViewOn}}" hint-placeholder-val="{{ true }}">
+        <div class="p44-as" role="group" aria-label="شاهد الصفحة كـ"><span>شاهد الصفحة كـ</span><div class="p44-seg"><sc-for list="{{p44Viewers}}" as="w" hint-placeholder-count="2"><button type="button" aria-pressed="{{w.on}}" onClick="{{w.pick}}">{{w.t}}</button></sc-for></div></div>
+        </sc-if>
+      </div>
+    </div>
+
+  <sc-if value="{{p44NoEng}}" hint-placeholder-val="{{ false }}"><div class="bs-retry" role="alert"><span class="m">محرّك الصلاحيات غير محمَّل — أعد تحميل الصفحة.</span></div></sc-if>
+  <sc-if value="{{p44Loading}}" hint-placeholder-val="{{ false }}"><div class="p44-empty" role="status">جارٍ تحميل الأدوار…</div></sc-if>
+  <sc-if value="{{p44Err}}" hint-placeholder-val="{{ false }}"><div class="bs-retry" role="alert"><span class="m">تعذّر تحميل الأدوار — تحقّق من الاتصال ثم أعد المحاولة</span><button type="button" class="b" onClick="{{p44Retry}}">أعد المحاولة</button></div></sc-if>
+
+  <!-- ══════════ نقطة التركيب · الأنظمة (ب5 · م5 · logic.js ogTabSystems ← logic-perm44.js _p44SysVals) ══════════ -->
+  <div data-org-tab="systems">
+  <sc-if value="{{p44OnSys}}" hint-placeholder-val="{{ true }}">
+  <div class="p44-grid">
+    <section class="p44-card p44-main" aria-label="أنظمة الوحدة">
+      <div class="p44-hd"><small>{{p44Unit.path}}</small><h4>{{p44Unit.n}}</h4><p class="p44-note">{{p44Unit.inh}}</p></div>
+      <sc-if value="{{p44SysNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">{{p44SysNoneTxt}}</div></sc-if>
+      <ul class="p44-rows">
+        <sc-for list="{{p44SysRows}}" as="s" hint-placeholder-count="8">
+        <li class="p44-row" data-on="{{s.on}}">
+          <span class="p44-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg></span>
+          <span class="p44-f"><b>{{s.n}}</b><small>{{s.sub}}</small></span>
+          <sc-if value="{{s.locked}}" hint-placeholder-val="{{ false }}"><span class="p44-lock">مطفأ من {{s.by}}</span></sc-if>
+          <sc-if value="{{s.sw}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-sw" role="switch" aria-checked="{{s.on}}" aria-label="{{s.n}}" disabled="{{s.locked}}" onClick="{{s.flip}}"></button></sc-if>
+        </li>
+        </sc-for>
+      </ul>
+    </section>
+    <aside class="p44-side" aria-label="المعاينة">
+      <sc-if value="{{p44SysNavOn}}" hint-placeholder-val="{{ true }}">
+      <section class="p44-card" aria-label="القائمة الجانبية لمدير الوحدة"><h4>{{p44SysNavT}}</h4><small>قائمتُه الجانبية كما تُرسم له الآن (المحفوظ)</small>
+        <ul class="p44-menu"><sc-for list="{{p44SysNav}}" as="m" hint-placeholder-count="5"><li data-k="{{m.k}}"><i aria-hidden="true"></i><span>{{m.n}}</span></li></sc-for></ul>
+      </section>
+      </sc-if>
+      <sc-if value="{{p44SysCtl}}" hint-placeholder-val="{{ true }}">
+      <section class="p44-card"><h4>أثر الحفظ</h4>
+        <div class="p44-kpis"><div><b>{{p44SysOnN}}</b><small>أنظمة مفعّلة</small></div><div><b>{{p44SysPeople}}</b><small>شخص يتأثر</small></div></div>
+        <p class="p44-note">إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل.</p>
+      </section>
+      </sc-if>
+    </aside>
+  </div>
+  <sc-if value="{{p44SysDirty}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-bar" role="region" aria-label="حفظ الأنظمة"><span>{{p44SysDirtyTxt}}</span><button type="button" class="u" onClick="{{p44SysUndo}}">تراجع</button><button type="button" class="s" onClick="{{p44SysReview}}">مراجعة وحفظ</button></div>
+  </sc-if>
+  </sc-if>
+  </div>
+
+  <!-- ══════════ نقطة التركيب · المسؤولون (ب6 · م6 · logic.js ogTabAdmins ← logic-perm44.js p44AdminsVals) ══════════
+       بطاقتا «مدير المنصة» (صف «المنصة كلها») و«مدير الوحدة» كما كانتا في «الأدوار» — وجدولُ حسابات الوحدة وأفعالُه محتوى بطاقة «مدير الوحدة»
+       القائم نفسُه: تركّبه الصفحةُ المضيفة (الإعدادات) هنا في الموضع ogSlotAdmins، ومنطقُه واحدٌ مع «مراقبة الحسابات» (_acctRow) -->
+  <sc-if value="{{ogOnAdmins}}" hint-placeholder-val="{{ false }}">
+  <div data-org-tab="admins">
+  <section class="p44-card p44-main" aria-label="المسؤولون">
+      <sc-if value="{{p44IsSup}}" hint-placeholder-val="{{ false }}">
+      <div class="p44-hd"><h4>{{p44Role.n}} <span class="p44-badge">{{p44Role.badge}}</span></h4><p>{{p44Role.d}}</p></div>
+      <div class="p44-super"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg><div><b>صلاحية كاملة بلا أي قيد</b><p>مدير المنصة لا يُمنح ولا يُقيَّد: يرى ويعدّل ويعتمد ويحذف في كل نظام وكل إدارة وكل فترة، بلا طلب سبب. كل ما يفعله يبقى مسجّلاً في سجل الأمن.</p></div></div>
+      </sc-if>
+      <sc-if value="{{p44IsMgr}}" hint-placeholder-val="{{ false }}">
+      <div class="p44-hd"><h4>{{p44Role.n}} <span class="p44-badge">{{p44Role.badge}}</span></h4><p>{{p44Role.d}}</p><small class="p44-mute">{{p44Role.members}}</small></div>
+      <sc-if value="{{p44MgrFull}}" hint-placeholder-val="{{ true }}">{{ogSlotAdmins}}</sc-if>
+      <sc-if value="{{p44MgrRO}}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{p44MgrNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا مدير لهذه الوحدة بعد — يعيّنه مدير المنصة.</div></sc-if>
+      <ul class="p44-menu" aria-label="حاملو الدور"><sc-for list="{{p44MgrHold}}" as="m" hint-placeholder-count="1"><li><i aria-hidden="true"></i><span>{{m.n}}</span><small>{{m.st}}</small></li></sc-for></ul>
+      </sc-if>
+      </sc-if>
+  </section>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ نقطة التركيب · الأدوار (ب7 · م6 · logic.js ogTabRoles ← logic-perm44.js _p44RoleVals) ══════════ -->
+  <div data-org-tab="roles">
+  <sc-if value="{{p44OnRoles}}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{p44Lvls}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-grid">
+    <aside class="p44-rail" aria-label="الأدوار">
+      <div class="p44-rh"><span>الأدوار · {{p44RoleN}}</span><sc-if value="{{p44RoleNewOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-add" onClick="{{p44RoleNew}}">+ دور جديد</button></sc-if></div>
+      <sc-for list="{{p44RoleList}}" as="r" hint-placeholder-count="5"><button type="button" class="p44-role" aria-pressed="{{r.on}}" onClick="{{r.pick}}"><span class="p44-f"><b>{{r.n}}</b><small>{{r.sub}}</small></span><sc-if value="{{r.lock}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="مقفل"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></sc-if></button></sc-for>
+    </aside>
+    <section class="p44-card p44-main" aria-label="محرّر الدور">
+      <sc-if value="{{p44NoRole}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا أدوار في هذه الإدارة بعد — ابدأ بـ«+ دور جديد».</div></sc-if>
+      <sc-if value="{{p44NodeRoles}}" hint-placeholder-val="{{ false }}">
+      <div class="p44-note p44-nodes">الأدوار المخصّصة تُبنى في كل إدارة أو قسم على حدة — افتح أدوار وحدةٍ تحتها: <sc-for list="{{p44NodeUnits}}" as="u" hint-placeholder-count="2"><a href="{{u.href}}" onClick="{{u.go}}">{{u.n}}</a> </sc-for></div>
+      </sc-if>
+      <sc-if value="{{p44NotSup}}" hint-placeholder-val="{{ true }}">
+      <div class="p44-hd p44-ed">
+        <label class="p44-fld"><span>اسم الدور</span><input type="text" value="{{p44RoleName}}" onChange="{{p44RoleNameSet}}" maxlength="60"></label>
+        <label class="p44-fld"><span>الوصف</span><input type="text" value="{{p44RoleDesc}}" onChange="{{p44RoleDescSet}}" maxlength="200"></label>
+        <div class="p44-acts"><small>{{p44Role.members}}</small>
+          <button type="button" class="p44-sw p44-sm" role="switch" aria-checked="{{p44RoleSup}}" aria-label="دور إشرافي (الطاقم الإشرافي)" onClick="{{p44RoleSupFlip}}"></button><span class="p44-mute">إشرافي</span>
+          <button type="button" class="p44-b" onClick="{{p44RoleCopy}}">نسخ الدور</button>
+          <button type="button" class="p44-b dz" onClick="{{p44RoleDel}}">حذف الدور</button>
+        </div>
+      </div>
+      <div class="p44-strip"><span><b>{{p44OnN}}</b> من {{p44AllN}} أنظمة مفعّلة لهذا الدور</span><button type="button" onClick="{{p44AllOn}}">تفعيل الكل</button><button type="button" onClick="{{p44AllOff}}">إيقاف الكل</button></div>
+      <sc-if value="{{p44SysEdNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا نظام مفعّلاً في سقف هذه الإدارة — يفعّله مدير المنصة من «الأنظمة».</div></sc-if>
+      <ul class="p44-rows">
+        <sc-for list="{{p44SysEd}}" as="s" hint-placeholder-count="8">
+        <li class="p44-row" data-on="{{s.onTxt}}">
+          <span class="p44-f"><b>{{s.n}}</b><small>{{s.sub}}</small></span>
+          <sc-if value="{{s.isOn}}" hint-placeholder-val="{{ true }}"><label class="p44-lv"><span>المستوى</span><select value="{{s.lv}}" onChange="{{s.setLv}}" aria-label="مستوى {{s.n}}"><sc-for list="{{p44Lvls}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label></sc-if>
+          <button type="button" class="p44-sw" role="switch" aria-checked="{{s.onTxt}}" aria-label="تفعيل {{s.n}} لهذا الدور" onClick="{{s.flip}}"></button>
+          <sc-if value="{{s.custom}}" hint-placeholder-val="{{ false }}">
+          <div class="p44-keys" role="group" aria-label="أفعال {{s.n}}"><sc-for list="{{s.keys}}" as="x" hint-placeholder-count="4"><button type="button" class="p44-key" aria-pressed="{{x.on}}" onClick="{{x.flip}}">{{x.n}}<sc-if value="{{x.sens}}" hint-placeholder-val="{{ false }}"><span class="p44-sens">حسّاس</span></sc-if></button></sc-for></div>
+          </sc-if>
+        </li>
+        </sc-for>
+      </ul>
+      <section class="p44-cmp" aria-label="قارن مع دور آخر">
+        <label class="p44-fld"><span>قارن مع دور آخر</span><select value="{{p44CmpVal}}" onChange="{{p44CmpSet}}"><sc-for list="{{p44CmpOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+        <sc-if value="{{p44CmpOn}}" hint-placeholder-val="{{ false }}">
+        <table class="p44-tb"><thead><tr><th scope="col">النظام</th><th scope="col">{{p44Role.n}}</th><th scope="col">{{p44CmpName}}</th></tr></thead>
+          <tbody><sc-for list="{{p44CmpRows}}" as="c" hint-placeholder-count="4"><tr data-diff="{{c.diff}}"><td>{{c.n}}</td><td>{{c.a}}</td><td>{{c.b}}</td></tr></sc-for></tbody></table>
+        </sc-if>
+      </section>
+      </sc-if>
+    </section>
+    <aside class="p44-side" aria-label="المعاينة">
+      <section class="p44-card"><h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>ماذا يرى حامل الدور</h4><small>قائمته الجانبية كما ستظهر له — تتغيّر مع كل تعديل</small>
+        <ul class="p44-menu"><sc-for list="{{p44Nav}}" as="m" hint-placeholder-count="5"><li><i aria-hidden="true"></i><span>{{m.n}}</span><small>{{m.l}}</small></li></sc-for></ul>
+      </section>
+      <sc-if value="{{p44NotSup}}" hint-placeholder-val="{{ true }}">
+      <section class="p44-card" aria-label="اختبار الوصول"><h4>اختبار الوصول</h4><small>هل يستطيع حامل الدور…؟ الجواب من قواعد الخادم نفسها</small>
+        <label class="p44-fld"><span>الفعل</span><select value="{{p44ChkKey}}" onChange="{{p44ChkSet}}"><sc-for list="{{p44ChkKeys}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+        <small class="p44-mute">{{p44ChkLocal}}</small>
+        <button type="button" class="p44-b" onClick="{{p44ChkRun}}" disabled="{{p44ChkBusy}}">اسأل الخادم</button>
+        <sc-if value="{{p44ChkHas}}" hint-placeholder-val="{{ false }}"><div class="p44-res" data-k="{{p44ChkRes.cls}}" role="status"><span aria-hidden="true">{{p44ChkRes.mark}}</span><span><b>{{p44ChkRes.q}}</b><small>{{p44ChkRes.why}}</small></span></div></sc-if>
+        <small class="p44-mute">{{p44ChkNote}}</small>
+      </section>
+      </sc-if>
+    </aside>
+  </div>
+  </sc-if>
+  </sc-if>
+  </div>
+
+  <!-- ══════════ نقطة التركيب · الأشخاص (ب8 · م6 · logic.js ogTabPeople ← logic-perm44.js _p44PeopleVals · _p44NodePeopleVals) ══════════ -->
+  <div data-org-tab="people">
+  <sc-if value="{{p44OnPeople}}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{p44PFilters}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-grid">
+    <section class="p44-card p44-main" aria-label="الأشخاص">
+      <div class="p44-bar2"><input type="search" class="adm-q" value="{{p44PQ}}" onChange="{{p44PQSet}}" placeholder="ابحث بالاسم أو الرقم الوظيفي" aria-label="بحث في الأشخاص">
+        <div class="p44-seg2"><sc-for list="{{p44PFilters}}" as="f" hint-placeholder-count="4"><button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}">{{f.t}} <span>{{f.n}}</span></button></sc-for></div></div>
+      <sc-if value="{{p44PEmpty}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">{{p44PEmptyTxt}}</div></sc-if>
+      <div class="p44-scroll"><table class="p44-tb p44-people"><thead><tr><th scope="col">الشخص</th><th scope="col">الدور</th><th scope="col">القسم</th><th scope="col">استثناءات</th><th scope="col">آخر دخول</th></tr></thead>
+        <tbody><sc-for list="{{p44PRows}}" as="p" hint-placeholder-count="6"><tr aria-selected="{{p.on}}"><td><button type="button" class="p44-who" onClick="{{p.pick}}"><span class="p44-av" aria-hidden="true">{{p.i}}</span><span><b>{{p.n}}</b><small>{{p.id}}</small></span><sc-if value="{{p.me}}" hint-placeholder-val="{{ false }}"><span class="p44-pill">أنت</span></sc-if></button></td><td><span class="p44-pill">{{p.role}}</span></td><td>{{p.unit}}</td><td><sc-if value="{{p.hasEx}}" hint-placeholder-val="{{ false }}"><span class="p44-pill ex">{{p.ex}}</span></sc-if></td><td class="p44-mute">{{p.last}}</td></tr></sc-for></tbody></table></div>
+    </section>
+    <sc-if value="{{p44PSelOn}}" hint-placeholder-val="{{ true }}">
+    <aside class="p44-card p44-side" aria-label="تفاصيل الشخص">
+      <div class="p44-who"><span class="p44-av" aria-hidden="true">{{p44PSel.i}}</span><span><b>{{p44PSel.n}}</b><small>{{p44PSel.id}} · {{p44PSel.role}}</small></span></div>
+      <sc-if value="{{p44PMgr}}" hint-placeholder-val="{{ false }}"><p class="p44-note">مدير الإدارة يعمل بكامل سقف إدارته — لا دور يُسند إليه هنا.</p></sc-if>
+      <sc-if value="{{p44PSelf}}" hint-placeholder-val="{{ false }}"><p class="p44-note p44-self" role="note">هذا سجلّك أنت — لا يغيّر أحدٌ صلاحياته بنفسه؛ يضبطها مدير المنصة.</p></sc-if>
+      <sc-if value="{{p44PEdit}}" hint-placeholder-val="{{ true }}">
+      <div><div class="p44-cap">الدور (واحد لكل شخص)</div><div class="p44-chips" role="radiogroup" aria-label="الدور"><sc-for list="{{p44PRoles}}" as="c" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{c.on}}" onClick="{{c.pick}}">{{c.t}}</button></sc-for></div></div>
+      <div><div class="p44-cap">استثناءات على هذا الشخص</div>
+        <sc-if value="{{p44PExNone}}" hint-placeholder-val="{{ true }}"><p class="p44-mute">لا استثناءات — صلاحياته هي دوره بالضبط.</p></sc-if>
+        <sc-for list="{{p44PEx}}" as="x" hint-placeholder-count="1"><div class="p44-ex" data-live="{{x.live}}"><span><b>{{x.n}}</b><small>{{x.meta}}</small></span><button type="button" class="p44-b" onClick="{{x.del}}" aria-label="إزالة الاستثناء">إزالة</button></div></sc-for>
+        <sc-if value="{{p44ExFormOn}}" hint-placeholder-val="{{ false }}">
+        <div class="p44-exf" role="group" aria-label="استثناء مؤقت">
+          <sc-if value="{{p44ExNoKeys}}" hint-placeholder-val="{{ false }}"><p class="p44-mute">دوره يشمل كل أفعال الأنظمة المفعّلة — لا استثناء يُضاف.</p></sc-if>
+          <label class="p44-fld"><span>الفعل</span><select value="{{p44ExKey}}" onChange="{{p44ExKeySet}}"><sc-for list="{{p44ExKeys}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+          <label class="p44-fld"><span>ينتهي في (اختياري)</span><input type="date" value="{{p44ExUntil}}" onChange="{{p44ExUntilSet}}"></label>
+          <label class="p44-fld"><span>ملاحظة</span><input type="text" value="{{p44ExNote}}" onChange="{{p44ExNoteSet}}" maxlength="120"></label>
+          <div class="p44-acts"><button type="button" class="p44-b" onClick="{{p44ExCancel}}">إلغاء</button><button type="button" class="p44-b s" onClick="{{p44ExOk}}">إضافة</button></div>
+        </div>
+        </sc-if>
+        <button type="button" class="p44-add" onClick="{{p44ExAdd}}">+ استثناء مؤقت</button>
+      </div>
+      </sc-if>
+      <div><div class="p44-cap">ما يراه الآن</div><ul class="p44-menu"><sc-for list="{{p44PNav}}" as="m" hint-placeholder-count="4"><li><i aria-hidden="true"></i><span>{{m.n}}</span><small>{{m.l}}</small></li></sc-for></ul></div>
+    </aside>
+    </sc-if>
+  </div>
+  </sc-if>
+  </sc-if>
+  <sc-if value="{{p44NodePeople}}" hint-placeholder-val="{{ false }}">
+  <section class="p44-card p44-main" aria-label="أشخاص الفرع">
+    <div class="p44-bar2"><input type="search" class="adm-q" value="{{p44PQ}}" onChange="{{p44PQSet}}" placeholder="ابحث بالاسم أو الرقم الوظيفي" aria-label="بحث في أشخاص الفرع"></div>
+    <sc-if value="{{p44NPEmpty}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">{{p44NPEmptyTxt}}</div></sc-if>
+    <div class="p44-scroll"><table class="p44-tb p44-people"><thead><tr><th scope="col">الشخص</th><th scope="col">الدور</th><th scope="col">الوحدة</th><th scope="col">آخر دخول</th></tr></thead>
+      <tbody><sc-for list="{{p44NPRows}}" as="p" hint-placeholder-count="4"><tr><td><button type="button" class="p44-who" onClick="{{p.go}}"><span class="p44-av" aria-hidden="true">{{p.i}}</span><span><b>{{p.n}}</b><small>{{p.id}}</small></span></button></td><td>{{p.role}}</td><td>{{p.unit}}</td><td>{{p.last}}</td></tr></sc-for></tbody></table></div>
+    <small class="p44-mute">{{p44NPFoot}}</small>
+  </section>
+  </sc-if>
+  </div>
+
+  <!-- شريط الحفظ الواحد للأدوار والأشخاص · والمراجعة قبله -->
+  <sc-if value="{{p44Dirty}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-bar" role="region" aria-label="حفظ الصلاحيات"><span><b>{{p44DirtyTxt}}</b> · {{p44AffTxt}}</span><button type="button" class="u" onClick="{{p44Undo}}">تراجع</button><button type="button" class="s" onClick="{{p44Review}}">مراجعة وحفظ</button></div>
+  </sc-if>
+  <!-- V7 · د5-ح: «مراجعة قبل الحفظ» نافذةٌ في وسط الشاشة (الأنظمة · الأدوار · الأشخاص) — مديرُ حوارات الإطار يضع التركيزَ داخلها ويمنع Tab من الخروج،
+       وEscape نقرةٌ على الطبقة = «رجوع»؛ تُغلق بعد الحفظ -->
+  <sc-if value="{{p44RevOn}}" hint-placeholder-val="{{ false }}">
+  <div class="bs-dlg bs-dlg--modal" onClick="{{p44RevOut}}">
+    <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="p44RevT" class="bs-dlg-box adm-dlg adm-dlg--w p44-rev" onClick="{{p44Keep}}">
+      <b class="t" id="p44RevT">مراجعة قبل الحفظ</b>
+      <ul class="p44-ch"><sc-for list="{{p44RevRows}}" as="c" hint-placeholder-count="3"><li><span>{{c.what}}</span><s>{{c.from}}</s><span aria-hidden="true">←</span><b>{{c.to}}</b></li></sc-for></ul>
+      <p class="p44-mute">{{p44RevAffTxt}} <sc-for list="{{p44RevAff}}" as="n" hint-placeholder-count="3"><span class="p44-pill">{{n}}</span> </sc-for></p>
+      <sc-if value="{{p44RevNote}}" hint-placeholder-val="{{ false }}"><p class="p44-note">{{p44RevNote}}</p></sc-if>
+      <sc-if value="{{p44RevErr}}" hint-placeholder-val="{{ false }}"><div class="bs-retry" role="alert"><span class="m">{{p44RevErr}}</span></div></sc-if>
+      <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{p44RevSave}}" disabled="{{p44RevBusy}}">حفظ</button><button type="button" class="bs-btn" onClick="{{p44RevClose}}">رجوع</button></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ نقطة التركيب · السجل (ب8 · م6 · logic.js ogTabLog ← logic-perm44.js _p44LogVals) ══════════ -->
+  <div data-org-tab="log">
+  <sc-if value="{{ogLogRoot}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-empty" role="status">{{ogLogRootTxt}} <a href="#/sysadmin/oplog" onClick="{{ogLogRootGo}}">افتح «سجل الأنشطة والتغييرات»</a></div>
+  </sc-if>
+  <sc-if value="{{p44OnLog}}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{p44LogFilters}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-seg2 p44-lf"><sc-for list="{{p44LogFilters}}" as="f" hint-placeholder-count="4"><button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}">{{f.t}}</button></sc-for></div>
+  <sc-if value="{{p44LogLoading}}" hint-placeholder-val="{{ false }}"><div class="p44-empty" role="status">جارٍ تحميل السجل…</div></sc-if>
+  <sc-if value="{{p44LogErr}}" hint-placeholder-val="{{ false }}"><div class="bs-retry" role="alert"><span class="m">تعذّر تحميل السجل — تحقّق من الاتصال ثم أعد المحاولة</span><button type="button" class="b" onClick="{{p44LogRetry}}">أعد المحاولة</button></div></sc-if>
+  <sc-if value="{{p44LogEmpty}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا تغييرات مسجّلة بعد.</div></sc-if>
+  <ol class="p44-log">
+    <sc-for list="{{p44LogItems}}" as="e" hint-placeholder-count="4">
+    <li class="p44-card"><span class="p44-av" aria-hidden="true">{{e.i}}</span>
+      <div class="p44-f"><div><b>{{e.who}}</b> <span class="p44-pill" data-k="{{e.kind}}">{{e.tag}}</span></div>
+        <ul class="p44-ch"><sc-for list="{{e.ch}}" as="c" hint-placeholder-count="2"><li><span>{{c.sys}}</span><s>{{c.from}}</s><span aria-hidden="true">←</span><b>{{c.to}}</b></li></sc-for></ul>
+        <small class="p44-mute">{{e.when}} · {{e.aff}}</small></div>
+      <sc-if value="{{e.undoOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-b" onClick="{{e.undo}}">تراجع عن هذا التغيير</button></sc-if>
+    </li>
+    </sc-for>
+  </ol>
+  </sc-if>
+  </sc-if>
+  </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ نقطة التركيب · البيانات (ب8 · logic.js ogTabData) — المحتوى قسمُ «بيانات الإدارة» القائم (نسخة الإدارة · استيراد نسخة · مسح البيانات)
+       تركّبه الصفحةُ المضيفة في الموضع ogSlotData بمعالجاته القائمة؛ لمدير المنصة وحده ══════════ -->
+  <sc-if value="{{ogOnData}}" hint-placeholder-val="{{ false }}">
+  <div data-org-tab="data">
+    <sc-if value="{{ogDataNode}}" hint-placeholder-val="{{ false }}">
+    <section class="og-card" aria-label="بيانات الفرع">
+      <h4>البيانات · {{ogU.name}}</h4>
+      <p class="og-note">بيانات «{{ogU.name}}» تُدار في كل إدارة أو قسم تحتها على حدة (نسخة الإدارة · استيراد نسخة · مسح البيانات) — افتح بيانات وحدة:</p>
+      <ul class="og-kids"><sc-for list="{{ogDataUnits}}" as="k" hint-placeholder-count="2"><li><a href="{{k.href}}" onClick="{{k.go}}">{{k.name}}</a><span class="og-kd" data-k="{{k.kindKey}}">{{k.kind}}</span></li></sc-for></ul>
+      <sc-if value="{{ogDataUnitsNone}}" hint-placeholder-val="{{ false }}"><p class="og-note">لا إدارة تحتها بعد.</p></sc-if>
+    </section>
+    </sc-if>
+    <sc-if value="{{ogDataUnit}}" hint-placeholder-val="{{ true }}">{{ogSlotData}}</sc-if>
+  </div>
+  </sc-if>
+</section>
+</div>
+
+<!-- ═══ ب3 · نوافذ أفعال الهيكل: الإضافة · إعادة التسمية · النقل · الحذف — نافذةٌ واحدة لكل فعل، من «نظرة عامة» (والإضافة من فوق الشجرة أيضاً) ═══ -->
+<sc-if value="{{ogAddOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogAddT" class="bs-dlg-box og-dlg" data-og-dlg="add" onClick="{{ogKeep}}">
+    <b class="t" id="ogAddT">إضافة إلى الهيكل</b>
+    <label class="fl"><span>الاسم</span><input type="text" id="ogAddName" value="{{ogAdd.name}}" onChange="{{ogAddOnName}}" maxlength="120" placeholder="مثل: قطاع خدمات الحشود بالمسجد الحرام"></label>
+    <label class="fl"><span>نوع العقدة</span>
+      <select value="{{ogAdd.kind}}" onChange="{{ogAddOnKind}}" data-og-f="kind" title="نوع العقدة — «إدارة» هي وعاء البيانات (موظفون وجداول وتقارير)، وما فوقها تصنيفٌ وتجميع">
+        <option value="">— النوع —</option>
+        <sc-for list="{{ogAddKinds}}" as="k" hint-placeholder-count="6"><option value="{{k.id}}">{{k.name}}</option></sc-for>
+        <option value="__new">+ نوع جديد…</option>
+      </select></label>
+    <sc-if value="{{ogAddNewOn}}" hint-placeholder-val="{{ false }}">
+    <label class="fl"><span>النوع الجديد</span><input type="text" value="{{ogAdd.newKind}}" onChange="{{ogAddOnNewKind}}" maxlength="40" placeholder="اكتب النوع الجديد — مثل: شعبة"></label>
+    </sc-if>
+    <label class="fl"><span>العقدة الأب</span>
+      <select value="{{ogAdd.pid}}" onChange="{{ogAddOnPid}}" data-og-f="parent" title="العقدة الأب — والشجرة تُعرض بعمقها">
+        <option value="">— في الجذر (بلا أب) —</option>
+        <sc-for list="{{ogAddParents}}" as="o" hint-placeholder-count="4"><option value="{{o.id}}">{{o.name}}</option></sc-for>
+      </select></label>
+    <p class="og-pos">الموضع: <b data-og="add-pos">{{ogAddPath}}</b></p>
+    <!-- ب4 (م4): اختيارُ «أنظمة الوحدة الجديدة» يُمرَّر وسيطاً إلى مسار الإنشاء (logic.js _ogAddGo) -->
+    <div class="fl" role="radiogroup" aria-label="أنظمة الوحدة الجديدة"><span>أنظمة الوحدة الجديدة</span>
+      <div class="og-radio"><sc-for list="{{ogAddSys}}" as="c" hint-placeholder-count="2"><button type="button" role="radio" data-og-sys="{{c.k}}" aria-checked="{{c.on}}" onClick="{{c.pick}}">{{c.t}}</button></sc-for></div>
+    </div>
+    <sc-if value="{{ogAdd.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogAdd.msg}}</div></sc-if>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="add" onClick="{{ogAddGo}}">أضف العقدة</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ogRenOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogRenT" class="bs-dlg-box og-dlg" data-og-dlg="rename" onClick="{{ogKeep}}">
+    <b class="t" id="ogRenT">إعادة تسمية «{{ogDlgName}}»</b>
+    <label class="fl"><span>الاسم الجديد</span><input type="text" id="ogRenName" value="{{ogRen.name}}" onChange="{{ogRenOnName}}" maxlength="120"></label>
+    <sc-if value="{{ogRen.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogRen.msg}}</div></sc-if>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="rename" onClick="{{ogRenGo}}">حفظ الاسم</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ogMoveOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogMoveT" class="bs-dlg-box og-dlg" data-og-dlg="move" onClick="{{ogKeep}}">
+    <b class="t" id="ogMoveT">نقل «{{ogDlgName}}» إلى…</b>
+    <label class="fl"><span>الأب الجديد</span>
+      <select value="{{ogMove.pid}}" onChange="{{ogMoveOnPid}}" data-og-f="parent" title="العقدة الأب في الهيكل — الوحدة نفسها وما تحتها لا يظهران">
+        <sc-if value="{{ogMoveRootOn}}" hint-placeholder-val="{{ true }}"><option value="">— بلا أب (في الجذر) —</option></sc-if>
+        <sc-for list="{{ogMoveParents}}" as="o" hint-placeholder-count="3"><option value="{{o.id}}">{{o.name}}</option></sc-for>
+        <sc-if value="{{ogMoveNewOn}}" hint-placeholder-val="{{ false }}"><option value="__new">+ إدارة عامة جديدة…</option></sc-if>
+      </select></label>
+    <p class="og-pos">الموضع بعد النقل: <b data-og="move-pos">{{ogMovePath}}</b></p>
+    <sc-if value="{{ogMove.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogMove.msg}}</div></sc-if>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="move" onClick="{{ogMoveGo}}">انقل</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ogDelOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogDelT" class="bs-dlg-box og-dlg" data-og-dlg="delete" onClick="{{ogKeep}}">
+    <b class="t" id="ogDelT">{{ogDelTitle}}</b>
+    <p class="m">تُحذف العقدة الفارغة وحدها: انقل ما تحتها واحذف حساب مديرها أولاً. لا تُمسّ بيانات أي إدارة.</p>
+    <sc-if value="{{ogDelWhy}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert" data-og="del-why">{{ogDelWhy}}</div></sc-if>
+    <sc-if value="{{ogDelOk}}" hint-placeholder-val="{{ true }}"><p class="m" data-og="del-msg">{{ogDelMsg}}</p></sc-if>
+    <div class="ft"><sc-if value="{{ogDelOk}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-btn bs-btn--danger" data-og-ok="delete" onClick="{{ogDelGo}}">حذف</button></sc-if><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">{{ogDelCancel}}</button></div>
+  </div>
+</div>
+</sc-if>
+
+</sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:1100}}">var __defProp=Object.defineProperty;var __defNormalProp=(obj,key,value)=>key in obj?__defProp(obj,key,{enumerable:!0,configurable:!0,writable:!0,value}):obj[key]=value;var __publicField=(obj,key,value)=>__defNormalProp(obj,typeof key!="symbol"?key+"":key,value);class Component extends KIVO.BassamPageKit.base(DCLogic,["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","admin+profile+seized"]){constructor(){super(...arguments);__publicField(this,"state",{p44:{},ogQ:"",ogFlt:"",ogShut:{},ogSel:{},ogSheet:!1,ogDlg:null,ogDrag:null,ogOver:null,ogTick:0});__publicField(this,"OG_TABS",{overview:"نظرة عامة",systems:"الأنظمة",admins:"المسؤولون",roles:"الأدوار",people:"الأشخاص",log:"السجل",data:"البيانات"})}_ogHost(){return this.props&&this.props.host||{}}_ogMode(){return this._ogHost().mode==="dept"?"dept":"site"}_ogTry(f,d){try{const v=f();return v===void 0?d:v}catch{return d}}_ogSlot(name){const k=this.props&&this.props.children,a=Array.isArray(k)?k:k?[k]:[];for(let i=0;i<a.length;i++)if(a[i]&&a[i].props&&a[i].props["data-org-slot"]===name)return a[i];return null}_acctCtx(){const h=this._ogHost();return h.acctCtx&&this._ogTry(()=>h.acctCtx(),null)||{l:{},now:Date.now()}}adRole(u){const h=this._ogHost();return h.adRole?h.adRole(u):""}adUnit(u){const h=this._ogHost();return h.adUnit?h.adUnit(u):""}adWhen(t,e){const h=this._ogHost();return h.adWhen?h.adWhen(t,e):""}adFull(t){const h=this._ogHost();return h.adFull?h.adFull(t):""}_pages(){return this._ogTry(()=>KIVO.BassamPerm.PAGE_REG,[])||[]}_ogR(){return KIVO.BassamOrgRoute}_ogIsRoot(id){return id===this._ogR().ROOT}_ogKnown(id){const D=KIVO.BassamDepts;return!!id&&!!this._ogTry(()=>(D.allNodes?D.allNodes():D.nodes().concat(D.list())).some(x=>x&&x.id===id),!1)}_ogScope(){const D=KIVO.BassamDepts,R=this._ogR();if(this._ogMode()==="site")return{mode:"site",top:R.ROOT,has:id=>this._ogIsRoot(id)||this._ogKnown(id)};const A=KIVO.BassamAuth,u=this._ogTry(()=>A.user(),null)||{},act=this._ogTry(()=>D.active(),"")||"",top=u.role==="super"?act:u.role==="gm"?u.gid||"":u.deptId||act,ok=!!top&&this._ogKnown(top)&&!!this._ogTry(()=>KIVO.Perm44.mgrOf(u,top),!1),ids={};return ok&&(ids[top]=1,this._ogTry(()=>D.descendantsOf(top)||[],[]).forEach(x=>ids[x]=1)),{mode:"dept",top:ok?top:"",has:id=>!!ids[id],act}}_ogTabsOf(unit,mode){if(this._ogIsRoot(unit))return["overview","systems","admins","log"];const all=this._ogR().TABS.slice();return mode==="dept"?all.filter(t=>t!=="data"):all}_ogRoute(){const R=this._ogR(),sc=this._ogScope(),p=this._ogTry(()=>R.parse(location.hash),null),mine=!!p&&p.mode===sc.mode,def=sc.mode==="site"?R.ROOT:sc.has(sc.act)?sc.act:sc.top,want=mine?p.unit:"",unit=want&&sc.has(want)?want:def,tabs=this._ogTabsOf(unit,sc.mode),tab=mine&&tabs.indexOf(p.tab)!==-1?p.tab:"overview";return{mode:sc.mode,unit,tab,tabs,mine,bad:mine&&want&&want!==unit?want:"",scope:sc,href:unit?R.href(sc.mode,unit,tab):""}}ogHref(unit,tab){return this._ogR().href(this._ogMode(),unit,tab)}_ogSyncHash(rt){try{if(!rt.mine||!rt.href||String(location.hash||"")===rt.href)return;history.replaceState&&history.replaceState(null,"",location.pathname+location.search+rt.href)}catch{}}dirty(){return!!(this.orgDirty&&this._ogTry(()=>this.orgDirty(),!1))}async canLeave(next){if(!this.orgGuard)return!0;try{return!!await this.orgGuard(next||{})}catch{return!1}}async go(unit,tab,o){const cur=this._ogRoute(),u=unit||cur.unit,t=tab||cur.tab,tabs=this._ogTabsOf(u,cur.mode),next={unit:u,tab:tabs.indexOf(t)!==-1?t:"overview"};if(!cur.scope.has(u))return!1;if(next.unit===cur.unit&&next.tab===cur.tab&&cur.mine)return!0;if(!(o&&o.force)&&!await this.canLeave(next))return!1;const h=this.ogHref(next.unit,next.tab);this.__ogPass=h;try{String(location.hash||"")===h?this.setState({ogTick:(this.state.ogTick|0)+1}):location.hash=h}catch{}return this.state.ogSheet&&this.setState({ogSheet:!1}),!0}_ogGo(unit,tab){return ev=>{try{if(ev&&(ev.ctrlKey||ev.metaKey||ev.shiftKey||ev.button===1))return;ev&&ev.preventDefault&&ev.preventDefault(),ev&&ev.stopPropagation&&ev.stopPropagation()}catch{}this.go(unit,tab)}}componentDidMount(){this.__ogApi={go:(u,t,o)=>this.go(u,t,o),canLeave:n=>this.canLeave(n),dirty:()=>this.dirty(),href:()=>this.__ogPass||this._ogRoute().href,route:()=>{const r=this._ogRoute();return{mode:r.mode,unit:r.unit,tab:r.tab}}},KIVO.BassamOrg=this.__ogApi,this.__ogKey=ev=>{ev.key==="Escape"&&this.state.ogSheet&&!this.state.ogDlg&&this.setState({ogSheet:!1})},this.__ogUnload=ev=>{this.dirty()&&(ev.preventDefault(),ev.returnValue="")};try{document.addEventListener("keydown",this.__ogKey),window.addEventListener("beforeunload",this.__ogUnload)}catch{}const h=this._ogHost();h.ready&&this._ogTry(()=>h.ready(),null)}componentWillUnmount(){KIVO.BassamOrg===this.__ogApi&&(KIVO.BassamOrg=null);try{document.removeEventListener("keydown",this.__ogKey),window.removeEventListener("beforeunload",this.__ogUnload)}catch{}clearTimeout(this._sdT)}_ogKindKey(id,node){if(this._ogIsRoot(id))return"root";if(node&&node.sec)return"sec";if(node&&node.dept)return"dept";const k=String(node&&node.kind||"");return k==="إدارة عليا"?"top":k==="قطاع"?"sector":k==="إدارة عامة"?"gen":"other"}_ogInfo(id){const D=KIVO.BassamDepts,A=KIVO.BassamAuth||{};if(this._ogIsRoot(id)){const sups=this._ogTry(()=>A.users().filter(u=>u&&u.role==="super"&&!u.dis),[]);return{id,root:!0,isNode:!1,isUnit:!1,name:"المنصة كلها",kind:"المنصة",kindKey:"root",path:[],mgrs:sups,mgrHas:sups.length>0,kids:this._ogTry(()=>D.childrenOf(null)||[],[])}}const n=this._ogTry(()=>D.nodeOf(id),null)||{id,name:id},isUnit=!!n.dept,mgrs=this._ogTry(()=>(isUnit?A.deptManagers(id):A.groupManagers(id))||[],[]);return{id,root:!1,node:n,isNode:!isUnit,isUnit,isSec:!!n.sec,name:n.name||"—",kind:n.kind||(isUnit?"إدارة":"عقدة"),kindKey:this._ogKindKey(id,n),path:this._ogTry(()=>D.pathOf(id)||[],[]),mgrs,mgrHas:mgrs.length>0,kids:this._ogTry(()=>D.childrenOf(id)||[],[])}}_capStateTxt(o){const P=KIVO.BassamPerm;let s=null;try{s=P&&P.capState?P.capState(o):null}catch{}if(!s)return{kind:"",ok:!0,tone:"",short:"",txt:""};const of=s.n+" من "+KIVO.BassamCount(s.all,"صفحة","g"),k=s.kind;return s.empty?k==="own"&&this._capOwnRecEmpty(o)?{kind:k,empty:!0,ownEmpty:!0,ok:!1,tone:"warn",short:"السقف فارغ",txt:"سقفٌ خاصّ"+(s.independent?" مستقلّ":"")+" فارغ — لا صفحة مفعّلة لهذه الوحدة"}:{kind:k,empty:!0,ownEmpty:!1,ok:!1,tone:"warn",short:"السقف فارغ بحكم الأصول",txt:"السقف الفعلي فارغ بحكم سقوف الأصول — لا صفحة مفعّلة"}:k==="open"?{kind:k,ok:!1,tone:"warn",short:"السقف مفتوح — لم يُضبط",txt:"مفتوح — لم يُضبط: لا سقفَ لها ولا لأصولها، فكلُّ صفحات المنصة متاحة ("+of+")"}:k==="inherit"?{kind:k,ok:!0,tone:"",short:"يرث سقف الأصل · "+of,txt:"موروثٌ من الأصل: لا سقفَ خاصّاً لها، ويحدّها سقفُ أصلٍ فوقها — "+of}:{kind:k,ok:!0,tone:"",short:"سقفٌ خاصّ · "+of+(s.independent?" · مستقلّ":""),txt:"سقفٌ خاصّ"+(s.independent?" مستقلّ":"")+": "+of}}_capOwnRecEmpty(o){const P=KIVO.BassamPerm;try{const keys=P&&P.PAGE_KEYS||[];return!!(P&&P.hasCap&&P.hasCap(o))&&!P.rawCap(o).some(x=>keys.indexOf(x)!==-1)}catch{return!1}}_ogPeopleIdx(){const own={},all={};let total=0;return this._p44Users().forEach(u=>{if(!u||u.role==="super")return;total++;const k=this.p44UnitOfUser(u);k&&(all[k]=(all[k]||0)+1),this.p44IsOwnPerson(u)&&u.deptId&&(own[u.deptId]=(own[u.deptId]||0)+1)}),{own,all,total}}_ogPeopleN(inf,X){if(inf.root)return X.total;if(inf.isUnit)return X.own[inf.id]||0;let n=X.all[inf.id]||0;return this._ogTry(()=>KIVO.BassamDepts.descendantsOf(inf.id)||[],[]).forEach(x=>n+=X.all[x]||0),n}_ogTreeRows(rt){const D=KIVO.BassamDepts,sc=rt.scope,site=sc.mode==="site",st=this.state,X=this._ogPeopleIdx(),act=this._ogTry(()=>D.active(),""),sup=this._p44SupNow(),struct=site&&sup,q=String(st.ogQ||"").trim(),dig=s=>this._ogTry(()=>KIVO.BassamFind.dig(String(s||"")),String(s||"")),qd=q?dig(q):"",flt=st.ogFlt||"",forced=!!q||!!flt,raw=this._ogTry(()=>D.railTree()||[],[]).filter(r=>r.t!=="none");let base=[];if(site){const bucket={};this._ogTry(()=>D.railTree()||[],[]).forEach((r,i,a)=>{r.t==="none"&&a.slice(i+1).forEach(x=>bucket[x.id]=1)}),base=[{id:this._ogR().ROOT,depth:0,kids:this._ogInfo(this._ogR().ROOT).kids.length}].concat(raw.map(r=>({id:r.id,depth:(bucket[r.id]?r.depth-1:r.depth)+1,kids:r.kids})))}else if(sc.top){const i0=raw.findIndex(r=>r.id===sc.top);if(i0>=0)for(let i=i0;i<raw.length&&(i===i0||raw[i].depth>raw[i0].depth);i++)base.push({id:raw[i].id,depth:raw[i].depth-raw[i0].depth,kids:raw[i].kids})}const rows=base.map(b=>{const inf=this._ogInfo(b.id),people=this._ogPeopleN(inf,X),sys=this.p44SysCount(b.id);return{b,inf,people,sys,empty:!inf.root&&!inf.kids.length&&!people}}),counts={mgr:0,nomgr:0,empty:0};rows.forEach(r=>{r.inf.root||(r.inf.mgrHas?counts.mgr++:counts.nomgr++,r.empty&&counts.empty++)});const hit=rows.map(r=>(!qd||dig(r.inf.name).indexOf(qd)>=0)&&(!flt||!r.inf.root&&(flt==="mgr"?r.inf.mgrHas:flt==="nomgr"?!r.inf.mgrHas:r.empty))),keep=hit.slice();if(forced){for(let i=0;i<rows.length;i++)if(!keep[i]){for(let j=i+1;j<rows.length&&rows[j].b.depth>rows[i].b.depth;j++)if(hit[j]){keep[i]=!0;break}}}const out=[];let shutAt=-1;return rows.forEach((r,i)=>{const b=r.b,inf=r.inf;if(shutAt>=0&&b.depth>shutAt||(shutAt=-1,forced&&!keep[i]))return;const open=forced||inf.root||!st.ogShut[b.id];b.kids&&!open&&(shutAt=b.depth);const chk=!!st.ogSel[b.id],drag=struct&&!inf.root?this._ogDragProps(b.id):{};out.push({id:b.id,seg:inf.root?this._ogR().ROOT_SEG:b.id,name:inf.name,level:String(b.depth+1),cls:"d"+Math.min(6,b.depth)+(inf.root?" root":"")+(b.id===rt.unit?" sel":"")+(drag.trDragCls?" "+drag.trDragCls:""),sel:b.id===rt.unit?"true":"false",exp:b.kids&&!inf.root?open?"true":"false":void 0,kidsOn:!!b.kids&&!inf.root,leaf:!b.kids||inf.root,toggle:ev=>{ev&&ev.stopPropagation&&ev.stopPropagation(),this.setState(s=>{const m={...s.ogShut||{}};return m[b.id]?delete m[b.id]:m[b.id]=1,{ogShut:m}})},pick:this._ogGo(b.id),tip:inf.path.concat([inf.name]).join(" ← "),kind:inf.kind,kindKey:inf.kindKey,kids:String(inf.kids.length),mgrHas:inf.mgrHas?"true":"false",mgr:inf.mgrHas?"له مدير":"بلا مدير",people:String(r.people),peopleTip:inf.root?"كل حسابات المنصة":inf.isUnit?"أشخاص الوحدة":"أشخاص الفرع",sys:r.sys.on+"/"+r.sys.all,sysTip:inf.root?"الأنظمة المفعّلة على المنصة من الكل":"الأنظمة المفعّلة من الكل"+(this._capStateTxt(b.id).short?" — "+this._capStateTxt(b.id).short:""),cur:inf.isUnit&&b.id===act,chkOn:struct&&!inf.root,chk:chk?"true":"false",chkFlip:ev=>{ev&&ev.stopPropagation&&ev.stopPropagation(),this.setState(s=>{const m={...s.ogSel||{}};return m[b.id]?delete m[b.id]:m[b.id]=1,{ogSel:m}})},drag:struct&&!inf.root?"true":"false",...drag})}),{rows:out,counts,n:rows.filter(r=>!r.inf.root).length,all:rows,struct,forced}}_ogDragProps(id){const e=this.state,ov=e.ogOver;return{trDragCls:(e.ogDrag===id?"dragging":"")+(ov&&ov.id===id?" dz-"+ov.pos:""),trDragStart:t=>{try{t.dataTransfer.setData("text/plain",id),t.dataTransfer.effectAllowed="move"}catch{}t.stopPropagation&&t.stopPropagation(),this.setState({ogDrag:id,ogOver:null})},trDragOver:t=>{const s=this.state.ogDrag;if(!s||s===id)return;t.preventDefault(),t.stopPropagation&&t.stopPropagation();const D=KIVO.BassamDepts,r=t.currentTarget.getBoundingClientRect(),y=t.clientY-r.top,h=r.height||36,tg=D&&D.nodeOf?D.nodeOf(id):null,leaf=!!(tg&&tg.dept),pos=y<.3*h?"before":y>.7*h?"after":leaf?y<h/2?"before":"after":"inside";try{t.dataTransfer.dropEffect="move"}catch{}const o=this.state.ogOver;o&&o.id===id&&o.pos===pos||this.setState({ogOver:{id,pos}})},trDragLeave:t=>{const o=this.state.ogOver,r=t.relatedTarget;o&&o.id===id&&r&&t.currentTarget&&!t.currentTarget.contains(r)&&this.setState({ogOver:null})},trDrop:t=>{t.preventDefault(),t.stopPropagation&&t.stopPropagation();const s=this.state.ogDrag,o=this.state.ogOver;this.setState({ogDrag:null,ogOver:null}),s&&o&&o.id===id&&this._ogDndMove(s,id,o.pos)},trDragEnd:()=>{(this.state.ogDrag||this.state.ogOver)&&this.setState({ogDrag:null,ogOver:null})}}}_ogDndMove(s,id,pos){const D=KIVO.BassamDepts,r=D&&D.moveNode?D.moveNode(s,id,pos):{ok:!1,err:"غير متاح"};if(!r||!r.ok)return void this.bsToast(r&&r.err||"تعذّر النقل","err");if(r.pid){const m={...this.state.ogShut||{}};delete m[r.pid],this.setState({ogShut:m})}this.bsToast(r.msg,"ok")}_ogSetAll(open,rows){const m={};open||rows.forEach(r=>r.b.kids&&!r.inf.root&&(m[r.b.id]=1)),this.setState({ogShut:m})}_ogBulk(mode){const units=Object.keys(this.state.ogSel||{}).filter(id=>this._ogKnown(id));if(!units.length)return;let done=!1;try{done=!!(this.orgBulkApply&&this.orgBulkApply(mode,units)),window.dispatchEvent(new CustomEvent("bs:org-bulk",{detail:{mode,units}}))}catch{}done||this.bsToast("تطبيق الأنظمة على الوحدات المحددة غير متاح الآن","warn")}_ogDlg(patch){this.setState(s=>({ogDlg:patch===null?null:Object.assign({},s.ogDlg||{},patch)}))}_ogFocus(id){const f=n=>{try{const el=document.getElementById(id);el?el.focus():n<12&&setTimeout(()=>f(n+1),40)}catch{}};setTimeout(()=>f(0),0)}_ogParentOpts(excl){const D=KIVO.BassamDepts,out=[];return this._ogTry(()=>D.railTree()||[],[]).forEach(a=>{a.t!=="none"&&(excl&&a.id===excl||excl&&!D.canParent(excl,a.id)||out.push({id:a.id,name:(a.depth?"···".repeat(a.depth)+" ":"")+a.name+(a.kind?"  ⟨"+a.kind+"⟩":"")}))}),out}_ogPathTxt(pid,tail){const D=KIVO.BassamDepts;return pid?this._ogTry(()=>(D.pathOf(pid)||[]).concat([(D.nodeOf(pid)||{}).name||""]),[]).concat(tail?[tail]:[]).filter(Boolean).join(" ← "):["في الجذر — بلا أب"].concat(tail?[tail]:[]).join(" ← ")}_ogAddOpen(pid){const D=KIVO.BassamDepts,p=pid&&!this._ogIsRoot(pid)?this._ogTry(()=>D.nodeOf(pid),null):null;this.setState({ogDlg:{k:"add",name:"",kind:p&&p.dept?D.NODE_KIND_SEC||"قسم":"",newKind:"",pid:p?pid:"",sys:"off",msg:""}}),this._ogFocus("ogAddName")}_ogAddGo(){const D=KIVO.BassamDepts,f=this.state.ogDlg||{},name=String(f.name||"").trim(),kind=String(f.kind==="__new"?f.newKind||"":f.kind||"").trim(),pid=f.pid||null,sys=f.sys==="parent"?"parent":"off",fail=m=>this._ogDlg({msg:m});if(!name)return fail("اكتب الاسم");if(!kind)return fail("اختر النوع");if(D.nodes().some(x=>x.name===name)||D.list().some(x=>x.name===name))return fail("يوجد في الهيكل ما يحمل هذا الاسم");let id="";if(kind===(D.NODE_KIND_SEC||"قسم")&&D.sectionAdd){const x=D.sectionAdd({name,deptId:pid||"",systems:sys});if(!x||!x.ok)return fail(x&&x.err||"تعذّر إنشاء القسم");id=x.id}else if(kind===(D.NODE_KIND_DEPT||"إدارة")){if(pid&&!D.nodeOf(pid))return fail("الأب غير موجود");const w=D.placeWhy({id:"",dept:!0},pid);if(w)return fail(w);id=D.freshId("d");const rec={id,name};pid&&(rec.gid=pid),D.save(D.list().concat([rec]));try{const P=KIVO.BassamPerm;P&&P.seedCapFrom&&P.seedCapFrom(id,pid,{systems:sys})}catch{}}else{const r=D.nodeAdd({name,kind,pid,systems:sys});if(!r||!r.ok)return fail(r&&r.err||"تعذّر الإنشاء");id=r.id}if(pid){const m={...this.state.ogShut||{}};delete m[pid],this.setState({ogShut:m})}this.setState({ogDlg:null}),this.bsAck("أُنشئت «"+name+"» — أكمل تهيئتها من «نظرة عامة»","ok"),id&&this.go(id,"overview",{force:!0})}_ogRenGo(inf){const D=KIVO.BassamDepts,s=String((this.state.ogDlg||{}).name||"").trim(),fail=m=>this._ogDlg({msg:m});if(!s)return fail("اكتب الاسم");if(s===inf.name)return void this.setState({ogDlg:null});if(inf.isNode){if(D.nodes().some(x=>x.id!==inf.id&&x.name===s))return fail("الاسم مستخدم لعقدة أخرى");const r=D.nodeSave(inf.id,{name:s});if(!r||!r.ok)return fail(r&&r.err||"تعذّر")}else{const L=D.treeFlat?D.treeFlat():D.list();if(L.some(x=>x.id!==inf.id&&x.name===s))return fail("الاسم مستخدم لإدارة أو قسم آخر");D.save(L.map(x=>x.id===inf.id?{...x,name:s}:x))}this.setState({ogDlg:null}),this.bsAck("تم تحديث الاسم","ok")}_ogMoveGo(inf){const D=KIVO.BassamDepts,s=(this.state.ogDlg||{}).pid||"",fail=m=>this._ogDlg({msg:m}),done=m=>{this.setState({ogDlg:null}),this.bsAck(m,"ok")};if(inf.isNode){const r=D.nodeSave(inf.id,{pid:s||null});return r&&r.ok?done(s?"نُقلت تحت «"+((D.nodeOf(s)||{}).name||"")+"»":"صارت في الجذر"):fail(r&&r.err||"تعذّر النقل")}if(s==="__new"){if(inf.isSec)return fail("القسم يكون تحت إدارةٍ مباشرةً — لا تحت «إدارة عامة»");const base="إدارة عامة جديدة";let nm=base,k=2;for(;D.nodes().some(x=>x.name===nm)||D.list().some(x=>x.name===nm);)nm=base+" "+k++;const r=D.nodeAdd({name:nm,kind:"إدارة عامة",pid:null});if(!r||!r.ok)return fail(r&&r.err||"تعذّر إنشاء الإدارة العامة");const c=D.setDeptParent(inf.id,r.id);return!c||!c.ok?(D.nodeDel(r.id),fail(c&&c.err||"تعذّر الإسناد")):done("أُنشئت «"+nm+"» وأُسندت إليها هذه الإدارة — غيّر اسمها من «نظرة عامة»")}const a=D.setDeptParent(inf.id,s||null);a&&a.ok?done(s?"أُسندت إلى «"+((D.nodeOf(s)||{}).name||"")+"»":"رُفع التصنيف"):fail(a&&a.err||"تعذّر الإسناد")}_ogDelWhy(inf){const D=KIVO.BassamDepts,A=KIVO.BassamAuth;if(inf.isNode){const kd=inf.kids.length;if(kd)return"تحت «"+inf.name+"» "+KIVO.BassamCount(kd,"تابع")+" — انقلها أو احذفها أولاً ثم احذف العقدة";const m=this._ogTry(()=>A.groupManagers(inf.id).length,0);return m?"لـ«"+inf.name+"» "+KIVO.BassamCount(m,"حساب مدير")+" — احذفه أولاً من تبويب «المسؤولون» ثم احذف العقدة":""}const sw=this._ogTry(()=>D.deptDelWhy(inf.id),"");return sw||(!inf.isSec&&this._ogTry(()=>D.list().length,2)<=1?"لا تُحذف آخر إدارة في المنصة":"")}_ogDelGo(inf){const D=KIVO.BassamDepts;if(this._ogDelWhy(inf))return;if(inf.isNode){const s=D.nodeDel(inf.id);return!s||!s.ok?void this._ogDlg({msg:s&&s.err||"تعذّر الحذف"}):(this.setState({ogDlg:null}),this.bsAck("حُذفت العقدة","ok"),void this.go(inf.node.pid&&this._ogKnown(inf.node.pid)?inf.node.pid:this._ogR().ROOT,"overview",{force:!0}))}this.setState({ogDlg:null});const h=this._ogHost();h.deptDel?h.deptDel(inf.node):this.bsToast("حذف الإدارة غير متاح هنا","warn")}ogTabOverview(c){const D=KIVO.BassamDepts,inf=c.inf,X=this._ogPeopleIdx(),people=this._ogPeopleN(inf,X),sys=this.p44SysCount(c.unit),mg=inf.mgrs,kids=inf.kids.map(k=>({name:k.name||"—",kind:k.kind||(k.sec?"قسم":"إدارة"),kindKey:this._ogKindKey(k.id,k),href:this.ogHref(k.id,"overview"),go:this._ogGo(k.id,"overview")})),v={ogOnOverview:!0,ogSum:[{k:"admins",t:"المسؤول",v:mg.length?mg[0].name||mg[0].un||"—":"بلا مدير",s:inf.root?KIVO.BassamCount(mg.length,"حساب")+" لمدير المنصة":mg.length>1?"و"+KIVO.BassamCount(mg.length-1,"مدير")+" غيره":mg.length?"مدير الوحدة":"لم يُعيَّن بعد"},{k:"people",t:"الأشخاص",v:String(people),s:inf.root?"كل حسابات المنصة":inf.isUnit?"في هذه الوحدة":"في العقدة وفرعها"},{k:"systems",t:"الأنظمة المفعّلة",v:sys.on+" من "+sys.all,s:inf.root?"على المنصة كلها":"بعد الوراثة ممّا فوقها"}].map(x=>({...x,go:this._ogGo(c.unit,c.tabs.indexOf(x.k)!==-1?x.k:"overview")})),ogPosTxt:inf.root?"أعلى الهيكل":inf.path.concat([inf.name]).join(" ← ")||inf.name,ogKids:kids,ogKidsOn:kids.length>0,ogKidsNone:!kids.length,ogKidsN:KIVO.BassamCount(kids.length,"تابع"),ogActsOn:c.struct,ogActAddOn:c.struct&&!inf.isSec,ogActEditOn:c.struct&&!inf.root,ogActsNote:c.struct?"":"أفعال الهيكل (الإضافة · إعادة التسمية · النقل · الحذف) لمدير المنصة من «مركز إدارة رشاد».",ogDelLbl:inf.isNode?"حذف العقدة":inf.isSec?"حذف القسم":"حذف الإدارة",ogAddUnder:()=>this._ogAddOpen(c.unit),ogRenameOpen:()=>(this.setState({ogDlg:{k:"rename",id:c.unit,name:inf.name,msg:""}}),this._ogFocus("ogRenName")),ogMoveOpen:()=>this.setState({ogDlg:{k:"move",id:c.unit,pid:inf.node&&inf.node.pid||"",msg:""}}),ogDelOpen:()=>{if(!inf.isNode&&!this._ogDelWhy(inf))return void this._ogDelGo(inf);this.setState({ogDlg:{k:"del",id:c.unit,msg:""}})},ogStepsOn:!inf.root};if(inf.root)return v;const cs=this._capStateTxt(c.unit),capOk=!!cs.kind&&cs.ok,capTxt=cs.short||sys.on+" من "+sys.all+" مفعّلة",units=inf.isUnit?[c.unit]:this._ogTry(()=>D.deptsUnder(c.unit)||[],[]),withRoles=units.filter(u=>{const r=this._ogTry(()=>this._p44E().rolesOf(u),null);return!!r&&((Array.isArray(r)?r:r.roles)||[]).length>0}).length,rolesOk=units.length>0&&withRoles===units.length,rolesTxt=inf.isUnit?withRoles?"أدوار الموظفين معرَّفة":"لا أدوار للموظفين بعد":units.length?withRoles+" من "+KIVO.BassamCount(units.length,"وحدة")+" لها أدوار":"لا وحدة تحتها بعد",all4=capOk&&mg.length>0&&rolesOk,step=(k,t,st,ok,tab)=>({k,t,st,ok:ok?"true":"false",mark:ok?"✓":"!",sr:ok?"منجز":"ناقص",tip:(ok?"منجز":"ناقص")+" — افتح «"+this.OG_TABS[tab]+"»",go:this._ogGo(c.unit,tab)});return v.ogSteps=[step("node","العقدة",inf.kind+" · في الهيكل",!0,"overview"),step("systems","الأنظمة",capTxt,capOk,"systems"),step("admins","المسؤول",mg.length?"معيَّن: "+mg.map(m=>m.name||m.un).join("، "):"لم يُعيَّن بعد",mg.length>0,"admins"),step("roles","الصلاحيات",rolesTxt,rolesOk,"roles"),step("review","المراجعة",all4?"اكتملت الخطوات — راجع السجل":"تكتمل بإنجاز ما قبلها",all4,"log")],v}ogTabSystems(c){return this._p44Vals(c.unit,c.isNode,c.node,"systems")}ogTabAdmins(c){const a=this.p44AdminsVals(c.unit,c.isNode,c.mgrV),n=c.isRoot?c.inf.mgrs.length:a.p44MgrN|0;return Object.assign(this._p44Vals(c.unit,c.isNode,c.node,"admins"),a,{ogOnAdmins:!0,p44Head:"المسؤولون",p44Lead:c.isRoot?"مدير المنصة: صلاحية كاملة بلا قيد.":"مسؤولو «"+c.inf.name+"»: "+(n?KIVO.BassamCount(n,"مدير"):"لا مدير بعد")+" — يعيّنهم مدير المنصة وحده.",ogSlotAdmins:this._ogSlot("admins")})}ogTabRoles(c){return this._p44Vals(c.unit,c.isNode,c.node,"roles")}ogTabPeople(c){return this._p44Vals(c.unit,c.isNode,c.node,"people")}ogTabLog(c){return c.isRoot?Object.assign(this._p44Vals(c.unit,!1,null,"none"),{p44Head:"السجل",p44Lead:"كل تغيير: من غيّر، ماذا تغيّر، ومن تأثّر.",ogLogRoot:!0,ogLogRootTxt:"تغييرات أنظمة المنصة وحساباتها تُعرض في سجل الأنشطة والتغييرات، وتغييرات كل وحدة في تبويب «السجل» لها.",ogLogRootGo:ev=>{ev&&ev.preventDefault&&ev.preventDefault(),this.canLeave({leave:!0}).then(y=>y&&this._ogTry(()=>KIVO.BassamNav.conGo("oplog",null),null))}}):this._p44Vals(c.unit,c.isNode,c.node,"log")}ogTabData(c){const D=KIVO.BassamDepts,units=c.isNode?this._ogTry(()=>D.deptsUnder(c.unit)||[],[]):[];return{ogOnData:!0,ogDataNode:c.isNode,ogDataUnit:!c.isNode,ogDataUnits:units.map(id=>{const n=this._ogTry(()=>D.nodeOf(id),null)||{};return{name:n.name||id,kind:n.kind||"إدارة",kindKey:this._ogKindKey(id,n),href:this.ogHref(id,"data"),go:this._ogGo(id,"data")}}),ogDataUnitsNone:c.isNode&&!units.length,ogSlotData:this._ogSlot("data")}}renderVals(){const D=KIVO.BassamDepts,st=this.state,rt=this._ogRoute(),mode=rt.mode;if(this.__p44Dept=mode==="dept",!D||!rt.unit)return{ogOn:!1,ogNoneOn:!0,ogNoneTxt:D?"لا وحدة تديرها في هذا الموضع — «الصلاحيات» لمدير الوحدة ومدير المنصة.":"تعذّر قراءة سجل الإدارات — أعد المحاولة",ogMode:mode};this._ogSyncHash(rt),this.__ogPass===rt.href&&(this.__ogPass=""),rt.bad&&this.__ogBad!==rt.bad&&(this.__ogBad=rt.bad,setTimeout(()=>this.bsToast("العقدة المطلوبة غير موجودة في الهيكل","warn"),0));const inf=this._ogInfo(rt.unit),sup=this._p44SupNow(),tree=this._ogTreeRows(rt),c={unit:rt.unit,tab:rt.tab,tabs:rt.tabs,mode,inf,isRoot:inf.root,isNode:inf.isNode,node:inf.node||null,mgrV:this._p44Viewer()==="mgr",sup,struct:tree.struct},selN=Object.keys(st.ogSel||{}).filter(id=>this._ogKnown(id)).length,dlg=st.ogDlg||null,dInf=dlg&&dlg.id&&this._ogKnown(dlg.id)?this._ogInfo(dlg.id):null,act=this._ogTry(()=>D.active(),""),h=this._ogHost(),stop=ev=>{ev&&ev.stopPropagation&&ev.stopPropagation()},mount={overview:"ogTabOverview",systems:"ogTabSystems",admins:"ogTabAdmins",roles:"ogTabRoles",people:"ogTabPeople",log:"ogTabLog",data:"ogTabData"}[rt.tab],tabVals=this[mount](c),v={ogOn:!0,ogNoneOn:!1,ogMode:mode,ogUnitSeg:inf.root?this._ogR().ROOT_SEG:rt.unit,ogTab:rt.tab,ogKeep:stop,ogU:{name:inf.name,pathTxt:inf.path.join(" ← ")||(inf.root?"مركز إدارة رشاد":"أعلى الهيكل"),kind:inf.kind,kindKey:inf.kindKey,mgrHas:inf.mgrHas?"true":"false",mgrTxt:inf.mgrHas?"له مدير":"بلا مدير",cur:inf.isUnit&&rt.unit===act,switchOn:mode==="site"&&sup&&inf.isUnit&&rt.unit!==act&&!!h.switchDept},ogSwitch:()=>h.switchDept&&this.canLeave({leave:!0}).then(y=>y&&h.switchDept(rt.unit)),ogTabs:rt.tabs.map(k=>({k,t:this.OG_TABS[k],on:k===rt.tab?"true":"false",href:this.ogHref(rt.unit,k),go:this._ogGo(rt.unit,k)})),ogRows:tree.rows,ogRowsNone:!tree.rows.filter(r=>!/(^| )root( |$)/.test(r.cls)).length,ogRowsNoneTxt:tree.forced?"لا وحدة تطابق البحث أو الفلتر":mode==="site"?"لا وحدات في الهيكل بعد — ابدأ بـ«+ إضافة»":"لا وحدات تحت إدارتك",ogUnitCount:String(tree.n),ogStructOn:tree.struct,ogDndOn:tree.struct,ogQ:st.ogQ||"",ogOnQ:ev=>this.setState({ogQ:String(ev&&ev.target&&ev.target.value||"")}),ogExpandAll:()=>this._ogSetAll(!0,tree.all),ogCollapseAll:()=>this._ogSetAll(!1,tree.all),ogFilters:[["mgr","لها مدير"],["nomgr","بلا مدير"],["empty","فارغة"]].map(x=>({k:x[0],t:x[1],n:String(tree.counts[x[0]]),on:st.ogFlt===x[0]?"true":"false",pick:()=>this.setState({ogFlt:st.ogFlt===x[0]?"":x[0]})})),ogBulkOn:tree.struct&&selN>0,ogBulkTxt:"المحدد: "+KIVO.BassamCount(selN,"وحدة"),ogBulkEnable:()=>this._ogBulk("on"),ogBulkDisable:()=>this._ogBulk("off"),ogBulkClear:()=>this.setState({ogSel:{}}),ogExportOn:mode==="site"&&sup&&!!h.exportAll,ogExportAll:()=>h.exportAll&&h.exportAll(),ogAddOpen:()=>this._ogAddOpen(""),sdShow:tree.struct&&!!this._ogTry(()=>D.needsStructure&&D.needsStructure(),!1),sdLbl:st.sdArm?"اضغط مرة أخرى لزرع الهيكل":"زرع هيكل القطاع",sdGo:()=>{if(!this.state.sdArm){this.setState({sdArm:!0}),clearTimeout(this._sdT),this._sdT=setTimeout(()=>this.setState({sdArm:!1}),4e3);return}clearTimeout(this._sdT);const r=D.seedStructure();if(!r||!r.ok)return this.bsToast(r&&r.err||"تعذّر زرع الهيكل"),void this.setState({sdArm:!1});this.setState({sdArm:!1,ogShut:{}}),this.bsAck("زُرع هيكل القطاع: "+KIVO.BassamCount(r.nodes,"عقدة")+" · "+KIVO.BassamCount(r.depts,"إدارة")+(r.linked?" · ورُبطت "+KIVO.BassamCount(r.linked,"إدارة|قائمة"):""),"ok")},ogSheetAttr:st.ogSheet?"true":"false",ogSheetOpen:()=>this.setState({ogSheet:!0}),ogSheetClose:()=>this.setState({ogSheet:!1}),ogSheetOut:()=>this.state.ogSheet&&this.setState({ogSheet:!1}),ogOnOverview:!1,ogOnAdmins:!1,ogOnData:!1,p44Show:["systems","admins","roles","people","log"].indexOf(rt.tab)!==-1,...tabVals,ogDlgClose:()=>this.setState({ogDlg:null}),ogDlgOut:()=>this.setState({ogDlg:null}),ogDlgName:dInf?dInf.name:"",ogAddOn:!!dlg&&dlg.k==="add",ogRenOn:!!dlg&&dlg.k==="rename"&&!!dInf,ogMoveOn:!!dlg&&dlg.k==="move"&&!!dInf,ogDelOn:!!dlg&&dlg.k==="del"&&!!dInf};if(v.ogAddOn){const set=k=>ev=>this._ogDlg({[k]:String(ev&&ev.target&&ev.target.value||""),msg:""});Object.assign(v,{ogAdd:dlg,ogAddOnName:set("name"),ogAddOnKind:set("kind"),ogAddOnNewKind:set("newKind"),ogAddOnPid:set("pid"),ogAddKinds:this._ogTry(()=>D.nodeKinds()||[],[]).map(k=>({id:k,name:k})),ogAddNewOn:dlg.kind==="__new",ogAddParents:this._ogParentOpts(""),ogAddPath:this._ogPathTxt(dlg.pid||""),ogAddSys:[["off","مطفأة كلها"],["parent","نفس أنظمة العقدة الأب"]].map(x=>({k:x[0],t:x[1],on:(dlg.sys||"off")===x[0]?"true":"false",pick:()=>this._ogDlg({sys:x[0]})})),ogAddGo:()=>this._ogAddGo()})}if(v.ogRenOn&&Object.assign(v,{ogRen:dlg,ogRenOnName:ev=>this._ogDlg({name:String(ev&&ev.target&&ev.target.value||""),msg:""}),ogRenGo:()=>this._ogRenGo(dInf)}),v.ogMoveOn&&Object.assign(v,{ogMove:dlg,ogMoveOnPid:ev=>this._ogDlg({pid:String(ev&&ev.target&&ev.target.value||""),msg:""}),ogMoveParents:this._ogParentOpts(dInf.id),ogMoveRootOn:!dInf.isSec,ogMoveNewOn:dInf.isUnit&&!dInf.isSec,ogMovePath:dlg.pid==="__new"?["إدارة عامة جديدة",dInf.name].join(" ← "):this._ogPathTxt(dlg.pid||"",dInf.name),ogMoveGo:()=>this._ogMoveGo(dInf)}),v.ogDelOn){const why=this._ogDelWhy(dInf);Object.assign(v,{ogDelTitle:(dInf.isNode?"حذف العقدة":dInf.isSec?"حذف القسم":"حذف الإدارة")+" «"+dInf.name+"»",ogDelWhy:why||dlg.msg||"",ogDelOk:!why,ogDelMsg:"تُحذف «"+dInf.name+"» من الهيكل. لا تُمسّ بيانات أي إدارة.",ogDelCancel:why?"إغلاق":"إلغاء",ogDelGo:()=>this._ogDelGo(dInf)})}return v}}Object.assign(Component.prototype,{_p44E(){try{return KIVO.Perm44||null}catch{return null}},_p44Try(f,d){try{const v=f();return v===void 0?d:v}catch{return d}},_p44S(){return this.state.p44||{}},_p44Set(patch){this.setState(s=>({p44:Object.assign({},s.p44||{},typeof patch=="function"?patch(s.p44||{}):patch)}))},P44_LV(){return{view:"مشاهدة فقط",input:"إدخال",edit:"تعديل",full:"كامل",sensitive:"حسّاس",custom:"مخصّص"}},_p44Lvls(){const L=this.P44_LV(),raw=this._p44Try(()=>this._p44E().levels(),null);return(Array.isArray(raw)?raw:Object.keys(L)).map(x=>{const k=typeof x=="string"?x:x&&(x.k||x.key||x.id);return k?{v:k,t:typeof x=="object"&&x&&(x.n||x.name||x.label)||L[k]||k}:null}).filter(Boolean)},_p44LvName(k){const x=this._p44Lvls().filter(l=>l.v===k)[0];return x?x.t:k?String(k):""},_p44Sys(){const raw=this._p44Try(()=>this._p44E().sysList(),[]);return(Array.isArray(raw)?raw:[]).map(s=>typeof s=="string"?{k:s}:s||{}).map(s=>({k:s.k||s.key||"",n:s.n||s.name||this._p44Try(()=>KIVO.BassamPerm.nameOf(s.k||s.key),"")||s.k||s.key,cap:s.page||s.cap||s.leaves&&s.leaves[0]||s.k||s.key,tg:s.toggle!==!1})).filter(s=>s.k)},_p44PlatOff(){const pl=this._p44Try(()=>KIVO.BassamPlat.get(),null);return(pl&&pl.mods&&pl.mods.off||[]).filter(k=>k!=="admin")},_p44On(u,s,off){const k=typeof s=="string"?s:s.k,cap=typeof s=="string"?(this._p44Sys().filter(x=>x.k===s)[0]||{cap:s}).cap:s.cap;return(off||this._p44PlatOff()).indexOf(k)!==-1?!1:!u||u==="__plat"?!0:this._p44Try(()=>!!KIVO.BassamPerm.on(cap,u),!0)},_p44Lock(u,s,off){if(u==="__plat")return this._p44PlatSw(s.k)?"":"الإعداد الدائم";if((off||this._p44PlatOff()).indexOf(s.k)!==-1)return"المنصة";const D=KIVO.BassamDepts,anc=this._p44Try(()=>(D.ancestorsOf(u)||[]).slice(),[]);for(let i=anc.length-1;i>=0;i--)if(!this._p44On(anc[i],s,off))return this._p44Try(()=>D.nodeOf(anc[i]).name,"")||"الأصل";return""},_p44PlatSw(k){return this._p44Try(()=>KIVO.KIVO_MANIFEST.clone("pages").some(p=>p.key===k&&p.platSwitch===!0&&p.activation==="toggle"),!1)},_p44Ceil(did){const off=this._p44PlatOff(),S=this._p44Sys();return k=>{const s=S.filter(x=>x.k===k)[0];return!!s&&this._p44On(did,s,off)}},_p44KeyCeil(did){const C=this._p44Try(()=>this._p44E().ceiling(did),null),on=this._p44Ceil(did);return k=>{if(C&&C.key&&!C.key(k))return!1;const ss=this._p44Try(()=>this._p44E().sysOfKey(k),null);return!Array.isArray(ss)||!ss.length||ss.some(x=>on(x))}},_p44SupNow(){return this._p44Try(()=>!!KIVO.BassamAuth.isSuper(),!1)},_p44Viewer(){return!this.__p44Dept&&this._p44SupNow()&&this._p44S().viewer!=="mgr"?"plat":"mgr"},p44MgrOf(u,did){return!!this._p44Try(()=>this._p44E().mgrOf(u,did),!1)},_p44SubNow(){const t=this._ogRoute?this._ogRoute().tab:"";return["systems","roles","people","log"].indexOf(t)!==-1?t:""},_p44Doc(did){const r=this._p44E().rolesOf(did);return r==null?{roles:[],people:{}}:Array.isArray(r)?{roles:JSON.parse(JSON.stringify(r)),people:{}}:{roles:JSON.parse(JSON.stringify(r.roles||[])),people:JSON.parse(JSON.stringify(r.people||{}))}},_p44Ensure(did){const S=this._p44S();if(S.d&&S.d.did===did)return S.d;if(S.ld&&S.ld.did===did&&S.ld.st==="loading"||S.ld&&S.ld.did===did&&S.ld.st==="error")return null;let doc=null;try{doc=this._p44Doc(did)}catch{doc=null}if(doc){const d={did,base:JSON.parse(JSON.stringify(doc)),roles:doc.roles,people:doc.people};return this.state={...this.state,p44:Object.assign({},S,{d,ld:{did,st:"ready"}})},d}return this.state={...this.state,p44:Object.assign({},S,{ld:{did,st:"loading"}})},setTimeout(()=>this._p44Read(did),0),null},async _p44Read(did){let d=null;try{const S=KIVO.__BS_SRV;S&&S.resync&&await S.resync(!1);const doc=this._p44Doc(did);d={did,base:JSON.parse(JSON.stringify(doc)),roles:doc.roles,people:doc.people}}catch{d=null}this._p44Set({ld:{did,st:d?"ready":"error"},d})},_p44Retry(did){this._p44Set({ld:null,d:null})},_p44Dirty(d){return!!d&&JSON.stringify({r:d.roles,p:d.people})!==JSON.stringify({r:d.base.roles,p:d.base.people})},_p44Upd(fn){this._p44Set(s=>{if(!s.d)return{};const d=JSON.parse(JSON.stringify(s.d));return fn(d),{d,rev:null}})},p44Affected(d){const B=d.base,changed={},out=[],sig=r=>JSON.stringify(r||null),rb={};(B.roles||[]).forEach(r=>rb[r.id]=sig(r)),(d.roles||[]).forEach(r=>rb[r.id]!==sig(r)&&(changed[r.id]=1)),(B.roles||[]).forEach(r=>!(d.roles||[]).some(x=>x.id===r.id)&&(changed[r.id]=1));const all=Object.assign({},B.people||{},d.people||{});return Object.keys(all).forEach(ek=>{const a=(B.people||{})[ek],b=(d.people||{})[ek];(sig(a)!==sig(b)||b&&changed[b.role]||a&&changed[a.role])&&out.push(ek)}),out.sort()},p44AffLine(n,pre){return n?(pre||"يتأثر")+" "+KIVO.BassamCount(n,"شخص"):"لا يتأثر أحد الآن"},_p44DiffOf(before,after){const r=this._p44Try(()=>this._p44E().diff(before,after),[]);return Array.isArray(r)?r:r&&r.changes||[]},_p44Txt(v){return v==null||v===""?"—":v===!0?"مفعّل":v===!1?"مطفأ":typeof v=="string"?this.P44_LV()[v]?this._p44LvName(v):this._p44RoleName(v)||v:Array.isArray(v)?v.length?v.map(x=>x&&x.key?this._p44Label(x.key):typeof x=="string"?this._p44Try(()=>KIVO.BassamPerm.nameOf(x),"")||this._p44Txt(x):this._p44Txt(x)).join("، "):"—":v.lvl?this._p44LvName(v.lvl)+(v.keys&&v.lvl==="custom"?" ("+v.keys.length+")":""):v.name?v.name:"role"in v?this._p44RoleName(v.role)||"بلا دور":"—"},_p44RoleName(id){const S=this._p44S(),r=(S.d&&S.d.roles||[]).filter(x=>x.id===id)[0];return r?r.name:""},_p44SysName(k){return(this._p44Sys().filter(s=>s.k===k)[0]||{n:this._p44Try(()=>KIVO.KIVO_REGISTRY.byKey[k].label,k)}).n},p44Rows(ch){const out=[];return(ch||[]).forEach(c=>{if(!c)return;out.push({what:this._p44What(c),from:this._p44Txt(c.from),to:this._p44Txt(c.to)});const r=c.what==="role"?c.to||c.from:null;if(!r||typeof r!="object")return;const mk=!!c.to,nm=this._p44RoleName(c.role)||r.name||"دور",S=r.sys&&typeof r.sys=="object"?r.sys:{},ks=Object.keys(S);ks.forEach(k=>out.push({what:nm+" · "+this._p44SysName(k),from:mk?"—":this._p44Txt(S[k]),to:mk?this._p44Txt(S[k]):"—"})),mk&&!ks.length&&out.push({what:nm+" · الأنظمة",from:"—",to:"بلا أنظمة"}),r.sup&&out.push({what:nm+" · إشرافي",from:mk?"—":"نعم",to:mk?"نعم":"—"})}),out},_p44What(c){const w=String(c.what||""),sysN=k=>this._p44SysName(k),rn=id=>this._p44RoleName(id)||c.to&&c.to.name||c.from&&c.from.name||"دور",un=id=>this._p44Try(()=>KIVO.BassamDepts.nodeOf(id).name,"")||id||"";return w==="sys"?rn(c.role)+" · "+sysN(c.sys):w==="name"||w==="desc"||w==="sup"?rn(c.role)+" · "+{name:"الاسم",desc:"الوصف",sup:"إشرافي"}[w]:w==="role"?(c.to?c.from?"":"دور جديد · ":"حذف دور · ")+rn(c.role):w==="person"?this._p44PName(c.person)+" · الدور":w==="ex"?this._p44PName(c.person)+" · استثناء "+this._p44Label(c.key):/^ceil\./.test(w)?(un(c.unit)?un(c.unit)+" · ":"")+({"ceil.caps":"الأنظمة","ceil.subs":"الصفحات الفرعية","ceil.lenses":"العدسات"}[w]||"السقف"):c.sys?sysN(c.sys):c.person?this._p44PName(c.person):c.key?this._p44Label(c.key):w||"—"},_p44Users(){return this._p44Try(()=>KIVO.BassamAuth.users()||[],[])},_p44PName(ek){const u=this._p44Users().filter(x=>x.ekey===ek)[0];return u?u.name||u.un:ek},_p44Label(k){return this._p44Try(()=>KIVO.KIVO_REGISTRY.byKey[k].label,"")||k},_p44Keys(sk){const E=this._p44E(),all=this._p44Try(()=>E.keysFor(sk,"sensitive"),[]);return Array.isArray(all)?all:[]},_p44Compile(role,did){const r=this._p44Try(()=>this._p44E().compileRole(role,this._p44KeyCeil(did)),[]);return Array.isArray(r)?r:r&&(r.keys||r.plus)||[]},_p44Eff(rec,roles,did,now){const r=this._p44Try(()=>this._p44E().effective(rec,{roles:roles||[],people:{}},this._p44KeyCeil(did),now),[]);return Array.isArray(r)?r:r instanceof Set?Array.from(r):r&&(r.keys||r.plus)||[]},_p44Menu(keys,role,did,extra){const on=this._p44Ceil(did),set=new Set(keys||[]),out=[{n:"صفحتي",l:""}];return this._p44Sys().forEach(s=>{if(!on(s.k))return;const ks=this._p44Keys(s.k),n=ks.length?ks.filter(k=>set.has(k)).length:0,lv=role&&role.sys&&role.sys[s.k]?this._p44LvName(role.sys[s.k].lvl):"";n&&out.push({n:s.n,l:lv||(extra?"استثناء":"")})}),out},_p44Vals(did,isNode,node,sub){const E=this._p44E(),sup=this._p44SupNow(),viewer=this._p44Viewer(),mgrV=viewer==="mgr",S=this._p44S(),v={p44MgrV:mgrV,p44ViewOn:sup&&!this.__p44Dept,p44Viewers:[["plat","مدير المنصة"],["mgr","مدير الإدارة"]].map(x=>({t:x[1],on:x[0]===viewer?"true":"false",pick:()=>this._p44Set({viewer:x[0],sel:x[0]==="plat"?S.sel:S.sel==="__super"?"":S.sel,rev:null})})),p44OnSys:sub==="systems",p44OnRoles:sub==="roles",p44OnPeople:sub==="people",p44OnLog:sub==="log",p44Head:{systems:"الأنظمة",roles:"الأدوار",people:"الأشخاص",log:"السجل"}[sub],p44Lead:{systems:mgrV?"الأنظمة المفعّلة لإدارتك — يضبطها مدير المنصة، وما لا يظهر هنا غير متاح لإدارتك.":"ما تطفئه في مستوى يختفي من كل ما تحته، ولا يراه مديرها أصلاً.",roles:"ابنِ الدور مرة واحدة وأسنده لمن تريد. ما تراه هنا هو ما يقبله الخادم.",people:"لكل شخص دور واحد. الاستثناء نادر، ويظهر بوضوح حتى لا يُنسى.",log:"كل تغيير: من غيّر، ماذا تغيّر، ومن تأثّر — مع رجوع بضغطة."}[sub],p44NoEng:!E,p44Keep:ev=>{try{ev.stopPropagation()}catch{}}};if(!E||["systems","roles","people","log"].indexOf(sub)===-1)return v;if(sub==="systems")return Object.assign(v,this._p44SysVals(did,mgrV));if(sub==="log")return Object.assign(v,this._p44LogVals(did));if(isNode)return Object.assign(v,sub==="roles"?this._p44RoleVals(did,{did,base:{roles:[],people:{}},roles:[],people:{}},mgrV,!0):this._p44NodePeopleVals(did));const d=this._p44Ensure(did),L=this._p44S().ld;if(!d)return Object.assign(v,{p44Loading:!L||L.st!=="error",p44Err:!!L&&L.st==="error",p44Retry:()=>this._p44Retry(did)});const dirty=this._p44Dirty(d),aff=dirty?this.p44Affected(d):[];return Object.assign(v,{p44Dirty:dirty,p44DirtyTxt:dirty?KIVO.BassamCount(this._p44DiffOf(d.base,{roles:d.roles,people:d.people}).length||1,"تغيير|غير محفوظ"):"",p44AffTxt:this.p44AffLine(aff.length,"يتأثر بها"),p44Undo:()=>this._p44Upd(x=>(x.roles=x.base.roles,x.people=x.base.people)),p44Review:()=>this._p44Set({rev:{open:1}}),...this._p44RevVals(d,aff)}),Object.assign(v,sub==="roles"?this._p44RoleVals(did,d,mgrV,!1):this._p44PeopleVals(did,d))},p44Open(unit,sub,extra){unit&&(extra&&(this.state={...this.state,p44:Object.assign({},this.state.p44||{},{rev:null,exForm:null},extra)}),this.go(unit,sub))},_p44Mgrs(did,isNode){const A=KIVO.BassamAuth||{};return this._p44Try(()=>(isNode?A.groupManagers(did):A.deptManagers(did))||[],[])},p44UnitOfUser(u){return u&&(u.role==="gm"?u.gid:u.deptId)||""},p44IsOwnPerson(u){return!!u&&u.role==="staff"&&!!u.ekey},p44PeopleOf(did,isNode){const all=this._p44Users();if(!isNode)return all.filter(u=>this.p44IsOwnPerson(u)&&u.deptId===did);const D=KIVO.BassamDepts,ids={[did]:1};return this._p44Try(()=>(D.descendantsOf?D.descendantsOf(did):D.deptsUnder(did))||[],[]).forEach(x=>ids[typeof x=="string"?x:x&&x.id]=1),all.filter(u=>u&&u.role!=="super"&&!!ids[this.p44UnitOfUser(u)])},p44SysCount(u){const off=this._p44PlatOff(),sys=this._p44Sys().filter(s=>s.tg);return{on:sys.filter(s=>this._p44On(u,s,off)).length,all:sys.length}},_p44NodePeopleVals(did){const D=KIVO.BassamDepts,S=this._p44S(),X=this._acctCtx?this._p44Try(()=>this._acctCtx(),{l:{},now:Date.now()}):{l:{},now:Date.now()},q=String(S.q||"").trim(),unitOf=u=>this.p44UnitOfUser(u),all=this.p44PeopleOf(did,!0),shown=all.filter(u=>!q||(String(u.name||"")+" "+(u.un||"")+" "+(u.empno||u.no||"")).indexOf(q)!==-1);return{p44NodePeople:!0,p44PQ:S.q||"",p44PQSet:ev=>this._p44Set({q:String(ev&&ev.target&&ev.target.value||"")}),p44NPRows:shown.map(u=>{const un=unitOf(u),gm=u.role==="gm";return{n:u.name||u.un,id:u.empno||u.no||u.un||"",i:String(u.name||"؟").trim().charAt(0)||"؟",role:gm||u.mgr?"مدير الوحدة":this.adRole&&this._p44Try(()=>this.adRole(u),"")||"—",unit:this.adUnit&&this._p44Try(()=>this.adUnit(u),"")||this._p44Try(()=>D.nodeOf(un).name,"")||"—",last:X.l[u.id]&&this.adWhen?this.adWhen(X.l[u.id],X.now):"لم يدخل",go:()=>gm||u.mgr?this.p44Open(un,"admins"):this.p44Open(un,"people",{pSel:u.ekey||""})}}),p44NPEmpty:!shown.length,p44NPEmptyTxt:all.length?"لا أحد يطابق البحث":"لا حسابات في هذا الفرع بعد",p44NPFoot:KIVO.BassamCount(all.length,"حساب")+" في العقدة وفرعها — يُضبط دورُ كلٍّ منهم في «الأشخاص» لوحدته"}},_p44SysVals(did,mgrV){if(mgrV)return this._p44SysRO(did);const D=KIVO.BassamDepts,S=this._p44S(),anc=this._p44Try(()=>(D.ancestorsOf(did)||[]).slice(),[]),chain=did==="__plat"?["__plat"]:["__plat"].concat(anc,[did]),u=did,nm=id=>id==="__plat"?"المنصة كلها":this._p44Try(()=>D.nodeOf(id).name,"")||"—",off=this._p44PlatOff(),sys=this._p44Sys().filter(s=>s.tg),dr=S.cap&&S.cap.unit===u?S.cap.on:{},rows=sys.map(s=>{const by=this._p44Lock(u,s,off),was=!by&&this._p44On(u,s,off),on=by?!1:s.k in dr?!!dr[s.k]:was;return{k:s.k,n:s.n,on:on?"true":"false",isOn:on,locked:!!by,by,sub:by?"مطفأ من "+by+" — لا يُفعَّل هنا":on?was?"مفعّل":"سيُفعَّل عند الحفظ":was?"سيُطفأ عند الحفظ":"مطفأ — لا يظهر لهذه الوحدة",flip:()=>{by||this._p44Set(st=>{const c=st.cap&&st.cap.unit===u?Object.assign({},st.cap.on):{};return c[s.k]=!on,c[s.k]===was&&delete c[s.k],{cap:{unit:u,on:c}}})}}}),dirtyN=Object.keys(dr).length,people=u==="__plat"?this._p44Users().filter(x=>x.role!=="super").length:this._p44Users().filter(x=>x.deptId===u||this._p44Try(()=>(D.ancestorsOf(x.deptId)||[]).indexOf(u)!==-1,!1)).length;return{p44Unit:{n:nm(u),path:chain.slice(0,chain.indexOf(u)).map(nm).join(" / ")||"أعلى الهيكل",inh:u==="__plat"?"المنصة كلها: النظام المطفأ هنا يختفي من كل الإدارات ومن الأدوار ومن القوائم.":"يتبع ما فوقه: ما أُطفئ هناك يظهر مقفلاً هنا ولا يُفعَّل."},p44SysCtl:!0,p44SysRows:rows.map(r=>Object.assign(r,{sw:!0})),p44SysNone:!rows.length,p44SysNoneTxt:"لا أنظمة قابلة للتشغيل في هذه المنصة.",p44SysNavOn:u!=="__plat",p44SysNav:u==="__plat"?[]:this.p44NavOf(u),p44SysNavT:"ما يراه مدير هذه الإدارة",p44SysOnN:String(rows.filter(r=>r.isOn).length),p44SysPeople:String(people),p44SysDirty:dirtyN>0,p44SysDirtyTxt:KIVO.BassamCount(dirtyN,"تغيير|غير محفوظ"),p44SysUndo:()=>this._p44Set({cap:null,rev:null}),p44SysReview:()=>this._p44Set({rev:{open:1,kind:"sys"}}),...this._p44SysRevVals(u,dr,nm(u),people)}},p44NavOf(u){const P=KIVO.BassamPerm;return[{k:"profile",n:"صفحتي"}].concat(this._p44Try(()=>P.menuFor(P.mgrPerms(u),u).filter(x=>x.on&&!x.hid).map(x=>({k:x.k,n:x.n})),[]))},_p44SysRO(did){const D=KIVO.BassamDepts,off=this._p44PlatOff(),rows=this._p44Sys().filter(s=>s.tg&&this._p44On(did,s,off)).map(s=>({k:s.k,n:s.n,on:"true",isOn:!0,locked:!1,by:"",sw:!1,sub:"مفعّل لإدارتك",flip:()=>{}})),people=this._p44Users().filter(x=>x.deptId===did||this._p44Try(()=>(D.ancestorsOf(x.deptId)||[]).indexOf(did)!==-1,!1)).length;return{p44SysRO:!0,p44SysCtl:!1,p44SysNavOn:!0,p44Unit:{n:this._p44Try(()=>D.nodeOf(did).name,"")||"—",path:"إدارتك",inh:"يضبط الأنظمةَ مدير المنصة — ما يظهر هنا وحده متاحٌ لإدارتك ولأدوار موظفيها."},p44SysRows:rows,p44SysNone:!rows.length,p44SysNoneTxt:"لا نظام مفعّل لإدارتك بعد — يفعّله مدير المنصة.",p44SysNav:this.p44NavOf(did),p44SysNavT:"قائمة إدارتك",p44SysOnN:String(rows.length),p44SysPeople:String(people),p44SysDirty:!1,p44RevOn:!1}},_p44SysRevVals(u,dr,unitName,people){const R=this._p44S().rev,ks=Object.keys(dr||{});return!R||!R.open||R.kind!=="sys"||!ks.length?{p44RevOn:!1}:{p44RevOn:!0,p44RevRows:ks.map(k=>({what:unitName+" · "+this._p44SysName(k),from:dr[k]?"مطفأ":"مفعّل",to:dr[k]?"مفعّل":"مطفأ"})),p44RevAff:[],p44RevAffTxt:this.p44AffLine(people)+(people?" في هذه الوحدة وما تحتها":""),p44RevNote:"إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل.",p44RevBusy:!1,p44RevErr:R.err||"",p44RevClose:()=>this._p44Set({rev:null}),p44RevOut:()=>this._p44Set({rev:null}),p44RevSave:()=>this._p44CapSave(u,dr)}},_p44CapSave(u,dr){const P=KIVO.BassamPerm,keys=Object.keys(dr||{});if(!keys.length)return;let r={ok:!0};try{if(u==="__plat"){const pl=KIVO.BassamPlat.get(),o=(pl.mods.off||[]).slice();keys.forEach(k=>{const i=o.indexOf(k);dr[k]?i!==-1&&o.splice(i,1):i===-1&&o.push(k)}),r=KIVO.BassamPlat.set(Object.assign({},pl,{mods:Object.assign({},pl.mods,{off:o})}))}else{const sys=this._p44Sys(),reg=this._pages?this._pages():[],cap=(P.hasCap(u)?P.rawCap(u):P.deptCap(u)).slice();keys.forEach(k=>{const s=sys.filter(x=>x.k===k)[0]||{cap:k},pk=s.cap,sl=pk.indexOf("/"),pg=reg.filter(p=>p.key===pk)[0]||{};if(sl>0){const host=pk.slice(0,sl),leaf=pk.slice(sl+1),cur=(P.deptSubs(u,host)||[]).filter(x=>x!==leaf);dr[k]&&(cap.indexOf(host)===-1&&cap.push(host),cur.push(leaf)),r.ok&&(r=P.setDeptSubs(u,host,cur)||r);return}if(dr[k])cap.indexOf(pk)===-1&&cap.push(pk),pg.under&&cap.indexOf(pg.under)===-1&&cap.push(pg.under),reg.filter(p=>p.under===pk).forEach(p=>cap.indexOf(p.key)===-1&&cap.push(p.key)),(pg.subs||[]).length&&P.setDeptSubs(u,pk,pg.subs.map(x=>x.key)),(pg.tabs||[]).length&&P.setDeptTabs&&P.setDeptTabs(u,pk,pg.tabs.map(x=>x.key));else{const drop=[pk].concat(reg.filter(p=>p.under===pk).map(p=>p.key));for(let i=cap.length-1;i>=0;i--)drop.indexOf(cap[i])!==-1&&cap.splice(i,1)}}),r.ok&&(r=P.setDeptCap(u,cap)||r)}}catch{r={ok:!1,err:"تعذّر حفظ الأنظمة"}}if(r&&r.ok===!1)return void this._p44Set({rev:{open:1,kind:"sys",err:r.err||"لم يُحفظ"}});this._p44Set({cap:null,rev:null}),this.bsToast("حُفظت أنظمة «"+(u==="__plat"?"المنصة كلها":this._p44Try(()=>KIVO.BassamDepts.nodeOf(u).name,""))+"» — البيانات باقية كما هي","ok")},_p44RoleVals(did,d,mgrV,isNode){const S=this._p44S(),on=this._p44Ceil(did),sys=this._p44Sys().filter(s=>on(s.k)),holders=id=>Object.keys(d.people||{}).filter(ek=>(d.people[ek]||{}).role===id).length,sel=(d.roles.filter(r=>r.id===S.sel)[0]||d.roles[0]||{id:""}).id,role=d.roles.filter(r=>r.id===sel)[0]||null,list=d.roles.map(r=>({id:r.id,name:r.name||"بلا اسم",sub:(holders(r.id)?KIVO.BassamCount(holders(r.id),"شخص"):"بلا حاملين")+(r.sup?" · إشرافي":"")})),v={p44RoleList:list.map(r=>({n:r.name,sub:r.sub,lock:!!r.lock,on:r.id===sel?"true":"false",pick:()=>this._p44Set({sel:r.id,cmp:"",chk:null})})),p44RoleN:String(list.length),p44RoleNew:()=>this._p44NewRole(null),p44RoleNewOn:!isNode,p44NodeRoles:!!isNode,p44NodeUnits:isNode?this._p44Try(()=>KIVO.BassamDepts.deptsUnder(did)||[],[]).map(id=>({n:this._p44Try(()=>KIVO.BassamDepts.nodeOf(id).name,"")||id,href:this.ogHref?this.ogHref(id,"roles"):"",go:ev=>{ev&&ev.preventDefault&&ev.preventDefault(),this.p44Open(id,"roles",{sel:""})}})):[],p44NotSup:!!role,p44NoRole:!role&&!isNode,p44Lvls:this._p44Lvls()};if(!role)return Object.assign(v,{p44Nav:[{n:"صفحتي",l:""}]});const keysAll=k=>this._p44Keys(k),upd=fn=>this._p44Upd(x=>{const r=x.roles.filter(y=>y.id===role.id)[0];r&&fn(r)}),rows=sys.map(s=>{const g=(role.sys||{})[s.k],isOn=!!g,lv=g?g.lvl:"",open=isOn&&lv==="custom";return{k:s.k,n:s.n,isOn,onTxt:isOn?"true":"false",lv:lv||"view",sub:isOn?this._p44LvName(lv)+(lv==="custom"?" · "+KIVO.BassamCount((g.keys||[]).length,["فعل واحد","فعلان","فعلين","أفعال","فعلاً","فعل"]):""):"غير مفعّل لهذا الدور",flip:()=>upd(r=>(r.sys=r.sys||{},r.sys[s.k]?delete r.sys[s.k]:r.sys[s.k]={lvl:"view"})),setLv:ev=>{const n=String(ev&&ev.target&&ev.target.value||"view");upd(r=>{const was=(r.sys||{})[s.k]||{};r.sys=r.sys||{},r.sys[s.k]=n==="custom"?{lvl:"custom",keys:was.keys||this._p44Try(()=>this._p44E().keysFor(s.k,was.lvl||"view"),[])||[]}:{lvl:n}})},custom:open,keys:open?keysAll(s.k).map(k=>{const has=(g.keys||[]).indexOf(k)!==-1;return{n:this._p44Label(k),sens:this._p44Try(()=>!!KIVO.KIVO_REGISTRY.byKey[k].sensitive,!1),on:has?"true":"false",flip:()=>upd(r=>r.sys[s.k].keys=has?r.sys[s.k].keys.filter(x=>x!==k):(r.sys[s.k].keys||[]).concat([k]))}}):[]}}),comp=this._p44Compile(role,did),cmpId=S.cmp&&d.roles.some(r=>r.id===S.cmp&&r.id!==role.id)?S.cmp:"",cmp=cmpId?d.roles.filter(r=>r.id===cmpId)[0]:null,chk=S.chk||{},chkKeys=[].concat.apply([],sys.map(s=>keysAll(s.k).map(k=>({v:k,t:s.n+" · "+this._p44Label(k)})))),ck=chk.key&&chkKeys.some(x=>x.v===chk.key)?chk.key:(chkKeys[0]||{}).v||"";return Object.assign(v,{p44Role:{n:role.name||"بلا اسم",d:role.desc||"",badge:role.sup?"دور إشرافي":"دور",members:holders(role.id)?KIVO.BassamCount(holders(role.id),"شخص")+" "+KIVO.BassamCount.agr(holders(role.id),"يحمل","يحملان","يحملون")+" هذا الدور":"لا يحمل هذا الدور أحد بعد"},p44RoleName:role.name||"",p44RoleNameSet:ev=>upd(r=>r.name=String(ev&&ev.target&&ev.target.value||"").slice(0,60)),p44RoleDesc:role.desc||"",p44RoleDescSet:ev=>upd(r=>r.desc=String(ev&&ev.target&&ev.target.value||"").slice(0,200)),p44RoleSup:role.sup?"true":"false",p44RoleSupFlip:()=>upd(r=>r.sup?delete r.sup:r.sup=!0),p44RoleCopy:()=>this._p44NewRole(role),p44RoleDel:()=>this._p44DelRole(role,holders(role.id)),p44SysEd:rows,p44SysEdNone:!rows.length,p44OnN:String(rows.filter(r=>r.isOn).length),p44AllN:String(rows.length),p44AllOn:()=>upd(r=>(r.sys=r.sys||{},sys.forEach(s=>r.sys[s.k]||(r.sys[s.k]={lvl:"view"})))),p44AllOff:()=>upd(r=>r.sys={}),p44Nav:this._p44Menu(comp,role,did),p44CmpOpts:[{v:"",t:"— اختر دوراً —"}].concat(d.roles.filter(r=>r.id!==role.id).map(r=>({v:r.id,t:r.name||"بلا اسم"}))),p44CmpVal:cmpId,p44CmpSet:ev=>this._p44Set({cmp:String(ev&&ev.target&&ev.target.value||"")}),p44CmpOn:!!cmp,p44CmpName:cmp?cmp.name:"",p44CmpRows:cmp?this.p44Compare(role,cmp,sys):[],p44ChkKeys:chkKeys,p44ChkKey:ck,p44ChkSet:ev=>this._p44Set({chk:{key:String(ev&&ev.target&&ev.target.value||"")}}),p44ChkLocal:ck?comp.indexOf(ck)!==-1?"المعاينة: مسموح بهذا الدور كما هو الآن":"المعاينة: غير مسموح بهذا الدور كما هو الآن":"",p44ChkRun:()=>this._p44Check(did,role.id,ck),p44ChkBusy:!!chk.busy,p44ChkHas:!!chk.res,p44ChkRes:chk.res||{},p44ChkNote:this._p44Dirty(d)?"الخادم يجيب عن الدور المحفوظ — احفظ تعديلك ليُختبر":""})},p44AdminsVals(did,isNode,mgrV){if(did==="__plat")return{p44IsSup:!0,p44IsMgr:!1,p44Role:{n:"مدير المنصة",d:"صاحب المنصة: لا قيد عليه في أي نظام أو إدارة.",badge:"دور النظام"}};const mgrs=this._p44Mgrs(did,isNode);return{p44IsSup:!1,p44IsMgr:!0,p44Role:{n:"مدير الوحدة",d:"يعمل بكامل سقف وحدته ويعتمد جداولها وتقاريرها — يعيّنه مدير المنصة وحده.",badge:"دور النظام",members:mgrs.length?KIVO.BassamCount(mgrs.length,"شخص")+" "+KIVO.BassamCount.agr(mgrs.length,"يحمل","يحملان","يحملون")+" هذا الدور":"لا يحمل هذا الدور أحد بعد"},p44MgrFull:!mgrV&&!this.__p44Dept,p44MgrRO:mgrV||!!this.__p44Dept,p44MgrAddOn:this._p44SupNow()&&!mgrV,p44MgrHold:mgrs.map(m=>({n:m.name||m.un||"—",st:m.dis?"موقوف":"نشط"})),p44MgrNone:!mgrs.length,p44MgrN:mgrs.length}},p44Compare(a,b,sys){const lv=(r,k)=>(r.sys||{})[k]?this._p44LvName(r.sys[k].lvl):"—";return sys.map(s=>({n:s.n,a:lv(a,s.k),b:lv(b,s.k),diff:lv(a,s.k)!==lv(b,s.k)?"true":"false"}))},_p44NewRole(from){const id="r"+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36);this._p44Upd(x=>{const r=from?JSON.parse(JSON.stringify(from)):{name:"دور جديد",desc:"",sys:{}};r.id=id,from&&(r.name="نسخة من "+(from.name||"دور")),x.roles.push(r)}),this._p44Set({sel:id,cmp:"",chk:null})},_p44DelRole(role,n){if(n)return void this.bsToast("يحمل هذا الدورَ "+KIVO.BassamCount(n,"شخص")+" — انقلهم إلى دورٍ آخر أولاً","warn");this._p44Upd(x=>x.roles=x.roles.filter(r=>r.id!==role.id)),this._p44Set({sel:""})},async _p44Check(did,rid,key){if(!key)return;this._p44Set({chk:{key,busy:1}});let res=null;try{const r=await fetch("/api/perm44/check?d="+encodeURIComponent(did)+"&role="+encodeURIComponent(rid)+"&key="+encodeURIComponent(key),{credentials:"same-origin",cache:"no-store"}),j=await r.json();if(!r.ok||!j||typeof j.allow!="boolean")throw Error("bad");const W={role:"مسموح بمستوى الدور",exception:"مسموح باستثناء مؤقت",super:"مدير المنصة — بلا قيد",self:"متاح لكل صاحب حساب",level:"مستوى الدور لا يشمله",ceiling:"النظام مطفأ في سقف هذه الوحدة","no-role":"لا دور بهذا المعرّف أو لا دور للشخص",mgr:"لمدير الإدارة وحده","role-only":"يُمنح بالمنصب لا بالدور","not-grantable":"لا يُمنح بالأدوار","unknown-key":"فعلٌ غير معروف",reserved:"فعلٌ محجوز"};res={ok:j.allow,mark:j.allow?"✓":"✕",cls:j.allow?"ok":"no",q:this._p44Label(key),why:W[j.why]||String(j.why||(j.allow?"مسموح":"غير مسموح"))}}catch{res={ok:!1,mark:"!",cls:"err",q:this._p44Label(key),why:"تعذّر سؤال الخادم — أعد المحاولة"}}this._p44Set({chk:{key,res}})},_p44RevVals(d,aff){const R=this._p44S().rev;if(!R||!R.open||R.kind==="sys")return{p44RevOn:!1};const ch=this._p44DiffOf(d.base,{roles:d.roles,people:d.people});return{p44RevOn:!0,p44RevRows:this.p44Rows(ch),p44RevAff:aff.map(ek=>this._p44PName(ek)),p44RevAffTxt:this.p44AffLine(aff.length)+(aff.length?":":""),p44RevNote:"",p44RevBusy:!!R.busy,p44RevErr:R.err||"",p44RevClose:()=>R.busy||this._p44Set({rev:null}),p44RevOut:()=>this._p44S().rev&&this._p44S().rev.busy?void 0:this._p44Set({rev:null}),p44RevSave:()=>this._p44Save()}},async _p44Save(){const E=this._p44E(),S=this._p44S(),d=S.d;if(!E||!d||S.rev&&S.rev.busy)return;const did=d.did,aff=this.p44Affected(d),roles=JSON.parse(JSON.stringify(d.roles)),people=JSON.parse(JSON.stringify(d.people)),intent={k:"perm44",did,roles,people};this._p44Set({rev:{open:1,busy:1}});let r=null;try{const dr=E.draft(did),w=E.setRoles(dr,did,{v:1,roles,people});r=w&&w.ok===!1?{ok:!1,err:w.err}:await E.commit(dr),this.__p44LastDraft=dr}catch{r=null}if(!r||!r.ok){const why=r&&r.err==="unsent"?"لم يصل تأكيد الحفظ — المسودة باقية؛ أعد الحفظ للتحقق.":r&&r.err==="denied"?"رفض الخادم الحفظ — راجع الصلاحية ثم أعد المحاولة.":"لم يُحفظ التغيير — "+(r&&r.err?"("+r.err+") ":"")+"راجع الصلاحية ثم أعد المحاولة.";return void this._p44Set({rev:{open:1,err:why}})}this._p44Set(s=>({rev:null,d:s.d?Object.assign({},s.d,{base:{roles,people}}):s.d,log:null})),this.bsToast("حُفظت الصلاحيات — "+this.p44AffLine(aff.length),"ok")},_p44PeopleVals(did,d){const S=this._p44S(),D=KIVO.BassamDepts,X=this._acctCtx?this._p44Try(()=>this._acctCtx(),{l:{},now:Date.now()}):{l:{},now:Date.now()},now=Date.now(),q=String(S.q||"").trim(),f=S.pf||"all",users=this.p44PeopleOf(did,!1),me=this._p44Try(()=>KIVO.BassamAuth.user(),null)||{},self=u=>!!u&&!!me.id&&u.id===me.id,rec=u=>(d.people||{})[u.ekey]||{role:null,ex:[]},live=x=>!x.until||x.until>now,roleOf=u=>u.mgr?"مدير الإدارة":this._p44RoleName(rec(u).role)||((rec(u).ex||[]).some(live)?"صلاحيات مخصّصة":"بلا صلاحيات"),keep=u=>(f==="ex"?(rec(u).ex||[]).some(live):f==="never"?!X.l[u.id]:f==="mgr"?!!u.mgr:!0)&&(!q||(String(u.name||"")+" "+(u.un||"")+" "+(u.empno||u.no||"")).indexOf(q)!==-1),F=[["all","الكل",users.length],["ex","باستثناءات",users.filter(u=>(rec(u).ex||[]).some(live)).length],["never","لم يدخلوا",users.filter(u=>!X.l[u.id]).length],["mgr","المدراء",users.filter(u=>u.mgr).length]],shown=users.filter(keep),sel=users.filter(u=>u.ekey===S.pSel)[0]||shown[0]||null,v={p44PQ:S.q||"",p44PQSet:ev=>this._p44Set({q:String(ev&&ev.target&&ev.target.value||"")}),p44PFilters:F.map(x=>({t:x[1],n:String(x[2]),on:x[0]===f?"true":"false",pick:()=>this._p44Set({pf:x[0]})})),p44PRows:shown.map(u=>{const ex=(rec(u).ex||[]).filter(live).length;return{n:u.name||u.un,id:u.empno||u.no||u.un||"",i:String(u.name||"؟").trim().charAt(0)||"؟",me:self(u),role:roleOf(u),unit:this.adUnit&&this._p44Try(()=>this.adUnit(u),"")||this._p44Try(()=>D.nodeOf(u.deptId).name,"")||"—",hasEx:ex>0,ex:"+"+ex,last:X.l[u.id]&&this.adWhen?this.adWhen(X.l[u.id],X.now):"لم يدخل",on:sel&&sel.ekey===u.ekey?"true":"false",pick:()=>this._p44Set({pSel:u.ekey,exForm:null})}}),p44PEmpty:!shown.length,p44PEmptyTxt:users.length?"لا أحد يطابق البحث أو المرشّح":"لا حسابات موظفين في هذه الإدارة بعد",p44PSelOn:!!sel};if(!sel)return v;const r=rec(sel),roles=d.roles,setRec=fn=>this._p44Upd(x=>{const p=x.people[sel.ekey]=JSON.parse(JSON.stringify(x.people[sel.ekey]||{role:null,ex:[]}));p.ex=p.ex||[],fn(p)}),eff=this._p44Eff(r,roles,did,now),rl=roles.filter(x=>x.id===r.role)[0]||null,ef=S.exForm,have=new Set(this._p44Compile(rl||{sys:{}},did)),on=this._p44Ceil(did),exKeys=[].concat.apply([],this._p44Sys().filter(s=>on(s.k)).map(s=>this._p44Keys(s.k).filter(k=>!have.has(k)).map(k=>({v:k,t:s.n+" · "+this._p44Label(k)})))),byName=id=>(this._p44Users().filter(u=>u.id===id)[0]||{}).name||"مدير المنصة";return Object.assign(v,{p44PSel:{n:sel.name||sel.un,i:String(sel.name||"؟").trim().charAt(0)||"؟",id:sel.empno||sel.no||sel.un||"",role:roleOf(sel),mgr:!!sel.mgr},p44PMgr:!!sel.mgr,p44PSelf:self(sel),p44PEdit:!sel.mgr&&!self(sel),p44PRoles:[{id:null,name:"بلا دور"}].concat(roles).map(x=>({t:x.name||"بلا اسم",on:(r.role||null)===x.id?"true":"false",pick:()=>setRec(p=>p.role=x.id)})),p44PEx:(r.ex||[]).map((x,i)=>({vis:this._p44Viewer()!=="mgr"||this._p44KeyCeil(did)(x.key),n:"+ "+this._p44Label(x.key),meta:"منحه "+byName(x.by)+" · "+(x.until?(live(x)?"ينتهي ":"انتهى ")+this._p44Day(x.until):"بلا تاريخ انتهاء"),live:live(x)?"true":"false",del:()=>setRec(p=>p.ex.splice(i,1))})).filter(x=>x.vis),p44PExNone:!(r.ex||[]).length,p44PNav:sel.mgr?[{n:"كل الأنظمة المفعّلة لإدارته",l:"كامل داخل السقف"}]:this._p44Menu(eff,rl,did,!0),p44ExAdd:()=>this._p44Set({exForm:{key:(exKeys[0]||{}).v||"",until:"",note:""}}),p44ExFormOn:!!ef,p44ExKeys:exKeys,p44ExNoKeys:!!ef&&!exKeys.length,p44ExKey:ef&&ef.key||"",p44ExUntil:ef&&ef.until||"",p44ExNote:ef&&ef.note||"",p44ExKeySet:ev=>this._p44Set(s=>({exForm:Object.assign({},s.exForm,{key:String(ev.target.value||"")})})),p44ExUntilSet:ev=>this._p44Set(s=>({exForm:Object.assign({},s.exForm,{until:String(ev.target.value||"")})})),p44ExNoteSet:ev=>this._p44Set(s=>({exForm:Object.assign({},s.exForm,{note:String(ev.target.value||"").slice(0,120)})})),p44ExCancel:()=>this._p44Set({exForm:null}),p44ExOk:()=>{const x=this.p44ExRec(ef,this._p44Try(()=>KIVO.BassamAuth.user().id,""),Date.now());if(!x.ok)return void this.bsToast(x.err,"warn");setRec(p=>p.ex.push(x.rec)),this._p44Set({exForm:null})}})},p44ExRec(ef,by,now){if(!ef||!ef.key)return{ok:!1,err:"اختر الفعل"};let until=null;if(ef.until){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ef.until);if(!m)return{ok:!1,err:"تاريخ الانتهاء غير صالح"};if(until=new Date(+m[1],+m[2]-1,+m[3],23,59,59).getTime(),until<=now)return{ok:!1,err:"تاريخ الانتهاء مضى — اختر يوماً قادماً"}}return{ok:!0,rec:{key:ef.key,until,by,at:now,note:ef.note||""}}},_p44Day(ms){try{return KIVO.BassamCal.hText(new Date(ms),{day:"numeric",month:"long"})}catch{return new Date(ms).toISOString().slice(0,10)}},_p44Seen(did){const on=this._p44Ceil(did),kon=this._p44KeyCeil(did);return c=>!!c&&!/^ceil\./.test(String(c.what||""))&&(!c.sys||on(c.sys))&&(!c.key||kon(c.key))},_p44LogVals(did){const S=this._p44S(),L=S.log&&S.log.did===did?S.log:null;L||(this.state={...this.state,p44:Object.assign({},S,{log:{did,st:"loading"}})},setTimeout(()=>this._p44LogLoad(did),0));const st=L?L.st:"loading",f=S.lf||"all",kindOf=e=>{const w=String(((e.changes||[])[0]||{}).what||"");return/^ceil\./.test(w)?"cap":w==="person"||w==="ex"?"person":"role"},TG={role:"دور",person:"شخص",cap:"سقف إدارة"},mgrV=this._p44Viewer()==="mgr",seen=this._p44Seen(did),items=(L&&L.items||[]).map(e=>mgrV?Object.assign({},e,{changes:(e.changes||[]).filter(seen)}):e).filter(e=>(!mgrV||kindOf(e)!=="cap"&&e.changes.length)&&(f==="all"||kindOf(e)===f));return{p44LogLoading:st==="loading",p44LogErr:st==="error",p44LogRetry:()=>this._p44Set({log:null}),p44LogEmpty:st==="ready"&&!items.length,p44LogFilters:[["all","الكل"],["role","الأدوار"],["person","الأشخاص"],["cap","سقوف الإدارات"]].filter(x=>!mgrV||x[0]!=="cap").map(x=>({t:x[1],on:x[0]===f?"true":"false",pick:()=>this._p44Set({lf:x[0]})})),p44LogItems:items.map(e=>{const k=kindOf(e),wid=e.who&&typeof e.who=="object"?e.who.uid:e.who,who=String(e.who&&e.who.name||this._p44Try(()=>this._p44Users().filter(u=>u.id===wid)[0].name,"")||wid||"—");return{who,i:who.charAt(0)||"؟",tag:TG[k],kind:k,ch:this.p44Rows(e.changes).map(c=>({sys:c.what,from:c.from,to:c.to})),when:e.at&&this.adFull?this._p44Try(()=>this.adFull(e.at),""):"",aff:(e.affected||[]).length?"يتأثر "+KIVO.BassamCount(e.affected.length,"شخص"):"لم يتأثر أحد",undoOn:!!(e.changes||[]).length&&!(k==="cap"&&this._p44Viewer()==="mgr"),undo:()=>this._p44Undo(did,e)}})}},async _p44LogLoad(did){let items=null;try{const r=await fetch("/api/perm44/log?d="+encodeURIComponent(did)+"&limit=50",{credentials:"same-origin",cache:"no-store"}),j=await r.json();if(!r.ok||(items=j&&j.ok===1&&Array.isArray(j.rows)?j.rows:null,!Array.isArray(items)))throw Error("bad")}catch{items=null}this._p44Set({log:{did,st:items?"ready":"error",items:items||[]}})},_p44Undo(did,ev){const ch=ev&&ev.changes||[],eq=(a,b)=>JSON.stringify(a??null)===JSON.stringify(b??null),drift=()=>this.bsToast("تغيّر هذا الموضع بعد ذلك — لا يمكن التراجع عنه تلقائياً","warn"),cl=ch.filter(c=>/^ceil\./.test(String(c.what||"")));if(cl.length&&cl.length===ch.length){const P=KIVO.BassamPerm;for(const c of cl){const u=c.unit||did;if(c.what==="ceil.caps"&&!eq(P.hasCap(u)?P.rawCap(u):null,c.to)||c.what==="ceil.lenses"&&!eq(this._p44Try(()=>P.deptLenses(u),null),c.to))return void drift()}let r2={ok:!0};for(const c of cl){const u=c.unit||did;if(c.what==="ceil.caps")r2=r2.ok&&P.setDeptCap(u,c.from||[])||r2;else if(c.what==="ceil.lenses")r2=r2.ok&&P.setDeptLenses(u,c.from||[])||r2;else if(c.what==="ceil.subs"){const F=c.from||{},T=c.to||{};Object.keys(Object.assign({},F,T)).forEach(k=>{if(!r2.ok||eq(F[k],T[k]))return;const tb=/^(.+):tabs$/.exec(k);r2=(tb?P.setDeptTabs&&P.setDeptTabs(u,tb[1],F[k]||[]):P.setDeptSubs(u,k,F[k]||[]))||r2})}}return r2&&r2.ok===!1?void this.bsToast(r2.err||"لم يُحفظ","err"):(this._p44Set({log:null}),void this.bsToast("أُعيد السقف كما كان قبل هذا التغيير","ok"))}const S=this._p44S(),d=S.d&&S.d.did===did?S.d:this._p44Ensure(did);if(!d)return void this.bsToast("افتح «الأدوار» مرةً لتحميلها ثم أعد التراجع","warn");if(this._p44Dirty(d))return void this.bsToast("في الأدوار تعديلٌ غير محفوظ — احفظه أو تراجع عنه أولاً","warn");const r=this._p44Try(()=>this._p44E().undo({v:1,roles:d.base.roles,people:d.base.people},ch.filter(c=>!/^ceil\./.test(String(c.what||"")))),null);if(!r)return void drift();this._p44Set(st=>({d:Object.assign({},st.d||d,{roles:r.roles,people:r.people}),rev:{open:1}})),this.go&&this.go(did,"roles",{force:!0})}});</script>
+</body>
+</html>
