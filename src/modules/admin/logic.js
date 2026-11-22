@@ -993,6 +993,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         bassam_seized_acts_v1: "إجراءات المضبوطات",
         bassam_seized_locs_v1: "مواقع المضبوطات",
         bassam_seized_jew_v1: "أنواع قطع المجوهرات",
+        bassam_rasd_v1: "نظام رصد الحالات",
+        bassam_rasd_opts_v1: "قوائم رصد الحالات",
         bassam_award_v1: "جائزة التميز",
         bassam_custody_v1: "العهد",
       }[s] || (KL ? KL.label(s) : "بيانات المنصة")) + (e ? " · " + this.adDept(e[1]) : "")
@@ -5627,6 +5629,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 bassam_award_v1: "ترشيحات جائزة التميز",
                 bassam_irshad_locs_v1: "مواقع نظام الاسترشاد",
                 bassam_irshad_langs_v1: "لغات نظام الاسترشاد",
+                bassam_rasd_v1: "سجلات نظام رصد الحالات",
+                bassam_rasd_opts_v1: "قوائم نظام رصد الحالات",
                 bassam_seized_v1: "محاضر نظام المضبوطات",
                 bassam_seized_cat_v1: "قائمة ممنوعات المضبوطات",
                 bassam_seized_acts_v1: "إجراءات المضبوطات",

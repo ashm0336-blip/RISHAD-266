@@ -15,6 +15,7 @@
 | `#/tasks` | المهام | `tasks` | `tasks` | P.can("tasks","view") ⇐ task.view | تحت «المتابعة اليومية» | — |
 | `#/irshad` | نظام الاسترشاد | `irshad` | `irshad` | P.can("irshad","view") ⇐ ir.dash.view، ir.rec.view، ref.irshad.language.view، ref.irshad.location.view | في القائمة · العنوانُ يحمل #/irshad/records | `dash` · `records` |
 | `#/seized` | نظام المضبوطات | `seized` | `seized` | P.can("seized","view") ⇐ ref.seized.action.view، ref.seized.category.view، ref.seized.item.view، ref.seized.kind.view، ref.seized.location.view، sz.dash.view … | في القائمة · العنوانُ يحمل #/seized/records | `dash` · `records` |
+| `#/rasd` | نظام رصد الحالات | `rasd` | `rasd` | P.can("rasd","view") ⇐ ref.rasd.list.view، rz.dash.view، rz.rec.view | في القائمة · العنوانُ يحمل #/rasd/records | `dash` · `records` |
 | `#/award` | جائزة التميز | `award` | `award` | P.can("award","view") ⇐ award.doc.view، award.new.view، award.res.view | في القائمة · العنوانُ يحمل التبويب #/award/<تبويب> | `new` · `res` · `doc` |
 | `#/links` | مواقع ذات صلة | `links` | `shell (src/layouts)` | ورقةُ الصفحة «links» (P.can("links","view")) — links.view | رابطٌ في التذييل/القائمة الثانوية | — |
 | `#/help` | المساعدة | `help` | `shell (src/layouts)` | ورقةُ الصفحة «help» (P.can("help","view")) — help.view | رابطٌ في التذييل/القائمة الثانوية | — |

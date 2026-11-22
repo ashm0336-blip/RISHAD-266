@@ -45,6 +45,9 @@ var RD_REG = {
   'bassam_seized_acts_v1':     ['seized/records', 'seized/dash'],
   'bassam_seized_locs_v1':     ['seized/records', 'seized/dash'],
   'bassam_seized_jew_v1':      ['seized/records', 'seized/dash'],
+  /* ── رصد الحالات ── */
+  'bassam_rasd_v1':            ['rasd/records', 'rasd/dash'],
+  'bassam_rasd_opts_v1':       ['rasd/records', 'rasd/dash'],
   /* ── جائزة التميز ── */
   'bassam_award_v1':           ['award/res', 'award/new', 'emps/data'],
   'bassam_award_docs_v1':      ['award/doc', 'award/res', 'award/new'],

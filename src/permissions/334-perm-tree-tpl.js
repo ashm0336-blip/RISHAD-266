@@ -73,6 +73,7 @@
     bassam_tasks_v1:'tasks', bassam_tasks_locks_v1:'tasks',
     bassam_irshad_v1:'irshad', bassam_irshad_langs_v1:'irshad', bassam_irshad_locs_v1:'irshad',
     bassam_seized_v1:'seized', bassam_seized_cat_v1:'seized', bassam_seized_acts_v1:'seized', bassam_seized_locs_v1:'seized', bassam_seized_jew_v1:'seized',
+    bassam_rasd_v1:'rasd', bassam_rasd_opts_v1:'rasd',
     bassam_award_v1:'award', bassam_award_docs_v1:'award', bassam_award_docs_v2:'award' };
   function keyCap(k){ var b = String(k || '').replace(/^bsdept:[^:]+:/, '').replace(/:.*$/, ''); return KEY_CAP[b] || ''; }
   function keyOn(k, did){ try { if ((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper())) return true; /* V7 · د1-ج: مدير المنصة بلا قيد */ var c = keyCap(k); return c ? onCap(c, did) : true; } catch (e) { return true; } }

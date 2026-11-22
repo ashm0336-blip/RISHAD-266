@@ -307,13 +307,17 @@ def gen_bindings(S):
 # وتبويبُ الغلاف الذي له نظامُه (shellTabs[].as = قسمٌ من أقسامها — العهد في صفحة الموظفين) نظامٌ مستقلٌّ بورقته. نصُّ المحرّك نفسُه في الملفين حرفاً.
 PERM44 = {'levels': 'perm44-levels.json', 'core': 'perm44-core.js', 'client': 'perm44-client.js', 'server': 'perm44-server.js',
           'out_client': 'permissions/345-perm44.js', 'out_server': '057b-perm44.js'}
-def perm44_systems(M):
+def perm44_systems(M, opt_in=()):
+    # V7 · د6: optIn — نظامٌ يعلن في system.json أنه «لا يفتحه السقفُ المفتوح؛ يُفعَّل صراحةً فقط»؛ القاعدةُ في 331 و021 تقرؤه من هذه القائمة وحدها
     pk = {p['key'] for p in M['pages']}; out = []
+    for k in opt_in:
+        if k not in pk or next(p for p in M['pages'] if p['key'] == k).get('activation') != 'toggle': raise SystemExit('optIn: «%s» ليس صفحةَ نظامٍ يُطفأ في pages.json' % k)
     for p in M['pages']:
         if p.get('activation') != 'toggle': continue
         subs = [x['key'] for x in (p.get('subs') or [])]; own = {t.get('as') for t in (p.get('shellTabs') or []) if t.get('as') in subs}
         leaves = [p['key']] + [p['key'] + '/' + x for x in subs if x not in own] + [p['key'] + '/' + x['key'] for x in (p.get('tabs') or [])]
         e = {'key': p['key'], 'name': p.get('name') or p['key'], 'leaves': leaves, 'toggle': not p.get('platLock'), 'plat': bool(p.get('platSwitch'))}
+        if p['key'] in opt_in: e['optIn'] = True
         if p.get('under') in pk: e['under'] = p['under']
         out.append(e)
         for x in (p.get('subs') or []):
@@ -323,7 +327,8 @@ def gen_perm44(S, produced):
     R = os.path.join(S, layout(S)['registry']); mrel = norm(layout(S)['pagesManifest'])
     M = json.loads(produced[mrel].decode('utf-8')) if mrel in produced else json.load(open(os.path.join(S, mrel), encoding='utf-8'))
     lv = json.load(open(os.path.join(R, PERM44['levels']), encoding='utf-8'))
-    data = {'v': lv['v'], 'levels': lv['levels'], 'names': lv['names'], 'systems': perm44_systems(M)}
+    opt_in = sorted(d['key'] for d in (json.load(open(f, encoding='utf-8')) for f in __import__('glob').glob(os.path.join(S, 'systems', '*', 'system.json'))) if d.get('optIn') is True)
+    data = {'v': lv['v'], 'levels': lv['levels'], 'names': lv['names'], 'systems': perm44_systems(M, opt_in)}
     dj = 'var KIVO_PERM44_DATA = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n'
     core = rd(os.path.join(R, PERM44['core']))
     head = ('/* ═══ V7 · د5-هـ (44) — محرّكُ الأدوار (%s): مولَّدٌ بأداة tools/generate.py من permissions/registry/perm44-levels.json (جدولُ المستويات) و\n'

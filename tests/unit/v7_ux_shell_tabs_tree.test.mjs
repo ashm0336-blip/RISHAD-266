@@ -16,14 +16,15 @@ const ROOT = new URL('../../', import.meta.url).pathname, read = (p) => fs.readF
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const canon = (v) => Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}' : JSON.stringify(v);
 const DEVELOP = {
-  pages: '5b61666d77701f2043360bc4a83d4db6408fece898b802c69e0ad54188857528',
+  /* V7 · د6 (رصد الحالات): البصماتُ الثلاث تُحدَّث بإضافة النظام — صفحتُه في pages.json · صفوفُه في السجلّ · سطرُه في PG_REG؛ لا تغييرَ غيرها */
+  pages: '02c8d8c7b02b9cc81d23d34a3b4d5b79f46f276873194b452480c480a8629462',
   /* V7 · د5-ح (القفل): السجلُّ وPG_REG بعد حذف ورقة «قوالب الصلاحيات» ومفاتيحِ tpl.* الخمسة (وحدها — v7_d5h_deleted_residue) */
-  registryJson: 'd7902f2507161e3a13be7ae811494fe671aab04abcec62e9d0944debf05e66d3',
-  registryBlock: 'c23c0f7a43edafd6f47d04d2b3299c7f3d31855dcdfef0f1af0e0abba60197c3',
-  serverPages: 'b1301f52ef6ade487c101cd90bdd431f67763a614e109556d426bf3e60785d34',
+  registryJson: '33728b5d14bf873258e13eab2a45bc09bd0008264e6e9f2b2b60fc7c6e659b1c',
+  registryBlock: '8ef92834583e829b4e0b8e8f78a662012a0be2e11dacaf117b1cc5f4e48f3bed',
+  serverPages: 'a4437bfe74d7424890b2a20e960f843f888d129a4627ae46aac252d8b9301f82',
 };
 
-test('pages.json without the display-only field is develop\'s pages.json; the field sits on one page and names a leaf that exists', needs('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
+test('pages.json without the display-only field is develop\'s pages.json; the field sits on one page and names a leaf that exists', needs('award', 'custody', 'dstats', 'rasd', 'seized', 'tasks'), () => {
   const M = JSON.parse(read('src/manifests/pages.json')), withField = M.pages.filter((p) => p.shellTabs);
   /* V7 · د5-ح: وحقلٌ على «الإعدادات» — تبويبُ «الصلاحيات» الذي ترسمه الصفحةُ لمدير الوحدة (when: unitMgr = KIVO.Perm44.unitMgr)، لا ورقةَ له في الشجرة */
   assert.deepEqual(withField.map((p) => p.key).sort(), ['admin', 'emps']);
@@ -46,15 +47,15 @@ test('pages.json without the display-only field is develop\'s pages.json; the fi
   assert.equal(sha(Buffer.from(canon(M))), DEVELOP.pages, 'every other value of pages.json is as on develop');
 });
 
-test('the permission registry is the pinned one: develop minus the five tpl.* keys (250 active keys)', needs('award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'), () => {
+test('the permission registry is the pinned one: develop minus the five tpl.* keys (250 active keys)', needs('award', 'custody', 'dstats', 'irshad', 'rasd', 'seized', 'tasks'), () => {
   assert.equal(sha(read('src/permissions/registry/registry-v24.9.json')), DEVELOP.registryJson);
   assert.equal(sha(read('src/permissions/340-registry-v24-9.js')), DEVELOP.registryBlock);
   const R = JSON.parse(read('src/permissions/registry/registry-v24.9.json'));
-  assert.equal(R.registry.filter((k) => k.status === 'active').length, 250); assert.equal(R.counts.securityActive, 250); assert.equal(R.registry.length, 264);
+  assert.equal(R.registry.filter((k) => k.status === 'active').length, 261); assert.equal(R.counts.securityActive, 261); assert.equal(R.registry.length, 276);   /* V7 · د6: + 11 مفتاحاً نشطاً لرصد الحالات و rz.rec.status المحجوز */
   assert.ok(!R.registry.some((k) => /^tpl\./.test(k.key)), 'tpl.* removed');
 });
 
-test('the server page structure (PG_REG) is develop\'s and does not carry the field', needs('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
+test('the server page structure (PG_REG) is develop\'s and does not carry the field', needs('award', 'custody', 'dstats', 'rasd', 'seized', 'tasks'), () => {
   const W = read('workers/_worker.js').toString('utf8'), m = /(?:const|var|let) PG_REG\s*=\s*(\[[\s\S]*?\]);\n/.exec(W);
   assert.ok(m, 'PG_REG found'); assert.equal(sha(Buffer.from(m[1])), DEVELOP.serverPages);
   assert.equal(W.includes('shellTabs'), false);

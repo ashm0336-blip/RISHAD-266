@@ -289,6 +289,7 @@ test('V7 nf-deny · record labels and pages cannot drift from the client (KIVO.B
   const SERVER_ONLY = {
     bassam_dstats_v1: 'الإحصائيات اليومية',                       /* its own domain (/api/dstats) — never listed in the client's key labels */
     bassam_irshad_retro_v1: 'نافذة استدراك الاسترشاد', bassam_seized_retro_v1: 'نافذة استدراك المضبوطات',   /* server-side state of /api/retro */
+    bassam_rasd_retro_v1: 'نافذة استدراك رصد الحالات',   /* V7 · د6: the same server-side retro state for rasd (srv resource) */
     /* review L3: registered keys the client has no label for (retired notification stores · a device key · a one-time flag) */
     bassam_notif_cfg_v1: 'إعدادات التنبيهات (سجل قديم)', bassam_notif_sys_v1: 'تنبيهات المنصة (سجل قديم)', bassam_bc_v1: 'التعاميم (سجل قديم)',
     bassam_notif_v1: 'تنبيهات الإدارة (سجل قديم)', bslg_v1: 'عدّاد محاولات الدخول على الجهاز',

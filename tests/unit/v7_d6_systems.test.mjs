@@ -277,6 +277,6 @@ test('ب11 · ج7 — leaving the page (the shell asks canLeave({leave:true})): 
 
 /* ═══ ب13 ═══ */
 test('ب13 · the «مراجعة وحفظ» bar is fixed at the bottom under 1024px with 44px targets', () => {
-  const m = /@media \(max-width:1023px\)\{\n  \.og \.p44-bar\{position:fixed;inset-inline:0;bottom:0;[^}]*\}\n  \.og\.og\.og \.p44-bar button\{min-height:44px;min-width:44px\}/.exec(ORG_CSS);
+  const m = /@media not all and \(min-width:1024px\)\{\n  \.og \.p44-bar\{position:fixed;inset-inline:0;bottom:0;[^}]*\}\n  \.og\.og\.og \.p44-bar button\{min-height:44px;min-width:44px\}/.exec(ORG_CSS);
   assert.ok(m, 'the narrow rule');
 });

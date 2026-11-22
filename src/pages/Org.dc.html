@@ -133,7 +133,7 @@
 .og [data-org-tab]:empty{display:none}
 /* ═══ ب13 · العرض الضيّق: عمودٌ واحد · زرُّ الوحدة يفتح الشجرة لوحةً من الأسفل · أهدافُ اللمس 44px ═══ */
 /* V7 · د6 (قرار المالك): العمودان من 1024 فما فوق (التابلت الأفقي عمودان) — ما دون 1024 عمودٌ واحد والشجرةُ لوحةٌ من الأسفل */
-@media (max-width:1023px){
+@media not all and (min-width:1024px){
   .og-grid{grid-template-columns:minmax(0,1fr)}
   .og-ub{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;margin-bottom:10px;padding:8px 14px;border:1px solid var(--border-brand);border-radius:14px;background:var(--bg-card);color:var(--text-primary);text-align:start;cursor:pointer;box-shadow:var(--shadow-card)}
   .og-ub-t{flex:1;min-width:0;display:flex;flex-direction:column}.og-ub-t b{font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.og-ub-t small{font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -152,7 +152,7 @@
   .og-hint{display:none}
 }
 /* أهدافُ اللمس 44px: في العمود الواحد، وعلى كل شاشة لمسٍ أو قلم (التابلت الأفقي بعمودين) */
-@media (max-width:1023px),(pointer:coarse){
+@media not all and (min-width:1024px),(pointer:coarse){
   /* V7 · د6 (ب13): .og.og.og — أعلى من قاعدتَي اللمس العامتين (pointer:coarse ⇒ أزرارُ صفحة الإعدادات المضيفة وحقولُ main بـ min-height:32px) فتبقى أهدافُ الشاشة 44px */
   .og.og.og .og-b,.og.og.og .og-l,.og.og.og .og-q,.og.og.og .og-flt button,.og-tab,.og.og.og .og-radio button,.og.og.og .og-dlg .fl input,.og.og.og .og-dlg .fl select,.og.og.og .og-dlg .ft button{min-height:44px}
   .og-rw{min-height:48px}
@@ -281,12 +281,12 @@
 .og-bulk-rows>li{padding:8px 10px;border:1px solid var(--border-subtle);border-radius:10px;background:var(--bg-surface);font-size:12px;line-height:1.8}
 .og-tag{display:inline-block;padding:0 8px;border-radius:999px;background:var(--bg-muted,var(--bg-surface));border:1px solid var(--border-default);font-size:11px;font-weight:700}.og-tag--skip{color:var(--warning-text);background:var(--warning-bg);border-color:var(--warning-border)}
 /* ب13 · م5: «مراجعة وحفظ» ثابتٌ أسفل الشاشة دون 1024 — وأهدافُه 44px؛ والمحتوى لا يختفي تحته */
-@media (max-width:1023px){
+@media not all and (min-width:1024px){
   .og .p44-bar{position:fixed;inset-inline:0;bottom:0;z-index:calc(var(--z-modal) - 1);border-radius:14px 14px 0 0;padding:8px 14px calc(8px + env(safe-area-inset-bottom,0px))}
   .og.og.og .p44-bar button{min-height:44px;min-width:44px}
   .og .p44:has(.p44-bar){padding-bottom:96px}
 }
-@media (max-width:1023px),(pointer:coarse){
+@media not all and (min-width:1024px),(pointer:coarse){
   .og.og.og .og-pk,.og.og.og .p44-all .p44-b{min-height:44px}
   .og.og.og .p44-src{display:inline-flex;align-items:center;min-height:44px}
 }

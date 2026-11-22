@@ -1,0 +1,38 @@
+{
+ "name": "Rasd",
+ "slug": "rasd",
+ "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
+ "mid": "\n</helmet>\n",
+ "mid2": "\n</x-dc>\n",
+ "scriptTag": "<script type=\"text/x-dc\" data-dc-script data-props=\"{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}\">",
+ "post": "</script>\n</body>\n</html>\n",
+ "minifiedSource": true,
+ "prettified": true,
+ "charter": {
+  "owner": "مدير الإدارة · الراصدون الميدانيون",
+  "purpose": "نظامُ رصد الحالات: محضرٌ ميداني يومي بالمنطقة والموقع ونوع الحالة وتأثيرها والإجراء المتخذ والجهة المبلَّغة",
+  "page": "rasd",
+  "routes": [
+   "#/rasd"
+  ],
+  "ui": [
+   "src/systems/rasd/client/view.html",
+   "src/systems/rasd/client/helmet.css"
+  ],
+  "domain": "src/systems/rasd/client/logic.js",
+  "data": [
+   "bassam_dayshift_v1",
+   "bassam_employees_v1",
+   "bassam_rasd_opts_v1",
+   "bassam_rasd_v1",
+   "bassam_shift_options_v1"
+  ],
+  "permissions": [
+   "rasd/dash",
+   "rasd/records"
+  ],
+  "tests": [
+   "src/systems/rasd/tests/rasd_logic.test.mjs"
+  ]
+ }
+}

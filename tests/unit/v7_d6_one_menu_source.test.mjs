@@ -11,6 +11,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { needs } from './harness.mjs';
+import fs from 'node:fs';
+/* V7 · د6: «رصد الحالات» في القائمة كاملةً بحضوره (allOn يشغّله) */
+const KIVO_RASD = fs.existsSync(new URL('../../src/systems/rasd/system.json', import.meta.url)) ? ['rasd'] : [];
 import { holdersWorld, clientOf, permViews, applyState, seedRoles, namesOf, STATES, OFF_ONE, OFF_PLAT, ROLE_DOC, ACC, A, B, A_S1, E_ROLE, E_NONE, E_EX } from './v7_d6_holders_fx.mjs';
 import { assertOneSource } from '../support/one_menu.mjs';
 
@@ -77,7 +80,7 @@ test('V7 · د6 · أ1 — one source for «what a holder sees»: sidebar · man
       /* ── القواعد ── */
       for (const who of Object.keys(out)) for (const k of out[who]) assert.ok(su.ev('KIVO.BassamPerm.menuFor().map(function (x) { return x.k; })').concat(['profile']).includes(k), L + who + ': only menu keys');
       if (st === 'allOn') {
-        for (const who of ['suOut', 'suIn', 'gm', 'dept', 'mgr', 'sec']) assert.deepEqual(out[who], ['profile', 'kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award', 'links', 'help', 'admin'], L + who + ' sees the whole menu');
+        for (const who of ['suOut', 'suIn', 'gm', 'dept', 'mgr', 'sec']) assert.deepEqual(out[who], ['profile', 'kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized'].concat(KIVO_RASD, ['award', 'links', 'help', 'admin']), L + who + ' sees the whole menu');
         assert.deepEqual(out.role, ['profile', 'kpis', 'dstats', 'planning', 'daily', 'irshad', 'links'], L + 'the role opens its systems (container for a child · KPIs for a drawn panel)');
         /* مستوى الدور يبقى ظاهراً بجانب رابطه: النظامُ الذي يسكن حاويةً باسمه (أ6 — لا يسقط ما كان معروضاً) */
         const rows = V.roleRows(ROLE_DOC, A), lv = (n) => (rows.find((x) => x.n === n) || {}).l;

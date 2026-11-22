@@ -3,7 +3,7 @@
  "docSha256": "6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde",
  "phase": 4.1,
  "mode": "shadow",
- "toBind": 70,
+ "toBind": 71,
  "shadowOnly": [
   {
    "key": "backup.restore",
@@ -760,6 +760,18 @@
    "guardKind": "cap"
   },
   {
+   "key": "rz.rec.bulk.delete",
+   "res": "bassam_rasd_v1",
+   "where": "زوالُ ≥2 حالةٍ من reports[] في كتابةٍ واحدة",
+   "how": "عدُّ الحالات الزائلة",
+   "asis": "rasd/records:del",
+   "decl": "العتبة: 2+ = جماعي",
+   "dup": "",
+   "owner": "rasd/records",
+   "type": "operation",
+   "guardKind": "cap"
+  },
+  {
    "key": "award.doc.reset",
    "res": "bassam_award_docs_v2",
    "where": "استبدالُ مجموعةٍ كاملة (A|B|C): title+lead+foot+secs تتغيّر معاً أو يتغيّر طولُ secs مع ≥½ أقسامها",
@@ -985,16 +997,16 @@
   }
  ],
  "counts": {
-  "bindings": 70,
-  "toBind": 70,
+  "bindings": 71,
+  "toBind": 71,
   "unbound": 0,
   "unknownKeys": 0,
   "reservedEmitted": 0,
   "shadowOnly": 2,
   "duplicatesJustified": 2,
   "duplicatesUnjustified": 0,
-  "emittedKeys": 118,
-  "coveredResources": 18,
+  "emittedKeys": 122,
+  "coveredResources": 19,
   "decisions": 19
  }
 }

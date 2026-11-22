@@ -344,7 +344,7 @@ var KIVO_SCOPE = (function (S, R) {
   /* ═══ الفاعل ═══ */
   function isCeiling(actor) { if (!actor) return false; var r = actor.role; return r === 'super' || r === 'dept' || r === 'gm' || !!actor.mgr || String(actor.ekey || '').slice(0, 4) === 'mgr:'; }
   function heldFor(ctx, key) { return !!(ctx && ctx.held && ctx.held[key]); }
-  function RETRO_SYS(res) { return res === 'bassam_irshad_v1' ? 'irshad' : (res === 'bassam_seized_v1' ? 'seized' : ''); }
+  function RETRO_SYS(res) { return res === 'bassam_irshad_v1' ? 'irshad' : (res === 'bassam_seized_v1' ? 'seized' : res === 'bassam_rasd_v1' ? 'rasd' : ''); }
   /* ═══ مقيّمو الأبعاد: fn(item, key, ctx, res) → نتيجة ═══ */
   var D = {};
   D['Department'] = function (item, key, ctx) {

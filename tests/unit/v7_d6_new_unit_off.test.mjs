@@ -9,6 +9,7 @@
    الاستيرادُ والاستعادة: tests/unit/v7_d6_new_unit_restore.test.mjs. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { needs } from './harness.mjs';
 import { stored } from './world_fx.mjs';
 import { holdersWorld, clientOf, applyState, addHolder, offRecord, KP, T, S, G, A, B, A_S1, NO, OP, OFF_PLAT } from './v7_d6_holders_fx.mjs';
@@ -16,6 +17,10 @@ import { holdersWorld, clientOf, applyState, addHolder, offRecord, KP, T, S, G, 
 const SYS = ['tasks', 'staff', 'irshad', 'daily', 'award', 'custody', 'dstats'];
 const OFF = offRecord(), PERMANENT = ['profile', 'emps', 'admin'];
 const FULL = ['profile', 'kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award', 'links', 'help', 'admin'];
+/* V7 · د6 (رصد الحالات · قرار المالك): نظامٌ أعلن optIn في system.json لا يدخل السقفَ المفتوح (وحدةٌ بلا سجلّ هي وأصولُها) — فـFULL قائمةُ الوحدة المفتوحة كما كانت،
+   وFULL_ON قائمةُ وحدةٍ سجلُّها (أو سجلُّ أصلها) يحمل كلَّ الصفحات */
+const OPEN_OFF = fs.existsSync(new URL('../../src/systems/rasd/system.json', import.meta.url)) ? ['rasd'] : [];
+const FULL_ON = FULL.flatMap((k) => (k === 'seized' ? [k].concat(OPEN_OFF) : [k]));
 const J = (x) => JSON.parse(JSON.stringify(x));
 const others = (pm, ids) => { const o = J(pm); for (const m of ['caps', 'subs', 'lenses', 'capOwn', 'capSeed', 'emps', 'empLens', 'tplOf']) for (const id of ids) if (o[m]) delete o[m][id]; for (const m of ['subs', 'lenses', 'capOwn', 'capSeed']) if (o[m] && !Object.keys(o[m]).length) delete o[m]; return o; };
 /* ينشئ من واجهة مدير المنصة الحقيقية ثم يحفظ عبر العامل؛ يعيد جوابَ الإنشاء */
@@ -107,7 +112,7 @@ test('V7 · د6 · ب4 — «نفس أنظمة العقدة الأب»: the pare
   assert.deepEqual(pm.caps[r.id], OFF.all.filter((k) => k !== 'dstats'), 'the parent\'s pages'); assert.deepEqual(pm.subs[r.id], { emps: ['data'] }, '… and its OFF section-system');
   assert.deepEqual(pm.capSeed[r.id], { seed: 'parent', caps: OFF.all.filter((k) => k !== 'dstats'), subs: { emps: ['data'] } }, 'marked as a seeded record');
   await addHolder(W, 'pm', r.id, true);
-  assert.deepEqual(await seenBy(W, 'pm', r.id), FULL.filter((k) => k !== 'dstats'), 'its manager sees what a manager of the parent\'s systems sees');
+  assert.deepEqual(await seenBy(W, 'pm', r.id), FULL_ON.filter((k) => k !== 'dstats'), 'its manager sees what a manager of the parent\'s systems sees');
   assert.deepEqual((await srvOn(W, r.id)).slice().sort(), (await srvOn(W, G)).slice().sort(), 'server: the same systems ON as in the parent');
   assert.deepEqual((await heldSystems(W, 'pm', r.id)).slice().sort(), OFF.systems.filter((k) => k !== 'dstats' && k !== 'custody').sort(), 'server keys: every system but the two OFF in the parent');
   /* لقطة: توسيعُ الأب لاحقاً لا يوسّع الابن من تلقاء نفسه */
@@ -117,7 +122,7 @@ test('V7 · د6 · ب4 — «نفس أنظمة العقدة الأب»: the pare
   /* الأبُ المفتوح بلا سجلّ ⇒ كلُّ المفعّل على المنصة — وإطفاءُ المنصة يسري عليه */
   const o = await create(W, (c) => c.K.BassamDepts.unitAdd({ name: T + 'إدارة تحت مفتوح', kind: 'إدارة', pid: NO, seed: 'parent' }));
   pm = stored(W.env, KP);
-  assert.deepEqual(pm.caps[o.id], OFF.all, 'open parent: a record with every page'); assert.equal(pm.subs && pm.subs[o.id], undefined, 'nothing OFF ⇒ no sections record');
+  assert.deepEqual(pm.caps[o.id], OFF.all.filter((k) => !OPEN_OFF.includes(k)), 'open parent: a record with every page (V7 · د6: but a system declared optIn, OFF in the open parent itself)'); assert.equal(pm.subs && pm.subs[o.id], undefined, 'nothing OFF ⇒ no sections record');
   assert.equal(Object.prototype.hasOwnProperty.call(pm.caps, NO), false, 'the open parent itself gets no record'); assert.equal(Object.prototype.hasOwnProperty.call(pm.caps, OP), false);
   await addHolder(W, 'om', o.id, true);
   assert.deepEqual(await seenBy(W, 'om', o.id), FULL, 'everything that is ON on the platform');
@@ -151,8 +156,8 @@ test('V7 · د6 · ب4 — a new section: the same choice and the same default (
   await addHolder(W, 'sm1', s1.id, true); await addHolder(W, 'sm2', s2.id, true);
   assert.deepEqual(await seenBy(W, 'sm1', s1.id), PERMANENT, 'the new section\'s manager: the permanent pages alone');
   assert.deepEqual(await heldSystems(W, 'sm1', s1.id), [], 'server keys: nothing of a switchable system');
-  assert.deepEqual(await seenBy(W, 'sm2', s2.id), FULL.filter((k) => k !== 'dstats'));
-  assert.deepEqual(await seenBy(W, 'sec', A_S1), FULL.filter((k) => k !== 'dstats'), 'the existing section is as it was');
+  assert.deepEqual(await seenBy(W, 'sm2', s2.id), FULL_ON.filter((k) => k !== 'dstats'));
+  assert.deepEqual(await seenBy(W, 'sec', A_S1), FULL_ON.filter((k) => k !== 'dstats'), 'the existing section is as it was');
   /* قواعدُ القسم القائمة */
   const bad = await create(W, (c) => [c.K.BassamDepts.sectionAdd({ name: T + 'قسم في الجذر', deptId: '' }), c.K.BassamDepts.sectionAdd({ name: T + 'قسم تحت قسم', deptId: A_S1 }), c.K.BassamDepts.sectionAdd({ name: T + 'قسم جديد', deptId: A })]);
   assert.deepEqual(bad.map((x) => x.ok), [false, false, false]);

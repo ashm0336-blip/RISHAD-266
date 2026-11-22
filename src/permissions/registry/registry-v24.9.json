@@ -2894,6 +2894,261 @@
    "reservedReason": null
   },
   {
+   "key": "rz.dash.view",
+   "owner": "rasd/dash",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "عرض لوحة المؤشرات",
+   "type": "access",
+   "sensitive": false,
+   "guard": {
+    "kind": "read",
+    "resources": [
+     "bassam_rasd_v1",
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "قراءة bassam_rasd_v1, bassam_rasd_opts_v1 بورقة rasd/dash (RD_REG/DS_READ)",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "none",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/dash:view"
+   ],
+   "references": [
+    "kpis"
+   ],
+   "uiOnly": false,
+   "v23": [
+    "rz.dash.view"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
+   "key": "rz.rec.view",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "عرض السجلات",
+   "type": "view",
+   "sensitive": false,
+   "guard": {
+    "kind": "read",
+    "resources": [
+     "bassam_rasd_v1",
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "قراءة bassam_rasd_v1, bassam_rasd_opts_v1 بورقة rasd/records (RD_REG/DS_READ)",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "none",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:view"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "rz.rec.view"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
+   "key": "rz.rec.create",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "إضافة سجل",
+   "type": "create",
+   "sensitive": false,
+   "guard": {
+    "kind": "cap",
+    "resources": [
+     "bassam_rasd_v1",
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "bassam_rasd_v1 (add)",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "diff",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:add"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "rz.rec.add"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
+   "key": "rz.rec.edit",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "تعديل سجل",
+   "type": "edit",
+   "sensitive": false,
+   "guard": {
+    "kind": "cap",
+    "resources": [
+     "bassam_rasd_v1",
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "bassam_rasd_v1 (edit)",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "diff",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:edit"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "rz.rec.edit"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
+   "key": "rz.rec.status",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "تغيير الحالة",
+   "type": "edit",
+   "sensitive": false,
+   "guard": {
+    "kind": "none",
+    "resources": [],
+    "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): «حالة الحالة» رفضها صاحب المنصة (18 نوفمبر) و«الإجراء المتخذ» يغطّيها",
+    "status": "reserved"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "diff",
+    "reason": false
+   },
+   "grant": "none",
+   "status": "reserved",
+   "asisMap": [],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "rz.rec.status"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": "«حالة الحالة» مرفوضة بقرار صاحب المنصة (18 نوفمبر) — «الإجراء المتخذ» يغطّيها"
+  },
+  {
+   "key": "rz.rec.delete",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "حذف سجل",
+   "type": "delete",
+   "sensitive": true,
+   "guard": {
+    "kind": "cap",
+    "resources": [
+     "bassam_rasd_v1",
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "bassam_rasd_v1 (del)",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "line",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:del"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "rz.rec.delete"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
    "key": "award.new.view",
    "owner": "award/new",
    "ownerKind": "page",
@@ -9020,6 +9275,217 @@
    "reservedReason": null
   },
   {
+   "key": "ref.rasd.list.view",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "عرض قوائم رصد الحالات",
+   "type": "view",
+   "sensitive": false,
+   "guard": {
+    "kind": "read",
+    "resources": [
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "قراءة القائمة المرجعية bassam_rasd_opts_v1 بورقة المالك (RD)",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "none",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:view"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "ref.rasd.list.view"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
+   "key": "ref.rasd.list.create",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "إضافة بند إلى قوائم رصد الحالات",
+   "type": "create",
+   "sensitive": false,
+   "guard": {
+    "kind": "cap",
+    "resources": [
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "إضافة قيمة في bassam_rasd_opts_v1 → zone[] · floor[] · type[] · act[] · party[] · spot[] (rename cascade إلى السجلات)",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "diff",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:add"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "ref.rasd.list.add"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
+   "key": "ref.rasd.list.edit",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "تعديل بند في قوائم رصد الحالات",
+   "type": "edit",
+   "sensitive": false,
+   "guard": {
+    "kind": "cap",
+    "resources": [
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "تعديل/إعادة تسمية قيمة في bassam_rasd_opts_v1 → zone[] · floor[] · type[] · act[] · party[] · spot[] (rename cascade إلى السجلات)",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "diff",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:edit"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "ref.rasd.list.edit"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
+   "key": "ref.rasd.list.delete",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "حذف بند من قوائم رصد الحالات",
+   "type": "delete",
+   "sensitive": true,
+   "guard": {
+    "kind": "cap",
+    "resources": [
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "حذف قيمة في bassam_rasd_opts_v1 → zone[] · floor[] · type[] · act[] · party[] · spot[] (rename cascade إلى السجلات)",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "line",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:del"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "ref.rasd.list.delete"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
+   "key": "rz.rec.bulk.delete",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "حذف جميع تقارير رصد الحالات للشهر",
+   "type": "operation",
+   "sensitive": true,
+   "guard": {
+    "kind": "cap",
+    "resources": [
+     "bassam_rasd_v1",
+     "bassam_rasd_opts_v1"
+    ],
+    "detail": "bassam_rasd_v1: حذف حالاتٍ متعدّدة في كتابةٍ واحدة (شكل جماعي)",
+    "status": "to-bind"
+   },
+   "scopeDims": [
+    "Department",
+    "Branch",
+    "DateRange",
+    "Shift",
+    "Site"
+   ],
+   "audit": {
+    "record": "line",
+    "reason": true
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:del"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "rz.rec.month.delete"
+   ],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
    "key": "award.doc.reset",
    "owner": "award/doc",
    "ownerKind": "page",
@@ -9449,6 +9915,45 @@
    "references": [],
    "uiOnly": false,
    "v23": [],
+   "mergedFrom": [],
+   "splitFrom": null,
+   "managedIn": null,
+   "reservedReason": null
+  },
+  {
+   "key": "rz.rec.retro.open",
+   "owner": "rasd/records",
+   "ownerKind": "page",
+   "domain": "rasd",
+   "label": "فتح شهر/يوم مقفل للاستدراك",
+   "type": "decision",
+   "sensitive": true,
+   "guard": {
+    "kind": "rule-new",
+    "resources": [
+     "bassam_rasd_v1"
+    ],
+    "detail": "قاعدة قفل زمني خادمية (الآلية القائمة D3‑01/D3‑02/D3‑07): فتحُ نافذة الاستدراك وإغلاقُها عبر /api/retro = super OR rz.rec.retro.open (⇐ rasd/records:approve) بنطاق Department + DateRange، بسببٍ وتدقيق؛ أيُّ كتابةٍ على حالةٍ في فترةٍ مغلقة تحتاج نافذةً ساريةً تغطّيها",
+    "status": "exists"
+   },
+   "scopeDims": [
+    "Department",
+    "DateRange"
+   ],
+   "audit": {
+    "record": "line",
+    "reason": false
+   },
+   "grant": "assignable",
+   "status": "active",
+   "asisMap": [
+    "rasd/records:approve"
+   ],
+   "references": [],
+   "uiOnly": false,
+   "v23": [
+    "rz.rec.retro.open"
+   ],
    "mergedFrom": [],
    "splitFrom": null,
    "managedIn": null,
@@ -11162,6 +11667,22 @@
    "resource": null
   },
   {
+   "id": "rasd/dash",
+   "kind": "page",
+   "label": "لوحة مؤشرات رصد الحالات",
+   "manifest": "page",
+   "managedIn": null,
+   "resource": null
+  },
+  {
+   "id": "rasd/records",
+   "kind": "page",
+   "label": "سجلات رصد الحالات",
+   "manifest": "page",
+   "managedIn": null,
+   "resource": null
+  },
+  {
    "id": "award/new",
    "kind": "page",
    "label": "ترشيح جديد",
@@ -12477,6 +12998,99 @@
    ]
   },
   {
+   "leaf": "rasd/dash",
+   "act": "view",
+   "disposition": "migrated",
+   "targets": [
+    "rz.dash.view"
+   ]
+  },
+  {
+   "leaf": "rasd/dash",
+   "act": "add",
+   "disposition": "obsolete",
+   "targets": []
+  },
+  {
+   "leaf": "rasd/dash",
+   "act": "edit",
+   "disposition": "obsolete",
+   "targets": []
+  },
+  {
+   "leaf": "rasd/dash",
+   "act": "del",
+   "disposition": "obsolete",
+   "targets": []
+  },
+  {
+   "leaf": "rasd/dash",
+   "act": "approve",
+   "disposition": "obsolete",
+   "targets": []
+  },
+  {
+   "leaf": "rasd/dash",
+   "act": "export",
+   "disposition": "converted_to_feature",
+   "targets": [
+    "ff.rz.dash.export"
+   ]
+  },
+  {
+   "leaf": "rasd/records",
+   "act": "view",
+   "disposition": "migrated",
+   "targets": [
+    "rz.rec.view",
+    "ref.rasd.list.view"
+   ]
+  },
+  {
+   "leaf": "rasd/records",
+   "act": "add",
+   "disposition": "migrated",
+   "targets": [
+    "rz.rec.create",
+    "ref.rasd.list.create"
+   ]
+  },
+  {
+   "leaf": "rasd/records",
+   "act": "edit",
+   "disposition": "migrated",
+   "targets": [
+    "rz.rec.edit",
+    "ref.rasd.list.edit"
+   ]
+  },
+  {
+   "leaf": "rasd/records",
+   "act": "del",
+   "disposition": "migrated",
+   "targets": [
+    "rz.rec.delete",
+    "rz.rec.bulk.delete",
+    "ref.rasd.list.delete"
+   ]
+  },
+  {
+   "leaf": "rasd/records",
+   "act": "approve",
+   "disposition": "migrated",
+   "targets": [
+    "rz.rec.retro.open"
+   ]
+  },
+  {
+   "leaf": "rasd/records",
+   "act": "export",
+   "disposition": "converted_to_feature",
+   "targets": [
+    "ff.rz.rec.export"
+   ]
+  },
+  {
    "leaf": "award/new",
    "act": "view",
    "disposition": "migrated",
@@ -12877,6 +13491,8 @@
   "ff.ir.rec.export",
   "ff.sz.dash.export",
   "ff.sz.rec.export",
+  "ff.rz.dash.export",
+  "ff.rz.rec.export",
   "ff.award.res.export",
   "ff.backup.download",
   "ff.backup.upload",
@@ -12909,6 +13525,7 @@
   "ff.module.tasks.enabled",
   "ff.module.irshad.enabled",
   "ff.module.seized.enabled",
+  "ff.module.rasd.enabled",
   "ff.module.award.enabled",
   "ff.module.admin.enabled",
   "ff.module.links.enabled",
@@ -12916,27 +13533,27 @@
   "ff.module.kpis.enabled"
  ],
  "counts": {
-  "securityActive": 250,
-  "assignable": 226,
+  "securityActive": 261,
+  "assignable": 237,
   "roleOrSelf": 24,
-  "reserved": 14,
-  "reference": 64,
+  "reserved": 15,
+  "reference": 68,
   "referenceOwned": 4,
   "plugin": 50,
-  "pageOwned": 172,
+  "pageOwned": 183,
   "platform": 24,
-  "owners": 43,
+  "owners": 45,
   "ownersByKind": {
-   "page": 28,
+   "page": 30,
    "platform": 8,
    "lens": 6,
    "reference": 1
   },
-  "atoms": 186,
-  "references": 79,
+  "atoms": 198,
+  "references": 80,
   "guards": {
-   "exists": 170,
-   "toBind": 70,
+   "exists": 180,
+   "toBind": 71,
    "toBuild": 10
   }
  }

@@ -14,6 +14,7 @@ var ENF_UNCOV = (function () {
     'bassam_irshad_langs_v1': crud('ref.irshad.language'), 'bassam_irshad_locs_v1': crud('ref.irshad.location'),
     'bassam_seized_cat_v1': join(crud('ref.seized.category'), crud('ref.seized.item')), 'bassam_seized_acts_v1': crud('ref.seized.action'),
     'bassam_seized_locs_v1': crud('ref.seized.location'), 'bassam_seized_jew_v1': crud('ref.seized.kind'),
+    'bassam_rasd_opts_v1': crud('ref.rasd.list'),
     'bassam_leave_kinds_v1': crud('ref.leave_type'), 'bassam_callsigns_v1': crud('ref.callsign'),
     'bassam_award_docs_v1': crud('award.doc'),
     'bassam_perm_limit_v1': all(['staff.permission_limit.set']),

@@ -241,6 +241,26 @@
    ]
   },
   {
+   "key": "rasd",
+   "module": "rasd",
+   "activation": "toggle",
+   "platSwitch": true,
+   "departmentComponents": ["Rasd"],
+   "nav": "rasd",
+   "name": "نظام رصد الحالات",
+   "subs": [
+    {
+     "key": "dash",
+     "name": "لوحة المؤشرات",
+     "offPage": true
+    },
+    {
+     "key": "records",
+     "name": "السجلات"
+    }
+   ]
+  },
+  {
    "key": "award",
    "module": "award",
    "activation": "toggle",
@@ -321,6 +341,7 @@
     "daily/kpiZones",
     "seized/dash",
     "irshad/dash",
+    "rasd/dash",
     "tasks",
     "dstats/anHaram",
     "dstats/anNabawi",
@@ -334,6 +355,7 @@
     "daily/kpiZones": "مؤشرات المصليات",
     "seized/dash": "لوحة مؤشرات المضبوطات",
     "irshad/dash": "لوحة مؤشرات الاسترشاد",
+    "rasd/dash": "لوحة مؤشرات رصد الحالات",
     "tasks": "مؤشرات المهام",
     "dstats/anHaram": "تحليل المسجد الحرام",
     "dstats/anNabawi": "تحليل المسجد النبوي",
@@ -361,6 +383,9 @@
   },
   "seized": {
    "records": 1
+  },
+  "rasd": {
+   "records": 1
   }
  },
  "navOrder": [
@@ -371,6 +396,7 @@
   "daily",
   "irshad",
   "seized",
+  "rasd",
   "award"
  ],
  "navNames": {
@@ -381,6 +407,7 @@
   "daily": "المتابعة اليومية",
   "irshad": "نظام الاسترشاد",
   "seized": "نظام المضبوطات",
+  "rasd": "نظام رصد الحالات",
   "award": "جائزة التميز"
  },
  "routeNames": {
@@ -395,6 +422,7 @@
   "tasks": "المهام",
   "irshad": "نظام الاسترشاد",
   "seized": "نظام المضبوطات",
+  "rasd": "نظام رصد الحالات",
   "award": "جائزة التميز",
   "links": "مواقع ذات صلة",
   "help": "المساعدة",

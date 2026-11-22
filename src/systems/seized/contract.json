@@ -11,7 +11,11 @@
   "bassam_seized_locs_v1",
   "bassam_seized_retro_v1"
  ],
- "provides": {},
+ "provides": {
+  "read": {
+   "seized.usable@1": "() ← هل نظامُ المضبوطات مفعَّلٌ في الإدارة النشطة (ورقتُه في سقفها) — لصفحاتٍ تُظهر أو تُخفي ما يخصّه (client/549-seized-links.js)"
+  }
+ },
  "consumes": {
   "key:bassam_dayshift_v1": {
    "absent": "موردُ قاعدةٍ حاضرٌ دائماً",

@@ -31,6 +31,7 @@
 | plan (Operational Plan) | 58 | 10 | 113 | 0 | 4 |
 | planning (Planning) | 0 | 0 | 7 | 0 | 0 |
 | profile (Profile) | 31 | 18 | 107 | 0 | 11 |
+| rasd (Rasd) | 16 | 1 | 36 | 0 | 2 |
 | seized (Seized) | 20 | 1 | 28 | 0 | 4 |
 | staff (Staffing) | 14 | 0 | 46 | 0 | 1 |
 | tasks (Tasks) | 38 | 11 | 87 | 0 | 8 |

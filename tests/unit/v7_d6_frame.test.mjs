@@ -501,11 +501,11 @@ test('ب12 entry · the manager\'s «الإعدادات ← الصلاحيات»
 test('ب13 skeleton · narrow width: one column, the unit button opens the tree as a bottom sheet, a scrollable tab strip, 44px targets, dialogs fill the width', () => {
   /* قرارُ المالك: العمودان من 1024 فما فوق — ما دون 1024 عمودٌ واحد؛ من 1024 إلى 1280 الشجرةُ أضيق؛ وأهدافُ اللمس 44px في العمود الواحد وعلى كل شاشة لمس */
   assert.doesNotMatch(ORG_CSS, /@media \(max-width:1280px\)\{/, 'the old 1280 single-column breakpoint is gone');
-  const narrow = ORG_CSS.slice(ORG_CSS.indexOf('@media (max-width:1023px){'));
+  const narrow = ORG_CSS.slice(ORG_CSS.indexOf('@media not all and (min-width:1024px){'));
   assert.ok(narrow.length > 200, 'the narrow rules exist');
   const mid = ORG_CSS.slice(ORG_CSS.indexOf('@media (min-width:1024px) and (max-width:1280px){')); assert.ok(mid.length > 50);
   assert.match(mid, /^[^}]*\{\s*\.og-grid\{grid-template-columns:minmax\(0,40fr\) minmax\(0,60fr\)/, 'two columns, a narrower tree'); assert.match(mid, /\[data-og-col="kids"\],\.og-rw \[data-og-col="people"\]\{display:none\}/);
-  assert.match(ORG_CSS, /@media \(max-width:1023px\),\(pointer:coarse\)\{/, '44px targets on any touch or pen screen');
+  assert.match(ORG_CSS, /@media not all and \(min-width:1024px\),\(pointer:coarse\)\{/, '44px targets on any touch or pen screen');
   assert.match(ORG_SRC, /KIVO\.BassamNav\.fit\(!0\)/); assert.match(ORG_SRC, /KIVO\.BassamNav\.fit\(!1\)/);
   assert.match(narrow, /\.og-grid\{grid-template-columns:minmax\(0,1fr\)\}/, 'one column');
   assert.match(ORG_CSS, /\.og-sheet-hd,\.og-ub\{display:none\}/, 'the unit button is for the narrow layout only'); assert.match(narrow, /\.og-ub\{display:flex;[^}]*min-height:52px/);
