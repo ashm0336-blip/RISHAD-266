@@ -224,8 +224,9 @@ async function rsImportRoute(env, request, ss) {
               " s, json_each(s.row_json) j WHERE s.snapshot_id=?1 AND s.domain='q' AND s.table_key=?2 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET " + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(id, k + '|' + t));
           });
           if (!mine) { plan.revisionKeys.push(k); plan.counts.operations++; }
-          summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== 'operations:' + k; });
         });
+        /* ما أُخرج من نصّ الملف ليُرسل دفعاتٍ ليس «مجموعةً غائبة عن النسخة» */
+        Object.keys(M.slices).forEach(function (k) { var gone = 'operations:bsdept:' + s.departmentId + ':' + k.replace(/#\d+$/, ''); summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== gone; }); });
         summary.notTransferred = drop.concat(stage.unref.map(function (k) { return { k: k, why: 'image-unreferenced' }; }));
         summary.imagesNew = stage.fresh.length;
         if (op === 'commit') plan.statements.push(rsiDrop(env, id));

@@ -64,6 +64,9 @@ async function heavy(scale, t, { inline = false } = {}) {
     assert.ok(size.data > LIMIT, 'البياناتُ وحدها تتجاوز 8MB');
     const before = permsOf(T), users = T.DB.q("SELECT group_concat(v,'') v FROM kv WHERE k='bassam_auth_users_v1'")[0].v;
     const P = protocol(T, T.su, file, { scope: SCOPE });
+    await P.build();
+    assert.ok(P.sliceCount >= 12 * scale, 'المفتاحُ الكبير يُرسل دفعاتٍ لا نصاً واحداً (' + P.sliceCount + ' دفعة)');
+    assert.equal(P.text.includes('"bassam_rounds_v1"'), false, 'ولا يبقى في نصّ الملف');
     const biggest = Math.max(...P.parts.map((p) => Buffer.byteLength(JSON.stringify({ requestId: P.id, op: 'part', items: [p] }))));
     assert.ok(biggest < LIMIT, 'كلُّ جزءٍ دون حدّ الطلب (أكبرُها ' + biggest + ' بايتاً)');
     const t1 = Date.now(), out = await P.run();
@@ -224,6 +227,78 @@ test('(٤ب) فشلُ الاعتماد نفسِه (خطأُ قاعدةٍ داخ�
       await compare(T, T.su, file); assert.equal(staged(T.DB), 0); assert.equal(audits(T), 1);
     } finally { await T.close(); }
   }
+});
+
+/* لقطةُ الصفوف التشغيلية والصور والتنبيهات — للمقارنة بين مسارين على قاعدتين */
+const rowsOf = (T) => Object.fromEntries(T.DB.q("SELECT name FROM sqlite_master WHERE type='table' AND (name GLOB 'ops_*' OR name IN ('imgref','notification_messages')) ORDER BY name").map(({ name }) => [name, T.DB.q('SELECT * FROM ' + name).map((r) => JSON.stringify(r)).sort()]));
+
+test('(٨) الدفعاتُ = المسارُ الواحد: النسخةُ نفسُها بالطريقين تنتهي إلى الصفوف نفسِها حرفاً (كل جداول التشغيل · مراجع الصور · التنبيهات) والوثائق نفسِها بترتيب أيامها', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true }), A = await target(), Z = await target();
+  try {
+    const mono = await protocol(A, A.su, file, { scope: SCOPE, slice: false }).run();
+    const P = protocol(Z, Z.su, file, { scope: SCOPE, slice: 1000, sliceTarget: 5000 }), cut = await P.run();
+    assert.equal(mono.commit.status, 200); assert.equal(cut.commit && cut.commit.status, 200, JSON.stringify((cut.commit || cut.inspect || cut.part || cut.begin).j).slice(0, 300));
+    assert.ok(P.sliceCount >= 3, 'الجولاتُ قُسمت (' + P.sliceCount + ')');
+    assert.deepEqual(cut.commit.j.counts, mono.commit.j.counts, 'العدّادُ واحد'); assert.deepEqual(cut.inspect.j.inspection.counts, cut.commit.j.counts);
+    assert.deepEqual(cut.inspect.j.inspection.summary.emptyDomains, mono.inspect.j.inspection.summary.emptyDomains, 'والمجالاتُ الفارغة المعلنة هي هي');
+    assert.deepEqual(Object.keys(cut.commit.j.revs).sort(), Object.keys(mono.commit.j.revs).sort(), 'والمواردُ التي تقدّمت نسختُها');
+    const a = rowsOf(A), z = rowsOf(Z);
+    for (const t of Object.keys(a)) assert.deepEqual(z[t], a[t], 'جدول ' + t);
+    const names = ['bassam_rounds_v1', 'bassam_rounds_arc_v1'], da = await readOps(A, A.su, B, names), dz = await readOps(Z, Z.su, B, names);
+    assert.equal(JSON.stringify(dz), JSON.stringify(da), 'الوثيقتان بترتيب أعضائهما');
+    await compare(Z, Z.su, file); assert.equal(staged(Z.DB), 0); assert.equal(audits(Z), 1);
+  } finally { await A.close(); await Z.close(); }
+});
+
+test('(٩) دفعاتُ المفتاح الكبير: بالترتيب · المكرَّرةُ لا تضيف · الفاشلةُ تُعاد وحدها · الناقصةُ تمنع الاعتماد · الإلغاءُ ينظّف · ولغير مدير المنصة أو لهدفٍ غير فارغ لا دفعات', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true }), T = await target(), opt = { scope: SCOPE, slice: 1000, sliceTarget: 5000 };
+  try {
+    const q = () => T.DB.q("SELECT COUNT(*) n FROM restore_preimage WHERE snapshot_id GLOB 'stage:*' AND domain='q'")[0].n, base = snapshot(T.DB);
+    let P = protocol(T, T.su, file, opt);
+    assert.equal((await P.begin()).status, 200); for (let i = 0; i < P.parts.length; i++) assert.equal((await P.part(i)).status, 200);
+    assert.ok(P.sliceCount >= 3);
+    /* الاعتمادُ قبل الدفعات مرفوض (ناقص) وينظَّف */
+    const early = await P.inspect(); assert.equal(early.status, 409); assert.equal(early.j.err, 'import-incomplete'); assert.equal(staged(T.DB), 0);
+    P = protocol(T, T.su, file, opt); await P.begin(); for (let i = 0; i < P.parts.length; i++) await P.part(i);
+    /* خارج الترتيب مرفوض */
+    const skip = await P.sliceStep(1); assert.equal(skip.status, 409); assert.equal(skip.j.err, 'import-incomplete'); assert.equal(staged(T.DB), 0, 'ونُظّف');
+    P = protocol(T, T.su, file, opt); await P.begin(); for (let i = 0; i < P.parts.length; i++) await P.part(i);
+    assert.equal((await P.sliceStep(0)).status, 200); const rows0 = q(); assert.ok(rows0 > 0, 'صفوفُ الدفعة في المؤقت');
+    assert.equal((await P.sliceStep(0)).status, 200, 'الدفعةُ المكرَّرة مقبولة'); assert.equal(q(), rows0, 'ولا تضيف صفاً');
+    /* دفعةٌ تفشل (خطأُ قاعدة) ثم تُعاد وحدها */
+    T.DB.failIf = (sql) => /INSERT OR REPLACE INTO restore_preimage/.test(sql);
+    const bad = await P.sliceStep(1); T.DB.failIf = null;
+    assert.ok(bad.status >= 500); assert.equal(q(), rows0, 'الفاشلةُ لم تترك صفاً');
+    /* طلبٌ مصنوع من حسابٍ آخر على المؤقت نفسِه */
+    const mgr = await T.login(LAB.mgrA, LAB.pw), forged = await protocol(T, mgr, file, { ...opt, requestId: P.id }).sliceStep(1);
+    assert.ok(forged.status === 404 || forged.status === 403, 'مصنوع: ' + forged.status); assert.equal(q(), rows0);
+    for (let i = 1; i < P.sliceCount; i++) assert.equal((await P.sliceStep(i)).status, 200);
+    assert.deepEqual(changed(snapshot(T.DB), base), [], 'الدفعاتُ كلُّها في المؤقت — لم يتغيّر شيء في الإدارة');
+    /* الإلغاءُ يحذف صفوفَ الدفعات كذلك */
+    assert.equal((await P.cancel()).status, 200); assert.equal(staged(T.DB), 0); assert.deepEqual(changed(snapshot(T.DB), base), []);
+    /* اعتمادٌ يفشل داخل الدفعة الذرّية: لا صفَّ من صفوف الدفعات كُتب — ثم ينجح */
+    P = protocol(T, T.su, file, opt); await P.begin(); for (let i = 0; i < P.parts.length; i++) await P.part(i); for (let i = 0; i < P.sliceCount; i++) await P.sliceStep(i);
+    const ins = await P.inspect(); assert.equal(ins.status, 200, JSON.stringify(ins.j).slice(0, 300));
+    T.DB.failIf = (sql) => /INSERT INTO restore_operations/.test(sql);
+    const fail = await P.commit(ins.j.inspection.base); T.DB.failIf = null;
+    assert.ok(fail.status >= 500); assert.deepEqual(changed(snapshot(T.DB), base), [], 'الدفعةُ الذرّية تراجعت كلُّها'); assert.equal(T.DB.q('SELECT COUNT(*) n FROM ops_round_day')[0].n, 0);
+    assert.equal((await P.commit(ins.j.inspection.base)).status, 200); await compare(T, T.su, file); assert.equal(staged(T.DB), 0);
+    /* الهدفُ الآن غيرُ فارغ: الخادمُ لا يعلن دفعاتٍ، والاستيرادُ يجري بالمسار الواحد كما كان */
+    const again = protocol(T, T.su, file, opt), dry = await again.post({ op: 'begin', dry: true, scope: SCOPE, keys: { bassam_rounds_v1: 0 } });
+    assert.deepEqual(dry.j.slice, {}, 'هدفٌ غير فارغ: لا دفعات');
+    const r2 = await again.run(); assert.equal(again.sliceCount, 0); assert.equal(r2.commit.status, 200); await compare(T, T.su, file);
+    /* وبيانُ دفعاتٍ يُفرض على هدفٍ غير فارغ مرفوضٌ عند البدء */
+    const forcedBegin = await again.post({ op: 'begin', scope: SCOPE, n: 10, f: 1, slices: { 'bassam_rounds_v1#0': 50 }, keys: { bassam_rounds_v1: 0 } });
+    assert.equal(forcedBegin.status, 400); assert.equal(forcedBegin.j.err, 'import-shape');
+  } finally { await T.close(); }
+  /* مديرُ الإدارة (ولو بمفتاح الاستعادة): لا دفعات — مسارُه كما كان */
+  const T2 = await target();
+  try {
+    const GK = 'bsdept:' + B + ':bassam_grants_v1';
+    await T2.DB.batch([...T2.lab.W.kvPutStmts(T2.lab.env, 'kv', GK, JSON.stringify({ v: 1, emp: { ['mgr:' + B]: { plus: ['backup.restore'], minus: [] } } })), T2.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1)').bind(GK)]);
+    const mgrB = await T2.login(LAB.mgrB, LAB.pw), dry = await protocol(T2, mgrB, file, opt).post({ op: 'begin', dry: true, scope: SCOPE, keys: { bassam_rounds_v1: 0 } });
+    assert.equal(dry.status, 200); assert.deepEqual(dry.j.slice, {}, 'غيرُ مدير المنصة: لا دفعات');
+  } finally { await T2.close(); }
 });
 
 test('(٥) حسابٌ بلا صلاحية يُرفض في كل جزء ولو بطلبٍ مصنوع يدوياً — ولا يمسّ مؤقتَ غيره', { timeout: 300000, ...need }, async (t) => {
