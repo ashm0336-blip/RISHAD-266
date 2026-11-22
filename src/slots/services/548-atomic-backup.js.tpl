@@ -287,10 +287,10 @@
         sizes[k] = v.length;
         cut(v, 4000000).forEach(function (t, n) { imageOf[list.length] = i + 1; list.push({ k: k, s: n, t: t }); });
       });
+      live.add(id);   /* قبل الطلب: صفحةٌ تُغلق وردُّ البدء لم يصل تطلب حذفَ مؤقتها كذلك */
       var began = await post({ op: 'begin', requestId: id, scope: scope, n: parts.text.length, f: texts.length, images: sizes }, stamp);
-      if (!began.ok) return began;
+      if (!began.ok) { if (!began.uncertain) live.delete(id); return began; }
       job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest };
-      live.add(id);
     } else if (job.mode !== opt.mode) return fail(failure('invalid'));
     job.stop = typeof opt.shouldStop === 'function' ? opt.shouldStop : null;
     var up = await upload(job, stamp, progress);

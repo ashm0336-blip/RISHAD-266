@@ -84,7 +84,8 @@ async function rsImportRoute(env, request, ss) {
         for (var at = 0, j = 0; at < t.length; j++) {
           var end = Math.min(t.length, at + RSI_ROW);
           if (end < t.length && (t.charCodeAt(end - 1) & 0xfc00) === 0xd800) end--;
-          st.push(D.prepare('INSERT INTO ' + T + ' VALUES(?1,?2,?3,?4,?5)').bind(id, dom, it.k, it.s * 1000 + j, JSON.stringify(t.slice(at, end))));
+          /* الإيداعُ مشروطٌ ببقاء بيان المؤقت في العبارة نفسِها: إلغاءٌ سبق هذا الجزءَ بلحظة لا يترك صفاً يتيماً */
+          st.push(D.prepare('INSERT INTO ' + T + ' SELECT ?1,?2,?3,?4,?5 WHERE EXISTS(SELECT 1 FROM ' + T + " WHERE snapshot_id=?1 AND domain='meta')").bind(id, dom, it.k, it.s * 1000 + j, JSON.stringify(t.slice(at, end))));
           at = end;
         }
       });

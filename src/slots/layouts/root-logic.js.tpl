@@ -977,7 +977,7 @@ class Component extends DCLogic {
     try { if (sum && sum.exportedAt) when = new Date(sum.exportedAt).toLocaleString("ar-SA-u-nu-latn", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { when = (sum && sum.exportedAt) || ""; }
     const parts = run.parts || 0, pct = run.step === "upload" && parts ? Math.max(2, Math.round(((run.part - 1) / parts) * 90)) : run.step === "inspect" || run.step === "review" ? 92 : run.step === "commit" ? 97 : 1;
     const runText = run.stopping ? "يتوقّف بعد الجزء الجاري…" : run.step === "upload" ? "الجزء " + run.part + " من " + parts + (run.images ? " · الصور: " + (run.image || 0) + " من " + run.images : "") + " — لا يتغيّر شيء في الإدارة قبل الاعتماد."
-      : run.step === "inspect" ? "اكتمل الإرسال (" + N(parts, "جزء") + ") — الخادم يفحص النسخة ويطابقها مع الإدارة."
+      : run.step === "inspect" ? "اكتمل إرسال الأجزاء (" + parts + ") — الخادم يفحص النسخة ويطابقها مع الإدارة."
       : run.step === "review" ? "اكتمل الفحص — راجع ملخّص الخادم واعتمد الاستعادة."
       : run.step === "commit" ? "تُطبَّق النسخة في خطوة واحدة على الخادم…" : "تُجهَّز أجزاء النسخة…";
     const s2 = (done && done.summary) || {}, r = (done && done.receipt) || {}, cn = r.counts || {}, lost = s2.notTransferred || [];

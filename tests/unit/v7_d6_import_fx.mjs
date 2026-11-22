@@ -96,7 +96,9 @@ export async function oldFile({ scale = 1, small = false, images = true } = {}) 
   const floors = ids.map((id, f) => ({ ...baseFloor, sid: 'tstd6s' + f, name: 'TEST_ONLY · طابق د6 ' + (f + 1), num: f + 1, iid: id, imgW: 1200, imgH: 900,
     zones: Array.from({ length: zonesPer }, (_, z) => ({ uid: 'tstd6z' + f + 'x' + z, code: 'D6Z' + f + '-' + z, name: 'TEST_ONLY · مصلى د6 ' + (f + 1) + '-' + (z + 1), d: pathD(Math.floor(perFloor / zonesPer) - 160, f * 31 + z), cx: 5 + z, cy: 5 + f, area: 100 + z, emp: z ? [] : ['tst_demo_e11'] })),
     gates: baseFloor.gates.map((g, i) => ({ ...g, uid: 'tstd6g' + f + 'x' + i })), marks: baseFloor.marks.map((m, i) => ({ ...m, uid: 'tstd6m' + f + 'x' + i })), paths: baseFloor.paths.map((p, i) => ({ ...p, uid: 'tstd6p' + f + 'x' + i })) }));
-  const plan = { ...docs.bassam_plan_v1, floors, months: {} };
+  /* خطةُ الشهر الجاري في بيانات العرض تحمل طوابقَ النسخة — فتعرضها صفحةُ المخطط */
+  const month = Object.keys(docs.bassam_plan_v1.months)[0];
+  const plan = { ...docs.bassam_plan_v1, floors, months: { [month]: { ...docs.bassam_plan_v1.months[month], d: small ? floors : floors.slice(0, 1) } } };
   /* الجولات: يومٌ = لقطةُ طوابق — 26 يوماً ≈ 8.4MB */
   const firstDay = Object.keys(docs.bassam_rounds_v1)[0], baseDay = docs.bassam_rounds_v1[firstDay], rounds = {}, dz = small ? 2 : 40;
   for (let n = 0; n < days; n++) {
@@ -158,16 +160,19 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
   return P;
 }
 export const staged = (DB) => DB.q("SELECT COUNT(*) n FROM restore_preimage WHERE snapshot_id>='stage:' AND snapshot_id<'stage;'")[0].n;
-/* لقطةُ كلِّ ما قد يغيّره الاستيراد (عدا السجلات والمؤقت نفسِه) — للمقارنة «لم يتغيّر شيء» */
+/* لقطةُ كلِّ ما قد يغيّره الاستيراد — للمقارنة «لم يتغيّر شيء». خارجها: السجلاتُ والجلسات، والمؤقتُ نفسُه (يُفحص بـ staged)، وما تكتبه الصفحةُ المفتوحة
+   من تلقاء نفسها ولا علاقة له بالاستيراد (نقاطُ فحص التنبيهات وعدّادُها · طابعُ rev العام · حرّاسُ المهام tkg:) */
 export function snapshot(DB) {
-  const skip = new Set(['aud', 'audit', 'sec', 'authz', 'authz_snap', 'authz_snaps', 'sess', 'guard', 'sqlite_sequence', 'restore_preimage', 'restore_snapshot_manifest', 'd1_migrations']), out = {};
+  const skip = new Set(['aud', 'audit', 'sec', 'authz', 'authz_snap', 'authz_snaps', 'sess', 'guard', 'sqlite_sequence', 'restore_preimage', 'restore_snapshot_manifest', 'd1_migrations', 'notification_checkpoints']), out = {};
+  const where = { meta: " WHERE k IN ('restore_epoch','schema_version','authz_mode')", revs: " WHERE k NOT GLOB 'bassam_notif*'" };
   for (const { name } of DB.q("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")) {
     if (skip.has(name)) continue;
     const h = crypto.createHash('sha256'); let n = 0;
-    for (const r of DB.q('SELECT * FROM ' + name).map((r) => JSON.stringify(Object.values(r))).sort()) { h.update(r + '\n'); n++; }
+    for (const r of DB.q('SELECT * FROM ' + name + (where[name] || '')).map((r) => JSON.stringify(Object.values(r))).sort()) { h.update(r + '\n'); n++; }
     out[name] = n + ':' + h.digest('hex').slice(0, 16);
   }
   return out;
 }
+export const changed = (a, b) => Object.keys({ ...a, ...b }).filter((t) => a[t] !== b[t]);
 export const readOps = async (T, who, dept, names) => { const r = await T.call('/api/operations/read?keys=' + encodeURIComponent(names.map((n) => 'bsdept:' + dept + ':' + n).join(',')), { ck: who.ck }); assert.equal(r.status, 200, r.t.slice(0, 200)); return Object.fromEntries(Object.entries(r.j.resources).map(([k, v]) => [k.split(':').pop(), v])); };
 export const readImage = async (T, who, id) => T.call('/api/img/' + id, { ck: who.ck });
