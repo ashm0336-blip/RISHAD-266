@@ -249,7 +249,9 @@ for (const mode of ['enforce']) {
     const P = stored(W.env, 'bassam_perms_v1'), caps0 = P.caps[D].slice();
     const check = async (why) => {
       const l = await listOf(W, me.ck);
-      assert.equal(l.status, 200, why); assert.equal(l.j.me.linked, false, why + ': ' + JSON.stringify(l.j.me)); assert.equal(l.j.me.off, 1, why); assert.deepEqual(l.j.rows, [], why);
+      /* V7 · د6 (walkfix): القراءةُ نفسُها مرفوضة لغير مدير المنصة كالفعل والصورة (كانت 200 بقائمةٍ فارغة وعلامة off) — ولا صفوف */
+      assert.equal(l.status, 403, why); assert.equal(l.j.err, 'off', why + ': ' + JSON.stringify(l.j)); assert.equal(l.j.rows, undefined, why); assert.equal(l.j.me, undefined, why);
+      const sv = await listOf(W, W.su.ck); assert.equal(sv.status, 200, why + ' — مديرُ المنصة كما كان'); assert.equal(sv.j.me.off, 1, why); assert.deepEqual(sv.j.rows, [], why);
       const a = await actOf(W, me.ck, { k: DAY, id: 1760000000101, act: 'accept' }); assert.equal(a.status, 403, why + ' — الفعل'); assert.equal(a.j.err, 'off', why);
       assert.equal((await W.C.api('/api/me/tasks/img?id=' + IMG_ME, { cookie: me.ck })).status, 403, why + ' — الصورة');
     };

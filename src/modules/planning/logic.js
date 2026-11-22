@@ -23,19 +23,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
       return !0;
     }
   }
-  /* V7 · د6 (أ2-5): لكل تبويبٍ عنوانُه #/planning/<تبويب> — يُكتب بالاستبدال ويُقرأ من خطّاف الهيكل */
+  /* V7 · د6 (أ2-5): لكل تبويبٍ عنوانُه #/planning/<صفحته> — يُكتب بالاستبدال ويُقرأ من خطّاف الهيكل */
   _bsHT(t) {
     try {
-      const h = location.hash, w = "#/planning/" + t;
-      /^#\/planning(\/|$)/.test(h) && "none" !== t && h !== w && history.replaceState(null, "", location.pathname + location.search + w);
+      const h = location.hash, p = "#/planning", k = this.PT_TABS[t];
+      k && 0 === h.indexOf(p) && h !== p + "/" + k.page && history.replaceState(null, "", location.pathname + location.search + p + "/" + k.page);
     } catch (e) {}
   }
   _bsHR() {
     const o = KIVO.__BS_OPEN_TAB;
     if (!o || "planning" !== o.page) return;
     KIVO.__BS_OPEN_TAB = null;
-    const i = o.tab;
-    this._tabOk(i) && (this.state = { ptab: i, seen: { ...this.state.seen, [i]: !0 } });
+    const i = this._ids().filter((x) => this.PT_TABS[x].page === o.tab)[0];
+    i && this._tabOk(i) && (this.state = { ptab: i, seen: { ...this.state.seen, [i]: !0 } });
   }
   _bsGo(t) {
     "read" === t && (t = this._ids()[0]);

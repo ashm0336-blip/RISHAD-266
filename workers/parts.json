@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "8251e4f98db2a8827a102108c48d2318e646d73409447fe037e04ba2fe521447",
+  "sha256": "d3a55ab9b8d55f1cf632b28d343c484e3f54f4790faed808d4efb983f9b91853",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -1117,8 +1117,8 @@
     {
       "file": "../../src/systems/tasks/server/062c-me-tasks.js",
       "new": "KIVO_264 · KIVO-Tasks — «ملفي ← مهامي» (GET /api/me/tasks · POST /api/me/tasks/act · GET /api/me/tasks/img · GET /api/me/tasks/log) — المرحلةُ الثانية: ack/start/decline/stall/resume/doc/submit/expire",
-      "bytes": 41918,
-      "sha256": "67dbf4c66619c2d32282552856e97ef2aa796c9ce7915489c209d03494bb878d",
+      "bytes": 42070,
+      "sha256": "ab26626ad8409843aec060e8ffbebd30e9b8871a3b584c3a8403e6c64bb96816",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks — «ملفي ← مهامي»: قراءةُ الموظف لمهامه هو وحده، ودورةُ حياتها من جهته، من الخادم ═══",
       "lines": [
         27439,
