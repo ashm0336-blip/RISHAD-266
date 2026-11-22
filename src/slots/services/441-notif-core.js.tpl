@@ -286,8 +286,7 @@ var REG = [
     return view.items.filter(function(x){
       if (x.exp && x.exp < Date.now()) return false;
       if (x.at > Date.now()) return false;
-      /* V7 · د5-ح: تنبيهُ نظامٍ مطفأ في مساحة الإدارة النشطة لا يُعرض لمدير المنصة (goOk بصلاحياته المقصوصة بالمطفأ) */
-      if (sup && (!x.dept || x.dept === c.dept) && x.k !== 'sys' && x.k !== 'sec' && !x.isBc && !goOk(x)) return false;
+      /* V7 · د5-ح (البند ٧): تنبيهُ نظامٍ مطفأ لا يصل هنا أصلاً — يحجبه الخادمُ بحكمٍ واحد للقائمة والعدّاد (019 nfSysOff في nfAudience) لكل أحد */
       return !sup || all || !x.dept || x.dept === c.dept || x.k === 'sys' || x.k === 'sec' || x.isBc;
     }).map(function(x){return JSON.parse(JSON.stringify(x));}).sort(function(a,b){ return ((b.pin && b.un) ? 1 : 0) - ((a.pin && a.un) ? 1 : 0) || b.at - a.at; });
   }

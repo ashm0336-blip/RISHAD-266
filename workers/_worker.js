@@ -4721,6 +4721,39 @@ function nfOwn(m, targets, u, refs) {
     })[0];
   return !!(e && e.nid && a.indexOf(String(e.nid)) >= 0);
 }
+/* ═══ V7 · د5-ح (قرار المالك · البند ٧): تنبيهُ نظامٍ مطفأ لا يُولَّد ولا يُعرض لأحد — ولا لمدير المنصة ═══
+   النظامُ مصدرُ النوع من إعلانه نفسِه: ورقةُ النوع (NF_CAP_ID — يعلنها النظامُ في فتحته) أو ورقةُ فئته (NF_CAP — كذلك) ⇒ النظامُ الذي تملك
+   ورقتَه (perm44E().sysList: leaves) ما دام يُشغَّل ويُطفأ (toggle). نوعٌ بلا ورقة نظام (الأمن · النسخ · الحساب · التعاميم · الموظفون) لا يتأثر.
+   مطفأٌ = على المنصة (A.off) أو في سقف الوحدة d أو أحد أصولها (perm44LeafOn — القاعدةُ نفسُها لسقف الأدوار).
+   الحكمُ وقتَ القراءة (nfAudience) لا الحذف: المخزَّنُ يبقى كما هو ويعود حين يُعاد تشغيلُ النظام */
+var NF_SYS_MEMO = null;
+function nfSysOf(type, cat) {
+  var page = NF_CAP_ID[type] || NF_CAP[cat];
+  if (!page) return "";
+  if (!NF_SYS_MEMO) NF_SYS_MEMO = {};
+  if (NF_SYS_MEMO[page] !== undefined) return NF_SYS_MEMO[page];
+  var out = "";
+  try {
+    perm44E().sysList().forEach(function (s) {
+      if (!out && s && s.toggle !== false && Array.isArray(s.leaves) && s.leaves.indexOf(page) !== -1) out = s.key;
+    });
+  } catch (e) {
+    swallow("nf-sys-of", e);
+  }
+  return (NF_SYS_MEMO[page] = out);
+}
+function nfSysOff(A, d, type, cat) {
+  var s = nfSysOf(type, cat);
+  if (!s) return false;
+  if (Array.isArray(A && A.off) && A.off.indexOf(s) !== -1) return true;
+  if (!d) return false;
+  try {
+    return !perm44E().sysOn(s, perm44LeafOn(A, d));
+  } catch (e) {
+    swallow("nf-sys-off", e);
+    return false;
+  }
+}
 function nfPage(A, d, type, cat, act) {
   var page = NF_CAP_ID[type] || NF_CAP[cat];
   if (A.u.role === "super") return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
@@ -5347,6 +5380,7 @@ async function nfAudience(env, A, opts) {
     // Super inbox matching uses account keys and fixed roles only. Broadcasts
     // are visible directly; staff recipient statistics still load their refs.
     refs = A.u.role === "super" ? {} : await nfRefs(env, A, depts),
+    off = [],
     aud = [],
     bc = [],
     u = A.u;
@@ -5373,6 +5407,7 @@ async function nfAudience(env, A, opts) {
       .concat(["bc_dept"])
       .forEach(function (type) {
         var cat = NF_TYPES[type] ? NF_TYPES[type].k : "bc";
+        if (nfSysOff(A, d, type, cat)) return off.push({ scope: scope, type: type });   /* V7 · د5-ح: لا يُعرض لأحد ولا لمدير المنصة */
         if (u.role === "super" || nfPage(A, d, type, cat, "view"))
           roles.forEach(function (role) {
             add(scope, "role", role, type);
@@ -5400,7 +5435,7 @@ async function nfAudience(env, A, opts) {
   if (u.role === "staff" && !mgr && !lead) bc.push({ kind: "role", value: "staff" });
   var shift = nfShift(u, u.deptId, refs);
   if (shift) bc.push({ kind: "shift", value: shift });
-  return { aud: aud, bc: bc, scopes: depts.map(nfScope).concat(u.role === "super" ? ["sys"] : []) };
+  return { aud: aud, bc: bc, off: off, scopes: depts.map(nfScope).concat(u.role === "super" ? ["sys"] : []) };
 }
 async function nfFeedRows(env, A, opts) {
   opts = opts || {};
@@ -5420,6 +5455,13 @@ async function nfFeedRows(env, A, opts) {
         : "(m.target_mode='all' OR EXISTS(SELECT 1 FROM notification_targets t JOIN json_each(?5) a ON json_extract(a.value,'$.kind')=t.kind AND json_extract(a.value,'$.value')=t.value WHERE t.scope=m.scope AND t.message_id=m.id))") +
       "))";
   if (A.u.role === "super" && !opts.all) where += " AND (m.department='' OR m.department=?6 OR m.category IN ('sys','sec'))";
+  /* V7 · د5-ح (البند ٧): نوعُ نظامٍ مطفأ في نطاق وحدته خارجَ القائمة والعدّاد كليهما (الشرطُ نفسُه لهما) — ولو وصل باسم الشخص (employee · «*»).
+     القيمُ من السجلّ لا من الطلب (أنواعٌ معرَّفة · نطاقاتٌ من معرّفات الوحدات) وتُهرَّب على كل حال */
+  if (audience.off.length) {
+    var q9 = function (s) { return "'" + String(s).replace(/'/g, "''") + "'"; }, byScope9 = {};
+    audience.off.forEach(function (o) { (byScope9[o.scope] = byScope9[o.scope] || []).push(o.type); });
+    where += " AND NOT (m.kind='event' AND (" + Object.keys(byScope9).map(function (sc) { return "(m.scope=" + q9(sc) + " AND m.type IN (" + byScope9[sc].map(q9).join(",") + "))"; }).join(" OR ") + "))";
+  }
   bind.push(opts.dept || A.u.deptId || "");
   where += " AND json_valid(?5) AND ?6 IS NOT NULL";
 
@@ -5727,6 +5769,8 @@ async function nfPlanEvents(env, A, events, internal) {
     if (!T.on) return;
     var d = it.dept || A.u.deptId || "",
       own = it.own || [];
+    /* V7 · د5-ح (البند ٧): حدثُ نظامٍ مطفأ (على المنصة أو لهذه الوحدة) لا يُولَّد — يُسقط بصمت كالمتقاعد، من أيّ منتجٍ كان (المتصفحُ أو الخادمُ نفسُه) */
+    if (nfSysOff(A, d, T.id, T.k)) return;
     nfArr(own, 20000).forEach(function (k) {
       nfStr(k, 200, false);
     });
