@@ -35,17 +35,21 @@ const SPECIAL = {
     tabOnMark: ':scope > span:empty',                   /* علامةُ التبويب المعروض في الأشرطة القديمة (.bs-tabstrip): خطٌّ تحته (span فارغ) */
     dialog: '[role=dialog], [role=alertdialog], dialog[open], .bs-plat-ov',   /* نافذةٌ فوق الصفحة («المساعدة» تفتح .bs-plat-ov) */
     dialogClose: '^(?:إغلاق|أغلق|×|✕)',
+    mainWait: '[data-ps-wait]',                         /* الغلافُ ما زال ينتظر الصفحة (555-page-states) */
     loading: '.ps-skel, .sc-placeholder, [aria-busy="true"]',
     loadingText: 'جارٍ (?:ال)?(?:قراءة|تحميل)',
     failed: '.ps-fail, .bs-retry, .sc-placeholder-error',
     leftover: 'h1, h2, h3, h4, h5, button, a, th, legend, summary, label, option, [role=button], [role=link], [role=heading], b',
     timer: '^/api/(?:changes|presence)\\b',
+    blankMin: 25,                                       /* أقلُّ من هذا عددَ حروفٍ تحت الترويسة (بلا جدولٍ ولا رسمٍ ولا حقل ولا رسالة) = صفحةٌ فارغة */
     idleMs: 350,                                        /* فعلٌ لم يغيّر شيئاً في الصفحة: يُنتظر هذا القدر ثم يُعدّ مستقراً */             /* طلباتٌ يحرّكها مؤقّتٌ لا الصفحة: لا تُنتظر */
   },
   centerHome: '#/sysadmin/overview',
   unitHome: '#/profile',
   flashProbe: '#/admin/shifts',                         /* عنوانٌ يُعاد التحميل عليه حين لا نظامَ مطفأ (تبويبٌ قد لا يملكه الحساب) */
   maxDepth: 3, maxViews: 220,
+  lateStrip: 250,                                       /* صفحةٌ بلا شريط تبويبات: يُنتظر هذا القدر لشريطٍ يُرسم بعد المحتوى */
+  blankGrace: 4000,                                     /* مهلةُ ما يبدو فارغاً (أو تبويباً لم يُعرض) قبل الحكم عليه */
   /* عناوينُ لا يصلها بندٌ ولا تبويب: صفحاتُ الوحدات في المركز (العناوينُ القديمة تُحوَّل إلى الشاشة الجديدة) */
   extraPages: {
     'super-center': ['#/sysadmin/org/' + UNITS.G, '#/sysadmin/org/' + UNITS.A, '#/sysadmin/org/' + UNITS.S1, '#/sysadmin/org/' + UNITS.A + '/perm/systems'],

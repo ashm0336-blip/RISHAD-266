@@ -107,7 +107,7 @@ const PROBE = (C) => {
   const start = () => { new MutationObserver(scan).observe(document, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'aria-selected', 'aria-current'], characterData: true }); scan(); };
   start();
   /* ── استقرار: لا قراءةَ جارية · لا هيكلَ تحميل · هدأ الـDOM ── */
-  X.loading = () => { const m = mainEl(); if (!m) return ['no-main']; const out = []; m.querySelectorAll(C.loading).forEach((e) => { if (vis(e) && !e.querySelector(C.failed) && !e.matches(C.failed)) out.push(norm(e.className || e.tagName).slice(0, 40)); }); [...m.querySelectorAll('[role=status], .p44-empty, span, p, div, b')].forEach((e) => { if (e.childElementCount === 0 && new RegExp(C.loadingText).test(e.textContent) && vis(e)) out.push('«' + norm(e.textContent).slice(0, 40) + '»'); }); return out; };
+  X.loading = () => { const m = mainEl(); if (!m) return ['no-main']; const out = []; if (C.mainWait && m.matches(C.mainWait)) out.push('الغلاف ينتظر الصفحة'); m.querySelectorAll(C.loading).forEach((e) => { if (vis(e) && !e.querySelector(C.failed) && !e.matches(C.failed)) out.push(norm(e.className || e.tagName).slice(0, 40)); }); [...m.querySelectorAll('[role=status], .p44-empty, span, p, div, b')].forEach((e) => { if (e.childElementCount === 0 && new RegExp(C.loadingText).test(e.textContent) && vis(e)) out.push('«' + norm(e.textContent).slice(0, 40) + '»'); }); return out; };
   X.settled = (quiet) => (X.mark == null || X.moved || performance.now() - X.mark > C.idleMs) && !!mainEl() && !!document.querySelector(C.side) && X.fly === 0 && performance.now() - X.last >= quiet && X.loading().length === 0;
   /* ── لقطةُ الصفحة المعروضة ── */
   X.snap = () => {
@@ -126,7 +126,8 @@ const PROBE = (C) => {
     }
     const crumbs = [...document.querySelectorAll(C.crumb)].filter(vis).map((e) => norm(e.textContent)).filter(Boolean);
     const dialogs = [...document.querySelectorAll(C.dialog)].filter(vis).map((e) => norm(e.getAttribute('aria-label') || e.innerText).slice(0, 80));
-    return { hash: location.hash, side: X.side(), strips, textLen: text.length, contentLen: Math.max(0, text.length - stripText), media, head: text.slice(0, 120), fails, alerts, screens, crumbs, leftovers: [...new Set(leftovers)], dialogs, loading: X.loading(), flying: X.what.slice(), off: X.off.splice(0), wide: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+    const contentLen = Math.max(0, text.length - stripText);
+    return { hash: location.hash, side: X.side(), strips, textLen: text.length, contentLen, thin: contentLen < C.blankMin && !media && !fails.length && !alerts.length, media, head: text.slice(0, 120), fails, alerts, screens, crumbs, leftovers: [...new Set(leftovers)], dialogs, loading: X.loading(), flying: X.what.slice(), off: X.off.splice(0), wide: document.documentElement.scrollWidth - document.documentElement.clientWidth };
   };
   X.closeDialogs = () => { let n = 0; document.querySelectorAll(C.dialog).forEach((d) => { if (!vis(d)) return; const b = [...d.querySelectorAll('button, [role=button]')].find((e) => new RegExp(C.dialogClose).test(norm(e.getAttribute('aria-label') || e.textContent)) && vis(e)); if (b) { b.click(); n++; } }); return n; };
   X.setDyn = (d) => { X.dyn = d || {}; try { sessionStorage.setItem('__d6', JSON.stringify(X.dyn)); } catch (e) { /* خاص */ } };
@@ -171,7 +172,7 @@ export async function session(W, acc, viewport) {
   if (viewport) { const v = s.page.viewportSize(); if (!v || v.width !== viewport.width || v.height !== viewport.height) await s.page.setViewportSize(viewport); }
   return s;
 }
-const QUIET = +(process.env.KIVO_D6_QUIET || 140), SETTLE = +(process.env.KIVO_D6_SETTLE || 12000);
+const QUIET = +(process.env.KIVO_D6_QUIET || 200), SETTLE = +(process.env.KIVO_D6_SETTLE || 12000);
 export async function settle(page, ms, quiet) {
   try { await page.waitForFunction((q) => window.__d6 && window.__d6.settled(q), quiet || QUIET, { timeout: ms || SETTLE, polling: 40 }); return true; } catch (e) { return false; }
 }
@@ -217,7 +218,7 @@ export function assertPage({ snap, events, settled, where, benign }) {
   const F = [], add = (rule, detail) => F.push(Object.assign({ rule, detail }, where));
   /* (1) لا صفحة فارغة — ولا تحميلَ لا ينتهي */
   if (!settled) add('loading', 'التحميل لم ينتهِ: ' + (snap.loading.concat(snap.flying).join(' · ') || 'الصفحة لم تهدأ'));
-  else if (snap.contentLen < 25 && !snap.media && !snap.fails.length && !snap.alerts.length) add('blank', 'صفحة فارغة: ' + snap.contentLen + ' حرفاً تحت الترويسة' + (snap.head ? ' («' + snap.head.slice(0, 60) + '»)' : ''));
+  else if (snap.thin) add('blank', 'صفحة فارغة: ' + snap.contentLen + ' حرفاً تحت الترويسة' + (snap.head ? ' («' + snap.head.slice(0, 60) + '»)' : ''));
   /* (2) لا شيء من نظامٍ مطفأ: رابط · تبويب · بقيّةٌ في الصفحة */
   snap.off.forEach((o) => add('off', (o.kind === 'side' ? 'رابطٌ جانبي' : 'تبويب') + ' من نظامٍ مطفأ: «' + o.what + '»'));
   snap.leftovers.forEach((l) => add('off', 'بقيّةٌ من نظامٍ مطفأ في الصفحة: ' + l));
@@ -265,7 +266,9 @@ export async function walkAccount(W, acc, st, viewport, opts = {}) {
     const did = how.hash ? await p.evaluate((h) => { window.__d6.go(h); return true; }, how.hash) : await p.evaluate(([k, a, b]) => window.__d6.click(k, a, b), [how.kind, how.a, how.b || '']);
     if (!did) { push([Object.assign({ rule: 'walk', detail: 'تعذّر النقر: ' + JSON.stringify(how) }, where0)], page, tab); return null; }
     const done = await settle(p);
-    const snap = await p.evaluate(() => window.__d6.snap());
+    let snap = await p.evaluate(() => window.__d6.snap());
+    /* ما يبدو فارغاً يُمهَل قبل الحكم (محتوى يُرسم بعد هدوءٍ قصير ليس صفحةً فارغة) — الفارغُ حقاً يبقى فارغاً */
+    if (done && snap.thin) { await p.waitForFunction(() => !window.__d6.snap().thin, null, { timeout: S.blankGrace, polling: 100 }).catch(() => null); const again = await p.evaluate(() => window.__d6.snap()); again.off = snap.off.concat(again.off); snap = again; }
     const ev = s.log.slice(mark).filter((e) => e.kind !== 'req');
     push(assertPage({ snap, events: ev, settled: done, where: where0, benign: S.benign }), page, tab);
     if (snap.dialogs.length) {   /* نافذةٌ فتحها البند (المساعدة مثلاً): تُغلق قبل المتابعة — Esc ثم زرُّ إغلاقها */
@@ -278,6 +281,13 @@ export async function walkAccount(W, acc, st, viewport, opts = {}) {
     return snap;
   };
   const seenStrips = new Set();
+  /* صفحةٌ ترسم شريطَها بعد محتواها: بعد مشي الصفحة تُعاد قراءةُ أشرطتها (بمهلةٍ قصيرة إن لم يظهر فيها شريطٌ أولاً) فيُمشى ما ظهر متأخراً */
+  const walkPage = async (page, snap) => {
+    await walkStrips(page, '', snap, 0);
+    if (!snap.strips.length) await p.waitForFunction(() => window.__d6.strips().length > 0, null, { timeout: S.lateStrip, polling: 60 }).catch(() => null);
+    const late = await p.evaluate(() => window.__d6.snap());
+    if (late.strips.some((x) => !seenStrips.has(page + '§' + x.id))) await walkStrips(page, '', late, 0);
+  };
   const walkStrips = async (page, path, snap, depth) => {
     /* أشرطةُ هذا العرض الجديدة تُحجز كلُّها أولاً (فلا يمشيها عرضٌ أعمق) ثم تُمشى الأعمقُ أولاً: شريطٌ يسكن التبويبَ المعروض قبل أن يُغادَر تبويبُه */
     const mine = snap.strips.filter((x) => !seenStrips.has(page + '§' + x.id)); mine.forEach((x) => seenStrips.add(page + '§' + x.id));
@@ -289,7 +299,11 @@ export async function walkAccount(W, acc, st, viewport, opts = {}) {
         const tab = (path ? path + ' › ' : '') + item.label;
         const v = await view({ kind: 'tab', a: strip.id, b: item.label }, page, tab); if (!v) continue;
         /* (5) العنوانُ يطابق التبويب المعروض: التبويبُ المنقور هو المعروض · ولا تبويبان بعنوانٍ واحد */
-        const now = v.strips.find((x) => x.id === strip.id);
+        let now = v.strips.find((x) => x.id === strip.id);
+        if (strip.marked && now && !(now.items.find((i) => i.label === item.label) || {}).sel) {   /* يُمهَل قبل الحكم بأن النقر لم يعرض تبويبَه */
+          await p.waitForFunction(([sid, l]) => { const st = window.__d6.strips().find((x) => x.id === sid); return !st || st.items.some((i) => i.label === l && i.sel); }, [strip.id, item.label], { timeout: S.blankGrace, polling: 100 }).catch(() => null);
+          now = (await p.evaluate(() => window.__d6.strips())).find((x) => x.id === strip.id); v.hash = await p.evaluate(() => location.hash);
+        }
         if (strip.marked && now && !(now.items.find((i) => i.label === item.label) || {}).sel && !forb.offLabels.includes(item.label)) push([Object.assign({ rule: 'addr', detail: 'نقرُ التبويب «' + item.label + '» لا يعرضه (المعروض: «' + ((now.items.find((i) => i.sel) || {}).label || '—') + '» · العنوان ' + v.hash + ')' }, where0)], page, tab);
         else if (!byHash.has(v.hash)) byHash.set(v.hash, [item.label]);
         else if (!byHash.get(v.hash).includes(item.label)) byHash.get(v.hash).push(item.label);
@@ -316,12 +330,12 @@ export async function walkAccount(W, acc, st, viewport, opts = {}) {
     /* (5) البندُ المنقور هو المعلَّم في القائمة (حيث تعلّم القائمةُ بندَها) */
     const onNow = snap.side.filter((x) => x.on).map((x) => x.label);
     if (!item.self && !snap.dialogs.length && onNow.length && !onNow.includes(item.label)) push([Object.assign({ rule: 'addr', detail: 'البندُ المنقور «' + item.label + '» ليس المعلَّم في القائمة (المعلَّم: «' + onNow.join('، ') + '» · العنوان ' + snap.hash + ')' }, where0)], item.label);
-    await walkStrips(item.label, '', snap, 0);
+    await walkPage(item.label, snap);
   }
   /* ── عناوينُ لا يصلها بندٌ ولا تبويب (جدول SPECIAL.extraPages) ── */
   for (const x of (S.extraPages[acc.key] || [])) {
     if (opts.only && !opts.only.test(x)) continue;
-    const snap = await view({ hash: x }, x); if (snap) await walkStrips(x, '', snap, 0);
+    const snap = await view({ hash: x }, x); if (snap) await walkPage(x, snap);
   }
   /* ── (5) الرابطُ العميق: كلُّ عنوانِ تبويبٍ سُجّل يُفتح من جديد فيعرض التبويبَ نفسَه ── */
   if (opts.deep) {
