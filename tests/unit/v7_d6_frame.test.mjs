@@ -213,8 +213,12 @@ test('ب2 · multi-select: a checkbox per row (not the root), the bar with its t
   rowOf(v, A).chkFlip({ stopPropagation() {} }); rowOf(W.render(), B).chkFlip({ stopPropagation() {} }); v = W.render();
   assert.equal(v.ogBulkOn, true); assert.equal(v.ogBulkTxt, 'المحدد: 2 وحدة'); assert.equal(rowOf(v, A).chk, 'true'); assert.equal(rowOf(v, G).chk, 'false');
   assert.equal(W.location.hash, '#/sysadmin/org/platform/overview', 'ticking a box does not select the unit');
-  /* بلا خطّاف: يُقال صراحةً — ومع الخطّاف يتولّى التطبيق (والحدث يحمل النمط والوحدات) */
-  v.ogBulkEnable(); assert.match(W.toasts.at(-1)[0], /غير متاح الآن/); assert.equal(W.events.at(-1).type, 'bs:org-bulk'); deq(J(W.events.at(-1).detail), { mode: 'on', units: [A, B] });
+  /* V7 · د6 (م5): الخطّافُ صار معرَّفاً (logic-perm44.js orgBulkApply) — يفتح نافذةَ التطبيق ولا يُقال «غير متاح»؛ والحدث يحمل النمط والوحدات.
+     (كان: بلا خطّاف يُقال «غير متاح الآن» — الرسالةُ باقيةٌ في _ogBulk لخطّافٍ لا يتولّى) */
+  const t0 = W.toasts.length; v.ogBulkEnable(); assert.equal(W.toasts.length, t0, 'the hook took it: no «غير متاح» notice'); assert.equal(W.render().p44BulkOn, true, 'the apply dialog opens');
+  assert.equal(W.events.at(-1).type, 'bs:org-bulk'); deq(J(W.events.at(-1).detail), { mode: 'on', units: [A, B] });
+  W.render().p44BulkClose(); assert.equal(W.render().p44BulkOn, false);
+  W.page.orgBulkApply = () => false; W.render().ogBulkEnable(); assert.match(W.toasts.at(-1)[0], /غير متاح الآن/, 'a hook that does not take it: said plainly');
   const got = []; W.page.orgBulkApply = (mode, units) => { got.push([mode, units.slice()]); return true; };
   const n0 = W.toasts.length; W.render().ogBulkDisable(); deq(got, [['off', [A, B]]]); assert.equal(W.toasts.length, n0, 'the hook took it: no notice');
   W.render().ogBulkEnable(); deq(got.at(-1), ['on', [A, B]]);
@@ -355,7 +359,11 @@ test('«نقل إلى…» · «أثر النقل على الأنظمة»: what 
   /* الحسابُ قراءةٌ افتراضية: لم يُحفظ شيء ولم يتغيّر الهيكل، والمصدرُ دالةُ الوراثة القائمة (asIfUnder) */
   assert.equal(JSON.stringify([W.D.nodes(), W.D.list()]), reg0); assert.equal(W.D.nodeOf(A).pid, G); deq(J(W.D.ancestorsOf(A)), [G, SEC]);
   const f = ORG_SRC.slice(ORG_SRC.indexOf('  _ogMoveEffect('), ORG_SRC.indexOf('  _ogSetAll('));
-  assert.match(f, /D\.asIfUnder\(id, pid \|\| null, read\)/); assert.match(f, /this\._p44On\(u, x, off\)/); assert.match(f, /!this\._p44Lock\(u, x, off\) && this\._p44On\(u, x, off\)/, 'effective = what the «الأنظمة» tab shows (not locked from above ∧ on)'); assert.doesNotMatch(f, /ancestorsOf|rawCap|hasCap|deptCap/, 'no second copy of the inheritance rule');
+  assert.match(f, /D\.asIfUnder\(id, pid \|\| null, read\)/);
+  /* V7 · د6 (م5 · ب5): «المفعّل فعلياً» دالةٌ واحدة (p44SysOnEff = غيرُ مقفلٍ من فوق ∧ مفعّل) يقرؤها التبويبُ والشجرةُ وبطاقةُ النقل — لا تعبيرٌ منسوخ هنا */
+  assert.match(f, /this\.p44SysOnEff\(u, x, off\)/, 'effective = what the «الأنظمة» tab shows (the one function)');
+  const fe = ORG_SRC.slice(ORG_SRC.indexOf('  p44SysOnEff('), ORG_SRC.indexOf('  _p44PlatSw('));
+  assert.match(fe, /_p44LockSrc\(u, x, off\)/); assert.match(fe, /&& this\._p44On\(u, x, off\)/, 'not locked from above ∧ on'); assert.doesNotMatch(f, /ancestorsOf|rawCap|hasCap|deptCap/, 'no second copy of the inheritance rule');
   /* وحدةٌ مستقلةُ السجلّ تحت أبٍ أضيق: ما يطفئه الأبُ الجديد يُذكر باسمها وحدها */
   const W2 = orgWorld({ hash: '#/sysadmin/org/' + Z + '/overview', caps: { [G]: ['staff'] } }); let y = W2.render(); y.ogMoveOpen(); y = W2.render();
   y.ogMoveOnPid({ target: { value: G } }); y = W2.render();

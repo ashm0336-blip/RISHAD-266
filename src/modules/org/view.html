@@ -152,13 +152,20 @@
   <div class="p44-grid">
     <section class="p44-card p44-main" aria-label="أنظمة الوحدة">
       <div class="p44-hd"><small>{{p44Unit.path}}</small><h4>{{p44Unit.n}}</h4><p class="p44-note">{{p44Unit.inh}}</p></div>
+      <!-- V7 · د6 (ب5 · م5): «تشغيل الكل» / «إطفاء الكل» — المقفلُ من فوق لا يتأثر — وعدّادُ «المفعّل من الكل» -->
+      <sc-if value="{{p44SysCtl}}" hint-placeholder-val="{{ true }}">
+      <div class="p44-all" role="group" aria-label="كل الأنظمة"><span data-og="sys-count">المفعّل من الكل: <b dir="ltr">{{p44SysOnOf}}</b></span>
+        <sc-if value="{{p44SysAllOk}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-b" data-og-act="all-on" onClick="{{p44SysAllOn}}">تشغيل الكل</button><button type="button" class="p44-b" data-og-act="all-off" onClick="{{p44SysAllOff}}">إطفاء الكل</button></sc-if>
+      </div>
+      </sc-if>
       <sc-if value="{{p44SysNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">{{p44SysNoneTxt}}</div></sc-if>
       <ul class="p44-rows">
         <sc-for list="{{p44SysRows}}" as="s" hint-placeholder-count="8">
         <li class="p44-row" data-on="{{s.on}}">
           <span class="p44-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-1b59ac83"></svg></span>
           <span class="p44-f"><b>{{s.n}}</b><small>{{s.sub}}</small></span>
-          <sc-if value="{{s.locked}}" hint-placeholder-val="{{ false }}"><span class="p44-lock">مطفأ من {{s.by}}</span></sc-if>
+          <sc-if value="{{s.locked}}" hint-placeholder-val="{{ false }}"><span class="p44-lock" data-og="lock">{{s.lockTxt}}</span></sc-if>
+          <sc-if value="{{s.srcOn}}" hint-placeholder-val="{{ false }}"><a class="p44-src" href="{{s.srcHref}}" data-og-act="src" onClick="{{s.srcGo}}">افتح مصدره</a></sc-if>
           <sc-if value="{{s.sw}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-sw" role="switch" aria-checked="{{s.on}}" aria-label="{{s.n}}" disabled="{{s.locked}}" onClick="{{s.flip}}"></button></sc-if>
         </li>
         </sc-for>
@@ -173,6 +180,13 @@
       <sc-if value="{{p44SysCtl}}" hint-placeholder-val="{{ true }}">
       <section class="p44-card"><h4>أثر الحفظ</h4>
         <div class="p44-kpis"><div><b>{{p44SysOnN}}</b><small>أنظمة مفعّلة</small></div><div><b>{{p44SysPeople}}</b><small>شخص يتأثر</small></div></div>
+        <!-- V7 · د6 (ب5 · قرار المالك ٤): ما يتغيّر بالحفظ بالأسماء — وما يُطفأ مع حاويته (Perm44.offWith) -->
+        <ul class="p44-eff" data-og="sys-effect" aria-live="polite">
+          <sc-if value="{{p44SysEffNone}}" hint-placeholder-val="{{ true }}"><li data-og-eff="none">لا تغيير غير محفوظ.</li></sc-if>
+          <sc-if value="{{p44SysEffOn}}" hint-placeholder-val="{{ false }}"><li data-og-eff="on"><b>سيُفعَّل:</b> {{p44SysEffOn}}</li></sc-if>
+          <sc-if value="{{p44SysEffOff}}" hint-placeholder-val="{{ false }}"><li data-og-eff="off"><b>سيُطفأ:</b> {{p44SysEffOff}}</li></sc-if>
+          <sc-if value="{{p44SysEffWith}}" hint-placeholder-val="{{ false }}"><li data-og-eff="with"><b>يُطفأ معها:</b> {{p44SysEffWith}}</li></sc-if>
+        </ul>
         <p class="p44-note">إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل.</p>
       </section>
       </sc-if>
@@ -454,6 +468,46 @@
     </section>
     <sc-if value="{{ogMove.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogMove.msg}}</div></sc-if>
     <div class="ft"><button type="button" class="{{ogMoveOkCls}}" data-og-ok="move" onClick="{{ogMoveGo}}">{{ogMoveOkLbl}}</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
+  </div>
+</div>
+</sc-if>
+
+<!-- V7 · د6 (ب2 · م5): تطبيقُ الأنظمة على الوحدات المحددة — اختيارُ الأنظمة ← «مراجعة قبل الحفظ» لكل وحدة (ما يتغيّر · ما يُتخطّى بسببه) ← حفظٌ واحد كلُّه أو لا شيء -->
+<sc-if value="{{p44BulkOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{p44BulkClose}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogBulkT" class="bs-dlg-box og-dlg og-bulkdlg" data-og-dlg="bulk" data-og-mode="{{p44BulkMode}}" onClick="{{ogKeep}}">
+    <b class="t" id="ogBulkT">{{p44BulkT}}</b>
+    <p class="og-note" data-og="bulk-units">{{p44BulkUnits}}</p>
+    <sc-if value="{{p44BulkPick}}" hint-placeholder-val="{{ true }}">
+    <div class="og-bulk-hd"><span>اختر الأنظمة: <b>{{p44BulkPickN}}</b></span><button type="button" class="og-l" onClick="{{p44BulkAll}}">اختر الكل</button><button type="button" class="og-l" onClick="{{p44BulkNone}}">لا شيء</button></div>
+    <ul class="og-bulk-sys" role="group" aria-label="الأنظمة"><sc-for list="{{p44BulkSys}}" as="s" hint-placeholder-count="6"><li><button type="button" role="checkbox" class="og-pk" data-og-sys="{{s.k}}" aria-checked="{{s.on}}" onClick="{{s.flip}}">{{s.n}}</button></li></sc-for></ul>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="bulk-next" disabled="{{p44BulkNoPick}}" onClick="{{p44BulkNext}}">مراجعة قبل الحفظ</button><button type="button" class="bs-btn" onClick="{{p44BulkClose}}">إلغاء</button></div>
+    </sc-if>
+    <sc-if value="{{p44BulkRev}}" hint-placeholder-val="{{ false }}">
+    <h5 class="og-bulk-rt">مراجعة قبل الحفظ</h5>
+    <p class="og-pos" data-og="bulk-sum"><b>{{p44BulkSum}}</b></p>
+    <ul class="og-bulk-rows"><sc-for list="{{p44BulkRows}}" as="u" hint-placeholder-count="2"><li data-og-unit="{{u.id}}"><b>{{u.name}}</b>
+      <sc-if value="{{u.chOn}}" hint-placeholder-val="{{ true }}"><div data-og-b="ch"><span class="og-tag">{{u.chLbl}}</span> {{u.ch}}</div></sc-if>
+      <sc-if value="{{u.withOn}}" hint-placeholder-val="{{ false }}"><div data-og-b="with"><span class="og-tag">يُطفأ معها</span> {{u.with}}</div></sc-if>
+      <sc-if value="{{u.skipOn}}" hint-placeholder-val="{{ false }}"><sc-for list="{{u.skip}}" as="x" hint-placeholder-count="1"><div data-og-b="skip"><span class="og-tag og-tag--skip">تُخطّي</span> {{x.n}} — {{x.why}}</div></sc-for></sc-if>
+      <sc-if value="{{u.sameOn}}" hint-placeholder-val="{{ false }}"><div data-og-b="same" class="og-note">{{u.sameLbl}}: {{u.same}}</div></sc-if>
+      <sc-if value="{{u.none}}" hint-placeholder-val="{{ false }}"><div data-og-b="none" class="og-note">لا يتغيّر فيها شيء</div></sc-if>
+    </li></sc-for></ul>
+    <p class="og-note">{{p44BulkNote}}</p>
+    <sc-if value="{{p44BulkErr}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert" data-og="bulk-err">{{p44BulkErr}}</div></sc-if>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="bulk-save" disabled="{{p44BulkSaveOff}}" onClick="{{p44BulkSave}}">حفظ</button><button type="button" class="bs-btn" disabled="{{p44BulkBusy}}" onClick="{{p44BulkBack}}">رجوع</button></div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- V7 · د6 (ب11 · م5): تغييرٌ غيرُ محفوظ + وحدةٌ أخرى أو تبويبٌ آخر أو مغادرةُ الصفحة ⇒ ثلاثةُ أزرار. «حفظ ثم انتقال» يفتح «مراجعة قبل الحفظ» ويبقى إن رُفض -->
+<sc-if value="{{ogAskOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogAskStay}}">
+  <div dir="rtl" role="alertdialog" aria-modal="true" aria-labelledby="ogAskT" aria-describedby="ogAskM" class="bs-dlg-box og-dlg" data-og-dlg="unsaved" onClick="{{ogKeep}}">
+    <b class="t" id="ogAskT">تغييرات غير محفوظة</b>
+    <p class="m" id="ogAskM">{{ogAskTxt}}</p>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ask="save" onClick="{{ogAskSave}}">حفظ ثم انتقال</button><button type="button" class="bs-btn" data-og-ask="drop" onClick="{{ogAskDrop}}">تجاهل وانتقال</button><button type="button" class="bs-btn" data-og-ask="stay" onClick="{{ogAskStay}}">البقاء</button></div>
   </div>
 </div>
 </sc-if>

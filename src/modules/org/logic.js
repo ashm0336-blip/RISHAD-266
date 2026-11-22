@@ -465,7 +465,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       sys = this._ogTry(() => this._p44Sys().filter((x) => x.tg), []),
       units = [id].concat(this._ogTry(() => D.descendantsOf(id) || [], [])),
       /* المفعّلُ كما يعرضه تبويبُ «الأنظمة» نفسُه: غيرُ مقفلٍ من فوق (_p44Lock) ∧ مفعّلٌ في سقفها (_p44On) — فما يُطفئه الأبُ الجديد بالقفل (مثل ورقة «عهد الموظفين») يُسمّى هنا أيضاً */
-      read = () => units.map((u) => sys.map((x) => !this._p44Lock(u, x, off) && this._p44On(u, x, off))),
+      read = () => units.map((u) => sys.map((x) => this.p44SysOnEff(u, x, off))),   /* V7 · د6 (ب5): الدالةُ الواحدة (logic-perm44.js) */
       now = read(),
       then = this._ogTry(() => D.asIfUnder(id, pid || null, read), null),
       out = { off: [], on: [], nOff: 0, ok: !!then };
@@ -879,6 +879,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ogOnData: !1,
       p44Show: ["systems", "admins", "roles", "people", "log"].indexOf(rt.tab) !== -1,
       ...tabVals,
+      /* V7 · د6 (م5): نافذةُ التحديد المتعدد (ب2) وسؤالُ التغييرات غير المحفوظة (ب11) — logic-perm44.js */
+      ...this.p44BulkVals(),
+      ...this.ogAskVals(),
       /* نوافذُ أفعال الهيكل */
       ogDlgClose: () => this.setState({ ogDlg: null }),
       ogDlgOut: () => this.setState({ ogDlg: null }),
