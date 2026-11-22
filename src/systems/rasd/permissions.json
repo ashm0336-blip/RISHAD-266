@@ -571,10 +571,7 @@
      },
      "scopeDims": [
       "Department",
-      "Branch",
-      "DateRange",
-      "Shift",
-      "Site"
+      "DateRange"
      ],
      "audit": {
       "record": "line",

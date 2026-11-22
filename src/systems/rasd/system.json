@@ -222,10 +222,6 @@
    "order": 25,
    "text": "C['bassam_rasd_v1'] = recBulk('rz.rec');"
   },
-  "read.ops": {
-   "order": 25,
-   "text": ",'rasd/records'"
-  },
   "enf.refCrud.records": {
    "order": 25,
    "text": "    'bassam_rasd_opts_v1': crud('ref.rasd.list'),\n"

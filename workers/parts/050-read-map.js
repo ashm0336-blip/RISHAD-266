@@ -5,7 +5,7 @@
    وسجلّاتُ المضبوطات والإرشاد والجائزة والعهدة والمهام لا تقرؤها إلا صفحتُها. ومَن مُنح «النسخ
    الاحتياطية» يقرأ كلَّ مجموعات إدارته لأن النسخةَ لا تُصدَّر ناقصة. */
 var RD_ANY = ['admin/backup'];            /* ورقةٌ تقرأ كلَّ مجموعات الإدارة */
-var RD_OPS = ['emps/data','staff','plan','daily/rounds','daily/field','dreport','tasks','irshad/records','seized/records','rasd/records','award/res','award/new','award/doc','planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
+var RD_OPS = ['emps/data','staff','plan','daily/rounds','daily/field','dreport','tasks','irshad/records','seized/records','award/res','award/new','award/doc','planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
 var RD_REG = {
   /* ── مراجعُ مشتركة: تُقرأ من كل صفحةٍ تشغيليّة لتعرض اسماً أو ورديّة ── */
   'bassam_employees_v1':       RD_OPS,

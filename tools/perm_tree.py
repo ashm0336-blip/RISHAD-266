@@ -30,7 +30,9 @@ def system_rows(S):
             out.append('<td>%s</td><td><b>%s</b> <code>%s</code></td><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%d</td>' % (
                 e(r['container']), e(r['label']), e(r['owner']), e(r['kind']), e(r['route']), ' · '.join('<code>%s</code>' % e(k) for k in r['keys']),
                 int(r.get('reserved', 0)), len(r['keys']) + int(r.get('reserved', 0))))
+            system_rows.names.add(r['container'])
     return out
+system_rows.names = set()
 def strip(x): return html.unescape(re.sub(r'<[^>]+>', '', x)).strip()
 def derive():
     errs = []
@@ -132,6 +134,12 @@ def derive():
         cont[cname]['leaves'].append(leaf)
     # KIVO_259 · AUD-030 (ADR-018): عدسةُ إضافةٍ غيرُ مذكورةٍ في الوثيقة تُلحق بحاوية «العدسات (Plugins)» من manifest-ها (source: plugin) —
     # مفاتيحُها من السجلّ كسائر الأوراق؛ والعدساتُ المذكورة في الوثيقة كما هي (لا تغيير للست المضمَّنة).
+    # V7 · د6: حاويةُ نظامٍ من صفوف الأنظمة (system_rows) تأخذ موضعَ صفحتها في pages.json بين حاويات الصفحات — كما تبنيها الواجهة (t24Struct)
+    pidx = {p['key']: i for i, p in enumerate(pages['pages'])}
+    for cn in [c for c in order if c in system_rows.names and cont[c]['kind'] == 'page']:
+        order.remove(cn); me = pidx.get(cont[cn]['page'], len(pidx))
+        at = next((i for i, c in enumerate(order) if cont[c]['kind'] != 'page' or pidx.get(cont[c]['page'], -1) > me), len(order))
+        order.insert(at, cn)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import plugins as PL
     LC = 'العدسات (Plugins)'
     for pm in PL.load(SRC):

@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "20ac02f4e21f208e16203bd034e1c2d1013aef0ed26cb01ce4f3fc3221787dd7",
+  "sha256": "7ef666e89c38ca9f5a9ee3a573a98e82a7245c43b38643d00300d4828993d33e",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -48,8 +48,8 @@
         133,
         224
       ],
-      "bytes": 229999,
-      "sha256": "e27fed80e29c3b12c4b5cfc303736989caabc85dd2e6fd9e9a8df17b0905f39b",
+      "bytes": 229975,
+      "sha256": "9350034e572cbcb6da16c1b57c32705e1072b7b7e150819defa00789d672f9cd",
       "head": "/* ═══ KIVO — Master Permission Registry v24.9 (generated R203 · Phase 4.5 — Integrated Identity→Scope Preflight) ═══"
     },
     {
@@ -937,8 +937,8 @@
         22601,
         22678
       ],
-      "bytes": 6547,
-      "sha256": "9642053c98262bd4b2fbab311b90ec983818b03b3c8577409f7bb08c86ab6fdf",
+      "bytes": 6532,
+      "sha256": "4890294aae2d5f178782a647a4643c632d2b11eb8a1a678b2ead2c1d0aad8b75",
       "head": "/* ══ R169-CC · READ-01: خريطةُ القراءة المرجعيّة ══════════════════════════"
     },
     {
