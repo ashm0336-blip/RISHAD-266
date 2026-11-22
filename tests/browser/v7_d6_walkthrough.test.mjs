@@ -118,6 +118,10 @@ const KNOWN_D6 = [
     note: 'أزرارُ تصفية «سجل الحركة» تسمّي النظامَ المطفأ («المهام» · «التقرير اليومي»)' },
   { id: 'D6-OFF-AUDIT-FILTER', owner: 'المركز ← «سجل الأنشطة والتغييرات»', rule: 'off', accounts: ['super-center'], states: ['oneOffPlat'], page: /سجل الأنشطة/, detail: /button«(?:المهام|التقرير اليومي)»/,
     note: 'أزرارُ تصفية سجل المركز تسمّي ما يتبع نظاماً مطفأً على المنصة' },
+  { id: 'D6-OFF-REQ-ME-TASKS', owner: 'نظام المهام × «صفحتي»', rule: 'off', accounts: ['super-in', 'gm', 'mgr', 'sec', 'emp-role', 'emp-none'], states: ['oneOffDept', 'allOffDept'], detail: /طلبٌ لواجهة نظامٍ مطفأ \(tasks\): GET \/api\/me\/tasks/,
+    note: '«صفحتي» تطلب /api/me/tasks والمهامُ مطفأةٌ للإدارة (بطاقةُ «مهامك» لا تُرسم، والخادمُ يجيب 200 لغير مدير المنصة أيضاً)' },
+  { id: 'D6-OFF-REQ-CUSTODY', owner: 'نظام العهد / «موظفو الإدارة»', rule: 'off', accounts: ['super-in', 'gm', 'mgr', 'sec', 'emp-role'], states: ['allOffDept'], detail: /طلبٌ لواجهة نظامٍ مطفأ \(custody\): GET \/api\/custody/,
+    note: '«موظفو الإدارة» تطلب /api/custody والعهدُ مطفأ (لمدير المنصة 200 · لغيره 403 = D6-HTTP-CUSTODY-OFF)' },
   /* ── «المتابعة اليومية» مطفأةٌ على المنصة وما يسكنها («التقرير اليومي» · «المهام») باقٍ — يحتاج قراراً: هل يتبع الساكنُ حاويتَه على المنصة كما يتبعها في الإدارة؟ ── */
   { id: 'D6-PLAT-UNDER-PAGE', owner: 'إطفاء المنصة (mods.off) وما يسكن الحاوية', rule: 'off', accounts: OPS, states: ['oneOffPlat'], detail: /عنوانُ نظامٍ مطفأ يُفتح: #\/daily|تبويب من نظامٍ مطفأ: «(?:التقرير اليومي|المهام|مؤشرات المهام)»/,
     note: 'الرابطُ الجانبي يختفي لكن العنوانَ #/daily يُفتح وفيه تبويبا «التقرير اليومي» و«المهام»، ولوحةُ «مؤشرات المهام» باقية' },
@@ -125,6 +129,8 @@ const KNOWN_D6 = [
     note: 'تنبيهاتُ «التقرير اليومي» و«المهام» تبقى في القائمة والجرس و«المتابعة اليومية» مطفأةٌ على المنصة' },
   { id: 'D6-PLAT-UNDER-SYSLIST', owner: 'إطفاء المنصة (mods.off) وما يسكن الحاوية', rule: 'off', accounts: ['super-center', 'super-in', 'gm', 'mgr', 'sec'], states: ['oneOffPlat'], detail: /b«(?:التقرير اليومي|المهام)»/,
     note: '«الصلاحيات»: «التقرير اليومي» و«المهام» يُعرضان مفعّلين (قائمةُ أنظمة المدير · محرّرُ الأدوار) وحاويتُهما مطفأةٌ على المنصة' },
+  { id: 'D6-PLAT-UNDER-REQ', owner: 'إطفاء المنصة (mods.off) وما يسكن الحاوية', rule: 'off', states: ['oneOffPlat'], detail: /طلبٌ لواجهة نظامٍ مطفأ \(tasks\): GET \/api\/me\/tasks/,
+    note: '«صفحتي» تطلب /api/me/tasks و«المتابعة اليومية» (حاويةُ المهام) مطفأةٌ على المنصة — كلُّ الحسابات' },
   { id: 'D6-PLAT-ROLE-LEAK', owner: 'محرّك الأدوار × إطفاء المنصة', rule: 'off', accounts: ['emp-role'], states: ['oneOffPlat'], detail: /«(?:الجولات اليومية|مؤشرات التشغيل اليومي)»/,
     note: 'حاملُ الدور يرى من «المتابعة اليومية» نفسِها (لا مما يسكنها) تبويبَ «الجولات اليومية» ولوحةَ «مؤشرات التشغيل اليومي» وهي مطفأةٌ على المنصة — والمديرُ لا يراهما' },
   /* ── ج2 · المصدرُ الواحد (أ1) — إلى م4 ── */
@@ -171,7 +177,8 @@ test('V7 · د6 (أ2 · ج1 · ج2 · ج9) · الجولة الكاملة: كل�
         if (ONLY !== 'walk') {
           const q0 = Date.now(), src = await singleSource(W, st, accounts);
           row.source = Date.now() - q0; sources.push({ state: st.key, rows: src.rows }); all.push(...src.findings);
-          accounts.forEach((a) => cells.push({ account: a.key, state: st.key, viewport: 1366, part: 'source' }));
+          /* بطاقةُ حاملٍ يعرضها حسابٌ آخر: مداخلُ المصدر الواحد لا يُحكم ببَوارها إلا والحساباتُ كلُّها في التشغيل */
+          if (accounts.length === ACCOUNTS.length) accounts.forEach((a) => cells.push({ account: a.key, state: st.key, viewport: 1366, part: 'source' }));
         }
         row.total = Date.now() - s0; times.push(row);
         log0('d6 · ' + st.key + ': build ' + row.build + ' ms (' + row.saves + ' saves) · walk ' + JSON.stringify(row.walk) + ' · source ' + row.source + ' ms · total ' + row.total + ' ms');

@@ -387,6 +387,8 @@ function ownsMap() {
 function offReads(W, log, forb) {
   const owns = ownsMap(), out = new Set();
   log.filter((e) => e.kind === 'req' && /^GET \/api\/get\?/.test(e.text)).forEach((e) => { let q = ''; try { q = decodeURIComponent(e.text); } catch (x) { q = e.text; } Object.keys(owns).forEach((k) => { if (forb.off.includes(owns[k]) && new RegExp('[:=,]' + k + '(?:[,&:]|$)').test(q)) out.add('قراءةُ مورد نظامٍ مطفأ: ' + k + ' (' + owns[k] + ')'); }); });
+  /* وطلبٌ لواجهةٍ يحمل مسارُها اسمَ نظامٍ مطفأ (‎/api/…/<مفتاح النظام>‎) — المفاتيحُ من فهرس الأنظمة */
+  log.filter((e) => e.kind === 'req').forEach((e) => { const m = /^(\w+) (\/api\/[^?\s]*)/.exec(e.text); if (!m) return; const hit = m[2].split('/').find((seg) => forb.off.includes(seg)); if (hit) out.add('طلبٌ لواجهة نظامٍ مطفأ (' + hit + '): ' + m[1] + ' ' + m[2]); });
   return [...out];
 }
 
@@ -503,11 +505,11 @@ export async function singleSource(W, st, accounts) {
     for (const v of c.viewers) {
       const acc = ACCOUNTS.find((a) => a.key === v.account); if (!acc || !accounts.includes(acc) || !menus[c.holder]) continue;
       const s = await session(W, acc, vp), p = s.page, miss = (why) => { F.push(Object.assign({ rule: 'source', account: c.holder, page: c.name, tab: 'يعرضها ' + v.account, detail: why + ' (' + v.addr + ') — حدّث SPECIAL.cards إن تغيّرت الشاشة' }, where0)); rows.push({ holder: c.holder, card: c.name, viewer: v.account, same: false, keys: false, real: [], shown: null }); };
-      const tg = Date.now(); await p.evaluate((h) => { window.__d6.go(h); }, v.addr); const okg = await settle(p); if (process.env.KIVO_D6_TRACE) console.log('d6 trace go', v.addr, Date.now() - tg, okg);
+      await p.evaluate((h) => { window.__d6.go(h); }, v.addr); await settle(p);
       if (c.pick) {
         const el = p.locator(S.dom.main).locator(c.pickIn || 'button, [role=option], [role=row], li, a').filter({ has: p.getByText(c.pick, { exact: true }) }).first();
         if (!(await el.count())) { miss('لم يوجد «' + c.pick + '» ليُختار'); s.log.length = 0; continue; }
-        const tq = Date.now(); await p.evaluate(() => window.__d6.act()); await el.click(); const okq = await settle(p, 5000); if (process.env.KIVO_D6_TRACE) console.log('d6 trace pick', c.name, v.account, Date.now() - tq, okq, okq ? '' : JSON.stringify(await p.evaluate(() => ({ l: window.__d6.loading(), f: window.__d6.what, moved: window.__d6.moved, q: performance.now() - window.__d6.last }))));
+        await p.evaluate(() => window.__d6.act()); await el.click(); await settle(p, 5000);
       }
       const got = await p.evaluate(([main, heads, item, pick, verify]) => {
         const norm = (t) => String(t || '').replace(/\s+/g, ' ').trim(), m = document.querySelector(main); if (!m) return { err: 'لا صفحة' };
