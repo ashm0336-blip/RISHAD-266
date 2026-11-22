@@ -104,7 +104,8 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
     /* د4-ج: بغياب العهد — نسخةُ الإدارة من صفحة العقدة (ملفٌ حقيقي يسلّمه المتصفح) ثم استعادتُها بالاستبدال من الملف نفسه حتى اعتماد الخادم */
     if (!SYSTEMS.includes('custody')) {
       const p = s.page, posts = [];
-      p.on('response', async (r) => { if (/\/api\/backup\/restore/.test(r.url()) && r.request().method() === 'POST') { let j = null; try { j = await r.json(); } catch (e) {} posts.push({ s: r.status(), ok: j && j.ok, err: j && j.err, phase: j && (j.inspection ? 'prepare' : 'commit') }); } });
+      /* V7 · د6: الاستعادةُ تُرسل على أجزاء (/api/backup/import) — التحضيرُ هو ردُّ الفحص (inspection) والاعتمادُ هو ردُّ طلب phase:'commit' بإيصاله (rev)؛ البدءُ والأجزاءُ لا تُحسب أيّاً منهما */
+      p.on('response', async (r) => { if (/\/api\/backup\/import/.test(r.url()) && r.request().method() === 'POST') { let j = null, q = {}; try { j = await r.json(); q = JSON.parse(r.request().postData() || '{}'); } catch (e) {} posts.push({ s: r.status(), ok: j && j.ok, err: j && j.err, phase: j && j.inspection ? 'prepare' : q.phase === 'commit' && j && Number.isSafeInteger(j.rev) ? 'commit' : 'part' }); } });
       const unit = await p.evaluate(() => { const D = KIVO.BassamDepts; return D && D.active ? D.active() : ''; }); assert.ok(unit, 'الإدارةُ النشطة معروفة');
       await s.go('#/sysadmin/org/' + unit, 3500);
       await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click(); await p.waitForTimeout(800);

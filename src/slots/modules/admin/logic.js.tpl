@@ -2517,7 +2517,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       if (!pend.ticket || pend.mode !== mode) {
         const scope = pend.legacy ? { kind: "dept", departmentId: KIVO.BassamDepts.active() } : { kind: "full" },
-          prepared = await svc.prepare(pend.file, { scope, mode });
+          /* V7 · د6: النسخةُ تُرسل على أجزاء — سطرُ الحالة يعرض الجزءَ الحالي من الكل */
+          prepared = await svc.prepare(pend.file, { scope, mode, resume: pend.failed && pend.failed.resumable && pend.mode === mode ? pend.failed : undefined,
+            onProgress: (p) => this.setState({ backupMsg: p.step === "upload" ? "جارٍ إرسال النسخة: الجزء " + p.part + " من " + p.parts + (p.images ? " · الصور " + (p.image || 0) + " من " + p.images : "") : "جارٍ فحص النسخة…" }) });
+        pend.failed = prepared.ok ? null : prepared;
+        pend.mode = mode;
         if (!prepared.ok) {
           this.setState({ backupMsg: prepared.message });
           return;
