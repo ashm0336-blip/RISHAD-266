@@ -5,7 +5,7 @@
    وسجلّاتُ المضبوطات والإرشاد والجائزة والعهدة والمهام لا تقرؤها إلا صفحتُها. ومَن مُنح «النسخ
    الاحتياطية» يقرأ كلَّ مجموعات إدارته لأن النسخةَ لا تُصدَّر ناقصة. */
 var RD_ANY = ['admin/backup'];            /* ورقةٌ تقرأ كلَّ مجموعات الإدارة */
-var RD_OPS = ['emps/data','staff','plan','daily/rounds','daily/field','dreport','tasks','irshad/records','seized/records','award/res','award/new','award/doc','planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
+var RD_OPS = ['emps/data','staff','plan','daily/rounds','daily/field','dreport','tasks','irshad/records','seized/records','rasd/records','award/res','award/new','award/doc','planning','planning/readiness'];           /* كلُّ الأوراق التشغيلية — للمراجع المشتركة */
 var RD_REG = {
   /* ── مراجعُ مشتركة: تُقرأ من كل صفحةٍ تشغيليّة لتعرض اسماً أو ورديّة ── */
   'bassam_employees_v1':       RD_OPS,
@@ -45,6 +45,9 @@ var RD_REG = {
   'bassam_seized_acts_v1':     ['seized/records', 'seized/dash'],
   'bassam_seized_locs_v1':     ['seized/records', 'seized/dash'],
   'bassam_seized_jew_v1':      ['seized/records', 'seized/dash'],
+  /* ── رصد الحالات ── */
+  'bassam_rasd_v1':            ['rasd/records', 'rasd/dash'],
+  'bassam_rasd_opts_v1':       ['rasd/records', 'rasd/dash'],
   /* ── جائزة التميز ── */
   'bassam_award_v1':           ['award/res', 'award/new', 'emps/data'],
   'bassam_award_docs_v1':      ['award/doc', 'award/res', 'award/new'],

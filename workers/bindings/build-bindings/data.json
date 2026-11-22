@@ -274,15 +274,38 @@
     "seized/records:approve"
    ],
    "sensitive": true
+  },
+  {
+   "key": "rz.rec.retro.open",
+   "group": "D — retro (rasd)",
+   "mechanism": "قفلٌ زمنيٌّ في الواجهة: الشهرُ أو اليومُ المنقضي مقفلٌ للإدخال، ويفتحه للاستدراك حاملُ rz.rec.retro.open (⇐ rasd/records:approve) بنقرةٍ مزدوجة على بطاقته — حالةٌ في الصفحة لا نافذةٌ خادمية (كما في Production)",
+   "inputs": "اليومُ الهجري (KIVO.BassamCal.hToday) · تاريخُ اليوم المختار في شريط الأيام · قرارُ rasd/records:approve",
+   "shadow_rule": "لا قاعدةَ رفضٍ خادمية لهذا النظام — DateRange للمورد بلا نموذج قفل (allow no-temporal-lock)",
+   "asis_today": "القفلُ حالةُ واجهةٍ فقط (rzOpenMonths/rzOpenDays بنقرةٍ مزدوجة لحامل approve)",
+   "expected_mismatch": "لا شيء — لا قاعدةَ خادمية تُقاس لهذا النظام",
+   "impl": [],
+   "tests": [
+    "src/systems/rasd/tests/rasd_logic.test.mjs"
+   ],
+   "api": "—",
+   "status": "ui-only",
+   "owner": "rasd/records",
+   "label": "فتح شهر/يوم مقفل للاستدراك",
+   "guardKind": "rule-new",
+   "guardStatus": "to-build",
+   "asisMap": [
+    "rasd/records:approve"
+   ],
+   "sensitive": true
   }
  ],
  "counts": {
-  "toBuild": 10,
-  "built": 10,
+  "toBuild": 11,
+  "built": 11,
   "unbuilt": 0,
   "unknownKeys": 0,
   "reservedEmitted": 0,
-  "implFns": 10
+  "implFns": 11
  },
  "importRes": [
   "bassam_employees_v1",

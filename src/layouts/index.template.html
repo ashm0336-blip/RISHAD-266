@@ -119,6 +119,7 @@
 @@KIVO_BLOCK:systems/tasks/client/545-task-self.js@@
 @@KIVO_BLOCK:systems/tasks/client/546-task-model.js@@
 @@KIVO_BLOCK:systems/custody/client/547-custody-api.js@@
+@@KIVO_BLOCK:systems/seized/client/549-seized-links.js@@
 @@KIVO_BLOCK:services/548-atomic-backup.js@@
 @@KIVO_BLOCK:styles/540-busy.css@@
 @@KIVO_BLOCK:components/550-bassam-busy.js@@
@@ -238,6 +239,7 @@
       <a class="{{nDaily}}" data-key="daily" role="link" tabindex="0" sc-camel-on-click="{{goDaily}}" title="{{tDaily}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9a375c7e"></svg></span><span class="nlbl">المتابعة اليومية</span></a>
       <a class="{{nIrshad}}" data-key="irshad" role="link" tabindex="0" sc-camel-on-click="{{goIrshad}}" title="{{tIrshad}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-8d0f2597"></svg></span><span class="nlbl">نظام الاسترشاد</span></a>
       <a class="{{nSeized}}" data-key="seized" role="link" tabindex="0" sc-camel-on-click="{{goSeized}}" title="{{tSeized}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d82ee5cd"></svg></span><span class="nlbl">نظام المضبوطات</span></a>
+      <a class="{{nRasd}}" data-key="rasd" role="link" tabindex="0" sc-camel-on-click="{{goRasd}}" title="{{tRasd}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-ec9ec7cc"></svg></span><span class="nlbl">نظام رصد الحالات</span></a>
       <a class="{{nAward}}" data-key="award" role="link" tabindex="0" sc-camel-on-click="{{goAward}}" title="{{tAward}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-94b68a04"></svg></span><span class="nlbl">جائزة التميز</span></a>
       <!-- «المهام اليومية» انتقلت إلى تبويب داخل صفحة موظفي الإدارة -->
     </div>
@@ -373,6 +375,9 @@
   </sc-if>
   <sc-if value="{{isSeized}}" hint-placeholder-val="{{ false }}">
     <dc-import name="Seized" hint-size="100%,900px"></dc-import>
+  </sc-if>
+  <sc-if value="{{isRasd}}" hint-placeholder-val="{{ false }}">
+    <dc-import name="Rasd" hint-size="100%,900px"></dc-import>
   </sc-if>
   <sc-if value="{{isAward}}" hint-placeholder-val="{{ false }}">
     <dc-import name="Award" hint-size="100%,900px"></dc-import>

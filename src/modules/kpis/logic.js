@@ -27,6 +27,7 @@ class Component extends DCLogic {
         { k: "zn", pk: "daily", sk: "kpiZones" },
         { k: "sz", pk: "seized", sk: "dash" },
         { k: "ir", pk: "irshad", sk: "dash" },
+        { k: "rz", pk: "rasd", sk: "dash" },
         { k: "tk", pk: "tasks", sk: "" },
         { k: "dsh", pk: "dstats", sk: "anHaram" },
         { k: "dsn", pk: "dstats", sk: "anNabawi" },

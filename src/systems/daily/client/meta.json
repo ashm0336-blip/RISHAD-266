@@ -76,7 +76,9 @@
    "gate:theme248.mjs",
    "gate:visual.mjs",
    "gate:zcodes.mjs",
+   "src/systems/daily/tests/v7_d5h_daily_boundary.test.mjs",
    "src/systems/daily/tests/v7_d5h_rounds_archive_page.test.mjs",
+   "src/systems/dreport/tests/v7_d5h_dreport_boundary.test.mjs",
    "tests/unit/refresh_tabs_w1.test.mjs",
    "tests/unit/v7_d1c_super_unbounded.test.mjs",
    "tests/unit/v7_p4_systems_map.test.mjs"

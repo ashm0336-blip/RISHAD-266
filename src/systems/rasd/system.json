@@ -1,0 +1,261 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "rasd",
+ "name": "نظام رصد الحالات",
+ "note": "V7 · د6 (م7): نظامُ «رصد الحالات» — نظامٌ مستقلٌّ في مجلده بالنمط نفسِه للمضبوطات: يقرؤه tools/systems.py وقتَ البناء (القطعُ في فتحات القاعدة) وtools/perm_parts.py (صلاحياتُه). بياناتُه مفتاحا إدارةٍ في المخزن السحابي (bassam_rasd_v1 · bassam_rasd_opts_v1) بصيغة Production نفسِها، فلا جزءَ خادمٍ خاصّاً به: السياسةُ والقراءةُ والكيانُ والحراسةُ قطعٌ في سجلّات القاعدة. حذفُ المجلد يُخرجه كاملاً.",
+ "client": {
+  "slug": "rasd",
+  "component": "Rasd",
+  "files": [
+   "client/helmet.css",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "server": {
+  "parts": []
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [],
+  "why": "لا جداولَ خاصة: مفتاحا إدارةٍ في مخزن المنصة (kv)"
+ },
+ "permissions": "permissions.json",
+ "tests": [
+  "tests/rasd_logic.test.mjs",
+  "tests/rasd_server.test.mjs",
+  "tests/rasd_import.test.mjs",
+  "tests/rasd_fx.mjs"
+ ],
+ "derived": [
+  "src/pages/Rasd.dc.html"
+ ],
+ "slots": {
+  "modules.tail": {
+   "order": 20,
+   "text": ",\n  {\n   \"name\": \"Rasd\",\n   \"slug\": \"rasd\",\n   \"minifiedSource\": true,\n   \"bytes\": 193642,\n   \"logicLines\": 1758\n  }"
+  },
+  "blocks.pages.tail": {
+   "order": 20,
+   "text": ",\n   {\n    \"b64Sha256\": \"356beb14be5e7bd5fa34c6c652c388a0d17d5c5e0cac0347b2c6d5c1499b464a\",\n    \"bytes\": 193642,\n    \"file\": \"client/pages/Rasd.dc.html\",\n    \"name\": \"Rasd\",\n    \"sha256\": \"22b03b9085099622ec75616d2c789d1147e69c25a44f9c6a101a66201a90733a\"\n   }"
+  },
+  "blocks.order.tail": {
+   "order": 20,
+   "text": ",\n   \"Rasd\""
+  },
+  "budget.page.rasd": {
+   "order": 10,
+   "text": "  \"page:Rasd\": 40500,\r\n"
+  },
+  "budget.decisions": {
+   "order": 10,
+   "text": " \"d6RasdDecision\": {\r\n  \"date\": \"2026-11-22\",\r\n  \"scope\": \"V7 · د6 (م7 رصد الحالات): سقفٌ جديد لصفحة النظام page:Rasd = 40500 بايت gzip (هامش ≥ 2% على 39607 المقيس). صفحةٌ كسولة تُحمَّل عند فتح «نظام رصد الحالات» أو لوحته في «مؤشرات الإدارة» وحدهما. لم يُرفع سقفٌ قائم.\"\r\n },\r\n"
+  },
+  "uxStates.tail": {
+   "order": 20,
+   "text": ",\n  \"rasd\": {\n   \"فارغ\": 0,\n   \"تحميل\": 0,\n   \"خطأ\": 0,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 0\n  }"
+  },
+  "ns.after.tail": {
+   "order": 20,
+   "text": ",\n  \"src/systems/rasd/client/logic.js\""
+  },
+  "pages.entry.systems": {
+   "order": 25,
+   "text": "  {\n   \"key\": \"rasd\",\n   \"module\": \"rasd\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"departmentComponents\": [\"Rasd\"],\n   \"nav\": \"rasd\",\n   \"name\": \"نظام رصد الحالات\",\n   \"subs\": [\n    {\n     \"key\": \"dash\",\n     \"name\": \"لوحة المؤشرات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"records\",\n     \"name\": \"السجلات\"\n    }\n   ]\n  },\n"
+  },
+  "pages.kpi.refs.mid": {
+   "order": 30,
+   "text": ",\n    \"rasd/dash\""
+  },
+  "pages.kpi.names.mid": {
+   "order": 30,
+   "text": ",\n    \"rasd/dash\": \"لوحة مؤشرات رصد الحالات\""
+  },
+  "pages.tabAddr.tail": {
+   "order": 40,
+   "text": ",\n  \"rasd\": {\n   \"records\": 1\n  }"
+  },
+  "pages.navOrder.tail": {
+   "order": 25,
+   "text": ",\n  \"rasd\""
+  },
+  "pages.navNames.tail": {
+   "order": 25,
+   "text": ",\n  \"rasd\": \"نظام رصد الحالات\""
+  },
+  "pages.routeNames.systems": {
+   "order": 25,
+   "text": "  \"rasd\": \"نظام رصد الحالات\",\n"
+  },
+  "shell.nav.systems": {
+   "order": 25,
+   "text": "      <a class=\"{{nRasd}}\" data-key=\"rasd\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goRasd}}\" title=\"{{tRasd}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-ec9ec7cc\"></svg></span><span class=\"nlbl\">نظام رصد الحالات</span></a>\n"
+  },
+  "shell.mounts": {
+   "order": 35,
+   "text": "  <sc-if value=\"{{isRasd}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Rasd\" hint-size=\"100%,900px\"></dc-import>\n  </sc-if>\n"
+  },
+  "root.liveKeys": {
+   "order": 25,
+   "text": "rasd: /rasd/, "
+  },
+  "root.landing.systems": {
+   "order": 25,
+   "text": "\"rasd\", "
+  },
+  "root.inPlanning": {
+   "order": 25,
+   "text": ",\"rasd\""
+  },
+  "root.labels": {
+   "order": 25,
+   "text": "rasd:\"نظام رصد الحالات\", "
+  },
+  "root.navVals.systems": {
+   "order": 25,
+   "text": "nRasd: cls(\"rasd\", \"rasd\"), tRasd: tip(\"rasd\"), "
+  },
+  "root.go.systems": {
+   "order": 25,
+   "text": "goRasd: go(\"rasd\"), "
+  },
+  "root.is.systems": {
+   "order": 25,
+   "text": "isRasd: ap === \"rasd\", "
+  },
+  "root.known.systems": {
+   "order": 25,
+   "text": "\"rasd\","
+  },
+  "plat.sideOrder": {
+   "order": 25,
+   "text": ", \"rasd\""
+  },
+  "pageStates.names": {
+   "order": 25,
+   "text": "    \"rasd\": \"سجلات رصد الحالات\", \"rasd/records\": \"سجلات رصد الحالات\", \"rasd/dash\": \"مؤشرات رصد الحالات\",\n"
+  },
+  "kpis.panels.mid": {
+   "order": 30,
+   "text": "        { k: \"rz\", pk: \"rasd\", sk: \"dash\" },\n"
+  },
+  "kpis.tabs.mid": {
+   "order": 30,
+   "file": "slots/kpis.tabs.mid.frag"
+  },
+  "kpis.mounts.mid": {
+   "order": 30,
+   "text": "  <sc-if value=\"{{on_rz}}\" hint-placeholder-val=\"{{ false }}\"><dc-import name=\"Rasd\" solo=\"dash\" hint-size=\"100%,1100px\"></dc-import></sc-if>\n"
+  },
+  "nf.types": {
+   "order": 25,
+   "file": "slots/nf.types.frag"
+  },
+  "nf.cap": {
+   "order": 25,
+   "text": "  rasd: \"rasd\",\n"
+  },
+  "nf.denyPages.2": {
+   "order": 25,
+   "text": " rasd: \"نظام رصد الحالات\","
+  },
+  "nf.denyRecs.2": {
+   "order": 25,
+   "text": "bassam_rasd_v1: \"نظام رصد الحالات\", bassam_rasd_opts_v1: \"قوائم رصد الحالات\", "
+  },
+  "nfc.kind.color": {
+   "order": 25,
+   "text": " get rasd() { return KC.acct; },"
+  },
+  "nfc.kind.name": {
+   "order": 25,
+   "text": " rasd:'رصد الحالات',"
+  },
+  "nfc.kind.icon": {
+   "order": 25,
+   "text": " rasd:'M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6',"
+  },
+  "nfc.reg": {
+   "order": 25,
+   "file": "slots/nfc.reg.frag"
+  },
+  "nfc.goPage.records": {
+   "order": 25,
+   "text": "rasd: 'rasd'"
+  },
+  "nfc.goPage.dash": {
+   "order": 25,
+   "text": "rasd: 'kpis'"
+  },
+  "nfc.goKpiPage": {
+   "order": 25,
+   "text": "rasd: ['rasd', 'dash']"
+  },
+  "nfo.watch": {
+   "order": 10,
+   "file": "slots/nfo.watch.frag"
+  },
+  "res.reg.dept": {
+   "order": 25,
+   "text": "  /* ── رصد الحالات ── */\n  'bassam_rasd_v1':            { scope: 'dept', cap: 'rasd/records' },\n  'bassam_rasd_opts_v1':       { scope: 'dept', cap: 'rasd/records' },\n"
+  },
+  "ent.reg": {
+   "order": 25,
+   "text": "  /* ── رصد الحالات ── */\n  'bassam_rasd_v1':           { cols: [{ at: 'reports', idf: ['id'], lock: ['id'] }], empty: '{\"reports\":[]}' },\n  /* القوائم: { zone, floor, type, act, party: [{ n, c }], spot: [{ n, z, g }] } — الاسمُ هويةُ البند */\n  'bassam_rasd_opts_v1':      { cols: [{ at: 'zone', idf: ['n'] }, { at: 'floor', idf: ['n'] }, { at: 'type', idf: ['n'] }, { at: 'act', idf: ['n'] }, { at: 'party', idf: ['n'] }, { at: 'spot', idf: ['n'] }],\n                               empty: '{\"zone\":[],\"floor\":[],\"type\":[],\"act\":[],\"party\":[],\"spot\":[]}' },\n"
+  },
+  "fields.reg": {
+   "order": 25,
+   "text": "  'bassam_rasd_v1':       { cols: { reports: { req: ['id'], type: { id: 'str' } } } },\n"
+  },
+  "read.map.systems": {
+   "order": 25,
+   "text": "  /* ── رصد الحالات ── */\n  'bassam_rasd_v1':            ['rasd/records', 'rasd/dash'],\n  'bassam_rasd_opts_v1':       ['rasd/records', 'rasd/dash'],\n"
+  },
+  "tree.keyCap": {
+   "order": 25,
+   "text": "    bassam_rasd_v1:'rasd', bassam_rasd_opts_v1:'rasd'"
+  },
+  "guard.classify.records": {
+   "order": 25,
+   "text": "C['bassam_rasd_v1'] = recBulk('rz.rec');"
+  },
+  "read.ops": {
+   "order": 25,
+   "text": ",'rasd/records'"
+  },
+  "enf.refCrud.records": {
+   "order": 25,
+   "text": "    'bassam_rasd_opts_v1': crud('ref.rasd.list'),\n"
+  },
+  "store.identity": {
+   "order": 25,
+   "text": " bassam_rasd_v1: { \"reports\": \"id\" },"
+  },
+  "store.keyLabels": {
+   "order": 25,
+   "text": "      bassam_rasd_v1:[\"نظام رصد الحالات\"], bassam_rasd_opts_v1:[\"قوائم رصد الحالات\"],\n"
+  },
+  "activity.entities": {
+   "order": 25,
+   "text": " rasd: 'حالة رصد',"
+  },
+  "activity.filter": {
+   "order": 25,
+   "text": " ['rasd', 'رصد الحالات'],"
+  },
+  "res.empty.systems": {
+   "order": 25,
+   "text": "    bassam_rasd_v1: '{\"reports\":[]}', bassam_rasd_opts_v1: '{\"zone\":[],\"floor\":[],\"type\":[],\"act\":[],\"party\":[],\"spot\":[]}',\n"
+  },
+  "admin.keyLabels": {
+   "order": 25,
+   "text": "        bassam_rasd_v1: \"نظام رصد الحالات\",\r\n        bassam_rasd_opts_v1: \"قوائم رصد الحالات\",\r\n"
+  },
+  "admin.wipe.labels": {
+   "order": 35,
+   "text": "                bassam_rasd_v1: \"سجلات نظام رصد الحالات\",\r\n                bassam_rasd_opts_v1: \"قوائم نظام رصد الحالات\",\r\n"
+  }
+ }
+}

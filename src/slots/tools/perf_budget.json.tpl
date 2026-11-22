@@ -34,7 +34,7 @@
   "measuredGzipBytes": 452004,
   "status": "الحجم النهائي 452004 ضمن السقف الداخلي المعتمد 460000."
  },
- "d6ImportDecision": {
+@@SYS:budget.decisions@@ "d6ImportDecision": {
   "date": "2026-11-22",
   "scope": "V7 · د6 (استيراد): سقفٌ جديد لملف خدمة النسخ في الغلاف asset:548-atomic-backup = 10850 بايت gzip (هامش 2.5٪ على 10529 المقيس بعد دفعات الاستبدال ورسائل الرفض المبكر؛ كان 6.3 KB تقريباً قبل د6 بلا سقف). يحمل كودَ العميل الجديد: الإرسال على أجزاء، تقسيم المفتاح الكبير دفعاتٍ، الملخّص، إعادة المحاولة والإلغاء. tools/perf_budget.py يقيس الآن ما سُمّي asset:<الاسم> من assets/js.",
   "unchanged": "لم يُرفع أيُّ سقفٍ قائم: العامل 467472 / 477600 (هامش 2.17٪) · page:Admin 127241 / 130700 (2.72٪) · الغلاف 22868 / 30100."
@@ -46,7 +46,7 @@
 @@SYS:budget.page.irshad@@  "page:KPIs": 8000,
 @@SYS:budget.page.plan@@  "page:Planning": 3050,
   "page:Profile": 70000,
-@@SYS:budget.page.seized@@@@SYS:budget.page.staff@@@@SYS:budget.page.tasks@@  "shell:index.html": 30100,
+@@SYS:budget.page.rasd@@@@SYS:budget.page.seized@@@@SYS:budget.page.staff@@@@SYS:budget.page.tasks@@  "shell:index.html": 30100,
   "worker:_worker.js": 477600
  },
  "unifyBatch3Decision": {

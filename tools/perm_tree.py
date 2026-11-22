@@ -22,6 +22,15 @@ CONT_ID = {'العدسات (Plugins)': 'lenses', 'المنصة': 'platform', 'ا
 def registry():
     t = open(os.path.join(SRC, 'permissions', '340-registry-v24-9.js'), encoding='utf-8').read()
     return json.loads(re.search(r'var KIVO_REGISTRY_DATA = (\{[\s\S]*?\});\n', t).group(1))
+def system_rows(S):
+    out = []
+    for p in sorted(__import__('glob').glob(os.path.join(S, 'systems', '*', 'permissions.json'))):
+        for r in json.load(open(p, encoding='utf-8')).get('tree') or []:
+            e = html.escape
+            out.append('<td>%s</td><td><b>%s</b> <code>%s</code></td><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%d</td>' % (
+                e(r['container']), e(r['label']), e(r['owner']), e(r['kind']), e(r['route']), ' · '.join('<code>%s</code>' % e(k) for k in r['keys']),
+                int(r.get('reserved', 0)), len(r['keys']) + int(r.get('reserved', 0))))
+    return out
 def strip(x): return html.unescape(re.sub(r'<[^>]+>', '', x)).strip()
 def derive():
     errs = []
@@ -31,6 +40,9 @@ def derive():
     i = s.find('القسم ٣ — الشجرة', i + 1) if s.find('<table', i) > s.find('القسم ٤', i) else i
     j = s.find('<table', i); k = s.find('</table>', j); tbl = s[j:k]
     rows = re.findall(r'<tr>(.*?)</tr>', tbl, re.S)[1:]
+    # V7 · د6: نظامٌ أُضيف بعد أرشفة الوثيقة يعلن صفوفَ شجرته في permissions.json (tree: [{container, label, owner, kind, route, keys, reserved}]) —
+    #          تُقرأ كصفوف الوثيقة نفسِها (قواعدُها كلُّها) وتغيب بغياب مجلده. الوثيقةُ نفسُها لا تُمسّ (بصمتُها في السجلّ).
+    rows += system_rows(SRC)
     owners = {o['id']: o for o in D['owners']}
     reg = {}
     for e in D['registry']: reg.setdefault(e['owner'], []).append(e)

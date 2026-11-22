@@ -806,6 +806,16 @@
    "new": "Typed custody API transport included by the runtime shell"
   },
   {
+   "closeTag": "</script>",
+   "id": "systems/seized/client/549-seized-links.js",
+   "kind": "js",
+   "line": 10494,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "V7 · د6: ما يوفّره نظامُ المضبوطات لغيره عبر الناقل (seized.usable@1)"
+  },
+  {
    "id": "services/548-atomic-backup.js",
    "kind": "js",
    "openTag": "<script>",
@@ -1144,6 +1154,13 @@
     "file": "client/pages/Daily Stats.dc.html",
     "name": "Daily Stats",
     "sha256": "07c4807e8fdfab2386f43410010bd0475f8b919836a7ff3246cbf66a60eeed8a"
+   },
+   {
+    "b64Sha256": "356beb14be5e7bd5fa34c6c652c388a0d17d5c5e0cac0347b2c6d5c1499b464a",
+    "bytes": 193642,
+    "file": "client/pages/Rasd.dc.html",
+    "name": "Rasd",
+    "sha256": "22b03b9085099622ec75616d2c789d1147e69c25a44f9c6a101a66201a90733a"
    }
   ],
   "order": [
@@ -1160,7 +1177,8 @@
    "Planning",
    "Seized",
    "KPIs",
-   "Daily Stats"
+   "Daily Stats",
+   "Rasd"
   ],
   "zlibLevel": 9
  },

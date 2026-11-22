@@ -546,7 +546,7 @@ class Component extends DCLogic {
     const MAP = {
       employees: /employees|options|custody|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|roles|perm_limit|employees/,
       plan: /plan_v1|zone_opts|gate_opts|mark_kinds|employees/, planning: /plan_v1|staffing|employees|rounds|dreport/,
-      irshad: /irshad/, seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, award: /award|employees/, profile: /auth_users|employees|staffing|shift_options|tasks|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
+      irshad: /irshad/, seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, rasd: /rasd/, award: /award|employees/, profile: /auth_users|employees|staffing|shift_options|tasks|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
       admin: /depts|gdepts|auth_users|perms|platform|last_export/, sysadmin: /depts|gdepts|auth_users|perms|platform|last_export/
     };
     const re = MAP[page]; if (!re) return true;
@@ -1150,7 +1150,7 @@ class Component extends DCLogic {
   async _goOps() {
     if (!(await this._conLeaveOk())) return false;
     const last = this.__lastOps && this._pageAllowed(this.__lastOps);
-    const k = last || (this._kpisOk(1) ? "kpis" : (["dstats", "employees", "planning", "daily", "irshad", "seized", "award", "links"].find((x) => this._pageAllowed(x)) || "profile"));
+    const k = last || (this._kpisOk(1) ? "kpis" : (["dstats", "employees", "planning", "daily", "irshad", "seized", "rasd", "award", "links"].find((x) => this._pageAllowed(x)) || "profile"));
     try { KIVO.BassamNav.go(k, true); } catch (e) {}
     /* رابطُ الخروج يزول مع شريط المركز فيسقط التركيزُ إلى body: يُنقل إلى الصفحة الحالية في الشريط التشغيلي (والدرجُ يُغلق ⇒ زرُّ القائمة) — ما لم يتحرّك المستخدم */
     const f = (n) => { try { const ae = document.activeElement; if (ae && ae !== document.body && !(ae.closest && ae.closest("aside.bsb"))) return;
@@ -1211,10 +1211,10 @@ class Component extends DCLogic {
     // كانت «إدارة الموظفين» غلافاً بلا محتوى: شريط تبويبات يستضيف ثلاث صفحات، فتصل
     // إلى وجهتك بنقرتين ويُكتب لك مسارٌ من مستويين لمكانٍ واحد. حُذف الغلاف وصارت
     // الصفحات الثلاث عناصر مستقلة في القائمة الجانبية بترتيب سير العمل نفسه.
-    const inPlanning = ["employees","staffing","plan","daily","tasks","irshad","seized","award"].includes(a);
+    const inPlanning = ["employees","staffing","plan","daily","tasks","irshad","seized","rasd","award"].includes(a);
     /* F01: اسمُ الصفحة بنوع الوحدة النشطة — «موظفو القسم» · «مؤشرات القسم» حين تكون قسماً */
     const _ua = (() => { try { const D = KIVO.BassamDepts; return D && D.unitAl ? D.unitAl(D.active()) : "الإدارة"; } catch (e) { return "الإدارة"; } })();
-    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
+    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", rasd:"نظام رصد الحالات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
     return {
       sidebarOpen: open,
       lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",
@@ -1257,7 +1257,7 @@ class Component extends DCLogic {
           /* كانت مربوطة بـ«الجدول الشهري» وحده فتختفي عمّن له «التشغيل الميداني» فقط */
           nPlanning: "n" + (a === "planning" ? " on" : "") + ((_menu && "planning" in _menu ? _menu.planning : _pAny(["planning","staff","plan"])) ? "" : " gone"), tPlanning: tip("planning"),
           nIrshad: cls("irshad", "irshad"), tIrshad: tip("irshad"), nSeized: cls("seized", "seized"), tSeized: tip("seized"),
-          nAward: cls("award", "award"), tAward: tip("award"),
+nRasd: cls("rasd", "rasd"), tRasd: tip("rasd"),           nAward: cls("award", "award"), tAward: tip("award"),
           nLinks: cls("links", "links"), tLinks: tip("links"),
           tAdmin: "الإعدادات — نسخة الإدارة الاحتياطية",
         };
@@ -1406,7 +1406,7 @@ class Component extends DCLogic {
           cfmIcCls: c.danger ? "is-danger" : "",
           cfmYes: () => { match && this.cfmClose(true); }, cfmNo: () => this.cfmClose(false) }; })(),
       ...this._nfVals(),
-      goPlan: go("plan"), goDaily: go("daily"), goDreport: go("dreport"), goPlanning: go("planning"), goIrshad: go("irshad"), goSeized: go("seized"), goAward: go("award"), goLinks: go("links"),
+      goPlan: go("plan"), goDaily: go("daily"), goDreport: go("dreport"), goPlanning: go("planning"), goIrshad: go("irshad"), goSeized: go("seized"), goRasd: go("rasd"), goAward: go("award"), goLinks: go("links"),
       ...((() => {
         let pr = null;
         try { if (KIVO.BassamAuth && KIVO.BassamAuth.display) pr = KIVO.BassamAuth.display(); } catch (e) {}
@@ -1422,7 +1422,7 @@ class Component extends DCLogic {
       goAdmin: () => { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); }, goProfile: (ev) => { try { if (ev && ev.target && ev.target.closest && ev.target.closest(".s-logout")) return; } catch (e) {} go("profile")(); }, bsVerTxt: "الإصدار " + (KIVO.__BS_VER || ""),
       pageName: this._pageNames()[a] || "لوحة التحكم",
       isKpis: ap === "kpis", isDstats: ap === "dstats",
-      isEmployees: ap === "employees", isStaffing: ap === "staffing", isDaily: ap === "daily", isDreport: ap === "dreport", isPlanning: ap === "planning", isTasks: ap === "tasks", isIrshad: ap === "irshad", isSeized: ap === "seized", isAward: ap === "award", isSysAdmin: ap === "sysadmin", isPlan: ap === "plan", isAdmin: ap === "admin", isProfile: ap === "profile", isPlaceholder: !this.state.navPending && !["kpis","dstats","employees","planning","staffing","plan","daily","dreport","tasks","irshad","seized","award","admin","sysadmin","profile","links"].includes(a),
+      isEmployees: ap === "employees", isStaffing: ap === "staffing", isDaily: ap === "daily", isDreport: ap === "dreport", isPlanning: ap === "planning", isTasks: ap === "tasks", isIrshad: ap === "irshad", isSeized: ap === "seized", isRasd: ap === "rasd", isAward: ap === "award", isSysAdmin: ap === "sysadmin", isPlan: ap === "plan", isAdmin: ap === "admin", isProfile: ap === "profile", isPlaceholder: !this.state.navPending && !["kpis","dstats","employees","planning","staffing","plan","daily","dreport","tasks","irshad","seized","rasd","award","admin","sysadmin","profile","links"].includes(a),
       isLinks: ap === "links",
       ...((() => {
         /* «مواقع ذات صلة» — قائمة روابط تُقرأ من إعدادات المنصة (links) ويحرّرها مدير النظام من الصفحة نفسها */

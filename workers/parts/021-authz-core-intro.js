@@ -24,6 +24,7 @@ var PG_REG = [
   { key: 'tasks', under: 'daily' },
   { key: 'irshad', subs: ['dash', 'records'], off: ['dash'] },
   { key: 'seized', subs: ['dash', 'records'], off: ['dash'] },
+  { key: 'rasd', subs: ['dash', 'records'], off: ['dash'] },
   { key: 'award', subs: ['new', 'res', 'doc'] },
   { key: 'links' },
   { key: 'help' },

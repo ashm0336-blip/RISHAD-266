@@ -212,7 +212,7 @@ def main(argv):
         if write:
             if not gate_available:
                 der['tests'] = sorted(set(ch.get('tests') or []) | set(der['tests']))
-            own, pur = HUMAN[slug]
+            own, pur = HUMAN.get(slug) or (ch.get('owner'), ch.get('purpose'))   # V7 · د6: نظامٌ يحمل مالكَه وغايتَه في ميثاقه (meta.json) لا في هذا الجدول
             meta['charter'] = dict({'owner': ch.get('owner') or own, 'purpose': ch.get('purpose') or pur}, **der)
             open(mp, 'w', encoding='utf-8').write(json.dumps(meta, ensure_ascii=False, indent=1) + '\n')
             continue

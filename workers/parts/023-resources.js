@@ -75,6 +75,9 @@ var RES_REG = {
   'bassam_seized_acts_v1':     { scope: 'dept', cap: 'seized/records' },
   'bassam_seized_locs_v1':     { scope: 'dept', cap: 'seized/records' },
   'bassam_seized_jew_v1':      { scope: 'dept', cap: 'seized/records' },
+  /* ── رصد الحالات ── */
+  'bassam_rasd_v1':            { scope: 'dept', cap: 'rasd/records' },
+  'bassam_rasd_opts_v1':       { scope: 'dept', cap: 'rasd/records' },
   /* ── جائزة التميز ── */
   /* الترشيح يُنشأ من award/new، وكل ما عداه — تعديلٌ أو حذفٌ أو اعتماد نتيجة — لا يكون إلا بورقة award/res */
   'bassam_award_v1':           { scope: 'dept', cap: 'award/res', capAdd: 'award/new' },

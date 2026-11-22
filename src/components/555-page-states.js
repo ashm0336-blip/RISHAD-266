@@ -31,6 +31,7 @@
   var NAMES = {
     "award/new": "الترشيحات", "award/res": "نتائج الترشيحات", "award": "الترشيحات",
     "seized/records": "سجلات المضبوطات", "seized/dash": "مؤشرات المضبوطات", "seized": "سجلات المضبوطات",
+    "rasd": "سجلات رصد الحالات", "rasd/records": "سجلات رصد الحالات", "rasd/dash": "مؤشرات رصد الحالات",
     "irshad": "سجلات الاسترشاد", "irshad/records": "سجلات الاسترشاد",
     "employees": "بيانات الموظفين", "admin/import": "صفحة الاستيراد", "profile": "صفحتك",
     "dstats/haram": "إحصائيات المسجد الحرام", "dstats/nabawi": "إحصائيات المسجد النبوي"

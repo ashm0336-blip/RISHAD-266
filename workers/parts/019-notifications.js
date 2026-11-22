@@ -918,6 +918,42 @@ var NF_TYPES = {
     txt: "بالمستودع {العدد} قطعة · أقدمها {الأيام} يوماً · قيمة تقديرية {المبلغ} ريال",
     go: "افتح لوحة المؤشرات",
   },
+  rz_new: {
+    id: "rz_new",
+    k: "rasd",
+    name: "حالة رصد جديدة",
+    when: "فور الحفظ",
+    on: false,
+    to: ["mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "{النوع}: {الموقع} · {التأثير} · {الراصد}",
+    go: "افتح السجلات",
+  },
+  rz_hot: {
+    id: "rz_hot",
+    k: "rasd",
+    name: "حالة رصد عالية أو حرجة",
+    when: "فور الحفظ",
+    on: true,
+    to: ["mgr"],
+    lvl: "urg",
+    chan: "toast",
+    txt: "{التأثير} — {النوع}: {الموقع} · {الإجراء} · {الراصد}",
+    go: "افتح السجلات",
+  },
+  rz_edit: {
+    id: "rz_edit",
+    k: "rasd",
+    name: "تعديل أو حذف حالة",
+    when: "فور التغيير",
+    on: true,
+    to: ["mgr"],
+    lvl: "act",
+    chan: "bell",
+    txt: "{الفعل} حالة «{النوع}» في {الموقع} بواسطة {المُعدّل}",
+    go: "افتح السجلات",
+  },
   aw_new: {
     id: "aw_new",
     k: "award",
@@ -1284,6 +1320,7 @@ var NF_CAP = {
   round: "daily/rounds",
   irshad: "irshad",
   box: "seized",
+  rasd: "rasd",
   award: "award",
 };
 var NF_CAP_ID = { kp_att: "daily/kpiDaily", kp_occ: "daily/kpiOcc", st_shdef: "admin/shifts", fd_obs: "daily/field" };
@@ -3218,7 +3255,7 @@ var NF_DENY_WIN_MS = 60000,
 /* prettier-ignore */
 var NF_DENY_PAGES = {
   dstats: "الإحصائيات اليومية", emps: "موظفو الإدارة", planning: "الخطة التشغيلية", staff: "الجدول الشهري", plan: "التشغيل الميداني",
-  daily: "المتابعة اليومية", dreport: "التقرير اليومي", tasks: "المهام", irshad: "نظام الاسترشاد", seized: "نظام المضبوطات",
+  daily: "المتابعة اليومية", dreport: "التقرير اليومي", tasks: "المهام", irshad: "نظام الاسترشاد", seized: "نظام المضبوطات", rasd: "نظام رصد الحالات",
   award: "جائزة التميز", links: "مواقع ذات صلة", help: "المساعدة", admin: "الإعدادات",
 };
 /* prettier-ignore */
@@ -3234,7 +3271,7 @@ var NF_DENY_RECS = {
   bassam_mark_kinds_v1: "أنواع المعالم", bassam_rounds_v1: "الجولات اليومية", bassam_rounds_arc_v1: "أرشيف الجولات اليومية", bassam_dayshift_v1: "الوردية المختارة",
   bassam_dayfocus_v1: "اليوم المختار", bassam_dreport_v1: "التقرير اليومي", bassam_dr_grp_v1: "مجموعات التقرير اليومي",
   bassam_leave_kinds_v1: "أنواع الإجازات", bassam_tasks_v1: "المهام", bassam_tasks_locks_v1: "أقفال المهام", bassam_irshad_v1: "نظام الاسترشاد",
-  bassam_irshad_langs_v1: "لغات الاسترشاد", bassam_irshad_locs_v1: "مواقع الاسترشاد", bassam_seized_v1: "نظام المضبوطات",
+  bassam_irshad_langs_v1: "لغات الاسترشاد", bassam_irshad_locs_v1: "مواقع الاسترشاد", bassam_seized_v1: "نظام المضبوطات",bassam_rasd_v1: "نظام رصد الحالات", bassam_rasd_opts_v1: "قوائم رصد الحالات", 
   bassam_seized_cat_v1: "قائمة ممنوعات المضبوطات", bassam_seized_acts_v1: "إجراءات المضبوطات", bassam_seized_locs_v1: "مواقع المضبوطات",
   bassam_seized_jew_v1: "أنواع قطع المجوهرات", bassam_award_v1: "جائزة التميز", bassam_award_docs_v1: "المراجع المعتمدة للجائزة (قديم)",
   bassam_award_docs_v2: "المراجع المعتمدة للجائزة", bassam_shift_options_v1: "الورديات", bassam_roles_v1: "أدوار الصلاحيات",

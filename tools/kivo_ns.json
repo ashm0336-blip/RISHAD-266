@@ -77,6 +77,7 @@
   "src/systems/seized/client/logic.js",
   "src/components/450-pull-refresh.js",
   "src/systems/_multi/client/560-canvas-input.js",
-  "src/systems/dstats/client/logic.js"
+  "src/systems/dstats/client/logic.js",
+  "src/systems/rasd/client/logic.js"
  ]
 }

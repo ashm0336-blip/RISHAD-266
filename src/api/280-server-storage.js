@@ -197,6 +197,7 @@
       bassam_tasks_v1:["المهام"], bassam_tasks_locks_v1:["أقفال المهام"], bassam_custody_v1:["عهد الموظفين"],
       bassam_irshad_v1:["نظام الاسترشاد"], bassam_irshad_langs_v1:["لغات الاسترشاد"], bassam_irshad_locs_v1:["مواقع الاسترشاد"],
       bassam_seized_v1:["نظام المضبوطات"], bassam_seized_cat_v1:["قائمة ممنوعات المضبوطات"], bassam_seized_acts_v1:["إجراءات المضبوطات"], bassam_seized_locs_v1:["مواقع المضبوطات"], bassam_seized_jew_v1:["أنواع قطع المجوهرات"],
+      bassam_rasd_v1:["نظام رصد الحالات"], bassam_rasd_opts_v1:["قوائم رصد الحالات"],
       bassam_award_v1:["جائزة التميز"], bassam_award_docs_v1:["المراجع المعتمدة للجائزة (قديم)"], bassam_award_docs_v2:["المراجع المعتمدة للجائزة"],
       bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"], bassam_leave_kinds_v1:["أنواع الإجازات"], bassam_callsigns_v1:["رموز النداء"],
       bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_roles_v1:["أدوار الصلاحيات"],
@@ -254,7 +255,7 @@
       bassam_dreport_v1: { "*.shifts.*.roster": "ekey" },
       bassam_tasks_v1: { "*": { key: 13, grp: 14 } },   /* F10-fix: الهويةُ 13 — وصفوفُ المهمة الجماعية (13 نفسُها لأكثر من مكلَّف) 13·14، كما tkKeepSelf في 070 */
       bassam_employees_v1: { "": "eid" },
-      bassam_irshad_v1: { "reports": "id" }, bassam_seized_v1: { "reports": "id" }, bassam_award_v1: { "recs": "id" },
+      bassam_irshad_v1: { "reports": "id" }, bassam_seized_v1: { "reports": "id" }, bassam_rasd_v1: { "reports": "id" }, bassam_award_v1: { "recs": "id" },
       bassam_auth_users_v1: { "": "id" }, bassam_depts_v1: { "": "id" }, bassam_gdepts_v1: { "": "id" }
     };
     /* عناصرُ الخريطة التشغيلية تحت كلّ موقع (المصلى · الباب · المعلم · المسار): uid الثابت (500-element-uid) — ومرآتُها في رأس الخطة */
