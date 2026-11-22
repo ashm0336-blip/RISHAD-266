@@ -110,6 +110,7 @@ export function permViews(c) {
     roleNames: (role, did) => keys(ui._p44Menu(ui._p44Compile(role, did), role, did)).map((x) => x.n),
     personNames: (sel, did, rec, roles) => keys(ui._p44Menu(rec ? ui._p44Eff(rec, roles, did, Date.now()) : null, null, did, sel)).map((x) => x.n),
     roleKeys: (role, did) => keys(ui._p44Compile(role, did)),
+    roleRows: (role, did) => keys(ui._p44Menu(ui._p44Compile(role, did), role, did)),
   };
 }
 export const namesOf = (c, ks) => c.ev('(function (ks) { var m = {}; KIVO.BassamPerm.menuFor({}, "").forEach(function (x) { m[x.k] = x.n; }); m.profile = "صفحتي"; return ks.map(function (k) { return m[k] || k; }); })(' + JSON.stringify(ks) + ')');

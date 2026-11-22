@@ -79,6 +79,9 @@ test('V7 · د6 · أ1 — one source for «what a holder sees»: sidebar · man
       if (st === 'allOn') {
         for (const who of ['suOut', 'suIn', 'gm', 'dept', 'mgr', 'sec']) assert.deepEqual(out[who], ['profile', 'kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award', 'links', 'help', 'admin'], L + who + ' sees the whole menu');
         assert.deepEqual(out.role, ['profile', 'kpis', 'dstats', 'planning', 'daily', 'irshad', 'links'], L + 'the role opens its systems (container for a child · KPIs for a drawn panel)');
+        /* مستوى الدور يبقى ظاهراً بجانب رابطه: النظامُ الذي يسكن حاويةً باسمه (أ6 — لا يسقط ما كان معروضاً) */
+        const rows = V.roleRows(ROLE_DOC, A), lv = (n) => (rows.find((x) => x.n === n) || {}).l;
+        assert.equal(lv('المتابعة اليومية'), 'مشاهدة فقط · المهام تعديل'); assert.equal(lv('الخطة التشغيلية'), 'الجدول الشهري مشاهدة فقط'); assert.equal(lv('الإحصائيات اليومية'), 'مشاهدة فقط'); assert.equal(lv('صفحتي'), '');
         assert.deepEqual(out.ex, ['profile', 'kpis', 'daily'], L + 'the live exception opens its page through its container, and «مؤشرات الإدارة» for its drawn panel');
       }
       if (st === 'allOff') {

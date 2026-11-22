@@ -48,7 +48,7 @@ Object.assign(Component.prototype, {
     const raw = this._p44Try(() => this._p44E().sysList(), []);
     return (Array.isArray(raw) ? raw : [])
       .map((s) => ("string" === typeof s ? { k: s } : s || {}))
-      .map((s) => ({ k: s.k || s.key || "", n: s.n || s.name || this._p44Try(() => KIVO.BassamPerm.nameOf(s.k || s.key), "") || s.k || s.key, cap: s.page || s.cap || (s.leaves && s.leaves[0]) || s.k || s.key, tg: !1 !== s.toggle }))
+      .map((s) => ({ k: s.k || s.key || "", n: s.n || s.name || this._p44Try(() => KIVO.BassamPerm.nameOf(s.k || s.key), "") || s.k || s.key, cap: s.page || s.cap || (s.leaves && s.leaves[0]) || s.k || s.key, tg: !1 !== s.toggle, under: s.under || "" }))
       .filter((s) => s.k);
   },
   _p44PlatOff() {
@@ -298,14 +298,17 @@ Object.assign(Component.prototype, {
   },
   /* V7 · د6 (أ1): «ماذا يرى حامل الدور» و«ما يراه الآن» = قائمتُه الجانبية الفعلية من المصدر الواحد BassamPerm.seenBy (334) — لا قائمةَ أنظمةٍ محسوبةً
      على حدة. keys: مفاتيحُ الدور (compileRole) أو مفاتيحُ الشخص الفعّالة من المسودة (effective)؛ person: الحسابُ المختار — وبلا keys يُقرأ المحفوظُ له
-     (ورقتُه · منحُه · استثناءاتُه السارية · وراثةُ المدير). l: مستوى الدور في نظام الرابط، أو «استثناء» لنظامٍ خارج دوره */
+     (ورقتُه · منحُه · استثناءاتُه السارية · وراثةُ المدير). l: مستوى الدور في نظام الرابط، والأنظمةُ التي تسكنه باسمها ومستواها («المهام تعديل» تحت
+     «المتابعة اليومية»)، أو «استثناء» لنظامٍ خارج دوره */
   _p44Menu(keys, role, did, person) {
-    const sysK = new Set(this._p44Sys().map((s) => s.k)),
-      h = person ? { kind: "person", did: did, ekey: person.ekey, mgr: !!person.mgr } : { kind: "role", did: did, keys: keys || [] };
+    const S = this._p44Sys(),
+      h = person ? { kind: "person", did: did, ekey: person.ekey, mgr: !!person.mgr } : { kind: "role", did: did, keys: keys || [] },
+      lvOf = (k) => (role && role.sys && role.sys[k] ? this._p44LvName(role.sys[k].lvl) : "");
     person && Array.isArray(keys) && (h.keys = keys);
     return this._p44Try(() => KIVO.BassamPerm.seenBy(h), [{ k: "profile", n: "صفحتي" }]).map((x) => {
-      const lv = role && role.sys && role.sys[x.k] ? this._p44LvName(role.sys[x.k].lvl) : "";
-      return { n: x.n, l: lv || (person && Array.isArray(keys) && sysK.has(x.k) ? "استثناء" : "") };
+      const mine = S.filter((s) => s.k === x.k || s.under === x.k),
+        lv = mine.map((s) => (lvOf(s.k) ? (s.k === x.k ? "" : s.n + " ") + lvOf(s.k) : "")).filter(Boolean).join(" · ");
+      return { n: x.n, l: lv || (person && Array.isArray(keys) && mine.length ? "استثناء" : "") };
     });
   },
   /* ── الأقسام ── */
