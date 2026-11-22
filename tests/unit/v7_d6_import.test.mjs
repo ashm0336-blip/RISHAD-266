@@ -50,8 +50,9 @@ async function compare(T, who, file, dept = B) {
 const permsOf = (T) => JSON.parse(T.DB.q("SELECT group_concat(v,'') v FROM (SELECT v FROM kv WHERE k='bassam_perms_v1' ORDER BY seq)")[0].v);
 const audits = (T) => T.DB.q("SELECT COUNT(*) n FROM aud WHERE k='atomic_restore'")[0].n;
 
-async function heavy(scale, t) {
-  const t0 = Date.now(), file = await oldFile({ scale }), size = sizeOf(file), T = await target();
+async function heavy(scale, t, { inline = false } = {}) {
+  /* inline: بلا مستودعٍ كائنيّ — أجسامُ الصور في D1 مقطَّعةً (تُنسخ من المؤقت داخل دفعة الاعتماد) · وإلا فالمستودعُ الكائنيّ (يوضع الكائنُ عند الاعتماد) */
+  const t0 = Date.now(), file = await oldFile({ scale }), size = sizeOf(file), T = await target(inline ? { IMG_R2: null } : {});
   try {
     /* الشكلُ والتوزيع المقيسان */
     assert.deepEqual(Object.keys(file).sort(), ['app', 'data', 'dept', 'exportedAt', 'idbImages', 'kind', 'perms', 'preImport', 'version']);
@@ -77,17 +78,35 @@ async function heavy(scale, t) {
     const ms = Date.now() - t1, n = await compare(T, T.su, file);
     assert.equal(staged(T.DB), 0, 'المؤقتُ حُذف مع الاعتماد'); assert.equal(audits(T), 1, 'سُجّل الاستيراد مرةً واحدة');
     assert.equal(T.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 1);
+    const perms1 = permsOf(T);
     assert.ok(T.DB.q("SELECT COUNT(*) n FROM restore_preimage WHERE snapshot_id GLOB 'atomic_*'")[0].n > 0, 'لقطةُ ما قبل الاستيراد محفوظة على الخادم');
     /* الصلاحيات: السقفُ والأوراقُ المرفقة بالنسخة بقاعدة الشريحة القائمة — ولا شيءَ خارج الإدارة الهدف، ولا حساباتٍ ولا منحاً */
-    const now = permsOf(T);
+    const now = perms1;
     assert.deepEqual(now.caps[B], file.perms.cap); assert.deepEqual(now.emps[B], file.perms.emps);
     for (const d of Object.keys(before.caps)) if (d !== B) assert.deepEqual(now.caps[d], before.caps[d], 'سقفُ ' + d + ' لم يُمسّ');
     assert.deepEqual(Object.keys(now.emps), [B]); assert.equal(T.DB.q("SELECT group_concat(v,'') v FROM kv WHERE k='bassam_auth_users_v1'")[0].v, users, 'الحساباتُ كما هي');
-    t.diagnostic('scale ' + scale + ': ' + JSON.stringify(size) + ' · ' + P.parts.length + ' جزءاً · أكبرُ طلب ' + biggest + ' بايتاً · ' + n + ' مورداً تشغيلياً · استيراد ' + ms + ' ms · الكل ' + (Date.now() - t0) + ' ms');
+    /* أين استقرّت أجسامُ الصور — وحدُّ قيمة الصف في طبقة التخزين (CHUNK = 700,000 حرفاً) محترم */
+    const bodies = T.DB.q('SELECT COUNT(*) n, MAX(length(v)) m, SUM(length(v)) c FROM imgs')[0];
+    if (inline) { assert.equal(bodies.c, size.images, 'أجسامُ الصور كلُّها في D1'); assert.ok(bodies.m <= 200000, 'صفُّ الصورة ≤ 200,000 حرف (' + bodies.m + ')'); }
+    else { assert.equal(bodies.n, 10 * scale); assert.equal(bodies.m, 4, 'في D1 سطرُ المرجع وحده — الجسمُ في المستودع الكائنيّ'); }
+    if (scale === 1) {
+      /* نسخةُ ما قبل الاستيراد مع الأحجام الكبيرة: استيرادٌ ثانٍ فوق إدارةٍ تحمل الجولاتِ كلَّها (≈8.4MB) بنسخةٍ معدَّلة ⇒ اللقطةُ الخادمية تحمل ما كان قبله كاملاً */
+      const rounds = JSON.parse(file.data.bassam_rounds_v1);
+      for (const day of Object.values(rounds)) { day.t += 1; for (const fl of day.d) for (const z of fl.zones) z.name += ' (معدَّل)'; }
+      const v2 = { ...file, data: { ...file.data, bassam_rounds_v1: JSON.stringify(rounds) } }, t2 = Date.now(), second = await protocol(T, T.su, v2, { scope: SCOPE }).run();
+      assert.equal(second.commit && second.commit.status, 200, JSON.stringify((second.commit || second.inspect).j).slice(0, 300));
+      assert.equal(second.inspect.j.inspection.summary.imagesNew, 0); assert.equal(second.inspect.j.inspection.summary.imagesReused, 10, 'الصورُ الموجودة المطابقة يُعاد استعمالُها');
+      await compare(T, T.su, v2);
+      const pre = T.DB.q('SELECT COUNT(*) n, SUM(length(row_json)) c FROM restore_preimage WHERE snapshot_id=?1', second.commit.j.snapshot)[0];
+      assert.ok(pre.c > 8e6, 'لقطةُ ما قبل الاستيراد تحمل الجولاتِ السابقة كاملة (' + pre.n + ' صفاً · ' + pre.c + ' حرفاً)');
+      assert.equal(audits(T), 2); assert.equal(staged(T.DB), 0);
+      t.diagnostic('استيرادٌ ثانٍ فوق بياناتٍ قائمة: ' + (Date.now() - t2) + ' ms · لقطةُ ما قبله ' + pre.n + ' صفاً / ' + pre.c + ' حرفاً');
+    }
+    t.diagnostic('scale ' + scale + (inline ? ' · صور D1' : ' · صور المستودع') + ': ' + JSON.stringify(size) + ' · ' + P.parts.length + ' جزءاً · أكبرُ طلب ' + biggest + ' بايتاً · ' + n + ' مورداً تشغيلياً · استيراد ' + ms + ' ms · الكل ' + (Date.now() - t0) + ' ms');
   } finally { await T.close(); }
 }
 test('(١) [ثقيل] نسخةٌ بالشكل القديم ≈31MB (مفتاحٌ ≈8.4MB · صورةٌ 3.37MB) تُستورد كاملة وتُطابَق مفتاحاً مفتاحاً وصورةً صورة', { timeout: 300000, ...need }, (t) => heavy(1, t));
-test('(٢) [ثقيل] نسخةٌ بضعف الحجم ≈62MB', { timeout: 600000, ...need }, (t) => heavy(2, t));
+test('(٢) [ثقيل] نسخةٌ بضعف الحجم ≈62MB — وأجسامُ الصور في D1 (بلا مستودعٍ كائنيّ)', { timeout: 600000, ...need }, (t) => heavy(2, t, { inline: true }));
 
 test('(٣) قطعٌ في منتصف الأجزاء · فشلُ جزء · إغلاقُ الصفحة · انقضاءُ المهلة ⇒ لم يتغيّر شيء والمؤقتُ نُظّف', { timeout: 300000, ...need }, async () => {
   const file = await oldFile({ small: true }), T = await target();
@@ -182,6 +201,29 @@ test('(٤) إعادةُ المحاولة بعد فشل · طلبٌ مكرَّر 
     assert.equal(refused.inspect.status, 409); assert.equal(refused.inspect.j.err, 'backup-image-reuse-rejected');
     assert.deepEqual(changed(snapshot(T.DB), before), []); assert.equal(staged(T.DB), 0, 'الرفضُ النهائي ينظّف المؤقت');
   } finally { await T.close(); }
+});
+
+test('(٤ب) فشلُ الاعتماد نفسِه (خطأُ قاعدةٍ داخل الدفعة) ⇒ لا شيء من النسخة كُتب — لا بياناتٍ ولا صوراً — ثم إعادةُ الاعتماد تنجح · بالمستودعين', { timeout: 300000, ...need }, async () => {
+  for (const inline of [false, true]) {
+    const file = await oldFile({ small: true }), T = await target(inline ? { IMG_R2: null } : {}), tag = inline ? 'D1' : 'R2';
+    try {
+      const P = protocol(T, T.su, file, { scope: SCOPE });
+      await P.begin(); for (let i = 0; i < P.parts.length; i++) assert.equal((await P.part(i)).status, 200);
+      const ins = await P.inspect(); assert.equal(ins.status, 200);
+      const base = snapshot(T.DB), rows = staged(T.DB);
+      assert.equal(T.DB.q('SELECT COUNT(*) n FROM imgs')[0].n, 0, tag + ': الفحصُ لا يكتب صورة');
+      T.DB.failIf = (sql) => /INSERT INTO restore_operations/.test(sql);
+      const bad = await P.commit(ins.j.inspection.base);
+      T.DB.failIf = null;
+      assert.ok(bad.status >= 500, tag + ': فشلُ الاعتماد ' + bad.status);
+      assert.deepEqual(changed(snapshot(T.DB), base), [], tag + ': الدفعةُ كلُّها تراجعت'); assert.equal(T.DB.q('SELECT COUNT(*) n FROM imgs')[0].n, 0, tag + ': ولا صفَّ صورة');
+      if (!inline) for (const id of Object.keys(file.idbImages)) assert.equal(await T.lab.env.IMG_R2.get('img/' + id), null, tag + ': كائنُ الصورة الموضوع للاعتماد الفاشل أُزيل');
+      assert.equal(staged(T.DB), rows, tag + ': المؤقتُ باقٍ لإعادة الاعتماد'); assert.equal(audits(T), 0);
+      const ok = await P.commit(ins.j.inspection.base);
+      assert.equal(ok.status, 200, JSON.stringify(ok.j).slice(0, 300)); assert.equal(ok.j.imagesNew, 2);
+      await compare(T, T.su, file); assert.equal(staged(T.DB), 0); assert.equal(audits(T), 1);
+    } finally { await T.close(); }
+  }
 });
 
 test('(٥) حسابٌ بلا صلاحية يُرفض في كل جزء ولو بطلبٍ مصنوع يدوياً — ولا يمسّ مؤقتَ غيره', { timeout: 300000, ...need }, async (t) => {

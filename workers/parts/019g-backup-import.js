@@ -51,7 +51,7 @@ async function rsImportRoute(env, request, ss) {
       if (b.dry) return json({ ok: 1, skip: skip });
       var im = b.images || {}, ids = Object.keys(im), total = b.n, meta = { scope: s, n: b.n, f: b.f, images: {} };
       ids.forEach(function (k) {
-        if (!/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(k) || !(im[k] > 0) || im[k] > IMG_TOTAL_MAX) throw rsError('import-shape');
+        if (!/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(k) || !(im[k] > 0) || im[k] > IMG_TOTAL_MAX) throw Object.assign(rsError('import-shape'), { details: { k: k.slice(0, 80) } });   /* الصورةُ المرفوضة تُسمّى */
         meta.images[k] = [im[k], Math.ceil(im[k] / RSI_SEG.i)];
         total += im[k];
       });

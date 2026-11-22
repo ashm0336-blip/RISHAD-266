@@ -53,7 +53,7 @@
       'import-expired': 'انقضت مهلة الاستيراد (ساعة) وحُذف المؤقت؛ لم يتغيّر شيء — أعد المحاولة من البداية',
       'import-incomplete': 'لم تكتمل أجزاء النسخة على الخادم؛ لم يتغيّر شيء — أعد المحاولة من البداية',
       'import-part': 'رفض الخادم جزءًا من النسخة (محتواه غير صالح)؛ لم يتغيّر شيء',
-      'import-shape': 'بيان النسخة غير صالح (حجم أو معرّف صورة)؛ لم يتغيّر شيء',
+      'import-shape': 'بيان النسخة غير صالح (حجم صورة أو معرّفها' + (data && data.details && data.details.k ? ': ' + data.details.k : '') + ')؛ لم يتغيّر شيء',
       'import-too-large': 'النسخة أكبر من سقف الاستيراد (256MB)؛ لم يتغيّر شيء',
       'restore-epoch-changed': 'جرت استعادة أخرى أثناء الاستيراد؛ لم يتغيّر شيء — أعد المحاولة',
       'restore-reason': 'سبب الاستيراد مطلوب (300 حرف على الأكثر)؛ لم يتغيّر شيء',
@@ -405,6 +405,11 @@
         (c.kv || 0) +
         ' مجموعة بيانات و' + (c.operations||0) + ' موردًا تشغيليًا@@SYS:bk.restore.summary@@. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
         (legacy ? ' ستُحوَّل النسخة القديمة إلى المخطط الحالي قبل الكتابة.' : '') +
+        /* V7 · د6: ما لن يُنقل يُذكر قبل الاعتماد في كل مدخل (نسخةُ الإدارة والنسخةُ الشاملة) · والصورُ التي ستُكتب من النسخة */
+        (Array.isArray(i.summary.notTransferred) && i.summary.notTransferred.length
+          ? ' لن يُنقل ' + i.summary.notTransferred.length + ' (لا مقابل له في المنصة الحالية): ' + i.summary.notTransferred.slice(0, 12).map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + (i.summary.notTransferred.length > 12 ? ' · …' : '') + '.'
+          : '') +
+        (i.summary.imagesNew > 0 ? ' ستُكتب ' + i.summary.imagesNew + ' صورة تحملها النسخة وليست على المنصة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
           : '') +
