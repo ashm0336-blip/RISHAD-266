@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
-import { world, browser, fullExport, D1, OPTIONS, epoch, posts, copy, IDS } from './operations_backup_flow_fx.mjs';
+import { world, browser, fullExport, D1, OPTIONS, epoch, posts, sentFile, copy, IDS } from './operations_backup_flow_fx.mjs';
 import { until } from './k264_vm.mjs';
 
 const HAVE = 'img_testonly_have', GONE = 'img_testonly_gone', BODY = 'data:image/png;base64,VEVTVF9PTkxZ';
@@ -77,7 +77,9 @@ test('the backup made around a missing image restores: same record, same image r
   assert.equal(C.page._fbkPend, null, JSON.stringify(C.page.state));
   assert.equal(epoch(B), beforeEpoch + 1, 'the restore committed');
   assert.deepEqual(inspectOperationalFixture(B.env, OPTIONS), value, 'the record is back, with both references');
-  const inspect = JSON.parse(posts(C, 'inspect')[0].body), commit = posts(C, 'commit')[0];
+  /* V7 · د6: الملفُّ يصل الخادمَ على أجزاء (لا في جسم طلب الفحص) — يُقرأ ما وصل من مجموع أجزائه */
+  const inspect = { backup: sentFile(C) }, commit = posts(C, 'commit')[0];
+  assert.equal(posts(C, 'inspect').length, 1);
   assert.deepEqual(copy(inspect.backup.imagesMissing), [{ id: GONE, at: [D1 + ':bassam_options_v1'] }], 'the file carried its note to the server');
   assert.equal(commit.status, 200);
   assert.ok(asked.includes(GONE), 'the confirmation before the restore names the image that will be missing · ' + asked.slice(0, 400));

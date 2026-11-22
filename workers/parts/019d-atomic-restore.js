@@ -1093,6 +1093,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var operationalInput=opRestoreDocuments(body,reference,A);
+  if (internal && internal.release) body.domains.operations = null;   /* V7 · د6: صفوفُ المجال التشغيلي صارت وثائقَ أعلاه ولا يقرؤها ما بعده — تُحرَّر (أكبرُ ما يُحمل في الذاكرة) */
   Object.assign(keys,operationalInput.keys);
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
   keys = selection.keys;
@@ -1473,6 +1474,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     });
   }
   await bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartments,keys);
+  if (internal && internal.images && internal.images.touch) internal.images.touch(plan);   /* V7 · د6: مراجعُ صور المفاتيح المودَعة على دفعات (019g) */
   if (internal && internal.images) await rsImageArchivePlan(env, A, plan, reference, internal.images);
   await rsImageMetadataPlan(env, A, plan, reference);
   return plan;
@@ -1669,6 +1671,67 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
 }
+/* V7 · د6: ثلاثُ قطعٍ من مسار الاستعادة صارت دوالَّ ليشاركه فيها الاستيرادُ على أجزاء (019g) بلا نسخةٍ ثانية: حكمُ الصلاحية · تحويلُ النسخة وتخطيطُها واعتمادُها · ترجمةُ الرفض */
+function rsScopeDenied(A, s) {
+  return !s || (s.kind === 'full' && A.u.role !== 'super') || (s.kind === 'dept' && A.u.role !== 'super' && (!isMgrOf(A, s.departmentId) || !enfHeld(A, s.departmentId, 'backup.restore')));
+}
+function rsErrorResponse(e) {
+  if (e.ocCode) return json({ok:0,err:e.ocCode},e.status||400);
+  if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
+  if (e.szCode || e.awCode) return bdErrorResponse(e);
+  if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
+  if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
+  if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
+  if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
+  if (/KIVO_RESTORE_EPOCH/.test(String(e))) return json({ ok: 0, err: 'restore-epoch-changed' }, 409);
+  if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e))) return json({ ok: 0, err: 'conflict' }, 409);
+  return null;
+}
+async function rsBackupRun(env, A, request, body, reference, rawFingerprint, stage) {
+    var converted = await rsConvertBackup(env, A, body.backup, {
+        scope: body.scope,
+        mode: body.mode,
+        legacyConsent: body.phase === 'inspect' || body.legacyConsent === true,
+        reference: reference,
+      }),
+      base = JSON.parse(JSON.stringify(body.base || {}));
+    if (stage) body.backup = null;   /* V7 · د6: نصُّ الملف لا يلزم بعد التحويل — يُحرَّر قبل التخطيط (نسخةٌ بياناتُها 10MB كانت تُبقي فوق 120MB حيّةً في الذاكرة) */
+    base.kv = base.kv || {};
+    Object.keys(converted.keys).forEach(function (k) {
+      if (base.kv[k] === undefined && !Object.prototype.hasOwnProperty.call(reference.inputKeys, k) && !reference.inputRevs[k])
+        base.kv[k] = 0;
+    });
+    var normalized = {
+      version: 1,
+      uid: body.uid,
+      requestId: body.requestId,
+      scope: body.scope,
+      mode: body.mode,
+      reason: body.reason,
+      base: base,
+      keys: converted.keys,
+      delete: [],
+      domains: converted.domains,
+      manifest: converted.manifest,
+    };
+    if (converted.permissionSlice !== undefined) normalized.permissionSlice = converted.permissionSlice;
+    var plan = await rsPrepare(env, A, normalized, reqMeta(request), {
+      reference: reference,
+      fingerprint: rawFingerprint,
+      images: stage || converted.images,
+      release: !!stage,
+    });
+    plan.guards.push.apply(plan.guards, converted.readGuards || []);
+    converted.summary.imagesReused = plan.imagesReused;
+    converted.summary.imagesMissing = plan.imagesMissing || 0;   /* V7-F: images the file mentions that the platform no longer holds — restored as missing (019e) */
+    if (plan.imagesMissingIds && plan.imagesMissingIds.length) converted.summary.imagesMissingIds = plan.imagesMissingIds;
+    /* V7-F (review, low item): a full replace-restore that drops or (re)introduces a unit id stamps that unit's orphans, as the unit routes do (019e) */
+    var unitsPd = ((plan.kv && plan.kv.pend) || []).filter(function (pd) { return pd.k === K_DEPTS; })[0];
+    if (unitsPd) rsImageUnitStamp(env, A, plan, unitsPd.act === 'del' ? [] : parseJson(unitsPd.v, []));
+    if (stage) stage.done(plan, converted.summary);
+    if (body.phase === 'inspect') return { ok: 1, inspection: { scope: body.scope, base: base, counts: plan.counts, summary: converted.summary || {} } };
+    return await rsCommit(env, A, plan, reqMeta(request));
+}
 async function rsRoute(env, request, url, ss) {
   var A = await actorOf(env, ss.uid);
   if (!A) return json({ ok: 0, err: 'session' }, 401);
@@ -1708,14 +1771,7 @@ async function rsRoute(env, request, url, ss) {
       var reference = await rsReferenceSnapshot(env, A.u.id);
       env = reference.env;
       A = reference.A;
-      if (
-        !body.scope ||
-        (body.scope.kind === 'full' && A.u.role !== 'super') ||
-        (body.scope.kind === 'dept' &&
-          A.u.role !== 'super' &&
-          (!isMgrOf(A, body.scope.departmentId) || !enfHeld(A, body.scope.departmentId, 'backup.restore')))
-      )
-        throw rsError('restore-policy', 403);
+      if (rsScopeDenied(A, body.scope)) throw rsError('restore-policy', 403);
       var rawFingerprint = hex(
           await crypto.subtle.digest(
             'SHA-256',
@@ -1730,59 +1786,12 @@ async function rsRoute(env, request, url, ss) {
         await env.DB.batch(rsReferenceGuards(env,reference));
         return json(await rsCommit(env, A, { receipt: existing }, reqMeta(request)));
       }
-      var converted = await rsConvertBackup(env, A, body.backup, {
-          scope: body.scope,
-          mode: body.mode,
-          legacyConsent: body.phase === 'inspect' || body.legacyConsent === true,
-          reference: reference,
-        }),
-        base = JSON.parse(JSON.stringify(body.base || {}));
-      base.kv = base.kv || {};
-      Object.keys(converted.keys).forEach(function (k) {
-        if (base.kv[k] === undefined && !Object.prototype.hasOwnProperty.call(reference.inputKeys, k) && !reference.inputRevs[k])
-          base.kv[k] = 0;
-      });
-      var normalized = {
-        version: 1,
-        uid: body.uid,
-        requestId: body.requestId,
-        scope: body.scope,
-        mode: body.mode,
-        reason: body.reason,
-        base: base,
-        keys: converted.keys,
-        delete: [],
-        domains: converted.domains,
-        manifest: converted.manifest,
-      };
-      if (converted.permissionSlice !== undefined) normalized.permissionSlice = converted.permissionSlice;
-      var plan = await rsPrepare(env, A, normalized, reqMeta(request), {
-        reference: reference,
-        fingerprint: rawFingerprint,
-        images: converted.images,
-      });
-      plan.guards.push.apply(plan.guards, converted.readGuards || []);
-      converted.summary.imagesReused = plan.imagesReused;
-      converted.summary.imagesMissing = plan.imagesMissing || 0;   /* V7-F: images the file mentions that the platform no longer holds — restored as missing (019e) */
-      if (plan.imagesMissingIds && plan.imagesMissingIds.length) converted.summary.imagesMissingIds = plan.imagesMissingIds;
-      /* V7-F (review, low item): a full replace-restore that drops or (re)introduces a unit id stamps that unit's orphans, as the unit routes do (019e) */
-      var unitsPd = ((plan.kv && plan.kv.pend) || []).filter(function (pd) { return pd.k === K_DEPTS; })[0];
-      if (unitsPd) rsImageUnitStamp(env, A, plan, unitsPd.act === 'del' ? [] : parseJson(unitsPd.v, []));
-      if (body.phase === 'inspect')
-        return json({ ok: 1, inspection: { scope: body.scope, base: base, counts: plan.counts, summary: converted.summary || {} } });
-      return json(await rsCommit(env, A, plan, reqMeta(request)));
+      return json(await rsBackupRun(env, A, request, body, reference, rawFingerprint));
     }
     return json(await rsCommit(env, A, await rsPrepare(env, A, body, reqMeta(request)), reqMeta(request)));
   } catch (e) {
-    if (e.ocCode) return json({ok:0,err:e.ocCode},e.status||400);
-    if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
-    if (e.szCode || e.awCode) return bdErrorResponse(e);
-    if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
-    if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
-    if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
-    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
-    if (/KIVO_RESTORE_EPOCH/.test(String(e))) return json({ ok: 0, err: 'restore-epoch-changed' }, 409);
-    if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e))) return json({ ok: 0, err: 'conflict' }, 409);
+    var failed = rsErrorResponse(e);
+    if (failed) return failed;
     throw e;
   }
 }

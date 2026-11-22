@@ -465,7 +465,12 @@ test('full restore entry points use the shared atomic API for relational daily s
   file.domains.notifications.messages[0].title = 'TEST_ONLY SQL rollback target';
   C.page._fbkPend = { file, ticket: null }; B.DB.failIf = sql => /INSERT .*INTO notification_messages/.test(sql);
   await C.method('src/modules/admin/logic.js', 'fbkCommit').call(C.page, 'replace'); B.DB.failIf = null;
-  assert.deepEqual(backupSnapshot(B.DB), before); assert.ok(C.page._fbkPend); assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 0); assert.deepEqual(C.writes, []);
+  /* V7 · د6: النسخةُ تُرسل على أجزاء إلى منطقةٍ مؤقتة (restore_preimage · 'stage:<طلب>')؛ فشلُ الاعتماد بخطأ قاعدةٍ يُبقيها لإعادة المحاولة بالتذكرة نفسِها
+     (_fbkPend باقٍ) — ليست كتابةً في بيانات المنصة: تُفصل عن اللقطة ويُثبَت أنها وحدها ما زاد، وكلُّ ما عداها كما كان حرفاً */
+  const afterFailure = backupSnapshot(B.DB), stagedRows = afterFailure.restore_preimage.filter(row => String(row.snapshot_id).startsWith('stage:'));
+  assert.ok(stagedRows.length > 0, 'the staged copy is kept for the retry');
+  afterFailure.restore_preimage = afterFailure.restore_preimage.filter(row => !String(row.snapshot_id).startsWith('stage:'));
+  assert.deepEqual(afterFailure, before); assert.ok(C.page._fbkPend); assert.equal(B.DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, 0); assert.deepEqual(C.writes, []);
 });
 
 test('full backup waits for actual relational reads, includes every typed domain and fails on network loss', needs('award', 'custody', 'seized', 'tasks'), async () => {

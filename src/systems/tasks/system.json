@@ -359,10 +359,6 @@
    "order": 10,
    "text": "              \"المهام المسندة\",\n"
   },
-  "perm.seed.cap.tasks": {
-   "order": 10,
-   "text": "'tasks',"
-  },
   "perm.legacy.tasks": {
    "order": 10,
    "text": "      /* تسامح: مفتاح الورقة القديم emps/tasks (من عهد «التوأم») يُقرأ tasks */\n      try { var mv = false; Object.keys(r.emps).forEach(function(d9){ Object.keys(r.emps[d9] || {}).forEach(function(ek){ var pm9 = r.emps[d9][ek] || {}; if (pm9['emps/tasks']) { if (!pm9.tasks) pm9.tasks = pm9['emps/tasks']; delete pm9['emps/tasks']; mv = true; } }); }); if (mv) permSave(r); } catch (e9) {}\n"

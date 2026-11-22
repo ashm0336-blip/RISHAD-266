@@ -86,18 +86,15 @@ test('the admin center shows the state from that one source in the tree and the 
   assert.equal(r.txt, 'سقفٌ خاصّ مستقلّ فارغ — لا صفحة مفعّلة لهذه الوحدة', 'independent and empty: its own record, no ancestor assumed');
 });
 
-test('the unused patterns are gone; the live seed keeps its behaviour (and a stored «أساسي» still wins)', needs('custody', 'tasks'), () => {
+/* V7 · د6 (ب4 — owner decision): the remaining «أساسي» seed (SEED_BASIC · seedBasic · patternSeed · the stored patterns.basic) is gone as well — the new unit's seed is the
+   explicit choice 'off' | 'parent' (tests/unit/dept_cap_seed.test.mjs · v7_d6_new_unit_off.test.mjs). This case pinned «the live seed keeps its behaviour»; it now pins its removal. */
+test('the unused patterns are gone — and since V7 · د6 the «أساسي» seed too: a new unit is seeded by the explicit choice', needs('custody', 'tasks'), () => {
   for (const n of ['PATTERN_META', 'PATTERN_DEF', 'patternMeta', 'patternApply', 'patternSet', 'function patterns(']) {
     assert.ok(!code(M).includes(n), '331 no longer has ' + n); assert.ok(!code(T).includes(n), '334 no longer has ' + n);
   }
   for (const n of ['capPatRows', 'capPatSaveDo', 'capPatSaveTip', 'capPat']) { assert.ok(!L.includes(n), 'admin logic: no ' + n); assert.ok(!V.includes(n), 'admin view: no ' + n); }
-  assert.match(M, /if \(!inh\.length\) \{ var sd = patternSeed\(id\);/, 'seedCapFrom still seeds «أساسي» under an empty parent');
-  const sb = fnSrc(M, 'seedBasic');
-  const SEED = /var SEED_BASIC = (\{[^\n]+\});/.exec(M)[1];
-  const run = (store) => vm.runInNewContext('var SEED_BASIC = ' + SEED + ';(' + sb + ')()', { permStore: () => store, JSON, Array });
-  assert.deepEqual(run({}).cap, ['emps', 'tasks', 'planning', 'staff', 'links', 'help', 'admin'], 'the built-in «أساسي» (unchanged)');
-  assert.deepEqual(run({}).subs, { emps: ['data', 'custody'], planning: ['readiness'], admin: ['shifts', 'backup', 'import'] });   /* V7 · د5-ح: بلا ورقة «قوالب الصلاحيات» */
-  assert.deepEqual(run({ patterns: { basic: { cap: ['help'], subs: {}, tabs: {}, lenses: [] } } }).cap, ['help'], 'a stored patterns.basic wins, as before');
-  assert.deepEqual(run({ patterns: { basic: { cap: 'x' } } }).cap.length, 7, 'a malformed stored pattern falls back');
+  for (const n of ['var SEED_BASIC', 'function seedBasic(', 'function patternSeed(', 'patternSeed']) { assert.ok(!code(M).includes(n), '331 no longer has ' + n); assert.ok(!code(T).includes(n), '334 no longer has ' + n); }
+  assert.match(M, /function seedMode\(opt\)\{ var m = opt && typeof opt === 'object' \? opt\.seed : opt; return m === 'parent' \? 'parent' : 'off'; \}/, 'the seed is an explicit choice, default «off»');
+  assert.match(M, /function seedCapFrom\(id, pid, opt\)\{/); assert.match(M, /function seedSectionCap\(id, did, opt\)\{/);
   assert.ok(!/والجذر يبدأ فارغاً/.test(M), 'the stale comment («the root starts empty») is corrected');
 });

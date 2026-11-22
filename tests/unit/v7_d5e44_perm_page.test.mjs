@@ -70,6 +70,14 @@ function world({ caps = { [DID]: ['staff', 'plan', 'tasks'] }, off = [], doc, su
       /* V7 · د5-ح: مصدرُ القائمة الجانبية الواحد (334 menuFor على صلاحيات مدير الوحدة mgrPerms) — هنا بديلُه من السقف المصطنع */
       mgrPerms: (u) => ({ TEST_ONLY_unit: u }),
       menuFor: (P, d) => ['emps', 'staff', 'plan', 'tasks', 'links', 'admin'].map((k) => ({ k, n: 'TEST_ONLY ' + k, on: k === 'emps' || k === 'admin' || (!plat.mods.off.includes(k) && on(k, P.TEST_ONLY_unit)), hid: k === 'links' })),
+      /* V7 · د6 (أ1): المصدرُ الواحد لكل «ما يراه حامل» (334 seenBy) — بديلُه هنا: المديرُ من menuFor(mgrPerms) أعلاه؛ وحاملُ الدور والشخصُ (بمفاتيح المحرّك الحقيقي)
+         من كل نظامٍ مفعّلٍ في السقف يحمل منه مفتاحاً؛ وشخصٌ بلا مفاتيح ممرَّرة: المحفوظُ له (المديرُ قائمةُ المدير · غيرُه «صفحتي») */
+      seenBy: (h) => {
+        const head = [{ k: 'profile', n: 'صفحتي' }], B = KIVO.BassamPerm, E = KIVO.Perm44;
+        if (h.kind === 'mgr' || (h.kind === 'person' && h.mgr && !Array.isArray(h.keys))) return head.concat(B.menuFor(B.mgrPerms(h.did), h.did).filter((x) => x.on && !x.hid).map((x) => ({ k: x.k, n: x.n })));
+        const held = new Set(h.keys || []);
+        return head.concat(E.sysList().filter((s) => !plat.mods.off.includes(s.key) && on(s.key, h.did) && E.sysKeys(s.key).some((k) => held.has(k))).map((s) => ({ k: s.key, n: s.name })));
+      },
       /* سقفُ الوحدة لمحرّك الأدوار (= 331 p24Ceil · p24LeafOn): سجلُّها إن وُجد، والمطفأُ من المنصة خارجه */
       p24: { ceil: (u) => ({ page: (k) => !plat.mods.off.includes(k) && (!Array.isArray(caps0[u]) || caps0[u].includes(k)), sub: () => true, lens: () => true }), leafOn: (C0, leaf) => C0.page(String(leaf).split('/')[0]) },
     },
@@ -442,7 +450,9 @@ test('the manager\'s own row: shown as his, not editable (the server refuses «s
   W.location.hash = '#/admin/perm';
   let v = W.sub('people', { pSel: 'mgr:' + DID });
   assert.equal(v.p44PSelf, true); assert.equal(v.p44PEdit, false); assert.equal(v.p44PMgr, true);
-  assert.deepEqual(J(v.p44PNav), [{ n: 'كل الأنظمة المفعّلة لإدارته', l: 'كامل داخل السقف' }]);
+  /* V7 · د6 (أ1 — قرار المالك): «ما يراه الآن» للمدير = قائمتُه الفعلية من المصدر الواحد (seenBy) — كان سطراً ثابتاً «كل الأنظمة المفعّلة لإدارته · كامل داخل السقف» */
+  assert.deepEqual(J(v.p44PNav), [{ k: 'profile', n: 'صفحتي' }].concat(W.KIVO.BassamPerm.menuFor({ TEST_ONLY_unit: DID }, DID).filter((x) => x.on && !x.hid)).map((x) => ({ n: x.n, l: '' })), 'the manager row shows his real menu');
+  assert.ok(v.p44PNav.length > 2 && v.p44PNav.some((m) => m.n === 'TEST_ONLY admin'));
   const row = v.p44PRows.find((r) => r.n === 'TEST_ONLY المدير');
   assert.equal(row.me, true); assert.equal(row.role, 'مدير الإدارة');
   assert.ok(v.p44PRows.filter((r) => r.n !== 'TEST_ONLY المدير').every((r) => r.me === false));

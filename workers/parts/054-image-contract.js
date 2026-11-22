@@ -773,6 +773,7 @@ async function imgSweepSafe(env, max, every, maxDead) {
   try {
     var now = Date.now();
     if (every !== 0 && !(await imgSweepDue(env, now, every || IMG_SWEEP_EVERY))) return null;
+    try { await rsiSweepStmt(env, now, '').run(); } catch (eS) { swallow('import-sweep', eS, env && env.__rid); }   /* V7 · د6: مؤقتُ استيرادٍ انقضت مهلتُه (ساعة) يُزال مع كل جولة كنس */
     return await imgSweep(env, now, max || IMG_SWEEP_SAVE, maxDead);
   } catch (e) { swallow('img-sweep', e, env && env.__rid); return null; }
 }

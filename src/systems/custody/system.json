@@ -614,10 +614,6 @@
    "order": 10,
    "text": "bassam_custody_v1:[\"عهد الموظفين\"],"
   },
-  "perm.seed.subs.custody": {
-   "order": 10,
-   "text": ",'custody'"
-  },
   "perm.keyCap.custody": {
    "order": 10,
    "text": " bassam_custody_v1:'emps/custody',"

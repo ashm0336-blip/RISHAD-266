@@ -27,5 +27,13 @@
  "migrate.plan.daily": {
   "order": 10,
   "text": "  if (opts.parts && opts.parts.indexOf(DAILY_ARC_PART) !== -1) return await dailyArcMigPlan(env, seed, now, T, keys, revs, capture);   /* V7 · د5-ح (13) */\n"
+ },
+ "rsi.slice": {
+  "order": 10,
+  "text": "  'bassam_rounds_v1': ['^\\\\d{4}-\\\\d{1,2}-\\\\d{1,2}(?:-.+)?$', ['bassam_rounds_v1', 'bassam_rounds_arc_v1']],\n  'bassam_rounds_arc_v1': ['^\\\\d{4}-\\\\d{1,2}-\\\\d{1,2}(?:-.+)?$', ['bassam_rounds_v1', 'bassam_rounds_arc_v1']]\n"
+ },
+ "rsi.pend": {
+  "order": 10,
+  "text": "      await dailyArcPend(env, kv, reference);   /* V7 · د6: دفعةُ الأيام تُقسم بين الحيّ والأرشيف بالخطوة نفسِها (019p3) */\n"
  }
 }

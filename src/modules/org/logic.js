@@ -12,7 +12,7 @@
    ── نقاطُ التركيب ── دالةٌ واحدة لكل تبويب (ogTabOverview · ogTabSystems · ogTabAdmins · ogTabRoles · ogTabPeople · ogTabLog · ogTabData)
         يقابلها قسمٌ واحد في view.html (data-org-tab) — يُعدَّل كلُّ تبويبٍ على حدة. منطقُ الأقسام الأربعة القائم في logic-perm44.js (منقولٌ كما هو).
    ── التحديد المتعدد ── شريطُه وأزرارُه هنا؛ التطبيقُ خطّاف: orgBulkApply(mode, unitIds) والحدث window «bs:org-bulk» { mode: "on"|"off", units }.
-   ── ب4 ── اختيارُ «أنظمة الوحدة الجديدة» ("off" الافتراضي | "parent") يُمرَّر وسيطاً إلى مسار الإنشاء في _ogAddGo (ثلاثة مواضع معلَّمة «ب4»). */
+   ── ب4 ── اختيارُ «أنظمة الوحدة الجديدة» ("off" الافتراضي | "parent") يُمرَّر seed إلى المدخل الواحد KIVO.BassamDepts.unitAdd في _ogAddGo. */
 /* V7 · د6: «class Component» اصطلاحُ إطار الصفحات نفسُه (dc-runtime يأخذ الصنفَ بهذا الاسم) — كما في كل صفحة */
 /* eslint-disable-next-line no-redeclare, no-unused-vars */
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks", "admin+profile+seized"]) {
@@ -506,47 +506,30 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this.setState({ ogDlg: { k: "add", name: "", kind: p && p.dept ? D.NODE_KIND_SEC || "قسم" : "", newKind: "", pid: p ? pid : "", sys: "off", msg: "" } });
     this._ogFocus("ogAddName");
   }
-  /* منقولٌ من صفحة الهيكل القديمة (ndGo) بقواعده: الاسمُ فريدٌ في الهيكل · «قسم» ← sectionAdd · «إدارة» ← سجلُّ الإدارات بقاعدة الموضع · غيرُهما ← nodeAdd */
+  /* V7 · د6 (ب3 · ب4): المدخلُ الواحد لإنشاء وحدة — KIVO.BassamDepts.unitAdd({ name, kind, pid, seed }): النوعُ يحدّد المسار («قسم» · «إدارة» · عقدةٌ فوقية)
+     بقواعده كلِّها في النموذج (الاسمُ فريدٌ في الهيكل · قاعدةُ الموضع · البذر، وإن فشل البذر سُحبت الوحدة). seed = اختيارُ «أنظمة الوحدة الجديدة»:
+     "off" («مطفأة كلها» — الافتراضي) أو "parent" («نفس أنظمة العقدة الأب») */
   _ogAddGo() {
     const D = KIVO.BassamDepts,
       f = this.state.ogDlg || {},
       name = String(f.name || "").trim(),
       kind = String("__new" === f.kind ? f.newKind || "" : f.kind || "").trim(),
       pid = f.pid || null,
-      sys = "parent" === f.sys ? "parent" : "off",   /* ب4: «مطفأة كلها» (الافتراضي) أو «نفس أنظمة العقدة الأب» */
+      seed = "parent" === f.sys ? "parent" : "off",
       fail = (m) => this._ogDlg({ msg: m });
     if (!name) return fail("اكتب الاسم");
     if (!kind) return fail("اختر النوع");
     if (D.nodes().some((x) => x.name === name) || D.list().some((x) => x.name === name)) return fail("يوجد في الهيكل ما يحمل هذا الاسم");
-    let id = "";
-    if (kind === (D.NODE_KIND_SEC || "قسم") && D.sectionAdd) {
-      const x = D.sectionAdd({ name: name, deptId: pid || "", systems: sys });   /* ب4: الاختيارُ وسيطٌ لمسار إنشاء القسم */
-      if (!x || !x.ok) return fail((x && x.err) || "تعذّر إنشاء القسم");
-      id = x.id;
-    } else if (kind === (D.NODE_KIND_DEPT || "إدارة")) {
-      if (pid && !D.nodeOf(pid)) return fail("الأب غير موجود");
-      const w = D.placeWhy({ id: "", dept: !0 }, pid);
-      if (w) return fail(w);
-      id = D.freshId("d");
-      const rec = { id: id, name: name };
-      pid && (rec.gid = pid);
-      D.save(D.list().concat([rec]));
-      try {
-        const P = KIVO.BassamPerm;
-        P && P.seedCapFrom && P.seedCapFrom(id, pid, { systems: sys });   /* ب4: الاختيارُ وسيطٌ لبذر سقف الإدارة الجديدة */
-      } catch (e) {}
-    } else {
-      const r = D.nodeAdd({ name: name, kind: kind, pid: pid, systems: sys });   /* ب4: الاختيارُ وسيطٌ لمسار إنشاء العقدة */
-      if (!r || !r.ok) return fail((r && r.err) || "تعذّر الإنشاء");
-      id = r.id;
-    }
+    const r = D.unitAdd({ name: name, kind: kind, pid: pid, seed: seed });
+    if (!r || !r.ok) return fail((r && r.err) || "تعذّر الإنشاء");
+    const id = r.id;
     if (pid) {
       const m = { ...(this.state.ogShut || {}) };
       delete m[pid];
       this.setState({ ogShut: m });
     }
     this.setState({ ogDlg: null });
-    this.bsAck("أُنشئت «" + name + "» — أكمل تهيئتها من «نظرة عامة»", "ok");
+    this.bsAck("أُنشئت «" + name + "» — " + ("parent" === r.seed ? "أنظمتها كأنظمة العقدة الأب" : "أنظمتها مطفأة: فعّلها من «الأنظمة»"), "ok");
     id && this.go(id, "overview", { force: !0 });
   }
   /* منقولٌ من رأس صفحة الوحدة القديمة (selRenameSave): الاسمُ فريدٌ بين العقد أو بين الإدارات والأقسام */
@@ -587,7 +570,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       let nm = base,
         k = 2;
       for (; D.nodes().some((x) => x.name === nm) || D.list().some((x) => x.name === nm); ) nm = base + " " + k++;
-      const r = D.nodeAdd({ name: nm, kind: "إدارة عامة", pid: null });
+      const r = D.nodeAdd({ name: nm, kind: "إدارة عامة", pid: null, seed: "parent" });   /* V7 · د6 (ب4): تُنشأ لتُسنَد إليها إدارةٌ قائمة — فلا تبدأ مطفأةً فتُطفئ ما تحتها */
       if (!r || !r.ok) return fail((r && r.err) || "تعذّر إنشاء الإدارة العامة");
       const c = D.setDeptParent(inf.id, r.id);
       if (!c || !c.ok) return (D.nodeDel(r.id), fail((c && c.err) || "تعذّر الإسناد"));
