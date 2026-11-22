@@ -749,6 +749,10 @@
           "type": "string",
           "maxLength": 12
         },
+        "phase": {
+          "type": "string",
+          "maxLength": 12
+        },
         "requestId": {
           "type": "string",
           "maxLength": 100
@@ -822,7 +826,6 @@
         }
       },
       "required": [
-        "op",
         "requestId"
       ],
       "additionalProperties": false

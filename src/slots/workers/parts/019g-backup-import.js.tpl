@@ -1,7 +1,8 @@
 /* V7 · د6: استيرادُ النسخة على أجزاء — POST /api/backup/import (نسخةُ الإدارة والنسخةُ الشاملة).
    لماذا: حدُّ الطلب 8MB لا يُرفع، ونسخةُ إدارةٍ حقيقية 31MB (بياناتُها وحدها 9.9MB، ومفتاحٌ واحد 8.4MB، وصورُها 21MB).
    كيف: op:'begin' يفتح منطقةً مؤقتة باسم الطلب ← op:'part' يودِع الأجزاء (نصُّ الملف بلا صوره مقطَّعاً · ثم الصورُ واحدةً واحدة) ←
-        op:'inspect' يجمع ويخطّط بلا كتابة ← op:'commit' يطبّق كلَّ شيءٍ في دفعةٍ واحدة (rsCommit القائمة) ومعها حذفُ المؤقت · op:'cancel' يحذفه.
+        phase:'inspect' يجمع ويخطّط بلا كتابة ← phase:'commit' يطبّق كلَّ شيءٍ في دفعةٍ واحدة (rsCommit القائمة) ومعها حذفُ المؤقت · op:'cancel' يحذفه
+        (inspect/commit باسم phase كما في /api/backup/restore).
    · المؤقت: صفوفٌ في restore_preimage (جدولُ لقطات الاستعادة — لا ترحيلَ مخطّط) باسم 'stage:<requestId>': صفُّ بيانٍ (domain 'meta' · table_key = الحساب ·
      row_number = لحظةُ البدء) وصفوفُ نصٍّ (domain 'f' للملف · 'i' للصور بمعرّفها) كلٌّ ≤ RSI_ROW حرفاً — دون حدِّ قيمة الصف في طبقة التخزين (CHUNK = 700,000).
    · لا يتغيّر شيءٌ قبل الاعتماد: الأجزاءُ لا تمسّ إلا المؤقت، والاعتمادُ دفعةٌ واحدة بحرّاسها (كما /api/backup/restore). انقطاعٌ أو إغلاقُ صفحة ⇒ مؤقتٌ يتيم
@@ -42,7 +43,7 @@ async function rsImportRoute(env, request, ss) {
     var bad = bodyCheck('/api/backup/import', b);
     if (bad) return json({ ok: 0, err: 'bad-body', at: bad }, 400);
     if (!isObj(b) || !/^[-A-Za-z0-9_]{8,100}$/.test(b.requestId || '')) throw rsError('restore-shape');
-    var now = Date.now(), id = 'stage:' + b.requestId, op = b.op, D = env.DB, s = b.scope, T = RSI_T;
+    var now = Date.now(), id = 'stage:' + b.requestId, op = b.op || b.phase, D = env.DB, s = b.scope, T = RSI_T;
     if (op === 'begin') {
       if (!isObj(s) || ['full', 'dept'].indexOf(s.kind) < 0 || rsScopeDenied(A, s) || (s.kind === 'dept' && !A.depts.some(function (d) { return d.id === s.departmentId; }))) throw rsError('restore-policy', 403);
       var skip = Object.keys(b.keys || {}).map(function (k) { return { k: k, why: rsiSkipWhy(k, b.keys[k] ? null : '') }; }).filter(function (x) { return x.why; });
@@ -122,7 +123,9 @@ async function rsImportRoute(env, request, ss) {
     };
     var reference = await rsReferenceSnapshot(env, A.u.id);
     if (rsScopeDenied(reference.A, s)) throw rsError('restore-policy', 403);
-    var out = await rsBackupRun(reference.env, reference.A, request, { version: 1, uid: A.u.id, requestId: b.requestId, scope: s, mode: b.mode, reason: b.reason, base: b.base, backup: file, legacyConsent: b.legacyConsent === true, phase: op }, reference, fp, stage);
+    var run = { version: 1, uid: A.u.id, requestId: b.requestId, scope: s, mode: b.mode, reason: b.reason, base: b.base, backup: file, legacyConsent: b.legacyConsent === true, phase: op };
+    file = null;
+    var out = await rsBackupRun(reference.env, reference.A, request, run, reference, fp, stage);
     if (op === 'commit') out.imagesNew = stage.fresh.length;
     return json(out);
   } catch (e) {

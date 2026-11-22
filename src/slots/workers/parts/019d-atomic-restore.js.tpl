@@ -1027,6 +1027,7 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var operationalInput=opRestoreDocuments(body,reference,A);
+  if (internal && internal.release) body.domains.operations = null;   /* V7 · د6: صفوفُ المجال التشغيلي صارت وثائقَ أعلاه ولا يقرؤها ما بعده — تُحرَّر (أكبرُ ما يُحمل في الذاكرة) */
   Object.assign(keys,operationalInput.keys);
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
   keys = selection.keys;
@@ -1452,6 +1453,7 @@ async function rsBackupRun(env, A, request, body, reference, rawFingerprint, sta
         reference: reference,
       }),
       base = JSON.parse(JSON.stringify(body.base || {}));
+    if (stage) body.backup = null;   /* V7 · د6: نصُّ الملف لا يلزم بعد التحويل — يُحرَّر قبل التخطيط (نسخةٌ بياناتُها 10MB كانت تُبقي فوق 120MB حيّةً في الذاكرة) */
     base.kv = base.kv || {};
     Object.keys(converted.keys).forEach(function (k) {
       if (base.kv[k] === undefined && !Object.prototype.hasOwnProperty.call(reference.inputKeys, k) && !reference.inputRevs[k])
@@ -1475,6 +1477,7 @@ async function rsBackupRun(env, A, request, body, reference, rawFingerprint, sta
       reference: reference,
       fingerprint: rawFingerprint,
       images: stage || converted.images,
+      release: !!stage,
     });
     plan.guards.push.apply(plan.guards, converted.readGuards || []);
     converted.summary.imagesReused = plan.imagesReused;
