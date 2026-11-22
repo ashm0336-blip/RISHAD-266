@@ -50,23 +50,23 @@ const { C, KIVO, ctx } = load();
 const page = () => Object.create(C.prototype);
 const STRUCT = page().t24Struct();
 
-test('the manifest ships the system contract and the lens hosts to the client (the source of the map)', needsSys('award', 'dstats', 'seized', 'tasks'), () => {
+test('the manifest ships the system contract and the lens hosts to the client (the source of the map)', needsSys('award', 'dstats', 'rasd', 'seized', 'tasks'), () => {
   const M = KIVO.KIVO_MANIFEST.clone('pages');
   for (const p of PAGES.pages) { const q = M.find((x) => x.key === p.key); assert.equal(q.module, p.module, p.key + '.module'); assert.equal(q.activation, p.activation, p.key + '.activation'); assert.deepEqual(J(q.requires || []), p.requires || [], p.key + '.requires'); }
-  assert.equal(M.filter((p) => p.module).length, 12, 'twelve systems (module)');
+  assert.equal(M.filter((p) => p.module).length, 13, 'thirteen systems (module)');   /* V7 · د6: + «رصد الحالات» (rasd) */
   assert.deepEqual(J(KIVO.KIVO_MANIFEST.clone('lenses')).map((l) => [l.key, l.hosts, l.indicators]), LENSES.map((m) => [m.key, m.hosts, (m.resources || {}).indicators || []]));
 });
 
-test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · leaves · keys · reserved)', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
-  assert.equal(REG.owners.length, 43);   /* V7 · د5-ح: مالكُ admin/ptpls حُذف */
+test('A2 every owner is one row · t24Struct = perm-tree24.json (containers · leaves · keys · reserved)', needsSys('award', 'custody', 'dstats', 'rasd', 'seized', 'tasks'), () => {
+  assert.equal(REG.owners.length, 45);   /* V7 · د6: + rasd/dash · rasd/records */   /* V7 · د5-ح: مالكُ admin/ptpls حُذف */
   assert.deepEqual(J(STRUCT).map((c) => c.id), TREE.containers.map((c) => c.id), 'the same containers in the same order');
   /* leaves and keys: the keys of a leaf in the registry order; the reserved ones as a set; the leaves of a page container in the
      manifest order (the platform owners are listed in the registry order by the builder and in the document order by the tree file) */
   const shape = (cs, kindOf) => cs.map((c) => { const L = c.leaves.map((l) => ({ owner: l.owner, kind: kindOf(l).replace('page_under', 'page'), keys: l.keys, reserved: l.reserved.slice().sort() }));
     return { id: c.id, kind: c.kind, page: c.page, nav: c.nav, leaves: c.kind === 'page' ? L : L.sort((a, b) => (a.owner < b.owner ? -1 : 1)) }; });
   assert.deepEqual(shape(J(STRUCT), (l) => l.type), shape(TREE.containers, (l) => l.kind));
-  assert.equal(TREE.counts.leaves, 43); assert.equal(TREE.counts.keys, 250);   /* V7 · د5-ح: ورقةُ admin/ptpls ومفاتيحُها الخمسة حُذفت */
-  assert.deepEqual(J(STRUCT).flatMap((c) => c.leaves.map((l) => l.owner)).sort(), REG.owners.map((o) => o.id).sort(), 'the 43 owners, one leaf each');
+  assert.equal(TREE.counts.leaves, 45); assert.equal(TREE.counts.keys, 261);   /* V7 · د6: + ورقتا رصد الحالات ومفاتيحُهما الأحد عشر */   /* V7 · د5-ح: ورقةُ admin/ptpls ومفاتيحُها الخمسة حُذفت */
+  assert.deepEqual(J(STRUCT).flatMap((c) => c.leaves.map((l) => l.owner)).sort(), REG.owners.map((o) => o.id).sort(), 'the 45 owners, one leaf each');
 });
 
 test('A4 lens hosts come from the lens manifests — no literal host list', () => {
@@ -88,11 +88,11 @@ test('Q5 parity: a lens manifest declares exactly the panels pages.json makes co
   assert.deepEqual(J(STRUCT.find((c) => c.id === 'lenses').leaves).map((l) => [l.lens, l.ind]), LENSES.map((m) => [m.key, (m.resources || {}).indicators || []]));
 });
 
-test('A5 refs = the panels of kpis/logic.js · the conditions = kpiPanelOk (V7 · د5-هـ 44: the map rows were deleted with t24Rows)', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
+test('A5 refs = the panels of kpis/logic.js · the conditions = kpiPanelOk (V7 · د5-هـ 44: the map rows were deleted with t24Rows)', needsSys('award', 'custody', 'dstats', 'rasd', 'seized', 'tasks'), () => {
   /* (1) one row per ref, and the KPIs page draws exactly those */
   const KL = rd('modules', 'kpis', 'logic.js');
   const drawn = [...KL.matchAll(/\{ k: "\w+", pk: "(\w+)", sk: "(\w*)" \}/g)].map((m) => m[1] + (m[2] ? '/' + m[2] : ''));
-  assert.equal(drawn.length, 11);
+  assert.equal(drawn.length, 12);   /* V7 · د6: + لوحة مؤشرات رصد الحالات */
   assert.deepEqual(drawn, KPI.refs, 'kpis/logic.js draws the refs of the container, in order');
   assert.doesNotMatch(KL, /"tkKpi"/, 'the tasks panel has no rule of its own left in the KPIs page');
   /* (2) the conditions: the literal rules of kpiPanelOk (the extraction of tools/validate_schemas.py ⑤) */
@@ -102,7 +102,7 @@ test('A5 refs = the panels of kpis/logic.js · the conditions = kpiPanelOk (V7 �
   assert.deepEqual(Object.keys(rules).sort(), ['kpiDaily', 'kpiOcc', 'kpiZones']);
   /* (4) kpiPanelOk serves the page-level ref through the page's own view right — no new leaf, no new key */
   assert.match(body, /if \(!sk\) return pv \? pv\(pk\) : can\(pk, 'view'\);/);   /* V7 · د5-ح: أو صلاحياتُ حاملٍ مُعطاة (بطاقة قائمة المدير) */
-  assert.equal(REG.registry.length, 264 /* V7 · د5-ح: 269 − صفوفُ tpl.* الخمسة لورقة admin/ptpls المحذوفة */); assert.equal(PAGES.pages.find((p) => p.key === 'tasks').tabs, undefined);
+  assert.equal(REG.registry.length, 276 /* V7 · د5-ح: 269 − صفوفُ tpl.* الخمسة لورقة admin/ptpls المحذوفة · V7 · د6: + صفوفُ رصد الحالات الاثنا عشر (11 نشطاً + rz.rec.status المحجوز) */); assert.equal(PAGES.pages.find((p) => p.key === 'tasks').tabs, undefined);
 });
 
 /* A6 «الوحدات» (the platform-units page _plMods) was DELETED in V7 · د5-هـ (44) — toggling systems moves to the «الصلاحيات» tab; its case is deleted with it. */
