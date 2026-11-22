@@ -311,6 +311,8 @@
       rest.domains = Object.assign({}, rest.domains || file.domains, { operations: ((rest.domains || file.domains).operations).map(function (d, i) { return i === at ? Object.assign({}, d, { rows: empty }) : d; }) });
       add(name, texts2);
     });
+    /* لا عضوَ أكبر من الدفعة: يُسمّى أكبرُ ما بقي في نصّ الملف (≥ 1M حرف) إن رُفض لثقله */
+    if (!big && record(rest.data)) Object.keys(rest.data).forEach(function (k) { var v = rest.data[k]; if (typeof v === 'string' && v.length >= 1e6 && (!big || v.length > rest.data[big].length)) big = k; });
     return { text: JSON.stringify(rest), images: images, ids: Object.keys(images), slices: slices, list: list, big: big };
   }
   function wait(ms) {
