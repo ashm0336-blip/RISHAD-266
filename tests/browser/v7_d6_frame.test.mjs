@@ -208,6 +208,9 @@ test('V7 · د6 ب2 · the tree: columns of the seeded org, kind badges, the gol
     await p.evaluate(() => { window.__TEST_ONLY_bulk = []; window.addEventListener('bs:org-bulk', (e) => window.__TEST_ONLY_bulk.push(e.detail)); });
     await p.locator('main .og-bulk [data-og-bulk="off"]').click(); await p.waitForTimeout(400);
     assert.deepEqual(await p.evaluate(() => window.__TEST_ONLY_bulk), [{ mode: 'off', units: [B, S1] }]);
+    /* V7 · د6 (م5): الخطّافُ معرَّفٌ الآن — يفتح نافذةَ التطبيق (تختبرها v7_d6_systems)؛ «إلغاء» يغلقها بلا حفظ */
+    assert.equal(await p.locator('[data-og-dlg="bulk"]').count(), 1, 'the apply dialog opens');
+    await p.locator('[data-og-dlg="bulk"] .ft button', { hasText: 'إلغاء' }).click(); await p.waitForTimeout(300);
     await p.locator('main .og-bulk [data-og-bulk="clear"]').click(); await p.waitForTimeout(500);
     assert.equal(await p.locator('main .og-bulk').count(), 0, '«إلغاء التحديد» hides the bar'); assert.equal(await p.locator('main .og-ck[aria-checked="true"]').count(), 0, 'and clears every box');
     /* «تصدير النسخة الشاملة — كل الإدارات» تحت الشجرة */

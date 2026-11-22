@@ -238,23 +238,19 @@ test('ب12 · مديرُ القسم على قسمه · والمديرُ العا
   assert.ok(!Gm.open('#/admin/perm/' + SEC + '/overview').ogTabs.some((t) => t.k === 'data'));
 });
 
-/* ══ ب11 · مصدرُ التعديلات غير المحفوظة (يسجّله حارسُ م5 بنداءٍ واحد) ══ */
-test('ب11 · p44DirtySource: dirty · review · save · discard لمسودة الأدوار والأشخاص الواحدة', async () => {
+/* ══ ب11 · مسودةُ الأدوار والأشخاص في سجلّ حارس م5 (orgDirtySources) — وحفظُها يبلغه النجاحَ والرفض (_p44Save ⇒ true/false · _ogPendEnd) ══ */
+test('ب11 · the roles/people draft is a source of the guard registry; its save reports success and refusal', async () => {
   const W = world();
   W.open('#/sysadmin/org/' + A + '/roles');
-  const src = W.page.p44DirtySource();
-  deq([src.id, src.tabs, typeof src.dirty, typeof src.review, typeof src.save, typeof src.discard], ['p44-roles', ['roles', 'people'], 'function', 'function', 'function', 'function']);
-  assert.equal(src.dirty(), false); assert.equal(src.review(), false, 'nothing to review'); assert.equal(await src.save(), true, 'nothing to save');
-  W.render().p44RoleNew(); assert.equal(src.dirty(), true); assert.equal(src.unit(), A);
-  /* the same draft from «الأشخاص» of the unit */
-  W.open('#/sysadmin/org/' + A + '/people'); assert.equal(src.dirty(), true, 'one draft for both tabs');
-  assert.equal(src.review(), true); assert.equal(W.render().p44RevOn, true, '«مراجعة قبل الحفظ» opens');
-  src.discard(); assert.equal(src.dirty(), false); assert.equal(W.render().p44RevOn, false);
-  /* save: the existing path (engine draft → commit); refused ⇒ false and the draft stays */
-  W.render(); W.open('#/sysadmin/org/' + A + '/roles'); W.render().p44RoleNew();
+  const src = () => W.page.orgDirtySources().find((x) => x.k === 'perm');
+  assert.ok(src(), 'registered (by م5)'); assert.equal(src().dirty(), false);
+  W.render().p44RoleNew(); assert.equal(src().dirty(), true); assert.equal(src().unit, A); assert.equal(W.page.orgDirty(), true);
+  W.open('#/sysadmin/org/' + A + '/people'); assert.equal(src().dirty(), true, 'one draft for both tabs'); assert.equal(src().tab, 'people');
   const E0 = W.E, eng = (commit) => { W.page._p44E = () => Object.assign({}, E0, { commit }); };
+  let ended = []; const end0 = W.page._ogPendEnd.bind(W.page); W.page._ogPendEnd = (ok) => (ended.push(ok), end0(ok));
   eng(async () => ({ ok: false, err: 'denied' }));
-  assert.equal(await src.save(), false); assert.equal(src.dirty(), true); assert.match(W.render().p44RevErr, /رفض الخادم/);
+  assert.equal(await W.page._p44Save(), false); assert.equal(src().dirty(), true, 'refused: the draft stays'); deq(ended, [], 'a refusal ends nothing (the guard keeps waiting)');
+  assert.match(W.render().p44RevErr, /رفض الخادم/);
   W.page._p44Set({ rev: null }); eng(async () => ({ ok: true }));
-  assert.equal(await src.save(), true); assert.equal(src.dirty(), false);
+  assert.equal(await W.page._p44Save(), true); assert.equal(src().dirty(), false); deq(ended, [true], 'success reported to the guard');
 });

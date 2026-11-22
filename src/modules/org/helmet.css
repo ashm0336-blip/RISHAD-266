@@ -257,4 +257,27 @@
 .p44-log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}.p44-log>li{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}.p44-lf{margin-bottom:4px}
 .p44-empty{padding:18px;border:1px dashed var(--border-default);border-radius:12px;color:var(--text-secondary);text-align:center;line-height:1.8}
 @media (max-width:640px){.p44{padding:12px 10px}.p44-rail,.p44-side{max-width:none}.p44-ch li>span:first-child{min-width:0}}
+/* V7 · د6 (م5 · ب5): «افتح مصدره» · «تشغيل الكل» / «إطفاء الكل» وعدّادُها · «أثر الحفظ» بالأسماء */
+.p44-src{font-size:11.5px;font-weight:700;color:var(--brand-text);text-decoration:underline;white-space:nowrap}
+.p44-all{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}.p44-all>span{flex:1 1 160px;font-size:12px;color:var(--text-secondary)}
+.p44-eff{list-style:none;margin:8px 0 0;padding:0;font-size:12px;line-height:1.8}.p44-eff b{font-weight:800}
+/* ب2 · نافذةُ التحديد المتعدد */
+.og-bulk-hd{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0}.og-bulk-hd>span{flex:1;font-size:12px}
+.og-bulk-sys{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.og-pk{min-height:36px;padding:0 12px;border:1px solid var(--border-default);border-radius:9px;background:var(--bg-card);color:var(--text-primary);font:inherit;font-size:12px;cursor:pointer}
+.og-pk[aria-checked="true"]{background:var(--bg-inverse);border-color:var(--bg-inverse);color:var(--text-on-inverse);font-weight:700}
+.og-bulk-rt{margin:8px 0 2px;font-size:13px;font-weight:800}
+.og-bulk-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow:auto}
+.og-bulk-rows>li{padding:8px 10px;border:1px solid var(--border-subtle);border-radius:10px;background:var(--bg-surface);font-size:12px;line-height:1.8}
+.og-tag{display:inline-block;padding:0 8px;border-radius:999px;background:var(--bg-muted,var(--bg-surface));border:1px solid var(--border-default);font-size:11px;font-weight:700}.og-tag--skip{color:var(--warning-text);background:var(--warning-bg);border-color:var(--warning-border)}
+/* ب13 · م5: «مراجعة وحفظ» ثابتٌ أسفل الشاشة دون 1024 — وأهدافُه 44px؛ والمحتوى لا يختفي تحته */
+@media (max-width:1023px){
+  .og .p44-bar{position:fixed;inset-inline:0;bottom:0;z-index:calc(var(--z-modal) - 1);border-radius:14px 14px 0 0;padding:8px 14px calc(8px + env(safe-area-inset-bottom,0px))}
+  .og.og.og .p44-bar button{min-height:44px;min-width:44px}
+  .og .p44:has(.p44-bar){padding-bottom:96px}
+}
+@media (max-width:1023px),(pointer:coarse){
+  .og.og.og .og-pk,.og.og.og .p44-all .p44-b{min-height:44px}
+  .og.og.og .p44-src{display:inline-flex;align-items:center;min-height:44px}
+}
 </style>
