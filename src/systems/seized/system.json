@@ -186,7 +186,7 @@
   },
   "kpis.panels.mid": {
    "order": 10,
-   "text": "        { k: \"sz\", pk: \"seized\", sk: \"dash\" },\n"
+   "text": "        { k: \"sz\", a: \"seized\", pk: \"seized\", sk: \"dash\" },\n"
   },
   "kpis.tabs.mid": {
    "order": 10,

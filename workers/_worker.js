@@ -4672,10 +4672,21 @@ function nfLeadShifts(A, u, d, refs) {
     st = isObj(r.staffing_v3) ? r.staffing_v3 : {}, opts = Array.isArray(r.shift_options_v1) ? r.shift_options_v1 : [],
     dayOf = function (T0) { return pfDay({ bucket: isObj(st[T0.ym]) ? st[T0.ym] : {}, rep: isObj(dr[T0.dk]) ? dr[T0.dk] : null, toks: toks, wd: T0.wd, opts: opts }); };
   if (!toks.length) return (memo[mk] = []);
-  var T = pfOpDay(Date.now(), dayOf), sh = String(dayOf(T).shift.name || ""), rep = dr[T.dk],
+  var T = nfDeptOpDay(dr, st, opts, Date.now()), sh = String(dayOf(T).shift.name || ""), rep = dr[T.dk],   /* V7 · د6 (LEAD_D6): يومُ الإدارة التشغيلي لا يومُ الشخص */
     s = sh && isObj(rep) && isObj(rep.shifts) && isObj(rep.shifts[sh]) ? rep.shifts[sh] : null, l = s && isObj(s.leaders) ? s.leaders : {},
     me = [u.name, L.rec && L.rec.name, L.rec && L.rec.eid, u.ekey].filter(function (x) { return x != null && String(x).trim() !== ""; }).map(String);
   return (memo[mk] = ["chief", "deputy"].some(function (x) { return l[x] != null && me.indexOf(String(l[x])) >= 0; }) ? [sh] : []);
+}
+/* V7 · د6 (LEAD_D6 · «اليوم التشغيلي بالقاعدة القائمة»): يومُ الإدارة التشغيلي يبدأ بأول ورديةٍ لها وينتهي بنهاية آخر ورديةٍ لها ولو بعد منتصف الليل —
+   ورديةٌ ليلية (نهايتُها ≤ بدايتها) من ورديات أمس (تقريرُه · جدولُ شهره · ورديات الإدارة) لم تنتهِ بعد ⇒ اليومُ يومُ أمس، وإلا يومُ التقويم (pfOpDay بالقاعدة نفسِها
+   لكن على ورديات الإدارة كلِّها). كان يُحسب بوردية الشخص وحده (pfOpDay(dayOf)) فيُعدّ رئيسُ اليوم التالي — ولا ورديةَ له أمس — رئيساً بعد منتصف الليل والليلةُ لم تنتهِ */
+function nfDeptOpDay(dr, st, opts, now) {
+  var C = pfHijriAt(now), P = pfHijriAt(now - 86400000), n = pfRiyadhMins(now), rep = isObj(dr) ? dr[P.dk] : null, bk = isObj(st) && isObj(st[P.ym]) ? st[P.ym] : {}, defs = [], s;
+  if (isObj(rep) && isObj(rep.shifts)) for (s in rep.shifts) { var x = rep.shifts[s]; defs.push(isObj(x) && isObj(x.def) && (x.def.tStart || x.def.tEnd) ? x.def : pfDef(bk, s, opts)); }
+  (Array.isArray(bk.__shifts) && bk.__shifts.length ? bk.__shifts : Array.isArray(opts) ? opts : []).forEach(function (o) { if (isObj(o)) defs.push(o); });
+  var night = defs.some(function (q) { var a = pfMins(q && q.tStart), b = pfMins(q && q.tEnd); return a != null && b != null && b <= a && n < b; });
+  if (night) { P.op = 'night'; return P; }
+  C.op = 'calendar'; return C;
 }
 function nfLeader(A, u, d, refs) {
   return nfLeadShifts(A, u, d, refs).length > 0;
@@ -22678,6 +22689,32 @@ function resOnCeiling(A, d, R) {
   for (var i = 0; i < own.length; i++) if (capOnDept(A, d, own[i])) return true;
   return false;
 }
+/* V7 · د6 (قرار المالك — قاعدةٌ واحدة لكل من في الوحدة عدا مدير المنصة): النظامُ المطفأ لوحدته (بالوراثة) أو على المنصة لا يُخدم ولا يُكتب.
+   هذا موضعُها الواحد في الخادم. المحرّكُ العام يطبّقها بالسؤال نفسِه (capOnDept: resOnCeiling أعلاه · 057 enfKeyOnCeiling) لكل دورٍ سوى مدير المنصة،
+   والمساراتُ الخاصة تسأل هذه الدوالّ: «مهامي» (062c) · «ملفي» اليوم والسجل (062b) · سطورُ السجل (052 audSysOff).
+     sysOfLeaf(leaf)        النظامُ القابلُ للإطفاء الذي يملك الورقة (perm44 sysList · toggle) — أو ''
+     sysOffAt(A, d, key)    النظامُ مطفأٌ على المنصة (A.off مع ما يسكن الحاوية) أو في سقف الوحدة d وأصولها — بلا استثناء دور
+     acctUnitOf(A)          وحدةُ الحساب: إدارتُه، أو عقدتُه لمدير العقدة (gm) — أو '' (المنصةُ وحدها تحكم)
+     sysServed(A, d, key)   يُخدم للفاعل: مديرُ المنصة دائماً، وغيرُه ما لم يكن مطفأً
+     resLeafOffAt(A, d, k)  ورقةُ المورد (RES_REG.cap) لنظامٍ قابلٍ للإطفاء وهي مطفأةٌ في d (صفحةً أو تبويباً، أو على المنصة) — موردٌ بلا ورقة نظام لا يتأثر */
+function sysOfLeaf(leaf) {
+  leaf = String(leaf || ''); if (!leaf) return '';
+  var s = perm44E().sysList().filter(function (x) { return x && x.toggle !== false && Array.isArray(x.leaves) && x.leaves.indexOf(leaf) !== -1; })[0];
+  return s ? String(s.key) : '';
+}
+function sysOffAt(A, d, key) {
+  if (!key) return false;
+  if (Array.isArray(A && A.off) && A.off.indexOf(key) !== -1) return true;
+  d = String(d || ''); return d ? !perm44E().sysOn(key, perm44LeafOn(A, d)) : false;
+}
+function acctUnitOf(A) { var u = (A && A.u) || {}; return String(u.deptId || (u.role === 'gm' ? u.gid || '' : '')); }
+function sysServed(A, d, key) { return !!(A && A.u) && (A.u.role === 'super' || !sysOffAt(A, d, key)); }
+function resLeafOffAt(A, d, k) {
+  var R = resOf(k), leaf = R && typeof R.cap === 'string' ? R.cap : '', sys = sysOfLeaf(leaf);
+  if (!sys) return false;
+  if (Array.isArray(A && A.off) && A.off.indexOf(sys) !== -1) return true;
+  return d ? !perm44LeafOn(A, String(d))(leaf) : false;
+}
 
 /* ═══ فرق التدقيق: ما الذي تغيّر بالضبط — مضغوطاً ═══ */
 var IDF = ['id', 'eid', 'key', 'k', 'nid', 'tok'];
@@ -23627,13 +23664,8 @@ function kvPutStmts(env, table, k, v) {
    مطفأٌ = على المنصة (A.off — مع ما يسكن الحاوية) أو في سقف وحدة السطر بالوراثة (perm44LeafOn). موردٌ بلا ورقة نظام (الهيكل · الحسابات · المنصة) لا يتأثر */
 function audSysOff(A, r) {
   try {
-    var R = r && r.k ? resOf(r.k) : null, leaf = R && typeof R.cap === 'string' ? R.cap : '';
-    if (!leaf) return false;
-    var E = perm44E(), s = E.sysList().filter(function (x) { return x && x.toggle !== false && Array.isArray(x.leaves) && x.leaves.indexOf(leaf) !== -1; })[0];
-    if (!s) return false;
-    if (Array.isArray(A && A.off) && A.off.indexOf(s.key) !== -1) return true;
-    var d = String(r.dept || (parseKey(r.k) || {}).dept || '');
-    return d ? !E.sysOn(s.key, perm44LeafOn(A, d)) : false;
+    var R = r && r.k ? resOf(r.k) : null, sys = sysOfLeaf(R && typeof R.cap === 'string' ? R.cap : '');   /* القاعدةُ الواحدة (050 sysOffAt) */
+    return !!sys && sysOffAt(A, String(r.dept || (parseKey(r.k) || {}).dept || ''), sys);
   } catch (e) { swallow('aud-sys-off', e); return false; }
 }
 /* ═══ ملكيةُ الصور ═══════════════════════════════════════════════════════════
@@ -27731,6 +27763,17 @@ async function meDeptData(env, deptId, extra) {
     staffing: P('bassam_staffing_v3', {}), locks: P('bassam_staffing_locks_v1', {}), dreport: P('bassam_dreport_v1', {}), plan: P('bassam_plan_v1', {}),
     rounds: Object.assign({}, P('bassam_rounds_arc_v1', {}), P('bassam_rounds_v1', {})), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
 }
+/* V7 · د6 (قرار المالك: النظامُ المطفأ لوحدة الحساب أو على المنصة لا يُخدم — الموظفُ والمديرُ سواء): «ملفي» يعرض جدولَه وتقريرَه وموقعَه وجولاتِه
+   من موارد أنظمةٍ قابلةٍ للإطفاء (الجدول الشهري · التقرير اليومي · الخطة التشغيلية · الجولات اليومية) — ما كانت ورقةُ مورده مطفأةً تُفرَّغ قيمتُه هنا
+   (050 resLeafOffAt — الموضعُ الواحد) فلا يصل منه شيء. الهويةُ (الموظفون) وأسماءُ الورديات (الإعدادات) ليست أنظمةً تُطفأ. فاعلٌ تعذّر بناؤه ⇒ تُفرَّغ كلُّها.
+   حقلٌ غائب (نظامٌ أُزيل من الحزمة) يبقى غائباً */
+var ME_SYS_RES = { staffing: 'bassam_staffing_v3', locks: 'bassam_staffing_locks_v1', dreport: 'bassam_dreport_v1', plan: 'bassam_plan_v1', rounds: 'bassam_rounds_v1' };
+function meResOff(A, d, name) { return !A || resLeafOffAt(A, d, 'bsdept:' + d + ':' + name); }
+function meDropOff(A, d, D) {
+  for (var f in ME_SYS_RES) if (Object.prototype.hasOwnProperty.call(D, f) && meResOff(A, d, ME_SYS_RES[f])) D[f] = {};
+  D.staffOn = !meResOff(A, d, ME_SYS_RES.staffing);
+  return D;
+}
 function meIdent(u, D, users) {
   var L = pfLink(u, D ? D.emps : []);
   /* KIVO_265 · F-1/R-24 (المراجعةُ المستقلة · fail-closed — خارج PF-CORE فالمرآةُ 535 كما هي): سجلٌّ يحلّ إليه حسابٌ نشطٌ آخر في الإدارة ⇒ غيرُ مرتبطٍ
@@ -27774,6 +27817,9 @@ async function meSelfRoutes(request, env, path, ss) {
   if (!u) return json({ ok: 0, err: 'session' }, 401);
   var C = pfHijriAt(now), ymQ = null;
   if (hist && url.searchParams.has('ym')) { ymQ = meYm(url.searchParams.get('ym'), C); if (!ymQ) return json({ ok: 0, err: 'bad-ym' }, 400); }
+  /* V7 · د6 (قرار المالك — القاعدةُ الواحدة 050 resLeafOffAt): الفاعلُ من لقطة مقدّمة الطلب (PRE_KV — بلا جولةٍ إضافية ما دامت حيّة) قبل حدّ المعدّل */
+  var preK = {}; for (var pk = 0; pk < PRE_KV.length; pk++) preK[PRE_KV[pk]] = await kvGet(env, 'kv', PRE_KV[pk]);
+  var A = actorFromKeys(preK, u.id);
   var rl = await rlHit(env, 'me', u.id, ME_RL);
   if (rl) return tooMany(rl);
   var acct = meAccount(u, depts), eligible = meStaffEligible(u);
@@ -27781,7 +27827,7 @@ async function meSelfRoutes(request, env, path, ss) {
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
   var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (eligible) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; I = meIdent(u, D, users); }
+  if (eligible) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; meDropOff(A, u.deptId, D); I = meIdent(u, D, users); }
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: (D && D.staffing && D.staffing[T0.ym]) || {}, rep: (D && D.dreport && D.dreport[T0.dk]) || null, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
@@ -27815,9 +27861,11 @@ async function meSelfRoutes(request, env, path, ss) {
     res.month = H.month; res.days = H.days; res.sites = H.sites;
     res.evidence.reports = H.evidence.reports; res.evidence.approved = H.evidence.approved; res.evidence.rounds = H.evidence.rounds;
     res.range = meRange(D, I.toks, T);
+    if (D.staffOn) {   /* V7 · د6: تغييراتُ الجدول الشهري لا تُقرأ والجدولُ مطفأ (meDropOff) */
     var q = env.DB.prepare("SELECT ts, uid, act, bef, aft FROM aud WHERE dept = ?1 AND etype = 'staffing' AND ctx LIKE ?2 AND eid IN (" + I.toks.map(function (_, n) { return '?' + (n + 3); }).join(',') + ') ORDER BY ts DESC, id DESC LIMIT 120');
     var ra = await q.bind.apply(q, [u.deptId, '%"plan":"' + ym + '"%'].concat(I.toks)).all();
     res.changes = meChanges((ra && ra.results) || [], users);
+    }
   }
   res.moves.items = meMoves(secQ ? ((ex[0] && ex[0].results) || []) : [], u.id, depts);
   var body = JSON.stringify(res);
@@ -27925,14 +27973,13 @@ function meTkKey(I) { return tkK(I.dept); }
 /* ── GET /api/me/tasks ── */
 /* SR-2.2 · F-7 (سياسةُ المالك «الصفحةُ غيرُ المفعّلة لا تُظهر أيَّ بياناتٍ تخصّها»): صفحةُ المهام في سقف إدارة الحساب وغيرُ مطفأةٍ على مستوى المنصة —
    deptCapOf (سقفُ الإدارة بتقاطع أسلافها · غيابُ السجل = مفتوح · وتسقط منه الوحدةُ المطفأة A.off) كما writePages؛ وإلا فلا قراءةَ ولا فعلَ ذاتيّ */
-function meTkPageOn(A) { var d = String(A.u.deptId || ''); return !!d && deptCapOf(A, d).indexOf('tasks') !== -1; }
+function meTkPageOn(A) { var d = String(A.u.deptId || ''); return !!d && !sysOffAt(A, d, 'tasks'); }   /* V7 · د6: القاعدةُ الواحدة (050 sysOffAt) — كان deptCapOf هنا */
 async function meTkList(env, A, url, request) {
-  /* V7 · د6: المهامُ مطفأةٌ لإدارة الحساب (أو على المنصة) ⇒ القراءةُ مرفوضة لغير مدير المنصة كأفعال «مهامي» أدناه (كانت 200 بقائمةٍ فارغة وعلامة off؛
-     والواجهةُ لا تسأل أصلاً: 545 pageOn). ما يعود لمدير المنصة كما كان (قرارٌ مفتوح للمالك)، وكذلك لحسابٍ بلا إدارة (مدير العقدة: لا «مهامي» له أصلاً — ليس نظاماً مطفأ) */
-  if (!meTkPageOn(A)) {
-    if (A.u.role !== 'super' && A.u.deptId) return json({ ok: 0, err: 'off', msg: 'صفحةُ المهام غيرُ مفعّلةٍ لإدارتك' }, 403);
-    return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
-  }
+  /* V7 · د6 (قرار المالك — قاعدةٌ واحدة لكل من في الوحدة عدا مدير المنصة · 050 sysServed): المهامُ مطفأةٌ لوحدة الحساب (إدارتُه، أو عقدتُه لمدير العقدة)
+     أو على المنصة ⇒ القراءةُ مرفوضة — الموظفُ ومديرُ الإدارة ومديرُ القسم ومديرُ العقدة سواء، كأفعال «مهامي» أدناه؛ والواجهةُ لا تسأل أصلاً (545 pageOn).
+     كانت 200 بعلامة off لمدير العقدة (حسابٌ بلا إدارة). مديرُ المنصة وحده كما كان (200 me.off). وحسابٌ بلا إدارةٍ والمهامُ مفعّلة: غيرُ مرتبط (لا «مهامي» له) */
+  if (!sysServed(A, acctUnitOf(A), 'tasks')) return json({ ok: 0, err: 'off', msg: 'صفحةُ المهام غيرُ مفعّلةٍ لإدارتك' }, 403);
+  if (A.u.role === 'super' && !meTkPageOn(A)) return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
   var I = await meTkIdent(env, A), now = Date.now();
   var me = { linked: I.linked, by: I.by, dept: I.dept };
   if (!I.linked) return json({ ok: 1, now: now, me: me, rev: 0, n: 0, more: 0, months: [], rows: [] });

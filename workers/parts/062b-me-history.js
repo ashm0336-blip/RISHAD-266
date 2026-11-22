@@ -322,6 +322,17 @@ async function meDeptData(env, deptId, extra) {
     staffing: P('bassam_staffing_v3', {}), locks: P('bassam_staffing_locks_v1', {}), dreport: P('bassam_dreport_v1', {}), plan: P('bassam_plan_v1', {}),
     rounds: Object.assign({}, P('bassam_rounds_arc_v1', {}), P('bassam_rounds_v1', {})), opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
 }
+/* V7 · د6 (قرار المالك: النظامُ المطفأ لوحدة الحساب أو على المنصة لا يُخدم — الموظفُ والمديرُ سواء): «ملفي» يعرض جدولَه وتقريرَه وموقعَه وجولاتِه
+   من موارد أنظمةٍ قابلةٍ للإطفاء (الجدول الشهري · التقرير اليومي · الخطة التشغيلية · الجولات اليومية) — ما كانت ورقةُ مورده مطفأةً تُفرَّغ قيمتُه هنا
+   (050 resLeafOffAt — الموضعُ الواحد) فلا يصل منه شيء. الهويةُ (الموظفون) وأسماءُ الورديات (الإعدادات) ليست أنظمةً تُطفأ. فاعلٌ تعذّر بناؤه ⇒ تُفرَّغ كلُّها.
+   حقلٌ غائب (نظامٌ أُزيل من الحزمة) يبقى غائباً */
+var ME_SYS_RES = { staffing: 'bassam_staffing_v3', locks: 'bassam_staffing_locks_v1', dreport: 'bassam_dreport_v1', plan: 'bassam_plan_v1', rounds: 'bassam_rounds_v1' };
+function meResOff(A, d, name) { return !A || resLeafOffAt(A, d, 'bsdept:' + d + ':' + name); }
+function meDropOff(A, d, D) {
+  for (var f in ME_SYS_RES) if (Object.prototype.hasOwnProperty.call(D, f) && meResOff(A, d, ME_SYS_RES[f])) D[f] = {};
+  D.staffOn = !meResOff(A, d, ME_SYS_RES.staffing);
+  return D;
+}
 function meIdent(u, D, users) {
   var L = pfLink(u, D ? D.emps : []);
   /* KIVO_265 · F-1/R-24 (المراجعةُ المستقلة · fail-closed — خارج PF-CORE فالمرآةُ 535 كما هي): سجلٌّ يحلّ إليه حسابٌ نشطٌ آخر في الإدارة ⇒ غيرُ مرتبطٍ
@@ -365,6 +376,9 @@ async function meSelfRoutes(request, env, path, ss) {
   if (!u) return json({ ok: 0, err: 'session' }, 401);
   var C = pfHijriAt(now), ymQ = null;
   if (hist && url.searchParams.has('ym')) { ymQ = meYm(url.searchParams.get('ym'), C); if (!ymQ) return json({ ok: 0, err: 'bad-ym' }, 400); }
+  /* V7 · د6 (قرار المالك — القاعدةُ الواحدة 050 resLeafOffAt): الفاعلُ من لقطة مقدّمة الطلب (PRE_KV — بلا جولةٍ إضافية ما دامت حيّة) قبل حدّ المعدّل */
+  var preK = {}; for (var pk = 0; pk < PRE_KV.length; pk++) preK[PRE_KV[pk]] = await kvGet(env, 'kv', PRE_KV[pk]);
+  var A = actorFromKeys(preK, u.id);
   var rl = await rlHit(env, 'me', u.id, ME_RL);
   if (rl) return tooMany(rl);
   var acct = meAccount(u, depts), eligible = meStaffEligible(u);
@@ -372,7 +386,7 @@ async function meSelfRoutes(request, env, path, ss) {
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
   var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (eligible) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; I = meIdent(u, D, users); }
+  if (eligible) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; meDropOff(A, u.deptId, D); I = meIdent(u, D, users); }
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: (D && D.staffing && D.staffing[T0.ym]) || {}, rep: (D && D.dreport && D.dreport[T0.dk]) || null, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
@@ -406,9 +420,11 @@ async function meSelfRoutes(request, env, path, ss) {
     res.month = H.month; res.days = H.days; res.sites = H.sites;
     res.evidence.reports = H.evidence.reports; res.evidence.approved = H.evidence.approved; res.evidence.rounds = H.evidence.rounds;
     res.range = meRange(D, I.toks, T);
+    if (D.staffOn) {   /* V7 · د6: تغييراتُ الجدول الشهري لا تُقرأ والجدولُ مطفأ (meDropOff) */
     var q = env.DB.prepare("SELECT ts, uid, act, bef, aft FROM aud WHERE dept = ?1 AND etype = 'staffing' AND ctx LIKE ?2 AND eid IN (" + I.toks.map(function (_, n) { return '?' + (n + 3); }).join(',') + ') ORDER BY ts DESC, id DESC LIMIT 120');
     var ra = await q.bind.apply(q, [u.deptId, '%"plan":"' + ym + '"%'].concat(I.toks)).all();
     res.changes = meChanges((ra && ra.results) || [], users);
+    }
   }
   res.moves.items = meMoves(secQ ? ((ex[0] && ex[0].results) || []) : [], u.id, depts);
   var body = JSON.stringify(res);

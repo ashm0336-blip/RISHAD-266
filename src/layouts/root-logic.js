@@ -49,7 +49,7 @@ class Component extends DCLogic {
     try { const m = /^#\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
   }
   _hashTab() {
-    try { const m = /^#\/[a-z]+\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
+    try { const m = /^#\/[a-z]+\/([a-z]+(?:-[a-z]+)*)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }   /* V7 · د6: رمزُ تبويبٍ بشرطة (#/kpis/haram-analysis) */
   }
   /* CORE-02 S7: المقطعُ الثالث — قسمُ إعدادات المنصة (#/sysadmin/plat/<sub>) */
   _hashSub() {

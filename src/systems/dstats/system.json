@@ -138,7 +138,7 @@
   },
   "kpis.panels.tail": {
    "order": 10,
-   "text": "        { k: \"dsh\", pk: \"dstats\", sk: \"anHaram\" },\n        { k: \"dsn\", pk: \"dstats\", sk: \"anNabawi\" },\n        { k: \"dsc\", pk: \"dstats\", sk: \"anCmp\" },\n        { k: \"dst\", pk: \"dstats\", sk: \"anTime\" },\n"
+   "text": "        { k: \"dsh\", a: \"haram-analysis\", pk: \"dstats\", sk: \"anHaram\" },\n        { k: \"dsn\", a: \"nabawi-analysis\", pk: \"dstats\", sk: \"anNabawi\" },\n        { k: \"dsc\", a: \"comparison\", pk: \"dstats\", sk: \"anCmp\" },\n        { k: \"dst\", a: \"over-time\", pk: \"dstats\", sk: \"anTime\" },\n"
   },
   "kpis.tabs.tail": {
    "order": 10,

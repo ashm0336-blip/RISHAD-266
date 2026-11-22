@@ -55,7 +55,7 @@ for (const mode of ['enforce']) {   /* V7 · د5-ح (القفل): لا وضعَ 
         if (name === '«المهام» alone') {
           /* the feature kept: the link is there and the route opens on the tasks panel */
           await s.go('#/kpis', 4500); v = await see(s.page);
-          assert.equal(v.hash, '#/kpis/tk', 'the route is open, on the address of its one panel');   /* V7 · د6 (walkfix · أ2-5): لكل لوحةٍ عنوانُها — #/kpis يُصحَّح إلى عنوان اللوحة المعروضة */ assert.equal(v.panel, true, 'the tasks panel is drawn'); assert.equal(v.none, false);
+          assert.equal(v.hash, '#/kpis/tasks', 'the route is open, on the address of its one panel');   /* V7 · د6 (walkfix · أ2-5): لكل لوحةٍ عنوانُها — #/kpis يُصحَّح إلى عنوان اللوحة المعروضة */ assert.equal(v.panel, true, 'the tasks panel is drawn'); assert.equal(v.none, false);
           /* …and having visited it does not make it the default: the saved page is what he opened, nothing more */
           await s.go('#/tasks', 3500); v = await see(s.page); assert.equal(v.hash, '#/tasks', 'the tasks page opens');
         }

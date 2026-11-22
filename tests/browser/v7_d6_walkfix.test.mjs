@@ -23,6 +23,8 @@ const reloadAt = async (s, hash, ms) => { await s.page.evaluate((h) => { locatio
 const strip = (p) => p.evaluate(() => { const lit = (e) => { const r = e.getBoundingClientRect(), c = getComputedStyle(e); return r.width > 0 && r.height > 0 && c.display !== 'none' && c.visibility !== 'hidden' && +c.opacity > 0.05 && c.backgroundColor !== 'rgba(0, 0, 0, 0)'; };
   const tabs = [...document.querySelectorAll('main .bs-tabstrip > *')].filter((e) => e.getBoundingClientRect().width > 2).map((e) => ({ n: (e.getAttribute('aria-label') || e.textContent).replace(/\s+/g, ' ').trim(), on: [...e.querySelectorAll(':scope > span:empty')].some(lit) }));
   return { hash: location.hash, all: tabs.map((t) => t.n), shown: (tabs.find((t) => t.on) || {}).n || '', n: history.length }; });
+/* V7 · د6 (قرار المالك): رمزُ عنوان كل لوحة — يعلنه نظامُها (شريحة kpis.panels) */
+const KPI_TOK = { 'مؤشرات الجاهزية': 'readiness', 'مؤشرات التشغيل اليومي': 'daily', 'مؤشرات الإشغال': 'occupancy', 'مؤشرات المصليات': 'zones', 'لوحة مؤشرات المضبوطات': 'seized', 'لوحة مؤشرات الاسترشاد': 'irshad', 'مؤشرات المهام': 'tasks', 'تحليل المسجد الحرام': 'haram-analysis', 'تحليل المسجد النبوي': 'nabawi-analysis', 'مقارنة الحرمين': 'comparison', 'المقارنة الزمنية': 'over-time' };
 const clickTab = async (p, name) => { await p.locator('main .bs-tabstrip > *', { hasText: name }).first().click(); await p.waitForTimeout(900); };
 
 test('V7 · د6 (walkfix ①②) · a page does not ask for an OFF system\'s data («مهامي» · «العهد») and the log filter does not name it', { timeout: 600000 }, async () => {
@@ -78,23 +80,31 @@ test('V7 · د6 (walkfix ③) · the address is the tab that is shown: every KPI
     let s = await strip(p);
     assert.ok(s.all.length > 3, 'the KPI strip is there: ' + JSON.stringify(s.all));
     assert.equal(s.shown, s.all[0], 'the first allowed panel is shown');
-    assert.match(s.hash, /^#\/kpis\/[a-z]+$/, 'and the old address #/kpis is corrected to its own: ' + s.hash);
+    assert.match(s.hash, /^#\/kpis\/[a-z]+(?:-[a-z]+)*$/, 'and the old address #/kpis is corrected to its own: ' + s.hash);
     const first = s.hash, seenAddr = new Set([first]);
     for (const name of s.all.slice(1)) {
       await clickTab(p, name); s = await strip(p);
       assert.equal(s.shown, name, 'the clicked panel is shown');
-      assert.match(s.hash, /^#\/kpis\/[a-z]+$/); assert.ok(!seenAddr.has(s.hash), 'the panel «' + name + '» has an address of its own: ' + s.hash); seenAddr.add(s.hash);
+      if (KPI_TOK[name]) assert.equal(s.hash, '#/kpis/' + KPI_TOK[name], 'V7 · د6 (قرار المالك): the readable token its system declares');
+      assert.match(s.hash, /^#\/kpis\/[a-z]+(?:-[a-z]+)*$/); assert.ok(!seenAddr.has(s.hash), 'the panel «' + name + '» has an address of its own: ' + s.hash); seenAddr.add(s.hash);
     }
     const last = { name: s.shown, hash: s.hash };
     await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(3500);
     s = await strip(p);
     assert.deepEqual([s.hash, s.shown], [last.hash, last.name], 'after a reload the address still opens its panel');
+    /* V7 · د6 (قرار المالك): the old internal addresses redirect to the readable ones, and the readable one opens its panel after a reload */
+    for (const [old, tok, name] of [['tk', 'tasks', 'مؤشرات المهام'], ['dsh', 'haram-analysis', 'تحليل المسجد الحرام'], ['dy', 'daily', 'مؤشرات التشغيل اليومي']]) {
+      await reloadAt(m, '#/kpis/' + old); s = await strip(p);
+      assert.deepEqual([s.hash, s.shown], ['#/kpis/' + tok, name], '#/kpis/' + old + ' ⇒ #/kpis/' + tok);
+      await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(3500); s = await strip(p);
+      assert.deepEqual([s.hash, s.shown], ['#/kpis/' + tok, name], 'the deep link #/kpis/' + tok + ' after a reload');
+    }
     /* a panel that is not allowed in the address ⇒ the shown one, and the address says so */
     await caps(lab, FULL.filter((k) => k !== 'tasks'));
     await reloadAt(m, '#/kpis/tk');
     s = await strip(p);
     assert.ok(!s.all.includes('مؤشرات المهام'), 'the OFF panel is not offered');
-    assert.notEqual(s.hash, '#/kpis/tk'); assert.match(s.hash, /^#\/kpis\/[a-z]+$/); assert.ok(s.shown, 'a panel is shown, and the address is its own: ' + JSON.stringify(s));
+    assert.notEqual(s.hash, '#/kpis/tk'); assert.match(s.hash, /^#\/kpis\/[a-z]+(?:-[a-z]+)*$/); assert.ok(s.shown, 'a panel is shown, and the address is its own: ' + JSON.stringify(s));
     await caps(lab, FULL);
     /* «الخطة التشغيلية» */
     await reloadAt(m, '#/planning');

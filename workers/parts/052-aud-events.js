@@ -526,12 +526,7 @@ function kvPutStmts(env, table, k, v) {
    مطفأٌ = على المنصة (A.off — مع ما يسكن الحاوية) أو في سقف وحدة السطر بالوراثة (perm44LeafOn). موردٌ بلا ورقة نظام (الهيكل · الحسابات · المنصة) لا يتأثر */
 function audSysOff(A, r) {
   try {
-    var R = r && r.k ? resOf(r.k) : null, leaf = R && typeof R.cap === 'string' ? R.cap : '';
-    if (!leaf) return false;
-    var E = perm44E(), s = E.sysList().filter(function (x) { return x && x.toggle !== false && Array.isArray(x.leaves) && x.leaves.indexOf(leaf) !== -1; })[0];
-    if (!s) return false;
-    if (Array.isArray(A && A.off) && A.off.indexOf(s.key) !== -1) return true;
-    var d = String(r.dept || (parseKey(r.k) || {}).dept || '');
-    return d ? !E.sysOn(s.key, perm44LeafOn(A, d)) : false;
+    var R = r && r.k ? resOf(r.k) : null, sys = sysOfLeaf(R && typeof R.cap === 'string' ? R.cap : '');   /* القاعدةُ الواحدة (050 sysOffAt) */
+    return !!sys && sysOffAt(A, String(r.dept || (parseKey(r.k) || {}).dept || ''), sys);
   } catch (e) { swallow('aud-sys-off', e); return false; }
 }
