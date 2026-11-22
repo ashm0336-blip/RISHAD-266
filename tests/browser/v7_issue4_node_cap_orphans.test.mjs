@@ -25,7 +25,7 @@ test('V7 #4 · a deleted node leaves no ceiling record; other units untouched; a
     const before = others(P, id);
     /* delete it from its page, as the administrator does */
     await s.go('#/sysadmin/org/' + id, 3500);
-    await p.locator('main section[aria-label="حذف العقدة"] button.dz').click(); await p.waitForTimeout(1200);
+    await p.locator('main [data-org-tab="overview"] [data-og-act="delete"]').click(); await p.waitForTimeout(1200);   /* V7 · د6: «حذف…» في «نظرة عامة» (كان قسمَ «حذف العقدة» في صفحة الوحدة) */
     if (await p.locator('#bsCfmOk').isVisible().catch(() => false)) await p.locator('#bsCfmOk').click();
     await p.waitForTimeout(3500); await lab.idle();
     assert.ok(!readK(lab, KGD).some((n) => n.id === id), 'the node is gone from the structure');

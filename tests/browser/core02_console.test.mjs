@@ -40,13 +40,14 @@ const NOHELP5H = (L) => (L || []).filter((x) => !/^n bs-plat-help\|/.test(x));
 for (const h of Object.keys(BEFORE.super || {})) BEFORE.super[h] = NOHELP5H(OFF5H(BEFORE.super[h]));
 const MOBILE = { viewport: { width: 390, height: 844 }, context: { isMobile: true, hasTouch: true, deviceScaleFactor: 1 } };
 /* V7 · د5-هـ (44): «خريطة الصلاحيات» (perms) و«الوحدات» (plat/mods) حُذفتا بقرار المالك · V7 · د5-ح: و«الطباعة والتقارير» (plat/print) — 14 وجهة */
-const DEST = [['overview', null, 'الرئيسية'], ['depts', null, 'الإدارات'], ['users', null, 'مراقبة الحسابات'],
+const DEST = [['overview', null, 'الرئيسية'], ['depts', null, 'الإدارات والصلاحيات'] /* V7 · د6 (ب1): كان «الإدارات» */, ['users', null, 'مراقبة الحسابات'],
   ['plat', 'id', 'هوية المنصة'], ['plat', 'notif', 'التنبيهات والتعاميم'], ['plat', 'login', 'شاشة تسجيل الدخول'],
   ['plat', 'side', 'القوائم'], ['plat', 'app', 'تطبيق الجوال'], ['plat', 'about', 'حول المنصة'],
   ['sec', null, 'الأمن'], ['oplog', null, 'سجل الأنشطة والتغييرات'], ['backup', null, 'النسخة الاحتياطية'], ['plat', 'setup', 'التهيئة والاستعادة'],
   ['histimp', null, 'استيراد البيانات التاريخية']];
-/* V7 P0: «الإدارات» عنوانُها #/sysadmin/org (والقديم #/sysadmin/depts يُقرأ ثم يُكتب الجديد) */
-const addr = (d) => '#/sysadmin/' + (d[0] === 'depts' ? 'org' : d[0]) + (d[1] ? '/' + d[1] : '');
+/* V7 P0: «الإدارات» عنوانُها #/sysadmin/org (والقديم #/sysadmin/depts يُقرأ ثم يُكتب الجديد)
+   V7 · د6: الشاشةُ الواحدة «الإدارات والصلاحيات» تكتب وحدتَها وتبويبَها — مدخلُ الشريط يفتح صف «المنصة كلها» على «نظرة عامة» (#/sysadmin/org/platform/overview) */
+const addr = (d) => '#/sysadmin/' + (d[0] === 'depts' ? 'org/platform/overview' : d[0]) + (d[1] ? '/' + d[1] : '');
 const sel = (d) => 'aside.bsb [data-con-tab="' + d[0] + '"]' + (d[1] ? '[data-con-sub="' + d[1] + '"]' : ':not([data-con-sub])');
 /* the accordion sidebar (one group open at a time): an item of a collapsed group is reached by opening its group header first */
 async function reach(page, d) {
@@ -113,7 +114,7 @@ test('(A)(B) platform administrator: the console, its 14 destinations, deep link
     await page.goBack(); await page.waitForTimeout(1500);
     st = await state(page); assert.equal(st.hash, '#/sysadmin/plat/setup', 'Back returns to the previous console page'); assert.equal(st.h2, 'التهيئة والاستعادة');
     /* every address opens cold; #/sysadmin/plat alone reopens the last section (kept with the page view state), an unknown one opens «هوية المنصة» */
-    for (const [h, want, title] of [...DEST.map((d) => [addr(d), addr(d), d[2]]), ['#/sysadmin/depts', '#/sysadmin/org', 'الإدارات'], ['#/sysadmin/plat', '#/sysadmin/plat/setup', 'التهيئة والاستعادة'], ['#/sysadmin/plat/zzz', '#/sysadmin/plat/id', 'هوية المنصة']]) {
+    for (const [h, want, title] of [...DEST.map((d) => [addr(d), addr(d), d[2]]), ['#/sysadmin/depts', '#/sysadmin/org/platform/overview', 'الإدارات والصلاحيات'], ['#/sysadmin/org', '#/sysadmin/org/platform/overview', 'الإدارات والصلاحيات'], ['#/sysadmin/plat', '#/sysadmin/plat/setup', 'التهيئة والاستعادة'], ['#/sysadmin/plat/zzz', '#/sysadmin/plat/id', 'هوية المنصة']]) {
       await page.goto('about:blank'); await page.goto(lab.base + '/' + h, { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(3500);   /* a real load, not a same-document hash change */
       st = await state(page);
       assert.equal(st.hash, want, h + ': cold load keeps / normalises the address');
@@ -248,15 +249,16 @@ test('(S8) «الرئيسية»: skeleton before the read, real counts after it,
         assert.match(await page.textContent('main .adm-ov-stat[data-k="acc"] small'), /^\W*[3٣]\W* موظفين في كل الإدارات$/);
         /* decisions: the lab has no backup yet and one unit without a manager; their actions exist (none is clicked: nothing is written) */
         const dec = await page.evaluate(() => [...document.querySelectorAll('main .adm-ov-al')].map((a) => [a.querySelector('.t').textContent.trim(), a.querySelector('button') ? a.querySelector('button').textContent.trim() : '']));
-        assert.deepEqual(dec, [['لم تُؤخذ نسخة احتياطية شاملة بعد', 'أخذ نسخة الآن'], ['وحدة واحدة بلا مدير — لا يعتمد فيها أحدٌ الجدول أو التقرير اليومي', 'الإدارات']]);
+        assert.deepEqual(dec, [['لم تُؤخذ نسخة احتياطية شاملة بعد', 'أخذ نسخة الآن'], ['وحدة واحدة بلا مدير — لا يعتمد فيها أحدٌ الجدول أو التقرير اليومي', 'الإدارات والصلاحيات']]);   /* V7 · د6: الزرُّ باسم الشاشة الجديد */
         assert.match((await page.textContent('main #ov-h-dec')).trim(), /^يحتاج قرارك \(\W*[2٢]\W*\)$/);
         /* no shortcut tiles: the platform settings are sidebar items only */
         assert.equal(await page.locator('main a[href*="/plat/"], main [data-con-tab]').count(), 0);
         /* each card link opens its page (and Back returns home) */
-        for (const [t, h] of [['حالة المنصة', '#/sysadmin/backup'], ['الحسابات', '#/sysadmin/users'], ['الوحدات التنظيمية', '#/sysadmin/org'], ['الأمن اليوم', '#/sysadmin/sec']]) {
+        /* V7 · د6: رابطُ «الوحدات التنظيمية» #/sysadmin/org كما هو — والشاشةُ تكتب عنوانَها القانوني (to) بلا مدخلٍ إضافي في السجلّ */
+        for (const [t, h, to] of [['حالة المنصة', '#/sysadmin/backup'], ['الحسابات', '#/sysadmin/users'], ['الوحدات التنظيمية', '#/sysadmin/org', '#/sysadmin/org/platform/overview'], ['الأمن اليوم', '#/sysadmin/sec']]) {
           assert.equal(c1[t].href, h);
           await page.locator('main .adm-ov-stat', { has: page.locator('h3', { hasText: t }) }).locator('.adm-ov-lnk').click(); await page.waitForTimeout(1500);
-          assert.equal(await page.evaluate(() => location.hash), h, t + ' → ' + h);
+          assert.equal(await page.evaluate(() => location.hash), to || h, t + ' → ' + (to || h));
           assert.equal(await page.locator('aside.bsb [aria-current="page"]').count(), 1);
           await page.goBack(); await page.waitForTimeout(1500);
           assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/overview', 'Back returns home');
@@ -439,8 +441,8 @@ test('(S10) keyboard walk, focus ring and contrast, headings, dialogs, reduced m
           assert.equal(h.cur, 1, at + ': one current item'); assert.equal(h.sel, 0, at + ': no tab semantics in the sidebar');
         }
         /* a dialog: named, focus inside, Tab stays inside, Escape closes, focus back on the opener */
-        /* V7 P1/P2 · د5-ح: the unit's own page, «الصلاحيات ← الأدوار ← مدير الوحدة» (the structure page #/sysadmin/org holds only the tree) */
-        await s.go('#/sysadmin/org/TEST_ONLY_A/perm/roles', 2500); await page.locator('main .p44-role', { hasText: 'مدير الوحدة' }).first().click(); await page.waitForTimeout(600);
+        /* V7 P1/P2 · د5-ح · د6: the unit's «المسؤولون» tab (was «الصلاحيات ← الأدوار ← مدير الوحدة») */
+        await s.go('#/sysadmin/org/TEST_ONLY_A/admins', 3000);
         const op = page.locator('main button.add').first(); await op.focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
         const dlg = () => page.evaluate(() => { const d = document.querySelector('main [role=dialog]'); return d ? { name: d.getAttribute('aria-label') || '', inside: d.contains(document.activeElement) } : null; });
         let dl = await dlg(); assert.ok(dl && dl.name.length > 0, 'the manager dialog is named'); assert.ok(dl.inside, 'the focus moves into the dialog');
@@ -592,7 +594,7 @@ test('(P) parity with 625dac6: a late active lock keeps «فكّ القفل» on
       await row.locator('[data-bs-dd]').getByText('تعديل الصلاحيات', { exact: true }).click(); await page.waitForTimeout(2500);
       const st1 = await state(page);
       /* the address the menu writes (the «الصلاحيات» tab is group v2's: until it is merged the page settles on the unit's page) */
-      assert.ok((await page.evaluate(() => window.__h44)).some((h) => /^#\/sysadmin\/org\/TEST_ONLY_[AB]\/perm\/people$/.test(h)), who + ': «تعديل الصلاحيات» opens the people section of the unit\'s «الصلاحيات» tab');
+      assert.ok((await page.evaluate(() => window.__h44)).some((h) => /^#\/sysadmin\/org\/TEST_ONLY_[AB]\/people$/.test(h)), who + ': «تعديل الصلاحيات» opens the unit\'s «الأشخاص» tab (V7 · د6: #/sysadmin/org/<unit>/people)');
       void st1; void unit;   /* the selected page of that address is v2's «الصلاحيات» route — asserted where that tab is tested */
       await page.goBack(); await page.waitForTimeout(1500);
       assert.equal(await page.evaluate(() => location.hash), '#/sysadmin/users', who + ': Back returns to the accounts');
@@ -653,7 +655,7 @@ test('(ACC) accordion sidebar: deep links per group, toggle without navigation, 
           await page.click('#con-gh-org'); await page.waitForTimeout(300);
           st = await acc(page);
           assert.equal(st.hash, '#/sysadmin/plat/setup', 'a header click does not navigate');
-          assert.deepEqual(openOf(st), ['org']); assert.deepEqual(st.vis, ['الرئيسية', 'الإدارات', 'مراقبة الحسابات']);
+          assert.deepEqual(openOf(st), ['org']); assert.deepEqual(st.vis, ['الرئيسية', 'الإدارات والصلاحيات', 'مراقبة الحسابات']);
           assert.ok(st.hdr.data.cur && st.hdr.data.desc === 'con-gh-cur', 'the collapsed group of the current page is marked and described');
           assert.equal(await page.evaluate(() => document.getElementById('con-gh-cur').textContent), 'الصفحة الحالية ضمن هذه المجموعة');
           assert.deepEqual(st.cur, [['التهيئة والاستعادة', false]], 'still exactly one current item (inside the collapsed group)');
@@ -982,40 +984,40 @@ test('(ACC-FIX) acceptance audit B1–B4: blank platform name, out-of-range poli
 });
 
 test('(V7-P0) node addresses: #/sysadmin/org/<id> opens that node or unit, survives a reload, follows a click; unknown or unsafe ids fall back; only the platform administrator', { timeout: 600000 }, async () => {
+  /* V7 · د6: the address carries the unit AND the tab (#/sysadmin/org/<id>/<tab>); the old #/sysadmin/org/<id> is redirected to its overview. The selected
+     unit is named in the unit header (no name field any more — renaming is a dialog of the overview), and the tree is always beside it. */
   const b = await chromium.launch(); const lab = await world(); const writes = []; let s = null, m = null;
   try {
     s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: { width: 1366, height: 900 }, onPage: (p) => watchWrites(p, writes) }); s.page.setDefaultTimeout(15000);
-    const page = s.page, H = () => page.evaluate(() => location.hash), SEL = () => page.evaluate(() => (document.getElementById('bsSelName') || {}).value ?? null);
+    const page = s.page, H = () => page.evaluate(() => location.hash), SEL = () => page.evaluate(() => { const e = document.querySelector('main .og-hd [data-og="name"]'); return e ? e.textContent.trim() : null; });
     const cold = async (h) => { await page.goto('about:blank'); await page.goto(lab.base + '/' + h, { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(4000); };
     /* a data unit and a node, cold */
     await cold('#/sysadmin/org/TEST_ONLY_A');
-    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A', 'the unit address stays'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ', 'unit A is selected');
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A/overview', 'the unit address stays (with its tab)'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ', 'unit A is selected');
     await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForTimeout(4000);
-    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ', 'still selected after a reload');
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A/overview'); assert.equal(await SEL(), 'TEST_ONLY إدارة أ', 'still selected after a reload');
     await cold('#/sysadmin/org/TEST_ONLY_G');
-    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_G'); assert.equal(await SEL(), 'TEST_ONLY إدارة عامة', 'the node is selected');
-    /* a click in the tree writes the address of what it selects (V7 P1: the tree is the structure page — «العودة إلى الهيكل» leads there) */
-    await page.locator('main button.dl-bk').click(); await page.waitForTimeout(1200);
-    assert.equal(await H(), '#/sysadmin/org', '«العودة إلى الهيكل» writes the structure address'); assert.equal(await SEL(), null, 'the structure page shows no node page');
-    await page.locator('main a:has-text("فرد الكل")').click(); await page.waitForTimeout(500);
-    await page.locator('main .tr-rw', { hasText: 'TEST_ONLY إدارة ب' }).first().click(); await page.waitForTimeout(1500);
-    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B', 'clicking unit B writes its address'); assert.equal(await SEL(), 'TEST_ONLY إدارة ب');
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_G/overview'); assert.equal(await SEL(), 'TEST_ONLY إدارة عامة', 'the node is selected');
+    /* a click in the tree writes the address of what it selects (V7 · د6: the tree is beside the unit — no «العودة إلى الهيكل») */
+    assert.equal(await page.locator('main button.dl-bk').count(), 0);
+    await page.locator('main .og-rw[data-og-id="TEST_ONLY_B"] .og-nm').click(); await page.waitForTimeout(1500);
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B/overview', 'clicking unit B writes its address'); assert.equal(await SEL(), 'TEST_ONLY إدارة ب');
     await page.reload({ waitUntil: 'domcontentloaded' }); await page.waitForTimeout(4000);
     assert.equal(await SEL(), 'TEST_ONLY إدارة ب', 'the clicked selection survives a reload');
     /* a typed address while on the page */
     await page.evaluate(() => { location.hash = '#/sysadmin/org/TEST_ONLY_A_S1'; }); await page.waitForTimeout(2500);
     assert.equal(await SEL(), 'TEST_ONLY قسم أ١', 'a typed section address selects the section');
-    /* unknown and unsafe ids fall back to the structure, said once, no error */
+    /* unknown and unsafe ids fall back to the root row, said once, no error */
     for (const h of ['#/sysadmin/org/TEST_ONLY_NOPE', '#/sysadmin/org/%3Cimg%20src%3Dx%3E', '#/sysadmin/org/a/b']) {
       await cold(h);
-      assert.equal(await H(), '#/sysadmin/org', h + ': falls back to #/sysadmin/org');
+      assert.equal(await H(), '#/sysadmin/org/platform/overview', h + ': falls back to the root row'); assert.equal(await SEL(), 'المنصة كلها');
     }
     await cold('#/sysadmin/org/TEST_ONLY_NOPE');
     assert.match(await page.evaluate(() => [...document.querySelectorAll('#bs-toast,#bs-stoast,[role=status]')].map((e) => e.textContent).join(' ')), /غير موجودة في الهيكل/, 'the unknown node is named as missing');
     assert.deepEqual(s.errs, [], 'no page errors'); assert.deepEqual(writes, [], 'opening addresses saves nothing');
     /* a unit manager cannot reach it by address */
     m = await openAs(b, lab, LAB.mgrA, LAB.pw, { viewport: { width: 1366, height: 900 } });
-    for (const h of ['#/sysadmin/org/TEST_ONLY_A', '#/sysadmin/org/TEST_ONLY_G', '#/sysadmin/depts']) {
+    for (const h of ['#/sysadmin/org/TEST_ONLY_A', '#/sysadmin/org/TEST_ONLY_G', '#/sysadmin/org/TEST_ONLY_A/roles', '#/sysadmin/org/platform/systems', '#/sysadmin/depts']) {
       await m.page.goto(lab.base + '/' + h, { waitUntil: 'domcontentloaded' }); await m.page.waitForTimeout(3500);
       const r = await m.page.evaluate(() => ({ h: location.hash, con: !!document.querySelector('aside.bsb--console') }));
       assert.ok(!/^#\/sysadmin/.test(r.h) && !r.con, 'manager: ' + h + ' refused (now ' + r.h + ')');

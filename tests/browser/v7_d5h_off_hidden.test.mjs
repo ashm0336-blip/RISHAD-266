@@ -51,11 +51,11 @@ test('V7 · د5-ح · an OFF system is visible to nobody, not even the platform 
     const hd = await nav('dstats'); await s.go(hd, 2000);
     assert.equal(await p.evaluate(() => location.hash), hd, 'in B the dstats link opens');
     /* the only place: «الصلاحيات ← الأنظمة» for the platform admin, with its switch */
-    await s.go('#/sysadmin/org/' + A + '/perm/systems', 2500);
+    await s.go('#/sysadmin/org/' + A + '/systems', 2500);
     const row = (n) => p.locator('main .p44 .p44-row', { hasText: n }).first();
     assert.equal(await row('الإحصائيات اليومية').getAttribute('data-on'), 'false'); assert.equal(await row('الإحصائيات اليومية').locator('button.p44-sw').isDisabled(), false, 'switchable here');
     assert.match(await row('جائزة التميز').innerText(), /مطفأ من المنصة/);
-    await p.locator('main .p44 .p44-unit', { hasText: 'المنصة كلها' }).click(); await p.waitForTimeout(300);
+    await s.go('#/sysadmin/org/platform/systems', 1500);   /* V7 · د6: صف «المنصة كلها» في الشجرة (كان عمودَ الوحدات داخل «الأنظمة») */
     assert.equal(await row('جائزة التميز').locator('button.p44-sw').isDisabled(), false, 'the platform switch turns it back on');
     /* the server: super's access is unchanged (data kept reachable for backup / restore) */
     const r = await s.api('/api/perm44/check?d=' + A + '&role=x&key=task.view');
@@ -88,7 +88,7 @@ async function scenario(lab, b, label, caps, off) {
   assert.deepEqual(await seen(p, 'kpis').then((x) => x.dom), false, label + ': no «مؤشرات الإدارة» link');
   for (const h of ['#/kpis', '#/help', '#/links']) { await s.go(h, 1800); assert.notEqual(await p.evaluate(() => location.hash), h, label + ': ' + h + ' does not open for super'); assert.equal(await p.locator('#bs-plat-about').count(), 0, label + ': no help dialog'); }
   /* the card «ما يراه مدير هذه الإدارة» = the manager's real side menu (the same source: BassamPerm.menuFor) */
-  await s.go('#/sysadmin/org/' + A + '/perm/systems', 2500);
+  await s.go('#/sysadmin/org/' + A + '/systems', 2500);
   const card = await p.locator('main .p44 section[aria-label="القائمة الجانبية لمدير الوحدة"] li[data-k]').evaluateAll((L) => L.map((x) => x.dataset.k));
   const m = await openAs(b, lab, LAB.mgrA, LAB.pw); m.page.setDefaultTimeout(15000);
   await m.go('#/profile', 2500);
@@ -97,7 +97,7 @@ async function scenario(lab, b, label, caps, off) {
   assert.ok(real.includes('emps') && real.includes('admin'), label + ': his permanent pages are in it: ' + JSON.stringify(real));
   assert.equal(card[0], 'profile');
   /* his own «الصلاحيات ← الأنظمة» card: the same list */
-  await m.go('#/admin/perm/systems', 2500);
+  await m.go('#/admin/perm/' + A + '/systems', 2500);
   assert.deepEqual(await m.page.locator('main .p44 section[aria-label="القائمة الجانبية لمدير الوحدة"] li[data-k]').evaluateAll((L) => L.map((x) => x.dataset.k)), card, label + ': his own card too');
   /* the permanent pages work with every system OFF: «الإعدادات ← الورديات» · الموظفون · صفحتي — no read error, no blank page */
   for (const h of ['#/admin/shifts', '#/employees', '#/profile']) {
@@ -144,7 +144,7 @@ test('V7 · د5-ح (off2) · turning every system OFF through «الصلاحيا
     await put(lab, 'bassam_perms_v1', { caps: { [G]: FULL, [A]: FULL, [B]: FULL, TEST_ONLY_A_S1: FULL }, emps: {} });
     const before = await (async () => { const m = await openAs(b, lab, LAB.mgrA, LAB.pw); await m.go('#/admin', 2500); const r = await m.page.evaluate(() => ({ subs: ['backup', 'oplog', 'shifts', 'import'].filter((k) => KIVO.BassamPerm.subOn('admin', k)), emps: KIVO.BassamPerm.can('emps', 'view') })); await m.ctx.close(); return r; })();
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw); const p = s.page; p.setDefaultTimeout(15000);
-    await s.go('#/sysadmin/org/' + A + '/perm/systems', 3000);
+    await s.go('#/sysadmin/org/' + A + '/systems', 3000);
     for (;;) { const on = p.locator('main .p44 button.p44-sw[aria-checked="true"]:not([disabled])'); if (!(await on.count())) break; await on.first().click(); await p.waitForTimeout(120); }
     await p.locator('main .p44 .p44-bar button', { hasText: 'مراجعة وحفظ' }).click(); await p.locator('main .p44 [role=dialog]').waitFor();
     await p.locator('main .p44 [role=dialog] button', { hasText: 'حفظ' }).click(); await p.waitForTimeout(2500); await lab.idle();

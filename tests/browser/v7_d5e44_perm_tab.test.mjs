@@ -40,16 +40,17 @@ test('V7 · د5-هـ (44) · «الصلاحيات»: super sees four sections an
     await seed(lab);
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw, { context: { deviceScaleFactor: 1 } }); const p = s.page; p.setDefaultTimeout(15000);
     const H = () => p.evaluate(() => location.hash);
-    const tabs = () => p.locator('main [aria-label="أقسام صفحة العقدة"] button').allInnerTexts().then((x) => x.map((t) => t.replace(/[\d٠-٩]+/g, '').replace(/\s+/g, ' ').trim()));
-    const subs = () => p.locator('main nav[aria-label="أقسام الصلاحيات"] button').allInnerTexts();
+    /* V7 · د6: الشاشةُ الواحدة — تبويبُ «الصلاحيات» وأقسامُه الأربعة صارت تبويباتِ الوحدة السبعة (#/sysadmin/org/<الوحدة>/<التبويب>) */
+    const TAB = (o) => p.locator('main .og-tabs .og-tab', o);
+    const tabs = () => TAB().allInnerTexts().then((x) => x.map((t) => t.replace(/[\d٠-٩]+/g, '').replace(/\s+/g, ' ').trim()));
+    const SEVEN = ['نظرة عامة', 'الأنظمة', 'المسؤولون', 'الأدوار', 'الأشخاص', 'السجل', 'البيانات'];
     const P = (sel, o) => p.locator('main .p44 ' + sel, o);
     await s.go('#/sysadmin/org/' + A, 2500);
     await lab.idle(); const w0 = s.writes.length;   /* what boot wrote is not this page's */
     const t = await tabs();
-    assert.ok(t.includes('الصلاحيات') && !t.includes('سقف الصفحات'), 'the tab bar: ' + JSON.stringify(t));
-    await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'الصلاحيات' }).click(); await p.waitForTimeout(700);
-    assert.equal(await H(), '#/sysadmin/org/' + A + '/perm/systems');
-    assert.deepEqual(await subs(), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل']);
+    assert.deepEqual(t, SEVEN, 'the tab bar (no «سقف الصفحات», no «الصلاحيات» tab of sections): ' + JSON.stringify(t));
+    await TAB({ hasText: 'الأنظمة' }).click(); await p.waitForTimeout(700);
+    assert.equal(await H(), '#/sysadmin/org/' + A + '/systems');
     /* ① systems */
     const SYS = await p.evaluate(() => KIVO.Perm44.sysList().filter((x) => x.toggle !== false).map((x) => x.name));
     const rows = await P('.p44-row').count(); assert.equal(rows, SYS.length, 'a row per toggleable system of the engine (' + SYS.length + ')');
@@ -59,12 +60,15 @@ test('V7 · د5-هـ (44) · «الصلاحيات»: super sees four sections an
     assert.match(await P('aside[aria-label="المعاينة"]').first().innerText(), /صفحتي/);
     await shot(p, 'p44_1_systems_super');
     /* ② roles: the platform-admin card, then a role */
-    await P('nav button', { hasText: 'الأدوار' }).first().click(); await p.waitForTimeout(600);
-    assert.equal(await H(), '#/sysadmin/org/' + A + '/perm/roles');
-    await P('.p44-role', { hasText: 'مدير المنصة' }).click(); await p.waitForTimeout(400);
+    /* V7 · د6: بطاقةُ «مدير المنصة» الثابتة انتقلت من قائمة الأدوار إلى تبويب «المسؤولون» في صف «المنصة كلها» */
+    await s.go('#/sysadmin/org/platform/admins', 1500);
     assert.match(await P('.p44-super').innerText(), /صلاحية كاملة بلا أي قيد/);
     assert.equal(await P('select[aria-label^="مستوى"]').count(), 0, 'no level editor for the platform admin');
     await shot(p, 'p44_2_roles_super_card');
+    await s.go('#/sysadmin/org/' + A + '/systems', 1500);
+    await TAB({ hasText: 'الأدوار' }).click(); await p.waitForTimeout(600);
+    assert.equal(await H(), '#/sysadmin/org/' + A + '/roles');
+    assert.equal(await P('.p44-role', { hasText: 'مدير المنصة' }).count(), 0, 'the fixed card is not in the roles list any more');
     await P('.p44-role', { hasText: 'TEST_ONLY مراقب' }).click(); await p.waitForTimeout(400);
     const ed = (await P('.p44-rows .p44-row b').allInnerTexts()).map((x) => x.trim());
     assert.deepEqual(ed, ['الإحصائيات اليومية', 'موظفو الإدارة', 'عهد الموظفين', 'الجدول الشهري', 'التشغيل الميداني', 'المتابعة اليومية', 'التقرير اليومي', 'المهام'], 'the editor lists the ON systems only');
@@ -83,8 +87,8 @@ test('V7 · د5-هـ (44) · «الصلاحيات»: super sees four sections an
     await P('.p44-rev button', { hasText: 'رجوع' }).click(); await P('.p44-bar button', { hasText: 'تراجع' }).click(); await p.waitForTimeout(300);
     assert.equal(await P('.p44-bar').count(), 0, 'undo ⇒ nothing unsaved');
     /* ③ people, by address */
-    await s.go('#/sysadmin/org/' + A + '/perm/people', 1500);
-    assert.equal(await H(), '#/sysadmin/org/' + A + '/perm/people'); assert.deepEqual(await P('nav button[aria-current=page]').allInnerTexts(), ['الأشخاص'], 'the address opens its section');
+    await s.go('#/sysadmin/org/' + A + '/perm/people', 1500);   /* the old address of the section: read, then rewritten */
+    assert.equal(await H(), '#/sysadmin/org/' + A + '/people'); assert.deepEqual((await p.locator('main .og-tabs .og-tab[aria-selected="true"]').allInnerTexts()).map((x) => x.trim()), ['الأشخاص'], 'the address opens its tab');
     assert.deepEqual((await P('table.p44-people th').allInnerTexts()).map((x) => x.trim()), ['الشخص', 'الدور', 'القسم', 'استثناءات', 'آخر دخول']);
     await P('table.p44-people button', { hasText: 'TEST_ONLY موظف أ' }).first().click(); await p.waitForTimeout(400);
     assert.match(await P('aside[aria-label="تفاصيل الشخص"]').innerText(), /ما يراه الآن[\s\S]*صفحتي/);
@@ -93,19 +97,19 @@ test('V7 · د5-هـ (44) · «الصلاحيات»: super sees four sections an
     assert.equal(await P('input[type=date]').count(), 1, 'the exception has an expiry field');
     await shot(p, 'p44_4_people');
     /* ④ log */
-    await P('nav button', { hasText: 'السجل' }).first().click(); await p.waitForTimeout(800);
+    await TAB({ hasText: 'السجل' }).click(); await p.waitForTimeout(800);
     assert.equal(await P('.p44-log > li').count(), 2);
     assert.equal(await P('.p44-log button', { hasText: 'تراجع عن هذا التغيير' }).count(), 2);
     await shot(p, 'p44_5_log');
     /* view as the department manager: «الأنظمة» read-only (V7 · د5-ح — was hidden), no OFF system, no platform-admin role */
     await P('[aria-label="شاهد الصفحة كـ"] button', { hasText: 'مدير الإدارة' }).click(); await p.waitForTimeout(400);
-    assert.deepEqual(await subs(), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل']);
-    await P('nav button', { hasText: 'الأنظمة' }).first().click(); await p.waitForTimeout(500);
+    assert.deepEqual(await tabs(), SEVEN, 'the viewer changes what the tabs show, not the tabs');
+    await TAB({ hasText: 'الأنظمة' }).click(); await p.waitForTimeout(500);
     assert.deepEqual((await P('.p44-row b').allInnerTexts()).map((x) => x.trim()), ['الإحصائيات اليومية', 'عهد الموظفين', 'الجدول الشهري', 'التشغيل الميداني', 'المتابعة اليومية', 'التقرير اليومي', 'المهام'], 'only what is ON in his ceiling');
     assert.equal(await P('button.p44-sw').count(), 0, 'no switches'); assert.equal(await P('.p44-row[data-on="false"]').count(), 0, 'never an OFF one');
     assert.equal(await P('aside[aria-label="الهيكل"]').count(), 0, 'no unit chain');
     await shot(p, 'p44_6a_systems_as_manager');
-    await P('nav button', { hasText: 'الأدوار' }).first().click(); await p.waitForTimeout(500);
+    await TAB({ hasText: 'الأدوار' }).click(); await p.waitForTimeout(500);
     const txt = await P('').innerText();
     for (const off of ['الاسترشاد', 'المضبوطات', 'جائزة']) assert.ok(!new RegExp(off).test(txt), 'an OFF system is never shown to the manager: ' + off);
     assert.equal(await P('.p44-role', { hasText: 'مدير المنصة' }).count(), 0);

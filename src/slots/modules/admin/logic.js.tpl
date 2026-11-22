@@ -48,6 +48,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const O = KIVO.BassamOrgRoute.screen;
       if (O && O.go && "depts" === this.state.admTab) return void O.go(unit, tab, force ? { force: !0 } : null);
       location.hash = KIVO.BassamOrgRoute.href("site", unit, tab);
+      /* العنوانُ تغيّر الآن و«hashchange» يفتح الشاشةَ لاحقاً — رسمٌ بينهما (قائمةُ الصف تُغلَق) كان يعيد كتابةَ التبويب القديم في العنوان فلا يُفتح شيء
+         (القاعدةُ نفسُها في _ovGo): فالتبويبُ يتبع العنوانَ من الآن */
+      "depts" !== this.state.admTab && this.setState({ admTab: "depts" });
     } catch (e) {}
   }
   /* مغادرةُ الشاشة بفعلٍ من هذه الصفحة: يُسأل حارسُها أولاً */
@@ -2159,7 +2162,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         tone: "warn",
         txt: KIVO.BassamCount(nm.length, ["وحدة واحدة", "وحدتان", "وحدتين", "وحدات", "وحدة", "وحدة"]) + " بلا مدير — لا يعتمد فيها أحدٌ الجدول أو التقرير اليومي",
         when: "",
-        act: "الإدارات",
+        act: "الإدارات والصلاحيات",   /* V7 · د6 (ب1): اسمُ الشاشة الجديد */
         go: go("depts"),
       }),
       oh &&

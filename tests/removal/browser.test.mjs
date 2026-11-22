@@ -107,7 +107,7 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
       p.on('response', async (r) => { if (/\/api\/backup\/restore/.test(r.url()) && r.request().method() === 'POST') { let j = null; try { j = await r.json(); } catch (e) {} posts.push({ s: r.status(), ok: j && j.ok, err: j && j.err, phase: j && (j.inspection ? 'prepare' : 'commit') }); } });
       const unit = await p.evaluate(() => { const D = KIVO.BassamDepts; return D && D.active ? D.active() : ''; }); assert.ok(unit, 'الإدارةُ النشطة معروفة');
       await s.go('#/sysadmin/org/' + unit, 3500);
-      await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click(); await p.waitForTimeout(800);
+      await p.locator('main .og-tabs .og-tab', { hasText: 'البيانات' }).click(); await p.waitForTimeout(800);   /* V7 · د6: تبويباتُ الوحدة في الشاشة الواحدة «الإدارات والصلاحيات» */
       const [d] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.locator('main [title^="نسخة الإدارة"]').click()]);
       const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'rm-bk-')), 'dept.json'); await d.saveAs(file);
       const bk = JSON.parse(fs.readFileSync(file, 'utf8'));

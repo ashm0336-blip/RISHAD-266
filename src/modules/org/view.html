@@ -30,7 +30,7 @@
     </sc-if>
   </div>
   <div class="og-sb">
-    <input type="search" class="og-q" value="{{ogQ}}" onInput="{{ogOnQ}}" onChange="{{ogOnQ}}" placeholder="ابحث في الهيكل…" aria-label="ابحث في الهيكل" autocomplete="off">
+    <input type="search" class="og-q" value="{{ogQ}}" onInput="{{ogOnQ}}" onChange="{{ogOnQ}}" placeholder="ابحث في الهيكل…" aria-label="ابحث في الهيكل…" autocomplete="off">
     <button type="button" class="og-l" data-og-act="expand" onClick="{{ogExpandAll}}">فرد الكل</button>
     <button type="button" class="og-l" data-og-act="collapse" onClick="{{ogCollapseAll}}">طيّ الكل</button>
   </div>
@@ -102,7 +102,7 @@
       <p class="og-pos">الموضع: <b data-og="pos">{{ogPosTxt}}</b></p>
       <sc-if value="{{ogActsOn}}" hint-placeholder-val="{{ true }}">
       <div class="og-acts">
-        <sc-if value="{{ogActAddOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b og-b--p" data-og-act="add-under" onClick="{{ogAddUnder}}">+ إضافة تحتها</button></sc-if>
+        <sc-if value="{{ogActAddOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b og-b--p" data-og-act="add-under" onClick="{{ogAddUnder}}" title="{{ogAddUnderTip}}">+ إضافة تحتها</button></sc-if>
         <sc-if value="{{ogActEditOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b" data-og-act="rename" onClick="{{ogRenameOpen}}">إعادة التسمية</button></sc-if>
         <sc-if value="{{ogActEditOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b" data-og-act="move" onClick="{{ogMoveOpen}}">نقل إلى…</button></sc-if>
         <sc-if value="{{ogActEditOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b og-b--dz" data-og-act="delete" onClick="{{ogDelOpen}}">{{ogDelLbl}}</button></sc-if>
@@ -422,7 +422,7 @@
 <div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
   <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogRenT" class="bs-dlg-box og-dlg" data-og-dlg="rename" onClick="{{ogKeep}}">
     <b class="t" id="ogRenT">إعادة تسمية «{{ogDlgName}}»</b>
-    <label class="fl"><span>الاسم الجديد</span><input type="text" id="ogRenName" value="{{ogRen.name}}" onChange="{{ogRenOnName}}" maxlength="120"></label>
+    <label class="fl"><span>الاسم الجديد</span><input type="text" id="ogRenName" aria-label="{{ogRenLbl}}" value="{{ogRen.name}}" onChange="{{ogRenOnName}}" maxlength="120"></label>
     <sc-if value="{{ogRen.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogRen.msg}}</div></sc-if>
     <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="rename" onClick="{{ogRenGo}}">حفظ الاسم</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
   </div>
@@ -434,7 +434,7 @@
   <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogMoveT" class="bs-dlg-box og-dlg" data-og-dlg="move" onClick="{{ogKeep}}">
     <b class="t" id="ogMoveT">نقل «{{ogDlgName}}» إلى…</b>
     <label class="fl"><span>الأب الجديد</span>
-      <select value="{{ogMove.pid}}" onChange="{{ogMoveOnPid}}" data-og-f="parent" title="العقدة الأب في الهيكل — الوحدة نفسها وما تحتها لا يظهران">
+      <select value="{{ogMove.pid}}" onChange="{{ogMoveOnPid}}" data-og-f="parent" aria-label="العقدة الأب في الهيكل — والشجرة تُعرض بعمقها" title="الوحدة نفسها وما تحتها لا يظهران في القائمة">
         <sc-if value="{{ogMoveRootOn}}" hint-placeholder-val="{{ true }}"><option value="">— بلا أب (في الجذر) —</option></sc-if>
         <sc-for list="{{ogMoveParents}}" as="o" hint-placeholder-count="3"><option value="{{o.id}}">{{o.name}}</option></sc-for>
         <sc-if value="{{ogMoveNewOn}}" hint-placeholder-val="{{ false }}"><option value="__new">+ إدارة عامة جديدة…</option></sc-if>

@@ -438,7 +438,8 @@ test('ب13 skeleton · narrow width: one column, the unit button opens the tree 
   assert.match(ORG_CSS, /\.og-sheet-hd,\.og-ub\{display:none\}/, 'the unit button is for the narrow layout only'); assert.match(narrow, /\.og-ub\{display:flex;[^}]*min-height:52px/);
   assert.match(narrow, /\.og-treewrap\{display:none\}/); assert.match(narrow, /\.og\[data-og-sheet="true"\] \.og-treewrap\{display:flex;position:fixed;inset:0;[^}]*align-items:flex-end/, 'the tree is a sheet from the bottom');
   assert.match(ORG_CSS, /\.og-tabs\{[^}]*overflow-x:auto/, 'the tab strip scrolls sideways'); assert.match(ORG_CSS, /\.og-tab\{flex:none;/);
-  assert.match(narrow, /\.og-b,\.og-l,\.og-q,\.og-flt button,\.og-tab,\.og-radio button,\.og-dlg \.fl input,\.og-dlg \.fl select\{min-height:44px\}/, '44px touch targets');
+  /* .og.og.og: فوق قاعدتَي اللمس العامتين (pointer:coarse ⇒ 32px) — المتصفحُ يقيس الارتفاعَ الفعلي بمحاكاة اللمس (tests/browser/v7_d6_frame) */
+  assert.match(narrow, /\.og\.og\.og \.og-b,\.og\.og\.og \.og-l,\.og\.og\.og \.og-q,\.og\.og\.og \.og-flt button,\.og-tab,\.og\.og\.og \.og-radio button,\.og\.og\.og \.og-dlg \.fl input,\.og\.og\.og \.og-dlg \.fl select,\.og\.og\.og \.og-dlg \.ft button\{min-height:44px\}/, '44px touch targets');
   assert.match(narrow, /\.og-rw\{min-height:48px\}/); assert.match(narrow, /\.og-cv\{width:44px;height:44px/); assert.match(narrow, /\.og-dlg\{width:100%\}/, 'dialogs fill the width');
   /* الزرّ يحمل اسمَ الوحدة ومسارَها ويفتح اللوحة؛ اختيارُ وحدةٍ يغلقها */
   assert.match(ORG_VIEW, /<button type="button" class="og-ub" aria-haspopup="dialog" aria-expanded="\{\{ogSheetAttr\}\}" onClick="\{\{ogSheetOpen\}\}"[^>]*>\s*<span class="og-ub-t"><b>\{\{ogU\.name\}\}<\/b><small>\{\{ogU\.pathTxt\}\}<\/small><\/span>/);

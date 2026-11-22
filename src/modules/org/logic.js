@@ -138,7 +138,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       tabs = this._ogTabsOf(u, cur.mode),
       next = { unit: u, tab: tabs.indexOf(t) !== -1 ? t : "overview" };
     if (!cur.scope.has(u)) return !1;
-    if (next.unit === cur.unit && next.tab === cur.tab && cur.mine) return !0;
+    if (next.unit === cur.unit && next.tab === cur.tab && cur.mine) return this.state.ogSheet && this.setState({ ogSheet: !1 }), !0;   /* الوحدةُ نفسُها: تُغلق لوحةُ الشجرة ولا شيء غيرُه */
     if (!(o && o.force) && !(await this.canLeave(next))) return !1;
     const h = this.ogHref(next.unit, next.tab);
     this.__ogPass = h;
@@ -661,6 +661,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ogActsNote: c.struct ? "" : "أفعال الهيكل (الإضافة · إعادة التسمية · النقل · الحذف) لمدير المنصة من «مركز إدارة رشاد».",
       ogDelLbl: inf.isNode ? "حذف العقدة" : inf.isSec ? "حذف القسم" : "حذف الإدارة",
       ogAddUnder: () => this._ogAddOpen(c.unit),
+      ogAddUnderTip: inf.isUnit ? "قسمٌ تحت هذه الإدارة: له مديره وموظفوه وسقفه وبياناته" : "إضافة إلى الهيكل تحت «" + inf.name + "»",
       ogRenameOpen: () => (this.setState({ ogDlg: { k: "rename", id: c.unit, name: inf.name, msg: "" } }), this._ogFocus("ogRenName")),
       ogMoveOpen: () => this.setState({ ogDlg: { k: "move", id: c.unit, pid: (inf.node && inf.node.pid) || "", msg: "" } }),
       ogDelOpen: () => this._ogDelAsk(inf),
@@ -670,7 +671,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     /* قائمةُ التهيئة: خمسُ خطواتٍ حقيقية — كلٌّ بحالته من البيانات الفعلية، والضغطُ يفتح تبويبَ الخطوة */
     const cs = this._capStateTxt(c.unit),   /* V7 P3-0: المصدرُ الواحد — «مفتوح — لم يُضبط» تنبيهٌ لا علامةُ تمام */
       capOk = !!cs.kind && cs.ok,
-      capTxt = "dept" === c.mode ? "المفعّل: " + sys.on : capOk || !cs.short ? sys.on + " من " + sys.all + " مفعّلة" : cs.short,
+      /* الناقصُ يُقال بنصّه الكامل من المصدر الواحد (كما كان في قائمة التهيئة القديمة)، والمنجزُ بعدده — ونصُّ حالته في تلميح الخطوة */
+      capTxt = "dept" === c.mode ? "المفعّل: " + sys.on : capOk || !cs.txt ? sys.on + " من " + sys.all + " مفعّلة" : cs.txt,
       units = inf.isUnit ? [c.unit] : this._ogTry(() => D.deptsUnder(c.unit) || [], []),
       withRoles = units.filter((u) => {
         const r = this._ogTry(() => this._p44E().rolesOf(u), null);
@@ -679,10 +681,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       rolesOk = units.length > 0 && withRoles === units.length,
       rolesTxt = inf.isUnit ? (withRoles ? "أدوار الموظفين معرَّفة" : "لا أدوار للموظفين بعد") : units.length ? withRoles + " من " + KIVO.BassamCount(units.length, "وحدة") + " لها أدوار" : "لا وحدة تحتها بعد",
       all4 = capOk && mg.length > 0 && rolesOk,
-      step = (k, t, st, ok, tab) => ({ k: k, t: t, st: st, ok: ok ? "true" : "false", mark: ok ? "✓" : "!", sr: ok ? "منجز" : "ناقص", tip: (ok ? "منجز" : "ناقص") + " — افتح «" + this.OG_TABS[tab] + "»", go: this._ogGo(c.unit, tab) });
+      step = (k, t, st, ok, tab, more) => ({ k: k, t: t, st: st, ok: ok ? "true" : "false", mark: ok ? "✓" : "!", sr: ok ? "منجز" : "ناقص", tip: (more ? more + " — " : "") + (ok ? "منجز" : "ناقص") + " — افتح «" + this.OG_TABS[tab] + "»", go: this._ogGo(c.unit, tab) });
     v.ogSteps = [
       step("node", "العقدة", inf.kind + " · في الهيكل", !0, "overview"),
-      step("systems", "الأنظمة", capTxt, capOk, "systems"),
+      step("systems", "الأنظمة", capTxt, capOk, "systems", "site" === c.mode ? cs.txt : ""),
       step("admins", "المسؤول", mg.length ? "معيَّن: " + mg.map((m) => m.name || m.un).join("، ") : "لم يُعيَّن بعد", mg.length > 0, "admins"),
       step("roles", "الصلاحيات", rolesTxt, rolesOk, "roles"),
       step("review", "المراجعة", all4 ? "اكتملت الخطوات — راجع السجل" : "تكتمل بإنجاز ما قبلها", all4, "log"),
@@ -863,7 +865,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ogAddGo: () => this._ogAddGo(),
       });
     }
-    if (v.ogRenOn) Object.assign(v, { ogRen: dlg, ogRenOnName: (ev) => this._ogDlg({ name: String((ev && ev.target && ev.target.value) || ""), msg: "" }), ogRenGo: () => this._ogRenGo(dInf) });
+    if (v.ogRenOn) Object.assign(v, { ogRen: dlg, ogRenLbl: dInf.isNode ? "اسم العقدة" : dInf.isSec ? "اسم القسم" : "اسم الإدارة", ogRenOnName: (ev) => this._ogDlg({ name: String((ev && ev.target && ev.target.value) || ""), msg: "" }), ogRenGo: () => this._ogRenGo(dInf) });
     if (v.ogMoveOn)
       Object.assign(v, {
         ogMove: dlg,
