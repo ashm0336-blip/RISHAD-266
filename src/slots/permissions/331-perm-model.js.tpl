@@ -105,6 +105,7 @@
       var r = { caps: o.caps || {}, emps: o.emps || {}, tplOf: o.tplOf || {}, lenses: o.lenses || {}, subs: o.subs || {}, empLens: o.empLens || {}, lensZ: o.lensZ, patterns: o.patterns || {} };
       /* caps-own: the ceiling mode travels with the registry (the server refuses a save that drops it — 021 capOwnWhy) */
       if (o.capOwn !== undefined) r.capOwn = o.capOwn; if (o.capMode !== undefined) r.capMode = o.capMode;
+      if (o.capSeed !== undefined) r.capSeed = o.capSeed;   /* V7 · د6 (ب4): علامةُ «سجلٌّ مبذورٌ لم يضبطه أحد» تسافر مع السجلّ (أدناه unseed · seedUnit) */
 @@SYS:perm.legacy.tasks@@      /* ترقية: «المناطق» انضمّت لسقف العدسات — المصفوفات المخزونة قبلها تعدّها مفعّلة */
       if (!r.lensZ) {
         Object.keys(r.lenses).forEach(function(d){ var L = r.lenses[d]; if (Array.isArray(L) && L.indexOf('zones') === -1) L.push('zones'); });
@@ -118,6 +119,24 @@
     return f0;
   }
   function permSave(o){ _pmMemo = o; try { RAW.setItem.call(localStorage, K_PERM, JSON.stringify(o)); } catch(e){} }
+  /* V7 · د6 (ب4 — قرار المالك: الاستيرادُ والاستعادة كما كانا): سجلُّ السقف الذي كتبه بذرُ الوحدة الجديدة يُعلَّم صراحةً capSeed[<الوحدة>] =
+     { seed, caps, subs } (نسخةٌ مما كُتب) — فيعامله الاستيرادُ والاستعادة كأن الوحدة بلا سجلّ (320 permSlice = rsPermSlice في الخادم: السقفُ المرفق
+     بالنسخة يُطبَّق كما كان قبل ب4). العلامةُ لا تمنح ولا تمنع شيئاً: لا يقرؤها حكمُ صلاحيةٍ في الواجهة ولا في الخادم، ولا تدخل فرقَ السجلّ
+     (perm44CeilDiff: caps · subs · lenses). وأوّلُ ضبطٍ حقيقي للسقف (أيُّ كاتبٍ أدناه) يمحوها؛ والخادمُ لا يثق بها وحدها: سجلٌّ لا يطابق نسختَها
+     ليس «مبذوراً لم يُمسّ». */
+  function unseed(o, d){
+    if (!o.capSeed || typeof o.capSeed !== 'object' || !Object.prototype.hasOwnProperty.call(o.capSeed, d)) return;
+    var m = {}; Object.keys(o.capSeed).forEach(function(k){ if (k !== d) m[k] = o.capSeed[k]; });
+    if (Object.keys(m).length) o.capSeed = m; else delete o.capSeed;
+  }
+  /* هل سجلُّ الوحدة ما زال بذرَ إنشائها لم يضبطه أحد؟ — للعرض ('off' | 'parent' | '') */
+  function capSeeded(did){
+    var o = permStore(), d = did || curDept(), s = o.capSeed && typeof o.capSeed === 'object' ? o.capSeed[d] : null;
+    if (!s || typeof s !== 'object' || !Array.isArray(o.caps[d])) return '';
+    if (JSON.stringify(o.caps[d]) !== JSON.stringify(s.caps) || JSON.stringify((o.subs || {})[d] || null) !== JSON.stringify(s.subs || null)) return '';
+    if ((o.lenses && Object.prototype.hasOwnProperty.call(o.lenses, d)) || (o.capOwn && o.capOwn[d])) return '';
+    return s.seed === 'parent' ? 'parent' : 'off';
+  }
   function rawCap(id){
     var c = permStore().caps[id];
     return Array.isArray(c) ? c.slice() : [];   /* الافتراضي: لا شيء متاح */
@@ -206,7 +225,7 @@
     if (!isSuper()) return { ok:false, err:'سقف الإدارة لمسؤول المنصة وحده' };
     var o = permStore(), d = did || curDept();
     o.caps[d] = (arr || []).filter(function(k){ return PAGE_KEYS.indexOf(k) !== -1; });
-    permSave(o); return { ok:true };
+    unseed(o, d); permSave(o); return { ok:true };   /* V7 · د6 (ب4): ضبطٌ حقيقي ⇒ لم يعد «مبذوراً» */
   }
   /* caps-own: is unit d's ceiling independent of its ancestors? (bassam_perms_v1.capOwn[d] · or capMode 'own' for every unit = 021 capOwnOf) */
   function capOwnOf(did){ var o = permStore(), d = did || curDept(); return o.capMode === 'own' || !!(o.capOwn && o.capOwn[d] === true); }
@@ -220,7 +239,7 @@
     if (!!on === capOwnOf(d)) return { ok:true, same:true };
     var c = deptCap(d), m = {}; Object.keys(o.capOwn || {}).forEach(function(k){ if (k !== d) m[k] = true; });
     if (on) { m[d] = true; o.caps[d] = c; }
-    o.capOwn = m; permSave(o); return { ok:true };
+    o.capOwn = m; unseed(o, d); permSave(o); return { ok:true };
   }
   /* read-time narrowing: the part of a sheet inside unit d's ceiling — its page in the effective ceiling and a sub-leaf in its page's live
      tabs (what the old trim kept); latentLeaves = the rest, stored and not read */
@@ -286,6 +305,10 @@
       o.subs = o.subs || {}; o.subs[id] = o.subs[id] || {};
       o.subs[id][pk] = all.filter(function(k){ return offSubs[pk].indexOf(k) === -1; });
     });
+    /* علامةُ البذر: نسخةٌ مما كُتب — يقارَن بها السجلُّ عند الاستيراد (320 permSlice) */
+    var m = {}; Object.keys(o.capSeed && typeof o.capSeed === 'object' ? o.capSeed : {}).forEach(function(k){ m[k] = o.capSeed[k]; });
+    m[id] = { seed: mode, caps: o.caps[id].slice(), subs: o.subs && o.subs[id] ? JSON.parse(JSON.stringify(o.subs[id])) : null };
+    o.capSeed = m;
     permSave(o);
     return { ok:true, seed: mode, n: o.caps[id].length, on: on };
   }
@@ -305,6 +328,7 @@
     var o = permStore(), hit = [];
     ['caps', 'subs', 'lenses'].forEach(function(k){ if (o[k] && Object.prototype.hasOwnProperty.call(o[k], id)) { delete o[k][id]; hit.push(k); } });
     if (o.capOwn && Object.prototype.hasOwnProperty.call(o.capOwn, id)) { var m = {}; Object.keys(o.capOwn).forEach(function(k){ if (k !== id) m[k] = o.capOwn[k]; }); o.capOwn = m; hit.push('capOwn'); }
+    var s0 = !!(o.capSeed && typeof o.capSeed === 'object' && Object.prototype.hasOwnProperty.call(o.capSeed, id)); if (s0) { unseed(o, id); hit.push('capSeed'); }   /* V7 · د6 (ب4) */
     if (hit.length) permSave(o);
     return { ok:true, removed: hit };
   }
@@ -319,7 +343,7 @@
       D.nodes().concat(D.list()).forEach(function(x){ if (x && x.id != null && x.id !== '') live[String(x.id)] = 1; });
       o = permStore();
     } catch(e){ return { ok:false, err:'تعذّرت قراءة الهيكل' }; }
-    ['caps', 'subs', 'lenses', 'capOwn'].forEach(function(k){
+    ['caps', 'subs', 'lenses', 'capOwn', 'capSeed'].forEach(function(k){
       var m = o[k]; if (!m || typeof m !== 'object') return;
       Object.keys(m).forEach(function(id){ if (live[id]) return; if (!maps[id]) { maps[id] = []; ids.push(id); } maps[id].push(k); });
     });
@@ -366,7 +390,7 @@
     var o = permStore(), d = did || curDept();
     o.subs = o.subs || {}; o.subs[d] = o.subs[d] || {};
     o.subs[d][pk] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; });
-    permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
+    unseed(o, d); permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
   }
   /* ── مجموعة السقف الثانية: التبويبات ──────────────────────────────────────
      تسكن في مخزن subs نفسه لكن تحت مفتاح «الصفحة:tabs» — فلا تصطدم بمجموعة
@@ -386,7 +410,7 @@
     var o = permStore(), d = did || curDept();
     o.subs = o.subs || {}; o.subs[d] = o.subs[d] || {};
     o.subs[d][tabSlot(pk)] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; });
-    permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
+    unseed(o, d); permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
   }
   function tabOn(pk, tk){
     try {
@@ -423,7 +447,7 @@
     var o = permStore(), d = did || curDept();
     o.lenses = o.lenses || {};
     o.lenses[d] = (arr || []).filter(function(k){ return LENS_KEYS.indexOf(k) !== -1; });
-    permSave(o); return { ok:true };   /* caps-own: employees' lens lists stay — read ∩ unit lenses (empLens · server lensGate) */
+    unseed(o, d); permSave(o); return { ok:true };   /* caps-own: employees' lens lists stay — read ∩ unit lenses (empLens · server lensGate) */
   }
   /* عدسات الموظف: غياب السجل = كل عدسات الإدارة (توافق رجعي) */
   function empLens(ekey, did){
@@ -851,7 +875,7 @@
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
   I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.capOwnOf = capOwnOf; I.capState = capState; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
-  I.permSave = permSave; I.platCut = platCut; I.heldPerms = heldPerms; I.dropNodeCap = dropNodeCap; I.capOrphans = capOrphans;
+  I.permSave = permSave; I.capSeeded = capSeeded; I.platCut = platCut; I.heldPerms = heldPerms; I.dropNodeCap = dropNodeCap; I.capOrphans = capOrphans;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;
   I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;

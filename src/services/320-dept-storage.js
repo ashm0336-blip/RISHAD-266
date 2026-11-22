@@ -226,8 +226,18 @@
       var KP = Array.isArray(pageKeys) && pageKeys.length ? pageKeys : ['emps','staff','plan','plan','daily','tasks','admin'];
       var KL = Array.isArray(lensKeys) ? lensKeys : ['paths','gates','marks','dist','dens'];   /* V7 · د5-ح: قائمةٌ فارغة = لا عدسة (قطعتُها غائبة) — لا رجوعَ إلى القائمة القديمة */
       pm.caps = pm.caps || {}; pm.emps = pm.emps || {};
-      var hasCur = (pm.caps[id] || []).length > 0 || Object.keys(pm.emps[id] || {}).length > 0;
+      /* V7 · د6 (ب4 — قرار المالك: الاستيرادُ والاستعادة يُبقيان السقف المرفق كما كانا): سجلٌّ كتبه بذرُ الوحدة الجديدة ولم يضبطه أحد (علامتُه capSeed[id]
+         قائمة والسجلُّ ما زال يطابق نسختَها حرفاً، بلا عدساتٍ ولا استقلال) يُعامل كأن الوحدة بلا سجلّ — كما كانت الوحدةُ الجديدة قبل ب4: الدمجُ يكتب
+         شريحةَ النسخة، والاستبدالُ كذلك؛ ونسخةٌ بلا سجلّ سقف تترك الوحدةَ بلا سجلّ. سجلٌّ ضبطه شخص (العلامةُ مُحيت أو السجلُّ تغيّر) على القاعدة القائمة.
+         وكلُّ كتابةٍ للشريحة تمحو العلامة. (الدالةُ نفسُها هي rsPermSlice في الخادم — tools/dept_permission_slice.mjs) */
+      var sd = (pm.capSeed && typeof pm.capSeed === 'object' && !Array.isArray(pm.capSeed) && Object.prototype.hasOwnProperty.call(pm.capSeed, id)) ? pm.capSeed[id] : null;
+      var fresh = !!(sd && typeof sd === 'object' && Array.isArray(pm.caps[id]) && JSON.stringify(pm.caps[id]) === JSON.stringify(sd.caps)
+        && JSON.stringify((pm.subs && typeof pm.subs === 'object' && pm.subs[id]) || null) === JSON.stringify(sd.subs || null)
+        && !(pm.lenses && typeof pm.lenses === 'object' && Object.prototype.hasOwnProperty.call(pm.lenses, id)) && !(pm.capOwn && typeof pm.capOwn === 'object' && pm.capOwn[id]));
+      var hasCur = (!fresh && (pm.caps[id] || []).length > 0) || Object.keys(pm.emps[id] || {}).length > 0;
       if (!(mode === 'replace' || !hasCur)) return null;
+      if (fresh) { delete pm.caps[id]; if (pm.subs && typeof pm.subs === 'object' && Object.prototype.hasOwnProperty.call(pm.subs, id)) delete pm.subs[id]; }
+      if (sd !== null) { delete pm.capSeed[id]; if (!Object.keys(pm.capSeed).length) delete pm.capSeed; }
       var legacyNoCap = !('capSet' in PP) && Array.isArray(PP.cap) && !PP.cap.length && !Object.keys((PP.emps && typeof PP.emps === 'object') ? PP.emps : {}).length;
       if (PP.capSet === false || PP.cap == null || legacyNoCap) delete pm.caps[id];
       else pm.caps[id] = (Array.isArray(PP.cap) ? PP.cap : []).filter(function(k){ return KP.indexOf(k) !== -1; });

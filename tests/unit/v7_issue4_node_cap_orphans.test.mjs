@@ -52,13 +52,14 @@ test('nodeAdd (a node made by hand) drops a leftover of its id before seeding �
   const mk = () => { const store = { caps: { P: ['emps', 'tasks'], N: ['emps'] }, subs: { N: { emps: ['data'] } }, lenses: {}, capOwn: { N: true } }, saved = [];
     const ctx = { isSuper: () => true, permStore: () => store, permSave: (o) => saved.push(J(o)), PAGE_KEYS: ['emps', 'tasks', 'help'], PAGE_OF: {}, subKeysOf: () => [], splitLeaf: (k) => ({ page: k, sub: '' }),
       onCap: (k, d) => !Array.isArray(store.caps[d]) || store.caps[d].indexOf(k) !== -1, KIVO: { Perm44: { sysList: () => [{ key: 'tasks', toggle: true, leaves: ['tasks'] }, { key: 'help', toggle: true, leaves: ['help'] }] }, BassamDepts: { ancestorsOf: () => [] } }, Object, JSON, Array, String };
-    vm.createContext(ctx); vm.runInContext(['dropNodeCap', 'seedSystems', 'seedOnAt', 'seedMode', 'seedUnit', 'seedCapFrom'].map((f) => fnSrc(M, f)).join('\n'), ctx); return { ctx, saved }; };
+    vm.createContext(ctx); vm.runInContext(['unseed', 'dropNodeCap', 'seedSystems', 'seedOnAt', 'seedMode', 'seedUnit', 'seedCapFrom'].map((f) => fnSrc(M, f)).join('\n'), ctx); return { ctx, saved }; };
   let X = mk(); X.ctx.dropNodeCap('N'); let r = J(X.ctx.seedCapFrom('N', 'P'));
   assert.deepEqual(r, { ok: true, seed: 'off', n: 1, on: [] }, 'seeded afresh (all OFF by default) — not «kept»');
-  assert.deepEqual(X.saved[X.saved.length - 1], { caps: { P: ['emps', 'tasks'], N: ['emps'] }, subs: {}, lenses: {}, capOwn: {} }, 'the leftover sections record and independence flag are gone');
+  /* capSeed (V7 · د6 · ب4): the mark of a seeded record nobody has set yet — a copy of what the seed wrote */
+  assert.deepEqual(X.saved[X.saved.length - 1], { caps: { P: ['emps', 'tasks'], N: ['emps'] }, subs: {}, lenses: {}, capOwn: {}, capSeed: { N: { seed: 'off', caps: ['emps'], subs: null } } }, 'the leftover sections record and independence flag are gone');
   X = mk(); X.ctx.dropNodeCap('N'); r = J(X.ctx.seedCapFrom('N', 'P', { seed: 'parent' }));
   assert.deepEqual(r, { ok: true, seed: 'parent', n: 2, on: ['tasks'] }, 'seeded from the parent\'s systems — not «kept»');
-  assert.deepEqual(X.saved[X.saved.length - 1], { caps: { P: ['emps', 'tasks'], N: ['emps', 'tasks'] }, subs: {}, lenses: {}, capOwn: {} });
+  assert.deepEqual(X.saved[X.saved.length - 1], { caps: { P: ['emps', 'tasks'], N: ['emps', 'tasks'] }, subs: {}, lenses: {}, capOwn: {}, capSeed: { N: { seed: 'parent', caps: ['emps', 'tasks'], subs: null } } });
 });
 
 /* READ-ONLY check of existing leftovers (331 capOrphans): ceiling entries whose id is neither a current node nor a current unit/section. */

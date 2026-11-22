@@ -17,7 +17,7 @@ const SYS = ['tasks', 'staff', 'irshad', 'daily', 'award', 'custody', 'dstats'];
 const OFF = offRecord(), PERMANENT = ['profile', 'emps', 'admin'];
 const FULL = ['profile', 'kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award', 'links', 'help', 'admin'];
 const J = (x) => JSON.parse(JSON.stringify(x));
-const others = (pm, ids) => { const o = J(pm); for (const m of ['caps', 'subs', 'lenses', 'capOwn', 'emps', 'empLens', 'tplOf']) for (const id of ids) if (o[m]) delete o[m][id]; for (const m of ['subs', 'lenses', 'capOwn']) if (o[m] && !Object.keys(o[m]).length) delete o[m]; return o; };
+const others = (pm, ids) => { const o = J(pm); for (const m of ['caps', 'subs', 'lenses', 'capOwn', 'capSeed', 'emps', 'empLens', 'tplOf']) for (const id of ids) if (o[m]) delete o[m][id]; for (const m of ['subs', 'lenses', 'capOwn', 'capSeed']) if (o[m] && !Object.keys(o[m]).length) delete o[m]; return o; };
 /* ينشئ من واجهة مدير المنصة الحقيقية ثم يحفظ عبر العامل؛ يعيد جوابَ الإنشاء */
 async function create(W, fn) {
   const c = await clientOf(W, 'su', B);
@@ -43,6 +43,8 @@ test('V7 · د6 · ب4 — a new department starts with every switchable system 
   assert.deepEqual(pm.caps[r.id], OFF.caps, 'D1: the new unit\'s ceiling record = the permanent pages alone');
   assert.deepEqual(pm.subs[r.id], OFF.subs, 'D1: a system that is a section of a permanent page («العهد») is OFF too');
   assert.deepEqual(others(pm, [r.id]), others(before, []), 'no other unit\'s record changed (byte-equal JSON)');
+  /* علامةُ البذر (للاستيراد والاستعادة): نسخةٌ مما كُتب — لا لوحدةٍ أخرى */
+  assert.deepEqual(pm.capSeed, { [r.id]: { seed: 'off', caps: OFF.caps, subs: OFF.subs } }, 'the seeded record is marked, and only it');
   assert.equal(stored(W.env, 'bassam_depts_v1').find((d) => d.id === r.id).gid, G);
   /* reload: the unit's manager and an employee, by the server's keys */
   await addHolder(W, 'nm', r.id, true); await addHolder(W, 'ns', r.id, false);
@@ -68,6 +70,21 @@ test('V7 · د6 · ب4 — a new department starts with every switchable system 
   assert.deepEqual(openBefore, FULL);
   const su = await clientOf(W, 'su', OP);
   try { assert.equal(su.ev('KIVO.BassamPerm.capState(' + JSON.stringify(OP) + ').kind'), 'open', 'still «open» (no record written for it)'); assert.equal(su.ev('KIVO.BassamPerm.capState(' + JSON.stringify(A) + ').kind'), 'own'); } finally { su.dispose(); }
+  /* العلامةُ لا تمنح ولا تمنع: حذفُها من السجلّ لا يغيّر مفتاحاً واحداً عند الخادم · وحفظُ مديرٍ آخر لصلاحيات موظفيه لا يُسقطها ولا يُرفض بسببها ·
+     وأوّلُ ضبطٍ حقيقي للسقف يمحوها ولو بالقيمة نفسِها */
+  const mc = await clientOf(W, 'dept', A);
+  try { assert.equal(mc.I.setEmpLens('TEST_ONLY_d6_e_none', ['zones'], A).ok, true); await mc.settle(); assert.equal(mc.denied(), 0, 'a manager\'s own save passes with the mark in the registry'); } finally { mc.dispose(); }
+  assert.deepEqual(stored(W.env, KP).capSeed, pm.capSeed, 'and the mark is still there');
+  const sc = await clientOf(W, 'su', B);
+  try {
+    assert.equal(sc.ev('KIVO.BassamPerm.capSeeded(' + JSON.stringify(r.id) + ')'), 'off'); assert.equal(sc.ev('KIVO.BassamPerm.capSeeded(' + JSON.stringify(A) + ')'), '');
+    assert.equal(sc.I.setDeptCap(r.id, OFF.caps).ok, true); await sc.settle(); assert.equal(sc.denied(), 0);
+    assert.equal(sc.ev('KIVO.BassamPerm.capSeeded(' + JSON.stringify(r.id) + ')'), '');
+  } finally { sc.dispose(); }
+  const pm2 = stored(W.env, KP);
+  assert.equal(pm2.capSeed, undefined, 'the first real ceiling save clears the mark'); assert.deepEqual(pm2.caps[r.id], OFF.caps);
+  assert.deepEqual(await seenBy(W, 'nm', r.id), PERMANENT, 'with or without the mark the manager sees the same');
+  assert.deepEqual(await heldSystems(W, 'nm', r.id), [], '… and the server carries the same keys');
   /* المدخلُ القديم لصفحة الإدارة (حفظُ سجلّ الوحدات ثم seedCapFrom(id, pid) بلا اختيار) ⇒ الافتراضيُّ الجديد · وقيمةٌ مجهولة ⇒ 'off' */
   const r2 = await create(W, (c) => { const D = c.K.BassamDepts, id = D.freshId('d'); D.save(D.list().concat([{ id, name: T + 'إدارة بالمدخل القديم', gid: G }])); return Object.assign({ id }, c.P.seedCapFrom(id, G)); });
   assert.equal(r2.seed, 'off'); assert.deepEqual(stored(W.env, KP).caps[r2.id], OFF.caps);
@@ -88,6 +105,7 @@ test('V7 · د6 · ب4 — «نفس أنظمة العقدة الأب»: the pare
   assert.equal(r.seed, 'parent');
   let pm = stored(W.env, KP);
   assert.deepEqual(pm.caps[r.id], OFF.all.filter((k) => k !== 'dstats'), 'the parent\'s pages'); assert.deepEqual(pm.subs[r.id], { emps: ['data'] }, '… and its OFF section-system');
+  assert.deepEqual(pm.capSeed[r.id], { seed: 'parent', caps: OFF.all.filter((k) => k !== 'dstats'), subs: { emps: ['data'] } }, 'marked as a seeded record');
   await addHolder(W, 'pm', r.id, true);
   assert.deepEqual(await seenBy(W, 'pm', r.id), FULL.filter((k) => k !== 'dstats'), 'its manager sees what a manager of the parent\'s systems sees');
   assert.deepEqual((await srvOn(W, r.id)).slice().sort(), (await srvOn(W, G)).slice().sort(), 'server: the same systems ON as in the parent');

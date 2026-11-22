@@ -204,7 +204,7 @@ function nodeRemoveWhy(A, old, N) {
    { v: the registry to write instead (pNew if carried, else pCur) without those records — null when nothing changes ·
      couple: this save writes a record for a node it adds ⇒ both registries are written together or not at all (otherwise a retried
      structure would find its own fresh record «stored before it») }. The capOwn map itself stays, even empty (021 capOwnWhy). */
-var NODE_CAP_MAPS = ['caps', 'subs', 'lenses', 'capOwn'];
+var NODE_CAP_MAPS = ['caps', 'subs', 'lenses', 'capOwn', 'capSeed'];   /* V7 · د6 (ب4): وعلامةُ البذر capSeed تُحذف مع العقدة */
 function nodeCapRec(P, id) {
   var r = {}, n = 0;
   NODE_CAP_MAPS.forEach(function (f) { if (isObj(P[f]) && Object.prototype.hasOwnProperty.call(P[f], id)) { r[f] = P[f][id]; n++; } });
