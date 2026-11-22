@@ -48,7 +48,7 @@
   </sc-if>
   <!-- KIVO_265 · طلبُ المالك: السحبُ والإفلات — قبل/بعد صفٍّ للترتيب، وعلى وسطه للنقل تحته (باقٍ · والنقلُ بنافذة «نقل إلى…» أيضاً) -->
   <sc-if value="{{ogDndOn}}" hint-placeholder-val="{{ true }}">
-  <div class="og-hint">اسحب صفاً وأفلته: على طرف صفٍّ آخر (أعلاه أو أسفله) للترتيب، أو على وسطه لنقله تحته</div>
+  <div class="og-hint">اسحب صفاً وأفلته: على طرف صفٍّ آخر (أعلاه أو أسفله) للترتيب، أو على وسطه لنقله تحته — تُفتح نافذة النقل بأثره على الأنظمة قبل التأكيد</div>
   </sc-if>
   <div class="og-th" aria-hidden="true"><span class="og-c-nm">الوحدة</span><span class="og-c-kd">النوع</span><span class="og-c-n">تحتها</span><span class="og-c-mg">المدير</span><span class="og-c-n">الأشخاص</span><span class="og-c-n">الأنظمة</span></div>
   <div class="og-rows" role="tree" aria-label="الهيكل">
@@ -120,7 +120,7 @@
     <sc-if value="{{ogStepsOn}}" hint-placeholder-val="{{ true }}">
     <section class="og-card" aria-label="قائمة التهيئة">
       <h4>قائمة التهيئة</h4>
-      <ol class="og-steps"><sc-for list="{{ogSteps}}" as="s" hint-placeholder-count="5"><li data-og-step="{{s.k}}" data-ok="{{s.ok}}"><button type="button" onClick="{{s.go}}" title="{{s.tip}}"><span class="mk" aria-hidden="true">{{s.mark}}</span><b>{{s.t}}</b><small>{{s.st}}</small><span class="og-sr">{{s.sr}}</span></button></li></sc-for></ol>
+      <ol class="og-steps"><sc-for list="{{ogSteps}}" as="s" hint-placeholder-count="4"><li data-og-step="{{s.k}}" data-ok="{{s.ok}}"><button type="button" onClick="{{s.go}}" title="{{s.tip}}"><span class="mk" aria-hidden="true">{{s.mark}}</span><b>{{s.t}}</b><small>{{s.st}}</small><span class="og-sr">{{s.sr}}</span></button></li></sc-for></ol>
     </section>
     </sc-if>
   </div>
@@ -345,7 +345,9 @@
   <!-- ══════════ نقطة التركيب · السجل (ب8 · م6 · logic.js ogTabLog ← logic-perm44.js _p44LogVals) ══════════ -->
   <div data-org-tab="log">
   <sc-if value="{{ogLogRoot}}" hint-placeholder-val="{{ false }}">
-  <div class="p44-empty" role="status">{{ogLogRootTxt}} <a href="#/sysadmin/oplog" onClick="{{ogLogRootGo}}">افتح «سجل الأنشطة والتغييرات»</a></div>
+  <div class="p44-empty" role="status" data-og="root-log">{{ogLogRootTxt}}
+    <ul class="og-loglinks"><sc-for list="{{ogLogRootLinks}}" as="l" hint-placeholder-count="2"><li><a href="#/sysadmin/oplog" data-og-log="{{l.k}}" onClick="{{l.go}}">{{l.t}}</a></li></sc-for></ul>
+  </div>
   </sc-if>
   <sc-if value="{{p44OnLog}}" hint-placeholder-val="{{ false }}">
   <sc-if value="{{p44LogFilters}}" hint-placeholder-val="{{ false }}">
@@ -411,6 +413,7 @@
     <!-- ب4 (م4): اختيارُ «أنظمة الوحدة الجديدة» يُمرَّر وسيطاً إلى مسار الإنشاء (logic.js _ogAddGo) -->
     <div class="fl" role="radiogroup" aria-label="أنظمة الوحدة الجديدة"><span>أنظمة الوحدة الجديدة</span>
       <div class="og-radio"><sc-for list="{{ogAddSys}}" as="c" hint-placeholder-count="2"><button type="button" role="radio" data-og-sys="{{c.k}}" aria-checked="{{c.on}}" onClick="{{c.pick}}">{{c.t}}</button></sc-for></div>
+      <small class="og-note" data-og="add-sys-note">«نفس أنظمة العقدة الأب»: تنسخ الوحدة سجلَّ أبيها كما هو الآن، ومفتاح المنصة فوق الجميع — ما يُعاد تشغيله على المنصة يصلها كما يصل أباها.</small>
     </div>
     <sc-if value="{{ogAdd.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogAdd.msg}}</div></sc-if>
     <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="add" onClick="{{ogAddGo}}">أضف العقدة</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
@@ -440,8 +443,17 @@
         <sc-if value="{{ogMoveNewOn}}" hint-placeholder-val="{{ false }}"><option value="__new">+ إدارة عامة جديدة…</option></sc-if>
       </select></label>
     <p class="og-pos">الموضع بعد النقل: <b data-og="move-pos">{{ogMovePath}}</b></p>
+    <sc-if value="{{ogMoveOrderOn}}" hint-placeholder-val="{{ false }}"><p class="og-pos">الترتيب: <b data-og="move-order">{{ogMoveOrder}}</b></p></sc-if>
+    <!-- V7 · د6 (قرار المالك): أثرُ النقل على الأنظمة — للوحدة ولكل ما تحتها، بالأسماء (logic.js _ogMoveEffect ← دالةُ الوراثة القائمة) -->
+    <section class="og-eff" data-og="move-effect" aria-label="أثر النقل على الأنظمة" aria-live="polite">
+      <h5>أثر النقل على الأنظمة</h5>
+      <sc-if value="{{ogEffOffOn}}" hint-placeholder-val="{{ false }}"><div class="og-eff-g" data-og-eff="off"><b>سيُطفأ بحكم الأب الجديد</b><ul><sc-for list="{{ogEffOff}}" as="u" hint-placeholder-count="1"><li><b>{{u.name}}</b>: {{u.txt}}</li></sc-for></ul></div></sc-if>
+      <sc-if value="{{ogEffOnOn}}" hint-placeholder-val="{{ false }}"><div class="og-eff-g" data-og-eff="on"><b>سيُفتح بالوراثة</b><ul><sc-for list="{{ogEffOn}}" as="u" hint-placeholder-count="1"><li><b>{{u.name}}</b>: {{u.txt}}</li></sc-for></ul></div></sc-if>
+      <sc-if value="{{ogEffNone}}" hint-placeholder-val="{{ true }}"><p class="og-note" data-og-eff="none">لا يتغيّر شيء في الأنظمة: لا نظام يُطفأ ولا نظام يُفتح.</p></sc-if>
+      <sc-if value="{{ogEffErr}}" hint-placeholder-val="{{ false }}"><p class="og-err" role="alert">تعذّر حساب أثر النقل — أغلق النافذة وأعد المحاولة.</p></sc-if>
+    </section>
     <sc-if value="{{ogMove.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogMove.msg}}</div></sc-if>
-    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="move" onClick="{{ogMoveGo}}">انقل</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
+    <div class="ft"><button type="button" class="{{ogMoveOkCls}}" data-og-ok="move" onClick="{{ogMoveGo}}">{{ogMoveOkLbl}}</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
   </div>
 </div>
 </sc-if>

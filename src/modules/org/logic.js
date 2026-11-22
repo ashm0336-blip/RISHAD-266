@@ -185,9 +185,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (e) {}
     const h = this._ogHost();
     h.ready && this._ogTry(() => h.ready(), null);
+    this._ogTry(() => KIVO.BassamNav.fit(!0), null);   /* العمودان من 1024: القائمةُ الجانبية تُطوى مؤقتاً ما دام العرضُ ≤ 1280 */
   }
   componentWillUnmount() {
     KIVO.BassamOrgRoute.screen === this.__ogApi && (KIVO.BassamOrgRoute.screen = null);
+    this._ogTry(() => KIVO.BassamNav.fit(!1), null);
     try {
       document.removeEventListener("keydown", this.__ogKey);
       window.removeEventListener("beforeunload", this.__ogUnload);
@@ -443,16 +445,38 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
     };
   }
+  /* V7 · د6 (قرار المالك): السحبُ والإفلات لا ينقل مباشرةً — يفتح نافذةَ «نقل إلى…» نفسَها معبّأةً بالأب الذي أُفلت عنده (وبموضع الترتيب dnd)،
+     فيُرى «الموضع بعد النقل» و«أثر النقل على الأنظمة» ولا يُحفظ شيءٌ قبل التأكيد. ما ترفضه قاعدةُ الموضع يُقال فوراً بنصّها كما كان */
   _ogDndMove(s, id, pos) {
     const D = KIVO.BassamDepts,
-      r = D && D.moveNode ? D.moveNode(s, id, pos) : { ok: !1, err: "غير متاح" };
-    if (!r || !r.ok) return void this.bsToast((r && r.err) || "تعذّر النقل", "err");
-    if (r.pid) {
-      const m = { ...(this.state.ogShut || {}) };
-      delete m[r.pid];
-      this.setState({ ogShut: m });
-    }
-    this.bsToast(r.msg, "ok");
+      n = this._ogTry(() => D.nodeOf(s), null),
+      t = this._ogTry(() => D.nodeOf(id), null);
+    if (!n || !t || s === id) return;
+    const pid = "inside" === pos ? id : t.pid || null,
+      why = this._ogTry(() => D.placeWhy({ id: s, dept: !!n.dept, sec: !!n.sec }, pid), "تعذّر النقل");
+    if (why) return void this.bsToast(why, "err");
+    this.setState({ ogDlg: { k: "move", id: s, pid: pid || "", msg: "", dnd: { ref: id, pos: pos, pid: pid || "", txt: "inside" === pos ? "" : ("before" === pos ? "قبل" : "بعد") + " «" + (t.name || "") + "»" } } });
+  }
+  /* V7 · د6 (قرار المالك) · «أثر النقل على الأنظمة»: للوحدة ولكل ما تحتها — ما سيُطفأ وما سيُفتح بالوراثة، بالأسماء. المصدرُ دالةُ الوراثة القائمة نفسُها
+     (_p44On ← BassamPerm.on) تُسأل مرتين: الآن، وكأنّ الوحدة تحت الأب الجديد (BassamDepts.asIfUnder — قراءةٌ بلا حفظ)؛ لا نسخةَ ثانية من القاعدة */
+  _ogMoveEffect(id, pid) {
+    const D = KIVO.BassamDepts,
+      off = this._ogTry(() => this._p44PlatOff(), []),
+      sys = this._ogTry(() => this._p44Sys().filter((x) => x.tg), []),
+      units = [id].concat(this._ogTry(() => D.descendantsOf(id) || [], [])),
+      read = () => units.map((u) => sys.map((x) => this._p44On(u, x, off))),
+      now = read(),
+      then = this._ogTry(() => D.asIfUnder(id, pid || null, read), null),
+      out = { off: [], on: [], nOff: 0, ok: !!then };
+    if (!then) return out;
+    units.forEach((u, a) => {
+      const name = (this._ogTry(() => D.nodeOf(u), null) || {}).name || u,
+        lost = sys.filter((x, b) => now[a][b] && !then[a][b]).map((x) => x.n),
+        got = sys.filter((x, b) => !now[a][b] && then[a][b]).map((x) => x.n);
+      lost.length && (out.off.push({ id: u, name: name, txt: lost.join(" · ") }), (out.nOff += lost.length));
+      got.length && out.on.push({ id: u, name: name, txt: got.join(" · ") });
+    });
+    return out;
   }
   _ogSetAll(open, rows) {
     const m = {};
@@ -560,6 +584,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         this.setState({ ogDlg: null });
         this.bsAck(m, "ok");
       };
+    /* جاء من السحب والإفلات ولم يُغيَّر الأبُ في النافذة: النقلُ بموضع الترتيب نفسِه (moveNode — قبل · بعد · داخل) */
+    const dnd = (this.state.ogDlg || {}).dnd;
+    if (dnd && dnd.pid === s) {
+      const r = D.moveNode(inf.id, dnd.ref, dnd.pos);
+      if (!r || !r.ok) return fail((r && r.err) || "تعذّر النقل");
+      if (r.pid) {
+        const m = { ...(this.state.ogShut || {}) };
+        delete m[r.pid];
+        this.setState({ ogShut: m });
+      }
+      return done(r.msg);
+    }
     if (inf.isNode) {
       const r = D.nodeSave(inf.id, { pid: s || null });
       return r && r.ok ? done(s ? "نُقلت تحت «" + ((D.nodeOf(s) || {}).name || "") + "»" : "صارت في الجذر") : fail((r && r.err) || "تعذّر النقل");
@@ -651,26 +687,33 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ogStepsOn: !inf.root,
     };
     if (inf.root) return v;
-    /* قائمةُ التهيئة: خمسُ خطواتٍ حقيقية — كلٌّ بحالته من البيانات الفعلية، والضغطُ يفتح تبويبَ الخطوة */
+    /* قائمةُ التهيئة: أربعُ خطواتٍ حقيقية — كلٌّ بحالته من البيانات الفعلية (لا حالةَ مخزَّنة)، والضغطُ يفتح تبويبَ الخطوة */
     const cs = this._capStateTxt(c.unit),   /* V7 P3-0: المصدرُ الواحد — «مفتوح — لم يُضبط» تنبيهٌ لا علامةُ تمام */
       capOk = !!cs.kind && cs.ok,
       /* الناقصُ يُقال بنصّه الكامل من المصدر الواحد (كما كان في قائمة التهيئة القديمة)، والمنجزُ بعدده — ونصُّ حالته في تلميح الخطوة */
       capTxt = "dept" === c.mode ? "المفعّل: " + sys.on : capOk || !cs.txt ? sys.on + " من " + sys.all + " مفعّلة" : cs.txt,
       units = inf.isUnit ? [c.unit] : this._ogTry(() => D.deptsUnder(c.unit) || [], []),
-      withRoles = units.filter((u) => {
-        const r = this._ogTry(() => this._p44E().rolesOf(u), null);
-        return !!r && ((Array.isArray(r) ? r : r.roles) || []).length > 0;
-      }).length,
-      rolesOk = units.length > 0 && withRoles === units.length,
-      rolesTxt = inf.isUnit ? (withRoles ? "أدوار الموظفين معرَّفة" : "لا أدوار للموظفين بعد") : units.length ? withRoles + " من " + KIVO.BassamCount(units.length, "وحدة") + " لها أدوار" : "لا وحدة تحتها بعد",
-      all4 = capOk && mg.length > 0 && rolesOk,
+      /* «الصلاحيات» (قرار المالك): منجزةٌ حين لا يبقى في الوحدة شخصٌ نشط بلا دور — والوحدةُ التي لا أشخاصَ فيها ناقصة. مشتقّةٌ من البيانات وحدها:
+         الأشخاصُ حساباتُ الوحدة (أو وحداتِ الفرع) غيرُ الموقوفة · والدورُ دورٌ قائمٌ في سجلّ وحدته (مديرُ الوحدة دورُه «مدير الوحدة») */
+      ppl = units.reduce((a, u) => {
+        const doc = this._ogTry(() => this._p44E().rolesOf(u), null) || {},
+          ids = ((Array.isArray(doc) ? doc : doc.roles) || []).map((r) => r && r.id),
+          rec = doc.people || {};
+        this._ogTry(() => this.p44PeopleOf(u, !1), [])
+          .filter((p) => !p.dis)
+          .forEach((p) => a.push(!!p.mgr || (!!(rec[p.ekey] || {}).role && ids.indexOf(rec[p.ekey].role) !== -1)));
+        return a;
+      }, []),
+      noRole = ppl.filter((x) => !x).length,
+      rolesOk = ppl.length > 0 && !noRole,
+      rolesTxt = !ppl.length ? "لا أشخاص فيها بعد" : noRole ? KIVO.BassamCount(noRole, "شخص") + " بلا دور" : "لكل شخص نشط دور",
       step = (k, t, st, ok, tab, more) => ({ k: k, t: t, st: st, ok: ok ? "true" : "false", mark: ok ? "✓" : "!", sr: ok ? "منجز" : "ناقص", tip: (more ? more + " — " : "") + (ok ? "منجز" : "ناقص") + " — افتح «" + this.OG_TABS[tab] + "»", go: this._ogGo(c.unit, tab) });
+    /* «المراجعة» حُذفت من الصف (قرار المالك): لم يكن لها معنى مستقلّ — كانت تكرّر اكتمالَ الخطوات قبلها */
     v.ogSteps = [
       step("node", "العقدة", inf.kind + " · في الهيكل", !0, "overview"),
       step("systems", "الأنظمة", capTxt, capOk, "systems", "site" === c.mode ? cs.txt : ""),
       step("admins", "المسؤول", mg.length ? "معيَّن: " + mg.map((m) => m.name || m.un).join("، ") : "لم يُعيَّن بعد", mg.length > 0, "admins"),
-      step("roles", "الصلاحيات", rolesTxt, rolesOk, "roles"),
-      step("review", "المراجعة", all4 ? "اكتملت الخطوات — راجع السجل" : "تكتمل بإنجاز ما قبلها", all4, "log"),
+      step("roles", "الصلاحيات", rolesTxt, rolesOk, "people"),
     ];
     return v;
   }
@@ -704,11 +747,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         p44Head: "السجل",
         p44Lead: "كل تغيير: من غيّر، ماذا تغيّر، ومن تأثّر.",
         ogLogRoot: !0,
-        ogLogRootTxt: "تغييرات أنظمة المنصة وحساباتها تُعرض في سجل الأنشطة والتغييرات، وتغييرات كل وحدة في تبويب «السجل» لها.",
-        ogLogRootGo: (ev) => {
-          ev && ev.preventDefault && ev.preventDefault();
-          this.canLeave({ leave: !0 }).then((y) => y && this._ogTry(() => KIVO.BassamNav.conGo("oplog", null), null));
-        },
+        ogLogRootTxt: "تغييرات مستوى المنصة تُعرض في «سجل الأنشطة والتغييرات» مفلترةً عليها — وتغييرات كل وحدة في تبويب «السجل» لها.",
+        /* قرارُ المالك: السجلُّ يُفتح مفلتراً على تغييرات مستوى المنصة (مفاتيح الأنظمة · مسؤولو المنصة) لا السجلَّ كلَّه — الفلترُ في الصفحة المضيفة (audOpenPlat) */
+        ogLogRootLinks: [
+          ["bassam_platform_v1", "تغييرات مفاتيح الأنظمة وإعدادات المنصة"],
+          ["bassam_auth_users_v1", "تغييرات حسابات الدخول ومسؤولي المنصة"],
+        ].map((x) => ({
+          k: x[0],
+          t: x[1],
+          go: (ev) => {
+            ev && ev.preventDefault && ev.preventDefault();
+            this.canLeave({ leave: !0 }).then((y) => {
+              if (!y) return;
+              const h = this._ogHost();
+              h.openPlatLog ? h.openPlatLog(x[0]) : this._ogTry(() => KIVO.BassamNav.conGo("oplog", null), null);
+            });
+          },
+        })),
       });
     return this._p44Vals(c.unit, c.isNode, c.node, "log");
   }
@@ -858,6 +913,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ogMoveNewOn: dInf.isUnit && !dInf.isSec,
         ogMovePath: "__new" === dlg.pid ? ["إدارة عامة جديدة", dInf.name].join(" ← ") : this._ogPathTxt(dlg.pid || "", dInf.name),
         ogMoveGo: () => this._ogMoveGo(dInf),
+        ...(() => {
+          const e = this._ogMoveEffect(dInf.id, "__new" === dlg.pid ? null : dlg.pid || null),
+            dn = dlg.dnd && dlg.dnd.pid === dlg.pid ? dlg.dnd.txt : "";
+          return {
+            ogEffOff: e.off,
+            ogEffOffOn: e.off.length > 0,
+            ogEffOn: e.on,
+            ogEffOnOn: e.on.length > 0,
+            ogEffNone: e.ok && !e.off.length && !e.on.length,
+            ogEffErr: !e.ok,
+            ogMoveOrder: dn,
+            ogMoveOrderOn: !!dn,
+            /* ما سيُطفأ يُذكر في زرّ التأكيد صراحةً */
+            ogMoveOkLbl: e.off.length ? "انقل وأطفئ ما ذُكر (" + e.nOff + ")" : "انقل",
+            ogMoveOkCls: "bs-btn " + (e.off.length ? "bs-btn--danger" : "bs-btn--primary"),
+          };
+        })(),
       });
     if (v.ogDelOn)
       Object.assign(v, {

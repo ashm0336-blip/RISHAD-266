@@ -123,7 +123,7 @@ test('ب1 · the mounted screen registers its API for the shell and the settings
   W.page.componentDidMount();
   deq(Object.keys(W.R.screen).sort(), ['canLeave', 'dirty', 'go', 'href', 'route']);
   deq(J(W.R.screen.route()), { mode: 'site', unit: A, tab: 'roles' }); assert.equal(W.R.screen.href(), '#/sysadmin/org/' + A + '/roles');
-  deq(W.hostCalls, [['ready']], 'the host is told the screen is mounted (it then renders its two slots)');
+  deq(W.hostCalls, [['ready'], ['fit', true]], 'the host is told the screen is mounted, and the shell is asked for the width (it then renders its two slots)');
   W.page.componentWillUnmount(); assert.equal(W.R.screen, null);
 });
 
@@ -222,14 +222,29 @@ test('ب2 · multi-select: a checkbox per row (not the root), the bar with its t
   for (const s of ['data-og-bulk="on"', 'تفعيل أنظمة للمحدد', 'data-og-bulk="off"', 'إطفاء أنظمة للمحدد', 'data-og-bulk="clear"', 'إلغاء التحديد', 'role="checkbox" aria-checked="{{r.chk}}"']) assert.ok(ORG_VIEW.includes(s), s);
 });
 
-test('ب2 · drag and drop is kept: the same three zones through BassamDepts.moveNode', () => {
+test('ب2 · drag and drop is kept (the same three zones) but no longer moves directly: the drop opens «نقل إلى…» prefilled, and nothing is saved until confirm', () => {
   const W = orgWorld({ hash: '#/sysadmin/org' }); let v = W.render();
   assert.equal(rowOf(v, B).drag, 'true'); assert.equal(v.ogDndOn, true);
   const ev = (y) => ({ preventDefault() {}, stopPropagation() {}, dataTransfer: { setData() {} }, clientY: y, currentTarget: { getBoundingClientRect: () => ({ top: 0, height: 40 }), contains: () => true } });
   rowOf(v, B).trDragStart(ev(0)); v = W.render(); assert.match(rowOf(v, B).cls, /dragging/);
   rowOf(v, E).trDragOver(ev(20)); v = W.render(); assert.match(rowOf(v, E).cls, /dz-inside/, 'the middle of a node = under it');
+  const reg0 = JSON.stringify([W.D.nodes(), W.D.list()]);
   rowOf(v, E).trDrop(ev(20)); v = W.render();
-  assert.equal(W.D.nodeOf(B).pid, E, 'moved under the node'); assert.match(W.toasts.at(-1)[0], /نُقلت «TEST_ONLY إدارة ب» تحت «TEST_ONLY إدارة عامة فارغة»/);
+  /* قرارُ المالك: الإفلاتُ يفتح النافذةَ نفسَها معبّأةً — ولا يُحفظ شيء */
+  assert.equal(JSON.stringify([W.D.nodes(), W.D.list()]), reg0, 'the drop saved nothing'); assert.equal(W.D.nodeOf(B).pid, G);
+  assert.equal(v.ogMoveOn, true, 'the move dialog is open'); assert.equal(v.ogDlgName, 'TEST_ONLY إدارة ب', 'for the dragged unit (not the selected one)'); assert.equal(v.ogMove.pid, E, 'the drop target is prefilled');
+  assert.equal(v.ogMovePath, 'TEST_ONLY قطاع ← TEST_ONLY إدارة عامة فارغة ← TEST_ONLY إدارة ب'); assert.equal(v.ogEffNone, true); assert.equal(v.ogMoveOkLbl, 'انقل');
+  v.ogDlgClose(); v = W.render(); assert.equal(v.ogMoveOn, false); assert.equal(JSON.stringify([W.D.nodes(), W.D.list()]), reg0, 'cancel: still nothing saved');
+  rowOf(v, B).trDragStart(ev(0)); rowOf(W.render(), E).trDragOver(ev(20)); rowOf(W.render(), E).trDrop(ev(20)); W.render().ogMoveGo(); v = W.render();
+  assert.equal(W.D.nodeOf(B).pid, E, 'confirm: moved under the node'); assert.match(W.acks.at(-1)[0], /نُقلت «TEST_ONLY إدارة ب» تحت «TEST_ONLY إدارة عامة فارغة»/); assert.equal(v.ogMoveOn, false);
+  /* إفلاتٌ على طرف صف = ترتيب: النافذةُ تذكره، والتأكيدُ ينقل بالموضع نفسِه (moveNode) */
+  rowOf(v, E).trDragStart(ev(0)); rowOf(W.render(), G).trDragOver(ev(2)); rowOf(W.render(), G).trDrop(ev(2)); v = W.render();
+  assert.equal(v.ogMoveOn, true); assert.equal(v.ogMoveOrderOn, true); assert.equal(v.ogMoveOrder, 'قبل «TEST_ONLY إدارة عامة»');
+  const order0 = W.D.nodes().map((x) => x.id).join(); v.ogMoveGo(); const order1 = W.D.nodes().map((x) => x.id);
+  assert.notEqual(order1.join(), order0); assert.ok(order1.indexOf(E) < order1.indexOf(G), 'placed before the drop row');
+  /* ما ترفضه قاعدةُ الموضع يُقال فوراً بلا نافذة */
+  v = W.render(); rowOf(v, G).trDragStart(ev(0)); rowOf(W.render(), A).trDragOver(ev(20)); rowOf(W.render(), A).trDrop(ev(20)); v = W.render();
+  assert.equal(v.ogMoveOn, false);
   rowOf(v, A).trDragStart(ev(0)); rowOf(W.render(), B).trDragOver(ev(20)); v = W.render();
   assert.doesNotMatch(rowOf(v, B).cls, /dz-inside/, 'a department is a leaf: no «under»'); assert.match(rowOf(v, B).cls, /dz-(before|after)/);
   for (const a of ['draggable="{{r.drag}}"', 'onDragStart="{{r.trDragStart}}"', 'onDragOver="{{r.trDragOver}}"', 'onDrop="{{r.trDrop}}"', 'onDragEnd="{{r.trDragEnd}}"']) assert.ok(ORG_VIEW.includes(a), a);
@@ -282,7 +297,8 @@ test('ب3 · the add dialog from both entry points: «+ إضافة» (no parent)
   assert.equal(W.render().ogAdd.msg, W.D.placeWhy({ id: '', dept: true }, A), 'the placement rule\'s own reason');
   /* القالب: نافذةٌ واحدة بحقولها */
   const dlg = ORG_VIEW.slice(ORG_VIEW.indexOf('data-og-dlg="add"'), ORG_VIEW.indexOf('data-og-dlg="rename"'));
-  for (const s of ['إضافة إلى الهيكل', '<span>الاسم</span>', '<span>نوع العقدة</span>', '+ نوع جديد…', '<span>العقدة الأب</span>', 'الموضع: <b', 'أنظمة الوحدة الجديدة', 'أضف العقدة', 'إلغاء']) assert.ok(dlg.includes(s), 'add dialog: ' + s);
+  for (const s of ['إضافة إلى الهيكل', '<span>الاسم</span>', '<span>نوع العقدة</span>', '+ نوع جديد…', '<span>العقدة الأب</span>', 'الموضع: <b', 'أنظمة الوحدة الجديدة', 'أضف العقدة', 'إلغاء',
+    'تنسخ الوحدة سجلَّ أبيها كما هو الآن، ومفتاح المنصة فوق الجميع — ما يُعاد تشغيله على المنصة يصلها كما يصل أباها']) assert.ok(dlg.includes(s), 'add dialog: ' + s);
   assert.equal(ORG_VIEW.split('data-og-dlg="add"').length, 2, 'one add dialog');
 });
 
@@ -323,6 +339,32 @@ test('ب3 · rename and «نقل إلى…» live in «الموضع وأفعال
   assert.equal(orgWorld({ hash: '#/sysadmin/org/' + S1 + '/overview' }).render().ogActAddOn, false, 'nothing is added under a section');
 });
 
+test('«نقل إلى…» · «أثر النقل على الأنظمة»: what will be switched OFF and what will open by inheritance — by name, for the unit and everything under it; the confirm button says it; from the one inheritance source', () => {
+  /* G يفتح staff · plan · tasks — E يفتح staff · daily: نقلُ إدارة أ (وقسمُها) من G إلى E يُطفئ اثنين ويفتح واحداً */
+  const W = orgWorld({ hash: '#/sysadmin/org/' + A + '/overview', caps: { [G]: ['staff', 'plan', 'tasks'], [E]: ['staff', 'daily'] } }); let v = W.render();
+  const reg0 = JSON.stringify([W.D.nodes(), W.D.list()]);
+  v.ogMoveOpen(); v = W.render();
+  assert.equal(v.ogEffNone, true, 'the current parent: nothing changes'); assert.equal(v.ogMoveOkLbl, 'انقل'); assert.match(v.ogMoveOkCls, /bs-btn--primary/); deq(J([v.ogEffOff, v.ogEffOn]), [[], []]);
+  v.ogMoveOnPid({ target: { value: E } }); v = W.render();
+  deq(J(v.ogEffOff), [{ id: A, name: 'TEST_ONLY إدارة أ', txt: 'التشغيل الميداني · المهام' }, { id: S1, name: 'TEST_ONLY قسم أ١', txt: 'التشغيل الميداني · المهام' }], 'OFF: the unit and what is under it, by name');
+  deq(J(v.ogEffOn), [{ id: A, name: 'TEST_ONLY إدارة أ', txt: 'المتابعة اليومية' }, { id: S1, name: 'TEST_ONLY قسم أ١', txt: 'المتابعة اليومية' }], 'opened by inheritance, by name');
+  assert.equal(v.ogEffNone, false); assert.equal(v.ogMoveOkLbl, 'انقل وأطفئ ما ذُكر (4)', 'the confirm button says what it switches off'); assert.match(v.ogMoveOkCls, /bs-btn--danger/);
+  /* إلى الجذر: لا أبَ يقيّد ⇒ يُفتح ما كان G يطفئه، ولا يُطفأ شيء */
+  v.ogMoveOnPid({ target: { value: '' } }); v = W.render();
+  deq(J(v.ogEffOff), []); assert.equal(v.ogEffOnOn, true); assert.match(v.ogEffOn[0].txt, /المتابعة اليومية/); assert.equal(v.ogMoveOkLbl, 'انقل');
+  /* الحسابُ قراءةٌ افتراضية: لم يُحفظ شيء ولم يتغيّر الهيكل، والمصدرُ دالةُ الوراثة القائمة (asIfUnder) */
+  assert.equal(JSON.stringify([W.D.nodes(), W.D.list()]), reg0); assert.equal(W.D.nodeOf(A).pid, G); deq(J(W.D.ancestorsOf(A)), [G, SEC]);
+  const f = ORG_SRC.slice(ORG_SRC.indexOf('  _ogMoveEffect('), ORG_SRC.indexOf('  _ogSetAll('));
+  assert.match(f, /D\.asIfUnder\(id, pid \|\| null, read\)/); assert.match(f, /this\._p44On\(u, x, off\)/); assert.doesNotMatch(f, /ancestorsOf|rawCap|hasCap|deptCap/, 'no second copy of the inheritance rule');
+  /* وحدةٌ مستقلةُ السجلّ تحت أبٍ أضيق: ما يطفئه الأبُ الجديد يُذكر باسمها وحدها */
+  const W2 = orgWorld({ hash: '#/sysadmin/org/' + Z + '/overview', caps: { [G]: ['staff'] } }); let y = W2.render(); y.ogMoveOpen(); y = W2.render();
+  y.ogMoveOnPid({ target: { value: G } }); y = W2.render();
+  assert.equal(y.ogEffOff.length, 1); assert.equal(y.ogEffOff[0].id, Z); assert.equal(y.ogEffOnOn, false); assert.match(y.ogMoveOkLbl, /^انقل وأطفئ ما ذُكر \(\d+\)$/);
+  /* القالب: البطاقةُ تحت «الموضع بعد النقل» */
+  const dlg = ORG_VIEW.slice(ORG_VIEW.indexOf('data-og-dlg="move"'), ORG_VIEW.indexOf('data-og-dlg="delete"'));
+  assert.ok(dlg.indexOf('الموضع بعد النقل') < dlg.indexOf('aria-label="أثر النقل على الأنظمة"')); for (const t of ['سيُطفأ بحكم الأب الجديد', 'سيُفتح بالوراثة', 'لا يتغيّر شيء في الأنظمة', '{{ogMoveOkLbl}}']) assert.ok(dlg.includes(t), t);
+});
+
 test('ب3 · delete: a non-empty node is refused with the reason (nothing asked, nothing deleted); an empty one asks once; a department goes to the server inventory', async () => {
   /* عقدةٌ تحتها توابع */
   let W = orgWorld({ hash: '#/sysadmin/org/' + G + '/overview' }), v = W.render();
@@ -356,8 +398,8 @@ test('ب3 · delete: a non-empty node is refused with the reason (nothing asked,
 });
 
 /* ══ ب10 · نظرة عامة ══ */
-test('ب10 · overview: the summary cells open their tabs; «ما تحتها»; the setup checklist is five real steps with their state', async () => {
-  const docs = { [A]: { roles: [{ id: 'r1', name: 'TEST_ONLY دور', desc: '', sys: {} }], people: {} } };
+test('ب10 · overview: the summary cells open their tabs; «ما تحتها»; the setup checklist is four real steps derived from data (no stored state)', async () => {
+  const docs = { [A]: { roles: [{ id: 'r1', name: 'TEST_ONLY دور', desc: '', sys: {} }], people: { TEST_ONLY_e1: { role: 'r1', ex: [] }, TEST_ONLY_e2: { role: 'r1', ex: [] } } } };
   const W = orgWorld({ hash: '#/sysadmin/org/' + A + '/overview', caps: { [A]: ['staff', 'plan'] }, docs }); let v = W.render();
   assert.equal(v.ogOnOverview, true); assert.equal(v.p44Show, false);
   deq(J(v.ogSum.map((c) => [c.k, c.t, c.v])), [['admins', 'المسؤول', 'TEST_ONLY مدير أ'], ['people', 'الأشخاص', '3'], ['systems', 'الأنظمة المفعّلة', '2 من ' + W.page.p44SysCount(A).all]]);
@@ -365,21 +407,28 @@ test('ب10 · overview: the summary cells open their tabs; «ما تحتها»; 
   v = W.open('#/sysadmin/org/' + A + '/overview');
   assert.equal(v.ogPosTxt, 'TEST_ONLY قطاع ← TEST_ONLY إدارة عامة ← TEST_ONLY إدارة أ');
   deq(J(v.ogKids.map((k) => [k.name, k.kind, k.href])), [['TEST_ONLY قسم أ١', 'قسم', '#/sysadmin/org/' + S1 + '/overview']]); assert.equal(v.ogKidsN, '1 تابع');
-  /* الخطوات: العقدة · الأنظمة · المسؤول · الصلاحيات · المراجعة — كلٌّ بحالته، والضغطُ يفتح تبويبه */
-  deq(J(v.ogSteps.map((s) => [s.k, s.t, s.ok, s.sr])), [['node', 'العقدة', 'true', 'منجز'], ['systems', 'الأنظمة', 'true', 'منجز'], ['admins', 'المسؤول', 'true', 'منجز'], ['roles', 'الصلاحيات', 'true', 'منجز'], ['review', 'المراجعة', 'true', 'منجز']]);
-  const dest = { node: 'overview', systems: 'systems', admins: 'admins', roles: 'roles', review: 'log' };
+  /* الخطوات (قرارُ المالك): العقدة · الأنظمة · المسؤول · الصلاحيات — كلٌّ بحالته من البيانات، والضغطُ يفتح تبويبه. «المراجعة» حُذفت: لم يكن لها معنى مستقل */
+  deq(J(v.ogSteps.map((s) => [s.k, s.t, s.ok, s.sr])), [['node', 'العقدة', 'true', 'منجز'], ['systems', 'الأنظمة', 'true', 'منجز'], ['admins', 'المسؤول', 'true', 'منجز'], ['roles', 'الصلاحيات', 'true', 'منجز']]);
+  assert.equal(v.ogSteps[3].st, 'لكل شخص نشط دور', 'the manager counts by his badge; both employees hold an existing role');
+  const dest = { node: 'overview', systems: 'systems', admins: 'admins', roles: 'people' };
   for (const k of Object.keys(dest)) { W.open('#/sysadmin/org/' + A + '/overview').ogSteps.find((s) => s.k === k).go(); await W.tick(); assert.equal(W.location.hash, '#/sysadmin/org/' + A + '/' + dest[k], 'step ' + k + ' opens ' + dest[k]); }
   /* وحدةٌ ناقصة: بلا مدير · سقفٌ مفتوح لم يُضبط · بلا أدوار ⇒ ناقص، والمراجعةُ تتبعها */
   const Y = orgWorld({ hash: '#/sysadmin/org/' + Z + '/overview' }), y = Y.render();
-  deq(J(y.ogSteps.map((s) => [s.k, s.ok])), [['node', 'true'], ['systems', 'false'], ['admins', 'false'], ['roles', 'false'], ['review', 'false']]);
-  assert.match(y.ogSteps[1].st, /^مفتوح — لم يُضبط: لا سقفَ لها ولا لأصولها/, 'the cap state from its one source (capState), in full when the step is not done'); assert.match(y.ogSteps[1].tip, /^مفتوح — لم يُضبط[\s\S]* — ناقص — افتح «الأنظمة»$/); assert.equal(y.ogSteps[2].st, 'لم يُعيَّن بعد'); assert.equal(y.ogSteps[3].st, 'لا أدوار للموظفين بعد');
+  deq(J(y.ogSteps.map((s) => [s.k, s.ok])), [['node', 'true'], ['systems', 'false'], ['admins', 'false'], ['roles', 'false']]);
+  assert.match(y.ogSteps[1].st, /^مفتوح — لم يُضبط: لا سقفَ لها ولا لأصولها/, 'the cap state from its one source (capState), in full when the step is not done'); assert.match(y.ogSteps[1].tip, /^مفتوح — لم يُضبط[\s\S]* — ناقص — افتح «الأنظمة»$/); assert.equal(y.ogSteps[2].st, 'لم يُعيَّن بعد'); assert.equal(y.ogSteps[3].st, 'لا أشخاص فيها بعد', 'a unit with no people is incomplete');
+  /* «الصلاحيات»: شخصٌ نشط بلا دور ⇒ ناقصة بعدده · دورٌ محذوف لا يُحسب · الموقوفُ لا يُحسب */
+  const one = (people, users) => orgWorld({ hash: '#/sysadmin/org/' + A + '/overview', docs: { [A]: { roles: docs[A].roles, people } }, ...(users ? { users } : {}) }).render().ogSteps[3];
+  let st = one({ TEST_ONLY_e1: { role: 'r1', ex: [] } }); assert.equal(st.ok, 'false'); assert.equal(st.st, '1 شخص بلا دور');
+  st = one({ TEST_ONLY_e1: { role: 'r1', ex: [] }, TEST_ONLY_e2: { role: 'TEST_ONLY_gone', ex: [] } }); assert.equal(st.ok, 'false', 'a role that no longer exists is not a role');
+  st = one({ TEST_ONLY_e1: { role: 'r1', ex: [] } }, ORG.users.map((u) => (u.id === 'TEST_ONLY_a2' ? { ...u, dis: 1 } : u))); assert.equal(st.ok, 'true', 'a frozen account is not an active person');
+  assert.doesNotMatch(ORG_SRC.slice(ORG_SRC.indexOf('    /* قائمةُ التهيئة:'), ORG_SRC.indexOf('  ogTabSystems(')), /localStorage|setState|\.save\(|setDept|setCap/, 'the checklist stores nothing: every step is derived');
   assert.equal(y.ogSum[0].v, 'بلا مدير');
   /* عقدةٌ إشرافية: «الصلاحيات» من وحداتها */
-  const g = W.open('#/sysadmin/org/' + G + '/overview'); assert.equal(g.ogSteps[3].st, '1 من 3 وحدة لها أدوار'); assert.equal(g.ogSteps[3].ok, 'false');
+  const g = W.open('#/sysadmin/org/' + G + '/overview'); assert.equal(g.ogSteps[3].ok, 'false'); assert.match(g.ogSteps[3].st, /^\d+ شخص بلا دور$/, 'a node: the people of its units (S1 and B have people without roles)');
   /* صف «المنصة كلها»: ملخّصٌ وما تحتها وإضافة — بلا قائمة تهيئة */
   const r = W.open('#/sysadmin/org/platform/overview'); assert.equal(r.ogStepsOn, false); assert.equal(r.ogSum[0].v, 'TEST_ONLY المالك'); deq(r.ogKids.map((k) => k.name), ['TEST_ONLY قطاع', 'TEST_ONLY إدارة بلا أب']);
   /* القالب: الخطواتُ في صفٍّ واحد */
-  assert.match(ORG_CSS, /\.og-steps\{[^}]*grid-template-columns:repeat\(5,/); assert.match(ORG_VIEW, /<ol class="og-steps">/);
+  assert.match(ORG_CSS, /\.og-steps\{[^}]*grid-template-columns:repeat\(4,/); assert.match(ORG_VIEW, /<ol class="og-steps">/);
   for (const s of ['aria-label="ملخّص الوحدة"', 'aria-label="الموضع وأفعال الوحدة"', 'aria-label="ما تحتها"', 'aria-label="قائمة التهيئة"']) assert.ok(ORG_VIEW.includes(s), s);
 });
 
@@ -393,7 +442,7 @@ test('ب1 · the unit header: path · name · kind · manager state · «الت�
 });
 
 /* ══ صف «المنصة كلها» والتبويبات القائمة ══ */
-test('the root row: «الأنظمة» = the platform switches; «المسؤولون» = the «مدير المنصة» card; «السجل» points to the activity log; no unit picker inside «الأنظمة»', async () => {
+test('the root row: «الأنظمة» = the platform switches; «المسؤولون» = the «مدير المنصة» card; «السجل» opens the activity log filtered to platform-level changes; no unit picker inside «الأنظمة»', async () => {
   const W = orgWorld({ hash: '#/sysadmin/org/platform/systems', off: ['seized'] }); let v = W.render();
   assert.equal(v.p44Show, true); assert.equal(v.p44OnSys, true); assert.equal(v.p44Unit.n, 'المنصة كلها'); assert.equal(v.p44SysNavOn, false, 'no manager menu for the platform row');
   assert.equal(v.p44SysRows.find((r) => r.k === 'seized').isOn, false); assert.equal('p44Units' in v, false, 'the «الوحدة» picker is gone');
@@ -402,7 +451,11 @@ test('the root row: «الأنظمة» = the platform switches; «المسؤول
   deq(J(W.platW.at(-1).mods.off), [], 'saved through the existing platform writer (mods.off)');
   v = W.open('#/sysadmin/org/platform/admins'); assert.equal(v.ogOnAdmins, true); assert.equal(v.p44IsSup, true); assert.equal(v.p44IsMgr, false); assert.equal(v.p44Role.n, 'مدير المنصة'); assert.equal(v.p44Head, 'المسؤولون');
   v = W.open('#/sysadmin/org/platform/log'); assert.equal(v.ogLogRoot, true); assert.equal(v.p44OnLog, false);
-  v.ogLogRootGo({ preventDefault() {} }); await W.tick(); deq(W.hostCalls.at(-1), ['conGo', 'oplog', null]);
+  /* قرارُ المالك: يفتح سجلَّ الأنشطة مفلتراً على تغييرات مستوى المنصة (مفاتيح الأنظمة · مسؤولو المنصة) — لا السجلَّ كلَّه */
+  deq(J(v.ogLogRootLinks.map((l) => [l.k, l.t])), [['bassam_platform_v1', 'تغييرات مفاتيح الأنظمة وإعدادات المنصة'], ['bassam_auth_users_v1', 'تغييرات حسابات الدخول ومسؤولي المنصة']]);
+  v.ogLogRootLinks[0].go({ preventDefault() {} }); await W.tick(); deq(W.hostCalls.at(-1), ['openPlatLog', 'bassam_platform_v1']);
+  v.ogLogRootLinks[1].go({ preventDefault() {} }); await W.tick(); deq(W.hostCalls.at(-1), ['openPlatLog', 'bassam_auth_users_v1']);
+  assert.ok(!W.hostCalls.some((c) => c[0] === 'conGo'), 'never the unfiltered log');
   /* وحدة: «المسؤولون» بطاقةُ «مدير الوحدة» القائمة — و«الأدوار» أدوارُ الموظفين وحدها */
   v = W.open('#/sysadmin/org/' + A + '/admins'); assert.equal(v.p44IsMgr, true); assert.equal(v.p44MgrFull, true); assert.equal(v.p44MgrAddOn, true); assert.match(v.p44Lead, /مسؤولو «TEST_ONLY إدارة أ»: 1 مدير/);
   v = W.open('#/sysadmin/org/' + A + '/roles'); deq(J(v.p44RoleList), [], 'no fixed cards in the roles list'); assert.equal(v.p44NoRole, true); assert.equal('p44IsMgr' in v, false);
@@ -438,8 +491,14 @@ test('ب12 entry · the manager\'s «الإعدادات ← الصلاحيات»
 
 /* ══ ب13 · هيكلُ العرض الضيّق ══ */
 test('ب13 skeleton · narrow width: one column, the unit button opens the tree as a bottom sheet, a scrollable tab strip, 44px targets, dialogs fill the width', () => {
-  const narrow = ORG_CSS.slice(ORG_CSS.indexOf('@media (max-width:1280px){'));
-  assert.ok(narrow.length > 200, 'the narrow rules exist (a token breakpoint)');
+  /* قرارُ المالك: العمودان من 1024 فما فوق — ما دون 1024 عمودٌ واحد؛ من 1024 إلى 1280 الشجرةُ أضيق؛ وأهدافُ اللمس 44px في العمود الواحد وعلى كل شاشة لمس */
+  assert.doesNotMatch(ORG_CSS, /@media \(max-width:1280px\)\{/, 'the old 1280 single-column breakpoint is gone');
+  const narrow = ORG_CSS.slice(ORG_CSS.indexOf('@media (max-width:1023px){'));
+  assert.ok(narrow.length > 200, 'the narrow rules exist');
+  const mid = ORG_CSS.slice(ORG_CSS.indexOf('@media (min-width:1024px) and (max-width:1280px){')); assert.ok(mid.length > 50);
+  assert.match(mid, /^[^}]*\{\s*\.og-grid\{grid-template-columns:minmax\(0,40fr\) minmax\(0,60fr\)/, 'two columns, a narrower tree'); assert.match(mid, /\[data-og-col="kids"\],\.og-rw \[data-og-col="people"\]\{display:none\}/);
+  assert.match(ORG_CSS, /@media \(max-width:1023px\),\(pointer:coarse\)\{/, '44px targets on any touch or pen screen');
+  assert.match(ORG_SRC, /KIVO\.BassamNav\.fit\(!0\)/); assert.match(ORG_SRC, /KIVO\.BassamNav\.fit\(!1\)/);
   assert.match(narrow, /\.og-grid\{grid-template-columns:minmax\(0,1fr\)\}/, 'one column');
   assert.match(ORG_CSS, /\.og-sheet-hd,\.og-ub\{display:none\}/, 'the unit button is for the narrow layout only'); assert.match(narrow, /\.og-ub\{display:flex;[^}]*min-height:52px/);
   assert.match(narrow, /\.og-treewrap\{display:none\}/); assert.match(narrow, /\.og\[data-og-sheet="true"\] \.og-treewrap\{display:flex;position:fixed;inset:0;[^}]*align-items:flex-end/, 'the tree is a sheet from the bottom');

@@ -175,6 +175,8 @@ class Component extends DCLogic {
         const narrow = window.innerWidth <= 1024;
         if (narrow && !this._wasNarrow && this.state.sidebarOpen) this.setState({ sidebarOpen: false });
         this._wasNarrow = narrow;
+        const tightW = window.innerWidth <= 1280;   /* V7 · د6: عبورُ عتبة الطيّ المؤقت يعيد الرسم */
+        if (tightW !== this._wasTightW) { this._wasTightW = tightW; this.__fitWant && this.setState({ conTick: (this.state.conTick | 0) + 1 }); }
       };
       window.addEventListener("resize", this._onResizeSB);
       /* ═══ العنوان: الرجوع/التقدّم أو رابطٌ ملصوق → نفس حرّاس الصفحة المحفوظة ═══ */
@@ -1199,7 +1201,10 @@ class Component extends DCLogic {
     /* CORE-02 S7: صفحةُ «مركز إدارة رشاد» (لمسؤول المنصة وحده — _pageAllowed) مساحةٌ مستقلّة: شريطُها تنقّلُ المركز وحده،
        ممدودٌ افتراضاً وطيُّه على الحاسوب conCx (لا يمسّ sidebarOpen في الصفحات التشغيلية) · على الشاشة الضيّقة الدرجُ نفسُه */
     const sbConsole = platPage && !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());
-    const sbOpen = sbConsole && wide ? !this.state.conCx : open;
+    /* V7 · د6 (قرار المالك — العمودان من 1024): شاشةُ «الإدارات والصلاحيات» تطلب العرض (BassamNav.fit) — فتُطوى القائمةُ الجانبية ما دام العرضُ ≤ 1280
+       (التابلت الأفقي) إلى أن يفتحها المستخدم بزرّها؛ طيٌّ مؤقت لا يُحفظ ولا يمسّ تفضيلَه (conCx · sidebarOpen) */
+    const tight = !!this.__fitWant && !this.__fitUser && wide && window.innerWidth <= 1280;
+    const sbOpen = sbConsole && wide ? !(this.state.conCx || tight) : open && !tight;
     const slide = (this.__sbToggled && wide) ? (sbOpen ? "animation:bsSlideOpen .3s ease-in-out;" : "animation:bsSlideClose .3s ease-in-out;") : "";
     /* مفتاح الصفحة في منظومة الصلاحيات مقابل مفتاح التنقل */
     const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps", staffing: "staff", plan: "plan", daily: "daily", tasks: "tasks", irshad: "irshad", admin: "admin" };
@@ -1284,6 +1289,7 @@ class Component extends DCLogic {
       /* الطبقة المعتمة تظهر مع الشريط المفتوح — والـCSS يقصرها على الشاشات الصغيرة */
       scrimOn: !!this.state.sidebarOpen,
       toggleSidebar: () => {
+        if (tight) { this.__fitUser = true; this.setState({ conTick: (this.state.conTick | 0) + 1 }); return; }   /* V7 · د6: المستخدمُ فتحها — لا تُطوى ثانيةً في هذه الزيارة */
         if (sbConsole && typeof window !== "undefined" && window.innerWidth > 1024) {
           const v = !this.state.conCx; this._conCxRaw(v ? "1" : "0");
           this.setState({ conCx: v }); return;
@@ -1432,6 +1438,8 @@ class Component extends DCLogic {
       __nav: (KIVO.BassamNav = { go: (k, asked) => { try { (k === "sysadmin" ? goSys : go(k, asked))(); } catch (e) {} },
         again: () => this.setState({ navPending: true }, () => this.setState({ navPending: false })),   /* V7 UX: «أعد المحاولة» في حالات الصفحة — يُعاد تركيبُ الصفحة المفتوحة فتعيد قراءتَها */
         conSync: (s) => this._conSync(s), conGo: (tab, sub) => this._conGo(tab, sub, false),
+        /* V7 · د6: صفحةٌ تحتاج العرض كلَّه تطلب طيَّ القائمة الجانبية مؤقتاً (true عند تركيبها · false عند إزالتها) */
+        fit: (on) => { if (!!on === !!this.__fitWant) return; this.__fitWant = !!on; this.__fitUser = false; Promise.resolve().then(() => this.setState({ conTick: (this.state.conTick | 0) + 1 })); },
         /* CORE-02 S8: «عرض الكل» في «أحداث المنصة الأخيرة» يفتح الجرس (بعد نقرة الفتح كي لا يغلقه مستمعُ النقر خارجه) */
         bell: () => setTimeout(() => { if (!this.state.nfOpen) this.setState({ nfOpen: true, nfToast: null }, () => this._nfReload()); }, 0) }),
       goAdmin: () => { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); }, goProfile: (ev) => { try { if (ev && ev.target && ev.target.closest && ev.target.closest(".s-logout")) return; } catch (e) {} go("profile")(); }, bsVerTxt: "الإصدار " + (KIVO.__BS_VER || ""),

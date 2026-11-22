@@ -454,6 +454,13 @@
       while (c && !seen[c] && n++ < 64) { seen[c] = 1; out.push(c); c = this.parentIdOf(c); }
       return out;
     },
+    /* V7 · د6 (قرار المالك — «أثر النقل على الأنظمة»): قراءةٌ افتراضية بلا حفظ — تُشغَّل fn والهيكلُ كأنّ id تحت pid (null = الجذر)، فيُسأل مصدرُ الوراثة
+       القائم نفسُه (كلُّ قارئٍ للأسلاف يمرّ بـ parentIdOf) عمّا يكون «بعد النقل» بدل نسخةٍ ثانية من قاعدته؛ لا يكتب شيئاً ولا يغيّر الهيكل، ويُعاد الأصلُ دائماً */
+    asIfUnder: function(id, pid, fn){
+      var self = this, real = this.parentIdOf;
+      this.parentIdOf = function(x){ return x === id ? (pid || null) : real.call(self, x); };
+      try { return fn(); } finally { this.parentIdOf = real; }
+    },
     descendantsOf: function(id){
       var self = this, out = [], seen = {};
       (function walk(p){

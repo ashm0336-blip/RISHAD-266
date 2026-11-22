@@ -107,7 +107,7 @@ export function orgWorld(o = {}) {
     },
     BassamFind: { dig: (s) => String(s || '').toLowerCase(), filter: (_q, rows) => rows },
     BassamCount: count,
-    BassamNav: { conGo: (...a) => hostCalls.push(['conGo', ...a]) },
+    BassamNav: { conGo: (...a) => hostCalls.push(['conGo', ...a]), fit: (on) => hostCalls.push(['fit', !!on]) },
     bsConfirm: async (q) => { confirms.push(q); return typeof o.confirm === 'function' ? o.confirm(q) : o.confirm !== false; },
   });
   /* المحرّكُ الحقيقي يقرأ سجلَّي الوحدة من المخزن نفسِه الذي تقرأ منه خدمةُ الهيكل (مخزنٌ واحد في الذاكرة) */
@@ -121,6 +121,7 @@ export function orgWorld(o = {}) {
     deptDel: (t) => hostCalls.push(['deptDel', t && t.id]),
     switchDept: (id) => hostCalls.push(['switchDept', id]),
     exportAll: () => hostCalls.push(['exportAll']),
+    openPlatLog: (k) => hostCalls.push(['openPlatLog', k]),
     acctCtx: () => ({ l: {}, now: Date.now() }), adRole: (u) => (u.mgr ? 'مدير الإدارة' : 'TEST_ONLY دور'), adUnit: (u) => (D.nodeOf(u.role === 'gm' ? u.gid : u.deptId) || {}).name || '',
     adWhen: () => 'TEST_ONLY اليوم', adFull: () => 'TEST_ONLY وقت', ready: () => hostCalls.push(['ready']),
   }, o.host || {});

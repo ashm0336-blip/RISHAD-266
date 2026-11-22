@@ -79,6 +79,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         deptDel: (target) => this.deptDel(target),
         switchDept: (id) => this._adSwitchDept(() => KIVO.BassamDepts.setActive(id)),
         exportAll: () => this.__orgExportAll && this.__orgExportAll(),
+        openPlatLog: (k) => this.audOpenPlat(k),
         acctCtx: () => this._acctCtx(),
         adRole: (u) => this.adRole(u),
         adUnit: (u) => this.adUnit(u),
@@ -3284,6 +3285,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const q = {
       dept: sc.dept,
       etype: F.etype || "",
+      k: sc.site ? F.k || "" : "",   /* V7 · د6: تغييراتُ مستوى المنصة — سجلُّ مجموعةٍ بعينها (الخادمُ يفلتر بـk؛ لمدير المنصة في المركز وحده) */
       act: F.act || "",
       uid: F.uid || "",
       q: KIVO.BassamFind.dig(F.q || ""),
@@ -3311,6 +3313,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         },
       });
     });
+  }
+  /* V7 · د6: مجموعتا مستوى المنصة في سجل الأنشطة — المفتاحُ كما يخزّنه الخادم (aud.k) واسمُه في الواجهة */
+  AUD_PLAT = [
+    ["bassam_platform_v1", "مفاتيح الأنظمة وإعدادات المنصة"],
+    ["bassam_auth_users_v1", "حسابات الدخول ومسؤولو المنصة"],
+  ];
+  /* يفتح «سجل الأنشطة والتغييرات» مفلتراً على مجموعةٍ من مستوى المنصة (من تبويب «السجل» لصف «المنصة كلها») */
+  audOpenPlat(k) {
+    const S = this.state.aud || {};
+    this.setState({ aud: { ...S, dept: "", f: { k: this.AUD_PLAT.some((o) => o[0] === k) ? k : this.AUD_PLAT[0][0] }, open: null, loaded: !1 } }, () => this._ovGo("oplog"));
   }
   audSetF(k, v) {
     const S = this.state.aud || {};
@@ -3601,7 +3613,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const fTo =
         inp("to", "", 130, "date", "إلى تاريخ");
     const fClr =
-        F.etype || F.act || F.uid || F.q || F.site || F.plan || F.day || F.from || F.to
+        F.etype || F.act || F.uid || F.q || F.site || F.plan || F.day || F.from || F.to || F.k
           ? h(
               "button",
               {
@@ -3625,6 +3637,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const fEt = [chip(!F.etype, "كل الكيانات", () => this.audSetF("etype", ""), "e_")].concat(
           A.ET_FILTER.map((o) => chip(F.etype === o[0], o[1], () => this.audSetF("etype", F.etype === o[0] ? "" : o[0]), "e" + o[0])),
         );
+    /* V7 · د6 (قرار المالك): تغييراتُ مستوى المنصة — مفاتيحُ الأنظمة وإعداداتُ المنصة · حساباتُ الدخول (ومنها مسؤولو المنصة) — يفتحه تبويبُ «السجل» لصف «المنصة كلها» مفلتراً */
+    const fPlat = [chip(!F.k, "كل المستويات", () => this.audSetF("k", ""), "k_")].concat(
+          this.AUD_PLAT.map((o) => chip(F.k === o[0], o[1], () => this.audSetF("k", F.k === o[0] ? "" : o[0]), "k" + o[0])),
+        );
     const fAct = [chip(!F.act, "كل الأفعال", () => this.audSetF("act", ""), "a_")].concat(
           A.ACT_FILTER.map((o) => chip(F.act === o[0], o[1], () => this.audSetF("act", F.act === o[0] ? "" : o[0]), "a" + o[0])),
         );
@@ -3634,6 +3650,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       h("div", { key: "g" + k, className: "adm-flt-r" }, h("span", { className: "adm-flt-l", id: "aud-fl-" + k }, lbl), h("div", { role: "group", "aria-labelledby": "aud-fl-" + k, className: cls }, kids));
     const filters = sc.site
       ? h("div", { key: "ft", className: "adm-flt" }, [
+          fGrp("k", "مستوى المنصة", "adm-chips adm-flt-c", fPlat),
           fGrp("e", "الكيان", "adm-chips adm-flt-c", fEt),
           fGrp("a", "الفعل", "adm-chips adm-flt-c", fAct),
           fGrp("q", "البحث", "adm-flt-f", [fDept, fUid, fQ, fSite]),
