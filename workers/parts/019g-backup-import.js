@@ -13,25 +13,40 @@
    · النسخةُ بالشكل القديم (بلا manifest): ما لا مقابلَ له لا يُسقط بصمت — يُعاد في skip (عند البدء) وفي summary.notTransferred (عند الفحص): المفتاح وسببُه. */
 var RSI_TTL = 3600e3, RSI_ROW = 200000, RSI_SEG = { f: 1000000, i: 4000000 }, RSI_MAX = 256e6, RSI_T = 'restore_preimage';
 /* المفتاحُ الكبير لا يُحمل كلُّه في الذاكرة: موردٌ تشغيليٌّ جذرُه خريطةٌ (يومٌ ← قيمة) يعلنه نظامُه هنا — [نمطُ الأعضاء التي تُقسم دفعاتٍ · أسرةُ الموارد: تُقسم معاً إن كبر أحدُها،
-   ويجب أن تكون كلُّها فارغةً في الهدف].
+   ويجب أن تكون كلُّها فارغةً في الهدف]. نمطٌ null = موردٌ لا ينقسم بأعضائه: يُرسل كلُّه دفعةً واحدة في طلبه (محدودةً بحجمه هو، لا تُضاف إلى بقية النسخة) ويُطبَّق كغيره داخل القاعدة.
    العميلُ يقسمه دفعاتٍ (≤ 1M حرف: الأعضاءُ المشتركة + مجموعةُ أيام)؛ وكلُّ دفعةٍ طلبٌ (phase:'slice'): أحكامُ الحفظ القائمة (applySave بعلامة الاستعادة) ثم تحويلُها
    صفوفاً بالمرمِّز القائم (ocConvert · ocPhysicalRows) تودَع في المؤقت؛ والاعتمادُ ينسخها بعباراتٍ تقرأ المؤقت نفسَه (لا يحمل العاملُ أجسامَها) داخل الدفعة الذرّية.
    الشروط: نسخةٌ قديمة · مديرُ المنصة · الموردُ فارغٌ في الهدف (وإلا فالمسارُ الواحد كما كان). */
 var RSI_SLICE = {
   'bassam_rounds_v1': ['^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$', ['bassam_rounds_v1', 'bassam_rounds_arc_v1']],
-  'bassam_rounds_arc_v1': ['^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$', ['bassam_rounds_v1', 'bassam_rounds_arc_v1']]
+  'bassam_rounds_arc_v1': ['^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$', ['bassam_rounds_v1', 'bassam_rounds_arc_v1']],
+  'bassam_plan_v1': [null, ['bassam_plan_v1']],   /* V7 · د6: المخططُ كلُّه في طلبه (جذرُه ليس خريطةَ أعضاء) — لا يُضاف إلى بقية النسخة */
+  'bassam_staffing_v3': [null, ['bassam_staffing_v3']],   /* V7 · د6: جدولُ الورديات كلُّه في طلبه — لا يُضاف إلى بقية النسخة */
+  'bassam_tasks_v1': ['^.', ['bassam_tasks_v1']],   /* V7 · د6: المهامُ خريطةُ أيام — تُقسم أياماً فلا تكبر كلفةُ طلبٍ بطول السجل */
+  'bassam_dreport_v1': ['^.', ['bassam_dreport_v1']],   /* V7 · د6: التقريرُ اليومي خريطةُ أيام — يُقسم أياماً */
 };
 var RSI_SLICE_MIN = 1500000;
-async function rsiSliceSpec(env, A, s, keys) {
+async function rsiSliceSpec(env, A, s, keys, mode) {
   var out = {};
   if (A.u.role !== 'super' || s.kind !== 'dept') return out;
   for (var n in RSI_SLICE) {
     if (!ocOwn(keys, n) || keys[n]) continue;
-    var free = true;
-    for (var e of RSI_SLICE[n][1]) { var v = parseJson(await opResourceGet(env, 'bsdept:' + s.departmentId + ':' + e), null); if (v && Object.keys(v).length) free = false; }
+    /* الاستبدالُ يطرح القائم فيُقسم دائماً؛ وغيرُه (الدمج) يُقسم إن كانت الأسرةُ فارغةً في الهدف — يُعرف بعدٍّ لا بتحميل */
+    var free = mode === 'replace' || !(await env.DB.prepare('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND parent_key IS NOT NULL AND resource IN (SELECT value FROM json_each(?2))').bind(s.departmentId, JSON.stringify(RSI_SLICE[n][1])).first('n'));
     if (free) out[n] = RSI_SLICE[n];
   }
   return out;
+}
+/* كلفةُ التخطيط في طلبٍ واحد (حيث لا دفعات): مقيسةٌ ≈16MB كومةً لكل مليون حرف من نسخةٍ قديمة و≈7MB من حديثة، و≈0.02MB لكل عقدةٍ قائمة يحمّلها المرجع.
+   ما فوق RSI_BUDGET يُرفض عند البدء — قبل أي رفعٍ أو عملٍ ثقيل — بسببٍ واضح، ولا يُحاوَل فيموت العازل. */
+var RSI_BUDGET = 40;
+async function rsiHeavy(env, s, n, legacy, sliced) {
+  var fam = [];
+  sliced.forEach(function (k) { fam = fam.concat(RSI_SLICE[k][1]); });
+  /* V7 · د6: وتنبيهاتُ الإدارة القائمة (خطةُ تنبيهات الإدارة تقرأ نطاقَها وحده — 019d rsNFPlan) تُعدّ كالعقد */
+  var nodes = await (s.kind === 'dept' ? env.DB.prepare("SELECT (SELECT COUNT(*) FROM ops_nodes WHERE department_id=?1 AND resource NOT IN (SELECT value FROM json_each(?2)))+(SELECT COUNT(*) FROM notification_messages WHERE scope=?3)+(SELECT COUNT(*) FROM notification_targets WHERE scope=?3)+(SELECT COUNT(*) FROM notification_user_state WHERE message_scope=?3) n").bind(s.departmentId, JSON.stringify(fam), 'd:' + s.departmentId) : env.DB.prepare('SELECT COUNT(*) n FROM ops_nodes')).first('n'),
+    cost = (n / 1e6) * (legacy ? 16 : 7) + nodes * 0.02;
+  if (cost > RSI_BUDGET) throw Object.assign(rsError('import-too-heavy', 413), { details: { cost: Math.round(cost), budget: RSI_BUDGET, chars: n, nodes: nodes, kind: s.kind } });
 }
 /* دفعةٌ واحدة: حكمٌ ثم صفوف — مواضعُ الأعضاء تُرقَّم على المجموع (المشتركةُ أولاً ثم الأيامُ بترتيب الدفعات) */
 async function rsiSlice(env, A, request, id, M, b) {
@@ -40,9 +55,15 @@ async function rsiSlice(env, A, request, id, M, b) {
   var done = (await D.prepare('SELECT row_number r,row_json j FROM ' + T + " WHERE snapshot_id=?1 AND domain='sr' AND row_number<?2").bind(id, b.i).all()).results || [],
     got = await rsiText(env, id, 's', name);
   if (done.length !== b.i || got.text.length !== M.slices[name]) throw rsError('import-incomplete', 409);
-  var reference = await rsReferenceSnapshot(env, A.u.id), key = 'bsdept:' + M.scope.departmentId + ':' + base, set = {}, bs = {}, ops = {}, why = {};
+  /* مرجعُ الإدارة وحدها، وبلا تحميل مواردها التشغيلية: مواردُ الأسرة تُعرض للحكم فارغةً — الاستبدالُ يطرح القائمَ منها كلَّه (كما يفعل المسارُ الواحد:
+     الموردُ الغائب عن النسخة يُستعاد فارغاً)، وفي غير الاستبدال هي فارغةٌ شرطاً. والقائمُ منها يُعرف بعدٍّ: موردٌ قائمٌ لم تنتج له الدفعاتُ شيئاً يُكتب فارغاً. */
+  var dept = M.scope.departmentId, reference = await rsReferenceSnapshot(env, A.u.id, { departments: [dept], operationalKeys: [] }), key = 'bsdept:' + dept + ':' + base, set = {}, bs = {}, ops = {}, why = {}, held = [];
   env = reference.env; A = reference.A;
   if (A.u.role !== 'super' || rsScopeDenied(A, M.scope) || !RSI_SLICE[base]) throw rsError('restore-policy', 403);
+  for (var fr of RSI_SLICE[base][1]) {
+    reference.operational.keys['bsdept:' + dept + ':' + fr] = null;
+    if (await D.prepare('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource=?2').bind(dept, fr).first('n')) held.push('bsdept:' + dept + ':' + fr);
+  }
   /* دفعةٌ من نسخةٍ حديثة: صفوفُ المجال التشغيلي لمجموعة أعضاء (بفحص النسخ القائم opBackupDecode) تعود وثيقةً ثم تمرّ بالطريق نفسِه */
   var text = got.text, first = parseJson(text, null);
   if (isObj(first) && isObj(first.rows) && isObj(first.scope)) {
@@ -56,26 +77,31 @@ async function rsiSlice(env, A, request, id, M, b) {
   var kv = await applySave(env, { set: set, del: [], base: bs, ops: ops, why: why }, A, reqMeta(request), { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN, __srvRestore: RESTORE_INTERNAL_TOKEN });
   if (!kv.__plan || !kv.ok) throw Object.assign(rsError(Object.keys(kv.conflicts || {}).length ? 'conflict' : 'restore-key-denied', Object.keys(kv.conflicts || {}).length ? 409 : 403), { details: { denied: kv.denied, conflicts: Object.keys(kv.conflicts || {}) } });
       await dailyArcPend(env, kv, reference);   /* V7 · د6: دفعةُ الأيام تُقسم بين الحيّ والأرشيف بالخطوة نفسِها (019p3) */
-  var rx = new RegExp(RSI_SLICE[base][0]), before = {}, out = { keys: {}, have: {}, imgs: {}, tables: {} }, seq = 0,
+  var rx = RSI_SLICE[base][0] ? new RegExp(RSI_SLICE[base][0]) : null, before = {}, out = { keys: {}, have: {}, imgs: {}, rows: [] }, seq = 0,
     st = [D.prepare('DELETE FROM ' + T + " WHERE snapshot_id=?1 AND domain='q' AND row_number/100000=?2").bind(id, b.i)];
   done.forEach(function (r) { var o = JSON.parse(r.j); Object.keys(o.keys).forEach(function (k) { before[k] = (before[k] || 0) + o.keys[k]; }); });
   if (!b.i || Object.keys(M.slices)[b.i - 1].replace(/#\d+$/, '') !== base) out.authz = kv.authzRows || [];
+  /* أولُ دفعةٍ لموردها: ما كان قائماً من الأسرة ولم يرد في حكمها يُكتب فارغاً (جذرُه وحده) — فيُستبدل القائمُ ولو لم تأتِ له أيام */
+  if (out.authz) held.forEach(function (k) { if (!kv.pend.some(function (pd) { return pd.k === k; })) kv.pend.push({ k: k, act: 'set', v: (ENT[resName(k)] && ENT[resName(k)].empty) || '{}', have: reference.inputRevs[k] || 0 }); });
   kv.pend.forEach(function (pd) {
-    var info = opInfo(pd.k), cur = parseJson(pd.cur, null);
-    if (!info || pd.act !== 'set' || RSI_SLICE[base][1].indexOf(info.resource) < 0 || (cur && Object.keys(cur).length)) throw rsError('import-slice-target', 409);
-    var dom = ocConvert(info.prepared, info.dept, info.resource, JSON.parse(pd.v), true), shared = 0, mine = 0, root = null, tables = ocPhysicalTables(info.prepared);
+    var info = opInfo(pd.k), doc = JSON.parse(pd.v), mine = 0;
+    if (!info || pd.act !== 'set' || RSI_SLICE[base][1].indexOf(info.resource) < 0) throw rsError('import-slice-target', 409);
+    var dom = ocConvert(info.prepared, info.dept, info.resource, doc, true), shared = 0, root = null, tables = ocPhysicalTables(info.prepared);
+    doc = null;
     Object.keys(dom.rows).forEach(function (t) { dom.rows[t].forEach(function (r) { if (r.parent_key == null) root = r.row_key; }); });
     /* المواضعُ متّصلةٌ من الصفر كما يشترط المرمِّز: المشتركةُ أولاً (هي هي في كل دفعة) ثم الأيامُ بترتيب وصولها على مجموع الدفعات */
     var kids = [];
     Object.keys(dom.rows).forEach(function (t) { dom.rows[t].forEach(function (r) { if (r.parent_key === root && r.member_key != null) kids.push(r); }); });
     kids.sort(function (x, y) { return x.position - y.position; });
-    kids.forEach(function (r) { if (!rx.test(r.member_key)) r.position = shared++; });
-    kids.forEach(function (r) { if (rx.test(r.member_key)) r.position = shared + (before[pd.k] || 0) + mine++; });
+    if (rx) {
+      kids.forEach(function (r) { if (!rx.test(r.member_key)) r.position = shared++; });
+      kids.forEach(function (r) { if (rx.test(r.member_key)) r.position = shared + (before[pd.k] || 0) + mine++; });
+    }
     var phys = ocPhysicalRows(info.prepared, dom);
     dom = null;
     Object.keys(tables).forEach(function (t) {
       rsChunks(phys[t] || []).forEach(function (part) {
-        out.tables[pd.k + '|' + t] = 1;
+        out.rows.push([pd.k, t, b.i * 100000 + seq]);
         st.push(D.prepare('INSERT INTO ' + T + ' SELECT ?1,?2,?3,?4,?5 WHERE EXISTS(SELECT 1 FROM ' + T + " WHERE snapshot_id=?1 AND domain='meta')").bind(id, 'q', pd.k + '|' + t, b.i * 100000 + seq++, JSON.stringify(part)));
       });
     });
@@ -131,19 +157,23 @@ async function rsImportRoute(env, request, ss) {
     if (op === 'begin') {
       if (!isObj(s) || ['full', 'dept'].indexOf(s.kind) < 0 || rsScopeDenied(A, s) || (s.kind === 'dept' && !A.depts.some(function (d) { return d.id === s.departmentId; }))) throw rsError('restore-policy', 403);
       var skip = Object.keys(b.keys || {}).map(function (k) { return { k: k, why: rsiSkipWhy(k, b.keys[k] ? null : '') }; }).filter(function (x) { return x.why; });
-      var spec = await rsiSliceSpec(env, A, s, b.resources || b.keys || {});
+      var spec = await rsiSliceSpec(env, A, s, b.resources || b.keys || {}, b.mode);
       if (b.dry) return json({ ok: 1, skip: skip, slice: spec, sliceMin: RSI_SLICE_MIN });
-      var im = b.images || {}, ids = Object.keys(im), total = b.n, meta = { scope: s, n: b.n, f: b.f, images: {}, slices: b.slices || {} };
+      var im = b.images || {}, ids = Object.keys(im), total = b.n, meta = { scope: s, n: b.n, f: b.f, images: {}, slices: b.slices || {}, mode: b.mode || '' }, bases = {};
       Object.keys(meta.slices).forEach(function (k) {
-        if (!ocOwn(spec, k.replace(/#\d+$/, '')) || !(meta.slices[k] > 1) || meta.slices[k] > RSI_SEG.f) throw rsError('import-shape');
-        total += meta.slices[k];
+        var sb = k.replace(/#\d+$/, '');
+        if (!ocOwn(spec, sb) || !(meta.slices[k] > 1) || (spec[sb][0] && meta.slices[k] > RSI_SEG.f)) throw rsError('import-shape');
+        if ((meta.slices[k] / 1e6) * 16 > RSI_BUDGET) throw Object.assign(rsError('import-too-heavy', 413), { details: { cost: Math.round((meta.slices[k] / 1e6) * 16), budget: RSI_BUDGET, chars: meta.slices[k], k: sb, kind: s.kind } });
+        total += meta.slices[k]; bases[k.replace(/#\d+$/, '')] = 1;
       });
       ids.forEach(function (k) {
         if (!/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(k) || !(im[k] > 0) || im[k] > IMG_TOTAL_MAX) throw Object.assign(rsError('import-shape'), { details: { k: k.slice(0, 80) } });   /* الصورةُ المرفوضة تُسمّى */
         meta.images[k] = [im[k], Math.ceil(im[k] / RSI_SEG.i)];
         total += im[k];
       });
-      if (!(b.n > 1) || !(b.f > 0) || b.f > Math.ceil(b.n / (RSI_SEG.f - 1)) || ids.length > IMG_CAP || total > RSI_MAX) throw rsError(total > RSI_MAX ? 'import-too-large' : 'import-shape', total > RSI_MAX ? 413 : 400);
+      if (!(b.n > 1) || !(b.f > 0) || b.f > Math.ceil(b.n / (RSI_SEG.f - 1)) || ids.length > IMG_CAP || total > RSI_MAX) throw Object.assign(rsError(total > RSI_MAX ? 'import-too-large' : 'import-shape', total > RSI_MAX ? 413 : 400), { details: { chars: total, limit: RSI_MAX } });
+      /* ما كان يقبله المسارُ القديم أصلاً (النسخةُ كلُّها ≤ حدِّ طلبه 8MB) لا يُرفض هنا — لا تراجعَ عمّا كان يُستعاد قبل د6 */
+      if (total > 8e6) await rsiHeavy(env, s, b.n, Object.keys(b.keys || {}).length > 0, Object.keys(bases));
       await D.batch([rsiSweepStmt(env, now, A.u.id), D.prepare('INSERT INTO ' + T + " VALUES(?1,'meta',?2,?3,?4)").bind(id, A.u.id, now, JSON.stringify(meta))]);
       return json({ ok: 1, skip: skip, seg: RSI_SEG });
     }
@@ -167,7 +197,7 @@ async function rsImportRoute(env, request, ss) {
       var st = [];
       (b.items || []).forEach(function (it) {
         var sl = it.k.charAt(0) === '#', dom = sl ? 's' : it.k ? 'i' : 'f', t = it.t;
-        if (sl) { it.k = it.k.slice(1); if (it.s || !ocOwn(M.slices || {}, it.k) || t.length !== M.slices[it.k] || /^[\udc00-\udfff]|[\ud800-\udbff]$/.test(t)) throw rsError('import-part'); }
+        if (sl) { it.k = it.k.slice(1); if (!ocOwn(M.slices || {}, it.k) || !(it.s < Math.ceil(M.slices[it.k] / (RSI_SEG.f - 1))) || !t || t.length > RSI_SEG.f || /^[\udc00-\udfff]|[\ud800-\udbff]$/.test(t)) throw rsError('import-part'); }
         else if (!(it.s < (it.k ? (M.images[it.k] || [])[1] : M.f)) || !t || t.length > RSI_SEG[dom] || (it.k ? !(it.s ? imgPartOk(t) : imgTypeOk(t)) : /^[\udc00-\udfff]|[\ud800-\udbff]$/.test(t))) throw rsError('import-part');
         st.push(D.prepare('DELETE FROM ' + T + ' WHERE snapshot_id=?1 AND domain=?2 AND table_key=?3 AND row_number/1000=?4').bind(id, dom, it.k, it.s));
         for (var at = 0, j = 0; at < t.length; j++) {
@@ -184,7 +214,7 @@ async function rsImportRoute(env, request, ss) {
     }
     M.slices = M.slices || {};
     if (op === 'slice') { await rsiSlice(env, A, request, id, M, b); return json({ ok: 1 }); }
-    if ((op !== 'inspect' && op !== 'commit') || !deq(M.scope, s)) throw rsError('restore-shape');
+    if ((op !== 'inspect' && op !== 'commit') || !deq(M.scope, s) || (Object.keys(M.slices).length && M.mode !== b.mode)) throw rsError('restore-shape');
     var sr = (await D.prepare('SELECT row_json j FROM ' + T + " WHERE snapshot_id=?1 AND domain='sr' ORDER BY row_number").bind(id).all()).results || [];
     if (sr.length !== Object.keys(M.slices).length) throw rsError('import-incomplete', 409);
     sr = sr.map(function (r) { return JSON.parse(r.j); });
@@ -199,7 +229,7 @@ async function rsImportRoute(env, request, ss) {
     if (isObj(file.data) && !rsBCOwn(file, 'manifest'))
       Object.keys(file.data).forEach(function (k) {
         var why = rsiSkipWhy(k, file.data[k]);
-        if (why) { drop.push({ k: k, why: why }); delete file.data[k]; }
+        if (why) { drop.push(why === 'grants' ? { k: k, why: why, n: Object.keys((parseJson(file.data[k], null) || {}).emp || {}).length } : { k: k, why: why }); delete file.data[k]; }   /* المنحُ تُذكر بعددها */
       });
     stage = {
       rsiStage: 1, ids: M.images, fresh: [], unref: [], put: [],
@@ -207,7 +237,9 @@ async function rsImportRoute(env, request, ss) {
       /* جسمُ الصورة الجديدة: في D1 يُنسخ من المؤقت بعبارةٍ واحدة داخل دفعة الاعتماد (لا تمرّ بايتاتُه بالعامل) · مع مستودعٍ كائنيّ يوضع الكائنُ عند الاعتماد وحده ثم سطرُ مرجعه */
       store: async function (k) {
         var B = imgBucket(env);
-        if (!B) return [D.prepare('INSERT INTO imgs(k,seq,v) SELECT ?2,row_number,json_extract(row_json,\'$\') FROM ' + T + " WHERE snapshot_id=?1 AND domain='i' AND table_key=?2").bind(id, k)];
+        if (!B) return ((await D.prepare('SELECT row_number r FROM ' + T + " WHERE snapshot_id=?1 AND domain='i' AND table_key=?2 ORDER BY row_number").bind(id, k).all()).results || []).map(function (x) {
+          return D.prepare("INSERT INTO imgs(k,seq,v) SELECT ?2,row_number,json_extract(row_json,'$') FROM " + T + " WHERE snapshot_id=?1 AND domain='i' AND table_key=?2 AND row_number=?3").bind(id, k, x.r);
+        });
         if (op !== 'commit') return [];
         stage.put.push(k);
         return await imgStoreStmts(env, k, await stage.text(k));
@@ -219,26 +251,39 @@ async function rsImportRoute(env, request, ss) {
         Object.keys(ids).forEach(function (k) { (plan.imgTouch || (plan.imgTouch = [])).push({ k: k, v: Object.keys(ids[k]).join(' ') }); });
       },
       done: function (plan, summary) {
-        /* صفوفُ الدفعات: حارسُ نسخة كل موردٍ كما قرأته دفعاتُه (فارغاً) · عبارةٌ لكل جدول تنسخ من المؤقت · نسخةُ المورد تتقدّم · سطرُ قرار الصلاحية */
-        var keys = {}, tabs = {};
+        /* مواردُ الدفعات في دفعة الاعتماد — كلُّها عباراتٌ تقرأ القاعدة نفسَها، لا يحمل العاملُ صفاً منها:
+           حارسُ نسخة المورد كما قرأتها دفعاتُه · لقطةُ ما قبله (صفوفُه القائمة تُنسخ إلى restore_preimage) · إزالةُ القائم منه · ثم عبارةٌ لكل صفٍّ مودَع (≤ 500KB)
+           بترتيب إيداعه · نسخةُ المورد تتقدّم · سطرُ قرار الصلاحية. */
+        var keys = {}, rows = [], imgs = {};
         sr.forEach(function (o) {
           Object.keys(o.have).forEach(function (k) { if (ocOwn(keys, k) && keys[k] !== o.have[k]) throw rsError('conflict', 409); keys[k] = o.have[k]; });
-          Object.keys(o.tables).forEach(function (k) { tabs[k] = 1; });
+          rows = rows.concat(o.rows);
+          Object.keys(o.imgs).forEach(function (k) { o.imgs[k].forEach(function (x) { (imgs[k] = imgs[k] || {})[x] = 1; }); });
           (o.authz || []).forEach(function (r) { plan.authz.push(r); });
         });
+        /* حدودُ الوثيقة كلِّها تُحسب على مجموع دفعاتها: سقفُ الصور في السجل الواحد (IMG_CAP) لا يُتجاوز بالتقسيم */
+        Object.keys(imgs).forEach(function (k) { if (Object.keys(imgs[k]).length > IMG_CAP) { var den = {}; den[k] = { why: 'img-limit' }; throw Object.assign(rsError('restore-key-denied', 403), { details: { denied: den, conflicts: [] } }); } });
+        plan.snapshotSql = plan.snapshotSql || [];
         Object.keys(keys).forEach(function (k) {
-          var info = opInfo(k), tables = ocPhysicalTables(info.prepared);
-          /* الخطةُ العامة قد تكتب الموردَ نفسَه فارغاً (نسخةٌ حديثة أُفرغ مجالُه منها) — مقبولٌ: صفوفُ الدفعات تليه في الدفعة؛ وأيُّ كتابةٍ أخرى له تعارض */
-          var mine = plan.kv.pend.filter(function (pd) { return pd.k === k; })[0];
-          if (mine && (mine.act !== 'set' || Object.keys(parseJson(mine.v, null) || { x: 1 }).length)) throw rsError('conflict', 409);
+          var info = opInfo(k), tables = ocPhysicalTables(info.prepared), names = Object.keys(tables), where = ' WHERE department_id=?1 AND resource=?2';
+          if (plan.kv.pend.some(function (pd) { return pd.k === k; })) throw rsError('conflict', 409);
           plan.guards.push(revGuard(env, k, keys[k]));
-          Object.keys(tables).forEach(function (t) {
-            if (!tabs[k + '|' + t]) return;
-            var cols = tables[t], mutable = cols.filter(function (c) { return c !== 'department_id' && c !== 'resource' && c !== 'row_key'; });
-            plan.statements.push(D.prepare('INSERT INTO ' + t + '(' + cols.join(',') + ') SELECT ' + cols.map(function (c) { return "json_extract(j.value,'$." + c + "')"; }).join(',') + ' FROM ' + T +
-              " s, json_each(s.row_json) j WHERE s.snapshot_id=?1 AND s.domain='q' AND s.table_key=?2 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET " + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(id, k + '|' + t));
+          names.forEach(function (t) {
+            var cols = tables[t], packs = [];
+            for (var c = 0; c < cols.length; c += 40) packs.push('json_array(' + cols.slice(c, c + 40).join(',') + ')');
+            plan.snapshotSql.push(function (snap) {
+              return [D.prepare("INSERT INTO restore_snapshot_manifest(snapshot_id,domain,table_key,row_count) SELECT ?3,'operations-sql',?4,COUNT(*) FROM " + t + where).bind(info.dept, info.resource, snap, k + ':' + t),
+                D.prepare('INSERT INTO ' + T + "(snapshot_id,domain,table_key,row_number,row_json) SELECT ?3,'operations-sql',?4,ROW_NUMBER() OVER (ORDER BY row_key),json_array(" + packs.join(',') + ') FROM ' + t + where).bind(info.dept, info.resource, snap, k + ':' + t)];
+            });
           });
-          if (!mine) { plan.revisionKeys.push(k); plan.counts.operations++; }
+          plan.statements.push(D.prepare('UPDATE ops_nodes SET parent_key=NULL' + where).bind(info.dept, info.resource));
+          names.slice().reverse().forEach(function (t) { plan.statements.push(D.prepare('DELETE FROM ' + t + where).bind(info.dept, info.resource)); });
+          plan.revisionKeys.push(k); plan.counts.operations++;
+        });
+        rows.sort(function (x, y) { return x[2] - y[2]; }).forEach(function (r) {
+          var cols = ocPhysicalTables(opInfo(r[0]).prepared)[r[1]], mutable = cols.filter(function (c) { return c !== 'department_id' && c !== 'resource' && c !== 'row_key'; });
+          plan.statements.push(D.prepare('INSERT INTO ' + r[1] + '(' + cols.join(',') + ') SELECT ' + cols.map(function (c) { return "json_extract(j.value,'$." + c + "')"; }).join(',') + ' FROM ' + T +
+            " s, json_each(s.row_json) j WHERE s.snapshot_id=?1 AND s.domain='q' AND s.row_number=?2 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET " + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(id, r[2]));
         });
         /* ما أُخرج من نصّ الملف ليُرسل دفعاتٍ ليس «مجموعةً غائبة عن النسخة» */
         Object.keys(M.slices).forEach(function (k) { var gone = 'operations:bsdept:' + s.departmentId + ':' + k.replace(/#\d+$/, ''); summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== gone; }); });
@@ -247,8 +292,14 @@ async function rsImportRoute(env, request, ss) {
         if (op === 'commit') plan.statements.push(rsiDrop(env, id));
       },
     };
-    var reference = await rsReferenceSnapshot(env, A.u.id);
+    /* مرجعُ استيراد الإدارة: الإدارةُ وحدها (لا مواردَ الإدارات الأخرى)، وبلا أسرة الموارد المودَعة على دفعات — فلا يُحمَّل القائمُ منها ولا تمسّها الخطةُ العامة */
+    var fam = [], famKeys = [];
+    Object.keys(M.slices).forEach(function (k) { fam = fam.concat(RSI_SLICE[k.replace(/#\d+$/, '')][1]); });
+    fam.forEach(function (r) { var fk = 'bsdept:' + s.departmentId + ':' + r; if (famKeys.indexOf(fk) < 0) famKeys.push(fk); });
+    stage.skip = famKeys;
+    var reference = await rsReferenceSnapshot(env, A.u.id, s.kind === 'dept' ? { departments: [s.departmentId], operationalKeys: opDefinitions().map(function (def) { return 'bsdept:' + s.departmentId + ':' + def.resource; }).filter(function (k) { return famKeys.indexOf(k) < 0; }) } : undefined);
     if (rsScopeDenied(reference.A, s)) throw rsError('restore-policy', 403);
+    reference.noWiden = s.kind === 'dept';
     var run = { version: 1, uid: A.u.id, requestId: b.requestId, scope: s, mode: b.mode, reason: b.reason, base: b.base, backup: file, legacyConsent: b.legacyConsent === true, phase: op };
     file = null;
     var out = await rsBackupRun(reference.env, reference.A, request, run, reference, fp, stage);

@@ -143,5 +143,9 @@
  "res.deviceDept": {
   "order": 10,
   "text": "'bassam_st_grp_v1': 1"
+ },
+ "rsi.slice": {
+  "order": 30,
+  "text": "  'bassam_staffing_v3': [null, ['bassam_staffing_v3']],   /* V7 · د6: جدولُ الورديات كلُّه في طلبه — لا يُضاف إلى بقية النسخة */\n"
  }
 }

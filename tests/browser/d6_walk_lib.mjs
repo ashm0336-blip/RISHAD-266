@@ -347,7 +347,12 @@ export async function walkAccount(W, acc, st, viewport, opts = {}) {
       const snap = await p.evaluate(() => window.__d6.snap());
       const sel = snap.strips.filter((x) => x.marked).map((x) => (x.items.find((i) => i.sel) || {}).label || '').filter(Boolean);
       if (!done) push([Object.assign({ rule: 'loading', detail: 'الرابط العميق ' + v.hash + ' لم يستقرّ' }, where0)], v.page, v.tab);
-      else if (snap.hash !== v.hash || JSON.stringify(sel) !== JSON.stringify(v.sel)) push([Object.assign({ rule: 'addr', detail: 'الرابط العميق ' + v.hash + ' يعرض ' + JSON.stringify(sel) + ' بعنوان ' + snap.hash + ' — والمسجَّل ' + JSON.stringify(v.sel) }, where0)], v.page, v.tab);
+      else {
+        /* العنوانُ النهائي هو الحَكَم: عنوانٌ أساس يعرض تبويباً محفوظاً يُصحَّح إلى عنوان ذلك التبويب (قرارُ د6) — فالمعروضُ يجب أن يطابق ما سُجّل تحت العنوان النهائي */
+        const want = uniq.get(snap.hash);
+        if (!want) push([Object.assign({ rule: 'addr', detail: 'الرابط العميق ' + v.hash + ' انتهى إلى عنوانٍ لم يُسجَّل لتبويب: ' + snap.hash + ' (المعروض ' + JSON.stringify(sel) + ')' }, where0)], v.page, v.tab);
+        else if (JSON.stringify(sel) !== JSON.stringify(want.sel)) push([Object.assign({ rule: 'addr', detail: 'الرابط العميق ' + v.hash + ' يعرض ' + JSON.stringify(sel) + ' بعنوان ' + snap.hash + ' — والمسجَّل لهذا العنوان ' + JSON.stringify(want.sel) }, where0)], v.page, v.tab);
+      }
     }
   }
   /* ── (2) التنبيهاتُ والعدّاد: لا تنبيهَ من نظامٍ مطفأ في القائمة ولا في الجرس، والعدّادُ لا يحسبه ── */

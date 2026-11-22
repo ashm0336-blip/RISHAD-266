@@ -73,10 +73,17 @@ function actorFromKeys(keys, uid) {
   var u = users.filter(function (x) { return x && x.id === uid; })[0] || null;
   if (!u || u.dis) return null;                 /* حسابٌ حُذف أو جُمّد: لا فاعل */
   var plat = parseJson(keys[K_PLAT], {});
-  var off = (isObj(plat) && isObj(plat.mods) && Array.isArray(plat.mods.off)) ? plat.mods.off : [];
+  var off = platOffOf(plat);
   var perms = parseJson(keys[K_PERM], {}), depts = parseJson(keys[K_DEPTS], []), nodes = parseJson(keys[K_GDEPTS], []);
   return { u: u, users: users, perms: isObj(perms) ? perms : {}, depts: Array.isArray(depts) ? depts : [],
            nodes: Array.isArray(nodes) ? nodes : [], off: off };
+}
+/* V7 · د6: المطفأُ على المنصة كما يُطبَّق في الخادم (A.off) = المخزَّنُ (mods.off) مع ما يسكن حاوياتِه — الإغلاقُ في المحرّك المشترك
+   (perm44-core offClosure، النصُّ نفسُه في الواجهة). قارئٌ واحد لكل بانٍ للفاعل؛ والمخزَّنُ لا يُمسّ */
+function platOffOf(plat) {
+  var off = (isObj(plat) && isObj(plat.mods) && Array.isArray(plat.mods.off)) ? plat.mods.off : [];
+  if (!off.length) return off;
+  try { return perm44E().offClosure(off); } catch (e) { swallow('plat-off-closure', e); return off; }
 }
 async function actorOf(env, uid) {
   var users = (await usersList(env)) || [];
@@ -87,7 +94,7 @@ async function actorOf(env, uid) {
   /* سجل العقد الفوقية — كان معرَّفاً ولا يُقرأ يوم كانت الشجرة طبقتين، إذ كان
      حقل gid في الإدارة يكفي. وقد صارت أعمق فلا بدّ من العقد لمشي الشجرة صعوداً. */
   var nodes = parseJson(await kvGet(env, 'kv', K_GDEPTS), []);
-  var plat = await platGet(env); var off = (isObj(plat) && isObj(plat.mods) && Array.isArray(plat.mods.off)) ? plat.mods.off : [];
+  var plat = await platGet(env); var off = platOffOf(plat);
   var A0 = { u: u, users: users, perms: isObj(perms) ? perms : {}, depts: Array.isArray(depts) ? depts : [],
            nodes: Array.isArray(nodes) ? nodes : [], off: off };
   /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده يقرّر — يُرفق بكل فاعلٍ وضعُه ومنحُه الصريح. فاعلٌ بُني خارج مسار الطلب (بلا env.__enf)

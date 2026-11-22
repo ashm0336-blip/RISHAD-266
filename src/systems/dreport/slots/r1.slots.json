@@ -95,5 +95,9 @@
  "enf.via.cs.dreport": {
   "order": 10,
   "text": "    if (enfHeld(A, d, 'report.callsign.assign')) return { keys: ['report.callsign.assign'], tag: 'via:CS_ONLY' };\n"
+ },
+ "rsi.slice": {
+  "order": 50,
+  "text": "  'bassam_dreport_v1': ['^.', ['bassam_dreport_v1']],   /* V7 · د6: التقريرُ اليومي خريطةُ أيام — يُقسم أياماً */\n"
  }
 }

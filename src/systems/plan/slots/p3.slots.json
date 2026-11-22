@@ -25,7 +25,7 @@
  },
  "activity.filter.plan": {
   "order": 10,
-  "text": " ['plan', 'خطط الشهور'],"
+  "text": " ['plan', 'خطط الشهور', 'plan'],"
  },
  "activity.stampPlan.fn": {
   "order": 10,

@@ -191,6 +191,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       if (!o || o.page !== "daily") {
         const sd = this.__bsSeeded;
         sd && void 0 !== sd.dsTab && ((this.__bsSeeded = null), this._bsHT(hv(this.state.dsTab)));
+        /* V7 · د6 (أ2-5): العنوانُ الأساس يعرض تبويباً محفوظاً من الجلسة ⇒ يُصحَّح العنوانُ إلى ذلك التبويب (استبدالٌ لا مدخلُ تاريخٍ جديد) — التبويبُ المعروض لا يتغيّر */
+        const cur = (/^#\/daily\/([a-z]+)/i.exec(String(location.hash || "")) || [])[1] || "";
+        cur !== hv(this.state.dsTab) && this._bsHT(hv(this.state.dsTab));
         return;
       }
       KIVO.__BS_OPEN_TAB = null;

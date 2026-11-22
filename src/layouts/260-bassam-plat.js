@@ -72,7 +72,8 @@
     if (sig !== lastSig) {
       var css = "";
       var order = (P.side.order || []).filter(function (k) { return NAVKEYS.indexOf(k) >= 0; }); NAVKEYS.forEach(function (k, i) { if (order.indexOf(k) >= 0) return; var prev = i > 0 ? order.indexOf(NAVKEYS[i - 1]) : -1; order.splice(prev + 1, 0, k); });   /* رابط جديد لم يُرتَّب بعد يقف خلف سابقه في القالب لا في الذيل */
-      NAVKEYS.forEach(function (k) { var pos = order.indexOf(k); var hide = (P.side.hidden || []).indexOf(k) >= 0 || (P.mods.off || []).indexOf(k) >= 0;   /* V7 · د5-ح (قرار المالك): الوحدةُ المطفأة على مستوى المنصة لا تظهر لأحد — ولا لمدير المنصة (كانت له وحده · د1-ج) */ css += 'aside.bsb .s-nav .grp > a[data-key="' + k + '"]{order:' + pos + (hide ? ";display:none!important" : "") + "}\n"; });   /* CORE-01: بمفتاح الرابط (data-key) لا بموضعه في القالب */
+      var offNow = P.mods.off || []; try { if (KIVO.BassamPerm && KIVO.BassamPerm.platOff) offNow = KIVO.BassamPerm.platOff(); } catch (e0) { /* V7 · د6: القارئُ الواحد (مع ما يسكن الحاوية) — وبغيابه المخزَّنُ كما هو */ }
+      NAVKEYS.forEach(function (k) { var pos = order.indexOf(k); var hide = (P.side.hidden || []).indexOf(k) >= 0 || offNow.indexOf(k) >= 0;   /* V7 · د5-ح (قرار المالك): الوحدةُ المطفأة على مستوى المنصة لا تظهر لأحد — ولا لمدير المنصة (كانت له وحده · د1-ج) */ css += 'aside.bsb .s-nav .grp > a[data-key="' + k + '"]{order:' + pos + (hide ? ";display:none!important" : "") + "}\n"; });   /* CORE-01: بمفتاح الرابط (data-key) لا بموضعه في القالب */
       if (!styleEl) { styleEl = document.createElement("style"); styleEl.id = "bs-plat-css"; (document.head || document.documentElement).appendChild(styleEl); }
       styleEl.textContent = css;
       /* أيقونات الجوال والمتصفح من شعار المنصة إن رُفع. بيانُ التثبيت ملفٌّ ثابتٌ من الأصل نفسه (/manifest.webmanifest — KIVO_242):

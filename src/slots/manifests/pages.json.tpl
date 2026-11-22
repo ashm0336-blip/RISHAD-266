@@ -113,6 +113,7 @@
  ],
  "tabAddr": {
   "emps": 1,
+  "planning": {@@SYS:pages.tabAddr.planning|sep=", "@@},
 @@SYS:pages.tabAddr.award@@  "admin": 1@@SYS:pages.tabAddr.daily.entry@@@@SYS:pages.tabAddr.tail@@
  },
  "navOrder": [

@@ -84,7 +84,7 @@ export const NOT_TRANSFERRED = {
   'bassam_notif_dev_v1:TEST_ONLY_u1': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u2': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u3': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u4': 'null',
   'bassam_notif_dev_v1:TEST_ONLY_u5': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u6': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u7': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u8': 'device',
 };
-export async function oldFile({ scale = 1, small = false, images = true } = {}) {
+export async function oldFile({ scale = 1, small = false, images = true, planRows = 1 } = {}) {
   const docs = await legacyDocs(), J = JSON.stringify;
   const nImg = small ? 2 : 10 * scale, days = small ? 3 : 26 * scale, dayChars = small ? 6000 : 318000, planChars = small ? 9000 : 1150000, nfChars = small ? 3000 : 228000;
   const sizes = [1.48, 1.65, 1.85, 2.05, 2.25, 2.45, 2.7, 3.0, 3.37].map((m) => Math.round(m * 1e6));
@@ -92,7 +92,7 @@ export async function oldFile({ scale = 1, small = false, images = true } = {}) 
   const idb = {};
   if (images) ids.forEach((id, i) => { idb[id] = small ? png(1400, i) : i % 10 === 9 ? jpeg(490000, i) : png(sizes[i % 10], i); });
   /* المخطط: طابقٌ لكل صورة (iid) بمصلياته — نصُّ مسار المصلى يملأ الحجم المقيس */
-  const baseFloor = docs.bassam_plan_v1.floors[0], perFloor = Math.floor(planChars / nImg), zonesPer = small ? 3 : 12;
+  const baseFloor = docs.bassam_plan_v1.floors[0], perFloor = Math.floor(planChars / nImg), zonesPer = small ? 3 : 12 * planRows;   /* planRows: مضاعِفُ صفوف المخطط بالحجم نفسِه */
   const floors = ids.map((id, f) => ({ ...baseFloor, sid: 'tstd6s' + f, name: 'TEST_ONLY · طابق د6 ' + (f + 1), num: f + 1, iid: id, imgW: 1200, imgH: 900,
     zones: Array.from({ length: zonesPer }, (_, z) => ({ uid: 'tstd6z' + f + 'x' + z, code: 'D6Z' + f + '-' + z, name: 'TEST_ONLY · مصلى د6 ' + (f + 1) + '-' + (z + 1), d: pathD(Math.floor(perFloor / zonesPer) - 160, f * 31 + z), cx: 5 + z, cy: 5 + f, area: 100 + z, emp: z ? [] : ['tst_demo_e11'] })),
     gates: baseFloor.gates.map((g, i) => ({ ...g, uid: 'tstd6g' + f + 'x' + i })), marks: baseFloor.marks.map((m, i) => ({ ...m, uid: 'tstd6m' + f + 'x' + i })), paths: baseFloor.paths.map((p, i) => ({ ...p, uid: 'tstd6p' + f + 'x' + i })) }));
@@ -155,10 +155,12 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
       if (P.parts.length) return;
       const rest = { ...rest0, data: { ...(rest0.data || {}) } }, sl = [];
       if (slice !== false && keys) {
-        const dry = await post({ op: 'begin', dry: true, scope, keys });
+        const dry = await post({ op: 'begin', dry: true, scope, keys, mode });
         const spec = (dry.j && dry.j.slice) || {}, min = typeof slice === 'number' ? slice : (dry.j && dry.j.sliceMin) || Infinity;
         for (const name of Object.keys(spec)) {
           const raw = rest.data[name];
+          /* موردٌ لا ينقسم بأعضائه (النمط null): كلُّه دفعةً واحدة في طلبه — دائماً */
+          if (!spec[name][0]) { if (typeof raw === 'string' && raw.length > 2) { delete rest.data[name]; P.slices[name + '#0'] = raw.length; cut(raw, SEG.f).forEach((t, n) => sl.push({ k: '#' + name + '#0', s: n, t })); } continue; }
           if (typeof raw !== 'string' || raw.length < min) continue;
           const texts = sliceKey(raw, spec[name][0], sliceTarget);
           if (texts.length < 2) continue;
@@ -166,10 +168,10 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
           texts.forEach((t, n) => { P.slices[name + '#' + n] = t.length; sl.push({ k: '#' + name + '#' + n, s: 0, t }); });
         }
       }
-      P.text = JSON.stringify(rest); P.fparts = cut(P.text, SEG.f); P.sliceCount = sl.length;
+      P.text = JSON.stringify(rest); P.fparts = cut(P.text, SEG.f); P.sliceCount = Object.keys(P.slices).length;
       P.parts = P.fparts.map((t, s) => ({ k: '', s, t })).concat(sl, Object.entries(idbImages).flatMap(([k, v]) => cut(v, SEG.i).map((t, s) => ({ k, s, t }))));
     },
-    begin: async (extra = {}) => { await P.build(); return post({ op: 'begin', scope, n: P.text.length, f: P.fparts.length, images: Object.fromEntries(Object.entries(idbImages).map(([k, v]) => [k, v.length])), slices: P.slices, ...(keys ? { keys } : {}), ...extra }); },
+    begin: async (extra = {}) => { await P.build(); return post({ op: 'begin', scope, n: P.text.length, f: P.fparts.length, images: Object.fromEntries(Object.entries(idbImages).map(([k, v]) => [k, v.length])), slices: P.slices, mode, ...(keys ? { keys } : {}), ...extra }); },
     part: (i) => post({ op: 'part', items: [P.parts[i]] }),
     sliceStep: (i) => post({ phase: 'slice', i, reason }),
     inventory: async () => { const q = new URLSearchParams({ kind: scope.kind, departments: '[]' }); if (scope.kind === 'dept') q.set('dept', scope.departmentId); return (await T.call('/api/backup/restore?' + q, { ck: who.ck })).j; },

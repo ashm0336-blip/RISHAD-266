@@ -496,7 +496,7 @@
   },
   "activity.filter": {
    "order": 30,
-   "text": " ['award', 'الجائزة'],"
+   "text": " ['award', 'الجائزة', 'award'],"
   },
   "res.empty.award": {
    "order": 10,

@@ -122,6 +122,17 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
         if (await imgForeignIn(env, A, key, finalKeys[key], (plan.relationalImageCurrent||{})[key] || (plan.relationalImageBefore||{})[key] || reference.inputKeys[key] || '')) reject();
       }
   }
+  /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور القائمة كلَّها معاً (21MB في النسخة المقيسة): صورةً صورة — القائمُ يُقارن بالمودَع ثم يُحرَّر،
+     والسياجُ عددُ صفوف جسمها ومجموعُ أطوالها (لا نصُّها)، وللغائبة «لا صفّ»؛ وجزءُ رفعٍ معلّق لمعرّفٍ منها يرفض كما كان. */
+  if (stage) {
+    var sArgs = [], sWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, sArgs);
+    if (await rsBound(env.DB.prepare("SELECT 1 x FROM imgs WHERE substr(k,1,5)='~stg~' AND " + sWhere + ' LIMIT 1'), sArgs).first()) reject();
+    for (var sid9 of ids) {
+      if (!gone.has(sid9)) { var held9 = await imgLoad(env, sid9); if (held9 == null || held9 !== (await stage.text(sid9))) reject(); held9 = null; }
+      var sig9 = await env.DB.prepare("SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) s FROM imgs WHERE k=?1").bind(sid9).first('s');
+      plan.guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) FROM imgs WHERE k=?1)!=?2 THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g").bind(sid9, sig9));
+    }
+  } else {
   // Include any upload fragments for these exact IDs. A late fragment or owner
   // change rejects the SQL transaction even if it appeared after body matching.
   var bodyArgs = [],
@@ -148,6 +159,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     if (actual !== (stage ? await stage.text(id) : images[id])) reject();
   }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], rows, bodyWhere, bodyArgs));
+  }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], owners, ownWhere, ownArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
   plan.imagesReused = ids.length - gone.size;
@@ -212,9 +224,13 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       ),
       bodyArgs = [],
       bodyWhere = rsImageIn('k', newIds, bodyArgs),
-      knownBodies =
+      /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور المذكورة ليعرف القائمَ منها — يسأل عن معرّفاتها وتوقيعها (عددُ الصفوف ومجموعُ الأطوال)، وسياجُه التوقيعُ نفسُه */
+      bodySig = "SELECT COALESCE(group_concat(k||'='||c||':'||n,','),'') s FROM (SELECT k,COUNT(*) c,SUM(length(v)) n FROM imgs WHERE " + bodyWhere + ' GROUP BY k ORDER BY k)',
+      knownBodies = plan.imagesFresh ? [] :
         (await rsBound(env.DB.prepare('SELECT k,seq,v FROM imgs WHERE ' + bodyWhere + ' ORDER BY k,seq'), bodyArgs).all()).results || [],
+      sigNow = plan.imagesFresh ? String((await rsBound(env.DB.prepare(bodySig), bodyArgs).first('s')) || '') : '',
       known = new Set(
+        plan.imagesFresh ? sigNow.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }) :
         knownBodies.map(function (r) {
           return r.k;
         }),
@@ -224,7 +240,8 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
        at commit, and the receipt carries the warning. No image body is ever written by a restore. */
     var missing = newIds.filter(function (id) { return !known.has(id) && !(plan.imagesFresh && plan.imagesFresh.has(id)); });   /* V7 · د6: الصورةُ الجديدة يُكتب جسمُها في الدفعة نفسِها (019g) فليست مفقودة */
     if (missing.length) { rsImageMissingNote(plan, missing); plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
-    plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
+    if (plan.imagesFresh) plan.guards.push(rsBound(env.DB.prepare("SELECT CASE WHEN (" + bodySig + ")!=?" + (bodyArgs.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), bodyArgs.concat([sigNow])));
+    else plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
   }
   var ownArgs = [],
     ownWhere = rsImageIn('img', Array.from(ids), ownArgs),

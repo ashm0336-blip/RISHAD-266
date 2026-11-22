@@ -72,7 +72,7 @@ async function rsScopeOperational(env, capture, keys) {
    scope may be referenced elsewhere) widens the reference to the whole database, fenced alike. */
 async function rsReferenceWiden(env, reference) {
   var scope = reference.scope;
-  if (!scope || scope.all) return false;
+  if (!scope || scope.all || reference.noWiden) return false;   /* V7 · د6: استيرادُ الإدارة على أجزاء لا يحمّل القاعدةَ كلَّها ليحكم على صورةٍ لم تعد إدارتُه تذكرها — يحكم بفهرس المراجع (imgref)، والكنسُ يعيد الفحص قبل أي حذف (019g) */
   var P = env.__pre, later = JSON.stringify(scope.later), where = 'NOT ' + RS_SCOPE_KV + ' AND k NOT IN (SELECT value FROM json_each(?2))',
     rows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + where + ' ORDER BY k,seq').bind(scope.arg, later).all()).results || [],
     joined = kvJoin(rows), departments = parseJson(reference.inputKeys[K_DEPTS] || '[]', null);
@@ -802,12 +802,29 @@ function rsNFValidate(domain, scope) {
   });
   return out;
 }
+/* V7 · د6: عمودُ النطاق لكل جدول تنبيهات (الإعداداتُ ونقاطُ التتبّع للمنصة — لا نطاقَ إدارة لها) وقراءةُ صفوف نطاقاتٍ مسمّاة وحدها */
+function rsNFScopeCol(n) {
+  return n === 'states' ? 'message_scope' : n === 'overrides' || n === 'checkpoints' ? '' : 'scope';
+}
+function rsNFScopeWhere(n, only) {
+  return rsNFScopeCol(n) + ' IN (' + only.map(function (_, i) { return '?' + (i + 1); }).join(',') + ')';
+}
+async function rsNFReadScoped(env, only) {
+  var names = Object.keys(NF_TABLES).filter(rsNFScopeCol),
+    b = await env.DB.batch(names.map(function (n) { return rsBound(env.DB.prepare('SELECT * FROM ' + NF_TABLES[n][0] + ' WHERE ' + rsNFScopeWhere(n, only)), only); })),
+    o = { version: 1, overrides: [], checkpoints: [] };
+  names.forEach(function (n, i) { o[n] = b[i].results || []; });
+  return o;
+}
 async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
   rsShape(base, ['rev', 'configRev', 'broadcastRev']);
   ['rev', 'configRev', 'broadcastRev'].forEach(function (k) {
     rsNat(base[k]);
   });
-  var before = await nfRead(env),
+  /* V7 · د6: استعادةُ إدارةٍ لا تقرأ تنبيهاتِ المنصة كلِّها: صفوفُ نطاقها وحده (ونطاقِ ما يُنشأ معها) — تُقرأ وتُحرس وتُلتقط وتُحذف ثم تُدرج،
+     وما سواها لا يُمسّ (كان يُحذف ويُعاد كما هو). النتيجةُ في الجداول هي هي؛ والكلفةُ تتبع تنبيهاتِ الإدارة لا المنصة. */
+  var only = scope.kind === 'dept' ? ['d:' + scope.departmentId].concat((newDepts || []).map(function (d) { return 'd:' + d; })) : null,
+    before = only ? await rsNFReadScoped(env, only) : await nfRead(env),
     next = rsNFValidate(domain, scope),
     guards = [revGuard(env, NF_REV, base.rev), revGuard(env, NF_CFG_REV, base.configRev), revGuard(env, NF_BC_REV, base.broadcastRev)],
     st = [],
@@ -833,7 +850,8 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
   Object.keys(NF_TABLES).forEach(function (n) {
     var spec = NF_TABLES[n],
       rows = before[n];
-    guards.push.apply(guards, rsWitness(env, spec[0], spec[1], rows));
+    if (only && !rsNFScopeCol(n)) return;
+    guards.push.apply(guards, only ? rsWitness(env, spec[0], spec[1], rows, rsNFScopeWhere(n, only), only) : rsWitness(env, spec[0], spec[1], rows));
     snaps.push({ domain: 'notifications', table: spec[0], rows: rows });
     if (mode === 'merge') next[n] = rsMergeRows(rows, next[n], spec[1], pks[n]);
     else if (scope.kind === 'dept')
@@ -844,13 +862,15 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
         .concat(next[n]);
   });
   ['states', 'targets', 'messages', 'dedup', 'overrides', 'checkpoints'].forEach(function (n) {
-    st.push(env.DB.prepare('DELETE FROM ' + NF_TABLES[n][0]));
+    if (only && !rsNFScopeCol(n)) return;
+    st.push(only ? rsBound(env.DB.prepare('DELETE FROM ' + NF_TABLES[n][0] + ' WHERE ' + rsNFScopeWhere(n, only)), only) : env.DB.prepare('DELETE FROM ' + NF_TABLES[n][0]));
   });
   ['messages', 'targets', 'states', 'dedup', 'overrides', 'checkpoints'].forEach(function (n) {
+    if (only && !rsNFScopeCol(n)) return;
     st.push.apply(st, rsBulk(env, NF_TABLES[n][0], NF_TABLES[n][1], next[n]));
   });
   var unchanged = Object.keys(NF_TABLES).every(function (n) {
-    return rsSameRows(before[n], next[n]);
+    return (only && !rsNFScopeCol(n)) || rsSameRows(before[n], next[n]);
   });
   var revisionKeys = unchanged ? [] : [NF_REV];
   if (!unchanged && !rsSameRows(before.overrides, next.overrides)) revisionKeys.push(NF_CFG_REV);
@@ -1027,6 +1047,7 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var operationalInput=opRestoreDocuments(body,reference,A);
+  if (internal && internal.images && internal.images.skip) internal.images.skip.forEach(function (k) { delete operationalInput.keys[k]; operationalInput.physicalDeletes = operationalInput.physicalDeletes.filter(function (x) { return x !== k; }); });   /* V7 · د6: مواردُ تودَع على دفعات (019g) لا تمسّها الخطةُ العامة */
   if (internal && internal.release) body.domains.operations = null;   /* V7 · د6: صفوفُ المجال التشغيلي صارت وثائقَ أعلاه ولا يقرؤها ما بعده — تُحرَّر (أكبرُ ما يُحمل في الذاكرة) */
   Object.assign(keys,operationalInput.keys);
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
@@ -1281,6 +1302,7 @@ async function rsCommit(env, A, plan, meta) {
   });
   st.push.apply(st,rsBulk(env,'restore_snapshot_manifest',['snapshot_id','domain','table_key','row_count'],snapshotManifest));
   st.push.apply(st,rsBulk(env,'restore_preimage',['snapshot_id','domain','table_key','row_number','row_json'],snapshotRows));
+  (plan.snapshotSql || []).forEach(function (make) { st.push.apply(st, make(sid)); });   /* V7 · د6: لقطةُ ما قبل الاستيراد لمواردَ تُستبدل على دفعات — تُنسخ صفوفُها القائمة داخل القاعدة (019g) */
   if (changed)
     st.push(
       env.DB.prepare(
@@ -1381,7 +1403,8 @@ async function rsCommit(env, A, plan, meta) {
   };
 }
 async function rsRestoreInventory(env, A, scope, requestedDepartments) {
-  var reference = await rsReferenceSnapshot(env, A.u.id);
+  /* V7 · د6: جردُ إدارةٍ واحدة يقرأ النسخ (revs) وحدها — لا يحمّل المواردَ التشغيلية لكل الإدارات (كان يحمّلها كلَّها ليعيد أرقامَ نسخها) */
+  var reference = await rsReferenceSnapshot(env, A.u.id, scope && scope.kind === 'dept' && typeof scope.departmentId === 'string' && scope.departmentId && scope.departmentId.indexOf(':') < 0 ? { departments: [scope.departmentId], operationalKeys: [] } : undefined);
   env = reference.env;
   A = reference.A;
   if (!scope || !['full', 'dept'].includes(scope.kind) || (scope.kind === 'full' && A.u.role !== 'super'))

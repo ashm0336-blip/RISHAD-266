@@ -185,7 +185,7 @@ test('الخطة التشغيلية (PLAN-11): التبويبُ المزروع �
      (اختبارُ الزرع في refresh_seed_w1). هنا: renderVals الحقيقية على حالةٍ مزروعة */
   /* V7 · د5-د/د5-هـ: الحاويةُ عامة — سجلُّ التبويبات (PT_TABS) قطعٌ من مجلدات البرامج بشكلها { page · go · on · act · lazy }؛ تُستخرج الدوالُّ الحقيقية */
   const TABS = { sched: { page: 'staff', go: 'goSched', on: 'schedOn', act: 'onSched' }, plan: { page: 'plan', go: 'goPlan', on: 'planSeen', act: 'onPlan', lazy: true } };
-  const M = ['renderVals() {', '_tabOk(t) {', '_ids() {'];
+  const M = ['renderVals() {', '_tabOk(t) {', '_ids() {', '_bsHR() {', '_bsHT(t) {'];   /* V7 · د6: renderVals تقرأ عنوانَ التبويب وتكتبه (لكل تبويبٍ عنوانُه) */
   const P = page('planning', M, { state: { ptab: 'plan', seen: {} }, self: { PT_TABS: TABS, _ptOk: () => true, _bsGo() {} } });
   const V = P.c.renderVals();
   assert.equal(V.ptab, 'plan'); assert.equal(V.onPlan, true); assert.equal(V.planSeen, true, '«التشغيل الميداني» يُركَّب في أوّل رسم بلا علامة «رُئي»');
