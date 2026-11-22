@@ -257,6 +257,8 @@ export async function walkAccount(W, acc, st, viewport, opts = {}) {
   Object.keys(cold.cold.screen).forEach((l) => { if (!cold.snap.screens.includes(l)) flash.push('صفحة «' + l + '» رُسمت ثم أُزيلت'); });
   push(flash.map((d) => Object.assign({ rule: 'flash', detail: d }, where0)), 'إعادة التحميل على ' + provoke);
   if (provoke !== home && forb.off.length && cold.snap.hash === provoke) push([Object.assign({ rule: 'off', detail: 'عنوانُ نظامٍ مطفأ يُفتح: ' + provoke }, where0)], 'إعادة التحميل على ' + provoke);
+  /* المساحةُ المقصودة قبل المشي: عنوانٌ مرفوض قد يُهبط مديرَ المنصة في المركز (أو خارجه) */
+  await p.evaluate((h) => { window.__d6.go(h); }, home); await settle(p);
   /* ── فتحُ عرض: نقرٌ (أو عنوان) ⇒ استقرار ⇒ لقطة ⇒ assertPage ── */
   const view = async (how, page, tab) => {
     mark = s.log.length;
@@ -281,7 +283,7 @@ export async function walkAccount(W, acc, st, viewport, opts = {}) {
     const mine = snap.strips.filter((x) => !seenStrips.has(page + '§' + x.id)); mine.forEach((x) => seenStrips.add(page + '§' + x.id));
     for (const strip of mine.reverse()) {
       if (!strip.marked) uncheck.push(page + ' › ' + strip.id);
-      const cur = strip.items.find((i) => i.sel), byHash = new Map(cur ? [[snap.hash, cur.label]] : []);
+      const cur = strip.items.find((i) => i.sel), byHash = new Map(cur ? [[snap.hash, [cur.label]]] : []);
       for (const item of strip.items) {
         if (item.sel || item.dis) continue;
         const tab = (path ? path + ' › ' : '') + item.label;
@@ -289,10 +291,12 @@ export async function walkAccount(W, acc, st, viewport, opts = {}) {
         /* (5) العنوانُ يطابق التبويب المعروض: التبويبُ المنقور هو المعروض · ولا تبويبان بعنوانٍ واحد */
         const now = v.strips.find((x) => x.id === strip.id);
         if (strip.marked && now && !(now.items.find((i) => i.label === item.label) || {}).sel && !forb.offLabels.includes(item.label)) push([Object.assign({ rule: 'addr', detail: 'نقرُ التبويب «' + item.label + '» لا يعرضه (المعروض: «' + ((now.items.find((i) => i.sel) || {}).label || '—') + '» · العنوان ' + v.hash + ')' }, where0)], page, tab);
-        else if (!strip.seg && byHash.has(v.hash) && byHash.get(v.hash) !== item.label) push([Object.assign({ rule: 'addr', detail: 'التبويب «' + item.label + '» معروضٌ بعنوان التبويب «' + byHash.get(v.hash) + '» نفسِه (' + v.hash + ')' }, where0)], page, tab);
-        else byHash.set(v.hash, item.label);
+        else if (!byHash.has(v.hash)) byHash.set(v.hash, [item.label]);
+        else if (!byHash.get(v.hash).includes(item.label)) byHash.get(v.hash).push(item.label);
         if (depth < S.maxDepth) await walkStrips(page, tab, v, depth + 1);
       }
+      /* (5) تبويباتٌ من الشريط نفسِه بعنوانٍ واحد: العنوانُ لا يدلّ على المعروض منها (موجودةٌ واحدة للشريط) */
+      if (!strip.seg) byHash.forEach((labels, h) => { if (labels.length > 1) push([Object.assign({ rule: 'addr', detail: labels.length + ' تبويبات بعنوانٍ واحد ' + h + ': «' + labels.slice().sort().join('» · «') + '»' }, where0)], page, path); });
     }
   };
   /* ── القائمة الجانبية: البنودُ الظاهرة ثم بنودُ كل مجموعةٍ مطويّة (تُفتح مجموعتُها أولاً) — يُنقر كلُّ بند ── */
@@ -351,9 +355,12 @@ async function notifOf(W, s, acc, forb) {
   if (r.status !== 200) out.push('قائمة التنبيهات: ' + r.status);
   const bad = rows.filter((x) => forb.off.includes(sysOf(x.type, x.category || x.cat || x.k)));
   bad.forEach((x) => out.push('تنبيهٌ من نظامٍ مطفأ في القائمة: ' + x.type));
-  const bell = await s.page.evaluate(() => { try { return KIVO.BassamNotif.list().map((x) => ({ type: x.type, k: x.k || x.cat || x.category || '' })); } catch (e) { return null; } });
-  (bell || []).filter((x) => forb.off.includes(sysOf(x.type, x.k))).forEach((x) => out.push('تنبيهٌ من نظامٍ مطفأ في الجرس: ' + x.type));
-  return { findings: [...new Set(out)], seen: { list: rows.length, bell: bell ? bell.length : -1, types: [...new Set(rows.map((x) => x.type))] } };
+  /* العدّاد: لا يحسب ما لا يُعرض (صفحةٌ واحدة من القائمة ⇒ عددُ غير المقروء = غيرُ المقروء المعروض) */
+  if (r.j && !r.j.next && typeof r.j.unread === 'number' && r.j.unread > rows.filter((x) => x.un).length) out.push('العدّاد يحسب ' + r.j.unread + ' غيرَ مقروء والمعروضُ ' + rows.filter((x) => x.un).length);
+  const bell = await s.page.evaluate(async () => { try { const N = KIVO.BassamNotif; if (N.refresh) await N.refresh(); return { list: N.list().map((x) => ({ type: x.type, k: x.k || x.cat || x.category || '', un: !!x.un })), unread: typeof N.unread === 'function' ? N.unread() : null }; } catch (e) { return null; } });
+  ((bell && bell.list) || []).filter((x) => forb.off.includes(sysOf(x.type, x.k))).forEach((x) => out.push('تنبيهٌ من نظامٍ مطفأ في الجرس: ' + x.type));
+  if (bell && typeof bell.unread === 'number' && !(r.j && r.j.next) && bell.unread > bell.list.filter((x) => x.un).length) out.push('عدّادُ الجرس ' + bell.unread + ' والمعروضُ غيرَ مقروء ' + bell.list.filter((x) => x.un).length);
+  return { findings: [...new Set(out)], seen: { list: rows.length, bell: bell ? bell.list.length : -1, unread: r.j ? r.j.unread : -1, types: [...new Set(rows.map((x) => x.type))] } };
 }
 /* طلبٌ لمورد يملكه نظامٌ مطفأ (من عقده contract.json: owns) — دليلُ قطعةٍ محقونةٍ ما زالت حيّة */
 let OWNS = null;
