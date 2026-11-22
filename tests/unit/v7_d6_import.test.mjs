@@ -439,41 +439,76 @@ test('(١٦) كلُّ ما يكبر يُقسم: المهامُ والتقرير�
   } finally { await A.close(); await Z.close(); }
 });
 
-/* V7 · د6: تنبيهاتُ إدارةٍ أخرى لا تدخل خطةَ استيراد هذه الإدارة: لا تُقرأ (تعديلُها بين الفحص والاعتماد لا يوقفه) ولا تُعاد كتابتُها (تبقى كما عُدِّلت) ·
-   وتنبيهاتُ الإدارة الهدف محروسة (تعديلُها بين الفحص والاعتماد ⇒ 409 ولا يتغيّر شيء) */
-test('(١٧) التنبيهات: خطةُ استيراد الإدارة تقرأ تنبيهاتِها وحدها — تنبيهاتُ إدارةٍ أخرى لا تُقرأ ولا تُمسّ، وتنبيهاتُ الهدف محروسة', { timeout: 300000, ...need }, async () => {
-  const file = await oldFile({ small: true }), T = await target(), dA = 'd:' + A;
-  const rowsA = () => ['notification_messages', 'notification_targets'].map((t) => T.DB.q('SELECT * FROM ' + t + ' WHERE scope=?1 ORDER BY 1,2', dA).map((r) => JSON.stringify(r)));
-  try {
-    assert.equal((await protocol(T, T.su, file, { scope: SCOPE }).run()).commit.status, 200);
-    const nB = T.DB.q('SELECT COUNT(*) n FROM notification_messages WHERE scope=?1', 'd:' + B)[0].n;
-    assert.ok(nB >= 2, 'في الإدارة الهدف تنبيهاتُ النسخة (' + nB + ')');
-    /* تنبيهاتٌ لإدارةٍ أخرى: نسخةٌ من صفوف الهدف بنطاق A */
-    for (const t of ['notification_messages', 'notification_targets']) {
-      const cols = T.DB.q('PRAGMA table_info(' + t + ')').map((c) => c.name);
-      T.DB.exec('INSERT INTO ' + t + '(' + cols.join(',') + ') SELECT ' + cols.map((c) => (c === 'scope' ? "'" + dA + "'" : c)).join(',') + ' FROM ' + t + " WHERE scope='d:" + B + "'");
-    }
-    const P = protocol(T, T.su, variant(file), { scope: SCOPE });
-    const run = async (Q) => { assert.equal((await Q.begin()).status, 200); for (let i = 0; i < Q.parts.length; i++) assert.equal((await Q.part(i)).status, 200); for (let i = 0; i < Q.sliceCount; i++) assert.equal((await Q.sliceStep(i)).status, 200); const ins = await Q.inspect(); assert.equal(ins.status, 200, JSON.stringify(ins.j).slice(0, 300)); return ins; };
-    const ins = await run(P);
-    T.DB.exec("UPDATE notification_messages SET title='TEST_ONLY · عُدِّل في إدارةٍ أخرى' WHERE scope='" + dA + "'");
-    const afterEdit = rowsA();
-    const done = await P.commit(ins.j.inspection.base);
-    assert.equal(done.status, 200, 'تعديلُ تنبيهات إدارةٍ أخرى لا يوقف الاعتماد: ' + JSON.stringify(done.j).slice(0, 300));
-    assert.deepEqual(rowsA(), afterEdit, 'تنبيهاتُ الإدارة الأخرى كما عُدِّلت — لم تُعَد كتابتُها');
-    assert.equal(T.DB.q('SELECT COUNT(*) n FROM notification_messages WHERE scope=?1', 'd:' + B)[0].n, nB, 'تنبيهاتُ الهدف هي تنبيهاتُ النسخة');
-    /* تنبيهاتُ الهدف تُستبدل كلُّها (ولو عُدِّلت قبل الاعتماد) · وتغيّرُ نسخة التنبيهات بين الفحص والاعتماد ⇒ تعارض ولا يتغيّر شيء */
-    const Q = protocol(T, T.su, file, { scope: SCOPE }), ins2 = await run(Q);
-    T.DB.exec("UPDATE revs SET rev=rev+1 WHERE k='bassam_notifications_domain_v1'");
-    const before = snapshot(T.DB), bad = await Q.commit(ins2.j.inspection.base);
-    assert.equal(bad.status, 409, JSON.stringify(bad.j).slice(0, 300));
-    assert.deepEqual(changed(snapshot(T.DB), before).filter((t) => t !== 'revs'), [], 'لم يتغيّر شيء');
-    const R = protocol(T, T.su, file, { scope: SCOPE }), ins3 = await run(R);
-    T.DB.exec("UPDATE notification_messages SET title='TEST_ONLY · عُدِّل في الهدف' WHERE scope='d:" + B + "'");
-    assert.equal((await R.commit(ins3.j.inspection.base)).status, 200);
-    assert.equal(T.DB.q("SELECT COUNT(*) n FROM notification_messages WHERE scope=?1 AND title LIKE 'TEST_ONLY · عُدِّل%'", 'd:' + B)[0].n, 0, 'صفوفُ الهدف استُبدلت');
-    assert.deepEqual(rowsA(), afterEdit, 'وتنبيهاتُ الإدارة الأخرى ما زالت كما عُدِّلت');
-  } finally { await T.close(); }
+/* V7 · د6 (قرارُ المالك: الخطةُ المحصورة باقية): استيرادُ الإدارة أو استعادتُها لا تمسّ تنبيهاتِ غيرها أبداً — على المسارين (/api/backup/import · /api/backup/restore)
+   وبالوضعين (استبدال · دمج): (أ) كلُّ صفٍّ لغير الإدارة (إدارةٌ أخرى · bc · sys · الإعداداتُ ونقاطُ التتبّع) هو هو بايتاً بعد كل عملية،
+   (ب) تنبيهاتُ الإدارة بعد الاستبدال هي ما تحمله النسخةُ صفاً بصف (التحويلُ المتوقَّع = استيرادُ النسخة نفسِها إلى إدارةٍ فارغة) — بلا تكرارٍ ولا نقص؛
+   وبعد الدمج كما كانت حرفاً (الدمجُ في الإدارة لا يطبّق مجالَ التنبيهات — قاعدةٌ قائمة).
+   ثم على المسار الجديد: تنبيهاتُ إدارةٍ أخرى لا تُقرأ (تعديلُها بين الفحص والاعتماد لا يوقفه ويبقى) وتنبيهاتُ الهدف محروسة بنسختها. */
+const NF_T = [['notification_messages', 'scope'], ['notification_targets', 'scope'], ['notification_user_state', 'message_scope'], ['notification_dedup', 'scope'], ['notification_type_overrides', ''], ['notification_checkpoints', 'scope']];
+const nfRows = (T, mine) => Object.fromEntries(NF_T.filter(([, c]) => !mine || c).map(([t, c]) => [t, T.DB.q('SELECT * FROM ' + t + (c ? ' WHERE ' + c + (mine ? '=' : '<>') + "'d:" + B + "'" : '')).map((r) => JSON.stringify(r)).sort()]));
+const nfMine = (T) => { const o = nfRows(T, true); delete o.notification_checkpoints; return o; };
+test('(١٧) التنبيهات: استيرادُ الإدارة واستعادتُها (المساران · الاستبدال والدمج) لا تمسّ تنبيهاتِ غيرها بايتاً، وتنبيهاتُ الإدارة هي ما تحمله النسخة صفاً بصف — وتنبيهاتُ إدارةٍ أخرى لا تُقرأ وتنبيهاتُ الهدف محروسة', { timeout: 600000, ...need }, async () => {
+  const strip = (f) => ({ ...f, data: Object.fromEntries(Object.entries(f.data).filter(([k]) => !(k in NOT_TRANSFERRED))), idbImages: {} });
+  const file = await oldFile({ small: true, images: false }), nf = JSON.parse(file.data.bassam_notif_v1);
+  /* نسخةٌ ثانية: نصفُ التنبيهات وأحدُها معدَّل العنوان */
+  const half = { ...nf, items: nf.items.slice(0, Math.ceil(nf.items.length / 2)).map((x, i) => (i ? x : { ...x, t: x.t + ' (معدَّل)' })) };
+  const file2 = { ...file, data: { ...file.data, bassam_notif_v1: JSON.stringify(half) } };
+  assert.ok(nf.items.length >= 4 && half.items.length < nf.items.length);
+  /* التحويلُ المتوقَّع: النسخةُ نفسُها إلى إدارةٍ فارغة في منصةٍ جديدة */
+  const expect = async (f) => { const Z = await target(); try { assert.equal((await protocol(Z, Z.su, f, { scope: SCOPE }).run()).commit.status, 200); return { rows: nfMine(Z), z: Z.DB.q("SELECT * FROM notification_messages WHERE scope='d:" + B + "'"), targets: Z.DB.q("SELECT * FROM notification_targets WHERE scope='d:" + B + "'") }; } finally { await Z.close(); } };
+  const E1 = await expect(file), E2 = await expect(file2);
+  assert.equal(E1.rows.notification_messages.length, nf.items.length, 'كلُّ تنبيهٍ في النسخة صفٌّ واحد'); assert.equal(E2.rows.notification_messages.length, half.items.length);
+  const viaNew = async (T, f, mode) => { const r = await protocol(T, T.su, f, { scope: SCOPE, mode }).run(); assert.equal(r.commit && r.commit.status, 200, 'جديد ' + mode + ': ' + JSON.stringify((r.commit || r.inspect || r.begin).j).slice(0, 300)); };
+  const viaOld = async (T, f, mode) => {
+    const inv = (await T.call('/api/backup/restore?kind=dept&departments=%5B%5D&dept=' + B, { ck: T.su.ck })).j, id = 'TEST_ONLY_nf_old_' + Math.random().toString(36).slice(2, 12);
+    const body = { version: 1, uid: T.su.uid, requestId: id, scope: SCOPE, mode, reason: 'TEST_ONLY د6 تنبيهات', backup: strip(f), legacyConsent: true };
+    const ins = await T.call('/api/backup/restore', { ck: T.su.ck, body: { ...body, base: inv.base, phase: 'inspect' } });
+    assert.equal(ins.status, 200, 'قديم فحص ' + mode + ': ' + JSON.stringify(ins.j).slice(0, 300));
+    const com = await T.call('/api/backup/restore', { ck: T.su.ck, body: { ...body, base: ins.j.inspection.base, phase: 'commit' } });
+    assert.equal(com.status, 200, 'قديم اعتماد ' + mode + ': ' + JSON.stringify(com.j).slice(0, 300));
+  };
+  for (const [route, run] of [['/api/backup/import', viaNew], ['/api/backup/restore', viaOld]]) {
+    const T = await target();
+    try {
+      /* صفوفٌ لغير الإدارة قبل أي استيراد: إدارةٌ أخرى · bc · sys (رسائلُ وأهدافٌ وحالاتُ قراءة وتكرار) · إعدادُ نوع · نقطةُ تتبّع */
+      for (const sc of ['d:' + A, 'bc', 'sys']) {
+        for (const m of E1.z) { const r = { ...m, scope: sc, title: 'TEST_ONLY · ' + sc + ' · ' + m.title }; T.DB.q('INSERT INTO notification_messages(' + Object.keys(r).join(',') + ') VALUES(' + Object.keys(r).map((_, i) => '?' + (i + 1)).join(',') + ')', ...Object.values(r)); }
+        for (const g of E1.targets) T.DB.q('INSERT INTO notification_targets(scope,message_id,kind,value) VALUES(?1,?2,?3,?4)', sc, g.message_id, g.kind, g.value);
+        T.DB.q('INSERT INTO notification_user_state(account_uid,message_scope,message_id,read_at) VALUES(?1,?2,?3,?4)', T.su.uid, sc, E1.z[0].id, 1795000000123);
+        T.DB.q('INSERT INTO notification_dedup(scope,once_key,created_at,message_id) VALUES(?1,?2,?3,?4)', sc, 'TEST_ONLY_once', 1795000000124, E1.z[0].id);
+      }
+      T.DB.q("INSERT INTO notification_type_overrides(type_id,enabled,priority) VALUES('TEST_ONLY_type',1,'urg')");
+      T.DB.q("INSERT INTO notification_checkpoints(scope,name,value) VALUES('sys','TEST_ONLY_cp',7)");
+      const O = nfRows(T, false);
+      assert.ok(O.notification_messages.length >= 3 * E1.z.length && O.notification_type_overrides.length && O.notification_checkpoints.length);
+      const step = async (label, f, mode, check) => {
+        await run(T, f, mode);
+        assert.deepEqual(nfRows(T, false), O, route + ' · ' + label + ': كلُّ صفٍّ لغير الإدارة هو هو بايتاً');
+        check(nfMine(T), route + ' · ' + label);
+      };
+      await step('استبدال', file, 'replace', (m, w) => assert.deepEqual(m, E1.rows, w + ': ما تحمله النسخة صفاً بصف'));
+      await step('دمجُ النسخة نفسِها', file, 'merge', (m, w) => assert.deepEqual(m, E1.rows, w + ': كما كانت — بلا تكرار'));
+      await step('استبدالٌ بالثانية', file2, 'replace', (m, w) => assert.deepEqual(m, E2.rows, w + ': ما تحمله الثانية وحدها — لا بقيّةَ من الأولى'));
+      /* الدمجُ في الإدارة لا يطبّق مجالَ تنبيهات النسخة أصلاً (قاعدةٌ قائمة قبل د6 — 019d rsSelectMerge: «المجالاتُ الموجودة تبقى كما هي»):
+         تنبيهاتُ الإدارة تبقى كما كانت حرفاً — لا تُضاف تنبيهاتُ النسخة ولا تتكرّر ولا تنقص */
+      await step('دمجُ الأولى فوق الثانية', file, 'merge', (m, w) => assert.deepEqual(m, E2.rows, w + ': تنبيهاتُ الإدارة كما كانت (لا إضافةَ ولا تكرارَ ولا نقص)'));
+      if (route === '/api/backup/import') {
+        /* تنبيهاتُ إدارةٍ أخرى لا تُقرأ: تعديلُها بين الفحص والاعتماد لا يوقف الاعتمادَ ويبقى كما عُدِّل */
+        const go = async (Q) => { assert.equal((await Q.begin()).status, 200); for (let i = 0; i < Q.parts.length; i++) assert.equal((await Q.part(i)).status, 200); for (let i = 0; i < Q.sliceCount; i++) assert.equal((await Q.sliceStep(i)).status, 200); const ins = await Q.inspect(); assert.equal(ins.status, 200, JSON.stringify(ins.j).slice(0, 300)); return ins; };
+        const P = protocol(T, T.su, file, { scope: SCOPE }), ins = await go(P);
+        T.DB.exec("UPDATE notification_messages SET title='TEST_ONLY · عُدِّل في إدارةٍ أخرى' WHERE scope='d:" + A + "'");
+        const edited = nfRows(T, false);
+        assert.equal((await P.commit(ins.j.inspection.base)).status, 200, 'تعديلُ تنبيهات إدارةٍ أخرى لا يوقف الاعتماد');
+        assert.deepEqual(nfRows(T, false), edited, 'وتبقى كما عُدِّلت — لم تُعَد كتابتُها');
+        /* وتغيّرُ نسخة التنبيهات بين الفحص والاعتماد ⇒ تعارض ولا يتغيّر شيء */
+        const Q = protocol(T, T.su, file2, { scope: SCOPE }), ins2 = await go(Q);
+        T.DB.exec("UPDATE revs SET rev=rev+1 WHERE k='bassam_notifications_domain_v1'");
+        const before = snapshot(T.DB), bad = await Q.commit(ins2.j.inspection.base);
+        assert.equal(bad.status, 409, JSON.stringify(bad.j).slice(0, 300));
+        assert.deepEqual(changed(snapshot(T.DB), before).filter((t) => t !== 'revs'), [], 'لم يتغيّر شيء');
+      }
+    } finally { await T.close(); }
+  }
 });
 
 test('(١٣) الصور: غيرُ المذكورة لا تُكتب وتُعدّ · فحوصُ مسار الرفع القائم نفسُها (الحكمُ واحدٌ على البايتات نفسِها) · الأكبرُ من الحد مرفوض · وفشلُ الاستيراد لا يترك صورة', { timeout: 300000, ...need }, async () => {
