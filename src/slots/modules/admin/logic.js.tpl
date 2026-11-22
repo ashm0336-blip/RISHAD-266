@@ -3650,7 +3650,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       h("div", { key: "g" + k, className: "adm-flt-r" }, h("span", { className: "adm-flt-l", id: "aud-fl-" + k }, lbl), h("div", { role: "group", "aria-labelledby": "aud-fl-" + k, className: cls }, kids));
     const filters = sc.site
       ? h("div", { key: "ft", className: "adm-flt" }, [
-          fGrp("k", "مستوى المنصة", "adm-chips adm-flt-c", fPlat),
+          /* V7 · د6: مجموعةُ «مستوى المنصة» تظهر ما دام مرشّحُها مختاراً (وصولاً من «السجل» لصف «المنصة كلها») — والسجلُّ العادي بمجموعاته الأربع كما كان؛ «مسح المرشّحات» يعيده */
+          F.k ? fGrp("k", "مستوى المنصة", "adm-chips adm-flt-c", fPlat) : null,
           fGrp("e", "الكيان", "adm-chips adm-flt-c", fEt),
           fGrp("a", "الفعل", "adm-chips adm-flt-c", fAct),
           fGrp("q", "البحث", "adm-flt-f", [fDept, fUid, fQ, fSite]),
