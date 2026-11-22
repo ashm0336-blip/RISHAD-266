@@ -108,3 +108,33 @@ test('V7 · د6 (walkfix ④ · ⑤) · stored log lines of an OFF system are hi
   assert.deepEqual(await names('su', B, { kind: 'mgr', did: A_S1 }), ['مؤشرات القسم', 'موظفو القسم'], '«ما يراه مدير» for a section, seen from elsewhere, names the section');
   assert.deepEqual(await names('su', A_S1, { kind: 'mgr', did: A }), ['مؤشرات الإدارة', 'موظفو الإدارة'], 'and for a department, seen from inside a section, the department');
 });
+
+test('V7 · د6 (walkfix · قرار المالك ٤) · «أثر الحفظ» names what goes OFF with a container, before saving — one function (Perm44.offWith), platform and department level', { timeout: 600000 }, async () => {
+  const { permViews, G } = await import('./v7_d6_holders_fx.mjs');
+  const W = await holdersWorld();
+  await applyState(W, 'allOn');
+  const c = await clientOf(W, 'su', B);
+  try {
+    assert.deepEqual(c.ev('KIVO.Perm44.offWith(["daily"]).sort()'), ['dreport', 'tasks'], 'what lives in «المتابعة اليومية»');
+    assert.deepEqual(c.ev('KIVO.Perm44.offWith(["planning", "award"]).sort()'), ['plan', 'staff'], 'what lives in «الخطة التشغيلية»; a page with nothing in it adds nothing');
+    assert.deepEqual(c.ev('KIVO.Perm44.offWith(["daily", "tasks"])'), ['dreport'], 'what is already in the change is not repeated');
+    assert.deepEqual(c.ev('KIVO.Perm44.offWith(["tasks"])'), [], 'a system with nothing in it');
+    assert.deepEqual(c.ev('KIVO.Perm44.offWith(["daily"], function (k) { return k !== "tasks"; })'), ['dreport'], 'what is already OFF is not an effect of this save');
+    assert.deepEqual(c.ev('KIVO.Perm44.offClosure(["daily"]).sort()'), ['daily', 'dreport', 'tasks'], 'the same closure the platform switch is read with');
+    /* the page's own review rows (logic-perm44 _p44SysRevVals): the pending switch, then what goes with it — by name */
+    const ui = permViews(c).ui;
+    ui._p44S = () => ({ rev: { open: 1, kind: 'sys' } });
+    const rows = (u, dr) => JSON.parse(JSON.stringify(ui._p44SysRevVals(u, dr, 'TEST_ONLY', 0).p44RevRows)).map((r) => r.what.replace('TEST_ONLY · ', '') + ' ' + r.from + '←' + r.to);
+    assert.deepEqual(rows('__plat', { daily: false }), ['المتابعة اليومية مفعّل←مطفأ', 'التقرير اليومي — يُطفأ معها مفعّل←مطفأ', 'المهام — يُطفأ معها مفعّل←مطفأ'], 'platform level');
+    assert.deepEqual(rows(A, { daily: false, tasks: false }), ['المتابعة اليومية مفعّل←مطفأ', 'المهام مفعّل←مطفأ', 'التقرير اليومي — يُطفأ معها مفعّل←مطفأ'], 'department level, one of them already in the change');
+    assert.deepEqual(rows(A, { award: false }), ['جائزة التميز مفعّل←مطفأ'], 'nothing goes with a plain page');
+    assert.deepEqual(rows(A, { daily: true }), ['المتابعة اليومية مطفأ←مفعّل'], 'switching ON names no «goes OFF with it»');
+  } finally { c.dispose(); }
+  /* what is already OFF for the unit is not named as an effect */
+  await asSuper(W, B, (x) => x.I.setDeptCap(A, x.ev('KIVO.BassamPerm.PAGE_KEYS').filter((k) => k !== 'tasks')));
+  const d = await clientOf(W, 'su', B);
+  try {
+    const ui = permViews(d).ui; ui._p44S = () => ({ rev: { open: 1, kind: 'sys' } });
+    assert.deepEqual(JSON.parse(JSON.stringify(ui._p44SysRevVals(A, { daily: false }, 'X', 0).p44RevRows)).map((r) => r.what), ['X · المتابعة اليومية', 'X · التقرير اليومي — يُطفأ معها'], '«المهام» was already OFF for the unit');
+  } finally { d.dispose(); }
+});

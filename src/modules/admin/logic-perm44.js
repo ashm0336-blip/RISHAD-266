@@ -522,7 +522,9 @@ Object.assign(Component.prototype, {
     if (!R || !R.open || "sys" !== R.kind || !ks.length) return { p44RevOn: !1 };
     return {
       p44RevOn: !0,
-      p44RevRows: ks.map((k) => ({ what: unitName + " · " + this._p44SysName(k), from: dr[k] ? "مطفأ" : "مفعّل", to: dr[k] ? "مفعّل" : "مطفأ" })),
+      p44RevRows: ks.map((k) => ({ what: unitName + " · " + this._p44SysName(k), from: dr[k] ? "مطفأ" : "مفعّل", to: dr[k] ? "مفعّل" : "مطفأ" }))
+        /* V7 · د6 (قرار المالك ٤): «أثر الحفظ» يسمّي ما يُطفأ مع الحاوية قبل الحفظ — من الإغلاق الواحد (Perm44.offWith) */
+        .concat(this._p44Try(() => KIVO.Perm44.offWith(ks.filter((k) => !dr[k]), (k) => this._p44On(u, k)), []).map((k) => ({ what: unitName + " · " + this._p44SysName(k) + " — يُطفأ معها", from: "مفعّل", to: "مطفأ" }))),
       p44RevAff: [],
       p44RevAffTxt: this.p44AffLine(people) + (people ? " في هذه الوحدة وما تحتها" : ""),
       p44RevNote: "إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل.",

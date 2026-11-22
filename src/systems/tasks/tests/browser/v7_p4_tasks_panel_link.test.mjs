@@ -30,7 +30,7 @@ for (const mode of ['enforce']) {   /* V7 · د5-ح (القفل): لا وضعَ 
       assert.equal(v.tasksView, true, 'the employee holds tasks:view');
       assert.equal(v.link, true, 'the «مؤشرات الإدارة» link is shown to a holder of tasks:view alone');
       await s.go('#/kpis', 4500); v = await see(s.page);
-      assert.equal(v.hash, '#/kpis', 'the route is open'); assert.equal(v.panel, true, 'the tasks panel is drawn'); assert.equal(v.none, false);
+      assert.equal(v.hash, '#/kpis/tk', 'the route is open, on the address of its one panel');   /* V7 · د6 (walkfix · أ2-5): لكل لوحةٍ عنوانُها — #/kpis يُصحَّح إلى عنوان اللوحة المعروضة */ assert.equal(v.panel, true, 'the tasks panel is drawn'); assert.equal(v.none, false);
       assert.deepEqual(s.errs, []); await s.ctx.close();
       /* no grant at all: neither link nor page */
       await setPerms(lab, (P) => { P.emps[A] = { TEST_ONLY_eA1: {} }; });

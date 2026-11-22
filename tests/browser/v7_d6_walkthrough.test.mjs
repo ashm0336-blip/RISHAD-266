@@ -7,7 +7,7 @@
    ومعها ج2 (source): القائمةُ الجانبية الفعلية = مصدرُها = البطاقاتُ التي تصف الحاملَ نفسَه · وج9: الجولةُ بعرض 390 و768.
    كلُّ موجودةٍ على الشجرة إمّا مدخلٌ مسمّى في KNOWN_D6 (يُحذف حين يُصلَح) أو تُسقط الاختبار؛ ومدخلٌ لم يعد يتكرر يُسقطه كذلك.
    مفاتيحُ التشغيل: KIVO_D6_STATES=allOn,oneOffDept · KIVO_D6_ACCOUNTS=mgr,sec · KIVO_D6_VIEWPORTS=1366,390 · KIVO_D6_ONLY=walk|source ·
-   KIVO_D6_REPORT=<ملف.md> (جدولُ الموجودات والأزمنة) · KIVO_D6_SAVE=model (كاتبُ السقف بلا شاشة) · KIVO_D6_PAR=<عددُ الحسابات معاً، الافتراضي 3>. */
+   KIVO_D6_FULL=1 (البوابةُ الكاملة: المصفوفةُ كلُّها بالعرضين الضيّقين) · KIVO_D6_REPORT=<ملف.md> (جدولُ الموجودات والأزمنة) · KIVO_D6_SAVE=model (كاتبُ السقف بلا شاشة) · KIVO_D6_PAR=<عددُ الحسابات معاً، الافتراضي 3>. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -105,6 +105,7 @@ const KNOWN_D6 = [
 
 const pick = (env, all, key) => { const v = (process.env[env] || '').split(',').map((x) => x.trim()).filter(Boolean); return v.length ? all.filter((x) => v.includes(String(key(x)))) : all; };
 const ONLY = process.env.KIVO_D6_ONLY || '', PAR = Math.max(1, +(process.env.KIVO_D6_PAR || 3));
+const FULL = process.env.KIVO_D6_FULL === '1';   /* V7 · د6 (ج9 — البوابةُ الكاملة): المصفوفةُ كلُّها (كلُّ الحسابات × كلُّ الحالات) بعرض 390 و768 أيضاً؛ بدونه المجموعةُ المصغّرة NARROW (البوابةُ السريعة) */
 /* سجلُّ طلبات الخادم (سطرٌ لكل طلب) يُسكَت في هذا الملف وحده: آلافُ الأسطر تحجب تقريرَ الجولة */
 const log0 = console.log; console.log = (...a) => { if (typeof a[0] === 'string' && a[0].startsWith('{"v":1,"t":')) return; log0(...a); };
 async function pool(items, n, fn) { const out = new Array(items.length); let i = 0; await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k]); } })); return out; }
@@ -124,7 +125,7 @@ test('V7 · د6 (أ2 · ج1 · ج2 · ج9) · الجولة الكاملة: كل�
         if (st.key === ALL_ON.key) await seedRoleAndNotifications(W);
         const row = { state: st.key, build: built.ms, saves: built.saves, walk: {}, source: 0 };
         if (ONLY !== 'source') for (const vp of widths) {
-          const narrow = vp.width !== 1366, accs = accounts.filter((a) => !narrow || (NARROW.accounts.includes(a.key) && NARROW.states.includes(st.key)));
+          const narrow = vp.width !== 1366, accs = accounts.filter((a) => !narrow || FULL || (NARROW.accounts.includes(a.key) && NARROW.states.includes(st.key)));
           if (!accs.length) continue;
           const w0 = Date.now();
           const res = await pool(accs, PAR, (acc) => walkAccount(W, acc, st, vp, { deep: st.key === 'allOn' && !narrow }));
