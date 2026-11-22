@@ -4,9 +4,8 @@
                (V7 · د5-هـ 44: the editor header and its empty alert were deleted with «سقف الصفحات» — their checks with them);
      · inherit (G has a record, B none): «يرث سقف الأصل · n من …» / «موروثٌ من الأصل …» ✓;
      · own     (A its own record): «سقفٌ خاصّ · n من …», independent adds «مستقلّ»; an empty record reads «السقف فارغ» as a warning.
-   Seeding (the real client engine, after the removal): a child under an empty parent gets the «أساسي» record and an empty effective ceiling;
-   when the parent is widened the child stays within «أساسي» (no silent widening); under a capped parent the child snapshots it; a root node
-   has no record (open). Nothing here changes authorization. */
+   Seeding (the real client engine) — V7 · د6 (ب4): the explicit choice 'off' (default: the permanent pages alone) | 'parent' (the parent's systems; open or
+   root ⇒ every page); when the parent is widened the child does not widen by itself. Nothing here changes authorization. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startLab, LAB } from './local_server.mjs';
@@ -70,7 +69,9 @@ test('V7 P3-0 · ceiling state from one source: open (warning), inherited, own, 
   } finally { await b.close(); await lab.close(); }
 });
 
-test('V7 P3-0 · seeding after the pattern removal: empty parent ⇒ «أساسي» record and empty effective; widening the parent does not widen the child past «أساسي»', { timeout: 600000 }, async () => {
+/* V7 · د6 (ب4 — owner decision): the seeding this case pinned (root ⇒ no record · empty parent ⇒ the «أساسي» pattern · capped parent ⇒ a snapshot · a stored
+   patterns.basic wins) is replaced by the explicit choice 'off' (default) | 'parent'. The same end-to-end path (the real page, real saves), the new rule. */
+test('V7 P3-0 → د6 · seeding by the explicit choice: default «all OFF»; «parent» = the parent\'s systems (open ⇒ all); widening the parent never widens the child; no «أساسي» pattern', { timeout: 600000 }, async () => {
   const lab = await startLab(); const b = await chromium.launch();
   try {
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw); const p = s.page; await s.go('#/sysadmin/org', 3000);
@@ -78,31 +79,36 @@ test('V7 P3-0 · seeding after the pattern removal: empty parent ⇒ «أساس�
     const flush = async () => { await p.evaluate(() => (KIVO.__BS_SRV && KIVO.__BS_SRV.flushAsync ? KIVO.__BS_SRV.flushAsync(4000) : null)).catch(() => {}); await p.waitForTimeout(700); await lab.idle(); };
     const eff = (id) => ev((id) => KIVO.BassamPerm.deptCap(id).slice().sort(), id);
     const ALL = await ev(() => KIVO.BassamPerm.PAGE_KEYS.slice());
-    const BASIC = ['admin', 'emps', 'help', 'links', 'planning', 'staff', 'tasks'];
+    const PERMANENT = ['admin', 'emps'];
     const root = await ev(() => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY جذر', kind: 'إدارة عامة', pid: null })); await flush();
-    assert.equal(readP(lab).caps[root.id], undefined, 'a root node gets no record'); assert.equal((await eff(root.id)).length, ALL.length, 'open');
+    assert.equal(root.seed, 'off'); assert.deepEqual(readP(lab).caps[root.id].slice().sort(), PERMANENT, 'a new root node: the permanent pages alone (was: no record = open)');
+    assert.deepEqual(readP(lab).subs[root.id], { emps: ['data'] }, '«العهد» OFF too'); assert.deepEqual(await eff(root.id), PERMANENT);
+    const open = await ev(() => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY جذر كالمنصة', kind: 'إدارة عامة', pid: null, seed: 'parent' })); await flush();
+    assert.deepEqual(readP(lab).caps[open.id].slice().sort(), ALL.slice().sort(), 'root + «parent»: every page, an explicit record');
+    /* an empty parent: «parent» ⇒ its systems are OFF (no «أساسي» pattern); widening the parent later does not widen the child */
     await ev((id) => KIVO.BassamPerm.setDeptCap(id, []), root.id); await flush();
-    const kid = await ev((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY ابن', kind: 'قطاع', pid }), root.id); await flush();
-    assert.deepEqual(readP(lab).caps[kid.id].slice().sort(), BASIC, 'under an empty parent: the «أساسي» record');
-    assert.deepEqual(readP(lab).subs[kid.id], { emps: ['data', 'custody'], planning: ['readiness'], admin: ['shifts', 'backup', 'import'] }, 'and its inner tabs');   /* V7 · د5-ح: بلا «قوالب الصلاحيات» */
-    assert.deepEqual(readP(lab).lenses[kid.id], [], 'and its lenses');
+    const kid = await ev((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY ابن', kind: 'قطاع', pid, seed: 'parent' }), root.id); await flush();
+    assert.deepEqual(readP(lab).caps[kid.id].slice().sort(), PERMANENT, 'under an empty parent: the permanent pages alone');
+    assert.equal(readP(lab).lenses && readP(lab).lenses[kid.id], undefined, 'no lenses record is written');
     assert.deepEqual(await eff(kid.id), [], 'its effective ceiling is empty (the parent)');
     await ev(([id, all]) => KIVO.BassamPerm.setDeptCap(id, all), [root.id, ALL]); await flush();
-    assert.deepEqual(await eff(kid.id), BASIC, 'the parent widened to every page: the child stays within «أساسي»');
-    const capped = await ev(() => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY أب مسقوف', kind: 'إدارة عامة', pid: null })); await flush();
+    assert.deepEqual(await eff(kid.id), PERMANENT, 'the parent widened to every page: the child does not widen by itself');
+    const capped = await ev(() => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY أب مسقوف', kind: 'إدارة عامة', pid: null, seed: 'parent' })); await flush();
     await ev((id) => KIVO.BassamPerm.setDeptCap(id, ['emps', 'tasks', 'help']), capped.id); await flush();
-    const snap = await ev((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY لقطة', kind: 'قطاع', pid }), capped.id); await flush();
-    assert.deepEqual(readP(lab).caps[snap.id].slice().sort(), ['emps', 'help', 'tasks'], 'under a capped parent: a snapshot of it');
+    const snap = await ev((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY لقطة', kind: 'قطاع', pid, seed: 'parent' }), capped.id); await flush();
+    assert.deepEqual(readP(lab).caps[snap.id].slice().sort(), ['admin', 'emps', 'help', 'tasks'], 'under a capped parent: its systems (and the permanent pages)');
+    assert.deepEqual(await eff(snap.id), ['emps', 'help', 'tasks'], 'effective: never beyond the parent');
+    const offKid = await ev((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY مطفأ', kind: 'قطاع', pid }), capped.id); await flush();
+    assert.deepEqual(readP(lab).caps[offKid.id].slice().sort(), PERMANENT, 'the default under a capped parent: all OFF');
     assert.deepEqual(s.errs, []); await s.ctx.close();
-    /* a stored patterns.basic (written by an earlier admin screen) still wins, end to end */
+    /* a stored patterns.basic (written by an earlier admin screen) is no longer a seed source */
     await setPerms(lab, (P) => { P.patterns = { basic: { cap: ['help', 'links'], subs: {}, tabs: {}, lenses: [] } }; });
     const s2 = await openAs(b, lab, LAB.superUn, LAB.superPw); const p2 = s2.page; await s2.go('#/sysadmin/org', 3000);
     const flush2 = async () => { await p2.evaluate(() => (KIVO.__BS_SRV && KIVO.__BS_SRV.flushAsync ? KIVO.__BS_SRV.flushAsync(4000) : null)).catch(() => {}); await p2.waitForTimeout(700); await lab.idle(); };
-    const kid2 = await p2.evaluate((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY ابن ثانٍ', kind: 'قطاع', pid }), root.id); await flush2();
     await p2.evaluate((id) => KIVO.BassamPerm.setDeptCap(id, []), root.id); await flush2();
-    const kid3 = await p2.evaluate((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY ابن ثالث', kind: 'قطاع', pid }), root.id); await flush2();
-    assert.deepEqual(readP(lab).caps[kid3.id].slice().sort(), ['help', 'links'], 'the stored «أساسي» is used for the seed');
-    assert.ok(Array.isArray(readP(lab).caps[kid2.id]), 'kid2 (parent widened at that time) got a snapshot');
+    const kid3 = await p2.evaluate((pid) => KIVO.BassamDepts.nodeAdd({ name: 'TEST_ONLY ابن ثالث', kind: 'قطاع', pid, seed: 'parent' }), root.id); await flush2();
+    assert.deepEqual(readP(lab).caps[kid3.id].slice().sort(), PERMANENT, 'the stored «أساسي» is not used: the explicit choice alone');
+    assert.deepEqual(readP(lab).patterns, { basic: { cap: ['help', 'links'], subs: {}, tabs: {}, lenses: [] } }, 'the stored record itself is left as it is');
     assert.deepEqual(s2.errs, []);
   } finally { await b.close(); await lab.close(); }
 });

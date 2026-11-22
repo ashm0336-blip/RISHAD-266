@@ -47,10 +47,6 @@
   "order": 10,
   "text": " ['staffing', 'التسكين الشهري'],"
  },
- "perm.seed.cap.staff": {
-  "order": 10,
-  "text": "'staff',"
- },
  "tree.keyCap.staff": {
   "order": 10,
   "text": "\n    bassam_staffing_v3:'staff', bassam_staffing_v2:'staff', bassam_staffing_snap_v1:'staff', bassam_staffing_locks_v1:'staff', bassam_callsigns_v1:'staff',"

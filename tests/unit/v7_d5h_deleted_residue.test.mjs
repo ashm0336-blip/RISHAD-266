@@ -61,7 +61,8 @@ test('① ورقةُ «قوالب الصلاحيات» ومفاتيحُ tpl.* ل
   assert.ok(!REG.owners.some((o) => o.id === 'admin/ptpls') && !REG.atoms.some((a) => a.leaf === 'admin/ptpls'));
   const PAGES = JSON.parse(rd(path.join(SRC, 'manifests', 'pages.json')));
   assert.ok(!JSON.stringify(PAGES).includes('"ptpls"'), 'pages.json بلا الورقة');
-  assert.match(rd(path.join(SRC, 'permissions', '331-perm-model.js')), /admin:\['shifts','backup','import'\]/, 'بذرُ السقف «أساسي» بلا الورقة');
+  /* V7 · د6 (ب4 — قرار المالك): بذرُ السقف «أساسي» (SEED_BASIC) حُذف كلُّه مع استبدال البذر بالاختيار الصريح — فلا قائمةَ أقسامٍ فيه تحمل الورقة أو تخلو منها */
+  assert.doesNotMatch(rd(path.join(SRC, 'permissions', '331-perm-model.js')), /var SEED_BASIC|ptpls/, 'لا بذرَ «أساسي» ولا أثرَ للورقة في نموذج الصلاحيات');
 });
 
 test('② موردُ القوالب غيرُ مسجَّل في الخادم — يذكره الترحيلُ (063) ومحوّلُ النسخ (019f · بـenfTplsKey) وحدهما', () => {

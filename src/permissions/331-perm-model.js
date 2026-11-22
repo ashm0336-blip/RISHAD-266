@@ -106,6 +106,7 @@
       var r = { caps: o.caps || {}, emps: o.emps || {}, tplOf: o.tplOf || {}, lenses: o.lenses || {}, subs: o.subs || {}, empLens: o.empLens || {}, lensZ: o.lensZ, patterns: o.patterns || {} };
       /* caps-own: the ceiling mode travels with the registry (the server refuses a save that drops it — 021 capOwnWhy) */
       if (o.capOwn !== undefined) r.capOwn = o.capOwn; if (o.capMode !== undefined) r.capMode = o.capMode;
+      if (o.capSeed !== undefined) r.capSeed = o.capSeed;   /* V7 · د6 (ب4): علامةُ «سجلٌّ مبذورٌ لم يضبطه أحد» تسافر مع السجلّ (أدناه unseed · seedUnit) */
       /* تسامح: مفتاح الورقة القديم emps/tasks (من عهد «التوأم») يُقرأ tasks */
       try { var mv = false; Object.keys(r.emps).forEach(function(d9){ Object.keys(r.emps[d9] || {}).forEach(function(ek){ var pm9 = r.emps[d9][ek] || {}; if (pm9['emps/tasks']) { if (!pm9.tasks) pm9.tasks = pm9['emps/tasks']; delete pm9['emps/tasks']; mv = true; } }); }); if (mv) permSave(r); } catch (e9) {}
       /* ترقية: «المناطق» انضمّت لسقف العدسات — المصفوفات المخزونة قبلها تعدّها مفعّلة */
@@ -121,6 +122,24 @@
     return f0;
   }
   function permSave(o){ _pmMemo = o; try { RAW.setItem.call(localStorage, K_PERM, JSON.stringify(o)); } catch(e){} }
+  /* V7 · د6 (ب4 — قرار المالك: الاستيرادُ والاستعادة كما كانا): سجلُّ السقف الذي كتبه بذرُ الوحدة الجديدة يُعلَّم صراحةً capSeed[<الوحدة>] =
+     { seed, caps, subs } (نسخةٌ مما كُتب) — فيعامله الاستيرادُ والاستعادة كأن الوحدة بلا سجلّ (320 permSlice = rsPermSlice في الخادم: السقفُ المرفق
+     بالنسخة يُطبَّق كما كان قبل ب4). العلامةُ لا تمنح ولا تمنع شيئاً: لا يقرؤها حكمُ صلاحيةٍ في الواجهة ولا في الخادم، ولا تدخل فرقَ السجلّ
+     (perm44CeilDiff: caps · subs · lenses). وأوّلُ ضبطٍ حقيقي للسقف (أيُّ كاتبٍ أدناه) يمحوها؛ والخادمُ لا يثق بها وحدها: سجلٌّ لا يطابق نسختَها
+     ليس «مبذوراً لم يُمسّ». */
+  function unseed(o, d){
+    if (!o.capSeed || typeof o.capSeed !== 'object' || !Object.prototype.hasOwnProperty.call(o.capSeed, d)) return;
+    var m = {}; Object.keys(o.capSeed).forEach(function(k){ if (k !== d) m[k] = o.capSeed[k]; });
+    if (Object.keys(m).length) o.capSeed = m; else delete o.capSeed;
+  }
+  /* هل سجلُّ الوحدة ما زال بذرَ إنشائها لم يضبطه أحد؟ — للعرض ('off' | 'parent' | '') */
+  function capSeeded(did){
+    var o = permStore(), d = did || curDept(), s = o.capSeed && typeof o.capSeed === 'object' ? o.capSeed[d] : null;
+    if (!s || typeof s !== 'object' || !Array.isArray(o.caps[d])) return '';
+    if (JSON.stringify(o.caps[d]) !== JSON.stringify(s.caps) || JSON.stringify((o.subs || {})[d] || null) !== JSON.stringify(s.subs || null)) return '';
+    if ((o.lenses && Object.prototype.hasOwnProperty.call(o.lenses, d)) || (o.capOwn && o.capOwn[d])) return '';
+    return s.seed === 'parent' ? 'parent' : 'off';
+  }
   function rawCap(id){
     var c = permStore().caps[id];
     return Array.isArray(c) ? c.slice() : [];   /* الافتراضي: لا شيء متاح */
@@ -209,7 +228,7 @@
     if (!isSuper()) return { ok:false, err:'سقف الإدارة لمسؤول المنصة وحده' };
     var o = permStore(), d = did || curDept();
     o.caps[d] = (arr || []).filter(function(k){ return PAGE_KEYS.indexOf(k) !== -1; });
-    permSave(o); return { ok:true };
+    unseed(o, d); permSave(o); return { ok:true };   /* V7 · د6 (ب4): ضبطٌ حقيقي ⇒ لم يعد «مبذوراً» */
   }
   /* caps-own: is unit d's ceiling independent of its ancestors? (bassam_perms_v1.capOwn[d] · or capMode 'own' for every unit = 021 capOwnOf) */
   function capOwnOf(did){ var o = permStore(), d = did || curDept(); return o.capMode === 'own' || !!(o.capOwn && o.capOwn[d] === true); }
@@ -223,7 +242,7 @@
     if (!!on === capOwnOf(d)) return { ok:true, same:true };
     var c = deptCap(d), m = {}; Object.keys(o.capOwn || {}).forEach(function(k){ if (k !== d) m[k] = true; });
     if (on) { m[d] = true; o.caps[d] = c; }
-    o.capOwn = m; permSave(o); return { ok:true };
+    o.capOwn = m; unseed(o, d); permSave(o); return { ok:true };
   }
   /* read-time narrowing: the part of a sheet inside unit d's ceiling — its page in the effective ceiling and a sub-leaf in its page's live
      tabs (what the old trim kept); latentLeaves = the rest, stored and not read */
@@ -247,37 +266,59 @@
     });
     return out;
   }
-  /* وراثةُ السقف عند إنشاء عقدة: لقطةٌ من سقف الأب الفعليّ لا رابطٌ حيّ.
-     لقطةً لأن التوسيع قرارٌ صريح: لو وسّعتَ سقف الأب لاحقاً لم يتوسّع الأبناء
-     من تلقاء أنفسهم. أما التضييق فيسري فوراً بحكم التقاطع في effCap.
-     والعقدةُ في الجذر (أو تحت أبٍ بلا سجلّ) لا يُكتب لها سجلّ — فسقفُها مفتوحٌ (capState 'open') ما لم يكن لأصلٍ أعلى سجلّ، فتَرِثه ('inherit'). */
-
-  /* V7 P3-0 · بذرُ «أساسي» — الأثرُ الوحيد الباقي لأنماط السقف: الأنماطُ الخمسة وواجهتُها (patternMeta · patternApply · patternSet ·
-     أزرارُ المحرّر) أُزيلت لأنها لم تكن معروضةً ولا مستدعاة. يبقى هذا البذرُ لأبٍ سقفُه الفعليُّ فارغ (seedCapFrom): سقفُ الابن
-     الفعليُّ فارغٌ لحظتَها بحكم التقاطع، ويحدّه «أساسي» إن وُسِّع سقفُ الأب لاحقاً — بلا سجلٍّ لورث التوسعةَ كلَّها (اختبارُ التكافؤ).
-     ونمطٌ «أساسي» محفوظٌ في السجل (patterns.basic — كتبته واجهةٌ سابقة) يبقى هو المرجع كما كان. */
-  var SEED_BASIC = { cap:['emps','tasks','planning','staff','links','help','admin'], subs:{ emps:['data','custody'], planning:['readiness'], admin:['shifts','backup','import'] }, tabs:{}, lenses:[] };
-  function seedBasic(){ var p = (permStore().patterns || {}).basic; return JSON.parse(JSON.stringify((p && Array.isArray(p.cap)) ? p : SEED_BASIC)); }
-  function patternSeed(did){
-    var pt = seedBasic(); var o = permStore(); o.caps[did] = pt.cap.slice(); permSave(o);
-    try { Object.keys(pt.subs || {}).forEach(function(k){ setDeptSubs(did, k, pt.subs[k]); }); Object.keys(pt.tabs || {}).forEach(function(k){ setDeptTabs(did, k, pt.tabs[k]); }); setDeptLenses(did, pt.lenses || []); } catch(e){}
-    return { ok:true, n: pt.cap.length };
+  /* V7 · د6 (ب4 — قرار المالك): الوحدةُ الجديدة تبدأ وأنظمتُها مطفأة. حلّ محلَّ البذر السابق كلِّه (لقطةُ الوراثة · النمطُ «أساسي» SEED_BASIC ·
+     «لا سجلَّ = مفتوح») اختيارٌ صريح يمرّره المنادي: opt.seed =
+       'off'    (الافتراضي، وكلُّ قيمةٍ أخرى) كلُّ نظامٍ يُطفأ مطفأٌ للوحدة الجديدة؛
+       'parent' الأنظمةُ نفسُها المفعّلة في العقدة الأب (سقفُها ∩ سقوفُ أصولها — بلا مفتاح المنصة: ذاك يُقصّ عند القراءة في كل وحدة)؛
+                والأبُ المفتوح بلا سجلّ (أو لا أب) ⇒ كلُّ الأنظمة، أي كلُّ المفعّل على المنصة.
+     يُكتب للوحدة الجديدة سجلٌّ صريح دائماً — لا وحدةَ جديدة بلا سجلّ. الصفحاتُ الدائمة (ما ليس نظاماً يُطفأ: «موظفو الإدارة» ·
+     «الإعدادات» وفروعُها) في السجل دائماً، و«صفحتي» خارج السقف أصلاً. الأنظمةُ من مصدرها الواحد KIVO.Perm44.sysList (toggle) — وبلا
+     المحرّك لا يُكتب شيء ويُرفض الإنشاء (المنادي يتراجع) فلا تُترك وحدةٌ مفتوحة. الوحداتُ القائمة لا تُمسّ: لا يُكتب إلا سجلُّ المعرّف الجديد،
+     ومن له سجلٌّ مسبق لا يُلمس (kept)، ومن لا سجلَّ له اليوم يبقى كما هو (capState 'open' / 'inherit'). */
+  function seedSystems(){
+    var S = null;
+    try { var E = KIVO.Perm44; S = E && E.sysList ? E.sysList() : null; } catch(e){ S = null; }
+    if (!Array.isArray(S)) return null;
+    return S.filter(function(s){ return !!(s && s.key && s.key !== 'admin' && s.toggle !== false && s.leaves && s.leaves.length); })
+            .map(function(s){ return { key: s.key, cap: String(s.leaves[0]) }; });
   }
-  function seedCapFrom(id, pid){
-    if (!id) return { ok:false, err:'معرّف مفقود' };
+  /* النظامُ (بمفتاح سقفه: صفحةٌ أو «صفحة/قسم») مفعّلٌ في العقدة pid وأصولِها كلِّها؟ — قاعدةُ «الأنظمة» نفسُها (onCap على كل حلقة) */
+  function seedOnAt(cap, pid){
+    if (!pid) return true;
+    var ch = [pid], D = KIVO.BassamDepts;
+    try { if (D && D.ancestorsOf) ch = ch.concat(D.ancestorsOf(pid) || []); } catch(e){ return false; }   /* تعذّرُ القراءة لا يفتح */
+    for (var i = 0; i < ch.length; i++) if (ch[i] && !onCap(cap, ch[i])) return false;
+    return true;
+  }
+  function seedMode(opt){ var m = opt && typeof opt === 'object' ? opt.seed : opt; return m === 'parent' ? 'parent' : 'off'; }
+  function seedUnit(id, pid, opt){
     var o = permStore();
     if (Array.isArray(o.caps[id])) return { ok:true, kept:true };   /* له سقفٌ مسبقاً — لا يُلمس */
-    /* عقدةٌ في الجذر، أو أبوها بلا سقفٍ مضبوط: لا يُكتب لها سقفٌ فارغ — فذلك
-       قرارُ منعٍ لم يتّخذه أحد، ويُفرِغ فرعها كله بصمت. تُترك بلا سجلّ حتى
-       يُضبط، وغيابُ السجلّ لا يقيّد. */
-    if (!pid || !hasCap(pid)) return { ok:true, open:true };
-    /* KIVO_265 · ملاحظةُ المالك (2026-10-19): أبٌ سقفُه الفعليُّ فارغ (مضبوطٌ على لا شيء) كان يورِّث الفراغَ للعقدة الجديدة
-       فتبدو المنصةُ للمدير خاليةً بلا سبب ظاهر. الفراغُ ليس قراراً يُورَّث: تبدأ العقدةُ بالنمط «أساسي». */
-    var inh = effCap(pid);
-    if (!inh.length) { var sd = patternSeed(id); return { ok:true, seeded:'basic', n: sd && sd.n }; }
-    o.caps[id] = inh;
+    var S = seedSystems(); if (!S) return { ok:false, err:'تعذّرت قراءة قائمة الأنظمة — لم تُنشأ الوحدة' };
+    var mode = seedMode(opt), on = [], offPages = {}, offSubs = {};
+    S.forEach(function(s){
+      if (mode === 'parent' && seedOnAt(s.cap, pid)) { on.push(s.key); return; }
+      var sp = splitLeaf(s.cap);
+      if (sp.sub) (offSubs[sp.page] = offSubs[sp.page] || []).push(sp.sub); else offPages[sp.page] = 1;
+    });
+    o.caps[id] = PAGE_KEYS.filter(function(k){ return !offPages[k]; });
+    /* نظامٌ ورقتُه قسمٌ من صفحةٍ دائمة (العهد في «موظفو الإدارة»): يُطفأ في مخزن الأقسام — وما لم يُطفأ منها شيءٌ لا يُكتب لها سجلّ (الغيابُ = الكل) */
+    Object.keys(offSubs).forEach(function(pk){
+      var all = subKeysOf(pk), pg = PAGE_OF[pk]; if (!all.length || (pg && pg.subStore === 'lenses')) return;
+      o.subs = o.subs || {}; o.subs[id] = o.subs[id] || {};
+      o.subs[id][pk] = all.filter(function(k){ return offSubs[pk].indexOf(k) === -1; });
+    });
+    /* علامةُ البذر: نسخةٌ مما كُتب — يقارَن بها السجلُّ عند الاستيراد (320 permSlice) */
+    var m = {}; Object.keys(o.capSeed && typeof o.capSeed === 'object' ? o.capSeed : {}).forEach(function(k){ m[k] = o.capSeed[k]; });
+    m[id] = { seed: mode, caps: o.caps[id].slice(), subs: o.subs && o.subs[id] ? JSON.parse(JSON.stringify(o.subs[id])) : null };
+    o.capSeed = m;
     permSave(o);
-    return { ok:true, n: o.caps[id].length };
+    return { ok:true, seed: mode, n: o.caps[id].length, on: on };
+  }
+  /* عقدةٌ أو إدارةٌ جديدة id تحت pid (أو في الجذر) — seedCapFrom(id, pid, { seed: 'off' | 'parent' }) */
+  function seedCapFrom(id, pid, opt){
+    if (!id) return { ok:false, err:'معرّف مفقود' };
+    return seedUnit(id, pid || null, opt);
   }
 
   /* V7 · القضية #4 — حذفُ العقدة يحذف سجلاتِ سقفها (نظيرُ seedCapFrom عند الإنشاء). كانت تبقى caps/subs/lenses[<العقدة>] وعلامةُ capOwn
@@ -290,6 +331,7 @@
     var o = permStore(), hit = [];
     ['caps', 'subs', 'lenses'].forEach(function(k){ if (o[k] && Object.prototype.hasOwnProperty.call(o[k], id)) { delete o[k][id]; hit.push(k); } });
     if (o.capOwn && Object.prototype.hasOwnProperty.call(o.capOwn, id)) { var m = {}; Object.keys(o.capOwn).forEach(function(k){ if (k !== id) m[k] = o.capOwn[k]; }); o.capOwn = m; hit.push('capOwn'); }
+    var s0 = !!(o.capSeed && typeof o.capSeed === 'object' && Object.prototype.hasOwnProperty.call(o.capSeed, id)); if (s0) { unseed(o, id); hit.push('capSeed'); }   /* V7 · د6 (ب4) */
     if (hit.length) permSave(o);
     return { ok:true, removed: hit };
   }
@@ -304,25 +346,20 @@
       D.nodes().concat(D.list()).forEach(function(x){ if (x && x.id != null && x.id !== '') live[String(x.id)] = 1; });
       o = permStore();
     } catch(e){ return { ok:false, err:'تعذّرت قراءة الهيكل' }; }
-    ['caps', 'subs', 'lenses', 'capOwn'].forEach(function(k){
+    ['caps', 'subs', 'lenses', 'capOwn', 'capSeed'].forEach(function(k){
       var m = o[k]; if (!m || typeof m !== 'object') return;
       Object.keys(m).forEach(function(id){ if (live[id]) return; if (!maps[id]) { maps[id] = []; ids.push(id); } maps[id].push(k); });
     });
     return { ok:true, n: ids.length, ids: ids, maps: maps };
   }
 
-  /* F01 · سقفُ القسم الجديد: لقطةٌ من سقف الإدارة الأم الفعليّ (deptCap — سجلُّها إن كان لها، وإلا ما ترثه من أسلافها) مرةً واحدة
-     (لا سجلَّ للقسم قبلُ) — فلا يتجاوز سقفَ إدارته ولا يُبدَّل بنمطٍ آخر. لا سقفَ في السلسلة كلِّها ⇒ لا سجلّ (الغيابُ لا يقيّد).
-     الخادمُ يحكم: مديرُ الإدارة الأم يبذره مرةً جزءاً من سقف إدارته (018 permsSecSeedOk) */
-  function seedSectionCap(id, did){
+  /* F01 · سقفُ القسم الجديد — V7 · د6 (ب4): الاختيارُ نفسُه والافتراضيُّ نفسُه (seedUnit): 'off' أنظمتُه مطفأةٌ كلُّها · 'parent' أنظمةُ إدارته الأم
+     المفعّلة (فلا يتجاوز سقفَها). مرةً واحدة (لا سجلَّ للقسم قبلُ). كان: لقطةً من سقف الإدارة الأم، وبلا سقفٍ في السلسلة لا سجلّ (مفتوح).
+     الخادمُ يحكم: السقفُ لمدير المنصة وحده (018c permsRule) والأقسامُ ينشئها هو */
+  function seedSectionCap(id, did, opt){
     var D = KIVO.BassamDepts;
     if (!id || !did || !D || !D.parentDeptOf || D.parentDeptOf(id) !== did) return { ok:false, err:'ليس قسماً لهذه الإدارة' };
-    var o = permStore();
-    if (Array.isArray(o.caps[id])) return { ok:true, kept:true };
-    if (!capSetAnywhere(did)) return { ok:true, open:true };
-    o.caps[id] = deptCap(did).slice();
-    permSave(o);
-    return { ok:true, n: o.caps[id].length, own: hasCap(did) };
+    return seedUnit(id, did, opt);
   }
   /* Irshad uses its typed API. Existing capability and grant values are preserved; no legacy JSON probe or automatic grant. */
   /* RISHAD-266 P14: ترحيلاتُ العميل لمرة واحدة (seized/help caps · mgr explicit · leaf perms · admin subs) حُذفت — الخادمُ يحكم بالسقف، والبياناتُ الحالية بالشكل الجديد */
@@ -356,7 +393,7 @@
     var o = permStore(), d = did || curDept();
     o.subs = o.subs || {}; o.subs[d] = o.subs[d] || {};
     o.subs[d][pk] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; });
-    permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
+    unseed(o, d); permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
   }
   /* ── مجموعة السقف الثانية: التبويبات ──────────────────────────────────────
      تسكن في مخزن subs نفسه لكن تحت مفتاح «الصفحة:tabs» — فلا تصطدم بمجموعة
@@ -376,7 +413,7 @@
     var o = permStore(), d = did || curDept();
     o.subs = o.subs || {}; o.subs[d] = o.subs[d] || {};
     o.subs[d][tabSlot(pk)] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; });
-    permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
+    unseed(o, d); permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
   }
   function tabOn(pk, tk){
     try {
@@ -413,7 +450,7 @@
     var o = permStore(), d = did || curDept();
     o.lenses = o.lenses || {};
     o.lenses[d] = (arr || []).filter(function(k){ return LENS_KEYS.indexOf(k) !== -1; });
-    permSave(o); return { ok:true };   /* caps-own: employees' lens lists stay — read ∩ unit lenses (empLens · server lensGate) */
+    unseed(o, d); permSave(o); return { ok:true };   /* caps-own: employees' lens lists stay — read ∩ unit lenses (empLens · server lensGate) */
   }
   /* عدسات الموظف: غياب السجل = كل عدسات الإدارة (توافق رجعي) */
   function empLens(ekey, did){
@@ -562,6 +599,11 @@
   /* V7 · د5-ح (قرار المالك): النظامُ المطفأ لا يراه أحد — ولا مديرُ المنصة. المطفأُ على المنصة (mods.off) يغيب عن المنصة كلها،
      والمطفأُ في سقف الإدارة النشطة (بالوراثة — KIVO.Perm44.ceiling) يغيب داخل مساحتها ويبقى حيث هو مفعّل. يُقصّ العرضُ وحده
      (القائمة · العناوين · أشرطةُ الصفحات · التبويبات): ما سواه بلا قيد لمدير المنصة كما كان (د1-ج)؛ وموضعُ المطفأ الوحيد «الصلاحيات ← الأنظمة» */
+  /* V7 · د6 (أ1): قصُّ المطفأ على المنصة من ورقة صلاحيات — دالةٌ واحدة للجلسة (myPerms) ولمن تُحسب قائمتُه لغيره (334 holderPerms · mgrPerms) */
+  function platCut(all){
+    try { var off = (KIVO.BassamPlat && KIVO.BassamPlat.get().mods.off) || []; for (var i = 0; i < off.length; i++) if (off[i] !== 'admin') { delete all[off[i]]; leafKeysOf(off[i]).forEach(function(l){ delete all[l]; }); } } catch(e){}
+    return all;
+  }
   var _supOff = {};
   function supOffLeaves(){
     var out = {}, E = KIVO.Perm44, i;
@@ -586,8 +628,7 @@
       PAGE_REG.forEach(function(p){ if (p.under && all[p.key] && all[p.key].length && !all[p.under]) all[p.under] = ['view']; });
       return all;
     }
-    try { var off = (KIVO.BassamPlat && KIVO.BassamPlat.get().mods.off) || []; for (var i = 0; i < off.length; i++) if (off[i] !== 'admin') { delete all[off[i]]; leafKeysOf(off[i]).forEach(function(l){ delete all[l]; }); } } catch(e){}
-    return all;
+    return platCut(all);
   };
   /* ذاكرةُ myPerms: تُحسَب مرةً ما ثبتت مدخلاتُها كلُّها (نصُّ الجلسة · سجلُّ الحسابات ·
      الإدارةُ النشطة · مخزنُ الصلاحيات · سجلّا الإدارات والهيكل · إعداداتُ المنصة)
@@ -626,14 +667,9 @@
     _azBits = { h: x.h, set: set }; return set;
   }
   function azKey(k, did){ var H = azHeld(did); return H === null ? null : !!H[k]; }
-  var _myPerms2 = myPerms, _azMemo = { a: null, h: null, v: null };
-  myPerms = function(){
-    var all = _myPerms2();
-    if (isSuper()) return all;
-    /* V7 · د5-ح (القفل): بلا وصفٍ من الخادم (أو سجلٍّ لا يطابقه) لا يُعرض شيء — لا عودةَ إلى الورقة القديمة وحدها */
-    if (!azZ()) return {};
-    var H = azHeld(curDept()); if (H === null) return {};
-    if (_azMemo.a === all && _azMemo.h === H) return _azMemo.v;
+  /* V7 · د6 (أ1): ما يبقى من ورقةٍ all لحامل المفاتيح H (+ ذرّاتُ المنح الصريح plus) — القاعدةُ التي تُحسب بها صلاحياتُ الجلسة من مفاتيح الخادم، دالةً واحدة:
+     تُغذّى بمفاتيح الجلسة (myPerms أدناه) أو بمفاتيح حاملٍ آخر (334 holderPerms: حاملُ دور · شخصٌ بعينه) فتخرج القائمتان من الحساب نفسِه */
+  function heldPerms(all, H, plus){
     var R = KIVO.KIVO_REGISTRY, leaves = {};
     Object.keys(all).forEach(function(k){
       if (isContainer(k)) return;
@@ -650,12 +686,23 @@
       if (acts.length) leaves[k] = acts.concat(ff);
     });
     /* المنحُ الصريح (plus) يضيف أفعالَ ذرّاته — الورقةُ القديمة لا تعرفه (مثل: حذفُ المحاضر لموظفٍ بلا ورقة حذف) */
-    var x = azZ().depts[curDept()], plus = x && Array.isArray(x.p) ? x.p : [];
+    plus = Array.isArray(plus) ? plus : [];
     if (plus.length && R && R.atoms) Object.keys(R.atoms).forEach(function(ak){
       var at = R.atoms[ak]; if (!at || !at.leaf || !at.act || !at.targets) return;
       for (var i = 0; i < plus.length; i++) if (at.targets.indexOf(plus[i]) !== -1 && H[plus[i]]) { var L = leaves[at.leaf] || (leaves[at.leaf] = []); if (L.indexOf(at.act) === -1) L.push(at.act); break; }
     });
-    var v = derivePages(leaves);
+    return derivePages(leaves);
+  }
+  var _myPerms2 = myPerms, _azMemo = { a: null, h: null, v: null };
+  myPerms = function(){
+    var all = _myPerms2();
+    if (isSuper()) return all;
+    /* V7 · د5-ح (القفل): بلا وصفٍ من الخادم (أو سجلٍّ لا يطابقه) لا يُعرض شيء — لا عودةَ إلى الورقة القديمة وحدها */
+    if (!azZ()) return {};
+    var H = azHeld(curDept()); if (H === null) return {};
+    if (_azMemo.a === all && _azMemo.h === H) return _azMemo.v;
+    var x = azZ().depts[curDept()];
+    var v = heldPerms(all, H, x && Array.isArray(x.p) ? x.p : []);
     _azMemo = { a: all, h: H, v: v };
     return v;
   };
@@ -749,7 +796,7 @@
   }
   function p24GrantsRaw(did){ try { return RAW.getItem.call(localStorage, 'bsdept:' + (did || curDept()) + ':bassam_grants_v1'); } catch(e){ return null; } }
   function p24GrantsRec(did){ try { var v = JSON.parse(p24GrantsRaw(did)); return (v && typeof v === 'object' && v.emp && typeof v.emp === 'object' && !Array.isArray(v.emp)) ? v : { v: 1, emp: {} }; } catch(e){ return { v: 1, emp: {} }; } }
-  function p24GrantOf(ekey, did){ var g = p24GrantsRec(did).emp[ekey] || {}; return { plus: Array.isArray(g.plus) ? g.plus.slice() : [], minus: Array.isArray(g.minus) ? g.minus.slice() : [], src: typeof g.src === 'string' ? g.src : '' }; }
+  function p24GrantOf(ekey, did){ var g = p24GrantsRec(did).emp[ekey] || {}; return { plus: Array.isArray(g.plus) ? g.plus.slice() : [], minus: Array.isArray(g.minus) ? g.minus.slice() : [], src: typeof g.src === 'string' ? g.src : '', until: (g.until && typeof g.until === 'object' && !Array.isArray(g.until)) ? g.until : null }; }   /* V7 · د6 (أ1): until — مهلةُ الاستثناء المؤقت (057 enfGrantOf) */
   /* يُمنح بالفرق؟ (لا بوابةُ عدسة · ولا role:mgr لغير المدير أو بلا ذرّة) */
   function p24Grantable(k, C, tgt){
     var R = p24R(), ix = p24Ix(); if (!R || !ix) return false; var e = R.byKey[k];
@@ -831,7 +878,7 @@
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
   I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.capOwnOf = capOwnOf; I.capState = capState; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
-  I.patternSeed = patternSeed; I.permSave = permSave; I.dropNodeCap = dropNodeCap; I.capOrphans = capOrphans;
+  I.permSave = permSave; I.capSeeded = capSeeded; I.platCut = platCut; I.heldPerms = heldPerms; I.dropNodeCap = dropNodeCap; I.capOrphans = capOrphans;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;
   I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;

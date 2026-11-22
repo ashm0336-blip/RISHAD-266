@@ -697,7 +697,7 @@ async function rsWipeRoute(env, request, url, ss) {
       /* F01: وسجلُّ الصلاحيات في الدفعة الذرّية نفسِها — سقفُ الوحدة ووضعُه وتبويباتُها وعدساتُها وأوراقُها وعدساتُ موظفيها وقوالبُهم
          (caps · capOwn · subs · lenses · emps · empLens · tplOf). كان يبقى يتيماً بعد الحذف (والواجهةُ لا تنظّف شيئاً بنفسها) */
       var perms0 = isObj(current.perms) ? current.perms : {}, perms1 = Object.assign({}, perms0), permsHit = false;
-      ['caps', 'capOwn', 'subs', 'lenses', 'emps', 'empLens', 'tplOf'].forEach(function (f) {
+      ['caps', 'capOwn', 'capSeed', 'subs', 'lenses', 'emps', 'empLens', 'tplOf'].forEach(function (f) {   /* V7 · د6 (ب4): وعلامةُ البذر */
         if (!isObj(perms0[f]) || !Object.prototype.hasOwnProperty.call(perms0[f], input.dept)) return;
         var m = Object.assign({}, perms0[f]);
         delete m[input.dept];

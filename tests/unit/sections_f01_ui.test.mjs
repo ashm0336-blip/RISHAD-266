@@ -42,9 +42,11 @@ function world(user) {
   const D = ctx.KIVO.BassamDepts; assert.ok(D && D.moveNode, 'BassamDepts موجودة');
   const M = rd('permissions/331-perm-model.js');
   const store = { caps: { a: ['emps', 'tasks', 'help'], d: ['emps'] }, emps: {} };
-  Object.assign(ctx, { PAGE_KEYS, permStore: () => store, permSave: () => {}, isSuper: () => !!(user && user.role === 'super'), curDept: () => D.active(),
-    patternSeed: (id) => { store.caps[id] = ['emps']; return { ok: true, n: 1 }; } });
-  for (const f of ['splitLeaf', 'rawCap', 'hasCap', 'effCap', 'capSetAnywhere', 'deptCap', 'seedCapFrom']) { const t = fnSrc(M, f, true); if (t) vm.runInContext(t, ctx); }
+  Object.assign(ctx, { PAGE_KEYS, permStore: () => store, permSave: () => {}, isSuper: () => !!(user && user.role === 'super'), curDept: () => D.active() });
+  /* V7 · د6 (ب4): البذرُ الجديد يقرأ الأنظمةَ التي تُطفأ من المحرّك (هنا بديلٌ مصطنع: tasks · plan · daily · help — وemps وadmin دائمتان) */
+  ctx.KIVO.Perm44 = { sysList: () => ['tasks', 'plan', 'daily', 'help'].map((k) => ({ key: k, toggle: true, leaves: [k] })) };
+  Object.assign(ctx, { PAGE_OF: {}, subKeysOf: () => [], onCap: (k, d) => ctx.deptCap(d).indexOf(k) !== -1 });
+  for (const f of ['splitLeaf', 'rawCap', 'hasCap', 'effCap', 'capSetAnywhere', 'deptCap', 'seedSystems', 'seedOnAt', 'seedMode', 'seedUnit', 'seedCapFrom']) { const t = fnSrc(M, f, true); if (t) vm.runInContext(t, ctx); }
   vm.runInContext(fnSrc(M, 'seedSectionCap'), ctx);
   vm.runInContext(rd('services/440-count.js'), ctx);
   ctx.KIVO.BassamPerm = { seedCapFrom: ctx.seedCapFrom, seedSectionCap: ctx.seedSectionCap, hasCap: ctx.hasCap, deptCap: ctx.deptCap, effCap: ctx.effCap };
@@ -113,21 +115,25 @@ test('F01 ui (3) أفعالُ الشجرة: «إضافة قسم» للإدارة
   assert.match(SRC_RD('services/442-notif-observer.js'), /D\.unitEvents\(o, n, who\(\)\)/);
 });
 
-test('F01 ui (4) بذرُ سقف القسم من سقف الإدارة الأم الفعليّ — ولو بلا سجلٍّ خاصّ لها (ما ترثه من أسلافها) · مرةً · جزءٌ منه', () => {
+/* V7 · د6 (ب4 — قرار المالك): القسمُ الجديد بالاختيار نفسِه والافتراضيِّ نفسِه — كانت الحالةُ تثبّت «لقطةً من سقف الإدارة الأم ('snap')، وبلا سقفٍ في السلسلة
+   لا سجلّ ('open')»؛ صارت: 'off' (الافتراضي) الصفحاتُ الدائمة وحدها · 'parent' أنظمةُ إدارته الفعلية (سقفُها ∩ أسلافُها) · سجلٌّ صريح دائماً · مرةً واحدة. */
+test('F01 ui (4) بذرُ سقف القسم (V7 · د6 · ب4): مطفأٌ افتراضاً · «نفس أنظمة الأب» = أنظمةُ إدارته الفعلية ولو بلا سجلٍّ خاصّ لها · مرةً · قسمُ تلك الإدارة وحده', () => {
   /* الإدارة ب بلا سجلّ سقف · وعقدتُها g1 مضبوطة */
   let W = world(SUPER); W.store.caps.g1 = ['emps', 'help'];
   let r = W.D.sectionAdd({ name: 'قسم ب-1', deptId: 'b' });
-  assert.equal(r.ok, true); assert.equal(r.cap, 'snap');
-  assert.deepEqual(J(W.store.caps[r.id]), ['emps', 'help'], 'لقطةٌ من سقف الإدارة الفعليّ (الموروث)');
-  assert.deepEqual(J(W.ctx.seedSectionCap(r.id, 'b')), { ok: true, kept: true }, 'مرةً واحدة');
-  /* إدارةٌ لها سجلّ: سقفُها الفعليّ (تقاطعُها مع أسلافها) */
+  assert.equal(r.ok, true); assert.equal(r.cap, 'off');
+  assert.deepEqual(J(W.store.caps[r.id]), ['emps', 'admin'], 'الافتراضي: الصفحاتُ الدائمة وحدها');
+  assert.deepEqual(J(W.ctx.seedSectionCap(r.id, 'b', { seed: 'parent' })), { ok: true, kept: true }, 'مرةً واحدة');
+  r = W.D.sectionAdd({ name: 'قسم ب-1ب', deptId: 'b', seed: 'parent' });
+  assert.equal(r.cap, 'parent'); assert.deepEqual(J(W.store.caps[r.id]), ['emps', 'admin', 'help'], 'أنظمةُ الإدارة الفعلية (الموروثة من عقدتها)');
+  /* إدارةٌ لها سجلّ: أنظمتُها الفعلية (تقاطعُها مع أسلافها) */
   W = world(MGR_A); W.store.caps.g1 = ['emps', 'help', 'plan'];
-  r = W.D.sectionAdd({ name: 'قسم أ-2', deptId: 'a' });
-  assert.deepEqual(J(W.store.caps[r.id]), ['emps', 'help'], 'تقاطعُ سقف الإدارة أ مع عقدتها');
-  /* لا سقفَ في السلسلة كلِّها: لا سجلّ (الغيابُ لا يقيّد) · ولا بذرَ لغير قسمِ تلك الإدارة */
+  r = W.D.sectionAdd({ name: 'قسم أ-2', deptId: 'a', seed: 'parent' });
+  assert.deepEqual(J(W.store.caps[r.id]), ['emps', 'admin', 'help'], 'تقاطعُ أنظمة الإدارة أ مع عقدتها');
+  /* لا سقفَ في السلسلة كلِّها مع 'parent': كلُّ الأنظمة — بسجلٍّ صريح (كان: لا سجلّ) · ولا بذرَ لغير قسمِ تلك الإدارة */
   W = world(SUPER);
-  r = W.D.sectionAdd({ name: 'قسم ب-2', deptId: 'b' });
-  assert.equal(r.cap, 'open'); assert.equal(W.store.caps[r.id], undefined);
+  r = W.D.sectionAdd({ name: 'قسم ب-2', deptId: 'b', seed: 'parent' });
+  assert.equal(r.cap, 'parent'); assert.deepEqual(J(W.store.caps[r.id]), PAGE_KEYS);
   assert.equal(W.ctx.seedSectionCap('s2', 'a').ok, false, 'ليس قسماً لهذه الإدارة');
 });
 
