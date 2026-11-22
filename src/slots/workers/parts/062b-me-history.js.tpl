@@ -312,26 +312,21 @@ function meRec(rec) {
   for (i = 0; i < F.length; i++) if (rec[F[i]] != null && String(rec[F[i]]).trim() !== '') o[F[i]] = String(rec[F[i]]).trim().slice(0, 120);
   return o;
 }
-async function meDeptData(env, deptId, extra) {
+async function meDeptData(env, deptId, extra, A) {
   var ks = ME_KEYS.map(function (n) { return 'bsdept:' + deptId + ':' + n; });
   var capture = await opCaptureReferences(env, Object.create(null), ks),
     rs = await env.DB.batch(capture.guards.concat(extra || [])),
-    kj = capture.keys, P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
+    off = meOffOf(A, deptId), kj = meDropOff(capture.keys, ks, off), P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
   return { emps: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_employees_v1'], []); return Array.isArray(a) ? a : []; })(),
     @@SYS:me.data.staff@@@@SYS:me.data.dreport@@@@SYS:me.data.plan@@
-    @@SYS:me.data.daily|empty="rounds: {}, "@@opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
+    @@SYS:me.data.daily|empty="rounds: {}, "@@opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length), off: off };
 }
-/* V7 · د6 (قرار المالك: النظامُ المطفأ لوحدة الحساب أو على المنصة لا يُخدم — الموظفُ والمديرُ سواء): «ملفي» يعرض جدولَه وتقريرَه وموقعَه وجولاتِه
-   من موارد أنظمةٍ قابلةٍ للإطفاء (الجدول الشهري · التقرير اليومي · الخطة التشغيلية · الجولات اليومية) — ما كانت ورقةُ مورده مطفأةً تُفرَّغ قيمتُه هنا
-   (050 resLeafOffAt — الموضعُ الواحد) فلا يصل منه شيء. الهويةُ (الموظفون) وأسماءُ الورديات (الإعدادات) ليست أنظمةً تُطفأ. فاعلٌ تعذّر بناؤه ⇒ تُفرَّغ كلُّها.
-   حقلٌ غائب (نظامٌ أُزيل من الحزمة) يبقى غائباً */
-var ME_SYS_RES = { staffing: 'bassam_staffing_v3', locks: 'bassam_staffing_locks_v1', dreport: 'bassam_dreport_v1', plan: 'bassam_plan_v1', rounds: 'bassam_rounds_v1' };
-function meResOff(A, d, name) { return !A || resLeafOffAt(A, d, 'bsdept:' + d + ':' + name); }
-function meDropOff(A, d, D) {
-  for (var f in ME_SYS_RES) if (Object.prototype.hasOwnProperty.call(D, f) && meResOff(A, d, ME_SYS_RES[f])) D[f] = {};
-  D.staffOn = !meResOff(A, d, ME_SYS_RES.staffing);
-  return D;
-}
+/* V7 · د6 (قرار المالك: النظامُ المطفأ لوحدة الحساب أو على المنصة لا يُخدم — الموظفُ والمديرُ سواء): «ملفي» يقرأ موارد أنظمةٍ قابلةٍ للإطفاء
+   (الجدول الشهري · التقرير اليومي · الخطة التشغيلية · الجولات — مفاتيحُها من شرائح أنظمتها في ME_KEYS). ما كانت ورقةُ مورده مطفأةً (050 resLeafOffAt — الموضعُ
+   الواحد) تُسقط قيمتُه قبل أيّ حساب فلا يصل منه شيء، ويُعلَّم في D.off (اسمُ المورد) لما يقرؤه النظامُ من غيره (سجلُّ التغييرات). مواردُ لا تملكها ورقةُ نظامٍ
+   يُطفأ (الموظفون · أسماءُ الورديات) لا تتأثر. فاعلٌ تعذّر بناؤه ⇒ تُسقط كلُّها */
+function meOffOf(A, d) { var off = nmap(); ME_KEYS.forEach(function (n) { if (!A || resLeafOffAt(A, d, 'bsdept:' + d + ':' + n)) off[n] = 1; }); return off; }
+function meDropOff(keys, ks, off) { var out = Object.assign({}, keys); ks.forEach(function (k) { if (off[k.slice(k.lastIndexOf(':') + 1)]) out[k] = null; }); return out; }
 function meIdent(u, D, users) {
   var L = pfLink(u, D ? D.emps : []);
   /* KIVO_265 · F-1/R-24 (المراجعةُ المستقلة · fail-closed — خارج PF-CORE فالمرآةُ 535 كما هي): سجلٌّ يحلّ إليه حسابٌ نشطٌ آخر في الإدارة ⇒ غيرُ مرتبطٍ
@@ -369,7 +364,7 @@ async function meSelfRoutes(request, env, path, ss) {
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
   var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (eligible) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; meDropOff(A, u.deptId, D); I = meIdent(u, D, users); }
+  if (eligible) { D = await meDeptData(env, u.deptId, extra, A); ex = D.extra; I = meIdent(u, D, users); }
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: @@SYS:me.bucket.day|empty="{}"@@, rep: @@SYS:me.rep.day.dreport|empty="null"@@, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
@@ -403,9 +398,7 @@ async function meSelfRoutes(request, env, path, ss) {
     res.month = H.month; res.days = H.days; res.sites = H.sites;
     res.evidence.reports = H.evidence.reports; res.evidence.approved = H.evidence.approved; res.evidence.rounds = H.evidence.rounds;
     res.range = meRange(D, I.toks, T);
-    if (D.staffOn) {   /* V7 · د6: تغييراتُ الجدول الشهري لا تُقرأ والجدولُ مطفأ (meDropOff) */
-@@SYS:me.changes.staff@@    }
-  }
+@@SYS:me.changes.staff@@  }
   res.moves.items = meMoves(secQ ? ((ex[0] && ex[0].results) || []) : [], u.id, depts);
   var body = JSON.stringify(res);
   while (body.length > ME_HIST_MAX && res.changes.length) { res.changes = res.changes.slice(0, Math.floor(res.changes.length / 2)); res.truncated = 1; body = JSON.stringify(res); }
