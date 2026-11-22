@@ -426,7 +426,7 @@
         if (began.err === 'import-too-heavy' && parts.big && record(began.details) && record(began.details.details) && !began.details.details.k) return failure(began.err, began.status, Object.assign({}, began.details, { details: Object.assign({}, began.details.details, { k: parts.big }) }));
         return began;
       }
-      job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest, slices: parts.list.length, sliced: 0 };
+      job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest, slices: Object.keys(parts.slices).length, sliced: 0 };   /* V7 · د6: عددُ الدفعات لا عددُ أجزائها (موردٌ كاملٌ أكبر من 1M حرف يُرفع جزأين وهو دفعةٌ واحدة) */
     } else if (job.mode !== opt.mode) return fail(failure('invalid'));
     job.stop = typeof opt.shouldStop === 'function' ? opt.shouldStop : null;
     var up = await upload(job, stamp, progress);

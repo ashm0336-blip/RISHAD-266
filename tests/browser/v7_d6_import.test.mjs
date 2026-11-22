@@ -68,8 +68,9 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
     await click(s.page, 'ارفع وتحقّق');
     await s.page.getByText('تأكيد الاستبدال').first().waitFor({ state: 'visible', timeout: 60000 });
     const seen = (await s.page.evaluate(() => window.__d6run)).map(AR);
-    assert.ok(seen.some((x) => /الجزء 1 من 4/.test(x)), 'التقدّم: الجزء الحالي من الكل — ' + JSON.stringify(seen.slice(0, 6)));
-    assert.ok(seen.some((x) => /الجزء 4 من 4 .{1,3}الصور: 2 من 2/.test(x)), 'التقدّم: الصور — ' + JSON.stringify(seen.slice(-6)));
+    /* عددُ الأجزاء: نصُّ الملف + كلُّ موردٍ في طلبه (المخطط · جدولُ الورديات) + الصورتان — 5 */
+    assert.ok(seen.some((x) => /الجزء 1 من 5/.test(x)), 'التقدّم: الجزء الحالي من الكل — ' + JSON.stringify(seen.slice(0, 6)));
+    assert.ok(seen.some((x) => /الجزء 5 من 5 .{1,3}الصور: 2 من 2/.test(x)), 'التقدّم: الصور — ' + JSON.stringify(seen.slice(-6)));
     assert.deepEqual(changed(snapshot(lab.env.DB), before), [], 'قبل الاعتماد لم يتغيّر شيء في القاعدة (الأجزاء في المؤقت وحده)');
     assert.ok(staged(lab.env.DB) > 0, 'الأجزاء في المنطقة المؤقتة');
     /* التأكيدُ الوحيد: بعد الرفع والتحقق، ومعه ملخّصُ الخادم (ما سيُنقل وما لن يُنقل) */
@@ -199,11 +200,15 @@ test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة 
   try {
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw), p = s.page, sizes = [];
     let slices = 0;
+    const refused = [];
+    p.on('response', async (r) => { if (/\/api\/backup\/import/.test(r.url()) && r.status() !== 200) { let t = ''; try { t = (await r.text()).slice(0, 300); } catch (e) { /* بلا جسم */ } refused.push(r.status() + ' ' + t + ' ← ' + String(r.request().postData() || '').slice(0, 160)); } });
     p.on('request', (r) => { if (/\/api\/backup\/(import|restore)/.test(r.url()) && r.method() === 'POST') { const body = r.postData() || ''; sizes.push(Buffer.byteLength(body)); if (body.length < 400 && /"phase":"slice"/.test(body)) slices++; } });
     const importVia = async (path0, expectDone) => {
       await chooseFile(s, B, path0);
       await click(p, 'استبدال كامل'); await click(p, 'ارفع وتحقّق');
-      await p.getByText('تأكيد الاستبدال').first().waitFor({ state: 'visible', timeout: 300000 });
+      /* التأكيدُ أو لوحةُ الفشل — أيُّهما ظهر أولاً (الفشلُ يُعرض بسببه بدل انتظار المهلة) */
+      await Promise.race([p.getByText('تأكيد الاستبدال').first().waitFor({ state: 'visible', timeout: 300000 }), p.waitForSelector('[data-bkc="fail"]', { timeout: 300000 })]);
+      if (await p.locator('[data-bkc="fail"]').count()) assert.fail('فشل الاستيراد: ' + (await text(p, '[data-bkc="fail-msg"]')) + ' · ' + JSON.stringify(refused));
       await click(p, 'نعم، استبدل');
       await p.waitForSelector('[data-bkc="done"]', { timeout: 300000 });
       const done = await text(p, '[data-bkc="done-msg"]');
