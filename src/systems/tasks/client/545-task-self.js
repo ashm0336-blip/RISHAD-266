@@ -73,9 +73,21 @@
     dirty = true;
     scheduleRefresh();
   }
+  /* V7 · د6: المهامُ مفعّلةٌ لإدارة الحساب؟ — سقفُ إدارته بالوراثة ∩ المنصة (KIVO.Perm44.ceiling، القاعدةُ التي يحكم بها الخادم meTkPageOn).
+     حسابٌ بلا إدارة (مدير المنصة · مدير القطاع) لا «مهامي» له. تُسأل قبل كل قراءة: النظامُ المطفأ لا تُطلب بياناتُه */
+  function pageOn(context) {
+    try { var d = context && context[2]; if (!d) return false; var P4 = NS.Perm44; if (!P4 || !P4.ceiling) return true; return (P4.ceiling(d).on || []).indexOf('tasks') !== -1; } catch (e) { return true; }
+  }
   function load(force) {
     var context = readContext(), state = readState();
     if (!context) return Promise.resolve(state);
+    if (!pageOn(context)) {   /* V7 · د6: مطفأ ⇒ الحالةُ التي كان الخادمُ يعيدها (me.off) بلا طلب */
+      if (refreshTimer) clearTimeout(refreshTimer); refreshTimer = null; readScope = context; dirty = false; readToken++;
+      var was = !!(state.me && state.me.off) && !state.loading;
+      state.loading = null; state.err = ''; state.at = Date.now(); state.me = { linked: false, by: 'off', dept: String(context[2] || ''), off: 1 }; state.rev = 0; state.rows = []; state.months = []; state.more = false;
+      if (!was) emit();
+      return Promise.resolve(state);
+    }
     if (state.loading) return state.loading;
     if (refreshTimer) clearTimeout(refreshTimer); refreshTimer = null;
     readScope = context; dirty = false; startedAt = Date.now();

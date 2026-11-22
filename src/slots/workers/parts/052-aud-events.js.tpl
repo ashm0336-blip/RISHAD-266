@@ -519,3 +519,17 @@ function kvPutStmts(env, table, k, v) {
     st.push(env.DB.prepare('INSERT INTO ' + table + ' (k, seq, v) VALUES (?1, ?2, ?3)').bind(k, i, v.slice(i * CHUNK, (i + 1) * CHUNK)));
   return st;
 }
+
+/* V7 · د6: نظامُ سطر السجل من مورده (RES_REG.cap — ورقةُ المورد) ⇒ النظامُ الذي يملك تلك الورقة ويُشغَّل ويُطفأ (perm44 sysList: leaves · toggle).
+   مطفأٌ = على المنصة (A.off — مع ما يسكن الحاوية) أو في سقف وحدة السطر بالوراثة (perm44LeafOn). موردٌ بلا ورقة نظام (الهيكل · الحسابات · المنصة) لا يتأثر */
+function audSysOff(A, r) {
+  try {
+    var R = r && r.k ? resOf(r.k) : null, leaf = R && typeof R.cap === 'string' ? R.cap : '';
+    if (!leaf) return false;
+    var E = perm44E(), s = E.sysList().filter(function (x) { return x && x.toggle !== false && Array.isArray(x.leaves) && x.leaves.indexOf(leaf) !== -1; })[0];
+    if (!s) return false;
+    if (Array.isArray(A && A.off) && A.off.indexOf(s.key) !== -1) return true;
+    var d = String(r.dept || (parseKey(r.k) || {}).dept || '');
+    return d ? !E.sysOn(s.key, perm44LeafOn(A, d)) : false;
+  } catch (e) { swallow('aud-sys-off', e); return false; }
+}

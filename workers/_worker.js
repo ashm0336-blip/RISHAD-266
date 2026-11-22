@@ -20923,6 +20923,19 @@ function deptTabsOf(A, d, pk) {
   var L = ((A.perms.subs || {})[d] || {})[pk + ':tabs'];
   return Array.isArray(L) ? L.filter(function (k) { return all.indexOf(k) !== -1; }) : all.slice();
 }
+/* V7 · د6: تبويباتُ الصفحة الحيّة في الوحدة = سجلُّها ∩ سجلُّ كلِّ أصلٍ ضبط تبويباتِ تلك الصفحة — كسقف الصفحات (effCapOf) وكما في الواجهة (331 liveLeaves):
+   ما أُطفئ في الإدارة مطفأٌ في قسمها ولو بقي في سجلّ القسم. الوحدةُ المستقلة (capOwn) بسجلِّها وحده */
+function liveLeavesOf(A, d, pk) {
+  var own = deptSubsOf(A, d, pk).concat(deptTabsOf(A, d, pk));
+  if (!own.length || (hasCapOf(A, d) && capOwnOf(A, d))) return own;
+  var S = (A.perms && A.perms.subs) || {}, anc = ancChain(A, d);
+  for (var i = 0; i < anc.length && own.length; i++) {
+    var m = S[anc[i]]; if (!isObj(m) || (!Array.isArray(m[pk]) && !Array.isArray(m[pk + ':tabs']))) continue;
+    var a = deptSubsOf(A, anc[i], pk).concat(deptTabsOf(A, anc[i], pk));
+    own = own.filter(function (k) { return a.indexOf(k) !== -1; });
+  }
+  return own;
+}
 /* onCap في الواجهة: هل هذه القدرة مفعّلة لهذه الإدارة أصلاً؟ */
 function capOnDept(A, d, key) {
   key = String(key || ''); if (!key) return true;
@@ -20932,7 +20945,7 @@ function capOnDept(A, d, key) {
     if (!capOnDept(A, d, pk)) return false;
     var q = PG_OF[sk];
     if (q && q.under === pk) return capOnDept(A, d, sk);
-    return deptSubsOf(A, d, pk).concat(deptTabsOf(A, d, pk)).indexOf(sk) !== -1;
+    return liveLeavesOf(A, d, pk).indexOf(sk) !== -1;
   }
   if (PG_KEYS.indexOf(key) === -1) return false;   /* V7 · د1: مفتاحُ صفحةٍ رئيسيٌّ مجهول ⇒ منع (كان سماحاً) — الورقةُ المجهولة كانت منعاً أصلاً */
   return deptCapOf(A, d).indexOf(key) !== -1;
@@ -20942,7 +20955,7 @@ function capAllPermsOf(A, d) {
   var out = {};
   deptCapOf(A, d).forEach(function (k) {
     out[k] = ACTS_ALL.slice();
-    var live = deptSubsOf(A, d, k).concat(deptTabsOf(A, d, k));
+    var live = liveLeavesOf(A, d, k);
     pgLeaves(k).forEach(function (l) {
       var sp = pgSplit(l);
       if (sp.sub && live.indexOf(sp.sub) === -1) return;
@@ -20957,7 +20970,7 @@ function expandPermsOf(A, d, obj) {
   Object.keys(obj || {}).forEach(function (k) {
     var acts = (obj[k] || []).slice(); if (!acts.length) return;
     if (pgIsContainer(k)) {
-      deptSubsOf(A, d, k).concat(deptTabsOf(A, d, k)).forEach(function (sk) { out[k + '/' + sk] = acts.slice(); });
+      liveLeavesOf(A, d, k).forEach(function (sk) { out[k + '/' + sk] = acts.slice(); });
     } else out[k] = acts;
   });
   return out;
@@ -23227,6 +23240,20 @@ function kvPutStmts(env, table, k, v) {
   for (var i = 0; i < n; i++)
     st.push(env.DB.prepare('INSERT INTO ' + table + ' (k, seq, v) VALUES (?1, ?2, ?3)').bind(k, i, v.slice(i * CHUNK, (i + 1) * CHUNK)));
   return st;
+}
+
+/* V7 · د6: نظامُ سطر السجل من مورده (RES_REG.cap — ورقةُ المورد) ⇒ النظامُ الذي يملك تلك الورقة ويُشغَّل ويُطفأ (perm44 sysList: leaves · toggle).
+   مطفأٌ = على المنصة (A.off — مع ما يسكن الحاوية) أو في سقف وحدة السطر بالوراثة (perm44LeafOn). موردٌ بلا ورقة نظام (الهيكل · الحسابات · المنصة) لا يتأثر */
+function audSysOff(A, r) {
+  try {
+    var R = r && r.k ? resOf(r.k) : null, leaf = R && typeof R.cap === 'string' ? R.cap : '';
+    if (!leaf) return false;
+    var E = perm44E(), s = E.sysList().filter(function (x) { return x && x.toggle !== false && Array.isArray(x.leaves) && x.leaves.indexOf(leaf) !== -1; })[0];
+    if (!s) return false;
+    if (Array.isArray(A && A.off) && A.off.indexOf(s.key) !== -1) return true;
+    var d = String(r.dept || (parseKey(r.k) || {}).dept || '');
+    return d ? !E.sysOn(s.key, perm44LeafOn(A, d)) : false;
+  } catch (e) { swallow('aud-sys-off', e); return false; }
 }
 /* ═══ ملكيةُ الصور ═══════════════════════════════════════════════════════════
    مبدآن لا ثالثَ لهما:
@@ -27512,7 +27539,12 @@ function meTkKey(I) { return tkK(I.dept); }
    deptCapOf (سقفُ الإدارة بتقاطع أسلافها · غيابُ السجل = مفتوح · وتسقط منه الوحدةُ المطفأة A.off) كما writePages؛ وإلا فلا قراءةَ ولا فعلَ ذاتيّ */
 function meTkPageOn(A) { var d = String(A.u.deptId || ''); return !!d && deptCapOf(A, d).indexOf('tasks') !== -1; }
 async function meTkList(env, A, url, request) {
-  if (!meTkPageOn(A)) return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
+  /* V7 · د6: المهامُ مطفأةٌ لإدارة الحساب (أو على المنصة) ⇒ القراءةُ مرفوضة لغير مدير المنصة كأفعال «مهامي» أدناه (كانت 200 بقائمةٍ فارغة وعلامة off؛
+     والواجهةُ لا تسأل أصلاً: 545 pageOn). ما يعود لمدير المنصة كما كان (قرارٌ مفتوح للمالك) */
+  if (!meTkPageOn(A)) {
+    if (A.u.role !== 'super') return json({ ok: 0, err: 'off', msg: 'صفحةُ المهام غيرُ مفعّلةٍ لإدارتك' }, 403);
+    return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
+  }
   var I = await meTkIdent(env, A), now = Date.now();
   var me = { linked: I.linked, by: I.by, dept: I.dept };
   if (!I.linked) return json({ ok: 1, now: now, me: me, rev: 0, n: 0, more: 0, months: [], rows: [] });
@@ -30969,6 +31001,8 @@ export default {
         /* READ-01: السجلُّ يتبع عقدَ القراءة نفسَه — لا يُعرض حدثٌ عن مجموعةِ بياناتٍ لا يقرؤها صاحبُ الجلسة */
         var nRawA = rowsA.length;
         rowsA = rowsA.filter(function (r) { return !r.k || r.k === 'system' || canRead(AU, r.k); });
+        /* V7 · د6: سطرُ نظامٍ مطفأ (على المنصة أو لوحدته أو لأصلٍ لها) لا يُعرض لأحد ما دام مطفأ — كتنبيهاته (019 nfSysOff): يُحجب عند القراءة ولا يُحذف */
+        rowsA = rowsA.filter(function (r) { return !audSysOff(AU, r); });
         /* سجلُّ كيانٍ في صفحةٍ لا يقرؤها صاحبُ الجلسة: رفضٌ صريحٌ لا قائمةٌ فارغةٌ مُلبِسة */
         if (entMode && nRawA > 0 && rowsA.length === 0) return json({ ok: 0, err: 'forbidden' }, 403);
         rowsA = rowsA.map(function (r) { var u = byIdU[r.uid]; return Object.assign({}, r, { name: u ? (u.name || u.un) : (r.un || ''), role: u ? u.role : '' }); });

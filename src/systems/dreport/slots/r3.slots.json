@@ -70,7 +70,7 @@
  },
  "activity.filter.dreport": {
   "order": 10,
-  "text": " ['dreport', 'التقرير اليومي'],"
+  "text": " ['dreport', 'التقرير اليومي', 'dreport'],"
  },
  "imgref.empty.dreport.lk": {
   "order": 10,

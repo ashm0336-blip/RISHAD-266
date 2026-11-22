@@ -1,8 +1,11 @@
   _cuEmpty() { return { rev: 0, rows: [], items: [], summary: {}, total: 0, next: "", catalogNext: "" }; }
   _cuApi() { return KIVO.Custody; }
   _cuError(result) { this.setState({ cuError: result.message || "تعذّر تأكيد بيانات العهد من الخادم" }); this.bsToast(result.message || "تعذّر تأكيد العملية", "warn"); }
+  /* V7 · د6: العهدُ مفعّلٌ لهذه الوحدة؟ (القاعدةُ التي تُرسم بها تبويباتُه) — تُسأل قبل كل قراءة: تبويبٌ محفوظٌ من قبل الإطفاء لا يطلب بياناتِ نظامٍ مطفأ */
+  _cuOn() { try { const P = KIVO.BassamPerm; return !P || !P.subOn || !!P.subOn("emps", "custody"); } catch (e) { return !0; } }
   _cuEnsure() {
     if (!["custody", "store"].includes(this.state.empTab)) return;
+    if (!this._cuOn()) return;
     const API = this._cuApi(), actor = API && API.context();
     if (!actor) { this.state.cuData = this._cuEmpty(); this.state.cuError = "الجلسة غير متاحة — أعد تسجيل الدخول"; return; }
     if (this._cuActorKey && this._cuActorKey !== actor.key) {
@@ -19,7 +22,7 @@
   }
   async _cuRefresh(cursor) {
     const API = this._cuApi(), actor = API && API.context();
-    if (!actor) return { ok: 0 };
+    if (!actor || !this._cuOn()) return { ok: 0 };
     const generation = this._cuGeneration = (this._cuGeneration || 0) + 1;
     const view = this.state.empTab === "store" ? "catalog" : "month";
     const options = { view, year: view === "catalog" ? undefined : this.state.cuYear || undefined, month: view === "catalog" ? undefined : this.state.cuMonth || undefined, q: this.state.cuSearch || "", limit: Math.min(view === "month" ? 100 : 200, this.state.cuPerPage || 10), cursor: cursor || "" };

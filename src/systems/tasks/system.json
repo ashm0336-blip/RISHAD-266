@@ -373,7 +373,7 @@
   },
   "activity.filter.tasks": {
    "order": 10,
-   "text": " ['task', 'المهام'],"
+   "text": " ['task', 'المهام', 'tasks'],"
   },
   "res.reg.tasks": {
    "order": 10,

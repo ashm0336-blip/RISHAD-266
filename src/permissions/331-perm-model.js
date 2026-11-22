@@ -212,7 +212,7 @@
         var pk = key.slice(0, i), sk = key.slice(i + 1);
         if (!onCap(pk, d)) return false;
         var q = PAGE_OF[sk]; if (q && q.under === pk) return onCap(sk, d);
-        return deptSubs(d, pk).concat(deptTabs(d, pk)).indexOf(sk) !== -1;
+        return liveLeaves(d, pk).indexOf(sk) !== -1;
       }
       if (PAGE_KEYS.indexOf(key) === -1) return true;
       return deptCap(d).indexOf(key) !== -1;
@@ -250,7 +250,7 @@
     var d = did || curDept(), cap = deptCap(d), live = {}, out = {};
     Object.keys(sheet || {}).forEach(function(k){
       var sp = splitLeaf(k); if (cap.indexOf(sp.page) === -1) return;
-      if (sp.sub && (live[sp.page] || (live[sp.page] = deptSubs(d, sp.page).concat(deptTabs(d, sp.page)))).indexOf(sp.sub) === -1) return;
+      if (sp.sub && (live[sp.page] || (live[sp.page] = liveLeaves(d, sp.page))).indexOf(sp.sub) === -1) return;
       out[k] = sheet[k];
     });
     return out;
@@ -399,6 +399,23 @@
      تسكن في مخزن subs نفسه لكن تحت مفتاح «الصفحة:tabs» — فلا تصطدم بمجموعة
      subs الأولى حتى لو أُضيفت tabs مستقبلاً إلى صفحة مخزنها الافتراضي. */
   function tabSlot(pk){ return pk + ':tabs'; }
+  /* V7 · د6: تبويباتُ الصفحة الحيّة في الوحدة = سجلُّها ∩ سجلُّ كلِّ أصلٍ ضبط تبويباتِ تلك الصفحة — كسقف الصفحات (effCap): ما أُطفئ في الإدارة مطفأٌ في قسمها
+     ولو بقي في سجلّ القسم (كان «عهد الموظفين» يبقى لمدير القسم والعهدُ مطفأ لإدارته). الوحدةُ المستقلة (capOwn) بسجلِّها وحده كسقفها.
+     تقرؤها بواباتُ العرض والتوريث (onCap · tabOn · subOn · canSub · ceilSheet · capAllPerms)؛ والمحرّرُ يقرأ ويكتب سجلَّ الوحدة نفسَه (deptSubs · deptTabs) */
+  function liveLeaves(did, pk){
+    var d = did || curDept(), own = deptSubs(d, pk).concat(deptTabs(d, pk)), pg = PAGE_OF[pk];
+    if (!own.length || (pg && pg.subStore === 'lenses')) return own;
+    try {
+      if (hasCap(d) && capOwnOf(d)) return own;
+      var o = permStore(), D = KIVO.BassamDepts, anc = (D && D.ancestorsOf && D.ancestorsOf(d)) || [];
+      for (var i = 0; i < anc.length && own.length; i++) {
+        var m = (o.subs || {})[anc[i]]; if (!m || (!Array.isArray(m[pk]) && !Array.isArray(m[tabSlot(pk)]))) continue;
+        var a = deptSubs(anc[i], pk).concat(deptTabs(anc[i], pk));
+        own = own.filter(function(k){ return a.indexOf(k) !== -1; });
+      }
+    } catch(e){}
+    return own;
+  }
   function deptTabs(did, pk){
     var all = tabKeysOf(pk); if (!all.length) return [];
     var o = permStore(), d = did || curDept();
@@ -418,7 +435,7 @@
   function tabOn(pk, tk){
     try {
       if (isSuper()) return !supHidden(pk) && !supHidden(pk + '/' + tk);   /* V7 · د1-ج: مدير المنصة بلا قيد — د5-ح: إلا المطفأ */
-      if (deptTabs(null, pk).indexOf(tk) === -1) return false;
+      if (liveLeaves(null, pk).indexOf(tk) === -1) return false;
       return can(pk + '/' + tk, 'view');
     } catch (e) { return false; }
   }
@@ -430,14 +447,14 @@
       if (isSuper()) return PAGE_OF[sk] && PAGE_OF[sk].under === pk ? !supHidden(sk) : !supHidden(pk) && !supHidden(pk + '/' + sk);   /* V7 · د1-ج: بلا قيد — د5-ح: إلا المطفأ (الصفحةُ الساكنة بصفحتها) */
       /* الصفحة الساكنة تحت هذه الحاوية تبويبٌ فيها — يتبع صلاحية صفحته (مفتاحها المستقل) */
       var q = PAGE_OF[sk]; if (q && q.under === pk) return can(sk, 'view');
-      if (deptSubs(null, pk).indexOf(sk) === -1) return false;
+      if (liveLeaves(null, pk).indexOf(sk) === -1) return false;
       return can(pk + '/' + sk, 'view');
     } catch (e) { return false; }
   }
   /* هل تملك الجلسة الحالية فعلاً على ورقة بعينها؟ */
   /* مدير النظام والوحدة المختارة: ورقةُ صفحةٍ داخل سقفها كما ضبطتها الوحدة؛ وورقةُ صفحةٍ خارجه تُرى عرضاً ما رُئيت صفحتُها (myPerms: والمطفأةُ على المنصة لا تُرى) — والكتابةُ بالسقف وحده */
   function supSees(pk, sk){ return onCap(pk + '/' + sk) || (!onCap(pk) && leafKeysOf(pk).indexOf(pk + '/' + sk) !== -1 && can(pk, 'view')); }
-  function canSub(pk, sk, act){ try { if (isSuper()) return PAGE_OF[sk] && PAGE_OF[sk].under === pk ? !supHidden(sk) : !supHidden(pk) && !supHidden(pk + '/' + sk);   /* V7 · د1-ج: مدير المنصة بلا قيد — د5-ح: إلا المطفأ */ if (deptSubs(null, pk).concat(deptTabs(null, pk)).indexOf(sk) === -1) return false; return can(pk + '/' + sk, act || 'view'); } catch (e) { return false; } }
+  function canSub(pk, sk, act){ try { if (isSuper()) return PAGE_OF[sk] && PAGE_OF[sk].under === pk ? !supHidden(sk) : !supHidden(pk) && !supHidden(pk + '/' + sk);   /* V7 · د1-ج: مدير المنصة بلا قيد — د5-ح: إلا المطفأ */ if (liveLeaves(null, pk).indexOf(sk) === -1) return false; return can(pk + '/' + sk, act || 'view'); } catch (e) { return false; } }
 
   function deptLenses(did){
     var o = permStore(), d = did || curDept();
@@ -489,7 +506,7 @@
     Object.keys(src).forEach(function(k){
       var sp = splitLeaf(k);
       if (cap.indexOf(sp.page) === -1) return;                  /* لا منح خارج السقف */
-      if (sp.sub) { if (deptSubs(d, sp.page).concat(deptTabs(d, sp.page)).indexOf(sp.sub) === -1) return; }
+      if (sp.sub) { if (liveLeaves(d, sp.page).indexOf(sp.sub) === -1) return; }
       else if (isContainer(sp.page) || !PAGE_OF[sp.page]) return;
       var acts = (src[k] || []).filter(function(a){ return ALL_ACTS.indexOf(a) !== -1; });
       if (!acts.length) return;
@@ -553,7 +570,7 @@
     var out = {}, d = did || curDept();
     deptCap(d).forEach(function(k){
       out[k] = ALL_ACTS.slice();
-      var live = deptSubs(d, k).concat(deptTabs(d, k));
+      var live = liveLeaves(d, k);
       leafKeysOf(k).forEach(function(l){
         var sp = splitLeaf(l);
         if (sp.sub && live.indexOf(sp.sub) === -1) return;
