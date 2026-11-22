@@ -119,7 +119,7 @@ const KNOWN_D6 = [
   { id: 'D6-OFF-AUDIT-FILTER', owner: 'المركز ← «سجل الأنشطة والتغييرات»', rule: 'off', accounts: ['super-center'], states: ['oneOffPlat'], page: /سجل الأنشطة/, detail: /button«(?:المهام|التقرير اليومي)»/,
     note: 'أزرارُ تصفية سجل المركز تسمّي ما يتبع نظاماً مطفأً على المنصة' },
   { id: 'D6-OFF-REQ-ME-TASKS', owner: 'نظام المهام × «صفحتي»', rule: 'off', accounts: ['super-in', 'gm', 'mgr', 'sec', 'emp-role', 'emp-none'], states: ['oneOffDept', 'allOffDept'], detail: /طلبٌ لواجهة نظامٍ مطفأ \(tasks\): GET \/api\/me\/tasks/,
-    note: '«صفحتي» تطلب /api/me/tasks والمهامُ مطفأةٌ للإدارة (بطاقةُ «مهامك» لا تُرسم، والخادمُ يجيب 200 لغير مدير المنصة أيضاً)' },
+    note: '«صفحتي» تطلب /api/me/tasks والمهامُ مطفأةٌ للإدارة (بطاقةُ «مهامك» لا تُرسم، والخادمُ لا يرفض الطلبَ لغير مدير المنصة أيضاً)' },
   { id: 'D6-OFF-REQ-CUSTODY', owner: 'نظام العهد / «موظفو الإدارة»', rule: 'off', accounts: ['super-in', 'gm', 'mgr', 'sec', 'emp-role'], states: ['allOffDept'], detail: /طلبٌ لواجهة نظامٍ مطفأ \(custody\): GET \/api\/custody/,
     note: '«موظفو الإدارة» تطلب /api/custody والعهدُ مطفأ (لمدير المنصة 200 · لغيره 403 = D6-HTTP-CUSTODY-OFF)' },
   /* ── «المتابعة اليومية» مطفأةٌ على المنصة وما يسكنها («التقرير اليومي» · «المهام») باقٍ — يحتاج قراراً: هل يتبع الساكنُ حاويتَه على المنصة كما يتبعها في الإدارة؟ ── */
