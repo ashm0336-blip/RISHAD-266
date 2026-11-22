@@ -1056,7 +1056,6 @@ export default {
     }
     var t0 = Date.now();
     var res0 = await this.handle(request, env);
-    if (res0 && res0.status === 200 && url0.pathname.indexOf('/api/') === 0) await rsiSweepLater(env);   /* V7 · د6: مؤقتُ استيرادٍ انقضت مهلتُه يُكنس مع حركة الطلبات العادية (قراءةً أو كتابة) — مرةً كل 5 دقائق للعازل على الأكثر، بعبارةٍ واحدة (019g) */
     /* V7-F · owner decision 2: the image sweep runs after every accepted write — the typed/atomic save path included (054 imgSweep: a small batch, after the response when waitUntil exists) */
     if ((m0 === 'POST' || m0 === 'PUT' || m0 === 'DELETE') && res0 && res0.status === 200 && url0.pathname.indexOf('/api/') === 0 && url0.pathname.indexOf('/api/img/') !== 0 && url0.pathname !== '/api/login') await (url0.pathname === '/api/reset' ? imgSweepLater(env, IMG_SWEEP_RESET, 0, IMG_SWEEP_DEAD_ADMIN) : imgSweepLater(env, IMG_SWEEP_SAVE));   /* one compare-and-set per write; a pass at most once per IMG_SWEEP_EVERY · a reset condemns every R2 image (019e) and forces its first pass (chunked: every chunk R2 confirmed is finished, whatever cuts the invocation) */
     var out0 = withSec(res0, url0, rid, nonce);
