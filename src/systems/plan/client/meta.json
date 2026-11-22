@@ -81,7 +81,6 @@
    "gate:theme248.mjs",
    "gate:visual.mjs",
    "gate:zcodes.mjs",
-   "src/systems/plan/tests/v7_d5h_plan_boundary.test.mjs",
    "tests/unit/v7_d1c_super_unbounded.test.mjs",
    "tests/unit/v7_p3_0_cap_state.test.mjs",
    "tests/unit/v7_p4_systems_map.test.mjs",

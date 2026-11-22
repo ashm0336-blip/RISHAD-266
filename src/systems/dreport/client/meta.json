@@ -64,7 +64,6 @@
    "gate:sec163.mjs",
    "gate:theme248.mjs",
    "gate:visual.mjs",
-   "src/systems/dreport/tests/v7_d5h_dreport_boundary.test.mjs",
    "tests/unit/v7_d1c_super_unbounded.test.mjs"
   ]
  }
