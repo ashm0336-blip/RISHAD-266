@@ -3,7 +3,7 @@
        شريطُ التقدّم (الجزء الحالي من الكل · الصور) ← اعتمادُ ملخّص الخادم ← ملخّصُ النجاح؛ ثم فتحُ الصفحات: المخطط بمصلياته وخرائطه (الصورُ تُحمَّل 200).
    (٢) فشلُ جزءٍ في منتصف الإرسال: رسالةٌ بالسبب ونافذةٌ تعرض «إعادة المحاولة» و«إغلاق» — لا زرَّ بلا أثر؛ «إعادة المحاولة» تكمل من الجزء الفاشل وحده وتنجح.
    (٣) «إغلاق» بعد الفشل يحذف المؤقت ولا يغيّر شيئاً · وإغلاقُ الصفحة أثناء الإرسال كذلك.
-   موضعُ زرّ الاستيراد في الواجهة: صفحةُ الوحدة ← «البيانات» (المساعدُ chooseFile وحده يعرف الطريق — يُعدَّل هو إن نُقل الزر). */
+   موضعُ زرّ الاستيراد في الواجهة: «الإدارات والصلاحيات» ← الوحدة ← «البيانات» (المساعدُ chooseFile وحده يعرف الطريق — يُعدَّل هو إن نُقل الزر). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -21,12 +21,10 @@ async function fileOnDisk(opts) {
   fs.writeFileSync(p, JSON.stringify(f));
   return { f, p };
 }
-/* الطريقُ إلى زرّ «استيراد نسخة» لمدير المنصة: صفحةُ الوحدة ← «البيانات» */
+/* الطريقُ إلى زرّ «استيراد نسخة» لمدير المنصة: «الإدارات والصلاحيات» ← الوحدة ← «البيانات» (#/sysadmin/org/<الوحدة>/data) */
 async function chooseFile(s, unit, file) {
   await s.go('#/sysadmin/overview', 1500);
-  await s.go('#/sysadmin/org/' + unit, 3500);
-  await s.page.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click();
-  await s.page.waitForTimeout(700);
+  await s.go('#/sysadmin/org/' + unit + '/data', 3500);   /* V7 · د6: شاشة «الإدارات والصلاحيات» — تبويبُ «البيانات» للوحدة بعنوانه */
   const [fc] = await Promise.all([s.page.waitForEvent('filechooser', { timeout: 15000 }), s.page.locator('main [title^="استيراد نسخة احتياطية إلى هذه الإدارة"]').click()]);
   await fc.setFiles(file);
   await s.page.waitForSelector('[data-bkc="summary"]', { timeout: 20000 });
@@ -191,8 +189,7 @@ test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة 
     /* التصدير من الكود الحالي: نسخةُ الإدارة النشطة */
     assert.equal(await p.evaluate((d) => KIVO.BassamDepts.setActive(d), B), true);
     await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(4000);
-    await s.go('#/sysadmin/overview', 1500); await s.go('#/sysadmin/org/' + B, 3500);
-    await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click(); await p.waitForTimeout(700);
+    await s.go('#/sysadmin/overview', 1500); await s.go('#/sysadmin/org/' + B + '/data', 3500);   /* V7 · د6: تبويبُ «البيانات» بعنوانه في الشاشة الجديدة */
     const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 300000 }), p.locator('main [title^="نسخة الإدارة"]').click()]);
     const exported = path.join(path.dirname(file), 'TEST_ONLY-exported.json'); await dl.saveAs(exported);
     const bk = JSON.parse(fs.readFileSync(exported, 'utf8'));

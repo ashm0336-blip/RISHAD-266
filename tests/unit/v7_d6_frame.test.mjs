@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { SRC, moduleLogic } from './harness.mjs';
-import { orgWorld, rowOf, rowIds, J, ORG, ORG_VIEW, ORG_CSS } from './org_world.mjs';
+import { orgWorld, rowOf, rowIds, J, ORG, ORG_VIEW, ORG_CSS, ORG_SRC } from './org_world.mjs';
 
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const SEC = 'TEST_ONLY_SEC', G = 'TEST_ONLY_G', E = 'TEST_ONLY_E', A = 'TEST_ONLY_A', B = 'TEST_ONLY_B', S1 = 'TEST_ONLY_A_S1', Z = 'TEST_ONLY_Z', ROOT = '__plat';
@@ -249,26 +249,32 @@ test('ب3 · the add dialog from both entry points: «+ إضافة» (no parent)
   assert.equal(v.ogAdd.pid, G, 'the parent is the selected unit'); assert.equal(v.ogAddPath, 'TEST_ONLY قطاع ← TEST_ONLY إدارة عامة');
   v.ogAddGo(); assert.equal(W.render().ogAdd.msg, 'اكتب الاسم');
   v.ogAddOnName({ target: { value: 'TEST_ONLY إدارة ج' } }); W.render().ogAddGo(); assert.equal(W.render().ogAdd.msg, 'اختر النوع');
+  /* ب4 (بعد دمج القواعد): المدخلُ الواحد KIVO.BassamDepts.unitAdd({ name, kind, pid, seed }) — النافذةُ لا تنادي غيرَه */
+  const ua = []; const ua0 = W.D.unitAdd; W.D.unitAdd = function (o) { ua.push(J(o)); return ua0.call(this, o); };
   W.render().ogAddOnKind({ target: { value: 'إدارة' } }); W.render().ogAddSys[1].pick(); v = W.render(); assert.equal(v.ogAddSys[1].on, 'true');
   v.ogAddGo(); v = W.render();
   const c = W.D.list().find((x) => x.name === 'TEST_ONLY إدارة ج');
   assert.ok(c && c.gid === G, 'the department is created under the prefilled parent'); assert.match(c.id, /^d[0-9a-z]+$/);
-  deq(J(W.seeded.at(-1)), ['seedCapFrom', c.id, G, { systems: 'parent' }], 'ب4: the choice reaches the creation path as a parameter');
+  deq(ua, [{ name: 'TEST_ONLY إدارة ج', kind: 'إدارة', pid: G, seed: 'parent' }], 'ب4: the dialog choice goes to the one entry as seed');
+  deq(J(W.seeded.at(-1)), ['seedCapFrom', c.id, G, { seed: 'parent' }], 'and the model seeds the new unit with it');
+  assert.match(W.acks.at(-1)[0], /أنظمتها كأنظمة العقدة الأب/);
   assert.equal(v.ogAddOn, false, 'the dialog closes'); assert.equal(W.location.hash, '#/sysadmin/org/' + c.id + '/overview', 'and the new unit is opened');
   assert.match(W.acks.at(-1)[0], /أُنشئت «TEST_ONLY إدارة ج»/);
   /* تحت إدارة: النوع «قسم» معبّأ — ومسارُه sectionAdd بالاختيار الافتراضي */
   v = W.open('#/sysadmin/org/' + B + '/overview'); v.ogAddUnder(); v = W.render();
   assert.equal(v.ogAdd.kind, 'قسم'); assert.equal(v.ogAdd.pid, B);
-  const calls = []; const sa = W.D.sectionAdd; W.D.sectionAdd = function (o) { calls.push(J(o)); return sa.call(this, o); };
+  ua.length = 0;
   v.ogAddOnName({ target: { value: 'TEST_ONLY قسم ب١' } }); W.render().ogAddGo();
-  deq(calls, [{ name: 'TEST_ONLY قسم ب١', deptId: B, systems: 'off' }], 'ب4: default «مطفأة كلها» passed to sectionAdd');
+  deq(ua, [{ name: 'TEST_ONLY قسم ب١', kind: 'قسم', pid: B, seed: 'off' }], 'ب4: default «مطفأة كلها» for a section, through the same entry');
+  assert.match(W.acks.at(-1)[0], /أنظمتها مطفأة: فعّلها من «الأنظمة»/);
   assert.ok(W.D.list().some((x) => x.name === 'TEST_ONLY قسم ب١' && x.gid === B && x.kind === 'قسم'));
   /* عقدةٌ بنوعٍ جديد: nodeAdd بالاختيار */
   v = W.open('#/sysadmin/org/platform/overview'); v.ogAddUnder(); v = W.render(); assert.equal(v.ogAdd.pid, '', 'under the root row = no parent');
-  const nc = []; const na = W.D.nodeAdd; W.D.nodeAdd = function (o) { nc.push(J(o)); return na.call(this, o); };
+  ua.length = 0;
   v.ogAddOnName({ target: { value: 'TEST_ONLY شعبة' } }); W.render().ogAddOnKind({ target: { value: '__new' } }); v = W.render(); assert.equal(v.ogAddNewOn, true);
   v.ogAddOnNewKind({ target: { value: 'شعبة' } }); W.render().ogAddGo();
-  deq(nc, [{ name: 'TEST_ONLY شعبة', kind: 'شعبة', pid: null, systems: 'off' }]);
+  deq(ua, [{ name: 'TEST_ONLY شعبة', kind: 'شعبة', pid: null, seed: 'off' }]);
+  assert.doesNotMatch(ORG_SRC.slice(ORG_SRC.indexOf('  _ogAddGo()'), ORG_SRC.indexOf('  _ogRenGo(')), /sectionAdd|nodeAdd|seedCapFrom|D\.save\(/, 'no direct creation call left in the dialog');
   /* القواعدُ القائمة: الاسمُ فريد · إدارةٌ تحت إدارة مرفوضة بنصّ قاعدة الموضع */
   v = W.open('#/sysadmin/org/' + G + '/overview'); v.ogAddUnder(); W.render().ogAddOnName({ target: { value: 'TEST_ONLY إدارة أ' } }); W.render().ogAddOnKind({ target: { value: 'إدارة' } }); W.render().ogAddGo();
   assert.equal(W.render().ogAdd.msg, 'يوجد في الهيكل ما يحمل هذا الاسم');

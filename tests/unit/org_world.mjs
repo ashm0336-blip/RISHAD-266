@@ -94,8 +94,8 @@ export function orgWorld(o = {}) {
         return { kind: own ? 'own' : anc ? 'inherit' : 'open', independent: false, n: own ? caps0[u].length : 13, all: 13, empty: own && !caps0[u].length };
       },
       nameOf: (k) => k, mgrPerms: (u) => ({ TEST_ONLY_unit: u }), menuFor: () => [],
-      seedCapFrom: (id, pid, opt) => { seeded.push(['seedCapFrom', id, pid || null, opt || null]); return { ok: true }; },
-      seedSectionCap: (id, did) => { seeded.push(['seedSectionCap', id, did || null]); return { ok: true }; },
+      seedCapFrom: (id, pid, opt) => { seeded.push(['seedCapFrom', id, pid || null, opt || null]); return { ok: true, seed: opt && opt.seed === 'parent' ? 'parent' : 'off' }; },
+      seedSectionCap: (id, did, opt) => { seeded.push(['seedSectionCap', id, did || null, opt || null]); return { ok: true, seed: opt && opt.seed === 'parent' ? 'parent' : 'off' }; },
       dropNodeCap: () => {},
       p24: { ceil: (u) => ({ page: (k) => !plat.mods.off.includes(k) && on(k, u), sub: () => true, lens: () => true }), leafOn: (C0, leaf) => C0.page(String(leaf).split('/')[0]) },
     },

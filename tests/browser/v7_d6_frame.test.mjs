@@ -348,6 +348,58 @@ test('V7 · د6 ب3 · ب10 · structure actions in one place: add from both ent
   } finally { await b.close(); await lab.close(); }
 });
 
+/* V7 · د6 ب4 (بعد دمج القواعد): اختيارُ «أنظمة الوحدة الجديدة» في نافذة الإضافة يصل المدخلَ الواحد BassamDepts.unitAdd(seed) — بحفظٍ حقيقي:
+   «مطفأة كلها» (الافتراضي) ⇒ تبويبُ «الأنظمة» للوحدة الجديدة بلا نظامٍ مفعّل، وقائمةُ مديرها الصفحاتُ الدائمة وحدها، والخادمُ يوافق؛
+   «نفس أنظمة العقدة الأب» ⇒ المفعّلُ فيها هو المفعّلُ في أبيها، في الشاشة وفي الخادم؛ وبعد إعادة التحميل كما هو. */
+test('V7 · د6 ب4 · the add dialog choice is really saved: «مطفأة كلها» ⇒ the new unit\'s «الأنظمة» tab and its manager\'s menu are OFF; «نفس أنظمة العقدة الأب» ⇒ the same as the parent', { timeout: 600000 }, async () => {
+  const lab = await startLab(); const b = await chromium.launch();
+  try {
+    const { s, p, H } = await page(b, lab); const J = (k) => JSON.parse(read(lab, k));
+    const dlg = p.locator('[data-og-dlg="add"]'), ov = p.locator('main [data-org-tab="overview"]');
+    const sysOn = async () => (await p.locator('main [data-org-tab="systems"] .p44-row[data-on="true"] b').allInnerTexts()).map(norm).sort();
+    const sysAll = () => p.locator('main [data-org-tab="systems"] .p44-row').count();
+    const card = () => p.locator('main section[aria-label="القائمة الجانبية لمدير الوحدة"] li[data-k]').evaluateAll((L) => L.map((x) => x.dataset.k));
+    const srvOn = async (id) => { const r = await s.api('/api/perm44/check?d=' + encodeURIComponent(id) + '&role=x&key=task.view'); assert.equal(r.status, 200); return (r.j.on || []).slice().sort(); };
+    const toggles = await (async () => { await s.go('#/sysadmin/org/' + G + '/systems', 3000); return p.evaluate(() => KIVO.Perm44.sysList().filter((x) => x.toggle !== false).map((x) => x.key)); })();
+    const parentOn = await sysOn(), parentSrv = await srvOn(G);
+    assert.ok(parentOn.length > 0 && parentOn.length <= await sysAll(), 'the parent has systems ON to copy: ' + JSON.stringify(parentOn));
+    const add = async (name, choice) => {
+      await s.go('#/sysadmin/org/' + G + '/overview', 2000);
+      await ov.locator('[data-og-act="add-under"]').click(); await p.waitForTimeout(600);
+      await dlg.locator('#ogAddName').fill(name); await dlg.locator('#ogAddName').blur();
+      await dlg.locator('select[data-og-f="kind"]').selectOption('إدارة');
+      if (choice) { await dlg.locator('[data-og-sys="' + choice + '"]').click(); await p.waitForTimeout(200); assert.equal(await dlg.locator('[data-og-sys="' + choice + '"]').getAttribute('aria-checked'), 'true'); }
+      else assert.equal(await dlg.locator('[data-og-sys="off"]').getAttribute('aria-checked'), 'true', 'the default is «مطفأة كلها»');
+      await dlg.locator('[data-og-ok="add"]').click(); await p.waitForTimeout(2500); await lab.idle();
+      const u = J(KD).find((x) => x.name === name); assert.ok(u && u.gid === G, name + ' is saved under the parent');
+      assert.equal(await H(), '#/sysadmin/org/' + u.id + '/overview');
+      return u.id;
+    };
+    /* ① الافتراضي: مطفأة كلها */
+    const off = await add('TEST_ONLY إدارة مطفأة', '');
+    assert.match(await p.evaluate(() => [...document.querySelectorAll('#bs-toast,#bs-stoast,[role=status]')].map((e) => e.textContent).join(' ')), /أنظمتها مطفأة: فعّلها من «الأنظمة»/);
+    const look = async (id) => { await s.go('#/sysadmin/org/' + id + '/systems', 2500); return { on: await sysOn(), all: await sysAll(), card: await card(), srv: await srvOn(id) }; };
+    let v = await look(off);
+    assert.equal(v.all, toggles.length, 'a switch per system'); assert.deepEqual(v.on, [], '«الأنظمة»: nothing is ON in the new unit');
+    assert.deepEqual(v.card, ['profile', 'emps', 'admin'], 'its manager\'s menu: the permanent pages only');
+    assert.deepEqual(v.srv.filter((k) => toggles.includes(k)), [], 'the server: no switchable system is ON for it');
+    /* ② نفس أنظمة العقدة الأب */
+    const par = await add('TEST_ONLY إدارة كالأب', 'parent');
+    assert.match(await p.evaluate(() => [...document.querySelectorAll('#bs-toast,#bs-stoast,[role=status]')].map((e) => e.textContent).join(' ')), /أنظمتها كأنظمة العقدة الأب/);
+    v = await look(par);
+    assert.deepEqual(v.on, parentOn, '«الأنظمة»: the same systems as the parent');
+    assert.deepEqual(v.srv.filter((k) => toggles.includes(k)), parentSrv.filter((k) => toggles.includes(k)), 'the server agrees');
+    assert.ok(v.card.length > 3 && v.card[0] === 'profile', 'its manager\'s menu carries the parent\'s systems: ' + JSON.stringify(v.card));
+    /* ③ بعد إعادة التحميل: المحفوظُ هو المعروض */
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(4000);
+    assert.deepEqual(await sysOn(), parentOn);
+    v = await look(off); assert.deepEqual(v.on, []); assert.deepEqual(v.card, ['profile', 'emps', 'admin']);
+    /* الأبُ وإخوتُه لم يُمسّوا */
+    await s.go('#/sysadmin/org/' + G + '/systems', 2500); assert.deepEqual(await sysOn(), parentOn, 'the parent is untouched');
+    assert.deepEqual(s.errs.filter((e) => !/ResizeObserver/.test(e)), [], 'no page errors');
+  } finally { await b.close(); await lab.close(); }
+});
+
 test('V7 · د6 ب12 entry · the manager\'s #/admin/perm keeps working: the same screen inside «الإعدادات», his unit and what is under it only, no structure actions', { timeout: 600000 }, async () => {
   const lab = await startLab(); const b = await chromium.launch();
   const before = [read(lab, KG), read(lab, KD)];

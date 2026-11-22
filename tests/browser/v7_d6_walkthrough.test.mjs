@@ -50,16 +50,17 @@ const SPECIAL = {
   maxDepth: 3, maxViews: 220,
   lateStrip: 250,                                       /* صفحةٌ بلا شريط تبويبات: يُنتظر هذا القدر لشريطٍ يُرسم بعد المحتوى */
   blankGrace: 4000,                                     /* مهلةُ ما يبدو فارغاً (أو تبويباً لم يُعرض) قبل الحكم عليه */
-  /* عناوينُ لا يصلها بندٌ ولا تبويب: صفحاتُ الوحدات في المركز (العناوينُ القديمة تُحوَّل إلى الشاشة الجديدة) */
+  /* عناوينُ لا يصلها بندٌ ولا تبويب: وحداتُ شاشة «الإدارات والصلاحيات» في المركز (#/sysadmin/org/<الوحدة>/<التبويب>) — بندُ القائمة يفتح صف «المنصة كلها»
+     بتبويباته الأربعة، وكلُّ وحدةٍ هنا تُمشى تبويباتُها السبعة من شريطها؛ والعنوانُ القديم الأخير يثبت التحويل. والمديرُ يصل الشاشةَ نفسَها من «الإعدادات ← الصلاحيات» (تبويبٌ يُكتشف) */
   extraPages: {
-    'super-center': ['#/sysadmin/org/' + UNITS.G, '#/sysadmin/org/' + UNITS.A, '#/sysadmin/org/' + UNITS.S1, '#/sysadmin/org/' + UNITS.A + '/perm/systems'],
+    'super-center': ['#/sysadmin/org/' + UNITS.G + '/overview', '#/sysadmin/org/' + UNITS.A + '/overview', '#/sysadmin/org/' + UNITS.S1 + '/overview', '#/sysadmin/org/' + UNITS.A + '/perm/systems'],
   },
   /* الموضعُ الوحيد الذي يُسمّى فيه نظامٌ مطفأ: «الصلاحيات ← الأنظمة» لمدير المنصة (ليعيد تشغيله) */
-  offNameAllowed: [/\/perm\/systems$/],
+  offNameAllowed: [/\/org\/[^/]+\/systems$/, /\/perm\/systems$/],
   benign: [/ResizeObserver loop/],                      /* تحذيرُ المتصفح عن حلقة القياس — ليس خطأ صفحة */
   /* حفظُ الأنظمة من شاشتها (اليوم «الصلاحيات ← الأنظمة»؛ عنوانُها القديم يُحوَّل إلى تبويب «الأنظمة» في الشاشة الجديدة) */
   save: {
-    addr: (unit) => '#/sysadmin/org/' + unit + '/perm/systems',
+    addr: (unit) => '#/sysadmin/org/' + unit + '/systems',
     platName: 'المنصة كلها',
     unitPick: (p, name) => p.locator('main .p44-units button, main [role=treeitem]').filter({ has: p.getByText(name, { exact: true }) }),   /* اختيارُ الوحدة في الشاشة */
     sw: 'main [role=switch]',
@@ -74,12 +75,12 @@ const SPECIAL = {
     sideOnly: [],                                        /* في القائمة الفعلية ولا تذكره البطاقات */
     cardOnly: ['profile', 'صفحتي'],                      /* تذكره البطاقات وليس رابطاً في القائمة (صندوقُ المستخدم) */
     list: [
-      { name: 'ما يراه مدير هذه الإدارة — إدارة أ', holder: 'mgr', heading: ['ما يراه مدير', 'قائمة إدارتك'], viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/perm/systems' }, { account: 'mgr', addr: '#/admin/perm/systems' }] },
-      { name: 'ما يراه مدير هذه الإدارة — قسم أ١', holder: 'sec', heading: ['ما يراه مدير', 'قائمة إدارتك'], viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.S1 + '/perm/systems' }, { account: 'sec', addr: '#/admin/perm/systems' }] },
-      { name: 'ماذا يرى حامل الدور — ' + ROLE.name, holder: 'emp-role', heading: 'ماذا يرى حامل الدور', pick: ROLE.name, viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/perm/roles' }, { account: 'mgr', addr: '#/admin/perm/roles' }] },
-      { name: 'ما يراه الآن — موظف بدور', holder: 'emp-role', heading: 'ما يراه الآن', pick: 'TEST_ONLY موظف أ٢', verify: '[aria-label="تفاصيل الشخص"]', viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/perm/people' }, { account: 'mgr', addr: '#/admin/perm/people' }] },
-      { name: 'ما يراه الآن — موظف بلا دور', holder: 'emp-none', heading: 'ما يراه الآن', pick: 'TEST_ONLY موظف أ', verify: '[aria-label="تفاصيل الشخص"]', viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/perm/people' }, { account: 'mgr', addr: '#/admin/perm/people' }] },
-      { name: 'ما يراه الآن — مدير الإدارة', holder: 'mgr', heading: 'ما يراه الآن', pick: 'TEST_ONLY مدير أ', verify: '[aria-label="تفاصيل الشخص"]', viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/perm/people' }] },
+      { name: 'ما يراه مدير هذه الإدارة — إدارة أ', holder: 'mgr', heading: ['ما يراه مدير', 'قائمة إدارتك'], viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/systems' }, { account: 'mgr', addr: '#/admin/perm/systems' }] },
+      { name: 'ما يراه مدير هذه الإدارة — قسم أ١', holder: 'sec', heading: ['ما يراه مدير', 'قائمة إدارتك'], viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.S1 + '/systems' }, { account: 'sec', addr: '#/admin/perm/systems' }] },
+      { name: 'ماذا يرى حامل الدور — ' + ROLE.name, holder: 'emp-role', heading: 'ماذا يرى حامل الدور', pick: ROLE.name, viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/roles' }, { account: 'mgr', addr: '#/admin/perm/roles' }] },
+      { name: 'ما يراه الآن — موظف بدور', holder: 'emp-role', heading: 'ما يراه الآن', pick: 'TEST_ONLY موظف أ٢', verify: '[aria-label="تفاصيل الشخص"]', viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/people' }, { account: 'mgr', addr: '#/admin/perm/people' }] },
+      { name: 'ما يراه الآن — موظف بلا دور', holder: 'emp-none', heading: 'ما يراه الآن', pick: 'TEST_ONLY موظف أ', verify: '[aria-label="تفاصيل الشخص"]', viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/people' }, { account: 'mgr', addr: '#/admin/perm/people' }] },
+      { name: 'ما يراه الآن — مدير الإدارة', holder: 'mgr', heading: 'ما يراه الآن', pick: 'TEST_ONLY مدير أ', verify: '[aria-label="تفاصيل الشخص"]', viewers: [{ account: 'super-center', addr: '#/sysadmin/org/' + UNITS.A + '/people' }] },
     ],
   },
 };
@@ -104,8 +105,6 @@ const KNOWN_D6 = [
     note: 'لوحاتُ «مؤشرات الإدارة» كلُّها بعنوانٍ واحد #/kpis: التبويبُ المعروض لا يظهر في العنوان، والعنوانُ يعيد آخرَ لوحةٍ فُتحت لا التي يدلّ عليها' },
   { id: 'D6-ADDR-PLANNING', owner: 'صفحة «الخطة التشغيلية»', rule: 'addr', accounts: OPS, states: ['allOn', 'oneOffDept', 'oneOffPlat'], detail: /#\/planning/,
     note: 'تبويبا «الجدول الشهري» و«التشغيل الميداني» داخل الحاوية بعنوانٍ واحد #/planning' },
-  { id: 'D6-ADDR-UNIT-DATA', owner: 'ب1 (صفحةُ الوحدة تُستبدل بالشاشة الجديدة)', rule: 'addr', accounts: ['super-center'], detail: /تبويبات بعنوانٍ واحد #\/sysadmin\/org\/[^/ ]+: «البيانات» · «نظرة عامة»/,
-    note: 'تبويب «البيانات» في صفحة الوحدة بلا عنوان: يبقى #/sysadmin/org/<الوحدة> — يزول مع الشاشة الجديدة (العنوانُ يحمل الوحدةَ والتبويب)' },
   { id: 'D6-ADDR-LAST-TAB', owner: 'الصفحات ذات التبويبات المعنونة', rule: 'addr', accounts: OPS, states: ['allOn'], viewports: [1366], detail: /^الرابط العميق #\/(?:award|daily|dstats|employees) /,
     note: 'العنوانُ الأساس للصفحة (#/award · #/daily · #/dstats · #/employees) يعرض آخرَ تبويبٍ فُتح في الجلسة ولا يُصحَّح العنوانُ إلى عنوان ذلك التبويب' },
   /* ── (3) طلبٌ مرفوض من فتح الصفحة ── */
@@ -134,14 +133,8 @@ const KNOWN_D6 = [
   { id: 'D6-PLAT-ROLE-LEAK', owner: 'محرّك الأدوار × إطفاء المنصة', rule: 'off', accounts: ['emp-role'], states: ['oneOffPlat'], detail: /«(?:الجولات اليومية|مؤشرات التشغيل اليومي)»/,
     note: 'حاملُ الدور يرى من «المتابعة اليومية» نفسِها (لا مما يسكنها) تبويبَ «الجولات اليومية» ولوحةَ «مؤشرات التشغيل اليومي» وهي مطفأةٌ على المنصة — والمديرُ لا يراهما' },
   /* ── ج2 · المصدرُ الواحد (أ1) — إلى م4 ── */
-  { id: 'D6-SRC-PLAT-MENU', owner: 'م4', rule: 'source', accounts: OPS, states: ['oneOffPlat'], page: /menuFor|ما يراه مدير/, detail: /المحتوى يختلف/,
+  { id: 'D6-SRC-PLAT-MENU', owner: 'م4', rule: 'source', accounts: OPS, states: ['oneOffPlat'], page: /menuFor|ما يراه مدير|ماذا يرى حامل الدور|ما يراه الآن/, detail: /المحتوى يختلف/,   /* V7 · د6 (دمج الإطار): بطاقتا الدور والشخص صارتا من المصدر نفسِه (seenBy) فتحملان الفرقَ نفسَه */
     note: 'BassamPerm.menuFor (وبطاقةُ «ما يراه مدير هذه الإدارة») تعدّ «المتابعة اليومية» ظاهرةً وهي مطفأةٌ على المنصة؛ القائمةُ المرسومة تخفيها بشرطٍ ثانٍ (260 apply) — مصدران' },
-  { id: 'D6-SRC-ROLE-CARD', owner: 'م4', rule: 'source', accounts: ['emp-role'], states: ['allOn', 'oneOffDept', 'oneOffPlat'], page: /ماذا يرى حامل الدور/,
-    note: 'بطاقةُ «ماذا يرى حامل الدور» قائمةُ أنظمة (_p44Menu) لا قائمتُه الجانبية: بلا «مؤشرات الإدارة»، وفيها «عهد الموظفين» · «الجدول الشهري» · «التشغيل الميداني» · «التقرير اليومي» · «المهام» بنوداً' },
-  { id: 'D6-SRC-PERSON-NOW', owner: 'م4', rule: 'source', accounts: ['emp-role'], states: ['allOn', 'oneOffDept', 'oneOffPlat'], page: /ما يراه الآن — موظف بدور/,
-    note: '«ما يراه الآن» للشخص من _p44Menu نفسِها: الفرقُ نفسُه عن قائمته الفعلية' },
-  { id: 'D6-SRC-MGR-NOW', owner: 'م4', rule: 'source', accounts: ['mgr'], page: /ما يراه الآن — مدير الإدارة/,
-    note: '«ما يراه الآن» لمدير الإدارة سطرٌ واحد «كل الأنظمة المفعّلة لإدارته» لا قائمتُه' },
   { id: 'D6-SRC-SECTION-NAMES', owner: 'م4', rule: 'source', accounts: ['sec'], states: ['allOn', 'oneOffDept', 'allOffDept'], detail: /الأسماء تختلف/,
     note: 'مديرُ القسم: القائمةُ المرسومة تسمّي «مؤشرات القسم» و«موظفو القسم»، والمصدرُ (menuFor) والبطاقةُ يسمّيانهما «مؤشرات الإدارة» و«موظفو الإدارة» (المفاتيحُ متطابقة)' },
 ];
