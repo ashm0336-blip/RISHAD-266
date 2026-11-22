@@ -131,17 +131,47 @@ export function cut(text, size) {
   for (let at = 0; at < text.length;) { let end = Math.min(text.length, at + size); if (end < text.length && (text.charCodeAt(end - 1) & 0xfc00) === 0xd800) end--; out.push(text.slice(at, end)); at = end; }
   return out;
 }
+/* تقسيمُ المفتاح الكبير دفعاتٍ — كما يفعل العميل (548 split): الأعضاءُ المشتركة + مجموعةُ أيام ≤ ~0.7M حرف */
+export function sliceKey(raw, rxSource, target = 700000) {
+  const doc = JSON.parse(raw), rx = new RegExp(rxSource), shared = {}, days = [], texts = [];
+  for (const k of Object.keys(doc)) { if (rx.test(k)) days.push(k); else shared[k] = doc[k]; }
+  const head = JSON.stringify(shared).length;
+  let group = { ...shared }, size = head;
+  for (const d of days) { const one = JSON.stringify(doc[d]).length + d.length + 4; if (size + one > target && size > head) { texts.push(JSON.stringify(group)); group = { ...shared }; size = head; } group[d] = doc[d]; size += one; }
+  texts.push(JSON.stringify(group));
+  return texts;
+}
 let rid = 0;
-export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST_ONLY د6', requestId } = {}) {
+/* slice: 'auto' (كالعميل: ما يعلنه الخادم وكان أكبر من حدّه) · false (مسارٌ واحد) · رقم (حدٌّ أدنى مفروض وحجمُ دفعةٍ صغير — للمقارنة على بياناتٍ صغيرة) */
+export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST_ONLY د6', requestId, slice = 'auto', sliceTarget } = {}) {
   const id = requestId || 'TEST_ONLY_d6_' + (++rid) + '_' + crypto.randomBytes(6).toString('hex');
-  const { idbImages = {}, ...rest } = file, text = JSON.stringify(rest), fparts = cut(text, SEG.f);
-  const parts = fparts.map((t, s) => ({ k: '', s, t })).concat(Object.entries(idbImages).flatMap(([k, v]) => cut(v, SEG.i).map((t, s) => ({ k, s, t }))));
+  const { idbImages = {}, ...rest0 } = file;
   const post = (body) => T.call('/api/backup/import', { ck: who.ck, body: { requestId: id, ...body } });
-  const keys = rest.manifest ? undefined : Object.fromEntries(Object.entries(rest.data || {}).map(([k, v]) => [k, v === null ? 1 : 0]));
+  const keys = rest0.manifest ? undefined : Object.fromEntries(Object.entries(rest0.data || {}).map(([k, v]) => [k, v === null ? 1 : 0]));
   const P = {
-    id, parts, post,
-    begin: (extra = {}) => post({ op: 'begin', scope, n: text.length, f: fparts.length, images: Object.fromEntries(Object.entries(idbImages).map(([k, v]) => [k, v.length])), ...(keys ? { keys } : {}), ...extra }),
-    part: (i) => post({ op: 'part', items: [parts[i]] }),
+    id, parts: [], post, slices: {}, sliceCount: 0, text: '',
+    /* يُبنى مرةً قبل البدء: ما يُقسم يخرج من نصّ الملف */
+    async build() {
+      if (P.parts.length) return;
+      const rest = { ...rest0, data: { ...(rest0.data || {}) } }, sl = [];
+      if (slice !== false && keys) {
+        const dry = await post({ op: 'begin', dry: true, scope, keys });
+        const spec = (dry.j && dry.j.slice) || {}, min = typeof slice === 'number' ? slice : (dry.j && dry.j.sliceMin) || Infinity;
+        for (const name of Object.keys(spec)) {
+          const raw = rest.data[name];
+          if (typeof raw !== 'string' || raw.length < min) continue;
+          const texts = sliceKey(raw, spec[name], sliceTarget);
+          if (texts.length < 2) continue;
+          delete rest.data[name];
+          texts.forEach((t, n) => { P.slices[name + '#' + n] = t.length; sl.push({ k: '#' + name + '#' + n, s: 0, t }); });
+        }
+      }
+      P.text = JSON.stringify(rest); P.fparts = cut(P.text, SEG.f); P.sliceCount = sl.length;
+      P.parts = P.fparts.map((t, s) => ({ k: '', s, t })).concat(sl, Object.entries(idbImages).flatMap(([k, v]) => cut(v, SEG.i).map((t, s) => ({ k, s, t }))));
+    },
+    begin: async (extra = {}) => { await P.build(); return post({ op: 'begin', scope, n: P.text.length, f: P.fparts.length, images: Object.fromEntries(Object.entries(idbImages).map(([k, v]) => [k, v.length])), slices: P.slices, ...(keys ? { keys } : {}), ...extra }); },
+    part: (i) => post({ op: 'part', items: [P.parts[i]] }),
+    sliceStep: (i) => post({ phase: 'slice', i, reason }),
     inventory: async () => { const q = new URLSearchParams({ kind: scope.kind, departments: '[]' }); if (scope.kind === 'dept') q.set('dept', scope.departmentId); return (await T.call('/api/backup/restore?' + q, { ck: who.ck })).j; },
     inspect: async () => { const inv = await P.inventory(); return post({ phase: 'inspect', scope, mode, reason, base: inv && inv.base, legacyConsent: false }); },
     commit: (base, extra = {}) => post({ phase: 'commit', scope, mode, reason, base, legacyConsent: true, ...extra }),
@@ -150,7 +180,8 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
     async run({ onPart } = {}) {
       const out = { begin: await P.begin() };
       if (out.begin.status !== 200) return out;
-      for (let i = 0; i < parts.length; i++) { const r = await P.part(i); if (onPart) await onPart(i, r); if (r.status !== 200) { out.part = r; out.failedAt = i; return out; } }
+      for (let i = 0; i < P.parts.length; i++) { const r = await P.part(i); if (onPart) await onPart(i, r); if (r.status !== 200) { out.part = r; out.failedAt = i; return out; } }
+      for (let i = 0; i < P.sliceCount; i++) { const r = await P.sliceStep(i); if (r.status !== 200) { out.slice = r; out.inspect = r; out.failedAt = i; return out; } }
       out.inspect = await P.inspect();
       if (out.inspect.status !== 200) return out;
       out.commit = await P.commit(out.inspect.j.inspection.base);

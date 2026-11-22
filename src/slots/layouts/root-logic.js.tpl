@@ -972,8 +972,9 @@ class Component extends DCLogic {
     const sum = c.sum, run = c.run || {}, done = c.done, skip = (sum && sum.skip) || [];
     let when = "";
     try { if (sum && sum.exportedAt) when = new Date(sum.exportedAt).toLocaleString("ar-SA-u-nu-latn", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { when = (sum && sum.exportedAt) || ""; }
-    const parts = run.parts || 0, pct = run.step === "upload" && parts ? Math.max(2, Math.round(((run.part - 1) / parts) * 90)) : run.step === "inspect" || run.step === "review" ? 92 : run.step === "commit" ? 97 : 1;
+    const parts = run.parts || 0, pct = run.step === "upload" && parts ? Math.max(2, Math.round(((run.part - 1) / parts) * 78)) : run.step === "slice" && parts ? 80 + Math.round((run.part / parts) * 10) : run.step === "inspect" || run.step === "review" ? 92 : run.step === "commit" ? 97 : 1;
     const runText = run.stopping ? "يتوقّف بعد الجزء الجاري…" : run.step === "upload" ? "الجزء " + run.part + " من " + parts + (run.images ? " · الصور: " + (run.image || 0) + " من " + run.images : "") + " — لا يتغيّر شيء في الإدارة قبل الاعتماد."
+      : run.step === "slice" ? "اكتمل الإرسال — تُجهَّز البيانات الكبيرة على دفعات: " + run.part + " من " + parts + "."
       : run.step === "inspect" ? "اكتمل إرسال الأجزاء (" + parts + ") — تُفحص النسخة وتُطابَق مع الإدارة."
       : run.step === "review" ? "اكتمل الفحص — راجع ملخّصه واعتمد الاستعادة."
       : run.step === "commit" ? "تُطبَّق النسخة في خطوة واحدة…" : "تُجهَّز أجزاء النسخة…";

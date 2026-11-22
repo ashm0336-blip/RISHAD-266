@@ -1934,6 +1934,17 @@
           "type": "string",
           "maxLength": 12
         },
+        "i": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "slices": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
         "requestId": {
           "type": "string",
           "maxLength": 100

@@ -1474,6 +1474,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     });
   }
   await bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartments,keys);
+  if (internal && internal.images && internal.images.touch) internal.images.touch(plan);   /* V7 · د6: مراجعُ صور المفاتيح المودَعة على دفعات (019g) */
   if (internal && internal.images) await rsImageArchivePlan(env, A, plan, reference, internal.images);
   await rsImageMetadataPlan(env, A, plan, reference);
   return plan;

@@ -1242,6 +1242,7 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
     plan.counts.notifications = np.count;
   }
 @@SYS:rs.plan.custody@@@@SYS:rs.plan.irshad@@@@SYS:rs.plan.custodyCleanup@@@@SYS:rs.plan.irshadRemoved@@  await bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartments,keys);
+  if (internal && internal.images && internal.images.touch) internal.images.touch(plan);   /* V7 · د6: مراجعُ صور المفاتيح المودَعة على دفعات (019g) */
   if (internal && internal.images) await rsImageArchivePlan(env, A, plan, reference, internal.images);
   await rsImageMetadataPlan(env, A, plan, reference);
   return plan;

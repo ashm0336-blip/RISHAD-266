@@ -208,10 +208,33 @@
     }
     return out;
   }
-  function split(file) {
-    var images = record(file.idbImages) ? file.idbImages : {}, rest = Object.assign({}, file);
+  /* المفتاحُ الكبير (يعلنه الخادم: الاسم ونمطُ أعضائه التي تُقسم) يُرسل دفعاتٍ كلٌّ منها وثيقةٌ صغيرة: الأعضاءُ المشتركة + مجموعةُ أيام (≤ ~0.7M حرف) —
+     فلا يحمله الخادمُ كلَّه في ذاكرته. ما لا ينقسم (ليس خريطةً · يومٌ واحد أكبر من الحد) يبقى في نصّ الملف كما كان. */
+  function split(file, spec, min) {
+    var images = record(file.idbImages) ? file.idbImages : {}, rest = Object.assign({}, file), slices = {}, list = [];
     delete rest.idbImages;
-    return { text: JSON.stringify(rest), images: images, ids: Object.keys(images) };
+    Object.keys(spec || {}).forEach(function (name) {
+      var raw = record(file.data) ? file.data[name] : null, doc, rx, shared = {}, days = [], texts = [], group, size, head;
+      if (typeof raw !== 'string' || raw.length < min) return;
+      try { doc = JSON.parse(raw); rx = new RegExp(spec[name]); } catch (e) { return; }
+      if (!record(doc)) return;
+      Object.keys(doc).forEach(function (k) { if (rx.test(k)) days.push(k); else shared[k] = doc[k]; });
+      head = JSON.stringify(shared).length;
+      if (days.length < 2 || head > 200000) return;
+      group = Object.assign({}, shared); size = head;
+      for (var i = 0; i < days.length; i++) {
+        var one = JSON.stringify(doc[days[i]]).length + days[i].length + 4;
+        if (head + one > 950000) return;
+        if (size + one > 700000 && size > head) { texts.push(JSON.stringify(group)); group = Object.assign({}, shared); size = head; }
+        group[days[i]] = doc[days[i]]; size += one;
+      }
+      texts.push(JSON.stringify(group));
+      if (texts.some(function (t) { return t.length > 1000000; })) return;
+      if (rest.data === file.data) rest.data = Object.assign({}, file.data);
+      delete rest.data[name];
+      texts.forEach(function (t, n) { slices[name + '#' + n] = t.length; list.push({ k: '#' + name + '#' + n, s: 0, t: t }); });
+    });
+    return { text: JSON.stringify(rest), images: images, ids: Object.keys(images), slices: slices, list: list };
   }
   function wait(ms) {
     return new Promise(function (go) { setTimeout(go, ms); });
@@ -232,7 +255,7 @@
     var stamp = context(), id = identity();
     if (!stamp) return failure('session', 401);
     if (!id || !record(file) || !record(file.data) || !record(scope)) return failure('invalid');
-    var parts = split(file), legacy = !file.manifest, keys = {}, names = Object.keys(file.data);
+    var parts = split(file, {}, 0), legacy = !file.manifest, keys = {}, names = Object.keys(file.data);
     names.forEach(function (k) { keys[k] = file.data[k] === null ? 1 : 0; });
     var read = await post({ op: 'begin', dry: true, requestId: id, scope: scope, keys: legacy ? keys : {} }, stamp);
     if (!read.ok) return read;
@@ -254,6 +277,17 @@
       }
       if (!sent.ok) return sent;
       job.parts[job.next] = null;
+    }
+    /* دفعاتُ المفتاح الكبير: كلُّ دفعةٍ يحكم عليها الخادمُ ويحوّلها في طلبها (بالترتيب) — والفاشلةُ تُعاد وحدها */
+    for (; job.sliced < job.slices; job.sliced++) {
+      if (job.stop && job.stop()) return failure('cancelled');
+      for (var again = 1; ; again++) {
+        progress({ step: 'slice', part: job.sliced + 1, parts: job.slices });
+        sent = await post({ phase: 'slice', requestId: job.id, i: job.sliced, reason: job.reason }, stamp, LONG);
+        if (sent.ok || !sent.uncertain || again >= 3 || !same(stamp)) break;
+        await wait(700 * again);
+      }
+      if (!sent.ok) return sent;
     }
     return { ok: 1 };
   }
@@ -286,17 +320,25 @@
       var reason = typeof opt.reason === 'string' ? opt.reason.trim() : exempt ? '' : await askReason(scope);
       if (!reason && !exempt) return failure('reason', 403);
       if (!same(stamp)) return failure('session', 401);
-      var parts = split(file), texts = cut(parts.text, 1000000), sizes = {}, list = [], imageOf = {};
+      var legacyKeys = {}, spec = {}, min = 0;
+      if (!file.manifest && record(file.data)) {
+        Object.keys(file.data).forEach(function (k) { legacyKeys[k] = file.data[k] === null ? 1 : 0; });
+        var asked = await post({ op: 'begin', dry: true, requestId: id, scope: scope, keys: legacyKeys }, stamp);
+        if (!asked.ok) return asked;
+        if (record(asked.data.slice) && integer(asked.data.sliceMin)) { spec = asked.data.slice; min = asked.data.sliceMin; }
+      }
+      var parts = split(file, spec, min), texts = cut(parts.text, 1000000), sizes = {}, list = [], imageOf = {};
       texts.forEach(function (t, n) { list.push({ k: '', s: n, t: t }); });
+      parts.list.forEach(function (item) { list.push(item); });
       parts.ids.forEach(function (k, i) {
         var v = String(parts.images[k]);
         sizes[k] = v.length;
         cut(v, 4000000).forEach(function (t, n) { imageOf[list.length] = i + 1; list.push({ k: k, s: n, t: t }); });
       });
       live.add(id);   /* قبل الطلب: صفحةٌ تُغلق وردُّ البدء لم يصل تطلب حذفَ مؤقتها كذلك */
-      var began = await post({ op: 'begin', requestId: id, scope: scope, n: parts.text.length, f: texts.length, images: sizes }, stamp);
+      var began = await post({ op: 'begin', requestId: id, scope: scope, n: parts.text.length, f: texts.length, images: sizes, slices: parts.slices, keys: legacyKeys }, stamp);
       if (!began.ok) { if (!began.uncertain) live.delete(id); return began; }
-      job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest };
+      job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest, slices: parts.list.length, sliced: 0 };
     } else if (job.mode !== opt.mode) return fail(failure('invalid'));
     job.stop = typeof opt.shouldStop === 'function' ? opt.shouldStop : null;
     var up = await upload(job, stamp, progress);
