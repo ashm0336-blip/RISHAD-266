@@ -30,7 +30,7 @@
  },
  "rsi.slice": {
   "order": 10,
-  "text": "  'bassam_rounds_v1': ['^\\\\d{4}-\\\\d{1,2}-\\\\d{1,2}(?:-.+)?$', ['bassam_rounds_v1', 'bassam_rounds_arc_v1']]\n"
+  "text": "  'bassam_rounds_v1': ['^\\\\d{4}-\\\\d{1,2}-\\\\d{1,2}(?:-.+)?$', ['bassam_rounds_v1', 'bassam_rounds_arc_v1']],\n  'bassam_rounds_arc_v1': ['^\\\\d{4}-\\\\d{1,2}-\\\\d{1,2}(?:-.+)?$', ['bassam_rounds_v1', 'bassam_rounds_arc_v1']]\n"
  },
  "rsi.pend": {
   "order": 10,

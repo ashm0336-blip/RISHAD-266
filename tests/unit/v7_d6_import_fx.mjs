@@ -160,7 +160,7 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
         for (const name of Object.keys(spec)) {
           const raw = rest.data[name];
           if (typeof raw !== 'string' || raw.length < min) continue;
-          const texts = sliceKey(raw, spec[name], sliceTarget);
+          const texts = sliceKey(raw, spec[name][0], sliceTarget);
           if (texts.length < 2) continue;
           delete rest.data[name];
           texts.forEach((t, n) => { P.slices[name + '#' + n] = t.length; sl.push({ k: '#' + name + '#' + n, s: 0, t }); });

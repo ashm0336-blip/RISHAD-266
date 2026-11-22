@@ -757,6 +757,13 @@
           "type": "integer",
           "minimum": 0
         },
+        "resources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
         "slices": {
           "type": "object",
           "additionalProperties": {

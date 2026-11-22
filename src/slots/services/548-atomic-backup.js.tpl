@@ -207,26 +207,83 @@
   function split(file, spec, min) {
     var images = record(file.idbImages) ? file.idbImages : {}, rest = Object.assign({}, file), slices = {}, list = [];
     delete rest.idbImages;
-    Object.keys(spec || {}).forEach(function (name) {
-      var raw = record(file.data) ? file.data[name] : null, doc, rx, shared = {}, days = [], texts = [], group, size, head;
-      if (typeof raw !== 'string' || raw.length < min) return;
-      try { doc = JSON.parse(raw); rx = new RegExp(spec[name]); } catch (e) { return; }
-      if (!record(doc)) return;
-      Object.keys(doc).forEach(function (k) { if (rx.test(k)) days.push(k); else shared[k] = doc[k]; });
-      head = JSON.stringify(shared).length;
-      if (days.length < 2 || head > 200000) return;
-      group = Object.assign({}, shared); size = head;
-      for (var i = 0; i < days.length; i++) {
-        var one = JSON.stringify(doc[days[i]]).length + days[i].length + 4;
-        if (head + one > 950000) return;
-        if (size + one > 700000 && size > head) { texts.push(JSON.stringify(group)); group = Object.assign({}, shared); size = head; }
-        group[days[i]] = doc[days[i]]; size += one;
-      }
-      texts.push(JSON.stringify(group));
-      if (texts.some(function (t) { return t.length > 1000000; })) return;
-      if (rest.data === file.data) rest.data = Object.assign({}, file.data);
-      delete rest.data[name];
+    function add(name, texts) {
       texts.forEach(function (t, n) { slices[name + '#' + n] = t.length; list.push({ k: '#' + name + '#' + n, s: 0, t: t }); });
+    }
+    /* تجميعٌ عام: رأسٌ مشترك (head) + عناصرُ بأحجامها ⇒ مجموعاتٌ ≤ ~0.7M حرف؛ null إن لم ينقسم */
+    function groups(head, sizes) {
+      var out = [], cur = [], size = head;
+      if (head > 200000) return null;
+      for (var i = 0; i < sizes.length; i++) {
+        if (head + sizes[i] > 950000) return null;
+        if (size + sizes[i] > 700000 && cur.length) { out.push(cur); cur = []; size = head; }
+        cur.push(i); size += sizes[i];
+      }
+      out.push(cur);
+      return out;
+    }
+    /* أسرةُ الموارد تُقسم معاً إن بلغ أحدُها الحد (الحيُّ وأرشيفُه: خطوةُ الأرشفة تجري في دفعاتهما) */
+    var ops0 = record(file.domains) && Array.isArray(file.domains.operations) ? file.domains.operations : [];
+    function weight(name) {
+      var raw = record(file.data) ? file.data[name] : null, w = typeof raw === 'string' ? raw.length : 0;
+      ops0.forEach(function (d) { if (record(d) && d.resource === name && record(d.rows)) w = Math.max(w, JSON.stringify(d.rows).length); });
+      return w;
+    }
+    function due(name) {
+      return (Array.isArray(spec[name]) && Array.isArray(spec[name][1]) ? spec[name][1] : [name]).some(function (n) { return Object.prototype.hasOwnProperty.call(spec, n) && weight(n) >= min; });
+    }
+    Object.keys(spec || {}).forEach(function (name) {
+      var rx, raw = record(file.data) ? file.data[name] : null, doc;
+      if (!min || !due(name)) return;
+      try { rx = new RegExp(spec[name][0]); } catch (e) { return; }
+      /* نسخةٌ قديمة: الوثيقةُ نصٌّ في data */
+      if (typeof raw === 'string') {
+        try { doc = JSON.parse(raw); } catch (e) { return; }
+        if (!record(doc)) return;
+        var shared = {}, days = Object.keys(doc).filter(function (k) { if (rx.test(k)) return true; shared[k] = doc[k]; return false; });
+        var plan = groups(JSON.stringify(shared).length, days.map(function (k) { return JSON.stringify(doc[k]).length + k.length + 4; }));
+        if (!plan) return;
+        var texts = plan.map(function (idx) { var g = Object.assign({}, shared); idx.forEach(function (i) { g[days[i]] = doc[days[i]]; }); return JSON.stringify(g); });
+        if (texts.some(function (t) { return t.length > 1000000; })) return;
+        if (rest.data === file.data) rest.data = Object.assign({}, file.data);
+        delete rest.data[name];
+        add(name, texts);
+        return;
+      }
+      /* نسخةٌ حديثة: صفوفُ المورد في domains.operations — تُجمع صفوفُ كل عضوٍ (بادئةُ مفتاح صفّه) مع الجذر والأعضاء المشتركة */
+      var ops = record(file.domains) && Array.isArray(file.domains.operations) ? file.domains.operations : [], at = -1;
+      ops.forEach(function (d, i) { if (record(d) && d.resource === name && record(d.rows) && Array.isArray(d.rows.ops_nodes)) at = i; });
+      if (at < 0) return;
+      var entry = ops[at], nodes = entry.rows.ops_nodes, root = nodes.filter(function (r) { return r && r.parent_key == null; })[0], tables = Object.keys(entry.rows);
+      if (!root) return;
+      var kids = nodes.filter(function (r) { return r.parent_key === root.row_key && r.member_key != null; }).sort(function (x, y) { return x.position - y.position; }),
+        owner = {}, bucket = { '': {} }, cut0 = root.row_key.length + 1;
+      kids.forEach(function (r) { owner[r.row_key] = rx.test(r.member_key) ? r.row_key : ''; bucket[owner[r.row_key]] = bucket[owner[r.row_key]] || {}; });
+      tables.forEach(function (t) {
+        (entry.rows[t] || []).forEach(function (r) {
+          var k = String(r.row_key), next = k.indexOf('/', cut0), top = k === root.row_key ? '' : next < 0 ? k : k.slice(0, next), o = Object.prototype.hasOwnProperty.call(owner, top) ? owner[top] : '';
+          (bucket[o][t] = bucket[o][t] || []).push(r);
+        });
+      });
+      var dayKids = kids.filter(function (r) { return owner[r.row_key]; }), sharedKids = kids.filter(function (r) { return !owner[r.row_key]; });
+      var plan2 = groups(JSON.stringify(bucket['']).length, dayKids.map(function (r) { return JSON.stringify(bucket[r.row_key]).length; }));
+      if (!plan2) return;
+      var texts2 = plan2.map(function (idx) {
+        var rows = {}, pos = {};
+        sharedKids.forEach(function (r, i) { pos[r.row_key] = i; });
+        idx.forEach(function (i, n) { pos[dayKids[i].row_key] = sharedKids.length + n; });
+        tables.forEach(function (t) {
+          rows[t] = (bucket[''][t] || []).slice();
+          idx.forEach(function (i) { rows[t] = rows[t].concat(bucket[dayKids[i].row_key][t] || []); });
+          if (t === 'ops_nodes') rows[t] = rows[t].map(function (r) { return Object.prototype.hasOwnProperty.call(pos, r.row_key) ? Object.assign({}, r, { position: pos[r.row_key] }) : r; });
+        });
+        return JSON.stringify({ version: entry.version, scope: entry.scope, resource: entry.resource, rows: rows });
+      });
+      if (texts2.some(function (t) { return t.length > 1000000; })) return;
+      var empty = {};
+      tables.forEach(function (t) { empty[t] = []; });
+      rest.domains = Object.assign({}, file.domains, { operations: ops.map(function (d, i) { return i === at ? Object.assign({}, d, { rows: empty }) : d; }) });
+      add(name, texts2);
     });
     return { text: JSON.stringify(rest), images: images, ids: Object.keys(images), slices: slices, list: list };
   }
@@ -314,10 +371,12 @@
       var reason = typeof opt.reason === 'string' ? opt.reason.trim() : exempt ? '' : await askReason(scope);
       if (!reason && !exempt) return failure('reason', 403);
       if (!same(stamp)) return failure('session', 401);
-      var legacyKeys = {}, spec = {}, min = 0;
-      if (!file.manifest && record(file.data)) {
-        Object.keys(file.data).forEach(function (k) { legacyKeys[k] = file.data[k] === null ? 1 : 0; });
-        var asked = await post({ op: 'begin', dry: true, requestId: id, scope: scope, keys: legacyKeys }, stamp);
+      /* ما قد يُقسم دفعاتٍ يعلنه الخادم (begin dry): أسماءُ الموارد في النسخة — مفاتيحُ data في القديمة، ومواردُ domains.operations في الحديثة */
+      var legacyKeys = {}, resources = {}, spec = {}, min = 0, old = !file.manifest && record(file.data);
+      if (old) Object.keys(file.data).forEach(function (k) { legacyKeys[k] = resources[k] = file.data[k] === null ? 1 : 0; });
+      else if (record(file.domains) && Array.isArray(file.domains.operations)) file.domains.operations.forEach(function (d) { if (record(d) && typeof d.resource === 'string') resources[d.resource] = 0; });
+      if (scope.kind === 'dept' && Object.keys(resources).length) {
+        var asked = await post({ op: 'begin', dry: true, requestId: id, scope: scope, resources: resources }, stamp);
         if (!asked.ok) return asked;
         if (record(asked.data.slice) && integer(asked.data.sliceMin)) { spec = asked.data.slice; min = asked.data.sliceMin; }
       }
@@ -330,7 +389,7 @@
         cut(v, 4000000).forEach(function (t, n) { imageOf[list.length] = i + 1; list.push({ k: k, s: n, t: t }); });
       });
       live.add(id);   /* قبل الطلب: صفحةٌ تُغلق وردُّ البدء لم يصل تطلب حذفَ مؤقتها كذلك */
-      var began = await post({ op: 'begin', requestId: id, scope: scope, n: parts.text.length, f: texts.length, images: sizes, slices: parts.slices, keys: legacyKeys }, stamp);
+      var began = await post({ op: 'begin', requestId: id, scope: scope, n: parts.text.length, f: texts.length, images: sizes, slices: parts.slices, resources: resources }, stamp);
       if (!began.ok) { if (!began.uncertain) live.delete(id); return began; }
       job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest, slices: parts.list.length, sliced: 0 };
     } else if (job.mode !== opt.mode) return fail(failure('invalid'));
