@@ -661,7 +661,8 @@
       <sc-if value="{{ogDataUnitsNone}}" hint-placeholder-val="{{ false }}"><p class="og-note">لا إدارة تحتها بعد.</p></sc-if>
     </section>
     </sc-if>
-    <sc-if value="{{ogDataUnit}}" hint-placeholder-val="{{ true }}"><h4 class="og-dttl" data-og="data-name">البيانات · {{ogU.name}}</h4>{{ogSlotData}}</sc-if>
+    <sc-if value="{{ogDataUnit}}" hint-placeholder-val="{{ true }}"><h4 class="og-dttl" data-og="data-name">البيانات · {{ogU.name}}</h4></sc-if>
+    <sc-if value="{{ogDataUnit}}" hint-placeholder-val="{{ true }}">{{ogSlotData}}</sc-if>
   </div>
   </sc-if>
 </section>
