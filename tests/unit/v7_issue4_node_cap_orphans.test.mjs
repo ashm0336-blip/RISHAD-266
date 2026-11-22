@@ -42,16 +42,23 @@ test('nodeDel calls it after removing the node; exported on KIVO.BassamPerm', ()
 });
 test('nodeAdd (a node made by hand) drops a leftover of its id before seeding — it never carries a stored leftover along', () => {
   const i = S.indexOf('nodeAdd: function(o) {'), body = S.slice(i, S.indexOf('nodeSave: function', i));
-  const d = body.indexOf('P.dropNodeCap(id)'), sd = body.indexOf('P.seedCapFrom(id, pid)');
-  assert.ok(d > 0 && sd > d, 'dropNodeCap, then seedCapFrom');
-  assert.ok(body.indexOf('this.saveNodes(') < d, 'after the node is written');
-  /* behaviour: a leftover is removed, then the parent\'s ceiling is seeded (seedCapFrom no longer answers «kept») */
-  const store = { caps: { P: ['emps', 'tasks'], N: ['emps'] }, subs: { N: { emps: ['data'] } }, lenses: {}, capOwn: { N: true } }, saved = [];
-  const ctx = { isSuper: () => true, permStore: () => store, permSave: (o) => saved.push(J(o)), hasCap: (id) => Array.isArray(store.caps[id]), effCap: (id) => store.caps[id].slice(), patternSeed: () => assert.fail('not an empty parent'), Object, JSON, Array };
-  vm.createContext(ctx); vm.runInContext(fnSrc(M, 'dropNodeCap') + '\n' + fnSrc(M, 'seedCapFrom'), ctx);
-  ctx.dropNodeCap('N'); const r = J(ctx.seedCapFrom('N', 'P'));
-  assert.deepEqual(r, { ok: true, n: 2 }, 'seeded from the parent — not «kept»');
-  assert.deepEqual(saved[saved.length - 1], { caps: { P: ['emps', 'tasks'], N: ['emps', 'tasks'] }, subs: {}, lenses: {}, capOwn: {} });
+  /* V7 · د6 (ب4): the drop + seed pair moved into one helper shared by every creation path (_seedNew(id, pid, seed, drop)) — nodeAdd calls it with drop = true */
+  const call = body.indexOf('this._seedNew(id, pid, o.seed, true)'), H = S.slice(S.indexOf('_seedNew: function(id, pid, seed, drop) {'), S.indexOf('deptAdd: function(o) {'));
+  const d = H.indexOf('if (drop && P && P.dropNodeCap) P.dropNodeCap(id)'), sd = H.indexOf('P.seedCapFrom(id, pid || null, { seed: seed })');
+  assert.ok(call > 0 && d > 0 && sd > d, 'dropNodeCap, then seedCapFrom');
+  assert.ok(body.indexOf('this.saveNodes(') < call, 'after the node is written');
+  /* behaviour: a leftover is removed, then the node is seeded afresh (seedCapFrom no longer answers «kept»).
+     V7 · د6 (ب4 — owner decision): the seed is the explicit choice — default «all OFF» (was: a snapshot of the parent\'s ceiling); «parent» = the parent\'s systems */
+  const mk = () => { const store = { caps: { P: ['emps', 'tasks'], N: ['emps'] }, subs: { N: { emps: ['data'] } }, lenses: {}, capOwn: { N: true } }, saved = [];
+    const ctx = { isSuper: () => true, permStore: () => store, permSave: (o) => saved.push(J(o)), PAGE_KEYS: ['emps', 'tasks', 'help'], PAGE_OF: {}, subKeysOf: () => [], splitLeaf: (k) => ({ page: k, sub: '' }),
+      onCap: (k, d) => !Array.isArray(store.caps[d]) || store.caps[d].indexOf(k) !== -1, KIVO: { Perm44: { sysList: () => [{ key: 'tasks', toggle: true, leaves: ['tasks'] }, { key: 'help', toggle: true, leaves: ['help'] }] }, BassamDepts: { ancestorsOf: () => [] } }, Object, JSON, Array, String };
+    vm.createContext(ctx); vm.runInContext(['dropNodeCap', 'seedSystems', 'seedOnAt', 'seedMode', 'seedUnit', 'seedCapFrom'].map((f) => fnSrc(M, f)).join('\n'), ctx); return { ctx, saved }; };
+  let X = mk(); X.ctx.dropNodeCap('N'); let r = J(X.ctx.seedCapFrom('N', 'P'));
+  assert.deepEqual(r, { ok: true, seed: 'off', n: 1, on: [] }, 'seeded afresh (all OFF by default) — not «kept»');
+  assert.deepEqual(X.saved[X.saved.length - 1], { caps: { P: ['emps', 'tasks'], N: ['emps'] }, subs: {}, lenses: {}, capOwn: {} }, 'the leftover sections record and independence flag are gone');
+  X = mk(); X.ctx.dropNodeCap('N'); r = J(X.ctx.seedCapFrom('N', 'P', { seed: 'parent' }));
+  assert.deepEqual(r, { ok: true, seed: 'parent', n: 2, on: ['tasks'] }, 'seeded from the parent\'s systems — not «kept»');
+  assert.deepEqual(X.saved[X.saved.length - 1], { caps: { P: ['emps', 'tasks'], N: ['emps', 'tasks'] }, subs: {}, lenses: {}, capOwn: {} });
 });
 
 /* READ-ONLY check of existing leftovers (331 capOrphans): ceiling entries whose id is neither a current node nor a current unit/section. */

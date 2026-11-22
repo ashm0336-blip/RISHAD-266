@@ -33,8 +33,9 @@ test('V7 #4 · a deleted node leaves no ceiling record; other units untouched; a
     for (const k of ['caps', 'subs', 'lenses', 'capOwn']) assert.ok(!(P[k] && Object.prototype.hasOwnProperty.call(P[k], id)), 'no ' + k + ' record of the deleted node');
     assert.equal(others(P, id), before, 'every other unit\'s records are unchanged');
     /* the id returns (import / restore): seeded afresh from its parent, not «kept» */
-    const seed = await p.evaluate(([id, G]) => { const r = KIVO.BassamPerm.seedCapFrom(id, G); return { kept: !!r.kept, n: r.n, cap: KIVO.BassamPerm.rawCap(id), parent: KIVO.BassamPerm.deptCap(G) }; }, [id, G]);
-    assert.equal(seed.kept, false, 'no stale record to keep'); assert.deepEqual(seed.cap.slice().sort(), seed.parent.slice().sort(), 'a fresh snapshot of the parent');
+    /* V7 · د6 (ب4 — owner decision): the seed is an explicit choice — «parent» = the parent's systems (was: always a snapshot of the parent); the default is «all OFF» */
+    const seed = await p.evaluate(([id, G]) => { const r = KIVO.BassamPerm.seedCapFrom(id, G, { seed: 'parent' }); return { kept: !!r.kept, seed: r.seed, n: r.n, cap: KIVO.BassamPerm.rawCap(id), parent: KIVO.BassamPerm.deptCap(G) }; }, [id, G]);
+    assert.equal(seed.kept, false, 'no stale record to keep'); assert.equal(seed.seed, 'parent'); assert.deepEqual(seed.cap.slice().sort(), seed.parent.slice().sort(), 'seeded afresh with the parent\'s systems');
     assert.deepEqual(s.errs, []);
   } finally { await b.close(); await lab.close(); }
 });
