@@ -154,14 +154,14 @@
       <div class="p44-hd"><small>{{p44Unit.path}}</small><h4>{{p44Unit.n}}</h4><p class="p44-note">{{p44Unit.inh}}</p></div>
       <!-- V7 · د6 (ب5 · م5): «تشغيل الكل» / «إطفاء الكل» — المقفلُ من فوق لا يتأثر — وعدّادُ «المفعّل من الكل» -->
       <sc-if value="{{p44SysCtl}}" hint-placeholder-val="{{ true }}">
-      <div class="p44-all" role="group" aria-label="كل الأنظمة"><span data-og="sys-count">المفعّل من الكل: <b dir="ltr">{{p44SysOnOf}}</b></span>
+      <div class="p44-all" role="group" aria-label="كل الأنظمة"><span data-og="sys-count">المفعّل من الكل: <b>{{p44SysOnOf}}</b></span>
         <sc-if value="{{p44SysAllOk}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-b" data-og-act="all-on" onClick="{{p44SysAllOn}}">تشغيل الكل</button><button type="button" class="p44-b" data-og-act="all-off" onClick="{{p44SysAllOff}}">إطفاء الكل</button></sc-if>
       </div>
       </sc-if>
       <sc-if value="{{p44SysNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">{{p44SysNoneTxt}}</div></sc-if>
       <ul class="p44-rows">
         <sc-for list="{{p44SysRows}}" as="s" hint-placeholder-count="8">
-        <li class="p44-row" data-on="{{s.on}}">
+        <li class="p44-row" data-on="{{s.on}}" data-sys="{{s.k}}">
           <span class="p44-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-1b59ac83"></svg></span>
           <span class="p44-f"><b>{{s.n}}</b><small>{{s.sub}}</small></span>
           <sc-if value="{{s.locked}}" hint-placeholder-val="{{ false }}"><span class="p44-lock" data-og="lock">{{s.lockTxt}}</span></sc-if>
