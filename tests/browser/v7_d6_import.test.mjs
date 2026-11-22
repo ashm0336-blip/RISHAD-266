@@ -157,3 +157,76 @@ test('د6: فشلُ جزءٍ ⇒ رسالةٌ بالسبب و«إعادة الم
     await s.ctx.close();
   } finally { await b.close(); await lab.close(); }
 });
+
+/* د6 — الجولةُ الكاملة بالحجم المقيس: استيرادُ النسخة القديمة ≈31MB من واجهة المتصفح نفسِها ← تصديرُ نسخة الإدارة من الكود الحالي (ملفٌّ يسلّمه المتصفح) ←
+   مسحُ بيانات الإدارة ← استيرادُ الملف المصدَّر ← المطابقة مورداً مورداً وصورةً صورة. [ثقيل ≈ دقيقة إلى دقيقتين] */
+test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة — بنسخةٍ ≈31MB من واجهة المتصفح', { timeout: 900000, ...need }, async (t) => {
+  const lab = await startLab(), b = await chromium.launch(), t0 = Date.now(), { f, p: file } = await fileOnDisk({ scale: 1 });
+  const stamp = (m) => t.diagnostic(m + ' @' + Math.round((Date.now() - t0) / 1000) + 's');
+  try {
+    const s = await openAs(b, lab, LAB.superUn, LAB.superPw), p = s.page, sizes = [];
+    p.on('request', (r) => { if (/\/api\/backup\/(import|restore)/.test(r.url()) && r.method() === 'POST') sizes.push(Buffer.byteLength(r.postData() || '')); });
+    const importVia = async (path0, expectDone) => {
+      await chooseFile(s, B, path0);
+      await click(p, 'استبدال كامل'); await click(p, 'نعم، استبدل');
+      await p.getByText('اعتماد استعادة النسخة').first().waitFor({ state: 'visible', timeout: 300000 });
+      await click(p, 'استعادة النسخة');
+      await p.waitForSelector('[data-bkc="done"]', { timeout: 300000 });
+      const done = await text(p, '[data-bkc="done-msg"]');
+      assert.match(done, expectDone, done);
+      await click(p, 'تم');
+    };
+    stamp('file ' + fs.statSync(file).size + ' bytes');
+    assert.ok(fs.statSync(file).size > 31e6);
+    await importVia(file, /الصور: 10 جديدة و0 موجودة/);
+    stamp('old copy imported');
+    assert.ok(Math.max(...sizes) < 8 * 1024 * 1024, 'كلُّ طلبٍ دون 8MB (أكبرُها ' + Math.max(...sizes) + ')');
+    /* ما في الإدارة الآن — المرجعُ للمطابقة بعد الجولة */
+    const names = ['bassam_plan_v1', 'bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_tasks_v1', 'bassam_employees_v1', 'bassam_staffing_v3', 'bassam_dreport_v1', 'bassam_shift_options_v1', 'bassam_options_v1'];
+    const readAll = () => p.evaluate(async ([d, names]) => { const r = await fetch('/api/operations/read?keys=' + encodeURIComponent(names.map((n) => 'bsdept:' + d + ':' + n).join(','))); const j = await r.json(); return Object.fromEntries(names.map((n) => [n, JSON.stringify(j.resources['bsdept:' + d + ':' + n] ?? null)])); }, [B, names]);
+    const before = await readAll();
+    assert.ok(before.bassam_rounds_arc_v1.length + before.bassam_rounds_v1.length > 8e6, 'الجولاتُ بحجمها في الإدارة');
+    /* التصدير من الكود الحالي: نسخةُ الإدارة النشطة */
+    assert.equal(await p.evaluate((d) => KIVO.BassamDepts.setActive(d), B), true);
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(4000);
+    await s.go('#/sysadmin/overview', 1500); await s.go('#/sysadmin/org/' + B, 3500);
+    await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click(); await p.waitForTimeout(700);
+    const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 300000 }), p.locator('main [title^="نسخة الإدارة"]').click()]);
+    const exported = path.join(path.dirname(file), 'TEST_ONLY-exported.json'); await dl.saveAs(exported);
+    const bk = JSON.parse(fs.readFileSync(exported, 'utf8'));
+    stamp('exported ' + fs.statSync(exported).size + ' bytes');
+    assert.equal(bk.kind, 'dept'); assert.equal(bk.version, 4); assert.equal(bk.manifest.version, 4); assert.ok(Array.isArray(bk.domains.operations));
+    assert.deepEqual(Object.keys(bk.idbImages).sort(), Object.keys(f.idbImages).sort(), 'النسخةُ المصدَّرة تحمل الصورَ العشر');
+    for (const id of Object.keys(f.idbImages)) assert.equal(bk.idbImages[id] === f.idbImages[id], true, 'بايتاتُ ' + id);
+    assert.ok(fs.statSync(exported).size > 30e6, 'تصديرُ نسخةٍ بهذا الحجم يعمل');
+    /* المسح */
+    const wiped = await p.evaluate(async ([d, uid]) => { const inv = await (await fetch('/api/admin/dept-wipe?dept=' + d)).json(); const r = await fetch('/api/admin/dept-wipe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid, dept: d, requestId: 'TEST_ONLY_d6_wipe_1', base: inv.base, reason: 'TEST_ONLY جولة د6' }) }); return { s: r.status, j: await r.json() }; }, [B, lab.env.DB.q("SELECT uid FROM sess ORDER BY rowid DESC LIMIT 1")[0].uid]);
+    assert.equal(wiped.s, 200, JSON.stringify(wiped.j).slice(0, 300));
+    const empty = await readAll();
+    assert.equal(JSON.parse(empty.bassam_plan_v1) === null || (JSON.parse(empty.bassam_plan_v1).floors || []).length === 0, true, 'المخططُ مُسح');
+    assert.equal(Object.keys(JSON.parse(empty.bassam_rounds_arc_v1) || {}).length + Object.keys(JSON.parse(empty.bassam_rounds_v1) || {}).length, 0, 'الجولاتُ مُسحت');
+    stamp('wiped');
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(4000);
+    /* استيرادُ ما صُدِّر (نسخةٌ حديثة — لا «شكل قديم» ولا ما لا يُنقل) */
+    sizes.length = 0;
+    await chooseFile(s, B, exported);
+    const sum = await text(p, '[data-bkc="sum-line"]');
+    assert.doesNotMatch(sum, /الشكل القديم/); assert.equal(await p.locator('[data-bkc="skip"]').count(), 0, 'لا شيءَ خارج النقل في نسخةٍ حديثة');
+    await click(p, 'استبدال كامل'); await click(p, 'نعم، استبدل');
+    await p.getByText('اعتماد استعادة النسخة').first().waitFor({ state: 'visible', timeout: 300000 });
+    await click(p, 'استعادة النسخة');
+    await p.waitForSelector('[data-bkc="done"]', { timeout: 300000 });
+    const done = await text(p, '[data-bkc="done-msg"]');
+    assert.match(done, /الصور: (10 جديدة و0|0 جديدة و10) موجودة/, done);
+    await click(p, 'تم');
+    stamp('exported copy imported · ' + done.slice(0, 120));
+    assert.ok(Math.max(...sizes) < 8 * 1024 * 1024, 'كلُّ طلبٍ دون 8MB');
+    /* المطابقة */
+    const after = await readAll();
+    for (const n of names) assert.equal(after[n] === before[n], true, n + ' بعد الجولة كما قبلها (' + before[n].length + ' حرفاً)');
+    for (const id of Object.keys(f.idbImages)) { const got = await p.evaluate(async (i) => { const r = await fetch('/api/img/' + i); return { s: r.status, t: await r.text() }; }, id); assert.equal(got.s, 200, id); assert.equal(got.t === f.idbImages[id], true, 'الصورة ' + id + ' بعد الجولة'); }
+    assert.equal(staged(lab.env.DB), 0);
+    assert.deepEqual(s.errs, [], 'لا أخطاء صفحة');
+    await s.ctx.close();
+  } finally { await b.close(); await lab.close(); }
+});
