@@ -1133,7 +1133,8 @@ class Component extends DCLogic {
     const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps", staffing: "staff", plan: "plan", daily: "daily", tasks: "tasks", irshad: "irshad", admin: "admin" };
     /* V7 · د5-ح: القائمةُ الجانبية من مصدرٍ واحد — BassamPerm.menuFor (334) على صلاحيات الجلسة؛ وهو نفسُه يبني «ما يراه مدير هذه الإدارة» في «الصلاحيات ← الأنظمة».
        «الإعدادات» دائمةٌ في صلاحيات مدير المنصة (331) فلا استثناءَ له هنا */
-    const _menu = (() => { try { const m = {}; KIVO.BassamPerm.menuFor().forEach((x) => { m[x.k] = x.on; }); return m; } catch (e) { return null; } })();
+    const _mName = {};   /* V7 · د6: اسمُ البند من المصدر نفسِه (menuFor يسمّيه بنوع الوحدة) */
+    const _menu = (() => { try { const m = {}; KIVO.BassamPerm.menuFor().forEach((x) => { m[x.k] = x.on; _mName[x.k] = x.n; }); return m; } catch (e) { return null; } })();
     const _pOK = (pk) => { try { if (_menu && pk in _menu) return !!_menu[pk]; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
     const _pAny = (ks) => ks.some(_pOK);
     /* «مدير النظام»: لمدير النظام وحده (كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة) */
@@ -1157,7 +1158,7 @@ class Component extends DCLogic {
     const inPlanning = ["employees","staffing","plan","daily","tasks","irshad","seized","award"].includes(a);
     /* F01: اسمُ الصفحة بنوع الوحدة النشطة — «موظفو القسم» · «مؤشرات القسم» حين تكون قسماً */
     const _ua = (() => { try { const D = KIVO.BassamDepts; return D && D.unitAl ? D.unitAl(D.active()) : "الإدارة"; } catch (e) { return "الإدارة"; } })();
-    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
+    const labels = { kpis: _mName.kpis || "مؤشرات " + _ua, employees: _mName.emps || "موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
     return {
       sidebarOpen: open,
       lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",

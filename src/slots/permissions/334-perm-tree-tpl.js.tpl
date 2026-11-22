@@ -99,13 +99,17 @@
     var hiddenSide = (pl && pl.side && pl.side.hidden) || [], helpSide = !(pl && pl.side && pl.side.help === false);
     var pv = function(k){ return !!(perms[k] && perms[k].indexOf('view') !== -1); };
     var nameOf0 = function(k){ var p = PAGE_OF[k]; if (p) return p.name; var g = NAV_REG.filter(function(x){ return x.key === k; })[0]; return g ? g.name : k; };
+    /* V7 · د6: اسمُ البند بنوع الوحدة — «مؤشرات القسم» · «موظفو القسم» حين تكون الوحدةُ قسماً (BassamDepts.unitAl). الاسمُ هنا وحده: القائمةُ المرسومة
+       (root-logic) والبطاقاتُ (seenBy) تأخذانه من هذا المصدر */
+    var unitAl = 'الإدارة'; try { var D0 = KIVO.BassamDepts; if (D0 && D0.unitAl) unitAl = D0.unitAl(did || curDept()) || unitAl; } catch (e) { unitAl = 'الإدارة'; }
+    var unitName = function(n){ return unitAl !== 'الإدارة' && / الإدارة$/.test(n) ? n.replace(/ الإدارة$/, ' ' + unitAl) : n; };
     NO.groups.forEach(function(g){ g.keys.forEach(function(k){
       var on;
       if (k === 'kpis') on = navLeaves('kpis').some(function(x){ return kpiPanelOk(x[0], x[1], P || null, did); });
       else if (isContainer(k) || PAGE_REG.some(function(p){ return p.under === k; })) on = pv(k) || PAGE_REG.some(function(p){ return p.under === k && pv(p.key); });
       else on = pv(k);
       if (k === 'help') on = on && helpSide;
-      out.push({ k: k, n: nameOf0(k), on: !!on, hid: hiddenSide.indexOf(k) !== -1 });
+      out.push({ k: k, n: unitName(nameOf0(k)), on: !!on, hid: hiddenSide.indexOf(k) !== -1 });
     }); });
     return out;
   }

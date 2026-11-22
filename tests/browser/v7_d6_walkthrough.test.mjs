@@ -97,53 +97,10 @@ const NARROW = { widths: [{ width: 390, height: 844 }, { width: 768, height: 102
 
 /* ══ ③ KNOWN_D6 — موجوداتُ الشجرة الأساس (f73613d)، كلٌّ باسمه: يُحذف المدخلُ حين يُصلَح خللُه (الاختبارُ يسقط إن بقي مدخلٌ لا يتكرر) ══
    rule · accounts · states · viewports ('*' = الكل) · page / tab / detail (تعابير) · owner: المجموعةُ التي يُحال إليها · some: يكفي أن يتكرر في خانةٍ واحدة */
-const OPS = ['super-in', 'gm', 'mgr', 'sec', 'emp-role'];   /* من له مساحةُ عملٍ فيها أنظمة */
 const KNOWN_D6 = [
-  /* ── (5) العنوانُ والتبويب ── */
-  { id: 'D6-ADDR-KPIS', owner: 'صفحة «مؤشرات الإدارة»', rule: 'addr', accounts: OPS, states: ['allOn', 'oneOffDept', 'oneOffPlat'], detail: /#\/kpis/,
-    note: 'لوحاتُ «مؤشرات الإدارة» كلُّها بعنوانٍ واحد #/kpis: التبويبُ المعروض لا يظهر في العنوان، والعنوانُ يعيد آخرَ لوحةٍ فُتحت لا التي يدلّ عليها' },
-  { id: 'D6-ADDR-PLANNING', owner: 'صفحة «الخطة التشغيلية»', rule: 'addr', accounts: OPS, states: ['allOn', 'oneOffDept', 'oneOffPlat'], detail: /#\/planning/,
-    note: 'تبويبا «الجدول الشهري» و«التشغيل الميداني» داخل الحاوية بعنوانٍ واحد #/planning' },
+  /* ما بقي بعد إصلاحات د6 (walkfix): صفحةُ الوحدة القديمة وحدها — تُستبدل بشاشة «الإدارات والصلاحيات» (م1) فيُحذف مدخلُها معها */
   { id: 'D6-ADDR-UNIT-DATA', owner: 'ب1 (صفحةُ الوحدة تُستبدل بالشاشة الجديدة)', rule: 'addr', accounts: ['super-center'], detail: /تبويبات بعنوانٍ واحد #\/sysadmin\/org\/[^/ ]+: «البيانات» · «نظرة عامة»/,
     note: 'تبويب «البيانات» في صفحة الوحدة بلا عنوان: يبقى #/sysadmin/org/<الوحدة> — يزول مع الشاشة الجديدة (العنوانُ يحمل الوحدةَ والتبويب)' },
-  { id: 'D6-ADDR-LAST-TAB', owner: 'الصفحات ذات التبويبات المعنونة', rule: 'addr', accounts: OPS, states: ['allOn'], viewports: [1366], detail: /^الرابط العميق #\/(?:award|daily|dstats|employees) /,
-    note: 'العنوانُ الأساس للصفحة (#/award · #/daily · #/dstats · #/employees) يعرض آخرَ تبويبٍ فُتح في الجلسة ولا يُصحَّح العنوانُ إلى عنوان ذلك التبويب' },
-  /* ── (3) طلبٌ مرفوض من فتح الصفحة ── */
-  { id: 'D6-HTTP-CUSTODY-OFF', owner: 'نظام العهد / «موظفو الإدارة»', rule: 'http', accounts: ['gm', 'mgr', 'emp-role'], states: ['allOffDept'], detail: /GET \/api\/custody\?.*view=catalog.*→ 403/,
-    note: '«موظفو الإدارة» تقرأ فهرسَ العهد والعهدُ مطفأ للإدارة ⇒ 403 من فتح الصفحة' },
-  /* ── (2) بقايا نظامٍ مطفأ ── */
-  { id: 'D6-OFF-SECTION-CUSTODY', owner: 'سقف التبويبات (subs) والوراثة', rule: 'off', accounts: ['sec'], states: ['allOffDept'], detail: /«عهد الموظفين»/,
-    note: '«عهد الموظفين» مطفأ لإدارة أ ويبقى لمدير قسمها: تبويبٌ في «موظفو القسم» وصفٌّ «مفعّل» في «الصلاحيات ← الأنظمة» — تبويباتُ القسم (subs) لا ترث إطفاءَ الأصل' },
-  { id: 'D6-OFF-OPLOG-FILTER', owner: '«الإعدادات ← سجل الحركة»', rule: 'off', accounts: ['super-in', 'gm', 'mgr', 'sec'], states: ['oneOffDept', 'allOffDept', 'oneOffPlat'], tab: /سجل الحركة/, detail: /button«(?:المهام|التقرير اليومي)»/,
-    note: 'أزرارُ تصفية «سجل الحركة» تسمّي النظامَ المطفأ («المهام» · «التقرير اليومي»)' },
-  { id: 'D6-OFF-AUDIT-FILTER', owner: 'المركز ← «سجل الأنشطة والتغييرات»', rule: 'off', accounts: ['super-center'], states: ['oneOffPlat'], page: /سجل الأنشطة/, detail: /button«(?:المهام|التقرير اليومي)»/,
-    note: 'أزرارُ تصفية سجل المركز تسمّي ما يتبع نظاماً مطفأً على المنصة' },
-  { id: 'D6-OFF-REQ-ME-TASKS', owner: 'نظام المهام × «صفحتي»', rule: 'off', accounts: ['super-in', 'gm', 'mgr', 'sec', 'emp-role', 'emp-none'], states: ['oneOffDept', 'allOffDept'], detail: /طلبٌ لواجهة نظامٍ مطفأ \(tasks\): GET \/api\/me\/tasks/,
-    note: '«صفحتي» تطلب /api/me/tasks والمهامُ مطفأةٌ للإدارة (بطاقةُ «مهامك» لا تُرسم، والخادمُ لا يرفض الطلبَ لغير مدير المنصة أيضاً)' },
-  { id: 'D6-OFF-REQ-CUSTODY', owner: 'نظام العهد / «موظفو الإدارة»', rule: 'off', accounts: ['super-in', 'gm', 'mgr', 'sec', 'emp-role'], states: ['allOffDept'], detail: /طلبٌ لواجهة نظامٍ مطفأ \(custody\): GET \/api\/custody/,
-    note: '«موظفو الإدارة» تطلب /api/custody والعهدُ مطفأ (لمدير المنصة 200 · لغيره 403 = D6-HTTP-CUSTODY-OFF)' },
-  /* ── «المتابعة اليومية» مطفأةٌ على المنصة وما يسكنها («التقرير اليومي» · «المهام») باقٍ — يحتاج قراراً: هل يتبع الساكنُ حاويتَه على المنصة كما يتبعها في الإدارة؟ ── */
-  { id: 'D6-PLAT-UNDER-PAGE', owner: 'إطفاء المنصة (mods.off) وما يسكن الحاوية', rule: 'off', accounts: OPS, states: ['oneOffPlat'], detail: /عنوانُ نظامٍ مطفأ يُفتح: #\/daily|تبويب من نظامٍ مطفأ: «(?:التقرير اليومي|المهام|مؤشرات المهام)»/,
-    note: 'الرابطُ الجانبي يختفي لكن العنوانَ #/daily يُفتح وفيه تبويبا «التقرير اليومي» و«المهام»، ولوحةُ «مؤشرات المهام» باقية' },
-  { id: 'D6-PLAT-UNDER-NOTIF', owner: 'إطفاء المنصة (mods.off) وما يسكن الحاوية', rule: 'off', accounts: ['gm', 'mgr', 'emp-role', 'emp-none'], states: ['oneOffPlat'], detail: /تنبيهٌ من نظامٍ مطفأ في (?:القائمة|الجرس): (?:rep_|task_)/,
-    note: 'تنبيهاتُ «التقرير اليومي» و«المهام» تبقى في القائمة والجرس و«المتابعة اليومية» مطفأةٌ على المنصة' },
-  { id: 'D6-PLAT-UNDER-SYSLIST', owner: 'إطفاء المنصة (mods.off) وما يسكن الحاوية', rule: 'off', accounts: ['super-center', 'super-in', 'gm', 'mgr', 'sec'], states: ['oneOffPlat'], detail: /b«(?:التقرير اليومي|المهام)»/,
-    note: '«الصلاحيات»: «التقرير اليومي» و«المهام» يُعرضان مفعّلين (قائمةُ أنظمة المدير · محرّرُ الأدوار) وحاويتُهما مطفأةٌ على المنصة' },
-  { id: 'D6-PLAT-UNDER-REQ', owner: 'إطفاء المنصة (mods.off) وما يسكن الحاوية', rule: 'off', states: ['oneOffPlat'], detail: /طلبٌ لواجهة نظامٍ مطفأ \(tasks\): GET \/api\/me\/tasks/,
-    note: '«صفحتي» تطلب /api/me/tasks و«المتابعة اليومية» (حاويةُ المهام) مطفأةٌ على المنصة — كلُّ الحسابات' },
-  { id: 'D6-PLAT-ROLE-LEAK', owner: 'محرّك الأدوار × إطفاء المنصة', rule: 'off', accounts: ['emp-role'], states: ['oneOffPlat'], detail: /«(?:الجولات اليومية|مؤشرات التشغيل اليومي)»/,
-    note: 'حاملُ الدور يرى من «المتابعة اليومية» نفسِها (لا مما يسكنها) تبويبَ «الجولات اليومية» ولوحةَ «مؤشرات التشغيل اليومي» وهي مطفأةٌ على المنصة — والمديرُ لا يراهما' },
-  /* ── ج2 · المصدرُ الواحد (أ1) — إلى م4 ── */
-  { id: 'D6-SRC-PLAT-MENU', owner: 'م4', rule: 'source', accounts: OPS, states: ['oneOffPlat'], page: /menuFor|ما يراه مدير/, detail: /المحتوى يختلف/,
-    note: 'BassamPerm.menuFor (وبطاقةُ «ما يراه مدير هذه الإدارة») تعدّ «المتابعة اليومية» ظاهرةً وهي مطفأةٌ على المنصة؛ القائمةُ المرسومة تخفيها بشرطٍ ثانٍ (260 apply) — مصدران' },
-  { id: 'D6-SRC-ROLE-CARD', owner: 'م4', rule: 'source', accounts: ['emp-role'], states: ['allOn', 'oneOffDept', 'oneOffPlat'], page: /ماذا يرى حامل الدور/,
-    note: 'بطاقةُ «ماذا يرى حامل الدور» قائمةُ أنظمة (_p44Menu) لا قائمتُه الجانبية: بلا «مؤشرات الإدارة»، وفيها «عهد الموظفين» · «الجدول الشهري» · «التشغيل الميداني» · «التقرير اليومي» · «المهام» بنوداً' },
-  { id: 'D6-SRC-PERSON-NOW', owner: 'م4', rule: 'source', accounts: ['emp-role'], states: ['allOn', 'oneOffDept', 'oneOffPlat'], page: /ما يراه الآن — موظف بدور/,
-    note: '«ما يراه الآن» للشخص من _p44Menu نفسِها: الفرقُ نفسُه عن قائمته الفعلية' },
-  { id: 'D6-SRC-MGR-NOW', owner: 'م4', rule: 'source', accounts: ['mgr'], page: /ما يراه الآن — مدير الإدارة/,
-    note: '«ما يراه الآن» لمدير الإدارة سطرٌ واحد «كل الأنظمة المفعّلة لإدارته» لا قائمتُه' },
-  { id: 'D6-SRC-SECTION-NAMES', owner: 'م4', rule: 'source', accounts: ['sec'], states: ['allOn', 'oneOffDept', 'allOffDept'], detail: /الأسماء تختلف/,
-    note: 'مديرُ القسم: القائمةُ المرسومة تسمّي «مؤشرات القسم» و«موظفو القسم»، والمصدرُ (menuFor) والبطاقةُ يسمّيانهما «مؤشرات الإدارة» و«موظفو الإدارة» (المفاتيحُ متطابقة)' },
 ];
 
 const pick = (env, all, key) => { const v = (process.env[env] || '').split(',').map((x) => x.trim()).filter(Boolean); return v.length ? all.filter((x) => v.includes(String(key(x)))) : all; };

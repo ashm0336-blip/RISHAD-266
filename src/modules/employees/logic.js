@@ -54,6 +54,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!o || o.page !== "employees") {
         const sd = this.__bsSeeded;
         sd && void 0 !== sd.empTab && ((this.__bsSeeded = null), this._bsHT(shown()));
+        /* V7 · د6 (أ2-5): العنوانُ الأساس يعرض تبويباً محفوظاً من الجلسة ⇒ يُصحَّح العنوانُ إلى ذلك التبويب (استبدالٌ لا مدخلُ تاريخٍ جديد) — التبويبُ المعروض لا يتغيّر */
+        const cur = (/^#\/employees\/([a-z]+)/i.exec(String(location.hash || "")) || [])[1] || "data", c0 = this.state.empTab;
+        cur !== (on(c0) ? c0 : "data") && this._bsHT(shown());
         return;
       }
       KIVO.__BS_OPEN_TAB = null;
