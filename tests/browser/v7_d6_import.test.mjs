@@ -165,7 +165,8 @@ test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة 
   const stamp = (m) => t.diagnostic(m + ' @' + Math.round((Date.now() - t0) / 1000) + 's');
   try {
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw), p = s.page, sizes = [];
-    p.on('request', (r) => { if (/\/api\/backup\/(import|restore)/.test(r.url()) && r.method() === 'POST') sizes.push(Buffer.byteLength(r.postData() || '')); });
+    let slices = 0;
+    p.on('request', (r) => { if (/\/api\/backup\/(import|restore)/.test(r.url()) && r.method() === 'POST') { const body = r.postData() || ''; sizes.push(Buffer.byteLength(body)); if (body.length < 400 && /"phase":"slice"/.test(body)) slices++; } });
     const importVia = async (path0, expectDone) => {
       await chooseFile(s, B, path0);
       await click(p, 'استبدال كامل'); await click(p, 'نعم، استبدل');
@@ -179,7 +180,8 @@ test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة 
     stamp('file ' + fs.statSync(file).size + ' bytes');
     assert.ok(fs.statSync(file).size > 31e6);
     await importVia(file, /الصور: 10 جديدة و0 موجودة/);
-    stamp('old copy imported');
+    stamp('old copy imported · ' + slices + ' slices');
+    assert.ok(slices >= 12, 'المفتاحُ الكبير (الجولات ≈8.4MB) أُرسل دفعاتٍ: ' + slices);
     assert.ok(Math.max(...sizes) < 8 * 1024 * 1024, 'كلُّ طلبٍ دون 8MB (أكبرُها ' + Math.max(...sizes) + ')');
     /* ما في الإدارة الآن — المرجعُ للمطابقة بعد الجولة */
     const names = ['bassam_plan_v1', 'bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_tasks_v1', 'bassam_employees_v1', 'bassam_staffing_v3', 'bassam_dreport_v1', 'bassam_shift_options_v1', 'bassam_options_v1'];
@@ -208,7 +210,7 @@ test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة 
     stamp('wiped');
     await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(4000);
     /* استيرادُ ما صُدِّر (نسخةٌ حديثة — لا «شكل قديم» ولا ما لا يُنقل) */
-    sizes.length = 0;
+    sizes.length = 0; slices = 0;
     await chooseFile(s, B, exported);
     const sum = await text(p, '[data-bkc="sum-line"]');
     assert.doesNotMatch(sum, /الشكل القديم/); assert.equal(await p.locator('[data-bkc="skip"]').count(), 0, 'لا شيءَ خارج النقل في نسخةٍ حديثة');
@@ -219,7 +221,8 @@ test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة 
     const done = await text(p, '[data-bkc="done-msg"]');
     assert.match(done, /الصور: (10 جديدة و0|0 جديدة و10) موجودة/, done);
     await click(p, 'تم');
-    stamp('exported copy imported · ' + done.slice(0, 120));
+    stamp('exported copy imported · ' + slices + ' slices · ' + done.slice(0, 120));
+    assert.ok(slices >= 12, 'والنسخةُ الحديثة المصدَّرة كذلك (صفوفُ مجالها التشغيلي على دفعات): ' + slices);
     assert.ok(Math.max(...sizes) < 8 * 1024 * 1024, 'كلُّ طلبٍ دون 8MB');
     /* المطابقة */
     const after = await readAll();

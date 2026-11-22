@@ -11,7 +11,7 @@ import gzip, json, os, re, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUD = os.path.join(ROOT, 'tools', 'perf_budget.json')
 
-def measure(pk):
+def measure(pk, assets=()):
     D = os.path.join(ROOT, pk)
     bj = json.load(open(D + '.build.json', encoding='utf-8'))
     ret = set(bj.get('retainedFiles') or [])
@@ -20,6 +20,9 @@ def measure(pk):
         if f in ret: continue
         m = re.match(r'assets/pages/([A-Za-z-]+)\.(?:logic\.)?[0-9a-f]{10}\.(?:dc\.txt|js)$', f)
         if m: groups.setdefault('page:' + m.group(1), []).append(f)
+        # V7 · د6: ملفُّ خدمةٍ في الغلاف له سقفٌ مسمّى (asset:<الاسم بلا بصمة>) — يُقاس ما سُمّي في الميزانية وحده
+        a = re.match(r'assets/js/([0-9A-Za-z_-]+)\.[0-9a-f]{10}\.js$', f)
+        if a and 'asset:' + a.group(1) in assets: groups.setdefault('asset:' + a.group(1), []).append(f)
     groups['shell:index.html'] = ['index.html']; groups['worker:_worker.js'] = ['_worker.js']
     out = {}
     for g, fs in sorted(groups.items()):
@@ -29,13 +32,15 @@ def measure(pk):
 
 def main(a):
     if not a: print(__doc__); return 2
-    M = measure(a[0])
+    try: named = [g for g in json.load(open(BUD, encoding='utf-8'))['budget'] if g.startswith('asset:')]
+    except Exception: named = []
+    M = measure(a[0], named)
     if '--write' in a:
         json.dump({'note': 'KIVO_263 · AUD-024: السقفُ = gz عند الاعتماد × 1.05 — يُخفَّض ولا يُرفع إلا بقرارٍ مكتوب', 'budget': {g: int(v['gz'] * 1.05) for g, v in M.items()}},
                   open(BUD, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
         print('✎ tools/perf_budget.json (' + str(len(M)) + ' سقفاً)')
     B = json.load(open(BUD, encoding='utf-8'))['budget']
-    bad = [g for g in M if g in B and M[g]['gz'] > B[g]] + [g + ' (بلا سقف)' for g in M if g not in B]
+    bad = [g for g in M if g in B and M[g]['gz'] > B[g]] + [g + ' (بلا سقف)' for g in M if g not in B] + [g + ' (سقفٌ بلا ملف)' for g in named if g not in M]
     big = [g + ' ' + str(round(M[g]['raw'] / 1024)) + 'KB' for g in M if g.startswith('page:') and M[g]['raw'] > 300 * 1024]
     for g in sorted(M): print('  %s %-28s gz %8d / %8s   raw %9d' % ('✘' if g in bad else '✔', g, M[g]['gz'], B.get(g, '—'), M[g]['raw']))
     print('   صفحاتٌ > 300 KB خاماً (تقسيمُها مفتوح — السقّاطةُ تمنع نموَّها): ' + (' · '.join(big) or 'لا شيء'))

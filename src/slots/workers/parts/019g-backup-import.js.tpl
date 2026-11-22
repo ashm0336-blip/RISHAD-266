@@ -89,6 +89,17 @@ function rsiSkipWhy(k, v) {
 function rsiSweepStmt(env, now, uid) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id IN (SELECT snapshot_id FROM ' + RSI_T + " WHERE domain='meta' AND snapshot_id>='stage:' AND snapshot_id<'stage;' AND (row_number<?1 OR table_key=?2))").bind(now - RSI_TTL, uid);
 }
+/* الكنسُ الدوريّ: لا ينتظر استيراداً آخر ولا كتابة — أيُّ طلب API ناجح يطلبه، ويُجاب مرةً كل RSI_SWEEP_EVERY لكل عازل (أولُها بعد المدة من بدء العازل)؛
+   بعد الردّ إن وفّر التشغيلُ waitUntil. وكنسُ الكتابات (054) وكنسُ البدء باقيان. */
+var RSI_SWEEP_EVERY = 300e3, rsiSweptAt = Date.now();
+function rsiSweepLater(env) {
+  var now = Date.now();
+  if (now - rsiSweptAt < RSI_SWEEP_EVERY) return null;
+  rsiSweptAt = now;
+  var p = rsiSweepStmt(env, now, '').run().catch(function (e) { swallow('import-sweep', e, env && env.__rid); });
+  if (env && env.__ctx && typeof env.__ctx.waitUntil === 'function') { env.__ctx.waitUntil(p); return null; }
+  return p;
+}
 function rsiDrop(env, id) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id=?1').bind(id);
 }

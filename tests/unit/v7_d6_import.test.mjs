@@ -171,6 +171,33 @@ test('(٣ب) كنسُ المؤقت المنقضي مع جولة الكنس بع�
   } finally { await T.close(); }
 });
 
+test('(٣ج) المهلةُ بساعةٍ مضبوطة: مؤقتٌ انقضت ساعتُه لا يُعتمد أبداً · ويكنسه أيُّ طلبٍ عاديٍّ ناجح (قراءةٌ من حسابٍ آخر) بلا استيرادٍ جديد ولا كتابة — وقبل الساعة يبقى', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true }), T = await target(), realNow = Date.now;
+  let shift = 0;
+  Date.now = () => realNow() + shift;
+  try {
+    const base = snapshot(T.DB), other = await T.login(LAB.mgrA, LAB.pw), read = () => T.call('/api/get?keys=bassam_platform_v1', { ck: other.ck });
+    /* (أ) كاملُ الأجزاء، ثم تمرّ ساعةٌ ودقيقة: الاعتمادُ مرفوض 410 ولا شيء يُكتب */
+    let P = protocol(T, T.su, file, { scope: SCOPE });
+    await P.begin(); for (let i = 0; i < P.parts.length; i++) assert.equal((await P.part(i)).status, 200);
+    const ins = await P.inspect(); assert.equal(ins.status, 200);
+    shift = 61 * 60e3;
+    const late = await P.commit(ins.j.inspection.base);
+    assert.equal(late.status, 410); assert.equal(late.j.err, 'import-expired'); assert.deepEqual(changed(snapshot(T.DB), base), [], 'المنقضي لم يُعتمد'); assert.equal(audits(T), 0); assert.equal(staged(T.DB), 0);
+    /* (ب) مؤقتٌ يتيم: قبل الساعة يبقى مهما كثرت الطلبات · وبعدها يكنسه أولُ طلبٍ عاديٍّ ناجح */
+    P = protocol(T, T.su, file, { scope: SCOPE });
+    await P.begin(); await P.part(0);
+    const rows = staged(T.DB); assert.ok(rows > 1);
+    shift += 30 * 60e3;
+    for (let i = 0; i < 3; i++) assert.equal((await read()).status, 200);
+    assert.equal(staged(T.DB), rows, 'قبل انقضاء الساعة: باقٍ');
+    shift += 31 * 60e3;
+    assert.equal((await read()).status, 200);
+    assert.equal(staged(T.DB), 0, 'بعد الساعة: كنسته قراءةٌ عادية من حسابٍ آخر');
+    assert.equal((await P.part(1)).status, 404, 'ولا يُقبل له جزءٌ بعدها'); assert.deepEqual(changed(snapshot(T.DB), base), []);
+  } finally { Date.now = realNow; await T.close(); }
+});
+
 test('(٤) إعادةُ المحاولة بعد فشل · طلبٌ مكرَّر للجزء نفسِه · اعتمادٌ مكرَّر ⇒ نتيجةٌ واحدة وسطرُ سجلٍّ واحد', { timeout: 300000, ...need }, async () => {
   const file = await oldFile({ small: true }), T = await target();
   try {
