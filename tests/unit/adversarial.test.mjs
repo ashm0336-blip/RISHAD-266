@@ -29,7 +29,7 @@ async function world(extra = {}) {
 const opSave = async (C, env, ck, set, base) => { const keys = Object.keys(set); let b = base; if (!b) { const g = (await C.api('/api/operations/read?keys=' + encodeURIComponent(keys.filter(k => /^bsdept:/.test(k)).join(',')), { cookie: ck })).j; b = {}; for (const k of keys) b[k] = ((g.base || {})[k]) || 0; } return C.api('/api/save', { method: 'POST', cookie: ck, body: operationSaveBody(env, '/api/save', { set, del: [], base: b }) }); };
 const opGet = async (C, ck, k) => { const j = (await C.api('/api/operations/read?keys=' + encodeURIComponent(k), { cookie: ck })).j; return { v: (j.resources || {})[k] ?? null, rev: (j.base || {})[k] ?? 0, j }; };
 const getv = async (C, ck, k) => ((await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: ck })).j.keys || {})[k];
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};
   test('[' + mode + '] الموظف لا يرفع صلاحياته: كتابة جدول الحسابات والصلاحيات والإدارات تُرفض ولا تُغيَّر القيم', async () => {
     const { C, su, emp } = await world(EX);
@@ -83,7 +83,7 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(stale.status === 409 && stale.j.conflicts && stale.j.conflicts[k], 'نسخةٌ قديمة ⇒ تعارض لا كتابة: ' + JSON.stringify(stale.j).slice(0, 160));
     assert.deepEqual((await opGet(C, su.ck, k)).v.type, ['v2'], 'القيمةُ الأحدث باقية');
     const huge = await opSave(C, env, su.ck, { [k]: JSON.stringify({ type: ['x'.repeat(999999)], work: [] }) }, { [k]: cur.rev });
-    assert.ok(huge.status === 413 || huge.status === 200, 'حمولة < 8MB تُعالج أو تُرفض بوضوح: ' + huge.status);
+    assert.ok(huge.status === 413 || huge.status === 200, 'حمولة < 16MB تُعالج أو تُرفض بوضوح: ' + huge.status);
   });
   test('[' + mode + '] المسار: مفاتيحُ شكلٍ خاطئ (اجتياز · طويلة · فارغة) تُرفض · طرقٌ غيرُ مسموحة · جسمٌ أكبر من الحد 413', async () => {
     const { C, su, emp } = await world(EX);

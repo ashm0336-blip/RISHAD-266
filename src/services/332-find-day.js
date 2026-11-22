@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/services/332-find-day.js.tpl */
 /* ═══ خدماتُ المنصة: محرّكُ البحث الموحّد · اليومُ والورديةُ المشتركان ═══
    KIVO_257 · AUD-010: جزءٌ 3/6 من «src/auth/330-auth-perm.js» السابقة — مقسومةً بالمسؤولية بـtools/split_iife.mjs (tools/split/330-auth-perm.json)؛
    التبعياتُ بين الأجزاء صريحةٌ هنا وعبر المساحة الداخلية window.__BS_I.auth وحدها. */
@@ -274,14 +275,15 @@
         var me = null; emps.forEach(function(e){ if (me || !e) return; if (keyOf(e) === u.ekey || toksOf(e).indexOf(u.ekey) !== -1) me = e; });
         var myKey = me ? keyOf(me) : u.ekey;
         var found = '';
-        var rec = (J9('bassam_dreport_v1', {}) || {})[y + '-' + m + '-' + d];
+        var rec = (KIVO.bus.read('dreport.doc@1') || {})[y + '-' + m + '-' + d];   /* V7 · د5-هـ: التقريرُ يُسأل مالكُه بالاسم؛ بغيابه لا يومَ مسحوب */
         if (rec && rec.shifts) Object.keys(rec.shifts).forEach(function(nm){
           if (found) return; var sr = rec.shifts[nm]; if (!sr || !sr.pulled) return;
           (sr.roster || []).forEach(function(x){ if (found || !x || !x.ekey) return;
             var e2 = null; emps.forEach(function(e){ if (e2 || !e) return; if (keyOf(e) === x.ekey || toksOf(e).indexOf(x.ekey) !== -1) e2 = e; });
             if ((e2 ? keyOf(e2) : x.ekey) === myKey) found = nm; }); });
         if (!found) {
-          var b = (J9('bassam_staffing_v3', {}) || {})[y + '-' + m] || {};
+          /* V7 · د5-د2: شهرُ الجدولة يُسأل مالكُه بالاسم (الناقل)؛ بغيابه لا وردية من الجدول */
+          var b = (KIVO.bus.read('staff.months@1') || {})[y + '-' + m] || {};
           var st = (E && E.entry && me) ? E.entry(b, me) : b[myKey];
           if (st && typeof st === 'object' && st.shift) found = st.shift;
         }

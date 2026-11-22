@@ -34,7 +34,7 @@ async function scenario(file, mode) {
   return { W, dm, e1, k, id, raw };
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] الثغرةُ قبل الرقعة 06 (توصيف): حاملُ task.view يجعل مهمته «منجزة» بحفظٍ خامّ متجاوزاً المراجِعَ وسياسةَ الإثبات', { skip: MERGED ? 'الرقعة 06 مدمجةٌ في العامل' : false }, async () => {
     const { W, k, id, raw } = await scenario(WU.file, mode);
     assert.equal(raw.status, 200, JSON.stringify(raw.j));

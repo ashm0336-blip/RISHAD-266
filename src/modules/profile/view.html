@@ -1,3 +1,4 @@
+<!-- ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/modules/profile/view.html.tpl -->
 <div dir="rtl" data-screen-label="صفحتي" class="pf-root">
 
 <div class="pf-top" style="{{pfTopStyle}}">
@@ -309,8 +310,9 @@
             <sc-if value="{{x.isM}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-0fc3b909"></svg></sc-if>
             <sc-if value="{{x.isD}}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-dc79b3fe"></svg></sc-if>
           </span>
-          <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{x.dev}}<sc-if value="{{x.where}}" hint-placeholder-val="{{ true }}"> · {{x.where}}</sc-if> <span class="pf-faint">· {{x.when}}</span></span>
+          <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{x.dev}}<sc-if value="{{x.where}}" hint-placeholder-val="{{ true }}"> · {{x.where}}</sc-if> <span class="pf-faint">· {{x.when}}</span><sc-if value="{{x.since}}" hint-placeholder-val="{{ true }}"> <span class="pf-faint">· {{x.since}}</span></sc-if><sc-if value="{{x.last}}" hint-placeholder-val="{{ false }}"> <span class="pf-faint">· {{x.last}}</span></sc-if></span>
           <sc-if value="{{x.mine}}" hint-placeholder-val="{{ true }}"><span class="pf-pill pf-pill-ok">الحالية</span></sc-if>
+          <sc-if value="{{x.canKill}}" hint-placeholder-val="{{ false }}"><button class="pf-btn pf-danger" onClick="{{x.kill}}" style="height:26px;padding:0 10px;font-size:11px" aria-label="إنهاء هذه الجلسة">إنهاء</button></sc-if>
         </div>
         </sc-for>
         <sc-for list="{{secEv}}" as="e" hint-placeholder-count="2">

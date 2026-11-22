@@ -74,7 +74,7 @@ async function ceiling(c, x) {
   assert.equal(c.denied(), 0, 'the worker accepted every save');
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'narrow then widen (pages · tabs · lenses) from the real client: stored sheets, lens lists, template ids and explicit grants stay byte-identical in D1', needs('award', 'irshad', 'tasks'), async () => {
@@ -124,33 +124,7 @@ for (const mode of ['legacy', 'enforce']) {
     try { assert.deepEqual(cp(e.I.empLens(EK, D)).sort(), ['dens', 'zones'], 'the lens comes back on re-enable'); } finally { e.dispose(); }
   });
 
-  test(M + 'saving a permission template under a narrowed ceiling keeps its out-of-ceiling items (F07)', needs('award'), async () => {
-    const W = await scene(mode);
-    const s = await clientOf(W, 'su'); try { await ceiling(s, NARROW); } finally { s.dispose(); }
-    const c = await clientOf(W, 'su');
-    try {
-      c.T.W.DCLogic = class { constructor() { this.state = {}; } setState(p) { Object.assign(this.state, typeof p === 'function' ? p(this.state) : p); } };
-      c.K.BassamPageKit = c.K.BassamPageKit || { base: (B) => class extends B {} };
-      vm.runInContext(moduleLogic('admin') + '\n;globalThis.__C = Component;', c.T.ctx, { filename: 'admin/logic.js' });
-      const a = Object.create(c.T.W.__C.prototype), msg = [];
-      a.state = {}; a.setState = function (p) { Object.assign(this.state, typeof p === 'function' ? p(this.state) : p); };
-      a.bsToast = (x) => msg.push('toast ' + x); a.bsAck = (x) => msg.push('ack ' + x);
-      a.PC = () => true;
-      assert.equal(!!a.t24On(), mode === 'enforce');
-      a.tpOpen(TID);
-      a.setState({ tpName: 'TEST_ONLY · قالب معدَّل' });
-      a.tpSave();
-      assert.ok(msg.some((x) => /^ack حُفظ القالب/.test(x)), msg.join(' | '));
-      await c.settle();
-      assert.equal(c.denied(), 0);
-    } finally { c.dispose(); }
-    const t = stored(W.env, TPK).find((x) => x.id === TID);
-    assert.equal(t.name, 'TEST_ONLY · قالب معدَّل', 'saved');
-    assert.ok(t.lens.includes('dens'), 'the switched-off lens stays in the template');
-    if (mode === 'enforce') assert.ok(t.keys24.includes(W.plus[0]), 'the out-of-ceiling key stays in the template');
-    assert.ok((t.perms['award/res'] || []).includes('view'), 'the out-of-ceiling leaf stays in the template');
-  });
-
+  /* F07 (saving a permission template under a narrowed ceiling) was DELETED in V7 · د5-هـ (44) with the templates editor (tpSave) — templates became roles. */
   test(M + 'independent ceiling: the explicit per-unit switch is a super save the worker accepts; the parent no longer narrows the unit; a manager cannot switch', needs('award'), async () => {
     const W = await scene(mode);
     const m = await clientOf(W, 'dm1');

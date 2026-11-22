@@ -34,7 +34,7 @@ Object.assign(Component.prototype, {
       return { all: !0 };
     }
   },
-  /* الموظف يرى: العامة غير المقيّدة، والعامة المقيّدة بنوع عمله، وما وُجّه إليه هو — ورئيس/نائب الوردية (قالب إشرافي) يرى مهام غيره الموجّهة أيضاً */
+  /* الموظف يرى: العامة غير المقيّدة، والعامة المقيّدة بنوع عمله، وما وُجّه إليه هو — ورئيس/نائب الوردية (دورٌ إشرافي) يرى مهام غيره الموجّهة أيضاً */
   tkVisible(t, e) {
     return !!e.all || (t[14] ? e.sup || t[14] === e.me : !t[19] || t[19] === e.wt);
   },
@@ -55,19 +55,21 @@ Object.assign(Component.prototype, {
     });
     return t.filter((t) => e[t] > 0);
   },
+  /* V7 · د5-هـ (44): مجموعةُ كل موظف في المنتقي = دورُه (محرّك الأدوار KIVO.Perm44) بترتيب أدوار الإدارة — قوالبُ الصلاحيات حُذفت */
   tkTplInfo() {
-    const t = {};
+    const t = {},
+      n = KIVO.Perm44;
     let e = [];
     try {
-      const t = this._tkLS("bassam_perm_tpls_v1");
-      Array.isArray(t) && (e = t);
+      const t = n && "function" === typeof n.rolesOf ? (n.rolesOf(this._tkDept ? this._tkDept() : undefined) || {}).roles : [];   /* rolesOf → {roles, people} */
+      Array.isArray(t) && (e = t.filter((x) => x && x.id));
     } catch (t) {}
-    const n = KIVO.BassamPerm;
     return (
       this.loadEmps().forEach((a) => {
         try {
           const r = KIVO.BassamEmp ? KIVO.BassamEmp.key(a) : a.eid || a.nid || a.name,
-            s = n && n.tplOfEmp ? n.tplOfEmp(r) : "",
+            q = n && "function" === typeof n.roleOf ? n.roleOf(r, this._tkDept ? this._tkDept() : undefined) : null,
+            s = q ? q.id : "",
             o = s ? e.findIndex((t) => t.id === s) : -1;
           t[r] = { tpl: o >= 0 ? e[o].name : "", ord: o >= 0 ? o : s ? 98 : 99 };
         } catch (t) {}
@@ -94,10 +96,10 @@ Object.assign(Component.prototype, {
   tkPickModel(t) {
     const e = this.state,
       n = this.loadEmps(),
-      r = this.bsOn("staff"),
-      ST = r ? this._tkLS("bassam_staffing_v3") : null,
-      DR = this._tkLS("bassam_dreport_v1"),
-      TP = this._tkLS("bassam_perm_tpls_v1"),
+      r = !!KIVO.bus.read("staff.enabled@1", this),   /* V7 · د5-د2: قراءتان معلنتان من مالك الجدول — بغيابه: لا جدول (كالمعطَّل) */
+      ST = r ? KIVO.bus.read("staff.schedule@1", (k) => this._tkLS(k)) : null,
+      DR = KIVO.bus.read("dreport.doc@1", (k) => this._tkLS(k)),   /* V7 · د5-هـ: تقريرُ اليوم بالناقل؛ بغيابه لا تأشيرَ غيابٍ ولا إجازة */
+      TP = this._tkLS("bassam_roles_v1"),   /* V7 · د5-هـ (44): أدوارُ الإدارة وإسنادُها يُبطلان النموذج */
       SO = this._tkLS("bassam_shift_options_v1"),
       uv = (() => {
         try {
@@ -465,9 +467,9 @@ Object.assign(Component.prototype, {
       AC = e.acceptRef ? this._tkAcctMap(this.loadEmps()) : null,
       TM = this._tkM() || {};
     return {
-      dutyEmpty: 0 === t.length && this.bsOn("staff"),
+      dutyEmpty: 0 === t.length && !!KIVO.bus.read("staff.enabled@1", this),
       dutyHas: t.length > 0,
-      dutyStaffOn: this.bsOn("staff"),
+      dutyStaffOn: !!KIVO.bus.read("staff.enabled@1", this),
       dutyWt: W ? " — مهمة لنوع العمل «" + W + "» فقط" : "",
       dutyList: t.map((t) => {
         const ac = AC && null != t.id ? AC[String(t.id)] || "" : "";

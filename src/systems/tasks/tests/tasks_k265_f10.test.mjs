@@ -32,7 +32,7 @@ import { loadClient } from '../../../../tests/unit/k264_vm.mjs';
 const WU = workerUnderTest();
 const H = 3600e3, MGR = { un: '0000000101', pw: '70101' };
 const ROUNDS = +(process.env.KIVO_K265F10_ROUNDS || 2);
-const MODES = (process.env.KIVO_K265F10_MODES || 'legacy,enforce').split(',');
+const MODES = (process.env.KIVO_K265F10_MODES || 'enforce').split(',');   /* V7 · د5-ح (القفل): حالاتُ [legacy] حُذفت — تثبّت حكمَ الوضع القديم بلا سبب */
 const get = async (Wd, ck) => { const r = await Wd.C.api("/api/operations/read?keys=" + encodeURIComponent(KT), { cookie: ck }); const it = r.j; return { v: JSON.stringify(it.resources[KT]), rev: it.base[KT] }; };
 const at = (S, id, eid) => { const f = findRow(S, id, eid); return f ? f.r : null; };
 const idx = (S, d, id, eid) => (S[d] || []).findIndex((r) => Array.isArray(r) && r[13] === id && r[14] === eid);

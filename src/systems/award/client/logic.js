@@ -1,7 +1,7 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","award+irshad+seized"]) {
   _businessSpec() {
     return { prefix: "aw", path: "/api/award", logical: "bassam_award_v1", resources: ["records", "docsV1", "docsV2"], rows: "recs",
-      views: ["records", "record", "references", "context"], changed: /^bassam_(?:award(?:_docs)?|employees|grants|perm_tpls|perms|auth_users|depts|gdepts|platform)_v[0-9]+$/ };
+      views: ["records", "record", "references", "context"], changed: /^bassam_(?:award(?:_docs)?|employees|grants|roles|perms|auth_users|depts|gdepts|platform)_v[0-9]+$/ };
   }
   _businessReadValid(view, data) {
     if (view === "records") return Array.isArray(data.recs) && data.recs.every(row => row && typeof row.id === "string") &&
@@ -820,19 +820,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           } catch (t) {}
         }, 4200)));
     } catch (t) {}
-  }
-  hToday() {
-    try {
-      const t = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        }).formatToParts(new Date()),
-        e = (e) => +t.find((t) => t.type === e).value;
-      return { y: e("year"), m: e("month"), d: e("day") };
-    } catch (t) {
-      return { y: 1448, m: 1, d: 1 };
-    }
   }
   hStr(t) {
     const e = (t) => (t < 10 ? "0" + t : String(t));

@@ -4,14 +4,7 @@
 var EMP_TRANSITION_RELATED = [
   'bassam_employees_v1',
   'bassam_options_v1',
-  'bassam_staffing_v2',
-  'bassam_staffing_v3',
-  'bassam_staffing_locks_v1',
-  'bassam_plan_v1',
-  'bassam_rounds_v1',
-@@SYS:emp.keys.tasks@@  'bassam_dreport_v1',
-  'bassam_shift_options_v1',
-  'bassam_perm_tpls_v1',
+@@SYS:emp.keys.staff@@@@SYS:emp.keys.plan@@@@SYS:emp.keys.daily@@@@SYS:emp.keys.tasks@@@@SYS:emp.keys.dreport@@  'bassam_shift_options_v1',
   'bassam_grants_v1',
 ];
 function empTransitionKey(d, n) {
@@ -52,9 +45,7 @@ function empActionAllowed(A, d, intent) {
     })
   )
     throw cuError('employee-transition-forbidden', 403);
-  var ok = A.enf
-    ? enfHeld(A, d, intent === 'delete' ? 'emp.record.delete' : 'emp.record.create')
-    : actsHeldOn(A, d, 'emps/data', [intent === 'delete' ? 'del' : 'add']);
+  var ok = enfHeld(A, d, intent === 'delete' ? 'emp.record.delete' : 'emp.record.create');   /* V7 · د5-ح: المحرّكُ النافذ وحده */
   if (!ok) throw cuError('employee-transition-forbidden', 403);
 }
 async function empTransitionSource(env) {
@@ -159,7 +150,7 @@ function empPrunePermissions(p, d, users, A) {
     if (!live.has(k)) empDropPermission(p, d, k);
   });
 }
-function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
+function empCleanupValues(values, removed, after, replace, wipe@@SYS:emp.cleanup.staffParam@@) {
   var drop = new Set(cuRemovedHolderKeys(removed, after)),
     names = new Set(
       after.map(function (e) {
@@ -177,20 +168,7 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
         })
       : a;
   };
-  if (staffOn)
-    ['bassam_staffing_v2', 'bassam_staffing_v3'].forEach(function (n) {
-      var st = values[n];
-      if (!isObj(st)) return;
-      Object.keys(st).forEach(function (k) {
-        var b = st[k];
-        if (drop.has(k) && isObj(b) && (b.shift !== undefined || b.rest !== undefined)) delete st[k];
-        else if (isObj(b))
-          drop.forEach(function (x) {
-            delete b[x];
-          });
-      });
-    });
-  function fd(v) {
+@@SYS:emp.cleanup.staff.rows@@  function fd(v) {
     if (!isObj(v)) return;
     ['zones', 'gates'].forEach(function (n) {
       if (Array.isArray(v[n]))
@@ -199,270 +177,10 @@ function empCleanupValues(values, removed, after, replace, wipe, staffOn) {
         });
     });
   }
-  var pl = values.bassam_plan_v1;
-  if (isObj(pl)) {
-    fd(pl);
-    if (Array.isArray(pl.floors)) pl.floors.forEach(fd);
-    if (isObj(pl.months))
-      Object.keys(pl.months).forEach(function (k) {
-        var a = pl.months[k],
-          d = Array.isArray(a) ? a : a && a.d;
-        if (Array.isArray(d)) d.forEach(fd);
-      });
-  }
-  var rounds = values.bassam_rounds_v1;
-  if (isObj(rounds))
-    Object.keys(rounds).forEach(function (k) {
-      if (rounds[k] && Array.isArray(rounds[k].d)) rounds[k].d.forEach(fd);
-    });
-@@SYS:emp.cleanup.tasks@@  if (replace || wipe) {
-    if (staffOn) {
-      var st = values.bassam_staffing_v3,
-        lk = values.bassam_staffing_locks_v1;
-      if (!isObj(st)) st = {};
-      if (!isObj(lk)) lk = {};
-      Object.keys(st).forEach(function (m) {
-        var b = st[m];
-        if (!isObj(b)) {
-          delete st[m];
-          delete lk[m];
-          return;
-        }
-        Object.keys(b).forEach(function (k) {
-          if (k !== '__shifts') delete b[k];
-        });
-        if (
-          !Object.keys(b).some(function (k) {
-            return k !== '__shifts';
-          })
-        ) {
-          delete st[m];
-          delete lk[m];
-        }
-      });
-      values.bassam_staffing_v3 = st;
-      values.bassam_staffing_locks_v1 = lk;
-    }
-    if (values.__dreportOn) values.bassam_dreport_v1 = {};
-  }
+@@SYS:emp.cleanup.plan@@@@SYS:emp.cleanup.daily@@@@SYS:emp.cleanup.tasks@@  if (replace || wipe) {
+@@SYS:emp.cleanup.staff.wipe@@@@SYS:emp.cleanup.wipe.dreport@@  }
 }
-function empApplySchedule(values, meta, validKeys, result) {
-  var rows = meta.schedule || [];
-  if (!rows.length) return;
-  if (!values.__staffOn) {
-    result.warnings.push('schedule-disabled');
-    return;
-  }
-  var mk = meta.year + '-' + meta.month,
-    locks = values.bassam_staffing_locks_v1 || {};
-  if (locks[mk]) {
-    result.warnings.push('schedule-locked');
-    return;
-  }
-  var options = values.bassam_shift_options_v1;
-  if (
-    !Array.isArray(options) ||
-    !options.length ||
-    !options.every(function (x) {
-      return x && x.name && x.color;
-    })
-  )
-    options = [
-      { name: 'الوردية الأولى', color: '#b99751' },
-      { name: 'الوردية الثانية', color: '#0891b2' },
-      { name: 'الوردية الثالثة', color: '#4f46e5' },
-      { name: 'الوردية الرابعة', color: '#166534' },
-    ];
-  var palette = ['#be185d', '#166534', '#7c3aed', '#b45309', '#0e7490'],
-    days = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
-    st = values.bassam_staffing_v3 || {},
-    bucket = st[mk] || {},
-    newOpt = 0,
-    nShift = 0;
-  rows.forEach(function (sr) {
-    empShape(sr, ['key', 'shift', 'rest', 'cs', 'muk']);
-    if (typeof sr.key !== 'string' || !validKeys.has(sr.key)) throw cuError('employee-transition-schedule-key');
-    ['shift', 'rest', 'cs', 'muk'].forEach(function (k) {
-      if (sr[k] !== undefined && typeof sr[k] !== 'string' && !(k === 'muk' && typeof sr[k] === 'boolean'))
-        throw cuError('employee-transition-schedule-shape');
-    });
-    var entry = Object.assign({}, bucket[sr.key] || {});
-    if (sr.shift) {
-      var n = sr.shift.trim(),
-        o = options.find(function (x) {
-          return x.name === n || x.name === 'ال' + n || 'ال' + x.name === n;
-        });
-      if (!o && n.length >= 2) {
-        o = { name: n, color: palette[(options.length + newOpt) % palette.length] };
-        options = options.concat([o]);
-        newOpt++;
-      }
-      if (o) {
-        entry.shift = o.name;
-        nShift++;
-      } else result.warnings.push('schedule-shift-unknown');
-    }
-    if (sr.rest) {
-      var txt = sr.rest.replace(/[أإآ]/g, 'ا'),
-        found = [];
-      days.forEach(function (d) {
-        var bare = d.replace(/^ال/, '').replace(/[أإآ]/g, 'ا').replace(/ة$/, '[ةه]'),
-          m = txt.match(new RegExp('(?:ال)?' + bare));
-        if (m) found.push({ d: d, at: m.index });
-      });
-      found.sort(function (a, b) {
-        return a.at - b.at;
-      });
-      var unique = Array.from(
-        new Set(
-          found.map(function (x) {
-            return x.d;
-          }),
-        ),
-      );
-      if (unique.length) entry.rest = unique;
-    }
-    if (sr.cs) entry.cs = sr.cs.trim();
-    if (sr.muk !== undefined && String(sr.muk).trim()) {
-      var m = String(sr.muk).trim().replace(/[أإآ]/g, 'ا').replace(/ّ/g, '');
-      entry.muk = /^(نعم|مكلف|منتدب|صح|صحيح|✓|✔|x|yes|true|1)$/i.test(m);
-    }
-    delete entry.leaves;
-    if (entry.muk === undefined) entry.muk = false;
-    bucket[sr.key] = entry;
-  });
-  st[mk] = bucket;
-  values.bassam_staffing_v3 = st;
-  if (newOpt || nShift) values.bassam_shift_options_v1 = options;
-  result.counts.schedule = rows.length;
-}
-function empCleanTemplate(A, d, sheet) {
-  var clean = {},
-    src = expandPermsOf(A, d, sheet || {}),
-    cap = deptCapOf(A, d);
-  Object.keys(src).forEach(function (k) {
-    var sp = pgSplit(k);
-    if (cap.indexOf(sp.page) < 0) return;
-    if (sp.sub) {
-      if (
-        deptSubsOf(A, d, sp.page)
-          .concat(deptTabsOf(A, d, sp.page))
-          .indexOf(sp.sub) < 0
-      )
-        return;
-    } else if (pgIsContainer(sp.page) || !PG_OF[sp.page]) return;
-    var acts = (src[k] || []).filter(function (a) {
-      return ACTS_ALL.indexOf(a) >= 0;
-    });
-    if (acts.length) {
-      if (acts.indexOf('view') < 0) acts.push('view');
-      clean[k] = acts;
-    }
-  });
-  return clean;
-}
-function empApplyTemplates(A, d, values, p, users, meta, validKeys, result) {
-  var rows = meta.templates || [];
-  if (!rows.length) return;
-  if (!capOnDept(A, d, 'admin/ptpls')) {
-    result.warnings.push('templates-disabled');
-    return;
-  }
-  if (!isMgrOf(A, d)) {
-    result.warnings.push('templates-manager-required');
-    return;
-  }
-  var templates = values.bassam_perm_tpls_v1 || [],
-    lens = (p.lenses || {})[d];
-  var accountByKey = new Map();
-  users.forEach(function (u) {
-    if (u && u.role === 'staff' && u.deptId === d) accountByKey.set(u.ekey, u);
-  });
-  if (!Array.isArray(lens))
-    lens = Object.keys(enfIx().lens)
-      .map(function (k) {
-        return enfIx().lens[k];
-      })
-      .filter(function (v, i, a) {
-        return a.indexOf(v) === i;
-      });
-  var grants = values.bassam_grants_v1;
-  if (!isObj(grants) || !isObj(grants.emp)) grants = { v: 1, emp: {} };
-  rows.forEach(function (row) {
-    empShape(row, ['key', 'name']);
-    if (typeof row.key !== 'string' || !validKeys.has(row.key) || typeof row.name !== 'string')
-      throw cuError('employee-transition-template-key');
-    var norm = function (n) {
-        return String(n || '')
-          .trim()
-          .replace(/\s+/g, ' ');
-      },
-      t = templates.find(function (t) {
-        return norm(t.name) === norm(row.name);
-      });
-    if (!t) {
-      result.warnings.push('template-unknown');
-      return;
-    }
-    var cut = empCleanTemplate(A, d, t.perms);
-    if (!Object.keys(cut).length) {
-      result.warnings.push('template-empty');
-      return;
-    }
-    ['emps', 'tplOf', 'empLens'].forEach(function (n) {
-      p[n] = p[n] || {};
-      p[n][d] = p[n][d] || {};
-    });
-    p.emps[d][row.key] = cut;
-    p.tplOf[d][row.key] = t.id;
-    p.empLens[d][row.key] = Array.isArray(t.lens)
-      ? t.lens.filter(function (k) {
-          return lens.indexOf(k) >= 0;
-        })
-      : lens.slice();
-    if (A.enf) {
-      if (A.u.role !== 'super' && A.u.ekey === row.key) {
-        result.warnings.push('template-self-grant-unchanged');
-        return;
-      }
-      if (Array.isArray(t.keys24)) {
-        var target = accountByKey.get(row.key) || { role: 'staff', deptId: d, ekey: row.key },
-          targetA = Object.assign({}, A, { u: target, perms: p, __enfT: null, __enfH: null }),
-          translated = enfTranslated(targetA, d).keys,
-          E = new Set(t.keys24),
-          prev = (grants.emp[row.key] || {}).plus || [],
-          plus = [],
-          minus = [];
-        KIVO_REGISTRY.keys.forEach(function (k) {
-          var e = KIVO_REGISTRY.byKey[k],
-            ix = enfIx();
-          if (
-            !e ||
-            e.status !== 'active' ||
-            e.grant !== 'assignable' ||
-            /^lens\.[a-z]+\.enable$/.test(k) ||
-            (ix.needMgr[k] && (ix.atomless[k] || !isMgrKey(row.key))) ||
-            !enfKeyOnCeiling(A, d, k)
-          )
-            return;
-          var L = ix.lens[k];
-          if (L && p.empLens[d][row.key].indexOf(L) < 0) return;
-          var T = !!translated[k] && !(enfPermMigrated(A) && ENF_COMPAT[k]);
-          if (E.has(k) && !T) {
-            if (A.u.role === 'super' || prev.indexOf(k) >= 0 || enfHeld(A, d, k)) plus.push(k);
-            else result.warnings.push('template-unheld-key-omitted');
-          }
-          if (T && !E.has(k)) minus.push(k);
-        });
-        if (plus.length || minus.length)
-          grants.emp[row.key] = { plus: plus.sort(), minus: minus.sort(), at: Date.now(), by: A.u.id, src: 'tpl:' + t.id };
-        else delete grants.emp[row.key];
-      } else delete grants.emp[row.key];
-    }
-    result.counts.templates++;
-  });
-  if (A.enf) values.bassam_grants_v1 = grants;
-}
+@@SYS:emp.schedule.fn@@/* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — لا يمنح الاستيرادُ صلاحياتٍ بعمود «الصلاحيات» بعد اليوم؛ الأدوارُ تُسنَد من «الصلاحيات ← الأشخاص» */
 async function empPrepareTransition(env, A, input) {
   if (!A || !A.u) throw cuError('employee-transition-forbidden', 403);
   empShape(input, [
@@ -511,7 +229,7 @@ async function empPrepareTransition(env, A, input) {
     )
       throw cuError('employee-transition-shape');
   } else {
-    empShape(input.import, ['mode', 'year', 'month', 'schedule', 'templates']);
+    empShape(input.import, ['mode', 'year', 'month', 'schedule']);
     if (
       !['add', 'update', 'replace'].includes(mode) ||
       !Number.isInteger(input.import.year) ||
@@ -520,19 +238,13 @@ async function empPrepareTransition(env, A, input) {
       input.import.month < 1 ||
       input.import.month > 12 ||
       !Array.isArray(input.import.schedule) ||
-      !Array.isArray(input.import.templates) ||
       input.deleteMode !== undefined
     )
       throw cuError('employee-transition-import-shape');
     var act = replace ? 'del' : mode === 'update' ? 'edit' : 'add';
-    if (
-      !(A.enf
-        ? enfHeld(A, d, { del: 'emp.record.delete', edit: 'emp.record.edit', add: 'emp.record.create' }[act])
-        : actsHeldOn(A, d, 'emps/data', [act]))
-    )
+    if (!enfHeld(A, d, { del: 'emp.record.delete', edit: 'emp.record.edit', add: 'emp.record.create' }[act]))
       throw cuError('employee-transition-forbidden', 403);
-    if (replace && !(A.enf ? enfHeld(A, d, 'import.replace') : actsHeldOn(A, d, 'admin/import', ['del'])))
-      throw cuError('employee-transition-forbidden', 403);
+    if (replace && !enfHeld(A, d, 'import.replace')) throw cuError('employee-transition-forbidden', 403);
   }
   /* PRIVACY (019u): the context reached a delete-only holder projected (019e GET) — hidden fields come back from storage before any
      rule; one sent with another value, or an unknown 'nx:' token, is refused (lossless, never silently applied) */
@@ -547,7 +259,7 @@ async function empPrepareTransition(env, A, input) {
     base = Object.assign(Object.create(null), input.base.kv),
     ops = {},
     result = {
-      counts: { removed: removed.length, employees: after.length, accountsCreated: 0, accountsRemoved: 0, schedule: 0, templates: 0 },
+      counts: { removed: removed.length, employees: after.length, accountsCreated: 0, accountsRemoved: 0, schedule: 0 },
       warnings: [],
     };
   EMP_TRANSITION_RELATED.forEach(function (n) {
@@ -558,14 +270,8 @@ async function empPrepareTransition(env, A, input) {
   });
   /* Ordinary delete called 590 cleanup without skip flags; only import replace
      skips disabled modules. The canonical resource guards still decide writes. */
-  values.__staffOn = input.intent === 'delete' || capOnDept(A, d, 'staff');
-  values.__dreportOn = input.intent === 'delete' || capOnDept(A, d, 'dreport');
-  empCleanupValues(values, replace ? before : removed, after, replace, wipe, values.__staffOn);
-  if (replace && values.__staffOn) {
-    var mk = input.import.year + '-' + input.import.month;
-    delete values.bassam_staffing_locks_v1[mk];
-  }
-  values.bassam_employees_v1 = after;
+@@SYS:emp.flags.staff@@@@SYS:emp.flags.dreport@@  empCleanupValues(values, replace ? before : removed, after, replace, wipe@@SYS:emp.cleanup.staffArg@@);
+@@SYS:emp.replace.staff@@  values.bassam_employees_v1 = after;
   if (input.options !== undefined) {
     empShape(input.options, ['type', 'work']);
     ['type', 'work'].forEach(function (k) {
@@ -665,13 +371,9 @@ async function empPrepareTransition(env, A, input) {
     })
   )
     throw cuError('employee-transition-account-proposal-ineligible');
-  var validKeys = new Set(after.map(empStableKey));
   if (input.intent === 'import') {
-    empApplySchedule(values, input.import, validKeys, result);
-    empApplyTemplates(A, d, values, p, users, input.import, validKeys, result);
-  }
+@@SYS:emp.schedule.call|empty="    if ((input.import.schedule || []).length) result.warnings.push('schedule-disabled');   /* V7 · د5-د2: بلا مالك الجدول لا يُستورد تسكين — التحذيرُ نفسُه والجدولُ مطفأ */\n"@@  }
   EMP_TRANSITION_RELATED.forEach(function (n) {
-    if (n === 'bassam_perm_tpls_v1') return;
     // An absent ledger has no rows to clean. Do not turn cleanup into an
     // unrelated resource creation solely by materializing its empty shape.
     if (original[n] === null && isObj(values[n]) && !Object.keys(values[n]).length) return;

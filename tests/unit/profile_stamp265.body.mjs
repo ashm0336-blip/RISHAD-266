@@ -15,6 +15,7 @@ import vm from 'node:vm';
 import path from 'node:path';
 import { ROOT } from './harness.mjs';
 import { world, workerUnderTest, ME, KT, DAY, TAG, stored, rowsOf, putKV, HR, PNG } from '../../src/systems/tasks/tests/tasks_fx.mjs';
+import { calendar, callers } from './cal_kit.mjs';   /* V7 · د5-د2: التقويم الموحّد */
 
 const WU = workerUnderTest();
 const LOGIC = process.env.PROFILE_LOGIC || path.join(ROOT, 'src/modules/profile/logic.js');
@@ -51,7 +52,8 @@ function page(W, ck, o = {}) {
   KIVO.BassamCount = (n, w) => n + ' ' + w;
   KIVO.BassamAuth = { user: () => ({ id: ME.uid, name: NAME, role: 'staff', deptId: 'tst_d1', ekey: ME.eid }) };
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } }
-  KIVO.BassamPageKit = { base: (Bc) => class extends Bc { bsOn() { return true; } bsToast(m) { (this.__toasts = this.__toasts || []).push(m); } bsAck() { return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } } };
+  calendar(ctx);
+  KIVO.BassamPageKit = { base: (Bc) => callers(class extends Bc { bsOn() { return true; } bsToast(m) { (this.__toasts = this.__toasts || []).push(m); } bsAck() { return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } }, KIVO) };   /* V7 · د5-د2: مناديات التقويم */
   ctx.DCLogic = DCLogic;
   vm.runInContext(fs.readFileSync(LOGIC, 'utf8') + '\n;globalThis.__C = Component;', ctx, { filename: 'profile/logic.js' });
   const c = new ctx.__C(); c.state = Object.assign({ pfPanel: '' }, c.state || {}); c._pfAlive = true;
@@ -125,7 +127,7 @@ test('(3) الالتقاط كاملاً: بموقعٍ مسموح ⇒ الصور�
   assert.ok(await until(() => (P2.c.state.tkImgs || []).length === 2)); assert.equal(n, 2); assert.equal(P2.c._tkGeoC.v.lat, 24.7136, 'قيمةٌ واحدةٌ مذكورة');
 });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] (4) الخادم: meta مع submit ⇒ r21.meta بترتيب الصور · proof.meta في القراءة · فاسدٌ ⇒ 400 at:meta · حذفُ المسودّة يُسقطها · حفظُ المدير لا يمسّها', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);

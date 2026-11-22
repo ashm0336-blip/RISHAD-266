@@ -5,10 +5,11 @@ import fs from "node:fs";
 import vm from "node:vm";
 import { DatabaseSync } from "node:sqlite";
 import { operationalMigrationFixture } from "./operational_migration_fx.mjs";
+import { SCHED_PARTS } from './sched_parts.mjs';   /* V7 · د5-د: أجزاءُ الجدولة من سجلّها */
 const C = vm.createContext({});
 for (const path of [
   "workers/parts/019o-operational-codec.js",
-  "workers/parts/019p-operations-scheduling.js",
+  ...SCHED_PARTS.map((f) => "workers/parts/" + f),
 ])
   vm.runInContext(fs.readFileSync(path, "utf8"), C, { filename: path });
 const definitions = C.OC_SCHEDULING_RESOURCES,
@@ -140,8 +141,8 @@ function floor() {
   };
 }
 test("fourteen declared scheduling resources have unique closed tables and D1-safe column counts", () => {
-  assert.equal(definitions.length, 14);
-  assert.equal(new Set(definitions.map((d) => d.resource)).size, 14);
+  assert.equal(definitions.length, 15);   /* V7 · د5-ح (13): + أرشيفُ الجولات (شكلُ الجولات · جداولُها) */
+  assert.equal(new Set(definitions.map((d) => d.resource)).size, 15);
   const p = allPrepared,
     tables = C.ocPhysicalTables(p);
   assert.equal(p.order.length, new Set(p.order.map((s) => s.table)).size);

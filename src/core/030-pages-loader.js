@@ -48,7 +48,7 @@ window.__resourceBlobs = {};
     if (!manifest || manifest.keys.indexOf('operationsReadSets') === -1) throw Error('operations-readset-required');
     var declared = manifest.clone('operationsReadSets')[name] || [];
     var service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
-    var names = service ? declared.filter(function (key) { return service.resources.indexOf(key) !== -1 && !/^bassam_(?:st|dr)_grp_v1$|^bassam_dayfocus_v1$/.test(key); }) : declared;
+    var names = service ? declared.filter(function (key) { return service.resources.indexOf(key) !== -1 && !(service.device && service.device(key)) && key !== 'bassam_dayfocus_v1'; }) : declared;
     if (!names.length) return { keys: [], service: service };
     var stamp = service && service.context();
     if (!stamp) {

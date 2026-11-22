@@ -54,7 +54,7 @@ async function suUsers(W, f) {
   assert.ok(ok(s), 'مديرُ النظام: ' + show(s));
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) R3-OLDTAB-ALL: إسقاطٌ بلا بصمة بعد تغيّر عدسةٍ يجعل الكلَّ مرئياً ⇒ رفضٌ لا حذف · وعلى نسخةٍ قديمة تعارضٌ يُدمج والمعادُ يُقبل بلا حذف', async () => {

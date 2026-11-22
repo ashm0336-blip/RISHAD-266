@@ -75,7 +75,7 @@ const LAYOUT = (swipe) => {
    Routes not listed have one page read (or only the shell gate's operations read): nothing there is secondary. */
 const RETRO = /^\/api\/retro\b/, OVERVIEW = /^\/api\/overview\b/;
 const SECONDARY = { irshad: RETRO, 'irshad/records': RETRO, seized: RETRO, 'seized/records': RETRO, admin: OVERVIEW, 'admin/backup': OVERVIEW, 'admin/oplog': OVERVIEW, 'admin/shifts': OVERVIEW,
-  'admin/ptpls': OVERVIEW, 'admin/import': OVERVIEW, sysadmin: OVERVIEW, profile: /^\/api\/me\/today\b/ };
+  'admin/import': OVERVIEW, sysadmin: OVERVIEW, profile: /^\/api\/me\/today\b/ };
 
 /* ── the routes and their expected header, from pages.json alone ── */
 function routes() {

@@ -23,17 +23,7 @@ function audEvStmt(env, r) {
     .bind(r.cid, r.ts, r.uid, r.un || '', r.dept || '', r.k, r.rev || 0, r.etype, r.eid, r.ename || '', r.act, r.ctx || '', r.bef || '', r.aft || '', r.ip || '', r.dev || '', r.city || '');
 }
 /* من يقرأ سجلَّ إدارةٍ كاملاً: مدير النظام، مدير الإدارة، ومن مُنح «الإعدادات» في إدارته — وسجلُّ كيانٍ واحد لمن يقرأ نطاقَ الإدارة */
-function audCanDept(AA, d, entMode) {
-  if (AA && AA.enf) return enfAudCanDept(AA, d, entMode);                     /* KIVO_243: audit.view */
-  if (!d) return AA.u.role === 'super';
-  if (isMgrOf(AA, d)) return true;
-  if (entMode) return deptInScope(AA, d);
-  /* سقفُ الإدارة الفعليّ (deptCapOf: «لا سقفَ مضبوطاً» = كلُّ الصفحات، والوحدةُ المطفأة تُستبعد) لا السقفُ الخام */
-  var ep = ((AA.perms.emps || {})[d] || {})[AA.u.ekey] || {};
-  /* الورقةُ نفسُها التي تفتح «سجل الحركة» داخل الإعدادات: admin/oplog (والشكلُ القديم admin)
-     — caps-own · read-time narrowing: only while admin/oplog is inside the unit ceiling (a switched-off tab is no longer deleted from sheets) */
-  return deptInScope(AA, d) && capOnDept(AA, d, 'admin/oplog') && ((ep['admin/oplog'] || ep.admin || []).indexOf('view') !== -1);
-}
+function audCanDept(AA, d, entMode) { return enfAudCanDept(AA, d, entMode); }   /* KIVO_243: audit.view · V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
 /* نصُّ البحث حرفيٌّ: رموزُ LIKE (% _ \) تُهرَّب بشرطةٍ خلفيّة — فالمعرّفاتُ التي تحوي «_» تُبحث كما هي */
 function audLike(v) { return String(v || '').replace(/[%_\\]/g, function (m) { return '\\' + m; }).trim(); }
 /* R169-CC: auditStmt أُزيلت — لا كتابةَ في الجدول القديم بعد الترحيل. الجدولُ يبقى مصدرَ الترحيل وحدَه. */
@@ -221,6 +211,10 @@ async function migrateDb(env) {
     if (dataPlan) st = st.concat(dataPlan.after);
     if (permit && pending[i].name === names[names.length - 1])
       st.push(env.DB.prepare('DELETE FROM meta WHERE k=?1 AND v=?2').bind(DB_UPGRADE_PERMIT, permit.raw));
+    /* V7 · د5-ح (القفل): قاعدةٌ وُلدت الآن (لا جدولَ ولا سجلَّ ترحيلٍ قبلها) لا بياناتِ صلاحياتٍ قديمة فيها ⇒ تُختم enforce مع آخر ترحيل.
+       قاعدةٌ قائمة (Production) لا تُختم هنا أبداً: تبقى «unmigrated» حتى يرحّلها مديرُ المنصة ويفعّلها (063 act:'activate') */
+    if (empty && pending[i].name === names[names.length - 1])
+      st.push(env.DB.prepare("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO NOTHING"));
     st.push(env.DB.prepare('INSERT OR IGNORE INTO d1_migrations (name) VALUES (?1)').bind(pending[i].name));
     await env.DB.batch(st);
     state = { names: state.names.concat([pending[i].name]), schema: String(names.indexOf(pending[i].name) + 1), hasMeta: true, hasLedger: true, tables: null };
@@ -247,7 +241,7 @@ function initDb(env) {
    على env.__pre، وتستهلكها kvGet/metaGet/session/revsAll ما دامت «حيّة». الضمانُ الدلالي: اللقطةُ تُطفأ عند أوّل كتابةٍ في الطلب
    (dbGuard يلفّ env.DB: batch · exec · أيُّ عبارةِ تعديل مهما كان منفذُها) فلا قراءةَ قديمةً بعد كتابة — والقراءاتُ بعدها حيّةٌ كما كانت.
    إن أخفق جلبُ اللقطة (تعذّرُ D1) يُترك env.__pre فارغاً وتعمل كلُّ المسارات كما قبل 255 (ومنها وضعُ الحماية fail-closed في enfModeOf). */
-var PRE_META_BASE = ['policy', 'rev', 'rk', 'schema_version', 'restore_epoch'], PRE_META_AUTHZ = ['authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig'];   /* مفاتيحُ الإنفاذ تُقرأ في بيئة الإنفاذ وحدها (KIVO_243: Production بلا المتغيّر لا تقرأ شيئاً) — والعبارةُ تحمل علامةَ pre:authz حين تشملها */
+var PRE_META_BASE = ['policy', 'rev', 'rk', 'schema_version', 'restore_epoch'], PRE_META_AUTHZ = ['authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig'];   /* مفاتيحُ الإنفاذ — V7 · د5-ح: تُقرأ في كل بيئة (لا وضعَ قديماً) والعبارةُ تحمل علامةَ pre:authz */
 var PRE_KV = [K_USERS, K_PERM, K_DEPTS, K_GDEPTS, K_PLAT];
 function kvJoin(rows) {
   var out = {}, i; rows = rows || [];
@@ -426,8 +420,8 @@ function dbGuard(DB, pre, preserve) {
 async function preload(env, tok, kvKeys) {
   var pre = { live: true, meta: {}, kv: {}, revs: {}, tok: tok || '', sess: null, hasSess: !!tok },
     i;
-  var withAuthz = enfEnvOn(env),
-    PRE_META = withAuthz ? PRE_META_BASE.concat(PRE_META_AUTHZ) : PRE_META_BASE;
+  /* V7 · د5-ح (القفل): مفاتيحُ الإنفاذ تُقرأ في كل بيئة — المحرّكُ يقرّر في كلٍّ منها (056 enfModeOf) */
+  var PRE_META = PRE_META_BASE.concat(PRE_META_AUTHZ);
   for (i = 0; i < PRE_META.length; i++) pre.meta[PRE_META[i]] = null;
   for (i = 0; i < kvKeys.length; i++) pre.kv[kvKeys[i]] = null;
   var sM = env.DB.prepare(
@@ -435,8 +429,7 @@ async function preload(env, tok, kvKeys) {
       PRE_META.map(function (_, j) {
         return '?' + (j + 1);
       }).join(',') +
-      ')' +
-      (withAuthz ? ' /* pre:authz */' : ''),
+      ') /* pre:authz */',
   );
   var sK = env.DB.prepare(
     'SELECT k, seq, v FROM kv WHERE k IN (' +

@@ -7,28 +7,7 @@
    "bytes": 530622,
    "logicLines": 6201
   },
-@@SYS:modules.tasks@@  {
-   "name": "Daily Sessions",
-   "slug": "daily",
-   "minifiedSource": true,
-   "bytes": 818608,
-   "logicLines": 20267
-  },
-  {
-   "name": "Operational Plan",
-   "slug": "plan",
-   "minifiedSource": true,
-   "bytes": 855494,
-   "logicLines": 19783
-  },
-  {
-   "name": "Staffing",
-   "slug": "staff",
-   "minifiedSource": true,
-   "bytes": 206045,
-   "logicLines": 3013
-  },
-  {
+@@SYS:modules.tasks@@@@SYS:modules.daily@@@@SYS:modules.plan@@@@SYS:modules.staff@@  {
    "name": "Admin",
    "slug": "admin",
    "minifiedSource": true,
@@ -42,14 +21,7 @@
    "bytes": 157711,
    "logicLines": 2736
   },
-@@SYS:modules.irshad@@@@SYS:modules.award@@  {
-   "name": "Daily Report",
-   "slug": "dreport",
-   "minifiedSource": true,
-   "bytes": 242223,
-   "logicLines": 4400
-  },
-  {
+@@SYS:modules.irshad@@@@SYS:modules.award@@@@SYS:modules.dreport@@  {
    "name": "Planning",
    "slug": "planning",
    "minifiedSource": true,

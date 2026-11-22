@@ -8,6 +8,7 @@
   "routes"
  ],
  "properties": {
+  "$comment": {"type": "string", "description": "V7 · د5-ح: ترويسةُ «ملف مولَّد» — الملفُّ مولَّدٌ من قالبه (tools/systems.py)"},
   "$schema_note": {
    "type": "string"
   },

@@ -7,15 +7,11 @@ var ENF_UNCOV = (function () {
   function join() { var o = { add: [], edit: [], del: [] }, i, a; for (i = 0; i < arguments.length; i++) for (a in o) o[a] = o[a].concat(arguments[i][a] || []); return o; }
   function all(keys) { return { add: keys, edit: keys, del: keys, approve: keys }; }
   return {
-    'bassam_options_v1': join(crud('ref.employment_type'), crud('ref.work_type')),
-    'bassam_zone_opts_v1': crud('ref.zone.type'), 'bassam_gate_opts_v1': crud('ref.gate.type'), 'bassam_mark_kinds_v1': crud('ref.mark.kind'),
-    'bassam_shift_options_v1': crud('ref.shift'),
-@@SYS:enf.refCrud.records@@    'bassam_leave_kinds_v1': crud('ref.leave_type'), 'bassam_callsigns_v1': crud('ref.callsign'),
-@@SYS:enf.refCrud.award@@    'bassam_perm_limit_v1': all(['staff.permission_limit.set']),
-    'bassam_staffing_snap_v1': all(['staff.lock', 'staff.reopen', 'staff.callsign.assign', 'report.callsign.assign']),
-    'bassam_dayshift_v1': all(['round.edit', 'report.edit', 'round.create', 'report.create']),
-    'bassam_dayfocus_v1': all(['round.edit', 'report.edit', 'round.create', 'report.create']),
-    'bassam_dr_grp_v1': all(['report.edit', 'report.create'])
+    'bassam_options_v1': join(crud('ref.employment_type')@@SYS:enf.refCrud.options.staff@@),
+@@SYS:enf.refCrud.plan@@    'bassam_shift_options_v1': crud('ref.shift'),
+@@SYS:enf.refCrud.records@@@@SYS:enf.uncov.leave.dreport@@@@SYS:enf.refCrud.callsign.staff@@
+@@SYS:enf.refCrud.award@@@@SYS:enf.uncov.staff@@    'bassam_dayshift_v1': all([@@SYS:enf.uncov.day.edit.daily|empty="...[]"@@@@SYS:enf.uncov.day.edit.dreport@@, @@SYS:enf.uncov.day.create.daily|empty="...[]"@@@@SYS:enf.uncov.day.create.dreport@@]),
+    'bassam_dayfocus_v1': all([@@SYS:enf.uncov.day.edit.daily|empty="...[]"@@@@SYS:enf.uncov.day.edit.dreport@@, @@SYS:enf.uncov.day.create.daily|empty="...[]"@@@@SYS:enf.uncov.day.create.dreport@@])@@SYS:enf.uncov.grp.dreport@@
   };
 })();
 /* السببُ المرافق للكتابة: body.why[k] (طبقةُ المزامنة) أو سببُ علامة العملية (الاستعادة) */
@@ -25,33 +21,10 @@ function enfVia(A, k, rn, d, curVal, newVal, ctx) {
   if (curVal == null || newVal == null) return null;
   var ds = null, i, f, need = {};
   function diffs() { if (!ds) ds = walkDiff(curVal, newVal); return ds; }
-  /* EMP_FIELDS: الجدولُ الشهري يكتب في سجل الموظفين حقلَي نوع العمل/التوظيف (والهوية القانونية eid) وحدها */
-  if (rn === 'bassam_employees_v1' && diffs().length && diffs().every(EMP_FIELDS)) {
-    for (i = 0; i < ds.length; i++) { f = ds[i].p.split('.').pop(); if (f === 'work') need['staff.work_type.assign'] = 1; else if (f === 'type') need['staff.employment_type.assign'] = 1; }
-    var ks = Object.keys(need);
-    if (!ks.length) return enfHeld(A, d, 'staff.work_type.assign') || enfHeld(A, d, 'staff.employment_type.assign') ? { keys: [enfHeld(A, d, 'staff.work_type.assign') ? 'staff.work_type.assign' : 'staff.employment_type.assign'], tag: 'via:EMP_FIELDS(eid)' } : null;
-    for (i = 0; i < ks.length; i++) if (!enfHeld(A, d, ks[i])) return null;
-    return { keys: ks, tag: 'via:EMP_FIELDS' };
-  }
-  /* CS_ONLY · SNAP_CS_ONLY: التقريرُ اليومي يُسند رمزَ النداء في الجدول (حقل cs وحده) */
-  if ((rn === 'bassam_staffing_v3' && diffs().length && diffs().every(CS_ONLY)) || (rn === 'bassam_staffing_snap_v1' && diffs().length && diffs().every(SNAP_CS_ONLY))) {
-    if (enfHeld(A, d, 'report.callsign.assign')) return { keys: ['report.callsign.assign'], tag: 'via:CS_ONLY' };
-    if (enfHeld(A, d, 'staff.callsign.assign')) return { keys: ['staff.callsign.assign'], tag: 'via:CS_ONLY(staff)' };
-    return null;
-  }
-  /* SEED_ONLY: بذرُ قوالب الصلاحيات الافتراضية لأول مرّة (القائمةُ فارغة) من صفحة التقرير */
-  if (rn === 'bassam_perm_tpls_v1' && diffs().length && diffs().every(SEED_ONLY)) {
-    var sk = ['tpl.create', 'report.create', 'report.edit'];
-    for (i = 0; i < sk.length; i++) if (enfHeld(A, d, sk[i])) return { keys: [sk[i]], tag: 'via:SEED_ONLY' };
-    return null;
-  }
+@@SYS:enf.via.staff@@
   /* تبعةُ إعادة تسمية الوردية (عمليةٌ محمية): حقلُ shift وحده من الاسم القديم إلى الجديد، ولا يبقى صفٌّ على القديم — بمفتاح ref.shift.edit */
-  if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && ctx && ctx.shRen) {
-    var sd = diffs(); if (!sd.length) return null;
-    for (i = 0; i < sd.length; i++) { if (!/(^|\.)shift$/.test(sd[i].p) || String(sd[i].f) !== ctx.shRen.o || String(sd[i].t) !== ctx.shRen.n) return null; }
-    if (shiftLeft(parseJson(newVal, null), ctx.shRen.o)) return null;
-    return enfHeld(A, d, 'ref.shift.edit') ? { keys: ['ref.shift.edit'], tag: 'cascade:shiftRename' } : null;
-  }
+  if (ctx && ctx.shRen && srvBusAccepts('shifts.renamed.cascade@1', rn, diffs, newVal, ctx))
+    return enfHeld(A, d, 'ref.shift.edit') ? { keys: ['ref.shift.edit'], tag: 'cascade:shiftRename' } : null;   /* V7 · د5-د: مالكُ المورد المتأثّر يقرّر أنها تبعةٌ تامّة (ناقل الخادم) */
   return null;
 }
 /* KIVO_259 · AUD-030 (ADR-018): حقولُ عدسات الإضافات الجديدة (خارج المرجع KIVO_BUILD.LENSES) — الحارسُ المرجعي يصنّف حقلَ عنصرٍ لا يعرفه تعديلاً عامّاً
@@ -70,7 +43,7 @@ function enfPlugOps(res) {
   for (var i = 0, m, o; i < res.ops.length; i++) {
     o = res.ops[i];
     if ((m = /(?:^|\.)([a-z]+)\[[^\]]*\]\.([A-Za-z0-9_]+)$/.exec(o.path)) && KIVO_LENS_PLUGINS.edit[m[1]] === o.key && ENF_PLUG_OPS.el[m[1] + '.' + m[2]]) o.key = ENF_PLUG_OPS.el[m[1] + '.' + m[2]];
-    else if ((o.key === 'site.edit' || o.key === 'round.edit') && (m = /\.([A-Za-z0-9_]+)$/.exec(o.path)) && ENF_PLUG_OPS.fl[m[1]]) o.key = ENF_PLUG_OPS.fl[m[1]];
+    else if ((@@SYS:enf.plugFloor.plan@@@@SYS:enf.plugFloor.daily|empty="false"@@) && (m = /\.([A-Za-z0-9_]+)$/.exec(o.path)) && ENF_PLUG_OPS.fl[m[1]]) o.key = ENF_PLUG_OPS.fl[m[1]];
   }
   return res;
 }
@@ -224,7 +197,7 @@ function enfSheetKeys(A, d, t, sheet, el) {
 }
 /* ── المنحُ الصريح (bsdept:<d>:bassam_grants_v1): مديرُ الإدارة (perm.assign) لموظفي إدارته لا لنفسه — مفتاحٌ قابلٌ للمنح · داخل سقف الإدارة · يملكه المانح؛
    الإسقاطُ (minus) لأيّ مفتاحٍ نشط · مديرُ النظام بلا قيد المانح · حذفُ السجل كلِّه لمدير النظام وحده ── */
-var ENF_GRANT_FIELDS = { plus: 1, minus: 1, at: 1, by: 1, src: 1 };
+var ENF_GRANT_FIELDS = { plus: 1, minus: 1, at: 1, by: 1, src: 1, until: 1 };   /* V7 · د5-هـ (44): until = انتهاءُ الاستثناء {مفتاح: ms} */
 function enfGrantsWrite(A, k, newVal, curVal, ctx) {
   var P = parseKey(k), d = P.dept, sup = A.u.role === 'super';
   if (!d) return enfNo('scope', { structural: 1 });
@@ -250,6 +223,7 @@ function enfGrantsWrite(A, k, newVal, curVal, ctx) {
       if (!isObj(gb)) return enfNo('shape', { detail: e });
       for (q in gb) if (!ENF_GRANT_FIELDS[q]) return enfNo('shape', { detail: e + '.' + q });
       if ((gb.plus !== undefined && !Array.isArray(gb.plus)) || (gb.minus !== undefined && !Array.isArray(gb.minus))) return enfNo('shape', { detail: e });
+      if (gb.until !== undefined && (!isObj(gb.until) || Object.keys(gb.until).some(function (x) { return typeof gb.until[x] !== 'number'; }))) return enfNo('shape', { detail: e + '.until' });
     }
     if (!sup) { var lw = enfMinusLiftWhy(A, d, e, eo[e], gb, ctx && ctx.pa); if (lw) return enfNo('grant', { detail: lw + ' (grantor does not hold it)' }); }   /* الجولة 2 · M-D · R3-4 */
     if (gb === undefined) continue;

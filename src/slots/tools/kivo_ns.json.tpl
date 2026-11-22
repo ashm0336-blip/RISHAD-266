@@ -22,7 +22,7 @@
   "__BS_AUD_MODE",
   "__BS_OP_MODE",
   "BassamPurge",
-  "BassamStaffSnap"
+  "BassamStaffSnap"@@SYS:ns.owned.daily|empty=",\n  \"BassamField\",\n  \"BassamRound\""@@@@SYS:ns.owned.print|empty=",\n  \"BassamPrintCore\""@@
  ],
  "extra": [
   "__dcLogicDefs",
@@ -49,10 +49,7 @@
   "src/services/320-dept-storage.js",
   "src/permissions/331-perm-model.js",
   "src/layouts/root-logic.js",
-  "src/services/566-print-core.js",
-  "src/modules/daily/logic.js",
-  "src/modules/plan/logic.js",
-  "src/modules/admin/logic.js",
+@@SYS:ns.after.print@@@@SYS:ns.after.daily@@@@SYS:ns.after.plan@@  "src/modules/admin/logic.js",
   "src/components/660-a11y-enhancer.js",
 @@SYS:ns.after.tasks@@  "src/api/280-server-storage.js",
   "src/auth/330-auth.js",
@@ -63,14 +60,12 @@
   "src/permissions/334-perm-tree-tpl.js",
   "src/modules/kpis/logic.js",
 @@SYS:ns.after.award@@  "src/services/441-notif-core.js",
-  "src/modules/dreport/logic.js",
-  "src/services/332-find-day.js",
+@@SYS:ns.after.dreport@@  "src/services/332-find-day.js",
   "src/modules/profile/logic.js",
-  "src/modules/staff/logic.js",
-  "src/services/590-employees-import.js",
+@@SYS:ns.after.staff@@  "src/services/590-employees-import.js",
   "src/modules/employees/logic.js",
   "src/services/360-bassam-idb.js",
 @@SYS:ns.after.irshad@@@@SYS:ns.after.seized@@  "src/components/450-pull-refresh.js",
-  "src/components/560-canvas-input.js"@@SYS:ns.after.tail@@
+  "src/systems/_multi/client/560-canvas-input.js"@@SYS:ns.after.tail@@
  ]
 }

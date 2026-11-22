@@ -27,9 +27,9 @@ test('التخفيضُ والاعتباطيُّ والتكراراتُ الشا�
   assert.equal(ok(null, { ph: 'p2$9999999$' + 'a'.repeat(32) + '$' + 'b'.repeat(64) }), false);
   assert.equal(ok(null, { ph: 'p2$100000$' + 'A'.repeat(32) + '$' + 'b'.repeat(64) }), false);
 });
-test('الحارسُ موصولٌ في المسارين (usersRule · enfUsersWrite) لغير مدير النظام', () => {
+test('الحارسُ موصولٌ في مسار الإنفاذ (enfUsersWrite) لغير مدير النظام — V7 · د5-ح: usersRule القديم حُذف', () => {
   const r018 = src[1], r059 = fs.readFileSync(path.join(ROOT, 'workers', 'parts', '059-protected-ops-2.js'), 'utf8');
-  assert.equal((r018.match(/(?<!function )phNewOk\(a, b\)/g) || []).length, 2);
+  assert.equal((r018.match(/(?<!function )phNewOk\(a, b\)/g) || []).length, 0, 'تعريفُه وحده في 018c — موصولٌ في 059 وحده');
   assert.equal((r059.match(/phNewOk\(a, b\)/g) || []).length, 2);
   assert.match(r059, /\(sup \|\| \(userRecOk\(b\) && phNewOk\(a, b\)\)\)/);
 });

@@ -1,0 +1,16 @@
+{
+ "ident.keys.plan": {
+  "order": 10,
+  "text": "['bsdept:' + did + ':bassam_plan_v1', plan, planOps, 'plan'], "
+ },
+ "ident.emp.plan": {
+  "order": 10,
+  "text": "      pf.forEach(function (f, fi) { EMP_COLS.forEach(function (col) { arr(obj(f)[col]).forEach(function (e, ei) { canonEmp('plan', e, ['floors', fi, col, ei], planOps); }); }); });\n"
+ },
+ "ident.shape.plan": {
+  "order": 10,
+  "text": "bsdept:<dept>:bassam_plan_v1 | ",
+  "only": "bsdept:<dept>:bassam_plan_v1"
+ },
+ "_note": "V7 · د5-هـ (م1): ترحيلُ الهوية (014) — بروفةُ قراءةٍ تنسب عناصرَ الجولات إلى طوابق الخطة؛ بغياب الخطة لا تعمل (if (!plan) continue)، فمواضعُ الخطة فيها قطعٌ من مجلدها."
+}

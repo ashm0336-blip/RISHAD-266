@@ -1,7 +1,37 @@
 {
  "note": "V7 · د2 — قوالبُ الفتحات: tpl (في src/slots) ← out (من جذر المستودع). الناتجُ مولَّدٌ بـtools/systems.py (يستدعيه tools/generate.py) ولا يُحرَّر يدوياً؛ التعديلُ في القالب أو في قطع الأنظمة (system.json ← slots).",
  "optional": [
-  "bd.awardIndex"
+  "daily.fb.4.dreport",
+  "daily.fallback.2.tasks",
+  "bd.awardIndex",
+  "root.liveKeys.seized.staff",
+  "read.map.reader.plan.2",
+  "priv.carrier.dreport",
+  "res.via.cs.dreport",
+  "res.via.snap.dreport",
+  "read.map.dreport",
+  "read.map.reader.staff.1",
+  "read.map.reader.tasks.1",
+  "read.map.reader.staff.5",
+  "enf.uncov.cs.dreport",
+  "enf.via.cs.dreport",
+  "root.liveKeys.seized.dreport",
+  "pages.daily.requires.dreport",
+  "pages.daily.seq.dreport",
+  "pages.daily.seq.tasks",
+  "pages.tabAddr.daily.dreport",
+  "pages.tabAddr.daily",
+  "nfc.reg.dreport",
+  "nfc.reg.dreport.top",
+  "admin.kpiDaily.dreport",
+  "priv.carrier.daily",
+  "res.via.rounds.dreport",
+  "read.map.reader.plan.3",
+  "read.map.rounds",
+  "read.reader.daily",
+  "pages.under.daily",
+  "lens.hosts.sep.daily",
+  "tree.kpiPanel.dreport"
  ],
  "optionalNote": "فتحاتٌ علامتُها داخل قطعة نظامٍ آخر: bd.awardIndex في قطعة الجائزة bd.employeeCleanup (تملؤها المضبوطات)؛ بغياب الجائزة لا تظهر العلامة.",
  "templates": [
@@ -112,14 +142,6 @@
   {
    "tpl": "workers/parts/061-enf-read.js.tpl",
    "out": "workers/parts/061-enf-read.js"
-  },
-  {
-   "tpl": "workers/parts/045-permv2.js.tpl",
-   "out": "workers/parts/045-permv2.js"
-  },
-  {
-   "tpl": "workers/parts/049-permv4-read.js.tpl",
-   "out": "workers/parts/049-permv4-read.js"
   },
   {
    "tpl": "workers/parts/048-permv4.js.tpl",
@@ -242,16 +264,12 @@
    "out": "workers/parts/062a-auth-routes.js"
   },
   {
+   "tpl": "services/332-find-day.js.tpl",
+   "out": "src/services/332-find-day.js"
+  },
+  {
    "tpl": "services/320-dept-storage.js.tpl",
    "out": "src/services/320-dept-storage.js"
-  },
-  {
-   "tpl": "modules/daily/logic.js.tpl",
-   "out": "src/modules/daily/logic.js"
-  },
-  {
-   "tpl": "modules/daily/view.html.tpl",
-   "out": "src/modules/daily/view.html"
   },
   {
    "tpl": "modules/profile/logic.js.tpl",
@@ -284,6 +302,54 @@
   {
    "tpl": "modules/employees/helmet.css.tpl",
    "out": "src/modules/employees/helmet.css"
+  },
+  {
+   "tpl": "modules/planning/view.html.tpl",
+   "out": "src/modules/planning/view.html"
+  },
+  {
+   "tpl": "modules/planning/logic.js.tpl",
+   "out": "src/modules/planning/logic.js"
+  },
+  {
+   "tpl": "workers/parts/019p9-scheduling-registry.js.tpl",
+   "out": "workers/parts/019p9-scheduling-registry.js"
+  },
+  {
+   "tpl": "workers/parts/062b-me-history.js.tpl",
+   "out": "workers/parts/062b-me-history.js"
+  },
+  {
+   "tpl": "workers/parts/019k-business-context.js.tpl",
+   "out": "workers/parts/019k-business-context.js"
+  },
+  {
+   "tpl": "workers/parts/019r-operational-storage.js.tpl",
+   "out": "workers/parts/019r-operational-storage.js"
+  },
+  {
+   "tpl": "workers/parts/019o1-table-names.js.tpl",
+   "out": "workers/parts/019o1-table-names.js"
+  },
+  {
+   "tpl": "modules/planning/helmet.css.tpl",
+   "out": "src/modules/planning/helmet.css"
+  },
+  {
+   "tpl": "workers/bindings/build-bindings/engine.js.tpl",
+   "out": "workers/bindings/build-bindings/engine.js"
+  },
+  {
+   "tpl": "workers/bindings/identity-migration/engine.js.tpl",
+   "out": "workers/bindings/identity-migration/engine.js"
+  },
+  {
+   "tpl": "workers/bindings/identity-migration/data.json.tpl",
+   "out": "workers/bindings/identity-migration/data.json"
+  },
+  {
+   "tpl": "workers/parts/018-ancestry.js.tpl",
+   "out": "workers/parts/018-ancestry.js"
   }
  ]
 }

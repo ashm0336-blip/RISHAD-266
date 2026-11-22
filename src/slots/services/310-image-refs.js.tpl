@@ -19,9 +19,8 @@
      فـ«مسحُ بياناتِ إدارة» = كتابةُ الشكل الفارغ لكلِّ مورد؛ وما ليس مورداً (تنبيهات، أوّلُ تشغيل…) يُحذف كمفتاح. */
   KIVO.__BS_RES_EMPTY = {
     bassam_employees_v1: '[]', bassam_options_v1: '{}',@@SYS:res.empty.award@@
-@@SYS:res.empty.systems@@    bassam_shift_options_v1: '[]', bassam_perm_tpls_v1: '[]', bassam_perm_tpls_named_v1: '{}', bassam_callsigns_v1: '[]', bassam_leave_kinds_v1: '[]', bassam_perm_limit_v1: '{}',
-    bassam_staffing_v3: '{}', bassam_staffing_v2: '{}', bassam_staffing_snap_v1: '{}', bassam_staffing_locks_v1: '{}',
-    @@SYS:res.empty.tasks@@bassam_dreport_v1: '{}', bassam_dr_grp_v1: '{}', bassam_rounds_v1: '{}', bassam_dayshift_v1: '{}', bassam_dayfocus_v1: '{}',
-    bassam_plan_v1: '{"zones":[],"gates":[],"marks":[],"paths":[],"floors":[],"months":{}}', bassam_zone_opts_v1: '{}', bassam_gate_opts_v1: '{}', bassam_mark_kinds_v1: '[]', bassam_last_export_v1: '0', bassam_last_full_export_v1: '0'
+@@SYS:res.empty.systems@@    bassam_shift_options_v1: '[]',@@SYS:res.empty.staff.callsigns@@@@SYS:imgref.empty.dreport.lk@@@@SYS:res.empty.staff@@
+    @@SYS:res.empty.tasks@@@@SYS:imgref.empty.dreport@@@@SYS:imgref.empty.daily@@bassam_dayshift_v1: '{}', bassam_dayfocus_v1: '{}',
+    @@SYS:imgref.empty.plan@@bassam_last_export_v1: '0', bassam_last_full_export_v1: '0'
   };
 })();

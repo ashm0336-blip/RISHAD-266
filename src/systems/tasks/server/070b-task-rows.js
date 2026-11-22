@@ -27,13 +27,12 @@ function tkLink(emps, tok) {
 /* KIVO_265 · H-1: وسمُ الخادم — الفاعلُ في مسارات المسؤول (071) والتكرار (073) يكتب العمود 23 (018 taskXWhy). يُبنى في الخادم من الجلسة ولا يصل إليه
    مدخلٌ من الطلب (كوسم الذات __tkSelf في 062c) — والحفظُ المركزي يحكم صلاحيتَه كما كان (canWrite · enfDecide) */
 function tkSrvMark(A) { if (A) { try { Object.defineProperty(A, '__tkSrv', { value: 1, enumerable: false, configurable: true }); } catch (e) { A.__tkSrv = 1; } } return A; }
-/* ── صلاحيةُ مفتاحٍ بعينه للفاعل في إدارة — بالوضعين: الإنفاذُ من السجل (enfHeld) · والقديمُ بترجمة ورقته (permv2Ctx ⇒ KIVO_REGISTRY.can) ── */
+/* ── صلاحيةُ مفتاحٍ بعينه للفاعل في إدارة — الإنفاذُ من السجل (enfHeld) · V7 · د5-ح (القفل): وحده ── */
 function tkHeld(A, d, key) {
   if (!A || !A.u) return false;
   if (A.u.role === 'super') return true;
   if (!d) return false;
-  if (A.enf) return enfHeld(A, d, key);
-  try { return !!KIVO_REGISTRY.can(key, permv2Ctx(A, d)).ok; } catch (e) { return false; }
+  return enfHeld(A, d, key);
 }
 /* ── مفاتيحُ المخازن ── */
 function tkK(d) { return 'bsdept:' + d + ':bassam_tasks_v1'; }

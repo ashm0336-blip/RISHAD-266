@@ -16,7 +16,7 @@ const KU = 'bassam_auth_users_v1', DM = ['0000000101', '70101'];
 const ph = (pw, uid) => { const salt = crypto.createHash('sha256').update('kivo-264-tasks-fixture|' + uid).digest().subarray(0, 16); return 'p2$100000$' + salt.toString('hex') + '$' + crypto.pbkdf2Sync(pw, salt, 100000, 32, 'sha256').toString('hex'); };
 const show = (r) => JSON.stringify({ st: r.status, revs: r.j && r.j.revs, denied: r.j && r.j.denied && Object.fromEntries(Object.entries(r.j.denied).map(([k, v]) => [k, v && v.why])) });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   const saveU = async (W, ck, fn) => {
     const g = (await W.C.api('/api/get?keys=' + KU, { cookie: ck })).j.keys[KU], L = JSON.parse(g.v); fn(L);

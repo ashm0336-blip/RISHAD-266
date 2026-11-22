@@ -47,7 +47,7 @@ const clean = (r, k) => { assert.equal(r.status, 200, JSON.stringify(r.j).slice(
 /* what 280 saveAck9 requires of an answer: nothing about a key the request did not carry */
 const onlyAbout = (r, keys) => { for (const kind of ['revs', 'denied', 'conflicts']) for (const k of Object.keys(r.j[kind] || {})) assert.ok(keys.includes(k), kind + ' names a key the request did not carry: ' + k); };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('(a) ' + mode + ': deleting a node through the normal save removes its ceiling records — other records byte-identical', async () => {
     const P0 = registry(N), W = await world(mode, { nodes: [node(G), node(N, G)], perms: P0 }), r0 = rev(W.DB, KP);
     const r = await W.save({ [KG]: JSON.stringify([node(G)]) });

@@ -24,7 +24,7 @@
   function tabAct(){ try { var ss = window.sessionStorage; return ss ? SSG.call(ss, ACT_K) : null; } catch(e){ return null; } }
   function tabActSet(v){ try { var ss = window.sessionStorage; if (!ss) return; if (v == null) SSD.call(ss, ACT_K); else SSS.call(ss, ACT_K, String(v)); } catch(e){ /* مخزنُ الجلسة ممنوع — تبقى قيمةُ الجهاز وحدها */ } }
 
-  /* R180: bassam_dstats_v1 — «الإحصائيات اليومية» صُمّمت مفتاحاً عامّاً واحداً للحرمين (R170) لكنه لم يُدرج
+  /* R180: مفتاحُ «الإحصائيات اليومية» صُمّم مفتاحاً عامّاً واحداً للحرمين (R170) لكنه لم يُدرج
      هنا، فكانت كتابتُه تذهب إلى الإدارة النشطة: لكلِّ إدارةٍ نسخةٌ، ولا يقرؤها الخادمُ لغير مدير النظام */
   var GLOBAL = { 'bassam_depts_v1':1, 'bassam_gdepts_v1':1, 'bassam_active_dept_v1':1, 'bassam_theme':1, 'bassam_auth_users_v1':1, 'bassam_session_v1':1, 'bassam_perms_v1':1, 'bassam_platform_v1':1, 'bassam_notif_mute_v1':1 };
   var PREFIX = 'bsdept:';
@@ -91,9 +91,7 @@
      الذاكرة تحدّثت، ثم يختفي عند إعادة التحميل لأن الكتابة فشلت ولم يُبلَّغ أحد.
      الإنذار هنا عند مصدر الكتابة الوحيد فيغطي كل المسارات الحالية والمستقبلية،
      ثم يُعاد رمي الاستثناء كما هو حتى لا يتغيّر منطق التراجع القائم. */
-  var LABELS = { 'bassam_employees_v1':'قائمة الموظفين', 'bassam_staffing_v3':'الجدول الشهري', 'bassam_staffing_snap_v1':'بيان الشهر',
-                 'bassam_rounds_v1':'جولات المتابعة اليومية',@@SYS:deptStore.labels.tasks@@
-                 'bassam_plan_v1':'الخطة التشغيلية' };
+  var LABELS = { 'bassam_employees_v1':'قائمة الموظفين',@@SYS:deptStore.labels.staff@@@@SYS:deptStore.labels.daily@@@@SYS:deptStore.labels.tasks@@@@SYS:deptStore.labels.plan@@ };
   var warned = 0;
   function isQuota(e){
     if (!e) return false;
@@ -222,8 +220,8 @@
     permSlice: function(pm, id, PP, mode, pageKeys, lensKeys){
       if (!id || !PP || typeof PP !== 'object' || Array.isArray(PP)) return null;
       pm = (pm && typeof pm === 'object' && !Array.isArray(pm)) ? pm : {};
-      var KP = Array.isArray(pageKeys) && pageKeys.length ? pageKeys : ['emps','staff','plan','daily',@@SYS:deptStore.pageKeys.tasks@@'admin'];
-      var KL = Array.isArray(lensKeys) && lensKeys.length ? lensKeys : ['paths','gates','marks','dist','dens'];
+      var KP = Array.isArray(pageKeys) && pageKeys.length ? pageKeys : ['emps',@@SYS:deptStore.pageKeys.staff@@@@SYS:deptStore.pageKeys.plan@@@@SYS:deptStore.pageKeys.daily@@@@SYS:deptStore.pageKeys.tasks@@'admin'];
+      var KL = Array.isArray(lensKeys) ? lensKeys : ['paths','gates','marks','dist','dens'];   /* V7 · د5-ح: قائمةٌ فارغة = لا عدسة (قطعتُها غائبة) — لا رجوعَ إلى القائمة القديمة */
       pm.caps = pm.caps || {}; pm.emps = pm.emps || {};
       var hasCur = (pm.caps[id] || []).length > 0 || Object.keys(pm.emps[id] || {}).length > 0;
       if (!(mode === 'replace' || !hasCur)) return null;

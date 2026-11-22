@@ -43,7 +43,7 @@ function enfEmpCanon(v, tk, ek) {
 function enfScopeEval(A, d, k, rn, a, b, keys, X) {
   if (!keys.length) return { composite: 'not_applicable', denyDims: [], unknownDims: [], items: 0, why: '' };
   /* F24: تسكينٌ برقم الموظف أو هويته أو اسمه يُقرأ مفتاحَ حسابه قبل المقيِّم المرجعي (Assigned يقارن بـekey وحده) — للتقييم وحده */
-  var ek = String(A.u.ekey || ''), tk = ek && X && X.emps && (rn === 'bassam_rounds_v1' || rn === 'bassam_plan_v1') ? enfToksOf(X.emps[d], ek) : null;
+  var ek = String(A.u.ekey || ''), tk = ek && X && X.emps && (@@SYS:enf.scopeToks.daily|empty="false"@@@@SYS:enf.scopeToks.plan@@) ? enfToksOf(X.emps[d], ek) : null;
   if (tk && Object.keys(tk).length > 1) { a = enfEmpCanon(a, tk, ek); b = enfEmpCanon(b, tk, ek); }
   var cx = enfScopeCtx(A, d, k, enfHeldMap(A, d, keys), X, 'write');
   var W = KIVO_SCOPE.evaluateWrite(keys, cx.actor, rn, a, b, cx), whys = [], key, r, i;

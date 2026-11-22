@@ -1,3 +1,4 @@
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { TEST_SUPER_USERNAME, TEST_SUPER_PIN } from '../../../../tests/unit/harness.mjs';
 /* KIVO_265 · حادثةُ الصور (إدارة سقيا زمزم · 2026-10-19) — البنود 2–5 من قائمة صفحة المهام، على العامل الحقيقي بالوضعين:
      task-own  الحفظُ الخامّ لا يمحو توثيقَ الموظف: صورةُ إثباتٍ تغيب · تسليمٌ (21.sub) أو بدءٌ (11) يقلّ — ولو كان الصفُّ مكرّرَ الهوية (لا يحميه tkKeepSelf)
@@ -29,7 +30,7 @@ const own = (W, img) => W.env.DB.q('SELECT st, k, ts FROM imgown WHERE img = ?',
 const inStore = (W, img) => W.env.DB.q('SELECT COUNT(*) AS n FROM imgs WHERE k = ?', img)[0].n > 0;
 const rowOf = (S, id) => { for (const d in S) { const r = (S[d] || []).find((q) => Array.isArray(q) && q[13] === id); if (r) return { d, r, i: S[d].indexOf(r) }; } return null; };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'task-own: حفظُ المدير لا يُنقص توثيقَ الموظف — صورةٌ تغيب · تسليمٌ يُنزع · بدءٌ يُنزع ⇒ مرفوض · وتعديلُ العنوان مع التوثيق كما هو يمرّ', async () => {

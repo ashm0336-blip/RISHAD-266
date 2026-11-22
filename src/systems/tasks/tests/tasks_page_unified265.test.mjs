@@ -44,6 +44,11 @@ async function page(W, ck, storeJson, emps, users) {
   KIVO.BassamSup = { isSup: () => false };
   class DCLogic { constructor() { this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); cb && cb(); } }
   ctx.DCLogic = DCLogic;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/core/060-bus.js'), 'utf8'), ctx);   /* V7 · د5-د: الناقل (قلب المنصة) وروابطُ الجدول الشهري عليه — الصفحاتُ تسأل بالاسم */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   /* بلا جدولٍ شهريّ في الصفحة: الموظفون كلُّهم «مداومون» (onDutyToday بلا التسكين) */
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn(k) { return k !== 'staff'; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
@@ -55,7 +60,7 @@ async function page(W, ck, storeJson, emps, users) {
 }
 const usersOf = (W) => stored(W.env, 'bassam_auth_users_v1').filter((u) => u.deptId === D).map((u) => ({ id: u.id, role: u.role, deptId: u.deptId, ekey: u.ekey, dis: u.dis, mgr: u.mgr }));
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) R-2 «قبولٌ نيابةً»: بلا حساب · معطَّل · برقم الهوية معلَّمون بالسبب ولا يُختارون — والنشطُ يُختار', async () => {

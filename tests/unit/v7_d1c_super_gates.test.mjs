@@ -16,7 +16,7 @@ let loads = 0;
 async function load() {
   const src = fs.readFileSync(WORKER, 'utf8');
   const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'd1c-')), f = path.join(dir, 'w.mjs');
-  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, actorOf, enfModeOf, enfAttachGrants, myPermsOf, actsHeldOn, authorize0, resOnCeiling, nfPage, enfHeld, imgWriteOk, NF_TYPES, PG_KEYS, pgLeaves, ACTS_ALL, KIVO_REGISTRY, RES_REG };\n');
+  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, actorOf, enfModeOf, enfAttachGrants, myPermsOf, actsHeldOn, resOnCeiling, nfPage, enfHeld, imgWriteOk, NF_TYPES, PG_KEYS, pgLeaves, ACTS_ALL, KIVO_REGISTRY, RES_REG };\n');
   try { return await import(pathToFileURL(f).href + '?n=' + (++loads)); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 const D = 'TEST_ONLY_d0';
@@ -38,7 +38,7 @@ async function actor(W, mode) {
   return A;
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('V7 · د1-ج · ' + mode + ': أبوابُ الصلاحية في الخادم لا ترفض مدير المنصة على إدارةٍ سقفُها فارغ ووحداتُها مطفأة', { timeout: 300000 }, async (t) => {
     const W = await load(), A = await actor(W, mode), out = [];
     let n = 0; const chk = (ok, label) => { n++; if (!ok) out.push(label); };
@@ -49,8 +49,10 @@ for (const mode of ['legacy', 'enforce']) {
     for (const r of RES) {
       const R = W.RES_REG[r], k = 'bsdept:' + D + ':' + r;
       chk(W.resOnCeiling(A, D, R), 'resOnCeiling ' + r);
+      /* V7 · د5-ح (13): موردٌ تكتبه خطوةُ خادمٍ وحدها (srv — أرشيفُ الجولات) لا يكتبه أحدٌ من العميل ولا مديرُ المنصة — فلا تُكتب صورتُه؛ ويُثبَّت رفضُه */
+      if (R.srv) { assert.equal(W.imgWriteOk(A, k), false, 'srv: ' + r); continue; }
       chk(W.imgWriteOk(A, k), 'imgWriteOk ' + r);   /* كتابةُ الصورة = كتابةُ مورد مالكها (054 · 060 enfImgWriteOk) */
-      if (!R.rule) for (const a of ['view', 'add', 'edit', 'del']) { const z = W.authorize0(A, k, a); chk(z.ok, 'authorize0 ' + r + ':' + a + ' (' + z.why + ')'); }
+      /* V7 · د5-ح: authorize0 (حكمُ الوضع القديم) حُذف */
     }
     for (const type of Object.keys(W.NF_TYPES)) chk(W.nfPage(A, D, type, W.NF_TYPES[type].k, 'view'), 'nfPage ' + type);
     if (mode === 'enforce') for (const key of W.KIVO_REGISTRY.keys) { const e = W.KIVO_REGISTRY.byKey[key]; if (e && e.status === 'active') chk(W.enfHeld(A, D, key), 'enfHeld ' + key); }

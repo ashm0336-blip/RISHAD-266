@@ -47,7 +47,7 @@ async function setup(t,emitted){
  K.__BS_AUTHZ=true;K.BassamAuth={user:()=>B.users.find(u=>u.id===IDS.manager1)};K.BassamDepts={active:()=>D1};K.BassamCount=n=>String(n);
  const source=emitted?bytes('src/api/280-server-storage.js'):fs.readFileSync(path.join(ROOT,'src/api/280-server-storage.js'),'utf8');vm.runInContext(source,T.ctx,{filename:emitted?'emitted280':'source280'});
  const service=K.__BS_SRV.operations;assert.equal((await service.read([KEY])).ok,1);
- const daily=emitted?bytes('src/modules/daily/logic.js'):fs.readFileSync(path.join(ROOT,'src/modules/daily/logic.js'),'utf8');
+ const daily=emitted?bytes('src/systems/daily/client/logic.js'):fs.readFileSync(path.join(ROOT,'src/systems/daily/client/logic.js'),'utf8');
  const page={_opService:()=>service,_opDrafts:{[NAME]:service.draft()},bsToast:(message)=>toasts.push(message)};page._opCommit=vm.runInContext('({'+member(daily,'_opCommit')+'})._opCommit',T.ctx);
  const desired=copy(before);desired[dk].d[0].zones.push({uid:'TEST_ONLY_SCOPE_ZONE',d:'M1 1 L11 1 L11 11 L1 11 Z',code:'01',ser:'01',cat:'men',rawA:100,cx:6,cy:6,count:null,pc:{},emp:[],kind:null,hideLabel:true});
  t.after(()=>T.dispose());return{B,T,K,service,page,toasts,control,before,desired,protectedBefore,dk};

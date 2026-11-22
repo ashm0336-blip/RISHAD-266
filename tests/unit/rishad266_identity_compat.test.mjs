@@ -24,6 +24,7 @@ function declaration(source, name) {
 function world() {
   const DB = new D1Shim();
   DB.exec(read('migrations/0001_baseline.sql'));
+  DB.exec(read('migrations/0011_session_device.sql'));   /* V7 · د5-هـ (x1): the login route writes the device columns of sess */
   const context = vm.createContext({
     crypto: webcrypto, TextEncoder, Response, Uint8Array,
     PBKDF2_ITER: 100000, PBKDF2_MAX: 100000, PW_MIN: 6, CHUNK: 80000,
@@ -34,6 +35,7 @@ function world() {
     reqMeta: () => ({ ip: 'unit-test', city: '', dev: '' }),
     secAr: String, secLog: async () => {}, setCookie: (token) => ({ 'Set-Cookie': 'fixture=' + token }),
     redactPh: (value) => value, swallow: () => {},
+    enfUnmigratedFor: () => false, ENF_UNMIG_MSG: 'TEST_ONLY',   /* V7 · د5-ح: بوابةُ «unmigrated» في الدخول (056) — هذا العالمُ مختومٌ enforce */
   });
   const storage = read('workers/parts/054-image-contract.js');
   vm.runInContext(read('workers/parts/052-aud-events.js') + '\n' +

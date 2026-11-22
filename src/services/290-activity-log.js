@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/services/290-activity-log.js.tpl */
 
 /* ═══ سجلُّ الأنشطة والتغييرات — المعرّفاتُ الثابتة وعرضُ السجل في المتصفح (Candidate 205 / R169) ═══
    الأحداثُ تُحسب وتُدوَّن على الخادم؛ وهذا الملفّ يبقي في المتصفح ما يلزم الكتابةَ والعرض فقط:
@@ -114,7 +115,7 @@
     return rows;
   }
   function clock(ts) { try { var d = new Date(+ts); var h = d.getHours(), m = d.getMinutes(); return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + (h >= 12 ? ' م' : ' ص'); } catch (e) { return ''; } }
-  function dateTxt(ts) { try { var d = new Date(+ts); var H = KIVO.BassamHijri && KIVO.BassamHijri.now ? KIVO.BassamHijri.now(d) : null; return (H ? H.d + ' ' + (MONTHS[H.m - 1] || H.m) + ' ' + H.y : d.toLocaleDateString('ar-SA')); } catch (e) { return ''; } }
+  function dateTxt(ts) { try { var d = new Date(+ts); var H = KIVO.BassamCal.hNow(d, null); return (H ? H.d + ' ' + (MONTHS[H.m - 1] || H.m) + ' ' + H.y : d.toLocaleDateString('ar-SA')); } catch (e) { return ''; } }
   function rowVM(r) {
     return { id: r.id, ts: r.ts, t: clock(r.ts), date: dateTxt(r.ts), by: r.name || r.un || '—', act: describe(r), actKey: r.act, etype: r.etype, eid: r.eid, ename: r.ename || '', ctx: ctxText(r.ctx), deleted: r.act === 'deleted', details: detailRows(r), dev: r.dev === 'm' ? 'جوال' : r.dev === 'd' ? 'حاسوب' : '', city: r.city || '', dept: r.dept || '' };
   }

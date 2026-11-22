@@ -2,8 +2,8 @@
 var rsPermSlice = function(pm, id, PP, mode, pageKeys, lensKeys){
       if (!id || !PP || typeof PP !== 'object' || Array.isArray(PP)) return null;
       pm = (pm && typeof pm === 'object' && !Array.isArray(pm)) ? pm : {};
-      var KP = Array.isArray(pageKeys) && pageKeys.length ? pageKeys : ['emps','staff','plan','daily','tasks','admin'];
-      var KL = Array.isArray(lensKeys) && lensKeys.length ? lensKeys : ['paths','gates','marks','dist','dens'];
+      var KP = Array.isArray(pageKeys) && pageKeys.length ? pageKeys : ['emps','staff','plan','plan','daily','tasks','admin'];
+      var KL = Array.isArray(lensKeys) ? lensKeys : ['paths','gates','marks','dist','dens'];   /* V7 · د5-ح: قائمةٌ فارغة = لا عدسة (قطعتُها غائبة) — لا رجوعَ إلى القائمة القديمة */
       pm.caps = pm.caps || {}; pm.emps = pm.emps || {};
       var hasCur = (pm.caps[id] || []).length > 0 || Object.keys(pm.emps[id] || {}).length > 0;
       if (!(mode === 'replace' || !hasCur)) return null;

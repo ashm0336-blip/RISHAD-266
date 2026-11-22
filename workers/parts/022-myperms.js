@@ -18,6 +18,7 @@ function myPermsOf(A, d) {
     if (!deptInScope(A, d)) return {};
     return hasOwnSheetOf(A, u.ekey, d) ? empPermsOf(A, u.ekey, d) : capAllPermsOf(A, d);
   }
+  if (u.role === 'display') return u.deptId === d ? dispViewOf(capAllPermsOf(A, d)) : {};   /* V7 · د5-هـ (x1): شاشةُ العرض — سقفُ إدارتها قراءةً وحدها */
   /* F01: مديرُ الإدارة الأم في قسمها — كمدير العقدة على وحداته: ورقتُه الصريحة فيه إن وُجدت وإلا سقفُ القسم كلُّه */
   if (u.deptId !== d) return secMgrOf(A, d) ? (hasOwnSheetOf(A, u.ekey, d) ? empPermsOf(A, u.ekey, d) : capAllPermsOf(A, d)) : {};
   if (u.role === 'dept') return (DEPT_SHEET && hasOwnSheetOf(A, u.ekey, d)) ? empPermsOf(A, u.ekey, d) : capAllPermsOf(A, d);
@@ -27,4 +28,5 @@ function myPermsOf(A, d) {
   }
   return {};
 }
-
+/* V7 · د5-هـ (x1): ورقةُ «شاشة العرض»: كلُّ ورقةٍ فيها view تبقى view وحده — لا إضافة ولا تعديل ولا حذف ولا اعتماد ولا تصدير */
+function dispViewOf(p) { var o = {}, k; for (k in p) if (Array.isArray(p[k]) && p[k].indexOf('view') !== -1) o[k] = ['view']; return o; }

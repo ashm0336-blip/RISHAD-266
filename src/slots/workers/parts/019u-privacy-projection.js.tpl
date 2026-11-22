@@ -19,7 +19,7 @@
             token too and are marked redacted.
          gender: kept also for readers of the monthly schedule (staff) and the daily report (dreport): both pages count and show the
                  male/female distribution of the shift (modules/staff/logic.js · modules/dreport/logic.js). Removed elsewhere.
-   (2) Daily report bsdept:<d>:bassam_dreport_v1 — roster rows carry a copy of empno (pulled from the register): same rule as (1).
+   (2) Daily report (its per-department report resource) — roster rows carry a copy of empno (pulled from the register): same rule as (1).
    (2b) Custody read (/api/custody · 019a): each row carries the holder's nid/empno snapshot — same rule as (1).
    (3) Permissions registry bassam_perms_v1 — a non-super actor receives: caps/subs/lenses of the units in his scope and their
        ancestor nodes; emps/tplOf/empLens of a unit he manages for himself and for every employee he may administer (permTargetOk ·
@@ -45,14 +45,14 @@
    kept: a record equal to the stored one is the stored object); a hidden part PRESENT in the incoming value is left as sent, so the
    existing rules judge it (an unauthorised change is denied, never silently applied). Super: unchanged both ways. */
 var PRIV_EMP_F = ['nid', 'phone', 'email', 'empno', 'contact'];
-var PRIV_EMP_RES = 'bassam_employees_v1', PRIV_DR_RES = 'bassam_dreport_v1', PRIV_PERM_KEY = 'bassam_perms_v1';
+var PRIV_EMP_RES = 'bassam_employees_v1', PRIV_DR_RES = @@SYS:priv.drRes.dreport|empty="null"@@, PRIV_PERM_KEY = 'bassam_perms_v1';
 var PRIV_PERM_EMPK = { emps: 1, tplOf: 1, empLens: 1 }, PRIV_PERM_UNITK = { caps: 1, subs: 1, lenses: 1, capOwn: 1 };   /* capOwn: caps-own per-unit mode (021) */
 function privOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 function privPut(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true }); }   /* «__proto__» stays data */
 function privCopy(o) { var r = {}, k; for (k in o) if (privOwn(o, k)) privPut(r, k, o[k]); return r; }
-/* per-actor, per-unit decision cache · one of the enforcement keys ek (or legacy 'page:act' lk) held in unit d */
+/* per-actor, per-unit decision cache · one of the enforcement keys ek held in unit d (V7 · د5-ح: المحرّكُ النافذ وحده) */
 function privMemo(A, slot, d, fn) { var c = A[slot] || (A[slot] = nmap()); return c[d] !== undefined ? c[d] : (c[d] = !!fn()); }
-function privHeld(A, d, ek, lk) { return A.enf ? ek.some(function (k) { return enfHeld(A, d, k); }) : lk.some(function (k) { var i = k.lastIndexOf(':'); return actsHeldOn(A, d, k.slice(0, i), [k.slice(i + 1)]); }); }
+function privHeld(A, d, ek) { return ek.some(function (k) { return enfHeld(A, d, k); }); }
 /* arr.map(fn), the same array when no element changed */
 function privMap(arr, fn) { var ch = 0, o = arr.map(function (x, i) { var y = fn(x, i); if (y !== x) ch++; return y; }); return ch ? o : arr; }
 /* holder of the employees-data write actions, or manager of the unit */
@@ -60,11 +60,11 @@ function privPersonalOk(A, d) {
   if (!A || !A.u) return false;
   if (A.u.role === 'super') return true;
   if (!d || !deptInScope(A, d)) return false;
-  return privMemo(A, '__privP', d, function () { return isMgrOf(A, d) || privHeld(A, d, ['emp.record.create', 'emp.record.edit'], ['emps/data:add', 'emps/data:edit']); });
+  return privMemo(A, '__privP', d, function () { return isMgrOf(A, d) || privHeld(A, d, ['emp.record.create', 'emp.record.edit']); });
 }
 /* readers of the two pages that use gender operationally (distribution of the shift) */
 function privGenderOk(A, d) {
-  return privPersonalOk(A, d) || privMemo(A, '__privG', d, function () { return privHeld(A, d, ['staff.view', 'report.view'], ['staff:view', 'dreport:view']); });
+  return privPersonalOk(A, d) || privMemo(A, '__privG', d, function () { return privHeld(A, d, [@@SYS:priv.gender.keys.staff@@@@SYS:priv.gender.keys.dreport@@]); });
 }
 function privSelfRec(A, e) {
   var ek = String((A && A.u && A.u.ekey) || '');
@@ -268,7 +268,7 @@ function privPermsStale(A, ps, nRaw, cRaw) {
   return privPermsOmits(A, parseJson(String(nRaw), null), parseJson(String(cRaw), null)) ? 'perms-stale-client' : '';
 }
 /* (4) references by nid */
-var PRIV_TOK_RES = { bassam_staffing_v3: 1, bassam_staffing_v2: 1, bassam_staffing_snap_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1, bassam_dreport_v1: 1@@SYS:priv.tokRes.tasks@@ };
+var PRIV_TOK_RES = { @@SYS:priv.tokRes.staff@@@@SYS:priv.tokRes.plan@@@@SYS:priv.tokRes.daily|empty="...{}"@@@@SYS:priv.tokRes.dreport@@@@SYS:priv.tokRes.tasks@@ };
 var PRIV_NO = { privacy: 'hidden' };   /* privIn: the incoming value changes a hidden reference ⇒ refused (054) */
 /* { M: nid→eid, R: eid→nid } of the records of unit d whose nid the actor does not receive, or null; have: raw values by key */
 function privTok(A, d, have) {
@@ -345,7 +345,7 @@ function privTokIn(n, c, T, st) {
    grants register (read by the managers' permission page only). */
 async function privPrepDepts(env, A, ds) {
   if (!A || !A.u || A.u.role === 'super') return;
-  await privPrep(env, A, (ds || []).filter(function (d) { return d && deptInScope(A, d) && !privPersonalOk(A, d); }).map(function (d) { return 'bsdept:' + d + ':@@SYS:priv.carrier|empty="bassam_dreport_v1"@@'; }));
+  await privPrep(env, A, (ds || []).filter(function (d) { return d && deptInScope(A, d) && !privPersonalOk(A, d); }).map(function (d) { return 'bsdept:' + d + ':@@SYS:priv.carrier|empty="@@SYS:priv.carrier.dreport|empty=\"@@SYS:priv.carrier.daily|empty=\\\"' + (Object.keys(PRIV_TOK_RES)[0] || '') + '\\\"@@\"@@"@@'; }));
 }
 function privKeyOut(A, d, k) { var T = A && A.__privTok && A.__privTok[d]; return T && k != null && T.M[String(k)] !== undefined ? T.M[String(k)] : k; }
 /* an account row as a reader sees it (054 usersLens): its ekey projected */
@@ -406,6 +406,7 @@ async function privRestoreBlanks(env, cur, keys, domains) {
 @@SYS:privacy.custody.fns@@/* ── entry points: raw JSON text in, raw JSON text out (unchanged text when nothing is hidden) ── */
 function privOut(A, k, raw, have) {
   if (raw == null || !A || !A.u || A.u.role === 'super') return raw;
+  k = resReadAs(k);   /* V7 · د5-ح (13): 023 RES_READ_AS */
   var P = parseKey(k), rn = resName(k), v, p, T;
   if (!P.dept && P.name === PRIV_PERM_KEY) { v = parseJson(raw, undefined); if (v === undefined) return raw; p = privPermsOut(A, v); }
   else if (P.dept && (rn === PRIV_EMP_RES || rn === PRIV_DR_RES || PRIV_TOK_RES[rn])) {
@@ -445,10 +446,8 @@ function bkExportOk(A, d) {
   if (A.u.role === 'dept') return false;
   if (!d || !deptInScope(A, d)) return false;
   return privMemo(A, '__bkX', d, function () {
-    if (!privHeld(A, d, ['backup.view'], ['admin/backup:view'])) return false;
-    if (isMgrOf(A, d) || privHeld(A, d, ['backup.create', 'backup.restore'], ['admin/backup:add', 'admin/backup:edit'])) return true;
-    if (A.enf) return false;
-    try { return KIVO_GUARDS.decide('backup.restore', permv2Ctx(A, d)).ok; } catch (e) { return false; }
+    if (!privHeld(A, d, ['backup.view'])) return false;
+    return isMgrOf(A, d) || privHeld(A, d, ['backup.create', 'backup.restore']);
   });
 }
 /* backup.view as a read key of every department collection (RD_ANY · readKeysFor): only for its own stamp, or for an exporter */

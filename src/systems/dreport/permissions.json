@@ -1,0 +1,3035 @@
+{
+ "schema": 1,
+ "system": "dreport",
+ "note": "V7 · د5: صلاحياتُ هذا النظام — صفوفُه في السجلّ (المفاتيح · الورقة · الذرّات · الأعلام) وروابطُه في الخادم (النطاق · الحراسة)، وما يضيفه إلى صفوف القاعدة. تجمعها tools/perm_parts.py مع القاعدة.",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 170,
+    "value": {
+     "key": "report.view",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "عرض التقرير",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "قراءة bassam_dreport_v1, bassam_dr_grp_v1, bassam_leave_kinds_v1, bassam_dayshift_v1, bassam_dayfocus_v1 بورقة dreport (RD_REG/DS_READ)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 180,
+    "value": {
+     "key": "report.create",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "إنشاء تقرير/وردية",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "bassam_dreport_v1 يوم/وردية جديد (add) — سحب التقرير من الجدول (snap SNAP_CS_ONLY)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.create"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 190,
+    "value": {
+     "key": "report.edit",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "تعديل بيانات التقرير",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "bassam_dreport_v1 صفوف الموظفين (edit) عدا حقول الحضور المميّزة",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 200,
+    "value": {
+     "key": "report.approve",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "اعتماد الوردية/اليوم",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "*.shifts.*.ap/apAt/apBy · dshut — اتجاه الاعتماد/الإغلاق",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.approve"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 1,
+    "seq": 210,
+    "value": {
+     "key": "report.reopen",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "إعادة فتح التقرير",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "ops",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "dopen / إزالة ap — اتجاه الفتح",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:approve"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.reopen"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 140,
+    "value": {
+     "key": "report.transfer",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "تحويل موظف بين المواقع/الورديات",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "bassam_dreport_v1: نقل صف الموظف بين الورديات/المواقع (edit)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.transfer"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 150,
+    "value": {
+     "key": "report.att.absence",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "تسجيل غياب",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "bassam_dreport_v1 [\"y-m-d\"].shifts[sh].roster[ekey].st → 'ab' (غياب) — والعودةُ منها إلى 'pr' بالمفتاح نفسِه",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.att.absence"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 160,
+    "value": {
+     "key": "report.att.leave",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "تسجيل إجازة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "roster[ekey].st → 'lv' (إجازة) مع lvk نوعُ الإجازة (ref.leave_type)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.att.leave"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 170,
+    "value": {
+     "key": "report.att.late_in",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "تسجيل تأخر عن بداية الوردية",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "roster[ekey].st → 'pm' مع pmk === 'in' (استئذانُ دخول = تأخّرٌ عن بداية الوردية) — أثرٌ داخليّ: سجلُّ النصاب الشهري [\"m:y-m\"].perm[ekey] (Backend Rule rule.report.permission_quota) يُكتب/يُنشأ بهذا المفتاح نفسِه بلا report.create ولا add عام",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.att.late_in"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 180,
+    "value": {
+     "key": "report.att.early_out",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "تسجيل انصراف مبكر",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "field",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "roster[ekey].st → 'pm' مع pmk === 'out' (الافتراضي؛ استئذانُ خروج = انصرافٌ مبكر) — أثرٌ داخليّ: سجلُّ النصاب الشهري [\"m:y-m\"].perm[ekey] (rule.report.permission_quota) يُكتب/يُنشأ بهذا المفتاح نفسِه",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.att.early_out"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 190,
+    "value": {
+     "key": "report.callsign.assign",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "إسناد رمز نداء داخل التقرير",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "via",
+      "resources": [
+       "bassam_dreport_v1",
+       "bassam_dr_grp_v1",
+       "bassam_leave_kinds_v1",
+       "bassam_dayshift_v1",
+       "bassam_dayfocus_v1"
+      ],
+      "detail": "via dreport:'CS_ONLY' — حقل cs فقط",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "report.callsign.assign"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 200,
+    "value": {
+     "key": "ref.leave_type.view",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "عرض أنواع الإجازات",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_leave_kinds_v1"
+      ],
+      "detail": "قراءة القائمة المرجعية bassam_leave_kinds_v1 → kinds[] بورقة المالك (RD)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:view"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.leave_type.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 210,
+    "value": {
+     "key": "ref.leave_type.create",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "إضافة نوع إجازة",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_leave_kinds_v1"
+      ],
+      "detail": "إضافة قيمة في bassam_leave_kinds_v1 → kinds[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:add"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.leave_type.add"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 220,
+    "value": {
+     "key": "ref.leave_type.delete",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "حذف نوع إجازة",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_leave_kinds_v1"
+      ],
+      "detail": "حذف قيمة في bassam_leave_kinds_v1 → kinds[] (prim/primAct · rename cascade حيث وُجد)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "DateRange",
+      "Shift",
+      "Site"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "ref.leave_type.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 680,
+    "value": {
+     "key": "report.day.delete",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "حذف يوم التقرير اليومي (إعادة ضبط اليوم)",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_dreport_v1"
+      ],
+      "detail": "إزالةُ المفتاح [\"y-m-d\"] من خريطة bassam_dreport_v1 (drRsDo — إعادةُ ضبط اليوم؛ لا يمسّ [\"m:y-m\"]) — AS‑IS: classifyMutation/cmpMap يصنّفه del على الورقة dreport",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:del"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 25,
+    "seq": 10,
+    "value": {
+     "key": "report.indicators.view",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "عرض مؤشرات التشغيل اليومي",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [
+       "bassam_dreport_v1"
+      ],
+      "detail": "قراءة بورقة dreport (RD_REG)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "DateRange",
+      "Shift"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:view"
+     ],
+     "references": [
+      "kpis"
+     ],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [
+      "lens.dist.indicators.daily.view"
+     ],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 25,
+    "seq": 20,
+    "value": {
+     "key": "ref.leave_type.edit",
+     "owner": "dreport",
+     "ownerKind": "page",
+     "domain": "dreport",
+     "label": "تعديل نوع إجازة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [
+       "bassam_leave_kinds_v1"
+      ],
+      "detail": "primRoot/primAct=edit — إعادة تسمية القيمة البدائية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "dreport:edit"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.shift.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": "dreport"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.dist.assign.edit"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": "dreport",
+    "needs": [
+     "_shared/lenses"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": "dreport"
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 2,
+    "seq": 30,
+    "value": {
+     "id": "dreport",
+     "kind": "page",
+     "label": "التقرير اليومي",
+     "manifest": "page",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 130,
+    "value": {
+     "leaf": "dreport",
+     "act": "view",
+     "disposition": "migrated",
+     "targets": [
+      "report.view",
+      "report.indicators.view",
+      "ref.leave_type.view"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 140,
+    "value": {
+     "leaf": "dreport",
+     "act": "add",
+     "disposition": "migrated",
+     "targets": [
+      "report.create",
+      "ref.leave_type.create"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 150,
+    "value": {
+     "leaf": "dreport",
+     "act": "edit",
+     "disposition": "migrated",
+     "targets": [
+      "report.edit",
+      "report.att.absence",
+      "report.att.leave",
+      "report.att.late_in",
+      "report.att.early_out",
+      "report.transfer",
+      "report.callsign.assign",
+      "ref.leave_type.edit"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 160,
+    "value": {
+     "leaf": "dreport",
+     "act": "del",
+     "disposition": "migrated",
+     "targets": [
+      "report.day.delete",
+      "ref.leave_type.delete"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 170,
+    "value": {
+     "leaf": "dreport",
+     "act": "approve",
+     "disposition": "migrated",
+     "targets": [
+      "report.approve",
+      "report.reopen"
+     ]
+    }
+   },
+   {
+    "path": [
+     "atoms"
+    ],
+    "after": 12,
+    "seq": 180,
+    "value": {
+     "leaf": "dreport",
+     "act": "export",
+     "disposition": "converted_to_feature",
+     "targets": [
+      "ff.report.export"
+     ]
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 12,
+    "seq": 40,
+    "value": "ff.module.dreport.enabled"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "staff.rest"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": "dreport",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "staff.callsign.assign"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": "dreport",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.callsign.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 0,
+    "value": "dreport",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ref.leave_type.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 1,
+    "value": "staff",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "report.callsign.assign"
+     },
+     "guard",
+     "detail"
+    ],
+    "sub": "via dreport",
+    "by": "bassam_staffing_v3 via dreport",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "report.indicators.view"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": "bassam_staffing_v3",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي) — ويفتح dreportCleanup حين يفرغ الموظفون"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "bassam_employees_v1: حذف المحدد/الكل (شكل جماعي) — ويفتح awardCleanup/dreportCleanup حين يفرغ الموظفون",
+    "with": [
+     "award"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ التقرير اليومي بشكله القانوني فقط (dreportCleanup)"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "wipeAllowed → 'import' (كان admin/import:del) — تفريغ التقرير اليومي وسجلات الجائزة بشكلها القانوني فقط (dreportCleanup · awardCleanup)",
+    "with": [
+     "award"
+    ]
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "guard",
+     "detail"
+    ],
+    "sub": "bassam_employees_v1, ",
+    "by": "bassam_employees_v1, bassam_dreport_v1, "
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 1,
+    "seq": 20,
+    "value": "bassam_dreport_v1"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "guard",
+     "resources"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_dreport_v1"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 1,
+    "seq": 50,
+    "value": "ff.report.export"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "lens.dist.assign.edit"
+     },
+     "guard",
+     "detail"
+    ],
+    "set": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — كان dreport عبر NO_APPROVAL — تصنيف المجموعة → lens.dist في classifyMutation",
+    "needs": [
+     "_shared/lenses"
+    ]
+   }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 170,
+    "value": {
+     "key": "report.view",
+     "owner": "dreport",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 180,
+    "value": {
+     "key": "report.create",
+     "owner": "dreport",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 190,
+    "value": {
+     "key": "report.edit",
+     "owner": "dreport",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 200,
+    "value": {
+     "key": "report.approve",
+     "owner": "dreport",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 210,
+    "value": {
+     "key": "report.reopen",
+     "owner": "dreport",
+     "type": "decision",
+     "g": "to-bind",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 140,
+    "value": {
+     "key": "report.transfer",
+     "owner": "dreport",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 150,
+    "value": {
+     "key": "report.att.absence",
+     "owner": "dreport",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 160,
+    "value": {
+     "key": "report.att.leave",
+     "owner": "dreport",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 170,
+    "value": {
+     "key": "report.att.late_in",
+     "owner": "dreport",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 180,
+    "value": {
+     "key": "report.att.early_out",
+     "owner": "dreport",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 190,
+    "value": {
+     "key": "report.callsign.assign",
+     "owner": "dreport",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1",
+      "bassam_dr_grp_v1",
+      "bassam_leave_kinds_v1",
+      "bassam_dayshift_v1",
+      "bassam_dayfocus_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (report)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 200,
+    "value": {
+     "key": "ref.leave_type.view",
+     "owner": "dreport",
+     "type": "view",
+     "g": "exists",
+     "res": "bassam_leave_kinds_v1",
+     "resources": [
+      "bassam_leave_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 210,
+    "value": {
+     "key": "ref.leave_type.create",
+     "owner": "dreport",
+     "type": "create",
+     "g": "exists",
+     "res": "bassam_leave_kinds_v1",
+     "resources": [
+      "bassam_leave_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 220,
+    "value": {
+     "key": "ref.leave_type.delete",
+     "owner": "dreport",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_leave_kinds_v1",
+     "resources": [
+      "bassam_leave_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "DateRange": [
+       "na",
+       "no-period-identity (reference/setting)"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "Site": [
+       "na",
+       "no-site-identity (reference/setting)"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 670,
+    "value": {
+     "key": "report.day.delete",
+     "owner": "dreport",
+     "type": "delete",
+     "g": "exists",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 25,
+    "seq": 10,
+    "value": {
+     "key": "report.indicators.view",
+     "owner": "dreport",
+     "type": "access",
+     "g": "exists",
+     "res": "bassam_dreport_v1",
+     "resources": [
+      "bassam_dreport_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "DateRange": [
+       "periodLock"
+      ],
+      "Shift": [
+       "reportShift"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 25,
+    "seq": 20,
+    "value": {
+     "key": "ref.leave_type.edit",
+     "owner": "dreport",
+     "type": "edit",
+     "g": "exists",
+     "res": "bassam_leave_kinds_v1",
+     "resources": [
+      "bassam_leave_kinds_v1"
+     ],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 50,
+    "value": "report.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 60,
+    "value": "report.indicators.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 50,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_employees_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 60,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayshift_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": "report.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayshift_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 40,
+    "value": "report.indicators.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayshift_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayshift_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 40,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayfocus_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": "report.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayfocus_v1",
+     "keys"
+    ],
+    "after": 0,
+    "seq": 40,
+    "value": "report.indicators.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayfocus_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.view",
+     "source": "explicit-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dayfocus_v1",
+     "routes"
+    ],
+    "after": 0,
+    "seq": 40,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 50,
+    "value": "report.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 60,
+    "value": "report.indicators.view"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 50,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_shift_options_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 60,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "reference-read"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "keys"
+    ],
+    "after": 6,
+    "seq": 3,
+    "value": "report.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "keys"
+    ],
+    "after": 6,
+    "seq": 4,
+    "value": "report.indicators.view",
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 8,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_plan_v1",
+     "routes"
+    ],
+    "after": 6,
+    "seq": 9,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "plan"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 4,
+    "value": "report.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 5,
+    "value": "report.indicators.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 4,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_v3",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 5,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "explicit-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": "report.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 2,
+    "value": "report.indicators.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_staffing_locks_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 2,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_callsigns_v1",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 1,
+    "value": "report.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_callsigns_v1",
+     "keys"
+    ],
+    "after": 2,
+    "seq": 2,
+    "value": "report.indicators.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_callsigns_v1",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 1,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_callsigns_v1",
+     "routes"
+    ],
+    "after": 2,
+    "seq": 2,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_limit_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": "report.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_limit_v1",
+     "keys"
+    ],
+    "after": 1,
+    "seq": 2,
+    "value": "report.indicators.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_limit_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 1,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_perm_limit_v1",
+     "routes"
+    ],
+    "after": 1,
+    "seq": 2,
+    "value": {
+     "cap": "dreport:view",
+     "key": "report.indicators.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "report.indicators.view"
+     },
+     "resources"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": "bassam_staffing_v3",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "migration",
+     "DateRange",
+     "evidence"
+    ],
+    "sub": "rounds:",
+    "by": "rounds/dreport:"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "res"
+    ],
+    "set": "bassam_dreport_v1"
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": "ir.rec.view",
+    "needs": [
+     "irshad"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 2,
+    "value": "sz.rec.view",
+    "needs": [
+     "seized"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 3,
+    "value": "staff.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 4,
+    "value": "task.view",
+    "needs": [
+     "tasks"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 1,
+    "value": {
+     "cap": "irshad/records:view",
+     "key": "ir.rec.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "irshad"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 2,
+    "value": {
+     "cap": "seized/records:view",
+     "key": "sz.rec.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "seized"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 3,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_dreport_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 4,
+    "value": {
+     "cap": "tasks:view",
+     "key": "task.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "tasks"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_leave_kinds_v1",
+     "keys"
+    ],
+    "after": 3,
+    "seq": 40,
+    "value": "staff.view",
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource",
+     "bassam_leave_kinds_v1",
+     "routes"
+    ],
+    "after": 3,
+    "seq": 40,
+    "value": {
+     "cap": "staff:view",
+     "key": "staff.view",
+     "source": "reference-read"
+    },
+    "needs": [
+     "staff"
+    ]
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "ready.view"
+     },
+     "resources"
+    ],
+    "after": 1,
+    "seq": 20,
+    "value": "bassam_dreport_v1"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "import.replace"
+     },
+     "resources"
+    ],
+    "after": 0,
+    "seq": 10,
+    "value": "bassam_dreport_v1"
+   },
+   {
+    "path": [
+     "byResource"
+    ],
+    "key": "bassam_dreport_v1",
+    "after": 0,
+    "seq": 30,
+    "value": {
+     "items": "dreportItems",
+     "evidence": "[\"y-m-d\"].shifts[shift] · roster[ekey] · ap/apAt/apBy · m:y-m {ap,mo,dopen,dshut,perm}",
+     "lock": "dreport: m:y-m + shifts[sh].ap — واجهةٌ فقط اليوم",
+     "dims": {
+      "Department": "keyDept",
+      "Branch": "branchCeiling",
+      "Shift": "reportShift",
+      "DateRange": "periodLock"
+     },
+     "na": {
+      "Site": "no-site-identity (report)",
+      "Zone/Element": "no-element-identity",
+      "Assigned": "no-assignment-field",
+      "Own": "no-owner-identity",
+      "Source": "department-resource",
+      "Global": "no-record-scope"
+     }
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_dreport_v1",
+    "after": 21,
+    "seq": 10,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "report.view",
+      "report.indicators.view",
+      "emp.view",
+      "ready.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "dreport:view",
+       "key": "report.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.indicators.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "emps/data:view",
+       "key": "emp.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "planning:view",
+       "key": null,
+       "source": "no-atom"
+      },
+      {
+       "cap": "planning/readiness:view",
+       "key": "ready.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_dr_grp_v1",
+    "after": 21,
+    "seq": 20,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "report.view",
+      "report.indicators.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "dreport:view",
+       "key": "report.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.indicators.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "readBindings",
+     "byResource"
+    ],
+    "key": "bassam_leave_kinds_v1",
+    "after": 21,
+    "seq": 30,
+    "value": {
+     "scope": "dept",
+     "cls": "explicit read permission + explicit special read capability + reference-read routes",
+     "keys": [
+      "report.view",
+      "report.indicators.view",
+      "ref.leave_type.view",
+      "backup.view"
+     ],
+     "routes": [
+      {
+       "cap": "dreport:view",
+       "key": "report.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "report.indicators.view",
+       "source": "reference-read"
+      },
+      {
+       "cap": "dreport:view",
+       "key": "ref.leave_type.view",
+       "source": "explicit-read"
+      },
+      {
+       "cap": "admin/backup:view",
+       "key": "backup.view",
+       "source": "special:backup.view"
+      }
+     ],
+     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+    }
+   },
+   {
+    "path": [
+     "terminology",
+     {
+      "by": "term",
+      "eq": "reopen"
+     },
+     "means"
+    ],
+    "sub": "…",
+    "by": "… · report.reopen"
+   },
+   {
+    "path": [
+     "terminology",
+     {
+      "by": "term",
+      "eq": "reopen"
+     },
+     "means"
+    ],
+    "sub": "staff.reopen · report.reopen",
+    "by": "report.reopen · staff.reopen",
+    "needs": [
+     "staff"
+    ]
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 90,
+    "value": {
+     "key": "report.approve",
+     "res": "bassam_dreport_v1",
+     "where": "[\"y-m-d\"].shifts[sh].ap/apAt/apBy تظهر · [\"m:y-m\"].dshut[d] يظهر · [\"m:y-m\"].dopen[d] يزول",
+     "how": "اتجاه الاعتماد/الإغلاق (drSetAp · drToggleDayLock)",
+     "asis": "dreport:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "dreport",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 100,
+    "value": {
+     "key": "report.reopen",
+     "res": "bassam_dreport_v1",
+     "where": "[\"y-m-d\"].shifts[sh].ap/apAt/apBy تزول · [\"m:y-m\"].dopen[d] يظهر · [\"m:y-m\"].dshut[d] يزول",
+     "how": "اتجاه الفتح",
+     "asis": "dreport:approve",
+     "decl": "",
+     "dup": "",
+     "owner": "dreport",
+     "type": "decision",
+     "guardKind": "ops"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 260,
+    "value": {
+     "key": "report.att.absence",
+     "res": "bassam_dreport_v1",
+     "where": "shifts[sh].roster[ekey].st → \"ab\" (أو العودةُ منها إلى \"pr\")",
+     "how": "حقلُ الحالة على صف الموظف",
+     "asis": "dreport:edit (rpMark بلا PC)",
+     "decl": "إلغاءُ الحالة (العودةُ إلى pr) تُربط بمفتاح الحالة التي أُلغيت",
+     "dup": "",
+     "owner": "dreport",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 270,
+    "value": {
+     "key": "report.att.leave",
+     "res": "bassam_dreport_v1",
+     "where": "roster[ekey].st → \"lv\" (+ lvk نوعُ الإجازة من ref.leave_type)",
+     "how": "حقلُ الحالة",
+     "asis": "dreport:edit",
+     "decl": "",
+     "dup": "",
+     "owner": "dreport",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 280,
+    "value": {
+     "key": "report.att.late_in",
+     "res": "bassam_dreport_v1 (+ [\"m:y-m\"].perm[ekey])",
+     "where": "roster[ekey].st → \"pm\" مع pmk === \"in\" · والأثرُ الداخلي: سجلُّ النصاب الشهري [\"m:y-m\"].perm[ekey] (Backend Rule rule.report.permission_quota)",
+     "how": "حقلُ الحالة + نوعُ الاستئذان؛ تغيّرُ سجل النصاب وحدَه يُصنَّف anyOf(late_in, early_out) لا مفتاحاً مستقلاً",
+     "asis": "dreport:edit (الصف) · dreport:add لأول سجل m:y-m في الشهر (cmpMap) — فارقٌ خشِن موثَّق (F-03)",
+     "decl": "v24.3 (F-02/F-03): لا حالةَ استئذانٍ مستقلة؛ النصابُ أثرٌ داخليٌّ مسموحٌ لمن يملك late_in أو early_out بلا report.create ولا add عام",
+     "dup": "",
+     "owner": "dreport",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 290,
+    "value": {
+     "key": "report.att.early_out",
+     "res": "bassam_dreport_v1 (+ [\"m:y-m\"].perm[ekey])",
+     "where": "roster[ekey].st → \"pm\" مع pmk === \"out\" (الافتراضي) · والأثرُ الداخلي: سجلُّ النصاب الشهري",
+     "how": "حقلُ الحالة + نوعُ الاستئذان؛ سجلُّ النصاب anyOf(late_in, early_out)",
+     "asis": "dreport:edit (الصف) · dreport:add لأول سجل m:y-m",
+     "decl": "v24.3 (F-02/F-03): كما late_in",
+     "dup": "",
+     "owner": "dreport",
+     "type": "edit",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 1,
+    "seq": 60,
+    "value": {
+     "key": "report.transfer",
+     "res": "bassam_dreport_v1",
+     "where": "shifts[A].roster[ekey] يزول + shifts[A].tout[ekey]={to,why} · shifts[B].roster يظهر فيه {ekey, tin:1, tfrom, treason}",
+     "how": "نقلُ صفٍّ بين ورديتَين (rpTransfer)",
+     "asis": "dreport:edit (بلا PC في الواجهة)",
+     "decl": "",
+     "dup": "",
+     "owner": "dreport",
+     "type": "edit",
+     "guardKind": "cap"
+    }
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {})"
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · award.recs [])",
+    "with": [
+     "award"
+    ]
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [])",
+    "with": [
+     "custody"
+    ]
+   },
+   {
+    "path": [
+     "bindings",
+     {
+      "by": "key",
+      "eq": "emp.record.bulk.delete"
+     },
+     "res"
+    ],
+    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · award.recs [])",
+    "with": [
+     "award",
+     "custody"
+    ]
+   },
+   {
+    "path": [
+     "decisions"
+    ],
+    "after": 7,
+    "seq": 10,
+    "value": {
+     "id": "D-17",
+     "topic": "حذفُ يومِ تقريرٍ يوميّ",
+     "status": "حُسم في v24.3 (F-08)",
+     "text": "report.day.delete مفتاحٌ مستقل (exists · asis dreport:del) — المصنِّف يُخرجه بدل __unmapped."
+    }
+   },
+   {
+    "path": [
+     "counts",
+     "emittedKeys"
+    ],
+    "add": 10
+   },
+   {
+    "path": [
+     "counts",
+     "coveredResources"
+    ],
+    "add": 1
+   }
+  ],
+  "build-bindings": [
+   {
+    "path": [
+     "importRes"
+    ],
+    "after": 4,
+    "seq": 10,
+    "value": "bassam_dreport_v1"
+   }
+  ]
+ }
+}

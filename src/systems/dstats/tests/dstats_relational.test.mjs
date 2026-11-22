@@ -45,7 +45,7 @@ const populated = () => ({
   nabawi: { '9999-01-01': { worshippers: 40, salam_corridor: 12, rawdah_men_actual: 2, rawdah_women_actual: 1 } },
   locks: { 'haram|9999-1': { mo: 1, dopen: { 1: 1 }, dshut: { 2: 1 } }, 'nabawi|9999-2': true }
 });
-function actor(W, uid = 'super', { enf = false, allowed = true } = {}) {
+function actor(W, uid = 'super', { enf = true, allowed = true } = {}) {   /* V7 · د5-ح (القفل): كلُّ فاعلٍ بالمحرّك النافذ — لا فاعلَ قديماً */
   const keys = {
     bassam_auth_users_v1: JSON.stringify([{ id: 'super', role: 'super', ekey: 'mgr:root' }, { id: 'staff', role: 'staff', deptId: 'd1', ekey: 'e1' }]),
     bassam_depts_v1: JSON.stringify([{ id: 'd1', gid: 'g1' }]),
@@ -224,7 +224,7 @@ test('the original enforced DateRange and day-lock guards apply to the new table
   await seed(W, env, locked);
   const next = cp(locked); next.haram['1500-01-01'].worshippers = 6;
   const r = await W.dsDomainCommit(env, actor(W, 'staff'), { base: 0, data: next });
-  assert.equal(r.status, 403); assert.equal(r.body.why, 'dslock');
+  assert.equal(r.status, 403); assert.equal(r.body.why, 'scope', JSON.stringify(r.body));   /* V7 · د5-ح: قفلُ اليوم يحكمه نطاقُ DateRange في المحرّك النافذ (كان 'dslock' في dstatsRule القديم المحذوف) */
   assert.deepEqual((await W.dsDomainRead(env)).data, locked);
 });
 

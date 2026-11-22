@@ -6,9 +6,10 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { SRC, blockFile } from './harness.mjs';
+import { calendar, callers } from './cal_kit.mjs';   /* V7 · د5-د: التقويم الموحّد */
 const rd = (p) => fs.readFileSync(p, 'utf8');
 export const LOGIC = process.env.PROFILE_LOGIC || path.join(SRC, 'modules', 'profile', 'logic.js');
-const SERVICES = ['490-emp-key.js', '530-emp-day-facts.js', '440-count.js', '400-shift-need.js', '410-gate-units.js', '535-profile-facts.js'];
+const SERVICES = ['060-bus.js', '490-emp-key.js', '530-emp-day-facts.js', '533-staff-g3.js', '403-plan-p3.js', '404-plan-p4.js', '405-dreport-links.js', '407-dreport-r3.js', '421-round-links.js', '422-daily-t2.js', '440-count.js', '400-shift-need.js', '410-gate-units.js', '535-profile-facts.js'];
 /* اليومُ كما تحسبه القواعد (أم القرى · الرياض) — منه تُبنى مفاتيحُ البيانات في كل عالَم */
 export function riyadhDay(ts = Date.now()) {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
@@ -39,7 +40,7 @@ export function world(o) {
     fetch: (u) => { fetches.push(String(u)); const r = o.fetch ? o.fetch(String(u)) : null; return Promise.resolve(r ? { ok: r.status === undefined || r.status < 400, status: r.status || 200, json: () => Promise.resolve(r.body) } : { ok: false, status: 404, json: () => Promise.resolve(null) }); },
   };
   ctx.window = ctx; ctx.globalThis = ctx;
-  vm.createContext(ctx);
+  vm.createContext(ctx); calendar(ctx);
   ctx.__BS_BOOT = o.cf ? { srv: 1, cf: 1, uid: o.user?.id || '' } : null;
   KIVO.BassamHijri = { now: (dt) => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(dt || new Date()); const g = (t) => +f.find((x) => x.type === t).value; return { y: g('year'), m: g('month'), d: g('day') }; } };
   for (const f of SERVICES) vm.runInContext(rd(blockFile(f)), ctx, { filename: f });
@@ -105,7 +106,7 @@ export function world(o) {
   KIVO.BassamNav = { go: (k) => nav.push(k) };
   if (o.open) KIVO.__BS_OPEN_TAB = o.open;
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } }
-  KIVO.BassamPageKit = { base: (B) => class extends B { bsOn() { return true; } bsLensOn(k) { return o.lens ? o.lens(k) : true; } bsToast() {} bsAck() { return Promise.resolve(true); } } };
+  KIVO.BassamPageKit = { base: (B) => callers(class extends B { bsOn() { return true; } bsLensOn(k) { return o.lens ? o.lens(k) : true; } bsToast() {} bsAck() { return Promise.resolve(true); } }, KIVO) };
   ctx.DCLogic = DCLogic;
   vm.runInContext(rd(LOGIC) + '\n;globalThis.__C = Component;', ctx, { filename: 'profile/logic.js' });
   const c = new ctx.__C();

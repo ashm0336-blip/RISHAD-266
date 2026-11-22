@@ -98,10 +98,11 @@ test('D-3: دخولُ حسابٍ آخر في تبويبٍ آخر (تتبدّل �
 
 /* عقد C1 على العامل الحقيقي. المورد عام لطابور KV، ومخوّل لكلا الهويتين
    ببيانات صلاحية اصطناعية مع حفظ إيجابي فعلي لكل منهما قبل تبديل الكوكي. */
-for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-3 (طرفٌ لطرف): تعديلُ X المعلَّق لا يُحفظ باسم Y بعد خروجٍ ودخولٍ في المتصفح نفسِه', async (t) => {
+for (const mode of ['enforce']) test('[' + mode + '] D-3 (طرفٌ لطرف): تعديلُ X المعلَّق لا يُحفظ باسم Y بعد خروجٍ ودخولٍ في المتصفح نفسِه', async (t) => {
   /* schema 10: options is a typed Operations resource (no generic queue); the named permission templates are a generic dept KV
-     resource that a synthetic page grant (admin/ptpls) makes writable for both identities — the C1 contract under test is unchanged */
-  const K = 'bsdept:tst_d1:bassam_perm_tpls_named_v1';
+     resource that a synthetic page grant (admin/ptpls) makes writable for both identities — the C1 contract under test is unchanged
+     V7 · د5-ح: حُذفت القوالبُ وورقةُ admin/ptpls — المورد البديل موردُ KV عاديّ للإدارة (آخرُ تصدير) بمنحٍ اصطناعيّ لورقة admin/backup */
+  const K = 'bsdept:tst_d1:bassam_last_export_v1';
   const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : { KIVO_TEST_FIXTURE: 'allow' }); const C = client(env);
   const su = await C.login('admin', 'admin'); assert.ok(su.ok);
   await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dR', name: 'إدارة', gid: '' }]) });
@@ -111,7 +112,7 @@ for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-3 (طرفٌ ل�
   /* Only synthetic fixture grants. Both users can edit this same live
      reference; denial under Y must come from C1 rather than an own-only key. */
   const permissions = JSON.parse(env.DB.q("SELECT v FROM kv WHERE k='bassam_perms_v1' AND seq=0")[0].v);
-  for (const eid of ['tst_e_emp1', 'tst_e_sup1']) permissions.emps.tst_d1[eid]['admin/ptpls'] = ['view', 'add', 'edit', 'del'];
+  for (const eid of ['tst_e_emp1', 'tst_e_sup1']) permissions.emps.tst_d1[eid]['admin/backup'] = ['view', 'add', 'edit', 'del'];
   env.DB.db.prepare("UPDATE kv SET v=? WHERE k='bassam_perms_v1' AND seq=0").run(JSON.stringify(permissions));
   const X = await C.login('0000000113', '70113'); assert.ok(X.ok, 'X = tst_emp1');
   const Y0 = await C.login('0000000111', '70111'); assert.ok(Y0.ok, 'Y = tst_sup1');

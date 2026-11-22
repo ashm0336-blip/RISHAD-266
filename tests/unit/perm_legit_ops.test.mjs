@@ -28,7 +28,7 @@ const edit = async (w, ck, id, patch) => (await list(w, ck)).map((u) => (u.id ==
 const ok = (r, m) => assert.ok(r.ok, m + ' — ' + r.show);
 const staff = (id, un, dept, ekey, pw) => ({ id, un, ph: PH(pw, id), name: 'TEST_ONLY · ' + id, role: 'staff', deptId: dept, ekey, dis: 0, test: 'TEST_ONLY' });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] legitimate account and permission administration still works (super · manager · gm)', async () => {
     const w = await world({ mode }), su = w.su.ck;
     const dm1 = (await w.login('0000000101', '70101')).ck;

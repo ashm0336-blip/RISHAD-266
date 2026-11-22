@@ -9,7 +9,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 12,
+    "seq": 130,
     "value": {
      "key": "cust.view",
      "owner": "emps/custody",
@@ -55,7 +55,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 13,
+    "seq": 140,
     "value": {
      "key": "ref.custody_type.create",
      "owner": "emps/custody",
@@ -101,7 +101,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 14,
+    "seq": 150,
     "value": {
      "key": "ref.custody_type.edit",
      "owner": "emps/custody",
@@ -147,7 +147,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 15,
+    "seq": 160,
     "value": {
      "key": "cust.move.issue",
      "owner": "emps/custody",
@@ -194,7 +194,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 16,
+    "seq": 170,
     "value": {
      "key": "cust.move.return",
      "owner": "emps/custody",
@@ -240,7 +240,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 17,
+    "seq": 180,
     "value": {
      "key": "cust.move.damage",
      "owner": "emps/custody",
@@ -286,7 +286,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 18,
+    "seq": 190,
     "value": {
      "key": "cust.move.lost",
      "owner": "emps/custody",
@@ -332,7 +332,7 @@
      "registry"
     ],
     "after": 0,
-    "seq": 19,
+    "seq": 200,
     "value": {
      "key": "ref.custody_type.delete",
      "owner": "emps/custody",
@@ -377,8 +377,8 @@
     "path": [
      "registry"
     ],
-    "after": 134,
-    "seq": 86,
+    "after": 24,
+    "seq": 700,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",
@@ -421,7 +421,7 @@
      "owners"
     ],
     "after": 1,
-    "seq": 6,
+    "seq": 10,
     "value": {
      "id": "emps/custody",
      "kind": "page",
@@ -436,7 +436,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 36,
+    "seq": 10,
     "value": {
      "leaf": "emps/custody",
      "act": "view",
@@ -452,7 +452,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 37,
+    "seq": 20,
     "value": {
      "leaf": "emps/custody",
      "act": "add",
@@ -468,7 +468,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 38,
+    "seq": 30,
     "value": {
      "leaf": "emps/custody",
      "act": "edit",
@@ -487,7 +487,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 39,
+    "seq": 40,
     "value": {
      "leaf": "emps/custody",
      "act": "del",
@@ -502,7 +502,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 40,
+    "seq": 50,
     "value": {
      "leaf": "emps/custody",
      "act": "approve",
@@ -515,7 +515,7 @@
      "atoms"
     ],
     "after": 6,
-    "seq": 41,
+    "seq": 60,
     "value": {
      "leaf": "emps/custody",
      "act": "export",
@@ -530,7 +530,7 @@
      "featureFlags"
     ],
     "after": 0,
-    "seq": 6,
+    "seq": 70,
     "value": "ff.cust.export"
    }
   ],
@@ -540,7 +540,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 12,
+    "seq": 130,
     "value": {
      "key": "cust.view",
      "owner": "emps/custody",
@@ -565,7 +565,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 13,
+    "seq": 140,
     "value": {
      "key": "ref.custody_type.create",
      "owner": "emps/custody",
@@ -590,7 +590,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 14,
+    "seq": 150,
     "value": {
      "key": "ref.custody_type.edit",
      "owner": "emps/custody",
@@ -615,7 +615,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 15,
+    "seq": 160,
     "value": {
      "key": "cust.move.issue",
      "owner": "emps/custody",
@@ -640,7 +640,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 16,
+    "seq": 170,
     "value": {
      "key": "cust.move.return",
      "owner": "emps/custody",
@@ -665,7 +665,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 17,
+    "seq": 180,
     "value": {
      "key": "cust.move.damage",
      "owner": "emps/custody",
@@ -690,7 +690,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 18,
+    "seq": 190,
     "value": {
      "key": "cust.move.lost",
      "owner": "emps/custody",
@@ -715,7 +715,7 @@
      "bindings"
     ],
     "after": 0,
-    "seq": 19,
+    "seq": 200,
     "value": {
      "key": "ref.custody_type.delete",
      "owner": "emps/custody",
@@ -739,8 +739,8 @@
     "path": [
      "bindings"
     ],
-    "after": 122,
-    "seq": 84,
+    "after": 24,
+    "seq": 680,
     "value": {
      "key": "ref.custody_type.view",
      "owner": "emps/custody",
@@ -762,7 +762,7 @@
      "byResource"
     ],
     "key": "bassam_custody_v1",
-    "after": 6,
+    "after": 1,
     "seq": 3,
     "value": {
      "items": "custodyItems",
@@ -790,8 +790,8 @@
      "byResource"
     ],
     "key": "bassam_custody_v1",
-    "after": 20,
-    "seq": 1,
+    "after": 19,
+    "seq": 10,
     "value": {
      "scope": "dept",
      "cls": "explicit read permission + explicit special read capability",
@@ -826,8 +826,8 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
-    "seq": 8,
+    "after": 0,
+    "seq": 170,
     "value": {
      "key": "cust.move.issue",
      "res": "bassam_custody_v1",
@@ -845,8 +845,8 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
-    "seq": 9,
+    "after": 0,
+    "seq": 180,
     "value": {
      "key": "cust.move.return",
      "res": "bassam_custody_v1",
@@ -864,8 +864,8 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
-    "seq": 10,
+    "after": 0,
+    "seq": 190,
     "value": {
      "key": "cust.move.damage",
      "res": "bassam_custody_v1",
@@ -883,8 +883,8 @@
     "path": [
      "bindings"
     ],
-    "after": 8,
-    "seq": 11,
+    "after": 0,
+    "seq": 200,
     "value": {
      "key": "cust.move.lost",
      "res": "bassam_custody_v1",
@@ -921,7 +921,7 @@
      },
      "res"
     ],
-    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · staffing)"
+    "set": "bassam_employees_v1 (+ تنظيفات custody.moves [])"
    },
    {
     "path": [
@@ -932,7 +932,7 @@
      },
      "res"
     ],
-    "set": "bassam_employees_v1 (+ تنظيفات dreport {} · custody.moves [] · award.recs [] · staffing)",
+    "set": "bassam_employees_v1 (+ تنظيفات custody.moves [] · award.recs [])",
     "with": [
      "award"
     ]
@@ -943,8 +943,8 @@
     "path": [
      "importRes"
     ],
-    "after": 7,
-    "seq": 0,
+    "after": 4,
+    "seq": 20,
     "value": "bassam_custody_v1"
    }
   ]

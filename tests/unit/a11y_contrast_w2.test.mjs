@@ -46,7 +46,7 @@ test('ES-4 (بقيّة) · زرّا التحويل في التقرير اليو�
   assert.equal(tok('indigo-on', false).toUpperCase(), '#FFFFFF', 'الفاتحُ كما كان: أبيض');
   /* المرجع: طرفُ التدرّج القديم وحده دون الحدّ في السمتين، والأبيضُ على النيلي الداكن كذلك */
   assert.ok(cr('#FFFFFF', tok('bg-x6366f1', false)) < 3 && cr('#FFFFFF', tok('bg-x6366f1', true)) < 3 && cr('#FFFFFF', tok('bg-x4f46e5', true)) < 3.5);
-  const v = rd('modules/dreport/view.html'), s = moduleLogic('dreport');
+  const v = rd('systems/dreport/client/view.html'), s = moduleLogic('dreport');
   assert.match(v, /font-weight:600;background:var\(--bg-x4f46e5\);color:var\(--indigo-on\);border:0;cursor:pointer;font-family:'Cairo',sans-serif">نعم، حوّل<\/button>/);
   assert.match(s, /"cursor:pointer;background:var\(--bg-x4f46e5\);color:var\(--indigo-on\)"\n\s+: "cursor:default;background:var\(--bg-xcbd5e1\)"/);
   assert.doesNotMatch(v + s, /linear-gradient\(135deg,var\(--bg-x4f46e5\),var\(--bg-x6366f1\)\)/);
@@ -66,7 +66,7 @@ test('ES-4 · حلقةُ «توزيع الورديات» تمرّ بمحوِّل
   const s = moduleLogic('staff');
   assert.match(s, /color: KIVO\.__bsTokVal \? KIVO\.__bsTokVal\("background", t\.color\) : t\.color,\n\s+dash: Math\.round/);
   /* نقطةُ الدليل نفسُها background:{{r.color}} — فالرمزُ واحد */
-  assert.match(rd('modules/staff/view.html'), /<i style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:\{\{r\.color\}\};/);
+  assert.match(rd('systems/staff/client/view.html'), /<i style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:\{\{r\.color\}\};/);
 });
 
 test('KD-09 · IRSZ-5 · --warning-on-strong على --warning-strong ≥ 4.5:1 في السمتين (الأبيضُ كان 1.8:1 داكناً) والفاتحُ كما كان (أبيض 6.99:1)', () => {
@@ -76,8 +76,8 @@ test('KD-09 · IRSZ-5 · --warning-on-strong على --warning-strong ≥ 4.5:1 �
 });
 
 /* ── منطقُ الوحدات في vm ── */
-const SERVICES = ['src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
-  'src/services/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/560-canvas-input.js', 'src/components/565-page-kit.js'];
+const SERVICES = ['src/systems/_multi/client/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
+  'src/systems/daily/client/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/systems/_multi/client/560-canvas-input.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/systems/staff/client/533-staff-g3.js', 'src/systems/plan/client/403-plan-p3.js', 'src/systems/staff/client/534-staff-g4.js', 'src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
 /* خريطةُ وقت التشغيل الحقيقية (110 · __BS_TOK) ومحوِّلٌ بقدرها: لونُ الخاصيّة ← var(--<حرفي>) كما يفعل __bsTokVal */
 const TOK = (() => { const s = fs.readFileSync(path.join(SRC, 'core/110-theme-prepaint.js'), 'utf8'); return JSON.parse(/KIVO\.__BS_TOK = (\{.*?\});\n/s.exec(s)[1]); })();
 function page(slug) {

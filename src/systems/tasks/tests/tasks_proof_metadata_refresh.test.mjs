@@ -27,6 +27,8 @@ async function page(storeJson, emitted) {
   KIVO.BassamIDB = { getInfo: () => { throw Error('No image or R2 request is allowed'); } };
   class DCLogic { constructor() { this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); cb && cb(); } }
   ctx.DCLogic = DCLogic;
+  vm.runInContext(emitted ? asset('js','385-calendar') : fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
+  for (const [n, f] of [['060-bus', 'src/core/060-bus.js'], ['534-staff-g4', 'src/systems/staff/client/534-staff-g4.js']]) vm.runInContext(emitted ? asset('js', n) : fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);   /* V7 · د5-د2: الناقل (قلب المنصة) وقراءاتُ الجدول الشهري المعلنة عليه — الصفحةُ تسأل بالاسم */
   vm.runInContext(emitted ? asset('js','565-page-kit') : fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } };
   if(emitted) vm.runInContext(asset('pages','Tasks.logic'),ctx,{filename:'actual-emitted-Tasks.logic'});

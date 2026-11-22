@@ -41,7 +41,7 @@ function actor(W, mode, operations) {
 }
 
 test('entry alone cannot close or reopen a day or month in either permission mode', async () => {
-  for (const mode of ['legacy', 'enforce']) for (const lock of [true, { mo: 1 }, { dopen: { 1: 1 } }, { dshut: { 1: 1 } }]) {
+  for (const mode of ['enforce']) for (const lock of [true, { mo: 1 }, { dopen: { 1: 1 } }, { dshut: { 1: 1 } }]) {
     const { W, env } = await world(), data = empty(); data.locks['haram|9999-1'] = lock;
     const r = await W.dsDomainCommit(env, actor(W, mode, ['add', 'edit']), { base: 0, data });
     assert.equal(r.status, 403, mode + ': lock changes require the lock operation');
@@ -50,7 +50,7 @@ test('entry alone cannot close or reopen a day or month in either permission mod
 });
 
 test('approval alone cannot insert or edit numeric daily statistics', async () => {
-  for (const mode of ['legacy', 'enforce']) {
+  for (const mode of ['enforce']) {
     const { W, env } = await world(), before = empty(); before.haram['9999-01-01'] = { worshippers: 10 };
     await env.DB.batch(W.dsDomainStatements(env, empty(), before));
     for (const mutation of [d => d.haram['9999-01-01'].worshippers = 12, d => d.haram['9999-01-02'] = { worshippers: 12 }]) {

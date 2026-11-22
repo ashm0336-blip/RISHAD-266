@@ -23,7 +23,7 @@ test('fail-closed: عطلُ قراءة meta في بيئة الإنفاذ ⇒ 503
   const az1 = await C.api('/api/authz', { cookie: su.ck }); assert.equal(az1.status, 503, '/api/authz 503');
   const br = await C.api('/api/brand'); assert.equal(br.status, 200, '/api/brand يبقى (هوية عامة بلا بيانات)');
   /* KIVO_261 (إفصاح — تعديلُ اختبارٍ مقصود · SOT-145): النبضُ في وضع الحماية يُعلن الجاهزيةَ (ready:0 · mode:'protect') — كان المفتاحان الأربعة وحدها */
-  const pg = await C.api('/api/ping'); assert.equal(pg.status, 200); assert.deepEqual(Object.keys(pg.j).sort(), ['cf', 'commit', 'fresh', 'mode', 'ok', 'ready', 'ver'], '/api/ping نبضٌ مختصر بلا أعداد');
+  const pg = await C.api('/api/ping'); assert.equal(pg.status, 200); assert.deepEqual(Object.keys(pg.j).sort(), ['cf', 'fresh', 'mode', 'ok', 'ready'], '/api/ping نبضٌ مختصر بلا أعداد');
   assert.equal(pg.j.ready, 0, 'الخادمُ حيٌّ غيرُ جاهز'); assert.equal(pg.j.mode, 'protect', 'وضعُ الحماية معلَن للمراقِب');
   const bt = await C.boot(su.ck); assert.equal(bt.status, 200); assert.equal(bt.boot.auth, 'need', 'صفحةُ الدخول لا البيانات'); assert.equal(bt.boot.authz, 'unavailable'); assert.deepEqual(bt.boot.keys, {}, 'لا مفاتيحَ تُحقن');
   assert.ok(bt.boot.notice && bt.boot.notice.includes('وضع الحماية'), 'إشعارٌ لشاشة الدخول');
@@ -40,21 +40,23 @@ test('fail-closed: عطلُ قراءة meta في بيئة الإنفاذ ⇒ 503
   const pg2 = await C.api('/api/ping', { cookie: su2.ck }); assert.equal(pg2.j.ready, 1, 'بعد زوال العطل: جاهز (ready:1) والمخطّطُ مطابق'); assert.equal(pg2.j.schemaOk, 1); assert.ok(!('mode' in pg2.j));
 });
 
-test('مفتاحُ الإيقاف المقصود يبقى: سطرُ legacy يُقرأ بنجاح ⇒ النظام القديم لا وضعُ الحماية', async () => {
-  const env = makeTestEnv({ KIVO_AUTHZ_MODE: 'enforce' }); const C = client(env);
-  const su = await C.login('0501234567', '583927'); env.DB.exec("CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)"); setMode(env, 'legacy');
-  const az = await C.api('/api/authz', { cookie: su.ck }); assert.equal(az.status, 200); assert.equal(az.j.mode, 'legacy'); assert.equal(az.j.unavailable, undefined);
-  const s = await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dB', name: 'ب', gid: '' }]) }); assert.equal(s.status, 200, 'الكتابة تعمل في النظام القديم');
+/* V7 · د5-ح (القفل): حُذفت حالتا «مفتاحِ الإيقاف ⇒ النظام القديم» و«Production بلا ENV: لا يُقرأ الوضع» — تثبّتان الوضعَ القديم المحذوف.
+   مكانَهما: سطرٌ بقيمةٍ غير enforce (أو غائب) ⇒ «unmigrated» المعلَن (لا النظامُ القديم ولا وضعُ الحماية)، والوضعُ يُقرأ في كل بيئة فعطلُه حمايةٌ بلا ENV كذلك */
+test('V7 · د5-ح: سطرُ legacy (أو غائب) يُقرأ بنجاح ⇒ unmigrated لا النظامُ القديم ولا وضعُ الحماية — مديرُ المنصة يعمل', async () => {
+  const env = makeTestEnv(); const C = client(env);
+  const su = await C.login('0501234567', '583927'); setMode(env, 'legacy');
+  const az = await C.api('/api/authz', { cookie: su.ck }); assert.equal(az.status, 200); assert.equal(az.j.mode, 'unmigrated'); assert.equal(az.j.unavailable, undefined);
+  const s = await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dB', name: 'ب', gid: '' }]) }); assert.equal(s.status, 200, 'مديرُ المنصة يكتب (بالمحرّك نفسِه) ليرحّل');
   setMode(env, null);
-  const az2 = await C.api('/api/authz', { cookie: su.ck }); assert.equal(az2.j.mode, 'legacy', 'غيابُ السطر = legacy (ليس عطلاً)');
+  const az2 = await C.api('/api/authz', { cookie: su.ck }); assert.equal(az2.j.mode, 'unmigrated', 'غيابُ السطر = unmigrated (ليس عطلاً ولا legacy)');
 });
 
-test('Production (بلا ENV): استعلامُ الوضع لا يُنفَّذ أصلاً، ولا أثرَ لحقن العطل', async () => {
+test('V7 · د5-ح: بلا ENV (كـProduction) يُقرأ الوضعُ كذلك — وعطلُ قراءته وضعُ الحماية (fail-closed) لا سماح', async () => {
   const env = makeTestEnv({}); const C = client(env);
-  env.DB.failIf = META_Q;
   const su = await C.login('0501234567', '583927'); assert.ok(su.ok);
-  const s = await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dC', name: 'ج', gid: '' }]) }); assert.equal(s.status, 200);
-  const g = await C.api('/api/get?keys=bassam_depts_v1', { cookie: su.ck }); assert.equal(g.status, 200);
-  assert.ok(!env.DB.log.some(META_Q), 'استعلامُ authz_mode لم يُرسل إلى D1 قط');
-  const az = await C.api('/api/authz', { cookie: su.ck }); assert.equal(az.status, 404, 'واجهةُ الإنفاذ غيرُ موجودة بلا ENV');
+  const az = await C.api('/api/authz', { cookie: su.ck }); assert.equal(az.status, 200, 'واجهةُ الإنفاذ في كل بيئة'); assert.equal(az.j.mode, 'enforce'); assert.equal(az.j.env, false);
+  env.DB.failIf = META_Q;
+  const s = await C.save(su.ck, { bassam_depts_v1: JSON.stringify([{ id: 'dC', name: 'ج', gid: '' }]) }); assert.equal(s.status, 503); assert.equal(s.j.err, 'authz_unavailable');
+  assert.ok(env.DB.log.some(META_Q), 'استعلامُ الوضع يُرسل إلى D1 بلا ENV');
+  env.DB.failIf = null;
 });

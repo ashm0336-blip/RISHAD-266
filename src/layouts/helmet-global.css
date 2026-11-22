@@ -567,11 +567,6 @@ main .bs-canvas-header button:not([style*="position: absolute"]){min-width:44px;
 .bsb .n:hover{background:var(--bg-gold-50-a8-v2);color:var(--text-secondary)}
 /* بند «خارج سقف الإدارة النشطة»: يظهر لمدير النظام وحده — باهت مع نقطة تنبيه،
    ويبقى قابلاً للفتح (لا يُخفى) حتى لا يُحبس المشرف داخل إدارة سقفها فارغ. */
-.bsb .n.out{opacity:.45}
-.bsb .n.out .ni{filter:grayscale(1)}
-.bsb .n.out:hover{opacity:.85}
-.bsb .n.out::after{content:"";position:absolute;left:8px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:var(--warning-strong);box-shadow:0 0 0 2px rgba(201,112,42,.18)}
-.bsb.cx .n.out::after{left:3px;top:8px;transform:none}
 /* البند النشط: خطّ جانبيّ ذهبيّ وتظليل متدرّج ينساب منه — نمط شارتَي «أعلى/أدنى»
    في لوحة الكانفس، بدل الإطار المحيط. اللون الذهبي كما هو. */
 .bsb .n.on{background:linear-gradient(to left,var(--tone-gold-50-a16),var(--bg-gold-50-a0));color:var(--brand-text);border:1px solid transparent;border-right:3px solid var(--border-brand);border-radius:0 9px 9px 0;font-weight:700}
@@ -586,10 +581,6 @@ main .bs-canvas-header button:not([style*="position: absolute"]){min-width:44px;
 .bsb.cx .s-ghead{padding:2px 0 10px;justify-content:center}
 .bsb .s-dept{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:38px;padding:0 9px;border-radius:11px;border:1px solid var(--tone-gold-50-a30);background:var(--bg-gold-50-a7);cursor:pointer;font-family:var(--font-ui);transition:all .15s}
 .bsb .s-dept:hover{background:var(--bg-gold-50-a14)}
-/* RISHAD266: «+ قسم» بجوار مبدّل الوحدة — يُخفى في الشريط المطويّ */
-.bsb .s-secadd{flex:none;height:38px;padding:0 10px;border-radius:11px;border:1px dashed var(--tone-gold-50-a30);background:transparent;color:var(--brand-text);font:700 11.5px var(--font-ui);cursor:pointer;white-space:nowrap}
-.bsb .s-secadd:hover{background:var(--bg-gold-50-a7)}
-.bsb.cx .s-secadd{display:none}
 .bsb .s-depti{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--brand-muted),var(--border-brand));color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .bsb .s-deptn{flex:1;min-width:0;text-align:right;font-size:12.5px;font-weight:800;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bsb .s-deptc{flex-shrink:0;color:var(--brand-text)}

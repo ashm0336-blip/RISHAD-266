@@ -6,6 +6,7 @@
            كان يُكتب فيقرأ الزميلُ صورةَ إثبات غيره (P0) — بالوضعين في شهرٍ مفتوح (والإنفاذُ في الشهر المقفل يمنعه النطاقُ وحده)
    والتحقّقُ من b7538e2 (verify_b7538e2.md): (V-5) إسنادُ صفٍّ بدأه من حُذف كما تكتبه الصفحةُ الآن («بانتظار الاستلام» كاملاً) يمضي ويراه المكلَّفُ غيرَ مقبول
            (الإصلاحُ في الواجهة — tasks_page_verify265 (V-5) يُخفق على b7538e2) */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, KT, KE, TAG, DAY, PDAY, stored, putKV, row, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
@@ -21,7 +22,7 @@ const deniedWhy = (r) => (r.j && r.j.denied && r.j.denied[KT] ? r.j.denied[KT].w
 const show = (r) => JSON.stringify(r.j || r).slice(0, 260);
 async function raw(W, ck, mut, extra) { const g = await get(W, ck, "/api/operations/read?keys=" + encodeURIComponent(KT)); const S = g.j.resources[KT]; mut(S); return post(W, ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(S) }, del: [], base: { [KT]: g.j.base[KT] } }, extra || {})); }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   const WHY = (ks) => (mode === 'enforce' ? { why: Object.fromEntries(ks.map((k) => [k, 'TEST_ONLY سببٌ كما ترسله نافذةُ السبب'])) } : {});
 

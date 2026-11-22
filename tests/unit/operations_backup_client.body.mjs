@@ -7,14 +7,15 @@ import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
 import { parse } from 'acorn';
 import { needs } from './harness.mjs';
+import { SCHED_PARTS } from './sched_parts.mjs';   /* V7 · د5-د: أجزاءُ الجدولة من سجلّها */
 const source=fs.readFileSync('src/services/548-atomic-backup.js','utf8');
 const transport=fs.readFileSync('src/api/280-server-storage.js','utf8');
 let resources;
 function visit(node){if(!node||typeof node!=='object')return;if(node.type==='VariableDeclarator'&&node.id.name==='operationResources9'){assert.equal(node.init.type,'CallExpression');resources=node.init.arguments[0].elements.map(item=>item.value);}for(const v of Object.values(node))if(Array.isArray(v))v.forEach(visit);else if(v&&typeof v==='object')visit(v);}
-visit(parse(transport,{ecmaVersion:'latest'}));assert.equal(resources.length,21);
+visit(parse(transport,{ecmaVersion:'latest'}));assert.equal(resources.length,22);   /* V7 · د5-ح (13): + أرشيفُ الجولات */
 const clone=value=>JSON.parse(JSON.stringify(value)),DEPT='TEST_ONLY_backup',UID='TEST_ONLY_backup_manager';
 const codec=vm.createContext({});
-vm.runInContext(['019o-operational-codec.js','019p-operations-scheduling.js','019q-operations-people-tasks.js'].map(file=>fs.readFileSync('workers/parts/'+file,'utf8')).join('\n')+'\nvar TEST_ONLY_PREPARED=ocPrepare(OC_SCHEDULING_RESOURCES.concat(OC_PEOPLE_TASK_RESOURCES));function TEST_ONLY_rows(resource,value){var p=ocForResource(TEST_ONLY_PREPARED,resource);return ocPhysicalRows(p,ocConvert(p,"'+DEPT+'",resource,value,true));}',codec);
+vm.runInContext(['019o-operational-codec.js',...SCHED_PARTS,'019q-operations-people-tasks.js'].map(file=>fs.readFileSync('workers/parts/'+file,'utf8')).join('\n')+'\nvar TEST_ONLY_PREPARED=ocPrepare(OC_SCHEDULING_RESOURCES.concat(OC_PEOPLE_TASK_RESOURCES));function TEST_ONLY_rows(resource,value){var p=ocForResource(TEST_ONLY_PREPARED,resource);return ocPhysicalRows(p,ocConvert(p,"'+DEPT+'",resource,value,true));}',codec);
 function page(mutate){
   const calls=[],imageReads=[],boot={srv:1,cf:1,uid:UID,v:7},scope={uid:UID};
   const ops=resources.map(resource=>({version:1,scope:{departmentId:DEPT},resource,rows:{ops_nodes:[]}}));
@@ -34,7 +35,7 @@ function page(mutate){
 }
 test('The actual backup service requires all21 typed resources and keeps operational image references in the same export',needs('award', 'seized'), async()=>{
   const f=page(({kind,body})=>{if(kind==='operations')body.domains.find(d=>d.resource==='bassam_plan_v1').rows=clone(codec.TEST_ONLY_rows('bassam_plan_v1',{floors:[{sid:'TEST_ONLY_floor',img:'img_test_only'}]}));});
-  const result=await f.export();assert.equal(result.domains.operations.length,21);assert.equal(f.calls.length,4);
+  const result=await f.export();assert.equal(result.domains.operations.length,22);assert.equal(f.calls.length,4);
   assert.deepEqual(f.imageReads,['img_test_only']);assert.equal(result.images.img_test_only,'data:image/png;base64,TEST_ONLY');
   assert.ok(f.calls.every(route=>route.includes('uid='+encodeURIComponent(UID))&&route.includes('dept='+DEPT)));
 });

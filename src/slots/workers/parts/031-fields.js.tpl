@@ -18,8 +18,7 @@ var FIELDS = {
   /* ── A: الورديات — sfAdd/sfRename وحدهما يكتبانها، فالعقد مغلق ── */
   'bassam_shift_options_v1': { at: '', closed: 1, req: ['name'],
     type: { name: 'str', color: 'str', tStart: 'str', tEnd: 'str' } },
-@@SYS:fields.custody@@  /* ── A: قوالب الصلاحيات ── */
-  'bassam_perm_tpls_v1': { at: '', req: ['id', 'name'], type: { id: 'str', name: 'str' } },
+@@SYS:fields.custody@@
   /* ── B: الثابتُ وحده — وما داخلَه يتوسّع بحرّيته ── */
 @@SYS:fields.reg@@};
 function fieldsOf(k) { return FIELDS[resName(k)] || null; }

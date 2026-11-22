@@ -37,7 +37,7 @@ const other = { y: TODAY.year, m: TODAY.month === 1 ? 2 : 1, d: 3 };
 const today = { y: TODAY.year, m: TODAY.month, d: TODAY.day };
 const plain = (x) => x ? { y: x.y, m: x.m, d: x.d } : x;
 
-for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-5: «اليوم المختار» لكل مستخدم — تنقّلُ A لا يغيّر يومَ B ولا يُكتب في الخادم', async () => {
+for (const mode of ['enforce']) test('[' + mode + '] D-5: «اليوم المختار» لكل مستخدم — تنقّلُ A لا يغيّر يومَ B ولا يُكتب في الخادم', async () => {
   const { env, C } = await setup(mode);
   const A = await C.login('0000000111', '70111'), B = await C.login('0000000114', '70114'); assert.ok(A.ok && B.ok, 'A = tst_sup1 · B = tst_lon');
   const tA = tab(C, A, (await C.boot(A.ck)).boot).run(BLOCKS), tB = tab(C, B, (await C.boot(B.ck)).boot).run(BLOCKS);
@@ -54,29 +54,4 @@ for (const mode of ['legacy', 'enforce']) test('[' + mode + '] D-5: «اليوم
   } finally { tA.dispose(); tB.dispose(); }
 });
 
-test('[legacy] D-5: لكل تبويب يومُه · التبويبُ الجديد يفتح على اليوم (KIVO_265 · فحص القبول: لا افتراضَ من الجهاز) · إعادةُ التحميل تُبقيه · المفتاحُ القديم لا يُقرأ', async () => {
-  const { env, C } = await setup('legacy');
-  const A = await C.login('0000000111', '70111'); assert.ok(A.ok);
-  /* قيمةٌ مشتركة قديمة في الخادم (كتبتها نسخةٌ سابقة) */
-  const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN);
-  const old = { y: TODAY.year, m: TODAY.month, d: 1 };
-  assert.deepEqual(await replaceOperationalFixture(env, KF, old), old, 'زُرعت قيمةٌ مشتركة قديمة');
-  const boot = (await C.boot(A.ck)).boot;
-  const t1 = tab(C, A, boot), t2 = tab(C, A, boot);
-  const shared = shareNative([t1, t2]); t1.run(BLOCKS); t2.run(BLOCKS);
-  const tabs = [t1, t2];
-  try {
-    assert.equal(t1.W.KIVO.BassamDayFocus.get(), null, 'بلا اختيارٍ سابق: لا افتراضَ من المفتاح القديم ولا من الجهاز — الشاشةُ تفتح على اليوم (KIVO_265)');
-    asWriter(shared, t1, () => t1.W.KIVO.BassamDayFocus.set(today.y, today.m, today.d));
-    asWriter(shared, t2, () => t2.W.KIVO.BassamDayFocus.set(other.y, other.m, other.d));
-    assert.deepEqual(plain(t1.W.KIVO.BassamDayFocus.get()), today, 'التبويب ١ على يومه');
-    assert.deepEqual(plain(t2.W.KIVO.BassamDayFocus.get()), other, 'التبويب ٢ على يومه');
-    const t3 = tab(C, A, boot); tabs.push(t3); shareNative(tabs); t3.run(BLOCKS);
-    assert.equal(t3.W.KIVO.BassamDayFocus.get(), null, 'التبويبُ الجديد لا يرث يومَ تبويبٍ آخر ولا آخرَ يومٍ على الجهاز — يفتح على اليوم (KIVO_265)');
-    const t1r = tab(C, A, boot, { session: t1.W.sessionStorage }); tabs.push(t1r); shareNative(tabs); t1r.run(BLOCKS);
-    assert.deepEqual(plain(t1r.W.KIVO.BassamDayFocus.get()), today, 'إعادةُ التحميل تُبقي يومَ التبويب');
-    /* القيمةُ المشتركة القديمة لا تُكتب بعد الآن ولا تحرّك تبويباً له يومُه */
-    assert.deepEqual(inspectOperationalFixture(env, KF), old, 'لم تُمسّ في الخادم');
-    assert.ok(!Object.keys(t1.nativeLS()).some(k => k === KF), 'ولا تُنسخ قيمةُ الفريق إلى الجهاز');
-  } finally { tabs.forEach(t => t.dispose()); }
-});
+/* V7 · د5-ح (القفل): حُذفت حالةٌ «[legacy]» تثبّت مسارَ القرار القديم المحذوف: D-5: لكل تبويب يومُه · التبويبُ الجديد يفتح على اليوم (KIVO_265 · فحص القبول: لا افتراضَ م… */

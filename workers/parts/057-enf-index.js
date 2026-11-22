@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/057-enf-index.js.tpl */
 /* ══ (1) فهارسُ السجل — تُبنى مرّةً لكل نسخةٍ من الخادم ══ */
 var ENF_IX = null;
 var ENF_LEAF_RE = /^([A-Za-z]+(?:\/[A-Za-z]+)?):(view|add|edit|del|approve|export)$/;
@@ -28,9 +29,9 @@ function enfFieldOnly(A, d) {
   var u = A && A.u; if (!u || !d || u.role === 'super' || u.role === 'dept') return false;
   var ep = ((A.perms.emps || {})[d] || {})[u.ekey] || {};
   if ((ep['daily/field'] || []).length && capOnDept(A, d, 'daily/field')) return dailyFieldOnly(A, d);   /* الورقةُ المخزَّنة تحكم كما كانت */
-  /* V7 sec (fail-closed): تعذُّرُ قراءة سجلّ المنح له حالتان. الوضعُ القديم (لا A.enf): لا سجلَّ منحٍ بالتصميم ⇒ الورقةُ وحدها كما كانت (غيرُ محصور).
-     وضعُ الإنفاذ (A.enf): السجلُّ يُرفق دائماً عند إنشاء الفاعل، فغيابُه أو عطلُ قراءته خطأٌ حقيقي ⇒ محصورٌ بالمسنَد (لا يُفتح الحصرُ بخطأ) */
-  var g; try { g = enfGrantOf(A, d); } catch (e0) { return !!A.enf; }
+  /* V7 sec (fail-closed): سجلُّ المنح يُرفق دائماً عند إنشاء الفاعل، فغيابُه أو عطلُ قراءته خطأٌ حقيقي ⇒ محصورٌ بالمسنَد (لا يُفتح الحصرُ بخطأ)
+     — V7 · د5-ح: لا وضعَ قديماً بلا سجلّ منح */
+  var g; try { g = enfGrantOf(A, d); } catch (e0) { return true; }
   if (!g.plus['field.view'] || !enfHeld(A, d, 'field.view')) return false;
   var L = enfFieldLift(), i;
   for (i = 0; i < L.length; i++) if (enfHeld(A, d, L[i])) return false;                                  /* كتابةٌ صريحةٌ غيرُ مشتقّة ⇒ بلا حصر، كالمشرف */
@@ -42,7 +43,7 @@ var ENF_COMPAT = { 'ir.rec.retro.open': 'irshad/records:approve', 'sz.rec.retro.
    (المصلى · البوابة · المعلم · المسار — حقولُ الحالة: fst · flow · closed · off …) لم يعد يطلب سبباً إلزامياً. الصلاحيةُ والنطاقُ يُحكمان كما كانا،
    والفعلُ يُسجَّل في سجل التدقيق كما كان؛ السببُ وحده لم يعد شرطاً للحفظ. المرجعُ v24.9 (audit.reason في السجلّ) لا يُمسّ — الاستثناءُ هنا في فهرس الإنفاذ.
    باقيةٌ بسببها: رفعُ الخريطة واستبدالُها (map.replace) · إعادةُ فتح الخطة المعتمدة (plan.reopen) · وسائرُ مفاتيح السبب */
-var ENF_REASON_OFF = { 'lens.zones.status.change': 1, 'lens.gates.status.change': 1, 'lens.marks.status.change': 1, 'lens.paths.status.change': 1 };
+var ENF_REASON_OFF = { 'lens.zones.status.change': 1, 'lens.gates.status.change': 1, 'lens.marks.status.change': 1, 'lens.paths.status.change': 1 };   /* V7 · د5-ح: مفاتيحُ حالة العدسات من قطعتها (src/systems/_shared/lenses) — فارغٌ بغياب مضيفَيها */
 /* KIVO_259 · AUD-030 (ADR-018): عدسةُ مفتاحٍ من الإضافات (KIVO_LENS_PLUGINS) — للعدسات الجديدة خارج المرجع v24.9 (KIVO_BUILD.LENSES)؛
    المضمَّنةُ يعيدها المرجعُ نفسُه أولاً فلا يتغيّر شيءٌ لها. بوابةُ عدسة الإضافة = بوابةُ المرجع (KIVO_BUILD.lensGate عامّةٌ لأيّ عدسة). */
 function enfPlugLensOf(key) { var m = /^lens\.([a-z]+)\./.exec(String(key || '')); return m && KIVO_LENS_PLUGINS.keys.indexOf(m[1]) !== -1 ? m[1] : null; }
@@ -136,7 +137,8 @@ function enfGrantOf(A, d) {
   var ek = A.u.ekey ? String(A.u.ekey) : '', rec = A.__grants[d], g = ek && rec ? rec.emp[ek] : null, out = { plus: {}, minus: {}, has: false }, i;
   if (isObj(g)) {
     out.has = true;
-    if (Array.isArray(g.plus)) for (i = 0; i < g.plus.length; i++) out.plus[String(g.plus[i])] = 1;
+    var un9 = isObj(g.until) ? g.until : null, now9 = Date.now();   /* V7 · د5-هـ (44): الاستثناءُ المؤقّت ينتهي وقتَ القرار */
+    if (Array.isArray(g.plus)) for (i = 0; i < g.plus.length; i++) if (!(un9 && typeof un9[String(g.plus[i])] === 'number' && un9[String(g.plus[i])] <= now9)) out.plus[String(g.plus[i])] = 1;
     if (Array.isArray(g.minus)) for (i = 0; i < g.minus.length; i++) out.minus[String(g.minus[i])] = 1;
   }
   return (c[d] = out);
@@ -233,7 +235,7 @@ function enfResWriter(A, d, rn) {
 }
 /* V7-D: كاتبُ موردِ الصورة — enfResWriter بلا المشتقّة من field.view لمن لم يُرفع عنه الحصر (enfDerivedBare)
    RISHAD-266 · V7-E (قرارُ المالك: «المشرف وخريطة الخطة في enforce: يُمنع كما في legacy»): مفاتيحُ العدسات تذكر في السجلّ الموردَين معاً
-   (guard.resources: bassam_plan_v1 + bassam_rounds_v1 — عناصرُ العدسة تسكن الخطة وتُنسخ في الجولة)، وكتابةُ «الجولات» وحدها تُترجَم إليها
+   (guard.resources: موردُ الخطة + موردُ الجولات — عناصرُ العدسة تسكن الخطة وتُنسخ في الجولة)، وكتابةُ «الجولات» وحدها تُترجَم إليها
    (asisMap daily/rounds:edit). فكان صاحبُ كتابةِ الجولات وحدها — ورقةُ المشرف · منحُ round.edit مع مفاتيح الحالة · مفتاحُ عدسةٍ واحد — «كاتباً للخطة»
    فيستبدل ويحذف الصورةَ المربوطة بها (خريطة الموقع)، والوضعُ القديم يرفض: الصورةُ تتبع كتابةَ سجلّها، وسجلُّ الخطة تكتبه ورقةُ الخطة وحدها
    (023 RES_REG cap → 054 imgWriteOk → authorize)، وحفظُ السجلّ نفسِه بخريطةٍ أخرى مرفوضٌ لهم أصلاً (059 enfDecide: map.replace).
@@ -243,7 +245,7 @@ function enfResWriter(A, d, rn) {
    مضيفُه الخطةُ وحدها (lens.gates.geometry.edit · lens.dens.threshold.configure — كما كانا). صورةُ الجولات لا يتغيّر فيها شيءٌ لأحد، ولا كتابةُ السجلّين،
    ولا الوضعُ القديم. تعذُّرُ قراءة المنح ⇒ enfHeld يرفض (fail-closed).
    النطاقُ الفعليّ (تصحيحٌ بعد المراجعة المستقلّة): القاعدةُ ليست لصورة الخطة وحدها، بل لكلّ موردٍ له مفاتيحُ عدسةٍ تستضيفها «الجولات» ولا تكتبه
-   ورقةُ «الجولات»: bassam_plan_v1 وسجلّاتُ الخيارات الثلاثة bassam_zone_opts_v1 · bassam_gate_opts_v1 · bassam_mark_kinds_v1 (cap: plan) — فصاحبُ
+   ورقةُ «الجولات»: موردُ الخطة وسجلّاتُ خياراتها الثلاثة (المناطق · الأبواب · أنواع العلامات — cap: plan) — فصاحبُ
    كتابةِ الجولات وحدها لا يستبدل ولا يحذف صورةً مربوطةً بأيٍّ منها، كما في الوضع القديم؛ ويبقى لها صاحبُ مفتاحِ ورقة الخطة أو مفتاحِ المرجع
    (ref.zone.type.* · ref.gate.type.* · ref.mark.kind.* — مضيفُها الخطةُ وحدها). وعبر imgForeignIn (054): حفظُ سجلّ الجولات نفسِه بإشارةٍ جديدةٍ إلى
    صورةٍ تملكها الخطة يُرفض «imgown» لصاحب كتابةِ الجولات وحدها، كما في الوضع القديم (كان يُقبل في enforce قبل هذه القاعدة). */
@@ -258,7 +260,7 @@ function enfImgResWriter(A, d, rn) {
    الحالةُ المعاكسة لما سبق — ورقةٌ فيها كتابةُ «الخطة» وحدها تُترجَم هي الأخرى إلى مفاتيح العدسات (asisMap plan:edit)، وهذه تذكر سجلَّ الجولات بين
    مواردها، فكان كاتبُ الخطة وحدها يستبدل ويحذف الصورةَ المربوطة بالجولة، والوضعُ القديم يرفض (cap: daily/rounds).
    القاعدة (شكلُ القاعدة السابقة نفسُه، معمَّماً): المفتاحُ يُحسب لصورة موردٍ فقط عبر ورقةٍ تكتب ذلك المورد — الأوراقُ نفسُها التي يسألها الوضعُ القديم
-   (capForAct) وعلى سقف الإدارة (capOnDept، كما في 042 authorize0):
+   (capForAct) وعلى سقف الإدارة (capOnDept):
      • مفتاحٌ جاء من ترجمة الورقة: لا بدّ أن تكون إحدى ذرّاته (ورقة:فعل في asisMap) على ورقةٍ تكتب المورد وأن تحملها ورقةُ الفاعل نفسُها (myPermsOf —
        ما يقرؤه الوضعُ القديم). فمفتاحُ العدسة الذي منحته ورقةُ «الخطة» ليس كتابةً لصورة الجولة، والذي منحته ورقةُ «الجولات» ليس كتابةً لصورة الخطة.
      • مفتاحٌ بمنحٍ صريح (plus — لا ورقةَ وراءه): يكفي أن تكون إحدى ذرّاته على ورقةٍ تكتب المورد (ومفتاحُ العدسة ذو المضيفَين يبقى جهةَ الجولات — الشرطُ أعلاه).

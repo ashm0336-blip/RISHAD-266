@@ -502,9 +502,9 @@ function szDayContext(ctx, q, clock) {
       if (k) index[String(k)] = e;
     });
   });
-  var report = (szReference(ctx, "bassam_dreport_v1") || {})[key],
-    staff = (szReference(ctx, "bassam_staffing_v3") || {})[y + "-" + m] || {},
-    round = (szReference(ctx, "bassam_rounds_v1") || {})[key],
+  var report = (srvBusRead("dreport.docSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب مالك التقرير {} — لا تقريرَ لليوم */
+    sched = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
+    round = (srvBusRead("daily.daysSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب المتابعة اليومية {} — لا جولةَ لليوم */
     shifts = [],
     rows = {},
     leaders = {},
@@ -525,7 +525,7 @@ function szDayContext(ctx, q, clock) {
           return null;
         var e = index[String(r.ekey)],
           assignment =
-            staff[r.ekey] || (e && (staff[e.eid] || staff[e.nid])) || {},
+            sched[r.ekey] || (e && (sched[e.eid] || sched[e.nid])) || {},
           rest = (s.rest && s.rest[r.ekey]) || assignment.rest || [];
         if (
           weekday &&
@@ -611,7 +611,7 @@ function szDayContext(ctx, q, clock) {
       });
     });
     if (!mine) {
-      var monthly = staff[my ? my.eid : me.ekey] || (my && staff[my.nid]);
+      var monthly = sched[my ? my.eid : me.ekey] || (my && sched[my.nid]);
       mine = (monthly && monthly.shift) || "";
     }
     dayShift = mine;

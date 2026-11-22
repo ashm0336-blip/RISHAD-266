@@ -12,6 +12,7 @@
      services/332-find-day.js (pure marked search block)                    → workers/parts/018a-find-engine.js (KIVO_FIND)
      ../workers/bindings/<name>/data.base.json + systems/<key>/permissions.json (V7 · د3) → ../workers/bindings/<name>/data.json (النطاق · الحراسة · البناء: القاعدة + الأنظمة الحاضرة)
      ../workers/bindings/<name>/{data.json,engine.js} + targets.json (V7 · الحزمة ج) → workers/parts/006 · 008 · 010 · 014 (الوحداتُ المرجعية v24.9)
+     registry/perm44-levels.json + perm44-core.js + perm44-{client,server}.js + manifests/pages.json (V7 · د5-هـ 44) → permissions/345-perm44.js · workers/parts/057b-perm44.js
      plugins/lenses/<key>/manifest.json (KIVO_259)                              → KIVO_MANIFEST.lenses (الواجهة) · workers/parts/006a-lens-plugins.js (KIVO_LENS_PLUGINS)  (AUD-030 · ADR-018)
    الترتيبُ مهم: السجلُّ قبل الضمّ لأن جزءَ الخادم 004 مشتقٌّ هو نفسُه."""
 import os, sys, json, hashlib, subprocess, re
@@ -100,10 +101,32 @@ def view_tabs(path):
         if not depth: end = m.end() + t.start(); break
     return [[('*' if '{{' in name else name.strip()), icon] for icon, name in re.findall(r'data-i="(i-[0-9a-f]{8})"></svg>\s*</div>\s*<span[^>]*>([^<]+)</span>', src[m.end():end])]
 
+def bus_read_resources(S, d, module):
+    """V7 · د5-د2: مواردُ Operations التي تحتاجها صفحةٌ عبر قراءاتٍ معلنة على الناقل. الصفحةُ لا تسمّي مفتاحَ برنامجٍ آخر: تسأل بالاسم
+       (KIVO.bus.read('مالك.شيء@N')) والمالكُ الحاضر يعلن في عقده (contract.json ← readResources) ما تحتاجه كلُّ قراءةٍ محمَّلاً قبل الرسم.
+       بغياب المالك لا عقدَ فلا مورد."""
+    import glob
+    table = {}
+    # V7 · د5-هـ: وعقودُ البرامج التي لم تُفصل بعد (src/contracts/<key>.json — الجولات) تعلن readResources كذلك
+    for p in sorted(glob.glob(os.path.join(S, 'systems', '*', 'contract.json'))) + sorted(q for q in glob.glob(os.path.join(S, 'contracts', '*.json')) if not os.path.basename(q).startswith('_')):
+        for name, keys in (json.load(open(p, encoding='utf-8')).get('readResources') or {}).items():
+            if not name.startswith('_'): table[name] = keys
+    if not table: return []
+    logic = ''.join(open(os.path.join(d, f), encoding='utf-8').read() for f in ['logic.js'] + (module.get('logicParts') or []) if os.path.isfile(os.path.join(d, f)))
+    # والخدماتُ المشتركة التي تناديها الصفحة (KIVO.X المعرَّفة في src/services · src/components) قد تسأل الناقلَ هي: تُضمّ نصوصُها (مستوًى واحد، كما يتبعها الميثاق)
+    import re
+    for q in sorted(glob.glob(os.path.join(S, 'services', '*.js')) + glob.glob(os.path.join(S, 'components', '*.js'))):
+        t = open(q, encoding='utf-8').read()
+        if 'KIVO.bus.' in t and any(('KIVO.' + g) in logic for g in set(re.findall(r'KIVO\.(Bassam\w+)\s*=[^=]', t))): logic += t
+    return [k for name in sorted(table) if ('"' + name + '"') in logic or ("'" + name + "'") in logic for k in table[name]]
+
 # ── KIVO_247 · AUD-015: manifest الصفحات → كتلة الواجهة + PG_REG في جزء الخادم ─────────────────────────────────────────
 def gen_manifest(S):
     M = json.load(open(os.path.join(S, layout(S)['pagesManifest']), encoding='utf-8'))
     data = {k: (M[k] if k != 'lenses' else lenses_of(S, M)) for k in ('version', 'pages', 'containers', 'lenses', 'tabAddr', 'navOrder', 'navNames', 'routeNames')}
+    # V7 · د5-هـ: صفحةٌ أبوها غائب (نظامٌ محذوف) صفحةٌ عليا في سجل الواجهة — under يُسقط حين لا صفحةَ بمفتاحه
+    pkeys = {p['key'] for p in M['pages']}
+    data['pages'] = [p if p.get('under') in pkeys or 'under' not in p else {k: v for k, v in p.items() if k != 'under'} for p in M['pages']]
     # V7 P4: module · activation · requires (CORE-01) ship to the client manifest — the systems map, «الوحدات» and the panel
     # conditions are derived from them (no hand lists). The server's PG_REG below still takes the structure alone.
     # The module charter is already the data-ownership source of truth. Export
@@ -121,6 +144,7 @@ def gen_manifest(S):
         if not os.path.isfile(meta_path): continue
         module = json.load(open(meta_path, encoding='utf-8'))
         keys = [k for k in module.get('charter', {}).get('data', []) if re.fullmatch(r'bassam_[a-z0-9_]+', k)]
+        keys += bus_read_resources(S, dirs[slug], module)   # V7 · د5-د2: ما تحتاجه قراءاتُها المعلنة من مالكٍ حاضر
         data['operationsReadSets'][module['name']] = sorted(set(keys))
         data['pageComponents'][module['name']] = slug
         tabs = view_tabs(os.path.join(dirs[slug], 'view.html'))
@@ -143,7 +167,7 @@ def gen_manifest(S):
         # KIVO_261 (SOT-003): offPage على الأوراق كلِّها (subs وtabs) — الواجهةُ (isOffPage) تقرأ الاثنين، فالخادمُ مثلُها (كان tabs وحدها)
         off = [x['key'] for x in (p.get('subs') or []) + (p.get('tabs') or []) if x.get('offPage')]
         if off: o += ", off: [" + ', '.join("'" + x + "'" for x in off) + "]"
-        if p.get('under'): o += ", under: '" + p['under'] + "'"
+        if p.get('under') in pkeys: o += ", under: '" + p['under'] + "'"   # V7 · د5-هـ: أبٌ غائب ⇒ صفحةٌ عليا
         return o + ' }'
     reg = 'var PG_REG = [\n' + ',\n'.join(pg(p) for p in M['pages']) + '\n];\n'
     return {norm(layout(S)['pageManifestBlock']): js.encode('utf-8')}, reg
@@ -166,12 +190,13 @@ import plugins as _PL
 LENS_PART = '006a-lens-plugins.js'
 def lenses_of(S, M):
     P = _PL.load(S)
-    if not P: return M['lenses']                      # التخطيطُ الانتقالي: pages.json.lenses
+    if not P: return M.get('lenses', [])             # التخطيطُ الانتقالي: pages.json.lenses · V7 · د5-ح: أو لا عدسة (قطعتُها غائبة)
     if 'lenses' in M: raise SystemExit('pages.json.lenses and plugins/lenses both present — one source only (ADR-018)')
     # V7 P4: hosts · indicators reach the client (the lens rows of the map and the host fallback of 331 read them — no literal host list)
     return [{'key': m['key'], 'name': m['name'], 'hosts': m['hosts'], 'indicators': (m.get('resources') or {}).get('indicators', [])} for m in P]
 def gen_lens_part(S):
-    if not _PL.load(S): return {}
+    if not _PL.load(S) and 'lenses' in json.load(open(os.path.join(S, layout(S)['pagesManifest']), encoding='utf-8')): return {}   # التخطيطُ الانتقالي
+    # V7 · د5-ح: بلا عدسة (قطعتُها غائبة بغياب مضيفَيها) يُولَّد الجدولُ فارغاً — طبقةُ الإنفاذ تقرؤه كما هو
     js = ('/* ═══ KIVO_259 · AUD-030 · SOT-089 — العدساتُ إضافات: مولَّدٌ من plugins/lenses/<key>/manifest.json بأداة tools/generate.py (tools/plugins.py)؛ لا يُحرَّر يدوياً.\n'
           '   تستهلكه طبقةُ الإنفاذ وحدها: ربطُ مفتاح العدسة بعدستها (enfIx) · أعمدةُ العناصر وأقنعةُ حقول العدسات في الإسقاط والدمج (061) · عدساتُ /api/authz me · إعادةُ تصنيف\n'
           '   حقول العدسات الجديدة. الوحداتُ المرجعية v24.9 (الحرّاس 006 · البناء 008) كما هي — وجداولُها = هذا الملف للعدسات المضمَّنة فيها (tools/plugins.py ④). ═══ */\n'
@@ -277,6 +302,36 @@ def gen_bindings(S):
         out[norm(layout(S)['workersParts'] + '/' + t['part'])] = (t['header'] + body + rd(os.path.join(d, 'engine.js'))).encode('utf-8')
     return out
 
+# ── V7 · د5-هـ (44): محرّكُ الأدوار — مصدرٌ واحد (registry/perm44-levels.json + registry/perm44-core.js) ← الواجهة 345 والخادم 057b ──────────
+# الأنظمةُ (sysList) تُشتقّ من manifests/pages.json المولَّد: كلُّ صفحةٍ تُطفأ (activation = toggle) نظام، أوراقُه الصفحةُ وأقسامُها وتبويباتُها؛
+# وتبويبُ الغلاف الذي له نظامُه (shellTabs[].as = قسمٌ من أقسامها — العهد في صفحة الموظفين) نظامٌ مستقلٌّ بورقته. نصُّ المحرّك نفسُه في الملفين حرفاً.
+PERM44 = {'levels': 'perm44-levels.json', 'core': 'perm44-core.js', 'client': 'perm44-client.js', 'server': 'perm44-server.js',
+          'out_client': 'permissions/345-perm44.js', 'out_server': '057b-perm44.js'}
+def perm44_systems(M):
+    pk = {p['key'] for p in M['pages']}; out = []
+    for p in M['pages']:
+        if p.get('activation') != 'toggle': continue
+        subs = [x['key'] for x in (p.get('subs') or [])]; own = {t.get('as') for t in (p.get('shellTabs') or []) if t.get('as') in subs}
+        leaves = [p['key']] + [p['key'] + '/' + x for x in subs if x not in own] + [p['key'] + '/' + x['key'] for x in (p.get('tabs') or [])]
+        e = {'key': p['key'], 'name': p.get('name') or p['key'], 'leaves': leaves, 'toggle': not p.get('platLock'), 'plat': bool(p.get('platSwitch'))}
+        if p.get('under') in pk: e['under'] = p['under']
+        out.append(e)
+        for x in (p.get('subs') or []):
+            if x['key'] in own: out.append({'key': x['key'], 'name': x.get('name') or x['key'], 'leaves': [p['key'] + '/' + x['key']], 'toggle': True, 'plat': False, 'under': p['key']})
+    return out
+def gen_perm44(S, produced):
+    R = os.path.join(S, layout(S)['registry']); mrel = norm(layout(S)['pagesManifest'])
+    M = json.loads(produced[mrel].decode('utf-8')) if mrel in produced else json.load(open(os.path.join(S, mrel), encoding='utf-8'))
+    lv = json.load(open(os.path.join(R, PERM44['levels']), encoding='utf-8'))
+    data = {'v': lv['v'], 'levels': lv['levels'], 'names': lv['names'], 'systems': perm44_systems(M)}
+    dj = 'var KIVO_PERM44_DATA = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n'
+    core = rd(os.path.join(R, PERM44['core']))
+    head = ('/* ═══ V7 · د5-هـ (44) — محرّكُ الأدوار (%s): مولَّدٌ بأداة tools/generate.py من permissions/registry/perm44-levels.json (جدولُ المستويات) و\n'
+            '   perm44-core.js (المحرّكُ المشترك — نصُّه في الواجهة والخادم حرفاً) و%s وقائمةِ الأنظمة من manifests/pages.json — لا يُحرَّر يدوياً. ═══ */\n')
+    cl = head % ('الواجهة', PERM44['client']) + '(function () {\n  \'use strict\';\n' + dj + core + rd(os.path.join(R, PERM44['client'])) + '})();\n'
+    sv = head % ('الخادم', PERM44['server']) + dj + core + rd(os.path.join(R, PERM44['server']))
+    return {norm(PERM44['out_client']): cl.encode('utf-8'), norm(layout(S)['workersParts'] + '/' + PERM44['out_server']): sv.encode('utf-8')}
+
 _main0 = main
 def main():
     S = os.path.abspath(sys.argv[sys.argv.index('--src') + 1]); check = '--check' in sys.argv
@@ -297,6 +352,7 @@ def main():
     produced.update(gen_registry(S)); produced.update(gen_bindings(S)); produced.update(gen_migrations(S)); produced.update(gen_lens_part(S)); produced.update(gen_body_schemas(S)); produced.update(gen_department_permission_slice(S)); produced.update(gen_find_engine(S)); produced.update(gen_system_parts(S))
     if os.path.exists(os.path.join(S, layout(S)['pagesManifest'])):
         mj, reg = gen_manifest(S); produced.update(mj); splice_pg(S, produced, reg)
+        produced.update(gen_perm44(S, produced))
     produced.update(gen_worker(S, produced)); produced.update(gen_pages(S))
     bad = []
     for rel, data in sorted(produced.items()):
@@ -313,6 +369,12 @@ def main():
         if os.path.isdir(os.path.join(S, 'schemas')):
             rv = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'validate_schemas.py'), S], capture_output=True, text=True, encoding='utf-8'); print(rv.stdout.strip())
             if rv.returncode: bad.append('schemas')
+        # V7 · د5-ب: سجلُّ العقود — عقدٌ ناقص أو متناقض يُفشل --check (tools/contracts.py)
+        rc = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'contracts.py'), '--src', S, '--check'], capture_output=True, text=True, encoding='utf-8'); print(rc.stdout.rstrip())
+        if rc.returncode: bad.append('contracts')
+        # V7 · د5-د2: خريطةُ أسماء جداول العمليات — شكلٌ جديد بلا اسمٍ صريح، أو جدولُ كيانٍ بلا ترحيل، يُفشل --check (tools/oc_tables.mjs)
+        ro = subprocess.run([os.environ.get('KIVO_NODE', 'node'), os.path.join(os.path.dirname(os.path.abspath(__file__)), 'oc_tables.mjs'), '--check'], capture_output=True, text=True, encoding='utf-8'); print(ro.stdout.rstrip())
+        if ro.returncode: bad.append('oc-tables')
         sys.exit(1 if bad else 0)
     print('generated', len(produced), 'derived files →', S)
 if __name__ == '__main__': main()

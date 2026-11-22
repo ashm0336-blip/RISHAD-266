@@ -6,6 +6,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
 import { ROOT } from '../../../../tests/unit/harness.mjs';
+import { calendar, callers } from '../../../../tests/unit/cal_kit.mjs';   /* V7 · د5-د: التقويم الموحّد */
 
 const source = fs.readFileSync(path.join(ROOT, 'src/systems/irshad/client/logic.js'), 'utf8');
 const base = { epoch: 2, reports: 3, languages: 4, locations: 5, retro: 6 };
@@ -32,6 +33,11 @@ test('Irshad uses the existing page-kit toast with the same warning/success pres
     document: { getElementById: () => node }, requestAnimationFrame: fn => fn(),
     setTimeout(fn, delay) { timers.push({ fn, delay }); return timers.length; }, clearTimeout() {} };
   W.window = W; vm.createContext(W);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), W);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/core/060-bus.js'), 'utf8'), W);   /* V7 · د5-د: الناقل (قلب المنصة) وروابطُ الجدول الشهري عليه — الصفحاتُ تسأل بالاسم */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), W);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), W);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), W);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), W);
   vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
   const page = new W.TestComponent();
@@ -60,7 +66,7 @@ function browser(handler = async () => json({ ok: 0 }, 500)) {
     loadEmployeesIr() { return [{ eid: 'TEST_ONLY_employee', name: 'TEST_ONLY_employee_snapshot' }]; }
     loadShiftOptsIr() { return [{ name: 'TEST_ONLY_shift' }]; }
   }
-  const KIVO = { BassamPageKit: { base: () => Base }, BassamCount: Count, BassamAuth: { user: () => ({ id: user }) },
+  const KIVO = { BassamPageKit: { base: () => callers(Base, KIVO) }, BassamCount: Count, BassamAuth: { user: () => ({ id: user }) },
     BassamDepts: { active: () => dept, has: value => value === dept && !!dept }, BassamPerm: { can: () => true, subOn: () => true }, __BS_SRV: { sesChanged: () => false }, bsPct: Math.round };
   const W = { KIVO, DCLogic: Base, URLSearchParams, AbortController, Uint8Array, crypto: webcrypto, Intl, Date, console,
     __BS_BOOT: { srv: 1, cf: 1, uid: user },
@@ -70,7 +76,9 @@ function browser(handler = async () => json({ ok: 0 }, 500)) {
     removeEventListener(type, fn) { events.get(type)?.delete(fn); },
     dispatchEvent(event) { for (const fn of events.get(event.type) || []) fn(event); },
     fetch: async (url, options = {}) => { calls.push({ url: String(url), options }); return handler(String(url), options); }, print() { notices.push('print'); } };
-  W.window = W; vm.createContext(W); vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
+  W.window = W; vm.createContext(W); calendar(W);
+  for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/534-staff-g4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), W);   /* V7 · د5-د2: الناقل (قلب المنصة) وقراءاتُ الجدول الشهري المعلنة عليه — الصفحةُ تسأل بالاسم */
+  vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
   const page = new W.TestComponent();
   page.bsToast = message => notices.push(message); page.bsAck = message => notices.push(message);
   page.state.irTab = 'records'; page.state.irYear = 1448; page.state.irMonth = 5; page.state.irDay = 19;

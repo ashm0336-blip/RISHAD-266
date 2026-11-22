@@ -1,0 +1,91 @@
+{
+ "daily.addr.1.dreport": {
+  "order": 10,
+  "text": " || \"dreport\" === x",
+  "host": "daily"
+ },
+ "daily.addr.list.dreport": {
+  "order": 10,
+  "text": ", \"dreport\"",
+  "host": "daily"
+ },
+ "daily.addr.2.dreport": {
+  "order": 10,
+  "text": "\"dreport\" === t",
+  "host": "daily"
+ },
+ "daily.addr.3.dreport": {
+  "order": 10,
+  "text": " || \"dreport\" === n.dsTab",
+  "host": "daily"
+ },
+ "daily.kpiDaily.dreport": {
+  "order": 10,
+  "text": "      if (\"kpiDaily\" === t) return !e || !e.can || !!e.can(\"dreport\", \"view\");\n",
+  "host": "daily"
+ },
+ "daily.can.dreport": {
+  "order": 10,
+  "text": "      qn = (() => {\n        try {\n          const t = KIVO.BassamPerm;\n          return !t || !t.can || !!t.can(\"dreport\", \"view\");\n        } catch (t) {\n          return !0;\n        }\n      })(),\n",
+  "host": "daily"
+ },
+ "daily.pick.dreport": {
+  "order": 10,
+  "text": "\"dreport\" === s.dsTab ? \"dreport\" : ",
+  "host": "daily"
+ },
+ "daily.fb.1.dreport": {
+  "order": 10,
+  "text": "qn ? \"dreport\" : ",
+  "host": "daily"
+ },
+ "daily.fb.2.dreport": {
+  "order": 10,
+  "text": "      \"dreport\" !== $n || qn || ($n = Qn ? \"kpi\" : @@SYS:daily.fallback.2.tasks|empty=\"\\\"rounds\\\"\"@@),\n",
+  "host": "daily"
+ },
+ "daily.fb.3.dreport": {
+  "order": 10,
+  "text": "qn ? \"dreport\" : ",
+  "host": "daily"
+ },
+ "daily.tabVals.1.dreport": {
+  "order": 10,
+  "text": "        dsOnDr: \"dreport\" === $n,\n",
+  "host": "daily"
+ },
+ "daily.tabVals.2.dreport": {
+  "order": 10,
+  "text": "        dsDrTabStyle: ti(\"dreport\" === $n),\n        dsDrTabIcon: ei(\"dreport\" === $n),\n        dsDrTabLbl: si(\"dreport\" === $n),\n",
+  "host": "daily"
+ },
+ "daily.tabVals.3.dreport": {
+  "order": 10,
+  "text": "        dsGoDr: () => this.setState({ dsTab: \"dreport\" }),\n",
+  "host": "daily"
+ },
+ "daily.tabVals.4.dreport": {
+  "order": 10,
+  "text": "        dsDrTabShow: qn,\n",
+  "host": "daily"
+ },
+ "daily.tabBar.dreport": {
+  "order": 10,
+  "text": " + (qn ? 1 : 0)",
+  "host": "daily"
+ },
+ "daily.fb.4.dreport": {
+  "order": 10,
+  "text": "qn ? \"dreport\" : "
+ },
+ "daily.view.tab.dreport": {
+  "order": 10,
+  "file": "slots/daily.view.tab.dreport.frag",
+  "host": "daily"
+ },
+ "daily.view.mount.dreport": {
+  "order": 10,
+  "text": "<!-- ═══ تبويب «التقرير اليومي» — يستورد صفحته كما تستورد «الخطة التشغيلية» جدولها ═══ -->\n<sc-if value=\"{{dsOnDr}}\" hint-placeholder-val=\"{{ false }}\">\n<dc-import name=\"Daily Report\" hint-size=\"100%,1100px\"></dc-import>\n</sc-if>\n",
+  "host": "daily"
+ }
+}

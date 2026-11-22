@@ -1,0 +1,63 @@
+{
+ "_note": "V7 · د5-هـ (مجموعة p2): قطعُ التشغيل الميداني في التنبيهات (019 · 441 · 442) وانتقال الموظف (019c) و«ملفي» (062b).",
+ "nf.types.plan": {
+  "order": 10,
+  "file": "slots/nf.types.plan.frag"
+ },
+ "nf.cap.plan": {
+  "order": 10,
+  "text": "  plan: \"plan\",\n"
+ },
+ "nf.denyPages.plan": {
+  "order": 10,
+  "text": "plan: \"التشغيل الميداني\","
+ },
+ "nf.denyRecs.plan": {
+  "order": 10,
+  "text": "  bassam_plan_v1: \"الخطة التشغيلية\", bassam_zone_opts_v1: \"خيارات المصليات\", bassam_gate_opts_v1: \"خيارات الأبواب\",\n  bassam_mark_kinds_v1: \"أنواع المعالم\","
+ },
+ "nf.feed.known.plan": {
+  "order": 10,
+  "text": ""
+ },
+ "emp.keys.plan": {
+  "order": 10,
+  "text": "  'bassam_plan_v1',\n"
+ },
+ "emp.cleanup.plan": {
+  "order": 10,
+  "file": "slots/emp.cleanup.plan.frag"
+ },
+ "me.keys.plan": {
+  "order": 10,
+  "text": "'bassam_plan_v1', "
+ },
+ "me.data.plan": {
+  "order": 10,
+  "text": " plan: P('bassam_plan_v1', {}),"
+ },
+ "nfc.kind.color.plan": {
+  "order": 10,
+  "text": " plan:'#0f8f80',"
+ },
+ "nfc.kind.name.plan": {
+  "order": 10,
+  "text": " plan:'الميداني',"
+ },
+ "nfc.kind.icon.plan": {
+  "order": 10,
+  "text": " plan:'M1 6v16l7-4 8 4 7-4V2l-7 4-8-4zM8 2v16M16 6v16',"
+ },
+ "nfc.reg.plan": {
+  "order": 10,
+  "file": "slots/nfc.reg.plan.frag"
+ },
+ "nfc.goNav.plan": {
+  "order": 10,
+  "text": " 'افتح التشغيل الميداني':'plan',"
+ },
+ "nfo.watch.plan": {
+  "order": 10,
+  "file": "slots/nfo.watch.plan.frag"
+ }
+}

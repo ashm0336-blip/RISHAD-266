@@ -35,52 +35,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }, 4200)));
     } catch (t) {}
   }
-  hParts(t) {
-    const e = this._hfmt().formatToParts(t),
-      n = (t) => +e.find((e) => e.type === t).value;
-    return { y: n("year"), m: n("month"), d: n("day") };
-  }
-  hGreg(t, e, n) {
-    let a = new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (e - 1)) + (n - 1)));
-    try {
-      for (let r = 0; r < 12; r++) {
-        const r = this.hParts(a);
-        if (r.y === t && r.m === e && r.d === n) return a;
-        const s = 354.367 * (r.y - t) + 29.5306 * (r.m - e) + (r.d - n);
-        a = new Date(a.getTime() - 864e5 * (Math.round(s) || (s > 0 ? 1 : -1)));
-      }
-    } catch (t) {}
-    return a;
-  }
-  hMonthDays(t, e) {
-    const n = t + "-" + e;
-    if (((this.__hd = this.__hd || {}), this.__hd[n])) return this.__hd[n];
-    let a = 30;
-    try {
-      const n = this.hGreg(t, e, 1),
-        r = this.hParts(new Date(n.getTime() + 25056e5));
-      a = r.y === t && r.m === e ? 30 : 29;
-    } catch (t) {}
-    return ((this.__hd[n] = a), a);
-  }
-  hGregMonthLabel(t, e) {
-    const n = t + "-" + e;
-    if (((this.__hg = this.__hg || {}), this.__hg[n])) return this.__hg[n];
-    let a = "";
-    try {
-      a = this.hGreg(t, e, 15).toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
-    } catch (t) {}
-    return ((this.__hg[n] = a), a);
-  }
-  hGregYearRange(t) {
-    try {
-      const e = this.hGreg(t, 1, 1).getFullYear(),
-        n = this.hGreg(t, 12, 29).getFullYear();
-      return e === n ? e + " م" : e + " – " + n + " م";
-    } catch (t) {
-      return "";
-    }
-  }
   mStart(t, e) {
     return this.hGreg(t, e + 1, 1);
   }
@@ -97,13 +51,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       r = 2,
       s = 1;
     try {
-      const t = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        }).formatToParts(e),
-        n = (e) => +t.find((t) => t.type === e).value;
-      ((a = n("year")), (r = n("month")), (s = n("day")));
+      const t = KIVO.BassamCal.hParts(e);   /* V7 · د5-د2 */
+      ((a = t.y), (r = t.m), (s = t.d));
     } catch (t) {}
     const o = (t) => (t < 10 ? "0" + t : "" + t);
     return { wd: n, date: a + "/" + r + "/" + s + " هـ", time: o(e.getHours()) + ":" + o(e.getMinutes()), k: a + "-" + r + "-" + s };
@@ -188,16 +137,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   tkHParts(t) {
     try {
-      const e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        }).formatToParts(new Date(t)),
-        n = (t) => {
-          const n = e.find((e) => e.type === t);
-          return n ? +n.value : 0;
-        };
-      return { y: n("year"), m: n("month"), d: n("day") };
+      return KIVO.BassamCal.hParts(new Date(t));   /* V7 · د5-د2 */
     } catch (t) {
       return null;
     }
@@ -477,7 +417,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   onDutyToday() {
     const t = this.loadEmps();
-    if (!this.bsOn("staff"))
+    if (!KIVO.bus.read("staff.enabled@1", this))   /* V7 · د5-د2: يجيب مالكُ الجدول؛ بغيابه كالمعطَّل: كلُّ الموظفين بلا وردية */
       return t.map((t) => ({
         id: KIVO.BassamEmp ? KIVO.BassamEmp.key(t) : t.eid || t.nid || t.name,
         name: t.name,
@@ -486,7 +426,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }));
     let e = {};
     try {
-      const t = this._tkLS("bassam_staffing_v3");
+      const t = KIVO.bus.read("staff.schedule@1", (k) => this._tkLS(k));
       t && "object" == typeof t && (e = t);
     } catch (t) {}
     const n = this.hToday(),
@@ -3026,7 +2966,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             e.newAdvTouched ? this._tkAdvBody() : {}, RP.op ? { recur: Object.assign({}, RP) } : {});
           if (body.recur) { delete body.recur.ask; delete body.recur.err; }
           ["uid", "dept", "epoch", "base", "requestId"].forEach((key) => delete body[key]);
-          const response = await this._tkCommandApi("/api/tasks/settings", body, "newTaskOpen");
+          let response = await this._tkCommandApi("/api/tasks/settings", body, "newTaskOpen");
+          /* V7 · د5-ح (القفل): في الإنفاذ وحده يطلب الخادمُ سبباً لما يعيد المهمةَ «بانتظار الاستلام» (task.reopen: إسنادُ المعتذَر عنها) — نافذةُ السبب
+             نفسُها من طبقة التخزين (280 askReason) ثم يُعاد الطلبُ بالسبب كإعادة الفتح؛ والإلغاءُ يُبقي المسودة */
+          const SR = KIVO.__BS_SRV;
+          if (response.j && response.j.why === "reason" && SR && SR.askReason) {
+            const why = await new Promise((done) => SR.askReason("bsdept:" + (this._tkDept() || "") + ":bassam_tasks_v1", response.j.reasonKeys || ["task.reopen"], done));
+            if (!why) return void this.bsToast("لم تُحفظ تعديلات المهمة لعدم كتابة سبب — المسودة باقية", "warn");
+            response = await this._tkCommandApi("/api/tasks/settings", Object.assign({}, body, { why: why }), "newTaskOpen");
+          }
           if (response.j && response.j.ok === 1) {
             this.setState({ newTaskOpen: false, editRef: null });
             if (body.recur) this._tkRecAck(body.recur.op, response.j.recurrence);

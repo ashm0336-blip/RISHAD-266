@@ -14,15 +14,16 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
     if (!(X.restore && !isNodeId(A, P.dept))) return enfNo('unit', { detail: P.dept });
     (A.__batchUnits || (A.__batchUnits = nmap()))[String(P.dept)] = 1; enfMemoDrop(A, String(P.dept));
   }
-  if (P.dept && rn === ENF_GRANTS_RES) return enfGrantsWrite(A, k, newVal, curVal, ctx);   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ctx.pa */
+  if (P.dept && rn === ENF_GRANTS_RES) { var gw9 = enfGrantsWrite(A, k, newVal, curVal, ctx), p4g9 = gw9.ok ? perm44GrantsWhy(A, P.dept) : ''; return p4g9 ? enfNo(p4g9) : gw9; }   /* V7 · د5-هـ (44): منحُ الدور = سجلُّ الأدوار */   /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: ctx.pa */
   var R0 = resOf(k);
   if (!R0) return enfNo('unknown');
   if (R0.scope === 'device') return enfNo('device');
+  if (R0.srv) return A.__srvRst ? enfOk(['backup.restore']) : enfNo('srv', { structural: 1 });   /* V7 · د5-ح (13): تكتبه خطوةُ خادمٍ وحدها (044) — بنيويٌّ: لا يرفعه مديرُ المنصة */
   if (!P.dept) {
     if (R0.scope !== 'global') return enfNo('scope', { structural: 1 });
     if (P.name === K_USERS) return newVal == null ? enfNo('users') : enfUsersWrite(A, k, newVal, curVal, ctx, X);
     if (P.name === K_PERM) return newVal == null ? enfNo('super') : enfPermsWrite(A, k, newVal, curVal, ctx, X);
-@@SYS:enf.write.dstats@@    /* F01: مديرُ الإدارة يُنشئ أقسامَ إدارته (018 deptSecMgrWhy) — بمفتاح الإدارة perm.assign في الإدارة الأم */
+@@SYS:enf.write.dstats@@    /* F01: مديرُ الإدارة يعيد تسميةَ أقسام إدارته — والإنشاءُ لمدير المنصة وحده (V7 · د5-هـ 44 · 018 deptSecMgrWhy) — بمفتاح الإدارة perm.assign في الإدارة الأم */
     if (P.name === K_DEPTS && newVal != null && u.role !== 'super') { var smw = deptSecMgrWhy(A, newVal, curVal); if (smw) return enfNo(smw); unitBatchAdd(A, newVal); return enfOk([]); }
     if (u.role !== 'super') return enfNo('super');
     if (P.name === K_DEPTS && newVal != null) { var dsE = deptShapeWhy(A, newVal, curVal, !!X.restore); if (dsE) return enfNo(dsE); unitBatchAdd(A, newVal); }
@@ -39,6 +40,7 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
   if (FLAG_KEYS[nm]) return isMgrOf(A, P.dept) ? enfOk([]) : enfNo('flag');
   var rule9 = R0.rule || '';
   if (rule9 === 'tech') return enfAnyWriterDept(A, P.dept) ? enfOk([]) : enfNo('view');
+  if (R0.p44) { var p4r9 = perm44RolesWhy(A, k, newVal, curVal); return p4r9 ? enfNo(p4r9) : enfOk(['perm.assign']); }   /* V7 · د5-هـ (44) */
   if (rule9) return enfNo(rule9);
   if (newVal == null) return enfNo('keydel');
   var E9 = entOf(k), O9 = opsOf(k);
@@ -55,11 +57,12 @@ function canWriteEnfCore(A, k, newVal, curVal, ctx) {
 }
 /* «authorize» في وضع الإنفاذ لمن يسأل عن فعلٍ على مورد (رقمُ المراجعة · صاحبُ الصورة): أيُّ مفتاحٍ كتابيٍّ مربوطٍ بالمورد محمول */
 function enfImgWriteOk(A, k) {
-  var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
+  var R8 = resOf(k); if (!R8 || R8.scope === 'device' || R8.srv) return false;   /* V7 · د5-ح (13): srv لا يكتبه العميل */
   var P8 = parseKey(k);
   if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
   if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
   if (!deptInScope(A, P8.dept)) return false;
   if (R8.rule) return enfAnyWriterDept(A, P8.dept, true);   /* V7-E: سؤالُ صورة — 057 */
+  if (R8.p44) return isMgrOf(A, P8.dept);   /* V7 · د5-هـ (44): صورةُ سجلّ الأدوار تتبع كاتبَه (مديرُ الوحدة) — كالوضع القديم */
   return enfImgResWriter(A, P8.dept, resName(k));   /* V7-D: المشتقّةُ من field.view ليست كتابةَ مورد الصورة */
 }

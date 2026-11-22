@@ -20,7 +20,7 @@ const see = (page) => page.evaluate(() => {
     panel: /مؤشرات المهام/.test((document.querySelector('main') || document.body).innerText), none: /لا مؤشرات ممنوحة لك/.test(document.body.innerText) };
 });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {   /* V7 · د5-ح (القفل): لا وضعَ قديماً — قاعدةٌ غيرُ مُرحَّلة ترفض دخولَ الموظفين (v7_d5h_lock) */
   test('G6 · ' + mode + ': tasks:view alone reaches «مؤشرات الإدارة» and its tasks panel; no grant ⇒ no link', { timeout: 600000 }, async () => {
     const lab = await startLab({ mode }); const b = await chromium.launch();
     try {

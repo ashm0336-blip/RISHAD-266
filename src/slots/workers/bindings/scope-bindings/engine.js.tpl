@@ -101,9 +101,7 @@ var KIVO_SCOPE = (function (S, R) {
     paths: function (e) { if (!isObj(e)) return null; var u = uidOf(e); if (u) return u; var v = e.id || e.code || e.name; return v == null || v === '' ? null : 'p:' + v; },
     floors: function (e, i) { if (!isObj(e)) return '#' + i; var v = e.sid || e.id; return v == null || v === '' ? '#' + i : 'f:' + v; }
   };
-  /* KIVO_238 · IH‑01: طابقُ الجولة ذو sid يحمل هويةَ الخطة نفسَها (f:<sid>) — وإلا الهويةُ القديمة rounds:<name|num|#i> */
-  function roundsSite(fl, idx) { fl = obj(fl); if (fl.sid != null && fl.sid !== '') return 'f:' + fl.sid; return 'rounds:' + (fl.name || fl.num || idx); }
-  var LENS_COLS = ['zones', 'gates', 'marks', 'paths'], EMP_COLS = { zones: 1, gates: 1, marks: 1 };
+@@SYS:scope.site.daily@@  var LENS_COLS = [@@SYS:scope.lens.cols@@], EMP_COLS = {@@SYS:scope.lens.empCols@@};   /* V7 · د5-ح: من قطعة العدسات — فارغان بغياب مضيفَيها */
   function it(o) { o.kind = o.kind || 'changed'; o.what = o.what || 'record'; return o; }
   function kindOf(x, y) { return x === undefined ? 'added' : (y === undefined ? 'removed' : 'changed'); }
   function empOf(e) { return isObj(e) && Array.isArray(e.emp) ? e.emp.map(String) : []; }
@@ -119,142 +117,8 @@ var KIVO_SCOPE = (function (S, R) {
     }
   }
   var X = {};
-  /* ═══ الخطة التشغيلية ═══ */
-  X.planItems = function (a, b, ctx) {
-    a = obj(a); b = obj(b); var items = [], i, k, T = ctx.today;
-    var fm = matchById(arr(a.floors), arr(b.floors), ID.floors);
-    for (i = 0; i < fm.added.length; i++) { items.push(it({ what: 'floor', kind: 'added', id: fm.added[i].id, path: 'floors[' + fm.added[i].id + ']', site: pair(null, fm.added[i].id), lock: { locked: false, why: 'new-site' } })); if (ctx.read) floorElems(items, {}, fm.added[i].b, fm.added[i].id, null, 'floors[' + fm.added[i].id + ']', { locked: false, why: 'read' }); }
-    for (i = 0; i < fm.removed.length; i++) items.push(it({ what: 'floor', kind: 'removed', id: fm.removed[i].id, path: 'floors[' + fm.removed[i].id + ']', site: pair(fm.removed[i].id, null), lock: { locked: !!obj(fm.removed[i].a).approved, why: 'site-approved' } }));
-    for (i = 0; i < fm.changed.length; i++) {
-      var fx = obj(fm.changed[i].a), fy = obj(fm.changed[i].b), fid = fm.changed[i].id, lk = { locked: !!fx.approved, why: fx.approved ? 'site-approved' : 'open' };
-      if (!!fx.approved !== !!fy.approved) items.push(it({ what: 'floorAp', kind: 'changed', id: fid, path: 'floors[' + fid + '].approved', site: pair(fid, fid), lockOp: true }));
-      floorElems(items, fx, fy, fid, null, 'floors[' + fid + ']', lk);
-      var fk = union(fx, fy), q, other = 0; for (q = 0; q < fk.length; q++) { k = fk[q]; if (k === 'approved' || has(LENS_COLS, k)) continue; if (!deq(fx[k], fy[k])) other++; }
-      if (other) items.push(it({ what: 'floorEdit', kind: 'changed', id: fid, path: 'floors[' + fid + ']', site: pair(fid, fid), lock: lk }));
-    }
-    /* مرآةُ الجذر (الموقعُ النشط): تُسجَّل فقط حين لا نظيرَ لها في floors/months */
-    var mirror = [];
-    floorElems(mirror, { zones: a.zones, gates: a.gates, marks: a.marks, paths: a.paths }, { zones: b.zones, gates: b.gates, marks: b.marks, paths: b.paths }, null, null, 'root', { locked: false, why: 'root-mirror' });
-    var ma = obj(a.months), mb = obj(b.months), ks = union(ma, mb);
-    for (i = 0; i < ks.length; i++) {
-      k = ks[i]; if (deq(ma[k], mb[k])) continue; var per = parseMonth(k);
-      if (ma[k] === undefined) {
-        items.push(it({ what: 'month', kind: 'added', id: k, path: 'months[' + k + ']', period: pair(null, per), lock: { locked: false, why: 'new-month' } }));
-        if (ctx.read) { var y0 = Array.isArray(mb[k]) ? { c: 1, d: mb[k] } : obj(mb[k]), d0 = arr(y0.d), q0; for (q0 = 0; q0 < d0.length; q0++) { var fid0 = ID.floors(d0[q0], q0); items.push(it({ what: 'floor', kind: 'added', id: fid0, path: 'months[' + k + '].d[' + fid0 + ']', site: pair(null, fid0), period: pair(null, per), lock: { locked: false, why: 'read' } })); floorElems(items, {}, d0[q0], fid0, per, 'months[' + k + '].d[' + fid0 + ']', { locked: false, why: 'read' }); } }
-        continue;
-      }
-      if (mb[k] === undefined) { items.push(it({ what: 'month', kind: 'removed', id: k, path: 'months[' + k + ']', period: pair(per, null), lock: { locked: per ? (closedPeriod(T, per.y, per.m, null) && !obj(ma[k]).mo) : false, why: 'past-month' } })); continue; }
-      var x = Array.isArray(ma[k]) ? { c: 1, d: ma[k] } : obj(ma[k]), y = Array.isArray(mb[k]) ? { c: 1, d: mb[k] } : obj(mb[k]);
-      var mlock = { locked: !!(per && closedPeriod(T, per.y, per.m, null) && !x.mo), why: 'past-month-without-mo' };
-      if (!!x.mo !== !!y.mo) items.push(it({ what: 'monthLock', kind: 'changed', id: k, path: 'months[' + k + '].mo', period: pair(per, per), lockOp: true }));
-      var dm = matchById(arr(x.d), arr(y.d), ID.floors), q2;
-      for (q2 = 0; q2 < dm.added.length; q2++) items.push(it({ what: 'floor', kind: 'added', id: dm.added[q2].id, path: 'months[' + k + '].d[' + dm.added[q2].id + ']', site: pair(null, dm.added[q2].id), period: pair(null, per), lock: mlock }));
-      for (q2 = 0; q2 < dm.removed.length; q2++) items.push(it({ what: 'floor', kind: 'removed', id: dm.removed[q2].id, path: 'months[' + k + '].d[' + dm.removed[q2].id + ']', site: pair(dm.removed[q2].id, null), period: pair(per, null), lock: mlock }));
-      for (q2 = 0; q2 < dm.changed.length; q2++) {
-        var dx = obj(dm.changed[q2].a), dy = obj(dm.changed[q2].b), did = dm.changed[q2].id, dl = { locked: mlock.locked || !!dx.approved, why: mlock.locked ? mlock.why : (dx.approved ? 'site-approved' : 'open') };
-        if (!!dx.approved !== !!dy.approved) items.push(it({ what: 'floorAp', kind: 'changed', id: did, path: 'months[' + k + '].d[' + did + '].approved', site: pair(did, did), period: pair(per, per), lockOp: true }));
-        floorElems(items, dx, dy, did, per, 'months[' + k + '].d[' + did + ']', dl);
-      }
-    }
-    for (i = 0; i < mirror.length; i++) { var dup = false; for (k = 0; k < items.length; k++) if (items[k].what === 'element' && items[k].col === mirror[i].col && items[k].id === mirror[i].id) { dup = true; break; } if (!dup) { mirror[i].mirror = true; items.push(mirror[i]); } }
-    if (!items.length) items.push(it({ what: 'resource', kind: kindOf(a, b), id: 'plan', path: '*' }));
-    return items;
-  };
-  /* ═══ الجولات اليومية ═══ */
-  X.roundsItems = function (a, b, ctx) {
-    a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), T = ctx.today;
-    for (i = 0; i < ks.length; i++) {
-      k = ks[i]; if (deq(a[k], b[k])) continue;
-      if (/^m:\d{4}-\d{1,2}$/.test(k)) { items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(parseMonth(k), parseMonth(k)), lockOp: true })); continue; }
-      var day = parseDay(k); if (!day) { items.push(it({ what: 'dayOther', kind: kindOf(a[k], b[k]), id: k, path: k })); continue; }
-      var rec = a['m:' + day.y + '-' + day.m], x = a[k], y = b[k];
-      var locked = !!(isObj(x) && x.ap) || lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: locked, why: (isObj(x) && x.ap) ? 'day-approved' : (locked ? 'period-locked (m:y-m/dsLockedIn)' : 'open') };
-      if (x === undefined) {
-        items.push(it({ what: 'day', kind: 'added', id: k, path: k, period: pair(null, day), lock: { locked: lockedIn(rec, day.y, day.m, day.d, T), why: 'period-locked' } }));
-        if (ctx.read) { var yd = obj(y), dl0 = arr(yd.d), q1; for (q1 = 0; q1 < dl0.length; q1++) { var fl1 = obj(dl0[q1]), sid1 = roundsSite(fl1, '#' + q1); items.push(it({ what: 'floor', kind: 'added', id: '#' + q1, path: k + '.d[#' + q1 + ']', site: pair(null, sid1), period: pair(null, day), lock: lk })); floorElems(items, {}, fl1, sid1, day, k + '.d[#' + q1 + ']', lk); } }
-        continue;
-      }
-      if (y === undefined) { items.push(it({ what: 'day', kind: 'removed', id: k, path: k, period: pair(day, null), lock: lk })); continue; }
-      x = obj(x); y = obj(y); var fk = union(x, y), other = 0;
-      for (q = 0; q < fk.length; q++) {
-        var f = fk[q]; if (deq(x[f], y[f])) continue;
-        if (f === 'ap') { items.push(it({ what: 'dayAp', kind: 'changed', id: k, path: k + '.ap', period: pair(day, day), lockOp: true })); continue; }
-        if (f === 'shAp') { var sx = obj(x.shAp), sy = obj(y.shAp), sk = union(sx, sy), z; for (z = 0; z < sk.length; z++) if (!deq(sx[sk[z]], sy[sk[z]])) items.push(it({ what: 'shiftAp', kind: 'changed', id: k + '|' + sk[z], path: k + '.shAp[' + sk[z] + ']', period: pair(day, day), shift: pair(sk[z], sk[z]), lockOp: true })); continue; }
-        if (f === 'd') {
-          var m = matchById(arr(x.d), arr(y.d), function (e, i2) { return '#' + i2; }), z2;
-          for (z2 = 0; z2 < m.changed.length; z2++) { var fla = obj(m.changed[z2].a), flb = obj(m.changed[z2].b); floorElems(items, m.changed[z2].a, m.changed[z2].b, roundsSite((fla.sid != null && fla.sid !== '') ? fla : flb, m.changed[z2].id), day, k + '.d[' + m.changed[z2].id + ']', lk); }
-          for (z2 = 0; z2 < m.added.length; z2++) items.push(it({ what: 'floor', kind: 'added', id: m.added[z2].id, path: k + '.d[' + m.added[z2].id + ']', site: pair(null, roundsSite(m.added[z2].b, m.added[z2].id)), period: pair(null, day), lock: lk }));
-          for (z2 = 0; z2 < m.removed.length; z2++) items.push(it({ what: 'floor', kind: 'removed', id: m.removed[z2].id, path: k + '.d[' + m.removed[z2].id + ']', site: pair(roundsSite(m.removed[z2].a, m.removed[z2].id), null), period: pair(day, null), lock: lk }));
-          continue;
-        }
-        other++;
-      }
-      if (other) items.push(it({ what: 'dayEdit', kind: 'changed', id: k, path: k, period: pair(day, day), lock: lk }));
-    }
-    if (!items.length) items.push(it({ what: 'resource', kind: kindOf(a, b), id: 'rounds', path: '*' }));
-    return items;
-  };
-  /* ═══ التقرير اليومي ═══ */
-  X.dreportItems = function (a, b, ctx) {
-    a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), T = ctx.today;
-    for (i = 0; i < ks.length; i++) {
-      k = ks[i]; if (deq(a[k], b[k])) continue;
-      if (/^m:/.test(k)) { var lx = normLock(a[k]), ly = normLock(b[k]), per = parseMonth(k); if (!deq(lx.perm, ly.perm)) items.push(it({ what: 'monthPerm', kind: 'changed', id: k, path: k + '.perm', period: pair(per, per), lock: { locked: lockedIn(a[k], per.y, per.m, null, T), why: 'month-lock' } })); var rest = union(lx, ly).filter(function (f) { return f !== 'perm' && !deq(lx[f], ly[f]); }); if (rest.length) items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(per, per), lockOp: true })); continue; }
-      var day = parseDay(k); if (!day) { items.push(it({ what: 'dayOther', kind: kindOf(a[k], b[k]), id: k, path: k })); continue; }
-      var rec = a['m:' + day.y + '-' + day.m], dayLocked = lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: dayLocked, why: dayLocked ? 'period-locked (m:y-m/dsLockedIn)' : 'open' };
-      var x = a[k], y = b[k];
-      if (x === undefined) {
-        items.push(it({ what: 'day', kind: 'added', id: k, path: k, period: pair(null, day), lock: lk }));
-        if (ctx.read) { var sy0 = obj(obj(y).shifts), sk0 = union({}, sy0), q2; for (q2 = 0; q2 < sk0.length; q2++) { var sh0 = sk0[q2], p0 = k + '.shifts[' + sh0 + ']', ro0 = arr(obj(sy0[sh0]).roster), z0; items.push(it({ what: 'shift', kind: 'added', id: k + '|' + sh0, path: p0, period: pair(null, day), shift: pair(null, sh0), lock: lk })); for (z0 = 0; z0 < ro0.length; z0++) { var ek0 = isObj(ro0[z0]) && ro0[z0].ekey != null ? String(ro0[z0].ekey) : ('#' + z0); items.push(it({ what: 'roster', kind: 'added', id: ek0, path: p0 + '.roster[' + ek0 + ']', period: pair(null, day), shift: pair(null, sh0), owner: pair(null, ek0), lock: lk })); } } }
-        continue;
-      }
-      if (y === undefined) { items.push(it({ what: 'day', kind: 'removed', id: k, path: k, period: pair(day, null), lock: lk })); continue; }
-      x = obj(x); y = obj(y); var sx = obj(x.shifts), sy = obj(y.shifts), sk = union(sx, sy);
-      for (q = 0; q < sk.length; q++) {
-        var sh = sk[q]; if (deq(sx[sh], sy[sh])) continue; var p = k + '.shifts[' + sh + ']';
-        if (sx[sh] === undefined) { items.push(it({ what: 'shift', kind: 'added', id: k + '|' + sh, path: p, period: pair(null, day), shift: pair(null, sh), lock: lk })); continue; }
-        if (sy[sh] === undefined) { items.push(it({ what: 'shift', kind: 'removed', id: k + '|' + sh, path: p, period: pair(day, null), shift: pair(sh, null), lock: lk })); continue; }
-        var ox = obj(sx[sh]), oy = obj(sy[sh]), shLock = { locked: dayLocked || !!ox.ap, why: dayLocked ? lk.why : (ox.ap ? 'shift-approved' : 'open') };
-        if (!deq(ox.ap, oy.ap) || !deq(ox.apAt, oy.apAt) || !deq(ox.apBy, oy.apBy)) items.push(it({ what: 'shiftAp', kind: 'changed', id: k + '|' + sh, path: p + '.ap', period: pair(day, day), shift: pair(sh, sh), lockOp: true }));
-        if (!deq(ox.roster, oy.roster)) {
-          var m = matchById(arr(ox.roster), arr(oy.roster), function (e) { return isObj(e) && e.ekey != null ? String(e.ekey) : null; }), z;
-          for (z = 0; z < m.added.length; z++) items.push(it({ what: 'roster', kind: 'added', id: m.added[z].id, path: p + '.roster[' + m.added[z].id + ']', period: pair(null, day), shift: pair(null, sh), lock: shLock }));
-          for (z = 0; z < m.removed.length; z++) items.push(it({ what: 'roster', kind: 'removed', id: m.removed[z].id, path: p + '.roster[' + m.removed[z].id + ']', period: pair(day, null), shift: pair(sh, null), lock: shLock }));
-          for (z = 0; z < m.changed.length; z++) items.push(it({ what: 'roster', kind: 'changed', id: m.changed[z].id, path: p + '.roster[' + m.changed[z].id + ']', period: pair(day, day), shift: pair(sh, sh), lock: shLock }));
-        }
-        var ok2 = union(ox, oy), other = 0, z3; for (z3 = 0; z3 < ok2.length; z3++) { var f2 = ok2[z3]; if (f2 === 'ap' || f2 === 'apAt' || f2 === 'apBy' || f2 === 'roster') continue; if (!deq(ox[f2], oy[f2])) other++; }
-        if (other) items.push(it({ what: 'shiftEdit', kind: 'changed', id: k + '|' + sh, path: p, period: pair(day, day), shift: pair(sh, sh), lock: shLock }));
-      }
-      var dk = union(x, y), oth = 0, z4; for (z4 = 0; z4 < dk.length; z4++) if (dk[z4] !== 'shifts' && !deq(x[dk[z4]], y[dk[z4]])) oth++;
-      if (oth) items.push(it({ what: 'dayEdit', kind: 'changed', id: k, path: k, period: pair(day, day), lock: lk }));
-    }
-    if (!items.length) items.push(it({ what: 'resource', kind: kindOf(a, b), id: 'dreport', path: '*' }));
-    return items;
-  };
-  /* ═══ الجدولُ الشهري ═══ */
-  function lockState(locks, mk) { if (locks === undefined || locks === null) return null; var v = obj(locks)[mk]; return v === true || v === 1; }
-  X.staffingItems = function (a, b, ctx) {
-    a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), L = ctx.locks ? ctx.locks.staffing : undefined;
-    for (i = 0; i < ks.length; i++) {
-      k = ks[i]; if (deq(a[k], b[k])) continue; var per = parseMonth(k), ls = lockState(L, k), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_staffing_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
-      if (a[k] === undefined) {
-        items.push(it({ what: 'month', kind: 'added', id: k, path: k, period: pair(null, per), lock: lk }));
-        if (ctx.read) { var ym = obj(b[k]), q3; for (q3 in ym) { if (q3 === '__shifts') continue; var r3 = obj(ym[q3]); items.push(it({ what: 'row', kind: 'added', id: k + '|' + q3, path: k + '[' + q3 + ']', period: pair(null, per), owner: pair(null, q3), shift: pair(null, r3.shift || null), lock: lk })); } }
-        continue;
-      }
-      if (b[k] === undefined) { items.push(it({ what: 'month', kind: 'removed', id: k, path: k, period: pair(per, null), lock: lk })); continue; }
-      var x = obj(a[k]), y = obj(b[k]), eks = union(x, y);
-      for (q = 0; q < eks.length; q++) {
-        var ek = eks[q]; if (deq(x[ek], y[ek])) continue;
-        if (ek === '__shifts') { items.push(it({ what: 'snapshot', kind: kindOf(x[ek], y[ek]), id: k + '|__shifts', path: k + '[__shifts]', period: pair(per, per), lockOp: true })); continue; }
-        var r0 = obj(x[ek]), r1 = obj(y[ek]), kd = kindOf(x[ek], y[ek]);
-        items.push(it({ what: 'row', kind: kd, id: k + '|' + ek, path: k + '[' + ek + ']', period: pair(kd === 'added' ? null : per, kd === 'removed' ? null : per), owner: pair(kd === 'added' ? null : ek, kd === 'removed' ? null : ek), shift: pair(kd === 'added' ? null : (r0.shift || null), kd === 'removed' ? null : (r1.shift || null)), lock: lk }));
-      }
-    }
-    if (!items.length) items.push(it({ what: 'resource', kind: kindOf(a, b), id: 'staffing', path: '*' }));
-    return items;
-  };
-@@SYS:scope.items.tasks@@  /* ═══ الاسترشاد · المضبوطات ═══ */
+@@SYS:scope.items.plan@@@@SYS:scope.items.daily@@@@SYS:scope.items.dreport@@@@SYS:scope.items.staff.head@@  function lockState(locks, mk) { if (locks === undefined || locks === null) return null; var v = obj(locks)[mk]; return v === true || v === 1; }
+@@SYS:scope.items.staff@@@@SYS:scope.items.tasks@@  /* ═══ الاسترشاد · المضبوطات ═══ */
   X.reportItems = function (a, b) {
     var ra = arr(obj(a).reports), rb = arr(obj(b).reports), items = [], i;
     var m = matchById(ra, rb, function (e) { return isObj(e) && e.id != null ? String(e.id) : null; });
@@ -345,7 +209,7 @@ var KIVO_SCOPE = (function (S, R) {
     var ex = ctx.scopeValues && ctx.scopeValues.Shift;
     if (Array.isArray(ex)) { for (i = 0; i < vs.length; i++) if (!has(ex, vs[i].v)) return deny('shift-out-of-scope (' + vs[i].side + ':' + vs[i].v + ')', { basis: 'explicit scope value', transition: transition }); return allow('shift-in-scope', { basis: 'explicit scope value', transition: transition }); }
     var mine = null, p = item.period && (item.period.new || item.period.old); if (typeof ctx.actorShift === 'function') mine = ctx.actorShift(p ? p.y + '-' + p.m : '');
-    var ev = mine ? (vs.every(function (x) { return String(x.v) === String(mine); }) ? 'staffing-shift-match' : 'staffing-shift-mismatch') : 'no-staffing-evidence';
+    var ev = mine ? (vs.every(function (x) { return String(x.v) === String(mine); }) ? @@SYS:scope.shift.evidence|empty="'actor-shift-match' : 'actor-shift-mismatch') : 'no-actor-shift-evidence';"@@
     return unk('unmigrated-shift-scope', { basis: 'no explicit Shift scope value for employee', transition: transition, value: vs.map(function (x) { return x.v; }), evidence: ev, actorShift: mine || null, migrationNeeded: true, missingEvidence: !mine });
   };
   D['Assigned'] = function (item, key, ctx) {

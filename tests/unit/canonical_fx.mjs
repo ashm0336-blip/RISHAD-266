@@ -128,7 +128,6 @@ function fixtureKeys() {
         [D1]: { [EKEYS.employee1]: sheet, [EKEYS.leader]: sheet, [EKEYS.noView]: {}, [EKEYS.frozen]: sheet },
         [D2]: { [EKEYS.employee2]: sheet },
       },
-      tplOf: { [D1]: { [EKEYS.leader]: 'TEST_ONLY_supervisory_template' } },
     },
     bassam_platform_v1: {},
     ['bsdept:' + D1 + ':bassam_employees_v1']: users
@@ -137,7 +136,8 @@ function fixtureKeys() {
     ['bsdept:' + D2 + ':bassam_employees_v1']: users
       .filter((u) => u.deptId === D2 && !u.mgr)
       .map((u) => ({ eid: u.ekey, name: u.name, nid: u.un })),
-    ['bsdept:' + D1 + ':bassam_perm_tpls_v1']: [{ id: 'TEST_ONLY_supervisory_template', name: 'TEST_ONLY renamed template', sup: true }],
+    /* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — الطاقمُ الإشرافيُّ دورُ الإدارة الموسوم sup:true (019 nfLeader · BassamSup) */
+    ['bsdept:' + D1 + ':bassam_roles_v1']: { v: 1, roles: [{ id: 'TEST_ONLY_supervisory_template', name: 'TEST_ONLY renamed template', desc: '', sup: true, sys: {} }], people: { [EKEYS.leader]: { role: 'TEST_ONLY_supervisory_template', ex: [] } } },
   };
   return { users, keys };
 }
@@ -198,7 +198,7 @@ async function fixtureWorld({ mode = 'enforce', through = null } = {}) {
   if (through) allowTestSchemaUpgrade(DB);
   /* RISHAD-266 · schema 10: the synthetic employee roster is an operational resource. Install it through the real
      cutover planner (same as tasks_fx/current_schema_fx) — the worker correctly refuses a KV copy of it. */
-  else if (DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '10') await installOperationalFixture(env, W);
+  else if (DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '11') await installOperationalFixture(env, W);
   const api = async (who, route, { method = 'GET', body } = {}) => {
     const headers = new Headers();
     if (who) headers.set('Cookie', 'bs_tok=TEST_ONLY_session_' + who);

@@ -146,7 +146,7 @@
   },
   "root.liveKeys": {
    "order": 20,
-   "text": "seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, "
+   "text": "seized: /seized|employees@@SYS:root.liveKeys.seized.staff@@|shift_options@@SYS:root.liveKeys.seized.dreport@@|rounds|dayshift/, "
   },
   "root.landing.systems": {
    "order": 20,
@@ -387,10 +387,6 @@
   "bc.out.systems": {
    "order": 20,
    "text": "  manifest.domains.seized = 1;\n"
-  },
-  "retro.counters": {
-   "order": 20,
-   "text": "seized: pv3Retro()"
   },
   "retro.table": {
    "order": 20,

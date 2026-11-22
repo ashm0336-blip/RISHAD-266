@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/054-image-contract.js.tpl */
 /* ══ R169-CC · عقدُ الصورة الأصلية ══════════════════════════════════════════
    STG: بادئةُ أجزاء الرفع المرحَّلة — خارج [a-z0-9_] فلا يطابقها معرّفُ صورةٍ ولا تُنسب إليها ملكية.
    R2_MARK: سطرُ المرجع في D1 حين يكون الأصلُ في المستودع الكائنيّ.
@@ -242,7 +243,6 @@ async function imgRefsOfKey(env, k) {
   var r = await env.DB.prepare('SELECT img FROM imgref WHERE k = ?1').bind(k).all();
   return ((r && r.results) || []).map(function (x) { return x.img; });
 }
-function imgDeptWriter(A, d) { var wp = writePages(A, d); return wp === null || wp.length > 0; }
 /* V7-F · owner decisions 1+3 — the ORIGINAL unit of an orphan is imgown.dept, and it only counts while that unit still exists and was never
    deleted since the image was orphaned: a unit delete stamps its orphans IMG_GONE (019e), so a unit or section created later under the same id
    inherits nothing. Then: an orphan is re-bound only by a record of that unit (its own undo inside the grace) or by the platform admin. */
@@ -259,16 +259,7 @@ function imgNo(A, o, why) {
   return { ok: false, why: why, open: why === 'inuse' || !!(o && o.dept && o.uid !== IMG_GONE && imgUnitLive(A, o.dept) && deptInScope(A, o.dept)) };
 }
 /* كتابةُ الصورة = كتابةُ مورد مالكها. لا anyWriter، ولا دورٌ يعلو على سجل الموارد. */
-function imgWriteOk(A, k) {
-  if (A && A.enf) return enfImgWriteOk(A, k);                                 /* KIVO_243 */
-  var R8 = resOf(k); if (!R8 || R8.scope === 'device') return false;
-  var P8 = parseKey(k);
-  if (R8.scope === 'global' || !P8.dept) return A.u.role === 'super';
-  if (A.u.role === 'super') return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — بعد فحص المورد والشكل، قبل السقف والأوراق */
-  if (!deptInScope(A, P8.dept)) return false;
-  if (R8.rule) return imgDeptWriter(A, P8.dept);
-  return authorize(A, k, 'edit').ok || authorize(A, k, 'add').ok || authorize(A, k, 'del').ok;
-}
+function imgWriteOk(A, k) { return enfImgWriteOk(A, k); }   /* KIVO_243 · V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
 /* mode: 'read' | 'put' | 'del' — الحكمُ من المالك وحده */
 async function imgVerdict(env, A, ik, mode) {
   if (!A || !A.u) return { ok: false, why: 'session' };
@@ -955,8 +946,8 @@ function usersPick(u, ek) {
   for (var i = 0; i < USERS_DIR_F.length; i++) { var f = USERS_DIR_F[i]; if ((f !== 'ekey' || ek || usersSynKey(u.ekey)) && Object.prototype.hasOwnProperty.call(u, f)) c[f] = u[f]; }
   return c;
 }
-/* القراءةُ بلا ظلّ القياس (permv2NoteRead في canRead) — الإسقاطُ لا يغيّر عدّاداتِ /api/permv2 */
-function usersReadsEmps(A, d) { var k = 'bsdept:' + d + ':bassam_employees_v1'; return A.enf ? canReadEnf(A, k) : canRead0(A, k); }
+/* القراءةُ بلا مسار canRead العام (V7 · د5-هـ 44: ظلُّ القياس الذي كان فيه حُذف) */
+function usersReadsEmps(A, d) { return canReadEnf(A, 'bsdept:' + d + ':bassam_employees_v1'); }   /* V7 · د5-ح: المحرّكُ النافذ وحده */
 /* عدسةُ الفاعل: سجلٌّ مخزَّن (بعد نزع البصمة والرقم) ⇒ هو نفسُه (يُرى كاملاً) · نسخةُ دليلٍ مقلَّصة · null (لا يُرسل) — الحكمُ مرةً لكل إدارة */
 function usersLens(A) {
   var memo = nmap();
@@ -1223,7 +1214,7 @@ function redactPh(s, where) {
   return out;
 }
 /* دمج الحفظ القادم من المتصفح: سجل وصل بلا ph يرث بصمته المخزونة */
-function mergeUsers(incomingJson, currentList, actorUid, rid) {
+function mergeUsers(incomingJson, currentList, actorUid, rid, info) {
   var inc;
   try { inc = JSON.parse(incomingJson); } catch (e) { return null; }
   if (!Array.isArray(inc) || !inc.length) return null;
@@ -1238,7 +1229,7 @@ function mergeUsers(incomingJson, currentList, actorUid, rid) {
     /* KIVO_253 · AUD-035 (ب): بصمةٌ قديمة p1$ لحسابٍ بصمتُه المخزَّنة p2$ = نسخةٌ قديمة لدى الكاتب لا كلمةٌ جديدة (العملاءُ يولّدون p2$ دائماً) —
        تُحفظ المخزَّنة فلا تُنزَّل البصمةُ ولا تُبطَل جلساتُ صاحبها؛ الاستثناء: تعيينٌ مؤقت جديد (mc يُرفع) أو صاحبُ الحساب نفسُه (سقوطُ متصفحٍ بلا WebCrypto) */
     if (u && u.id && u.ph && String(u.ph).indexOf('p2$') !== 0 && s && String(s.ph || '').indexOf('p2$') === 0 && u.ph !== s.ph
-        && !(u.mc && !s.mc) && u.id !== actorUid) { var c2 = {}; for (var k2 in u) c2[k2] = u[k2]; c2.ph = s.ph; stale++; return c2; }
+        && !(u.mc && !s.mc) && u.id !== actorUid) { var c2 = {}; for (var k2 in u) c2[k2] = u[k2]; c2.ph = s.ph; stale++; if (info) (info.stale = info.stale || []).push(u.name || u.un || u.id); return c2; }
     return u;
   });
   if (stale) logEv('warn', 'users-stale-ph', { rid: rid, n: stale });
@@ -1255,8 +1246,10 @@ async function session(env, req) {
   if (P && P.live && P.hasSess && P.tok === tok) s = P.sess;
   else s = await env.DB.prepare('SELECT tok, uid, ts, la, dev FROM sess WHERE tok = ?1').bind(tok).first();
   if (!s) return null;
-  var now = Date.now();
-  if (now - s.ts > SESSION_MAX || now - s.la > IDLE_MAX || (s.dev === 'test' && now - s.ts > ENF_TEST_TTL)) {   /* KIVO_244 · ADR-004: جلسةُ الاختبار تنتهي بعد ENF_TEST_TTL مهما بقيت في الجدول */
+  var now = Date.now(), lim = SESSION_MAX;
+  /* V7 · د5-هـ (x1): «شاشة العرض» (role:'display') عمرُها DISP_MAX (سياسةُ dispH) — يُسأل عن الدور بعد تجاوز العمر العادي وحده */
+  if (now - s.ts > lim && DISP_MAX > lim && now - s.ts <= DISP_MAX && ((await usersList(env)) || []).some(function (x) { return x && x.id === s.uid && x.role === 'display'; })) lim = DISP_MAX;
+  if (now - s.ts > lim || now - s.la > IDLE_MAX || (s.dev === 'test' && now - s.ts > ENF_TEST_TTL)) {   /* KIVO_244 · ADR-004: جلسةُ الاختبار تنتهي بعد ENF_TEST_TTL مهما بقيت في الجدول */
     await env.DB.prepare('DELETE FROM sess WHERE tok = ?1').bind(tok).run();
     return null;
   }
@@ -1443,6 +1436,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   /* R169: أحداثُ السجل المرافقة — تُقبل فقط لمفاتيح هذا الطلب، وتُكتب مع القيمة في الدفعة نفسِها */
   var audKeysOk = {}; for (var ka9 in set) audKeysOk[String(ka9)] = 1; for (var da9 = 0; da9 < del.length; da9++) audKeysOk[String(del[da9])] = 1;
   var audIn = audClean(body && body.aud, audKeysOk);
+  audIn = audIn.filter(function (e) { return e.etype !== 'perm44'; });   /* V7 · د5-هـ (44): أحداثُ «سجل الصلاحيات» يكتبها الخادمُ وحده (057b perm44AudEv) */
   /* PRIVACY batch (019u header · privIn/privPermsStale): hidden parts come back from the stored value BEFORE any context or rule, so every rule
      judges the value as it will be written; a registry built on another projection (body.pscope) and a changed hidden reference stop here (pvNo9). */
   var pvNo9 = nmap();
@@ -1460,8 +1454,6 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      المحذوفة: 073) — والحفظُ الخامّ من العميل معرّفاتُه 'c…' (290). حدثٌ بمعرّف الخادم في حفظةٍ من العميل يُسقط ولا يُكتب (كان مستخدمٌ يملك الإضافةَ وحدها
      يُلغي موعدَ سلسلةِ غيره بحدث «أُنشئت» مزوَّر) — ومساراتُ الخادم (A.__tkSrv · tkSave: opt.srv — والمسارُ الذاتي منها) كما هي */
   if (!A.__tkSrv && !(opt && opt.srv)) audIn = audIn.filter(function (e) { return !/^tk/i.test(e.cid); });
-  /* R194 · Phase 2 (باقٍ في Phase 3 دليلاً مسانداً): حفظةُ استعادةِ نسخة من أحداث التدقيق (dataset · import|restore) — للظلّ فقط */
-  var pv2Restore = false; for (var pr9 = 0; pr9 < audIn.length; pr9++) if (audIn[pr9].etype === 'dataset' && (audIn[pr9].act === 'import' || audIn[pr9].act === 'restore')) pv2Restore = true;
   /* R196 · Phase 3: علاماتُ العمليات الصريحة (body.ops) — بياناتٌ غيرُ موثوقة تُعقَّم (KIVO_BUILD.markers) وتُقرأ للظلّ فقط؛ لا تصل إلى canWrite ولا إلى أي قاعدة */
   var pv3M = { ops: {}, n: 0, bad: 0, byOp: {} }; try { pv3M = KIVO_BUILD.markers(body && body.ops, audKeysOk); } catch (e3m) { swallow('pv3-markers', e3m, env.__rid); }
   var pv3Restore = null; for (var pm9 in pv3M.ops) if (pv3M.ops[pm9].op === 'backup.restore') { pv3Restore = pv3M.ops[pm9]; break; }
@@ -1476,20 +1468,17 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var pv3RetroCtx = {}; try { pv3RetroCtx = await permv3RetroLoad(env, set, del); } catch (e3r) { swallow('pv3-retroLoad', e3r, env.__rid); }
   /* R197 · Phase 4: مرجعياتُ النطاق المخزّنة (أقفالُ الجدول/المهام · جدولُ الورديات) لكل إدارة — للظلّ فقط */
   var pv4Refs = {}; try { pv4Refs = await permv4RefsLoad(env, set, del); } catch (e4r) { swallow('pv4-refsLoad', e4r, env.__rid); }
-  /* KIVO_243 · الإنفاذ: سياقُ الحفظة (سجلّاتُ النطاق · جداولُ الورديات · الأسباب · سياستا الاستيراد والاستعادة) — في وضع الإنفاذ وحده */
-  var ENFX = null;
-  if (A.enf) {
-    var enfAudRestore = false, enfAudHist = false;
-    for (var ah9 = 0; ah9 < audIn.length; ah9++) if (audIn[ah9].etype === 'dataset') { if (audIn[ah9].act === 'restore') enfAudRestore = true; else if (audIn[ah9].act === 'import' && resName(audIn[ah9].k) === K_DSTATS) enfAudHist = true; }
-    ENFX = await enfSavePrep(env, A, body, set, del, audKeysOk, pv3M, pv3Restore, enfAudRestore, enfAudHist, pv3RetroCtx, pv4Refs);
-  } else if (A.u.ekey) for (var ob9 in set) { var od9 = parseKey(ob9).dept; if (od9 && resName(ob9) === 'bassam_rounds_v1') (A.__obsToks = A.__obsToks || nmap())[od9] = enfToksOf(await opResourceGet(env, 'bsdept:' + od9 + ':bassam_employees_v1'), String(A.u.ekey)); }   /* RISHAD266 (F24 في الوضع القديم): هويّاتُ راصد الميدان في التسكين — كالإنفاذ */
+  /* KIVO_243 · الإنفاذ: سياقُ الحفظة (سجلّاتُ النطاق · جداولُ الورديات · الأسباب · سياستا الاستيراد والاستعادة) — V7 · د5-ح (القفل): دائماً */
+  var enfAudRestore = false, enfAudHist = false;
+  for (var ah9 = 0; ah9 < audIn.length; ah9++) if (audIn[ah9].etype === 'dataset') { if (audIn[ah9].act === 'restore') enfAudRestore = true; else if (audIn[ah9].act === 'import' && resName(audIn[ah9].k) === K_DSTATS) enfAudHist = true; }
+  var ENFX = await enfSavePrep(env, A, body, set, del, audKeysOk, pv3M, pv3Restore, enfAudRestore, enfAudHist, pv3RetroCtx, pv4Refs);
   /* الرقمُ يُخصَّص بعد المرور كلِّه، حين يُعرف أن ثمّة ما يُنفَّذ فعلاً */
   var rev = 0, pend = [];
   var st = [], k, changed = 0, i;
   var revs = await revsAll(env);
   var out = { revs: {}, denied: {}, conflicts: {} };
   /* READ-01: لا تُسلَّم قيمةٌ حاليةٌ إلا لمن يقرأ المفتاح — الرفضُ لا يكون قناةَ تسريب */
-  var curSafe = function (kq, cq) { if (!canRead(A, kq)) return null; if (ENFX && cq != null) { try { cq = enfProjectStr(A, kq, cq, ENFX.refs); } catch (eP9) { return null; } } if (kq === K_USERS && cq != null) cq = usersScopeOut(usersNoOut(stripPh(cq), A), A); return privOut(A, kq, cq); };   /* KIVO_248 · AUD-033: القيمةُ الحالية في denied/conflicts كانت تحمل بصمات كلمات المرور — تُنزع كما في /api/get والإقلاع · KIVO_254 (ج): لكل الأدوار بلا استثناء (كان مدير النظام يُستثنى) */
+  var curSafe = function (kq, cq) { if (!canRead(A, kq)) return null; if (cq != null) { try { cq = enfProjectStr(A, kq, cq, ENFX.refs); } catch (eP9) { return null; } } if (kq === K_USERS && cq != null) cq = usersScopeOut(usersNoOut(stripPh(cq), A), A); return privOut(A, kq, cq); };   /* KIVO_248 · AUD-033: القيمةُ الحالية في denied/conflicts كانت تحمل بصمات كلمات المرور — تُنزع كما في /api/get والإقلاع · KIVO_254 (ج): لكل الأدوار بلا استثناء (كان مدير النظام يُستثنى) */
   var curUsers = null, now = Date.now();
   var ident = { uid: A.u.id, un: String(A.u.un || ''), ip: (ip && ip.ip) || '', city: (ip && ip.city) || '', dev: (ip && ip.dev) || '' };
   /* KIVO_264 · D14 · OD-7: حفظةٌ تغيّر اسمَ دخول صاحبها (un/alt) ⇒ كلمةُ المرور الحالية «cur» في جسمها تُفحص هنا مرّةً (PBKDF2 غيرُ متزامن) — والحكمُ في selfAcctWhy (018) */
@@ -1577,15 +1566,15 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   var CLEAN_RES = { 'bassam_staffing_v3': 1, 'bassam_staffing_v2': 1, 'bassam_tasks_v1': 1,
                     'bassam_custody_v1': 1, 'bassam_award_v1': 1, 'bassam_plan_v1': 1, 'bassam_rounds_v1': 1 };
   var protOp = '';
-  var hasEmp = {}, hasClean = {}, hasStaff = {};
+  var hasEmp = {}, hasClean = {}, hasSched = {};
   for (k in set) {
     var rnP = resName(k), dP = parseKey(k).dept; if (!dP) continue;
     if (rnP === 'bassam_employees_v1') hasEmp[dP] = k;
     if (CLEAN_RES[rnP]) hasClean[dP] = 1;
-    if (rnP === 'bassam_staffing_v3' || rnP === 'bassam_staffing_v2') hasStaff[dP] = 1;
+    if (rnP === 'bassam_staffing_v3' || rnP === 'bassam_staffing_v2') hasSched[dP] = 1;
   }
   for (var dQ in hasEmp) if (hasClean[dQ]) protOp = 'empDelete';
-  for (var dR in shRenCtx) if (hasStaff[dR]) protOp = protOp || 'shiftRename';
+  for (var dR in shRenCtx) if (hasSched[dR]) protOp = protOp || 'shiftRename';
   if (!protOp) for (k in set) {
     var rnQ = resName(k);
     if (rnQ !== 'bassam_custody_v1' && rnQ !== 'bassam_employees_v1') continue;
@@ -1595,6 +1584,19 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var infQ = {}; alignOld(EQ, aQ, bQ, infQ);
     if (infQ.ren) { protOp = 'custodyRename'; break; }
     if (infQ.adopt) { protOp = 'adopt'; break; }
+  }
+  /* V7 · د5-هـ (44): سجلُّ الأدوار ومنحُه المترجَم — قيمتاهما كما ستُكتبان (من الطلب، وإلا المخزَّن) لكل وحدةٍ تمسّها الحفظة، قبل أيّ حكم (057b perm44Pair);
+     والحفظةُ التي تحمل سجلَّ الأدوار ذرّية: إمّا السجلّان معاً أو لا شيء */
+  A.__p44 = null;
+  var p44D9 = nmap(), del9s = del.map(String);
+  Object.keys(set).concat(del9s).forEach(function (kk) { var dd = parseKey(kk).dept, rn = resName(kk); if (dd && (rn === PERM44_RES || rn === ENF_GRANTS_RES)) p44D9[dd] = 1; });
+  for (var dq44 in p44D9) {
+    var rk44 = perm44Key(dq44), gk44 = enfGrantsKey(dq44), rc44 = await opResourceGet(env, rk44), gc44 = await opResourceGet(env, gk44);
+    var rIn44 = Object.prototype.hasOwnProperty.call(set, rk44) || del9s.indexOf(rk44) !== -1, gIn44 = Object.prototype.hasOwnProperty.call(set, gk44) || del9s.indexOf(gk44) !== -1;
+    (A.__p44 = A.__p44 || nmap())[dq44] = { rolesCur: rc44, grantsCur: gc44, rolesInBatch: rIn44, grantsInBatch: gIn44,
+      roles: rIn44 ? (Object.prototype.hasOwnProperty.call(set, rk44) && set[rk44] != null ? String(set[rk44]) : null) : rc44,
+      grants: gIn44 ? (Object.prototype.hasOwnProperty.call(set, gk44) && set[gk44] != null ? String(set[gk44]) : null) : gc44 };
+    if (rIn44) protOp = protOp || 'perm44';
   }
   var todo = [];
   /* F01 · الأقسام: سجلّا الهيكل (الوحدات ثم العقد) يُحكم عليهما قبل كلِّ مفتاح — فوحدةٌ جديدةٌ في الحفظة وحدةٌ لمفاتيحها أيّاً كان ترتيبُها؛
@@ -1611,7 +1613,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
      في حفظةٍ واحدة، ورفعُ الإسقاط يُحكم بما سيحمله الموظفُ بعد الحفظ (059 enfMinusLiftWhy) — فتُقيَّم الصلاحياتُ أوّلاً، وتُعطى سجلاتُ المنح صلاحياتِ ما بعد
      الحفظ إن قُبلت (pa9) وإلا المخزَّنة؛ ومنحٌ حُكم بها لا يُكتب إلا إن كُتبت هي في الحفظة نفسها (حارسُ نسختها في مجموعته: dep9) */
   var pa9 = null, paOn9 = false;
-  if (A.enf && A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_PERM) && todo.some(function (t) { return resName(t.k) === ENF_GRANTS_RES; })) {
+  if (A.u.role !== 'super' && Object.prototype.hasOwnProperty.call(set, K_PERM) && todo.some(function (t) { return resName(t.k) === ENF_GRANTS_RES; })) {
     paOn9 = true; var rk9 = function (x) { return x.act !== 'set' ? 0 : (x.k === K_DEPTS || x.k === K_GDEPTS) ? 2 : x.k === K_PERM ? 1 : 0; }; todo.sort(function (x, y) { return rk9(y) - rk9(x); });
   }
   /* «… (الجولة 2)» · R3-2: ربطُ حسابٍ بمفتاحٍ يحمل منحاً صريحاً باقياً يُحكم كمنح (018 usersGrantWhy) — سجلاتُ المنح لكلّ الوحدات تُقرأ مرّةً لحفظ الحسابات */
@@ -1634,9 +1636,9 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var w9 = regPairWhy(A, todo[j].k, todo[j].v, e9.cur, regRst9[j], todo[1 - j].k);
     if (!w9) return;
     batchRegUndo(A, regMks9[j]);
-    var vn9 = ENFX ? enfNo(w9) : null;
+    var vn9 = enfNo(w9);
     evald[j] = { deny: w9, cur: e9.cur, x: vn9 };
-    if (ENFX) { var lp9 = enfLogRow(A, todo[j].k, vn9, '/api/save', { ip: ident.ip }); if (lp9) ENFX.log.push(lp9); }
+    var lp9 = enfLogRow(A, todo[j].k, vn9, '/api/save', { ip: ident.ip }); if (lp9) ENFX.log.push(lp9);
   };
   for (i = 0; i < todo.length; i++) {
     regUndo9(i - 1);
@@ -1649,13 +1651,13 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     var cur0 = await opResourceGet(env, k0), P00 = parseKey(k0), d00 = P00 ? P00.dept : '', raw0 = it0.v;
     /* PRIVACY batch (019u): registry built on another projection ⇒ conflict with the current one (usOut9: pscope · why) · projection without
        pscope omitting a visible entry, or a changed hidden reference ⇒ refused — nothing of it is judged or written */
-    if (it0.act === 'set' && pvNo9[k0] && !(ENFX && ENFX.batchDeny)) { evald.push(pvNo9[k0] === 'scope' ? { conflict: 1, cur: cur0 } : { deny: pvNo9[k0], cur: cur0, sd: pvNo9[k0] }); continue; }
+    if (it0.act === 'set' && pvNo9[k0] && !ENFX.batchDeny) { evald.push(pvNo9[k0] === 'scope' ? { conflict: 1, cur: cur0 } : { deny: pvNo9[k0], cur: cur0, sd: pvNo9[k0] }); continue; }
     if (it0.act === 'set' && k0 === K_USERS && A.u.role !== 'super') {
       /* مراجعةُ التكامل W1-R1: قائمةٌ بُنيت على عدسةٍ غير عدسته الآن (usStale9) ⇒ تعارضٌ قبل usersNoIn/usersScopeIn/canWrite — فلا يُحكم على إسقاطٍ قديم
          ولا يُكتب منه شيء (ما صار يراه ولم يصله لا يُحسب حذفاً). ورفضُ الدفعة كلِّها في الإنفاذ (batchDeny) يبقى رفضاً
          مراجعةُ التكامل R3-ORDER (منخفض): والتعارضُ قبل بوابة المعرّف المكرَّر — كان تكرارٌ قديمٌ مختلفُ النسخ صارت نسخُه المحجوبةُ مرئيةً بتغيّر العدسة
          يُرفض «dup-id» (سطرٌ أمنيٌّ زائفٌ وإعادةٌ كاملة) بدل التعارض. لا يكتب التعارضُ شيئاً، والمعادُ ببصمةٍ حديثة يمرّ بالبوابة كاملةً (فيُرفض ويُسجَّل إن خالف) */
-      if (usStale9 && !(ENFX && ENFX.batchDeny)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
+      if (usStale9 && !ENFX.batchDeny) { evald.push({ conflict: 1, cur: cur0 }); continue; }
       /* مراجعةُ التكامل W1-CRIT: معرّفٌ مكرَّرٌ في الواردة ⇒ رفضٌ (السجلُّ الأمنيّ: dup-id) إلا تكراراً قديماً لم يُمسّ (usersDupIdIn) — قبل كلّ تحويلٍ وحكم وبالوضعين */
       var dI9 = usersDupIdIn(it0.v, cur0, A);
       if (dI9.id != null) { evald.push({ deny: 'users', cur: cur0, x: { detail: 'dup-id' }, sd: 'users · dup-id ' + String(dI9.id).slice(0, 80) }); continue; }
@@ -1666,7 +1668,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
          (يعود العميلُ القديم إلى قيمة الخادم ويعيد المستخدمُ التحميل) — والقائمةُ الكاملة القديمة والمُسقَطةُ التي لا تحذف شيئاً تمضيان كما كانتا */
       if (!(typeof (body && body.uscope) === 'string' && body.uscope !== '') && usersOmitsSeen(it0.v, cur0, A)) {
         /* وعلى نسخةٍ قديمة (عبارةُ فحص النسخة نفسُها): تعارضٌ بالإسقاط الحالي — يدمجه العميلُ القديمُ (merge3) فيحمل ما صار يراه ويعيد بنسخةٍ حديثة */
-        if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0) && !(ENFX && ENFX.batchDeny)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
+        if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0) && !ENFX.batchDeny) { evald.push({ conflict: 1, cur: cur0 }); continue; }
         evald.push({ deny: 'users', cur: cur0, x: { detail: 'users-stale-client' }, sd: 'users · users-stale-client' }); continue;
       }
     }
@@ -1682,7 +1684,6 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       var st9 = Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0);   /* KIVO_265: base قديم ⇒ x من الخادم (H-1 · تعارضٌ لا رفض) */
       var kp9 = tkKeepSelf(it0.v, cur0, { x: !!st9 }); if (kp9.n) { it0.v = kp9.v; logEv('warn', 'tk-kept', { n: kp9.n, rid: env.__rid }); }
     }
-    if (!ENFX && it0.act === 'set' && it0.v != null && cur0 != null && d00 && resName(k0) === 'bassam_rounds_v1') it0.v = obsKeepOthers(A, d00, it0.v, cur0);   /* RISHAD266: راصد الميدان في الوضع القديم (018) */
     var ctx0 = {
       empsEmpty: wipeCtx[d00] === true, emps: empCtx[d00] || null, shRen: shRenCtx[d00] || null,
       imp: !!d00 && actsHeldOn(A, d00, 'admin/import', ['del']),
@@ -1695,15 +1696,14 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       ed: edCtx9 && d00 && resName(k0) === 'bassam_employees_v1' ? edCtx9 : null,  /* KIVO_265 · أمن: تفرّدُ الهوية عبر الإدارات (018 empDupWhy) */
       dw: !!(d00 && opt && Array.isArray(opt.__serverDepartmentWipes) && opt.__serverDepartmentWipes.indexOf(d00) !== -1)   /* RISHAD-266: مسحُ الإدارة أو حذفُها في الخادم (059 scopeRetiredWhy) */
     };
-    if (ENFX) {
-      /* merge-on-write: ما يُحجب عن الفاعل في القراءة يعود من القيمة الحالية قبل التصنيف — فلا يمحوه ولا يكتب فيه */
-      /* …ومحاولةُ الكتابة في المحجوب (أو فشلُ الدمج) رفضٌ صريح — fail-closed */
-      if (it0.act === 'set' && it0.v != null && cur0 != null) { try { var mc9 = enfMergeChk(A, k0, it0.v, cur0, ENFX.refs); it0.v = mc9.v; if (mc9.hidden) ctx0.enfHidden = 'hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)'; } catch (eM9) { ctx0.enfHidden = 'merge-failed'; } }
-      ctx0.imp = !!d00 && enfHeld(A, d00, 'import.replace');
-      ctx0.enf = enfCtxFor(ENFX, k0, d00);
-    }
-    if (i < regN9) regRst9[i] = ENFX ? !!(ctx0.enf && ctx0.enf.restore) : !!ctx0.rst;   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */
-    var vd0 = ENFX && ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ENFX && ctx0.enfHidden ? enfSuperGate(A, enfNo('scope', { detail: ctx0.enfHidden })) : canWrite(A, k0, it0.v, cur0, ctx0));
+    /* merge-on-write: ما يُحجب عن الفاعل في القراءة يعود من القيمة الحالية قبل التصنيف — فلا يمحوه ولا يكتب فيه */
+    /* …ومحاولةُ الكتابة في المحجوب (أو فشلُ الدمج) رفضٌ صريح — fail-closed */
+    if (it0.act === 'set' && it0.v != null && cur0 != null) { try { var mc9 = enfMergeChk(A, k0, it0.v, cur0, ENFX.refs); it0.v = mc9.v; if (mc9.hidden) ctx0.enfHidden = 'hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)'; } catch (eM9) { ctx0.enfHidden = 'merge-failed'; } }
+    ctx0.imp = !!d00 && enfHeld(A, d00, 'import.replace');
+    ctx0.enf = enfCtxFor(ENFX, k0, d00);
+    if (it0.act === 'set' && resName(k0) === 'bassam_rounds_v1') it0.v = dailyArcFill(env, k0, it0.v, cur0);   /* V7 · د5-ح (13): غيابُ يومٍ مؤرشف ليس حذفاً — 019p3 */
+    if (i < regN9) regRst9[i] = !!(ctx0.enf && ctx0.enf.restore);   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */
+    var vd0 = ENFX.batchDeny ? enfNo(ENFX.batchDeny.why, ENFX.batchDeny) : (ctx0.enfHidden ? enfSuperGate(A, enfNo('scope', { detail: ctx0.enfHidden })) : canWrite(A, k0, it0.v, cur0, ctx0));
     /* KIVO_265 · المراجعةُ الموحّدة (R-4): أحكامُ مخزن المهام الخامّ (018 taskRawWhy) تقيس الحفظةَ على القيمة الحالية — فعلى base قديمٍ قد يكون الحكمُ
        أثرَ ما كتبه الخادمُ أو غيرُه بعد قراءتها (تمديدٌ في 23 · حذفُ صفٍّ · إعادةُ إسناد) لا فعلَها هي. ولا كتابةَ على base قديمٍ أصلاً (فحصُ النسخة أدناه)
        ⇒ تعارضٌ يدمجه العميلُ ثم يعيد الإرسالَ بنسخةٍ حديثة فيُحكم عليه كاملاً (والرفضُ حينها صريح). كانت تُرفض «task-x» فتُسقط الواجهةُ تعديلاتِ
@@ -1711,11 +1711,8 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (!vd0.ok && it0.act === 'set' && TK_RAW_WHY[vd0.why] && resName(k0) === 'bassam_tasks_v1' && Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) {
       evald.push({ conflict: 1, cur: cur0 }); continue;
     }
-    if (ENFX) { var lr9 = enfLogRow(A, k0, vd0, '/api/save', { ip: ident.ip }); if (lr9) ENFX.log.push(lr9); }
-    /* R194…R203 — الظلّ: يقيس حكمَ السجل الحالي v24.9 (ربطُ الحرّاس + آلياتُ Phase 3 + نطاقُ Phase 4/4.1/4.1.1 — وPhase 4.2 جردٌ تجريبي لا يمسّ الكتابة — وPhase 4.3 هويةٌ ثابتة يقرؤها المحرّك — وPhase 4.4 بروفةُ ترحيلٍ لا تكتب — وPhase 4.5 تمهيدٌ مُدمَج هوية→نطاق لا يكتب) بجانب حكم canWrite ولا يغيّره؛ canWrite نفسُها لم تُمسّ.
-       علاماتُ العمليات (ops) وسياقُ الاستدراك يُضافان إلى ctx0 هنا — بعد صدور الحكم — فلا تراهما canWrite ولا أيُّ قاعدة */
-    try { ctx0.restore = !!(pv2Restore || pv3Restore); ctx0.op = pv3M.ops[k0] || null; ctx0.retroWin = pv3RetroCtx; ctx0.pv4 = pv4Refs[d00] || {}; if (!PERMV2.mute && !ENFX) permv2Bind(A, k0, it0.v, cur0, ctx0, vd0); } catch (e9b) { swallow('permv2-batch', e9b, env.__rid); }
-    if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: ENFX || vd0.detail ? vd0 : null }); continue; }
+    var lr9 = enfLogRow(A, k0, vd0, '/api/save', { ip: ident.ip }); if (lr9) ENFX.log.push(lr9);
+    if (!vd0.ok) { evald.push({ deny: vd0.why, cur: cur0, x: vd0 }); continue; }
     /* KIVO_259 · SR-8: اسمُ دخولٍ جديد (أو معدَّل) يصادم حساباً آخر ⇒ رفض — لكل الأدوار ومنها مدير النظام (الواجهةُ تمنعه أصلاً: taken · empHolder) */
     /* مراجعةُ التكامل W1-R2: ولغير مدير النظام يسمّي الرفضُ الصفوفَ المخالفة (dup) — مما أرسله الفاعلُ نفسُه وحده، لا من حسابٍ محجوب */
     if (it0.act === 'set' && k0 === K_USERS) {
@@ -1766,7 +1763,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
       img0 = seen0;
     }
     if (Object.prototype.hasOwnProperty.call(base, k0) && (revs[k0] || 0) && Number(base[k0]) !== (revs[k0] || 0)) { evald.push({ conflict: 1, cur: cur0 }); continue; }
-    evald.push({ ok: 1, cur: cur0, keys: ENFX ? vd0.keys : null, dep9: !!ctx0.pa, img9: img0 });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
+    evald.push({ ok: 1, cur: cur0, keys: vd0.keys, dep9: !!ctx0.pa, img9: img0 });   /* R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ */
   }
   if (todo.length === regN9) { regUndo9(todo.length - 1); regPair9(); }               /* F01: حفظةٌ فيها السجلّان وحدهما */
   /* V7 · issue #4 (018 nodeCapSweep): the node registry was accepted ⇒ the ceiling records of the nodes it removes go in this same save, and a
@@ -1791,8 +1788,6 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     protOp = protOp || 'capStale';
     for (i = 0; i < todo.length; i++) if (evald[i] && !evald[i].conflict && !evald[i].deny) evald[i] = { deny: 'perms', cur: evald[i].cur, x: { detail: 'stale-client: ' + CAP_STALE_MSG }, sd: 'perms · stale-client' };
   }
-  /* R196 · Phase 3 — حسابُ الحفظة ظلّياً (العلامات · سياسةُ الاستعادة) بعد تقييم كلِّ المفاتيح وقبل أي كتابة */
-  try { if (!PERMV2.mute && !ENFX) permv3Batch(A, set, del, evald, todo, pv3M, pv3Restore, pv2Restore); } catch (e3c) { swallow('permv3-batch', e3c, env.__rid); }
   if (protOp || planOnly) {
     /* مانعٌ واحدٌ يكفي: رفضاً كان أو تعارضاً — فالعملية المترابطة لا تُنفَّذ
        نصفَين. وتبقى معلومات التعارض في الردّ ليُعيد العميلُ المحاولة. */
@@ -1811,15 +1806,15 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
         if (!(opt && opt.quiet)) st.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'denied', target: todo[i].k, detail: ev1.sd || ev1.deny, ip: ident.ip, city: ident.city, dev: ident.dev }));
       }
       out.atomic = protOp;                                          /* عمليةٌ محمية رُدَّت كاملة */
-      if (ENFX) for (var lz = 0; lz < ENFX.log.length; lz++) st.push(enfLogStmt(env, ENFX.log[lz]));
-      if(planOnly)return Object.assign(out,{__plan:1,ok:0,protectedOp:protOp,authzRows:ENFX?ENFX.log:[]});
+      for (var lz = 0; lz < ENFX.log.length; lz++) st.push(enfLogStmt(env, ENFX.log[lz]));
+      if(planOnly)return Object.assign(out,{__plan:1,ok:0,protectedOp:protOp,authzRows:ENFX.log});
       for (var jz = 0; jz < st.length; jz += 90) await env.DB.batch(st.slice(jz, jz + 90));
       out.v = rev - 1;
       return out;
     }
   }
   /* KIVO_243 · §12: نسخةُ ما قبل العملية للاستعادة والاستبدال (import.replace) — تُكتب قبل أي تغيير في الدفعة نفسِها */
-  if (ENFX && !planOnly) {
+  if (!planOnly) {
     var snapIt = [], replace9 = false;
     for (i = 0; i < todo.length; i++) { var ev9 = evald[i]; if (!ev9 || !ev9.ok) continue; if (ev9.keys && ev9.keys.indexOf('import.replace') !== -1) replace9 = true; }
     if (ENFX.restore || replace9) for (i = 0; i < todo.length; i++) if (evald[i] && evald[i].ok) snapIt.push({ k: todo[i].k, cur: evald[i].cur });
@@ -1853,8 +1848,10 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     if (!verdict.ok) { out.denied[k] = usOut9(k, enfDenyInfo({ why: verdict.why, cur: curSafe(k, cur), rev: have }, ev), ev); if (!(opt && opt.quiet)) st.push(secStmt(env, { ts: now, uid: ident.uid, un: ident.un, act: 'denied', target: k, detail: (ev && ev.sd) || verdict.why, ip: ident.ip, city: ident.city, dev: ident.dev })); continue; }
     if (it.act === 'set' && k === K_USERS) {
       if (curUsers === null) curUsers = await usersList(env);
-      var m = mergeUsers(v, curUsers, A.u.id, env.__rid);
+      var mInfo = {}, m = mergeUsers(v, curUsers, A.u.id, env.__rid, mInfo);
       if (m === null) { out.denied[k] = usOut9(k, { why: 'users', cur: curSafe(k, cur), rev: have }); continue; }
+      /* V7 · د5-هـ (أمن ١): البصمةُ القديمة كانت تُستبدل صامتةً بالمخزَّنة ويُعلَن المفتاحُ «محفوظاً» (إعادةُ ضبطٍ لم تقع) — الآن يُرفض بسببٍ يعرضه العميل */
+      if (mInfo.stale && mInfo.stale.length) { out.denied[k] = usOut9(k, { why: 'users', detail: 'stale-client: لم تُحفظ كلمةُ المرور الجديدة لحساب «' + String(mInfo.stale[0]).slice(0, 80) + '»' + (mInfo.stale.length > 1 ? ' و' + (mInfo.stale.length - 1) + ' غيره' : '') + ' — وصلت بصيغة تشفيرٍ قديمة لا تحلّ محلَّ المحفوظة؛ أعد التعيين بكلمةٍ مؤقتة', cur: curSafe(k, cur), rev: have }); continue; }
       /* من غيّر كلمة مروره بنفسه يسقط عنه علم «كلمة مؤقتة» */
       try { var mj = JSON.parse(m), cm = {}; (curUsers || []).forEach(function (x) { if (x && x.id) cm[x.id] = x; });
         mj.forEach(function (x) { if (x && x.id === A.u.id && x.mc && cm[x.id] && x.ph && x.ph !== cm[x.id].ph) delete x.mc; }); m = JSON.stringify(mj); } catch (e) { swallow('users-mc-strip', e, env.__rid); }
@@ -1880,11 +1877,11 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     changed++;
   }
   if (ncM9) out.__nc = ncM9;
-  if(planOnly)return {__plan:1,ok:!Object.keys(out.denied).length&&!Object.keys(out.conflicts).length,protectedOp:protOp,pend:pend,out:out,revs:revs,ident:ident,authzRows:ENFX ? ENFX.log : []};
+  if(planOnly)return {__plan:1,ok:!Object.keys(out.denied).length&&!Object.keys(out.conflicts).length,protectedOp:protOp,pend:pend,out:out,revs:revs,ident:ident,authzRows:ENFX.log};
   /* لحظةُ التخصيص: بعد أن عُرف أن ثمّة تغييراً واحداً على الأقل سيُنفَّذ */
   if (changed) {
     rev = await nextRev(env);
-    if (ENFX && out.snap) st.push(env.DB.prepare("UPDATE authz_snaps SET meta = json_set(COALESCE(meta, '{}'), '$.rev', ?2) WHERE snap = ?1").bind(out.snap, rev));   /* KIVO_243: رقمُ العملية — لكشف الانجراف عند الرجوع */
+    if (out.snap) st.push(env.DB.prepare("UPDATE authz_snaps SET meta = json_set(COALESCE(meta, '{}'), '$.rev', ?2) WHERE snap = ?1").bind(out.snap, rev));   /* KIVO_243: رقمُ العملية — لكشف الانجراف عند الرجوع */
     for (var p9 = 0; p9 < pend.length; p9++) {
       var pd = pend[p9];
       /* «فحص الصلاحيات العميق · المرحلة 0 (الجولة 2)» · R3-4: منحٌ حُكم بصلاحيات ما بعد الحفظ (dep9) يُكتب بعد أن كُتبت هي بنسخة هذه الحفظة — وإلا تعارض */
@@ -1909,11 +1906,13 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
         etype: 'dataset', eid: resName(pd.k), ename: resName(pd.k), act: 'changed', ctx: '',
         bef: '', aft: audClip(pd.k === K_USERS ? jsonDiff(stripPh(pd.cur || '[]'), stripPh(pd.v || '[]')) : jsonDiff(pd.cur, pd.v), AUD_STR),
         ip: ident.ip, dev: ident.dev, city: ident.city }));
+      /* V7 · د5-هـ (44): «سجل الصلاحيات» — فرقٌ منظَّم (من · ماذا · من → إلى · المتأثرون) لكل حفظة أدوارٍ أو سقف */
+      if (resName(pd.k) === PERM44_RES || pd.k === K_PERM) { try { var p44e9 = perm44AudEv(pd.k, pd.cur, pd.act === 'del' ? null : pd.v, rev); if (p44e9) pd.g.push(audEvStmt(env, Object.assign(p44e9, { ts: now, uid: ident.uid, un: ident.un, dept: dA9, rev: rev, ip: ident.ip, dev: ident.dev, city: ident.city }))); } catch (e44) { swallow('perm44-aud', e44, env.__rid); } }
       /* حذفُ مفتاحٍ كامل (حذفُ إدارة مثلاً): حدثٌ على مستوى مجموعة البيانات ليبقى أثرُه */
       if (pd.act === 'del') pd.g.push(audEvStmt(env, { cid: 'del_' + rev + '_' + pd.k.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40), ts: now, uid: ident.uid, un: ident.un, dept: dA9, k: pd.k, rev: rev, etype: 'dataset', eid: pd.k, ename: resName(pd.k), act: 'deleted', ctx: '', bef: '', aft: '', ip: ident.ip, dev: ident.dev, city: ident.city }));
     }
   }
-  if (ENFX) for (var lw9 = 0; lw9 < ENFX.log.length; lw9++) st.push(enfLogStmt(env, ENFX.log[lw9]));
+  for (var lw9 = 0; lw9 < ENFX.log.length; lw9++) st.push(enfLogStmt(env, ENFX.log[lw9]));
   /* العباراتُ العامة (لقطةُ الاستعادة · سجلُّ الرفض · رقمُ اللقطة · سجلُّ الإنفاذ) أوّلاً، ثم مجموعاتُ المفاتيح — دفعات مقسّمة: دفعة D1 الواحدة لها سقف عبارات */
   for (var j0 = 0; j0 < st.length; j0 += 90) await env.DB.batch(st.slice(j0, j0 + 90));
   if (changed) {
@@ -1936,7 +1935,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
   } else out.v = await curRev(env);
   /* بعد ثبوت الكتابة لا قبلها: الملكيةُ والاستعمالُ يتبعان الحالة المستقرّة */
   if (changed && imgTouch.length) await imgSync(env, A, imgTouch);
-  if (ENFX) await enfLogPrune(env);
+  await enfLogPrune(env);
   return opt && opt.__cuPass === RESTORE_INTERNAL_TOKEN ? out : nodeCapAck(out);   /* issue #4: inside rsSaveCommit the caller answers (above) */
 }
 

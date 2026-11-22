@@ -12,8 +12,8 @@ import { needs } from './harness.mjs';
 const W = await internals(['FIELDS', 'ENT', 'OPS', 'OP_SHAPE', 'RES_REG', 'K_USERS', 'K_PERM', 'K_DEPTS', 'K_GDEPTS', 'K_PLAT', 'KIVO_REGISTRY', 'KIVO_SCOPE', 'ENF_COMPAT',
   'typeOk', 'entChanged', 'twinOf', 'hasF', 'specViolation', 'uniqViolation', 'idfFor', 'fieldViolation', 'fieldsOf', 'primBad', 'shapeViolation', 'bodyNoId', 'fbChain', 'withCol', 'adoptOk',
   'needAdd', 'idOf', 'colList', 'cmpCol', 'cmpList', 'cmpPrim', 'cmpMap', 'isEmptyVal', 'stripCols', 'primDup',
-  'classifyMutation', 'capForAct', 'allowKeyDelete', 'entOf', 'opsOf', 'resOf',
-  'authorize0', 'authorize', 'authorizeActs', 'actorFromKeys',
+  'classifyMutation', 'capForAct', 'entOf', 'opsOf', 'resOf',
+  'actorFromKeys',
   'enfIx', 'enfHeld', 'enfHeld0', 'enfAttachGrantsKeys', 'enfGrantsKey', 'enfDecide', 'enfVia',
   'enfKeyOnCeiling', 'enfTranslated', 'enfScopeEval', 'enfScopeCtx', 'enfSources', 'enfHeldMap', 'enfReasonOf']);
 const J = (x) => JSON.stringify(x);
@@ -213,11 +213,9 @@ test('classifyMutation: القوائمُ البدائية (الجذر · الح�
   assert.equal(acts(cls('bsdept:d1:bassam_custody_v1', C, { items: [{ name: 'جهاز لاسلكي' }], moves: [{ t: 'out', item: 'جهاز لاسلكي' }] })), '', 'تسميةُ صنف العهدة وتبعتُها في الحركات: مواءمةٌ كاملة');
   assert.equal(acts(cls('bsdept:d1:bassam_custody_v1', C, { items: [{ name: 'جهاز لاسلكي' }], moves: [{ t: 'out', item: 'جهاز' }] })), 'edit', 'تسميةٌ بلا تبعتها: الحركةُ تغيّرت');
 });
-test('capForAct · allowKeyDelete', () => {
+test('capForAct', () => {   /* V7 · د5-ح: allowKeyDelete حُذف مع فرع canWrite القديم */
   assert.deepEqual(W.capForAct({ cap: 'x', capAdd: 'y' }, 'add'), ['y']); assert.deepEqual(W.capForAct({ cap: 'x', capAdd: 'y' }, 'edit'), ['x']);
   assert.deepEqual(W.capForAct({ cap: ['a', 'b'] }, 'del'), ['a', 'b']); assert.deepEqual(W.capForAct({}, 'del'), []);
-  assert.equal(W.allowKeyDelete({}, 'bsdept:d1:bassam_tasks_v1', W.resOf('bsdept:d1:bassam_tasks_v1')), false, 'بلا سياسةٍ معلنة: مرفوضٌ للجميع');
-  assert.equal(W.allowKeyDelete({}, 'k', null), false);
 });
 
 /* ══ (ج) التخويل ══ */
@@ -235,40 +233,8 @@ test('actorFromKeys: بنيةُ الفاعل · المجمَّد والمجهو�
   const B = W.actorFromKeys({ [W.K_USERS]: J(USERS), [W.K_PERM]: '[1]', [W.K_DEPTS]: '{}', [W.K_GDEPTS]: 'x', [W.K_PLAT]: '{"mods":{"off":"no"}}' }, 'st1');
   assert.deepEqual([B.perms, B.depts, B.nodes, B.off], [{}, [], [], []], 'سجلّاتٌ تالفة ⇒ قيمٌ فارغة آمنة');
 });
-test('authorize0: الجلسة · المجهول · الجهاز · العامّ (مديرُ النظام وحده) · الإدارة (النطاق · القاعدة · الورقة والفعل)', needs('irshad', 'tasks'), () => {
-  const su = actor('su'), st1 = actor('st1'), gm1 = actor('gm1'), dm1 = actor('dm1'), st2 = actor('st2'), xx = actor('x');
-  const K = (r, d = 'd1') => 'bsdept:' + d + ':' + r;
-  assert.deepEqual(W.authorize0(null, K('bassam_tasks_v1'), 'add'), { ok: false, why: 'session' });
-  assert.equal(W.authorize0(st1, K('bassam_nope_v1'), 'add').why, 'unknown');
-  assert.equal(W.authorize0(st1, K('bassam_page_v1'), 'edit').why, 'device');
-  /* السجلّاتُ العامّة: لمدير النظام وحده بلا إدارة (قواعدُها الخاصة — users/perms/dstats — تُفحص في canWrite لا هنا) */
-  assert.deepEqual(W.authorize0(su, 'bassam_depts_v1', 'edit'), { ok: true, cap: '*' }); assert.equal(W.authorize0(st1, 'bassam_depts_v1', 'edit').why, 'super');
-  assert.equal(W.authorize0(su, 'bsdept:d1:bassam_depts_v1', 'edit').why, 'scope', 'سجلٌّ عامٌّ بمفتاح إدارة');
-  assert.equal(W.authorize0(st1, 'bassam_tasks_v1', 'add').why, 'scope', 'موردُ إدارةٍ بلا إدارة');
-  assert.equal(W.authorize0(st2, K('bassam_tasks_v1'), 'add').why, 'dept', 'إدارةٌ أخرى');
-  assert.equal(W.authorize0(xx, K('bassam_tasks_v1'), 'add').why, 'dept', 'دورٌ مجهول');
-  assert.equal(W.authorize0(st1, K('bassam_tasks_v1'), 'add').ok, true, 'ورقةُ الموظف تحمل الفعل');
-  assert.equal(W.authorize0(st1, K('bassam_tasks_v1'), 'del').why, 'act', 'الورقةُ بلا هذا الفعل');
-  assert.equal(W.authorize0(st1, K('bassam_irshad_v1'), 'add').why, 'page', 'ورقةٌ أخرى');
-  assert.equal(W.authorize0(actor('st1', { emps: {} }), K('bassam_tasks_v1'), 'add').why, 'view', 'بلا ورقةٍ أصلاً');
-  assert.equal(W.authorize0(su, K('bassam_tasks_v1'), 'del').ok, true, 'مديرُ النظام بسقف الإدارة كاملاً');
-  assert.equal(W.authorize0(dm1, K('bassam_tasks_v1'), 'del').ok, true, 'مديرُ الإدارة يرث سقفها');
-  assert.equal(W.authorize0(gm1, K('bassam_tasks_v1'), 'add').ok, true, 'مديرُ القطاع على إدارةٍ تحته (سلسلةُ الأسلاف)');
-  assert.equal(W.authorize0(gm1, K('bassam_tasks_v1', 'd2'), 'add').why, 'dept', 'مديرُ القطاع خارج قطاعه');
-  assert.equal(W.authorize0(actor('dm1', null, { mods: { off: ['tasks'] } }), K('bassam_tasks_v1'), 'add').why, 'page', 'وحدةٌ مطفأةٌ على مستوى المنصة: لا ورقة');
-  assert.equal(W.authorize0(actor('su', null, { mods: { off: ['tasks'] } }), K('bassam_tasks_v1'), 'add').ok, true, 'V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية: الوحدةُ المطفأة لا تقيّده');
-  const ruled = Object.keys(W.RES_REG).find(k => W.RES_REG[k].scope === 'dept' && W.RES_REG[k].rule);
-  if (ruled) assert.equal(W.authorize0(su, K(ruled), 'edit').why, 'rule', 'سياسةٌ خاصة تُفحص في موضعها');
-});
-test('authorize · authorizeActs: كلُّ فعلٍ في يد الفاعل — لا «أيُّ فعلٍ يكفي»', needs('tasks'), () => {
-  const st1 = actor('st1'), k = 'bsdept:d1:bassam_tasks_v1';
-  assert.deepEqual(W.authorizeActs(st1, k, []), { ok: false, why: 'noop' });
-  assert.deepEqual(W.authorizeActs(st1, k, ['add', 'edit']), { ok: true });
-  assert.deepEqual(W.authorizeActs(st1, k, ['add', 'del']), { ok: false, why: 'act', act: 'del' });
-  assert.equal(W.authorize(null, k, 'add').why, 'session');
-  assert.equal(W.authorize(st1, k, 'add').ok, true, 'الظلُّ لا يغيّر الحكم');
-});
 
+/* V7 · د5-ح (القفل): حُذفت حالتا «authorize0: …» و«authorize · authorizeActs: …» — حكمُ الوضع القديم المحذوف (042 · 043) */
 /* ══ (د) الإنفاذ ══ */
 const R = () => W.KIVO_REGISTRY, IX = () => W.enfIx();
 const keyWhere = (f) => R().keys.find(k => { const e = R().byKey[k]; return e && e.status === 'active' && f(k, e); });
@@ -345,8 +311,7 @@ test('enfVia: الحقولُ الممنوحة من ورقةٍ أخرى (EMP_FIEL
   const sa = J({ '1447-03': { r1: { cs: 'A1', shift: 'ص' } } }), sb = J({ '1447-03': { r1: { cs: 'A2', shift: 'ص' } } });
   const v2 = W.enfVia(su, 'bsdept:d1:bassam_staffing_v3', 'bassam_staffing_v3', 'd1', sa, sb, {});
   assert.ok(v2 === null || /CS_ONLY/.test(v2.tag), J(v2));
-  const v3 = W.enfVia(su, 'bsdept:d1:bassam_perm_tpls_v1', 'bassam_perm_tpls_v1', 'd1', '[]', J([{ id: 't1', name: 'قالب' }]), {});
-  assert.ok(v3 === null || /SEED_ONLY/.test(v3.tag), J(v3));
+  /* V7 · د5-ح: بديلُ SEED_ONLY (بذرُ قوالب الصلاحيات من التقرير) حُذف مع موردها */
   const rn = W.enfVia(su, 'bsdept:d1:bassam_staffing_v3', 'bassam_staffing_v3', 'd1', J({ m: { r: { shift: 'ص' } } }), J({ m: { r: { shift: 'الصباحية' } } }), { shRen: { o: 'ص', n: 'الصباحية' } });
   assert.ok(rn === null || /shiftRename/.test(rn.tag), J(rn));
   assert.equal(W.enfVia(su, 'bsdept:d1:bassam_staffing_v3', 'bassam_staffing_v3', 'd1', J({ m: { r: { shift: 'ص', x: 1 } } }), J({ m: { r: { shift: 'الصباحية', x: 2 } } }), { shRen: { o: 'ص', n: 'الصباحية' } }), null, 'تبعةُ التسمية لا تحمل تغييراً آخر');

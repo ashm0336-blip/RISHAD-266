@@ -75,6 +75,17 @@ test('tab addresses (pages.json tabAddr): direct links open their tab and keep t
   const b = await chromium.launch();
   try {
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw);
+    /* V7 · د5-ح (قرار المالك): النظامُ المطفأ لإدارةٍ يغيب في مساحتها حتى عند مدير المنصة — وسقفُ إدارة المختبر بلا الاسترشاد والمضبوطات والترشيح:
+       (١) وهي مطفأة: عنوانُها لا يُفتح له · (٢) يشغّلها مديرُ المنصة لهذه الإدارة (كاتبُ السقف القائم، حفظٌ حقيقي) ثم تُفحص العناوينُ كلُّها كما كانت */
+    const offNow = await s.page.evaluate(() => { const on = KIVO.Perm44.ceiling(KIVO.BassamDepts.active()).on; return ['irshad', 'seized', 'award'].filter((k) => on.indexOf(k) === -1); });
+    assert.deepEqual(offNow, ['irshad', 'seized', 'award'], 'the lab department starts without these three');
+    await s.page.goto(lab.base + '/#/irshad/records', { waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(4000);
+    assert.notEqual(await s.page.evaluate(() => location.hash), '#/irshad/records', 'OFF for the department ⇒ not opened, even for the platform admin');
+    /* سقفُ الإدارة = سقفُها ∩ أسلافها: يُشغَّل من أعلى السلسلة إلى الإدارة */
+    await s.page.evaluate((add) => { const D = KIVO.BassamDepts, P = KIVO.BassamPerm, d = D.active(); (D.ancestorsOf(d) || []).slice().reverse().concat([d]).forEach((id) => { P.setDeptCap(id, P.deptCap(id).concat(add)); }); }, offNow);
+    assert.equal(await s.page.evaluate(() => KIVO.__BS_SRV.flushAsync(8000)), true, 'the ceiling is saved on the server');
+    await s.page.reload({ waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(3000);
+    assert.deepEqual(await s.page.evaluate(() => { const on = KIVO.Perm44.ceiling(KIVO.BassamDepts.active()).on; return ['irshad', 'seized', 'award'].filter((k) => on.indexOf(k) === -1); }), [], 'ON for the department after the save and a reload');
     for (const h of ['#/irshad/records', '#/seized/records', '#/dstats/haram', '#/dstats/nabawi', '#/daily/rounds', '#/daily/dreport', '#/daily/tasks', '#/employees/custody', '#/employees/store', '#/award/res', '#/admin/oplog']) {
       await s.page.goto(lab.base + '/' + h, { waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(4000);
       const st = await s.page.evaluate(() => ({ hash: location.hash, len: ((document.querySelector('main') || document.body).innerText || '').length }));

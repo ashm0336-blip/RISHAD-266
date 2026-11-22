@@ -1,0 +1,6 @@
+  ops_plan_live_floors_floor_gates_element_shift_needs: { t: "ops_plan_deleted_months", e: null },
+  ops_plan_live_floors_floor_marks: { t: "ops_plan_live_floors_floor_marks", e: null },
+  ops_plan_live_floors_floor_marks_element: { t: "ops_plan_live_floors_floor_marks_element", e: "ops_plan_live_floors_floor_marks_element" },
+  ops_plan_live_floors_floor_marks_element_employees: { t: "ops_staffing_month_employee_perm_days", e: null },
+  ops_plan_live_floors_floor_marks_element_field_log: { t: "ops_plan_live_floors_floor_gates_element_field_log", e: null },
+  ops_plan_live_floors_floor_marks_element_field_log_entry: { t: "ops_plan_live_floors_floor_gates_element_field_log_entry", e: "ops_plan_live_floors_floor_gates_element_field_log_entry" },

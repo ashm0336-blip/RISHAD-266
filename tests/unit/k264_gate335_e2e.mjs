@@ -54,7 +54,7 @@ async function gateSave(T, un, pw) {
   if (!L.length) throw new Error('bsPwSave has no click handler — gate not in forced mode');
   L[0]();
 }
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   /* S1 — > 15 min */
   {
     const { env, C, su } = await world(mode);

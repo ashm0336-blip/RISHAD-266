@@ -16,6 +16,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { ROOT } from '../../../../tests/unit/harness.mjs';
 import { world, workerUnderTest, ME, KT, DAY, TOMORROW, YESTERDAY, PDAY, row, stored, rowsOf, putKV, HR, PNG } from './tasks_fx.mjs';
+import { calendar, callers } from '../../../../tests/unit/cal_kit.mjs';   /* V7 · د5-د: التقويم الموحّد */
 
 const WU = workerUnderTest();
 const PATCH = path.join(ROOT, 'reports/k264/tasks/patches/03-profile-mytasks.patch');
@@ -37,12 +38,12 @@ function page(W, ck, logicFile, opts = {}) {
   ctx.CustomEvent = class { constructor(t, o) { this.type = t; this.detail = o && o.detail; } };
   ctx.addEventListener = () => {}; ctx.dispatchEvent = () => true;
   ctx.fetch = async (url, opt = {}) => { if (B.offline) throw new TypeError('Failed to fetch'); if (opts.calls && /\/api\/me\/tasks\/act$/.test(String(url))) opts.calls.push(JSON.parse(opt.body)); const r = await W.C.req(url, { method: opt.method || 'GET', cookie: ck, headers: opt.headers, body: opt.body }); return { ok: r.status < 300, status: r.status, text: () => r.text(), json: () => r.json() }; };
-  vm.createContext(ctx);
+  vm.createContext(ctx); calendar(ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/tasks/client/545-task-self.js'), 'utf8'), ctx);
   KIVO.BassamCount = (n, w) => n + ' ' + w;
   const toasts = [];
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } }
-  KIVO.BassamPageKit = { base: (Bc) => class extends Bc { bsOn() { return true; } bsToast(m, k) { toasts.push(['toast', m, k]); } bsAck(m, k) { toasts.push(['ack', m, k]); return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } } };
+  KIVO.BassamPageKit = { base: (Bc) => callers(class extends Bc { bsOn() { return true; } bsToast(m, k) { toasts.push(['toast', m, k]); } bsAck(m, k) { toasts.push(['ack', m, k]); return Promise.resolve(true); } MONTHS() { return '١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ١٠ ١١ ١٢'.split(' '); } }, KIVO) };
   ctx.DCLogic = DCLogic;
   vm.runInContext(fs.readFileSync(logicFile, 'utf8') + '\n;globalThis.__C = Component;', ctx, { filename: 'profile/logic.js' });
   const c = new ctx.__C(); c.state = Object.assign({ pfPanel: '' }, c.state || {}); c._pfAlive = true;
@@ -51,7 +52,7 @@ function page(W, ck, logicFile, opts = {}) {
 const T = { y: +DAY.split('-')[0], m: +DAY.split('-')[1], d: +DAY.split('-')[2] };
 const E = { isStaff: true, T, myKey: ME.eid, keyOfTok: (x) => x, myRec: { name: ME.name } };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] رقعةُ «ملفي»: مهمةُ المدير (لليوم ولغد) تظهر في «مهامك» للموظف بلا task.view · ولا اسمَ يُطابَق · والقبولُ من الخادم', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login('0000000101', '70101');
@@ -102,7 +103,7 @@ const srvRow = (W, id) => (rowsOf(stored(W.env, KT), ME.eid).find((x) => x.r[13]
 async function until(f, ms = 5000) { const t0 = Date.now(); for (;;) { let v = false; try { v = f(); } catch (e) { v = false; } if (v || Date.now() - t0 > ms) return v; await new Promise((r) => setTimeout(r, 10)); } }
 const mkTask = (W, ck, t, extra) => post(W, ck, '/api/tasks/create', Object.assign({ k: DAY, t: 'TEST_ONLY ' + t, s: Date.now() - 60e3, e: Date.now() + 2 * HR, asg: [ME.eid] }, extra || {}));
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] رقعةُ «ملفي» · المرحلة الثانية: استلامٌ مستقلٌّ عن البدء · تعثّرٌ واستئناف · مسودّة · تسليمٌ للمراجعة ⇒ إعادةٌ بسبب ⇒ استكمالٌ بصورة ⇒ اعتماد · سجلُّ المهمة', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), dm = await W.login('0000000101', '70101');
@@ -224,7 +225,7 @@ for (const mode of ['legacy', 'enforce']) {
 /* SR-2.2 (المراجعةُ المستقلة لحزمة 242 — والعيبُ نفسُه هنا): F-3 الانقضاءُ التلقائيّ عند فتح «ملفي» لِما انتهت مهلتُه خلال 48 ساعة وحده — كانت أوّلُ زيارةٍ
    بعد الترقية من بيانات 242 تُسجّل انقضاءَ كلِّ متأخرةٍ قديمة (كتابةٌ للمخزن كاملاً وتنبيهٌ للمسؤول لكلٍّ منها) · F-7 صفحةُ المهام غيرُ المفعّلة لإدارة
    الموظف (أو المطفأةُ للمنصة) لا تُظهر بطاقةَ «مهامك» — والخادمُ لا يعيد شيئاً (me.off) */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] SR-2.2 · F-3 + F-7 في «ملفي»: الانقضاءُ التلقائيّ للحديث (≤ 48 ساعة) وحده — بلا موجةٍ للمتأخرات القديمة ولا تكرار · وصفحةُ المهام المطفأة لا بطاقةَ لها', async () => {
     const W = await world({ worker: WU.file, mode });
     const me = await W.login(ME.un, ME.pw), OLD = 1760000000778, t0 = Date.now() - 20 * 864e5;

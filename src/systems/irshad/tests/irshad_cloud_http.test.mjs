@@ -12,6 +12,7 @@ import { candidateWorker, seed, D1, D2, IDS, identitySnapshot, ROOT } from '../.
 import { world } from '../../../../tests/unit/canonical_fx.mjs';
 import { installOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 import { EKEYS } from '../../../../tests/unit/notifications_review_fx.mjs';
+import { calendar, callers } from '../../../../tests/unit/cal_kit.mjs';   /* V7 · د5-د: التقويم الموحّد */
 
 test('real module saves with a lost committed ACK, retries once, edits, aggregates and exports every filtered page without duplicate effects', async t => {
   const B = await world(); B.W = await candidateWorker();
@@ -50,7 +51,7 @@ test('real module saves with a lost committed ACK, retries once, edits, aggregat
     loadEmployeesIr() { return B.keys['bsdept:' + D1 + ':bassam_employees_v1']; }
     loadShiftOptsIr() { return [{ name: shift }]; }
   }
-  const C = { DCLogic: Base, KIVO: { BassamPageKit: { base: () => Base }, BassamCount: Count, BassamAuth: { user: () => B.users.find(u => u.id === IDS.super) },
+  const C = { DCLogic: Base, KIVO: { BassamPageKit: { base: () => callers(Base, () => C.KIVO) }, BassamCount: Count, BassamAuth: { user: () => B.users.find(u => u.id === IDS.super) },
     BassamDepts: { active: () => D1, has: value => value === D1 }, BassamPerm: { can: () => true }, __BS_SRV: { sesChanged: () => false, askReason: (key, keys, done) => done('TEST_ONLY explicit operator reason') } },
     __BS_BOOT: { srv: 1, cf: 1, uid: IDS.super }, URLSearchParams, AbortController, Uint8Array, Intl, Date, crypto: webcrypto,
     setTimeout(fn, ms) { const timer = setTimeout(fn, ms); timers.push(timer); return timer; }, clearTimeout,
@@ -66,7 +67,8 @@ test('real module saves with a lost committed ACK, retries once, edits, aggregat
       }
       return response;
     } };
-  C.window = C; vm.createContext(C);
+  C.window = C; vm.createContext(C); calendar(C);
+  for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/534-staff-g4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), C);   /* V7 · د5-د2: الناقل (قلب المنصة) وقراءاتُ الجدول الشهري المعلنة عليه — الصفحةُ تسأل بالاسم */
   const source = fs.readFileSync(path.join(ROOT, 'src/systems/irshad/client/logic.js'), 'utf8');
   vm.runInContext(source + '\nglobalThis.TestComponent = Component;', C);
   const page = new C.TestComponent(); page.bsToast = () => {}; page.bsAck = () => {};

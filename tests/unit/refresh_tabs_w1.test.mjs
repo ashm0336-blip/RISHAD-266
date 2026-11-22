@@ -91,15 +91,15 @@ test('المتابعة اليومية (DG-04 · R7 · DG-09): #/daily/rounds ي�
   const T = page('daily', ['_bsHR() {'], { state: { dsTab: 'kpi' }, self, perm: { can: (k) => k === 'tasks' }, kivo: { __BS_OPEN_TAB: { page: 'daily', tab: 'tasks' } } });
   T.c._bsHT = () => {}; T.c._bsHR();
   assert.equal(T.c.state.dsTab, 'tasks'); assert.equal(T.timers.length, 0);
-  const src = rd('modules/daily/logic.js');
+  const src = rd('systems/daily/client/logic.js');
   assert.equal(firstInRender(src, 'this._bsHR();'), 2);
   assert.doesNotMatch(method(src, '_bsHR() {'), /setTimeout|subOn/);
   assert.match(src, /Vn =\n\s+this\._dsTabOn\("rounds"\) && \(this\.bsLensOn\("zones"\) \|\| this\.bsLensOn\("gates"\) \|\| this\.bsLensOn\("marks"\) \|\| this\.bsLensOn\("paths"\)\),/, 'القاعدةُ نفسُها التي تُظهر التبويب');
 });
 
-test('الإعدادات (R1 · AUX-06): #/admin/import|ptpls|shifts|oplog — التبويبُ في أوّل رسم ولا يُكتب #/admin/backup · سجلُّ الحركة يُحمَّل مرة', () => {
-  const g = ['backup', 'oplog', 'shifts', 'ptpls', 'import'];
-  for (const tab of ['import', 'ptpls', 'shifts']) {
+test('الإعدادات (R1 · AUX-06): #/admin/import|shifts|oplog — التبويبُ في أوّل رسم ولا يُكتب #/admin/backup · سجلُّ الحركة يُحمَّل مرة', () => {
+  const g = ['backup', 'oplog', 'shifts', 'import'];   /* V7 · د5-ح: ورقةُ «قوالب الصلاحيات» حُذفت */
+  for (const tab of ['import', 'shifts']) {
     const P = page('admin', ['_admTabsNow(i, n, p, g) {'], { state: { admTab: 'depts', deptTab: 'backup' }, kivo: { __ADMIN_OPEN_DTAB: tab } });
     const r = P.c._admTabsNow('dept', false, ['backup'], g);
     assert.equal(r.h, tab, 'التبويبُ المعروض في الرسم الأول'); assert.equal(P.c.state.deptTab, tab); assert.equal(P.KIVO.__ADMIN_OPEN_DTAB, null);
@@ -122,7 +122,7 @@ test('الإعدادات (R1 · AUX-06): #/admin/import|ptpls|shifts|oplog — �
   const ry = Y.c._admTabsNow('site', true, ['overview', 'sec', 'depts'], g);
   assert.equal(ry.l, 'sec'); assert.equal(Y.c.state.admTab, 'sec'); Y.timers.splice(0).forEach((f) => f()); assert.equal(go, 'sec');
   const src = rd('modules/admin/logic.js'), rv = src.slice(src.indexOf('\n  renderVals() {'));
-  const iT = rv.indexOf('this._admTabsNow(i, n, p, g)'), iH = rv.indexOf('this._hashTab("admin", h)');
+  const iT = rv.indexOf('this._admTabsNow(i, n, p, g)'), iH = rv.indexOf('this._hashTab("admin", "perm" === h ? "perm/" + this._p44SubNow() : h)');   /* V7 · د5-هـ (44 · المدير): و«الصلاحيات» بقسمها (#/admin/perm/<قسم>) */
   assert.ok(iT > 0 && iH > iT, 'العنوانُ يُكتب بعد حلّ التبويب المطلوب (لا #/admin/backup)');
   assert.doesNotMatch(src, /setTimeout\(\s*\(\) =>\s*this\.setState\(\{ deptTab: q \}/);
 });
@@ -183,13 +183,22 @@ test('الاسترشاد والمضبوطات (R7): #/irshad/records و#/seized/
 test('الخطة التشغيلية (PLAN-11): التبويبُ المزروع من حالة العرض (ptab) يُرسم في أوّل رسم ويُركِّب «التشغيل الميداني» — بحارس الصلاحية', () => {
   /* كان سجلُّ الحالة بمفتاح data-screen-label فتتصادم الحاويةُ و«التشغيل الميداني» (التسميةُ نفسُها) ويضيع ptab؛ الآن بمفتاح اسم المكوّن
      (اختبارُ الزرع في refresh_seed_w1). هنا: renderVals الحقيقية على حالةٍ مزروعة */
-  const P = page('planning', ['renderVals() {'], { state: { ptab: 'plan', planSeen: false }, self: { _ptOk: () => true, _bsGo() {} } });
+  /* V7 · د5-د/د5-هـ: الحاويةُ عامة — سجلُّ التبويبات (PT_TABS) قطعٌ من مجلدات البرامج بشكلها { page · go · on · act · lazy }؛ تُستخرج الدوالُّ الحقيقية */
+  const TABS = { sched: { page: 'staff', go: 'goSched', on: 'schedOn', act: 'onSched' }, plan: { page: 'plan', go: 'goPlan', on: 'planSeen', act: 'onPlan', lazy: true } };
+  const M = ['renderVals() {', '_tabOk(t) {', '_ids() {'];
+  const P = page('planning', M, { state: { ptab: 'plan', seen: {} }, self: { PT_TABS: TABS, _ptOk: () => true, _bsGo() {} } });
   const V = P.c.renderVals();
-  assert.equal(V.ptab, 'plan'); assert.equal(V.onPlan, true); assert.equal(V.planSeen, true, '«التشغيل الميداني» يُركَّب بلا planSeen');
-  const Q = page('planning', ['renderVals() {'], { state: { ptab: 'plan', planSeen: false }, self: { _ptOk: (k) => k !== 'plan', _bsGo() {} } });
+  assert.equal(V.ptab, 'plan'); assert.equal(V.onPlan, true); assert.equal(V.planSeen, true, '«التشغيل الميداني» يُركَّب في أوّل رسم بلا علامة «رُئي»');
+  const Q = page('planning', M, { state: { ptab: 'plan', seen: {} }, self: { PT_TABS: TABS, _ptOk: (k) => k !== 'plan', _bsGo() {} } });
+  /* وبغياب قطعة الجدول (لا تبويبَ له في السجل): الحاويةُ تعرض ما بقي بهدوء */
+  const R = page('planning', M, { state: { ptab: null, seen: {} }, self: { PT_TABS: { plan: TABS.plan }, _ptOk: () => true, _bsGo() {} } }).c.renderVals();
+  assert.ok(!R.schedOn); assert.equal(R.ptab, 'plan'); assert.equal(R.ptOn, 'plan', 'تبويبٌ واحد: الشريطُ يختفي بقاعدته');
+  /* وبغياب القطع كلِّها: لا تبويب ولا خطأ */
+  const N = page('planning', M, { state: { ptab: null, seen: {} }, self: { PT_TABS: {}, _ptOk: () => true, _bsGo() {} } }).c.renderVals();
+  assert.equal(N.ptab, 'none'); assert.equal(N.ptOn, '');
   const W = Q.c.renderVals();
   assert.equal(W.ptab, 'sched', 'بلا صلاحية الخطة: الجدولُ الشهري'); assert.equal(W.planSeen, false);
-  assert.match(rd('modules/planning/logic.js'), /state = \{ ptab: null, planSeen: !1 \};/, 'ptab في الحالة الأولى (null يقبل الزرع)');
+  assert.match(rd('modules/planning/logic.js'), /state = \{ ptab: null, seen: \{\} \};/, 'ptab في الحالة الأولى (null يقبل الزرع)');
 });
 
 /* DG-14: صفحةُ المهام في vm بساعةٍ ثابتة (ظهرُ 2026-10-20 = 9 جمادى الأولى 1448) وبلا مهام */
@@ -210,6 +219,13 @@ function tasksPage() {
   KIVO.BassamFind = { dig: (v) => String(v == null ? '' : v), filter: (q, list, f) => list.filter((r) => f(r).some((x) => String(x == null ? '' : x).indexOf(q) >= 0)) };
   class DCLogic { constructor() { this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); cb && cb(); } }
   ctx.DCLogic = DCLogic;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/core/060-bus.js'), 'utf8'), ctx);   /* V7 · د5-د: الناقل (قلب المنصة) وروابطُ الجدول الشهري عليه — الصفحاتُ تسأل بالاسم */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/plan/client/403-plan-p3.js'), 'utf8'), ctx);   /* V7 · د5-هـ: قراءاتُ التشغيل الميداني المعلنة */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), ctx);
+  for (const f of ['src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);   /* V7 · د5-هـ: روابطُ الخطة والجولات على الناقل */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast() {} };
   KIVO.__BS_SRV = { operations: { resources: [], status: () => ({ state: 'idle', epoch: 0 }), context: () => null, state: () => 'ready', begin: () => ({ ok: true }), draft: () => null }, rev: () => 0 };

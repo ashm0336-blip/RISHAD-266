@@ -116,12 +116,11 @@ function tkPhase(r, now) {
   return 'new';
 }
 /* ── اليومُ الهجريّ (أم القرى · الرياض) ووقتُ اليوم بالدقائق — الرياضُ UTC+3 ثابتاً بلا توقيتٍ صيفي ── */
-var TK_HFMT = null;
+/* V7 · د5-د2: المُنسِّقُ وفحصُ المدى في تقويم الخادم الواحد (016: calHijriAt · calHijriOk) — هنا الشكلُ الذي تريده المهام (k · ym) ووسمُ خطئها */
 function tkHij(ms) {
   try {
-    if (!TK_HFMT) TK_HFMT = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
-    var o = {}; TK_HFMT.formatToParts(new Date(ms)).forEach(function (p) { o[p.type] = +p.value; });
-    if (o.year > 1300 && o.month >= 1 && o.month <= 12 && o.day >= 1 && o.day <= 30) return { y: o.year, m: o.month, d: o.day, k: o.year + '-' + o.month + '-' + o.day, ym: o.year + '-' + o.month };
+    var o = calHijriAt(ms);
+    if (calHijriOk(o)) return { y: o.y, m: o.m, d: o.d, k: o.y + '-' + o.m + '-' + o.d, ym: o.y + '-' + o.m };
   } catch (e) { swallow('tk-hij', e); }
   return null;
 }
@@ -130,7 +129,7 @@ function tkMinOfDay(ms) { return Math.floor(((ms / 60000) + 180) % 1440 + 1440) 
 function tkWdOf(ms) { return new Date(ms + 3 * 3600 * 1000).getUTCDay(); }           /* 0 = الأحد */
 var TK_WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 function tkHm(min) { min = ((min % 1440) + 1440) % 1440; var h = Math.floor(min / 60), m = min % 60; return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
-function tkDayNum(k) { var p = String(k).split('-'); return (+p[0]) * 10000 + (+p[1]) * 100 + (+p[2]); }
+function tkDayNum(k) { return calDayNum(k); }   /* V7 · د5-د2: في تقويم الخادم (016) */
 /* ── الهوية (مشتركةٌ مع 062c) — الموظفون بالمعرّف الثابت eid، ورقمُ الهوية مقبولٌ فريداً فقط؛ لا اسمَ أبداً ── */
 /* tkEmps → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 /* SR-2.2 · F-1 (المراجعةُ المستقلة لحزمة 242 — والعيبُ نفسُه هنا): سجلٌّ يحمل هذا المعرّفَ في حقله وحده — والمكرَّرُ (خطأُ إدخالٍ أو استيراد) لا يُعيد أوّلَ مطابِق */

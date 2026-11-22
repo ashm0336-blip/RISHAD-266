@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/services/548-atomic-backup.js.tpl */
 /* One backup transport for admin, department settings and the authenticated gate.
    Files/tickets remain in memory. No local storage overlay or image upload. */
 (function () {
@@ -135,7 +136,7 @@
     if (!Array.isArray(missing) || !missing.length) return '';
     var names = {};
     try { (KIVO.BassamDepts.list() || []).forEach(function (d) { if (d && d.id) names[d.id] = d.name || d.id; }); } catch (e) {}
-    var label = { seized: 'المضبوطات', awards: 'التكريم', bassam_plan_v1: 'الخطة', bassam_rounds_v1: 'الجولات', bassam_tasks_v1: 'المهام' };
+    var label = { seized: 'المضبوطات', awards: 'التكريم', bassam_plan_v1: 'الخطة', bassam_rounds_v1: 'الجولات', bassam_rounds_arc_v1: 'أرشيف الجولات', bassam_tasks_v1: 'المهام' };
     var place = function (at) { var i = String(at).lastIndexOf(':'), d = at.slice(0, i), r = at.slice(i + 1); return (d ? '«' + (names[d] || d) + '» ' : '') + (label[r] || r); };
     return ' تحذير: ' + missing.length + ' صورة يشير إليها سجلٌّ ولم تعد موجودة على الخادم — تُخطّيت والنسخة أُنشئت بدونها: ' +
       missing.slice(0, 20).map(function (m) { return m.id + ' (' + (m.at || []).map(place).join('، ') + ')'; }).join(' · ') + (missing.length > 20 ? ' · …' : '') + '.';

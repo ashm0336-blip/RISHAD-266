@@ -18,9 +18,12 @@
     pull = Math.min(dy * 0.55, 140); var b = box(); b.style.transform = "translate(-50%," + (pull - 50) + "px)"; var ok = pull >= TH; document.getElementById("bsPtrTxt").textContent = ok ? "حرّر لجلب الأحدث" : "اسحب لجلب الأحدث"; document.getElementById("bsPtrIco").style.transform = "rotate(" + Math.min(pull * 3, 360) + "deg)"; }, { passive: true });
   function end(){ if (!active) return; active = false; if (pull >= TH) { var b = box(); document.getElementById("bsPtrTxt").textContent = "جارٍ جلب الأحدث…"; b.style.transform = "translate(-50%,14px)";
       var stay9 = function(){ b.style.transform = "translate(-50%,-60px)"; try { KIVO.bsToast("لم تُحفظ تعديلاتك بعد — نحاول تلقائيًا، ثم اسحب من جديد", { tone: "err" }); } catch(e){} };
+      /* V7 · د5-هـ (أمن ١): رفضٌ أثناء الحفظ ⇒ لا إعادةَ تحميل تمحو رسالتَه (flushAsync يعيد false للمرفوض) */
+      var S0 = KIVO.__BS_SRV, d09 = 0; try { d09 = S0 && S0.denied ? +S0.denied() || 0 : 0; } catch(e){}
+      var refused9 = function(){ try { return !!(S0 && S0.denied && (+S0.denied() || 0) > d09); } catch(e){ return false; } };
       var f9 = null; try { f9 = KIVO.__BS_SRV && KIVO.__BS_SRV.flushAsync ? KIVO.__BS_SRV.flushAsync(4000) : true; } catch(e){ f9 = false; }
       var pend9 = function(){ try { var S = KIVO.__BS_SRV; return !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch(e){ return true; } };
-      Promise.resolve(f9).then(function(ok){ if (ok === true || !pend9()) location.reload(); else stay9(); }, function(){ if (pend9()) stay9(); else location.reload(); }); } else if (el) el.style.transform = "translate(-50%,-60px)"; pull = 0; }
+      Promise.resolve(f9).then(function(ok){ if (ok !== true && refused9()) { b.style.transform = "translate(-50%,-60px)"; try { KIVO.bsToast("رُفض حفظ تعديلك — لم نُعد التحميل حتى تراه", { tone: "err" }); } catch(e){} return; } if (ok === true || !pend9()) location.reload(); else stay9(); }, function(){ if (pend9()) stay9(); else location.reload(); }); } else if (el) el.style.transform = "translate(-50%,-60px)"; pull = 0; }
   window.addEventListener("touchend", end, { passive: true }); window.addEventListener("touchcancel", end, { passive: true });
   try { document.documentElement.style.overscrollBehaviorY = "contain"; } catch(e){}
 })();

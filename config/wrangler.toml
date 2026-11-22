@@ -22,7 +22,7 @@ database_name = "bassam-db-preview"
 database_id = "<يُقرأ من اللوحة: D1 → bassam-db-preview → UUID>"
 
 [env.preview.vars]
-KIVO_AUTHZ_MODE = "enforce"         # ADR-002: الإنفاذُ = ENV ∧ meta.authz_mode
+KIVO_AUTHZ_MODE = "enforce"         # V7 · د5-ح: لم يعد شرطَ الإنفاذ (المحرّكُ في كل بيئة · الوضعُ من meta.authz_mode) — يبقى شرطاً لأداة الاختبار وحدها
 # KIVO_TEST_FIXTURE = "allow"       # أداةُ الاختبار (ADR-004) — تُزال بعد الاختبارات (SOT-173 · قرارُ المالك)
 # KIVO_TEST_HOST = "test.kivo-d81.pages.dev"
 

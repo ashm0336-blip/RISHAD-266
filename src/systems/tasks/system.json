@@ -217,7 +217,7 @@
   },
   "pages.entry.tasks": {
    "order": 10,
-   "text": "  {\n   \"key\": \"tasks\",\n   \"module\": \"tasks\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Tasks\"],\n   \"nav\": \"tasks\",\n   \"name\": \"المهام\",\n   \"under\": \"daily\"\n  },\n"
+   "text": "  {\n   \"key\": \"tasks\",\n   \"module\": \"tasks\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Tasks\"],\n   \"nav\": \"tasks\",\n   \"name\": \"المهام\"@@SYS:pages.under.daily@@\n  },\n"
   },
   "pages.daily.seq.tasks": {
    "order": 10,
@@ -343,21 +343,9 @@
    "order": 10,
    "text": "                bassam_tasks_v1: \"المهام\",\r\n                bassam_tasks_locks_v1: \"اعتمادات المهام\",\r\n"
   },
-  "admin.tree.leafNote.tasks": {
-   "order": 10,
-   "text": "\"tasks\" === l.owner\r\n                        ? \"التكرار: إنشاءُ مهمةٍ متكررة = «\" + lab(\"task.create\") + \"» (+ «\" + lab(\"task.assign\") + \"») · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «\" + lab(\"task.edit\") + \"»\"\r\n                        : "
-  },
-  "admin.tree.recNotes.tasks": {
-   "order": 10,
-   "text": "        \"task.create\": \"يشمل إنشاءَ مهمةٍ لمرة واحدة أو متكررة (يومي · أسبوعي · شهري)\",\r\n        \"task.edit\": \"يشمل تعديلَ التكرار وإيقافَه مؤقتاً واستئنافَه وإنهاءَه، وتحويلَ مهمةٍ إلى متكررة مع «\" + lab(\"task.create\") + \"» و«\" + lab(\"task.assign\") + \"»\",\r\n        \"task.assign\": \"يشمل مكلَّفي المهمة المتكررة\",\r\n"
-  },
   "admin.keyLabels.tasks": {
    "order": 10,
    "text": "        bassam_tasks_v1: \"المهام\",\r\n"
-  },
-  "admin.tree.capTip.tasks": {
-   "order": 10,
-   "text": "      r && r.isLeaf && \"tasks\" === r.key && (r.chkTip += \" · التكرار: إنشاءُ مهمةٍ متكررة = «\" + ad + \"» (+ «\" + ed + \"» لمكلَّفيها) · تعديلُ التكرار وإيقافُه واستئنافُه وإنهاؤه = «\" + ed + \"»\");\r\n"
   },
   "bk.labels.tasks": {
    "order": 10,
@@ -419,14 +407,6 @@
    "order": 10,
    "text": ", 'tasks'"
   },
-  "read.map.reader.tasks.3": {
-   "order": 10,
-   "text": ", 'tasks'"
-  },
-  "canWrite.rawWhy.tasks": {
-   "order": 10,
-   "text": "  if (nm === 'bassam_tasks_v1') { var xw9 = taskRawWhy(A, PV9.a(), PV9.b(), P.dept, ctx); if (xw9) return { ok: false, why: xw9 }; }\n"
-  },
   "enf.canWrite.rawWhy.tasks": {
    "order": 10,
    "text": "  if (rn === 'bassam_tasks_v1') { var xwE = taskRawWhy(A, a, b, P.dept, ctx); if (xwE) return enfNo(xwE); }\n"
@@ -451,10 +431,6 @@
    "order": 10,
    "text": "  if (meTasksChanged(AC, (ch && ch.results) || [], vC)) outC.tasksChanged = 1;\n"
   },
-  "empGone.tasks.fn": {
-   "order": 10,
-   "file": "slots/empGone.tasks.fn.frag"
-  },
   "emp.cleanup.tasks": {
    "order": 10,
    "text": "  var tasks = values.bassam_tasks_v1;\n  if (isObj(tasks))\n    Object.keys(tasks).forEach(function (k) {\n      if (Array.isArray(tasks[k]))\n        tasks[k].forEach(function (r) {\n          if (Array.isArray(r) && ((r[14] && drop.has(String(r[14]).trim())) || (r[8] && drop.has(String(r[8]).trim())))) {\n            r[7] = [];\n            r[8] = '';\n            r[14] = '';\n          }\n        });\n    });\n"
@@ -470,10 +446,6 @@
   "priv.carrier": {
    "order": 10,
    "text": "bassam_tasks_v1"
-  },
-  "permv2.selfEkey.tasks": {
-   "order": 10,
-   "text": "rn === 'bassam_tasks_v1' && !A.__tkSelf ? null : "
   },
   "enf.selfEkey.tasks": {
    "order": 10,
@@ -571,29 +543,20 @@
    "order": 10,
    "file": "slots/contracts.tasks.frag"
   },
-  "canWrite.selfRule.tasks": {
-   "order": 10,
-   "text": "  if (R9.self === 'task' && newVal != null && selfTaskOnly(A, newVal, curVal)) return { ok: true };\n"
-  },
-  "permv2.selfRule.tasks": {
-   "order": 10,
-   "text": "    if (R0.self === 'task' && selfTaskOnly(A, newVal, curVal)) return 'selfTask';\n"
-  },
-  "permv2.selfRule.how.tasks": {
-   "order": 10,
-   "text": " || how === 'selfTask'"
-  },
   "daily.tabVals.tasks": {
    "order": 10,
-   "text": "        dsOnTasks: \"tasks\" === $n,\n        dsTasksTabStyle: ti(\"tasks\" === $n),\n        dsTasksTabIcon: ei(\"tasks\" === $n),\n        dsTasksTabLbl: si(\"tasks\" === $n),\n        dsGoTasks: () => this.setState({ dsTab: \"tasks\" }),\n        dsTasksTabShow: TKn,\n"
+   "text": "        dsOnTasks: \"tasks\" === $n,\n        dsTasksTabStyle: ti(\"tasks\" === $n),\n        dsTasksTabIcon: ei(\"tasks\" === $n),\n        dsTasksTabLbl: si(\"tasks\" === $n),\n        dsGoTasks: () => this.setState({ dsTab: \"tasks\" }),\n        dsTasksTabShow: TKn,\n",
+   "host": "daily"
   },
   "daily.fallback.3.tasks": {
    "order": 10,
-   "text": "TKn ? \"tasks\" : "
+   "text": "TKn ? \"tasks\" : ",
+   "host": "daily"
   },
   "daily.guard.tasks": {
    "order": 10,
-   "text": ",\n      \"tasks\" !== $n || TKn || ($n = Qn ? \"kpi\" : qn ? \"dreport\" : \"rounds\")"
+   "text": ",\n      \"tasks\" !== $n || TKn || ($n = Qn ? \"kpi\" : @@SYS:daily.fb.4.dreport@@\"rounds\")",
+   "host": "daily"
   },
   "daily.fallback.2.tasks": {
    "order": 10,
@@ -601,39 +564,48 @@
   },
   "daily.fallback.1.tasks": {
    "order": 10,
-   "text": "Vn ? \"rounds\" : \"tasks\""
+   "text": "Vn ? \"rounds\" : \"tasks\"",
+   "host": "daily"
   },
   "daily.pick.tasks": {
    "order": 10,
-   "text": "\"tasks\" === s.dsTab ? \"tasks\" : "
+   "text": "\"tasks\" === s.dsTab ? \"tasks\" : ",
+   "host": "daily"
   },
   "daily.can.tasks": {
    "order": 10,
-   "text": "      TKn = (() => {\n        try {\n          const t = KIVO.BassamPerm;\n          return !t || !t.can || !!t.can(\"tasks\", \"view\");\n        } catch (t) {\n          return !0;\n        }\n      })(),\n"
+   "text": "      TKn = (() => {\n        try {\n          const t = KIVO.BassamPerm;\n          return !t || !t.can || !!t.can(\"tasks\", \"view\");\n        } catch (t) {\n          return !0;\n        }\n      })(),\n",
+   "host": "daily"
   },
   "daily.addr.3.tasks": {
    "order": 10,
-   "text": " || \"tasks\" === n.dsTab"
+   "text": " || \"tasks\" === n.dsTab",
+   "host": "daily"
   },
   "daily.addr.2.tasks": {
    "order": 10,
-   "text": " || \"tasks\" === t"
+   "text": " || \"tasks\" === t",
+   "host": "daily"
   },
   "daily.addr.list.tasks": {
    "order": 10,
-   "text": ", \"tasks\""
+   "text": ", \"tasks\"",
+   "host": "daily"
   },
   "daily.addr.1.tasks": {
    "order": 10,
-   "text": " || \"tasks\" === x"
+   "text": " || \"tasks\" === x",
+   "host": "daily"
   },
   "daily.view.mount.tasks": {
    "order": 10,
-   "text": "<!-- ═══ تبويب «المهام» — انتقل من «موظفو الإدارة»: ماذا يعمل من حضر اليوم — يستورد صفحته كما هي ═══ -->\n<sc-if value=\"{{dsOnTasks}}\" hint-placeholder-val=\"{{ false }}\">\n<dc-import name=\"Tasks\" hint-size=\"100%,1200px\"></dc-import>\n</sc-if>\n"
+   "text": "<!-- ═══ تبويب «المهام» — انتقل من «موظفو الإدارة»: ماذا يعمل من حضر اليوم — يستورد صفحته كما هي ═══ -->\n<sc-if value=\"{{dsOnTasks}}\" hint-placeholder-val=\"{{ false }}\">\n<dc-import name=\"Tasks\" hint-size=\"100%,1200px\"></dc-import>\n</sc-if>\n",
+   "host": "daily"
   },
   "daily.view.tab.tasks": {
    "order": 10,
-   "file": "slots/daily.view.tab.tasks.frag"
+   "file": "slots/daily.view.tab.tasks.frag",
+   "host": "daily"
   },
   "profile.hist.filter.tasks": {
    "order": 10,
@@ -713,11 +685,8 @@
   },
   "daily.tabBar.tasks": {
    "order": 10,
-   "text": " + (TKn ? 1 : 0)"
-  },
-  "empGone.map": {
-   "order": 10,
-   "text": "'bassam_tasks_v1': tasksGoneOk"
+   "text": " + (TKn ? 1 : 0)",
+   "host": "daily"
   },
   "emp.confirm.tasks": {
    "order": 10,
@@ -734,6 +703,10 @@
   "activity.taskId.export": {
    "order": 10,
    "text": " taskId: taskId,"
+  },
+  "oc.names.tasks.1": {
+   "order": 10,
+   "file": "slots/oc.names.tasks.1.frag"
   }
  }
 }

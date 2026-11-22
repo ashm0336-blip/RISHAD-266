@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/025-entities-2.js.tpl */
 /* ══ سجل الكيانات ENT — جردٌ من الواجهة الفعلية لكل مورد ══════════════════════
    لكل مورد: شكلُ جذره القانوني · مجموعاته وهويةُ عناصرها · قوائمه البدائية ·
    ما يُلحق به · ما يُعاد تسميته · ما يتبنّى هويةً قانونية.
@@ -42,9 +43,6 @@ var ENT = {
   /* sfRead: [{ name, color, tStart, tEnd }] — الاسم هويةٌ، وإعادة تسميته عملية edit */
   'bassam_shift_options_v1':  { cols: [{ at: '', idf: ['name'], lock: ['name'] }], empty: '[]',
                                 rename: { at: '', field: 'name' } },
-  'bassam_perm_tpls_v1':      { cols: [{ at: '', idf: ['id'], lock: ['id'] }], empty: '[]' },
-  /* رايةُ ترحيلٍ تُكتب مرةً واحدة — بلا شكلٍ مفروض */
-  'bassam_perm_tpls_named_v1':{ },
   'bassam_callsigns_v1':      { empty: '[]', primRoot: 1 },
   /* drAddLeaveKind/drDelLeaveKind: كلتاهما محروستان بـPC("edit") في الواجهة */
   'bassam_leave_kinds_v1':    { empty: '[]', primRoot: 1, primAct: 'edit' },
@@ -62,6 +60,7 @@ var ENT = {
   'bassam_dr_grp_v1':         { empty: '{}' },
   /* ── الجولات ── */
   'bassam_rounds_v1':         { map: 1, empty: '{}' },
+  'bassam_rounds_arc_v1':     { map: 1, empty: '{}' },
   'bassam_dayshift_v1':       { map: 1, empty: '{}' },
   /* اليوم المختار: { y, m, d } */
   'bassam_dayfocus_v1':       { empty: '{}' },

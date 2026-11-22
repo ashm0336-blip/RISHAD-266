@@ -41,7 +41,7 @@ async function world(mode) {
 const without = (...ids) => NODES.filter((n) => !ids.includes(n.id));
 const why = (r) => (r.j && r.j.denied && r.j.denied[KG] && r.j.denied[KG].why) || '';
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] removing a node that still has children, units or a general manager is refused; nothing is written', async () => {
     const { DB, C, ck } = await world(mode);
     const cases = [

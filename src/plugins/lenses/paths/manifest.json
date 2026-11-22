@@ -1,4 +1,5 @@
 {
+ "$comment": "ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/systems/_shared/lenses/plugins/paths/manifest.json.tpl",
  "schema": 1,
  "kind": "lens",
  "key": "paths",

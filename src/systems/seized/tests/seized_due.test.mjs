@@ -7,7 +7,11 @@ import { needs } from '../../../../tests/unit/harness.mjs';
 const DUE=Date.parse('2026-10-31T06:01:00Z'); // Saturday09:01 Riyadh.
 async function clock(fn){const RealDate=globalThis.Date,box={now:DUE};globalThis.Date=class extends RealDate{constructor(...a){super(...(a.length?a:[box.now]));}static now(){return box.now;}};try{await fn(v=>box.now=RealDate.parse(v));}finally{globalThis.Date=RealDate;}}
 async function fixture({empty=false}={}){
- const B=await world({schema:10}),W=await candidateWorker(['nfSeizedDue','NF_REV','pfHijriAt','szKey','szRevs']);
+ const B=await world({schema:11}),W=await candidateWorker(['nfSeizedDue','NF_REV','pfHijriAt','szKey','szRevs']);
+ /* V7 · d5h (owner rule, item 7): a notification of an OFF system is never generated -- and the shared world ceiling (canonical_fx) does not carry
+    seized, so it is turned ON for the departments and their parent first (as section_mgr_reload turns systems ON before opening their addresses).
+    The OFF case itself: tests/unit/v7_d5h_notif_off.test.mjs and tests/browser/v7_d5h_notif_off.test.mjs */
+ {const P=JSON.parse(B.DB.q("SELECT v FROM kv WHERE k='bassam_perms_v1' ORDER BY seq").map(r=>r.v).join(''));for(const d of Object.keys(P.caps||{}))if(Array.isArray(P.caps[d])&&!P.caps[d].includes('seized'))P.caps[d]=P.caps[d].concat(['seized']);await B.DB.prepare("DELETE FROM kv WHERE k='bassam_perms_v1'").run();await B.put('bassam_perms_v1',P,true);}
  await B.DB.prepare("INSERT INTO notification_type_overrides(type_id,enabled)VALUES('bx_wk',1)").run();
  const docs=seizedDocs();docs.reports.reports[0].ts=DUE-40*86400000;docs.reports.reports[0].items[0].n=3;docs.reports.reports[0].items[0].val=1200;
  if(empty)docs.reports.reports=[];await B.install('seized',D1,docs);

@@ -29,7 +29,11 @@ async function clock(start, fn) {
   finally { globalThis.Date = RealDate; }
 }
 async function fixture({ items = true, weekly = true, ageDays = 40, now } = {}) {
-  const B = await world({ schema: 10 });
+  const B = await world({ schema: 11 });
+  /* V7 · د5-ح (قرار المالك · البند ٧): تنبيهُ نظامٍ مطفأ لا يُولَّد — و«المضبوطات» ليست في سقف هذا العالم، فتُشغَّل أولاً كما يُشغَّل «الاسترشاد» أدناه */
+  { const perms = clone(B.keys.bassam_perms_v1);
+    Object.keys(perms.caps).forEach((d) => { if (!perms.caps[d].includes('seized')) perms.caps[d].push('seized'); });
+    await B.put('bassam_perms_v1', perms); }
   if (weekly) await B.DB.prepare("INSERT INTO notification_type_overrides(type_id,enabled)VALUES('bx_wk',1)").run();
   if (items) {
     const docs = seizedDocs('due_gate');

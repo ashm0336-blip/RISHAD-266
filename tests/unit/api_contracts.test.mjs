@@ -24,13 +24,13 @@ test('(أ) مساراتُ العقد = مساراتُ العامل حرفاً، 
   for (const r of CT.routes) { assert.ok(Array.isArray(r.methods) && r.methods.length, r.path + ': طرائق'); assert.ok(['public', 'session', 'actor', 'super', 'enforce'].includes(r.access), r.path + ': مستوى'); assert.ok(r.responses && Object.keys(r.responses).length, r.path + ': ردود'); }
 });
 
-for (const mode of ['legacy', 'enforce']) test('(ب) الردودُ الفعلية تطابق العقد — ' + mode, { ...S255, ...needs('dstats') }, async () => {
+for (const mode of ['enforce']) test('(ب) الردودُ الفعلية تطابق العقد — ' + mode, { ...S255, ...needs('dstats') }, async () => {
   const env = makeTestEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}); const C = client(env);
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok); const ck = su.ck;
   assert.ok(hasKeys(su.j, byPath['/api/login'].responses['200'].ok1), 'login ok1');
   if (mode === 'enforce') { env.DB.exec("CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)"); env.DB.exec("INSERT OR REPLACE INTO meta (k, v) VALUES ('authz_mode','enforce')"); }
   const s0 = await C.save(ck, { bassam_depts_v1: JSON.stringify([{ id: 'dA', name: 'إدارة', gid: '' }]) }); assert.equal(s0.status, 200); assert.ok(hasKeys(s0.j, byPath['/api/save'].responses['200'].keys), 'save');
-  const GETS = { '/api/dstats': '', '/api/brand': '', '/api/ping': '', '/api/whoami': '', '/api/me': '', '/api/changes': '?since=0', '/api/get': '?keys=bassam_depts_v1', '/api/aud': '?limit=5', '/api/presence': '', '/api/sec': '', '/api/guard': '', '/api/policy': '', '/api/overview': '', '/api/recovery': '', '/api/permv2': '', '/api/identity-rehearsal': '', '/api/authz': '', '/api/authz/log': '', '/api/authz/snaps': '', '/api/retro': '' };
+  const GETS = { '/api/dstats': '', '/api/brand': '', '/api/ping': '', '/api/whoami': '', '/api/me': '', '/api/changes': '?since=0', '/api/get': '?keys=bassam_depts_v1', '/api/aud': '?limit=5', '/api/presence': '', '/api/sec': '', '/api/guard': '', '/api/policy': '', '/api/overview': '', '/api/recovery': '', '/api/identity-rehearsal': '', '/api/authz': '', '/api/authz/log': '', '/api/authz/snaps': '', '/api/retro': '' };
   for (const p in GETS) {
     const r = await C.api(p + GETS[p], { cookie: ck }); const c = byPath[p];
     const expect = c.access === 'enforce' && mode === 'legacy' ? '404' : (p === '/api/retro' ? '400' : '200');

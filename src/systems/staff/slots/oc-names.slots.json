@@ -1,0 +1,19 @@
+{
+ "_note": "V7 · د5-د2: أسماءُ جداول أشكال الجدول الشهري وحده في خريطة أسماء جداول العمليات (019o1) — تغيب بغيابه. الأسماءُ التي تحتاجها القاعدةُ بغيابه (أشكالٌ مشتركة خُزّنت تاريخياً بجداول باسمه) تبقى في القالب حرفياً بقرار المراجع 1.",
+ "oc.names.staff.1": {
+  "order": 10,
+  "text": "  ops_callsigns: { t: \"ops_staffing_month_employee_perm_days\", e: null },\n"
+ },
+ "oc.names.staff.2": {
+  "order": 10,
+  "text": "  ops_permission_limit: { t: \"ops_staffing_month_shifts_entry_choice_0\", e: \"ops_staffing_month_shifts_entry_choice_0\" },\n"
+ },
+ "oc.names.staff.3": {
+  "order": 10,
+  "file": "slots/oc.names.staff.3.frag"
+ },
+ "oc.names.staff.4": {
+  "order": 10,
+  "file": "slots/oc.names.staff.4.frag"
+ }
+}

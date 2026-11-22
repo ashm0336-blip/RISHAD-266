@@ -11,6 +11,13 @@ import { startLab, LAB } from './local_server.mjs';
 import { chromium, openAs } from './lab_browser.mjs';
 
 const BEFORE = JSON.parse(fs.readFileSync(new URL('./fixtures/core01_nav_before.json', import.meta.url), 'utf8')).roles;
+
+/* V7 · د5-ح (قرار المالك — موثَّق، اللقطةُ نفسُها لا تُعدَّل): النظامُ المطفأ لا يراه أحد ولا مديرُ المنصة. ما كانت القائمةُ تعرضه له باهتاً
+   «خارج السقف» (صنفُ n out وتلميحُ «— خارج سقف «…» · مرئية لك بصلاحية المشرف») صار غائباً كما لغيره (n gone)، والتلميحُ اسمُ الصفحة وحده */
+const OFF5H = (L) => (L || []).map((x) => { const [c, t, n] = x.split('|'), m = / — خارج سقف «[^»]*» - مرئية لك بصلاحية المشرف$/.exec(t || ''); return m ? [c.replace(' out', ' gone'), t.slice(0, m.index), n].join('|') : x; });
+/* V7 · د5-ح (off2 — قرار المالك): «المساعدة» نظامٌ يُطفأ (help) وليست في سقف إدارة المختبر (أ) — فلا يراها مديرُ المنصة فيها (كانت له دائماً: 260 helpOk · root _pageAllowed) */
+const NOHELP5H = (L) => (L || []).filter((x) => !/^n bs-plat-help\|/.test(x));
+for (const h of Object.keys(BEFORE.super || {})) BEFORE.super[h] = NOHELP5H(OFF5H(BEFORE.super[h]));
 const MOBILE = { viewport: { width: 390, height: 844 }, context: { isMobile: true, hasTouch: true, deviceScaleFactor: 1 } };
 const links = (page) => page.evaluate(() => [...document.querySelectorAll('aside.bsb a, aside.bsb .n')].map((a) => (a.className || '') + '|' + (a.getAttribute('title') || '') + '|' + (a.textContent || '').replace(/\s+/g, ' ').trim()));
 const text = (page) => page.evaluate(() => document.body.innerText);

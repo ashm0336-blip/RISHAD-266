@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/modules/profile/logic.js.tpl */
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","admin+profile+seized"]) {
   /* KIVO_264 · «ملفي»: pfMe = ردُّ /api/me/today (حقائقُ يومي من الخادم بهويةٍ يقرّرها الخادم) · pfHist = ردودُ /api/me/history لكل شهر ·
      histYm/histType = مرشّحا «السجل» · spotAll = «+N» الزملاء داخل الصفحة نفسِها (لا تنقّل) */
@@ -20,7 +21,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
            على الأكثر كلَّ ١٠ ثوانٍ مهما تتابعت الأحداث (كلُّ جلبٍ يقرأ مفاتيحَ الإدارة في الخادم)، ومفاتيحُ لا تمسّ يومي (المهام · التنبيهات …) لا تجلب */
         const keys = ev && ev.detail && ev.detail.keys,
           ks = Array.isArray(keys) ? keys.map(String) : [],
-          REL = ["bassam_employees_v1", "bassam_staffing_v3", "bassam_staffing_locks_v1", "bassam_dreport_v1", "bassam_plan_v1", "bassam_rounds_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
+          REL = ["bassam_employees_v1", "bassam_staffing_v3", "bassam_staffing_locks_v1", "bassam_dreport_v1", "bassam_plan_v1", "bassam_rounds_v1", "bassam_rounds_arc_v1", "bassam_shift_options_v1", "bassam_auth_users_v1", "bassam_depts_v1"];
         if (ks.length && !ks.some((k) => REL.some((r) => k === r || k.slice(-r.length - 1) === ":" + r))) return;
         this.pfMeInvalidate();
       }));
@@ -209,7 +210,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       m = +p[2],
       upto = 12 * y + m < 12 * T.y + T.m ? 31 : y === T.y && m === T.m ? T.d : 0,
       H = toks.length
-        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, staffing: this.LS("bassam_staffing_v3", {}), locks: this.LS("bassam_staffing_locks_v1", {}), dreport: this.LS("bassam_dreport_v1", {}), plan: this.LS("bassam_plan_v1", {}), rounds: this.LS("bassam_rounds_v1", {}), opts: this.LS("bassam_shift_options_v1", []) })
+        ? PF.hist({ ym: y0, days: PF.monthDays(y, m), upto, toks, months: this.LB("staff.months@1", {}), locks: this.LB("staff.locks@1", {}), reports: this.LB("dreport.doc@1", {}), plan: this.LB("plan.doc@1", {}), rounds: this.LR({}), opts: this.LS("bassam_shift_options_v1", []) })
         : null;
     return {
       ok: 1,
@@ -242,6 +243,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         .catch(() => {
           this._pfAlive && (this.setState({ pfSrvBusy: !1 }), this.bsToast("تعذّر الاتصال بالخادم"));
         }));
+  }
+  /* V7 · د5-هـ (x1): إنهاءُ جلسةٍ واحدة من القائمة */
+  pfKillOne(sid) {
+    this.isCF() && sid && !this.state.pfSrvBusy &&
+      (this.setState({ pfSrvBusy: !0 }),
+      fetch("/api/me/sess/kill-one", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sid: sid }) })
+        .then((t) => t.json().catch(() => null))
+        .then((t) => {
+          this._pfAlive && (this.setState({ pfSrvBusy: !1 }), t && t.ok ? (this.bsToast("أُنهيت تلك الجلسة", "ok"), this.pfSrvLoad()) : (this.bsToast(t && "not-found" === t.err ? "انتهت تلك الجلسة من قبل" : "تعذّر إنهاء الجلسة — حاول مجدداً"), this.pfSrvLoad()));
+        })
+        .catch(() => { this._pfAlive && (this.setState({ pfSrvBusy: !1 }), this.bsToast("تعذّر الاتصال بالخادم")); }));
   }
   pfImg(t) {
     if (!t) return "";
@@ -295,10 +307,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const value = S.get(t);
     return value == null ? e : value;
   }
+  /* V7 · د5-د2: وثيقةٌ يملكها برنامجٌ آخر تُسأل بالاسم (الناقل) — محجوبةٌ أو غائبٌ مالكُها ⇒ القيمةُ الافتراضية */
+  LB(t, e) {
+    const value = KIVO.bus.read(t, "granted");
+    return value == null ? e : value;
+  }
+  /* V7 · د5-هـ: أيامُ الجولات من مالكها (daily.days@1) بقراءة Operations نفسِها (LS: المحجوبُ ⇒ الافتراض)؛ بغياب مالكها الافتراض */
+  LR(e) {
+    const value = KIVO.bus.read("daily.days@1", (k) => this.LS(k, e));
+    return value == null ? e : value;
+  }
   can(t, e) {
     try {
       const s = KIVO.BassamPerm;
-      return !(s && s.can && !(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) && !s.can(t, e || "view"));
+      /* V7 · د5-ح (قرار المالك): بلا استثناءٍ لمدير المنصة — صلاحياتُه (331) كلُّ شيءٍ إلا المطفأ، فقطعُ «صفحتي» لنظامٍ مطفأ لا تُرسم له */
+      return !(s && s.can && !s.can(t, e || "view"));
     } catch (t) {
       return !0;
     }
@@ -308,23 +331,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (KIVO.BassamNav && KIVO.BassamNav.go) return void KIVO.BassamNav.go(t);
     } catch (t) {}
   }
-  hParts(t) {
-    try {
-      const e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        }).formatToParts(t || new Date()),
-        s = (t) => +e.find((e) => e.type === t).value;
-      return { y: s("year"), m: s("month"), d: s("day") };
-    } catch (e) {
-      try {
-        return KIVO.BassamHijri.now(t);
-      } catch (t) {
-        return { y: 1448, m: 1, d: 1 };
-      }
-    }
-  }
+  hParts(t) { return KIVO.BassamCal.hPartsSafe(t); }   /* V7 · د5-د: بتراجعٍ إن غاب دعمُ التقويم (385-calendar) */
   MONTHS() {
     return [
       "محرم",
@@ -390,6 +397,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "bassam_shift_options_v1",
         "bassam_dreport_v1",
         "bassam_rounds_v1",
+        "bassam_rounds_arc_v1",
         "bassam_plan_v1",
         "bassam_tasks_v1",
         "bassam_dayshift_v1",
@@ -600,9 +608,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         new Intl.DateTimeFormat(loc, Object.assign({ timeZone: tz }, o)).formatToParts(d).forEach((p) => (q[p.type] = p.value));
         return q;
       };
-      const H = P("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" }),
+      const H = KIVO.BassamCal.hPartsRiyadh(d),   /* V7 · د5-د2: يومُ الرياض الهجري من الخدمة */
         G = P("en-u-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-      ((h = H.day + "/" + H.month + "/" + H.year + "هـ"), (g = G.day + "/" + G.month + "/" + G.year + "م"), (c = G.hour + ":" + G.minute));
+      ((h = H.d + "/" + H.m + "/" + H.y + "هـ"), (g = G.day + "/" + G.month + "/" + G.year + "م"), (c = G.hour + ":" + G.minute));
     } catch (t) {
       g = d.toISOString().slice(0, 16).replace("T", " ");
     }
@@ -1877,7 +1885,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       srv = S.pfMe && S.pfMe.ok && this.pfMeSame(this._pfMeScope) ? S.pfMe : null;
     let loc = null;
     try {
-      loc = PF && o.user ? PF.today({ user: o.user, emps: o.emps, staffing: o.staffing, locks: o.locks, dreport: o.dreport, plan: o.plan, rounds: o.rounds, opts: o.opts, now: Date.now() }) : null;
+      loc = PF && o.user ? PF.today({ user: o.user, emps: o.emps, months: o.months, locks: o.locks, reports: o.reports, plan: o.plan, rounds: o.rounds, opts: o.opts, now: Date.now() }) : null;
     } catch (t) {
       loc = null;
     }
@@ -1912,15 +1920,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return null;
       }
     };
+    /* V7 · د5-د2: هل وثيقةُ الأشهر جاهزةٌ عند مالكها؟ بغيابه undefined (لا شيء يُنتظر) */
+    const rawSched = () => {
+      try {
+        return KIVO.bus.read("staff.months@1", "ready");
+      } catch (x) {
+        return null;
+      }
+    };
     const y = this.LS("bassam_employees_v1", []),
-      u0 = this.LS("bassam_staffing_v3", {}),
+      u0 = this.LB("staff.months@1", {}),
       u = u0 && "object" == typeof u0 ? u0 : {},
-      LK = this.LS("bassam_staffing_locks_v1", {}),
-      B = this.LS("bassam_dreport_v1", {}),
-      RND = this.LS("bassam_rounds_v1", {}),
-      Z = this.LS("bassam_plan_v1", {}),
+      LK = this.LB("staff.locks@1", {}),
+      B = this.LB("dreport.doc@1", {}),   /* V7 · د5-هـ: التقريرُ يملكه برنامجُه — بالناقل؛ بغيابه أو حجبه لا تقرير */
+      RND = this.LR({}),   /* V7 · د5-هـ: الجولاتُ يملكها برنامجُها — بالناقل؛ بغيابه أو حجبها لا جولة */
+      Z = this.LB("plan.doc@1", {}),   /* V7 · د5-د2: الخطةُ يملكها التشغيلُ الميداني — بالناقل؛ بغيابه أو حجبها لا خطة */
       GO = this.LS("bassam_shift_options_v1", []);
-    const ME = l ? this.pfMine({ user: t, emps: y, staffing: u, locks: LK, dreport: B, plan: Z, rounds: RND, opts: GO, readable: null !== raw("bassam_employees_v1") && null !== raw("bassam_staffing_v3") }) : null,
+    const ME = l ? this.pfMine({ user: t, emps: y, months: u, locks: LK, reports: B, plan: Z, rounds: RND, opts: GO, readable: null !== raw("bassam_employees_v1") && null !== rawSched() }) : null,
       MM = ME && ME.M,
       F = MM ? MM.facts : null,
       SITE = MM ? MM.site : null,
@@ -2099,13 +2115,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         for (let ii = 0; ii < L.length; ii++) {
           const el = L[ii];
           if (!el) continue;
-          const hit = sx.uid ? String(el.uid || el.eid || "") === sx.uid : (("round" === src && Q) || ("plan" === src && at)) && fi === sx.fi && ii === sx.i;
+          const hit = sx.uid ? String(el.uid || el.eid || "") === sx.uid : (("round" === src && Q) || ("official" === src && at)) && fi === sx.fi && ii === sx.i;
           if (hit) return { fi: fi, kind: sx.kind, i: ii, x: el.x, y: el.y, label: sx.label, short: sx.short, loc: sx.loc, closed: "gates" === sx.kind ? !!el.closed : !!el.off };
         }
       }
       return null;
     };
-    const offEl = l && SITE ? findEl(SITE.official, "plan") : null,
+    const offEl = l && SITE ? findEl(SITE.official, "official") : null,
       tdEl = l && SITE ? findEl(SITE.today, "round") : null,
       lt = offEl ? Object.assign({ which: "official" }, offEl) : tdEl ? Object.assign({ which: "today" }, tdEl) : null,
       ltToday = offEl && tdEl && !(offEl.fi === tdEl.fi && offEl.kind === tdEl.kind && offEl.i === tdEl.i) ? tdEl : null;
@@ -2231,6 +2247,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!o || "profile" !== o.page) return;
       KIVO.__BS_OPEN_TAB = null;
       "history" === o.tab && setTimeout(() => this._pfAlive && this.pfOpenHist("all", ""), 0);
+      "acct" === o.tab && setTimeout(() => this._pfAlive && this.setState({ pfPanel: "acct", pfMsg: "", pfAccMsg: "" }), 0);   /* V7 · د5-هـ (x1): «ليس أنا» ← تغيير كلمة المرور */
     } catch (t) {
       KIVO.__BS_OPEN_TAB = null;
     }
@@ -2385,7 +2402,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!e) return { pfDeptInfo: o, pfDeptSub: "" };
     const title = (() => {
       try {
-        return i.isSuper ? "مسؤول المنصة" : (AU && AU.myTitle && AU.myTitle()) || ("gm" === e.role ? (AU && AU.gmRoleLabel ? AU.gmRoleLabel() : "مدير إدارة عامة") : i.isAppt ? (this.deptIsSec(e.deptId) ? "مدير القسم" : "مدير الإدارة") : AU && AU.permLabel && e.ekey ? AU.permLabel(e.ekey) || "بلا صلاحيات" : "");
+        /* V7 · د5-هـ (44): «الصلاحيات» للموظف = اسمُ دوره الممنوح (permLabel ← محرّك الأدوار) — لا المسمّى الحرّ */
+        if (!i.isSuper && "staff" === e.role && !i.isAppt && AU && AU.permLabel && e.ekey) return AU.permLabel(e.ekey, e.deptId) || "بلا صلاحيات";
+        return i.isSuper ? "مسؤول المنصة" : (AU && AU.myTitle && AU.myTitle()) || ("gm" === e.role ? (AU && AU.gmRoleLabel ? AU.gmRoleLabel() : "مدير إدارة عامة") : i.isAppt ? (this.deptIsSec(e.deptId) ? "مدير القسم" : "مدير الإدارة") : AU && AU.permLabel && e.ekey ? AU.permLabel(e.ekey, e.deptId) || "بلا صلاحيات" : "");
       } catch (t) {
         return "";
       }
@@ -2453,9 +2472,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         String(null == t ? "" : t)
           .replace(/\s+/g, " ")
           .trim();
+    /* V7 · د5-هـ (44): الطاقمُ الإشرافي = حاملو الأدوار الموسومة sup:true (محرّك الأدوار) — قوالبُ الصلاحيات حُذفت */
     let tp = [];
     try {
-      tp = ((P && P.tpls && P.tpls()) || []).filter((t) => (P.isSupTpl ? P.isSupTpl(t) : !!t.sup));
+      const P4 = KIVO.Perm44;
+      tp = ((P4 && "function" === typeof P4.rolesOf ? (P4.rolesOf(e.deptId) || {}).roles : null) || []).filter((t) => t && t.id && P && P.isSupRole && P.isSupRole(t));   /* rolesOf → {roles, people} */
     } catch (t) {
       tp = [];
     }
@@ -2468,7 +2489,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           if (!r || !r.ekey) return;
           let x = null;
           try {
-            x = P.tplOf ? P.tplOf(r.ekey) : null;
+            x = P.roleOf ? P.roleOf(r.ekey, e.deptId) : null;
           } catch (q) {
             x = null;
           }
@@ -2476,7 +2497,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           const nm = (i.empOfTok && (i.empOfTok(r.ekey) || {}).name) || "";
           nm && !seen[nm] && ((seen[nm] = 1), names.push(nm));
         });
-        o.push(R("mgr", clean(t.name) || "قالب إشرافي", names.join(" · "), { w: "1" }));
+        o.push(R("mgr", clean(t.name) || "دور إشرافي", names.join(" · "), { w: "1" }));
       });
     return { pfDeptInfo: o, pfDeptSub: dn ? (this.deptIsSec(e.deptId) ? "قسمك: " : "إدارتك: ") + dn : "" };
   }
@@ -2634,12 +2655,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       p = (() => {
         try {
           if (i.isSuper) return "مسؤول المنصة";
-          const T = KIVO.BassamAuth && KIVO.BassamAuth.myTitle ? KIVO.BassamAuth.myTitle() : "";
-          if (T) return T;
-          if ("gm" === i.role) return KIVO.BassamAuth && KIVO.BassamAuth.gmRoleLabel ? KIVO.BassamAuth.gmRoleLabel() : "مدير إدارة عامة";
-          if (i.isAppt) return this.deptIsSec(e && e.deptId) ? "مدير القسم" : "مدير الإدارة";
           const t = KIVO.BassamAuth;
-          return (t && t.permLabel && e && e.ekey && t.permLabel(e.ekey)) || "";
+          /* V7 · د5-هـ (44): سطرُ الدور للموظف = اسمُ دوره الممنوح (permLabel ← محرّك الأدوار) — قبل المسمّى الحرّ */
+          if ("staff" === i.role && !i.isAppt && t && t.permLabel && e && e.ekey) { const L = t.permLabel(e.ekey, e.deptId); if (L) return L; }
+          const T = t && t.myTitle ? t.myTitle() : "";
+          if (T) return T;
+          if ("gm" === i.role) return t && t.gmRoleLabel ? t.gmRoleLabel() : "مدير إدارة عامة";
+          if (i.isAppt) return this.deptIsSec(e && e.deptId) ? "مدير القسم" : "مدير الإدارة";
+          return (t && t.permLabel && e && e.ekey && t.permLabel(e.ekey, e.deptId)) || "";
         } catch (t) {
           return "";
         }
@@ -2679,11 +2702,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       /* ورديةٌ ليلية بدأت أمس (اليوم التشغيلي — OD-10): ما بعد منتصف الليل امتدادٌ لها */
       w = null != d && null != g && night && u < d ? u + 1440 : u,
       S = null != d && null != g;
-    const bsRd = this.bsOn("daily/rounds") && (this.bsLensOn("zones") || this.bsLensOn("gates") || this.bsLensOn("marks") || this.bsLensOn("paths")),
-      bsSt = this.bsOn("staff"),
-      bsDr = this.bsOn("dreport"),
+    const bsRd = !!KIVO.bus.read("daily.usable@1") && (this.bsLensOn("zones") || this.bsLensOn("gates") || this.bsLensOn("marks") || this.bsLensOn("paths")),
+      bsSt = !!KIVO.bus.read("staff.usable@1"),
+      bsDr = !!KIVO.bus.read("dreport.usable@1"),   /* V7 · د5-هـ: ورقةُ التقرير اليومي يجيب عنها مالكُه؛ بغيابه مطفأة */
       bsDi = this.bsLensOn("dist"),
-      bsPl = this.bsOn("plan");
+      bsPl = !!KIVO.bus.read("plan.usable@1");   /* V7 · د5-د2: ورقةُ التشغيل الميداني يجيب عنها مالكُه؛ بغيابه مطفأة */
     let b = "none";
     S && (b = w < d ? "before" : w <= g ? "during" : "after");
     const restToday = !!(F && F.rest.today),
@@ -2923,7 +2946,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   pfMapVals(i, bsDi, tdDiff) {
     const r = {},
       ops = KIVO.__BS_SRV && KIVO.__BS_SRV.operations,
-      unavailable = !!(ops && ops.state("bassam_rounds_v1") === "denied" && !i.fromPlan),
+      unavailable = !!(ops && (KIVO.bus.read("daily.resources@1") || []).some((k) => ops.state(k) === "denied") && !i.fromPlan),   /* V7 · د5-هـ: موردُ الجولات من مالكها؛ بغيابه لا حجب */
       bsEls = i.mapEls.filter((t) => this.bsLensOn(t.kind));
     let _ = i.mySpot ? i.mySpot.fi : 0;
     if (!i.mySpot && bsEls.length) {
@@ -3083,7 +3106,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (x.sess || [])
         .slice()
         .sort((t, e) => (e.mine ? 1 : 0) - (t.mine ? 1 : 0) || e.la - t.la)
-        .forEach((t) => L.push({ dev: "m" === t.dev ? "جوال" : "حاسوب", isM: "m" === t.dev, where: [t.mine ? "هذا الجهاز" : "", t.city].filter(Boolean).join(" · "), when: t.mine ? "الآن" : t.active ? "نشط الآن" : this.rel(t.la), mine: !!t.mine }));
+        /* V7 · د5-هـ (x1): لكل جلسةٍ الجهازُ والمتصفح · المدينة · البدء · آخرُ نشاط · «الحالية» — و«إنهاء» لكلٍّ عدا الحالية (بمِقبضها sid) */
+        .forEach((t) => L.push({ dev: ("m" === t.dev ? "جوال" : "حاسوب") + (t.br ? " · " + t.br : ""), isM: "m" === t.dev, where: [t.mine ? "هذا الجهاز" : "", t.city].filter(Boolean).join(" · "), when: t.mine ? "الآن" : t.active ? "نشط الآن" : this.rel(t.la), since: t.ts ? "بدأت " + this.rel(t.ts) : "", last: t.mine || t.active ? "" : "آخر نشاط " + this.rel(t.la), mine: !!t.mine, sid: t.sid || "" }));
     else {
       let t = 0;
       try {
@@ -3094,7 +3118,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
       L.push({ dev: /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "جوال" : "حاسوب", isM: /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent), where: "هذا الجهاز", when: t ? "منذ " + this.clock(t) : "الآن", mine: !0 });
     }
-    ((r.sess = L.map((t) => ({ ...t, isD: !t.isM }))),
+    ((r.sess = L.map((t) => ({ ...t, isD: !t.isM, canKill: !t.mine && !!t.sid, kill: () => this.pfKillOne(t.sid) }))),
       (r.sessOthers = L.filter((t) => !t.mine).length),
       (r.sessHasOthers = r.sessOthers > 0),
       (r.sessKillTxt = a.pfSrvBusy ? "جارٍ الإنهاء…" : "إنهاء الجلسات الأخرى (" + r.sessOthers + ")"),

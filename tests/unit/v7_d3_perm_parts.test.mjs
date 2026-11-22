@@ -24,7 +24,7 @@ test('V7 · د3: المستودع — الوثائقُ المجموعة = الم
   }
   /* القاعدةُ لا تحمل صفاً يملكه نظام */
   const base = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry.base.json'), 'utf8'));
-  for (const e of base.registry) assert.ok(!['award', 'dstats', 'irshad', 'seized', 'tasks'].includes(e.owner.split('/')[0]) && e.owner !== 'emps/custody', 'صفُّ نظامٍ في القاعدة: ' + e.key);
+  for (const e of base.registry) assert.ok(!['award', 'daily', 'dstats', 'dreport', 'irshad', 'plan', 'seized', 'staff', 'tasks'].includes(e.owner.split('/')[0]) && e.owner !== 'emps/custody', 'صفُّ نظامٍ في القاعدة: ' + e.key);
   /* ومصدرُ 340 هو السجلُّ المجموع */
   const reg = JSON.parse(fs.readFileSync(path.join(SRC, 'permissions', 'registry', 'registry-v24.9.json'), 'utf8'));
   const js = fs.readFileSync(path.join(SRC, 'permissions', '340-registry-v24-9.js'), 'utf8');
@@ -56,6 +56,10 @@ g = {'bindings': [], 'shadowOnly': [], 'decisions': [], 'toBind': 0, 'counts': {
 gg = lambda ops: PP.finish('guard-bindings', PP.apply(g, ops, 't'), False)['counts']
 out['add'] = [gg({})['emittedKeys'], gg({'a': [{'path': ['counts', 'emittedKeys'], 'add': 3}]})['emittedKeys'], gg({'a': [{'path': ['counts', 'emittedKeys'], 'add': 3}], 'b': [{'path': ['counts', 'emittedKeys'], 'add': 4}, {'path': ['counts', 'coveredResources'], 'add': 1}]})]
 out['base'] = [e['key'] for e in base['registry']]
+N = {'a': [{'path': ['map'], 'key': 'own', 'after': 1, 'seq': 0, 'value': {'keys': ['k1']}}, {'path': ['registry', {'by': 'key', 'eq': 'b1'}, 'note'], 'sub': 'قاعدة', 'by': 'قاعدة (a)'}],
+     'b': [{'path': ['map', 'own', 'keys'], 'after': 1, 'seq': 0, 'value': 'k2', 'needs': ['a']}]}
+PP.apply(base, N, 't'); both = PP.apply(base, N, 't'); onlyb = PP.apply(base, {'b': N['b']}, 't')
+out['needs'] = [both['map']['own']['keys'], 'own' in onlyb['map'], both['registry'][0]['note'], onlyb['registry'][0]['note']]
 print(json.dumps(out, ensure_ascii=False))
 `;
   const r = py(code); assert.equal(r.status, 0, r.stderr); const o = JSON.parse(r.stdout);
@@ -70,5 +74,6 @@ print(json.dumps(out, ensure_ascii=False))
   assert.deepEqual(o.all.c.guards, { exists: 1, toBind: 3, toBuild: 0 });
   assert.match(o.bad, /0 عنصراً يطابق key='nope'/, 'مسارٌ لا يطابق عنصراً في القاعدة يُرفض');
   assert.deepEqual(o.base, ['b1', 'ref.b2'], 'القاعدةُ لا تتبدّل بالجمع');
+  assert.deepEqual(o.needs, [['k1', 'k2'], false, 'قاعدة (a)', 'قاعدة'], 'V7 · د5-د2: needs تُدرج في مدخل نظامٍ آخر بعد إدراجه وتُهمل بغيابه · sub يبدّل مقطعاً في نصّ القاعدة بحضور صاحبه');
   assert.equal(o.add[0], 5); assert.equal(o.add[1], 8); assert.equal(o.add[2].emittedKeys, 12); assert.equal(o.add[2].coveredResources, 3, 'add: نصيبُ النظام يُجمع على نصيب القاعدة');
 });

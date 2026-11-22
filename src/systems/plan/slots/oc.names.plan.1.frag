@@ -1,0 +1,7 @@
+  ops_gate_options: { t: "ops_gate_options", e: null },
+  ops_gate_options_cat: { t: "ops_staffing_month_employee_perm_days", e: null },
+  ops_gate_options_cls: { t: "ops_staffing_month_employee_perm_days", e: null },
+  ops_gate_options_gtype: { t: "ops_staffing_month_employee_perm_days", e: null },
+  ops_gate_options_kind: { t: "ops_staffing_month_employee_perm_days", e: null },
+  ops_gate_options_loc: { t: "ops_staffing_month_employee_perm_days", e: null },
+  ops_gate_options_route: { t: "ops_staffing_month_employee_perm_days", e: null },

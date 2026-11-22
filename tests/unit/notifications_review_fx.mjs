@@ -47,8 +47,8 @@ export async function world({ mode = 'enforce' } = {}) {
     bassam_perms_v1: { caps: { [G1]: cap, [G2]: cap, [D1]: cap, [D2]: cap }, emps: { [D1]: { [EKEYS.employee1]: sheet, [EKEYS.leader]: sheet, [EKEYS.noView]: {}, [EKEYS.frozen]: sheet }, [D2]: { [EKEYS.employee2]: sheet } }, tplOf: { [D1]: { [EKEYS.leader]: 'TEST_ONLY_supervisory_template' } } },
     bassam_platform_v1: {},
     ['bsdept:' + D1 + ':bassam_employees_v1']: users.filter(u => u.deptId === D1 && !u.mgr).map(u => ({ eid: u.ekey, name: u.name, nid: u.un })),
-    ['bsdept:' + D2 + ':bassam_employees_v1']: users.filter(u => u.deptId === D2 && !u.mgr).map(u => ({ eid: u.ekey, name: u.name, nid: u.un })),
-    ['bsdept:' + D1 + ':bassam_perm_tpls_v1']: [{ id: 'TEST_ONLY_supervisory_template', name: 'TEST_ONLY renamed template', sup: true }]
+    ['bsdept:' + D2 + ':bassam_employees_v1']: users.filter(u => u.deptId === D2 && !u.mgr).map(u => ({ eid: u.ekey, name: u.name, nid: u.un }))
+    /* V7 · د5-ح: حُذف من البذر سجلُّ القوالب bassam_perm_tpls_v1 (تقاعد: لا كاتبَ له، والقيادةُ من سجلّ الأدوار) */
   };
   const statements = [];
   for (const [key, value] of Object.entries(keys)) {

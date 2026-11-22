@@ -1,0 +1,50 @@
+{
+ "schema": 1,
+ "kind": "system",
+ "key": "dreport",
+ "name": "التقرير اليومي",
+ "names": [
+  "bassam_dreport_v1",
+  "bassam_dr_grp_v1",
+  "bassam_leave_kinds_v1",
+  "Daily[ -]Report",
+  "modules/dreport/",
+  "systems/dreport/",
+  "\\bdreport\\.[A-Za-z]+@[0-9]"
+ ],
+ "note": "V7 · د5-هـ (م2): التقريرُ اليومي في مجلده. هذا الملف تقرؤه القاعدةُ وقتَ البناء (tools/systems.py · tools/generate.py). روابطُه مع غيره في contract.json.",
+ "client": {
+  "slug": "dreport",
+  "component": "Daily Report",
+  "files": [
+   "client/405-dreport-links.js",
+   "client/407-dreport-r3.js",
+   "client/helmet.css",
+   "client/logic.js",
+   "client/meta.json",
+   "client/view.html"
+  ]
+ },
+ "server": {
+  "parts": [
+   {
+    "file": "server/044d-dreport-r2.js",
+    "after": "016b-server-bus.js",
+    "order": 20,
+    "new": "V7 · د5-هـ: قراءاتُ التقرير اليومي المعلنة على ناقل الخادم (المهام · المضبوطات)"
+   }
+  ]
+ },
+ "migrations": {
+  "files": [],
+  "staysIn": [],
+  "why": "ترحيلاتُ D1 في مجلدٍ واحد مرقَّمٍ بلا فجوات — لا تُنقل"
+ },
+ "permissions": "permissions.json",
+ "tests": [],
+ "derived": [
+  "src/pages/Daily Report.dc.html"
+ ],
+ "sharedStaysInBase": [],
+ "slots": {}
+}

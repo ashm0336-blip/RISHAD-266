@@ -75,10 +75,16 @@ ok(oldonly == retained and all(_from_prev(u) for u in retained) and all(u in cur
 # V7 · د2-ب · د4-ب: الأعدادُ أدناه = القاعدة + ما تصرّح به الأنظمةُ الحاضرة (src/systems/<key>/system.json). بالأنظمة الخمسة: js 73 · صفحات 14.
 #   القاعدة: 69 سكربتاً في الغلاف و9 صفحات (د4-ب: صفحةُ المهام وكتلتاها 545 · 546 صارت من نظام المهام · د4-ج: 547 صارت من نظام العهد). كلُّ نظامٍ حاضر يضيف صفحةً (نصاً ومنطقاً)،
 #   وسكربتاتِ الغلاف التي في ملفات واجهته (‎client/NNN-*.js‎).
+#   د5-هـ: القاعدة 71 = 70 + 421-round-links (ما توفّره الجولاتُ لغيرها عبر الناقل — الجولاتُ لم تُفصل بعد فملفُّها من القاعدة).
+#   د5-هـ (م3): القاعدة 68 = 71 − 420-round-factory · 421-round-links · 520-field-monitor (صارت في مجلد المتابعة اليومية فتُعدّ من كتل الأنظمة).
 _SYSD = os.path.join(ROOT, 'src', 'systems')
 _SYS = [json.load(open(os.path.join(_SYSD, k, 'system.json'), encoding='utf-8')) for k in sorted(os.listdir(_SYSD)) if os.path.isfile(os.path.join(_SYSD, k, 'system.json'))] if os.path.isdir(_SYSD) else []
-N_JS = 69 + sum(1 for d in _SYS for f in d.get('client', {}).get('files', []) if re.fullmatch(r'client/\d+[a-z]?-[\w-]+\.js', f))
-N_PG = 9 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة
+#   V7 · د5-ح (العدسات · التوحيد): كتلُ الغلاف التي تأتي من الأنظمة والقطع المشتركة (‎systems/<key>/client/NNN-*.js‎ · ‎systems/_multi/client/*‎ ·
+#   ‎systems/_shared/<key>/*‎) تُعدّ من سجلّ الكتل المولَّد للحاضر (src/blocks.json ← قطعُ blocks.shell.*)، فالعددُ مشتقٌّ من الحاضر لا رقماً ثابتاً.
+#   القاعدة 64 = 63 كتلةَ js من القاعدة + منطقُ الغلاف المُصرَّف (root-logic).
+N_SYS_JS = sum(1 for b in json.load(open(os.path.join(ROOT, 'src', 'blocks.json'), encoding='utf-8'))['blocks'] if b.get('kind') == 'js' and str(b.get('id', '')).startswith('systems/'))
+N_JS = 64 + N_SYS_JS
+N_PG = 5 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة · د5-د: الجدولُ الشهري صار نظاماً بصفحته · د5-هـ: والتشغيلُ الميداني · والتقريرُ اليومي · والمتابعةُ اليومية (5 للقاعدة)
 kinds = {}
 for u in files:
     if u in retained: continue   # أصولُ الإصدارات السابقة المُبقاة (أُثبتت أعلاه) لا تُعدّ في أصناف الإصدار الحالي
@@ -87,8 +93,8 @@ ok(kinds.get('js') == N_JS and kinds.get('css') == 11 and kinds.get('fonts') == 
 JS = re.findall(r'<script([^>]*) src="(/assets/js/[^"]+)"></script>', shell)
 CSS = re.findall(r'<link rel="stylesheet"([^>]*) href="(/assets/css/[^"]+)">', shell)
 tags = re.findall(r'<script\b[^>]*>', shell)
-ok(len(JS) == N_JS and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٣ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٣ = ٧٢ + 555-page-states حالاتُ الصفحة الموحَّدة V7 UX (ومعه ورقةُ أنماطه — css ١١) · ٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
-ok(len(tags) == N_JS + 1 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٤ وسمَ script: ٧٣ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
+ok(len(JS) == N_JS and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٥ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٥ = ٧٤ + 385-calendar التقويم الموحّد V7 د5-د [ومنها 530 وقائعُ اليوم: صارت في مجلد الجدول الشهري فتُعدّ من كتل الأنظمة لا من ثابت القاعدة] · ٧٤ = ٧٣ + 060-bus ناقلُ الأحداث V7 د5-ب · ٧٣ = ٧٢ + 555-page-states حالاتُ الصفحة الموحَّدة V7 UX (ومعه ورقةُ أنماطه — css ١١) · ٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
+ok(len(tags) == N_JS + 1 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٦ وسمَ script: ٧٥ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
 refs = set(u for _, u in JS) | set(u for _, u in CSS) | set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', shell))
 for u in list(files):
     if u.endswith('.css') or u.endswith('.js'): refs |= set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', files[u].decode('utf-8')))

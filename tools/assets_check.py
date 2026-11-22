@@ -17,6 +17,17 @@ def main(a):
         for f in fs:
             if f.endswith(('.js', '.html', '.json', '.css')): corpus.append(open(os.path.join(d, f), encoding='utf-8', errors='replace').read())
     corpus = '\n'.join(corpus)
+    # V7 · د5-ح (rmall): في نسخة اختبار الحذف (KIVO_FULL_SRC = الشجرةُ الكاملة) أصلٌ لا يستعمله إلا نظامٌ غائب (صورةُ ترويسة الطباعة بغياب الخطة والمتابعة والعهد)
+    # مستعمَلٌ في مجلد ذلك النظام في الشجرة الكاملة — لا يُحقن في الحزمة هنا (@@KIVO_INLINE@@ بمستعمِله وحده)؛ والشجرةُ الكاملة تفحصه كما كان
+    gone = []
+    full = os.environ.get('KIVO_FULL_SRC')
+    if full and os.path.realpath(full) != os.path.realpath(src) and os.path.isdir(os.path.join(full, 'systems')):
+        for k in sorted(os.listdir(os.path.join(full, 'systems'))):
+            if os.path.isfile(os.path.join(full, 'systems', k, 'system.json')) and not os.path.isfile(os.path.join(src, 'systems', k, 'system.json')):
+                for d, ds, fs in os.walk(os.path.join(full, 'systems', k)):
+                    for f in fs:
+                        if f.endswith(('.js', '.html', '.json', '.css', '.frag', '.tpl')): gone.append(open(os.path.join(d, f), encoding='utf-8', errors='replace').read())
+    gone = '\n'.join(gone)
     bad, n = [], 0
     for sub in ('images', 'fonts'):
         D = os.path.join(A, sub)
@@ -24,7 +35,7 @@ def main(a):
             n += 1; p = os.path.join(D, f); b = open(p, 'rb').read(); rel = sub + '/' + f
             stem = re.sub(r'-(latin-ext|latin|arabic|bullet)\.woff2$', '', f)
             if f not in readme and not (sub == 'fonts' and stem in readme): bad.append(rel + ': غيرُ مذكورٍ في README')
-            if f not in corpus: bad.append(rel + ': غيرُ مستعمَلٍ في المصدر (اسمُه الكامل غائبٌ عن src)')
+            if f not in corpus and f not in gone: bad.append(rel + ': غيرُ مستعمَلٍ في المصدر (اسمُه الكامل غائبٌ عن src)')
             if len(b) > CAP[sub]: bad.append('%s: %d بايت > السقف %d' % (rel, len(b), CAP[sub]))
             if b'Exif' in b[:65536] or b'GPS' in b[:65536] or (f.endswith('.png') and any(t in b for t in (b'tEXt', b'iTXt', b'zTXt'))): bad.append(rel + ': بياناتٌ وصفية')
     for x in bad: print('  ✘', x)

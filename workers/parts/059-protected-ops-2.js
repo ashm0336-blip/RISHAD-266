@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/059-protected-ops-2.js.tpl */
 /* ══ (3) الكتابة — كلُّ كتابةٍ تُصنَّف إلى مفاتيح v24.9 (المصنِّف المربوط · خريطةُ الموارد غير المصنَّفة · بدائلُ via المعلنة)
    ثم: المفتاحُ محمول (سقف الإدارة ∧ بوابة العدسة ∧ الدور ∧ المنح) ∧ النطاقُ على كل عنصرٍ متأثر ∧ السببُ حيث يوجبه السجل.
    الثوابتُ البنيوية للبيانات (الشكل · الهوية · الإلحاق · العمليات المحمية) تبقى كما هي — ليست صلاحيات. ══ */
@@ -43,19 +44,10 @@ function enfVia(A, k, rn, d, curVal, newVal, ctx) {
     if (enfHeld(A, d, 'staff.callsign.assign')) return { keys: ['staff.callsign.assign'], tag: 'via:CS_ONLY(staff)' };
     return null;
   }
-  /* SEED_ONLY: بذرُ قوالب الصلاحيات الافتراضية لأول مرّة (القائمةُ فارغة) من صفحة التقرير */
-  if (rn === 'bassam_perm_tpls_v1' && diffs().length && diffs().every(SEED_ONLY)) {
-    var sk = ['tpl.create', 'report.create', 'report.edit'];
-    for (i = 0; i < sk.length; i++) if (enfHeld(A, d, sk[i])) return { keys: [sk[i]], tag: 'via:SEED_ONLY' };
-    return null;
-  }
+
   /* تبعةُ إعادة تسمية الوردية (عمليةٌ محمية): حقلُ shift وحده من الاسم القديم إلى الجديد، ولا يبقى صفٌّ على القديم — بمفتاح ref.shift.edit */
-  if ((rn === 'bassam_staffing_v3' || rn === 'bassam_staffing_v2') && ctx && ctx.shRen) {
-    var sd = diffs(); if (!sd.length) return null;
-    for (i = 0; i < sd.length; i++) { if (!/(^|\.)shift$/.test(sd[i].p) || String(sd[i].f) !== ctx.shRen.o || String(sd[i].t) !== ctx.shRen.n) return null; }
-    if (shiftLeft(parseJson(newVal, null), ctx.shRen.o)) return null;
-    return enfHeld(A, d, 'ref.shift.edit') ? { keys: ['ref.shift.edit'], tag: 'cascade:shiftRename' } : null;
-  }
+  if (ctx && ctx.shRen && srvBusAccepts('shifts.renamed.cascade@1', rn, diffs, newVal, ctx))
+    return enfHeld(A, d, 'ref.shift.edit') ? { keys: ['ref.shift.edit'], tag: 'cascade:shiftRename' } : null;   /* V7 · د5-د: مالكُ المورد المتأثّر يقرّر أنها تبعةٌ تامّة (ناقل الخادم) */
   return null;
 }
 /* KIVO_259 · AUD-030 (ADR-018): حقولُ عدسات الإضافات الجديدة (خارج المرجع KIVO_BUILD.LENSES) — الحارسُ المرجعي يصنّف حقلَ عنصرٍ لا يعرفه تعديلاً عامّاً
@@ -228,7 +220,7 @@ function enfSheetKeys(A, d, t, sheet, el) {
 }
 /* ── المنحُ الصريح (bsdept:<d>:bassam_grants_v1): مديرُ الإدارة (perm.assign) لموظفي إدارته لا لنفسه — مفتاحٌ قابلٌ للمنح · داخل سقف الإدارة · يملكه المانح؛
    الإسقاطُ (minus) لأيّ مفتاحٍ نشط · مديرُ النظام بلا قيد المانح · حذفُ السجل كلِّه لمدير النظام وحده ── */
-var ENF_GRANT_FIELDS = { plus: 1, minus: 1, at: 1, by: 1, src: 1 };
+var ENF_GRANT_FIELDS = { plus: 1, minus: 1, at: 1, by: 1, src: 1, until: 1 };   /* V7 · د5-هـ (44): until = انتهاءُ الاستثناء {مفتاح: ms} */
 function enfGrantsWrite(A, k, newVal, curVal, ctx) {
   var P = parseKey(k), d = P.dept, sup = A.u.role === 'super';
   if (!d) return enfNo('scope', { structural: 1 });
@@ -254,6 +246,7 @@ function enfGrantsWrite(A, k, newVal, curVal, ctx) {
       if (!isObj(gb)) return enfNo('shape', { detail: e });
       for (q in gb) if (!ENF_GRANT_FIELDS[q]) return enfNo('shape', { detail: e + '.' + q });
       if ((gb.plus !== undefined && !Array.isArray(gb.plus)) || (gb.minus !== undefined && !Array.isArray(gb.minus))) return enfNo('shape', { detail: e });
+      if (gb.until !== undefined && (!isObj(gb.until) || Object.keys(gb.until).some(function (x) { return typeof gb.until[x] !== 'number'; }))) return enfNo('shape', { detail: e + '.until' });
     }
     if (!sup) { var lw = enfMinusLiftWhy(A, d, e, eo[e], gb, ctx && ctx.pa); if (lw) return enfNo('grant', { detail: lw + ' (grantor does not hold it)' }); }   /* الجولة 2 · M-D · R3-4 */
     if (gb === undefined) continue;

@@ -233,6 +233,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "core/060-bus.js",
+   "kind": "js",
+   "line": 2724,
+   "new": "V7 · د5-ب: ناقل الأحداث — القاعدة وسيط فقط (قراءة · أمر · حدث · مشارك داخل المسودة)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
    "id": "core/140-safety-scheduler.js",
    "kind": "js",
    "line": 2724,
@@ -471,12 +481,13 @@
   },
   {
    "closeTag": "</script>",
-   "id": "permissions/350-perm-v2-shadow.js",
+   "id": "permissions/345-perm44.js",
    "kind": "js",
    "line": 8047,
+   "new": "V7 · د5-هـ (44): محرّكُ الأدوار KIVO.Perm44 (مولَّد: registry/perm44-*.js · generate.py) — حلّ محلَّ طبقة الظلّ 350 المحذوفة",
    "openTag": "<script>",
-   "origBytes": 4280,
-   "origSha256": "5ec7e50ecd0eeb2ff4234d85735841bdf310a55073f8f533443108a2bb757222"
+   "origBytes": null,
+   "origSha256": null
   },
   {
    "closeTag": "</script>",
@@ -507,14 +518,15 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/390-kpi-primitives.js",
+   "id": "i18n/385-calendar.js",
    "kind": "js",
-   "line": 8530,
+   "line": 10752,
+   "new": "V7 · د5-د: التقويم الهجري/الميلادي — نسخة واحدة لكل دالة (KIVO.BassamCal)",
    "openTag": "<script>",
-   "origBytes": 19273,
-   "origSha256": "443ae381e50d1696e09e93b7ced7473b6689f6ce1ee652fad220528bcb37b46a"
+   "origBytes": null,
+   "origSha256": null
   },
-  {
+@@SYS:blocks.shell.multi.390@@  {
    "closeTag": "</script>",
    "id": "services/400-shift-need.js",
    "kind": "js",
@@ -532,16 +544,7 @@
    "origBytes": 7356,
    "origSha256": "55eba74a656ef8cdb4af1fa4f24b416361bf96ad55df0d30d4762d769874ef02"
   },
-  {
-   "closeTag": "</script>",
-   "id": "services/420-round-factory.js",
-   "kind": "js",
-   "line": 8899,
-   "openTag": "<script>",
-   "origBytes": 5761,
-   "origSha256": "2df31e87dfe46cc6507354527b243a562b368381117b68dcda935951712afe06"
-  },
-  {
+@@SYS:blocks.svc.daily.1@@  {
    "closeTag": "</script>",
    "id": "services/430-store-broadcast.js",
    "kind": "js",
@@ -625,25 +628,7 @@
    "origBytes": 2640,
    "origSha256": "c27e87ef9c7b90d83763f5f0b4258985ff871338a0cf8f587eead3ff74b9bbf7"
   },
-  {
-   "closeTag": "</script>",
-   "id": "services/520-field-monitor.js",
-   "kind": "js",
-   "line": 10324,
-   "openTag": "<script>",
-   "origBytes": 15231,
-   "origSha256": "9f832adfc8b1074f4de0fa14a2926b0702b581bf22f489a9816bfe681ad343be"
-  },
-  {
-   "closeTag": "</script>",
-   "id": "services/530-emp-day-facts.js",
-   "kind": "js",
-   "line": 10494,
-   "openTag": "<script>",
-   "origBytes": 10543,
-   "origSha256": "27012b4294aa581a0688c00ff7eb69a863beadab023efdd9c52784982605fa4a"
-  },
-  {
+@@SYS:blocks.svc.daily.2@@@@SYS:blocks.shell.staff@@@@SYS:blocks.shell.plan.p3@@@@SYS:blocks.shell.plan.p4@@@@SYS:blocks.shell.dreport@@@@SYS:blocks.shell.dreport.r3@@@@SYS:blocks.shell.daily.t2@@@@SYS:blocks.shell.daily.t3@@  {
    "closeTag": "</script>",
    "id": "services/535-profile-facts.js",
    "kind": "js",
@@ -702,16 +687,7 @@
    "origBytes": null,
    "origSha256": null
   },
-  {
-   "closeTag": "</script>",
-   "id": "components/560-canvas-input.js",
-   "kind": "js",
-   "line": 10752,
-   "openTag": "<script>",
-   "origBytes": 42000,
-   "origSha256": "9949817de1a53ad004add085145296360aeebf3fa7a7f018b018a1b819234a3f"
-  },
-  {
+@@SYS:blocks.shell.multi.560@@  {
    "closeTag": "</script>",
    "id": "components/565-page-kit.js",
    "kind": "js",
@@ -721,17 +697,7 @@
    "origSha256": null,
    "new": "KIVO_257 · AUD-012"
   },
-  {
-   "closeTag": "</script>",
-   "id": "services/566-print-core.js",
-   "kind": "js",
-   "line": 10752,
-   "openTag": "<script>",
-   "origBytes": null,
-   "origSha256": null,
-   "new": "KIVO_258 · AUD-013"
-  },
-  {
+@@SYS:blocks.shell.print@@  {
    "closeTag": "</script>",
    "id": "services/570-bassam-xlsx.js",
    "kind": "js",
@@ -813,16 +779,7 @@
    "origBytes": 4953,
    "origSha256": "bb4ff3ddc3a96e0bb4b03df8c8ef4d1f5806cda50e300e37dbcf530301d85480"
   },
-  {
-   "closeTag": "</script>",
-   "id": "components/640-map-tooltip.js",
-   "kind": "js",
-   "line": 15119,
-   "openTag": "<script>",
-   "origBytes": 12523,
-   "origSha256": "308bae1243297760bdeaeab216f7057ee98542a90c0f8b95899065d341b1dab7"
-  },
-  {
+@@SYS:blocks.shell.multi.640@@  {
    "closeTag": "</script>",
    "id": "components/650-dropdown-unify.js",
    "kind": "js",
@@ -893,28 +850,7 @@
     "name": "Employees",
     "sha256": "a9c411dfd74600407d2d6de818104d8c9896eb2567b8a8e3fad5183fefa4883b"
    },
-@@SYS:blocks.pages.tasks@@   {
-    "b64Sha256": "18fd106f029402372a63ee7938a81c70cb1e20d3ca365afce5f18642c8e18ed9",
-    "bytes": 818646,
-    "file": "client/pages/Daily Sessions.dc.html",
-    "name": "Daily Sessions",
-    "sha256": "be3abc92554039fbf72e349c34a124f65444de98a30982645147f907212e4e00"
-   },
-   {
-    "b64Sha256": "b4eed90979c0e2fd824b2c1142e54220b2a471bed9aefc9fb2e346ce66f6c0d9",
-    "bytes": 855532,
-    "file": "client/pages/Operational Plan.dc.html",
-    "name": "Operational Plan",
-    "sha256": "8673ea459c3052cf7e1db354e1ddd2a1c50875a97eb39cad0c4fc783a01b11fa"
-   },
-   {
-    "b64Sha256": "7f43ccc5601872757d06f9ef3265255b12925ab8c32794821c839897f8e8a71c",
-    "bytes": 206045,
-    "file": "client/pages/Staffing.dc.html",
-    "name": "Staffing",
-    "sha256": "94add6fc704b7cfaa0a63604bd2a6c31e07ad62e1477889a0fe3bf33216fd7f5"
-   },
-   {
+@@SYS:blocks.pages.tasks@@@@SYS:blocks.pages.daily@@@@SYS:blocks.pages.plan@@@@SYS:blocks.pages.staff@@   {
     "b64Sha256": "52e50939d94f3ab0cfc86f3ceab9c83c6e7183033504f326ca211d4031aa1508",
     "bytes": 581768,
     "file": "client/pages/Admin.dc.html",
@@ -928,14 +864,7 @@
     "name": "Profile",
     "sha256": "af1c2e5dab42352c82d7278623963e26be9600c47fd914780bdc27378ef53151"
    },
-@@SYS:blocks.pages.irshad@@@@SYS:blocks.pages.award@@   {
-    "b64Sha256": "fbcf52ef83b260e078027f439a4719465269d467d9a055feb7d40efa064d31bb",
-    "bytes": 242108,
-    "file": "client/pages/Daily Report.dc.html",
-    "name": "Daily Report",
-    "sha256": "fe0b0a7c8bce136028048cd10c43d52f36a836c296b2492dd5d75a84afb9581d"
-   },
-   {
+@@SYS:blocks.pages.irshad@@@@SYS:blocks.pages.award@@@@SYS:blocks.pages.dreport@@   {
     "b64Sha256": "6f49a4140896745721e75a008214c0cd360a7536ba4df4db7c410a9813f255f3",
     "bytes": 7098,
     "file": "client/pages/Planning.dc.html",
@@ -952,13 +881,9 @@
   ],
   "order": [
    "Employees",
-@@SYS:blocks.order.tasks@@   "Daily Sessions",
-   "Operational Plan",
-   "Staffing",
-   "Admin",
+@@SYS:blocks.order.tasks@@@@SYS:blocks.order.daily@@@@SYS:blocks.order.plan@@@@SYS:blocks.order.staff@@   "Admin",
    "Profile",
-@@SYS:blocks.order.irshad@@@@SYS:blocks.order.award@@   "Daily Report",
-   "Planning",
+@@SYS:blocks.order.irshad@@@@SYS:blocks.order.award@@@@SYS:blocks.order.dreport@@   "Planning",
 @@SYS:blocks.order.seized@@   "KPIs"@@SYS:blocks.order.tail@@
   ],
   "zlibLevel": 9

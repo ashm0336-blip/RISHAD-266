@@ -17,7 +17,8 @@ const A = 'TEST_ONLY_A', B = 'TEST_ONLY_B';
 
 /* the expectation: the owner logic (or, with KIVO_TK_REF, the pre-move KPIs logic) over the very store the browser loaded */
 function expected(store, y, m) {
-  const KIVO = { BassamHijri: { now: () => T }, __BS_SRV: { operations: { get: (k) => (k === 'bassam_tasks_v1' ? store : null) } }, BassamDepts: { context: () => ({ state: 'ready' }) } };
+  const KIVO = { BassamHijri: { now: () => T }, BassamCal: { hNow: () => T, hPartsRiyadh: () => T },   /* V7 · د5-ح: المنطقُ يقرأ اليومَ من خدمة التقويم (د5-د2) — كان البديلُ القديم وحده فيسقط عنوانُ «الشهر الحالي» */
+    __BS_SRV: { operations: { get: (k) => (k === 'bassam_tasks_v1' ? store : null) } }, BassamDepts: { context: () => ({ state: 'ready' }) } };
   let c;
   if (process.env.KIVO_TK_REF) { const Old = new Function('DCLogic', 'KIVO', fs.readFileSync(process.env.KIVO_TK_REF, 'utf8') + ';return Component')(class { setState(p) { Object.assign(this.state, p); } }, KIVO); c = new Old(); }
   else { function C() {} C.prototype.setState = function (p) { Object.assign(this.state, p); }; new Function('Component', 'KIVO', fs.readFileSync(path.join(SRC, 'systems/tasks/client/logic-kpi.js'), 'utf8'))(C, KIVO); c = new C(); }

@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/031-fields.js.tpl */
 /* ══ سجل عقود الحقول — FIELDS ═══════════════════════════════════════════════
    سجلٌّ مركزيٌّ واحد لا مدقّقاتٌ متناثرة. لا يُعلَن فيه حقلٌ ولا نوعٌ إلا ما
    أثبته قارئُ الواجهة أو كاتبُها. ويُطبَّق على الكيان الذي تغيّر في هذا
@@ -28,8 +29,7 @@ var FIELDS = {
              type: { t: 'str', eid: 'str', item: 'str', ser: 'str', color: 'str', y: 'num', m: 'num', d: 'num', cond: 'str', note: 'str', by: 'str', nid: 'str', empno: 'str', name: 'str' },
              maxLen: { nid: 4096, empno: 4096, name: 4096 },
              enum: { t: ['out', 'in', 'dmg', 'lost'] } } } },
-  /* ── A: قوالب الصلاحيات ── */
-  'bassam_perm_tpls_v1': { at: '', req: ['id', 'name'], type: { id: 'str', name: 'str' } },
+
   /* ── B: الثابتُ وحده — وما داخلَه يتوسّع بحرّيته ── */
   'bassam_award_v1':      { cols: { recs:    { req: ['id', 'st'], type: { id: 'str', st: 'str' } } } },
   'bassam_irshad_v1':     { cols: { reports: { req: ['id'], type: { id: 'str' } } } },

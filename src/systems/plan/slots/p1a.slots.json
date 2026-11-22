@@ -1,0 +1,31 @@
+{
+ "_note": "V7 · د5-هـ (p1a): قطعُ التشغيل الميداني في محرّكَي الحراسة والنطاق (المصنِّف · فرعُ الموقع في classifyFloor · النطاقات · planItems) وفي manifest العدسات (المضيف plan · موردُ الخطة في guards.resources).",
+ "guard.classify.plan": {
+  "order": 10,
+  "file": "slots/guard.classify.plan.frag"
+ },
+ "guard.sectors.plan": {
+  "order": 10,
+  "text": "  function classifySectors(R, la, lb, p) {\n    var m = matchById(la, lb, ID.sectors), i;\n    for (i = 0; i < m.added.length; i++) R.op('sector.create', p + '[' + m.added[i].id + ']');\n    for (i = 0; i < m.removed.length; i++) R.op('sector.delete', p + '[' + m.removed[i].id + ']');\n    for (i = 0; i < m.changed.length; i++) R.op('sector.edit', p + '[' + m.changed[i].id + ']');\n  }\n"
+ },
+ "guard.floor.sectors.plan": {
+  "order": 10,
+  "text": "      if (k === 'sectors') { classifySectors(R, arr(x[k]), arr(y[k]), p + '.sectors'); continue; }\n"
+ },
+ "guard.floor.plan": {
+  "order": 10,
+  "file": "slots/guard.floor.plan.frag"
+ },
+ "scope.items.plan": {
+  "order": 10,
+  "file": "slots/scope.items.plan.frag"
+ },
+ "lens.hosts.plan": {
+  "order": 10,
+  "text": "\"plan\"@@SYS:lens.hosts.sep.daily@@"
+ },
+ "lens.res": {
+  "order": 10,
+  "text": "\"bassam_plan_v1\""
+ }
+}

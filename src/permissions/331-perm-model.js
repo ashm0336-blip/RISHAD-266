@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/permissions/331-perm-model.js.tpl */
 /* ═══ نموذجُ الصلاحيات: سجلُّ الصفحات · الأوراق · السقف · الأنماط · الترحيلات · الإنفاذ · مفاتيحُ v24.9 ═══
    KIVO_257 · AUD-010: جزءٌ 2/6 من «src/auth/330-auth-perm.js» السابقة — مقسومةً بالمسؤولية بـtools/split_iife.mjs (tools/split/330-auth-perm.json)؛
    التبعياتُ بين الأجزاء صريحةٌ هنا وعبر المساحة الداخلية window.__BS_I.auth وحدها. */
@@ -6,8 +7,6 @@
   /* ← من الأجزاء السابقة */
   var D = I.D, K_SESS = I.K_SESS, K_USERS = I.K_USERS, RAW = I.RAW, cur = I.cur, curDept = I.curDept, isMgrKey = I.isMgrKey, isSuper = I.isSuper,
       requireMgr = I.requireMgr;
-  /* → من أجزاءٍ لاحقة (تُستدعى وقتَ النداء لا التحميل) */
-  function tplsList() { return I.tplsList.apply(this, arguments); }
   /* ═══ نظام الصلاحيات — مستويان ═══
      bassam_perms_v1 = { caps: { deptId: [pageKeys] }, emps: { deptId: { ekey: { pageKey: [acts] } } } }
      سقف الإدارة (مدير النظام) ثم صلاحيات الموظف داخله (المشرف أو مدير الإدارة).
@@ -257,7 +256,7 @@
      أزرارُ المحرّر) أُزيلت لأنها لم تكن معروضةً ولا مستدعاة. يبقى هذا البذرُ لأبٍ سقفُه الفعليُّ فارغ (seedCapFrom): سقفُ الابن
      الفعليُّ فارغٌ لحظتَها بحكم التقاطع، ويحدّه «أساسي» إن وُسِّع سقفُ الأب لاحقاً — بلا سجلٍّ لورث التوسعةَ كلَّها (اختبارُ التكافؤ).
      ونمطٌ «أساسي» محفوظٌ في السجل (patterns.basic — كتبته واجهةٌ سابقة) يبقى هو المرجع كما كان. */
-  var SEED_BASIC = { cap:['emps','tasks','planning','staff','links','help','admin'], subs:{ emps:['data','custody'], planning:['readiness'], admin:['shifts','backup','ptpls','import'] }, tabs:{}, lenses:[] };
+  var SEED_BASIC = { cap:['emps','tasks','planning','staff','links','help','admin'], subs:{ emps:['data','custody'], planning:['readiness'], admin:['shifts','backup','import'] }, tabs:{}, lenses:[] };
   function seedBasic(){ var p = (permStore().patterns || {}).basic; return JSON.parse(JSON.stringify((p && Array.isArray(p.cap)) ? p : SEED_BASIC)); }
   function patternSeed(did){
     var pt = seedBasic(); var o = permStore(); o.caps[did] = pt.cap.slice(); permSave(o);
@@ -381,7 +380,7 @@
   }
   function tabOn(pk, tk){
     try {
-      if (isSuper()) return true;   /* V7 · د1-ج: مدير المنصة بلا قيد */
+      if (isSuper()) return !supHidden(pk) && !supHidden(pk + '/' + tk);   /* V7 · د1-ج: مدير المنصة بلا قيد — د5-ح: إلا المطفأ */
       if (deptTabs(null, pk).indexOf(tk) === -1) return false;
       return can(pk + '/' + tk, 'view');
     } catch (e) { return false; }
@@ -391,7 +390,7 @@
      ومدير النظام يرى كل شيء كبقية المنظومة. */
   function subOn(pk, sk){
     try {
-      if (isSuper()) return true;   /* V7 · د1-ج: مدير المنصة بلا قيد */
+      if (isSuper()) return PAGE_OF[sk] && PAGE_OF[sk].under === pk ? !supHidden(sk) : !supHidden(pk) && !supHidden(pk + '/' + sk);   /* V7 · د1-ج: بلا قيد — د5-ح: إلا المطفأ (الصفحةُ الساكنة بصفحتها) */
       /* الصفحة الساكنة تحت هذه الحاوية تبويبٌ فيها — يتبع صلاحية صفحته (مفتاحها المستقل) */
       var q = PAGE_OF[sk]; if (q && q.under === pk) return can(sk, 'view');
       if (deptSubs(null, pk).indexOf(sk) === -1) return false;
@@ -401,7 +400,7 @@
   /* هل تملك الجلسة الحالية فعلاً على ورقة بعينها؟ */
   /* مدير النظام والوحدة المختارة: ورقةُ صفحةٍ داخل سقفها كما ضبطتها الوحدة؛ وورقةُ صفحةٍ خارجه تُرى عرضاً ما رُئيت صفحتُها (myPerms: والمطفأةُ على المنصة لا تُرى) — والكتابةُ بالسقف وحده */
   function supSees(pk, sk){ return onCap(pk + '/' + sk) || (!onCap(pk) && leafKeysOf(pk).indexOf(pk + '/' + sk) !== -1 && can(pk, 'view')); }
-  function canSub(pk, sk, act){ try { if (isSuper()) return true;   /* V7 · د1-ج: مدير المنصة بلا قيد */ if (deptSubs(null, pk).concat(deptTabs(null, pk)).indexOf(sk) === -1) return false; return can(pk + '/' + sk, act || 'view'); } catch (e) { return false; } }
+  function canSub(pk, sk, act){ try { if (isSuper()) return PAGE_OF[sk] && PAGE_OF[sk].under === pk ? !supHidden(sk) : !supHidden(pk) && !supHidden(pk + '/' + sk);   /* V7 · د1-ج: مدير المنصة بلا قيد — د5-ح: إلا المطفأ */ if (deptSubs(null, pk).concat(deptTabs(null, pk)).indexOf(sk) === -1) return false; return can(pk + '/' + sk, act || 'view'); } catch (e) { return false; } }
 
   function deptLenses(did){
     var o = permStore(), d = did || curDept();
@@ -436,13 +435,7 @@
     o.empLens[d][ekey] = (Array.isArray(arr) ? arr : []).filter(function(k){ return dl.indexOf(k) !== -1; }).concat(lat);
     permSave(o); return { ok:true };
   }
-  function lensOn(key, did){
-    if (isSuper()) return true;                        /* V7 · د1-ج: مدير المنصة بلا قيد — العدساتُ كلُّها */
-    if (deptLenses(did).indexOf(key) === -1) return false;
-    var u = cur(); if (!u) return false;
-    if (u.role === 'staff' || u.role === 'gm') return empLens(u.ekey, did || curDept()).indexOf(key) !== -1;
-    return true;
-  }
+  /* V7 · د5-ح (القفل): العدسةُ من المفاتيح المحمولة من الخادم وحدها (lensOn أدناه بعد azZ) — لا حكمَ قديماً بالسقف والورقة */
   /* صلاحيات الموظف على مستوى الأوراق — الشكل القديم (مفتاح حاوية) يُوسَّع عند القراءة */
   function empPerms(ekey, did){
     var d = did || curDept();
@@ -479,26 +472,6 @@
     Object.keys(lat).forEach(function(k){ if (!Object.prototype.hasOwnProperty.call(clean, k)) clean[k] = lat[k]; });
     o.emps[d] = o.emps[d] || {}; o.emps[d][ekey] = clean; permSave(o);
     return { ok:true };
-  }
-  /* هوية القالب الممنوح — تُحفظ صراحةً لأن استنتاجها من الصفحات يخلط بين
-     قالبين يحملان نفس الصفحات فيظهر الأوّل منهما لكل من مُنح أيّاً منهما. */
-  function empTpl(ekey, did){
-    var o = permStore(), d = did || curDept();
-    var v = ((o.tplOf || {})[d] || {})[ekey];
-    return typeof v === 'string' ? v : '';
-  }
-  function setEmpTpl(ekey, tplId, did){
-    var o = permStore(), d = isSuper() ? (did || curDept()) : curDept();
-    o.tplOf = o.tplOf || {}; o.tplOf[d] = o.tplOf[d] || {};
-    if (tplId) o.tplOf[d][ekey] = tplId; else delete o.tplOf[d][ekey];
-    permSave(o);
-    /* KIVO_256 (الإنفاذُ وحده): المنحُ الصريح يتبع القالب */
-    var g24 = p24AfterTpl(ekey, tplId, d);
-    return (g24 && g24.ok === false) ? { ok:true, grantErr: g24.err } : { ok:true };
-  }
-  function dropEmpTpl(ekey, did){
-    var o = permStore(), d = did || curDept();
-    if (o.tplOf && o.tplOf[d] && o.tplOf[d][ekey] !== undefined) { delete o.tplOf[d][ekey]; permSave(o); }
   }
   function clearEmpPerms(ekey, did){
     var g = requireMgr(); if (g) return g;
@@ -577,6 +550,7 @@
        والفرق بين «لم تُخزَّن» و«خُزِّنت فارغة» محفوظٌ في المخزن نفسه، فلا حقلَ جديد.
        وفي الحالتين السقفُ هو الحدّ: تضييقه أو إطفاء ورقةٍ للإدارة يضيّق عليه معه. */
     if (u.role === 'dept') return capAllPerms(u.deptId);
+    if (u.role === 'display') { var cv = capAllPerms(u.deptId), dv = {}; Object.keys(cv).forEach(function(k){ if ((cv[k] || []).indexOf('view') !== -1) dv[k] = ['view']; }); return dv; }   /* V7 · د5-هـ (x1): شاشةُ العرض — سقفُ إدارتها قراءةً وحدها (يطابق 022 dispViewOf) */
     if (u.role === 'staff' && isMgrKey(u.ekey) && !hasOwnSheet(u.ekey, u.deptId)) return capAllPerms(u.deptId);
     /* مدير الإدارة العامة: صلاحياته في الإدارة النشطة وحدها — وهي من إداراته حتماً */
     /* مدير العقدة (إدارة عامة/قطاع/إدارة عليا): يرث سقف الإدارة النشطة كاملاً كمدير الإدارة — ما لم تُخزَّن له ورقة صريحة فيها (تضييق) — والإدارة من فرعه حتماً */
@@ -585,10 +559,33 @@
   }
   /* الوحدات المطفأة على مستوى المنصة (مدير النظام ← المنصة ← الوحدات): لا تظهر لأحد ولا تُفتح — حتى لمدير النظام
      حتى يعيد تفعيلها؛ تبقى بياناتها محفوظة */
+  /* V7 · د5-ح (قرار المالك): النظامُ المطفأ لا يراه أحد — ولا مديرُ المنصة. المطفأُ على المنصة (mods.off) يغيب عن المنصة كلها،
+     والمطفأُ في سقف الإدارة النشطة (بالوراثة — KIVO.Perm44.ceiling) يغيب داخل مساحتها ويبقى حيث هو مفعّل. يُقصّ العرضُ وحده
+     (القائمة · العناوين · أشرطةُ الصفحات · التبويبات): ما سواه بلا قيد لمدير المنصة كما كان (د1-ج)؛ وموضعُ المطفأ الوحيد «الصلاحيات ← الأنظمة» */
+  var _supOff = {};
+  function supOffLeaves(){
+    var out = {}, E = KIVO.Perm44, i;
+    try {
+      if (!E || !E.sysList || !E.ceiling) return out;
+      var off = p24Off(), on = E.ceiling(curDept()).on || [], S = E.sysList();
+      for (i = 0; i < S.length; i++) {
+        var s = S[i]; if (!s || s.toggle === false || s.key === 'admin') continue;
+        if (off.indexOf(s.key) !== -1 || on.indexOf(s.key) === -1) (s.leaves || []).forEach(function(l){ out[l] = 1; });
+      }
+    } catch(e){ return {}; }
+    return out;
+  }
+  function supHidden(key){ return !!(isSuper() && (myPerms(), _supOff[key])); }
   var _myPerms0 = myPerms;
   myPerms = function(){
     var all = _myPerms0();
-    if (isSuper()) return all;   /* V7 · د1-ج (قرار صاحب المنصة): الوحدةُ المطفأة على مستوى المنصة لا تقيّد مدير المنصة */
+    if (isSuper()) {
+      _supOff = supOffLeaves();
+      Object.keys(_supOff).forEach(function(l){ delete all[l]; if (PAGE_KEYS.indexOf(l) !== -1) leafKeysOf(l).forEach(function(x){ delete all[x]; }); });
+      /* حاويةٌ مطفأة تسكنها صفحةٌ مفعّلة (كالخطة التشغيلية والجدولُ تحتها): تُفتح للعرض كي تصل الصفحة — القاعدةُ نفسُها لغيره (derivePages) */
+      PAGE_REG.forEach(function(p){ if (p.under && all[p.key] && all[p.key].length && !all[p.under]) all[p.under] = ['view']; });
+      return all;
+    }
     try { var off = (KIVO.BassamPlat && KIVO.BassamPlat.get().mods.off) || []; for (var i = 0; i < off.length; i++) if (off[i] !== 'admin') { delete all[off[i]]; leafKeysOf(off[i]).forEach(function(l){ delete all[l]; }); } } catch(e){}
     return all;
   };
@@ -613,10 +610,10 @@
     if (key !== null) { _mpKey = key; _mpVal = { v: v, u: I._usersMemo, p: _pmMemo }; }
     return v;
   };
-  /* ═══ KIVO_243 · الإنفاذ: الواجهةُ تتبع المفاتيحَ المحمولة من الخادم (window.__BS_AUTHZ — وضعُ الإنفاذ وحده) ═══
+  /* ═══ KIVO_243 · الإنفاذ: الواجهةُ تتبع المفاتيحَ المحمولة من الخادم (window.__BS_AUTHZ — V7 · د5-ح: دائماً؛ لا وضعَ قديماً) ═══
      الورقةُ القديمة (AS‑IS) تبقى مصدرَ الشكل (أيُّ صفحةٍ وتبويب)، وكلُّ «ورقة:فعل» فيها يبقى فقط إن حُمل أيُّ مفتاحٍ تُترجَم إليه
      (سقفُ الإدارة · بوابةُ العدسة · المنحُ والإسقاطُ الصريحان · الدور) — وذرّةٌ بلا مفتاحٍ في السجل تبقى كما هي (الخادمُ يحكم على كل حال).
-     بلا __BS_AUTHZ لا يتغيّر شيء: myPerms · lensOn كما في KIVO_242. */
+     بلا __BS_AUTHZ لا يُعرض شيءٌ لغير مدير المنصة (fail-closed — V7 · د5-ح). */
   function azZ(){ var Z = KIVO.__BS_AUTHZ; return (Z && Z.mode === 'enforce' && Z.depts && typeof Z.depts === 'object') ? Z : null; }
   var _azBits = { h: null, set: null };
   function azHeld(did){
@@ -632,8 +629,10 @@
   var _myPerms2 = myPerms, _azMemo = { a: null, h: null, v: null };
   myPerms = function(){
     var all = _myPerms2();
-    if (!azZ() || isSuper()) return all;
-    var H = azHeld(curDept()); if (H === null) return all;
+    if (isSuper()) return all;
+    /* V7 · د5-ح (القفل): بلا وصفٍ من الخادم (أو سجلٍّ لا يطابقه) لا يُعرض شيء — لا عودةَ إلى الورقة القديمة وحدها */
+    if (!azZ()) return {};
+    var H = azHeld(curDept()); if (H === null) return {};
     if (_azMemo.a === all && _azMemo.h === H) return _azMemo.v;
     var R = KIVO.KIVO_REGISTRY, leaves = {};
     Object.keys(all).forEach(function(k){
@@ -660,8 +659,19 @@
     _azMemo = { a: all, h: H, v: v };
     return v;
   };
-  var _lensOn0 = lensOn;
-  lensOn = function(key, did){ var Z = azZ(); if (!Z) return _lensOn0(key, did); var x = Z.depts[did || curDept()]; return !!(x && Array.isArray(x.lens) && x.lens.indexOf(key) !== -1); };
+  function lensOn(key, did){
+    /* V7 · د1-ج: مدير المنصة بلا قيد — العدساتُ كلُّها؛ د5-ح (قرار المالك): إلا المطفأة — عدسةٌ أُطفئت في سقف الوحدة أو أحد أصولها،
+       أو لم يبقَ لها مضيفٌ مفعّل (صفحاتُها مطفأة) لا تظهر له في تلك الوحدة */
+    if (isSuper()) {
+      var dd = did || curDept(), ch = [dd];
+      try { ch = ch.concat((KIVO.BassamDepts.ancestorsOf ? KIVO.BassamDepts.ancestorsOf(dd) : []) || []); } catch (e) {}
+      for (var i = 0; i < ch.length; i++) if (ch[i] && deptLenses(ch[i]).indexOf(key) === -1) return false;
+      var hs = lensHosts(key);
+      return !hs.length || (dd !== curDept()) || hs.some(function(h){ return !supHidden(h); });
+    }
+    var Z = azZ(); if (!Z) return false;               /* V7 · د5-ح (القفل): المفاتيحُ المحمولة وحدها */
+    var x = Z.depts[did || curDept()]; return !!(x && Array.isArray(x.lens) && x.lens.indexOf(key) !== -1);
+  }
   function can(pageKey, act){
     var a = myPerms()[pageKey];
     return !!(a && a.length && a.indexOf(act || 'view') !== -1);
@@ -809,32 +819,22 @@
     var L = Array.isArray(lens) ? lens : empLens(ekey, d);
     return p24SetGrant(ekey, d, p24Delta(E, p24Translate(sheet || empPerms(ekey, d), C), C, L, tgt), src);
   }
-  /* بعد منح قالب: keys24 ⇒ فرقُه بالضبط؛ وإلا يُرفع المنحُ السابق */
-  function p24AfterTpl(ekey, tplId, d){
-    if (!azZ() || !ekey || !p24R()) return null;
-    try {
-      var tp = tplId ? tplsList(d).filter(function(t){ return t.id === tplId; })[0] : null;
-      if (tp && Array.isArray(tp.keys24)) { var dl = deptLenses(d); return p24Apply(ekey, d, tp.keys24, null, 'tpl:' + tp.id, Array.isArray(tp.lens) ? tp.lens.filter(function(k){ return dl.indexOf(k) !== -1; }) : dl); }
-      if (p24GrantsRec(d).emp[ekey]) return p24SetGrant(ekey, d, { plus: [], minus: [] });
-    } catch(e){ /* منحُ القالب (الورقة) تمّ — والمنحُ الصريح يُضبط في الحفظ التالي */ }
-    return null;
-  }
   /* → للأجزاء الأخرى */
   I.ALL_ACTS = ALL_ACTS; I.K_PERM = K_PERM; I.LENS_KEYS = LENS_KEYS; I.LENS_REG = LENS_REG; I.NAV2PERM = NAV2PERM; I.NAV_REG = NAV_REG;
   I.P24_DERIVE = P24_DERIVE; I.PAGE_KEYS = PAGE_KEYS; I.PAGE_OF = PAGE_OF; I.PAGE_REG = PAGE_REG; I.PERM2NAV = PERM2NAV; I.azKey = azKey;
   I.azZ = azZ; I.can = can; I.canSub = canSub; I.capAllPerms = capAllPerms; I.capSetAnywhere = capSetAnywhere; I.cleanLeafPerms = cleanLeafPerms;
   I.clearEmpPerms = clearEmpPerms; I.deptCap = deptCap; I.deptLenses = deptLenses; I.deptSubs = deptSubs; I.deptTabs = deptTabs;
-  I.derivePages = derivePages; I.dropEmpPerms = dropEmpPerms; I.dropEmpTpl = dropEmpTpl; I.effCap = effCap; I.empLens = empLens;
-  I.empPagePerms = empPagePerms; I.empPerms = empPerms; I.empTpl = empTpl; I.expandPerms = expandPerms; I.hasCap = hasCap;
+  I.derivePages = derivePages; I.dropEmpPerms = dropEmpPerms; I.effCap = effCap; I.empLens = empLens;
+  I.empPagePerms = empPagePerms; I.empPerms = empPerms; I.expandPerms = expandPerms; I.hasCap = hasCap;
   I.hasOwnSheet = hasOwnSheet; I.isContainer = isContainer; I.leafKeysOf = leafKeysOf; I.leafReg = leafReg; I.onAny = onAny; I.onCap = onCap;
-  I.p24AfterTpl = p24AfterTpl; I.p24Apply = p24Apply; I.p24Assignable = p24Assignable; I.p24Ceil = p24Ceil; I.p24Cover = p24Cover;
+  I.p24Apply = p24Apply; I.p24Assignable = p24Assignable; I.p24Ceil = p24Ceil; I.p24Cover = p24Cover;
   I.p24Delta = p24Delta; I.p24Effective = p24Effective; I.p24GrantOf = p24GrantOf; I.p24Grantable = p24Grantable; I.p24Ix = p24Ix;
   I.p24KeyOn = p24KeyOn; I.p24LeafOn = p24LeafOn; I.p24LensHosted = p24LensHosted; I.p24LensOf = p24LensOf; I.p24R = p24R;
   I.p24SetGrant = p24SetGrant; I.p24Translate = p24Translate; I.capOwnOf = capOwnOf; I.capState = capState; I.setCapOwn = setCapOwn; I.latentLeaves = latentLeaves;
   I.patternSeed = patternSeed; I.permSave = permSave; I.dropNodeCap = dropNodeCap; I.capOrphans = capOrphans;
   I.permStore = permStore; I.pruneOrphanEmpPerms = pruneOrphanEmpPerms; I.rawCap = rawCap; I.seedCapFrom = seedCapFrom; I.seedSectionCap = seedSectionCap; I.setDeptCap = setDeptCap;
   I.setDeptLenses = setDeptLenses; I.setDeptSubs = setDeptSubs; I.setDeptTabs = setDeptTabs; I.setEmpLens = setEmpLens; I.setEmpPerms = setEmpPerms;
-  I.setEmpTpl = setEmpTpl; I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;
+  I.splitLeaf = splitLeaf; I.subKeysOf = subKeysOf; I.subOn = subOn; I.tabKeysOf = tabKeysOf; I.tabOn = tabOn;
   I.visiblePages = visiblePages;
   Object.defineProperty(I, "_pmMemo", { get: function () { return _pmMemo; }, set: function (v) { _pmMemo = v; }, configurable: true });
   Object.defineProperty(I, "lensOn", { get: function () { return lensOn; }, set: function (v) { lensOn = v; }, configurable: true });

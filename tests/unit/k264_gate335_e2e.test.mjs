@@ -14,5 +14,5 @@ test('بوابةُ الدخول الأول و«cur» من طرفٍ إلى طرف
   const m = /RESULT (\d+) pass \/ (\d+) fail/.exec(out);
   assert.ok(m, 'سطرُ النتيجة: ' + out.slice(-600));
   assert.equal(+m[2], 0, out.split('\n').filter((l) => l.startsWith('FAIL')).join('\n'));
-  assert.ok(+m[1] >= 24, 'التأكيداتُ كلُّها جرت: ' + m[1]);
+  assert.ok(+m[1] >= 12 /* V7 · د5-ح: نصفُ الوضع القديم حُذف — S1…S6 في الإنفاذ وحده (12 تأكيداً كانت 24 بالوضعين) */, 'التأكيداتُ كلُّها جرت: ' + m[1]);
 });

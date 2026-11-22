@@ -63,7 +63,6 @@
           "keys": [
             "ok",
             "brand",
-            "ver",
             "rk"
           ]
         }
@@ -80,11 +79,11 @@
           "keys": [
             "ok",
             "cf",
-            "ver",
-            "commit",
             "fresh"
           ],
           "super_extra": [
+            "ver",
+            "commit",
             "users",
             "rev",
             "sess",
@@ -125,6 +124,14 @@
           ],
           "err": "bad-body",
           "schema": "src/schemas/api/bodies.schema.json#/bodies//api/recover"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "why": "rk-changed",
+          "note": "V7 · د5-هـ: مفتاحُ الاستعادة استُعمل أو تغيّر بين التحقّق والكتابة (why: rk-changed) — أو تغيّرت الحسابات (بلا why) · لا يُكتب شيء"
         }
       }
     },
@@ -213,6 +220,7 @@
         "GET"
       ],
       "access": "session",
+      "note": "V7 · د5-هـ (x1): sess[] = {sid (مِقبضُ الجلسة — بصمةٌ لا الرمز) · mine · ts · la · dev · br (المتصفح) · city · active} — لا رمزَ ولا IP",
       "responses": {
         "200": {
           "keys": [
@@ -249,6 +257,48 @@
           ],
           "err": "bad-body",
           "schema": "src/schemas/api/bodies.schema.json#/bodies//api/me/sess/kill"
+        }
+      }
+    },
+    {
+      "path": "/api/me/sess/kill-one",
+      "methods": [
+        "POST"
+      ],
+      "access": "session",
+      "note": "V7 · د5-هـ (x1): إنهاءُ جلسةٍ واحدة من جلسات صاحب الطلب بمِقبضها (قائمةُ «الجلسات والنشاط» · «ليس أنا» في تنبيه sc_dev) — مِقبضُ غيره 404 كالمجهول",
+      "request": {
+        "sid": "string(16 hex)",
+        "why": "'not-me' | null"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/me/sess/kill-one"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "not-found"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "current"
         }
       }
     },
@@ -497,6 +547,75 @@
       }
     },
     {
+      "path": "/api/perm44/check",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "d": "id — الوحدة",
+        "role|ekey": "دورٌ أو شخص (أحدهما)",
+        "key": "مفتاحُ السجلّ"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "allow",
+            "why",
+            "on"
+          ],
+          "note": "V7 · د5-هـ (44): «اختبار الوصول» — القرارُ نفسُه الذي تُحكم به كتابةُ الأدوار (057b perm44Decide) · on: الأنظمةُ المشغَّلة في سقف الوحدة بالوراثة"
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "unit · args"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "مديرُ المنصة أو مديرُ الوحدة وحدهما"
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/perm44/log",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "query": {
+        "d": "id — الوحدة",
+        "limit?": "1..200"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "rows"
+          ],
+          "note": "V7 · د5-هـ (44): «سجل الصلاحيات» — rows[{id, at, who{uid,name}, unit, k, changes[{what, role?, sys?, person?, key?, unit?, from, to}], affected[], truncated}] من أحداث aud (etype perm44) التي يكتبها الخادمُ مع كلّ حفظة أدوارٍ أو سقف"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
       "path": "/api/retro",
       "methods": [
         "GET",
@@ -632,7 +751,7 @@
       "methods": [
         "GET"
       ],
-      "access": "actor",
+      "access": "super",
       "responses": {
         "200": {
           "keys": [
@@ -665,7 +784,7 @@
       "methods": [
         "POST"
       ],
-      "access": "actor",
+      "access": "super",
       "request": {
         "uid": "string",
         "all?": "1"
@@ -747,6 +866,7 @@
       "request": {
         "sessH": "1..",
         "idleH": "0.25..",
+        "dispH": "1..72 (V7 · د5-هـ: مدةُ جلسة شاشة العرض)",
         "lockN": "3..",
         "lockMin": "1..",
         "pwMin": "6..",
@@ -846,6 +966,14 @@
           "err": "bad-body",
           "note": "KIVO_264 · E5: null كان 500",
           "schema": "src/schemas/api/bodies.schema.json#/bodies//api/recovery/new"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "why": "rk-changed",
+          "note": "V7 · د5-هـ: إصدارٌ متزامن أو استعمالٌ غيّر المفتاحَ السابق — لا يُنشأ مفتاح"
         }
       }
     },
@@ -877,34 +1005,17 @@
           "err": "bad-body",
           "note": "KIVO_264 · E5: null كان 500",
           "schema": "src/schemas/api/bodies.schema.json#/bodies//api/reset"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "why": "rk-changed",
+          "note": "V7 · د5-هـ: المفتاحُ الذي أجاز التهيئة استُهلك قبل كتابتها — لا يُنفَّذ شيء"
         }
       },
       "note": "محروسة — لا تُنفَّذ في اختبار العقد"
-    },
-    {
-      "path": "/api/permv2",
-      "methods": [
-        "GET"
-      ],
-      "access": "super",
-      "responses": {
-        "200": {
-          "keys": [
-            "ok",
-            "version",
-            "docSha256",
-            "status",
-            "phase",
-            "mode",
-            "worker",
-            "counts",
-            "validation",
-            "stats",
-            "scope",
-            "guards"
-          ]
-        }
-      }
     },
     {
       "path": "/api/identity-rehearsal",
@@ -927,7 +1038,7 @@
       "methods": [
         "GET"
       ],
-      "access": "enforce",
+      "access": "session",
       "responses": {
         "200": {
           "keys": [
@@ -957,7 +1068,7 @@
       "methods": [
         "GET"
       ],
-      "access": "enforce",
+      "access": "super",
       "responses": {
         "200": {
           "keys": [
@@ -979,7 +1090,7 @@
       "methods": [
         "GET"
       ],
-      "access": "enforce",
+      "access": "super",
       "responses": {
         "200": {
           "keys": [
@@ -1000,7 +1111,7 @@
       "methods": [
         "POST"
       ],
-      "access": "enforce",
+      "access": "super",
       "request": {
         "act": "apply | rollback (POST) · status | plan (GET ?act=)",
         "seed": "hex64",
@@ -1031,6 +1142,56 @@
             "ok",
             "err"
           ]
+        }
+      }
+    },
+    {
+      "path": "/api/demo-data",
+      "methods": [
+        "POST"
+      ],
+      "access": "enforce",
+      "request": {
+        "act": "preview|seed|remove|status",
+        "reveal?": "boolean — كلماتُ مرور حسابات العرض في الرد مرةً واحدة (seed)",
+        "force?": "boolean — الحذفُ رغم الانحراف (remove)"
+      },
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "act"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "err": "bad-body",
+          "note": "بعد حرّاس الأداة (البيئة · المضيف · مدير النظام)",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/demo-data"
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "غيرُ مدير المنصة"
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "بلا KIVO_TEST_FIXTURE=allow أو مضيفٍ غير مسموح — وحزمةُ الإنتاج بلا الأداة أصلاً (tools/prod_strip.py)"
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ],
+          "note": "demo-already-seeded · demo-residue · demo-drift · conflict"
         }
       }
     },

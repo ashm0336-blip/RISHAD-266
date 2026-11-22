@@ -48,8 +48,9 @@ function raceBeforeCommit(B, change) {
 test('Daily uses the old unpadded Hijri once key and only the23:30 Riyadh window', async () => clockTest(async set => {
   const B = await fixture(), source = fs.readFileSync(path.join(ROOT, 'src/services/442-notif-observer.js'), 'utf8');
   const start = source.indexOf('function todayKey()'), end = source.indexOf('  function tick()', start);
-  const context = { Date: globalThis.Date, Intl: { DateTimeFormat: function (locale, opts) { return new Intl.DateTimeFormat(locale, { ...opts, timeZone: 'Asia/Riyadh' }); } } };
-  vm.runInNewContext(source.slice(start, end) + '\nthis.result=todayKey();', context);
+  const context = { KIVO: {}, Date: globalThis.Date, Intl: { DateTimeFormat: function (locale, opts) { return new Intl.DateTimeFormat(locale, { ...opts, timeZone: 'Asia/Riyadh' }); } } };
+  /* V7 · د5-د2: todayKey يسأل التقويمَ الموحّد — يُحمَّل في السياق نفسه بالمنسِّق المثبَّت على الرياض، فالمقارنةُ هي هي */
+  vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8') + '\n' + source.slice(start, end) + '\nthis.result=todayKey();', context);
   assert.equal(B.day.dk, context.result.key, 'Actual old observer function, with its browser timezone set to Riyadh');
   set('2026-10-30T20:29:59Z'); assert.equal((await B.poll()).emitted, 0); assert.equal(messages(B).length, 0);
   set('2026-10-30T21:00:00Z'); assert.equal((await B.poll()).emitted, 0); assert.equal(messages(B).length, 0);

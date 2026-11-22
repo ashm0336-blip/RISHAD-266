@@ -16,9 +16,9 @@
 import os, re, sys, json
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'src')
-DOMAIN = {'400-shift-need.js', '410-gate-units.js', '420-round-factory.js', '520-field-monitor.js', '530-emp-day-facts.js', '590-employees-import.js',
+DOMAIN = {'400-shift-need.js', '410-gate-units.js', '420-round-factory.js', '421-round-links.js', '520-field-monitor.js', '530-emp-day-facts.js', '590-employees-import.js',
           '442-notif-observer.js'}
-DOMAIN_SYSTEMS = {'systems/dstats/client/580-historical-import.js'}   # V7 · د1: خدمةُ الاستيراد التاريخي مجاليةٌ في مكانها الجديد (كانت services/580)   # قواعدُ أحداث التنبيهات عبر المجالات (رصدُ الميدان · الجولات · الأبواب …) — خدمةُ تطبيقٍ لا بدائيةُ منصّة
+DOMAIN_SYSTEMS = {'systems/dstats/client/580-historical-import.js', 'systems/daily/client/420-round-factory.js', 'systems/daily/client/421-round-links.js', 'systems/daily/client/520-field-monitor.js'}   # V7 · د1: خدمةُ الاستيراد التاريخي مجاليةٌ في مكانها الجديد (كانت services/580)   # قواعدُ أحداث التنبيهات عبر المجالات (رصدُ الميدان · الجولات · الأبواب …) — خدمةُ تطبيقٍ لا بدائيةُ منصّة
 PLATFORM_SYSTEMS = {'systems/custody/client/547-custody-api.js'}   # V7 · د4-ج: ناقلُ واجهة العهد خدمةٌ منصّية في مكانها الجديد (كانت services/547)
 FACADES = {'BassamNotif': 'واجهةُ التنبيهات للغلاف (الجرس · العدّ · التنقّل) — يعرّفها مراقبُ التنبيهات (442)'}
 CONTRACTS = {'__ADMIN_OPEN_TAB': 'فتحُ تبويبٍ في الإعدادات من صفحةٍ أخرى', '__ADMIN_OPEN_DTAB': 'فتحُ تبويبِ إدارةٍ في الإعدادات',

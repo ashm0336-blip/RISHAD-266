@@ -24,7 +24,7 @@ test('F22 · 170-freeze: تحت 640px عمودُ الهوية المثبّت ي�
   assert.match(m, /\.bs-rtable\.bs-fitcols \.bs-fzkeep\{right:0 !important;width:1px;max-width:45vw;box-sizing:border-box\}/);
   assert.match(m, /\.bs-rtable\.bs-fitcols \.bs-fzkeep>\*\{max-width:calc\(45vw - 24px\)\}/);
   /* «الجدول الشهري» يحمل الصنفين على عمود الاسم والجدولُ fit-cols — فالقاعدةُ تصيبه */
-  const v = rd('modules/staff/view.html');
+  const v = rd('systems/staff/client/view.html');
   assert.match(v, /<table class="bs-rtable bs-fitcols"[^>]*min-width:1300px/);
   assert.match(v, /<td data-label="اسم الموظف" class="bs-fz bs-fz3 bs-fzkeep"/);
 });
@@ -44,7 +44,7 @@ test('F22 · منتقي الجدول الشهري: تمريرُ القائمة �
   }
   assert.match(c._pkListStyle(null), /text-align:right;white-space:normal$/);
   assert.match(c._pkListStyle({ left: 1, top: 2, w: 3 }), /^position:fixed;left:1px;top:2px;width:3px;.*white-space:normal$/);
-  const v = rd('modules/staff/view.html');
+  const v = rd('systems/staff/client/view.html');
   assert.ok(v.includes('<div data-pm="list" style="{{e.pmListStyle}}">') && v.includes('<div data-sd="list" style="{{e.sdListStyle}}">'), 'القائمتان تحملان الوسم الذي يُفحص');
 });
 

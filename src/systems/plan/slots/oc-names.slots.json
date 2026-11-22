@@ -1,0 +1,35 @@
+{
+ "_note": "V7 · د5-هـ (م1): أسماءُ جداول أشكال التشغيل الميداني وحده في خريطة أسماء جداول العمليات (019o1) — تغيب بغيابه. المشتركةُ (أشكالٌ تستعملها الجولات وغيرها) تبقى في القالب حرفياً بقرار المراجع 1.",
+ "oc.names.plan.1": {
+  "order": 20,
+  "file": "slots/oc.names.plan.1.frag"
+ },
+ "oc.names.plan.2": {
+  "order": 20,
+  "text": "  ops_mark_kinds: { t: \"ops_staffing_month_employee_perm_days\", e: null },\n"
+ },
+ "oc.names.plan.3": {
+  "order": 20,
+  "text": "  ops_plan_deleted_months: { t: \"ops_plan_deleted_months\", e: null },\n"
+ },
+ "oc.names.plan.4": {
+  "order": 20,
+  "file": "slots/oc.names.plan.4.frag"
+ },
+ "oc.names.plan.5": {
+  "order": 20,
+  "file": "slots/oc.names.plan.5.frag"
+ },
+ "oc.names.plan.6": {
+  "order": 20,
+  "file": "slots/oc.names.plan.6.frag"
+ },
+ "oc.names.plan.7": {
+  "order": 20,
+  "file": "slots/oc.names.plan.7.frag"
+ },
+ "oc.names.plan.8": {
+  "order": 20,
+  "file": "slots/oc.names.plan.8.frag"
+ }
+}

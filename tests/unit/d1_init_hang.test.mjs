@@ -18,7 +18,7 @@ function hangFirstInit(DB) {
   DB.prepare = (sql) => { const st = prep(sql); if (hung || !/FROM d1_migrations/.test(sql)) return st; hung = 1; st.all = () => new Promise(() => {}); st.first = () => new Promise(() => {}); return st; };
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] (أ) أوّلُ جولة D1 للطلب A معلّقةٌ أبداً ⇒ الطلبُ B يكتمل — وA يُردّ 5xx عند المهلة لا تعليقاً', { timeout: 30000 }, async () => {
     const env = makeEnv(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}), C = client(env);
     hangFirstInit(env.DB);

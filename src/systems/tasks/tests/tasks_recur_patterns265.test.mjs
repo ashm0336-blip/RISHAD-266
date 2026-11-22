@@ -38,7 +38,7 @@ function srv() {
   ctx.isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v); ctx.swallow = () => {}; ctx.nmap = () => Object.create(null);
   ctx.parseJson = (s, d) => { try { return JSON.parse(s); } catch (e) { return d; } }; ctx.METK_DAY_RX = /^\d{4}-\d{1,2}-\d{1,2}$/;
   vm.createContext(ctx);
-  for (const f of ['src/systems/tasks/server/070-task-core.js', 'src/systems/tasks/server/073-task-recur.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: path.basename(f) });
+  for (const f of ['workers/parts/016-base-shared.js', 'src/systems/tasks/server/070-task-core.js', 'src/systems/tasks/server/073-task-recur.js'])   /* V7 · د5-د2: تقويمُ الخادم الواحد في 016 */ vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: path.basename(f) });
   return ctx;
 }
 /* أولُ شهرٍ هجريّ طولُه len يوماً بعد الوقت t0 (أم القرى · الرياض): {first: منتصفُ ليل أوّل يومٍ فيه, len} */
@@ -87,7 +87,7 @@ test('(أ) tkRecDue monthly md "last": آخرُ يومٍ في شهر 29 وشهر
 });
 
 /* ── (ب) على العامل الحقيقي ── */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(ب) every n=3: التوليدُ يولّد كلَّ ثالث يومٍ من البدء في الأفق وحده · لا تكرارَ عند إعادة التشغيل · والتعديلُ إلى n=5 يُلغي ما خرج ويولّد الناقص', async () => {

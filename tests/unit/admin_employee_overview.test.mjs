@@ -15,7 +15,7 @@ const LEGACY_EMPLOYEE = 'TEST_ONLY legacy union employee';
 
 async function fixture({ empty = false, mode = 'enforce', legacyString = false, legacyAccount = false } = {}) {
   const W = await candidateWorker(['opPrepared', 'opBulkInstall', 'ocConvert']);
-  assert.equal(W.KIVO_SCHEMA_VERSION, 10);
+  assert.equal(W.KIVO_SCHEMA_VERSION, 11);
   const DB = new D1Shim(), env = { DB, ...(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}), ASSETS: { fetch: async () => new Response('TEST_ONLY') } };
   await W.initDb(env); DB.exec('PRAGMA foreign_keys=ON');
   const hash = 'p2$100000$' + 'a'.repeat(32) + '$' + 'b'.repeat(64);
@@ -141,18 +141,20 @@ test('ordinary staff cannot retrieve cross-department employee overview aggregat
   assert.equal((await f.api(null)).status, 401);
 });
 
-test('legacy non-super overview preserves the existing super-only guard without querying employee counts', async () => {
+/* V7 · د5-ح: كانت «legacy non-super overview preserves the existing super-only guard…» — حُذف المسارُ القديم؛
+   قاعدةٌ غيرُ مختومةٍ بالإنفاذ تُغلق لغير مدير النظام بحالةٍ واضحة (503 authz_unmigrated) قبل أي تجميع، ومدير النظام يرى كما كان */
+test('V7 · د5-ح · an unmigrated D1 refuses a non-super overview with authz_unmigrated before any employee aggregate · super still served', async () => {
   const f = await fixture({ mode: 'legacy' }), batches = [], original = f.DB.batch.bind(f.DB);
   f.DB.batch = statements => { batches.push(...statements); return original(statements); };
   const response = await f.api(STAFF);
-  // The unconditional guard before /api/overview also applies in legacy mode.
-  // The same fixture against the prior HEAD Worker returned 403 before this fix.
-  assert.equal(response.status, 403);
-  assert.equal(response.json.err, 'forbidden');
+  assert.equal(response.status, 503);
+  assert.equal(response.json.err, 'authz_unmigrated');
   assert.equal(response.json.employeeCount, undefined);
   assert.equal(response.json.employeeNoAccountCount, undefined);
   const aggregate = batches.filter(statement => /LEFT JOIN ops_employee_record/.test(statement.sql));
-  assert.equal(aggregate.length, 0, 'The existing role guard runs before the employee aggregate');
+  assert.equal(aggregate.length, 0, 'The closed state is decided before the employee aggregate');
+  const owner = await f.api(OWNER);
+  assert.equal(owner.status, 200, 'the platform administrator is not locked out of an unmigrated D1');
 });
 
 test('registered legacy string employee entries remain counted alongside typed employee objects', async () => {

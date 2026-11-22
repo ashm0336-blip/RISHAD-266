@@ -8,7 +8,7 @@
  "filesWithFindings": 29,
  "top": [
   [
-   "modules/plan/logic.js",
+   "systems/plan/client/logic.js",
    53
   ],
   [
@@ -24,7 +24,7 @@
    17
   ],
   [
-   "modules/staff/logic.js",
+   "systems/staff/client/logic.js",
    15
   ],
   [

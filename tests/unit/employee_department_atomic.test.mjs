@@ -428,7 +428,7 @@ test('new employee transition accepts a valid original-workflow payload above 64
       base: context.base,
       finalRows: context.employees.concat(fresh),
       options: context.options,
-      import: { mode: 'add', year: context.clock.y, month: context.clock.m, schedule: [], templates: [] },
+      import: { mode: 'add', year: context.clock.y, month: context.clock.m, schedule: [] },
       reason: 'TEST_ONLY user import reason',
     };
   assert.ok(Buffer.byteLength(JSON.stringify(body)) > 65536);

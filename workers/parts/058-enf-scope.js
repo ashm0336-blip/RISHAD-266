@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/058-enf-scope.js.tpl */
 /* ══ (2) النطاق في وضع الإنفاذ ══
    RISHAD-266 · تقاعدُ «سقف النطاق القديم» (bsdept:<d>:bassam_scope_v1 — ceiling[Site|Zone/Element] · emp[ekey][Site|Zone/Element|Shift]):
    لا يُقرأ السجلُّ ولا يُكتب، وأبعادُ الموقع والعنصر والوردية لا تنطبق في الإنفاذ (not_applicable · legacy-scope-retired) — كان غيابُه يرفض

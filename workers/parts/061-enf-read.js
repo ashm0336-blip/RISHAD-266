@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/061-enf-read.js.tpl */
 /* ══ (4) القراءة — مفاتيحُ القراءة المربوطة صراحةً (readBindings · P4.1.1-01) محمولةٌ في الإدارة ∧ Department/Branch،
    ثم إسقاطُ السجلات خارج النطاق (D4-01): المصدر · المسنَد (P4.2-05) · العدساتُ المعطّلة.
    RISHAD-266: الوردية (D4-09) والموقع/العنصر كانت تُسقَط بسقف النطاق القديم (bassam_scope_v1) — أُلغي، فلا تقيّد القراءةَ بعده.
@@ -6,6 +7,7 @@
    fail-closed (P4.1.1-04): لا ميزانيةَ تتخطّى سجلاً — أيُّ خطأٍ في الإسقاط ⇒ القراءةُ مرفوضة. ══ */
 function canReadEnf(A, k) {
   if (!A || !A.u) return false;
+  k = resReadAs(k);                                                          /* V7 · د5-ح (13): 023 RES_READ_AS */
   var u = A.u, P = parseKey(k), rn = resName(k), i;
   if (u.role === 'super') return true;                                       /* مديرُ النظام يقرأ كلَّ شيء (Global) — كما AS‑IS */
   if (!P.dept) {
@@ -19,6 +21,7 @@ function canReadEnf(A, k) {
   if (rn === ENF_GRANTS_RES) return isMgrOf(A, P.dept);                      /* سجلُّ المنح: مديرُ الإدارة (والموظفُ يتسلّم مفاتيحَه الفعلية في الإقلاع) */
   var R2 = resOf(k);
   if (!R2 || R2.scope !== 'dept') return false;
+  if (R2.p44) return true;                                                   /* V7 · د5-هـ (44): سجلُّ الأدوار يُقرأ داخل الإدارة */
   if (R2.rule) {
     if (P.name.indexOf('bassam_notif_dev_v1:') === 0) return P.name === 'bassam_notif_dev_v1:' + u.id || isMgrOf(A, P.dept);   /* Own */
     return true;                                                             /* التنبيهاتُ (self) · الراياتُ التقنية · الملف — قواعدُها تحرسها */
@@ -229,6 +232,7 @@ async function enfRefsFor(env, depts, keys) {
 /* الإسقاطُ على نصّ قيمةٍ كما ستُرسل — يرمي عند الخطأ (fail-closed: المستدعي يرفض القراءة) */
 function enfProjectStr(A, k, raw, refs) {
   if (raw == null || !A || A.u.role === 'super') return raw;
+  k = resReadAs(k);   /* V7 · د5-ح (13): الأرشيفُ بإسقاط الجولات نفسِه (023 RES_READ_AS) */
   var P = parseKey(k), rn = resName(k), PJ = ENF_PROJ[rn];
   if (!PJ) return raw;
   var V = enfViewCtx(A, P.dept || (A.u.deptId || ''), rn, refs);

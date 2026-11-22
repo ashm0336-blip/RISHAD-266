@@ -50,7 +50,7 @@ test('KD-11 · ES-9 · DG-10 · AUX-13: الطبقةُ المشتركة (الغ�
 });
 
 test('ES-9 · مربّعاتُ التحديد في جدولَي الموظفين والجدول الشهري داخل <label class="bs-ckhit"> — فالمساحةُ اللمسية ٣٦ والنقرُ على الغلاف يبدّل المربّع', () => {
-  for (const [f, n] of [['modules/employees/view.html', 2], ['modules/staff/view.html', 2]]) {
+  for (const [f, n] of [['modules/employees/view.html', 2], ['systems/staff/client/view.html', 2]]) {
     const v = rd(f);
     assert.equal((v.match(/<label class="bs-ckhit"><input type="checkbox" checked="\{\{(?:allSelected|e\.sel)\}\}"[^>]*><\/label>/g) || []).length, n, f);
     assert.doesNotMatch(v, /<t[hd][^>]*><input type="checkbox" checked="\{\{(?:allSelected|e\.sel)\}\}"/, f + ': لا مربّعَ عارياً');
@@ -59,20 +59,20 @@ test('ES-9 · مربّعاتُ التحديد في جدولَي الموظفين
 
 test('PLAN-06 · DG-10 · ES-9 · AUX-13: قواعدُ الوحدات (لا في الغلاف) — التشغيلُ الميداني ٣٦ وشارةُ حذف الشهر ٢٤ · «الشهر كاملاً» ٣٦ · إدارةُ الموقع ٣٢ — كلُّها على الإصبع وحده', needs('tasks'), () => {
   const M = (f, mark) => { const m = mediaAfter(rd(f), mark); assert.equal(m.head, '@media (pointer: coarse)', f); return strip(m.body).replace(/\s+/g, ' '); };
-  const plan = M('modules/plan/helmet.css', 'الموجة 2 · PLAN-06');
+  const plan = M('systems/plan/client/helmet.css', 'الموجة 2 · PLAN-06');
   assert.ok(plan.includes('.bs-mapcard button:not([style*="position: absolute"]), .bs-panel-shell button:not([style*="position: absolute"]){ min-width:36px; min-height:36px; }'));
   assert.ok(plan.includes('[title^="سيتم حذف"][style*="position: absolute"]{ min-width:24px; min-height:24px; }'));
   const tasks = M('systems/tasks/client/helmet.css', 'الموجة 2 · DG-10');
   assert.ok(tasks.includes('.tk-dayall{min-height:36px}') && tasks.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}'));
-  const st = M('modules/staff/helmet.css', 'الموجة 2 · ES-9');
+  const st = M('systems/staff/client/helmet.css', 'الموجة 2 · ES-9');
   assert.ok(st.includes('[title^="سيتم حذف"][style*="position: absolute"]{min-width:24px;min-height:24px}') && st.includes('.st-restdd button{min-height:36px}'));
-  assert.ok(M('modules/dreport/helmet.css', 'الموجة 2 · DG-10').includes('.dr-trbox button{min-height:36px}'));
-  assert.equal((rd('modules/dreport/view.html').match(/<div class="dr-trbox" style="margin-top:6px;/g) || []).length, 2, 'منتقيا التحويل (الجدول والبطاقات)');
+  assert.ok(M('systems/dreport/client/helmet.css', 'الموجة 2 · DG-10').includes('.dr-trbox button{min-height:36px}'));
+  assert.equal((rd('systems/dreport/client/view.html').match(/<div class="dr-trbox" style="margin-top:6px;/g) || []).length, 2, 'منتقيا التحويل (الجدول والبطاقات)');
   const adm = M('modules/admin/helmet.css', 'الموجة 2 · AUX-13');
   assert.ok(adm.includes('[data-screen-label="إدارة الموقع"] button:not([style*="position: absolute"]){min-width:32px;min-height:32px}'));
   assert.ok(adm.includes('[data-screen-label="إدارة الموقع"] [data-sf=name][style*="cursor: pointer"]{min-height:32px;display:inline-flex;align-items:center}'));
   /* الشارةُ في القوالب فعلاً بهذا العنوان وموضعٍ مطلق */
-  assert.match(rd('modules/staff/view.html'), /title="سيتم حذف جميع بيانات الشهر" style="position:absolute;/);
+  assert.match(rd('systems/staff/client/view.html'), /title="سيتم حذف جميع بيانات الشهر" style="position:absolute;/);
 });
 
 /* قرار المالك 2026-11-11 (نقل دفعة الترويسة): هذا الاختبار كان يثبت التفافَ رأس الخريطة سطرين على الجوال واللمس (PLAN-06)؛
@@ -84,11 +84,11 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
   const inner = bare.indexOf('.bs-hbar>.bs-hbar{flex-shrink:1;min-width:0}'), own = bare.indexOf('.bs-canvas-header>.bs-hbar{flex-shrink:0;overflow:visible}');
   assert.ok(inner >= 0 && own > inner, 'قاعدةُ الترويسة بعد القاعدة العامة');
   /* لا قاعدةَ التفافٍ في وحدة الخطة، ولا في أيّ مكان لهذه الترويسة */
-  const plan = rd('modules/plan/helmet.css');
+  const plan = rd('systems/plan/client/helmet.css');
   assert.doesNotMatch(plan, /flex-wrap\s*:\s*wrap/, 'حُذفت قاعدةُ الالتفاف سطرين');
   assert.doesNotMatch(plan, /\.bs-mapcard > \.bs-hbar/);
   assert.doesNotMatch(bare, /\.bs-canvas-header[^{]*\{[^}]*flex-wrap\s*:\s*wrap/);
-  for (const [f, group] of [['modules/plan/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/], ['modules/daily/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/]]) {
+  for (const [f, group] of [['systems/plan/client/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/], ['systems/daily/client/view.html', /<div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap">/]]) {
     const v = rd(f), m = /<div class="([^"]*\bbs-canvas-header\b[^"]*)" style="([^"]*)">/.exec(v); assert.ok(m, f);
     assert.deepEqual(m[1].split(/\s+/), ['bs-hbar', 'bs-canvas-header'], f + ': bs-hbar بلا bs-wrap');
     assert.doesNotMatch(m[2], /flex-wrap/, f + ': لا flex-wrap مكتوباً على الترويسة');
@@ -105,7 +105,7 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
     assert.match(h, /<div class="bs-pop bs-canvas-site-menu" data-bs-site-menu="1">\s*<div class="bs-canvas-site-list">/, f);
     assert.doesNotMatch(v, /fldPopStyle/, f);
   }
-  for (const f of ['modules/plan/logic.js', 'modules/daily/logic.js']) {
+  for (const f of ['systems/plan/client/logic.js', 'systems/daily/client/logic.js']) {
     const l = rd(f);
     assert.doesNotMatch(l, /fldPopStyle/, f);
     assert.match(l, /fldToggle: \(\) => this\.setState\(\(t\) => \(\{ fldOpen: !t\.fldOpen \}\)\),/, f);
@@ -127,11 +127,11 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
   assert.match(dd, /workspace\.style\.setProperty\("--bs-canvas-panel-top", Math\.ceil\(top\) \+ "px"\)/);
   assert.match(dd, /root\.querySelectorAll\("\.bs-canvas-header"\)\.forEach\(watchHeader\)/);
   assert.match(dd, /menu\.hasAttribute\("data-bs-site-menu"\)/);
-  for (const f of ['modules/plan/view.html', 'modules/daily/view.html']) assert.match(rd(f), /<div class="bs-ws-row" style="\{\{wsStyle\}\}">/, f);
+  for (const f of ['systems/plan/client/view.html', 'systems/daily/client/view.html']) assert.match(rd(f), /<div class="bs-ws-row" style="\{\{wsStyle\}\}">/, f);
 });
 
 test('ES-9 · محرِّرُ الراحات لا يتجاوز الشاشة: عرضُه max-content بحدٍّ أقصى calc(100vw - 16px) وأيامُه تلتفّ — كان 452px فيخرج «سبت» عن جوال 390px (ولا طريقَ آخر للحذف باللمس)', () => {
-  const v = rd('modules/staff/view.html');
+  const v = rd('systems/staff/client/view.html');
   const eds = v.match(/<div data-bs-dd="1" class="st-restdd" style="[^"]*">/g) || [];
   assert.equal(eds.length, 2, 'الجدولُ والبطاقات');
   for (const e of eds) {
@@ -149,8 +149,8 @@ test('ES-9 · محرِّرُ الراحات لا يتجاوز الشاشة: عر
 /* RISHAD-266: AUX-13 «صفحتي» (profile/helmet.css) لا يُنقل هنا — profile خارج هذا النقل (عملُ المالك المحلّي على خريطتها) */
 
 /* ── منطقُ الوحدات في vm ── */
-const SERVICES = ['src/services/060-percent-format.js', 'src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js',
-  'src/i18n/380-hijri-fallback.js', 'src/services/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/560-canvas-input.js', 'src/components/565-page-kit.js'];
+const SERVICES = ['src/services/060-percent-format.js', 'src/systems/_multi/client/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js',
+  'src/i18n/380-hijri-fallback.js', 'src/systems/daily/client/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/systems/_multi/client/560-canvas-input.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/systems/staff/client/533-staff-g3.js', 'src/systems/plan/client/403-plan-p3.js', 'src/systems/staff/client/534-staff-g4.js', 'src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
 function page(slug, o = {}) {
   const store = new Map(), KIVO = {}, toasts = [];
   const ctx = { KIVO, console, setTimeout: () => 0, clearTimeout: () => 0, setInterval: () => 0, clearInterval: () => 0, requestAnimationFrame: () => 0, cancelAnimationFrame() {}, performance: { now: () => 1 },
@@ -228,7 +228,7 @@ test('ES-9 · الفأرة كما كانت: نقرةٌ على رقاقة الر�
   const rl = L.row('TEST_ONLY_e1'); assert.equal(rl.restChips[0].tip, 'الشهر مقفل'); rl.restChips[0].remove();
   assert.equal(L.writes(), 0); assert.equal(L.c.state.restOpen || null, null);
   /* القالب: المحرِّرُ خارج شرط زرّ الإضافة (يُفتح من الرقاقة ولو اكتمل النصاب) — في الجدول وفي البطاقات */
-  const v = rd('modules/staff/view.html');
+  const v = rd('systems/staff/client/view.html');
   assert.equal((v.match(/<sc-if value="\{\{e\.restCanEdit\}\}" hint-placeholder-val="\{\{ true \}\}">\n\s*<button onClick="\{\{e\.restToggle\}\}" title="تعديل أيام الراحة" style="\{\{e\.restBtnStyle\}\}">\+<\/button>\n\s*<\/sc-if>/g) || []).length, 2);
 });
 

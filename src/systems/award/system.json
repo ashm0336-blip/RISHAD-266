@@ -90,7 +90,7 @@
   },
   "budget.page.award": {
    "order": 10,
-   "text": "  \"page:Award\": 47900,\r\n"
+   "text": "  \"page:Award\": 48300,\r\n"
   },
   "uxStates.award": {
    "order": 10,
@@ -530,22 +530,6 @@
    "order": 10,
    "text": "    'bassam_award_docs_v1': crud('award.doc'),\n"
   },
-  "cleanup.award.fn": {
-   "order": 10,
-   "file": "slots/cleanup.award.fn.frag"
-  },
-  "cleanup.award.call": {
-   "order": 10,
-   "text": "  if (awardCleanup(A, k, newVal, curVal, ctx)) return { ok: true };\n"
-  },
-  "cleanup.award.shadow": {
-   "order": 10,
-   "text": " || awardCleanup(A, k, newVal, curVal, ctx)"
-  },
-  "empGone.award.fn": {
-   "order": 10,
-   "file": "slots/empGone.award.fn.frag"
-  },
   "scope.items.award": {
    "order": 10,
    "file": "slots/scope.items.award.frag"
@@ -637,10 +621,6 @@
   "bk.export.awardName": {
    "order": 10,
    "text": "spec[0]==='award'?'awards':"
-  },
-  "empGone.map": {
-   "order": 30,
-   "text": "'bassam_award_v1': awardGoneOk"
   },
   "emp.confirm.award": {
    "order": 10,

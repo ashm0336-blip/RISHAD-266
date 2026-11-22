@@ -44,7 +44,7 @@ const acct = (id, un, ekey) => ({ id, un, ph: PH('70999', id), name: 'TEST_ONLY 
 const tplOf = (p, d, ek, t) => { p.tplOf = p.tplOf || {}; p.tplOf[d] = Object.assign({}, p.tplOf[d], { [ek]: t }); return p; };
 const lensOf = (p, d, ek, arr) => { p.empLens = p.empLens || {}; p.empLens[d] = Object.assign({}, p.empLens[d], { [ek]: arr }); return p; };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test(mode + ' · الاستعمالُ العاديّ كما كان (يمرّ قبل الإصلاح وبعده)', needs('seized'), async () => {
     const w = await W(mode), dm = await w.as('dm1');
     /* مديرُ الإدارة (يرث سقفَ إدارته): قالبٌ وعدساتٌ وتضييقٌ وحسابُ موظف */
@@ -200,10 +200,7 @@ test('enforce · M5/PAR-4 (المنح) · مديرُ الإدارة لا يسق�
   ok(await put(w, gm, G, g3), 'ومديرُ الفرع يسقط عن مدير إدارته');
 });
 
-test('legacy · DX-05 · سجلُّ المنح مجهولٌ في النظام القديم — كما كان', async () => {
-  const w = await W('legacy'), dm = await w.as('dm2');
-  assert.ok(!(await put(w, dm, 'bsdept:tst_d2:bassam_grants_v1', { v: 1, emp: { tst_e_emp2: { plus: [], minus: ['ir.rec.edit'] } } })).ok, 'المنح');
-});
+/* V7 · د5-ح: حُذفت «legacy · DX-05 · سجلُّ المنح مجهولٌ في النظام القديم» — لا نظامَ قديماً؛ قاعدةٌ غيرُ مختومةٍ تُغلق لغير مدير النظام (v7_d5h_lock) */
 
 test('enforce · DX-05 · أولُ سجلّ منحٍ في وحدةٍ لا سجلَّ لها يُقبل بـ v:1 من مديرها — وما سوى v:1 لمدير النظام ', needs('irshad'), async () => {
   const w = await W('enforce'), dm2 = await w.as('dm2'), G = 'bsdept:tst_d2:bassam_grants_v1';

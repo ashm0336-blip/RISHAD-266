@@ -1,0 +1,130 @@
+{
+ "store.opResources.staff": {
+  "order": 10,
+  "text": " 'bassam_staffing_v3', 'bassam_staffing_v2',\n    'bassam_staffing_snap_v1', 'bassam_staffing_locks_v1', 'bassam_callsigns_v1', 'bassam_perm_limit_v1',"
+ },
+ "store.keyLabels.staff": {
+  "order": 10,
+  "text": " bassam_staffing_v3:[\"الجدول الشهري\"], bassam_staffing_v2:[\"الجدول الشهري (صيغة قديمة)\"], bassam_staffing_snap_v1:[\"بيان الشهر\"],\n      bassam_staffing_locks_v1:[\"أقفال الجدول الشهري\"],"
+ },
+ "store.keyLabels.staff.callsigns": {
+  "order": 10,
+  "text": " bassam_callsigns_v1:[\"رموز النداء\"],"
+ },
+ "store.keyLabels.staff.tech": {
+  "order": 10,
+  "text": " bassam_st_grp_v1:[\"مجموعات الجدول الشهري\",\"tech\"],"
+ },
+ "store.keyLabels.staff.limit": {
+  "order": 10,
+  "text": "\n      bassam_perm_limit_v1:[\"ترقية الصلاحيات\",\"tech\"],"
+ },
+ "store.proj.staff": {
+  "order": 10,
+  "text": "bassam_staffing_v2: 1, bassam_staffing_v3: 1, "
+ },
+ "res.empty.staff.callsigns": {
+  "order": 10,
+  "text": " bassam_callsigns_v1: '[]',"
+ },
+ "res.empty.staff": {
+  "order": 10,
+  "text": " bassam_perm_limit_v1: '{}',\n    bassam_staffing_v3: '{}', bassam_staffing_v2: '{}', bassam_staffing_snap_v1: '{}', bassam_staffing_locks_v1: '{}',"
+ },
+ "deptStore.labels.staff": {
+  "order": 10,
+  "text": " 'bassam_staffing_v3':'الجدول الشهري', 'bassam_staffing_snap_v1':'بيان الشهر',"
+ },
+ "deptStore.pageKeys.staff": {
+  "order": 10,
+  "text": "'staff',"
+ },
+ "activity.entities.staff": {
+  "order": 10,
+  "text": " staffing: 'التسكين الشهري',"
+ },
+ "activity.filter.staff": {
+  "order": 10,
+  "text": " ['staffing', 'التسكين الشهري'],"
+ },
+ "perm.seed.cap.staff": {
+  "order": 10,
+  "text": "'staff',"
+ },
+ "tree.keyCap.staff": {
+  "order": 10,
+  "text": "\n    bassam_staffing_v3:'staff', bassam_staffing_v2:'staff', bassam_staffing_snap_v1:'staff', bassam_staffing_locks_v1:'staff', bassam_callsigns_v1:'staff',"
+ },
+ "root.liveKeys.staff": {
+  "order": 10,
+  "text": " staffing: /staffing|shift_options|callsigns|leave_kinds|roles|perm_limit|employees/,"
+ },
+ "root.live.planning.staff": {
+  "order": 10,
+  "text": "|staffing"
+ },
+ "root.live.profile.staff": {
+  "order": 10,
+  "text": "|staffing"
+ },
+ "root.navPerm.staff": {
+  "order": 10,
+  "text": " staffing: \"staff\","
+ },
+ "root.inPlanning.staff": {
+  "order": 10,
+  "text": "\"staffing\","
+ },
+ "root.labels.staff": {
+  "order": 10,
+  "text": " staffing:\"الجدول الشهري\","
+ },
+ "root.navVals.staff": {
+  "order": 10,
+  "text": "          nStaffing: cls(\"staffing\", \"staff\"), tStaffing: tip(\"staff\"),\n"
+ },
+ "root.is.staff": {
+  "order": 10,
+  "text": " isStaffing: ap === \"staffing\","
+ },
+ "root.known.staff": {
+  "order": 10,
+  "text": "\"staffing\","
+ },
+ "admin.keyLabels.staff": {
+  "order": 10,
+  "text": "        bassam_staffing_v3: \"الجدول الشهري\",\r\n        bassam_staffing_snap_v1: \"بيان الشهر\",\r\n"
+ },
+ "admin.resLabels.staff": {
+  "order": 10,
+  "text": "                bassam_staffing_v3: \"الورديات والجدول الشهري\",\r\n                bassam_staffing_v2: \"الورديات والجدول الشهري\",\r\n                bassam_staffing_locks_v1: \"اعتمادات الجدول\",\r\n                bassam_staffing_snap_v1: \"بيان الشهر (لقطة الاعتماد)\",\r\n"
+ },
+ "profile.rel.staff": {
+  "order": 10,
+  "text": " \"bassam_staffing_v3\", \"bassam_staffing_locks_v1\","
+ },
+ "profile.data.key.staff": {
+  "order": 10,
+  "text": "        \"bassam_staffing_v3\",\n        \"bassam_staffing_snap_v1\",\n"
+ },
+ "profile.data.key.staff.locks": {
+  "order": 10,
+  "text": "        \"bassam_staffing_locks_v1\",\n"
+ },
+ "emp.permPages.staff": {
+  "order": 10,
+  "text": "          { k: \"staff\", n: \"الجدول الشهري\", acts: r },\n"
+ },
+ "blocks.shell.staff": {
+  "order": 20,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/staff/client/533-staff-g3.js\",\n   \"kind\": \"js\",\n   \"line\": 10496,\n   \"new\": \"V7 · د5-د2: قراءاتٌ معلنة من الجدول الشهري لصفحات القاعدة (مفعَّل؟ · وثيقة الأشهر · الأشهر المعتمدة)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "shell.blocks.staff": {
+  "order": 20,
+  "text": "@@KIVO_BLOCK:systems/staff/client/533-staff-g3.js@@\n"
+ },
+ "store.devGroups": {
+  "order": 10,
+  "text": "\"bassam_st_grp_v1\""
+ }
+}

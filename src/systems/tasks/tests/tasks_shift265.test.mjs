@@ -36,7 +36,7 @@ async function seed(W, n, o = {}) {
 const mk = (W, ck, body) => post(W, ck, '/api/tasks/create', Object.assign({ k: K0, t: TAG + ' للوردية', s: S0, e: S0 + 2 * HR, rv: 'none' }, body || {}));
 const rowsK = (W) => (stored(W.env, KT)[K0] || []).filter((r) => Array.isArray(r) && String(r[0]).indexOf('للوردية') !== -1);
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(أ) 60 موظفاً: بالقائمة 400 at:asg كما كان — وبالوردية صفٌّ لكل واحدٍ ومعهم المحوَّلُ إليها من تقرير اليوم · مجموعةٌ واحدة · تنبيهٌ لكلٍّ · حدثُ تدقيقٍ يذكر الوردية', async () => {

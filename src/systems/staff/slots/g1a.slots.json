@@ -1,0 +1,19 @@
+{
+ "_note": "V7 · د5-د2 (g1a): قطعُ الجدول الشهري في محرّكَي الحراسة والنطاق (المصنِّف · عناصرُ النطاق · دليلُ الوردية).",
+ "guard.classify.staff": {
+  "order": 10,
+  "file": "slots/guard.classify.staff.frag"
+ },
+ "scope.items.staff.head": {
+  "order": 10,
+  "text": "  /* ═══ الجدولُ الشهري ═══ */\n"
+ },
+ "scope.items.staff": {
+  "order": 10,
+  "file": "slots/scope.items.staff.frag"
+ },
+ "scope.shift.evidence": {
+  "order": 10,
+  "text": "'staffing-shift-match' : 'staffing-shift-mismatch') : 'no-staffing-evidence';"
+ }
+}

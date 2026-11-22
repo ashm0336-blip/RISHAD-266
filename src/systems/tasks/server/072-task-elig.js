@@ -1,7 +1,7 @@
 /* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══
-   المصدرُ المعتمد: الخطةُ التشغيلية ← الجدولُ الشهري (bassam_staffing_v3[Y-M][مفتاح الموظف]: shift · rest[] · perm[] · leaves[] · muk)
+   المصدرُ المعتمد: الخطةُ التشغيلية ← الجدولُ الشهري (staff.schedule@1 ← [Y-M][مفتاح الموظف]: shift · rest[] · perm[] · leaves[] · muk)
    + أوقاتُ الورديات (bassam_shift_options_v1: tStart/tEnd — الليليةُ تعبر منتصف الليل فيومُها يومُ بدئها) + تقريرُ اليوم المسحوب
-   (bassam_dreport_v1: غياب ab · إجازة lv · استئذان pm) + مهامُه الأخرى (التعارض) + صلاحياتُه التشغيلية التي تحتاجها المهمة (needs).
+   (dreport.doc@1: غياب ab · إجازة lv · استئذان pm) + مهامُه الأخرى (التعارض) + صلاحياتُه التشغيلية التي تحتاجها المهمة (needs).
    النتيجة لكل (موظف × موعد): «متاح» · «غير متاح» (بالسبب) · «بانتظار التحقق» (لا جدول · لا صفّ · لا وقتَ للوردية · استئذان · تتجاوز الوردية).
    يُسمح بإنشاء مهامٍ مستقبلية لغائبٍ اليوم ما دام متاحاً يومَ التنفيذ — والحكمُ إفصاحٌ للمسؤول: «غير متاح» لا يُنشأ إلا بتأكيده (force).
    «التكليف» (muk) ساعاتُ عملٍ إضافية في الجدول الشهري — يُذكر ولا يُخلط بالمهمة ولا تُنشئه.
@@ -10,9 +10,12 @@
 var TK_EL_OK = 'متاح', TK_EL_NO = 'غير متاح', TK_EL_WAIT = 'بانتظار التحقق';
 async function tkEligCtx(env, A, d) {
   var g = async function (n) { return parseJson(await opResourceGet(env, 'bsdept:' + d + ':' + n), null); };
-  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), staff: await g('bassam_staffing_v3'), locks: await g('bassam_staffing_locks_v1'),
-    shifts: await g('bassam_shift_options_v1'), rep: await g('bassam_dreport_v1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
-  C.detail = A && A.u ? (A.u.role === 'super' || canRead(A, 'bsdept:' + d + ':bassam_staffing_v3')) : false;
+  /* V7 · د5-د2: الجدولُ وأقفالُه قراءتان معلنتان من مالكهما (بالترتيب نفسه)؛ بغيابه null ⇒ «بانتظار التحقق: لا جدول» كما لو لم يُنشأ جدول */
+  /* V7 · د5-هـ: وتقريرُ اليوم قراءةٌ معلنة من مالكه (dreport.doc@1)؛ بغيابه null ⇒ لا غيابَ ولا إجازةَ ولا استئذانَ من التقرير */
+  var sb = async function (n) { var v = await srvBusRead(n, env, d); return v === undefined ? null : v; };
+  var C = { d: d, emps: tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), sched: await sb('staff.schedule@1'), locks: await sb('staff.locks@1'),
+    shifts: await g('bassam_shift_options_v1'), rep: await sb('dreport.doc@1'), tasks: await g('bassam_tasks_v1'), users: (await usersList(env)) || [] };
+  C.detail = A && A.u ? (A.u.role === 'super' || !!srvBusRead('staff.readable@1', A, d)) : false;
   /* KIVO_265 · F-3 (RBAC_AUDIT_265): عناوينُ المهام المتعارضة (conf[].t) لمن يقرأ مخزنَ المهام (task.view) وحده — كان حاملُ task.create/assign بلا task.view يقرؤها */
   C.view = A && A.u ? (A.u.role === 'super' || canRead(A, tkK(d))) : false;
   return C;
@@ -38,7 +41,7 @@ function tkToks(emp, emps) {
 }
 /* صفُّ الموظف في شهر الجدول — المعرّفُ أولاً ثم الصيغُ القديمة (BassamEmp.entryKey) — قراءةٌ للحكم لا إسنادٌ بالاسم */
 function tkEntryOf(C, ym, emp) {
-  var bk = isObj(C.staff) && isObj(C.staff[ym]) ? C.staff[ym] : null; if (!bk) return { bk: null, e: null };
+  var bk = isObj(C.sched) && isObj(C.sched[ym]) ? C.sched[ym] : null; if (!bk) return { bk: null, e: null };
   var t = tkToks(emp, C.emps); for (var i = 0; i < t.length; i++) if (isObj(bk[t[i].v])) return { bk: bk, e: bk[t[i].v], by: t[i].by };
   return { bk: bk, e: null };
 }

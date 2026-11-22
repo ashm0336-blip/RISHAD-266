@@ -7,7 +7,7 @@ import fs from "node:fs";
 import vm from "node:vm";
 import * as acorn from "acorn";
 
-const planSource = fs.readFileSync("src/modules/plan/logic.js", "utf8");
+const planSource = fs.readFileSync("src/systems/plan/client/logic.js", "utf8");
 const ast = acorn.parse(planSource, { ecmaVersion: "latest" });
 
 function world(extra = {}) {
@@ -95,6 +95,10 @@ function world(extra = {}) {
       },
     },
   });
+  vm.runInContext(fs.readFileSync("src/i18n/385-calendar.js", "utf8"), C);   /* V7 · د5-د2: التقويمُ الموحّد — «اليوم» (يومُ الرياض) منه */
+  /* V7 · د5-هـ: الناقل وروابطُ الخطة والجولات عليه — الخطةُ تكتب في الجولات بأوامر مالكها، والجولاتُ تقرأ الخطةَ بالاسم */
+  for (const file of ["src/core/060-bus.js", "src/systems/plan/client/404-plan-p4.js", "src/systems/daily/client/421-round-links.js"])
+    vm.runInContext(fs.readFileSync(file, "utf8"), C);
   vm.runInContext(planSource + "\nglobalThis.TestComponent=Component;", C);
   const component = new C.TestComponent();
   component.bsToast = (...args) => seen.toasts.push(args);
@@ -127,7 +131,7 @@ function world(extra = {}) {
   return { C, KIVO, component, op, seen };
 }
 function service(w, name) {
-  vm.runInContext(fs.readFileSync("src/services/" + name, "utf8"), w.C);
+  vm.runInContext(fs.readFileSync("src/systems/daily/client/" + name, "utf8")   /* V7 · د5-هـ: خدماتُ الجولات في مجلد المتابعة */, w.C);
 }
 function action(w, name) {
   let property;
@@ -164,7 +168,7 @@ test("Plan loads confirmed typed data without business Storage or browser-trigge
   assert.ok(!/localStorage\.(setItem|removeItem)\(/.test(planSource));
   for (const file of ["420-round-factory.js", "520-field-monitor.js"])
     assert.ok(
-      !/localStorage\./.test(fs.readFileSync("src/services/" + file, "utf8")),
+      !/localStorage\./.test(fs.readFileSync("src/systems/daily/client/" + file, "utf8")),
     );
 });
 test("Plan rejects a revision or identity change after editor load before staging any write", async () => {

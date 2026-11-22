@@ -1,4 +1,4 @@
-/* عالمُ الكانفس للاختبار: طبقةُ إدخال الخريطة الحقيقية (src/components/560-canvas-input.js) داخل node:vm فوق محاكٍ صغيرٍ لتوزيع الأحداث كما في المتصفح —
+/* عالمُ الكانفس للاختبار: طبقةُ إدخال الخريطة الحقيقية (src/systems/_multi/client/560-canvas-input.js) داخل node:vm فوق محاكٍ صغيرٍ لتوزيع الأحداث كما في المتصفح —
    التقاطُ النافذة ثمّ الوثيقة · ثمّ معالجاتُ React على العناصر صعوداً (__reactProps$w1: onPointerDown …) · stopPropagation يوقف ما بعده ·
    مؤقّتاتٌ وإطاراتٌ يدوية · ساعةٌ قابلةٌ للضبط. اختيارياً: منطقُ صفحةٍ حقيقيّ (المتابعة اليومية · التشغيل الميداني) بخدماته في السياق نفسِه
    (بدائلُ صغيرة للمصادقة والصلاحيات والبحث). بياناتٌ اصطناعية (TEST_ONLY) — لا شبكةَ ولا متصفح.
@@ -8,10 +8,10 @@ import vm from 'node:vm';
 import path from 'node:path';
 import { ROOT, SRC, moduleLogic } from './harness.mjs';
 
-export const CANVAS = process.env.CANVAS_SRC || path.join(SRC, 'components', '560-canvas-input.js');
+export const CANVAS = process.env.CANVAS_SRC || path.join(SRC, 'systems', '_multi', 'client', '560-canvas-input.js');
 const PROP = { pointerdown: 'onPointerDown', pointermove: 'onPointerMove', pointerup: 'onPointerUp', pointercancel: 'onPointerCancel', click: 'onClick', dblclick: 'onDoubleClick' };
-const SERVICES = ['src/services/060-percent-format.js', 'src/services/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
-  'src/services/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/components/565-page-kit.js'];
+const SERVICES = ['src/services/060-percent-format.js', 'src/systems/_multi/client/390-kpi-primitives.js', 'src/services/400-shift-need.js', 'src/services/440-count.js', 'src/services/410-gate-units.js', 'src/i18n/380-hijri-fallback.js',
+  'src/systems/daily/client/420-round-factory.js', 'src/services/490-emp-key.js', 'src/services/290-activity-log.js', 'src/core/060-bus.js', 'src/systems/staff/client/531-staff-links.js', 'src/systems/staff/client/533-staff-g3.js', 'src/systems/plan/client/403-plan-p3.js', 'src/systems/staff/client/534-staff-g4.js', 'src/systems/daily/client/421-round-links.js', 'src/systems/plan/client/404-plan-p4.js', 'src/i18n/385-calendar.js', 'src/components/565-page-kit.js'];
 
 export function world() {
   const T = { now: 1000 }, timers = [], frames = [], store = new Map();

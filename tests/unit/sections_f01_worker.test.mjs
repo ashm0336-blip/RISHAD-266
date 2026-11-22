@@ -69,10 +69,10 @@ let EMPN = 0;
 const addEmp = (W, ck, d, tag) => { const L = stored(W.env, E(d)) || []; return save(W, ck, { [E(d)]: L.concat([{ eid: 'tst_e_x_' + tag, name: TAG + ' · ' + tag, empno: String(79000 + (++EMPN)) }]) }); };
 const custody = (W, ck, uid, d) => W.C.api('/api/custody?' + new URLSearchParams({ dept: d, uid }), { cookie: ck });
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + 'F01 (1) إنشاءُ قسم: مدير النظام ومديرُ الإدارة الأم (مع بذر سقفه) — والشكلُ المخالف ومن لا يدير الإدارة مرفوضون', needs('dstats'), async () => {
+  test(M + 'F01 (1) إنشاءُ قسم: مدير النظام وحده (V7 · د5-هـ 44) — مديرُ الإدارة الأم وبذرُ سقفه · والشكلُ المخالف ومن لا يدير الإدارة مرفوضون', needs('dstats'), async () => {
     const { W, S } = await setup(mode);
     const L0 = stored(W.env, KD);
     /* مدير النظام: قسمٌ تحت إدارة ✓ · قسمٌ تحت عقدة ✗ · قسمٌ تحت قسم ✗ · قسمٌ بلا أب ✗ */
@@ -83,14 +83,19 @@ for (const mode of ['legacy', 'enforce']) {
       r = await save(W, S.super, { [KD]: L.concat([{ id: 'tst_sbad', name: TAG + ' · ' + label, gid, kind: 'قسم' }]) });
       assert.equal(why(r, KD), 'dept-shape', 'قسمٌ ' + label + ': ' + show(r));
     }
-    /* مديرُ الإدارة الأم: قسمٌ تحت إدارته مع سقفه (لقطةٌ من سقف إدارته) في حفظةٍ واحدة */
+    /* V7 · د5-هـ (44) — قرارُ المالك: الأقسامُ يضيفها مديرُ المنصة وحده. مديرُ الإدارة الأم: قسمٌ تحت إدارته مع سقفه في حفظةٍ واحدة ⇒ مرفوضان (كان مقبولاً) */
     const L1 = stored(W.env, KD), pj = await get(W, S.dm1, [KP]), P1 = val(pj, KP);
     P1.caps = P1.caps || {}; P1.caps.tst_s8 = (P1.caps.tst_d1 || []).slice(0, 3);
     r = await save(W, S.dm1, { [KD]: L1.concat([{ id: 'tst_s8', name: TAG + ' · قسم مدير الإدارة', gid: 'tst_d1', kind: 'قسم' }]), [KP]: P1 });
-    assert.ok(ok(r, KD) && ok(r, KP), 'مديرُ الإدارة يُنشئ قسماً تحت إدارته ببذر سقفه: ' + show(r));
+    assert.ok(!ok(r, KD) && !ok(r, KP), 'مديرُ الإدارة لا يُنشئ قسماً ولا يبذر سقفه: ' + show(r));
+    assert.equal(why(r, KD), 'super');
+    assert.ok(!stored(W.env, KD).some((d) => d.id === 'tst_s8'), 'لم يُكتب القسم');
+    assert.ok(!(stored(W.env, KP).caps || {}).tst_s8, 'ولم يُكتب سقفُه');
+    /* مديرُ المنصة ينشئه (وسقفَه) · ومديرُ الإدارة الأم يكتب في القسم الجديد */
+    r = await save(W, S.super, { [KD]: stored(W.env, KD).concat([{ id: 'tst_s8', name: TAG + ' · قسم مدير الإدارة', gid: 'tst_d1', kind: 'قسم' }]), [KP]: Object.assign(stored(W.env, KP), { caps: Object.assign({}, stored(W.env, KP).caps, { tst_s8: P1.caps.tst_s8 }) }) });
+    assert.ok(ok(r, KD) && ok(r, KP), 'مديرُ المنصة يُنشئ القسمَ وسقفَه: ' + show(r));
     assert.ok(stored(W.env, KD).some((d) => d.id === 'tst_s8' && d.gid === 'tst_d1' && d.kind === 'قسم'));
     assert.deepEqual(stored(W.env, KP).caps.tst_s8, P1.caps.tst_s8);
-    /* …ويكتب في قسمه الجديد */
     r = await save(W, S.dm1, { [E('tst_s8')]: [{ eid: 'tst_e_s8', name: TAG + ' · أول موظف', empno: '78001' }] });
     assert.ok(ok(r, E('tst_s8')), 'مديرُ الإدارة يكتب في قسمه الجديد: ' + show(r));
     /* وما سوى ذلك مرفوض: قسمٌ تحت إدارةٍ أخرى · إدارةٌ جديدة · حذفُ وحدة · سقفٌ أوسع من سقف إدارته · ومديرُ القسم لا يُنشئ قسماً */
@@ -235,7 +240,7 @@ for (const mode of ['legacy', 'enforce']) {
    (أ) إدارةٌ فيها أقسام لا تُحذف — ولا متتابعاً بحذف أقسامها معها في حفظةٍ واحدة (dept-has-sections)
    (ب) الحذفُ النهائيّ للوحدة لمدير المنصة من مسار الحذف الذرّي وحده — الحفظُ العاديّ (ولو من مدير المنصة) لا يحذف وحدة (unit-delete-route)، ولا حذفُ السجل كلِّه
    (ج) القسمُ يضيفه مديرُ إدارته الأم أو مديرُ المنصة — لا مديرُ عقدةٍ أعلى (gm) */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   test(M + 'RISHAD266 أقسام (أ)(ب): لا حذفَ متتابع ولا حذفَ وحدةٍ بالحفظ العادي — والحذفُ الذرّيّ لمدير المنصة باقٍ', async () => {
     const { W, S } = await setup(mode);
@@ -255,18 +260,19 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(!ok(r5, KD), 'مديرُ الإدارة لا يحذف قسمه');
     /* الطريقُ الصحيح (الحذفُ الذرّيّ لمدير المنصة · 409 لإدارةٍ ذات أقسام) يغطّيه F01 (6) أعلاه كما هو */
   });
-  test(M + 'RISHAD266 أقسام (ج): مديرُ عقدةٍ أعلى (gm) لا يضيف قسماً — ومديرُ الإدارة الأم يضيف', async () => {
+  test(M + 'RISHAD266 أقسام (ج) · V7 · د5-هـ (44): لا مديرُ عقدةٍ أعلى (gm) ولا مديرُ الإدارة الأم يضيف قسماً — مديرُ المنصة وحده', async () => {
     const { W, S } = await setup(mode);
     const add = (ck, id) => save(W, ck, { [KD]: stored(W.env, KD).concat([{ id, name: TAG + ' · قسم جديد ' + id, gid: 'tst_d1', kind: 'قسم' }]) });
-    const g = await add(S.gm, 'tst_s9'); assert.ok(!ok(g, KD), 'gm مرفوض: ' + show(g)); assert.equal(why(g, KD), 'mgr');
-    const d = await add(S.dm1, 'tst_s8'); assert.ok(ok(d, KD), 'مديرُ الإدارة الأم يضيف: ' + show(d));
+    const g = await add(S.gm, 'tst_s9'); assert.ok(!ok(g, KD), 'gm مرفوض: ' + show(g)); assert.equal(why(g, KD), 'super');
+    const d = await add(S.dm1, 'tst_s8'); assert.ok(!ok(d, KD), 'مديرُ الإدارة الأم مرفوض (كان يضيف): ' + show(d)); assert.equal(why(d, KD), 'super');
+    const su = await add(S.super, 'tst_s7'); assert.ok(ok(su, KD), 'مديرُ المنصة يضيف: ' + show(su));
   });
 }
 
 /* RISHAD266 · مراجعة المالك على aae024c: علامةُ الاستعادة القادمة من العميل في الحفظ العادي (body.ops backup.restore + سبب) لا تمنح استثناءً من سلامة العلاقات —
    حذفُ وحدةٍ بها مرفوض (unit-delete-route) ولا تبقى حساباتٌ أو مفاتيحُ يتيمة. الاستعادةُ الخادمية المتحقَّقة (019d) تحذف وتنظّف — يغطّيها atomic_restore_review
    («full replacement derives removed department account/session pruning …») */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] RISHAD266 أقسام: علامةُ استعادةٍ من العميل في حفظٍ عادي لا تحذف وحدة ولا تترك يتيماً', async () => {
     const { W, S } = await setup(mode);
     const L0 = stored(W.env, KD), before = JSON.stringify(L0), users0 = JSON.stringify(stored(W.env, K)), keys0 = W.env.DB.q('SELECT COUNT(*) n FROM kv WHERE k LIKE ?', 'bsdept:' + S2 + ':%')[0].n;

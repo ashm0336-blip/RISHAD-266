@@ -1,51 +1,5 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","admin+profile+seized","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","award+irshad+seized","irshad+seized+tasks","dstats+irshad","irshad+seized"]) {
   static _irSessions = new WeakMap();
-  hParts(t) {
-    const e = this._hfmt().formatToParts(t),
-      r = (t) => +e.find((e) => e.type === t).value;
-    return { y: r("year"), m: r("month"), d: r("day") };
-  }
-  hGreg(t, e, r) {
-    let a = new Date(new Date(2026, 5, 16).getTime() + 864e5 * (29.5306 * (12 * (t - 1448) + (e - 1)) + (r - 1)));
-    try {
-      for (let i = 0; i < 12; i++) {
-        const i = this.hParts(a);
-        if (i.y === t && i.m === e && i.d === r) return a;
-        const s = 354.367 * (i.y - t) + 29.5306 * (i.m - e) + (i.d - r);
-        a = new Date(a.getTime() - 864e5 * (Math.round(s) || (s > 0 ? 1 : -1)));
-      }
-    } catch (t) {}
-    return a;
-  }
-  hMonthDays(t, e) {
-    const r = t + "-" + e;
-    if (((this.__hd = this.__hd || {}), this.__hd[r])) return this.__hd[r];
-    let a = 30;
-    try {
-      const r = this.hGreg(t, e, 1),
-        i = this.hParts(new Date(r.getTime() + 25056e5));
-      a = i.y === t && i.m === e ? 30 : 29;
-    } catch (t) {}
-    return ((this.__hd[r] = a), a);
-  }
-  hGregMonthLabel(t, e) {
-    const r = t + "-" + e;
-    if (((this.__hg = this.__hg || {}), this.__hg[r])) return this.__hg[r];
-    let a = "";
-    try {
-      a = this.hGreg(t, e, 15).toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
-    } catch (t) {}
-    return ((this.__hg[r] = a), a);
-  }
-  hGregYearRange(t) {
-    try {
-      const e = this.hGreg(t, 1, 1).getFullYear(),
-        r = this.hGreg(t, 12, 29).getFullYear();
-      return e === r ? e + " م" : e + " – " + r + " م";
-    } catch (t) {
-      return "";
-    }
-  }
   LANGS = [
     "العربية",
     "الإنجليزية",
@@ -101,7 +55,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         const parts = /^bsdept:([^:]+):(.+)$/.exec(key);
         if (parts && parts[1] !== dept) return false;
         const name = parts ? parts[2] : key;
-        return /^bassam_irshad(?:_langs|_locs|_retro)?_v1$/.test(name) || /^bassam_(?:employees|staffing|shift_options|grants|perm_tpls)_v[0-9]+$/.test(name);
+        return /^bassam_irshad(?:_langs|_locs|_retro)?_v1$/.test(name) || /^bassam_(?:employees|shift_options|grants|roles)_v[0-9]+$/.test(name)
+          || (KIVO.bus.read("staff.resources@1", "schedule", "legacy") || []).indexOf(name) !== -1;   /* V7 · د5-د2: مواردُ الجدول يسمّيها مالكُها */
       });
       if (!affected) return;
       this._irReads = new Map();
@@ -359,9 +314,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   loadIrshadLocs() {
     return (this.state.irCatalogs?.catalogs?.locations?.values || []).slice();
   }
-  loadStaffingIr() {
+  loadScheduleIr() {
     try {
-      const e = KIVO.__BS_SRV.operations.get("bassam_staffing_v3"),
+      const e = KIVO.bus.read("staff.schedule@1"),   /* V7 · د5-د2: بغياب مالك الجدول {} */
         r = e && "object" == typeof e ? e : {};
       return r;
     } catch (t) {
@@ -369,11 +324,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
   }
   employeesForShift(t, e, r, a) {
-    if (!this.bsOn("staff"))
+    if (!KIVO.bus.read("staff.enabled@1", this))   /* V7 · د5-د2: بغياب مالك الجدول كالمعطَّل: كلُّ الموظفين */
       return this.loadEmployeesIr()
         .filter((t) => t && t.eid)
         .map((t) => ({ eid: t.eid, name: t.name || "بدون اسم" }));
-    const i = this.loadStaffingIr()[t + "-" + e] || {};
+    const i = this.loadScheduleIr()[t + "-" + e] || {};
     return this.loadEmployeesIr()
       .filter((t) => {
         const e = t && t.eid;
@@ -1494,7 +1449,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irSetShift: (t) => N({ shift: t.target.value, eid: "" }),
       irNoShiftPicked: !O.shift,
       irNoEmpForShift: !!O.shift && 0 === F.length,
-      irNoEmpMsg: this.bsOn("staff") ? "لا يوجد موظف مسكّن في هذه الوردية لهذا اليوم" : "لا يوجد موظفون",
+      irNoEmpMsg: KIVO.bus.read("staff.enabled@1", this) ? "لا يوجد موظف مسكّن في هذه الوردية لهذا اليوم" : "لا يوجد موظفون",
       irHasEmpOpts: !!O.shift && F.length > 0,
       irEmpDisabled: !O.shift || 0 === F.length,
       irEmpOpts: F,
@@ -1560,7 +1515,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         if (!pending && !t.shift) return void this.setState({ irSaveErrMsg: "اختر الوردية أولاً" });
         const e = this.employeesForShift(r, a, t.shift, E).find((e) => e.eid === t.eid);
         if (!pending && !e)
-          return void this.setState({ irSaveErrMsg: this.bsOn("staff") ? "اختر موظفاً من قائمة المسكّنين في هذه الوردية" : "اختر الموظف" });
+          return void this.setState({ irSaveErrMsg: KIVO.bus.read("staff.enabled@1", this) ? "اختر موظفاً من قائمة المسكّنين في هذه الوردية" : "اختر الموظف" });
         const snapshot = JSON.stringify(t), day = [r, a, D].join("-");
         const data = {
           shift: t.shift,

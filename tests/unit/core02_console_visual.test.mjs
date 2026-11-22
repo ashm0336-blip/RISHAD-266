@@ -29,9 +29,11 @@ test('(2) one page title, section titles h3, platform sections on token classes;
   assert.equal(n(SITE, /<h2\b/g), 1, 'one h2 in the console view: the page title');
   assert.match(SITE, /<div class="\{\{conPhCls\}\}">[\s\S]*?<h2 tabindex="-1">\{\{conTitle\}\}<\/h2>/, 'the h2 is the console header title');
   assert.equal(n(SITE, /aria-level=/g), 0, 'no aria-level patches: real heading levels');
-  assert.ok(n(SITE, /<h3 class="adm-pl-h">/g) >= 24, 'every platform section title is an h3');
+  /* V7 · د5-هـ (44): 24 → 21 — أقسامُ المنصة الثلاثة لـ«الوحدات» و«ترتيب الصفحات» حُذفت معهما */
+  /* V7 · د5-ح: 21 → 19 — قسما «الترويسة الموحّدة» و«التذييل» حُذفا مع «الطباعة والتقارير» */
+  assert.ok(n(SITE, /<h3 class="adm-pl-h">/g) >= 19, 'every platform section title is an h3');
   assert.equal(n(SITE, /<h2 style=/g), 0);
-  assert.equal(n(SITE, /class="adm-pl-sec"/g), 24, 'the platform sections use .adm-pl-sec');
+  assert.equal(n(SITE, /class="adm-pl-sec"/g), 19, 'the platform sections use .adm-pl-sec');   /* V7 · د5-هـ (44): 24 → 21 (الوحدات · ترتيب الصفحات حُذفا) · V7 · د5-ح: 21 → 19 (الترويسة الموحّدة · التذييل) */
   assert.ok(n(SITE, /class="adm-pl-in"/g) >= 34, 'platform text fields use .adm-pl-in');
   /* ratchet: S9 took the console view from 878 inline styles / 377 inline font sizes to these; they may only go down */
   const st = n(SITE, /\sstyle="/g), fs = n(SITE, /font-size/g);
@@ -56,13 +58,14 @@ test('(2) one page title, section titles h3, platform sections on token classes;
 test('(3) dialogs are .bs-dlg-box with a name; platform save actions are .bs-btn and a bottom bar on phones', () => {
   assert.equal(n(SITE, /position:fixed;inset:0/g), 0, 'no hand-made overlays in the console view');
   const dl = SITE.match(/<div[^>]*role="dialog"[^>]*>/g) || [];
-  assert.ok(dl.length >= 5, 'the console dialogs are found');
+  /* V7 · د5-هـ (44): 5 → 4 — نافذةُ صلاحيات الموظف (upOn · upClose) حُذفت */
+  assert.ok(dl.length >= 4, 'the console dialogs are found');
   for (const d of dl) {
     assert.match(d, /class="bs-dlg-box\b/, 'dialog box: ' + d.slice(0, 90));
     assert.match(d, /aria-modal="true"/);
     assert.match(d, /aria-label="[^"]+"/);
   }
-  for (const c of ['mgrClose', 'wpClose', 'upClose']) assert.match(SITE, new RegExp('<div class="bs-dlg" onClick="\\{\\{' + c + '\\}\\}">'), c + ' overlay is .bs-dlg');
+  for (const c of ['mgrClose', 'wpClose']) assert.match(SITE, new RegExp('<div class="bs-dlg" onClick="\\{\\{' + c + '\\}\\}">'), c + ' overlay is .bs-dlg');
   assert.match(SITE, /<button type="button" onClick="\{\{plSave\}\}" class="bs-btn bs-btn--primary adm-pl-btn">✓ حفظ ونشر للجميع<\/button>/);
   assert.match(SITE, /<button type="button" onClick="\{\{plDiscard\}\}" class="bs-btn adm-pl-btn">تجاهل<\/button>/);
   assert.match(SITE, /<div class="adm-pl-bar">[\s\S]*?plDiscard[\s\S]*?plSave[\s\S]*?<\/div>/, 'save state and buttons in one bar');

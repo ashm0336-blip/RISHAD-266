@@ -14,7 +14,7 @@
     var u = cur(); if (!u) return null; if (u.role === 'super') return id;
     /* F01: مديرُ الإدارة (حسابُها · حاملُ الشارة) يقف في أقسام إدارته كما في إدارته — والخادمُ يحكم (018 secMgrOf) */
     if ((u.role === 'dept' || (u.role === 'staff' && u.mgr)) && id && D.parentDeptOf && D.parentDeptOf(id) === u.deptId) return id;
-    if (u.role === 'dept' || u.role === 'staff') return u.deptId || null;
+    if (u.role === 'dept' || u.role === 'staff' || u.role === 'display') return u.deptId || null;   /* V7 · د5-هـ (x1): شاشةُ العرض في إدارتها وحدها */
     if (u.role === 'gm') { var gd = gmDepts(u.gid); return gd.some(function(d){ return d.id === id; }) ? id : ((gd[0] || {}).id || null); }
     return null;
   });
@@ -56,6 +56,10 @@
       timer = setInterval(check, 30000);
       try { document.addEventListener('visibilitychange', function(){ if (!document.hidden) check(); }); } catch(e){}
       try { window.addEventListener('focus', check); } catch(e){}
+      /* V7 · د5-هـ (x1): الخروجُ في تبويبٍ آخر من المتصفح نفسِه يُقفل هذا التبويب فوراً — مسحُ علامة الجلسة (storage) أو رسالةُ BroadcastChannel؛
+         بلا رحلة خادم (الكوكي مشتركٌ بين التبويبات فالجلسةُ انتهت هنا أيضاً) */
+      try { window.addEventListener('storage', function(e){ if (e && (e.key === K_SESS || e.key === null) && !e.newValue) check(); }); } catch(e){}
+      try { if (typeof BroadcastChannel === 'function') new BroadcastChannel('bassam-session').onmessage = function(m){ if (m && m.data && m.data.t === 'out') { try { RAW.removeItem.call(localStorage, K_SESS); } catch(e2){} check(); } }; } catch(e){}
     })();
     return;                                        /* مسجّل دخول — التطبيق يعمل */
   }
@@ -266,6 +270,11 @@
           var wait9 = (window.__BS_BOOT && window.__BS_BOOT.cf && srv9 && srv9.flushAsync)
             ? srv9.flushAsync(12000) : Promise.resolve(true);
           return wait9.then(function (okSv) {
+            if (window.__BS_BOOT && window.__BS_BOOT.cf && !okSv && dn9() > d09) {   /* V7 · د5-هـ: flushAsync يعيد false للمرفوض — الرفضُ باسمه (كما كان) لا «تحقق من اتصالك» */
+              say('انتهت مهلةُ تغيير كلمة المرور الأولى في هذه الجلسة — سجّل الدخول من جديد ثم غيّرها');
+              setTimeout(function(){ location.href = '/api/logout'; }, 3500);
+              return;
+            }
             if (window.__BS_BOOT && window.__BS_BOOT.cf && !okSv) {
               sv.disabled = false;
               say('تعذّر حفظ كلمة المرور في الخادم — تحقق من اتصالك وحاول من جديد');
@@ -299,7 +308,7 @@
       if (!B9 || !B9.cf) return;
       var el9 = document.getElementById('bsSrvState');
       if (!el9) return;
-      if (B9.authz === 'unavailable') {   /* KIVO_244 · ADR-003: وضعُ الحماية — الخادمُ لم يستطع التحقق من وضع الصلاحيات فلا دخولَ ولا بيانات حتى يعود */
+      if (B9.authz === 'unavailable' || B9.authz === 'unmigrated') {   /* KIVO_244 · ADR-003: وضعُ الحماية — الخادمُ لم يستطع التحقق من وضع الصلاحيات فلا دخولَ ولا بيانات حتى يعود · V7 · د5-ح: «لم تُرحَّل بعد» (مديرُ المنصة وحده يدخل) */
         el9.textContent = B9.notice || 'النظام في وضع الحماية: تعذّر التحقق من وضع الصلاحيات مؤقتاً — أعد المحاولة بعد قليل.';
         el9.style.color = 'var(--warning-text)'; el9.style.display = ''; el9.dataset.fresh = '1';
       } else if (B9.fresh) {

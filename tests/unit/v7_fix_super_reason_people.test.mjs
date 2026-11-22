@@ -172,7 +172,7 @@ for (const [label, shape, left] of [
 /* import.replace — employee import with mode 'replace': the four stored employees are replaced by one new record and the daily report
    of the unit (one day seeded) is emptied by the same commit. */
 const NEW = { eid: 'TEST_ONLY_new_1', name: 'TEST_ONLY new one' };
-const replaceShape = () => ({ finalRows: [NEW], import: { mode: 'replace', year: T.y, month: T.m, schedule: [], templates: [] } });
+const replaceShape = () => ({ finalRows: [NEW], import: { mode: 'replace', year: T.y, month: T.m, schedule: [] } });
 const seedReport = (f) => replaceOperationalFixture(f.env, DK, { [DAY]: { created: 1, shifts: {} } });
 const reportDays = (f) => Object.keys(inspectOperationalFixture(f.env, DK) || {}).length;
 test('import.replace — super without a reason replaces · manager without is refused · manager with a reason replaces', async () => {

@@ -22,15 +22,6 @@
   /* ── daily · dreport · irshad · plan · seized · staff · tasks (1) ── */
   T["daily+dreport+irshad+plan+seized+staff+tasks"] = function (B) {
     return class extends B {
-      _hfmt() {
-        if (void 0 === this.__hf)
-          try {
-            this.__hf = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" });
-          } catch (t) {
-            this.__hf = null;
-          }
-        return this.__hf;
-      }
     };
   };
   /* ── dreport · irshad · planning · profile · seized · staff · tasks (1) ── */
@@ -62,20 +53,6 @@
   /* ── daily · plan · seized · staff (2) ── */
   T["daily+plan+seized+staff"] = function (B) {
     return class extends B {
-      hGregYearRange(t) {
-        try {
-          const e = this.hGreg(t, 1, 1).getFullYear(),
-            s = this.hGreg(t, 12, 29).getFullYear();
-          return e === s ? e + " م" : e + " – " + s + " م";
-        } catch (t) {
-          return "";
-        }
-      }
-      hParts(t) {
-        const e = this._hfmt().formatToParts(t),
-          s = (t) => +e.find((e) => e.type === t).value;
-        return { y: s("year"), m: s("month"), d: s("day") };
-      }
     };
   };
   /* ── admin · profile · seized (1) ── */
@@ -151,19 +128,6 @@
   /* ── irshad · seized · tasks (1) ── */
   T["irshad+seized+tasks"] = function (B) {
     return class extends B {
-      hToday() {
-        try {
-          const t = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-              year: "numeric",
-              month: "numeric",
-              day: "numeric",
-            }).formatToParts(new Date()),
-            e = (e) => +t.find((t) => t.type === e).value;
-          return { y: e("year"), m: e("month"), d: e("day") };
-        } catch (t) {
-          return KIVO.BassamHijri ? KIVO.BassamHijri.now() : { y: 1448, m: 2, d: 1 };
-        }
-      }
     };
   };
   /* ── admin · seized (1) ── */
@@ -512,7 +476,9 @@
         if (!e) return false;
         const s = this._markKinds();
         if (s.includes(e)) return true;
-        const result = await KIVO.__BS_SRV.operations.commit(this, "mark-kind", { kind: e }, draft => draft.set("bassam_mark_kinds_v1", [...s, e]));
+        /* V7 · د5-د2: كتالوجُ أنواع المعالم يملكه التشغيلُ الميداني — يُكتب بأمره داخل المسودة؛ بغيابه لا إضافة */
+        if (!KIVO.bus.has("plan.markKinds.set@1")) return false;
+        const result = await KIVO.__BS_SRV.operations.commit(this, "mark-kind", { kind: e }, draft => KIVO.bus.call("plan.markKinds.set@1", { kinds: [...s, e] }, draft));
         if (!result || result.ok !== 1) { this.bsToast("لم يصل تأكيد حفظ النوع — أعد الإجراء نفسه للتحقق من المسودة."); return false; }
         return true;
       }
@@ -557,7 +523,7 @@
       _markKinds() {
         let t = ["دورات مياه", "سلالم", "مصاعد", "سبيل", "نقطة إسعاف", "مخرج طوارئ", "نقطة تجمّع"];
         try {
-          const e = KIVO.__BS_SRV.operations.text("bassam_mark_kinds_v1");
+          const e = KIVO.bus.read("plan.markKinds@1");   /* V7 · د5-د2: نصُّ الكتالوج من مالكه؛ بغيابه الأنواعُ الافتراضية */
           if (e) {
             const s = JSON.parse(e);
             Array.isArray(s) && s.length && (t = s);
@@ -599,15 +565,6 @@
         const e = this.GATE_LOCS.find((e) => e[0] === t);
         return e ? e[1] : null;
       }
-      hGregMonthLabel(t, e) {
-        const s = t + "-" + e;
-        if (((this.__hg = this.__hg || {}), this.__hg[s])) return this.__hg[s];
-        let n = "";
-        try {
-          n = this.hGreg(t, e, 15).toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" });
-        } catch (t) {}
-        return ((this.__hg[s] = n), n);
-      }
       zoneOptList(t) {
         const e = (this.state.zoneOpts || {})[t];
         return Array.isArray(e) ? e.filter((t) => ("string" == typeof t && t) || (t && "object" == typeof t && t.n)) : [];
@@ -621,8 +578,11 @@
         return 2;
       }
       WEEKDAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+      /* V7 · د5-د: كان يعيد الافتراضي دائماً فلا يُقرأ الحدُّ المحفوظ أبداً. الحدُّ يملكه الجدولُ الشهري ويوفّره قراءةً معلنة؛
+         بلا حدٍّ محفوظ (أو بغياب الجدول) الافتراضي. */
       loadPermLimit() {
-        return this.PERM_DEF_LIMIT;
+        const t = KIVO.bus.read("staff.permLimit@1");
+        return "number" == typeof t && isFinite(t) ? t : this.PERM_DEF_LIMIT;
       }
     };
   };
@@ -693,15 +653,43 @@
   /* ── employees · staff (2) ── */
   T["employees+staff"] = function (B) {
     return class extends B {
-      PERM_TPLS() {
-        /* القوالب ورقةٌ بيضاء يكتبها المستخدم من «قوالب الصلاحيات» — لا قوالب مدمجة تُزرع */ try {
-          const t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-          if (Array.isArray(t)) {
-            const e = KIVO.BassamPerm;
-            return e && e.tplsMigrate ? e.tplsMigrate(t) : t;
-          }
-        } catch (t) {}
-        return [];
+      /* V7 · د5-هـ (44): أدوارُ الإدارة النشطة من محرّك الأدوار (KIVO.Perm44) — قوالبُ الصلاحيات حُذفت. بغياب المحرّك: لا أدوار ولا إسناد */
+      _p44Dept(did) {
+        try {
+          return did || (KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : "") || "";
+        } catch (t) {
+          return "";
+        }
+      }
+      PERM_ROLES(did) {
+        try {
+          const P4 = KIVO.Perm44, R = P4 && "function" === typeof P4.rolesOf ? P4.rolesOf(this._p44Dept(did)) : null, L = R && R.roles;   /* rolesOf → {roles, people} */
+          return Array.isArray(L) ? L.filter((r) => r && r.id) : [];
+        } catch (t) {
+          return [];
+        }
+      }
+      /* دورُ الشخص (كائنُ الدور أو null) */
+      PERM_ROLE_OF(ekey, did) {
+        try {
+          const P4 = KIVO.Perm44;
+          return (ekey && P4 && "function" === typeof P4.roleOf && P4.roleOf(ekey, this._p44Dept(did))) || null;
+        } catch (t) {
+          return null;
+        }
+      }
+      /* إسنادُ دورٍ (أو سحبُه بـ null) — المسارُ الواحد KIVO.Perm44.assign: مسودةٌ واحدة تُثبَّت مرةً (الدورُ والمنحُ المترجَم معاً).
+         ekey مفتاحٌ واحد، أو خريطةٌ {ekey: roleId|null} للإسناد الجماعي في الحفظة نفسِها. يعيد وعداً بـ{ok, n, err?} */
+      PERM_ROLE_SET(ekey, roleId, did) {
+        const P4 = KIVO.Perm44;
+        if (!P4 || "function" != typeof P4.assign) return Promise.resolve({ ok: !1, err: "محرّك الأدوار غير متاح" });
+        const map = ekey && "object" === typeof ekey ? ekey : { [ekey]: roleId || null };
+        const why = (r) => (r && r.ok) || !r ? r : Object.assign({}, r, { err: "denied" === r.err ? "رفض الخادم حفظ الدور — راجع صلاحيتك" : "no-role" === r.err ? "الدور لم يعد موجوداً" : "تعذّر حفظ الدور" });
+        try {
+          return Promise.resolve(P4.assign(this._p44Dept(did), map)).then(why, () => ({ ok: !1, err: "تعذّر حفظ الدور" }));
+        } catch (t) {
+          return Promise.resolve({ ok: !1, err: "تعذّر حفظ الدور" });
+        }
       }
     };
   };
@@ -759,18 +747,7 @@
   /* ── plan · staff (3) ── */
   T["plan+staff"] = function (B) {
     return class extends B {
-      curHijri() {
-        try {
-          const t = new Date();
-          return {
-            y: parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(t)),
-            m: parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(t)),
-          };
-        } catch (t) {
-          const e = KIVO.BassamHijri ? KIVO.BassamHijri.now() : { y: 1448, m: 2, d: 1 };
-          return { y: e.y, m: e.m };
-        }
-      }
+      curHijri() { const t = KIVO.BassamCal.hToday(); return { y: t.y, m: t.m }; }   /* V7 · د5-د2: سنةُ اليوم وشهرُه من الخدمة (كانت تبني مُنسِّقَين هنا — الناتجُ والتراجعُ هما هما) */
       gregOf(t, e) {
         return this.hGregMonthLabel(t, e + 1);
       }
@@ -781,6 +758,18 @@
   };
   var memo = new Map();
   /* base(DCLogic, سمات) ⇒ صنفٌ أساس: DCLogic ثم السماتُ بترتيبها (لا اسمَ يتكرّر بين سمات وحدةٍ واحدة — مُثبَتٌ عند التوليد) */
+  /* V7 · د5-د: التقويم — نسخةٌ واحدة لكل دالة في خدمة القاعدة KIVO.BassamCal (i18n/385-calendar.js)؛ كلُّ صفحةٍ ترث هذه المناديات، ولا تحمل صفحةٌ نسخةً.
+     (كانت منسوخةً في الصفحات وفي سماتٍ هنا؛ ومن يحتاج نسخةَ الساعة 12 أو التراجعَ يعيد تعريفَ المنادي بسطرٍ واحد.) */
+  function calendar(B) {
+    return class extends B {
+      hParts(t) { return KIVO.BassamCal.hParts(t); }
+      hGreg(t, e, s) { return KIVO.BassamCal.hGreg(t, e, s); }
+      hGregMonthLabel(t, e) { return KIVO.BassamCal.hGregMonthLabel(t, e); }
+      hGregYearRange(t) { return KIVO.BassamCal.hGregYearRange(t); }
+      hToday() { return KIVO.BassamCal.hToday(); }
+      hMonthDays(t, e) { return KIVO.BassamCal.hMonthDays(t, e); }   /* V7 · د5-د2: كانت منسوخةً في سبع صفحات؛ صفحتا الحساب بالأيام تعيدان تعريفَها بنسخة الظهر */
+    };
+  }
   function base(DCLogic, names) {
     var k = names.join("|"),
       hit = memo.get(DCLogic);
@@ -789,7 +778,7 @@
       memo.set(DCLogic, hit);
     }
     if (hit.has(k)) return hit.get(k);
-    var C = DCLogic;
+    var C = calendar(DCLogic);
     for (var i = 0; i < names.length; i++) {
       var f = T[names[i]];
       if (!f) throw new Error("BassamPageKit: سمةٌ مجهولة " + names[i]);

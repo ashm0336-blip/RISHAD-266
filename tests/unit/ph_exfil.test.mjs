@@ -62,7 +62,7 @@ const bodiesFor = (users) => [
   { keys: [K, 'bassam_perms_v1', 'bassam_depts_v1'], snap: 'x', force: true, seed: 'a'.repeat(64), hash: 'b'.repeat(64), generated: Date.now() },
 ];
 const QS = ['', '?keys=' + K, '?since=0', '?act=plan', '?act=plan&parts=identity,scope,perm&inferable=1', '?act=status', '?act=rollback', '?act=apply', '?k=' + K, '?keys=' + K + ',bassam_perms_v1&since=0', '?q=' + encodeURIComponent('p2$'), '?limit=500&act=all&before=9999999999999&count=500&kind=all&dept=tst_d1&res=users&uid=tst_emp1&decision=all&n=500&wait=0', '?bsPreview=login'];
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
 const EX = mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow' } : {};
 test('[' + mode + '] (أ) كلُّ مسار × كلُّ دور × GET/POST بأجسامٍ عدائية: لا بصمةَ في أيّ استجابة ولا في السجل', GUARDED, async () => {
   const { env, C, S, users, hashes } = await world(EX);

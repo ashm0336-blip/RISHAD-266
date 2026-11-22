@@ -11,7 +11,9 @@
      {"path": [...], "key": k, "after": n, "seq": i, "value": v}    إدراجُ مفتاحٍ في كائن: بعد n مفتاحاً من مفاتيح القاعدة
      {"path": [...], "set": v, "with": [أنظمة أخرى]}                استبدالُ قيمةٍ نصية (تُطبَّق بحضور النظام ومن في with؛ وإلا يبقى نصُّ القاعدة)
      {"path": [...], "add": n}                                      نصيبُ النظام من عدّادٍ لا صيغةَ له: يُجمع على نصيب القاعدة (المكتوب في ملف القاعدة)
-   path: مفاتيحُ كائنات · أو {"by": حقل, "eq": قيمة} لعنصر مصفوفةٍ في القاعدة · أو رقمٌ (موضعٌ في مصفوفة القاعدة).
+     {"path": [...], "sub": مقطع, "by": بديل}                       V7 · د5-د2: ذكرُ النظام داخل نصٍّ للقاعدة — يُبدَّل المقطعُ (يرد مرةً واحدة) بعد عمليات set؛ نصُّ القاعدة يُكتب بلا ذكره
+     … + "needs": [أنظمة]                                           V7 · د5-د2: العمليةُ تستهدف مدخلاً أدرجه نظامٌ آخر: تُهمل بغيابه، وتُحلّ مساراتُها في جولةٍ ثانية بعد إدراجه (after يعدّ عناصرَ المدخل كما أدرجه مالكُه)
+   path: مفاتيحُ كائنات · أو {"by": حقل, "eq": قيمة, "and"?: {حقل: قيمة}} لعنصر مصفوفةٍ في القاعدة · أو رقمٌ (موضعٌ في مصفوفة القاعدة).
    الأعدادُ (counts) تُحسب من المجموع — بالأنظمة الأربعة تساوي المكتوبَ في الوثيقة المرجعية حرفاً.
    عدّادا الحراسة اللذان لا يُحسبان من الصفوف — emittedKeys (المفاتيحُ التي يُصدرها مصنِّفُ الكتابة) وcoveredResources (المواردُ التي لها مصنِّف) —
    يعلن كلُّ نظامٍ نصيبَه منهما (add)، والقاعدةُ نصيبَها في data.base.json؛ المجموعُ بالأربعة 122 و20.
@@ -46,12 +48,22 @@ def declared(S):
             d = _load(p)
             if d.get('system') != k: raise SystemExit('✘ %s: system = %r ≠ اسم المجلد' % (p, d.get('system')))
             out[k] = d.get('docs', {})
+    # V7 · د5-ح (العدسات): القطعةُ المشتركة src/systems/_shared/<key>/permissions.json تُطبَّق ما حضر أحدُ مالكيها (shared.json ← owners)،
+    #            باسم «_shared/<key>» — صفوفُها إدراجٌ كإدراج الأنظمة، وعملياتُ الأنظمة التي تمسّ صفوفَها تحمل needs: ["_shared/<key>"].
+    present = set(out) | set(systems(S)); sd = os.path.join(S, 'systems', '_shared')
+    for k in sorted(os.listdir(sd)) if os.path.isdir(sd) else []:
+        p = os.path.join(sd, k, 'permissions.json'); sj = os.path.join(sd, k, 'shared.json')
+        if not (os.path.isfile(p) and os.path.isfile(sj)): continue
+        if not set(_load(sj).get('owners') or []) & present: continue
+        d = _load(p)
+        if d.get('system') != '_shared/' + k: raise SystemExit('✘ %s: system = %r ≠ _shared/%s' % (p, d.get('system'), k))
+        out['_shared/' + k] = d.get('docs', {})
     return out
 
 def _walk(node, path, where):
     for step in path:
         if isinstance(step, dict):
-            hit = [x for x in node if isinstance(x, dict) and x.get(step['by']) == step['eq']]
+            hit = [x for x in node if isinstance(x, dict) and x.get(step['by']) == step['eq'] and all(x.get(k) == v for k, v in (step.get('and') or {}).items())]   # د5-هـ: and — حقولٌ أخرى تُطابَق معه (عنصرٌ لا يتفرّد بحقلٍ واحد: ورقةٌ وفعل)
             if len(hit) != 1: raise SystemExit('✘ %s: المسار %s — %d عنصراً يطابق %s=%r' % (where, json.dumps(path, ensure_ascii=False), len(hit), step['by'], step['eq']))
             node = hit[0]
         else:
@@ -59,10 +71,9 @@ def _walk(node, path, where):
             except (KeyError, IndexError, TypeError): raise SystemExit('✘ %s: المسار %s غير موجود في القاعدة عند %r' % (where, json.dumps(path, ensure_ascii=False), step))
     return node
 
-def apply(base, ops_by_sys, name='?'):
-    """القاعدة + عمليات الأنظمة الحاضرة → الوثيقة المجموعة. المسارات تُحلّ على القاعدة قبل أي إدراج."""
-    doc = copy.deepcopy(base); present = set(ops_by_sys)
-    ins = {}; sets = []; holders = {}
+def _round(doc, ops_by_sys, present, name):
+    """جولةٌ واحدة: المسارات تُحلّ على الوثيقة كما هي عند بدء الجولة، قبل أي إدراجٍ فيها."""
+    ins = {}; sets = []; subs = []; holders = {}
     for sysk in sorted(ops_by_sys):
         for op in ops_by_sys[sysk]:
             where = '%s/permissions.json (%s)' % (sysk, name)
@@ -74,6 +85,8 @@ def apply(base, ops_by_sys, name='?'):
                 if all(w in present for w in op.get('with', [])):
                     parent = _walk(doc, op['path'][:-1], where); sets.append((parent, op['path'][-1], op['set'], where))
                 continue
+            if 'sub' in op:
+                parent = _walk(doc, op['path'][:-1], where); subs.append((parent, op['path'][-1], op, where)); continue
             cont = _walk(doc, op['path'], where)
             if ('key' in op) != isinstance(cont, dict): raise SystemExit('✘ %s: المسار %s — نوعُ الحاوية لا يطابق العملية' % (where, json.dumps(op['path'], ensure_ascii=False)))
             holders[id(cont)] = cont; ins.setdefault(id(cont), []).append((op['after'], op['seq'], sysk, op))
@@ -81,6 +94,10 @@ def apply(base, ops_by_sys, name='?'):
         tgt = _walk(parent, [last], where)   # يتحقق من الوجود
         if isinstance(last, dict): parent[parent.index(tgt)] = val
         else: parent[last] = val
+    for parent, last, op, where in subs:   # بعد set: المقطعُ يُبحث عنه في النص القائم (نصُّ القاعدة أو ما استبدله نظامٌ آخر) ويجب أن يرد مرةً واحدة
+        cur = _walk(parent, [last], where)
+        if not isinstance(cur, str) or cur.count(op['sub']) != 1: raise SystemExit('✘ %s: sub — المقطع %r لا يرد مرةً واحدة عند %s' % (where, op['sub'], json.dumps(op['path'], ensure_ascii=False)))
+        parent[last] = cur.replace(op['sub'], op['by'])
     for cid, items in ins.items():
         cont = holders[cid]; items.sort(key=lambda x: (x[0], x[1], x[2]))
         if isinstance(cont, list):
@@ -99,6 +116,24 @@ def apply(base, ops_by_sys, name='?'):
                     cont[k] = items[i][3]['value']; i += 1
                 if n < len(base_keys): cont[base_keys[n][0]] = base_keys[n][1]
             if i != len(items): raise SystemExit('✘ %s: after أكبر من عدد مفاتيح القاعدة (%d)' % (name, len(base_keys)))
+
+def apply(base, ops_by_sys, name='?'):
+    """القاعدة + عمليات الأنظمة الحاضرة → الوثيقة المجموعة. المسارات تُحلّ على القاعدة قبل أي إدراج.
+       V7 · د5-د2: عمليةٌ تحمل needs تستهدف مدخلاً يملكه نظامٌ آخر — تُهمل بغيابه، وتُطبَّق في جولةٍ ثانية على ما جمعته الأولى."""
+    doc = copy.deepcopy(base); present = set(ops_by_sys)
+    ops_by_sys = copy.deepcopy(ops_by_sys)   # الجولاتُ التالية تُدرج داخل قيمٍ أدرجتها السابقة: نسخةٌ كي لا تتبدّل عملياتُ المصدر
+    # V7 · د5-ح: الجولة = عددُ ما تنتظره العملية: needs نظامٍ آخر (+1) · needs قطعةٍ مشتركة «_shared/…» (+1) — فما يمسّ صفاً أدرجته القطعةُ
+    #            يُطبَّق بعد إدراجه، وما ينتظر نظاماً أدرج داخل صفّ القطعة يُطبَّق بعدهما. بلا قطعة: جولتان كما كانتا.
+    def lvl(op):
+        n = op.get('needs') or []
+        return (1 if any(not x.startswith('_shared/') for x in n) else 0) + (1 if any(x.startswith('_shared/') for x in n) else 0)
+    top = 0; rounds = {}
+    for k, v in ops_by_sys.items():
+        for op in v:
+            if op.get('needs') and not all(n in present for n in op['needs']): continue
+            L = lvl(op); top = max(top, L); rounds.setdefault(L, {}).setdefault(k, []).append(op)
+    for L in range(top + 1):
+        if L in rounds: _round(doc, rounds[L], present, name)
     return doc
 
 # ── الأعداد: تُحسب من المجموع (بالأنظمة الأربعة = المكتوب في الوثيقة المرجعية) ──────────────────────────────────────

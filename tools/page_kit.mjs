@@ -22,6 +22,8 @@ const [SPEC, MODE] = [process.argv[2], process.argv[3] || ''];
 if (!SPEC) { console.error('usage: node tools/page_kit.mjs <spec.json> [--write|--check]'); process.exit(2); }
 const spec = JSON.parse(fs.readFileSync(path.resolve(ROOT, SPEC), 'utf8'));
 const REF = process.env.KIVO_KIT_REF || spec.ref, DEAD = spec.dead || {};
+const UNIFIED = (spec.unified && spec.unified.names) || [];
+if (UNIFIED.length) { const svc = fs.readFileSync(path.resolve(ROOT, spec.unified.service), 'utf8'); for (const n of UNIFIED) if (!new RegExp('\\b' + n + '\\b').test(svc)) { console.error('✘ unified: ' + n + ' غيرُ معرَّف في ' + spec.unified.service); process.exit(1); } }
 const MOD = 'src/modules', KIT = 'src/components/565-page-kit.js';
 const git = (a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8', maxBuffer: 256 << 20 });
 /* الكودُ الميت: الاسمُ لا يرد في src عند المرجع إلا موضعَ تعريفه */
@@ -136,6 +138,9 @@ function prove(getMod, kitSrc) {
     const eff = new Map(); for (const t of tr) { if (!traitM[t]) { errs.push(m + ': سمةٌ مجهولة ' + t); continue; } for (const x of traitM[t]) { const k = x.kind + ' ' + x.key; if (eff.has(k)) errs.push(m + ': اسمٌ مكرّر بين السمات ' + k); eff.set(k, x.h); } }
     for (const x of cur.methods) eff.set(x.kind + ' ' + x.key, x.h);   /* الخاصّ يعلو */
     const want = new Map(REFM[m].methods.map(x => [x.kind + ' ' + x.key, x.h]));
+    /* V7 · د5-د: ما وُحِّد في خدمة قاعدة (spec.unified) خرج من الصفحات والسمات معاً — لا يُقارَن بنسخ المرجع المحذوفة.
+       برهانُه: الخدمةُ تعرّف كلَّ اسم، وما بقي في الصفحات منادٍ بسطرٍ واحد (tests/unit/v7_d5_calendar.test.mjs ⑤)، ومخرجُه = نسخ المرجع (الاختبار نفسُه ①–④). */
+    for (const n of UNIFIED) { want.delete('method ' + n); eff.delete('method ' + n); }
     for (const [k, h] of want) if (eff.get(k) !== h) errs.push(m + ': ' + k + (eff.has(k) ? ' تغيّر' : ' غائب'));
     for (const k of eff.keys()) if (!want.has(k)) errs.push(m + ': ' + k + ' زائد');
     /* ما سوى المناهج في الوحدة كما هو: نصُّ الملف بعد حذف المناهج المنقولة من المرجع = النصُّ الحالي (عدا رأس الصنف) */

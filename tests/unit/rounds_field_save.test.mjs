@@ -69,29 +69,11 @@ test('[enforce] ولا يُسنِد نفسَه إلى عنصرٍ غيره: ال�
 });
 
 /* الوضعُ القديم: لا إسقاط — يرى الراصدُ كلَّ شيء ويُحكم على ما أرسله حرفاً (018 fieldObsOnly) — كما كان */
-test('[legacy] تعديلُه على عنصره يُحفظ · وعناصرُ بلا uid كذلك · والكتابةُ في غيرِ المسنَد لا تُكتب (تعود من الخادم)', async () => {
-  saved((await attempt('legacy', () => {}, (v, day) => own(v[day]))).r);
-  saved((await attempt('legacy', (x, day) => { x[day].d[0].zones.forEach((z) => { delete z.uid; z.code = 'TEST_ONLY SAME'; }); }, (v, day) => own(v[day]))).r);
-  /* RISHAD266 (البلاغ · الحالة ١ في الوضع القديم): الكتابةُ في عنصرٍ غيرِ مسنَد لا تُحفظ — تعود من الخادم ويُحفظ تعديلُه هو (كالإنفاذ: «يُحفظ الباقي ويعود المحجوب»).
-     كانت تُرفض الحفظةُ كلُّها (403 page) فيضيع تعديلُه على عنصره بسبب حالةٍ نسختها الواجهة */
-  const t = await attempt('legacy', () => {}, (v, day) => { own(v[day]); v[day].d[0].zones[1].cWhy = 'TEST_ONLY عبث'; });
-  saved(t.r); assert.equal(t.after.d[0].zones[0].fst, 'closed', 'تعديلُه على عنصره محفوظ');
-  assert.deepEqual(pick(t.after.d[0].zones[1]), pick(t.before.d[0].zones[1]), 'وحقلُ العنصر غيرِ المسنَد كما في الخادم');
-});
+/* V7 · د5-ح (القفل): حُذفت حالةٌ «[legacy]» تثبّت مسارَ القرار القديم المحذوف: تعديلُه على عنصره يُحفظ · وعناصرُ بلا uid كذلك · والكتابةُ في غيرِ المسنَد لا تُكتب (تعود … */
 
-test('[legacy] (١) حالةٌ منسوخةٌ من الخطة على بابٍ غيرِ مسنَد: يُحفظ تعديلُه ولا تُكتب حالةُ الباب', async () => {
-  const { r, after, before } = await attempt('legacy', (x, day) => { x[day].d[0].gates[0].emp = []; }, (v, day) => { own(v[day]); Object.assign(v[day].d[0].gates[0], { fst: 'closed', closed: true }); });
-  saved(r);
-  assert.equal(after.d[0].zones[0].fst, 'closed', 'تعديلُه محفوظ');
-  assert.deepEqual(pick(after.d[0].gates[0]), pick(before.d[0].gates[0]), 'وحالةُ الباب غيرِ المسنَد كما في الخادم');
-});
+/* V7 · د5-ح (القفل): حُذفت حالةٌ «[legacy]» تثبّت مسارَ القرار القديم المحذوف: (١) حالةٌ منسوخةٌ من الخطة على بابٍ غيرِ مسنَد: يُحفظ تعديلُه ولا تُكتب حالةُ الباب', asyn… */
 
-test('[legacy] ولا يُسنِد نفسَه إلى عنصرٍ غيره · ولا يحذف عنصراً: الرفضُ باقٍ ولا يُكتب شيء', async () => {
-  const a = await attempt('legacy', () => {}, (v, day) => { own(v[day]); v[day].d[0].zones[1].emp = (v[day].d[0].zones[1].emp || []).concat(['tst_e_field']); });
-  assert.equal(a.r.status, 403, why(a.r)); assert.deepEqual(a.after, a.before);
-  const b = await attempt('legacy', () => {}, (v, day) => { own(v[day]); v[day].d[0].zones.splice(1, 1); });
-  assert.equal(b.r.status, 403, why(b.r)); assert.deepEqual(b.after, b.before);
-});
+/* V7 · د5-ح (القفل): حُذفت حالةٌ «[legacy]» تثبّت مسارَ القرار القديم المحذوف: ولا يُسنِد نفسَه إلى عنصرٍ غيره · ولا يحذف عنصراً: الرفضُ باقٍ ولا يُكتب شيء', async () =>… */
 
 /* RISHAD266 (F24 في الوضع القديم · حالةُ البلاغ ٣): تسكينٌ بـname الموظف أو nid — يُعرف في الحفظ القديم أيضاً (054 يحمّل سجلَّ الموظفين · 018 fieldObsOnly)،
    والكتابةُ في عنصرٍ غيرِ مسنَدٍ إليه بأيٍّ من رموزه ما زالت تُرفض */

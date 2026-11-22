@@ -14,7 +14,7 @@ OUT = os.path.join(ROOT, 'docs/routes.md')
 SPECIAL = {  # مساراتٌ خارج سجلّ الصفحات بحكم طبيعتها — حارسُها في الغلاف نفسِه (root-logic._pageAllowed)
     'profile':  ('صفحتي', 'profile', 'كلُّ صاحب جلسة (الصفحةُ الشخصية · المرتدُّ الأخير)', 'خارج القائمة — من قائمة المستخدم'),
     'sysadmin': ('مركز إدارة رشاد', 'admin', 'مسؤول المنصة وحده (isSuper) — وإلا لا يُفتح', 'من القائمة الجانبية «🛡 مركز إدارة رشاد» · #/sysadmin/<تبويب>'),
-    'kpis':     ('مؤشرات الإدارة', 'kpis', 'من يملك ورقةً من أوراق لوحاتها (navLeaves("kpis") · kpiPanelOk) — مدير النظام دائماً', 'حاويةُ عرضٍ في القائمة (navOrder)'),
+    'kpis':     ('مؤشرات الإدارة', 'kpis', 'من يملك ورقةً من أوراق لوحاتها (navLeaves("kpis") · kpiPanelOk) — ولمدير المنصة ما لم يُطفأ (د5-ح)', 'حاويةُ عرضٍ في القائمة (navOrder)'),
 }
 
 def build():
@@ -29,15 +29,17 @@ def build():
             pg = lf.get('page')
             if pg: view.setdefault(pg, []).extend(k for k in lf.get('keys', []) if k.endswith('.view'))
     rows, bad = [], []
+    navOf = dict((x['key'], x['nav']) for x in M['pages'])
     for p in M['pages']:
         nav, key = p['nav'], p['key']
+        up = p.get('under') if p.get('under') in navOf else None   # V7 · د5-هـ: صفحةٌ أبوها غائب (نظامٌ محذوف) صفحةٌ عليا
         title = M['routeNames'].get(nav)
         owner = mods.get(nav) or ('shell (src/layouts)' if nav in ('links', 'help') else None)
         vk = sorted(set(view.get(key, [])))
         if key in ('links', 'help'): guard = 'ورقةُ الصفحة «' + key + '» (P.can("' + key + '","view")) — ' + ('، '.join(vk) if vk else 'بلا مفاتيح عرضٍ في الشجرة')
         else: guard = 'P.can("' + key + '","view")' + (' ⇐ ' + '، '.join(vk[:6]) + (' …' if len(vk) > 6 else '') if vk else '')
         tabs = [t['key'] for t in p.get('tabs', [])] + [s['key'] for s in p.get('subs', [])]
-        beh = ('تحت «' + M['routeNames'].get(dict((x['key'], x['nav']) for x in M['pages'])[p['under']], p['under']) + '»' if p.get('under') else ('في القائمة' if key in M['navOrder'] or nav in M['navOrder'] else 'رابطٌ في التذييل/القائمة الثانوية'))
+        beh = ('تحت «' + M['routeNames'].get(navOf[up], up) + '»' if up else ('في القائمة' if key in M['navOrder'] or nav in M['navOrder'] else 'رابطٌ في التذييل/القائمة الثانوية'))
         ta = M['tabAddr'].get(key, M['tabAddr'].get(nav))
         if ta == 1: beh += ' · العنوانُ يحمل التبويب #/' + nav + '/<تبويب>'
         elif ta: beh += ' · العنوانُ يحمل ' + ' · '.join('#/' + nav + '/' + t for t in ta)

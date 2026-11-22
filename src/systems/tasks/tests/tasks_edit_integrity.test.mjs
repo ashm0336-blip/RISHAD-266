@@ -36,6 +36,11 @@ async function tasksPage(logicSrc, storeJson, emps, W, ck) {
   KIVO.BassamDepts = { active: () => 'tst_d1' };
   class DCLogic { constructor() { this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); cb && cb(); } }
   ctx.DCLogic = DCLogic;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/core/060-bus.js'), 'utf8'), ctx);   /* V7 · د5-د: الناقل (قلب المنصة) وروابطُ الجدول الشهري عليه — الصفحاتُ تسأل بالاسم */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast() {} bsAck() { return Promise.resolve(true); } };
   vm.runInContext(logicSrc + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
@@ -72,7 +77,7 @@ async function editTitleOfDoneTask(logicSrc, mode) {
   return { row, sent, img: W.env.DB.q('SELECT k FROM imgs WHERE k = ?', IMG_ME).length };
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] (أ) العيبُ على KIVO_263: واجهتُه تُسقط التوثيق (العمود 21) عند تعديل عنوانِ مهمةٍ منجزة — والخادمُ (F-10) يعيده ولا يكنس الصورة', { skip: ref263 ? false : 'لا تاريخ git (KIVO_263)' }, async () => {
     const r = await editTitleOfDoneTask(ref263, mode);
     assert.equal(r.sent.length, 20, 'العيبُ في واجهة 263: الصفُّ المعدَّل يُرسل بـ20 عموداً'); assert.equal(r.sent[21], undefined, 'والتوثيقُ ساقطٌ ممّا ترسله');

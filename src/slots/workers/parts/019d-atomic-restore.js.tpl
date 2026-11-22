@@ -115,13 +115,12 @@ async function rsReferenceSnapshot(env, uid, options) {
   var currentActor = actorFromKeys(inputKeys, uid);
   if (!currentActor) throw rsError('session', 401);
   var currentMode = await enfModeOf(env);
-  if (currentMode.mode === 'unavailable') throw rsError('authz-unavailable', 503);
-  if (currentMode.mode === 'enforce') {
-    currentActor.enf = currentMode;
-    // The actor's explicit grants of every department it reaches (a sector manager's branch) are part of its authority.
-    if (scope) await rsScopeKV(env, (currentActor.u.role === 'super' ? [] : enfDeptsOf(currentActor)).map(enfGrantsKey));
-    enfAttachGrantsKeys(currentActor, inputKeys);
-  }
+  if (currentMode.mode === 'unavailable' || enfUnmigratedFor(currentMode, currentActor.u)) throw rsError('authz-unavailable', 503);   /* V7 · د5-ح: «unmigrated» لغير مدير المنصة كذلك */
+  /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده — لا فرعَ قديماً */
+  currentActor.enf = currentMode;
+  // The actor's explicit grants of every department it reaches (a sector manager's branch) are part of its authority.
+  if (scope) await rsScopeKV(env, (currentActor.u.role === 'super' ? [] : enfDeptsOf(currentActor)).map(enfGrantsKey));
+  enfAttachGrantsKeys(currentActor, inputKeys);
   return {
     env: env,
     A: currentActor,
@@ -135,11 +134,14 @@ async function rsReferenceSnapshot(env, uid, options) {
     scope: scope,
   };
 }
-/* Base witnesses: the full kv/meta tables, or exactly the scoped predicate sets (rows read later carry their own, in scope.late). */
+/* Base witnesses: the full kv/meta tables, or exactly the scoped predicate sets (rows read later carry their own, in scope.late).
+   V7 · د5-هـ (أمن ٣): طوابعُ حارس المهام (tkg:<kind>:<dept> — 074 tkGateStamp) خارج الشاهد: محايدةٌ للمخبأ (052 dbGuardCacheNeutral)، تُقرأ وتُكتب
+   بـ__rawDB وحدها ولا يبني عليها المرجعُ قراراً — فكتابتُها كلَّ 5–10 دقائق كانت تحوّل حفظاً أو قراءةً لا تمسّها إلى 409. تبقى في اللقطة كما كانت. */
+var RS_FENCE_META = "substr(k,1,4)<>'tkg:'";
 function rsReferenceBase(env, reference, meta) {
   var scope = reference.scope, later = new Set(scope ? scope.later : []),
-    rows = (meta ? reference.metaRows : reference.inputRows).filter(function (row) { return !later.has(row.k); });
-  if (meta) return scope ? rsWitness(env, 'meta', ['k', 'v'], rows, RS_SCOPE_META, [scope.arg]) : rsWitness(env, 'meta', ['k', 'v'], rows, "k<>'rev'");
+    rows = (meta ? reference.metaRows : reference.inputRows).filter(function (row) { return !later.has(row.k) && !(meta && String(row.k).slice(0, 4) === 'tkg:'); });
+  if (meta) return scope ? rsWitness(env, 'meta', ['k', 'v'], rows, RS_SCOPE_META + ' AND ' + RS_FENCE_META, [scope.arg]) : rsWitness(env, 'meta', ['k', 'v'], rows, "k<>'rev' AND " + RS_FENCE_META);
   return scope ? rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, RS_SCOPE_KV, [scope.arg]) : rsWitness(env, 'kv', ['k', 'seq', 'v'], rows);
 }
 /* Position in a scoped reference's lazily grown witnesses; rsReferenceSince returns what was read after it. */
@@ -1200,7 +1202,7 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
           !(pd.k === K_USERS && JSON.stringify(cuCanonical(parseJson(pd.v, []))) === JSON.stringify(cuCanonical(parseJson(pd.cur, []))));
   });
   rsPhysicalDeletes(kv, reference, physicalDeletes);
-  var plan = {
+@@SYS:restore.pend.daily@@  var plan = {
     body: body,
     author: A,
     fingerprint: fingerprint,

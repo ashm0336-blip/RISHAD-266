@@ -5,7 +5,7 @@
    (b) split requests: the narrowing accepted first, then a second request that drops latent items (sheet leaf · lens · grant key · template
        leaf/lens/key · container template rewritten without its switched-off tab) ⇒ refused, D1 byte-identical
    (c) a filtered (privacy-projected) view of a manager keeps latent items when it saves; the same view without them is refused
-   (d) explicit deletions stay allowed: a whole sheet, lens list, grant entry, template; a manager's in-ceiling leaf; the system administrator's
+   (d) explicit deletions stay allowed: a whole sheet, lens list, grant entry (V7 · د5-ح: whole template removed — no writer); a manager's in-ceiling leaf; the system administrator's
        clearLatent request. TEST_ONLY. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -76,27 +76,11 @@ async function scene(mode) {
   putKV(W.env, TPK, [T1, T2]);
   return Object.assign(W, { aw });
 }
-async function tpSaveAll(W) {
-  const c = await clientOf(W, 'su');
-  try {
-    c.T.W.DCLogic = class { constructor() { this.state = {}; } setState(p) { Object.assign(this.state, typeof p === 'function' ? p(this.state) : p); } };
-    c.K.BassamPageKit = c.K.BassamPageKit || { base: (B) => class extends B {} };
-    vm.runInContext(moduleLogic('admin') + '\n;globalThis.__C = Component;', c.T.ctx, { filename: 'admin/logic.js' });
-    const a = Object.create(c.T.W.__C.prototype), msg = [];
-    a.state = {}; a.setState = function (p) { Object.assign(this.state, typeof p === 'function' ? p(this.state) : p); };
-    a.bsToast = (x) => msg.push('toast ' + x); a.bsAck = (x) => msg.push('ack ' + x); a.PC = () => true;
-    for (const id of ['tTSTL', 'tTSTC']) { a.tpOpen(id); a.tpSave(); }
-    assert.equal(msg.filter((x) => /^ack حُفظ القالب/.test(x)).length, 2, msg.join(' | '));
-    if (W.mode === 'enforce') assert.equal(c.I.p24SetGrant(EK, D, { plus: [], minus: [] }).ok, true);
-    await c.settle();
-    assert.equal(c.SV.denied(), 0, 'accepted');
-  } finally { c.dispose(); }
-}
-
-for (const mode of ['legacy', 'enforce']) {
+/* V7 · د5-هـ (44): the templates editor (tpOpen · tpSave) is deleted — templates became roles (perm44-roles); its re-save step is gone */
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
-  test(M + '(a) narrow → re-save sheet, lens list, templates (leaf-key and container-key) and grants → widen: everything as it was', needs('award', 'tasks'), async () => {
+  test(M + '(a) narrow → re-save sheet, lens list and grants → widen: everything as it was (the stored templates are untouched)', needs('award', 'tasks'), async () => {
     const W = await scene(mode);
     const P0 = stored(W.env, KP), sh0 = cp(P0.emps[D][EK]), el0 = cp(P0.empLens[D][EK]), g0 = JSON.stringify(stored(W.env, GK)), stored0 = stored(W.env, TPK), t0 = [];
     let P = cp(P0); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok, 'narrowed');
@@ -106,20 +90,12 @@ for (const mode of ['legacy', 'enforce']) {
       assert.equal(m.I.setEmpLens(EK, cp(m.P.empLens(EK, D)), D).ok, true);
       await m.settle(); assert.equal(m.SV.denied(), 0, 'the manager\'s re-save is accepted');
     } finally { m.dispose(); }
-    await tpSaveAll(W);
     P = cp(stored(W.env, KP)); WIDEN(P); assert.ok((await save(W, 'su', { [KP]: P })).ok, 'widened');
     const P1 = stored(W.env, KP), t1 = stored(W.env, TPK);
     assert.deepEqual(P1.emps[D][EK], sh0, 'the sheet as it was'); assert.deepEqual(P1.empLens[D][EK], el0, 'the lens list as it was');
     assert.equal(JSON.stringify(stored(W.env, GK)), g0, 'explicit grants byte-identical');
-    const by = (L, id) => L.find((t) => t.id === id);
-    t0.length = 0; t0.push(by(stored0, 'tTSTL'), by(stored0, 'tTSTC')); const t1b = [by(t1, 'tTSTL'), by(t1, 'tTSTC')]; t1.length = 0; t1.push(...t1b);
-    assert.equal(JSON.stringify(t1[0]), JSON.stringify(t0[0]), 'the leaf-key template byte-identical');
-    if (mode === 'legacy') assert.equal(JSON.stringify(t1[1]), JSON.stringify(t0[1]), 'the container-key template byte-identical (no implicit expansion)');
-    else {
-      assert.deepEqual(t1[1].lens, t0[1].lens, 'its switched-off lens kept');
-      for (const l of ['emps/data', 'emps/custody', 'tasks']) assert.ok((t1[1].perms[l] || t1[1].perms[l.split('/')[0]] || []).includes('view'), 'container template keeps ' + l);
-      assert.deepEqual(Object.keys(t1[1].perms).filter((k) => !['emps', 'emps/data', 'emps/custody', 'tasks'].includes(k)), [], 'nothing wider than it had');
-    }
+    assert.equal(JSON.stringify(t1), JSON.stringify(stored0), 'the stored templates byte-identical (no writer is left; the migration reads them)');
+    void t0;
   });
 
   test(M + '(b) split requests: the narrowing first, then a request dropping latent items ⇒ refused, D1 byte-identical', needs('award', 'custody'), async () => {
@@ -135,11 +111,14 @@ for (const mode of ['legacy', 'enforce']) {
       'a template switched-off lens': () => { const T = cp(stored(W.env, TPK)); T[0].lens = ['zones']; return { [TPK]: T }; },
       'a container template rewritten without its switched-off tab': () => { const T = cp(stored(W.env, TPK)); T[1].perms = { 'emps/data': ['view'], tasks: ['view'] }; return { [TPK]: T }; }
     };
+    /* V7 · د5-ح: سجلُّ القوالب لا كاتبَ له في الخادم — يُرفض «unknown» قبل حارس الكامن؛ يُقرأ للترحيل ويُتقاعد بـ /api/authz-migrate (tpls-retire) */
+    const TPL_TRIES = new Set(['a template leaf outside the ceiling', 'a template switched-off lens', 'a container template rewritten without its switched-off tab', 'a template key outside the ceiling']);
     if (mode === 'enforce') tries['a grant key outside the ceiling'] = () => { const G = cp(stored(W.env, GK)); G.emp[EK].plus = G.emp[EK].plus.slice(1); return { [GK]: G }; };
     if (mode === 'enforce') tries['a template key outside the ceiling'] = () => { const T = cp(stored(W.env, TPK)); T[0].keys24 = ['task.view']; return { [TPK]: T }; };
     for (const [n, f] of Object.entries(tries)) {
       const r = await save(W, 'su', f());
       assert.ok(!r.ok, n + ' — accepted: ' + r.show);
+      if (TPL_TRIES.has(n)) { assert.equal(r.why, 'unknown', n); continue; }
       assert.equal(r.why, 'perms', n); assert.match(r.detail, /^latent: .* \| لم يُحفظ شيء/, n);
     }
     assert.equal(all(W), s0, 'nothing written');
@@ -171,8 +150,10 @@ for (const mode of ['legacy', 'enforce']) {
     v = await got(W, 'dm1', KP); delete v.emps[D][EK];
     assert.ok((await save(W, 'su', { [KP]: Object.assign(cp(stored(W.env, KP)), { emps: Object.assign(cp(stored(W.env, KP).emps), { [D]: v.emps[D] }) }) })).ok, 'a sheet holding latent leaves, whole');
     if (mode === 'enforce') { const G = cp(stored(W.env, GK)); delete G.emp[EK]; const rg = await save(W, 'su', { [GK]: G }); assert.ok(rg.ok, 'a whole grant entry — ' + rg.show); }   /* explicit grants: enforce only */
-    const T = cp(stored(W.env, TPK)).slice(1);
-    assert.ok((await save(W, 'su', { [TPK]: T })).ok, 'a whole template');
+    /* V7 · د5-ح: كانت «a whole template» مقبولةً لمدير النظام — حُذف كاتبُ القوالب؛ لا يحذفها أحدٌ بالحفظ، والسجلُّ المخزَّن يبقى كما هو للترحيل */
+    const T0 = JSON.stringify(stored(W.env, TPK)), T = cp(stored(W.env, TPK)).slice(1), rt = await save(W, 'su', { [TPK]: T });
+    assert.ok(!rt.ok && rt.why === 'unknown', 'the retired templates record has no writer — ' + rt.show);
+    assert.equal(JSON.stringify(stored(W.env, TPK)), T0, 'the stored templates are untouched');
     v = await got(W, 'dm1', KP); delete v.emps[D].tst_e_sup1['irshad/records']; v.emps[D].tst_e_imp = Object.assign({}, v.emps[D].tst_e_imp);
     P = cp(stored(W.env, KP)); P.emps[D].tst_e_sup1['award/res'] = ['view']; assert.ok((await save(W, 'su', { [KP]: P }, { clearLatent: true })).ok, 'setup: a latent leaf');
     v = await got(W, 'dm1', KP); delete v.emps[D].tst_e_sup1['award/res'];
@@ -180,30 +161,5 @@ for (const mode of ['legacy', 'enforce']) {
     assert.ok(!r2.ok && r2.why === 'perms', 'the marker is the system administrator\'s alone — ' + r2.show);
   });
 
-  test(M + '(e) editing an old-format container-key template under switched-off tabs keeps them with the container\'s actions — nothing wider', needs('award', 'custody'), async () => {
-    const W = await scene(mode);
-    let P = cp(stored(W.env, KP)); NARROW(P); assert.ok((await save(W, 'su', { [KP]: P })).ok);
-    const c = await clientOf(W, 'su');
-    try {
-      c.T.W.DCLogic = class { constructor() { this.state = {}; } setState(p) { Object.assign(this.state, typeof p === 'function' ? p(this.state) : p); } };
-      c.K.BassamPageKit = c.K.BassamPageKit || { base: (B) => class extends B {} };
-      vm.runInContext(moduleLogic('admin') + '\n;globalThis.__C = Component;', c.T.ctx, { filename: 'admin/logic.js' });
-      const a = Object.create(c.T.W.__C.prototype), msg = [];
-      a.state = {}; a.setState = function (p) { Object.assign(this.state, typeof p === 'function' ? p(this.state) : p); };
-      a.bsToast = (x) => msg.push('toast ' + x); a.bsAck = (x) => msg.push('ack ' + x); a.PC = () => true;
-      a.tpOpen('tTSTC');
-      if (mode === 'enforce') { const C = c.P.p24.ceil(D); a.setState({ tp24Draft: Object.assign({}, a.tp24Base(a.tpRead().find((t) => t.id === 'tTSTC'), D, C), { 'emp.view': true }) }); }
-      else a.setState({ tpDraft: Object.assign({}, a.state.tpDraft, { 'emps/data': ['view', 'edit'] }) });
-      a.tpSave(); await c.settle(); assert.equal(c.SV.denied(), 0, msg.join(' | '));
-    } finally { c.dispose(); }
-    const t = stored(W.env, TPK).find((x) => x.id === 'tTSTC');
-    if (t.perms.emps) assert.deepEqual(t.perms.emps, ['view'], 'unchanged container: the container key kept as it was');
-    else {
-      assert.deepEqual(t.perms['emps/custody'], ['view'], 'the switched-off tab kept with the container\'s action, no wider: ' + JSON.stringify(t));
-      if (mode === 'legacy') assert.deepEqual(t.perms['emps/data'], ['view', 'edit'], 'the edit');
-    }
-    assert.ok(mode === 'enforce' || !t.perms.emps, 'legacy: the edited container is written as leaves');
-    assert.deepEqual(Object.keys(t.perms).filter((k) => !['emps', 'emps/data', 'emps/custody', 'tasks'].includes(k)), [], 'nothing wider than it had');
-    assert.ok(t.lens.includes('dens'));
-  });
+  /* (e) editing an old-format container-key template was DELETED in V7 · د5-هـ (44) with the templates editor. */
 }

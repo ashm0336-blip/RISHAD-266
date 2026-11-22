@@ -86,7 +86,9 @@ def _core01(S, M):
         if (p.get('platSwitch') or p.get('platLock')) and p.get('activation') != 'toggle': err.append(p['key'] + ': platSwitch/platLock لوحدةٍ toggle وحدها')
         if p.get('platSwitch') and p.get('platLock'): err.append(p['key'] + ': platSwitch و platLock لا يجتمعان')
     ex331 = set(re.findall(r"off\[i\] !== '([a-z]\w*)'", R('permissions', '331-perm-model.js')))
-    exAdm = set(re.findall(r'\(\(pl && pl\.mods && pl\.mods\.off\) \|\| \[\]\)\.filter\(\(k\) => "([a-z]\w*)" !== k\)', R('modules', 'admin', 'logic.js')))
+    # V7 · د5-هـ (44): منطقُ صفحة الإدارة أجزاءٌ (logic.js · logic-perm44.js — meta.json logicParts) والاستثناءُ في «الصلاحيات ← الأنظمة»
+    admL = ''.join(R('modules', 'admin', f) for f in sorted(os.listdir(os.path.join(S, 'modules', 'admin'))) if re.match(r'logic(-[\w-]+)?\.js$', f))
+    exAdm = set(re.findall(r'\(\(pl && pl\.mods && pl\.mods\.off\) \|\| \[\]\)\.filter\(\(k\) => "([a-z]\w*)" !== k\)', admL))
     if not (always == ex331 == exAdm): err.append('activation:always ' + str(sorted(always)) + ' ≠ استثناءُ mods.off في 331 ' + str(sorted(ex331)) + ' / admin/logic ' + str(sorted(exAdm)))
     # ③ requires: for ورقةٌ offPage حقيقية في صفحتها · on صفحةٌ أو عدسة (lens:<key>) · kind يطابق شكل on
     def leaf(ref):
@@ -113,14 +115,14 @@ def _core01(S, M):
                 continue
             lf = leaf(ref)
             if not lf or not lf.get('offPage'): err.append(c['key'] + '.refs: «' + ref + '» ليست ورقةً offPage')
-    # ⑤ اعتمادياتُ perm/lens = قواعدُ kpiPanelOk الحرفية في 334 (شيفرةٌ وإعلانٌ لا يفترقان)
-    body = re.search(r'function kpiPanelOk\(pk, sk\)\{([\s\S]*?)\n  \}', R('permissions', '334-perm-tree-tpl.js'))
+    # ⑤ اعتمادياتُ perm/lens = قواعدُ kpiPanelOk الحرفية في 334 (شيفرةٌ وإعلانٌ لا يفترقان) — د5-ح: التوقيعُ (pk, sk, P, did) ووحدةُ onCap(…, did)
+    body = re.search(r'function kpiPanelOk\(pk, sk(?:, P, did)?\)\{([\s\S]*?)\n  \}', R('permissions', '334-perm-tree-tpl.js'))
     lit = set()
     for sk, expr in re.findall(r"if \(sk === '(\w+)'\) return ([^;]+);", body.group(1) if body else ''):
-        lit |= {(sk, 'lens:' + x, 'lens') for x in re.findall(r"onCap\('(\w+)'\)", expr)}
+        lit |= {(sk, 'lens:' + x, 'lens') for x in re.findall(r"onCap\('(\w+)'(?:, did)?\)", expr)}
         lit |= {(sk, x, 'perm') for x in re.findall(r"\bcan\('(\w+)', 'view'\)", expr)}
     dec = {(f.split('/')[1], on, k) for f, on, k in reqs if k != 'code'}
-    if not lit: err.append('334 kpiPanelOk: لم تُقرأ قواعدُه')
+    if not lit and dec: err.append('334 kpiPanelOk: لم تُقرأ قواعدُه')   # د5-هـ: بغياب المتابعة لا اعتماديةَ معلنة ولا قاعدة — اتساقٌ لا خلل
     elif dec != lit: err.append('requires(perm/lens) ≠ 334 kpiPanelOk: زائدٌ ' + str(sorted(dec - lit)) + ' · ناقصٌ ' + str(sorted(lit - dec)))
     # ⑥ اعتمادياتُ code: صفحةُ for تستورد لوحتَها من وحدة on (<dc-import name="<وحدة on>" solo="<الورقة>">)
     for f, on, k in reqs:

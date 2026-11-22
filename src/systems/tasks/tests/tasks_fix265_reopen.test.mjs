@@ -43,12 +43,7 @@ test('[enforce] إعادةُ الفتح بالسبب ⇒ تمضي والسببُ
   const a = reopened(W); assert.equal(a.length, 1); assert.equal(JSON.parse(a[0].aft).why, WHY, 'السببُ في حدث التدقيق');
 });
 
-test('[legacy] إعادةُ الفتح بلا سبب ⇒ تمضي كما كان (لا سببَ مطلوب)', async () => {
-  const { W, dm } = await done('legacy');
-  const r = await post(W, dm.ck, '/api/tasks/reopen', { k: DAY, id: ID, ekey: ME.eid });
-  assert.equal(r.status, 200, JSON.stringify(r.j)); assert.equal(row(W)[3], 'in_progress');
-  assert.equal(reopened(W).length, 1, 'بحدث تدقيق');
-});
+/* V7 · د5-ح (القفل): حالة «[legacy] إعادةُ الفتح بلا سبب ⇒ تمضي» حُذفت — تثبّت إعفاءَ الوضع القديم من السبب (المحذوف) */
 
 /* الصفحةُ لمدير الإدارة في vm (كما في tasks_page_review265) — وطبقةُ التخزين بنافذة سببٍ محاكاة: askReason(k, keys, cb) يردّ answer */
 const LOGIC = moduleLogic('tasks');
@@ -71,6 +66,11 @@ async function page(W, ck, answer) {
   KIVO.BassamSup = { isSup: () => false };
   class DCLogic { constructor() { this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); cb && cb(); } }
   ctx.DCLogic = DCLogic;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/core/060-bus.js'), 'utf8'), ctx);   /* V7 · د5-د: الناقل (قلب المنصة) وروابطُ الجدول الشهري عليه — الصفحاتُ تسأل بالاسم */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn() { return true; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });

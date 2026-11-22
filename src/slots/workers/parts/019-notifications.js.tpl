@@ -160,247 +160,8 @@ var NF_TYPES = {
     txt: "{الفعل} {العدد} حساباً دفعة واحدة — بواسطة {المُعدّل}",
     go: "افتح الموظفين",
   },
-  acct_tpl: {
-    id: "acct_tpl",
-    k: "acct",
-    name: "منح قالب صلاحيات لموظف",
-    when: "فور المنح",
-    on: true,
-    to: ["own"],
-    lvl: "info",
-    chan: "bell",
-    txt: "مُنحت قالب «{القالب}» — {العدد} صفحات",
-    go: "",
-  },
-@@SYS:nf.types.tasks@@@@SYS:nf.types.custody@@  st_shift: {
-    id: "st_shift",
-    k: "staff",
-    name: "تغيير وردية موظف في الجدول",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "تغيّرت وردية {الاسم} في {الشهر} من {القديم} إلى {الجديد} — بواسطة {المُعدّل}",
-    go: "افتح الجدول الشهري",
-  },
-  st_rest: {
-    id: "st_rest",
-    k: "staff",
-    name: "تغيير أيام راحة موظف في الجدول",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "أيام راحة {الاسم} في {الشهر} صارت: {الأيام} — بواسطة {المُعدّل}",
-    go: "افتح الجدول الشهري",
-  },
-  st_loc: {
-    id: "st_loc",
-    k: "staff",
-    name: "تغيير موقع موظف في الجدول",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "موقع {الاسم} في {اليوم} صار «{الموقع}» بدل «{القديم}»",
-    go: "افتح الجدول الشهري",
-  },
-  st_leave: {
-    id: "st_leave",
-    k: "staff",
-    name: "تسجيل استئذان أو إجازة في الجدول",
-    when: "فور التسجيل",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "سُجّل لـ{الاسم} {النوع} يوم {اليوم} بواسطة {المُعدّل}",
-    go: "افتح الجدول الشهري",
-  },
-  st_lead: {
-    id: "st_lead",
-    k: "staff",
-    name: "تعيين رئيس أو نائب في الجدول",
-    when: "فور التعيين",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "عُيّن {الاسم} {الدور} لـ{الوردية} في {الشهر}",
-    go: "افتح الجدول الشهري",
-  },
-  st_pub: {
-    id: "st_pub",
-    k: "staff",
-    name: "نشر جدول شهر جديد",
-    when: "فور النشر",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "toast",
-    txt: "نُشر جدول {الشهر} — {العدد} موظفاً موزَّعين",
-    go: "افتح الجدول الشهري",
-  },
-  st_lock: {
-    id: "st_lock",
-    k: "staff",
-    name: "اعتماد الشهر وقفله / فك الاعتماد",
-    when: "فور التغيير",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل} جدول {الشهر} بواسطة {المُعدّل}",
-    go: "",
-  },
-  st_gap: {
-    id: "st_gap",
-    k: "staff",
-    name: "نقص في تسكين وردية الغد",
-    when: "الساعة 16:00 يومياً",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "act",
-    chan: "toast",
-    txt: "الوردية {الوردية} غداً ينقصها {العدد} على المواقع الحرجة",
-    go: "افتح الجدول الشهري",
-  },
-  st_dup: {
-    id: "st_dup",
-    k: "staff",
-    name: "تعارض تسكين (موظف في موقعين)",
-    when: "عند الحفظ",
-    on: true,
-    to: ["mgr"],
-    lvl: "urg",
-    chan: "toast",
-    txt: "{الاسم} مسكّن في «{الموقع1}» و«{الموقع2}» يوم {اليوم}",
-    go: "افتح الجدول الشهري",
-  },
-  st_rest2: {
-    id: "st_rest2",
-    k: "staff",
-    name: "تجاوز حدّ الراحات الأسبوعي",
-    when: "عند المحاولة",
-    on: false,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "محاولة منح راحة ثالثة في أسبوع لـ{الاسم} — رُفضت",
-    go: "",
-  },
-  st_shdef: {
-    id: "st_shdef",
-    k: "staff",
-    name: "تعريف وردية أُضيف أو عُدّل أو حُذف",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل} وردية «{الوردية}» — {التفصيل} · بواسطة {المُعدّل}",
-    go: "افتح الإعدادات",
-  },
-  pl_chg: {
-    id: "pl_chg",
-    k: "plan",
-    name: "تعديل الخطة الميدانية لموقع",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "عُدّلت خطة «{الموقع}»: {التفصيل}",
-    go: "افتح التشغيل الميداني",
-  },
-  pl_cap: {
-    id: "pl_cap",
-    k: "plan",
-    name: "تغيير سعة موقع أو إغلاقه",
-    when: "فور الحفظ",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "act",
-    chan: "toast",
-    txt: "{الموقع}: {التفصيل} بواسطة {المُعدّل}",
-    go: "افتح التشغيل الميداني",
-  },
-  pl_mark: {
-    id: "pl_mark",
-    k: "plan",
-    name: "علامة أو مسار جديد",
-    when: "فور الإضافة",
-    on: false,
-    to: ["lead"],
-    lvl: "info",
-    chan: "bell",
-    txt: "أُضيف {النوع} «{الاسم}» في {الموقع}",
-    go: "",
-  },
-  pl_ok: {
-    id: "pl_ok",
-    k: "plan",
-    name: "اعتماد الخطة الميدانية للشهر",
-    when: "فور الاعتماد",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "toast",
-    txt: "اعتُمدت خطة {الشهر} وأُنشئت أول جولة — {العدد} موقعاً",
-    go: "افتح الجولات",
-  },
-  pl_place: {
-    id: "pl_place",
-    k: "plan",
-    name: "تسكينك على موقع في التشغيل الميداني",
-    when: "فور التسكين",
-    on: true,
-    to: ["own", "lead"],
-    lvl: "act",
-    chan: "toast",
-    txt: "سُكِّنت على «{إلى}» في التشغيل الميداني — {الوقت} · {المُعدّل}",
-    go: "افتح صفحتي",
-  },
-  pl_move: {
-    id: "pl_move",
-    k: "plan",
-    name: "نقلك إلى موقع آخر على الخريطة",
-    when: "فور النقل",
-    on: true,
-    to: ["own", "lead"],
-    lvl: "act",
-    chan: "toast",
-    txt: "نُقلت من «{من}» إلى «{إلى}» — {الوقت} · {المُعدّل}",
-    go: "افتح صفحتي",
-  },
-  pl_unplace: {
-    id: "pl_unplace",
-    k: "plan",
-    name: "رفع تسكينك من موقع",
-    when: "فور الرفع",
-    on: true,
-    to: ["own", "lead"],
-    lvl: "info",
-    chan: "bell",
-    txt: "رُفع تسكينك من «{من}» في التشغيل الميداني — {الوقت} · {المُعدّل}",
-    go: "افتح صفحتي",
-  },
-  pl_sup: {
-    id: "pl_sup",
-    k: "plan",
-    name: "رفع موظف إلى إشرافي / إعادته",
-    when: "فور التغيير",
-    on: true,
-    to: ["own", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل}: {الاسم} — لا يُحسب في التغطية",
-    go: "",
-  },
-  rd_low: {
+  /* V7 · د5-ح: نوعا «قوالب الصلاحيات» (منحُ قالبٍ لموظف · وقالبٌ أُنشئ أو عُدّل أو حُذف) حُذفا مع القوالب — الأدوارُ تُدار من «الصلاحيات» */
+@@SYS:nf.types.tasks@@@@SYS:nf.types.custody@@@@SYS:nf.types.staff@@@@SYS:nf.types.plan@@  rd_low: {
     id: "rd_low",
     k: "ready",
     name: "انخفاض الجاهزية تحت الحد",
@@ -412,271 +173,7 @@ var NF_TYPES = {
     txt: "جاهزية {الشهر} {النسبة}٪ — تحت الحد {الحد}٪ ({السبب})",
     go: "افتح مؤشرات الجاهزية",
   },
-  rep_pull: {
-    id: "rep_pull",
-    k: "rep",
-    name: "سحب تقرير الوردية",
-    when: "فور السحب",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "سُحب تقرير {الوردية} ليوم {اليوم} بواسطة {المُعدّل}",
-    go: "افتح التقرير",
-  },
-  rep_late: {
-    id: "rep_late",
-    k: "rep",
-    name: "تقرير مسحوب لم يُعتمد",
-    when: "قبل انتهاء الوردية بساعة",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "urg",
-    chan: "toast",
-    txt: "تقرير {الوردية} لم يُعتمد — تنتهي الوردية {الوقت}",
-    go: "افتح التقرير",
-  },
-  rep_ok: {
-    id: "rep_ok",
-    k: "rep",
-    name: "اعتماد التقرير / فك الاعتماد",
-    when: "فور التغيير",
-    on: true,
-    to: ["mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل} تقرير {الوردية} · حضور {النسبة}٪",
-    go: "افتح التقرير",
-  },
-  rep_att: {
-    id: "rep_att",
-    k: "rep",
-    name: "تأشيرك في التقرير (غياب / تأخر / استئذان)",
-    when: "فور التأشير",
-    on: true,
-    to: ["own"],
-    lvl: "act",
-    chan: "toast",
-    txt: "أُشّر لك «{الحالة}» في تقرير {الوردية} {اليوم} — اعترض خلال 24 ساعة",
-    go: "افتح التقرير",
-  },
-  rep_diff: {
-    id: "rep_diff",
-    k: "rep",
-    name: "تغيّر الجدول بعد سحب التقرير",
-    when: "عند الاكتشاف",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "act",
-    chan: "bell",
-    txt: "جدول {الوردية} تغيّر بعد سحب التقرير: {التفصيل}",
-    go: "افتح التقرير",
-  },
-  rep_here: {
-    id: "rep_here",
-    k: "rep",
-    name: "تسكينك اليوم في موقع مختلف",
-    when: "عند السحب",
-    on: true,
-    to: ["own"],
-    lvl: "act",
-    chan: "toast",
-    txt: "اليوم أنت في «{الموقع}» ({الوردية})",
-    go: "افتح التقرير",
-  },
-  rep_mv: {
-    id: "rep_mv",
-    k: "rep",
-    name: "تحويلك إلى وردية أو موقع آخر من التقرير",
-    when: "فور التحويل",
-    on: true,
-    to: ["own", "lead"],
-    lvl: "act",
-    chan: "toast",
-    txt: "حُوّلت إلى {الوردية} — «{الموقع}» بواسطة {المُعدّل}",
-    go: "افتح التقرير",
-  },
-  rep_today: {
-    id: "rep_today",
-    k: "rep",
-    name: "ورديتك اليوم (عند سحب التقرير)",
-    when: "فور السحب",
-    on: true,
-    to: ["own"],
-    lvl: "info",
-    chan: "toast",
-    txt: "ورديتك اليوم {الوردية} {الوقت} · القيادة: {القيادة}",
-    go: "افتح صفحتي",
-  },
-  rep_restday: {
-    id: "rep_restday",
-    k: "rep",
-    name: "اليوم راحتك (عند سحب التقرير)",
-    when: "فور السحب",
-    on: true,
-    to: ["own"],
-    lvl: "info",
-    chan: "bell",
-    txt: "اليوم {اليوم} راحتك — لست على وردية {الوردية}",
-    go: "افتح صفحتي",
-  },
-  rep_rest: {
-    id: "rep_rest",
-    k: "rep",
-    name: "تغيير أيام راحتك في التقرير",
-    when: "فور التغيير",
-    on: true,
-    to: ["own", "lead"],
-    lvl: "act",
-    chan: "toast",
-    txt: "أيام راحتك في تقرير {الوردية} صارت: {الأيام} — بواسطة {المُعدّل}",
-    go: "افتح صفحتي",
-  },
-  rep_ap: {
-    id: "rep_ap",
-    k: "rep",
-    name: "اعتماد تقرير ورديتك — حالتك",
-    when: "فور الاعتماد",
-    on: true,
-    to: ["own"],
-    lvl: "info",
-    chan: "bell",
-    txt: "اعتُمد تقرير {الوردية} ليوم {اليوم} — حالتك: {الحالة}",
-    go: "افتح صفحتي",
-  },
-  rep_quota: {
-    id: "rep_quota",
-    k: "rep",
-    name: "اكتمال نصاب استئذانات الشهر (من التقارير)",
-    when: "عند التأشير",
-    on: true,
-    to: ["own", "lead", "mgr"],
-    lvl: "act",
-    chan: "bell",
-    txt: "{الاسم} بلغ نصاب الاستئذان لشهر {الشهر} ({العدد} من {الحد})",
-    go: "افتح التقرير",
-  },
-  rep_cont: {
-    id: "rep_cont",
-    k: "rep",
-    name: "متابعة تقرير من يوم سابق",
-    when: "فور المتابعة",
-    on: false,
-    to: ["mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "تقرير {الوردية} تُوبع من تقرير يوم {اليوم}",
-    go: "افتح التقرير",
-  },
-  rep_lead: {
-    id: "rep_lead",
-    k: "rep",
-    name: "تغيير قيادة الوردية في التقرير",
-    when: "فور التغيير",
-    on: true,
-    to: ["own", "mgr"],
-    lvl: "act",
-    chan: "bell",
-    txt: "{الدور} {الوردية} اليوم: {الاسم}",
-    go: "افتح التقرير",
-  },
-  rn_start: {
-    id: "rn_start",
-    k: "round",
-    name: "بدء جولة / إغلاقها",
-    when: "فور التغيير",
-    on: false,
-    to: ["mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل} جولة {الوردية} بواسطة {المُعدّل}",
-    go: "افتح الجولات",
-  },
-  rn_red: {
-    id: "rn_red",
-    k: "round",
-    name: "موقع بعجز كامل (أحمر)",
-    when: "عند تأشير الجولة",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "urg",
-    chan: "toast",
-    txt: "«{الموقع}» بلا تغطية في جولة {الوقت}",
-    go: "افتح الخريطة",
-  },
-  rn_full: {
-    id: "rn_full",
-    k: "round",
-    name: "اكتمال تغطية كل المواقع",
-    when: "عند التأشير",
-    on: true,
-    to: ["mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "اكتملت تغطية {العدد} موقعاً في جولة {الوقت}",
-    go: "",
-  },
-  rn_loc: {
-    id: "rn_loc",
-    k: "round",
-    name: "موقعك في جولة اليوم",
-    when: "فور التسكين أو التغيير",
-    on: true,
-    to: ["own", "lead"],
-    lvl: "act",
-    chan: "toast",
-    txt: "{الفعل} {الموقع} — جولة {اليوم}",
-    go: "افتح صفحتي",
-  },
-  rn_close: {
-    id: "rn_close",
-    k: "round",
-    name: "إغلاق موقعك في الجولة",
-    when: "فور الإغلاق",
-    on: true,
-    to: ["own", "lead"],
-    lvl: "act",
-    chan: "toast",
-    txt: "أُغلق موقعك «{الموقع}» في جولة {اليوم} — راجع رئيس الوردية لموقعك الجديد",
-    go: "افتح صفحتي",
-  },
-  fd_obs: {
-    id: "fd_obs",
-    k: "round",
-    name: "رصد ميداني: حالة موقع أو مساره",
-    when: "فور الرصد",
-    on: true,
-    to: ["own", "lead", "mgr"],
-    lvl: "act",
-    chan: "toast",
-    txt: "{الموظف} رصد {الباب}: {الحالة}{السبب} — {الوقت}",
-    go: "افتح الجولات",
-  },
-  kp_att: {
-    id: "kp_att",
-    k: "kpi",
-    name: "الحضور الفعلي تحت النسبة المحددة",
-    when: "عند الاعتماد",
-    on: true,
-    to: ["mgr"],
-    lvl: "act",
-    chan: "bell",
-    txt: "حضور {الوردية} {النسبة}٪ — تحت الحد {الحد}٪",
-    go: "افتح المؤشرات",
-  },
-  kp_occ: {
-    id: "kp_occ",
-    k: "kpi",
-    name: "إشغال مصلى تجاوز الحد",
-    when: "عند التسجيل",
-    on: true,
-    to: ["lead", "mgr"],
-    lvl: "urg",
-    chan: "toast",
-    txt: "إشغال «{المصلى}» {النسبة}٪",
-    go: "افتح الإشغال",
-  },
-@@SYS:nf.types@@  sc_dev: {
+@@SYS:nf.types.dreport@@@@SYS:nf.types.daily@@@@SYS:nf.types@@  sc_dev: {
     id: "sc_dev",
     k: "sec",
     name: "دخول من جهاز جديد",
@@ -697,7 +194,7 @@ var NF_TYPES = {
     to: ["own", "sys"],
     lvl: "urg",
     chan: "toast",
-    txt: "{العدد} محاولات فاشلة على حساب {الاسم} من {IP}",
+    txt: "{العدد} محاولات فاشلة على حساب {الاسم} من {IP} — السبب: {السبب}",
     go: "سجل الأمن",
   },
   sc_pw: {
@@ -769,7 +266,7 @@ var NF_TYPES = {
     to: ["sys"],
     lvl: "urg",
     chan: "toast",
-    txt: "{الفعل} مفتاح الاستعادة من {IP} — {النتيجة}",
+    txt: "{الفعل} مفتاح الاستعادة من {IP} — {النتيجة} {السبب}",
     go: "الأمن",
   },
   pm_chg: {
@@ -795,18 +292,6 @@ var NF_TYPES = {
     chan: "bell",
     txt: "سقف إدارتك: {الفعل} {الصفحات} — بواسطة مدير النظام",
     go: "افتح الصلاحيات",
-  },
-  pm_tpl: {
-    id: "pm_tpl",
-    k: "perm",
-    name: "قالب صلاحيات أُنشئ أو عُدّل أو حُذف",
-    when: "فور الحفظ",
-    on: true,
-    to: ["mgr"],
-    lvl: "info",
-    chan: "bell",
-    txt: "{الفعل} قالب «{القالب}» — {التفصيل} · بواسطة {المُعدّل}",
-    go: "افتح الإعدادات",
   },
   sy_dept: {
     id: "sy_dept",
@@ -985,14 +470,9 @@ var NF_REV = "bassam_notifications_domain_v1",
 var NF_GLOBAL = ["bassam_notif_sys_v1", "bassam_bc_v1", "bassam_notif_cfg_v1"];
 var NF_CAP = {
   emp: "emps",
-@@SYS:nf.cap.tasks@@@@SYS:nf.cap.custody@@  staff: "staff",
-  plan: "plan",
-  ready: "planning/readiness",
-  rep: "dreport",
-  round: "daily/rounds",
-@@SYS:nf.cap@@  perm: "admin/ptpls",
-};
-var NF_CAP_ID = { kp_att: "daily/kpiDaily", kp_occ: "daily/kpiOcc", st_shdef: "admin/shifts", fd_obs: "daily/field" };
+@@SYS:nf.cap.tasks@@@@SYS:nf.cap.custody@@@@SYS:nf.cap.staff@@@@SYS:nf.cap.plan@@  ready: "planning/readiness",
+@@SYS:nf.cap.dreport@@@@SYS:nf.cap.daily@@@@SYS:nf.cap@@};
+var NF_CAP_ID = { @@SYS:nf.capId.daily@@@@SYS:nf.capId.staff@@@@SYS:nf.capId.field.daily@@};
 var NF_MESSAGE_COLS = [
   "scope",
   "id",
@@ -1242,7 +722,7 @@ async function nfRefs(env, A, only) {
   (A.depts || []).forEach(function (d) {
     if (d && d.id && (!only || only.indexOf(d.id) >= 0) && !refs[d.id]) {
       refs[d.id] = {};
-      ["employees_v1", "staffing_v3", "dreport_v1", "perm_tpls_v1"].forEach(function (s) {
+      ["employees_v1", @@SYS:nf.refs.staff@@@@SYS:nf.refs.dreport@@"roles_v1", "shift_options_v1"].forEach(function (s) {
         keys.push("bsdept:" + d.id + ":bassam_" + s);
       });
     }
@@ -1257,54 +737,44 @@ async function nfRefs(env, A, only) {
   A.__nfRefs = refs;
   return refs;
 }
+/* V7 · د5-ح (بند 11): رئيسُ الوردية = من له صلاحيةٌ إشرافية الآن (دورُه في سجلّ أدوار وحدته bassam_roles_v1 يحمل sup:true — العلامةُ نفسُها
+   التي يقرؤها KIVO.BassamSup في الواجهة، ونقلها ترحيلُ perm44-roles من القوالب) وورد رئيساً أو نائباً في تقرير ورديته هو لليوم التشغيلي
+   بتوقيت الرياض (pfOpDay · pfDay: الورديةُ الليلية التي بدأت أمس ولم تنتهِ يومُها يومُ بدئها؛ ورديتُه من صفّه في التقرير المسحوب وإلا من جدوله).
+   كان يكفي ورودُه في أيّ تقريرٍ مخزَّن ولو قبل شهور، أو قالبٌ إشرافيّ بلا تقرير. الناتجُ قائمةُ وردياته التي يرأسها اليوم (واحدةٌ أو لا شيء)،
+   وبها تصله تنبيهاتُ ورديته وحدها (هدفُ «lead:<الوردية>» — nfLeadTargets). بغياب التقرير اليومي لا رئيسَ وردية. */
+function nfSupNow(r, u) {
+  var rec = r && isObj(r.roles_v1) ? r.roles_v1 : null, pr = rec && isObj(rec.people) ? rec.people[String(u.ekey)] : null, i;
+  if (!isObj(pr) || !pr.role || !Array.isArray(rec.roles)) return false;
+  for (i = 0; i < rec.roles.length; i++) if (rec.roles[i] && rec.roles[i].id === pr.role) return rec.roles[i].sup === true;
+  return false;
+}
+function nfLeadShifts(A, u, d, refs) {
+  if (!u || u.role !== "staff" || u.ekey == null || u.ekey === "") return [];
+  var r = refs[d] || {}, memo = r.__nfLead || Object.defineProperty(r, "__nfLead", { value: {} }).__nfLead, mk = String(u.id) + "\u0001" + String(u.ekey);
+  if (memo[mk]) return memo[mk];
+  var dr = @@SYS:nf.leader.dreport|empty="null"@@;
+  if (!isObj(dr) || !nfSupNow(r, u)) return (memo[mk] = []);
+  var emps = Array.isArray(r.employees_v1) ? r.employees_v1 : [], L = pfLink(u, emps), toks = pfTokens(u, L.rec, emps),
+    st = @@SYS:nf.lead.staffing.staff|empty="{}"@@, opts = Array.isArray(r.shift_options_v1) ? r.shift_options_v1 : [],
+    dayOf = function (T0) { return pfDay({ bucket: isObj(st[T0.ym]) ? st[T0.ym] : {}, rep: isObj(dr[T0.dk]) ? dr[T0.dk] : null, toks: toks, wd: T0.wd, opts: opts }); };
+  if (!toks.length) return (memo[mk] = []);
+  var T = pfOpDay(Date.now(), dayOf), sh = String(dayOf(T).shift.name || ""), rep = dr[T.dk],
+    s = sh && isObj(rep) && isObj(rep.shifts) && isObj(rep.shifts[sh]) ? rep.shifts[sh] : null, l = s && isObj(s.leaders) ? s.leaders : {},
+    me = [u.name, L.rec && L.rec.name, L.rec && L.rec.eid, u.ekey].filter(function (x) { return x != null && String(x).trim() !== ""; }).map(String);
+  return (memo[mk] = ["chief", "deputy"].some(function (x) { return l[x] != null && me.indexOf(String(l[x])) >= 0; }) ? [sh] : []);
+}
 function nfLeader(A, u, d, refs) {
-  // Preserve the established rule: leadership in any stored report, then the
-  // explicitly supervised template. Restricting reports to today is a policy change.
-  if (u.role !== "staff") return false;
-  var r = refs[d] || {},
-    dr = r.dreport_v1 || {},
-    names = {};
-  Object.keys(dr).forEach(function (k) {
-    if (!/^\d+-\d+-\d+$/.test(k)) return;
-    var sh = (dr[k] && dr[k].shifts) || {};
-    Object.keys(sh).forEach(function (s) {
-      var l = sh[s].leaders || {};
-      if (l.chief) names[l.chief] = 1;
-      if (l.deputy) names[l.deputy] = 1;
-    });
-  });
-  if (u.name && names[u.name]) return true;
-  var id = (((A.perms || {}).tplOf || {})[d] || {})[u.ekey],
-    t = (Array.isArray(r.perm_tpls_v1) ? r.perm_tpls_v1 : []).filter(function (x) {
-      return x && x.id === id;
-    })[0];
-  return !!(t && (t.sup === true || (t.sup === undefined && /رئيس|نائب/.test(t.name || ""))));
+  return nfLeadShifts(A, u, d, refs).length > 0;
+}
+/* هدفُ الرئيس لحدثٍ يحمل ورديته (vars.الوردية): «lead:<الوردية>» فلا يصل رئيسَ ورديةٍ أخرى؛ وبلا وردية «lead» لكل رئيس ورديةٍ اليوم */
+var NF_LEAD_SHIFT = "lead:";
+function nfLeadTargets(toR, vars) {
+  var sh = isObj(vars) && typeof vars["الوردية"] === "string" ? vars["الوردية"].trim() : "";
+  if (!sh || sh.length > 120) return toR;
+  return toR.map(function (x) { return x === "lead" ? NF_LEAD_SHIFT + sh : x; });
 }
 function nfShift(u, d, refs) {
-  var r = refs[d] || {},
-    st = r.staffing_v3 || {},
-    months = Object.keys(st)
-      .filter(function (k) {
-        return /^\d+-\d+$/.test(k);
-      })
-      .sort(function (a, b) {
-        var x = a.split("-").map(Number),
-          y = b.split("-").map(Number);
-        return y[0] - x[0] || y[1] - x[1];
-      }),
-    m = months[0];
-  if (!m) return "";
-  var e = (Array.isArray(r.employees_v1) ? r.employees_v1 : []).filter(function (x) {
-      return x && (x.eid || x.name) === u.ekey;
-    })[0],
-    keys = e ? [e.nid, e.eid, u.ekey] : [u.ekey];
-  for (var i = 0; i < keys.length; i++) {
-    var v = keys[i] && st[m][keys[i]];
-    if (v && v.shift) return String(v.shift);
-  }
-  return "";
-}
-function nfOwn(m, targets, u, refs) {
+@@SYS:nf.shift.staff|empty="  return \"\";\n}\n"@@function nfOwn(m, targets, u, refs) {
   var a = targets
     .filter(function (t) {
       return t.kind === "employee";
@@ -1321,39 +791,71 @@ function nfOwn(m, targets, u, refs) {
     })[0];
   return !!(e && e.nid && a.indexOf(String(e.nid)) >= 0);
 }
+/* ═══ V7 · د5-ح (قرار المالك · البند ٧): تنبيهُ نظامٍ مطفأ لا يُولَّد ولا يُعرض لأحد — ولا لمدير المنصة ═══
+   النظامُ مصدرُ النوع من إعلانه نفسِه: ورقةُ النوع (NF_CAP_ID — يعلنها النظامُ في فتحته) أو ورقةُ فئته (NF_CAP — كذلك) ⇒ النظامُ الذي تملك
+   ورقتَه (perm44E().sysList: leaves) ما دام يُشغَّل ويُطفأ (toggle). نوعٌ بلا ورقة نظام (الأمن · النسخ · الحساب · التعاميم · الموظفون) لا يتأثر.
+   مطفأٌ = على المنصة (A.off) أو في سقف الوحدة d أو أحد أصولها (perm44LeafOn — القاعدةُ نفسُها لسقف الأدوار).
+   الحكمُ وقتَ القراءة (nfAudience) لا الحذف: المخزَّنُ يبقى كما هو ويعود حين يُعاد تشغيلُ النظام */
+var NF_SYS_MEMO = null;
+function nfSysOf(type, cat) {
+  var page = NF_CAP_ID[type] || NF_CAP[cat];
+  if (!page) return "";
+  if (!NF_SYS_MEMO) NF_SYS_MEMO = {};
+  if (NF_SYS_MEMO[page] !== undefined) return NF_SYS_MEMO[page];
+  var out = "";
+  try {
+    perm44E().sysList().forEach(function (s) {
+      if (!out && s && s.toggle !== false && Array.isArray(s.leaves) && s.leaves.indexOf(page) !== -1) out = s.key;
+    });
+  } catch (e) {
+    swallow("nf-sys-of", e);
+  }
+  return (NF_SYS_MEMO[page] = out);
+}
+function nfSysOff(A, d, type, cat) {
+  var s = nfSysOf(type, cat);
+  if (!s) return false;
+  if (Array.isArray(A && A.off) && A.off.indexOf(s) !== -1) return true;
+  if (!d) return false;
+  try {
+    return !perm44E().sysOn(s, perm44LeafOn(A, d));
+  } catch (e) {
+    swallow("nf-sys-off", e);
+    return false;
+  }
+}
 function nfPage(A, d, type, cat, act) {
   var page = NF_CAP_ID[type] || NF_CAP[cat];
   if (A.u.role === "super") return true;   /* V7 · د1-ج (قرار صاحب المنصة): مدير المنصة بلا قيد صلاحية — قبل السقف والوحدات المطفأة والعدسة والأوراق */
+  /* V7 · د5-ح: تنبيهاتُ الصلاحيات (pm_chg · pm_cap) كانت تُحرس بورقة «قوالب الصلاحيات» المحذوفة — صارت لمدير الوحدة (isMgrOf) كتبويب «الصلاحيات» نفسِه */
+  if (cat === "perm") return !!d && deptInScope(A, d) && isMgrOf(A, d);
   if (!page) return !["sys", "sec"].includes(cat);
   if (!d || !deptInScope(A, d) || !capOnDept(A, d, page)) return false;
   if (page.indexOf("admin/") === 0 && act === "view" && isMgrOf(A, d)) return true;
-  if (A.enf) {
-    /* RISHAD-266 · owner decision («مدير الإدارة في enforce يقرأ إشعارات الموظفين الموجّهة للمديرين»): «emps» is a container page with
-       no registry atom, so the lookup below never answered for the «emp» category and no manager read these in enforce. READ only,
-       and only for the manager role of this unit: the legacy rule itself (the manager's sheet holds «view» on the container — a
-       manager with his own narrower sheet does not) ∧ the enforce key emp.view still held (an explicit «minus» keeps dropping it).
-       Scope and the unit ceiling were checked above. Nothing else is opened: a non-manager, whatever key or leaf he holds, gets
-       false as before, and the emit path never comes here for this category (clients are dropped, the server plans internally). */
-    if (cat === "emp" && page === NF_CAP.emp)
-      return act === "view" && isMgrOf(A, d) && actsHeldOn(A, d, page, [act]) && enfHeld(A, d, "emp.view");
-    var atom = KIVO_REGISTRY.atoms[page + ":" + act];
-    /* V7 · د1-ب: الصفحةُ الحاوية (irshad · seized · award) لا ذرّةَ لها في السجل — ذرّاتُها على أوراقها — فكان لا يُحسب لها مستلمٌ في الإنفاذ.
-       المستلمون الآن هم مستلمو الوضع القديم لنفس الصلاحيات (ورقةُ القارئ تحمل الفعلَ على الحاوية) ∧ يحمل في الإنفاذ ذرّةَ ورقةٍ واحدةٍ منها
-       على الأقل (فالإسقاطُ الصريح في الإنفاذ يبقى نافذاً). emps عولجت أعلاه ولا تصل إلى هنا. */
-    if (!atom && pgIsContainer(page))
-      return actsHeldOn(A, d, page, [act]) && pgLeaves(page).some(function (leaf) {
-        var la = KIVO_REGISTRY.atoms[leaf + ":" + act];
-        return !!(la && la.targets && la.targets.some(function (k) { return enfHeld(A, d, k); }));
-      });
-    return !!(
-      atom &&
-      atom.targets &&
-      atom.targets.some(function (k) {
-        return enfHeld(A, d, k);
-      })
-    );
-  }
-  return actsHeldOn(A, d, page, [act]);
+  /* RISHAD-266 · owner decision («مدير الإدارة في enforce يقرأ إشعارات الموظفين الموجّهة للمديرين»): «emps» is a container page with
+     no registry atom, so the lookup below never answered for the «emp» category and no manager read these in enforce. READ only,
+     and only for the manager role of this unit: the legacy rule itself (the manager's sheet holds «view» on the container — a
+     manager with his own narrower sheet does not) ∧ the enforce key emp.view still held (an explicit «minus» keeps dropping it).
+     Scope and the unit ceiling were checked above. Nothing else is opened: a non-manager, whatever key or leaf he holds, gets
+     false as before, and the emit path never comes here for this category (clients are dropped, the server plans internally). */
+  if (cat === "emp" && page === NF_CAP.emp)
+    return act === "view" && isMgrOf(A, d) && actsHeldOn(A, d, page, [act]) && enfHeld(A, d, "emp.view");
+  var atom = KIVO_REGISTRY.atoms[page + ":" + act];
+  /* V7 · د1-ب: الصفحةُ الحاوية (irshad · seized · award) لا ذرّةَ لها في السجل — ذرّاتُها على أوراقها — فكان لا يُحسب لها مستلمٌ في الإنفاذ.
+     المستلمون الآن هم مستلمو الوضع القديم لنفس الصلاحيات (ورقةُ القارئ تحمل الفعلَ على الحاوية) ∧ يحمل في الإنفاذ ذرّةَ ورقةٍ واحدةٍ منها
+     على الأقل (فالإسقاطُ الصريح في الإنفاذ يبقى نافذاً). emps عولجت أعلاه ولا تصل إلى هنا. */
+  if (!atom && pgIsContainer(page))
+    return actsHeldOn(A, d, page, [act]) && pgLeaves(page).some(function (leaf) {
+      var la = KIVO_REGISTRY.atoms[leaf + ":" + act];
+      return !!(la && la.targets && la.targets.some(function (k) { return enfHeld(A, d, k); }));
+    });
+  return !!(
+    atom &&
+    atom.targets &&
+    atom.targets.some(function (k) {
+      return enfHeld(A, d, k);
+    })
+  );
 }
 function nfTargetHit(A, m, targets, u, refs) {
   if (m.kind === "broadcast") {
@@ -1393,7 +895,8 @@ function nfTargetHit(A, m, targets, u, refs) {
       roles.indexOf("all") >= 0 ||
       (roles.indexOf("sys") >= 0 && u.role === "super") ||
       (roles.indexOf("mgr") >= 0 && u.role !== "super" && isMgrOf(Object.assign({}, A, { u: u }), m.department || u.deptId)) ||
-      (roles.indexOf("lead") >= 0 && nfLeader(A, u, m.department || u.deptId, refs));
+      ((roles.indexOf("lead") >= 0 || roles.some(function (x) { return x.indexOf(NF_LEAD_SHIFT) === 0; })) &&
+        nfLeadShifts(A, u, m.department || u.deptId, refs).some(function (sh) { return roles.indexOf("lead") >= 0 || roles.indexOf(NF_LEAD_SHIFT + sh) >= 0; }));
   return !!(
     hit &&
     (u.role === "super" ||
@@ -1947,6 +1450,7 @@ async function nfAudience(env, A, opts) {
     // Super inbox matching uses account keys and fixed roles only. Broadcasts
     // are visible directly; staff recipient statistics still load their refs.
     refs = A.u.role === "super" ? {} : await nfRefs(env, A, depts),
+    off = [],
     aud = [],
     bc = [],
     u = A.u;
@@ -1968,11 +1472,12 @@ async function nfAudience(env, A, opts) {
     var roles = ["all"];
     if (u.role === "super") roles.push("sys");
     else if (isMgrOf(A, d)) roles.push("mgr");
-    if (nfLeader(A, u, d, refs)) roles.push("lead");
+    nfLeadShifts(A, u, d, refs).forEach(function (sh) { roles.push("lead", NF_LEAD_SHIFT + sh); });   /* V7 · د5-ح: رئيسُ ورديته اليوم — العامّ وورديتُه وحدها */
     Object.keys(NF_TYPES)
       .concat(["bc_dept"])
       .forEach(function (type) {
         var cat = NF_TYPES[type] ? NF_TYPES[type].k : "bc";
+        if (nfSysOff(A, d, type, cat)) return off.push({ scope: scope, type: type });   /* V7 · د5-ح: لا يُعرض لأحد ولا لمدير المنصة */
         if (u.role === "super" || nfPage(A, d, type, cat, "view"))
           roles.forEach(function (role) {
             add(scope, "role", role, type);
@@ -2000,7 +1505,7 @@ async function nfAudience(env, A, opts) {
   if (u.role === "staff" && !mgr && !lead) bc.push({ kind: "role", value: "staff" });
   var shift = nfShift(u, u.deptId, refs);
   if (shift) bc.push({ kind: "shift", value: shift });
-  return { aud: aud, bc: bc, scopes: depts.map(nfScope).concat(u.role === "super" ? ["sys"] : []) };
+  return { aud: aud, bc: bc, off: off, scopes: depts.map(nfScope).concat(u.role === "super" ? ["sys"] : []) };
 }
 async function nfFeedRows(env, A, opts) {
   opts = opts || {};
@@ -2020,9 +1525,17 @@ async function nfFeedRows(env, A, opts) {
         : "(m.target_mode='all' OR EXISTS(SELECT 1 FROM notification_targets t JOIN json_each(?5) a ON json_extract(a.value,'$.kind')=t.kind AND json_extract(a.value,'$.value')=t.value WHERE t.scope=m.scope AND t.message_id=m.id))") +
       "))";
   if (A.u.role === "super" && !opts.all) where += " AND (m.department='' OR m.department=?6 OR m.category IN ('sys','sec'))";
+  /* V7 · د5-ح (البند ٧): نوعُ نظامٍ مطفأ في نطاق وحدته خارجَ القائمة والعدّاد كليهما (الشرطُ نفسُه لهما) — ولو وصل باسم الشخص (employee · «*»).
+     القيمُ من السجلّ لا من الطلب (أنواعٌ معرَّفة · نطاقاتٌ من معرّفات الوحدات) وتُهرَّب على كل حال */
+  if (audience.off.length) {
+    var q9 = function (s) { return "'" + String(s).replace(/'/g, "''") + "'"; }, byScope9 = {};
+    audience.off.forEach(function (o) { (byScope9[o.scope] = byScope9[o.scope] || []).push(o.type); });
+    where += " AND NOT (m.kind='event' AND (" + Object.keys(byScope9).map(function (sc) { return "(m.scope=" + q9(sc) + " AND m.type IN (" + byScope9[sc].map(q9).join(",") + "))"; }).join(" OR ") + "))";
+  }
   bind.push(opts.dept || A.u.deptId || "");
   where += " AND json_valid(?5) AND ?6 IS NOT NULL";
-@@SYS:nf.feed.known.award|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.custody|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.irshad|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.seized|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.tasks|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@  var from =
+@@SYS:nf.feed.known.award|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.custody|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.irshad|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.staff|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@
+@@SYS:nf.feed.known.seized|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.tasks|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@@@SYS:nf.feed.known.plan|empty="  if (where.indexOf(\" AND (m.kind<>'event' OR\") < 0) where += \" AND (m.kind<>'event' OR m.type IN ('\" + Object.keys(NF_TYPES).join(\"','\") + \"'))\";   /* a type this build does not define (absent system): hidden, kept */\n"@@  var from =
       " FROM notification_messages m LEFT JOIN notification_user_state s ON s.account_uid=?1 AND s.message_scope=m.scope AND s.message_id=m.id WHERE ",
     pin = "CASE WHEN m.pinned=1 AND COALESCE(s.read_at,0)=0 THEN 1 ELSE 0 END",
     cursor = opts.cursor || "",
@@ -2326,6 +1839,8 @@ async function nfPlanEvents(env, A, events, internal) {
     if (!T.on) return;
     var d = it.dept || A.u.deptId || "",
       own = it.own || [];
+    /* V7 · د5-ح (البند ٧): حدثُ نظامٍ مطفأ (على المنصة أو لهذه الوحدة) لا يُولَّد — يُسقط بصمت كالمتقاعد، من أيّ منتجٍ كان (المتصفحُ أو الخادمُ نفسُه) */
+    if (nfSysOff(A, d, T.id, T.k)) return;
     nfArr(own, 20000).forEach(function (k) {
       nfStr(k, 200, false);
     });
@@ -2342,9 +1857,9 @@ async function nfPlanEvents(env, A, events, internal) {
     if (it.once !== undefined) nfStr(it.once, 500, false);
     if (it.at !== undefined) nfTime(it.at);
     var toE = T.to.indexOf("own") >= 0 ? own : [],
-      toR = T.to.filter(function (r) {
+      toR = nfLeadTargets(T.to.filter(function (r) {
         return r !== "own";
-      }),
+      }), it.vars),
       sys = toR.length === 1 && toR[0] === "sys" && !toE.length && A.u.role === "super";
     if (!sys && (!d || !deptInScope(A, d))) throw nfErr("notification-scope", 403);
     var selfOnly =
@@ -2720,7 +2235,7 @@ async function nfBroadcastCreate(env, A, body) {
     dept = body.op === "dept-broadcast",
     d = body.dept || A.u.deptId || "";
   if (dept) {
-    if (!d || !deptInScope(A, d) || (A.enf ? !enfHeld(A, d, "notif.dept.broadcast") : !isMgrOf(A, d)))
+    if (!d || !deptInScope(A, d) || !enfHeld(A, d, "notif.dept.broadcast"))
       throw nfErr("notification-broadcast-permission", 403);
     nfArr(b.emps || [], 20000).forEach(function (x) {
       nfStr(x, 200, false);
@@ -2865,8 +2380,8 @@ var NF_DENY_WIN_MS = 60000,
   NF_DENY_REC_OTHER = "بيانات المنصة";
 /* prettier-ignore */
 var NF_DENY_PAGES = {
-  @@SYS:nf.denyPages.dstats@@emps: "موظفو الإدارة", planning: "الخطة التشغيلية", staff: "الجدول الشهري", plan: "التشغيل الميداني",
-  daily: "المتابعة اليومية", dreport: "التقرير اليومي",@@SYS:nf.denyPages.tasks@@@@SYS:nf.denyPages.2@@
+  @@SYS:nf.denyPages.dstats@@emps: "موظفو الإدارة", planning: "الخطة التشغيلية", @@SYS:nf.denyPages.staff@@@@SYS:nf.denyPages.plan@@
+@@SYS:nf.denyPages.daily@@@@SYS:nf.denyPages.dreport@@@@SYS:nf.denyPages.tasks@@@@SYS:nf.denyPages.2@@
   @@SYS:nf.denyPages.3@@links: "مواقع ذات صلة", help: "المساعدة", admin: "الإعدادات",
 };
 /* prettier-ignore */
@@ -2874,18 +2389,14 @@ var NF_DENY_RECS = {
   bassam_auth_users_v1: "حسابات الدخول", bassam_perms_v1: "الصلاحيات", bassam_depts_v1: "الإدارات", bassam_gdepts_v1: "الهيكل التنظيمي",
   bassam_platform_v1: "إعدادات المنصة", bassam_struct_seed_v1: "تهيئة الهيكل التنظيمي", bassam_perm_admsubs_v2: "ترقية الصلاحيات",
   bassam_session_v1: "الجلسة", bassam_theme: "المظهر", bassam_active_dept_v1: "الإدارة النشطة", bassam_fresh_login_v1: "راية أول دخول",
-  bassam_notif_mute_v1: "كتم التنبيهات", bassam_page_v1: "الصفحة المحفوظة", bassam_st_grp_v1: "مجموعات الجدول الشهري",
+  bassam_notif_mute_v1: "كتم التنبيهات", bassam_page_v1: "الصفحة المحفوظة",@@SYS:nf.denyRecs.staff.grp@@
   bassam_employees_v1: "قائمة الموظفين", bassam_options_v1: "خيارات الموظفين",@@SYS:nf.denyRecs.custody@@
-  bassam_staffing_v3: "الجدول الشهري", bassam_staffing_v2: "الجدول الشهري (صيغة قديمة)", bassam_staffing_snap_v1: "بيان الشهر",
-  bassam_staffing_locks_v1: "أقفال الجدول الشهري", bassam_callsigns_v1: "رموز النداء", bassam_perm_limit_v1: "ترقية الصلاحيات",
-  bassam_plan_v1: "الخطة التشغيلية", bassam_zone_opts_v1: "خيارات المصليات", bassam_gate_opts_v1: "خيارات الأبواب",
-  bassam_mark_kinds_v1: "أنواع المعالم", bassam_rounds_v1: "الجولات اليومية", bassam_dayshift_v1: "الوردية المختارة",
-  bassam_dayfocus_v1: "اليوم المختار", bassam_dreport_v1: "التقرير اليومي", bassam_dr_grp_v1: "مجموعات التقرير اليومي",
-  bassam_leave_kinds_v1: "أنواع الإجازات",@@SYS:nf.denyRecs.tasks@@@@SYS:nf.denyRecs.1@@
+@@SYS:nf.denyRecs.staff@@@@SYS:nf.denyRecs.plan|empty=" "@@ @@SYS:nf.denyRecs.daily@@bassam_dayshift_v1: "الوردية المختارة",
+  bassam_dayfocus_v1: "اليوم المختار",@@SYS:nf.denyRecs.dreport@@@@SYS:nf.denyRecs.tasks@@@@SYS:nf.denyRecs.1@@
   @@SYS:nf.denyRecs.2@@
   @@SYS:nf.denyRecs.3@@
   @@SYS:nf.denyRecs.4@@
-  @@SYS:nf.denyRecs.5@@bassam_shift_options_v1: "الورديات", bassam_perm_tpls_v1: "قوالب الصلاحيات",
+  @@SYS:nf.denyRecs.5@@bassam_shift_options_v1: "الورديات", bassam_roles_v1: "أدوار الصلاحيات",
   bassam_last_export_v1: "آخر تصدير", bassam_last_full_export_v1: "آخر نسخة شاملة", bassam_notif_dev_v1: "جهاز التنبيهات",
   bassam_perm_help_v1: "ترقية الصلاحيات", bassam_perm_irshad_cap_v1: "ترقية الصلاحيات", bassam_perm_seized_cap_v1: "ترقية الصلاحيات",
   bassam_perm_leaf_v1: "ترقية الصلاحيات", bassam_perm_mgr_explicit_v1: "ترقية الصلاحيات", bassam_first_boot_v1: "أول تشغيل",
@@ -2893,25 +2404,31 @@ var NF_DENY_RECS = {
   /* not in the client's list */
   @@SYS:nf.denyRecs.dstats@@@@SYS:nf.labels.retro|sep=" "@@
   bassam_notif_cfg_v1: "إعدادات التنبيهات (سجل قديم)", bassam_notif_sys_v1: "تنبيهات المنصة (سجل قديم)", bassam_bc_v1: "التعاميم (سجل قديم)",
-  bassam_notif_v1: "تنبيهات الإدارة (سجل قديم)", bslg_v1: "عدّاد محاولات الدخول على الجهاز", bassam_perm_tpls_named_v1: "راية إعادة تسمية قوالب الصلاحيات",
+  bassam_notif_v1: "تنبيهات الإدارة (سجل قديم)", bslg_v1: "عدّاد محاولات الدخول على الجهاز",
 };
 /* prettier-ignore */
 var NF_DENY_WHY = {
   /* permission and scope */
   perm: "صلاحيته لا تشمل هذا الإجراء", "no-atom": "صلاحيته لا تشمل هذا الإجراء", none: "لا صلاحية له تتيح هذا الإجراء",
-  act: "صلاحيته على هذه الصفحة لا تشمل هذا الإجراء", page: "صلاحيته على هذه الصفحة عرضٌ فقط", view: "صلاحيته عرضٌ فقط",
+  /* V7 · د5-ح: حُذفت رموزُ المسار القديم act · page · dslock · rule · noop — لم يعد الخادم يُصدرها */
+  view: "صلاحيته عرضٌ فقط",
   cap: "الصفحة خارج سقف إدارته", dept: "السجل يخصّ إدارة أخرى", scope: "خارج نطاقه (المسنَد إليه أو المصدر أو الفترة)",
   "scope-unknown": "تعذّر التحقق من قفل الفترة لهذا التعديل", "scope-retired": "سقف النطاق القديم أُلغي ولا يُحفظ",
   super: "الإجراء لمسؤول المنصة وحده", "super-only": "الإجراء لمسؤول المنصة وحده", sys: "الإجراء لمسؤول المنصة وحده",
   mgr: "الإجراء لمدير الإدارة", role: "دوره لا يسمح بهذا الإجراء", "mgr-without-sheet": "مدير لم تُمنح له هذه الصلاحية في ورقته",
   feature: "الميزة غير ممنوحة له", reserved: "صلاحية محجوزة لم تُفعَّل بعد", obsolete: "صلاحية أُلغيت ولم تعد تُمنح",
-  deny: "لم يسمح به نظام الصلاحيات", reason: "هذه العملية تتطلب ذكر السبب", dslock: "اليوم أو الشهر مقفل", own: "السجل لصاحبه وحده",
+  deny: "لم يسمح به نظام الصلاحيات", reason: "هذه العملية تتطلب ذكر السبب", own: "السجل لصاحبه وحده",
   "restore-policy": "الاستعادة لمسؤول المنصة أو لمدير الإدارة الممنوح مفتاحها", "import-allowlist": "السجل خارج قائمة الاستيراد المسموحة",
   /* accounts and permissions registers */
   users: "جدول الحسابات لم يُقبل", "users · dup-id ": "جدول الحسابات لم يُقبل لتكرار معرّف حساب",
   "users · users-stale-client": "جدول الحسابات لم يُقبل لأن نسخة الصفحة قديمة", perms: "الصلاحيات لم تُقبل",
   "perms · stale-client": "الصلاحيات لم تُقبل لأن نسخة الصفحة قديمة", "perms-stale-client": "الصلاحيات لم تُقبل لأن نسخة الصفحة قديمة",
-  "privacy-hidden": "التعديل يمسّ بيانات محجوبة عنه", capmode: "صيغة سقف الصلاحيات لم تُقبل",
+  "privacy-hidden": "التعديل يمسّ بيانات محجوبة عنه", display: "حساب شاشة العرض للمشاهدة وحدها", "rk-changed": "تغيّر مفتاح الاستعادة أثناء الطلب — أعد المحاولة",
+  /* V7 · د5-هـ (44): سجلُّ الأدوار ومنحُ حامليها */
+  "role-id": "معرّف الدور فارغ أو مكرّر", "role-name": "اسم الدور مطلوب ولا يزيد على ثمانين حرفاً", "role-desc": "وصف الدور أطول من المسموح",
+  "role-sup": "علامة الطاقم الإشرافي في الدور غير صحيحة", "role-sys": "أنظمة الدور غير محدّدة", "role-lvl": "مستوى نظامٍ في الدور غير معروف",
+  "person-role": "الدور المُسند للشخص غير موجود", "person-ex": "استثناءٌ مؤقت بصيغةٍ غير صحيحة",
+  "p44-grants": "منح الحامل لا يطابق دوره — يُحفظ الدور والمنح معاً", capmode: "صيغة سقف الصلاحيات لم تُقبل",
   grant: "لا يملك منح هذه الصلاحية", target: "صلاحيات المديرين يعدّلها مسؤول المنصة أو المدير الأعلى",
   ekey: "مفتاح الحساب مفتاح مدير يعدّله مسؤول المنصة وحده", "mgr-key": "حساب مدير الإدارة لا تُنزع عنه الإدارة",
   "dept-role": "نوع «حساب الإدارة» أُلغي فلا يُنشأ ولا يُعدَّل", self: "لا يُعدَّل في حسابه سوى كلمة المرور",
@@ -2925,8 +2442,9 @@ var NF_DENY_WHY = {
   /* shape of the record */
   shape: "قيمة خارج الحدود المسموحة طولاً أو شكلاً", unmapped: "تعديل غير مصنَّف رُفض احتياطاً", residual: "تعديل غير مصنَّف رُفض احتياطاً",
   unbound: "تعديل غير مصنَّف رُفض احتياطاً", keydel: "حذف السجل كاملاً غير مسموح", append: "السجل يقبل الإضافة فقط ولا يُعدَّل ما سبق فيه",
-  unknown: "سجل لا يعرفه الخادم", device: "تفضيل خاص بالجهاز لا يُحفظ في الخادم", rule: "للسجل سياسة خاصة لا تسمح بهذا الإجراء",
-  noop: "طلب بلا إجراء محدَّد", session: "جلسة غير صالحة", base: "الطلب لم يذكر نسخة السجل التي بُني عليها",
+  unknown: "سجل لا يعرفه الخادم", device: "تفضيل خاص بالجهاز لا يُحفظ في الخادم",
+  srv: "سجلٌّ تكتبه خطوةُ خادمٍ وحدها (كأرشيف الجولات) — لا يُكتب من الصفحة",   /* V7 · د5-ح (13): 023 RES_READ_AS · 060 */
+  session: "جلسة غير صالحة", base: "الطلب لم يذكر نسخة السجل التي بُني عليها",
   flag: "راية تهيئة يكتبها مدير الإدارة وحده", tech: "راية تهيئة لا يكتبها إلا من له كتابة في الإدارة",
   selfdev: "سجل جهاز التنبيهات لصاحبه وحده", notif: "سجل التنبيهات القديم لم يعد يُكتب", "domain-moved": "السجل انتقل إلى مسار خاص ولا يُحفظ بالحفظ العام",
 @@SYS:nf.denyWhy.dstats@@  /* employees and tasks */
@@ -3110,6 +2628,7 @@ async function nfSecurityPoll(env, A) {
     max = last,
     fails = {},
     failId = {},
+    failWhy = {},
     denyOpen = {},
     denyAll = [];
   rows.forEach(function (r) {
@@ -3121,6 +2640,8 @@ async function nfSecurityPoll(env, A) {
       var k = r.target || r.un;
       fails[k] = (fails[k] || 0) + 1;
       failId[k] = r.id;
+      var fw = failWhy[k] || (failWhy[k] = {});
+      fw[r.detail || ""] = (fw[r.detail || ""] || 0) + 1;
       return;
     }
     if (r.act === "lock" || r.act === "guard_unlock") {
@@ -3131,10 +2652,12 @@ async function nfSecurityPoll(env, A) {
       vars = { التفصيل: r.detail || "", المُعدّل: r.un || "" };
     } else if (["recovery_key", "recover_ok", "recover_fail"].indexOf(r.act) >= 0) {
       type = "sc_rk";
+      /* V7 · د5-هـ: المحاولةُ الفاشلة «رُفض» (كانت «استُخدم») وسببُها من sec.detail (bad-key · no-key — 062a) */
       vars = {
-        الفعل: r.act === "recovery_key" ? "أُنشئ" : "استُخدم",
+        الفعل: r.act === "recovery_key" ? "أُنشئ" : r.act === "recover_fail" ? "رُفض" : "استُخدم",
         IP: r.ip || "",
         النتيجة: r.act === "recover_fail" ? "محاولة فاشلة" : "نجح",
+        السبب: r.act === "recover_fail" ? "(السبب: " + (NF_RK_WHY[r.detail] || r.detail || "غير معروف") + ")" : "",
       };
     } else if (r.act === "denied") {
       var gk = [r.uid, r.target, r.detail].join("\u0001"),
@@ -3169,15 +2692,19 @@ async function nfSecurityPoll(env, A) {
     (
       (
         await env.DB.prepare(
-          "SELECT un,ip,COUNT(*) c FROM sec WHERE act='login_fail' AND ts>?1 AND un IN (SELECT value FROM json_each(?2)) GROUP BY un,ip ORDER BY c DESC,ip",
+          "SELECT un,ip,COUNT(*) c,SUM(detail='bad-pw') bad_pw,SUM(detail='no-user') no_user,SUM(detail='frozen') frozen,SUM(COALESCE(detail,'') NOT IN ('bad-pw','no-user','frozen')) other FROM sec WHERE act='login_fail' AND ts>?1 AND un IN (SELECT value FROM json_each(?2)) GROUP BY un,ip ORDER BY c DESC,ip",
         )
           .bind(nowF - NF_FAIL_WIN_MS, JSON.stringify(failNames))
           .all()
       ).results || []
     ).forEach(function (x) {
-      var b = byName[x.un] || (byName[x.un] = { n: 0, ips: [] });
+      var b = byName[x.un] || (byName[x.un] = { n: 0, ips: [], why: {} });
       b.n += x.c;
       if (x.ip) b.ips.push(x.ip);
+      ["bad-pw", "no-user", "frozen"].forEach(function (d) {
+        if (x[d.replace("-", "_")]) b.why[d] = (b.why[d] || 0) + x[d.replace("-", "_")];
+      });
+      if (x.other) b.why[""] = (b.why[""] || 0) + x.other;
     });
   }
   /* المراجعة المستقلة (L2): إنذارُ العناوين المختلفة لحسابٍ قائمٍ فقط — رشُّ أسماءٍ لا وجودَ لها من عناوين قليلة كان يولّد إنذاراً عاجلاً لكل اسم.
@@ -3221,6 +2748,7 @@ async function nfSecurityPoll(env, A) {
             b.ips.length > 1
               ? b.ips.length + " عناوين مختلفة: " + b.ips.slice(0, 5).join("، ") + (b.ips.length > 5 ? " …" : "")
               : b.ips[0] || "",
+          السبب: nfFailWhy(b.n >= fails[k] ? b.why : failWhy[k]),
         },
         once: fails[k] >= 5 ? "fail:" + k + ":" + Math.floor(nowF / 600000) : "fail:" + k + ":ips:" + failId[k],
       });
@@ -3250,6 +2778,19 @@ async function nfSecurityPoll(env, A) {
     ).results || [];
   for (var i = 0; i < due.length; i++) await nfRemind(env, A, due[i].id, undefined, true);
   return result;
+}
+/* V7 · د5-هـ: أسبابُ الرفض في إنذارَي الأمن — sec.detail (062a) نصّاً مقروءاً */
+var NF_RK_WHY = { "bad-key": "المفتاح غير صحيح", "no-key": "لا يوجد مفتاح استعادة مُصدَر" },
+  NF_FAIL_WHY = { "bad-pw": "كلمة مرور خاطئة", "no-user": "اسم مستخدم غير موجود", frozen: "حساب موقوف" };
+function nfFailWhy(w) {
+  return Object.keys(w || {})
+    .sort(function (a, b) {
+      return w[b] - w[a] || (a < b ? -1 : 1);
+    })
+    .map(function (d) {
+      return (NF_FAIL_WHY[d] || "سبب غير معروف") + " ×" + w[d];
+    })
+    .join("، ");
 }
 async function nfAction(env, A, body) {
   var op = body.op;

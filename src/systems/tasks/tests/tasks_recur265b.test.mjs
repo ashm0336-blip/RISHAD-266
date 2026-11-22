@@ -10,6 +10,7 @@
      S9  الإنهاءُ والتعديل: حدثُ «أُلغيت» لكل نسخةٍ ملغاة — يراه كلُّ مكلَّفٍ في «سجل المهمة» · والحدثُ المجمَّع باقٍ · ولا تنبيه (كما كان)
      S10 rec-asg بمفاتيح 400 المعقودة (at)
      U1  stop {k, row}: نسخةُ هذه السلسلة المحدَّدة تبقى آخرَ موعدٍ لها */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, KT, D, DAY, PDAY, TAG, stored, putKV, hij, MID, HR, wdOf, ymOf, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
@@ -63,7 +64,7 @@ async function runWith(W, during) {
   } finally { DB.prepare = orig; DB.batch = batch; }
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'S1 إيقافٌ · إنهاءٌ · تعديلٌ حُفظ أثناء التوليد: لا نسخةَ بالقاعدة القديمة بعده', async () => {

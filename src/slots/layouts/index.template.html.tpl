@@ -51,6 +51,7 @@
 <div id="bs-boot" aria-hidden="true"><div class="bs-boot-bar"></div><div class="bs-boot-msg">جارٍ التحميل…</div></div>
 @@KIVO_BLOCK:i18n/120-arabic-digits.js@@
 @@KIVO_BLOCK:core/130-error-bar.js@@
+@@KIVO_BLOCK:core/060-bus.js@@
 
 @@KIVO_BLOCK:core/140-safety-scheduler.js@@
 @@KIVO_BLOCK:styles/150-statscroll.css@@
@@ -82,15 +83,14 @@
 @@KIVO_BLOCK:permissions/334-perm-tree-tpl.js@@
 @@KIVO_BLOCK:auth/335-identity-gate.js@@
 @@KIVO_BLOCK:permissions/340-registry-v24-9.js@@
-@@KIVO_BLOCK:permissions/350-perm-v2-shadow.js@@
+@@KIVO_BLOCK:permissions/345-perm44.js@@
 @@KIVO_BLOCK:services/360-bassam-idb.js@@
 @@KIVO_BLOCK:auth/370-backup-crypto.js@@
 @@KIVO_BLOCK:i18n/380-hijri-fallback.js@@
-@@KIVO_BLOCK:services/390-kpi-primitives.js@@
-@@KIVO_BLOCK:services/400-shift-need.js@@
+@@KIVO_BLOCK:i18n/385-calendar.js@@
+@@SYS:shell.multi.390@@@@KIVO_BLOCK:services/400-shift-need.js@@
 @@KIVO_BLOCK:services/410-gate-units.js@@
-@@KIVO_BLOCK:services/420-round-factory.js@@
-@@KIVO_BLOCK:services/430-store-broadcast.js@@
+@@SYS:shell.svc.daily.1@@@@KIVO_BLOCK:services/430-store-broadcast.js@@
 @@KIVO_BLOCK:services/440-count.js@@
 @@KIVO_BLOCK:services/441-notif-core.js@@
 @@KIVO_BLOCK:services/442-notif-observer.js@@
@@ -100,18 +100,14 @@
 
 @@KIVO_BLOCK:services/490-emp-key.js@@
 @@KIVO_BLOCK:services/500-element-uid.js@@
-@@KIVO_BLOCK:services/520-field-monitor.js@@
-@@KIVO_BLOCK:services/530-emp-day-facts.js@@
-@@KIVO_BLOCK:services/535-profile-facts.js@@
+@@SYS:shell.svc.daily.2@@@@SYS:shell.blocks.staff@@@@SYS:shell.blocks.plan.p3@@@@SYS:shell.blocks.plan.p4@@@@SYS:shell.blocks.dreport@@@@SYS:shell.blocks.dreport.r3@@@@SYS:shell.blocks.daily.t2@@@@SYS:shell.blocks.daily.t3@@@@KIVO_BLOCK:services/535-profile-facts.js@@
 @@SYS:shell.blocks.tasks@@@@SYS:shell.blocks.custody@@@@KIVO_BLOCK:services/548-atomic-backup.js@@
 @@KIVO_BLOCK:styles/540-busy.css@@
 @@KIVO_BLOCK:components/550-bassam-busy.js@@
 @@KIVO_BLOCK:styles/555-page-states.css@@
 @@KIVO_BLOCK:components/555-page-states.js@@
-@@KIVO_BLOCK:components/560-canvas-input.js@@
-@@KIVO_BLOCK:components/565-page-kit.js@@
-@@KIVO_BLOCK:services/566-print-core.js@@
-@@KIVO_BLOCK:services/570-bassam-xlsx.js@@
+@@SYS:shell.multi.560@@@@KIVO_BLOCK:components/565-page-kit.js@@
+@@SYS:shell.blocks.print@@@@KIVO_BLOCK:services/570-bassam-xlsx.js@@
 @@SYS:shell.blocks.after570@@@@KIVO_BLOCK:services/590-employees-import.js@@
 <x-dc>
 <helmet>
@@ -189,7 +185,6 @@
           <span class="nlbl s-deptn">{{deptName}}</span>
           <svg class="s-deptc" width="12" height="12" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{deptChev}}" data-i="i-820aa71e"></svg>
         </button>
-        <sc-if value="{{secAddOn}}" hint-placeholder-val="{{ false }}"><button class="s-secadd" sc-camel-on-click="{{secAdd}}" title="إضافة قسم تحت هذه الإدارة" aria-label="إضافة قسم تحت هذه الإدارة">+ قسم</button></sc-if>
       </div>
       <sc-if value="{{deptOpen}}" hint-placeholder-val="{{ false }}">
       <div class="s-deptdd">
@@ -218,8 +213,7 @@
       <a class="{{nKpis}}" data-key="kpis" role="link" tabindex="0" sc-camel-on-click="{{goKpis}}" title="{{tKpis}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-f1f8422f"></svg></span><span class="nlbl">{{lKpis}}</span></a>
 @@SYS:shell.nav.dstats@@      <a class="{{nEmployees}}" data-key="emps" role="link" tabindex="0" sc-camel-on-click="{{goEmployees}}" title="{{tEmployees}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-88b8240d"></svg></span><span class="nlbl">{{lEmployees}}</span></a>
       <a class="{{nPlanning}}" data-key="planning" role="link" tabindex="0" sc-camel-on-click="{{goPlanning}}" title="{{tPlanning}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-d81dfaae"></svg></span><span class="nlbl">الخطة التشغيلية</span></a>
-      <a class="{{nDaily}}" data-key="daily" role="link" tabindex="0" sc-camel-on-click="{{goDaily}}" title="{{tDaily}}"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-9a375c7e"></svg></span><span class="nlbl">المتابعة اليومية</span></a>
-@@SYS:shell.nav.systems@@      <!-- «المهام اليومية» انتقلت إلى تبويب داخل صفحة موظفي الإدارة -->
+@@SYS:shell.nav.daily@@@@SYS:shell.nav.systems@@      <!-- «المهام اليومية» انتقلت إلى تبويب داخل صفحة موظفي الإدارة -->
     </div>
     <!-- الخطّ يفصل صفحات العمل عمّا بعدها، و«مواقع ذات صلة» أوّل ما يليه -->
     <div class="grp">
@@ -235,7 +229,7 @@
     </sc-if>
     </sc-if>
     <!-- CORE-02 S7 · مساحةُ «مركز إدارة رشاد»: تنقّلُ المركز وحده (خمسُ مجموعاتٍ ثابتة؛ العناصرُ من خريطة _sysNav وتوافرِ صفحة الإدارة) —
-         لا أنظمةَ تشغيلية ولا مبدّلَ وحدات ولا «+ قسم». الخروجُ إلى مساحة العمل التشغيلية في موضعٍ ثابتٍ أسفل الشريط ·
+         لا أنظمةَ تشغيلية ولا مبدّلَ وحدات. الخروجُ إلى مساحة العمل التشغيلية في موضعٍ ثابتٍ أسفل الشريط ·
          أكورديون: رأسُ المجموعة زرٌّ (aria-expanded · aria-controls) وقائمتُها hidden حين تُطوى — لا عنصرَ مخفيّاً يأخذ التركيز -->
     <sc-if value="{{sbConsole}}" hint-placeholder-val="{{ false }}">
     <div class="s-space"><span class="ni"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-i="i-97d6f6ed"></svg></span><span class="s-spt"><span class="nlbl">مركز إدارة رشاد</span></span></div>
@@ -318,24 +312,12 @@
   <sc-if value="{{isEmployees}}" hint-placeholder-val="{{ true }}">
     <dc-import name="Employees" hint-size="100%,1200px"></dc-import>
   </sc-if>
-  <sc-if value="{{isStaffing}}" hint-placeholder-val="{{ false }}">
-    <dc-import name="Staffing" hint-size="100%,1300px"></dc-import>
-  </sc-if>
-  <sc-if value="{{isPlan}}" hint-placeholder-val="{{ false }}">
-    <dc-import name="Operational Plan" hint-size="100%,1100px"></dc-import>
-  </sc-if>
-
+@@SYS:shell.mounts.staff@@@@SYS:shell.mounts.plan@@
   <sc-if value="{{isSysAdmin}}" hint-placeholder-val="{{ false }}">
     <dc-import name="Admin" hint-size="100%,1200px"></dc-import>
   </sc-if>
 
-@@SYS:shell.mounts.tasks@@  <sc-if value="{{isDaily}}" hint-placeholder-val="{{ false }}">
-    <dc-import name="Daily Sessions" hint-size="100%,1100px"></dc-import>
-  </sc-if>
-  <sc-if value="{{isDreport}}" hint-placeholder-val="{{ false }}">
-    <dc-import name="Daily Report" hint-size="100%,1100px"></dc-import>
-  </sc-if>
-  <sc-if value="{{isPlanning}}" hint-placeholder-val="{{ false }}">
+@@SYS:shell.mounts.tasks@@@@SYS:shell.mounts.daily@@@@SYS:shell.mounts.dreport@@  <sc-if value="{{isPlanning}}" hint-placeholder-val="{{ false }}">
     <dc-import name="Planning" hint-size="100%,1200px"></dc-import>
   </sc-if>
   <sc-if value="{{isKpis}}" hint-placeholder-val="{{ false }}">
@@ -520,6 +502,7 @@
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><small style="font-size:10px;color:var(--fg-x94a3b8)">{{r.at}}</small><sc-if value="{{r.hasDept}}" hint-placeholder-val="{{ false }}"><small style="font-size:10px;color:var(--fg-x94a3b8)">· {{r.deptName}}</small></sc-if>
             <sc-if value="{{r.needAck}}" hint-placeholder-val="{{ false }}"><span style="margin-right:auto;font-size:10.5px;font-weight:700;color:var(--text-on-brand);background:linear-gradient(135deg,var(--bg-x8a6f35),var(--bg-xb99751));border-radius:8px;padding:3px 10px">✓ قرأت وفهمت</span></sc-if>
             <sc-if value="{{r.hasGo}}" hint-placeholder-val="{{ false }}"><span style="margin-right:auto;font-size:10.5px;font-weight:700;color:var(--fg-x8a6f35);background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p45);border-radius:8px;padding:3px 10px">{{r.go}} ←</span></sc-if>
+            <sc-if value="{{r.notMeOn}}" hint-placeholder-val="{{ false }}"><button type="button" sc-camel-on-click="{{r.notMe}}" style="font-family:inherit;font-size:10.5px;font-weight:700;color:var(--fg-xdc2626);background:var(--bg-xffffff);border:1px solid var(--bd-a22038380p25);border-radius:8px;padding:3px 10px;cursor:pointer">ليس أنا — أنهِ الجلسة</button></sc-if>
           </div>
         </div>
       </div>
@@ -557,6 +540,7 @@
   <sc-if value="{{nfToastUrg}}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border-radius:50%;background:var(--bg-xf87171);box-shadow:0 0 0 4px rgba(248,113,113,.25);flex-shrink:0"></span><b>عاجل:</b></sc-if>
   <span style="min-width:0"><b>{{nfToastT}}</b> — {{nfToastB}}</span>
   <sc-if value="{{nfToastHasGo}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfToastOpen}}" style="margin-right:6px;font-weight:700;color:var(--fg-xf3e4bc);border:1px solid var(--bd-a2432281880p5);border-radius:8px;padding:2px 10px;cursor:pointer;white-space:nowrap">{{nfToastGo}}</span></sc-if>
+  <sc-if value="{{nfToastNotMeOn}}" hint-placeholder-val="{{ false }}"><button type="button" sc-camel-on-click="{{nfToastNotMe}}" style="font-family:inherit;font-size:12px;font-weight:700;color:var(--fg-xffffff);background:var(--bg-xdc2626);border:0;border-radius:8px;padding:2px 10px;cursor:pointer;white-space:nowrap">ليس أنا</button></sc-if>
   <sc-if value="{{nfToastHasMore}}" hint-placeholder-val="{{ false }}"><span sc-camel-on-click="{{nfToastAll}}" style="font-size:10.5px;color:var(--fg-a2552552550p7);cursor:pointer;white-space:nowrap">{{nfToastMore}} أخرى</span></sc-if>
   <span sc-camel-on-click="{{nfToastClose}}" style="cursor:pointer;color:var(--fg-a2552552550p6);padding:0 4px">×</span>
 </div>
@@ -568,8 +552,7 @@
 @@KIVO_BLOCK:components/610-map-wheel.js@@
 @@KIVO_BLOCK:components/620-no-select.js@@
 @@KIVO_BLOCK:components/630-popover-place.js@@
-@@KIVO_BLOCK:components/640-map-tooltip.js@@
-
+@@SYS:shell.multi.640@@
 @@KIVO_BLOCK:components/650-dropdown-unify.js@@
 
 @@KIVO_BLOCK:components/660-a11y-enhancer.js@@

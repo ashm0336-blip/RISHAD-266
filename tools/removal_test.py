@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """V7 · د2-ب — اختبارُ الحذف: حذفُ مجلد نظامٍ يُخرجه من القاعدة نظيفاً (مقبسُ الأنظمة · tools/systems.py).
-   python3 tools/removal_test.py [all | none | award | dstats | seized | tasks | custody]... [--units] [--no-browser] [--no-check] [--keep] [--jobs N]
-     none   حذفُ الأنظمة كلِّها معاً (الستة)        award · dstats · seized · tasks · custody   حذفُ نظامٍ واحد      all = الحالاتُ الست (الافتراضي)
-     (الاسترشاد لا يُحذف وحده: المضبوطات تتطلبه — requires في system.json)
+   python3 tools/removal_test.py [all | none | <نظام> | plan+daily | only:<نظام>]... [--units] [--no-browser] [--no-check] [--keep] [--jobs N]
+     V7 · د5-ح (rmall): الحالاتُ تُحسب من مجلدات الأنظمة (src/systems/*/system.json) فلا تنسى نظاماً:
+     none          حذفُ الأنظمة العشرة كلِّها معاً
+     <نظام>        حذفُ نظامٍ واحد (staff · plan · dreport · daily · award · dstats · irshad · seized · tasks · custody) ومعه من يتطلّبه
+                   (requires في system.json): «irshad» يحذف المضبوطات معه — المضبوطاتُ تتطلّب الاسترشاد فلا تبقى بغيابه
+     plan+daily    حذفُ مالكَي نواة الطباعة والعدسات معاً (src/systems/_shared/print · lenses تُحذف معهما — لا كودَ لهما في القاعدة)
+     only:<نظام>   النظامُ وحده (مع ما يتطلّبه): حذفُ كلِّ ما سواه — only:plan · only:dreport · only:daily في all
+     all = none · الأنظمةُ العشرة واحداً واحداً · plan+daily · only:plan · only:dreport · only:daily (الافتراضي)
+     ‎--jobs N     عددُ الحالات المتوازية (الافتراضي 2؛ ووحداتُ ⑥ داخل الحالة بالعدد نفسِه) — مخرجاتُ كلِّ حالةٍ تُطبع كاملةً عند انتهائها
    لكل حالة، في نسخةٍ مؤقتة من شجرة العمل خارج المستودع (لا يُمسّ المستودع):
      ① حذفُ المجلد ثم  tools/systems.py --regen  (يعيد التوليد ويحذف ما وُلّد للنظام الغائب)
      ② لا جزءَ من القاعدة يذكر اسماً معرَّفاً في أجزاء خادم نظامٍ غائب (خارج التعليقات والنصوص)
@@ -11,20 +17,56 @@
      ④ الخادمُ المبني على قاعدة بياناتٍ جديدة: tests/removal/server.test.mjs
         + د4-ج: تنبيهاتُ نظامٍ غائب خارج الجرس وعدّاده، محفوظةٌ، وتعود بعودة النظام (عاملُ الشجرة الكاملة على القاعدة نفسِها)
         + د3: tests/removal/perms.test.mjs — لا مفتاحَ ولا ورقةَ ولا ذرّةَ ولا عَلمَ لنظامٍ غائب في السجلّ (340 · 004) والشجرة وروابط 006 · 008 · 010 ولا في أجزاء
-          القاعدة · validate وperm_tree.py check · أعدادُ /api/permv2 = المحسوب · شجرةُ الواجهة بلا نظامٍ غائب · منحُ مفتاحه مرفوض والمخزَّنُ عليه باقٍ
+          القاعدة · validate وperm_tree.py check · أعدادُ السجلّ في الخادم المولَّد نفسِه = المحسوب (V7 · د5-ح: لا مسارَ تقرير) · شجرةُ الواجهة بلا نظامٍ غائب · منحُ مفتاحه مرفوض والمخزَّنُ عليه باقٍ
           · بحثٌ نصي عن أسماء الأنظمة الغائبة في أجزاء الخادم وكتل الواجهة (خارج التعليقات والترحيلات): ما يبقى معلنٌ بسببه في tests/removal/names.allow.json
      ⑤ المتصفح: tests/removal/browser.test.mjs                              (‎--no-browser يتخطّاه)
         + د4-ج: بغياب العهد — صفحةُ الموظفين بتبويب البيانات وحده · حذفُ موظف · نسخةُ الإدارة واستعادتُها (في browser.test) · واستيرادُ الموظفين (v7_d1d_emp_import)
      ⑥ ‎--units: وحداتُ القاعدة كلها (ملفاً ملفاً، ‎--jobs بالتوازي) — طويل
+     ⑤ V7 · د5-ح (rmall): اختباراتُ الحدود — لكل نظامٍ حاضرٍ غاب أحدُ شركائه (مستهلكاتُه في contract.json) تُشغَّل اختباراتُه
+        src/systems/<نظام>/tests/*_boundary.test.mjs في النسخة نفسِها (عاملٌ حقيقي ومتصفح): صفحاتُه تُفتح · قراءاتُه من الغائب = absent · حفظُه يعمل
    يخرج بـ0 إن نجحت كل الحالات. ‎--keep يبقي النسخ المؤقتة ويطبع مساراتها."""
-import os, sys, re, json, glob, shutil, subprocess, tempfile, time
+import os, sys, re, json, glob, shutil, subprocess, tempfile, time, threading
+from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CASES = {'none': ['award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'], 'award': ['award'], 'dstats': ['dstats'], 'seized': ['seized'], 'tasks': ['tasks'], 'custody': ['custody']}
+# V7 · د5-ح (rmall): الحالاتُ من مجلدات الأنظمة نفسِها — نظامٌ جديد يدخل all تلقائياً، و«none» يحذفها كلَّها
+SYS = {os.path.basename(os.path.dirname(f)): json.load(open(f, encoding='utf-8')) for f in sorted(glob.glob(os.path.join(ROOT, 'src', 'systems', '*', 'system.json')))}
+def needs_of(k, seen=None):
+    """النظامُ وما يتطلّبه (requires) بالتعدّي."""
+    seen = set() if seen is None else seen
+    if k in seen or k not in SYS: return seen
+    seen.add(k)
+    for r in SYS[k].get('requires', []): needs_of(r, seen)
+    return seen
+def with_dependents(ks):
+    """المحذوفُ ومن يتطلّبه بالتعدّي: لا يبقى نظامٌ غاب ما يتطلّبه."""
+    out = set(ks)
+    while True:
+        more = {k for k in SYS if k not in out and needs_of(k) & out}
+        if not more: return sorted(out)
+        out |= more
+ONLY = ['plan', 'dreport', 'daily']   # اختباراتُ الحدود: كلٌّ منها وحده
+CASES = {'none': sorted(SYS)}
+for _k in SYS: CASES[_k] = with_dependents([_k])
+CASES['plan+daily'] = with_dependents(['daily', 'plan'])
+for _k in SYS: CASES['only:' + _k] = sorted(set(SYS) - needs_of(_k))
+ALL = ['none'] + list(SYS) + ['plan+daily'] + ['only:' + k for k in ONLY]
 
 def sh(cmd, cwd, env=None, timeout=3600):
     r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
+
+def first_error(out, also=()):
+    """V7 · د5-ح (rmall): أولُ خطأٍ في مخرجات node --test — ونصُّه حين يأتي كتلةً (error: |-) في السطر التالي، لا «|-» وحده."""
+    lines = out.split('\n')
+    for i, l in enumerate(lines):
+        t = l.strip()
+        if t.startswith('error:') or any(a in l for a in also):
+            if t in ('error: |-', 'error: >-', "error: ''"):
+                nxt = next((x.strip() for x in lines[i + 1:i + 6] if x.strip()), '')
+                return 'error: ' + nxt
+            return t
+    return ''
 
 def idents(text):
     out = set()
@@ -108,10 +150,12 @@ def units(copy, env, jobs):
     return len(files), bad, tot
 
 def run_case(name, opts):
-    gone = CASES[name]; copy = tempfile.mkdtemp(prefix='kivo-removal-' + name + '-'); res = []; ok = True
+    gone = CASES[name]; copy = tempfile.mkdtemp(prefix=re.sub(r'[^\w+-]', '_', name) + '-', dir=opts['base']); res = []; ok = True; log = []; t0 = time.time()
+    # V7 · د5-ح (rmall): الحالاتُ تتوازى (--jobs) — سطورُ الحالة تُجمع وتُطبع كتلةً واحدة عند انتهائها فلا تتداخل
     def step(label, good, note=''):
-        nonlocal ok; ok = ok and good; res.append((label, good, note)); print('  %s %s%s' % ('✔' if good else '✘', label, (' — ' + note) if note else ''), flush=True)
-    print('══ حالة الحذف «%s»: %s ══' % (name, ' · '.join(gone)), flush=True)
+        nonlocal ok; ok = ok and good; res.append((label, good, note)); log.append('  %s %s%s' % ('✔' if good else '✘', label, (' — ' + note) if note else ''))
+    log.append('══ حالة الحذف «%s»: %s ══' % (name, ' · '.join(gone)))
+    with PRINT: print('  ▶ بدأت «%s»' % name, flush=True)
     try:
         copy_tree(copy)
         # مصفوفةُ التتبّع وفحصُ الأسرار وأدواتُ التحزيم تقرأ git: النسخةُ مستودعٌ مستقل (لا صلة له بمستودع المشروع) — التزامٌ قبل الحذف وآخرُ بعد التوليد
@@ -132,29 +176,70 @@ def run_case(name, opts):
         rc, out = sh([sys.executable, 'tools/generate.py', '--src', 'src', '--check'], copy, env); step('③ التوليد --check', rc == 0, next((l for l in out.split('\n') if 'generated =' in l or 'differ' in l), '')[:120])
         if not opts['nocheck']:
             rc, out = sh(['npm', 'run', '-s', 'check'], copy, env); step('③ check', rc == 0, next((l.strip() for l in out.split('\n') if '✘' in l), '')[:160])
-        rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/server.test.mjs'], copy, env, 600); step('④ الخادم على قاعدة بياناتٍ جديدة', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:')), '')[:200])
+        rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/server.test.mjs'], copy, env, 600); step('④ الخادم على قاعدة بياناتٍ جديدة', rc == 0, first_error(out)[:200])
         # د3: الصلاحيات — لا رمزَ لنظامٍ غائب في السجلّ والشجرة والروابط وأجزاء القاعدة · validate · perm_tree check · شجرةُ الواجهة
-        rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/perms.test.mjs'], copy, env, 600); step('④ الصلاحيات: السجلُّ والشجرةُ والروابطُ بلا نظامٍ غائب', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:') or '!==' in l), '')[:260])
+        rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/perms.test.mjs'], copy, env, 600); step('④ الصلاحيات: السجلُّ والشجرةُ والروابطُ بلا نظامٍ غائب', rc == 0, first_error(out, ('!==',))[:260])
         if not opts['nobrowser']:
-            rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/browser.test.mjs'], copy, env, 1200); step('⑤ المتصفح', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:')), '')[:200])
+            rc, out = sh(['node', '--no-warnings', '--test', 'tests/removal/browser.test.mjs'], copy, env, 1200); step('⑤ المتصفح', rc == 0, first_error(out)[:200])
         # د4-ج: بغياب العهد — قبولُ استيراد الموظفين القائم (tests/browser/v7_d1d_emp_import: القالب · الدمج · التعديل · الاستبدال بحذف، من الواجهة الحقيقية) يعمل كما هو
         if not opts['nobrowser'] and 'custody' in gone:
-            rc, out = sh(['node', '--no-warnings', '--test', 'tests/browser/v7_d1d_emp_import.test.mjs'], copy, env, 1500); step('⑤ استيراد الموظفين بلا العهد (القبول 1–10)', rc == 0, next((l.strip() for l in out.split('\n') if l.strip().startswith('error:')), '')[:200])
+            rc, out = sh(['node', '--no-warnings', '--test', 'tests/browser/v7_d1d_emp_import.test.mjs'], copy, env, 1500); step('⑤ استيراد الموظفين بلا العهد (القبول 1–10)', rc == 0, first_error(out)[:200])
+        # V7 · د5-ح (rmall): اختباراتُ الحدود — نظامٌ حاضرٌ غاب أحدُ شركائه (مستهلكاتُه المعلنة) يُختبر في هذه الشجرة نفسِها: صفحاتُه · قراءاتُه absent · حفظُه
+        for k, partners in boundary_targets(copy, gone):
+            for f in sorted(glob.glob(os.path.join(copy, 'src', 'systems', k, 'tests', '*_boundary.test.mjs'))):
+                rc, out = sh(['node', '--no-warnings', '--test', '--test-concurrency=1', os.path.relpath(f, copy)], copy, env, 1800)
+                step('⑤ حدودُ «%s» بغياب %s' % (k, ' · '.join(partners)), rc == 0, first_error(out)[:220])
         if opts['units']:
             n, bad, tot = units(copy, env, opts['jobs']); step('⑥ وحداتُ القاعدة', not bad, '%d ملفاً · %d اختباراً: نجح %d · فشل %d · تُخطّي %d%s' % (n, tot[0], tot[1], tot[2], tot[3], (' · الفاشلة: ' + ' '.join(os.path.basename(b) for b in bad[:8])) if bad else ''))
+    except Exception as e:   # خطأُ الأداة نفسِها (مهلةٌ مثلاً) يُخفق الحالةَ ولا يوقف الحالاتِ الأخرى
+        step('خطأٌ في تشغيل الحالة', False, repr(e)[:200])
     finally:
-        if opts['keep']: print('  النسخة: ' + copy)
+        if opts['keep']: log.append('  النسخة: ' + copy)
         else: shutil.rmtree(copy, ignore_errors=True)
+        log.append('  (%.0f ث)' % (time.time() - t0))
+        with PRINT: print('\n'.join(log), flush=True)
     return ok
+
+PRINT = threading.Lock()
+
+def consumed_owners(sysdir):
+    """شركاءُ النظام: مالكو ما يستهلكه في عقده (owner.thing@N · perm:<نظام>) — من contract.json."""
+    try: c = json.load(open(os.path.join(sysdir, 'contract.json'), encoding='utf-8'))
+    except (OSError, ValueError): return set()
+    out = set()
+    for name in c.get('consumes', {}):
+        m = re.match(r'^(?:perm:|via:)?([a-z]+)(?:\.|$)', name)
+        if m and m.group(1) in SYS: out.add(m.group(1))
+    return out
+
+def boundary_targets(copy, gone):
+    """[(نظامٌ حاضر له اختبارُ حدود, شركاؤه الغائبون)] — يُختبر حين يغيب أحدُ شركائه في هذه الحالة."""
+    out = []
+    for sj in sorted(glob.glob(os.path.join(copy, 'src', 'systems', '*', 'system.json'))):
+        d = os.path.dirname(sj); k = os.path.basename(d)
+        if not glob.glob(os.path.join(d, 'tests', '*_boundary.test.mjs')): continue
+        partners = sorted(consumed_owners(d) & set(gone))
+        if partners: out.append((k, partners))
+    return out
 
 def main(argv):
     names = [a for a in argv if not a.startswith('--') and not a.isdigit()] or ['all']
-    if 'all' in names: names = ['none', 'award', 'dstats', 'seized', 'tasks', 'custody']
+    out = []
     for n in names:
-        if n not in CASES: print('حالةٌ غير معروفة: ' + n + ' (none · award · dstats · seized · tasks · custody · all)'); return 2
-    jobs = int(argv[argv.index('--jobs') + 1]) if '--jobs' in argv else 6
-    opts = {'units': '--units' in argv, 'nobrowser': '--no-browser' in argv, 'nocheck': '--no-check' in argv, 'keep': '--keep' in argv, 'jobs': jobs}
-    results = {n: run_case(n, opts) for n in names}
+        for x in (ALL if n == 'all' else [n]):
+            if x not in out: out.append(x)
+    names = out
+    for n in names:
+        if n not in CASES: print('حالةٌ غير معروفة: ' + n + ' (' + ' · '.join(['all'] + list(CASES)) + ')'); return 2
+    jobs = int(argv[argv.index('--jobs') + 1]) if '--jobs' in argv else 2
+    # V7 · د5-ح (rmall): نسخُ الحالات داخل مجلدٍ واحدٍ خاصٍّ بهذا التشغيل (kivo-rmrun-*) — لا تطالها تنقيةُ «/tmp/kivo-removal-*» من تشغيلٍ آخر متزامن
+    base = tempfile.mkdtemp(prefix='kivo-rmrun-')
+    opts = {'units': '--units' in argv, 'nobrowser': '--no-browser' in argv, 'nocheck': '--no-check' in argv, 'keep': '--keep' in argv, 'jobs': jobs, 'base': base}
+    print('══ اختبارُ الحذف: %d حالة · %d بالتوازي%s ══' % (len(names), jobs, ' · بلا متصفح' if opts['nobrowser'] else ''), flush=True)
+    with ThreadPoolExecutor(max_workers=max(1, jobs)) as ex:
+        futs = {n: ex.submit(run_case, n, opts) for n in names}
+        results = {n: futs[n].result() for n in names}
+    if not opts['keep']: shutil.rmtree(base, ignore_errors=True)
     print('══ اختبارُ الحذف: ' + ' · '.join('%s %s' % (n, '✔' if ok else '✘') for n, ok in results.items()) + ' ══')
     return 0 if all(results.values()) else 1
 

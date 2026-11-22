@@ -1,4 +1,4 @@
-/* RISHAD V7 P2 — account isolation behind «المسؤولون والحسابات», on the real worker (legacy and enforce), TEST_ONLY data only.
+/* RISHAD V7 P2 — account isolation behind the node accounts table (V7 · د5-ح: the «مدير الوحدة» card of «الصلاحيات ← الأدوار»), on the real worker (legacy and enforce), TEST_ONLY data only.
    P2 lists accounts per node and gives every row one action menu (edit · freeze/re-enable · temporary password · permissions ·
    sign-out · delete). Showing an account never grants a write: each action is a write of bassam_auth_users_v1 that the server judges
    (044 usersA1Why/usersRule · 059 enfUsersWrite). This test pins, without any server change:
@@ -38,7 +38,7 @@ async function world(mode) {
 const ids = (j) => { const v = j && j.keys && j.keys[KU] && j.keys[KU].v; return v ? JSON.parse(v) : null; };
 const refused = (r) => r.status >= 400 || !!(r.j && r.j.denied && r.j.denied[KU]);
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('[' + mode + '] reads are scoped by unit and role, and never carry a password hash', async () => {
     const { C } = await world(mode);
     const seen = {};

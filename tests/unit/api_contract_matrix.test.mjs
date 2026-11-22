@@ -17,7 +17,7 @@ function seed() {
   return fs.readFileSync(out + '/test_seed.sql', 'utf8');
 }
 const QS = { '/api/changes': '?since=0', '/api/get': '?keys=bassam_depts_v1', '/api/aud': '?limit=3' };
-const BODY = { '/api/sess/kill': { uid: 'nobody' }, '/api/guard/unlock': { gk: 'u:x' }, '/api/recovery/new': { pw: 'x' }, '/api/reset': { pw: 'x', confirm: 'x' }, '/api/policy': {}, '/api/permv2': {} };
+const BODY = { '/api/sess/kill': { uid: 'nobody' }, '/api/guard/unlock': { gk: 'u:x' }, '/api/recovery/new': { pw: 'x' }, '/api/reset': { pw: 'x', confirm: 'x' }, '/api/policy': {} };
 async function world() {
   const env = makeTestEnv(); const C = client(env);
   assert.ok((await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN)).ok);
@@ -36,7 +36,7 @@ test('(أ)(ب) الصلاحيةُ لكل مسارٍ في العقد — موظف
     else if (r.access === 'session') { const x = await call(C, r, emp.ck); assert.ok(x.status === 200 || (x.status === 400 && r.path !== '/api/whoami'), 'موظف ⇐ ' + r.path + ': ' + x.status); seen.session++; }
     else if (r.access === 'enforce') { const x = await call(C, r, emp.ck); assert.equal(x.status, 404, 'الوضعُ القديم ⇐ ' + r.path + ': ' + x.status); seen.enforce++; }
   }
-  assert.ok(seen.super >= 10 && seen.session >= 3 && seen.enforce >= 4, JSON.stringify(seen));
+  assert.ok(seen.super >= 10 && seen.session >= 3 && seen.enforce >= 2, JSON.stringify(seen));   /* V7 · د5-ح: واجهاتُ الإنفاذ والترحيل صارت session/super في كل بيئة — يبقى «enforce» أداةَ الاختبار وحدها */
 });
 test('(ج) الأخطاءُ المعقودة: 400 bad-body لكل مخطّط · 405 · 404', since(163), async () => {
   const { C, emp } = await world();
@@ -45,7 +45,7 @@ test('(ج) الأخطاءُ المعقودة: 400 bad-body لكل مخطّط · 
   /* KIVO_264 · SOT-101 (إفصاح — توسيعُ اختبار): مخطّطاتُ المسارات المغيِّرة الباقية (14 بدل 5). مساراتُ مدير النظام تُرسَل بجلسته — الصلاحيةُ قبل الشكل
      (الموظفُ 403 عليها، (أ) أعلاه)؛ ومسارا الإنفاذ (authz-migrate · authz-test) يُثبَت مخطّطاهما في بيئتهما: tests/unit/k264_sec_bodies.test.mjs */
   const bad = { '/api/dstats': null, '/api/notifications/act': { op: 17 }, '/api/save': { set: { bassam_depts_v1: 5 } }, '/api/login': { u: [] }, '/api/recover': { key: {} }, '/api/checkpw': { p: 1 }, '/api/sess/kill': { uid: true },
-    '/api/logout': { tok: 'x' }, '/api/me/sess/kill': { tok: 'x' }, '/api/retro': { res: 1 }, '/api/guard/unlock': { gk: 1 }, '/api/policy': null, '/api/recovery/new': { pw: 1 }, '/api/reset': null,
+    '/api/logout': { tok: 'x' }, '/api/me/sess/kill': { tok: 'x' }, '/api/me/sess/kill-one': { sid: 5 }, '/api/retro': { res: 1 }, '/api/guard/unlock': { gk: 1 }, '/api/policy': null, '/api/recovery/new': { pw: 1 }, '/api/reset': null,
     /* KIVO_264 · KIVO-Tasks (الرقعتان 02 · 05): «مهامي» ومساراتُ المسؤول — الشكلُ قبل الصلاحية (الموظفُ يرى 400 لا 403 لجسمٍ خاطئ) */
     '/api/me/tasks/act': { k: 5 }, '/api/tasks/create': { k: 5 }, '/api/tasks/review': { k: 5 }, '/api/tasks/extend': { k: 5 }, '/api/tasks/reassign': { k: 5 },
     '/api/tasks/cancel': { k: 5 }, '/api/tasks/relink': { k: 5 }, '/api/tasks/recur': { id: 5 }, '/api/tasks/recur/run': { day: 5 },
@@ -56,7 +56,7 @@ test('(ج) الأخطاءُ المعقودة: 400 bad-body لكل مخطّط · 
     '/api/custody/act': { op: 17 }, '/api/irshad/act': { op: 17 }, '/api/seized/act': { op: 17 }, '/api/award/act': { op: 17 }, '/api/employees/transition': { intent: 17 },
     '/api/admin/dept-wipe': { dept: 17 }, '/api/admin/dept-delete': { dept: 17 },
     '/api/backup/restore': { mode: 17 } };
-  const ENF_ONLY = ['/api/authz-migrate', '/api/authz-test'];
+  const ENF_ONLY = ['/api/authz-migrate', '/api/authz-test', '/api/demo-data'];   /* V7 · د5-هـ (م6): أداةُ بيانات العرض — مخطّطُها في بيئتها: tests/unit/v7_d5e_demo_data.test.mjs */
   for (const p of Object.keys(B)) {
     if (ENF_ONLY.includes(p)) continue;
     assert.ok(bad[p] !== undefined, 'جسمٌ خاطئٌ للاختبار: ' + p);

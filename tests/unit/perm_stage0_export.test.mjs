@@ -73,8 +73,9 @@ test('enforce · M3 · الإسقاطُ الصريح يبقى نافذاً: ور
   assert.equal(c('tasks', 'export'), true, 'وبقيةُ الأوراق كما هي');
 });
 
-test('legacy · M3 · بلا __BS_AUTHZ لا يتغيّر شيء', () => {
+/* V7 · د5-ح: كانت «legacy · M3 · بلا __BS_AUTHZ لا يتغيّر شيء» — حُذف المسارُ القديم: بلا __BS_AUTHZ لا صلاحيةَ في الواجهة (مغلقٌ لا مفتوح) */
+test('V7 · د5-ح · M3 · بلا __BS_AUTHZ لا تصديرَ لأحد — الورقةُ المخزّنة وحدها لا تمنح شيئاً', () => {
   const c = can(EXP, { legacy: true });
-  for (const pk of Object.keys(EXP)) assert.equal(c(pk, 'export'), true, pk);
+  for (const pk of Object.keys(EXP)) { assert.equal(c(pk, 'export'), false, pk); assert.equal(c(pk, 'view'), false, pk); }
   assert.equal(can(NOEXP, { legacy: true })('tasks', 'export'), false);
 });

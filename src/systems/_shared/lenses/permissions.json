@@ -1,0 +1,5128 @@
+{
+ "schema": 1,
+ "system": "_shared/lenses",
+ "note": "V7 · د5-ح: صفوفُ العدسات الست (المصليات · المسارات · الأبواب · المعالم · التوزيع · الكثافة) في وثائق الصلاحيات — كانت في القاعدة (registry.base.json · data.base.json للنطاق والحراسة والبناء). تُطبَّق ما حضر أحدُ مالكَي القطعة (plan · daily)، وتغيب بغيابهما. عملياتُ الأنظمة التي تمسّ هذه الصفوف تحمل needs: [\"_shared/lenses\"].",
+ "docs": {
+  "registry": [
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 10,
+    "value": {
+     "key": "lens.zones.enable",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "تفعيل عدسة المصليات",
+     "type": "capability",
+     "sensitive": false,
+     "guard": {
+      "kind": "capability",
+      "resources": [
+       "bassam_perms_v1"
+      ],
+      "detail": "سقف العدسات للإدارة (perms.lenses[d]) وعدسات الموظف (perms.empLens[d][ekey]) — يُفحص في الخادم قبل أي كتابة على مجموعة zones",
+      "status": "to-build"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "lens-flag:zones (deptLenses/empLens)"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.zones.enable"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 20,
+    "value": {
+     "key": "lens.zones.view",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "عرض المصليات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قراءة مجموعة zones في الخطة/الجولة بورقة المضيف + بوابة enable",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.zones.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 30,
+    "value": {
+     "key": "lens.zones.create",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "إضافة مصلى",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "إضافة كيان في zones[] — تصنيف المجموعة → lens.zones في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.zones.create"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 40,
+    "value": {
+     "key": "lens.zones.data.edit",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "تعديل بيانات المصلى",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقول الخصائص في zones[] (غير الهندسية) — تصنيف المجموعة → lens.zones في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.zones.data.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 50,
+    "value": {
+     "key": "lens.zones.geometry.edit",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "تعديل رسم وحدود المصلى",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "الحقول الهندسية في zones[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.zones في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.zones.geometry.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 60,
+    "value": {
+     "key": "lens.zones.status.change",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "تغيير حالة المصلى",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقول الحالة في zones[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.zones في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.zones.status.change"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 70,
+    "value": {
+     "key": "lens.zones.delete",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "حذف المصلى",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "إزالة كيان من zones[] مع تبعاته — تصنيف المجموعة → lens.zones في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.zones.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 80,
+    "value": {
+     "key": "lens.zones.report.view",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "عرض تقارير المصليات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا تقرير مصليات مستقل في المصدر",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.zones.report.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا تقرير مصليات مستقل في المصدر"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 90,
+    "value": {
+     "key": "lens.paths.enable",
+     "owner": "lens.paths",
+     "ownerKind": "lens",
+     "domain": "lens.paths",
+     "label": "تفعيل عدسة المسارات",
+     "type": "capability",
+     "sensitive": false,
+     "guard": {
+      "kind": "capability",
+      "resources": [
+       "bassam_perms_v1"
+      ],
+      "detail": "سقف العدسات للإدارة (perms.lenses[d]) وعدسات الموظف (perms.empLens[d][ekey]) — يُفحص في الخادم قبل أي كتابة على مجموعة paths",
+      "status": "to-build"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "lens-flag:paths (deptLenses/empLens)"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.paths.enable"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 100,
+    "value": {
+     "key": "lens.paths.view",
+     "owner": "lens.paths",
+     "ownerKind": "lens",
+     "domain": "lens.paths",
+     "label": "عرض المسارات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قراءة مجموعة paths في الخطة/الجولة بورقة المضيف + بوابة enable",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.paths.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 110,
+    "value": {
+     "key": "lens.paths.create",
+     "owner": "lens.paths",
+     "ownerKind": "lens",
+     "domain": "lens.paths",
+     "label": "إضافة مسار",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "إضافة كيان في paths[] — تصنيف المجموعة → lens.paths في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.paths.create"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 120,
+    "value": {
+     "key": "lens.paths.edit",
+     "owner": "lens.paths",
+     "ownerKind": "lens",
+     "domain": "lens.paths",
+     "label": "تعديل بيانات المسار",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقول الخصائص في paths[] — تصنيف المجموعة → lens.paths في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.paths.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 130,
+    "value": {
+     "key": "lens.paths.geometry.edit",
+     "owner": "lens.paths",
+     "ownerKind": "lens",
+     "domain": "lens.paths",
+     "label": "تعديل رسم المسار",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "الحقول الهندسية في paths[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.paths في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.paths.geometry.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 140,
+    "value": {
+     "key": "lens.paths.status.change",
+     "owner": "lens.paths",
+     "ownerKind": "lens",
+     "domain": "lens.paths",
+     "label": "تغيير حالة المسار",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "paths[].active (true/false — تفعيل/تعطيل المسار؛ الواجهة: side-panel toggle · bulk · peReverse لا يمسّه) — تغييرُ حالةٍ مستقلٌّ عن lens.paths.edit (الخصائص: type · dir · line · w · anim · hideLabel)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.paths.status.change"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 150,
+    "value": {
+     "key": "lens.paths.delete",
+     "owner": "lens.paths",
+     "ownerKind": "lens",
+     "domain": "lens.paths",
+     "label": "حذف مسار",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "إزالة كيان من paths[] مع تبعاته — تصنيف المجموعة → lens.paths في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.paths.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 160,
+    "value": {
+     "key": "lens.paths.kpi.view",
+     "owner": "lens.paths",
+     "ownerKind": "lens",
+     "domain": "lens.paths",
+     "label": "عرض مؤشرات المسارات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا مؤشرات مسارات منشورة (LENS_OWNED_INDICATORS.paths = [])",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.paths.kpi.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا مؤشرات مسارات منشورة (LENS_OWNED_INDICATORS.paths = [])"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 170,
+    "value": {
+     "key": "lens.paths.report.view",
+     "owner": "lens.paths",
+     "ownerKind": "lens",
+     "domain": "lens.paths",
+     "label": "عرض تقارير المسارات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا تقرير مسارات في المصدر",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.paths.report.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا تقرير مسارات في المصدر"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 180,
+    "value": {
+     "key": "lens.gates.enable",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "تفعيل عدسة البوابات",
+     "type": "capability",
+     "sensitive": false,
+     "guard": {
+      "kind": "capability",
+      "resources": [
+       "bassam_perms_v1"
+      ],
+      "detail": "سقف العدسات للإدارة (perms.lenses[d]) وعدسات الموظف (perms.empLens[d][ekey]) — يُفحص في الخادم قبل أي كتابة على مجموعة gates",
+      "status": "to-build"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "lens-flag:gates (deptLenses/empLens)"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.gates.enable"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 190,
+    "value": {
+     "key": "lens.gates.view",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "عرض البوابات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قراءة مجموعة gates في الخطة/الجولة بورقة المضيف + بوابة enable",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.gates.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 200,
+    "value": {
+     "key": "lens.gates.create",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "إضافة بوابة",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "إضافة كيان في gates[] — تصنيف المجموعة → lens.gates في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.gates.create"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 210,
+    "value": {
+     "key": "lens.gates.edit",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "تعديل بيانات البوابة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقول الخصائص في gates[] — تصنيف المجموعة → lens.gates في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.gates.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 220,
+    "value": {
+     "key": "lens.gates.status.change",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "تغيير حالة البوابة",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقول الحالة في gates[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.gates في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.gates.status.change"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 230,
+    "value": {
+     "key": "lens.gates.delete",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "حذف بوابة",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "إزالة كيان من gates[] مع تبعاته — تصنيف المجموعة → lens.gates في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.gates.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 240,
+    "value": {
+     "key": "lens.gates.kpi.view",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "عرض مؤشرات البوابات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا مؤشرات بوابات منشورة",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.gates.kpi.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا مؤشرات بوابات منشورة"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 250,
+    "value": {
+     "key": "lens.gates.report.view",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "عرض تقارير البوابات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا تقرير بوابات في المصدر",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.gates.report.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا تقرير بوابات في المصدر"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 260,
+    "value": {
+     "key": "lens.marks.enable",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "تفعيل عدسة العلامات",
+     "type": "capability",
+     "sensitive": false,
+     "guard": {
+      "kind": "capability",
+      "resources": [
+       "bassam_perms_v1"
+      ],
+      "detail": "سقف العدسات للإدارة (perms.lenses[d]) وعدسات الموظف (perms.empLens[d][ekey]) — يُفحص في الخادم قبل أي كتابة على مجموعة marks",
+      "status": "to-build"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "lens-flag:marks (deptLenses/empLens)"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.marks.enable"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 270,
+    "value": {
+     "key": "lens.marks.view",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "عرض العلامات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قراءة مجموعة marks في الخطة/الجولة بورقة المضيف + بوابة enable",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.marks.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 280,
+    "value": {
+     "key": "lens.marks.create",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "إضافة علامة",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "إضافة كيان في marks[] — تصنيف المجموعة → lens.marks في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.marks.create"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 290,
+    "value": {
+     "key": "lens.marks.edit",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "تعديل علامة",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقول الخصائص في marks[] — تصنيف المجموعة → lens.marks في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.marks.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 300,
+    "value": {
+     "key": "lens.marks.geometry.edit",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "تعديل موقع العلامة",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "الحقول الهندسية في marks[] (polygon/points/cx,cy) — تصنيف المجموعة → lens.marks في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.marks.geometry.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 310,
+    "value": {
+     "key": "lens.marks.delete",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "حذف علامة",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "إزالة كيان من marks[] مع تبعاته — تصنيف المجموعة → lens.marks في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.marks.delete"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 320,
+    "value": {
+     "key": "lens.marks.kpi.view",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "عرض مؤشرات العلامات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا مؤشرات علامات منشورة",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.marks.kpi.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا مؤشرات علامات منشورة"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 330,
+    "value": {
+     "key": "lens.marks.report.view",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "عرض تقارير العلامات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا تقرير علامات في المصدر",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.marks.report.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا تقرير علامات في المصدر"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 340,
+    "value": {
+     "key": "lens.dist.enable",
+     "owner": "lens.dist",
+     "ownerKind": "lens",
+     "domain": "lens.dist",
+     "label": "تفعيل عدسة التوزيع",
+     "type": "capability",
+     "sensitive": false,
+     "guard": {
+      "kind": "capability",
+      "resources": [
+       "bassam_perms_v1"
+      ],
+      "detail": "سقف العدسات للإدارة (perms.lenses[d]) وعدسات الموظف (perms.empLens[d][ekey]) — يُفحص في الخادم قبل أي كتابة على مجموعة dist",
+      "status": "to-build"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "lens-flag:dist (deptLenses/empLens)"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dist.enable"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 350,
+    "value": {
+     "key": "lens.dist.view",
+     "owner": "lens.dist",
+     "ownerKind": "lens",
+     "domain": "lens.dist",
+     "label": "عرض التوزيع",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قراءة مجموعة dist في الخطة/الجولة بورقة المضيف + بوابة enable",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dist.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 360,
+    "value": {
+     "key": "lens.dist.assign.edit",
+     "owner": "lens.dist",
+     "ownerKind": "lens",
+     "domain": "lens.dist",
+     "label": "تسكين موظف على عنصر (التوزيع)",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقل emp[] على كيانات zones/gates/marks في يوم الجولة (التسكين) — تصنيف المجموعة → lens.dist في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dist.edit"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 370,
+    "value": {
+     "key": "lens.dist.redistribute",
+     "owner": "lens.dist",
+     "ownerKind": "lens",
+     "domain": "lens.dist",
+     "label": "إعادة توزيع",
+     "type": "operation",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): «إعادة التوزيع» في المصدر = تسكين متكرر (assign.edit)؛ لا عملية مستقلة",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dist.redistribute"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "«إعادة التوزيع» في المصدر = تسكين متكرر (assign.edit)؛ لا عملية مستقلة"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 380,
+    "value": {
+     "key": "lens.dist.approve",
+     "owner": "lens.dist",
+     "ownerKind": "lens",
+     "domain": "lens.dist",
+     "label": "اعتماد التوزيع",
+     "type": "decision",
+     "sensitive": true,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا اعتماد توزيع في المصدر",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dist.approve"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا اعتماد توزيع في المصدر"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 390,
+    "value": {
+     "key": "lens.dist.report.view",
+     "owner": "lens.dist",
+     "ownerKind": "lens",
+     "domain": "lens.dist",
+     "label": "عرض تقارير التوزيع",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا تقرير توزيع مستقل",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dist.report.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا تقرير توزيع مستقل"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 400,
+    "value": {
+     "key": "lens.dens.enable",
+     "owner": "lens.dens",
+     "ownerKind": "lens",
+     "domain": "lens.dens",
+     "label": "تفعيل عدسة الكثافة",
+     "type": "capability",
+     "sensitive": false,
+     "guard": {
+      "kind": "capability",
+      "resources": [
+       "bassam_perms_v1"
+      ],
+      "detail": "سقف العدسات للإدارة (perms.lenses[d]) وعدسات الموظف (perms.empLens[d][ekey]) — يُفحص في الخادم قبل أي كتابة على مجموعة dens",
+      "status": "to-build"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [
+      "lens-flag:dens (deptLenses/empLens)"
+     ],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dens.enable"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 410,
+    "value": {
+     "key": "lens.dens.view",
+     "owner": "lens.dens",
+     "ownerKind": "lens",
+     "domain": "lens.dens",
+     "label": "عرض الكثافة",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قراءة مجموعة dens في الخطة/الجولة بورقة المضيف + بوابة enable",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dens.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 420,
+    "value": {
+     "key": "lens.dens.threshold.configure",
+     "owner": "lens.dens",
+     "ownerKind": "lens",
+     "domain": "lens.dens",
+     "label": "ضبط حدود التنبيه",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "field",
+      "resources": [],
+      "detail": "floors[i].dens ∈ {base (.74) · mid (.66) · high (.55) · null} — معيارُ/عتبةُ الكثافة للموقع (لوحةُ الكثافة densSelClick)؛ zones[].area تبقى lens.zones.data.edit لأنها خاصيةٌ للمصلى تدخل في الحساب لا إعدادَ عتبة",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dens.threshold.configure"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 430,
+    "value": {
+     "key": "lens.dens.report.view",
+     "owner": "lens.dens",
+     "ownerKind": "lens",
+     "domain": "lens.dens",
+     "label": "عرض تقارير الكثافة",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "none",
+      "resources": [],
+      "detail": "لا قدرة في المصدر — محجوز (لا يُمنح ولا يُحرَس): لا تقرير كثافة مستقل",
+      "status": "reserved"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "none",
+     "status": "reserved",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.dens.report.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": "لا تقرير كثافة مستقل"
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 440,
+    "value": {
+     "key": "lens.zones.indicators.view",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "عرض مؤشرات المصليات",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قراءة بيانات العدسة بورقة المضيف (كانت ورقة daily/kpi*)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [
+      "kpis"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "lens.zones.indicators.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 11,
+    "seq": 450,
+    "value": {
+     "key": "lens.dens.indicators.view",
+     "owner": "lens.dens",
+     "ownerKind": "lens",
+     "domain": "lens.dens",
+     "label": "عرض مؤشرات الإشغال والكثافة",
+     "type": "access",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قراءة بيانات العدسة بورقة المضيف (كانت ورقة daily/kpi*)",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [
+      "kpis"
+     ],
+     "uiOnly": false,
+     "v23": [
+      "lens.dens.indicators.view"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 24,
+    "seq": 670,
+    "value": {
+     "key": "lens.marks.status.change",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "تغيير حالة العلامة/المعلم",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقول الحالة في marks[]: closed · cWhy · cAt · cBy · off · fst · flow (FIELD_KEYS) — بسبب — تصنيف المجموعة → lens.marks في classifyMutation",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Branch",
+      "Site",
+      "Zone/Element",
+      "Assigned",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": true
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [
+      "lens.marks.status.change"
+     ],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 10,
+    "value": {
+     "key": "lens.dist.need.edit",
+     "owner": "lens.dist",
+     "ownerKind": "lens",
+     "domain": "lens.dist",
+     "label": "تحديد الاحتياج على العنصر (needN · needS)",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقلا needN/needS على كيانات zones/gates/marks",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Site",
+      "Zone/Element"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 20,
+    "value": {
+     "key": "lens.dens.reading.record",
+     "owner": "lens.dens",
+     "ownerKind": "lens",
+     "domain": "lens.dens",
+     "label": "تسجيل/مسح قراءة الكثافة للمصلى",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "حقلا count وpc.<prayer> على zones في يوم الجولة (_updRound · _densClearAt)",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Site",
+      "Zone/Element",
+      "Shift",
+      "DateRange"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 30,
+    "value": {
+     "key": "lens.gates.geometry.edit",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "نقل موضع البوابة على الخريطة",
+     "type": "operation",
+     "sensitive": true,
+     "guard": {
+      "kind": "collection",
+      "resources": [],
+      "detail": "إحداثيات cx/cy على gates[]",
+      "status": "to-bind"
+     },
+     "scopeDims": [
+      "Department",
+      "Site"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 40,
+    "value": {
+     "key": "ref.zone.type.view",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "عرض أنواع/خيارات المصليات",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 50,
+    "value": {
+     "key": "ref.zone.type.create",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "إضافة أنواع/خيارات المصليات",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 60,
+    "value": {
+     "key": "ref.zone.type.edit",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "تعديل أنواع/خيارات المصليات",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 70,
+    "value": {
+     "key": "ref.zone.type.delete",
+     "owner": "lens.zones",
+     "ownerKind": "lens",
+     "domain": "lens.zones",
+     "label": "حذف أنواع/خيارات المصليات",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 80,
+    "value": {
+     "key": "ref.gate.type.view",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "عرض أنواع/خيارات البوابات",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 90,
+    "value": {
+     "key": "ref.gate.type.create",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "إضافة أنواع/خيارات البوابات",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 100,
+    "value": {
+     "key": "ref.gate.type.edit",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "تعديل أنواع/خيارات البوابات",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 110,
+    "value": {
+     "key": "ref.gate.type.delete",
+     "owner": "lens.gates",
+     "ownerKind": "lens",
+     "domain": "lens.gates",
+     "label": "حذف أنواع/خيارات البوابات",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 120,
+    "value": {
+     "key": "ref.mark.kind.view",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "عرض أنواع العلامات",
+     "type": "view",
+     "sensitive": false,
+     "guard": {
+      "kind": "read",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "none",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 130,
+    "value": {
+     "key": "ref.mark.kind.create",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "إضافة أنواع العلامات",
+     "type": "create",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 140,
+    "value": {
+     "key": "ref.mark.kind.edit",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "تعديل أنواع العلامات",
+     "type": "edit",
+     "sensitive": false,
+     "guard": {
+      "kind": "cap",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "diff",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "registry"
+    ],
+    "after": 28,
+    "seq": 150,
+    "value": {
+     "key": "ref.mark.kind.delete",
+     "owner": "lens.marks",
+     "ownerKind": "lens",
+     "domain": "lens.marks",
+     "label": "حذف أنواع العلامات",
+     "type": "delete",
+     "sensitive": true,
+     "guard": {
+      "kind": "cap",
+      "resources": [],
+      "detail": "قائمة مرجعية",
+      "status": "exists"
+     },
+     "scopeDims": [
+      "Department"
+     ],
+     "audit": {
+      "record": "line",
+      "reason": false
+     },
+     "grant": "assignable",
+     "status": "active",
+     "asisMap": [],
+     "references": [],
+     "uiOnly": false,
+     "v23": [],
+     "mergedFrom": [],
+     "splitFrom": null,
+     "managedIn": null,
+     "reservedReason": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 16,
+    "seq": 10,
+    "value": {
+     "id": "lens.zones",
+     "kind": "lens",
+     "label": "عدسة المصليات",
+     "manifest": "plugin",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 16,
+    "seq": 20,
+    "value": {
+     "id": "lens.paths",
+     "kind": "lens",
+     "label": "عدسة المسارات",
+     "manifest": "plugin",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 16,
+    "seq": 30,
+    "value": {
+     "id": "lens.gates",
+     "kind": "lens",
+     "label": "عدسة البوابات",
+     "manifest": "plugin",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 16,
+    "seq": 40,
+    "value": {
+     "id": "lens.marks",
+     "kind": "lens",
+     "label": "عدسة العلامات",
+     "manifest": "plugin",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 16,
+    "seq": 50,
+    "value": {
+     "id": "lens.dist",
+     "kind": "lens",
+     "label": "عدسة التوزيع",
+     "manifest": "plugin",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "owners"
+    ],
+    "after": 16,
+    "seq": 60,
+    "value": {
+     "id": "lens.dens",
+     "kind": "lens",
+     "label": "عدسة الكثافة",
+     "manifest": "plugin",
+     "managedIn": null,
+     "resource": null
+    }
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 6,
+    "seq": 10,
+    "value": "ff.lens.zones.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 6,
+    "seq": 20,
+    "value": "ff.lens.paths.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 6,
+    "seq": 30,
+    "value": "ff.lens.gates.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 6,
+    "seq": 40,
+    "value": "ff.lens.dist.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 6,
+    "seq": 50,
+    "value": "ff.lens.dens.display"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 6,
+    "seq": 60,
+    "value": "ff.lens.dens.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 6,
+    "seq": 70,
+    "value": "ff.lens.zones.indicators.export"
+   },
+   {
+    "path": [
+     "featureFlags"
+    ],
+    "after": 6,
+    "seq": 80,
+    "value": "ff.lens.dens.indicators.export"
+   },
+   {
+    "path": [
+     "ownerKinds"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": "lens"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "audit.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 20,
+    "value": "lens.zones"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "audit.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 30,
+    "value": "lens.gates"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "audit.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 40,
+    "value": "lens.marks"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "audit.view"
+     },
+     "references"
+    ],
+    "after": 0,
+    "seq": 50,
+    "value": "lens.paths"
+   },
+   {
+    "path": [
+     "registry",
+     {
+      "by": "key",
+      "eq": "report.indicators.view"
+     },
+     "references"
+    ],
+    "after": 1,
+    "seq": 0,
+    "value": "lens.dist",
+    "needs": [
+     "dreport"
+    ]
+   }
+  ],
+  "scope-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 10,
+    "value": {
+     "key": "lens.zones.enable",
+     "owner": "lens.zones",
+     "type": "capability",
+     "g": "to-build",
+     "res": "bassam_perms_v1",
+     "resources": [
+      "bassam_perms_v1"
+     ],
+     "dims": {
+      "Department": [
+       "sectionDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 20,
+    "value": {
+     "key": "lens.zones.view",
+     "owner": "lens.zones",
+     "type": "access",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 30,
+    "value": {
+     "key": "lens.zones.create",
+     "owner": "lens.zones",
+     "type": "create",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 40,
+    "value": {
+     "key": "lens.zones.data.edit",
+     "owner": "lens.zones",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 50,
+    "value": {
+     "key": "lens.zones.geometry.edit",
+     "owner": "lens.zones",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 60,
+    "value": {
+     "key": "lens.zones.status.change",
+     "owner": "lens.zones",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 70,
+    "value": {
+     "key": "lens.zones.delete",
+     "owner": "lens.zones",
+     "type": "delete",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 80,
+    "value": {
+     "key": "lens.paths.enable",
+     "owner": "lens.paths",
+     "type": "capability",
+     "g": "to-build",
+     "res": "bassam_perms_v1",
+     "resources": [
+      "bassam_perms_v1"
+     ],
+     "dims": {
+      "Department": [
+       "sectionDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 90,
+    "value": {
+     "key": "lens.paths.view",
+     "owner": "lens.paths",
+     "type": "access",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 100,
+    "value": {
+     "key": "lens.paths.create",
+     "owner": "lens.paths",
+     "type": "create",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 110,
+    "value": {
+     "key": "lens.paths.edit",
+     "owner": "lens.paths",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 120,
+    "value": {
+     "key": "lens.paths.geometry.edit",
+     "owner": "lens.paths",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 130,
+    "value": {
+     "key": "lens.paths.status.change",
+     "owner": "lens.paths",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 140,
+    "value": {
+     "key": "lens.paths.delete",
+     "owner": "lens.paths",
+     "type": "delete",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 150,
+    "value": {
+     "key": "lens.gates.enable",
+     "owner": "lens.gates",
+     "type": "capability",
+     "g": "to-build",
+     "res": "bassam_perms_v1",
+     "resources": [
+      "bassam_perms_v1"
+     ],
+     "dims": {
+      "Department": [
+       "sectionDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 160,
+    "value": {
+     "key": "lens.gates.view",
+     "owner": "lens.gates",
+     "type": "access",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 170,
+    "value": {
+     "key": "lens.gates.create",
+     "owner": "lens.gates",
+     "type": "create",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 180,
+    "value": {
+     "key": "lens.gates.edit",
+     "owner": "lens.gates",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 190,
+    "value": {
+     "key": "lens.gates.status.change",
+     "owner": "lens.gates",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 200,
+    "value": {
+     "key": "lens.gates.delete",
+     "owner": "lens.gates",
+     "type": "delete",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 210,
+    "value": {
+     "key": "lens.marks.enable",
+     "owner": "lens.marks",
+     "type": "capability",
+     "g": "to-build",
+     "res": "bassam_perms_v1",
+     "resources": [
+      "bassam_perms_v1"
+     ],
+     "dims": {
+      "Department": [
+       "sectionDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 220,
+    "value": {
+     "key": "lens.marks.view",
+     "owner": "lens.marks",
+     "type": "access",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 230,
+    "value": {
+     "key": "lens.marks.create",
+     "owner": "lens.marks",
+     "type": "create",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 240,
+    "value": {
+     "key": "lens.marks.edit",
+     "owner": "lens.marks",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 250,
+    "value": {
+     "key": "lens.marks.geometry.edit",
+     "owner": "lens.marks",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 260,
+    "value": {
+     "key": "lens.marks.delete",
+     "owner": "lens.marks",
+     "type": "delete",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 270,
+    "value": {
+     "key": "lens.dist.enable",
+     "owner": "lens.dist",
+     "type": "capability",
+     "g": "to-build",
+     "res": "bassam_perms_v1",
+     "resources": [
+      "bassam_perms_v1"
+     ],
+     "dims": {
+      "Department": [
+       "sectionDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 280,
+    "value": {
+     "key": "lens.dist.view",
+     "owner": "lens.dist",
+     "type": "access",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 290,
+    "value": {
+     "key": "lens.dist.assign.edit",
+     "owner": "lens.dist",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 300,
+    "value": {
+     "key": "lens.dens.enable",
+     "owner": "lens.dens",
+     "type": "capability",
+     "g": "to-build",
+     "res": "bassam_perms_v1",
+     "resources": [
+      "bassam_perms_v1"
+     ],
+     "dims": {
+      "Department": [
+       "sectionDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 310,
+    "value": {
+     "key": "lens.dens.view",
+     "owner": "lens.dens",
+     "type": "access",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 320,
+    "value": {
+     "key": "lens.dens.threshold.configure",
+     "owner": "lens.dens",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Shift": [
+       "na",
+       "no-shift-identity"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 330,
+    "value": {
+     "key": "lens.zones.indicators.view",
+     "owner": "lens.zones",
+     "type": "access",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 11,
+    "seq": 340,
+    "value": {
+     "key": "lens.dens.indicators.view",
+     "owner": "lens.dens",
+     "type": "access",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 24,
+    "seq": 660,
+    "value": {
+     "key": "lens.marks.status.change",
+     "owner": "lens.marks",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Branch": [
+       "branchCeiling"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Assigned": [
+       "elementEmp"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 10,
+    "value": {
+     "key": "lens.dist.need.edit",
+     "owner": "lens.dist",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 20,
+    "value": {
+     "key": "lens.dens.reading.record",
+     "owner": "lens.dens",
+     "type": "edit",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Site": [
+       "floorSid"
+      ],
+      "Zone/Element": [
+       "elementId"
+      ],
+      "Shift": [
+       "shApShift"
+      ],
+      "DateRange": [
+       "periodLock"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 30,
+    "value": {
+     "key": "lens.gates.geometry.edit",
+     "owner": "lens.gates",
+     "type": "operation",
+     "g": "to-bind",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ],
+      "Site": [
+       "floorSid"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 40,
+    "value": {
+     "key": "ref.zone.type.view",
+     "owner": "lens.zones",
+     "type": "view",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 50,
+    "value": {
+     "key": "ref.zone.type.create",
+     "owner": "lens.zones",
+     "type": "create",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 60,
+    "value": {
+     "key": "ref.zone.type.edit",
+     "owner": "lens.zones",
+     "type": "edit",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 70,
+    "value": {
+     "key": "ref.zone.type.delete",
+     "owner": "lens.zones",
+     "type": "delete",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 80,
+    "value": {
+     "key": "ref.gate.type.view",
+     "owner": "lens.gates",
+     "type": "view",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 90,
+    "value": {
+     "key": "ref.gate.type.create",
+     "owner": "lens.gates",
+     "type": "create",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 100,
+    "value": {
+     "key": "ref.gate.type.edit",
+     "owner": "lens.gates",
+     "type": "edit",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 110,
+    "value": {
+     "key": "ref.gate.type.delete",
+     "owner": "lens.gates",
+     "type": "delete",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 120,
+    "value": {
+     "key": "ref.mark.kind.view",
+     "owner": "lens.marks",
+     "type": "view",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 130,
+    "value": {
+     "key": "ref.mark.kind.create",
+     "owner": "lens.marks",
+     "type": "create",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 140,
+    "value": {
+     "key": "ref.mark.kind.edit",
+     "owner": "lens.marks",
+     "type": "edit",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 28,
+    "seq": 150,
+    "value": {
+     "key": "ref.mark.kind.delete",
+     "owner": "lens.marks",
+     "type": "delete",
+     "g": "exists",
+     "res": "",
+     "resources": [],
+     "dims": {
+      "Department": [
+       "keyDept"
+      ]
+     }
+    }
+   },
+   {
+    "path": [
+     "terminology"
+    ],
+    "after": 1,
+    "seq": 10,
+    "value": {
+     "term": "lens.paths",
+     "means": "عدسةُ المسارات التشغيلية (مجموعة paths[] في الخطة/الجولة: create · edit · geometry.edit · status.change (active) · delete · view)",
+     "notA": "ليست «اتجاه الحركة» (flow)",
+     "classifier": "paths[].active ⇒ lens.paths.status.change · هندسة/حقول paths ⇒ lens.paths.edit/geometry.edit"
+    }
+   },
+   {
+    "path": [
+     "terminology"
+    ],
+    "after": 1,
+    "seq": 20,
+    "value": {
+     "term": "lens.*.enable",
+     "means": "تفعيلُ العدسة (Plugin/Lens activation): سقفُ الإدارة perms.lenses[d] وعدساتُ الموظف perms.empLens[d][ekey] — بوابةُ D3‑04",
+     "notA": "ليس تغييرَ حالة عنصر (status.change) ولا منحةَ عملية",
+     "classifier": "تغيّر perms.lenses/empLens ⇒ permSection على bassam_perms_v1 (lens.*.enable) — لا status.change"
+    }
+   },
+   {
+    "path": [
+     "terminology"
+    ],
+    "after": 5,
+    "seq": 10,
+    "value": {
+     "term": "empLens",
+     "means": "Employee Lens Assignment (perms.empLens[d][ekey]) — جزءُ بوابة العدسة (Ceiling ∧ Assignment)",
+     "notA": "ليس Assigned Data Scope",
+     "classifier": "Lens Gate (KIVO_BUILD.lensGate) — لا بُعدَ نطاق"
+    }
+   }
+  ],
+  "guard-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 300,
+    "value": {
+     "key": "lens.zones.create",
+     "res": "",
+     "where": "كيانٌ يظهر في zones[] (الهوية: code → ser → name → id/eid)",
+     "how": "مواءمةُ المجموعة بالهوية ثم: ظهورٌ = create",
+     "asis": "— (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.zones",
+     "type": "create",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 310,
+    "value": {
+     "key": "lens.zones.data.edit",
+     "res": "",
+     "where": "حقولُ الخصائص على كيانٍ قائم في zones[] (ما ليس هندسةً ولا حالةً ولا توزيعاً ولا كثافة)",
+     "how": "الحقلُ المتغيّرُ خارجَ الصفوف المسمّاة",
+     "asis": "—",
+     "decl": "pri (الأولوية أ/ب/ج) · lang/lsz (زاوية/حجم العنوان) · area (المساحة م² — تبقى هنا بقرار F-06) تُصنَّف خصائصَ — لا مفتاحَ مستقلاً لها",
+     "dup": "",
+     "owner": "lens.zones",
+     "type": "edit",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 320,
+    "value": {
+     "key": "lens.zones.geometry.edit",
+     "res": "",
+     "where": "الحقولُ الهندسية في zones[]: d · hs · cx · cy · rawA · kind · unp",
+     "how": "الحقلُ المتغيّر ∈ صفّ الهندسة",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.zones",
+     "type": "operation",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 330,
+    "value": {
+     "key": "lens.zones.status.change",
+     "res": "",
+     "where": "حقولُ الحالة في zones[]: off · cWhy · cAt · cAtMs · cBy · fst · flow · fAt · fBy · fKind · fLog",
+     "how": "الحقلُ المتغيّر ∈ FIELD_KEYS (+ closed للأبواب / off للمصليات والمعالم)",
+     "asis": "v24.3 (F-14): الرصدُ يستهلك هذا المفتاح بنطاق Assigned (مؤجَّل لمرحلة Data Scope)",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.zones",
+     "type": "operation",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 340,
+    "value": {
+     "key": "lens.zones.delete",
+     "res": "",
+     "where": "كيانٌ يزول من zones[]",
+     "how": "مواءمةٌ بالهوية ثم: زوالٌ = delete",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.zones",
+     "type": "delete",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 350,
+    "value": {
+     "key": "lens.paths.create",
+     "res": "",
+     "where": "كيانٌ يظهر في paths[] (الهوية: code → name → id)",
+     "how": "مواءمةُ المجموعة بالهوية ثم: ظهورٌ = create",
+     "asis": "— (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.paths",
+     "type": "create",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 360,
+    "value": {
+     "key": "lens.paths.edit",
+     "res": "",
+     "where": "حقولُ الخصائص على كيانٍ قائم في paths[] (ما ليس هندسةً ولا حالةً ولا توزيعاً ولا كثافة)",
+     "how": "الحقلُ المتغيّرُ خارجَ الصفوف المسمّاة",
+     "asis": "—",
+     "decl": "type · dir · line · w · anim · hideLabel — أمّا active فصار lens.paths.status.change (v24.3 F-06)",
+     "dup": "",
+     "owner": "lens.paths",
+     "type": "edit",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 370,
+    "value": {
+     "key": "lens.paths.geometry.edit",
+     "res": "",
+     "where": "الحقولُ الهندسية في paths[]: pts",
+     "how": "الحقلُ المتغيّر ∈ صفّ الهندسة",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.paths",
+     "type": "operation",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 380,
+    "value": {
+     "key": "lens.paths.status.change",
+     "res": "",
+     "where": "paths[].active (true/false) — تفعيل/تعطيل المسار (side-panel · bulk)",
+     "how": "الحقلُ active وحدَه؛ ما سواه lens.paths.edit (type · dir · line · w · anim · hideLabel)",
+     "asis": "—",
+     "decl": "v24.3 (F-06): فُعِّل من محجوز",
+     "dup": "",
+     "owner": "lens.paths",
+     "type": "operation",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 390,
+    "value": {
+     "key": "lens.paths.delete",
+     "res": "",
+     "where": "كيانٌ يزول من paths[]",
+     "how": "مواءمةٌ بالهوية ثم: زوالٌ = delete",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.paths",
+     "type": "delete",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 400,
+    "value": {
+     "key": "lens.gates.create",
+     "res": "",
+     "where": "كيانٌ يظهر في gates[] (الهوية: gid+leafNo → num → label → id)",
+     "how": "مواءمةُ المجموعة بالهوية ثم: ظهورٌ = create",
+     "asis": "— (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.gates",
+     "type": "create",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 410,
+    "value": {
+     "key": "lens.gates.edit",
+     "res": "",
+     "where": "حقولُ الخصائص على كيانٍ قائم في gates[] (ما ليس هندسةً ولا حالةً ولا توزيعاً ولا كثافة)",
+     "how": "الحقلُ المتغيّرُ خارجَ الصفوف المسمّاة",
+     "asis": "—",
+     "decl": "leafN · cats · gtype · loc · kind · route · cls · hideNum/hideLabel",
+     "dup": "",
+     "owner": "lens.gates",
+     "type": "edit",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 420,
+    "value": {
+     "key": "lens.gates.geometry.edit",
+     "res": "",
+     "where": "الحقولُ الهندسية في gates[]: x · y · unp",
+     "how": "الحقلُ المتغيّر ∈ صفّ الهندسة",
+     "asis": "(الأبوابُ لا تُسحب في الجولة)",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.gates",
+     "type": "operation",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 430,
+    "value": {
+     "key": "lens.gates.status.change",
+     "res": "",
+     "where": "حقولُ الحالة في gates[]: closed · cWhy · cAt · cAtMs · cBy · fst · flow · fAt · fBy · fKind · fLog",
+     "how": "الحقلُ المتغيّر ∈ FIELD_KEYS (+ closed للأبواب / off للمصليات والمعالم)",
+     "asis": "v24.3 (F-14): الرصدُ يستهلك هذا المفتاح بنطاق Assigned (مؤجَّل لمرحلة Data Scope)",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.gates",
+     "type": "operation",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 440,
+    "value": {
+     "key": "lens.gates.delete",
+     "res": "",
+     "where": "كيانٌ يزول من gates[]",
+     "how": "مواءمةٌ بالهوية ثم: زوالٌ = delete",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.gates",
+     "type": "delete",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 450,
+    "value": {
+     "key": "lens.marks.create",
+     "res": "",
+     "where": "كيانٌ يظهر في marks[] (الهوية: label → id (ثم الفهرس))",
+     "how": "مواءمةُ المجموعة بالهوية ثم: ظهورٌ = create",
+     "asis": "— (المصدر: الواجهةُ لا تفحص إلا بوابةَ الحفظ edit|approve|add)",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.marks",
+     "type": "create",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 460,
+    "value": {
+     "key": "lens.marks.edit",
+     "res": "",
+     "where": "حقولُ الخصائص على كيانٍ قائم في marks[] (ما ليس هندسةً ولا حالةً ولا توزيعاً ولا كثافة)",
+     "how": "الحقلُ المتغيّرُ خارجَ الصفوف المسمّاة",
+     "asis": "—",
+     "decl": "kind · hideLabel",
+     "dup": "",
+     "owner": "lens.marks",
+     "type": "edit",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 470,
+    "value": {
+     "key": "lens.marks.geometry.edit",
+     "res": "",
+     "where": "الحقولُ الهندسية في marks[]: x · y · unp",
+     "how": "الحقلُ المتغيّر ∈ صفّ الهندسة",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.marks",
+     "type": "operation",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 480,
+    "value": {
+     "key": "lens.marks.status.change",
+     "res": "",
+     "where": "حقولُ الحالة في marks[]: off · cWhy · cAt · cAtMs · cBy · fst · flow · fAt · fBy · fKind · fLog",
+     "how": "الحقلُ المتغيّر ∈ FIELD_KEYS (+ closed للأبواب / off للمصليات والمعالم)",
+     "asis": "v24.3 (F-14): الرصدُ يستهلك هذا المفتاح بنطاق Assigned (مؤجَّل لمرحلة Data Scope)",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.marks",
+     "type": "operation",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 490,
+    "value": {
+     "key": "lens.marks.delete",
+     "res": "",
+     "where": "كيانٌ يزول من marks[]",
+     "how": "مواءمةٌ بالهوية ثم: زوالٌ = delete",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.marks",
+     "type": "delete",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 500,
+    "value": {
+     "key": "lens.dist.assign.edit",
+     "res": " (+ mvLog)",
+     "where": "emp[] على zones/gates/marks (التسكين) · ويُرافقه [\"y-m-d\"].mvLog[] في الجولة",
+     "how": "الحقلُ emp وحدَه (أو mvLog)",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.dist",
+     "type": "edit",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 510,
+    "value": {
+     "key": "lens.dist.need.edit",
+     "res": "",
+     "where": "needN · needS · uniNeed على zones/gates/marks",
+     "how": "الحقلُ ∈ {needN, needS, uniNeed}",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.dist",
+     "type": "edit",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 520,
+    "value": {
+     "key": "lens.dens.reading.record",
+     "res": "",
+     "where": "zones[].count · zones[].pc.<fajr|dhuhr|asr|maghrib|isha> = {n,cap[,p]}",
+     "how": "الحقلُ ∈ {count, pc}",
+     "asis": "—",
+     "decl": "",
+     "dup": "",
+     "owner": "lens.dens",
+     "type": "edit",
+     "guardKind": "collection"
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 0,
+    "seq": 530,
+    "value": {
+     "key": "lens.dens.threshold.configure",
+     "res": "",
+     "where": "floors[i].dens ∈ {base, mid, high, null} — معيارُ/عتبةُ الكثافة للموقع (لوحة الكثافة)",
+     "how": "الحقلُ dens على الموقع وحدَه؛ zones[].area تبقى lens.zones.data.edit",
+     "asis": "",
+     "decl": "v24.3 (F-06): فُعِّل من محجوز؛ area لا تُنقل إليه",
+     "dup": "",
+     "owner": "lens.dens",
+     "type": "operation",
+     "guardKind": "field"
+    }
+   },
+   {
+    "path": [
+     "decisions"
+    ],
+    "after": 4,
+    "seq": 20,
+    "value": {
+     "id": "D-07",
+     "topic": "حقولُ المصليات بلا مفتاحٍ مخصوص",
+     "status": "معلَن (باقٍ) — area مثبَّتة بقرار F-06",
+     "text": "pri · lang · lsz · area → lens.zones.data.edit؛ cap مشتقٌّ (يُهمَل)؛ count/pc → lens.dens.reading.record."
+    }
+   },
+   {
+    "path": [
+     "decisions"
+    ],
+    "after": 4,
+    "seq": 30,
+    "value": {
+     "id": "D-08",
+     "topic": "المسارات",
+     "status": "حُسم في v24.3 (F-06)",
+     "text": "paths[].active → lens.paths.status.change (فُعِّل)؛ بقيةُ الحقول lens.paths.edit."
+    }
+   },
+   {
+    "path": [
+     "counts",
+     "emittedKeys"
+    ],
+    "add": 24
+   }
+  ],
+  "build-bindings": [
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 2,
+    "seq": 10,
+    "value": {
+     "key": "lens.zones.enable",
+     "group": "C — Lens Enable Gate",
+     "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «المصليات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+     "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.zones.* (KIVO_GUARDS.decide)",
+     "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.zones.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+     "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+     "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+     "impl": [
+      "lensOf",
+      "lensGate"
+     ],
+     "tests": [
+      "p3build.mjs (المصفوفة الوحدوية)",
+      "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+     ],
+     "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.zones.cells)",
+     "status": "built-shadow",
+     "owner": "lens.zones",
+     "label": "تفعيل عدسة المصليات",
+     "guardKind": "capability",
+     "guardStatus": "to-build",
+     "asisMap": [
+      "lens-flag:zones (deptLenses/empLens)"
+     ],
+     "sensitive": false
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 2,
+    "seq": 20,
+    "value": {
+     "key": "lens.paths.enable",
+     "group": "C — Lens Enable Gate",
+     "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «المسارات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+     "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.paths.* (KIVO_GUARDS.decide)",
+     "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.paths.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+     "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+     "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+     "impl": [
+      "lensOf",
+      "lensGate"
+     ],
+     "tests": [
+      "p3build.mjs (المصفوفة الوحدوية)",
+      "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+     ],
+     "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.paths.cells)",
+     "status": "built-shadow",
+     "owner": "lens.paths",
+     "label": "تفعيل عدسة المسارات",
+     "guardKind": "capability",
+     "guardStatus": "to-build",
+     "asisMap": [
+      "lens-flag:paths (deptLenses/empLens)"
+     ],
+     "sensitive": false
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 2,
+    "seq": 30,
+    "value": {
+     "key": "lens.gates.enable",
+     "group": "C — Lens Enable Gate",
+     "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «البوابات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+     "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.gates.* (KIVO_GUARDS.decide)",
+     "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.gates.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+     "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+     "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+     "impl": [
+      "lensOf",
+      "lensGate"
+     ],
+     "tests": [
+      "p3build.mjs (المصفوفة الوحدوية)",
+      "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+     ],
+     "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.gates.cells)",
+     "status": "built-shadow",
+     "owner": "lens.gates",
+     "label": "تفعيل عدسة البوابات",
+     "guardKind": "capability",
+     "guardStatus": "to-build",
+     "asisMap": [
+      "lens-flag:gates (deptLenses/empLens)"
+     ],
+     "sensitive": false
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 2,
+    "seq": 40,
+    "value": {
+     "key": "lens.marks.enable",
+     "group": "C — Lens Enable Gate",
+     "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «العلامات»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+     "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.marks.* (KIVO_GUARDS.decide)",
+     "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.marks.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+     "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+     "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+     "impl": [
+      "lensOf",
+      "lensGate"
+     ],
+     "tests": [
+      "p3build.mjs (المصفوفة الوحدوية)",
+      "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+     ],
+     "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.marks.cells)",
+     "status": "built-shadow",
+     "owner": "lens.marks",
+     "label": "تفعيل عدسة العلامات",
+     "guardKind": "capability",
+     "guardStatus": "to-build",
+     "asisMap": [
+      "lens-flag:marks (deptLenses/empLens)"
+     ],
+     "sensitive": false
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 2,
+    "seq": 50,
+    "value": {
+     "key": "lens.dist.enable",
+     "group": "C — Lens Enable Gate",
+     "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «التوزيع»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+     "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.dist.* (KIVO_GUARDS.decide)",
+     "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.dist.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+     "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+     "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+     "impl": [
+      "lensOf",
+      "lensGate"
+     ],
+     "tests": [
+      "p3build.mjs (المصفوفة الوحدوية)",
+      "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+     ],
+     "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.dist.cells)",
+     "status": "built-shadow",
+     "owner": "lens.dist",
+     "label": "تفعيل عدسة التوزيع",
+     "guardKind": "capability",
+     "guardStatus": "to-build",
+     "asisMap": [
+      "lens-flag:dist (deptLenses/empLens)"
+     ],
+     "sensitive": false
+    }
+   },
+   {
+    "path": [
+     "bindings"
+    ],
+    "after": 2,
+    "seq": 60,
+    "value": {
+     "key": "lens.dens.enable",
+     "group": "C — Lens Enable Gate",
+     "mechanism": "حارسٌ خادميٌّ مركزيّ ظلّي لعدسة «الكثافة»: Lens Enabled ∧ Permission Granted (∧ Scope Allowed — مؤجَّل F‑14)",
+     "inputs": "perms.lenses[d] (سقفُ الإدارة؛ غيابُه = كلُّ العدسات) · perms.empLens[d][ekey] (عدساتُ الموظف؛ غيابُه = كلُّ عدسات الإدارة؛ يُطبَّق على staff/gm) · قرارُ مفتاح العملية الدقيق lens.dens.* (KIVO_GUARDS.decide)",
+     "shadow_rule": "لكل كتابةٍ يُخرج المصنِّفُ لها مفتاح lens.dens.*: gate = deptOn ∧ empOn؛ shadow = gate ∧ opPerm؛ تُسجَّل الخلية (D?E?P?) ويُقارَن بحكم canWrite",
+     "asis_today": "لا فحصَ للعدسات في الخادم: canWrite يحكم بذرّات الورقة (…) فقط؛ الإخفاءُ واجهيّ (BassamPerm.lensOn)",
+     "expected_mismatch": "AS‑IS يقبل والعدسةُ معطَّلة (الإدارة أو الموظف) في النموذج الجديد = «lens-disabled» (متوقَّع بالتصميم) · AS‑IS يقبل والعدسةُ مفعَّلة ومفتاحُ العملية غيرُ ممنوح = اختلافُ Phase 2.1 الموثَّق (design:*) لا غير",
+     "impl": [
+      "lensOf",
+      "lensGate"
+     ],
+     "tests": [
+      "p3build.mjs (المصفوفة الوحدوية)",
+      "p3shadow.mjs (مصفوفةُ العدسة على الخادم: D1E1 · D1E0 · D0E1 · D0E0 × P1/P0)"
+     ],
+     "matrix": "Department enabled / Employee enabled / Operation permission / AS‑IS result / Shadow result — لكل عدسة على حدة (PERMV3.lens.dens.cells)",
+     "status": "built-shadow",
+     "owner": "lens.dens",
+     "label": "تفعيل عدسة الكثافة",
+     "guardKind": "capability",
+     "guardStatus": "to-build",
+     "asisMap": [
+      "lens-flag:dens (deptLenses/empLens)"
+     ],
+     "sensitive": false
+    }
+   }
+  ]
+ }
+}

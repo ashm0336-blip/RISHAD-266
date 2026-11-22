@@ -33,7 +33,7 @@ async function env(mode) {
 const stored = (e) => e.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', PLAT).map((r) => r.v).join('');
 
 /* ── B1 · server ── */
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   test('B1 [' + mode + '] the server refuses an empty or blank platform name and keeps the stored value', async () => {
     const { e, C, ck } = await env(mode);
     const ok = await C.save(ck, { [PLAT]: JSON.stringify({ name: 'TEST_ONLY منصة', short: 'TEST_ONLY' }) });

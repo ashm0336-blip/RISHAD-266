@@ -43,7 +43,7 @@ import { world, workerUnderTest, D as FXD, PNG as FXPNG, TAG, stored, taskComman
 import { needs } from './harness.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const { PG_KEYS, RES_REG, pgLeaves, ACTS_ALL, WRITE_ACTS } = await internals(['PG_KEYS', 'RES_REG', 'pgLeaves', 'ACTS_ALL', 'WRITE_ACTS']);
+const { PG_KEYS, RES_REG, pgLeaves, ACTS_ALL, WRITE_ACTS, RES_READ_AS } = await internals(['PG_KEYS', 'RES_REG', 'pgLeaves', 'ACTS_ALL', 'WRITE_ACTS', 'RES_READ_AS']);
 const REGJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/permissions/registry/registry-v24.9.json'), 'utf8')), REG = REGJ.registry;
 const KG = 'bassam_gdepts_v1', KD = 'bassam_depts_v1', KU = 'bassam_auth_users_v1', KP = 'bassam_perms_v1';
 const put = (DB, k, v) => { DB.db.prepare('DELETE FROM kv WHERE k = ?').run(k); DB.db.prepare('INSERT INTO kv (k, seq, v) VALUES (?, 0, ?)').run(k, JSON.stringify(v)); DB.db.prepare('INSERT INTO revs (k, rev) VALUES (?, 1) ON CONFLICT(k) DO UPDATE SET rev = rev + 1').run(k); };
@@ -167,6 +167,11 @@ function violations(L, E) {
     const refs = L[id] ? [id] : GRANT_REF[id]; assert.ok(refs && refs.every((r) => L[r]), id + ': a legacy counterpart exists (' + refs + ')');
     for (const cell of Object.keys(E[id])) for (let i = 0; i < E[id][cell].length; i++) {
       compared++;
+      /* V7 · د5-ح: سجلٌّ وُلد بعد المرجع (20e6571) لا عمودَ له في الجدول القديم — أرشيفُ الجولات يُقرأ بسياسة الجولات (023 RES_READ_AS)، فيُقارن بعمودها.
+         وما لا نظيرَ له: الإنفاذُ لا يسمح فيه بشيءٍ أصلاً (أشدّ من المقارنة) */
+      let lc = cell; if (!refs.some((r) => L[r][lc])) for (const [a, b] of Object.entries(RES_READ_AS || {})) if (lc.endsWith(a)) lc = lc.slice(0, -a.length) + b;
+      if (!refs.some((r) => L[r][lc])) { if (E[id][cell][i] === 'Y') (out[cell + ' · ' + opName(cell, i) + ' (no legacy baseline)'] = out[cell + ' · ' + opName(cell, i) + ' (no legacy baseline)'] || []).push(id); continue; }
+      if (lc !== cell) { if (E[id][cell][i] === 'Y' && !refs.some((r) => L[r][lc][i] === 'Y')) (out[cell + ' · ' + opName(cell, i)] = out[cell + ' · ' + opName(cell, i)] || []).push(id); continue; }
       if (E[id][cell][i] === 'Y' && !refs.some((r) => L[r][cell][i] === 'Y')) (out[cell + ' · ' + opName(cell, i)] = out[cell + ' · ' + opName(cell, i)] || []).push(id);
     }
   }
@@ -204,11 +209,15 @@ test('the OPEN exception is pinned literally (owner decision 2026-11-12, option 
 });
 
 let SW = null;
-const sweeps = (t) => SW || (SW = quiet(async () => ({ L: await sweep('legacy', t), E: await sweep('enforce', t) })));
+/* V7 · د5-ح (القفل): الوضعُ القديم حُذف فلا يُقاس عموده — المرجعُ ما قيس منه على العامل 20e6571 بالعالم نفسِه (v7_e_img_enforce_le_legacy.gold.json ·
+   sweep · binds). عمودُ الإنفاذ يُقاس حيّاً كما كان ويُقارن بالمرجع بالقاعدة نفسِها (enforce لا يسمح بما رفضه legacy) */
+const GOLD = JSON.parse(fs.readFileSync(new URL('./v7_e_img_enforce_le_legacy.gold.json', import.meta.url), 'utf8'));
+const sweeps = (t) => SW || (SW = quiet(async () => ({ L: { table: GOLD.sweep, cells: GOLD.sweepCells }, E: await sweep('enforce', t) })));
 
 test('the sweep is not vacuous: the lists are derived and both modes allow real writers', { ...needs('award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'), timeout: 1800000 }, async (t) => {
   const { L, E } = await sweeps(t);
-  assert.ok(LEAVES.length >= 40 && ASSIGN.length >= 231 && RECORDS.length >= 68 + 41, 'pages/leaves, assignable keys and records are read from the server and the registry');
+  /* V7 · د5-ح: ورقةُ admin/ptpls (−1) ومفاتيحُ tpl.* الخمسة (−5) وسجلّا القوالب في الوحدة والوحدة المفتوحة (−4) حُذفت */
+  assert.ok(LEAVES.length >= 39 && ASSIGN.length >= 226 && RECORDS.length >= 68 + 41 - 4, 'pages/leaves, assignable keys and records are read from the server and the registry');
   for (const rn of ['bassam_plan_v1', 'bassam_rounds_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1', 'bassam_mark_kinds_v1', 'bassam_tasks_v1', 'bassam_seized_v1', 'bassam_dreport_v1', 'bassam_dayshift_v1', 'bassam_employees_v1', 'bassam_profile_v1']) assert.ok(RECORDS.some((r) => r.id === rn), rn);
   for (const T of [L.table, E.table]) {
     assert.equal(T['s plan:edit'].bassam_plan_v1, 'YYY'); assert.equal(T['s daily/rounds:edit'].bassam_rounds_v1, 'YYY'); assert.equal(T['s tasks:edit'].bassam_tasks_v1, 'YYY');
@@ -244,7 +253,7 @@ test('IMAGES: enforce allows nothing that legacy refuses — every actor × reco
    compared after every attempt. */
 const WU = workerUnderTest();
 const FKP = 'bassam_perms_v1', DM = ['0000000101', '70101'], FACC = ['0000000118', '70118'], FACC_E = 'tst_e_field';
-const DEPT_RECORDS = Object.keys(RES_REG).filter((n) => RES_REG[n].scope === 'dept');
+const DEPT_RECORDS = Object.keys(RES_REG).filter((n) => RES_REG[n].scope === 'dept' && !RES_REG[n].srv);   /* V7 · د5-ح (13): srv (أرشيفُ الجولات) لا يكتبه العميلُ أصلاً — لا حفظةَ تربط صورة */
 const capsOf = (R) => [].concat(R.cap || [], R.capAdd || []);
 const relevant = (leaf) => DEPT_RECORDS.filter((n) => capsOf(RES_REG[n]).includes(leaf) || REG.some((e) => e.status === 'active' && atomsOf(e).some(([l]) => l === leaf) && ((e.guard || {}).resources || []).includes(n)));
 const ROUNDS_WRITES = DEPT_RECORDS.filter((n) => capsOf(RES_REG[n]).includes('daily/rounds'));
@@ -316,7 +325,7 @@ async function binds(mode, t) {
   return { out, saves };
 }
 let BN = null;
-const bindSweeps = (t) => BN || (BN = quiet(async () => ({ L: await binds('legacy', t), E: await binds('enforce', t) })));
+const bindSweeps = (t) => BN || (BN = quiet(async () => ({ L: { out: GOLD.binds, saves: GOLD.bindSaves }, E: await binds('enforce', t) })));
 
 test('IMAGES · bind by a record save: enforce accepts no foreign image that legacy refuses «imgown»', { timeout: 1800000 }, async (t) => {
   const { L, E } = await bindSweeps(t), viol = {}, other = {}; let compared = 0;

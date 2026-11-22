@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019q-operations-people-tasks.js.tpl */
 /* Operational source contracts only. Every container has its own fixed table.
    These descriptors preserve transport shape/order/absence/null; they do not
    grant writes, normalize legacy identities or run the old client migrations.

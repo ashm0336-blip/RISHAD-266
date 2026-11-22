@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { parse } from 'acorn';
+import { perm44Real, rolesKey } from './perm44_real.mjs';
 
 const source = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 
@@ -22,7 +23,14 @@ test('the existing identity resolver displays a legacy token from typed employee
   vm.runInNewContext(source('src/services/490-emp-key.js'), context);
   vm.runInNewContext(source('src/permissions/334-perm-tree-tpl.js'), context);
   const displayed = context.KIVO.BassamAuth.display();
-  assert.equal(displayed.name, employees[0].name); assert.equal(displayed.role, templates[0].name);
+  /* V7 · د5-هـ (44): the permission name is the granted ROLE name (KIVO.Perm44.roleNameOf); templates were deleted. Without the role engine
+     a person with grants under the legacy token is «صلاحيات مخصّصة» — the token is still resolved, nothing is moved or granted */
+  assert.equal(displayed.name, employees[0].name); assert.equal(displayed.role, 'صلاحيات مخصّصة');
+  /* the REAL role engine (345) over the unit's roles record (TEST_ONLY) — the role granted to the legacy token is the name shown */
+  const keep = context.localStorage;
+  perm44Real(context, { [rolesKey(user.deptId)]: { v: 1, roles: [{ id: 'TEST_ONLY_r', name: templates[0].name, sys: {} }], people: { [user.ekey]: { role: 'TEST_ONLY_r', ex: [] } } } });
+  assert.equal(context.KIVO.BassamAuth.display().role, templates[0].name, 'with the role engine: the role name');
+  delete context.KIVO.Perm44; context.localStorage = keep;
   assert.equal(context.KIVO.BassamPerm.can('emps', 'edit'), false);
   assert.deepEqual(JSON.parse(JSON.stringify(context.KIVO.BassamPerm.empPerms('TEST_ONLY stable eid'))), {});
   assert.equal(JSON.stringify({ user, grants }), before); assert.deepEqual(writes, []);

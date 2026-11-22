@@ -9,6 +9,7 @@ import { spawnSync } from "node:child_process";
 import { D1Shim, PYTHON } from "./harness.mjs";
 import { operationalMigrationFixture } from "./operational_migration_fx.mjs";
 import { needs } from './harness.mjs';
+import { SCHED_PARTS } from './sched_parts.mjs';   /* V7 · د5-د: أجزاءُ الجدولة من سجلّها */
 const C = vm.createContext({
   TextEncoder,
   crypto: webcrypto,
@@ -29,7 +30,7 @@ C.K_DEPTS = "bassam_depts_v1";
 for (const file of [
   "019d-atomic-restore.js",
   "019o-operational-codec.js",
-  "019p-operations-scheduling.js",
+  ...SCHED_PARTS,
   "019q-operations-people-tasks.js",
   "019r-operational-storage.js",
   "019s-operational-migration.js",

@@ -47,7 +47,7 @@ test('actual lazy registry reaches both business bundles exactly once, with one 
 
 for(const name of ['Seized','Award'])test('actual emitted '+name+' factory includes callable typed transport and fails anonymous requests before storage/network',async()=>{
  const B=built(),{C,forbidden}=environment();
- for(const stem of ['005-kivo-ns','565-page-kit','548-atomic-backup']){const asset=B.asset(stem);vm.runInContext(asset.source,C,{filename:asset.path});}
+ for(const stem of ['005-kivo-ns','385-calendar','565-page-kit','548-atomic-backup']){const asset=B.asset(stem);vm.runInContext(asset.source,C,{filename:asset.path});}
  const Count=(n,label)=>n+' '+label;Count.pair=(key,n)=>({[key]:n});Count.agr=()=>'';
  C.KIVO.BassamCount=Count;C.KIVO.BassamAuth={user:()=>null};C.KIVO.BassamDepts={active:()=>null};
  class Base{hToday(){return{y:1448,m:5,d:19};}_hfmt(){return new Intl.DateTimeFormat('en-u-ca-islamic-umalqura',{year:'numeric',month:'numeric',day:'numeric'});}setState(value){Object.assign(this.state,typeof value==='function'?value(this.state):value);}bsOn(){return false;}}
@@ -61,7 +61,7 @@ for(const name of ['Seized','Award'])test('actual emitted '+name+' factory inclu
 });
 
 test('actual emitted 548 exports all four canonical HTTP business domains with every declared department and one explicit read-only global Award scope',needs('custody', 'dstats'), async t=>{
- const B=await world({schema:10});t.after(()=>B.DB.db.close());
+ const B=await world({schema:11});t.after(()=>B.DB.db.close());
  const perms=JSON.parse(JSON.stringify(B.keys.bassam_perms_v1));Object.values(perms.caps).forEach(caps=>caps.push('irshad','seized','award'));await B.put('bassam_perms_v1',perms,true);
  const revision=(await B.api('super','/api/get?keys=&uid='+IDS.super)).json.v,protectedBefore=identitySnapshot(B.DB),calls=[],assets=built(),{C,forbidden}=environment();
  for(const stem of ['005-kivo-ns','548-atomic-backup']){const asset=assets.asset(stem);vm.runInContext(asset.source,C,{filename:asset.path});}

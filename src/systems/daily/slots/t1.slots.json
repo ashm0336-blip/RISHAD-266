@@ -1,0 +1,239 @@
+{
+ "_note": "V7 · د5-هـ (t1): معرفةُ المتابعة اليومية (الجولات) في أجزاء الخادم العامة ووثائق الصلاحيات ومحرّكاتها — قطعٌ في مجلدها.",
+ "oc.sched.resources.daily": {
+  "order": 10,
+  "text": "  osSchemaRoundsResources(),\n"
+ },
+ "oc.names.daily": {
+  "order": 10,
+  "file": "slots/oc.names.daily.frag"
+ },
+ "guard.floor.daily": {
+  "order": 10,
+  "text": "      if (host === 'rounds') {\n        if (k === 'ap') { R.op(y.ap ? 'round.approve' : 'round.reopen', p + '.ap'); continue; }\n        R.op('round.edit', p + '.' + k); continue;                                                     /* hideZones/hidePaths/hideGates/hideMarks/showCodes */\n      }\n"
+ },
+ "guard.classify.daily": {
+  "order": 10,
+  "file": "slots/guard.classify.daily.frag"
+ },
+ "scope.site.daily": {
+  "order": 10,
+  "text": "  /* KIVO_238 · IH‑01: طابقُ الجولة ذو sid يحمل هويةَ الخطة نفسَها (f:<sid>) — وإلا الهويةُ القديمة rounds:<name|num|#i> */\n  function roundsSite(fl, idx) { fl = obj(fl); if (fl.sid != null && fl.sid !== '') return 'f:' + fl.sid; return 'rounds:' + (fl.name || fl.num || idx); }\n"
+ },
+ "scope.items.daily": {
+  "order": 10,
+  "file": "slots/scope.items.daily.frag"
+ },
+ "ident.rounds.daily": {
+  "order": 10,
+  "file": "slots/ident.rounds.daily.frag"
+ },
+ "ident.emp.daily": {
+  "order": 10,
+  "text": "      Object.keys(rounds).filter(parseDay).sort().forEach(function (day) { arr(obj(rounds[day]).d).forEach(function (f, fi) { EMP_COLS.forEach(function (col) { arr(obj(f)[col]).forEach(function (e, ei) { canonEmp('rounds', e, [day, 'd', fi, col, ei], roundOps); }); }); }); });\n"
+ },
+ "ident.keys.daily": {
+  "order": 10,
+  "text": "['bsdept:' + did + ':bassam_rounds_v1', B2.rounds, roundOps, 'rounds']"
+ },
+ "ident.inv.daily": {
+  "order": 10,
+  "text": "  {\n   \"path\": \"إنشاءُ جولة اليوم\",\n   \"evidence\": \"BassamRound.ensure: dcopy = lensFilter(plan.months[y-m].d).map(…) — طابقُ الجولة i = طابقُ لقطة الشهر i (موضعي)؛ ومن جولةٍ سابقة: نسخُ d بترتيبه\",\n   \"conclusion\": \"الموضعُ يُورَث عند الإنشاء\"\n  },\n  {\n   \"path\": \"الجولاتُ اليومية — البدءُ من الخطة · النسخُ من يوم\",\n   \"evidence\": \"roundPull: P.map(…) بالموضع · roundCopyDay: e.d.map(…) بالموضع\",\n   \"conclusion\": \"الموضعُ يُورَث\"\n  },\n"
+ },
+ "ident.shape.plan": {
+  "order": 20,
+  "text": "bassam_rounds_v1"
+ },
+ "anc.field.daily": {
+  "order": 10,
+  "file": "slots/anc.field.daily.frag"
+ },
+ "enf.lens.hosts.daily": {
+  "order": 10,
+  "text": "'daily/rounds'"
+ },
+ "nf.types.daily": {
+  "order": 10,
+  "file": "slots/nf.types.daily.frag"
+ },
+ "nf.cap.daily": {
+  "order": 10,
+  "text": "  round: \"daily/rounds\",\n"
+ },
+ "nf.capId.daily": {
+  "order": 10,
+  "text": "kp_att: \"daily/kpiDaily\", kp_occ: \"daily/kpiOcc\", "
+ },
+ "nf.capId.field.daily": {
+  "order": 10,
+  "text": "fd_obs: \"daily/field\" "
+ },
+ "nf.denyRecs.daily": {
+  "order": 10,
+  "text": "bassam_rounds_v1: \"الجولات اليومية\", bassam_rounds_arc_v1: \"أرشيف الجولات اليومية\", "
+ },
+ "emp.keys.daily": {
+  "order": 10,
+  "text": "  'bassam_rounds_v1',\n"
+ },
+ "emp.cleanup.daily": {
+  "order": 10,
+  "text": "  var rounds = values.bassam_rounds_v1;\n  if (isObj(rounds))\n    Object.keys(rounds).forEach(function (k) {\n      if (rounds[k] && Array.isArray(rounds[k].d)) rounds[k].d.forEach(fd);\n    });\n"
+ },
+ "priv.tokRes.daily": {
+  "order": 10,
+  "text": "bassam_rounds_v1: 1"
+ },
+ "priv.carrier.daily": {
+  "order": 10,
+  "text": "bassam_rounds_v1"
+ },
+ "res.reg.daily": {
+  "order": 10,
+  "text": "  /* ── المتابعة اليومية ── */\n  /* اعتماد الجولة عمليةُ setShiftAp: أعلامُ الاعتماد وبياناتها التابعة وحدها.\n     أمّا closed · cWhy · needN · off · dopen فرصدٌ تشغيليّ لا اعتماد. */\n  'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { @@SYS:res.via.rounds.dreport@@'emps/data': 'EMP_REFS' }, field: 'daily' },\n  /* V7 · د5-ح (13): أرشيفُ الجولات — يُقرأ بسياسة الجولات حرفاً (RES_READ_AS) ولا يكتبه العميل (srv): خطوةُ الأرشفة وحدها (dailyArcPend · rounds-arc) */\n  'bassam_rounds_arc_v1':      { scope: 'dept', cap: 'daily/rounds', srv: 1 },\n"
+ },
+ "res.dayCap.daily": {
+  "order": 10,
+  "text": "'daily/rounds'"
+ },
+ "ent.reg.daily": {
+  "order": 10,
+  "text": "  'bassam_rounds_v1':         { map: 1, empty: '{}' },\n  'bassam_rounds_arc_v1':     { map: 1, empty: '{}' },\n"
+ },
+ "ops.reg.daily": {
+  "order": 10,
+  "text": "  'bassam_rounds_v1':          { approve: ['*.shAp', '*.shAp.*', '*.ap', '*.auto', '*.mo', '*.d.*.ap', '*.dopen', '*.dopen.*', '*.dshut', '*.dshut.*'], newAp: ['*.ap', '*.mo', '*.dopen.*', '*.dshut.*'], shape: 'rounds' },\n"
+ },
+ "permv4.roster.res.daily": {
+  "order": 10,
+  "text": "rn === 'bassam_rounds_v1'"
+ },
+ "read.ops.daily": {
+  "order": 10,
+  "text": "'daily/rounds','daily/field'"
+ },
+ "read.map.res.daily": {
+  "order": 10,
+  "text": "  'bassam_rounds_v1':          ['daily/rounds', 'daily/field'@@SYS:read.reader.dreport@@, 'emps/data'@@SYS:read.map.reader.plan.3@@@@SYS:read.map.rounds@@],\n"
+ },
+ "read.dayReaders.daily": {
+  "order": 10,
+  "text": "'daily/rounds', 'daily/field'"
+ },
+ "read.reader.daily": {
+  "order": 10,
+  "text": ", 'daily/rounds', 'daily/field'"
+ },
+ "cleanup.ctxRes.daily": {
+  "order": 10,
+  "text": " 'bassam_rounds_v1': 1"
+ },
+ "cleanup.cleanRes.daily": {
+  "order": 10,
+  "text": " 'bassam_rounds_v1': 1"
+ },
+ "enf.derive.daily": {
+  "order": 10,
+  "text": "'field.view': ['lens.zones.status.change', 'lens.gates.status.change', 'lens.marks.status.change']"
+ },
+ "enf.lift.owner.daily": {
+  "order": 10,
+  "text": "e.owner === 'daily/rounds' || "
+ },
+ "enf.fieldOnly.sheet.daily": {
+  "order": 10,
+  "text": "  if ((ep['daily/field'] || []).length && capOnDept(A, d, 'daily/field')) return dailyFieldOnly(A, d);   /* الورقةُ المخزَّنة تحكم كما كانت */\n"
+ },
+ "enf.fieldOnly.held.daily": {
+  "order": 10,
+  "text": "!g.plus['field.view'] || !enfHeld(A, d, 'field.view')"
+ },
+ "enf.img.rnd.daily": {
+  "order": 10,
+  "text": "capForAct(R, 'edit').concat(capForAct(R, 'add')).indexOf('daily/rounds') !== -1"
+ },
+ "enf.img.host.daily": {
+  "order": 10,
+  "text": "(rnd || !(ix.hosts[ks[i]] && ix.hosts[ks[i]].indexOf('daily/rounds') !== -1))"
+ },
+ "enf.scopeToks.daily": {
+  "order": 10,
+  "text": "rn === 'bassam_rounds_v1'"
+ },
+ "enf.toks.daily": {
+  "order": 10,
+  "text": "rn === 'bassam_rounds_v1' && refs && refs.emps ? enfToksOf(refs.emps[d], String(A.u.ekey || '')) : null"
+ },
+ "enf.empsLoad.daily": {
+  "order": 10,
+  "text": "rn === 'bassam_rounds_v1'"
+ },
+ "enf.proj.daily": {
+  "order": 10,
+  "file": "slots/enf.proj.daily.frag"
+ },
+ "enf.mergeChk.daily": {
+  "order": 10,
+  "text": "rn !== 'bassam_rounds_v1'"
+ },
+ "enf.uncov.day.edit.daily": {
+  "order": 10,
+  "text": "'round.edit'"
+ },
+ "enf.uncov.day.create.daily": {
+  "order": 10,
+  "text": "'round.create'"
+ },
+ "enf.plugFloor.daily": {
+  "order": 10,
+  "text": "o.key === 'round.edit'"
+ },
+ "me.keys.daily": {
+  "order": 10,
+  "text": "'bassam_rounds_v1', 'bassam_rounds_arc_v1', "
+ },
+ "me.data.daily": {
+  "order": 10,
+  "text": "rounds: Object.assign({}, P('bassam_rounds_arc_v1', {}), P('bassam_rounds_v1', {})), "
+ },
+ "ident.rehearse.daily": {
+  "order": 10,
+  "text": "rounds: parseJson(keysR[preR + 'bassam_rounds_v1'], null), "
+ },
+ "deptStore.pageKeys.daily": {
+  "order": 10,
+  "text": "'daily',"
+ },
+ "pages.under.daily": {
+  "order": 10,
+  "text": ",\n   \"under\": \"daily\""
+ },
+ "pages.kpi.refs.daily": {
+  "order": 10,
+  "text": ",\n    \"daily/kpiDaily\",\n    \"daily/kpiOcc\",\n    \"daily/kpiZones\""
+ },
+ "pages.kpi.names.daily": {
+  "order": 10,
+  "text": ",\n    \"daily/kpiDaily\": \"مؤشرات التشغيل اليومي\",\n    \"daily/kpiOcc\": \"مؤشرات الإشغال\",\n    \"daily/kpiZones\": \"مؤشرات المصليات\""
+ },
+ "lens.hosts.daily": {
+  "order": 10,
+  "text": "\"daily/rounds\""
+ },
+ "lens.hosts.sep.daily": {
+  "order": 10,
+  "text": ", "
+ },
+ "lens.ind.zones.daily": {
+  "order": 10,
+  "text": "\"daily/kpiOcc\", \"daily/kpiZones\""
+ },
+ "lens.ind.dens.daily": {
+  "order": 10,
+  "text": "\"daily/kpiOcc\""
+ },
+ "lens.res": {
+  "order": 20,
+  "text": "\"bassam_rounds_v1\""
+ }
+}

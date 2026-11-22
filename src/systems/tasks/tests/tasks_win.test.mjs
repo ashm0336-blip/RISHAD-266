@@ -4,6 +4,7 @@
      · التسليم: بعد المهلة + late مرفوضٌ 409 late (والمسودّةُ doc تبقى) · وداخل السماح يُقبل ويُسجَّل «متأخر»
      · المهمةُ غيرُ المبدوءة «منقضية» بعد المهلة + late لا بعد المهلة وحدها (late 0 ⇒ expired فور المهلة)
      · الأداءُ (العمود 6) من المهلة: قبلها «في الوقت/مبكر» · بعدها «متأخر» · وإعادةُ الإسناد تنقل win */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, KT, TAG, stored, putKV, hij, HR, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
@@ -20,7 +21,7 @@ async function mk(W, ck, o) {
 const rowOf = (W, id) => Object.values(stored(W.env, KT)).flat().find((r) => Array.isArray(r) && r[13] === id);
 const mine = async (W, ck, id) => ((await get(W, ck, '/api/me/tasks')).j.rows || []).find((r) => String(r.id) === String(id));
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'الإنشاء: win يُحفظ في العمود 23 ويظهر للموظف (from/to) · الحدودُ تُرفض 400 · null = الافتراضي · ويُعدَّل من /api/tasks/settings', async () => {

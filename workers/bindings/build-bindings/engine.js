@@ -1,7 +1,8 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/bindings/build-bindings/engine.js.tpl */
 var KIVO_BUILD = (function (B, R, G) {
   'use strict';
   /* ═══ R196/R197/R198/R199 · Phase 3 → 4 → 4.1 → 4.1.1 — Build Missing Guards (shadow): الآلياتُ المبنيّة للـ10 to-build — دوالُّ نقيّةٌ تُحسب بها أحكامُ TO-BE وتُقارَن بحكم النظام القديم ولا تغيّره ═══ */
-  var LENSES = ['zones', 'paths', 'gates', 'marks', 'dist', 'dens'];
+  var LENSES = ['zones', 'paths', 'gates', 'marks', 'dist', 'dens'];   /* V7 · د5-ح: عدساتُ القطعة المشتركة src/systems/_shared/lenses — فارغةٌ بغياب مضيفَيها */
   var OPS = { 'import.run': 1, 'backup.restore': 1 };
   var IMPORT_RES = B.importRes, byRes = {}; for (var ir = 0; ir < IMPORT_RES.length; ir++) byRes[IMPORT_RES[ir]] = 1;
   function isObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }

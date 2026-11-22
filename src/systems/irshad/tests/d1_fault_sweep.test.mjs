@@ -27,7 +27,7 @@ function seedSql(){
 const D1='tst_d1',D2='tst_d2',K1='bsdept:'+D1+':bassam_irshad_v1',K2='bsdept:'+D2+':bassam_irshad_v1',KP='bassam_perms_v1';
 const UID='tst_emp1',EID='tst_e_emp1';
 const copy=v=>JSON.parse(JSON.stringify(v));
-for(const mode of ['legacy','enforce']){
+for(const mode of ['enforce']){
   const EX=mode==='enforce'?{KIVO_AUTHZ_MODE:'enforce',KIVO_TEST_FIXTURE:'allow'}:{};
   test('['+mode+'] مسحُ أعطال D1 عبارةً عبارة: لا قراءةَ خارج النطاق · لا كتابةَ ممنوعة · لا كتابةَ جزئية · لا نجاحَ بلا أثر',async()=>{
     const env=makeTestEnv(EX),C=client(env);
@@ -39,7 +39,7 @@ for(const mode of ['legacy','enforce']){
     // Reuse the actual atomic cutover plans (irshad → business → operations) in this isolated test DB only.
     // Do not reintroduce a runtime KV adapter. RISHAD-266: the worker is schema 10, the cutover includes Irshad.
     await installCurrentSchemaFixture(env);
-    assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'10');
+    assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'11');
     assert.equal(env.DB.q("SELECT name FROM d1_migrations WHERE name='0008_irshad'").length,1);
     assert.equal(env.DB.q("SELECT k FROM meta WHERE k='schema_upgrade_permit_v1'").length,0);
     assert.equal(env.DB.q("SELECT k FROM kv WHERE k GLOB '*bassam_irshad*'").length,0,'No retired IR KV is re-created');

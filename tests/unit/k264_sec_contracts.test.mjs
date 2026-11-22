@@ -34,7 +34,7 @@ const truth = (env, k) => { if (/:bassam_options_v1$/.test(k)) { const o = inspe
 const revOf = (env, k) => { const r = env.DB.q('SELECT rev FROM revs WHERE k = ?1', k)[0]; return r ? r.rev : 0; };
 
 /* ══ C1 ══ */
-for (const mode of ['legacy', 'enforce']) test('(C1) [' + mode + '] uid يخالف صاحبَ الجلسة ⇒ 409 session-changed بلا أيّ كتابة · المطابقُ والغائبُ وnull كما كانت', K264, async () => {
+for (const mode of ['enforce']) test('(C1) [' + mode + '] uid يخالف صاحبَ الجلسة ⇒ 409 session-changed بلا أيّ كتابة · المطابقُ والغائبُ وnull كما كانت', K264, async () => {
   const { env, C, su } = await world(mode);
   const K = 'bsdept:tst_d1:bassam_options_v1';
   const permissions = JSON.parse(truth(env, 'bassam_perms_v1'));
@@ -90,7 +90,7 @@ function bumpRevs(env, keys, sameRev) {
   env.DB.db.prepare("INSERT INTO meta (k, v) VALUES ('rev', ?1) ON CONFLICT(k) DO UPDATE SET v = ?1").run(String(rv));
   return rv;
 }
-for (const mode of ['legacy', 'enforce']) test('(C2) [' + mode + '] /api/changes يُقطع عند الحدّ على حدود المراجعة ⇒ more:1 ومؤشّرٌ آمن · الصفحاتُ تغطّي كلَّ شيء بلا تكرار', K264, async () => {
+for (const mode of ['enforce']) test('(C2) [' + mode + '] /api/changes يُقطع عند الحدّ على حدود المراجعة ⇒ more:1 ومؤشّرٌ آمن · الصفحاتُ تغطّي كلَّ شيء بلا تكرار', K264, async () => {
   const { env, C, su } = await world(mode);
   const v0 = +(env.DB.q("SELECT v FROM meta WHERE k = 'rev'")[0]).v;
   /* صغير: الشكلُ القديم بلا more */
@@ -158,7 +158,7 @@ test('(C3) بلا ربط D1: GET / و/index.html ⇒ 503 بلا غلاف · وا
   const api = await w.fetch(new Request('http://x/api/ping'), env); assert.equal(api.status, 503); assert.equal((await api.json()).err, 'no-db');
   const fav = await w.fetch(new Request('http://x/manifest.webmanifest'), env); assert.equal(fav.status, 200, 'أصلٌ ثابت يُخدم بلا قاعدة');
 });
-for (const mode of ['legacy', 'enforce']) test('(C3) [' + mode + '] كلُّ عطلٍ في عبارات GET / ⇒ 503 بلا غلاف أو غلافٌ بحقنٍ سليم — لا غلافَ بلا __BS_BOOT أبداً', K264, async () => {
+for (const mode of ['enforce']) test('(C3) [' + mode + '] كلُّ عطلٍ في عبارات GET / ⇒ 503 بلا غلاف أو غلافٌ بحقنٍ سليم — لا غلافَ بلا __BS_BOOT أبداً', K264, async () => {
   const { env, C, su } = await world(mode);
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok);
   let down = 0, booted = 0;

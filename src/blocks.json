@@ -1,4 +1,5 @@
 {
+ "$comment": "ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/blocks.json.tpl",
  "assets": {
   "fonts/almarai-800-arabic.woff2": {
    "bytes": 33328,
@@ -230,6 +231,16 @@
    "openTag": "<script>",
    "origBytes": 1487,
    "origSha256": "4a92e85f80a74570669a6eab19b7777b6c20aa1fb9fa1235b6b4abbded55b829"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "core/060-bus.js",
+   "kind": "js",
+   "line": 2724,
+   "new": "V7 · د5-ب: ناقل الأحداث — القاعدة وسيط فقط (قراءة · أمر · حدث · مشارك داخل المسودة)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
   },
   {
    "closeTag": "</script>",
@@ -471,12 +482,13 @@
   },
   {
    "closeTag": "</script>",
-   "id": "permissions/350-perm-v2-shadow.js",
+   "id": "permissions/345-perm44.js",
    "kind": "js",
    "line": 8047,
+   "new": "V7 · د5-هـ (44): محرّكُ الأدوار KIVO.Perm44 (مولَّد: registry/perm44-*.js · generate.py) — حلّ محلَّ طبقة الظلّ 350 المحذوفة",
    "openTag": "<script>",
-   "origBytes": 4280,
-   "origSha256": "5ec7e50ecd0eeb2ff4234d85735841bdf310a55073f8f533443108a2bb757222"
+   "origBytes": null,
+   "origSha256": null
   },
   {
    "closeTag": "</script>",
@@ -507,7 +519,17 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/390-kpi-primitives.js",
+   "id": "i18n/385-calendar.js",
+   "kind": "js",
+   "line": 10752,
+   "new": "V7 · د5-د: التقويم الهجري/الميلادي — نسخة واحدة لكل دالة (KIVO.BassamCal)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/_multi/client/390-kpi-primitives.js",
    "kind": "js",
    "line": 8530,
    "openTag": "<script>",
@@ -534,12 +556,22 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/420-round-factory.js",
+   "id": "systems/daily/client/420-round-factory.js",
    "kind": "js",
    "line": 8899,
    "openTag": "<script>",
    "origBytes": 5761,
    "origSha256": "2df31e87dfe46cc6507354527b243a562b368381117b68dcda935951712afe06"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/daily/client/421-round-links.js",
+   "kind": "js",
+   "line": 8899,
+   "new": "V7 · د5-هـ: ما توفّره الجولاتُ اليومية لغيرها عبر الناقل (قراءات · أوامر داخل مسودة المستدعي)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
   },
   {
    "closeTag": "</script>",
@@ -627,7 +659,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/520-field-monitor.js",
+   "id": "systems/daily/client/520-field-monitor.js",
    "kind": "js",
    "line": 10324,
    "openTag": "<script>",
@@ -636,12 +668,102 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/530-emp-day-facts.js",
+   "id": "systems/staff/client/530-emp-day-facts.js",
    "kind": "js",
    "line": 10494,
    "openTag": "<script>",
    "origBytes": 10543,
    "origSha256": "27012b4294aa581a0688c00ff7eb69a863beadab023efdd9c52784982605fa4a"
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/staff/client/531-staff-links.js",
+   "kind": "js",
+   "line": 10495,
+   "new": "V7 · د5-د: ما يوفّره الجدول الشهري لغيره عبر الناقل (قراءات · أمر · مشارك)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/staff/client/533-staff-g3.js",
+   "kind": "js",
+   "line": 10496,
+   "new": "V7 · د5-د2: قراءاتٌ معلنة من الجدول الشهري لصفحات القاعدة (مفعَّل؟ · وثيقة الأشهر · الأشهر المعتمدة)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/staff/client/534-staff-g4.js",
+   "kind": "js",
+   "line": 10495,
+   "new": "V7 · د5-د2: قراءاتُ الجدول الشهري المعلنة لبرامجَ أخرى (الجدول · الأقفال · الرموز · التفعيل · أسماء الموارد)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/plan/client/403-plan-p3.js",
+   "kind": "js",
+   "line": 10496,
+   "new": "V7 · د5-هـ: قراءاتٌ وأمرٌ معلنة من التشغيل الميداني لصفحات القاعدة (مفعَّل؟ · الخطة · مواقع الشهر · أنواع المعالم)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/plan/client/404-plan-p4.js",
+   "kind": "js",
+   "line": 10495,
+   "new": "V7 · د5-هـ: قراءاتُ التشغيل الميداني وأوامرُه المعلنة لبرامجَ أخرى (الخطة · خيارات المصليات · خيارات الأبواب)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/dreport/client/405-dreport-links.js",
+   "kind": "js",
+   "line": 10495,
+   "new": "V7 · د5-هـ: قراءاتُ التقرير اليومي المعلنة لغيره (وثيقةُ التقرير · أنواعُ الإجازات)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/dreport/client/407-dreport-r3.js",
+   "kind": "js",
+   "line": 10497,
+   "new": "V7 · د5-هـ: قراءةٌ معلنة من التقرير اليومي لصفحات القاعدة والجدول الشهري (ورقتُه مفعَّلة؟)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/daily/client/422-daily-t2.js",
+   "kind": "js",
+   "line": 10497,
+   "new": "V7 · د5-هـ: قراءةٌ معلنة من المتابعة اليومية لصفحات القاعدة (ورقةُ الجولات مفعَّلة؟)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
+  },
+  {
+   "closeTag": "</script>",
+   "id": "systems/daily/client/423-daily-t3.js",
+   "kind": "js",
+   "line": 10497,
+   "new": "V7 · د5-هـ: قراءاتٌ معلنة من المتابعة اليومية للتقرير اليومي والجدول الشهري («الجولات» مفعَّلة؟ · صفحتُها في الصلاحيات)",
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null
   },
   {
    "closeTag": "</script>",
@@ -734,7 +856,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "components/560-canvas-input.js",
+   "id": "systems/_multi/client/560-canvas-input.js",
    "kind": "js",
    "line": 10752,
    "openTag": "<script>",
@@ -753,7 +875,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "services/566-print-core.js",
+   "id": "systems/_shared/print/566-print-core.js",
    "kind": "js",
    "line": 10752,
    "openTag": "<script>",
@@ -854,7 +976,7 @@
   },
   {
    "closeTag": "</script>",
-   "id": "components/640-map-tooltip.js",
+   "id": "systems/_multi/client/640-map-tooltip.js",
    "kind": "js",
    "line": 15119,
    "openTag": "<script>",

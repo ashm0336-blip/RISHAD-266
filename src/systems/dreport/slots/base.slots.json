@@ -1,0 +1,58 @@
+{
+ "modules.dreport": {
+  "order": 10,
+  "text": "  {\n   \"name\": \"Daily Report\",\n   \"slug\": \"dreport\",\n   \"minifiedSource\": true,\n   \"bytes\": 242223,\n   \"logicLines\": 4400\n  },\n"
+ },
+ "blocks.pages.dreport": {
+  "order": 10,
+  "text": "   {\n    \"b64Sha256\": \"fbcf52ef83b260e078027f439a4719465269d467d9a055feb7d40efa064d31bb\",\n    \"bytes\": 242108,\n    \"file\": \"client/pages/Daily Report.dc.html\",\n    \"name\": \"Daily Report\",\n    \"sha256\": \"fe0b0a7c8bce136028048cd10c43d52f36a836c296b2492dd5d75a84afb9581d\"\n   },\n"
+ },
+ "blocks.order.dreport": {
+  "order": 10,
+  "text": "   \"Daily Report\",\n"
+ },
+ "shell.mounts.dreport": {
+  "order": 10,
+  "text": "  <sc-if value=\"{{isDreport}}\" hint-placeholder-val=\"{{ false }}\">\n    <dc-import name=\"Daily Report\" hint-size=\"100%,1100px\"></dc-import>\n  </sc-if>\n"
+ },
+ "pages.daily.requires.dreport": {
+  "order": 10,
+  "text": "    {\"for\": \"daily/kpiDaily\", \"on\": \"dreport\", \"kind\": \"perm\"},\n"
+ },
+ "pages.daily.seq.dreport": {
+  "order": 10,
+  "text": "    \"page:dreport\",\n"
+ },
+ "pages.entry.dreport": {
+  "order": 10,
+  "text": "  {\n   \"key\": \"dreport\",\n   \"module\": \"dreport\",\n   \"activation\": \"toggle\",\n   \"departmentComponents\": [\"Daily Report\"],\n   \"nav\": \"dreport\",\n   \"name\": \"التقرير اليومي\"@@SYS:pages.under.daily@@\n  },\n"
+ },
+ "pages.tabAddr.daily.dreport": {
+  "order": 10,
+  "text": ",\n   \"dreport\": 1"
+ },
+ "pages.routeNames.dreport": {
+  "order": 10,
+  "text": "  \"dreport\": \"التقرير اليومي\",\n"
+ },
+ "ns.after.dreport": {
+  "order": 10,
+  "text": "  \"src/systems/dreport/client/logic.js\",\n"
+ },
+ "uxStates.dreport": {
+  "order": 10,
+  "text": "  \"dreport\": {\n   \"فارغ\": 19,\n   \"تحميل\": 0,\n   \"خطأ\": 5,\n   \"بلا اتصال\": 0,\n   \"أعد المحاولة\": 1\n  },\n"
+ },
+ "budget.page.dreport": {
+  "order": 10,
+  "text": "  \"page:Daily-Report\": 54585,\r\n"
+ },
+ "blocks.shell.dreport": {
+  "order": 10,
+  "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/dreport/client/405-dreport-links.js\",\n   \"kind\": \"js\",\n   \"line\": 10495,\n   \"new\": \"V7 · د5-هـ: قراءاتُ التقرير اليومي المعلنة لغيره (وثيقةُ التقرير · أنواعُ الإجازات)\",\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null\n  },\n"
+ },
+ "shell.blocks.dreport": {
+  "order": 10,
+  "text": "@@KIVO_BLOCK:systems/dreport/client/405-dreport-links.js@@\n"
+ }
+}

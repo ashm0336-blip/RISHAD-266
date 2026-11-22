@@ -51,7 +51,7 @@ async function seed(W) {
 const setDis = (W, uid, dis) => { const U = stored(W.env, 'bassam_auth_users_v1'); U.find((u) => u.id === uid).dis = dis; putKV(W.env, 'bassam_auth_users_v1', U); };
 const create = (W, ck, asg, extra) => { const s = (extra && extra.s) || Date.now() + 2 * HR; return post(W, ck, '/api/tasks/create', Object.assign({ k: hij(s), t: TAG + ' اختبارُ المراجعة الموحّدة', s, e: s + HR, asg, rv: 'none' }, extra || {}, { s })); };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   const WHY = mode === 'enforce' ? { why: { [KT]: 'TEST_ONLY سببٌ كما ترسله نافذةُ السبب' } } : {};
 

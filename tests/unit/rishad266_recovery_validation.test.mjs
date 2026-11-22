@@ -156,17 +156,58 @@ test('Recovery racing a concurrent account save writes nothing, keeps the one-ti
   assert.equal(W.DB.q("SELECT COUNT(*) AS n FROM meta WHERE k='rk'")[0].n, 0);
 });
 
+/* V7 · د5-هـ (أمن ٢): كان Promise.all يترك الترتيبَ للتوقيت — الآن يُفرض التداخل: الطلبان يتحقّقان من المفتاح كلاهما قبل أن يكتب أيٌّ منهما
+   (حاجزٌ على verifyPw للمفتاح)، ثم يكتبان — فالدفعةُ الثانية ترى ما كتبته الأولى. */
+const recover = (W, pin) => { const R = request('/api/recover', { key: RECOVERY_KEY, pw: pin }); return W.context.authPublicRoutes(R.request, W.env, R.url.pathname, R.url); };
+function keyBarrier(W, n) {   /* the first n recovery-key verifications wait for each other */
+  const real = W.context.verifyPw; let seen = 0, open; const all = new Promise((r) => { open = r; });
+  W.context.verifyPw = async (pw, ph) => { const v = await real(pw, ph); if (String(pw).startsWith('rk:') && seen < n) { if (++seen === n) open(); await all; } return v; };
+  return () => { W.context.verifyPw = real; };
+}
 test('Two concurrent recoveries with the same key: exactly one succeeds and the stored PIN is the winner\'s', async () => {
   const W = world();
   await seed(W, await W.context.hashPw('rk:' + RECOVERY_KEY));
   const PIN_A = String(400000 + 61728), PIN_B = String(700000 + 15926);
-  const A = request('/api/recover', { key: RECOVERY_KEY, pw: PIN_A }), B = request('/api/recover', { key: RECOVERY_KEY, pw: PIN_B });
-  const [ra, rb] = await Promise.all([W.context.authPublicRoutes(A.request, W.env, A.url.pathname, A.url), W.context.authPublicRoutes(B.request, W.env, B.url.pathname, B.url)]);
+  const done = keyBarrier(W, 2);
+  const [ra, rb] = await Promise.all([recover(W, PIN_A), recover(W, PIN_B)]); done();
   const ja = await ra.json(), jb = await rb.json();
   assert.equal([ja.ok, jb.ok].filter(x => x === 1).length, 1, 'exactly one recovery succeeds: ' + JSON.stringify([ra.status, ja, rb.status, jb]));
+  assert.equal((ja.ok === 1 ? rb : ra).status, 409, 'the other is a clear conflict');
   const winner = ja.ok === 1 ? PIN_A : PIN_B, loser = ja.ok === 1 ? PIN_B : PIN_A;
   const ph = JSON.parse(usersText(W)).find(a => a.id === 'fixture-super').ph;
   assert.equal(await W.context.verifyPw(winner, ph), true);
   assert.equal(await W.context.verifyPw(loser, ph), false);
   assert.equal(W.DB.q("SELECT COUNT(*) AS n FROM meta WHERE k='rk'")[0].n, 0);
+});
+
+/* V7 · د5-هـ (أمن ٢ · السباق ١): الاستعادةُ الأولى تكتمل (تستهلك المفتاح) بين تحقّق الثانية من المفتاح وقراءتها للحسابات — كانت الثانية
+   تقرأ نسخةَ الحسابات الجديدة فيمرّ حارسُها وتنجح بمفتاحٍ مُستهلَك (استعمالان لمفتاحٍ واحد). الآن حارسُ المفتاح نفسِه في الدفعة. */
+test('A recovery key is used exactly once: a recovery that finishes between another one\'s key check and its write wins alone', async () => {
+  const W = world();
+  await seed(W, await W.context.hashPw('rk:' + RECOVERY_KEY));
+  const PIN_A = String(400000 + 61728), PIN_B = String(700000 + 15926);
+  const real = W.context.verifyPw; let ra = null;
+  W.context.verifyPw = async (pw, ph) => { const v = await real(pw, ph); if (String(pw).startsWith('rk:') && !ra) { ra = 'running'; ra = await recover(W, PIN_A); } return v; };
+  const rb = await recover(W, PIN_B); W.context.verifyPw = real;
+  const ja = await ra.json(), jb = await rb.json();
+  assert.equal(ja.ok, 1, 'the recovery that finished first succeeds: ' + JSON.stringify(ja));
+  assert.equal(jb.ok, 0, '★ the second use of the same key is refused: ' + JSON.stringify(jb)); assert.equal(rb.status, 409);
+  const ph = JSON.parse(usersText(W)).find(a => a.id === 'fixture-super').ph;
+  assert.equal(await W.context.verifyPw(PIN_A, ph), true, 'the stored PIN is the first recovery\'s');
+  assert.equal(await W.context.verifyPw(PIN_B, ph), false);
+});
+
+/* V7 · د5-هـ (أمن ٢ · السباق ٢): مفتاحٌ جديد يصدر بين تحقّق الاستعادة من المفتاح القديم وكتابتها — كانت الاستعادةُ تنجح وتحذف المفتاحَ الجديد
+   (يُعرض للمدير ثم لا يعمل). الآن: المفتاحُ الذي تحقّقت منه لم يعد المخزَّن ⇒ 409 لا يُكتب شيء، والمفتاحُ الجديد باقٍ. */
+test('A recovery never deletes a key newer than the one it verified', async () => {
+  const W = world();
+  await seed(W, await W.context.hashPw('rk:' + RECOVERY_KEY));
+  const NEWER = await W.context.hashPw('rk:' + 'B'.repeat(20));
+  const real = W.context.verifyPw; let issued = false;
+  W.context.verifyPw = async (pw, ph) => { const v = await real(pw, ph); if (String(pw).startsWith('rk:') && !issued) { issued = true; W.DB.db.prepare("UPDATE meta SET v = ? WHERE k = 'rk'").run(NEWER); } return v; };
+  const before = usersText(W);
+  const r = await recover(W, NEW_PIN); W.context.verifyPw = real;
+  assert.equal(r.status, 409, 'the verified key is no longer the stored one'); assert.equal((await r.json()).ok, 0);
+  assert.equal(W.DB.q("SELECT v FROM meta WHERE k='rk'")[0].v, NEWER, '★ the newer key is kept');
+  assert.equal(usersText(W), before, 'nothing written');
 });

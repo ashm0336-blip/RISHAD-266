@@ -1,7 +1,8 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/bindings/guard-bindings/engine.js.tpl */
 var KIVO_GUARDS = (function (B, R) {
   'use strict';
   /* ═══ R200 · Phase 4.2 — Guard Binding (shadow) على v24.5.1 (المصنِّفُ كما في Phase 3): يُصنِّف كلَّ كتابةٍ (قديم → جديد) إلى مفاتيح v24.5.1 المطلوبة — للقياس فقط ═══
-     لا يحكم: الحكمُ النافذ للنظام القديم (canWrite0). النتيجةُ تُقارَن وتُحصى في الذاكرة ثم تُقرأ من /api/permv2. */
+     V7 · د5-ح (القفل): المصنِّفُ يُستدعى من محرّك الإنفاذ (059 enfDecide) — لا حكمَ قديماً ولا عدّاداتِ ظلّ ولا تقريرَ لها. */
   function isObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
   function arr(x) { return Array.isArray(x) ? x : []; }
   function deq(a, b) {
@@ -58,7 +59,7 @@ var KIVO_GUARDS = (function (B, R) {
   }
   /* ═══ العدسات: أصنافُ الحقول (من الواجهة الفعلية — Operational Plan · Daily Sessions · BassamField) ═══ */
   var FIELD_KEYS = { fst: 1, flow: 1, fAt: 1, fBy: 1, fKind: 1, fLog: 1, closed: 1, off: 1, cAt: 1, cAtMs: 1, cWhy: 1, cBy: 1 };
-  var GEOM = { zones: { d: 1, hs: 1, cx: 1, cy: 1, rawA: 1, kind: 1, unp: 1 }, paths: { pts: 1 }, gates: { x: 1, y: 1, unp: 1 }, marks: { x: 1, y: 1, unp: 1 } };
+  var GEOM = { zones: { d: 1, hs: 1, cx: 1, cy: 1, rawA: 1, kind: 1, unp: 1 }, paths: { pts: 1 }, gates: { x: 1, y: 1, unp: 1 }, marks: { x: 1, y: 1, unp: 1 } };   /* V7 · د5-ح: جداولُ العدسات من قطعتها (src/systems/_shared/lenses) — فارغةٌ بغياب مضيفَيها */
   var DIST_ASSIGN = { emp: 1 }, DIST_NEED = { needN: 1, needS: 1, uniNeed: 1 }, DENS = { count: 1, pc: 1 }, DERIVED_Z = { cap: 1 };
   var LENS_COLS = { zones: 1, gates: 1, marks: 1, paths: 1 };
   var EDIT_KEY = { zones: 'lens.zones.data.edit', gates: 'lens.gates.edit', marks: 'lens.marks.edit', paths: 'lens.paths.edit' };
@@ -464,15 +465,6 @@ var KIVO_GUARDS = (function (B, R) {
       for (q = 0; q < dk.length; q++) if (!deq(x[dk[q]], y[dk[q]])) R.op('sys.ceiling.set', k + '[' + dk[q] + ']');
     }
   };
-  /* ═══ قوالبُ الصلاحيات ═══ */
-  C['bassam_perm_tpls_v1'] = function (R, a, b) {
-    var la = arr(a), lb = arr(b), i, m = matchById(la, lb, function (e) { return isObj(e) && e.id != null ? 't:' + e.id : null; });
-    for (i = 0; i < m.added.length; i++) R.op('tpl.create', '[' + m.added[i].id + ']');
-    for (i = 0; i < m.removed.length; i++) R.op('tpl.delete', '[' + m.removed[i].id + ']');
-    for (i = 0; i < m.changed.length; i++) { var c = m.changed[i], ks = union(c.a, c.b), q, f = []; for (q = 0; q < ks.length; q++) if (!deq(c.a[ks[q]], c.b[ks[q]])) f.push(ks[q]); if (f.indexOf('sup') !== -1) R.op('tpl.supervisory', '[' + c.id + '].sup'); var rest = f.filter(function (z) { return z !== 'sup'; }); if (rest.length) R.op('tpl.edit', '[' + c.id + '].' + rest.join('/')); }
-    if (!m.added.length && !m.removed.length && !m.changed.length && !deq(la, lb)) R.op('tpl.edit', '[] reorder');
-  };
-  C['bassam_perm_tpls_named_v1'] = function (R) { R.tec('migration-flag'); };
   /* ═══ الاسترشاد · المضبوطات ═══ */
   function recBulk(prefix) {
     return function (R, a, b) {

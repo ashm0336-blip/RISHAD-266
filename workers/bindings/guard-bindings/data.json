@@ -3,7 +3,7 @@
  "docSha256": "6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde",
  "phase": 4.1,
  "mode": "shadow",
- "toBind": 71,
+ "toBind": 70,
  "shadowOnly": [
   {
    "key": "backup.restore",
@@ -373,18 +373,6 @@
    "dup": "",
    "owner": "dreport",
    "type": "edit",
-   "guardKind": "field"
-  },
-  {
-   "key": "tpl.supervisory",
-   "res": "bassam_perm_tpls_v1",
-   "where": "[id].sup (boolean) — وسمُ «إشرافي» (tpSupTog)",
-   "how": "تغيّرُ حقل sup وحده على قالبٍ قائم",
-   "asis": "admin/ptpls:edit",
-   "decl": "",
-   "dup": "",
-   "owner": "admin/ptpls",
-   "type": "decision",
    "guardKind": "field"
   },
   {
@@ -972,12 +960,6 @@
    "text": "to-build بعلامةٍ صريحة من الواجهة (Phase 3: ops[k].op = import.run من BassamEmpImp.commit)؛ الاستدلالُ «2+ سجلّ» صار علماً للقياس لا مصدراً للمفتاح؛ AS‑IS يمرّ بـemps/data."
   },
   {
-   "id": "D-16",
-   "topic": "tpl.supervisory",
-   "status": "حُسم في v24.3 (F-07)",
-   "text": "الحقلُ bassam_perm_tpls_v1[].sup."
-  },
-  {
    "id": "D-17",
    "topic": "حذفُ يومِ تقريرٍ يوميّ",
    "status": "حُسم في v24.3 (F-08)",
@@ -1003,16 +985,16 @@
   }
  ],
  "counts": {
-  "bindings": 71,
-  "toBind": 71,
+  "bindings": 70,
+  "toBind": 70,
   "unbound": 0,
   "unknownKeys": 0,
   "reservedEmitted": 0,
   "shadowOnly": 2,
   "duplicatesJustified": 2,
   "duplicatesUnjustified": 0,
-  "emittedKeys": 122,
-  "coveredResources": 20,
-  "decisions": 20
+  "emittedKeys": 118,
+  "coveredResources": 18,
+  "decisions": 19
  }
 }

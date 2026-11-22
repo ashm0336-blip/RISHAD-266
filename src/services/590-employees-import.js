@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/services/590-employees-import.js.tpl */
 /* ═══ محرّك استيراد الموظفين — وحدةٌ مستقلّة ═══
 
    كان هذا المنطق ساكناً في صفحة «موظفي الإدارة» وملحوماً بحالتها، وقد نُقل
@@ -57,8 +58,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     { k: "shift",  t: "الوردية",           to: "sched", alt: ["الوردية المسندة", "الوردية المسنده"] },
     { k: "rest",   t: "أيام الراحة",       to: "sched", alt: ["الراحة", "الراحة الأولى", "الراحة الثانية"] },
     { k: "cs",     t: "رمز النداء",        to: "sched", alt: ["رمز النداء الآلي"] },
-    { k: "muk",    t: "التكليف",           to: "sched", alt: ["مكلَّف", "مكلف", "التكليف الشهري"] },
-    { k: "tpl",    t: "الصلاحيات",         to: "sched", alt: ["القالب", "قالب الصلاحيات", "الصلاحية"] }
+    { k: "muk",    t: "التكليف",           to: "sched", alt: ["مكلَّف", "مكلف", "التكليف الشهري"] }
   ];
   /* أعمدةٌ تُصدّرها المنصة ولا تُستورد: محسوبةٌ من غيرها أو من نظامٍ آخر.
      تُعرَّف هنا كي يُقال للمستعمل «وجدتُها وتجاهلتُها» بدل الصمت — وكي لا
@@ -67,7 +67,9 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     { t: "وقت الوردية",   why: "محسوب من تعريف الوردية" },
     { t: "مدة الوردية",   why: "محسوبة من تعريف الوردية" },
     { t: "الحالة",        why: "محسوبة من أيام الراحة" },
-    { t: "حساب الدخول",   why: "يُفعَّل من صفحة الموظفين" }
+    { t: "حساب الدخول",   why: "يُفعَّل من صفحة الموظفين" },
+    /* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — عمودُ «الصلاحيات» لا يمنح شيئاً؛ الدورُ يُسنَد من «الإعدادات ← الصلاحيات ← الأشخاص» */
+    { t: "الصلاحيات",     why: "تُسنَد الأدوار من «الإعدادات ← الصلاحيات ← الأشخاص»" }
   ];
   /* تطبيع عنوانٍ للمقارنة: نفس normAr مع طيّ المسافات — فـ«الرقم  الوظيفى» و«الرقم الوظيفي» سواء */
   function hnorm(v) { return normAr(v).replace(/\s+/g, " "); }
@@ -117,9 +119,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   /* الشهر الهجري الجاري — أساسُ المنتقي حين لا يختار المستعمل شهراً */
   function curHij() {
     try {
-      const n = new Date();
-      const y = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(n));
-      const m = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(n));
+      const h = KIVO.BassamCal.hParts(new Date()), y = h.y, m = h.m;   /* V7 · د5-د2 */
       if (y && m) return { y: y, m: m };
     } catch (e) {}
     return { y: 1448, m: 1 };
@@ -128,9 +128,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   function schedM() { return ST.m || curHij().m; }
   function curHijriKey() {
     try {
-      const n = new Date();
-      const y = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(n));
-      const m = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(n));
+      const h = KIVO.BassamCal.hParts(new Date()), y = h.y, m = h.m;   /* V7 · د5-د2 */
       if (y && m) return y + "-" + m;
     } catch (e) {}
     return "";
@@ -253,7 +251,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       var retried = await transitionSend(next, true); retried.ticket = next; return retried;
     }
     var ack = result.data;
-    if (ack.dept !== prepared.stamp.dept || ack.intent !== ticket.intent || ack.requestId !== ticket.requestId || !nonnegative(ack.rev) || !ack.revs || typeof ack.revs !== 'object' || Array.isArray(ack.revs) || !Object.keys(ack.revs).every(function (key) { return nonnegative(ack.revs[key]); }) || !ack.counts || typeof ack.counts !== 'object' || Array.isArray(ack.counts) || !['employees', 'removed', 'accountsCreated', 'accountsRemoved', 'schedule', 'templates'].every(function (name) { return nonnegative(ack.counts[name]); })) return fail('invalid');
+    if (ack.dept !== prepared.stamp.dept || ack.intent !== ticket.intent || ack.requestId !== ticket.requestId || !nonnegative(ack.rev) || !ack.revs || typeof ack.revs !== 'object' || Array.isArray(ack.revs) || !Object.keys(ack.revs).every(function (key) { return nonnegative(ack.revs[key]); }) || !ack.counts || typeof ack.counts !== 'object' || Array.isArray(ack.counts) || !['employees', 'removed', 'accountsCreated', 'accountsRemoved', 'schedule'].every(function (name) { return nonnegative(ack.counts[name]); })) return fail('invalid');
     return { ok: 1, receipt: deep(ack) };
   }
   var Transition = Object.freeze({ context: actor, read: transitionRead, prepare: transitionPrepare, send: transitionSend });
@@ -308,7 +306,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     try {
       if (!ST.ticket) {
         ST.plan = prepareImport(pend, mode, ST.snapshot.data);
-        ST.ticket = await transitionPrepare('import', { finalRows: ST.plan.finalRows, options: ST.plan.options, import: { mode: mode, year: schedY(), month: schedM(), schedule: ST.plan.schedule, templates: ST.plan.templates } }, ST.snapshot);
+        ST.ticket = await transitionPrepare('import', { finalRows: ST.plan.finalRows, options: ST.plan.options, import: { mode: mode, year: schedY(), month: schedM(), schedule: ST.plan.schedule } }, ST.snapshot);
         if (ST.ticket.ok === 0) { ST.error = ST.ticket.message; toast(ST.error); ST.ticket = null; return; }
         ST.mode = mode; ST.ticketMonth = schedY() + '-' + schedM();
       }
@@ -326,17 +324,10 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
         'schedule-disabled': 'لم تُكتب أعمدة الجدول الشهري لأن الصفحة غير مفعلة في الإدارة',
         'schedule-locked': 'الجدول الشهري معتمد ومقفل؛ لم تُطبق أعمدته',
         'schedule-shift-unknown': 'تجاهل الخادم اسم وردية غير صالح',
-        'templates-disabled': 'لم تُمنح قوالب الصلاحيات لأنها غير مفعلة في الإدارة',
-        'templates-manager-required': 'لم تُمنح القوالب لأن إدارة الصلاحيات تتطلب دور المدير',
-        'template-unknown': 'تجاهل الخادم قالب صلاحيات غير معروف في الإدارة',
-        'template-empty': 'يوجد قالب بلا صلاحيات داخل سقف الإدارة؛ لم يُمنح',
-        'template-self-grant-unchanged': 'لم تُغيّر صلاحيات المستورد الشخصية عن طريق الملف',
-        'template-unheld-key-omitted': 'استُبعدت صلاحيات لا يملكها المستورد من القالب',
         'account-login-unavailable': 'تعذر تفعيل حساب لعدم توفر اسم دخول فريد؛ بقي الموظف مسجلاً',
       };
       if (result.receipt.counts.accountsCreated) parts.push('فُعّل تلقائياً ' + result.receipt.counts.accountsCreated + ' حساب دخول');
       if (result.receipt.counts.schedule) parts.push('عولج ' + result.receipt.counts.schedule + ' سجل في جدول الشهر المختار');
-      if (result.receipt.counts.templates) parts.push('مُنح ' + result.receipt.counts.templates + ' قالب صلاحيات');
       if (Array.isArray(warnings)) Array.from(new Set(warnings)).forEach(function (warning) { parts.push(warningText[warning] || 'اعتمد الخادم العملية مع تنبيه يحتاج مراجعة البيانات'); });
       if (!parts.length) parts.push('اعتمد الخادم الاستيراد');
       ST.pend = null; ST.snapshot = null; ST.ticket = null; ST.uncertain = false; ST.needsReview = false; host.close(); toast(parts.join(' · '), ST.plan.rejected || warnings.length ? 'warn' : 'ok');
@@ -368,7 +359,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     const hasCol = pend.cols || { name: 1, empno: 1, phone: 1, type: 1, work: 1, gender: 1 };
     const list = [...base];
     const fresh = [];
-    const schedRows = [], tplRows = [];
+    const schedRows = [];
     let added = 0, updated = 0, skipped = 0, rejected = 0, same = 0;   /* V7 · د1-د: same = مطابقٌ لسجله حرفاً (لا تغيير) */
     /* ═══ قواعد الأرقام تسري على الاستيراد أيضاً — وإلا صار باباً خلفياً للتكرار ═══
        الهوية والجوال: 10 أرقام أو فارغ؛ الرقم الوظيفي: 5 أو 6 أرقام أو فارغ؛ ولا
@@ -401,17 +392,15 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
         if (["name","empno","phone","type","work","gender"].every(k => String(mg[k] || "") === String(list[at][k] || ""))) same++;   /* الحقلُ الغائب والفارغ سواء */
         list[at] = mg; updated++;
         if (c.sh || c.rs || c.cs || c.muk) schedRows.push({ key: schedKey(mg), shift: c.sh, rest: c.rs, cs: c.cs, muk: c.muk });
-        if (c.tpl && c.tpl !== "—") tplRows.push({ key: schedKey(mg), name: c.tpl });
       } else {
         if (!rowOk(emp, false)) { rejected++; return; }
         fresh.push(emp); added++;
         if (c.sh || c.rs || c.cs || c.muk) schedRows.push({ key: schedKey(emp), shift: c.sh, rest: c.rs, cs: c.cs, muk: c.muk });
-        if (c.tpl && c.tpl !== "—") tplRows.push({ key: schedKey(emp), name: c.tpl });
       }
     });
     // كان: وضع الاستبدال يعكس ترتيب الملف رغم أن الملف هو القائمة كاملة — العكس للإضافة فقط (محاكاة unshift)
     const finalList = mode === "replace" ? fresh.concat(list) : fresh.slice().reverse().concat(list);
-    return { finalRows: finalList, options: opts, schedule: schedRows, templates: tplRows, added: added, updated: updated, skipped: skipped, rejected: rejected, same: same };
+    return { finalRows: finalList, options: opts, schedule: schedRows, added: added, updated: updated, skipped: skipped, rejected: rejected, same: same };
   }
   /* الملتقِط: يفتح مربّع الملفات ثم يقرأ ويحضّر المرشّحين — كما كان حرفاً بحرف */
   function pickFile() {
@@ -485,14 +474,14 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
                 if (key && fileSeen.has(key)) { inFileDup++; return; }
                 if (key) fileSeen.add(key);
                 cands.push({ emp, sh: g(ix.shift), rs: ixRestAll.map(g).filter(Boolean).join(" - "), blank: blank,
-                  cs: g(ix.cs), muk: g(ix.muk), tpl: ix.tpl !== -1 ? g(ix.tpl) : "" });
+                  cs: g(ix.cs), muk: g(ix.muk) });
               });
               const dups = [];
               [[dupN, "رقم الهوية"], [dupO, "الرقم الوظيفي"], [dupP, "رقم الجوال"]].forEach(pr => pr[0].forEach((rs, v) => { if (rs.length > 1) dups.push(pr[1] + " " + v + " في الصفوف " + rs.join(" و")); }));
               if (dups.length) { toast("رُفض الملف — فيه تكرار: " + dups.slice(0, 3).join(" · ") + (dups.length > 3 ? " · و" + (dups.length - 3) + " تكراراً آخر" : "") + ". صحّح الملف ثم ارفعه من جديد — لم يُحفظ شيء.", "err"); return; }
               // كان: عند سقوط كل الصفوف لا يُذكر سبب الإسقاط — نُظهر عدد الصفوف بلا اسم
               if (!cands.length) { toast("لا توجد صفوف صالحة في الملف" + (noName ? " · " + KIVO.BassamCount(noName,"صف") + " بلا اسم" : "")); return; }
-              ST.pend = { cands: cands, inFileDup: inFileDup, noName: noName, badLen: badLen, cols: { name: ix.name !== -1, empno: ix.empno !== -1, phone: ix.phone !== -1, type: ix.type !== -1, work: ix.work !== -1, gender: ix.gender !== -1, tpl: ix.tpl !== -1 },
+              ST.pend = { cands: cands, inFileDup: inFileDup, noName: noName, badLen: badLen, cols: { name: ix.name !== -1, empno: ix.empno !== -1, phone: ix.phone !== -1, type: ix.type !== -1, work: ix.work !== -1, gender: ix.gender !== -1 },
                 sched: { shift: ix.shift !== -1, rest: ixRestAll.length > 0, cs: ix.cs !== -1, muk: ix.muk !== -1 },
                 /* ما وُجد في الملف ولا يُستورد — يُصارَح به المستعمل بدل التجاهل الصامت */
                 derived: HM.derived, unknown: HM.unknown };
@@ -547,6 +536,10 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     } catch (t) {
       return !0;
     }
+  }
+  /* V7 · د5-د2: هل برنامجُ الجدولة حاضرٌ ومفعَّل — يجيب مالكُه بالاسم؛ بغيابه لا */
+  function impSched() {
+    return !!KIVO.bus.read("staff.usable@1");
   }
   /* حالةُ النافذة هنا لا في حالة الصفحة: الملخّصُ المعروض والخطوة. الصفحةُ تُعاد رسماً بعدّادٍ واحد (impTick). */
   var HS = { conf: null, step: "pick" };
@@ -653,7 +646,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
           p = !!(o.shift || o.rest || o.cs || o.muk);
         let l = !1;
         try {
-          l = !!(KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1") || {})[r + "-" + i];
+          l = !!(KIVO.bus.read("staff.locks@1") || {})[r + "-" + i];
         } catch (t) {}
         const d = [o.shift ? "الوردية" : "", o.rest ? "أيام الراحة" : "", o.cs ? "رمز النداء" : "", o.muk ? "التكليف" : ""].filter(Boolean);
         return {
@@ -695,7 +688,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
               ? "rgba(220,38,38,0.35);background:var(--bg-a22038380p07);color:var(--fg-xb91c1c)"
               : "rgba(4,120,87,0.3);background:var(--bg-a4120870p07);color:var(--fg-x047857)"),
           impSchedCols:
-            (impOn("staff")
+            (impSched()
               ? "الأعمدة التي وجدها في ملفك وستذهب إلى هذا الشهر: " +
                 (d.length ? d.join(" · ") : "لا شيء") +
                 ". أما بقية الأعمدة فتذهب إلى سجل الموظف نفسه ولا يمسّها اختيار الشهر."
@@ -730,7 +723,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
             " من القائمة الحالية ثم تُستورد بيانات الملف (" +
             KIVO.BassamCount(s.file, "موظف") +
             ") من جديد" +
-            (impOn("staff") ? "، ويُبنى الجدول الشهري " + KIVO.BassamCount.agr(s.file, "له", "لهما", "لهم") + " من الصفر." : "."),
+            (impSched() ? "، ويُبنى الجدول الشهري " + KIVO.BassamCount.agr(s.file, "له", "لهما", "لهم") + " من الصفر." : "."),
           impReplaceWarn:
             "سيُحذف " +
             KIVO.BassamCount(s.cur, "موظف") +
@@ -742,7 +735,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
             KIVO.BassamCount.agr(s.cur, "أثره", "أثرهما", "أثرهم") +
             ": " +
             [
-              impOn("staff") ? "الجدول الشهري بكل أشهره" : "",
+              impSched() ? "الجدول الشهري بكل أشهره" : "",
               impOn("dreport") ? "التقارير اليومية بكل أيامها ودفاتر استئذاناتها" : "",
               "تسكينات الخطة التشغيلية والجولات اليومية",
               "المهام المسندة",
@@ -752,7 +745,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
             ]
               .filter(Boolean)
               .join("، و") +
-            (impOn("staff") ? " — ويُنشأ جدول الشهر من جديد مسودة مفتوحة غير معتمدة." : ".") +
+            (impSched() ? " — ويُنشأ جدول الشهر من جديد مسودة مفتوحة غير معتمدة." : ".") +
             " لا يمكن التراجع.",
           stopClick: (t) => {
             t && t.stopPropagation && t.stopPropagation();

@@ -24,15 +24,11 @@ function selfFieldsOf(u) { return (u && Object.prototype.hasOwnProperty.call(SEL
 /* أي صفحة تكتب هذا المفتاح: pages = كتابة كاملة بفعل كتابة على إحداها؛
    via = صفحات تكتب فيه كتابةً ضيّقة (كرمز النداء الذي يسجّله التقرير اليومي في
    الجدول الشهري) — تُقبل إن انحصر الفرق في المواضع المسموحة فقط */
-function endsAny(p, arr) { for (var i = 0; i < arr.length; i++) if (p === arr[i] || p.slice(-(arr[i].length + 1)) === '.' + arr[i]) return true; return false; }
 var CS_ONLY = function (d) { return /^\d{4}-\d{1,2}\.[^.]+\.cs$/.test(d.p) || (/^\d{4}-\d{1,2}\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^\d{4}-\d{1,2}$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (ek) { return isObj(d.t[ek]) && Object.keys(d.t[ek]).every(function (q) { return q === 'cs'; }); })); };
 /* بيان الشهر من التقرير اليومي: رمز النداء لموظف داخل البيان، أو أخذ بيان شهرٍ معتمد بلا بيان عند أول سحب (شهر كامل جديد لا تعديل موجود) */
 var SNAP_CS_ONLY = function (d) { return /^\d{4}-\d{1,2}\.bucket\.[^.]+\.cs$/.test(d.p) || (/^\d{4}-\d{1,2}\.bucket\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^\d{4}-\d{1,2}$/.test(d.p) && d.f === undefined && isObj(d.t) && isObj(d.t.bucket)); };
 var EMP_FIELDS = function (d) { return /^(\d+|\[[^\]]*\])\.(work|type|eid)$/.test(d.p); };
-var EMP_REFS = function (d) { return endsAny(d.p, ['emp']); };
-var NO_APPROVAL = function (d) { return !endsAny(d.p, ['ap', 'shAp', 'apAt', 'apBy', 'closed', 'cWhy', 'off', 'needN', 'dopen']); };
-var SEED_ONLY = function (d) { return d.p === '' && d.f === undefined; };
-var VIA_FN = { EMP_FIELDS: EMP_FIELDS, EMP_REFS: EMP_REFS, CS_ONLY: CS_ONLY, SNAP_CS_ONLY: SNAP_CS_ONLY, NO_APPROVAL: NO_APPROVAL, SEED_ONLY: SEED_ONLY };
+
 /* KEY_RULES حُذف: RESOURCE_REGISTRY هو توصيف الموارد الوحيد */
 /* أعلام ترحيلٍ تُكتب مرةً واحدة — لمدير النظام ومدراء الإدارات؛ الموظف يُرفض بصمت */
 /* صارت الخمسةُ رايات عامّة في سجل الموارد، فلم يبقَ مفتاحُ رايةٍ إدارية.
@@ -94,6 +90,8 @@ async function actorOf(env, uid) {
   var plat = await platGet(env); var off = (isObj(plat) && isObj(plat.mods) && Array.isArray(plat.mods.off)) ? plat.mods.off : [];
   var A0 = { u: u, users: users, perms: isObj(perms) ? perms : {}, depts: Array.isArray(depts) ? depts : [],
            nodes: Array.isArray(nodes) ? nodes : [], off: off };
-  if (env && env.__enf) { A0.enf = env.__enf; await enfAttachGrants(env, A0); }   /* KIVO_243: وضعُ الإنفاذ (ENV ∧ D1) وحده يضبطه · ويُرفق به المنحُ الصريح */
+  /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده يقرّر — يُرفق بكل فاعلٍ وضعُه ومنحُه الصريح. فاعلٌ بُني خارج مسار الطلب (بلا env.__enf)
+     يُعلَّم «closed»: لا قرارَ قديماً ولا سماحَ — المحرّكُ يرفض ما لا يحمله */
+  A0.enf = (env && env.__enf) || ENF_CLOSED; await enfAttachGrants(env, A0);
   return A0;
 }

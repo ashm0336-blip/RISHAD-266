@@ -18,6 +18,7 @@
    التغيير البعيد يرفضالمسودة القديمة ويحفظمدخلاتها؛استئنافالفعللايتمإلابعدإغلاقالمسودةومراجعتهاوفتحهاصراحةً،معالحفاظعلىهويةالصف.
    ثم التحقّقُ من cf03398 (reports/k265/reviews/verify_cf03398.md — يُخفق على cf03398 أولاً):
      (D-1) صفّان بالهوية نفسِها في اليوم (فردان يتيمان لمجموعةٍ قديمة): قائمةُ أحدهما لا تفتح الآخر، ونافذةُ حذفه بعد الإزاحة لا تحذف توأمه */
+import '../../../../tests/unit/clock.mjs';   /* V7 · د5-هـ (أمن ٤): ساعةُ الاختبار المثبَّتة (1448-5-9 · 10:00 الرياض) — يُستورد أولاً، قبل tasks_fx التي تحسب اليومَ عند التحميل */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -56,6 +57,11 @@ async function page(storeJson, emps, users, ext) {
   KIVO.BassamSup = { isSup: () => false };
   class DCLogic { constructor() { this.state = {}; } setState(p, cb) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); cb && cb(); } }
   ctx.DCLogic = DCLogic;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د: التقويم الموحّد — تعتمد عليه عُدّة الصفحات */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/core/060-bus.js'), 'utf8'), ctx);   /* V7 · د5-د: الناقل (قلب المنصة) وروابطُ الجدول الشهري عليه — الصفحاتُ تسأل بالاسم */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/531-staff-links.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), ctx);
   const B0 = KIVO.BassamPageKit.base; KIVO.BassamPageKit.base = (B, a) => class extends B0(B, a) { bsOn(k) { return k !== 'staff'; } bsToast(m, k) { toasts.push([m, k]); } bsAck(m, k) { toasts.push([m, k || 'ok']); return Promise.resolve(true); } };
   vm.runInContext(LOGIC + '\n;globalThis.__C = Component;', ctx, { filename: 'tasks/logic.js' });
@@ -370,11 +376,14 @@ test('(C-3) قائمةُ الصفّ المفتوحة تبقى مع صفّها ب
     const it = vmOf(P, R[1][13]).rmItems.find((x) => /إعادة|فتح/.test(x.name || ''));
     assert.ok(it, 'بندُ إعادة الفتح في قائمة R2: ' + JSON.stringify(vmOf(P, R[1][13]).rmItems.map((x) => x.name)));
     it.run ? it.run() : it.click && await it.click({});
-    await P.drain();
+    await P.drain(); await new Promise((r) => setTimeout(r, 20)); await P.drain();
     const re = calls.filter((c) => /\/api\/tasks\/reopen/.test(c.route));
-    assert.equal(re.length, 1, JSON.stringify(calls.map((c) => c.route)));
-    assert.equal(re[0].body.id, R[1][13], 'أُعيد فتحُ R2 نفسِه لا R3');
-    assert.equal((await re[0].promise).j.ok, 1, 'إقرار API الحقيقي لا mock200');
+    /* V7 · د5-ح (القفل): الإنفاذُ وحده — الطلبُ الأول يُرفض «سبب» (task.reopen) ثم يُعاد بالسبب من نافذة 280 (askReason) على الصفّ نفسِه */
+    assert.equal(re.length, 2, JSON.stringify(calls.map((c) => c.route)));
+    assert.equal((await re[0].promise).j.why, 'reason', 'الأولُ بلا سبب يُرفض بطلب السبب');
+    assert.ok(re[1].body.why, 'الإعادةُ تحمل السبب');
+    for (const x of re) assert.equal(x.body.id, R[1][13], 'أُعيد فتحُ R2 نفسِه لا R3');
+    assert.equal((await re[1].promise).j.ok, 1, 'إقرار API الحقيقي لا mock200');
     assert.equal(byId(P, R[2][13])[3], 'done', 'R3 غير مستهدف');
     /* و«إعادة الفتح» بموضعٍ قديمٍ (إزاحةٌ بعد بناء الصفوف) تبقى بهويته */
     calls.length = 0; P.c._doReopen(HIJ.day, 1, P.c._tkKey(R[1]));

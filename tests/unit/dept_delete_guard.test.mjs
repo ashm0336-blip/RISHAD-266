@@ -39,7 +39,7 @@ function harness(opts={}){
     }};
   context.window=context;vm.createContext(context);
   const self={state:{admArm:opts.arm||null,sysSel:DEPT.id},setState(value){calls.state.push(value);Object.assign(this.state,value);},bsToast:message=>calls.toast.push(message),bsAck:(...args)=>calls.ack.push(args)};
-  for(const name of ['_wpActor','_wpCall','_businessBaseValid','deptDel','_deptDelGo']){
+  for(const name of ['_wpActor','_reasonFirst','_wpCall','_businessBaseValid','deptDel','_deptDelGo']){
     const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name+' موجودة');
     self[name]=vm.runInContext('({'+L.slice(node.start,node.end)+'}).'+name,context);
   }

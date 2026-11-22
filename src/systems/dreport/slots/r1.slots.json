@@ -1,0 +1,99 @@
+{
+ "_note": "V7 · د5-هـ (r1): معرفةُ التقرير اليومي في أجزاء الخادم العامة (سجلُّ الموارد · الكيانات · عمليات الاعتماد وشكلُها · التنظيف · الإنفاذ · خريطةُ القراءة · عقدُ الصورة) ومصنِّفُه ونطاقاتُه في محرّكَي الحراسة والنطاق.",
+ "guard.classify.dreport": {
+  "order": 10,
+  "file": "slots/guard.classify.dreport.frag"
+ },
+ "guard.h.attKey.dreport": {
+  "order": 10,
+  "text": "attKey: attKey, "
+ },
+ "scope.items.dreport": {
+  "order": 10,
+  "file": "slots/scope.items.dreport.frag"
+ },
+ "res.via.rounds.dreport": {
+  "order": 10,
+  "text": "dreport: 'NO_APPROVAL', "
+ },
+ "read.reader.dreport": {
+  "order": 10,
+  "text": ", 'dreport'"
+ },
+ "res.reg.dreport": {
+  "order": 10,
+  "text": "  /* ── التقرير اليومي ── */\n  'bassam_dreport_v1':         { scope: 'dept', cap: 'dreport' },\n  'bassam_dr_grp_v1':          { scope: 'dept', cap: 'dreport' },\n  'bassam_leave_kinds_v1':     { scope: 'dept', cap: 'dreport' },\n"
+ },
+ "res.via.cs.dreport": {
+  "order": 10,
+  "text": ", via: { dreport: 'CS_ONLY' }"
+ },
+ "res.via.snap.dreport": {
+  "order": 10,
+  "text": ", via: { dreport: 'SNAP_CS_ONLY' }"
+ },
+ "ent.reg.leave.dreport": {
+  "order": 10,
+  "text": "  /* drAddLeaveKind/drDelLeaveKind: كلتاهما محروستان بـPC(\"edit\") في الواجهة */\n  'bassam_leave_kinds_v1':    { empty: '[]', primRoot: 1, primAct: 'edit' },\n"
+ },
+ "ent.reg.dreport": {
+  "order": 10,
+  "text": "  /* ── التقرير اليومي ── */\n  'bassam_dreport_v1':        { map: 1, empty: '{}' },\n  /* drGrpPref: { on:true, closed:{…} } */\n  'bassam_dr_grp_v1':         { empty: '{}' },\n"
+ },
+ "ops.reg.dreport": {
+  "order": 10,
+  "text": "  'bassam_dreport_v1':         { approve: ['*.shifts.*.ap', '*.shifts.*.apAt', '*.shifts.*.apBy', '*.dopen', '*.dopen.*', '*.dshut', '*.dshut.*'], newAp: ['*.dopen.*', '*.dshut.*'], shape: 'dreport' },\n"
+ },
+ "approval.shape.dreport": {
+  "order": 10,
+  "file": "slots/approval.shape.dreport.frag"
+ },
+ "permv4.roster.res.dreport": {
+  "order": 10,
+  "text": "rn === 'bassam_dreport_v1' || "
+ },
+ "read.ops.dreport": {
+  "order": 10,
+  "text": ",'dreport'"
+ },
+ "read.map.res.dreport": {
+  "order": 10,
+  "text": "  'bassam_dreport_v1':         ['dreport'@@SYS:read.reader.daily@@, 'emps/data'@@SYS:read.map.dreport@@@@SYS:read.map.reader.staff.1@@@@SYS:read.map.reader.tasks.1@@, 'planning', 'planning/readiness'],\n"
+ },
+ "read.map.reg.dreport": {
+  "order": 10,
+  "text": "  /* ── التقرير اليومي ── */\n  'bassam_dr_grp_v1':          ['dreport'],\n  'bassam_leave_kinds_v1':     ['dreport'@@SYS:read.map.reader.staff.5@@],\n"
+ },
+ "priv.res.cond.dreport": {
+  "order": 10,
+  "text": " && rnPv !== 'bassam_dreport_v1'"
+ },
+ "cleanup.ctxRes.dreport": {
+  "order": 10,
+  "text": "'bassam_dreport_v1': 1, "
+ },
+ "enf.uncov.leave.dreport": {
+  "order": 10,
+  "text": "    'bassam_leave_kinds_v1': crud('ref.leave_type'),"
+ },
+ "enf.uncov.day.edit.dreport": {
+  "order": 10,
+  "text": ", 'report.edit'"
+ },
+ "enf.uncov.day.create.dreport": {
+  "order": 10,
+  "text": ", 'report.create'"
+ },
+ "enf.uncov.grp.dreport": {
+  "order": 10,
+  "text": ",\n    'bassam_dr_grp_v1': all(['report.edit', 'report.create'])"
+ },
+ "enf.uncov.cs.dreport": {
+  "order": 10,
+  "text": ", 'report.callsign.assign'"
+ },
+ "enf.via.cs.dreport": {
+  "order": 10,
+  "text": "    if (enfHeld(A, d, 'report.callsign.assign')) return { keys: ['report.callsign.assign'], tag: 'via:CS_ONLY' };\n"
+ }
+}

@@ -13,7 +13,7 @@ test('super inbox avoids business reference reads while recipient statistics sti
   W.DB.prepare = sql => {
     const statement = prepare(sql), bind = statement.bind.bind(statement);
     statement.bind = (...args) => {
-      if (/SELECT.*\bkv\b/i.test(sql) && args.some(value => typeof value === 'string' && /^bsdept:[^:]+:bassam_(employees_v1|staffing_v3|dreport_v1|perm_tpls_v1)$/.test(value))) referenceReads++;
+      if (/SELECT.*\bkv\b/i.test(sql) && args.some(value => typeof value === 'string' && /^bsdept:[^:]+:bassam_(employees_v1|staffing_v3|dreport_v1|roles_v1|shift_options_v1)$/.test(value))) referenceReads++;
       return bind(...args);
     };
     return statement;
@@ -22,7 +22,7 @@ test('super inbox avoids business reference reads while recipient statistics sti
   const inbox = await W.get('super', { all: '1' });
   assert.equal(inbox.status, 200);
   assert.ok(inbox.json.items.some(item => item.bcId === sent.json.id));
-  assert.equal(referenceReads, 0, 'Super audience does not depend on employee, schedule, report or supervisory-template documents');
+  assert.equal(referenceReads, 0, 'Super audience does not depend on employee, schedule, report or supervisory-role documents'   /* V7 · د5-ح: الإشرافُ من سجلّ الأدوار (roles_v1) لا من القوالب */);
   assert.ok(W.DB.trips - before <= 7);
   const staff = await W.get('employee1');
   assert.equal(staff.status, 200);

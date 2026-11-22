@@ -731,6 +731,13 @@
           "type": "integer",
           "minimum": 0
         },
+        "why": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
         "edit": {
           "type": "object",
           "additionalProperties": false,

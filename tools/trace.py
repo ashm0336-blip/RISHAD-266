@@ -19,7 +19,7 @@ DOCS = ('docs/',)
 
 def tracked():
     out = subprocess.run(['git', 'ls-files', '--cached', '--others', '--exclude-standard'], cwd=ROOT, capture_output=True, text=True).stdout.split('\n')   # المتتبَّعُ والجديدُ غيرُ المستثنى — النتيجةُ لا تتعلّق بلحظة الالتزام
-    return sorted(set(f for f in out if f and 'node_modules/' not in f))
+    return sorted(set(f for f in out if f and 'node_modules/' not in f and os.path.lexists(os.path.join(ROOT, f))))   # V7 · د5-ح: ما حُذف من القرص (قبل الالتزام) لا يُعدّ — حذفُ قطعةٍ بغياب مالكيها
 
 def gate_suites():
     """حزمُ البوابة الدائمة في أحدث gateallNNN.sh (أسماءُ ملفات cfbench) — اختباراتٌ نشطة وإن سبقت 251."""

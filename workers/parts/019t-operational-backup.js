@@ -18,6 +18,14 @@ function opValidateBackupDomains(domains,departments) {
     if(!expected.has(key)||seen.has(key))throw rsError('restore-operations-scope');seen.add(key);
     decodedDomains.push(decoded);
   });
+  /* V7 · د5-ح (13): موردٌ أُضيف بعد نسخٍ قائمة (تعريفُه late — أرشيفُ الجولات) يغيب عن النسخة القديمة فيُستعاد فارغاً (أيامُها كلُّها في موردها الحيّ)؛
+     وغيابُ غيره نقصٌ كما كان */
+  expected.forEach(function(key){
+    if(seen.has(key))return;
+    var info=opInfo(key);
+    if(!info.definition.late)throw rsError('restore-incomplete-operations');
+    seen.add(key);decodedDomains.push({key:key,domain:ocConvert(info.prepared,info.dept,info.resource,undefined,false),info:info});
+  });
   if(seen.size!==expected.size)throw rsError('restore-incomplete-operations');
   return decodedDomains;
 }
@@ -74,7 +82,7 @@ async function opExport(env,request,url,session) {
         for(var def of opDefinitions()){
           var k='bsdept:'+d+':'+def.resource,raw=reference.inputKeys[k];
           if(!canRead(A,k))throw rsError('operations-export-permission',403);
-          if(A.enf&&raw!=null)raw=enfProjectStr(A,k,raw,refs);
+          if(raw!=null)raw=enfProjectStr(A,k,raw,refs);
           var raw0=raw;raw=privOut(A,k,raw,reference.inputKeys);   // PRIVACY batch (019u): exports follow the read rule · the copy marked redacted
           var prepared=opPrepared(def.resource),domain=ocConvert(prepared,d,def.resource,raw==null?undefined:JSON.parse(raw),raw!=null),dom=opBackupDomain(prepared,domain);
           if(raw!==raw0){dom.redacted=true;redacted.push(d+':'+def.resource);}

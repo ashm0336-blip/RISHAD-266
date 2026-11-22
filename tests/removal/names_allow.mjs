@@ -27,10 +27,13 @@ export function staleAllow(allow, root, src) {
   const run = spawnSync(process.env.KIVO_PYTHON || 'python3', [path.join(root, 'tools', 'systems.py'), '--src', src, '--variants'], { encoding: 'utf8', maxBuffer: 1 << 29 });
   if (run.status !== 0) return ['tools/systems.py --variants: ' + (run.stderr || run.stdout).slice(0, 300)];
   const cases = JSON.parse(run.stdout); if (!cases.length) return ['لا نظامَ في الشجرة الكاملة: لا يُعرف ما يُبحث عنه'];
-  const base = scanFiles(root, src).map((f) => relOf(root, f)).filter((rel) => !rel.startsWith('src/systems/'));   /* أجزاءُ الأنظمة نفسُها ليست من القاعدة */
-  const disk = new Map(base.map((rel) => [rel, noComments(fs.readFileSync(path.join(root, rel), 'utf8')).split('\n')]));
-  const views = cases.map((c) => ({ NAME: { test: ((f) => (t) => !!f(t))(finder(c.gone, c.names)) }, lines: (rel) => (c.files[rel] === undefined ? disk.get(rel) : noComments(c.files[rel]).split('\n')) }));
-  const out = [], known = new Set(base);
+  const scanned = scanFiles(root, src).map((f) => relOf(root, f));
+  const base = scanned.filter((rel) => !rel.startsWith('src/systems/'));   /* أجزاءُ الأنظمة نفسُها ليست من القاعدة */
+  /* د5-د2: أجزاءُ خادم البرامج الأخرى في ترتيب الضمّ يفحصها البحثُ أيضاً (مستهلكو نظامٍ غائب) — فمدخلٌ لملفٍ منها يُتحقَّق من موضعه كغيره ('*' يبقى للقاعدة وحدها) */
+  const disk = new Map(scanned.map((rel) => [rel, noComments(fs.readFileSync(path.join(root, rel), 'utf8')).split('\n')]));
+  const noSub = new Set((allow.roles || []).filter((r) => r.substring === false).map((r) => r.name));   /* د5-هـ: كما في الاختبار */
+  const views = cases.map((c) => ({ NAME: { test: ((f) => (t) => !!f(t))(finder(c.gone.filter((k) => !noSub.has(k)), c.names)) }, lines: (rel) => (c.files[rel] === undefined ? disk.get(rel) : noComments(c.files[rel]).split('\n')) }));
+  const out = [], known = new Set(scanned);
   for (const s of allow.skipFiles) {
     if (!known.has(s.file)) out.push('skipFiles: ' + s.file + ' ليس من الملفات المبحوث فيها');
     else if (!views.some((v) => v.lines(s.file).some((l) => v.NAME.test(l)))) out.push('skipFiles: ' + s.file + ' لا يذكر اسمَ نظامٍ غائب في أي حالة حذف');

@@ -88,14 +88,7 @@ test('[enforce] the fixture supervisor and the unit manager: unchanged', async (
   assert.deepEqual(status(mgr), FREE, 'unit manager'); assert.equal(mgr.name, 'W'); assert.equal(mgr.assign, 'W');
   assert.deepEqual(sup, PIN.sup, 'supervisor (pinned as measured on 8b3b161)');
 });
-test('[legacy] the stored sheet decides, as before (explicit grants are not read in legacy)', async () => {
-  assert.deepEqual(await run('legacy', 'obs', (x) => x.sheet({ 'daily/field': ['view'] })), CONFINED, 'observer');
-  assert.deepEqual(await run('legacy', 'obs', (x) => x.sheet({ 'daily/field': ['view'], 'daily/rounds': ['view'] })), CONFINED, 'observer + view of the rounds');
-  const s = await run('legacy', 'obs', (x) => x.sheet({ 'daily/field': ['view'], 'daily/rounds': ['view', 'edit'] }));
-  assert.deepEqual(status(s), FREE, 'a write on the rounds lifts it');
-  assert.deepEqual(status(await run('legacy', 'mgr', () => {})), FREE, 'unit manager');
-  assert.deepEqual(await run('legacy', 'obs', (x) => { x.sheet(null); x.grant(VIEWS.concat(DER)); }), PIN.legacyGrant, 'a grant record alone gives nothing in legacy');
-});
+/* V7 · د5-ح (القفل): حُذفت حالةٌ «[legacy]» تثبّت مسارَ القرار القديم المحذوف: the stored sheet decides, as before (explicit grants are not read in legacy)', async () =>… */
 /* measured on 8b3b161 before the fix and unchanged by it */
 const PIN = {
   sup: { 'zones.assigned': 'W', 'zones.free': 'W', 'marks.assigned': 'W', 'marks.free': 'W', 'gates.assigned': 'W', 'gates.free': 'W', name: 'W', assign: 'W' },

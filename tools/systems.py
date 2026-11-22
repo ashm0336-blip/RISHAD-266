@@ -25,7 +25,17 @@ def load(S):
     """الأنظمةُ الحاضرة مرتَّبةً بالمفتاح؛ كلٌّ منها system.json مع _dir (مجلدُه)."""
     out = []
     for p in sorted(glob.glob(os.path.join(S, 'systems', '*', 'system.json'))):
-        d = json.load(open(p, encoding='utf-8')); d['_dir'] = os.path.dirname(p); out.append(d)
+        d = json.load(open(p, encoding='utf-8')); d['_dir'] = os.path.dirname(p)
+        # V7 · د5-د2: قطعُ النظام قد تتوزّع على ملفات مجموعات slots/<اسم>.slots.json ({اسمُ الفتحة: قطعة أو قائمة}) تُضمّ إلى slots في system.json —
+        #            لنظامٍ قطعُه بالمئات (الجدول الشهري). الاسمُ الواحد في ملفين: القائمتان تُضمّان (order يرتّب).
+        slots = dict(d.get('slots') or {})
+        for g in sorted(glob.glob(os.path.join(d['_dir'], 'slots', '*.slots.json'))):
+            for name, v in json.load(open(g, encoding='utf-8')).items():
+                if name == '_note': continue
+                add = v if isinstance(v, list) else [v]
+                slots[name] = ((slots[name] if isinstance(slots[name], list) else [slots[name]]) + add) if name in slots else v
+        if slots: d['slots'] = slots
+        out.append(d)
     return sorted(out, key=lambda d: d.get('key', ''))
 
 def shared(S):
@@ -67,6 +77,10 @@ def problems(S, systems=None):
         if p.get('key') != s or p.get('kind') != 'shared': bad.append('_shared/%s/shared.json: key/kind' % s)
         for f in p.get('files') or []:
             if not os.path.isfile(os.path.join(p['_dir'], f)): bad.append('_shared/%s: %s غير موجود' % (s, f))
+        for name, v in (p.get('slots') or {}).items():   # V7 · د5-ح: قطعُ القطعة المشتركة كقطع النظام (text أو file)
+            for it in (v if isinstance(v, list) else [v]):
+                if ('text' in it) == ('file' in it): bad.append('_shared/%s: slots.%s يحمل text أو file (واحداً منهما)' % (s, name))
+                elif 'file' in it and not os.path.isfile(os.path.join(p['_dir'], it['file'])): bad.append('_shared/%s: slots.%s ← %s غير موجود' % (s, name, it['file']))
         if not set(p.get('owners') or []) & set(keys): bad.append('قطعة مشتركة بلا مالك: %s — احذفها' % os.path.relpath(p['_dir'], os.path.dirname(S)).replace(os.sep, '/'))
         for o in p.get('owners') or []:
             if o in keys and s not in (next(d for d in systems if d.get('key') == o).get('shared') or []): bad.append('%s: مالكٌ للقطعة المشتركة «%s» ولا يعلنها (shared)' % (o, s))
@@ -81,7 +95,11 @@ def problems(S, systems=None):
 def fragments(S, systems=None):
     """{name: [(order, key, {text[, first, last, only]})]} مرتَّبةً — نصُّ القطعة من system.json أو من ملفٍ في مجلد النظام."""
     systems = load(S) if systems is None else systems; out = {}
-    for d in systems:
+    # V7 · د5-ح: قطعُ القطعة المشتركة (shared.json ← slots) تُحقن مرّةً واحدة ما حضر أحدُ مالكيها — كتلةٌ في الغلاف يحتاجها نظامان (نواةُ الطباعة)
+    #            لا تتكرّر بحضورهما معاً ولا تبقى في القاعدة بغيابهما. مفتاحُها في الترتيب «_shared/<key>».
+    present = {d.get('key') for d in systems}
+    owners = [dict(p, key='_shared/' + k) for k, p in sorted(shared(S).items()) if set(p.get('owners') or []) & present]
+    for d in list(systems) + owners:
         for name, v in (d.get('slots') or {}).items():
             for it in (v if isinstance(v, list) else [v]):
                 text = it['text'] if 'text' in it else open(os.path.join(d['_dir'], it['file']), encoding='utf-8', newline='').read()
@@ -112,14 +130,45 @@ def expand(text, frags, used=None):
         if not n or not MARK.search(text): break
     return text
 
-def manifest(S):
+def manifest(S, systems=None):
+    """القوالب: ما في src/slots/slots.json (tpl نسبةً إلى src/slots) — و V7 · د5-هـ: قوالبُ الأنظمة الحاضرة (system.json ← templates:
+       [{tpl, out}] نسبةً إلى مجلد النظام): ملفٌّ للنظام نفسِه تُحقن فيه قطعُ أنظمةٍ أخرى (صفحةُ المتابعة يضيف إليها التقريرُ والمهام تبويباتِهما)،
+       يغيب بغيابه. لكل مدخلٍ path (المسارُ الكامل للقالب) و out (نسبةً إلى جذر المستودع)."""
     p = os.path.join(S, 'slots', 'slots.json')
-    return json.load(open(p, encoding='utf-8'))['templates'] if os.path.isfile(p) else []
+    out = [dict(t, path=os.path.join(S, 'slots', t['tpl'])) for t in (json.load(open(p, encoding='utf-8'))['templates'] if os.path.isfile(p) else [])]
+    root = os.path.dirname(S); systems = load(S) if systems is None else systems
+    # V7 · د5-ح: وقوالبُ القطعة المشتركة (shared.json ← templates) ما حضر أحدُ مالكيها — إضافاتُ العدسات تغيب بغياب مضيفَيها
+    present = {d.get('key') for d in systems}
+    pieces = [p for _, p in sorted(shared(S).items()) if set(p.get('owners') or []) & present]
+    for d in list(systems) + pieces:
+        for t in d.get('templates') or []:
+            out.append({'tpl': os.path.relpath(os.path.join(d['_dir'], t['tpl']), os.path.join(S, 'slots')).replace(os.sep, '/'), 'out': os.path.relpath(os.path.join(d['_dir'], t['out']), root).replace(os.sep, '/'), 'path': os.path.join(d['_dir'], t['tpl'])})
+    return out
 
 def optional(S):
     """فتحاتٌ علامتُها داخل قطعة نظامٍ آخر (slots.json ← optional): تغيب العلامةُ بغياب ذلك النظام، فقطعتُها ليست خطأً إملائياً."""
     p = os.path.join(S, 'slots', 'slots.json')
     return set(json.load(open(p, encoding='utf-8')).get('optional', [])) if os.path.isfile(p) else set()
+
+HEADER = 'ملف مولَّد — لا يُحرَّر يدوياً، المصدر: %s'
+def headed(text, out, tpl):
+    """V7 · د5-ح: ترويسةُ «ملف مولَّد» في رأس كل ناتجٍ من قالب (بصيغة تعليق ملفه) — كانت تُترك لشرط المطابقة البايتية مع الإصدار السابق، ولم يعد قائماً.
+       js · css: /* … */ (في helmet.css بعد <style>) · html: <!-- … --> (بعد سطر DOCTYPE إن وُجد) · json: مفتاحٌ أولُ "$comment" (لا تعليقَ في JSON؛
+       ‎$comment تعليقٌ معتمَد في JSON Schema ومخطّطاتُ هذه الملفات تقبله). غيرُها بلا ترويسة."""
+    h = HEADER % tpl
+    eol = '\r\n' if text.split('\n', 1)[0].endswith('\r') else '\n'
+    if out.endswith('.js'): return '/* ' + h + ' */' + eol + text
+    if out.endswith('.css'):
+        return ('<style>/* ' + h + ' */' + text[len('<style>'):]) if text.startswith('<style>') else '/* ' + h + ' */' + eol + text
+    if out.endswith('.html'):
+        if text[:9].upper() == '<!DOCTYPE':
+            first, rest = text.split('\n', 1); return first + '\n' + '<!-- ' + h + ' -->' + eol + rest
+        return '<!-- ' + h + ' -->' + eol + text
+    if out.endswith('.json'):
+        m = re.match(r'\{(\r?\n)([ \t]*)', text)
+        if not m: raise SystemExit('✘ systems: %s — ناتجُ JSON لا يبدأ بـ«{» وسطرٍ جديد فلا موضعَ للترويسة' % out)
+        return '{' + m.group(1) + m.group(2) + '"$comment": ' + json.dumps(h, ensure_ascii=False) + ',' + m.group(1) + text[m.end(1):]
+    return text
 
 def outputs(S, systems=None):
     """{المسارُ نسبةً إلى جذر المستودع: bytes} لكل قالبٍ مسجَّل — ويرفض قطعةً لا فتحةَ لها (خطأٌ إملائي في الاسم)."""
@@ -127,10 +176,12 @@ def outputs(S, systems=None):
     bad = problems(S, systems)
     if bad: raise SystemExit('✘ systems: ' + ' · '.join(bad))
     frags = fragments(S, systems); used = set(); out = {}
-    for t in manifest(S):
-        src = open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read()
-        out[t['out']] = expand(src, frags, used).encode('utf-8')
-    orphan = sorted(set(frags) - used - RESERVED - optional(S))
+    for t in manifest(S, systems):
+        src = open(t['path'], encoding='utf-8', newline='').read()
+        out[t['out']] = headed(expand(src, frags, used), t['out'], os.path.relpath(t['path'], os.path.dirname(S)).replace(os.sep, '/')).encode('utf-8')
+    present = {d['key'] for d in systems}
+    hosted = {name for d in systems for name, v in (d.get('slots') or {}).items() for it in (v if isinstance(v, list) else [v]) if it.get('host') and it['host'] not in present}   # د5-هـ: قطعةٌ لقالب نظامٍ غائب
+    orphan = sorted(set(frags) - used - RESERVED - optional(S) - hosted)
     if orphan: raise SystemExit('✘ systems: قطعٌ بلا فتحة في أي قالب: ' + ', '.join(orphan))
     return out
 
@@ -168,7 +219,7 @@ RESERVED = set()   # أسماءُ فتحاتٍ يستهلكها مولِّدٌ �
 
 REGEN = [  # ما يُعاد توليدُه حين يتبدّل حضورُ نظام — بالترتيب (generate أولاً: السجلاتُ تسبق من يقرؤها)
     ['tools/generate.py', '--src', 'src'], ['tools/icons.py', 'extract', '--src', 'src'], ['tools/icons.py', 'index', '--src', 'src'],
-    ['tools/route_registry.py', '--write'], ['tools/api_routes.py', '--write'], ['tools/ux_states.py'], ['node:tools/gen_types.mjs'],
+    ['tools/route_registry.py', '--write'], ['tools/api_routes.py', '--write'], ['tools/ux_states.py'], ['node:tools/kivo_ns.mjs', 'tools/kivo_ns.json', '--layer'], ['node:tools/gen_types.mjs'],   # د5-هـ: طبقةُ الأسماء العامة تُسقط أسماءَ نظامٍ غائب (kivo_ns.json ← retired بقطعته)
     ['tools/perm_tree.py', 'emit'],            # د3: شجرةُ الصلاحيات (perm-tree24.json) من السجلّ المجموع والصفحات الحاضرة — قبل المواثيق لأنها تقرؤها
     ['tools/module_charter.py', '--write'],   # حقلُ «data» في مواثيق الوحدات مشتقٌّ من المصدر المولَّد
     ['tools/generate.py', '--src', 'src'],     # بيانُ الصفحات (manifests) مشتقٌّ من المواثيق — يُولَّد بعدها
@@ -189,7 +240,23 @@ def prune(S):
     order = {os.path.basename(e['file']) for e in parts_order(S, PD)}
     for f in sorted(glob.glob(os.path.join(PD, '*.js'))):
         if os.path.basename(f) not in base and os.path.basename(f) not in order: gone.append(f)
-    for f in gone: os.remove(f); print('  − ' + os.path.relpath(f, root) + ' (مولَّدٌ لنظامٍ غائب — حُذف)')
+    gone += prune_plugins(S, dry=True)
+    for f in gone:
+        os.remove(f); print('  − ' + os.path.relpath(f, root) + ' (مولَّدٌ لنظامٍ غائب — حُذف)')
+        dd = os.path.dirname(f)
+        while dd != S and os.path.isdir(dd) and not os.listdir(dd): os.rmdir(dd); dd = os.path.dirname(dd)
+    return gone
+
+def prune_plugins(S, dry=False):
+    """V7 · د5-ح: ملفُّ إضافةٍ مولَّدٌ (src/plugins/<نوع>/<key>/manifest.json) لا قالبَ حاضراً له — قطعتُه غابت بغياب مالكيها.
+       يُحذف قبل إعادة التوليد (أدواتُ السجلّ والشجرة تقرأ الإضافات) — dry: يعيد القائمة فقط."""
+    root = os.path.dirname(S); outs = {os.path.normpath(os.path.join(root, t['out'])) for t in manifest(S)}
+    gone = [f for f in sorted(glob.glob(os.path.join(S, 'plugins', '*', '*', 'manifest.json'))) if os.path.normpath(f) not in outs]
+    if not dry:
+        for f in gone:
+            os.remove(f); print('  − ' + os.path.relpath(f, root) + ' (إضافةٌ مولَّدةٌ لقطعةٍ غائبة — حُذفت)')
+            dd = os.path.dirname(f)
+            while dd != S and os.path.isdir(dd) and not os.listdir(dd): os.rmdir(dd); dd = os.path.dirname(dd)
     return gone
 
 def regen(S):
@@ -215,6 +282,7 @@ def regen(S):
 def main(argv):
     S = os.path.abspath(argv[argv.index('--src') + 1]) if '--src' in argv else os.path.join(ROOT, 'src')
     if '--regen' in argv:
+        prune_plugins(S)
         rc = regen(S)
         if rc == 0: prune(S)
         return rc
@@ -232,7 +300,7 @@ def main(argv):
         cases = [set(d['key'] for d in systems)] + [dependents(d['key']) for d in systems]
         for gone in [g for i, g in enumerate(cases) if g and g not in cases[:i]]:
             frags = fragments(S, [d for d in systems if d['key'] not in gone])
-            res.append({'gone': sorted(gone), 'names': [n for d in systems if d['key'] in gone for n in d.get('names') or []], 'files': {t['out']: expand(open(os.path.join(S, 'slots', t['tpl']), encoding='utf-8', newline='').read(), frags) for t in manifest(S) if t['out'].endswith('.js')}})
+            res.append({'gone': sorted(gone), 'names': [n for d in systems if d['key'] in gone for n in d.get('names') or []], 'files': {t['out']: expand(open(t['path'], encoding='utf-8', newline='').read(), frags) for t in manifest(S, [d for d in systems if d['key'] not in gone]) if t['out'].endswith('.js')}})
         print(json.dumps(res, ensure_ascii=False)); return 0
     if '--list' in argv:
         print(json.dumps([{'key': d['key'], 'name': d.get('name'), 'requires': d.get('requires') or []} for d in systems], ensure_ascii=False)); return 0
@@ -241,8 +309,12 @@ def main(argv):
         for b in bad: print('  ✘ ' + b)
         print('✘ systems: %d مخالفة' % len(bad)); return 1
     out = outputs(S, systems); root = os.path.dirname(S); diff = []
+    srcs = {t['out']: os.path.relpath(t['path'], root).replace(os.sep, '/') for t in manifest(S, systems)}
     for rel, data in sorted(out.items()):
         p = os.path.join(root, rel); cur = open(p, 'rb').read() if os.path.isfile(p) else None
+        # V7 · د5-ح: الملتزَمُ يحمل ترويسةَ «ملف مولَّد» باسم قالبه — تحريرٌ يدويٌّ حذفها أو ملفٌّ نُسخ من غير قالبه يُكشف باسمه
+        if '--write' not in argv and cur is not None and rel.endswith(('.js', '.css', '.html', '.json')) and (HEADER % srcs[rel]).encode('utf-8') not in cur[:600]:
+            print('  ✘ ' + rel + ': بلا ترويسة «ملف مولَّد — … المصدر: ' + srcs[rel] + '»')
         if cur == data: continue
         diff.append(rel)
         if '--write' in argv:

@@ -56,6 +56,7 @@ function page(o = {}) {
   const k = new ctx.__C();
   /* اللوحةُ: جزءُ المهام على صنفٍ كما يركّبه page_modules (Object.assign على النموذج) — props.solo = "kpi" كما في dc-import */
   vm.runInContext('globalThis.__P = class extends DCLogic { constructor() { super(); this.props = { solo: "kpi" }; } };', ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د2: التقويمُ الموحّد — الصفحةُ تسأله (الساعةُ المثبَّتة عبر BassamHijri كما كانت) */
   vm.runInContext('(function (Component) {' + fs.readFileSync(PANEL, 'utf8') + '\n})(globalThis.__P);', ctx, { filename: 'tasks/logic-kpi.js' });
   const c = new ctx.__P();
   const V = () => { const e = k.renderVals(); return e.on_tk ? Object.assign(e, c._tkSoloVals()) : e; };

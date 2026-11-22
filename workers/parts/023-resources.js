@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/023-resources.js.tpl */
 /* ══ سجل الموارد: لكل مفتاح تخزينٍ معروف سياسةٌ صريحة ══════════════════════
    scope: global (سجل منصّة) · dept (بيانات إدارة) · device (تفضيل جهاز لا يُخزَّن)
    cap  : الورقة القانونية بالضبط — لا صفحتها الأم. مصفوفةٌ إن كان المورد
@@ -5,6 +6,8 @@
    rule : سياسةٌ خاصة تسبق الأوراق (users · perms · notif · flag · self · tech)
    via  : منحٌ محدودٌ بالحقول من ورقةٍ أخرى — لا يتحوّل إلى كتابة المورد كاملاً
    ولا يوجد «افتراضي»: ما ليس هنا يُرفض. */
+/* V7 · د5-ح: تفضيلاتُ جهازٍ لكل إدارة (bsdept:<d>:<المفتاح>) يعلنها كلُّ نظامٍ بقطعته — يقرؤها isDeviceKey (002) فلا تُقبل حفظاً ولا تُحقن */
+var DEVICE_DEPT_KEYS = { 'bassam_st_grp_v1': 1 };
 var RES_REG = {
   /* ── سجلات المنصة العامة ── */
   'bassam_auth_users_v1':      { scope: 'global', rule: 'users' },
@@ -50,6 +53,8 @@ var RES_REG = {
   /* اعتماد الجولة عمليةُ setShiftAp: أعلامُ الاعتماد وبياناتها التابعة وحدها.
      أمّا closed · cWhy · needN · off · dopen فرصدٌ تشغيليّ لا اعتماد. */
   'bassam_rounds_v1':          { scope: 'dept', cap: 'daily/rounds', via: { dreport: 'NO_APPROVAL', 'emps/data': 'EMP_REFS' }, field: 'daily' },
+  /* V7 · د5-ح (13): أرشيفُ الجولات — يُقرأ بسياسة الجولات حرفاً (RES_READ_AS) ولا يكتبه العميل (srv): خطوةُ الأرشفة وحدها (dailyArcPend · rounds-arc) */
+  'bassam_rounds_arc_v1':      { scope: 'dept', cap: 'daily/rounds', srv: 1 },
   'bassam_dayshift_v1':        { scope: 'dept', cap: ['daily/rounds', 'dreport'] },
   'bassam_dayfocus_v1':        { scope: 'dept', cap: ['daily/rounds', 'dreport'] },
   /* ── التقرير اليومي ── */
@@ -77,8 +82,7 @@ var RES_REG = {
   'bassam_award_docs_v2':      { scope: 'dept', cap: 'award/doc' },
   /* ── الإعدادات: أوراقها لا صفحتها الأم ── */
   'bassam_shift_options_v1':   { scope: 'dept', cap: 'admin/shifts' },
-  'bassam_perm_tpls_v1':       { scope: 'dept', cap: 'admin/ptpls', via: { dreport: 'SEED_ONLY' } },
-  'bassam_perm_tpls_named_v1': { scope: 'dept', cap: 'admin/ptpls' },
+
   'bassam_last_export_v1':     { scope: 'dept', cap: 'admin/backup' },
   /* طابعُ النسخة الشاملة (كلُّ الإدارات): سجلُّ منصّةٍ عامٌّ يكتبه مديرُ النظام وحده — لا بياناتُ إدارة.
      كان scope:'dept' فيُرفض مفتاحُه العامُّ (why=super) ويضيع الطابع عند التحديث. */
@@ -86,6 +90,9 @@ var RES_REG = {
   /* ── سياسات خاصة ── */
   'bassam_notif_v1':           { scope: 'dept', rule: 'notif' },
   'bassam_notif_dev_v1':       { scope: 'dept', rule: 'selfdev' },
+  /* V7 · د5-هـ (44): أدوارُ الإدارة وأشخاصُها — يُقرأ داخل الإدارة (اسمُ الدور يُعرض للجميع) ويكتبه مديرُ الوحدة داخل سقفها أو مديرُ المنصة، مع منحه المترجَم
+     في الحفظة نفسِها (057b perm44RolesWhy). p44 لا rule: لا ورقةَ تكتبه ولا صورةَ تُربط به (054 imgWriteOk · 060 enfImgWriteOk يرفضانها) */
+  'bassam_roles_v1':           { scope: 'dept', p44: 1 },
   /* راياتُ ترحيلٍ عامّة لمرّةٍ واحدة — لا بياناتُ إدارة. كلٌّ منها يرحّل السجل
      العام bassam_perms_v1 مارّاً على الإدارات كلها، وتُكتب بلا نطاقٍ بنفس
      اصطلاح struct_seed و perm_admsubs_v2 — فعقدُها عقدُهما حرفاً بحرف. */
@@ -101,6 +108,18 @@ var RES_REG = {
   'bassam_demo_purged_v1':     { scope: 'dept', rule: 'tech' },
   'bassam_profile_v1':         { scope: 'dept', rule: 'tech' }
 };
+/* V7 · د5-ح (13): موردٌ يُقرأ بسياسة موردٍ آخر حرفاً — أوراقُه وسقفُه ومفاتيحُ قراءته وإسقاطاتُه وخصوصيتُه (canRead · canRead0 · canReadEnf ·
+   enfProjectStr · privOut) — يسجّله مالكُه (أرشيفُ الجولات بسياسة الجولات). ولا يكتبه العميلُ: srv في RES_REG (044 canWrite · 060 · 042 authorize0) —
+   تكتبه خطوةُ خادمٍ وحدها، والاستعادةُ الخادمية المتحقَّقة (A.__srvRst) تعيده كما في النسخة. */
+var RES_READ_AS = {
+  'bassam_rounds_arc_v1': 'bassam_rounds_v1'
+};
+function resReadAs(k) {
+  var t = Object.prototype.hasOwnProperty.call(RES_READ_AS, resName(k)) ? RES_READ_AS[resName(k)] : null, P;
+  if (!t) return k;
+  P = parseKey(k);
+  return P.dept ? 'bsdept:' + P.dept + ':' + t : k;
+}
 /* اسم المورد من المفتاح: bsdept:<d>:<name> ثم ما قبل أوّل نقطتين (notif_dev_v1:uid) */
 function resName(k) { return String(parseKey(k).name).replace(/:.*$/, ''); }
 function resOf(k) { return RES_REG[resName(k)] || null; }

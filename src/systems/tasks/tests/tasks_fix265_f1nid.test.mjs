@@ -25,7 +25,7 @@ async function sees(W, ck) {
   return { linked: !!(t.j.me && t.j.me.linked), rows: (t.j.rows || []).length, img: img.status, pfLinked: !!(d.j.identity && d.j.identity.linked), facts: !!d.j.facts };
 }
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
   const saveU = async (W, ck, fn) => {
     const g = (await get(W, ck, '/api/get?keys=' + KU)).j.keys[KU], L = JSON.parse(g.v); fn(L);

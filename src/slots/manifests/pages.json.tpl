@@ -42,9 +42,7 @@
    "nav": "planning",
    "name": "الخطة التشغيلية",
    "seq": [
-    "sub:readiness",
-    "page:staff",
-    "page:plan"
+    "sub:readiness"@@SYS:pages.planning.seq|sep=",\n"|pre=",\n"@@
    ],
    "subs": [
     {
@@ -54,84 +52,7 @@
     }
    ]
   },
-  {
-   "key": "staff",
-   "module": "staff",
-   "activation": "toggle",
-   "departmentComponents": ["Staffing"],
-   "nav": "staffing",
-   "name": "الجدول الشهري",
-   "under": "planning"
-  },
-  {
-   "key": "plan",
-   "module": "plan",
-   "activation": "toggle",
-   "departmentComponents": ["Operational Plan"],
-   "nav": "plan",
-   "name": "التشغيل الميداني",
-   "under": "planning"
-  },
-  {
-   "key": "daily",
-   "module": "daily",
-   "activation": "toggle",
-   "platSwitch": true,
-   "requires": [
-    {"for": "daily/kpiDaily", "on": "dreport", "kind": "perm"},
-    {"for": "daily/kpiOcc", "on": "lens:zones", "kind": "lens"},
-    {"for": "daily/kpiOcc", "on": "lens:dens", "kind": "lens"},
-    {"for": "daily/kpiZones", "on": "lens:zones", "kind": "lens"}
-   ],
-   "departmentComponents": ["Daily Sessions"],
-   "nav": "daily",
-   "name": "المتابعة اليومية",
-   "seq": [
-    "tab:kpiDaily",
-    "tab:kpiOcc",
-    "tab:kpiZones",
-    "page:dreport",
-    "tab:rounds",
-@@SYS:pages.daily.seq.tasks@@    "tab:field"
-   ],
-   "tabLabel": "التبويبات",
-   "tabs": [
-    {
-     "key": "kpiDaily",
-     "name": "مؤشرات المتابعة — التشغيل اليومي",
-     "offPage": true
-    },
-    {
-     "key": "kpiOcc",
-     "name": "مؤشرات المتابعة — الإشغال",
-     "offPage": true
-    },
-    {
-     "key": "kpiZones",
-     "name": "مؤشرات المتابعة — المصليات",
-     "offPage": true
-    },
-    {
-     "key": "rounds",
-     "name": "الجولات اليومية"
-    },
-    {
-     "key": "field",
-     "name": "رصد الميدان — حالة الموقع واتجاه الحركة من صفحة الموظف",
-     "offPage": true
-    }
-   ]
-  },
-  {
-   "key": "dreport",
-   "module": "dreport",
-   "activation": "toggle",
-   "departmentComponents": ["Daily Report"],
-   "nav": "dreport",
-   "name": "التقرير اليومي",
-   "under": "daily"
-  },
-@@SYS:pages.entry.tasks@@@@SYS:pages.entry.systems@@  {
+@@SYS:pages.entry.staff@@@@SYS:pages.entry.plan@@@@SYS:pages.entry.daily@@@@SYS:pages.entry.dreport@@@@SYS:pages.entry.tasks@@@@SYS:pages.entry.systems@@  {
    "key": "links",
    "activation": "toggle",
    "nav": "links",
@@ -149,6 +70,13 @@
    "activation": "always",
    "nav": "admin",
    "name": "الإعدادات",
+   "shellTabs": [
+    {
+     "name": "الصلاحيات",
+     "when": "unitMgr",
+     "tab": "perm"
+    }
+   ],
    "subs": [
     {
      "key": "backup",
@@ -161,10 +89,6 @@
     {
      "key": "shifts",
      "name": "الورديات"
-    },
-    {
-     "key": "ptpls",
-     "name": "قوالب الصلاحيات"
     },
     {
      "key": "import",
@@ -180,48 +104,32 @@
    "nav": "kpis",
    "name": "مؤشرات الإدارة",
    "refs": [
-    "planning/readiness",
-    "daily/kpiDaily",
-    "daily/kpiOcc",
-    "daily/kpiZones"@@SYS:pages.kpi.refs.mid@@@@SYS:pages.kpi.refs.tasks@@@@SYS:pages.kpi.refs.tail@@
+    "planning/readiness"@@SYS:pages.kpi.refs.daily@@@@SYS:pages.kpi.refs.mid@@@@SYS:pages.kpi.refs.tasks@@@@SYS:pages.kpi.refs.tail@@
    ],
    "names": {
-    "planning/readiness": "مؤشرات الجاهزية",
-    "daily/kpiDaily": "مؤشرات التشغيل اليومي",
-    "daily/kpiOcc": "مؤشرات الإشغال",
-    "daily/kpiZones": "مؤشرات المصليات"@@SYS:pages.kpi.names.mid@@@@SYS:pages.kpi.names.tasks@@@@SYS:pages.kpi.names.tail@@
+    "planning/readiness": "مؤشرات الجاهزية"@@SYS:pages.kpi.names.daily@@@@SYS:pages.kpi.names.mid@@@@SYS:pages.kpi.names.tasks@@@@SYS:pages.kpi.names.tail@@
    }
   }
  ],
  "tabAddr": {
   "emps": 1,
-@@SYS:pages.tabAddr.award@@  "admin": 1,
-  "daily": {
-   "rounds": 1,
-   "dreport": 1@@SYS:pages.tabAddr.daily@@
-  }@@SYS:pages.tabAddr.tail@@
+@@SYS:pages.tabAddr.award@@  "admin": 1@@SYS:pages.tabAddr.daily.entry@@@@SYS:pages.tabAddr.tail@@
  },
  "navOrder": [
   "kpis",
 @@SYS:pages.navOrder.dstats@@  "emps",
-  "planning",
-  "daily"@@SYS:pages.navOrder.tail@@
+  "planning"@@SYS:pages.navOrder.daily@@@@SYS:pages.navOrder.tail@@
  ],
  "navNames": {
   "kpis": "مؤشرات الإدارة",
 @@SYS:pages.navNames.dstats@@  "emps": "موظفو الإدارة",
-  "planning": "الخطة التشغيلية",
-  "daily": "المتابعة اليومية"@@SYS:pages.navNames.tail@@
+  "planning": "الخطة التشغيلية"@@SYS:pages.navNames.daily@@@@SYS:pages.navNames.tail@@
  },
  "routeNames": {
   "kpis": "مؤشرات الإدارة",
 @@SYS:pages.routeNames.dstats@@  "employees": "موظفو الإدارة",
-  "staffing": "الجدول الشهري",
-  "plan": "التشغيل الميداني",
-  "planning": "الخطة التشغيلية",
-  "daily": "المتابعة اليومية",
-  "dreport": "التقرير اليومي",
-@@SYS:pages.routeNames.tasks@@@@SYS:pages.routeNames.systems@@  "links": "مواقع ذات صلة",
+@@SYS:pages.routeNames.staff@@@@SYS:pages.routeNames.plan@@  "planning": "الخطة التشغيلية",
+@@SYS:pages.routeNames.daily@@@@SYS:pages.routeNames.dreport@@@@SYS:pages.routeNames.tasks@@@@SYS:pages.routeNames.systems@@  "links": "مواقع ذات صلة",
   "help": "المساعدة",
   "admin": "الإعدادات",
   "sysadmin": "مركز إدارة رشاد",

@@ -547,26 +547,5 @@ test("seized receipt rejects malformed/missing/duplicate/unknown permission proo
   await assert.rejects(B.act(b), (e) => e.szCode === "seized-receipt-invalid");
 });
 
-test("seized legacy receipt records actual canonical classified acts instead of the generic command label", async (t) => {
-  const B = await commandWorld({ mode: "legacy" });
-  t.after(() => B.DB.db.close());
-  const b = await B.body(
-    "catalog-replace",
-    {
-      kind: "locations",
-      value: ["TEST_ONLY location", "TEST_ONLY new location"],
-    },
-    "staff",
-  );
-  await B.act(b, "staff");
-  assert.deepEqual(
-    JSON.parse(
-      B.DB.q("SELECT permission_keys FROM seized_requests")[0].permission_keys,
-    ),
-    ["locations:add"],
-  );
-  const p = clone(B.keys.bassam_perms_v1);
-  p.emps[DEPT].TEST_ONLY_E1 = { "seized/records": ["view", "edit"] };
-  await put(B, "bassam_perms_v1", p);
-  await assert.rejects(B.act(b, "staff"), (e) => e.szStatus === 403);
-});
+/* V7 · د5-ح (القفل): حُذفت حالة «seized legacy receipt records actual canonical classified acts…» — تثبّت إيصالَ الوضع القديم (أفعالُ الورقة «locations:add»)
+   المحذوف؛ الإيصالُ بالمفاتيح في الإنفاذ وحده (القائمُ في الحالات الأخرى)، وإيصالُ وضعٍ آخر يُرفض seized-receipt-invalid */

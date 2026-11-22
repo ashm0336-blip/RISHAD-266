@@ -6,6 +6,7 @@
    fail-closed (P4.1.1-04): لا ميزانيةَ تتخطّى سجلاً — أيُّ خطأٍ في الإسقاط ⇒ القراءةُ مرفوضة. ══ */
 function canReadEnf(A, k) {
   if (!A || !A.u) return false;
+  k = resReadAs(k);                                                          /* V7 · د5-ح (13): 023 RES_READ_AS */
   var u = A.u, P = parseKey(k), rn = resName(k), i;
   if (u.role === 'super') return true;                                       /* مديرُ النظام يقرأ كلَّ شيء (Global) — كما AS‑IS */
   if (!P.dept) {
@@ -18,6 +19,7 @@ function canReadEnf(A, k) {
   if (rn === ENF_GRANTS_RES) return isMgrOf(A, P.dept);                      /* سجلُّ المنح: مديرُ الإدارة (والموظفُ يتسلّم مفاتيحَه الفعلية في الإقلاع) */
   var R2 = resOf(k);
   if (!R2 || R2.scope !== 'dept') return false;
+  if (R2.p44) return true;                                                   /* V7 · د5-هـ (44): سجلُّ الأدوار يُقرأ داخل الإدارة */
   if (R2.rule) {
     if (P.name.indexOf('bassam_notif_dev_v1:') === 0) return P.name === 'bassam_notif_dev_v1:' + u.id || isMgrOf(A, P.dept);   /* Own */
     return true;                                                             /* التنبيهاتُ (self) · الراياتُ التقنية · الملف — قواعدُها تحرسها */
@@ -51,7 +53,7 @@ function enfViewCtx(A, d, rn, refs) {
   var dims = ['Assigned', 'Source'], rs = { 'Shift': false, 'Site': false, 'Zone/Element': false }, j;
   for (j = 0; j < dims.length; j++) { var all = held.length > 0; for (i = 0; i < held.length && all; i++) if (enfDimsOf(held[i]).indexOf(dims[j]) === -1) all = false; rs[dims[j]] = all; }
   var V = { d: d, rn: rn, held: held, restrict: rs, sources: enfSources(A, 'read'), fieldOnly: enfFieldOnly(A, d), ekey: String(A.u.ekey || ''),
-    lens: {}, toks: rn === 'bassam_rounds_v1' && refs && refs.emps ? enfToksOf(refs.emps[d], String(A.u.ekey || '')) : null };
+    lens: {}, toks: @@SYS:enf.toks.daily|empty="null"@@ };
   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (KIVO_LENS_PLUGINS.keys) — بوابةُ كلٍّ منها بالمرجع نفسِه */
   for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = KIVO_BUILD.lensGate(A.perms, A.u, d, KIVO_LENS_PLUGINS.keys[li]).on;
   return (cache[ck] = V);
@@ -83,7 +85,7 @@ function enfToksOf(raw, ek) {
 function enfMine(V, emp) { if (!Array.isArray(emp)) return false; for (var i = 0; i < emp.length; i++) if (V.toks ? V.toks[String(emp[i])] : String(emp[i]) === V.ekey) return true; return false; }
 /* سجلُّ الموظفين لإدارات الجولات والخطة في الحفظ (refs بلا keys) */
 async function enfEmpsLoad(env, refs, ks) {
-  for (var i = 0; i < ks.length; i++) { var rn = resName(ks[i]), d = parseKey(ks[i]).dept; if (d && (rn === 'bassam_rounds_v1' || rn === 'bassam_plan_v1') && !(d in refs.emps)) refs.emps[d] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'); }
+  for (var i = 0; i < ks.length; i++) { var rn = resName(ks[i]), d = parseKey(ks[i]).dept; if (d && (@@SYS:enf.empsLoad.daily|empty="false"@@@@SYS:enf.empsLoad.plan@@) && !(d in refs.emps)) refs.emps[d] = await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1'); }
 }
 /* عنصرٌ كما يراه الفاعل: يُسقَط منه ما لا يراه (حالةُ الرصد خارج النطاق · التسكين بلا عدسة التوزيع · الكثافة بلا عدستها) */
 function enfElemMask(V, col, e, rounds) {
@@ -137,75 +139,18 @@ function enfFloorMerge(V, nf, cf, rounds) {
 function enfFloorBlank(V, fl) { var o = {}, c, f; if (!isObj(fl)) return o; for (c = 0; c < ENF_LENS_COLS.length; c++) { f = ENF_LENS_COLS[c]; if (fl[f] !== undefined) o[f] = V.lens[f] ? [] : fl[f]; } for (c = 0; c < ENF_LENS_FLOOR.length; c++) { f = ENF_LENS_FLOOR[c].field; if (fl[f] !== undefined && !V.lens[ENF_LENS_FLOOR[c].lens]) o[f] = fl[f]; } return o; }
 function enfMonthD(v) { return Array.isArray(v) ? { arr: true, d: v } : (isObj(v) && Array.isArray(v.d) ? { arr: false, d: v.d } : null); }
 var ENF_PROJ = {
-@@SYS:enf.proj.dstats@@  /* الخطة: سياقُ رسم (لا يُحجب طابقٌ ولا عنصر) — تُحجب العدساتُ المعطّلة وحقولُها (RISHAD-266: لا إسقاطَ بالموقع/العنصر بعد تقاعد سقف النطاق القديم) */
-  'bassam_plan_v1': {
-    on: function (V) { return enfAnyLensOff(V); },
-    proj: function (v, V) {
-      if (!isObj(v)) return v; var o = enfShallow(v), i;
-      if (Array.isArray(v.floors)) o.floors = v.floors.map(function (fl, i0) { return enfFloorProj(V, fl, false); });
-      if (isObj(v.months)) { var mo = {}, k; for (k in v.months) { var md = enfMonthD(v.months[k]); if (!md) { mo[k] = v.months[k]; continue; } var dd = md.d.map(function (fl, i1) { return enfFloorProj(V, fl, false); }); if (md.arr) mo[k] = dd; else { mo[k] = enfShallow(v.months[k]); mo[k].d = dd; } } o.months = mo; }
-      var root = enfFloorProj(V, enfColsOf(v), false);
-      for (i = 0; i < ENF_LENS_COLS.length; i++) if (v[ENF_LENS_COLS[i]] !== undefined) o[ENF_LENS_COLS[i]] = root[ENF_LENS_COLS[i]];
-      return o;
-    },
-    merge: function (c, n, V) {
-      if (!isObj(n) || !isObj(c)) return n; var o = enfShallow(n), i, k;
-      if (Array.isArray(n.floors) && Array.isArray(c.floors)) {
-        var cf = {}; c.floors.forEach(function (fl, i0) { cf[ENF_ID.floor(fl, i0)] = fl; });
-        o.floors = n.floors.map(function (fl, i1) { var id = ENF_ID.floor(fl, i1), x = cf[id]; return x ? enfFloorMerge(V, fl, x, false) : fl; });
-      }
-      if (isObj(n.months) && isObj(c.months)) {
-        var mo = enfShallow(n.months);
-        for (k in n.months) {
-          var mn = enfMonthD(n.months[k]), mc = enfMonthD(c.months[k]); if (!mn || !mc) continue;
-          var cm = {}; mc.d.forEach(function (fl, i2) { cm[ENF_ID.floor(fl, i2)] = fl; });
-          var dd = mn.d.map(function (fl, i3) { var id = ENF_ID.floor(fl, i3), x = cm[id]; return x ? enfFloorMerge(V, fl, x, false) : fl; });
-          if (mn.arr) mo[k] = dd; else { mo[k] = enfShallow(n.months[k]); mo[k].d = dd; }
-        }
-        o.months = mo;
-      }
-      var rn0 = enfColsOf(n), rc0 = enfColsOf(c);
-      var rm = enfFloorMerge(V, rn0, rc0, false);
-      for (i = 0; i < ENF_LENS_COLS.length; i++) { var col = ENF_LENS_COLS[i]; if (rm[col] !== undefined) o[col] = rm[col]; else delete o[col]; }
-      return o;
-    }
-  },
-  /* الجولات: كالخطة + راصدُ الميدان يرى حالةَ العناصر المسنَدة إليه وحدها (P4.2-05) — الحاوياتُ والهندسةُ وemp[] تبقى */
-  'bassam_rounds_v1': {
-    on: function (V) { return V.restrict.Assigned || enfAnyLensOff(V); },
-    proj: function (v, V) {
-      if (!isObj(v)) return v; var o = {}, dk;
-      for (dk in v) {
-        var x = v[dk];
-        if (!KIVO_SCOPE._h.parseDay(dk) || !isObj(x) || !Array.isArray(x.d)) { o[dk] = x; continue; }
-        var x2 = enfShallow(x); x2.d = x.d.map(function (fl, i) { return enfFloorProj(V, fl, true); }); o[dk] = x2;
-      }
-      return o;
-    },
-    merge: function (c, n, V) {
-      if (!isObj(n) || !isObj(c)) return n; var o = enfShallow(n), dk;
-      for (dk in n) {
-        var nx = n[dk], cx = c[dk];
-        if (!KIVO_SCOPE._h.parseDay(dk) || !isObj(nx) || !Array.isArray(nx.d)) continue;
-        /* F24: يومٌ أو طابقٌ جديد يُقارن بطابقٍ بلا عناصر — فلا يُكتب فيه ما لا يراه الفاعل */
-        var cd = isObj(cx) && Array.isArray(cx.d) ? cx.d : [];
-        var x2 = enfShallow(nx); x2.d = nx.d.map(function (fl, i) { return i < cd.length && isObj(cd[i]) ? enfFloorMerge(V, fl, cd[i], true) : enfFloorMerge(V, fl, enfFloorBlank(V, fl), true); }); o[dk] = x2;
-      }
-      return o;
-    }
-  }
-};
+@@SYS:enf.proj.dstats@@@@SYS:enf.proj.plan@@@@SYS:enf.proj.daily@@};
 /* مرجعياتُ الإسقاط لطلب: جداولُ الورديات وسجلُّ الموظفين للإدارات المعنية — الشكلُ { recs, staffing, emps } ثابتٌ لمستدعيه (019k · 019r · 019t · 020 · 062 · 063)؛
    RISHAD-266: recs فارغٌ دائماً (سقفُ النطاق القديم أُلغي فلا يُقرأ سجلُّه) */
 async function enfRefsFor(env, depts, keys) {
-  var out = { recs: {}, staffing: {}, emps: {} }, i, d;
+  var out = { recs: {}, @@SYS:enf.refs.init.staff@@emps: {} }, i, d;
   for (i = 0; keys && i < depts.length; i++) { d = 'bsdept:' + depts[i] + ':bassam_employees_v1'; if (Object.prototype.hasOwnProperty.call(keys, d)) out.emps[depts[i]] = keys[d]; }   /* F24 (enfToksOf) */
-  for (i = 0; i < depts.length; i++) { d = depts[i]; if (!d || out.staffing[d] !== undefined) continue; var sk = 'bsdept:' + d + ':bassam_staffing_v3'; var raw = keys && Object.prototype.hasOwnProperty.call(keys, sk) ? keys[sk] : (keys ? null : await opResourceGet(env, sk)); out.staffing[d] = parseJson(raw, null); }
-  return out;
+@@SYS:enf.refs.load.staff@@  return out;
 }
 /* الإسقاطُ على نصّ قيمةٍ كما ستُرسل — يرمي عند الخطأ (fail-closed: المستدعي يرفض القراءة) */
 function enfProjectStr(A, k, raw, refs) {
   if (raw == null || !A || A.u.role === 'super') return raw;
+  k = resReadAs(k);   /* V7 · د5-ح (13): الأرشيفُ بإسقاط الجولات نفسِه (023 RES_READ_AS) */
   var P = parseKey(k), rn = resName(k), PJ = ENF_PROJ[rn];
   if (!PJ) return raw;
   var V = enfViewCtx(A, P.dept || (A.u.deptId || ''), rn, refs);
@@ -228,7 +173,7 @@ function enfMergeChk(A, k, nextRaw, curRaw, refs) {
   if (n === undefined || c === undefined) throw new Error('enf-merge-parse');
   var m = PJ.merge(c, n, V);
   /* F24: الجولات — ما لا يراه الفاعل يعود من الخادم أو لا يُكتب (enfFloorMerge) فلا رفضَ لفرقٍ لم يصنعه (حالةٌ منسوخةٌ من الخطة · عنصران بلا uid · تسكينٌ برمزٍ قديم) */
-  if (rn !== 'bassam_rounds_v1' && !deq(PJ.proj(JSON.parse(JSON.stringify(m)), V), n)) out.hidden = true;
+  if (@@SYS:enf.mergeChk.daily|empty="true"@@ && !deq(PJ.proj(JSON.parse(JSON.stringify(m)), V), n)) out.hidden = true;
   out.v = deq(m, c) ? curRaw : JSON.stringify(m);
   return out;
 }

@@ -40,7 +40,7 @@ async function page(module, documents, save) {
   K.BassamPageKit = { base: () => class { setState(patch, done) { const value = typeof patch === 'function' ? patch(this.state, {}) : patch; this.state = { ...this.state, ...value }; done?.(); } } };
   T.W.DCLogic = class {};
   vm.runInContext(source('src/services/332-find-day.js'), T.ctx);
-  vm.runInContext(source('src/services/420-round-factory.js'), T.ctx);
+  vm.runInContext(source('src/systems/daily/client/420-round-factory.js'), T.ctx);
   assert.equal(typeof K.BassamDayShift.prepareSet, 'function');
   assert.equal(typeof K.BassamRound.prepareShiftAp, 'function');
   vm.runInContext(source(modRel(module) + '/logic.js') + '\nglobalThis.TEST_ONLY_Page = Component;', T.ctx);

@@ -1,10 +1,19 @@
+/* V7 · د5-د2: ورقةُ برنامج الجدولة يجيب عنها مالكُه بالاسم على الناقل (انظر _bsCapOk)؛ بغيابه مطفأة */
+const _bsSched = "@staff.usable@1";
+/* V7 · د5-د2: ورقةُ التشغيل الميداني كذلك — يجيب عنها مالكُه بالناقل؛ بغيابه مطفأة */
+const _bsPlan = "@plan.usable@1";
+/* V7 · د5-هـ: ورقةُ التقرير اليومي كذلك — يجيب عنها مالكُه بالناقل؛ بغيابه مطفأة */
+const _bsDr = "@dreport.usable@1";
+/* V7 · د5-هـ: ورقةُ الجولات (المتابعة اليومية) كذلك — يجيب عنها مالكُه بالناقل؛ بغيابه مطفأة */
+const _bsRd = "@daily.usable@1";
 function _bsCapOk(c) {
   try {
     const P = KIVO.BassamPerm;
-    if (!c || !P || !P.on) return !0;
+    if (!c) return !0;
+    /* V7 · د5-د2: «@اسم» = سؤالٌ معلن على الناقل (ورقةُ برنامجٍ يجيب عنها مالكُه؛ بغيابه لا) — وغيرُه ورقةٌ في سقف الإدارة كما كان */
     return String(c)
       .split("|")
-      .some((g) => g.split("&").every((k) => !!P.on(k)));
+      .some((g) => g.split("&").every((k) => ("@" === k.charAt(0) ? !!KIVO.bus.read(k.slice(1)) : !P || !P.on || !!P.on(k))));
   } catch (e) {
     return !0;
   }
@@ -270,6 +279,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
 @@SYS:emp.logic.custody@@  impToast(t) {
     (clearTimeout(this._impT), this.setState({ impToast: t }), (this._impT = setTimeout(() => this.setState({ impToast: "" }), 3200)));
   }
+  /* V7 · د5-هـ (أمن ١): رسالةُ النجاح بعد إقرار الخادم (كما bsAck في الإدارة) — الكتابةُ المحلية ليست حفظاً */
+  impAck(t) {
+    const A = KIVO.BassamAck;
+    return (A && A.ack ? Promise.resolve(A.ack()).catch(() => !1) : Promise.resolve(!0)).then((r) => {
+      r === !0 ? this.impToast(t) : this.impToast(r && r.denied ? "لم يُحفظ — رفضه الخادم" : (A && A.PENDING) || "لم يُحفظ بعد");
+      return r === !0;
+    });
+  }
   _rowMenu(t, e) {
     const r = (e || []).filter(Boolean),
       n = this.state.rowMenu === t;
@@ -511,10 +528,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ? n.map((t) => ({ k: t.key, n: t.name, acts: e[t.key] || r }))
       : [
           { k: "emps", n: "موظفو الإدارة", acts: e.emps },
-          { k: "staff", n: "الجدول الشهري", acts: r },
-          { k: "plan", n: "الخطة التشغيلية", acts: r },
-          { k: "daily", n: "المتابعة اليومية", acts: r },
-          { k: "admin", n: "الإعدادات", acts: e.admin },
+@@SYS:emp.permPages.staff@@@@SYS:emp.permPages.plan@@@@SYS:emp.permPages.daily@@          { k: "admin", n: "الإعدادات", acts: e.admin },
         ];
   }
   bsMenusPatch() {
@@ -581,9 +595,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const e = t || new Date();
     let r = "";
     try {
-      r = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { year: "numeric", month: "numeric", day: "numeric" }).format(
-        new Date(),
-      );
+      const h = KIVO.BassamCal.hParts(new Date());   /* V7 · د5-د2: يومُ اليوم الهجري من الخدمة — المفتاحُ بالصيغة نفسِها (شهر/يوم/سنة AH) */
+      r = h.m + "/" + h.d + "/" + h.y + " AH";
     } catch (t) {}
     return e.getHours() + "|" + r;
   }
@@ -622,19 +635,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })(),
       a = (() => {
         try {
-          const t = KIVO.__BS_SRV.operations.text("bassam_staffing_v3");
-          if (t) {
-            const e = JSON.parse(t);
-            if (e && "object" == typeof e) {
-              const t = new Date();
-              return (
-                e[
-                  parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(t)) +
-                    "-" +
-                    parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(t))
-                ] || {}
-              );
-            }
+          const e = KIVO.bus.read("staff.months@1", "copy");
+          if (e && "object" == typeof e) {
+            const t = KIVO.BassamCal.hParts(new Date());   /* V7 · د5-د2 */
+            return e[t.y + "-" + t.m] || {};
           }
         } catch (t) {}
         return {};
@@ -656,25 +660,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })(),
       o = (() => {
         try {
-          const t = KIVO.__BS_SRV.operations.text("bassam_staffing_locks_v1");
-          if (t) {
-            const e = JSON.parse(t);
-            if (e && "object" == typeof e) return e;
-          }
+          const e = KIVO.bus.read("staff.locks@1", "copy");
+          if (e && "object" == typeof e) return e;
         } catch (t) {}
         return {};
       })(),
       s = i.map((t) => t.name),
       l = (function () {
         try {
-          const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
-            e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-              year: "numeric",
-              month: "numeric",
-              day: "numeric",
-            }).formatToParts(new Date()),
-            r = (t) => parseInt((e.find((e) => e.type === t) || {}).value, 10),
-            n = t[r("year") + "-" + r("month") + "-" + r("day")],
+          const t = KIVO.bus.read("dreport.doc@1") || {},   /* V7 · د5-هـ: التقريرُ بالناقل؛ بغيابه لا تقرير */
+            e = KIVO.BassamCal.hParts(new Date()),   /* V7 · د5-د2 */
+            n = t[e.y + "-" + e.m + "-" + e.d],
             a = {};
           return (
             n &&
@@ -745,18 +741,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     let P = 1448,
       T = 1;
     try {
-      ((P = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).format(e))),
-        (T = parseInt(new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { month: "numeric" }).format(e))));
+      const t = KIVO.BassamCal.hParts(e);   /* V7 · د5-د2 */
+      ((P = t.y), (T = t.m));
     } catch (t) {}
     const I = !!o[P + "-" + T],
       j = Object.keys(o).filter((t) => o[t] && 0 === t.indexOf(P + "-")).length;
     let N = {};
     try {
-      const t = KIVO.__BS_SRV.operations.text("bassam_staffing_v3");
-      if (t) {
-        const e = JSON.parse(t);
-        e && "object" == typeof e && (N = e);
-      }
+      const e = KIVO.bus.read("staff.months@1", "copy");
+      e && "object" == typeof e && (N = e);
     } catch (t) {}
     const Y = (t) => {
         if (!Object.prototype.hasOwnProperty.call(N, t)) return !1;
@@ -811,8 +804,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           placedBy: {},
         };
         try {
-          const e = ((KIVO.__BS_SRV.operations.get("bassam_plan_v1") || {}).months || {})[P + "-" + T],
-            r = e ? (Array.isArray(e) ? e : e.d) : null;
+          /* V7 · د5-د2: مواقعُ الشهر من مالكها بالناقل (ترمي كقراءة المورد إن لم يُقرأ)؛ بغيابه undefined ⇒ لا خطة */
+          const r = KIVO.bus.read("plan.sites@1", P + "-" + T);
           if (!Array.isArray(r) || !r.length) return t;
           ((t.has = !0),
             (t.floors = r.length),
@@ -831,7 +824,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           });
           let s = 0,
             l = 0;
-          (r.forEach((e) => {
+          /* V7 · د5-ج: حارسُ الغياب — «نموذجُ عناصر الموقع» (الاحتياج) خدمةُ برنامجٍ قد يغيب؛ بغيابه لا عنصرَ له احتياج: الأعدادُ صفر والحساب يمضي */
+          ((KIVO.BassamNeed ? r : []).forEach((e) => {
             (e.zones || [])
               .filter((t) => !t.off && KIVO.BassamNeed.has(t, n))
               .concat((e.gates || []).filter((t) => !t.closed && KIVO.BassamNeed.has(t, n)))
@@ -883,7 +877,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       et = (() => {
         const t = { rate: {}, days: 0 };
         try {
-          const e = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
+          const e = KIVO.bus.read("dreport.doc@1") || {},   /* V7 · د5-هـ: التقريرُ بالناقل؛ بغيابه لا تقرير */
             r = Object.keys(e).filter((t) => 0 !== t.indexOf("m:") && 0 !== t.indexOf("__") && e[t] && e[t].shifts);
           r.sort((t, e) => {
             const r = t.split("-").map(Number),
@@ -928,8 +922,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       nt = (() => {
         const t = [];
         try {
-          const e = ((KIVO.__BS_SRV.operations.get("bassam_plan_v1") || {}).months || {})[P + "-" + T];
-          ((e ? (Array.isArray(e) ? e : e.d) : null) || []).forEach((e) => {
+          (KIVO.bus.read("plan.sites@1", P + "-" + T) || []).forEach((e) => {   /* V7 · د5-د2: بالناقل؛ بغيابه لا مواقع */
             const r = {};
             ((e.gates || []).forEach((t) => {
               const e = String(null == t.num ? "" : t.num).trim();
@@ -959,7 +952,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               (lt * dt.plan) / 100,
           )
         : 0,
-      pt = e.toLocaleDateString("ar-SA-u-ca-islamic-umalqura", { month: "long" }),
+      pt = KIVO.BassamCal.hText(e, { month: "long" }),
       mt = [
         {
           group: "جاهزية القوى العاملة — من الجدول الشهري",
@@ -1403,7 +1396,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           const r = e.need - e.net,
             n = t[0];
           ne.push({
-            cap: "staff&plan&dist",
+            cap: _bsSched + "&" + _bsPlan + "&dist",   /* V7 · د5-د2: ورقةُ الجدول بالناقل */
             s: "critical",
             title: "عجز اليوم في " + e.nm + " — " + KIVO.BassamCount(r, "موظف") + "",
             action:
@@ -1434,7 +1427,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           .slice(0, 1)
           .forEach((t) => {
             ne.push({
-              cap: "staff&plan&dist",
+              cap: _bsSched + "&" + _bsPlan + "&dist",   /* V7 · د5-د2: ورقةُ الجدول بالناقل */
               s: "warning",
               title: t.nm + " بلا احتياط اليوم",
               action:
@@ -1488,7 +1481,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         e.length &&
           (e.sort((t, e) => e.gap - t.gap),
           ne.push({
-            cap: "staff",
+            cap: _bsSched,
             s: "critical",
             title: "راحاتٌ تُغرق أياماً بعينها",
             action:
@@ -1504,7 +1497,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         $.need > 0 &&
           2 * $.placed < $.need &&
           ne.push({
-            cap: "plan&dist",
+            cap: _bsPlan + "&dist",
             s: 10 * $.placed < $.need ? "critical" : "warning",
             title: "الميدان بلا تسكين يذكر",
             action:
@@ -1521,7 +1514,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     (nt.length &&
       ne.push({
-        cap: "plan&gates",
+        cap: _bsPlan + "&gates",
         s: "warning",
         title: "أرقام أبواب مكرّرة في الخطة",
         action:
@@ -1534,7 +1527,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }),
       m - h > 0 &&
         ne.push({
-          cap: "staff",
+          cap: _bsSched,
           s: "critical",
           title: "موظفون بدون تسكين",
           action:
@@ -1547,7 +1540,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }),
       o[P + "-" + T] ||
         ne.push({
-          cap: "staff",
+          cap: _bsSched,
           s: "warning",
           title: "جدول " + pt + " غير معتمد",
           action: "جدول الشهر الحالي ما زال مسودة — راجعه واعتمده بنقرة مزدوجة على كرت الشهر.",
@@ -1556,7 +1549,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }),
       kt - Mt > 1 &&
         ne.push({
-          cap: "staff",
+          cap: _bsSched,
           s: "warning",
           title: "خلل توازن الورديات",
           action:
@@ -1572,7 +1565,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }),
       J.length > 0
         ? ne.push({
-            cap: "staff",
+            cap: _bsSched,
             s: "critical",
             title: "تجاوز حد الراحات اليومي",
             action:
@@ -1587,7 +1580,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         : Tt < It &&
           Tt <= Math.round(0.75 * m) &&
           ne.push({
-            cap: "staff",
+            cap: _bsSched,
             s: "warning",
             title: 1 === Vt.length ? "ضعف جاهزية " + Vt[0] : "ضعف جاهزية " + KIVO.BassamCount(Vt.length, "يوم|متعادل", "g") + "",
             action:
@@ -1604,7 +1597,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       U &&
         !H &&
         ne.push({
-          cap: "staff",
+          cap: _bsSched,
           s: "critical",
           title: "لا توجد أيام راحة مسجّلة",
           action: "لم تُسجَّل أي أيام راحة — المؤشر لا يعكس الجاهزية الحقيقية. سجّل أيام الراحة الأسبوعية في الجدول الشهري.",
@@ -1614,7 +1607,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       0 === g &&
         m > 0 &&
         ne.push({
-          cap: "staff",
+          cap: _bsSched,
           s: "warning",
           title: "لا يوجد مكلفون",
           action: "لم يُكلف أي موظف بعد — فعّل التكاليف من عمود المكلفين في الجدول الشهري.",
@@ -1633,7 +1626,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         !G &&
         ((ne.length = 0),
         ne.push({
-          cap: "staff",
+          cap: _bsSched,
           s: "warning",
           title: "لم يُنشأ الجدول الشهري بعد",
           action:
@@ -1650,7 +1643,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           title: "لا توجد بيانات بعد",
           action:
             "أضف موظفي الإدارة من صفحة ««موظفي الإدارة»»" +
-            (_bsCapOk("staff") ? " ثم أنشئ الجدول الشهري" : "") +
+            (_bsCapOk(_bsSched) ? " ثم أنشئ الجدول الشهري" : "") +
             " — وستتولد التوصيات هنا تلقائياً من بياناتك الحقيقية.",
           p1: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",
           p2: "M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0",
@@ -1702,12 +1695,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       greeting: r >= 4 && r < 12 ? "صباح الخير" : r >= 12 && r < 17 ? "نهارك سعيد" : r >= 17 && r < 21 ? "مساء الخير" : "ليلة هانئة",
       timeShort: e.toLocaleTimeString("ar-SA-u-nu-latn", { hour: "2-digit", minute: "2-digit", hour12: !0 }),
       gregShort: e.toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", { weekday: "long", day: "numeric", month: "long" }),
-      hijriShort: e.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-latn", { day: "numeric", month: "long", year: "numeric" }),
-      hijriChip: e.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-latn", { month: "long", year: "numeric" }),
+      hijriShort: KIVO.BassamCal.hText(e, { day: "numeric", month: "long", year: "numeric" }),
+      hijriChip: KIVO.BassamCal.hText(e, { month: "long", year: "numeric" }),
       assignPct: String(z),
-      rdStaffOn: _bsCapOk("staff"),
-      netCovOn: G && rt.length > 0 && _bsCapOk("staff&plan&dist"),
-      netCovNoNeed: G && rt.length > 0 && _bsCapOk("staff&plan&dist") && !rt.some((t) => t.need > 0),
+      rdSchedOn: _bsCapOk(_bsSched),
+      netCovOn: G && rt.length > 0 && _bsCapOk(_bsSched + "&" + _bsPlan + "&dist"),
+      netCovNoNeed: G && rt.length > 0 && _bsCapOk(_bsSched + "&" + _bsPlan + "&dist") && !rt.some((t) => t.need > 0),
       netCovSub:
         "القوة الاسمية − راحات اليوم − الإجازات السارية − الغياب المتوقّع = القوة الصافية، مقابل احتياج الميدان" +
         (et.days
@@ -1827,16 +1820,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       s = 1,
       l = 1;
     try {
-      const t = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        }).formatToParts(e),
-        r = (e) => parseInt((t.find((t) => t.type === e) || {}).value, 10);
-      ((o = r("year")), (s = r("month")), (l = r("day")));
+      const t = KIVO.BassamCal.hParts(e);   /* V7 · د5-د2 */
+      ((o = t.y), (s = t.m), (l = t.d));
     } catch (t) {}
     const d = o + "-" + s,
-      c = r("bassam_staffing_v3", {}),
+      c = (() => {
+        try {
+          const t = KIVO.bus.read("staff.months@1", "copy");
+          if (null != t) return t;
+        } catch (t) {}
+        return {};
+      })(),
       p = c && "object" == typeof c && c[d] && "object" == typeof c[d] ? c[d] : {},
       m = (() => {
         const t = r("bassam_shift_options_v1", null);
@@ -1850,17 +1844,33 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ];
       })(),
       h = m.map((t) => t.name),
-      u = r("bassam_plan_v1", {}),
-      g = ((u && u.months) || {})[d],
-      f = (g && (Array.isArray(g) ? g : g.d)) || [],
+      /* V7 · د5-د2: مواقعُ الشهر من مالكها بالناقل («text»: من نصّ المورد كما كانت تُقرأ)؛ بغيابه أو تعذّرها لا مواقع */
+      f = (() => {
+        try {
+          return KIVO.bus.read("plan.sites@1", d, "text") || [];
+        } catch (t) {}
+        return [];
+      })(),
       b = [];
     let A = 0,
       x = 0;
     f.forEach((t) => {
       ((t.gates || []).forEach((t) => b.push(t)), (A += (t.zones || []).length), (x += (t.marks || []).length));
     });
-    const y = r("bassam_dreport_v1", {}),
-      v = r("bassam_rounds_v1", {}),
+    const y = (() => {
+        try {
+          const t = KIVO.bus.read("dreport.doc@1", "text");   /* V7 · د5-هـ: نسخةٌ من التقرير بالناقل؛ بغيابه لا تقرير */
+          if (null != t) return t;
+        } catch (t) {}
+        return {};
+      })(),
+      v = (() => {
+        try {
+          const t = KIVO.bus.read("daily.days@1", (k) => r(k, {}));   /* V7 · د5-هـ: أيامُ الجولات من مالكها؛ بغيابه لا جولة */
+          if (null != t) return t;
+        } catch (t) {}
+        return {};
+      })(),
       w = i.length,
       S = (t) => String(t || "").replace("الوردية ", ""),
       k = (t) => {
@@ -2148,7 +2158,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       _on = (k) => {
         try {
           const P = KIVO.BassamPerm;
-          return !P || !P.on || P.on(k);
+          return "@" === String(k).charAt(0) ? !!KIVO.bus.read(String(k).slice(1)) : !P || !P.on || P.on(k);
         } catch (t) {
           return !0;
         }
@@ -2266,7 +2276,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           tip: "أخفّ وردية ÷ أثقلها: " + Dt + " ÷ " + Wt + " = " + Zt + "٪ · الفجوة الكبيرة ترهق وردية وتريح أخرى بلا سبب تشغيلي.",
         },
         {
-          cap: "plan",
+          cap: _bsPlan,
           nm: "كشف أيام الأسبوع — " + KIVO.BassamCount(Xt, "يوم|مغطّى") + " من 7",
           p: Math.round((100 * Xt) / 7),
           lbl: Xt + "/7",
@@ -2339,7 +2349,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ],
       ee = [
         {
-          cap: "dreport",
+          cap: _bsDr,
           nm: "سحب تقرير الورديات — " + X + " من " + R * h.length,
           p: n(X, R * h.length),
           tip:
@@ -2356,7 +2366,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "٪ · التقرير مصدر «من على رأس العمل فعلاً» — وبدونه الغياب لا يُرى.",
         },
         {
-          cap: "daily/rounds",
+          cap: _bsRd,
           nm: "توثيق الجولات الميدانية — " + H + " من " + KIVO.BassamCount(R, "يوم", "g") + "",
           p: n(H, R),
           tip:
@@ -2369,7 +2379,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "٪ · الجولة حال الميدان كما شوهد لا كما خُطّط — منها يُتعلَّم للغد.",
         },
         {
-          cap: "daily/rounds",
+          cap: _bsRd,
           nm: "اعتماد الجولات — قفل سجل اليوم",
           p: H ? n(q, H) : 0,
           tip:
@@ -2380,7 +2390,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             " مسجّلة · الاعتماد يحوّل الجولة سجلاً مقفولاً يُحاسَب عليه — والمسودة تُعدَّل بلا أثر.",
         },
         {
-          cap: "dreport",
+          cap: _bsDr,
           nm: "تأشير الإجازات — " + KIVO.BassamCount(K, "تأشيرة") + " هذا الشهر",
           p: K > 0 ? 100 : 0,
           tip:
@@ -2391,7 +2401,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ") · تُسجَّل من قائمة التأشير بنوعها ليومها فقط، فيسقط صاحبها من عدّ يومه بدل أن يظهر «غائباً» ظلماً.",
         },
         {
-          cap: "dreport",
+          cap: _bsDr,
           nm: "اكتمال دورة اليوم — الثلاثة معاً",
           p: n(Q, R),
           tip:
@@ -2461,11 +2471,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           (t) =>
             ({
               p1: !0,
-              p2: _on("plan") && _on("gates"),
-              p3: _on("plan") && _on("dist"),
-              p4: _on("staff"),
-              p5: _on("plan") && _on("dist"),
-              p6: _on("dreport") || _on("daily/rounds"),
+              p2: _on(_bsPlan) && _on("gates"),
+              p3: _on(_bsPlan) && _on("dist"),
+              p4: _on(_bsSched),
+              p5: _on(_bsPlan) && _on("dist"),
+              p6: _on(_bsDr) || _on(_bsRd),
             })[t.key] && t.rows.length,
         )
         .map((t, e) => ({ ...t, n: ["١", "٢", "٣", "٤", "٥", "٦"][e], pct: re(t.rows) })),
@@ -2501,7 +2511,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         " من 100.",
       pe =
         0 === w
-          ? _bsCapOk("staff")
+          ? _bsCapOk(_bsSched)
             ? "لا يُحسب المؤشر قبل وجود موظفين — أضف الموظفين وأنشئ الجدول الشهري ليبدأ من بياناتك الحقيقية."
             : "لا يُحسب المؤشر قبل وجود موظفين — أضف موظفي الإدارة ليبدأ من بياناتك الحقيقية."
           : "الناقص لرفع المؤشر: " +
@@ -2841,7 +2851,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     (ut &&
       (vt < ut || ft.length) &&
       Fe.push({
-        cap: "plan&gates",
+        cap: _bsPlan + "&gates",
         s: "critical",
         title: "صنّف أولوية التغطية (أ/ب/ج)" + (ft.length ? " — ووحّد الأرقام المكرّرة" : ""),
         action:
@@ -2867,7 +2877,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       Tt &&
         Y < Tt &&
         Fe.push({
-          cap: "plan&dist",
+          cap: _bsPlan + "&dist",
           s: "critical",
           title: "راجع احتياج أبوابك باباً باباً بدل الرقم الموروث",
           action:
@@ -2889,7 +2899,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       j > 0 &&
         $t < 50 &&
         Fe.push({
-          cap: "plan&dist",
+          cap: _bsPlan + "&dist",
           s: "critical",
           title: "نفّذ التوزيع — الخطوة الواقفة في الجاهزية كلها",
           action:
@@ -2907,7 +2917,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       Jt.length &&
         _t.length &&
         Fe.push({
-          cap: "staff",
+          cap: _bsSched,
           s: "warning",
           title: "أعد توزيع الراحات على أيام الأسبوع",
           action:
@@ -2926,7 +2936,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }),
       Q < R &&
         Fe.push({
-          cap: "dreport|daily/rounds",
+          cap: _bsDr + "|" + _bsRd,
           s: "warning",
           title: "حوّل المتابعة إلى عادةٍ يومية بثلاث لبنات",
           action:
@@ -2969,14 +2979,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       })),
       Te = (function () {
         try {
-          const t = KIVO.__BS_SRV.operations.get("bassam_dreport_v1") || {},
-            e = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
-              year: "numeric",
-              month: "numeric",
-              day: "numeric",
-            }).formatToParts(new Date()),
-            r = (t) => parseInt((e.find((e) => e.type === t) || {}).value, 10),
-            n = t[r("year") + "-" + r("month") + "-" + r("day")],
+          const t = KIVO.bus.read("dreport.doc@1") || {},   /* V7 · د5-هـ: التقريرُ بالناقل؛ بغيابه لا تقرير */
+            e = KIVO.BassamCal.hParts(new Date()),   /* V7 · د5-د2 */
+            n = t[e.y + "-" + e.m + "-" + e.d],
             a = {};
           return (
             n &&
@@ -3097,7 +3102,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ie.bd,
       rdMiss: pe,
       rdMonthLbl:
-        "مؤشر جاهزية التشغيل · " + e.toLocaleDateString("ar-SA-u-ca-islamic-umalqura-nu-latn", { month: "long", year: "numeric" }),
+        "مؤشر جاهزية التشغيل · " + KIVO.BassamCal.hText(e, { month: "long", year: "numeric" }),
       rdCols: ge,
       rdCalc: ue,
       rdTopTxt: se.name + " " + se.pct + "٪",
@@ -3113,11 +3118,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       rdKpis: ye.filter(
         (t) =>
           ({
-            "نطاق الميدان": _on("plan") && _on("gates"),
-            "احتياج الشهر": _on("plan") && _on("dist"),
-            "مجدولون على الورديات": _on("staff"),
-            "موزّعون على المواقع": _on("plan") && _on("dist"),
-            "أيام موثّقة بجولة": _on("daily/rounds"),
+            "نطاق الميدان": _on(_bsPlan) && _on("gates"),
+            "احتياج الشهر": _on(_bsPlan) && _on("dist"),
+            "مجدولون على الورديات": _on(_bsSched),
+            "موزّعون على المواقع": _on(_bsPlan) && _on("dist"),
+            "أيام موثّقة بجولة": _on(_bsRd),
           })[t.label] !== !1,
       ),
       rdStepsN: String(_nS),
@@ -3327,48 +3332,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           const e = s(t);
           return "active" === e ? 0 : "frozen" === e ? 1 : 2;
         },
-        e = (() => {
-          try {
-            const t = JSON.parse(localStorage.getItem("bassam_perm_tpls_v1"));
-            return Array.isArray(t) ? t : [];
-          } catch (t) {
-            return [];
-          }
-        })(),
-        r = (t) =>
-          Object.keys(t || {})
-            .filter((e) => (t[e] || []).length)
-            .sort()
-            .map((e) => e + ":" + (t[e] || []).slice().sort().join(","))
-            .join("|"),
-        a =
-          ((() => {
-            try {
-              const t = KIVO.BassamPerm;
-              return t ? t.deptCap() : [];
-            } catch (t) {
-              return [];
-            }
-          })(),
-          e.map((t) => {
-            const e = KIVO.BassamPerm;
-            return e && e.tplSig ? e.tplSig(t.perms) : r(t.perms || {});
-          })),
+        /* V7 · د5-هـ (44): الترتيبُ بترتيب أدوار الإدارة (محرّك الأدوار) — من لا دور له في آخرها */
+        e = this.PERM_ROLES(),
         i = (t) => {
-          try {
-            const n = KIVO.BassamPerm;
-            if (!n || !n.empPerms || !t) return 99;
-            const i = r(n.empPerms(t) || {});
-            if (!i) return 99;
-            const o = n.tplOfEmp ? n.tplOfEmp(t) : "";
-            if (o) {
-              const t = e.findIndex((t) => t.id === o);
-              if (-1 !== t) return t;
-            }
-            return 98;
-          } catch (t) {
-            return 99;
-          }
+          const q = t ? this.PERM_ROLE_OF(t) : null,
+            k = q ? e.findIndex((x) => x.id === q.id) : -1;
+          return -1 === k ? 99 : k;
         },
         l = new Intl.Collator("ar", { sensitivity: "base", numeric: !0 });
       n = [...n].sort((e, r) => t(e) - t(r) || i(o(e)) - i(o(r)) || l.compare(String(e.name || ""), String(r.name || "")));
@@ -3418,18 +3387,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             f = KIVO.BassamPerm || null,
             b = f && "none" !== r ? f.empPerms(a) : {},
             A = Object.keys(b).filter((t) => (b[t] || []).length).length,
-            x = (() => {
-              if (!A || !_bsCapOk("admin/ptpls")) return "";
-              const t = this.PERM_TPLS(),
-                r = f && f.tplOfEmp ? f.tplOfEmp(a) : "";
-              if (r) {
-                const e = t.find((t) => t.id === r);
-                if (e) return e.name;
-              }
-              return "";
-            })();
+            /* V7 · د5-هـ (44): اسمُ الصلاحية = اسمُ الدور الممنوح (permLabel ← محرّك الأدوار) */
+            x = "none" !== r && KIVO.Perm44 && m && m.permLabel ? m.permLabel(a) || "" : "";
           return {
-            permLabel: "none" === r ? "—" : h ? "مدير الإدارة ★" : A ? x : "بلا صلاحيات",
+            permLabel: "none" === r ? "—" : h ? "مدير الإدارة ★" : x || (A ? "صلاحيات مخصّصة" : "بلا صلاحيات"),
             permTip:
               "none" === r
                 ? "لا صلاحيات بلا حساب دخول — فعّل الحساب أولاً"
@@ -3437,9 +3398,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? "مدير الإدارة — يدير حسابات موظفيها وصلاحياتهم ويمنحهم مما يملكه؛ وصفحاتُه كما في ورقته ما لم يوسّعها مسؤول المنصة"
                   : f && f.deptCap().length
                     ? A
-                      ? (x ? x + " — " : "") + "متاح له " + KIVO.BassamCount(A, "صفحة") + " · الضبط من الجدول الشهري"
-                      : "لم تُمنح له أي صفحة بعد — من قائمة حساب الدخول ← الصلاحيات"
-                    : "لم يُحدَّد سقف صفحات لهذه الإدارة — حدّده من: مركز إدارة رشاد ← الإدارات ← سقف الصفحات",
+                      ? (x ? x + " — " : "") + "الضبط من «الإعدادات ← الصلاحيات ← الأشخاص»"
+                      : "لا دور له بعد — أسنِده من «الإعدادات ← الصلاحيات ← الأشخاص»"
+                    : "لم يُحدَّد سقف هذه الإدارة — يحدّده مسؤول المنصة من: مركز إدارة رشاد ← الإدارات ← الصلاحيات ← الأنظمة",
             permBadgeStyle:
               "font-size:12px;font-weight:400;white-space:nowrap;color:" +
               (h ? "var(--fg-x9a7e40)" : "none" !== r && A ? "#141414" : "#cbd5e1"),
@@ -3512,9 +3473,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               if (!e || !e.freezeStaff) return;
               const n = e.freezeStaff(a);
               (this.setState({ accOpen: null }),
-                this.impToast(
-                  n && n.ok ? "جُمِّد حساب " + t.name + " — لن يستطيع الدخول حتى تُعيد تفعيله" : (n && n.err) || "تعذّر التجميد",
-                ));
+                n && n.ok
+                  ? this.impAck("جُمِّد حساب " + t.name + " — لن يستطيع الدخول حتى تُعيد تفعيله")
+                  : this.impToast((n && n.err) || "تعذّر التجميد"));
             },
             /* دفعة الواجهات (2أ): حسابٌ مفتاحُه mgr: لا تُنزع عنه الشارة (الخادم: mgr-key) — يُحذف من صفحة الإدارات أو يبقى مديراً */
             accMgrShow: u && "active" === r && !(h && /^mgr:/.test(String(a || ""))),
@@ -3527,13 +3488,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               if (!e || !e.setStaffMgr) return;
               const r = e.setStaffMgr(a, !h);
               (this.setState({ accOpen: null, permTick: (this.state.permTick || 0) + 1 }),
-                this.impToast(
-                  r && r.ok
-                    ? h
-                      ? "أُلغي تعيين " + t.name + " مديراً — لم يعد يدير الحسابات والصلاحيات، وبقيت صفحاتُه كما في ورقته"
-                      : "عُيِّن " + t.name + " مديراً للإدارة — يدير حسابات موظفيها وصلاحياتهم ويمنحهم مما يملكه، وتبقى صفحاتُه كما في ورقته الحالية ما لم يوسّعها مسؤول المنصة"
-                    : (r && r.err) || "تعذّر التعيين",
-                ));
+                r && r.ok
+                  ? this.impAck(
+                      h
+                        ? "أُلغي تعيين " + t.name + " مديراً — لم يعد يدير الحسابات والصلاحيات، وبقيت صفحاتُه كما في ورقته"
+                        : "عُيِّن " + t.name + " مديراً للإدارة — يدير حسابات موظفيها وصلاحياتهم ويمنحهم مما يملكه، وتبقى صفحاتُه كما في ورقته الحالية ما لم يوسّعها مسؤول المنصة",
+                    )
+                  : this.impToast((r && r.err) || "تعذّر التعيين"));
             },
           };
         })(),
@@ -4407,7 +4368,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               l && l.ok ? t++ : n++;
             }),
               this.setState({ permTick: (this.state.permTick || 0) + 1 }),
-              this.impToast(
+              (t ? this.impAck.bind(this) : this.impToast.bind(this))(
                 "تجميد الحسابات: جُمِّد " +
                   t +
                   (e ? " · بلا حساب نشط " + e : "") +

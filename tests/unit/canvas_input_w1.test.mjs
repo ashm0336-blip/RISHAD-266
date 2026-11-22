@@ -1,6 +1,6 @@
 /* SOT-054 · SOT-056 · SOT-154: الجزء المثبت هنا هو توزيع لمس/قلم اصطناعي ورفض راحة الكف على طبقة الإدخال الحقيقية؛
    يظل اختبار الجوال والقلم الفعليين خارج هذه المحاكاة.
-   W1 · الكانفس على اللوحي — طبقةُ إدخال الخريطة الحقيقية (src/components/560-canvas-input.js) داخل node:vm فوق محاكٍ صغيرٍ لتوزيع الأحداث
+   W1 · الكانفس على اللوحي — طبقةُ إدخال الخريطة الحقيقية (src/systems/_multi/client/560-canvas-input.js) داخل node:vm فوق محاكٍ صغيرٍ لتوزيع الأحداث
    كما في المتصفح: التقاطُ النافذة ثمّ الوثيقة · ثمّ معالجاتُ React على العناصر صعوداً (onPointerDown …) · stopPropagation يوقف ما بعده ·
    والإصبعُ مأسورٌ ضمناً بعنصر نزوله. منطقُ الصفحة بديلٌ صغيرٌ بقواعد الخطة نفسِها: ضغطةُ المصلّى تُوقف الحدثَ وتبدأ سحبه (zdrag) ·
    الضغطُ على الخريطة الفارغة سحبٌ للعرض · الرفعُ يعتمد السحبَ ويحفظ. بياناتٌ اصطناعية (TEST_ONLY) — لا شبكةَ ولا متصفح.
@@ -14,7 +14,7 @@ import vm from 'node:vm';
 import path from 'node:path';
 import { SRC } from './harness.mjs';
 
-const FILE = process.env.CANVAS_SRC || path.join(SRC, 'components', '560-canvas-input.js');
+const FILE = process.env.CANVAS_SRC || path.join(SRC, 'systems', '_multi', 'client', '560-canvas-input.js');
 const PROP = { pointerdown: 'onPointerDown', pointermove: 'onPointerMove', pointerup: 'onPointerUp', pointercancel: 'onPointerCancel', click: 'onClick' };
 
 /* ── المحاكي: عناصر · توزيعُ الأحداث · مؤقّتاتٌ وإطاراتٌ يدوية · ساعةٌ قابلةٌ للضبط ── */

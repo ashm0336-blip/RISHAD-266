@@ -180,7 +180,7 @@ test('Profile field observation awaits its existing service ACK and passes the o
 test('Employee day facts never turn an unloaded or failed cloud shift read into an available-employee claim', async () => {
   const W = await world();
   try {
-    vm.runInContext(read('src/services/530-emp-day-facts.js'), W.T.ctx);
+    vm.runInContext(read('src/systems/staff/client/530-emp-day-facts.js'), W.T.ctx);
     assert.throws(() => W.T.W.KIVO.BassamDay.shiftWindow('TEST_ONLY unloaded shift'), /operations-read-required/);
     await W.ops.read([W.ops.key('bassam_shift_options_v1')]);
     assert.equal(W.T.W.KIVO.BassamDay.shiftWindow('TEST_ONLY absent shift'), null, 'Only confirmed absence keeps the established unknown-window behavior');

@@ -42,7 +42,7 @@ const ok = (r, m) => assert.ok(r.ok, m + ' — ' + r.show);
 const no = (r, why, m) => { assert.ok(!r.ok, m + ' — accepted'); assert.equal(r.why, why, m + ' — ' + r.show); };
 const narrow = async (W, f) => { const P = cp(stored(W.env, KP)); f(P); ok(await put(W, 'su', P), 'the system administrator writes the ceiling'); };
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + '(a) F05 · F06: a manager saves a sheet still holding latent leaves and lenses; a new out-of-ceiling leaf or lens is refused «cap»', needs('tasks'), async () => {
@@ -111,21 +111,20 @@ for (const mode of ['legacy', 'enforce']) {
   });
 }
 
-test('(c) a narrowed grant gives no access on the server: writePages · audCanDept · myPermsOf read the sheet cut to the ceiling, and it is back on widening', needs('tasks'), async () => {
+test('(c) a narrowed grant gives no access on the server: audCanDept · myPermsOf read the sheet cut to the ceiling, and it is back on widening', needs('tasks'), async () => {
   const W = await world({ mode: 'legacy' });
-  const IN = await internals(['writePages', 'audCanDept', 'myPermsOf']);
+  const IN = await internals(['audCanDept', 'myPermsOf', 'enfAttachGrantsKeys']);   /* V7 · د5-ح: writePages حُذف مع الوضع القديم — والفاعلُ بالمحرّك النافذ */
   const P = stored(W.env, KP);
   P.subs = { [D]: { admin: ['backup', 'oplog', 'shifts', 'ptpls', 'import'] } };
   P.emps[D].tst_e_imp = { 'admin/import': ['view', 'add'], 'admin/oplog': ['view'], tasks: ['view'] };
-  const A = (perms) => ({ u: { id: 'tst_imp', role: 'staff', deptId: D, ekey: 'tst_e_imp' }, users: stored(W.env, 'bassam_auth_users_v1'), perms, depts: stored(W.env, 'bassam_depts_v1'), nodes: stored(W.env, 'bassam_gdepts_v1'), off: [] });
+  const A = (perms) => IN.enfAttachGrantsKeys({ u: { id: 'tst_imp', role: 'staff', deptId: D, ekey: 'tst_e_imp' }, users: stored(W.env, 'bassam_auth_users_v1'), perms, depts: stored(W.env, 'bassam_depts_v1'), nodes: stored(W.env, 'bassam_gdepts_v1'), off: [], enf: { mode: 'enforce', perm: { applied: false } } }, {});
   const wide = A(P);
-  assert.deepEqual(cp(IN.writePages(wide, D)), ['admin']); assert.equal(IN.audCanDept(wide, D), true);
+  assert.equal(IN.audCanDept(wide, D), true);
   const N = cp(P); N.subs[D].admin = ['backup', 'shifts'];
   const nar = A(N);
-  assert.deepEqual(cp(IN.writePages(nar, D)), [], 'no write through a switched-off tab');
   assert.equal(IN.audCanDept(nar, D), false, 'no activity log through a switched-off tab');
   const mp = IN.myPermsOf(nar, D);
   assert.ok(!mp['admin/import'] && !mp['admin/oplog'] && mp.tasks, 'myPermsOf: cut to the ceiling');
   assert.deepEqual(N.emps[D].tst_e_imp['admin/import'], ['view', 'add'], 'and nothing deleted');
-  assert.deepEqual(cp(IN.writePages(A(P), D)), ['admin'], 'widened: back');
+  assert.equal(IN.audCanDept(A(P), D), true, 'widened: back');
 });

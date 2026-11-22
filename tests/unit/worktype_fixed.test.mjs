@@ -12,7 +12,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 test('الجدولُ الشهري: لا إضافةَ ولا تسميةَ ولا حذفَ لنوع العمل في الواجهة', () => {
-  const all = rd('src/modules/staff/view.html');
+  const all = rd('src/systems/staff/client/view.html');
   const i = all.indexOf('data-label="نوع العمل"'); assert.ok(i > 0, 'خانةُ نوع العمل موجودة');
   const v = all.slice(i, all.indexOf('<td ', i + 10));   /* كتلةُ خانة نوع العمل وحدها (خاناتُ الرمز والوردية لها قوائمُها الحرّة) */
   assert.doesNotMatch(v, /إضافة نوع عمل/, 'حقلُ «إضافة نوع عمل» أُزيل');
@@ -27,7 +27,7 @@ test('الجدولُ الشهري: لا إضافةَ ولا تسميةَ ولا 
 });
 
 test('المنطق: القائمةُ ثابتة (ميدانيـ / ـة · إداريـ / ـة) ولا تُقرأ من bassam_options_v1 · القيمةُ خارجها لا تُكتب · الإضافةُ والتسميةُ والحذف تُرفض', () => {
-  const l = rd('src/modules/staff/logic.js');
+  const l = rd('src/systems/staff/client/logic.js');
   assert.match(l, /wkFixed\(\) \{\s*return \["ميدانيـ \/ ـة", "إداريـ \/ ـة"\];/, 'القائمةُ المغلقة معلنةٌ في المصدر');
   const load = l.slice(l.indexOf('  loadWkOpts() {'), l.indexOf('  wkFixedMsg() {'));
   assert.doesNotMatch(load, /bassam_options_v1/, 'loadWkOpts لا يقرأ القائمةَ الحرّة القديمة');

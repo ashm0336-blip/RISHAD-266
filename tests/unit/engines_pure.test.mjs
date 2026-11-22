@@ -5,9 +5,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { internals } from './internals.mjs';
 import { needs, hasSystem } from './harness.mjs';
-const DS_ONLY = ['dsDayOk', 'dsStampOk', 'dsLockOk', 'dsLockRec', 'dsLockedIn'];   /* V7 · د2-ب: دوالُّ نظام الإحصائيات تُطلب بحضوره فقط */
+const DS_ONLY = ['dsDayOk', 'dsStampOk', 'dsLockOk'];   /* V7 · د5-ح: dsLockRec · dsLockedIn حُذفا مع dstatsRule القديم */   /* V7 · د2-ب: دوالُّ نظام الإحصائيات تُطلب بحضوره فقط */
 const W = await internals(['unCheck', 'pwCheck', 'normKey', 'normId', 'isDeviceKey', 'isMgrKey', 'parseKey', 'stripKey', 'isObj', 'isEmptyVal', 'parseJson', 'eq', 'eqExcept',
-  'dsDayOk', 'dsStampOk', 'dsToday', 'dsLockOk', 'dsLockRec', 'dsLockedIn', 'opMatch', 'opPrefix', 'splitOps', 'secHeaders', 'bodyLimit', 'isLocal', 'enfTestHostOk', 'enfIsTestUser',
+  'dsDayOk', 'dsStampOk', 'dsToday', 'dsLockOk', 'opMatch', 'opPrefix', 'splitOps', 'secHeaders', 'bodyLimit', 'isLocal', 'enfTestHostOk', 'enfIsTestUser',
   'legacyHash', 'hex', 'pbkdf2', 'hashPw', 'verifyPw', 'readCookie'].filter((n) => hasSystem('dstats') || !DS_ONLY.includes(n)));
 
 test('هويةُ الدخول: 10 أرقام بالضبط (جوال/هوية) — لا فراغات ولا حروف ولا أرقام عربية', () => {
@@ -55,21 +55,9 @@ test('dsToday: اليومُ الهجري (أم القرى) بتوقيت الري
   assert.ok(a && b && (b.d === a.d + 1 || (b.d === 1 && a.d >= 29)), 'قبل 03:00 الرياض يُحسب اليومُ السابق: ' + JSON.stringify([a, b]));
   assert.equal(W.dsToday(NaN), null, 'وقتٌ غيرُ صالح ⇒ null');
 });
-test('أقفالُ الإحصائيات: dsLockOk · dsLockRec · dsLockedIn (معتمد · شهرٌ منقضٍ · يومٌ مفتوح/مقفل يدوياً)', needs('dstats'), () => {
+test('أقفالُ الإحصائيات: dsLockOk (شكلُ السجل)', needs('dstats'), () => {
   assert.equal(W.dsLockOk(undefined), true); assert.equal(W.dsLockOk(true), true); assert.equal(W.dsLockOk({ ap: 1 }), true); assert.equal(W.dsLockOk({ ap: 2 }), false);
   assert.equal(W.dsLockOk({ dopen: { '5': 1 } }), true); assert.equal(W.dsLockOk({ dopen: { '55x': 1 } }), false); assert.equal(W.dsLockOk({ zz: 1 }), false); assert.equal(W.dsLockOk('x'), false);
-  assert.deepEqual(W.dsLockRec({ 'haram|1448-4': true }, 'haram', 1448, 4), { ap: 1 }); assert.deepEqual(W.dsLockRec({}, 'haram', 1448, 4), {});
-  const T = { y: 1448, m: 4, d: 20 };
-  assert.equal(W.dsLockedIn({ 'haram|1448-4': true }, 'haram', 1448, 4, 1, T), true, 'شهرٌ معتمد: مقفل');
-  assert.equal(W.dsLockedIn({}, 'haram', 1448, 3, 10, T), true, 'شهرٌ منقضٍ بلا سجل: مقفل');
-  assert.equal(W.dsLockedIn({ 'haram|1448-3': { mo: 1 } }, 'haram', 1448, 3, 10, T), true, 'شهرٌ منقضٍ فُتح بأثر رجعي (mo) لكنّ اليومَ المنقضي يبقى مقفلاً حتى يُفتح (dopen)');
-  assert.equal(W.dsLockedIn({ 'haram|1448-3': { mo: 1, dopen: { '10': 1 } } }, 'haram', 1448, 3, 10, T), false, 'mo + dopen لليوم: مفتوح');
-  assert.equal(W.dsLockedIn({ 'haram|1448-3': { dopen: { '10': 1 } } }, 'haram', 1448, 3, 10, T), true, 'dopen بلا mo في شهرٍ منقضٍ: ما زال مقفلاً');
-  assert.equal(W.dsLockedIn({}, 'haram', 1448, 4, 19, T), true, 'يومٌ منقضٍ في الشهر الحالي: مقفل');
-  assert.equal(W.dsLockedIn({ 'haram|1448-4': { dopen: { '19': 1 } } }, 'haram', 1448, 4, 19, T), false, 'يومٌ منقضٍ فُتح (dopen): مفتوح');
-  assert.equal(W.dsLockedIn({}, 'haram', 1448, 4, 20, T), false, 'اليوم: مفتوح');
-  assert.equal(W.dsLockedIn({ 'haram|1448-4': { dshut: { '25': 1 } } }, 'haram', 1448, 4, 25, T), true, 'يومٌ لم ينقضِ أُقفل يدوياً (dshut): مقفل');
-  assert.equal(W.dsLockedIn({}, 'haram', 1448, 5, 1, T), false, 'شهرٌ لاحق: مفتوح');
 });
 test('محرّكُ مواضع الاعتماد: opMatch (نمطٌ بطول المسار · *) · opPrefix (بادئة) · splitOps (فصلُ الاعتمادات عن البقية)', () => {
   assert.equal(W.opMatch(['days.*.ap'], ['days', '3', 'ap']), true); assert.equal(W.opMatch(['days.*.ap'], ['days', '3']), false); assert.equal(W.opMatch(['days.*.ap'], ['days', '3', 'mo']), false);
@@ -88,7 +76,7 @@ test('ترويساتُ الأمن: nosniff · SAMEORIGIN · HSTS خارج localh
   const l = W.secHeaders(new URL('http://localhost:8787/api/ping'), false);
   assert.equal(l['Strict-Transport-Security'], undefined, 'لا HSTS على localhost'); assert.equal(l['Content-Security-Policy'], undefined, 'لا CSP لغير HTML');
   assert.equal(W.isLocal(new URL('http://127.0.0.1:9/')), true); assert.equal(W.isLocal(new URL('https://localhost/')), false);
-  assert.equal(W.bodyLimit('/api/save'), 8 * 1024 * 1024); assert.equal(W.bodyLimit('/api/img/x'), 512 * 1024); assert.equal(W.bodyLimit('/api/login'), 64 * 1024);
+  assert.equal(W.bodyLimit('/api/save'), 16 * 1024 * 1024);   /* V7 · د5-ح: كالإنتاج */ assert.equal(W.bodyLimit('/api/img/x'), 512 * 1024); assert.equal(W.bodyLimit('/api/login'), 64 * 1024);
 });
 test('حارسُ مضيف أداة الاختبار (ADR-004): Production مرفوضٌ دائماً · KIVO_TEST_HOST بالضبط · وإلا test.* أو مضيفٌ محلي', () => {
   const U = (h) => new URL('https://' + h + '/api/authz-test');

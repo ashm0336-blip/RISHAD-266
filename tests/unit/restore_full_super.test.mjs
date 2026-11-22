@@ -27,7 +27,7 @@ async function world() {
   const dm = await C.login('0000000101', '70101'); assert.ok(dm.ok, 'tst_dm1');
   return { env, C, su, dm };
 }
-const K = 'bsdept:tst_d1:bassam_perm_tpls_v1';   /* schema 10: bassam_options_v1 is typed operational (/api/save refuses it: operations-request-envelope); the policy under test is on /api/save restore markers */
+const K = 'bsdept:tst_d1:bassam_last_export_v1';   /* V7 · د5-ح: كان bassam_perm_tpls_v1 (سجلُّ القوالب حُذف كاتبُه) — موردُ إدارةٍ عاديٌّ بسقف admin/backup · schema 10: bassam_options_v1 is typed operational (/api/save refuses it: operations-request-envelope); the policy under test is on /api/save restore markers */
 const getv = async (C, ck, k) => ((await C.api('/api/get?keys=' + encodeURIComponent(k), { cookie: ck })).j.keys || {})[k];
 const restore = async (C, ck, set, scope, su) => { const base = {}; for (const k of Object.keys(set)) { const g = await getv(C, su || ck, k); if (g && g.rev != null) base[k] = g.rev; } return C.api('/api/save', { method: 'POST', cookie: ck, body: { set, del: [], base, ops: Object.fromEntries(Object.keys(set).map(k => [k, { op: 'backup.restore', scope, mode: 'replace', reason: 'اختبار SOT-190' }])) } }); };
 const den = (r, k) => (r.j && r.j.denied || {})[k];
@@ -51,7 +51,7 @@ test('(ج)(د) مفتاحٌ عامّ ⇒ not-mgr · نطاقُ الإدارة: �
   const ok = await restore(C, dm.ck, { [K]: JSON.stringify([{ id: 'TEST_ONLY_tpl', name: 'TEST_ONLY dept-ok' }]) }, 'dept', su.ck);
   assert.ok(!den(ok, K), 'بالمفتاح: ' + JSON.stringify(ok.j.denied || {}).slice(0, 160));
   const dm2 = await C.login('0000000102', '70102'); assert.ok(dm2.ok, 'tst_dm2');
-  const K2 = 'bsdept:tst_d2:bassam_perm_tpls_v1';
+  const K2 = 'bsdept:tst_d2:bassam_last_export_v1';
   const d = await restore(C, dm2.ck, { [K2]: JSON.stringify([{ id: 'TEST_ONLY_tpl', name: 'TEST_ONLY x' }]) }, 'dept', su.ck);
   const dd = den(d, K2); assert.ok(d.status === 403 || dd, 'بلا مفتاح backup.restore مرفوضة: ' + JSON.stringify(d.j).slice(0, 160)); if (dd) assert.equal(dd.detail, 'mgr-no-key', JSON.stringify(dd));
 });

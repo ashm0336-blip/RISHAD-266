@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/services/442-notif-observer.js.tpl */
 /* ═══ التنبيهاتُ والتعاميم — المراقب: استنتاجُ الأحداث من فروق المخازن · الفحصُ الدوري · التشغيل ═══
    KIVO_257 · AUD-010: جزءٌ 2/2 من «src/services/440-notifications.js (الـIIFE الثالثة)» السابقة — مقسومةً بالمسؤولية بـtools/split_iife.mjs (tools/split/440-notifications.json)؛
    التبعياتُ بين الأجزاء صريحةٌ هنا وعبر المساحة الداخلية window.__BS_I.notif وحدها. */
@@ -52,11 +53,9 @@
       if (parts.length) emit('pm_chg', { dept: d, own: [ek], vars: { 'الفعل': '', 'الصفحات': parts.join(' · '), 'المُغيّر': who() } }); }); });
     var oc = o.caps || {}, nc = n.caps || {};
     Object.keys(nc).forEach(function(d){ if (eq(oc[d] || [], nc[d] || [])) return; var nm = function(k){ try { return P().nameOf(k); } catch(e){ return k; } }; var add = (nc[d] || []).filter(function(k){ return (oc[d] || []).indexOf(k) === -1; }), rem = (oc[d] || []).filter(function(k){ return (nc[d] || []).indexOf(k) === -1; }); var parts = []; if (add.length) parts.push('أُضيف ' + add.map(nm).join('، ')); if (rem.length) parts.push('سُحب ' + rem.map(nm).join('، ')); if (parts.length) emit('pm_cap', { dept: d, vars: { 'الفعل': parts.join(' · '), 'الصفحات': '' } }); });
-    var ot = o.tplOf || {}, nt = n.tplOf || {};
-    Object.keys(nt).forEach(function(d){ Object.keys(nt[d] || {}).forEach(function(ek){ if ((ot[d] || {})[ek] === nt[d][ek] || !nt[d][ek]) return; var L2 = J(rawGet('bsdept:' + d + ':bassam_perm_tpls_v1'), []) || []; var t = (L2 || []).filter(function(x){ return x.id === nt[d][ek]; })[0]; emit('acct_tpl', { dept: d, own: [ek], vars: { 'القالب': t ? t.name : 'قالب صلاحيات', 'العدد': t ? Object.keys(t.perms || {}).length : '' } }); }); });
   };
-  /* تعريفات الورديات وقوالب الصلاحيات صارت صفحتين في إعدادات الإدارة — ولكل
-     تغييرٍ فيهما حدثه، فلا فعلَ في المنصة بلا مدخلٍ في الشجرة. */
+  /* تعريفات الورديات صفحةٌ في إعدادات الإدارة — ولكل تغييرٍ فيها حدثه. V7 · د5-هـ (44): قوالبُ الصلاحيات حُذفت (مراقبُها معها) —
+     تغييراتُ الأدوار والإسناد يسجّلها «سجلُّ» تبويب «الصلاحيات». */
   WATCH['bassam_shift_options_v1'] = function(did, o, n){
     o = Array.isArray(o) ? o : []; n = Array.isArray(n) ? n : [];
     if (!o.length && n.length > 1) return;   /* بذر الورديات الافتراضية ليس فعلَ مستخدم */
@@ -68,19 +67,6 @@
       var ch = []; if (tm(a) !== tm(b)) ch.push('الوقت ' + tm(a) + ' ← ' + tm(b)); if ((a.color||'') !== (b.color||'')) ch.push('اللون');
       if (!ch.length) return;
       emit('st_shdef', { dept: did, vars: { 'الفعل': 'عُدّلت', 'الوردية': b.name, 'التفصيل': ch.join(' · '), 'المُعدّل': who() } }); });
-  };
-  WATCH['bassam_perm_tpls_v1'] = function(did, o, n){
-    o = Array.isArray(o) ? o : []; n = Array.isArray(n) ? n : [];
-    if (!o.length && n.length > 1) return;   /* بذر القوالب الافتراضية عند أول فتح ليس فعلَ مستخدم */
-    var d = diffList(o, n, function(x){ return x && x.id; });
-    var cnt = function(x){ return Object.keys((x && x.perms) || {}).length; };
-    d.added.forEach(function(x){ emit('pm_tpl', { dept: did, vars: { 'الفعل': 'أُنشئ', 'القالب': x.name, 'التفصيل': cnt(x) ? (KIVO.BassamCount(cnt(x), "ورقة")) : 'فارغ', 'المُعدّل': who() } }); });
-    d.removed.forEach(function(x){ emit('pm_tpl', { dept: did, vars: { 'الفعل': 'حُذف', 'القالب': x.name, 'التفصيل': cnt(x) ? (KIVO.BassamCount(cnt(x), "ورقة")) : 'فارغ', 'المُعدّل': who() } }); });
-    d.both.forEach(function(p){ var a = p[0], b = p[1]; if (eq(a, b)) return;
-      var ch = []; if ((a.name||'') !== (b.name||'')) ch.push('الاسم «' + (a.name||'') + '» ← «' + (b.name||'') + '»');
-      if (!eq(a.perms || {}, b.perms || {})) ch.push('الأوراق ' + cnt(a) + ' ← ' + cnt(b));
-      if (!ch.length) return;
-      emit('pm_tpl', { dept: did, vars: { 'الفعل': 'عُدّل', 'القالب': b.name, 'التفصيل': ch.join(' · '), 'المُعدّل': who() } }); });
   };
   /* الجدول الشهري تخطيطٌ بين مدير الإدارة ورؤساء الورديات — تنبيهاته لهم وحدهم، ولا يصل الموظفَ شيء منه؛ تشغيله يبدأ بسحب التقرير اليومي */
   function empName(did, key){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []) || []; var e = emps.filter(function(x){ return x.eid === key || x.nid === key || x.name === key; })[0]; return e ? e.name : String(key); } catch(e){ return String(key); } }
@@ -146,7 +132,7 @@
   };
   var WD = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   function wdName(day){ /* اسم يوم الأسبوع لتاريخ هجري y-m-d بالتقويم أم القرى */
-    try { var p = day.split('-').map(Number); var fmt = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }); var t = new Date(); for (var i = -400; i <= 400; i++) { var d = new Date(t.getTime() + i * 86400000); var parts = {}; fmt.formatToParts(d).forEach(function(x){ parts[x.type] = x.value; }); if (+parts.year === p[0] && +parts.month === p[1] && +parts.day === p[2]) return WD[d.getDay()]; } } catch(e){} return '';
+    try { var p = day.split('-').map(Number); return WD[KIVO.BassamCal.hWeekdayIndex(p[0], p[1], p[2], 400)] || ''; } catch(e){} return '';   /* V7 · د5-د2: البحثُ (±400 يوماً) صار في الخدمة */
   }
   function isRestOn(rest, wdn){ return !!wdn && (rest || []).some(function(r){ return r === wdn || ('ال' + r) === wdn || r === ('ال' + wdn); }); }
   function restBase(did, day, ek){ try { var st = J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}) || {}; var mk = day.split('-').slice(0, 2).join('-'); var e = (st[mk] || {})[ek]; return e && Array.isArray(e.rest) ? e.rest : []; } catch(e){ return []; } }
@@ -219,7 +205,7 @@
   WATCH['bassam_gdepts_v1'] = function(did, o, n){ var d = diffList(Array.isArray(o) ? o : [], Array.isArray(n) ? n : [], function(x){ return x.id; }); d.added.forEach(function(x){ emit('sy_dept', { vars: { 'الفعل': 'أُنشئت إدارة عامة', 'الإدارة': x.name, 'التفصيل': '' } }); }); d.removed.forEach(function(x){ emit('sy_ddel', { vars: { 'النوع': 'إدارة عامة', 'الإدارة': x.name, 'المُعدّل': who() } }); }); };
   WATCH['bassam_platform_v1'] = function(did, o, n){ o = o || {}; n = n || {}; if (!Object.keys(o).length) return;
     var oo = ((o.mods || {}).off || []), no = ((n.mods || {}).off || []); if (!eq(oo, no)) { var nm = function(k){ try { return (P().PAGE_OF[k] || {}).name || k; } catch(e){ return k; } }; var inCap = function(k, d){ try { var c = P().deptCap ? P().deptCap(d.id) : null; return !c || c.indexOf(k) !== -1; } catch(e){ return true; } }; no.filter(function(k){ return oo.indexOf(k) === -1; }).forEach(function(k){ depts().filter(function(d){ return inCap(k, d); }).forEach(function(d){ emit('sy_mods', { dept: d.id, vars: { 'الفعل': 'أُطفئت', 'الوحدة': nm(k) } }); }); }); oo.filter(function(k){ return no.indexOf(k) === -1; }).forEach(function(k){ depts().filter(function(d){ return inCap(k, d); }).forEach(function(d){ emit('sy_mods', { dept: d.id, vars: { 'الفعل': 'فُعّلت', 'الوحدة': nm(k) } }); }); }); }
-    var ch = Object.keys(n).filter(function(k){ return k !== 'mods' && !eq(o[k], n[k]); }); if (ch.length) emit('sy_plat', { vars: { 'التفصيل': ch.map(function(k){ return ({ name:'الاسم', org:'الجهة', logo:'الشعار', login:'شاشة الدخول', side:'القائمة', app:'تطبيق الجوال', about:'حول المنصة', themeDef:'المظهر', print:'الطباعة', top:'الشريط العلوي' })[k] || k; }).join('، ') } }); };
+    var ch = Object.keys(n).filter(function(k){ return k !== 'mods' && !eq(o[k], n[k]); }); if (ch.length) emit('sy_plat', { vars: { 'التفصيل': ch.map(function(k){ return ({ name:'الاسم', org:'الجهة', logo:'الشعار', login:'شاشة الدخول', side:'القائمة', app:'تطبيق الجوال', about:'حول المنصة', themeDef:'المظهر', top:'الشريط العلوي' })[k] || k; }).join('، ') } }); };
   WATCH['bassam_last_export_v1'] = function(did, o, n){ emit('sy_bk', { vars: { 'الفعل': 'أُنشئت نسخة احتياطية لإدارة ' + deptName(did), 'المُعدّل': who(), 'الحجم': '' } }); };
   WATCH['bassam_last_full_export_v1'] = function(did, o, n){ emit('sy_bk', { vars: { 'الفعل': 'أُنشئت النسخة الشاملة', 'المُعدّل': who(), 'الحجم': '' } }); };
 
@@ -256,7 +242,7 @@
   }
 
   /* ═══ الفحص الدوري (المهلات والنصاب والمستودع) — في متصفح المدير/مدير النظام، مرة لكل مهلة ═══ */
-  function todayKey(){ try { var p = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }).formatToParts(new Date()); var g = function(t){ return (p.filter(function(x){ return x.type === t; })[0] || {}).value; }; return { y:+g('year'), m:+g('month'), d:+g('day'), key: g('year') + '-' + g('month') + '-' + g('day') }; } catch(e){ var d = new Date(); return { y:d.getFullYear(), m:d.getMonth() + 1, d:d.getDate(), key:'g' + d.toISOString().slice(0, 10) }; } }
+  function todayKey(){ try { var h = KIVO.BassamCal.hParts(new Date()); return { y:h.y, m:h.m, d:h.d, key: h.y + '-' + h.m + '-' + h.d }; } catch(e){ var d = new Date(); return { y:d.getFullYear(), m:d.getMonth() + 1, d:d.getDate(), key:'g' + d.toISOString().slice(0, 10) }; } }   /* V7 · د5-د2 */
   /* بدايةُ تشغيل المنصة من الخادم (لمدير النظام وحده): تُقرأ مرةً وتُحفظ في الذاكرة؛ الفشلُ أو الغيابُ يُعاد في الفحص التالي */
   var FIRST = 0, FIRST_P = null;
   function firstAt(){

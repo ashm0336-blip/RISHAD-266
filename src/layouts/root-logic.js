@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/layouts/root-logic.js.tpl */
 
 class Component extends DCLogic {
   /* حالةُ الزينة (شريطٌ، تنبيهٌ، جرس، حوارُ النسخ) لا تعني الصفحاتَ في شيء —
@@ -62,7 +63,7 @@ class Component extends DCLogic {
   _sysTabOf(seg) { return seg === "org" ? "depts" : seg; }
   _hashOrgId() {
     try {
-      const m = /^#\/sysadmin\/org\/([^/?#]+)$/.exec(String(location.hash || "")); if (!m) return "";
+      const m = /^#\/sysadmin\/org\/([^/?#]+)(?:\/perm\/(?:systems|roles|people|log))?$/.exec(String(location.hash || "")); if (!m) return "";   /* V7 · د5-هـ (44): وذيلُ «الصلاحيات» */
       const id = decodeURIComponent(m[1]);
       return id.length <= 128 && !/[\u0000-\u001f<>"'`\\]/.test(id) ? id : "";
     } catch (e) { return ""; }
@@ -92,9 +93,9 @@ class Component extends DCLogic {
       const OK = Object.assign({ profile: null, sysadmin: null, kpis: null }, (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || {});
       if (!(v in OK)) return "";
       const sup = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());
-      if (v === "help" && sup) return v;
+      /* V7 · د5-ح (قرار المالك): «المساعدة» و«مؤشرات الإدارة» بلا استثناءٍ لمدير المنصة — المطفأُ لا يُفتح لأحد (صلاحياتُه في 331 بلا المطفأ) */
       if (v === "kpis") {
-        if (!KIVO.BassamPerm || sup) return v;
+        if (!KIVO.BassamPerm) return v;
         return this._kpisOk() ? v : "";
       }
       const pk = OK[v];
@@ -358,8 +359,21 @@ class Component extends DCLogic {
     const cand = fresh.filter(x => x.chan === "toast" || x.lvl === "urg" || x.isBc || x.bcDept).filter(x => x.lvl === "urg" || !mute);
     if (!cand.length) return;
     const x = cand.sort((a, b) => (b.lvl === "urg" ? 1 : 0) - (a.lvl === "urg" ? 1 : 0))[0];
-    this.setState({ nfToast: { id: x.id, t: x.t, b: x.b, urg: x.lvl === "urg", go: x.ack && !x.acked ? "قرأت وفهمت" : (x.go || ""), n: cand.length } });
+    this.setState({ nfToast: { id: x.id, t: x.t, b: x.b, urg: x.lvl === "urg", go: x.ack && !x.acked ? "قرأت وفهمت" : (x.go || ""), n: cand.length, notMe: this._nfSid(x) ? 1 : 0 } });
     clearTimeout(this._nfToastT); this._nfToastT = setTimeout(() => this.setState({ nfToast: null }), x.lvl === "urg" ? 9000 : 5000);
+  }
+  /* V7 · د5-هـ (x1): «ليس أنا» على تنبيه الجهاز الجديد (sc_dev) — يحمل مِقبضَ تلك الجلسة (link 'sess:<sid>') فيُنهيها وحدها ثم يعرض تغييرَ كلمة المرور */
+  _nfSid(x) { const m = x && x.type === "sc_dev" && /^sess:([0-9a-f]{16})$/.exec(String(x.link || "")); return m ? m[1] : ""; }
+  async _nfNotMe(x) {
+    const sid = this._nfSid(x); if (!sid) return;
+    this.setState({ nfToast: null });
+    let j = null;
+    try { const r = await fetch("/api/me/sess/kill-one", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sid: sid, why: "not-me" }) }); j = await r.json().catch(() => null); } catch (e) { this.bkToast("لا اتصال — حاول مجددًا بعد قليل", 4000); return; }
+    if (!j || (!j.ok && j.err !== "not-found")) { this.bkToast(j && j.err === "current" ? "هذه جلستك الحالية — استعمل «تسجيل الخروج»" : "تعذّر إنهاء الجلسة — حاول مجددًا", 4000); return; }
+    try { const NF = KIVO.BassamNotif; if (NF && NF.markRead) await NF.markRead(x.id); } catch (e) { /* القراءةُ علامةٌ لا شرط */ }
+    const y = await KIVO.bsConfirm({ title: j.ok ? "أُنهيت تلك الجلسة" : "انتهت تلك الجلسة من قبل", msg: "خرج ذلك الجهاز من حسابك. إن لم تكن أنت فغيّر كلمة المرور الآن.", ok: "تغيير كلمة المرور", cancel: "لاحقاً" });
+    if (!y) return;
+    KIVO.__BS_OPEN_TAB = { page: "profile", tab: "acct" }; this._savePage("profile"); this.setState({ active: "profile", nfOpen: false, sidebarOpen: false });
   }
   async _nfWork(run) {
     try {
@@ -412,6 +426,7 @@ class Component extends DCLogic {
       rows.push({ key: x.id, isGrp: false, isItem: true, t: x.t, b: x.b, at: ago(x.at), un: x.un, isUrg: x.lvl === "urg", isAct: x.lvl === "act", go: x.go, hasGo: !!x.go && !(x.ack && !x.acked) && (!NF.goOk || NF.goOk(x)), needAck: !!(x.ack && !x.acked), icoPath: NF.KI[x.k] || NF.KI.sys, icoStyle: "width:34px;height:34px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid " + c + "33;background:" + c + "14;color:" + c,
         rowStyle: "display:flex;gap:11px;padding:12px 14px 12px 12px;border-bottom:1px solid var(--bd-xf1f3f5);position:relative;cursor:pointer;" + (x.un ? "background:var(--bg-a185151810p05);" : "") + (x.pin && x.un ? "border-right:3px solid var(--bd-xb99751);" : ""),
         dotStyle: "position:absolute;right:5px;top:19px;width:6px;height:6px;border-radius:50%;background:var(--bg-xb99751);" + (x.un ? "" : "display:none"),
+        notMeOn: !!this._nfSid(x), notMe: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this._nfNotMe(x); },
         deptName: x.deptName || "", hasDept: !!x.deptName, canDel: !(x.ack && !x.acked), open: () => this._nfOpenItem(x), del: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this._nfWork(()=>NF.dismiss(x.id)); } }); });
     const kinds=Object.keys(counters.byKind).map(k=>({key:k,name:NF.KN[k] || k,style:"font-size:10px;font-weight:600;padding:2px 9px;border-radius:9999px;cursor:pointer;border:1px solid " + (kf[k] ? "rgba(14,116,144,.4);background:var(--bg-a141161440p07);color:var(--fg-x0e7490)" : "#e2e8f0;background:var(--bg-xffffff);color:var(--fg-x94a3b8)"),toggle:()=>this._nfReload({nfKinds:{...(this.state.nfKinds || {}),[k]:!(this.state.nfKinds || {})[k]}})}));
     const seg = (on) => "flex:1;text-align:center;padding:5px 0;border-radius:8px;font-size:10.5px;font-weight:700;cursor:pointer;" + (on ? "background:var(--bg-xffffff);color:var(--fg-x8a6f35);box-shadow:var(--shadow-card)" : "color:var(--fg-x94a3b8)");
@@ -488,6 +503,7 @@ class Component extends DCLogic {
       nfToastOn: !!tt, nfToastT: tt ? tt.t : "", nfToastB: tt ? tt.b : "", nfToastUrg: !!(tt && tt.urg), nfToastGo: tt ? tt.go : "", nfToastHasGo: !!(tt && tt.go), nfToastMore: tt && tt.n > 1 ? ("+" + (tt.n - 1)) : "", nfToastHasMore: !!(tt && tt.n > 1),
       nfToastOpen: () => { const t = this.state.nfToast; if (!t) return; let x = null; try { x = NF.list().filter(y => y.id === t.id)[0]; } catch (e) {} if (x) this._nfOpenItem(x); this.setState({ nfToast: null }); },
       nfToastClose: () => this.setState({ nfToast: null }),
+      nfToastNotMeOn: !!(tt && tt.notMe), nfToastNotMe: () => { const t = this.state.nfToast; let x = null; try { x = t ? NF.list().filter(y => y.id === t.id)[0] : null; } catch (e) {} if (x) this._nfNotMe(x); },
       nfToastAll: () => this.setState({ nfToast: null, nfOpen: true })
     };
     function knob(on) { return "position:absolute;top:2px;" + (on ? "right:17px" : "right:2px") + ";width:14px;height:14px;border-radius:9999px;background:var(--bg-xffffff);box-shadow:var(--shadow-card);transition:.2s"; }
@@ -528,7 +544,7 @@ class Component extends DCLogic {
   /* أي صفحة يخصّها هذا المفتاح؟ (مفتاح غير معروف = كل الصفحات احتياطاً) */
   _liveTouches(keys, page) {
     const MAP = {
-      employees: /employees|options|custody|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|perm_tpls|perm_limit|employees/,
+      employees: /employees|options|custody|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|roles|perm_limit|employees/,
       plan: /plan_v1|zone_opts|gate_opts|mark_kinds|employees/, planning: /plan_v1|staffing|employees|rounds|dreport/,
       irshad: /irshad/, seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, award: /award|employees/, profile: /auth_users|employees|staffing|shift_options|tasks|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
       admin: /depts|gdepts|auth_users|perms|platform|last_export/, sysadmin: /depts|gdepts|auth_users|perms|platform|last_export/
@@ -690,8 +706,12 @@ class Component extends DCLogic {
       try { goOn = !!(await KIVO.bsConfirm({ title: "تعديلات لم تُحفظ بعد", msg: "لديك تعديلات لم يكتمل حفظها. نحفظها أولاً ثم نتابع.", ok: "احفظ وتابع", cancel: "ابقَ هنا" })); } catch (e) { goOn = false; }
       if (!goOn) return false;
     }
-    let ok = true;
+    let ok = true, d0 = 0;
+    try { d0 = S && S.denied ? +S.denied() || 0 : 0; } catch (e) {}
     if (S && S.flushAsync) { try { ok = (await S.flushAsync(4000)) === true; } catch (e) { ok = false; } }
+    /* V7 · د5-هـ (أمن ١): رُفض تعديلٌ أثناء الحفظ ⇒ لا انتقال — يبقى المستخدمُ أمام رسالة الرفض (لا «حُفظ» ولا تبديلٌ يمحوها) */
+    let refused = false; try { refused = !!(S && S.denied && (+S.denied() || 0) > d0); } catch (e) {}
+    if (!ok && refused) { this.bkToast("رُفض حفظ بعض تعديلاتك (السببُ في الرسالة) — لم ننتقل", true); return false; }
     if (!ok) { let still = true; try { still = !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch (e) { still = true; }
       if (still) { this.bkToast("لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ", true); return false; } }   /* لا تعديلَ معلَّق (جلسةٌ منتهية · عمليةٌ عالقة) ⇒ لا رسالةَ كاذبة ولا منع */
     return true;
@@ -932,9 +952,9 @@ class Component extends DCLogic {
   _sysNav() {
     return {
       home: [["overview", null, "الرئيسية"]],
-      org: [["depts", null, "الإدارات"], ["users", null, "مراقبة الحسابات"], ["perms", null, "خريطة الصلاحيات"]],
-      plat: [["plat", "id", "هوية المنصة"], ["plat", "mods", "الوحدات"], ["plat", "notif", "التنبيهات والتعاميم"],
-        ["plat", "login", "شاشة تسجيل الدخول", 1], ["plat", "side", "القوائم"], ["plat", "print", "الطباعة والتقارير"], ["plat", "app", "تطبيق الجوال"],
+      org: [["depts", null, "الإدارات"], ["users", null, "مراقبة الحسابات"]],
+      plat: [["plat", "id", "هوية المنصة"], ["plat", "notif", "التنبيهات والتعاميم"],
+        ["plat", "login", "شاشة تسجيل الدخول", 1], ["plat", "side", "القوائم"], ["plat", "app", "تطبيق الجوال"],
         ["plat", "about", "حول المنصة", 1]],
       sec: [["sec", null, "الأمن"], ["oplog", null, "سجل الأنشطة والتغييرات"]],
       data: [["backup", null, "النسخة الاحتياطية"], ["plat", "setup", "التهيئة والاستعادة"], ["histimp", null, "استيراد البيانات التاريخية"]],
@@ -1111,7 +1131,10 @@ class Component extends DCLogic {
     const slide = (this.__sbToggled && wide) ? (sbOpen ? "animation:bsSlideOpen .3s ease-in-out;" : "animation:bsSlideClose .3s ease-in-out;") : "";
     /* مفتاح الصفحة في منظومة الصلاحيات مقابل مفتاح التنقل */
     const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps", staffing: "staff", plan: "plan", daily: "daily", tasks: "tasks", irshad: "irshad", admin: "admin" };
-    const _pOK = (pk) => { try { if (pk === "admin" && KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) return true; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
+    /* V7 · د5-ح: القائمةُ الجانبية من مصدرٍ واحد — BassamPerm.menuFor (334) على صلاحيات الجلسة؛ وهو نفسُه يبني «ما يراه مدير هذه الإدارة» في «الصلاحيات ← الأنظمة».
+       «الإعدادات» دائمةٌ في صلاحيات مدير المنصة (331) فلا استثناءَ له هنا */
+    const _menu = (() => { try { const m = {}; KIVO.BassamPerm.menuFor().forEach((x) => { m[x.k] = x.on; }); return m; } catch (e) { return null; } })();
+    const _pOK = (pk) => { try { if (_menu && pk in _menu) return !!_menu[pk]; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
     const _pAny = (ks) => ks.some(_pOK);
     /* «مدير النظام»: لمدير النظام وحده (كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة) */
     const goSys = () => this._goSys();
@@ -1152,31 +1175,20 @@ class Component extends DCLogic {
       authNotStaff: !(KIVO.BassamAuth && KIVO.BassamAuth.isStaff && KIVO.BassamAuth.isStaff()),
       /* مجموعة «الإعدادات» كانت محجوبة عن كل موظف — حتى مدير الإدارة المأذون.
          الآن تتبع الصلاحية نفسها: مدير النظام دائماً، وغيره بصلاحية admin. */
-      showAdminGrp: !!((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || _pOK("admin")),
+      showAdminGrp: !!_pOK("admin"),
       /* حراسة الصلاحيات: الصفحة غير المتاحة يختفي رابطها (class "n gone")
          ويُردّ الانتقال إليها بأي طريق. مدير النظام يرى كل شيء. */
-      /* ═══ صدق القائمة الجانبية أمام مدير النظام ═══
-         مدير النظام فوق كل السقوف فتبقى كل الصفحات مفتوحة له — وكان ذلك يجعل
-         القائمة ثابتة مهما بدّل الإدارة، فلا يعرف ما هو مفعّل فعلاً لكل إدارة.
-         الآن: ما هو داخل سقف الإدارة النشطة يظهر عادياً، وما هو خارجه يظهر
-         باهتاً بنقطة تنبيه وتلميح يوضّح السبب — ويبقى قابلاً للفتح، لأن إخفاءه
-         يحبس المشرف داخل إدارة سقفها فارغ بلا طريق لتعديله. */
+      /* ═══ V7 · د5-ح (قرار المالك): النظامُ المطفأ لا يراه أحد — ولا مديرُ المنصة ═══
+         المطفأُ على المنصة يغيب عن المنصة كلها، والمطفأُ لإدارةٍ يغيب داخل مساحتها (الإدارةُ النشطة) — فالقائمةُ تتبع myPerms
+         (331: مديرُ المنصة يُقصّ بما أُطفئ) ولا عرضَ باهتاً بنقطة «خارج السقف». موضعُه الوحيد «الصلاحيات ← الأنظمة» لمدير المنصة. */
       ...(() => {
-        const P = KIVO.BassamPerm, A = KIVO.BassamAuth;
-        const sup = !!(A && A.isSuper && A.isSuper());
-        let cap = [];
-        try { cap = (P && P.deptCap) ? P.deptCap() : []; } catch (e) { cap = []; }
-        const dn = (KIVO.BassamDepts && KIVO.BassamDepts.activeName && KIVO.BassamDepts.activeName()) || "هذه الإدارة";
+        const P = KIVO.BassamPerm;
         const NM = {}; try { (P.PAGE_REG || []).forEach(x => NM[x.key] = x.name); } catch (e) {}
-        const outOf = (pk) => sup && cap.indexOf(pk) === -1;
-        const cls = (navKey, pk) => "n" + (a === navKey ? " on" : "")
-          + (_pOK(pk) ? "" : " gone") + (outOf(pk) ? " out" : "");
-        const tip = (pk) => outOf(pk)
-          ? ((NM[pk] || "") + " — خارج سقف «" + dn + "» · مرئية لك بصلاحية المشرف")
-          : (NM[pk] || "");
+        const cls = (navKey, pk) => "n" + (a === navKey ? " on" : "") + (_pOK(pk) ? "" : " gone");
+        const tip = (pk) => NM[pk] || "";
         /* «مؤشرات الإدارة» حاويةُ عرضٍ لأوراقٍ قائمة بمفاتيحها — فظهورُها من
            ملك واحدةٍ منها، لا من مفتاحٍ جديدٍ لها */
-        const _kpiAny = this._kpisOk();
+        const _kpiAny = _menu && "kpis" in _menu ? !!_menu.kpis : this._kpisOk();
         return {
           nKpis: "n" + (a === "kpis" ? " on" : "") + (_kpiAny ? "" : " gone"), tKpis: labels.kpis,
           nDstats: cls("dstats", "dstats"), tDstats: tip("dstats"),
@@ -1186,18 +1198,15 @@ class Component extends DCLogic {
           nDaily: cls("daily", "daily"), tDaily: tip("daily"),
           nDreport: cls("dreport", "dreport"), tDreport: tip("dreport"),
           /* كانت مربوطة بـ«الجدول الشهري» وحده فتختفي عمّن له «التشغيل الميداني» فقط */
-          nPlanning: "n" + (a === "planning" ? " on" : "") + (_pAny(["planning","staff","plan"]) ? "" : " gone") + (outOf("planning") && outOf("staff") && outOf("plan") ? " out" : ""), tPlanning: tip("planning"),
+          nPlanning: "n" + (a === "planning" ? " on" : "") + ((_menu && "planning" in _menu ? _menu.planning : _pAny(["planning","staff","plan"])) ? "" : " gone"), tPlanning: tip("planning"),
           nIrshad: cls("irshad", "irshad"), tIrshad: tip("irshad"), nSeized: cls("seized", "seized"), tSeized: tip("seized"),
           nAward: cls("award", "award"), tAward: tip("award"),
           nLinks: cls("links", "links"), tLinks: tip("links"),
-          tAdmin: outOf("admin")
-            ? ("الإعدادات — خارج سقف «" + dn + "» · مرئية لك بصلاحية المشرف")
-            : "الإعدادات — نسخة الإدارة الاحتياطية",
+          tAdmin: "الإعدادات — نسخة الإدارة الاحتياطية",
         };
       })(),
-      /* الإعدادات تتبع صلاحية admin — تختفي إن أُطفئت للإدارة، إلا للمشرف
-         العام فيراها دائماً (لا يُحبس أحد خارج النسخ الاحتياطي). */
-      nAdmin: "n" + (a === "admin" ? " on" : "") + (((KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper()) || _pOK("admin")) ? "" : " gone") + ((() => { try { const P = KIVO.BassamPerm, A = KIVO.BassamAuth; return (A && A.isSuper && A.isSuper() && P && P.deptCap().indexOf("admin") === -1) ? " out" : ""; } catch (e) { return ""; } })()),
+      /* الإعدادات تتبع صلاحية admin (دائمةٌ لمدير المنصة في صلاحياته — 331) — لا يُحبس أحد خارج النسخ الاحتياطي */
+      nAdmin: "n" + (a === "admin" ? " on" : "") + (_pOK("admin") ? "" : " gone"),
       nSysAdmin: "n" + (a === "sysadmin" ? " on" : ""),
       goSysAdmin: goSys,
       /* الطبقة المعتمة تظهر مع الشريط المفتوح — والـCSS يقصرها على الشاشات الصغيرة */
@@ -1230,24 +1239,8 @@ class Component extends DCLogic {
         const meU = KIVO.BassamAuth && KIVO.BassamAuth.user() ? KIVO.BassamAuth.user() : null;
         const secU = !isSuper0 && !gmU && meU && D.switchUnits ? D.switchUnits(meU) : [];
         const isSuper = isSuper0 || !!gmU || secU.length > 1;
-        /* RISHAD266 (قرار المالك): «+ قسم» بجوار المبدّل حين تكون الوحدةُ النشطة إدارةً أمّاً (لا قسماً) — لمديرها نفسِه (حسابُ الإدارة أو مديرٌ بشارة) ولمدير المنصة.
-           يعمل على الإدارة النشطة وحدها، ولا يفتح شجرةَ المنصة لمدير الإدارة؛ والخادمُ يحكم (018 deptSecMgrWhy) */
-        const realSuper = !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.user() && KIVO.BassamAuth.isSuper());
-        const secAddOn = !!act && !!D.sectionAdd && !(D.isSection && D.isSection(act)) && (realSuper || !!(meU && meU.deptId === act && (meU.role === "dept" || (meU.role === "staff" && meU.mgr))));
+        /* V7 · د5-هـ (44): زرُّ «+ قسم» في القائمة الجانبية حُذف — الأقسامُ يضيفها مدير المنصة من «الإدارات» وحدها (والخادمُ يرفض غيرَه) */
         return {
-          secAddOn,
-          secAdd: async (ev) => {
-            try { ev && ev.stopPropagation && ev.stopPropagation(); } catch (e) {}
-            if (!(await this._unsavedGuard())) return;   /* CORE-01: التعديلاتُ المعلّقة تُحفظ أولاً — لا تضيع مع إعادة التحميل */
-            const nm = await this.cfmAsk({ title: "إضافة قسم", msg: "قسمٌ جديد تحت «" + (D.activeName() || deptLabel) + "». سقفُه يبدأ نسخةً من سقف الإدارة، وتديره من «الصلاحيات».", input: "اسم القسم", ok: "إضافة" });
-            if (!nm) return;
-            const r = D.sectionAdd({ name: nm, deptId: act });
-            if (!r || !r.ok) { this.bkToast("لم يُضف القسم: " + ((r && r.err) || "تعذّر الإنشاء")); return; }
-            this.bkToast("جارٍ حفظ القسم «" + nm + "»…");
-            const S = KIVO.__BS_SRV, go = () => { try { location.reload(); } catch (e) {} };
-            /* المراجعة المستقلة: لا إعادةَ تحميلٍ إن لم يُحفظ — تبقى رسالةُ الرفض أو الانتظار ظاهرة */
-            (S && S.flushAsync ? Promise.resolve(S.flushAsync(6000)).catch(() => false) : Promise.resolve(true)).then((ok) => { if (ok !== true) this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true); else go(); }, () => this.bkToast("لم يُحفظ القسم «" + nm + "» بعد — نحاول تلقائيًا", true));
-          },
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
           doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },
           deptName: deptLabel,

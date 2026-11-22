@@ -1,3 +1,4 @@
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/api/280-server-storage.js.tpl */
 /* RISHAD 266 — واجهة سحابية فقط.
    لا يوجد خادم محلي ولا وضع عرض يعمل بقاعدة بيانات المتصفح.
    غياب تهيئة الخادم يعني فشلًا مغلقًا، دون فتح مخزن أعمال محلي أو اعتراض واجهة Storage. */
@@ -25,7 +26,7 @@
     'bassam_employees_v1', 'bassam_options_v1', 'bassam_staffing_v3', 'bassam_staffing_v2',
     'bassam_staffing_snap_v1', 'bassam_staffing_locks_v1', 'bassam_callsigns_v1', 'bassam_perm_limit_v1',
     'bassam_shift_options_v1', 'bassam_plan_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1',
-    'bassam_mark_kinds_v1', 'bassam_rounds_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1',
+    'bassam_mark_kinds_v1', 'bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1',
     'bassam_dreport_v1', 'bassam_dr_grp_v1', 'bassam_leave_kinds_v1', 'bassam_tasks_v1', 'bassam_tasks_locks_v1'
   ]);
   function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '')) !== -1; }
@@ -35,11 +36,11 @@
                 bassam_con_cx_v1: 1 };   /* CORE-02 S7: طيُّ شريط «مركز إدارة رشاد» تفضيلُ جهازٍ كالسمة — لا يُرسل للخادم */
   /* «آخر صفحة مفتوحة» تفضيلُ جهازٍ لا بيانات فريق: كانت تُرسل للخادم — وعند الخروج
      تُرسل بعد إنهاء الجلسة فتُرفض (401) ويومض شريط «انتهت جلستك» قبل إعادة التحميل */
-  /* R187: «مجموعات | قائمة» في الجدول الشهري (bassam_st_grp_v1، لكل إدارة) تفضيلُ عرضٍ لهذا الجهاز كذلك —
-     لا يُرسل للخادم، فلا يُرفض لمن صلاحيتُه عرضٌ فقط ولا يُفرض على الزملاء. R188: ومثلُه في التقرير اليومي (bassam_dr_grp_v1)
-     — كان مشتركاً للإدارة على الخادم فيُرفض لمن صلاحيتُه عرضٌ ويعود؛ تسجيلُه في الخادم باقٍ كما هو لا يُستعمل */
+  /* R187 · R188: تفضيلُ عرضٍ لكل إدارة («مجموعات | قائمة» في صفحات الأنظمة) تفضيلُ جهازٍ كذلك — لا يُرسل للخادم، فلا يُرفض لمن صلاحيتُه
+     عرضٌ فقط ولا يُفرض على الزملاء. V7 · د5-ح: مفاتيحُها يعلنها كلُّ نظامٍ في قطعته (store.devGroups) — القاعدةُ لا تسمّيها */
+  var DEVG9 = ["bassam_st_grp_v1", "bassam_dr_grp_v1"];
   /* KIVO_264 · D-5: «اليوم المختار» لكل مستخدمٍ على جهازه (bassam_dayfocus_v1:<الحساب>) — لا يُرسل للخادم ولا يُفرض على الزملاء */
-  function devKey9(k) { return !!DEVK9[k] || /(^|:)bassam_page_v1:/.test(k) || /(^|:)bassam_(st|dr)_grp_v1$/.test(k) || /(^|:)bassam_dayfocus_v1:/.test(k); }
+  function devKey9(k) { return !!DEVK9[k] || /(^|:)bassam_page_v1:/.test(k) || DEVG9.indexOf(String(k).split(":").pop()) !== -1 || /(^|:)bassam_dayfocus_v1:/.test(k); }
   /* KIVO_244 · AUD-003: قائمةُ المفاتيح التي يجوز أن تُزامَن مع الخادم — مفاتيحُ الفريق وحدها (bassam_* أو bsdept:<إدارة>:bassam_*).
      أيُّ مفتاحٍ آخر (أداةٌ · امتدادُ متصفح · سكربتُ مراقبة) يبقى في مخزن هذا الجهاز ولا يُرسل أصلاً — فلا يُنتج قرارَ authz ولا تنبيهَ رفض
      (الحادثةُ المسجَّلة على Preview: k243_rows_* ⇒ 363 رفضاً و400 تنبيه). الخادمُ يبقى حَكَماً ثانياً يرفض المجهول لو وصله. */
@@ -191,14 +192,14 @@
   KIVO.BassamKeyLabels = (function(){
     var M = {
       bassam_employees_v1:["قائمة الموظفين"], bassam_staffing_v3:["الجدول الشهري"], bassam_staffing_v2:["الجدول الشهري (صيغة قديمة)"], bassam_staffing_snap_v1:["بيان الشهر"],
-      bassam_staffing_locks_v1:["أقفال الجدول الشهري"], bassam_rounds_v1:["الجولات اليومية"], bassam_dreport_v1:["التقرير اليومي"], bassam_dr_grp_v1:["مجموعات التقرير اليومي"],
+      bassam_staffing_locks_v1:["أقفال الجدول الشهري"], bassam_rounds_v1:["الجولات اليومية"], bassam_rounds_arc_v1:["أرشيف الجولات اليومية"], bassam_dreport_v1:["التقرير اليومي"], bassam_dr_grp_v1:["مجموعات التقرير اليومي"],
       bassam_plan_v1:["الخطة التشغيلية"], bassam_zone_opts_v1:["خيارات المصليات"], bassam_gate_opts_v1:["خيارات الأبواب"], bassam_mark_kinds_v1:["أنواع المعالم"],
       bassam_tasks_v1:["المهام"], bassam_tasks_locks_v1:["أقفال المهام"], bassam_custody_v1:["عهد الموظفين"],
       bassam_irshad_v1:["نظام الاسترشاد"], bassam_irshad_langs_v1:["لغات الاسترشاد"], bassam_irshad_locs_v1:["مواقع الاسترشاد"],
       bassam_seized_v1:["نظام المضبوطات"], bassam_seized_cat_v1:["قائمة ممنوعات المضبوطات"], bassam_seized_acts_v1:["إجراءات المضبوطات"], bassam_seized_locs_v1:["مواقع المضبوطات"], bassam_seized_jew_v1:["أنواع قطع المجوهرات"],
       bassam_award_v1:["جائزة التميز"], bassam_award_docs_v1:["المراجع المعتمدة للجائزة (قديم)"], bassam_award_docs_v2:["المراجع المعتمدة للجائزة"],
       bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"], bassam_leave_kinds_v1:["أنواع الإجازات"], bassam_callsigns_v1:["رموز النداء"],
-      bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_perm_tpls_v1:["قوالب الصلاحيات"],
+      bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_roles_v1:["أدوار الصلاحيات"],
       bassam_depts_v1:["الإدارات"], bassam_gdepts_v1:["الهيكل التنظيمي"], bassam_platform_v1:["إعدادات المنصة"], bassam_profile_v1:["الملف الشخصي"],
       bassam_media:["الصور والملفات"], bassam_notifications_domain_v1:["التنبيهات والتعاميم"],
       bassam_last_export_v1:["آخر تصدير"], bassam_last_full_export_v1:["آخر نسخة شاملة"],
@@ -533,6 +534,7 @@
     for (k in pSet) base[k] = krev[k] || 0;
     var o9 = { set: pSet, del: dl, base: base, aud: audEvents9(pSet) }, w9 = null;
     if (UID9) o9.uid = UID9;                         /* KIVO_264 · D-3 (C1): الخادمُ يردّ 409 session-changed إن لم تعد هويةَ الكوكي */
+    o9.ack = 2;                                      /* V7 · د5-هـ (أمن ١): يفهم ok:0 لحفظٍ لم يُكتب منه مفتاح (saveAck9) */
     var A9 = KIVO.__BS_I && KIVO.__BS_I.auth, c9 = (A9 && typeof A9.saveCur === "function" && ("bassam_auth_users_v1" in pSet)) ? A9.saveCur("bassam_auth_users_v1") : null;
     if (c9) o9.cur = c9;                             /* KIVO_264 · D14: كلمةُ المرور الحالية لتغيير اسم دخول صاحب الحساب (330 saveCur — في الذاكرة ≤ 120 ث · لا تُخزَّن) */
     if (uscope9 && (KU9 in pSet)) o9.uscope = uscope9;
@@ -1170,6 +1172,60 @@
     dlg9({ title: "هذا الإجراء يتطلب سبباً", desc: "التعديل على " + namesOf9(it) + " إجراءٌ حسّاس يُسجَّل سببُه في سجل التدقيق.", ok: "حفظ بالسبب", remember: true },
       function (r, rem) { if (r && rem) rsnMem9[sig] = r; cb(r || ""); });
   }
+  /* V7 · د5-هـ (44) · إصلاحُ نافذة السبب: «اسأل أولاً ثم أرسل مرّةً واحدة» — كتابةٌ يُعرف قبل إرسالها أنها تتطلب سبباً (مفتاحُ السجلّ audit.reason ·
+     قاعدةُ الخادم enfNo('reason')) لا تُرسل بلا سبب ثم تُرفض: تُعلَّق (hold9)، وتُفتح النافذة، و«حفظ بالسبب» يُرسلها مرّةً واحدة به (why)؛
+     و«إلغاء» لا يُرسل شيئاً ولا يُظهر رسالة رفض (تعود القيمة المحفوظة). مدير المنصة لا يُسأل أبداً، والوضعُ القديم (بلا إنفاذ) لا يطلب سبباً.
+     التنبّؤ: (أ) قواعدُ يسجّلها مالكُ المورد (reasonRule) · (ب) من السجلّ: كلُّ مفاتيح الكتابة التي يحملها المستخدم على هذا المورد مفاتيحُ سبب —
+     فلا سبيل لكتابته بلا سبب. ما لا يُتنبّأ به يبقى على المسار الاحتياطي (رفضُ الخادم ⇒ النافذة نفسُها، بلا رسالة رفض). */
+  var RSN_OFF9 = { "lens.zones.status.change": 1, "lens.gates.status.change": 1, "lens.marks.status.change": 1, "lens.paths.status.change": 1 };   /* نظيرُ 057 ENF_REASON_OFF · V7 · د5-ح: من قطعة العدسات */
+  var rsnRules9 = Object.create(null), rsnRes9 = null;
+  function exempt9() { try { var a9 = KIVO.BassamAuth, u9 = a9 && a9.user && a9.user(); return !!(u9 && u9.role === "super"); } catch (e) { return false; } }
+  function resName9(k) { return String(k || "").replace(/^bsdept:[^:]+:/, "").replace(/:.*$/, ""); }
+  function rsnByRes9() {
+    if (rsnRes9) return rsnRes9;
+    var R = KIVO.KIVO_REGISTRY || (typeof KIVO_REGISTRY !== "undefined" ? KIVO_REGISTRY : null), out = Object.create(null);
+    if (!R || !R.keys || !R.byKey) return out;
+    R.keys.forEach(function (key) {
+      var e = R.byKey[key]; if (!e || e.status !== "active" || e.type === "view" || e.type === "access") return;
+      ((e.guard && e.guard.resources) || []).forEach(function (rn) { (out[rn] = out[rn] || []).push({ k: key, r: !!(e.audit && e.audit.reason && !RSN_OFF9[key]) }); });
+    });
+    return (rsnRes9 = out);
+  }
+  /* مفاتيحُ السبب المتوقَّعة لكتابة المفتاح k الآن ([] = لا يُتوقَّع سبب) */
+  function rsnNeed9(k) {
+    var rn = resName9(k), out = [], i, L = rsnRules9[rn] || [];
+    var dm = /^bsdept:([^:]+):/.exec(String(k)), did = dm ? dm[1] : "";
+    for (i = 0; i < L.length; i++) { try { var r = L[i](baseVal[k] == null ? null : baseVal[k], (k in pSet) ? pSet[k] : null, k); if (Array.isArray(r)) r.forEach(function (x) { if (typeof x === "string" && out.indexOf(x) === -1) out.push(x); }); } catch (e) {} }
+    if (out.length) return out;
+    var PM = KIVO.BassamPerm, W = rsnByRes9()[rn] || [], held = [];
+    if (!PM || typeof PM.key !== "function" || !W.length) return out;
+    for (i = 0; i < W.length; i++) { var h = PM.key(W[i].k, did || undefined); if (h === null) return []; if (h) held.push(W[i]); }
+    if (held.length && held.every(function (x) { return x.r; })) held.forEach(function (x) { out.push(x.k); });
+    return out;
+  }
+  /* يعيد true إن عُلّقت الكتابةُ لسؤال السبب أولاً (فلا يُستدعى kick) */
+  function askFirst9(k) {
+    if (!KIVO.__BS_AUTHZ || exempt9() || why9[k] || hold9[k]) return false;
+    var keys = rsnNeed9(k); if (!keys.length) return false;
+    var sig = keys.slice().sort().join(",");
+    if (rsnMem9[sig]) { why9[k] = rsnMem9[sig]; return false; }
+    hold9[k] = 1;
+    dlg9({ title: "هذا الإجراء يتطلب سبباً", desc: "التعديل على «" + lbl(k) + "» إجراءٌ حسّاس يُسجَّل سببُه في سجل التدقيق.", ok: "حفظ بالسبب", remember: true }, function (r, rem) {
+      delete hold9[k];
+      if (r) { why9[k] = r; if (rem) rsnMem9[sig] = r; recount(); kick(); return; }
+      /* أُلغي: لا شيءَ يُرسل ولا رسالةَ رفض — القيمةُ المحفوظة تعود كما هي */
+      if (baseVal[k] != null) mem[k] = baseVal[k]; else delete mem[k];
+      delete pSet[k]; delete pDel[k]; unmark9(k); recount(); notify(k);
+      if (dirty) kick(); else settleWaiters(false);
+    });
+    return true;
+  }
+  /* نداءٌ صريح قبل عمليةٍ يعرف صاحبُها أنها تتطلب سبباً: cb({ go, reason }) — go=false عند الإلغاء (لا تُرسل)؛ السببُ يُعلَّم على k فتحمله الكتابةُ الأولى */
+  function reasonFirst9(k, keys, cb) {
+    k = String(k || "");
+    if (!KIVO.__BS_AUTHZ || exempt9()) { setTimeout(function () { cb({ go: true, reason: "" }); }, 0); return; }
+    askReason9(k, keys, function (r) { if (r && k) why9[k] = String(r).slice(0, 300); cb(r ? { go: true, reason: r } : { go: false, reason: "" }); });
+  }
   /* نافذةُ الاستدراك (D3-07): الفترةُ المغلقة تُفتح بسببٍ لمدةٍ افتراضية (24 ساعة) لإدارتك — ثم يُعاد إرسالُ التعديل كما هو */
   function retroSys9(k) { var n = String(k).replace(/^bsdept:[^:]+:/, ""); return n === "bassam_irshad_v1" ? "irshad" : n === "bassam_seized_v1" ? "seized" : ""; }
   function retroAsk9(items) {
@@ -1220,7 +1276,10 @@
   function saveAck9(j, snap) {
     var obj = function (v) { return !!v && typeof v === "object" && !Array.isArray(v); };
     var rev = function (v) { return Number.isSafeInteger(v) && v >= 0; };
-    if (!obj(j) || (j.ok !== undefined && j.ok !== 1 && j.ok !== true)) return false;
+    /* V7 · د5-هـ (أمن ١): ok:0 = لم يُحفظ مفتاح (رُفض كلُّ ما طُلب أو تعارض) — إقرارٌ صالح إن لم يحمل مفتاحاً محفوظاً وحمل مانعاً */
+    var none9 = !!obj(j) && j.ok === 0;
+    if (!obj(j) || (j.ok !== undefined && j.ok !== 1 && j.ok !== true && !none9)) return false;
+    if (none9 && obj(j.revs) && Object.keys(j.revs).length) return false;
     var seen = Object.create(null), kinds = ["revs", "denied", "conflicts"], count = 0, stopped = 0, i, k, value;
     for (i = 0; i < kinds.length; i++) {
       var kind = kinds[i], map = j[kind];
@@ -1241,7 +1300,7 @@
         seen[k] = 1; count++;
       }
     }
-    if (!count) return false;
+    if (!count || (none9 && !stopped)) return false;
     /* رفضُ عملية ذرّية يعيد فقط الموانع؛ settle يعيد بقية اللقطة إلى الطابور. */
     if (j.atomic && stopped) return true;
     for (k in snap.set) if (!seen[k]) return false;
@@ -1300,10 +1359,10 @@
         if (j === undefined || sx9) return;           /* عولج أعلاه أو عُزلت الجلسة أثناء الطلب */
         if (!saveAck9(j, snap)) throw new Error("invalid-save-acknowledgement");
         inflight = null;
-        var again = settle(j, snap);
+        var again = settle(j, snap), dn9n = Object.keys(j.denied || {}).length;
         warn(false); fails = 0;
         if (again) { kick(); settleWaiters(false); return; }
-        settleWaiters(!dirty);
+        settleWaiters(!dirty && !dn9n);   /* V7 · د5-هـ (أمن ١): مفتاحٌ رُفض ليس حفظاً — خرج من الطابور لكنه لم يُحفظ */
         kickIfDirty();
       })
       .catch(function (e) {
@@ -1474,6 +1533,7 @@
     if (devKey9(k) || !teamKey9(k)) return oSet.call(this, k, v);
     if (mem[k] === v) return;                     /* لا كتابة بلا تغيير */
     mem[k] = v; pSet[k] = v; delete pDel[k]; dirty = true;
+    if (askFirst9(k)) return;                     /* V7 · د5-هـ (44): السببُ أولاً ثم الإرسال */
     kick();
   };
   P.removeItem = function (k) {
@@ -1485,6 +1545,7 @@
     if (devKey9(k) || !teamKey9(k)) return oDel.call(this, k);
     if (!(k in mem)) return;
     delete mem[k]; pDel[k] = 1; delete pSet[k]; dirty = true;
+    if (askFirst9(k)) return;                     /* V7 · د5-هـ (44): السببُ أولاً ثم الإرسال */
     kick();
   };
   P.clear = function () {
@@ -1631,9 +1692,9 @@
        (/api/changes?since=0 حتى 50 صفحة) — ولو كان التغييرُ لموظفٍ في إدارةٍ أخرى. الآن يُقارن «نصيبي» منها قبل السحب وبعده، ولا يُعاد السردُ
        إلا إن تغيّر: سجلُّ حسابي (الدور · الإدارة · العقدة · الرقم · الإدارة المُدارة · التجميد) · إداراتُ نطاقي وسلسلةُ أسلافها · سقوفُها وفروعُها
        وعدساتُها · ورقتي فيها · الوحداتُ المطفأة. مديرُ النظام يقرأ كلَّ شيءٍ فنصيبُه ثابت. والنطاقُ والمنحُ في الإنفاذ يحكمها وصفُ صلاحياتي
-       (authzSync9 · az) لا هذا المفتاح. PROJ9 نسخةٌ من ENF_PROJ في الخادم (061-enf-read.js) — يُضاف إليها bassam_tasks_v1 إن صار الخادمُ يُسقطها. */
+       (authzSync9 · az) لا هذا المفتاح. PROJ9 نسخةٌ من ENF_PROJ في الخادم (061-enf-read.js) — يُضاف إليها موردُ أيِّ نظامٍ يُسقطه الخادم بقطعته (store.proj). */
     var SLICEK9 = /^bassam_(perms|auth_users|depts|gdepts|platform)_v1$/;
-    var PROJ9 = { bassam_staffing_v2: 1, bassam_staffing_v3: 1, bassam_dreport_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1 };
+    var PROJ9 = { bassam_staffing_v2: 1, bassam_staffing_v3: 1, bassam_dreport_v1: 1, bassam_plan_v1: 1, bassam_rounds_v1: 1, bassam_rounds_arc_v1: 1 };
     function pj9(k, dflt) { try { var v = JSON.parse(mem[k] || "null"); return v == null ? dflt : v; } catch (e) { return dflt; } }   /* قيمةٌ تالفة ⇒ الافتراض */
     function slice9() {
       var U = pj9("bassam_auth_users_v1", []), me = null, i;
@@ -1818,7 +1879,11 @@
     /* KIVO_265 · k265-fix: نافذةُ السبب لمسارات الخادم (askReason9) — إعادةُ فتح المهمة في الإنفاذ */
     askReason: askReason9,
     /* إصلاح (مدير المنصة لا يُطلب منه سبب): هل الحسابُ الحالي معفًى من نوافذ السبب؟ الخادمُ هو الحَكَم (016 reasonExempt) — هذه لئلا تُفتح نافذةٌ لا حاجة لها */
-    reasonExempt: function () { try { var a9 = KIVO.BassamAuth, u9 = a9 && a9.user && a9.user(); return !!(u9 && u9.role === "super"); } catch (e) { return false; } },
+    reasonExempt: exempt9,
+    /* V7 · د5-هـ (44): السببُ قبل الإرسال — reasonFirst(k, مفاتيحُ السبب, cb({go, reason})) · reasonRule(اسمُ المورد, fn(قديم, جديد, k) ⇒ [مفاتيحُ السبب]) يسجّلها مالكُ المورد */
+    reasonFirst: reasonFirst9,
+    reasonRule: function (rn, fn) { if (typeof rn === "string" && typeof fn === "function") (rsnRules9[rn] = rsnRules9[rn] || []).push(fn); },
+    reasonNeed: function (k) { return rsnNeed9(String(k || "")); },
     /* يُفرغ ما في الطابور ثم يغلق الباب — قبل إنهاء الجلسة. الوعدُ يُنتظر. */
     bye: function () { var p = flushAsync(5000); bye9 = true; try { imcClear9(); } catch (e) {} return p; },
     /* R169: للاختبار والتشخيص — أحداثُ ما في الطابور الآن */
@@ -1830,6 +1895,7 @@
     resync: function (proj) { return readSetHook9 ? readSetHook9(!!proj) : Promise.resolve({ ok: 0, err: 'read-unavailable' }); },
     operations: Object.freeze({
       resources: operationResources9,
+      device: devKey9,   /* V7 · د5-ح: مفتاحُ جهازٍ لا يُطلب من الخادم (030 pageData) — بدل أن تعرف القاعدةُ مفاتيحَ الأنظمة */
       context: operationContext9,
       departmentContext: operationDepartmentContext9,
       snapshot: function () { return operationSnapshot9 && operationSame9(operationSnapshot9) ? operationClone9(operationSnapshot9) : null; },

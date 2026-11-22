@@ -1,0 +1,18 @@
+{
+ "_note": "V7 · د5-ح (بند 8): رابطُ «التقرير اليومي» في القائمة الجانبية حين تغيب «المتابعة اليومية» — قطعُ التقرير في فتحات موضع المتابعة نفسِها (رابطُ القائمة · ترتيبُها · أسماؤها). نصُّها فارغ بحضور المتابعة (التقريرُ تبويبٌ تحتها فلا رابطَ له)، وبديلُ only يُكتب حين تكون قطعتُه وحدها في الفتحة، أي حين يغيب مجلدُ المتابعة. لا ملفَّ في القاعدة يسمّي نظاماً.",
+ "shell.nav.daily": {
+  "order": 20,
+  "text": "",
+  "only": "      <a class=\"{{nDreport}}\" data-key=\"dreport\" role=\"link\" tabindex=\"0\" sc-camel-on-click=\"{{goDreport}}\" title=\"{{tDreport}}\"><span class=\"ni\"><svg width=\"16\" height=\"16\" sc-camel-view-box=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-i=\"i-43ca6054\"></svg></span><span class=\"nlbl\">التقرير اليومي</span></a>\n"
+ },
+ "pages.navOrder.daily": {
+  "order": 20,
+  "text": "",
+  "only": ",\n  \"dreport\""
+ },
+ "pages.navNames.daily": {
+  "order": 20,
+  "text": "",
+  "only": ",\n  \"dreport\": \"التقرير اليومي\""
+ }
+}

@@ -124,7 +124,7 @@ function observer(live, snapshot) {
     Intl: { DateTimeFormat: class { formatToParts() { return Object.entries(HIJRI).map(([type, value]) => ({ type, value })); } } },
     fetch() { throw Error('No network in observer source regression'); },
   };
-  vm.runInNewContext(source('src/services/442-notif-observer.js'), context);
+  vm.runInNewContext(source('src/i18n/385-calendar.js') + '\n' + source('src/services/442-notif-observer.js'), context);   /* V7 · د5-د2: التقويمُ الموحّد بتقويم السياق المثبَّت */
   reads.length = 0;
   return { context, reads, events, writes, values, scoped, listeners };
 }

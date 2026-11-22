@@ -27,7 +27,7 @@ async function raw(W, ck, mut) {
 const denied = (sv) => (sv.j && sv.j.denied && sv.j.denied[KT] ? String(sv.j.denied[KT].why || '?') : '');
 const saved = (sv) => !!(sv.j && sv.j.revs && sv.j.revs[KT]);
 
-for (const mode of ['legacy', 'enforce']) {
+for (const mode of ['enforce']) {
   const M = '[' + mode + '] ';
 
   test(M + 'H-1 (أ) الحفظُ الخامّ بانتحال المنشئ (x.by = مدير النظام) وسلسلةِ تكرار من حامل task.edit بلا task.create يُرفض · والتوليدُ الكسول لا يُنشئ شيئاً', async () => {

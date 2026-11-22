@@ -281,10 +281,12 @@ function rsSaveAudit(env, plan, A, meta, sid) {
     supplied = supplied.filter(function (e) {
       return !/^tk/i.test(e.cid);
     });
+  supplied = supplied.filter(function (e) { return e.etype !== 'perm44'; });   /* V7 · د5-هـ (44): «سجل الصلاحيات» يكتبه الخادمُ وحده */
   plan.kv.pend.forEach(function (pd) {
     var incoming = supplied.filter(function (e) {
       return e.k === pd.k;
     });
+    if (resName(pd.k) === PERM44_RES || pd.k === K_PERM) { try { var p44 = perm44AudEv(pd.k, pd.cur, pd.act === 'del' ? null : pd.v, sid + '_' + rows.length); if (p44) incoming = incoming.concat([p44]); } catch (e44) { swallow('perm44-aud', e44); } }
     if (!incoming.length)
       incoming = [
         {
@@ -400,7 +402,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       operationReadGuards.push(revGuard(env,readKey,readBase));
     }
   }
-  var kv = await applySave(env, body, A, meta, Object.assign({}, opt, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN }));
+@@SYS:save.pre.daily@@  var kv = await applySave(env, body, A, meta, Object.assign({}, opt, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN }));
   kv.revs = kv.revs || reference.inputRevs;
   if (opt.__serverDepartmentWipes) {
     var wipeOperations = rsDepartmentOperationalDeletes(env, reference, A, body, opt.__serverDepartmentWipes);
@@ -430,7 +432,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
   }
   if (!transition.transitions.length && !opt.__serverDepartmentWipes && !opt.__employeeRequestId && !operationalSave && !referenceDependentSave)
     return await applySave(env, body, A, meta, Object.assign({}, opt, { __cuPass: RESTORE_INTERNAL_TOKEN }));
-  kv.pend = kv.pend.filter(function (pd) {
+@@SYS:save.pend.daily@@  kv.pend = kv.pend.filter(function (pd) {
     var changed = pd.act === 'del' ? pd.cur != null : pd.v !== pd.cur;
     // Canonical merges can turn an authorized write into a no-op (notably a
     // credential-redacted account list). Its current revision still settles
@@ -841,6 +843,7 @@ async function rsResetRoute(env, request, path, url, AX, superX) {
   var phZ = await hashPw(pwZ);
   var usersZ = [{ id: 'su', un: unZ, ph: phZ, name: nmZ, role: 'super', mc: 1 }];
   var stZ = [
+    rkGuard(env, rkZ),   /* V7 · د5-هـ (أمن ٢): المفتاحُ الذي أجاز التهيئة ما زال المخزَّن (لم تستهلكه استعادةٌ ولا تهيئةٌ متزامنة) */
     env.DB.prepare('DELETE FROM notification_user_state'), env.DB.prepare('DELETE FROM notification_targets'), env.DB.prepare('DELETE FROM notification_messages'),
     env.DB.prepare('DELETE FROM notification_dedup'), env.DB.prepare('DELETE FROM notification_type_overrides'), env.DB.prepare('DELETE FROM notification_checkpoints'),
 @@SYS:reset.irshad@@@@SYS:reset.custody@@    env.DB.prepare('DELETE FROM restore_operations'), env.DB.prepare('DELETE FROM restore_preimage'), env.DB.prepare('DELETE FROM restore_snapshot_manifest'),
@@ -861,6 +864,6 @@ async function rsResetRoute(env, request, path, url, AX, superX) {
   stZ.push(env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = ?2').bind('rev', '1'));
   if(!Number.isSafeInteger(env.__restoreEpoch)||env.__restoreEpoch>=Number.MAX_SAFE_INTEGER)throw dbGuardError('db-restore-epoch-invalid');
   stZ.push(env.DB.prepare("INSERT INTO meta(k,v) VALUES('restore_epoch',?1) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(env.__restoreEpoch+1)),env.DB.prepare('DELETE FROM sec'),audEvStmt(env, { cid: 'reset_' + Date.now().toString(36), ts: Date.now(), uid: AX.u.id, un: AX.u.un, dept: '', k: 'system', rev: 1, etype: 'system', eid: 'platform', ename: 'المنصة', act: 'reset', ctx: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ }), bef: '', aft: '' }),secStmt(env, { uid: AX.u.id, un: AX.u.un, act: 'reset', detail: JSON.stringify({ keepBrand: keepBrand, newAdmin: unZ, byName: AX.u.name || '' }), ip: rmZ.ip, city: rmZ.city, dev: rmZ.dev }));
-  await env.DB.batch(stZ);
+  try { await env.DB.batch(stZ); } catch (eZ) { if (isRkConflict(eZ)) return json({ ok: 0, err: 'مفتاح الاستعادة استُعمل أو تغيّر أثناء التهيئة — لم يُنفَّذ شيء', why: 'rk-changed' }, 409); throw eZ; }
   return json({ ok: 1 }, 200, clearCookie(url));
 }
