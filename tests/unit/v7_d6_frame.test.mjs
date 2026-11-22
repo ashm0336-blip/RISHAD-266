@@ -355,7 +355,7 @@ test('«نقل إلى…» · «أثر النقل على الأنظمة»: what 
   /* الحسابُ قراءةٌ افتراضية: لم يُحفظ شيء ولم يتغيّر الهيكل، والمصدرُ دالةُ الوراثة القائمة (asIfUnder) */
   assert.equal(JSON.stringify([W.D.nodes(), W.D.list()]), reg0); assert.equal(W.D.nodeOf(A).pid, G); deq(J(W.D.ancestorsOf(A)), [G, SEC]);
   const f = ORG_SRC.slice(ORG_SRC.indexOf('  _ogMoveEffect('), ORG_SRC.indexOf('  _ogSetAll('));
-  assert.match(f, /D\.asIfUnder\(id, pid \|\| null, read\)/); assert.match(f, /this\._p44On\(u, x, off\)/); assert.doesNotMatch(f, /ancestorsOf|rawCap|hasCap|deptCap/, 'no second copy of the inheritance rule');
+  assert.match(f, /D\.asIfUnder\(id, pid \|\| null, read\)/); assert.match(f, /this\._p44On\(u, x, off\)/); assert.match(f, /!this\._p44Lock\(u, x, off\) && this\._p44On\(u, x, off\)/, 'effective = what the «الأنظمة» tab shows (not locked from above ∧ on)'); assert.doesNotMatch(f, /ancestorsOf|rawCap|hasCap|deptCap/, 'no second copy of the inheritance rule');
   /* وحدةٌ مستقلةُ السجلّ تحت أبٍ أضيق: ما يطفئه الأبُ الجديد يُذكر باسمها وحدها */
   const W2 = orgWorld({ hash: '#/sysadmin/org/' + Z + '/overview', caps: { [G]: ['staff'] } }); let y = W2.render(); y.ogMoveOpen(); y = W2.render();
   y.ogMoveOnPid({ target: { value: G } }); y = W2.render();
@@ -452,9 +452,9 @@ test('the root row: «الأنظمة» = the platform switches; «المسؤول
   v = W.open('#/sysadmin/org/platform/admins'); assert.equal(v.ogOnAdmins, true); assert.equal(v.p44IsSup, true); assert.equal(v.p44IsMgr, false); assert.equal(v.p44Role.n, 'مدير المنصة'); assert.equal(v.p44Head, 'المسؤولون');
   v = W.open('#/sysadmin/org/platform/log'); assert.equal(v.ogLogRoot, true); assert.equal(v.p44OnLog, false);
   /* قرارُ المالك: يفتح سجلَّ الأنشطة مفلتراً على تغييرات مستوى المنصة (مفاتيح الأنظمة · مسؤولو المنصة) — لا السجلَّ كلَّه */
-  deq(J(v.ogLogRootLinks.map((l) => [l.k, l.t])), [['bassam_platform_v1', 'تغييرات مفاتيح الأنظمة وإعدادات المنصة'], ['bassam_auth_users_v1', 'تغييرات حسابات الدخول ومسؤولي المنصة']]);
-  v.ogLogRootLinks[0].go({ preventDefault() {} }); await W.tick(); deq(W.hostCalls.at(-1), ['openPlatLog', 'bassam_platform_v1']);
-  v.ogLogRootLinks[1].go({ preventDefault() {} }); await W.tick(); deq(W.hostCalls.at(-1), ['openPlatLog', 'bassam_auth_users_v1']);
+  deq(J(v.ogLogRootLinks.map((l) => [l.k, l.t])), [['switches', 'تغييرات مفاتيح الأنظمة وإعدادات المنصة'], ['accounts', 'تغييرات حسابات الدخول ومسؤولي المنصة']]);
+  v.ogLogRootLinks[0].go({ preventDefault() {} }); await W.tick(); deq(W.hostCalls.at(-1), ['openPlatLog', 'switches']);
+  v.ogLogRootLinks[1].go({ preventDefault() {} }); await W.tick(); deq(W.hostCalls.at(-1), ['openPlatLog', 'accounts']);
   assert.ok(!W.hostCalls.some((c) => c[0] === 'conGo'), 'never the unfiltered log');
   /* وحدة: «المسؤولون» بطاقةُ «مدير الوحدة» القائمة — و«الأدوار» أدوارُ الموظفين وحدها */
   v = W.open('#/sysadmin/org/' + A + '/admins'); assert.equal(v.p44IsMgr, true); assert.equal(v.p44MgrFull, true); assert.equal(v.p44MgrAddOn, true); assert.match(v.p44Lead, /مسؤولو «TEST_ONLY إدارة أ»: 1 مدير/);
@@ -505,7 +505,7 @@ test('ب13 skeleton · narrow width: one column, the unit button opens the tree 
   assert.match(ORG_CSS, /\.og-tabs\{[^}]*overflow-x:auto/, 'the tab strip scrolls sideways'); assert.match(ORG_CSS, /\.og-tab\{flex:none;/);
   /* .og.og.og: فوق قاعدتَي اللمس العامتين (pointer:coarse ⇒ 32px) — المتصفحُ يقيس الارتفاعَ الفعلي بمحاكاة اللمس (tests/browser/v7_d6_frame) */
   assert.match(narrow, /\.og\.og\.og \.og-b,\.og\.og\.og \.og-l,\.og\.og\.og \.og-q,\.og\.og\.og \.og-flt button,\.og-tab,\.og\.og\.og \.og-radio button,\.og\.og\.og \.og-dlg \.fl input,\.og\.og\.og \.og-dlg \.fl select,\.og\.og\.og \.og-dlg \.ft button\{min-height:44px\}/, '44px touch targets');
-  assert.match(narrow, /\.og-rw\{min-height:48px\}/); assert.match(narrow, /\.og-cv\{width:44px;height:44px/); assert.match(narrow, /\.og-dlg\{width:100%\}/, 'dialogs fill the width');
+  assert.match(narrow, /\.og-rw\{min-height:48px\}/); assert.match(narrow, /\.og-cv\{position:relative;width:28px;height:44px/); assert.match(narrow, /\.og-cv::before\{content:"";position:absolute;inset:0 -8px\}/, 'the fold arrow: 44px high, 28px + 2×8px = 44px wide hit area'); assert.match(narrow, /\.og-ck::before\{content:"";position:absolute;inset:-10px\}/, 'the checkbox: 24px + 2×10px = 44px hit area'); assert.match(narrow, /\.og-dlg\{width:100%\}/, 'dialogs fill the width');
   /* الزرّ يحمل اسمَ الوحدة ومسارَها ويفتح اللوحة؛ اختيارُ وحدةٍ يغلقها */
   assert.match(ORG_VIEW, /<button type="button" class="og-ub" aria-haspopup="dialog" aria-expanded="\{\{ogSheetAttr\}\}" onClick="\{\{ogSheetOpen\}\}"[^>]*>\s*<span class="og-ub-t"><b>\{\{ogU\.name\}\}<\/b><small>\{\{ogU\.pathTxt\}\}<\/small><\/span>/);
   const W = orgWorld({ hash: '#/sysadmin/org/' + A + '/roles' }); let v = W.render(); assert.equal(v.ogSheetAttr, 'false');

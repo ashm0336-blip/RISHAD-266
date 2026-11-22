@@ -146,8 +146,13 @@
   /* V7 · د6 (ب13): .og.og.og — أعلى من قاعدتَي اللمس العامتين (pointer:coarse ⇒ أزرارُ صفحة الإعدادات المضيفة وحقولُ main بـ min-height:32px) فتبقى أهدافُ الشاشة 44px */
   .og.og.og .og-b,.og.og.og .og-l,.og.og.og .og-q,.og.og.og .og-flt button,.og-tab,.og.og.og .og-radio button,.og.og.og .og-dlg .fl input,.og.og.og .og-dlg .fl select,.og.og.og .og-dlg .ft button{min-height:44px}
   .og-rw{min-height:48px}
-  .og-cv{width:44px;height:44px;margin:-2px 0}
-  .og-ck{width:24px;height:24px;margin:10px}
+  /* أعمدةُ الشجرة أضيق قليلاً باللمس ليبقى الاسمُ مقروءاً بجانب أهداف 44px */
+  .og-th,.og-rw{gap:3px}.og-c-kd{width:56px}.og-c-mg{width:46px}.og-c-n{width:34px}
+  /* مربّعُ التحديد وسهمُ الطيّ: هدفُ اللمس 44px بمساحةِ نقرٍ ممتدّة (::before) لا بعرضٍ يأكل عمودَ الاسم */
+  .og-cv{position:relative;width:28px;height:44px;margin:-2px 0}
+  .og-cv::before{content:"";position:absolute;inset:0 -8px}
+  .og-ck{width:24px;height:24px;margin:10px 2px}
+  .og-ck::before{content:"";position:absolute;inset:-10px}
   .og-ck[aria-checked="true"]::after{inset:3px 7px 6px}
   .og.og.og .og-nm{min-height:44px}
   .og-kids a{display:inline-flex;align-items:center;min-height:44px}

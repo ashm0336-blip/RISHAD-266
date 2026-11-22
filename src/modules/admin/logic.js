@@ -3336,10 +3336,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     ["bassam_platform_v1", "مفاتيح الأنظمة وإعدادات المنصة"],
     ["bassam_auth_users_v1", "حسابات الدخول ومسؤولو المنصة"],
   ];
-  /* يفتح «سجل الأنشطة والتغييرات» مفلتراً على مجموعةٍ من مستوى المنصة (من تبويب «السجل» لصف «المنصة كلها») */
+  /* يفتح «سجل الأنشطة والتغييرات» مفلتراً على مجموعةٍ من مستوى المنصة (من تبويب «السجل» لصف «المنصة كلها») — k: "switches" | "accounts" */
   audOpenPlat(k) {
     const S = this.state.aud || {};
-    this.setState({ aud: { ...S, dept: "", f: { k: this.AUD_PLAT.some((o) => o[0] === k) ? k : this.AUD_PLAT[0][0] }, open: null, loaded: !1 } }, () => this._ovGo("oplog"));
+    this.setState({ aud: { ...S, dept: "", f: { k: this.AUD_PLAT["accounts" === k ? 1 : 0][0] }, open: null, loaded: !1 } }, () => this._ovGo("oplog"));
   }
   audSetF(k, v) {
     const S = this.state.aud || {};

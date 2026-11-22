@@ -27,7 +27,7 @@
 | employees (Employees) | 52 | 6 | 105 | 0 | 7 |
 | irshad (Irshad) | 18 | 0 | 17 | 0 | 6 |
 | kpis (KPIs) | 1 | 0 | 2 | 0 | 1 |
-| org (Org) | 27 | 3 | 38 | 0 | 9 |
+| org (Org) | 27 | 3 | 40 | 0 | 10 |
 | plan (Operational Plan) | 58 | 10 | 113 | 0 | 4 |
 | planning (Planning) | 0 | 0 | 6 | 0 | 0 |
 | profile (Profile) | 31 | 18 | 107 | 0 | 11 |

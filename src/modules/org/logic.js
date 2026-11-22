@@ -458,13 +458,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this.setState({ ogDlg: { k: "move", id: s, pid: pid || "", msg: "", dnd: { ref: id, pos: pos, pid: pid || "", txt: "inside" === pos ? "" : ("before" === pos ? "قبل" : "بعد") + " «" + (t.name || "") + "»" } } });
   }
   /* V7 · د6 (قرار المالك) · «أثر النقل على الأنظمة»: للوحدة ولكل ما تحتها — ما سيُطفأ وما سيُفتح بالوراثة، بالأسماء. المصدرُ دالةُ الوراثة القائمة نفسُها
-     (_p44On ← BassamPerm.on) تُسأل مرتين: الآن، وكأنّ الوحدة تحت الأب الجديد (BassamDepts.asIfUnder — قراءةٌ بلا حفظ)؛ لا نسخةَ ثانية من القاعدة */
+     (_p44Lock + _p44On ← BassamPerm.on، كما يرسم تبويبُ «الأنظمة» صفوفَه) تُسأل مرتين: الآن، وكأنّ الوحدة تحت الأب الجديد (BassamDepts.asIfUnder — قراءةٌ بلا حفظ)؛ لا نسخةَ ثانية من القاعدة */
   _ogMoveEffect(id, pid) {
     const D = KIVO.BassamDepts,
       off = this._ogTry(() => this._p44PlatOff(), []),
       sys = this._ogTry(() => this._p44Sys().filter((x) => x.tg), []),
       units = [id].concat(this._ogTry(() => D.descendantsOf(id) || [], [])),
-      read = () => units.map((u) => sys.map((x) => this._p44On(u, x, off))),
+      /* المفعّلُ كما يعرضه تبويبُ «الأنظمة» نفسُه: غيرُ مقفلٍ من فوق (_p44Lock) ∧ مفعّلٌ في سقفها (_p44On) — فما يُطفئه الأبُ الجديد بالقفل (مثل ورقة «عهد الموظفين») يُسمّى هنا أيضاً */
+      read = () => units.map((u) => sys.map((x) => !this._p44Lock(u, x, off) && this._p44On(u, x, off))),
       now = read(),
       then = this._ogTry(() => D.asIfUnder(id, pid || null, read), null),
       out = { off: [], on: [], nOff: 0, ok: !!then };
@@ -750,8 +751,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ogLogRootTxt: "تغييرات مستوى المنصة تُعرض في «سجل الأنشطة والتغييرات» مفلترةً عليها — وتغييرات كل وحدة في تبويب «السجل» لها.",
         /* قرارُ المالك: السجلُّ يُفتح مفلتراً على تغييرات مستوى المنصة (مفاتيح الأنظمة · مسؤولو المنصة) لا السجلَّ كلَّه — الفلترُ في الصفحة المضيفة (audOpenPlat) */
         ogLogRootLinks: [
-          ["bassam_platform_v1", "تغييرات مفاتيح الأنظمة وإعدادات المنصة"],
-          ["bassam_auth_users_v1", "تغييرات حسابات الدخول ومسؤولي المنصة"],
+          ["switches", "تغييرات مفاتيح الأنظمة وإعدادات المنصة"],
+          ["accounts", "تغييرات حسابات الدخول ومسؤولي المنصة"],
         ].map((x) => ({
           k: x[0],
           t: x[1],

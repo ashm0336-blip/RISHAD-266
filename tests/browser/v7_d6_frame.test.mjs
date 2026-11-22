@@ -4,7 +4,7 @@
    ب2 · قيمُ أعمدة الشجرة للهيكل المبذور · الفلاتر والبحث وفرد/طيّ الكل · التحديد المتعدد وشريطُه و«إلغاء التحديد» · «تصدير النسخة الشاملة» تحتها؛
    ب3 · نافذةُ الإضافة من الموضعين (الأبُ معبّأ) · «نقل إلى…» بلا الوحدة وفرعها وبـ«الموضع بعد النقل» (النقلُ يعمل بلا سحب) · الحذفُ يرفض غيرَ الفارغة بسببه ·
         لا ⋯ على الصفوف ولا تعديلَ اسمٍ في الرأس؛
-   ب10 · ملخّصُ الوحدة وخاناتُه · «ما تحتها» · قائمةُ التهيئة خمسُ خطواتٍ تفتح تبويباتها؛
+   ب10 · ملخّصُ الوحدة وخاناتُه · «ما تحتها» · قائمةُ التهيئة أربعُ خطواتٍ مشتقّة من البيانات تفتح تبويباتها؛
    ب12 (المدخل) · عنوانُ المدير #/admin/perm يبقى يعمل ويفتح المكوّنَ نفسَه بشجرة وحدته وحدها وبلا أفعال هيكل؛
    ب13 · 390 و768: عمودٌ واحد · زرُّ الوحدة يفتح الشجرة لوحةً من الأسفل · شريطُ التبويبات يُسحب أفقياً · أهدافُ اللمس 44px · النوافذُ تملأ العرض · لا تمريرَ أفقياً للصفحة.
    فتحُ الصفحات لا يحفظ شيئاً؛ ولا أخطاءَ صفحة. */
@@ -237,7 +237,7 @@ test('V7 · د6 ب3 · ب10 · structure actions in one place: add from both ent
     assert.deepEqual((await ov.locator('.og-sumc small').allInnerTexts()).map(norm), ['المسؤول', 'الأشخاص', 'الأنظمة المفعّلة']);
     assert.deepEqual((await ov.locator('section[aria-label="ما تحتها"] a').allInnerTexts()).map(norm).sort(), ['TEST_ONLY إدارة أ', 'TEST_ONLY إدارة ب']);
     const steps = await ov.locator('.og-steps li').evaluateAll((L) => L.map((e) => [e.dataset.ogStep, e.querySelector('b').textContent, e.dataset.ok]));
-    assert.deepEqual(steps.map((x) => x.slice(0, 2)), [['node', 'العقدة'], ['systems', 'الأنظمة'], ['admins', 'المسؤول'], ['roles', 'الصلاحيات'], ['review', 'المراجعة']], 'five real steps');
+    assert.deepEqual(steps.map((x) => x.slice(0, 2)), [['node', 'العقدة'], ['systems', 'الأنظمة'], ['admins', 'المسؤول'], ['roles', 'الصلاحيات']], 'four real steps (owner decision: «المراجعة» had no meaning of its own)');
     assert.equal(steps[0][2], 'true'); assert.equal(steps[2][2], 'false', 'the node has no manager: the step is missing');
     const sy = await p.locator('main .og-steps').evaluate((e) => [...e.children].map((c) => Math.round(c.getBoundingClientRect().top)));
     assert.equal(new Set(sy).size, 1, 'the steps sit in one row');
@@ -313,6 +313,8 @@ test('V7 · د6 ب3 · ب10 · structure actions in one place: add from both ent
     assert.equal(await dlg('move').locator('select[data-og-f="parent"]').inputValue(), G, 'the current parent is selected');
     await dlg('move').locator('select[data-og-f="parent"]').selectOption(sector.id); await p.waitForTimeout(300);
     assert.equal(norm(await dlg('move').locator('[data-og="move-pos"]').innerText()), norm('TEST_ONLY قطاع ← TEST_ONLY إدارة ج٢'), '«الموضع بعد النقل»');
+    /* «أثر النقل على الأنظمة» تحت «الموضع بعد النقل»: وحدةٌ أنظمتُها مطفأة إلى أبٍ مطفأ ⇒ لا يتغيّر شيء، والزرُّ «انقل» */
+    assert.equal(await dlg('move').locator('[data-og="move-effect"] [data-og-eff="none"]').count(), 1); assert.equal(norm(await dlg('move').locator('[data-og-ok="move"]').innerText()), 'انقل');
     await dlg('move').locator('[data-og-ok="move"]').click(); await p.waitForTimeout(2500); await lab.idle();
     assert.equal(J(KD).find((x) => x.id === c.id).gid, sector.id, 'moved by the dialog (no drag)');
     assert.equal(norm(await p.locator('main .og-hd [data-og="path"]').innerText()), 'TEST_ONLY قطاع'); assert.equal(await H(), '#/sysadmin/org/' + c.id + '/overview');
@@ -347,6 +349,127 @@ test('V7 · د6 ب3 · ب10 · structure actions in one place: add from both ent
     assert.deepEqual(s.errs, [], 'no page errors');
   } finally { await b.close(); await lab.close(); }
 });
+
+/* قرارُ المالك (REPLY2 · 1): نافذةُ «نقل إلى…» تعرض «أثر النقل على الأنظمة» بالأسماء للوحدة ولكل ما تحتها، وزرُّ التأكيد يذكر ما سيُطفأ؛
+   والسحبُ والإفلات يفتح النافذةَ نفسَها معبّأةً ولا يحفظ شيئاً قبل التأكيد. */
+test('V7 · د6 · «نقل إلى…»: the systems-effect card (off · on · neither) and the confirm label; drag and drop opens the same dialog and saves nothing until confirm', { timeout: 600000 }, async () => {
+  const lab = await startLab(); const b = await chromium.launch();
+  try {
+    const { s, p, row } = await page(b, lab); const J = (k) => JSON.parse(read(lab, k));
+    const dlg = p.locator('[data-og-dlg="move"]'), ov = p.locator('main [data-org-tab="overview"]');
+    const eff = async (k) => (await dlg.locator('[data-og-eff="' + k + '"] li').allInnerTexts()).map(norm);
+    /* وجهةٌ مطفأة: قطاعٌ جديد بالافتراضي «مطفأة كلها» */
+    await s.go('#/sysadmin/org/platform/overview', 3000);
+    await p.locator('main .og-tree [data-og-act="add"]').click(); await p.waitForTimeout(500);
+    await p.locator('[data-og-dlg="add"] #ogAddName').fill('TEST_ONLY قطاع مطفأ'); await p.locator('[data-og-dlg="add"] #ogAddName').blur(); await p.locator('[data-og-dlg="add"] select[data-og-f="kind"]').selectOption('قطاع');
+    assert.match(norm(await p.locator('[data-og-dlg="add"] [data-og="add-sys-note"]').innerText()), /تنسخ الوحدة سجلَّ أبيها كما هو الآن، ومفتاح المنصة فوق الجميع/, 'the line under the parent choice (REPLY2 · 2)');
+    await p.locator('[data-og-dlg="add"] [data-og-ok="add"]').click(); await p.waitForTimeout(2500); await lab.idle();
+    const X = J(KG).find((x) => x.name === 'TEST_ONLY قطاع مطفأ'); assert.ok(X);
+    /* ما هو مفعّلٌ لإدارة ب الآن */
+    await s.go('#/sysadmin/org/' + B + '/systems', 2500);
+    const onB = (await p.locator('main [data-org-tab="systems"] .p44-row[data-on="true"] b').allInnerTexts()).map(norm); assert.ok(onB.length > 0);
+    await s.go('#/sysadmin/org/' + B + '/overview', 2000);
+    const reg0 = [read(lab, KG), read(lab, KD)];
+    await ov.locator('[data-og-act="move"]').click(); await p.waitForTimeout(500);
+    /* ① الأبُ الحالي: لا شيء */
+    assert.equal(await dlg.locator('[data-og-eff="none"]').count(), 1); assert.equal(norm(await dlg.locator('[data-og-ok="move"]').innerText()), 'انقل');
+    const posY = (await dlg.locator('[data-og="move-pos"]').boundingBox()).y, effY = (await dlg.locator('[data-og="move-effect"]').boundingBox()).y; assert.ok(effY > posY, 'the card is under «الموضع بعد النقل»');
+    /* ② إلى القطاع المطفأ: كلُّ ما هو مفعّلٌ سيُطفأ، باسم الوحدة وأسماء الأنظمة، والزرُّ يذكره */
+    await dlg.locator('select[data-og-f="parent"]').selectOption(X.id); await p.waitForTimeout(400);
+    const off = await eff('off'); assert.equal(off.length, 1); assert.ok(off[0].startsWith(norm('TEST_ONLY إدارة ب') + ':'), off[0]);
+    const named = off[0].slice(off[0].indexOf(':') + 1).split(/\s[·\-–]\s/).map((x) => x.trim()).filter(Boolean).sort();
+    assert.ok(named.length > 0 && named.every((n) => onB.includes(n)), 'the card names systems that are ON now: ' + JSON.stringify(named));
+    assert.equal(await dlg.locator('[data-og-eff="on"]').count(), 0); assert.equal(await dlg.locator('[data-og-eff="none"]').count(), 0);
+    assert.equal(norm(await dlg.locator('[data-og-ok="move"]').innerText()), norm('انقل وأطفئ ما ذُكر (' + named.length + ')'), 'the confirm button says it');
+    assert.match(await dlg.locator('[data-og-ok="move"]').getAttribute('class'), /bs-btn--danger/);
+    await lab.idle(); assert.deepEqual([read(lab, KG), read(lab, KD)], reg0, 'looking at the effect saved nothing');
+    await dlg.locator('[data-og-ok="move"]').click(); await p.waitForTimeout(2500); await lab.idle();
+    assert.equal(J(KD).find((x) => x.id === B).gid, X.id, 'confirmed: moved');
+    await s.go('#/sysadmin/org/' + B + '/systems', 2500);
+    /* ما سمّته البطاقةُ هو بالضبط ما انطفأ فعلاً بعد النقل (المصدرُ الواحد: الشاشةُ نفسُها بعد الحفظ) */
+    const onAfter = (await p.locator('main [data-org-tab="systems"] .p44-row[data-on="true"] b').allInnerTexts()).map(norm);
+    assert.deepEqual(onB.filter((n) => !onAfter.includes(n)).sort(), named, 'the card predicted exactly what was switched OFF'); assert.ok(onAfter.every((n) => onB.includes(n)), 'and nothing was opened');
+    /* ③ العودة إلى الأب الأول: ما في سجلّها يُفتح بالوراثة، بالأسماء، والزرُّ «انقل» */
+    await s.go('#/sysadmin/org/' + B + '/overview', 2000); await ov.locator('[data-og-act="move"]').click(); await p.waitForTimeout(500);
+    await dlg.locator('select[data-og-f="parent"]').selectOption(G); await p.waitForTimeout(400);
+    const on = await eff('on'); assert.equal(on.length, 1);
+    assert.deepEqual(on[0].slice(on[0].indexOf(':') + 1).split(/\s[·\-–]\s/).map((x) => x.trim()).filter(Boolean).sort(), named, 'going back opens, by name, exactly what was switched OFF');
+    assert.equal(await dlg.locator('[data-og-eff="off"]').count(), 0); assert.equal(norm(await dlg.locator('[data-og-ok="move"]').innerText()), 'انقل');
+    await dlg.locator('.ft button', { hasText: 'إلغاء' }).click(); await p.waitForTimeout(300);
+    /* ④ السحبُ والإفلات: يفتح النافذةَ نفسَها معبّأةً — ولا يُحفظ شيءٌ قبل التأكيد */
+    await p.locator('main [data-og-act="expand"]').first().click(); await p.waitForTimeout(300);
+    const reg1 = [read(lab, KG), read(lab, KD)];
+    const saves = []; p.on('request', (r) => { if (r.method() === 'POST' && /\/api\/save$/.test(new URL(r.url()).pathname)) saves.push(1); });
+    await row(B).dragTo(row(G), { targetPosition: { x: 200, y: 20 } }); await p.waitForTimeout(800);
+    assert.equal(await dlg.count(), 1, 'the drop opens «نقل إلى…»'); assert.match(norm(await dlg.locator('.t').innerText()), /TEST_ONLY إدارة ب/);
+    assert.equal(await dlg.locator('select[data-og-f="parent"]').inputValue(), G, 'prefilled with the drop target');
+    assert.equal((await eff('on')).length, 1, 'with its effect on the systems');
+    await lab.idle(); assert.deepEqual([read(lab, KG), read(lab, KD)], reg1, 'the drop saved nothing'); assert.deepEqual(saves, []);
+    await dlg.locator('.ft button', { hasText: 'إلغاء' }).click(); await p.waitForTimeout(400); await lab.idle();
+    assert.deepEqual([read(lab, KG), read(lab, KD)], reg1, 'cancel: nothing moved');
+    await row(B).dragTo(row(G), { targetPosition: { x: 200, y: 20 } }); await p.waitForTimeout(800);
+    await dlg.locator('[data-og-ok="move"]').click(); await p.waitForTimeout(2500); await lab.idle();
+    assert.equal(J(KD).find((x) => x.id === B).gid, G, 'confirm: moved by the drop');
+    assert.deepEqual(s.errs.filter((e) => !/ResizeObserver/.test(e)), [], 'no page errors');
+  } finally { await b.close(); await lab.close(); }
+});
+
+/* قرارُ المالك (REPLY3 · 1): «السجل» لصف «المنصة كلها» يفتح سجلَّ الأنشطة مفلتراً على تغييرات مستوى المنصة — لا السجلَّ كلَّه. */
+test('V7 · د6 · the root row «السجل» opens the activity log filtered to platform-level changes (system switches · accounts), not the whole log', { timeout: 600000 }, async () => {
+  const lab = await startLab(); const b = await chromium.launch();
+  try {
+    const { s, p, H } = await page(b, lab); const asked = [];
+    p.on('request', (r) => { const u = new URL(r.url()); if (u.pathname === '/api/aud' && !u.searchParams.get('first')) asked.push(u.searchParams.get('k') || ''); });
+    for (const [which, key, chip] of [['switches', 'bassam_platform_v1', 'مفاتيح الأنظمة وإعدادات المنصة'], ['accounts', 'bassam_auth_users_v1', 'حسابات الدخول ومسؤولو المنصة']]) {
+      await s.go('#/sysadmin/org/platform/log', 3000); asked.length = 0;
+      assert.equal(await p.locator('main [data-og="root-log"] a').count(), 2);
+      await p.locator('main [data-og="root-log"] a[data-og-log="' + which + '"]').click(); await p.waitForTimeout(3000);
+      assert.equal(await H(), '#/sysadmin/oplog');
+      assert.ok(asked.length >= 1 && asked.every((k) => k === key), which + ': every read of the log is filtered to ' + key + ': ' + JSON.stringify(asked));
+      const on = await p.locator('main .adm-flt .adm-chip', { hasText: chip }).first().evaluate((e) => e.getAttribute('aria-pressed') || e.getAttribute('aria-selected') || e.className);
+      assert.match(String(on), /true|on|is-on|active/, 'the filter chip is shown as chosen: ' + on);
+      assert.ok(await p.locator('main button', { hasText: 'مسح المرشّحات' }).count() >= 1, 'and can be cleared');
+    }
+    assert.deepEqual(s.errs.filter((e) => !/ResizeObserver/.test(e)), [], 'no page errors');
+  } finally { await b.close(); await lab.close(); }
+});
+
+/* قرارُ المالك (REPLY3 · 4): العمودان من عرض 1024 فما فوق (التابلت الأفقي)، والشجرةُ هناك أضيق، والقائمةُ الجانبية تُطوى إن احتاج العرض — باللمس والقلم. */
+for (const [W, Hh] of [[1024, 768], [1180, 820], [1281, 900]]) {
+  test('V7 · د6 ب13 · width ' + W + ' with touch and pen: two columns, the tree beside the unit, readable names, 44px targets, no sideways scroll; the side menu gives the width when needed', { timeout: 600000 }, async () => {
+    const lab = await startLab(); const b = await chromium.launch();
+    try {
+      const { s, p, H, og, row, side } = await page(b, lab, null, { viewport: { width: W, height: Hh }, context: { hasTouch: true, deviceScaleFactor: 1 } });
+      await s.go('#/sysadmin/org/' + A + '/overview', 4000);
+      assert.equal(await side(), 0, 'nothing scrolls sideways');
+      assert.equal(await p.locator('main .og-ub').isVisible(), false, 'no unit button: the tree is a column'); assert.equal(await p.locator('main .og-tree').isVisible(), true);
+      const bt = await p.locator('main .og-tree').boundingBox(), bu = await p.locator('main .og-unit').boundingBox();
+      assert.ok(bt.x > bu.x + bu.width - 2, 'two columns: the tree on the right, the unit on the left ' + JSON.stringify([bt, bu])); assert.ok(bt.width < bu.width, 'the tree is the narrower column');
+      const thin = await p.evaluate(() => [...document.querySelectorAll('main .og-rw .og-nm')].map((e) => [e.textContent, Math.round(e.getBoundingClientRect().width)]).filter((x) => x[1] < 60));
+      assert.deepEqual(thin, [], 'every name keeps a readable width');
+      /* القائمةُ الجانبية: مطويّةٌ ما دام العرضُ ≤ 1280 (عند 1024 هي درجٌ أصلاً)، وممدودةٌ فوقه */
+      const aside = await p.evaluate(() => { const a = document.querySelector('aside.bsb'); const r = a ? a.getBoundingClientRect() : null; return r ? Math.round(Math.max(0, Math.min(innerWidth, r.right) - Math.max(0, r.left))) : 0; });
+      if (W <= 1280) assert.ok(aside < 120, 'the side menu is folded at ' + W + ': ' + aside); else assert.ok(aside > 180, 'the side menu is open at ' + W + ': ' + aside);
+      /* أهدافُ اللمس 44px */
+      const small = await p.evaluate(() => [...document.querySelectorAll('main .og .og-tab, main .og [data-org-tab="overview"] .og-b, main .og-tree .og-b, main .og-tree .og-l, main .og-tree .og-q, main .og-tree .og-flt button, main .og-tree .og-rw, main .og-tree .og-nm')].filter((e) => e.getClientRects().length)
+        .map((e) => [e.className, Math.round(e.getBoundingClientRect().height)]).filter((x) => x[1] < 44));
+      assert.deepEqual(small, [], 'touch targets ≥ 44px');
+      /* باللمس: نقرةُ إصبعٍ على صفٍّ تختاره وتُبقي التبويب · وبالقلم (حدثُ مؤشّرٍ نوعُه pen ثم النقر) كذلك */
+      await p.locator('main .og-tab', { hasText: 'الأنظمة' }).tap(); await p.waitForTimeout(1200); assert.equal(await H(), '#/sysadmin/org/' + A + '/systems');
+      await row(B).locator('.og-nm').tap(); await p.waitForTimeout(1500); assert.equal(await H(), '#/sysadmin/org/' + B + '/systems', 'a finger tap selects the unit and keeps the tab');
+      await row(A).locator('.og-nm').evaluate((e) => { const r = e.getBoundingClientRect(), o = { bubbles: true, cancelable: true, pointerType: 'pen', pointerId: 7, isPrimary: true, clientX: r.left + 5, clientY: r.top + 5 };
+        e.dispatchEvent(new PointerEvent('pointerdown', o)); e.dispatchEvent(new PointerEvent('pointerup', o)); e.dispatchEvent(new PointerEvent('click', o)); });
+      await p.waitForTimeout(1500); assert.equal(await H(), '#/sysadmin/org/' + A + '/systems', 'a pen tap selects the unit');
+      /* النقلُ بنافذته (لا يحتاج سحباً): تُفتح باللمس وفيها أثرُ النقل */
+      await p.locator('main .og-tab', { hasText: 'نظرة عامة' }).tap(); await p.waitForTimeout(1000);
+      await p.locator('main [data-org-tab="overview"] [data-og-act="move"]').tap(); await p.waitForTimeout(600);
+      assert.equal(await p.locator('[data-og-dlg="move"] [data-og="move-effect"]').count(), 1); assert.ok((await p.locator('[data-og-dlg="move"] select').boundingBox()).height >= 44);
+      await p.locator('[data-og-dlg="move"] .ft button', { hasText: 'إلغاء' }).tap(); await p.waitForTimeout(300);
+      assert.deepEqual(await og(), { mode: 'site', unit: A, tab: 'overview', sheet: 'false' }); assert.equal(await side(), 0);
+      assert.deepEqual(s.errs.filter((e) => !/ResizeObserver/.test(e)), [], 'no page errors');
+    } finally { await b.close(); await lab.close(); }
+  });
+}
 
 /* V7 · د6 ب4 (بعد دمج القواعد): اختيارُ «أنظمة الوحدة الجديدة» في نافذة الإضافة يصل المدخلَ الواحد BassamDepts.unitAdd(seed) — بحفظٍ حقيقي:
    «مطفأة كلها» (الافتراضي) ⇒ تبويبُ «الأنظمة» للوحدة الجديدة بلا نظامٍ مفعّل، وقائمةُ مديرها الصفحاتُ الدائمة وحدها، والخادمُ يوافق؛
