@@ -172,12 +172,13 @@ test('(٣ب) كنسُ المؤقت المنقضي مع جولة الكنس بع�
   } finally { await T.close(); }
 });
 
-test('(٣ج) المهلةُ بساعةٍ مضبوطة: مؤقتٌ انقضت ساعتُه لا يُعتمد أبداً · ويكنسه أيُّ طلبٍ عاديٍّ ناجح (قراءةٌ من حسابٍ آخر) بلا استيرادٍ جديد ولا كتابة — وقبل الساعة يبقى', { timeout: 300000, ...need }, async () => {
+test('(٣ج) المهلةُ بساعةٍ مضبوطة: مؤقتٌ انقضت ساعتُه لا يُعتمد أبداً · ويكنسه أولُ حفظٍ عاديٍّ ناجح بعد الساعة (جولةُ الكنس بعد الكتابات) بلا استيرادٍ جديد — وقبل الساعة يبقى مهما كثرت الطلبات (القراءةُ لا تكنس: لا تزيد جولةَ قاعدة)', { timeout: 300000, ...need }, async () => {
   const file = await oldFile({ small: true }), T = await target(), realNow = Date.now;
   let shift = 0;
   Date.now = () => realNow() + shift;
   try {
-    const base = snapshot(T.DB), other = await T.login(LAB.mgrA, LAB.pw), read = () => T.call('/api/get?keys=bassam_platform_v1', { ck: other.ck });
+    const base = snapshot(T.DB), other = await T.login(LAB.mgrA, LAB.pw), read = () => T.call('/api/get?keys=bassam_platform_v1', { ck: other.ck }),
+      write = async () => { const w = await T.call('/api/policy', { ck: T.su.ck, body: (await T.call('/api/policy', { ck: T.su.ck })).j.policy || {} }); await T.lab.idle(); return w; };
     /* (أ) كاملُ الأجزاء، ثم تمرّ ساعةٌ ودقيقة: الاعتمادُ مرفوض 410 ولا شيء يُكتب */
     let P = protocol(T, T.su, file, { scope: SCOPE });
     await P.begin(); for (let i = 0; i < P.parts.length; i++) assert.equal((await P.part(i)).status, 200);
@@ -192,10 +193,13 @@ test('(٣ج) المهلةُ بساعةٍ مضبوطة: مؤقتٌ انقضت س�
     const rows = staged(T.DB); assert.ok(rows > 1);
     shift += 30 * 60e3;
     for (let i = 0; i < 3; i++) assert.equal((await read()).status, 200);
-    assert.equal(staged(T.DB), rows, 'قبل انقضاء الساعة: باقٍ');
+    assert.equal((await write()).status, 200);
+    assert.equal(staged(T.DB), rows, 'قبل انقضاء الساعة: باقٍ (قراءاتٌ وحفظٌ وجولةُ كنس)');
     shift += 31 * 60e3;
-    assert.equal((await read()).status, 200);
-    assert.equal(staged(T.DB), 0, 'بعد الساعة: كنسته قراءةٌ عادية من حسابٍ آخر');
+    for (let i = 0; i < 3; i++) assert.equal((await read()).status, 200);
+    assert.equal(staged(T.DB), rows, 'القراءةُ لا تكنس — لا تزيد جولةَ قاعدة');
+    assert.equal((await write()).status, 200);
+    assert.equal(staged(T.DB), 0, 'بعد الساعة: كنسه أولُ حفظٍ عاديٍّ ناجح');
     assert.equal((await P.part(1)).status, 404, 'ولا يُقبل له جزءٌ بعدها'); assert.deepEqual(changed(snapshot(T.DB), base), []);
   } finally { Date.now = realNow; await T.close(); }
 });
