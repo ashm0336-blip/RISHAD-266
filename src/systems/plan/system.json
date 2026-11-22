@@ -100,6 +100,10 @@
    "order": 10,
    "text": "  osSchemaPlanResources(),\n"
   },
+  "pages.tabAddr.planning": {
+   "order": 20,
+   "text": "\"plan\": 1"
+  },
   "planning.tabs.reg": {
    "order": 20,
    "text": "plan: { page: \"plan\", go: \"goPlan\", on: \"planSeen\", act: \"onPlan\", lazy: !0 }, "

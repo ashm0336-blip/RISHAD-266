@@ -101,7 +101,12 @@ function meTkKey(I) { return tkK(I.dept); }
    deptCapOf (سقفُ الإدارة بتقاطع أسلافها · غيابُ السجل = مفتوح · وتسقط منه الوحدةُ المطفأة A.off) كما writePages؛ وإلا فلا قراءةَ ولا فعلَ ذاتيّ */
 function meTkPageOn(A) { var d = String(A.u.deptId || ''); return !!d && deptCapOf(A, d).indexOf('tasks') !== -1; }
 async function meTkList(env, A, url, request) {
-  if (!meTkPageOn(A)) return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
+  /* V7 · د6: المهامُ مطفأةٌ لإدارة الحساب (أو على المنصة) ⇒ القراءةُ مرفوضة لغير مدير المنصة كأفعال «مهامي» أدناه (كانت 200 بقائمةٍ فارغة وعلامة off؛
+     والواجهةُ لا تسأل أصلاً: 545 pageOn). ما يعود لمدير المنصة كما كان (قرارٌ مفتوح للمالك)، وكذلك لحسابٍ بلا إدارة (مدير العقدة: لا «مهامي» له أصلاً — ليس نظاماً مطفأ) */
+  if (!meTkPageOn(A)) {
+    if (A.u.role !== 'super' && A.u.deptId) return json({ ok: 0, err: 'off', msg: 'صفحةُ المهام غيرُ مفعّلةٍ لإدارتك' }, 403);
+    return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
+  }
   var I = await meTkIdent(env, A), now = Date.now();
   var me = { linked: I.linked, by: I.by, dept: I.dept };
   if (!I.linked) return json({ ok: 1, now: now, me: me, rev: 0, n: 0, more: 0, months: [], rows: [] });

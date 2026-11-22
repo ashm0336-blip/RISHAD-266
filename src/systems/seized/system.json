@@ -570,7 +570,7 @@
   },
   "activity.filter": {
    "order": 10,
-   "text": " ['seized', 'المضبوطات'],"
+   "text": " ['seized', 'المضبوطات', 'seized'],"
   },
   "res.empty.systems": {
    "order": 20,

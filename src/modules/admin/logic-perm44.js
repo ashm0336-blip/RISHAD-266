@@ -53,7 +53,8 @@ Object.assign(Component.prototype, {
   },
   _p44PlatOff() {
     const pl = this._p44Try(() => KIVO.BassamPlat.get(), null);   /* المطفأُ على المنصة كلها — «admin» دائم (activation: always) */
-    return ((pl && pl.mods && pl.mods.off) || []).filter((k) => "admin" !== k);
+    const raw = ((pl && pl.mods && pl.mods.off) || []).filter((k) => "admin" !== k);
+    return this._p44Try(() => KIVO.Perm44.offClosure(raw), raw);   /* V7 · د6: مع ما يسكن حاوياتِه (الإغلاقُ الواحد في المحرّك المشترك) */
   },
   /* النظامُ مفعّلٌ في الوحدة u؟ = غيرُ مطفأٍ على المنصة ∧ في سقفها الفعلي (سقفُها ∩ سقوفُ أصولها — 331 on) */
   _p44On(u, s, off) {
@@ -521,7 +522,9 @@ Object.assign(Component.prototype, {
     if (!R || !R.open || "sys" !== R.kind || !ks.length) return { p44RevOn: !1 };
     return {
       p44RevOn: !0,
-      p44RevRows: ks.map((k) => ({ what: unitName + " · " + this._p44SysName(k), from: dr[k] ? "مطفأ" : "مفعّل", to: dr[k] ? "مفعّل" : "مطفأ" })),
+      p44RevRows: ks.map((k) => ({ what: unitName + " · " + this._p44SysName(k), from: dr[k] ? "مطفأ" : "مفعّل", to: dr[k] ? "مفعّل" : "مطفأ" }))
+        /* V7 · د6 (قرار المالك ٤): «أثر الحفظ» يسمّي ما يُطفأ مع الحاوية قبل الحفظ — من الإغلاق الواحد (Perm44.offWith) */
+        .concat(this._p44Try(() => KIVO.Perm44.offWith(ks.filter((k) => !dr[k]), (k) => this._p44On(u, k)), []).map((k) => ({ what: unitName + " · " + this._p44SysName(k) + " — يُطفأ معها", from: "مفعّل", to: "مطفأ" }))),
       p44RevAff: [],
       p44RevAffTxt: this.p44AffLine(people) + (people ? " في هذه الوحدة وما تحتها" : ""),
       p44RevNote: "إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل.",

@@ -1323,6 +1323,8 @@ export default {
         /* READ-01: السجلُّ يتبع عقدَ القراءة نفسَه — لا يُعرض حدثٌ عن مجموعةِ بياناتٍ لا يقرؤها صاحبُ الجلسة */
         var nRawA = rowsA.length;
         rowsA = rowsA.filter(function (r) { return !r.k || r.k === 'system' || canRead(AU, r.k); });
+        /* V7 · د6: سطرُ نظامٍ مطفأ (على المنصة أو لوحدته أو لأصلٍ لها) لا يُعرض لأحد ما دام مطفأ — كتنبيهاته (019 nfSysOff): يُحجب عند القراءة ولا يُحذف */
+        rowsA = rowsA.filter(function (r) { return !audSysOff(AU, r); });
         /* سجلُّ كيانٍ في صفحةٍ لا يقرؤها صاحبُ الجلسة: رفضٌ صريحٌ لا قائمةٌ فارغةٌ مُلبِسة */
         if (entMode && nRawA > 0 && rowsA.length === 0) return json({ ok: 0, err: 'forbidden' }, 403);
         rowsA = rowsA.map(function (r) { var u = byIdU[r.uid]; return Object.assign({}, r, { name: u ? (u.name || u.un) : (r.un || ''), role: u ? u.role : '' }); });

@@ -1961,10 +1961,17 @@ function actorFromKeys(keys, uid) {
   var u = users.filter(function (x) { return x && x.id === uid; })[0] || null;
   if (!u || u.dis) return null;                 /* حسابٌ حُذف أو جُمّد: لا فاعل */
   var plat = parseJson(keys[K_PLAT], {});
-  var off = (isObj(plat) && isObj(plat.mods) && Array.isArray(plat.mods.off)) ? plat.mods.off : [];
+  var off = platOffOf(plat);
   var perms = parseJson(keys[K_PERM], {}), depts = parseJson(keys[K_DEPTS], []), nodes = parseJson(keys[K_GDEPTS], []);
   return { u: u, users: users, perms: isObj(perms) ? perms : {}, depts: Array.isArray(depts) ? depts : [],
            nodes: Array.isArray(nodes) ? nodes : [], off: off };
+}
+/* V7 · د6: المطفأُ على المنصة كما يُطبَّق في الخادم (A.off) = المخزَّنُ (mods.off) مع ما يسكن حاوياتِه — الإغلاقُ في المحرّك المشترك
+   (perm44-core offClosure، النصُّ نفسُه في الواجهة). قارئٌ واحد لكل بانٍ للفاعل؛ والمخزَّنُ لا يُمسّ */
+function platOffOf(plat) {
+  var off = (isObj(plat) && isObj(plat.mods) && Array.isArray(plat.mods.off)) ? plat.mods.off : [];
+  if (!off.length) return off;
+  try { return perm44E().offClosure(off); } catch (e) { swallow('plat-off-closure', e); return off; }
 }
 async function actorOf(env, uid) {
   var users = (await usersList(env)) || [];
@@ -1975,7 +1982,7 @@ async function actorOf(env, uid) {
   /* سجل العقد الفوقية — كان معرَّفاً ولا يُقرأ يوم كانت الشجرة طبقتين، إذ كان
      حقل gid في الإدارة يكفي. وقد صارت أعمق فلا بدّ من العقد لمشي الشجرة صعوداً. */
   var nodes = parseJson(await kvGet(env, 'kv', K_GDEPTS), []);
-  var plat = await platGet(env); var off = (isObj(plat) && isObj(plat.mods) && Array.isArray(plat.mods.off)) ? plat.mods.off : [];
+  var plat = await platGet(env); var off = platOffOf(plat);
   var A0 = { u: u, users: users, perms: isObj(perms) ? perms : {}, depts: Array.isArray(depts) ? depts : [],
            nodes: Array.isArray(nodes) ? nodes : [], off: off };
   /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده يقرّر — يُرفق بكل فاعلٍ وضعُه ومنحُه الصريح. فاعلٌ بُني خارج مسار الطلب (بلا env.__enf)
@@ -21297,6 +21304,19 @@ function deptTabsOf(A, d, pk) {
   var L = ((A.perms.subs || {})[d] || {})[pk + ':tabs'];
   return Array.isArray(L) ? L.filter(function (k) { return all.indexOf(k) !== -1; }) : all.slice();
 }
+/* V7 · د6: تبويباتُ الصفحة الحيّة في الوحدة = سجلُّها ∩ سجلُّ كلِّ أصلٍ ضبط تبويباتِ تلك الصفحة — كسقف الصفحات (effCapOf) وكما في الواجهة (331 liveLeaves):
+   ما أُطفئ في الإدارة مطفأٌ في قسمها ولو بقي في سجلّ القسم. الوحدةُ المستقلة (capOwn) بسجلِّها وحده */
+function liveLeavesOf(A, d, pk) {
+  var own = deptSubsOf(A, d, pk).concat(deptTabsOf(A, d, pk));
+  if (!own.length || (hasCapOf(A, d) && capOwnOf(A, d))) return own;
+  var S = (A.perms && A.perms.subs) || {}, anc = ancChain(A, d);
+  for (var i = 0; i < anc.length && own.length; i++) {
+    var m = S[anc[i]]; if (!isObj(m) || (!Array.isArray(m[pk]) && !Array.isArray(m[pk + ':tabs']))) continue;
+    var a = deptSubsOf(A, anc[i], pk).concat(deptTabsOf(A, anc[i], pk));
+    own = own.filter(function (k) { return a.indexOf(k) !== -1; });
+  }
+  return own;
+}
 /* onCap في الواجهة: هل هذه القدرة مفعّلة لهذه الإدارة أصلاً؟ */
 function capOnDept(A, d, key) {
   key = String(key || ''); if (!key) return true;
@@ -21306,7 +21326,7 @@ function capOnDept(A, d, key) {
     if (!capOnDept(A, d, pk)) return false;
     var q = PG_OF[sk];
     if (q && q.under === pk) return capOnDept(A, d, sk);
-    return deptSubsOf(A, d, pk).concat(deptTabsOf(A, d, pk)).indexOf(sk) !== -1;
+    return liveLeavesOf(A, d, pk).indexOf(sk) !== -1;
   }
   if (PG_KEYS.indexOf(key) === -1) return false;   /* V7 · د1: مفتاحُ صفحةٍ رئيسيٌّ مجهول ⇒ منع (كان سماحاً) — الورقةُ المجهولة كانت منعاً أصلاً */
   return deptCapOf(A, d).indexOf(key) !== -1;
@@ -21316,7 +21336,7 @@ function capAllPermsOf(A, d) {
   var out = {};
   deptCapOf(A, d).forEach(function (k) {
     out[k] = ACTS_ALL.slice();
-    var live = deptSubsOf(A, d, k).concat(deptTabsOf(A, d, k));
+    var live = liveLeavesOf(A, d, k);
     pgLeaves(k).forEach(function (l) {
       var sp = pgSplit(l);
       if (sp.sub && live.indexOf(sp.sub) === -1) return;
@@ -21331,7 +21351,7 @@ function expandPermsOf(A, d, obj) {
   Object.keys(obj || {}).forEach(function (k) {
     var acts = (obj[k] || []).slice(); if (!acts.length) return;
     if (pgIsContainer(k)) {
-      deptSubsOf(A, d, k).concat(deptTabsOf(A, d, k)).forEach(function (sk) { out[k + '/' + sk] = acts.slice(); });
+      liveLeavesOf(A, d, k).forEach(function (sk) { out[k + '/' + sk] = acts.slice(); });
     } else out[k] = acts;
   });
   return out;
@@ -23601,6 +23621,20 @@ function kvPutStmts(env, table, k, v) {
   for (var i = 0; i < n; i++)
     st.push(env.DB.prepare('INSERT INTO ' + table + ' (k, seq, v) VALUES (?1, ?2, ?3)').bind(k, i, v.slice(i * CHUNK, (i + 1) * CHUNK)));
   return st;
+}
+
+/* V7 · د6: نظامُ سطر السجل من مورده (RES_REG.cap — ورقةُ المورد) ⇒ النظامُ الذي يملك تلك الورقة ويُشغَّل ويُطفأ (perm44 sysList: leaves · toggle).
+   مطفأٌ = على المنصة (A.off — مع ما يسكن الحاوية) أو في سقف وحدة السطر بالوراثة (perm44LeafOn). موردٌ بلا ورقة نظام (الهيكل · الحسابات · المنصة) لا يتأثر */
+function audSysOff(A, r) {
+  try {
+    var R = r && r.k ? resOf(r.k) : null, leaf = R && typeof R.cap === 'string' ? R.cap : '';
+    if (!leaf) return false;
+    var E = perm44E(), s = E.sysList().filter(function (x) { return x && x.toggle !== false && Array.isArray(x.leaves) && x.leaves.indexOf(leaf) !== -1; })[0];
+    if (!s) return false;
+    if (Array.isArray(A && A.off) && A.off.indexOf(s.key) !== -1) return true;
+    var d = String(r.dept || (parseKey(r.k) || {}).dept || '');
+    return d ? !E.sysOn(s.key, perm44LeafOn(A, d)) : false;
+  } catch (e) { swallow('aud-sys-off', e); return false; }
 }
 /* ═══ ملكيةُ الصور ═══════════════════════════════════════════════════════════
    مبدآن لا ثالثَ لهما:
@@ -26179,7 +26213,21 @@ function perm44Make(R, D) {
     }
     return r;
   }
-  return { levels: levels, sysList: sysList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
+  /* V7 · د6: الإغلاق — ما يسكن حاويةً مطفأة يُطفأ معها (under في جدول الأنظمة)، كما يفعل مفتاحُ الإدارة حين يُسقط صفحاتِ الحاوية معها.
+     القاعدةُ الواحدة لإطفاء المنصة (mods.off) في الواجهة (331 platOff) والخادم (017 platOffOf) — موضعُها الوحيد هنا:
+     للرجوع عنها (إن قرّر المالك أن الساكنَ لا يتبع حاويتَه على المنصة) تُعاد القائمةُ كما هي: return base; */
+  function offClosure(list) {
+    var base = (Array.isArray(list) ? list : []).slice(), out = base.slice(), grew = true, n;
+    while (grew) { grew = false; for (n = 0; n < D.systems.length; n++) { var s = D.systems[n]; if (s.under && out.indexOf(s.under) !== -1 && out.indexOf(s.key) === -1) { out.push(s.key); grew = true; } } }
+    return out;
+  }
+  /* V7 · د6 (قرار المالك ٤): ما يُطفأ مع تغييرٍ معلَّق — الأنظمةُ التي تسكن ما سيُطفأ (keys) ولم تُذكر فيه، من الإغلاق نفسِه؛ ليسمّيها «أثر الحفظ» قبل الحفظ
+     (على المنصة وفي الوحدة). onFn (اختياري): يُبقي المفعَّلَ الآن وحده — فما كان مطفأً من قبل لا يُعدّ أثراً */
+  function offWith(keys, onFn) {
+    var base = Array.isArray(keys) ? keys : [];
+    return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
+  }
+  return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
            keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }
@@ -27879,7 +27927,12 @@ function meTkKey(I) { return tkK(I.dept); }
    deptCapOf (سقفُ الإدارة بتقاطع أسلافها · غيابُ السجل = مفتوح · وتسقط منه الوحدةُ المطفأة A.off) كما writePages؛ وإلا فلا قراءةَ ولا فعلَ ذاتيّ */
 function meTkPageOn(A) { var d = String(A.u.deptId || ''); return !!d && deptCapOf(A, d).indexOf('tasks') !== -1; }
 async function meTkList(env, A, url, request) {
-  if (!meTkPageOn(A)) return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
+  /* V7 · د6: المهامُ مطفأةٌ لإدارة الحساب (أو على المنصة) ⇒ القراءةُ مرفوضة لغير مدير المنصة كأفعال «مهامي» أدناه (كانت 200 بقائمةٍ فارغة وعلامة off؛
+     والواجهةُ لا تسأل أصلاً: 545 pageOn). ما يعود لمدير المنصة كما كان (قرارٌ مفتوح للمالك)، وكذلك لحسابٍ بلا إدارة (مدير العقدة: لا «مهامي» له أصلاً — ليس نظاماً مطفأ) */
+  if (!meTkPageOn(A)) {
+    if (A.u.role !== 'super' && A.u.deptId) return json({ ok: 0, err: 'off', msg: 'صفحةُ المهام غيرُ مفعّلةٍ لإدارتك' }, 403);
+    return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
+  }
   var I = await meTkIdent(env, A), now = Date.now();
   var me = { linked: I.linked, by: I.by, dept: I.dept };
   if (!I.linked) return json({ ok: 1, now: now, me: me, rev: 0, n: 0, more: 0, months: [], rows: [] });
@@ -31337,6 +31390,8 @@ export default {
         /* READ-01: السجلُّ يتبع عقدَ القراءة نفسَه — لا يُعرض حدثٌ عن مجموعةِ بياناتٍ لا يقرؤها صاحبُ الجلسة */
         var nRawA = rowsA.length;
         rowsA = rowsA.filter(function (r) { return !r.k || r.k === 'system' || canRead(AU, r.k); });
+        /* V7 · د6: سطرُ نظامٍ مطفأ (على المنصة أو لوحدته أو لأصلٍ لها) لا يُعرض لأحد ما دام مطفأ — كتنبيهاته (019 nfSysOff): يُحجب عند القراءة ولا يُحذف */
+        rowsA = rowsA.filter(function (r) { return !audSysOff(AU, r); });
         /* سجلُّ كيانٍ في صفحةٍ لا يقرؤها صاحبُ الجلسة: رفضٌ صريحٌ لا قائمةٌ فارغةٌ مُلبِسة */
         if (entMode && nRawA > 0 && rowsA.length === 0) return json({ ok: 0, err: 'forbidden' }, 403);
         rowsA = rowsA.map(function (r) { var u = byIdU[r.uid]; return Object.assign({}, r, { name: u ? (u.name || u.un) : (r.un || ''), role: u ? u.role : '' }); });
