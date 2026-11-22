@@ -59,7 +59,7 @@
         (data && data.details && data.details.kind === 'full'
           ? 'النسخة الشاملة بهذا الحجم لا تُستورد دفعةً واحدة: استورد نسخ الإدارات واحدةً واحدة.'
           : data && data.details && data.details.k ? 'السبب: «' + data.details.k + '» وحده أكبر مما يُعالَج في طلب واحد.' : 'اختر «استبدال كامل» بحساب مدير المنصة (تُرسل البيانات الكبيرة على دفعات)، أو امسح بيانات الإدارة الهدف أولاً ثم استورد.'),
-      'import-too-large': 'النسخة أكبر من سقف الاستيراد (256MB)؛ لم يتغيّر شيء',
+      'import-too-large': 'النسخة أكبر من سقف الاستيراد؛ لم يتغيّر شيء ولم يُرسل منها شيء. حجمها ' + (data && data.details && data.details.chars ? Math.round(data.details.chars / 1e6) : '؟') + ' مليون حرف، والحدّ ' + (data && data.details && data.details.limit ? Math.round(data.details.limit / 1e6) : 256) + ' مليون حرف.',
       'restore-epoch-changed': 'جرت استعادة أخرى أثناء الاستيراد؛ لم يتغيّر شيء — أعد المحاولة',
       'restore-reason': 'سبب الاستيراد مطلوب (300 حرف على الأكثر)؛ لم يتغيّر شيء',
       'authz-unavailable': 'خدمة الصلاحيات غير متاحة الآن؛ لم يتغيّر شيء — أعد المحاولة بعد قليل',
@@ -330,7 +330,7 @@
     'image-unreferenced': 'صورة لا يشير إليها أي سجل في النسخة',
   };
   function skipList(list) {
-    return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { return { k: x.k, why: String(x.why || ''), text: WHY[x.why] || String(x.why || '') }; });
+    return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { return { k: x.k, why: String(x.why || ''), n: integer(x.n) ? x.n : null, text: (WHY[x.why] || String(x.why || '')) + (integer(x.n) ? ' — العدد: ' + x.n : '') }; });
   }
   /* ملخّصُ ما قبل التأكيد — لا يودِع شيئاً (begin dry): الخادمُ يفحص الصلاحية ويعيد ما لن يُنقل من نسخةٍ قديمة */
   async function summary(file, scope) {
@@ -344,7 +344,9 @@
     var bytes = parts.text.length;
     parts.ids.forEach(function (k) { bytes += String(parts.images[k]).length; });
     return { ok: 1, legacy: legacy, kind: file.kind || scope.kind, dept: typeof file.dept === 'string' ? file.dept : '', exportedAt: typeof file.exportedAt === 'string' ? file.exportedAt : '',
-      keys: names.length, images: parts.ids.length, bytes: bytes, skip: skipList(read.data.skip) };
+      keys: names.length, images: parts.ids.length, bytes: bytes, noPerms: file.perms == null,
+      /* المنحُ القديمة تُذكر بعددها (يُحسب من الملف؛ والخادمُ يعيده مؤكَّداً بعد الرفع) */
+      skip: skipList((read.data.skip || []).map(function (x) { var n = null; if (x && x.why === 'grants') { try { n = Object.keys((JSON.parse(file.data[x.k]) || {}).emp || {}).length; } catch (e) { n = null; } } return n === null ? x : Object.assign({}, x, { n: n }); })) };
   }
   /* الأجزاء: كلُّ جزءٍ طلبٌ؛ الفاشلُ بلا ردٍّ مؤكَّد يُعاد وحده ثلاثاً، ثم يُعاد الفشلُ ومعه job لإكمالٍ لاحق من الجزء نفسِه */
   async function upload(job, stamp, progress) {
@@ -527,7 +529,8 @@
         try { fetch(IMPORT, { method: 'POST', keepalive: true, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'cancel', requestId: id }) }); } catch (e) { /* مهلةُ الخادم تكفي */ }
       });
     });
-  async function confirm(prepared) {
+  /* V7 · د6: التأكيدُ الوحيد — بعد الرفع والتحقق، بملخّص الخادم المؤكَّد. labels: عنوانُه وزرُّه لمن يسمّيه (استبدالُ الإدارة: «نعم، استبدل») */
+  async function confirm(prepared, labels) {
     if (!prepared || !prepared.ok) return false;
     var i = prepared.inspection,
       c = i.counts || {},
@@ -559,7 +562,7 @@
           : '') +
         (i.summary.preservedGlobals.length ? ' سيُحافظ على ' + i.summary.preservedGlobals.length + ' مورد عام غير مشمول بالنسخة.' : '');
     return KIVO.bsConfirm
-      ? !!(await KIVO.bsConfirm({ title: 'اعتماد استعادة النسخة', msg: text, ok: 'استعادة النسخة', cancel: 'إلغاء' }))
+      ? !!(await KIVO.bsConfirm({ title: (labels && labels.title) || 'اعتماد استعادة النسخة', msg: text, ok: (labels && labels.ok) || 'استعادة النسخة', cancel: 'إلغاء' }))
       : !!window.confirm(text);
   }
   async function refresh() {

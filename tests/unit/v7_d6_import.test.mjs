@@ -10,6 +10,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { hasSystem } from './harness.mjs';
+import { internals } from './internals.mjs';
 import { target, oldFile, sizeOf, protocol, staged, snapshot, changed, readOps, readImage, NOT_TRANSFERRED, LAB, SEG } from './v7_d6_import_fx.mjs';
 
 const B = 'TEST_ONLY_B', A = 'TEST_ONLY_A', SCOPE = { kind: 'dept', departmentId: B }, LIMIT = 8 * 1024 * 1024;
@@ -414,6 +415,91 @@ test('(١٢) حدُّ الوثيقة كلِّها يُحسب على مجموع �
     assert.equal(out.inspect.status, 403, JSON.stringify(out.inspect.j).slice(0, 300)); assert.equal(out.inspect.j.err, 'restore-key-denied');
     assert.deepEqual(Object.values(out.inspect.j.details.denied).map((x) => x.why), ['img-limit']);
     assert.deepEqual(changed(snapshot(T.DB), base), []); assert.equal(staged(T.DB), 0);
+  } finally { await T.close(); }
+});
+
+test('(١٣) الصور: غيرُ المذكورة لا تُكتب وتُعدّ · فحوصُ مسار الرفع القائم نفسُها (الحكمُ واحدٌ على البايتات نفسِها) · الأكبرُ من الحد مرفوض · وفشلُ الاستيراد لا يترك صورة', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true }), T = await target({ IMG_R2: null }), ids = Object.keys(file.idbImages), SCOPE2 = SCOPE;
+  try {
+    /* (أ) صورةٌ في الملف لا يذكرها أيُّ سجل: لا تُكتب، وتُذكر في الملخّص */
+    const extra = { ...file, idbImages: { ...file.idbImages, img_testonly_unref: file.idbImages[ids[0]] } }, a = await protocol(T, T.su, extra, { scope: SCOPE2 }).run();
+    assert.equal(a.commit.status, 200, JSON.stringify((a.commit || a.inspect).j).slice(0, 300));
+    assert.deepEqual(a.inspect.j.inspection.summary.notTransferred.filter((x) => x.why === 'image-unreferenced').map((x) => x.k), ['img_testonly_unref']);
+    assert.equal(a.inspect.j.inspection.summary.imagesNew, 2); assert.equal(T.DB.q("SELECT COUNT(*) n FROM imgs WHERE k='img_testonly_unref'")[0].n, 0, 'غيرُ المذكورة لم تُكتب'); assert.equal(T.DB.q("SELECT COUNT(*) n FROM imgown WHERE img='img_testonly_unref'")[0].n, 0);
+    assert.equal(a.inspect.j.inspection.summary.notTransferred.filter((x) => x.why === 'grants')[0].n, 1, 'المنحُ القديمة تُذكر بعددها');
+    /* (ب) الحكمُ على البايتات هو حكمُ مسار الرفع القائم PUT /api/img — الدالتان نفساهما (imgTypeOk · imgPartOk · IMG_TOTAL_MAX): كلُّ حالةٍ تُرسل للمسارين وتُقارن */
+    const put = async (id, body) => (await T.lab.W.default.fetch(new Request('https://lab.local/api/img/' + id, { method: 'PUT', headers: { cookie: T.su.ck, origin: 'https://lab.local', 'Content-Type': 'text/plain' }, body }), T.lab.env, { waitUntil() {}, passThroughOnException() {} })).status;
+    const cases = { 'ليست صورة (نص)': 'TEST_ONLY not an image', 'نوعٌ غيرُ صورة': 'data:text/html;base64,VEVTVF9PTkxZ', 'صورةٌ بلا base64': 'data:image/png,<b>TEST_ONLY</b>', 'محارفُ خارج base64': 'data:image/png;base64,VEVTV<script>', 'ادعاءُ png ببايتات jpeg': 'data:image/png;base64,/9j/4AAQSkZJRgABAQ==', 'صورةٌ سليمة': 'data:image/png;base64,VEVTVF9PTkxZ' };
+    let n = 0;
+    for (const [name, body] of Object.entries(cases)) {
+      const id = 'img_testonly_chk' + (++n), up = await put(id, body);
+      const P = protocol(T, T.su, { ...file, idbImages: { [id]: body } }, { scope: SCOPE2 }); await P.build();
+      assert.equal((await P.begin()).status, 200); const at = P.parts.findIndex((x) => x.k === id), r = await P.part(at);
+      assert.equal(r.status === 200, up === 200, name + ': الاستيراد ' + r.status + ' ومسارُ الرفع ' + up + ' — الحكمُ واحد');
+      if (r.status !== 200) { assert.equal(r.j.err, 'import-part'); assert.equal(staged(T.DB), 0, name + ': المؤقتُ نُظّف'); } else await P.cancel();
+    }
+    /* (ب) الحجم: فوق سقف الصورة (IMG_TOTAL_MAX = 24MB) مرفوضٌ عند البدء باسم الصورة */
+    const big = await protocol(T, T.su, file, { scope: SCOPE2 }).post({ op: 'begin', scope: SCOPE2, mode: 'replace', n: 100, f: 1, images: { img_testonly_big: 24 * 1024 * 1024 + 1 } });
+    assert.equal(big.status, 400); assert.equal(big.j.err, 'import-shape'); assert.equal(big.j.details.k, 'img_testonly_big');
+    /* (ج) فشلٌ بعد إيداع الصور: لا صورةَ ولا ملكيةَ ولا مرجعَ يبقى — (اعتمادٌ يفشل ثم إلغاء) */
+    const state = { imgs: T.DB.q('SELECT COUNT(*) n FROM imgs')[0].n, own: T.DB.q('SELECT COUNT(*) n FROM imgown')[0].n, ref: T.DB.q('SELECT COUNT(*) n FROM imgref')[0].n };
+    const fresh = { ...file, idbImages: Object.fromEntries(ids.map((id, i) => ['img_testonly_new' + i, file.idbImages[id]])), data: { ...file.data, bassam_plan_v1: file.data.bassam_plan_v1.replace(new RegExp(ids[0], 'g'), 'img_testonly_new0').replace(new RegExp(ids[1], 'g'), 'img_testonly_new1') } };
+    const P = protocol(T, T.su, fresh, { scope: SCOPE2 }); await P.begin(); for (let i = 0; i < P.parts.length; i++) assert.equal((await P.part(i)).status, 200); for (let i = 0; i < P.sliceCount; i++) assert.equal((await P.sliceStep(i)).status, 200);
+    const ins = await P.inspect(); assert.equal(ins.status, 200, JSON.stringify(ins.j).slice(0, 200)); assert.equal(ins.j.inspection.summary.imagesNew, 2);
+    T.DB.failIf = (sql) => /INSERT INTO restore_operations/.test(sql);
+    assert.ok((await P.commit(ins.j.inspection.base)).status >= 500); T.DB.failIf = null;
+    await P.cancel();
+    assert.deepEqual({ imgs: T.DB.q('SELECT COUNT(*) n FROM imgs')[0].n, own: T.DB.q('SELECT COUNT(*) n FROM imgown')[0].n, ref: T.DB.q('SELECT COUNT(*) n FROM imgref')[0].n }, state, 'فشلُ الاستيراد لم يترك صورةً ولا ملكيةً ولا مرجعاً'); assert.equal(staged(T.DB), 0);
+  } finally { await T.close(); }
+});
+
+test('(١٤) صورةٌ يذكرها سجلٌّ في إدارةٍ أخرى لا تزول باستيرادٍ في هذه الإدارة — عند الاعتماد وبعد الكنس', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true }), T = await target({ IMG_R2: null }), ids = Object.keys(file.idbImages), KA = 'bsdept:' + A + ':bassam_plan_v1';
+  try {
+    assert.equal((await protocol(T, T.su, file, { scope: SCOPE }).run()).commit.status, 200);
+    /* إدارةٌ أخرى تذكر الصورةَ نفسَها في مخططها (مرجعٌ مسجَّل في فهرس المراجع) */
+    const other = await protocol(T, T.su, { ...file, perms: undefined, data: { bassam_plan_v1: file.data.bassam_plan_v1 } }, { scope: { kind: 'dept', departmentId: A } }).run();
+    assert.equal(other.commit && other.commit.status, 200, 'الإدارةُ الأخرى تحمل المخططَ نفسَه: ' + JSON.stringify((other.commit || other.inspect).j).slice(0, 300));
+    assert.ok(T.DB.q('SELECT COUNT(*) n FROM imgref WHERE img=?1 AND k=?2', ids[0], KA)[0].n > 0, 'مرجعُ الإدارة الأخرى مسجَّل');
+    /* استيرادٌ في B بنسخةٍ لا تذكر الصورة */
+    const plan = JSON.parse(file.data.bassam_plan_v1); plan.floors.forEach((f) => { delete f.iid; }); Object.values(plan.months).forEach((m) => (m.d || []).forEach((f) => { delete f.iid; }));
+    const without = { ...file, idbImages: {}, data: { ...file.data, bassam_plan_v1: JSON.stringify(plan) } };
+    assert.equal((await protocol(T, T.su, without, { scope: SCOPE }).run()).commit.status, 200);
+    const alive = async (when) => { for (const id of ids) { const own = T.DB.q('SELECT st FROM imgown WHERE img=?1', id)[0]; assert.ok(own && own.st !== 'dead', when + ': ' + id + ' ليست محكومةً بالحذف (' + (own && own.st) + ')'); assert.ok(T.DB.q('SELECT COUNT(*) n FROM imgs WHERE k=?1', id)[0].n > 0, when + ': جسمُ ' + id + ' باقٍ'); const g = await readImage(T, T.su, id); assert.equal(g.status, 200, when + ': تُقرأ'); assert.equal(g.t, file.idbImages[id]); } };
+    await alive('عند الاعتماد');
+    /* الكنس نفسُه (imgSweep من العامل المبنيّ) بساعةٍ متقدّمة تتجاوز كلَّ مهلة — وصورةُ ضبطٍ لا يذكرها أحدٌ تثبت أنه يحذف فعلاً */
+    const put = await T.lab.W.default.fetch(new Request('https://lab.local/api/img/img_testonly_ctl', { method: 'PUT', headers: { cookie: T.su.ck, origin: 'https://lab.local', 'Content-Type': 'text/plain' }, body: file.idbImages[ids[0]] }), T.lab.env, { waitUntil() {}, passThroughOnException() {} });
+    assert.equal(put.status, 200);
+    const { imgSweep } = await internals(['imgSweep']);
+    for (let i = 1; i <= 8; i++) await imgSweep(T.lab.env, Date.now() + i * 60 * 86400e3, 500, 500);
+    assert.equal(T.DB.q("SELECT COUNT(*) n FROM imgs WHERE k='img_testonly_ctl'")[0].n, 0, 'الكنسُ يعمل: صورةُ الضبط غيرُ المذكورة حُذفت');
+    await alive('بعد الكنس');
+  } finally { await T.close(); }
+});
+
+test('(١٥) لا تراجعَ عمّا كان يُستعاد قبل د6: نسخةٌ شاملة (ونسخةُ إدارةٍ بالدمج) يقبلها المسارُ القديم بحجمها تُقبل على المسار الجديد — والرفضُ المبكر لما فوق حدّ الطلب القديم وحده · ورسالةُ السقف بحجمه وحدِّه', { timeout: 300000, ...need }, async () => {
+  const T = await target();
+  try {
+    assert.equal((await protocol(T, T.su, await oldFile({ small: true }), { scope: SCOPE }).run()).commit.status, 200);
+    /* نسخةٌ شاملة من القاعدة نفسِها مكبَّرةً بمفتاحٍ نصيّ إلى ≈5M حرف (دون 8MB): كانت تُقبل طلباً واحداً — تُقبل الآن وتُعتمد */
+    const full = { app: 'bassam-crowd', version: 3, kind: 'full', exportedAt: '2026-11-21T10:00:00.000Z', data: {}, preImport: false };
+    for (const r of T.DB.q("SELECT k, group_concat(v,'') v FROM (SELECT k,v FROM kv ORDER BY k,seq) GROUP BY k")) full.data[r.k] = r.v;
+    const ops = await readOps(T, T.su, B, ['bassam_plan_v1', 'bassam_employees_v1', 'bassam_rounds_arc_v1']);
+    for (const [k, v] of Object.entries(ops)) if (v != null && k !== 'bassam_rounds_arc_v1') full.data['bsdept:' + B + ':' + k] = JSON.stringify(v);
+    const rounds = {}; for (let i = 0; i < 600; i++) rounds['1448-6-' + (1 + (i % 28)) + '-x' + i] = Object.values(ops.bassam_rounds_arc_v1)[0];
+    full.data['bsdept:' + B + ':bassam_rounds_v1'] = JSON.stringify(rounds);
+    for (const k of Object.keys(full.data)) if (/^bassam_(notifications_domain|notif_)/.test(k) || /:bassam_(first_boot|last_export|grants)_v1$/.test(k)) delete full.data[k];
+    const P = protocol(T, T.su, full, { scope: { kind: 'full' } }); await P.build();
+    assert.ok(P.text.length > 3e6 && P.text.length < 8e6, 'النسخةُ الشاملة ≈' + Math.round(P.text.length / 1e5) / 10 + 'M حرف (فوق تقدير الكلفة ودون حدّ الطلب القديم)');
+    const out = await P.run();
+    assert.equal(out.begin.status, 200, 'لا رفضَ مبكراً لما كان يقبله المسارُ القديم: ' + JSON.stringify(out.begin.j));
+    assert.equal(out.commit && out.commit.status, 200, JSON.stringify((out.commit || out.inspect).j).slice(0, 300));
+    /* وفوق 8MB (لم يكن المسارُ القديم يقبلها أصلاً: 413) تُرفض مبكراً بسببها */
+    const over = await protocol(T, T.su, full, { scope: { kind: 'full' } }).post({ op: 'begin', scope: { kind: 'full' }, mode: 'replace', n: 9e6, f: 10, keys: { bassam_depts_v1: 0 } });
+    assert.equal(over.status, 413); assert.equal(over.j.err, 'import-too-heavy'); assert.equal(over.j.details.kind, 'full');
+    /* سقفُ الاستيراد: الرسالةُ تحمل الحجمَ والحد */
+    const huge = await protocol(T, T.su, full, { scope: SCOPE }).post({ op: 'begin', scope: SCOPE, mode: 'replace', n: 2e6, f: 3, images: Object.fromEntries(Array.from({ length: 11 }, (_, i) => ['img_testonly_h' + i, 24 * 1024 * 1024])) });
+    assert.equal(huge.status, 413); assert.equal(huge.j.err, 'import-too-large'); assert.equal(huge.j.details.limit, 256e6); assert.ok(huge.j.details.chars > 256e6);
   } finally { await T.close(); }
 });
 

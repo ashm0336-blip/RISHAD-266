@@ -64,8 +64,8 @@ for (const preload of [false, true]) for (const scale of [1, 2]) {
   });
 }
 test('(ب3) [ثقيل] النسخةُ القديمة ≈31MB تستبدل إدارةً تحمل نسخةً صفوفُ مخططها ثلاثةُ أضعاف — لا طلبَ يتوقّف على ما في الهدف: تحت السقف نفسِه', { timeout: 600000, ...need }, async (t) => {
-  const base = await measure(1, { preload: true }), m = await measure(1, { preload: true, planRows: 3 });
-  assert.ok(m.heldPlan > base.heldPlan * 2.5, 'صفوفُ المخطط القائم ثلاثةُ أضعاف (' + m.heldPlan + ' مقابل ' + base.heldPlan + ')');
+  const base = await measure(1, { preload: true }), m = await measure(1, { preload: true, planRows: 5 });
+  assert.ok(m.heldPlan >= base.heldPlan * 3, 'صفوفُ المخطط القائم ثلاثةُ أضعاف (' + m.heldPlan + ' مقابل ' + base.heldPlan + ')');
   assert.equal(m.commit.ok, 1); assert.equal(m.rounds, 26); assert.equal(m.staged, 0);
   for (const [name, p] of Object.entries(m.phases)) assert.ok(p.total <= TOTAL_CAP, 'مرحلة ' + name + ': ' + mb(p.total) + 'MB ≤ 80MB');
   t.diagnostic('مخططٌ قائم ' + m.heldPlan + ' عقدة (×3): ' + line(m.phases) + ' — ومع ' + base.heldPlan + ' عقدة: ' + line(base.phases));

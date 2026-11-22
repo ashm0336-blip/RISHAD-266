@@ -515,12 +515,13 @@
       <button onClick="{{bkcCancel}}" class="bs-btn">إلغاء الاستيراد</button>
     </div>
     </sc-if>
+    <!-- V7 · د6: ليست تأكيداً — الرفعُ والتحققُ لا يغيّران شيئاً؛ التأكيدُ الوحيد بعدهما بملخّص الخادم -->
     <sc-if value="{{bkcConfirm}}" hint-placeholder-val="{{ false }}">
-    <div style="background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);border-radius:14px;padding:14px">
-      <div style="font-size:13px;font-weight:600;color:var(--fg-xdc2626);margin-bottom:5px">تأكيد الاستبدال</div>
+    <div data-bkc="upload" style="background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:14px;padding:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--fg-x141414);margin-bottom:5px">{{bkcUpHead}}</div>
       <p style="font-size:11.5px;color:var(--fg-x53565a);line-height:1.9;margin:0 0 12px">{{bkcWarn}}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onClick="{{bkcDoReplace}}" class="bs-btn bs-btn--danger">نعم، استبدل</button>
+        <button onClick="{{bkcDoReplace}}" class="bs-btn bs-btn--primary">ارفع وتحقّق</button>
         <button onClick="{{bkcBack}}" class="bs-btn">رجوع</button>
       </div>
     </div>
@@ -552,6 +553,9 @@
     <div data-bkc="done" role="status" style="border:1px solid var(--bd-xe2e8f0);border-radius:14px;padding:14px">
       <div style="font-size:13px;font-weight:600;color:var(--fg-x047857);margin-bottom:5px">اكتمل الاستيراد</div>
       <p data-bkc="done-msg" style="font-size:11.5px;color:var(--fg-x53565a);line-height:1.9;margin:0 0 12px">{{bkcDoneMsg}}</p>
+      <sc-if value="{{bkcSysOn}}" hint-placeholder-val="{{ false }}">
+      <p data-bkc="done-sys" style="font-size:11.5px;color:var(--fg-xb45309);line-height:1.9;margin:0 0 12px">النسخة لا تحمل صلاحيات: أنظمة الوحدة ما زالت مطفأة — <a href="{{bkcSysHref}}" onClick="{{bkcClose}}">افتح أنظمة الوحدة</a></p>
+      </sc-if>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{bkcClose}}" class="bs-btn bs-btn--primary">تم</button></div>
     </div>
     </sc-if>

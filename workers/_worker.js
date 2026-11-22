@@ -14042,8 +14042,9 @@ async function rsImportRoute(env, request, ss) {
         meta.images[k] = [im[k], Math.ceil(im[k] / RSI_SEG.i)];
         total += im[k];
       });
-      if (!(b.n > 1) || !(b.f > 0) || b.f > Math.ceil(b.n / (RSI_SEG.f - 1)) || ids.length > IMG_CAP || total > RSI_MAX) throw rsError(total > RSI_MAX ? 'import-too-large' : 'import-shape', total > RSI_MAX ? 413 : 400);
-      await rsiHeavy(env, s, b.n, Object.keys(b.keys || {}).length > 0, Object.keys(bases));
+      if (!(b.n > 1) || !(b.f > 0) || b.f > Math.ceil(b.n / (RSI_SEG.f - 1)) || ids.length > IMG_CAP || total > RSI_MAX) throw Object.assign(rsError(total > RSI_MAX ? 'import-too-large' : 'import-shape', total > RSI_MAX ? 413 : 400), { details: { chars: total, limit: RSI_MAX } });
+      /* ما كان يقبله المسارُ القديم أصلاً (النسخةُ كلُّها ≤ حدِّ طلبه 8MB) لا يُرفض هنا — لا تراجعَ عمّا كان يُستعاد قبل د6 */
+      if (total > 8e6) await rsiHeavy(env, s, b.n, Object.keys(b.keys || {}).length > 0, Object.keys(bases));
       await D.batch([rsiSweepStmt(env, now, A.u.id), D.prepare('INSERT INTO ' + T + " VALUES(?1,'meta',?2,?3,?4)").bind(id, A.u.id, now, JSON.stringify(meta))]);
       return json({ ok: 1, skip: skip, seg: RSI_SEG });
     }
@@ -14099,7 +14100,7 @@ async function rsImportRoute(env, request, ss) {
     if (isObj(file.data) && !rsBCOwn(file, 'manifest'))
       Object.keys(file.data).forEach(function (k) {
         var why = rsiSkipWhy(k, file.data[k]);
-        if (why) { drop.push({ k: k, why: why }); delete file.data[k]; }
+        if (why) { drop.push(why === 'grants' ? { k: k, why: why, n: Object.keys((parseJson(file.data[k], null) || {}).emp || {}).length } : { k: k, why: why }); delete file.data[k]; }   /* المنحُ تُذكر بعددها */
       });
     stage = {
       rsiStage: 1, ids: M.images, fresh: [], unref: [], put: [],

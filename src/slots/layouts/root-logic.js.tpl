@@ -5,7 +5,7 @@ class Component extends DCLogic {
      نسخةَ العالم فتُعاد كما كانت. المُحدِّثُ الدالّيُّ يُعامَل بحذرٍ: يرفعها. */
   setState(u, cb) {
     try {
-      const CH = { sidebarOpen: 1, toast: 1, deptOpen: 1, deptNodeOpen: 1, nfOpen: 1, nfToast: 1, nfTick: 1, nfKinds: 1, nfFilt: 1, nfCompose: 1, bkConf: 1, bkStep: 1, navPending: 1, conTick: 1, conCx: 1 };
+      const CH = { sidebarOpen: 1, toast: 1, deptOpen: 1, deptNodeOpen: 1, nfOpen: 1, nfToast: 1, nfTick: 1, nfKinds: 1, nfFilt: 1, nfCompose: 1, bkConf: 1, bkStep: 1, bkMode: 1, navPending: 1, conTick: 1, conCx: 1 };
       let bump = true;
       if (u && typeof u === "object") { bump = false; for (const k in u) if (!CH[k]) { bump = true; break; } }
       if (bump) KIVO.__dcWorld = (KIVO.__dcWorld || 0) + 1;
@@ -937,7 +937,8 @@ class Component extends DCLogic {
       }
       if (!pend.confirmed) {
         show({ run: { step: "review" } }, "run");
-        if (!(await svc.confirm(pend.prepared))) { show({}, "confirm"); return; }
+        /* التأكيدُ الوحيد: بعد الرفع والتحقق، بملخّص الخادم */
+        if (!(await svc.confirm(pend.prepared, mode === "replace" ? { title: "تأكيد الاستبدال", ok: "نعم، استبدل" } : { title: "تأكيد الدمج", ok: "نعم، ادمج" }))) { show({}, "confirm"); return; }
         const approved = svc.approve(pend.ticket);
         if (!approved.ok) {
           fail(approved);
@@ -958,7 +959,7 @@ class Component extends DCLogic {
       }
       if (this._bkPend !== pend) return;
       this._bkPend = null;
-      this.setState({ bkConf: { ...(this.state.bkConf || {}), done: { receipt: result.receipt, summary: pend.prepared.inspection.summary, mode } }, bkStep: "done", tick: (this.state.tick || 0) + 1 });
+      this.setState({ bkConf: { ...(this.state.bkConf || {}), done: { receipt: result.receipt, summary: pend.prepared.inspection.summary, mode, noPerms: pend.file.perms == null, unit: pend.did } }, bkStep: "done", tick: (this.state.tick || 0) + 1 });
       this.bkToast("اكتملت استعادة الإدارة وأُنشئت لقطة ما قبلها");
       await svc.refresh();
     } finally {
@@ -967,6 +968,12 @@ class Component extends DCLogic {
   }
 
   /* V7 · د6: نصوصُ مراحل نافذة الاستيراد من حالتها (bkConf.sum · run · fail · done) */
+  /* عنوانُ تبويب «الأنظمة» للوحدة في شاشة «الإدارات والصلاحيات» — موضعٌ واحد يُعدَّل إن تغيّر مخططُ العناوين (services/325-org-route.js حين يحضر) */
+  _bkSysHref(unit) {
+    const R = KIVO.OrgRoute;
+    try { if (R && typeof R.href === "function") return R.href(unit, "systems"); } catch (e) { /* المخططُ الافتراضي أدناه */ }
+    return "#/sysadmin/org/" + encodeURIComponent(unit || "") + "/systems";
+  }
   _bkView(c, step) {
     const N = (n, w) => (KIVO.BassamCount ? KIVO.BassamCount(n, w) : n + " " + w), mb = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + " ميجابايت" : Math.max(1, Math.round(n / 1024)) + " كيلوبايت");
     const sum = c.sum, run = c.run || {}, done = c.done, skip = (sum && sum.skip) || [];
@@ -976,7 +983,7 @@ class Component extends DCLogic {
     const runText = run.stopping ? "يتوقّف بعد الجزء الجاري…" : run.step === "upload" ? "الجزء " + run.part + " من " + parts + (run.images ? " · الصور: " + (run.image || 0) + " من " + run.images : "") + " — لا يتغيّر شيء في الإدارة قبل الاعتماد."
       : run.step === "slice" ? "اكتمل الإرسال — تُجهَّز البيانات الكبيرة على دفعات: " + run.part + " من " + parts + "."
       : run.step === "inspect" ? "اكتمل إرسال الأجزاء (" + parts + ") — تُفحص النسخة وتُطابَق مع الإدارة."
-      : run.step === "review" ? "اكتمل الفحص — راجع ملخّصه واعتمد الاستعادة."
+      : run.step === "review" ? "اكتمل الرفع والتحقق — راجع الملخّص ثم أكّد."
       : run.step === "commit" ? "تُطبَّق النسخة في خطوة واحدة…" : "تُجهَّز أجزاء النسخة…";
     const s2 = (done && done.summary) || {}, r = (done && done.receipt) || {}, cn = r.counts || {}, lost = s2.notTransferred || [];
     return {
@@ -984,10 +991,10 @@ class Component extends DCLogic {
       bkcSumLine: sum ? "المصدر: «" + (sum.dept || c.src) + "»" + (when ? " · صُدّرت: " + when : "") + " · " + N(sum.keys, "مجموعة بيانات") + " و" + N(sum.images, "صورة") + " · الحجم: " + mb(sum.fileBytes || sum.bytes) +
         (sum.legacy ? " · نسخة بالشكل القديم: تُحوَّل إلى المخطط الحالي قبل الكتابة." : "") : c.sumErr || "",
       bkcSkipOn: skip.length > 0, bkcSkip: skip, bkcSkipHead: "لن يُنقل (" + skip.length + ") — لا مقابل له في المنصة الحالية:",
-      bkcRun: step === "run", bkcRunHead: run.step === "commit" ? "جارٍ اعتماد النسخة…" : run.step === "review" ? "بانتظار اعتمادك" : "جارٍ إرسال النسخة على أجزاء…", bkcRunText: runText,
+      bkcRun: step === "run", bkcRunHead: run.step === "commit" ? "جارٍ اعتماد النسخة…" : run.step === "review" ? "بانتظار تأكيدك" : "جارٍ إرسال النسخة على أجزاء…", bkcRunText: runText,
       bkcPct: pct, bkcBarStyle: "height:100%;width:" + pct + "%;background:var(--bg-x8a6f35);transition:width .2s", bkcAbortOn: step === "run" && run.step === "upload" && !run.stopping,
       bkcFail: step === "fail", bkcFailMsg: (c.fail && c.fail.msg) || "",
-      bkcDone: step === "done",
+      bkcDone: step === "done", bkcSysOn: step === "done" && !!(done && done.noPerms), bkcSysHref: done ? this._bkSysHref(done.unit) : "",
       bkcDoneMsg: done ? "استُعيدت " + N(cn.kv || 0, "مجموعة بيانات") + " و" + N(cn.operations || 0, "مورد تشغيلي") + (cn.notifications ? " و" + N(cn.notifications, "تنبيه") : "") +
         " · الصور: " + (s2.imagesNew || 0) + " جديدة و" + (s2.imagesReused || 0) + " موجودة مطابقة" + (s2.imagesMissing ? " و" + s2.imagesMissing + " مفقودة" : "") +
         (lost.length ? " · لم يُنقل " + lost.length + ": " + lost.slice(0, 12).map((x) => x.k).join("، ") + (lost.length > 12 ? "…" : "") : "") +
@@ -1351,7 +1358,7 @@ class Component extends DCLogic {
       bkcStop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       ...((() => {
         const c = this.state.bkConf;
-        const off = { bkcOpen: false, bkcPick: true, bkcConfirm: false, bkcRun: false, bkcFail: false, bkcDone: false, bkcSumOn: false, bkcSkipOn: false, bkcSkip: [], bkcAbortOn: false, bkcCur: 0, bkcFile: 0, bkcOver: 0, bkcFresh: 0,
+        const off = { bkcOpen: false, bkcPick: true, bkcConfirm: false, bkcRun: false, bkcFail: false, bkcDone: false, bkcSysOn: false, bkcSysHref: "", bkcUpHead: "", bkcSumOn: false, bkcSkipOn: false, bkcSkip: [], bkcAbortOn: false, bkcCur: 0, bkcFile: 0, bkcOver: 0, bkcFresh: 0,
           bkcMergeDesc: "", bkcReplaceDesc: "", bkcWarn: "", bkcHead: "", bkcSub: "",
           bkcCancel: () => {}, bkcMerge: () => {}, bkcAskReplace: () => {}, bkcDoReplace: () => {}, bkcBack: () => {}, bkcRetry: () => {}, bkcAbort: () => {}, bkcClose: () => {} };
         if (!c) return off;
@@ -1365,7 +1372,8 @@ class Component extends DCLogic {
           bkcSub: "ملف النسخة سيُستورد داخل إدارة «" + (c.dest || (D ? D.activeName() : "")) + "» — اختر طريقة التعامل مع بياناتها الحالية.",
           bkcMergeDesc: "تُضاف مجموعات البيانات المفقودة فقط؛ المجموعات والمجالات الموجودة تبقى كما هي، دون دمج السجلات داخلها.",
           bkcReplaceDesc: "تعرض المنصة جرد الإدارة الهدف، ثم يستبدل مواردها المعلنة بالنسخة في معاملة واحدة ويحفظ لقطة ما قبلها.",
-          bkcWarn: "الإدارات الأخرى والمجالات العامة لا تتأثر. ستُراجع الصلاحيات والنطاق قبل التأكيد النهائي.",
+          bkcUpHead: this.state.bkMode === "merge" ? "الدمج: رفع النسخة والتحقق منها" : "الاستبدال: رفع النسخة والتحقق منها",
+          bkcWarn: "تُرفع النسخة على أجزاء ثم تُتحقَّق — لا يتغيّر شيء في الإدارة حتى تؤكّد بعد ذلك، ومعك ملخّص ما سيُنقل وما لن يُنقل. الإدارات الأخرى والمجالات العامة لا تتأثر.",
           bkcCancel: () => { if (this.state.bkStep === "done") { this.setState({ bkConf: null, bkStep: "pick" }); return; }
             if (this.state.bkStep === "run") return;   /* V7 · د6: أثناء الإرسال لا يُغلق بنقرةٍ خارج النافذة — «إيقاف الاستيراد» زرُّه الظاهر */
             if(this._bkSaving||this._bkPend&&this._bkPend.uncertain){this.bkToast("تعذّر تأكيد نتيجة الطلب؛ أعد المحاولة نفسها قبل إغلاق الملف",true);return;}
@@ -1375,10 +1383,10 @@ class Component extends DCLogic {
           bkcRetry: () => { const f = c.fail; if (f) this.bkCommit(f.mode); },
           bkcAbort: () => { if (this._bkPend) { this._bkPend.stop = true; this.setState({ bkConf: { ...c, run: { ...(c.run || {}), stopping: true } } }); } },
           bkcClose: () => this.setState({ bkConf: null, bkStep: "pick" }),
-          bkcMerge: () => this.bkCommit("merge"),
-          bkcAskReplace: () => this.setState({ bkStep: "confirm" }),
+          bkcMerge: () => this.setState({ bkStep: "confirm", bkMode: "merge" }),
+          bkcAskReplace: () => this.setState({ bkStep: "confirm", bkMode: "replace" }),
           bkcBack: () => this.setState({ bkStep: "pick" }),
-          bkcDoReplace: () => this.bkCommit("replace"),
+          bkcDoReplace: () => this.bkCommit(this.state.bkMode === "merge" ? "merge" : "replace"),
         };
       })()),
 

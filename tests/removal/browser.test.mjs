@@ -117,11 +117,11 @@ test('د2-ب · الحذف: المتصفحُ بالأنظمة الحاضرة [' 
       const [fc] = await Promise.all([p.waitForEvent('filechooser', { timeout: 15000 }), p.locator('main [title^="استيراد نسخة احتياطية إلى هذه الإدارة"]').click()]);
       await fc.setFiles(file); await p.waitForTimeout(3500);
       const click = async (t, ms) => { const el = p.getByText(t, { exact: true }).last(); assert.equal(await el.count() > 0, true, 'الخطوة «' + t + '» ظاهرة'); await el.click(); await p.waitForTimeout(ms || 3000); };
-      await click('استبدال كامل'); await click('نعم، استبدل');
+      await click('استبدال كامل'); await click('ارفع وتحقّق');   /* V7 · د6: الخطوةُ قبل الرفع ليست تأكيداً — التأكيدُ الوحيد بعد الرفع والتحقق */
       if (await p.locator('textarea:visible').count()) { await p.locator('textarea:visible').last().fill('TEST_ONLY استعادة نسخة الإدارة'); await click('حفظ بالسبب', 4000); }
       const body = await p.evaluate(() => document.body.innerText.replace(/\s+/g, ' '));
-      assert.match(body, /اعتماد استعادة النسخة/, 'نافذةُ الاعتماد ظهرت'); assert.equal(/نطاق عهد/.test(body), false, 'ملخّصُ الاعتماد بلا ذكر العهد');
-      await click('استعادة النسخة', 6000);
+      assert.match(body, /تأكيد الاستبدال/, 'نافذةُ التأكيد ظهرت'); assert.equal(/نطاق عهد/.test(body), false, 'ملخّصُ الاعتماد بلا ذكر العهد');
+      await click('نعم، استبدل', 6000);
       assert.ok(posts.some((x) => x.phase === 'prepare' && x.s === 200 && x.ok === 1), 'الخادم قبِل تحضير الاستعادة: ' + JSON.stringify(posts));
       assert.ok(posts.some((x) => x.phase === 'commit' && x.s === 200 && x.ok === 1), 'الخادم اعتمد الاستعادة: ' + JSON.stringify(posts));
       await s.go('#/employees', 3000);
