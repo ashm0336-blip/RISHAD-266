@@ -366,7 +366,7 @@ test('ب10 · overview: the summary cells open their tabs; «ما تحتها»; 
   /* وحدةٌ ناقصة: بلا مدير · سقفٌ مفتوح لم يُضبط · بلا أدوار ⇒ ناقص، والمراجعةُ تتبعها */
   const Y = orgWorld({ hash: '#/sysadmin/org/' + Z + '/overview' }), y = Y.render();
   deq(J(y.ogSteps.map((s) => [s.k, s.ok])), [['node', 'true'], ['systems', 'false'], ['admins', 'false'], ['roles', 'false'], ['review', 'false']]);
-  assert.equal(y.ogSteps[1].st, 'السقف مفتوح — لم يُضبط', 'the cap state from its one source (capState)'); assert.equal(y.ogSteps[2].st, 'لم يُعيَّن بعد'); assert.equal(y.ogSteps[3].st, 'لا أدوار للموظفين بعد');
+  assert.match(y.ogSteps[1].st, /^مفتوح — لم يُضبط: لا سقفَ لها ولا لأصولها/, 'the cap state from its one source (capState), in full when the step is not done'); assert.match(y.ogSteps[1].tip, /^مفتوح — لم يُضبط[\s\S]* — ناقص — افتح «الأنظمة»$/); assert.equal(y.ogSteps[2].st, 'لم يُعيَّن بعد'); assert.equal(y.ogSteps[3].st, 'لا أدوار للموظفين بعد');
   assert.equal(y.ogSum[0].v, 'بلا مدير');
   /* عقدةٌ إشرافية: «الصلاحيات» من وحداتها */
   const g = W.open('#/sysadmin/org/' + G + '/overview'); assert.equal(g.ogSteps[3].st, '1 من 3 وحدة لها أدوار'); assert.equal(g.ogSteps[3].ok, 'false');

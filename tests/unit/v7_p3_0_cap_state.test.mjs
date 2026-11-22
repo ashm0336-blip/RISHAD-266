@@ -54,7 +54,8 @@ test('the admin center shows the state from that one source in the tree and the 
   /* V7 · د6: الخطوةُ اسمُها «الأنظمة» (التبويبُ الذي تفتحه)؛ علامتُها ✓/! من المصدر نفسه (المفتوحُ والفارغُ ليسا ✓) ونصُّها نصُّه حين لا تكتمل */
   assert.match(L, /const cs = this\._capStateTxt\(c\.unit\),/);
   assert.match(L, /capOk = !!cs\.kind && cs\.ok,/, 'checklist: ✓/! from the source (open is not ✓)');
-  assert.match(L, /step\("systems", "الأنظمة", capTxt, capOk, "systems"\)/, 'the step opens the «الأنظمة» tab');
+  assert.match(L, /step\("systems", "الأنظمة", capTxt, capOk, "systems", "site" === c\.mode \? cs\.txt : ""\)/, 'the step opens the «الأنظمة» tab, and its tip carries the state text');
+  assert.match(L, /capOk \|\| !cs\.txt \? sys\.on \+ " من " \+ sys\.all \+ " مفعّلة" : cs\.txt,/, 'a step that is not done says the full state text (as the old checklist did)');
   assert.doesNotMatch(LA, /_capStateTxt|_capOwnRecEmpty/, 'one source: nothing left in the settings page');
   assert.doesNotMatch(L, /"موروثٌ من الأعلى"/, 'the P1 text that called every unit without a record «inherited» is gone');
   /* V7 · د6: عمودُ «الأنظمة» في الشجرة (المفعّل/الكل) وتلميحُه نصُّ الحالة القصير نفسُه (كان سطراً تحت اسم الإدارة) */

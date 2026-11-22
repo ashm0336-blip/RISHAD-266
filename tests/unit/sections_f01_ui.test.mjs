@@ -103,7 +103,7 @@ test('F01 ui (3) أفعالُ الشجرة: «إضافة قسم» للإدارة
   const AL = SRC_RD('modules/org/logic.js'), AV = SRC_RD('modules/org/view.html');
   assert.match(AL, /ogActAddOn: c\.struct && !inf\.isSec,/, 'الإضافةُ تحت الإدارة لا تحت القسم');
   assert.match(AL, /kind: p && p\.dept \? D\.NODE_KIND_SEC \|\| "قسم" : ""/, 'النافذةُ بنوع «قسم» وأبٍ هو الإدارة');
-  assert.match(AV, /data-og-act="add-under" onClick="\{\{ogAddUnder\}\}">\+ إضافة تحتها<\/button>/);
+  assert.match(AV, /data-og-act="add-under" onClick="\{\{ogAddUnder\}\}" title="\{\{ogAddUnderTip\}\}">\+ إضافة تحتها<\/button>/);
   assert.match(AL, /const sw = this\._ogTry\(\(\) => D\.deptDelWhy\(inf\.id\), ""\);\r?\n\s*if \(sw\) return sw;/, 'الحذفُ يُرفض قبل الجرد بنصّ السبب');
   assert.match(AL, /if \(why\) return void this\.setState\(\{ ogDlg: \{ k: "del", id: inf\.id, msg: why \} \}\);/, 'والسببُ يُعرض في نافذة الحذف — لا جردَ ولا سؤال');
   assert.match(AL, /inf\.isNode \? "حذف العقدة" : inf\.isSec \? "حذف القسم" : "حذف الإدارة"/);
