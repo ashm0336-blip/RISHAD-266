@@ -9319,7 +9319,7 @@ async function rsScopeOperational(env, capture, keys) {
    scope may be referenced elsewhere) widens the reference to the whole database, fenced alike. */
 async function rsReferenceWiden(env, reference) {
   var scope = reference.scope;
-  if (!scope || scope.all) return false;
+  if (!scope || scope.all || reference.noWiden) return false;   /* V7 · د6: استيرادُ الإدارة على أجزاء لا يحمّل القاعدةَ كلَّها ليحكم على صورةٍ لم تعد إدارتُه تذكرها — يحكم بفهرس المراجع (imgref)، والكنسُ يعيد الفحص قبل أي حذف (019g) */
   var P = env.__pre, later = JSON.stringify(scope.later), where = 'NOT ' + RS_SCOPE_KV + ' AND k NOT IN (SELECT value FROM json_each(?2))',
     rows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + where + ' ORDER BY k,seq').bind(scope.arg, later).all()).results || [],
     joined = kvJoin(rows), departments = parseJson(reference.inputKeys[K_DEPTS] || '[]', null);
@@ -11168,6 +11168,17 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
         if (await imgForeignIn(env, A, key, finalKeys[key], (plan.relationalImageCurrent||{})[key] || (plan.relationalImageBefore||{})[key] || reference.inputKeys[key] || '')) reject();
       }
   }
+  /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور القائمة كلَّها معاً (21MB في النسخة المقيسة): صورةً صورة — القائمُ يُقارن بالمودَع ثم يُحرَّر،
+     والسياجُ عددُ صفوف جسمها ومجموعُ أطوالها (لا نصُّها)، وللغائبة «لا صفّ»؛ وجزءُ رفعٍ معلّق لمعرّفٍ منها يرفض كما كان. */
+  if (stage) {
+    var sArgs = [], sWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, sArgs);
+    if (await rsBound(env.DB.prepare("SELECT 1 x FROM imgs WHERE substr(k,1,5)='~stg~' AND " + sWhere + ' LIMIT 1'), sArgs).first()) reject();
+    for (var sid9 of ids) {
+      if (!gone.has(sid9)) { var held9 = await imgLoad(env, sid9); if (held9 == null || held9 !== (await stage.text(sid9))) reject(); held9 = null; }
+      var sig9 = await env.DB.prepare("SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) s FROM imgs WHERE k=?1").bind(sid9).first('s');
+      plan.guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) FROM imgs WHERE k=?1)!=?2 THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g").bind(sid9, sig9));
+    }
+  } else {
   // Include any upload fragments for these exact IDs. A late fragment or owner
   // change rejects the SQL transaction even if it appeared after body matching.
   var bodyArgs = [],
@@ -11194,6 +11205,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     if (actual !== (stage ? await stage.text(id) : images[id])) reject();
   }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], rows, bodyWhere, bodyArgs));
+  }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], owners, ownWhere, ownArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
   plan.imagesReused = ids.length - gone.size;
@@ -14147,6 +14159,7 @@ async function rsImportRoute(env, request, ss) {
     stage.skip = famKeys;
     var reference = await rsReferenceSnapshot(env, A.u.id, s.kind === 'dept' ? { departments: [s.departmentId], operationalKeys: opDefinitions().map(function (def) { return 'bsdept:' + s.departmentId + ':' + def.resource; }).filter(function (k) { return famKeys.indexOf(k) < 0; }) } : undefined);
     if (rsScopeDenied(reference.A, s)) throw rsError('restore-policy', 403);
+    reference.noWiden = s.kind === 'dept';
     var run = { version: 1, uid: A.u.id, requestId: b.requestId, scope: s, mode: b.mode, reason: b.reason, base: b.base, backup: file, legacyConsent: b.legacyConsent === true, phase: op };
     file = null;
     var out = await rsBackupRun(reference.env, reference.A, request, run, reference, fp, stage);

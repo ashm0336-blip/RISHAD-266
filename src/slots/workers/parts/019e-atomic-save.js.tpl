@@ -121,6 +121,17 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
         if (await imgForeignIn(env, A, key, finalKeys[key], (plan.relationalImageCurrent||{})[key] || (plan.relationalImageBefore||{})[key] || reference.inputKeys[key] || '')) reject();
       }
   }
+  /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور القائمة كلَّها معاً (21MB في النسخة المقيسة): صورةً صورة — القائمُ يُقارن بالمودَع ثم يُحرَّر،
+     والسياجُ عددُ صفوف جسمها ومجموعُ أطوالها (لا نصُّها)، وللغائبة «لا صفّ»؛ وجزءُ رفعٍ معلّق لمعرّفٍ منها يرفض كما كان. */
+  if (stage) {
+    var sArgs = [], sWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, sArgs);
+    if (await rsBound(env.DB.prepare("SELECT 1 x FROM imgs WHERE substr(k,1,5)='~stg~' AND " + sWhere + ' LIMIT 1'), sArgs).first()) reject();
+    for (var sid9 of ids) {
+      if (!gone.has(sid9)) { var held9 = await imgLoad(env, sid9); if (held9 == null || held9 !== (await stage.text(sid9))) reject(); held9 = null; }
+      var sig9 = await env.DB.prepare("SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) s FROM imgs WHERE k=?1").bind(sid9).first('s');
+      plan.guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) FROM imgs WHERE k=?1)!=?2 THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g").bind(sid9, sig9));
+    }
+  } else {
   // Include any upload fragments for these exact IDs. A late fragment or owner
   // change rejects the SQL transaction even if it appeared after body matching.
   var bodyArgs = [],
@@ -147,6 +158,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     if (actual !== (stage ? await stage.text(id) : images[id])) reject();
   }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], rows, bodyWhere, bodyArgs));
+  }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], owners, ownWhere, ownArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
   plan.imagesReused = ids.length - gone.size;

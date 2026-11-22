@@ -285,6 +285,7 @@ async function rsImportRoute(env, request, ss) {
     stage.skip = famKeys;
     var reference = await rsReferenceSnapshot(env, A.u.id, s.kind === 'dept' ? { departments: [s.departmentId], operationalKeys: opDefinitions().map(function (def) { return 'bsdept:' + s.departmentId + ':' + def.resource; }).filter(function (k) { return famKeys.indexOf(k) < 0; }) } : undefined);
     if (rsScopeDenied(reference.A, s)) throw rsError('restore-policy', 403);
+    reference.noWiden = s.kind === 'dept';
     var run = { version: 1, uid: A.u.id, requestId: b.requestId, scope: s, mode: b.mode, reason: b.reason, base: b.base, backup: file, legacyConsent: b.legacyConsent === true, phase: op };
     file = null;
     var out = await rsBackupRun(reference.env, reference.A, request, run, reference, fp, stage);

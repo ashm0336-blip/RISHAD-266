@@ -72,7 +72,7 @@ async function rsScopeOperational(env, capture, keys) {
    scope may be referenced elsewhere) widens the reference to the whole database, fenced alike. */
 async function rsReferenceWiden(env, reference) {
   var scope = reference.scope;
-  if (!scope || scope.all) return false;
+  if (!scope || scope.all || reference.noWiden) return false;   /* V7 · د6: استيرادُ الإدارة على أجزاء لا يحمّل القاعدةَ كلَّها ليحكم على صورةٍ لم تعد إدارتُه تذكرها — يحكم بفهرس المراجع (imgref)، والكنسُ يعيد الفحص قبل أي حذف (019g) */
   var P = env.__pre, later = JSON.stringify(scope.later), where = 'NOT ' + RS_SCOPE_KV + ' AND k NOT IN (SELECT value FROM json_each(?2))',
     rows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + where + ' ORDER BY k,seq').bind(scope.arg, later).all()).results || [],
     joined = kvJoin(rows), departments = parseJson(reference.inputKeys[K_DEPTS] || '[]', null);

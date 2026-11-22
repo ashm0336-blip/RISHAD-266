@@ -399,6 +399,21 @@ test('(١١) ما لا يُقسم لا يُحاوَل إن كان أثقلَ م�
   } finally { await T.close(); }
 });
 
+test('(١٢) حدُّ الوثيقة كلِّها يُحسب على مجموع دفعاتها: سقفُ الصور في السجل الواحد (5000) لا يُتجاوز بالتقسيم — كلُّ دفعةٍ دونه ومجموعُها فوقه ⇒ يُرفض عند الفحص ولا يتغيّر شيء', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true }), T = await target();
+  try {
+    /* ثلاثةُ أيام، في كلٍّ منها 1700 معرّفَ صورةٍ مختلفاً (نصاً في اسم مصلى): كلُّ دفعةٍ 1700، والمجموع 5100 */
+    const rounds = JSON.parse(file.data.bassam_rounds_v1), days = Object.keys(rounds);
+    days.forEach((d, n) => { rounds[d].d[0].zones[0].name = 'TEST_ONLY ' + Array.from({ length: 1700 }, (_, i) => 'img_cap' + n + '_x' + i).join(' '); });
+    const heavy = { ...file, data: { ...file.data, bassam_rounds_v1: JSON.stringify(rounds) } }, base = snapshot(T.DB);
+    const P = protocol(T, T.su, heavy, { scope: SCOPE, slice: 1000, sliceTarget: 30000 }), out = await P.run();
+    assert.ok(P.sliceCount >= 3, 'ثلاثُ دفعات (' + P.sliceCount + ')'); assert.equal(out.slice, undefined, 'كلُّ دفعةٍ وحدها مقبولة');
+    assert.equal(out.inspect.status, 403, JSON.stringify(out.inspect.j).slice(0, 300)); assert.equal(out.inspect.j.err, 'restore-key-denied');
+    assert.deepEqual(Object.values(out.inspect.j.details.denied).map((x) => x.why), ['img-limit']);
+    assert.deepEqual(changed(snapshot(T.DB), base), []); assert.equal(staged(T.DB), 0);
+  } finally { await T.close(); }
+});
+
 test('(٥) حسابٌ بلا صلاحية يُرفض في كل جزء ولو بطلبٍ مصنوع يدوياً — ولا يمسّ مؤقتَ غيره', { timeout: 300000, ...need }, async (t) => {
   const file = await oldFile({ small: true }), T = await target();
   try {
