@@ -91,7 +91,8 @@ test('Q5 parity: a lens manifest declares exactly the panels pages.json makes co
 test('A5 refs = the panels of kpis/logic.js · the conditions = kpiPanelOk (V7 · د5-هـ 44: the map rows were deleted with t24Rows)', needsSys('award', 'custody', 'dstats', 'seized', 'tasks'), () => {
   /* (1) one row per ref, and the KPIs page draws exactly those */
   const KL = rd('modules', 'kpis', 'logic.js');
-  const drawn = [...KL.matchAll(/\{ k: "\w+", pk: "(\w+)", sk: "(\w*)" \}/g)].map((m) => m[1] + (m[2] ? '/' + m[2] : ''));
+  /* V7 · د6 (walkfix2 · قرار المالك): كلُّ صفٍّ يحمل رمزَ عنوانه المقروء (a) الذي يعلنه نظامُه */
+  const drawn = [...KL.matchAll(/\{ k: "\w+", a: "[a-z]+(?:-[a-z]+)*", pk: "(\w+)", sk: "(\w*)" \}/g)].map((m) => m[1] + (m[2] ? '/' + m[2] : ''));
   assert.equal(drawn.length, 11);
   assert.deepEqual(drawn, KPI.refs, 'kpis/logic.js draws the refs of the container, in order');
   assert.doesNotMatch(KL, /"tkKpi"/, 'the tasks panel has no rule of its own left in the KPIs page');

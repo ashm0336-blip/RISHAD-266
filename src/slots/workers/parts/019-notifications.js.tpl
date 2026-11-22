@@ -758,10 +758,21 @@ function nfLeadShifts(A, u, d, refs) {
     st = @@SYS:nf.lead.staffing.staff|empty="{}"@@, opts = Array.isArray(r.shift_options_v1) ? r.shift_options_v1 : [],
     dayOf = function (T0) { return pfDay({ bucket: isObj(st[T0.ym]) ? st[T0.ym] : {}, rep: isObj(dr[T0.dk]) ? dr[T0.dk] : null, toks: toks, wd: T0.wd, opts: opts }); };
   if (!toks.length) return (memo[mk] = []);
-  var T = pfOpDay(Date.now(), dayOf), sh = String(dayOf(T).shift.name || ""), rep = dr[T.dk],
+  var T = nfDeptOpDay(dr, st, opts, Date.now()), sh = String(dayOf(T).shift.name || ""), rep = dr[T.dk],   /* V7 · د6 (LEAD_D6): يومُ الإدارة التشغيلي لا يومُ الشخص */
     s = sh && isObj(rep) && isObj(rep.shifts) && isObj(rep.shifts[sh]) ? rep.shifts[sh] : null, l = s && isObj(s.leaders) ? s.leaders : {},
     me = [u.name, L.rec && L.rec.name, L.rec && L.rec.eid, u.ekey].filter(function (x) { return x != null && String(x).trim() !== ""; }).map(String);
   return (memo[mk] = ["chief", "deputy"].some(function (x) { return l[x] != null && me.indexOf(String(l[x])) >= 0; }) ? [sh] : []);
+}
+/* V7 · د6 (LEAD_D6 · «اليوم التشغيلي بالقاعدة القائمة»): يومُ الإدارة التشغيلي يبدأ بأول ورديةٍ لها وينتهي بنهاية آخر ورديةٍ لها ولو بعد منتصف الليل —
+   ورديةٌ ليلية (نهايتُها ≤ بدايتها) من ورديات أمس (تقريرُه · جدولُ شهره · ورديات الإدارة) لم تنتهِ بعد ⇒ اليومُ يومُ أمس، وإلا يومُ التقويم (pfOpDay بالقاعدة نفسِها
+   لكن على ورديات الإدارة كلِّها). كان يُحسب بوردية الشخص وحده (pfOpDay(dayOf)) فيُعدّ رئيسُ اليوم التالي — ولا ورديةَ له أمس — رئيساً بعد منتصف الليل والليلةُ لم تنتهِ */
+function nfDeptOpDay(dr, st, opts, now) {
+  var C = pfHijriAt(now), P = pfHijriAt(now - 86400000), n = pfRiyadhMins(now), rep = isObj(dr) ? dr[P.dk] : null, bk = isObj(st) && isObj(st[P.ym]) ? st[P.ym] : {}, defs = [], s;
+  if (isObj(rep) && isObj(rep.shifts)) for (s in rep.shifts) { var x = rep.shifts[s]; defs.push(isObj(x) && isObj(x.def) && (x.def.tStart || x.def.tEnd) ? x.def : pfDef(bk, s, opts)); }
+  (Array.isArray(bk.__shifts) && bk.__shifts.length ? bk.__shifts : Array.isArray(opts) ? opts : []).forEach(function (o) { if (isObj(o)) defs.push(o); });
+  var night = defs.some(function (q) { var a = pfMins(q && q.tStart), b = pfMins(q && q.tEnd); return a != null && b != null && b <= a && n < b; });
+  if (night) { P.op = 'night'; return P; }
+  C.op = 'calendar'; return C;
 }
 function nfLeader(A, u, d, refs) {
   return nfLeadShifts(A, u, d, refs).length > 0;

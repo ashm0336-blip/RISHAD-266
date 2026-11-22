@@ -138,7 +138,7 @@ test('(A)(B) platform administrator: the console, its 14 destinations, deep link
     await page.locator('aside.bsb .s-exit').click(); await page.waitForSelector('#bsCfm', { state: 'visible', timeout: 5000 });
     await page.click('#bsCfmOk'); await page.waitForTimeout(3000);
     st = await state(page);
-    assert.match(st.hash, /^#\/kpis\/[a-z]+$/, 'the exit opens the operational workspace (first page: no operational page visited yet)');   /* V7 · د6 (walkfix · أ2-5): لكل لوحةٍ عنوانُها — #/kpis يُصحَّح إلى عنوان اللوحة المعروضة */
+    assert.match(st.hash, /^#\/kpis\/[a-z]+(?:-[a-z]+)*$/, 'the exit opens the operational workspace (first page: no operational page visited yet)');   /* V7 · د6 (walkfix · أ2-5): لكل لوحةٍ عنوانُها — #/kpis يُصحَّح إلى عنوان اللوحة المعروضة */
     assert.doesNotMatch(st.cls, /bsb--console/);
     assert.deepEqual(await links(page), BEFORE.super['#/kpis'], 'the operational sidebar is exactly what it was');
     await s.go('#/tasks', 2500);

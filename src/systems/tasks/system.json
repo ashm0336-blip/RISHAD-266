@@ -281,7 +281,7 @@
   },
   "kpis.panels.tasks": {
    "order": 10,
-   "text": "        { k: \"tk\", pk: \"tasks\", sk: \"\" },\n"
+   "text": "        { k: \"tk\", a: \"tasks\", pk: \"tasks\", sk: \"\" },\n"
   },
   "kpis.mounts.tasks": {
    "order": 10,

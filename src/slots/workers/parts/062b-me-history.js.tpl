@@ -312,15 +312,21 @@ function meRec(rec) {
   for (i = 0; i < F.length; i++) if (rec[F[i]] != null && String(rec[F[i]]).trim() !== '') o[F[i]] = String(rec[F[i]]).trim().slice(0, 120);
   return o;
 }
-async function meDeptData(env, deptId, extra) {
+async function meDeptData(env, deptId, extra, A) {
   var ks = ME_KEYS.map(function (n) { return 'bsdept:' + deptId + ':' + n; });
   var capture = await opCaptureReferences(env, Object.create(null), ks),
     rs = await env.DB.batch(capture.guards.concat(extra || [])),
-    kj = capture.keys, P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
+    off = meOffOf(A, deptId), kj = meDropOff(capture.keys, ks, off), P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
   return { emps: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_employees_v1'], []); return Array.isArray(a) ? a : []; })(),
     @@SYS:me.data.staff@@@@SYS:me.data.dreport@@@@SYS:me.data.plan@@
-    @@SYS:me.data.daily|empty="rounds: {}, "@@opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length) };
+    @@SYS:me.data.daily|empty="rounds: {}, "@@opts: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_shift_options_v1'], []); return Array.isArray(a) ? a : []; })(), extra: rs.slice(capture.guards.length), off: off };
 }
+/* V7 · د6 (قرار المالك: النظامُ المطفأ لوحدة الحساب أو على المنصة لا يُخدم — الموظفُ والمديرُ سواء): «ملفي» يقرأ موارد أنظمةٍ قابلةٍ للإطفاء
+   (الجدول الشهري · التقرير اليومي · الخطة التشغيلية · الجولات — مفاتيحُها من شرائح أنظمتها في ME_KEYS). ما كانت ورقةُ مورده مطفأةً (050 resLeafOffAt — الموضعُ
+   الواحد) تُسقط قيمتُه قبل أيّ حساب فلا يصل منه شيء، ويُعلَّم في D.off (اسمُ المورد) لما يقرؤه النظامُ من غيره (سجلُّ التغييرات). مواردُ لا تملكها ورقةُ نظامٍ
+   يُطفأ (الموظفون · أسماءُ الورديات) لا تتأثر. فاعلٌ تعذّر بناؤه ⇒ تُسقط كلُّها */
+function meOffOf(A, d) { var off = nmap(); ME_KEYS.forEach(function (n) { if (!A || resLeafOffAt(A, d, 'bsdept:' + d + ':' + n)) off[n] = 1; }); return off; }
+function meDropOff(keys, ks, off) { var out = Object.assign({}, keys); ks.forEach(function (k) { if (off[k.slice(k.lastIndexOf(':') + 1)]) out[k] = null; }); return out; }
 function meIdent(u, D, users) {
   var L = pfLink(u, D ? D.emps : []);
   /* KIVO_265 · F-1/R-24 (المراجعةُ المستقلة · fail-closed — خارج PF-CORE فالمرآةُ 535 كما هي): سجلٌّ يحلّ إليه حسابٌ نشطٌ آخر في الإدارة ⇒ غيرُ مرتبطٍ
@@ -348,6 +354,9 @@ async function meSelfRoutes(request, env, path, ss) {
   if (!u) return json({ ok: 0, err: 'session' }, 401);
   var C = pfHijriAt(now), ymQ = null;
   if (hist && url.searchParams.has('ym')) { ymQ = meYm(url.searchParams.get('ym'), C); if (!ymQ) return json({ ok: 0, err: 'bad-ym' }, 400); }
+  /* V7 · د6 (قرار المالك — القاعدةُ الواحدة 050 resLeafOffAt): الفاعلُ من لقطة مقدّمة الطلب (PRE_KV — بلا جولةٍ إضافية ما دامت حيّة) قبل حدّ المعدّل */
+  var preK = {}; for (var pk = 0; pk < PRE_KV.length; pk++) preK[PRE_KV[pk]] = await kvGet(env, 'kv', PRE_KV[pk]);
+  var A = actorFromKeys(preK, u.id);
   var rl = await rlHit(env, 'me', u.id, ME_RL);
   if (rl) return tooMany(rl);
   var acct = meAccount(u, depts), eligible = meStaffEligible(u);
@@ -355,7 +364,7 @@ async function meSelfRoutes(request, env, path, ss) {
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
   var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (eligible) { D = await meDeptData(env, u.deptId, extra); ex = D.extra; I = meIdent(u, D, users); }
+  if (eligible) { D = await meDeptData(env, u.deptId, extra, A); ex = D.extra; I = meIdent(u, D, users); }
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: @@SYS:me.bucket.day|empty="{}"@@, rep: @@SYS:me.rep.day.dreport|empty="null"@@, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();

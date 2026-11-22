@@ -54,7 +54,7 @@
  },
  "kpis.panels.daily": {
   "order": 10,
-  "text": "        { k: \"dy\", pk: \"daily\", sk: \"kpiDaily\" },\n        { k: \"occ\", pk: \"daily\", sk: \"kpiOcc\" },\n        { k: \"zn\", pk: \"daily\", sk: \"kpiZones\" },\n"
+  "text": "        { k: \"dy\", a: \"daily\", pk: \"daily\", sk: \"kpiDaily\" },\n        { k: \"occ\", a: \"occupancy\", pk: \"daily\", sk: \"kpiOcc\" },\n        { k: \"zn\", a: \"zones\", pk: \"daily\", sk: \"kpiZones\" },\n"
  },
  "kpis.tabs.daily": {
   "order": 10,

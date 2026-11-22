@@ -14,7 +14,7 @@ class Component extends DCLogic {
       return !0;
     }
   }
-  /* V7 · د6 (أ2-5): لكل لوحةٍ عنوانُها #/kpis/<مفتاح اللوحة> — يُكتب مع كل رسم (استبدالٌ) ويُقرأ من خطّاف الهيكل (KIVO.__BS_OPEN_TAB).
+  /* V7 · د6 (أ2-5): لكل لوحةٍ عنوانُها #/kpis/<رمزها المقروء a — يعلنه نظامُها في شريحة kpis.panels> — يُكتب مع كل رسم (استبدالٌ) ويُقرأ من خطّاف الهيكل (KIVO.__BS_OPEN_TAB).
      العنوانُ القديم #/kpis يفتح اللوحةَ المعروضة (الأولى المسموحة أو المحفوظة) ويُصحَّح إليها؛ ولوحةٌ غيرُ مسموحة في العنوان تُصحَّح إلى المعروضة */
   _bsHT(k) {
     try {
@@ -27,7 +27,7 @@ class Component extends DCLogic {
   renderVals() {
     const n = this,
       t = [
-        { k: "read", pk: "planning", sk: "readiness" },
+        { k: "read", a: "readiness", pk: "planning", sk: "readiness" },
 @@SYS:kpis.panels.daily@@@@SYS:kpis.panels.mid@@@@SYS:kpis.panels.tasks@@@@SYS:kpis.panels.tail@@      ],
       r = {};
     t.forEach(function (t) {
@@ -46,12 +46,13 @@ class Component extends DCLogic {
     const open = KIVO.__BS_OPEN_TAB;
     if (open && "kpis" === open.page) {
       KIVO.__BS_OPEN_TAB = null;
-      const hk = t.filter(function (x) { return x.k.toLowerCase() === String(open.tab || "").toLowerCase(); })[0];
+      /* V7 · د6 (قرار المالك): العنوانُ رمزُ اللوحة المقروء (a) الذي يعلنه نظامُها في شريحته — والمفتاحُ الداخليّ القديم (#/kpis/tk …) يُقبل ويُصحَّح إلى رمزها */
+      const ot = String(open.tab || "").toLowerCase(), hk = t.filter(function (x) { return x.a === ot; })[0] || t.filter(function (x) { return x.k.toLowerCase() === ot; })[0];
       if (hk && r[hk.k]) this.state = Object.assign({}, this.state, { ktab: hk.k });
     }
     let o = this.state.ktab;
     (o && r[o]) || (o = i.length ? i[0].k : "");
-    this._bsHT(o);
+    this._bsHT((t.filter(function (x) { return x.k === o; })[0] || {}).a || o);
     const e = { noneOn: !i.length, stripOn: i.length > 1 };
     return (
       t.forEach(function (t) {
