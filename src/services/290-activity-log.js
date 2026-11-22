@@ -71,7 +71,7 @@
     changed: 'عُدِّل', updated: 'حُدِّث', added: 'أُضيف', migrated: 'رُحِّل', rolled_back: 'أُعيد إلى ما قبل التعديل', emitted: 'أُرسل تنبيه', remind: 'أُرسل تذكير', config: 'عُدِّلت إعداداته', state: 'حُدِّثت حالته',
     create: 'أُنشئ', edit: 'عُدِّل', delete: 'حُذف', status: 'تغيّرت حالته', issue: 'سُلِّم', close: 'أُغلق' };
   var ET_AR = { zone: 'المصلى', gate: 'الباب', mark: 'المعلم', path: 'المسار', sector: 'النطاق', site: 'الموقع', plan: 'خطة الشهر', plan_site: 'خطة الموقع', round: 'جولة اليوم', round_site: 'موقع الجولة', round_month: 'جولات الشهر', round_shift: 'جولة الوردية', round_lock: 'قفل اليوم', task: 'المهمة', employee: 'الموظف', staffing: 'التسكين الشهري', dreport: 'التقرير اليومي', seized: 'محضر المضبوطات', irshad: 'تقرير الاسترشاد', rasd: 'حالة رصد', award: 'ترشيح الجائزة', dataset: 'مجموعة البيانات', system: 'المنصة' };
-  var ET_FILTER = [['zone', 'المصليات'], ['gate', 'الأبواب'], ['mark', 'المعالم'], ['path', 'المسارات'], ['sector', 'النطاقات'], ['site', 'المواقع'], ['plan', 'خطط الشهور'], ['round', 'الجولات'], ['task', 'المهام'], ['employee', 'الموظفون'], ['staffing', 'التسكين الشهري'], ['dreport', 'التقرير اليومي'], ['seized', 'المضبوطات'], ['irshad', 'الاسترشاد'], ['rasd', 'رصد الحالات'], ['award', 'الجائزة'], ['dataset', 'مجموعات البيانات']];
+  var ET_FILTER = [['zone', 'المصليات'], ['gate', 'الأبواب'], ['mark', 'المعالم'], ['path', 'المسارات'], ['sector', 'النطاقات'], ['site', 'المواقع'], ['plan', 'خطط الشهور', 'plan'], ['round', 'الجولات'], ['task', 'المهام', 'tasks'], ['employee', 'الموظفون'], ['staffing', 'التسكين الشهري', 'staff'], ['dreport', 'التقرير اليومي', 'dreport'], ['seized', 'المضبوطات', 'seized'], ['irshad', 'الاسترشاد', 'irshad'], ['rasd', 'رصد الحالات'], ['award', 'الجائزة', 'award'], ['dataset', 'مجموعات البيانات']];
   var ACT_FILTER = [['created', 'إنشاء'], ['edited', 'تعديل'], ['geometry_changed', 'تعديل الشكل'], ['moved', 'نقل'], ['enabled', 'تفعيل'], ['disabled', 'تعطيل'], ['status_changed', 'تغيير حالة'], ['reassigned', 'إعادة توزيع'], ['approved', 'اعتماد'], ['approval_revoked', 'إلغاء اعتماد'], ['locked', 'قفل'], ['unlocked', 'فتح'], ['completed', 'إنجاز'], ['deleted', 'حذف'], ['restore', 'استعادة'], ['import', 'استيراد'], ['wipe', 'مسح بيانات']];
   var FIELD_AR = { name: 'الاسم', code: 'الرمز', ser: 'التسلسل', cat: 'الفئة', label: 'التسمية', num: 'الرقم', kind: 'النوع', loc: 'الموقع', gtype: 'نوع الباب', route: 'المسار', cls: 'التصنيف', pri: 'الأولوية', cats: 'الفئات', needN: 'الاحتياج', hideLabel: 'إخفاء التسمية', region: 'المنطقة', level: 'الدور', ztype: 'النوع', zcat: 'الفئة', yard: 'الساحة', off: 'معطَّل', closed: 'مغلق', active: 'مفعَّل', color: 'اللون', line: 'الخط', w: 'العرض', lead: 'المسؤول', note: 'ملاحظة', showLbl: 'إظهار التسمية', chip: 'الشارة', iid: 'الخريطة', phone: 'الجوال', email: 'البريد', type: 'النوع', work: 'نوع العمل', gender: 'الجنس', shift: 'الوردية', group: 'المجموعة', nid: 'الهوية', empno: 'الرقم الوظيفي', title: 'العنوان', desc: 'الوصف', prio: 'الأولوية', dur: 'المدة', from: 'من', until: 'إلى', wt: 'نوع العمل', rest: 'الراحة', muk: 'مكلَّف', cs: 'رمز النداء', status: 'الحالة', st: 'الحالة', ok: 'مقبول', score: 'الدرجة', items: 'الأصناف', langs: 'اللغات', bro: 'مطويات', pros: 'نشرات', pol: 'استطلاع', actor: 'المنفّذ', lsz: 'حجم الخط', lang: 'دوران الخط', hideSectors: 'إخفاء النطاقات' };
   function fieldAr(q) { return FIELD_AR[q] || q; }
@@ -143,8 +143,21 @@
       kids);
   }
 
+  /* V7 · د6: زرُّ تصفيةٍ يعلن نظامُه ورقتَه (العنصرُ الثالث — من فتحة النظام نفسِه) لا يُعرض والنظامُ مطفأ: على المنصة (مع ما يسكن الحاوية — BassamPerm.platOff)
+     أو في سقف الوحدة النشطة بالوراثة (Perm44.ceiling). في مركز الإدارة (سجلُّ كل الوحدات) المطفأُ على المنصة وحده. العطلُ يُبقي الزر */
+  function etLive(o) {
+    try {
+      if (!o || !o[2]) return true;
+      var P4 = KIVO.Perm44, Pm = KIVO.BassamPerm; if (!P4 || !P4.sysList) return true;
+      var sys = P4.sysList().filter(function (s) { return s && s.toggle !== false && (s.leaves || []).indexOf(o[2]) !== -1; })[0]; if (!sys) return true;
+      if (Pm && Pm.platOff && Pm.platOff().indexOf(sys.key) !== -1) return false;
+      if (KIVO.__ADMIN_MODE === 'site') return true;
+      var d = KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : ''; if (!d || !P4.ceiling) return true;
+      return (P4.ceiling(d).on || []).indexOf(sys.key) !== -1;
+    } catch (e) { return true; }
+  }
   KIVO.BassamAudit = { VER: 1, hash: hash, newId: newId, legacyId: legacyId, taskId: taskId, stampPlan: stampPlan, stampRounds: stampRounds, stampList: stampList, stampSite: stampSite,
     describe: describe, rowVM: rowVM, detailRows: detailRows, ctxText: ctxText, fetch: fetchAud, entityHistory: entityHistory, panelNodes: panelNodes,
-    ACT_AR: ACT_AR, ET_AR: ET_AR, ET_FILTER: ET_FILTER, ACT_FILTER: ACT_FILTER, MONTHS: MONTHS, mLabel: mLabel, dLabel: dLabel, clock: clock, dateTxt: dateTxt, fieldAr: fieldAr };
+    ACT_AR: ACT_AR, ET_AR: ET_AR, get ET_FILTER() { return ET_FILTER.filter(etLive); }, ACT_FILTER: ACT_FILTER, MONTHS: MONTHS, mLabel: mLabel, dLabel: dLabel, clock: clock, dateTxt: dateTxt, fieldAr: fieldAr };
 })();
 

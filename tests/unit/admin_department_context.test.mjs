@@ -1,11 +1,16 @@
 /* Actual Admin renderVals/scLoadReferences, synthetic dependency fixtures.
-   No client/backend policy, account/delete/scope action or cloud transport. */
+   No client/backend policy, account/delete/scope action or cloud transport.
+   V7 · د6: the structure page, the unit page and their tree moved to the separate «الإدارات والصلاحيات» page (src/modules/org); the unit and the tab
+   are read from its address alone. What this page still owns for a selected unit are the two slots it hands to that screen — «المسؤولون» (the accounts
+   card) and «البيانات» (the unit data section). The same honesty rules are pinned here on those slots: no registered selection ⇒ no slot, no
+   operational reference, no action; a stale invented id cannot create one. (The screen's own fallback for an unknown unit: v7_d6_frame.test.mjs.) */
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 
-const source = fs.readFileSync("src/modules/admin/logic.js", "utf8") + "\n" + fs.readFileSync("src/modules/admin/logic-perm44.js", "utf8");   /* V7 · د5-هـ (44 · المدير): وجزءُ «الصلاحيات» (p44Mount يحرس كتلتَها) */
+const source = fs.readFileSync("src/modules/admin/logic.js", "utf8");   /* V7 · د6: جزءُ «الصلاحيات» (logic-perm44.js) نُقل إلى صفحة الشاشة */
+const routeSrc = fs.readFileSync("src/services/325-org-route.js", "utf8");
 const view = fs.readFileSync("src/modules/admin/view.html", "utf8");
 const clone = (value) => JSON.parse(JSON.stringify(value));
 function fixture({
@@ -13,7 +18,8 @@ function fixture({
   nodes = [],
   active = null,
   selected = "",
-  tab = "ov",   /* V7 · د5-ح: لا تبويبَ «emps» — الحساباتُ في «الصلاحيات ← الأدوار ← مدير الوحدة» */
+  tab = "overview",   /* V7 · د6: تبويبُ الشاشة من عنوانها (overview · admins · data …) */
+  mounted = true,     /* الشاشةُ مركَّبة وسجّلت واجهتَها (KIVO.BassamOrgRoute.screen) */
 } = {}) {
   const effects = {
     references: [],
@@ -102,7 +108,7 @@ function fixture({
     KIVO,
     DCLogic: class {},
     __BS_BOOT: { cf: 1, srv: 1, uid: "TEST_ONLY_OWNER" },
-    location: { hash: "#/sysadmin/depts" },
+    location: { hash: "#/sysadmin/org" },
     setTimeout,
     clearTimeout,
     Date,
@@ -122,12 +128,13 @@ function fixture({
   };
   C.window = C;
   vm.createContext(C);
+  vm.runInContext(routeSrc, C);
+  /* الشاشةُ تجيب بما في عنوانها كما هو — والتحقّقُ من أنّ الوحدة مسجَّلة على هذه الصفحة (_orgUnitNow ← _orgKnown) */
+  if (mounted) KIVO.BassamOrgRoute.screen = { route: () => ({ mode: "site", unit: selected || KIVO.BassamOrgRoute.ROOT, tab }) };
   vm.runInContext(source + "\nglobalThis.TEST_ONLY_Admin=Component;", C);
   const page = Object.create(C.TEST_ONLY_Admin.prototype);
   page.state = {
     admTab: "depts",
-    sysSel: selected,
-    sysTab: tab,
     usrPage: 1,
     usrPerPage: 10,
   };
@@ -153,8 +160,6 @@ function fixture({
     page[name] = () => ({});
   page._admTabsNow = () => ({ l: "depts", h: "depts" });
   page._hashTab = () => {};
-  page._nodeRows = (_depts, _state, rows) => rows;
-  page._parentOpts = () => [];
   page._gmKind = () => "TEST_ONLY node";
   page.t24On = () => false;
   page._unSplit = () => ({});
@@ -165,77 +170,84 @@ function fixture({
   return { page, effects, depts, operations, render: () => page.renderVals() };
 }
 
-test("actual Admin render with no registered selection shows an honest empty detail and no invalid operational reference", async () => {
-  const B = fixture(),
-    values = B.render();
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(values.deptDetailReady, false);
-  assert.equal(values.deptDetailEmpty, true);
-  assert.equal(values._sel, "");
-  assert.match(values.deptDetailMessage, /لا توجد إدارة/);
-  assert.equal(values.deptRows.length, 0);
-  assert.equal(values.admOnDepts, true);
-  assert.deepEqual(B.effects.references, []);
-  assert.deepEqual(B.effects.reads, []);
-  assert.deepEqual(B.effects.writes, []);
-  assert.equal(
-    typeof values.ndToggle,
-    "function",
-    "Hierarchy creation remains available",
-  );
-  assert.equal(
-    typeof values.admGoPlat,
-    "function",
-    "General platform settings remain available",
-  );
+test("actual Admin render with no registered selection hands the screen no slot and makes no invalid operational reference", async () => {
+  for (const B of [fixture(), fixture({ mounted: false }), fixture({ tab: "admins" }), fixture({ tab: "data" })]) {
+    const values = B.render();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(values.admOnDepts, true);
+    assert.equal(values.orgOn, true, "the screen is mounted in its place");
+    assert.equal(values.orgHost.mode, "site");
+    assert.equal(values.orgSlotAdmins, false);
+    assert.equal(values.orgSlotData, false);
+    assert.equal(values.dhSwitch, undefined);
+    assert.equal(values.dhWipe, undefined);
+    assert.equal(values.mgAdd, undefined);
+    assert.deepEqual(B.effects.references, []);
+    assert.deepEqual(B.effects.reads, []);
+    assert.deepEqual(B.effects.writes, []);
+    assert.equal(typeof values.admGoPlat, "function", "General platform settings remain available");
+    for (const gone of ["deptRows", "ndToggle", "deptDetailReady", "selName", "selRename", "selSetGid", "dhDel", "dhAdd", "goTabPerm", "p44Show", "p44SysReview", "_sel"])
+      assert.equal(gone in values, false, gone + " left this page with the structure and unit pages");
+  }
 });
 
-test("stale invented d1 and collapsed detail state cannot create a fake department card or references", async () => {
-  const B = fixture({ active: "d1", selected: "d1", tab: "scope" });
-  B.page.state.dlShut = true;
-  const values = B.render();
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(values.deptDetailReady, false);
-  assert.equal(values.deptDetailEmpty, true);
-  assert.equal(values._sel, "");
-  assert.ok(!values.mdGridStyle.includes("56px"));
-  assert.deepEqual(B.effects.references, []);
-  assert.deepEqual(B.effects.reads, []);
-  assert.equal(values.dhSwitch, undefined);
-  assert.equal(values.dhDel, undefined);
-  assert.equal(values.capSaveDo, undefined);
-  /* V7 · د5-هـ (44 · المدير): ولا صفحةَ «الصلاحيات» بلا تفاصيل جاهزة، ولو كان تبويبُها المطلوب */
-  B.page.state.sysTab = "perm";
-  const pv = B.render();
-  assert.equal(pv.deptDetailReady, false);
-  assert.equal(pv.p44Show, false);
-  assert.equal(pv.p44SysReview, undefined);
+test("a stale invented d1 in the address cannot create a fake department slot or references", async () => {
+  for (const tab of ["admins", "data", "overview"]) {
+    const B = fixture({ active: "d1", selected: "d1", tab });
+    const values = B.render();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(values.orgSlotAdmins, false);
+    assert.equal(values.orgSlotData, false);
+    assert.deepEqual(B.effects.references, []);
+    assert.deepEqual(B.effects.reads, []);
+    assert.equal(values.dhSwitch, undefined);
+    assert.equal(values.dhWipe, undefined);
+    assert.equal(values.dhImpPick, undefined);
+    assert.equal(values.mgAdd, undefined);
+  }
 });
 
-test("real registered departments and actual hierarchy nodes retain their existing detail types and actions", () => {
+test("real registered departments and actual hierarchy nodes get the slot of the tab in the address, with their existing types and actions", () => {
   const department = { id: "TEST_ONLY_DEPT", name: "TEST_ONLY department" },
     node = {
       id: "TEST_ONLY_NODE",
       name: "TEST_ONLY hierarchy",
       kind: "TEST_ONLY kind",
     };
-  const dept = fixture({
-    departments: [department],
-    active: department.id,
-    selected: department.id,
-  }).render();
-  assert.equal(dept.deptDetailReady, true);
-  assert.equal(dept.deptDetailEmpty, false);
-  assert.equal(dept.selName, department.name);
-  assert.equal(dept.selIsDept, true);
-  assert.equal(dept.selIsNode, false);
-  assert.equal(typeof dept.selRename, "function");
-  const group = fixture({ nodes: [node], selected: node.id }).render();
-  assert.equal(group.deptDetailReady, true);
-  assert.equal(group.selName, node.name);
-  assert.equal(group.selIsNode, true);
-  assert.equal(group.selIsDept, false);
-  assert.equal(typeof group.dhAdd, "function");
+  const D = (tab, active = department.id) => fixture({ departments: [department], active, selected: department.id, tab });
+  /* «المسؤولون»: the accounts card of the unit */
+  let B = D("admins"), dept = B.render();
+  assert.equal(dept.orgSlotAdmins, true);
+  assert.equal(dept.orgSlotData, false);
+  assert.equal(dept.dhIsDept, true);
+  assert.equal(dept.dhIsNode, false);
+  assert.equal(dept.mgAddOn, true, "only the platform admin adds a manager");
+  assert.equal(typeof dept.mgAdd, "function");
+  assert.equal(dept.mgTitle, "مديرو الإدارة");
+  assert.deepEqual(B.effects.references, ["bsdept:" + department.id + ":bassam_employees_v1"], "the registered unit's reference, as before");
+  /* «البيانات»: export only from the active unit; import · wipe with their existing handlers; no delete here (it lives in the overview) */
+  dept = D("data").render();
+  assert.equal(dept.orgSlotData, true);
+  assert.equal(dept.orgSlotAdmins, false);
+  assert.equal(dept.dhActive, true);
+  assert.equal(dept.dhNotActive, false);
+  for (const k of ["dhExp", "dhImpPick", "dhImpStop", "dhWipe", "dhSwitch"]) assert.equal(typeof dept[k], "function", k);
+  assert.equal(dept.dhDel, undefined);
+  assert.equal(D("data", "TEST_ONLY_OTHER").render().dhNotActive, true);
+  /* another tab of the same unit: nothing computed for the slots */
+  B = D("roles"); dept = B.render();
+  assert.equal(dept.orgSlotAdmins, false);
+  assert.equal(dept.orgSlotData, false);
+  assert.deepEqual(B.effects.references, []);
+  /* a supervisory node: its managers card; no data slot (a node holds no data) and no unit reference */
+  B = fixture({ nodes: [node], selected: node.id, tab: "admins" });
+  const group = B.render();
+  assert.equal(group.orgSlotAdmins, true);
+  assert.equal(group.dhIsNode, true);
+  assert.equal(group.dhIsDept, false);
+  assert.equal(group.mgTitle, "مديرو TEST_ONLY node");
+  assert.deepEqual(B.effects.references, []);
+  assert.equal(fixture({ nodes: [node], selected: node.id, tab: "data" }).render().orgSlotData, false);
 });
 
 test("scLoadReferences refuses empty/stale/node scopes before touching operations; a registered scope retains read behavior", async () => {
@@ -259,38 +271,32 @@ test("scLoadReferences refuses empty/stale/node scopes before touching operation
   ]);
 });
 
-test("the actual template gates every existing selected-detail action while leaving hierarchy controls outside the guard", () => {
-  const start = view.indexOf('<sc-if value="{{deptDetailReady}}"');
-  assert.ok(start >= 0, "Selection guard is in the real template");
-  const tags = /<\/?sc-if\b[^>]*>/g;
-  tags.lastIndex = start;
-  let depth = 0,
-    end = -1,
-    match;
-  while ((match = tags.exec(view))) {
-    if (match[0].startsWith("</")) depth--;
-    else depth++;
-    if (depth === 0) {
-      end = tags.lastIndex;
-      break;
+test("the actual template mounts the screen once and gates each slot's existing actions by its own guard", () => {
+  const block = (open) => {
+    const start = view.indexOf(open);
+    assert.ok(start >= 0, open + " is in the real template");
+    const tags = /<\/?sc-if\b[^>]*>/g;
+    tags.lastIndex = start;
+    let depth = 0, match;
+    while ((match = tags.exec(view))) {
+      if (match[0].startsWith("</")) depth--;
+      else depth++;
+      if (depth === 0) return view.slice(start, tags.lastIndex);
     }
-  }
-  assert.ok(end > start);
-  const selected = view.slice(start, end);
-  for (const binding of [
-    "{{selName}}",
-    "{{dhSwitch}}",
-    "{{goTabData}}",   /* V7 P1: the «بيانات الإدارة» menu became the «البيانات» tab */
-    "{{goTabPerm}}",   /* V7 · د5-ح: the node accounts tab was deleted — its content is the «مدير الوحدة» card of «الصلاحيات» */
-  ])
-    assert.ok(selected.includes(binding), binding);
-  /* V7 · د5-هـ (44 · المدير): «الصلاحيات» (ومنها مراجعةُ الأنظمة وحفظُها p44SysReview — د5-ح) صفحةٌ واحدة يعرضها موضعان — صفحةُ العقدة وإعداداتُ الإدارة —
-     فكتلتُها خارج هذه الكتلة، وحارسُها p44Show: في «مركز إدارة رشاد» = تبويبُها مع تفاصيلَ جاهزة (deptDetailReady) — الحالةُ تُثبَّت أدناه */
-  const p44 = view.indexOf('<sc-if value="{{p44Show}}"');
-  assert.ok(p44 > end && view.indexOf("{{p44SysReview}}") > p44, "the permissions page (with its systems review-and-save) sits under its own guard {{p44Show}}");
-  assert.ok(view.includes("{{deptDetailMessage}}"));
-  assert.ok(
-    view.indexOf("{{deptCount}}") > end,
-    "Hierarchy remains outside selected detail",
-  );
+    assert.fail("unbalanced " + open);
+  };
+  assert.equal(view.split('<dc-import name="Org"').length, 2, "one mount of the screen for both places (the same component)");
+  const mount = block('<sc-if value="{{orgOn}}"');
+  assert.match(mount, /<dc-import name="Org" host="\{\{orgHost\}\}"/);
+  const admins = block('<sc-if value="{{orgSlotAdmins}}"'), data = block('<sc-if value="{{orgSlotData}}"');
+  assert.ok(mount.includes(admins) && mount.includes(data), "both slots are children of the mounted screen");
+  assert.match(mount, /<div data-org-slot="admins">\s*<sc-if value="\{\{orgSlotAdmins\}\}"/);
+  assert.match(mount, /<div data-org-slot="data">\s*<sc-if value="\{\{orgSlotData\}\}"/);
+  for (const binding of ["{{mgTitle}}", "{{mgAdd}}", "{{mgAddOn}}", "{{ndRows}}", "{{ndOnQ}}", "{{u.rmToggle}}", "{{dhSwitch}}"]) assert.ok(admins.includes(binding), "admins slot: " + binding);
+  for (const binding of ["{{dhExp}}", "{{dhImpPick}}", "{{dhWipe}}", "{{dhActive}}", "{{dhNotActive}}"]) assert.ok(data.includes(binding), "data slot: " + binding);
+  assert.ok(!data.includes("{{dhDel}}") && !view.includes("{{dhDel}}"), "delete is offered in the screen's overview only");
+  /* every selected-unit binding lives inside a slot guard — nothing of the old unit page is left outside */
+  const rest = view.replace(admins, "").replace(data, "");
+  for (const binding of ["{{mgAdd}}", "{{ndRows}}", "{{dhExp}}", "{{dhImpPick}}", "{{dhWipe}}", "{{dhSwitch}}", "{{selName}}", "{{selRename}}", "{{goTabPerm}}", "{{goTabData}}", "{{deptRows}}", "{{deptDetailMessage}}", "{{p44Show}}", "{{p44SysReview}}", "{{ndGo}}"])
+    assert.ok(!rest.includes(binding), binding + " is not rendered outside the slots");
 });

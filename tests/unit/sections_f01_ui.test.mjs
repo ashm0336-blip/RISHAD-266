@@ -100,12 +100,15 @@ test('F01 ui (2) الألفاظ: اسمُ الوحدة وكلمتُها · «N �
 
 test('F01 ui (3) أفعالُ الشجرة: «إضافة قسم» للإدارة لا للقسم · حذفُ إدارةٍ لها أقسام مرفوضٌ بنصّه · والتنبيهاتُ بنوع الوحدة', () => {
   const { D } = world(SUPER);
-  const AL = SRC_RD('modules/admin/logic.js'), AV = SRC_RD('modules/admin/view.html');
-  assert.match(AL, /dhSecAddOn: !n && !\(t\.isSection && t\.isSection\(o\)\)/, '«إضافة قسم» للإدارة وحدها');
-  assert.match(AL, /ndKind: t\.NODE_KIND_SEC \|\| "قسم"/, 'النافذةُ بنوع «قسم» وأبٍ هو الإدارة');
-  assert.match(AV, /onClick="\{\{dhSecAdd\}\}"[^>]*>.*إضافة قسم<\/button>/);
-  assert.match(AL, /const sw = t\.deptDelWhy \? t\.deptDelWhy\(o\) : "";\r?\n\s*if \(sw\) return void this\.bsToast\(sw, "warn"\);\r?\n\s*this\.deptDel\(p\);/, 'الحذفُ يُرفض قبل الجرد بنصّ السبب');
-  assert.match(AL, /t\.isSection && t\.isSection\(o\) \? "حذف القسم" : "حذف الإدارة"/);
+  /* V7 · د6: أفعالُ الهيكل صارت في صفحة «الإدارات والصلاحيات» (src/modules/org) — «إضافة قسم» هي «+ إضافة تحتها» على إدارة (النافذةُ الواحدة بنوع «قسم» وأبٍ هو الإدارة)،
+     والحذفُ من بطاقة «الموضع وأفعال الوحدة» وحدها: المرفوضُ يُعرض سببُه في نافذته قبل أي جرد */
+  const AL = SRC_RD('modules/org/logic.js'), AV = SRC_RD('modules/org/view.html');
+  assert.match(AL, /ogActAddOn: c\.struct && !inf\.isSec,/, 'الإضافةُ تحت الإدارة لا تحت القسم');
+  assert.match(AL, /kind: p && p\.dept \? D\.NODE_KIND_SEC \|\| "قسم" : ""/, 'النافذةُ بنوع «قسم» وأبٍ هو الإدارة');
+  assert.match(AV, /data-og-act="add-under" onClick="\{\{ogAddUnder\}\}" title="\{\{ogAddUnderTip\}\}">\+ إضافة تحتها<\/button>/);
+  assert.match(AL, /const sw = this\._ogTry\(\(\) => D\.deptDelWhy\(inf\.id\), ""\);\r?\n\s*if \(sw\) return sw;/, 'الحذفُ يُرفض قبل الجرد بنصّ السبب');
+  assert.match(AL, /if \(why\) return void this\.setState\(\{ ogDlg: \{ k: "del", id: inf\.id, msg: why \} \}\);/, 'والسببُ يُعرض في نافذة الحذف — لا جردَ ولا سؤال');
+  assert.match(AL, /inf\.isNode \? "حذف العقدة" : inf\.isSec \? "حذف القسم" : "حذف الإدارة"/);
   assert.match(D.deptDelWhy('a'), /أقسام/);
   /* التنبيهات (442 ← 320 unitEvents) */
   const L0 = D.list(), L1 = L0.concat([{ id: 's9', name: 'قسم أ-9', gid: 'a', kind: 'قسم' }]);

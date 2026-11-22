@@ -96,7 +96,7 @@ test('«يحتاج قرارك»: units without a manager and old-hash accounts a
   assert.ok(txt.includes('حسابان بصيغة كلمة مرور قديمة التشفير'), JSON.stringify(txt));
   assert.equal(v.ovAlertsT, 'يحتاج قرارك (' + v.ovAlerts.length + ')');
   assert.equal(val(card(v, 'acc'), 'بصيغة كلمة مرور قديمة'), '2');
-  v.ovAlerts.find((a) => a.act === 'الإدارات').go();
+  v.ovAlerts.find((a) => a.act === 'الإدارات والصلاحيات').go();   /* V7 · د6 (ب1): الزرُّ باسم الشاشة الجديد (كان «الإدارات») */
   assert.deepEqual(cp(f.went.pop()), ['depts', null]);
   v.ovAlerts.find((a) => a.act === 'مراقبة الحسابات').go();
   assert.deepEqual(cp(f.went.pop()), ['users', null]); assert.equal(f.page.state.usF, 'old', 'opens the accounts filtered to the old format');

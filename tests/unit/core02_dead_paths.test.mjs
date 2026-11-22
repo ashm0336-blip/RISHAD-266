@@ -10,12 +10,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { orgWorld } from './org_world.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 const SRC = process.env.KIVO_SRC ? path.resolve(process.env.KIVO_SRC) : path.join(ROOT, 'src');
 const rd = (p) => fs.readFileSync(path.join(SRC, p), 'utf8');
 const L = rd('modules/admin/logic.js'), V = rd('modules/admin/view.html'), PG = rd('pages/Admin.dc.html'), CSS = rd('modules/admin/helmet.css');
 const J = (x) => JSON.parse(JSON.stringify(x));
+/* V7 · د6: صفحتا «الهيكل» و«الوحدة» وشجرتُهما وأفعالُ الهيكل نُقلت إلى صفحة «الإدارات والصلاحيات» (src/modules/org) — نقاطُ دخولها تُثبَّت هناك،
+   وقواعدُها تُشغَّل على صفحتها الفعلية فوق خدمة الهيكل الحقيقية (org_world.mjs) */
+const OL = rd('modules/org/logic.js'), OV = rd('modules/org/view.html');
 const word = (s, w) => new RegExp('(^|[^A-Za-z0-9_$])' + w.replace(/\$/g, '\\$') + '(?![A-Za-z0-9_$])').test(s);
 
 test('(1) removed symbols are gone from the admin module, its template and the generated page', () => {
@@ -38,117 +42,98 @@ test('(1) removed symbols are gone from the admin module, its template and the g
 });
 
 test('(2) kept entry points still exist (same data shown in different useful places is not duplication)', () => {
-  const METHODS = ['_nodeRows', '_nodeHead', '_parentOpts', 'nodePick', '_trDragProps', '_trMove', '_trFilter', '_trSetAll', '_grpFlip', 'deptDel', '_deptDelGo',
-    'fbkCommit', 'gmOpen', 'mgrOpen', 'wpOpen', 'sysPick', '_admGo', '_plGo', 'plRkLoad', 'audLoad'];
+  /* what the settings page still owns */
+  const METHODS = ['deptDel', '_deptDelGo', 'fbkCommit', 'gmOpen', 'mgrOpen', 'wpOpen', '_admGo', '_plGo', 'plRkLoad', 'audLoad'];
   for (const m of METHODS) assert.match(L, new RegExp('\\n  (async )?' + m.replace(/\$/g, '\\$') + '\\('), 'method ' + m);
-  const KEYS = ['dhAdd', 'dhSecAdd', 'dhSecAddOn', 'dhSwitch', 'dhExp', 'dhImpPick', 'dhImpStop', 'dhWipe', 'dhDel', 'dhDelOn', 'dhDelLbl', 'goTabData', 'goTabOv', 'orgBack', 'dhIsNode', 'dhNotActive',
-    'selSetGid', 'selRenameSave', 'gdeptOpts', 'ndGo', 'ndPidOpts', 'ndKinds', 'deptRows', 'fbkFile', 'fbkMerge', 'fbkAskReplace', 'fbkDoReplace', 'fbkCancel',
+  const KEYS = ['dhSwitch', 'dhExp', 'dhImpPick', 'dhImpStop', 'dhWipe', 'dhNotActive',
+    'fbkFile', 'fbkMerge', 'fbkAskReplace', 'fbkDoReplace', 'fbkCancel',
     'ovPres', 'ovPresEmpty', 'secSess', 'secSessN', 'ovFrozen', 'ovFrozenN', 'usFilters', 'usCards', 'admGoBackup'];   /* CORE-02 S7: admSubLnkGo left with the in-page strip — «التهيئة والاستعادة» is one sidebar item */
   for (const k of KEYS) {
     assert.ok(word(L, k), 'logic.js still provides ' + k);
     assert.ok(V.includes('{{' + k + '}}') || V.includes('{{' + k + '.'), 'view.html still renders ' + k);
   }
+  /* V7 · د6: what moved with the structure — each old entry point has its one new place in the «الإدارات والصلاحيات» page */
+  for (const m of ['_ogTreeRows', '_ogParentOpts', '_ogDragProps', '_ogDndMove', '_ogSetAll', '_ogAddOpen', '_ogAddGo', '_ogRenGo', '_ogMoveGo', '_ogDelWhy', '_ogDelAsk', 'go', 'canLeave'])
+    assert.match(OL, new RegExp('\\n  (async )?' + m + '\\('), 'org method ' + m);
+  const MOVED = { dhAdd: 'ogAddUnder', dhSecAdd: 'ogAddUnder', dhDel: 'ogDelOpen', selRenameSave: 'ogRenGo', selSetGid: 'ogMoveGo', gdeptOpts: 'ogMoveParents', ndToggle: 'ogAddOpen', ndGo: 'ogAddGo', ndPidOpts: 'ogAddParents', ndKinds: 'ogAddKinds',
+    deptRows: 'ogRows', trExpandAll: 'ogExpandAll', trCollapseAll: 'ogCollapseAll', trOnQ: 'ogOnQ', sdGo: 'sdGo', goTabOv: 'ogTabs', goTabData: 'ogTabs', goTabPerm: 'ogTabs' };
+  for (const [old, now] of Object.entries(MOVED)) {
+    assert.ok(old === now || (!word(L, old) && !V.includes('{{' + old + '}}')), old + ' left the settings page');
+    assert.ok(word(OL, now), 'org logic provides ' + now + ' (was ' + old + ')');
+    assert.ok(OV.includes('{{' + now + '}}') || OV.includes('"{{' + now + '}}"'), 'org view renders ' + now);
+  }
+  for (const gone of ['_nodeRows', '_nodeHead', '_parentOpts', 'nodePick', 'sysPick', '_trDragProps', '_trMove', '_trFilter', '_trSetAll', '_grpFlip', 'orgBack'])
+    assert.ok(!word(L, gone) && !V.includes(gone), gone + ' is not kept twice');
   /* the security-log row icon draws its per-kind path through the icon catalog body (<path d="{{r.icoPath}}">): icoPath is live, kept */
   assert.ok(word(L, 'icoPath') && PG.includes('{{r.icoPath}}'), 'security-log icons keep their per-kind path');
-  /* the tree row props that view.html reads are still produced by _nodeHead */
-  const head = L.slice(L.indexOf('\n  _nodeHead('), L.indexOf('\n  _parentOpts('));
-  for (const p of ['grpDepth', 'trDepCls', 'trSelCls', 'grpName', 'grpCount', 'grpCountW', 'grpKindOn', 'grpKindLbl', 'grpChevOn', 'grpChev', 'grpToggle', 'grpCapGo', 'grpMgrHas', 'grpMgrNone', 'grpMgrTip', 'grpMgrName']) {
-    assert.ok(head.includes('o.' + p + ' ='), '_nodeHead sets ' + p);
-    assert.ok(V.includes('{{d.' + p + '}}') || p === 'grpDepth', 'view.html reads d.' + p);
+  /* the tree row props that the org view reads are produced by _ogTreeRows (one row per unit) */
+  const rows = OL.slice(OL.indexOf('\n  _ogTreeRows('), OL.indexOf('\n  _ogDragProps('));
+  for (const p of ['name', 'cls', 'level', 'sel', 'exp', 'kidsOn', 'leaf', 'toggle', 'pick', 'tip', 'kind', 'kindKey', 'kids', 'mgrHas', 'mgr', 'people', 'sys', 'cur', 'chkOn', 'chk', 'chkFlip', 'drag']) {
+    assert.ok(new RegExp('\\n        ' + p + ': ').test(rows), '_ogTreeRows sets ' + p);
+    assert.ok(OV.includes('{{r.' + p + '}}'), 'org view reads r.' + p);
   }
-  assert.ok(head.includes('_trDragProps(s.id, e)'), 'node rows stay draggable');
+  assert.ok(rows.includes('this._ogDragProps(b.id)'), 'rows stay draggable');
 });
 
-/* ── the real BassamDepts in vm ── */
-function world() {
-  class Storage {
-    constructor() { this._m = new Map(); }
-    getItem(k) { return this._m.has(k) ? this._m.get(k) : null; }
-    setItem(k, v) { this._m.set(String(k), String(v)); }
-    removeItem(k) { this._m.delete(k); }
-    clear() { this._m.clear(); }
-    key(i) { return [...this._m.keys()][i] ?? null; }
-    get length() { return this._m.size; }
-  }
-  const localStorage = new Storage(), sessionStorage = new Storage();
-  const doc = { addEventListener() {}, body: { appendChild() {}, classList: { add() {}, remove() {} } }, createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }), getElementById: () => null };
-  const seeded = [];
-  const ctx = { Storage, localStorage, sessionStorage, KIVO: { __BS_SRV: { flushAsync() { return Promise.resolve(); } } }, document: doc, console, JSON, Date, Math, Object, Array, String, Number, Promise, setTimeout, clearTimeout };
-  ctx.window = { localStorage, sessionStorage, addEventListener() {}, document: doc, __BS_BOOT: { srv: 1, cf: 1 } };
-  ctx.globalThis = ctx;
-  vm.createContext(ctx);
-  vm.runInContext(rd('services/320-dept-storage.js'), ctx);
-  const D = ctx.KIVO.BassamDepts;
-  ctx.KIVO.BassamPerm = { seedCapFrom: (id, pid) => { seeded.push([id, pid || null]); return { ok: true }; } };
-  D.saveNodes([{ id: 'top', name: 'الإدارة العليا', kind: 'إدارة عليا' }, { id: 'g1', name: 'الإدارة العامة 1', kind: 'إدارة عامة', pid: 'top' }]);
-  D.save([{ id: 'a', name: 'إدارة أ', gid: 'g1' }, { id: 'b', name: 'إدارة ب' }, { id: 's1', name: 'قسم أ-1', gid: 'a', kind: 'قسم' }]);
-  return { D, ctx, seeded };
-}
-/* a handler taken verbatim from logic.js («key: (args) => { … }»), brace-matched */
-function handler(key) {
-  const i = L.indexOf(key + ': ('); assert.ok(i > 0 && L.indexOf(key + ': (', i + 1) < 0, key + ' appears once');
-  const a = L.indexOf('=> {', i); let d = 0, j = a + 3;
-  for (; j < L.length; j++) { if (L[j] === '{') d++; else if (L[j] === '}' && --d === 0) break; }
-  return L.slice(i + key.length + 2, j + 1);
-}
-function page(ctx, state) {
-  const out = { states: [], toasts: [] };
-  const self = { state: { ...state }, setState(s) { out.states.push(s); Object.assign(this.state, s); }, bsToast(m) { out.toasts.push(m); } };
-  return { self, out };
-}
+/* V7 · د6: (3) و(4) كانتا تأخذان المعالجَين selSetGid و ndGo حرفاً من منطق صفحة الإعدادات؛ صارا _ogMoveGo و _ogAddGo في صفحة «الإدارات والصلاحيات»
+   (نافذتا «نقل إلى…» و«إضافة إلى الهيكل») — القواعدُ نفسُها تُشغَّل الآن على الصفحة الفعلية فوق خدمة الهيكل الحقيقية */
+const SEED = {
+  nodes: [{ id: 'top', name: 'الإدارة العليا', kind: 'إدارة عليا' }, { id: 'g1', name: 'الإدارة العامة 1', kind: 'إدارة عامة', pid: 'top' }],
+  depts: [{ id: 'a', name: 'إدارة أ', gid: 'g1' }, { id: 'b', name: 'إدارة ب' }, { id: 's1', name: 'قسم أ-1', gid: 'a', kind: 'قسم' }],
+  users: [{ id: 'TEST_ONLY_OWNER', name: 'TEST_ONLY', un: '1000000001', role: 'super' }],
+};
+const moveTo = (W, id, pid) => { const v = W.open('#/sysadmin/org/' + id + '/overview'); v.ogMoveOpen(); W.render().ogMoveOnPid({ target: { value: pid } }); W.render().ogMoveGo(); return W.render(); };
 
 test('(3) «+ إدارة عامة جديدة…» uses nodeAdd + setDeptParent: a real node with kind, placement rule, fresh id and seeded ceiling', () => {
-  const { D, ctx, seeded } = world();
-  const mk = vm.runInContext('(function (t, n, o) { return (' + handler('selSetGid') + '); })', ctx);
-  const nodes0 = D.nodes().length, { self, out } = page(ctx, {});
-  mk.call(self, D, false, 'b')({ target: { value: '__new' } });
+  const W = orgWorld(SEED), D = W.D;
+  const nodes0 = D.nodes().length;
+  moveTo(W, 'b', '__new');
   const fresh = D.nodes().filter((x) => x.name === 'إدارة عامة جديدة');
   assert.equal(D.nodes().length, nodes0 + 1, 'one node was created');
   assert.equal(fresh.length, 1);
   assert.deepEqual(J({ kind: fresh[0].kind, pid: fresh[0].pid || null }), { kind: 'إدارة عامة', pid: null }, 'a general department in the root, as before — now with its kind');
   assert.match(fresh[0].id, /^n[0-9a-z]+$/, 'id from freshId (the node prefix), not "g"+time');
   assert.equal(D.nodeOf('b').pid, fresh[0].id, 'the unit is assigned under it (setDeptParent)');
-  assert.deepEqual(seeded, [[fresh[0].id, null]], 'its page ceiling is opened at creation (seedCapFrom), as for every node');
-  assert.match(out.states.at(-1).deptMsg, /^✓ أُنشئت «إدارة عامة جديدة» وأُسندت إليها هذه الإدارة/);
+  assert.deepEqual(J(W.seeded.map((x) => x.slice(0, 3))), [['seedCapFrom', fresh[0].id, null]], 'its page ceiling is opened at creation (seedCapFrom), as for every node');
+  assert.match(W.acks.at(-1)[0], /^أُنشئت «إدارة عامة جديدة» وأُسندت إليها هذه الإدارة/);
   /* a second one gets the next free name */
-  mk.call(self, D, false, 'a')({ target: { value: '__new' } });
+  moveTo(W, 'a', '__new');
   assert.ok(D.nodes().some((x) => x.name === 'إدارة عامة جديدة 2') && D.nodeOf('a').pid !== 'g1', 'next name; unit a moved under it');
-  /* a section cannot sit under a general department: refused before anything is written */
+  /* a section cannot sit under a general department: the option is not offered, and a forged choice is refused before anything is written */
   const before = D.nodes().length, s0 = D.nodeOf('s1').pid;
-  mk.call(self, D, false, 's1')({ target: { value: '__new' } });
+  let v = W.open('#/sysadmin/org/s1/overview'); v.ogMoveOpen(); v = W.render();
+  assert.equal(v.ogMoveNewOn, false, 'not offered to a section');
+  v.ogMoveOnPid({ target: { value: '__new' } }); W.render().ogMoveGo();
   assert.equal(D.nodes().length, before, 'nothing created for a section'); assert.equal(D.nodeOf('s1').pid, s0, 'the section stays under its unit');
-  assert.match(out.toasts.at(-1), /القسم يكون تحت إدارةٍ مباشرةً/);
+  assert.match(W.render().ogMove.msg, /القسم يكون تحت إدارةٍ مباشرةً/);
   /* the ordinary re-parent path is unchanged */
-  mk.call(self, D, false, 'b')({ target: { value: 'g1' } });
+  moveTo(W, 'b', 'g1');
   assert.equal(D.nodeOf('b').pid, 'g1', 'choosing an existing parent still re-parents through setDeptParent');
 });
 
-test('(4) ndGo unit branch: placeWhy + freshId — valid input as before, a unit under a unit refused', () => {
-  const { D, ctx, seeded } = world();
-  const mk = vm.runInContext('(function (t) { return (' + handler('ndGo') + '); })', ctx);
-  /* valid: a unit under a general department */
-  let p = page(ctx, { ndName: 'إدارة ج', ndKind: 'إدارة', ndPid: 'g1', admGrpFlip: { g1: 1 } });
-  mk.call(p.self, D)();
+test('(4) the add dialog\'s unit branch: placeWhy + freshId — valid input as before, a unit under a unit refused', () => {
+  const W = orgWorld(SEED), D = W.D;
+  const add = (name, kind, pid) => { const v = W.open('#/sysadmin/org/platform/overview'); v.ogAddOpen(); W.render().ogAddOnName({ target: { value: name } }); W.render().ogAddOnKind({ target: { value: kind } }); W.render().ogAddOnPid({ target: { value: pid } }); W.render().ogAddGo(); return W.render(); };
+  /* valid: a unit under a general department (folded in the tree before) */
+  W.page.setState({ ogShut: { g1: 1 } });
+  let v = add('إدارة ج', 'إدارة', 'g1');
   const c = D.list().find((x) => x.name === 'إدارة ج');
   assert.ok(c, 'the unit was created'); assert.equal(c.gid, 'g1', 'under its parent');
   assert.match(c.id, /^d[0-9a-z]+$/, 'id format unchanged ("d" + base36), now from freshId (no clash with a node or unit id)');
-  assert.deepEqual(seeded, [[c.id, 'g1']], 'its ceiling is seeded from the parent, as before');
-  assert.equal(p.out.states.at(-1).ndMsg, '✓ أُنشئت إدارة «إدارة ج» — أكمل حساب دخولها من صفّها', 'same message as before');
-  assert.deepEqual(J(p.out.states.at(-1).admGrpFlip), {}, 'the parent is unfolded, as before');
+  assert.deepEqual(J(W.seeded.map((x) => x.slice(0, 3))), [['seedCapFrom', c.id, 'g1']], 'its ceiling is seeded through the creation path, as before');
+  assert.match(W.acks.at(-1)[0], /^أُنشئت «إدارة ج»/, 'the success is said after the server\'s acknowledgement');
+  assert.deepEqual(J(W.page.state.ogShut), {}, 'the parent is unfolded, as before'); assert.equal(v.ogAddOn, false);
   /* valid: a unit in the root */
-  p = page(ctx, { ndName: 'إدارة د', ndKind: 'إدارة', ndPid: '' });
-  mk.call(p.self, D)();
+  add('إدارة د', 'إدارة', '');
   assert.ok(D.list().some((x) => x.name === 'إدارة د' && !x.gid), 'a root unit is still allowed');
   /* invalid: a unit under a unit, or under a section — refused by the shared placement rule, nothing written */
   for (const pid of ['a', 's1']) {
     const n0 = D.list().length;
-    p = page(ctx, { ndName: 'إدارة تحت ' + pid, ndKind: 'إدارة', ndPid: pid });
-    mk.call(p.self, D)();
+    v = add('إدارة تحت ' + pid, 'إدارة', pid);
     assert.equal(D.list().length, n0, 'nothing created under ' + pid);
-    assert.equal(p.out.states.at(-1).ndMsg, D.placeWhy({ id: '', dept: true }, pid), 'the placeWhy reason is shown');
+    assert.equal(v.ogAdd.msg, D.placeWhy({ id: '', dept: true }, pid), 'the placeWhy reason is shown');
   }
   /* missing parent: the existing message */
-  p = page(ctx, { ndName: 'إدارة هـ', ndKind: 'إدارة', ndPid: 'nope' });
-  mk.call(p.self, D)();
-  assert.equal(p.out.states.at(-1).ndMsg, 'الأب غير موجود');
+  v = add('إدارة هـ', 'إدارة', 'nope');
+  assert.equal(v.ogAdd.msg, 'الأب غير موجود');
 });

@@ -131,8 +131,21 @@
       kids);
   }
 
+  /* V7 · د6: زرُّ تصفيةٍ يعلن نظامُه ورقتَه (العنصرُ الثالث — من فتحة النظام نفسِه) لا يُعرض والنظامُ مطفأ: على المنصة (مع ما يسكن الحاوية — BassamPerm.platOff)
+     أو في سقف الوحدة النشطة بالوراثة (Perm44.ceiling). في مركز الإدارة (سجلُّ كل الوحدات) المطفأُ على المنصة وحده. العطلُ يُبقي الزر */
+  function etLive(o) {
+    try {
+      if (!o || !o[2]) return true;
+      var P4 = KIVO.Perm44, Pm = KIVO.BassamPerm; if (!P4 || !P4.sysList) return true;
+      var sys = P4.sysList().filter(function (s) { return s && s.toggle !== false && (s.leaves || []).indexOf(o[2]) !== -1; })[0]; if (!sys) return true;
+      if (Pm && Pm.platOff && Pm.platOff().indexOf(sys.key) !== -1) return false;
+      if (KIVO.__ADMIN_MODE === 'site') return true;
+      var d = KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : ''; if (!d || !P4.ceiling) return true;
+      return (P4.ceiling(d).on || []).indexOf(sys.key) !== -1;
+    } catch (e) { return true; }
+  }
   KIVO.BassamAudit = { VER: 1, hash: hash, newId: newId, legacyId: legacyId,@@SYS:activity.taskId.export@@@@SYS:activity.stampPlan.export@@ stampRounds: stampRounds, stampList: stampList, stampSite: stampSite,
     describe: describe, rowVM: rowVM, detailRows: detailRows, ctxText: ctxText, fetch: fetchAud, entityHistory: entityHistory, panelNodes: panelNodes,
-    ACT_AR: ACT_AR, ET_AR: ET_AR, ET_FILTER: ET_FILTER, ACT_FILTER: ACT_FILTER, MONTHS: MONTHS, mLabel: mLabel, dLabel: dLabel, clock: clock, dateTxt: dateTxt, fieldAr: fieldAr };
+    ACT_AR: ACT_AR, ET_AR: ET_AR, get ET_FILTER() { return ET_FILTER.filter(etLive); }, ACT_FILTER: ACT_FILTER, MONTHS: MONTHS, mLabel: mLabel, dLabel: dLabel, clock: clock, dateTxt: dateTxt, fieldAr: fieldAr };
 })();
 

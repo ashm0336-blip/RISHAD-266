@@ -22,9 +22,9 @@ async function bounded(promise,label,timeout=5000){
   finally{clearTimeout(timer);}
 }
 function harness(opts={}){
-  const calls={confirm:[],toast:[],post:[],get:[],ack:[],sync:[],state:[]},counts=opts.populated?{keys:7,accounts:104,custody:3,notifications:4,irshad:2,seized:5,awards:6}:{keys:0,accounts:0,custody:0,notifications:0,irshad:0,seized:0,awards:0};
+  const calls={confirm:[],toast:[],post:[],get:[],ack:[],sync:[],state:[],nav:[]},counts=opts.populated?{keys:7,accounts:104,custody:3,notifications:4,irshad:2,seized:5,awards:6}:{keys:0,accounts:0,custody:0,notifications:0,irshad:0,seized:0,awards:0};
   let settle,started;const postStarted=new Promise(resolve=>{started=resolve;});
-  const uid='TEST_ONLY_guard_super',KIVO={BassamAuth:{user:()=>({id:uid,role:'super'}),isSuper:()=>true},
+  const uid='TEST_ONLY_guard_super',KIVO={BassamOrgRoute:{ROOT:'__plat'},BassamAuth:{user:()=>({id:uid,role:'super'}),isSuper:()=>true},
     __BS_SRV:{resync:value=>calls.sync.push(value)},bsConfirm:async options=>{calls.confirm.push(options);return !!opts.answer;}};
   const base={epoch:1,kv:{bassam_depts_v1:1,bassam_auth_users_v1:1,bassam_perms_v1:1},custody:1,notifications:{rev:1,configRev:1,broadcastRev:1},irshad:{reports:1,languages:1,locations:1,retro:1},
     /* schema 9 (05ca197): the server inventory also carries the seized/awards business bases (logic.js _businessBaseValid) */
@@ -38,7 +38,8 @@ function harness(opts={}){
       return new Promise(resolve=>{settle=()=>resolve(new Response(JSON.stringify({ok:1,mode:'dept-delete',dept:DEPT.id,requestId:body.requestId,rev:2,revs:{bassam_depts_v1:2},counts})));});
     }};
   context.window=context;vm.createContext(context);
-  const self={state:{admArm:opts.arm||null,sysSel:DEPT.id},setState(value){calls.state.push(value);Object.assign(this.state,value);},bsToast:message=>calls.toast.push(message),bsAck:(...args)=>calls.ack.push(args)};
+  /* V7 · د6: الوحدةُ المختارة في عنوان شاشة «الإدارات والصلاحيات» لا في حالة هذه الصفحة (sysSel حُذف) — بعد إقرار الحذف تعود الشاشةُ إلى «المنصة كلها» (_orgGoto) */
+  const self={state:{admArm:opts.arm||null},setState(value){calls.state.push(value);Object.assign(this.state,value);},bsToast:message=>calls.toast.push(message),bsAck:(...args)=>calls.ack.push(args),_orgGoto:(...args)=>calls.nav.push(args)};
   for(const name of ['_wpActor','_reasonFirst','_wpCall','_businessBaseValid','deptDel','_deptDelGo']){
     const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name+' موجودة');
     self[name]=vm.runInContext('({'+L.slice(node.start,node.end)+'}).'+name,context);
@@ -61,9 +62,9 @@ test('إدارة فيها مدير و103 موظفين: تأكيد باسم ال�
 
 test('الموافقة تنتظر ACK الحذف · والإدارة الفارغة تُؤكَّد بالحوار نفسه (CORE-02: بدل الضغطتين خلال ٤ ثوانٍ)',async()=>{
   const h=harness({populated:true,answer:true}),pending=h.run(DEPT);await bounded(h.postStarted,'populated department POST');
-  assert.equal(h.calls.post.length,1,'الموافقة ترسل طلباً واحداً');assert.equal(h.calls.ack.length,0,'لا نجاح قبل إقرار الخادم');assert.equal(h.self.state.sysSel,DEPT.id);
+  assert.equal(h.calls.post.length,1,'الموافقة ترسل طلباً واحداً');assert.equal(h.calls.ack.length,0,'لا نجاح قبل إقرار الخادم');assert.deepEqual(h.calls.nav,[],'ولا تنقّلَ قبل الإقرار');
   await h.run(DEPT);assert.equal(h.calls.post.length,1,'ضغطتان أثناء الانتظار لا تكرران الحذف');h.ack();await bounded(pending,'populated department ACK');
-  assert.equal(h.calls.ack.length,1);assert.equal(h.self.state.sysSel,'');assert.deepEqual(h.calls.sync,[false]);
+  assert.equal(h.calls.ack.length,1);assert.deepEqual(h.calls.nav,[['__plat','overview',true]],'الوحدةُ المحذوفة لا تبقى مختارة');assert.ok(h.calls.state.every(value=>!('sysSel' in value)));assert.deepEqual(h.calls.sync,[false]);
   // CORE-02: the empty department is confirmed by the same KIVO.bsConfirm dialog; cancelling writes nothing and arms nothing.
   const e=harness({answer:false});await e.run(DEPT);
   assert.equal(e.calls.confirm.length,1,'الفارغة تسأل بالحوار نفسه');assert.equal(e.calls.confirm[0].danger,true);assert.match(e.calls.confirm[0].msg,/خالية/);assert.equal(e.calls.confirm[0].typed,undefined,'بلا كتابة اسم للإدارة الخالية');

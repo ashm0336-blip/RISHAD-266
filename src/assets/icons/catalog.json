@@ -311,8 +311,8 @@
   "i-1b59ac83": {
    "body": "<rect width=\"7\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\"></rect><rect width=\"7\" height=\"7\" x=\"14\" y=\"3\" rx=\"1\"></rect><rect width=\"7\" height=\"7\" x=\"14\" y=\"14\" rx=\"1\"></rect><rect width=\"7\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\"></rect>",
    "uses": {
-    "modules/admin/view.html": 1,
     "modules/employees/view.html": 1,
+    "modules/org/view.html": 1,
     "systems/dreport/client/view.html": 1,
     "systems/staff/client/view.html": 1,
     "systems/tasks/client/view.html": 1
@@ -344,7 +344,7 @@
    "body": "<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"></path>",
    "uses": {
     "layouts/index.template.html": 2,
-    "modules/admin/view.html": 2
+    "modules/admin/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -488,7 +488,7 @@
   "i-2ef48b8f": {
    "body": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path><path d=\"M17 8l-5-5-5 5\"></path><path d=\"M12 3v12\"></path>",
    "uses": {
-    "modules/admin/view.html": 5
+    "modules/admin/view.html": 4
    },
    "viewBox": "0 0 24 24"
   },
@@ -604,7 +604,8 @@
   "i-3a0791fe": {
    "body": "<rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"></path>",
    "uses": {
-    "modules/admin/view.html": 2,
+    "modules/admin/view.html": 1,
+    "modules/org/view.html": 1,
     "systems/daily/client/view.html": 1,
     "systems/dreport/client/view.html": 3,
     "systems/dstats/client/view.html": 1,
@@ -670,13 +671,6 @@
    "body": "<path d=\"M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76\"></path><path d=\"m9 12 2 2 4-4\"></path>",
    "uses": {
     "systems/plan/client/view.html": 1
-   },
-   "viewBox": "0 0 24 24"
-  },
-  "i-3f904c33": {
-   "body": "<path d=\"M12 22V8\"></path><path d=\"M5 12H2a10 10 0 0 0 20 0h-3\"></path><path d=\"M12 8a4 4 0 0 0-4-4H5a4 4 0 0 0 4 4Z\"></path><path d=\"M12 8a4 4 0 0 1 4-4h3a4 4 0 0 1-4 4Z\"></path>",
-   "uses": {
-    "modules/admin/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -955,7 +949,6 @@
   "i-5541214a": {
    "body": "<path d=\"M12 20h9\"></path><path d=\"M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "systems/daily/client/view.html": 3,
     "systems/plan/client/view.html": 3,
     "systems/tasks/client/view.html": 1
@@ -978,13 +971,6 @@
     "modules/employees/view.html": 1
    },
    "viewBox": "0 0 96 96"
-  },
-  "i-57689779": {
-   "body": "<path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path>",
-   "uses": {
-    "modules/admin/view.html": 4
-   },
-   "viewBox": "0 0 24 24"
   },
   "i-57a60517": {
    "body": "<path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\"></path><rect x=\"8\" y=\"2\" width=\"8\" height=\"4\" rx=\"1\"></rect><path d=\"M12 11h4\"></path><path d=\"M12 16h4\"></path><path d=\"M8 11h.01\"></path><path d=\"M8 16h.01\"></path>",
@@ -1063,7 +1049,6 @@
   "i-5ff99641": {
    "body": "<path d=\"m15 18-6-6 6-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "modules/employees/view.html": 4,
     "systems/award/client/view.html": 1,
     "systems/daily/client/view.html": 2,
@@ -1165,13 +1150,6 @@
    "body": "<rect x=\"3\" y=\"3\" width=\"7\" height=\"9\"></rect><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\"></rect><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\"></rect><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\"></rect>",
    "uses": {
     "layouts/index.template.html": 1
-   },
-   "viewBox": "0 0 24 24"
-  },
-  "i-6bc87e8f": {
-   "body": "<path d=\"M3 3v16a2 2 0 0 0 2 2h16\"></path><path d=\"M7 11h4\"></path><path d=\"M7 16h7\"></path><path d=\"M7 6h10\"></path>",
-   "uses": {
-    "modules/admin/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -1357,13 +1335,6 @@
    },
    "viewBox": "0 0 24 24"
   },
-  "i-7f5a10d8": {
-   "body": "<path d=\"M3 6h18\"></path><path d=\"M8 6V4h8v2\"></path><path d=\"M19 6l-1 14H6L5 6\"></path>",
-   "uses": {
-    "modules/admin/view.html": 2
-   },
-   "viewBox": "0 0 24 24"
-  },
   "i-802df772": {
    "body": "<path d=\"M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z\"></path><circle cx=\"12\" cy=\"13\" r=\"3\"></circle>",
    "uses": {
@@ -1472,7 +1443,6 @@
   "i-870cde61": {
    "body": "<path d=\"m9 18 6-6-6-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 1,
     "modules/employees/view.html": 4,
     "systems/award/client/view.html": 1,
     "systems/daily/client/view.html": 2,
@@ -2246,7 +2216,7 @@
   "i-bdce9bcc": {
    "body": "<path d=\"M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z\"></path><circle cx=\"12\" cy=\"12\" r=\"3\"></circle>",
    "uses": {
-    "modules/admin/view.html": 1,
+    "modules/org/view.html": 1,
     "systems/plan/client/view.html": 1
    },
    "viewBox": "0 0 24 24"
@@ -2421,8 +2391,9 @@
   "i-c92915c6": {
    "body": "<path d=\"m6 9 6 6 6-6\"></path>",
    "uses": {
-    "modules/admin/view.html": 3,
+    "modules/admin/view.html": 1,
     "modules/employees/view.html": 14,
+    "modules/org/view.html": 1,
     "systems/award/client/view.html": 3,
     "systems/daily/client/view.html": 10,
     "systems/dreport/client/view.html": 6,
@@ -2673,7 +2644,7 @@
   "i-de4e6997": {
    "body": "<path d=\"M5 12h14\"></path><path d=\"M12 5v14\"></path>",
    "uses": {
-    "modules/admin/view.html": 3,
+    "modules/admin/view.html": 1,
     "modules/employees/view.html": 8,
     "systems/daily/client/view.html": 1,
     "systems/plan/client/view.html": 3,
@@ -2734,7 +2705,7 @@
   "i-e448ef4a": {
    "body": "<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"></path><path d=\"m9 12 2 2 4-4\"></path>",
    "uses": {
-    "modules/admin/view.html": 1
+    "modules/org/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },

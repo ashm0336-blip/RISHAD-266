@@ -366,6 +366,7 @@
  ],
  "tabAddr": {
   "emps": 1,
+  "planning": {"staff": 1, "plan": 1},
   "award": 1,
   "admin": 1,
   "daily": {

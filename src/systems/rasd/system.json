@@ -250,7 +250,13 @@
   },
   "res.reg.dept": {
    "order": 25,
-   "text": "  /* ── رصد الحالات ── */\n  'bassam_rasd_v1':            { scope: 'dept', cap: 'rasd/records' },\n  'bassam_rasd_opts_v1':       { scope: 'dept', cap: 'rasd/records' },\n"
+   "text": "  /* ── رصد الحالات ── */\n  'bassam_rasd_v1':            { scope: 'dept', cap: 'rasd/records' },\n  'bassam_rasd_opts_v1':       { scope: 'dept', cap: 'rasd/records' },\n  /* V7 · د6 (رصد الحالات): نوافذُ الاستدراك — تكتبها /api/retro وحدها والاستعادةُ الخادمية المتحقَّقة (srv)، وتُقرأ بسياسة السجلات (RES_READ_AS) */\n  'bassam_rasd_retro_v1':      { scope: 'dept', cap: 'rasd/records', srv: 1 },\n"
+  },
+  "res.readAs": {
+   "order": 20,
+   "text": "  , 'bassam_rasd_retro_v1': 'bassam_rasd_v1'\n",
+   "first": "  'bassam_rasd_retro_v1': 'bassam_rasd_v1'\n",
+   "only": "  'bassam_rasd_retro_v1': 'bassam_rasd_v1'\n"
   },
   "ent.reg": {
    "order": 25,

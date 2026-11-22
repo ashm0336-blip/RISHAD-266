@@ -223,9 +223,13 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       ),
       bodyArgs = [],
       bodyWhere = rsImageIn('k', newIds, bodyArgs),
-      knownBodies =
+      /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور المذكورة ليعرف القائمَ منها — يسأل عن معرّفاتها وتوقيعها (عددُ الصفوف ومجموعُ الأطوال)، وسياجُه التوقيعُ نفسُه */
+      bodySig = "SELECT COALESCE(group_concat(k||'='||c||':'||n,','),'') s FROM (SELECT k,COUNT(*) c,SUM(length(v)) n FROM imgs WHERE " + bodyWhere + ' GROUP BY k ORDER BY k)',
+      knownBodies = plan.imagesFresh ? [] :
         (await rsBound(env.DB.prepare('SELECT k,seq,v FROM imgs WHERE ' + bodyWhere + ' ORDER BY k,seq'), bodyArgs).all()).results || [],
+      sigNow = plan.imagesFresh ? String((await rsBound(env.DB.prepare(bodySig), bodyArgs).first('s')) || '') : '',
       known = new Set(
+        plan.imagesFresh ? sigNow.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }) :
         knownBodies.map(function (r) {
           return r.k;
         }),
@@ -235,7 +239,8 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
        at commit, and the receipt carries the warning. No image body is ever written by a restore. */
     var missing = newIds.filter(function (id) { return !known.has(id) && !(plan.imagesFresh && plan.imagesFresh.has(id)); });   /* V7 · د6: الصورةُ الجديدة يُكتب جسمُها في الدفعة نفسِها (019g) فليست مفقودة */
     if (missing.length) { rsImageMissingNote(plan, missing); plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
-    plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
+    if (plan.imagesFresh) plan.guards.push(rsBound(env.DB.prepare("SELECT CASE WHEN (" + bodySig + ")!=?" + (bodyArgs.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), bodyArgs.concat([sigNow])));
+    else plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
   }
   var ownArgs = [],
     ownWhere = rsImageIn('img', Array.from(ids), ownArgs),

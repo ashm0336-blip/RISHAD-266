@@ -110,13 +110,17 @@
     var hiddenSide = (pl && pl.side && pl.side.hidden) || [], helpSide = !(pl && pl.side && pl.side.help === false);
     var pv = function(k){ return !!(perms[k] && perms[k].indexOf('view') !== -1); };
     var nameOf0 = function(k){ var p = PAGE_OF[k]; if (p) return p.name; var g = NAV_REG.filter(function(x){ return x.key === k; })[0]; return g ? g.name : k; };
+    /* V7 · د6: اسمُ البند بنوع الوحدة — «مؤشرات القسم» · «موظفو القسم» حين تكون الوحدةُ قسماً (BassamDepts.unitAl). الاسمُ هنا وحده: القائمةُ المرسومة
+       (root-logic) والبطاقاتُ (seenBy) تأخذانه من هذا المصدر */
+    var unitAl = 'الإدارة'; try { var D0 = KIVO.BassamDepts; if (D0 && D0.unitAl) unitAl = D0.unitAl(did || curDept()) || unitAl; } catch (e) { unitAl = 'الإدارة'; }
+    var unitName = function(n){ return unitAl !== 'الإدارة' && / الإدارة$/.test(n) ? n.replace(/ الإدارة$/, ' ' + unitAl) : n; };
     NO.groups.forEach(function(g){ g.keys.forEach(function(k){
       var on;
       if (k === 'kpis') on = navLeaves('kpis').some(function(x){ return kpiPanelOk(x[0], x[1], P || null, did); });
       else if (isContainer(k) || PAGE_REG.some(function(p){ return p.under === k; })) on = pv(k) || PAGE_REG.some(function(p){ return p.under === k && pv(p.key); });
       else on = pv(k);
       if (k === 'help') on = on && helpSide;
-      out.push({ k: k, n: nameOf0(k), on: !!on, hid: hiddenSide.indexOf(k) !== -1 });
+      out.push({ k: k, n: unitName(nameOf0(k)), on: !!on, hid: hiddenSide.indexOf(k) !== -1 });
     }); });
     return out;
   }
@@ -152,7 +156,7 @@
     try { C = KIVO.Perm44 && KIVO.Perm44.ceiling ? KIVO.Perm44.ceiling(did).key : null; } catch (e) { C = null; }
     (keys || []).forEach(function(k){ if (!C || C(k)) H[k] = true; });   /* السقفُ بالوراثة ∩ المنصة — ما كان الخادمُ ليحمله خارجَه */
     if (!plus) plus = Object.keys(H);   /* = perm44 grantOf: منحُ صاحب الدور أو الاستثناء (plus) هو مفاتيحُه الفعّالة كلُّها */
-    return I.heldPerms(I.platCut(all || {}), standingKeys(H, mgr), plus);
+    return I.heldPerms(I.platCut(all || {}), standingKeys(H, mgr), plus, did);
   }
   function holderPerms(h){
     h = h || {};
@@ -183,7 +187,7 @@
     isContainer: isContainer, leafKeysOf: leafKeysOf, leafReg: leafReg, splitLeaf: splitLeaf, expandPerms: expandPerms, derivePages: derivePages, canSub: canSub,
     empLens: empLens, setEmpLens: setEmpLens, nameOf: nameOf, ACT_NAMES: ACT_NAMES,
     dropEmpPerms: dropEmpPerms, pruneOrphanEmpPerms: pruneOrphanEmpPerms,
-    myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk, menuFor: menuFor, mgrPerms: mgrPerms, holderPerms: holderPerms, menuOf: menuOf, seenBy: seenBy,
+    platOff: I.platOff, myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk, menuFor: menuFor, mgrPerms: mgrPerms, holderPerms: holderPerms, menuOf: menuOf, seenBy: seenBy,
     /* V7 · د5-ح: هل حُسمت صلاحياتُ الجلسة؟ — مديرُ المنصة دائماً · وغيرُه حين تصل مفاتيحُ الخادم (__BS_AUTHZ) فلا تُرسم صفحةٌ قبل قرارها */
     ready: function(){ try { return !!(isSuper() || (I.azZ && I.azZ())); } catch (e) { return true; } },
     key: azKey, authz: function(){ return azZ(); },

@@ -19,8 +19,10 @@ async function setPerms(lab, f) {
 }
 async function view(b, lab) {
   const s = await openAs(b, lab, LAB.superUn, LAB.superPw); s.page.setDefaultTimeout(15000); const p = s.page;
-  const tree = async (name) => { await s.go('#/sysadmin/org', 2500); await p.locator('main a:has-text("فرد الكل")').click(); await p.waitForTimeout(400); return (await p.locator('main .tr-rw', { hasText: name }).first().innerText()).replace(/\s+/g, ' '); };
-  const step = async (id) => { await s.go('#/sysadmin/org/' + id, 2500); const li = p.locator('main section[aria-label="قائمة التهيئة"] li', { hasText: 'الصلاحيات' }).first();   /* V7 · د5-هـ (44 · المدير): الخطوةُ «الصلاحيات» (كانت «سقف الصفحات») */ return { txt: (await li.innerText()).replace(/\s+/g, ' '), cls: await li.getAttribute('class') }; };
+  /* V7 · د6: الشاشةُ الواحدة — حالةُ السقف في الشجرة تلميحُ عمود «الأنظمة» (كانت سطراً تحت الاسم)، وخطوةُ قائمة التهيئة «الأنظمة» (كانت «الصلاحيات»):
+     نصُّها الظاهر + تلميحُها، وحالتُها data-ok (كانت الصنف ok / wn) */
+  const tree = async (name) => { await s.go('#/sysadmin/org/platform/overview', 2500); await p.locator('main [data-og-act="expand"]').first().click(); await p.waitForTimeout(400); return ((await p.locator('main .og-rw', { hasText: name }).first().locator('[data-og-col="systems"]').getAttribute('title')) || '').replace(/\s+/g, ' '); };
+  const step = async (id) => { await s.go('#/sysadmin/org/' + id + '/overview', 2500); const li = p.locator('main section[aria-label="قائمة التهيئة"] li[data-og-step="systems"]').first(); return { txt: ((await li.innerText()) + ' ' + ((await li.locator('button').getAttribute('title')) || '')).replace(/\s+/g, ' '), cls: (await li.getAttribute('data-ok')) === 'true' ? 'ok' : 'wn' }; };
   return { s, p, tree, step };
 }
 

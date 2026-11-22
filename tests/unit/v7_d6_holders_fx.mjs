@@ -22,7 +22,7 @@ export const E_ROLE = T + 'e_role', E_NONE = T + 'e_none', E_EX = T + 'e_ex', RO
 export const KP = 'bassam_perms_v1';
 export const BLOCKS = ['255-page-manifest.js', '260-bassam-plat.js', '280-server-storage.js', '310-image-refs.js', '320-dept-storage.js', '330-auth.js', '331-perm-model.js', '332-find-day.js', '333-platform-map.js', '334-perm-tree-tpl.js', '340-registry-v24-9.js', '345-perm44.js', '440-count.js'];
 /* ملفُّ الصفحة الذي يحمل عروضَ «الصلاحيات» (ما يراه المدير · حاملُ الدور · الشخص) — إن نُقلت الدوالُّ إلى ملف صفحةٍ آخر يُحدَّث هذا المسارُ وحده */
-export const PERM_VIEWS = path.join(SRC, 'modules', 'admin', 'logic-perm44.js');
+export const PERM_VIEWS = path.join(SRC, 'modules', 'org', 'logic-perm44.js');
 const pin = () => String(crypto.randomInt(100000, 999999));
 /* الحسابات: who → { uid, un, role, dept, ekey, extra } */
 export const ACC = {

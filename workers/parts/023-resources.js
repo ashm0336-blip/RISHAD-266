@@ -78,6 +78,8 @@ var RES_REG = {
   /* ── رصد الحالات ── */
   'bassam_rasd_v1':            { scope: 'dept', cap: 'rasd/records' },
   'bassam_rasd_opts_v1':       { scope: 'dept', cap: 'rasd/records' },
+  /* V7 · د6 (رصد الحالات): نوافذُ الاستدراك — تكتبها /api/retro وحدها والاستعادةُ الخادمية المتحقَّقة (srv)، وتُقرأ بسياسة السجلات (RES_READ_AS) */
+  'bassam_rasd_retro_v1':      { scope: 'dept', cap: 'rasd/records', srv: 1 },
   /* ── جائزة التميز ── */
   /* الترشيح يُنشأ من award/new، وكل ما عداه — تعديلٌ أو حذفٌ أو اعتماد نتيجة — لا يكون إلا بورقة award/res */
   'bassam_award_v1':           { scope: 'dept', cap: 'award/res', capAdd: 'award/new' },
@@ -116,6 +118,7 @@ var RES_REG = {
    تكتبه خطوةُ خادمٍ وحدها، والاستعادةُ الخادمية المتحقَّقة (A.__srvRst) تعيده كما في النسخة. */
 var RES_READ_AS = {
   'bassam_rounds_arc_v1': 'bassam_rounds_v1'
+  , 'bassam_rasd_retro_v1': 'bassam_rasd_v1'
 };
 function resReadAs(k) {
   var t = Object.prototype.hasOwnProperty.call(RES_READ_AS, resName(k)) ? RES_READ_AS[resName(k)] : null, P;

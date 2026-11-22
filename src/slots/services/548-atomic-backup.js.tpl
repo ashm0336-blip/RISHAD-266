@@ -57,8 +57,8 @@
       'import-too-heavy': 'النسخة أكبر مما يُعالَج بأمان في طلب واحد؛ لم يتغيّر شيء ولم يُرسل منها شيء. ' +
         (data && data.details && data.details.kind === 'full'
           ? 'النسخة الشاملة بهذا الحجم لا تُستورد دفعةً واحدة: استورد نسخ الإدارات واحدةً واحدة.'
-          : 'اختر «استبدال كامل» بحساب مدير المنصة (تُرسل البيانات الكبيرة على دفعات)، أو امسح بيانات الإدارة الهدف أولاً ثم استورد.'),
-      'import-too-large': 'النسخة أكبر من سقف الاستيراد (256MB)؛ لم يتغيّر شيء',
+          : data && data.details && data.details.k ? 'السبب: «' + data.details.k + '» وحده أكبر مما يُعالَج في طلب واحد.' : 'اختر «استبدال كامل» بحساب مدير المنصة (تُرسل البيانات الكبيرة على دفعات)، أو امسح بيانات الإدارة الهدف أولاً ثم استورد.'),
+      'import-too-large': 'النسخة أكبر من سقف الاستيراد؛ لم يتغيّر شيء ولم يُرسل منها شيء. حجمها ' + (data && data.details && data.details.chars ? Math.round(data.details.chars / 1e6) : '؟') + ' مليون حرف، والحدّ ' + (data && data.details && data.details.limit ? Math.round(data.details.limit / 1e6) : 256) + ' مليون حرف.',
       'restore-epoch-changed': 'جرت استعادة أخرى أثناء الاستيراد؛ لم يتغيّر شيء — أعد المحاولة',
       'restore-reason': 'سبب الاستيراد مطلوب (300 حرف على الأكثر)؛ لم يتغيّر شيء',
       'authz-unavailable': 'خدمة الصلاحيات غير متاحة الآن؛ لم يتغيّر شيء — أعد المحاولة بعد قليل',
@@ -209,17 +209,22 @@
   /* المفتاحُ الكبير (يعلنه الخادم: الاسم ونمطُ أعضائه التي تُقسم) يُرسل دفعاتٍ كلٌّ منها وثيقةٌ صغيرة: الأعضاءُ المشتركة + مجموعةُ أيام (≤ ~0.7M حرف) —
      فلا يحمله الخادمُ كلَّه في ذاكرته. ما لا ينقسم (ليس خريطةً · يومٌ واحد أكبر من الحد) يبقى في نصّ الملف كما كان. */
   function split(file, spec, min) {
-    var images = record(file.idbImages) ? file.idbImages : {}, rest = Object.assign({}, file), slices = {}, list = [];
+    var images = record(file.idbImages) ? file.idbImages : {}, rest = Object.assign({}, file), slices = {}, list = [], big = '', over = -1;
     delete rest.idbImages;
     function add(name, texts) {
       texts.forEach(function (t, n) { slices[name + '#' + n] = t.length; list.push({ k: '#' + name + '#' + n, s: 0, t: t }); });
     }
+    function whole(name, text) {
+      slices[name + '#0'] = text.length;
+      cut(text, 1000000).forEach(function (t, n) { list.push({ k: '#' + name + '#0', s: n, t: t }); });
+    }
     /* تجميعٌ عام: رأسٌ مشترك (head) + عناصرُ بأحجامها ⇒ مجموعاتٌ ≤ ~0.7M حرف؛ null إن لم ينقسم */
     function groups(head, sizes) {
       var out = [], cur = [], size = head;
+      over = -1;
       if (head > 200000) return null;
       for (var i = 0; i < sizes.length; i++) {
-        if (head + sizes[i] > 950000) return null;
+        if (head + sizes[i] > 950000) { over = i; return null; }
         if (size + sizes[i] > 700000 && cur.length) { out.push(cur); cur = []; size = head; }
         cur.push(i); size += sizes[i];
       }
@@ -238,7 +243,24 @@
     }
     Object.keys(spec || {}).forEach(function (name) {
       var rx, raw = record(file.data) ? file.data[name] : null, doc;
-      if (!min || !due(name)) return;
+      if (!min) return;
+      /* موردٌ لا ينقسم بأعضائه (النمط null): يُرسل كلُّه دفعةً واحدة في طلبه — دائماً، فلا يدخل كلفةَ بقية النسخة ولا يُحمَّل القائمُ منه في الهدف */
+      if (!spec[name][0]) {
+        var at0 = -1;
+        ops0.forEach(function (d, i) { if (record(d) && d.resource === name && record(d.rows)) at0 = i; });
+        if (typeof raw === 'string' && raw.length > 2) {
+          if (rest.data === file.data) rest.data = Object.assign({}, file.data);
+          delete rest.data[name];
+          whole(name, raw);
+        } else if (at0 >= 0 && (ops0[at0].rows.ops_nodes || []).length) {
+          var blank = {};
+          Object.keys(ops0[at0].rows).forEach(function (t) { blank[t] = []; });
+          whole(name, JSON.stringify({ version: ops0[at0].version, scope: ops0[at0].scope, resource: name, rows: ops0[at0].rows }));
+          rest.domains = Object.assign({}, rest.domains || file.domains, { operations: ((rest.domains || file.domains).operations).map(function (d, i) { return i === at0 ? Object.assign({}, d, { rows: blank }) : d; }) });
+        }
+        return;
+      }
+      if (!due(name)) return;
       try { rx = new RegExp(spec[name][0]); } catch (e) { return; }
       /* نسخةٌ قديمة: الوثيقةُ نصٌّ في data */
       if (typeof raw === 'string') {
@@ -246,7 +268,7 @@
         if (!record(doc)) return;
         var shared = {}, days = Object.keys(doc).filter(function (k) { if (rx.test(k)) return true; shared[k] = doc[k]; return false; });
         var plan = groups(JSON.stringify(shared).length, days.map(function (k) { return JSON.stringify(doc[k]).length + k.length + 4; }));
-        if (!plan) return;
+        if (!plan) { if (over >= 0 && !big) big = name + ' › ' + days[over]; return; }
         var texts = plan.map(function (idx) { var g = Object.assign({}, shared); idx.forEach(function (i) { g[days[i]] = doc[days[i]]; }); return JSON.stringify(g); });
         if (texts.some(function (t) { return t.length > 1000000; })) return;
         if (rest.data === file.data) rest.data = Object.assign({}, file.data);
@@ -271,7 +293,7 @@
       });
       var dayKids = kids.filter(function (r) { return owner[r.row_key]; }), sharedKids = kids.filter(function (r) { return !owner[r.row_key]; });
       var plan2 = groups(JSON.stringify(bucket['']).length, dayKids.map(function (r) { return JSON.stringify(bucket[r.row_key]).length; }));
-      if (!plan2) return;
+      if (!plan2) { if (over >= 0 && !big) big = name + ' › ' + dayKids[over].member_key; return; }
       var texts2 = plan2.map(function (idx) {
         var rows = {}, pos = {};
         sharedKids.forEach(function (r, i) { pos[r.row_key] = i; });
@@ -286,10 +308,12 @@
       if (texts2.some(function (t) { return t.length > 1000000; })) return;
       var empty = {};
       tables.forEach(function (t) { empty[t] = []; });
-      rest.domains = Object.assign({}, file.domains, { operations: ops.map(function (d, i) { return i === at ? Object.assign({}, d, { rows: empty }) : d; }) });
+      rest.domains = Object.assign({}, rest.domains || file.domains, { operations: ((rest.domains || file.domains).operations).map(function (d, i) { return i === at ? Object.assign({}, d, { rows: empty }) : d; }) });
       add(name, texts2);
     });
-    return { text: JSON.stringify(rest), images: images, ids: Object.keys(images), slices: slices, list: list };
+    /* لا عضوَ أكبر من الدفعة: يُسمّى أكبرُ ما بقي في نصّ الملف (≥ 1M حرف) إن رُفض لثقله */
+    if (!big && record(rest.data)) Object.keys(rest.data).forEach(function (k) { var v = rest.data[k]; if (typeof v === 'string' && v.length >= 1e6 && (!big || v.length > rest.data[big].length)) big = k; });
+    return { text: JSON.stringify(rest), images: images, ids: Object.keys(images), slices: slices, list: list, big: big };
   }
   function wait(ms) {
     return new Promise(function (go) { setTimeout(go, ms); });
@@ -303,7 +327,7 @@
     'image-unreferenced': 'صورة لا يشير إليها أي سجل في النسخة',
   };
   function skipList(list) {
-    return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { return { k: x.k, why: String(x.why || ''), text: WHY[x.why] || String(x.why || '') }; });
+    return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { return { k: x.k, why: String(x.why || ''), n: integer(x.n) ? x.n : null, text: (WHY[x.why] || String(x.why || '')) + (integer(x.n) ? ' — العدد: ' + x.n : '') }; });
   }
   /* ملخّصُ ما قبل التأكيد — لا يودِع شيئاً (begin dry): الخادمُ يفحص الصلاحية ويعيد ما لن يُنقل من نسخةٍ قديمة */
   async function summary(file, scope) {
@@ -317,7 +341,9 @@
     var bytes = parts.text.length;
     parts.ids.forEach(function (k) { bytes += String(parts.images[k]).length; });
     return { ok: 1, legacy: legacy, kind: file.kind || scope.kind, dept: typeof file.dept === 'string' ? file.dept : '', exportedAt: typeof file.exportedAt === 'string' ? file.exportedAt : '',
-      keys: names.length, images: parts.ids.length, bytes: bytes, skip: skipList(read.data.skip) };
+      keys: names.length, images: parts.ids.length, bytes: bytes, noPerms: file.perms == null,
+      /* المنحُ القديمة تُذكر بعددها (يُحسب من الملف؛ والخادمُ يعيده مؤكَّداً بعد الرفع) */
+      skip: skipList((read.data.skip || []).map(function (x) { var n = null; if (x && x.why === 'grants') { try { n = Object.keys((JSON.parse(file.data[x.k]) || {}).emp || {}).length; } catch (e) { n = null; } } return n === null ? x : Object.assign({}, x, { n: n }); })) };
   }
   /* الأجزاء: كلُّ جزءٍ طلبٌ؛ الفاشلُ بلا ردٍّ مؤكَّد يُعاد وحده ثلاثاً، ثم يُعاد الفشلُ ومعه job لإكمالٍ لاحق من الجزء نفسِه */
   async function upload(job, stamp, progress) {
@@ -394,8 +420,13 @@
       });
       live.add(id);   /* قبل الطلب: صفحةٌ تُغلق وردُّ البدء لم يصل تطلب حذفَ مؤقتها كذلك */
       var began = await post({ op: 'begin', requestId: id, scope: scope, n: parts.text.length, f: texts.length, images: sizes, slices: parts.slices, resources: resources, keys: legacyKeys, mode: opt.mode }, stamp);
-      if (!began.ok) { if (!began.uncertain) live.delete(id); return began; }
-      job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest, slices: parts.list.length, sliced: 0 };
+      if (!began.ok) {
+        if (!began.uncertain) live.delete(id);
+        /* عضوٌ واحد أكبر مما يُرسل في دفعة: الرفضُ يسمّيه */
+        if (began.err === 'import-too-heavy' && parts.big && record(began.details) && record(began.details.details) && !began.details.details.k) return failure(began.err, began.status, Object.assign({}, began.details, { details: Object.assign({}, began.details.details, { k: parts.big }) }));
+        return began;
+      }
+      job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest, slices: Object.keys(parts.slices).length, sliced: 0 };   /* V7 · د6: عددُ الدفعات لا عددُ أجزائها (موردٌ كاملٌ أكبر من 1M حرف يُرفع جزأين وهو دفعةٌ واحدة) */
     } else if (job.mode !== opt.mode) return fail(failure('invalid'));
     job.stop = typeof opt.shouldStop === 'function' ? opt.shouldStop : null;
     var up = await upload(job, stamp, progress);
@@ -500,7 +531,8 @@
         try { fetch(IMPORT, { method: 'POST', keepalive: true, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'cancel', requestId: id }) }); } catch (e) { /* مهلةُ الخادم تكفي */ }
       });
     });
-  async function confirm(prepared) {
+  /* V7 · د6: التأكيدُ الوحيد — بعد الرفع والتحقق، بملخّص الخادم المؤكَّد. labels: عنوانُه وزرُّه لمن يسمّيه (استبدالُ الإدارة: «نعم، استبدل») */
+  async function confirm(prepared, labels) {
     if (!prepared || !prepared.ok) return false;
     var i = prepared.inspection,
       c = i.counts || {},
@@ -530,7 +562,7 @@
           : '') +
         (i.summary.preservedGlobals.length ? ' سيُحافظ على ' + i.summary.preservedGlobals.length + ' مورد عام غير مشمول بالنسخة.' : '');
     return KIVO.bsConfirm
-      ? !!(await KIVO.bsConfirm({ title: 'اعتماد استعادة النسخة', msg: text, ok: 'استعادة النسخة', cancel: 'إلغاء' }))
+      ? !!(await KIVO.bsConfirm({ title: (labels && labels.title) || 'اعتماد استعادة النسخة', msg: text, ok: (labels && labels.ok) || 'استعادة النسخة', cancel: 'إلغاء' }))
       : !!window.confirm(text);
   }
   async function refresh() {

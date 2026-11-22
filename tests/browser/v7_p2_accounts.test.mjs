@@ -25,24 +25,23 @@ async function world(view) {
   const H = () => p.evaluate(() => location.hash);
   /* V7 · د5-هـ (أمن ٣): لا نومٌ ثابت — كلُّ خطوةٍ تنتظر شرطَها الحقيقي (التبويبُ الحالي · القائمةُ ظاهرة · الحوار · قيمةُ الخادم) */
   const until = async (fn, what, ms = 15000) => { const t0 = Date.now(); for (;;) { if (await fn()) return; if (Date.now() - t0 > ms) throw new Error('timed out waiting for ' + what); await new Promise((r) => setTimeout(r, 50)); } };
-  const TABS = 'main [aria-label="أقسام صفحة العقدة"] button';
+  /* V7 · د6: الشاشةُ الواحدة «الإدارات والصلاحيات» — تبويباتُ الوحدة (.og-tabs) وعنوانُها #/sysadmin/org/<الوحدة>/<التبويب> */
+  const TABS = 'main .og-tabs .og-tab';
   const go = async (hash, ready) => { await p.evaluate((h) => { location.hash = h; }, hash); await p.waitForFunction((h) => location.hash === h, hash); await p.locator(ready).first().waitFor(); };
-  const node = (id) => go('#/sysadmin/org/' + id, TABS);
+  const node = (id) => go('#/sysadmin/org/' + id + '/overview', TABS);
   const tab = async (t) => {
     await p.locator(TABS, { hasText: t }).first().click();
-    await p.waitForFunction(([sel, t]) => [...document.querySelectorAll(sel)].some((x) => x.getAttribute('aria-current') === 'true' && x.textContent.includes(t)), [TABS, t]);
+    await p.waitForFunction(([sel, t]) => [...document.querySelectorAll(sel)].some((x) => x.getAttribute('aria-selected') === 'true' && x.textContent.includes(t)), [TABS, t]);
     await p.locator(NODE).first().waitFor();
   };
-  /* V7 · د5-ح: «الصلاحيات ← الأدوار ← مدير الوحدة» (كان تبويبَ العقدة للمسؤولين والحسابات) */
-  const onCard = () => p.evaluate(() => [...document.querySelectorAll('main .p44 .p44-role')].some((x) => x.getAttribute('aria-pressed') === 'true' && x.textContent.includes('مدير الوحدة')));
+  /* V7 · د5-ح · د6: تبويب «المسؤولون» (كان «الصلاحيات ← الأدوار ← مدير الوحدة»، وقبله تبويبَ العقدة للمسؤولين والحسابات) */
+  const onCard = () => p.evaluate(() => [...document.querySelectorAll('main .og-tabs .og-tab')].some((x) => x.getAttribute('aria-selected') === 'true' && x.textContent.includes('المسؤولون')) && !!document.querySelector('main [data-org-tab="admins"] .mk.ac7'));
   const card = async () => {
-    await p.locator(TABS, { hasText: 'الصلاحيات' }).first().click();
-    await p.locator('main nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأدوار' }).first().click();
-    await p.locator('main .p44 .p44-role', { hasText: 'مدير الوحدة' }).first().click();
-    await p.waitForFunction(() => [...document.querySelectorAll('main .p44 .p44-role')].some((x) => x.getAttribute('aria-pressed') === 'true' && x.textContent.includes('مدير الوحدة')));
+    await p.locator(TABS, { hasText: 'المسؤولون' }).first().click();
+    await p.waitForFunction(() => [...document.querySelectorAll('main .og-tabs .og-tab')].some((x) => x.getAttribute('aria-selected') === 'true' && x.textContent.includes('المسؤولون')));
     await p.locator(NODE).first().waitFor();
   };
-  const cur = () => p.evaluate(() => { const e = [...document.querySelectorAll('main [aria-label="أقسام صفحة العقدة"] button')].find((x) => x.getAttribute('aria-current') === 'true'); return e ? e.textContent.replace(/[\d٠-٩\u200e\u200f\u202a-\u202e\u2066-\u2069]+/g, '').replace(/\s+/g, ' ').trim() : ''; });
+  const cur = () => p.evaluate(() => { const e = [...document.querySelectorAll('main .og-tabs .og-tab')].find((x) => x.getAttribute('aria-selected') === 'true'); return e ? e.textContent.replace(/[\d٠-٩\u200e\u200f\u202a-\u202e\u2066-\u2069]+/g, '').replace(/\s+/g, ' ').trim() : ''; });
   const rows = (scope) => p.evaluate((sc) => [...document.querySelectorAll(sc + ' .adm-tr.g-us:not(.adm-th)')].map((r) => r.querySelector('.adm-b').textContent.trim()), scope);
   const row = (scope, name) => p.locator(scope + ' .adm-tr.g-us', { hasText: name }).filter({ has: p.locator('.adm-rmb') }).first();
   const open = async (r) => { await r.locator('.adm-rmb').click(); await r.locator('[data-bs-dd] [role=menuitem]').first().waitFor(); };
@@ -53,7 +52,7 @@ async function world(view) {
   const closeDialog = async (rx, sel = '[role=dialog]') => { await p.keyboard.press('Escape'); if (!(await p.locator(sel).last().waitFor({ state: 'hidden', timeout: 1500 }).then(() => true, () => false))) { await p.locator('[role=dialog] button', { hasText: rx }).last().click().catch(() => {}); await p.locator(sel).last().waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {}); } };
   return { lab, b, s, p, H, go, node, until, tab, card, onCard, cur, rows, row, menu, open, pick, confirmOpen, answer, closeDialog };
 }
-const TABS0 = 'main [aria-label="أقسام صفحة العقدة"] button';
+const TABS0 = 'main .og-tabs .og-tab';
 const NODE = 'main .mk.ac7', ALL = 'main section[aria-label^="مراقبة الحسابات"]';
 const MGR = ['تعديل بيانات المدير', 'تجميد الحساب', 'إعادة تعيين كلمة المرور', 'تعديل الصلاحيات', 'حذف حساب المدير'];
 const EMP = ['تجميد الحساب', 'إعادة تعيين كلمة المرور', 'تعديل الصلاحيات', 'حذف حساب الدخول'];
@@ -65,8 +64,8 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     await node('TEST_ONLY_A');
     assert.ok(!(await p.locator(TABS0).allInnerTexts()).some((x) => /المسؤولون والحسابات/.test(x)), 'V7 · د5-ح: the node tab is deleted');
     await card();
-    assert.equal(await cur(), 'الصلاحيات', 'the accounts live in «الصلاحيات»'); assert.ok(await onCard(), '… on the «مدير الوحدة» card');
-    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A/perm/roles');
+    assert.equal(await cur(), 'المسؤولون', 'V7 · د6: the accounts live in the «المسؤولون» tab'); assert.ok(await onCard(), '… with the accounts card');
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A/admins');
     assert.deepEqual(await rows(NODE), ['TEST_ONLY مدير أ', 'TEST_ONLY موظف أ', 'TEST_ONLY حساب إدارة أ'], 'unit A: managers first, then its accounts');
     assert.equal(await p.locator(NODE + ' .adm-th.g-us').count(), 1, 'the central table header');
     await node('TEST_ONLY_A_S1'); await card();
@@ -103,7 +102,7 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
       await p.evaluate(() => { window.__h44 = []; addEventListener('hashchange', (e) => window.__h44.push(new URL(e.newURL).hash)); });
       await pick(NODE, who, 'تعديل الصلاحيات'); await p.waitForTimeout(1200);
       /* the address the menu writes (the tab itself is group v2's: until it is merged the page settles on the unit's page) */
-      assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_A/perm/people'), who + ': → the people section of the unit\'s «الصلاحيات» tab');
+      assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_A/people'), who + ': → the people section of the unit\'s «الصلاحيات» tab');
       assert.equal(await p.locator('[role=dialog]').count(), 0, who + ': no permissions dialog');
       await s.go('#/sysadmin/org/TEST_ONLY_A', 3000); await card();
     }
@@ -143,12 +142,12 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
       await p.evaluate(() => { window.__h44 = []; addEventListener('hashchange', (e) => window.__h44.push(new URL(e.newURL).hash)); });
       await pick(ALL, 'TEST_ONLY مدير ب', item);
       if (item === 'تعديل الصلاحيات') {
-        await p.waitForFunction(() => (window.__h44 || []).includes('#/sysadmin/org/TEST_ONLY_B/perm/people')).catch(() => {});
-        assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_B/perm/people'), item + ' → unit B, people section (V7 · د5-هـ 44)');
+        await p.waitForFunction(() => (window.__h44 || []).includes('#/sysadmin/org/TEST_ONLY_B/people')).catch(() => {});
+        assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_B/people'), item + ' → unit B, people section (V7 · د5-هـ 44)');
       } else {
-        await p.waitForFunction(() => location.hash === '#/sysadmin/org/TEST_ONLY_B/perm/roles').catch(() => {});
-        await until(onCard, 'the «مدير الوحدة» card').catch(() => {});
-        assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B/perm/roles', item + ' → unit B, «الصلاحيات ← الأدوار»'); assert.ok(await onCard(), '… on «مدير الوحدة»');
+        await p.waitForFunction(() => location.hash === '#/sysadmin/org/TEST_ONLY_B/admins').catch(() => {});
+        await until(onCard, 'the «المسؤولون» tab').catch(() => {});
+        assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B/admins', item + ' → unit B, «المسؤولون» (V7 · د6)'); assert.ok(await onCard(), '… with the accounts card');
       }
       await p.goBack(); await p.waitForFunction(() => location.hash === '#/sysadmin/users').catch(() => {}); assert.equal(await H(), '#/sysadmin/users', 'Back returns');
     }

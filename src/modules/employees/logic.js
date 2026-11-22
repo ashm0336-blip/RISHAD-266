@@ -53,7 +53,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         };
       if (!o || o.page !== "employees") {
         const sd = this.__bsSeeded;
-        sd && void 0 !== sd.empTab && ((this.__bsSeeded = null), this._bsHT(shown()));
+        sd && void 0 !== sd.empTab && (this.__bsSeeded = null);
+        /* V7 · د6 (أ2-5): العنوانُ الأساس يعرض تبويباً محفوظاً (من الجلسة أو من حالة العرض المزروعة) ⇒ يُصحَّح العنوانُ إلى ذلك التبويب — استبدالٌ لا مدخلُ تاريخٍ
+           جديد، مرةً لكل اختلاف، والتبويبُ المعروض لا يتغيّر */
+        const cur = (/^#\/employees\/([a-z]+)/i.exec(String(location.hash || "")) || [])[1] || "data", c0 = this.state.empTab, real = on(c0) ? c0 : "data";
+        cur === real ? (this.__bsFx = null) : this.__bsFx !== real && ((this.__bsFx = real), this._bsHT(shown()));
         return;
       }
       KIVO.__BS_OPEN_TAB = null;
@@ -284,8 +288,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _cuEmpty() { return { rev: 0, rows: [], items: [], summary: {}, total: 0, next: "", catalogNext: "" }; }
   _cuApi() { return KIVO.Custody; }
   _cuError(result) { this.setState({ cuError: result.message || "تعذّر تأكيد بيانات العهد من الخادم" }); this.bsToast(result.message || "تعذّر تأكيد العملية", "warn"); }
+  /* V7 · د6: العهدُ مفعّلٌ لهذه الوحدة؟ (القاعدةُ التي تُرسم بها تبويباتُه) — تُسأل قبل كل قراءة: تبويبٌ محفوظٌ من قبل الإطفاء لا يطلب بياناتِ نظامٍ مطفأ */
+  _cuOn() { try { const P = KIVO.BassamPerm; return !P || !P.subOn || !!P.subOn("emps", "custody"); } catch (e) { return !0; } }
   _cuEnsure() {
     if (!["custody", "store"].includes(this.state.empTab)) return;
+    if (!this._cuOn()) return;
     const API = this._cuApi(), actor = API && API.context();
     if (!actor) { this.state.cuData = this._cuEmpty(); this.state.cuError = "الجلسة غير متاحة — أعد تسجيل الدخول"; return; }
     if (this._cuActorKey && this._cuActorKey !== actor.key) {
@@ -302,7 +309,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   async _cuRefresh(cursor) {
     const API = this._cuApi(), actor = API && API.context();
-    if (!actor) return { ok: 0 };
+    if (!actor || !this._cuOn()) return { ok: 0 };
     const generation = this._cuGeneration = (this._cuGeneration || 0) + 1;
     const view = this.state.empTab === "store" ? "catalog" : "month";
     const options = { view, year: view === "catalog" ? undefined : this.state.cuYear || undefined, month: view === "catalog" ? undefined : this.state.cuMonth || undefined, q: this.state.cuSearch || "", limit: Math.min(view === "month" ? 100 : 200, this.state.cuPerPage || 10), cursor: cursor || "" };

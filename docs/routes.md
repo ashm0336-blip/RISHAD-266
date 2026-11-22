@@ -7,7 +7,7 @@
 |---|---|---|---|---|---|---|
 | `#/dstats` | الإحصائيات اليومية | `dstats` | `dstats` | P.can("dstats","view") ⇐ dstats.anCmp.view، dstats.anHaram.view، dstats.anNabawi.view، dstats.anTime.view، dstats.haram.view، dstats.nabawi.view | في القائمة · العنوانُ يحمل #/dstats/haram · #/dstats/nabawi | `anHaram` · `anNabawi` · `anCmp` · `anTime` · `haram` · `nabawi` |
 | `#/employees` | موظفو الإدارة | `emps` | `employees` | P.can("emps","view") ⇐ cust.view، emp.view، ref.custody_type.view، ref.employment_type.view | في القائمة · العنوانُ يحمل التبويب #/employees/<تبويب> | `data` · `custody` |
-| `#/planning` | الخطة التشغيلية | `planning` | `planning` | P.can("planning","view") ⇐ ready.view | في القائمة | `readiness` |
+| `#/planning` | الخطة التشغيلية | `planning` | `planning` | P.can("planning","view") ⇐ ready.view | في القائمة · العنوانُ يحمل #/planning/staff · #/planning/plan | `readiness` |
 | `#/staffing` | الجدول الشهري | `staff` | `staff` | P.can("staff","view") ⇐ ref.callsign.view، ref.work_type.view، staff.view | تحت «الخطة التشغيلية» | — |
 | `#/plan` | التشغيل الميداني | `plan` | `plan` | P.can("plan","view") ⇐ plan.view | تحت «الخطة التشغيلية» | — |
 | `#/daily` | المتابعة اليومية | `daily` | `daily` | P.can("daily","view") ⇐ field.view، round.view | في القائمة · العنوانُ يحمل #/daily/rounds · #/daily/dreport · #/daily/tasks | `kpiDaily` · `kpiOcc` · `kpiZones` · `rounds` · `field` |

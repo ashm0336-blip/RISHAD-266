@@ -179,6 +179,8 @@ export interface KivoResources {
   /** dept · الورقة: rasd/records */
   "bassam_rasd_opts_v1": { zone: Record<string, unknown>[]; floor: Record<string, unknown>[]; type: Record<string, unknown>[]; act: Record<string, unknown>[]; party: Record<string, unknown>[]; spot: Record<string, unknown>[]; [field: string]: unknown };
   /** dept · الورقة: rasd/records */
+  "bassam_rasd_retro_v1": unknown;
+  /** dept · الورقة: rasd/records */
   "bassam_rasd_v1": { reports: RasdReport[]; [field: string]: unknown };
   /** dept */
   "bassam_roles_v1": unknown;

@@ -56,6 +56,11 @@ test('rasd · ① الكتابةُ في فترةٍ مغلقة: تُرفض بلا
     assert.deepEqual((await T.save(mgr, K, after)).j.denied || {}, {}, 'the day window does not cover its day');
     const other = { reports: after.reports.concat([report(4, { y: p.y, m: p.m, d: 5 })]) };
     assert.ok(denied(await T.save(mgr, K, other), K), 'a day window opened another day');
+    /* مخزنُ النوافذ لا يُكتب بحفظٍ عادي (srv في RES_REG): نافذةٌ مزوَّرة بـ/api/save مرفوضة — للمدير ولمدير المنصة — والمخزنُ كما هو */
+    const RK = key(A, 'bassam_rasd_retro_v1'), st0 = readK(T.DB, RK);
+    const forged = { windows: [{ id: 'TEST_ONLY_forged', scope: { y: p.y, m: p.m, d: null }, by: 'x', at: Date.now(), until: Date.now() + 36e5, hours: 1, reason: 'TEST_ONLY' }] };
+    for (const who of [mgr, T.su]) assert.ok(denied(await T.save(who, RK, forged), RK), 'a forged retro window was saved through /api/save');
+    assert.deepEqual(readK(T.DB, RK), st0);
   } finally { await T.close(); }
 });
 

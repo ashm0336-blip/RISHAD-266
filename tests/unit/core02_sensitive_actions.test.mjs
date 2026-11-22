@@ -12,6 +12,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
+import { orgWorld, ORG, ORG_SRC } from './org_world.mjs';   /* V7 · د6: حذفُ العقدة صار في صفحة «الإدارات والصلاحيات» (src/modules/org) — يُختبر على صفحتها الفعلية */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const L = fs.readFileSync(path.join(ROOT, 'src/modules/admin/logic.js'), 'utf8');
@@ -153,7 +154,6 @@ const CASES = [
   ['freeze / unfreeze a manager (the «مدير الوحدة» card — the same menu)', 'go', 's.setDisById(a.id, !a.dis)', (w) => ({ fx: '', a: { id: 'TEST_ONLY_m', name: 'TEST_ONLY', role: 'staff', deptId: 'TEST_ONLY_A', ekey: 'mgr:TEST_ONLY_A', dis: 0 }, s: { setDisById: (...x) => (w.calls.dis.push(x), { ok: 1 }) } }), (w) => w.calls.dis.length],
   ['save the security policies', 'secPolSave', '', () => ({}), (w) => w.calls.fetch.length],
   ['clean up the legacy unit accounts', 'oldAccDo', '', () => ({ i: 2 }), (w) => w.calls.purge.length],
-  ['delete a unit node', 'dhDel', 'nodeDel', (w) => ({ n: true, o: 'TEST_ONLY_G', p: { name: 'TEST_ONLY' }, t: { nodeDel: (x) => (w.calls.nodeDel.push(x), { ok: 1 }), list: () => [] } }), (w) => w.calls.nodeDel.length + w.calls.rmMgr.length],
   ['delete a manager account', 'go', 'removeDeptManager', (w) => ({ gm: false, nm: 'TEST_ONLY', a: { id: 'TEST_ONLY_m', name: 'TEST_ONLY', role: 'staff', deptId: 'TEST_ONLY_A', ekey: 'mgr:TEST_ONLY_A' }, s: { removeDeptManager: (...x) => (w.calls.rmMgr.push(x), { ok: 1 }) } }), (w) => w.calls.rmMgr.length],
   ['platform-wide broadcast', 'nfBcSend', '', (w) => ({ E: true, k: { mode: 'all', title: 'TEST_ONLY', body: 'TEST_ONLY', when: 'now' }, _: 3, v: { ready: true }, M: (x) => w.calls.send.push(x) }), (w) => w.calls.send.length],
 ];
@@ -176,16 +176,29 @@ for (const [label, name, has, free, effect, nth] of CASES) {
   });
 }
 
+/* V7 · د6: the node delete moved with the structure actions to the «الإدارات والصلاحيات» page («نظرة عامة ← الموضع وأفعال الوحدة ← حذف العقدة» — _ogDelAsk).
+   Same rules, run on the real page over the real structure service (org_world.mjs): it asks first through KIVO.bsConfirm and cancelling changes nothing. */
+test('asks first, and cancelling changes nothing: delete a unit node', async () => {
+  for (const answer of [false, true]) {
+    const W = orgWorld({ hash: '#/sysadmin/org/TEST_ONLY_E/overview', confirm: answer });
+    W.render().ogDelOpen(); for (let i = 0; i < 4; i++) await tick();
+    assert.equal(W.confirms.length, 1, 'one KIVO.bsConfirm');
+    assert.ok(W.confirms[0].title && W.confirms[0].msg && W.confirms[0].ok, 'titled, explained, named action'); assert.equal(W.confirms[0].danger, true);
+    assert.equal(W.D.nodeOf('TEST_ONLY_E') ? 0 : 1, answer ? 1 : 0, answer ? 'deleted once after confirming' : 'cancelling deletes nothing');
+    if (!answer) { assert.deepEqual(W.acks, []); assert.deepEqual(W.hostCalls, []); }
+  }
+});
+
 /* V7 P1: a node with anything under it (child nodes or units — BassamDepts.childrenOf) is refused BEFORE the question: no confirmation,
-   nothing deleted, one warning naming what to do. (The server refuses it too — 018 nodeRemoveWhy, tests/unit/v7_p0_node_integrity.) */
+   nothing deleted, the reason naming what to do. (The server refuses it too — 018 nodeRemoveWhy, tests/unit/v7_p0_node_integrity.)
+   V7 · د6: the reason is shown in the delete dialog (was a toast). */
 test('deleting a node that still has children warns first and never asks', async () => {
-  for (const kids of [[{ id: 'TEST_ONLY_G2' }], [{ id: 'TEST_ONLY_D1' }, { id: 'TEST_ONLY_D2' }]]) {
-    const w = world({ answer: true });
-    const fn = w.page.handler('dhDel', 'nodeDel', { n: true, o: 'TEST_ONLY_G', p: { name: 'TEST_ONLY' }, t: { nodeDel: (x) => (w.calls.nodeDel.push(x), { ok: 1 }), list: () => [], childrenOf: (id) => (id === 'TEST_ONLY_G' ? kids : []) } });
-    fn(); for (let i = 0; i < 4; i++) await tick();
-    assert.equal(w.calls.confirm.length, 0, 'no confirmation is shown');
-    assert.deepEqual(w.calls.nodeDel, [], 'nothing is deleted');
-    assert.equal(w.calls.toast.length, 1); assert.match(w.calls.toast[0][0], /TEST_ONLY.*انقلها أو احذفها أولاً/); assert.equal(w.calls.toast[0][1], 'warn');
+  for (const id of ['TEST_ONLY_G', 'TEST_ONLY_SEC']) {   /* units under it · nodes under it */
+    const W = orgWorld({ hash: '#/sysadmin/org/' + id + '/overview', confirm: true });
+    W.render().ogDelOpen(); for (let i = 0; i < 4; i++) await tick();
+    assert.equal(W.confirms.length, 0, 'no confirmation is shown');
+    assert.ok(W.D.nodeOf(id), 'nothing is deleted');
+    const v = W.render(); assert.equal(v.ogDelOn, true); assert.match(v.ogDelWhy, /TEST_ONLY.*انقلها أو احذفها أولاً/);
   }
 });
 
@@ -197,17 +210,20 @@ test('a broadcast to a unit or chosen people is not interrupted; the platform-wi
 });
 
 test('the 4-second two-click confirmations are gone from the reachable delete buttons', () => {
-  for (const [name, has] of [['dhDel', 'nodeDel'], ['go', 'removeDeptManager']]) assert.doesNotMatch(propSrc(name, has), /setTimeout|Arm/, name + ': no arming timer');
-  assert.doesNotMatch(L, /mgArm|_mgArmT|dhDelArm|admArm\s*:\s*\{/, 'no arming state left for nodes, managers or empty units');
+  assert.doesNotMatch(propSrc('go', 'removeDeptManager'), /setTimeout|Arm/, 'manager delete: no arming timer');
+  const del = ORG_SRC.slice(ORG_SRC.indexOf('\n  _ogDelAsk(inf) {'), ORG_SRC.indexOf('\n  /* ═══════════════════════════════ نقاطُ التركيب'));
+  assert.ok(del.includes('KIVO.bsConfirm') && del.includes('D.nodeDel(inf.id)'), 'the node delete handler');
+  assert.doesNotMatch(del, /setTimeout|Arm/, 'node delete: no arming timer');
+  assert.doesNotMatch(L + ORG_SRC, /mgArm|_mgArmT|dhDelArm|admArm\s*:\s*\{/, 'no arming state left for nodes, managers or empty units');
   assert.doesNotMatch(V, /dhDelCls|g\.delCls/);
 });
 
 /* V7 P0: a node that still has a general-manager account is not deleted (the server refuses it too: 018 nodeRemoveWhy «node-has-manager»);
    the page says to remove the account first — no question, no deletion, no account removal (it used to delete both in one step) */
 test('delete a node that has a general manager: refused with guidance, nothing asked or deleted', async () => {
-  const w = world({ answer: true, gms: [{ id: 'TEST_ONLY_gm' }] });
-  const fn = w.page.handler('dhDel', 'nodeDel', { n: true, o: 'TEST_ONLY_G', p: { name: 'TEST_ONLY', kind: 'إدارة عامة' }, t: { nodeDel: (x) => (w.calls.nodeDel.push(x), { ok: 1 }), list: () => [] } });
-  fn(); for (let i = 0; i < 4; i++) await tick();
-  assert.equal(w.calls.confirm.length, 0, 'no question'); assert.deepEqual(w.calls.nodeDel, []); assert.deepEqual(w.calls.rmMgr, []);
-  assert.equal(w.calls.toast.length, 1); assert.match(w.calls.toast[0][0], /احذفه أولاً من «الصلاحيات ← الأدوار ← مدير الوحدة» ثم احذف العقدة/); assert.equal(w.calls.toast[0][1], 'warn');
+  const W = orgWorld({ hash: '#/sysadmin/org/TEST_ONLY_E/overview', confirm: true, users: ORG.users.concat([{ id: 'TEST_ONLY_gmE', name: 'TEST_ONLY', un: '1000000009', role: 'gm', gid: 'TEST_ONLY_E' }]) });
+  W.render().ogDelOpen(); for (let i = 0; i < 4; i++) await tick();
+  assert.equal(W.confirms.length, 0, 'no question'); assert.ok(W.D.nodeOf('TEST_ONLY_E'), 'not deleted'); assert.equal(W.users.filter((u) => u.id === 'TEST_ONLY_gmE').length, 1, 'the account is untouched');
+  /* V7 · د6: the account is removed from the unit's «المسؤولون» tab (was «الصلاحيات ← الأدوار ← مدير الوحدة») */
+  assert.match(W.render().ogDelWhy, /احذفه أولاً من تبويب «المسؤولون» ثم احذف العقدة/);
 });

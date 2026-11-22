@@ -110,15 +110,36 @@ test('rasd · ① الصفحةُ والمحضرُ والقوائم والسجل�
     assert.deepEqual(s.errs, [], 'page errors: ' + s.errs.join(' | '));
     await s.ctx.close();
 
-    /* نسخةُ الإدارة (من صفحة العقدة · «البيانات» — مديرُ المنصة) تحمل مفتاحَي النظام بنصّهما */
+    /* نسخةُ الإدارة (من «الإدارات والصلاحيات» · «البيانات» — مديرُ المنصة) تحمل مفتاحَي النظام بنصّهما */
     const su = await openAs(b, lab, LAB.superUn, LAB.superPw);
-    await su.go('#/sysadmin/org/' + A, 3500);
-    await su.page.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click(); await su.page.waitForTimeout(800);
-    const [dl] = await Promise.all([su.page.waitForEvent('download', { timeout: 30000 }), su.page.locator('main [title^="نسخة الإدارة"]').click()]);
+    assert.equal(await su.page.evaluate((d) => KIVO.BassamDepts.setActive(d), A), true);   /* نسخةُ الإدارة النشطة (كما في اختبار الاستيراد) */
+    await su.page.reload({ waitUntil: 'domcontentloaded' }); await su.page.waitForTimeout(3000);
+    await su.go('#/sysadmin/overview', 1500); await su.go('#/sysadmin/org/' + A + '/data', 3500);   /* V7 · د6: تبويبُ «البيانات» من العنوان (صفحة «الإدارات والصلاحيات») */
+    const [dl] = await Promise.all([su.page.waitForEvent('download', { timeout: 30000 }), su.page.locator('main [data-org-tab="data"] [title^="نسخة الإدارة"]').click()]);
     const file = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
     assert.deepEqual(JSON.parse(file.data[REC]), readK(T.DB, key(A, REC)), 'the department copy lacks the rasd records');
     assert.ok(file.data[OPT] && JSON.parse(file.data[OPT]).type.some((x) => x.n === 'TEST_ONLY نوع'), 'the department copy lacks the rasd lists');
     assert.ok(file.manifest.keys.includes(REC) && file.manifest.keys.includes(OPT));
+    /* الاستيرادُ من الواجهة (المسارُ المجزّأ نفسُه — «الإدارات والصلاحيات» ← «البيانات» ← استيراد · استبدالٌ كامل): تُغيَّر مفاتيحُ النظام الثلاثة في الإدارة
+       ثم تُستعاد النسخةُ فوقها ⇒ السجلاتُ والقوائمُ ونوافذُ الاستدراك كما في النسخة نصّاً (النوافذُ srv: تعيدها الاستعادةُ الخادمية المتحقَّقة وحدها) */
+    const ui = (t) => su.page.getByText(t, { exact: true }).last(), RK = key(A, 'bassam_rasd_retro_v1');
+    const fpath = await dl.path() + '.json'; fs.copyFileSync(await dl.path(), fpath);
+    assert.ok(file.data.bassam_rasd_retro_v1 && JSON.parse(file.data.bassam_rasd_retro_v1).windows.length, 'the department copy lacks the retro windows');
+    await putK(T, key(A, REC), { reports: [] }); await putK(T, key(A, OPT), { zone: [], floor: [], type: [], act: [], party: [], spot: [] }); await putK(T, RK, { windows: [] });
+    await su.go('#/sysadmin/overview', 1500); await su.go('#/sysadmin/org/' + A + '/data', 3500);
+    const [fc] = await Promise.all([su.page.waitForEvent('filechooser', { timeout: 15000 }), su.page.locator('main [title^="استيراد نسخة احتياطية إلى هذه الإدارة"]').click()]);
+    await fc.setFiles(fpath);
+    await su.page.waitForSelector('[data-bkc="summary"]', { timeout: 20000 });
+    await ui('استبدال كامل').click(); await ui('ارفع وتحقّق').click();
+    await Promise.race([su.page.getByText('تأكيد الاستبدال').first().waitFor({ state: 'visible', timeout: 120000 }), su.page.waitForSelector('[data-bkc="fail"]', { timeout: 120000 })]);
+    assert.equal(await su.page.locator('[data-bkc="fail"]').count(), 0, 'the import failed: ' + (await su.page.locator('[data-bkc="fail-msg"]').allInnerTexts()).join(' '));
+    await ui('نعم، استبدل').click();
+    await su.page.waitForSelector('[data-bkc="done"]', { timeout: 120000 });
+    await ui('تم').click();
+    assert.deepEqual(readK(T.DB, key(A, REC)), JSON.parse(file.data[REC]), 'the restored unit lacks the rasd records');
+    assert.deepEqual(readK(T.DB, key(A, OPT)), JSON.parse(file.data[OPT]), 'the restored unit lacks the rasd lists');
+    assert.deepEqual(readK(T.DB, RK), JSON.parse(file.data.bassam_rasd_retro_v1), 'the restored unit lacks the rasd retro windows');
+    fs.unlinkSync(fpath);
     await su.ctx.close();
 
     /* ② مطفأٌ للوحدة: لا رابط ولا صفحة ولا لوحة ولا تنبيه — والمخزَّن باقٍ */
@@ -158,5 +179,63 @@ test('rasd · ① الصفحةُ والمحضرُ والقوائم والسجل�
     assert.ok(!syn.cap.includes('award') && !syn.cap.includes('rasd') && syn.cap.includes('irshad') && syn.cap.includes('seized') && syn.cap.includes('daily'), 'client open ceiling with a synthetic optIn system: ' + JSON.stringify(syn.cap));
     await s4.ctx.close();
     await s3.ctx.close();
+  } finally { await b.close(); await lab.close(); }
+});
+
+/* ④ صفحةُ «الإدارات والصلاحيات» (src/modules/org): رصدُ الحالات في «الأنظمة» (مفتاحُ المنصة ومفتاحُ الوحدة يُحفظ ويسري) · في محرّر الدور بمستوياته وأفعاله الحسّاسة
+      وفي «اختبار الوصول» · وفي عدّاد أنظمة الشجرة — كلُّه من قائمة الأنظمة الواحدة (لا اسمَ نظامٍ في الصفحة) */
+const digits = (x) => String(x).replace(/[\u2066-\u2069\u202a-\u202e\u200e\u200f]/g, '').replace(/[٠-٩]/g, (c) => '٠١٢٣٤٥٦٧٨٩'.indexOf(c));
+test('rasd · ④ «الإدارات والصلاحيات»: الأنظمة (المنصة · الوحدة) · محرّرُ الدور بمستوياته وحسّاسه · عدّادُ الشجرة', { timeout: 600000 }, async () => {
+  const lab = await startLab(), T = T0(lab);
+  await rasdOn(T, A, true);
+  const b = await chromium.launch();
+  try {
+    const su = await openAs(b, lab, LAB.superUn, LAB.superPw), p = su.page;
+    const sw = (n) => p.locator('main [role=switch][aria-label="' + n + '"]');
+    /* المنصة: مفتاحُه حاضرٌ ومتاح، وعدّادُ الشجرة يعدّه */
+    await su.go('#/sysadmin/org/platform/systems', 3500);
+    assert.equal(await sw('نظام رصد الحالات').count(), 1, 'no platform switch for rasd');
+    assert.equal(await sw('نظام رصد الحالات').isDisabled(), false, 'the platform switch is locked');
+    const rows = await p.locator('main [data-org-tab="systems"] [role=switch]').count();
+    const all = await p.evaluate(() => KIVO.Perm44.sysList().filter((x) => x.toggle !== false).length);
+    assert.ok(all >= rows && rows > 0);
+    const plat = digits((await p.locator('main [data-og-col="systems"]').first().innerText()).trim());
+    assert.equal(plat.split('/')[1], String(all), 'the tree systems count (' + plat + ') does not count every switchable system');
+    assert.ok(await p.evaluate(() => KIVO.Perm44.sysList().some((x) => x.key === 'rasd' && x.toggle !== false)));
+    /* الوحدة: مفعّلٌ (سجلُّها يحمله) ⇒ إطفاؤه من المفتاح ← مراجعة ← حفظ يسري على السقف وعلى عدّاد الشجرة */
+    await su.go('#/sysadmin/org/' + A + '/systems', 3500);
+    const ua = sw('نظام رصد الحالات');
+    assert.equal(await ua.getAttribute('aria-checked'), 'true', 'the unit switch does not show rasd ON');
+    const before = Number(digits(await p.locator('main [data-og-col="systems"]').nth(2).innerText()).split('/')[0]);
+    await ua.click(); await p.waitForTimeout(400);
+    await p.locator('main [aria-label="حفظ الأنظمة"] button', { hasText: 'مراجعة وحفظ' }).click(); await p.waitForTimeout(600);
+    assert.match(await p.locator('[role=dialog]').last().innerText(), /نظام رصد الحالات/, 'the review does not name rasd');
+    await p.locator('[role=dialog] button', { hasText: /^حفظ$/ }).last().click(); await p.waitForTimeout(800);
+    if (await p.locator('textarea:visible').count()) { await p.locator('textarea:visible').last().fill('TEST_ONLY إطفاء'); await click(p, 'button', 'حفظ بالسبب'); }
+    await p.waitForTimeout(2500);
+    assert.ok(!readK(T.DB, 'bassam_perms_v1').caps[A].includes('rasd'), 'switching rasd OFF for the unit was not saved');
+    await su.go('#/sysadmin/org/' + A + '/systems', 3000);
+    assert.equal(await sw('نظام رصد الحالات').getAttribute('aria-checked'), 'false');
+    assert.equal(Number(digits(await p.locator('main [data-og-col="systems"]').nth(2).innerText()).split('/')[0]), before - 1, 'the tree count did not drop by rasd');
+    await rasdOn(T, A, true); await p.reload(); await p.waitForTimeout(2500);   /* السقفُ يُقرأ عند الإقلاع */
+    /* محرّرُ الدور: دورٌ جديد ⇒ رصدُ الحالات بين أنظمته · المستويات · «مخصّص» يُظهر أفعاله والحسّاسُ معلَّم · وفي «اختبار الوصول» */
+    await su.go('#/sysadmin/org/' + A + '/roles', 3500);
+    await p.getByText('+ دور جديد', { exact: true }).first().click(); await p.waitForTimeout(1000);
+    const rs = p.locator('main [role=switch][aria-label="تفعيل نظام رصد الحالات لهذا الدور"]');
+    assert.equal(await rs.count(), 1, 'rasd is not in the role editor');
+    await rs.click(); await p.waitForTimeout(600);
+    const lv = p.locator('main select[aria-label="مستوى نظام رصد الحالات"]');
+    const lvs = await lv.locator('option').allInnerTexts();
+    for (const x of ['مشاهدة فقط', 'إدخال', 'تعديل', 'كامل', 'مخصّص']) assert.ok(lvs.includes(x), 'level ' + x + ' missing: ' + lvs.join(','));
+    await lv.selectOption({ label: 'مخصّص' }); await p.waitForTimeout(800);
+    const keys = await p.locator('main [role=group][aria-label="أفعال نظام رصد الحالات"] button').evaluateAll((bs) => bs.map((x) => ({ t: x.firstChild.textContent.trim(), s: !!x.querySelector('.p44-sens') })));
+    const has = (t, s) => keys.some((k) => k.t.includes(t) && k.s === s);
+    assert.ok(has('إضافة سجل', false) && has('عرض السجلات', false), 'rasd actions in custom: ' + JSON.stringify(keys));
+    assert.ok(has('حذف سجل', true) && has('فتح شهر/يوم مقفل للاستدراك', true) && has('حذف جميع تقارير رصد الحالات للشهر', true), 'rasd sensitive actions are not marked: ' + JSON.stringify(keys));
+    assert.ok(!keys.some((k) => k.t.includes('تغيير الحالة')), 'the reserved rz.rec.status is assignable');
+    const chk = await p.locator('main [aria-label="اختبار الوصول"] select option').evaluateAll((os) => os.map((o) => o.value));
+    for (const k of ['rz.rec.view', 'rz.rec.create', 'rz.rec.retro.open', 'ref.rasd.list.edit']) assert.ok(chk.includes(k), 'rasd action ' + k + ' is not in the access check');
+    assert.deepEqual(su.errs, [], 'page errors: ' + su.errs.join(' | '));
+    await su.ctx.close();
   } finally { await b.close(); await lab.close(); }
 });

@@ -609,7 +609,7 @@
   },
   "activity.filter": {
    "order": 20,
-   "text": " ['irshad', 'الاسترشاد'],"
+   "text": " ['irshad', 'الاسترشاد', 'irshad'],"
   },
   "res.empty.systems": {
    "order": 10,

@@ -185,7 +185,21 @@ function perm44Make(R, D) {
     }
     return r;
   }
-  return { levels: levels, sysList: sysList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
+  /* V7 · د6: الإغلاق — ما يسكن حاويةً مطفأة يُطفأ معها (under في جدول الأنظمة)، كما يفعل مفتاحُ الإدارة حين يُسقط صفحاتِ الحاوية معها.
+     القاعدةُ الواحدة لإطفاء المنصة (mods.off) في الواجهة (331 platOff) والخادم (017 platOffOf) — موضعُها الوحيد هنا:
+     للرجوع عنها (إن قرّر المالك أن الساكنَ لا يتبع حاويتَه على المنصة) تُعاد القائمةُ كما هي: return base; */
+  function offClosure(list) {
+    var base = (Array.isArray(list) ? list : []).slice(), out = base.slice(), grew = true, n;
+    while (grew) { grew = false; for (n = 0; n < D.systems.length; n++) { var s = D.systems[n]; if (s.under && out.indexOf(s.under) !== -1 && out.indexOf(s.key) === -1) { out.push(s.key); grew = true; } } }
+    return out;
+  }
+  /* V7 · د6 (قرار المالك ٤): ما يُطفأ مع تغييرٍ معلَّق — الأنظمةُ التي تسكن ما سيُطفأ (keys) ولم تُذكر فيه، من الإغلاق نفسِه؛ ليسمّيها «أثر الحفظ» قبل الحفظ
+     (على المنصة وفي الوحدة). onFn (اختياري): يُبقي المفعَّلَ الآن وحده — فما كان مطفأً من قبل لا يُعدّ أثراً */
+  function offWith(keys, onFn) {
+    var base = Array.isArray(keys) ? keys : [];
+    return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
+  }
+  return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
            keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }

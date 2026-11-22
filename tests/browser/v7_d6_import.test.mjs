@@ -3,7 +3,7 @@
        شريطُ التقدّم (الجزء الحالي من الكل · الصور) ← اعتمادُ ملخّص الخادم ← ملخّصُ النجاح؛ ثم فتحُ الصفحات: المخطط بمصلياته وخرائطه (الصورُ تُحمَّل 200).
    (٢) فشلُ جزءٍ في منتصف الإرسال: رسالةٌ بالسبب ونافذةٌ تعرض «إعادة المحاولة» و«إغلاق» — لا زرَّ بلا أثر؛ «إعادة المحاولة» تكمل من الجزء الفاشل وحده وتنجح.
    (٣) «إغلاق» بعد الفشل يحذف المؤقت ولا يغيّر شيئاً · وإغلاقُ الصفحة أثناء الإرسال كذلك.
-   موضعُ زرّ الاستيراد في الواجهة: صفحةُ الوحدة ← «البيانات» (المساعدُ chooseFile وحده يعرف الطريق — يُعدَّل هو إن نُقل الزر). */
+   موضعُ زرّ الاستيراد في الواجهة: «الإدارات والصلاحيات» ← الوحدة ← «البيانات» (المساعدُ chooseFile وحده يعرف الطريق — يُعدَّل هو إن نُقل الزر). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,17 +16,16 @@ import { oldFile, staged, snapshot, changed, NOT_TRANSFERRED } from '../unit/v7_
 
 const B = 'TEST_ONLY_B', need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات والمهام' };
 const AR = (s) => String(s).replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660));
-async function fileOnDisk(opts) {
-  const f = await oldFile(opts), p = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'd6-import-')), 'TEST_ONLY-old-copy.json');
+async function fileOnDisk(opts, change) {
+  const f = await oldFile(opts); if (change) change(f);
+  const p = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'd6-import-')), 'TEST_ONLY-old-copy.json');
   fs.writeFileSync(p, JSON.stringify(f));
   return { f, p };
 }
-/* الطريقُ إلى زرّ «استيراد نسخة» لمدير المنصة: صفحةُ الوحدة ← «البيانات» */
+/* الطريقُ إلى زرّ «استيراد نسخة» لمدير المنصة: «الإدارات والصلاحيات» ← الوحدة ← «البيانات» (#/sysadmin/org/<الوحدة>/data) */
 async function chooseFile(s, unit, file) {
   await s.go('#/sysadmin/overview', 1500);
-  await s.go('#/sysadmin/org/' + unit, 3500);
-  await s.page.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click();
-  await s.page.waitForTimeout(700);
+  await s.go('#/sysadmin/org/' + unit + '/data', 3500);   /* V7 · د6: شاشة «الإدارات والصلاحيات» — تبويبُ «البيانات» للوحدة بعنوانه */
   const [fc] = await Promise.all([s.page.waitForEvent('filechooser', { timeout: 15000 }), s.page.locator('main [title^="استيراد نسخة احتياطية إلى هذه الإدارة"]').click()]);
   await fc.setFiles(file);
   await s.page.waitForSelector('[data-bkc="summary"]', { timeout: 20000 });
@@ -55,18 +54,28 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
     assert.match(skipHead, new RegExp('لن يُنقل \\(' + Object.keys(NOT_TRANSFERRED).length + '\\)'), skipHead);
     for (const k of ['bassam_grants_v1', 'bassam_perm_tpls_v1', 'bassam_dr_grp_v1', 'bassam_notif_dev_v1:TEST_ONLY_u8']) assert.ok(skip.includes(k), 'ما لن يُنقل يُذكر باسمه: ' + k);
     assert.match(skip, /صلاحيات بنظام قديم أُلغي/); assert.match(skip, /لا تُنقل حتى لا تُفتح صلاحية/);
+    assert.match(skip, /bassam_grants_v1[^¦]*العدد: 1/, 'المنحُ القديمة بعددها: ' + skip);
     assert.equal(staged(lab.env.DB), 0, 'الملخّصُ لا يودِع شيئاً في المؤقت');
     const before = snapshot(lab.env.DB);
     /* التأكيد ← التقدّم */
     await watchRun(s.page);
-    await click(s.page, 'استبدال كامل'); await click(s.page, 'نعم، استبدل');
-    await s.page.getByText('اعتماد استعادة النسخة').first().waitFor({ state: 'visible', timeout: 60000 });
+    await click(s.page, 'استبدال كامل');
+    /* الخطوةُ قبل الرفع ليست تأكيداً: زرُّها «ارفع وتحقّق» ونصُّها يقول إن شيئاً لا يتغيّر حتى التأكيد — ولا «نعم، استبدل» قبل الرفع */
+    const up = await text(s.page, '[data-bkc="upload"]');
+    assert.match(up, /لا يتغيّر شيء في الإدارة حتى تؤكّد/, up); assert.equal(await s.page.getByText('نعم، استبدل', { exact: true }).count(), 0, 'لا تأكيدَ قبل الرفع');
+    await click(s.page, 'ارفع وتحقّق');
+    await s.page.getByText('تأكيد الاستبدال').first().waitFor({ state: 'visible', timeout: 60000 });
     const seen = (await s.page.evaluate(() => window.__d6run)).map(AR);
-    assert.ok(seen.some((x) => /الجزء 1 من 3/.test(x)), 'التقدّم: الجزء الحالي من الكل — ' + JSON.stringify(seen.slice(0, 6)));
-    assert.ok(seen.some((x) => /الجزء 3 من 3 .{1,3}الصور: 2 من 2/.test(x)), 'التقدّم: الصور — ' + JSON.stringify(seen.slice(-6)));
+    /* عددُ الأجزاء: نصُّ الملف + كلُّ موردٍ في طلبه (المخطط · جدولُ الورديات) + الصورتان — 5 */
+    assert.ok(seen.some((x) => /الجزء 1 من 5/.test(x)), 'التقدّم: الجزء الحالي من الكل — ' + JSON.stringify(seen.slice(0, 6)));
+    assert.ok(seen.some((x) => /الجزء 5 من 5 .{1,3}الصور: 2 من 2/.test(x)), 'التقدّم: الصور — ' + JSON.stringify(seen.slice(-6)));
     assert.deepEqual(changed(snapshot(lab.env.DB), before), [], 'قبل الاعتماد لم يتغيّر شيء في القاعدة (الأجزاء في المؤقت وحده)');
     assert.ok(staged(lab.env.DB) > 0, 'الأجزاء في المنطقة المؤقتة');
-    await click(s.page, 'استعادة النسخة');
+    /* التأكيدُ الوحيد: بعد الرفع والتحقق، ومعه ملخّصُ الخادم (ما سيُنقل وما لن يُنقل) */
+    const confirmText = AR(await s.page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ')));
+    assert.match(confirmText, /لن يُنقل 11/, 'ملخّصُ الخادم في التأكيد'); assert.match(confirmText, /bassam_grants_v1 — [^·]*العدد: 1/, 'والمنحُ بعددها'); assert.match(confirmText, /ستُكتب 2 صور|ستُكتب 2 صورة/, 'والصورُ التي ستُكتب');
+    assert.equal(await s.page.getByText('نعم، استبدل', { exact: true }).count(), 1, 'تأكيدٌ واحد');
+    await click(s.page, 'نعم، استبدل');
     /* ملخّص النجاح */
     await s.page.waitForSelector('[data-bkc="done"]', { timeout: 60000 });
     const done = await text(s.page, '[data-bkc="done-msg"]');
@@ -105,18 +114,19 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
 });
 
 test('د6: فشلُ جزءٍ ⇒ رسالةٌ بالسبب و«إعادة المحاولة» تكمل من الجزء الفاشل · «إغلاق» وإغلاقُ الصفحة يحذفان المؤقت ولا يتغيّر شيء', { timeout: 600000, ...need }, async () => {
-  const lab = await startLab(), b = await chromium.launch(), { p: file } = await fileOnDisk({ small: true });
+  /* نسخةٌ بلا شريحة صلاحيات: ملخّصُ النجاح يقول إن أنظمة الوحدة ما زالت مطفأة ويفتح تبويبها */
+  const lab = await startLab(), b = await chromium.launch(), { p: file } = await fileOnDisk({ small: true }, (f) => { delete f.perms; });
   try {
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw), before = snapshot(lab.env.DB), sent = [];
     /* الجزءُ الثاني يُقطع اتصالُه (كلَّ محاولاته) حتى يُرفع القطع */
     let broken = true;
-    await s.page.route('**/api/backup/import', async (route) => { const q = JSON.parse(route.request().postData() || '{}'); if (q.op === 'part') sent.push(q.items[0].k + '#' + q.items[0].s); if (broken && q.op === 'part' && q.items[0].k) return route.abort('connectionreset'); return route.continue(); });
+    await s.page.route('**/api/backup/import', async (route) => { const q = JSON.parse(route.request().postData() || '{}'); if (q.op === 'part') sent.push(q.items[0].k + '#' + q.items[0].s); if (broken && q.op === 'part' && /^img_/.test(q.items[0].k)) return route.abort('connectionreset'); return route.continue(); });
     await chooseFile(s, B, file);
-    await click(s.page, 'استبدال كامل'); await click(s.page, 'نعم، استبدل');
+    await click(s.page, 'استبدال كامل'); await click(s.page, 'ارفع وتحقّق');
     await s.page.waitForSelector('[data-bkc="fail"]', { timeout: 60000 });
     const msg = await text(s.page, '[data-bkc="fail-msg"]');
     assert.match(msg, /تعذّر تأكيد|لا اتصال|أعد المحاولة/, 'رسالةٌ بالسبب: ' + msg);
-    assert.equal(await s.page.getByText('نعم، استبدل', { exact: true }).count(), 0, 'زرُّ التأكيد لا يبقى ظاهراً بلا أثر');
+    assert.equal(await s.page.getByText('ارفع وتحقّق', { exact: true }).count(), 0, 'زرُّ الرفع لا يبقى ظاهراً بلا أثر'); assert.equal(await s.page.getByText('نعم، استبدل', { exact: true }).count(), 0, 'ولا تأكيدَ قبل اكتمال الرفع والتحقق');
     assert.equal(await s.page.getByText('إعادة المحاولة', { exact: true }).count(), 1); assert.equal(await s.page.getByText('إغلاق', { exact: true }).count() >= 1, true);
     assert.deepEqual(changed(snapshot(lab.env.DB), before), [], 'فشلُ جزءٍ: لم يتغيّر شيء');
     const firstTry = sent.slice();
@@ -125,17 +135,19 @@ test('د6: فشلُ جزءٍ ⇒ رسالةٌ بالسبب و«إعادة الم
     /* إعادة المحاولة بعد عودة الاتصال: تكمل من الجزء الفاشل — جزءُ النص لا يُرسل ثانيةً */
     broken = false; sent.length = 0;
     await click(s.page, 'إعادة المحاولة');
-    await s.page.getByText('اعتماد استعادة النسخة').first().waitFor({ state: 'visible', timeout: 60000 });
-    assert.equal(sent.includes('#0'), false, 'ما نجح لا يُعاد: ' + JSON.stringify(sent)); assert.equal(sent.length, 2, 'الصورتان وحدهما: ' + JSON.stringify(sent));
-    await click(s.page, 'استعادة النسخة');
+    await s.page.getByText('تأكيد الاستبدال').first().waitFor({ state: 'visible', timeout: 60000 });
+    assert.equal(sent.some((x) => !/^img_/.test(x)), false, 'ما نجح (نصُّ الملف والمخطط) لا يُعاد: ' + JSON.stringify(sent)); assert.equal(sent.length, 2, 'الصورتان وحدهما: ' + JSON.stringify(sent));
+    await click(s.page, 'نعم، استبدل');
     await s.page.waitForSelector('[data-bkc="done"]', { timeout: 60000 });
     assert.equal(staged(lab.env.DB), 0);
+    assert.match(await text(s.page, '[data-bkc="done-sys"]'), /أنظمة الوحدة ما زالت مطفأة/);
+    assert.equal(await s.page.locator('[data-bkc="done-sys"] a').getAttribute('href'), '#/sysadmin/org/' + B + '/systems', 'رابطُ تبويب أنظمة الوحدة');
     await click(s.page, 'تم');
     /* فشلٌ ثم «إغلاق»: المؤقتُ يُحذف ولا يتغيّر شيء */
     const after1 = snapshot(lab.env.DB);
     broken = true;
     await chooseFile(s, B, file);
-    await click(s.page, 'استبدال كامل'); await click(s.page, 'نعم، استبدل');
+    await click(s.page, 'استبدال كامل'); await click(s.page, 'ارفع وتحقّق');
     await s.page.waitForSelector('[data-bkc="fail"]', { timeout: 60000 });
     assert.ok(staged(lab.env.DB) > 0, 'جزءُ النص في المؤقت');
     await click(s.page, 'إغلاق');
@@ -146,7 +158,7 @@ test('د6: فشلُ جزءٍ ⇒ رسالةٌ بالسبب و«إعادة الم
     await s.page.unroute('**/api/backup/import');
     lab.delay = (pth) => (pth === '/api/backup/import' ? 700 : 0);
     await chooseFile(s, B, file);
-    await click(s.page, 'استبدال كامل'); await click(s.page, 'نعم، استبدل');
+    await click(s.page, 'استبدال كامل'); await click(s.page, 'ارفع وتحقّق');
     await s.page.waitForSelector('[data-bkc="run"]', { timeout: 20000 });
     for (let i = 0; i < 80 && !staged(lab.env.DB); i++) await s.page.waitForTimeout(100);
     assert.ok(staged(lab.env.DB) > 0, 'بدأ الإيداع');
@@ -160,18 +172,42 @@ test('د6: فشلُ جزءٍ ⇒ رسالةٌ بالسبب و«إعادة الم
 
 /* د6 — الجولةُ الكاملة بالحجم المقيس: استيرادُ النسخة القديمة ≈31MB من واجهة المتصفح نفسِها ← تصديرُ نسخة الإدارة من الكود الحالي (ملفٌّ يسلّمه المتصفح) ←
    مسحُ بيانات الإدارة ← استيرادُ الملف المصدَّر ← المطابقة مورداً مورداً وصورةً صورة. [ثقيل ≈ دقيقة إلى دقيقتين] */
+test('د6: عضوٌ واحد أكبر مما يُرسل في دفعة ⇒ رفضٌ عند البدء يسمّيه (المورد › اليوم) — قبل أي رفع، ولا يتغيّر شيء', { timeout: 600000, ...need }, async () => {
+  /* يومٌ واحد ≈2.7M حرف (لا ينقسم) ونسخةٌ فوق حدّ الطلب القديم (صورتان) */
+  const lab = await startLab(), b = await chromium.launch(), { p: file } = await fileOnDisk({ small: true }, (f) => {
+    const r = JSON.parse(f.data.bassam_rounds_v1), day = Object.keys(r)[1]; r[day].d[0].zones[0].d = 'M0 0 ' + 'L1 1 '.repeat(540000) + 'Z'; f.data.bassam_rounds_v1 = JSON.stringify(r);
+    const ids = Object.keys(f.idbImages); ids.forEach((id) => { f.idbImages[id] = 'data:image/png;base64,' + 'VEVTVF9PTkxZ'.repeat(250000); });
+    f.__day = day;
+  });
+  try {
+    const day = JSON.parse(fs.readFileSync(file, 'utf8')).__day, s = await openAs(b, lab, LAB.superUn, LAB.superPw), before = snapshot(lab.env.DB), sent = [];
+    await s.page.route('**/api/backup/import', async (route) => { const q = JSON.parse(route.request().postData() || '{}'); sent.push(q.op || q.phase); return route.continue(); });
+    await chooseFile(s, B, file);
+    await click(s.page, 'استبدال كامل'); await click(s.page, 'ارفع وتحقّق');
+    await s.page.waitForSelector('[data-bkc="fail"]', { timeout: 60000 });
+    const msg = await text(s.page, '[data-bkc="fail-msg"]');
+    assert.ok(msg.replace(/[\u202a-\u202e\u2066-\u2069]/g, '').includes('bassam_rounds_v1 › ' + day), 'الرفضُ يسمّي العضو: ' + msg); assert.match(msg, /لم يتغيّر شيء/);
+    assert.equal(sent.includes('part'), false, 'لم يُرفع جزء: ' + JSON.stringify(sent));
+    assert.deepEqual(changed(snapshot(lab.env.DB), before), []); assert.equal(staged(lab.env.DB), 0);
+  } finally { await b.close(); await lab.close(); try { fs.rmSync(path.dirname(file), { recursive: true, force: true }); } catch (e) { /* مؤقت */ } }
+});
+
 test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة — بنسخةٍ ≈31MB من واجهة المتصفح', { timeout: 900000, ...need }, async (t) => {
   const lab = await startLab(), b = await chromium.launch(), t0 = Date.now(), { f, p: file } = await fileOnDisk({ scale: 1 });
   const stamp = (m) => t.diagnostic(m + ' @' + Math.round((Date.now() - t0) / 1000) + 's');
   try {
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw), p = s.page, sizes = [];
     let slices = 0;
+    const refused = [];
+    p.on('response', async (r) => { if (/\/api\/backup\/import/.test(r.url()) && r.status() !== 200) { let t = ''; try { t = (await r.text()).slice(0, 300); } catch (e) { /* بلا جسم */ } refused.push(r.status() + ' ' + t + ' ← ' + String(r.request().postData() || '').slice(0, 160)); } });
     p.on('request', (r) => { if (/\/api\/backup\/(import|restore)/.test(r.url()) && r.method() === 'POST') { const body = r.postData() || ''; sizes.push(Buffer.byteLength(body)); if (body.length < 400 && /"phase":"slice"/.test(body)) slices++; } });
     const importVia = async (path0, expectDone) => {
       await chooseFile(s, B, path0);
-      await click(p, 'استبدال كامل'); await click(p, 'نعم، استبدل');
-      await p.getByText('اعتماد استعادة النسخة').first().waitFor({ state: 'visible', timeout: 300000 });
-      await click(p, 'استعادة النسخة');
+      await click(p, 'استبدال كامل'); await click(p, 'ارفع وتحقّق');
+      /* التأكيدُ أو لوحةُ الفشل — أيُّهما ظهر أولاً (الفشلُ يُعرض بسببه بدل انتظار المهلة) */
+      await Promise.race([p.getByText('تأكيد الاستبدال').first().waitFor({ state: 'visible', timeout: 300000 }), p.waitForSelector('[data-bkc="fail"]', { timeout: 300000 })]);
+      if (await p.locator('[data-bkc="fail"]').count()) assert.fail('فشل الاستيراد: ' + (await text(p, '[data-bkc="fail-msg"]')) + ' · ' + JSON.stringify(refused));
+      await click(p, 'نعم، استبدل');
       await p.waitForSelector('[data-bkc="done"]', { timeout: 300000 });
       const done = await text(p, '[data-bkc="done-msg"]');
       assert.match(done, expectDone, done);
@@ -191,8 +227,7 @@ test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة 
     /* التصدير من الكود الحالي: نسخةُ الإدارة النشطة */
     assert.equal(await p.evaluate((d) => KIVO.BassamDepts.setActive(d), B), true);
     await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(4000);
-    await s.go('#/sysadmin/overview', 1500); await s.go('#/sysadmin/org/' + B, 3500);
-    await p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).click(); await p.waitForTimeout(700);
+    await s.go('#/sysadmin/overview', 1500); await s.go('#/sysadmin/org/' + B + '/data', 3500);   /* V7 · د6: تبويبُ «البيانات» بعنوانه في الشاشة الجديدة */
     const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 300000 }), p.locator('main [title^="نسخة الإدارة"]').click()]);
     const exported = path.join(path.dirname(file), 'TEST_ONLY-exported.json'); await dl.saveAs(exported);
     const bk = JSON.parse(fs.readFileSync(exported, 'utf8'));
@@ -214,9 +249,9 @@ test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة 
     await chooseFile(s, B, exported);
     const sum = await text(p, '[data-bkc="sum-line"]');
     assert.doesNotMatch(sum, /الشكل القديم/); assert.equal(await p.locator('[data-bkc="skip"]').count(), 0, 'لا شيءَ خارج النقل في نسخةٍ حديثة');
-    await click(p, 'استبدال كامل'); await click(p, 'نعم، استبدل');
-    await p.getByText('اعتماد استعادة النسخة').first().waitFor({ state: 'visible', timeout: 300000 });
-    await click(p, 'استعادة النسخة');
+    await click(p, 'استبدال كامل'); await click(p, 'ارفع وتحقّق');
+    await p.getByText('تأكيد الاستبدال').first().waitFor({ state: 'visible', timeout: 300000 });
+    await click(p, 'نعم، استبدل');
     await p.waitForSelector('[data-bkc="done"]', { timeout: 300000 });
     const done = await text(p, '[data-bkc="done-msg"]');
     assert.match(done, /الصور: (10 جديدة و0|0 جديدة و10) موجودة/, done);

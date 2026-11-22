@@ -167,6 +167,19 @@ function deptTabsOf(A, d, pk) {
   var L = ((A.perms.subs || {})[d] || {})[pk + ':tabs'];
   return Array.isArray(L) ? L.filter(function (k) { return all.indexOf(k) !== -1; }) : all.slice();
 }
+/* V7 · د6: تبويباتُ الصفحة الحيّة في الوحدة = سجلُّها ∩ سجلُّ كلِّ أصلٍ ضبط تبويباتِ تلك الصفحة — كسقف الصفحات (effCapOf) وكما في الواجهة (331 liveLeaves):
+   ما أُطفئ في الإدارة مطفأٌ في قسمها ولو بقي في سجلّ القسم. الوحدةُ المستقلة (capOwn) بسجلِّها وحده */
+function liveLeavesOf(A, d, pk) {
+  var own = deptSubsOf(A, d, pk).concat(deptTabsOf(A, d, pk));
+  if (!own.length || (hasCapOf(A, d) && capOwnOf(A, d))) return own;
+  var S = (A.perms && A.perms.subs) || {}, anc = ancChain(A, d);
+  for (var i = 0; i < anc.length && own.length; i++) {
+    var m = S[anc[i]]; if (!isObj(m) || (!Array.isArray(m[pk]) && !Array.isArray(m[pk + ':tabs']))) continue;
+    var a = deptSubsOf(A, anc[i], pk).concat(deptTabsOf(A, anc[i], pk));
+    own = own.filter(function (k) { return a.indexOf(k) !== -1; });
+  }
+  return own;
+}
 /* onCap في الواجهة: هل هذه القدرة مفعّلة لهذه الإدارة أصلاً؟ */
 function capOnDept(A, d, key) {
   key = String(key || ''); if (!key) return true;
@@ -176,7 +189,7 @@ function capOnDept(A, d, key) {
     if (!capOnDept(A, d, pk)) return false;
     var q = PG_OF[sk];
     if (q && q.under === pk) return capOnDept(A, d, sk);
-    return deptSubsOf(A, d, pk).concat(deptTabsOf(A, d, pk)).indexOf(sk) !== -1;
+    return liveLeavesOf(A, d, pk).indexOf(sk) !== -1;
   }
   if (PG_KEYS.indexOf(key) === -1) return false;   /* V7 · د1: مفتاحُ صفحةٍ رئيسيٌّ مجهول ⇒ منع (كان سماحاً) — الورقةُ المجهولة كانت منعاً أصلاً */
   return deptCapOf(A, d).indexOf(key) !== -1;
@@ -186,7 +199,7 @@ function capAllPermsOf(A, d) {
   var out = {};
   deptCapOf(A, d).forEach(function (k) {
     out[k] = ACTS_ALL.slice();
-    var live = deptSubsOf(A, d, k).concat(deptTabsOf(A, d, k));
+    var live = liveLeavesOf(A, d, k);
     pgLeaves(k).forEach(function (l) {
       var sp = pgSplit(l);
       if (sp.sub && live.indexOf(sp.sub) === -1) return;
@@ -201,7 +214,7 @@ function expandPermsOf(A, d, obj) {
   Object.keys(obj || {}).forEach(function (k) {
     var acts = (obj[k] || []).slice(); if (!acts.length) return;
     if (pgIsContainer(k)) {
-      deptSubsOf(A, d, k).concat(deptTabsOf(A, d, k)).forEach(function (sk) { out[k + '/' + sk] = acts.slice(); });
+      liveLeavesOf(A, d, k).forEach(function (sk) { out[k + '/' + sk] = acts.slice(); });
     } else out[k] = acts;
   });
   return out;
