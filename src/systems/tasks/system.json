@@ -375,6 +375,10 @@
    "order": 10,
    "text": " ['task', 'المهام'],"
   },
+  "rsi.slice": {
+   "order": 40,
+   "text": "  'bassam_tasks_v1': ['^.', ['bassam_tasks_v1']],   /* V7 · د6: المهامُ خريطةُ أيام — تُقسم أياماً فلا تكبر كلفةُ طلبٍ بطول السجل */\n"
+  },
   "res.reg.tasks": {
    "order": 10,
    "text": "  /* المهام: يومٌ ثم صفوفُ مهامّه — فالكيان في الطبقة الثانية */\n  'bassam_tasks_v1':           { scope: 'dept', cap: 'tasks', self: 'task' },\n  'bassam_tasks_locks_v1':     { scope: 'dept', cap: 'tasks' },\n"

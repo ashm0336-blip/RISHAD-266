@@ -348,7 +348,7 @@ test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدف�
   const file = await oldFile({ small: true }), next = variant(file), A = await target(), Z = await target();
   try {
     for (const T of [A, Z]) assert.equal((await protocol(T, T.su, file, { scope: SCOPE, slice: false }).run()).commit.status, 200, 'الإدارةُ تحمل النسخةَ الأولى');
-    const first = rowsOf(Z), nodes0 = Z.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND (resource GLOB 'bassam_rounds*' OR resource='bassam_plan_v1')", B)[0].n;
+    const first = rowsOf(Z), nodes0 = Z.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND (resource GLOB 'bassam_rounds*' OR resource IN ('bassam_plan_v1','bassam_staffing_v3'))", B)[0].n;
     assert.ok(nodes0 > 50, 'في الهدف جولاتٌ قائمة (' + nodes0 + ' عقدة)');
     const mono = await protocol(A, A.su, next, { scope: SCOPE, slice: false }).run();
     assert.equal(mono.commit.status, 200, JSON.stringify((mono.commit || mono.inspect).j).slice(0, 300));
@@ -364,9 +364,9 @@ test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدف�
     assert.ok(bad.status >= 500); assert.deepEqual(rowsOf(Z), first, 'فشلُ الاعتماد: لم يُحذف القائم ولم يُدرج الجديد');
     const done = await P.commit(ins.j.inspection.base);
     assert.equal(done.status, 200, JSON.stringify(done.j).slice(0, 300));
-    /* فرقٌ واحد معلوم: ما يُطبَّق على دفعات (الجولاتُ الحيّة · المخطط) يُعاد كتابتُه دائماً ولو لم يتغيّر محتواه فتتقدّم نسختُه — والصفوفُ هي هي */
+    /* فرقٌ واحد معلوم: ما يُطبَّق على دفعات (الجولاتُ الحيّة · المخطط · جدولُ الورديات) يُعاد كتابتُه دائماً ولو لم يتغيّر محتواه فتتقدّم نسختُه — والصفوفُ هي هي */
     const live = 'bsdept:' + B + ':bassam_rounds_v1', extra = Object.keys(done.j.revs).filter((k) => !(k in mono.commit.j.revs));
-    assert.deepEqual(Object.keys(mono.commit.j.revs).filter((k) => !(k in done.j.revs)), []); assert.ok(extra.every((k) => k === live || k === 'bsdept:' + B + ':bassam_plan_v1'), JSON.stringify(extra));
+    assert.deepEqual(Object.keys(mono.commit.j.revs).filter((k) => !(k in done.j.revs)), []); assert.ok(extra.every((k) => k === live || k === 'bsdept:' + B + ':bassam_plan_v1' || k === 'bsdept:' + B + ':bassam_staffing_v3'), JSON.stringify(extra));
     assert.deepEqual({ ...done.j.counts, operations: 0 }, { ...mono.commit.j.counts, operations: 0 }, 'العدّاداتُ الأخرى واحدة'); assert.ok(done.j.counts.operations >= mono.commit.j.counts.operations && done.j.counts.operations <= mono.commit.j.counts.operations + extra.length, 'المواردُ التشغيلية: ما أُعيدت كتابتُه بلا تغيير يُعدّ');
     const a = rowsOf(A), z = rowsOf(Z);
     for (const t of Object.keys(a)) assert.deepEqual(z[t], a[t], 'جدول ' + t + ' بعد الاستبدال');
@@ -378,7 +378,7 @@ test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدف�
     const snap = Z.DB.q("SELECT table_key k, COUNT(*) n FROM restore_preimage WHERE snapshot_id=?1 AND domain='operations-sql' GROUP BY table_key", done.j.snapshot), total = snap.reduce((n, r) => n + r.n, 0);
     const manifest = Z.DB.q("SELECT SUM(row_count) n FROM restore_snapshot_manifest WHERE snapshot_id=?1 AND domain='operations-sql'", done.j.snapshot)[0].n;
     assert.equal(total, manifest); assert.ok(snap.some((r) => /bassam_rounds_arc_v1:ops_nodes$/.test(r.k)), 'لقطةُ عقد الأرشيف القائم');
-    assert.equal(snap.filter((r) => /:ops_nodes$/.test(r.k)).reduce((n, r) => n + r.n, 0), nodes0, 'اللقطةُ تحمل كلَّ عقد الجولات والمخطط التي كانت قبل الاستبدال (' + nodes0 + ')');
+    assert.equal(snap.filter((r) => /:ops_nodes$/.test(r.k)).reduce((n, r) => n + r.n, 0), nodes0, 'اللقطةُ تحمل كلَّ عقد الجولات والمخطط وجدول الورديات التي كانت قبل الاستبدال (' + nodes0 + ')');
     assert.equal(staged(Z.DB), 0); await compare(Z, Z.su, next);
   } finally { await A.close(); await Z.close(); }
 });
@@ -416,6 +416,27 @@ test('(١٢) حدُّ الوثيقة كلِّها يُحسب على مجموع �
     assert.deepEqual(Object.values(out.inspect.j.details.denied).map((x) => x.why), ['img-limit']);
     assert.deepEqual(changed(snapshot(T.DB), base), []); assert.equal(staged(T.DB), 0);
   } finally { await T.close(); }
+});
+
+test('(١٦) كلُّ ما يكبر يُقسم: المهامُ والتقريرُ اليومي (خريطتا أيام) وجدولُ الورديات (في طلبه) — الدفعاتُ = المسارُ الواحد صفاً بصف، إلى إدارةٍ فارغة وفوق إدارةٍ تحمل نسخةً أخرى', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true }), A = await target(), Z = await target(), names = ['bassam_tasks_v1', 'bassam_dreport_v1', 'bassam_staffing_v3', 'bassam_rounds_v1', 'bassam_plan_v1'];
+  /* نسخةٌ ثانية: يومٌ يُحذف من التقرير، وشهرٌ يُحذف من الورديات، والمهامُ كما هي (تُطرح وتُكتب من جديد) */
+  const drop = (raw) => { const d = JSON.parse(raw), k = Object.keys(d); delete d[k[0]]; return JSON.stringify(d); };
+  const next = { ...variant(file), data: { ...variant(file).data, bassam_dreport_v1: drop(file.data.bassam_dreport_v1), bassam_staffing_v3: drop(file.data.bassam_staffing_v3) } };
+  try {
+    for (const [tag, f] of [['إدارةٌ فارغة', file], ['فوق نسخةٍ قائمة', next]]) {
+      const mono = await protocol(A, A.su, f, { scope: SCOPE, slice: false }).run();
+      const P = protocol(Z, Z.su, f, { scope: SCOPE, slice: 300, sliceTarget: 400 }), cut = await P.run();
+      assert.equal(mono.commit && mono.commit.status, 200, tag + ' (واحد): ' + JSON.stringify((mono.commit || mono.inspect).j).slice(0, 300));
+      assert.equal(cut.commit && cut.commit.status, 200, tag + ' (دفعات): ' + JSON.stringify((cut.commit || cut.inspect || cut.part || cut.begin).j).slice(0, 300));
+      const sl = Object.keys(P.slices);
+      for (const n of ['bassam_tasks_v1#1', 'bassam_dreport_v1#1', 'bassam_staffing_v3#0', 'bassam_plan_v1#0', 'bassam_rounds_v1#1']) assert.ok(sl.includes(n), tag + ': ' + n + ' دفعةٌ (' + sl.join(' ') + ')');
+      const a = rowsOf(A), z = rowsOf(Z);
+      for (const t of Object.keys(a)) assert.deepEqual(z[t], a[t], tag + ': جدول ' + t);
+      assert.equal(JSON.stringify(await readOps(Z, Z.su, B, names)), JSON.stringify(await readOps(A, A.su, B, names)), tag + ': الوثائقُ بترتيب أعضائها');
+      assert.deepEqual(cut.commit.j.counts.notifications, mono.commit.j.counts.notifications); assert.equal(staged(Z.DB), 0);
+    }
+  } finally { await A.close(); await Z.close(); }
 });
 
 test('(١٣) الصور: غيرُ المذكورة لا تُكتب وتُعدّ · فحوصُ مسار الرفع القائم نفسُها (الحكمُ واحدٌ على البايتات نفسِها) · الأكبرُ من الحد مرفوض · وفشلُ الاستيراد لا يترك صورة', { timeout: 300000, ...need }, async () => {

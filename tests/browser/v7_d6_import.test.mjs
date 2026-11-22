@@ -173,6 +173,26 @@ test('د6: فشلُ جزءٍ ⇒ رسالةٌ بالسبب و«إعادة الم
 
 /* د6 — الجولةُ الكاملة بالحجم المقيس: استيرادُ النسخة القديمة ≈31MB من واجهة المتصفح نفسِها ← تصديرُ نسخة الإدارة من الكود الحالي (ملفٌّ يسلّمه المتصفح) ←
    مسحُ بيانات الإدارة ← استيرادُ الملف المصدَّر ← المطابقة مورداً مورداً وصورةً صورة. [ثقيل ≈ دقيقة إلى دقيقتين] */
+test('د6: عضوٌ واحد أكبر مما يُرسل في دفعة ⇒ رفضٌ عند البدء يسمّيه (المورد › اليوم) — قبل أي رفع، ولا يتغيّر شيء', { timeout: 600000, ...need }, async () => {
+  /* يومٌ واحد ≈2.7M حرف (لا ينقسم) ونسخةٌ فوق حدّ الطلب القديم (صورتان) */
+  const lab = await startLab(), b = await chromium.launch(), { p: file } = await fileOnDisk({ small: true }, (f) => {
+    const r = JSON.parse(f.data.bassam_rounds_v1), day = Object.keys(r)[1]; r[day].d[0].zones[0].d = 'M0 0 ' + 'L1 1 '.repeat(540000) + 'Z'; f.data.bassam_rounds_v1 = JSON.stringify(r);
+    const ids = Object.keys(f.idbImages); ids.forEach((id) => { f.idbImages[id] = 'data:image/png;base64,' + 'VEVTVF9PTkxZ'.repeat(250000); });
+    f.__day = day;
+  });
+  try {
+    const day = JSON.parse(fs.readFileSync(file, 'utf8')).__day, s = await openAs(b, lab, LAB.superUn, LAB.superPw), before = snapshot(lab.env.DB), sent = [];
+    await s.page.route('**/api/backup/import', async (route) => { const q = JSON.parse(route.request().postData() || '{}'); sent.push(q.op || q.phase); return route.continue(); });
+    await chooseFile(s, B, file);
+    await click(s.page, 'استبدال كامل'); await click(s.page, 'ارفع وتحقّق');
+    await s.page.waitForSelector('[data-bkc="fail"]', { timeout: 60000 });
+    const msg = await text(s.page, '[data-bkc="fail-msg"]');
+    assert.ok(msg.replace(/[\u202a-\u202e\u2066-\u2069]/g, '').includes('bassam_rounds_v1 › ' + day), 'الرفضُ يسمّي العضو: ' + msg); assert.match(msg, /لم يتغيّر شيء/);
+    assert.equal(sent.includes('part'), false, 'لم يُرفع جزء: ' + JSON.stringify(sent));
+    assert.deepEqual(changed(snapshot(lab.env.DB), before), []); assert.equal(staged(lab.env.DB), 0);
+  } finally { await b.close(); await lab.close(); try { fs.rmSync(path.dirname(file), { recursive: true, force: true }); } catch (e) { /* مؤقت */ } }
+});
+
 test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة — بنسخةٍ ≈31MB من واجهة المتصفح', { timeout: 900000, ...need }, async (t) => {
   const lab = await startLab(), b = await chromium.launch(), t0 = Date.now(), { f, p: file } = await fileOnDisk({ scale: 1 });
   const stamp = (m) => t.diagnostic(m + ' @' + Math.round((Date.now() - t0) / 1000) + 's');

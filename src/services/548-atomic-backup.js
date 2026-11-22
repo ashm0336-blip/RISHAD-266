@@ -215,7 +215,7 @@
   /* المفتاحُ الكبير (يعلنه الخادم: الاسم ونمطُ أعضائه التي تُقسم) يُرسل دفعاتٍ كلٌّ منها وثيقةٌ صغيرة: الأعضاءُ المشتركة + مجموعةُ أيام (≤ ~0.7M حرف) —
      فلا يحمله الخادمُ كلَّه في ذاكرته. ما لا ينقسم (ليس خريطةً · يومٌ واحد أكبر من الحد) يبقى في نصّ الملف كما كان. */
   function split(file, spec, min) {
-    var images = record(file.idbImages) ? file.idbImages : {}, rest = Object.assign({}, file), slices = {}, list = [];
+    var images = record(file.idbImages) ? file.idbImages : {}, rest = Object.assign({}, file), slices = {}, list = [], big = '', over = -1;
     delete rest.idbImages;
     function add(name, texts) {
       texts.forEach(function (t, n) { slices[name + '#' + n] = t.length; list.push({ k: '#' + name + '#' + n, s: 0, t: t }); });
@@ -227,9 +227,10 @@
     /* تجميعٌ عام: رأسٌ مشترك (head) + عناصرُ بأحجامها ⇒ مجموعاتٌ ≤ ~0.7M حرف؛ null إن لم ينقسم */
     function groups(head, sizes) {
       var out = [], cur = [], size = head;
+      over = -1;
       if (head > 200000) return null;
       for (var i = 0; i < sizes.length; i++) {
-        if (head + sizes[i] > 950000) return null;
+        if (head + sizes[i] > 950000) { over = i; return null; }
         if (size + sizes[i] > 700000 && cur.length) { out.push(cur); cur = []; size = head; }
         cur.push(i); size += sizes[i];
       }
@@ -273,7 +274,7 @@
         if (!record(doc)) return;
         var shared = {}, days = Object.keys(doc).filter(function (k) { if (rx.test(k)) return true; shared[k] = doc[k]; return false; });
         var plan = groups(JSON.stringify(shared).length, days.map(function (k) { return JSON.stringify(doc[k]).length + k.length + 4; }));
-        if (!plan) return;
+        if (!plan) { if (over >= 0 && !big) big = name + ' › ' + days[over]; return; }
         var texts = plan.map(function (idx) { var g = Object.assign({}, shared); idx.forEach(function (i) { g[days[i]] = doc[days[i]]; }); return JSON.stringify(g); });
         if (texts.some(function (t) { return t.length > 1000000; })) return;
         if (rest.data === file.data) rest.data = Object.assign({}, file.data);
@@ -298,7 +299,7 @@
       });
       var dayKids = kids.filter(function (r) { return owner[r.row_key]; }), sharedKids = kids.filter(function (r) { return !owner[r.row_key]; });
       var plan2 = groups(JSON.stringify(bucket['']).length, dayKids.map(function (r) { return JSON.stringify(bucket[r.row_key]).length; }));
-      if (!plan2) return;
+      if (!plan2) { if (over >= 0 && !big) big = name + ' › ' + dayKids[over].member_key; return; }
       var texts2 = plan2.map(function (idx) {
         var rows = {}, pos = {};
         sharedKids.forEach(function (r, i) { pos[r.row_key] = i; });
@@ -316,7 +317,7 @@
       rest.domains = Object.assign({}, rest.domains || file.domains, { operations: ((rest.domains || file.domains).operations).map(function (d, i) { return i === at ? Object.assign({}, d, { rows: empty }) : d; }) });
       add(name, texts2);
     });
-    return { text: JSON.stringify(rest), images: images, ids: Object.keys(images), slices: slices, list: list };
+    return { text: JSON.stringify(rest), images: images, ids: Object.keys(images), slices: slices, list: list, big: big };
   }
   function wait(ms) {
     return new Promise(function (go) { setTimeout(go, ms); });
@@ -423,7 +424,12 @@
       });
       live.add(id);   /* قبل الطلب: صفحةٌ تُغلق وردُّ البدء لم يصل تطلب حذفَ مؤقتها كذلك */
       var began = await post({ op: 'begin', requestId: id, scope: scope, n: parts.text.length, f: texts.length, images: sizes, slices: parts.slices, resources: resources, keys: legacyKeys, mode: opt.mode }, stamp);
-      if (!began.ok) { if (!began.uncertain) live.delete(id); return began; }
+      if (!began.ok) {
+        if (!began.uncertain) live.delete(id);
+        /* عضوٌ واحد أكبر مما يُرسل في دفعة: الرفضُ يسمّيه */
+        if (began.err === 'import-too-heavy' && parts.big && record(began.details) && record(began.details.details) && !began.details.details.k) return failure(began.err, began.status, Object.assign({}, began.details, { details: Object.assign({}, began.details.details, { k: parts.big }) }));
+        return began;
+      }
       job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest, slices: parts.list.length, sliced: 0 };
     } else if (job.mode !== opt.mode) return fail(failure('invalid'));
     job.stop = typeof opt.shouldStop === 'function' ? opt.shouldStop : null;
