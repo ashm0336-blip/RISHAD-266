@@ -15,8 +15,8 @@ const HEAP_CAP = 64, TOTAL_CAP = 80e6, CHILD = fileURLToPath(new URL('./v7_d6_im
 const need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport', 'custody') ? {} : { skip: 'يحتاج أنظمة بيانات العرض المصدر' };
 const mb = (n) => Math.round(n / 1e5) / 10;
 
-async function measure(scale, { slice = 'auto', inline = true, preload = false, mode = 'replace' } = {}) {
-  const file = await oldFile({ scale }), size = sizeOf(file), first = preload ? await oldFile({ scale: 1 }) : null;
+async function measure(scale, { slice = 'auto', inline = true, preload = false, mode = 'replace', planRows = 1 } = {}) {
+  const file = await oldFile({ scale }), size = sizeOf(file), first = preload ? await oldFile({ scale: 1, planRows }) : null;
   const child = fork(CHILD, [], { execArgv: ['--no-warnings', '--expose-gc', '--max-old-space-size=' + HEAP_CAP, '--max-semi-space-size=2'], env: { ...process.env, D6_NO_R2: inline ? '1' : '' }, stdio: ['ignore', 'ignore', 'pipe', 'ipc'] });
   let err = '', dead = null;
   child.stderr.on('data', (d) => { err += d; });
@@ -35,7 +35,8 @@ async function measure(scale, { slice = 'auto', inline = true, preload = false, 
     const scope = { kind: 'dept', departmentId: 'TEST_ONLY_B' };
     let held = 0;
     /* الإدارةُ الهدف تحمل قبل القياس جولاتٍ ≈8MB (استيرادٌ أول تحت السقف نفسِه) */
-    if (first) { const pre = await protocol({ call }, who, first, { scope, reason: 'TEST_ONLY mem preload' }).run(); assert.equal(pre.commit && pre.commit.status, 200, 'preload'); child.send({ op: 'report' }); held = (await next('report')).nodes; }
+    let heldPlan = 0;
+    if (first) { const pre = await protocol({ call }, who, first, { scope, reason: 'TEST_ONLY mem preload' }).run(); assert.equal(pre.commit && pre.commit.status, 200, 'preload'); child.send({ op: 'report' }); const rep0 = await next('report'); held = rep0.nodes; heldPlan = rep0.planNodes; }
     const P = protocol({ call }, who, file, { scope, reason: 'TEST_ONLY mem', slice, mode });
     if (slice === false) { const r = await P.begin(); return { refused: r }; }
     const phases = {}, ok = (r, what) => { assert.equal(r.status, 200, what + ': ' + String(r.t).slice(0, 200)); return r; };
@@ -44,7 +45,7 @@ async function measure(scale, { slice = 'auto', inline = true, preload = false, 
     const sl = await phase('slice', async () => { for (let i = 0; i < P.sliceCount; i++) ok(await P.sliceStep(i), 'slice ' + i); });
     const ins = await phase('inspect', async () => ok(await P.inspect(), 'inspect'));
     const com = await phase('commit', async () => ok(await P.commit(ins.r.j.inspection.base), 'commit'));
-    return { size, parts: P.parts.length, slices: P.sliceCount, phases, held, rowStatements: sl.rep.q, imageRows: sl.rep.i, pre: com.rep.pre, nodes: com.rep.nodes, limit: com.rep.limit, rounds: com.rep.rounds, images: com.rep.images, staged: com.rep.staged, audits: com.rep.audits, commit: com.r.j };
+    return { size, parts: P.parts.length, slices: P.sliceCount, phases, held, heldPlan, rowStatements: sl.rep.q, imageRows: sl.rep.i, pre: com.rep.pre, nodes: com.rep.nodes, limit: com.rep.limit, rounds: com.rep.rounds, images: com.rep.images, staged: com.rep.staged, audits: com.rep.audits, commit: com.r.j };
   } finally { child.kill(); }
 }
 const line = (p) => Object.entries(p).map(([k, v]) => k + ' ' + mb(v.heap) + '+' + mb(v.external) + '=' + mb(v.total)).join(' · ');
@@ -62,6 +63,13 @@ for (const preload of [false, true]) for (const scale of [1, 2]) {
     t.diagnostic((preload ? 'فوق ' + m.held + ' عقدة قائمة · ' : '') + 'scale ' + scale + ' (' + mb(m.size.total) + 'MB · مفتاح ' + mb(m.size.maxKey) + 'MB · ' + m.parts + ' جزءاً · ' + m.slices + ' دفعة) — heapUsed+external=المجموع بالـMB: ' + line(m.phases) + ' · عباراتُ دفعة الاعتماد للصفوف المودَعة: ' + m.rowStatements + ' (كلٌّ ≤ 500KB) + ' + m.imageRows + ' لأجسام الصور (كلٌّ ≤ 200KB)');
   });
 }
+test('(ب3) [ثقيل] النسخةُ القديمة ≈31MB تستبدل إدارةً تحمل نسخةً صفوفُ مخططها ثلاثةُ أضعاف — لا طلبَ يتوقّف على ما في الهدف: تحت السقف نفسِه', { timeout: 600000, ...need }, async (t) => {
+  const base = await measure(1, { preload: true }), m = await measure(1, { preload: true, planRows: 3 });
+  assert.ok(m.heldPlan > base.heldPlan * 2.5, 'صفوفُ المخطط القائم ثلاثةُ أضعاف (' + m.heldPlan + ' مقابل ' + base.heldPlan + ')');
+  assert.equal(m.commit.ok, 1); assert.equal(m.rounds, 26); assert.equal(m.staged, 0);
+  for (const [name, p] of Object.entries(m.phases)) assert.ok(p.total <= TOTAL_CAP, 'مرحلة ' + name + ': ' + mb(p.total) + 'MB ≤ 80MB');
+  t.diagnostic('مخططٌ قائم ' + m.heldPlan + ' عقدة (×3): ' + line(m.phases) + ' — ومع ' + base.heldPlan + ' عقدة: ' + line(base.phases));
+});
 test('(ج) المسارُ الواحد (بلا دفعات) للنسخة ≈31MB لا يُحاوَل: يُرفض عند البدء بكلفته المقدَّرة — قبل أي رفع', { timeout: 600000, ...need }, async (t) => {
   const m = await measure(1, { slice: false });
   assert.equal(m.refused.status, 413); assert.equal(m.refused.j.err, 'import-too-heavy'); assert.ok(m.refused.j.details.cost > m.refused.j.details.budget);

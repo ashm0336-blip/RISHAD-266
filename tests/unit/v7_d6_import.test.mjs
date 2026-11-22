@@ -180,6 +180,7 @@ test('(٣ج) المهلةُ بساعةٍ مضبوطة: مؤقتٌ انقضت س�
     /* (أ) كاملُ الأجزاء، ثم تمرّ ساعةٌ ودقيقة: الاعتمادُ مرفوض 410 ولا شيء يُكتب */
     let P = protocol(T, T.su, file, { scope: SCOPE });
     await P.begin(); for (let i = 0; i < P.parts.length; i++) assert.equal((await P.part(i)).status, 200);
+    for (let i = 0; i < P.sliceCount; i++) assert.equal((await P.sliceStep(i)).status, 200);
     const ins = await P.inspect(); assert.equal(ins.status, 200);
     shift = 61 * 60e3;
     const late = await P.commit(ins.j.inspection.base);
@@ -209,6 +210,7 @@ test('(٤) إعادةُ المحاولة بعد فشل · طلبٌ مكرَّر 
       assert.equal((await P.part(i)).status, 200); const rows = staged(T.DB);
       assert.equal((await P.part(i)).status, 200, 'الطلبُ المكرَّر مقبول'); assert.equal(staged(T.DB), rows, 'ولا يضيف صفاً');
     }
+    for (let i = 0; i < P.sliceCount; i++) assert.equal((await P.sliceStep(i)).status, 200);
     const ins = await P.inspect(); assert.equal(ins.status, 200, JSON.stringify(ins.j).slice(0, 300));
     const c1 = await P.commit(ins.j.inspection.base); assert.equal(c1.status, 200, JSON.stringify(c1.j).slice(0, 300));
     await compare(T, T.su, file);
@@ -239,6 +241,7 @@ test('(٤ب) فشلُ الاعتماد نفسِه (خطأُ قاعدةٍ داخ�
     try {
       const P = protocol(T, T.su, file, { scope: SCOPE });
       await P.begin(); for (let i = 0; i < P.parts.length; i++) assert.equal((await P.part(i)).status, 200);
+      for (let i = 0; i < P.sliceCount; i++) assert.equal((await P.sliceStep(i)).status, 200);
       const ins = await P.inspect(); assert.equal(ins.status, 200);
       const base = snapshot(T.DB), rows = staged(T.DB);
       assert.equal(T.DB.q('SELECT COUNT(*) n FROM imgs')[0].n, 0, tag + ': الفحصُ لا يكتب صورة');
@@ -344,7 +347,7 @@ test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدف�
   const file = await oldFile({ small: true }), next = variant(file), A = await target(), Z = await target();
   try {
     for (const T of [A, Z]) assert.equal((await protocol(T, T.su, file, { scope: SCOPE, slice: false }).run()).commit.status, 200, 'الإدارةُ تحمل النسخةَ الأولى');
-    const first = rowsOf(Z), nodes0 = Z.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource GLOB 'bassam_rounds*'", B)[0].n;
+    const first = rowsOf(Z), nodes0 = Z.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND (resource GLOB 'bassam_rounds*' OR resource='bassam_plan_v1')", B)[0].n;
     assert.ok(nodes0 > 50, 'في الهدف جولاتٌ قائمة (' + nodes0 + ' عقدة)');
     const mono = await protocol(A, A.su, next, { scope: SCOPE, slice: false }).run();
     assert.equal(mono.commit.status, 200, JSON.stringify((mono.commit || mono.inspect).j).slice(0, 300));
@@ -360,10 +363,10 @@ test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدف�
     assert.ok(bad.status >= 500); assert.deepEqual(rowsOf(Z), first, 'فشلُ الاعتماد: لم يُحذف القائم ولم يُدرج الجديد');
     const done = await P.commit(ins.j.inspection.base);
     assert.equal(done.status, 200, JSON.stringify(done.j).slice(0, 300));
-    /* فرقٌ واحد معلوم: الدفعاتُ تعيد كتابة مورد الجولات الحيّ دائماً (ولو لم يتغيّر محتواه) فتتقدّم نسختُه — والصفوفُ والعدّادُ هي هي */
+    /* فرقٌ واحد معلوم: ما يُطبَّق على دفعات (الجولاتُ الحيّة · المخطط) يُعاد كتابتُه دائماً ولو لم يتغيّر محتواه فتتقدّم نسختُه — والصفوفُ هي هي */
     const live = 'bsdept:' + B + ':bassam_rounds_v1', extra = Object.keys(done.j.revs).filter((k) => !(k in mono.commit.j.revs));
-    assert.deepEqual(Object.keys(mono.commit.j.revs).filter((k) => !(k in done.j.revs)), []); assert.ok(extra.length === 0 || (extra.length === 1 && extra[0] === live), JSON.stringify(extra));
-    assert.deepEqual(done.j.counts, mono.commit.j.counts, 'العدّادُ واحد');
+    assert.deepEqual(Object.keys(mono.commit.j.revs).filter((k) => !(k in done.j.revs)), []); assert.ok(extra.every((k) => k === live || k === 'bsdept:' + B + ':bassam_plan_v1'), JSON.stringify(extra));
+    assert.deepEqual({ ...done.j.counts, operations: 0 }, { ...mono.commit.j.counts, operations: 0 }, 'العدّاداتُ الأخرى واحدة'); assert.ok(done.j.counts.operations >= mono.commit.j.counts.operations && done.j.counts.operations <= mono.commit.j.counts.operations + extra.length, 'المواردُ التشغيلية: ما أُعيدت كتابتُه بلا تغيير يُعدّ');
     const a = rowsOf(A), z = rowsOf(Z);
     for (const t of Object.keys(a)) assert.deepEqual(z[t], a[t], 'جدول ' + t + ' بعد الاستبدال');
     const names = ['bassam_rounds_v1', 'bassam_rounds_arc_v1'], da = await readOps(A, A.su, B, names), dz = await readOps(Z, Z.su, B, names);
@@ -374,7 +377,7 @@ test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدف�
     const snap = Z.DB.q("SELECT table_key k, COUNT(*) n FROM restore_preimage WHERE snapshot_id=?1 AND domain='operations-sql' GROUP BY table_key", done.j.snapshot), total = snap.reduce((n, r) => n + r.n, 0);
     const manifest = Z.DB.q("SELECT SUM(row_count) n FROM restore_snapshot_manifest WHERE snapshot_id=?1 AND domain='operations-sql'", done.j.snapshot)[0].n;
     assert.equal(total, manifest); assert.ok(snap.some((r) => /bassam_rounds_arc_v1:ops_nodes$/.test(r.k)), 'لقطةُ عقد الأرشيف القائم');
-    assert.equal(snap.filter((r) => /:ops_nodes$/.test(r.k)).reduce((n, r) => n + r.n, 0), nodes0, 'اللقطةُ تحمل كلَّ عقد الجولات التي كانت قبل الاستبدال (' + nodes0 + ')');
+    assert.equal(snap.filter((r) => /:ops_nodes$/.test(r.k)).reduce((n, r) => n + r.n, 0), nodes0, 'اللقطةُ تحمل كلَّ عقد الجولات والمخطط التي كانت قبل الاستبدال (' + nodes0 + ')');
     assert.equal(staged(Z.DB), 0); await compare(Z, Z.su, next);
   } finally { await A.close(); await Z.close(); }
 });

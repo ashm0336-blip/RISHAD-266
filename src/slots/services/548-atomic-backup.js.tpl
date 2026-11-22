@@ -57,7 +57,7 @@
       'import-too-heavy': 'النسخة أكبر مما يُعالَج بأمان في طلب واحد؛ لم يتغيّر شيء ولم يُرسل منها شيء. ' +
         (data && data.details && data.details.kind === 'full'
           ? 'النسخة الشاملة بهذا الحجم لا تُستورد دفعةً واحدة: استورد نسخ الإدارات واحدةً واحدة.'
-          : 'اختر «استبدال كامل» بحساب مدير المنصة (تُرسل البيانات الكبيرة على دفعات)، أو امسح بيانات الإدارة الهدف أولاً ثم استورد.'),
+          : data && data.details && data.details.k ? 'السبب: «' + data.details.k + '» وحده أكبر مما يُعالَج في طلب واحد.' : 'اختر «استبدال كامل» بحساب مدير المنصة (تُرسل البيانات الكبيرة على دفعات)، أو امسح بيانات الإدارة الهدف أولاً ثم استورد.'),
       'import-too-large': 'النسخة أكبر من سقف الاستيراد (256MB)؛ لم يتغيّر شيء',
       'restore-epoch-changed': 'جرت استعادة أخرى أثناء الاستيراد؛ لم يتغيّر شيء — أعد المحاولة',
       'restore-reason': 'سبب الاستيراد مطلوب (300 حرف على الأكثر)؛ لم يتغيّر شيء',
@@ -214,6 +214,10 @@
     function add(name, texts) {
       texts.forEach(function (t, n) { slices[name + '#' + n] = t.length; list.push({ k: '#' + name + '#' + n, s: 0, t: t }); });
     }
+    function whole(name, text) {
+      slices[name + '#0'] = text.length;
+      cut(text, 1000000).forEach(function (t, n) { list.push({ k: '#' + name + '#0', s: n, t: t }); });
+    }
     /* تجميعٌ عام: رأسٌ مشترك (head) + عناصرُ بأحجامها ⇒ مجموعاتٌ ≤ ~0.7M حرف؛ null إن لم ينقسم */
     function groups(head, sizes) {
       var out = [], cur = [], size = head;
@@ -238,7 +242,24 @@
     }
     Object.keys(spec || {}).forEach(function (name) {
       var rx, raw = record(file.data) ? file.data[name] : null, doc;
-      if (!min || !due(name)) return;
+      if (!min) return;
+      /* موردٌ لا ينقسم بأعضائه (النمط null): يُرسل كلُّه دفعةً واحدة في طلبه — دائماً، فلا يدخل كلفةَ بقية النسخة ولا يُحمَّل القائمُ منه في الهدف */
+      if (!spec[name][0]) {
+        var at0 = -1;
+        ops0.forEach(function (d, i) { if (record(d) && d.resource === name && record(d.rows)) at0 = i; });
+        if (typeof raw === 'string' && raw.length > 2) {
+          if (rest.data === file.data) rest.data = Object.assign({}, file.data);
+          delete rest.data[name];
+          whole(name, raw);
+        } else if (at0 >= 0 && (ops0[at0].rows.ops_nodes || []).length) {
+          var blank = {};
+          Object.keys(ops0[at0].rows).forEach(function (t) { blank[t] = []; });
+          whole(name, JSON.stringify({ version: ops0[at0].version, scope: ops0[at0].scope, resource: name, rows: ops0[at0].rows }));
+          rest.domains = Object.assign({}, rest.domains || file.domains, { operations: ((rest.domains || file.domains).operations).map(function (d, i) { return i === at0 ? Object.assign({}, d, { rows: blank }) : d; }) });
+        }
+        return;
+      }
+      if (!due(name)) return;
       try { rx = new RegExp(spec[name][0]); } catch (e) { return; }
       /* نسخةٌ قديمة: الوثيقةُ نصٌّ في data */
       if (typeof raw === 'string') {
@@ -286,7 +307,7 @@
       if (texts2.some(function (t) { return t.length > 1000000; })) return;
       var empty = {};
       tables.forEach(function (t) { empty[t] = []; });
-      rest.domains = Object.assign({}, file.domains, { operations: ops.map(function (d, i) { return i === at ? Object.assign({}, d, { rows: empty }) : d; }) });
+      rest.domains = Object.assign({}, rest.domains || file.domains, { operations: ((rest.domains || file.domains).operations).map(function (d, i) { return i === at ? Object.assign({}, d, { rows: empty }) : d; }) });
       add(name, texts2);
     });
     return { text: JSON.stringify(rest), images: images, ids: Object.keys(images), slices: slices, list: list };
