@@ -742,6 +742,91 @@
       },
       "additionalProperties": false
     },
+    "/api/backup/import": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "maxLength": 12
+        },
+        "requestId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "scope": {
+          "type": "object"
+        },
+        "mode": {
+          "type": "string",
+          "maxLength": 12
+        },
+        "reason": {
+          "type": "string"
+        },
+        "base": {
+          "type": "object"
+        },
+        "legacyConsent": {
+          "type": "boolean"
+        },
+        "dry": {
+          "type": "boolean"
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "f": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "keys": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "images": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 2000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "k": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "s": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "t": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "k",
+              "s",
+              "t"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "op",
+        "requestId"
+      ],
+      "additionalProperties": false
+    },
     "/api/backup/restore": {
       "type": "object",
       "properties": {

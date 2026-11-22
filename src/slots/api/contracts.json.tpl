@@ -1613,6 +1613,79 @@
       "note": "Server-owned operations. Existing resource authority, session identity, revision/epoch checks and operation-specific closed validation apply. GET inspects; POST commits atomically where supported."
     },
     {
+      "path": "/api/backup/import",
+      "methods": [
+        "POST"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/backup/import",
+          "note": "الجلسة وهوية الفاعل قبل فحص الشكل؛ تظل حراسة العملية والنطاق كما هي بعده."
+        },
+        "401": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "403": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "404": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "405": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "409": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "410": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "413": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        },
+        "503": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      },
+      "note": "V7 · د6: استيراد النسخة على أجزاء (op: begin · part · inspect · commit · cancel). كل طلب يُفحص بصلاحية الاستعادة نفسها وبمالك المنطقة المؤقتة؛ الأجزاء لا تمسّ إلا المؤقت، والاعتماد دفعة واحدة بالمسار القائم (/api/backup/restore)."
+    },
+    {
       "path": "/api/backup/restore",
       "methods": [
         "GET",
