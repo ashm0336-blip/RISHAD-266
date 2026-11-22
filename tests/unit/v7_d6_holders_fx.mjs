@@ -16,6 +16,8 @@ import { SEEN_SRC, SIDEBAR_SRC } from '../support/one_menu.mjs';
 
 export const T = 'TEST_ONLY_d6_';
 export const S = T + 'S', G = T + 'G', A = T + 'A', B = T + 'B', A_S1 = T + 'A_S1';
+/* وحدةٌ قائمة بلا سجلّ سقفٍ قط، تحت عقدةٍ في الجذر بلا سجلّ (سقفٌ «مفتوح») — لا تمسّها الحالاتُ الأربع: دليلُ «الوحدات القائمة لا تتغيّر» (ب4) */
+export const NO = T + 'NO', OP = T + 'OP';
 export const E_ROLE = T + 'e_role', E_NONE = T + 'e_none', E_EX = T + 'e_ex', ROLE = T + 'r1';
 export const KP = 'bassam_perms_v1';
 export const BLOCKS = ['255-page-manifest.js', '260-bassam-plat.js', '280-server-storage.js', '310-image-refs.js', '320-dept-storage.js', '330-auth.js', '331-perm-model.js', '332-find-day.js', '333-platform-map.js', '334-perm-tree-tpl.js', '340-registry-v24-9.js', '345-perm44.js', '440-count.js'];
@@ -31,6 +33,7 @@ export const ACC = {
   role:  { uid: T + 'u_role',  un: '2100000905', role: 'staff', dept: A,    ekey: E_ROLE },
   none:  { uid: T + 'u_none',  un: '2100000906', role: 'staff', dept: A,    ekey: E_NONE },
   ex:    { uid: T + 'u_ex',    un: '2100000907', role: 'staff', dept: A,    ekey: E_EX },
+  open:  { uid: T + 'u_open',  un: '2100000908', role: 'staff', dept: OP,   ekey: 'mgr:' + OP, extra: { mgr: 1 } },
 };
 const q = (s) => "'" + String(s).replace(/'/g, "''") + "'";
 /* قبل التحويل القانوني للبذرة: الهيكلُ والموظفون مفاتيحُ قديمةٌ عادية */
@@ -39,8 +42,8 @@ function seedOrg(env) {
     env.DB.exec("INSERT INTO meta (k, v) VALUES ('rev', '1') ON CONFLICT(k) DO UPDATE SET v = CAST(CAST(meta.v AS INTEGER) + 1 AS TEXT);");
     env.DB.exec('INSERT INTO revs (k, rev) VALUES (' + q(k) + ", (SELECT CAST(v AS INTEGER) FROM meta WHERE k = 'rev')) ON CONFLICT(k) DO UPDATE SET rev = excluded.rev;"); };
   const rd = (k) => { const r = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k); return r.length ? JSON.parse(r.map((x) => x.v).join('')) : null; };
-  put('bassam_gdepts_v1', (rd('bassam_gdepts_v1') || []).concat([{ id: S, name: T + 'قطاع', kind: 'قطاع' }, { id: G, name: T + 'إدارة عامة', kind: 'إدارة عامة', pid: S }]));
-  put('bassam_depts_v1', (rd('bassam_depts_v1') || []).concat([{ id: A, name: T + 'إدارة أ', gid: G }, { id: B, name: T + 'إدارة ب', gid: G }, { id: A_S1, name: T + 'قسم أ١', gid: A, kind: 'قسم' }]));
+  put('bassam_gdepts_v1', (rd('bassam_gdepts_v1') || []).concat([{ id: S, name: T + 'قطاع', kind: 'قطاع' }, { id: G, name: T + 'إدارة عامة', kind: 'إدارة عامة', pid: S }, { id: NO, name: T + 'عقدة مفتوحة', kind: 'إدارة عامة' }]));
+  put('bassam_depts_v1', (rd('bassam_depts_v1') || []).concat([{ id: A, name: T + 'إدارة أ', gid: G }, { id: B, name: T + 'إدارة ب', gid: G }, { id: A_S1, name: T + 'قسم أ١', gid: A, kind: 'قسم' }, { id: OP, name: T + 'إدارة مفتوحة', gid: NO }]));
   put('bsdept:' + A + ':bassam_employees_v1', [E_ROLE, E_NONE, E_EX].map((e, i) => ({ eid: e, name: T + 'موظف ' + (i + 1), empno: String(79001 + i), type: T + 'رسمي', work: T + 'مراقب' })));
 }
 export async function holdersWorld() {
@@ -53,6 +56,25 @@ export async function holdersWorld() {
   W.ck = { su: W.su.ck };
   for (const who of Object.keys(ACC)) W.ck[who] = (await W.login(ACC[who].un, pw[who])).ck;
   return W;
+}
+/* حسابٌ لوحدةٍ أُنشئت في الاختبار: who اسمُه في W.ck · mgr: يحمل شارةَ مدير الوحدة did */
+let accN = 0;
+export async function addHolder(W, who, did, mgr) {
+  const n = ++accN, pw = pin(), un = String(2100001000 + n), uid = T + 'u_new' + n;
+  addAccount(W.env, { uid, un, pw, name: T + who, ekey: mgr ? 'mgr:' + did : T + 'e_new' + n, dept: did, role: 'staff' });
+  if (mgr) { const U = stored(W.env, 'bassam_auth_users_v1'); U.find((x) => x.id === uid).mgr = 1; putKV(W.env, 'bassam_auth_users_v1', U); }
+  W.ck[who] = (await W.login(un, pw)).ck;
+  return who;
+}
+/* سجلُّ «مطفأة كلها» المتوقَّع — محسوباً مستقلاً من بيانات المحرّك المولَّدة (345: الأنظمةُ التي تُطفأ) وسجلّ الصفحات: الصفحاتُ الدائمة وحدها، والأقسامُ
+   التي هي أنظمةٌ (العهد) مطفأة */
+export function offRecord() {
+  const m = /var KIVO_PERM44_DATA = (\{[\s\S]*?\});\n/.exec(fs.readFileSync(path.join(SRC, 'permissions', '345-perm44.js'), 'utf8'));
+  const sys = JSON.parse(m[1]).systems.filter((s) => s.toggle !== false && s.key !== 'admin'), pages = JSON.parse(fs.readFileSync(path.join(SRC, 'manifests', 'pages.json'), 'utf8')).pages;
+  const offPages = sys.map((s) => s.leaves[0]).filter((l) => !l.includes('/')), offSubs = sys.map((s) => s.leaves[0]).filter((l) => l.includes('/')).map((l) => l.split('/'));
+  const subs = {};
+  for (const [pk, sk] of offSubs) subs[pk] = (subs[pk] || pages.find((p) => p.key === pk).subs.map((x) => x.key)).filter((k) => k !== sk);
+  return { caps: pages.map((p) => p.key).filter((k) => !offPages.includes(k)), subs, systems: sys.map((s) => s.key), all: pages.map((p) => p.key) };
 }
 /* الواجهةُ الحقيقية لحساب who والوحدةُ النشطة did — تُقلع من العامل؛ تُغلق بـdispose */
 export async function clientOf(W, who, did) {

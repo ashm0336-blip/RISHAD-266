@@ -5892,7 +5892,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     s = e,
                     a = 2;
                   for (; t.nodes().some((t) => t.name === s) || t.list().some((t) => t.name === s); ) s = e + " " + a++;
-                  const r = t.nodeAdd({ name: s, kind: "إدارة عامة", pid: null });
+                  const r = t.nodeAdd({ name: s, kind: "إدارة عامة", pid: null, seed: "parent" });   /* V7 · د6 (ب4): تُنشأ لتُسنَد إليها إدارةٌ قائمة — فلا تبدأ مطفأةً فتُطفئ ما تحتها */
                   if (!r || !r.ok) return void this.bsToast((r && r.err) || "تعذّر إنشاء الإدارة العامة");
                   const c = t.setDeptParent(o, r.id);
                   if (!c || !c.ok) return (t.nodeDel(r.id), void this.bsToast((c && c.err) || "تعذّر الإسناد"));
@@ -6206,7 +6206,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   admGrpFlip: r,
                   ndName: "",
                   ndNewKind: "",
-                  ndMsg: "✓ أُنشئت «" + e + "» — وفُتح لها سقفُ صفحاتٍ موروثٌ من أبيها",
+                  ndMsg: "✓ أُنشئت «" + e + "» — أنظمتها مطفأة: فعّلها من «الأنظمة»",
                 })
               : this.setState({ ndMsg: (i && i.err) || "تعذّر الإنشاء" });
           },
