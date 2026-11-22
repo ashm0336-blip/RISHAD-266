@@ -17,7 +17,7 @@ let loads = 0;   /* initDb يهاجر مرّةً لكل وحدة ⇒ لكل عا
 async function load() {
   const src = fs.readFileSync(WORKER, 'utf8');
   const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'd1b-')), f = path.join(dir, 'w.mjs');
-  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, NF_TYPES, opLegacyPrepare, opGuardRetired };\n');
+  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, NF_TYPES, NF_CAP, opLegacyPrepare, opGuardRetired };\n');
   try { return await import(pathToFileURL(f).href + '?n=' + (++loads)); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
@@ -69,7 +69,7 @@ async function world(W, mode) {
     tg.run('d:' + d, id, 'role', role);
   }
   DB.db.exec('COMMIT');
-  return { env, who };
+  return { env, who, caps };
 }
 async function feed(W, env, uid, dept, kind) {   /* فئةٌ واحدة في كلّ طلب: الصفحةُ محدودة، فلا تُزاحم فئةٌ أخرى */
   const r = await W.default.fetch(new Request('http://x/api/notifications?limit=200&kinds=' + kind + (dept ? '&dept=' + dept : ''), { headers: { Cookie: 'bs_tok=TEST_ONLY_s_' + uid } }), env, { waitUntil() {}, passThroughOnException() {} });
@@ -88,7 +88,10 @@ test('V7 · د1-ب: irshad · seized · award — مستلمو الإنفاذ = 
       assert.ok(a, 'مرجعٌ لكل حالة');
       assert.equal(b.status, a.status, uid + ' ' + dept + ' status');   /* قارئُ إدارةٍ أخرى يُرفض (403) */
       if (a.status === 200) compared++;
-      const x = a.items, y = b.items.filter((i) => cat(i) === c);
+      /* V7 · د5-ح (قرار المالك · البند ٧): تنبيهُ نظامٍ مطفأ في وحدته لا يُعرض لأحد — ولا لمدير المنصة (كان له وحده: d1 بلا المضبوطات والجائزة في سقفها).
+         المرجعُ المحفوظ نفسُه لا يُعدَّل؛ يُقصّ منه ما أُطفئ نظامُه في وحدة التنبيه (سقفُ هذا العالم: caps أعلاه) */
+      const sysOn = (it) => { const d = it.split('@')[1].split('#')[0], pg = WE.NF_CAP[c]; return !pg || (E.caps[d] || []).includes(pg.split('/')[0]); };
+      const x = a.items.filter(sysOn), y = b.items.filter((i) => cat(i) === c);
       if (uid !== 'TEST_ONLY_super') seenLegacy[c] += x.length;
       assert.deepEqual(y, x, uid + ' dept=' + (dept || '-') + ' فئة ' + c + ': مستلمو الإنفاذ ≠ مستلمي الوضع القديم');
     }
