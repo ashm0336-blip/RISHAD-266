@@ -901,10 +901,6 @@ class Component extends DCLogic {
   }
   /* V7 · د6: الاستيرادُ بمراحله الظاهرة — التقدّم (run) · الفشل بسببه وإعادةُ المحاولة (fail) · ملخّص النجاح (done). لا تبقى نافذةُ التأكيد بزرٍّ بلا أثر:
      كلُّ ضغطةٍ إمّا تبدأ مرحلةً ظاهرة وإمّا تُعرض رسالتُها. الإرسالُ على أجزاء في خدمة النسخ (548)، والاعتمادُ دفعةٌ واحدة في الخادم. */
-  _bkShow(patch, step) {
-    if (!this.state.bkConf) return;
-    this.setState({ bkConf: { ...this.state.bkConf, ...patch }, ...(step ? { bkStep: step } : {}) });
-  }
   async bkCommit(mode) {
     const pend = this._bkPend,
       svc = KIVO.BackupRestore;
@@ -914,9 +910,10 @@ class Component extends DCLogic {
       return;
     }
     this._bkSaving = true;
+    const show = (patch, step) => { if (this.state.bkConf) this.setState({ bkConf: { ...this.state.bkConf, ...patch }, ...(step ? { bkStep: step } : {}) }); };
     const fail = (result) => {
       pend.failed = result;
-      this._bkShow({ fail: { msg: result.message, mode } }, "fail");
+      show({ fail: { msg: result.message, mode } }, "fail");
       this.bkToast(result.message, true);
     };
     try {
@@ -924,17 +921,17 @@ class Component extends DCLogic {
         /* فشلٌ سابقٌ قابلٌ للإكمال بطريقةٍ أخرى: يُحذف مؤقتُه ويبدأ من جديد */
         if (pend.failed && pend.failed.resumable && pend.mode !== mode && svc.cancel) { await svc.cancel(pend.failed); pend.failed = null; }
         pend.stop = false;
-        this._bkShow({ run: { step: "start" } }, "run");
+        show({ run: { step: "start" } }, "run");
         const prepared = await svc.prepare(pend.file, {
           scope: { kind: "dept", departmentId: pend.did },
           mode,
-          onProgress: (p) => { if (this._bkPend === pend) this._bkShow({ run: p }, "run"); },
+          onProgress: (p) => { if (this._bkPend === pend) show({ run: p }, "run"); },
           shouldStop: () => !!pend.stop,
           resume: pend.failed && pend.failed.resumable ? pend.failed : undefined,
         });
         pend.mode = mode;
         if (!prepared.ok) {
-          if (prepared.err === "cancelled" || prepared.err === "reason") { pend.failed = null; this._bkShow({}, "pick"); this.bkToast(prepared.message, true); }
+          if (prepared.err === "cancelled" || prepared.err === "reason") { pend.failed = null; show({}, "pick"); this.bkToast(prepared.message, true); }
           else fail(prepared);
           return;
         }
@@ -944,8 +941,8 @@ class Component extends DCLogic {
         pend.confirmed = false;
       }
       if (!pend.confirmed) {
-        this._bkShow({ run: { step: "review" } }, "run");
-        if (!(await svc.confirm(pend.prepared))) { this._bkShow({}, "confirm"); return; }
+        show({ run: { step: "review" } }, "run");
+        if (!(await svc.confirm(pend.prepared))) { show({}, "confirm"); return; }
         const approved = svc.approve(pend.ticket);
         if (!approved.ok) {
           fail(approved);
@@ -953,7 +950,7 @@ class Component extends DCLogic {
         }
         pend.confirmed = true;
       }
-      this._bkShow({ run: { step: "commit" } }, "run");
+      show({ run: { step: "commit" } }, "run");
       const result = await svc.send(pend.ticket);
       if (!result.ok) {
         pend.uncertain = result.uncertain;
@@ -982,9 +979,9 @@ class Component extends DCLogic {
     try { if (sum && sum.exportedAt) when = new Date(sum.exportedAt).toLocaleString("ar-SA-u-nu-latn", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { when = (sum && sum.exportedAt) || ""; }
     const parts = run.parts || 0, pct = run.step === "upload" && parts ? Math.max(2, Math.round(((run.part - 1) / parts) * 90)) : run.step === "inspect" || run.step === "review" ? 92 : run.step === "commit" ? 97 : 1;
     const runText = run.stopping ? "يتوقّف بعد الجزء الجاري…" : run.step === "upload" ? "الجزء " + run.part + " من " + parts + (run.images ? " · الصور: " + (run.image || 0) + " من " + run.images : "") + " — لا يتغيّر شيء في الإدارة قبل الاعتماد."
-      : run.step === "inspect" ? "اكتمل إرسال الأجزاء (" + parts + ") — الخادم يفحص النسخة ويطابقها مع الإدارة."
-      : run.step === "review" ? "اكتمل الفحص — راجع ملخّص الخادم واعتمد الاستعادة."
-      : run.step === "commit" ? "تُطبَّق النسخة في خطوة واحدة على الخادم…" : "تُجهَّز أجزاء النسخة…";
+      : run.step === "inspect" ? "اكتمل إرسال الأجزاء (" + parts + ") — تُفحص النسخة وتُطابَق مع الإدارة."
+      : run.step === "review" ? "اكتمل الفحص — راجع ملخّصه واعتمد الاستعادة."
+      : run.step === "commit" ? "تُطبَّق النسخة في خطوة واحدة…" : "تُجهَّز أجزاء النسخة…";
     const s2 = (done && done.summary) || {}, r = (done && done.receipt) || {}, cn = r.counts || {}, lost = s2.notTransferred || [];
     return {
       bkcSumOn: (step === "pick" || step === "confirm") && (!!sum || !!c.sumErr),
@@ -998,7 +995,7 @@ class Component extends DCLogic {
       bkcDoneMsg: done ? "استُعيدت " + N(cn.kv || 0, "مجموعة بيانات") + " و" + N(cn.operations || 0, "مورد تشغيلي") + (cn.notifications ? " و" + N(cn.notifications, "تنبيه") : "") +
         " · الصور: " + (s2.imagesNew || 0) + " جديدة و" + (s2.imagesReused || 0) + " موجودة مطابقة" + (s2.imagesMissing ? " و" + s2.imagesMissing + " مفقودة" : "") +
         (lost.length ? " · لم يُنقل " + lost.length + ": " + lost.slice(0, 12).map((x) => x.k).join("، ") + (lost.length > 12 ? "…" : "") : "") +
-        " · حُفظت لقطة ما قبل الاستيراد على الخادم (" + (r.snapshot || "") + ") وسُجّل الاستيراد في السجل." : "",
+        " · حُفظت لقطة ما قبل الاستيراد (" + (r.snapshot || "") + ") وسُجّل الاستيراد في السجل." : "",
     };
   }
   /* CORE-01: رسالةُ الإطار تمرّ بالتوست الواحد (KIVO.bsToast · 280) — long: true ⇒ 4.2 ث · رقمٌ ⇒ مدّتُه */
@@ -1388,7 +1385,7 @@ class Component extends DCLogic {
             if (pend && svc && svc.cancel) { try { Promise.resolve(svc.cancel(pend.failed || pend.ticket)).catch(() => {}); } catch (e) { /* مهلةُ الخادم تحذف المؤقت */ } }
             this._bkPend = null; this.setState({ bkConf: null, bkStep: "pick" }); this.bkToast("أُلغي الاستيراد — لم يتغيّر شيء"); },
           bkcRetry: () => { const f = c.fail; if (f) this.bkCommit(f.mode); },
-          bkcAbort: () => { if (this._bkPend) { this._bkPend.stop = true; this._bkShow({ run: { ...(c.run || {}), stopping: true } }); } },
+          bkcAbort: () => { if (this._bkPend) { this._bkPend.stop = true; this.setState({ bkConf: { ...c, run: { ...(c.run || {}), stopping: true } } }); } },
           bkcClose: () => this.setState({ bkConf: null, bkStep: "pick" }),
           bkcMerge: () => this.bkCommit("merge"),
           bkcAskReplace: () => this.setState({ bkStep: "confirm" }),

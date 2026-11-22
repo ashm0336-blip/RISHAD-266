@@ -45,8 +45,14 @@ export const identity = B => ({
 export const snapshot = B => Object.fromEntries(B.DB.q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
   .map(({ name }) => [name, copy(B.DB.q('SELECT * FROM "' + name + '"'))]));
 export const epoch = B => +B.DB.q("SELECT v FROM meta WHERE k='restore_epoch'")[0]?.v || 0;
+/* V7 · د6: الفحصُ والاعتمادُ صارا على مسار الاستيراد على أجزاء (/api/backup/import) — الطلبُ بالاسم نفسِه (phase) */
 export function posts(C, phase) {
-  return C.requests.filter(request => request.method === 'POST' && request.url.split('?')[0] === '/api/backup/restore' && JSON.parse(request.body).phase === phase);
+  return C.requests.filter(request => request.method === 'POST' && request.url.split('?')[0] === '/api/backup/import' && JSON.parse(request.body).phase === phase);
+}
+/* V7 · د6: الملفُّ كما وصل الخادمَ — مجموعُ أجزاء نصّه (op:'part' · k:'') بترتيبها */
+export function sentFile(C) {
+  const parts = C.requests.filter(request => request.method === 'POST' && request.url.split('?')[0] === '/api/backup/import').map(request => JSON.parse(request.body)).filter(body => body.op === 'part').flatMap(body => body.items).filter(item => item.k === '');
+  return JSON.parse(parts.sort((a, b) => a.s - b.s).map(item => item.t).join(''));
 }
 /* opt.images (V7-F): the fixture carries images — /api/img requests are allowed and the actual 360 image transport is loaded */
 export async function browser(B, t, opt = {}) {
