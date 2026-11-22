@@ -36,6 +36,9 @@
      وظهورُ الرابط من ملك واحدةٍ من أوراقه. */
   var NAV_REG = KIVO.KIVO_MANIFEST.clone('containers');   /* AUD-015: الحاويات من الـmanifest */
   var PAGE_KEYS = PAGE_REG.map(function(p){ return p.key; });
+  /* V7 · د6: السقفُ المفتوح (لا سجلَّ في الوحدة ولا في أصولها) = كلُّ الصفحات إلا ما أعلن نظامُه openOff في pages.json — نظامٌ جديد
+     لا يُفتح ضمناً لوحدةٍ قائمة لم يُتّخذ فيها قرار؛ يُفعَّل صراحةً من «الأنظمة». الوراثةُ من أصلٍ مسقوف كما هي (effCap). = 021 PG_OPEN */
+  var PAGE_OPEN = PAGE_REG.filter(function(p){ return !p.openOff; }).map(function(p){ return p.key; });
   /* ═══ نموذج «الأوراق» — صلاحيات الموظف تُمنح على الصفحات الفعلية لا على الحاويات ═══
      الحاوية (صفحة لها subs أو tabs) لا تُخزَّن لها صلاحية: ظهورها في القائمة مشتقٌّ من
      أوراقها. مفتاح الورقة داخل الحاوية «pk/sk»، والصفحة المستقلة (بلا تبويبات) مفتاحها كما هو.
@@ -189,7 +192,7 @@
     if (hasCap(d)) return true;
     try { var D = KIVO.BassamDepts; return !!(D && D.ancestorsOf && (D.ancestorsOf(d) || []).some(function(a){ return hasCap(a); })); } catch(e){ return true; }   /* RISHAD266: تعذّرُ القراءة لا يعني «مفتوح» */
   }
-  function deptCap(did){ var d = did || curDept(); return capSetAnywhere(d) ? effCap(d) : PAGE_KEYS.slice(); }
+  function deptCap(did){ var d = did || curDept(); return capSetAnywhere(d) ? effCap(d) : PAGE_OPEN.slice(); }
   /* V7 P3-0 · حالةُ السقف — مصدرٌ واحد لكل ما يُعرض عنه (الشجرة · قائمة التهيئة · محرّر السقف)، قراءةٌ فقط من الدوال نفسِها:
      'open'    لا سجلَّ في الوحدة ولا في أيٍّ من أصولها ⇒ مفتوحٌ على كل الصفحات (غيرُ مضبوط — ليس قراراً اتُّخذ)
      'inherit' لا سجلَّ خاصّ، ويحدّها أصلٌ مسقوف ⇒ سقفُها الفعليُّ ما يسمح به الأصل

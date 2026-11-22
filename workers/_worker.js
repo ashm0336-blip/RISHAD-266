@@ -2735,7 +2735,7 @@ function permsRule(A, newJson, curJson) {
        على مستوى المنصة مفتاحُ تشغيلٍ لا سقف) لا السجلُّ الخامّ caps[d] الذي يقرأ الغائبَ «لا شيء» — فكان كلُّ قالبٍ يعطيه المديرُ في وحدةٍ مفتوحة
        يُرفض «خارج السقف». والأوراقُ التي تغيّرت في هذا الحفظ وحدها: ورقةٌ قديمةٌ لموظفٍ آخر لا تُسقط حفظاً لا شأن له بها.
        مفتاح الورقة «pk/sk» يُحكم بصفحته الحاوية */
-    var cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : PG_KEYS.slice();
+    var cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : PG_OPEN.slice();
     /* caps-own · latent grants: a leaf outside the ceiling stays stored (read-time narrowing), so only what the save ADDS outside it is
        refused — a leaf or action the owner did not hold in his stored sheet before (the same key); kept or narrowed latent leaves pass.
        The same for lenses switched off for the unit: kept in an explicit list, never added to one */
@@ -21164,7 +21164,7 @@ var PG_REG = [
   { key: 'tasks', under: 'daily' },
   { key: 'irshad', subs: ['dash', 'records'], off: ['dash'] },
   { key: 'seized', subs: ['dash', 'records'], off: ['dash'] },
-  { key: 'rasd', subs: ['dash', 'records'], off: ['dash'] },
+  { key: 'rasd', subs: ['dash', 'records'], off: ['dash'], openOff: 1 },
   { key: 'award', subs: ['new', 'res', 'doc'] },
   { key: 'links' },
   { key: 'help' },
@@ -21172,6 +21172,8 @@ var PG_REG = [
 ];
 var PG_OF = {}, PG_KEYS = [];
 PG_REG.forEach(function (p) { PG_OF[p.key] = p; PG_KEYS.push(p.key); });
+/* V7 · د6: السقفُ المفتوح بلا ما أعلنه نظامُه openOff — نظامٌ جديد لا يُفتح ضمناً لوحدةٍ لم يُضبط سقفُها (= 331 PAGE_OPEN) */
+var PG_OPEN = PG_KEYS.filter(function (k) { return !PG_OF[k].openOff; });
 var ACTS_ALL = ['view', 'add', 'edit', 'del', 'approve', 'export'];
 function pgIsContainer(pk) { var p = PG_OF[pk]; return !!(p && ((p.subs && p.subs.length) || (p.tabs && p.tabs.length))); }
 function pgLeaves(pk) {
@@ -21286,7 +21288,7 @@ function capSetAnywhereOf(A, d) { return hasCapOf(A, d) || ancChain(A, d).some(f
 /* غياب السجل في الإدارة وأسلافها = السقف مفتوح — نصُّ شاشة الصلاحيات نفسه.
    والوحدة المطفأة على مستوى المنصة تسقط من السقف مهما كان الدور. */
 function deptCapOf(A, d) {
-  var c = capSetAnywhereOf(A, d) ? effCapOf(A, d) : PG_KEYS.slice();
+  var c = capSetAnywhereOf(A, d) ? effCapOf(A, d) : PG_OPEN.slice();
   if (A.off && A.off.length) c = c.filter(function (k) { return A.off.indexOf(k) === -1; });
   return c;
 }

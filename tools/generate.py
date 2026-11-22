@@ -168,6 +168,7 @@ def gen_manifest(S):
         off = [x['key'] for x in (p.get('subs') or []) + (p.get('tabs') or []) if x.get('offPage')]
         if off: o += ", off: [" + ', '.join("'" + x + "'" for x in off) + "]"
         if p.get('under') in pkeys: o += ", under: '" + p['under'] + "'"   # V7 · د5-هـ: أبٌ غائب ⇒ صفحةٌ عليا
+        if p.get('openOff'): o += ', openOff: 1'   # V7 · د6: خارجَ السقف المفتوح (021 PG_OPEN)
         return o + ' }'
     reg = 'var PG_REG = [\n' + ',\n'.join(pg(p) for p in M['pages']) + '\n];\n'
     return {norm(layout(S)['pageManifestBlock']): js.encode('utf-8')}, reg

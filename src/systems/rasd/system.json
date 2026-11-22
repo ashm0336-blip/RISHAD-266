@@ -35,11 +35,11 @@
  "slots": {
   "modules.tail": {
    "order": 20,
-   "text": ",\n  {\n   \"name\": \"Rasd\",\n   \"slug\": \"rasd\",\n   \"minifiedSource\": true,\n   \"bytes\": 193642,\n   \"logicLines\": 1758\n  }"
+   "text": ",\n  {\n   \"name\": \"Rasd\",\n   \"slug\": \"rasd\",\n   \"minifiedSource\": true,\n   \"bytes\": 193794,\n   \"logicLines\": 1758\n  }"
   },
   "blocks.pages.tail": {
    "order": 20,
-   "text": ",\n   {\n    \"b64Sha256\": \"356beb14be5e7bd5fa34c6c652c388a0d17d5c5e0cac0347b2c6d5c1499b464a\",\n    \"bytes\": 193642,\n    \"file\": \"client/pages/Rasd.dc.html\",\n    \"name\": \"Rasd\",\n    \"sha256\": \"22b03b9085099622ec75616d2c789d1147e69c25a44f9c6a101a66201a90733a\"\n   }"
+   "text": ",\n   {\n    \"b64Sha256\": \"3d865f217a418b553d69e37ccf19766a5244d4b291a792f8066ccde8898e4499\",\n    \"bytes\": 193794,\n    \"file\": \"client/pages/Rasd.dc.html\",\n    \"name\": \"Rasd\",\n    \"sha256\": \"332e64e0400648893988969a5bd94f19ee2e5630ee19a2c52799e513cfcb0b6e\"\n   }"
   },
   "blocks.order.tail": {
    "order": 20,
@@ -51,7 +51,7 @@
   },
   "budget.decisions": {
    "order": 10,
-   "text": " \"d6RasdDecision\": {\r\n  \"date\": \"2026-11-22\",\r\n  \"scope\": \"V7 · د6 (م7 رصد الحالات): سقفٌ جديد لصفحة النظام page:Rasd = 40500 بايت gzip (هامش ≥ 2% على 39607 المقيس). صفحةٌ كسولة تُحمَّل عند فتح «نظام رصد الحالات» أو لوحته في «مؤشرات الإدارة» وحدهما. لم يُرفع سقفٌ قائم.\"\r\n },\r\n"
+   "text": " \"d6RasdDecision\": {\r\n  \"date\": \"2026-11-22\",\r\n  \"scope\": \"V7 · د6 (م7 رصد الحالات): سقفٌ جديد لصفحة النظام page:Rasd = 40500 بايت gzip (هامش ≥ 2% على 39588 المقيس). صفحةٌ كسولة تُحمَّل عند فتح «نظام رصد الحالات» أو لوحته في «مؤشرات الإدارة» وحدهما. لم يُرفع سقفٌ قائم.\"\r\n },\r\n"
   },
   "uxStates.tail": {
    "order": 20,
@@ -63,7 +63,7 @@
   },
   "pages.entry.systems": {
    "order": 25,
-   "text": "  {\n   \"key\": \"rasd\",\n   \"module\": \"rasd\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"departmentComponents\": [\"Rasd\"],\n   \"nav\": \"rasd\",\n   \"name\": \"نظام رصد الحالات\",\n   \"subs\": [\n    {\n     \"key\": \"dash\",\n     \"name\": \"لوحة المؤشرات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"records\",\n     \"name\": \"السجلات\"\n    }\n   ]\n  },\n"
+   "text": "  {\n   \"key\": \"rasd\",\n   \"module\": \"rasd\",\n   \"activation\": \"toggle\",\n   \"platSwitch\": true,\n   \"openOff\": true,\n   \"departmentComponents\": [\"Rasd\"],\n   \"nav\": \"rasd\",\n   \"name\": \"نظام رصد الحالات\",\n   \"subs\": [\n    {\n     \"key\": \"dash\",\n     \"name\": \"لوحة المؤشرات\",\n     \"offPage\": true\n    },\n    {\n     \"key\": \"records\",\n     \"name\": \"السجلات\"\n    }\n   ]\n  },\n"
   },
   "pages.kpi.refs.mid": {
    "order": 30,
