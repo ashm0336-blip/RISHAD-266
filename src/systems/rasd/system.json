@@ -27,7 +27,8 @@
   "tests/rasd_logic.test.mjs",
   "tests/rasd_server.test.mjs",
   "tests/rasd_import.test.mjs",
-  "tests/rasd_fx.mjs"
+  "tests/rasd_fx.mjs",
+  "tests/browser/rasd_page.test.mjs"
  ],
  "derived": [
   "src/pages/Rasd.dc.html"
