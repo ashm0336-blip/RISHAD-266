@@ -82,6 +82,7 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     await node('TEST_ONLY_A'); await card();
     await p.fill(NODE + ' input.adm-q', 'TEST_ONLY_لا_أحد'); await until(async () => (await rows(NODE)).length === 0, 'the search');
     assert.match(await p.locator(NODE).innerText(), /لا حسابات تطابق البحث/, 'search narrows the scope');
+    await p.fill(NODE + ' input.adm-q', ''); await until(async () => (await rows(NODE)).length === 1, 'the search cleared');   /* the search is kept per unit: clear it before coming back */
     /* the search belongs to one node page: opening another node starts unfiltered (independent review, V7 P2) */
     await node('TEST_ONLY_B'); await card(); await until(async () => (await rows(NODE)).length > 0, 'the unfiltered scope').catch(() => {});
     assert.equal(await p.inputValue(NODE + ' input.adm-q'), '', 'another node: the search is empty');
@@ -91,14 +92,13 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     await go('#/sysadmin/users', ALL + ' .adm-tr.g-us .adm-rmb');
     const cMgr = await menu(ALL, 'TEST_ONLY مدير أ'); await p.keyboard.press('Escape');
     const cEmp = await menu(ALL, 'TEST_ONLY موظف أ'); await p.keyboard.press('Escape');
+    /* V7 · د6: the legacy account is not an admin of the unit — its row and menu are in «مراقبة الحسابات» */
+    assert.deepEqual(await menu(ALL, 'TEST_ONLY حساب إدارة أ'), ['تجميد الحساب — غير متاح', 'إعادة تعيين كلمة المرور'], 'legacy account: what the server refuses is marked');
+    await p.keyboard.press('Escape');
     await node('TEST_ONLY_A'); await card();
     const nMgr = await menu(NODE, 'TEST_ONLY مدير أ'); await p.keyboard.press('Escape');
     assert.deepEqual(cMgr, MGR); assert.deepEqual(nMgr, MGR, 'manager: the same menu in the node tab');
     assert.deepEqual(cEmp, EMP, 'employee: the same menu, in «مراقبة الحسابات» (V7 · د6: not an admin of the unit)');
-    await go('#/sysadmin/users', ALL + ' .adm-tr.g-us .adm-rmb');
-    assert.deepEqual(await menu(ALL, 'TEST_ONLY حساب إدارة أ'), ['تجميد الحساب — غير متاح', 'إعادة تعيين كلمة المرور'], 'legacy account: what the server refuses is marked');
-    await p.keyboard.press('Escape');
-    await node('TEST_ONLY_A'); await card();
 
     /* node tab: the dialogs open in place */
     /* V7 · د5-هـ (44): نافذةُ صلاحيات الموظف حُذفت — «تعديل الصلاحيات» يفتح قسم «الأشخاص» في تبويب «الصلاحيات» لوحدة الحساب (مجموعة v2) */
