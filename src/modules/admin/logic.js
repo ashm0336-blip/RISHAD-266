@@ -5492,8 +5492,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
      «النسخة الاحتياطية» أولاً ويُكتب #/admin/backup في العنوان ثم يُبدَّل. التحميلُ وحده بعد الرسم: adGo · وسجلُّ الحركة (audLoad) مرةً
      حين يُطلب أو حين يكون أولَ ما يُعرض ولم يُحمَّل بعد (تبويبٌ مزروعٌ من حالة العرض). i: النمط (dept|site) · n: مدير النظام في نمط المنصة
      · p: تبويباتُ مدير النظام · g: تبويباتُ الإعدادات المتاحة. يُعيد {l: تبويبَ مدير النظام المطلوب, h: تبويبَ الإعدادات المعروض} */
+  /* V7 · د5-ح: هل حُسمت صلاحياتُ الجلسة؟ (مديرُ المنصة · أو وصلت مفاتيحُ الخادم — 334 ready) */
+  _dPermReady() {
+    try {
+      return !KIVO.BassamPerm || !KIVO.BassamPerm.ready || !!KIVO.BassamPerm.ready();
+    } catch (e) {
+      return !0;
+    }
+  }
   _admTabsNow(i, n, p, g) {
-    const e = this.state;
+    const e = this.state,
+      rdy = "dept" !== i || this._dPermReady();
     let l = e.admTab,
       dq = null;
     try {
@@ -5517,14 +5526,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
     } catch(t) { /* لا يمنع العرض — يُتجاوز بصمت */ }
     try {
-      "dept" === i && KIVO.__ADMIN_OPEN_DTAB && ((dq = KIVO.__ADMIN_OPEN_DTAB), (KIVO.__ADMIN_OPEN_DTAB = null));
+      /* V7 · د5-ح (قرار المالك): التبويبُ المطلوب في العنوان يُحفظ حتى تُحسم الصلاحية — قبلها لا يُرسم تبويب (حالةُ تحميل) */
+      "dept" === i && rdy && KIVO.__ADMIN_OPEN_DTAB && ((dq = KIVO.__ADMIN_OPEN_DTAB), (KIVO.__ADMIN_OPEN_DTAB = null));
       /* V7 · د5-هـ (44 · المدير): #/admin/perm/<systems|roles|people|log> يفتح «الصلاحيات» على قسمه (د5-ح: و«الأنظمة» قراءةً) */
       const psub = "perm" === dq ? (/^#\/admin\/perm\/(systems|roles|people|log)$/.exec(String(location.hash || "")) || [])[1] : "";
       psub && (this.state = { ...this.state, p44: { ...(this.state.p44 || {}), sub: psub } });
     } catch(t) { /* لا يمنع العرض — يُتجاوز بصمت */ }
-    const dt = dq && g.includes(dq) ? dq : e.deptTab,
-      h = g.includes(dt) ? dt : g[0] || "backup";
-    dt !== e.deptTab && (this.state = { ...this.state, deptTab: dt });
+    /* V7 · د5-ح: تبويبٌ مطلوبٌ غيرُ مسموح ⇒ أولُ تبويبٍ مسموح (والعنوانُ يُصحَّح في renderVals) · لا تبويبَ مسموحاً ⇒ "" (رسالةٌ لا صفحةٌ فارغة) ·
+       قبل حسم الصلاحية ⇒ "" (لا يُرسم تبويبٌ ثم يختفي) — كان الاحتياطُ «backup» يُرسم بلا صلاحية */
+    const dt = dq ? (g.includes(dq) ? dq : g[0] || "") : e.deptTab,
+      h = "dept" === i && !rdy ? "" : g.includes(dt) ? dt : g[0] || "";
+    "dept" === i && rdy && dt !== e.deptTab && (this.state = { ...this.state, deptTab: dt });
     try {
       const first = !this.__bsAudBoot,
         A = this.state.aud;
@@ -5569,8 +5581,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           av = this.adVals();
         const ps = "plat" === d ? (this.PL_KEYS().includes(this.state.plTab) ? this.state.plTab : "id") : null,
           pv = n && "plat" === d ? this.plVals() : {};
+        const dRdy = "dept" !== i || this._dPermReady();   /* V7 · د5-ح */
         try {
-          "dept" === i ? this._hashTab("admin", "perm" === h ? "perm/" + this._p44SubNow() : h) : n && this._hashTab("sysadmin", ps ? "plat/" + ps : "depts" === d ? this._orgSeg() : d);
+          "dept" === i
+            ? dRdy && (h ? this._hashTab("admin", "perm" === h ? "perm/" + this._p44SubNow() : h) : /^#\/admin\/./.test(String(location.hash || "")) && history.replaceState && history.replaceState(null, "", location.pathname + location.search + "#/admin"))
+            : n && this._hashTab("sysadmin", ps ? "plat/" + ps : "depts" === d ? this._orgSeg() : d);
         } catch (t) {}
         /* CORE-02 S7: ما تعرضه الصفحة يُنشر لشريط «مركز إدارة رشاد» (التوافرُ قاعدةُ p هنا وحدها) — بعد كتابة العنوان */
         try {
@@ -5613,7 +5628,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ovStoreTog: () => this.setState({ adStoreOpen: !this.state.adStoreOpen }),
           admSiteBackup: n && "backup" === d,
           showDeptBk: "dept" === i && "backup" === h,
-          dTabBarShow: "dept" === i && g.length > 1,
+          dTabBarShow: "dept" === i && dRdy && g.length > 1,
+          /* V7 · د5-ح: قبل حسم الصلاحية حالةُ تحميل (مكوّنُ حالات الصفحة) — ولا تبويبَ مسموحاً ⇒ رسالةٌ واضحة */
+          dLoadOn: "dept" === i && !dRdy,
+          dStates: (el) => KIVO.PageStates && KIVO.PageStates.host(el, { state: "loading" }),
+          dNoneOn: "dept" === i && dRdy && !g.length,
           dTabGoBackup: () => this.setState({ deptTab: "backup" }),
           dTabGoLog: () =>
             this.setState({ deptTab: "oplog" }, () => {

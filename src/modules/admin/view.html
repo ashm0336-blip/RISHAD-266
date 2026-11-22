@@ -982,6 +982,9 @@
 </div>
 </sc-if>
 
+<!-- V7 · د5-ح: «الإعدادات» قبل حسم الصلاحية — لا تبويبَ يُرسم ثم يختفي؛ ولا تبويبَ مسموحاً ⇒ رسالة -->
+<sc-if value="{{dLoadOn}}" hint-placeholder-val="{{ false }}"><div ref="{{dStates}}" data-d-state="loading"></div></sc-if>
+<sc-if value="{{dNoneOn}}" hint-placeholder-val="{{ false }}"><div class="bs-card adm-none" role="status" data-d-state="none">لا إعدادات متاحة لك في هذه الإدارة — يمنحها مدير المنصة أو مدير الإدارة.</div></sc-if>
 <sc-if value="{{dTabBarShow}}" hint-placeholder-val="{{ false }}">
 <div class="adm-tabbar adm-tabbar--d"><div class="bs-hbar bs-tabstrip adm-tabs" role="tablist" aria-label="إعدادات الإدارة">
   <sc-if value="{{dTabBkOn}}" hint-placeholder-val="{{ true }}"><button type="button" role="tab" class="adm-tab" aria-selected="{{showDeptBk}}" onClick="{{dTabGoBackup}}"><div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-53b60cd3"></svg></div><span>النسخة الاحتياطية</span></button></sc-if>

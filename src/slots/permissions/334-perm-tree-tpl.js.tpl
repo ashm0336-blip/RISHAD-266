@@ -125,6 +125,8 @@
     empLens: empLens, setEmpLens: setEmpLens, nameOf: nameOf, ACT_NAMES: ACT_NAMES,
     dropEmpPerms: dropEmpPerms, pruneOrphanEmpPerms: pruneOrphanEmpPerms,
     myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk, menuFor: menuFor, mgrPerms: mgrPerms,
+    /* V7 · د5-ح: هل حُسمت صلاحياتُ الجلسة؟ — مديرُ المنصة دائماً · وغيرُه حين تصل مفاتيحُ الخادم (__BS_AUTHZ) فلا تُرسم صفحةٌ قبل قرارها */
+    ready: function(){ try { return !!(isSuper() || (I.azZ && I.azZ())); } catch (e) { return true; } },
     key: azKey, authz: function(){ return azZ(); },
     p24: { R: p24R, ix: p24Ix, ceil: p24Ceil, leafOn: p24LeafOn, keyOn: p24KeyOn, lensHosted: p24LensHosted, translate: p24Translate, grantOf: p24GrantOf, grantable: p24Grantable, assignable: p24Assignable, effective: p24Effective, delta: p24Delta, cover: p24Cover, setGrant: p24SetGrant, apply: p24Apply, lensOf: p24LensOf, DERIVE: P24_DERIVE, primView: p24PrimView } };
 

@@ -591,3 +591,28 @@ test('V7 · د5-ح ⑥ creating a role is logged with its systems and their leve
   const rv = R.render(); rv.p44Review();
   assert.deepEqual(J(R.render().p44RevRows.map((r) => [r.what, r.to])), [['دور جديد · دور جديد', 'دور جديد'], ['دور جديد · المهام', 'مشاهدة فقط']]);
 });
+
+/* ── V7 · د5-ح (off2 · البند ٦): «الإعدادات» لا ترسم تبويباً قبل حسم الصلاحية · المطلوبُ غيرُ المسموح ⇒ أولُ مسموح · لا مسموحَ ⇒ رسالة ── */
+test('V7 · د5-ح (off2) ⑥ the settings tabs: nothing drawn before the permission is decided; a disallowed tab ⇒ the first allowed one; none ⇒ a message', () => {
+  const W = deptWorld(MGR);
+  let ready = false;
+  W.KIVO.BassamPerm.ready = () => ready;
+  W.KIVO.BassamPerm.subOn = (pk, sk) => pk === 'admin' && ['backup', 'oplog'].includes(sk);
+  W.KIVO.__ADMIN_OPEN_DTAB = 'shifts'; W.C.location.hash = '#/admin/shifts';
+  let v = W.render();
+  assert.equal(v.dLoadOn, true, 'a loading state'); assert.equal(typeof v.dStates, 'function', 'through the page-states component');
+  for (const k of ['showDeptBk', 'showDeptSf', 'showDeptAud', 'showDeptPerm', 'dTabBarShow']) assert.equal(v[k], false, 'no tab before the decision: ' + k);
+  assert.equal(W.KIVO.__ADMIN_OPEN_DTAB, 'shifts', 'the requested tab is kept until then');
+  assert.deepEqual(W.hashes, [], 'the address is not rewritten before the decision');
+  ready = true; v = W.render();
+  assert.equal(v.dLoadOn, false); assert.equal(v.showDeptSf, false, 'the disallowed «الورديات» is never drawn');
+  assert.equal(v.showDeptBk, true, 'the first allowed tab'); assert.equal(W.page.state.deptTab, 'backup');
+  assert.equal(W.hashes.at(-1), 'admin/backup', 'the address is corrected');
+  /* no allowed tab at all (a plain account with «الإعدادات» but no tab of it) ⇒ a clear message, not a blank page */
+  const E = deptWorld({ id: 'TEST_ONLY_u1', role: 'staff', deptId: DID, ekey: 'TEST_ONLY_e1' });
+  E.KIVO.BassamPerm.ready = () => true; E.KIVO.BassamPerm.subOn = () => false;
+  v = E.render();
+  assert.equal(v.dNoneOn, true); for (const k of ['showDeptBk', 'showDeptSf', 'showDeptAud', 'showDeptPerm']) assert.equal(v[k], false, k);
+  assert.match(view, /<sc-if value="\{\{dNoneOn\}\}"[^>]*><div class="bs-card adm-none" role="status" data-d-state="none">لا إعدادات متاحة لك/);
+  assert.match(view, /<sc-if value="\{\{dLoadOn\}\}"[^>]*><div ref="\{\{dStates\}\}"/);
+});

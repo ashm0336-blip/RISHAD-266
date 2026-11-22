@@ -27,9 +27,12 @@
 
   bus.provide('staff.shiftUsage@1', function (shift) {
     var out = { on: on(), records: 0, months: 0, locked: [] }, seen = {};
-    var locks = ops().get('bassam_staffing_locks_v1') || {};
-    if (out.on)
-      try {
+    /* V7 · د5-ح (السببُ الجذري لاختفاء «الإعدادات ← الورديات»): كانت أقفالُ الجدول تُقرأ قبل سؤال «هل الجدولُ مفعَّل؟» — وبإطفائه للإدارة
+       لا يقرأ الخادمُ مواردَه (سقفُ القراءة)، فرمت القراءةُ «operations-read-required» من داخل renderVals فصارت صفحةُ «الإعدادات» كلُّها فارغة.
+       الجدولُ المطفأ لا يُقرأ منه شيء: لا تسكين على الوردية */
+    if (!out.on) return out;
+    try {
+        var locks = ops().get('bassam_staffing_locks_v1') || {};
         var all = ops().get('bassam_staffing_v3') || {};
         Object.keys(all).forEach(function (month) {
           var bucket = all[month], hit = 0;
