@@ -37,6 +37,9 @@ test('pages.json without the display-only field is develop\'s pages.json; the fi
   /* V7 · د5-ح (القفل): ورقةُ admin/ptpls حُذفت من pages.json مع موردها — الترحيلُ perm44-roles يقرأ القوالبَ خاماً من D1 */
   assert.deepEqual(noTab, ['admin/import=true']);
   for (const p of M.pages) { delete p.shellTabs; for (const x of p.subs || []) delete x.noTab; }
+  /* V7 · د6 (walkfix ⑥ · قرار المالك ٥): عنوانٌ لكل تبويب في «الخطة التشغيلية» — tabAddr.planning يسجّله نظاما staff وplan (عنوانٌ لا ورقةُ صلاحية)؛
+     يثبت هنا مكانَه وقيمتَه ثم يُرفع فيطابق الباقي develop */
+  for (const [k, v] of Object.entries(M.tabAddr.planning || {})) assert.ok(['staff', 'plan'].includes(k) && v === 1, 'tabAddr.planning: ' + k); delete M.tabAddr.planning;
   delete M.$comment;   /* V7 · د5-ح: ترويسةُ «ملف مولَّد» (tools/systems.py) — تعليقٌ لا قيمة */
   /* V7 · د5-ح: تُعاد الورقةُ المحذوفة (admin/ptpls بعد shifts) فيطابق الباقي pages.json على develop بايتاً */
   M.pages.find((p) => p.key === 'admin').subs.splice(3, 0, { key: 'ptpls', name: 'قوالب الصلاحيات' });
