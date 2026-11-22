@@ -446,14 +446,14 @@
 </div>
 </sc-if>
 
+<!-- الحذف: ما يمنعه يُذكر سببُه هنا (القاعدةُ القائمة: الفارغةُ وحدها) — وما لا مانعَ له يُؤكَّد بحوار التأكيد الواحد (KIVO.bsConfirm) أو بجرد الخادم للإدارة -->
 <sc-if value="{{ogDelOn}}" hint-placeholder-val="{{ false }}">
 <div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
   <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogDelT" class="bs-dlg-box og-dlg" data-og-dlg="delete" onClick="{{ogKeep}}">
     <b class="t" id="ogDelT">{{ogDelTitle}}</b>
     <p class="m">تُحذف العقدة الفارغة وحدها: انقل ما تحتها واحذف حساب مديرها أولاً. لا تُمسّ بيانات أي إدارة.</p>
-    <sc-if value="{{ogDelWhy}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert" data-og="del-why">{{ogDelWhy}}</div></sc-if>
-    <sc-if value="{{ogDelOk}}" hint-placeholder-val="{{ true }}"><p class="m" data-og="del-msg">{{ogDelMsg}}</p></sc-if>
-    <div class="ft"><sc-if value="{{ogDelOk}}" hint-placeholder-val="{{ true }}"><button type="button" class="bs-btn bs-btn--danger" data-og-ok="delete" onClick="{{ogDelGo}}">حذف</button></sc-if><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">{{ogDelCancel}}</button></div>
+    <div class="og-err" role="alert" data-og="del-why">{{ogDelWhy}}</div>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{ogDlgClose}}">إغلاق</button></div>
   </div>
 </div>
 </sc-if>

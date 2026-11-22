@@ -72,14 +72,16 @@ test('الحدود: الإدارة ورقةٌ لا تُوضع تحت إدارة 
 
 test('الربط: ondrop في خريطة أحداث المحرّك · صفوفُ الشجرة قابلةٌ للسحب في القالب · الدرجاتُ في المنطق والنمط', () => {
   assert.match(rd('src/core/050-dc-runtime.js'), /ondrop: "onDrop"/, 'المحرّك يترجم ondrop');
-  const v = rd('src/modules/admin/view.html');
-  const rows = v.match(/class="tr-rw two \{\{d\.trDepCls\}\} \{\{d\.trSelCls\}\} \{\{d\.trDragCls\}\}" draggable="true" onDragStart="\{\{d\.trDragStart\}\}" onDragOver="\{\{d\.trDragOver\}\}" onDragLeave="\{\{d\.trDragLeave\}\}" onDrop="\{\{d\.trDrop\}\}" onDragEnd="\{\{d\.trDragEnd\}\}"/g) || [];
-  assert.equal(rows.length, 2, 'صفُّ العقدة وصفُّ الإدارة كلاهما قابلٌ للسحب');
-  assert.match(v, /class="tr-hint"/);
-  const l = rd('src/modules/admin/logic.js');
-  assert.match(l, /_trDragProps\(id, e\)/); assert.match(l, /pos = y < 0\.3 \* h \? "before" : y > 0\.7 \* h \? "after" : leaf \? \(y < h \/ 2 \? "before" : "after"\) : "inside"/, 'الثلثُ الأعلى قبل · الأسفل بعد · الوسطُ تحت (لا «تحت» لإدارة)');
+  /* V7 · د6: الشجرةُ صارت في صفحة «الإدارات والصلاحيات» (src/modules/org) — صفٌّ واحد لكل وحدة (كان صفّان: للعقدة وللإدارة)، والسحبُ والإفلات باقٍ بمناطقه الثلاث */
+  const v = rd('src/modules/org/view.html');
+  const rows = v.match(/class="og-rw \{\{r\.cls\}\}"[^>]* draggable="\{\{r\.drag\}\}" onDragStart="\{\{r\.trDragStart\}\}" onDragOver="\{\{r\.trDragOver\}\}" onDragLeave="\{\{r\.trDragLeave\}\}" onDrop="\{\{r\.trDrop\}\}" onDragEnd="\{\{r\.trDragEnd\}\}"/g) || [];
+  assert.equal(rows.length, 1, 'صفُّ الوحدة الواحد (عقدةً كانت أو إدارة) قابلٌ للسحب');
+  assert.match(v, /class="og-hint"/);
+  const l = rd('src/modules/org/logic.js');
+  assert.match(l, /_ogDragProps\(id\)/); assert.match(l, /pos = y < 0\.3 \* h \? "before" : y > 0\.7 \* h \? "after" : leaf \? \(y < h \/ 2 \? "before" : "after"\) : "inside"/, 'الثلثُ الأعلى قبل · الأسفل بعد · الوسطُ تحت (لا «تحت» لإدارة)');
   assert.match(l, /D\.moveNode\(s, id, pos\)/);
-  assert.match(l, /Object\.assign\(t, this\._trDragProps\(s\.id, e\)\)/, 'صفوفُ الإدارات'); assert.match(l, /Object\.assign\(o, p \? \{\} : this\._trDragProps\(s\.id, e\)\)/, 'صفوفُ العقد (لا دلوَ «بلا أب»)');
-  const c = rd('src/modules/admin/helmet.css');
-  ['.tr-rw.dragging', '.tr-rw.dz-before', '.tr-rw.dz-after', '.tr-rw.dz-inside', '.tr-hint'].forEach((k) => assert.ok(c.includes(k), k));
+  assert.match(l, /drag = struct && !inf\.root \? this\._ogDragProps\(b\.id\) : \{\}/, 'كلُّ صفٍّ عدا «المنصة كلها» — ولمدير المنصة في المركز وحده');
+  assert.doesNotMatch(rd('src/modules/admin/logic.js') + rd('src/modules/admin/view.html'), /_trDragProps|tr-rw|trDragStart/, 'لا نسخةَ ثانية في صفحة الإعدادات');
+  const c = rd('src/modules/org/helmet.css');
+  ['.og-rw.dragging', '.og-rw.dz-before', '.og-rw.dz-after', '.og-rw.dz-inside', '.og-hint'].forEach((k) => assert.ok(c.includes(k), k));
 });

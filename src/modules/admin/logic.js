@@ -3035,7 +3035,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   /* RISHAD-266: تبويبُ «سقف النطاق» ونطاقُ بيانات الموظفين (سجلُّ النطاق القديم لكل إدارة) أُزيلا مع تقاعد سقف النطاق القديم —
      الوصولُ يحدّده سقفُ الوحدة (سقف الصفحات) وصلاحياتُ الموظف. يبقى هنا تحميلُ مرجعيّات الإدارة (الخطة · الموظفون) الذي يستعمله
-     محرّرُ سقف الوحدة (sysPick) وتبويبُ الحسابات. */
+     بطاقةُ حسابات الوحدة (V7 · د6: موضعُ «المسؤولون» في شاشة «الإدارات والصلاحيات» — اختيارُ الوحدة من عنوانها). */
   async scLoadReferences(d, retry) {
     const registry = KIVO.BassamDepts;
     if (typeof d !== "string" || !d || !registry || !registry.treeFlat().some(dept => dept.id === d)) return false;

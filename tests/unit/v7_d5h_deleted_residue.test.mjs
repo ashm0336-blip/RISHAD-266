@@ -107,7 +107,8 @@ test('③ مسارُ القرار الحيّ في الوضع القديم محذ
   const C = code(rd(path.join(SRC, 'permissions', '331-perm-model.js')));
   assert.doesNotMatch(C, /if \(!azZ\(\) \|\| isSuper\(\)\) return all;/); assert.doesNotMatch(C, /_lensOn0/);
   assert.match(C, /if \(isSuper\(\)\) return all;\s*if \(!azZ\(\)\) return \{\};\s*var H = azHeld\(curDept\(\)\); if \(H === null\) return \{\};/);
-  assert.doesNotMatch(code(rd(path.join(SRC, 'modules', 'admin', 'logic-perm44.js'))), /"enforce" === KIVO\.__BS_AUTHZ\.mode/, '«الصلاحيات» للمدير لا تتوقف على وضعٍ قديم');
+  /* V7 · د6: logic-perm44.js نُقل كما هو إلى صفحة «الإدارات والصلاحيات» (src/modules/org) — وقاعدةُ من يرى التبويب في صفحة الإعدادات (_permUnit) */
+  assert.doesNotMatch(code(rd(path.join(SRC, 'modules', 'org', 'logic-perm44.js'))) + code(rd(path.join(SRC, 'modules', 'org', 'logic.js'))) + code(rd(path.join(SRC, 'modules', 'admin', 'logic.js'))), /"enforce" === KIVO\.__BS_AUTHZ\.mode/, '«الصلاحيات» للمدير لا تتوقف على وضعٍ قديم');
 });
 
 test('④ تقريرُ السجلّ القديم (permv2) — لا مسارَ ولا عقدَ', () => {

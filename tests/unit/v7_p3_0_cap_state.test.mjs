@@ -17,7 +17,7 @@ import { needs } from './harness.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
-const M = rd('src/permissions/331-perm-model.js'), T = rd('src/permissions/334-perm-tree-tpl.js'), L = rd('src/modules/admin/logic.js'), V = rd('src/modules/admin/view.html');
+const M = rd('src/permissions/331-perm-model.js'), T = rd('src/permissions/334-perm-tree-tpl.js'), L = rd('src/modules/org/logic.js'), V = rd('src/modules/org/view.html'), LA = rd('src/modules/admin/logic.js');   /* V7 · د6: الشجرةُ وقائمةُ التهيئة و_capStateTxt في صفحة «الإدارات والصلاحيات» */
 function fnSrc(src, name, lead = '\n  function ') {
   const i = src.indexOf(lead + name + '('); assert.ok(i >= 0, name + ' exists');
   let j = src.indexOf('{', i), d = 0;
@@ -51,10 +51,14 @@ test('capState: open · inherit · own · independent · empty — from the exis
 test('the admin center shows the state from that one source in the tree and the overview checklist (V7 · د5-هـ 44: the ceiling editor was deleted)', () => {
   const f = fnSrc(L, '_capStateTxt', '\n  ');
   assert.match(f, /P\.capState\(o\)/, 'reads capState');
-  assert.match(L, /step\("الصلاحيات", capSt\.txt, capSt\.ok, "cap"\)/, 'checklist: its text and ✓/! from the source (open is not ✓) — V7 · د5-هـ (44 · المدير): the step is named after the tab it opens (was «سقف الصفحات»)');
-  assert.match(L, /capSt = this\._capStateTxt\(o\),/);
+  /* V7 · د6: الخطوةُ اسمُها «الأنظمة» (التبويبُ الذي تفتحه)؛ علامتُها ✓/! من المصدر نفسه (المفتوحُ والفارغُ ليسا ✓) ونصُّها نصُّه حين لا تكتمل */
+  assert.match(L, /const cs = this\._capStateTxt\(c\.unit\),/);
+  assert.match(L, /capOk = !!cs\.kind && cs\.ok,/, 'checklist: ✓/! from the source (open is not ✓)');
+  assert.match(L, /step\("systems", "الأنظمة", capTxt, capOk, "systems"\)/, 'the step opens the «الأنظمة» tab');
+  assert.doesNotMatch(LA, /_capStateTxt|_capOwnRecEmpty/, 'one source: nothing left in the settings page');
   assert.doesNotMatch(L, /"موروثٌ من الأعلى"/, 'the P1 text that called every unit without a record «inherited» is gone');
-  assert.match(L, /trCapTxt: this\._capStateTxt\(r\.id\)\.short,/, 'tree');
+  /* V7 · د6: عمودُ «الأنظمة» في الشجرة (المفعّل/الكل) وتلميحُه نصُّ الحالة القصير نفسُه (كان سطراً تحت اسم الإدارة) */
+  assert.match(L, /"الأنظمة المفعّلة من الكل" \+ \(this\._capStateTxt\(b\.id\)\.short \? " — " \+ this\._capStateTxt\(b\.id\)\.short : ""\)/, 'tree'); assert.match(V, /data-og-col="systems" dir="ltr" title="\{\{r\.sysTip\}\}"/);
   assert.doesNotMatch(L, /: "السقف مفتوح";/, 'the tree no longer calls a limited unit «open»');
   assert.doesNotMatch(L, /subLine:/, 'the unrendered tree subtitle (a second ceiling count) is gone');
   /* V7 · د5-هـ (44): رأسُ محرّر السقف وتنبيهُه حُذفا مع «سقف الصفحات» — والحالةُ نفسُها باقيةٌ في الشجرة وقائمة التهيئة */

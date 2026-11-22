@@ -85,7 +85,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       u = this._ogTry(() => A.user(), null) || {},
       act = this._ogTry(() => D.active(), "") || "",
       top = "super" === u.role ? act : "gm" === u.role ? u.gid || "" : u.deptId || act,
-      ok = !!top && this._ogKnown(top) && !!this._ogTry(() => KIVO.Perm44.mgrOf(u, top), !1),
+      /* المديرُ العام مديرُ عقدته نفسِها (حسابُه مربوطٌ بها gid) — وmgrOf تجيب عن الوحدات تحتها */
+      ok = !!top && this._ogKnown(top) && ("gm" === u.role ? u.gid === top : !!this._ogTry(() => KIVO.Perm44.mgrOf(u, top), !1)),
       ids = {};
     ok && ((ids[top] = 1), this._ogTry(() => D.descendantsOf(top) || [], []).forEach((x) => (ids[x] = 1)));
     return { mode: "dept", top: ok ? top : "", has: (id) => !!ids[id], act: act };
@@ -325,7 +326,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
     /* البحثُ والفلاترُ: الصفُّ المطابق وأصولُه (فلا يظهر فرعٌ بلا سياقه) */
     const hit = rows.map((r) => (!qd || dig(r.inf.name).indexOf(qd) >= 0) && (!flt || (!r.inf.root && ("mgr" === flt ? r.inf.mgrHas : "nomgr" === flt ? !r.inf.mgrHas : r.empty))));
-    const keep = hit.slice();
+    const keep = hit.map((h, i) => h || rows[i].inf.root);   /* صف «المنصة كلها» ثابتٌ أعلى الشجرة */
     if (forced)
       for (let i = 0; i < rows.length; i++) {
         if (keep[i]) continue;
@@ -374,8 +375,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         mgr: inf.mgrHas ? "له مدير" : "بلا مدير",
         people: String(r.people),
         peopleTip: inf.root ? "كل حسابات المنصة" : inf.isUnit ? "أشخاص الوحدة" : "أشخاص الفرع",
-        sys: r.sys.on + "/" + r.sys.all,
-        sysTip: inf.root ? "الأنظمة المفعّلة على المنصة من الكل" : "الأنظمة المفعّلة من الكل" + (this._capStateTxt(b.id).short ? " — " + this._capStateTxt(b.id).short : ""),
+        sys: site ? r.sys.on + "/" + r.sys.all : String(r.sys.on),   /* ب12: المدير يرى المفعّلَ وحده — لا عددَ ما أُطفئ له */
+        sysTip: !site ? "الأنظمة المفعّلة لهذه الوحدة" : inf.root ? "الأنظمة المفعّلة على المنصة من الكل" : "الأنظمة المفعّلة من الكل" + (this._capStateTxt(b.id).short ? " — " + this._capStateTxt(b.id).short : ""),
         cur: inf.isUnit && b.id === act,
         chkOn: struct && !inf.root,
         chk: chk ? "true" : "false",
@@ -611,20 +612,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!inf.isSec && this._ogTry(() => D.list().length, 2) <= 1) return "لا تُحذف آخر إدارة في المنصة";
     return "";
   }
-  /* منقولٌ من صفحة الوحدة القديمة (dhDel): العقدةُ الفارغة تُحذف بتأكيد هذه النافذة · الإدارةُ والقسم بجرد الخادم وتأكيده (الصفحةُ المضيفة deptDel) */
-  _ogDelGo(inf) {
-    const D = KIVO.BassamDepts;
-    if (this._ogDelWhy(inf)) return;
-    if (inf.isNode) {
-      const s = D.nodeDel(inf.id);
-      if (!s || !s.ok) return void this._ogDlg({ msg: (s && s.err) || "تعذّر الحذف" });
-      this.setState({ ogDlg: null });
-      this.bsAck("حُذفت العقدة", "ok");
-      return void this.go(inf.node.pid && this._ogKnown(inf.node.pid) ? inf.node.pid : this._ogR().ROOT, "overview", { force: !0 });
+  /* منقولٌ من صفحة الوحدة القديمة (dhDel) بقاعدته: ما يمنع الحذف يُعرض سببُه في النافذة ولا يُسأل شيء · العقدةُ الفارغة تُؤكَّد بالحوار الواحد للأفعال
+     الحساسة (KIVO.bsConfirm — CORE-02) ثم nodeDel · الإدارةُ والقسم بجرد الخادم وتأكيده (الصفحةُ المضيفة deptDel — لا تأكيدَ مرتين) */
+  _ogDelAsk(inf) {
+    const D = KIVO.BassamDepts,
+      why = this._ogDelWhy(inf);
+    if (why) return void this.setState({ ogDlg: { k: "del", id: inf.id, msg: why } });
+    if (!inf.isNode) {
+      const h = this._ogHost();
+      return void (h.deptDel ? h.deptDel(inf.node) : this.bsToast("حذف الإدارة غير متاح هنا", "warn"));
     }
-    this.setState({ ogDlg: null });
-    const h = this._ogHost();
-    h.deptDel ? h.deptDel(inf.node) : this.bsToast("حذف الإدارة غير متاح هنا", "warn");
+    return Promise.resolve(KIVO.bsConfirm ? KIVO.bsConfirm({ title: "حذف «" + inf.name + "»", msg: "تُحذف «" + inf.name + "» من الهيكل. لا تُمسّ بيانات أي إدارة.", ok: "حذف", danger: !0 }) : !1).then((y) => {
+      if (!y) return;
+      const s = D.nodeDel(inf.id);
+      if (!s || !s.ok) return void this.bsToast((s && s.err) || "تعذّر الحذف");
+      this.bsAck("حُذفت العقدة", "ok");
+      this.go(inf.node.pid && this._ogKnown(inf.node.pid) ? inf.node.pid : this._ogR().ROOT, "overview", { force: !0 });
+    });
   }
   /* ═══════════════════════════════ نقاطُ التركيب: دالةٌ واحدة لكل تبويب ═══════════════════════════════
      c = { unit, tab, mode, inf, isRoot, isNode, node, mgrV, sup, struct }. كلٌّ تعيد قيمَ قسمها في view.html (data-org-tab) وحده. */
@@ -640,7 +644,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       sum = [
         { k: "admins", t: "المسؤول", v: mg.length ? mg[0].name || mg[0].un || "—" : "بلا مدير", s: inf.root ? KIVO.BassamCount(mg.length, "حساب") + " لمدير المنصة" : mg.length > 1 ? "و" + KIVO.BassamCount(mg.length - 1, "مدير") + " غيره" : mg.length ? "مدير الوحدة" : "لم يُعيَّن بعد" },
         { k: "people", t: "الأشخاص", v: String(people), s: inf.root ? "كل حسابات المنصة" : inf.isUnit ? "في هذه الوحدة" : "في العقدة وفرعها" },
-        { k: "systems", t: "الأنظمة المفعّلة", v: sys.on + " من " + sys.all, s: inf.root ? "على المنصة كلها" : "بعد الوراثة ممّا فوقها" },
+        { k: "systems", t: "الأنظمة المفعّلة", v: "dept" === c.mode ? String(sys.on) : sys.on + " من " + sys.all, s: inf.root ? "على المنصة كلها" : "dept" === c.mode ? "مفعّلة لوحدتك" : "بعد الوراثة ممّا فوقها" },
       ].map((x) => ({ ...x, go: this._ogGo(c.unit, c.tabs.indexOf(x.k) !== -1 ? x.k : "overview") }));
     const v = {
       ogOnOverview: !0,
@@ -659,18 +663,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ogAddUnder: () => this._ogAddOpen(c.unit),
       ogRenameOpen: () => (this.setState({ ogDlg: { k: "rename", id: c.unit, name: inf.name, msg: "" } }), this._ogFocus("ogRenName")),
       ogMoveOpen: () => this.setState({ ogDlg: { k: "move", id: c.unit, pid: (inf.node && inf.node.pid) || "", msg: "" } }),
-      ogDelOpen: () => {
-        /* الإدارةُ والقسم بلا مانع: جردُ الخادم وتأكيدُه هو النافذة (لا تأكيدَ مرتين) · وما سواه نافذةُ التأكيد أو سببُ المنع */
-        if (!inf.isNode && !this._ogDelWhy(inf)) return void this._ogDelGo(inf);
-        this.setState({ ogDlg: { k: "del", id: c.unit, msg: "" } });
-      },
+      ogDelOpen: () => this._ogDelAsk(inf),
       ogStepsOn: !inf.root,
     };
     if (inf.root) return v;
     /* قائمةُ التهيئة: خمسُ خطواتٍ حقيقية — كلٌّ بحالته من البيانات الفعلية، والضغطُ يفتح تبويبَ الخطوة */
     const cs = this._capStateTxt(c.unit),   /* V7 P3-0: المصدرُ الواحد — «مفتوح — لم يُضبط» تنبيهٌ لا علامةُ تمام */
       capOk = !!cs.kind && cs.ok,
-      capTxt = cs.short || sys.on + " من " + sys.all + " مفعّلة",
+      capTxt = "dept" === c.mode ? "المفعّل: " + sys.on : capOk || !cs.short ? sys.on + " من " + sys.all + " مفعّلة" : cs.short,
       units = inf.isUnit ? [c.unit] : this._ogTry(() => D.deptsUnder(c.unit) || [], []),
       withRoles = units.filter((u) => {
         const r = this._ogTry(() => this._p44E().rolesOf(u), null);
@@ -874,17 +874,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ogMovePath: "__new" === dlg.pid ? ["إدارة عامة جديدة", dInf.name].join(" ← ") : this._ogPathTxt(dlg.pid || "", dInf.name),
         ogMoveGo: () => this._ogMoveGo(dInf),
       });
-    if (v.ogDelOn) {
-      const why = this._ogDelWhy(dInf);
+    if (v.ogDelOn)
       Object.assign(v, {
         ogDelTitle: (dInf.isNode ? "حذف العقدة" : dInf.isSec ? "حذف القسم" : "حذف الإدارة") + " «" + dInf.name + "»",
-        ogDelWhy: why || dlg.msg || "",
-        ogDelOk: !why,
-        ogDelMsg: "تُحذف «" + dInf.name + "» من الهيكل. لا تُمسّ بيانات أي إدارة.",
-        ogDelCancel: why ? "إغلاق" : "إلغاء",
-        ogDelGo: () => this._ogDelGo(dInf),
+        ogDelWhy: dlg.msg || "",
       });
-    }
     return v;
   }
 }

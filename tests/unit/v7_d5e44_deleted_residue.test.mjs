@@ -76,5 +76,6 @@ test('the readers read roles: KIVO.Perm44 (rolesOf → {roles} · roleOf · assi
   assert.match(PF, /\(P4\.rolesOf\(e\.deptId\) \|\| \{\}\)\.roles/); assert.match(PF, /P\.isSupRole\(t\)/); assert.match(PF, /P\.roleOf\(r\.ekey, e\.deptId\)/);
   assert.match(T334, /KIVO\.BassamSup = \{ roleOf: roleOf, isSupRole: isSupRole, isSup: isSup, supName: supName \}/);
   assert.doesNotMatch(T334, /رئيس\|نائب/, 'no runtime name rule for the supervisory crew');
-  assert.match(AD, /const h = "#\/sysadmin\/org\/" \+ encodeURIComponent\(u\) \+ "\/perm\/people";\s*this\.__orgPend = h;\s*location\.hash = h;/, '«تعديل الصلاحيات» → the people section of the «الصلاحيات» tab');
+  /* V7 · د6: «الأشخاص» تبويبُ الوحدة في شاشة «الإدارات والصلاحيات» (#/sysadmin/org/<unit>/people) — عبر نقطة تنقّلها */
+  assert.match(AD, /if \("perm" === what\) return void \(u \? this\._orgGoto\(u, "people"\) : this\._ovGo\("depts"\)\);/, '«تعديل الصلاحيات» → the unit\'s «الأشخاص» tab');
 });
