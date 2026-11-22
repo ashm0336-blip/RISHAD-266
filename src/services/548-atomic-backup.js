@@ -55,6 +55,10 @@
       'import-incomplete': 'لم تكتمل أجزاء النسخة على الخادم؛ لم يتغيّر شيء — أعد المحاولة من البداية',
       'import-part': 'رفض الخادم جزءًا من النسخة (محتواه غير صالح)؛ لم يتغيّر شيء',
       'import-shape': 'بيان النسخة غير صالح (حجم صورة أو معرّفها' + (data && data.details && data.details.k ? ': ' + data.details.k : '') + ')؛ لم يتغيّر شيء',
+      'import-too-heavy': 'النسخة أكبر مما يُعالَج بأمان في طلب واحد؛ لم يتغيّر شيء ولم يُرسل منها شيء. ' +
+        (data && data.details && data.details.kind === 'full'
+          ? 'النسخة الشاملة بهذا الحجم لا تُستورد دفعةً واحدة: استورد نسخ الإدارات واحدةً واحدة.'
+          : 'اختر «استبدال كامل» بحساب مدير المنصة (تُرسل البيانات الكبيرة على دفعات)، أو امسح بيانات الإدارة الهدف أولاً ثم استورد.'),
       'import-too-large': 'النسخة أكبر من سقف الاستيراد (256MB)؛ لم يتغيّر شيء',
       'restore-epoch-changed': 'جرت استعادة أخرى أثناء الاستيراد؛ لم يتغيّر شيء — أعد المحاولة',
       'restore-reason': 'سبب الاستيراد مطلوب (300 حرف على الأكثر)؛ لم يتغيّر شيء',
@@ -382,7 +386,7 @@
       if (old) Object.keys(file.data).forEach(function (k) { legacyKeys[k] = resources[k] = file.data[k] === null ? 1 : 0; });
       else if (record(file.domains) && Array.isArray(file.domains.operations)) file.domains.operations.forEach(function (d) { if (record(d) && typeof d.resource === 'string') resources[d.resource] = 0; });
       if (scope.kind === 'dept' && Object.keys(resources).length) {
-        var asked = await post({ op: 'begin', dry: true, requestId: id, scope: scope, resources: resources }, stamp);
+        var asked = await post({ op: 'begin', dry: true, requestId: id, scope: scope, resources: resources, mode: opt.mode }, stamp);
         if (!asked.ok) return asked;
         if (record(asked.data.slice) && integer(asked.data.sliceMin)) { spec = asked.data.slice; min = asked.data.sliceMin; }
       }
@@ -395,7 +399,7 @@
         cut(v, 4000000).forEach(function (t, n) { imageOf[list.length] = i + 1; list.push({ k: k, s: n, t: t }); });
       });
       live.add(id);   /* قبل الطلب: صفحةٌ تُغلق وردُّ البدء لم يصل تطلب حذفَ مؤقتها كذلك */
-      var began = await post({ op: 'begin', requestId: id, scope: scope, n: parts.text.length, f: texts.length, images: sizes, slices: parts.slices, resources: resources }, stamp);
+      var began = await post({ op: 'begin', requestId: id, scope: scope, n: parts.text.length, f: texts.length, images: sizes, slices: parts.slices, resources: resources, keys: legacyKeys, mode: opt.mode }, stamp);
       if (!began.ok) { if (!began.uncertain) live.delete(id); return began; }
       job = { id: id, parts: list, next: 0, images: parts.ids.length, imageOf: imageOf, mode: opt.mode, reason: reason, legacy: !file.manifest, slices: parts.list.length, sliced: 0 };
     } else if (job.mode !== opt.mode) return fail(failure('invalid'));

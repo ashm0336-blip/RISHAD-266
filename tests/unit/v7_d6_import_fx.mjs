@@ -155,7 +155,7 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
       if (P.parts.length) return;
       const rest = { ...rest0, data: { ...(rest0.data || {}) } }, sl = [];
       if (slice !== false && keys) {
-        const dry = await post({ op: 'begin', dry: true, scope, keys });
+        const dry = await post({ op: 'begin', dry: true, scope, keys, mode });
         const spec = (dry.j && dry.j.slice) || {}, min = typeof slice === 'number' ? slice : (dry.j && dry.j.sliceMin) || Infinity;
         for (const name of Object.keys(spec)) {
           const raw = rest.data[name];
@@ -169,7 +169,7 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
       P.text = JSON.stringify(rest); P.fparts = cut(P.text, SEG.f); P.sliceCount = sl.length;
       P.parts = P.fparts.map((t, s) => ({ k: '', s, t })).concat(sl, Object.entries(idbImages).flatMap(([k, v]) => cut(v, SEG.i).map((t, s) => ({ k, s, t }))));
     },
-    begin: async (extra = {}) => { await P.build(); return post({ op: 'begin', scope, n: P.text.length, f: P.fparts.length, images: Object.fromEntries(Object.entries(idbImages).map(([k, v]) => [k, v.length])), slices: P.slices, ...(keys ? { keys } : {}), ...extra }); },
+    begin: async (extra = {}) => { await P.build(); return post({ op: 'begin', scope, n: P.text.length, f: P.fparts.length, images: Object.fromEntries(Object.entries(idbImages).map(([k, v]) => [k, v.length])), slices: P.slices, mode, ...(keys ? { keys } : {}), ...extra }); },
     part: (i) => post({ op: 'part', items: [P.parts[i]] }),
     sliceStep: (i) => post({ phase: 'slice', i, reason }),
     inventory: async () => { const q = new URLSearchParams({ kind: scope.kind, departments: '[]' }); if (scope.kind === 'dept') q.set('dept', scope.departmentId); return (await T.call('/api/backup/restore?' + q, { ck: who.ck })).j; },

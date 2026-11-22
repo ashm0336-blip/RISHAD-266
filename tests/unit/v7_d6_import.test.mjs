@@ -310,13 +310,18 @@ test('(٩) دفعاتُ المفتاح الكبير: بالترتيب · الم�
     const fail = await P.commit(ins.j.inspection.base); T.DB.failIf = null;
     assert.ok(fail.status >= 500); assert.deepEqual(changed(snapshot(T.DB), base), [], 'الدفعةُ الذرّية تراجعت كلُّها'); assert.equal(T.DB.q('SELECT COUNT(*) n FROM ops_round_day')[0].n, 0);
     assert.equal((await P.commit(ins.j.inspection.base)).status, 200); await compare(T, T.su, file); assert.equal(staged(T.DB), 0);
-    /* الهدفُ الآن غيرُ فارغ: الخادمُ لا يعلن دفعاتٍ، والاستيرادُ يجري بالمسار الواحد كما كان */
-    const again = protocol(T, T.su, file, opt), dry = await again.post({ op: 'begin', dry: true, scope: SCOPE, keys: { bassam_rounds_v1: 0 } });
-    assert.deepEqual(dry.j.slice, {}, 'هدفٌ غير فارغ: لا دفعات');
-    const r2 = await again.run(); assert.equal(again.sliceCount, 0); assert.equal(r2.commit.status, 200); await compare(T, T.su, file);
-    /* وبيانُ دفعاتٍ يُفرض على هدفٍ غير فارغ مرفوضٌ عند البدء */
-    const forcedBegin = await again.post({ op: 'begin', scope: SCOPE, n: 10, f: 1, slices: { 'bassam_rounds_v1#0': 50 }, keys: { bassam_rounds_v1: 0 } });
+    /* الهدفُ الآن غيرُ فارغ: الدمجُ لا دفعاتَ له (مسارُه الواحد كما كان) · والاستبدالُ يُقسم دفعاتٍ كذلك (اختبار ١٠) */
+    const again = protocol(T, T.su, file, { ...opt, mode: 'merge' }), dryMerge = await again.post({ op: 'begin', dry: true, scope: SCOPE, keys: { bassam_rounds_v1: 0 }, mode: 'merge' });
+    assert.deepEqual(dryMerge.j.slice, {}, 'دمجٌ في هدفٍ غير فارغ: لا دفعات');
+    const dryReplace = await again.post({ op: 'begin', dry: true, scope: SCOPE, keys: { bassam_rounds_v1: 0 }, mode: 'replace' });
+    assert.deepEqual(Object.keys(dryReplace.j.slice), ['bassam_rounds_v1'], 'استبدالٌ في هدفٍ غير فارغ: دفعات');
+    /* وبيانُ دفعاتٍ يُفرض على دمجٍ في هدفٍ غير فارغ مرفوضٌ عند البدء */
+    const forcedBegin = await again.post({ op: 'begin', scope: SCOPE, mode: 'merge', n: 10, f: 1, slices: { 'bassam_rounds_v1#0': 50 }, keys: { bassam_rounds_v1: 0 } });
     assert.equal(forcedBegin.status, 400); assert.equal(forcedBegin.j.err, 'import-shape');
+    /* والطريقةُ ثابتةٌ من البدء: دفعاتٌ بدأت استبدالاً لا تُعتمد دمجاً */
+    const R = protocol(T, T.su, file, opt); await R.begin(); for (let i = 0; i < R.parts.length; i++) await R.part(i); for (let i = 0; i < R.sliceCount; i++) assert.equal((await R.sliceStep(i)).status, 200);
+    const sw = await R.post({ phase: 'inspect', scope: SCOPE, mode: 'merge', reason: 'TEST_ONLY', base: (await R.inventory()).base, legacyConsent: false });
+    assert.equal(sw.status, 400); assert.equal(sw.j.err, 'restore-shape'); assert.equal(staged(T.DB), 0);
   } finally { await T.close(); }
   /* مديرُ الإدارة (ولو بمفتاح الاستعادة): لا دفعات — مسارُه كما كان */
   const T2 = await target();
@@ -326,6 +331,72 @@ test('(٩) دفعاتُ المفتاح الكبير: بالترتيب · الم�
     const mgrB = await T2.login(LAB.mgrB, LAB.pw), dry = await protocol(T2, mgrB, file, opt).post({ op: 'begin', dry: true, scope: SCOPE, keys: { bassam_rounds_v1: 0 } });
     assert.equal(dry.status, 200); assert.deepEqual(dry.j.slice, {}, 'غيرُ مدير المنصة: لا دفعات');
   } finally { await T2.close(); }
+});
+
+/* نسخةٌ ثانية تختلف عن الأولى: يومٌ يُحذف، يومٌ يتغيّر، يومٌ جديد — لاستبدالٍ فوق بياناتٍ قائمة */
+function variant(file) {
+  const rounds = JSON.parse(file.data.bassam_rounds_v1), days = Object.keys(rounds), out = {};
+  days.slice(1).forEach((d) => { out[d] = JSON.parse(JSON.stringify(rounds[d])); out[d].t += 7; out[d].d[0].zones[0].name += ' (معدَّل)'; });
+  out['1448-2-20'] = JSON.parse(JSON.stringify(rounds[days[0]])); out['1448-2-20'].t += 99;
+  return { ...file, data: { ...file.data, bassam_rounds_v1: JSON.stringify(out) } };
+}
+test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدفعاتُ = المسارُ الواحد صفاً بصف (القائمُ من الجولات وأرشيفها يُطرح كلُّه) · لقطةُ ما قبله في القاعدة · وفشلُ الاعتماد لا يغيّر شيئاً', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true }), next = variant(file), A = await target(), Z = await target();
+  try {
+    for (const T of [A, Z]) assert.equal((await protocol(T, T.su, file, { scope: SCOPE, slice: false }).run()).commit.status, 200, 'الإدارةُ تحمل النسخةَ الأولى');
+    const first = rowsOf(Z), nodes0 = Z.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource GLOB 'bassam_rounds*'", B)[0].n;
+    assert.ok(nodes0 > 50, 'في الهدف جولاتٌ قائمة (' + nodes0 + ' عقدة)');
+    const mono = await protocol(A, A.su, next, { scope: SCOPE, slice: false }).run();
+    assert.equal(mono.commit.status, 200, JSON.stringify((mono.commit || mono.inspect).j).slice(0, 300));
+    const P = protocol(Z, Z.su, next, { scope: SCOPE, slice: 1000, sliceTarget: 5000 });
+    assert.equal((await P.begin()).status, 200); for (let i = 0; i < P.parts.length; i++) assert.equal((await P.part(i)).status, 200);
+    assert.ok(P.sliceCount >= 3, 'هدفٌ غير فارغ والاستبدالُ على دفعات (' + P.sliceCount + ')');
+    for (let i = 0; i < P.sliceCount; i++) { const r = await P.sliceStep(i); assert.equal(r.status, 200, JSON.stringify(r.j)); }
+    assert.deepEqual(rowsOf(Z), first, 'الدفعاتُ في المؤقت: الإدارةُ كما هي');
+    const ins = await P.inspect(); assert.equal(ins.status, 200, JSON.stringify(ins.j).slice(0, 300));
+    /* الكلُّ أو لا شيء: اعتمادٌ يفشل داخل الدفعة ⇒ الجولاتُ القائمة كما هي حرفاً (لا حذفَ ولا إدراج) */
+    Z.DB.failIf = (sql) => /INSERT INTO restore_operations/.test(sql);
+    const bad = await P.commit(ins.j.inspection.base); Z.DB.failIf = null;
+    assert.ok(bad.status >= 500); assert.deepEqual(rowsOf(Z), first, 'فشلُ الاعتماد: لم يُحذف القائم ولم يُدرج الجديد');
+    const done = await P.commit(ins.j.inspection.base);
+    assert.equal(done.status, 200, JSON.stringify(done.j).slice(0, 300));
+    /* فرقٌ واحد معلوم: الدفعاتُ تعيد كتابة مورد الجولات الحيّ دائماً (ولو لم يتغيّر محتواه) فتتقدّم نسختُه — والصفوفُ والعدّادُ هي هي */
+    const live = 'bsdept:' + B + ':bassam_rounds_v1', extra = Object.keys(done.j.revs).filter((k) => !(k in mono.commit.j.revs));
+    assert.deepEqual(Object.keys(mono.commit.j.revs).filter((k) => !(k in done.j.revs)), []); assert.ok(extra.length === 0 || (extra.length === 1 && extra[0] === live), JSON.stringify(extra));
+    assert.deepEqual(done.j.counts, mono.commit.j.counts, 'العدّادُ واحد');
+    const a = rowsOf(A), z = rowsOf(Z);
+    for (const t of Object.keys(a)) assert.deepEqual(z[t], a[t], 'جدول ' + t + ' بعد الاستبدال');
+    const names = ['bassam_rounds_v1', 'bassam_rounds_arc_v1'], da = await readOps(A, A.su, B, names), dz = await readOps(Z, Z.su, B, names);
+    assert.equal(JSON.stringify(dz), JSON.stringify(da), 'الوثيقتان بترتيب أعضائهما');
+    const arc = Object.keys(dz.bassam_rounds_arc_v1);
+    assert.equal(arc.includes(Object.keys(JSON.parse(file.data.bassam_rounds_v1))[0]), false, 'يومٌ قائم ليس في النسخة الجديدة يزول (استبدال — كالمسار الواحد)'); assert.ok(arc.includes('1448-2-20'), 'واليومُ الجديد أُضيف');
+    /* لقطةُ ما قبل الاستيراد: صفوفُ الموردين القائمة نُسخت داخل القاعدة تحت معرّف لقطة هذا الاعتماد */
+    const snap = Z.DB.q("SELECT table_key k, COUNT(*) n FROM restore_preimage WHERE snapshot_id=?1 AND domain='operations-sql' GROUP BY table_key", done.j.snapshot), total = snap.reduce((n, r) => n + r.n, 0);
+    const manifest = Z.DB.q("SELECT SUM(row_count) n FROM restore_snapshot_manifest WHERE snapshot_id=?1 AND domain='operations-sql'", done.j.snapshot)[0].n;
+    assert.equal(total, manifest); assert.ok(snap.some((r) => /bassam_rounds_arc_v1:ops_nodes$/.test(r.k)), 'لقطةُ عقد الأرشيف القائم');
+    assert.equal(snap.filter((r) => /:ops_nodes$/.test(r.k)).reduce((n, r) => n + r.n, 0), nodes0, 'اللقطةُ تحمل كلَّ عقد الجولات التي كانت قبل الاستبدال (' + nodes0 + ')');
+    assert.equal(staged(Z.DB), 0); await compare(Z, Z.su, next);
+  } finally { await A.close(); await Z.close(); }
+});
+
+test('(١١) ما لا يُقسم لا يُحاوَل إن كان أثقلَ من الآمن: يُرفض عند البدء (قبل أي رفع) بسببه — دمجٌ في هدفٍ غير فارغ · النسخةُ الشاملة · غيرُ مدير المنصة · والصغيرُ يمرّ', { timeout: 300000, ...need }, async () => {
+  const big = await oldFile({ scale: 1, images: false }), small = await oldFile({ small: true }), T = await target();
+  try {
+    assert.equal((await protocol(T, T.su, small, { scope: SCOPE }).run()).commit.status, 200, 'في الهدف بياناتٌ قائمة');
+    const base = snapshot(T.DB), refused = async (P, what) => { const r = await P.begin(); assert.equal(r.status, 413, what + ': ' + JSON.stringify(r.j)); assert.equal(r.j.err, 'import-too-heavy', what); assert.ok(r.j.details.cost > r.j.details.budget, what + ' — الكلفةُ المقدَّرة ' + r.j.details.cost + 'MB فوق ' + r.j.details.budget); assert.equal(staged(T.DB), 0, what + ': لم يُفتح مؤقت'); return r; };
+    await refused(protocol(T, T.su, big, { scope: SCOPE, mode: 'merge' }), 'دمجٌ في هدفٍ غير فارغ');
+    /* النسخةُ الشاملة بهذا الحجم */
+    const full = { app: 'bassam-crowd', version: 3, kind: 'full', exportedAt: '2026-11-21T10:00:00.000Z', preImport: false, data: Object.fromEntries(Object.entries(big.data).filter(([, v]) => v !== null).map(([k, v]) => ['bsdept:' + B + ':' + k, v])) };
+    const fr = await refused(protocol(T, T.su, full, { scope: { kind: 'full' } }), 'النسخةُ الشاملة'); assert.equal(fr.j.details.kind, 'full');
+    /* مديرُ الإدارة بمفتاح الاستعادة: لا دفعاتَ له، فالكبيرُ يُرفض عند البدء */
+    const GK = 'bsdept:' + B + ':bassam_grants_v1';
+    await T.DB.batch([...T.lab.W.kvPutStmts(T.lab.env, 'kv', GK, JSON.stringify({ v: 1, emp: { ['mgr:' + B]: { plus: ['backup.restore'], minus: [] } } })), T.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind(GK)]);
+    await refused(protocol(T, await T.login(LAB.mgrB, LAB.pw), big, { scope: SCOPE, reason: 'TEST_ONLY' }), 'مديرُ الإدارة');
+    assert.deepEqual(changed(snapshot(T.DB), base).filter((t) => t !== 'kv' && t !== 'revs'), [], 'لم يتغيّر شيء');
+    /* والاستبدالُ بحساب مدير المنصة للنسخة نفسِها مقبولٌ (دفعات) · والدمجُ الصغير مقبول */
+    const ok = protocol(T, T.su, big, { scope: SCOPE }); assert.equal((await ok.begin()).status, 200); assert.ok(ok.sliceCount > 10); await ok.cancel();
+    const sm = protocol(T, T.su, small, { scope: SCOPE, mode: 'merge' }); assert.equal((await sm.begin()).status, 200); await sm.cancel();
+  } finally { await T.close(); }
 });
 
 test('(٥) حسابٌ بلا صلاحية يُرفض في كل جزء ولو بطلبٍ مصنوع يدوياً — ولا يمسّ مؤقتَ غيره', { timeout: 300000, ...need }, async (t) => {

@@ -1093,6 +1093,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var operationalInput=opRestoreDocuments(body,reference,A);
+  if (internal && internal.images && internal.images.skip) internal.images.skip.forEach(function (k) { delete operationalInput.keys[k]; operationalInput.physicalDeletes = operationalInput.physicalDeletes.filter(function (x) { return x !== k; }); });   /* V7 · د6: مواردُ تودَع على دفعات (019g) لا تمسّها الخطةُ العامة */
   if (internal && internal.release) body.domains.operations = null;   /* V7 · د6: صفوفُ المجال التشغيلي صارت وثائقَ أعلاه ولا يقرؤها ما بعده — تُحرَّر (أكبرُ ما يُحمل في الذاكرة) */
   Object.assign(keys,operationalInput.keys);
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
@@ -1514,6 +1515,7 @@ async function rsCommit(env, A, plan, meta) {
   });
   st.push.apply(st,rsBulk(env,'restore_snapshot_manifest',['snapshot_id','domain','table_key','row_count'],snapshotManifest));
   st.push.apply(st,rsBulk(env,'restore_preimage',['snapshot_id','domain','table_key','row_number','row_json'],snapshotRows));
+  (plan.snapshotSql || []).forEach(function (make) { st.push.apply(st, make(sid)); });   /* V7 · د6: لقطةُ ما قبل الاستيراد لمواردَ تُستبدل على دفعات — تُنسخ صفوفُها القائمة داخل القاعدة (019g) */
   if (changed)
     st.push(
       env.DB.prepare(
@@ -1614,7 +1616,8 @@ async function rsCommit(env, A, plan, meta) {
   };
 }
 async function rsRestoreInventory(env, A, scope, requestedDepartments) {
-  var reference = await rsReferenceSnapshot(env, A.u.id);
+  /* V7 · د6: جردُ إدارةٍ واحدة يقرأ النسخ (revs) وحدها — لا يحمّل المواردَ التشغيلية لكل الإدارات (كان يحمّلها كلَّها ليعيد أرقامَ نسخها) */
+  var reference = await rsReferenceSnapshot(env, A.u.id, scope && scope.kind === 'dept' && typeof scope.departmentId === 'string' && scope.departmentId && scope.departmentId.indexOf(':') < 0 ? { departments: [scope.departmentId], operationalKeys: [] } : undefined);
   env = reference.env;
   A = reference.A;
   if (!scope || !['full', 'dept'].includes(scope.kind) || (scope.kind === 'full' && A.u.role !== 'super'))
