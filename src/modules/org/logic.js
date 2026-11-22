@@ -7,11 +7,14 @@
    ── مصدرٌ واحد للحالة ── الوحدةُ المختارة والتبويبُ من العنوان وحده (KIVO.BassamOrgRoute ← _ogRoute)؛ لا نسخةَ لهما في الحالة.
    ── نقطةُ التنقّل الواحدة ── go(unit, tab[, { force }]): كلُّ تغيير وحدةٍ أو تبويب يمرّ بها، وهي تسأل canLeave(next) أولاً.
         canLeave(next) ⇒ Promise<boolean> · dirty() ⇒ boolean (تزامني) — الافتراضي «لا شيء غير محفوظ»؛ حارسُ ب11 يعرّفهما (orgDirty · orgGuard).
-        ومغادرةُ الصفحة (الإطار: القائمة · الرجوع · عنوانٌ مكتوب · تبويبٌ آخر في الإعدادات) تمرّ بـ KIVO.BassamOrg.canLeave({ leave: true }) نفسِها.
+        ومغادرةُ الصفحة (الإطار: القائمة · الرجوع · عنوانٌ مكتوب · تبويبٌ آخر في الإعدادات) تمرّ بـ KIVO.BassamOrgRoute.screen.canLeave({ leave: true }) نفسِها
+        (الشاشةُ المركَّبة تسجّل واجهتَها في KIVO.BassamOrgRoute.screen: { go, canLeave, dirty, href, route }).
    ── نقاطُ التركيب ── دالةٌ واحدة لكل تبويب (ogTabOverview · ogTabSystems · ogTabAdmins · ogTabRoles · ogTabPeople · ogTabLog · ogTabData)
         يقابلها قسمٌ واحد في view.html (data-org-tab) — يُعدَّل كلُّ تبويبٍ على حدة. منطقُ الأقسام الأربعة القائم في logic-perm44.js (منقولٌ كما هو).
    ── التحديد المتعدد ── شريطُه وأزرارُه هنا؛ التطبيقُ خطّاف: orgBulkApply(mode, unitIds) والحدث window «bs:org-bulk» { mode: "on"|"off", units }.
    ── ب4 ── اختيارُ «أنظمة الوحدة الجديدة» ("off" الافتراضي | "parent") يُمرَّر وسيطاً إلى مسار الإنشاء في _ogAddGo (ثلاثة مواضع معلَّمة «ب4»). */
+/* V7 · د6: «class Component» اصطلاحُ إطار الصفحات نفسُه (dc-runtime يأخذ الصنفَ بهذا الاسم) — كما في كل صفحة */
+/* eslint-disable-next-line no-redeclare, no-unused-vars */
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks", "admin+profile+seized"]) {
   state = { p44: {}, ogQ: "", ogFlt: "", ogShut: {}, ogSel: {}, ogSheet: !1, ogDlg: null, ogDrag: null, ogOver: null, ogTick: 0 };
   OG_TABS = { overview: "نظرة عامة", systems: "الأنظمة", admins: "المسؤولون", roles: "الأدوار", people: "الأشخاص", log: "السجل", data: "البيانات" };
@@ -166,7 +169,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return { mode: r.mode, unit: r.unit, tab: r.tab };
       },
     };
-    KIVO.BassamOrg = this.__ogApi;
+    KIVO.BassamOrgRoute.screen = this.__ogApi;
     this.__ogKey = (ev) => {
       "Escape" === ev.key && this.state.ogSheet && !this.state.ogDlg && this.setState({ ogSheet: !1 });
     };
@@ -183,7 +186,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     h.ready && this._ogTry(() => h.ready(), null);
   }
   componentWillUnmount() {
-    KIVO.BassamOrg === this.__ogApi && (KIVO.BassamOrg = null);
+    KIVO.BassamOrgRoute.screen === this.__ogApi && (KIVO.BassamOrgRoute.screen = null);
     try {
       document.removeEventListener("keydown", this.__ogKey);
       window.removeEventListener("beforeunload", this.__ogUnload);

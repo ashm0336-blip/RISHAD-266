@@ -27,8 +27,20 @@
    "src/modules/org/logic.js",
    "src/modules/org/logic-perm44.js"
   ],
-  "data": [],
-  "permissions": [],
-  "tests": []
+  "data": [
+   "bassam_dayshift_v1",
+   "bassam_employees_v1",
+   "bassam_perms_v1",
+   "bassam_shift_options_v1"
+  ],
+  "permissions": [
+   "platform admin (isSuper) · unit manager (KIVO.Perm44.mgrOf) — no tree leaf"
+  ],
+  "tests": [
+   "tests/unit/core02_console_home.test.mjs",
+   "tests/unit/core02_console_nav.test.mjs",
+   "tests/unit/refresh_tabs_w1.test.mjs",
+   "tests/unit/v7_d5e44_perm_page.test.mjs"
+  ]
  }
 }

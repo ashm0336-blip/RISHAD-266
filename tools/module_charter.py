@@ -19,6 +19,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 J = lambda p: json.load(open(os.path.join(ROOT, p), encoding='utf-8'))
 PAGE_OF = {'employees': 'emps'}          # slug ⇒ مفتاحُ الصفحة في الشجرة/pages.json حين يختلف
 NAV_OF = {'employees': 'employees', 'staff': 'staffing', 'admin': 'admin'}
+# V7 · د6: صفحةٌ تُركَّب داخل صفحةٍ أخرى بعناوينها هي (لا مدخلَ لها في pages.json): مساراتُها وحارسُها معلنان هنا
+ROUTES_OF = {'org': ['#/sysadmin/org', '#/admin/perm']}
+GUARD_OF = {'org': ['platform admin (isSuper) · unit manager (KIVO.Perm44.mgrOf) — no tree leaf']}
 # المالكُ التشغيلي والغاية — من docs/module-charters.md (§3 «المستخدمون والأدوار» · «الغاية التشغيلية») — يُكتب يدوياً ويُحفظ
 HUMAN = {
     'admin':     ('مدير النظام (الحوكمة) · مدير الإدارة (إعدادات إدارته)', 'حوكمةُ المنصة والإدارة: الهيكل والسقوف والحسابات والصلاحيات والورديات والقوالب والنسخ والسياسات'),
@@ -35,6 +38,7 @@ HUMAN = {
     'dstats':    ('مدير النظام · مدخلو الإحصاءات', 'الإحصائياتُ اليومية: أرقام الحرمين (سجلٌّ عام)'),
     'award':     ('مدير الإدارة · لجنة التقييم', 'جائزةُ التميز: ترشيحُ الموظفين وتقييمُهم'),
     'kpis':      ('مدير الإدارة (عارض — المالكُ هو الصفحةُ الأصلية)', 'مؤشراتُ الإدارة: عارضٌ لا مالك (SOT-012)'),
+    'org':       ('مدير النظام (الهيكل والأنظمة والمسؤولون) · مدير الوحدة (أدوار وحدته وأشخاصها)', 'شاشةُ «الإدارات والصلاحيات»: شجرةُ الهيكل والوحدةُ المختارة بتبويباتها (نظرة عامة · الأنظمة · المسؤولون · الأدوار · الأشخاص · السجل · البيانات)'),
 }
 NODATA = {'planning': 'none — حاويةٌ لا تكتب ولا تقرأ مفتاحاً بنفسها (التبويباتُ في وحداتها)', 'kpis': 'none — عارضٌ يرسم لوحاتِ الوحدات الأخرى بمحرّكاتها (المالكُ هو الصفحةُ الأصلية)'}
 KEY_RX = re.compile(r"\bbassam_[a-z0-9_]+_v\d+\b")
@@ -175,8 +179,8 @@ def derive(slug, G='', dependency_graph=None):
     leaves = sorted({lf['owner'] for c in tree['containers'] for lf in c.get('leaves', []) if lf.get('page') == page})
     shown = sorted(k for k, v in tree.get('shownIn', {}).items() if slug == 'kpis' and v.get('container') == 'مؤشرات الإدارة')
     nav = NAV_OF.get(slug, slug)
-    routes = ['#/' + nav] + (['#/sysadmin'] if slug == 'admin' else [])
-    pat = re.compile(r"#/" + re.escape(nav) + r"\b|go\(\s*\w+\s*,\s*'" + re.escape(nav) + r"'|PAGES\s*=\s*\[[^\]]*'" + re.escape(nav) + r"'")   # المسار · go(p,'x') · قائمةُ صفحاتٍ تُزار كلُّها
+    routes = ROUTES_OF.get(slug) or ['#/' + nav] + (['#/sysadmin'] if slug == 'admin' else [])
+    pat = re.compile('|'.join(re.escape(r) + r'\b' for r in ROUTES_OF[slug]) if slug in ROUTES_OF else r"#/" + re.escape(nav) + r"\b|go\(\s*\w+\s*,\s*'" + re.escape(nav) + r"'|PAGES\s*=\s*\[[^\]]*'" + re.escape(nav) + r"'")   # المسار · go(p,'x') · قائمةُ صفحاتٍ تُزار كلُّها
     tests = []
     for sub in ['cfbench', 'tests/unit'] + sorted('src/systems/' + k + '/tests' for k in (os.listdir(os.path.join(ROOT, 'src/systems')) if os.path.isdir(os.path.join(ROOT, 'src/systems')) else [])):
         if not os.path.isdir(os.path.join(ROOT, sub)): continue   # المستودعُ الرسمي وحده: بلا cfbench (المختبر)
@@ -190,7 +194,7 @@ def derive(slug, G='', dependency_graph=None):
         'ui': [m + '/view.html', m + '/helmet.css'],
         'domain': m + '/logic.js' if not parts else [m + '/' + f for f in ['logic.js'] + parts],   # KIVO_265 · البند 19: الأجزاءُ مع الأصل
         'data': sorted(set(KEY_RX.findall(logic + view)) | shared_data(slug, parts, dependency_graph)) or [NODATA.get(slug, 'none')],
-        'permissions': leaves if leaves else (['shownIn:' + k for k in shown] if shown else ['self (no tree leaf — every signed-in user)']),
+        'permissions': leaves if leaves else (['shownIn:' + k for k in shown] if shown else GUARD_OF.get(slug) or ['self (no tree leaf — every signed-in user)']),
         'tests': tests,
     }
 

@@ -87,9 +87,10 @@ def _core01(S, M):
         if p.get('platSwitch') and p.get('platLock'): err.append(p['key'] + ': platSwitch و platLock لا يجتمعان')
     ex331 = set(re.findall(r"off\[i\] !== '([a-z]\w*)'", R('permissions', '331-perm-model.js')))
     # V7 · د5-هـ (44): منطقُ صفحة الإدارة أجزاءٌ (logic.js · logic-perm44.js — meta.json logicParts) والاستثناءُ في «الصلاحيات ← الأنظمة»
-    admL = ''.join(R('modules', 'admin', f) for f in sorted(os.listdir(os.path.join(S, 'modules', 'admin'))) if re.match(r'logic(-[\w-]+)?\.js$', f))
+    # V7 · د6: «الصلاحيات ← الأنظمة» صارت في صفحة «الإدارات والصلاحيات» (modules/org · logic-perm44.js نُقل إليها كما هو) — يُقرأ منطقُ الصفحتين
+    admL = ''.join(R('modules', m, f) for m in ('admin', 'org') for f in sorted(os.listdir(os.path.join(S, 'modules', m))) if re.match(r'logic(-[\w-]+)?\.js$', f))
     exAdm = set(re.findall(r'\(\(pl && pl\.mods && pl\.mods\.off\) \|\| \[\]\)\.filter\(\(k\) => "([a-z]\w*)" !== k\)', admL))
-    if not (always == ex331 == exAdm): err.append('activation:always ' + str(sorted(always)) + ' ≠ استثناءُ mods.off في 331 ' + str(sorted(ex331)) + ' / admin/logic ' + str(sorted(exAdm)))
+    if not (always == ex331 == exAdm): err.append('activation:always ' + str(sorted(always)) + ' ≠ استثناءُ mods.off في 331 ' + str(sorted(ex331)) + ' / admin·org/logic ' + str(sorted(exAdm)))
     # ③ requires: for ورقةٌ offPage حقيقية في صفحتها · on صفحةٌ أو عدسة (lens:<key>) · kind يطابق شكل on
     def leaf(ref):
         pk, sk = ref.split('/'); pg = PG.get(pk)

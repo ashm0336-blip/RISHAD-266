@@ -38,7 +38,8 @@
   "page:Admin": 130700,
 @@SYS:budget.page.award@@@@SYS:budget.page.dreport@@@@SYS:budget.page.daily@@@@SYS:budget.page.dstats@@  "page:Employees": 165000,
 @@SYS:budget.page.irshad@@  "page:KPIs": 8000,
-@@SYS:budget.page.plan@@  "page:Planning": 3050,
+@@SYS:budget.page.plan@@  "page:Org": 36000,
+  "page:Planning": 3050,
   "page:Profile": 70000,
 @@SYS:budget.page.seized@@@@SYS:budget.page.staff@@@@SYS:budget.page.tasks@@  "shell:index.html": 30100,
   "worker:_worker.js": 477600

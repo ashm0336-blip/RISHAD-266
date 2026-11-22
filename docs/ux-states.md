@@ -19,7 +19,7 @@
 ## لكل وحدة
 | الوحدة | فارغ | تحميل | خطأ | بلا اتصال | أعد المحاولة |
 |---|---|---|---|---|---|
-| admin (Admin) | 54 | 34 | 246 | 2 | 22 |
+| admin (Admin) | 35 | 31 | 204 | 2 | 14 |
 | award (Award) | 8 | 1 | 33 | 0 | 0 |
 | daily (Daily Sessions) | 60 | 9 | 179 | 0 | 3 |
 | dreport (Daily Report) | 19 | 0 | 74 | 0 | 1 |
@@ -27,6 +27,7 @@
 | employees (Employees) | 52 | 6 | 105 | 0 | 7 |
 | irshad (Irshad) | 18 | 0 | 17 | 0 | 6 |
 | kpis (KPIs) | 1 | 0 | 2 | 0 | 1 |
+| org (Org) | 27 | 3 | 39 | 0 | 9 |
 | plan (Operational Plan) | 58 | 10 | 113 | 0 | 4 |
 | planning (Planning) | 0 | 0 | 6 | 0 | 0 |
 | profile (Profile) | 31 | 18 | 107 | 0 | 11 |

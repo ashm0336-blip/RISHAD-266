@@ -48,5 +48,7 @@
     }
     return null;
   }
-  KIVO.BassamOrgRoute = { ROOT: ROOT, ROOT_SEG: ROOT_SEG, TABS: TABS, parse: parse, href: href };
+  /* screen: الشاشةُ المركَّبة الآن تسجّل واجهتَها هنا ({ go, canLeave, dirty, href, route }) وتُخليها عند الإزالة — يقرؤها الإطارُ وصفحةُ الإعدادات
+     قبل أي مغادرة (حارسُ التغييرات غير المحفوظة) ولقراءة الوحدة المختارة؛ null = الشاشةُ غيرُ مركَّبة */
+  KIVO.BassamOrgRoute = { ROOT: ROOT, ROOT_SEG: ROOT_SEG, TABS: TABS, parse: parse, href: href, screen: null };
 })();

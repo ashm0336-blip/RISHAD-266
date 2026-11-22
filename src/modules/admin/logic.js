@@ -25,7 +25,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
   }
   /* V7 · د6: شاشةُ «الإدارات والصلاحيات» صفحةٌ مستقلة (src/modules/org) — وحدتُها وتبويبُها من العنوان وحده (KIVO.BassamOrgRoute)، وتنقّلُها نقطةٌ واحدة
-     (KIVO.BassamOrg.go ← حارسُ التغييرات غير المحفوظة). هذه الصفحةُ تقرأ الوحدةَ المختارة من المصدر نفسه لتركّب تبويبَي «المسؤولون» و«البيانات» */
+     (KIVO.BassamOrgRoute.screen.go ← حارسُ التغييرات غير المحفوظة). هذه الصفحةُ تقرأ الوحدةَ المختارة من المصدر نفسه لتركّب تبويبَي «المسؤولون» و«البيانات» */
   _orgHashIs(mode) {
     try {
       const r = KIVO.BassamOrgRoute.parse(location.hash);
@@ -36,7 +36,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   _orgUnitNow() {
     try {
-      const O = KIVO.BassamOrg,
+      const O = KIVO.BassamOrgRoute.screen,
         r = O && O.route ? O.route() : null;
       return r && "site" === r.mode && this._orgKnown(r.unit) ? r : null;
     } catch (e) {
@@ -46,14 +46,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* فتحُ وحدةٍ على تبويبٍ من خارج الشاشة (مراقبة الحسابات · بعد الحذف): عبر نقطة تنقّلها إن كانت مركَّبة، وإلا بالعنوان فتقرؤه عند تركيبها */
   _orgGoto(unit, tab, force) {
     try {
-      const O = KIVO.BassamOrg;
+      const O = KIVO.BassamOrgRoute.screen;
       if (O && O.go && "depts" === this.state.admTab) return void O.go(unit, tab, force ? { force: !0 } : null);
       location.hash = KIVO.BassamOrgRoute.href("site", unit, tab);
     } catch (e) {}
   }
   /* مغادرةُ الشاشة بفعلٍ من هذه الصفحة: يُسأل حارسُها أولاً */
   _orgLeave(run) {
-    const O = KIVO.BassamOrg;
+    const O = KIVO.BassamOrgRoute.screen;
     if (!O || !O.dirty || !O.dirty()) return void run();
     Promise.resolve(O.canLeave({ leave: !0 })).then((y) => y && run());
   }

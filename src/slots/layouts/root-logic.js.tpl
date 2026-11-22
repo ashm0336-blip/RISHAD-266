@@ -183,7 +183,7 @@ class Component extends DCLogic {
         /* V7 · د6: عنوانٌ تغيّر (رجوعٌ · عنوانٌ مكتوب · رابط) وفي شاشة «الإدارات والصلاحيات» تغييرٌ غيرُ محفوظ — يُعاد عنوانُها ويُسأل حارسُها أولاً،
            سواءٌ كانت الوجهةُ وحدةً أو تبويباً آخر فيها أو صفحةً أخرى. ما تنتقل إليه الشاشةُ نفسُها (go) عنوانٌ قبلته فلا يُسأل عنه مرتين */
         if (!this.__conAsked && this._orgDirty()) {
-          const O = KIVO.BassamOrg, keep = O.href ? O.href() : "";
+          const O = KIVO.BassamOrgRoute.screen, keep = O.href ? O.href() : "";
           if (keep && String(location.hash || "") !== keep) {
             const want = location.href;
             try { history.replaceState(null, "", location.pathname + location.search + keep); } catch (e) {}
@@ -1089,14 +1089,14 @@ class Component extends DCLogic {
   _conDirty() {
     return this._platDirty() || this._orgDirty();
   }
-  /* V7 · د6: تغييرٌ غيرُ محفوظ في شاشة «الإدارات والصلاحيات» (في المركز أو في إعدادات المدير) — الشاشةُ تجيب (KIVO.BassamOrg.dirty) والسؤالُ سؤالُها
+  /* V7 · د6: تغييرٌ غيرُ محفوظ في شاشة «الإدارات والصلاحيات» (في المركز أو في إعدادات المدير) — الشاشةُ تجيب (KIVO.BassamOrgRoute.screen.dirty) والسؤالُ سؤالُها
      (canLeave): كلُّ مخرجٍ يسأل _conLeaveOk يمرّ به، والعنوانُ المكتوب أو الرجوع يُعاد إلى عنوانها حتى تجيب (_onHash) */
   _orgDirty() {
-    try { const O = KIVO.BassamOrg; return !!(O && O.dirty && O.dirty()); } catch (e) { return false; }
+    try { const O = KIVO.BassamOrgRoute.screen; return !!(O && O.dirty && O.dirty()); } catch (e) { return false; }
   }
   /* سؤالٌ واحد قبل مغادرة المركز بمسوّداتٍ غير محفوظة — لكل مخرج: «مساحة العمل التشغيلية» · الرجوع والعنوان المكتوب · الجرس · بطاقة المستخدم */
   async _conLeaveOk() {
-    if (this._orgDirty()) { try { if (!(await KIVO.BassamOrg.canLeave({ leave: true }))) return false; } catch (e) { return false; } }
+    if (this._orgDirty()) { try { if (!(await KIVO.BassamOrgRoute.screen.canLeave({ leave: true }))) return false; } catch (e) { return false; } }
     if (!this._platDirty()) return true;
     try { return !!(await KIVO.bsConfirm({ title: "تغييرات غير محفوظة", msg: "لديك تغييرات غير محفوظة في إعدادات المنصة، والخروج يتجاهلها.", ok: "اخرج دون حفظ", cancel: "البقاء", danger: true })); } catch (e) { return false; }
   }

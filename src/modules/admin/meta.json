@@ -22,10 +22,7 @@
    "src/modules/admin/view.html",
    "src/modules/admin/helmet.css"
   ],
-  "domain": [
-   "src/modules/admin/logic.js",
-   "src/modules/admin/logic-perm44.js"
-  ],
+  "domain": "src/modules/admin/logic.js",
   "data": [
    "bassam_active_dept_v1",
    "bassam_auth_users_v1",
