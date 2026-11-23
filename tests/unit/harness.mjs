@@ -34,6 +34,23 @@ const LEGACY_LAYOUT = { migrations: 'migrations', workersParts: 'workers/parts',
 export const SYSTEMS = (() => { const d = path.join(SRC, 'systems'); try { return fs.readdirSync(d).filter((k) => fs.existsSync(path.join(d, k, 'system.json'))).sort(); } catch (e) { return []; } })();
 export const hasSystem = (...keys) => keys.every((k) => SYSTEMS.includes(k));
 export const needs = (...keys) => (hasSystem(...keys) ? {} : { skip: 'نظامٌ غير حاضر: ' + keys.filter((k) => !SYSTEMS.includes(k)).join(' + ') });
+/* V7 · د6 (gatefix): روابطُ صفحات القائمة الجانبية التشغيلية بترتيبها — مشتقّةً من المصدر لا مكتوبةً باليد: الروابطُ الثابتة في قالب الغلاف
+   (src/slots/layouts/index.template.html.tpl) وكلُّ فتحة @@SYS:shell.nav.*@@ تُبسط بقطع الأنظمة الحاضرة مرتَّبةً بـ(order ثم مفتاح النظام) كما يفعل tools/systems.py.
+   فنظامٌ جديدٌ يعلن رابطه (rasd) يدخل التوقّعَ من إعلانه، ونظامٌ محذوفٌ يخرج منه. */
+export function shellNavKeys() {
+  const frag = {}, add = (k, name, v) => { if (name.startsWith('shell.nav.')) for (const it of [].concat(v)) (frag[name] = frag[name] || []).push([it.order || 0, k, it]); };
+  for (const k of SYSTEMS) {
+    const dir = path.join(SRC, 'systems', k), d = JSON.parse(fs.readFileSync(path.join(dir, 'system.json'), 'utf8'));
+    for (const [name, v] of Object.entries(d.slots || {})) add(d.key, name, v);
+    let groups = []; try { groups = fs.readdirSync(path.join(dir, 'slots')).filter((f) => f.endsWith('.slots.json')).sort(); } catch (e) { /* بلا مجموعات */ }
+    for (const g of groups) for (const [name, v] of Object.entries(JSON.parse(fs.readFileSync(path.join(dir, 'slots', g), 'utf8')))) add(d.key, name, v);
+  }
+  /* قاعدةُ الموضع (only وحدها · last الأخيرة · first الأولى · وإلا text) */
+  const text = (it, i, n) => (n === 1 && 'only' in it ? it.only : i === n - 1 && 'last' in it ? it.last : i === 0 && 'first' in it ? it.first : it.text != null ? it.text : '');
+  for (const n in frag) frag[n].sort((x, y) => x[0] - y[0] || (x[1] < y[1] ? -1 : x[1] > y[1] ? 1 : 0));
+  const T = fs.readFileSync(path.join(SRC, 'slots', 'layouts', 'index.template.html.tpl'), 'utf8').replace(/@@SYS:(shell\.nav\.[\w.]+)@@/g, (m, n) => (frag[n] || []).map((f, i, a) => text(f[2], i, a.length)).join(''));
+  return [...T.matchAll(/<a class="\{\{n\w+\}\}" data-key="(\w+)"/g)].map((m) => m[1]);
+}
 /* ملفُّ اختبارٍ كلُّه يحتاج نظاماً (أو أكثر): «X.test.mjs» محمِّلٌ بسطرين و«X.body.mjs» الاختبارُ نفسُه — فبغياب النظام لا يُستورد الجسمُ أصلاً
    (استيرادُه الثابت لعُدّة نظامٍ غائب أو كودُه في أعلى الملف كان سيفشل قبل أي تخطٍّ)، ويُسجَّل اختبارٌ واحدٌ متخطّى باسم الملف وسببه.
    بحضور الأنظمة كلها: الجسمُ كما هو حرفاً، فلا يتبدّل ما يُختبر. */

@@ -25,7 +25,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { world, rd } from './core01_root_world.mjs';
-import { needs } from './harness.mjs';
+import { needs, shellNavKeys } from './harness.mjs';
 
 const T = rd('layouts/index.template.html'), R = rd('layouts/root-logic.js'), P = rd('layouts/260-bassam-plat.js');
 const L = rd('modules/admin/logic.js'), V = rd('modules/admin/view.html'), C = rd('modules/admin/helmet.css'), PG = rd('pages/Admin.dc.html');
@@ -67,7 +67,9 @@ test('(2) template: the operational sidebar is unchanged inside sc-if sbOps; the
   const ops = T.slice(ops0, con0), con = T.slice(con0, T.indexOf('</nav>'));
   for (const s of ['class="s-dept"', 'class="s-ghead"', 'مواقع ذات صلة', '{{goAdmin}}']) assert.ok(ops.includes(s), 'operational block keeps ' + s);
   assert.ok(!ops.includes('s-secadd'), 'V7 · د5-هـ (44): «+ قسم» is deleted from the side menu (sections are added from «الإدارات» only)');
-  deq([...ops.matchAll(/data-key="([a-z]+)"/g)].map((m) => m[1]), ['kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award'], 'the eight page links, in order');
+  /* V7 · د6 (gatefix): روابطُ الصفحات بترتيبها مشتقّةً من القالب وإعلانات الأنظمة (shellNavKeys) — «رصد الحالات» (rasd) أضاف رابطه */
+  deq([...ops.matchAll(/data-key="([a-z]+)"/g)].map((m) => m[1]), shellNavKeys(), 'the page links, in order');
+  for (const k of ['kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award']) assert.ok(ops.includes('data-key="' + k + '"'), 'the page link ' + k + ' stays');
   for (const s of ['data-key', 's-dept', 's-secadd', 'مواقع ذات صلة', 'goAdmin']) assert.ok(!con.includes(s), 'console block has no ' + s);
   for (const g of ['org', 'plat', 'sec', 'data']) assert.ok(con.includes('aria-labelledby="con-gh-' + g + '"') && con.includes('id="con-gh-' + g + '"'), 'group ' + g + ' labelled by its heading');
   assert.match(con, /<span class="nlbl">مركز إدارة رشاد<\/span>/, 'the space is named');
