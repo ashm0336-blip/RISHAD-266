@@ -60,6 +60,27 @@ const DELETED_D5H = {
 /* V7 · د6 (ب1 — الأمرُ ينصّ على حذف صفحة «الهيكل» المستقلة وصفحة الوحدة): الشجرةُ ثابتةٌ بجوار الوحدة في الشاشة الواحدة، فزرُّ الرجوع إليها
    («طيّ لوحة التفاصيل» ثم «العودة إلى الهيكل») لا مقابلَ له — يُثبَّت غيابُه بالاسم. كلُّ ما عداه من أفعال «الإدارات» باقٍ في مكانه الجديد (MOVED). */
 const DELETED_D6 = { depts: { actions: ['طيّ لوحة التفاصيل'] } };
+/* V7 · د6 (walkfix ③ — قرار المالك، موثَّق كـNOHELP5H في core01_shell/core02_console؛ اللقطةُ نفسُها لا تُعدَّل): زرُّ تصفية «سجل الأنشطة» لا يسمّي
+   نظاماً مطفأً لوحدة حامله (أو على المنصة). أزرارُ النظام تُقرأ من المصدر المولَّد (ET_FILTER: [النوع، الاسم، ورقةُ النظام]) ويُحكم بإطفائها وقتَ التشغيل
+   في الصفحة نفسِها (KIVO.Perm44.sysList · ceiling للوحدة النشطة · BassamPerm.platOff — القاعدةُ التي يرسم بها السجلُّ أزرارَه). لا يُرفع من المسجَّل إلا
+   تلك الأسماءُ بعينها، ويُثبَّت لكلٍّ منها أنه نظامٌ مطفأٌ هنا فعلاً وأن زرَّه غائب — فلا يخفي التحويلُ تراجعاً حقيقياً */
+const ET_CHIPS = (() => {
+  const src = fs.readFileSync(new URL('../../src/services/290-activity-log.js', import.meta.url), 'utf8'), line = (src.split(/\r?\n/).find((l) => /^\s*var ET_FILTER = \[/.test(l)) || '');
+  return [...line.matchAll(/\['([a-z_]+)', '([^']+)', '([a-zA-Z]+(?:\/[a-zA-Z]+)?)'\]/g)].map((m) => ({ et: m[1], name: m[2], leaf: m[3] }));
+})();
+const offChipsOf = (page) => page.evaluate((chips) => {
+  const P4 = KIVO.Perm44, Pm = KIVO.BassamPerm, d = KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : '';
+  const on = d && P4.ceiling ? (P4.ceiling(d).on || []) : null, po = Pm && Pm.platOff ? Pm.platOff() : [], site = KIVO.__ADMIN_MODE === 'site';
+  return chips.map((c) => { const s = P4.sysList().filter((x) => x && x.toggle !== false && (x.leaves || []).indexOf(c.leaf) !== -1)[0];
+    return s && (po.indexOf(s.key) !== -1 || (!site && on && on.indexOf(s.key) === -1)) ? { name: c.name, sys: s.key, why: po.indexOf(s.key) !== -1 ? 'platform' : 'unit ' + d } : null; }).filter(Boolean);
+}, ET_CHIPS);
+/* المسجَّلُ ناقصاً أزرارَ الأنظمة المطفأة هنا — ومع كلٍّ منها إثباتُه (مطفأٌ · زرُّه غائبٌ الآن) */
+async function offOplog(page, t, kind, rec, now) {
+  if (t !== 'oplog' || kind !== 'actions') return rec;
+  const offs = await offChipsOf(page), names = offs.map((o) => o.name), dropped = rec.filter((x) => names.includes(x));
+  for (const x of dropped) assert.ok(!now.actions.has(x), 'oplog: the filter button «' + x + '» of an OFF system (' + JSON.stringify(offs.find((o) => o.name === x)) + ') is hidden');
+  return rec.filter((x) => !names.includes(x));
+}
 const gone44 = (t, kind, x) => !!(DELETED44[t] && (DELETED44[t][kind] || []).includes(x)) || !!(DELETED_D5H[t] && (DELETED_D5H[t][kind] || []).includes(x)) || !!(DELETED_D6[t] && (DELETED_D6[t][kind] || []).includes(x));
 const SYS_TABS = ['overview', 'sec', 'users', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
 const DEPT_TABS = ['backup', 'oplog', 'shifts'];
@@ -449,7 +470,7 @@ if (CAPTURE) {
             await s.go('#/admin/' + t, 4000);
             const states = await probes(s.page, 'dept', t), now = union(states), rec = FX.dept[t];
             assert.ok(variants(rec.selected).some((v) => states[0].selected.includes(v)), 'admin/' + t + ': opens «' + rec.selected + '» (now ' + JSON.stringify(states[0].selected) + ')');
-            for (const kind of ['headings', 'actions', 'fields']) assert.deepEqual(missing(rec[kind], now, kind), [], 'admin/' + t + ': every recorded ' + kind + ' still reachable');
+            for (const kind of ['headings', 'actions', 'fields']) assert.deepEqual(missing(await offOplog(s.page, t, kind, rec[kind], now), now, kind), [], 'admin/' + t + ': every recorded ' + kind + ' still reachable');
           }
           for (const t of SYS_TABS) {
             await s.go('#/sysadmin/' + t, 2500);
@@ -503,7 +524,7 @@ if (CAPTURE) {
               };
               const states = await probes(s.page, scope, t, each), now = union(states);
               for (const kind of ['headings', 'actions', 'fields']) {
-                const miss = missing(rec[t][kind], now, kind).filter((x) => !(scope === 'sys' && gone44(t, kind, x))).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x])).filter((x) => !(kind === 'headings' && scope === 'sys' && merged(t, x, now)));
+                const miss = missing(scope === 'dept' ? await offOplog(s.page, t, kind, rec[t][kind], now) : rec[t][kind], now, kind).filter((x) => !(scope === 'sys' && gone44(t, kind, x))).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x])).filter((x) => !(kind === 'headings' && scope === 'sys' && merged(t, x, now)));
                 if (miss.length) bad.push(vn + ' ' + scope + '/' + t + ': not reachable (' + kind + '): ' + miss.join(' · '));
               }
             }
