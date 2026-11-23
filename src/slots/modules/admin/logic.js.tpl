@@ -3340,8 +3340,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   audExport() {
     const A = KIVO.BassamAudit,
-      rows = (this.state.aud || {}).rows || [];
-    if (!A || !rows.length) return;
+      S = this.state.aud || {},
+      rows = S.rows || [];
+    /* V7 · د6 (QA ١١): لا خروجَ صامت — قبل اكتمال التحميل الزرُّ معطّل، والفراغُ يُقال */
+    if (!A || S.loading || !S.loaded) return this.bsToast("انتظر اكتمال تحميل السجل ثم صدّره", "warn");
+    if (!rows.length) return this.bsToast("لا أحداث في النطاق المحدد", "warn");
     const e = (t) => '"' + String(null == t ? "" : t).replace(/"/g, '""') + '"',
       L = [["الوقت", "الفعل", "النوع", "الكيان", "المعرّف", "السياق", "المستخدم", "الإدارة", "التفاصيل"].map(e).join(",")];
     rows.forEach((r) => {
@@ -3564,6 +3567,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "button",
         {
           onClick: () => this.audExport(),
+          disabled: !!(S.loading || !S.loaded),   /* V7 · د6 (QA ١١): معطّلٌ حتى يكتمل التحميل */
+          "aria-disabled": S.loading || !S.loaded ? "true" : "false",
           style: {
             height: 30,
             padding: "0 12px",
@@ -3572,7 +3577,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             background: "var(--bg-card)",
             color: "var(--text-secondary)",
             fontSize: 11,
-            cursor: "pointer",
+            cursor: S.loading || !S.loaded ? "not-allowed" : "pointer",
+            opacity: S.loading || !S.loaded ? 0.5 : 1,
             fontFamily: "'Cairo',sans-serif",
           },
         },
