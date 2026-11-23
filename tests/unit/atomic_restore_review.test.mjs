@@ -966,9 +966,10 @@ test('actual permSlice replacement removes absent/default cap and lenses instead
       .map((r) => r.v)
       .join(''),
   );
-  assert.ok(isDeepStrictEqual(value, copy(expected)));
-  assert.equal(Object.prototype.hasOwnProperty.call(value.caps, D1), false);
-  assert.equal(Object.prototype.hasOwnProperty.call(value.lenses, D1), false);
+  /* V7 · د6 (QA ٦ — قرارُ المالك ب3، يلغي «الاستعادةُ تُبقي السقفَ المرفق» لنسخ الإدارة): السقفُ والعدساتُ كما في الهدف — لا يُمحى ما غاب عن النسخة */
+  assert.equal(isDeepStrictEqual(value, copy(expected)), false, 'لم يعد السقفُ يتبع الشريحة (rsPermSlice)');
+  assert.deepEqual(value.caps[D1], pm.caps[D1]);
+  assert.deepEqual(value.lenses[D1], ['zones', 'paths']);
   assert.deepEqual(value.lenses[D2], ['gates']);
 });
 test('actual permSlice merge is one joint no-op when current employee grants exist, even if current cap/lenses are absent', needs('award', 'custody', 'dstats', 'seized'), async () => {
@@ -997,8 +998,9 @@ test('permission slice filters against current page/lens registries including ad
       .map((r) => r.v)
       .join(''),
   );
-  assert.deepEqual(value.caps[D1], ['emps', 'planning', 'help']);
-  assert.deepEqual(value.lenses[D1], ['zones', 'paths']);
+  /* V7 · د6 (QA ٦ — قرارُ المالك ب3): سقفُ النسخة وعدساتُها لا تُكتب على الوحدة — تبقى كما في الهدف */
+  assert.deepEqual(value.caps[D1], B.keys.bassam_perms_v1.caps[D1]);
+  assert.deepEqual((value.lenses || {})[D1], (B.keys.bassam_perms_v1.lenses || {})[D1]);
 });
 
 test('restoring a known image reference changes ownership metadata atomically while retaining its existing body and never touching R2', needs('award', 'custody', 'dstats', 'seized'), async () => {

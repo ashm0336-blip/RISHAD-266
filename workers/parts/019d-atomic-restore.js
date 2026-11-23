@@ -1142,14 +1142,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       };
     }
     rsShape(requestedPerms, ['capSet', 'cap', 'emps', 'lenses']);
-    var retainedPerms = rsPermSlice(
-      JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))),
-      dept,
-      requestedPerms,
-      body.mode,
-      PG_KEYS,
-      KIVO_LENS_PLUGINS.keys,
-    );
+    var retainedPerms = rsDeptPermsKeep(JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))), dept, requestedPerms, body.mode);   /* V7 · د6 (QA ٦ — قرارُ المالك ب): السقفُ والمدير لا يغيّرهما استيراد */
     if (retainedPerms !== null) {
       keys[K_PERM] = JSON.stringify(retainedPerms);
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
@@ -1300,7 +1293,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept },
+    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept, perms: body.scope.kind === 'dept' ? rsPermsCounts(A, dept, keys) : undefined },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -1693,6 +1686,38 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
     },
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
+}
+/* V7 · د6 (QA ٦ — قرارُ المالك ب، يلغي «الاستيرادُ يُبقي السقفَ المرفق» لنسخ الإدارة): استيرادُ نسخة الإدارة واستعادتُها لا يغيّران سقفَ الوحدة
+   (الأنظمة المشغَّلة · الأقسام · العدسات · الاستقلال · علامة البذر) ولا مديرَها: تبقى كما في الهدف. ما ينتقل أوراقُ موظفي الإدارة وحدها (بيانُ الإدارة)
+   — وصحيفةُ مدير المصدر «mgr:*» لا تنتقل، وصحيفةُ مدير الهدف (إن وُجدت) تبقى كما هي. السقفُ الهدف يحكمها وقتَ القرار (057 enfTranslated · enfKeyOnCeiling):
+   ما خارجه مخزَّنٌ بلا أثر. الدمجُ في إدارةٍ لها أوراقٌ لا يمسّها (كما كان). null = لا تغيير */
+void rsPermSlice;   /* V7 · د6 (QA ٦): قاعدةُ الشريحة (051c ← 320 permSlice) باقيةٌ للعميل وأداة المطابقة؛ الخادمُ لا يطبّقها على نسخ الإدارة بعد قرار المالك ب3 */
+/* V7 · د6 (QA ٦ — قرارُ المالك ب4): ما ينتقل من صلاحيات الإدارة بعدده — الأدوار · الإسنادات (أشخاصُ الأدوار + أوراقُ الموظفين) · وما لا أثرَ له لأن النظامَ
+   مطفأٌ في سقف الهدف (لكل نظام: عددُ الأدوار والأوراق التي تحمله). مصدرٌ واحد لملخّص ما قبل التأكيد (inspection.counts) وملخّص النجاح (counts) — 548 permsLine */
+function rsPermsCounts(A, d, keys) {
+  var out = { roles: 0, assignments: 0, inert: {} }, rk = perm44Key(d), E = perm44E(), on = perm44LeafOn(A, d), add = function (s) { out.inert[s] = (out.inert[s] || 0) + 1; };
+  if (Object.prototype.hasOwnProperty.call(keys, rk)) {
+    var R = perm44Rec(keys[rk]) || { roles: [], people: {} };
+    (R.roles || []).forEach(function (r) { out.roles++; Object.keys(isObj(r && r.sys) ? r.sys : {}).forEach(function (sy) { if (!E.sysOn(sy, on)) add(sy); }); });
+    out.assignments += Object.keys(isObj(R.people) ? R.people : {}).length;
+  }
+  if (Object.prototype.hasOwnProperty.call(keys, K_PERM)) {
+    var em = ((parseJson(keys[K_PERM], {}) || {}).emps || {})[d] || {};
+    Object.keys(em).forEach(function (ek) { if (isMgrKey(ek) || !isObj(em[ek])) return; out.assignments++; Object.keys(em[ek]).forEach(function (leaf) { if (!on(leaf)) add(leaf.split('/')[0]); }); });
+  }
+  return out;
+}
+function rsDeptPermsKeep(pm, id, PP, mode) {
+  if (!id || !isObj(PP)) return null;
+  pm = isObj(pm) ? pm : {}; pm.emps = isObj(pm.emps) ? pm.emps : {};
+  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, staff = false;
+  for (ek in cur) if (!isMgrKey(ek)) staff = true;
+  if (mode !== 'replace' && staff) return null;
+  for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek];
+  for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) out[ek] = inc[ek];
+  if (deq(out, cur)) return null;
+  pm.emps[id] = out;
+  return pm;
 }
 /* V7 · د6: ثلاثُ قطعٍ من مسار الاستعادة صارت دوالَّ ليشاركه فيها الاستيرادُ على أجزاء (019g) بلا نسخةٍ ثانية: حكمُ الصلاحية · تحويلُ النسخة وتخطيطُها واعتمادُها · ترجمةُ الرفض */
 function rsScopeDenied(A, s) {

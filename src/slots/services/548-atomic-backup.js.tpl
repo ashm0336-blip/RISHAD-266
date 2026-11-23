@@ -334,6 +334,8 @@
     'nf-department': 'تنبيه لإدارة غير إدارة النسخة',
     'nf-state-message-unknown': 'علامة قراءة لتنبيه ليس في النسخة',
     'nf-state-identity-unknown': 'علامة قراءة لحساب ليس في الوحدة',
+    /* V7 · د6 (QA ٦ — قرارُ المالك ب1) */
+    'mgr-sheet': 'صحيفة صلاحيات مدير المصدر — مدير الوحدة يبقى كامل الصلاحية في إدارته، والسقف كما هو',
   };
   function nfItem(x) { return /^nf-/.test(x.why); }
   /* «أُعيد ربط N إشارة من <المصدر> إلى <الهدف>» بتفصيلها لكل مورد · ومعرّفاتٌ أخرى لم تُربط · وما بقي فيه المعرّفُ المصدر نصاً — '' إن لم يكن ربط */
@@ -343,6 +345,12 @@
     return (r.n > 0 ? ' أُعيد ربط ' + r.n + ' إشارة من «' + r.from + '» إلى «' + r.to + '» (' + list(r.by) + ').' : '') +
       (Object.keys(r.foreign || {}).length ? ' معرّفات إدارات أخرى في النسخة لم يُعَد ربطها: ' + list(r.foreign) + '.' : '') +
       (Object.keys(r.left || {}).length ? ' بقي المعرّف المصدر نصاً في: ' + list(r.left) + '.' : '');
+  }
+  /* V7 · د6 (QA ٦ — قرارُ المالك ب4): الصلاحياتُ المنقولة بعددها من الخادم (counts.perms — 019d rsPermsCounts): الأدوار · الإسنادات · وما لا أثرَ له لكل نظامٍ مطفأٍ في سقف الوحدة. مصدرٌ واحد للتأكيد ولملخّص النجاح (root-logic) */
+  function permsLine(c) {
+    var p = record(c) && record(c.perms) ? c.perms : null; if (!p) return '';
+    var inert = record(p.inert) ? Object.keys(p.inert).map(function (k) { return k + ': ' + p.inert[k]; }) : [];
+    return ' الصلاحيات: ' + (p.roles || 0) + ' دور و' + (p.assignments || 0) + ' إسناد تنتقل — ويبقى سقف الوحدة ومديرها كما هما' + (inert.length ? '؛ لا أثر لها لأن النظام مطفأ في الوحدة: ' + inert.join(' · ') : '') + '.';
   }
   var FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
   function skipList(list) {
@@ -573,6 +581,7 @@
         (fieldsLost.length ? ' حقول لن تُنقل (' + fieldsLost.length + '): ' + fieldsLost.map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + '.' : '') +
         (nfLost.length ? ' تنبيهات لن تُنقل (' + nfLost.reduce(function (n, x) { return n + (x.n || 0); }, 0) + '): ' + nfLost.map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + '.' : '') +
         remapLine(i.summary) +
+        permsLine(c) +
         (i.summary.imagesNew > 0 ? ' ستُكتب ' + i.summary.imagesNew + ' صورة تحملها النسخة وليست على المنصة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
@@ -612,6 +621,7 @@
     cancel: cancel,
     confirm: confirm,
     remapLine: remapLine,
+    permsLine: permsLine,
     refresh: refresh,
   });
 })();

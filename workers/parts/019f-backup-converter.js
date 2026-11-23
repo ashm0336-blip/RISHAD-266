@@ -115,6 +115,13 @@ function rsBCDeptRemap(docs, perms, from, to, rec) {
   });
   return rec;
 }
+/* V7 · د6 (QA ٦ — قرارُ المالك ب1): صحيفةُ صلاحيات مدير المصدر (perms.emps['mgr:*']) لا تنتقل ولا يُعاد ربطُها — مديرُ الإدارة لا تحكمه صحيفةٌ ولا دور،
+   ويبقى مديرُ الهدف كاملَ الصلاحية داخل سقف وحدته كما كان قبل الاستيراد (019d rsDeptPermsKeep). تُذكر في «ما لن يُنقل» بعددها */
+function rsBCMgrSheetDrop(perms, summary) {
+  var pe = isObj(perms) && perms.emps, n = 0;
+  if (isObj(pe)) Object.keys(pe).forEach(function (ek) { if (isMgrKey(ek)) { delete pe[ek]; n++; } });
+  if (n) (summary.notTransferred = summary.notTransferred || []).push({ k: 'perms · mgr', why: 'mgr-sheet', n: n });
+}
 function rsBCRemapRec(from, to) {
   return { from: from, to: to, n: 0, by: {}, foreign: {}, left: {} };
 }
@@ -316,6 +323,7 @@ async function rsConvertBackup(env, A, file, opt) {
     var rdocs = {}, nk = 'bsdept:' + target + ':bassam_notif_v1';
     ['bassam_notif_v1'].concat(Object.keys(RS_DEPT_REFS)).forEach(function (n) { var k = 'bsdept:' + target + ':' + n; if (rsBCOwn(keys, k)) rdocs[n] = parseJson(keys[k], null); });
     var from = source !== target ? source : rsBCDeptFind(rdocs, perms);
+    rsBCMgrSheetDrop(perms, summary);   /* V7 · د6 (QA ٦ — قرارُ المالك ب1): بعد معرفة المصدر وقبل إعادة الربط */
     if (from && from !== target && (parseJson(reference[K_DEPTS] || '[]', []) || []).some(function (d) { return d && d.id === from; })) { nfSrc = from; delete rdocs.bassam_notif_v1; }
     if (from) {
       var rec = (summary.remap = rsBCDeptRemap(rdocs, perms, from, target, rsBCRemapRec(from, target)));
@@ -587,6 +595,7 @@ async function rsConvertBackup(env, A, file, opt) {
   manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
+  if (scope.kind === 'dept') rsBCMgrSheetDrop(perms, summary);
   if (perms !== undefined) result.permissionSlice = perms;
   return result;
 }

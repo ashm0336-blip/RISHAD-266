@@ -9,13 +9,13 @@ import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { hasSystem } from './harness.mjs';
-import { oldFile, sizeOf, protocol } from './v7_d6_import_fx.mjs';
+import { oldFile, sizeOf, protocol, LAB } from './v7_d6_import_fx.mjs';
 
 const HEAP_CAP = 64, TOTAL_CAP = 80e6, CHILD = fileURLToPath(new URL('./v7_d6_import_mem_child.mjs', import.meta.url));
 const need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport', 'custody') ? {} : { skip: 'يحتاج أنظمة بيانات العرض المصدر' };
 const mb = (n) => Math.round(n / 1e5) / 10;
 
-async function measure(scale, { slice = 'auto', inline = true, preload = false, mode = 'replace', planRows = 1 } = {}) {
+async function measure(scale, { slice = 'auto', inline = true, preload = false, mode = 'replace', planRows = 1, as = 'super' } = {}) {
   const file = await oldFile({ scale }), size = sizeOf(file), first = preload ? await oldFile({ scale: 1, planRows }) : null;
   const child = fork(CHILD, [], { execArgv: ['--no-warnings', '--expose-gc', '--max-old-space-size=' + HEAP_CAP, '--max-semi-space-size=2'], env: { ...process.env, D6_NO_R2: inline ? '1' : '' }, stdio: ['ignore', 'ignore', 'pipe', 'ipc'] });
   let err = '', dead = null;
@@ -31,7 +31,7 @@ async function measure(scale, { slice = 'auto', inline = true, preload = false, 
       const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) { /* نص */ }
       return { status: r.status, j, t, h: r.headers };
     };
-    const lg = await call('/api/login', { body: { u: ready.un, p: ready.pw } }), who = { ck: (lg.h.get('set-cookie') || '').split(';')[0] };
+    const lg = await call('/api/login', { body: as === 'mgr' ? { u: LAB.mgrB, p: LAB.pw } : { u: ready.un, p: ready.pw } })   /* V7 · د6 (QA ٦): أو مديرُ الإدارة الهدف بلا منحٍ صريح */, who = { ck: (lg.h.get('set-cookie') || '').split(';')[0] };
     const scope = { kind: 'dept', departmentId: 'TEST_ONLY_B' };
     let held = 0;
     /* الإدارةُ الهدف تحمل قبل القياس جولاتٍ ≈8MB (استيرادٌ أول تحت السقف نفسِه) */
@@ -63,6 +63,14 @@ for (const preload of [false, true]) for (const scale of [1, 2]) {
     t.diagnostic((preload ? 'فوق ' + m.held + ' عقدة قائمة · ' : '') + 'scale ' + scale + ' (' + mb(m.size.total) + 'MB · مفتاح ' + mb(m.size.maxKey) + 'MB · ' + m.parts + ' جزءاً · ' + m.slices + ' دفعة) — heapUsed+external=المجموع بالـMB: ' + line(m.phases) + ' · عباراتُ دفعة الاعتماد للصفوف المودَعة: ' + m.rowStatements + ' (كلٌّ ≤ 500KB) + ' + m.imageRows + ' لأجسام الصور (كلٌّ ≤ 200KB)');
   });
 }
+/* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يستورد نسخةَ إدارته الحقيقيةَ الحجم بالمسار نفسِه وحدوده — كان يُرفض عند البدء (لا دفعاتَ لغير مدير المنصة) */
+test('(م١) [ثقيل] مديرُ الإدارة (بلا منحٍ صريح) يستبدل إدارتَه بالنسخة القديمة ≈31MB — بالدفعات تحت سقف كومةٍ ' + HEAP_CAP + 'MB والمجموعُ ≤ 80MB', { timeout: 600000, ...need }, async (t) => {
+  const m = await measure(1, { as: 'mgr' });
+  assert.ok(m.slices >= 12, 'المفتاحُ الكبير أُرسل دفعاتٍ لمدير الإدارة (' + m.slices + ')');
+  assert.equal(m.commit.ok, 1); assert.equal(m.rounds, 26); assert.equal(m.staged, 0); assert.equal(m.audits, 1);
+  for (const [name, p] of Object.entries(m.phases)) assert.ok(p.total <= TOTAL_CAP, 'مرحلة ' + name + ': ' + mb(p.total) + 'MB ≤ 80MB');
+  t.diagnostic('مديرُ الإدارة: ' + m.parts + ' جزءاً · ' + m.slices + ' دفعة — ' + line(m.phases));
+});
 test('(ب3) [ثقيل] النسخةُ القديمة ≈31MB تستبدل إدارةً تحمل نسخةً صفوفُ مخططها ثلاثةُ أضعاف — لا طلبَ يتوقّف على ما في الهدف: تحت السقف نفسِه', { timeout: 600000, ...need }, async (t) => {
   const base = await measure(1, { preload: true }), m = await measure(1, { preload: true, planRows: 5 });
   assert.ok(m.heldPlan >= base.heldPlan * 3, 'صفوفُ المخطط القائم ثلاثةُ أضعاف (' + m.heldPlan + ' مقابل ' + base.heldPlan + ')');

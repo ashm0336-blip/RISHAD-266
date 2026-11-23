@@ -10471,14 +10471,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       };
     }
     rsShape(requestedPerms, ['capSet', 'cap', 'emps', 'lenses']);
-    var retainedPerms = rsPermSlice(
-      JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))),
-      dept,
-      requestedPerms,
-      body.mode,
-      PG_KEYS,
-      KIVO_LENS_PLUGINS.keys,
-    );
+    var retainedPerms = rsDeptPermsKeep(JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))), dept, requestedPerms, body.mode);   /* V7 · د6 (QA ٦ — قرارُ المالك ب): السقفُ والمدير لا يغيّرهما استيراد */
     if (retainedPerms !== null) {
       keys[K_PERM] = JSON.stringify(retainedPerms);
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
@@ -10629,7 +10622,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept },
+    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept, perms: body.scope.kind === 'dept' ? rsPermsCounts(A, dept, keys) : undefined },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -11022,6 +11015,38 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
     },
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
+}
+/* V7 · د6 (QA ٦ — قرارُ المالك ب، يلغي «الاستيرادُ يُبقي السقفَ المرفق» لنسخ الإدارة): استيرادُ نسخة الإدارة واستعادتُها لا يغيّران سقفَ الوحدة
+   (الأنظمة المشغَّلة · الأقسام · العدسات · الاستقلال · علامة البذر) ولا مديرَها: تبقى كما في الهدف. ما ينتقل أوراقُ موظفي الإدارة وحدها (بيانُ الإدارة)
+   — وصحيفةُ مدير المصدر «mgr:*» لا تنتقل، وصحيفةُ مدير الهدف (إن وُجدت) تبقى كما هي. السقفُ الهدف يحكمها وقتَ القرار (057 enfTranslated · enfKeyOnCeiling):
+   ما خارجه مخزَّنٌ بلا أثر. الدمجُ في إدارةٍ لها أوراقٌ لا يمسّها (كما كان). null = لا تغيير */
+void rsPermSlice;   /* V7 · د6 (QA ٦): قاعدةُ الشريحة (051c ← 320 permSlice) باقيةٌ للعميل وأداة المطابقة؛ الخادمُ لا يطبّقها على نسخ الإدارة بعد قرار المالك ب3 */
+/* V7 · د6 (QA ٦ — قرارُ المالك ب4): ما ينتقل من صلاحيات الإدارة بعدده — الأدوار · الإسنادات (أشخاصُ الأدوار + أوراقُ الموظفين) · وما لا أثرَ له لأن النظامَ
+   مطفأٌ في سقف الهدف (لكل نظام: عددُ الأدوار والأوراق التي تحمله). مصدرٌ واحد لملخّص ما قبل التأكيد (inspection.counts) وملخّص النجاح (counts) — 548 permsLine */
+function rsPermsCounts(A, d, keys) {
+  var out = { roles: 0, assignments: 0, inert: {} }, rk = perm44Key(d), E = perm44E(), on = perm44LeafOn(A, d), add = function (s) { out.inert[s] = (out.inert[s] || 0) + 1; };
+  if (Object.prototype.hasOwnProperty.call(keys, rk)) {
+    var R = perm44Rec(keys[rk]) || { roles: [], people: {} };
+    (R.roles || []).forEach(function (r) { out.roles++; Object.keys(isObj(r && r.sys) ? r.sys : {}).forEach(function (sy) { if (!E.sysOn(sy, on)) add(sy); }); });
+    out.assignments += Object.keys(isObj(R.people) ? R.people : {}).length;
+  }
+  if (Object.prototype.hasOwnProperty.call(keys, K_PERM)) {
+    var em = ((parseJson(keys[K_PERM], {}) || {}).emps || {})[d] || {};
+    Object.keys(em).forEach(function (ek) { if (isMgrKey(ek) || !isObj(em[ek])) return; out.assignments++; Object.keys(em[ek]).forEach(function (leaf) { if (!on(leaf)) add(leaf.split('/')[0]); }); });
+  }
+  return out;
+}
+function rsDeptPermsKeep(pm, id, PP, mode) {
+  if (!id || !isObj(PP)) return null;
+  pm = isObj(pm) ? pm : {}; pm.emps = isObj(pm.emps) ? pm.emps : {};
+  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, staff = false;
+  for (ek in cur) if (!isMgrKey(ek)) staff = true;
+  if (mode !== 'replace' && staff) return null;
+  for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek];
+  for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) out[ek] = inc[ek];
+  if (deq(out, cur)) return null;
+  pm.emps[id] = out;
+  return pm;
 }
 /* V7 · د6: ثلاثُ قطعٍ من مسار الاستعادة صارت دوالَّ ليشاركه فيها الاستيرادُ على أجزاء (019g) بلا نسخةٍ ثانية: حكمُ الصلاحية · تحويلُ النسخة وتخطيطُها واعتمادُها · ترجمةُ الرفض */
 function rsScopeDenied(A, s) {
@@ -12222,6 +12247,13 @@ function rsBCDeptRemap(docs, perms, from, to, rec) {
   });
   return rec;
 }
+/* V7 · د6 (QA ٦ — قرارُ المالك ب1): صحيفةُ صلاحيات مدير المصدر (perms.emps['mgr:*']) لا تنتقل ولا يُعاد ربطُها — مديرُ الإدارة لا تحكمه صحيفةٌ ولا دور،
+   ويبقى مديرُ الهدف كاملَ الصلاحية داخل سقف وحدته كما كان قبل الاستيراد (019d rsDeptPermsKeep). تُذكر في «ما لن يُنقل» بعددها */
+function rsBCMgrSheetDrop(perms, summary) {
+  var pe = isObj(perms) && perms.emps, n = 0;
+  if (isObj(pe)) Object.keys(pe).forEach(function (ek) { if (isMgrKey(ek)) { delete pe[ek]; n++; } });
+  if (n) (summary.notTransferred = summary.notTransferred || []).push({ k: 'perms · mgr', why: 'mgr-sheet', n: n });
+}
 function rsBCRemapRec(from, to) {
   return { from: from, to: to, n: 0, by: {}, foreign: {}, left: {} };
 }
@@ -12423,6 +12455,7 @@ async function rsConvertBackup(env, A, file, opt) {
     var rdocs = {}, nk = 'bsdept:' + target + ':bassam_notif_v1';
     ['bassam_notif_v1'].concat(Object.keys(RS_DEPT_REFS)).forEach(function (n) { var k = 'bsdept:' + target + ':' + n; if (rsBCOwn(keys, k)) rdocs[n] = parseJson(keys[k], null); });
     var from = source !== target ? source : rsBCDeptFind(rdocs, perms);
+    rsBCMgrSheetDrop(perms, summary);   /* V7 · د6 (QA ٦ — قرارُ المالك ب1): بعد معرفة المصدر وقبل إعادة الربط */
     if (from && from !== target && (parseJson(reference[K_DEPTS] || '[]', []) || []).some(function (d) { return d && d.id === from; })) { nfSrc = from; delete rdocs.bassam_notif_v1; }
     if (from) {
       var rec = (summary.remap = rsBCDeptRemap(rdocs, perms, from, target, rsBCRemapRec(from, target)));
@@ -12694,6 +12727,7 @@ async function rsConvertBackup(env, A, file, opt) {
   manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
+  if (scope.kind === 'dept') rsBCMgrSheetDrop(perms, summary);
   if (perms !== undefined) result.permissionSlice = perms;
   return result;
 }
@@ -14096,9 +14130,11 @@ var RSI_SLICE = {
   'bassam_dreport_v1': ['^.', ['bassam_dreport_v1']],   /* V7 · د6: التقريرُ اليومي خريطةُ أيام — يُقسم أياماً */
 };
 var RSI_SLICE_MIN = 1500000;
+/* V7 · د6 (QA ٦ — قرارُ المالك): الدفعاتُ (مسارُ الذاكرة المحدودة) لمدير المنصة ولمدير الإدارة على إدارته (057 enfDeptMgrFull) — كان لمدير المنصة وحده فتُرفض نسخةُ Production لمديرها */
+function rsiSliceOk(A, d) { return A.u.role === 'super' || enfDeptMgrFull(A, d); }
 async function rsiSliceSpec(env, A, s, keys, mode) {
   var out = {};
-  if (A.u.role !== 'super' || s.kind !== 'dept') return out;
+  if (s.kind !== 'dept' || !rsiSliceOk(A, s.departmentId)) return out;   /* V7 · د6 (QA ٦): مديرُ الإدارة على إدارته بالمسار نفسِه وحدوده */
   for (var n in RSI_SLICE) {
     if (!ocOwn(keys, n) || keys[n]) continue;
     /* الاستبدالُ يطرح القائم فيُقسم دائماً؛ وغيرُه (الدمج) يُقسم إن كانت الأسرةُ فارغةً في الهدف — يُعرف بعدٍّ لا بتحميل */
@@ -14129,7 +14165,7 @@ async function rsiSlice(env, A, request, id, M, b) {
      الموردُ الغائب عن النسخة يُستعاد فارغاً)، وفي غير الاستبدال هي فارغةٌ شرطاً. والقائمُ منها يُعرف بعدٍّ: موردٌ قائمٌ لم تنتج له الدفعاتُ شيئاً يُكتب فارغاً. */
   var dept = M.scope.departmentId, reference = await rsReferenceSnapshot(env, A.u.id, { departments: [dept], operationalKeys: [] }), key = 'bsdept:' + dept + ':' + base, set = {}, bs = {}, ops = {}, why = {}, held = [];
   env = reference.env; A = reference.A;
-  if (A.u.role !== 'super' || rsScopeDenied(A, M.scope) || !RSI_SLICE[base]) throw rsError('restore-policy', 403);
+  if (!rsiSliceOk(A, dept) || rsScopeDenied(A, M.scope) || !RSI_SLICE[base]) throw rsError('restore-policy', 403);
   for (var fr of RSI_SLICE[base][1]) {
     reference.operational.keys['bsdept:' + dept + ':' + fr] = null;
     if (await D.prepare('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource=?2').bind(dept, fr).first('n')) held.push('bsdept:' + dept + ':' + fr);
@@ -14246,7 +14282,7 @@ function rsiFieldRec(list) {
   (list || []).forEach(function (r) { if (r && (RSI_FIELD_WHY[r.why] || /^nf-/.test(r.why))) rec[r.k + '|' + r.why] = r; });   /* V7 · د6 (remap): وبنودُ التنبيهات المُسقطة nf-* */
   return rec;
 }
-var RSI_FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
+var RSI_FIELD_WHY = { transient: 1, field: 1, 'field-type': 1, 'mgr-sheet': 1 };   /* V7 · د6 (QA ٦): وصحيفةُ مدير المصدر (019f rsBCMgrSheetDrop) */
 function rsiFieldList(recs) {
   var all = {};
   recs.forEach(function (rec) { Object.keys(rec || {}).forEach(function (id) { var r = rec[id]; if (!all[id]) all[id] = { k: r.k, why: r.why, n: 0 }; all[id].n += r.n; }); });
@@ -26318,6 +26354,13 @@ function enfGrantOf(A, d) {
   return (c[d] = out);
 }
 function enfPermMigrated(A) { return !!(A && A.enf && A.enf.perm && A.enf.perm.applied); }
+/* V7 · د6 (QA ٦ — قرارُ المالك): «لمدير الإدارة الصلاحيةُ الكاملة داخل إدارته» — يشمل استيرادَ نسخة إدارته واستبدالَها. مصدرٌ واحد: المفتاحان هنا،
+   ومديرُ الإدارة = حسابُ الإدارة أو مديرٌ بشارةٍ فيها (أو مديرُ إدارةٍ أمٍّ على قسمها — isMgrOf) · لا مديرُ عقدةٍ أعلى (gm) ولا مديرُ المنصة (له كلُّ شيء أصلاً). النسخةُ الشاملة لمدير المنصة وحده (019d · 062) */
+var ENF_MGR_FULL = { 'backup.restore': 1, 'import.replace': 1 };
+/* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يكتب في الفترات المقفلة/المنقضية من إدارته بلا نافذةٍ رجعية — في الاستيراد والاستعادة الخادمية المتحقَّقة وحدها (A.__srvRst).
+   هذا هو الموضعُ الواحد القابلُ للرجوع: إن قرّر المالك أن يشمل الكتابةَ الحيّة كذلك يُحذف شرطُ (X.restore ∧ A.__srvRst) هنا وحده. */
+function enfLockBypass(A, d, X) { return !!(X && X.restore && A && A.__srvRst) && enfDeptMgrFull(A, d); }
+function enfDeptMgrFull(A, d) { var r = A && A.u && A.u.role; return (r === 'dept' || r === 'staff') && !!d && isUnitId(A, d) && isMgrOf(A, d); }
 /* هل يحمل الفاعلُ المفتاحَ في الإدارة d؟ (سقف الإدارة ∧ بوابة العدسة ∧ الدور ∧ الترجمة/المنح الصريح − الإسقاط) */
 function enfHeld(A, d, key) {
   if (!A || !A.u) return false;
@@ -26340,6 +26383,7 @@ function enfHeld0(A, d, key) {
   if (!isUnitId(A, d)) return false;
   if (!sup && !deptInScope(A, d)) return false;
   if (!enfKeyOnCeiling(A, d, key)) return false;
+  if (ENF_MGR_FULL[key] && enfDeptMgrFull(A, d) && !enfGrantOf(A, d).minus[key]) return true;   /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يحمل الاستعادةَ والاستبدال في إدارته وحدها — بلا منحٍ صريح (الإسقاطُ الصريح من مدير المنصة يبقى نافذاً) */
   var L = ix.lens[key];
   if (L) {                                                               /* D3-04: Ceiling ∧ Employee Lens Assignment — enable بوابةٌ لا تمنح العملية */
     var g = KIVO_BUILD.lensGate(A.perms, u, d, L);
@@ -26990,6 +27034,7 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   if (missing.length) return enfNo('perm', { missing: missing, keys: real });
   /* النطاق — كلُّ عنصرٍ متأثر (deny أو unknown ⇒ رفض) */
   var sc = opts.noScope ? { composite: 'not_applicable', denyDims: [], unknownDims: [], items: 0, why: '' } : enfScopeEval(A, d, k, rn, a, b, used, X);
+  if (sc.composite !== 'not_applicable' && sc.composite !== 'allow' && enfLockBypass(A, d, X) && (sc.denyDims || []).concat(sc.unknownDims || []).every(function (q) { return q === 'DateRange'; })) sc = { composite: 'allow', denyDims: [], unknownDims: [], items: sc.items, why: 'mgr-restore-locked (' + sc.why + ')' };   /* V7 · د6 (QA ٦): 057 enfLockBypass */
   if (sc.composite === 'deny') return enfNo('scope', { keys: used, dims: sc.denyDims, detail: sc.why, items: sc.items });
   if (sc.composite === 'unknown') return enfNo('scope-unknown', { keys: used, dims: sc.unknownDims, detail: sc.why, items: sc.items });
   /* السببُ الإلزامي (audit.reason في السجل · §12) */
@@ -27584,7 +27629,7 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
   if (!X.batchDeny && (restoreMarker || audRestore)) {
     X.restore = true; X.snapKind = 'restore';
     var touched = {}, glob = false;
-    for (i = 0; i < ks.length; i++) { var dr = parseKey(ks[i]).dept; if (dr) touched[dr] = 1; else glob = true; }
+    for (i = 0; i < ks.length; i++) { var dr = parseKey(ks[i]).dept; if (dr) touched[dr] = 1; else if (!(ks[i] === K_PERM && A.__srvRst && restoreMarker && restoreMarker.scope === 'dept')) glob = true; }   /* V7 · د6 (QA ٦): شريحةُ صلاحيات الإدارة في استعادتها الخادمية المتحقَّقة (019d rsPermSlice — تبنيها من القائم فلا يتغيّر خارج الإدارة شيء) ليست «مفتاحاً عاماً» */
     var isSup = A.u.role === 'super', nT = Object.keys(touched).length, isMgr = !glob && nT > 0, hasKey = isSup || (!glob && nT > 0), dd;
     for (dd in touched) { if (!isMgrOf(A, dd)) isMgr = false; if (!isSup && !enfHeld(A, dd, 'backup.restore')) hasKey = false; }   /* المفتاحُ في كل إدارةٍ تمسّها الحفظة */
     var reason = (restoreMarker && restoreMarker.reason) || '', wk; if (!String(reason).trim()) for (wk in X.why) { reason = X.why[wk]; break; }
