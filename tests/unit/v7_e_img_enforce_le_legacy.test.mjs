@@ -160,9 +160,50 @@ async function sweep(mode, t) {
 const OPS3 = ['PUT', 'chunked PUT', 'DELETE'], OPS2 = ['PUT', 'chunked PUT'];
 const opName = (cell, i) => (cell.indexOf('new upload') === 0 ? OPS2 : OPS3)[i];
 
+/* V7 · د6 (gatefix): نظامٌ وُلد بعد المرجع («رصد الحالات» rasd) — أوراقُه وسجلّاته لا صفَّ لها ولا عمودَ في الجدول القديم. يُشتقّ نظيرُها من المرجع نفسِه
+   بلا توقّعٍ مكتوب لخانة:
+   · سجلٌّ وليد R (023 RES_REG: سقفُه «P/x» وصفحتُه P وليدة) نظيرُه أوّلُ سجلٍّ مقيسٍ R0 بالشكل نفسِه (النطاقُ والأعلامُ نفسُها، وسقفُه «Q/x» بالقسم نفسِه)؛
+     والفاعلون يُقرؤون عليه بتبديل P↔Q في ورقتهم: كاتبُ «P/x» على R = كاتبُ «Q/x» على R0 · وكاتبُ «Q/x» على R = كاتبُ «P/x» (وليد) على R0 — فلا يكتب
+     نظامٌ صورَ نظامٍ آخر.
+   · ورقةٌ وليدة «s P…:فعل» على خانةٍ قديمة: تقاطعُ كلِّ أوراق المرجع بالفعل نفسِه (Y حيث سمح القديمُ لكل ورقةٍ بهذا الفعل وحده: كاتبُ الوحدة · رفعُ إثبات
+     المهمة) — أشدّ من أيّ ورقةٍ حقيقية.
+   وما لم يُشتقّ له نظيرٌ يبقى «بلا مرجع» (الإنفاذُ لا يسمح فيه بشيء) كما كان. */
+function extendGold(L, E) {
+  const X = Object.assign({}, L), cols = new Set(Object.keys(L['platform admin'] || {}));
+  const pg = (c) => String(c || '').split('/')[0], sub = (c) => String(c || '').split('/').slice(1).join('/');
+  const bornPage = (p) => !!p && !GOLD_PAGES.has(p) && PG_KEYS.includes(p);
+  const shape = (e) => JSON.stringify(Object.keys(e).filter((k) => k !== 'cap').sort().map((k) => [k, e[k]]));
+  const ANALOG = {}, SWAP = {};
+  for (const n of Object.keys(RES_REG)) {
+    const e = RES_REG[n], c = [].concat(e.cap || []);
+    if (cols.has(n) || c.length !== 1 || !bornPage(pg(c[0])) || !sub(c[0])) continue;
+    const r0 = Object.keys(RES_REG).find((o) => { const d = [].concat(RES_REG[o].cap || []); return cols.has(o) && d.length === 1 && GOLD_PAGES.has(pg(d[0])) && sub(d[0]) === sub(c[0]) && shape(RES_REG[o]) === shape(e); });
+    if (!r0) continue;
+    const P = pg(c[0]), Q = pg(RES_REG[r0].cap);
+    assert.ok(!SWAP[P] || SWAP[P] === Q, 'one analogue page for ' + P); ANALOG[n] = r0; SWAP[P] = Q; SWAP[Q] = P;
+  }
+  const swap = (id) => id.replace(/^s ([A-Za-z]+)(?=[/:])/, (m, p) => (SWAP[p] ? 's ' + SWAP[p] : m));
+  const actOf = (id) => (/^s [A-Za-z/]+:([a-z]+)$/.exec(id) || [])[1];
+  const bornActor = (id) => { const m = /^s ([A-Za-z]+)[/:]/.exec(id); return !!m && !GOLD_PAGES.has(m[1]); };
+  const sameAct = {}; for (const id of Object.keys(L)) { const a = actOf(id); if (a) (sameAct[a] = sameAct[a] || []).push(id); }
+  const inter = (act, cell) => {
+    const rows = (sameAct[act] || []).map((r) => L[r][cell]).filter((v) => v !== undefined); if (!rows.length) return undefined;
+    let o = ''; for (let i = 0; i < rows[0].length; i++) { const no = rows.find((v) => v[i] !== 'Y'); o += no ? no[i] : 'Y'; } return o;
+  };
+  const cellOf = (id, cell) => {
+    const base = cell.replace(/^open unit: /, ''), pre = cell.slice(0, cell.length - base.length);
+    if (ANALOG[base]) { const id2 = swap(id), c2 = pre + ANALOG[base]; return L[id2] ? L[id2][c2] : bornActor(id2) ? inter(actOf(id2), c2) : undefined; }
+    return L[id] ? L[id][cell] : bornActor(id) ? inter(actOf(id), cell) : undefined;
+  };
+  const cells = new Set(); for (const id of Object.keys(E)) for (const c of Object.keys(E[id])) cells.add(c);
+  const ids = new Set(Object.keys(L)); for (const id of Object.keys(E)) { if (bornActor(id)) ids.add(id); for (const r of GRANT_REF[id] || []) if (bornActor(r)) ids.add(r); }
+  for (const id of ids) { const row = Object.assign({}, L[id] || {}); for (const c of cells) if (row[c] === undefined) { const v = cellOf(id, c); if (v !== undefined) row[c] = v; } X[id] = row; }
+  return X;
+}
+
 /* enforce allowed ⇒ legacy allowed. Returns { 'record · operation': [actors…] } for the cells that break it. */
-function violations(L, E) {
-  const out = {}; let compared = 0;
+function violations(L0, E) {
+  const out = {}; let compared = 0, L = extendGold(L0, E);
   for (const id of Object.keys(E)) {
     const refs = L[id] ? [id] : GRANT_REF[id]; assert.ok(refs && refs.every((r) => L[r]), id + ': a legacy counterpart exists (' + refs + ')');
     for (const cell of Object.keys(E[id])) for (let i = 0; i < E[id][cell].length; i++) {
@@ -212,6 +253,8 @@ let SW = null;
 /* V7 · د5-ح (القفل): الوضعُ القديم حُذف فلا يُقاس عموده — المرجعُ ما قيس منه على العامل 20e6571 بالعالم نفسِه (v7_e_img_enforce_le_legacy.gold.json ·
    sweep · binds). عمودُ الإنفاذ يُقاس حيّاً كما كان ويُقارن بالمرجع بالقاعدة نفسِها (enforce لا يسمح بما رفضه legacy) */
 const GOLD = JSON.parse(fs.readFileSync(new URL('./v7_e_img_enforce_le_legacy.gold.json', import.meta.url), 'utf8'));
+/* صفحاتُ أوراق المرجع (s <ورقة>:<فعل>) — ما سواها وُلد بعده */
+const GOLD_PAGES = new Set(Object.keys(GOLD.sweep).map((r) => /^s ([A-Za-z]+)/.exec(r)).filter(Boolean).map((m) => m[1]));
 const sweeps = (t) => SW || (SW = quiet(async () => ({ L: { table: GOLD.sweep, cells: GOLD.sweepCells }, E: await sweep('enforce', t) })));
 
 test('the sweep is not vacuous: the lists are derived and both modes allow real writers', { ...needs('award', 'custody', 'dstats', 'irshad', 'seized', 'tasks'), timeout: 1800000 }, async (t) => {
@@ -322,7 +365,8 @@ async function binds(mode, t) {
     }
   }
   if (t) t.diagnostic(mode + ' binds: ' + Object.keys(out).length + ' actors · ' + saves + ' saves');
-  return { out, saves };
+  /* V7 · د6 (gatefix): سقفُ وحدة المُثبِّت كما خُزّن (tests/fixtures/gen_fixture.py caps.tst_d1) — نظامٌ ليس فيه مطفأٌ لها */
+  return { out, saves, caps: Array.isArray((P.caps || {})[FXD]) ? P.caps[FXD].slice() : null };
 }
 let BN = null;
 const bindSweeps = (t) => BN || (BN = quiet(async () => ({ L: { out: GOLD.binds, saves: GOLD.bindSaves }, E: await binds('enforce', t) })));
@@ -331,10 +375,14 @@ test('IMAGES · bind by a record save: enforce accepts no foreign image that leg
   const { L, E } = await bindSweeps(t), viol = {}, other = {}; let compared = 0;
   const KEY = Object.fromEntries(WRITE_KEYS.map((e) => ['g home + ' + e.key, e]));
   for (const id of Object.keys(E.out)) for (const h of Object.keys(E.out[id])) {
-    const refs = L.out[id] ? [id] : id === 'g home' ? ['home sheet'] : atomsOf(KEY[id]).filter(([, a]) => WRITE_ACTS[a]).map(([l, a]) => 'home + ' + sheetId(l, a)).concat(['home sheet']);
+    /* V7 · د6 (gatefix): فاعلُ ورقةٍ وُلدت بعد المرجع («home + s rasd:…») لم يُقَس قديماً: نظيرُه «home sheet» وحدها — جزءٌ من حقوقه، فالمقارنةُ أشدّ */
+    const refs = L.out[id] ? [id] : id === 'g home' || (id.indexOf('home + s ') === 0 && !GOLD_PAGES.has(/^home \+ s ([A-Za-z]+)/.exec(id)[1])) ? ['home sheet'] : atomsOf(KEY[id]).filter(([, a]) => WRITE_ACTS[a]).map(([l, a]) => 'home + ' + sheetId(l, a)).concat(['home sheet']);
     for (const rn of Object.keys(E.out[id][h])) {
       compared++;
-      const leg = refs.map((r) => ((L.out[r] || {})[h] || {})[rn]).filter((v) => v !== undefined);
+      let leg = refs.map((r) => ((L.out[r] || {})[h] || {})[rn]).filter((v) => v !== undefined);
+      /* V7 · د6 (gatefix): سجلٌّ وُلد بعد المرجع (bassam_rasd_v1 … — «رصد الحالات») لم يُقَس مصدراً في الجدول القديم لأيّ فاعل: مرجعُه «القديمُ يرفض» ('i') —
+         قاعدةُ السجلّ الوليد في المسح أعلاه (أشدّ من المقارنة). وما قيس لأحدٍ ولم يُقَس لنظيره يبقى فشلاً كما كان */
+      if (!leg.length && !Object.values(L.out).some((row) => row[h] && rn in row[h])) leg = ['i'];
       assert.ok(leg.length, id + ' @' + h + ' ← ' + rn + ': a legacy counterpart was measured (' + refs + ')');
       if (E.out[id][h][rn] !== 'Y' || leg.includes('Y')) continue;
       (leg.every((v) => v === 'i') ? viol : other)[h + ' ← ' + rn] = ((leg.every((v) => v === 'i') ? viol : other)[h + ' ← ' + rn] || []).concat([id]);
@@ -344,12 +392,16 @@ test('IMAGES · bind by a record save: enforce accepts no foreign image that leg
   if (process.env.V7E_PRINT) console.log(JSON.stringify({ viol, other }, null, 1));
   /* not vacuous: the home writers do save their home, and the pinned decisions are visible on this path too */
   for (const M of [L.out, E.out]) {
+    const caps = M === E.out ? E.caps : null;
     for (const a of ['home sheet', 'unit manager']) for (const h of ['plan', 'rounds']) assert.equal(M[a][h]['(his own upload)'], 'Y', a + ' @' + h);
     assert.equal(M['home sheet'].plan.bassam_rounds_v1, 'i', 'a plan-only writer cannot bind the round-owned image into the plan');
     assert.equal(M['home sheet'].rounds.bassam_plan_v1, 'i', 'a rounds-only writer cannot bind the plan-owned image into the round');
     assert.equal(M['home + s daily/rounds:edit'].plan.bassam_rounds_v1, 'Y'); assert.equal(M['home + s plan:edit'].rounds.bassam_plan_v1, 'Y');
     assert.equal(M['home + s plan:approve'].rounds.bassam_plan_v1, 'i', 'an approve on the plan is not a write of its image');
-    for (const rn of DEPT_RECORDS) for (const h of ['plan', 'rounds']) if (M['unit manager'][h][rn] !== undefined) assert.equal(M['unit manager'][h][rn], 'Y', 'the unit manager @' + h + ' ← ' + rn);
+    /* V7 · د6 (gatefix): صورةُ سجلٍّ صفحتُه خارج سقف الوحدة (نظامٌ مطفأٌ لها — «رصد الحالات» ليس في سقف المُثبِّت: ب4 · optIn) لا تُربط ولو لمدير الوحدة («المطفأ لا يظهر لأحد») */
+    const offHere = (rn) => { const pg = capsOf(RES_REG[rn]).map((c) => String(c).split('/')[0]); return !!caps && pg.length > 0 && pg.every((x) => !caps.includes(x)); };
+    for (const rn of DEPT_RECORDS) for (const h of ['plan', 'rounds']) if (M['unit manager'][h][rn] !== undefined) assert.equal(M['unit manager'][h][rn], offHere(rn) ? 'i' : 'Y', 'the unit manager @' + h + ' ← ' + rn + (offHere(rn) ? ' (its page is OFF for the unit)' : ''));
+    if (caps) assert.ok(DEPT_RECORDS.filter((rn) => !offHere(rn)).length > DEPT_RECORDS.length / 2, 'most records stay on the unit ceiling: the Y rule is not vacuous');
   }
   for (const h of ['plan', 'rounds']) assert.equal(E.out['g home'][h]['(his own upload)'], 'Y', 'a home writer by explicit grant @' + h);
   assert.deepEqual(viol, {}, 'cells where enforce binds and legacy refuses imgown');
