@@ -65,10 +65,11 @@ test('rasd · ① الصفحةُ والمحضرُ والقوائم والسجل�
     const MN = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
     if (prev.m === 12) await click(p, 'main button[title="السنة السابقة"]', '');   /* محرم: الشهرُ السابق في السنة الماضية */
     assert.ok(await p.evaluate((name) => { const el = [...document.querySelectorAll('main [title*="انقضى"]')].find((d) => d.querySelector('p') && d.querySelector('p').textContent.trim() === name); if (!el) return false; el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); return true; }, MN[prev.m - 1]), 'the locked previous month card');
-    await p.locator('textarea:visible').last().waitFor({ timeout: 10000 });
-    await p.locator('textarea:visible').last().fill('TEST_ONLY استدراك من الواجهة');
+    /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سبب — رسالةُ تأكيد «فتح الفترة للاستدراك» بدل نافذة السبب */
+    await p.getByText('فتح الفترة للاستدراك', { exact: true }).last().waitFor({ timeout: 10000 });
+    assert.equal(await p.locator('textarea:visible').count(), 0, 'no reason field');
     const opened = p.waitForResponse((r) => /\/api\/retro\b/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 });
-    assert.ok(await click(p, 'button', 'حفظ بالسبب'), 'the reason dialog');
+    assert.ok(await click(p, 'button', 'فتح الفترة'), 'the confirmation');
     assert.equal((await opened).status(), 200);
     await p.waitForTimeout(1500);
     const st = readK(T.DB, key(A, 'bassam_rasd_retro_v1'));
