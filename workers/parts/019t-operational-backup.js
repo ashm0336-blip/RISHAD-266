@@ -7,7 +7,7 @@ function opBackupDecode(domain) {
   rsShape(domain,['version','scope','resource','rows']); rsShape(domain.scope,['departmentId']);
   if(domain.version!==1||typeof domain.resource!=='string'||!opRegistry()[domain.resource])throw rsError('restore-operations-domain');
   var d=domain.scope.departmentId, k='bsdept:'+d+':'+domain.resource, info=opInfo(k);
-  return {key:k,domain:ocFromPhysical(info.prepared,d,info.resource,domain.rows),info:info};
+  return {key:k,domain:ocFromPhysical(info.prepared,d,info.resource,osLegacyPhysical(domain.rows,ocPhysicalTables(info.prepared))),info:info};   /* V7 · د6 (schemafix): صفوفُ نسخةٍ قبل الترحيل 0012 بترميزها الجديد */
 }
 function opValidateBackupDomains(domains,departments) {
   if(!Array.isArray(domains))throw rsError('restore-incomplete-operations');

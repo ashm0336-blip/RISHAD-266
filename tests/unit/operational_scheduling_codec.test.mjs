@@ -311,6 +311,21 @@ test("round day/month metadata, legacy day suffixes and independent shift-approv
   exact("bassam_dayshift_v1", { "1448-1-2": "A" });
   exact("bassam_dayfocus_v1", { d: 2, m: 1, y: 1448 });
 });
+test("V7 · د6 (schemafix): prayer readings with capacity, legacy numbers and the daily-report move line round-trip exactly", () => {
+  const zone = (pc) => ({ uid: "TEST_ONLY_Z", code: "1", cap: 3094, pc, count: null });
+  const pc = { fajr: { n: 1086, cap: 3094 }, dhuhr: { n: null, cap: 0, p: 40 }, asr: 35, maghrib: null, isha: "12" };
+  for (const resource of ["bassam_rounds_v1", "bassam_rounds_arc_v1"])
+    exact(resource, {
+      "m:1448-1": { ap: true, mo: false },
+      "1448-1-16": {
+        t: 1,
+        d: [{ sid: "S1", zones: [zone(pc), zone({}), zone({ fajr: { n: 0, cap: 0 } })] }],
+        shAp: { A: { ap: true, at: 1, snap: [{ zones: [zone({ fajr: { n: 5, cap: 10 } })] }] } },
+        mvLog: [{ t: "07:00", kind: "gates", key: "E1", tok: "E1", fromI: -1, toI: 2, rm: false, fromLbl: "", toLbl: "TEST_ONLY", by: "TEST_ONLY", name: "TEST_ONLY", src: "dr" }],
+      },
+    });
+  exact("bassam_plan_v1", { zones: [zone(pc)], floors: [{ zones: [zone({ fajr: { n: 7, cap: 9 } })] }], months: { "1448-1": [{ zones: [zone({ asr: { n: null, cap: 0, p: 12.5 } })] }] } });
+});
 test("unknown fields, unsupported metadata and invalid nested containers fail before storage", () => {
   for (const [resource, value] of [
     ["bassam_staffing_v3", { "1448-1": { E1: { privilege: "forged" } } }],
@@ -319,10 +334,15 @@ test("unknown fields, unsupported metadata and invalid nested containers fail be
       { "1448-1": { bucket: {}, unknownMetadata: 1 } },
     ],
     ["bassam_plan_v1", { cfg: { unknown: 1 } }],
+    /* V7 · د6 (schemafix): القراءةُ بالسعة {n · cap · p} صارت مقبولة (الاختبار التالي) — الكائنُ مغلق: حقلٌ غيرها أو قيمةٌ غير مفردة تُرفض */
     [
       "bassam_plan_v1",
       { floors: [{ zones: [{ pc: { fajr: { opaque: 1 } } }] }] },
     ],
+    ["bassam_rounds_v1", { "1448-1-2": { d: [{ zones: [{ pc: { fajr: { n: 1, cap: 2, nNow: null } } }] }] } }],
+    ["bassam_rounds_v1", { "1448-1-2": { d: [{ zones: [{ pc: { fajr: { n: { v: 1 }, cap: 2 } } }] }] } }],
+    ["bassam_rounds_v1", { "1448-1-2": { d: [{ zones: [{ pc: { fajr: [1, 2] } }] }] } }],
+    ["bassam_rounds_v1", { "1448-1-2": { mvLog: [{ t: "07:00", rm: true, src: "dr", extra: 1 }] } }],
     ["bassam_rounds_v1", { unknownRoot: { d: [] } }],
   ])
     assert.throws(() => convert(resource, value));

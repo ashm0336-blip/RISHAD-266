@@ -36,6 +36,9 @@ function osSchemaRoundDay(table) {
         "toLbl",
         "by",
         "name",
+        // V7 · د6 (schemafix): سطرُ التقرير اليومي في سجلّ التسكين — rm (رفعٌ من الموقع) · src ("dr") كما يكتبهما Production والعميل
+        "rm",
+        "src",
       ]),
     ),
   );

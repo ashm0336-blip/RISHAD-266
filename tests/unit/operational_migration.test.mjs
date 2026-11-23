@@ -82,8 +82,18 @@ function seed(env, { large = false } = {}) {
   put(env, "TEST_ONLY_UNRELATED", { preserve: true });
   return { fixture, documents };
 }
+/* V7 · د6 (schemafix): ترحيلاتُ المخطّط التشغيلي بعد 0010 (0012: القراءةُ بالسعة) يطبّقها العاملُ في دفعة التحويل نفسِها قبل صفوفه (052 migrateDb)،
+   فالدفعةُ هنا = 0010 ثم 0012 كما يجريها العامل. (0011 يمسّ sess وحده — لا جدولَ له في هذا العالم المعزول.) */
+const laterStatements = fs
+  .readFileSync("migrations/0012_prayer_readings.sql", "utf8")
+  .split("\n")
+  .filter((line) => !line.trim().startsWith("--"))
+  .join("\n")
+  .split(";")
+  .map((s) => s.trim())
+  .filter(Boolean);
 function ddl(env) {
-  return sqlStatements.map((sql) => env.DB.prepare(sql));
+  return sqlStatements.concat(laterStatements).map((sql) => env.DB.prepare(sql));
 }
 function snapshot(env) {
   return JSON.stringify({
@@ -137,7 +147,7 @@ test("revision tombstones of removed departments survive an empty cutover withou
       assert.equal(env.DB.q("SELECT COUNT(*)n FROM ops_nodes")[0].n, 0);
       assert.equal(
         env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,
-        "10",
+        "12",   /* V7 · د6 (schemafix): الدفعةُ = 0010 ثم 0012 */
       );
       assert.equal(env.DB.q("SELECT v FROM meta WHERE k='rev'")[0].v, "7");
       assert.equal(env.DB.q("PRAGMA foreign_key_check").length, 0);
@@ -263,17 +273,31 @@ test("revision tombstones and department absence survive a late migration SQL ro
   }
 });
 test("migration DDL is the aggregate canonical58-table schema and carries the closed cutover guard", needs('tasks'), () => {
-  const p = C.ocPrepare(C.opDefinitions()),
+  const p = C.ocPrepare(C.opDefinitions(), C.OC_TABLE_NAMES),
     expected = C.ocCreateStatements(p);
-  assert.equal(Object.keys(C.ocPhysicalTables(p)).length, 58);
+  /* V7 · د6 (schemafix): 59 جدولاً = 58 من 0010 + ops_zone_prayer_capacity من 0012. عباراتُ 0010 هي نفسُها لكل جدولٍ لم يتغيّر شكلُه؛
+     والجدولان اللذان تغيّرا يطابقان المرمّزَ بعد 0012: الجديدُ بعبارته حرفاً، وops_round_day_move بأعمدته (0010 + ALTER في 0012) */
+  assert.equal(Object.keys(C.ocPhysicalTables(p)).length, 59);
   assert.ok(
     Object.values(C.ocPhysicalTables(p)).every(
       (columns) => columns.length <= 100,
     ),
   );
-  assert.deepEqual(sqlStatements.slice(1, -2), Array.from(expected));
+  const changed = (sql) => /ops_zone_prayer_capacity\(|ops_round_day_move\(/.test(sql);
+  assert.deepEqual(sqlStatements.slice(1, -2).filter((sql) => !changed(sql)), Array.from(expected).filter((sql) => !changed(sql)));
+  assert.equal(sqlStatements.slice(1, -2).length, expected.length - 1);
+  assert.ok(laterStatements.includes(Array.from(expected).find((sql) => /ops_zone_prayer_capacity\(/.test(sql))));
+  const env = fresh();
+  try {
+    env.DB.exec(sqlStatements.slice(1, -2).concat(laterStatements.slice(0, -1)).join(";"));
+    for (const [table, columns] of Object.entries(C.ocPhysicalTables(p)))
+      assert.deepEqual(env.DB.db.prepare('PRAGMA table_info("' + table + '")').all().map((r) => r.name).sort(), Array.from(columns).sort(), table);
+  } finally {
+    close(env);
+  }
   assert.match(sqlStatements[0], /KIVO_OPERATIONS_VALIDATED_CUTOVER_REQUIRED/);
   assert.match(sqlStatements.at(-1), /'schema_version','10'/);
+  assert.match(laterStatements.at(-1), /'schema_version','12'/);
 });
 test("one atomic cutover preserves100 employees, all14 source documents per department and logical revisions", async () => {
   const env = fresh();
@@ -305,7 +329,7 @@ test("one atomic cutover preserves100 employees, all14 source documents per depa
     }
     assert.equal(
       env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,
-      "10",
+      "12",   /* V7 · د6 (schemafix): الدفعةُ = 0010 ثم 0012 */
     );
     assert.equal(env.DB.q("SELECT v FROM meta WHERE k='rev'")[0].v, "12");
     assert.equal(
@@ -465,7 +489,8 @@ test("nonempty targets reject before writes and empty target races reject inside
   const env = fresh();
   try {
     seed(env);
-    for (const sql of C.ocCreateStatements(C.ocPrepare(C.opDefinitions())))
+    /* V7 · د6 (schemafix): الجداولُ القائمة قبل التحويل هي جداولُ 0010 (ما يتركه ترحيلُها) — 0012 يجري في دفعة التحويل نفسِها */
+    for (const sql of sqlStatements.slice(1, -2))
       env.DB.exec(sql);
     const plan = await C.opLegacyPrepare(env),
       p = C.opPrepared("bassam_callsigns_v1"),
@@ -582,7 +607,7 @@ for index,statement in enumerate(p['statements']):
   print(json.dumps({'failedStatement':index,'sql':statement['sql']}),file=sys.stderr)
   raise
 db.execute('COMMIT')
-assert db.execute("SELECT v FROM meta WHERE k='schema_version'").fetchone()[0]=='10'
+assert db.execute("SELECT v FROM meta WHERE k='schema_version'").fetchone()[0]=='12'
 assert db.execute('PRAGMA foreign_key_check').fetchall()==[]
 assert db.execute("SELECT count(*) FROM ops_nodes WHERE row_key='$'").fetchone()[0]==28
 print(json.dumps({'schema':10,'compound':5,'expression':100,'functionArgs':32,'variables':100,'columns':100,'sqlBytes':100000,'rootDocuments':28,'fkViolations':0}))

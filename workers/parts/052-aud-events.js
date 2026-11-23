@@ -207,9 +207,13 @@ async function migrateDb(env) {
   for (i = 0; i < pending.length; i++) {
     var dataPlan = pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :
       pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : null;
-    var st = [dbMigrationFence(env, state, permit)];
+    var st = [dbMigrationFence(env, state, permit)], first = i;
     if (dataPlan) st = st.concat(dataPlan.before);
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
+    /* V7 · د6 (schemafix): تحويلُ KV التشغيلي (0010) يكتب صفوفَه بمرمّز اليوم — فجداولُه وأعمدتُه التي أضافتها ترحيلاتٌ بعد 0010 (0012: القراءةُ بالسعة)
+       يجب أن توجد قبله: ترحيلاتُ هذا التشغيل التي بعد 0010 تُطبَّق في الدفعة نفسِها قبل صفوف التحويل — ذرّيّةٌ واحدة كما كانت */
+    if (dataPlan && pending[i].name === '0010_operational_domains')
+      while (i + 1 < pending.length) { i++; for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j])); }
     if (dataPlan) st = st.concat(dataPlan.after);
     if (permit && pending[i].name === names[names.length - 1])
       st.push(env.DB.prepare('DELETE FROM meta WHERE k=?1 AND v=?2').bind(DB_UPGRADE_PERMIT, permit.raw));
@@ -217,9 +221,9 @@ async function migrateDb(env) {
        قاعدةٌ قائمة (Production) لا تُختم هنا أبداً: تبقى «unmigrated» حتى يرحّلها مديرُ المنصة ويفعّلها (063 act:'activate') */
     if (empty && pending[i].name === names[names.length - 1])
       st.push(env.DB.prepare("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO NOTHING"));
-    st.push(env.DB.prepare('INSERT OR IGNORE INTO d1_migrations (name) VALUES (?1)').bind(pending[i].name));
+    for (j = first; j <= i; j++) st.push(env.DB.prepare('INSERT OR IGNORE INTO d1_migrations (name) VALUES (?1)').bind(pending[j].name));
     await env.DB.batch(st);
-    state = { names: state.names.concat([pending[i].name]), schema: String(names.indexOf(pending[i].name) + 1), hasMeta: true, hasLedger: true, tables: null };
+    state = { names: state.names.concat(pending.slice(first, i + 1).map(function (m) { return m.name; })), schema: String(names.indexOf(pending[i].name) + 1), hasMeta: true, hasLedger: true, tables: null };
   }
   logEv('info', 'schema-migrate', { ran: pending.map(function (m) { return m.name; }).join(','), applied: rows.length + pending.length, fresh: fresh ? 1 : 0 });   /* KIVO_250 · SOT-142 */
   return { applied: rows.length + pending.length, ran: pending.length };

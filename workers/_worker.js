@@ -18618,7 +18618,9 @@ var OC_TABLE_NAMES = {
   ops_plan_live_floors_floor_zones_element_handles: { t: "ops_plan_live_floors_floor_zones_element_handles", e: null },
   ops_plan_live_floors_floor_zones_element_legacy_points: { t: "ops_plan_live_floors_floor_paths_element_points", e: null },
   ops_plan_live_floors_floor_zones_element_legacy_points_point: { t: "ops_plan_live_floors_floor_paths_element_points_point", e: "ops_plan_live_floors_floor_paths_element_points_point" },
-  ops_plan_live_floors_floor_zones_element_prayer_counts: { t: "ops_plan_deleted_months", e: null },
+  ops_plan_live_floors_floor_zones_element_prayer_counts: { t: "ops_zone_prayer_counts", e: null },
+  ops_plan_live_floors_floor_zones_element_prayer_counts_reading: { t: "ops_zone_prayer_reading", e: null },
+  ops_plan_live_floors_floor_zones_element_prayer_counts_reading_capacity: { t: "ops_zone_prayer_capacity", e: "ops_zone_prayer_capacity" },
   ops_plan_live_floors_floor_zones_element_shift_needs: { t: "ops_plan_deleted_months", e: null },
   ops_plan_month: { t: "ops_plan_month", e: null },
   ops_plan_month_floors: { t: "ops_plan_live_floors", e: null },
@@ -18656,7 +18658,9 @@ var OC_TABLE_NAMES = {
   ops_plan_month_floors_floor_zones_element_handles: { t: "ops_plan_live_floors_floor_zones_element_handles", e: null },
   ops_plan_month_floors_floor_zones_element_legacy_points: { t: "ops_plan_live_floors_floor_paths_element_points", e: null },
   ops_plan_month_floors_floor_zones_element_legacy_points_point: { t: "ops_plan_live_floors_floor_paths_element_points_point", e: "ops_plan_live_floors_floor_paths_element_points_point" },
-  ops_plan_month_floors_floor_zones_element_prayer_counts: { t: "ops_plan_deleted_months", e: null },
+  ops_plan_month_floors_floor_zones_element_prayer_counts: { t: "ops_zone_prayer_counts", e: null },
+  ops_plan_month_floors_floor_zones_element_prayer_counts_reading: { t: "ops_zone_prayer_reading", e: null },
+  ops_plan_month_floors_floor_zones_element_prayer_counts_reading_capacity: { t: "ops_zone_prayer_capacity", e: "ops_zone_prayer_capacity" },
   ops_plan_month_floors_floor_zones_element_shift_needs: { t: "ops_plan_deleted_months", e: null },
   ops_plan_month_legacy_array: { t: "ops_plan_live_floors", e: null },
   ops_plan_month_legacy_array_floor: { t: "ops_plan_live_floors_floor", e: "ops_plan_live_floors_floor" },
@@ -18693,7 +18697,9 @@ var OC_TABLE_NAMES = {
   ops_plan_month_legacy_array_floor_zones_element_handles: { t: "ops_plan_live_floors_floor_zones_element_handles", e: null },
   ops_plan_month_legacy_array_floor_zones_element_legacy_points: { t: "ops_plan_live_floors_floor_paths_element_points", e: null },
   ops_plan_month_legacy_array_floor_zones_element_legacy_points_point: { t: "ops_plan_live_floors_floor_paths_element_points_point", e: "ops_plan_live_floors_floor_paths_element_points_point" },
-  ops_plan_month_legacy_array_floor_zones_element_prayer_counts: { t: "ops_plan_deleted_months", e: null },
+  ops_plan_month_legacy_array_floor_zones_element_prayer_counts: { t: "ops_zone_prayer_counts", e: null },
+  ops_plan_month_legacy_array_floor_zones_element_prayer_counts_reading: { t: "ops_zone_prayer_reading", e: null },
+  ops_plan_month_legacy_array_floor_zones_element_prayer_counts_reading_capacity: { t: "ops_zone_prayer_capacity", e: "ops_zone_prayer_capacity" },
   ops_plan_month_legacy_array_floor_zones_element_shift_needs: { t: "ops_plan_deleted_months", e: null },
   ops_plan_month_record: { t: "ops_plan_month_record", e: "ops_plan_month_record" },
   ops_plan_months: { t: "ops_plan_months", e: null },
@@ -18725,7 +18731,9 @@ var OC_TABLE_NAMES = {
   ops_plan_root_zones_element_handles: { t: "ops_plan_live_floors_floor_zones_element_handles", e: null },
   ops_plan_root_zones_element_legacy_points: { t: "ops_plan_live_floors_floor_paths_element_points", e: null },
   ops_plan_root_zones_element_legacy_points_point: { t: "ops_plan_live_floors_floor_paths_element_points_point", e: "ops_plan_live_floors_floor_paths_element_points_point" },
-  ops_plan_root_zones_element_prayer_counts: { t: "ops_plan_deleted_months", e: null },
+  ops_plan_root_zones_element_prayer_counts: { t: "ops_zone_prayer_counts", e: null },
+  ops_plan_root_zones_element_prayer_counts_reading: { t: "ops_zone_prayer_reading", e: null },
+  ops_plan_root_zones_element_prayer_counts_reading_capacity: { t: "ops_zone_prayer_capacity", e: "ops_zone_prayer_capacity" },
   ops_plan_root_zones_element_shift_needs: { t: "ops_plan_deleted_months", e: null },
   ops_report_closed_groups: { t: "ops_plan_deleted_months", e: null },
   ops_report_day: { t: "ops_report_day", e: "ops_report_day" },
@@ -18796,7 +18804,9 @@ var OC_TABLE_NAMES = {
   ops_round_day_approved_floors_floor_zones_element_handles: { t: "ops_plan_live_floors_floor_zones_element_handles", e: null },
   ops_round_day_approved_floors_floor_zones_element_legacy_points: { t: "ops_plan_live_floors_floor_paths_element_points", e: null },
   ops_round_day_approved_floors_floor_zones_element_legacy_points_point: { t: "ops_plan_live_floors_floor_paths_element_points_point", e: "ops_plan_live_floors_floor_paths_element_points_point" },
-  ops_round_day_approved_floors_floor_zones_element_prayer_counts: { t: "ops_plan_deleted_months", e: null },
+  ops_round_day_approved_floors_floor_zones_element_prayer_counts: { t: "ops_zone_prayer_counts", e: null },
+  ops_round_day_approved_floors_floor_zones_element_prayer_counts_reading: { t: "ops_zone_prayer_reading", e: null },
+  ops_round_day_approved_floors_floor_zones_element_prayer_counts_reading_capacity: { t: "ops_zone_prayer_capacity", e: "ops_zone_prayer_capacity" },
   ops_round_day_approved_floors_floor_zones_element_shift_needs: { t: "ops_plan_deleted_months", e: null },
   ops_round_day_floors: { t: "ops_plan_live_floors", e: null },
   ops_round_day_floors_floor: { t: "ops_plan_live_floors_floor", e: "ops_plan_live_floors_floor" },
@@ -18833,7 +18843,9 @@ var OC_TABLE_NAMES = {
   ops_round_day_floors_floor_zones_element_handles: { t: "ops_plan_live_floors_floor_zones_element_handles", e: null },
   ops_round_day_floors_floor_zones_element_legacy_points: { t: "ops_plan_live_floors_floor_paths_element_points", e: null },
   ops_round_day_floors_floor_zones_element_legacy_points_point: { t: "ops_plan_live_floors_floor_paths_element_points_point", e: "ops_plan_live_floors_floor_paths_element_points_point" },
-  ops_round_day_floors_floor_zones_element_prayer_counts: { t: "ops_plan_deleted_months", e: null },
+  ops_round_day_floors_floor_zones_element_prayer_counts: { t: "ops_zone_prayer_counts", e: null },
+  ops_round_day_floors_floor_zones_element_prayer_counts_reading: { t: "ops_zone_prayer_reading", e: null },
+  ops_round_day_floors_floor_zones_element_prayer_counts_reading_capacity: { t: "ops_zone_prayer_capacity", e: "ops_zone_prayer_capacity" },
   ops_round_day_floors_floor_zones_element_shift_needs: { t: "ops_plan_deleted_months", e: null },
   ops_round_day_import: { t: "ops_round_day_import", e: null },
   ops_round_day_import_choice_0: { t: "ops_staffing_month_shifts_entry_choice_0", e: "ops_staffing_month_shifts_entry_choice_0" },
@@ -18964,6 +18976,7 @@ var OC_TABLE_NAMES = {
   ops_task_row_self_stall: { t: "ops_task_row_self_stall", e: "ops_task_row_self_stall" },
   ops_tasks: { t: "ops_tasks", e: null },
   ops_work_types: { t: "ops_employment_types", e: null },
+  ops_zone_prayer_reading_choice_0: { t: "ops_staffing_month_shifts_entry_choice_0", e: "ops_staffing_month_shifts_entry_choice_0" },
   ops_zone_options: { t: "ops_zone_options", e: "ops_zone_options" },
   ops_zone_options_category_style: { t: "ops_zone_options_category_style", e: "ops_zone_options_category_style" },
   ops_zone_options_category_styles: { t: "ops_zone_options_category_styles", e: null },
@@ -19145,6 +19158,19 @@ function osSchemaFieldLog(table) {
     ),
   );
 }
+/* V7 · د6 (schemafix): قراءةُ كلِّ صلاةٍ في المصلى (pc[صلاة]) بياناتٌ حقيقية بشكلين كما يكتبهما العميلُ وProduction:
+   رقمٌ (نسبةٌ قديمة — أو count المنقول إلى fajr) أو «القراءةُ بالسعة» { n: العدد · cap: السعة } أو { n: null · cap: 0 · p: النسبة } حين لا سعة.
+   كان المدخلُ رقماً فقط فيُرفض حفظُ القراءة بالسعة حياً واستيرادُها (operations-scalar-type). الكائنُ مغلق: لا حقلَ غير n · cap · p.
+   تغيّر ترميزُ المدخل (اتحادٌ) فصفوفُ pc القائمة يرحّلها 0012_prayer_readings.sql وتقرؤها النسخُ القديمة بـosLegacyPhysical (019t). */
+function osSchemaPrayerCounts(table) {
+  return ocMap(
+    table,
+    ocUnion(table + "_reading", [
+      ocScalar("scalar"),
+      ocObject(table + "_reading_capacity", osSchemaFields(["n", "cap", "p"])),
+    ]),
+  );
+}
 function osSchemaElement(table, kind) {
   var names = ["uid", "eid", "id", "name", "label", "kind", "hideLabel", "unp"];
   if (kind === "paths") {
@@ -19221,7 +19247,7 @@ function osSchemaElement(table, kind) {
   fields.fLog = osSchemaFieldLog(table + "_field_log");
   if (kind === "gates") fields.cats = osSchemaScalars(table + "_categories");
   if (kind === "zones") {
-    fields.pc = ocMap(table + "_prayer_counts", ocScalar("scalar"));
+    fields.pc = osSchemaPrayerCounts(table + "_prayer_counts");
     fields.pts = osSchemaPoints(table + "_legacy_points");
     // Curve handles, not polygon holes. Legacy missing in/out is preserved.
     fields.hs = ocArray(
@@ -19289,6 +19315,70 @@ function osSchemaFloor(table) {
 function osSchemaFloors(table) {
   return ocArray(table, osSchemaFloor(table + "_floor"));
 }
+/* V7 · د6 (schemafix): مرآةُ الترحيل 0012_prayer_readings.sql لصفوفٍ مكتوبةٍ قبله (نسخةٌ حديثة صُدِّرت من قاعدةٍ بالإصدار 11):
+   تُعاد بترميزها الجديد دون تغيير قيمة — عقدةُ pc ← ops_zone_prayer_counts · مدخلُها ← اتحاد ops_zone_prayer_reading بفرعٍ /v:0 ·
+   وصفوفُ سجلّ التسكين تأخذ عمودَي rm و src فارغين. صفوفٌ بالترميز الجديد تعود كما هي (لا شيءَ يطابق). */
+var OS_LEGACY_PC = {
+  zone: "ops_plan_live_floors_floor_zones_element",
+  map: "ops_plan_deleted_months",
+  value: "ops_staffing_month_shifts_entry_choice_0",
+  counts: "ops_zone_prayer_counts",
+  reading: "ops_zone_prayer_reading",
+};
+var OS_LEGACY_ADDED = { ops_round_day_move: ["f_rm_", "f_src_"] }, OS_LEGACY_NEW = ["ops_zone_prayer_capacity"];
+function osLegacyPhysical(physical, tables) {
+  if (!ocObj(physical) || !Array.isArray(physical.ops_nodes)) return physical;
+  var L = OS_LEGACY_PC, out = Object.assign({}, physical), byKey = new Map();
+  OS_LEGACY_NEW.forEach(function (table) {
+    if (tables && ocOwn(tables, table) && !ocOwn(out, table)) out[table] = [];
+  });
+  Object.keys(OS_LEGACY_ADDED).forEach(function (table) {
+    if (!Array.isArray(out[table])) return;
+    out[table] = out[table].map(function (row) {
+      if (!ocObj(row)) return row;
+      var copy = Object.assign({}, row);
+      OS_LEGACY_ADDED[table].forEach(function (prefix) {
+        if (ocOwn(copy, prefix + "kind")) return;
+        copy[prefix + "kind"] = 0;
+        copy[prefix + "text"] = null;
+        copy[prefix + "number"] = null;
+        copy[prefix + "position"] = null;
+      });
+      return copy;
+    });
+  });
+  physical.ops_nodes.forEach(function (node) {
+    if (ocObj(node)) byKey.set(node.row_key, node);
+  });
+  var maps = new Set();
+  byKey.forEach(function (node) {
+    var parent = byKey.get(node.parent_key);
+    if (node.schema_id === L.map && node.member_key === "pc" && parent && parent.schema_id === L.zone) maps.add(node.row_key);
+  });
+  if (!maps.size) return out;
+  var values = new Map(), entries = new Set(), nodes = [];
+  (Array.isArray(out[L.value]) ? out[L.value] : []).forEach(function (row) {
+    if (ocObj(row)) values.set(row.row_key, row);
+  });
+  physical.ops_nodes.forEach(function (node) {
+    if (!ocObj(node)) return nodes.push(node);
+    if (maps.has(node.row_key)) return nodes.push(Object.assign({}, node, { schema_id: L.counts }));
+    if (!maps.has(node.parent_key) || node.schema_id !== L.value) return nodes.push(node);
+    entries.add(node.row_key);
+    var scalar = node.node_kind === 7;
+    nodes.push(Object.assign({}, node, { node_kind: scalar ? 6 : node.node_kind, variant: scalar ? 0 : null, schema_id: L.reading, entity_kind: null }));
+    if (scalar)
+      nodes.push(Object.assign({}, node, { row_key: node.row_key + "/v:0", parent_key: node.row_key, member_key: "@", position: 0, variant: null, tuple_length: null }));
+  });
+  out.ops_nodes = nodes;
+  if (Array.isArray(out[L.value]))
+    out[L.value] = out[L.value].reduce(function (list, row) {
+      if (!ocObj(row) || !entries.has(row.row_key)) list.push(row);
+      else if (byKey.get(row.row_key).node_kind === 7) list.push(Object.assign({}, row, { row_key: row.row_key + "/v:0" }));
+      return list;
+    }, []);
+  return out;
+}
 function osSchemaRoundDay(table) {
   var fields = osSchemaFields([
     "t",
@@ -19327,6 +19417,9 @@ function osSchemaRoundDay(table) {
         "toLbl",
         "by",
         "name",
+        // V7 · د6 (schemafix): سطرُ التقرير اليومي في سجلّ التسكين — rm (رفعٌ من الموقع) · src ("dr") كما يكتبهما Production والعميل
+        "rm",
+        "src",
       ]),
     ),
   );
@@ -20309,7 +20402,7 @@ function opBackupDecode(domain) {
   rsShape(domain,['version','scope','resource','rows']); rsShape(domain.scope,['departmentId']);
   if(domain.version!==1||typeof domain.resource!=='string'||!opRegistry()[domain.resource])throw rsError('restore-operations-domain');
   var d=domain.scope.departmentId, k='bsdept:'+d+':'+domain.resource, info=opInfo(k);
-  return {key:k,domain:ocFromPhysical(info.prepared,d,info.resource,domain.rows),info:info};
+  return {key:k,domain:ocFromPhysical(info.prepared,d,info.resource,osLegacyPhysical(domain.rows,ocPhysicalTables(info.prepared))),info:info};   /* V7 · د6 (schemafix): صفوفُ نسخةٍ قبل الترحيل 0012 بترميزها الجديد */
 }
 function opValidateBackupDomains(domains,departments) {
   if(!Array.isArray(domains))throw rsError('restore-incomplete-operations');
@@ -23128,9 +23221,30 @@ var KIVO_MIGRATIONS = [
    "ALTER TABLE sess ADD COLUMN br TEXT",
    "INSERT INTO meta(k,v)VALUES('schema_version','11')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
   ]
+ },
+ {
+  "name": "0012_prayer_readings",
+  "sql": [
+   "CREATE TABLE IF NOT EXISTS ops_zone_prayer_capacity(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_cap_kind\" INTEGER,\"f_cap_text\" TEXT,\"f_cap_number\" REAL,\"f_cap_position\" INTEGER,\"f_n_kind\" INTEGER,\"f_n_text\" TEXT,\"f_n_number\" REAL,\"f_n_position\" INTEGER,\"f_p_kind\" INTEGER,\"f_p_text\" TEXT,\"f_p_number\" REAL,\"f_p_position\" INTEGER,CHECK(entity_kind='ops_zone_prayer_capacity'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_rm_kind\" INTEGER",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_rm_text\" TEXT",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_rm_number\" REAL",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_rm_position\" INTEGER",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_src_kind\" INTEGER",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_src_text\" TEXT",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_src_number\" REAL",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_src_position\" INTEGER",
+   "UPDATE ops_round_day_move SET f_rm_kind=0,f_src_kind=0",
+   "INSERT INTO ops_nodes(department_id,resource,row_key,parent_key,member_key,position,node_kind,variant,tuple_length,schema_id,entity_kind) SELECT e.department_id,e.resource,e.row_key||'/v:0',e.row_key,'@',0,7,NULL,NULL,'ops_staffing_month_shifts_entry_choice_0','ops_staffing_month_shifts_entry_choice_0' FROM ops_nodes e JOIN ops_nodes m ON m.department_id=e.department_id AND m.resource=e.resource AND m.row_key=e.parent_key JOIN ops_nodes z ON z.department_id=m.department_id AND z.resource=m.resource AND z.row_key=m.parent_key WHERE e.node_kind=7 AND e.schema_id='ops_staffing_month_shifts_entry_choice_0' AND m.schema_id='ops_plan_deleted_months' AND m.member_key='pc' AND z.schema_id='ops_plan_live_floors_floor_zones_element'",
+   "INSERT INTO ops_staffing_month_shifts_entry_choice_0(department_id,resource,row_key,entity_kind,value_kind,value_text,value_number) SELECT v.department_id,v.resource,v.row_key||'/v:0',v.entity_kind,v.value_kind,v.value_text,v.value_number FROM ops_staffing_month_shifts_entry_choice_0 v JOIN ops_nodes e ON e.department_id=v.department_id AND e.resource=v.resource AND e.row_key=v.row_key JOIN ops_nodes m ON m.department_id=e.department_id AND m.resource=e.resource AND m.row_key=e.parent_key JOIN ops_nodes z ON z.department_id=m.department_id AND z.resource=m.resource AND z.row_key=m.parent_key WHERE e.node_kind=7 AND e.schema_id='ops_staffing_month_shifts_entry_choice_0' AND m.schema_id='ops_plan_deleted_months' AND m.member_key='pc' AND z.schema_id='ops_plan_live_floors_floor_zones_element'",
+   "DELETE FROM ops_staffing_month_shifts_entry_choice_0 WHERE (department_id,resource,row_key) IN(SELECT e.department_id,e.resource,e.row_key FROM ops_nodes e JOIN ops_nodes m ON m.department_id=e.department_id AND m.resource=e.resource AND m.row_key=e.parent_key JOIN ops_nodes z ON z.department_id=m.department_id AND z.resource=m.resource AND z.row_key=m.parent_key WHERE e.schema_id='ops_staffing_month_shifts_entry_choice_0' AND m.schema_id='ops_plan_deleted_months' AND m.member_key='pc' AND z.schema_id='ops_plan_live_floors_floor_zones_element')",
+   "UPDATE ops_nodes SET node_kind=CASE WHEN node_kind=7 THEN 6 ELSE node_kind END,variant=CASE WHEN node_kind=7 THEN 0 ELSE NULL END,schema_id='ops_zone_prayer_reading',entity_kind=NULL WHERE schema_id='ops_staffing_month_shifts_entry_choice_0' AND (department_id,resource,parent_key) IN(SELECT m.department_id,m.resource,m.row_key FROM ops_nodes m JOIN ops_nodes z ON z.department_id=m.department_id AND z.resource=m.resource AND z.row_key=m.parent_key WHERE m.schema_id='ops_plan_deleted_months' AND m.member_key='pc' AND z.schema_id='ops_plan_live_floors_floor_zones_element')",
+   "UPDATE ops_nodes SET schema_id='ops_zone_prayer_counts' WHERE schema_id='ops_plan_deleted_months' AND member_key='pc' AND (department_id,resource,parent_key) IN(SELECT z.department_id,z.resource,z.row_key FROM ops_nodes z WHERE z.schema_id='ops_plan_live_floors_floor_zones_element')",
+   "INSERT INTO meta(k,v)VALUES('schema_version','12')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
+  ]
  }
 ];
-var KIVO_SCHEMA_VERSION = 11;
+var KIVO_SCHEMA_VERSION = 12;
 /* ═══ KIVO_263 · SOT-101 — مخطّطاتُ أجسام الطلبات المغيِّرة: المصدرُ src/schemas/api/bodies.schema.json (JSON Schema) ═══
    هذه النسخةُ مطابقةٌ له حرفاً (يفرضها tests/unit/body_schemas.test.mjs) — فالقاعدةُ واحدةٌ مكتوبةٌ مرةً، قابلةٌ للاختبار بلا واجهة.
    bodyCheck(route, body) ⇒ null (سليم) أو موضعُ أوّل مخالفة ('set.<k>' · 'base.<k>' · 'del[3]' …) — والمسارُ يردّ 400 {ok:0, err:'bad-body', at}
@@ -23428,9 +23542,13 @@ async function migrateDb(env) {
   for (i = 0; i < pending.length; i++) {
     var dataPlan = pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :
       pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : null;
-    var st = [dbMigrationFence(env, state, permit)];
+    var st = [dbMigrationFence(env, state, permit)], first = i;
     if (dataPlan) st = st.concat(dataPlan.before);
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
+    /* V7 · د6 (schemafix): تحويلُ KV التشغيلي (0010) يكتب صفوفَه بمرمّز اليوم — فجداولُه وأعمدتُه التي أضافتها ترحيلاتٌ بعد 0010 (0012: القراءةُ بالسعة)
+       يجب أن توجد قبله: ترحيلاتُ هذا التشغيل التي بعد 0010 تُطبَّق في الدفعة نفسِها قبل صفوف التحويل — ذرّيّةٌ واحدة كما كانت */
+    if (dataPlan && pending[i].name === '0010_operational_domains')
+      while (i + 1 < pending.length) { i++; for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j])); }
     if (dataPlan) st = st.concat(dataPlan.after);
     if (permit && pending[i].name === names[names.length - 1])
       st.push(env.DB.prepare('DELETE FROM meta WHERE k=?1 AND v=?2').bind(DB_UPGRADE_PERMIT, permit.raw));
@@ -23438,9 +23556,9 @@ async function migrateDb(env) {
        قاعدةٌ قائمة (Production) لا تُختم هنا أبداً: تبقى «unmigrated» حتى يرحّلها مديرُ المنصة ويفعّلها (063 act:'activate') */
     if (empty && pending[i].name === names[names.length - 1])
       st.push(env.DB.prepare("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO NOTHING"));
-    st.push(env.DB.prepare('INSERT OR IGNORE INTO d1_migrations (name) VALUES (?1)').bind(pending[i].name));
+    for (j = first; j <= i; j++) st.push(env.DB.prepare('INSERT OR IGNORE INTO d1_migrations (name) VALUES (?1)').bind(pending[j].name));
     await env.DB.batch(st);
-    state = { names: state.names.concat([pending[i].name]), schema: String(names.indexOf(pending[i].name) + 1), hasMeta: true, hasLedger: true, tables: null };
+    state = { names: state.names.concat(pending.slice(first, i + 1).map(function (m) { return m.name; })), schema: String(names.indexOf(pending[i].name) + 1), hasMeta: true, hasLedger: true, tables: null };
   }
   logEv('info', 'schema-migrate', { ran: pending.map(function (m) { return m.name; }).join(','), applied: rows.length + pending.length, fresh: fresh ? 1 : 0 });   /* KIVO_250 · SOT-142 */
   return { applied: rows.length + pending.length, ran: pending.length };
