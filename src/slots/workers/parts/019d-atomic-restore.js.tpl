@@ -1076,14 +1076,7 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
       };
     }
     rsShape(requestedPerms, ['capSet', 'cap', 'emps', 'lenses']);
-    var retainedPerms = rsPermSlice(
-      JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))),
-      dept,
-      requestedPerms,
-      body.mode,
-      PG_KEYS,
-      KIVO_LENS_PLUGINS.keys,
-    );
+    var retainedPerms = rsDeptPermsKeep(JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))), dept, requestedPerms, body.mode);   /* V7 · د6 (QA ٦ — قرارُ المالك ب): السقفُ والمدير لا يغيّرهما استيراد */
     if (retainedPerms !== null) {
       keys[K_PERM] = JSON.stringify(retainedPerms);
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
@@ -1452,6 +1445,22 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
 @@SYS:rs.reference.base.systems@@    },
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
+}
+/* V7 · د6 (QA ٦ — قرارُ المالك ب، يلغي «الاستيرادُ يُبقي السقفَ المرفق» لنسخ الإدارة): استيرادُ نسخة الإدارة واستعادتُها لا يغيّران سقفَ الوحدة
+   (الأنظمة المشغَّلة · الأقسام · العدسات · الاستقلال · علامة البذر) ولا مديرَها: تبقى كما في الهدف. ما ينتقل أوراقُ موظفي الإدارة وحدها (بيانُ الإدارة)
+   — وصحيفةُ مدير المصدر «mgr:*» لا تنتقل، وصحيفةُ مدير الهدف (إن وُجدت) تبقى كما هي. السقفُ الهدف يحكمها وقتَ القرار (057 enfTranslated · enfKeyOnCeiling):
+   ما خارجه مخزَّنٌ بلا أثر. الدمجُ في إدارةٍ لها أوراقٌ لا يمسّها (كما كان). null = لا تغيير */
+function rsDeptPermsKeep(pm, id, PP, mode) {
+  if (!id || !isObj(PP)) return null;
+  pm = isObj(pm) ? pm : {}; pm.emps = isObj(pm.emps) ? pm.emps : {};
+  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, staff = false;
+  for (ek in cur) if (!isMgrKey(ek)) staff = true;
+  if (mode !== 'replace' && staff) return null;
+  for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek];
+  for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) out[ek] = inc[ek];
+  if (deq(out, cur)) return null;
+  pm.emps[id] = out;
+  return pm;
 }
 /* V7 · د6: ثلاثُ قطعٍ من مسار الاستعادة صارت دوالَّ ليشاركه فيها الاستيرادُ على أجزاء (019g) بلا نسخةٍ ثانية: حكمُ الصلاحية · تحويلُ النسخة وتخطيطُها واعتمادُها · ترجمةُ الرفض */
 function rsScopeDenied(A, s) {

@@ -19,9 +19,11 @@ var RSI_TTL = 3600e3, RSI_ROW = 200000, RSI_SEG = { f: 1000000, i: 4000000 }, RS
 var RSI_SLICE = {
 @@SYS:rsi.slice@@};
 var RSI_SLICE_MIN = 1500000;
+/* V7 · د6 (QA ٦ — قرارُ المالك): الدفعاتُ (مسارُ الذاكرة المحدودة) لمدير المنصة ولمدير الإدارة على إدارته (057 enfDeptMgrFull) — كان لمدير المنصة وحده فتُرفض نسخةُ Production لمديرها */
+function rsiSliceOk(A, d) { return A.u.role === 'super' || enfDeptMgrFull(A, d); }
 async function rsiSliceSpec(env, A, s, keys, mode) {
   var out = {};
-  if (A.u.role !== 'super' || s.kind !== 'dept') return out;
+  if (s.kind !== 'dept' || !rsiSliceOk(A, s.departmentId)) return out;   /* V7 · د6 (QA ٦): مديرُ الإدارة على إدارته بالمسار نفسِه وحدوده */
   for (var n in RSI_SLICE) {
     if (!ocOwn(keys, n) || keys[n]) continue;
     /* الاستبدالُ يطرح القائم فيُقسم دائماً؛ وغيرُه (الدمج) يُقسم إن كانت الأسرةُ فارغةً في الهدف — يُعرف بعدٍّ لا بتحميل */
@@ -52,7 +54,7 @@ async function rsiSlice(env, A, request, id, M, b) {
      الموردُ الغائب عن النسخة يُستعاد فارغاً)، وفي غير الاستبدال هي فارغةٌ شرطاً. والقائمُ منها يُعرف بعدٍّ: موردٌ قائمٌ لم تنتج له الدفعاتُ شيئاً يُكتب فارغاً. */
   var dept = M.scope.departmentId, reference = await rsReferenceSnapshot(env, A.u.id, { departments: [dept], operationalKeys: [] }), key = 'bsdept:' + dept + ':' + base, set = {}, bs = {}, ops = {}, why = {}, held = [];
   env = reference.env; A = reference.A;
-  if (A.u.role !== 'super' || rsScopeDenied(A, M.scope) || !RSI_SLICE[base]) throw rsError('restore-policy', 403);
+  if (!rsiSliceOk(A, dept) || rsScopeDenied(A, M.scope) || !RSI_SLICE[base]) throw rsError('restore-policy', 403);
   for (var fr of RSI_SLICE[base][1]) {
     reference.operational.keys['bsdept:' + dept + ':' + fr] = null;
     if (await D.prepare('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource=?2').bind(dept, fr).first('n')) held.push('bsdept:' + dept + ':' + fr);

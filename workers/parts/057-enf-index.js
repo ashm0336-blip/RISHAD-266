@@ -144,6 +144,13 @@ function enfGrantOf(A, d) {
   return (c[d] = out);
 }
 function enfPermMigrated(A) { return !!(A && A.enf && A.enf.perm && A.enf.perm.applied); }
+/* V7 · د6 (QA ٦ — قرارُ المالك): «لمدير الإدارة الصلاحيةُ الكاملة داخل إدارته» — يشمل استيرادَ نسخة إدارته واستبدالَها. مصدرٌ واحد: المفتاحان هنا،
+   ومديرُ الإدارة = حسابُ الإدارة أو مديرٌ بشارةٍ فيها (أو مديرُ إدارةٍ أمٍّ على قسمها — isMgrOf) · لا مديرُ عقدةٍ أعلى (gm) ولا مديرُ المنصة (له كلُّ شيء أصلاً). النسخةُ الشاملة لمدير المنصة وحده (019d · 062) */
+var ENF_MGR_FULL = { 'backup.restore': 1, 'import.replace': 1 };
+/* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يكتب في الفترات المقفلة/المنقضية من إدارته بلا نافذةٍ رجعية — في الاستيراد والاستعادة الخادمية المتحقَّقة وحدها (A.__srvRst).
+   هذا هو الموضعُ الواحد القابلُ للرجوع: إن قرّر المالك أن يشمل الكتابةَ الحيّة كذلك يُحذف شرطُ (X.restore ∧ A.__srvRst) هنا وحده. */
+function enfLockBypass(A, d, X) { return !!(X && X.restore && A && A.__srvRst) && enfDeptMgrFull(A, d); }
+function enfDeptMgrFull(A, d) { var r = A && A.u && A.u.role; return (r === 'dept' || r === 'staff') && !!d && isUnitId(A, d) && isMgrOf(A, d); }
 /* هل يحمل الفاعلُ المفتاحَ في الإدارة d؟ (سقف الإدارة ∧ بوابة العدسة ∧ الدور ∧ الترجمة/المنح الصريح − الإسقاط) */
 function enfHeld(A, d, key) {
   if (!A || !A.u) return false;
@@ -166,6 +173,7 @@ function enfHeld0(A, d, key) {
   if (!isUnitId(A, d)) return false;
   if (!sup && !deptInScope(A, d)) return false;
   if (!enfKeyOnCeiling(A, d, key)) return false;
+  if (ENF_MGR_FULL[key] && enfDeptMgrFull(A, d) && !enfGrantOf(A, d).minus[key]) return true;   /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يحمل الاستعادةَ والاستبدال في إدارته وحدها — بلا منحٍ صريح (الإسقاطُ الصريح من مدير المنصة يبقى نافذاً) */
   var L = ix.lens[key];
   if (L) {                                                               /* D3-04: Ceiling ∧ Employee Lens Assignment — enable بوابةٌ لا تمنح العملية */
     var g = KIVO_BUILD.lensGate(A.perms, u, d, L);
