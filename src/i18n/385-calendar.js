@@ -116,11 +116,14 @@
   }
   function hMonthDays(y, m, unsupported) { return monthDays(lens, y, m, function () { return new Date(hGreg(y, m, 1).getTime() + 25056e5); }, unsupported); }
   function hMonthDaysNoon(y, m, unsupported) { return monthDays(lensNoon, y, m, function () { var a = hGregNoon(y, m, 1); return new Date(a.getFullYear(), a.getMonth(), a.getDate() + 29, 12); }, unsupported); }
-  /* hWeekdayIndex: خوارزميةُ مراقب الإشعارات حرفاً — بحثٌ يومي من «الآن» ±within يوماً (400 كما كان)، فيومُ الأسبوع هو يومُ أول لحظةٍ تطابق. */
+  /* hWeekdayIndex: بحثُ مراقب الإشعارات — يومياً من اليوم ±within يوماً (400 كما كان)، فيومُ الأسبوع هو يومُ أول يومٍ يطابق.
+     V7 · د6: الخطوةُ يومٌ تقويميٌّ محلي ظهراً لا 24 ساعةً من «الآن» — تلك كانت تقفز يوماً محلياً كاملاً عند تقديم الساعة (التوقيت الصيفي) متى كان «الآن»
+     في الساعة الأخيرة قبل منتصف الليل (لوس أنجلوس 23:30 + 24 ساعة بعد التقديم = 00:30 بعد يومين)، فيبقى اسمُ ذلك اليوم فارغاً (-1).
+     الظهرُ موجودٌ في كل يومٍ محلي مرةً واحدة، فكلُّ يومٍ في النافذة يُزار مرةً أياً كانت الساعة والمنطقة (tests/unit/v7_d6_weekday_clock.test.mjs). */
   function hWeekdayIndex(y, m, d, within) {
     try {
-      var n = within == null ? 400 : within, now = new Date();
-      for (var i = -n; i <= n; i++) { var at = new Date(now.getTime() + i * 864e5), h = hParts(at); if (h.y === y && h.m === m && h.d === d) return at.getDay(); }
+      var n = within == null ? 400 : within, now = new Date(), y0 = now.getFullYear(), m0 = now.getMonth(), d0 = now.getDate();
+      for (var i = -n; i <= n; i++) { var at = new Date(y0, m0, d0 + i, 12), h = hParts(at); if (h.y === y && h.m === m && h.d === d) return at.getDay(); }
     } catch (e) { /* بلا دعم: -1 */ }
     return -1;
   }

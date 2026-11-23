@@ -123,7 +123,7 @@ const oldServer = (I) => { const c = srvCtx(I); vm.runInContext(OLD_SRV_SRC, c);
 const newServer = (I) => { const c = srvCtx(I); for (const f of ['workers/parts/016-base-shared.js', 'src/systems/tasks/server/070-task-core.js', 'src/systems/tasks/server/073-task-recur.js']) vm.runInContext(read(f), c, { filename: path.basename(f) }); return c; };
 
 function proof() {
-  const W = client(), C = W.KIVO.BassamCal, S = oldStats(Intl), R = { days: 0, instants: 0, riyadhDiffers: 0, monthPlainVsNoon: 0, monthStatsVsNoon: 0, utcDayDiffers: 0, utcInstantDiffers: 0, printShown: 0, wdChecked: 0, wdBand: 0, srvInstants: 0, srvMid: 0 };
+  const W = client(), C = W.KIVO.BassamCal, S = oldStats(Intl), R = { days: 0, instants: 0, riyadhDiffers: 0, monthPlainVsNoon: 0, monthStatsVsNoon: 0, utcDayDiffers: 0, utcInstantDiffers: 0, printShown: 0, wdChecked: 0, wdBand: 0, wdOldSkipped: 0, srvInstants: 0, srvMid: 0 };
   const now = new Date(), noonOf = (t) => new Date(t.getFullYear(), t.getMonth(), t.getDate(), 12), today = noonOf(now).getTime();
   const sameParts = (a, b, why) => assert.deepEqual({ y: a.y, m: a.m, d: a.d }, { y: b.y, m: b.m, d: b.d }, why);
   for (let y = Y0; y <= Y1; y++) for (let m = 1; m <= 12; m++) {
@@ -148,8 +148,17 @@ function proof() {
       /* اسمُ يوم الأسبوع (442): كلُّ يومٍ في جوار اليوم (±420) وأولُ كل شهرٍ ومنتصفُه؛ الاختلافُ لا يُقبل إلا على حافة النافذة (±400 ± 4) */
       const delta = Math.round((n.getTime() - today) / 864e5);
       if (exists && (Math.abs(delta) <= 420 || d === 1 || d === 15)) {
-        const was = OLD.wdName(y + '-' + m + '-' + d), is = OLD.WD[C.hWeekdayIndex(y, m, d, 400)] || '';
-        if (was !== is) { assert.ok(Math.abs(Math.abs(delta) - 400) <= 4, 'wdName ' + [y, m, d, was, is, delta]); R.wdBand++; } else if (Math.abs(delta) < 396) assert.equal(is, OLD.WD[n.getDay()], 'اسمُ اليوم هو يومُ التاريخ الميلادي');
+        const t0 = Date.now(), was = OLD.wdName(y + '-' + m + '-' + d), t1 = Date.now(), is = OLD.WD[C.hWeekdayIndex(y, m, d, 400)] || '';
+        /* V7 · د6: الاسمُ الجديد هو يومُ التاريخ الميلادي داخل النافذة دائماً (لا حين يطابق القديمَ فقط). والقديمُ يخالفه في موضعين لا ثالث لهما:
+           حافةُ النافذة (±400 ± 4) · أو يومٌ لم تقع عليه قطُّ خطواتُه الـ24 ساعةً من «الآن» (قفزةُ التوقيت الصيفي حين يكون «الآن» قبل منتصف الليل بأقلَّ من ساعة)
+           فكان اسمُه فارغاً — وهذا يُثبَت هنا بإعادة الخطوات نفسِها لا يُفترض. */
+        if (Math.abs(delta) < 396) assert.equal(is, OLD.WD[n.getDay()], 'اسمُ اليوم هو يومُ التاريخ الميلادي');
+        if (was !== is) {
+          /* «الآن» الذي رآه القديم بين t0 وt1: يكفي أن تخطئ خطواتُه اليومَ من أحد الطرفين */
+          const edge = Math.abs(Math.abs(delta) - 400) <= 4, key = n.toDateString(), steps = (t) => Array.from({ length: 801 }, (_, i) => new Date(t + (i - 400) * 864e5).toDateString()).includes(key);
+          const stepped = !edge && was === '' && steps(t0) && steps(t1);
+          assert.ok(edge || (was === '' && !stepped), 'wdName ' + [y, m, d, was, is, delta]); if (edge) R.wdBand++; else R.wdOldSkipped++;
+        }
         R.wdChecked++;
       }
       /* لحظاتُ ذلك اليوم: ظهرُه · آخرُ لحظةٍ قبل منتصف ليله · منتصفُ ليله · آخرُ لحظةٍ فيه */
