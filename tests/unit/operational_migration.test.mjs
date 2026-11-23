@@ -28,6 +28,7 @@ for (const [file, name] of [
 }
 C.K_DEPTS = "bassam_depts_v1";
 for (const file of [
+  "051c-department-permission-slice.js",   /* V7 · د6 (QA): 019d يشير إلى rsPermSlice (في العامل المجمّع var مرفوع) — يُحمّل قبله */
   "019d-atomic-restore.js",
   "019o-operational-codec.js",
   ...SCHED_PARTS,

@@ -96,9 +96,9 @@ export function withPatch(w, patchFile) {
   const src = fs.readFileSync(w, 'utf8'), P = fs.readFileSync(path.join(PATCHES, patchFile), 'utf8').split('\n');
   const hunks = []; let cur = null, file = '';
   for (const l of P) {
-    if (l.startsWith('@@')) { cur = { a: [], b: [], file }; hunks.push(cur); continue; }
+    if (l.startsWith('@@')) { cur = { a: [], b: [], add: [], file }; hunks.push(cur); continue; }
     if (!cur || l.startsWith('--- ') || l.startsWith('+++ ')) { if (l.startsWith('--- ')) cur = null; if (l.startsWith('+++ b/')) file = l.slice(6).trim(); continue; }
-    if (l.startsWith('+')) cur.b.push(l.slice(1)); else if (l.startsWith('-')) cur.a.push(l.slice(1)); else if (l.startsWith(' ')) { cur.a.push(l.slice(1)); cur.b.push(l.slice(1)); } else if (l === '') { /* سطرٌ فارغٌ في نهاية الرقعة */ }
+    if (l.startsWith('+')) { cur.b.push(l.slice(1)); cur.add.push(l.slice(1)); } else if (l.startsWith('-')) cur.a.push(l.slice(1)); else if (l.startsWith(' ')) { cur.a.push(l.slice(1)); cur.b.push(l.slice(1)); } else if (l === '') { /* سطرٌ فارغٌ في نهاية الرقعة */ }
   }
   let out = src, merged = 0;
   for (const h of hunks) {
@@ -109,6 +109,8 @@ export function withPatch(w, patchFile) {
     const gone = (A.match(/function ([A-Za-z_$][\w$]*)\(/g) || []).map((x) => x.slice(9, -1)).filter((n) => !src.includes('function ' + n + '('));
     if (gone.length && out.split(A).length !== 2) { merged++; continue; }
     if (out.split(B).length === 2 && out.split(A).length !== 2) { merged++; continue; }
+    /* V7 · د6 (QA): مقطعٌ مدمجٌ تغيّر سطرُ سياقه بعد الدمج (059: «var ix = enfIx()» أُزيل مع السبب — 3a52671) — كلُّ سطرٍ مضافٍ قائمٌ مرّةً واحدة والأصلُ غائب ⇐ مدمج */
+    if (h.add.length && out.split(A).length !== 2 && h.add.every((x) => x.trim() === '' || out.split(x).length === 2)) { merged++; continue; }
     if (out.split(A).length !== 2) throw new Error(patchFile + ': مقطعٌ غيرُ فريد أو غائب — أعد بناء الرقعة على خط الأساس');
     out = out.replace(A, () => B);
   }
