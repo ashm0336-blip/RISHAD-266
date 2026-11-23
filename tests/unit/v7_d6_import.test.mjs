@@ -11,7 +11,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { hasSystem } from './harness.mjs';
 import { internals } from './internals.mjs';
-import { target, oldFile, sizeOf, protocol, staged, snapshot, changed, readOps, readImage, NOT_TRANSFERRED, LAB, SEG, withoutDropped, fieldDrops, fieldDropsOf } from './v7_d6_import_fx.mjs';
+import { target, oldFile, sizeOf, protocol, staged, snapshot, changed, readOps, readImage, NOT_TRANSFERRED, LAB, SEG, withoutDropped, fieldDrops, fieldDropsOf, remapOf, nfDropsOf, SRC_DEPT } from './v7_d6_import_fx.mjs';
 
 const B = 'TEST_ONLY_B', A = 'TEST_ONLY_A', SCOPE = { kind: 'dept', departmentId: B }, LIMIT = 8 * 1024 * 1024;
 const need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport', 'custody') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات والمهام والتشغيل والتقرير والعهد (بياناتُ العرض المصدر)' };
@@ -24,15 +24,15 @@ async function compare(T, who, file, dept = B) {
   const got = await readOps(T, who, dept, ops.concat(['bassam_rounds_arc_v1']));
   for (const k of ops) {
     /* V7 · د6 (schemafix): حقولُ المصلى العابرة/غير المعروفة (nNow · capNow · share · shareName) يُسقطها الاستيراد ويذكرها — وكلُّ ما سواها كما في النسخة */
-    const want = withoutDropped(JSON.parse(file.data[k]));
+    const want = withoutDropped(JSON.parse(remapped(file.data[k], dept)));
     /* الجولات: أيامُ الأشهر المنقضية ينقلها الخادمُ إلى أرشيفها (د5-ح) — المطابقةُ على مجموع الموردين */
     if (k === 'bassam_rounds_v1') assert.deepEqual({ ...(got.bassam_rounds_arc_v1 || {}), ...(got[k] || {}) }, want, 'الجولات (مع أرشيفها) كما في النسخة');
     else assert.deepEqual(got[k], want, k + ' كما في النسخة');
   }
   const kv = Object.fromEntries(T.DB.q("SELECT k, group_concat(v,'') v FROM (SELECT k,v FROM kv WHERE k GLOB ?1 ORDER BY k,seq) GROUP BY k", 'bsdept:' + dept + ':*').map((r) => [r.k.split(':').slice(2).join(':'), r.v]));
   for (const k of ['bassam_first_boot_v1', 'bassam_last_export_v1']) assert.equal(kv[k], file.data[k], k + ' كما في النسخة');
-  /* التنبيهات: كلُّ بندٍ برسالته */
-  const items = JSON.parse(file.data.bassam_notif_v1).items, rows = T.DB.q('SELECT id,title,body FROM notification_messages WHERE scope=?1', 'd:' + dept);
+  /* التنبيهات: كلُّ بندٍ برسالته — إلا ما يُسقط بنداً بنداً (pm_tpl · تنبيهُ إدارةٍ أخرى: V7 · د6 remap) */
+  const kept = new Set(remapOf(file).kept), items = JSON.parse(file.data.bassam_notif_v1).items.filter((x) => kept.has(x.id)), rows = T.DB.q('SELECT id,title,body FROM notification_messages WHERE scope=?1', 'd:' + dept);
   assert.equal(rows.length, items.length, 'عددُ التنبيهات');
   const byId = new Map(rows.map((r) => [r.id, r]));
   for (const it of items) { const r = byId.get(it.id); assert.ok(r, 'تنبيه ' + it.id); assert.equal(r.title, it.t); assert.equal(r.body, it.b); }
@@ -49,6 +49,8 @@ async function compare(T, who, file, dept = B) {
   assert.equal(T.DB.q('SELECT COUNT(*) n FROM imgref')[0].n, Object.keys(file.idbImages).length);
   return ops.length;
 }
+/* V7 · د6 (remap): النسخةُ كما يُتوقَّع بعد إعادة ربط معرّف إدارة المصدر بالوحدة الهدف — في مواضعه المعدودة وحدها (مفتاحُ المدير في المهام) */
+const remapped = (raw, dept) => raw.split('"mgr:' + SRC_DEPT + '"').join('"mgr:' + dept + '"');
 const permsOf = (T) => JSON.parse(T.DB.q("SELECT group_concat(v,'') v FROM (SELECT v FROM kv WHERE k='bassam_perms_v1' ORDER BY seq)")[0].v);
 const audits = (T) => T.DB.q("SELECT COUNT(*) n FROM aud WHERE k='atomic_restore'")[0].n;
 
@@ -77,7 +79,10 @@ async function heavy(scale, t, { inline = false } = {}) {
     assert.equal(out.inspect.status, 200, JSON.stringify(out.inspect.j).slice(0, 400));
     const s = out.inspect.j.inspection.summary;
     assert.equal(s.legacy, true); assert.equal(s.imagesNew, 10 * scale); assert.equal(s.imagesReused, 0); assert.equal(s.imagesMissing, 0);
-    const keyLevel = s.notTransferred.filter((x) => !['transient', 'field', 'field-type'].includes(x.why));
+    const keyLevel = s.notTransferred.filter((x) => !['transient', 'field', 'field-type'].includes(x.why) && !/^nf-/.test(x.why));
+    /* V7 · د6 (remap): التنبيهاتُ المُسقطة بنداً بنداً بعددها ونوعها · وإعادةُ ربط معرّف الإدارة بعددها */
+    assert.deepEqual(nfDropsOf(s.notTransferred), remapOf(file).nfDrops, 'تنبيهاتٌ لن تُنقل بعددها ونوعها');
+    assert.deepEqual({ from: s.remap.from, to: s.remap.to, n: s.remap.n, by: s.remap.by, foreign: s.remap.foreign, left: s.remap.left }, { from: SRC_DEPT, to: B, n: remapOf(file).n, by: remapOf(file).by, foreign: remapOf(file).foreign, left: {} }, 'أُعيد ربط كلِّ إشارة');
     assert.deepEqual(Object.fromEntries(keyLevel.map((x) => [x.k, x.why])), NOT_TRANSFERRED, 'وعند الفحص كذلك');
     /* V7 · د6 (schemafix): وما لا يعرفه المخطّط من حقول الموارد يُذكر قبل التأكيد بمساره وعدده — الفارغُ «عابر» والذي بقيمة «لا مقابل له» — ولا يُرفض به الاستيراد */
     assert.deepEqual(fieldDropsOf(s.notTransferred), fieldDrops(file), 'الحقولُ التي لن تُنقل وعددُها');
@@ -91,7 +96,7 @@ async function heavy(scale, t, { inline = false } = {}) {
     assert.ok(T.DB.q("SELECT COUNT(*) n FROM restore_preimage WHERE snapshot_id GLOB 'atomic_*'")[0].n > 0, 'لقطةُ ما قبل الاستيراد محفوظة على الخادم');
     /* الصلاحيات: السقفُ والأوراقُ المرفقة بالنسخة بقاعدة الشريحة القائمة — ولا شيءَ خارج الإدارة الهدف، ولا حساباتٍ ولا منحاً */
     const now = perms1;
-    assert.deepEqual(now.caps[B], file.perms.cap); assert.deepEqual(now.emps[B], file.perms.emps);
+    assert.deepEqual(now.caps[B], file.perms.cap); assert.deepEqual(now.emps[B], JSON.parse(remapped(JSON.stringify(file.perms.emps), B)), 'صحيفةُ مدير المصدر صارت صحيفةَ مدير الوحدة (V7 · د6 remap)');
     for (const d of Object.keys(before.caps)) if (d !== B) assert.deepEqual(now.caps[d], before.caps[d], 'سقفُ ' + d + ' لم يُمسّ');
     assert.deepEqual(Object.keys(now.emps), [B]); assert.equal(T.DB.q("SELECT group_concat(v,'') v FROM kv WHERE k='bassam_auth_users_v1'")[0].v, users, 'الحساباتُ كما هي');
     /* أين استقرّت أجسامُ الصور — وحدُّ قيمة الصف في طبقة التخزين (CHUNK = 700,000 حرفاً) محترم */
@@ -466,7 +471,9 @@ test('(١٧) التنبيهات: استيرادُ الإدارة واستعاد�
   /* التحويلُ المتوقَّع: النسخةُ نفسُها إلى إدارةٍ فارغة في منصةٍ جديدة */
   const expect = async (f) => { const Z = await target(); try { assert.equal((await protocol(Z, Z.su, f, { scope: SCOPE }).run()).commit.status, 200); return { rows: nfMine(Z), z: Z.DB.q("SELECT * FROM notification_messages WHERE scope='d:" + B + "'"), targets: Z.DB.q("SELECT * FROM notification_targets WHERE scope='d:" + B + "'") }; } finally { await Z.close(); } };
   const E1 = await expect(file), E2 = await expect(file2);
-  assert.equal(E1.rows.notification_messages.length, nf.items.length, 'كلُّ تنبيهٍ في النسخة صفٌّ واحد'); assert.equal(E2.rows.notification_messages.length, half.items.length);
+  /* V7 · د6 (remap): ما يُسقط بنداً بنداً (pm_tpl · تنبيهُ إدارةٍ أخرى) لا صفَّ له — وكلُّ ما سواه صفٌّ واحد */
+  const kept = new Set(remapOf(file).kept), nKept = (items) => items.filter((x) => kept.has(x.id)).length;
+  assert.equal(E1.rows.notification_messages.length, nKept(nf.items), 'كلُّ تنبيهٍ يُنقل في النسخة صفٌّ واحد'); assert.equal(E2.rows.notification_messages.length, nKept(half.items));
   const viaNew = async (T, f, mode) => { const r = await protocol(T, T.su, f, { scope: SCOPE, mode }).run(); assert.equal(r.commit && r.commit.status, 200, 'جديد ' + mode + ': ' + JSON.stringify((r.commit || r.inspect || r.begin).j).slice(0, 300)); };
   const viaOld = async (T, f, mode) => {
     const inv = (await T.call('/api/backup/restore?kind=dept&departments=%5B%5D&dept=' + B, { ck: T.su.ck })).j, id = 'TEST_ONLY_nf_old_' + Math.random().toString(36).slice(2, 12);

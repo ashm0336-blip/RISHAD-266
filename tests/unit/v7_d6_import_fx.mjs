@@ -124,12 +124,22 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
     'bassam_rounds_v1 · {}.d[].zones[].nNow|transient': rz - 1, 'bassam_rounds_v1 · {}.d[].zones[].nNow|field': 1,
     'bassam_rounds_v1 · {}.d[].zones[].capNow|transient': rz - 1, 'bassam_rounds_v1 · {}.d[].zones[].capNow|field': 1,
   };
-  const item = (i) => ({ id: 'TEST_ONLY_n' + i, type: 'bc_dept', k: 'bc', t: 'TEST_ONLY · تنبيه د6 ' + i, b: 'TEST_ONLY · ' + 'نصُّ تنبيهٍ تجريبي '.repeat(small ? 4 : 56), at: 1795000000000 + i, to: { e: [], r: ['all'] } });
-  const nItems = Math.max(2, Math.floor(nfChars / J(item(0)).length));
+  /* V7 · د6 (remap): التنبيهُ كما يكتبه Production (441 emit · tkNotify): dept = معرّفُ إدارة المصدر (غيرُ معرّف الوحدة الهدف — الحالةُ الطبيعية) ·
+     by = رمزُ الكاتب (مديرُ الإدارة «mgr:<المصدر>») · وأنواعٌ تصل لمستخدمي الوحدة: bc_dept للجميع · task_new لموظفٍ باسمه · emp_add لمدير الوحدة ودوره.
+     ومنها ما لا يُنقل بنداً بنداً: pm_tpl (فئة perm — قوالبُ الصلاحيات حُذفت) ×4 · وتنبيهٌ لإدارةٍ أخرى (OTHER) ×1 — وعلاماتُ قراءةٍ لهما وللتعميم العام (bc:) */
+  const KIND = [['bc_dept', 'bc', { e: [], r: ['all'] }], ['task_new', 'task', { e: ['tst_demo_e11'], r: [] }], ['emp_add', 'emp', { e: ['mgr:' + SRC_DEPT], r: ['mgr'] }]];
+  const item = (i) => { const [type, k, to] = i >= 1 && i <= 4 ? ['pm_tpl', 'perm', { e: [], r: ['mgr'] }] : KIND[i % 3];
+    return { id: 'TEST_ONLY_n' + i, type, k, lvl: 'info', chan: 'bell', t: 'TEST_ONLY · تنبيه د6 ' + i, b: 'TEST_ONLY · ' + 'نصُّ تنبيهٍ تجريبي '.repeat(small ? 4 : 56), at: 1795000000000 + i, by: 'mgr:' + SRC_DEPT, byName: 'TEST_ONLY مدير المصدر', to: JSON.parse(J(to)), go: '', dept: i === 5 ? OTHER_DEPT : SRC_DEPT }; };
+  const nItems = Math.max(8, Math.floor(nfChars / J(item(0)).length)), items = Array.from({ length: nItems }, (_, i) => item(i));
+  const nfDoc = { v: 1, items, read: { ['mgr:' + SRC_DEPT]: { TEST_ONLY_n0: 1795000001000, TEST_ONLY_n1: 1795000001000, 'bc:TEST_ONLY_bc1': 1795000001000 } }, ack: {}, del: {}, seen: { 'quota:TEST_ONLY': 1795000000500 } };
+  /* المهام كما يكتبها العامل (071 tkWho): x.by و x.rv يحملان مفتاحَ مدير الإدارة المصدر */
+  const tasks = Object.fromEntries(Object.entries(docs.bassam_tasks_v1).map(([day, rows]) => [day, rows.map((r) => { const x = r.slice(); while (x.length < 23) x.push(null);
+    x[23] = { v: 2, by: { u: 'TEST_ONLY_mgr_src', e: 'mgr:' + SRC_DEPT, n: 'TEST_ONLY مدير المصدر' }, pol: { m: 'any', n: 1, steps: [] }, rv: { u: 'TEST_ONLY_mgr_src', e: 'mgr:' + SRC_DEPT, n: 'TEST_ONLY مدير المصدر' }, dec: 1 }; return x; })]));
+  const nTaskRows = Object.values(tasks).reduce((n, rows) => n + rows.length, 0);
   const data = {
     bassam_rounds_v1: J(rounds), bassam_plan_v1: J(plan),
-    bassam_notif_v1: J({ v: 1, items: Array.from({ length: nItems }, (_, i) => item(i)), read: {}, ack: {}, del: {}, seen: {} }),
-    bassam_dreport_v1: J(docs.bassam_dreport_v1), bassam_tasks_v1: J(docs.bassam_tasks_v1),
+    bassam_notif_v1: J(nfDoc),
+    bassam_dreport_v1: J(docs.bassam_dreport_v1), bassam_tasks_v1: J(tasks),
     bassam_grants_v1: J({ v: 1, emp: { tst_demo_e11: { plus: ['plan.edit'], minus: [] } } }), bassam_zone_opts_v1: J({}),
     bassam_staffing_v3: J(docs.bassam_staffing_v3), bassam_perm_tpls_v1: J([{ id: 'TEST_ONLY_t1', name: 'TEST_ONLY قالب 1' }, { id: 'TEST_ONLY_t2', name: 'TEST_ONLY قالب 2' }, { id: 'TEST_ONLY_t3', name: 'TEST_ONLY قالب 3' }]),
     bassam_employees_v1: J(docs.bassam_employees_v1), bassam_dayshift_v1: J({}), bassam_custody_v1: J({ items: [], moves: [] }),
@@ -139,13 +149,28 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
   };
   for (let u = 1; u <= 8; u++) data['bassam_notif_dev_v1:TEST_ONLY_u' + u] = u === 8 ? '1795000000003' : null;
   const file = { app: 'bassam-crowd', version: 3, kind: 'dept', dept: 'TEST_ONLY إدارة قديمة', exportedAt: '2026-11-20T10:00:00.000Z', data,
-    perms: { capSet: true, cap: ['plan', 'daily', 'emps', 'admin'], emps: { tst_demo_e11: { plan: ['view'] } }, lenses: [] }, idbImages: idb, preImport: false };
+    perms: { capSet: true, cap: ['plan', 'daily', 'emps', 'admin'], emps: { tst_demo_e11: { plan: ['view'] }, ['mgr:' + SRC_DEPT]: { plan: ['view'] } }, lenses: [] }, idbImages: idb, preImport: false };
   DROPS.set(file, drops);
+  /* ما يُعاد ربطه (019f rsBCDeptWalk) بعدده: لكل تنبيهٍ dept (إلا OTHER) و by وما في to.e من مفتاح المدير · علامةُ القراءة (رمزُ المدير) · لكل مهمةٍ by و rv · صحيفةُ المدير */
+  const nfRefs = items.reduce((n, x) => n + (x.dept === SRC_DEPT ? 1 : 0) + 1 + x.to.e.filter((e) => e === 'mgr:' + SRC_DEPT).length, 0) + 1;
+  REMAP.set(file, { from: SRC_DEPT, n: nfRefs + 2 * nTaskRows + 1, by: { notifications: nfRefs, tasks: 2 * nTaskRows, perms: 1 }, foreign: { [OTHER_DEPT]: 1 },
+    /* ما يُسقطه تحويلُ التنبيهات بنداً بنداً: { 'bassam_notif_v1 · <النوع>|<السبب>': العدد } */
+    nfDrops: { 'bassam_notif_v1 · pm_tpl|nf-type': 4, ['bassam_notif_v1 · ' + items[5].type + '|nf-department']: 1, 'bassam_notif_v1 · read|nf-state-message-unknown': 2 },
+    kept: items.filter((x) => x.type !== 'pm_tpl' && x.dept === SRC_DEPT).map((x) => x.id) });
   return file;
 }
 /* V7 · د6 (schemafix): حقولُ المصلى التي لا يعرفها المخطّط في الملف القديم — يُسقطها الاستيرادُ ويذكرها؛ المطابقةُ مفتاحاً مفتاحاً تكون على الوثيقة بدونها */
 export const DROPPED_FIELDS = ['nNow', 'capNow', 'share', 'shareName'];
-const DROPS = new WeakMap();
+const DROPS = new WeakMap(), REMAP = new WeakMap();
+/* V7 · د6 (remap): معرّفُ إدارة المصدر في الملف القديم (كما في Production: معرّفٌ لا يوجد على المنصة الهدف) · ومعرّفٌ أجنبي في تنبيهٍ واحد */
+export const SRC_DEPT = 'TEST_ONLY_srcdept9x', OTHER_DEPT = 'TEST_ONLY_otherdept';
+/* المتوقَّع من إعادة الربط: { from, n, by, foreign, nfDrops, kept (معرّفاتُ التنبيهات التي تُنقل) } */
+export const remapOf = (file) => REMAP.get(file);
+export function nfDropsOf(list) {
+  const out = {};
+  for (const x of list || []) if (/^nf-/.test(x.why)) out[x.k + '|' + x.why] = (out[x.k + '|' + x.why] || 0) + x.n;
+  return out;
+}
 /* ما لن يُنقل من الحقول كما يُتوقَّع في summary.notTransferred: { 'المورد · المسار.الحقل|السبب': العدد } (أرشيفُ الجولات يُجمع مع الجولات) */
 export const fieldDrops = (file) => ({ ...DROPS.get(file) });
 export function fieldDropsOf(list) {

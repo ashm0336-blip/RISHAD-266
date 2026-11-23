@@ -66,6 +66,22 @@ async function rsiSlice(env, A, request, id, M, b) {
     text = JSON.stringify(ocInflate(dec.info.prepared, dec.domain).value);
   }
   first = null;
+  /* V7 · د6 (remap): دفعةُ مهامّ نسخةٍ قديمة — إدارةُ النسخة تُعرف من بقية الملف (أُودِعت كلُّها قبل الدفعات) بالحكم نفسِه (019f rsBCDeptFind) فتُربط إشاراتُها بالوحدة */
+  var remap = null;
+  if (legacy && base === 'bassam_tasks_v1') {
+    var rest = await rsiText(env, id, 'f', ''), rf = rest.segs === M.f && rest.text.length === M.n ? parseJson(rest.text, null) : null;
+    rest = null;
+    if (!isObj(rf) || !isObj(rf.data)) throw rsError('import-incomplete', 409);
+    var from = rsBCDeptFind({ bassam_notif_v1: parseJson(rf.data.bassam_notif_v1 || 'null', null) }, rf.perms);
+    rf = null;
+    if (from) {
+      var sd = { bassam_tasks_v1: JSON.parse(text) };
+      remap = rsBCDeptRemap(sd, null, from, dept, rsBCRemapRec(from, dept));
+      text = JSON.stringify(sd.bassam_tasks_v1);
+      var lc = from !== dept ? text.split(from).length - 1 : 0;
+      if (lc) remap.left[base] = lc;
+    }
+  }
   set[key] = text; bs[key] = reference.inputRevs[key] || 0; ops[key] = { op: 'backup.restore', scope: 'dept', mode: 'replace', reason: b.reason || '' }; why[key] = b.reason || '';
   got = null;
   var kv = await applySave(env, { set: set, del: [], base: bs, ops: ops, why: why }, A, reqMeta(request), { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN, __srvRestore: RESTORE_INTERNAL_TOKEN });
@@ -77,6 +93,7 @@ async function rsiSlice(env, A, request, id, M, b) {
   /* أولُ دفعةٍ لموردها: ما كان قائماً من الأسرة ولم يرد في حكمها يُكتب فارغاً (جذرُه وحده) — فيُستبدل القائمُ ولو لم تأتِ له أيام */
   if (out.authz) held.forEach(function (k) { if (!kv.pend.some(function (pd) { return pd.k === k; })) kv.pend.push({ k: k, act: 'set', v: (ENT[resName(k)] && ENT[resName(k)].empty) || '{}', have: reference.inputRevs[k] || 0 }); });
   out.fields = {};
+  if (remap) out.remap = remap;
   kv.pend.forEach(function (pd) {
     if (legacy && pd.act === 'set') pd.v = rsiFields(out.fields, pd.k, pd.v);   /* V7 · د6 (schemafix): ما لا يعرفه المخطّط يُذكر ولا يُرفض به الاستيراد */
     var info = opInfo(pd.k), doc = JSON.parse(pd.v), mine = 0;
@@ -147,7 +164,7 @@ function rsiFields(rec, k, raw) {
 }
 function rsiFieldRec(list) {
   var rec = {};
-  (list || []).forEach(function (r) { if (r && RSI_FIELD_WHY[r.why]) rec[r.k + '|' + r.why] = r; });
+  (list || []).forEach(function (r) { if (r && (RSI_FIELD_WHY[r.why] || /^nf-/.test(r.why))) rec[r.k + '|' + r.why] = r; });   /* V7 · د6 (remap): وبنودُ التنبيهات المُسقطة nf-* */
   return rec;
 }
 var RSI_FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
@@ -325,6 +342,14 @@ async function rsImportRoute(env, request, ss) {
         /* ما أُخرج من نصّ الملف ليُرسل دفعاتٍ ليس «مجموعةً غائبة عن النسخة» */
         Object.keys(M.slices).forEach(function (k) { var gone = 'operations:bsdept:' + s.departmentId + ':' + k.replace(/#\d+$/, ''); summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== gone; }); });
         /* V7 · د6 (schemafix): وما لا يعرفه المخطّط من حقول الموارد: من بقية الملف (019t) ومن الدفعات — بعدده */
+        /* V7 · د6 (remap): إشاراتُ المعرّف المصدر في الدفعات تُجمع إلى إشارات بقية الملف */
+        sr.forEach(function (o) {
+          var x = o.remap, y;
+          if (!x) return;
+          y = summary.remap = summary.remap || rsBCRemapRec(x.from, x.to);
+          y.n += x.n;
+          ['by', 'foreign', 'left'].forEach(function (f) { Object.keys(x[f]).forEach(function (k) { y[f][k] = (y[f][k] || 0) + x[f][k]; }); });
+        });
         summary.notTransferred = drop.concat(rsiFieldList([rsiFieldRec(summary.notTransferred)].concat(sr.map(function (o) { return o.fields; }))), stage.unref.map(function (k) { return { k: k, why: 'image-unreferenced' }; }));
         summary.imagesNew = stage.fresh.length;
         if (op === 'commit') plan.statements.push(rsiDrop(env, id));

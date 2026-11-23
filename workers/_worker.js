@@ -5118,7 +5118,20 @@ async function nfCommit(env, A, st, base, action, scopes, casKey) {
   if (casKey === NF_BC_REV) receipt.broadcastRev = await nfRevision(env, NF_BC_REV);
   return receipt;
 }
-function nfLegacyConvert(keys) {
+/* V7 · د6 (remap): drop — سجلُّ ما يُسقط بنداً بنداً عند تحويل نسخةٍ قديمة (019f): تنبيهٌ بنوعٍ لا يعرفه الإصدار أو بقيمةٍ لا تُقبل ·
+   أو لإدارةٍ غير إدارة المخزن · علامةُ قراءةٍ لحسابٍ أو تنبيهٍ ليس في النسخة · مفتاحُ عدم تكرارٍ تالف — يُسقط وحده ويُعدّ (drop[سبب|نوع]) ولا يُرفض الملف.
+   بلا drop (الترحيلُ الحيّ 0005 · nfLegacyPrepare) يبقى الرفضُ كما كان حرفاً. */
+function nfLegacyConvert(keys, drop) {
+  function lost(e, type) {
+    if (!drop || !e || !e.nf) throw e;
+    var id = e.nf.replace(/^notification-cutover-/, '') + '|' + (type == null ? '' : String(type).slice(0, 60));
+    drop[id] = (drop[id] || 0) + 1;
+  }
+  function each(list, fn, type) {
+    list.forEach(function (x) {
+      try { fn(x); } catch (e) { lost(e, type ? type(x) : ''); }
+    });
+  }
   var out = { version: 1, messages: [], targets: [], states: [], dedup: [], overrides: [], checkpoints: [] },
     users = parseJson(keys[K_USERS] || "[]", null),
     depts = parseJson(keys["bassam_depts_v1"] || "[]", null),
@@ -5218,7 +5231,7 @@ function nfLegacyConvert(keys) {
       )
         throw nfErr("notification-cutover-department-unknown");
       nfShape(v, ["items", "read", "ack", "del", "seen", "v"]);
-      nfArr(v.items || [], 10000).forEach(function (x) {
+      each(nfArr(v.items || [], 10000), function (x) {
         nfShape(
           x,
           [
@@ -5248,6 +5261,8 @@ function nfLegacyConvert(keys) {
         if (!Object.prototype.hasOwnProperty.call(NF_TYPES, x.type) && x.type !== "bc_dept") throw nfErr("notification-cutover-type");
         nfShape(x.to, ["e", "r"]);
         var to = { e: x.to.e || [], r: x.to.r || [] };
+        /* V7 · د6 (remap): هدفٌ مكرَّر (بعد إعادة ربط مفتاح المدير) أو فارغ لا معنى له — يُطوى */
+        if (drop) to = { e: nfArr(to.e, 20000).filter(function (y, i, a) { return y !== "" && a.indexOf(y) === i; }), r: nfArr(to.r, 8).filter(function (y, i, a) { return a.indexOf(y) === i; }) };
         nfArr(to.e, 20000).forEach(function (y) {
           nfStr(y, 200, false);
         });
@@ -5277,15 +5292,17 @@ function nfLegacyConvert(keys) {
         if (
           m.category !== (m.type === "bc_dept" ? "bc" : NF_TYPES[m.type].k) ||
           ["info", "act", "urg"].indexOf(m.priority) < 0 ||
-          ["bell", "toast"].indexOf(m.channel) < 0 ||
-          (d && m.department !== d)
+          ["bell", "toast"].indexOf(m.channel) < 0
         )
           throw nfErr("notification-cutover-shape");
+        if (d && m.department !== d) throw nfErr(drop ? "notification-cutover-department" : "notification-cutover-shape");
         add(m, nfTargetRows(scope, m.id, to));
+      }, function (x) {
+        return isObj(x) ? x.type : "";
       });
       var seen = v.seen || {};
       if (!isObj(seen)) throw nfErr("notification-cutover-seen");
-      Object.keys(seen).forEach(function (once) {
+      each(Object.keys(seen), function (once) {
         nfStr(once, 500, false);
         var ts = nfTime(seen[once]);
         if (once === "__sec") out.checkpoints.push({ scope: scope, name: "security-ts", value: ts });
@@ -5297,7 +5314,7 @@ function nfLegacyConvert(keys) {
     ["read", "ack", "del"].forEach(function (field) {
       var map = store.v[field] || {};
       if (!isObj(map)) throw nfErr("notification-cutover-state");
-      Object.keys(map).forEach(function (alias) {
+      each(Object.keys(map), function (alias) {
         var candidates = users.filter(function (u) {
           return (
             u &&
@@ -5306,10 +5323,15 @@ function nfLegacyConvert(keys) {
             [u.id, u.ekey, u.un, u.alt].filter(Boolean).map(String).indexOf(alias) >= 0
           );
         });
-        if (candidates.length !== 1) throw nfErr("notification-cutover-state-identity-unknown");
+        if (candidates.length !== 1) {
+          if (!drop) throw nfErr("notification-cutover-state-identity-unknown");
+          var nm = "state-identity-unknown|" + field;   /* علاماتُ حسابٍ لا يُعرف في الوحدة الهدف: تُعدّ علامةً علامة */
+          drop[nm] = (drop[nm] || 0) + (isObj(map[alias]) ? Object.keys(map[alias]).length : 1);
+          return;
+        }
         var vals = map[alias];
         if (!isObj(vals)) throw nfErr("notification-cutover-state");
-        Object.keys(vals).forEach(function (id) {
+        each(Object.keys(vals), function (id) {
           var ts = nfTime(vals[id]),
             matches = out.messages.filter(function (m) {
               return id.slice(0, 3) === "bc:"
@@ -5334,7 +5356,11 @@ function nfLegacyConvert(keys) {
               column = { read: "read_at", ack: "acknowledged_at", del: "dismissed_at" }[field];
             r[column] = Math.max(r[column], ts);
           });
+        }, function () {
+          return field;
         });
+      }, function () {
+        return field;
       });
     });
   });
@@ -12119,18 +12145,78 @@ function rsBCEmptyNF() {
   });
   return d;
 }
-function rsBCRemapNF(domain, source, target) {
+function rsBCRemapNF(domain, source, target, rec) {
   var next = rsBCClone(domain);
   if (source === target) return next;
+  /* V7 · د6 (remap): ومفتاحُ مدير الإدارة المصدر في منشئ التنبيه وأهدافه — كما في النسخة القديمة (rsBCDeptWalk) */
+  function mgr(r, c) {
+    if (rsBCMgrOf(r[c]) !== source) return;
+    r[c] = 'mgr:' + target + r[c].slice(4 + source.length);
+    if (rec) { rec.n++; rec.by.notifications = (rec.by.notifications || 0) + 1; }
+  }
   Object.keys(NF_TABLES).forEach(function (n) {
     next[n].forEach(function (r) {
       var col = n === 'states' ? 'message_scope' : 'scope';
       if (r[col] === 'd:' + source) r[col] = 'd:' + target;
       if (n === 'messages' && r.department === source) r.department = target;
+      if (n === 'messages') mgr(r, 'author_key');
       if (n === 'targets' && r.kind === 'department' && r.value === source) r.value = target;
+      if (n === 'targets' && r.kind === 'employee') mgr(r, 'value');
     });
   });
   return next;
+}
+/* V7 · د6 (remap): إعادةُ ربط معرّف الإدارة. نسخةُ إدارةٍ من Production لا تحمل معرّفَ إدارتها في رأسها (dept اسمٌ، والمفاتيحُ بلا بادئة)،
+   ويحمله ما تكتبه الكتّابُ فيها (جردُ مصدر Production 39b7f42): التنبيهُ dept (441 emit · tkNotify) · مفتاحُ مدير الإدارة «mgr:<المعرّف>» (330 mgrKeyOf)
+   في منشئ التنبيه by وأهدافه to.e وعلامات القراءة read/ack/del (مفاتيحُها رمزُ الحساب) · ومنشئ المهمة ومراجِعها r[23].by.e · r[23].rv.e (071 tkWho) ·
+   وصحيفةُ صلاحيات المدير في شريحة الصلاحيات perms.emps. هذه المواضع وحدها تُزار (لا استبدالَ نصٍّ أعمى)، كلٌّ بحقله. */
+function rsBCMgrOf(v) {
+  var m = typeof v === 'string' && /^mgr:([^:]+)/.exec(v);
+  return m ? m[1] : '';
+}
+function rsBCDeptWalk(docs, perms, fn) {
+  var nf = docs.bassam_notif_v1, tk = docs.bassam_tasks_v1;
+  if (isObj(nf)) {
+    (Array.isArray(nf.items) ? nf.items : []).forEach(function (x) {
+      if (!isObj(x)) return;
+      if (typeof x.dept === 'string') fn('notifications', 1, x.dept, function (v) { x.dept = v; });
+      fn('notifications', 0, x.by, function (v) { x.by = v; });
+      if (isObj(x.to) && Array.isArray(x.to.e)) x.to.e.forEach(function (e, i) { fn('notifications', 0, e, function (v) { x.to.e[i] = v; }); });
+    });
+    ['read', 'ack', 'del'].forEach(function (f) {
+      var m = nf[f];
+      if (isObj(m)) Object.keys(m).forEach(function (a) { fn('notifications', 0, a, function (v) { var o = m[a]; delete m[a]; m[v] = isObj(m[v]) && isObj(o) ? Object.assign({}, o, m[v]) : o; }); });
+    });
+  }
+  if (isObj(tk)) Object.keys(tk).forEach(function (day) {
+    if (Array.isArray(tk[day])) tk[day].forEach(function (r) {
+      var x = Array.isArray(r) && isObj(r[23]) ? r[23] : null;
+      if (x) ['by', 'rv'].forEach(function (f) { if (isObj(x[f])) fn('tasks', 0, x[f].e, function (v) { x[f].e = v; }); });
+    });
+  });
+  var pe = isObj(perms) && perms.emps;
+  if (isObj(pe)) Object.keys(pe).forEach(function (ek) { fn('perms', 0, ek, function (v) { var o = pe[ek]; delete pe[ek]; if (!rsBCOwn(pe, v)) pe[v] = o; }); });
+}
+/* إدارةُ النسخة نفسها: معرّفُ تنبيهات مخزنها (الأكثر ورداً) — فمعرّفُ مفاتيح المدير إن لم تكن تنبيهات؛ '' = لا إشارة */
+function rsBCDeptFind(docs, perms) {
+  var ids = [{}, {}];
+  rsBCDeptWalk(docs, perms, function (res, bare, v) { var d = bare ? v : rsBCMgrOf(v); if (d) ids[bare][d] = (ids[bare][d] || 0) + 1; });
+  return [1, 0].map(function (b) { var o = ids[b]; return Object.keys(o).sort(function (x, y) { return o[y] - o[x] || (x < y ? -1 : 1); })[0] || ''; }).filter(Boolean)[0] || '';
+}
+/* from ← to في المواضع وحدها · معرّفٌ آخر يُعدّ في foreign ولا يُمسّ · rec يجمع (n · by[مورد] · foreign[معرّف]) */
+function rsBCDeptRemap(docs, perms, from, to, rec) {
+  rsBCDeptWalk(docs, perms, function (res, bare, v, set) {
+    var d = bare ? v : rsBCMgrOf(v);
+    if (!d || d === to) return;
+    if (d !== from) { rec.foreign[d] = (rec.foreign[d] || 0) + 1; return; }
+    set(bare ? to : 'mgr:' + to + v.slice(4 + from.length));
+    rec.n++;
+    rec.by[res] = (rec.by[res] || 0) + 1;
+  });
+  return rec;
+}
+function rsBCRemapRec(from, to) {
+  return { from: from, to: to, n: 0, by: {}, foreign: {}, left: {} };
 }
 function rsBCRemapCU(domain, source, target) {
   var original = cuValidateDomain(domain, source),
@@ -12320,6 +12406,20 @@ async function rsConvertBackup(env, A, file, opt) {
       keys[dest] = input[k];
     });
   }
+  /* V7 · د6 (remap): نسخةُ إدارةٍ قديمة تُستورد إلى وحدةٍ بمعرّفٍ آخر — الحالةُ الطبيعية على منصة الشركة. إدارةُ النسخة: من بادئة مفاتيحها إن كانت،
+     وإلا ممّا تحمله بياناتُها (rsBCDeptFind). إشاراتُها تصير الوحدةَ الهدف في المواضع المعدودة قبل أي تحويل؛ ومعرّفٌ غيرُها يُذكر ولا يُربط.
+     وما بقي يحمل المعرّفَ المصدر نصّاً في موضعٍ لم يُعدّ يُذكر بموارده (left) — لا يُعاد ربطه ولا يُرفض به الملف. */
+  var perms = file.perms === undefined ? undefined : rsBCClone(file.perms);
+  if (legacy && scope.kind === 'dept') {
+    var rdocs = {};
+    ['bassam_notif_v1', 'bassam_tasks_v1'].forEach(function (n) { var k = 'bsdept:' + target + ':' + n; if (rsBCOwn(keys, k)) rdocs[n] = parseJson(keys[k], null); });
+    var from = source !== target ? source : rsBCDeptFind(rdocs, perms);
+    if (from) {
+      var rec = (summary.remap = rsBCDeptRemap(rdocs, perms, from, target, rsBCRemapRec(from, target)));
+      Object.keys(rdocs).forEach(function (n) { if (isObj(rdocs[n])) keys['bsdept:' + target + ':' + n] = JSON.stringify(rdocs[n]); });
+      if (from !== target) Object.keys(keys).forEach(function (k) { var c = keys[k].split(from).length - 1; if (c) rec.left[resName(k)] = c; });
+    }
+  }
   Object.keys(keys).filter(bdLegacyKey).forEach(function(k){
     var def=bdDefinitions().find(function(def){return def.resources.includes(resName(k));}),part=parseKey(k),index=def.resources.indexOf(resName(k));
     if(k!==(part.dept?def.key(part.dept,index):def.resources[index]))rsBCFail('business-namespace');
@@ -12449,7 +12549,8 @@ async function rsConvertBackup(env, A, file, opt) {
   if (domains.notifications !== undefined) {
     if (scope.kind === 'dept') {
       var normalized = rsBCNF(domains.notifications, { kind: 'dept', departmentId: source });
-      domains.notifications = rsBCNF(rsBCRemapNF(normalized, source, target), scope);
+      if (source !== target) summary.remap = rsBCRemapRec(source, target);
+      domains.notifications = rsBCNF(rsBCRemapNF(normalized, source, target, summary.remap), scope);
     } else domains.notifications = rsBCNF(domains.notifications, scope);
   } else if (legacy) {
     var identity = Object.create(null),
@@ -12459,8 +12560,9 @@ async function rsConvertBackup(env, A, file, opt) {
     if (nfKeys.length && (typeof nativeUsers !== 'string' || typeof nativeDepts !== 'string')) rsBCFail('notifications-identity-required');
     identity[K_USERS] = nativeUsers;
     identity[K_DEPTS] = nativeDepts;
+    /* V7 · د6 (remap): تنبيهاتُ نسخة الإدارة القديمة أُعيد ربطها بالوحدة الهدف أعلاه — فتُحوَّل باسمها (المعرّفُ المصدر قد لا يكون إدارةً على هذه المنصة) */
     nfKeys.forEach(function (k) {
-      var old = scope.kind === 'dept' ? 'bsdept:' + source + ':' + resName(k) : k;
+      var old = scope.kind === 'dept' ? 'bsdept:' + target + ':' + resName(k) : k;
       legacyNF[old] = keys[k];
     });
     Object.keys(identity).forEach(function (k) {
@@ -12472,12 +12574,18 @@ async function rsConvertBackup(env, A, file, opt) {
       var ds = rsBCParse(identity[K_DEPTS]);
       if (
         !ds.some(function (d) {
-          return d && d.id === source;
+          return d && d.id === target;
         })
       )
         rsBCFail('notifications-unknown-source-department');
     }
-    var converted = nfKeys.length ? nfLegacyConvert(legacyNF) : rsBCEmptyNF();
+    var nfDrop = {},
+      converted = nfKeys.length ? nfLegacyConvert(legacyNF, nfDrop) : rsBCEmptyNF();
+    /* V7 · د6 (remap): ما أُسقط بنداً بنداً يُذكر قبل التأكيد بعدده ونوعه (019g RSI_FIELD_WHY · 548) */
+    Object.keys(nfDrop).forEach(function (id) {
+      var p = id.split('|');
+      (summary.notTransferred = summary.notTransferred || []).push({ k: 'bassam_notif_v1 · ' + (p[1] || '—'), why: 'nf-' + p[0], n: nfDrop[id] });
+    });
     if (scope.kind === 'dept') {
       converted = rsBCRemapNF(converted, source, target);
       domains.notifications = rsBCNF(converted, scope);
@@ -12576,7 +12684,7 @@ async function rsConvertBackup(env, A, file, opt) {
   manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
-  if (file.perms !== undefined) result.permissionSlice = rsBCClone(file.perms);
+  if (perms !== undefined) result.permissionSlice = perms;
   return result;
 }
 /* Typed Irshad business domain. Plans never commit or allocate revisions. */
@@ -14025,6 +14133,22 @@ async function rsiSlice(env, A, request, id, M, b) {
     text = JSON.stringify(ocInflate(dec.info.prepared, dec.domain).value);
   }
   first = null;
+  /* V7 · د6 (remap): دفعةُ مهامّ نسخةٍ قديمة — إدارةُ النسخة تُعرف من بقية الملف (أُودِعت كلُّها قبل الدفعات) بالحكم نفسِه (019f rsBCDeptFind) فتُربط إشاراتُها بالوحدة */
+  var remap = null;
+  if (legacy && base === 'bassam_tasks_v1') {
+    var rest = await rsiText(env, id, 'f', ''), rf = rest.segs === M.f && rest.text.length === M.n ? parseJson(rest.text, null) : null;
+    rest = null;
+    if (!isObj(rf) || !isObj(rf.data)) throw rsError('import-incomplete', 409);
+    var from = rsBCDeptFind({ bassam_notif_v1: parseJson(rf.data.bassam_notif_v1 || 'null', null) }, rf.perms);
+    rf = null;
+    if (from) {
+      var sd = { bassam_tasks_v1: JSON.parse(text) };
+      remap = rsBCDeptRemap(sd, null, from, dept, rsBCRemapRec(from, dept));
+      text = JSON.stringify(sd.bassam_tasks_v1);
+      var lc = from !== dept ? text.split(from).length - 1 : 0;
+      if (lc) remap.left[base] = lc;
+    }
+  }
   set[key] = text; bs[key] = reference.inputRevs[key] || 0; ops[key] = { op: 'backup.restore', scope: 'dept', mode: 'replace', reason: b.reason || '' }; why[key] = b.reason || '';
   got = null;
   var kv = await applySave(env, { set: set, del: [], base: bs, ops: ops, why: why }, A, reqMeta(request), { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN, __srvRestore: RESTORE_INTERNAL_TOKEN });
@@ -14037,6 +14161,7 @@ async function rsiSlice(env, A, request, id, M, b) {
   /* أولُ دفعةٍ لموردها: ما كان قائماً من الأسرة ولم يرد في حكمها يُكتب فارغاً (جذرُه وحده) — فيُستبدل القائمُ ولو لم تأتِ له أيام */
   if (out.authz) held.forEach(function (k) { if (!kv.pend.some(function (pd) { return pd.k === k; })) kv.pend.push({ k: k, act: 'set', v: (ENT[resName(k)] && ENT[resName(k)].empty) || '{}', have: reference.inputRevs[k] || 0 }); });
   out.fields = {};
+  if (remap) out.remap = remap;
   kv.pend.forEach(function (pd) {
     if (legacy && pd.act === 'set') pd.v = rsiFields(out.fields, pd.k, pd.v);   /* V7 · د6 (schemafix): ما لا يعرفه المخطّط يُذكر ولا يُرفض به الاستيراد */
     var info = opInfo(pd.k), doc = JSON.parse(pd.v), mine = 0;
@@ -14107,7 +14232,7 @@ function rsiFields(rec, k, raw) {
 }
 function rsiFieldRec(list) {
   var rec = {};
-  (list || []).forEach(function (r) { if (r && RSI_FIELD_WHY[r.why]) rec[r.k + '|' + r.why] = r; });
+  (list || []).forEach(function (r) { if (r && (RSI_FIELD_WHY[r.why] || /^nf-/.test(r.why))) rec[r.k + '|' + r.why] = r; });   /* V7 · د6 (remap): وبنودُ التنبيهات المُسقطة nf-* */
   return rec;
 }
 var RSI_FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
@@ -14285,6 +14410,14 @@ async function rsImportRoute(env, request, ss) {
         /* ما أُخرج من نصّ الملف ليُرسل دفعاتٍ ليس «مجموعةً غائبة عن النسخة» */
         Object.keys(M.slices).forEach(function (k) { var gone = 'operations:bsdept:' + s.departmentId + ':' + k.replace(/#\d+$/, ''); summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== gone; }); });
         /* V7 · د6 (schemafix): وما لا يعرفه المخطّط من حقول الموارد: من بقية الملف (019t) ومن الدفعات — بعدده */
+        /* V7 · د6 (remap): إشاراتُ المعرّف المصدر في الدفعات تُجمع إلى إشارات بقية الملف */
+        sr.forEach(function (o) {
+          var x = o.remap, y;
+          if (!x) return;
+          y = summary.remap = summary.remap || rsBCRemapRec(x.from, x.to);
+          y.n += x.n;
+          ['by', 'foreign', 'left'].forEach(function (f) { Object.keys(x[f]).forEach(function (k) { y[f][k] = (y[f][k] || 0) + x[f][k]; }); });
+        });
         summary.notTransferred = drop.concat(rsiFieldList([rsiFieldRec(summary.notTransferred)].concat(sr.map(function (o) { return o.fields; }))), stage.unref.map(function (k) { return { k: k, why: 'image-unreferenced' }; }));
         summary.imagesNew = stage.fresh.length;
         if (op === 'commit') plan.statements.push(rsiDrop(env, id));
@@ -20503,6 +20636,8 @@ function opConvertBackupBoundary(keys,domains,departments,scope,source,version,s
     var sourceDepartments=scope.kind==='dept'?[source]:departments;
     domains.operations=opValidateBackupDomains(domains.operations,sourceDepartments).map(function(decoded){
       var target=scope.kind==='dept'?scope.departmentId:decoded.info.dept, projection=ocInflate(decoded.info.prepared,decoded.domain);
+      /* V7 · د6 (remap): مهامُّ نسخةٍ حديثة من وحدةٍ أخرى — مفتاحُ مديرها في منشئ المهمة ومراجِعها يصير مديرَ الوحدة الهدف (019f rsBCDeptRemap) */
+      if(target!==source&&projection.present&&decoded.info.resource==='bassam_tasks_v1'){var docs={bassam_tasks_v1:projection.value};summary.remap=summary.remap||rsBCRemapRec(source,target);rsBCDeptRemap(docs,null,source,target,summary.remap);}
       return opBackupDomain(decoded.info.prepared,ocConvert(decoded.info.prepared,target,decoded.info.resource,projection.value,projection.present));
     });
   } else {

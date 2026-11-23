@@ -2018,7 +2018,20 @@ async function nfCommit(env, A, st, base, action, scopes, casKey) {
   if (casKey === NF_BC_REV) receipt.broadcastRev = await nfRevision(env, NF_BC_REV);
   return receipt;
 }
-function nfLegacyConvert(keys) {
+/* V7 · د6 (remap): drop — سجلُّ ما يُسقط بنداً بنداً عند تحويل نسخةٍ قديمة (019f): تنبيهٌ بنوعٍ لا يعرفه الإصدار أو بقيمةٍ لا تُقبل ·
+   أو لإدارةٍ غير إدارة المخزن · علامةُ قراءةٍ لحسابٍ أو تنبيهٍ ليس في النسخة · مفتاحُ عدم تكرارٍ تالف — يُسقط وحده ويُعدّ (drop[سبب|نوع]) ولا يُرفض الملف.
+   بلا drop (الترحيلُ الحيّ 0005 · nfLegacyPrepare) يبقى الرفضُ كما كان حرفاً. */
+function nfLegacyConvert(keys, drop) {
+  function lost(e, type) {
+    if (!drop || !e || !e.nf) throw e;
+    var id = e.nf.replace(/^notification-cutover-/, '') + '|' + (type == null ? '' : String(type).slice(0, 60));
+    drop[id] = (drop[id] || 0) + 1;
+  }
+  function each(list, fn, type) {
+    list.forEach(function (x) {
+      try { fn(x); } catch (e) { lost(e, type ? type(x) : ''); }
+    });
+  }
   var out = { version: 1, messages: [], targets: [], states: [], dedup: [], overrides: [], checkpoints: [] },
     users = parseJson(keys[K_USERS] || "[]", null),
     depts = parseJson(keys["bassam_depts_v1"] || "[]", null),
@@ -2118,7 +2131,7 @@ function nfLegacyConvert(keys) {
       )
         throw nfErr("notification-cutover-department-unknown");
       nfShape(v, ["items", "read", "ack", "del", "seen", "v"]);
-      nfArr(v.items || [], 10000).forEach(function (x) {
+      each(nfArr(v.items || [], 10000), function (x) {
         nfShape(
           x,
           [
@@ -2148,6 +2161,8 @@ function nfLegacyConvert(keys) {
         if (!Object.prototype.hasOwnProperty.call(NF_TYPES, x.type) && x.type !== "bc_dept") throw nfErr("notification-cutover-type");
         nfShape(x.to, ["e", "r"]);
         var to = { e: x.to.e || [], r: x.to.r || [] };
+        /* V7 · د6 (remap): هدفٌ مكرَّر (بعد إعادة ربط مفتاح المدير) أو فارغ لا معنى له — يُطوى */
+        if (drop) to = { e: nfArr(to.e, 20000).filter(function (y, i, a) { return y !== "" && a.indexOf(y) === i; }), r: nfArr(to.r, 8).filter(function (y, i, a) { return a.indexOf(y) === i; }) };
         nfArr(to.e, 20000).forEach(function (y) {
           nfStr(y, 200, false);
         });
@@ -2177,15 +2192,17 @@ function nfLegacyConvert(keys) {
         if (
           m.category !== (m.type === "bc_dept" ? "bc" : NF_TYPES[m.type].k) ||
           ["info", "act", "urg"].indexOf(m.priority) < 0 ||
-          ["bell", "toast"].indexOf(m.channel) < 0 ||
-          (d && m.department !== d)
+          ["bell", "toast"].indexOf(m.channel) < 0
         )
           throw nfErr("notification-cutover-shape");
+        if (d && m.department !== d) throw nfErr(drop ? "notification-cutover-department" : "notification-cutover-shape");
         add(m, nfTargetRows(scope, m.id, to));
+      }, function (x) {
+        return isObj(x) ? x.type : "";
       });
       var seen = v.seen || {};
       if (!isObj(seen)) throw nfErr("notification-cutover-seen");
-      Object.keys(seen).forEach(function (once) {
+      each(Object.keys(seen), function (once) {
         nfStr(once, 500, false);
         var ts = nfTime(seen[once]);
         if (once === "__sec") out.checkpoints.push({ scope: scope, name: "security-ts", value: ts });
@@ -2197,7 +2214,7 @@ function nfLegacyConvert(keys) {
     ["read", "ack", "del"].forEach(function (field) {
       var map = store.v[field] || {};
       if (!isObj(map)) throw nfErr("notification-cutover-state");
-      Object.keys(map).forEach(function (alias) {
+      each(Object.keys(map), function (alias) {
         var candidates = users.filter(function (u) {
           return (
             u &&
@@ -2206,10 +2223,15 @@ function nfLegacyConvert(keys) {
             [u.id, u.ekey, u.un, u.alt].filter(Boolean).map(String).indexOf(alias) >= 0
           );
         });
-        if (candidates.length !== 1) throw nfErr("notification-cutover-state-identity-unknown");
+        if (candidates.length !== 1) {
+          if (!drop) throw nfErr("notification-cutover-state-identity-unknown");
+          var nm = "state-identity-unknown|" + field;   /* علاماتُ حسابٍ لا يُعرف في الوحدة الهدف: تُعدّ علامةً علامة */
+          drop[nm] = (drop[nm] || 0) + (isObj(map[alias]) ? Object.keys(map[alias]).length : 1);
+          return;
+        }
         var vals = map[alias];
         if (!isObj(vals)) throw nfErr("notification-cutover-state");
-        Object.keys(vals).forEach(function (id) {
+        each(Object.keys(vals), function (id) {
           var ts = nfTime(vals[id]),
             matches = out.messages.filter(function (m) {
               return id.slice(0, 3) === "bc:"
@@ -2234,7 +2256,11 @@ function nfLegacyConvert(keys) {
               column = { read: "read_at", ack: "acknowledged_at", del: "dismissed_at" }[field];
             r[column] = Math.max(r[column], ts);
           });
+        }, function () {
+          return field;
         });
+      }, function () {
+        return field;
       });
     });
   });
