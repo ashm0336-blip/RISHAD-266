@@ -379,6 +379,10 @@
    "order": 40,
    "text": "  'bassam_tasks_v1': ['^.', ['bassam_tasks_v1']],   /* V7 · د6: المهامُ خريطةُ أيام — تُقسم أياماً فلا تكبر كلفةُ طلبٍ بطول السجل */\n"
   },
+  "bc.deptRefs": {
+   "order": 10,
+   "text": "  /* V7 · د6 (remap): منشئُ المهمة ومراجِعُها (071 tkWho · tkRvIn) يحملان مفتاحَ مدير الإدارة «mgr:<المعرّف>» — يُربطان بالوحدة الهدف عند استيراد نسخة إدارة */\n  bassam_tasks_v1: function (tk, fn) {\n    if (isObj(tk)) Object.keys(tk).forEach(function (day) {\n      if (Array.isArray(tk[day])) tk[day].forEach(function (r) {\n        var x = Array.isArray(r) && isObj(r[23]) ? r[23] : null;\n        if (x) ['by', 'rv'].forEach(function (f) { if (isObj(x[f])) fn('tasks', 0, x[f].e, function (v) { x[f].e = v; }); });\n      });\n    });\n  },\n"
+  },
   "res.reg.tasks": {
    "order": 10,
    "text": "  /* المهام: يومٌ ثم صفوفُ مهامّه — فالكيان في الطبقة الثانية */\n  'bassam_tasks_v1':           { scope: 'dept', cap: 'tasks', self: 'task' },\n  'bassam_tasks_locks_v1':     { scope: 'dept', cap: 'tasks' },\n"

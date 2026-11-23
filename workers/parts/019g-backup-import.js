@@ -73,18 +73,19 @@ async function rsiSlice(env, A, request, id, M, b) {
     text = JSON.stringify(ocInflate(dec.info.prepared, dec.domain).value);
   }
   first = null;
-  /* V7 · د6 (remap): دفعةُ مهامّ نسخةٍ قديمة — إدارةُ النسخة تُعرف من بقية الملف (أُودِعت كلُّها قبل الدفعات) بالحكم نفسِه (019f rsBCDeptFind) فتُربط إشاراتُها بالوحدة */
+  /* V7 · د6 (remap): دفعةُ موردٍ يعلن مواضعَ إشاراتٍ (RS_DEPT_REFS) من نسخةٍ قديمة — إدارةُ النسخة تُعرف من بقية الملف (أُودِعت كلُّها قبل الدفعات) بالحكم نفسِه (019f rsBCDeptFind) فتُربط إشاراتُها بالوحدة */
   var remap = null;
-  if (legacy && base === 'bassam_tasks_v1') {
+  if (legacy && RS_DEPT_REFS[base]) {
     var rest = await rsiText(env, id, 'f', ''), rf = rest.segs === M.f && rest.text.length === M.n ? parseJson(rest.text, null) : null;
     rest = null;
     if (!isObj(rf) || !isObj(rf.data)) throw rsError('import-incomplete', 409);
     var from = rsBCDeptFind({ bassam_notif_v1: parseJson(rf.data.bassam_notif_v1 || 'null', null) }, rf.perms);
     rf = null;
     if (from) {
-      var sd = { bassam_tasks_v1: JSON.parse(text) };
+      var sd = {};
+      sd[base] = JSON.parse(text);
       remap = rsBCDeptRemap(sd, null, from, dept, rsBCRemapRec(from, dept));
-      text = JSON.stringify(sd.bassam_tasks_v1);
+      text = JSON.stringify(sd[base]);
       var lc = from !== dept ? text.split(from).length - 1 : 0;
       if (lc) remap.left[base] = lc;
     }

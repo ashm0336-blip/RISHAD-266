@@ -12169,13 +12169,25 @@ function rsBCRemapNF(domain, source, target, rec) {
 /* V7 · د6 (remap): إعادةُ ربط معرّف الإدارة. نسخةُ إدارةٍ من Production لا تحمل معرّفَ إدارتها في رأسها (dept اسمٌ، والمفاتيحُ بلا بادئة)،
    ويحمله ما تكتبه الكتّابُ فيها (جردُ مصدر Production 39b7f42): التنبيهُ dept (441 emit · tkNotify) · مفتاحُ مدير الإدارة «mgr:<المعرّف>» (330 mgrKeyOf)
    في منشئ التنبيه by وأهدافه to.e وعلامات القراءة read/ack/del (مفاتيحُها رمزُ الحساب) · ومنشئ المهمة ومراجِعها r[23].by.e · r[23].rv.e (071 tkWho) ·
-   وصحيفةُ صلاحيات المدير في شريحة الصلاحيات perms.emps. هذه المواضع وحدها تُزار (لا استبدالَ نصٍّ أعمى)، كلٌّ بحقله. */
+   وصحيفةُ صلاحيات المدير في شريحة الصلاحيات perms.emps (ومواضعُ الأنظمة في RS_DEPT_REFS). هذه المواضع وحدها تُزار (لا استبدالَ نصٍّ أعمى)، كلٌّ بحقله. */
 function rsBCMgrOf(v) {
   var m = typeof v === 'string' && /^mgr:([^:]+)/.exec(v);
   return m ? m[1] : '';
 }
+/* مواضعُ الأنظمة: كلُّ نظامٍ يعلن موردَه ومواضعَه في فتحته bc.deptRefs (المهام: src/systems/tasks/system.json) — { المورد: function (وثيقة, fn) } */
+var RS_DEPT_REFS = {
+  /* V7 · د6 (remap): منشئُ المهمة ومراجِعُها (071 tkWho · tkRvIn) يحملان مفتاحَ مدير الإدارة «mgr:<المعرّف>» — يُربطان بالوحدة الهدف عند استيراد نسخة إدارة */
+  bassam_tasks_v1: function (tk, fn) {
+    if (isObj(tk)) Object.keys(tk).forEach(function (day) {
+      if (Array.isArray(tk[day])) tk[day].forEach(function (r) {
+        var x = Array.isArray(r) && isObj(r[23]) ? r[23] : null;
+        if (x) ['by', 'rv'].forEach(function (f) { if (isObj(x[f])) fn('tasks', 0, x[f].e, function (v) { x[f].e = v; }); });
+      });
+    });
+  },
+};
 function rsBCDeptWalk(docs, perms, fn) {
-  var nf = docs.bassam_notif_v1, tk = docs.bassam_tasks_v1;
+  var nf = docs.bassam_notif_v1;
   if (isObj(nf)) {
     (Array.isArray(nf.items) ? nf.items : []).forEach(function (x) {
       if (!isObj(x)) return;
@@ -12188,12 +12200,7 @@ function rsBCDeptWalk(docs, perms, fn) {
       if (isObj(m)) Object.keys(m).forEach(function (a) { fn('notifications', 0, a, function (v) { var o = m[a]; delete m[a]; m[v] = isObj(m[v]) && isObj(o) ? Object.assign({}, o, m[v]) : o; }); });
     });
   }
-  if (isObj(tk)) Object.keys(tk).forEach(function (day) {
-    if (Array.isArray(tk[day])) tk[day].forEach(function (r) {
-      var x = Array.isArray(r) && isObj(r[23]) ? r[23] : null;
-      if (x) ['by', 'rv'].forEach(function (f) { if (isObj(x[f])) fn('tasks', 0, x[f].e, function (v) { x[f].e = v; }); });
-    });
-  });
+  Object.keys(RS_DEPT_REFS).forEach(function (n) { if (rsBCOwn(docs, n)) RS_DEPT_REFS[n](docs[n], fn); });
   var pe = isObj(perms) && perms.emps;
   if (isObj(pe)) Object.keys(pe).forEach(function (ek) { fn('perms', 0, ek, function (v) { var o = pe[ek]; delete pe[ek]; if (!rsBCOwn(pe, v)) pe[v] = o; }); });
 }
@@ -12412,7 +12419,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var perms = file.perms === undefined ? undefined : rsBCClone(file.perms);
   if (legacy && scope.kind === 'dept') {
     var rdocs = {};
-    ['bassam_notif_v1', 'bassam_tasks_v1'].forEach(function (n) { var k = 'bsdept:' + target + ':' + n; if (rsBCOwn(keys, k)) rdocs[n] = parseJson(keys[k], null); });
+    ['bassam_notif_v1'].concat(Object.keys(RS_DEPT_REFS)).forEach(function (n) { var k = 'bsdept:' + target + ':' + n; if (rsBCOwn(keys, k)) rdocs[n] = parseJson(keys[k], null); });
     var from = source !== target ? source : rsBCDeptFind(rdocs, perms);
     if (from) {
       var rec = (summary.remap = rsBCDeptRemap(rdocs, perms, from, target, rsBCRemapRec(from, target)));
@@ -14133,18 +14140,19 @@ async function rsiSlice(env, A, request, id, M, b) {
     text = JSON.stringify(ocInflate(dec.info.prepared, dec.domain).value);
   }
   first = null;
-  /* V7 · د6 (remap): دفعةُ مهامّ نسخةٍ قديمة — إدارةُ النسخة تُعرف من بقية الملف (أُودِعت كلُّها قبل الدفعات) بالحكم نفسِه (019f rsBCDeptFind) فتُربط إشاراتُها بالوحدة */
+  /* V7 · د6 (remap): دفعةُ موردٍ يعلن مواضعَ إشاراتٍ (RS_DEPT_REFS) من نسخةٍ قديمة — إدارةُ النسخة تُعرف من بقية الملف (أُودِعت كلُّها قبل الدفعات) بالحكم نفسِه (019f rsBCDeptFind) فتُربط إشاراتُها بالوحدة */
   var remap = null;
-  if (legacy && base === 'bassam_tasks_v1') {
+  if (legacy && RS_DEPT_REFS[base]) {
     var rest = await rsiText(env, id, 'f', ''), rf = rest.segs === M.f && rest.text.length === M.n ? parseJson(rest.text, null) : null;
     rest = null;
     if (!isObj(rf) || !isObj(rf.data)) throw rsError('import-incomplete', 409);
     var from = rsBCDeptFind({ bassam_notif_v1: parseJson(rf.data.bassam_notif_v1 || 'null', null) }, rf.perms);
     rf = null;
     if (from) {
-      var sd = { bassam_tasks_v1: JSON.parse(text) };
+      var sd = {};
+      sd[base] = JSON.parse(text);
       remap = rsBCDeptRemap(sd, null, from, dept, rsBCRemapRec(from, dept));
-      text = JSON.stringify(sd.bassam_tasks_v1);
+      text = JSON.stringify(sd[base]);
       var lc = from !== dept ? text.split(from).length - 1 : 0;
       if (lc) remap.left[base] = lc;
     }
@@ -20636,8 +20644,8 @@ function opConvertBackupBoundary(keys,domains,departments,scope,source,version,s
     var sourceDepartments=scope.kind==='dept'?[source]:departments;
     domains.operations=opValidateBackupDomains(domains.operations,sourceDepartments).map(function(decoded){
       var target=scope.kind==='dept'?scope.departmentId:decoded.info.dept, projection=ocInflate(decoded.info.prepared,decoded.domain);
-      /* V7 · د6 (remap): مهامُّ نسخةٍ حديثة من وحدةٍ أخرى — مفتاحُ مديرها في منشئ المهمة ومراجِعها يصير مديرَ الوحدة الهدف (019f rsBCDeptRemap) */
-      if(target!==source&&projection.present&&decoded.info.resource==='bassam_tasks_v1'){var docs={bassam_tasks_v1:projection.value};summary.remap=summary.remap||rsBCRemapRec(source,target);rsBCDeptRemap(docs,null,source,target,summary.remap);}
+      /* V7 · د6 (remap): موردٌ يعلن مواضعَ إشاراتٍ (019f RS_DEPT_REFS — المهام) في نسخةٍ حديثة من وحدةٍ أخرى — مفتاحُ مديرها يصير مديرَ الوحدة الهدف */
+      if(target!==source&&projection.present&&RS_DEPT_REFS[decoded.info.resource]){var docs={};docs[decoded.info.resource]=projection.value;summary.remap=summary.remap||rsBCRemapRec(source,target);rsBCDeptRemap(docs,null,source,target,summary.remap);}
       return opBackupDomain(decoded.info.prepared,ocConvert(decoded.info.prepared,target,decoded.info.resource,projection.value,projection.present));
     });
   } else {

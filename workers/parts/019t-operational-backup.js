@@ -53,8 +53,8 @@ function opConvertBackupBoundary(keys,domains,departments,scope,source,version,s
     var sourceDepartments=scope.kind==='dept'?[source]:departments;
     domains.operations=opValidateBackupDomains(domains.operations,sourceDepartments).map(function(decoded){
       var target=scope.kind==='dept'?scope.departmentId:decoded.info.dept, projection=ocInflate(decoded.info.prepared,decoded.domain);
-      /* V7 · د6 (remap): مهامُّ نسخةٍ حديثة من وحدةٍ أخرى — مفتاحُ مديرها في منشئ المهمة ومراجِعها يصير مديرَ الوحدة الهدف (019f rsBCDeptRemap) */
-      if(target!==source&&projection.present&&decoded.info.resource==='bassam_tasks_v1'){var docs={bassam_tasks_v1:projection.value};summary.remap=summary.remap||rsBCRemapRec(source,target);rsBCDeptRemap(docs,null,source,target,summary.remap);}
+      /* V7 · د6 (remap): موردٌ يعلن مواضعَ إشاراتٍ (019f RS_DEPT_REFS — المهام) في نسخةٍ حديثة من وحدةٍ أخرى — مفتاحُ مديرها يصير مديرَ الوحدة الهدف */
+      if(target!==source&&projection.present&&RS_DEPT_REFS[decoded.info.resource]){var docs={};docs[decoded.info.resource]=projection.value;summary.remap=summary.remap||rsBCRemapRec(source,target);rsBCDeptRemap(docs,null,source,target,summary.remap);}
       return opBackupDomain(decoded.info.prepared,ocConvert(decoded.info.prepared,target,decoded.info.resource,projection.value,projection.present));
     });
   } else {
