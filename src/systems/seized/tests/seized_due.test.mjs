@@ -1,13 +1,13 @@
 /* SQL replacement of the existing bx_old/bx_wk observer, real canonical SQLite. */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {world,seizedDocs,D1,D2,IDS,clone,batchBounds} from '../../_multi/tests/business_atomic_fx.mjs';
+import {world,CURRENT_SCHEMA,seizedDocs,D1,D2,IDS,clone,batchBounds} from '../../_multi/tests/business_atomic_fx.mjs';
 import {candidateWorker} from '../../../../tests/unit/irshad_domain_fx.mjs';
 import { needs } from '../../../../tests/unit/harness.mjs';
 const DUE=Date.parse('2026-10-31T06:01:00Z'); // Saturday09:01 Riyadh.
 async function clock(fn){const RealDate=globalThis.Date,box={now:DUE};globalThis.Date=class extends RealDate{constructor(...a){super(...(a.length?a:[box.now]));}static now(){return box.now;}};try{await fn(v=>box.now=RealDate.parse(v));}finally{globalThis.Date=RealDate;}}
 async function fixture({empty=false}={}){
- const B=await world({schema:11}),W=await candidateWorker(['nfSeizedDue','NF_REV','pfHijriAt','szKey','szRevs']);
+ const B=await world({schema:CURRENT_SCHEMA}),W=await candidateWorker(['nfSeizedDue','NF_REV','pfHijriAt','szKey','szRevs']);
  /* V7 · d5h (owner rule, item 7): a notification of an OFF system is never generated -- and the shared world ceiling (canonical_fx) does not carry
     seized, so it is turned ON for the departments and their parent first (as section_mgr_reload turns systems ON before opening their addresses).
     The OFF case itself: tests/unit/v7_d5h_notif_off.test.mjs and tests/browser/v7_d5h_notif_off.test.mjs */

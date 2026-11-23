@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {world as currentWorld, legacyWorld, ROOT, D1, D2, IDS, identitySnapshot} from './canonical_fx.mjs';
-import {allowTestSchemaUpgrade,hasSystem} from './harness.mjs';
+import {allowTestSchemaUpgrade,hasSystem,CURRENT_SCHEMA} from './harness.mjs';
 import {installOperationalFixture} from './operational_legacy_seed_fx.mjs';
 export {ROOT,D1,D2,IDS,identitySnapshot};
 /* V7 · د2-ب: أسماءُ الاسترشاد تُطلب بحضوره فقط؛ عُدّةُ العالَم (world · candidateWorker) تخدم اختبارات القاعدة بالحالين */
@@ -21,7 +21,7 @@ export async function candidateWorker(extraExports=[]) {
 }
 export function authorizeCandidateUpgrade(DB,W) {
   assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'7');
-  assert.equal(W.KIVO_MIGRATIONS.length,11);
+  assert.equal(W.KIVO_MIGRATIONS.length,CURRENT_SCHEMA);   /* V7 · د6 (pins): كلُّ ترحيلات المخطّط الحالي */
   assert.equal(W.KIVO_MIGRATIONS[7].name,'0008_irshad','Keep testing the actual migration8 cutover before the later schema9 domains');
   assert.equal(DB.q("SELECT k FROM meta WHERE k='schema_upgrade_permit_v1'").length,0);
   allowTestSchemaUpgrade(DB);
@@ -32,7 +32,7 @@ export async function world({legacy=false,authorize=true,mode='enforce',extraExp
     W=await candidateWorker(extraExports);
   if(!legacy)await installOperationalFixture(base.env);
   if(legacy&&!authorize)base.DB.exec("DELETE FROM meta WHERE k='schema_upgrade_permit_v1'");
-  assert.equal(W.KIVO_SCHEMA_VERSION,11,'Actual canonical schema10 includes the unchanged Irshad migration8 and the later business/operations cutovers');
+  assert.equal(W.KIVO_SCHEMA_VERSION,CURRENT_SCHEMA,'Actual canonical current schema includes the unchanged Irshad migration8 and the later business/operations cutovers');   /* V7 · د6 (pins): المخطّطُ الحالي من المصدر الواحد */
   return {...base,canonicalW:base.W,W};
 }
 export async function seed(B,docs,dept=D1) {

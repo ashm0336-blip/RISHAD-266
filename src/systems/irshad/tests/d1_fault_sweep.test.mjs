@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
-import {PYTHON,makeTestEnv,client,applySql,ROOT,TEST_SUPER_USERNAME,TEST_SUPER_PIN} from '../../../../tests/unit/harness.mjs';
+import {PYTHON,makeTestEnv,client,applySql,ROOT,TEST_SUPER_USERNAME,TEST_SUPER_PIN,CURRENT_SCHEMA} from '../../../../tests/unit/harness.mjs';
 import { installCurrentSchemaFixture } from '../../../../tests/unit/current_schema_fx.mjs';
 import {installIrshadFixture} from '../../../../tests/unit/irshad_legacy_seed_fx.mjs';
 import {inspectOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
@@ -39,7 +39,7 @@ for(const mode of ['enforce']){
     // Reuse the actual atomic cutover plans (irshad → business → operations) in this isolated test DB only.
     // Do not reintroduce a runtime KV adapter. RISHAD-266: the worker is schema 10, the cutover includes Irshad.
     await installCurrentSchemaFixture(env);
-    assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,'11');
+    assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v,String(CURRENT_SCHEMA));   /* V7 · د6 (pins): المخطّطُ الحالي من المصدر الواحد */
     assert.equal(env.DB.q("SELECT name FROM d1_migrations WHERE name='0008_irshad'").length,1);
     assert.equal(env.DB.q("SELECT k FROM meta WHERE k='schema_upgrade_permit_v1'").length,0);
     assert.equal(env.DB.q("SELECT k FROM kv WHERE k GLOB '*bassam_irshad*'").length,0,'No retired IR KV is re-created');

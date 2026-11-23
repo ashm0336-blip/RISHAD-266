@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { parse } from 'acorn';
-import { SRC } from './harness.mjs';
+import { SRC, CURRENT_SCHEMA } from './harness.mjs';
 import { loadClient, until } from './k264_vm.mjs';
 import { world as canonicalWorld, D1, D2, IDS, copy } from './canonical_fx.mjs';
 import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
@@ -28,7 +28,7 @@ export function sourcePart(file, type, name) {
 }
 export async function world() {
   const B = await canonicalWorld();
-  assert.equal(B.W.KIVO_SCHEMA_VERSION, 12);   /* V7 · د6 (schemafix): 0012_prayer_readings */
+  assert.equal(B.W.KIVO_SCHEMA_VERSION, CURRENT_SCHEMA);   /* V7 · د6 (pins): المخطّطُ الحالي من المصدر الواحد */
   await installOperationalFixture(B.env, B.W);
   return B;
 }
