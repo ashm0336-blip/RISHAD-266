@@ -358,7 +358,7 @@ Object.assign(Component.prototype, {
       p44DirtyTxt: dirty ? KIVO.BassamCount(this._p44DiffOf(d.base, { roles: d.roles, people: d.people }).length || 1, "تغيير|غير محفوظ") : "",
       p44AffTxt: this.p44AffLine(aff.length, "يتأثر بها"),
       p44Undo: () => this._p44Upd((x) => ((x.roles = x.base.roles), (x.people = x.base.people))),
-      p44Review: () => this._p44Set({ rev: { open: 1 } }),
+      p44Review: () => this._p44Set({ rev: { open: 1, err: this._p44EmptyCustom(d.roles) } }),
       ...this._p44RevVals(d, aff),
     });
     return Object.assign(v, "roles" === sub ? this._p44RoleVals(did, d, mgrV, !1) : this._p44PeopleVals(did, d));
@@ -871,11 +871,23 @@ Object.assign(Component.prototype, {
       p44RevSave: () => this._p44Save(),
     };
   },
+  /* V7 · د6 (QA): نظامٌ مفعّلٌ لدورٍ بمستوى «مخصّص» وبلا فعلٍ واحد يبدو مفعّلاً ولا يعطي شيئاً — يُمنع حفظُه برسالةٍ تسمّي موضعه
+     (قرارُ المالك: المنعُ لا الإطفاءُ التلقائي) — "" = لا شيء */
+  _p44EmptyCustom(roles) {
+    const bad = [];
+    (roles || []).forEach((r) => Object.keys((r && r.sys) || {}).forEach((k) => {
+      const g = r.sys[k];
+      if (g && "custom" === g.lvl && !(Array.isArray(g.keys) && g.keys.length)) bad.push((r.name || "دور") + " · " + this._p44SysName(k));
+    }));
+    return bad.length ? "اختر فعلاً واحداً على الأقل أو أطفئ النظام — " + bad.join("، ") : "";
+  },
   async _p44Save() {
     const E = this._p44E(),
       S = this._p44S(),
       d = S.d;
     if (!E || !d || (S.rev && S.rev.busy)) return !1;   /* V7 · د6 (م6): يعيد true حين حُفظ ثم !1 عند الرفض */
+    const empty = this._p44EmptyCustom(d.roles);
+    if (empty) return this._p44Set({ rev: { open: 1, err: empty } }), !1;
     const did = d.did,
       aff = this.p44Affected(d),
       roles = JSON.parse(JSON.stringify(d.roles)),

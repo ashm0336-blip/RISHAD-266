@@ -677,3 +677,25 @@ test('V7 · د5-ح (off2) ⑥ the settings tabs: nothing drawn before the permis
   assert.match(adminView, /<sc-if value="\{\{dNoneOn\}\}"[^>]*><div class="bs-card adm-none" role="status" data-d-state="none">لا إعدادات متاحة لك/);
   assert.match(adminView, /<sc-if value="\{\{dLoadOn\}\}"[^>]*><div ref="\{\{dStates\}\}"/);
 });
+
+/* V7 · د6 (QA ٤): «مخصّص» بلا أي فعل يبدو مفعّلاً ولا يعطي شيئاً — يُمنع الحفظ برسالةٍ تسمّي الدور والنظام، ولا كتابة */
+test('④ custom level with zero actions: the save is refused with «اختر فعلاً واحداً على الأقل أو أطفئ النظام» and nothing is written', async () => {
+  const W = world();
+  W.sub('roles', { viewer: 'plat', sel: 'r_obs' });
+  const tasks = () => W.render().p44SysEd.find((s) => s.k === 'tasks');
+  tasks().setLv({ target: { value: 'custom' } });
+  for (const k of tasks().keys.filter((x) => x.on === 'true')) tasks().keys.find((x) => x.n === k.n).flip();
+  assert.equal(tasks().keys.filter((x) => x.on === 'true').length, 0, 'every action off');
+  let v = W.render(); assert.equal(v.p44Dirty, true);
+  v.p44Review(); v = W.render();
+  assert.match(v.p44RevErr, /^اختر فعلاً واحداً على الأقل أو أطفئ النظام — TEST_ONLY مراقب · /, 'named before saving');
+  const ok = await v.p44RevSave();
+  assert.equal(ok, false); v = W.render();
+  assert.match(v.p44RevErr, /اختر فعلاً واحداً على الأقل أو أطفئ النظام/);
+  assert.deepEqual(W.writes, [], 'nothing written');
+  assert.ok(!W.toasts.some((t) => /حُفظت الصلاحيات/.test(t[0])));
+  /* one action back ⇒ the save goes through */
+  tasks().keys[0].flip(); v = W.render(); v.p44Review(); v = W.render();
+  assert.equal(v.p44RevErr, '');
+  assert.equal(await v.p44RevSave(), true);
+});
