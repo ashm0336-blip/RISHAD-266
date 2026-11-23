@@ -747,3 +747,79 @@ test('(١٨) الأشكالُ كما يكتبها Production: pc بالكائن 
     assert.deepEqual(rowsOf(Z), rowsOf(A), 'المساران ينتهيان إلى الصفوف نفسِها');
   } finally { await A.close(); await Z.close(); }
 });
+
+/* V7 · د6 (remap): الملفُ الحقيقي رُفض كلُّه في التنبيهات (400 notification-cutover-shape): كلُّ تنبيهاته تحمل معرّفَ إدارة Production (dept) والوحدةُ الهدف
+   بمعرّفٍ آخر — وهي الحالةُ الطبيعية على منصة الشركة · ونوعُ pm_tpl (فئة perm) حُذف · والمهامُ تحمل مفتاحَ مدير المصدر «mgr:<المعرّف>».
+   الآن: إشاراتُ إدارة النسخة تُربط بالوحدة الهدف في مواضعها المعدودة بعددٍ مضبوط · وما يخصّ بنداً واحداً يُسقطه وحده ويُذكر — بالمسارين (طلبٌ واحد · دفعات
+   تُقسم فيها المهامُ أيضاً) وبالمسار القديم /api/backup/restore · ثم: التنبيهاتُ في خلاصة مدير الوحدة وموظفها الحقيقية · المهامُ تُفتح (مهامّي للموظف ·
+   قراءةُ الصفحة للمدير) وتشير إلى الوحدة · لا صفَّ في الوحدة يحمل المعرّفَ المصدر · وإدارةٌ أخرى لم تُمسّ بايتاً */
+test('(١٩) معرّفُ الإدارة المصدر غيرُ معرّف الوحدة: يُعاد ربطه بعدده · pm_tpl والتنبيهُ الأجنبي يُسقطان ويُذكران · التنبيهاتُ لمستخدمي الوحدة والمهامُ تُفتح — بالمسارات الثلاثة', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true, images: false }), R = remapOf(file), nf = JSON.parse(file.data.bassam_notif_v1);
+  /* سقفُ الوحدة في النسخة يفتح المهام، وللموظف عرضُها — ليقرأ «مهامّي» وتنبيهَ المهمة المسنَدة إليه */
+  file.perms.cap.push('tasks'); file.perms.emps.tst_demo_e11.tasks = ['view']; file.perms.emps['mgr:' + SRC_DEPT].tasks = ['view'];   /* صحيفةُ مدير المصدر تصير صحيفةَ مدير الوحدة */
+  assert.notEqual(R.from, B); assert.ok(nf.items.every((x) => x.dept && x.dept !== B), 'كلُّ تنبيهٍ يحمل معرّفَ إدارةٍ غيرَ الوحدة الهدف');
+  assert.equal(nf.items.filter((x) => x.type === 'pm_tpl' && x.k === 'perm').length, 4);
+  assert.ok(file.data.bassam_tasks_v1.includes('"mgr:' + SRC_DEPT + '"'), 'والمهامُ تحمل مفتاحَ مدير المصدر');
+  const notThere = (T) => { const hits = []; for (const { name } of T.DB.q("SELECT name FROM sqlite_master WHERE type='table'")) { if (['aud', 'audit', 'sec', 'restore_operations', 'restore_preimage', 'restore_snapshot_manifest'].includes(name)) continue; const n = T.DB.q('SELECT * FROM ' + name).filter((r) => JSON.stringify(r).includes(SRC_DEPT)).length; if (n) hits.push(name + ':' + n); } return hits; };
+  const outside = (T) => { const o = {}; for (const { name } of T.DB.q("SELECT name FROM sqlite_master WHERE type='table'")) { const cols = T.DB.q('PRAGMA table_info(' + name + ')').map((c) => c.name), w = cols.includes('department_id') ? " WHERE department_id<>'" + B + "'" : cols.includes('message_scope') ? " WHERE message_scope<>'d:" + B + "'" : ['notification_messages', 'notification_targets', 'notification_dedup'].includes(name) ? " WHERE scope<>'d:" + B + "'" : name === 'kv' ? " WHERE k GLOB 'bsdept:" + A + ":*'" : null; if (w !== null) o[name] = T.DB.q('SELECT * FROM ' + name + w).map((r) => JSON.stringify(r)).sort(); } return o; };
+  const routes = [['طلبٌ واحد', { slice: false }], ['دفعات', { slice: 1000, sliceTarget: 1500 }], ['/api/backup/restore', null]];
+  const ends = [];
+  for (const [tag, opt] of routes) {
+    const T = await target();
+    try {
+      /* موظفٌ في الوحدة الهدف رمزُه رمزُ موظف النسخة (tst_demo_e11) — كما يربط المديرُ حساباتِ موظفيه بعد الاستيراد */
+      const users = JSON.parse(T.DB.q("SELECT group_concat(v,'') v FROM (SELECT v FROM kv WHERE k='bassam_auth_users_v1' ORDER BY seq)")[0].v), empA = users.find((u) => u.id === 'TEST_ONLY_empA');
+      users.push({ ...empA, id: 'TEST_ONLY_empB', un: '1200000102', name: 'TEST_ONLY موظف ب ١', deptId: B, ekey: 'tst_demo_e11' });
+      await T.DB.batch([T.DB.prepare("DELETE FROM kv WHERE k='bassam_auth_users_v1'"), ...T.lab.W.kvPutStmts(T.lab.env, 'kv', 'bassam_auth_users_v1', JSON.stringify(users)), T.DB.prepare("UPDATE revs SET rev=rev+1 WHERE k='bassam_auth_users_v1'")]);
+      const before = outside(T);
+      let s, sumDone;
+      if (opt) {
+        const P = protocol(T, T.su, file, { scope: SCOPE, ...opt }), out = await P.run();
+        assert.equal(out.commit && out.commit.status, 200, tag + ': ' + JSON.stringify((out.commit || out.inspect || out.part || out.begin).j).slice(0, 400));
+        if (opt.slice) assert.ok(Object.keys(P.slices).some((k) => /^bassam_tasks_v1#/.test(k)), tag + ': المهامُ قُسمت دفعاتٍ أيضاً');
+        s = out.inspect.j.inspection.summary; sumDone = out.commit.j.summary;
+      } else {
+        const strip = { ...file, data: Object.fromEntries(Object.entries(file.data).filter(([k]) => !(k in NOT_TRANSFERRED))), idbImages: {} };
+        const inv = (await T.call('/api/backup/restore?kind=dept&departments=%5B%5D&dept=' + B, { ck: T.su.ck })).j, id = 'TEST_ONLY_remap_' + Math.random().toString(36).slice(2, 12);
+        const body = { version: 1, uid: T.su.uid, requestId: id, scope: SCOPE, mode: 'replace', reason: 'TEST_ONLY د6 remap', backup: strip, legacyConsent: true };
+        const ins = await T.call('/api/backup/restore', { ck: T.su.ck, body: { ...body, base: inv.base, phase: 'inspect' } });
+        assert.equal(ins.status, 200, tag + ': ' + JSON.stringify(ins.j).slice(0, 400));
+        const com = await T.call('/api/backup/restore', { ck: T.su.ck, body: { ...body, base: ins.j.inspection.base, phase: 'commit' } });
+        assert.equal(com.status, 200, tag + ': ' + JSON.stringify(com.j).slice(0, 400));
+        s = ins.j.inspection.summary;
+      }
+      ends.push(rowsOf(T));   /* قبل أي دخول (الدخولُ يكتب تنبيهَ «جهاز جديد») */
+      /* (أ) الملخّصُ قبل التأكيد: إعادةُ الربط بعددها المضبوط لكل مورد · الأجنبيُّ يُذكر ولا يُربط · لا موضعَ بقي فيه المعرّف · والتنبيهاتُ المُسقطة بعددها ونوعها */
+      assert.deepEqual(s.remap, { from: SRC_DEPT, to: B, n: R.n, by: R.by, foreign: R.foreign, left: {} }, tag + ': إعادةُ الربط');
+      assert.deepEqual(nfDropsOf(s.notTransferred), R.nfDrops, tag + ': التنبيهاتُ المُسقطة وحدها');
+      if (sumDone) assert.deepEqual(sumDone.remap, s.remap, tag + ': وفي ملخّص النجاح');
+      /* (ب) لا صفَّ في القاعدة يحمل المعرّفَ المصدر (السجلاتُ ولقطةُ ما قبل الاستيراد وإيصالُها خارج الفحص: تذكر ما جرى) */
+      assert.deepEqual(notThere(T), [], tag + ': لا إشارةَ باقية إلى ' + SRC_DEPT);
+      /* (ج) إدارةٌ أخرى وما خارج الوحدة لم يُمسّ بايتاً */
+      assert.deepEqual(outside(T), before, tag + ': ما خارج الوحدة الهدف كما كان');
+      /* (د) التنبيهات في الخلاصة الحقيقية: مديرُ الوحدة وموظفُها يريان تنبيهاتِ النسخة (لا pm_tpl ولا الأجنبي) · وعلامةُ قراءة مدير المصدر صارت علامتَه */
+      /* معرّفُ الخلاصة مرجعٌ مرمَّز «nf:» + base64url([النطاق، المعرّف]) — النطاقُ نطاقُ الوحدة الهدف */
+      const mid = (m) => { const [sc, id] = JSON.parse(Buffer.from(m.id.slice(3), 'base64url').toString()); assert.equal(sc, 'd:' + B, tag + ': نطاقُ ' + id); return id; };
+      const kept = new Set(R.kept), byType = (t) => nf.items.filter((x) => kept.has(x.id) && x.type === t).map((x) => x.id).sort();
+      const feed = async (un, uid) => { const who = await T.login(un, LAB.pw), r = await T.call('/api/notifications?uid=' + uid, { ck: who.ck }); assert.equal(r.status, 200, tag + ' ' + uid + ': ' + r.t.slice(0, 200)); return r.j.items; };
+      const mgr = await feed(LAB.mgrB, 'TEST_ONLY_mgrB'), emp = await feed('1200000102', 'TEST_ONLY_empB'), ids = (L, t) => L.filter((m) => m.type === t).map(mid).sort();
+      assert.deepEqual(ids(mgr, 'bc_dept'), byType('bc_dept'), tag + ': مديرُ الوحدة — تعميمُ الإدارة'); assert.deepEqual(ids(mgr, 'emp_add'), byType('emp_add'), tag + ': ومفتاحُه في الأهداف');
+      assert.deepEqual(ids(emp, 'bc_dept'), byType('bc_dept'), tag + ': موظفُ الوحدة — تعميمُ الإدارة'); assert.deepEqual(ids(emp, 'task_new'), byType('task_new'), tag + ': والمسنَدُ إليه باسمه');
+      for (const L of [mgr, emp]) assert.equal(L.some((m) => m.type === 'pm_tpl' || mid(m) === 'TEST_ONLY_n5'), false, tag + ': لا pm_tpl ولا تنبيهَ الإدارة الأخرى');
+      const n0 = mgr.find((m) => mid(m) === 'TEST_ONLY_n0'), n6 = mgr.find((m) => mid(m) === 'TEST_ONLY_n6');
+      assert.equal(n0.un, false, tag + ': علامةُ قراءة مدير المصدر صارت علامةَ مدير الوحدة (مقروء)'); assert.equal(n6.un, true, tag + ': وغيرُه غيرُ مقروء');
+      assert.equal(n0.by, 'mgr:' + B, tag + ': منشئُ التنبيه مديرُ الوحدة'); assert.equal(n0.dept, B);
+      assert.equal(T.DB.q("SELECT COUNT(*) n FROM notification_messages WHERE scope='d:" + B + "' AND department<>'" + B + "'")[0].n, 0, tag + ': كلُّ تنبيهٍ للوحدة الهدف');
+      /* (هـ) المهام تُفتح: «مهامّي» للموظف بمسارها الحقيقي · وقراءةُ صفحة المهام للمدير — منشئُها ومراجِعُها مديرُ الوحدة الهدف */
+      const ew = await T.login('1200000102', LAB.pw), mine = await T.call('/api/me/tasks?uid=TEST_ONLY_empB', { ck: ew.ck });
+      assert.equal(mine.status, 200, tag + ': ' + mine.t.slice(0, 200)); assert.equal(mine.j.me.linked, true, tag + ': الموظفُ مرتبطٌ بمهامه');
+      const own = Object.values(JSON.parse(file.data.bassam_tasks_v1)).flat().filter((r) => r[14] === 'tst_demo_e11').length;
+      assert.ok(own > 0 && mine.j.rows.length === own, tag + ': مهامُّه كلُّها (' + mine.j.rows.length + '/' + own + ')');
+      const mw = await T.login(LAB.mgrB, LAB.pw), rd = await T.call('/api/operations/read?uid=TEST_ONLY_mgrB&keys=' + encodeURIComponent('bsdept:' + B + ':bassam_tasks_v1'), { ck: mw.ck });
+      assert.equal(rd.status, 200, tag + ': ' + rd.t.slice(0, 200));
+      const rows = Object.values(rd.j.resources['bsdept:' + B + ':bassam_tasks_v1']).flat();
+      assert.ok(rows.length && rows.every((r) => r[23].by.e === 'mgr:' + B && r[23].rv.e === 'mgr:' + B), tag + ': منشئُ المهمة ومراجِعُها مديرُ الوحدة');
+    } finally { await T.close(); }
+  }
+  assert.deepEqual(ends[1], ends[0], 'الدفعاتُ = الطلبُ الواحد صفاً بصف');
+});
