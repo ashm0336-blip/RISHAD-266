@@ -2,6 +2,22 @@
    والتعديل · /api/tasks/settings بعد وصول التعديل · صفُّ التعديل بهويته. يُجمَع بعد logic.js بترتيب meta.json "logicParts". */
 "use strict";
 Object.assign(Component.prototype, {
+  /* V7 · د6 (QA): هل يراجع المنشئُ ما ينشئه؟ — قاعدةُ الخادم نفسُها (071 tkCanReview: task.edit ∧ task.finish في الإدارة، ومديرُ المنصة دائماً)
+     من مفاتيح الجلسة (BassamPerm.key). بلا مفاتيح معروفة ⇒ لا (الخادمُ يرفض «أنا» لمن لا يملكها) */
+  _tkCanRv() {
+    try {
+      const me = this._tkMe(), P = KIVO.BassamPerm, d = this._tkDept();
+      if (me && "super" === me.role) return !0;
+      return !!(P && P.key && d && !0 === P.key("task.edit", d) && !0 === P.key("task.finish", d));
+    } catch (t) {
+      return !1;
+    }
+  },
+  /* المراجِعُ الفعلي: "" (نموذجُ الإنشاء) = «أنا» لمن يملك الاعتماد وإلا «بلا مراجعة»؛ والقيمةُ الصريحة (ومنها «creator» في التعديل) كما هي */
+  _tkRvCur() {
+    const v = this.state.newRv;
+    return v ? v : this._tkCanRv() ? "creator" : "none";
+  },
   /* الإعداداتُ المتقدمة ⇒ حقولُ x (العمود 23) كما يقبلها الخادم */
   _tkAdvBody() {
     const e = this.state,
@@ -14,7 +30,8 @@ Object.assign(Component.prototype, {
       .slice(0, 12)
       .map((t) => t.slice(0, 120));
     st.length && (pol.steps = st);
-    const rv = !e.newRv || "creator" === e.newRv ? "creator" : "none" === e.newRv ? "none" : { u: e.newRv },
+    const rvC = this._tkRvCur(),
+      rv = "creator" === rvC ? "creator" : "none" === rvC ? "none" : { u: rvC },
       cl = (v, lo, hi, d) => (isFinite(+v) ? Math.min(hi, Math.max(lo, Math.floor(+v))) : d),
       win = { early: e.newWinEarlyOn ? cl(e.newWinEarly, 0, 240, 10) : 0, late: e.newWinLateOn ? cl(e.newWinLate, 0, 24, 2) : 0 };   /* KIVO_265 · نافذةُ التنفيذ (070 tkWinIn) */
     return { pol: pol, rv: rv, dec: !1 === e.newDecOk ? 0 : 1, win: win };
@@ -41,12 +58,15 @@ Object.assign(Component.prototype, {
         }
       })(),
       mgrs = users.filter((u) => u && !u.dis && (!me || u.id !== me.id) && ((("dept" === u.role || ("staff" === u.role && u.mgr)) && u.deptId === d) || "gm" === u.role)),
-      rvOpts = [{ v: "creator", label: "أنا — منشئ المهمة (الافتراضي)" }, { v: "none", label: "بلا مراجعة — التسليمُ إنجاز" }]
+      rvCur = this._tkRvCur(),
+      rvMe = this._tkCanRv() || "creator" === e.newRv,   /* V7 · د6 (QA): «أنا» لا يُعرض لمن لا يملك الاعتماد (إلا مهمةً قائمةً مراجِعُها منشئُها) */
+      rvOpts = (rvMe ? [{ v: "creator", label: "أنا — منشئ المهمة (الافتراضي)" }] : [])
+        .concat([{ v: "none", label: "بلا مراجعة — التسليمُ إنجاز" + (rvMe ? "" : " (الافتراضي)") }])
         .concat(mgrs.map((u) => ({ v: u.id, label: (u.name || u.un || u.id) + " — مدير" })))
-        .map((o) => Object.assign(o, { sel: (e.newRv || "creator") === o.v })),
+        .map((o) => Object.assign(o, { sel: rvCur === o.v })),
       polTxt = { any: "صورة أو ملاحظة", img: (+e.newPolN || 1) > 1 ? +e.newPolN + " صور" : "صورة", note: "ملاحظة", both: "صورة وملاحظة", none: "بلا إثبات" }[pm],
       nSteps = String(e.newSteps || "").split(/\n+/).filter((t) => t.trim()).length,
-      rvTxt = "none" === e.newRv ? "بلا مراجعة" : !e.newRv || "creator" === e.newRv ? "المراجِع: أنت" : "المراجِع: " + ((rvOpts.filter((o) => o.v === e.newRv)[0] || {}).label || "").replace(" — مدير", ""),
+      rvTxt = "none" === rvCur ? "بلا مراجعة" : "creator" === rvCur ? "المراجِع: أنت" : "المراجِع: " + ((rvOpts.filter((o) => o.v === rvCur)[0] || {}).label || "").replace(" — مدير", ""),
       /* KIVO_265 · قرارُ المالك: التكرارُ خرج من هنا إلى النموذج نفسِه («نوع المهمة») — موضعٌ واحد، وملخّصُه هناك */
       winTxt = [e.newWinEarlyOn ? "البدء قبل الموعد بـ" + (+e.newWinEarly || 0) + " د" : "", e.newWinLateOn ? (2 === +e.newWinLate ? "" : "التسليم حتى " + (+e.newWinLate || 0) + " س بعد المهلة") : "لا تسليم بعد المهلة"].filter(Boolean).join(" · "),
       sum = ["الإثبات: " + polTxt + (nSteps ? " · " + nSteps + " خطوات" : ""), rvTxt, !1 === e.newDecOk ? "لا اعتذار" : "", winTxt].filter(Boolean).join(" · ");

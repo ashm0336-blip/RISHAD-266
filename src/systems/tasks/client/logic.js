@@ -576,7 +576,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       newPol: "any",
       newPolN: 1,
       newSteps: "",
-      newRv: "creator",
+      newRv: "",   /* V7 · د6 (QA): "" = الافتراضيُّ بحسب الصلاحية (logic-adv _tkRvCur) — «أنا» لمن يملك الاعتماد، وإلا «بلا مراجعة» */
       newDecOk: !0,
       /* KIVO_265 · نافذةُ التنفيذ (قرارُ المالك 2026-10-19): البدءُ المبكر (نعم ⇒ دقائق قبل الموعد) · التسليمُ بعد المهلة (نعم ⇒ ساعات) — الافتراضي لا · نعم 2 */
       newWinEarlyOn: !1,
@@ -2723,7 +2723,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 newPol: "any",
                 newPolN: 1,
                 newSteps: "",
-                newRv: "creator",
+                newRv: "",
                 newDecOk: !0,
                 newWinEarlyOn: !1,
                 newWinEarly: 10,
