@@ -403,7 +403,9 @@ test('V7 nf-deny · every reason code that exists in the server source has an Ar
   assert.deepEqual(missing, [], 'reason codes in the server source without an Arabic phrase');
   /* no phrase for a code the server no longer has (the table cannot rot the other way) */
   const known = new Set([...codes.keys()].map((c) => (c.endsWith('…') ? c.slice(0, -1) : c)));
-  assert.deepEqual(Object.keys(W.NF_DENY_WHY).filter((k) => !known.has(k)), [], 'phrases without a code in the source');
+  /* V7 · د6 (QA) · البند ١: 'reason' عبارةُ سجلاتٍ قديمة وحدها (لا يُنتجها الخادمُ بعد القرار) — تبقى ليُعرض صفُّ الأمن القديم بالعربية */
+  const LEGACY = new Set(['reason']);
+  assert.deepEqual(Object.keys(W.NF_DENY_WHY).filter((k) => !known.has(k) && !LEGACY.has(k)), [], 'phrases without a code in the source');
   assert.equal(W.nfDenyWhy(''), W.NF_DENY_GENERIC); assert.equal(W.nfDenyWhy(null), W.NF_DENY_GENERIC); assert.equal(W.nfDenyWhy('TEST_ONLY'), W.NF_DENY_GENERIC); assert.equal(W.NF_DENY_GENERIC, GENERIC);
   /* the verb: not stored in the sec row — neutral «تعديل» unless the row itself says otherwise */
   assert.deepEqual([[KR, 'perm'], [KR, 'keydel'], [KCU, 'custody:type-delete'], [KRETRO, 'retro.open:perm'], [KRETRO, 'retro.close:perm'], [KNF, 'notification-scope'], [KNF, 'super'],
