@@ -55,7 +55,30 @@ async function reach(page, d) {
   if (!(await l.isVisible())) { await page.click('#' + await l.evaluate((e) => e.closest('.s-cg').querySelector('.s-cgh').id)); await page.waitForTimeout(200); }
   return l;
 }
-const links = (page) => page.evaluate(() => [...document.querySelectorAll('aside.bsb a, aside.bsb .n')].map((a) => (a.className || '') + '|' + (a.getAttribute('title') || '') + '|' + (a.textContent || '').replace(/\s+/g, ' ').trim()));
+/* V7 · د6 (م7 «رصد الحالات» — موثَّق كـOFF5H/NOHELP5H؛ اللقطةُ نفسُها لا تُعدَّل): نظامٌ لم يكن موجوداً يوم أُخذت اللقطة يُضاف رابطُه إلى القائمة
+   مخفياً (n gone) ما دام مطفأً — مثلُ «رصد الحالات» (optIn: لا يفتحه السقفُ المفتوح). يُرفع من المقارنة مشتقّاً لا بالاسم: عنصرُ القائمة الذي يسمّي نظاماً
+   من KIVO.Perm44.sysList() لا يرد اسمُه في اللقطة كلِّها، وهو مخفيّ، ونظامُه مطفأٌ لهذا الحامل الآن (BassamPerm.platOff · سقفُ الوحدة النشطة Perm44.ceiling،
+   وبلا وحدةٍ نشطة: optIn) — ويُثبَّت ذلك لكلّ مرفوع. نظامٌ جديدٌ مفعّل (رابطُه ظاهر) يبقى في المقارنة فتفشل كما يجب */
+const KNOWN_TXT = JSON.stringify(BEFORE);
+const links = async (page) => {
+  const r = await page.evaluate((known) => {
+    const P4 = KIVO.Perm44, Pm = KIVO.BassamPerm, d = KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : '';
+    const on = d && P4 && P4.ceiling ? (P4.ceiling(d).on || []) : null, po = Pm && Pm.platOff ? Pm.platOff() : [], sys = P4 && P4.sysList ? P4.sysList() : [];
+    const keep = [], drop = [];
+    [...document.querySelectorAll('aside.bsb a, aside.bsb .n')].forEach((a) => {
+      const cls = a.className || '', title = a.getAttribute('title') || '', txt = (a.textContent || '').replace(/\s+/g, ' ').trim(), e = cls + '|' + title + '|' + txt;
+      const s = sys.filter((x) => x && x.name && (x.name === txt || x.name === title))[0];
+      if (s && known.indexOf(s.name) === -1) {
+        const off = po.indexOf(s.key) !== -1 || (on ? on.indexOf(s.key) === -1 : s.optIn === true);
+        if (off && /(^|\s)gone(\s|$)/.test(cls)) { drop.push({ e, key: s.key, optIn: s.optIn === true, off, hidden: getComputedStyle(a).display === 'none' || a.getBoundingClientRect().width === 0 }); return; }
+      }
+      keep.push(e);
+    });
+    return { keep, drop };
+  }, KNOWN_TXT);
+  for (const x of r.drop) assert.ok(x.off && x.hidden && KNOWN_TXT.indexOf(x.e.split('|')[2]) === -1, 'a system the capture did not know is dropped only while OFF and hidden: ' + JSON.stringify(x));
+  return r.keep;
+};
 /* writes while only navigating: sign-in, an empty save flush and the notifications security-poll / recipient preview */
 function watchWrites(page, out) {
   page.on('request', (r) => {
