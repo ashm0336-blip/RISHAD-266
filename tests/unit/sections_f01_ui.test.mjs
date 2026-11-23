@@ -46,7 +46,8 @@ function world(user) {
   /* V7 · د6 (ب4): البذرُ الجديد يقرأ الأنظمةَ التي تُطفأ من المحرّك (هنا بديلٌ مصطنع: tasks · plan · daily · help — وemps وadmin دائمتان) */
   ctx.KIVO.Perm44 = { sysList: () => ['tasks', 'plan', 'daily', 'help'].map((k) => ({ key: k, toggle: true, leaves: [k] })) };
   Object.assign(ctx, { PAGE_OF: {}, subKeysOf: () => [], onCap: (k, d) => ctx.deptCap(d).indexOf(k) !== -1 });
-  for (const f of ['splitLeaf', 'rawCap', 'hasCap', 'effCap', 'capSetAnywhere', 'deptCap', 'seedSystems', 'seedOnAt', 'seedMode', 'seedUnit', 'seedCapFrom']) { const t = fnSrc(M, f, true); if (t) vm.runInContext(t, ctx); }
+  /* V7 · د6 (optIn): deptCap يقرأ السقفَ المفتوح من pageOpen (كلُّ الصفحات إلا أنظمةَ optIn من Perm44.sysList) — فتُحمَّل معه */
+  for (const f of ['splitLeaf', 'rawCap', 'hasCap', 'effCap', 'capSetAnywhere', 'pageOpen', 'deptCap', 'seedSystems', 'seedOnAt', 'seedMode', 'seedUnit', 'seedCapFrom']) { const t = fnSrc(M, f, true); if (t) vm.runInContext(t, ctx); }
   vm.runInContext(fnSrc(M, 'seedSectionCap'), ctx);
   vm.runInContext(rd('services/440-count.js'), ctx);
   ctx.KIVO.BassamPerm = { seedCapFrom: ctx.seedCapFrom, seedSectionCap: ctx.seedSectionCap, hasCap: ctx.hasCap, deptCap: ctx.deptCap, effCap: ctx.effCap };
