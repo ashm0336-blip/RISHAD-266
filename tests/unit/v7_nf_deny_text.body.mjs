@@ -79,7 +79,7 @@ const SITES = {
   retro: async (x) => refused(await x.post('emp', '/api/retro', { res: 'irshad', dept: D, act: 'open', scope: { y: 1447, m: 1 }, hours: 1, reason: 'TEST_ONLY' }), 'retro (047)'),
   nfEmit: async (x) => refused(await x.post('emp', '/api/notifications/act', { uid: 'nfd_emp', op: 'emit', type: 'sc_deny', dept: D }), 'notifications route, POST (019)'),
 };
-/* 070 tkSave: in enforce «reopen» needs a reason — the manager sends none (tasks_fix265_reopen); in legacy the same call is accepted */
+/* 070 tkSave: «reopen» without a reason — V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ إلزامياً، فيُقبل في الوضعين (كان: يُرفض «reason» في الإنفاذ) */
 async function reopenNoReason(x) {
   const me = await x.w.login(ME.un, ME.pw);
   const f = await x.w.C.api('/api/me/tasks/act', { method: 'POST', cookie: me.ck, body: { k: DAY, id: 1760000000103, act: 'finish', note: 'TEST_ONLY' } });
@@ -128,7 +128,7 @@ for (const mode of ['enforce']) {
     const x = await mk(mode);
     for (const k of Object.keys(SITES)) await SITES[k](x);
     const re = await reopenNoReason(x);
-    if (mode === 'enforce') refused(re, 'task reopen without a reason (070 tkSave)'); else assert.equal(re.status, 200, 'legacy accepts the reopen');
+    assert.equal(re.status, 200, 'V7 · د6 (QA): the reopen without a reason is accepted (' + mode + ')');
     const rows = x.sec(); await x.poll();
     const G = groups(rows), B = x.bell();
     if (process.env.V7_NFD_DUMP === '1') console.log(mode + ' bell\n' + B.map((m) => m.once + ' | ' + m.title + ' | ' + m.body).join('\n'));
@@ -148,7 +148,7 @@ for (const mode of ['enforce']) {
     }
     /* every site was really exercised */
     for (const k of [KR, KE, KT, KPLAT, KCU, KDS, KRETRO, KNF]) assert.ok(seen.has(k), mode + ': a notice for ' + k);
-    if (mode === 'enforce') assert.ok(G.some((g) => g.first.uid === 'nfd_mgr' && g.first.target === KT && g.first.detail === 'reason'), 'the 070 tkSave refusal');
+    assert.ok(!G.some((g) => g.first.detail === 'reason'), 'V7 · د6 (QA): no refusal for a missing reason any more');
     /* the owner's own example, to the letter */
     const r = rows.find((q) => q.target === KR);
     /* only the platform administrator reads it */
@@ -170,13 +170,12 @@ for (const mode of ['enforce']) {
     const E = (uid, un, td, dev = '') => [uid, un, td, '', '', dev].join(' ¦ ');
     const want = (mode === 'legacy'
       ? [E('nfd_emp', '', KR + '|page'), E('nfd_emp', '', KE + '|page'), E('nfd_emp', '', KT + '|act'), E('nfd_emp', '', KCU + '|custody:type-create')]
-      : [E('nfd_emp', '', KR + '|residual'), E('nfd_emp', '', KE + '|perm'), E('nfd_emp', '', KT + '|perm'), E('nfd_emp', '', KCU + '|custody:type-create'),
-        E('nfd_mgr', '', KT + '|reason'), E('nfd_mgr', '0000000902', KT + '|reason', 'd')])
+      : [E('nfd_emp', '', KR + '|residual'), E('nfd_emp', '', KE + '|perm'), E('nfd_emp', '', KT + '|perm'), E('nfd_emp', '', KCU + '|custody:type-create')])   /* V7 · د6 (QA): لا صفَّي «reason» (إعادةُ الفتح بلا سبب تُقبل) */
       .concat([E('nfd_emp', '0000000901', KPLAT + '|super', 'd'), E('nfd_emp', '', KDS + '|view', 'd'), E('nfd_emp', '0000000901', KRETRO + '|retro.open:perm', 'd'),
         E('nfd_emp', '', KNF + '|notification-scope'), E('nfd_emp', '', KNF + '|notification-export-permission'), E('nfd_emp', '', KNF + '|notification-scope')]).sort();
     if (process.env.V7_NFD_DUMP === '1') console.log(mode, JSON.stringify(got, null, 1));
     assert.deepEqual(got, want, 'sec rows exactly as develop writes them');
-    assert.equal(re.status, mode === 'enforce' ? 403 : 200);
+    assert.equal(re.status, 200);   /* V7 · د6 (QA) · البند ١ */
     const before = JSON.stringify(x.sec()); await x.poll(); await x.poll();
     assert.equal(JSON.stringify(x.sec()), before, 'the poll writes nothing to the security log');
     /* /api/sec: the administrator still sees the technical key and the code, with the name the server resolves by uid */
@@ -391,7 +390,8 @@ function reasonCodes(src) {
 test('V7 nf-deny · every reason code that exists in the server source has an Arabic phrase (and only Arabic)', needsSys('custody', 'dstats'), async () => {
   const { W, src } = await internals(), codes = reasonCodes(src);
   assert.ok(codes.size >= 80, 'the enumeration found the codes: ' + codes.size);
-  for (const must of ['perm', 'reason', 'view', 'super', 'scope', 'custody:…', 'retro.…', 'custody-transition', 'notification-scope', 'restore-policy', 'import-allowlist', 'task-x', 'users · dup-id …', 'perms-stale-client', 'privacy-hidden'])
+  for (const must of ['perm', 'view',   /* V7 · د6 (QA) · البند ١: 'reason' لم يعد رمزَ رفضٍ في الخادم (أُزيل enfNo('reason')) — عبارتُه العربية باقيةٌ للسجلات القديمة */
+ 'super', 'scope', 'custody:…', 'retro.…', 'custody-transition', 'notification-scope', 'restore-policy', 'import-allowlist', 'task-x', 'users · dup-id …', 'perms-stale-client', 'privacy-hidden'])
     assert.ok(codes.has(must), 'enumeration sanity: ' + must);
   const missing = [], table = [];
   for (const [code, how] of [...codes].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {

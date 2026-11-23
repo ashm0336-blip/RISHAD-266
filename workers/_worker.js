@@ -26952,7 +26952,7 @@ function enfTaskSelfEkey(A, rn) { return rn === 'bassam_tasks_v1' && !A.__tkSelf
 /* القرارُ الكامل لكتابةٍ واحدة على موردٍ إداريّ (أو منصّيّ بسياق) — heldFn(key) يُعطى للموارد المنصّية */
 function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   opts = opts || {};
-  var ix = enfIx(), held = opts.held || function (key) { return enfHeld(A, d, key); };
+  var held = opts.held || function (key) { return enfHeld(A, d, key); };   /* V7 · د6 (QA): ix كان لمفاتيح السبب وحدها */
   /* KIVO_264 · KIVO-Tasks (الرقعة 06): «self.task.respond» للمسار الذاتي وحده (POST /api/me/tasks/act — 062c يسِم الفاعلَ في الخادم A.__tkSelf
      ولا يصل إليه مدخلٌ من الطلب). مصنِّفُ المهام في الوحدة المرجعية 006 (classifyTaskRow — لا تُمسّ: 004–016 = v24.9 بايتاً) يعدّ الصفَّ
      «ذاتياً» حين actor.ekey = العمود 14؛ فلا يُعطى هويةَ الذات على مخزن المهام إلا من ذلك المسار — والحفظُ الخامّ /api/save يُصنَّف بمفاتيح
