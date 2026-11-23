@@ -6,7 +6,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { WORKER } from './harness.mjs';
-import { needs } from './harness.mjs';
+import { needs, SYSTEMS, SRC as SRC_DIR } from './harness.mjs';
+import path from 'node:path';
 
 const SRC = fs.readFileSync(WORKER, 'utf8'), LINE = "  { key: 'irshad', subs: ['dash', 'records'], off: ['dash'] },\n";
 let n = 0;
@@ -35,7 +36,10 @@ test('مفتاحُ صفحةٍ أُزيل من PG_REG: لا يُعدّ مفعّل
 test('المفتاحُ المجهول يُمنع، والمعروفُ كما كان، والفارغُ كما كان', needs('tasks'), async () => {
   const W = await load(SRC);
   assert.equal(W.capOnDept(SUPER, 'TEST_ONLY_d1', 'TEST_ONLY_no_such_page'), false, 'مجهول ⇒ منع');
-  for (const k of W.PG_KEYS) assert.equal(W.capOnDept(SUPER, 'TEST_ONLY_d1', k), true, 'المعروفُ بلا سقفٍ مفعّل: ' + k);
+  /* V7 · د6 (قرار المالك · optIn): السقفُ المفتوح لا يفتح نظاماً أعلن "optIn": true في system.json — مشتقّاً من الإعلانات؛ وسجلٌّ صريحٌ يفتحه */
+  const OPTIN = SYSTEMS.filter((k) => JSON.parse(fs.readFileSync(path.join(SRC_DIR, 'systems', k, 'system.json'), 'utf8')).optIn === true);
+  for (const k of W.PG_KEYS) assert.equal(W.capOnDept(SUPER, 'TEST_ONLY_d1', k), !OPTIN.includes(k), (OPTIN.includes(k) ? 'optIn بلا سقفٍ مفعّل ⇒ مطفأ: ' : 'المعروفُ بلا سقفٍ مفعّل: ') + k);
+  for (const k of OPTIN.filter((x) => W.PG_KEYS.includes(x))) assert.equal(W.capOnDept({ u: SUPER.u, perms: { caps: { TEST_ONLY_d1: [k] } }, enf: false }, 'TEST_ONLY_d1', k), true, 'optIn بسجلٍّ صريح ⇒ مفعّل: ' + k);
   assert.equal(W.capOnDept(SUPER, 'TEST_ONLY_d1', ''), true, 'بلا مفتاح ⇒ كما كان');
   const capped = { u: SUPER.u, perms: { caps: { TEST_ONLY_d1: ['tasks'] } }, enf: false };
   assert.equal(W.capOnDept(capped, 'TEST_ONLY_d1', 'tasks'), true);
