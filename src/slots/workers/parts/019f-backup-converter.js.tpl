@@ -261,15 +261,18 @@ async function rsConvertBackup(env, A, file, opt) {
   /* V7 · د6 (remap): نسخةُ إدارةٍ قديمة تُستورد إلى وحدةٍ بمعرّفٍ آخر — الحالةُ الطبيعية على منصة الشركة. إدارةُ النسخة: من بادئة مفاتيحها إن كانت،
      وإلا ممّا تحمله بياناتُها (rsBCDeptFind). إشاراتُها تصير الوحدةَ الهدف في المواضع المعدودة قبل أي تحويل؛ ومعرّفٌ غيرُها يُذكر ولا يُربط.
      وما بقي يحمل المعرّفَ المصدر نصّاً في موضعٍ لم يُعدّ يُذكر بموارده (left) — لا يُعاد ربطه ولا يُرفض به الملف. */
-  var perms = file.perms === undefined ? undefined : rsBCClone(file.perms);
+  /* إدارةُ المصدر إن كانت إدارةً على هذه المنصة: تنبيهاتُها تُحوَّل بهوياتها هي (حساباتُ علاماتِ القراءة حساباتُها — لا يُعاد ربطُ معرّف حساب) ثم يُنقل نطاقُها
+     ومفتاحُ مديرها (rsBCRemapNF) كما كان؛ وإلا (نسخةُ Production: معرّفٌ لا يوجد هنا) فوثيقةُ التنبيهات تُربط قبل التحويل وتُحوَّل بهويات الوحدة الهدف. */
+  var perms = file.perms === undefined ? undefined : rsBCClone(file.perms), nfSrc = target;
   if (legacy && scope.kind === 'dept') {
-    var rdocs = {};
+    var rdocs = {}, nk = 'bsdept:' + target + ':bassam_notif_v1';
     ['bassam_notif_v1'].concat(Object.keys(RS_DEPT_REFS)).forEach(function (n) { var k = 'bsdept:' + target + ':' + n; if (rsBCOwn(keys, k)) rdocs[n] = parseJson(keys[k], null); });
     var from = source !== target ? source : rsBCDeptFind(rdocs, perms);
+    if (from && from !== target && (parseJson(reference[K_DEPTS] || '[]', []) || []).some(function (d) { return d && d.id === from; })) { nfSrc = from; delete rdocs.bassam_notif_v1; }
     if (from) {
       var rec = (summary.remap = rsBCDeptRemap(rdocs, perms, from, target, rsBCRemapRec(from, target)));
       Object.keys(rdocs).forEach(function (n) { if (isObj(rdocs[n])) keys['bsdept:' + target + ':' + n] = JSON.stringify(rdocs[n]); });
-      if (from !== target) Object.keys(keys).forEach(function (k) { var c = keys[k].split(from).length - 1; if (c) rec.left[resName(k)] = c; });
+      if (from !== target) Object.keys(keys).forEach(function (k) { var c = k === nk && nfSrc !== target ? 0 : keys[k].split(from).length - 1; if (c) rec.left[resName(k)] = c; });
     }
   }
   Object.keys(keys).filter(bdLegacyKey).forEach(function(k){
@@ -336,9 +339,9 @@ async function rsConvertBackup(env, A, file, opt) {
     if (nfKeys.length && (typeof nativeUsers !== 'string' || typeof nativeDepts !== 'string')) rsBCFail('notifications-identity-required');
     identity[K_USERS] = nativeUsers;
     identity[K_DEPTS] = nativeDepts;
-    /* V7 · د6 (remap): تنبيهاتُ نسخة الإدارة القديمة أُعيد ربطها بالوحدة الهدف أعلاه — فتُحوَّل باسمها (المعرّفُ المصدر قد لا يكون إدارةً على هذه المنصة) */
+    /* V7 · د6 (remap): تنبيهاتُ نسخة الإدارة القديمة تُحوَّل باسم nfSrc (أعلاه): الوحدةُ الهدف بعد إعادة ربطها، أو إدارةُ المصدر القائمة هنا */
     nfKeys.forEach(function (k) {
-      var old = scope.kind === 'dept' ? 'bsdept:' + target + ':' + resName(k) : k;
+      var old = scope.kind === 'dept' ? 'bsdept:' + nfSrc + ':' + resName(k) : k;
       legacyNF[old] = keys[k];
     });
     Object.keys(identity).forEach(function (k) {
@@ -350,7 +353,7 @@ async function rsConvertBackup(env, A, file, opt) {
       var ds = rsBCParse(identity[K_DEPTS]);
       if (
         !ds.some(function (d) {
-          return d && d.id === target;
+          return d && d.id === nfSrc;
         })
       )
         rsBCFail('notifications-unknown-source-department');
@@ -363,7 +366,7 @@ async function rsConvertBackup(env, A, file, opt) {
       (summary.notTransferred = summary.notTransferred || []).push({ k: 'bassam_notif_v1 · ' + (p[1] || '—'), why: 'nf-' + p[0], n: nfDrop[id] });
     });
     if (scope.kind === 'dept') {
-      converted = rsBCRemapNF(converted, source, target);
+      converted = rsBCRemapNF(converted, nfSrc, target, summary.remap);
       domains.notifications = rsBCNF(converted, scope);
       if (!nfKeys.length) summary.emptyDomains.push('notifications:' + target);
     } else {
