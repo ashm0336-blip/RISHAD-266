@@ -7,10 +7,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { internals } from './internals.mjs';
-import { SRC } from './harness.mjs';
+import { SRC, SYSTEMS } from './harness.mjs';
 
 const { deptCapOf, PG_KEYS } = await internals(['deptCapOf', 'PG_KEYS']);
-const [a, b, c] = PG_KEYS;
+/* V7 · د6 (قرار المالك · optIn): السقفُ المفتوح = كلُّ الصفحات إلا صفحاتِ الأنظمة التي أعلنت "optIn": true في system.json (021 pgOpen = 331 pageOpen) —
+   مشتقّةً من إعلانات الأنظمة؛ والواجهةُ تقرؤها من قائمة الأنظمة الواحدة (Perm44.sysList) فتُعطى هنا القائمةَ من الإعلانات نفسِها */
+const OPTIN = SYSTEMS.filter((k) => JSON.parse(fs.readFileSync(path.join(SRC, 'systems', k, 'system.json'), 'utf8')).optIn === true);
+const OPEN = PG_KEYS.filter((k) => !OPTIN.includes(k));
+const [a, b, c] = OPEN;
 const M = fs.readFileSync(path.join(SRC, 'permissions/331-perm-model.js'), 'utf8');
 const fnSrc = (name) => { const i = M.indexOf('\n  function ' + name + '('); assert.ok(i > 0, name); let j = M.indexOf('{', i), d = 0; for (let k = j; k < M.length; k++) { if (M[k] === '{') d++; else if (M[k] === '}' && --d === 0) { j = k + 1; break; } } return M.slice(i + 3, j); };
 /* tree: g1 (node) ⊃ d1 (department) ⊃ s1 (section) · d2 (department directly under g1) */
@@ -20,14 +24,15 @@ const anc = (id) => { const o = []; let p = PARENT[id]; while (p) { o.push(p); p
 const server = (perms, id) => deptCapOf({ perms, nodes, depts, off: [] }, id);
 function client(perms, id, throwAnc) {
   const ctx = { permStore: () => perms, PAGE_KEYS: PG_KEYS.slice(), curDept: () => id, Array,
-    KIVO: { BassamDepts: { ancestorsOf: (d) => { if (throwAnc) throw new Error('TEST_ONLY'); return anc(d); } } } };
+    KIVO: { Perm44: { sysList: () => OPTIN.map((k) => ({ key: k, optIn: true, leaves: [k] })) }, BassamDepts: { ancestorsOf: (d) => { if (throwAnc) throw new Error('TEST_ONLY'); return anc(d); } } } };
   vm.createContext(ctx);
-  for (const f of ['rawCap', 'hasCap', 'effCap', 'capSetAnywhere', 'deptCap']) vm.runInContext(fnSrc(f), ctx);
+  for (const f of ['rawCap', 'hasCap', 'effCap', 'capSetAnywhere', 'pageOpen', 'deptCap']) vm.runInContext(fnSrc(f), ctx);
   return vm.runInContext('deptCap(' + JSON.stringify(id) + ')', ctx).filter((k) => PG_KEYS.includes(k));
 }
 const S = (x) => JSON.parse(JSON.stringify(x)).sort();   /* vm arrays come from another realm */
 const CASES = [
-  ['no record anywhere ⇒ open (all pages)', { caps: {} }, 'd1', PG_KEYS],
+  ['no record anywhere ⇒ open (all pages but optIn systems)', { caps: {} }, 'd1', OPEN],
+  ['an explicit record opens an optIn system page', { caps: { d1: PG_KEYS.slice() } }, 'd1', PG_KEYS],
   ['ABSENT record under a capped ancestor ⇒ inherits the ancestor (the fixed case)', { caps: { g1: [a, b] } }, 'd1', [a, b]],
   ['EXPLICIT EMPTY [] under a capped ancestor ⇒ nothing', { caps: { g1: [a, b], d1: [] } }, 'd1', []],
   ['ancestor explicit [] locks a unit without record', { caps: { g1: [] } }, 'd1', []],
