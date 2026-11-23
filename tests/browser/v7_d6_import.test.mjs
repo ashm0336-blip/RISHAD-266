@@ -12,7 +12,7 @@ import path from 'node:path';
 import { startLab, LAB } from './local_server.mjs';
 import { chromium, openAs } from './lab_browser.mjs';
 import { hasSystem } from '../unit/harness.mjs';
-import { oldFile, staged, snapshot, changed, NOT_TRANSFERRED, fieldDrops, remapOf, SRC_DEPT, OTHER_DEPT } from '../unit/v7_d6_import_fx.mjs';
+import { oldFile, staged, snapshot, changed, NOT_TRANSFERRED, fieldDrops, remapOf, SRC_DEPT, OTHER_DEPT, dayKeys } from '../unit/v7_d6_import_fx.mjs';
 
 const B = 'TEST_ONLY_B', need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات والمهام' };
 const AR = (s) => String(s).replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660));
@@ -190,7 +190,7 @@ test('د6: فشلُ جزءٍ ⇒ رسالةٌ بالسبب و«إعادة الم
 test('د6: عضوٌ واحد أكبر مما يُرسل في دفعة ⇒ رفضٌ عند البدء يسمّيه (المورد › اليوم) — قبل أي رفع، ولا يتغيّر شيء', { timeout: 600000, ...need }, async () => {
   /* يومٌ واحد ≈2.7M حرف (لا ينقسم) ونسخةٌ فوق حدّ الطلب القديم (صورتان) */
   const lab = await startLab(), b = await chromium.launch(), { p: file } = await fileOnDisk({ small: true }, (f) => {
-    const r = JSON.parse(f.data.bassam_rounds_v1), day = Object.keys(r)[1]; r[day].d[0].zones[0].d = 'M0 0 ' + 'L1 1 '.repeat(540000) + 'Z'; f.data.bassam_rounds_v1 = JSON.stringify(r);
+    const r = JSON.parse(f.data.bassam_rounds_v1), day = dayKeys(r)[1];   /* V7 · د6 (posfix): يومٌ — لا __pMig ولا m: */ r[day].d[0].zones[0].d = 'M0 0 ' + 'L1 1 '.repeat(540000) + 'Z'; f.data.bassam_rounds_v1 = JSON.stringify(r);
     const ids = Object.keys(f.idbImages); ids.forEach((id) => { f.idbImages[id] = 'data:image/png;base64,' + 'VEVTVF9PTkxZ'.repeat(250000); });
     f.__day = day;
   });
@@ -282,4 +282,107 @@ test('د6 [ثقيل]: تصدير ← مسح ← استيراد ← مطابقة 
     assert.deepEqual(s.errs, [], 'لا أخطاء صفحة');
     await s.ctx.close();
   } finally { await b.close(); await lab.close(); }
+});
+
+/* V7 · د6 (posfix · FIX_IMPORT3_D6): بعد استيراد نسخةٍ بشكل ملف Production (جذرُ الجولات: __pMig أولاً ثم علاماتُ الأشهر ثم الأيام · ≈31MB على دفعات ·
+   وأيامٌ حيّة في الشهر الجاري حتى يوم الصفحة) — «المتابعة اليومية» و«التقرير اليومي» تفتحان ببياناتهما بلا قراءةٍ فاشلة، والحفظُ في كلٍّ منهما 200.
+   كان مع الخلل: كلُّ قراءةٍ تشمل الجولات 400 operations-member-position ⇒ الصفحتان فارغتان، والتحميلُ 24–36 ث بإعادة المحاولات، وكلُّ حفظٍ 400.
+   تُقاس أزمنةُ تحميل «المتابعة اليومية» و«الخطة التشغيلية» بعد الاستيراد وتُذكر (t.diagnostic). */
+test('د6 [ثقيل · posfix]: بعد استيراد نسخةٍ جذرُ جولاتها __pMig أولاً — «المتابعة اليومية» و«التقرير اليومي» ببياناتهما والحفظُ فيهما 200 · وأزمنةُ التحميل', { timeout: 900000, ...need }, async (t) => {
+  const lab = await startLab(), b = await chromium.launch(), t0 = Date.now(), stamp = (m) => t.diagnostic(m + ' @' + Math.round((Date.now() - t0) / 1000) + 's');
+  let dir = null;
+  try {
+    const s = await openAs(b, lab, LAB.superUn, LAB.superPw), p = s.page, reads = [], saves = [];
+    p.on('response', async (r) => {
+      const u = new URL(r.url());
+      if (u.pathname === '/api/operations/read') reads.push({ at: Date.now(), s: r.status(), keys: u.searchParams.get('keys') || '' });
+      if (u.pathname === '/api/save' && r.request().method() === 'POST') { let j = null; try { j = await r.json(); } catch (e) { /* بلا جسم */ } saves.push({ at: Date.now(), s: r.status(), ok: j && j.ok, err: j && j.err, keys: Object.keys(JSON.parse(r.request().postData() || '{}').set || {}) }); }
+    });
+    /* يومُ الصفحة نفسُه (التقويمُ الذي تعرض به الصفحةُ يومَها) ⇒ أيامٌ حيّة في شهره: اليومُ ويومان قبله */
+    const T = await p.evaluate(() => KIVO.BassamCal.hNow(new Date(), null));
+    assert.ok(T && T.y > 1400 && T.m >= 1 && T.d >= 1, JSON.stringify(T));
+    const today = T.y + '-' + T.m + '-' + T.d, open = { y: T.y, m: T.m, days: [T.d - 2, T.d - 1, T.d].filter((d) => d >= 1) };
+    const { f, p: file } = await fileOnDisk({ open });
+    dir = path.dirname(file);
+    const R0 = JSON.parse(f.data.bassam_rounds_v1);
+    assert.deepEqual(Object.keys(R0).slice(0, 2), ['__pMig', 'm:1448-5'], 'جذرُ الجولات كملف Production: __pMig أولاً'); assert.ok(today in R0, 'يومُ الصفحة في النسخة');
+    stamp('file ' + fs.statSync(file).size + ' bytes · today ' + today);
+    /* الاستيرادُ من الواجهة: استبدالٌ كامل */
+    let slices = 0;
+    p.on('request', (r) => { if (/\/api\/backup\/import/.test(r.url()) && r.method() === 'POST' && /"phase":"slice"/.test((r.postData() || '').slice(0, 400))) slices++; });
+    await chooseFile(s, B, file);
+    await click(p, 'استبدال كامل'); await click(p, 'ارفع وتحقّق');
+    await Promise.race([p.getByText('تأكيد الاستبدال').first().waitFor({ state: 'visible', timeout: 300000 }), p.waitForSelector('[data-bkc="fail"]', { timeout: 300000 })]);
+    if (await p.locator('[data-bkc="fail"]').count()) assert.fail('فشل الاستيراد: ' + (await text(p, '[data-bkc="fail-msg"]')));
+    await click(p, 'نعم، استبدل');
+    await p.waitForSelector('[data-bkc="done"]', { timeout: 300000 });
+    await click(p, 'تم');
+    stamp('imported · ' + slices + ' slices');
+    assert.ok(slices >= 12, 'الجولاتُ أُرسلت دفعاتٍ: ' + slices);
+    /* كلُّ موردٍ تشغيليٍّ للإدارة يُقرأ وحده بـ200 */
+    const res = lab.env.DB.q('SELECT DISTINCT resource r FROM ops_nodes WHERE department_id=?1 ORDER BY resource', B).map((x) => x.r);
+    const st = await p.evaluate(async ([d, res]) => { const o = {}; for (const r of res) o[r] = (await fetch('/api/operations/read?keys=' + encodeURIComponent('bsdept:' + d + ':' + r))).status; return o; }, [B, res]);
+    assert.deepEqual(st, Object.fromEntries(res.map((r) => [r, 200])), 'كلُّ موردٍ يُقرأ بعد الاستيراد');
+    assert.equal(await p.evaluate((d) => KIVO.BassamDepts.setActive(d), B), true);
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(3000);
+    /* مكوّنُ الصفحة المفتوحة (الصنفُ الذي يحمل الدالة) — من شجرة React */
+    const find = (fn) => p.evaluate((fn) => {
+      for (const el of document.querySelectorAll('main *')) {
+        const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let f = fk ? el[fk] : null;
+        while (f) { const n = f.stateNode; for (const c of [n, n && n.logic]) if (c && typeof c[fn] === 'function') { window.__posfix = c; return true; } f = f.return; }
+      }
+      return false;
+    }, fn);
+    const timed = async (hash, ready, arg = null) => {
+      const at = Date.now(), r0 = reads.length;
+      await p.evaluate((h) => { location.hash = h; }, hash);
+      try { await p.waitForFunction(ready, arg, { timeout: 120000, polling: 200 }); } catch (e) { throw new Error(hash + ': ' + e.message + ' · ' + AR(await p.evaluate(() => document.body.innerText.replace(/\s+/g, ' '))).slice(0, 1500)); }
+      return { ms: Date.now() - at, reads: reads.slice(r0) };
+    };
+    /* «المتابعة اليومية»: يومُ الصفحة بجولته (طوابقُه ومصلياتُه) */
+    const daily = await timed('#/daily', ([day]) => { const m = document.querySelector('main'); if (!m) return false; for (const el of m.querySelectorAll('*')) { const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let f = fk ? el[fk] : null; while (f) { const n = f.stateNode; for (const c of [n, n && n.logic]) if (c && typeof c.saveRounds === 'function' && c.state && c.state.rounds && c.state.rounds[day] && c.state.rounds[day].d && c.state.rounds[day].d.length) return true; f = f.return; } } return false; }, [today]);
+    stamp('«المتابعة اليومية» ' + daily.ms + ' ms · ' + daily.reads.length + ' قراءة (' + daily.reads.map((x) => x.s).join(',') + ')');
+    t.diagnostic('POSFIX_TIMING daily_ms=' + daily.ms);
+    assert.equal(daily.reads.filter((x) => x.s !== 200).length, 0, 'لا قراءةَ فاشلة: ' + JSON.stringify(daily.reads.map((x) => x.s)));
+    assert.ok(await find('saveRounds'));
+    const dayIn = await p.evaluate(([day]) => { const r = window.__posfix.state.rounds; return { pMig: r.__pMig, day: JSON.stringify(r[day].d.map((x) => x.zones.length)), n: Object.keys(r).filter((k) => /^\d{4}-\d+-\d+/.test(k)).length }; }, [today]);
+    assert.equal(dayIn.pMig, 2); assert.equal(dayIn.n, 26 + open.days.length, 'كلُّ أيام النسخة (الحيّةُ والمؤرشفة) في الصفحة'); assert.equal(dayIn.day, JSON.stringify(R0[today].d.map((x) => x.zones.length)));
+    /* والصفحةُ تعرض جولةَ اليوم: تبويبُ «الجولات اليومية» — الموقعُ النشط طابقُ النسخة ومصلياتُها برموزها */
+    const code = R0[today].d[0].zones[0].code;
+    await p.getByText('الجولات اليومية', { exact: true }).first().click();
+    let shown = '';
+    for (let i = 0; i < 40 && !(shown.includes(code) && /الموقع النشط: TEST_ONLY . طابق د6 1/.test(shown)); i++) { await p.waitForTimeout(250); shown = AR(await p.evaluate(() => document.body.innerText.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/\s+/g, ' '))); }
+    assert.match(shown, /الموقع النشط: TEST_ONLY . طابق د6 1/, 'الجولات اليومية: طابقُ النسخة');
+    assert.ok(shown.includes('مصلى ' + code + ' '), 'ومصلياتُها برموزها (' + code + '): ' + shown.slice(shown.indexOf('الموقع النشط'), shown.indexOf('الموقع النشط') + 300));
+    /* الحفظُ من الصفحة (دالّتُها saveRounds — طريقُ الواجهة نفسُه إلى /api/save) */
+    let n0 = saves.length;
+    const sv = await p.evaluate(async ([day]) => { const c = window.__posfix, live = JSON.parse(JSON.stringify(c._opRead('bassam_rounds_v1'))); live[day].d[0].zones[0].name += ' (حُفظ بعد الاستيراد)'; const r = await c.saveRounds(live); return r && r.ok; }, [today]);
+    await p.waitForTimeout(800);
+    const dailySaves = saves.slice(n0);
+    assert.ok(dailySaves.length >= 1 && dailySaves.every((x) => x.s === 200 && x.ok === 1), 'الحفظُ في «المتابعة اليومية» 200: ' + JSON.stringify(dailySaves) + ' · ' + sv);
+    assert.ok(dailySaves.some((x) => x.keys.includes('bsdept:' + B + ':bassam_rounds_v1')), JSON.stringify(dailySaves));
+    const after = await p.evaluate(async ([d, day]) => (await (await fetch('/api/operations/read?keys=' + encodeURIComponent('bsdept:' + d + ':bassam_rounds_v1'))).json()).resources['bsdept:' + d + ':bassam_rounds_v1'][day].d[0].zones[0].name, [B, today]);
+    assert.match(after, /حُفظ بعد الاستيراد/);
+    /* «التقرير اليومي»: يفتح بتقريره ويقرأ الجولات بلا فشل */
+    const dr = await timed('#/dreport', () => { const m = document.querySelector('main'); if (!m) return false; for (const el of m.querySelectorAll('*')) { const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let f = fk ? el[fk] : null; while (f) { const n = f.stateNode; for (const c of [n, n && n.logic]) if (c && typeof c.rpSave === 'function') { const v = c.rpLoad(); return !!v && Object.keys(v).length > 0; } f = f.return; } } return false; });
+    stamp('«التقرير اليومي» ' + dr.ms + ' ms · ' + dr.reads.length + ' قراءة (' + dr.reads.map((x) => x.s).join(',') + ')');
+    t.diagnostic('POSFIX_TIMING dreport_ms=' + dr.ms);
+    assert.equal(dr.reads.filter((x) => x.s !== 200).length, 0, 'لا قراءةَ فاشلة: ' + JSON.stringify(dr.reads.map((x) => x.s)));
+    assert.ok(await find('rpSave'));
+    const want = JSON.parse(f.data.bassam_dreport_v1);
+    const drKeys = await p.evaluate(() => Object.keys(window.__posfix.rpLoad()));
+    assert.deepEqual(drKeys.sort(), Object.keys(want).sort(), 'التقريرُ اليومي بأيامه كما في النسخة');
+    n0 = saves.length;
+    await p.evaluate(async () => { const c = window.__posfix, v = c.rpLoad(), k = Object.keys(v).filter((x) => x.indexOf('m:') !== 0)[0]; v[k] = { ...v[k], created: (v[k].created || 1795000000000) + 1 }; return await c.rpSave(v); });   /* تعديلٌ حقيقي في يومٍ من التقرير */
+    await p.waitForTimeout(800);
+    const drSaves = saves.slice(n0);
+    assert.ok(drSaves.length >= 1 && drSaves.every((x) => x.s === 200 && x.ok === 1), 'الحفظُ في «التقرير اليومي» 200: ' + JSON.stringify(drSaves));
+    /* «الخطة التشغيلية» بعد الاستيراد: زمنُ التحميل */
+    const plan = await timed('#/plan', () => /الموقع النشط:\s*TEST_ONLY/.test(((document.querySelector('main') || document.body).innerText || '').replace(/[‎‏‪-‮⁦-⁩]/g, '')));
+    stamp('«الخطة التشغيلية» ' + plan.ms + ' ms · ' + plan.reads.length + ' قراءة (' + plan.reads.map((x) => x.s).join(',') + ')');
+    t.diagnostic('POSFIX_TIMING plan_ms=' + plan.ms);
+    assert.equal(plan.reads.filter((x) => x.s !== 200).length, 0, 'لا قراءةَ فاشلة في الخطة: ' + JSON.stringify(plan.reads.map((x) => x.s)));
+    assert.deepEqual(s.errs, [], 'لا أخطاء صفحة');
+    await s.ctx.close();
+  } finally { await b.close(); await lab.close(); if (dir) try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* مؤقت */ } }
 });

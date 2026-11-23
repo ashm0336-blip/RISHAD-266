@@ -84,7 +84,12 @@ export const NOT_TRANSFERRED = {
   'bassam_notif_dev_v1:TEST_ONLY_u1': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u2': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u3': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u4': 'null',
   'bassam_notif_dev_v1:TEST_ONLY_u5': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u6': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u7': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u8': 'device',
 };
-export async function oldFile({ scale = 1, small = false, images = true, planRows = 1 } = {}) {
+/* V7 · د6 (posfix): مفاتيحُ الأيام في وثيقة الجولات (لا __pMig ولا m:y-m) */
+export const isDay = (k) => /^\d{4}-\d{1,2}-\d{1,2}(?:-.+)?$/.test(k);
+export const dayKeys = (doc) => Object.keys(doc).filter(isDay);
+export async function oldFile({ scale = 1, small = false, images = true, planRows = 1, openDays = 0, open = null } = {}) {
+  /* open: { y, m, days: [...] } — أيامٌ حيّة في شهرٍ بعينه (اختبارُ المتصفح: الشهرُ الجاري ليوم الصفحة) · openDays: n ⇒ 1448-6 من 1 إلى n */
+  const O = open || (openDays ? { y: 1448, m: 6, days: Array.from({ length: openDays }, (_, i) => i + 1) } : null), nOpen = O ? O.days.length : 0;
   const docs = await legacyDocs(), J = JSON.stringify;
   const nImg = small ? 2 : 10 * scale, days = small ? 3 : 26 * scale, dayChars = small ? 6000 : 318000, planChars = small ? 9000 : 1150000, nfChars = small ? 3000 : 228000;
   const sizes = [1.48, 1.65, 1.85, 2.05, 2.25, 2.45, 2.7, 3.0, 3.37].map((m) => Math.round(m * 1e6));
@@ -103,9 +108,14 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
   const month = Object.keys(docs.bassam_plan_v1.months)[0];
   const plan = { ...docs.bassam_plan_v1, floors, months: { [month]: { ...docs.bassam_plan_v1.months[month], d: small ? floors : floors.slice(0, 1) } } };
   /* الجولات: يومٌ = لقطةُ طوابق — 26 يوماً ≈ 8.4MB */
-  const firstDay = Object.keys(docs.bassam_rounds_v1)[0], baseDay = docs.bassam_rounds_v1[firstDay], rounds = {}, dz = small ? 2 : 40;
-  for (let n = 0; n < days; n++) {
-    const key = '1448-' + pad2(1 + Math.floor(n / 29)) + '-' + pad2(1 + (n % 29));
+  /* V7 · د6 (posfix): جذرُ الجولات كما في ملف Production المقيس — الحقلُ الثابت __pMig أولُ مفتاح (019p3 fixed)، ثم علاماتُ الأشهر m:y-m، ثم الأيام.
+     كان المولّدُ بلا __pMig فلم يلتقط اختبارٌ أن الدفعاتِ (019g rsiSlice) ترقّم المداخلَ من الصفر فوق موضع الحقل الثابت ⇒ 400 operations-member-position في كل قراءة.
+     openDays/open: أيامٌ في شهرٍ مفتوحٍ صراحةً (m:<y>-<m> {mo:1}) تبقى في الملف الحيّ مع __pMig — كأيام 1448-5/6 في الملف الحقيقي — وغيرُها يُؤرشف */
+  const firstDay = Object.keys(docs.bassam_rounds_v1).filter(isDay)[0], baseDay = docs.bassam_rounds_v1[firstDay], dz = small ? 2 : 40;
+  const rounds = { __pMig: 2, 'm:1448-5': { ap: 0 }, 'm:1448-6': { ap: 0 } };
+  if (O) rounds['m:' + O.y + '-' + O.m] = { mo: 1 };
+  for (let n = 0; n < days + nOpen; n++) {
+    const key = n < days ? '1448-' + pad2(1 + Math.floor(n / 29)) + '-' + pad2(1 + (n % 29)) : O.y + '-' + O.m + '-' + O.days[n - days];
     rounds[key] = { ...baseDay, t: 1795000000000 + n * 86400000, d: [0, 1].map((f) => ({ ...floors[f % floors.length], iid: undefined, imgW: undefined, imgH: undefined,
       zones: Array.from({ length: dz }, (_, z) => ({ uid: 'tstd6r' + f + 'x' + z, code: 'D6R' + f + '-' + z, name: 'TEST_ONLY · مصلى جولة ' + (z + 1), d: pathD(Math.floor(dayChars / (2 * dz)) - 200, n * 17 + f * 5 + z), cx: z, cy: f, area: 50 + z, emp: [], fst: z % 3 ? 'open' : 'closed', fAt: 1795000000000 + n * 86400000 + z,
         /* V7 · د6 (schemafix): «القراءة بالسعة» كما يكتبها Production: {n, cap} · {n: null, cap: 0, p} حين لا سعة · رقمٌ قديم (count المنقول إلى fajr) */
@@ -115,7 +125,7 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
       mvLog: [{ t: '07:00', kind: 'gates', key: 'tst_demo_e11', tok: 'tst_demo_e11', fromI: -1, toI: 0, rm: !!(n % 2), fromLbl: n % 2 ? 'TEST_ONLY موقع' : '', toLbl: n % 2 ? '' : 'TEST_ONLY موقع', by: 'TEST_ONLY', name: 'TEST_ONLY', src: 'dr' }] };
   }
   /* ما يُسقطه الاستيراد من حقول الموارد (019g rsiFields) — بعدده المتوقَّع، حسبما وُلِّد أعلاه */
-  const pz = floors.length * zonesPer, mz = (small ? floors.length : 1) * zonesPer, rz = days * 2 * dz;
+  const pz = floors.length * zonesPer, mz = (small ? floors.length : 1) * zonesPer, rz = (days + nOpen) * 2 * dz;
   const drops = {
     'bassam_plan_v1 · floors[].zones[].nNow|transient': pz, 'bassam_plan_v1 · floors[].zones[].capNow|transient': pz, 'bassam_plan_v1 · floors[].zones[].share|transient': pz,
     'bassam_plan_v1 · floors[].zones[].shareName|transient': pz - 1, 'bassam_plan_v1 · floors[].zones[].shareName|field': 1,
@@ -236,7 +246,8 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
     sliceStep: (i) => post({ phase: 'slice', i, reason }),
     inventory: async () => { const q = new URLSearchParams({ kind: scope.kind, departments: '[]' }); if (scope.kind === 'dept') q.set('dept', scope.departmentId); return (await T.call('/api/backup/restore?' + q, { ck: who.ck })).j; },
     inspect: async () => { const inv = await P.inventory(); return post({ phase: 'inspect', scope, mode, reason, base: inv && inv.base, legacyConsent: false }); },
-    commit: (base, extra = {}) => post({ phase: 'commit', scope, mode, reason, base, legacyConsent: true, ...extra }),
+    /* V7 · د6 (posfix): كلُّ اعتمادٍ ناجح في كل اختبارٍ يمرّ بهذا السائق يتبعه «اقرأ كلَّ شيء» (readBack) — نجاحُ الاعتماد وحده لا يثبت أن البيانات تُقرأ */
+    commit: async (base, extra = {}) => { const r = await post({ phase: 'commit', scope, mode, reason, base, legacyConsent: true, ...extra }); if (r.status === 200 && r.j && r.j.ok) await readAll(T, scope); return r; },
     cancel: () => post({ op: 'cancel' }),
     /* المسارُ كلُّه: ⇒ { begin, inspect, commit } (يتوقّف عند أول رفض) */
     async run({ onPart } = {}) {
@@ -268,4 +279,45 @@ export function snapshot(DB) {
 }
 export const changed = (a, b) => Object.keys({ ...a, ...b }).filter((t) => a[t] !== b[t]);
 export const readOps = async (T, who, dept, names) => { const r = await T.call('/api/operations/read?keys=' + encodeURIComponent(names.map((n) => 'bsdept:' + dept + ':' + n).join(',')), { ck: who.ck }); assert.equal(r.status, 200, r.t.slice(0, 200)); return Object.fromEntries(Object.entries(r.j.resources).map(([k, v]) => [k.split(':').pop(), v])); };
+/* V7 · د6 (posfix): «اقرأ كلَّ شيءٍ بعد الاستيراد» — نجاحُ الاعتماد لا يثبت أن البيانات تُقرأ (ملفُّ Production: الاعتمادُ 200 ثم كلُّ قراءةٍ للجولات 400 operations-member-position).
+   كلُّ موردٍ تشغيليٍّ للإدارة في القاعدة يُقرأ وحده عبر /api/operations/read بـ200 (بمدير المنصة — لا إسقاطَ خصوصية)، ثم:
+   · صفوفُه في القاعدة هي حرفاً ما يكتبه ocConvert للوثيقة كلِّها (القراءةُ نفسُها تفحص member-position · noncanonical-rows — وهنا يُعاد الفحصُ على الصفوف مباشرةً)؛
+   · وإن أُعطيت النسخةُ (want: { المورد: الوثيقة }) طابقها مفتاحاً مفتاحاً وبترتيب مفاتيحها (الجولاتُ: الحيُّ + أرشيفُه) ⇒ { المورد: الوثيقة المقروءة } */
+export async function readBack(T, dept, want = null, who = T.su, { nonEmpty = true } = {}) {
+  const W = T.lab.W, res = T.DB.q('SELECT DISTINCT resource r FROM ops_nodes WHERE department_id=?1 ORDER BY resource', dept).map((x) => x.r), out = {};
+  if (nonEmpty) assert.ok(res.length, 'للإدارة ' + dept + ' مواردُ تشغيلية بعد الاستيراد');
+  for (const r of res) {
+    const k = 'bsdept:' + dept + ':' + r, g = await T.call('/api/operations/read?keys=' + encodeURIComponent(k), { ck: who.ck });
+    assert.equal(g.status, 200, 'بعد الاستيراد يُقرأ ' + r + ' بـ200: ' + g.t.slice(0, 200));
+    out[r] = g.j.resources[k];
+    const info = W.opInfo(k), tables = W.ocPhysicalTables(info.prepared), phys = {};
+    for (const t of Object.keys(tables)) phys[t] = T.DB.q('SELECT ' + tables[t].join(',') + ' FROM ' + t + ' WHERE department_id=?1 AND resource=?2', dept, r).map((x) => ({ ...x }));
+    const dom = W.ocFromPhysical(info.prepared, dept, r, phys), inf = W.ocInflate(info.prepared, dom);
+    assert.deepEqual(inf.present ? inf.value : null, out[r], r + ': الصفوفُ المخزَّنة تُفكّ إلى ما تردّه القراءة');
+  }
+  if (want) for (const [r, doc] of Object.entries(want)) {
+    const got = r === 'bassam_rounds_v1' ? { ...(out.bassam_rounds_arc_v1 || {}), ...(out[r] || {}) } : out[r];
+    assert.deepEqual(got, doc, r + ' بعد الاستيراد كما في النسخة');
+    if (r === 'bassam_rounds_v1') {
+      /* الترتيب: الحيُّ (الحقلُ الثابت ثم العلاماتُ ثم أيامُه) ثم أيامُ الأرشيف — كلٌّ بترتيب النسخة */
+      const live = Object.keys(out[r] || {}), order = Object.keys(doc);
+      assert.deepEqual(live, order.filter((x) => live.includes(x)), 'الجولات الحيّة بترتيب النسخة: ' + live.slice(0, 6).join(' '));
+      assert.deepEqual(Object.keys(out.bassam_rounds_arc_v1 || {}), order.filter((x) => !live.includes(x)), 'أرشيفُ الجولات بترتيب النسخة');
+    } else if (doc && typeof doc === 'object' && !Array.isArray(doc)) assert.deepEqual(Object.keys(got), Object.keys(doc), r + ': ترتيبُ المفاتيح كما في النسخة');
+  }
+  return out;
+}
+/* بعد كل اعتمادٍ ناجح (السائقُ protocol ومسارُ /api/backup/restore في الاختبارات): كلُّ إدارةٍ في النطاق — والنسخةُ الشاملة: كلُّ إدارةٍ لها صفوف — تُقرأ كلُّها.
+   مختبرٌ بلا قاعدةٍ ظاهرة (اختبارُ الذاكرة يسوق العاملَ في عمليةٍ أخرى) لا يُقرأ هنا. */
+export async function readAll(T, scope) {
+  if (!T || !T.DB || !T.lab || !T.su) return;
+  const depts = scope && scope.kind === 'dept' ? [scope.departmentId] : T.DB.q('SELECT DISTINCT department_id d FROM ops_nodes ORDER BY d').map((x) => x.d);
+  for (const d of depts) await readBack(T, d, null, T.su, { nonEmpty: false });
+}
+/* V7 · د6 (posfix): ما يُتوقَّع أن يُقرأ من نسخةٍ قديمة: كلُّ موردٍ تشغيلي فيها بقيمة — بلا الحقول التي يُسقطها الاستيراد ويذكرها (DROPPED_FIELDS) وبعد إعادة ربط معرّف إدارة المصدر */
+export function wantOf(T, file, dept) {
+  const out = {};
+  for (const [k, v] of Object.entries(file.data)) if (v !== null && T.lab.W.opInfo('bsdept:' + dept + ':' + k)) out[k] = withoutDropped(JSON.parse(v.split('"mgr:' + SRC_DEPT + '"').join('"mgr:' + dept + '"')));
+  return out;
+}
 export const readImage = async (T, who, id) => T.call('/api/img/' + id, { ck: who.ck });

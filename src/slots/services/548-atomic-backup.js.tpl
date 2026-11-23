@@ -294,14 +294,25 @@
       var dayKids = kids.filter(function (r) { return owner[r.row_key]; }), sharedKids = kids.filter(function (r) { return !owner[r.row_key]; });
       var plan2 = groups(JSON.stringify(bucket['']).length, dayKids.map(function (r) { return JSON.stringify(bucket[r.row_key]).length; }));
       if (!plan2) { if (over >= 0 && !big) big = name + ' › ' + dayKids[over].member_key; return; }
+      /* V7 · د6 (posfix): الحقلُ الثابت القياسي للجذر (__pMig: عمودُ <حقل>_position في صفّ كيانه) عضوٌ مشترك — المشتركةُ بمواضعها ثم الأيام */
+      var head = sharedKids.map(function (r) { return { p: r.position, k: r.row_key }; }), fix = {};
+      tables.forEach(function (t) {
+        if (t === 'ops_nodes') return;
+        (bucket[''][t] || []).forEach(function (r) {
+          if (r.row_key !== root.row_key && !/^\/p:\d+$/.test(String(r.row_key).slice(root.row_key.length))) return;
+          Object.keys(r).forEach(function (c) { var m = /^(.+)_position$/.exec(c); if (m && r[c] != null && r[m[1] + '_kind']) head.push({ p: r[c], f: [t, r.row_key, c] }); });
+        });
+      });
+      head.sort(function (x, y) { return x.p - y.p; });
       var texts2 = plan2.map(function (idx) {
         var rows = {}, pos = {};
-        sharedKids.forEach(function (r, i) { pos[r.row_key] = i; });
-        idx.forEach(function (i, n) { pos[dayKids[i].row_key] = sharedKids.length + n; });
+        head.forEach(function (h, i) { if (h.k != null) pos[h.k] = i; else (fix[h.f[0] + '\u0000' + h.f[1]] = fix[h.f[0] + '\u0000' + h.f[1]] || {})[h.f[2]] = i; });
+        idx.forEach(function (i, n) { pos[dayKids[i].row_key] = head.length + n; });
         tables.forEach(function (t) {
           rows[t] = (bucket[''][t] || []).slice();
           idx.forEach(function (i) { rows[t] = rows[t].concat(bucket[dayKids[i].row_key][t] || []); });
           if (t === 'ops_nodes') rows[t] = rows[t].map(function (r) { return Object.prototype.hasOwnProperty.call(pos, r.row_key) ? Object.assign({}, r, { position: pos[r.row_key] }) : r; });
+          else rows[t] = rows[t].map(function (r) { var f = fix[t + '\u0000' + r.row_key]; return f ? Object.assign({}, r, f) : r; });
         });
         return JSON.stringify({ version: entry.version, scope: entry.scope, resource: entry.resource, rows: rows });
       });

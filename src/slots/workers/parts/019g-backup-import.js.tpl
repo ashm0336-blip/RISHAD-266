@@ -104,13 +104,16 @@ async function rsiSlice(env, A, request, id, M, b) {
     var dom = ocConvert(info.prepared, info.dept, info.resource, doc, true), shared = 0, root = null, tables = ocPhysicalTables(info.prepared);
     doc = null;
     Object.keys(dom.rows).forEach(function (t) { dom.rows[t].forEach(function (r) { if (r.parent_key == null) root = r.row_key; }); });
-    /* المواضعُ متّصلةٌ من الصفر كما يشترط المرمِّز: المشتركةُ أولاً (هي هي في كل دفعة) ثم الأيامُ بترتيب وصولها على مجموع الدفعات */
-    var kids = [];
-    Object.keys(dom.rows).forEach(function (t) { dom.rows[t].forEach(function (r) { if (r.parent_key === root && r.member_key != null) kids.push(r); }); });
-    kids.sort(function (x, y) { return x.position - y.position; });
+    /* المواضعُ متّصلةٌ من الصفر كما يشترط المرمِّز: المشتركةُ أولاً (هي هي في كل دفعة) ثم الأيامُ بترتيب وصولها على مجموع الدفعات.
+       V7 · د6 (posfix): أعضاءُ الجذر كلُّهم — لا الصفوفُ وحدها: الحقلُ الثابت القياسي (__pMig في الجولات وأرشيفها · 019p3 fixed) لا صفَّ له، موضعُه عمودٌ
+       في صفّ الجذر (أو في صفّ تفاصيله /p:n) — rsiMembers. كان يبقى على موضعه في الدفعة (0) والمداخلُ تُرقَّم من 0 فوقه ⇒ صفوفٌ لا تُقرأ (member-position).
+       الآن هي حرفاً ما يكتبه ocConvert للوثيقة المجمَّعة كلِّها (المشتركةُ بترتيبها ثم الأيام) — يثبته اختبارُ (٢٠). */
     if (rx) {
-      kids.forEach(function (r) { if (!rx.test(r.member_key)) r.position = shared++; });
-      kids.forEach(function (r) { if (rx.test(r.member_key)) r.position = shared + (before[pd.k] || 0) + mine++; });
+      var kids = rsiMembers(info.prepared.resources[info.resource].spec, dom, root);
+      /* حقلٌ ثابتٌ قياسي يطابق نمطَ الدفعات لا يأتي في كل دفعة وصفُّ الجذر واحدٌ لها كلِّها ⇒ لا يُقسم المورد بهذا النمط (لا موردَ اليوم كذلك — حارسٌ لا سلوك) */
+      kids.forEach(function (m) { if (m.scalar && rx.test(m.key)) throw rsError('import-slice-target', 409); });
+      kids.forEach(function (m) { if (!rx.test(m.key)) m.at(shared++); });
+      kids.forEach(function (m) { if (rx.test(m.key)) m.at(shared + (before[pd.k] || 0) + mine++); });
     }
     var phys = ocPhysicalRows(info.prepared, dom);
     dom = null;
@@ -124,6 +127,19 @@ async function rsiSlice(env, A, request, id, M, b) {
   });
   st.push(D.prepare('INSERT OR REPLACE INTO ' + T + ' SELECT ?1,?2,?3,?4,?5 WHERE EXISTS(SELECT 1 FROM ' + T + " WHERE snapshot_id=?1 AND domain='meta')").bind(id, 'sr', '', b.i, JSON.stringify(out)));
   await env.DB.batch(st);
+}
+/* V7 · د6 (posfix): أعضاءُ جذر الخريطة في صفوف المرمِّز (ocConvert) بمواضعها — كما يعدّها ocInflate عند القراءة حرفاً:
+   صفٌّ ابنٌ للجذر بمفتاح عضو (مدخلٌ · أو حقلٌ ثابتٌ غيرُ قياسي) موضعُه r.position؛ وحقلٌ ثابتٌ قياسيٌّ حاضر (kind ≠ 0) موضعُه عمودُ <الحقل>_position
+   في صفّ الجذر أو صفّ تفاصيله (fieldSpecs). ⇒ [{ key, pos, scalar, at(n) }] مرتّبةً بالموضع. */
+function rsiMembers(spec, dom, root) {
+  var out = [];
+  Object.keys(dom.rows).forEach(function (t) { dom.rows[t].forEach(function (r) { if (r.parent_key === root && r.member_key != null) out.push({ key: r.member_key, pos: r.position, scalar: false, at: function (n) { r.position = n; } }); }); });
+  Object.keys(spec.fields).forEach(function (f) {
+    if (spec.fields[f].kind !== 'scalar') return;
+    var fs = spec.fieldSpecs[f], key = fs === spec ? root : root + '/p:' + spec.segments.indexOf(fs), c = ocField(f), row = (dom.rows[fs.table] || []).filter(function (r) { return r.row_key === key; })[0];
+    if (row && row[c + '_kind'] !== 0) out.push({ key: f, pos: row[c + '_position'], scalar: true, at: function (n) { row[c + '_position'] = n; } });
+  });
+  return out.sort(function (x, y) { return x.pos - y.pos; });
 }
 /* V7 · د6 (schemafix): الاستيرادُ لا يُرفض كلُّه بسبب حقل. وثيقةُ موردٍ تشغيلي من نسخةٍ قديمة تُطابَق بمخطّطها قبل الترميز مباشرةً:
    حقلٌ لا يعرفه المخطّط · أو قيمةٌ بشكلٍ لا يحمله — يُزال من الوثيقة ويُسجَّل (المورد · المسار · الحقل · العدد · وكم منها بقيمة)، والباقي يُنقل كما هو.

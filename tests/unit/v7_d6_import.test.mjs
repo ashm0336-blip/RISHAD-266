@@ -11,7 +11,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { hasSystem } from './harness.mjs';
 import { internals } from './internals.mjs';
-import { target, oldFile, sizeOf, protocol, staged, snapshot, changed, readOps, readImage, NOT_TRANSFERRED, LAB, SEG, withoutDropped, fieldDrops, fieldDropsOf, remapOf, nfDropsOf, SRC_DEPT } from './v7_d6_import_fx.mjs';
+import { target, oldFile, sizeOf, protocol, staged, snapshot, changed, readOps, readImage, NOT_TRANSFERRED, LAB, SEG, withoutDropped, fieldDrops, fieldDropsOf, remapOf, nfDropsOf, SRC_DEPT, readBack, readAll, wantOf, dayKeys } from './v7_d6_import_fx.mjs';
 
 const B = 'TEST_ONLY_B', A = 'TEST_ONLY_A', SCOPE = { kind: 'dept', departmentId: B }, LIMIT = 8 * 1024 * 1024;
 const need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport', 'custody') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات والمهام والتشغيل والتقرير والعهد (بياناتُ العرض المصدر)' };
@@ -21,6 +21,8 @@ after(() => { console.log = quiet; });
 /* مطابقةُ ما في القاعدة بما في الملف: مفتاحاً مفتاحاً وصورةً صورة */
 async function compare(T, who, file, dept = B) {
   const W = T.lab.W, names = Object.keys(file.data), ops = names.filter((k) => file.data[k] !== null && W.opInfo('bsdept:' + dept + ':' + k));
+  /* V7 · د6 (posfix): كلُّ موردٍ تشغيليٍّ للإدارة يُقرأ وحده بـ200 · صفوفُه قانونية · ويطابق النسخةَ مفتاحاً مفتاحاً وبترتيبها */
+  await readBack(T, dept, wantOf(T, file, dept));
   const got = await readOps(T, who, dept, ops.concat(['bassam_rounds_arc_v1']));
   for (const k of ops) {
     /* V7 · د6 (schemafix): حقولُ المصلى العابرة/غير المعروفة (nNow · capNow · share · shareName) يُسقطها الاستيراد ويذكرها — وكلُّ ما سواها كما في النسخة */
@@ -107,7 +109,7 @@ async function heavy(scale, t, { inline = false } = {}) {
     if (scale === 1) {
       /* نسخةُ ما قبل الاستيراد مع الأحجام الكبيرة: استيرادٌ ثانٍ فوق إدارةٍ تحمل الجولاتِ كلَّها (≈8.4MB) بنسخةٍ معدَّلة ⇒ اللقطةُ الخادمية تحمل ما كان قبله كاملاً */
       const rounds = JSON.parse(file.data.bassam_rounds_v1);
-      for (const day of Object.values(rounds)) { day.t += 1; for (const fl of day.d) for (const z of fl.zones) z.name += ' (معدَّل)'; }
+      for (const day of dayKeys(rounds).map((k) => rounds[k])) { day.t += 1; for (const fl of day.d) for (const z of fl.zones) z.name += ' (معدَّل)'; }
       const v2 = { ...file, data: { ...file.data, bassam_rounds_v1: JSON.stringify(rounds) } }, t2 = Date.now(), second = await protocol(T, T.su, v2, { scope: SCOPE }).run();
       assert.equal(second.commit && second.commit.status, 200, JSON.stringify((second.commit || second.inspect).j).slice(0, 300));
       assert.equal(second.inspect.j.inspection.summary.imagesNew, 0); assert.equal(second.inspect.j.inspection.summary.imagesReused, 10, 'الصورُ الموجودة المطابقة يُعاد استعمالُها');
@@ -354,7 +356,7 @@ test('(٩) دفعاتُ المفتاح الكبير: بالترتيب · الم�
 
 /* نسخةٌ ثانية تختلف عن الأولى: يومٌ يُحذف، يومٌ يتغيّر، يومٌ جديد — لاستبدالٍ فوق بياناتٍ قائمة */
 function variant(file) {
-  const rounds = JSON.parse(file.data.bassam_rounds_v1), days = Object.keys(rounds), out = {};
+  const rounds = JSON.parse(file.data.bassam_rounds_v1), days = dayKeys(rounds), out = Object.fromEntries(Object.entries(rounds).filter(([k]) => !days.includes(k)));   /* V7 · د6 (posfix): الحقلُ الثابت والعلاماتُ تبقى */
   days.slice(1).forEach((d) => { out[d] = JSON.parse(JSON.stringify(rounds[d])); out[d].t += 7; out[d].d[0].zones[0].name += ' (معدَّل)'; });
   out['1448-2-20'] = JSON.parse(JSON.stringify(rounds[days[0]])); out['1448-2-20'].t += 99;
   return { ...file, data: { ...file.data, bassam_rounds_v1: JSON.stringify(out) } };
@@ -388,7 +390,7 @@ test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدف�
     const names = ['bassam_rounds_v1', 'bassam_rounds_arc_v1'], da = await readOps(A, A.su, B, names), dz = await readOps(Z, Z.su, B, names);
     assert.equal(JSON.stringify(dz), JSON.stringify(da), 'الوثيقتان بترتيب أعضائهما');
     const arc = Object.keys(dz.bassam_rounds_arc_v1);
-    assert.equal(arc.includes(Object.keys(JSON.parse(file.data.bassam_rounds_v1))[0]), false, 'يومٌ قائم ليس في النسخة الجديدة يزول (استبدال — كالمسار الواحد)'); assert.ok(arc.includes('1448-2-20'), 'واليومُ الجديد أُضيف');
+    assert.equal(arc.includes(dayKeys(JSON.parse(file.data.bassam_rounds_v1))[0]), false, 'يومٌ قائم ليس في النسخة الجديدة يزول (استبدال — كالمسار الواحد)'); assert.ok(arc.includes('1448-2-20'), 'واليومُ الجديد أُضيف');
     /* لقطةُ ما قبل الاستيراد: صفوفُ الموردين القائمة نُسخت داخل القاعدة تحت معرّف لقطة هذا الاعتماد */
     const snap = Z.DB.q("SELECT table_key k, COUNT(*) n FROM restore_preimage WHERE snapshot_id=?1 AND domain='operations-sql' GROUP BY table_key", done.j.snapshot), total = snap.reduce((n, r) => n + r.n, 0);
     const manifest = Z.DB.q("SELECT SUM(row_count) n FROM restore_snapshot_manifest WHERE snapshot_id=?1 AND domain='operations-sql'", done.j.snapshot)[0].n;
@@ -423,7 +425,7 @@ test('(١٢) حدُّ الوثيقة كلِّها يُحسب على مجموع �
   const file = await oldFile({ small: true }), T = await target();
   try {
     /* ثلاثةُ أيام، في كلٍّ منها 1700 معرّفَ صورةٍ مختلفاً (نصاً في اسم مصلى): كلُّ دفعةٍ 1700، والمجموع 5100 */
-    const rounds = JSON.parse(file.data.bassam_rounds_v1), days = Object.keys(rounds);
+    const rounds = JSON.parse(file.data.bassam_rounds_v1), days = dayKeys(rounds);
     days.forEach((d, n) => { rounds[d].d[0].zones[0].name = 'TEST_ONLY ' + Array.from({ length: 1700 }, (_, i) => 'img_cap' + n + '_x' + i).join(' '); });
     const heavy = { ...file, data: { ...file.data, bassam_rounds_v1: JSON.stringify(rounds) } }, base = snapshot(T.DB);
     const P = protocol(T, T.su, heavy, { scope: SCOPE, slice: 1000, sliceTarget: 30000 }), out = await P.run();
@@ -484,6 +486,7 @@ test('(١٧) التنبيهات: استيرادُ الإدارة واستعاد�
     assert.equal(ins.status, 200, 'قديم فحص ' + mode + ': ' + JSON.stringify(ins.j).slice(0, 300));
     const com = await T.call('/api/backup/restore', { ck: T.su.ck, body: { ...body, base: ins.j.inspection.base, phase: 'commit' } });
     assert.equal(com.status, 200, 'قديم اعتماد ' + mode + ': ' + JSON.stringify(com.j).slice(0, 300));
+    await readAll(T, SCOPE);   /* V7 · د6 (posfix): وبعد الاستعادة يُقرأ كلُّ شيء */
   };
   for (const [route, run] of [['/api/backup/import', viaNew], ['/api/backup/restore', viaOld]]) {
     const T = await target();
@@ -731,7 +734,7 @@ test('(١٨) الأشكالُ كما يكتبها Production: pc بالكائن 
   const file = await oldFile({ small: true }), A = await target(), Z = await target(), want = fieldDrops(file);
   try {
     const rounds = JSON.parse(file.data.bassam_rounds_v1), plan = JSON.parse(file.data.bassam_plan_v1);
-    assert.ok(Object.values(rounds).some((d) => d.d.some((f) => f.zones.some((z) => z.pc && z.pc.fajr && typeof z.pc.fajr === 'object'))), 'الملفُ يحمل القراءةَ بالسعة');
+    assert.ok(dayKeys(rounds).map((k) => rounds[k]).some((d) => d.d.some((f) => f.zones.some((z) => z.pc && z.pc.fajr && typeof z.pc.fajr === 'object'))), 'الملفُ يحمل القراءةَ بالسعة');
     assert.ok(plan.floors.every((f) => f.zones.every((z) => 'share' in z && 'shareName' in z && 'nNow' in z && 'capNow' in z)), 'والحقولَ العابرة على كل مصلى في المخطط');
     for (const [T, opt, tag] of [[A, { scope: SCOPE, slice: false }, 'طلبٌ واحد'], [Z, { scope: SCOPE, slice: 1000, sliceTarget: 5000 }, 'دفعات']]) {
       const base = snapshot(T.DB), P = protocol(T, T.su, file, opt), out = { begin: await P.begin() };
@@ -792,6 +795,7 @@ test('(١٩) معرّفُ الإدارة المصدر غيرُ معرّف الو
         assert.equal(ins.status, 200, tag + ': ' + JSON.stringify(ins.j).slice(0, 400));
         const com = await T.call('/api/backup/restore', { ck: T.su.ck, body: { ...body, base: ins.j.inspection.base, phase: 'commit' } });
         assert.equal(com.status, 200, tag + ': ' + JSON.stringify(com.j).slice(0, 400));
+        await readBack(T, B, wantOf(T, strip, B));   /* V7 · د6 (posfix): بعد الاستعادة يُقرأ كلُّ شيء ويطابق النسخة */
         s = ins.j.inspection.summary;
       }
       ends.push(rowsOf(T));   /* قبل أي دخول (الدخولُ يكتب تنبيهَ «جهاز جديد») */
@@ -828,4 +832,98 @@ test('(١٩) معرّفُ الإدارة المصدر غيرُ معرّف الو
     } finally { await T.close(); }
   }
   assert.deepEqual(ends[1], ends[0], 'الدفعاتُ = الطلبُ الواحد صفاً بصف');
+});
+
+/* V7 · د6 (posfix · FIX_IMPORT3_D6): ملفُّ Production الحقيقي — جذرُ الجولات يبدأ بالحقل الثابت __pMig (019p3 fixed) ثم علاماتِ الأشهر ثم الأيام —
+   كان يُستورد بنجاح (الاعتمادُ 200) ثم تردّ كلُّ قراءةٍ للجولات 400 operations-member-position: الدفعاتُ (019g rsiSlice) ترقّم المداخلَ من 0 فوق موضع الحقل الثابت.
+   هنا: بعد الاستيراد يُقرأ كلُّ موردٍ تشغيليٍّ للإدارة بـ200، وصفوفُه هي ما يكتبه ocConvert للوثيقة كلِّها، ويطابق النسخةَ مفتاحاً مفتاحاً وبترتيبها —
+   (أ) بالحجم المقيس ودفعاتٍ تلقائية (أيامٌ حيّة في أكثر من دفعة مع __pMig) ثم حفظٌ في الجولات 200 · (ب) المسارُ الواحد والدفعاتُ و/api/backup/restore على النسخة نفسِها
+   (صفاً بصف بين المسارين) · (ج) استيرادٌ ثانٍ بالبناء نفسِه فوق الإدارة نفسِها (استبدالٌ كامل) يكتب الجولاتَ من جديد فتُقرأ. */
+test('(٢٠) [posfix] الحقلُ الثابت __pMig أولُ مفتاحٍ في جذر الجولات (كملف Production) ⇒ بعد الاستيراد يُقرأ كلُّ شيء بـ200 ويطابق النسخة — بالمسارين و/api/backup/restore', { timeout: 600000, ...need }, async (t) => {
+  const big = await oldFile({ openDays: 3 }), T = await target();
+  try {
+    assert.deepEqual(Object.keys(JSON.parse(big.data.bassam_rounds_v1)).slice(0, 4), ['__pMig', 'm:1448-5', 'm:1448-6', '1448-1-1'], 'جذرُ الجولات كملف Production: __pMig أولاً');
+    const P = protocol(T, T.su, big, { scope: SCOPE }), out = await P.run();
+    assert.equal(out.commit && out.commit.status, 200, JSON.stringify((out.commit || out.inspect || out.part || out.begin).j).slice(0, 300));
+    const live = P.parts.filter((p) => /^#bassam_rounds_v1#/.test(p.k) && p.t.includes('"1448-6-')).length;
+    assert.ok(P.sliceCount > 2 && live >= 2, 'أكثرُ من دفعة، والأيامُ الحيّة في دفعتين على الأقل (' + P.sliceCount + ' · ' + live + ')');
+    const t0 = Date.now(), got = await readBack(T, B, wantOf(T, big, B));
+    t.diagnostic('قراءةُ كلِّ موارد الإدارة بعد الاستيراد: ' + Object.keys(got).length + ' مورداً في ' + (Date.now() - t0) + ' ms');
+    assert.deepEqual(Object.keys(got.bassam_rounds_v1), ['__pMig', 'm:1448-5', 'm:1448-6', '1448-6-1', '1448-6-2', '1448-6-3'], 'الحيُّ: الحقلُ الثابت ثم العلامات ثم أيامُ الشهر المفتوح');
+    assert.equal(got.bassam_rounds_v1.__pMig, 2);
+    /* الحفظُ في الجولات بعد الاستيراد 200 (كان 400 مع الخلل) — والقراءةُ بعده كذلك */
+    const k = 'bsdept:' + B + ':bassam_rounds_v1', cur = (await T.call('/api/operations/read?keys=' + encodeURIComponent(k), { ck: T.su.ck })).j, doc = cur.resources[k];
+    doc['1448-6-2'].d[0].zones[0].name += ' (حُفظ بعد الاستيراد)';
+    const sv = await T.call('/api/save', { ck: T.su.ck, body: { uid: T.su.uid, requestId: 'TEST_ONLY_posfix_save', epoch: cur.epoch, set: { [k]: JSON.stringify(doc) }, del: [], base: cur.base } });
+    assert.equal(sv.status, 200, sv.t.slice(0, 300)); assert.equal(sv.j.ok, 1, sv.t.slice(0, 300));
+    assert.match((await readBack(T, B)).bassam_rounds_v1['1448-6-2'].d[0].zones[0].name, /حُفظ بعد الاستيراد/);
+    /* (ج) استبدالٌ كامل فوق الإدارة نفسِها بالنسخة نفسِها: يعيد كتابة الجولات كلِّها فتطابق النسخة */
+    const again = await protocol(T, T.su, big, { scope: SCOPE }).run();
+    assert.equal(again.commit && again.commit.status, 200, JSON.stringify((again.commit || again.inspect || again.begin).j).slice(0, 300));
+    await readBack(T, B, wantOf(T, big, B));
+  } finally { await T.close(); }
+  /* (ب) نسخةٌ صغيرة بالشكل نفسِه: المسارُ الواحد · الدفعات (مفروضة صغيرة) · /api/backup/restore — كلٌّ إلى منصةٍ جديدة */
+  const file = await oldFile({ small: true, images: false, openDays: 2 }), ends = [];
+  for (const how of ['single', 'sliced', 'restore']) {
+    const Z = await target();
+    try {
+      if (how === 'restore') {
+        const f = { ...file, data: Object.fromEntries(Object.entries(file.data).filter(([x]) => !(x in NOT_TRANSFERRED))), idbImages: {} };
+        const inv = (await Z.call('/api/backup/restore?kind=dept&departments=%5B%5D&dept=' + B, { ck: Z.su.ck })).j, body = { version: 1, uid: Z.su.uid, requestId: 'TEST_ONLY_posfix_rs', scope: SCOPE, mode: 'replace', reason: 'TEST_ONLY د6 posfix', backup: f, legacyConsent: true };
+        const ins = await Z.call('/api/backup/restore', { ck: Z.su.ck, body: { ...body, base: inv.base, phase: 'inspect' } });
+        assert.equal(ins.status, 200, 'restore فحص: ' + ins.t.slice(0, 300));
+        const com = await Z.call('/api/backup/restore', { ck: Z.su.ck, body: { ...body, base: ins.j.inspection.base, phase: 'commit' } });
+        assert.equal(com.status, 200, 'restore اعتماد: ' + com.t.slice(0, 300));
+      } else {
+        const P = protocol(Z, Z.su, file, { scope: SCOPE, slice: how === 'sliced' ? 1000 : false, sliceTarget: 5000 }), r = await P.run();
+        assert.equal(r.commit && r.commit.status, 200, how + ': ' + JSON.stringify((r.commit || r.inspect || r.part || r.begin).j).slice(0, 300));
+        if (how === 'sliced') assert.ok(Object.keys(P.slices).filter((x) => /^bassam_rounds_v1#/.test(x)).length >= 3, 'الجولاتُ قُسمت (' + Object.keys(P.slices).join(' ') + ')');
+      }
+      const got = await readBack(Z, B, wantOf(Z, file, B));
+      assert.deepEqual(Object.keys(got.bassam_rounds_v1).slice(0, 3), ['__pMig', 'm:1448-5', 'm:1448-6'], how);
+      ends.push(Object.fromEntries(Object.entries(rowsOf(Z)).filter(([n]) => /^ops_/.test(n))));
+    } finally { await Z.close(); }
+  }
+  assert.deepEqual(ends[1], ends[0], 'الدفعاتُ = المسارُ الواحد صفاً بصف (مواضعُ الأعضاء كلُّها)');
+  assert.deepEqual(ends[2], ends[0], '/api/backup/restore = المسارُ الواحد صفاً بصف');
+});
+
+/* V7 · د6 (posfix): صفوفٌ كتبها الخلل قبل الإصلاح (Preview إن جُرّب عليه الاستيراد) — شكلُها حرفاً كما كتبه 954914d (مقيسٌ على بنائه:
+   __pMig في صفّ الجذر بالموضع 0 والمداخلُ من 0 — المداخلُ مزاحةٌ واحداً إلى الأسفل عمّا يكتبه ocConvert). القراءةُ ترفضها كما هي (member-position — لا يُرخى الفحص)، و:
+   (أ) استبدالٌ كامل بالبناء المصلَح على دفعات (كملف Production: الجولاتُ ≥ 1.5M حرف ⇒ دفعاتٌ دائماً) لا يقرأ القائمَ من الأسرة فيكتبها من جديد وتُقرأ؛
+   (ب) المسارُ الواحد (نسخةٌ أصغر من حدّ الدفعات) يقرأ القائمَ فيُرفض 400 ولا يتغيّر شيء — ثم تصحيحُ SQL الموثّق (POSFIX_REPAIR_SQL) يعيد المواضعَ حرفاً،
+       محروسٌ (لا يمسّ إلا جذرَ جولاتٍ فيه التصادمُ بعينه · تكرارُه لا يغيّر شيئاً)، وبعده تُقرأ ويمرّ المسارُ الواحد. */
+const POSFIX_REPAIR_SQL = (d) => "UPDATE ops_nodes SET position = position + 1 WHERE department_id = '" + d + "' AND resource = 'bassam_rounds_v1' AND parent_key = '$' AND member_key IS NOT NULL" +
+  " AND EXISTS (SELECT 1 FROM ops_rounds WHERE department_id = '" + d + "' AND resource = 'bassam_rounds_v1' AND row_key = '$' AND f_____p_u4d_ig_kind <> 0 AND f_____p_u4d_ig_position = 0)" +
+  " AND (SELECT MIN(position) FROM ops_nodes WHERE department_id = '" + d + "' AND resource = 'bassam_rounds_v1' AND parent_key = '$' AND member_key IS NOT NULL) = 0";
+test('(٢١) [posfix] صفوفُ الخلل القائمة: القراءةُ ترفضها ولا تُرخى · استبدالٌ كامل بالدفعات يعيد كتابتها · والمسارُ الواحد يُرفض بلا أثر حتى تصحيح SQL المحروس', { timeout: 300000, ...need }, async () => {
+  const file = await oldFile({ small: true, images: false, openDays: 2 }), k = 'bsdept:' + B + ':bassam_rounds_v1';
+  const pos = (T) => T.DB.q("SELECT row_key,position FROM ops_nodes WHERE department_id=?1 AND resource='bassam_rounds_v1' ORDER BY row_key", B).map((r) => ({ ...r }));
+  for (const how of ['دفعات', 'طلبٌ واحد ثم SQL']) {
+    const T = await target();
+    try {
+      assert.equal((await protocol(T, T.su, file, { scope: SCOPE, slice: 1000, sliceTarget: 5000 }).run()).commit.status, 200);
+      const good = pos(T);
+      /* شكلُ الخلل حرفاً */
+      T.DB.exec("UPDATE ops_nodes SET position=position-1 WHERE department_id='" + B + "' AND resource='bassam_rounds_v1' AND parent_key='$' AND member_key IS NOT NULL");
+      const bad = await T.call('/api/operations/read?keys=' + encodeURIComponent(k), { ck: T.su.ck });
+      assert.equal(bad.status, 400, how + ': صفوفُ الخلل لا تُقرأ'); assert.equal(bad.j.err, 'operations-member-position', how);
+      if (how === 'دفعات') {
+        const r = await protocol(T, T.su, file, { scope: SCOPE, slice: 1000, sliceTarget: 5000 }).run();
+        assert.equal(r.commit && r.commit.status, 200, how + ': ' + JSON.stringify((r.commit || r.inspect || r.part || r.begin).j).slice(0, 300));
+      } else {
+        const before = snapshot(T.DB), mono = await protocol(T, T.su, file, { scope: SCOPE, slice: false }).run(), stop = mono.commit || mono.inspect;
+        assert.equal(stop.status, 400, 'المسارُ الواحد يقرأ القائمَ فيُرفض: ' + JSON.stringify(stop.j).slice(0, 200)); assert.equal(stop.j.err, 'operations-member-position');
+        assert.deepEqual(changed(snapshot(T.DB), before), [], 'ولا يتغيّر شيء'); assert.equal(staged(T.DB), 0);
+        T.DB.exec(POSFIX_REPAIR_SQL(B));
+        assert.deepEqual(pos(T), good, 'التصحيحُ يعيد المواضعَ حرفاً كما يكتبها ocConvert');
+        const once = rowsOf(T); T.DB.exec(POSFIX_REPAIR_SQL(B)); T.DB.exec(POSFIX_REPAIR_SQL(A));
+        assert.deepEqual(rowsOf(T), once, 'محروس: تكرارُه (وعلى إدارةٍ بلا تصادم) لا يغيّر شيئاً');
+        await readBack(T, B, wantOf(T, file, B));
+        const again = await protocol(T, T.su, file, { scope: SCOPE, slice: false }).run();
+        assert.equal(again.commit && again.commit.status, 200, 'وبعده يمرّ المسارُ الواحد: ' + JSON.stringify((again.commit || again.inspect || again.begin).j).slice(0, 300));
+      }
+      await readBack(T, B, wantOf(T, file, B));
+    } finally { await T.close(); }
+  }
 });
