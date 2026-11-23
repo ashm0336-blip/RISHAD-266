@@ -45,10 +45,25 @@ async function scenario(t, lab, s, d, names) {
   const accountsBefore = staffOf(lab, d), before = await empsOf(s, d);
   await s.go('#/employees', 4000);
   await rowOf(p, names[0]);
+  /* ١٣ (أولاً — قبل الحذف): إضافة موظف بالاسم وحده لا تغيّر حسابات الآخرين */
+  const writes0 = s.writes.length, acks = [];
+  await p.locator('main button[title="إضافة موظف"]').click();
+  await p.locator('input[placeholder="مثال: أحمد بن سالم الحربي"]').fill('TEST_ONLY موظف بالاسم وحده');
+  const save = p.waitForRequest((r) => /\/api\/(save|operations)/.test(r.url()) && r.method() === 'POST');
+  await p.locator('button', { hasText: /^\s*(إضافة|إضافة الموظف|حفظ)\s*$/ }).last().click(); await save;
+  await until(async () => (await rowNames(p)).some((x) => x.includes('TEST_ONLY موظف بالاسم وحده')), 'the added row').catch(async (e) => { throw new Error(e.message + ' — ' + JSON.stringify({ rows: await rowNames(p), w: s.writes.slice(writes0), body: norm(await p.evaluate(() => document.body.innerText)).slice(0, 1500) })); });
+  await p.waitForTimeout(3000); await lab.idle();
+  const toast = await p.evaluate(() => document.body.innerText);
+  assert.doesNotMatch(toast, /فُعّل تلقائياً/, 'no automatic activation of other accounts');
+  for (const k of staffOf(lab, d)) assert.ok(accountsBefore.includes(k), 'adding an employee created no account for another employee: ' + k);
+  const userSaves = s.writes.slice(writes0).filter((w) => w === 'POST /api/save');
+  t.diagnostic('writes after add: ' + JSON.stringify(s.writes.slice(writes0)));
+  acks.push(userSaves.length);
+  const before1 = await empsOf(s, d);
   /* (١) ⋮ ← حذف ← تأكيد الحذف */
   await deleteOne(s, names[0]); await lab.idle();
   let now = await empsOf(s, d);
-  assert.equal(now.length, before.length - 1, 'one record removed on the server');
+  assert.equal(now.length, before1.length - 1, 'one record removed on the server');
   assert.ok(!now.some((e) => e.name === names[0]), 'the deleted record is gone');
   assert.deepEqual(staffOf(lab, d), accountsBefore.filter((k) => k !== before.find((e) => e.name === names[0]).eid), 'no account of a remaining employee was created or changed');
   /* (٢) «حذف المحدد» */
@@ -64,23 +79,9 @@ async function scenario(t, lab, s, d, names) {
   await until(async () => !(await p.locator('button', { hasText: 'تأكيد الحذف' }).count()), 'the bulk dialog to close');
   await lab.idle();
   now = await empsOf(s, d);
-  assert.equal(now.length, before.length - 2, 'bulk: one more record removed');
+  assert.equal(now.length, before1.length - 2, 'bulk: one more record removed');
   for (const k of staffOf(lab, d)) assert.ok(accountsBefore.includes(k), 'no new account after the deletes: ' + k);
 
-  /* ١٣: إضافة موظف بالاسم وحده */
-  const writes0 = s.writes.length, acks = [];
-  await p.locator('main button[title="إضافة موظف"]').click();
-  await p.locator('input[placeholder="مثال: أحمد بن سالم الحربي"]').fill('TEST_ONLY موظف بالاسم وحده');
-  const save = p.waitForRequest((r) => /\/api\/(save|operations)/.test(r.url()) && r.method() === 'POST');
-  await p.locator('button', { hasText: /^\s*(إضافة|إضافة الموظف|حفظ)\s*$/ }).last().click(); await save;
-  await until(async () => (await rowNames(p)).some((x) => x.includes('TEST_ONLY موظف بالاسم وحده')), 'the added row').catch(async (e) => { throw new Error(e.message + ' — ' + JSON.stringify({ rows: await rowNames(p), w: s.writes.slice(writes0), body: norm(await p.evaluate(() => document.body.innerText)).slice(0, 1500) })); });
-  await p.waitForTimeout(3000); await lab.idle();
-  const toast = await p.evaluate(() => document.body.innerText);
-  assert.doesNotMatch(toast, /فُعّل تلقائياً/, 'no automatic activation of other accounts');
-  for (const k of staffOf(lab, d)) assert.ok(accountsBefore.includes(k), 'adding an employee created no account for another employee: ' + k);
-  const userSaves = s.writes.slice(writes0).filter((w) => w === 'POST /api/save');
-  t.diagnostic('writes after add: ' + JSON.stringify(s.writes.slice(writes0)));
-  acks.push(userSaves.length);
   assert.deepEqual(s.errs, [], 'no page errors');
   return { pending: (await empsOf(s, d)).filter((e) => e.nid && e.empno && !staffOf(lab, d).includes(e.eid)) };
 }
