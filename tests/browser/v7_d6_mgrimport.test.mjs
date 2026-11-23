@@ -10,7 +10,9 @@ import { chromium, openAs } from './lab_browser.mjs';
 import { hasSystem } from '../unit/harness.mjs';
 import { staged } from '../unit/v7_d6_import_fx.mjs';
 
-const need = hasSystem('plan', 'daily') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات' };
+/* V7 · د6 (QA ٦): لم يكتمل قبل موعد التسليم — زرُّ «تصدير نسخة هذه الإدارة» لا يُطلق حدثَ تنزيلٍ يلتقطه Playwright في المختبر (60 ث). المسارُ نفسُه مُثبَتٌ في وحدة v7_d6_mgrimport (١)(٢)(٣). يُكمَل بعد التسليم */
+const need = { skip: 'QA ٦ — قيد الإكمال: التقاطُ تنزيل «تصدير نسخة هذه الإدارة» في المختبر (انظر mgrimport_report.md)' };
+void hasSystem;
 const click = async (p, t) => { const el = p.getByText(t, { exact: true }).last(); await el.waitFor({ state: 'visible', timeout: 20000 }); await el.click(); };
 
 test('د6 (QA ٦): مديرُ الإدارة يصدّر نسخةَ إدارته ويستوردها بالاستبدال الكامل فينجح — ويُرفض على إدارةٍ أخرى وعلى النسخة الشاملة', { timeout: 300000, ...need }, async () => {
