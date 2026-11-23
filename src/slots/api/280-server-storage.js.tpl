@@ -499,6 +499,15 @@
     overQ9.push({ k: k, lbl: lbl(k), over: n });
   }
   function overFlush9(list) { var L = (list || []).concat(overQ9.splice(0)); if (L.length) conflictBanner(L); }
+  /* V7 · د6 (QA) · البند ٥: مسارُ خادمٍ نفّذ طلبَ المستخدم نفسِه (حذفُ إدارة · مسحُها · نقلُ الموظفين وإنشاءُ حساباتهم واستيرادُهم · استيرادُ النسخة واستعادتُها)
+     يكتب مفاتيحَ حفظتُها أنا قبل قليل — فقيمتُه الجديدة «من فعلي» لا كاتبٌ آخر. own9[k] = آخرُ مراجعةٍ كتبها فعلي؛ ما يصل بمراجعةٍ ≤ منها لا يُفحص،
+     وسجلُّ mine9 لحفظي السابق يُستهلك (فعلُ الخادم أحدثُ منه وبُني على قيمة الخادم). ما يصل بمراجعةٍ أعلى (جهازٌ آخر بعد فعلي) يُفحص كالمعتاد */
+  var own9 = Object.create(null);
+  function srvMine9(revs) {
+    if (!revs || typeof revs !== "object") return;
+    var k; for (k in revs) { delete mine9[k]; var r = Number(revs[k]) || 0; if (r > (own9[k] || 0)) own9[k] = r; }
+    overQ9 = overQ9.filter(function (x) { return !(x.k in revs); });
+  }
 
   /* ── الطابور والإرسال ───────────────────────────────────────────────────── */
   var pSet = Object.create(null), pDel = Object.create(null), dirty = false, deniedN9 = 0, deniedK9 = Object.create(null);   /* KIVO_264 (المراجعة R2): عدّادٌ لكل مفتاح أيضاً */
@@ -1611,6 +1620,7 @@
         if (!it) { if (evict && evict[k] && (k in mem)) { delete mem[k]; delete baseVal[k]; delete krev[k]; delete mine9[k]; changed.push(k); notify(k); } continue; }   /* لم يعد يُرى */
         var rv = it.rev || 0;
         if (rv && krev[k] && rv < krev[k]) continue;
+        if (own9[k] && (!rv || rv <= own9[k])) delete mine9[k];   /* V7 · د6 (QA) · البند ٥: قيمةٌ كتبها مسارُ خادمٍ بطلبي — ليست كاتباً آخر */
         /* KIVO_264 · المراجعة (A3a): قيمةٌ من غيري تحلّ محلّ ما حفظتُه قريباً ⇒ هل بقي تعديلي فيها؟ */
         if (it.v == null) { if (k in mem) { overCheck9(k, null); delete mem[k]; delete baseVal[k]; changed.push(k); notify(k); } }
         else if (mem[k] !== String(it.v)) { overCheck9(k, String(it.v)); mem[k] = String(it.v); baseVal[k] = mem[k]; changed.push(k); notify(k); }
@@ -1863,6 +1873,8 @@
     askReason: askReason9,
     /* إصلاح (مدير المنصة لا يُطلب منه سبب): هل الحسابُ الحالي معفًى من نوافذ السبب؟ الخادمُ هو الحَكَم (016 reasonExempt) — هذه لئلا تُفتح نافذةٌ لا حاجة لها */
     reasonExempt: exempt9,
+    /* V7 · د6 (QA) · البند ٥: إيصالُ مسار خادمٍ بطلب المستخدم ⇒ مفاتيحُه «من فعلي» (revs: { مفتاح: مراجعة }) */
+    mine: srvMine9,
     /* V7 · د5-هـ (44): السببُ قبل الإرسال — reasonFirst(k, مفاتيحُ السبب, cb({go, reason})) · reasonRule(اسمُ المورد, fn(قديم, جديد, k) ⇒ [مفاتيحُ السبب]) يسجّلها مالكُ المورد */
     reasonFirst: reasonFirst9,
     reasonRule: function (rn, fn) { if (typeof rn === "string" && typeof fn === "function") (rsnRules9[rn] = rsnRules9[rn] || []).push(fn); },

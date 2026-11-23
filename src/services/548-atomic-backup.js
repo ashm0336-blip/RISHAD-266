@@ -538,6 +538,7 @@
     )
       return failure('invalid');
     live.delete(entry.body.requestId);
+    try { if (KIVO.__BS_SRV && KIVO.__BS_SRV.mine) KIVO.__BS_SRV.mine(ack.revs); } catch (e) { /* V7 · د6 (QA) · البند ٥: استيرادُ النسخة/استعادتُها من فعلي */ }
     return { ok: 1, receipt: clone(ack) };
   }
   /* الإلغاء: يحذف مؤقتَ طلبٍ لم يُعتمد (تذكرةٌ جاهزة أو فشلٌ قابلٌ للإكمال) — لا أثرَ له بعد الاعتماد */

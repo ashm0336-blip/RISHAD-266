@@ -974,7 +974,9 @@ async function rsPrepare(env, A, body, meta, internal) {
     (body.scope.kind === 'dept' && (typeof body.scope.departmentId !== 'string' || !body.scope.departmentId))
   )
     throw rsError('restore-scope');
-  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || (!body.reason.trim() && !reasonExempt(A)) || body.reason.length > 300)   /* السببُ الفارغ يُقبل من مدير المنصة وحده؛ حدُّ الطول 300 للجميع */
+  /* V7 · د6 (QA) · البند ١: السببُ لم يعد شرطاً لأحد — يُقبل غائباً أو فارغاً (يُطبَّع إلى "")، وحدُّ الطول 300 باقٍ لما يُرسل */
+  if (body.reason === undefined) body.reason = '';
+  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || body.reason.length > 300)
     throw rsError('restore-reason');
   /* A full backup declares its complete input. Never infer missing domains from
      its mode or silently reinterpret a sparse save as a complete backup. */
