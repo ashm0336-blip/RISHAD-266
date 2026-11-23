@@ -203,6 +203,11 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     if (data.dept !== stamp.dept || data.intent !== intent || !validBase(data.base, stamp.dept) || !Array.isArray(data.employees) || !Array.isArray(data.staffAccountKeys) || data.staffAccountKeys.some(function (key) { return typeof key !== 'string'; }) || !data.options || !Array.isArray(data.options.type) || !Array.isArray(data.options.work) || !data.clock || !Number.isSafeInteger(data.clock.y) || !Number.isSafeInteger(data.clock.m)) return fail('invalid');
     return { ok: 1, data: deep(data), contextKey: stamp.key };
   }
+  function acctTouched(before, row, key) {
+    var o = (before || []).filter(function (x) { return x && typeof x === 'object' && String(x.eid || x.nid || x.name || '') === key; })[0];
+    if (!o) return true;
+    return ['nid', 'phone', 'empno'].some(function (f) { return String(o[f] || '').trim() !== String(row[f] || '').trim(); });
+  }
   async function transitionPrepare(intent, input, snapshot) {
     var stamp = actor(); if (!stamp) return fail('session', 401);
     if (localPending()) return fail('pending');
@@ -220,6 +225,9 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
           if (!row || typeof row !== 'object') continue;
           var key = String(row.eid || row.nid || row.name || ''), number = String(row.empno || '').trim();
           if (!key || known.has(key) || !(String(row.nid || '').trim() || String(row.phone || '').trim()) || !number) continue;
+          /* V7 · د6 (QA ١٣ · ١٢): لا حسابَ إلا لصفٍّ هو هدفُ الانتقال (جديد · أو تغيّرت بياناتُ دخوله) — قاعدةُ الخادم نفسُها (019c empAcctTouched).
+             كان كلُّ معلّقٍ باقٍ يُقترح له حساب: الحذفُ يفعّل حساباتِ آخرين، ويفشل كلُّه «crypto» حين تغيب أداةُ البصمة */
+          if (!acctTouched(snapshot.data.employees, row, key)) continue;
           if (!auth || typeof auth.hashPw !== 'function') return fail('crypto');
           var ph = await auth.hashPw(number);
           if (!sameActor(stamp)) return fail('session', 401);
