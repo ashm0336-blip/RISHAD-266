@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, SRC } from './harness.mjs';
 import { internals } from './internals.mjs';
-import { needs } from './harness.mjs';
+import { needs, SYSTEMS } from './harness.mjs';
 
 const W = await internals(['enfHeld', 'KIVO_REGISTRY', 'enfIx', 'PG_REG']);
 const R = W.KIVO_REGISTRY, ACT = R.keys.map(k => R.byKey[k]).filter(e => e.status === 'active'), RES = R.keys.map(k => R.byKey[k]).filter(e => e.status !== 'active');
@@ -30,6 +30,9 @@ function A({ role = 'staff', dept = 'd1', mgr = false, plus = [], minus = [], ca
   return { u: { role, id: 'u1', ekey: 'e1', deptId: dept, mgr, un: 'x' }, perms, __grants: { d1: { v: 1, emp: plus.length || minus.length ? { e1: { plus, minus } } : {} }, d2: null }, depts: [{ id: 'd1' }, { id: 'd2' }] };
 }
 const held = (a, k, d = 'd1') => W.enfHeld(a, d, k);
+/* V7 · د6 (قرار المالك · optIn): نظامٌ أعلن "optIn": true في system.json لا يفتحه السقفُ المفتوح (لا سجلَّ سقفٍ في السلسلة) — يُفعَّل صراحةً وحده.
+   فتوقّعاتُ مفاتيح صفحته تُكتب بسقفٍ صريحٍ يضمّها (caps = كلُّ الصفحات)، ويُثبت فوقها أنّ السقفَ المفتوح لا يحملها — مشتقّاً من إعلانات الأنظمة لا من الدالة المختبَرة. */
+const OPTIN = SYSTEMS.filter((k) => JSON.parse(fs.readFileSync(path.join(SRC, 'systems', k, 'system.json'), 'utf8')).optIn === true);
 const COV = {};
 const mark = (k, why) => { (COV[k] = COV[k] || []).push(why); };
 
@@ -71,11 +74,13 @@ test('★ قرارُ الخادم لكل مفتاحٍ نشط (' + ACT.length + '
       ok(held(A({ role: 'dept', dept: 'd2', plus: [k] }), k), false, 'لا في إدارةٍ أخرى');
       mark(k, 'mgrAssignable'); continue;
     }
-    ok(held(A({ plus: [k] }), k), true, 'بالمنح الصريح');
-    ok(held(A(), k), false, 'بلا منحٍ ولا ورقة');
-    ok(held(A({ plus: [k], minus: [k] }), k), false, 'المنحُ مع الإسقاط');
-    ok(held(A({ plus: [k], dept: 'd2' }), k), false, 'في إدارةٍ أخرى');
-    ok(held(A({ role: 'super' }), k), true, 'مديرُ النظام داخل السقف');
+    const caps = OPTIN.includes(pg) ? PAGES : null;
+    if (caps) { ok(held(A({ plus: [k] }), k), false, 'optIn «' + pg + '»: السقفُ المفتوح لا يفتحه ولو مُنح'); ok(held(A({ role: 'super' }), k), true, 'optIn «' + pg + '»: مديرُ المنصة بلا قيد صلاحية (د1-ج) — السقفُ لا يقيّده'); }
+    ok(held(A({ plus: [k], caps }), k), true, 'بالمنح الصريح');
+    ok(held(A({ caps }), k), false, 'بلا منحٍ ولا ورقة');
+    ok(held(A({ plus: [k], minus: [k], caps }), k), false, 'المنحُ مع الإسقاط');
+    ok(held(A({ plus: [k], dept: 'd2', caps }), k), false, 'في إدارةٍ أخرى');
+    ok(held(A({ role: 'super', caps }), k), true, 'مديرُ النظام داخل السقف');
     if (pg && PAGES.includes(pg)) ok(held(A({ plus: [k], caps: PAGES.filter(p => p !== pg) }), k), false, 'صفحةُ مالكه «' + pg + '» خارج سقف الإدارة');
     mark(k, 'assignable' + (pg ? ':' + pg : ':platform'));
   }
