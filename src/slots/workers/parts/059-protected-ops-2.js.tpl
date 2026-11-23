@@ -90,10 +90,8 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   var sc = opts.noScope ? { composite: 'not_applicable', denyDims: [], unknownDims: [], items: 0, why: '' } : enfScopeEval(A, d, k, rn, a, b, used, X);
   if (sc.composite === 'deny') return enfNo('scope', { keys: used, dims: sc.denyDims, detail: sc.why, items: sc.items });
   if (sc.composite === 'unknown') return enfNo('scope-unknown', { keys: used, dims: sc.unknownDims, detail: sc.why, items: sc.items });
-  /* السببُ الإلزامي (audit.reason في السجل · §12) */
-  var needR = []; for (i = 0; i < used.length; i++) if (ix.reason[used[i]]) needR.push(used[i]);
-  if (needR.length && !enfReasonOf(X) && !reasonExempt(A)) return enfNo('reason', { keys: used, reasonKeys: needR });   /* مدير المنصة لا يُطلب منه سبب (016 reasonExempt) */
-  return enfOk(used, { path: path, reasonKeys: needR, reason: needR.length ? reasonLogged(A, enfReasonOf(X)) : '', items: sc.items, dims: [] });
+  /* V7 · د6 (QA) · البند ١: لا سببَ إلزامياً لأحد (قرارُ المالك) — أُزيل رفضُ enfNo('reason') لمفاتيح audit.reason؛ ما أرسله عميلٌ قديم من سببٍ يُسجَّل كما هو */
+  return enfOk(used, { path: path, reason: reasonLogged(A, enfReasonOf(X)), items: sc.items, dims: [] });
 }
 /* ── الحساباتُ (عامّ): البنيةُ كما usersRule (المدير على موظفيه في نطاقه · الذات على حقولها) والقرارُ بمفاتيح كل إدارةٍ على مستخدميها ── */
 function enfUsersWrite(A, k, newVal, curVal, ctx, X) {

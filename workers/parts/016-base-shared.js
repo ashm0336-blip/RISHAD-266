@@ -43,9 +43,10 @@ function dsToday(now) {
 }
 /* ── إصلاح (مدير المنصة لا يُطلب منه سببٌ أبداً — قرارُ المالك): مدير المنصة (role=super) معفًى من كل بوابات السبب في الخادم؛ وإن لم يكتب سبباً
    يُسجَّل في سجلّ القرار والتدقيق «بلا سبب (مدير المنصة)». غيرُه: طلبُ السبب كما هو. reasonExempt = هل الفاعلُ معفًى · reasonLogged = ما يُكتب في السجل ── */
-var REASON_NONE_SUPER = 'بلا سبب (مدير المنصة)';
-function reasonExempt(A) { return !!(A && A.u && A.u.role === 'super'); }
-function reasonLogged(A, r) { r = String(r == null ? '' : r).trim().slice(0, 300); return r || (reasonExempt(A) ? REASON_NONE_SUPER : ''); }
+/* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا يُطلب سببٌ في أيّ فعلٍ لأيّ مستخدم — رسالةُ التأكيد في الواجهة تكفي، وسجلُّ الحركة يسجّل الفاعلَ والوقتَ وما تغيّر.
+   أُزيلت بواباتُ السبب كلُّها (059 enfNo('reason') · 062 missingReason · 047 الاستدراك · 019d الاستعادة · العهد) ومعها reasonExempt و«بلا سبب (مدير المنصة)».
+   reasonLogged = نصُّ السبب إن أرسله عميلٌ قديم (يُحفظ كما كان، والسجلاتُ القديمة تُعرض كما هي) وإلا فارغ — لا يُفرض ولا يُكتب بديل */
+function reasonLogged(A, r) { return String(r == null ? '' : r).trim().slice(0, 300); }
 /* ── من 019a-custody.js: خطأٌ برمزٍ وحالة · ساعةُ اليوم الهجري · الصيغةُ القانونية · بصمةُ الطلب ── */
 function cuError(code, status) {
   var e = new Error(code);

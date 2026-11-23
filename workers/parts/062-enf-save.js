@@ -43,7 +43,7 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
     if (!KIVO_BUILD.isImportRes(rn)) X.batchDeny = { why: 'import-allowlist', detail: rn, keys: ['import.run'] };
     else if (A.u.role !== 'super' && !(rn === 'bassam_perms_v1' ? enfHeld(A, A.u.deptId || '', 'import.run') : enfHeld(A, di, 'import.run'))) X.batchDeny = { why: 'perm', missing: ['import.run'], keys: ['import.run'] };
   }
-  /* F-13 / D3-03: الاستعادة = super ∨ (role:mgr ∧ backup.restore في كل إدارةٍ تمسّها الحفظة) ∧ سببٌ إلزامي */
+  /* F-13 / D3-03: الاستعادة = super ∨ (role:mgr ∧ backup.restore في كل إدارةٍ تمسّها الحفظة) — V7 · د6 (QA): بلا سببٍ إلزامي */
   if (!X.batchDeny && (restoreMarker || audRestore)) {
     X.restore = true; X.snapKind = 'restore';
     var touched = {}, glob = false;
@@ -56,7 +56,7 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
     if (markers && markers.ops) for (fk in markers.ops) if (markers.ops[fk].op === 'backup.restore' && markers.ops[fk].scope === 'full') fullMk = true;
     if (fullMk && !isSup) X.batchDeny = { why: 'restore-policy', detail: 'full-super-only', keys: ['backup.restore'] };
     else if (!pol.ok) X.batchDeny = { why: 'restore-policy', detail: pol.why, keys: ['backup.restore'] };
-    else if (pol.missingReason && !reasonExempt(A)) X.batchDeny = { why: 'reason', reasonKeys: ['backup.restore'], keys: ['backup.restore'] };   /* مدير المنصة لا يُطلب منه سبب */
+    /* V7 · د6 (QA) · البند ١: أُزيل رفضُ «الاستعادة بلا سبب» (pol.missingReason) — لا سببَ إلزامياً لأحد */
     else X.restoreReason = reasonLogged(A, reason);
   }
   /* استيرادُ البيانات التاريخية (sys.histimp.run): لمدير النظام وحده بسبب */

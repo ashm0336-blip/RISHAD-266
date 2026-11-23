@@ -223,12 +223,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const activeWindow = state.windows.find(w => w && !w.closedAt && w.until > Date.now() && w.scope?.y === scope.y && w.scope?.m === scope.m && (w.scope.d == null ? scope.d == null : w.scope.d === scope.d));
     const body = { dept: context.dept, res: "irshad", act: activeWindow ? "close" : "open", ...(activeWindow ? { id: activeWindow.id } : { scope }) };
     if (!activeWindow) {
-      const srv = KIVO.__BS_SRV;
-      if (!srv || typeof srv.askReason !== "function") { this.bsToast("تعذّر طلب سبب الاستدراك؛ لم تُفتح النافذة"); return; }
-      /* مدير المنصة لا يُطلب منه سبب: تُفتح النافذة بلا سؤال */
-      const exempt = !!(srv.reasonExempt && srv.reasonExempt());
-      body.reason = exempt ? "" : await new Promise(resolve => srv.askReason("bsdept:" + context.dept + ":bassam_irshad_v1", ["ir.rec.retro.open"], resolve));
-      if ((!body.reason && !exempt) || !this._irSame(context)) return;
+      /* V7 · د6 (QA) · البند ١: لا سبب — رسالةُ تأكيدٍ قبل فتح الفترة (كانت نافذةُ السبب هي التأكيد) */
+      if (!(await (KIVO.bsConfirm ? KIVO.bsConfirm({ title: "فتح الفترة للاستدراك", msg: "تُفتح الفترةُ المغلقة للاستدراك لإدارتك 24 ساعة وتُسجَّل باسمك في سجل الحركة.", ok: "فتح الفترة" }) : false)) || !this._irSame(context)) return;
     }
     const result = await this._irRequest("/api/retro?uid=" + encodeURIComponent(context.uid), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, context);
     this.setState({ irRetro: null });

@@ -1,7 +1,7 @@
 async function cuPlanRestore(env, A, domain, opt) {
   cuShape(opt, ['dept', 'base', 'scope', 'mode', 'reason', 'finalKeys']);
   var dept = cuString(opt.dept, 200, false);
-  cuString(opt.reason, 300, reasonExempt(A));   /* السببُ الفارغ يُقبل من مدير المنصة وحده (016 reasonExempt)؛ حدُّ الطول للجميع */
+  cuString(opt.reason == null ? '' : opt.reason, 300, true);   /* V7 · د6 (QA) · البند ١: السببُ الفارغ يُقبل من الجميع؛ حدُّ الطول باقٍ */
   if (opt.mode !== 'replace') throw cuError('custody-restore-mode');
   if (['dept', 'full'].indexOf(opt.scope) < 0) throw cuError('custody-restore-scope');
   if (!Number.isSafeInteger(opt.base) || opt.base < 0) throw cuError('custody-restore-base');
