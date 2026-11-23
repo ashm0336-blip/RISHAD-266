@@ -61,6 +61,9 @@ test('(٣) قرارُ المالك ب: صحيفةُ مدير المصدر لا �
       assert.deepEqual(Object.fromEntries(Object.entries(now.emps[B]).filter(([k]) => k.startsWith('mgr:'))), MGR0, as + ': صحيفةُ مدير الهدف كما كانت (أو لا صحيفة) — لا تُستبدل ولا تُضاف');
       assert.deepEqual(now.emps[B].tst_demo_e11, file.perms.emps.tst_demo_e11, as + ': ورقةُ الموظف انتقلت كما هي (مخزَّنة)');
       assert.equal(usersOf(T), users, as + ': الحساباتُ (والمدير) كما هي');
+      /* قرارُ المالك ب4: الأدوار · الإسنادات · وما لا أثرَ له لكل نظامٍ مطفأ — في ملخّص ما قبل التأكيد وفي ملخّص النجاح (المصدرُ نفسُه) */
+      const wantP = { roles: 0, assignments: 1, inert: as === 'super' ? { plan: 1 } : {} };
+      assert.deepEqual(run.inspect.j.inspection.counts.perms, wantP, as + ': counts.perms قبل التأكيد'); assert.deepEqual(run.commit.j.counts.perms, wantP, as + ': وفي ملخّص النجاح');
       if (as === 'super') {
         /* ورقةُ plan مخزَّنةٌ والنظامُ مطفأٌ في السقف الهدف: لا مفتاحَ لها في إنفاذ الخادم */
         const held = T.lab.W.enfHeld ? null : null; void held;

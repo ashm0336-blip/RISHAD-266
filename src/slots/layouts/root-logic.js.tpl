@@ -1007,6 +1007,7 @@ class Component extends DCLogic {
       bkcDone: step === "done", bkcSysOn: step === "done" && !!(done && done.noPerms), bkcSysHref: done ? this._bkSysHref(done.unit) : "",
       bkcDoneMsg: done ? "استُعيدت " + N(cn.kv || 0, "مجموعة بيانات") + " و" + N(cn.operations || 0, "مورد تشغيلي") + (cn.notifications ? " و" + N(cn.notifications, "تنبيه") : "") +
         " · الصور: " + (s2.imagesNew || 0) + " جديدة و" + (s2.imagesReused || 0) + " موجودة مطابقة" + (s2.imagesMissing ? " و" + s2.imagesMissing + " مفقودة" : "") +
+        (KIVO.BackupRestore && KIVO.BackupRestore.permsLine ? KIVO.BackupRestore.permsLine(cn) : "") +   /* V7 · د6 (QA ٦ — ب4) */
         (lost.length ? " · لم يُنقل " + lost.length + ": " + lost.slice(0, 12).map((x) => x.k).join("، ") + (lost.length > 12 ? "…" : "") : "") +
         (lostF.length ? " · حقول لم تُنقل: " + lostF.reduce((n, x) => n + (x.n || 0), 0) + " في " + lostF.length + " مساراً (مذكورة في ملخّص التأكيد)" : "") +
         /* V7 · د6 (remap): التنبيهاتُ المُسقطة وحدها بعددها · وإعادةُ ربط معرّف الإدارة (النصُّ نفسُه في التأكيد — 548 remapLine) */
