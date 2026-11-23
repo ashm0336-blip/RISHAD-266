@@ -664,9 +664,10 @@ test('(٥) حسابٌ بلا صلاحية يُرفض في كل جزء ولو ب�
     assert.deepEqual(Object.keys((run.inspect.j.details || {}).denied || {}).sort(), Object.keys((oldRoute.j.details || {}).denied || {}).sort(), 'والمفاتيحُ المرفوضة هي هي');
     t.diagnostic('مديرُ الإدارة بالمفتاح: الفحص ' + run.inspect.status + ' ' + run.inspect.j.err + ' (كالمسار القديم)');
     assert.equal(staged(T.DB), 0, 'الرفضُ النهائي نظّف المؤقت'); assert.deepEqual(changed(snapshot(T.DB), state), []); assert.equal(audits(T), 0);
-    /* وبلا سبب يُرفض مديرُ الإدارة (كما اليوم — مديرُ المنصة وحده معفى) */
+    /* V7 · د6 (QA) · البند ١: بلا سبب حكمُ مدير الإدارة هو حكمُه بالسبب نفسُه (كان 400 restore-reason) — السببُ لم يعد شرطاً لأحد */
     const noReason = await protocol(T, mgrB, file, { scope: SCOPE, reason: '' }).run();
-    assert.equal(noReason.inspect.status, 400); assert.equal(noReason.inspect.j.err, 'restore-reason'); assert.equal(staged(T.DB), 0);
+    assert.ok(noReason.inspect, 'بلا سبب وصل الفحص');
+    assert.equal(noReason.inspect.status, run.inspect.status); assert.equal(noReason.inspect.j.err, run.inspect.j.err); assert.notEqual(noReason.inspect.j.err, 'restore-reason'); assert.equal(staged(T.DB), 0);
   } finally { await T.close(); }
 });
 
