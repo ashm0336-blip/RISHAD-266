@@ -53,6 +53,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       "depts" !== this.state.admTab && this.setState({ admTab: "depts" });
     } catch (e) {}
   }
+  /* V7 · د6 (ب6 · ب9): جدولُ تبويب «المسؤولون» = مسؤولو العقدة المختارة نفسِها (deptManagers · groupManagers — المصدرُ الذي يُعدّ منه عنوانُ التبويب)،
+     لا حساباتُ ما تحتها ولا الحساباتُ القديمة. الموضعُ الواحد القابلُ للعكس (سؤالٌ مفتوح في تقرير م6): إعادةُ null تُرجع النطاقَ كلَّه كما كان */
+  _orgAdmIds(list) {
+    const m = {};
+    (list || []).forEach((x) => x && x.id && (m[x.id] = 1));
+    return m;
+  }
   /* مغادرةُ الشاشة بفعلٍ من هذه الصفحة: يُسأل حارسُها أولاً */
   _orgLeave(run) {
     const O = KIVO.BassamOrgRoute.screen;
@@ -4149,7 +4156,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 const rank = (a) => ("gm" === a.role ? 0 : "staff" === a.role && (a.mgr || /^mgr:/.test(String(a.ekey || ""))) ? 1 : "staff" === a.role ? 2 : 3),
                   ndq = e.ndQU === o ? e.ndQ || "" : "",   /* V7 · د6: بحثُ حسابات الوحدة لوحدته وحدها (كان يُصفَّر عند فتح صفحة عقدةٍ أخرى) */
                   q = ndq ? KIVO.BassamFind.dig(String(ndq).trim().toLowerCase()) : "",
-                  scope = (A && A.users ? A.users() : []).filter((a) => "super" !== a.role && !!ids["gm" === a.role ? a.gid : a.deptId]),
+                  own = this._orgAdmIds(list),   /* V7 · د6 (ب6 · ب9): مسؤولو العقدة نفسِها وحدها — حساباتُ الموظفين في «مراقبة الحسابات» و«الأشخاص» */
+                  scope = (A && A.users ? A.users() : []).filter((a) => "super" !== a.role && !!ids["gm" === a.role ? a.gid : a.deptId] && (!own || !!own[a.id])),
                   shown = scope
                     .filter((a) => !q || KIVO.BassamFind.dig([a.name, a.un, a.alt, this.adUnit(a), this.adRole(a)].join(" ").toLowerCase()).indexOf(q) >= 0)
                     .sort((a, b) => rank(a) - rank(b) || String(a.name || "").localeCompare(String(b.name || ""), "ar"));
@@ -4174,7 +4182,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ndRows: shown.map((a) => this._acctRow(a, X, !0)),
                   ndEmpty: 0 === shown.length && !(0 === list.length && 0 === scope.length),   /* بلا مديرٍ ولا حساب: رسالةٌ واحدة (mgNone) */
                   ndEmptyTxt: scope.length ? "لا حسابات تطابق البحث" : "لا حسابات دخول في هذا النطاق بعد",
-                  ndFoot: KIVO.BassamCount(scope.length, "حساب") + (n ? " في العقدة وفرعها" : " في هذه الوحدة وما تحتها"),
+                  ndFoot: own ? KIVO.BassamCount(scope.length, "حساب") + (n ? " لمسؤولي هذه العقدة نفسِها" : " لمسؤولي هذه الوحدة") + " — حسابات الموظفين في «مراقبة الحسابات»" : KIVO.BassamCount(scope.length, "حساب") + (n ? " في العقدة وفرعها" : " في هذه الوحدة وما تحتها"),
                 };
               })(),
             };

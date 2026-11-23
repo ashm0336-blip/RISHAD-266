@@ -131,7 +131,7 @@
   <div class="p44" aria-label="{{p44Head}}">
     <div class="p44-top">
       <div class="p44-ttl">
-        <h3>{{p44Head}} · {{ogU.name}}</h3>
+        <h3>{{p44Head}} · {{ogU.name}}<sc-if value="{{ogHeadN}}" hint-placeholder-val="{{ false }}"> <span class="p44-mute" data-og="head-n">· {{ogHeadN}}</span></sc-if></h3>
         <p>{{p44Lead}}</p>
         <sc-if value="{{p44MgrV}}" hint-placeholder-val="{{ false }}"><span class="p44-chip">أدوار موظفي إدارتك فقط · تظهر هنا الأنظمة المفعّلة لإدارتك وحدها</span></sc-if>
       </div>
@@ -232,7 +232,8 @@
     <section class="p44-card p44-main" aria-label="محرّر الدور">
       <sc-if value="{{p44NoRole}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا أدوار في هذه الإدارة بعد — ابدأ بـ«+ دور جديد».</div></sc-if>
       <sc-if value="{{p44NodeRoles}}" hint-placeholder-val="{{ false }}">
-      <div class="p44-note p44-nodes">الأدوار المخصّصة تُبنى في كل إدارة أو قسم على حدة — افتح أدوار وحدةٍ تحتها: <sc-for list="{{p44NodeUnits}}" as="u" hint-placeholder-count="2"><a href="{{u.href}}" onClick="{{u.go}}">{{u.n}}</a> </sc-for></div>
+      <div class="p44-note p44-nodes">الأدوار المخصّصة تُبنى في كل إدارة أو قسم على حدة — افتح أدوار وحدةٍ تحتها:
+      <ul class="og-kids" data-og="node-roles"><sc-for list="{{p44NodeUnits}}" as="u" hint-placeholder-count="2"><li><span>{{u.n}}</span> <a href="{{u.href}}" onClick="{{u.go}}" aria-label="افتح أدوار {{u.n}}">افتح أدوارها</a></li></sc-for></ul></div>
       </sc-if>
       <sc-if value="{{p44NotSup}}" hint-placeholder-val="{{ true }}">
       <div class="p44-hd p44-ed">
@@ -268,6 +269,12 @@
       </sc-if>
     </section>
     <aside class="p44-side" aria-label="المعاينة">
+      <sc-if value="{{p44NotSup}}" hint-placeholder-val="{{ true }}">
+      <section class="p44-card" aria-label="حاملو الدور" data-og="role-holders"><h4>حاملو الدور</h4>
+        <sc-if value="{{p44RoleHoldNone}}" hint-placeholder-val="{{ false }}"><small class="p44-mute">لا يحمل هذا الدور أحد بعد — أسنده من «الأشخاص».</small></sc-if>
+        <div class="p44-chips"><sc-for list="{{p44RoleHold}}" as="h" hint-placeholder-count="2"><button type="button" onClick="{{h.go}}">{{h.n}}</button></sc-for></div>
+      </section>
+      </sc-if>
       <section class="p44-card"><h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-bdce9bcc"></svg>ماذا يرى حامل الدور</h4><small>قائمته الجانبية كما ستظهر له — تتغيّر مع كل تعديل</small>
         <ul class="p44-menu"><sc-for list="{{p44Nav}}" as="m" hint-placeholder-count="5"><li><i aria-hidden="true"></i><span>{{m.n}}</span><small>{{m.l}}</small></li></sc-for></ul>
       </section>
@@ -320,7 +327,7 @@
         <button type="button" class="p44-add" onClick="{{p44ExAdd}}">+ استثناء مؤقت</button>
       </div>
       </sc-if>
-      <div><div class="p44-cap">ما يراه الآن</div><ul class="p44-menu"><sc-for list="{{p44PNav}}" as="m" hint-placeholder-count="4"><li><i aria-hidden="true"></i><span>{{m.n}}</span><small>{{m.l}}</small></li></sc-for></ul></div>
+      <div><div class="p44-cap">ما يراه الآن</div><sc-if value="{{p44PMgrLine}}" hint-placeholder-val="{{ false }}"><p class="p44-note" data-og="mgr-line">{{p44PMgrLine}}</p></sc-if><ul class="p44-menu"><sc-for list="{{p44PNav}}" as="m" hint-placeholder-count="4"><li><i aria-hidden="true"></i><span>{{m.n}}</span><small>{{m.l}}</small></li></sc-for></ul></div>
     </aside>
     </sc-if>
   </div>
@@ -397,6 +404,7 @@
       <sc-if value="{{ogDataUnitsNone}}" hint-placeholder-val="{{ false }}"><p class="og-note">لا إدارة تحتها بعد.</p></sc-if>
     </section>
     </sc-if>
+    <sc-if value="{{ogDataUnit}}" hint-placeholder-val="{{ true }}"><h4 class="og-dttl" data-og="data-name">البيانات · {{ogU.name}}</h4></sc-if>
     <sc-if value="{{ogDataUnit}}" hint-placeholder-val="{{ true }}">{{ogSlotData}}</sc-if>
   </div>
   </sc-if>

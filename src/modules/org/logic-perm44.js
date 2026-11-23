@@ -99,7 +99,7 @@ Object.assign(Component.prototype, {
       S = this._p44Sys();
     return (k) => {
       const s = S.filter((x) => x.k === k)[0];
-      return !!s && this._p44On(did, s, off);
+      return !!s && this.p44SysOnEff(did, s, off);   /* V7 · د6 (م6 · أ1): المفعّلُ فعلياً كما يرسمه تبويبُ «الأنظمة» — محرّرُ الدور واستثناءاتُ الشخص والسجلُّ منه */
     };
   },
   /* سقفُ المفاتيح للمحرّك (compileRole · effective): ceiling(did).key — القاعدةُ نفسُها في الخادم (perm44CeilingFn) */
@@ -527,7 +527,7 @@ Object.assign(Component.prototype, {
     const D = KIVO.BassamDepts,
       off = this._p44PlatOff(),
       rows = this._p44Sys()
-        .filter((s) => s.tg && this._p44On(did, s, off))
+        .filter((s) => s.tg && this.p44SysOnEff(did, s, off))   /* V7 · د6 (م6 · ب12): المفعّلُ فعلياً وحده */
         .map((s) => ({ k: s.k, n: s.n, on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّل لإدارتك", flip: () => {} })),
       people = this._p44Users().filter((x) => x.deptId === did || this._p44Try(() => (D.ancestorsOf(x.deptId) || []).indexOf(did) !== -1, !1)).length;
     return {
@@ -760,6 +760,11 @@ Object.assign(Component.prototype, {
       ck = chk.key && chkKeys.some((x) => x.v === chk.key) ? chk.key : (chkKeys[0] || {}).v || "";
     return Object.assign(v, {
       p44Role: { n: role.name || "بلا اسم", d: role.desc || "", badge: role.sup ? "دور إشرافي" : "دور", members: holders(role.id) ? KIVO.BassamCount(holders(role.id), "شخص") + " " + KIVO.BassamCount.agr(holders(role.id), "يحمل", "يحملان", "يحملون") + " هذا الدور" : "لا يحمل هذا الدور أحد بعد" },
+      /* V7 · د6 (ب7): «حاملو الدور» بأسمائهم من المسودة نفسِها (عددُهم = holders) — كلٌّ يُفتح في «الأشخاص» لوحدته مختاراً */
+      p44RoleHold: Object.keys(d.people || {})
+        .filter((ek) => (d.people[ek] || {}).role === role.id)
+        .map((ek) => ({ n: this._p44PName(ek), go: () => this.p44Open(did, "people", { pSel: ek, exForm: null }) })),
+      p44RoleHoldNone: !holders(role.id),
       p44RoleName: role.name || "",
       p44RoleNameSet: (ev) => upd((r) => (r.name = String((ev && ev.target && ev.target.value) || "").slice(0, 60))),
       p44RoleDesc: role.desc || "",
@@ -870,7 +875,7 @@ Object.assign(Component.prototype, {
     const E = this._p44E(),
       S = this._p44S(),
       d = S.d;
-    if (!E || !d || (S.rev && S.rev.busy)) return;
+    if (!E || !d || (S.rev && S.rev.busy)) return !1;   /* V7 · د6 (م6): يعيد true حين حُفظ ثم !1 عند الرفض */
     const did = d.did,
       aff = this.p44Affected(d),
       roles = JSON.parse(JSON.stringify(d.roles)),
@@ -890,11 +895,12 @@ Object.assign(Component.prototype, {
     void intent;
     if (!r || !r.ok) {
       const why = r && "unsent" === r.err ? "لم يصل تأكيد الحفظ — المسودة باقية؛ أعد الحفظ للتحقق." : r && "denied" === r.err ? "رفض الخادم الحفظ — راجع الصلاحية ثم أعد المحاولة." : "لم يُحفظ التغيير — " + (r && r.err ? "(" + r.err + ") " : "") + "راجع الصلاحية ثم أعد المحاولة.";
-      return void this._p44Set({ rev: { open: 1, err: why } });
+      return this._p44Set({ rev: { open: 1, err: why } }), !1;
     }
     this._p44Set((s) => ({ rev: null, d: s.d ? Object.assign({}, s.d, { base: { roles: roles, people: people } }) : s.d, log: null }));
     this.bsToast("حُفظت الصلاحيات — " + this.p44AffLine(aff.length), "ok");
     this._ogPendEnd(!0);   /* V7 · د6 (ب11): «حفظ ثم انتقال» يكمل الانتقال بعد الحفظ وحده */
+    return !0;   /* V7 · د6 (م6): true حين حُفظ — والرفضُ !1 (الحارسُ ينتظر في مكانه) */
   },
   /* ③ الأشخاص */
   _p44PeopleVals(did, d) {
@@ -969,6 +975,8 @@ Object.assign(Component.prototype, {
     return Object.assign(v, {
       p44PSel: { n: sel.name || sel.un, i: String(sel.name || "؟").trim().charAt(0) || "؟", id: sel.empno || sel.no || sel.un || "", role: roleOf(sel), mgr: !!sel.mgr },
       p44PMgr: !!sel.mgr,
+      /* V7 · د6 (قرار المالك — الرد 2 · ٣): سطرٌ واحد فوق قائمته الحقيقية، وصفاً لا بديلاً عنها */
+      p44PMgrLine: sel.mgr ? "مدير الوحدة · كامل داخل سقف وحدته" : "",
       p44PSelf: self(sel),
       p44PEdit: !sel.mgr && !self(sel),
       p44PRoles: [{ id: null, name: "بلا دور" }].concat(roles).map((x) => ({ t: x.name || "بلا اسم", on: (r.role || null) === x.id ? "true" : "false", pick: () => setRec((p) => (p.role = x.id)) })),

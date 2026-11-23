@@ -730,6 +730,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ogOnAdmins: !0,
       p44Head: "المسؤولون",
       p44Lead: c.isRoot ? "مدير المنصة: صلاحية كاملة بلا قيد." : "مسؤولو «" + c.inf.name + "»: " + (n ? KIVO.BassamCount(n, "مدير") : "لا مدير بعد") + " — يعيّنهم مدير المنصة وحده.",
+      /* V7 · د6 (ب6): عنوانُ التبويب يحمل اسمَ العقدة (الرأسُ المشترك) وعددَ مسؤوليها — من المصدر نفسِه الذي يُرسم منه الجدول (deptManagers · groupManagers) */
+      ogHeadN: n ? KIVO.BassamCount(n, "مدير") : "لا مدير بعد",
       ogSlotAdmins: this._ogSlot("admins"),
     });
   }
