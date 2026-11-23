@@ -32,7 +32,7 @@ async function compare(T, who, file, dept = B) {
   const kv = Object.fromEntries(T.DB.q("SELECT k, group_concat(v,'') v FROM (SELECT k,v FROM kv WHERE k GLOB ?1 ORDER BY k,seq) GROUP BY k", 'bsdept:' + dept + ':*').map((r) => [r.k.split(':').slice(2).join(':'), r.v]));
   for (const k of ['bassam_first_boot_v1', 'bassam_last_export_v1']) assert.equal(kv[k], file.data[k], k + ' كما في النسخة');
   /* التنبيهات: كلُّ بندٍ برسالته — إلا ما يُسقط بنداً بنداً (pm_tpl · تنبيهُ إدارةٍ أخرى: V7 · د6 remap) */
-  const kept = new Set(remapOf(file).kept), items = JSON.parse(file.data.bassam_notif_v1).items.filter((x) => kept.has(x.id)), rows = T.DB.q('SELECT id,title,body FROM notification_messages WHERE scope=?1', 'd:' + dept);
+  const items = JSON.parse(file.data.bassam_notif_v1).items.filter((x) => x.type !== 'pm_tpl' && (x.dept == null || x.dept === SRC_DEPT)), rows = T.DB.q('SELECT id,title,body FROM notification_messages WHERE scope=?1', 'd:' + dept);
   assert.equal(rows.length, items.length, 'عددُ التنبيهات');
   const byId = new Map(rows.map((r) => [r.id, r]));
   for (const it of items) { const r = byId.get(it.id); assert.ok(r, 'تنبيه ' + it.id); assert.equal(r.title, it.t); assert.equal(r.body, it.b); }
