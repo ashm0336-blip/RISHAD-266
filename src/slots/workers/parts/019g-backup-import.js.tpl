@@ -170,7 +170,7 @@ function rsiFieldRec(list) {
   (list || []).forEach(function (r) { if (r && (RSI_FIELD_WHY[r.why] || /^nf-/.test(r.why))) rec[r.k + '|' + r.why] = r; });   /* V7 · د6 (remap): وبنودُ التنبيهات المُسقطة nf-* */
   return rec;
 }
-var RSI_FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
+var RSI_FIELD_WHY = { transient: 1, field: 1, 'field-type': 1, 'mgr-sheet': 1 };   /* V7 · د6 (QA ٦): وصحيفةُ مدير المصدر (019f rsBCMgrSheetDrop) */
 function rsiFieldList(recs) {
   var all = {};
   recs.forEach(function (rec) { Object.keys(rec || {}).forEach(function (id) { var r = rec[id]; if (!all[id]) all[id] = { k: r.k, why: r.why, n: 0 }; all[id].n += r.n; }); });

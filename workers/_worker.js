@@ -14114,9 +14114,11 @@ var RSI_SLICE = {
   'bassam_dreport_v1': ['^.', ['bassam_dreport_v1']],   /* V7 · د6: التقريرُ اليومي خريطةُ أيام — يُقسم أياماً */
 };
 var RSI_SLICE_MIN = 1500000;
+/* V7 · د6 (QA ٦ — قرارُ المالك): الدفعاتُ (مسارُ الذاكرة المحدودة) لمدير المنصة ولمدير الإدارة على إدارته (057 enfDeptMgrFull) — كان لمدير المنصة وحده فتُرفض نسخةُ Production لمديرها */
+function rsiSliceOk(A, d) { return A.u.role === 'super' || enfDeptMgrFull(A, d); }
 async function rsiSliceSpec(env, A, s, keys, mode) {
   var out = {};
-  if (A.u.role !== 'super' || s.kind !== 'dept') return out;
+  if (s.kind !== 'dept' || !rsiSliceOk(A, s.departmentId)) return out;   /* V7 · د6 (QA ٦): مديرُ الإدارة على إدارته بالمسار نفسِه وحدوده */
   for (var n in RSI_SLICE) {
     if (!ocOwn(keys, n) || keys[n]) continue;
     /* الاستبدالُ يطرح القائم فيُقسم دائماً؛ وغيرُه (الدمج) يُقسم إن كانت الأسرةُ فارغةً في الهدف — يُعرف بعدٍّ لا بتحميل */
@@ -14147,7 +14149,7 @@ async function rsiSlice(env, A, request, id, M, b) {
      الموردُ الغائب عن النسخة يُستعاد فارغاً)، وفي غير الاستبدال هي فارغةٌ شرطاً. والقائمُ منها يُعرف بعدٍّ: موردٌ قائمٌ لم تنتج له الدفعاتُ شيئاً يُكتب فارغاً. */
   var dept = M.scope.departmentId, reference = await rsReferenceSnapshot(env, A.u.id, { departments: [dept], operationalKeys: [] }), key = 'bsdept:' + dept + ':' + base, set = {}, bs = {}, ops = {}, why = {}, held = [];
   env = reference.env; A = reference.A;
-  if (A.u.role !== 'super' || rsScopeDenied(A, M.scope) || !RSI_SLICE[base]) throw rsError('restore-policy', 403);
+  if (!rsiSliceOk(A, dept) || rsScopeDenied(A, M.scope) || !RSI_SLICE[base]) throw rsError('restore-policy', 403);
   for (var fr of RSI_SLICE[base][1]) {
     reference.operational.keys['bsdept:' + dept + ':' + fr] = null;
     if (await D.prepare('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource=?2').bind(dept, fr).first('n')) held.push('bsdept:' + dept + ':' + fr);
@@ -14264,7 +14266,7 @@ function rsiFieldRec(list) {
   (list || []).forEach(function (r) { if (r && (RSI_FIELD_WHY[r.why] || /^nf-/.test(r.why))) rec[r.k + '|' + r.why] = r; });   /* V7 · د6 (remap): وبنودُ التنبيهات المُسقطة nf-* */
   return rec;
 }
-var RSI_FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
+var RSI_FIELD_WHY = { transient: 1, field: 1, 'field-type': 1, 'mgr-sheet': 1 };   /* V7 · د6 (QA ٦): وصحيفةُ مدير المصدر (019f rsBCMgrSheetDrop) */
 function rsiFieldList(recs) {
   var all = {};
   recs.forEach(function (rec) { Object.keys(rec || {}).forEach(function (id) { var r = rec[id]; if (!all[id]) all[id] = { k: r.k, why: r.why, n: 0 }; all[id].n += r.n; }); });
