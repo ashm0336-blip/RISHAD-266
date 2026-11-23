@@ -79,7 +79,8 @@ async function heavy(scale, t, { inline = false } = {}) {
     assert.equal(out.inspect.status, 200, JSON.stringify(out.inspect.j).slice(0, 400));
     const s = out.inspect.j.inspection.summary;
     assert.equal(s.legacy, true); assert.equal(s.imagesNew, 10 * scale); assert.equal(s.imagesReused, 0); assert.equal(s.imagesMissing, 0);
-    const keyLevel = s.notTransferred.filter((x) => !['transient', 'field', 'field-type'].includes(x.why) && !/^nf-/.test(x.why));
+    const keyLevel = s.notTransferred.filter((x) => !['transient', 'field', 'field-type', 'mgr-sheet'].includes(x.why) && !/^nf-/.test(x.why));
+    assert.deepEqual(s.notTransferred.filter((x) => x.why === 'mgr-sheet'), [{ k: 'perms · mgr', why: 'mgr-sheet', n: 1 }], 'صحيفةُ مدير المصدر لا تنتقل وتُذكر (د6 QA ٦ — ب1)');
     /* V7 · د6 (remap): التنبيهاتُ المُسقطة بنداً بنداً بعددها ونوعها · وإعادةُ ربط معرّف الإدارة بعددها */
     assert.deepEqual(nfDropsOf(s.notTransferred), remapOf(file).nfDrops, 'تنبيهاتٌ لن تُنقل بعددها ونوعها');
     assert.deepEqual({ from: s.remap.from, to: s.remap.to, n: s.remap.n, by: s.remap.by, foreign: s.remap.foreign, left: s.remap.left }, { from: SRC_DEPT, to: B, n: remapOf(file).n, by: remapOf(file).by, foreign: remapOf(file).foreign, left: {} }, 'أُعيد ربط كلِّ إشارة');
@@ -96,7 +97,7 @@ async function heavy(scale, t, { inline = false } = {}) {
     assert.ok(T.DB.q("SELECT COUNT(*) n FROM restore_preimage WHERE snapshot_id GLOB 'atomic_*'")[0].n > 0, 'لقطةُ ما قبل الاستيراد محفوظة على الخادم');
     /* الصلاحيات: السقفُ والأوراقُ المرفقة بالنسخة بقاعدة الشريحة القائمة — ولا شيءَ خارج الإدارة الهدف، ولا حساباتٍ ولا منحاً */
     const now = perms1;
-    assert.deepEqual(now.caps[B], file.perms.cap); assert.deepEqual(now.emps[B], JSON.parse(remapped(JSON.stringify(file.perms.emps), B)), 'صحيفةُ مدير المصدر صارت صحيفةَ مدير الوحدة (V7 · د6 remap)');
+    assert.deepEqual(now.caps[B], before.caps[B], 'سقفُ الوحدة كما في الهدف (د6 QA ٦ — ب3: لا سقفَ النسخة)'); assert.deepEqual(now.emps[B], Object.fromEntries(Object.entries(file.perms.emps).filter(([k]) => !k.startsWith('mgr:'))), 'أوراقُ الموظفين انتقلت · وصحيفةُ مدير المصدر لم تنتقل (د6 QA ٦ — ب1؛ كانت تصير صحيفةَ مدير الوحدة)');
     for (const d of Object.keys(before.caps)) if (d !== B) assert.deepEqual(now.caps[d], before.caps[d], 'سقفُ ' + d + ' لم يُمسّ');
     assert.deepEqual(Object.keys(now.emps), [B]); assert.equal(T.DB.q("SELECT group_concat(v,'') v FROM kv WHERE k='bassam_auth_users_v1'")[0].v, users, 'الحساباتُ كما هي');
     /* أين استقرّت أجسامُ الصور — وحدُّ قيمة الصف في طبقة التخزين (CHUNK = 700,000 حرفاً) محترم */
@@ -347,7 +348,7 @@ test('(٩) دفعاتُ المفتاح الكبير: بالترتيب · الم�
     const GK = 'bsdept:' + B + ':bassam_grants_v1';
     await T2.DB.batch([...T2.lab.W.kvPutStmts(T2.lab.env, 'kv', GK, JSON.stringify({ v: 1, emp: { ['mgr:' + B]: { plus: ['backup.restore'], minus: [] } } })), T2.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1)').bind(GK)]);
     const mgrB = await T2.login(LAB.mgrB, LAB.pw), dry = await protocol(T2, mgrB, file, opt).post({ op: 'begin', dry: true, scope: SCOPE, keys: { bassam_rounds_v1: 0 } });
-    assert.equal(dry.status, 200); assert.deepEqual(dry.j.slice, {}, 'غيرُ مدير المنصة: لا دفعات');
+    assert.equal(dry.status, 200); assert.deepEqual(Object.keys(dry.j.slice), ['bassam_rounds_v1'], 'مديرُ الإدارة على إدارته: الدفعاتُ نفسُها (د6 QA ٦ — قرارُ المالك؛ كانت: لا دفعات لغير مدير المنصة)');
   } finally { await T2.close(); }
 });
 
@@ -409,7 +410,8 @@ test('(١١) ما لا يُقسم لا يُحاوَل إن كان أثقلَ م�
     /* مديرُ الإدارة بمفتاح الاستعادة: لا دفعاتَ له، فالكبيرُ يُرفض عند البدء */
     const GK = 'bsdept:' + B + ':bassam_grants_v1';
     await T.DB.batch([...T.lab.W.kvPutStmts(T.lab.env, 'kv', GK, JSON.stringify({ v: 1, emp: { ['mgr:' + B]: { plus: ['backup.restore'], minus: [] } } })), T.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind(GK)]);
-    await refused(protocol(T, await T.login(LAB.mgrB, LAB.pw), big, { scope: SCOPE, reason: 'TEST_ONLY' }), 'مديرُ الإدارة');
+    /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة على إدارته بالدفعات نفسِها — كان يُرفض هنا (لا دفعات لغير مدير المنصة) */
+    { const mb = protocol(T, await T.login(LAB.mgrB, LAB.pw), big, { scope: SCOPE, reason: 'TEST_ONLY' }); assert.equal((await mb.begin()).status, 200, 'مديرُ الإدارة: دفعات'); assert.ok(mb.sliceCount > 10); await mb.cancel(); }
     assert.deepEqual(changed(snapshot(T.DB), base).filter((t) => t !== 'kv' && t !== 'revs'), [], 'لم يتغيّر شيء');
     /* والاستبدالُ بحساب مدير المنصة للنسخة نفسِها مقبولٌ (دفعات) · والدمجُ الصغير مقبول */
     const ok = protocol(T, T.su, big, { scope: SCOPE }); assert.equal((await ok.begin()).status, 200); assert.ok(ok.sliceCount > 10); await ok.cancel();
@@ -639,10 +641,11 @@ test('(٥) حسابٌ بلا صلاحية يُرفض في كل جزء ولو ب�
     const mgrB = await T.login(LAB.mgrB, LAB.pw), inventory = () => T.call('/api/backup/restore?kind=dept&departments=%5B%5D&dept=' + B, { ck: mgrB.ck });
     let M = protocol(T, mgrB, file, { scope: SCOPE }), began = await M.begin(), invB = await inventory();
     t.diagnostic('مديرُ الإدارة الهدف بلا المفتاح: البدء ' + began.status + ' · جردُ الاستعادة ' + invB.status);
-    assert.equal(began.status, 403); assert.equal(invB.status, 403);
+    /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يحمل الاستعادةَ في إدارته بلا منح — كان 403 */
+    assert.equal(began.status, 200); assert.equal(invB.status, 200); assert.equal((await M.cancel()).status, 200);
     assert.deepEqual(changed(snapshot(T.DB), base), [], 'لم يتغيّر شيء'); assert.equal(audits(T), 0);
     /* وبالمفتاح الممنوح صراحةً (backup.restore) يبدأ ويودِع — ثم يُنزع المفتاح في منتصف الاستيراد فيُرفض الجزءُ التالي ويُنظَّف مؤقتُه */
-    const GK = 'bsdept:' + B + ':bassam_grants_v1', grant = (on) => T.DB.batch([...T.lab.W.kvPutStmts(T.lab.env, 'kv', GK, JSON.stringify({ v: 1, emp: on ? { ['mgr:' + B]: { plus: ['backup.restore'], minus: [] } } : {} })),
+    const GK = 'bsdept:' + B + ':bassam_grants_v1', grant = (on) => T.DB.batch([...T.lab.W.kvPutStmts(T.lab.env, 'kv', GK, JSON.stringify({ v: 1, emp: on ? { ['mgr:' + B]: { plus: ['backup.restore'], minus: [] } } : { ['mgr:' + B]: { plus: [], minus: ['backup.restore'] } } })),   /* د6 QA ٦: النزعُ إسقاطٌ صريح (minus) — بلا منحٍ يحمله مديرُ الإدارة */
       T.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind(GK)]);
     await grant(true);
     M = protocol(T, mgrB, file, { scope: SCOPE, reason: 'TEST_ONLY استيراد مدير الإدارة' }); began = await M.begin(); invB = await inventory();
@@ -663,7 +666,8 @@ test('(٥) حسابٌ بلا صلاحية يُرفض في كل جزء ولو ب�
     assert.equal(run.inspect.status, oldRoute.status, 'حكمُ الاستيراد = حكمُ الاستعادة القائم'); assert.equal(run.inspect.j.err, oldRoute.j.err);
     assert.deepEqual(Object.keys((run.inspect.j.details || {}).denied || {}).sort(), Object.keys((oldRoute.j.details || {}).denied || {}).sort(), 'والمفاتيحُ المرفوضة هي هي');
     t.diagnostic('مديرُ الإدارة بالمفتاح: الفحص ' + run.inspect.status + ' ' + run.inspect.j.err + ' (كالمسار القديم)');
-    assert.equal(staged(T.DB), 0, 'الرفضُ النهائي نظّف المؤقت'); assert.deepEqual(changed(snapshot(T.DB), state), []); assert.equal(audits(T), 0);
+    /* V7 · د6 (QA ٦ — قرارُ المالك): الحكمان واحدٌ وهو القبول الآن (الفتراتُ المقفلة في نسخته وشريحةُ موظفيه له) — فيُعتمد الاستيراد ويُسجَّل مرةً واحدة */
+    assert.equal(run.inspect.status, 200, JSON.stringify(run.inspect.j).slice(0, 300)); assert.equal(run.commit.status, 200); assert.equal(staged(T.DB), 0); assert.equal(audits(T), 1); void state;
     /* وبلا سبب يُرفض مديرُ الإدارة (كما اليوم — مديرُ المنصة وحده معفى) */
     const noReason = await protocol(T, mgrB, file, { scope: SCOPE, reason: '' }).run();
     assert.equal(noReason.inspect.status, 400); assert.equal(noReason.inspect.j.err, 'restore-reason'); assert.equal(staged(T.DB), 0);

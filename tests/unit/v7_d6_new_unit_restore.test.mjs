@@ -50,7 +50,9 @@ const WITH = { capSet: true, cap: ['emps', 'tasks', 'daily', 'admin', 'TEST_ONLY
 const NONE = { capSet: false, emps: {} };
 async function run(kind, mode, slice, f) {
   const B = await world(), pm = await unit(B, kind, f), raw = copy(B.DB.q('SELECT * FROM kv WHERE k=?1', KP));
-  const want = DEPTS.permSlice(copy(pm), D1, copy(slice), mode, pages, lenses);
+  /* V7 · د6 (QA ٦ — قرارُ المالك ب3، يلغي ب4 «الاستيرادُ يُبقي السقفَ المرفق»): السقفُ (caps · subs · lenses · capOwn · العلامة) لا يغيّره استيرادُ الإدارة ولا استعادتُها —
+     وشريحةٌ بلا أوراق موظفين لا تكتب شيئاً. كان: الخادم = قاعدةُ العميل (320 permSlice) */
+  const want = null; void DEPTS; void pages; void lenses;
   ok(await B.restore(await B.body({ scope: { kind: 'dept', departmentId: D1 }, mode, permissionSlice: slice })));
   const v = readPerms(B);
   if (want === null) assert.deepEqual(copy(B.DB.q('SELECT * FROM kv WHERE k=?1', KP)), raw, kind + ' · ' + mode + ': nothing written — byte-identical');
@@ -59,48 +61,25 @@ async function run(kind, mode, slice, f) {
   return { v, pm, wrote: want !== null };
 }
 
-test('V7 · د6 · ب4 — import / restore into a NEW unit (seeded record, untouched): the copy\'s attached ceiling is applied in merge and in replace, as before ب4', needs('award', 'custody', 'dstats', 'seized'), async () => {
-  for (const kind of ['off', 'parent']) for (const mode of ['merge', 'replace']) {
-    const { v, wrote } = await run(kind, mode, WITH), L = kind + ' · ' + mode + ': ';
-    assert.equal(wrote, true, L + 'the slice is written');
-    assert.deepEqual(v.caps[D1], COPY_CAP, L + 'the unit\'s ceiling = the copy\'s (filtered by the platform\'s pages)');
-    assert.deepEqual(v.lenses[D1], ['zones'], L + 'and the copy\'s lenses');
-    assert.equal(v.subs && v.subs[D1], undefined, L + 'the seeded sections record goes with the seed (a unit with no record had none)');
-    assert.equal(v.capSeed && v.capSeed[D1], undefined, L + 'the mark is cleared — the ceiling is now a set one');
+test('V7 · د6 (QA ٦ — ب3) — import / restore into a NEW unit (seeded record, untouched): the target\'s ceiling, sections, lenses and seed mark stay — the copy\'s attached ceiling is NOT applied (was ب4)', needs('award', 'custody', 'dstats', 'seized'), async () => {
+  for (const kind of ['off', 'parent']) for (const mode of ['merge', 'replace']) for (const slice of [WITH, NONE]) {
+    const { v, pm, wrote } = await run(kind, mode, slice), L = kind + ' · ' + mode + ' · ' + (slice === WITH ? 'with' : 'none') + ': ';
+    assert.equal(wrote, false, L + 'nothing written');
+    assert.deepEqual(v.caps[D1], pm.caps[D1], L + 'the unit\'s ceiling as it was'); assert.deepEqual(v.capSeed[D1], pm.capSeed[D1], L + 'and its mark');
   }
 });
-
-test('V7 · د6 · ب4 — a copy with NO ceiling record into a new unit: the unit is left with no record (open / inherits), exactly what the old code produced for a unit without a record', needs('award', 'custody', 'dstats', 'seized'), async () => {
-  for (const kind of ['off', 'parent']) for (const mode of ['merge', 'replace']) {
-    const { v, wrote } = await run(kind, mode, NONE), L = kind + ' · ' + mode + ': ';
-    assert.equal(wrote, true);
-    assert.equal(Object.prototype.hasOwnProperty.call(v.caps, D1), false, L + 'no ceiling record');
-    assert.equal(v.subs && v.subs[D1], undefined, L + 'no sections record'); assert.equal(v.lenses && v.lenses[D1], undefined); assert.equal(v.capSeed && v.capSeed[D1], undefined, L + 'no mark');
-    assert.deepEqual(v.emps[D1], {});
-  }
-});
-
-test('V7 · د6 · ب4 — once a person has set the ceiling (mark cleared, or the record no longer equals the marked seed) today\'s rule holds: merge writes nothing, replace takes the copy', needs('award', 'custody', 'dstats', 'seized'), async () => {
-  const cleared = (pm) => { delete pm.capSeed[D1]; };                                   /* ضبطٌ بالقيمة نفسِها: العلامةُ مُحيت (331 setDeptCap) */
-  const edited = (pm) => { pm.caps[D1] = pm.caps[D1].concat(['links']).filter((k, i, a) => a.indexOf(k) === i).filter((k) => k !== 'admin'); };   /* تغيّر السجلُّ والعلامةُ باقية (كتابةٌ لم تمرّ بالكاتب) */
-  const subsEdited = (pm) => { pm.subs[D1] = { emps: ['data', 'custody'] }; };
+test('V7 · د6 (QA ٦ — ب3) — once a person has set the ceiling, import / restore still never touches it (merge or replace, with or without a ceiling in the copy)', needs('award', 'custody', 'dstats', 'seized'), async () => {
+  const cleared = (pm) => { delete pm.capSeed[D1]; };
+  const edited = (pm) => { pm.caps[D1] = pm.caps[D1].concat(['links']).filter((k, i, a) => a.indexOf(k) === i).filter((k) => k !== 'admin'); };
   const lensSet = (pm) => { pm.lenses = Object.assign({}, pm.lenses, { [D1]: ['zones'] }); };
   const own = (pm) => { pm.capOwn = Object.assign({}, pm.capOwn, { [D1]: true }); };
-  for (const [name, f] of [['cleared', cleared], ['edited', edited], ['sections edited', subsEdited], ['lenses set', lensSet], ['independent', own]]) {
-    const m = await run('off', 'merge', WITH, f);
-    assert.equal(m.wrote, false, name + ': merge does not write over a ceiling a person set');
-    const r = await run('off', 'replace', WITH, f);
-    assert.deepEqual(r.v.caps[D1], COPY_CAP, name + ': replace takes the copy\'s ceiling (as today)');
-    assert.equal(r.v.capSeed && r.v.capSeed[D1], undefined, name + ': and no mark is left');
-    if (name === 'cleared') assert.deepEqual(r.v.subs[D1], OFF.subs, 'a set unit keeps its sections record on replace (the slice does not carry it) — as today');
-    const n = await run('off', 'replace', NONE, f);
-    assert.equal(Object.prototype.hasOwnProperty.call(n.v.caps, D1), false, name + ': replace with a no-ceiling copy removes the record (as today)');
+  for (const [name, f] of [['cleared', cleared], ['edited', edited], ['lenses set', lensSet], ['independent', own]]) for (const mode of ['merge', 'replace']) for (const slice of [WITH, NONE]) {
+    const r = await run('off', mode, slice, f);
+    assert.equal(r.wrote, false, name + ' · ' + mode + ': nothing written');
   }
-  /* منحُ موظفين قائم في الوحدة الجديدة: الدمجُ لا يكتب — كما كان لوحدةٍ بلا سجلّ ولها منح */
   const g = await run('off', 'merge', WITH, (pm) => { pm.emps[D1] = { TEST_ONLY_e: { emps: ['view'] } }; });
   assert.equal(g.wrote, false, 'existing employee grants: merge is a no-op, the seed and its mark stay');
 });
-
 test('V7 · د6 · ب4 — the mark grants nothing and is not a logged change', () => {
   const W = fs.readFileSync(path.join(SRC, '..', 'workers', '_worker.js'), 'utf8'), uses = W.split('\n').filter((l) => /capSeed/.test(l) && !/^\s*(\/\*|\*)/.test(l));
   /* في الخادم: حذفُها مع العقدة (018) · ومع الإدارة (019e) · وقاعدةُ الشريحة (rsPermSlice) — لا قراءةَ في حكم صلاحية */
