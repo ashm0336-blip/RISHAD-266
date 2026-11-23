@@ -19376,7 +19376,7 @@ function osSchemaFloors(table) {
 var OS_LEGACY_PC = {
   zone: "ops_plan_live_floors_floor_zones_element",
   map: "ops_plan_deleted_months",
-  value: "ops_staffing_month_shifts_entry_choice_0",
+  value: OC_TABLE_NAMES.ops_zone_prayer_reading_choice_0.t,   // جدولُ القيمة المفردة المشترك (019o1)
   counts: "ops_zone_prayer_counts",
   reading: "ops_zone_prayer_reading",
 };

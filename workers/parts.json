@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "21faa07bc7f95fd9533c9cc6dc36519833d468ab6e642747a9135c8d301c1c34",
+  "sha256": "4aac9e044427dfda748954f7582b11529c68d690b51a790b42e1b6157401bbd9",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -576,8 +576,8 @@
         19199,
         19436
       ],
-      "bytes": 8271,
-      "sha256": "70658e0de6de39203b4be20355bba38548a2a3e460a4b56efec4f3aaf04e9ee3"
+      "bytes": 8345,
+      "sha256": "bb6321e38880235d37127d9212b3da657e07f8d8cc83ac5cc288d3ab0555dcb8"
     },
     {
       "file": "../../src/systems/daily/server/019p3-scheduling-rounds.js",
