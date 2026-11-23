@@ -12,7 +12,7 @@ import path from 'node:path';
 import { startLab, LAB } from './local_server.mjs';
 import { chromium, openAs } from './lab_browser.mjs';
 import { hasSystem } from '../unit/harness.mjs';
-import { oldFile, staged, snapshot, changed, NOT_TRANSFERRED, fieldDrops } from '../unit/v7_d6_import_fx.mjs';
+import { oldFile, staged, snapshot, changed, NOT_TRANSFERRED, fieldDrops, remapOf, SRC_DEPT, OTHER_DEPT } from '../unit/v7_d6_import_fx.mjs';
 
 const B = 'TEST_ONLY_B', need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات والمهام' };
 const AR = (s) => String(s).replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660));
@@ -79,12 +79,19 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
     assert.match(plain, /حقول لن تُنقل \(\d+\)/, 'حقولُ الموارد في التأكيد');
     assert.ok(plain.includes('bassam_plan_v1 · floors[].zones[].nNow — حقل عابر للعرض بلا قيمة في النسخة — العدد: ' + fd['bassam_plan_v1 · floors[].zones[].nNow|transient']), 'العابرُ الفارغ بعدده: ' + plain.slice(at, at + 700));
     assert.ok(plain.includes('bassam_plan_v1 · floors[].zones[].shareName — حقل لا مقابل له في المنصة — قيمته لن تُنقل — العدد: 1'), 'وذو القيمة يُذكر ولا يُسقط بصمت: ' + plain.slice(at, at + 700)); assert.match(confirmText, /bassam_grants_v1 — [^·]*العدد: 1/, 'والمنحُ بعددها'); assert.match(confirmText, /ستُكتب 2 صور|ستُكتب 2 صورة/, 'والصورُ التي ستُكتب');
+    /* V7 · د6 (remap): التنبيهاتُ التي تُسقط وحدها بعددها ونوعها · وإعادةُ ربط معرّف الإدارة بعددها من المصدر إلى الهدف */
+    const R = remapOf(f), nNf = Object.values(R.nfDrops).reduce((n, x) => n + x, 0);
+    assert.ok(plain.includes('تنبيهات لن تُنقل (' + nNf + ')'), 'تنبيهاتٌ لن تُنقل بعددها: ' + plain.slice(plain.indexOf('تنبيهات لن'), plain.indexOf('تنبيهات لن') + 400));
+    assert.ok(plain.includes('bassam_notif_v1 · pm_tpl — تنبيه بنوع لا يعرفه الإصدار الحالي — العدد: 4'), 'pm_tpl بعدده');
+    assert.ok(plain.includes('أُعيد ربط ' + R.n + ' إشارة من «' + SRC_DEPT + '» إلى «' + B + '» (التنبيهات: ' + R.by.notifications + ' · المهام: ' + R.by.tasks + ' · الصلاحيات: 1)'), 'إعادةُ الربط في التأكيد: ' + plain.slice(plain.indexOf('أُعيد ربط'), plain.indexOf('أُعيد ربط') + 200));
+    assert.ok(plain.includes('معرّفات إدارات أخرى في النسخة لم يُعَد ربطها: ' + OTHER_DEPT + ': 1'), 'والمعرّفُ الأجنبي يُذكر ولا يُربط');
     assert.equal(await s.page.getByText('نعم، استبدل', { exact: true }).count(), 1, 'تأكيدٌ واحد');
     await click(s.page, 'نعم، استبدل');
     /* ملخّص النجاح */
     await s.page.waitForSelector('[data-bkc="done"]', { timeout: 60000 });
     const done = await text(s.page, '[data-bkc="done-msg"]');
-    assert.match(done, /الصور: 2 جديدة و0 موجودة/, done); assert.match(done, /لم يُنقل 11/, done); assert.match(done, /حقول لم تُنقل: \d+ في \d+ مساراً/, done); assert.match(done, /لقطة ما قبل الاستيراد/, done);
+    assert.match(done, /الصور: 2 جديدة و0 موجودة/, done); assert.match(done, /لم يُنقل 11/, done);
+    assert.ok(done.includes('أُعيد ربط ' + R.n + ' إشارة من «' + SRC_DEPT + '» إلى «' + B + '»'), 'وفي ملخّص النجاح: ' + done); assert.ok(done.includes('تنبيهات لم تُنقل: ' + nNf + ' ('), done); assert.match(done, /حقول لم تُنقل: \d+ في \d+ مساراً/, done); assert.match(done, /لقطة ما قبل الاستيراد/, done);
     assert.equal(staged(lab.env.DB), 0, 'المؤقتُ حُذف مع الاعتماد');
     assert.equal(posts.filter((x) => x.op === 'commit' && x.s === 200 && x.ok === 1).length, 1, 'اعتمادٌ واحد: ' + JSON.stringify(posts));
     assert.equal(lab.env.DB.q("SELECT COUNT(*) n FROM aud WHERE k='atomic_restore'")[0].n, 1, 'سُجّل الاستيراد مرةً واحدة');

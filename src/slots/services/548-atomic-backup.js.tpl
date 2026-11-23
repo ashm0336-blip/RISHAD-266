@@ -329,7 +329,21 @@
     transient: 'حقل عابر للعرض بلا قيمة في النسخة',
     field: 'حقل لا مقابل له في المنصة — قيمته لن تُنقل',
     'field-type': 'قيمة بشكل لا يقبله الحقل — لن تُنقل',
+    /* V7 · د6 (remap): بنودُ التنبيهات التي تُسقط وحدها — والملفُّ يُنقل */
+    'nf-type': 'تنبيه بنوع لا يعرفه الإصدار الحالي',
+    'nf-department': 'تنبيه لإدارة غير إدارة النسخة',
+    'nf-state-message-unknown': 'علامة قراءة لتنبيه ليس في النسخة',
+    'nf-state-identity-unknown': 'علامة قراءة لحساب ليس في الوحدة',
   };
+  function nfItem(x) { return /^nf-/.test(x.why); }
+  /* «أُعيد ربط N إشارة من <المصدر> إلى <الهدف>» بتفصيلها لكل مورد · ومعرّفاتٌ أخرى لم تُربط · وما بقي فيه المعرّفُ المصدر نصاً — '' إن لم يكن ربط */
+  function remapLine(s) {
+    var r = s && s.remap, L = { notifications: 'التنبيهات', tasks: 'المهام', perms: 'الصلاحيات' }, O = Object.keys(L), list = function (o, f) { return Object.keys(o || {}).sort(function (x, y) { return (O.indexOf(x) + 1 || 9) - (O.indexOf(y) + 1 || 9); }).map(function (k) { return f(k) + ': ' + o[k]; }).join(' · '); };
+    if (!record(r) || !(r.n > 0 || Object.keys(r.foreign || {}).length)) return '';
+    return (r.n > 0 ? ' أُعيد ربط ' + r.n + ' إشارة من «' + r.from + '» إلى «' + r.to + '» (' + list(r.by, function (k) { return L[k] || k; }) + ').' : '') +
+      (Object.keys(r.foreign || {}).length ? ' معرّفات إدارات أخرى في النسخة لم يُعَد ربطها: ' + list(r.foreign, String) + '.' : '') +
+      (Object.keys(r.left || {}).length ? ' بقي المعرّف المصدر نصاً في: ' + list(r.left, String) + '.' : '');
+  }
   var FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
   function skipList(list) {
     return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { return { k: x.k, why: String(x.why || ''), n: integer(x.n) ? x.n : null, text: (WHY[x.why] || String(x.why || '')) + (integer(x.n) ? ' — العدد: ' + x.n : '') }; });
@@ -543,7 +557,8 @@
       c = i.counts || {},
       lost = Array.isArray(i.summary.notTransferred) ? i.summary.notTransferred : [],
       fieldsLost = lost.filter(function (x) { return FIELD_WHY[x.why]; }),
-      keysLost = lost.filter(function (x) { return !FIELD_WHY[x.why]; }),
+      nfLost = lost.filter(nfItem),
+      keysLost = lost.filter(function (x) { return !FIELD_WHY[x.why] && !nfItem(x); }),
       legacy = i.summary && i.summary.legacy,
       text =
         'سيُعتمد ' +
@@ -556,6 +571,8 @@
           : '') +
         /* V7 · د6 (schemafix): حقولُ الموارد التي لن تُنقل — كلُّها بمسارها وعددها، والباقي يُنقل */
         (fieldsLost.length ? ' حقول لن تُنقل (' + fieldsLost.length + '): ' + fieldsLost.map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + '.' : '') +
+        (nfLost.length ? ' تنبيهات لن تُنقل (' + nfLost.reduce(function (n, x) { return n + (x.n || 0); }, 0) + '): ' + nfLost.map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + '.' : '') +
+        remapLine(i.summary) +
         (i.summary.imagesNew > 0 ? ' ستُكتب ' + i.summary.imagesNew + ' صورة تحملها النسخة وليست على المنصة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
@@ -594,6 +611,7 @@
     send: send,
     cancel: cancel,
     confirm: confirm,
+    remapLine: remapLine,
     refresh: refresh,
   });
 })();
