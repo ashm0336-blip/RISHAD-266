@@ -2306,6 +2306,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         s.retroAsk)
     )
       return !1;
+    /* V7 · د6: المفتاحُ أُسقط بخبر /api/changes وقراءتُه الجديدة لم تصل بعد ⇒ لا دمجَ على خطةٍ فارغة (كان يُعلن العنصرَ المفتوح «عدّله غيرُك أو حذفه»
+       وهو باقٍ، فيُمنع حفظُه) — يُرجأ كحفظٍ في الطريق، ووصولُ القراءة يعيد المحاولة */
+    if (h("bassam_plan_v1")) {
+      const service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations,
+        known = service && typeof service.state === "function" ? service.state("bassam_plan_v1") : "ready";
+      if ("ready" !== known && "absent" !== known) return !1;
+    }
     if (this._opDrafts)
       Object.keys(this._opDrafts).forEach((name) => {
         if (h(name)) delete this._opDrafts[name];
