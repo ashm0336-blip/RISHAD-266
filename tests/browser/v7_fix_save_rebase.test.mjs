@@ -57,12 +57,15 @@ test('حفظٌ من الجهاز الأول بعد أن حفظ الجهاز ال
       const tool = s.page.locator('button[title^="وضع باب جديد"], button[data-tip^="وضع باب جديد"]').first();
       if (!(await tool.isVisible().catch(() => false))) { await s.page.locator('#bsPtPlan button', { hasText: /^الأبواب$/ }).first().click(); await s.page.waitForTimeout(300); }
       if (await tool.isVisible().catch(() => false)) { await tool.click(); await s.page.waitForTimeout(200); }
-      const b0 = await s.page.evaluate(() => { const im = [...document.querySelectorAll('#bsPtPlan img, #bsPtPlan svg image, #bsPtPlan canvas')].map((x) => x.getBoundingClientRect()).filter((r) => r.width > 300).sort((a, b) => b.width * b.height - a.width * a.height)[0]; return { x: im.x, y: im.y, w: im.width, h: im.height }; });
+      const b0 = await s.page.waitForFunction(() => { const im = [...document.querySelectorAll('#bsPtPlan img, #bsPtPlan svg image, #bsPtPlan canvas')].map((x) => x.getBoundingClientRect()).filter((r) => r.width > 300).sort((a, b) => b.width * b.height - a.width * a.height)[0]; return im ? { x: im.x, y: im.y, w: im.width, h: im.height } : null; }, null, { timeout: 15000 }).then((h) => h.jsonValue());
       await s.page.mouse.click(b0.x + b0.w * fx, b0.y + b0.h * fy);
       await s.page.locator(FIXED.split(', ').map((q) => q + ' input').join(', ')).first().waitFor({ timeout: 15000 });
     };
+    /* V7 · د6: صورةُ الخريطة تُنتظر حتى تُرسم (تبديلُ العدسة أو وصولُ نسخةٍ جديدة يعيد رسمَها) — لا يُفترض حضورُها بعد مهلةٍ ثابتة */
     /* the other device writes through the real client service of its own page */
-    const foreign = (kind, uid) => su.page.evaluate(async ([kind, uid]) => { const O = KIVO.__BS_SRV.operations, N = 'bassam_plan_v1', K = 'bsdept:' + O.context().dept + ':' + N; await O.read([K]); const doc = O.get(N); const lists = [doc.gates, doc.floors[0].gates].concat(Object.values(doc.months || {}).map((m) => m && m.d && m.d[0] && m.d[0].gates)).filter(Boolean); if (kind === 'add') lists.forEach((a) => a.push({ x: 50, y: 60, label: 'باب 9', emp: [], hideLabel: true, uid })); else lists.forEach((a) => a.forEach((g) => { if (g.uid === uid) g.num = '99'; })); const r = await O.commit({}, 'test:' + Math.random(), { t: Date.now() }, (d) => d.set(N, doc)); return { ok: r.ok, err: r.err }; }, [kind, uid]);
+    /* V7 · د6: قراءةُ الجهاز الآخر قد تسبقها قراءةُ صفحته نفسِها للمفتاح نفسِه (خبرُ /api/changes بحفظ الجهاز الأول يُسقط المفتاح ويعيد قراءته)،
+       فتُعلَن قراءتُه «stale» بعقد الخدمة ولا تُعتمد — تُعاد حتى تُعتمد قراءةٌ لم يسبقها غيرُها (شرطٌ حقيقي لا مهلة)، وأيُّ فشلٍ آخر يبقى فشلاً */
+    const foreign = (kind, uid) => su.page.evaluate(async ([kind, uid]) => { const O = KIVO.__BS_SRV.operations, N = 'bassam_plan_v1', K = 'bsdept:' + O.context().dept + ':' + N; let rd = null; for (let i = 0; i < 20 && (!rd || rd.err === 'stale'); i++) rd = await O.read([K]); if (!rd || rd.ok !== 1) return { ok: 0, err: 'read:' + (rd && rd.err) }; const doc = O.get(N); const lists = [doc.gates, doc.floors[0].gates].concat(Object.values(doc.months || {}).map((m) => m && m.d && m.d[0] && m.d[0].gates)).filter(Boolean); if (kind === 'add') lists.forEach((a) => a.push({ x: 50, y: 60, label: 'باب 9', emp: [], hideLabel: true, uid })); else lists.forEach((a) => a.forEach((g) => { if (g.uid === uid) g.num = '99'; })); const r = await O.commit({}, 'test:' + Math.random(), { t: Date.now() }, (d) => d.set(N, doc)); return { ok: r.ok, err: r.err }; }, [kind, uid]);
     const gates = async () => { const P = await plan(su); return ((P.floors[0] || {}).gates || []); };
     const uids = async () => (await gates()).map((x) => x.uid).sort();
     const cancel = async () => { await b2.page.locator(FIXED.split(', ').map((q) => q + ' button').join(', ')).filter({ hasText: /^إلغاء$/ }).first().click(); };
@@ -94,7 +97,7 @@ test('حفظٌ من الجهاز الأول بعد أن حفظ الجهاز ال
     /* ── ② تحريك بابي والجهاز الثاني حفظ للتوّ (خبرُه لم يصل: كمون على /api/changes) ── */
     await b2.page.keyboard.press('Escape'); await b2.page.waitForTimeout(3000);
     const g0 = await gate(mine);
-    const spot = await b2.page.evaluate(() => { const im = [...document.querySelectorAll('#bsPtPlan img, #bsPtPlan svg image, #bsPtPlan canvas')].map((x) => x.getBoundingClientRect()).filter((q) => q.width > 300).sort((a, b) => b.width * b.height - a.width * a.height)[0]; return { x: im.x + im.width * 0.3, y: im.y + im.height * 0.3 }; });
+    const spot = await b2.page.waitForFunction(() => { const im = [...document.querySelectorAll('#bsPtPlan img, #bsPtPlan svg image, #bsPtPlan canvas')].map((x) => x.getBoundingClientRect()).filter((q) => q.width > 300).sort((a, b) => b.width * b.height - a.width * a.height)[0]; return im ? { x: im.x + im.width * 0.3, y: im.y + im.height * 0.3 } : null; }, null, { timeout: 15000 }).then((h) => h.jsonValue());
     m = await mark(); lab.delay = { '/api/changes': 6000 };
     await b2.page.waitForTimeout(500);
     assert.equal((await foreign('add', 'TEST_ONLY_o2')).ok, 1);
