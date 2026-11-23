@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "86a8eaa38d20782d61d77dfe87d9a89d5fb0355b93d96871487e283c96d01b9c",
+  "sha256": "a4f6f0878574fa0421496ec2916cf8bef73afdab915c3419d2a9308670004d91",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -387,8 +387,8 @@
         12108,
         12696
       ],
-      "bytes": 31614,
-      "sha256": "5f975e234fd79d368c42b90e5ba36414ebd92fe6bc6e6caa85b6d3befacb1751"
+      "bytes": 31686,
+      "sha256": "a6c93fdd87ec0cdc0e9dd5d6433e95ef6438f8acf18bc84f2adc6c96fea9a4ee"
     },
     {
       "file": "../../src/systems/irshad/server/019g-irshad-domain.js",

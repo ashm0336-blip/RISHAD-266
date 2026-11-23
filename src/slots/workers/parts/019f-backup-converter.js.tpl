@@ -44,7 +44,7 @@ function rsBCRemapNF(domain, source, target, rec) {
   function mgr(r, c) {
     if (rsBCMgrOf(r[c]) !== source) return;
     r[c] = 'mgr:' + target + r[c].slice(4 + source.length);
-    if (rec) { rec.n++; rec.by.notifications = (rec.by.notifications || 0) + 1; }
+    if (rec) { rec.n++; rec.by['التنبيهات'] = (rec.by['التنبيهات'] || 0) + 1; }
   }
   Object.keys(NF_TABLES).forEach(function (n) {
     next[n].forEach(function (r) {
@@ -66,7 +66,7 @@ function rsBCMgrOf(v) {
   var m = typeof v === 'string' && /^mgr:([^:]+)/.exec(v);
   return m ? m[1] : '';
 }
-/* مواضعُ الأنظمة: كلُّ نظامٍ يعلن موردَه ومواضعَه في فتحته bc.deptRefs (المهام: src/systems/tasks/system.json) — { المورد: function (وثيقة, fn) } */
+/* مواضعُ الأنظمة: كلُّ نظامٍ يعلن موردَه ومواضعَه في فتحته bc.deptRefs — { المورد: function (وثيقة, fn(وسمُ المورد بالعربية, 0, القيمة, set)) } */
 var RS_DEPT_REFS = {
 @@SYS:bc.deptRefs@@};
 function rsBCDeptWalk(docs, perms, fn) {
@@ -74,18 +74,18 @@ function rsBCDeptWalk(docs, perms, fn) {
   if (isObj(nf)) {
     (Array.isArray(nf.items) ? nf.items : []).forEach(function (x) {
       if (!isObj(x)) return;
-      if (typeof x.dept === 'string') fn('notifications', 1, x.dept, function (v) { x.dept = v; });
-      fn('notifications', 0, x.by, function (v) { x.by = v; });
-      if (isObj(x.to) && Array.isArray(x.to.e)) x.to.e.forEach(function (e, i) { fn('notifications', 0, e, function (v) { x.to.e[i] = v; }); });
+      if (typeof x.dept === 'string') fn('التنبيهات', 1, x.dept, function (v) { x.dept = v; });
+      fn('التنبيهات', 0, x.by, function (v) { x.by = v; });
+      if (isObj(x.to) && Array.isArray(x.to.e)) x.to.e.forEach(function (e, i) { fn('التنبيهات', 0, e, function (v) { x.to.e[i] = v; }); });
     });
     ['read', 'ack', 'del'].forEach(function (f) {
       var m = nf[f];
-      if (isObj(m)) Object.keys(m).forEach(function (a) { fn('notifications', 0, a, function (v) { var o = m[a]; delete m[a]; m[v] = isObj(m[v]) && isObj(o) ? Object.assign({}, o, m[v]) : o; }); });
+      if (isObj(m)) Object.keys(m).forEach(function (a) { fn('التنبيهات', 0, a, function (v) { var o = m[a]; delete m[a]; m[v] = isObj(m[v]) && isObj(o) ? Object.assign({}, o, m[v]) : o; }); });
     });
   }
   Object.keys(RS_DEPT_REFS).forEach(function (n) { if (rsBCOwn(docs, n)) RS_DEPT_REFS[n](docs[n], fn); });
   var pe = isObj(perms) && perms.emps;
-  if (isObj(pe)) Object.keys(pe).forEach(function (ek) { fn('perms', 0, ek, function (v) { var o = pe[ek]; delete pe[ek]; if (!rsBCOwn(pe, v)) pe[v] = o; }); });
+  if (isObj(pe)) Object.keys(pe).forEach(function (ek) { fn('الصلاحيات', 0, ek, function (v) { var o = pe[ek]; delete pe[ek]; if (!rsBCOwn(pe, v)) pe[v] = o; }); });
 }
 /* إدارةُ النسخة نفسها: معرّفُ تنبيهات مخزنها (الأكثر ورداً) — فمعرّفُ مفاتيح المدير إن لم تكن تنبيهات؛ '' = لا إشارة */
 function rsBCDeptFind(docs, perms) {

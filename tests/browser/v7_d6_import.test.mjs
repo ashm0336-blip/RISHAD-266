@@ -83,7 +83,7 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
     const R = remapOf(f), nNf = Object.values(R.nfDrops).reduce((n, x) => n + x, 0);
     assert.ok(plain.includes('تنبيهات لن تُنقل (' + nNf + ')'), 'تنبيهاتٌ لن تُنقل بعددها: ' + plain.slice(plain.indexOf('تنبيهات لن'), plain.indexOf('تنبيهات لن') + 400));
     assert.ok(plain.includes('bassam_notif_v1 · pm_tpl — تنبيه بنوع لا يعرفه الإصدار الحالي — العدد: 4'), 'pm_tpl بعدده');
-    assert.ok(plain.includes('أُعيد ربط ' + R.n + ' إشارة من «' + SRC_DEPT + '» إلى «' + B + '» (التنبيهات: ' + R.by.notifications + ' · المهام: ' + R.by.tasks + ' · الصلاحيات: 1)'), 'إعادةُ الربط في التأكيد: ' + plain.slice(plain.indexOf('أُعيد ربط'), plain.indexOf('أُعيد ربط') + 200));
+    assert.ok(plain.includes('أُعيد ربط ' + R.n + ' إشارة من «' + SRC_DEPT + '» إلى «' + B + '» (التنبيهات: ' + R.by['التنبيهات'] + ' · المهام: ' + R.by['المهام'] + ' · الصلاحيات: 1)'), 'إعادةُ الربط في التأكيد: ' + plain.slice(plain.indexOf('أُعيد ربط'), plain.indexOf('أُعيد ربط') + 200));
     assert.ok(plain.includes('معرّفات إدارات أخرى في النسخة لم يُعَد ربطها: ' + OTHER_DEPT + ': 1'), 'والمعرّفُ الأجنبي يُذكر ولا يُربط');
     assert.equal(await s.page.getByText('نعم، استبدل', { exact: true }).count(), 1, 'تأكيدٌ واحد');
     await click(s.page, 'نعم، استبدل');

@@ -344,11 +344,11 @@
   function nfItem(x) { return /^nf-/.test(x.why); }
   /* «أُعيد ربط N إشارة من <المصدر> إلى <الهدف>» بتفصيلها لكل مورد · ومعرّفاتٌ أخرى لم تُربط · وما بقي فيه المعرّفُ المصدر نصاً — '' إن لم يكن ربط */
   function remapLine(s) {
-    var r = s && s.remap, L = { notifications: 'التنبيهات', tasks: 'المهام', perms: 'الصلاحيات' }, O = Object.keys(L), list = function (o, f) { return Object.keys(o || {}).sort(function (x, y) { return (O.indexOf(x) + 1 || 9) - (O.indexOf(y) + 1 || 9); }).map(function (k) { return f(k) + ': ' + o[k]; }).join(' · '); };
+    var r = s && s.remap, list = function (o) { return Object.keys(o || {}).map(function (k) { return k + ': ' + o[k]; }).join(' · '); };   /* وسومُ الموارد بالعربية من الخادم */
     if (!record(r) || !(r.n > 0 || Object.keys(r.foreign || {}).length)) return '';
-    return (r.n > 0 ? ' أُعيد ربط ' + r.n + ' إشارة من «' + r.from + '» إلى «' + r.to + '» (' + list(r.by, function (k) { return L[k] || k; }) + ').' : '') +
-      (Object.keys(r.foreign || {}).length ? ' معرّفات إدارات أخرى في النسخة لم يُعَد ربطها: ' + list(r.foreign, String) + '.' : '') +
-      (Object.keys(r.left || {}).length ? ' بقي المعرّف المصدر نصاً في: ' + list(r.left, String) + '.' : '');
+    return (r.n > 0 ? ' أُعيد ربط ' + r.n + ' إشارة من «' + r.from + '» إلى «' + r.to + '» (' + list(r.by) + ').' : '') +
+      (Object.keys(r.foreign || {}).length ? ' معرّفات إدارات أخرى في النسخة لم يُعَد ربطها: ' + list(r.foreign) + '.' : '') +
+      (Object.keys(r.left || {}).length ? ' بقي المعرّف المصدر نصاً في: ' + list(r.left) + '.' : '');
   }
   var FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
   function skipList(list) {

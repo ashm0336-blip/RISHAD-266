@@ -381,7 +381,7 @@
   },
   "bc.deptRefs": {
    "order": 10,
-   "text": "  /* V7 · د6 (remap): منشئُ المهمة ومراجِعُها (071 tkWho · tkRvIn) يحملان مفتاحَ مدير الإدارة «mgr:<المعرّف>» — يُربطان بالوحدة الهدف عند استيراد نسخة إدارة */\n  bassam_tasks_v1: function (tk, fn) {\n    if (isObj(tk)) Object.keys(tk).forEach(function (day) {\n      if (Array.isArray(tk[day])) tk[day].forEach(function (r) {\n        var x = Array.isArray(r) && isObj(r[23]) ? r[23] : null;\n        if (x) ['by', 'rv'].forEach(function (f) { if (isObj(x[f])) fn('tasks', 0, x[f].e, function (v) { x[f].e = v; }); });\n      });\n    });\n  },\n"
+   "text": "  /* V7 · د6 (remap): منشئُ المهمة ومراجِعُها (071 tkWho · tkRvIn) يحملان مفتاحَ مدير الإدارة «mgr:<المعرّف>» — يُربطان بالوحدة الهدف عند استيراد نسخة إدارة */\n  bassam_tasks_v1: function (tk, fn) {\n    if (isObj(tk)) Object.keys(tk).forEach(function (day) {\n      if (Array.isArray(tk[day])) tk[day].forEach(function (r) {\n        var x = Array.isArray(r) && isObj(r[23]) ? r[23] : null;\n        if (x) ['by', 'rv'].forEach(function (f) { if (isObj(x[f])) fn('المهام', 0, x[f].e, function (v) { x[f].e = v; }); });\n      });\n    });\n  },\n"
   },
   "res.reg.tasks": {
    "order": 10,

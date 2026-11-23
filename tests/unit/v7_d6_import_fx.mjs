@@ -153,7 +153,7 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
   DROPS.set(file, drops);
   /* ما يُعاد ربطه (019f rsBCDeptWalk) بعدده: لكل تنبيهٍ dept (إلا OTHER) و by وما في to.e من مفتاح المدير · علامةُ القراءة (رمزُ المدير) · لكل مهمةٍ by و rv · صحيفةُ المدير */
   const nfRefs = items.reduce((n, x) => n + (x.dept === SRC_DEPT ? 1 : 0) + 1 + x.to.e.filter((e) => e === 'mgr:' + SRC_DEPT).length, 0) + 1;
-  REMAP.set(file, { from: SRC_DEPT, n: nfRefs + 2 * nTaskRows + 1, by: { notifications: nfRefs, tasks: 2 * nTaskRows, perms: 1 }, foreign: { [OTHER_DEPT]: 1 },
+  REMAP.set(file, { from: SRC_DEPT, n: nfRefs + 2 * nTaskRows + 1, by: { 'التنبيهات': nfRefs, 'المهام': 2 * nTaskRows, 'الصلاحيات': 1 }, foreign: { [OTHER_DEPT]: 1 },
     /* ما يُسقطه تحويلُ التنبيهات بنداً بنداً: { 'bassam_notif_v1 · <النوع>|<السبب>': العدد } */
     nfDrops: { 'bassam_notif_v1 · pm_tpl|nf-type': 4, ['bassam_notif_v1 · ' + items[5].type + '|nf-department']: 1, 'bassam_notif_v1 · read|nf-state-message-unknown': 2 },
     kept: items.filter((x) => x.type !== 'pm_tpl' && x.dept === SRC_DEPT).map((x) => x.id) });
