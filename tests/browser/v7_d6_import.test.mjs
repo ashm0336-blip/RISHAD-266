@@ -75,16 +75,16 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
     const confirmText = AR(await s.page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ')));
     assert.match(confirmText, /لن يُنقل 11/, 'ملخّصُ الخادم في التأكيد');
     /* V7 · د6 (schemafix): وحقولُ الموارد التي لن تُنقل — كلُّها قبل التأكيد بمسارها وعددها (الملفُ يحملها كما يكتبها Production) */
-    const fd = fieldDrops(f);
-    assert.match(confirmText, /حقول لن تُنقل \(\d+\)/, 'حقولُ الموارد في التأكيد');
-    assert.ok(confirmText.includes('bassam_plan_v1 · floors[].zones[].nNow — حقل عابر للعرض بلا قيمة في النسخة — العدد: ' + fd['bassam_plan_v1 · floors[].zones[].nNow|transient']), 'العابرُ الفارغ بعدده');
-    assert.ok(confirmText.includes('bassam_plan_v1 · floors[].zones[].shareName — حقل لا مقابل له في المنصة — قيمته لن تُنقل — العدد: 1'), 'وذو القيمة يُذكر ولا يُسقط بصمت'); assert.match(confirmText, /bassam_grants_v1 — [^·]*العدد: 1/, 'والمنحُ بعددها'); assert.match(confirmText, /ستُكتب 2 صور|ستُكتب 2 صورة/, 'والصورُ التي ستُكتب');
+    const fd = fieldDrops(f), plain = confirmText.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/ - /g, ' · '),   /* نافذةُ التأكيد تعرض الفاصل «·» شرطةً */ at = plain.indexOf('حقول لن تُنقل');
+    assert.match(plain, /حقول لن تُنقل \(\d+\)/, 'حقولُ الموارد في التأكيد');
+    assert.ok(plain.includes('bassam_plan_v1 · floors[].zones[].nNow — حقل عابر للعرض بلا قيمة في النسخة — العدد: ' + fd['bassam_plan_v1 · floors[].zones[].nNow|transient']), 'العابرُ الفارغ بعدده: ' + plain.slice(at, at + 700));
+    assert.ok(plain.includes('bassam_plan_v1 · floors[].zones[].shareName — حقل لا مقابل له في المنصة — قيمته لن تُنقل — العدد: 1'), 'وذو القيمة يُذكر ولا يُسقط بصمت: ' + plain.slice(at, at + 700)); assert.match(confirmText, /bassam_grants_v1 — [^·]*العدد: 1/, 'والمنحُ بعددها'); assert.match(confirmText, /ستُكتب 2 صور|ستُكتب 2 صورة/, 'والصورُ التي ستُكتب');
     assert.equal(await s.page.getByText('نعم، استبدل', { exact: true }).count(), 1, 'تأكيدٌ واحد');
     await click(s.page, 'نعم، استبدل');
     /* ملخّص النجاح */
     await s.page.waitForSelector('[data-bkc="done"]', { timeout: 60000 });
     const done = await text(s.page, '[data-bkc="done-msg"]');
-    assert.match(done, /الصور: 2 جديدة و0 موجودة/, done); assert.match(done, /لم يُنقل 11/, done); assert.match(done, /لقطة ما قبل الاستيراد/, done);
+    assert.match(done, /الصور: 2 جديدة و0 موجودة/, done); assert.match(done, /لم يُنقل 11/, done); assert.match(done, /حقول لم تُنقل: \d+ في \d+ مساراً/, done); assert.match(done, /لقطة ما قبل الاستيراد/, done);
     assert.equal(staged(lab.env.DB), 0, 'المؤقتُ حُذف مع الاعتماد');
     assert.equal(posts.filter((x) => x.op === 'commit' && x.s === 200 && x.ok === 1).length, 1, 'اعتمادٌ واحد: ' + JSON.stringify(posts));
     assert.equal(lab.env.DB.q("SELECT COUNT(*) n FROM aud WHERE k='atomic_restore'")[0].n, 1, 'سُجّل الاستيراد مرةً واحدة');

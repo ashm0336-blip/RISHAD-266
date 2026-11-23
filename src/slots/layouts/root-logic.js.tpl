@@ -993,7 +993,9 @@ class Component extends DCLogic {
       : run.step === "inspect" ? "اكتمل إرسال الأجزاء (" + parts + ") — تُفحص النسخة وتُطابَق مع الإدارة."
       : run.step === "review" ? "اكتمل الرفع والتحقق — راجع الملخّص ثم أكّد."
       : run.step === "commit" ? "تُطبَّق النسخة في خطوة واحدة…" : "تُجهَّز أجزاء النسخة…";
-    const s2 = (done && done.summary) || {}, r = (done && done.receipt) || {}, cn = r.counts || {}, lost = s2.notTransferred || [];
+    /* V7 · د6 (schemafix): حقولُ الموارد التي لم تُنقل (transient · field · field-type) تُعدّ وحدها — «لم يُنقل» للمفاتيح كما كان */
+    const s2 = (done && done.summary) || {}, r = (done && done.receipt) || {}, cn = r.counts || {}, lost0 = s2.notTransferred || [], fwhy = { transient: 1, field: 1, "field-type": 1 },
+      lost = lost0.filter((x) => !fwhy[x.why]), lostF = lost0.filter((x) => fwhy[x.why]);
     return {
       bkcSumOn: (step === "pick" || step === "confirm") && (!!sum || !!c.sumErr),
       bkcSumLine: sum ? "المصدر: «" + (sum.dept || c.src) + "»" + (when ? " · صُدّرت: " + when : "") + " · " + N(sum.keys, "مجموعة بيانات") + " و" + N(sum.images, "صورة") + " · الحجم: " + mb(sum.fileBytes || sum.bytes) +
@@ -1006,6 +1008,7 @@ class Component extends DCLogic {
       bkcDoneMsg: done ? "استُعيدت " + N(cn.kv || 0, "مجموعة بيانات") + " و" + N(cn.operations || 0, "مورد تشغيلي") + (cn.notifications ? " و" + N(cn.notifications, "تنبيه") : "") +
         " · الصور: " + (s2.imagesNew || 0) + " جديدة و" + (s2.imagesReused || 0) + " موجودة مطابقة" + (s2.imagesMissing ? " و" + s2.imagesMissing + " مفقودة" : "") +
         (lost.length ? " · لم يُنقل " + lost.length + ": " + lost.slice(0, 12).map((x) => x.k).join("، ") + (lost.length > 12 ? "…" : "") : "") +
+        (lostF.length ? " · حقول لم تُنقل: " + lostF.reduce((n, x) => n + (x.n || 0), 0) + " في " + lostF.length + " مساراً (مذكورة في ملخّص التأكيد)" : "") +
         " · حُفظت لقطة ما قبل الاستيراد (" + (r.snapshot || "") + ") وسُجّل الاستيراد في السجل." : "",
     };
   }
