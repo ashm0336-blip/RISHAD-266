@@ -31,10 +31,11 @@ const J = (o) => JSON.parse(JSON.stringify(o));
    HTTP authorization (covered by irshad_cloud_http and the role matrix). Keep
    their transport fixture explicit: POST ACK cannot unlock a card; only the
    subsequent confirmed GET windows DTO may do so. No retired JSON/flags. */
-function irHintPage(can, {reason='TEST_ONLY hint reason',denied=false}={}) {
+function irHintPage(can, {confirm=true,denied=false}={}) {
   const P=page('irshad',{can}),context={uid:'tst_dm1',dept:'tst_d1',key:'tst_dm1\0tst_d1'},windows=[];
   P.requests=[];P.reasons=[];P.c._irContext=()=>context;
-  P.KIVO.__BS_SRV={askReason:(key,keys,done)=>{P.reasons.push({key,keys});done(reason);}};
+  /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سبب — رسالةُ التأكيد (KIVO.bsConfirm) هي البوابة؛ نافذةُ السبب لا تُطلب أبداً */
+  P.confirms=[];P.KIVO.__BS_SRV={askReason:(key,keys)=>{P.reasons.push({key,keys});}};P.KIVO.bsConfirm=(o)=>{P.confirms.push(o);return Promise.resolve(confirm);};
   const dto=()=>({ok:1,res:'irshad',dept:context.dept,today:P.c.hToday(),now:NOW,maxHours:24,defHours:1,may:true,windows:J(windows)});
   P.c.state.irRetro=dto();
   P.c._irRequest=async(route,options)=>{
@@ -53,11 +54,12 @@ function irHintPage(can, {reason='TEST_ONLY hint reason',denied=false}={}) {
 
 /* Same pure-hint contract as Irshad, using Seized's actual typed retro handler.
    Catalogs/context are explicit confirmed DTOs; they are not legacy KV adapters. */
-function szHintPage(can, {reason='TEST_ONLY hint reason',denied=false}={}) {
+function szHintPage(can, {confirm=true,denied=false}={}) {
   const P=page('seized',{can}),context={uid:'tst_dm1',dept:'tst_d1',key:'tst_dm1\0tst_d1'},windows=[];
   const base={epoch:0,reports:0,catalog:0,actions:0,locations:0,jew:0,retro:0};
   P.requests=[];P.reasons=[];P.c._bcContext=()=>context;P.c._bcEnsure=()=>{};
-  P.KIVO.__BS_SRV={askReason:(key,keys,done)=>{P.reasons.push({key,keys});done(reason);}};
+  /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سبب — رسالةُ التأكيد (KIVO.bsConfirm) هي البوابة؛ نافذةُ السبب لا تُطلب أبداً */
+  P.confirms=[];P.KIVO.__BS_SRV={askReason:(key,keys)=>{P.reasons.push({key,keys});}};P.KIVO.bsConfirm=(o)=>{P.confirms.push(o);return Promise.resolve(confirm);};
   const defaults=JSON.parse(fs.readFileSync(path.join(SRC,'systems/seized/client/defaults.json'),'utf8'));
   P.c.state.szCatalogs={_contextKey:context.key,base,catalogs:{catalog:{present:false,value:{ver:P.c.SZ_VER,cats:defaults.cats}},actions:{present:false,value:defaults.actions},jew:{present:false,value:defaults.kinds},locations:{present:false,value:[]}}};
   const dto=()=>({ok:1,res:'seized',dept:context.dept,today:P.c.hToday(),now:NOW,maxHours:24,defHours:1,may:true,windows:J(windows),_contextKey:context.key,_received:NOW});
@@ -107,11 +109,11 @@ for (const slug of ['irshad', 'seized']) {
     V.irMonths[3].dbl(EV);
     if(slug==='irshad'){
       await P.settle();assert.equal(P.c.state.irRetro,null,'ACK alone is not an active-window read');assert.equal(P.V().irMonthAutoHint,true);
-      assert.equal(P.reasons.length,1);assert.equal(JSON.parse(P.requests[0].options.body).reason,'TEST_ONLY hint reason');
+      assert.equal(P.confirms.length,1);assert.equal(P.confirms[0].title,'فتح الفترة للاستدراك');assert.equal(P.reasons.length,0,'no reason dialog');assert.equal(JSON.parse(P.requests[0].options.body).reason,undefined,'no reason in the POST');
       await P.pull();assert.equal(P.V().irMonthAutoHint,false);assert.deepEqual(J(P.c.state.irRetro.windows[0].scope),{y:1448,m:4,d:null});
     }else{
       await P.settle();assert.equal(P.c.state.szRetro,null,'ACK alone is not an active-window read');assert.equal(P.V().irMonthAutoHint,true);
-      assert.equal(P.reasons.length,1);assert.equal(JSON.parse(P.requests[0].options.body).reason,'TEST_ONLY hint reason');
+      assert.equal(P.confirms.length,1);assert.equal(P.confirms[0].title,'فتح الفترة للاستدراك');assert.equal(P.reasons.length,0,'no reason dialog');assert.equal(JSON.parse(P.requests[0].options.body).reason,undefined,'no reason in the POST');
       await P.pull();assert.equal(P.V().irMonthAutoHint,false);assert.deepEqual(J(P.c.state.szRetro.windows[0].scope),{y:1448,m:4,d:null});
     }
     assert.equal(P.toasts.length, 0);
@@ -129,19 +131,19 @@ for (const slug of ['irshad', 'seized']) {
   });
 }
 
-test('IRSZ-4 · الاسترشاد: إلغاء السبب أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',needs('tasks'), async()=>{
-  for(const options of [{reason:''},{denied:true}]){
+test('IRSZ-4 · الاسترشاد: إلغاء التأكيد أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',needs('tasks'), async()=>{
+  for(const options of [{confirm:false},{denied:true}]){
     const P=irHintPage(ALL,options);P.c.setState({irMonth:4,irDay:3});P.V().irMonths[3].dbl(EV);await P.settle();
-    assert.equal(P.reasons.length,1);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
+    assert.equal(P.confirms.length,1);assert.equal(P.reasons.length,0);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
     await P.pull();assert.deepEqual(J(P.c.state.irRetro.windows),[]);assert.equal(P.V().irMonthAutoHint,true);
     assert.deepEqual(J(P.c.state.irOpenMonths||{}),{});if(options.denied)assert.match(P.toasts.at(-1)[0],/server refusal/);
   }
 });
 
-test('IRSZ-4 · المضبوطات: إلغاء السبب أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',needs('tasks'), async()=>{
-  for(const options of [{reason:''},{denied:true}]){
+test('IRSZ-4 · المضبوطات: إلغاء التأكيد أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',needs('tasks'), async()=>{
+  for(const options of [{confirm:false},{denied:true}]){
     const P=szHintPage(ALL,options);P.c.setState({irMonth:4,irDay:3});P.V().irMonths[3].dbl(EV);await P.settle();
-    assert.equal(P.reasons.length,1);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
+    assert.equal(P.confirms.length,1);assert.equal(P.reasons.length,0);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
     await P.pull();assert.deepEqual(J(P.c.state.szRetro.windows),[]);assert.equal(P.V().irMonthAutoHint,true);
     assert.deepEqual(J(P.c._szRetroFlags().months),{});if(options.denied)assert.match(P.toasts.at(-1)[0],/server refusal/);
   }
