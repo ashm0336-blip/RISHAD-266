@@ -8763,6 +8763,13 @@ function empTransitionKey(d, n) {
 function empStableKey(e) {
   return typeof e === 'string' ? e : String((e && (e.eid || e.nid || e.name)) || '');
 }
+/* V7 · د6 (QA ١٣): هل الصفُّ e هدفُ هذا الانتقال في حسابه — غائبٌ عن السجل قبله، أو تغيّرت فيه الهويةُ أو الجوالُ أو الرقمُ الوظيفي.
+   القاعدةُ نفسُها في العميل (590 transitionPrepare: empAcctTouched) فالمقترحاتُ تطابق ما يقبله الخادم */
+function empAcctTouched(before, e, ek) {
+  var o = (before || []).filter(function (x) { return isObj(x) && empStableKey(x) === ek; })[0];
+  if (!o) return true;
+  return ['nid', 'phone', 'empno'].some(function (f) { return String(o[f] || '').trim() !== String(e[f] || '').trim(); });
+}
 function empRecordKey(e) {
   return typeof e === 'string' ? e : String((e && (e.eid || e.name)) || '');
 }
@@ -9253,6 +9260,9 @@ async function empPrepareTransition(env, A, input) {
         pw = String(e.empno || '').trim(),
         name = String(e.name || '').trim();
       if (!ek || (!nid && !phone) || !pw || existingStaff.has(ek)) continue;
+      /* V7 · د6 (QA ١٣ · ١٢): الانتقالُ لا يُنشئ حساباً إلا لصفٍّ هو هدفُه — جديدٌ فيه، أو تغيّرت فيه بياناتُ الدخول (الهوية · الجوال · الرقم الوظيفي).
+         كان يُنشئ حساباً لكل موظفٍ معلّقٍ باقٍ، فحذفُ موظفٍ أو استيرادُ غيره يفعّل حساباتِ آخرين أثراً جانبياً؛ تفعيلُ المعلّق فعلٌ صريحٌ للمدير */
+      if (!empAcctTouched(before, e, ek)) continue;
       var un = nid || phone,
         alt = nid ? phone : '';
       if (proposals.has(ek)) consumed.add(ek);

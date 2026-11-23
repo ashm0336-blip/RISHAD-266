@@ -338,6 +338,9 @@
     changeOwnAccount: changeOwnAccount,
     staffStatus: staffStatus,
     staffMap: staffMap, activateStaffMany: activateStaffMany,
+    /* V7 · د6 (QA ١٢): بصمةُ كلمة المرور (p2) لمقترحات حسابات الانتقال (590 transitionPrepare يسأل BassamAuth.hashPw) — لم تكن مُصدَّرةً
+       فيفشل كلُّ انتقالٍ فيه حسابٌ جديد بـ«crypto» قبل أي طلب */
+    hashPw: hashPw,
     staffIsMgr: staffIsMgr,
     setStaffMgr: setStaffMgr,
     activateStaff: activateStaff,
