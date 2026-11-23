@@ -831,7 +831,9 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       it("cols", "impColsDo", "a185151810p06", "down", "تنزيل قالب الاستيراد", "ملف Excel بالأعمدة الصحيحة — عبّئه ثم ارفعه");
   }
   function emptyHtml() {
-    return '<button data-ei="impPickDo" data-emp-imp="empty" class="ei-mi" style="height:42px;padding:0 24px;border-radius:12px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p4);cursor:pointer;font-family:\'Cairo\',sans-serif;display:inline-flex;align-items:center;gap:8px">' + svg("up", 16, 1) + " استيراد من Excel</button>";
+    return '<button data-ei="impPickDo" data-emp-imp="empty" class="ei-mi" style="height:42px;padding:0 24px;border-radius:12px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p4);cursor:pointer;font-family:\'Cairo\',sans-serif;display:inline-flex;align-items:center;gap:8px">' + svg("up", 16, 1) + " استيراد من Excel</button>" +
+      /* V7 · د6 (51ج · قرار المالك): في الحالة الفارغة لا قائمة «ملفات»، فقالبُ الاستيراد زرٌّ بجانب «استيراد من Excel» — المعالجُ نفسُه impColsDo */
+      '<button data-ei="impColsDo" data-emp-imp="empty-tpl" class="ei-mi" style="height:42px;padding:0 24px;border-radius:12px;font-size:13px;font-weight:400;background:var(--bg-xffffff);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p4);cursor:pointer;font-family:\'Cairo\',sans-serif;display:inline-flex;align-items:center;gap:8px">' + svg("down", 16, 1) + " تنزيل قالب الاستيراد</button>";
   }
   function impPaint(V, canAdd) {
     var run = function () {
