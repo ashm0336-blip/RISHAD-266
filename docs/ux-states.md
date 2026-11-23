@@ -24,7 +24,7 @@
 | daily (Daily Sessions) | 60 | 9 | 179 | 0 | 3 |
 | dreport (Daily Report) | 19 | 0 | 74 | 0 | 1 |
 | dstats (Daily Stats) | 14 | 1 | 37 | 0 | 0 |
-| employees (Employees) | 52 | 6 | 106 | 0 | 7 |
+| employees (Employees) | 53 | 9 | 107 | 0 | 7 |
 | irshad (Irshad) | 18 | 0 | 17 | 0 | 6 |
 | kpis (KPIs) | 1 | 0 | 3 | 0 | 1 |
 | org (Org) | 33 | 3 | 41 | 0 | 12 |
