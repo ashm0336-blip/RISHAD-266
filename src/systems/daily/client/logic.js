@@ -3587,19 +3587,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
      يبدو للخادم معدَّلاً (lens.zones.data.edit · gates · marks) ولو لم يلمسه المستخدم، وأيامُ الشهر الماضيةُ مقفلةٌ ⇒ 403 على حفظ اليوم.
      هنا: كلُّ يومٍ لا يختلف عن المخزّن إلا بحقول ختمٍ أضيفت (eid · id · sid غائبةٍ في المخزّن) يُعاد إلى المخزّن بعينه. تعديلٌ حقيقي يبقى كما هو فيحكمه الخادم. */
   _dsUnstamped(value) {
-    if (!value || "object" != typeof value) return value;
+    if (!value || "object" !== typeof value) return value;
     let base;
     try {
       base = this._opService().get("bassam_rounds_v1");
     } catch (e) {
       return value;
     }
-    if (!base || "object" != typeof base) return value;
+    if (!base || "object" !== typeof base) return value;
     const STAMP = { eid: 1, id: 1, sid: 1 },
       same = (v, b) => {
         if (v === b) return !0;
         if (Array.isArray(b)) return Array.isArray(v) && v.length === b.length && b.every((x, i) => same(v[i], x));
-        if (!b || "object" != typeof b || !v || "object" != typeof v || Array.isArray(v)) return JSON.stringify(v) === JSON.stringify(b);
+        if (!b || "object" !== typeof b || !v || "object" !== typeof v || Array.isArray(v)) return JSON.stringify(v) === JSON.stringify(b);
         const kb = Object.keys(b);
         if (!kb.every((k) => Object.prototype.hasOwnProperty.call(v, k) && same(v[k], b[k]))) return !1;
         return Object.keys(v).every((k) => Object.prototype.hasOwnProperty.call(b, k) || STAMP[k]);
