@@ -28,6 +28,11 @@ export const since = (n) => WORKER_N && WORKER_N < n ? { skip: 'يحتاج عا�
 export const DIST = process.env.KIVO_DIST || [WORKER_N ? 'pk' + (WORKER_N + 100) : '', 'pk251'].filter(Boolean).map(d => path.join(ROOT, d)).find(d => fs.existsSync(path.join(d, 'index.html'))) || path.join(ROOT, 'pk251');
 /* KIVO_251 · ADR-012: تخطيطُ المصدر — <src>/layout.json (الشجرةُ المستهدفة) أو التخطيطُ الانتقالي k2NN/src */
 export const SRC = process.env.KIVO_SRC || path.join(ROOT, 'src');
+/* V7 · د6 (pins): رقمُ المخطّط الحالي من مصدرٍ واحد — تصريحُ KIVO_SCHEMA_VERSION في جزء الترحيلات المولَّد (051a، من migrations/).
+   اختبارٌ يعني «المخطّط الحالي» يقارن به لا برقمٍ حرفيّ، فلا يكسره الترحيلُ القادم؛ والرقمُ التاريخيّ (مثل 0008 أو 9) يبقى حرفيّاً. */
+export const CURRENT_SCHEMA = (() => { const m = /var KIVO_SCHEMA_VERSION = (\d+);/.exec(fs.readFileSync(path.join(ROOT, 'workers', 'parts', '051a-schema-migrations.js'), 'utf8')); if (!m) throw Error('Canonical schema declaration missing'); return +m[1]; })();
+/* V7 · د6 (pins): meta.schema_version لقاعدةٍ مهيّأةٍ من الترحيل التاريخيّ «from» حتى الحالي — بدل القوائم الحرفيّة ['11','12'] */
+export const schemaFrom = (v, from) => /^\d+$/.test(String(v ?? '')) && +v >= from && +v <= CURRENT_SCHEMA;
 const LEGACY_LAYOUT = { migrations: 'migrations', workersParts: 'workers/parts', pages: 'client/pages', styles: 'client/css' };
 /* V7 · د2-ب — الأنظمةُ الحاضرة (src/systems/<key>/system.json): الاختبارُ الذي يحتاج نظاماً يُتخطّى بغيابه (needs)، والعُدّةُ المشتركة تعمل بالحالين.
    حذفُ مجلد نظامٍ يُخرجه من القاعدة (tools/systems.py)؛ فوحداتُ القاعدة تنجح بوجوده وبغيابه. */

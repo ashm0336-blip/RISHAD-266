@@ -8,13 +8,13 @@ import { world as canonicalWorld, D1, D2, IDS, copy } from './canonical_fx.mjs';
 import { candidateWorker } from './irshad_domain_fx.mjs';
 import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { inspectOperationalFixture, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
-import { needs } from './harness.mjs';
+import { needs, CURRENT_SCHEMA } from './harness.mjs';
 
 const workerSha = createHash('sha256').update(fs.readFileSync('workers/_worker.js')).digest('hex');
 console.log('Actual Operations HTTP Worker SHA256 ' + workerSha);
 async function world() {
   const B = await canonicalWorld();
-  assert.equal(B.W.KIVO_SCHEMA_VERSION, 12);   /* V7 · د6 (schemafix): 0012_prayer_readings */
+  assert.equal(B.W.KIVO_SCHEMA_VERSION, CURRENT_SCHEMA);   /* V7 · د6 (pins): المخطّطُ الحالي من المصدر الواحد */
   await installOperationalFixture(B.env, B.W);
   const W = await candidateWorker(['rsReferenceSnapshot', 'opDefinitions', 'opInfo']);
   return { ...B, W };

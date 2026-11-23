@@ -6,13 +6,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { world, D1, D2, IDS, EKEYS, seizedDocs, clone } from '../../_multi/tests/business_atomic_fx.mjs';
+import { world, CURRENT_SCHEMA, D1, D2, IDS, EKEYS, seizedDocs, clone } from '../../_multi/tests/business_atomic_fx.mjs';
 import { browser, ROOT } from '../../_multi/tests/business_cloud_ui_fx.mjs';
 import { PNG } from '../../../../tests/unit/world_fx.mjs';
 import { needs } from '../../../../tests/unit/harness.mjs';
 
 async function setup(t) {
-  const B = await world({ schema: 11 }); t.after(() => B.DB.db.close());
+  const B = await world({ schema: CURRENT_SCHEMA }); t.after(() => B.DB.db.close());
   const perms = clone(B.keys.bassam_perms_v1);
   Object.values(perms.caps).forEach((caps) => caps.push('seized', 'award'));
   Object.assign(perms.emps[D1][EKEYS.employee1], { 'seized/records': ['view', 'add', 'edit', 'del'], 'seized/dash': ['view'] });

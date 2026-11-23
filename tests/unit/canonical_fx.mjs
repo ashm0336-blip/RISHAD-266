@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { parse } from 'acorn';
-import { D1Shim, ROOT, allowTestSchemaUpgrade, hasSystem } from './harness.mjs';
+import { D1Shim, ROOT, allowTestSchemaUpgrade, hasSystem, schemaFrom } from './harness.mjs';
 import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { D1, D2, G1, G2, IDS, EKEYS, copy, identitySnapshot, notificationSnapshot } from './notifications_review_fx.mjs';
 export { ROOT, D1, D2, G1, G2, IDS, EKEYS, copy, identitySnapshot, notificationSnapshot };
@@ -198,7 +198,7 @@ async function fixtureWorld({ mode = 'enforce', through = null } = {}) {
   if (through) allowTestSchemaUpgrade(DB);
   /* RISHAD-266 · schema 10: the synthetic employee roster is an operational resource. Install it through the real
      cutover planner (same as tasks_fx/current_schema_fx) — the worker correctly refuses a KV copy of it. */
-  else if (['11','12'].includes(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v)) await installOperationalFixture(env, W);
+  else if (schemaFrom(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, 11)) await installOperationalFixture(env, W);
   const api = async (who, route, { method = 'GET', body } = {}) => {
     const headers = new Headers();
     if (who) headers.set('Cookie', 'bs_tok=TEST_ONLY_session_' + who);

@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { candidateWorker } from './irshad_domain_fx.mjs';
-import { D1Shim, ROOT } from './harness.mjs';
+import { D1Shim, ROOT, CURRENT_SCHEMA } from './harness.mjs';
 
 const A = 'TEST_ONLY_OV_A', B = 'TEST_ONLY_OV_B', GHOST = 'TEST_ONLY_OV_UNREGISTERED';
 const RESOURCE = 'bassam_employees_v1';
@@ -15,7 +15,7 @@ const LEGACY_EMPLOYEE = 'TEST_ONLY legacy union employee';
 
 async function fixture({ empty = false, mode = 'enforce', legacyString = false, legacyAccount = false } = {}) {
   const W = await candidateWorker(['opPrepared', 'opBulkInstall', 'ocConvert']);
-  assert.equal(W.KIVO_SCHEMA_VERSION, 12);   /* V7 · د6 (schemafix): 0012_prayer_readings */
+  assert.equal(W.KIVO_SCHEMA_VERSION, CURRENT_SCHEMA);   /* V7 · د6 (pins): المخطّطُ الحالي من المصدر الواحد */
   const DB = new D1Shim(), env = { DB, ...(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}), ASSETS: { fetch: async () => new Response('TEST_ONLY') } };
   await W.initDb(env); DB.exec('PRAGMA foreign_keys=ON');
   const hash = 'p2$100000$' + 'a'.repeat(32) + '$' + 'b'.repeat(64);
