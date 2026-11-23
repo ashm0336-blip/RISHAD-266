@@ -325,6 +325,10 @@
     grants: 'منح صلاحيات صريحة لموظفين — لا تُنقل حتى لا تُفتح صلاحية لم تكن',
     unknown: 'لا مقابل له في المنصة الحالية',
     'image-unreferenced': 'صورة لا يشير إليها أي سجل في النسخة',
+    /* V7 · د6 (schemafix): حقولٌ داخل الموارد — الاستيرادُ يكمل بغيرها */
+    transient: 'حقل عابر للعرض بلا قيمة في النسخة',
+    field: 'حقل لا مقابل له في المنصة — قيمته لن تُنقل',
+    'field-type': 'قيمة بشكل لا يقبله الحقل — لن تُنقل',
   };
   function skipList(list) {
     return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { return { k: x.k, why: String(x.why || ''), n: integer(x.n) ? x.n : null, text: (WHY[x.why] || String(x.why || '')) + (integer(x.n) ? ' — العدد: ' + x.n : '') }; });

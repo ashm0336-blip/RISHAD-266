@@ -11914,7 +11914,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                                       {
                                         zones: (t.zones || []).map((t) => {
                                           const { area: e, share: s, shareName: n, cap: a, ...i } = t;
-                                          return { ...i, area: null, share: null, shareName: null, cap: null };
+                                          /* V7 · د6 (schemafix): share · shareName حقلان قديمان لا يعرفهما المخطّط — «مسح السعة» يزيلهما ولا يكتبهما null (كان الحفظُ يُرفض operations-unknown-field-share) */
+                                          return { ...i, area: null, cap: null };
                                         }),
                                         floors: (t.floors || []).map((e, s) => (s === t.floor ? { ...e, mpu: null } : e)),
                                         calMode: null,

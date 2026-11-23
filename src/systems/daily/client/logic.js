@@ -17861,7 +17861,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     (this._rotLab = null),
                     t &&
                       this._updRound((e) => {
-                        Array.isArray(e.zones) && e.zones[t.i] && (e.zones[t.i] = t.z);
+                        /* V7 · د6 (schemafix): المصلى المسحوب مأخوذٌ من عرض الخريطة (نسخةٌ مشتقة: nNow · capNow · count = نسبةُ الصلاة المختارة)؛
+                           يُكتب شكلُه وحده على المصلى المخزَّن — لا تُكتب الحقولُ المشتقة (كان الحفظُ يُرفض operations-unknown-field-nNow) ولا تُستبدل count المخزَّنة */
+                        if (!Array.isArray(e.zones) || !e.zones[t.i]) return;
+                        const { nNow: n0, capNow: c0, count: k0, ...z } = t.z;
+                        e.zones[t.i] = Object.prototype.hasOwnProperty.call(e.zones[t.i], "count") ? { ...z, count: e.zones[t.i].count } : z;
                       }),
                     void this.setState({
                       zdrag: null,

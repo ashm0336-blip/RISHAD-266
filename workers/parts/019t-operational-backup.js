@@ -58,11 +58,14 @@ function opConvertBackupBoundary(keys,domains,departments,scope,source,version,s
   } else {
     if(domains.operations!==undefined)throw rsError('backup-operations-manifest-version');
     domains.operations=[];
+    /* V7 · د6 (schemafix): نسخةٌ قديمة لا تُرفض كلُّها بسبب حقل — وثيقتُها تُطابَق بمخطّطها قبل ترميزها (019g rsiFields) وما لا يُعرف يُذكر في «ما لن يُنقل» */
+    var fields={};
     departments.forEach(function(d){opDefinitions().forEach(function(def){
       var k='bsdept:'+d+':'+def.resource,prepared=opPrepared(def.resource),present=ocOwn(keys,k),value;
-      if(present){opInfo(k);value=rsBCParse(keys[k]);}else summary.emptyDomains.push('operations:'+k);
+      if(present){opInfo(k);keys[k]=rsiFields(fields,k,keys[k]);value=rsBCParse(keys[k]);}else summary.emptyDomains.push('operations:'+k);
       domains.operations.push(opBackupDomain(prepared,ocConvert(prepared,d,def.resource,value,present)));
     });});
+    var dropped=rsiFieldList([fields]);if(dropped.length)summary.notTransferred=(summary.notTransferred||[]).concat(dropped);
   }
   oldKeys.forEach(function(k){delete keys[k];});
 }

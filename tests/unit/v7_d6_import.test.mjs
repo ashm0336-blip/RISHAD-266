@@ -11,7 +11,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { hasSystem } from './harness.mjs';
 import { internals } from './internals.mjs';
-import { target, oldFile, sizeOf, protocol, staged, snapshot, changed, readOps, readImage, NOT_TRANSFERRED, LAB, SEG } from './v7_d6_import_fx.mjs';
+import { target, oldFile, sizeOf, protocol, staged, snapshot, changed, readOps, readImage, NOT_TRANSFERRED, LAB, SEG, withoutDropped, fieldDrops, fieldDropsOf } from './v7_d6_import_fx.mjs';
 
 const B = 'TEST_ONLY_B', A = 'TEST_ONLY_A', SCOPE = { kind: 'dept', departmentId: B }, LIMIT = 8 * 1024 * 1024;
 const need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport', 'custody') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات والمهام والتشغيل والتقرير والعهد (بياناتُ العرض المصدر)' };
@@ -23,7 +23,8 @@ async function compare(T, who, file, dept = B) {
   const W = T.lab.W, names = Object.keys(file.data), ops = names.filter((k) => file.data[k] !== null && W.opInfo('bsdept:' + dept + ':' + k));
   const got = await readOps(T, who, dept, ops.concat(['bassam_rounds_arc_v1']));
   for (const k of ops) {
-    const want = JSON.parse(file.data[k]);
+    /* V7 · د6 (schemafix): حقولُ المصلى العابرة/غير المعروفة (nNow · capNow · share · shareName) يُسقطها الاستيراد ويذكرها — وكلُّ ما سواها كما في النسخة */
+    const want = withoutDropped(JSON.parse(file.data[k]));
     /* الجولات: أيامُ الأشهر المنقضية ينقلها الخادمُ إلى أرشيفها (د5-ح) — المطابقةُ على مجموع الموردين */
     if (k === 'bassam_rounds_v1') assert.deepEqual({ ...(got.bassam_rounds_arc_v1 || {}), ...(got[k] || {}) }, want, 'الجولات (مع أرشيفها) كما في النسخة');
     else assert.deepEqual(got[k], want, k + ' كما في النسخة');
@@ -76,7 +77,11 @@ async function heavy(scale, t, { inline = false } = {}) {
     assert.equal(out.inspect.status, 200, JSON.stringify(out.inspect.j).slice(0, 400));
     const s = out.inspect.j.inspection.summary;
     assert.equal(s.legacy, true); assert.equal(s.imagesNew, 10 * scale); assert.equal(s.imagesReused, 0); assert.equal(s.imagesMissing, 0);
-    assert.deepEqual(Object.fromEntries(s.notTransferred.map((x) => [x.k, x.why])), NOT_TRANSFERRED, 'وعند الفحص كذلك');
+    const keyLevel = s.notTransferred.filter((x) => !['transient', 'field', 'field-type'].includes(x.why));
+    assert.deepEqual(Object.fromEntries(keyLevel.map((x) => [x.k, x.why])), NOT_TRANSFERRED, 'وعند الفحص كذلك');
+    /* V7 · د6 (schemafix): وما لا يعرفه المخطّط من حقول الموارد يُذكر قبل التأكيد بمساره وعدده — الفارغُ «عابر» والذي بقيمة «لا مقابل له» — ولا يُرفض به الاستيراد */
+    assert.deepEqual(fieldDropsOf(s.notTransferred), fieldDrops(file), 'الحقولُ التي لن تُنقل وعددُها');
+    t.diagnostic('حقولٌ لن تُنقل: ' + JSON.stringify(fieldDropsOf(s.notTransferred)));
     assert.equal(out.commit.status, 200, JSON.stringify(out.commit.j).slice(0, 400));
     assert.equal(out.commit.j.ok, 1); assert.deepEqual(out.commit.j.warnings, []); assert.equal(out.commit.j.imagesNew, 10 * scale);
     const ms = Date.now() - t1, n = await compare(T, T.su, file);
@@ -704,4 +709,34 @@ test('(٧) النسخةُ الشاملة تمرّ بالمسار نفسِه (kin
     const tr2 = await T.call('/api/employees/transition', { ck: T.su.ck, body: {} });
     assert.ok(tr2.status >= 400 && tr2.status < 500, 'ومسارُه يردّ برفضه المعتاد لجسمٍ فارغ: ' + tr2.status);
   } finally { await T.close(); }
+});
+
+/* V7 · د6 (schemafix): الملفُ الحقيقي من Production رُفض كلُّه (operations-unknown-field-nNow · capNow · operations-scalar-type في pc · share/shareName).
+   الآن: «القراءةُ بالسعة» (pc بالكائن) وسطرُ التقرير اليومي في سجلّ التسكين (rm · src) يُنقلان كما هما · الحقولُ العابرة الفارغة تُسقط وتُذكر بعددها ·
+   وما يحمل منها قيمةً لا يُسقط بصمت (يُذكر «لا مقابل له») · والاعتمادُ ذرّيٌّ كما كان — بالمسارين (دفعات · طلبٌ واحد) */
+test('(١٨) الأشكالُ كما يكتبها Production: pc بالكائن في الجولات والأرشيف · rm/src · الحقولُ العابرة تُذكر ولا تُرفض بها النسخة — بالمسارين', need, async () => {
+  const file = await oldFile({ small: true }), A = await target(), Z = await target(), want = fieldDrops(file);
+  try {
+    const rounds = JSON.parse(file.data.bassam_rounds_v1), plan = JSON.parse(file.data.bassam_plan_v1);
+    assert.ok(Object.values(rounds).some((d) => d.d.some((f) => f.zones.some((z) => z.pc && z.pc.fajr && typeof z.pc.fajr === 'object'))), 'الملفُ يحمل القراءةَ بالسعة');
+    assert.ok(plan.floors.every((f) => f.zones.every((z) => 'share' in z && 'shareName' in z && 'nNow' in z && 'capNow' in z)), 'والحقولَ العابرة على كل مصلى في المخطط');
+    for (const [T, opt, tag] of [[A, { scope: SCOPE, slice: false }, 'طلبٌ واحد'], [Z, { scope: SCOPE, slice: 1000, sliceTarget: 5000 }, 'دفعات']]) {
+      const base = snapshot(T.DB), P = protocol(T, T.su, file, opt), out = { begin: await P.begin() };
+      assert.equal(out.begin.status, 200, tag);
+      for (let i = 0; i < P.parts.length; i++) assert.equal((await P.part(i)).status, 200, tag + ': جزء ' + i);
+      for (let i = 0; i < P.sliceCount; i++) assert.equal((await P.sliceStep(i)).status, 200, tag + ': دفعة ' + i);
+      if (opt.slice) assert.ok(P.sliceCount >= 3, tag + ': قُسمت (' + P.sliceCount + ')');
+      out.inspect = await P.inspect();
+      assert.equal(out.inspect.status, 200, tag + ': ' + JSON.stringify(out.inspect.j).slice(0, 400));
+      assert.deepEqual(fieldDropsOf(out.inspect.j.inspection.summary.notTransferred), want, tag + ': ما لن يُنقل من الحقول بعدده — قبل التأكيد');
+      assert.deepEqual(changed(snapshot(T.DB), base), [], tag + ': الفحصُ لا يكتب شيئاً');
+      const done = await P.commit(out.inspect.j.inspection.base);
+      assert.equal(done.status, 200, tag + ': ' + JSON.stringify(done.j).slice(0, 400));
+      if (done.j.summary) assert.deepEqual(fieldDropsOf(done.j.summary.notTransferred), want, tag + ': وفي ملخّص النجاح');
+      await compare(T, T.su, file);
+      assert.ok(T.DB.q('SELECT COUNT(*) n FROM ops_zone_prayer_capacity')[0].n > 0, tag + ': القراءاتُ بالسعة في جدولها');
+      assert.ok(T.DB.q("SELECT COUNT(*) n FROM ops_round_day_move WHERE f_src_text='dr'")[0].n > 0, tag + ': سطرُ التقرير في سجلّ التسكين');
+    }
+    assert.deepEqual(rowsOf(Z), rowsOf(A), 'المساران ينتهيان إلى الصفوف نفسِها');
+  } finally { await A.close(); await Z.close(); }
 });

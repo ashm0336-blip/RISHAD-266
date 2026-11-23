@@ -14017,8 +14017,9 @@ async function rsiSlice(env, A, request, id, M, b) {
     if (await D.prepare('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource=?2').bind(dept, fr).first('n')) held.push('bsdept:' + dept + ':' + fr);
   }
   /* دفعةٌ من نسخةٍ حديثة: صفوفُ المجال التشغيلي لمجموعة أعضاء (بفحص النسخ القائم opBackupDecode) تعود وثيقةً ثم تمرّ بالطريق نفسِه */
-  var text = got.text, first = parseJson(text, null);
+  var text = got.text, first = parseJson(text, null), legacy = true;
   if (isObj(first) && isObj(first.rows) && isObj(first.scope)) {
+    legacy = false;
     var dec = opBackupDecode(first);
     if (dec.info.resource !== base) throw rsError('import-part');
     text = JSON.stringify(ocInflate(dec.info.prepared, dec.domain).value);
@@ -14035,7 +14036,9 @@ async function rsiSlice(env, A, request, id, M, b) {
   if (!b.i || Object.keys(M.slices)[b.i - 1].replace(/#\d+$/, '') !== base) out.authz = kv.authzRows || [];
   /* أولُ دفعةٍ لموردها: ما كان قائماً من الأسرة ولم يرد في حكمها يُكتب فارغاً (جذرُه وحده) — فيُستبدل القائمُ ولو لم تأتِ له أيام */
   if (out.authz) held.forEach(function (k) { if (!kv.pend.some(function (pd) { return pd.k === k; })) kv.pend.push({ k: k, act: 'set', v: (ENT[resName(k)] && ENT[resName(k)].empty) || '{}', have: reference.inputRevs[k] || 0 }); });
+  out.fields = {};
   kv.pend.forEach(function (pd) {
+    if (legacy && pd.act === 'set') pd.v = rsiFields(out.fields, pd.k, pd.v);   /* V7 · د6 (schemafix): ما لا يعرفه المخطّط يُذكر ولا يُرفض به الاستيراد */
     var info = opInfo(pd.k), doc = JSON.parse(pd.v), mine = 0;
     if (!info || pd.act !== 'set' || RSI_SLICE[base][1].indexOf(info.resource) < 0) throw rsError('import-slice-target', 409);
     var dom = ocConvert(info.prepared, info.dept, info.resource, doc, true), shared = 0, root = null, tables = ocPhysicalTables(info.prepared);
@@ -14061,6 +14064,57 @@ async function rsiSlice(env, A, request, id, M, b) {
   });
   st.push(D.prepare('INSERT OR REPLACE INTO ' + T + ' SELECT ?1,?2,?3,?4,?5 WHERE EXISTS(SELECT 1 FROM ' + T + " WHERE snapshot_id=?1 AND domain='meta')").bind(id, 'sr', '', b.i, JSON.stringify(out)));
   await env.DB.batch(st);
+}
+/* V7 · د6 (schemafix): الاستيرادُ لا يُرفض كلُّه بسبب حقل. وثيقةُ موردٍ تشغيلي من نسخةٍ قديمة تُطابَق بمخطّطها قبل الترميز مباشرةً:
+   حقلٌ لا يعرفه المخطّط · أو قيمةٌ بشكلٍ لا يحمله — يُزال من الوثيقة ويُسجَّل (المورد · المسار · الحقل · العدد · وكم منها بقيمة)، والباقي يُنقل كما هو.
+   transient: حقلٌ عابر للعرض بلا قيمة في النسخة (nNow · capNow · share · shareName فارغة: null · 0 · "") — يُسقط ويُذكر بعدده.
+   field: حقلٌ لا مقابل له يحمل قيمة (منه العابرُ بقيمة) — لا يُسقط بصمت: يُذكر في «ما لن يُنقل» قبل التأكيد بعدده.
+   field-type: حقلٌ معروف بقيمةٍ لا يقبلها شكلُه. القائمةُ في summary.notTransferred (والنصُّ عند العميل 548). مدخلُ مصفوفةٍ أو جذرٌ لا يطابق يبقى خطأً (المرمِّز). */
+var RSI_TRANSIENT = { nNow: 1, capNow: 1, share: 1, shareName: 1 };
+function rsiEmpty(v) { return v === null || v === 0 || v === '' || (Array.isArray(v) && !v.length) || (isObj(v) && !Object.keys(v).length); }
+function rsiFits(spec, v) {
+  if (v === null) return true;
+  if (spec.node.kind === 'union') return spec.choices.filter(function (c) { return ocKindMatches(c.node, v); }).length === 1;
+  return ocKindMatches(spec.node, v);
+}
+function rsiFields(rec, k, raw) {
+  var entry = opRegistry()[resName(k)], doc;
+  if (!entry || typeof raw !== 'string') return raw;
+  try { doc = JSON.parse(raw); } catch (e) { return raw; }
+  var res = entry.definition.resource, root = entry.prepared.resources[res].spec, hit = 0;
+  function note(path, f, why) {
+    hit++;
+    var label = res + ' · ' + (path ? path + '.' : '') + f, id = label + '|' + why, r = rec[id] || (rec[id] = { k: label, why: why, n: 0 });
+    r.n++;
+  }
+  function walk(spec, v, path) {
+    if (v === null || typeof v !== 'object') return;
+    var kind = spec.node.kind;
+    if (kind === 'union') { var ch = spec.choices.filter(function (c) { return ocKindMatches(c.node, v); }); if (ch.length === 1) walk(ch[0], v, path); return; }
+    if (kind === 'array') { if (Array.isArray(v)) v.forEach(function (x) { walk(spec.entry, x, path + '[]'); }); return; }
+    if (kind === 'tuple') { if (Array.isArray(v)) v.forEach(function (x, i) { if (ocOwn(spec.children, String(i))) walk(spec.children[String(i)], x, path + '[' + i + ']'); }); return; }
+    if ((kind !== 'object' && kind !== 'map') || !ocObj(v)) return;
+    Object.keys(v).forEach(function (f) {
+      var field = ocOwn(spec.fields, f) ? spec.fields[f] : null, child = field ? (field.kind === 'scalar' ? { node: field } : spec.children[f]) : null, name = f;
+      if (!child && kind === 'map') { try { child = ocEntry(spec, f); name = '{}'; } catch (e) { child = null; } }
+      if (!child) { note(path, f, RSI_TRANSIENT[f] && rsiEmpty(v[f]) ? 'transient' : 'field'); delete v[f]; return; }
+      if (!rsiFits(child, v[f])) { note(path, name, 'field-type'); delete v[f]; return; }
+      walk(child, v[f], (path ? path + '.' : '') + name);
+    });
+  }
+  walk(root, doc, '');
+  return hit ? JSON.stringify(doc) : raw;
+}
+function rsiFieldRec(list) {
+  var rec = {};
+  (list || []).forEach(function (r) { if (r && RSI_FIELD_WHY[r.why]) rec[r.k + '|' + r.why] = r; });
+  return rec;
+}
+var RSI_FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
+function rsiFieldList(recs) {
+  var all = {};
+  recs.forEach(function (rec) { Object.keys(rec || {}).forEach(function (id) { var r = rec[id]; if (!all[id]) all[id] = { k: r.k, why: r.why, n: 0 }; all[id].n += r.n; }); });
+  return Object.keys(all).sort().map(function (id) { return all[id]; });
 }
 /* سببُ عدم نقل مفتاحٍ من نسخةٍ قديمة ('' = يُنقل): null قيمةٌ فارغة في الملف · device تفضيلُ جهازٍ أو مستخدم · tpls قوالبُ الصلاحيات (حُذفت — الأدوارُ بديلُها) ·
    grants منحٌ صريحة لموظفين (لا تُفتح صلاحيةٌ لم تكن) · unknown لا موردَ له في سجل الموارد الحالي */
@@ -14230,7 +14284,8 @@ async function rsImportRoute(env, request, ss) {
         });
         /* ما أُخرج من نصّ الملف ليُرسل دفعاتٍ ليس «مجموعةً غائبة عن النسخة» */
         Object.keys(M.slices).forEach(function (k) { var gone = 'operations:bsdept:' + s.departmentId + ':' + k.replace(/#\d+$/, ''); summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== gone; }); });
-        summary.notTransferred = drop.concat(stage.unref.map(function (k) { return { k: k, why: 'image-unreferenced' }; }));
+        /* V7 · د6 (schemafix): وما لا يعرفه المخطّط من حقول الموارد: من بقية الملف (019t) ومن الدفعات — بعدده */
+        summary.notTransferred = drop.concat(rsiFieldList([rsiFieldRec(summary.notTransferred)].concat(sr.map(function (o) { return o.fields; }))), stage.unref.map(function (k) { return { k: k, why: 'image-unreferenced' }; }));
         summary.imagesNew = stage.fresh.length;
         if (op === 'commit') plan.statements.push(rsiDrop(env, id));
       },
@@ -20453,11 +20508,14 @@ function opConvertBackupBoundary(keys,domains,departments,scope,source,version,s
   } else {
     if(domains.operations!==undefined)throw rsError('backup-operations-manifest-version');
     domains.operations=[];
+    /* V7 · د6 (schemafix): نسخةٌ قديمة لا تُرفض كلُّها بسبب حقل — وثيقتُها تُطابَق بمخطّطها قبل ترميزها (019g rsiFields) وما لا يُعرف يُذكر في «ما لن يُنقل» */
+    var fields={};
     departments.forEach(function(d){opDefinitions().forEach(function(def){
       var k='bsdept:'+d+':'+def.resource,prepared=opPrepared(def.resource),present=ocOwn(keys,k),value;
-      if(present){opInfo(k);value=rsBCParse(keys[k]);}else summary.emptyDomains.push('operations:'+k);
+      if(present){opInfo(k);keys[k]=rsiFields(fields,k,keys[k]);value=rsBCParse(keys[k]);}else summary.emptyDomains.push('operations:'+k);
       domains.operations.push(opBackupDomain(prepared,ocConvert(prepared,d,def.resource,value,present)));
     });});
+    var dropped=rsiFieldList([fields]);if(dropped.length)summary.notTransferred=(summary.notTransferred||[]).concat(dropped);
   }
   oldKeys.forEach(function(k){delete keys[k];});
 }

@@ -93,8 +93,11 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
   if (images) ids.forEach((id, i) => { idb[id] = small ? png(1400, i) : i % 10 === 9 ? jpeg(490000, i) : png(sizes[i % 10], i); });
   /* المخطط: طابقٌ لكل صورة (iid) بمصلياته — نصُّ مسار المصلى يملأ الحجم المقيس */
   const baseFloor = docs.bassam_plan_v1.floors[0], perFloor = Math.floor(planChars / nImg), zonesPer = small ? 3 : 12 * planRows;   /* planRows: مضاعِفُ صفوف المخطط بالحجم نفسِه */
+  /* V7 · د6 (schemafix): المصلى كما يكتبه Production — «مسحُ السعة» في المخطط يترك share · shareName = null، وسحبُ المصلى في الجولات يكتب نسخةَ العرض
+     (nNow · capNow) — كلُّها فارغة في الملف المقيس؛ ومصلى واحد بقيمةٍ حقيقية (shareName هنا · nNow/capNow في الجولات) لا يُسقط بصمت بل يُذكر */
   const floors = ids.map((id, f) => ({ ...baseFloor, sid: 'tstd6s' + f, name: 'TEST_ONLY · طابق د6 ' + (f + 1), num: f + 1, iid: id, imgW: 1200, imgH: 900,
-    zones: Array.from({ length: zonesPer }, (_, z) => ({ uid: 'tstd6z' + f + 'x' + z, code: 'D6Z' + f + '-' + z, name: 'TEST_ONLY · مصلى د6 ' + (f + 1) + '-' + (z + 1), d: pathD(Math.floor(perFloor / zonesPer) - 160, f * 31 + z), cx: 5 + z, cy: 5 + f, area: 100 + z, emp: z ? [] : ['tst_demo_e11'] })),
+    zones: Array.from({ length: zonesPer }, (_, z) => ({ uid: 'tstd6z' + f + 'x' + z, code: 'D6Z' + f + '-' + z, name: 'TEST_ONLY · مصلى د6 ' + (f + 1) + '-' + (z + 1), d: pathD(Math.floor(perFloor / zonesPer) - 200, f * 31 + z), cx: 5 + z, cy: 5 + f, area: 100 + z, emp: z ? [] : ['tst_demo_e11'],
+      share: null, shareName: f || z ? null : 'TEST_ONLY حصة قديمة', cap: null, count: null, nNow: null, capNow: 0 })),
     gates: baseFloor.gates.map((g, i) => ({ ...g, uid: 'tstd6g' + f + 'x' + i })), marks: baseFloor.marks.map((m, i) => ({ ...m, uid: 'tstd6m' + f + 'x' + i })), paths: baseFloor.paths.map((p, i) => ({ ...p, uid: 'tstd6p' + f + 'x' + i })) }));
   /* خطةُ الشهر الجاري في بيانات العرض تحمل طوابقَ النسخة — فتعرضها صفحةُ المخطط */
   const month = Object.keys(docs.bassam_plan_v1.months)[0];
@@ -104,8 +107,23 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
   for (let n = 0; n < days; n++) {
     const key = '1448-' + pad2(1 + Math.floor(n / 29)) + '-' + pad2(1 + (n % 29));
     rounds[key] = { ...baseDay, t: 1795000000000 + n * 86400000, d: [0, 1].map((f) => ({ ...floors[f % floors.length], iid: undefined, imgW: undefined, imgH: undefined,
-      zones: Array.from({ length: dz }, (_, z) => ({ uid: 'tstd6r' + f + 'x' + z, code: 'D6R' + f + '-' + z, name: 'TEST_ONLY · مصلى جولة ' + (z + 1), d: pathD(Math.floor(dayChars / (2 * dz)) - 150, n * 17 + f * 5 + z), cx: z, cy: f, area: 50 + z, emp: [], fst: z % 3 ? 'open' : 'closed', fAt: 1795000000000 + n * 86400000 + z })) })) };
+      zones: Array.from({ length: dz }, (_, z) => ({ uid: 'tstd6r' + f + 'x' + z, code: 'D6R' + f + '-' + z, name: 'TEST_ONLY · مصلى جولة ' + (z + 1), d: pathD(Math.floor(dayChars / (2 * dz)) - 200, n * 17 + f * 5 + z), cx: z, cy: f, area: 50 + z, emp: [], fst: z % 3 ? 'open' : 'closed', fAt: 1795000000000 + n * 86400000 + z,
+        /* V7 · د6 (schemafix): «القراءة بالسعة» كما يكتبها Production: {n, cap} · {n: null, cap: 0, p} حين لا سعة · رقمٌ قديم (count المنقول إلى fajr) */
+        cap: 3000 + z, pc: [{ fajr: { n: 1000 + n + z, cap: 3000 + z } }, { fajr: 35, dhuhr: { n: null, cap: 0, p: 40 + z } }, { asr: { n: 0, cap: 3000 + z }, isha: null }, {}][(n + z) % 4],
+        count: z % 2 ? null : 35, nNow: n || f || z ? null : 1000 + z, capNow: n || f || z ? 0 : 3000 + z })) })),
+      /* سطرُ التقرير اليومي في سجلّ التسكين (rm · src) كما يكتبه Production */
+      mvLog: [{ t: '07:00', kind: 'gates', key: 'tst_demo_e11', tok: 'tst_demo_e11', fromI: -1, toI: 0, rm: !!(n % 2), fromLbl: n % 2 ? 'TEST_ONLY موقع' : '', toLbl: n % 2 ? '' : 'TEST_ONLY موقع', by: 'TEST_ONLY', name: 'TEST_ONLY', src: 'dr' }] };
   }
+  /* ما يُسقطه الاستيراد من حقول الموارد (019g rsiFields) — بعدده المتوقَّع، حسبما وُلِّد أعلاه */
+  const pz = floors.length * zonesPer, mz = (small ? floors.length : 1) * zonesPer, rz = days * 2 * dz;
+  const drops = {
+    'bassam_plan_v1 · floors[].zones[].nNow|transient': pz, 'bassam_plan_v1 · floors[].zones[].capNow|transient': pz, 'bassam_plan_v1 · floors[].zones[].share|transient': pz,
+    'bassam_plan_v1 · floors[].zones[].shareName|transient': pz - 1, 'bassam_plan_v1 · floors[].zones[].shareName|field': 1,
+    'bassam_plan_v1 · months.{}.d[].zones[].nNow|transient': mz, 'bassam_plan_v1 · months.{}.d[].zones[].capNow|transient': mz, 'bassam_plan_v1 · months.{}.d[].zones[].share|transient': mz,
+    'bassam_plan_v1 · months.{}.d[].zones[].shareName|transient': mz - 1, 'bassam_plan_v1 · months.{}.d[].zones[].shareName|field': 1,
+    'bassam_rounds_v1 · {}.d[].zones[].nNow|transient': rz - 1, 'bassam_rounds_v1 · {}.d[].zones[].nNow|field': 1,
+    'bassam_rounds_v1 · {}.d[].zones[].capNow|transient': rz - 1, 'bassam_rounds_v1 · {}.d[].zones[].capNow|field': 1,
+  };
   const item = (i) => ({ id: 'TEST_ONLY_n' + i, type: 'bc_dept', k: 'bc', t: 'TEST_ONLY · تنبيه د6 ' + i, b: 'TEST_ONLY · ' + 'نصُّ تنبيهٍ تجريبي '.repeat(small ? 4 : 56), at: 1795000000000 + i, to: { e: [], r: ['all'] } });
   const nItems = Math.max(2, Math.floor(nfChars / J(item(0)).length));
   const data = {
@@ -120,8 +138,25 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
     bassam_first_boot_v1: '1795000000001', bassam_last_export_v1: '1795000000002', bassam_dr_grp_v1: null,
   };
   for (let u = 1; u <= 8; u++) data['bassam_notif_dev_v1:TEST_ONLY_u' + u] = u === 8 ? '1795000000003' : null;
-  return { app: 'bassam-crowd', version: 3, kind: 'dept', dept: 'TEST_ONLY إدارة قديمة', exportedAt: '2026-11-20T10:00:00.000Z', data,
+  const file = { app: 'bassam-crowd', version: 3, kind: 'dept', dept: 'TEST_ONLY إدارة قديمة', exportedAt: '2026-11-20T10:00:00.000Z', data,
     perms: { capSet: true, cap: ['plan', 'daily', 'emps', 'admin'], emps: { tst_demo_e11: { plan: ['view'] } }, lenses: [] }, idbImages: idb, preImport: false };
+  DROPS.set(file, drops);
+  return file;
+}
+/* V7 · د6 (schemafix): حقولُ المصلى التي لا يعرفها المخطّط في الملف القديم — يُسقطها الاستيرادُ ويذكرها؛ المطابقةُ مفتاحاً مفتاحاً تكون على الوثيقة بدونها */
+export const DROPPED_FIELDS = ['nNow', 'capNow', 'share', 'shareName'];
+const DROPS = new WeakMap();
+/* ما لن يُنقل من الحقول كما يُتوقَّع في summary.notTransferred: { 'المورد · المسار.الحقل|السبب': العدد } (أرشيفُ الجولات يُجمع مع الجولات) */
+export const fieldDrops = (file) => ({ ...DROPS.get(file) });
+export function fieldDropsOf(list) {
+  const out = {};
+  for (const x of list || []) if (['transient', 'field', 'field-type'].includes(x.why)) { const k = x.k.replace(/^bassam_rounds_arc_v1 /, 'bassam_rounds_v1 ') + '|' + x.why; out[k] = (out[k] || 0) + x.n; }
+  return out;
+}
+export function withoutDropped(value) {
+  if (Array.isArray(value)) return value.map(withoutDropped);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.entries(value).filter(([k]) => !DROPPED_FIELDS.includes(k)).map(([k, v]) => [k, withoutDropped(v)]));
 }
 export const sizeOf = (file) => { const d = Object.values(file.data).reduce((n, v) => n + (v ? Buffer.byteLength(v) : 4), 0), i = Object.values(file.idbImages || {}).reduce((n, v) => n + v.length, 0); return { data: d, images: i, total: d + i, maxKey: Math.max(...Object.values(file.data).map((v) => (v ? Buffer.byteLength(v) : 0))), maxImage: Math.max(0, ...Object.values(file.idbImages || {}).map((v) => v.length)) }; };
 
