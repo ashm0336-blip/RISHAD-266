@@ -12,7 +12,7 @@ import path from 'node:path';
 import { startLab, LAB } from './local_server.mjs';
 import { chromium, openAs } from './lab_browser.mjs';
 import { hasSystem } from '../unit/harness.mjs';
-import { oldFile, staged, snapshot, changed, NOT_TRANSFERRED } from '../unit/v7_d6_import_fx.mjs';
+import { oldFile, staged, snapshot, changed, NOT_TRANSFERRED, fieldDrops } from '../unit/v7_d6_import_fx.mjs';
 
 const B = 'TEST_ONLY_B', need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات والمهام' };
 const AR = (s) => String(s).replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660));
@@ -73,7 +73,12 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
     assert.ok(staged(lab.env.DB) > 0, 'الأجزاء في المنطقة المؤقتة');
     /* التأكيدُ الوحيد: بعد الرفع والتحقق، ومعه ملخّصُ الخادم (ما سيُنقل وما لن يُنقل) */
     const confirmText = AR(await s.page.evaluate(() => document.body.innerText.replace(/\s+/g, ' ')));
-    assert.match(confirmText, /لن يُنقل 11/, 'ملخّصُ الخادم في التأكيد'); assert.match(confirmText, /bassam_grants_v1 — [^·]*العدد: 1/, 'والمنحُ بعددها'); assert.match(confirmText, /ستُكتب 2 صور|ستُكتب 2 صورة/, 'والصورُ التي ستُكتب');
+    assert.match(confirmText, /لن يُنقل 11/, 'ملخّصُ الخادم في التأكيد');
+    /* V7 · د6 (schemafix): وحقولُ الموارد التي لن تُنقل — كلُّها قبل التأكيد بمسارها وعددها (الملفُ يحملها كما يكتبها Production) */
+    const fd = fieldDrops(f);
+    assert.match(confirmText, /حقول لن تُنقل \(\d+\)/, 'حقولُ الموارد في التأكيد');
+    assert.ok(confirmText.includes('bassam_plan_v1 · floors[].zones[].nNow — حقل عابر للعرض بلا قيمة في النسخة — العدد: ' + fd['bassam_plan_v1 · floors[].zones[].nNow|transient']), 'العابرُ الفارغ بعدده');
+    assert.ok(confirmText.includes('bassam_plan_v1 · floors[].zones[].shareName — حقل لا مقابل له في المنصة — قيمته لن تُنقل — العدد: 1'), 'وذو القيمة يُذكر ولا يُسقط بصمت'); assert.match(confirmText, /bassam_grants_v1 — [^·]*العدد: 1/, 'والمنحُ بعددها'); assert.match(confirmText, /ستُكتب 2 صور|ستُكتب 2 صورة/, 'والصورُ التي ستُكتب');
     assert.equal(await s.page.getByText('نعم، استبدل', { exact: true }).count(), 1, 'تأكيدٌ واحد');
     await click(s.page, 'نعم، استبدل');
     /* ملخّص النجاح */

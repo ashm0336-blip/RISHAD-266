@@ -15,7 +15,7 @@ const LEGACY_EMPLOYEE = 'TEST_ONLY legacy union employee';
 
 async function fixture({ empty = false, mode = 'enforce', legacyString = false, legacyAccount = false } = {}) {
   const W = await candidateWorker(['opPrepared', 'opBulkInstall', 'ocConvert']);
-  assert.equal(W.KIVO_SCHEMA_VERSION, 11);
+  assert.equal(W.KIVO_SCHEMA_VERSION, 12);   /* V7 · د6 (schemafix): 0012_prayer_readings */
   const DB = new D1Shim(), env = { DB, ...(mode === 'enforce' ? { KIVO_AUTHZ_MODE: 'enforce' } : {}), ASSETS: { fetch: async () => new Response('TEST_ONLY') } };
   await W.initDb(env); DB.exec('PRAGMA foreign_keys=ON');
   const hash = 'p2$100000$' + 'a'.repeat(32) + '$' + 'b'.repeat(64);

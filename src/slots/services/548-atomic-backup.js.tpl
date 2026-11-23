@@ -330,6 +330,7 @@
     field: 'حقل لا مقابل له في المنصة — قيمته لن تُنقل',
     'field-type': 'قيمة بشكل لا يقبله الحقل — لن تُنقل',
   };
+  var FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
   function skipList(list) {
     return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { return { k: x.k, why: String(x.why || ''), n: integer(x.n) ? x.n : null, text: (WHY[x.why] || String(x.why || '')) + (integer(x.n) ? ' — العدد: ' + x.n : '') }; });
   }
@@ -540,6 +541,9 @@
     if (!prepared || !prepared.ok) return false;
     var i = prepared.inspection,
       c = i.counts || {},
+      lost = Array.isArray(i.summary.notTransferred) ? i.summary.notTransferred : [],
+      fieldsLost = lost.filter(function (x) { return FIELD_WHY[x.why]; }),
+      keysLost = lost.filter(function (x) { return !FIELD_WHY[x.why]; }),
       legacy = i.summary && i.summary.legacy,
       text =
         'سيُعتمد ' +
@@ -547,9 +551,11 @@
         ' مجموعة بيانات و' + (c.operations||0) + ' موردًا تشغيليًا@@SYS:bk.restore.summary@@. ستبقى كلمات مرور الحسابات الحالية كما هي.' +
         (legacy ? ' ستُحوَّل النسخة القديمة إلى المخطط الحالي قبل الكتابة.' : '') +
         /* V7 · د6: ما لن يُنقل يُذكر قبل الاعتماد في كل مدخل (نسخةُ الإدارة والنسخةُ الشاملة) · والصورُ التي ستُكتب من النسخة */
-        (Array.isArray(i.summary.notTransferred) && i.summary.notTransferred.length
-          ? ' لن يُنقل ' + i.summary.notTransferred.length + ' (لا مقابل له في المنصة الحالية): ' + i.summary.notTransferred.slice(0, 12).map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + (i.summary.notTransferred.length > 12 ? ' · …' : '') + '.'
+        (keysLost.length
+          ? ' لن يُنقل ' + keysLost.length + ' (لا مقابل له في المنصة الحالية): ' + keysLost.slice(0, 12).map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + (keysLost.length > 12 ? ' · …' : '') + '.'
           : '') +
+        /* V7 · د6 (schemafix): حقولُ الموارد التي لن تُنقل — كلُّها بمسارها وعددها، والباقي يُنقل */
+        (fieldsLost.length ? ' حقول لن تُنقل (' + fieldsLost.length + '): ' + fieldsLost.map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + '.' : '') +
         (i.summary.imagesNew > 0 ? ' ستُكتب ' + i.summary.imagesNew + ' صورة تحملها النسخة وليست على المنصة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
