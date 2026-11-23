@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "31895982665fc68f4418e7ea9f674ca44d118ee8a7c8b7ba029638e59a7b0cbc",
+  "sha256": "a2d31a5cf04c89fe7e39ecab831ab87f5f2a957ac2dc189d35fefe6e3773082c",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -1047,8 +1047,8 @@
         26224,
         26524
       ],
-      "bytes": 32473,
-      "sha256": "3b88a281399ea82ee2a601ff269504cb7a3665c56ff57755e8956064cfddb95b",
+      "bytes": 32645,
+      "sha256": "b5781b307e8c8b7173832216f0456b1c095529bbdc748a5b3e47b02e46faffcd",
       "head": "/* ══ (1) فهارسُ السجل — تُبنى مرّةً لكل نسخةٍ من الخادم ══ */"
     },
     {
