@@ -14,8 +14,13 @@ KIVO.DailyStats = (function () {
   var boot = window.__BS_BOOT || {}, uid = String(boot.uid || ''), cache = {}, rev = null, busy = false, seq = 0, error = '';
   function clone(v) { return JSON.parse(JSON.stringify(v)); }
   function read() { var v = clone(cache); Object.defineProperty(v, '__dsbase', { value: rev, enumerable: false }); return v; }
-  function fail(code) { error = code || 'network'; return false; }
+  /* V7 · د6 (QA): رفضُ الشكل يحمل اليومَ المخالف (at = «site|y-m-d») فتسمّيه الرسالة */
+  var errAt = '';
+  function fail(code, at) { error = code || 'network'; errAt = String(at || ''); return false; }
   function message() {
+    if (error === 'dstats-shape') { var p = /^(haram|nabawi)\|(\d{4})-(\d{2})-(\d{2})$/.exec(errAt);
+      return p ? 'لم يُحفظ — يومُ ' + (+p[4]) + '/' + (+p[3]) + '/' + p[2] + ' في ' + (p[1] === 'haram' ? 'المسجد الحرام' : 'المسجد النبوي') + ' فيه حقلٌ أو قيمةٌ غيرُ مسموحة — صحّح أرقامَ ذلك اليوم ثم أعد الحفظ'
+        : 'لم يُحفظ — في البيانات المرسلة حقلٌ أو قيمةٌ غيرُ مسموحة'; }
     if (error === 'conflict' || error === 'stale') return 'تغيّرت البيانات منذ فتحها — حدّث الصفحة ثم راجع مسودتك وأعد الحفظ';
     if (error === 'session' || error === 'session-changed') return 'تغيّرت جلسة الدخول — أعد تحميل الصفحة قبل الحفظ';
     if (error === 'denied') return 'رفض الخادم الحفظ — راجع الصلاحية ونطاق البيانات والأقفال';
@@ -55,7 +60,7 @@ KIVO.DailyStats = (function () {
         }
         break;
       }
-      if (!r.ok || !valid(v) || v.rev < base) return fail(v && v.err || 'network');
+      if (!r.ok || !valid(v) || v.rev < base) return fail(v && v.err || 'network', v && v.at);
       cache = clone(v.data); rev = v.rev; error = ''; return true;
     } catch (e) { return fail('network'); } finally { busy = false; }
   }

@@ -1181,7 +1181,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   async _saveLocks(next,site){
     if(!this.PC("approve",site)){ this.bsToast("الاعتمادُ والقفل يحتاج صلاحية الاعتماد","warn"); return false; }
     const all=this.load(); all.locks=next; const ok=await this.save(all);
-    if(ok) this.setState(pr=>({tick:(pr.tick||0)+1})); else this.bsToast("تعذّر حفظُ حالة القفل","err");
+    /* V7 · د6 (QA): لا رفضَ صامت — سببُ الخادم (ومنه اسمُ اليوم المخالف) يُلحق بالرسالة */
+    if(ok) this.setState(pr=>({tick:(pr.tick||0)+1})); else this.bsToast("تعذّر حفظُ حالة القفل"+(KIVO.DailyStats&&KIVO.DailyStats.error()&&KIVO.DailyStats.error()!=="busy"?" — "+KIVO.DailyStats.message():""),"err");
     return ok; }
   async setMonthOpen(site,y,m,on){ const k=this.MKEY(site,y,m), L=Object.assign({},this._locks());
     const r=Object.assign({}, this._rec(site,y,m)); delete r.ap;

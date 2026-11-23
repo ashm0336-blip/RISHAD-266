@@ -21265,28 +21265,32 @@ function dsLockOk(v) {
    resource identifier only; no business document is read from or written to kv. */
 var DS_METRICS = ['worshippers', 'umrah', 'hijr_ismail', 'carts', 'salam_corridor', 'rawdah_men_published', 'rawdah_men_reserved', 'rawdah_men_actual', 'rawdah_women_published', 'rawdah_women_reserved', 'rawdah_women_actual'];
 var DS_FIELDS = { haram: DS_METRICS.slice(0, 4), nabawi: [DS_METRICS[0]].concat(DS_METRICS.slice(4)) };
-function dsDomainShape(v) {
-  if (!isObj(v) || Object.keys(v).some(function (k) { return DS_SITES.concat(['locks']).indexOf(k) < 0; })) return false;
+function dsDomainShape(v) { return dsShapeAt(v) === ''; }
+/* V7 · د6 (QA): يومٌ مخزَّنٌ مخالفٌ لا يمنع حفظاً لا يمسّه (قفلُ الشهر · أرقامُ يومٍ آخر) — يُفحص من الأيام ما غيّره الحفظُ وحده
+   (cur = المخزَّن؛ بلا cur يُفحص كلُّ يوم كما كان: الاستعادة · المحوِّل)، والرفضُ يسمّي اليومَ المخالف «site|date» بدل الصمت */
+function dsShapeAt(v, cur) {
+  if (!isObj(v) || Object.keys(v).some(function (k) { return DS_SITES.concat(['locks']).indexOf(k) < 0; })) return '$';
   for (var s of DS_SITES) {
     if (v[s] === undefined) continue;
-    if (!isObj(v[s])) return false;
+    if (!isObj(v[s])) return s;
     for (var date in v[s]) {
-      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date), r = v[s][date];
-      if (!m || +m[1] < 1000 || +m[2] < 1 || +m[2] > 12 || +m[3] < 1 || +m[3] > 30 || !dsDayOk(r)) return false;
-      if (Object.keys(r).some(function (k) { return k !== '__m' && k !== '__f' && DS_FIELDS[s].indexOf(k) < 0; })) return false;
-      if (r.__f && Object.keys(r.__f).some(function (k) { return DS_FIELDS[s].indexOf(k) < 0; })) return false;
-      if (JSON.stringify(r).length > 60000) return false;
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date), r = v[s][date], at = s + '|' + date;
+      if (cur && isObj(cur[s]) && Object.prototype.hasOwnProperty.call(cur[s], date) && deq(cur[s][date], r)) continue;
+      if (!m || +m[1] < 1000 || +m[2] < 1 || +m[2] > 12 || +m[3] < 1 || +m[3] > 30 || !dsDayOk(r)) return at;
+      if (Object.keys(r).some(function (k) { return k !== '__m' && k !== '__f' && DS_FIELDS[s].indexOf(k) < 0; })) return at;
+      if (r.__f && Object.keys(r.__f).some(function (k) { return DS_FIELDS[s].indexOf(k) < 0; })) return at;
+      if (JSON.stringify(r).length > 60000) return at;
     }
   }
   if (v.locks !== undefined) {
-    if (!isObj(v.locks)) return false;
+    if (!isObj(v.locks)) return 'locks';
     for (var k in v.locks) {
-      if (!/^(haram|nabawi)\|[1-9]\d{3}-(?:[1-9]|1[0-2])$/.test(k) || !dsLockOk(v.locks[k])) return false;
+      if (!/^(haram|nabawi)\|[1-9]\d{3}-(?:[1-9]|1[0-2])$/.test(k) || !dsLockOk(v.locks[k])) return 'locks|' + k;
       var lock = v.locks[k];
-      for (var f of ['dopen', 'dshut']) if (isObj(lock) && lock[f]) for (var d in lock[f]) if (!/^(?:[1-9]|[12]\d|30)$/.test(d)) return false;
+      for (var f of ['dopen', 'dshut']) if (isObj(lock) && lock[f]) for (var d in lock[f]) if (!/^(?:[1-9]|[12]\d|30)$/.test(d)) return 'locks|' + k;
     }
   }
-  return true;
+  return '';
 }
 function dsDomainRows(v) {
   var rows = { days: [], months: [], locks: [] };
@@ -21362,8 +21366,9 @@ async function dsDomainDeny(env, A, why, ip, verdict) {
 async function dsDomainCommit(env, A, body, ip) {
   if (!canRead(A, K_DSTATS)) return await dsDomainDeny(env, A, 'view', ip);
   if (body.operation !== undefined && body.operation !== 'historical-import') return { status: 400, body: { ok: 0, err: 'operation' } };
-  if (!dsDomainShape(body.data)) return { status: 400, body: { ok: 0, err: 'dstats-shape' } };
-  var current = await dsDomainRead(env), cur = JSON.stringify(current.data), raw = JSON.stringify(body.data), refs = null, ctx = {};
+  var current = await dsDomainRead(env), shapeAt = dsShapeAt(body.data, current.data);
+  if (shapeAt) return { status: 400, body: { ok: 0, err: 'dstats-shape', at: shapeAt } };
+  var cur = JSON.stringify(current.data), raw = JSON.stringify(body.data), refs = null, ctx = {};
   var set = {}; set[K_DSTATS] = raw; var keys = {}; keys[K_DSTATS] = 1;
   var markers = KIVO_BUILD.markers(body.ops || {}, keys), restore = markers.ops[K_DSTATS] && markers.ops[K_DSTATS].op === 'backup.restore' ? markers.ops[K_DSTATS] : null;
   if (restore) return { status: 400, body: { ok: 0, err: 'full-restore-unsupported' } };
@@ -31155,7 +31160,11 @@ demoProvide({ sys: 'dstats', caps: ['dstats'], seed: async function (env, C, out
     C.days.forEach(function (day, k) {
       var key = day.y + '-' + String(day.m).padStart(2, '0') + '-' + String(day.d).padStart(2, '0');
       if (cur[site] && cur[site][key] !== undefined) return;
-      next[site][key] = { worshippers: 1000 * (s + 1) + 10 * k, umrah: 100 + k, __m: { t: 'TEST_ONLY' } }; n++;
+      /* V7 · د6 (QA): كلُّ يومٍ بحقول مسجده وحده (DS_FIELDS — كان umrah يُكتب للنبوي) وببصمةٍ بشكل بصمة الصفحة { n · u · t: وقتٌ رقمي }
+         (كانت t نصاً) — فيقبل الخادمُ كلَّ حفظٍ بعد الزرع؛ ووسمُ العرض في n/u يبقى، فالحذفُ يعرف صفوفه */
+      var day0 = { worshippers: 1000 * (s + 1) + 10 * k, __m: { n: C.tag + 'أداة العرض', u: DEMO_PRE + 'tool', t: C.now - k * 864e5 } };
+      day0[DS_FIELDS[site][1]] = 100 + k;
+      next[site][key] = day0; n++;
     });
   });
   if (!n) return;
