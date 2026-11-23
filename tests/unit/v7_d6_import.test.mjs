@@ -661,10 +661,7 @@ test('(٥) حسابٌ بلا صلاحية يُرفض في كل جزء ولو ب�
     const state = snapshot(T.DB);
     const clean = { ...file, data: Object.fromEntries(Object.entries(file.data).filter(([k]) => !(k in NOT_TRANSFERRED))), idbImages: {} };
     const oldRoute = await T.call('/api/backup/restore', { ck: mgrB.ck, body: { version: 1, uid: mgrB.uid, requestId: 'TEST_ONLY_old_route_1', scope: SCOPE, mode: 'replace', reason: 'TEST_ONLY استيراد مدير الإدارة', base: (await inventory()).j.base, backup: clean, legacyConsent: false, phase: 'inspect' } });
-    /* وبلا سبب يُرفض مديرُ الإدارة (قبل الاعتماد — د6 QA ٦: بعده الهدفُ غيرُ فارغ؛ كما اليوم — مديرُ المنصة وحده معفى) */
-    const noReason = await protocol(T, mgrB, file, { scope: SCOPE, reason: '' }).run();
-    /* د6 QA ٦: مديرُ الإدارة يجتاز الآن حكمَ الاستعادة نفسَه، فيصل غيابُ السبب إلى حكم الحفظة (why:'reason') بدل 400 restore-reason المبكر — الرفضُ نفسُه بسببه (البند ١ يلغي السبب لاحقاً) */
-    assert.equal(noReason.inspect.status, 403); assert.equal(noReason.inspect.j.err, 'restore-key-denied'); assert.ok(Object.values(noReason.inspect.j.details.denied).every((d) => d.why === 'reason'), JSON.stringify(noReason.inspect.j).slice(0, 300)); assert.equal(staged(T.DB), 0);
+    /* V7 · د6 (QA): (دمج noreason × mgrimport) كان هنا «بلا سبب يُرفض مديرُ الإدارة (why:'reason')» — نسخه قرارُ المالك (لا سبب في أي مكان)؛ الحكمُ بلا سبب يُفحص أدناه بعد الاعتماد ويساوي حكمَه بالسبب */
     const run = await protocol(T, mgrB, file, { scope: SCOPE, reason: 'TEST_ONLY استيراد مدير الإدارة' }).run();
     assert.ok(run.inspect, 'وصل الفحص: ' + JSON.stringify((run.part || run.begin).j));
     assert.equal(run.inspect.status, oldRoute.status, 'حكمُ الاستيراد = حكمُ الاستعادة القائم'); assert.equal(run.inspect.j.err, oldRoute.j.err);
