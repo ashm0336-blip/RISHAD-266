@@ -170,13 +170,9 @@ for (const mode of MODES) {
       assert.equal((await act(Wd, me.ck, { k: DAY, id: 1760000000103, i: idx(S, DAY, 1760000000103, ME.eid), act: 'finish', imgs: [img], note: 'TEST_ONLY' })).j.ok, 1);
       const g = await get(Wd, dm.ck), Mv = JSON.parse(g.v), ix = idx(Mv, DAY, 1760000000103, ME.eid);
       Mv[DAY][ix] = Mv[DAY][ix].slice(); Mv[DAY][ix][3] = 'in_progress'; Mv[DAY][ix][12] = null; Mv[DAY][ix][6] = null;          /* _doReopen */
-      if (mode === 'enforce') {                                                                        /* §12 audit.reason: بلا سبب ⇒ تُعلَّق وتُسأل نافذةُ السبب (280 reasonAsk9) */
-        const r0 = await raw(Wd, dm.ck, Mv, g.rev), d0 = r0.j.denied && r0.j.denied[KT];
-        assert.ok(!(r0.j.revs && r0.j.revs[KT]) && d0 && d0.why === 'reason', 'الإنفاذ: إعادةُ الفتح بحفظٍ خامّ بلا سبب ⇒ «يتطلب سبباً»: ' + JSON.stringify(r0.j).slice(0, 200));
-        assert.equal(at(stored(Wd.env, KT), 1760000000103, ME.eid)[3], 'done', 'ولا يُكتب شيءٌ بلا سبب');
-      }
-      const r = await post(Wd, dm.ck, '/api/save', Object.assign({ set: { [KT]: JSON.stringify(Mv) }, del: [], base: { [KT]: g.rev } }, mode === 'enforce' ? { why: { [KT]: 'TEST_ONLY سببُ إعادة الفتح' } } : {}));
-      assert.ok(r.j.revs && r.j.revs[KT], 'إعادةُ الفتح تُكتب: ' + JSON.stringify(r.j).slice(0, 200));
+      /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ إلزامياً — كان في الإنفاذ «بلا سبب ⇒ يتطلب سبباً»؛ الآن الحفظُ الخامّ بلا سبب يُكتب في الوضعين */
+      const r = await post(Wd, dm.ck, '/api/save', { set: { [KT]: JSON.stringify(Mv) }, del: [], base: { [KT]: g.rev } });
+      assert.ok(r.j.revs && r.j.revs[KT], 'إعادةُ الفتح تُكتب بلا سبب: ' + JSON.stringify(r.j).slice(0, 200));
       const x = at(stored(Wd.env, KT), 1760000000103, ME.eid);
       assert.ok(x[3] === 'in_progress' && x[12] == null && x[21] && x[21].imgs.includes(img), 'جاريةٌ من جديد بتوثيقها');
     }
@@ -216,9 +212,9 @@ for (const mode of MODES) {
         /* قرار المالك: مدير المنصة لا يُطلب منه سبب؛ فيُثبَّت الرفض على مدير الإدارة (كان على مدير المنصة) */
         const dm = await Wd.login(MGR.un, MGR.pw);
         const r0 = await post(Wd, dm.ck, '/api/save', { set: { [KT]: old.v }, del: [], base: { [KT]: cur.rev }, aud: audR() }), d0 = r0.j.denied && r0.j.denied[KT];
-        assert.ok(!(r0.j.revs && r0.j.revs[KT]) && d0 && d0.why === 'reason', 'الإنفاذ: استعادةٌ بلا سبب ⇒ «يتطلب سبباً»: ' + JSON.stringify(r0.j).slice(0, 200));
+        assert.ok(!(d0 && d0.why === 'reason'), 'V7 · د6 (QA) · البند ١: لا رفضَ «يتطلب سبباً» (كان) — ' + JSON.stringify(r0.j).slice(0, 200));
       }
-      const r = await post(Wd, Wd.su.ck, '/api/save', Object.assign({ set: { [KT]: old.v }, del: [], base: { [KT]: cur.rev }, aud: audR() },
+      const r = await post(Wd, Wd.su.ck, '/api/save', Object.assign({ set: { [KT]: old.v }, del: [], base: { [KT]: (await get(Wd, Wd.su.ck)).rev }, aud: audR() },
         mode === 'enforce' ? { ops: { [KT]: { op: 'backup.restore', scope: 'full', mode: 'replace', reason: 'TEST_ONLY سببُ الاستعادة' } } } : {}));
       assert.ok(r.j.revs && r.j.revs[KT], 'الاستعادةُ تُكتب: ' + JSON.stringify(r.j).slice(0, 200));
       assert.equal(JSON.stringify(stored(Wd.env, KT)), JSON.stringify(JSON.parse(old.v)), 'القيمةُ المستعادة حرفاً');

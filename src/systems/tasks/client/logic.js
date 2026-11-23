@@ -900,14 +900,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!r) return;
       const b = { k: a, id: r[13], ekey: null == r[14] ? void 0 : String(r[14]) },
         fin = (x) => (x.j && 1 === x.j.ok ? this.bsToast(r[14] ? "أُعيدت المهمة للموظف" : "أُعيد فتحُ المهمة", "ok") : this.bsToast(this._tkErr(x, "لم تُعَد فتحُ المهمة — أعد المحاولة")));
-      /* KIVO_265 · k265-fix (بوابة 265): في الإنفاذ تتطلب إعادةُ الفتح سبباً (task.reopen · §12) — يرفضها الخادمُ بلا سبب (403 why:reason) فتُعرض نافذةُ السبب
-         نفسُها من طبقة التخزين (280 askReason) ثم يُعاد الطلبُ بالسبب؛ والإلغاءُ لا يعيد فتحها. القديمُ يمضي من الطلب الأول كما كان */
-      return void this._tkApi("/api/tasks/reopen", b).then((x) => {
-        const S = KIVO.__BS_SRV;
-        if (!(x.j && "reason" === x.j.why && S && S.askReason)) return fin(x);
-        S.askReason("bsdept:" + (this._tkDept() || "") + ":bassam_tasks_v1", x.j.reasonKeys || ["task.reopen"], (why) =>
-          why ? this._tkApi("/api/tasks/reopen", Object.assign({}, b, { why: why })).then(fin) : this.bsToast("أُلغيت إعادةُ الفتح لعدم كتابة سبب", "warn"));
-      });
+      /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ إلزامياً — أُزيلت «نافذةُ السبب بعد رفض 403 why:reason»؛ الطلبُ الأول يمضي (التأكيدُ قبله في الصفحة) */
+      /* V7 · د6 (QA) · البند ١: كانت نافذةُ السبب هي التأكيدَ الوحيد لإعادة الفتح — رسالةُ تأكيدٍ قبلها الآن */
+      const ask = KIVO.bsConfirm ? Promise.resolve(KIVO.bsConfirm({ title: r[14] ? "إعادة المهمة للموظف" : "إعادة فتح المهمة", msg: "تعود المهمة «" + (r[0] || "") + "» قيدَ التنفيذ وتُسجَّل إعادةُ فتحها باسمك في سجل الحركة.", ok: r[14] ? "إعادة المهمة" : "إعادة الفتح" })) : Promise.resolve(true);
+      return void ask.then((y) => (y ? this._tkApi("/api/tasks/reopen", b).then(fin) : void 0));
     }
     this.bsToast("تحتاج المهمة إلى اتصال الخادم — لم يُحفظ تغيير محلي", "warn");
   }
@@ -2967,14 +2963,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           if (body.recur) { delete body.recur.ask; delete body.recur.err; }
           ["uid", "dept", "epoch", "base", "requestId"].forEach((key) => delete body[key]);
           let response = await this._tkCommandApi("/api/tasks/settings", body, "newTaskOpen");
-          /* V7 · د5-ح (القفل): في الإنفاذ وحده يطلب الخادمُ سبباً لما يعيد المهمةَ «بانتظار الاستلام» (task.reopen: إسنادُ المعتذَر عنها) — نافذةُ السبب
-             نفسُها من طبقة التخزين (280 askReason) ثم يُعاد الطلبُ بالسبب كإعادة الفتح؛ والإلغاءُ يُبقي المسودة */
-          const SR = KIVO.__BS_SRV;
-          if (response.j && response.j.why === "reason" && SR && SR.askReason) {
-            const why = await new Promise((done) => SR.askReason("bsdept:" + (this._tkDept() || "") + ":bassam_tasks_v1", response.j.reasonKeys || ["task.reopen"], done));
-            if (!why) return void this.bsToast("لم تُحفظ تعديلات المهمة لعدم كتابة سبب — المسودة باقية", "warn");
-            response = await this._tkCommandApi("/api/tasks/settings", Object.assign({}, body, { why: why }), "newTaskOpen");
-          }
+          /* V7 · د6 (QA) · البند ١: أُزيلت «نافذةُ السبب بعد رفض why:reason» — لا سببَ إلزامياً */
           if (response.j && response.j.ok === 1) {
             this.setState({ newTaskOpen: false, editRef: null });
             if (body.recur) this._tkRecAck(body.recur.op, response.j.recurrence);
