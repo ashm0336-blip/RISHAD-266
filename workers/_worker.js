@@ -1733,9 +1733,10 @@ function dsToday(now) {
 }
 /* ── إصلاح (مدير المنصة لا يُطلب منه سببٌ أبداً — قرارُ المالك): مدير المنصة (role=super) معفًى من كل بوابات السبب في الخادم؛ وإن لم يكتب سبباً
    يُسجَّل في سجلّ القرار والتدقيق «بلا سبب (مدير المنصة)». غيرُه: طلبُ السبب كما هو. reasonExempt = هل الفاعلُ معفًى · reasonLogged = ما يُكتب في السجل ── */
-var REASON_NONE_SUPER = 'بلا سبب (مدير المنصة)';
-function reasonExempt(A) { return !!(A && A.u && A.u.role === 'super'); }
-function reasonLogged(A, r) { r = String(r == null ? '' : r).trim().slice(0, 300); return r || (reasonExempt(A) ? REASON_NONE_SUPER : ''); }
+/* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا يُطلب سببٌ في أيّ فعلٍ لأيّ مستخدم — رسالةُ التأكيد في الواجهة تكفي، وسجلُّ الحركة يسجّل الفاعلَ والوقتَ وما تغيّر.
+   أُزيلت بواباتُ السبب كلُّها (059 enfNo('reason') · 062 missingReason · 047 الاستدراك · 019d الاستعادة · العهد) ومعها reasonExempt و«بلا سبب (مدير المنصة)».
+   reasonLogged = نصُّ السبب إن أرسله عميلٌ قديم (يُحفظ كما كان، والسجلاتُ القديمة تُعرض كما هي) وإلا فارغ — لا يُفرض ولا يُكتب بديل */
+function reasonLogged(A, r) { return String(r == null ? '' : r).trim().slice(0, 300); }
 /* ── من 019a-custody.js: خطأٌ برمزٍ وحالة · ساعةُ اليوم الهجري · الصيغةُ القانونية · بصمةُ الطلب ── */
 function cuError(code, status) {
   var e = new Error(code);
@@ -8464,12 +8465,12 @@ async function cuRestorePermission(A, dept, opt) {
   var has =
     A.u.role === 'super' || enfHeld(A, dept, 'backup.restore');   /* V7 · د5-ح: المحرّكُ النافذ وحده */
   var policy = KIVO_BUILD.restorePolicy(A.u.role === 'super', isMgrOf(A, dept), has, opt.reason);
-  if (!policy.ok || (policy.missingReason && !reasonExempt(A))) throw cuError('custody-restore-permission', 403);
+  if (!policy.ok) throw cuError('custody-restore-permission', 403);   /* V7 · د6 (QA) · البند ١: بلا شرط السبب (كان missingReason لغير مدير المنصة) */
 }
 async function cuPlanRestore(env, A, domain, opt) {
   cuShape(opt, ['dept', 'base', 'scope', 'mode', 'reason', 'finalKeys']);
   var dept = cuString(opt.dept, 200, false);
-  cuString(opt.reason, 300, reasonExempt(A));   /* السببُ الفارغ يُقبل من مدير المنصة وحده (016 reasonExempt)؛ حدُّ الطول للجميع */
+  cuString(opt.reason == null ? '' : opt.reason, 300, true);   /* V7 · د6 (QA) · البند ١: السببُ الفارغ يُقبل من الجميع؛ حدُّ الطول باقٍ */
   if (opt.mode !== 'replace') throw cuError('custody-restore-mode');
   if (['dept', 'full'].indexOf(opt.scope) < 0) throw cuError('custody-restore-scope');
   if (!Number.isSafeInteger(opt.base) || opt.base < 0) throw cuError('custody-restore-base');
@@ -10313,7 +10314,9 @@ async function rsPrepare(env, A, body, meta, internal) {
     (body.scope.kind === 'dept' && (typeof body.scope.departmentId !== 'string' || !body.scope.departmentId))
   )
     throw rsError('restore-scope');
-  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || (!body.reason.trim() && !reasonExempt(A)) || body.reason.length > 300)   /* السببُ الفارغ يُقبل من مدير المنصة وحده؛ حدُّ الطول 300 للجميع */
+  /* V7 · د6 (QA) · البند ١: السببُ لم يعد شرطاً لأحد — يُقبل غائباً أو فارغاً (يُطبَّع إلى "")، وحدُّ الطول 300 باقٍ لما يُرسل */
+  if (body.reason === undefined) body.reason = '';
+  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || body.reason.length > 300)
     throw rsError('restore-reason');
   /* A full backup declares its complete input. Never infer missing domains from
      its mode or silently reinterpret a sparse save as a complete backup. */
@@ -22892,7 +22895,7 @@ async function retroApiRun(env, request, A, url, meta) {
     if (!KIVO_BUILD.retroClosed(T, y, m, dd0)) return json({ ok: 0, err: 'not-closed', today: T }, 400);          /* الفترةُ المفتوحة لا تحتاج استدراكاً */
     var hours = Number(b.hours); if (!(hours > 0)) hours = KIVO_BUILD.RETRO_DEF_H; hours = Math.min(KIVO_BUILD.RETRO_MAX_H, Math.max(1 / 3600, hours));
     var reason = String(b.reason == null ? '' : b.reason).trim().slice(0, 300);
-    if (!reason && !reasonExempt(A)) return json({ ok: 0, err: 'reason', key: RETRO[sys].key }, 400);      /* KIVO_243 · D3-03: السببُ إلزاميٌّ عند الإنفاذ */
+    /* V7 · د6 (QA) · البند ١: فتحُ نافذة الاستدراك لا يطلب سبباً (كان KIVO_243 · D3-03 إلزامياً) — يُسجَّل الفاعلُ والوقت والفترة؛ السببُ إن أُرسل يُحفظ */
     w = { id: 'rw' + now.toString(36) + Math.floor(Math.random() * 1e6).toString(36), scope: scope, by: { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || ''), name: String(A.u.name || '') }, at: now, until: now + Math.round(hours * 3600000), hours: hours, reason: reasonLogged(A, reason), reasonMissing: !reason };
     st9.windows.push(w); if (st9.windows.length > 200) st9.windows = st9.windows.slice(-200);
   } else {
@@ -27008,7 +27011,7 @@ function enfTaskSelfEkey(A, rn) { return rn === 'bassam_tasks_v1' && !A.__tkSelf
 /* القرارُ الكامل لكتابةٍ واحدة على موردٍ إداريّ (أو منصّيّ بسياق) — heldFn(key) يُعطى للموارد المنصّية */
 function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   opts = opts || {};
-  var ix = enfIx(), held = opts.held || function (key) { return enfHeld(A, d, key); };
+  var held = opts.held || function (key) { return enfHeld(A, d, key); };   /* V7 · د6 (QA): ix كان لمفاتيح السبب وحدها */
   /* KIVO_264 · KIVO-Tasks (الرقعة 06): «self.task.respond» للمسار الذاتي وحده (POST /api/me/tasks/act — 062c يسِم الفاعلَ في الخادم A.__tkSelf
      ولا يصل إليه مدخلٌ من الطلب). مصنِّفُ المهام في الوحدة المرجعية 006 (classifyTaskRow — لا تُمسّ: 004–016 = v24.9 بايتاً) يعدّ الصفَّ
      «ذاتياً» حين actor.ekey = العمود 14؛ فلا يُعطى هويةَ الذات على مخزن المهام إلا من ذلك المسار — والحفظُ الخامّ /api/save يُصنَّف بمفاتيح
@@ -27047,10 +27050,8 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   if (sc.composite !== 'not_applicable' && sc.composite !== 'allow' && enfLockBypass(A, d, X) && (sc.denyDims || []).concat(sc.unknownDims || []).every(function (q) { return q === 'DateRange'; })) sc = { composite: 'allow', denyDims: [], unknownDims: [], items: sc.items, why: 'mgr-restore-locked (' + sc.why + ')' };   /* V7 · د6 (QA ٦): 057 enfLockBypass */
   if (sc.composite === 'deny') return enfNo('scope', { keys: used, dims: sc.denyDims, detail: sc.why, items: sc.items });
   if (sc.composite === 'unknown') return enfNo('scope-unknown', { keys: used, dims: sc.unknownDims, detail: sc.why, items: sc.items });
-  /* السببُ الإلزامي (audit.reason في السجل · §12) */
-  var needR = []; for (i = 0; i < used.length; i++) if (ix.reason[used[i]]) needR.push(used[i]);
-  if (needR.length && !enfReasonOf(X) && !reasonExempt(A)) return enfNo('reason', { keys: used, reasonKeys: needR });   /* مدير المنصة لا يُطلب منه سبب (016 reasonExempt) */
-  return enfOk(used, { path: path, reasonKeys: needR, reason: needR.length ? reasonLogged(A, enfReasonOf(X)) : '', items: sc.items, dims: [] });
+  /* V7 · د6 (QA) · البند ١: لا سببَ إلزامياً لأحد (قرارُ المالك) — أُزيل رفضُ enfNo('reason') لمفاتيح audit.reason؛ ما أرسله عميلٌ قديم من سببٍ يُسجَّل كما هو */
+  return enfOk(used, { path: path, reason: reasonLogged(A, enfReasonOf(X)), items: sc.items, dims: [] });
 }
 /* ── الحساباتُ (عامّ): البنيةُ كما usersRule (المدير على موظفيه في نطاقه · الذات على حقولها) والقرارُ بمفاتيح كل إدارةٍ على مستخدميها ── */
 function enfUsersWrite(A, k, newVal, curVal, ctx, X) {
@@ -27635,7 +27636,7 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
     if (!KIVO_BUILD.isImportRes(rn)) X.batchDeny = { why: 'import-allowlist', detail: rn, keys: ['import.run'] };
     else if (A.u.role !== 'super' && !(rn === 'bassam_perms_v1' ? enfHeld(A, A.u.deptId || '', 'import.run') : enfHeld(A, di, 'import.run'))) X.batchDeny = { why: 'perm', missing: ['import.run'], keys: ['import.run'] };
   }
-  /* F-13 / D3-03: الاستعادة = super ∨ (role:mgr ∧ backup.restore في كل إدارةٍ تمسّها الحفظة) ∧ سببٌ إلزامي */
+  /* F-13 / D3-03: الاستعادة = super ∨ (role:mgr ∧ backup.restore في كل إدارةٍ تمسّها الحفظة) — V7 · د6 (QA): بلا سببٍ إلزامي */
   if (!X.batchDeny && (restoreMarker || audRestore)) {
     X.restore = true; X.snapKind = 'restore';
     var touched = {}, glob = false;
@@ -27648,7 +27649,7 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
     if (markers && markers.ops) for (fk in markers.ops) if (markers.ops[fk].op === 'backup.restore' && markers.ops[fk].scope === 'full') fullMk = true;
     if (fullMk && !isSup) X.batchDeny = { why: 'restore-policy', detail: 'full-super-only', keys: ['backup.restore'] };
     else if (!pol.ok) X.batchDeny = { why: 'restore-policy', detail: pol.why, keys: ['backup.restore'] };
-    else if (pol.missingReason && !reasonExempt(A)) X.batchDeny = { why: 'reason', reasonKeys: ['backup.restore'], keys: ['backup.restore'] };   /* مدير المنصة لا يُطلب منه سبب */
+    /* V7 · د6 (QA) · البند ١: أُزيل رفضُ «الاستعادة بلا سبب» (pol.missingReason) — لا سببَ إلزامياً لأحد */
     else X.restoreReason = reasonLogged(A, reason);
   }
   /* استيرادُ البيانات التاريخية (sys.histimp.run): لمدير النظام وحده بسبب */

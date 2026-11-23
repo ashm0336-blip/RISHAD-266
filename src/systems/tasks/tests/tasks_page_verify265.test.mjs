@@ -378,12 +378,11 @@ test('(C-3) قائمةُ الصفّ المفتوحة تبقى مع صفّها ب
     it.run ? it.run() : it.click && await it.click({});
     await P.drain(); await new Promise((r) => setTimeout(r, 20)); await P.drain();
     const re = calls.filter((c) => /\/api\/tasks\/reopen/.test(c.route));
-    /* V7 · د5-ح (القفل): الإنفاذُ وحده — الطلبُ الأول يُرفض «سبب» (task.reopen) ثم يُعاد بالسبب من نافذة 280 (askReason) على الصفّ نفسِه */
-    assert.equal(re.length, 2, JSON.stringify(calls.map((c) => c.route)));
-    assert.equal((await re[0].promise).j.why, 'reason', 'الأولُ بلا سبب يُرفض بطلب السبب');
-    assert.ok(re[1].body.why, 'الإعادةُ تحمل السبب');
+    /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ إلزامياً — الطلبُ الأول يمضي على الصفّ نفسِه (كان: يُرفض «سبب» ثم يُعاد بالسبب) */
+    assert.equal(re.length, 1, JSON.stringify(calls.map((c) => c.route)));
+    assert.equal(re[0].body.why, undefined, 'بلا سبب');
     for (const x of re) assert.equal(x.body.id, R[1][13], 'أُعيد فتحُ R2 نفسِه لا R3');
-    assert.equal((await re[1].promise).j.ok, 1, 'إقرار API الحقيقي لا mock200');
+    assert.equal((await re[0].promise).j.ok, 1, 'إقرار API الحقيقي لا mock200');
     assert.equal(byId(P, R[2][13])[3], 'done', 'R3 غير مستهدف');
     /* و«إعادة الفتح» بموضعٍ قديمٍ (إزاحةٌ بعد بناء الصفوف) تبقى بهويته */
     calls.length = 0; P.c._doReopen(HIJ.day, 1, P.c._tkKey(R[1]));

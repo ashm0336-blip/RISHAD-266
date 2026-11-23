@@ -76,7 +76,7 @@ function enfTaskSelfEkey(A, rn) { return rn === 'bassam_tasks_v1' && !A.__tkSelf
 /* القرارُ الكامل لكتابةٍ واحدة على موردٍ إداريّ (أو منصّيّ بسياق) — heldFn(key) يُعطى للموارد المنصّية */
 function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   opts = opts || {};
-  var ix = enfIx(), held = opts.held || function (key) { return enfHeld(A, d, key); };
+  var held = opts.held || function (key) { return enfHeld(A, d, key); };   /* V7 · د6 (QA): ix كان لمفاتيح السبب وحدها */
   /* KIVO_264 · KIVO-Tasks (الرقعة 06): «self.task.respond» للمسار الذاتي وحده (POST /api/me/tasks/act — 062c يسِم الفاعلَ في الخادم A.__tkSelf
      ولا يصل إليه مدخلٌ من الطلب). مصنِّفُ المهام في الوحدة المرجعية 006 (classifyTaskRow — لا تُمسّ: 004–016 = v24.9 بايتاً) يعدّ الصفَّ
      «ذاتياً» حين actor.ekey = العمود 14؛ فلا يُعطى هويةَ الذات على مخزن المهام إلا من ذلك المسار — والحفظُ الخامّ /api/save يُصنَّف بمفاتيح
@@ -115,10 +115,8 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   if (sc.composite !== 'not_applicable' && sc.composite !== 'allow' && enfLockBypass(A, d, X) && (sc.denyDims || []).concat(sc.unknownDims || []).every(function (q) { return q === 'DateRange'; })) sc = { composite: 'allow', denyDims: [], unknownDims: [], items: sc.items, why: 'mgr-restore-locked (' + sc.why + ')' };   /* V7 · د6 (QA ٦): 057 enfLockBypass */
   if (sc.composite === 'deny') return enfNo('scope', { keys: used, dims: sc.denyDims, detail: sc.why, items: sc.items });
   if (sc.composite === 'unknown') return enfNo('scope-unknown', { keys: used, dims: sc.unknownDims, detail: sc.why, items: sc.items });
-  /* السببُ الإلزامي (audit.reason في السجل · §12) */
-  var needR = []; for (i = 0; i < used.length; i++) if (ix.reason[used[i]]) needR.push(used[i]);
-  if (needR.length && !enfReasonOf(X) && !reasonExempt(A)) return enfNo('reason', { keys: used, reasonKeys: needR });   /* مدير المنصة لا يُطلب منه سبب (016 reasonExempt) */
-  return enfOk(used, { path: path, reasonKeys: needR, reason: needR.length ? reasonLogged(A, enfReasonOf(X)) : '', items: sc.items, dims: [] });
+  /* V7 · د6 (QA) · البند ١: لا سببَ إلزامياً لأحد (قرارُ المالك) — أُزيل رفضُ enfNo('reason') لمفاتيح audit.reason؛ ما أرسله عميلٌ قديم من سببٍ يُسجَّل كما هو */
+  return enfOk(used, { path: path, reason: reasonLogged(A, enfReasonOf(X)), items: sc.items, dims: [] });
 }
 /* ── الحساباتُ (عامّ): البنيةُ كما usersRule (المدير على موظفيه في نطاقه · الذات على حقولها) والقرارُ بمفاتيح كل إدارةٍ على مستخدميها ── */
 function enfUsersWrite(A, k, newVal, curVal, ctx, X) {

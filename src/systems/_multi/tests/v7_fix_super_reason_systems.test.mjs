@@ -10,7 +10,7 @@ import { world, seed, D1, IDS, ROOT } from '../../../../tests/unit/irshad_domain
 import { EKEYS } from '../../../../tests/unit/canonical_fx.mjs';
 import { needs, hasSystem } from '../../../../tests/unit/harness.mjs';
 
-const NONE = 'بلا سبب (مدير المنصة)';
+const NONE = '';   /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ إلزامياً لأحد ولا علامةَ «بلا سبب (مدير المنصة)» — مديرُ الإدارة بلا سبب يُقبل */
 const REASON = 'TEST_ONLY reviewed reason';
 const SUP = 'super', MGR = 'manager1';
 const results = [];
@@ -44,20 +44,21 @@ async function threeWay({ key, place, how, route, run, note = '' }) {
   /* 1 — super, no reason */
   let B = await mk(), a = await run(B, SUP, '');
   const row = authzRow(B, SUP, route);
-  out.super = { ok: a.r.status === 200 && a.r.json?.ok === 1, changed: a.changed, status: a.r.status, logged: row ? row.reason === NONE : 'n-a' };
+  out.super = { ok: a.r.status === 200 && a.r.json?.ok === 1, changed: a.changed, status: a.r.status, logged: row ? (row.reason || '') === NONE : 'n-a' };
   assert.equal(a.r.status, 200, key + ' · super without a reason: ' + JSON.stringify(a.r.json));
   assert.equal(a.r.json.ok, 1);
   assert.equal(a.changed, true, key + ' · super without a reason must really change the stored data');
   assert.ok(row, key + ' · the allowed sensitive decision is written to authz');
   assert.equal(row.decision, 'allow'); assert.ok(row.keys.split(',').includes(key), key + ' is the key decided: ' + row.keys);
-  assert.equal(row.reason, NONE, key + ' · authz.reason for super without a reason');
+  assert.equal(row.reason || '', NONE, key + ' · authz.reason for super without a reason');
   B.DB.db.close();
   /* 2 — unit manager, no reason */
   B = await mk(); a = await run(B, MGR, '');
   out.mgrNoReason = { refused: a.r.status !== 200, why: whyOf(a.r.json), status: a.r.status };
-  assert.notEqual(a.r.status, 200, key + ' · manager without a reason must be refused: ' + JSON.stringify(a.r.json));
-  assert.equal(whyOf(a.r.json), 'reason', JSON.stringify(a.r.json));
-  assert.equal(a.changed, false, key + ' · a refused command leaves the data unchanged');
+  /* V7 · د6 (QA) · البند ١: كان «يُرفض why=reason» — الآن يُقبل بلا سبب ويتغيّر المخزَّن فعلاً */
+  assert.equal(a.r.status, 200, key + ' · manager without a reason is accepted: ' + JSON.stringify(a.r.json));
+  assert.notEqual(whyOf(a.r.json), 'reason', JSON.stringify(a.r.json));
+  assert.equal(a.changed, true, key + ' · manager without a reason really changes the stored data');
   B.DB.db.close();
   /* 3 — the same manager, with a reason */
   B = await mk(); a = await run(B, MGR, REASON);
@@ -73,7 +74,7 @@ async function threeWay({ key, place, how, route, run, note = '' }) {
 
 /* ── daily statistics: reopening a closed day (locks["<site>|y-m"].dshut[d] removed) through POST /api/dstats ── */
 for (const site of ['haram', 'nabawi']) {
-  test('dstats.' + site + '.reopen — super is not asked for a reason; the manager still is', needs('dstats'), async () => {
+  test('dstats.' + site + '.reopen — neither super nor the manager is asked for a reason (V7 · د6 QA)', needs('dstats'), async () => {
     await threeWay({
       key: 'dstats.' + site + '.reopen', place: 'POST /api/dstats', route: '/api/dstats',
       how: 'remove locks["' + site + '|y-m"].dshut[today] (reopen a closed day)',
@@ -114,8 +115,8 @@ test('sys.histimp.run — super imports without a reason; a manager is refused b
   const row = authzRow(B, SUP, '/api/dstats'), aud = B.DB.q("SELECT act,ctx FROM aud WHERE k='bassam_dstats_v1' ORDER BY ts DESC LIMIT 1")[0];
   assert.equal(aud.act, 'import');
   /* real behaviour: the import is decided by the entry key (not sensitive) so no authz row is written; the audit line of the import carries the «no reason» label for super */
-  assert.equal(row, null); assert.equal(JSON.parse(aud.ctx).reason, NONE);
-  const sup = { ok: true, changed: true, status: r.status, logged: JSON.parse(aud.ctx).reason === NONE };
+  assert.equal(row, null); assert.equal(JSON.parse(aud.ctx).reason || '', NONE);
+  const sup = { ok: true, changed: true, status: r.status, logged: (JSON.parse(aud.ctx).reason || '') === NONE };
   const authzSeen = row ? copy(row) : null;
   B.DB.db.close();
   B = await mk(); r = await send(B, MGR, '');
@@ -131,7 +132,7 @@ test('sys.histimp.run — super imports without a reason; a manager is refused b
 });
 
 /* ── irshad: delete a whole month of reports (two rows ⇒ the bulk key) through POST /api/irshad/act ── */
-test('ir.rec.bulk.delete — super is not asked for a reason; the manager still is', needs('irshad'), async () => {
+test('ir.rec.bulk.delete — neither super nor the manager is asked for a reason (V7 · د6 QA)', needs('irshad'), async () => {
   await threeWay({
     key: 'ir.rec.bulk.delete', place: 'POST /api/irshad/act', route: '/api/irshad/act', how: "op:'delete-month' on the current month (2 reports)",
     run: async (B, who, reason) => {
@@ -151,7 +152,7 @@ test('ir.rec.bulk.delete — super is not asked for a reason; the manager still 
 });
 
 /* ── seized: delete a whole month of records through POST /api/seized/act ── */
-test('sz.rec.bulk.delete — super is not asked for a reason; the manager still is', needs('seized', 'irshad'), async () => {
+test('sz.rec.bulk.delete — neither super nor the manager is asked for a reason (V7 · د6 QA)', needs('seized', 'irshad'), async () => {
   await threeWay({
     key: 'sz.rec.bulk.delete', place: 'POST /api/seized/act', route: '/api/seized/act', how: "op:'delete-month' on the current month (2 records)",
     run: async (B, who, reason) => {
@@ -178,7 +179,7 @@ test('sz.rec.bulk.delete — super is not asked for a reason; the manager still 
 
 /* ── retro window: POST /api/retro {act:'open'} on the previous (closed) month — reason in body.reason ── */
 for (const [sys, key, table] of [['irshad', 'ir.rec.retro.open', 'irshad_retro_windows'], ['seized', 'sz.rec.retro.open', 'seized_retro_windows']]) {
-  test(key + ' — super is not asked for a reason; the manager still is', needs(sys), async () => {
+  test(key + ' — neither super nor the manager is asked for a reason (V7 · د6 QA)', needs(sys), async () => {
     const out = await threeWay({
       key, place: 'POST /api/retro', route: '/api/retro', how: "act:'open' res:'" + sys + "' scope = previous month, 1 hour",
       run: async (B, who, reason) => {
@@ -189,14 +190,14 @@ for (const [sys, key, table] of [['irshad', 'ir.rec.retro.open', 'irshad_retro_w
         const r = await B.post(who, '/api/retro', body);
         if (r.status === 200) {
           const w = B.DB.q('SELECT reason,reason_missing FROM ' + table)[0];
-          assert.equal(w.reason, who === SUP ? NONE : REASON, 'the stored window carries the logged reason');
+          assert.equal(w.reason || '', reason ? REASON : NONE, 'the stored window carries the logged reason (V7 · د6 (QA): empty when none was typed)');
           assert.equal(Number(w.reason_missing), reason ? 0 : 1);
         }
         return { r, changed: count() === 1 };
       },
     });
-    assert.equal(out.mgrNoReason.status, 400, 'the retro route answers a missing reason with 400 err:reason');
-    out.note = 'refusal is HTTP 400 {err:"reason"} (workers/parts/047-retro.js); the stored window keeps reason «' + NONE + '» and reasonMissing=1 for super';
+    assert.equal(out.mgrNoReason.status, 200, 'V7 · د6 (QA) · البند ١: the retro route opens without a reason (was 400 err:reason)');
+    out.note = 'V7 · د6 (QA): no reason is required (workers/parts/047-retro.js); a window opened without one stores an empty reason and reasonMissing=1';
   });
 }
 
@@ -212,7 +213,7 @@ async function awardStatus(B, who, status, reason, st) {
   const r = await B.post(who, '/api/award/act', body), rec = await B.api(SUP, '/api/award?' + new URLSearchParams({ uid: IDS.super, dept: D1, view: 'record', id: 'TEST_ONLY_award' }));
   return { r, st: rec.json.record.st };
 }
-test('award.res.reject — super is not asked for a reason; the manager still is', needs('award'), async () => {
+test('award.res.reject — neither super nor the manager is asked for a reason (V7 · د6 QA)', needs('award'), async () => {
   await threeWay({
     key: 'award.res.reject', place: 'POST /api/award/act', route: '/api/award/act', how: "op:'status' قيد التحكيم → مستبعد",
     run: async (B, who, reason) => { const a = await awardStatus(B, who, 'مستبعد', reason); return { r: a.r, changed: a.st === 'مستبعد' }; },

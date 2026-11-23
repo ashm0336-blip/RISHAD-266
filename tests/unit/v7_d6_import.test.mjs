@@ -672,6 +672,10 @@ test('(٥) حسابٌ بلا صلاحية يُرفض في كل جزء ولو ب�
     t.diagnostic('مديرُ الإدارة بالمفتاح: الفحص ' + run.inspect.status + ' ' + run.inspect.j.err + ' (كالمسار القديم)');
     /* V7 · د6 (QA ٦ — قرارُ المالك): الحكمان واحدٌ وهو القبول الآن (الفتراتُ المقفلة في نسخته وشريحةُ موظفيه له) — فيُعتمد الاستيراد ويُسجَّل مرةً واحدة */
     assert.equal(run.inspect.status, 200, JSON.stringify(run.inspect.j).slice(0, 300)); assert.equal(run.commit.status, 200); assert.equal(staged(T.DB), 0); assert.equal(audits(T), 1); void state;
+    /* V7 · د6 (QA) · البند ١: بلا سبب حكمُ مدير الإدارة هو حكمُه بالسبب نفسُه (كان 400 restore-reason) — السببُ لم يعد شرطاً لأحد */
+    const noReason = await protocol(T, mgrB, file, { scope: SCOPE, reason: '' }).run();
+    assert.ok(noReason.inspect, 'بلا سبب وصل الفحص');
+    assert.equal(noReason.inspect.status, run.inspect.status); assert.equal(noReason.inspect.j.err, run.inspect.j.err); assert.notEqual(noReason.inspect.j.err, 'restore-reason'); assert.equal(staged(T.DB), 0);
   } finally { await T.close(); }
 });
 

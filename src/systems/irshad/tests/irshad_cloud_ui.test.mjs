@@ -303,10 +303,12 @@ test('lost retro ACK refreshes windows using GET only and a later explicit click
     assert.equal(body.act, 'close'); assert.equal(body.id, active.id); active = { ...active, closedAt: Date.now() };
     return json({ ok: 1, window: active });
   }); t.after(B.cleanup);
-  B.W.KIVO.__BS_SRV.askReason = (key, keys, cb) => cb('TEST_ONLY retro reason');
+  /* V7 · د6 (QA) · البند ١: فتحُ الاستدراك لا يسأل عن سبب — رسالةُ التأكيد (bsConfirm) قبله؛ «تأكيد» يمضي */
+  const confirms = []; B.W.KIVO.bsConfirm = async (o) => { confirms.push(o && o.title); return true; };
   B.page.state.irRetro = { windows: [] };
   await B.page._irRetroToggle(active.scope);
   assert.equal(B.page.state.irRetro, null, 'Old empty window state cannot trigger another open');
+  assert.deepEqual(confirms, ['فتح الفترة للاستدراك'], 'one confirmation before opening, no reason dialog');
   await new Promise(resolve => setTimeout(resolve, 10));
   assert.equal(B.calls.filter(c => c.options.method === 'POST').length, 1);
   assert.equal(B.page.state.irRetro.windows[0].id, active.id);

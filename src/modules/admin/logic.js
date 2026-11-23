@@ -2780,6 +2780,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (receipt.mode !== "dept-delete" || receipt.dept !== draft.dept || receipt.requestId !== draft.ticket.requestId || !natural(receipt.rev) || !receipt.revs || typeof receipt.revs !== "object" || Array.isArray(receipt.revs) || Object.values(receipt.revs).some(value => !natural(value)) || !receipt.counts || ["keys", "accounts", "custody", "notifications", "irshad", "seized", "awards"].some(key => !natural(receipt.counts[key]))) {
         draft.uncertain = true; return this.bsToast("وصل تأكيد حذف ناقص؛ أعد محاولة الطلب نفسه قبل أي عملية أخرى", "warn");
       }
+      try { if (srv && srv.mine) srv.mine(receipt.revs); } catch (_) {}   /* V7 · د6 (QA) · البند ٥: ما كتبه الحذفُ من فعلي — لا شريطَ «عدّله كاتب آخر» */
       if (this._wpActor() !== actor || this._deptDeleteDraft !== draft) return;
       this._deptDeleteDraft = null;
       this.setState({ deptMsg: "حذف الخادم إدارة «" + draft.data.department.name + "» وحساباتها وبياناتها", tick: (this.state.tick || 0) + 1 });
@@ -2886,6 +2887,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const receipt = result.body;
       if (receipt.dept !== dept || receipt.requestId !== ticket.body.requestId || !Number.isSafeInteger(receipt.rev) || receipt.rev < 0 || !receipt.counts || ["keys", "custody", "notifications", "irshad", "seized", "awards"].some(key => !Number.isSafeInteger(receipt.counts[key]) || receipt.counts[key] < 0))
         { this._wpUncertain = true; return void this.setState({ wpMsg: "تأكيد الخادم ناقص؛ لم يُعرض نجاح، أعد المحاولة بنفس الطلب" }); }
+      try { if (srv && srv.mine) srv.mine(receipt.revs); } catch (_) {}   /* V7 · د6 (QA) · البند ٥ */
       if (this._wpActor() !== actor || this.state.wpDid !== dept) return;
       this._wpTicket = null; this._wpUncertain = false;
       this.setState({ wpDid: "", wpTxt: "", wpBase: null, wpCounts: null, wpNeedsReview: false, wpMsg: "", tick: (this.state.tick || 0) + 1 });

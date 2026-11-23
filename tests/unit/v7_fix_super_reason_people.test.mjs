@@ -3,7 +3,9 @@
      super without a reason            => accepted, stored data changes, authz row carries «بلا سبب (مدير المنصة)»
      unit manager without a reason     => refused (why: reason), stored data unchanged
      the same manager with a reason    => accepted, stored data changes
-   Keys: task.reopen · task.bulk.delete · emp.record.bulk.delete · import.replace. Synthetic data only (TEST_ONLY). */
+   Keys: task.reopen · task.bulk.delete · emp.record.bulk.delete · import.replace. Synthetic data only (TEST_ONLY).
+   V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ إلزامياً لأحد — مديرُ الإدارة بلا سبب يُقبل الآن (كان: يُرفض why=reason)، ومديرُ المنصة
+   لا يُكتب له «بلا سبب (مدير المنصة)» بل حقلُ سببٍ فارغ؛ السببُ إن كُتب يُسجَّل كما هو. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,7 +14,7 @@ import { world as tasksWorld, workerUnderTest, ME, MATE, D, DAY, T, TAG, stored,
 import { world as canonWorld, D1, IDS } from './canonical_fx.mjs';
 import { inspectOperationalFixture } from './operational_legacy_seed_fx.mjs';
 
-const NONE = 'بلا سبب (مدير المنصة)';
+const NONE = '';   /* V7 · د6 (QA) · البند ١: لا علامةَ «بلا سبب (مدير المنصة)» */
 const WHY = TAG + ' سببٌ مكتوب';
 const results = [];
 const rec = (key, place, how) => { const r = { key, place, how, super: {}, mgrNoReason: {}, mgrReason: {}, note: '' }; results.push(r); return r; };
@@ -45,20 +47,19 @@ test('task.reopen — super without a reason reopens · manager without is refus
   {
     const { W, r, uid } = await reopen('super', '');
     const changed = taskRow(W)[3] === 'in_progress' && taskRow(W)[12] == null, z = authzOf(W.env.DB, KT, uid).filter((q) => /task\.reopen/.test(q.keys));
-    R.super = { ok: r.status === 200 && r.j.ok === 1, changed, status: r.status, logged: z.length === 1 && z[0].reason === NONE };
+    R.super = { ok: r.status === 200 && r.j.ok === 1, changed, status: r.status, logged: z.length === 1 && (z[0].reason || '') === NONE };
     assert.equal(r.status, 200, JSON.stringify(r.j)); assert.equal(r.j.ok, 1);
     assert.equal(taskRow(W)[3], 'in_progress', 'stored row is in progress again'); assert.equal(taskRow(W)[12], null, 'finish time cleared');
     assert.equal(reopened(W).length, 1, 'one «reopened» audit event');
-    assert.equal(z.length, 1, JSON.stringify(z)); assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason, NONE);
+    assert.equal(z.length, 1, JSON.stringify(z)); assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason || '', NONE);
   }
   {
     const { W, r, uid } = await reopen('manager', '');
-    R.mgrNoReason = { refused: r.status === 403 && r.j.ok === 0, why: String(r.j.why || ''), status: r.status };
-    assert.equal(r.status, 403, JSON.stringify(r.j)); assert.equal(r.j.err, 'denied'); assert.equal(r.j.why, 'reason');
-    assert.deepEqual(r.j.reasonKeys, ['task.reopen']);
-    assert.equal(taskRow(W)[3], 'done', 'still done'); assert.equal(reopened(W).length, 0);
+    R.mgrNoReason = { refused: !(r.status === 200 && r.j.ok === 1), why: String(r.j.why || ''), status: r.status };
+    assert.equal(r.status, 200, JSON.stringify(r.j)); assert.equal(r.j.ok, 1, 'V7 · د6 (QA): بلا سبب يُقبل');
+    assert.equal(taskRow(W)[3], 'in_progress', 'reopened'); assert.equal(reopened(W).length, 1);
     const z = authzOf(W.env.DB, KT, uid).filter((q) => /task\.reopen/.test(q.keys));
-    assert.equal(z.length, 1); assert.equal(z[0].decision, 'deny'); assert.equal(z[0].why, 'reason');
+    assert.equal(z.length, 1); assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason || '', '');
   }
   {
     const { W, r, uid } = await reopen('manager', WHY);
@@ -99,19 +100,19 @@ test('task.bulk.delete — super without a reason deletes the month · manager w
   {
     const { W, r, uid, total } = await bulkDelete('super', '');
     const z = authzOf(W.env.DB, KT, uid).filter((q) => q.keys === 'task.bulk.delete');
-    R.super = { ok: r.status === 200 && r.j.ok === 1, changed: monthRows(W) === 0, status: r.status, logged: z.length === 1 && z[0].reason === NONE };
+    R.super = { ok: r.status === 200 && r.j.ok === 1, changed: monthRows(W) === 0, status: r.status, logged: z.length === 1 && (z[0].reason || '') === NONE };
     assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 300)); assert.equal(r.j.ok, 1);
     assert.equal(monthRows(W), 0, 'month is empty in storage'); assert.equal(allRows(W), total - 3, 'only that month went');
-    assert.equal(z.length, 1, JSON.stringify(z)); assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason, NONE);
+    assert.equal(z.length, 1, JSON.stringify(z)); assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason || '', NONE);
   }
   {
     const { W, r, uid, total } = await bulkDelete('manager', '');
     const d = (r.j.denied || {})[KT] || {};
     R.mgrNoReason = { refused: r.j.ok === 0 && !!d.why, why: String(d.why || ''), status: r.status };
-    assert.equal(r.status, 403, JSON.stringify(r.j).slice(0, 300)); assert.equal(d.why, 'reason'); assert.deepEqual(d.reasonKeys, ['task.bulk.delete']);
-    assert.equal(monthRows(W), 3, 'nothing removed'); assert.equal(allRows(W), total);
+    assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 300)); assert.equal(d.why, undefined, 'V7 · د6 (QA): بلا سبب يُقبل');
+    assert.equal(monthRows(W), 0, 'month removed'); assert.equal(allRows(W), total - 3);
     const z = authzOf(W.env.DB, KT, uid).filter((q) => q.keys === 'task.bulk.delete');
-    assert.equal(z.length, 1); assert.equal(z[0].decision, 'deny'); assert.equal(z[0].why, 'reason');
+    assert.equal(z.length, 1); assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason || '', '');
   }
   {
     const { W, r, uid, total } = await bulkDelete('manager', WHY);
@@ -145,20 +146,19 @@ for (const [label, shape, left] of [
     const R = rec('emp.record.bulk.delete', 'POST /api/employees/transition (intent delete · ' + label + ')', 'unit of four employees: ' + (left ? 'two removed, two kept' : 'all four removed'));
     {
       const { r, before, after, z } = await transition('super', 'delete', shape, '');
-      R.super = { ok: r.status === 200 && r.json.ok === 1, changed: after.length === left && before.length === 4, status: r.status, logged: z.length === 1 && z[0].reason === NONE };
+      R.super = { ok: r.status === 200 && r.json.ok === 1, changed: after.length === left && before.length === 4, status: r.status, logged: z.length === 1 && (z[0].reason || '') === NONE };
       assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300)); assert.equal(r.json.ok, 1);
       assert.equal(before.length, 4); assert.equal(after.length, left, 'stored employees after the delete');
       assert.deepEqual(eids(after), eids(before).slice(4 - left)); assert.equal(r.json.counts.removed, 4 - left);
-      assert.equal(z.length, 1, JSON.stringify(z)); assert.equal(z[0].keys, 'emp.record.bulk.delete'); assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason, NONE);
+      assert.equal(z.length, 1, JSON.stringify(z)); assert.equal(z[0].keys, 'emp.record.bulk.delete'); assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason || '', NONE);
     }
     {
       const { r, before, after, z } = await transition('manager1', 'delete', shape, '');
       const d = ((r.json || {}).denied || {})[EK] || {};
-      R.mgrNoReason = { refused: r.status === 403 && r.json.ok === 0, why: String(d.why || ''), status: r.status };
-      assert.equal(r.status, 403, JSON.stringify(r.json).slice(0, 300)); assert.equal(r.json.err, 'denied'); assert.equal(d.why, 'reason');
-      assert.deepEqual(d.reasonKeys, ['emp.record.bulk.delete']);
-      assert.deepEqual(after, before, 'employees untouched');
-      assert.equal(z.length, 1); assert.equal(z[0].decision, 'deny'); assert.equal(z[0].why, 'reason');
+      R.mgrNoReason = { refused: !(r.status === 200 && r.json.ok === 1), why: String(d.why || ''), status: r.status };
+      assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300)); assert.equal(r.json.ok, 1, 'V7 · د6 (QA): بلا سبب يُقبل');
+      assert.equal(after.length, left); assert.equal(before.length, 4);
+      assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason || '', '');
     }
     {
       const { r, before, after, z } = await transition('manager1', 'delete', shape, WHY);
@@ -181,21 +181,20 @@ test('import.replace — super without a reason replaces · manager without is r
   {
     const { f, r, before, after, z } = await transition('super', 'import', replaceShape, '', seedReport);
     const changed = after.length === 1 && after[0].eid === NEW.eid && reportDays(f) === 0;
-    R.super = { ok: r.status === 200 && r.json.ok === 1, changed, status: r.status, logged: z.length === 1 && z[0].reason === NONE };
+    R.super = { ok: r.status === 200 && r.json.ok === 1, changed, status: r.status, logged: z.length === 1 && (z[0].reason || '') === NONE };
     assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300)); assert.equal(r.json.ok, 1);
     assert.equal(before.length, 4); assert.deepEqual(after, [NEW], 'stored employees are the imported ones only');
     assert.equal(reportDays(f), 0, 'daily report emptied'); assert.equal(r.json.counts.removed, 4);
     assert.equal(z.length, 1, JSON.stringify(z)); assert.match(z[0].keys, /emp\.record\.bulk\.delete/); assert.match(z[0].keys, /import\.run/);
-    assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason, NONE);
+    assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason || '', NONE);
   }
   {
     const { f, r, before, after, z } = await transition('manager1', 'import', replaceShape, '', seedReport);
     const d = ((r.json || {}).denied || {})[EK] || {};
-    R.mgrNoReason = { refused: r.status === 403 && r.json.ok === 0, why: String(d.why || ''), status: r.status };
-    assert.equal(r.status, 403, JSON.stringify(r.json).slice(0, 300)); assert.equal(r.json.err, 'denied'); assert.equal(d.why, 'reason');
-    assert.deepEqual(d.reasonKeys, ['emp.record.bulk.delete']);
-    assert.deepEqual(after, before, 'employees untouched'); assert.equal(reportDays(f), 1, 'daily report untouched');
-    assert.equal(z.length, 1); assert.equal(z[0].decision, 'deny'); assert.equal(z[0].why, 'reason');
+    R.mgrNoReason = { refused: !(r.status === 200 && r.json.ok === 1), why: String(d.why || ''), status: r.status };
+    assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300)); assert.equal(r.json.ok, 1, 'V7 · د6 (QA): بلا سبب يُقبل');
+    assert.deepEqual(after, [NEW]); assert.equal(reportDays(f), 0);
+    assert.equal(z[0].decision, 'allow'); assert.equal(z[0].reason || '', '');
   }
   {
     const { f, r, after, z } = await transition('manager1', 'import', replaceShape, WHY, seedReport);

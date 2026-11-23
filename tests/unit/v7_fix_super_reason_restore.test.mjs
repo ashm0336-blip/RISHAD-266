@@ -11,7 +11,7 @@ import { needs } from './harness.mjs';
 import { world } from './atomic_restore_review_fx.mjs';
 import { D1, IDS, EKEYS } from './notifications_review_fx.mjs';
 
-const NONE = 'بلا سبب (مدير المنصة)';
+const NONE = '';   /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ إلزامياً لأحد ولا علامةَ «بلا سبب (مدير المنصة)» — مديرُ الإدارة بلا سبب يُقبل */
 /* V7 · د5-ح: كان K سجلَّ القوالب bassam_perm_tpls_v1 (أُسقط من النسخ الاحتياطية وحُذف كاتبُه) — مكانه موردُ KV عاديّ للإدارة بسقف admin/backup، يُبذر في fresh */
 const K = 'bsdept:' + D1 + ':bassam_last_export_v1', GK = 'bsdept:' + D1 + ':bassam_grants_v1';
 const ALL = needs('award', 'custody', 'dstats', 'irshad', 'seized');   /* the restore file carries every domain */
@@ -36,7 +36,7 @@ async function restoreOnce(who, kind, reason) {
   const body = await B.body({ scope: kind === 'full' ? { kind } : { kind, departmentId: D1 }, keys: kind === 'full' ? { [K]: want } : { [K]: want, [GK]: GRANT }, reason });
   const r = await B.restore(body, who), now = kv(B, K);
   return { B, r, status: r.status, ok: r.status === 200 && r.json && r.json.ok === 1, err: (r.json && r.json.err) || '', changed: now === want, unchanged: now === before,
-    logged: authz(B).some((x) => x.uid === IDS[who] && x.k === K && x.decision === 'allow' && x.reason === NONE),
+    logged: authz(B).some((x) => x.uid === IDS[who] && x.k === K && x.decision === 'allow' && (x.reason || '') === NONE),
     audReason: (B.DB.q("SELECT ctx FROM aud WHERE k='atomic_restore'").map((x) => JSON.parse(x.ctx).reason))[0] };
 }
 const BUG_CUSTODY = 'BUG: super with an empty reason is refused 400 err custody-text at src/systems/custody/server/019b4-custody-restore.js:4 ' +
@@ -49,13 +49,13 @@ test('backup.restore — unit restore through /api/backup/restore: super without
     super: { ok: s.ok, changed: s.changed, status: s.status, logged: s.logged, err: s.err },
     mgrNoReason: { refused: !m0.ok, why: m0.err, status: m0.status }, mgrReason: { ok: m1.ok, changed: m1.changed, status: m1.status },
     note: [superNote(s), 'this route answers a missing reason with HTTP 400 err restore-reason (not why reason)'].filter(Boolean).join(' · ') });
-  assert.equal(m0.status, 400); assert.equal(m0.err, 'restore-reason'); assert.ok(m0.unchanged, 'manager without a reason: data unchanged');
-  assert.equal(authz(m0.B).length, 0);
+  /* V7 · د6 (QA): كان 400 restore-reason — الآن يُستعاد بلا سبب */
+  assert.ok(m0.ok, JSON.stringify(m0.r.json)); assert.ok(m0.changed, 'manager without a reason: the stored value is the file value');
   assert.ok(m1.ok, JSON.stringify(m1.r.json)); assert.ok(m1.changed, 'manager with a reason: the stored value is the file value');
   assert.equal(m1.audReason, 'TEST_ONLY rollback after a bad import');
   assert.ok(s.ok, 'super without a reason must succeed: ' + s.status + ' ' + JSON.stringify(s.r.json));
   assert.ok(s.changed, 'super without a reason: the stored value is the file value');
-  assert.ok(s.logged, 'authz row of super carries the no-reason label'); assert.equal(s.audReason, NONE);
+  assert.ok(s.logged, 'authz row of super: empty reason'); assert.equal(s.audReason || '', NONE);
 });
 
 test('sys.restore.full — full restore is super only: super without a reason succeeds · a manager is refused whatever the reason', ALL, async () => {
@@ -64,14 +64,14 @@ test('sys.restore.full — full restore is super only: super without a reason su
     super: { ok: s.ok, changed: s.changed, status: s.status, logged: s.logged, err: s.err },
     mgrNoReason: { refused: !m0.ok, why: m0.err, status: m0.status }, mgrReason: { ok: m1.ok, changed: m1.changed, status: m1.status, why: m1.err },
     note: [superNote(s), 'full restore is super-only: a manager with a reason gets 403 restore-policy; without a reason the reason check comes first (400 restore-reason)'].filter(Boolean).join(' · ') });
-  assert.equal(m0.status, 400); assert.equal(m0.err, 'restore-reason'); assert.ok(m0.unchanged);
+  assert.equal(m0.status, 403); assert.equal(m0.err, 'restore-policy'); assert.ok(m0.unchanged);   /* V7 · د6 (QA): بلا فحص سبب يصل حكمُ «لمدير المنصة وحده» مباشرة */
   assert.equal(m1.status, 403); assert.equal(m1.err, 'restore-policy'); assert.ok(m1.unchanged, 'manager full restore: data unchanged');
   assert.ok(s.ok, 'super full restore without a reason must succeed: ' + s.status + ' ' + JSON.stringify(s.r.json));
   assert.ok(s.changed, 'super full restore: the stored value is the file value');
-  assert.equal(s.audReason, NONE);
+  assert.equal(s.audReason || '', NONE);
 });
 
-test('place 019d «restore-reason» — empty reason passes the check for super only; 301 characters is refused for everyone', ALL, async () => {
+test('place 019d «restore-reason» — V7 · د6 (QA): empty reason passes for everyone; 301 characters is refused for everyone', ALL, async () => {
   const long = 'س'.repeat(301), edge = 'س'.repeat(300);
   const s = await restoreOnce('super', 'dept', ''), sBlank = await restoreOnce('super', 'dept', '   '), m0 = await restoreOnce('manager1', 'dept', ''), mBlank = await restoreOnce('manager1', 'dept', '   '),
     sLong = await restoreOnce('super', 'dept', long), mLong = await restoreOnce('manager1', 'dept', long), mEdge = await restoreOnce('manager1', 'dept', edge);
@@ -81,7 +81,8 @@ test('place 019d «restore-reason» — empty reason passes the check for super 
     mgrReason: { ok: mEdge.ok, changed: mEdge.changed, status: mEdge.status, reasonLength: 300 },
     note: [superNote(s), 'the 019d check itself lets the empty reason of super through (err is not restore-reason)'].filter(Boolean).join(' · ') });
   assert.notEqual(s.err, 'restore-reason', 'super with an empty reason passes the 019d check'); assert.notEqual(sBlank.err, 'restore-reason');
-  for (const x of [m0, mBlank, sLong, mLong]) { assert.equal(x.status, 400); assert.equal(x.err, 'restore-reason'); assert.ok(x.unchanged, 'refused: data unchanged'); }
+  assert.ok(m0.ok && m0.changed, 'manager, empty reason: accepted'); assert.ok(mBlank.ok && mBlank.changed, 'manager, blank reason: accepted');
+  for (const x of [sLong, mLong]) { assert.equal(x.status, 400); assert.equal(x.err, 'restore-reason'); assert.ok(x.unchanged, 'refused: data unchanged'); }
   assert.ok(mEdge.ok && mEdge.changed, 'a 300-character reason is accepted: ' + JSON.stringify(mEdge.r.json));
 });
 
@@ -93,17 +94,17 @@ async function markerSave(who, marker, extra = {}) {
   const d = ((r.json && r.json.denied) || {})[K] || null, now = kv(B, K);
   return { B, r, d, status: r.status, ok: r.status === 200 && !d && !!((r.json.revs || {})[K]), changed: now === want, unchanged: now === before, rows: authz(B) };
 }
-test('place 062 «missingReason» — /api/save with a backup.restore marker: super without a reason writes · manager without is refused (reason) · with passes', async () => {
+test('place 062 «missingReason» — V7 · د6 (QA): /api/save with a backup.restore marker: super and manager write without a reason · with one it is logged', async () => {
   const s = await markerSave('super', {}), m0 = await markerSave('manager1', {}), m1 = await markerSave('manager1', { reason: 'TEST_ONLY marker reason' }), m2 = await markerSave('manager1', {}, { why: { [K]: 'TEST_ONLY why map' } });
-  const logged = s.rows.some((x) => x.uid === IDS.super && x.k === K && x.decision === 'allow' && x.reason === NONE);
+  const logged = s.rows.some((x) => x.uid === IDS.super && x.k === K && x.decision === 'allow' && (x.reason || '') === NONE);
   results.push({ key: 'backup.restore', place: '062 missingReason (workers/parts/062-enf-save.js:59)', how: 'POST /api/save, set of a plain KV unit key with ops {op: backup.restore, scope: dept}',
     super: { ok: s.ok, changed: s.changed, status: s.status, logged },
     mgrNoReason: { refused: !!m0.d, why: m0.d && m0.d.why, status: m0.status, reasonKeys: m0.d && m0.d.reasonKeys },
     mgrReason: { ok: m1.ok, changed: m1.changed, status: m1.status },
     note: 'the line is reachable over HTTP; /api/save answers 200 with denied[key].why = reason (per-key refusal); the reason is taken from the marker or from body.why' });
   assert.ok(s.ok, JSON.stringify(s.r.json)); assert.ok(s.changed, 'super without a reason: stored value changed'); assert.ok(logged, 'authz row carries the no-reason label: ' + JSON.stringify(s.rows));
-  assert.ok(m0.d, 'manager without a reason is refused'); assert.equal(m0.d.why, 'reason'); assert.deepEqual(m0.d.reasonKeys, ['backup.restore']); assert.ok(m0.unchanged, 'data unchanged');
-  assert.ok(m0.rows.some((x) => x.decision === 'deny' && x.why === 'reason' && x.keys === 'backup.restore'));
+  assert.ok(m0.ok && m0.changed, 'V7 · د6 (QA): manager without a reason writes: ' + JSON.stringify(m0.r.json));
+  assert.ok(!m0.rows.some((x) => x.why === 'reason'), 'no reason refusal logged');
   assert.ok(m1.ok && m1.changed, JSON.stringify(m1.r.json)); assert.ok(m1.rows.some((x) => x.decision === 'allow' && x.reason === 'TEST_ONLY marker reason'));
   assert.ok(m2.ok && m2.changed, 'reason from body.why: ' + JSON.stringify(m2.r.json));
 });

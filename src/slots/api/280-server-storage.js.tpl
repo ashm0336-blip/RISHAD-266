@@ -499,6 +499,15 @@
     overQ9.push({ k: k, lbl: lbl(k), over: n });
   }
   function overFlush9(list) { var L = (list || []).concat(overQ9.splice(0)); if (L.length) conflictBanner(L); }
+  /* V7 · د6 (QA) · البند ٥: مسارُ خادمٍ نفّذ طلبَ المستخدم نفسِه (حذفُ إدارة · مسحُها · نقلُ الموظفين وإنشاءُ حساباتهم واستيرادُهم · استيرادُ النسخة واستعادتُها)
+     يكتب مفاتيحَ حفظتُها أنا قبل قليل — فقيمتُه الجديدة «من فعلي» لا كاتبٌ آخر. own9[k] = آخرُ مراجعةٍ كتبها فعلي؛ ما يصل بمراجعةٍ ≤ منها لا يُفحص،
+     وسجلُّ mine9 لحفظي السابق يُستهلك (فعلُ الخادم أحدثُ منه وبُني على قيمة الخادم). ما يصل بمراجعةٍ أعلى (جهازٌ آخر بعد فعلي) يُفحص كالمعتاد */
+  var own9 = Object.create(null);
+  function srvMine9(revs) {
+    if (!revs || typeof revs !== "object") return;
+    var k; for (k in revs) { delete mine9[k]; var r = Number(revs[k]) || 0; if (r > (own9[k] || 0)) own9[k] = r; }
+    overQ9 = overQ9.filter(function (x) { return !(x.k in revs); });
+  }
 
   /* ── الطابور والإرسال ───────────────────────────────────────────────────── */
   var pSet = Object.create(null), pDel = Object.create(null), dirty = false, deniedN9 = 0, deniedK9 = Object.create(null);   /* KIVO_264 (المراجعة R2): عدّادٌ لكل مفتاح أيضاً */
@@ -1124,16 +1133,17 @@
       ov.style.cssText = "position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px";
       ov.innerHTML = "<div style=\"background:var(--bg-xffffff,#fff);color:var(--fg-x25343f,#25343f);border-radius:14px;max-width:440px;width:100%;padding:18px 18px 14px;box-shadow:var(--shadow-elevated);font:400 13px/1.9 Cairo,Tahoma,Arial\">"
         + "<div data-t style=\"font-weight:700;font-size:14px;margin-bottom:4px\"></div><div data-d style=\"font-size:12px;color:var(--fg-x64748b,#64748b);margin-bottom:8px\"></div>"
-        + "<textarea rows=\"3\" maxlength=\"300\" style=\"width:100%;box-sizing:border-box;border:1px solid var(--bd-xcbd5e1,#cbd5e1);border-radius:10px;padding:8px 10px;font:400 13px Cairo,Tahoma,Arial;resize:vertical\" placeholder=\"اكتب السبب (ثلاثة أحرف على الأقل)\"></textarea>"
+        + (o.confirm ? "" : "<textarea rows=\"3\" maxlength=\"300\" style=\"width:100%;box-sizing:border-box;border:1px solid var(--bd-xcbd5e1,#cbd5e1);border-radius:10px;padding:8px 10px;font:400 13px Cairo,Tahoma,Arial;resize:vertical\" placeholder=\"اكتب السبب (ثلاثة أحرف على الأقل)\"></textarea>")
         + (o.remember ? "<label style=\"display:flex;gap:6px;align-items:center;font-size:12px;margin:6px 0 4px;cursor:pointer\"><input type=\"checkbox\"> تذكّر هذا السبب لهذا النوع من الإجراءات حتى نهاية الجلسة</label>" : "")
         + "<div style=\"display:flex;gap:8px;justify-content:flex-start;margin-top:8px\"><button type=\"button\" data-ok style=\"border:0;border-radius:10px;padding:7px 16px;background:var(--bg-x25343f,#25343f);color:#fff;font:600 13px Cairo,Tahoma,Arial;cursor:pointer\"></button>"
         + "<button type=\"button\" data-no style=\"border:1px solid var(--bd-xcbd5e1,#cbd5e1);border-radius:10px;padding:7px 16px;background:transparent;color:inherit;font:600 13px Cairo,Tahoma,Arial;cursor:pointer\">إلغاء التعديل</button></div></div>";
       ov.querySelector("[data-t]").textContent = o.title; ov.querySelector("[data-d]").textContent = o.desc; ov.querySelector("[data-ok]").textContent = o.ok;
       var ta = ov.querySelector("textarea"), cbx = ov.querySelector("input"), fin = false, close9 = function (r, rem) { if (fin) return; fin = true; try { ov.parentNode.removeChild(ov); } catch (e) {} cb(r, rem); };
-      ov.querySelector("[data-ok]").onclick = function () { var r = String(ta.value || "").trim(); if (r.length < 3) { ta.focus(); ta.style.borderColor = "#b91c1c"; return; } close9(r.slice(0, 300), !!(cbx && cbx.checked)); };
+      /* V7 · د6 (QA) · البند ١: o.confirm ⇒ نافذةُ تأكيدٍ بلا حقل سبب («تأكيد» يمضي · «إلغاء» يعيد القيمة) */
+      ov.querySelector("[data-ok]").onclick = function () { if (o.confirm) { close9("ok", false); return; } var r = String(ta.value || "").trim(); if (r.length < 3) { ta.focus(); ta.style.borderColor = "#b91c1c"; return; } close9(r.slice(0, 300), !!(cbx && cbx.checked)); };
       ov.querySelector("[data-no]").onclick = function () { close9("", false); };
       ov.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); close9("", false); } });
-      host.appendChild(ov); setTimeout(function () { try { ta.focus(); } catch (e) {} }, 30);
+      host.appendChild(ov); setTimeout(function () { try { (ta || ov.querySelector("[data-ok]")).focus(); } catch (e) {} }, 30);
     } catch (e) { cb("", false); }
   }
   function namesOf9(items) { return items.map(function (x) { return "«" + lbl(x.k) + "»"; }).filter(function (v, n, a) { return a.indexOf(v) === n; }).join("، "); }
@@ -1159,7 +1169,10 @@
      فلا سبيل لكتابته بلا سبب. ما لا يُتنبّأ به يبقى على المسار الاحتياطي (رفضُ الخادم ⇒ النافذة نفسُها، بلا رسالة رفض). */
   var RSN_OFF9 = {@@SYS:client.reasonOff.lens@@};   /* نظيرُ 057 ENF_REASON_OFF · V7 · د5-ح: من قطعة العدسات */
   var rsnRules9 = Object.create(null), rsnRes9 = null;
-  function exempt9() { try { var a9 = KIVO.BassamAuth, u9 = a9 && a9.user && a9.user(); return !!(u9 && u9.role === "super"); } catch (e) { return false; } }
+  /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا يُسأل أحدٌ عن سبب — كلُّ حسابٍ «معفًى». هذا الموضعُ الواحد يُطفئ نوافذَ السبب كلَّها في العميل
+     (askFirst9 · reasonFirst9 · وكلُّ مستدعٍ يفحص reasonExempt: الإرشاد · المضبوطات · الرصد · الخطة · الإدارة · النسخ · الاستيراد التاريخي)؛
+     والخادمُ لم يعد يرفض بلا سبب (059 · 062 · 047 · 019d)، فمساراتُ «رفضٌ لنقص السبب ⇒ النافذة» لا تُبلَغ. رسالةُ التأكيد قبل الفعل الحسّاس باقيةٌ في صفحته. */
+  function exempt9() { return true; }
   function resName9(k) { return String(k || "").replace(/^bsdept:[^:]+:/, "").replace(/:.*$/, ""); }
   function rsnByRes9() {
     if (rsnRes9) return rsnRes9;
@@ -1217,12 +1230,12 @@
     var keyOf = function (w) { return @@SYS:store.retroKey|empty="\"\""@@; };
     if (!ws.length || ws.some(function (w) { return !(PMr && PMr.key && PMr.key(keyOf(w), w.dept)); })) { releaseKeys9(items, false, "الفترةُ مغلقة — تعديلُها يتطلب نافذة استدراك يفتحها من يملك مفتاحها (" + (ws.length ? keyOf(ws[0]) : "retro.open") + ")"); return; }
     var lblP = ws.map(function (w) { return w.y + "/" + w.m; }).join("، ");
-    dlg9({ title: "الفترة مغلقة — فتحُ نافذة استدراك", desc: "التعديل على " + namesOf9(items) + " يقع في فترةٍ مغلقة (" + lblP + "). تُفتح نافذةُ استدراكٍ لإدارتك 24 ساعة وتُسجَّل باسمك وسببها، ثم يُعاد الحفظ.", ok: "فتح النافذة والحفظ", remember: false }, function (r) {
+    dlg9({ title: "الفترة مغلقة — فتحُ نافذة استدراك", desc: "التعديل على " + namesOf9(items) + " يقع في فترةٍ مغلقة (" + lblP + "). تُفتح نافذةُ استدراكٍ لإدارتك 24 ساعة وتُسجَّل باسمك، ثم يُعاد الحفظ.", ok: "فتح النافذة والحفظ", remember: false, confirm: true }, function (r) {
       if (!r) { releaseKeys9(items, false, "أُلغي التعديل — الفترةُ مغلقة"); return; }
       var go = function (n) {
         if (n >= ws.length) { releaseKeys9(items, true); return; }
         var w = ws[n];
-        fetch("/api/retro", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ res: w.res, dept: w.dept, act: "open", scope: { y: w.y, m: w.m }, reason: r }) })
+        fetch("/api/retro", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ res: w.res, dept: w.dept, act: "open", scope: { y: w.y, m: w.m } }) })
           .then(function (x) { return x.json().catch(function () { return null; }); })
           .then(function (j) { if (j && j.ok === 1) go(n + 1); else releaseKeys9(items, false, "تعذّر فتحُ نافذة الاستدراك" + (j && j.err ? " (" + j.err + ")" : "")); })
           .catch(function () { releaseKeys9(items, false, "تعذّر فتحُ نافذة الاستدراك — لا اتصال، حاول مجددًا عند العودة"); });
@@ -1607,6 +1620,7 @@
         if (!it) { if (evict && evict[k] && (k in mem)) { delete mem[k]; delete baseVal[k]; delete krev[k]; delete mine9[k]; changed.push(k); notify(k); } continue; }   /* لم يعد يُرى */
         var rv = it.rev || 0;
         if (rv && krev[k] && rv < krev[k]) continue;
+        if (own9[k] && (!rv || rv <= own9[k])) delete mine9[k];   /* V7 · د6 (QA) · البند ٥: قيمةٌ كتبها مسارُ خادمٍ بطلبي — ليست كاتباً آخر */
         /* KIVO_264 · المراجعة (A3a): قيمةٌ من غيري تحلّ محلّ ما حفظتُه قريباً ⇒ هل بقي تعديلي فيها؟ */
         if (it.v == null) { if (k in mem) { overCheck9(k, null); delete mem[k]; delete baseVal[k]; changed.push(k); notify(k); } }
         else if (mem[k] !== String(it.v)) { overCheck9(k, String(it.v)); mem[k] = String(it.v); baseVal[k] = mem[k]; changed.push(k); notify(k); }
@@ -1859,6 +1873,8 @@
     askReason: askReason9,
     /* إصلاح (مدير المنصة لا يُطلب منه سبب): هل الحسابُ الحالي معفًى من نوافذ السبب؟ الخادمُ هو الحَكَم (016 reasonExempt) — هذه لئلا تُفتح نافذةٌ لا حاجة لها */
     reasonExempt: exempt9,
+    /* V7 · د6 (QA) · البند ٥: إيصالُ مسار خادمٍ بطلب المستخدم ⇒ مفاتيحُه «من فعلي» (revs: { مفتاح: مراجعة }) */
+    mine: srvMine9,
     /* V7 · د5-هـ (44): السببُ قبل الإرسال — reasonFirst(k, مفاتيحُ السبب, cb({go, reason})) · reasonRule(اسمُ المورد, fn(قديم, جديد, k) ⇒ [مفاتيحُ السبب]) يسجّلها مالكُ المورد */
     reasonFirst: reasonFirst9,
     reasonRule: function (rn, fn) { if (typeof rn === "string" && typeof fn === "function") (rsnRules9[rn] = rsnRules9[rn] || []).push(fn); },

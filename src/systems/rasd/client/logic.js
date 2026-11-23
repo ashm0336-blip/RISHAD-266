@@ -1098,10 +1098,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const w = this._rzWinOf(scope.y, scope.m, scope.d),
         body = { uid: c.uid, dept: c.dept, res: "rasd", act: w ? "close" : "open", ...(w ? { id: w.id } : { scope: scope }) };
       if (!w) {
-        const srv = KIVO.__BS_SRV, exempt = !!(srv && srv.reasonExempt && srv.reasonExempt());
-        if (!exempt && !(srv && typeof srv.askReason === "function")) return void this.bsToast("تعذّر طلب سبب الاستدراك؛ لم تُفتح النافذة");
-        body.reason = exempt ? "" : await new Promise((ok) => srv.askReason("bsdept:" + c.dept + ":bassam_rasd_v1", ["rz.rec.retro.open"], ok));
-        if (!body.reason && !exempt) return;
+        /* V7 · د6 (QA) · البند ١: لا سبب — رسالةُ تأكيدٍ قبل فتح الفترة (كانت نافذةُ السبب هي التأكيد) */
+        if (!(await (KIVO.bsConfirm ? KIVO.bsConfirm({ title: "فتح الفترة للاستدراك", msg: "تُفتح الفترةُ المغلقة للاستدراك لإدارتك 24 ساعة وتُسجَّل باسمك في سجل الحركة.", ok: "فتح الفترة" }) : false))) return;
       }
       const r = await fetch("/api/retro?uid=" + encodeURIComponent(c.uid), { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
         j = await r.json().catch(() => null);

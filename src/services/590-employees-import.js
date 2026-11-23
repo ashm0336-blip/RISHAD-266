@@ -260,6 +260,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     }
     var ack = result.data;
     if (ack.dept !== prepared.stamp.dept || ack.intent !== ticket.intent || ack.requestId !== ticket.requestId || !nonnegative(ack.rev) || !ack.revs || typeof ack.revs !== 'object' || Array.isArray(ack.revs) || !Object.keys(ack.revs).every(function (key) { return nonnegative(ack.revs[key]); }) || !ack.counts || typeof ack.counts !== 'object' || Array.isArray(ack.counts) || !['employees', 'removed', 'accountsCreated', 'accountsRemoved', 'schedule'].every(function (name) { return nonnegative(ack.counts[name]); })) return fail('invalid');
+    try { if (KIVO.__BS_SRV && KIVO.__BS_SRV.mine) KIVO.__BS_SRV.mine(ack.revs); } catch (e) { /* V7 · د6 (QA) · البند ٥: علامةٌ للشريط وحده */ }   /* نقلٌ · إنشاءُ حسابات · استيراد · حذف: من فعلي */
     return { ok: 1, receipt: deep(ack) };
   }
   var Transition = Object.freeze({ context: actor, read: transitionRead, prepare: transitionPrepare, send: transitionSend });
