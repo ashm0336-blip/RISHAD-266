@@ -1450,6 +1450,7 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
    (الأنظمة المشغَّلة · الأقسام · العدسات · الاستقلال · علامة البذر) ولا مديرَها: تبقى كما في الهدف. ما ينتقل أوراقُ موظفي الإدارة وحدها (بيانُ الإدارة)
    — وصحيفةُ مدير المصدر «mgr:*» لا تنتقل، وصحيفةُ مدير الهدف (إن وُجدت) تبقى كما هي. السقفُ الهدف يحكمها وقتَ القرار (057 enfTranslated · enfKeyOnCeiling):
    ما خارجه مخزَّنٌ بلا أثر. الدمجُ في إدارةٍ لها أوراقٌ لا يمسّها (كما كان). null = لا تغيير */
+void rsPermSlice;   /* V7 · د6 (QA ٦): قاعدةُ الشريحة (051c ← 320 permSlice) باقيةٌ للعميل وأداة المطابقة؛ الخادمُ لا يطبّقها على نسخ الإدارة بعد قرار المالك ب3 */
 function rsDeptPermsKeep(pm, id, PP, mode) {
   if (!id || !isObj(PP)) return null;
   pm = isObj(pm) ? pm : {}; pm.emps = isObj(pm.emps) ? pm.emps : {};
