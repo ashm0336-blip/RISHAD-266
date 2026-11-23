@@ -1712,9 +1712,9 @@ function rsPermsCounts(A, d, keys) {
 function rsDeptPermsKeep(pm, id, PP, mode) {
   if (!id || !isObj(PP)) return null;
   pm = isObj(pm) ? pm : {}; pm.emps = isObj(pm.emps) ? pm.emps : {};
-  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, staff = false;
-  for (ek in cur) if (!isMgrKey(ek)) staff = true;
-  if (mode !== 'replace' && staff) return null;
+  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, empKeys = false;
+  for (ek in cur) if (!isMgrKey(ek)) empKeys = true;
+  if (mode !== 'replace' && empKeys) return null;
   for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek];
   for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) out[ek] = inc[ek];
   if (deq(out, cur)) return null;

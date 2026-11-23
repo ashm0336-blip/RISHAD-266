@@ -11052,9 +11052,9 @@ function rsPermsCounts(A, d, keys) {
 function rsDeptPermsKeep(pm, id, PP, mode) {
   if (!id || !isObj(PP)) return null;
   pm = isObj(pm) ? pm : {}; pm.emps = isObj(pm.emps) ? pm.emps : {};
-  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, staff = false;
-  for (ek in cur) if (!isMgrKey(ek)) staff = true;
-  if (mode !== 'replace' && staff) return null;
+  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, empKeys = false;
+  for (ek in cur) if (!isMgrKey(ek)) empKeys = true;
+  if (mode !== 'replace' && empKeys) return null;
   for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek];
   for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) out[ek] = inc[ek];
   if (deq(out, cur)) return null;
@@ -26373,7 +26373,7 @@ var ENF_MGR_FULL = { 'backup.restore': 1, 'import.replace': 1 };
 /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يكتب في الفترات المقفلة/المنقضية من إدارته بلا نافذةٍ رجعية — في الاستيراد والاستعادة الخادمية المتحقَّقة وحدها (A.__srvRst).
    هذا هو الموضعُ الواحد القابلُ للرجوع: إن قرّر المالك أن يشمل الكتابةَ الحيّة كذلك يُحذف شرطُ (X.restore ∧ A.__srvRst) هنا وحده. */
 function enfLockBypass(A, d, X) { return !!(X && X.restore && A && A.__srvRst) && enfDeptMgrFull(A, d); }
-function enfDeptMgrFull(A, d) { var r = A && A.u && A.u.role; return r === 'staff' && !!d && isUnitId(A, d) && isMgrOf(A, d); }   /* V7 · د6 (QA): دورُ «dept» المتقاعد ليس مديرَ إدارة هنا — يبقى مرفوضاً في التصدير وجرد الاستعادة (privacy_backup f) */
+function enfDeptMgrFull(A, d) { return !!(A && A.u) && A.u.role === 'staff' && !!d && isUnitId(A, d) && isMgrOf(A, d); }   /* V7 · د6 (QA): دورُ «dept» المتقاعد ليس مديرَ إدارة هنا — يبقى مرفوضاً في التصدير وجرد الاستعادة (privacy_backup f) */
 /* هل يحمل الفاعلُ المفتاحَ في الإدارة d؟ (سقف الإدارة ∧ بوابة العدسة ∧ الدور ∧ الترجمة/المنح الصريح − الإسقاط) */
 function enfHeld(A, d, key) {
   if (!A || !A.u) return false;
