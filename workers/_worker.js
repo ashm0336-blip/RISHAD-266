@@ -22190,7 +22190,7 @@ function calMigSummary(sum, rep) {
 /* خرائطُ الأيام: الحيُّ + أرشيفُه (الجولات) أو موردٌ واحد. الأيامُ تُنقل أجزاءً (حذفُ الهجري وإدراجُ الميلادي في الدفعة نفسِها)، ثم العلاماتُ والرأسُ أخيراً.
    مواضعُ الحاوية: الحقولُ الثابتة ثم العلاماتُ ثم الأيام (كما يكتبها calMigDayMap للوثيقة كلِّها) — فالنتيجةُ حرفاً ما يكتبه الحفظُ الحي للوثيقة المحوَّلة. */
 async function calMigDayMapPhase(env, dept, R, A, ctx, sum, budget) {
-  var KR = 'bsdept:' + dept + ':' + R, KA = A ? 'bsdept:' + dept + ':' + A : null, Tp = calGParse(ctx.T), list = [], mem = {};
+  var KR = 'bsdept:' + dept + ':' + R, KA = A ? 'bsdept:' + dept + ':' + A : null, Tp = calGParse(ctx.T), mem = {};
   for (var res of [R, A].filter(Boolean)) mem[res] = await calMigMembers(env, dept, res, '$');
   var fixedR = calMigFixed(R), hMarksR = mem[R].filter(function (x) { var p = calGParse(x.m); return p && p.kind === 'mctl' && p.cal === 'h'; }).map(function (x) { return x.m; });
   var hDays = [];
