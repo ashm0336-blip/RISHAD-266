@@ -114,7 +114,7 @@ test('53 · 0013 على قاعدةٍ بالمخطط 12 بناها العاملُ
   /* V7 · 53 تقويم: ما دامت الإدارةُ معلَّقةً تقويمياً لا تُقرأ مواردُها التقويمية (صفوفُها تتحوّل) — calendar-migrate أولاً ثم periods-migrate */
   const cmr = await (async () => { for (let n = 0; n < 200; n++) { const r = await call2('/api/operations/calendar-migrate', { method: 'POST', body: { dept: 'all' } }); assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 400)); if (!r.json.more) return r; } throw new Error('calendar-migrate'); })();
   assert.equal(cmr.json.ok, 1, JSON.stringify(cmr.json).slice(0, 600));
-  const conv = (d, r) => CNEW.calMigDoc(r, before[d][key(d, r)], { T: T14, rep: null });
+  const conv = (d, r) => CNEW.calConvDoc(r, before[d][key(d, r)], { T: T14, rep: null });
   for (const d of [D1, D2]) {
     const after = (await readAll(call2, d)).resources;
     for (const r of ALL.filter((x) => x !== 'bassam_rounds_v1')) assert.equal(JSON.stringify(after[key(d, r)]), JSON.stringify(conv(d, r)), d + ' ' + r + ' كما كُتب ثم حُوِّل إلى الميلادي');

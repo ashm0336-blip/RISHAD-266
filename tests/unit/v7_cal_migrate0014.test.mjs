@@ -229,9 +229,9 @@ test('53 تقويم · 0014 على قاعدةٍ بالمخطط 13 بناها ا�
     /* كلُّ موردٍ حرفاً (بترتيب مفاتيحه) ما تكتبه الدالةُ الواحدة للوثيقة كلِّها — الطريقُ الذي يسلكه الاستيرادُ أيضاً */
     for (const r of CAL.filter((x) => x !== 'bassam_rounds_v1' && x !== 'bassam_rounds_arc_v1')) {
       const b = before[d][key(d, r)]; if (b == null) continue;
-      assert.equal(JSON.stringify(after[d][key(d, r)]), JSON.stringify(NEW.calMigDoc(r, b, { T, rep: null })), d + ' ' + r);
+      assert.equal(JSON.stringify(after[d][key(d, r)]), JSON.stringify(NEW.calConvDoc(r, b, { T, rep: null })), d + ' ' + r);
     }
-    const wantR = NEW.calMigDoc('bassam_rounds_v1', merged(before, d), { T, rep: null }), gotR = merged(after, d);
+    const wantR = NEW.calConvDoc('bassam_rounds_v1', merged(before, d), { T, rep: null }), gotR = merged(after, d);
     assert.deepEqual(Object.keys(gotR).sort(), Object.keys(wantR).sort(), d + ' الجولات: المفاتيح'); for (const k of Object.keys(wantR)) assert.deepEqual(gotR[k], wantR[k], d + ' الجولات ' + k);
     for (const r of ['bassam_employees_v1', 'bassam_shift_options_v1']) assert.equal(JSON.stringify(after[d][key(d, r)]), JSON.stringify(before[d][key(d, r)]), d + ' ' + r + ' لم يُمسّ');
   }

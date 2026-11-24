@@ -93,8 +93,8 @@ async function rsiSlice(env, A, request, id, M, b) {
     }
   }
   /* V7 · 53 تقويم (ف٧): الدفعةُ ⇐ ميلادية قبل applySave وocConvert — المشتركةُ (__pMig وكلُّ علامات m:) تتحوّل في كل دفعةٍ بالنتيجة نفسِها (T ثابتٌ للاستيراد) */
-  var calRep = calMigRep();
-  text = calMigText(base, text, { T: M.calT || calToday(Date.now()).k, rep: calRep });
+  var calRep = calConvRep();
+  text = calConvText(base, text, { T: M.calT || calToday(Date.now()).k, rep: calRep });
   set[key] = text; bs[key] = reference.inputRevs[key] || 0; ops[key] = { op: 'backup.restore', scope: 'dept', mode: 'replace', reason: b.reason || '' }; why[key] = b.reason || '';
   got = null;
   var kv = await applySave(env, { set: set, del: [], base: bs, ops: ops, why: why }, A, reqMeta(request), { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN, __srvRestore: RESTORE_INTERNAL_TOKEN });
@@ -407,7 +407,7 @@ async function rsImportRoute(env, request, ss) {
         summary.notTransferred = drop.concat(rsiFieldList([rsiFieldRec(summary.notTransferred)].concat(sr.map(function (o) { return o.fields; }))), stage.unref.map(function (k) { return { k: k, why: 'image-unreferenced' }; }));
         summary.imagesNew = stage.fresh.length;
         /* V7 · 53 تقويم: ما حُوِّل في الدفعات يُجمع إلى سطر الملخّص (بقيةُ الملف حوّلها 019f) */
-        var cs = calMigSummaryText(sr.reduce(function (a, o) { return calMigMergeRep(a, o.cal); }, calMigRep())), c0 = summary.calendar || calMigSummaryText(calMigRep());
+        var cs = calConvSummaryText(sr.reduce(function (a, o) { return calConvMergeRep(a, o.cal); }, calConvRep())), c0 = summary.calendar || calConvSummaryText(calConvRep());
         summary.calendar = { days: c0.days + cs.days, months: c0.months + cs.months, conflicts: c0.conflicts + cs.conflicts, conflictMonths: c0.conflictMonths.concat(cs.conflictMonths), recurring: c0.recurring.concat(cs.recurring).slice(0, 50), plan: c0.plan.concat(cs.plan), custodyDay0: c0.custodyDay0 + cs.custodyDay0 };
         if (op === 'commit') plan.statements.push(rsiDrop(env, id));
       },
@@ -422,7 +422,7 @@ async function rsImportRoute(env, request, ss) {
     var reference = await rsReferenceSnapshot(env, A.u.id, s.kind === 'dept' || stage.skip.length ? { departments: full ? null : ds, operationalKeys: rsScopeOperationalKeys(ds).filter(function (k) { return stage.skip.indexOf(k) < 0; }) } : undefined);
     if (rsScopeDenied(reference.A, s)) throw rsError('restore-policy', 403);
     reference.noWiden = s.kind === 'dept';
-    reference.env.__calT = M.calT || calToday(now).k;   /* V7 · 53 تقويم: يومُ الاستيراد نفسُه لبقية الملف (019f calMigBackup) */
+    reference.env.__calT = M.calT || calToday(now).k;   /* V7 · 53 تقويم: يومُ الاستيراد نفسُه لبقية الملف (019f calConvBackup) */
     var run = { version: 1, uid: A.u.id, requestId: b.requestId, scope: s, mode: b.mode, reason: b.reason, base: b.base, backup: file, legacyConsent: b.legacyConsent === true, phase: op };
     file = null;
     var out = await rsBackupRun(reference.env, reference.A, request, run, reference, fp, stage);

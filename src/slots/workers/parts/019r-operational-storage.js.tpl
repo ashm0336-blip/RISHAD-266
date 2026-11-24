@@ -101,7 +101,7 @@ async function opLoadMany(env, keys, retired, scopes) {
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
   var pending = opLayoutPendingOf(((result[revisionIndex + 2].results) || [])[0]), calPend = calMigPendingOf(((result[revisionIndex + 2].results) || [])[0]);
   /* V7 · 53 تقويم: إدارةٌ لم تُتمّ المرحلةَ ٢ من 0014 — مواردُها التقويمية لا تُقرأ ولا تُكتب (صفوفُها مختلطةٌ أثناء التحويل) */
-  requests.forEach(function (r) { if (calPend.indexOf(r.info.dept) >= 0 && calMigIs(r.info.resource)) throw opLimError('calendar-pending', 503); });
+  requests.forEach(function (r) { if (calPend.indexOf(r.info.dept) >= 0 && calConvIs(r.info.resource)) throw opLimError('calendar-pending', 503); });
   if (scoped.length) (result[revisionIndex + 3].results || []).forEach(function (row) { var k = 'bsdept:' + row.d + ':' + row.r; (members[k] = members[k] || []).push({ p: row.m, k: row.k, pos: row.p }); });
   requests.forEach(function (request) {
     var info = request.info, physical = physicalByKey[request.key], key = request.key;

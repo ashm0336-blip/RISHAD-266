@@ -41,7 +41,7 @@ for (const mode of ['slice', 'single']) test('53 تقويم · ف٧ ملفُّ P
     assert.ok(cal.recurring.some((x) => x.id === 'TEST_ONLY_rec1' && x.from === 15), 'المهمةُ المتكررة التي تغيّر يومها مذكورة (ق6)');
     assert.equal(out.commit.status, 200, out.commit.t.slice(0, 400));
     const expect = {};
-    for (const [r, doc] of Object.entries(want)) expect[r] = CALR.includes(r) ? NEW.calMigDoc(r, doc, { T: Tday, rep: null }) : doc;
+    for (const [r, doc] of Object.entries(want)) expect[r] = CALR.includes(r) ? NEW.calConvDoc(r, doc, { T: Tday, rep: null }) : doc;
     const got = await readBack(T, dept, Object.fromEntries(Object.entries(expect).filter(([r]) => r !== 'bassam_rounds_v1')));
     const rounds = { ...(got.bassam_rounds_arc_v1 || {}), ...(got.bassam_rounds_v1 || {}) };
     assert.deepEqual(Object.keys(rounds).sort(), Object.keys(expect.bassam_rounds_v1).sort(), 'الجولات: المفاتيح'); for (const k of Object.keys(expect.bassam_rounds_v1)) assert.deepEqual(rounds[k], expect.bassam_rounds_v1[k], 'الجولات ' + k);
@@ -54,9 +54,11 @@ for (const mode of ['slice', 'single']) test('53 تقويم · ف٧ ملفُّ P
   } finally { await T.close(); }
 });
 
-/* ق12 · ف٧: نسخةٌ قديمةٌ بشكل Production تحمل العهدة والاسترشاد والمضبوطات (وثائقُ KV هجرية) — تُحوَّل قبل تحويلها صفوفاً وتحقّقها (019f calMigLegacyKV)،
+/* ق12 · ف٧: نسخةٌ قديمةٌ بشكل Production تحمل العهدة والاسترشاد والمضبوطات (وثائقُ KV هجرية) — تُحوَّل قبل تحويلها صفوفاً وتحقّقها (019f calConvLegacyKV)،
    فكلُّ صفٍّ علائقيٍّ بعد الاعتماد ميلاديٌّ بيومه (أوراكل Intl) · يومُ العهدة 0 يبقى 0 في شهر يومه الأول · لا صفَّ سقط */
-test('53 تقويم · ف٧ نسخةٌ قديمة بالعهدة والاسترشاد والمضبوطات ⇐ كلُّ صفٍّ علائقيٍّ ميلادي', { ...need, ...(hasSystem('custody', 'irshad', 'seized') ? {} : { skip: 'يحتاج العهد والاسترشاد والمضبوطات' }), timeout: 900000 }, async () => {
+/* خرائطُ أعمدة الأنظمة (cal-rest) تكتب greg_* — قبل دمجها لا يُكتب صفٌّ علائقيٌّ في جداول 0014 أصلاً، فالاختبارُ لها */
+const restMaps = !/'hijri_year'/.test(fs.readFileSync(WORKER, 'utf8').replace(/var KIVO_MIGRATIONS = [\s\S]*?var KIVO_SCHEMA_VERSION/, ''));
+test('53 تقويم · ف٧ نسخةٌ قديمة بالعهدة والاسترشاد والمضبوطات ⇐ كلُّ صفٍّ علائقيٍّ ميلادي', { ...need, ...(hasSystem('custody', 'irshad', 'seized') ? {} : { skip: 'يحتاج العهد والاسترشاد والمضبوطات' }), ...(restMaps ? {} : { skip: 'يحتاج خرائطَ أعمدة greg_* لـcal-rest (يمرّ على الفرع المدموج)' }), timeout: 900000 }, async () => {
   await oldDocs();
   const { H2G } = await import('./v7_cal_migrate_fx.mjs'), T = await target(), dept = 'TEST_ONLY_A';
   try {
