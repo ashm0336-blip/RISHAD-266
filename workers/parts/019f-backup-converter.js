@@ -161,7 +161,8 @@ function rsBCTplsRoles(keys, perms, d, src, summary) {
   Object.keys(of || {}).forEach(function (ek) { if (!isMgrKey(ek)) assign[ek] = of[ek]; });
   var X = enfRolesFromTpls(tpls, assign, rsBCOwn(keys, rk) ? parseJson(keys[rk], null) : null);
   if (X.rep.roles || X.rep.people) keys[rk] = JSON.stringify(X.rec);
-  summary.tplRoles = { roles: X.rep.roles, people: X.rep.people, unknownTpl: X.rep.unknownTpl, lensDropped: X.rep.lensDropped };
+  var S = summary.tplRoles || (summary.tplRoles = { roles: 0, people: 0, unknownTpl: 0, lensDropped: 0 }); for (var q in S) S[q] += X.rep[q];   /* V7 · 53: يُجمع لكل إدارةٍ في النسخة الشاملة */
+  return X.rep.people > 0;
 }
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
@@ -578,6 +579,8 @@ async function rsConvertBackup(env, A, file, opt) {
 
      V7 · د7 (51ب): في نسخة الإدارة تصير أدواراً قبل الإسقاط (rsBCTplsRoles) */
   if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
+  /* V7 · 53 (رد المالك د7_1): النسخةُ الشاملة كذلك، إدارةً إدارة — إسناداتُ كلٍّ من tplOf[<الإدارة>] في سجلّ صلاحياتها (019d rsRoleGrants يبني المنح) */
+  else if (scope.kind === 'full') { var fp9 = parseJson(keys[K_PERM], null), of9 = isObj(fp9) && isObj(fp9.tplOf) ? fp9.tplOf : {}; var tplD9 = deptIds.filter(function (d) { return rsBCTplsRoles(keys, { tplOf: isObj(of9[d]) ? of9[d] : {} }, d, d, summary); }); }
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });
@@ -615,5 +618,6 @@ async function rsConvertBackup(env, A, file, opt) {
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
   if (scope.kind === 'dept') rsBCMgrSheetDrop(perms, summary);
   if (perms !== undefined) result.permissionSlice = perms;
+  if (tplD9 && tplD9.length) result.tplDepts = tplD9;   /* V7 · 53: إداراتُ النسخة الشاملة التي صارت قوالبُها أدواراً بأشخاص (019d يبني منحها) */
   return result;
 }

@@ -877,8 +877,9 @@ class Component extends DCLogic {
             /* ختمُ آخر تصدير لهذه الإدارة — يقرؤه سطحُ الإعدادات فيُذكّر بدوريّة النسخ */
             /* KIVO_263: الختمُ رقمُ اللحظة (JSON صالح) — نصُّ ISO الخام ليس JSON فيرفضه الخادمُ في الإنفاذ («shape») فلا يصل الختمُ بقيةَ الأجهزة؛ القرّاءُ (bkTime · _expInfo) يقبلون الصيغتين */
             try { D.raw.setItem.call(localStorage, "bsdept:" + id + ":bassam_last_export_v1", String(dt.getTime())); } catch (eStamp) {}
-            this.bkToast("✓ تم تصدير نسخة «" + nm + "» (" + KIVO.BassamCount(Object.keys(data).length,"مجموعة بيانات") + "" + this.bkCapNote(Object.keys(data), id) + " و " + KIVO.BassamCount(Object.keys(business.images || {}).length,"صورة") + ")" + (KIVO.BackupRestore.missingNote ? KIVO.BackupRestore.missingNote(business.missing) : ""));
-          } catch (e) { this.bkToast("تعذّر التصدير"); }
+            const grp = Object.keys(data).concat(Object.keys(business.domains || {}).filter(n => n !== "operations").map(n => n === "awards" ? "bassam_award_v1" : "bassam_" + n + "_v1"));   /* V7 · 53 (قرار المالك ٦): مجالُ النظام المطفأ يُعدّ «محفوظة — غير مفعّلة» كالمفاتيح */
+            this.bkToast("✓ تم تصدير نسخة «" + nm + "» (" + KIVO.BassamCount(grp.length,"مجموعة بيانات") + "" + this.bkCapNote(grp, id) + " و " + KIVO.BassamCount(Object.keys(business.images || {}).length,"صورة") + ")" + (KIVO.BackupRestore.missingNote ? KIVO.BackupRestore.missingNote(business.missing) : ""));
+          } catch (e) { this.bkToast("تعذّر التصدير" + (e && e.message ? ": " + e.message : ""), true); }   /* V7 · 53 (قرار المالك ٦): الرسالةُ تذكر سببها */
         };
         if (iids.length && KIVO.BassamIDB) {
           const imgs = {}; let done = 0;
@@ -1030,6 +1031,7 @@ class Component extends DCLogic {
     return {
       bkcSumOn: (step === "pick" || step === "confirm") && (!!sum || !!c.sumErr),
       bkcSumLine: sum ? "المصدر: «" + (sum.dept || c.src) + "»" + (when ? " · صُدّرت: " + when : "") + " · " + N(sum.keys, "مجموعة بيانات") + " و" + N(sum.images, "صورة") + " · الحجم: " + mb(sum.fileBytes || sum.bytes) +
+        (sum.lens ? " · العدسات " + sum.lens + " (ما ليس في النسخة يُطفأ في الإدارة)" : "") +   /* V7 · 53: 548 lensNarrow */
         (sum.legacy ? " · نسخة بالشكل القديم: تُحوَّل إلى المخطط الحالي قبل الكتابة." : "") : c.sumErr || "",
       bkcSkipOn: skip.length > 0, bkcSkip: skip, bkcSkipHead: "لن يُنقل (" + skip.length + ") — لا مقابل له في المنصة الحالية:",
       bkcRun: step === "run", bkcRunHead: run.step === "commit" ? "جارٍ اعتماد النسخة…" : run.step === "review" ? "بانتظار تأكيدك" : "جارٍ إرسال النسخة على أجزاء…", bkcRunText: runText,

@@ -115,11 +115,9 @@
       if (o.capSeed !== undefined) r.capSeed = o.capSeed;   /* V7 · د6 (ب4): علامةُ «سجلٌّ مبذورٌ لم يضبطه أحد» تسافر مع السجلّ (أدناه unseed · seedUnit) */
       /* V7 · د7 (52 · الجرد ٦): كلُّ حقلٍ أعلى آخر لا يعرفه هذا البناء يُحمل كما هو مخزَّن — كانت الوثيقةُ تُبنى من القائمة أعلاه وحدها فيُسقطه أولُ حفظ */
       Object.keys(o).forEach(function(f9){ if (!Object.prototype.hasOwnProperty.call(r, f9)) r[f9] = o[f9]; });
-@@SYS:perm.legacy.tasks@@      /* ترقية: «المناطق» انضمّت لسقف العدسات — المصفوفات المخزونة قبلها تعدّها مفعّلة */
-      if (!r.lensZ) {
-        Object.keys(r.lenses).forEach(function(d){ var L = r.lenses[d]; if (Array.isArray(L) && L.indexOf('zones') === -1) L.push('zones'); });
-        r.lensZ = 1; permSave(r);
-      }
+      /* V7 · 53 (الجرد ٥ · لا كتابةَ عند القراءة): كانت ترقيةُ lensZ هنا تضيف «المناطق» إلى عدسات كل الوحدات ثم تحفظ السجلَّ من مسار قراءة —
+         فيُرفض الحفظُ لغير المدير على صفحةٍ لم تُعدَّل، وتُفعِّل نسخةُ Production المستوردة بلا lensZ «المناطق» حيث كانت مطفأة. القراءةُ الواحدة
+         المشتركة الآن هي قراءةُ الخادم (057 enfLensDeptOn · 018c permsRule): المصفوفةُ كما خُزِّنت، وlensZ يُحمل كما هو بلا كتابة */
       _pmMemo = r;
       return r;
     } } catch(e){}
@@ -475,7 +473,8 @@
     if (!isSuper()) return { ok:false, err:'سقف العدسات لمسؤول المنصة وحده' };
     var o = permStore(), d = did || curDept();
     o.lenses = o.lenses || {};
-    o.lenses[d] = (arr || []).filter(function(k){ return LENS_KEYS.indexOf(k) !== -1; });
+    var had9 = Array.isArray(o.lenses[d]) ? o.lenses[d] : [];   /* V7 · 53 (52 · بقايا): مفتاحُ عدسةٍ لا يعرفه هذا البناء يُحمل كما خُزِّن */
+    o.lenses[d] = (arr || []).filter(function(k){ return LENS_KEYS.indexOf(k) !== -1; }).concat(had9.filter(function(k){ return LENS_KEYS.indexOf(k) === -1; }));
     unseed(o, d); permSave(o); return { ok:true };   /* caps-own: employees' lens lists stay — read ∩ unit lenses (empLens · server lensGate) */
   }
   /* عدسات الموظف: غياب السجل = كل عدسات الإدارة (توافق رجعي) */
@@ -504,7 +503,7 @@
     var d = did || curDept();
     var p = (permStore().emps[d] || {})[ekey];
     if (!(p && typeof p === 'object')) return {};
-    var hasOld = Object.keys(p).some(function(k){ return isContainer(k); });
+@@SYS:perm.legacy.tasks@@    var hasOld = Object.keys(p).some(function(k){ return isContainer(k); });
     return ceilSheet(hasOld ? expandPerms(p, d) : JSON.parse(JSON.stringify(p)), d);   /* caps-own: read-time narrowing */
   }
   /* الشكل المشتق على مستوى الصفحات (الحاوية = اتحاد أوراقها) — للمصفوفات والقائمة */
@@ -900,7 +899,8 @@
     var old = JSON.stringify(rec.emp[ekey] || null);
     if (!pl.length && !mi.length) delete rec.emp[ekey];
     else { var src9 = src != null && src !== '' ? src : g0.src;   /* V7 · د7 (52 · الجرد ٨): بلا src يبقى مصدرُ المدخل المخزَّن — فلا يصير المنحُ المشتقّ من دورٍ صريحاً بصمت */
-      rec.emp[ekey] = { plus: pl.sort(), minus: mi.sort(), at: Date.now(), by: u ? u.id : '' }; if (src9) rec.emp[ekey].src = String(src9); }
+      rec.emp[ekey] = { plus: pl.sort(), minus: mi.sort(), at: Date.now(), by: u ? u.id : '' }; if (src9) rec.emp[ekey].src = String(src9);
+      Object.keys(g0).forEach(function(q){ if (!Object.prototype.hasOwnProperty.call(rec.emp[ekey], q) && q !== 'src') rec.emp[ekey][q] = g0[q]; }); }   /* V7 · 53 (52 · بقايا): until وكلُّ حقلٍ آخر في المدخل المخزَّن يُحمل كما هو */
     var cmp = function(x){ return x ? JSON.stringify({ p: (x.plus || []).slice().sort(), m: (x.minus || []).slice().sort(), s: x.src || '' }) : 'null'; };   /* caps-own: order-insensitive — an equal entry is not rewritten */
     if (cmp(old === 'null' ? null : JSON.parse(old)) === cmp(rec.emp[ekey] || null)) return { ok:true, same:true, dropped: dropped };
     try { RAW.setItem.call(localStorage, 'bsdept:' + d + ':bassam_grants_v1', JSON.stringify(rec)); } catch(e){ return { ok:false, err:'تعذّر الحفظ' }; }

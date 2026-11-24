@@ -10537,6 +10537,8 @@ async function rsPrepare(env, A, body, meta, internal) {
     var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
     if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
   }
+  /* V7 · 53: والنسخةُ الشاملة لكل إدارةٍ فيها سجلُّ أدوار ولا منحَ معه (قوالبُ حُوِّلت · 019f): المنحُ المترجَم فوق منح الهدف كما في نسخة الإدارة — نسخةٌ تحمل منحَها تبقى كما هي */
+  if (body.scope.kind === 'full') ((internal && internal.tplDepts) || []).forEach(function (d) { var k = perm44Key(d), gk = enfGrantsKey(d); if (keys[k] == null || keys[gk] !== undefined) return; var gv = rsRoleGrants(A, d, keys[k], inputKeys[gk]); if (gv !== null) { keys[gk] = gv; if (!Object.prototype.hasOwnProperty.call(base, gk)) base[gk] = inputRevs[gk] || 0; } });
   /* 330-auth.pruneDeptAccounts: restore only removes staff/dept identities bound
      to removed departments, never GM/Super accounts. The result still traverses
      applySave's unchanged password, uniqueness and final-super validators. */
@@ -11182,6 +11184,7 @@ async function rsBackupRun(env, A, request, body, reference, rawFingerprint, sta
       fingerprint: rawFingerprint,
       images: stage || converted.images,
       release: !!stage,
+      tplDepts: converted.tplDepts,
     });
     plan.guards.push.apply(plan.guards, converted.readGuards || []);
     converted.summary.imagesReused = plan.imagesReused;
@@ -12429,7 +12432,8 @@ function rsBCTplsRoles(keys, perms, d, src, summary) {
   Object.keys(of || {}).forEach(function (ek) { if (!isMgrKey(ek)) assign[ek] = of[ek]; });
   var X = enfRolesFromTpls(tpls, assign, rsBCOwn(keys, rk) ? parseJson(keys[rk], null) : null);
   if (X.rep.roles || X.rep.people) keys[rk] = JSON.stringify(X.rec);
-  summary.tplRoles = { roles: X.rep.roles, people: X.rep.people, unknownTpl: X.rep.unknownTpl, lensDropped: X.rep.lensDropped };
+  var S = summary.tplRoles || (summary.tplRoles = { roles: 0, people: 0, unknownTpl: 0, lensDropped: 0 }); for (var q in S) S[q] += X.rep[q];   /* V7 · 53: يُجمع لكل إدارةٍ في النسخة الشاملة */
+  return X.rep.people > 0;
 }
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
@@ -12846,6 +12850,8 @@ async function rsConvertBackup(env, A, file, opt) {
 
      V7 · د7 (51ب): في نسخة الإدارة تصير أدواراً قبل الإسقاط (rsBCTplsRoles) */
   if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
+  /* V7 · 53 (رد المالك د7_1): النسخةُ الشاملة كذلك، إدارةً إدارة — إسناداتُ كلٍّ من tplOf[<الإدارة>] في سجلّ صلاحياتها (019d rsRoleGrants يبني المنح) */
+  else if (scope.kind === 'full') { var fp9 = parseJson(keys[K_PERM], null), of9 = isObj(fp9) && isObj(fp9.tplOf) ? fp9.tplOf : {}; var tplD9 = deptIds.filter(function (d) { return rsBCTplsRoles(keys, { tplOf: isObj(of9[d]) ? of9[d] : {} }, d, d, summary); }); }
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });
@@ -12883,6 +12889,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
   if (scope.kind === 'dept') rsBCMgrSheetDrop(perms, summary);
   if (perms !== undefined) result.permissionSlice = perms;
+  if (tplD9 && tplD9.length) result.tplDepts = tplD9;   /* V7 · 53: إداراتُ النسخة الشاملة التي صارت قوالبُها أدواراً بأشخاص (019d يبني منحها) */
   return result;
 }
 /* Typed Irshad business domain. Plans never commit or allocate revisions. */
@@ -13616,7 +13623,7 @@ async function irExport(env, A, url) {
     if (!d) for (var dept of depts) contexts.push(await irQueryContext(env, { u: { id: uid } }, dept, { write: true }));
     contexts.forEach(function (ctx) {
       var actor = ctx.A;
-      if ((!d && actor.u.role !== 'super') || !canRead(actor, irKey(ctx.d)) || !deptInScope(actor, ctx.d) ||
+      if ((!d && actor.u.role !== 'super') || !(canRead(actor, irKey(ctx.d)) || (d && bkOffMgr(actor, d, irKey(d)))) || !deptInScope(actor, ctx.d) ||   /* V7 · 53: 019u bkOffMgr */
           !bkExportOk(actor, ctx.d))   /* IP39 (019u): backup.view alone does not export */
         throw irError('irshad-export-permission', 403);
       authorityGuards.push.apply(authorityGuards, ctx.guards);
@@ -14473,7 +14480,7 @@ function rsiFieldList(recs) {
 /* V7 · د7: قوالبُ نسخة الإدارة تصير أدواراً (019f) */
 function rsiSkipWhy(k, v, kind) {
   var n = resName(k), r = resOf(k);
-  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? (kind === 'dept' && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
+  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? ((kind === 'dept' || kind === 'full') && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
 }
 function rsiSweepStmt(env, now, uid) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id IN (SELECT snapshot_id FROM ' + RSI_T + " WHERE domain='meta' AND snapshot_id>='stage:' AND snapshot_id<'stage;' AND (row_number<?1 OR table_key=?2))").bind(now - RSI_TTL, uid);
@@ -18481,7 +18488,7 @@ function bdRestoreReferences(plan,def,d,domain,addition) {
 function bdRestoreCeiling(A,def,d,values) {
   if(A.u.role==='super')return;
   def.names.forEach(function(name,i){
-    if(!deq(values.before[name],values.after[name])&&!canRead(A,def.key(d,i)))throw rsError('restore-'+def.name+'-resource-denied',403);
+    if(!deq(values.before[name],values.after[name])&&!canRead(A,def.key(d,i))&&!bkOffMgr(A,d,def.key(d,i)))throw rsError('restore-'+def.name+'-resource-denied',403);
   });
 }
 function bdResetStatements(env) {
@@ -18536,9 +18543,9 @@ async function bdExport(env,actor,url,name) {
     if(!requested&&name==='awards') depts.push('');
     for(var dept of depts) {
       var ctx=await def.context(env,fresh,dept,{write:true,global:dept===''}), k=dept===''?AW_RES[1]:def.key(dept,0);
-      if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
+      if(!(canRead(ctx.A,k)||(dept&&bkOffMgr(ctx.A,dept,k)))||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
       var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
-      if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
+      if(readResources.some(function(resource){var rk=dept?'bsdept:'+dept+':'+resource:resource;return !canRead(ctx.A,rk)&&!(dept&&bkOffMgr(ctx.A,dept,rk));}))   /* V7 · 53: 019u bkOffMgr */throw rsError('domain-export-permission',403);
       var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose; the copy marked redacted
       if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept)&&privRowsBlank(ctx.A,exported,'records',['phone','email','employee_number'],'employee_key'))redacted.push('awards:'+dept);
       domains.push(exported);
@@ -21449,6 +21456,9 @@ function bkExportOk(A, d) {
   });
 }
 /* backup.view as a read key of every department collection (RD_ANY · readKeysFor): only for its own stamp, or for an exporter */
+/* V7 · 53 (قرار المالك ٦): نسخةُ الإدارة كاملةٌ دائماً — مجالُ نظامٍ مطفأٍ في سقف الوحدة (الاسترشاد · المضبوطات · الجائزة) يُقرأ للنسخ ويُعاد بالاستعادة
+   كما هو بلا أثر، لمدير الإدارة في إدارته وحدها (كالعهد اليوم). كان canRead يرفضه فيسقط تصديرُ النسخة كلُّه. لا يفتح قراءةً حيّة ولا كتابة */
+function bkOffMgr(A, d, k) { var R = resOf(k); return !!R && enfDeptMgrFull(A, d) && !resOnCeiling(A, d, R); }
 function bkReadAnyOk(A, d, rn) { return rn === 'bassam_last_export_v1' || bkExportOk(A, d); }
 /* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══
    كان المفتاحُ لمدير النظام وحده في الخادم، والشاشةُ تفتح الإدخالَ لكلِّ من مُنح الصفحة — فيُرفض حفظُه
@@ -27276,6 +27286,9 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
      «ذاتياً» حين actor.ekey = العمود 14؛ فلا يُعطى هويةَ الذات على مخزن المهام إلا من ذلك المسار — والحفظُ الخامّ /api/save يُصنَّف بمفاتيح
      الفعل نفسِها (task.accept · task.finish · task.evidence …) بلا بديل «الذات» — كان يصنع «منجزة» بأداءٍ وطوابعَ بلا سياسة إثبات ولا مراجِع */
   var cx = { dept: d, actor: { id: A.u.id, ekey: enfTaskSelfEkey(A, rn), role: A.u.role }, imp: !!(X && X.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(X && X.restore), op: (X && X.op && X.op.op) || '' };
+  /* V7 · 53 (قرار المالك ٩): الموقعُ المعتمد والشهرُ الماضي بلا mo مقفلان لأي تغيير — لا لنوع الختم وحده: مفتاحُ هندسة البوابة بلا بُعد DateRange، وطوابقُ floors بلا فترة، فكانا يمرّان.
+     إلا مديرَ المنصة (enfSuperGate لا يصلها) والاستعادةَ الخادمية (enfLockBypass)؛ ونافذةُ الاستدراك في الخطة هي فتحُ الشهر (mo) */
+  if (rn === 'bassam_plan_v1' && A.u.role !== 'super' && !enfLockBypass(A, d, X)) { var pl9 = KIVO_SCOPE.extract(rn, a, b, { today: dsToday(Date.now()) }).filter(function (x) { return !x.lockOp && x.lock && x.lock.locked; })[0]; if (pl9) return enfNo('scope', { dims: ['DateRange'], detail: pl9.path + ': locked-period: ' + pl9.lock.why }); }
   var res = KIVO_GUARDS.covers.indexOf(rn) !== -1 ? enfPlugOps(KIVO_GUARDS.classify(rn, a, b, cx)) : null;
   var real = [], anyG = [], alt = [], i, j, key;
   if (res) {

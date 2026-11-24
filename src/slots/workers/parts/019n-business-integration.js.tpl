@@ -56,7 +56,7 @@ function bdRestoreReferences(plan,def,d,domain,addition) {
 function bdRestoreCeiling(A,def,d,values) {
   if(A.u.role==='super')return;
   def.names.forEach(function(name,i){
-    if(!deq(values.before[name],values.after[name])&&!canRead(A,def.key(d,i)))throw rsError('restore-'+def.name+'-resource-denied',403);
+    if(!deq(values.before[name],values.after[name])&&!canRead(A,def.key(d,i))&&!bkOffMgr(A,d,def.key(d,i)))throw rsError('restore-'+def.name+'-resource-denied',403);
   });
 }
 function bdResetStatements(env) {
@@ -109,9 +109,9 @@ async function bdExport(env,actor,url,name) {
     if(!requested&&@@SYS:bd.export.global.1|empty="false"@@) depts.push('');
     for(var dept of depts) {
       var ctx=await def.context(env,fresh,dept,{write:true,global:dept===''}), k=@@SYS:bd.export.awardGlobalKey@@def.key(dept,0);
-      if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
+      if(!(canRead(ctx.A,k)||(dept&&bkOffMgr(ctx.A,dept,k)))||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
       var readResources=(@@SYS:bd.export.readResources@@def.resources).filter(function(_,i){return dept!==''||i>0;});
-      if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
+      if(readResources.some(function(resource){var rk=dept?'bsdept:'+dept+':'+resource:resource;return !canRead(ctx.A,rk)&&!(dept&&bkOffMgr(ctx.A,dept,rk));}))   /* V7 · 53: 019u bkOffMgr */throw rsError('domain-export-permission',403);
       var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose; the copy marked redacted
       @@SYS:bd.export.redact@@
       domains.push(exported);
