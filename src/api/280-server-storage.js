@@ -1326,6 +1326,7 @@
           var present = periodOwn9(data.resources, key);
           if (present) { mem[key] = JSON.stringify(data.resources[key]); baseVal[key] = mem[key]; } else { delete mem[key]; delete baseVal[key]; }
           krev[key] = data.base[key];
+          if (x2 && keys.indexOf(key) !== -1) { if (present) out.resources[key] = data.resources[key]; else out.absent.push(key); out.base[key] = data.base[key]; }   /* فترةٌ طُلبت بعينها (قراءةُ التحقق) */
           if (x2) {
             if (had && (prior.rev !== data.base[key] || prior.state !== (present ? 'ready' : 'absent'))) bump[x2.K] = 1;
             if (!had || prior.state !== 'ready') periodLoadSeq9[key] = ++periodSeq9;
