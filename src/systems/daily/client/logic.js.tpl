@@ -1070,6 +1070,76 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       e[i] = (e[i] || []).map((e, s) => (n.indexOf(s) >= 0 ? t(e, s) : e));
     });
   }
+  /* V7 · 53 (ملحق 6 · 6): التحديدُ المتعدد للمصليات وتغييرُ حالتها دفعةً واحدة بنافذة تأكيد (سلوكُ البرودكشن e5b8756…27b7c70 بأدوات هذه المنصة).
+     أداةُ «تحديد متعدد» في شريط أدوات المصليات: كلُّ نقرةٍ أو لمسةٍ على مصلى تضيفه إلى التحديد أو تُخرجه (بلا Ctrl، فتعمل على اللوحي) ولا تسحبه.
+     «تفعيل/تعطيل المحدَّد» يسأل أولاً، ثم يكتب الحالةَ بختم الميدان (_fdTog) في طلبٍ ذرّيٍّ واحد (saveRounds ← _opCommit): يُقبل كلُّه أو يُرفض كلُّه،
+     ولا يُكتب يومٌ لم يتغيّر غيرُ يوم الجولة (_dsLiveOnly · _dsUnstamped) — والأقفالُ (الشهر · اليوم · الجولة · الموقع · الوردية) تُفحص قبل التأكيد وبعده،
+     والخادمُ يحرسها. المصلياتُ تُطابَق بمعرّفها الثابت (uid/eid) لا بموضعها. */
+  _dsMultiOn() {
+    const t = this.state;
+    return !!t.dsMulti && "select" === t.tool && "zones" === t.lens && !t.dsAsn && this._dsCanEditZones();
+  }
+  _dsMultiScope() {
+    const t = this.state,
+      key = t.year + "-" + t.month + "-" + Math.min(t.day, this.hMonthDays(t.year, t.month)),
+      R = (t.rounds || {})[key],
+      site = R && Array.isArray(R.d) ? this._rdAt(R.d, t.floor) : null;
+    return { key, site, floor: t.floor >= 0 ? t.floor : 0, sig: JSON.stringify([key, t.floor, (site && site.sid) || ""]) };
+  }
+  async _dsBulkStatus(off) {
+    off = !!off;
+    const t = this.state,
+      sel = Array.isArray(t.selMulti) ? t.selMulti.slice() : [],
+      idOf = (z) => String((z && (z.uid || z.eid)) || "");
+    if (!t.dsSel || "zone" !== t.dsSel.t || !sel.length || this._dsBulkBusy) return !1;
+    const L = this._dsLockInfo();
+    if (L.locked) return (this.bsToast(L.text, "warn"), !1);
+    if (!this._dsCanEditZones()) return (this.permDeny(), !1);
+    const c = this._dsMultiScope(),
+      zs = (c.site && c.site.zones) || [],
+      ids = sel.map((i) => idOf(zs[i]));
+    if (!c.site || ids.some((id) => !id || zs.filter((z) => idOf(z) === id).length !== 1))
+      return (this.bsToast("تعذّر تحديد المصليات: معرّفُ أحدها غير متاح أو مكرر — أعد التحديد", "warn"), !1);
+    const n = ids.length,
+      same = sel.filter((i) => !!zs[i].off === off).length;
+    if (same === n) return (this.bsToast("المصليات المحددة " + (off ? "متوقفة" : "مفعّلة") + " أصلًا — لم يلزم أي تغيير", "warn"), !1);
+    this._dsBulkBusy = !0;
+    try {
+      let yes = !1;
+      try {
+        yes = await KIVO.bsConfirm({
+          title: "تأكيد تغيير حالة المصليات",
+          msg:
+            "هل تريد " + (off ? "إيقاف " : "تفعيل ") + KIVO.BassamCount(n, "مصلى") + " في جولة الموقع الحالية؟" +
+            (same ? " " + KIVO.BassamCount(same, "مصلى") + " " + (off ? "متوقفة" : "مفعّلة") + " أصلًا ولن تتغيّر." : ""),
+          ok: off ? "إيقاف المحدد" : "تفعيل المحدد",
+          danger: off,
+        });
+      } catch (e) {
+        yes = !1;
+      }
+      if (!yes) return !1;
+      /* بعد التأكيد: السياقُ نفسُه والقفلُ كما كان، والمصلياتُ المحددة نفسُها بمعرّفاتها */
+      const c2 = this._dsMultiScope(),
+        z2 = (c2.site && c2.site.zones) || [];
+      if (c2.sig !== c.sig || this._dsLockInfo().locked || !this._dsCanEditZones() || ids.some((id) => z2.filter((z) => idOf(z) === id).length !== 1))
+        return (this.bsToast("تغيّر سياق الجولة أو قفلها أو المصليات المحددة — لم تُنفَّذ العملية؛ أعد التحديد", "warn"), !1);
+      const changed = z2.filter((z) => ids.indexOf(idOf(z)) >= 0 && !!z.off !== off).length;
+      if (
+        !this._updRoundAt(c2.floor, (f) => {
+          f.zones = (f.zones || []).map((z) => (ids.indexOf(idOf(z)) >= 0 && !!z.off !== off ? this._fdTog(z, "zones") : z));
+        })
+      )
+        return (this.bsToast("لا توجد جولة موقع محفوظة في السياق الحالي", "warn"), !1);
+      const r = await this._opLastSave;
+      if (!r || 1 !== r.ok) return !1;   /* سببُ الرفض أعلنه _opCommit — ولم يُكتب شيء */
+      this.setState({ dsSel: null, selMulti: [] });
+      this.bsToast("تم " + (off ? "إيقاف " : "تفعيل ") + KIVO.BassamCount(changed, "مصلى") + " وحفظها في جولة الموقع", "ok");
+      return !0;
+    } finally {
+      this._dsBulkBusy = !1;
+    }
+  }
   _bulkDelete() {
     const t = this.state,
       e = Array.isArray(t.selMulti) ? t.selMulti : [];
@@ -13842,6 +13912,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   code: n.code || "",
                   down: (t) => {
                     if ("gates" === this.state.lens) return;
+                    if (this._dsMultiOn()) return void (t && t.stopPropagation && t.stopPropagation());   /* V7 · 53 (ملحق 6 · 6): التحديدُ المتعدد لا يسحب */
                     if (!this._dsCanEditZones() || "select" !== this.state.tool) return;
                     t && t.stopPropagation && t.stopPropagation();
                     const s = t && (t.ctrlKey || t.metaKey),
@@ -13852,6 +13923,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   },
                   click: (t) => {
                     if ("gates" === this.state.lens) return;
+                    if (this._dsMultiOn())
+                      return (t && t.stopPropagation && t.stopPropagation(), void (this._dsDragged || this._pickSel("zone", e, !0)));
                     const s = this._dsCanEditZones() && "select" === this.state.tool;
                     if (this._dsCanEditZones())
                       return (
@@ -13996,6 +14069,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 dsPolyCursor: null,
                 dsSel: "select" === t ? this.state.dsSel : null,
                 selMulti: "select" === t ? this.state.selMulti : [],
+                dsMulti: !1,
               }),
                 "path" !== t ||
                   $ ||
@@ -14005,7 +14079,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             };
           return {
             dsToolSelect: e("select"),
-            dsTSelStyle: t("select" === s.tool),
+            dsTSelStyle: t("select" === s.tool && !s.dsMulti),
+            /* V7 · 53 (ملحق 6 · 6): أداةُ التحديد المتعدد */
+            dsMultiToolOn: yt,
+            dsTMultiStyle: t(this._dsMultiOn()),
+            dsMultiPressed: this._dsMultiOn() ? "true" : "false",
+            dsMultiToggle: () =>
+              this._dsMultiOn()
+                ? this.setState({ dsMulti: !1 })
+                : this.setState({ dsMulti: !0, tool: "select", draft: null, dsPolyPts: [], dsPolyCursor: null, zdrag: null, dsShapeFly: null }),
             ...(() => {
               const t = { poly: "حر", rect: "مستطيل", square: "مربع", circle: "دائرة" },
                 n = !!t[s.tool],
@@ -15746,7 +15828,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             dsHovZ: null,
             dsHovG: null,
           }),
-        bulkOn: yt && d && "gate" !== l,
+        bulkOn: yt && (d || (this._dsMultiOn() && a.length > 0)) && "gate" !== l,
         dsGateBarOn: mt,
         dsGateSelOn: mt && "gate" === l && a.length >= 1,
         ...(() => {
@@ -15835,10 +15917,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         })(),
         bulkFull: "gate" !== l,
         bulkOn2: () =>
-          this._bulk((t) =>
-            "gate" === l ? this._fdOpen(t) : { ...t, off: !1 },
-          ),
+          "zone" === l
+            ? void this._dsBulkStatus(!1)   /* V7 · 53 (ملحق 6 · 6): بتأكيدٍ وحفظٍ ذرّيٍّ واحد */
+            : this._bulk((t) =>
+                "gate" === l ? this._fdOpen(t) : { ...t, off: !1 },
+              ),
         bulkOff: () => {
+          if ("zone" === l) return void this._dsBulkStatus(!0);
           if ("gate" !== l) return void this._bulk((t) => ({ ...t, off: !0 }));
           const t = a.map((t) => _ && (_.gates || [])[t]).filter(Boolean);
           if (!t.length || t.every((t) => !!t.closed)) return;
@@ -18025,6 +18110,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 )),
             ),
             dsDbl: () => {
+              if (this._dsMultiOn()) return;   /* V7 · 53 (ملحق 6 · 6): لا محرّرَ في التحديد المتعدد */
               if (this._dsCanEditZones()) {
                 if ("poly" === this.state.tool && this.state.dsPolyPts.length >= 3)
                   return void this._dsAddZoneFromPts(this.state.dsPolyPts);
