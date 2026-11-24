@@ -78,7 +78,8 @@ export async function actor(W, who) {
 export async function comp(s, hash, method, ready = 'true') {
   await s.go(hash, 3000);
   await s.page.waitForFunction(([m, rd]) => {
-    for (const el of document.querySelectorAll('main *')) { const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let x = fk ? el[fk] : null; while (x) { const n = x.stateNode; for (const c of [n, n && n.logic]) if (c && typeof c[m] === 'function' && (0, eval)('(c) => ' + rd)(c)) { window.__c = c; return true; } x = x.return; } }
+    const els = document.querySelectorAll('main *'), all = els.length ? els : document.querySelectorAll('body *');
+    for (const el of Array.prototype.slice.call(all, 0, 6000)) { const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let x = fk ? el[fk] : null; while (x) { const n = x.stateNode; for (const c of [n, n && n.logic]) if (c && typeof c[m] === 'function' && (0, eval)('(c) => ' + rd)(c)) { window.__c = c; return true; } x = x.return; } }
     return false;
   }, [method, ready], { timeout: 60000, polling: 250 });
 }
