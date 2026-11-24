@@ -317,7 +317,7 @@ function meRec(rec) {
 function meScopes(deptId, C) {
   var ym = function (k) { var mm = C.m + k, yy = C.y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } return yy + '-' + mm; }, P = pfHijriAt(Date.now() - 86400000), out = {}, i, d;
   var days = function (list) { var o = []; list.forEach(function (x) { o.push('m:' + x); for (d = 1; d <= 30; d++) o.push(x + '-' + d); }); return o; };
-  var span = { bassam_staffing_v3: [ym(-1), ym(0), ym(1)], bassam_plan_v1: [ym(0)], bassam_dreport_v1: days([ym(-1), ym(0)]),
+  var span = { bassam_staffing_v3: [ym(-1), ym(0), ym(1)], bassam_plan_v1: [ym(0)], bassam_dreport_v1: days([ym(0)]).concat([1, 2, 3, 4, 5, 6, 7].map(function (k) { return pfHijriAt(Date.now() - k * 86400000).dk; })),
     bassam_rounds_v1: ['m:' + ym(0), C.dk, P.dk], bassam_rounds_arc_v1: ['m:' + ym(0), C.dk, P.dk] };
   for (i = 0; i < ME_KEYS.length; i++) { var K = 'bsdept:' + deptId + ':' + ME_KEYS[i]; if (opSplitResource(K) && span[ME_KEYS[i]]) out[K] = { periods: span[ME_KEYS[i]] }; }
   return out;

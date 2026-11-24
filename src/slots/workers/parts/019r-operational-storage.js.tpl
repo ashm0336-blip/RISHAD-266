@@ -55,7 +55,7 @@ async function opLoadMany(env, keys, retired, scopes) {
   var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {}, revKeys = [];
   wanted.forEach(function (key) {
     var info = opInfo(key); if (!info) throw ocError('resource');
-    var def = opPeriodDef(info), scope = def && ocOwn(scopes, key) ? scopes[key] : null, ranges = [['', '￿']];
+    var def = opPeriodDef(info), scope = def && ocOwn(scopes, key) ? Object.assign({}, scopes[key], { periods: Array.from(new Set(scopes[key].periods)) }) : null, ranges = [['', '￿']];
     if (scope) {
       ranges = opHeadRanges(def);
       scope.periods.forEach(function (p) { ranges = ranges.concat(opPeriodRanges(def, p)); });
