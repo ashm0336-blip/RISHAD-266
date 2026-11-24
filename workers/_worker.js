@@ -21684,7 +21684,13 @@ function bkExportOk(A, d) {
 /* backup.view as a read key of every department collection (RD_ANY · readKeysFor): only for its own stamp, or for an exporter */
 /* V7 · 53 (قرار المالك ٦): نسخةُ الإدارة كاملةٌ دائماً — مجالُ نظامٍ مطفأٍ في سقف الوحدة (الاسترشاد · المضبوطات · الجائزة) يُقرأ للنسخ ويُعاد بالاستعادة
    كما هو بلا أثر، لمدير الإدارة في إدارته وحدها (كالعهد اليوم). كان canRead يرفضه فيسقط تصديرُ النسخة كلُّه. لا يفتح قراءةً حيّة ولا كتابة */
-function bkOffMgr(A, d, k) { var R = resOf(k); return !!R && enfDeptMgrFull(A, d) && !resOnCeiling(A, d, R); }
+/* V7 · 53 (basefix): «نظامٌ مطفأ» = النظامُ كلُّه خارج سقف الوحدة (صفحتُه العليا) — لا ورقةٌ فرعية قُصّت من نظامٍ مفعّل (award/doc والجائزةُ مفعّلة):
+   تلك تبقى خارج سقف الكتابة كما كانت، فلا تمنح الاستعادةُ مديرَ الإدارة ما قصّه السقف (business_atomic «Award doc write ceiling») */
+function bkOffMgr(A, d, k) {
+  var R = resOf(k); if (!R || !enfDeptMgrFull(A, d) || resOnCeiling(A, d, R)) return false;
+  var own = (Array.isArray(R.cap) ? R.cap : (R.cap ? [R.cap] : [])).concat(R.capAdd ? [R.capAdd] : []);
+  return own.length > 0 && own.every(function (c) { return !capOnDept(A, d, String(c).split('/')[0]); });
+}
 function bkReadAnyOk(A, d, rn) { return rn === 'bassam_last_export_v1' || bkExportOk(A, d); }
 /* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══
    كان المفتاحُ لمدير النظام وحده في الخادم، والشاشةُ تفتح الإدخالَ لكلِّ من مُنح الصفحة — فيُرفض حفظُه

@@ -56,10 +56,16 @@ test('rasd · ① الصفحةُ والمحضرُ والقوائم والسجل�
     assert.ok(rec.t && rec.lt && rec.by && rec.byName && rec.dept, 'auto fields recorded');
     t = await text(p);
     assert.ok(t.includes('ممر الصفا') && t.includes('العمليات المشتركة'), 'the new case is in the records table');
-    /* التنبيهُ العاجل وصل مدير الإدارة */
+    /* التنبيهُ العاجل: V7 · 53 (basefix) — srvfix (٨) «الفاعلُ لا يُنبَّه بفعله»: مديرُ الإدارة الذي حفظ الحالةَ الحرجة هو فاعلُها، فتنبيهُه مخزَّنٌ
+       لمستلميه ولا يظهر في قائمته هو · ثم يُصدره فاعلٌ آخر (مديرُ المنصة) فيصل مديرَ الإدارة — كما rasd_server ⑤ */
     await p.waitForTimeout(1500);
-    const feed = await s.api('/api/notifications?uid=' + encodeURIComponent(await p.evaluate(() => window.__BS_BOOT.uid)));
-    assert.match(JSON.stringify(feed.j || feed), /حرج — ازدحام/, 'urgent rz_hot not in the manager feed');
+    const myUid = await p.evaluate(() => window.__BS_BOOT.uid), feedOf = async () => JSON.stringify(((await s.api('/api/notifications?uid=' + encodeURIComponent(myUid))).j) || {});
+    assert.ok(T.DB.q("SELECT body FROM notification_messages WHERE type='rz_hot'").some((x) => /حرج — ازدحام/.test(x.body)), 'the urgent rz_hot of the save is stored');
+    assert.doesNotMatch(await feedOf(), /حرج — ازدحام/, 'the actor does not see his own rz_hot (٨)');
+    const su0 = await openAs(b, lab, LAB.superUn, LAB.superPw), suUid = await su0.page.evaluate(() => window.__BS_BOOT.uid);
+    const em = await su0.api('/api/notifications/act', { method: 'POST', body: JSON.stringify({ uid: suUid, op: 'emit', type: 'rz_hot', dept: A, once: 'TEST_ONLY_rz_page_su', vars: { 'التأثير': 'حرج', 'النوع': 'ازدحام', 'الموقع': 'ممر الصفا', 'الإجراء': 'إبلاغ جهة مختصة', 'الراصد': 'TEST_ONLY مدير المنصة' } }) });
+    assert.equal(em.status, 200, JSON.stringify(em.j)); await su0.ctx.close();
+    assert.match(await feedOf(), /حرج — ازدحام[^"]*TEST_ONLY مدير المنصة/, 'urgent rz_hot not in the manager feed');
     /* فتحُ الشهر المقفل من الواجهة (نقرةٌ مزدوجة لحامل approve ← سببٌ ← نافذةُ استدراكٍ على الخادم) ثم تسجيلُ حالةٍ في يومٍ منه */
     const prev = await p.evaluate(() => { const t = KIVO.BassamCal.hToday(); return t.m > 1 ? { y: t.y, m: t.m - 1 } : { y: t.y - 1, m: 12 }; });
     const MN = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
