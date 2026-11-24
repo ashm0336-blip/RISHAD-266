@@ -48,9 +48,15 @@ test('pages.json without the display-only field is develop\'s pages.json; the fi
 });
 
 test('the permission registry is the pinned one: develop minus the five tpl.* keys (250 active keys)', needs('award', 'custody', 'dstats', 'irshad', 'rasd', 'seized', 'tasks'), () => {
-  assert.equal(sha(read('src/permissions/registry/registry-v24.9.json')), DEVELOP.registryJson);
-  assert.equal(sha(read('src/permissions/340-registry-v24-9.js')), DEVELOP.registryBlock);
+  /* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4، معتمد من المالك): السجلُّ يحمل نصّي العرض verb · place (الفعل · المكان) — والبصمةُ على السجلّ بدونهما وحدهما:
+     كلُّ ما سواهما (المفاتيح · الأنواع · الحساسية · المنح · الحراسة · الذرّات) هو المثبَّت حرفاً كما كان */
   const R = JSON.parse(read('src/permissions/registry/registry-v24.9.json'));
+  const bare = (a) => a.map((e) => Object.fromEntries(Object.entries(e).filter(([k]) => k !== 'verb' && k !== 'place')));
+  const R0 = Object.assign({}, R, { registry: bare(R.registry), atoms: bare(R.atoms) });
+  assert.equal(sha(Buffer.from(JSON.stringify(R0, null, 1) + '\n'))   /* = json.dumps(ensure_ascii=False, indent=1) كما يكتبه perm_parts */, DEVELOP.registryJson, 'the registry without verb · place is the pinned one');
+  const B = read('src/permissions/340-registry-v24-9.js').toString('utf8'), i = B.indexOf('var KIVO_REGISTRY_DATA = '), j = B.indexOf(';\n', i);
+  assert.equal(sha(Buffer.from(B.slice(0, i) + 'var KIVO_REGISTRY_DATA = ' + JSON.stringify(R0) + B.slice(j))), DEVELOP.registryBlock, 'the client block without verb · place is the pinned one');
+  assert.ok(R.registry.every((e) => Object.keys(e).filter((k) => !(k in bare([e])[0])).every((k) => k === 'verb' || k === 'place')), 'nothing but verb · place was added');
   assert.equal(R.registry.filter((k) => k.status === 'active').length, 261); assert.equal(R.counts.securityActive, 261); assert.equal(R.registry.length, 276);   /* V7 · د6: + 11 مفتاحاً نشطاً لرصد الحالات و rz.rec.status المحجوز */
   assert.ok(!R.registry.some((k) => /^tpl\./.test(k.key)), 'tpl.* removed');
 });

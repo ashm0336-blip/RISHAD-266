@@ -38,7 +38,9 @@ function world({hash='#/help',saved='tasks',help=true,signedIn=true,onlyHelp=fal
   };
   const ctx={KIVO,document,location,localStorage,sessionStorage,console,URL,innerWidth:1200,innerHeight:800,scrollY:0,
     history:{replaceState(_s,_t,u){location.hash=new URL(u,'http://localhost').hash;},pushState(_s,_t,u){location.hash=new URL(u,'http://localhost').hash;}},
-    addEventListener(n,f){listeners.set(n,f);},removeEventListener(n){listeners.delete(n);},
+    /* V7 · 53: the window event API as a browser has it — several listeners per event, each removed by its own function (the About dialog
+       now also listens to hashchange to close itself: 260 openAbout · uiqa item 12; one listener per event name let it replace the root's) */
+    addEventListener(n,f){(listeners.get(n) || listeners.set(n,new Set()).get(n)).add(f);},removeEventListener(n,f){listeners.get(n)?.delete(f);},
     setTimeout(fn,ms){timers.push({fn,ms});return timers.length;},clearTimeout(){},requestAnimationFrame(fn){frames.push(fn);},
     MutationObserver:class{observe(){}disconnect(){}},getComputedStyle:()=>({}),
     get:()=>({name:'TEST_ONLY platform',about:{guides:[]}}),esc:String,ver:()=> 'TEST_ONLY',
@@ -51,7 +53,7 @@ function world({hash='#/help',saved='tasks',help=true,signedIn=true,onlyHelp=fal
   const root=new ctx.Root();
   function settle(){for(let i=0;i<8;i++){const t=timers.splice(0).filter(x=>x.ms===0);const f=frames.splice(0);if(!t.length&&!f.length)break;t.forEach(x=>x.fn());f.forEach(x=>x());}}
   function mount(){root.componentDidMount();settle();}
-  function navigate(hash){location.hash=hash;listeners.get('hashchange')?.();settle();}
+  function navigate(hash){location.hash=hash;[...(listeners.get('hashchange') || [])].forEach(f=>f());settle();}
   function close(){const ov=nodes.get('bs-plat-about');assert.ok(ov);ov.handlers.click({target:{id:'bsAboutX'}});}
   return {root,location,localStorage,nodes,mount,navigate,close};
 }
