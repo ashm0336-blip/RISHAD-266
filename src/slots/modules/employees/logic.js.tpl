@@ -4325,7 +4325,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             })
           : (n[this.state.editIdx] = { ...n[this.state.editIdx], ...t }),
           await this.setEmp(n, { index: this.state.editIdx, form: t }) &&
-          this.setState({ addOpen: !1 }));
+          (this.setState({ addOpen: !1 }),
+          /* V7 · 53 (البند 11): رسالةُ النجاح بعد إضافة موظف — بالشكل الموجود (bsAck «ok» بعد إقرار الخادم) */
+          null === this.state.editIdx && this.bsAck("أُضيف الموظف «" + t.name.trim() + "»", "ok")));
       },
       bulkClear: () => this.setState({ selected: {} }),
       bulkAccOn: l,
