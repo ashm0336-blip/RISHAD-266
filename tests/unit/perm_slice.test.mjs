@@ -51,12 +51,18 @@ test('permSlice الأصلية نفسها مولدة للخادم؛ الاستع
   const context = vm.createContext({});
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'workers/parts/051c-department-permission-slice.js'), 'utf8'), context);
   assert.equal(context.rsPermSlice.toString(), D.permSlice.toString(), 'الوظيفة المولدة هي نص السياسة الأصلية نفسه');
-  const rs = fs.readFileSync(path.join(ROOT, 'workers/parts/019d-atomic-restore.js'), 'utf8');
+  const rs = fs.readFileSync(path.join(ROOT, 'workers/parts/019d-atomic-restore.js'), 'utf8'), noCm0 = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ''), noCm = noCm0;
   /* V7 · د6 (QA) — قرارُ المالك ب3 (mgrimport): الاستيرادُ لا يغيّر السقفَ ولا العدسات ولا صحيفةَ المدير؛ الخادمُ يطبّق rsDeptPermsKeep على نسخ الإدارة
      (كان هنا: «rsPermSlice(… body.mode, PG_KEYS, KIVO_LENS_PLUGINS.keys)» — القاعدةُ السابقة). المشتق: الشريحةُ المولَّدة = نصُّ العميل (أعلاه) باقية،
      وطريقُ الاستعادة يمرّ بـ rsDeptPermsKeep بوضع الطلب، ولا يستدعي rsPermSlice على نسخ الإدارة؛ السلوكُ نفسه في v7_d6_mgrimport (٣). */
-  assert.match(rs, /rsDeptPermsKeep\([\s\S]*?inputKeys\[K_PERM\][\s\S]*?dept,\s*requestedPerms,\s*body\.mode\)/, 'طريقُ الاستعادة يحفظ السقفَ والمدير: rsDeptPermsKeep بوضع الطلب');
-  const noCm = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '');
+  /* V7 · 53 (ملحق 5 — «التضييق بدل الرفض»): وبمُضيِّق الأوراق narrowPerms — لغير مدير المنصة وحده، وهو permsImportNarrow (018c) ← perm44 narrowSheets لا غيرُه */
+  assert.match(rs, /rsDeptPermsKeep\([\s\S]*?inputKeys\[K_PERM\][\s\S]*?dept,\s*requestedPerms,\s*body\.mode,\s*narrowPerms\)/, 'طريقُ الاستعادة يحفظ السقفَ والمدير: rsDeptPermsKeep بوضع الطلب ومُضيِّق الأوراق');
+  assert.match(rs, /var narrowPerms = A\.u\.role === 'super' \? null : function \(c0, i0\) \{ var nr = permsImportNarrow\(A, dept, c0, i0, parseJson\(inputKeys\[K_PERM\], \{\}\)\); permDrops = nr\.drops; return nr\.out; \};/, 'المُضيِّق لغير مدير المنصة وحده، ونتيجتُه ما يعيده permsImportNarrow');
+  const ar = fs.readFileSync(path.join(ROOT, 'workers/parts/018c-ancestry-rules.js'), 'utf8'), pin = /function permsImportNarrow\([\s\S]*?\n}\n/.exec(ar);
+  assert.ok(pin, 'permsImportNarrow موجودة');
+  assert.match(pin[0], /var r = perm44E\(\)\.narrowSheets\(cur, inc, \{/, 'الأوراقُ من narrowSheets (المحرّكُ المشترك)');
+  assert.doesNotMatch(noCm0(pin[0]), /\.(caps|subs|capOwn|capSeed|lenses|empLens|tplOf)\s*(\[[^\]]*\])?\s*=(?!=)/, 'permsImportNarrow لا تكتب سقفاً ولا عدساتٍ ولا قوالب');
+
   assert.doesNotMatch(noCm(rs), /rsPermSlice\s*\(/, 'لا يطبّق الخادمُ شريحةَ السقف على نسخ الإدارة (قرار المالك ب3)');
   const keep = /function rsDeptPermsKeep\([\s\S]*?\n}\n/.exec(rs); assert.ok(keep, 'rsDeptPermsKeep موجودة');
   assert.doesNotMatch(keep[0], /\.(caps|subs|capOwn|capSeed)\b/, 'rsDeptPermsKeep لا تمسّ السقف');
@@ -65,6 +71,13 @@ test('permSlice الأصلية نفسها مولدة للخادم؛ الاستع
   const lensW = keep[0].match(/\.lenses\b[^;\n]*/g) || [];
   assert.deepEqual(lensW.filter((w) => /=(?!=)/.test(w) && !/^\.lenses = isObj\(pm\.lenses\)/.test(w) && !/^\.lenses\[id\] = lens$/.test(w)), [], 'لا كتابةَ للعدسات إلا نتيجةَ rsDeptLensNarrow');
   assert.match(keep[0], /var lens = rsDeptLensNarrow\(pm, id, PP\)/, 'العدساتُ من rsDeptLensNarrow وحدها');
+  /* V7 · 53 (ملحق 5): لا كتابةَ في pm إلا الأوراقُ والعدساتُ بالإدارة نفسِها — والأوراقُ: صحائفُ المديرين من القائم، وأوراقُ الموظفين من النسخة ثم من narrow وحده */
+  const pmW = noCm(keep[0]).match(/\bpm\.\w+(\[[^\]]*\])?\s*=(?!=)[^;]*/g) || [];
+  assert.deepEqual(pmW.map((w) => w.replace(/\s+/g, ' ')), ['pm.emps = isObj(pm.emps) ? pm.emps : {}', 'pm.emps[id] = out', 'pm.lenses = isObj(pm.lenses) ? pm.lenses : {}', 'pm.lenses[id] = lens'], 'rsDeptPermsKeep تكتب أوراقَ الإدارة وعدساتِها وحدها');
+  const outW = noCm(keep[0]).match(/\bout\[ek\] = [^;]*/g) || [], i0W = noCm(keep[0]).match(/\bi0(\[ek\])? = [^;]*/g) || [];
+  assert.deepEqual(outW, ['out[ek] = cur[ek]', 'out[ek] = i0[ek]'], 'الأوراقُ: صحائفُ المديرين من القائم وما سواها من i0');
+  assert.deepEqual(i0W, ['i0 = {}', 'i0[ek] = inc[ek]', 'i0 = narrow(c0, i0)'], 'i0: فارغٌ ثم أوراقُ موظفي النسخة (بلا صحائف المديرين) ثم المُضيِّق وحده');
+  assert.match(keep[0], /if \(narrow\) i0 = narrow\(c0, i0\);/, 'المُضيِّق يُطبَّق متى مُرِّر');
   const narrow = /function rsDeptLensNarrow\([\s\S]*?\n}\n/.exec(rs); assert.ok(narrow, 'rsDeptLensNarrow موجودة');
 });
 
