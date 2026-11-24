@@ -59,7 +59,7 @@ function osSchemaRoundsResources() {
     {
       resource: "bassam_rounds_v1",
       name: "rounds",
-      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds') },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds'), arc: { res: DAILY_ARC_RES, due: dailyArcDue } },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
       schema: ocMap("ops_rounds", null, {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
@@ -117,6 +117,13 @@ function dailyArcClosed(ctrl, y, m, T) {
   if (c && c.ap) return true;
   if (c && (c.mo || (isObj(c.dopen) && Object.keys(c.dopen).length))) return false;
   return !!(T && T.y > 0 && T.m > 0 && (y * 12 + m) <= (T.y * 12 + T.m) - 2);
+}
+/* V7 · 53 (periodsui 9): أيامُ الحيّ التي تنتقل إلى الأرشيف (شهرٌ مقفل) — حفظُ الفترة يضيفها إلى نطاقه فتنتقل في دفعته (dailyArcPend)؛ أقدمُها
+   أولاً و31 يوماً على الأكثر في الحفظة (حيٌّ تراكمَ فيه تاريخٌ طويل يُفرَّغ على حفظات، لا في دفعةٍ تتجاوز الميزانية) */
+function dailyArcDue(names, ctl) {
+  var T = dsToday(Date.now());
+  return names.filter(function (p) { var d = dailyArcDay(p); return d && dailyArcClosed(ctl[d.mk], d.y, d.m, T); })
+    .sort(function (a, b) { var x = dailyArcDay(a), y = dailyArcDay(b); return (x.y * 12 + x.m) - (y.y * 12 + y.m); }).slice(0, 31);
 }
 function dailyArcStep(live, arc, T) {
   var L = {}, R = {}, moved = [], back = [], gone = Object.create(null), k, p;

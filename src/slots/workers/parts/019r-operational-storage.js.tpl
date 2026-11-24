@@ -422,6 +422,22 @@ async function opPeriodSaveBody(env, A, bs) {
     written.forEach(function (p) { opPeriodCtx(def, p).forEach(function (c) { if (written.indexOf(c) < 0 && ctx.indexOf(c) < 0) ctx.push(c); }); });
     G.written = written; scopes[K] = { periods: written.concat(ctx) };
   });
+  /* V7 · 53 (periodsui 9): الأرشفة — أيامُ الشهر المقفل في الحيّ تدخل نطاقَ الحفظ (مع علامات الأشهر) فتنقلها خطوةُ الأرشيف في الدفعة نفسِها كما كان
+     الحفظُ الكامل؛ وفتحُ شهرٍ (علامتُه مكتوبة) يُدخل أيامَه من الأرشيف ليعود إلى الحيّ. الأرشيفُ بنطاقٍ مثلِه (ومنه مرجعُ dailyArcPre) */
+  for (var K0 of Ks) {
+    var I0 = byK[K0].info, def0 = opPeriodDef(I0); if (!def0.arc || typeof def0.arc.due !== 'function') continue;
+    var AK = 'bsdept:' + I0.dept + ':' + def0.arc.res, AI = opSplitResource(AK);
+    var names0 = (await opPeriodMembers(env, I0)).map(function (m) { return m.m; }), mct = names0.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; });
+    var sc0 = {}; sc0[K0] = { periods: mct };
+    var ctlDoc = mct.length ? (await opLoadMany(env, [K0], 1, sc0)).values[K0] : null, ctl = opSplit(I0, ctlDoc == null ? undefined : JSON.parse(ctlDoc)).periods;
+    var due = def0.arc.due(names0.filter(function (p) { return opPeriodIdx(def0, p).kind !== 'mctl'; }), ctl);
+    scopes[K0].periods = Array.from(new Set(scopes[K0].periods.concat(mct, due)));
+    if (!AI) continue;
+    var opened = byK[K0].written.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; }).map(function (p) { return opPeriodIdx(def0, p).grp; });
+    var arcNames = opened.length ? (await opPeriodMembers(env, AI)).map(function (m) { return m.m; }).filter(function (p) { return opened.indexOf(opPeriodIdx(opPeriodDef(AI), p).grp) >= 0; }) : [];
+    scopes[K0].periods = Array.from(new Set(scopes[K0].periods.concat(arcNames)));   /* ما يعود من الأرشيف يُكتب في الحيّ */
+    scopes[AK] = { periods: scopes[K0].periods.slice() };
+  }
   var cur = await opLoadMany(env, Ks, 1, scopes), out = { set: {}, del: [], base: {} }, conflicts = {};
   Object.keys(bs.base || {}).forEach(function (k) { if (k.indexOf('@') < 0) out.base[k] = bs.base[k]; });
   Object.keys(bs.set || {}).forEach(function (k) { if (k.indexOf('@') < 0) out.set[k] = bs.set[k]; });

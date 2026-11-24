@@ -181,3 +181,18 @@ test('53 · kpi: v.kpi لكل فترة (الجولات · التقرير · ال
     }
   } finally { await T.close(); }
 });
+
+test('53 · periodsui 9: حفظُ يومٍ بالفترة يُجري خطوةَ الأرشيف — أيامُ الشهر المقفل تخرج من الحيّ إلى الأرشيف في الدفعة نفسِها', { timeout: 120000 }, async () => {
+  const { T, read, save, env } = await lab();
+  try {
+    const AK = K('bassam_rounds_arc_v1');
+    await replaceOperationalFixture(env, RK, { __pMig: 2, 'm:1440-1': { ap: 1 }, '1440-1-5': day(5), 'm:1460-1': { ap: 0, mo: 1 }, '1460-1-1': day(1) });
+    const r0 = await read('keys=' + encodeURIComponent(RK + '@1460-1-1'));
+    const r = await save({ set: { [RK + '@1460-1-1']: JSON.stringify(day(2)) }, base: { [RK + '@1460-1-1']: r0.j.base[RK + '@1460-1-1'] } });
+    assert.equal(r.status, 200, r.t.slice(0, 300));
+    const live = (await read('keys=' + encodeURIComponent(RK))).j.resources[RK], arc = (await read('keys=' + encodeURIComponent(AK))).j.resources[AK];
+    assert.ok(!('1440-1-5' in live), 'لا يومَ من الشهر المقفل في الحيّ');
+    assert.deepEqual(arc && arc['1440-1-5'], day(5), 'اليومُ في الأرشيف بقيمته');
+    assert.deepEqual(live['1460-1-1'], day(2));
+  } finally { await T.close(); }
+});

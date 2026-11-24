@@ -20124,7 +20124,7 @@ function osSchemaRoundsResources() {
     {
       resource: "bassam_rounds_v1",
       name: "rounds",
-      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds') },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds'), arc: { res: DAILY_ARC_RES, due: dailyArcDue } },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
       schema: ocMap("ops_rounds", null, {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
@@ -20182,6 +20182,13 @@ function dailyArcClosed(ctrl, y, m, T) {
   if (c && c.ap) return true;
   if (c && (c.mo || (isObj(c.dopen) && Object.keys(c.dopen).length))) return false;
   return !!(T && T.y > 0 && T.m > 0 && (y * 12 + m) <= (T.y * 12 + T.m) - 2);
+}
+/* V7 · 53 (periodsui 9): أيامُ الحيّ التي تنتقل إلى الأرشيف (شهرٌ مقفل) — حفظُ الفترة يضيفها إلى نطاقه فتنتقل في دفعته (dailyArcPend)؛ أقدمُها
+   أولاً و31 يوماً على الأكثر في الحفظة (حيٌّ تراكمَ فيه تاريخٌ طويل يُفرَّغ على حفظات، لا في دفعةٍ تتجاوز الميزانية) */
+function dailyArcDue(names, ctl) {
+  var T = dsToday(Date.now());
+  return names.filter(function (p) { var d = dailyArcDay(p); return d && dailyArcClosed(ctl[d.mk], d.y, d.m, T); })
+    .sort(function (a, b) { var x = dailyArcDay(a), y = dailyArcDay(b); return (x.y * 12 + x.m) - (y.y * 12 + y.m); }).slice(0, 31);
 }
 function dailyArcStep(live, arc, T) {
   var L = {}, R = {}, moved = [], back = [], gone = Object.create(null), k, p;
@@ -20987,6 +20994,22 @@ async function opPeriodSaveBody(env, A, bs) {
     written.forEach(function (p) { opPeriodCtx(def, p).forEach(function (c) { if (written.indexOf(c) < 0 && ctx.indexOf(c) < 0) ctx.push(c); }); });
     G.written = written; scopes[K] = { periods: written.concat(ctx) };
   });
+  /* V7 · 53 (periodsui 9): الأرشفة — أيامُ الشهر المقفل في الحيّ تدخل نطاقَ الحفظ (مع علامات الأشهر) فتنقلها خطوةُ الأرشيف في الدفعة نفسِها كما كان
+     الحفظُ الكامل؛ وفتحُ شهرٍ (علامتُه مكتوبة) يُدخل أيامَه من الأرشيف ليعود إلى الحيّ. الأرشيفُ بنطاقٍ مثلِه (ومنه مرجعُ dailyArcPre) */
+  for (var K0 of Ks) {
+    var I0 = byK[K0].info, def0 = opPeriodDef(I0); if (!def0.arc || typeof def0.arc.due !== 'function') continue;
+    var AK = 'bsdept:' + I0.dept + ':' + def0.arc.res, AI = opSplitResource(AK);
+    var names0 = (await opPeriodMembers(env, I0)).map(function (m) { return m.m; }), mct = names0.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; });
+    var sc0 = {}; sc0[K0] = { periods: mct };
+    var ctlDoc = mct.length ? (await opLoadMany(env, [K0], 1, sc0)).values[K0] : null, ctl = opSplit(I0, ctlDoc == null ? undefined : JSON.parse(ctlDoc)).periods;
+    var due = def0.arc.due(names0.filter(function (p) { return opPeriodIdx(def0, p).kind !== 'mctl'; }), ctl);
+    scopes[K0].periods = Array.from(new Set(scopes[K0].periods.concat(mct, due)));
+    if (!AI) continue;
+    var opened = byK[K0].written.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; }).map(function (p) { return opPeriodIdx(def0, p).grp; });
+    var arcNames = opened.length ? (await opPeriodMembers(env, AI)).map(function (m) { return m.m; }).filter(function (p) { return opened.indexOf(opPeriodIdx(opPeriodDef(AI), p).grp) >= 0; }) : [];
+    scopes[K0].periods = Array.from(new Set(scopes[K0].periods.concat(arcNames)));   /* ما يعود من الأرشيف يُكتب في الحيّ */
+    scopes[AK] = { periods: scopes[K0].periods.slice() };
+  }
   var cur = await opLoadMany(env, Ks, 1, scopes), out = { set: {}, del: [], base: {} }, conflicts = {};
   Object.keys(bs.base || {}).forEach(function (k) { if (k.indexOf('@') < 0) out.base[k] = bs.base[k]; });
   Object.keys(bs.set || {}).forEach(function (k) { if (k.indexOf('@') < 0) out.set[k] = bs.set[k]; });
@@ -25482,7 +25505,7 @@ async function imgRefScan(env) {
   var split = async function (k2, from) {
     var info = opInfo(k2), names = (await opPeriodMembers(env, info)).map(function (m) { return m.m; });
     for (var j = from; j < names.length; j += 20) {
-      if (chars >= 6e6) return j;
+      if (chars >= 1.5e6) return j;   /* V7 · 53: مرورُ الكنس في waitUntil يحسب على وقت المعالج — 1.5M حرف من الفترات في المرور، ويُستأنف */
       var sc = {}; sc[k2] = { periods: names.slice(j, j + 20) };
       var got = await opLoadMany(env, [k2], 0, sc), v = got.values[k2] || '', ids = Object.keys(imgIdsIn(v)); chars += v.length;
       if (ids.length) await env.DB.batch([refStmt(ids, k2, got.revs[k2])]);

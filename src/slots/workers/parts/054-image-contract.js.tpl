@@ -432,7 +432,7 @@ async function imgRefScan(env) {
   var split = async function (k2, from) {
     var info = opInfo(k2), names = (await opPeriodMembers(env, info)).map(function (m) { return m.m; });
     for (var j = from; j < names.length; j += 20) {
-      if (chars >= 6e6) return j;
+      if (chars >= 1.5e6) return j;   /* V7 · 53: مرورُ الكنس في waitUntil يحسب على وقت المعالج — 1.5M حرف من الفترات في المرور، ويُستأنف */
       var sc = {}; sc[k2] = { periods: names.slice(j, j + 20) };
       var got = await opLoadMany(env, [k2], 0, sc), v = got.values[k2] || '', ids = Object.keys(imgIdsIn(v)); chars += v.length;
       if (ids.length) await env.DB.batch([refStmt(ids, k2, got.revs[k2])]);
