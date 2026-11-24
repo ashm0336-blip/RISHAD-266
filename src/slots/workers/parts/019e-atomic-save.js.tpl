@@ -842,7 +842,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
     if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
-    if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
+    if (e.cuCode) return json(Object.assign({ ok: 0, err: e.cuCode }, e.cuDup ? { dup: e.cuDup } : {}), e.cuStatus);   /* V7 · د7: تفصيلُ التكرار (019c empDupList) */
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT@@SYS:rs.conflict.custodyTrigger@@/.test(String(e)))

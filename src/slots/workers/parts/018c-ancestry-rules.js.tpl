@@ -12,23 +12,29 @@ function empIdents(rows) {
   });
   return m;
 }
-function empDupWhy(A, a, b, d, ctx) {
-  var E = ctx && ctx.ed; if (!E || !Array.isArray(b)) return '';
-  var old = empIdents(a), seen = { n: {}, p: {}, o: {} }, other = { n: {}, p: {}, o: {} }, dd, i, e, n, p, o, m;
-  for (dd in E.others) { if (dd === d) continue; m = empIdents(E.others[dd]); for (i in m.n) other.n[i] = 1; for (i in m.p) other.p[i] = 1; for (i in m.o) other.o[i] = 1; }
+/* V7 · د7 (استيراد Excel): الحكمُ نفسُه بتفصيله — كلُّ قيمةٍ مكرّرة: الحقل (nid · phone · empno) والقيمةُ وأين (file: مكرّرةٌ في الدفعة نفسِها ·
+   other: لموظفٍ في إدارةٍ أخرى · account: اسمُ دخولٍ لحسابٍ خارج هذه الإدارة). empDupWhy = «أيُّ تكرار» منه (مصدرٌ واحد). */
+function empDupList(A, a, b, d, E) {
+  var out = []; if (!E || !Array.isArray(b)) return out;
+  var old = empIdents(a), seen = { n: {}, p: {}, o: {} }, other = { n: {}, p: {}, o: {} }, dd, i, e, m, F = { n: 'nid', p: 'phone', o: 'empno' };
+  for (dd in E.others) { if (dd === d) continue; m = empIdents(E.others[dd]); for (i in m.n) other.n[i] = 'other'; for (i in m.p) other.p[i] = 'other'; for (i in m.o) other.o[i] = 'other'; }
   (Array.isArray(E.users) ? E.users : []).forEach(function (u) {
     if (!isObj(u) || u.deptId === d) return;
-    if (u.un) { other.n[String(u.un)] = 1; other.p[String(u.un)] = 1; }
-    if (u.alt) { other.n[String(u.alt)] = 1; other.p[String(u.alt)] = 1; }
+    [u.un, u.alt].forEach(function (x) { if (!x) return; x = String(x); if (!other.n[x]) other.n[x] = 'account'; if (!other.p[x]) other.p[x] = 'account'; });
   });
   for (i = 0; i < b.length; i++) {
     e = b[i]; if (!isObj(e)) continue;
-    n = String(e.nid || '').trim(); p = String(e.phone || '').trim(); o = String(e.empno || '').trim();
-    if (n) { if (seen.n[n] && !old.n[n]) return 'emp-dup'; seen.n[n] = 1; if (!old.n[n] && other.n[n]) return 'emp-dup'; }
-    if (p) { if (seen.p[p] && !old.p[p]) return 'emp-dup'; seen.p[p] = 1; if (!old.p[p] && other.p[p]) return 'emp-dup'; }
-    if (o) { if (seen.o[o] && !old.o[o]) return 'emp-dup'; seen.o[o] = 1; if (!old.o[o] && other.o[o]) return 'emp-dup'; }
+    [['n', e.nid], ['p', e.phone], ['o', e.empno]].forEach(function (pr) {
+      var f = pr[0], v = String(pr[1] || '').trim(); if (!v) return;
+      if (seen[f][v] && !old[f][v]) out.push({ f: F[f], v: v, where: 'file' });
+      else if (!old[f][v] && other[f][v]) out.push({ f: F[f], v: v, where: other[f][v] });
+      seen[f][v] = 1;
+    });
   }
-  return '';
+  return out;
+}
+function empDupWhy(A, a, b, d, ctx) {
+  return empDupList(A, a, b, d, ctx && ctx.ed).length ? 'emp-dup' : '';
 }
 @@SYS:task.rawWhy@@/* KIVO_264 · D14 · OD-7: حكمُ تعديل صاحب الحساب لسجلّه هو (a المخزَّن · b الوارد) — null مقبول، وإلا سببُ الرفض:
    'self' حقلٌ خارج قائمة دوره (SELF_FIELDS_BY_ROLE · 017) · 'self-un' اسمُ دخولٍ بصيغةٍ غير صالحة · 'self-cur' اسمُ دخولٍ بلا كلمة المرور الحالية.

@@ -2507,23 +2507,29 @@ function empIdents(rows) {
   });
   return m;
 }
-function empDupWhy(A, a, b, d, ctx) {
-  var E = ctx && ctx.ed; if (!E || !Array.isArray(b)) return '';
-  var old = empIdents(a), seen = { n: {}, p: {}, o: {} }, other = { n: {}, p: {}, o: {} }, dd, i, e, n, p, o, m;
-  for (dd in E.others) { if (dd === d) continue; m = empIdents(E.others[dd]); for (i in m.n) other.n[i] = 1; for (i in m.p) other.p[i] = 1; for (i in m.o) other.o[i] = 1; }
+/* V7 · د7 (استيراد Excel): الحكمُ نفسُه بتفصيله — كلُّ قيمةٍ مكرّرة: الحقل (nid · phone · empno) والقيمةُ وأين (file: مكرّرةٌ في الدفعة نفسِها ·
+   other: لموظفٍ في إدارةٍ أخرى · account: اسمُ دخولٍ لحسابٍ خارج هذه الإدارة). empDupWhy = «أيُّ تكرار» منه (مصدرٌ واحد). */
+function empDupList(A, a, b, d, E) {
+  var out = []; if (!E || !Array.isArray(b)) return out;
+  var old = empIdents(a), seen = { n: {}, p: {}, o: {} }, other = { n: {}, p: {}, o: {} }, dd, i, e, m, F = { n: 'nid', p: 'phone', o: 'empno' };
+  for (dd in E.others) { if (dd === d) continue; m = empIdents(E.others[dd]); for (i in m.n) other.n[i] = 'other'; for (i in m.p) other.p[i] = 'other'; for (i in m.o) other.o[i] = 'other'; }
   (Array.isArray(E.users) ? E.users : []).forEach(function (u) {
     if (!isObj(u) || u.deptId === d) return;
-    if (u.un) { other.n[String(u.un)] = 1; other.p[String(u.un)] = 1; }
-    if (u.alt) { other.n[String(u.alt)] = 1; other.p[String(u.alt)] = 1; }
+    [u.un, u.alt].forEach(function (x) { if (!x) return; x = String(x); if (!other.n[x]) other.n[x] = 'account'; if (!other.p[x]) other.p[x] = 'account'; });
   });
   for (i = 0; i < b.length; i++) {
     e = b[i]; if (!isObj(e)) continue;
-    n = String(e.nid || '').trim(); p = String(e.phone || '').trim(); o = String(e.empno || '').trim();
-    if (n) { if (seen.n[n] && !old.n[n]) return 'emp-dup'; seen.n[n] = 1; if (!old.n[n] && other.n[n]) return 'emp-dup'; }
-    if (p) { if (seen.p[p] && !old.p[p]) return 'emp-dup'; seen.p[p] = 1; if (!old.p[p] && other.p[p]) return 'emp-dup'; }
-    if (o) { if (seen.o[o] && !old.o[o]) return 'emp-dup'; seen.o[o] = 1; if (!old.o[o] && other.o[o]) return 'emp-dup'; }
+    [['n', e.nid], ['p', e.phone], ['o', e.empno]].forEach(function (pr) {
+      var f = pr[0], v = String(pr[1] || '').trim(); if (!v) return;
+      if (seen[f][v] && !old[f][v]) out.push({ f: F[f], v: v, where: 'file' });
+      else if (!old[f][v] && other[f][v]) out.push({ f: F[f], v: v, where: other[f][v] });
+      seen[f][v] = 1;
+    });
   }
-  return '';
+  return out;
+}
+function empDupWhy(A, a, b, d, ctx) {
+  return empDupList(A, a, b, d, ctx && ctx.ed).length ? 'emp-dup' : '';
 }
 function taskRawWhy(A, a, b, d, ctx) { return taskXWhy(A, a, b, d, ctx) || taskAsgWhy(A, a, b, d, ctx) || taskOwnWhy(A, a, b, d, ctx) || taskDelWhy(A, a, b, d, ctx) || taskAcctWhy(A, a, b, d, ctx); }
 /* KIVO_264 · D14 · OD-7: حكمُ تعديل صاحب الحساب لسجلّه هو (a المخزَّن · b الوارد) — null مقبول، وإلا سببُ الرفض:
@@ -9121,6 +9127,19 @@ function empApplySchedule(values, meta, validKeys, result) {
   result.counts.schedule = rows.length;
 }
 /* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — لا يمنح الاستيرادُ صلاحياتٍ بعمود «الصلاحيات» بعد اليوم؛ الأدوارُ تُسنَد من «الصلاحيات ← الأشخاص» */
+/* V7 · د7: سياقُ التفرّد كما يبنيه مسارُ الحفظ (054 edCtx9): موظفو الإدارات الأخرى بقيمتهم الحالية وحساباتُ الدخول — لا قراءةَ إلا إن حملت الدفعةُ
+   هويةً أو جوالاً أو رقماً وظيفياً ليس في القيمة الحالية */
+async function empDupContext(env, A, d, before, after) {
+  var o = empIdents(before), n = empIdents(after), q, chg = false;
+  for (q in n.n) if (!o.n[q]) chg = true; for (q in n.p) if (!o.p[q]) chg = true; for (q in n.o) if (!o.o[q]) chg = true;
+  if (!chg) return null;
+  var dl = parseJson(await kvGet(env, 'kv', 'bassam_depts_v1'), null), ids = [];
+  (Array.isArray(dl) ? dl : (dl && Array.isArray(dl.list) ? dl.list : [])).forEach(function (x) { if (x && x.id && String(x.id) !== d) ids.push(String(x.id)); });
+  var em = ids.length ? await opResourceMany(env, ids.map(function (id) { return 'bsdept:' + id + ':bassam_employees_v1'; })) : {},
+    E = { others: {}, users: Array.isArray(A.users) ? A.users : parseJson(await kvGet(env, 'kv', K_USERS), []) };
+  ids.forEach(function (id) { var k = 'bsdept:' + id + ':bassam_employees_v1'; E.others[id] = parseJson(em[k] == null ? '[]' : String(em[k]), []); });
+  return E;
+}
 async function empPrepareTransition(env, A, input) {
   if (!A || !A.u) throw cuError('employee-transition-forbidden', 403);
   empShape(input, [
@@ -9203,6 +9222,12 @@ async function empPrepareTransition(env, A, input) {
       counts: { removed: removed.length, employees: after.length, accountsCreated: 0, accountsRemoved: 0, schedule: 0 },
       warnings: [],
     };
+  /* V7 · د7 (استيراد Excel): التكرارُ مع إدارةٍ أخرى أو حسابِ دخول يُرفض قبل الحفظ بتفصيله (الحقل · القيمة · أين) — فيذكر العميلُ رقمَ الصف
+     وسببه بدل «تكرار» مجرّد. الحكمُ نفسُه (018c empDupList) يبقى في مسار الحفظ دفاعاً. القيمُ من ملفّ المدير نفسِه ولا يُذكر اسمُ الإدارة الأخرى */
+  if (input.intent === 'import') {
+    var dupList = empDupList(A, before, after, d, await empDupContext(env, A, d, before, after));
+    if (dupList.length) { var dupErr = cuError('emp-dup', 403); dupErr.cuDup = dupList.slice(0, 200); throw dupErr; }
+  }
   EMP_TRANSITION_RELATED.forEach(function (n) {
     var k = empTransitionKey(d, n),
       raw = source.keys[k];
@@ -12106,7 +12131,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
     if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
-    if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
+    if (e.cuCode) return json(Object.assign({ ok: 0, err: e.cuCode }, e.cuDup ? { dup: e.cuDup } : {}), e.cuStatus);   /* V7 · د7: تفصيلُ التكرار (019c empDupList) */
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))

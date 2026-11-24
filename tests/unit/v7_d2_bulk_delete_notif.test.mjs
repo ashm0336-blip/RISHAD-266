@@ -70,9 +70,11 @@ for (const mode of ['enforce']) {
     assert.deepEqual(d[0].roles, m[0].roles); assert.equal(d[0].priority, m[0].priority); assert.equal(d[0].channel, m[0].channel); assert.equal(d[0].scope, m[0].scope);
     const who = await x.readers('emp_delm');
     assert.deepEqual(who, await x.readers('emp_del'), 'the readers of the aggregated notice are those of emp_del');
-    assert.deepEqual(who, ['super', 'tst_dm1', 'tst_gm1']);
-    const item = (await x.feed('tst_dm1')).find((i) => i.type === 'emp_delm');
-    assert.ok(item && item.srv === 1 && item.k === 'emp', 'it is served in the manager\'s feed in the «emp» category: ' + JSON.stringify(item).slice(0, 200));
+    /* V7 · د7 (البند ٨ — قرار المالك): الفاعلُ tst_dm1 لا يُنبَّه بحذفه؛ يقرؤه غيرُه من مستلميه (مسؤول المنصة والمدير العام) */
+    assert.deepEqual(who, ['super', 'tst_gm1']);
+    assert.ok(!(await x.feed('tst_dm1')).some((i) => i.type === 'emp_delm' || i.type === 'emp_del'), 'the actor is not notified of his own delete');
+    const item = (await x.feed('tst_gm1')).find((i) => i.type === 'emp_delm');
+    assert.ok(item && item.srv === 1 && item.k === 'emp', 'it is served in the general manager\'s feed in the «emp» category: ' + JSON.stringify(item).slice(0, 200));
   });
 
   /* ── the boundary and the mix with the other events of the same save ── */
@@ -94,7 +96,8 @@ for (const mode of ['enforce']) {
     ok(await x.save('tst_dm1', (v) => v.filter((e) => !isNew(e, 1, 450))), 'remove 450');
     assert.deepEqual(x.msgs().map((m) => m.type).sort(), ['emp_add', 'emp_delm', 'emp_imp'], 'three notices in all');
     assert.equal(x.of('emp_delm')[0].body, 'حُذف 450 موظفاً من الإدارة بواسطة ' + DM1);
-    assert.deepEqual((await x.feed('tst_dm1')).map((m) => m.type).filter((t) => /^emp_/.test(t)).sort(), ['emp_add', 'emp_delm', 'emp_imp'], 'the earlier ones are still in the manager\'s feed');
+    /* V7 · د7 (البند ٨): الفاعلُ (tst_dm1) لا يقرأ ما فعله — يُفحص البقاءُ في مستلمٍ آخر (المدير العام) */
+    assert.deepEqual((await x.feed('tst_gm1')).map((m) => m.type).filter((t) => /^emp_/.test(t)).sort(), ['emp_add', 'emp_delm', 'emp_imp'], 'the earlier ones are still in a recipient\'s feed');
   });
 
   /* ── the transition route: selected delete, replace-import, full wipe ── */

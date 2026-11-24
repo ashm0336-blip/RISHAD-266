@@ -21,7 +21,8 @@ test('super inbox avoids business reference reads while recipient statistics sti
   const before = W.DB.trips;
   const inbox = await W.get('super', { all: '1' });
   assert.equal(inbox.status, 200);
-  assert.ok(inbox.json.items.some(item => item.bcId === sent.json.id));
+  /* V7 · د7 (البند ٨ — قرار المالك): مرسلُ التعميم لا يُنبَّه به في صندوقه؛ يبقى في قائمة إدارة التعاميم (أدناه) */
+  assert.ok(!inbox.json.items.some(item => item.bcId === sent.json.id), 'the sender is not notified of his own broadcast');
   assert.equal(referenceReads, 0, 'Super audience does not depend on employee, schedule, report or supervisory-role documents'   /* V7 · د5-ح: الإشرافُ من سجلّ الأدوار (roles_v1) لا من القوالب */);
   assert.ok(W.DB.trips - before <= 7);
   const staff = await W.get('employee1');
@@ -30,6 +31,7 @@ test('super inbox avoids business reference reads while recipient statistics sti
   referenceReads = 0;
   const managed = await W.get('super', { all: '1', manage: '1' });
   assert.equal(managed.status, 200);
+  assert.ok((managed.json.broadcasts || []).some(item => item.id === sent.json.id), 'the broadcast is listed in its sender\'s management view');
   assert.ok(referenceReads > 0, 'Super recipient statistics still need staff reference data; nfRefs itself is not bypassed');
 });
 
