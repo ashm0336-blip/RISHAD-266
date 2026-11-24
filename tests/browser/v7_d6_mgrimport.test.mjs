@@ -88,7 +88,9 @@ test('53 (قرار المالك ٦): مديرُ إدارةٍ أُطفئ فيها
     await p.evaluate(() => { const o = KIVO.bsToast; window.__tl = []; KIVO.bsToast = function (m) { window.__tl.push(String(m)); return o.apply(this, arguments); }; });   /* كلُّ رسالةٍ تمرّ بالتوست الواحد (280) */
     /* V7 · 53 (basefix): الصفحةُ على مراجعة الخادم قبل التصدير — فتحُ جلسة المدير يُكتب به في مجال التنبيهات (مراجعتان بعد إقلاعها: bassam_notifications_domain_v1)
        فيرفض سياجُ التصدير (root-logic fence) نسخةً على مراجعةٍ أقدم «حدّث البيانات ثم أعد التصدير» — صادقاً — حتى تلحق الصفحةُ (/api/changes) */
-    await p.waitForFunction(async () => { const r = await fetch('/api/get?keys=&uid=' + encodeURIComponent(window.__BS_BOOT.uid), { cache: 'no-store' }), j = await r.json(), S = KIVO.__BS_SRV; return j.v === window.__BS_BOOT.v && !S.dirty() && !S.inflight(); }, null, { timeout: 90000, polling: 500 });
+    const synced = () => p.evaluate(async () => { const r = await fetch('/api/get?keys=&uid=' + encodeURIComponent(window.__BS_BOOT.uid), { cache: 'no-store' }), j = await r.json(), S = KIVO.__BS_SRV; return { srv: j.v, page: window.__BS_BOOT.v, ok: j.v === window.__BS_BOOT.v && !S.dirty() && !S.inflight() }; });
+    let sy = await synced(); for (let i = 0; i < 180 && !sy.ok; i++) { await p.waitForTimeout(500); sy = await synced(); }
+    assert.ok(sy.ok, 'the page catches up with the server revision before the export: ' + JSON.stringify(sy));
     const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 60000 }), p.locator('main button', { hasText: 'تصدير نسخة هذ' }).first().click()]);
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'd53-mgr-')), 'TEST_ONLY-mgr-copy.json'); await dl.saveAs(file);
     const bk = JSON.parse(fs.readFileSync(file, 'utf8'));
