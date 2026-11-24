@@ -50,8 +50,12 @@ test('د2-ب · الحذف: الخادمُ بالأنظمة الحاضرة [' + 
     assert.equal(M.__SCOPE.bindings.length, act.length, 'روابطُ النطاق = المفاتيحُ النشطة'); assert.equal(M.__SCOPE.counts.keys, act.length);
     assert.equal(SV && SV.ok, true, 'تحقّقُ النطاق: ' + JSON.stringify(SV).slice(0, 400));
     assert.equal(RBC && RBC.ok, true, 'تحقّقُ ربط القراءة: ' + JSON.stringify(RBC).slice(0, 400));
-    assert.equal(G.bindings.length, act.filter((e) => e.guard.status === 'to-bind').length, 'روابطُ الحراسة = المفاتيحُ التي حارسُها «للربط»');
-    assert.equal(G.counts.bindings, G.bindings.length);
+    /* V7 · 53: «bindings» وثيقةُ تصميمٍ لا يقرؤها الخادم — يحذفها التوليدُ من الجزء المشحون (trim 15ae4c5 · workers/bindings/targets.json omit)، فتُقرأ
+       من مصدرها المولَّد في هذه النسخة (workers/bindings/guard-bindings/data.json) والفحوصُ هي هي؛ والخادمُ لا يحملها */
+    const GB = JSON.parse(fs.readFileSync(path.join(path.dirname(WORKER), 'bindings', 'guard-bindings', 'data.json'), 'utf8')).bindings;
+    assert.equal(G.bindings, undefined, 'الخادمُ لا يشحن وثيقةَ الروابط');
+    assert.equal(GB.length, act.filter((e) => e.guard.status === 'to-bind').length, 'روابطُ الحراسة = المفاتيحُ التي حارسُها «للربط»');
+    assert.equal(G.counts.bindings, GB.length);
     assert.equal(G.counts.coveredResources, G.covers.length, 'المواردُ التي لها مصنِّف = المعدودُ (نصيبُ القاعدة + الأنظمة الحاضرة)');
     r = await call('/'); assert.equal(r.s, 200, 'الغلاف');
     for (const k of ALL) { r = await call(ROUTE[k]); assert.equal(r.s, SYSTEMS.includes(k) ? 200 : 404, ROUTE[k] + ' ← ' + r.s + ' ' + r.t); }

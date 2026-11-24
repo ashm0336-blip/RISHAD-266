@@ -124,7 +124,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return { state: e.failed ? "error" : "loading", retry: () => { e.failed = !1; this.setState({ m1Tick: Date.now() }); } };
   }
   _sfNeed() {
-    return this._m1Need(["bassam_shift_options_v1"].concat(this.sfUsage("").on ? ["bassam_staffing_v3", "bassam_staffing_locks_v1"] : []));
+    return this._m1Need(["bassam_shift_options_v1"].concat(this.sfUsage("").on ? ["bassam_staffing_v3", "bassam_staffing_locks_v1"] : []   /* V7 · 53: مواردُ الجدول الشهري من قطعته — القاعدةُ لا تسمّي برنامجاً (removal ④ · isolation) */));
   }
   sfRead() {
     return this.sfItems(KIVO.__BS_SRV.operations.get("bassam_shift_options_v1")).filter(t => t && t.name);

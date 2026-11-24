@@ -31,6 +31,10 @@ export function staleAllow(allow, root, src) {
   const base = scanned.filter((rel) => !rel.startsWith('src/systems/'));   /* أجزاءُ الأنظمة نفسُها ليست من القاعدة */
   /* د5-د2: أجزاءُ خادم البرامج الأخرى في ترتيب الضمّ يفحصها البحثُ أيضاً (مستهلكو نظامٍ غائب) — فمدخلٌ لملفٍ منها يُتحقَّق من موضعه كغيره ('*' يبقى للقاعدة وحدها) */
   const disk = new Map(scanned.map((rel) => [rel, noComments(fs.readFileSync(path.join(root, rel), 'utf8')).split('\n')]));
+  /* V7 · 53: بياناتُ الروابط المولَّدة (workers/bindings/<وحدة>/data.json) يفحصها perms.test.mjs (د3) بقائمة الاستثناء نفسِها — ومنذ trim (15ae4c5) لا تُشحن
+     وثائقُها في الأجزاء، فموضعُ مدخلٍ قد يكون فيها وحدها. تُضمّ إلى «أين» للمداخل العامة ('*') لا إلى البحث عن الأسماء */
+  const DOCS = ['workers/bindings/scope-bindings/data.json', 'workers/bindings/guard-bindings/data.json', 'workers/bindings/build-bindings/data.json'].filter((rel) => fs.existsSync(path.join(root, rel)));
+  DOCS.forEach((rel) => disk.set(rel, fs.readFileSync(path.join(root, rel), 'utf8').split('\n')));
   const noSub = new Set((allow.roles || []).filter((r) => r.substring === false).map((r) => r.name));   /* د5-هـ: كما في الاختبار */
   const views = cases.map((c) => ({ NAME: { test: ((f) => (t) => !!f(t))(finder(c.gone.filter((k) => !noSub.has(k)), c.names)) }, lines: (rel) => (c.files[rel] === undefined ? disk.get(rel) : noComments(c.files[rel]).split('\n')) }));
   const out = [], known = new Set(scanned);
@@ -43,7 +47,7 @@ export function staleAllow(allow, root, src) {
     if (!views.some((v) => base.some((rel) => v.lines(rel).some((l) => (l.match(re) || []).some((m) => v.NAME.test(m)))))) out.push('patterns: ' + p.pattern + ' لا يطابق موضعاً يسمّي نظاماً غائباً في أي حالة حذف');
   }
   for (const e of allow.entries) {
-    const where = e.file === '*' ? base : [e.file];
+    const where = e.file === '*' ? base.concat(DOCS) : [e.file];
     if (e.file !== '*' && !known.has(e.file)) { out.push('entries: ' + e.file + ' ليس من الملفات المبحوث فيها'); continue; }
     for (const m of e.match) if (!views.some((v) => v.NAME.test(m) && where.some((rel) => v.lines(rel).some((l) => l.includes(m))))) out.push('entries: ' + e.file + ' «' + m + '» لا موضعَ له في أي حالة حذف');
   }

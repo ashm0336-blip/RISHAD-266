@@ -87,6 +87,10 @@
   "order": 10,
   "text": "\"staffing\","
  },
+ "admin.sf.need.staff": {
+  "order": 10,
+  "text": "\"bassam_staffing_v3\", \"bassam_staffing_locks_v1\""
+ },
  "admin.keyLabels.staff": {
   "order": 10,
   "text": "        bassam_staffing_v3: \"الجدول الشهري\",\r\n        bassam_staffing_snap_v1: \"بيان الشهر\",\r\n"
