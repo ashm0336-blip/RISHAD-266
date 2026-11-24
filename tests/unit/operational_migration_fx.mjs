@@ -235,15 +235,15 @@ export function operationalMigrationFixture({ employees = 100 } = {}) {
       },
     ];
     const documents = {
-      bassam_staffing_v3: { "1448-01": oldMonth, "1448-1": monthly },
+      bassam_staffing_v3: { "2026-04": oldMonth, "2026-06": monthly },
       bassam_staffing_v2:
         i === 0
           ? cloneOperationsFixture(oldMonth)
-          : { "1448-1": cloneOperationsFixture(monthly) },
+          : { "2026-06": cloneOperationsFixture(monthly) },
       bassam_staffing_snap_v1: {
-        "1448-1": { bucket: cloneOperationsFixture(oldMonth) },
+        "2026-06": { bucket: cloneOperationsFixture(oldMonth) },
       },
-      bassam_staffing_locks_v1: { "1448-01": true, "1448-1": { mo: 1 } },
+      bassam_staffing_locks_v1: { "2026-04": true, "2026-06": { mo: 1 } },
       bassam_callsigns_v1: ["TEST_ONLY_A", "", "TEST_ONLY_A"],
       bassam_perm_limit_v1: i === 0 ? "7" : 7,
       bassam_shift_options_v1: cloneOperationsFixture(shifts),
@@ -255,11 +255,11 @@ export function operationalMigrationFixture({ employees = 100 } = {}) {
         paths: [],
         floors: [floor],
         months: {
-          "1448-01": [historical],
-          "1448-1": { c: 1, mo: 1, d: [cloneOperationsFixture(floor)] },
+          "2026-04": [historical],
+          "2026-06": { c: 1, mo: 1, d: [cloneOperationsFixture(floor)] },
         },
         cfg: {},
-        delMonths: { "1447-12": 0 },
+        delMonths: { "2026-05": 0 },
       },
       bassam_zone_opts_v1: {
         region: ["TEST_ONLY old region", { n: "TEST_ONLY region", c: "R" }],
@@ -297,12 +297,12 @@ export function operationalMigrationFixture({ employees = 100 } = {}) {
       bassam_mark_kinds_v1: ["TEST_ONLY kind", "", "TEST_ONLY kind"],
       bassam_rounds_v1: {
         __pMig: 2,
-        "m:1448-1": { ap: 0, mo: 1, dopen: { 2: 1 }, dshut: { 3: 1 } },
-        "1448-1-2": {
+        "m:2026-06": { ap: 0, mo: 1, dopen: { 2: 1 }, dshut: { 3: 1 } },
+        "2026-06-02": {
           t: 1,
           ap: 0,
           auto: 1,
-          from: "1448-1-1",
+          from: "2026-06-01",
           synced: 1,
           d: [round],
           shAp: {
@@ -329,9 +329,9 @@ export function operationalMigrationFixture({ employees = 100 } = {}) {
             },
           ],
         },
-        "1448-1-2-legacy": { t: 1, d: [] },
+        "2026-06-02-legacy": { t: 1, d: [] },
       },
-      bassam_dayshift_v1: { "1448-1-2": shifts[0].name },
+      bassam_dayshift_v1: { "2026-06-02": shifts[0].name },
       bassam_dayfocus_v1: { d: 2, m: 1, y: 1448 },
     };
     result.byDepartment[department] = { employees: list, documents };

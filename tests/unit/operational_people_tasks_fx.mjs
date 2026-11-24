@@ -10,8 +10,8 @@ export function peopleTaskDocuments(department = 'TEST_ONLY_DEPT') {
     rev: decision, revh: [decision], asg: 'assigned', can: cancel, canh: [cancel],
     re: { at: 800, by: { u: who.u, n: who.n }, why: 'TEST_ONLY reassign', to: { e: 'TEST_ONLY_e2', n: 'TEST_ONLY second' } },
     from: { id: 'legacy-identity', e: 'TEST_ONLY_e0', at: 700 }, relink: [{ at: 750, by: { u: who.u, n: who.n }, from: 'TEST_ONLY old', to: 'TEST_ONLY_e1' }],
-    rec: { id: 'rTEST_ONLY', ver: 2, t: 'weekly', wd: [0, 2, 6], md: 'last', n: 2, from: '1448-5-1', to: '1448-6-1', paused: 0, stop: false, by: who, asg: ['TEST_ONLY_e1'] },
-    idem: 'r:rTEST_ONLY:1448-5-1:TEST_ONLY_e1', det: true };
+    rec: { id: 'rTEST_ONLY', ver: 2, t: 'weekly', wd: [0, 2, 6], md: 'last', n: 2, from: '2026-10-01', to: '2026-11-01', paused: 0, stop: false, by: who, asg: ['TEST_ONLY_e1'] },
+    idem: 'r:rTEST_ONLY:2026-10-01:TEST_ONLY_e1', det: true };
   const row = ['TEST_ONLY title', 'TEST_ONLY description', 'normal', 'in_progress', 'normal', 'added', ['on_time', 'في الوقت'], ['T'], 'TEST_ONLY employee', who.n, 30,
     1000, null, 101, 'TEST_ONLY_e1', 900, 4000, 'TEST_ONLY_group', 'TEST_ONLY group', null,
     { at: 1000, why: '', exp: 0, ack: 950, stall: { at: 1050, why: 'TEST_ONLY stall' }, q: ['TEST_ONLY_idem'] }, proof, 'TEST_ONLY_entity', management];
@@ -22,10 +22,10 @@ export function peopleTaskDocuments(department = 'TEST_ONLY_DEPT') {
   const values = {
     bassam_employees_v1: ['TEST_ONLY legacy name', { eid: 'TEST_ONLY_e1', name: 'TEST_ONLY employee', nid: 'TEST_ONLY_nid', phone: '', empno: '001', email: '', type: 'employee', work: 'TEST_ONLY work', gender: 'male', shift: 'night', group: 'بدون مجموعة', account: 'بانتظار التفعيل', contact: 'غير متوفر', job: null }],
     bassam_options_v1: { type: ['employee', 'TEST_ONLY other'], work: [] },
-    bassam_tasks_v1: { '1448-5-1': [row, []], '1448-5-2': [] },
-    bassam_tasks_locks_v1: { '1448-5': true, '1448-5-1': { mo: 1 }, '1448-5-2': false },
-    bassam_dreport_v1: { __ldcs: { chief: 'TEST_ONLY leader callsign', deputy: '' }, 'm:1448-5': { ap: false, mo: 1, auto: false, dopen: { 1: true }, dshut: {}, perm: { TEST_ONLY_e1: [1, '2', null] } },
-      '1448-5-1': { created: 1, shifts: { night: shift } }, '1448-5-2': { pulled: true, roster: [], ap: false, apBy: '', apAt: '' }, 'm:1448-6': true },
+    bassam_tasks_v1: { '2026-10-01': [row, []], '2026-10-02': [] },
+    bassam_tasks_locks_v1: { '2026-10': true, '2026-10-01': { mo: 1 }, '2026-10-02': false },
+    bassam_dreport_v1: { __ldcs: { chief: 'TEST_ONLY leader callsign', deputy: '' }, 'm:2026-10': { ap: false, mo: 1, auto: false, dopen: { 1: true }, dshut: {}, perm: { TEST_ONLY_e1: [1, '2', null] } },
+      '2026-10-01': { created: 1, shifts: { night: shift } }, '2026-10-02': { pulled: true, roster: [], ap: false, apBy: '', apAt: '' }, 'm:2026-11': true },
     bassam_leave_kinds_v1: ['TEST_ONLY leave', 'TEST_ONLY second'],
     bassam_dr_grp_v1: { on: true, closed: { 'TEST_ONLY_group': false } },
   };

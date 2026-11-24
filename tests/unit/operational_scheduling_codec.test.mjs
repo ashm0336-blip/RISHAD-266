@@ -171,7 +171,7 @@ test("fourteen declared scheduling resources have unique closed tables and D1-sa
 });
 test("staffing preserves reserved snapshots, raw month/token identity and actual legacy unions", () => {
   exact("bassam_staffing_v3", {
-    "1448-01": {
+    "2026-04": {
       E1: row,
       __shifts: [
         { tEnd: "06:00", name: "A", color: "", tStart: "22:00" },
@@ -179,16 +179,16 @@ test("staffing preserves reserved snapshots, raw month/token identity and actual
         1,
       ],
     },
-    "1448-1": { E1: { shift: null, rest: [], perm: {}, leaves: {}, cs: "" } },
+    "2026-06": { E1: { shift: null, rest: [], perm: {}, leaves: {}, cs: "" } },
   });
   exact("bassam_staffing_v2", { E1: row });
-  exact("bassam_staffing_v2", { "1448-1": { E1: row, __shifts: [] } });
+  exact("bassam_staffing_v2", { "2026-06": { E1: row, __shifts: [] } });
   exact("bassam_staffing_locks_v1", {
-    "1448-1": true,
-    "1448-2": { mo: 1 },
-    "1448-3": false,
+    "2026-06": true,
+    "2026-07": { mo: 1 },
+    "2026-08": false,
   });
-  exact("bassam_staffing_snap_v1", { "1448-1": { bucket: { E1: row } } });
+  exact("bassam_staffing_snap_v1", { "2026-06": { bucket: { E1: row } } });
   for (const resource of definitions.map((d) => d.resource)) {
     assert.deepEqual(plain(round(resource, undefined, false)), {
       present: false,
@@ -211,9 +211,9 @@ test("independent live/root/month plan containers and curve handles roundtrip wi
     marks: [],
     paths: [],
     floors: [live],
-    months: { "1448-1": [archived], "1448-2": { c: 1, mo: 1, d: [] } },
+    months: { "2026-06": [archived], "2026-07": { c: 1, mo: 1, d: [] } },
     cfg: {},
-    delMonths: { "1447-12": 0 },
+    delMonths: { "2026-05": 0 },
   });
 });
 test("manual sector assignments on zones, gates and marks retain missing/null/empty identities", () => {
@@ -231,11 +231,11 @@ test("legacy zone area keeps numeric, string, null and missing primitive values"
   exact("bassam_plan_v1", {floors:[{zones:[{uid:"TEST_ONLY_A",area:100},{uid:"TEST_ONLY_B",area:"100"},{uid:"TEST_ONLY_C",area:null},{uid:"TEST_ONLY_D"}]}]});
 });
 test("Daily source-written import provenance, type bindings and readiness remain closed and lossless", () => {
-  exact("bassam_rounds_v1", {"1448-1-2":{imp:{src:"hasr",day:"2026-10-31"},d:[]},"1448-1-3":{imp:true}});
+  exact("bassam_rounds_v1", {"2026-06-02":{imp:{src:"hasr",day:"2026-10-31"},d:[]},"2026-06-03":{imp:true}});
   exact("bassam_zone_opts_v1", {zcat:[{n:"TEST_ONLY category",t:["TEST_ONLY type",""]}]});
   exact("bassam_plan_v1", {floors:[{zones:[{readiness:"TEST_ONLY ready"},{readiness:null},{readiness:0}]}]});
   assert.throws(()=>convert("bassam_plan_v1",{floors:[{zones:[{readiness:{unknown:1}}]}]}),/scalar-type/);
-  assert.throws(()=>convert("bassam_rounds_v1",{"1448-1-2":{imp:{src:"hasr",day:"2026-10-31",unknown:1}}}),/unknown-field/);
+  assert.throws(()=>convert("bassam_rounds_v1",{"2026-06-02":{imp:{src:"hasr",day:"2026-10-31",unknown:1}}}),/unknown-field/);
 });
 test("catalog scalar/object/code-array unions preserve order, empty values and typed style fields", () => {
   exact("bassam_zone_opts_v1", {
@@ -281,8 +281,8 @@ test("round day/month metadata, legacy day suffixes and independent shift-approv
   approved.zones[0].pc.fajr = 4;
   exact("bassam_rounds_v1", {
     __pMig: 2,
-    "m:1448-1": { ap: 1, mo: 0, dopen: { 2: 1 }, dshut: { 3: true }, auto: 1 },
-    "1448-1-2": {
+    "m:2026-06": { ap: 1, mo: 0, dopen: { 2: 1 }, dshut: { 3: true }, auto: 1 },
+    "2026-06-02": {
       t: 1,
       ap: 0,
       auto: 1,
@@ -306,9 +306,9 @@ test("round day/month metadata, legacy day suffixes and independent shift-approv
         },
       ],
     },
-    "1448-1-2-old": { t: 1, d: [] },
+    "2026-06-02-old": { t: 1, d: [] },
   });
-  exact("bassam_dayshift_v1", { "1448-1-2": "A" });
+  exact("bassam_dayshift_v1", { "2026-06-02": "A" });
   exact("bassam_dayfocus_v1", { d: 2, m: 1, y: 1448 });
 });
 test("V7 · د6 (schemafix): prayer readings with capacity, legacy numbers and the daily-report move line round-trip exactly", () => {
@@ -316,22 +316,22 @@ test("V7 · د6 (schemafix): prayer readings with capacity, legacy numbers and t
   const pc = { fajr: { n: 1086, cap: 3094 }, dhuhr: { n: null, cap: 0, p: 40 }, asr: 35, maghrib: null, isha: "12" };
   for (const resource of ["bassam_rounds_v1", "bassam_rounds_arc_v1"])
     exact(resource, {
-      "m:1448-1": { ap: true, mo: false },
-      "1448-1-16": {
+      "m:2026-06": { ap: true, mo: false },
+      "2026-06-16": {
         t: 1,
         d: [{ sid: "S1", zones: [zone(pc), zone({}), zone({ fajr: { n: 0, cap: 0 } })] }],
         shAp: { A: { ap: true, at: 1, snap: [{ zones: [zone({ fajr: { n: 5, cap: 10 } })] }] } },
         mvLog: [{ t: "07:00", kind: "gates", key: "E1", tok: "E1", fromI: -1, toI: 2, rm: false, fromLbl: "", toLbl: "TEST_ONLY", by: "TEST_ONLY", name: "TEST_ONLY", src: "dr" }],
       },
     });
-  exact("bassam_plan_v1", { zones: [zone(pc)], floors: [{ zones: [zone({ fajr: { n: 7, cap: 9 } })] }], months: { "1448-1": [{ zones: [zone({ asr: { n: null, cap: 0, p: 12.5 } })] }] } });
+  exact("bassam_plan_v1", { zones: [zone(pc)], floors: [{ zones: [zone({ fajr: { n: 7, cap: 9 } })] }], months: { "2026-06": [{ zones: [zone({ asr: { n: null, cap: 0, p: 12.5 } })] }] } });
 });
 test("unknown fields, unsupported metadata and invalid nested containers fail before storage", () => {
   for (const [resource, value] of [
-    ["bassam_staffing_v3", { "1448-1": { E1: { privilege: "forged" } } }],
+    ["bassam_staffing_v3", { "2026-06": { E1: { privilege: "forged" } } }],
     [
       "bassam_staffing_snap_v1",
-      { "1448-1": { bucket: {}, unknownMetadata: 1 } },
+      { "2026-06": { bucket: {}, unknownMetadata: 1 } },
     ],
     ["bassam_plan_v1", { cfg: { unknown: 1 } }],
     /* V7 · د6 (schemafix): القراءةُ بالسعة {n · cap · p} صارت مقبولة (الاختبار التالي) — الكائنُ مغلق: حقلٌ غيرها أو قيمةٌ غير مفردة تُرفض */
@@ -339,10 +339,10 @@ test("unknown fields, unsupported metadata and invalid nested containers fail be
       "bassam_plan_v1",
       { floors: [{ zones: [{ pc: { fajr: { opaque: 1 } } }] }] },
     ],
-    ["bassam_rounds_v1", { "1448-1-2": { d: [{ zones: [{ pc: { fajr: { n: 1, cap: 2, nNow: null } } }] }] } }],
-    ["bassam_rounds_v1", { "1448-1-2": { d: [{ zones: [{ pc: { fajr: { n: { v: 1 }, cap: 2 } } }] }] } }],
-    ["bassam_rounds_v1", { "1448-1-2": { d: [{ zones: [{ pc: { fajr: [1, 2] } }] }] } }],
-    ["bassam_rounds_v1", { "1448-1-2": { mvLog: [{ t: "07:00", rm: true, src: "dr", extra: 1 }] } }],
+    ["bassam_rounds_v1", { "2026-06-02": { d: [{ zones: [{ pc: { fajr: { n: 1, cap: 2, nNow: null } } }] }] } }],
+    ["bassam_rounds_v1", { "2026-06-02": { d: [{ zones: [{ pc: { fajr: { n: { v: 1 }, cap: 2 } } }] }] } }],
+    ["bassam_rounds_v1", { "2026-06-02": { d: [{ zones: [{ pc: { fajr: [1, 2] } }] }] } }],
+    ["bassam_rounds_v1", { "2026-06-02": { mvLog: [{ t: "07:00", rm: true, src: "dr", extra: 1 }] } }],
     ["bassam_rounds_v1", { unknownRoot: { d: [] } }],
   ])
     assert.throws(() => convert(resource, value));
@@ -377,7 +377,7 @@ function readPhysical(db, p, dept, resource) {
 }
 test("actual scheduling graph isolates department and resource and rolls back every typed descendant", () => {
   const resource = "bassam_plan_v1",
-    value = { floors: [floor()], months: { "1448-1": { c: 1, d: [floor()] } } },
+    value = { floors: [floor()], months: { "2026-06": { c: 1, d: [floor()] } } },
     { p, domain } = convert(resource, value),
     db = new DatabaseSync(":memory:");
   try {
@@ -390,7 +390,7 @@ test("actual scheduling graph isolates department and resource and rolls back ev
       C.ocConvert(p, "OTHER_TEST_DEPT", resource, value, true),
     );
     const rounds = prepared("bassam_rounds_v1"),
-      roundsValue = { "1448-1-2": { d: [floor()] } };
+      roundsValue = { "2026-06-02": { d: [floor()] } };
     insertPhysical(
       db,
       rounds,

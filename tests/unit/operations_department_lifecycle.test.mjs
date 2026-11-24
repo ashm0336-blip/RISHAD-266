@@ -218,11 +218,11 @@ test("whole-department inventory fences all21 including absent resources; protec
   t.after(() => B.DB.db.close());
   const { department: d, documents: docs } = B;
   assert.equal(
-    docs["bsdept:" + d + ":bassam_staffing_locks_v1"]["1448-01"],
+    docs["bsdept:" + d + ":bassam_staffing_locks_v1"]["2026-04"],
     true,
   );
-  assert.equal(docs["bsdept:" + d + ":bassam_tasks_locks_v1"]["1448-5"], true);
-  const task = docs["bsdept:" + d + ":bassam_tasks_v1"]["1448-5-1"][0];
+  assert.equal(docs["bsdept:" + d + ":bassam_tasks_locks_v1"]["2026-10"], true);
+  const task = docs["bsdept:" + d + ":bassam_tasks_v1"]["2026-10-01"][0];
   assert.ok(
     task[20].ack && task[21].imgs.length && task[23].canh.length,
     "Assigned active task with ACK, proof and decision history is not an empty fixture",
