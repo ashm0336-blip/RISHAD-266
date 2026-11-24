@@ -113,3 +113,25 @@ test('V7 · د7 (52 · الكامن): keepOff = what latentLossWhy requires (gen
     assert.equal(!!without, lost, 'the guard refuses exactly when a hidden key would be dropped');
   }
 });
+
+/* V7 · د7 (52 · قرارُ المالك REPLY_52 §1): الدورُ الحالي هو المرجع — (أ) «كامل» للجائزة · تُطفأ الجائزة · يُسند (ب) «مشاهدة» لها · تُعاد ⇒ مستوى (ب) لا (أ)، بلا حفظٍ إضافي.
+   وكلُّ ذلك بلا تليين حارس: مفاتيحُ (أ) تبقى مخزَّنةً في plus (حارسُ الكامن) وتُحجب في minus (التضييقُ مقبول)، ولا يُضاف مفتاحٌ جديد خارج السقف (سقفُ المنح) */
+test('V7 · د7 (52 · الكامن): role A → role B while the system is OFF ⇒ ON again: B\'s level, not A\'s, with no further save', async () => {
+  const S = await world('enforce'), E = ENG(), all = () => true;
+  const rA = { id: 'TEST_ONLY_r_a', name: 'TEST_ONLY أ', sys: { tasks: { lvl: 'view' }, award: { lvl: 'full' } } }, rB = { id: 'TEST_ONLY_r_b', name: 'TEST_ONLY ب', sys: { tasks: { lvl: 'view' }, award: { lvl: 'view' } } };
+  const rec = { v: 1, roles: [rA, rB], people: { [EMP]: { role: rA.id, ex: [] } } };
+  const gA = J(E.grantOf(rec.people[EMP], rec, all, Date.now(), null)), G0 = S.kv(KG) || { v: 1, emp: {} };
+  assert.deepEqual(denied(await S.save(S.sup, { [KR]: rec, [KG]: { ...G0, emp: { ...G0.emp, [EMP]: gA } } })), {}, 'role A granted while award is ON');
+  const P = S.kv('bassam_perms_v1'); P.caps[D] = P.caps[D].filter((k) => k !== 'award');
+  assert.deepEqual(denied(await S.save(S.sup, { bassam_perms_v1: P })), {}, 'award OFF');
+  const C = (k) => !E.sysOfKey(k).includes('award'), rec2 = J(S.kv(KR)); rec2.people[EMP] = { role: rB.id, ex: [] };
+  const old = S.kv(KG).emp[EMP], now = Date.now(), g = J(E.keepOff(E.grantOf(rec2.people[EMP], rec2, C, now, null), old, C, E.effective(rec2.people[EMP], rec2, null, now)));
+  const r = await S.save(S.sup, { [KR]: rec2, [KG]: { ...S.kv(KG), emp: { ...S.kv(KG).emp, [EMP]: g } } });
+  assert.deepEqual(denied(r), {}, 'the role change saves (no guard relaxed): ' + JSON.stringify(r.j).slice(0, 300));
+  P.caps[D] = P.caps[D].concat(['award']); assert.deepEqual(denied(await S.save(S.sup, { bassam_perms_v1: P })), {}, 'award ON again');
+  const st = S.kv(KG).emp[EMP], eff = st.plus.filter((k) => !(st.minus || []).includes(k) && /^award\./.test(k)).sort();
+  assert.deepEqual(eff, J(E.keysFor('award', 'view')).sort(), 'ON again ⇒ B\'s award level (view), not A\'s (full): ' + JSON.stringify(st));
+  const aOnly = E.keysFor('award', 'full').find((k) => !E.keysFor('award', 'view').includes(k));
+  const ck = await S.get(S.sup, '/api/perm44/check?d=' + D + '&ekey=' + EMP + '&key=' + encodeURIComponent(aOnly));
+  assert.equal(ck.j && ck.j.allow, false, 'the server does not allow A\'s key: ' + JSON.stringify(ck.j));
+});

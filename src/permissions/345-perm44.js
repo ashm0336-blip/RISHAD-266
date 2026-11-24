@@ -119,15 +119,19 @@ function perm44Make(R, D) {
     return g;
   }
   /* V7 · د7 (52 · الكامن): القاعدةُ الواحدة لمنحٍ يُعاد بناؤه من الدور — ما في مدخله المخزَّن (old) من مفاتيح plus/minus خارج السقف (keyOn كاذبة)
-     يُحمل معه كما هو، فيعود كما كان متى وُسِّع السقف؛ وداخلَ السقف الدورُ وحده. يكتب به العميلُ (345 recompile) ويحكم به الخادمُ (057b perm44GrantsWhy)
-     — نصٌّ واحد بالطرفين، وهو ما يطلبه الحارس (021 latentLossWhy · capStaleBatch: مفتاحٌ خارج السقف لا يسقط من مدخلٍ باقٍ) */
-  function keepOff(nx, old, keyOn) {
+     يُحمل معه كما هو (فلا يرفضه حارسُ الكامن 021 latentLossWhy · capStaleBatch، ولا يُضاف مفتاحٌ جديد خارج السقف فلا يرفضه سقفُ المنح 059).
+     قرارُ المالك (REPLY_52 §1 — الدورُ الحالي هو المرجع): full = فعليُّ الدور الحالي بلا قصّ (effective بلا دالّة سقف)؛ إن كان old مشتقاً من دور فما حُمل
+     في plus خارج السقف ولا يمنحه الدورُ الحالي يُضاف إلى minus (يُحجب — التضييقُ مقبولٌ في كل الحرّاس)، فلا تعود مفاتيحُ دورٍ سابق متى وُسِّع السقف.
+     المنحُ الصريح (old بلا src دور) لا يُحجب منه شيء. يكتب به العميلُ (345 recompile) ويحكم الخادمُ على plus بالقاعدة نفسِها (057b perm44GrantsWhy). */
+  function derived(g) { return isObj(g) && /^(role:|p44:)/.test(String(g.src || '')); }
+  function keepOff(nx, old, keyOn, full) {
     if (!isObj(nx) || !isObj(old)) return nx;
-    var g = clone(nx), f, n;
+    var g = clone(nx), f, n, k, F = isObj(full) && Array.isArray(full.keys) ? full.keys : null;
     for (f in { plus: 1, minus: 1 }) {
       var a = Array.isArray(g[f]) ? g[f] : (g[f] = []), o = Array.isArray(old[f]) ? old[f] : [];
-      for (n = 0; n < o.length; n++) { var k = String(o[n]); if (!keyOn(k) && a.indexOf(k) === -1) a.push(k); }
+      for (n = 0; n < o.length; n++) { k = String(o[n]); if (!keyOn(k) && a.indexOf(k) === -1) a.push(k); }
     }
+    if (F && /^(role:|p44:)/.test(String(old.src || ''))) for (n = 0; n < g.plus.length; n++) { k = String(g.plus[n]); if (!keyOn(k) && F.indexOf(k) === -1 && g.minus.indexOf(k) === -1) g.minus.push(k); }
     return g;
   }
   /* V7 · د7 (52 · الجرد ٧): حقلٌ أعلى لا يعرفه هذا البناء يُحمل كما هو مخزَّن (كان السجلُّ يُبنى من {v, roles, people} وحدها فيضيع ما سواها بصمت) */
@@ -231,7 +235,7 @@ function perm44Make(R, D) {
     return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
   }
   return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
-           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, normRec: normRec, shapeWhy: shapeWhy,
+           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, derived: derived, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }
 /* V7 · د5-هـ (44): KIVO.Perm44 — واجهةُ المحرّك في المتصفح. القراءةُ والكتابة عبر المخزن الذي تستعمله 331/334 (localStorage المعترَض في 280 ⇒ ذاكرةُ
@@ -288,7 +292,7 @@ function recompile(dr, d, rec, ekeys) {
   var E = eng(), C = ceiling(d).key, g = dget(dr, d, GRANTS), u = curUser(), now = Date.now();
   g = obj(g) && obj(g.emp) ? g : { v: 1, emp: {} };
   ekeys.forEach(function (e) {
-    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.keepOff(E.grantOf(pr, rec, C, now, legacyT(e, d)), old, C) : null;   /* V7 · د7 (52 · الكامن): المخفيُّ خارج السقف يُحمل (perm44-core keepOff) */
+    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.keepOff(E.grantOf(pr, rec, C, now, legacyT(e, d)), old, C, E.effective(pr, rec, null, now)) : null;   /* V7 · د7 (52 · الكامن): المخفيُّ يُحمل، وما لا يمنحه الدورُ الحالي منه يُحجب (perm44-core keepOff) */
     if (!nx) { if (old && /^(role:|p44:)/.test(String(old.src || ''))) delete g.emp[e]; return; }
     var same = old && JSON.stringify((old.plus || []).slice().sort()) === JSON.stringify(nx.plus.slice().sort()) && JSON.stringify((old.minus || []).slice().sort()) === JSON.stringify(nx.minus.slice().sort()) && old.src === nx.src && JSON.stringify(old.until || null) === JSON.stringify(nx.until || null);
     if (!same) { nx.at = now; nx.by = u ? String(u.id) : ''; g.emp[e] = nx; }
@@ -378,6 +382,28 @@ function roleNameOf(ekey, did) {
   } catch (e0) { /* تعذّرت القراءة: بلا صلاحيات */ }
   return N.none;
 }
+/* V7 · د7 (52 · الكامن — الخطوة الثانية بعد توسيع السقف): بعد أن يؤكّد الخادمُ حفظَ سقفٍ وُسِّع (المنادي: شاشةُ الوحدات بعد _p44CapSave / الحفظِ الجماعي)
+   يُعاد حسابُ كلِّ منحٍ مشتقٍّ من دور (src role:/p44:) في الوحدات المعطاة وفروعها بالسقف الجديد — recompile/keepOff نفسُهما — فما في الدور الحالي ممّا كان
+   خارج السقف يُكتب الآن وهو داخله، فيقبله الخادمُ بحرّاسه كما هي (السقف · الكامن · perm44GrantsWhy). المنحُ الصريح لا يُمسّ. مسودةٌ لكل وحدة تُثبَّت مرة؛
+   ما لم يتغيّر لا يُرسل. ⇒ Promise {ok, n, failed: [{d, err}]} — والمنادي يُعلم الحافظَ بأي فشل */
+function refreshUnits(units) {
+  var E = eng(), D = KIVO.BassamDepts, ids = [], add = function (x) { x = typeof x === 'string' ? x : x && x.id; if (x && ids.indexOf(String(x)) === -1) ids.push(String(x)); };
+  (Array.isArray(units) ? units : []).forEach(function (u) {
+    if (u === '__plat') { try { (D && D.list ? D.list() : []).forEach(add); } catch (e) { /* بلا سجلّ وحدات: لا شيء */ } return; }
+    add(u); try { (D && D.descendantsOf ? D.descendantsOf(u) || [] : []).forEach(add); } catch (e) { /* بلا فروع معروفة */ }
+  });
+  var n = 0, failed = [];
+  return ids.reduce(function (p, d) {
+    return p.then(function () {
+      var rec = rolesOf(d), g = rd(kOf(d, GRANTS)), emp = obj(g) && obj(g.emp) ? g.emp : {};
+      var ek = Object.keys(rec.people).filter(function (e) { return E.derived(emp[e]); });
+      if (!ek.length) return null;
+      var dr = draft(d); recompile(dr, d, rec, ek);
+      if (JSON.stringify(dr.set[kOf(d, GRANTS)]) === JSON.stringify(g)) return null;
+      return commit(dr).then(function (x) { if (x && x.ok) n++; else failed.push({ d: d, err: (x && x.err) || 'denied' }); }, function (e) { failed.push({ d: d, err: String(e && e.message || e) }); });
+    });
+  }, Promise.resolve()).then(function () { return { ok: !failed.length, n: n, failed: failed }; });
+}
 /* V7 · د7 (52 · الكامن): نصُّ رفض الحارس (021 latentLossWhy: «latent: grant|sheet|lens <ekey> <مفتاح> | …») بلغة المدير — اسمُ الموظف واسمُ النظام */
 function latentText(detail, did) {
   var m = /^latent: (grant|sheet|lens) (\S+) (\S+) \|/.exec(String(detail || '')); if (!m) return '';
@@ -392,6 +418,7 @@ function latentText(detail, did) {
 }
 var API = {
   latentText: latentText,
+  refreshUnits: refreshUnits,
   levels: function () { return eng().levels(); },
   keysFor: function (s, l, c) { return eng().keysFor(s, l, c); },
   compileRole: function (r, f) { return eng().compileRole(r, f); },

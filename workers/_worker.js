@@ -26664,15 +26664,19 @@ function perm44Make(R, D) {
     return g;
   }
   /* V7 · د7 (52 · الكامن): القاعدةُ الواحدة لمنحٍ يُعاد بناؤه من الدور — ما في مدخله المخزَّن (old) من مفاتيح plus/minus خارج السقف (keyOn كاذبة)
-     يُحمل معه كما هو، فيعود كما كان متى وُسِّع السقف؛ وداخلَ السقف الدورُ وحده. يكتب به العميلُ (345 recompile) ويحكم به الخادمُ (057b perm44GrantsWhy)
-     — نصٌّ واحد بالطرفين، وهو ما يطلبه الحارس (021 latentLossWhy · capStaleBatch: مفتاحٌ خارج السقف لا يسقط من مدخلٍ باقٍ) */
-  function keepOff(nx, old, keyOn) {
+     يُحمل معه كما هو (فلا يرفضه حارسُ الكامن 021 latentLossWhy · capStaleBatch، ولا يُضاف مفتاحٌ جديد خارج السقف فلا يرفضه سقفُ المنح 059).
+     قرارُ المالك (REPLY_52 §1 — الدورُ الحالي هو المرجع): full = فعليُّ الدور الحالي بلا قصّ (effective بلا دالّة سقف)؛ إن كان old مشتقاً من دور فما حُمل
+     في plus خارج السقف ولا يمنحه الدورُ الحالي يُضاف إلى minus (يُحجب — التضييقُ مقبولٌ في كل الحرّاس)، فلا تعود مفاتيحُ دورٍ سابق متى وُسِّع السقف.
+     المنحُ الصريح (old بلا src دور) لا يُحجب منه شيء. يكتب به العميلُ (345 recompile) ويحكم الخادمُ على plus بالقاعدة نفسِها (057b perm44GrantsWhy). */
+  function derived(g) { return isObj(g) && /^(role:|p44:)/.test(String(g.src || '')); }
+  function keepOff(nx, old, keyOn, full) {
     if (!isObj(nx) || !isObj(old)) return nx;
-    var g = clone(nx), f, n;
+    var g = clone(nx), f, n, k, F = isObj(full) && Array.isArray(full.keys) ? full.keys : null;
     for (f in { plus: 1, minus: 1 }) {
       var a = Array.isArray(g[f]) ? g[f] : (g[f] = []), o = Array.isArray(old[f]) ? old[f] : [];
-      for (n = 0; n < o.length; n++) { var k = String(o[n]); if (!keyOn(k) && a.indexOf(k) === -1) a.push(k); }
+      for (n = 0; n < o.length; n++) { k = String(o[n]); if (!keyOn(k) && a.indexOf(k) === -1) a.push(k); }
     }
+    if (F && /^(role:|p44:)/.test(String(old.src || ''))) for (n = 0; n < g.plus.length; n++) { k = String(g.plus[n]); if (!keyOn(k) && F.indexOf(k) === -1 && g.minus.indexOf(k) === -1) g.minus.push(k); }
     return g;
   }
   /* V7 · د7 (52 · الجرد ٧): حقلٌ أعلى لا يعرفه هذا البناء يُحمل كما هو مخزَّن (كان السجلُّ يُبنى من {v, roles, people} وحدها فيضيع ما سواها بصمت) */
@@ -26776,7 +26780,7 @@ function perm44Make(R, D) {
     return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
   }
   return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
-           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, normRec: normRec, shapeWhy: shapeWhy,
+           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, derived: derived, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }
 /* ══ V7 · د5-هـ (44): الأدوارُ في الخادم — سجلُّ الأدوار bsdept:<d>:bassam_roles_v1 (مصدرُ الحقيقة) ومنحُه المترجَم bsdept:<d>:bassam_grants_v1 يُكتبان معاً ══
