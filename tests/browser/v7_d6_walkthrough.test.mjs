@@ -86,12 +86,14 @@ const SPECIAL = {
 };
 
 /* ══ ② الحالات — تُبنى بالترتيب على عالَمٍ واحد، كلٌّ بحفظٍ حقيقي ثم إعادة تحميل · ONE_DEPT و ONE_PLAT: النظامُ الواحد المطفأ ══ */
-const ONE_DEPT = process.env.KIVO_D6_ONE_DEPT || 'tasks', ONE_PLAT = process.env.KIVO_D6_ONE_PLAT || 'daily';   /* المهام: تبويبٌ ولوحةٌ وتنبيهاتٌ وقطعةٌ في «صفحتي» · المتابعة: حاويةٌ تسكنها صفحتان */
+const ONE_DEPT = process.env.KIVO_D6_ONE_DEPT || 'tasks', ONE_PLAT = process.env.KIVO_D6_ONE_PLAT || 'daily', ONE_LENS = process.env.KIVO_D6_ONE_LENS || 'paths';   /* V7 · 53: المسارات — تبويبٌ باسمها في المضيفَين */   /* المهام: تبويبٌ ولوحةٌ وتنبيهاتٌ وقطعةٌ في «صفحتي» · المتابعة: حاويةٌ تسكنها صفحتان */
 const STATES = (toggle) => [
   { key: 'allOn', name: 'كل الأنظمة مفعّلة', plat: [], unitOff: [] },
   { key: 'oneOffDept', name: 'واحدٌ مطفأ لإدارة أ («' + ONE_DEPT + '»)', plat: [], unitOff: [ONE_DEPT] },
   { key: 'allOffDept', name: 'كلها مطفأة لإدارة أ', plat: [], unitOff: toggle },
   { key: 'oneOffPlat', name: 'واحدٌ مطفأ على المنصة («' + ONE_PLAT + '»)', plat: [ONE_PLAT], unitOff: [] },
+  /* V7 · 53: عدسةٌ مطفأة لإدارة أ (الأنظمةُ كلُّها مفعّلة) — اسمُها لا يظهر في مساحة أ وقسمِها (d6_walk_lib: forbiddenFor · buildState) */
+  { key: 'lensOffDept', name: 'عدسةٌ مطفأة لإدارة أ («' + ONE_LENS + '»)', plat: [], unitOff: [], lensOff: [ONE_LENS] },
 ];
 /* ج9: العرضان الضيّقان — المجموعةُ المصغّرة (الحسابات × الحالات) التي تُمشى بهما؛ العرضُ 1366 يمشي المصفوفةَ كلَّها */
 const NARROW = { widths: [{ width: 390, height: 844 }, { width: 768, height: 1024 }], accounts: ['super-center', 'super-in', 'mgr', 'emp-role'], states: ['allOn', 'oneOffDept'] };

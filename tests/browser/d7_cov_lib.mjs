@@ -102,7 +102,12 @@ export function fileOk(f, ext) {
   return out;
 }
 /* «ملفات» ← «تصدير Excel» (تنزيلٌ يُفحص) ثم «ملفات» ← «طباعة / حفظ PDF» (نافذةُ الطباعة) — الشريطُ نفسُه في المهام والجدول الشهري والمضبوطات */
+/* V7 · 53: الجدولُ وشريطُه أسفل الصفحة يُرسمان عند التمرير إليهما — يُمرَّر كلُّ ما يتمرّر إلى آخره قبل البحث عن «ملفات» (ومثلُه قبل فحص غيابه) */
+export async function revealAll(p) {
+  for (let i = 0; i < 3; i++) { await p.evaluate(() => { document.querySelectorAll('main, main *').forEach((e) => { if (e.scrollHeight > e.clientHeight + 50) e.scrollTop = e.scrollHeight; }); window.scrollTo(0, document.body.scrollHeight); }); await p.waitForTimeout(700); }
+}
 export async function filesMenu(p, who) {
+  await revealAll(p);
   const files = () => p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).first();
   await files().click();
   const f = await downloaded(p, () => p.getByText('تصدير Excel', { exact: true }).first().click());

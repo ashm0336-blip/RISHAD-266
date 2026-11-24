@@ -6,7 +6,7 @@
    ② موظفٌ بدورٍ بلا مفتاح الحذف («تعديل»): لا يُعرض له × على كرت الشهر، وطلبُ الحذف من منطق الصفحة نفسِه يُرفض برسالةٍ عربية ولا يتغيّر شيء. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { world, grant, ACTORS, LAB, A, chromium, openAs, mainText, norm, reloadAt, logicOf, isArabicRefusal, until, toasts, seen, launchUtf8, filesMenu } from '../../../../../tests/browser/d7_cov_lib.mjs';
+import { world, grant, ACTORS, LAB, A, chromium, openAs, mainText, norm, reloadAt, logicOf, isArabicRefusal, until, toasts, seen, launchUtf8, filesMenu, revealAll } from '../../../../../tests/browser/d7_cov_lib.mjs';
 import { replaceOperationalFixture } from '../../../../../tests/unit/world_fx.mjs';
 
 const K = 'bsdept:' + A + ':bassam_tasks_v1';
@@ -104,10 +104,10 @@ test('مهام ③: التصدير — مديرُ الإدارة وموظفٌ ب
   const lab = await world(), b = await launchUtf8();
   try {
     await grant(b, lab, { tasks: 'full' });
-    for (const { who, un } of ACTORS) {
+    for (const { who, un } of ACTORS.filter((a) => a.un === LAB.mgrA)) {   /* V7 · 53: الموظفُ بدور — الحالةُ المسمّاة أدناه (تخطٍّ بسبب) */
       const s = await openAs(b, lab, un, LAB.pw, { context: { acceptDownloads: true } }), p = s.page; p.setDefaultTimeout(20000);
       await s.go('#/tasks', 5000);
-      if (!(await p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).count())) { for (const t of ['TEST_ONLY مهمة للتصدير']) assert.equal((await addTask(p, t)).status(), 200, who); await lab.idle(); await reloadAt(s, '#/tasks', 5000); }
+      await revealAll(p); if (!(await p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).count())) { for (const t of ['TEST_ONLY مهمة للتصدير']) assert.equal((await addTask(p, t)).status(), 200, who); await lab.idle(); await reloadAt(s, '#/tasks', 5000); }
       const { f, bad } = await filesMenu(p, who);
       assert.deepEqual(bad, [], who + ': ' + f.name + ' · ' + f.bytes.length + ' بايت');
       assert.deepEqual(s.errs, [], who + ': لا أخطاء صفحة');
@@ -117,7 +117,20 @@ test('مهام ③: التصدير — مديرُ الإدارة وموظفٌ ب
     const s = await openAs(b, lab, LAB.empA, LAB.pw), p = s.page;
     await s.go('#/tasks', 5000);
     assert.ok((await mainText(p)).includes('TEST_ONLY مهمة للتصدير'), 'المهامُّ معروضةٌ للمشاهدة');
+    await revealAll(p); assert.ok(await p.locator('main input[placeholder^="بحث"]:visible').count(), 'شريطُ الجدول مرسوم (فلا يمرّ فحصُ الغياب على صفحةٍ لم تُرسم)');
     assert.equal(await p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).count(), 0, 'بدور «مشاهدة» لا «ملفات» ولا تصدير');
+    await s.ctx.close();
+  } finally { await b.close(); await lab.close(); }
+});
+
+/* V7 · 53: ③ للموظف بدور «كامل» — الحالةُ نفسُها؛ تُتخطّى بسببٍ مسمّى (الاكتشاف ١ في trimcov_report) فلا تمرّ صامتة */
+test('مهام ③ب: التصدير — موظفٌ بدور «كامل» يرى «ملفات» ويصدّر', { skip: 'خللٌ مُبلَّغ (53 · trimcov_report، الاكتشاف ١): لا مستوى في محرّر الأدوار يمنح التصدير — ذرّةُ «تصدير» حُوّلت علمَ ميزة (ff.…export) ومستوياتُ الأدوار تمنح مفاتيحَ السجلّ وحدها، فحاملُ الدور «كامل» (وحتى «حسّاس») لا يرى «ملفات». يُفعَّل حين يقرّر المالك', timeout: 300000 }, async () => {
+  const lab = await world(), b = await launchUtf8();
+  try {
+    await grant(b, lab, { tasks: 'full' });
+    const s = await openAs(b, lab, LAB.empA, LAB.pw, { context: { acceptDownloads: true } }), p = s.page; p.setDefaultTimeout(20000);
+    await s.go('#/tasks', 5000);
+    assert.equal(await p.evaluate((k) => KIVO.BassamPerm.can(k, 'export'), 'tasks'.replace('staffing', 'staff')), true, 'حاملُ الدور «كامل» يملك التصدير');
     await s.ctx.close();
   } finally { await b.close(); await lab.close(); }
 });

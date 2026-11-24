@@ -103,9 +103,10 @@ test('2أ · مدير النظام: setDisById وresetPwById يردّان الس
   const A = rdS('modules/admin/logic.js');
   assert.match(A, /fx = s\.acctFixedWhy \? s\.acctFixedWhy\(a, !a\.dis\) : "";/);
   assert.match(A, /t: \(a\.dis \? "إعادة التفعيل" : "تجميد الحساب"\) \+ \(fx \? " — غير متاح" : ""\),\r?\n\s+go: \(\) => \{\r?\n\s+if \(fx\) return void this\.bsToast\(fx, "warn"\);/);
-  const ud = A.slice(A.indexOf('  userDis(t, e, s) {'), A.indexOf('  _nodeRows('));
-  assert.match(ud, /const fx = a\.acctFixedWhy \? a\.acctFixedWhy\(t, !t\.dis\) : "";\r?\n\s+if \(fx\) return void this\.bsToast\(fx, "warn"\);/);
-  assert.match(ud, /a\.setDeptManagerDis\(e, !t\.dis, t\.id\)/, 'الصفُّ نفسُه (كان أوّلَ مديرٍ للوحدة)');
+  /* V7 · 53: userDis (صفُّ الشجرة القديم في الإعدادات) حُذف — لا مستدعيَ له في المنطق ولا في القالب منذ انتقال الشجرة إلى صفحة الإدارات
+     (core02_dead_paths يمنع عودته)؛ وحارسُ مدير المنصة على تجميد مدير الوحدة باقٍ في الكاتب نفسِه (330 setDeptManagerDis · requireSuper) */
+  assert.ok(!/\n  userDis\(/.test(A), 'userDis dead path removed');
+  assert.match(rdS('auth/330-auth.js'), /function setDeptManagerDis\(did, on, uid\)\{\s*var g = requireSuper\(\); if \(g\) return g;/);
 });
 
 /* RISHAD266 (قرار المالك على aae024c): شيفرةُ «حساب الإدارة» الملغى حُذفت بعد إثبات أنها غيرُ مستعملة (لا ربطَ لها في القالب) — وحسابُ مدير الإدارة العادي باقٍ */
