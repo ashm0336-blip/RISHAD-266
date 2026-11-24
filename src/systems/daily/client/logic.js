@@ -3730,8 +3730,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     let i = { ...(this.state.rounds || {}) };
     (n
       ? (i = this.dayPastDS(t, e, s) ? this._setDOpenIn(i, t, e, s, !1) : this._setDShut(i, t, e, s, !0))
-      : ((i = this._setDShut(i, t, e, s, !1)), this.dayPastDS(t, e, s) && (i = this._setDOpenIn(i, t, e, s, !0))),
+      : ((i = this._setDShut(i, t, e, s, !1)), this.dayPastDS(t, e, s) && (i = this._setDOpenIn(i, t, e, s, !0)), (i = this._dayNeedsMonth(i, t, e))),
       this.saveRounds(i));
+  }
+  /* V7 · 53 (S13): يومٌ في شهرٍ مقفل (معتمد أو ماضٍ لم يُفتح) لا يُفتح وحده — كان يُحفظ فتحُ اليوم بلا أثر. فتحُه يفتح شهرَه معه للاستدراك
+     (كما يفعل «فتح الشهر»: يُلغى الاعتماد، والماضي يُعلَّم {mo:1}) في الحفظة نفسها، وتبقى أيامُه الأخرى مقفلةً بانقضائها */
+  _dayNeedsMonth(i, t, e) {
+    if (!this.isMonthAp(i, t, e)) return i;
+    const k = this.mKey(t, e), o = { ...(i[k] || {}) };
+    return (delete o.ap, delete o.auto, this.monthPastDS(t, e) && (o.mo = 1), Object.keys(o).length ? (i[k] = o) : delete i[k], i);
+  }
+  /* V7 · 53 (S13): عددُ أيام الشهر التي فيها جولة — اعتمادُ شهرٍ بلا جولات يُحذَّر منه قبل الاعتماد */
+  _monthRoundDays(t, e) {
+    const R = this.state.rounds || {}, p = t + "-" + e + "-";
+    return Object.keys(R).filter((k) => k.indexOf(p) === 0 && R[k] && Array.isArray(R[k].d) && R[k].d.length).length;
   }
   _setRoundApLock(t, e, s, n) {
     let i = { ...(this.state.rounds || {}) };
@@ -19160,7 +19172,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 " " +
                 s.year +
                 " هـ وإلغاء اعتماده ليصبح متاحاً للتعديل — يمكنك إعادة اعتماده لاحقاً بنقرة مزدوجة على كرته."
-              : "سيتم اعتماد شهر " +
+              : (this._monthRoundDays(s.year, t.n) ? "" : "⚠ لا جولات مسجّلة في هذا الشهر — اعتمادُه يقفله فارغاً. ") +
+                "سيتم اعتماد شهر " +
                 e +
                 " " +
                 s.year +
@@ -19210,7 +19223,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 retroTitle: t.open ? "فتح " + i + " بأثر رجعي" : "إعادة قفل " + i,
                 retroMsg: t.open
                   ? n
-                    ? "هذا اليوم انقضى وأُقفل تلقائياً. فتحه يتيح لك بدء جولته أو تعديلها بأثر رجعي."
+                    ? "هذا اليوم انقضى وأُقفل تلقائياً. فتحه يتيح لك بدء جولته أو تعديلها بأثر رجعي." +
+                      (this.isMonthAp(s.rounds, s.year, t.m) ? " وشهرُه مقفل، فيُفتح الشهرُ معه للاستدراك (تبقى أيامُه الأخرى مقفلة)." : "")
                     : "هذا الشهر انقضى وأُقفل تلقائياً. فتحه يتيح لك إضافة جولاته أو تعديلها بأثر رجعي."
                   : n
                     ? "سيعود اليوم إلى حالته المقفلة بانقضائه، ولن يمكن تعديل جولته حتى تفتحه من جديد."

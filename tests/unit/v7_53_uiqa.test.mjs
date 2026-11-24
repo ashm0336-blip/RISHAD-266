@@ -39,3 +39,12 @@ test('S15 — رفضُ «الإحصائيات اليومية» بالنطاق ي
   assert.match(m, /مدير المنصة/, m); assert.match(m, /صلاحية «الإحصائيات اليومية»/, m);
   assert.doesNotMatch(m, /ونطاق البيانات والأقفال/, 'not the generic message');
 });
+
+test('S14 — رأسُ مؤشرات الإشغال: العددُ سجلاتُ «مصلى × يوم» فالتسميةُ تقول ذلك (لا «المصليات 36» لستة مصليات)', () => {
+  for (const rel of ['src/systems/daily/client/logic.js', 'src/pages/Daily Sessions.dc.html']) {
+    const s = rd(rel);
+    assert.doesNotMatch(s, /n: "المصليات", v: r\(I\)/, rel + ': not labelled as a count of prayer halls');
+    assert.match(s, /n: "سجلات المصليات", v: r\(I\), p: "مصلى × يوم"/, rel);
+    for (const [n, u, v] of [['الأبواب', 'باب', 'R'], ['المسارات', 'مسار', 'G'], ['المعالم', 'معلم', 'Z']]) assert.ok(s.includes('n: "سجلات ' + n + '", v: r(' + v + '), p: "' + u + ' × يوم"'), rel + ' · ' + n);
+  }
+});
