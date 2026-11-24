@@ -61,3 +61,17 @@ export async function reloadAt(s, hash, ms = 4500) {
 export function refusals(s, rx) { const out = []; s.page.on('response', async (r) => { if (r.status() >= 400 && rx.test(new URL(r.url()).pathname)) { let t = ''; try { t = (await r.text()).slice(0, 300); } catch (e) { /* بلا جسم */ } out.push(r.status() + ' ' + new URL(r.url()).pathname + ' ' + t); } }); return out; }
 /* منطقُ الصفحة نفسُه (مثيلُ المكوّن عبر ليف React لمضيفها) — لطلب فعلٍ لا يعرضه زرٌّ لمن لا يملك مفتاحه */
 export const logicOf = (name) => `(() => { const host = document.querySelector('.sc-host[data-sc-name="${name}"]'); if (!host) return null; const key = Object.keys(host).find((k) => k.startsWith('__reactFiber$')); let f = host[key]; while (f && !(f.stateNode && f.stateNode.logic && f.stateNode.logic.state)) f = f.return; return f ? f.stateNode.logic : null; })()`;
+/* صورةُ PNG صغيرة مولَّدة (TEST_ONLY) — للتوقيع والصورة في النماذج */
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import zlib from 'node:zlib';
+export function png(w = 120, h = 60, rgb = [30, 60, 120]) {
+  const crc = (b) => { let c, n, k; const t = []; for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } c = 0xffffffff; for (const x of b) c = t[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  const chunk = (t, d) => { const len = Buffer.alloc(4); len.writeUInt32BE(d.length); const td = Buffer.concat([Buffer.from(t), d]); const c = Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([len, td, c]); };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const row = Buffer.concat([Buffer.from([0]), Buffer.alloc(w * 3, 0).map((_, i) => rgb[i % 3])]), raw = Buffer.concat(Array.from({ length: h }, () => row));
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'd7cov-')), 'TEST_ONLY.png');
+  fs.writeFileSync(f, Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]));
+  return f;
+}
