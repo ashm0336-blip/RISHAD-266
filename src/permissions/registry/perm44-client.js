@@ -25,12 +25,12 @@ function chainOf(d) {
 }
 function ceiling(did) {
   var d = did || (KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : ''), Pm = P24(), E = eng();
-  if (!Pm.ceil || !Pm.leafOn) return { on: E.sysList().map(function (s) { return s.key; }), key: function () { return true; } };
+  if (!Pm.ceil || !Pm.leafOn) return { on: E.sysList().map(function (s) { return s.key; }), key: function () { return true; }, leaf: function () { return true; } };
   var Cs = chainOf(d).map(function (x) { return Pm.ceil(x); });
   var leafOn = function (leaf) { for (var i = 0; i < Cs.length; i++) if (!Pm.leafOn(Cs[i], leaf)) return false; return true; };
   var lensOn = function (L) { for (var i = 0; i < Cs.length; i++) if (!Cs[i].lens(L)) return false; return true; };
   var memo = {}, key = function (k) { if (memo[k] === undefined) memo[k] = E.keyOn(k, leafOn, lensOn); return memo[k]; };
-  return { on: E.sysList().filter(function (s) { return E.sysOn(s.key, leafOn); }).map(function (s) { return s.key; }), key: key };
+  return { on: E.sysList().filter(function (s) { return E.sysOn(s.key, leafOn); }).map(function (s) { return s.key; }), key: key, leaf: leafOn };   /* V7 · 53: leaf — لأعلام التصدير (flagsOf) */
 }
 function rolesOf(did) { return eng().normRec(rd(kOf(did, RES))); }
 /* المسودة: { did, set: {مفتاح: قيمة} } — أو مسودةُ العمليات */

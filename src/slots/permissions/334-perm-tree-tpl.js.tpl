@@ -140,25 +140,35 @@
     });
     return H;
   }
-  function keysPerms(did, all, keys, plus, mgr){
+  function keysPerms(did, all, keys, plus, mgr, ffs){
     var H = {}, C = null;
     try { C = KIVO.Perm44 && KIVO.Perm44.ceiling ? KIVO.Perm44.ceiling(did).key : null; } catch (e) { C = null; }
     (keys || []).forEach(function(k){ if (!C || C(k)) H[k] = true; });   /* السقفُ بالوراثة ∩ المنصة — ما كان الخادمُ ليحمله خارجَه */
     if (!plus) plus = Object.keys(H);   /* = perm44 grantOf: منحُ صاحب الدور أو الاستثناء (plus) هو مفاتيحُه الفعّالة كلُّها */
-    return I.heldPerms(I.platCut(all || {}), standingKeys(H, mgr), plus, did);
+    return I.heldPerms(I.platCut(all || {}), standingKeys(H, mgr), plus, did, ffs);
+  }
+  /* V7 · 53 (قرار المالك — التصدير «أ»): أعلامُ التصدير لحاملٍ غيرِ الجلسة — بقاعدة الخادم نفسِها (063 enfMe f = perm44-core flagsOf داخل السقف):
+     role: دورُ المعاينة نفسُه (h.role) · person: دورُه في المسودة (h.roles) أو في المحفوظ (Perm44.rolesOf) */
+  function holderFlags(h, did){
+    try {
+      var P = KIVO.Perm44, lf = P.ceiling(did).leaf;
+      if (h.kind === 'role') return h.role && h.role.id ? P.flagsOf({ role: h.role.id }, { roles: [h.role], people: {} }, lf) : [];
+      var R = h.roles && typeof h.roles === 'object' ? h.roles : P.rolesOf(did);
+      return P.flagsOf((R.people || {})[String(h.ekey || '')], R, lf);
+    } catch (e) { return []; }
   }
   function holderPerms(h){
     h = h || {};
     var kind = h.kind || 'session', d = h.did || curDept();
     if (kind === 'session') return I.myPerms();
     if (kind === 'mgr') return mgrPerms(d);
-    if (kind === 'role') return keysPerms(d, null, h.keys || [], null, false);
+    if (kind === 'role') return keysPerms(d, null, h.keys || [], null, false, holderFlags(h, d));
     if (kind === 'person') {
       var ek = String(h.ekey || ''), mgr = h.mgr !== undefined ? !!h.mgr : isMgrKey(ek), inherit = mgr && !hasOwnSheet(ek, d);
       var sheet = inherit ? capAllPerms(d) : empPerms(ek, d), all = inherit ? capAllPerms(d) : derivePages(empPerms(ek, d));
-      if (Array.isArray(h.keys)) return keysPerms(d, all, h.keys, null, mgr);
+      if (Array.isArray(h.keys)) return keysPerms(d, all, h.keys, null, mgr, holderFlags(h, d));
       var K = holderKeys(d, ek, mgr, inherit, sheet);
-      return keysPerms(d, all, Object.keys(K.keys), K.plus, mgr);
+      return keysPerms(d, all, Object.keys(K.keys), K.plus, mgr, holderFlags(h, d));
     }
     return {};
   }

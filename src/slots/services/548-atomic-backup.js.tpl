@@ -40,7 +40,13 @@
   var NAMES = {};
   function namesOf(file) { NAMES = {}; try { JSON.parse(file.data.bassam_employees_v1).forEach(function (x) { if (x && x.name) NAMES[x.eid] = String(x.name); }); } catch (e) { /* بلا أسماء: يُعرض المفتاح */ } }
   function empName(ek) { return NAMES[ek] || ek; }
-  function pageName(p) { var P = KIVO.BassamPerm; return p === 'admin/ptpls' ? 'الإعدادات · قوالب الصلاحيات' : P && P.nameOf ? P.nameOf(p) : p; }
+  /* V7 · 53: صفحةٌ لم تعد في هذا البناء (ورقةٌ أُلغيت في نسخةٍ قديمة) تُسمّى «صفحة أُلغيت» تحت قسمها — لا رمزَ ولا اسمَ ورقةٍ محذوفة (v7_d5h_deleted_residue ①) */
+  function pageName(p) {
+    var P = KIVO.BassamPerm, n = P && P.nameOf ? String(P.nameOf(p)) : String(p);
+    if (!/[A-Za-z]/.test(n)) return n;
+    var head = n.replace(/\s*·?\s*[A-Za-z][\w\/.:-]*$/, '').trim();
+    return (head && !/[A-Za-z]/.test(head) ? head + ' · ' : '') + 'صفحة أُلغيت';
+  }
   /* المُسقَطُ بالعربي مجمَّعاً لكل موظفٍ وصفحة: { k: اسمُ الموظف, why: 'perm-grant', text: الصفحةُ والإجراءات } */
   function permItems(list) {
     var by = {}, A = (KIVO.BassamPerm || {}).ACT_NAMES || {};

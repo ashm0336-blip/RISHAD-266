@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "81c4cdcd34eb5bd761c8dac106291d26e543a24d826de94596b30f357f7ee0e4",
+  "sha256": "00b9e3ac8d2e27fcb7cae92ddcb77cedb9320cf95e75a6dce722a6431ebe28b8",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -387,8 +387,8 @@
         12468,
         13090
       ],
-      "bytes": 35588,
-      "sha256": "0da677f61d6add2487673b27a374e6d9b6c40b35ab686a8f3b7cf990cb9195a1"
+      "bytes": 35567,
+      "sha256": "56be3f67ab9c2e3f57517e642f05d25ee6061676019c09fd53ee072f7a0cc262"
     },
     {
       "file": "../../src/systems/irshad/server/019g-irshad-domain.js",
@@ -432,8 +432,8 @@
         14462,
         14897
       ],
-      "bytes": 46226,
-      "sha256": "fe0f07b20c912f312edeefe82243754037cb460d04dd0cb057f483f52919428c"
+      "bytes": 46223,
+      "sha256": "f58c9ace57c12ac35183977c2eaa1b0823c4144bfe3e4e9d0d8f6d60712fa476"
     },
     {
       "file": "019k-business-context.js",
@@ -1220,10 +1220,10 @@
       "file": "063-enf-api-and-handler.js",
       "lines": [
         31012,
-        32708
+        32711
       ],
-      "bytes": 175907,
-      "sha256": "2fdacc57819b8f1bf772208a14c0c6d86775e3b42e4437b7b8d5d93161786357",
+      "bytes": 176233,
+      "sha256": "d108f954e43db7281bb148ac504f992f980973e587a6ee9da158704a66d9e995",
       "head": "/* ══ (6) الواجهات: حالةُ الإنفاذ · سجلُّ القرارات · الترحيلُ والرجوع (هوية → نطاق → صلاحيات) · جلسةُ اختبارٍ داخلية (Preview) ══ */"
     }
   ]
