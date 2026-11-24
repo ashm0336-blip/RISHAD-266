@@ -328,5 +328,6 @@ test('nosilent REVIEW 37 ب3: staff month approve / reopen / delete say what hap
   assert.match(s, /op: "month-approval"[\s\S]{0,400}?\}\)\) \{\n\s*this\.setState\(\{ lockConfirm: null[\s\S]{0,200}?\n\s*\/\*[^\n]*\*\/\n\s*this\.bsAck\(t\.locked \? "فُتح جدول " \+ this\._stMonthName\(t\.n\) \+ " للتعديل" : "اعتُمد جدول " \+ this\._stMonthName\(t\.n\) \+ " وأُقفل", "ok"\);/);
   assert.match(s, /op: "delete-month"[\s\S]{0,300}?\}\)\) \{\n\s*this\.setState\(\{ delMonth: null[\s\S]{0,120}?\n\s*\/\*[^\n]*\*\/\n\s*this\.bsAck\("حُذف جدول " \+ this\._stMonthName\(t\.n\) \+ " — لم يبقَ فيه توزيع", "ok"\);/);
   /* the message is inside the success branch: a refused _opsSave (false) says its reason in _opsSave and nothing else */
-  assert.match(s, /_stMonthName\(n\) \{ return "«" \+ \(\(this\.MONTHS && this\.MONTHS\[n - 1\]\) \|\| n\) \+ " " \+ this\.state\.year \+ " هـ»"; \}/);
+  /* V7 · 53 تقويم (REVIEW 22 · عيب 3): الشهرُ ميلادي — «نوفمبر 2026» بلا «هـ» (v7_cal_r22_defects ③) */
+  assert.match(s, /_stMonthName\(n\) \{ return "«" \+ \(\(this\.MONTHS && this\.MONTHS\[n - 1\]\) \|\| n\) \+ " " \+ this\.state\.year \+ "»"; \}/);
 });
