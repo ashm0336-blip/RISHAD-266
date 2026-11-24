@@ -2610,13 +2610,54 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         })
       : t || [];
   }
+  /* V7 · 53: الخطةُ مخزّنةٌ بالشهر — شهرٌ لم يُحمَّل يُطلب أولاً (قراءةٌ صامتة بلا رسمٍ وسيط)، ثم يُفتح كما كان ويُضمّ إلى أشهر الصفحة */
+  _plPeriod(y, m, again) {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations, k = this._mKey(y, m);
+    if (!S || !S.split || !S.split("bassam_plan_v1")) return !1;
+    try {
+      if (S.loaded("bassam_plan_v1").groups.indexOf(k) !== -1) return !1;
+    } catch (x) {
+      return !1;
+    }
+    if (this._plWanting === k) return !0;
+    this._plWanting = k;
+    S.want("bassam_plan_v1", { groups: [k], quiet: !0 }).then((r) => {
+      this._plWanting = null;
+      r && 1 === r.ok ? again() : this.bsToast((r && r.msg) || "تعذّر تحميل خطة هذا الشهر — أعد المحاولة", "warn");
+    });
+    return !0;
+  }
+  /* V7 · 53: بعد الرسم الأول — الأشهرُ الاثنا عشر الماضية والشهران التاليان (قائمةُ «نسخ خطة شهرٍ آخر» · حذفُ الموقع وتعديلُه يشملها كما كان) */
+  _plAround() {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (!S || !S.split || !S.split("bassam_plan_v1")) return;
+    const c = this.curHijri(),
+      g = [];
+    for (let i = -12; i <= 2; i++) {
+      const n = c.y * 12 + (c.m - 1) + i;
+      g.push(this._mKey(Math.floor(n / 12), (n % 12) + 1));
+    }
+    setTimeout(() => S.want("bassam_plan_v1", { groups: g }), 1500);   /* بعد فتح الصفحة — لا يؤخّره */
+  }
+  _plWithPeriod(i, k) {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (i[k] || !S || !S.split || !S.split("bassam_plan_v1")) return i;
+    let v;
+    try {
+      v = S.period("bassam_plan_v1", k);
+    } catch (x) {
+      v = void 0;
+    }
+    return v ? { ...i, ...this._normMonths({ [k]: v }) } : i;
+  }
   goTo(t, e) {
+    if (this._plPeriod(t, e, () => this.goTo(t, e))) return;
     const s = this.state,
       n = this._mKey(s.year, s.month),
       a = (s.floors || []).map((t, e) =>
         e === s.floor ? { ...t, zones: s.zones, gates: s.gates, marks: s.marks || [], paths: s.paths || [] } : t,
       ),
-      i = { ...(s.planMonths || {}) };
+      i = this._plWithPeriod({ ...(s.planMonths || {}) }, this._mKey(t, e));
     this._hasPlanFor(i, n) && (i[n] = { ...(i[n] && !Array.isArray(i[n]) ? i[n] : {}), c: 1, d: this._snapshot(a) });
     const w9 = this._plLeftDirty(n, i, a),
       r = this._mKey(t, e),
@@ -3988,6 +4029,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {}
   }
   componentDidMount() {
+    this._plAround();
     this._bsSigV = this._bsSig();
     this._bsShown = (t) => {
       try {
