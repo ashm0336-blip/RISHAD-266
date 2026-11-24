@@ -23,7 +23,7 @@ async function nfIrshadDaily(env, actor, url, windowAt) {
   }
   if (!irDailyManager(ctx.A)) return { emitted: 0 };
   /* V7 · 53 تقويم (ق1 · §1.6): اليومُ الميلادي لمفتاح «مرةً واحدة» والتجميع (ir_day:2026-11-24) */
-  var day = pfGregAt(when), once = 'ir_day:' + day.dk, scope = nfScope(d),
+  var day = pfDayAt(when), once = 'ir_day:' + day.dk, scope = nfScope(d),
     existing = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
   if (existing) return { emitted: 0, checked: 1, settled: 1 };   /* checked/settled: the shared due gate (019 nfDueRun · decision h) */
   var aggregate = irDailyPlan(ctx, day), guards = ctx.guards.concat([rsEpochGuard(ctx.env.DB, ctx.base.epoch), irRetiredGuard(ctx.env)]), result;

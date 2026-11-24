@@ -2,7 +2,7 @@
 async function nfSeizedDueRun(env,actor,url,windowAt) {
   var now=Date.now(),when=windowAt==null?now:windowAt,minutes=pfRiyadhMins(when),d=url.searchParams.get('dept')||'';   /* windowAt: the due gate's catch-up of a closed window (019 nfDueRun) */
   if(!d||minutes<480||!irDailyManager(actor))return {emitted:0};
-  var saturday=new Date(when+3*3600000).getUTCDay()===6,day=pfGregAt(when),candidates=[];   /* V7 · 53 تقويم (ق1 · §1.6): مفتاحُ «مرةً واحدة» باليوم الميلادي ISO (bx_old:2026-11-24) */
+  var saturday=new Date(when+3*3600000).getUTCDay()===6,day=pfDayAt(when),candidates=[];   /* V7 · 53 تقويم (ق1 · §1.6): مفتاحُ «مرةً واحدة» باليوم الميلادي ISO (bx_old:2026-11-24) */
   if(minutes>=540)candidates.push({type:'bx_old',once:'bx_old:'+day.dk});
   if(saturday)candidates.push({type:'bx_wk',once:'bx_wk:'+day.dk});
   if(!candidates.length)return {emitted:0};
