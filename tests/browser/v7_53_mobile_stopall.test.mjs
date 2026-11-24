@@ -75,7 +75,7 @@ test('V7 · 53 ① mobile «إيقاف الكل» (iPhone 13): the manager turns
     await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(4500);
     await P(p, '.p44-role', { hasText: ROLE.name }).first().tap(); await p.waitForTimeout(600);
     const lv = await p.evaluate(() => [...document.querySelectorAll('main .p44 select[aria-label^="مستوى "]')].map((x) => [x.getAttribute('aria-label'), x.value]));
-    assert.ok(lv.length >= 2, 'the editor rows are shown after reload: ' + JSON.stringify(lv));
+    assert.ok(await P(p, '.p44-strip button', { hasText: 'إيقاف الكل' }).count(), 'the role editor is open after reload (rows shown: ' + JSON.stringify(lv) + ')');
     const sel = Object.fromEntries(lv), noneOf = (n) => !sel[n] || sel[n] === '' || sel[n] === 'none';
     assert.ok(noneOf('مستوى المهام') && noneOf('مستوى المصليات'), 'after reload: tasks and the zones lens show no right: ' + JSON.stringify(lv));
     await m.ctx.close();
