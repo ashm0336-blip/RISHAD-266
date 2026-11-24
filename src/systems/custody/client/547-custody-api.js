@@ -29,6 +29,8 @@
   async function request(url, options, stamp) {
     if (!stamp || !same(stamp)) return failure('session', 401);
     var control = new AbortController(), timer = setTimeout(function () { control.abort(); }, 15000);
+    /* V7 · 53 (nosilent · REVIEW 26 ب2/ب3): الأمرُ الكاتب في مؤشر التحميل الموحّد — الزرُّ يتجمّد والمغادرةُ تُسأل حتى يصل الإقرار */
+    var B = options && options.method && options.method !== 'GET' && KIVO.BassamBusy, busy = B ? B.start('جارٍ تأكيد العملية…') : null;
     try {
       var response = await fetch(url, Object.assign({ credentials: 'same-origin', cache: 'no-store', signal: control.signal }, options));
       if (!same(stamp)) return failure('session', 401);
@@ -44,7 +46,7 @@
       }
       return { ok: 1, body: body };
     } catch (error) { return failure(same(stamp) ? 'network' : 'session'); }
-    finally { clearTimeout(timer); }
+    finally { clearTimeout(timer); if (busy) busy.done(); }
   }
   function identity() {
     if (!window.crypto || !window.crypto.getRandomValues) return null;

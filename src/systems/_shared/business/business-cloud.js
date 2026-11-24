@@ -145,9 +145,11 @@ Object.assign(Component.prototype, {
       this._bcTickets.delete(intent); this._bcInvalidate();
       return { ok: 1, data: ack, sent: ticket.body, context: ticket.context };
     };
+    /* V7 · 53 (nosilent · REVIEW 26 ب2/ب3): الطلبُ في مؤشر التحميل الموحّد — الزرُّ الذي بدأه يتجمّد حتى يصل الإقرار، والمغادرةُ تُسأل */
+    const busy = KIVO.BassamBusy ? KIVO.BassamBusy.start("جارٍ تأكيد العملية…") : null;
     ticket.pending = run(); this.setState({ bcPending: true });
     try { const result = await ticket.pending; if (this._bcSame(context)) this.setState({ bcMessage: result.ok ? "" : result.message }); return result.ok ? { ...result, matches: this._bcFieldsSame(fields, result.sent) } : result; }
-    finally { ticket.pending = null; if (this._bcSame(context)) this.setState({ bcPending: [...this._bcTickets.values()].some(value => value.pending) }); }
+    finally { if (busy) busy.done(); ticket.pending = null; if (this._bcSame(context)) this.setState({ bcPending: [...this._bcTickets.values()].some(value => value.pending) }); }
   },
   _bcMount() {
     this._bcGone = false;
