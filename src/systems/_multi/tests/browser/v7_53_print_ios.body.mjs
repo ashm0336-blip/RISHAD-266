@@ -95,8 +95,10 @@ for (const [dev, hash, svg, nPages] of [['iPad Pro 11', '#/plan', 'svg[data-map-
       assert.ok(!veil.some((t) => /للطباعة/.test(t)), dev + ': لا «للطباعة»');
       /* (2)+(3): كلُّ صفحةٍ بالرسّام البديل، من إطارٍ مؤقّتٍ غيرِ محمي، بلا foreignObject */
       const h2c = await p.evaluate(() => window.__h2c);
-      assert.equal(h2c.length, nPages, dev + ': الرسّامُ البديل لكل صفحة ' + JSON.stringify(h2c));
-      for (const c of h2c) assert.deepEqual([c.frame, c.sandbox, c.fo, c.pg, c.scale], ['bs-print-raster', null, false, true, 2], dev + ': ' + JSON.stringify(c));
+      /* كلُّ صفحةٍ بالرسّام البديل بدقّة ×2؛ وإن تعذّرت صفحةٌ (مهلةُ 60 ث تحت الحِمل) نزلت إلى ×1.5 وثبتت عليها — بالتصميم — فقد تزيد النداءات على الصفحات */
+      assert.ok(h2c.length >= nPages, dev + ': الرسّامُ البديل لكل صفحة ' + JSON.stringify(h2c));
+      for (const c of h2c) assert.deepEqual([c.frame, c.sandbox, c.fo, c.pg], ['bs-print-raster', null, false, true], dev + ': ' + JSON.stringify(c));
+      assert.equal(h2c[0].scale, 2, dev + ': ×2 في سفاري'); assert.ok(h2c.every((c, i) => [2, 1.5].includes(c.scale) && (!i || c.scale <= h2c[i - 1].scale)), dev + ': الدقّةُ تنزل ولا تصعد ' + JSON.stringify(h2c));
       assert.ok(reqs.some(([u, st, ct]) => /^\/assets\/js\/html2canvas-1\.4\.1\.min\.[0-9a-f]{10}\.js$/.test(u) && st === 200 && /javascript/.test(ct)), dev + ': المكتبةُ من الحزمة ' + JSON.stringify(reqs));
       /* شاشةُ «الملف جاهز» */
       const ready = p.locator('#bs-pdf-ready');
