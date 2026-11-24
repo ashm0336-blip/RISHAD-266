@@ -94,6 +94,7 @@
       o = o || {};
       var text = String(msg == null ? "" : msg); if (!text) return;
       if (o.tone === "err" && text.charAt(0) !== "⚠") text = "⚠ " + text;
+      if (o.tone === "err" || o.tone === "warn") saveErrAt53 = Date.now();   /* V7 · 53: الصفحةُ قالت الفشل — لا رسالةَ مركزيةَ مكرَّرة */
       var host = document.body || document.documentElement; if (!host) return;
       if (!toastBox9 || !toastBox9.parentNode) {
         toastBox9 = document.createElement("div"); toastBox9.id = "bs-stoast"; toastBox9.className = "bs-toast";
@@ -697,6 +698,77 @@
     return !!now && now.uid === stamp.uid && now.dept === stamp.dept && now.generation === stamp.generation;
   }
   function operationFailure9(err, status, uncertain) { return { ok: 0, err: err, status: status || 0, uncertain: !!uncertain }; }
+  /* ═══ V7 · 53 (فشلُ الحفظ · البند 2 · S8 · ملحق 4): فشلٌ عابر (5xx · db-busy · انقطاعُ الشبكة) يُعاد بالطلب نفسِه — المعرّفُ والجسمُ نفسُهما،
+     والخادمُ يحسم المكرَّرَ من إيصاله (restore_operations · duplicate) فلا يتكرّر الفعل. ما لم يُحسم بعدها يُقرأ المورد من الخادم قبل أيّ حكم:
+     لم تتغيّر نسختُه ⇒ فشلٌ مؤكَّد (تُعاد الواجهةُ إلى المحفوظ ويُقال للمستخدم) · نسختُه تقدّمت بقيمة طلبي نفسِها ⇒ حُفظ · غيرُ ذلك ⇒ «غير مؤكَّد» كما كان.
+     وكلُّ فشلٍ يُقال صراحةً في التوست الواحد (KIVO.bsToast) — لا صمت. ═══ */
+  var SAVE_RETRY53 = 3, SAVE_WAIT53 = 60000, SAVE_FATAL53 = { 'db-schema-unsupported': 1, 'db-migration-permit-invalid': 1, 'db-restore-epoch-invalid': 1 };
+  function saveTransient53(status, data) {
+    if (!status || status < 500 || status > 599) return false;
+    return !(data && typeof data.err === 'string' && SAVE_FATAL53[data.err]);   /* انقطاعُ الشبكة لا يُعاد آلياً: «غير مؤكَّد» كما كان (الإعادةُ بالطلب نفسِه للمستخدم) */
+  }
+  function saveRetry53(operation, status, data) {
+    if (operationActive9 !== operation || !saveTransient53(status, data) || (operation.transient53 || 0) >= SAVE_RETRY53) return false;
+    operation.transient53 = (operation.transient53 || 0) + 1; operation.lastStatus53 = status || 0; operation.lastErr53 = (data && data.err) || 'http-' + status;
+    operationUncertainLog9('transient-retry-' + operation.transient53 + ' · ' + operation.lastErr53, operation.keys);
+    if (inflight === operation.snap) inflight = null;
+    operation.state = 'queued';
+    operation.keys.forEach(function (key) { if (key in operation.snap.set) pSet[key] = operation.snap.set[key]; else pDel[key] = 1; });
+    recount(); link9("off", "تعذّر الحفظ مؤقتاً — يُعاد الطلبُ نفسُه تلقائياً");
+    setTimeout(function () { if (operationActive9 === operation && operation.state === 'queued') sendNow(); }, 400 * Math.pow(2, operation.transient53 - 1));
+    return true;
+  }
+  function saveText53(err, status) {
+    if (err === 'db-busy' || status === 503) return 'المنصة مشغولة الآن فلم يُحفظ تعديلك — أُعيدت المحاولة تلقائياً دون جدوى. أعد الإجراء بعد لحظات؛ لن يتكرّر.';
+    if (err === 'network' || !status) return 'انقطع الاتصال قبل تأكيد الحفظ — لم يُعتمد تعديلك بعد. تحقّق من الاتصال ثم أعد الإجراء نفسه؛ لن يتكرّر.';
+    if (err === 'pending') return 'لم يصل تأكيد الحفظ بعد، وتعذّر التحقق منه — لم يُعتمد تعديلك بعد. أعد الإجراء نفسه للتحقق؛ لن يتكرّر.';
+    return 'تعذّر الحفظ (رمز ' + status + ') — لم يُحفظ تعديلك. أعد الإجراء؛ لن يتكرّر.';
+  }
+  /* رسالةُ الفشل المركزية: تُعرض ما لم تعرض الصفحةُ نفسُها رسالةَ فشلٍ في الأثناء (توستُ الصفحة #bs-toast أو KIVO.bsToast بنبرة خطأ) */
+  var saveErrAt53 = 0;
+  function saveNotice53(text, still) {
+    var at = Date.now(), pageText = function () { try { var t = document.getElementById && document.getElementById('bs-toast'); return t ? String(t.textContent || '') : ''; } catch (e) { return ''; } }, before = pageText();
+    setTimeout(function () {
+      try {
+        if (saveErrAt53 > at || pageText() !== before || (still && !still())) return;
+        bsToast(text, { tone: 'err', ms: 9000 });
+      } catch (e) { /* عرضٌ فقط */ }
+    }, 700);
+  }
+  function saveCanon53(text) {
+    try { return JSON.stringify(JSON.parse(text), function (k, v) { if (!v || typeof v !== 'object' || Array.isArray(v)) return v; var o = {}; Object.keys(v).sort().forEach(function (x) { o[x] = v[x]; }); return o; }); } catch (e) { return null; }
+  }
+  /* قراءةُ التحقق: الخادمُ وحده يحسم ما جرى لطلبٍ لم يصل إيصالُه */
+  async function saveVerify53(operation, inFlight) {
+    if (operationActive9 !== operation || (!inFlight && ['sending', 'queued'].includes(operation.state))) return null;
+    var base = {}; try { base = JSON.parse(operation.body).base || {}; } catch (e) { return null; }
+    var read = await operationRead9(operation.keys.slice());
+    if (!read || read.ok !== 1 || operationActive9 !== operation) return null;
+    var same = operation.keys.every(function (key) { return operationInteger9(base[key]) && read.base[key] === base[key]; });
+    if (same && !inFlight) {
+      /* لم يُكتب شيء: فشلٌ مؤكَّد — تُطلق العملية، والمعروضُ هو المحفوظُ فعلاً (قرأته القراءةُ أعلاه) */
+      if (inflight === operation.snap) inflight = null;
+      operation.state = 'failed'; operation.result = { ok: 0, err: 'save-failed', status: operation.lastStatus53 || 0, uncertain: false, failed: 1, verified: 1 };
+      operationActive9 = null; operation.keys.forEach(notify); warn(false); settleWaiters(false);
+      return operation.result;
+    }
+    var mine = operation.keys.every(function (key) {
+      var has = Object.prototype.hasOwnProperty.call(read.resources, key);
+      if (!operationInteger9(read.base[key]) || !(read.base[key] > (base[key] || 0))) return false;
+      return key in operation.snap.set ? has && saveCanon53(JSON.stringify(read.resources[key])) === saveCanon53(operation.snap.set[key]) : !has;
+    });
+    if (!mine) return null;
+    if (inFlight) return { ok: 1, verified: 1, inFlight: 1 };   /* الطلبُ ما زال في الطريق وقد كُتب: إيصالُه حين يصل يحسم الحالة كما هي */
+    var revs = {}; operation.keys.forEach(function (key) { revs[key] = read.base[key]; });
+    operation.state = 'sending';
+    await operationSettle9(operation, 200, { ok: 1, requestId: operation.ticket.requestId, epoch: operation.epoch, atomic: 1, revs: revs, verified: 1 });
+    return operation.state === 'confirmed' ? Object.assign({}, operation.result, { verified: 1 }) : null;
+  }
+  /* انتظارُ إيصالٍ ما زال في الطريق (حفظٌ يطول أكثر من مهلة الإفراغ · إعادةٌ مجدولة) — بحدّ، ثم قراءةُ التحقق */
+  async function saveAwait53(operation) {
+    for (var tick = 0; tick < SAVE_WAIT53 / 250 && !operation.result && ['sending', 'queued'].includes(operation.state) && operationActive9 === operation; tick++)
+      await new Promise(function (resume) { setTimeout(resume, 250); });
+  }
   function operationForget9(key, state, quiet) {
     delete mem[key]; delete baseVal[key]; delete krev[key];
     operationKnown9[key] = { state: state || 'unloaded' };
@@ -859,7 +931,7 @@
     }
     entry.promise = operationFlush9(entry.ticket, operationStatus9(entry.ticket).state === 'uncertain').then(function (result) {
       entry.result = Object.assign({}, result, { ticket: entry.ticket });
-      if (result && result.ok === 1 && editors[action] === entry) delete editors[action];
+      if (result && (result.ok === 1 || result.failed) && editors[action] === entry) delete editors[action];   /* V7 · 53: فشلٌ مؤكَّد يُطلق المحرِّر — الإجراءُ التالي طلبٌ جديد */
       return entry.result;
     }).finally(function () { entry.promise = null; });
     return entry.promise;
@@ -1004,6 +1076,9 @@
     operation.keys.forEach(function (key) { if (key in operation.snap.set) pSet[key] = operation.snap.set[key]; else pDel[key] = 1; });
     recount();
     await flushAsync();
+    if (!operation.result) await saveAwait53(operation);   /* V7 · 53 (S8): المهلةُ لا تعلن فشلاً والطلبُ في الطريق */
+    if (!operation.result && operation.state === 'sending') { var flying53 = await saveVerify53(operation, true); if (flying53) return flying53; }
+    if (operation.result && operation.result.uncertain && operation.state === 'uncertain' && operation.transient53) { var checked53 = await saveVerify53(operation); if (checked53) return checked53; }
     if (!operation.result) operationUncertainLog9('pending', operation.keys);
     return operation.result || operationFailure9('pending', 0, true);
   }
@@ -1015,6 +1090,7 @@
     if (inflight === operation.snap) inflight = null;
     operation.state = 'uncertain'; operation.result = operationFailure9(err, status, true);
     operationUncertainLog9(err, operation.keys);
+    if (err !== 'session') saveNotice53(saveText53(operation.lastErr53 === 'db-busy' ? 'db-busy' : err, status != null ? status : operation.lastStatus53), function () { return operation.state === 'uncertain' || operation.state === 'failed'; });   /* V7 · 53: لا فشلَ صامت */
     warn(true);
     settleWaiters(false);
   }
@@ -1044,6 +1120,7 @@
       setTimeout(function () { if (operationActive9 === operation && operation.state === 'queued') sendNow(); }, 150 * operation.raceRetries);
       return;
     }
+    if (saveRetry53(operation, status, data)) return;   /* V7 · 53: 5xx · db-busy ⇒ الطلبُ نفسُه بعد مهلة */
     var identity = operationObject9(data) && data.requestId === operation.ticket.requestId && data.epoch === operation.epoch && data.atomic === 1;
     var revs = data && data.revs;
     var success = status >= 200 && status < 300 && identity && data.ok === 1 && operationObject9(revs)
@@ -1381,6 +1458,7 @@
         if (sx9) return;
         if (inflight === snap) { inflight = null; requeue(snap); }
         warn(true, (e && e.message) || "");
+        if (!fails) saveNotice53("لم يُحفظ تعديلك بعد (" + ((e && e.message) || "تعذّر الاتصال") + ") — نحاول تلقائياً؛ لا تغلق الصفحة حتى يظهر الحفظ.");   /* V7 · 53: لا فشلَ صامت */
         retryLater();
         settleWaiters(false);
       });
