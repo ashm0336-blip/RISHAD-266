@@ -220,6 +220,7 @@ function opReadFailed(error) {
   var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
   if (error.rs || error.ocCode) return json({ ok: 0, err: error.rs || error.ocCode }, error.status || 400);
   if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
+  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 (§3ب.7) */
   throw error;
 }
 async function opReadOnce(env, url, session) {

@@ -9466,22 +9466,7 @@ async function rsScopeOperational(env, capture, keys) {
   capture.snapshots.push.apply(capture.snapshots, state.snapshots);
   capture.guards.push.apply(capture.guards, state.guards);
 }
-/* A decision that depends on every value in the database (an image no longer referenced in
-   scope may be referenced elsewhere) widens the reference to the whole database, fenced alike. */
-async function rsReferenceWiden(env, reference) {
-  var scope = reference.scope;
-  if (!scope || scope.all || reference.noWiden) return false;   /* V7 · د6: استيرادُ الإدارة على أجزاء لا يحمّل القاعدةَ كلَّها ليحكم على صورةٍ لم تعد إدارتُه تذكرها — يحكم بفهرس المراجع (imgref)، والكنسُ يعيد الفحص قبل أي حذف (019g) */
-  var P = env.__pre, later = JSON.stringify(scope.later), where = 'NOT ' + RS_SCOPE_KV + ' AND k NOT IN (SELECT value FROM json_each(?2))',
-    rows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + where + ' ORDER BY k,seq').bind(scope.arg, later).all()).results || [],
-    joined = kvJoin(rows), departments = parseJson(reference.inputKeys[K_DEPTS] || '[]', null);
-  rows.forEach(function (row) { scope.rows.push(row); });
-  Object.keys(joined).forEach(function (k) { scope.later.push(k); P.kv[k] = joined[k]; });
-  scope.late.push.apply(scope.late, rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, where, [scope.arg, later]));
-  scope.all = true;
-  if (!Array.isArray(departments) || departments.some(function (d) { return !d || !rsScopeDepartments([d.id]); })) throw ocError('departments');
-  await rsScopeOperational(env, reference.operational, rsScopeOperationalKeys(departments.map(function (d) { return d.id; })));
-  return true;
-}
+/* V7 · 53 (ملحق 4): rsReferenceWiden (توسيعُ المرجع إلى القاعدة كلها لحكم صورة) أُزيل — 019e rsImageHeldSql يسأل D1 بالمعرّفات. */
 async function rsReferenceSnapshot(env, uid, options) {
   /* One coherent reference snapshot feeds actor construction and applySave. Its
      complete row witness is rechecked INSIDE the eventual write transaction. */
@@ -11407,32 +11392,25 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
       plan.guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) FROM imgs WHERE k=?1)!=?2 THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g").bind(sid9, sig9));
     }
   } else {
-  // Include any upload fragments for these exact IDs. A late fragment or owner
-  // change rejects the SQL transaction even if it appeared after body matching.
+  /* V7 · 53 (ملحق 4): كانت أجسامُ كلِّ الصور المذكورة تُقرأ في استدعاءٍ واحد ثم تُرسل كلُّها شاهداً (rsWitness) — استعادةٌ فيها خرائطُ بحجمها الحقيقي
+     (عشرُ صورٍ من 3MB) تتجاوز سقفَ D1 (32MiB للاستدعاء). الآن كما الاستيرادُ على أجزاء: صورةً صورة (استدعاءٌ بحجم صورةٍ واحدة)، والسياجُ عددُ صفوف
+     جسمها ومجموعُ أطوالها داخل الدفعة؛ وجزءُ رفعٍ معلّق لمعرّفٍ منها يرفض كما كان، والغائبةُ تبقى «لا صفّ». */
   var bodyArgs = [],
-    bodyWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, bodyArgs),
-    rows = (await rsBound(env.DB.prepare('SELECT k,seq,v FROM imgs WHERE ' + bodyWhere + ' ORDER BY k,seq'), bodyArgs).all()).results || [];
-  var values = new Map();
-  for (var row of rows) {
-    if (row.k.indexOf(IMG_STG) === 0) reject();
-    values.set(row.k, (values.get(row.k) || '') + row.v);
-  }
+    bodyWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, bodyArgs);
+  if (await rsBound(env.DB.prepare("SELECT 1 x FROM imgs WHERE substr(k,1,5)='~stg~' AND " + bodyWhere + ' LIMIT 1'), bodyArgs).first()) reject();
+  var sigAll = "SELECT COALESCE(group_concat(k||'='||c||':'||n,','),'') s FROM (SELECT k,COUNT(*) c,SUM(length(v)) n FROM imgs WHERE " + bodyWhere + ' GROUP BY k ORDER BY k)',
+    sigHave = String((await rsBound(env.DB.prepare(sigAll), bodyArgs).first('s')) || ''),
+    haveIds = new Set(sigHave.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }));
+  plan.guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN (' + sigAll + ')!=?' + (bodyArgs.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), bodyArgs.concat([sigHave])));
   for (var id of ids) {
     if (gone.has(id)) continue;
-    if (!values.has(id)) reject();
-    // Inline content is the exact ordered D1 concatenation used by imgLoad;
-    // its rows are guarded below. Only the R2 marker needs an object read.
-    var actual = values.get(id);
-    if (actual === IMG_R2_MARK) {
-      try {
-        actual = await imgLoad(env, id);
-      } catch (e) {
-        reject();
-      }
-    }
-    if (actual !== (stage ? await stage.text(id) : images[id])) reject();
+    if (!haveIds.has(id)) reject();
+    // Inline content is the exact ordered D1 concatenation (imgLoad); the R2 marker reads the object.
+    var actual;
+    try { actual = await imgLoad(env, id); } catch (e) { reject(); }
+    if (actual !== images[id]) reject();
+    actual = null;
   }
-  plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], rows, bodyWhere, bodyArgs));
   }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], owners, ownWhere, ownArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
@@ -11462,6 +11440,59 @@ function rsImageFinalValues(plan, reference) {
   });
   (plan.imgTouch || []).forEach(function(t){values[t.k]=t.v;});
   return values;
+}
+/* V7 · 53 (ملحق 4): أيُّ المعرّفات ids (بشكل الماسح وحده) يذكره نصٌّ خارج المفاتيح keys — عبارةٌ واحدة تجيب بالمعرّفات لا بالنصوص.
+   kv: الصفُّ كلُّه وحدودُ الصفوف (كما IMG_KV_JOIN) · السجلاتُ التشغيلية: نصوصُ كلِّ جدول ops_* (كما opstxt — 054 imgOpsCols) خارج موارد keys
+   (والموردُ المخزَّن بالفترة res@<الفترة> من المورد نفسِه). الحدُّ بعد المطابقة كدلالة imgIdsIn ([^a-z0-9] أو نهايةُ النص).
+   الجواب: المعرّفاتُ الممسوكة مرتّبةً بفواصل؛ أو — إن حمل نصٌّ خارجها هروبَ \u00XX (قد يخفي معرّفاً لا تراه المطابقةُ الحرفية) — '!' ثم بصمةُ
+   تلك النصوص (مفتاحٌ وطولٌ لكلٍّ) فيقرؤها rsImageHeldEsc ويفكّها كما يفعل الحفظ (imgDeep)، والسياجُ البصمةُ نفسُها. */
+function rsImageHeldSql(ids, keys) {
+  var ops = keys.filter(opIsResource).map(function (k) { var i = opInfo(k); return [i.dept, i.resource]; }),
+    mine = "EXISTS(SELECT 1 FROM json_each(?3) p WHERE json_extract(p.value,'$[0]')=o.d AND (json_extract(p.value,'$[1]')=o.r OR substr(o.r,1,length(json_extract(p.value,'$[1]'))+1)=json_extract(p.value,'$[1]')||'@'))",
+    txt = imgOpsCols().map(function (x, j) { return 'SELECT ' + j + ' AS j, department_id AS d, resource AS r, row_key AS k, ' + imgOpsJoin(x[1]) + ' AS t FROM ' + x[0]; }).join(' UNION ALL '),
+    out = 'k NOT IN (SELECT value FROM json_each(?2))',
+    has = function (t) { return 'instr(' + t + ', j.value) > 0 AND (' + t + " GLOB '*' || j.value || '[^a-z0-9]*' OR " + t + " GLOB '*' || j.value)"; },
+    pair = 'FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND b.' + out;
+  return { args: [JSON.stringify(ids), JSON.stringify(keys), JSON.stringify(ops)],
+    sql: 'WITH opstxt(j, d, r, k, t) AS MATERIALIZED (' + txt + '), ops(j, d, r, k, t) AS MATERIALIZED (SELECT * FROM opstxt o WHERE NOT ' + mine + ')' +
+      ', esck(k) AS MATERIALIZED (SELECT k FROM kv WHERE ' + out + ' AND ' + imgEscCond('v') + ' UNION SELECT b.k ' + pair + ' AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
+      ", esc(s) AS MATERIALIZED (SELECT 'k' || k || char(2) || (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = esck.k) FROM esck" +
+      " UNION ALL SELECT 'o' || j || char(2) || d || char(2) || r || char(2) || k || char(2) || length(CAST(t AS BLOB)) FROM ops WHERE " + imgEscCond('t') + ')' +
+      " SELECT CASE WHEN EXISTS(SELECT 1 FROM esc) THEN '!' || (SELECT group_concat(s, char(1)) FROM (SELECT s FROM esc ORDER BY s))" +
+      " ELSE COALESCE((SELECT group_concat(id, ',') FROM (SELECT j.value AS id FROM json_each(?1) j WHERE" +
+      ' EXISTS(SELECT 1 FROM kv WHERE ' + out + ' AND ' + has('v') + ')' +
+      ' OR EXISTS(SELECT 1 ' + pair + ' AND instr(substr(CAST(a.v AS BLOB), -(length(CAST(j.value AS BLOB)) - 1)) || substr(CAST(b.v AS BLOB), 1, length(CAST(j.value AS BLOB)) - 1), j.value) > 0)' +
+      " OR EXISTS(SELECT 1 FROM ops WHERE " + has('t') + ") ORDER BY j.value)), '') END AS h" };
+}
+/* '!' من rsImageHeldSql: تُقرأ النصوصُ التي تحمل الهروبَ (وحدها، صفحاتٍ ≤ IMG_ESC_PAGE بايت، ومجموعها ≤ IMG_ESC_CHARS) وتُفكّ — يعيد المعرّفاتِ
+   التي يذكرها أحدُها، أو null إن لم يُحسم (أكبرُ من الحد · فكٌّ لم ينتهِ) فيبقى كلُّ شيءٍ كما هو (لا يتيم). */
+async function rsImageHeldEsc(env, ids, held) {
+  var T = imgOpsCols(), kvs = [], ops = {}, total = 0, found = new Set(), undecided = false;
+  held.slice(1).split('\u0001').forEach(function (e) {
+    var f = e.slice(1).split('\u0002'), n = Number(f[f.length - 1]) || 0; total += n;
+    if (e.charAt(0) === 'k') kvs.push({ k: f.slice(0, -1).join('\u0002'), n: n });
+    else (ops[f[0]] = ops[f[0]] || []).push({ at: [f[1], f[2], f[3]], n: n });
+  });
+  if (total > IMG_ESC_CHARS) return null;
+  var see = function (t) {
+    var o = {};
+    if (imgEsc(t)) { var dd = imgDeep(t); if (dd.und) undecided = true; o = dd.ids; } else imgScanInto(t, o);
+    ids.forEach(function (id) { if (o[id]) found.add(id); });
+  };
+  var pages = function (list) { var out = [], cur = [], n = 0; list.forEach(function (x) { if (cur.length && n + x.n > IMG_ESC_PAGE) { out.push(cur); cur = []; n = 0; } cur.push(x); n += x.n; }); if (cur.length) out.push(cur); return out; };
+  for (var page of pages(kvs)) {
+    var rows = (await env.DB.prepare('SELECT k, json_quote(v) AS q FROM kv WHERE k IN (SELECT value FROM json_each(?1)) ORDER BY k, seq').bind(JSON.stringify(page.map(function (x) { return x.k; }))).all()).results || [];
+    for (var i = 0, got; i < rows.length; i = got) { var text = ''; for (got = i; got < rows.length && rows[got].k === rows[i].k; got++) text += JSON.parse(rows[got].q); see(text); }
+  }
+  for (var j of Object.keys(ops)) {
+    var tb = T[Number(j)]; if (!tb) return null;
+    for (var part of pages(ops[j])) {
+      var got2 = (await env.DB.prepare('SELECT json_quote(' + imgOpsJoin(tb[1]) + ') AS q FROM ' + tb[0] + " WHERE (department_id, resource, row_key) IN (SELECT json_extract(value,'$[0]'), json_extract(value,'$[1]'), json_extract(value,'$[2]') FROM json_each(?1))")
+        .bind(JSON.stringify(part.map(function (x) { return x.at; }))).all()).results || [];
+      got2.forEach(function (r) { JSON.parse(r.q).split('\u0001').forEach(see); });
+    }
+  }
+  return undecided ? null : found;
 }
 /* Same image ownership/reference semantics as imgSync, prepared before commit.
    Bodies and R2 garbage collection are deliberately never called by this path: V7-F — the sweep runs AFTER the commit
@@ -11500,22 +11531,15 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       bodyWhere = rsImageIn('k', newIds, bodyArgs),
       /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور المذكورة ليعرف القائمَ منها — يسأل عن معرّفاتها وتوقيعها (عددُ الصفوف ومجموعُ الأطوال)، وسياجُه التوقيعُ نفسُه */
       bodySig = "SELECT COALESCE(group_concat(k||'='||c||':'||n,','),'') s FROM (SELECT k,COUNT(*) c,SUM(length(v)) n FROM imgs WHERE " + bodyWhere + ' GROUP BY k ORDER BY k)',
-      knownBodies = plan.imagesFresh ? [] :
-        (await rsBound(env.DB.prepare('SELECT k,seq,v FROM imgs WHERE ' + bodyWhere + ' ORDER BY k,seq'), bodyArgs).all()).results || [],
-      sigNow = plan.imagesFresh ? String((await rsBound(env.DB.prepare(bodySig), bodyArgs).first('s')) || '') : '',
-      known = new Set(
-        plan.imagesFresh ? sigNow.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }) :
-        knownBodies.map(function (r) {
-          return r.k;
-        }),
-      );
+      /* V7 · 53 (ملحق 4): المعرّفاتُ والتوقيعُ وحدهما دائماً (لا أجسامُ الصور ولا شاهدُها — استعادةٌ بخرائط حقيقية كانت تتجاوز 32MiB للاستدعاء) */
+      sigNow = String((await rsBound(env.DB.prepare(bodySig), bodyArgs).first('s')) || ''),
+      known = new Set(sigNow.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }));
     /* V7-F · owner decision 2 (ii): a backup that mentions an image the platform no longer holds (swept after its grace) is still restored —
        the reference is written as it is and READS AS MISSING (054 imgVerdict → 404); the witness below still fences that the body is absent
        at commit, and the receipt carries the warning. No image body is ever written by a restore. */
     var missing = newIds.filter(function (id) { return !known.has(id) && !(plan.imagesFresh && plan.imagesFresh.has(id)); });   /* V7 · د6: الصورةُ الجديدة يُكتب جسمُها في الدفعة نفسِها (019g) فليست مفقودة */
     if (missing.length) { rsImageMissingNote(plan, missing); plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
-    if (plan.imagesFresh) plan.guards.push(rsBound(env.DB.prepare("SELECT CASE WHEN (" + bodySig + ")!=?" + (bodyArgs.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), bodyArgs.concat([sigNow])));
-    else plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
+    plan.guards.push(rsBound(env.DB.prepare("SELECT CASE WHEN (" + bodySig + ")!=?" + (bodyArgs.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), bodyArgs.concat([sigNow])));
   }
   var ownArgs = [],
     ownWhere = rsImageIn('img', Array.from(ids), ownArgs),
@@ -11533,15 +11557,27 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     plan.snapshots.push({ domain: 'images', table: 'imgref', rows: oldRefs }, { domain: 'images', table: 'imgown', rows: oldOwn });
   }
   var live = new Set();
-  for (;;) {
-    Object.keys(values).forEach(function (k) {
-      Object.keys(imgIdsIn(values[k] || '')).forEach(function (id) {
-        live.add(id);
-      });
+  Object.keys(values).forEach(function (k) {
+    Object.keys(imgIdsIn(values[k] || '')).forEach(function (id) {
+      live.add(id);
     });
-    // RISHAD-266 · s1: an image the scoped values no longer mention may be mentioned anywhere else — decide on the whole database (fenced).
-    if (Array.from(ids).every(function (id) { return live.has(id); }) || !(await rsReferenceWiden(reference.env, reference))) break;
-    values = rsImageFinalValues(plan, reference);
+  });
+  /* V7 · 53 (ملحق 4 · السبب الجذري لـ500 على Preview): صورةٌ لم تعد القيمُ المنطاقة تذكرها قد يذكرها مفتاحٌ آخر في القاعدة. كان الحكمُ يوسّع المرجعَ
+     إلى القاعدة كلها (rsReferenceWiden: كلُّ kv خارج النطاق وكلُّ الموارد التشغيلية لكل الإدارات إلى العامل، ثم كلُّها شاهداً في دفعة الحفظ) —
+     فيكبر الاستدعاءُ بحجم القاعدة لا بحجم الحفظ، ويتجاوز سقفَ D1 (32MiB للاستدعاء) فيعود 500 save-failed. الآن يسأل D1 نفسَها بعبارةٍ واحدة
+     (rsImageHeldSql) أيُّ هذه المعرّفات ما زال نصٌّ خارج المفاتيح المحفوظة يذكره — kv صفّاً صفّاً وعبر حدود الصفوف · نصوصُ السجلات التشغيلية —
+     فلا يعبر إلا المعرّفات. والسياجُ العبارةُ نفسُها داخل دفعة الحفظ: أيُّ كتابةٍ متزامنة تغيّر الجواب ⇒ KIVO_REV_CONFLICT (كما كان الشاهد).
+     نصٌّ قديم يحمل هروبَ \u00XX (قد يخفي معرّفاً) خارج المحفوظ ⇒ لا يُحكم: كلُّها تبقى كما هي (لا يتيم) — والكنسُ (054 imgSweep) يقرّر وحده بعد ذلك. */
+  var lost = Array.from(ids).filter(function (id) { return !live.has(id); }), scope = reference.scope;
+  if (lost.length && scope && !scope.all && !reference.noWiden) {
+    lost.filter(function (id) { return !IMG_SCAN_ID_RX.test(id); }).forEach(function (id) { live.add(id); });
+    var ask = lost.filter(function (id) { return IMG_SCAN_ID_RX.test(id); });
+    if (ask.length) {
+      var proof = rsImageHeldSql(ask, keys), held = String((await rsBound(env.DB.prepare(proof.sql), proof.args).first('h')) || '');
+      var heldIds = held.charAt(0) !== '!' ? held.split(',').filter(Boolean) : await rsImageHeldEsc(env, ask, held);
+      (heldIds ? Array.from(heldIds) : ask).forEach(function (id) { live.add(id); });
+      plan.guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN (' + proof.sql + ') IS NOT ?' + (proof.args.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), proof.args.concat([held])));
+    }
   }
   var refs = [],
     updates = new Map(),
@@ -20492,6 +20528,7 @@ function opReadFailed(error) {
   var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
   if (error.rs || error.ocCode) return json({ ok: 0, err: error.rs || error.ocCode }, error.status || 400);
   if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
+  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 (§3ب.7) */
   throw error;
 }
 async function opReadOnce(env, url, session) {
@@ -24003,6 +24040,20 @@ function dbGuardError(code, status) {
   e.dbGuardCode = code;
   e.dbGuardStatus = status || 503;
   return e;
+}
+/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ الأعطال 500 بلا رسالة. سقفُ الاستدعاء (32MiB — حتميٌّ، الإعادةُ لا تنفع) ⇒
+   413 batch-budget · وأيُّ خطأ D1 آخر (ذاكرة · ازدحام · مهلة) ⇒ 503 db-busy مع Retry-After. لا شيء كُتب (الدفعةُ ذرّية) والرسالةُ عربية. */
+var DB_LIMIT_MSG = { 'batch-budget': 'العملية أكبر من أن تُنفَّذ مرة واحدة. احفظ شهراً واحداً أو يوماً واحداً في كل مرة.', 'db-busy': 'الخادم مشغول الآن. أعد المحاولة بعد لحظات، وبياناتك محفوظة كما هي.' };
+function dbLimitFailure(e) {
+  var text = String((e && e.message) || e || '');
+  if (!/D1_ERROR|D1 DB|SQLITE_(?:TOOBIG|NOMEM|BUSY|FULL)|Serialized RPC|Durable Object|Network connection lost|storage operation exceeded/i.test(text)) return null;
+  var err = /Serialized RPC arguments or return values are limited|SQLITE_TOOBIG|too many SQL variables|statement too long/i.test(text) ? 'batch-budget' : 'db-busy';
+  return { err: err, status: err === 'db-busy' ? 503 : 413, msg: DB_LIMIT_MSG[err] };
+}
+function dbLimitResponse(env, e, path) {
+  var f = dbLimitFailure(e); if (!f) return null;
+  logEv('error', 'db-limit', { rid: env && env.__rid, p: path, st: f.status, code: f.err, err: errMsg(e) });
+  return json({ ok: 0, err: f.err, msg: f.msg, rid: env && env.__rid }, f.status, f.status === 503 ? { 'Retry-After': '5' } : null);
 }
 function dbGuardFailure(e) {
   var text = String((e && e.message) || e || '');
@@ -31595,7 +31646,7 @@ async function saveRoute(env, request, path, ss) {
   } catch (eS) {
     var guardSave=dbGuardFailure(eS);if(guardSave)return json({ok:0,err:guardSave.err},guardSave.status);
     /* فشل الحفظ يظهر باسمه في سجلات المشروع وفي فاحص الشبكة — لا صمت */
-    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
+    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); var limS = dbLimitResponse(env, eS, path); if (limS) return limS; logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
   }
 }
 /* KIVO_264 · C1 للقراءة (اختياري — العقدُ نفسُه لـ/api/save): ?uid= على /api/changes و/api/get = هويةُ الجلسة التي بُني لها التبويب (BOOT.uid)؛

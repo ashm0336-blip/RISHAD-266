@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import v8 from 'node:v8';
 import { makeSql as makeFirstAdminSql } from '../../tools/provision_first_admin.mjs';
 import { moduleDir as _moduleDir } from '../../tools/systems_paths.mjs';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -77,21 +78,30 @@ export function moduleDir(slug) { return _moduleDir(SRC, slug); }
 export function moduleFile(slug, name) { return path.join(moduleDir(slug), name); }
 export function moduleLogic(slug) { const d = moduleDir(slug); let meta = {}; try { meta = JSON.parse(fs.readFileSync(path.join(d, 'meta.json'), 'utf8')); } catch (e) { /* بلا meta: logic.js وحده */ } return ['logic.js'].concat(meta.logicParts || []).map((f) => { const t = fs.readFileSync(path.join(d, f), 'utf8'); return t.endsWith('\n') ? t : t + '\n'; }).join(''); }
 /* ── D1 بديل: الواجهة التي يستعملها العامل فقط (prepare/bind/first/all/run · batch · withSession) ── */
+/* V7 · 53: سقوفُ D1 الحقيقية في وضع limits (اختياري: DB.limits = true، أو KIVO_D1_LIMITS=1) — بلا هذا الوضع لا يتغيّر شيء.
+   call: «Serialized RPC arguments or return values are limited to 32MiB» (مقيسٌ على Preview، ملحق 53 (4)) — الحجمُ بمسلسل V8 نفسِه
+   (v8.serialize) لمعاملات الاستدعاء (نصوصُ العبارات ومعاملاتُها) ولنتيجته، فالاستدعاءُ first/all/run أو batch واحد.
+   sql: نصُّ العبارة ≤ 100KB · params: ≤ 100 معامل للعبارة · value: نصٌّ أو كتلة ≤ 2MB (حدودُ D1 المنشورة). */
+export const D1_LIMITS = { call: 32 * 1048576, sql: 100000, params: 100, value: 2000000 };
 export class D1Shim {
-  constructor() { this.db = new DatabaseSync(':memory:'); this.failIf = null; this.log = []; this.trips = 0; this._inBatch = false; }   /* KIVO_255 · AUD-037: trips = جولاتُ D1 (كلُّ first/all/run/raw جولة · batch جولةٌ واحدة) */
+  constructor() { this.db = new DatabaseSync(':memory:'); this.failIf = null; this.log = []; this.trips = 0; this._inBatch = false; this.limits = process.env.KIVO_D1_LIMITS === '1'; this.peak = 0; }
+  _lim() { return this.limits === true ? D1_LIMITS : this.limits || null; }
+  _rpc(value) { const L = this._lim(); if (!L) return; const n = v8.serialize(value).length; if (n > this.peak) this.peak = n; if (n > L.call) throw new Error('D1_ERROR: Serialized RPC arguments or return values are limited to 32MiB, but the size of this value was: ' + n + ' bytes.'); }
+  _stmtLimits(sql, args) { const L = this._lim(); if (!L) return; if (Buffer.byteLength(sql) > L.sql) throw new Error('D1_ERROR: statement too long: SQLITE_TOOBIG'); if (args.length > L.params) throw new Error('D1_ERROR: too many SQL variables: SQLITE_RANGE'); for (const a of args) if (typeof a === 'string' && Buffer.byteLength(a) > L.value) throw new Error('D1_ERROR: string or blob too big: SQLITE_TOOBIG'); }   /* KIVO_255 · AUD-037: trips = جولاتُ D1 (كلُّ first/all/run/raw جولة · batch جولةٌ واحدة) */
   trip() { if (!this._inBatch) this.trips++; }
   withSession() { return this; }
   prepare(sql) { const self = this; return new (class Stmt {
     constructor() { this.sql = sql; this.args = []; }
     bind(...a) { this.args = a.map(v => v === undefined ? null : (typeof v === 'boolean' ? (v ? 1 : 0) : v)); return this; }
-    _st() { self.log.push(this.sql); self.trip(); if (self.failIf && self.failIf(this.sql)) throw new Error('D1_ERROR: injected failure for test'); return self.db.prepare(this.sql); }
+    _st() { self.log.push(this.sql); self.trip(); if (self.failIf && self.failIf(this.sql)) throw new Error('D1_ERROR: injected failure for test'); self._stmtLimits(this.sql, this.args); if (!self._inBatch) self._rpc([this.sql, this.args]); return self.db.prepare(this.sql); }
+    _out(v) { if (!self._inBatch) self._rpc(v); return v; }
     /* Node 22 sqlite treats ?1/?2 as named parameters; D1 binds them positionally.
        Keep the adaptation ONLY in this test shim, never in the production Worker. */
     _params() { return /\?[1-9][0-9]*/.test(this.sql) && this.args.length ? [Object.fromEntries(this.args.map((v, i) => [String(i + 1), v]))] : this.args; }
-    async first(col) { const r = this._st().get(...this._params()); if (r == null) return null; return col ? r[col] : r; }
-    async all() { const rows = this._st().all(...this._params()); return { results: rows, success: true, meta: { rows_read: rows.length } }; }
+    async first(col) { const r = this._out(this._st().get(...this._params())); if (r == null) return null; return col ? r[col] : r; }
+    async all() { const rows = this._out(this._st().all(...this._params())); return { results: rows, success: true, meta: { rows_read: rows.length } }; }
     async run() { const i = this._st().run(...this._params()); return { success: true, meta: { changes: Number(i.changes), last_row_id: Number(i.lastInsertRowid) }, results: [] }; }
-    async raw() { const rows = this._st().all(...this._params()); return rows.map(r => Object.values(r)); }
+    async raw() { const rows = this._out(this._st().all(...this._params())); return rows.map(r => Object.values(r)); }
     _allSync() { const rows = this._st().all(...this._params()); return { results: rows, success: true, meta: { rows_read: rows.length } }; }
     _runSync() { const i = this._st().run(...this._params()); return { success: true, meta: { changes: Number(i.changes), last_row_id: Number(i.lastInsertRowid) }, results: [] }; }
     /* D1.batch returns result rows for DML RETURNING as well as SELECT. Running
@@ -110,7 +120,7 @@ export class D1Shim {
   /* KIVO_259 (إصلاحُ عُدّة — إفصاح): الدفعةُ تُنفَّذ متزامنةً بلا await بين BEGIN وCOMMIT — ذرّيةٌ كما في D1 الحقيقية التي تسلسل الدفعات.
      كانت تُفلت await داخل المعاملة فيبدأ طلبٌ متزامنٌ آخر معاملتَه («cannot start a transaction within a transaction») — لم يظهر قبل
      اختبارات التزامن (save_race) لأن الاختباراتِ السابقةَ كلَّها متتابعة. */
-  async batch(stmts) { const out = []; this.trips++; this._inBatch = true; this.db.exec('BEGIN'); try { for (const s of stmts) out.push(s._batchSync()); this.db.exec('COMMIT'); } catch (e) { this.db.exec('ROLLBACK'); throw e; } finally { this._inBatch = false; } return out; }
+  async batch(stmts) { const out = []; this.trips++; this._rpc(stmts.map((s) => [s.sql, s.args])); this._inBatch = true; this.db.exec('BEGIN'); try { for (const s of stmts) out.push(s._batchSync()); if (this._lim()) this._rpc(out.map((r) => r.results)); this.db.exec('COMMIT'); } catch (e) { this.db.exec('ROLLBACK'); throw e; } finally { this._inBatch = false; } return out; }
   exec(sql) { this.db.exec(sql); }
   q(sql, ...args) { const params = /\?[1-9][0-9]*/.test(sql) && args.length ? [Object.fromEntries(args.map((v, i) => [String(i + 1), v]))] : args; return this.db.prepare(sql).all(...params); }
 }

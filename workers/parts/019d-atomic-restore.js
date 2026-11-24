@@ -69,22 +69,7 @@ async function rsScopeOperational(env, capture, keys) {
   capture.snapshots.push.apply(capture.snapshots, state.snapshots);
   capture.guards.push.apply(capture.guards, state.guards);
 }
-/* A decision that depends on every value in the database (an image no longer referenced in
-   scope may be referenced elsewhere) widens the reference to the whole database, fenced alike. */
-async function rsReferenceWiden(env, reference) {
-  var scope = reference.scope;
-  if (!scope || scope.all || reference.noWiden) return false;   /* V7 · د6: استيرادُ الإدارة على أجزاء لا يحمّل القاعدةَ كلَّها ليحكم على صورةٍ لم تعد إدارتُه تذكرها — يحكم بفهرس المراجع (imgref)، والكنسُ يعيد الفحص قبل أي حذف (019g) */
-  var P = env.__pre, later = JSON.stringify(scope.later), where = 'NOT ' + RS_SCOPE_KV + ' AND k NOT IN (SELECT value FROM json_each(?2))',
-    rows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + where + ' ORDER BY k,seq').bind(scope.arg, later).all()).results || [],
-    joined = kvJoin(rows), departments = parseJson(reference.inputKeys[K_DEPTS] || '[]', null);
-  rows.forEach(function (row) { scope.rows.push(row); });
-  Object.keys(joined).forEach(function (k) { scope.later.push(k); P.kv[k] = joined[k]; });
-  scope.late.push.apply(scope.late, rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, where, [scope.arg, later]));
-  scope.all = true;
-  if (!Array.isArray(departments) || departments.some(function (d) { return !d || !rsScopeDepartments([d.id]); })) throw ocError('departments');
-  await rsScopeOperational(env, reference.operational, rsScopeOperationalKeys(departments.map(function (d) { return d.id; })));
-  return true;
-}
+/* V7 · 53 (ملحق 4): rsReferenceWiden (توسيعُ المرجع إلى القاعدة كلها لحكم صورة) أُزيل — 019e rsImageHeldSql يسأل D1 بالمعرّفات. */
 async function rsReferenceSnapshot(env, uid, options) {
   /* One coherent reference snapshot feeds actor construction and applySave. Its
      complete row witness is rechecked INSIDE the eventual write transaction. */
