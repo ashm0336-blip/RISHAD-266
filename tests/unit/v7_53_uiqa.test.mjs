@@ -25,3 +25,17 @@ test('١٣ — قاعدةُ تحيةٍ واحدة: الساعة 4 فجراً ل�
     assert.doesNotMatch(s, /\?\s*"صباح الخير"/, rel + ': لا قاعدةَ تحيةٍ ثانية داخل الصفحة');
   }
 });
+
+test('S15 — رفضُ «الإحصائيات اليومية» بالنطاق يقول إن الإدخال لمدير المنصة أو لصاحب صلاحية الإحصائيات', async () => {
+  const calls = [];
+  const fetch = async (u, o) => { calls.push((o && o.method) || 'GET'); const post = o && o.method === 'POST';
+    return { ok: !post, status: post ? 403 : 200, json: async () => (post ? { ok: 0, err: 'denied', why: 'scope', reasonKeys: [] } : { ok: 1, rev: 3, data: {} }) }; };
+  const ctx = { KIVO: {}, window: { __BS_BOOT: { uid: 'TEST_ONLY_u', srv: 1, cf: 1 } }, fetch, JSON, Object, String, Number, Promise }; vm.createContext(ctx);
+  vm.runInContext(rd('src/systems/dstats/client/580-historical-import.js'), ctx);
+  const D = ctx.KIVO.DailyStats; await D.refresh();
+  assert.equal(await D.save(D.read()), false, 'refused');
+  assert.deepEqual(calls, ['GET', 'POST']);
+  const m = D.message();
+  assert.match(m, /مدير المنصة/, m); assert.match(m, /صلاحية «الإحصائيات اليومية»/, m);
+  assert.doesNotMatch(m, /ونطاق البيانات والأقفال/, 'not the generic message');
+});
