@@ -5973,7 +5973,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   async nfLoadManagement(more) {
     const N=this.nfN();if(!N)return;
     this.nfRefreshTargets();
-    const result=await (more ? N.loadMoreBroadcasts() : N.refreshManagement());
+    let result=await (more ? N.loadMoreBroadcasts() : N.refreshManagement());
+    if(this._nfDisposed)return;
+    /* V7 · 53 (M1): الصفحةُ تُرسم الآن قبل حسم سياق الوحدة، فقراءةٌ بدأت قبل الحسم تعود «تغيّر النطاق» — تُعاد القراءةُ (بلا أثر) مرّتين */
+    for(let again=0;!more&&!(result&&result.ok===1)&&again<2&&!this._nfDisposed;again++){await new Promise(r=>setTimeout(r,400*(again+1)));if(this._nfDisposed)return;result=await N.refreshManagement();}
     if(this._nfDisposed)return;
     this.setState({nfTick:(this.state.nfTick || 0)+1,nfManageError:result && result.ok === 1 ? "" : (result && result.err) || "تعذّر تحميل سجل التعاميم"});
   }
