@@ -84,7 +84,7 @@ Object.assign(Component.prototype, {
       Y = s.tkY || T.y,
       M = s.tkM || T.m,
       HM = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"],
-      k = (this._tkKpiWant(Y + "-" + M), this._tkKpi(this._tkStore(), Y, M)),
+      k = (this._tkKpiWant(KIVO.BassamCal.gYm(Y, M)), this._tkKpi(this._tkStore(), Y, M)),
       P = (v) => (null == v ? "—" : v + "٪");
     ((e.tkKpiTitle = HM[M - 1] + " " + Y + (Y === T.y && M === T.m ? " — الشهر الحالي" : "")),
       (e.tkKpiSub = k.n ? k.n + " مهمة · " + k.done + " منجزة · " + k.open + " مفتوحة · " + k.dec + " معتذَر عنها" + (k.can ? " · " + k.can + " ملغاة (خارج الحساب)" : "") : ""),

@@ -50,7 +50,7 @@ Object.assign(Component.prototype, {
     if (!KIVO.bus.read("staff.enabled@1", this)) return {};   /* V7 · د5-د2: بغياب مالك الجدول لا وردياتٍ في المرشِّح */
     const t = KIVO.bus.read("staff.schedule@1", (k) => this._tkLS(k)),
       all = t && "object" === typeof t ? t : {};
-    return (all && all[y + "-" + m]) || {};
+    return (all && all[KIVO.BassamCal.gYm(y, m)]) || {};
   },
   _tkShiftOf(emp, SM) {
     if (!emp) return "";

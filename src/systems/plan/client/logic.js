@@ -6742,8 +6742,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     (m = !1))
                   : (c += "dashed #E1E1E1;background:var(--bg-a2452452450p7);opacity:.9"),
           {
+            cal9: { ym: KIVO.BassamCal.gYm(e.year, n), closed: d || h, why: d ? "ap" : h ? "past" : this.monthOpenFlag(e.year, n) ? "retro" : "", sel: a, cur: i },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
             name: t,
-            greg: this.gregOf(e.year, s),
+            greg: KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(e.year, n)),
             style: c,
             nameColor: g,
             footColor: f,
@@ -17006,7 +17007,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             (e.registryOpen ? "transform:rotate(180deg)" : ""),
         };
       })(),
-      months: c,
+      months: c.map((x) => Object.assign(x, { card: KIVO.BassamCalCard.month(Object.assign({ key: x.cal9.ym, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }, x.cal9)) })),   /* V7 · 53 تقويم (§7) */
       zones: J,
       zoneLabelNodes: lt,
       gateNodes: ft,

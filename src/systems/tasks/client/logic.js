@@ -1,5 +1,15 @@
 "use strict";
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","irshad+seized+tasks"]) {
+  /* V7 · 53 تقويم (ف٥ · ق١ · §7): هذه الصفحة ميلادية — السنةُ والشهرُ واليومُ في حالتها ميلادية والمفاتيحُ ISO (KIVO.BassamCal.gKey/gYm/gMk)؛
+     أسماءُ عُدّة الصفحات (h*) باقيةٌ لمستدعيها ومعناها هنا ميلادي (يومُ الرياض المدني بلا مهلة — كما كانت)، والهجريُّ سطرٌ صغير محسوب لا مخزَّن */
+  MONTHS = KIVO.BassamCal.G_MONTHS.slice();
+  hParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
+  hToday() { return this.hParts(new Date()); }
+  hGreg(t, e, s) { return new Date(t, e - 1, s, 12); }
+  hMonthDays(t, e) { return KIVO.BassamCal.gMonthDays(t, e); }
+  hGregMonthLabel(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
+  hGregYearRange(t) { return KIVO.BassamCal.hRangeOfYear(t); }
+  curHijri() { const t = this.hToday(); return { y: t.y, m: t.m }; }
   bsToast(t, e) {
     try {
       const n = e || "err";
@@ -47,15 +57,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       n = e.toLocaleDateString("ar-SA-u-nu-latn", { weekday: "long" });
     } catch (t) {}
-    let a = 1448,
-      r = 2,
-      s = 1;
-    try {
-      const t = KIVO.BassamCal.hParts(e);   /* V7 · د5-د2 */
-      ((a = t.y), (r = t.m), (s = t.d));
-    } catch (t) {}
+    const g = KIVO.BassamCal.gAt(e), h = KIVO.BassamCal.hOf(g.k);   /* V7 · 53 تقويم: الميلاديُّ أولاً والهجريُّ تابع، والمفتاحُ ISO */
     const o = (t) => (t < 10 ? "0" + t : "" + t);
-    return { wd: n, date: a + "/" + r + "/" + s + " هـ", time: o(e.getHours()) + ":" + o(e.getMinutes()), k: a + "-" + r + "-" + s };
+    return { wd: n, date: g.d + "/" + g.m + "/" + g.y + (h ? " · " + h.d + "/" + h.m + "/" + h.y + " هـ" : ""), time: o(e.getHours()) + ":" + o(e.getMinutes()), k: g.k };
   }
   loadAllTasks() {
     return this._tkLS("bassam_tasks_v1") || {};
@@ -128,8 +132,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       Object.keys(tasks).forEach((key) => { const p = key.split("-"); if (+p[0] === year && +p[1] === month) delete tasks[key]; });
       draft.set("bassam_tasks_v1", tasks);
       if (this.PC("approve")) {
-        const locks = draft.get("bassam_tasks_locks_v1") || {}, prefix = year + "-" + month + "-";
-        delete locks[year + "-" + month];
+        const locks = draft.get("bassam_tasks_locks_v1") || {}, prefix = KIVO.BassamCal.gYm(year, month) + "-";
+        delete locks[KIVO.BassamCal.gYm(year, month)];
         Object.keys(locks).forEach((key) => { if (key.indexOf(prefix) === 0) delete locks[key]; });
         draft.set("bassam_tasks_locks_v1", locks);
       }
@@ -137,7 +141,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   tkHParts(t) {
     try {
-      return KIVO.BassamCal.hParts(new Date(t));   /* V7 · د5-د2 */
+      return this.hParts(new Date(t));   /* V7 · 53 تقويم: يومُ الرياض الميلادي (الاسمُ قديم) */
     } catch (t) {
       return null;
     }
@@ -164,7 +168,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!t) return "";
     try {
       const e = this.fmtStampParts(t);
-      return e && e.date ? e.date.replace(" هـ", "") : "";
+      return e && e.date ? e.date.replace("", "") : "";
     } catch (t) {
       return "";
     }
@@ -296,7 +300,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (e) { /* بلا DOM ⇒ لا تنقّل */ }
   }
   _tkWd1(y, m) {
-    const k = y + "-" + m;
+    const k = KIVO.BassamCal.gYm(y, m);
     this.__wd1 = this.__wd1 || {};
     if (!(k in this.__wd1)) {
       let w = -1;
@@ -430,7 +434,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       t && "object" == typeof t && (e = t);
     } catch (t) {}
     const n = this.hToday(),
-      a = e[n.y + "-" + n.m] || {},
+      a = e[KIVO.BassamCal.gYm(n.y, n.m)] || {},
       r = new Date().toLocaleDateString("ar-SA-u-nu-latn", { weekday: "long" });
     return t
       .filter((t) => {
@@ -475,14 +479,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return +t < n.y || (+t === n.y && +e < n.m);
   }
   monthOpenFlagT(t, e) {
-    const n = (this.state.locked || {})[t + "-" + e];
+    const n = (this.state.locked || {})[KIVO.BassamCal.gYm(t, e)];
     return !(!n || "object" != typeof n || !n.mo);
   }
   monthAutoLockedT(t, e) {
     return this.monthPastT(t, e) && !this.monthOpenFlagT(t, e);
   }
   monthApprovedT(t, e) {
-    return !0 === (this.state.locked || {})[t + "-" + e];
+    return !0 === (this.state.locked || {})[KIVO.BassamCal.gYm(t, e)];
   }
   monthLockedT(t, e) {
     return this.monthApprovedT(t, e) || this.monthAutoLockedT(t, e);
@@ -491,8 +495,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
      فُتح بأثر رجعي · true يومٌ أُغلق بيده — فلا يتغيّر الخادم ولا يُخلط بمفتاح الشهر «y-m». والمنقضي = قبل اليوم التشغيلي (الرياض − 3 ساعات) كالخادم */
   _tkDayLockOf(y, m, d) {
     const L = this.state.locked || {},
-      v = L[y + "-" + m + "-" + d],
-      past = this._tkDayN(y + "-" + m + "-" + d) < this._tkTodayN(),
+      v = L[KIVO.BassamCal.gKey(y, m, d)],
+      past = this._tkDayN(KIVO.BassamCal.gKey(y, m, d)) < this._tkTodayN(),
       opened = !!(v && "object" === typeof v && v.mo),
       shut = !0 === v,
       viaMonth = this.monthOpenFlagT(y, m);
@@ -510,13 +514,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   _setDayLockT(y, m, d, op) {
     return this.mutateLocks((r) => {
-      const k = y + "-" + m + "-" + d;
+      const k = KIVO.BassamCal.gKey(y, m, d);
       "open" === op ? (r[k] = { mo: 1 }) : "close" === op ? (r[k] = !0) : delete r[k];
     }, "retroAsk");
   }
   _setMonthOpenT(t, e, n) {
     return this.mutateLocks((r) => {
-      const a = t + "-" + e;
+      const a = KIVO.BassamCal.gYm(t, e);
       n ? (r[a] = { mo: 1 }) : delete r[a];
     }, "retroAsk");
   }
@@ -810,7 +814,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!Array.isArray(r)) return null;
     const k = { id: null == r[13] ? null : r[13], ek: null == r[14] ? "" : String(r[14]), e22: "string" === typeof r[22] ? r[22] : "", sig: null == r[13] ? JSON.stringify(r) : "" };
     if (!k.sig && null != d) {
-      const L = (this.loadAllTasks() || {})[this.state.year + "-" + this.state.month + "-" + d] || [];
+      const L = (this.loadAllTasks() || {})[KIVO.BassamCal.gKey(this.state.year, this.state.month, d)] || [];
       L.filter((q) => this._tkSame(q, k)).length > 1 && (k.sig = JSON.stringify(r));
     }
     return k;
@@ -857,7 +861,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const n = this.state,
       a = n.acceptRef;
     if (!a) return;
-    const r = n.year + "-" + n.month + "-" + a.d;
+    const r = KIVO.BassamCal.gKey(n.year, n.month, a.d);
     (await this.mutateStore((n) => {
       const s = (n[r] || []).map((t) => t.slice()),
         q = this._tkIdx(s, a.i, a.k);
@@ -877,7 +881,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   async _doFinish(t, e, k) {
     const n = this.state,
-      a = n.year + "-" + n.month + "-" + t;
+      a = KIVO.BassamCal.gKey(n.year, n.month, t);
     return this.mutateStore((t) => {
       const n = (t[a] || []).map((t) => t.slice());
       e = this._tkIdx(n, e, k);
@@ -890,7 +894,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   _doReopen(t, e, k) {
     const n = this.state,
-      a = n.year + "-" + n.month + "-" + t;
+      a = KIVO.BassamCal.gKey(n.year, n.month, t);
     /* تحقّقُ c4f79a0 (C-3): بهوية الصفّ لا بموضعه */
     e = this._tkIdx(this.loadAllTasks()[a], e, k);
     if (e < 0) return void this._tkGone();
@@ -1262,8 +1266,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* KIVO_265 · مراجعة U6: اليومُ التشغيلي كالخادم (070 tkToday): هجريُّ الرياض قبل ثلاث ساعات (KIVO.BassamProfileFacts.hijriAt) — وبدونها يومُ الجهاز */
   _tkTodayK() {
     const PF = KIVO.BassamProfileFacts,
-      T = PF && PF.hijriAt ? PF.hijriAt(Date.now() - 108e5) : this.hToday();
-    return T.y + "-" + T.m + "-" + T.d;
+      T = PF && PF.dayAt ? PF.dayAt(Date.now() - 108e5) : KIVO.BassamCal.gToday();   /* V7 · 53 تقويم: اليومُ التشغيلي الميلادي كالخادم (calToday) */
+    return KIVO.BassamCal.gKey(T.y, T.m, T.d);
   }
   /* رقمُ اليوم الهجري الجاري — يُحفظ دقيقةً (حالةُ كل صفٍّ متكرر في الجدول تقارن به) */
   _tkTodayN() {
@@ -1297,7 +1301,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       DN = {},
       WD = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
       MN = this.MONTHS[e.month - 1] || "",
-      SK = e.year + "-" + e.month,
+      SK = KIVO.BassamCal.gYm(e.year, e.month),
       cur = e.year === s.y && e.month === s.m,
       i = this.mDays(e.year, e.month - 1),
       g = this.hGreg(e.year, e.month, 1),
@@ -1337,6 +1341,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? " · نقرة مزدوجة لإغلاق اليوم"
                   : "";
       days.push({
+        cal9: { k: KIVO.BassamCal.gKey(e.year, e.month, a), closed: !!(D.locked || D.approved || D.shut), why: D.approved ? "ap" : D.shut ? "shut" : D.locked ? "past" : D.past ? "retro" : "", sel: a === sel, today: cur && a === s.d },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
         num: String(a),
         gnum: String(G.getDate()),
         isToday: cur && a === s.d,
@@ -1366,18 +1371,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     const today = !!eff && cur && eff === s.d,
       DL = eff ? this._tkDayLockOf(e.year, e.month, eff) : null;
-    let title = "مهام شهر " + MN + " " + e.year + " هـ — كل الأيام",
+    let title = "مهام شهر " + MN + " " + e.year + " — كل الأيام",
       sub = "";
     if (eff) {
       const G = gd(eff);
-      title = (today ? "مهام اليوم — " : "مهام يوم ") + WD[G.getDay()] + " " + eff + " " + MN + " " + e.year + " هـ";
+      title = (today ? "مهام اليوم — " : "مهام يوم ") + WD[G.getDay()] + " " + eff + " " + MN + " " + e.year;
       try {
         sub = "الموافق " + G.toLocaleDateString("ar-u-ca-gregory-nu-latn", { day: "numeric", month: "long", year: "numeric" }) + " م";
       } catch (x) { /* بلا تقويم ميلادي في المتصفح ⇒ بلا سطر «الموافق» */ }
-    } else if (sel) title = "نتائج البحث في مهام شهر " + MN + " " + e.year + " هـ";
+    } else if (sel) title = "نتائج البحث في مهام شهر " + MN + " " + e.year;
     return {
       tkDayStripOn: "prod" !== e.sub,
-      tkDays: days,
+      tkDays: days.map((x) => Object.assign(x, { card: KIVO.BassamCalCard.day(Object.assign({ key: x.cal9.k, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isToday) } }, x.cal9)) })),   /* V7 · 53 تقويم (§7) */
       tkDaysN: String(filled),
       tkDayTitle: title,
       tkDaySub: sub,
@@ -1414,7 +1419,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const e = this.state,
       G = this.hGreg(e.year, t.m, t.day),
       WD = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
-      lbl = (G ? WD[G.getDay()] + " " : "") + t.day + " " + n + " " + e.year + " هـ",
+      lbl = (G ? WD[G.getDay()] + " " : "") + t.day + " " + n + " " + e.year,
       op = t.op,
       openish = "open" === op || "unshut" === op,
       T = {
@@ -1619,8 +1624,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
     const T = this.hToday(),
       Y = this.hParts(new Date(Date.now() - 864e5)),
-      tk = T.y + "-" + T.m + "-" + T.d,
-      yk = Y.y + "-" + Y.m + "-" + Y.d,
+      tk = KIVO.BassamCal.gKey(T.y, T.m, T.d),
+      yk = KIVO.BassamCal.gKey(Y.y, Y.m, Y.d),
       WD = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
     /* الحقولُ على كائن الصفّ نفسِه لا على نسخةٍ منه: الصفُّ نفسُه في اللوحة (U.flat) — ونسخةٌ ثانية تُحسب صفّاً ثانياً بالهوية نفسِها.
        الكائناتُ تُبنى من جديد مع كل رسم فلا يبقى أثرٌ لرسمٍ سابق */
@@ -1631,7 +1636,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const shut = !!closed[k],
         a = String(k).split("-").map(Number),
         today = k === tk,
-        title = WD[this._tkWdOf(k)] + " " + a[2] + " " + (this.MONTHS[a[1] - 1] || "") + " " + a[0] + " هـ";
+        title = WD[this._tkWdOf(k)] + " " + a[2] + " " + (this.MONTHS[a[1] - 1] || "") + " " + a[0];
       return Object.assign(x, {
         dayHeadOn: !0,
         dayTitle: title,
@@ -1670,8 +1675,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!S || !S.split || !S.split("bassam_tasks_v1") || this._tkWant === e.year) return;
     this._tkWant = e.year;
     /* الشهرُ المعروض أولاً، وبقيةُ أشهر السنة (أعدادُ البطاقات) بعد فتح الصفحة — لا تؤخّر الفتح */
-    S.want("bassam_tasks_v1", { groups: [e.year + "-" + e.month] });
-    setTimeout(() => this._tkWant === e.year && S.want("bassam_tasks_v1", { groups: this.MONTHS.map((t, i) => e.year + "-" + (i + 1)) }), 1500);
+    S.want("bassam_tasks_v1", { groups: [KIVO.BassamCal.gYm(e.year, e.month)] });
+    setTimeout(() => this._tkWant === e.year && S.want("bassam_tasks_v1", { groups: this.MONTHS.map((t, i) => KIVO.BassamCal.gYm(e.year, (i + 1))) }), 1500);
   }
   renderVals() {
     if (this.props && "kpi" === this.props.solo) return this._tkSoloVals();
@@ -1760,7 +1765,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
        اليومُ المختار لهذا الشهر (tkDaySel) — الافتراضي اليومُ الجاري في الشهر الجاري و«الشهر كاملاً» (0) في غيره. والبحثُ يبحث في الشهر كله.
        الشهرُ كاملاً مقسَّمٌ بأيامه (DG) والأحدثُ أولاً */
     const VW = this.tkViewer(),
-      SK = e.year + "-" + e.month,
+      SK = KIVO.BassamCal.gYm(e.year, e.month),
       SDS = this._tkDaySelOf(e),
       SD0 = SDS && SDS.k === SK ? +SDS.d || 0 : this._tkDayDef(e, s),
       SD = String(e.search || "").trim() ? 0 : SD0,
@@ -1775,16 +1780,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     for (let t = 1; t <= i; t++) {
       const o = this.tkLockedAt(e.year, e.month, t),
         oT = this._tkLockTxt(e.year, e.month, t);
-      (r[e.year + "-" + e.month + "-" + t] || []).forEach(
+      (r[KIVO.BassamCal.gKey(e.year, e.month, t)] || []).forEach(
         (r, s, A) =>
           this.tkVisible(r, VW) &&
           l.push({
             ...a(r),
-            tkcKey: e.year + "-" + e.month + "-" + t + "#" + s,
+            tkcKey: KIVO.BassamCal.gKey(e.year, e.month, t) + "#" + s,
             tkcT: r,
             /* KIVO_265 · البند 11: خانةُ الاختيار للإجراء الجماعي (الصفُّ المفرد وحده — رأسُ المجموعة بلا خانة) */
             ...(() => {
-              const sk = this._tkSelKey(e.year + "-" + e.month + "-" + t, r),
+              const sk = this._tkSelKey(KIVO.BassamCal.gKey(e.year, e.month, t), r),
                 on = !!(e.tkSel || {})[sk],
                 can = this._tkSrv() && !!this._tkM() && this.PC("edit") && !this.monthLockedT(e.year, e.month);   /* الإجراءُ الجماعي سيرُ عمل (اعتماد · تمديد · إعادةُ إسناد · إلغاء) ⇒ قفلُ الشهر وحده — لا قفلُ اليوم */
               return { selKey: sk, selCan: can, selOn: on, selStyle: this._tkCbStyle(on, !can), selToggle: (ev) => (ev && ev.stopPropagation && ev.stopPropagation(), can && this._tkSelToggle(sk)) };
@@ -1797,9 +1802,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               const F = r[13] ? this.fmtStampParts(r[13]) : null;
               return {
                 entAt: +r[13] || 0,
-                secK: e.year + "-" + e.month + "-" + t,
+                secK: KIVO.BassamCal.gKey(e.year, e.month, t),
                 createdWeekday: F ? F.wd : t + " " + this.MONTHS[e.month - 1],
-                createdDate: F ? F.date.replace(" هـ", "") : "",
+                createdDate: F ? F.date.replace("", "") : "",
                 createdTime: F ? F.time : "",
               };
             })(),
@@ -1808,10 +1813,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             noEmp: !String(this.empNameOf(r, n)).trim(),
             hasAccepted: !!r[11],
             acceptedWd: r[11] ? this.fmtStampParts(r[11]).wd : "",
-            acceptedDateShort: r[11] ? this.fmtStampParts(r[11]).date.replace(" هـ", "") : "",
+            acceptedDateShort: r[11] ? this.fmtStampParts(r[11]).date.replace("", "") : "",
             acceptedTime: r[11] ? this.fmtStampParts(r[11]).time : "",
             ...this.timeVals(r, o),
-            ...this._tkP2Row(r, e.year + "-" + e.month + "-" + t),
+            ...this._tkP2Row(r, KIVO.BassamCal.gKey(e.year, e.month, t)),
             ...this._rowMenu("t" + t + "-" + this._tkMk(r, s, A), [
               this.PC("edit")
                 ? {
@@ -1877,7 +1882,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       }),
                   }
                 : null,
-              ...this._tkP2Menu(r, e.year + "-" + e.month + "-" + t, this.monthLockedT(e.year, e.month)),   /* المراجعةُ والتمديدُ وإعادةُ الإسناد على قفل الشهر وحده */
+              ...this._tkP2Menu(r, KIVO.BassamCal.gKey(e.year, e.month, t), this.monthLockedT(e.year, e.month)),   /* المراجعةُ والتمديدُ وإعادةُ الإسناد على قفل الشهر وحده */
               this.PC("del")
                 ? {
                     name: "حذف المهمة",
@@ -2000,7 +2005,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           m = this.ST[t];
         return { key: t, label: m[0], dot: "background:" + m[1], count: String(e.length), tasks: e };
       })),
-      g = (new Date(), this.MONTHS[e.month - 1] + " " + e.year + " هـ"),
+      g = (new Date(), this.MONTHS[e.month - 1] + " " + e.year),
       b = this.MONTHS.map((t, n) => {
         const a = n + 1,
           o = e.month === a,
@@ -2041,8 +2046,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   (f = "انقضى — مقفل")),
               (g = !1),
               {
+                cal9: { ym: KIVO.BassamCal.gYm(e.year, a), closed: !0, why: d ? "ap" : "past", sel: o, cur: i },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
                 name: t,
-                greg: h.toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" }),
+                greg: KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(e.year, a)),
                 nameColor: p,
                 cntLabel: f,
                 cntColor: u,
@@ -2096,8 +2102,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     (u = "#cbd5e1"))
                   : ((c += "dashed #E1E1E1;background:var(--bg-a2452452450p7);opacity:.9"), (f = "—"), (u = "#cbd5e1")),
               {
+                cal9: { ym: KIVO.BassamCal.gYm(e.year, a), closed: !1, why: this.monthOpenFlagT(e.year, a) ? "retro" : "", sel: o, cur: i },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
                 name: t,
-                greg: h.toLocaleDateString("ar-u-ca-gregory-nu-latn", { month: "long", year: "numeric" }),
+                greg: KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(e.year, a)),
                 nameColor: p,
                 cntLabel: f,
                 cntColor: u,
@@ -2142,10 +2149,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       tkFull: true,   /* RISHAD-266 P9: الصفحةُ كاملة — ولوحةُ «مؤشرات المهام» وحدها حين solo === "kpi" (logic-kpi.js) */
       dayLabel: g,
       isToday: d,
-      yearLabel: e.year + " هـ",
-      gregRange: this.mStart(e.year, 0).getFullYear() + " – " + this.mStart(e.year, 11).getFullYear() + " م",
+      yearLabel: e.year,
+      gregRange: KIVO.BassamCal.hRangeOfYear(e.year),   /* V7 · 53 تقويم: السنةُ ميلادية والهجريُّ المقابل سطرٌ تابع */
       badgeLabel:
-        "مهام " + this.MONTHS[e.month - 1] + " " + e.year + " هـ — " + (o ? "معتمد ومقفل" : c.length ? "مسودة مفتوحة" : "لا توجد مهام"),
+        "مهام " + this.MONTHS[e.month - 1] + " " + e.year + " — " + (o ? "معتمد ومقفل" : c.length ? "مسودة مفتوحة" : "لا توجد مهام"),
       badgeStyle:
         "display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;border-radius:9999px;padding:4px 12px;font-family:'Cairo',sans-serif;border:1px solid " +
         (o
@@ -2156,7 +2163,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       prevYear: () => this.setState((t) => ({ year: t.year - 1 })),
       nextYear: () => this.setState((t) => ({ year: t.year + 1 })),
       goToday: () => this.setState({ year: s.y, month: s.m, tkDaySel: null, tkDayK: "", tkDayD: 0, tkKf: null, page: 1 }),
-      mcards: b,
+      mcards: b.map((x) => Object.assign(x, { card: KIVO.BassamCalCard.month(Object.assign({ key: x.cal9.ym, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }, x.cal9)) })),   /* V7 · 53 تقويم (§7) */
       search: e.search,
       onSearch: (t) => this.setState({ search: t.target.value, page: 1 }),
       ...this.filterDD("tfs", "fStatus", "كل الحالات", [
@@ -2293,7 +2300,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ],
           ].concat(t);
         try {
-          KIVO.BassamXLSX && KIVO.BassamXLSX.download(n, "tasks-" + (SD ? SD + "-" : "") + this.MONTHS[e.month - 1] + "-" + e.year + ".xlsx");
+          KIVO.BassamXLSX && KIVO.BassamXLSX.download(n, "tasks-" + (SD ? SD + "-" : "") + KIVO.BassamCal.fileTag(KIVO.BassamCal.gYm(e.year, e.month)) + ".xlsx");
         } catch (t) {}
         this.setState({ filesOpen: !1 });
       },
@@ -2574,7 +2581,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         if (t.day) return this._tkDayAskVals(t, n);
         return {
           retroOn: !0,
-          retroTitle: t.open ? "فتح شهر " + n + " " + e.year + " هـ بأثر رجعي" : "إعادة قفل شهر " + n + " " + e.year + " هـ",
+          retroTitle: t.open ? "فتح شهر " + n + " " + e.year + " بأثر رجعي" : "إعادة قفل شهر " + n + " " + e.year,
           retroMsg: t.open
             ? "هذا الشهر انقضى وأُقفل تلقائياً. فتحه يتيح لك إضافة مهامه أو تعديل حالتها بأثر رجعي."
             : "سيعود الشهر إلى حالته المقفلة بانقضائه، ولن يمكن تعديل مهامه حتى تفتحه من جديد.",
@@ -2602,11 +2609,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       tasksCanAdd: !this.monthLockedT(e.year, e.month) && !(SD0 && this.tkLockedAt(e.year, e.month, SD0)) && this.PC("add"),
       permCanAdd: this.PC("add"),
       permCanExport: this.PC("export"),
-      noTasksTitle: "لا توجد مهام لشهر " + this.MONTHS[e.month - 1] + " " + e.year + " هـ",
+      noTasksTitle: "لا توجد مهام لشهر " + this.MONTHS[e.month - 1] + " " + e.year,
       addFirstTaskLabel: "إضافة أول مهمة لشهر " + this.MONTHS[e.month - 1],
       delMonthOn: !!e.delMonth,
       delMonthMsg: e.delMonth
-        ? "سيتم حذف جميع مهام شهر " + this.MONTHS[e.delMonth.n - 1] + " " + e.year + " هـ نهائياً وسيعود الكرت فارغاً — لا يمكن التراجع."
+        ? "سيتم حذف جميع مهام شهر " + this.MONTHS[e.delMonth.n - 1] + " " + e.year + " نهائياً وسيعود الكرت فارغاً — لا يمكن التراجع."
         : "",
       delMonthCancel: () => this._tkClose("delMonth", { delMonth: null }),
       delMonthDo: async () => {
@@ -2619,7 +2626,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         const t = this.state.lockConfirm, year = this.state.year;
         if (!t) return;
         const ok = await this.mutateLocks((locks) => {
-          const key = year + "-" + t.n;
+          const key = KIVO.BassamCal.gYm(year, t.n);
           t.locked ? (this.monthPastT(year, t.n) ? (locks[key] = { mo: 1 }) : delete locks[key]) : (locks[key] = true);
         }, "lockConfirm");
         if (ok) this.setState({ lockConfirm: null });
@@ -2627,12 +2634,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       lcTitle: e.lockConfirm && e.lockConfirm.locked ? "فتح الشهر للتعديل" : "اعتماد وإغلاق الشهر",
       lcMsg: e.lockConfirm
         ? e.lockConfirm.locked
-          ? "سيتم فتح مهام " + this.MONTHS[e.lockConfirm.n - 1] + " " + e.year + " هـ وإلغاء اعتمادها لتصبح متاحة للتعديل."
+          ? "سيتم فتح مهام " + this.MONTHS[e.lockConfirm.n - 1] + " " + e.year + " وإلغاء اعتمادها لتصبح متاحة للتعديل."
           : "سيتم اعتماد مهام " +
             this.MONTHS[e.lockConfirm.n - 1] +
             " " +
             e.year +
-            " هـ وإغلاق الشهر — لن يمكن إضافة أو تعديل أو حذف المهام بعد الإغلاق."
+            " وإغلاق الشهر — لن يمكن إضافة أو تعديل أو حذف المهام بعد الإغلاق."
         : "",
       lcNote:
         e.lockConfirm && e.lockConfirm.locked
@@ -2665,7 +2672,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       confirmDelDo: async () => {
         const t = e.confirmDel;
         if (!t) return;
-        const n = e.year + "-" + e.month + "-" + t.d;
+        const n = KIVO.BassamCal.gKey(e.year, e.month, t.d);
         /* KIVO_265 · حادثةُ الصور (البند 5): الحذفُ الفعليُّ للأخطاء الحديثة وحدها — صفٌّ عليه نشاطٌ يُلغى من قائمته (الخادمُ يرفضه task-del كذلك) */
         {
           const L0 = this.loadAllTasks()[n] || [],
@@ -2754,7 +2761,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         return {
           v: String(a),
           label:
-            a + " " + this.MONTHS[e.month - 1] + " " + e.year + " هـ" + (e.year === s.y && e.month === s.m && a === s.d ? " (اليوم)" : ""),
+            a + " " + this.MONTHS[e.month - 1] + " " + e.year + (e.year === s.y && e.month === s.m && a === s.d ? " (اليوم)" : ""),
           sel: a === r,
         };
       }),
@@ -2771,7 +2778,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           a = (t) =>
             Array.from({ length: i }, (n, a) => {
               const r = a + 1;
-              return { v: String(r), sel: r === t, label: (w1 >= 0 ? TKWD[(w1 + r - 1) % 7] + " " : "") + r + " " + this.MONTHS[e.month - 1] + " " + e.year + " هـ" };
+              return { v: String(r), sel: r === t, label: (w1 >= 0 ? TKWD[(w1 + r - 1) % 7] + " " : "") + r + " " + this.MONTHS[e.month - 1] + " " + e.year };
             }),
           r = this.tkStamp(e.year, e.month, t, e.newSh, e.newSm, e.newSap),
           o = this.tkStamp(e.year, e.month, n, e.newEh, e.newEm, e.newEap),
@@ -2904,7 +2911,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               : l
                 ? "var(--border-brand-soft);background:var(--brand-tint);color:var(--brand-text)"
                 : "var(--border-default);background:var(--bg-surface);color:var(--text-muted)"),
-          tkMonthNote: "كلا الوقتين داخل شهر " + this.MONTHS[e.month - 1] + " " + e.year + " هـ",
+          tkMonthNote: "كلا الوقتين داخل شهر " + this.MONTHS[e.month - 1] + " " + e.year,
         };
       })(),
       acceptOpen: !!e.acceptRef,
@@ -2924,7 +2931,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         if (l <= o) return void this.bsToast("نهاية المهمة يجب أن تكون بعد بدايتها");
         const h = Math.round((l - o) / 6e4) || null,
           m = Math.min(Math.max(1, +(e.newDay || (d ? s.d : 1)) || 1), i),
-          p = e.year + "-" + e.month + "-" + m,
+          p = KIVO.BassamCal.gKey(e.year, e.month, m),
           D = "direct" === e.newAsg,
           P = e.newPick || {},
           K = Object.keys(P);
@@ -2935,7 +2942,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               this.MONTHS[e.month - 1] +
               " " +
               e.year +
-              " هـ معتمد ومقفل — لا يمكن حفظ المهمة فيه. " +
+              " معتمد ومقفل — لا يمكن حفظ المهمة فيه. " +
               this._tkHowOpen("افتح الشهر أولاً بنقرة مزدوجة على كرت الشهر."),
           );
         if (this.tkLockedAt(e.year, e.month, m) || (e.editRef && e.editRef.d && this.tkLockedAt(e.year, e.month, +e.editRef.d)))
@@ -2966,7 +2973,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             if (!edit || edit.k !== p || edit.t !== t || edit.desc !== e.newDesc.trim() || edit.prio !== e.newPrio || edit.s !== o || edit.e !== l ||
                 (!e.editRef.grp && String(edit.ekey || "") !== String(D ? K[0] : ""))) return this.bsToast("الطلب السابق لم يُحسم — احتفظ بالمسودة السابقة وأعد الطلب نفسه", "warn");
           }
-          const body = previous && !original ? Object.assign({}, previous.body) : Object.assign({ k: e.year + "-" + e.month + "-" + e.editRef.d },
+          const body = previous && !original ? Object.assign({}, previous.body) : Object.assign({ k: KIVO.BassamCal.gKey(e.year, e.month, e.editRef.d) },
             e.editRef.grp ? { grp: e.editRef.grp } : { id: original[13], ekey: original[14] == null ? null : String(original[14]) },
             { edit: Object.assign({ k: p, t: t, desc: e.newDesc.trim(), prio: e.newPrio, s: o, e: l }, e.editRef.grp ? {} : { ekey: D ? K[0] : null, wt: D ? null : String(e.pickWt || "") || null }) },
             e.newAdvTouched ? this._tkAdvBody() : {}, RP.op ? { recur: Object.assign({}, RP) } : {});

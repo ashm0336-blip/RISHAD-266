@@ -28,12 +28,12 @@ Object.assign(Component.prototype, {
   /* نهايةُ التكرار: تاريخٌ صريح أو اختصارٌ من الأساس b (أسبوع · أسبوعان · شهر · 3 أشهر · سنة) */
   _tkRecTo(b) {
     const v = String(this.state.newRecTo || "m1"),
-      n = { w1: 7, w2: 14, m1: 30, m3: 90, y1: 354 }[v];
+      n = { w1: 7, w2: 14, m1: 30, m3: 90, y1: 365 }[v];   /* V7 · 53 تقويم: السنةُ ميلادية */
     if (!n) return this._tkDayN(v) ? v : "";
     const a = String(b).split("-").map(Number),
       g = this.hGreg(a[0], a[1], a[2]),
       h = g ? this.tkHParts(g.getTime() + 864e5 * n) : null;
-    return h ? h.y + "-" + h.m + "-" + h.d : "";
+    return h ? KIVO.BassamCal.gKey(h.y, h.m, h.d) : "";
   },
   /* بصمةُ القاعدة (النوع · الأيام · يوم الشهر · النهاية) — تغييرُها في النموذج وحده يرسل «تعديل التكرار» */
   _tkRecSig(o) {
@@ -238,14 +238,14 @@ Object.assign(Component.prototype, {
       base = ser ? this._tkTodayK() : k,
       o = on && !ro ? this._tkRecBody(k, base) : null,
       er = o ? this._tkRecChk(o, from, "new" !== C.mode && C.mode) : "",
-      dk = e.editRef ? e.year + "-" + e.month + "-" + e.editRef.d : "",
+      dk = e.editRef ? KIVO.BassamCal.gKey(e.year, e.month, e.editRef.d) : "",
       to = o && o.to ? o.to.split("-").map(Number) : null,
       ty = to ? to[0] : +from.split("-")[0],
       y0 = +base.split("-")[0],
       WD = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
       wd = this._tkRecWd(k),
       md = "last" === e.newRecMd ? "last" : +e.newRecMd || +k.split("-")[2] || 1,
-      setTo = (y, m, d) => this.setState({ newRecTo: y + "-" + m + "-" + Math.min(Math.max(1, d), this.hMonthDays(y, m)) }),
+      setTo = (y, m, d) => this.setState({ newRecTo: KIVO.BassamCal.gKey(y, m, Math.min(Math.max(1, d), this.hMonthDays(y, m))) }),
       tone = ser && ser.ended ? "var(--border-strong);background:var(--bg-surface-3);color:var(--text-muted)" : ser && ser.paused ? "var(--warning-border);background:var(--warning-bg);color:var(--warning-text)" : "var(--success-border);background:var(--success-bg);color:var(--success-text)",
       typ = (label, sel, off, click) => ({ label: label, aria: sel ? "true" : "false", ariaDis: off ? "true" : "false", tip: off && dis ? dis : "", style: this._tkSeg(sel, off), click: click });
     return {
@@ -301,7 +301,7 @@ Object.assign(Component.prototype, {
       tkRecToOn: "date" === e.newRecEnd,
       tkRecToDs: to ? Array.from({ length: this.hMonthDays(to[0], to[1]) }, (q, i) => ({ v: String(i + 1), label: String(i + 1), sel: i + 1 === to[2] })) : [],
       tkRecToMs: this.MONTHS.map((l, i) => ({ v: String(i + 1), label: l, sel: !!to && i + 1 === to[1] })),
-      tkRecToYs: [0, 1, 2, 3].map((q) => ({ v: String(y0 + q), label: y0 + q + " هـ", sel: y0 + q === ty })),
+      tkRecToYs: [0, 1, 2, 3].map((q) => ({ v: String(y0 + q), label: String(y0 + q), sel: y0 + q === ty })),
       onTkRecToD: (t) => to && setTo(to[0], to[1], +t.target.value),
       onTkRecToM: (t) => to && setTo(to[0], +t.target.value, to[2]),
       onTkRecToY: (t) => to && setTo(+t.target.value, to[1], to[2]),

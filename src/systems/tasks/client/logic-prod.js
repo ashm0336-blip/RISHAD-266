@@ -61,7 +61,7 @@ Object.assign(Component.prototype, {
       emps = Object.keys(E).filter((k) => E[k].asg > 0).map((k) => fin(E[k])).sort(srt),
       shifts = Object.keys(H).filter((k) => H[k].asg > 0).map((k) => fin(H[k])).sort((a, b) => ("بلا وردية" === a.name) - ("بلا وردية" === b.name) || srt(a, b)),
       tot = fin(emps.reduce((o, q) => ((o.asg += q.asg), (o.done += q.done), (o.onTime += q.onTime), (o.late += q.late), (o.apSum += q.apSum), (o.apN += q.apN), (o.img += q.img), (o.can += q.can), o), mk("الإجمالي", ""))),
-      ttl = "إنتاجية مهام " + this.MONTHS[e.month - 1] + " " + e.year + " هـ",
+      ttl = "إنتاجية مهام " + this.MONTHS[e.month - 1] + " " + e.year,
       aoa = () =>
         [["الموظف", "الوردية", "المسندة", "المنجزة", "نسبة الإنجاز", "في الوقت", "متأخرة", "متوسط الفعلي/المخطط", "التوثيق بالصور"]]
           .concat(emps.map((q) => [q.name, q.shift, q.asg, q.done, q.donePct, q.onTime, q.late, q.apAvg, q.docPct]))
@@ -83,7 +83,7 @@ Object.assign(Component.prototype, {
       prodExport: () => {
         if (!this.PC("export")) return;
         try {
-          KIVO.BassamXLSX && KIVO.BassamXLSX.download(aoa(), "tasks-prod-" + this.MONTHS[e.month - 1] + "-" + e.year + ".xlsx");
+          KIVO.BassamXLSX && KIVO.BassamXLSX.download(aoa(), "tasks-prod-" + KIVO.BassamCal.fileTag(KIVO.BassamCal.gYm(e.year, e.month)) + ".xlsx");
         } catch (t) {}
       },
       prodPrint: () => {

@@ -45,7 +45,7 @@ Object.assign(Component.prototype, {
   },
   _tkBulkKeys() {
     const e = this.state,
-      pre = e.year + "-" + e.month + "-";
+      pre = KIVO.BassamCal.gYm(e.year, e.month) + "-";
     return Object.keys(e.tkSel || {}).filter((k) => 0 === k.indexOf(pre));
   },
   _tkBulkRun() {
