@@ -291,15 +291,23 @@ def gen_system_parts(S):
 # (الترويسةُ كما هي حرفاً واسمُ المتغيّر) — بنمط السجل نفسه (permissions/registry/targets.json): الجزءُ = الترويسة + «var X = <JSON مضغوط>;» + المحرّك.
 # التعديلُ اليدوي على جزءٍ منها يُفشل --check (المولَّدُ ≠ الملتزَم). البياناتُ تُفحص: version و docSha256 = السجل v24.9.
 def omit_paths(data, paths, where):
-    """V7 · 53 (تقليصُ العامل): نسخةٌ من data بلا المسارات المذكورة («مفتاح» أو «أب.ابن» في كائنات). المسارُ الغائب خطأٌ (لا حذفَ صامت لما تغيّر اسمُه)."""
+    """V7 · 53 (تقليصُ العامل): نسخةٌ من data بلا المسارات المذكورة («مفتاح» أو «أب.ابن»؛ «أب[].ابن» = الحقلُ في كلِّ عنصرٍ من المصفوفة).
+       المسارُ الغائب خطأٌ (لا حذفَ صامت لما تغيّر اسمُه)."""
     data = json.loads(json.dumps(data))
-    for p in paths:
-        *head, last = p.split('.'); o = data
-        for k in head:
-            if not isinstance(o, dict) or k not in o: raise SystemExit('bindings %s: omit «%s» — المسارُ غيرُ موجود' % (where, p))
-            o = o[k]
-        if not isinstance(o, dict) or last not in o: raise SystemExit('bindings %s: omit «%s» — المسارُ غيرُ موجود' % (where, p))
-        del o[last]
+    def bad(p): raise SystemExit('bindings %s: omit «%s» — المسارُ غيرُ موجود' % (where, p))
+    def drop(o, ks, p):
+        k = ks[0]; arr = k.endswith('[]'); k = k[:-2] if arr else k
+        if not isinstance(o, dict) or k not in o: bad(p)
+        if len(ks) == 1:
+            if arr: bad(p)
+            del o[k]; return
+        if arr:
+            if not isinstance(o[k], list) or not o[k]: bad(p)
+            for x in o[k]:
+                if not isinstance(x, dict) or ks[1] not in x: bad(p)   # الحقلُ في كلِّ عنصر
+                drop(x, ks[1:], p)
+        else: drop(o[k], ks[1:], p)
+    for p in paths: drop(data, p.split('.'), p)
     return data
 
 def gen_bindings(S):

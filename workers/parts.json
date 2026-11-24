@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "aec44891e716f80243b5748f514724cee2bd18c14f2159ed2d69d6d0c67424cf",
+  "sha256": "156a93529c098265be4c1e282b125da8869d57f228ec5642492b807be6249e69",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -68,8 +68,8 @@
         226,
         734
       ],
-      "bytes": 46219,
-      "sha256": "44c5d98226eb2d685c46f8829c31b21d8af90df2df0d7e6ebca5b02789039c0a",
+      "bytes": 57216,
+      "sha256": "d17c08e6e3b82d4416b13518e35690af8379f3425a7a8590ac80fbfad5bb2f35",
       "head": "/* ═══ KIVO · R203 · Phase 4.5 — Guard Binding Shadow على v24.9 (مولَّدٌ آلياً من registry10/guard_bindings.py — لا يُحرَّر يدوياً؛ المصنِّفُ كما في Phase 3) ═══"
     },
     {
