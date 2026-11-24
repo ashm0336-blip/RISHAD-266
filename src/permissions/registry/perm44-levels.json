@@ -6,7 +6,7 @@
   { "key": "input", "name": "إدخال", "desc": "+ يضيف جديداً", "types": ["access", "view", "create"], "sensitive": false },
   { "key": "edit", "name": "تعديل", "desc": "+ يعدّل ويُسند ويُرفق", "types": ["access", "view", "create", "edit"], "sensitive": false },
   { "key": "full", "name": "تشغيل", "desc": "+ يقبل وينهي ويصدّر", "types": "*", "sensitive": false, "ff": true },
-  { "key": "sensitive", "name": "إشراف", "desc": "+ يحذف ويعتمد ويقفل ويعيد الفتح", "types": "*", "sensitive": true, "ff": true },
+  { "key": "sensitive", "name": "اعتماد وحذف", "desc": "+ يحذف ويعتمد ويقفل ويعيد الفتح", "types": "*", "sensitive": true, "ff": true },
   { "key": "custom", "name": "مخصّص", "desc": "تختار الأفعال واحداً واحداً", "custom": true }
  ],
  "names": { "custom": "صلاحيات مخصّصة", "none": "بلا صلاحيات", "super": "صلاحية كاملة بلا أي قيد" }

@@ -822,7 +822,7 @@ Object.assign(Component.prototype, {
         /* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): تحت المستوى المختار سطرُه الوصفي وجدولُ أفعال الصف كلِّها (الفعل · المكان · الحالة) — وفي «مخصّص» مربعٌ عند كل فعلٍ يُمنح */
         lvD: isOn ? (this._p44Lvls().filter((l) => l.v === lv)[0] || {}).d || "" : "",
         tb: isOn
-          ? this._p44Try(() => this._p44E().acts(s.k, role.sys, lv), []).map((x) => {   /* V7 · 53: «تصدير» فعلٌ يُختار في «مخصّص» — وبجانب المربع مستوى الفعل (الحسّاسُ «إشراف») */
+          ? this._p44Try(() => this._p44E().acts(s.k, role.sys, lv), []).map((x) => {   /* V7 · 53: «تصدير» فعلٌ يُختار في «مخصّص» — وبجانب المربع مستوى الفعل (الحسّاسُ «اعتماد وحذف») */
               const has = (g.keys || []).indexOf(x.k) !== -1;
               return Object.assign(x, { on: has ? "true" : "false", flip: () => upd((r) => (r.sys[s.k].keys = has ? r.sys[s.k].keys.filter((y) => y !== x.k) : (r.sys[s.k].keys || []).concat([x.k]))) });
             })

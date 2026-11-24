@@ -211,7 +211,7 @@ test('② roles: a level change is a dirty draft; review names the diff and the 
   assert.deepEqual(J(keys.map((k) => k.k)), J(W.E.sysKeys('tasks').concat(['ff.task.export'])), 'every key of the system to choose from, then the export action');
   assert.equal(keys[keys.length - 1].on, 'false', 'export is not chosen when «مخصّص» starts from «إدخال»');
   const sens = W.E.sysKeys('tasks').filter((k) => W.KIVO.KIVO_REGISTRY.byKey[k].sensitive);
-  assert.ok(sens.length && sens.every((k) => t.tb.find((x) => x.k === k).st === 'إشراف'), 'a sensitive key is marked (its level «إشراف» — was the badge «حسّاس»)');
+  assert.ok(sens.length && sens.every((k) => t.tb.find((x) => x.k === k).st === 'اعتماد وحذف'), 'a sensitive key is marked (its level «اعتماد وحذف» — was the badge «حسّاس»)');
 });
 
 test('a department manager never sees a system that is OFF in his ceiling — not in the editor, the menu or the sections; no platform-admin role', () => {
@@ -715,7 +715,7 @@ test('V7 · 53 (وضوح) the role editor: under the chosen level its line and t
   assert.deepEqual(J(t.tb.map((x) => x.k)), J(W.E.sysKeys('tasks').concat(['self.task.respond', 'ff.task.export'])).sort((a, b) => R.keys.concat(['ff.task.export']).indexOf(a) - R.keys.concat(['ff.task.export']).indexOf(b)), 'every action of the system, registry order');
   const st = (k) => t.tb.find((x) => x.k === k);
   assert.deepEqual([st('task.view').st, st('task.create').st, st('task.edit').st, st('task.accept').st, st('task.delete').st, st('ff.task.export').st, st('self.task.respond').st],
-    ['✔', '✔', '✕ يحتاج تعديل', '✕ يحتاج تشغيل', '✕ يحتاج إشراف', '✕ يحتاج تشغيل', 'لكل موظف على ما يخصه']);
+    ['✔', '✔', '✕ يحتاج تعديل', '✕ يحتاج تشغيل', '✕ يحتاج اعتماد وحذف', '✕ يحتاج تشغيل', 'لكل موظف على ما يخصه']);
   assert.equal(st('task.delete').a, 'يحذف مهمة'); assert.equal(st('task.delete').w, 'المهام');
   assert.ok(t.tb.every((x) => x.ck === false), 'no checkbox outside «مخصّص»');
   t.setLv({ target: { value: 'custom' } }); t = tasks();
