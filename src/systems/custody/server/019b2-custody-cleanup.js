@@ -7,7 +7,7 @@ async function cuCleanupPermission(env, A, dept, intent, oldEmployees, newEmploy
   var before = {
       items: [{ name: 'CLEANUP_WITNESS', qty: 0 }],
       moves: moves.map(function (r, i) {
-        return { t: r.kind, eid: r.holder_key, item: 'CLEANUP_WITNESS', ser: 'W-' + i, y: r.hijri_year, m: r.hijri_month, d: r.hijri_day };
+        return { t: r.kind, eid: r.holder_key, item: 'CLEANUP_WITNESS', ser: 'W-' + i, y: r.greg_year, m: r.greg_month, d: r.greg_day };
       }),
     },
     after = { items: before.items, moves: [] };
@@ -206,15 +206,15 @@ function cuValidateDomain(domain, dept) {
     if (
       !Number.isSafeInteger(r.sequence) ||
       r.sequence < 0 ||
-      !Number.isSafeInteger(r.hijri_year) ||
-      r.hijri_year < 1000 ||
-      r.hijri_year > 9999 ||
-      !Number.isSafeInteger(r.hijri_month) ||
-      r.hijri_month < 1 ||
-      r.hijri_month > 12 ||
-      !Number.isSafeInteger(r.hijri_day) ||
-      r.hijri_day < 0 ||
-      r.hijri_day > 30 ||
+      !Number.isSafeInteger(r.greg_year) ||
+      r.greg_year < 1900 ||
+      r.greg_year > 2199 ||
+      !Number.isSafeInteger(r.greg_month) ||
+      r.greg_month < 1 ||
+      r.greg_month > 12 ||
+      !Number.isSafeInteger(r.greg_day) ||
+      r.greg_day < 0 ||
+      r.greg_day > 31 ||   /* V7 · 53 تقويم (§1.10): يومُ الشهر الميلادي 0–31 (قيدُ الجدول نفسُه) */
       ['out', 'in', 'dmg', 'lost'].indexOf(r.kind) < 0 ||
       !Number.isSafeInteger(r.presence_mask) ||
       r.presence_mask < 0 ||

@@ -10,8 +10,15 @@
   function newId(p) { return (p || 'e') + Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36); }
   function isObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
   var MONTHS = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
-  function mLabel(key) { var m = /^(\d+)-(\d+)$/.exec(String(key || '')); return m ? (MONTHS[+m[2] - 1] || m[2]) + ' ' + m[1] : String(key || ''); }
-  function dLabel(key) { var m = /^(\d+)-(\d+)-(\d+)$/.exec(String(key || '')); return m ? 'يوم ' + m[3] + ' ' + (MONTHS[+m[2] - 1] || m[2]) + ' ' + m[1] : String(key || ''); }
+  /* V7 · 53 تقويم (ق1 · ق9): المفتاحُ الميلادي (سنة 19xx–21xx) يُقرأ بأشهره الميلادية؛ والمفتاحُ الهجري (13xx–15xx) سطرٌ كُتب قبل التحويل
+     فيُعرض كما كُتب بأشهره الهجرية ومعه «قبل التحويل» — لا يُعاد حسابه ولا يُغيَّر نصُّه */
+  var GMONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  var PRE_CAL = 'قبل التحويل';
+  function isGregY(y) { return /^(19|20|21)\d{2}$/.test(String(y)); }
+  function isHijriY(y) { return /^1[3-5]\d{2}$/.test(String(y)); }
+  function preCalTxt(t) { return /(?:^|[^\d])1[3-5]\d{2}-\d{1,2}(?:-\d{1,2})?(?!\d)/.test(String(t == null ? '' : t)); }
+  function mLabel(key) { var m = /^(\d+)-(\d+)$/.exec(String(key || '')); if (!m) return String(key || ''); if (isGregY(m[1])) return (GMONTHS[+m[2] - 1] || m[2]) + ' ' + m[1]; return (MONTHS[+m[2] - 1] || m[2]) + ' ' + m[1] + (isHijriY(m[1]) ? ' هـ (' + PRE_CAL + ')' : ''); }
+  function dLabel(key) { var m = /^(\d+)-(\d+)-(\d+)$/.exec(String(key || '')); if (!m) return String(key || ''); if (isGregY(m[1])) return 'يوم ' + (+m[3]) + ' ' + (GMONTHS[+m[2] - 1] || m[2]) + ' ' + m[1]; return 'يوم ' + m[3] + ' ' + (MONTHS[+m[2] - 1] || m[2]) + ' ' + m[1] + (isHijriY(m[1]) ? ' هـ (' + PRE_CAL + ')' : ''); }
 
   /* ── المعرّفاتُ الثابتة ── */
   var STABLE = {
@@ -113,9 +120,13 @@
     return rows;
   }
   function clock(ts) { try { var d = new Date(+ts); var h = d.getHours(), m = d.getMinutes(); return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + (h >= 12 ? ' م' : ' ص'); } catch (e) { return ''; } }
-  function dateTxt(ts) { try { var d = new Date(+ts); var H = KIVO.BassamCal.hNow(d, null); return (H ? H.d + ' ' + (MONTHS[H.m - 1] || H.m) + ' ' + H.y : d.toLocaleDateString('ar-SA')); } catch (e) { return ''; } }
+  /* V7 · 53 تقويم (§7): التاريخُ ميلاديٌّ أولاً، والهجريُّ سطرٌ صغيرٌ محسوب (hdate) — من ختم الحدث نفسِه */
+  function dateTxt(ts) { try { var d = new Date(+ts); if (isNaN(d.getTime())) return ''; return d.getDate() + ' ' + GMONTHS[d.getMonth()] + ' ' + d.getFullYear(); } catch (e) { return ''; } }
+  function hdateTxt(ts) { try { var d = new Date(+ts); var H = KIVO.BassamCal.hNow(d, null); return H ? H.d + ' ' + (MONTHS[H.m - 1] || H.m) + ' ' + H.y + ' هـ' : ''; } catch (e) { return ''; } }
+  /* ق9: سطرٌ يحمل مفتاحَ يومٍ أو شهرٍ هجرياً (سياقُه · اسمُه · تفصيلُه) كُتب قبل التحويل — يبقى نصُّه كما هو وتُذكر الملاحظة */
+  function preCal(r) { return [r.ctx, r.ename, r.eid, r.bef != null ? r.bef : r.before, r.aft != null ? r.aft : r.after].some(function (x) { return preCalTxt(typeof x === 'string' ? x : x == null ? '' : JSON.stringify(x)); }); }
   function rowVM(r) {
-    return { id: r.id, ts: r.ts, t: clock(r.ts), date: dateTxt(r.ts), by: r.name || r.un || '—', act: describe(r), actKey: r.act, etype: r.etype, eid: r.eid, ename: r.ename || '', ctx: ctxText(r.ctx), deleted: r.act === 'deleted', details: detailRows(r), dev: r.dev === 'm' ? 'جوال' : r.dev === 'd' ? 'حاسوب' : '', city: r.city || '', dept: r.dept || '' };
+    return { id: r.id, ts: r.ts, t: clock(r.ts), date: dateTxt(r.ts), hdate: hdateTxt(r.ts), pre: preCal(r), by: r.name || r.un || '—', act: describe(r), actKey: r.act, etype: r.etype, eid: r.eid, ename: r.ename || '', ctx: ctxText(r.ctx), deleted: r.act === 'deleted', details: detailRows(r), dev: r.dev === 'm' ? 'جوال' : r.dev === 'd' ? 'حاسوب' : '', city: r.city || '', dept: r.dept || '' };
   }
   /* جلبٌ عند الطلب (لا استطلاع): سجلُّ كيانٍ واحد أو استعلامٌ مرشَّح */
   function fetchAud(params) {
@@ -129,10 +140,11 @@
     var vm = (rows || []).map(rowVM);
     var kids = vm.map(function (v, i) {
       return h('div', { key: 'a' + (v.id || i), style: { display: 'flex', gap: 7, fontSize: opts.fs || 9, color: 'var(--text-secondary)', lineHeight: 1.85, borderTop: '1px solid var(--border-subtle)', padding: '3px 0', alignItems: 'flex-start' } },
-        h('span', { style: { color: 'var(--text-faint)', minWidth: 74, fontFeatureSettings: "'tnum'", whiteSpace: 'nowrap' }, title: v.date }, v.date + ' ' + v.t),
+        h('span', { style: { color: 'var(--text-faint)', minWidth: 74, fontFeatureSettings: "'tnum'", whiteSpace: 'nowrap' }, title: v.date + (v.hdate ? ' · ' + v.hdate : '') }, v.date + ' ' + v.t, v.hdate ? h('span', { style: { display: 'block', fontSize: (opts.fs || 9) - 1.5, lineHeight: 1.3 } }, v.hdate) : null),
         h('span', { style: { minWidth: 70, maxWidth: 110, color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, title: v.by }, v.by),
         h('span', { style: { flex: 1, minWidth: 0 } }, v.act + (v.ctx ? ' — ' + v.ctx : ''),
           v.deleted ? h('span', { style: { marginRight: 6, padding: '0 6px', borderRadius: 6, fontSize: 8.5, fontWeight: 700, background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' } }, 'محذوف') : null,
+          v.pre ? h('span', { style: { marginRight: 6, padding: '0 6px', borderRadius: 6, fontSize: 8.5, fontWeight: 600, color: 'var(--text-muted)', border: '1px solid var(--border-default)' }, title: 'سُجّل بالتاريخ الهجري قبل تحويل المنصة إلى الميلادي — يُعرض كما كُتب' }, PRE_CAL) : null,
           v.details.length && opts.details !== false ? h('div', { style: { color: 'var(--text-muted)', fontSize: (opts.fs || 9) - 0.5 } }, v.details.slice(0, 6).map(function (d, j) { return h('div', { key: 'd' + j }, d.f + ': ' + (d.from ? d.from + ' → ' : '') + (d.to || '')); })) : null));
     });
     if (!vm.length) kids.push(h('div', { key: 'e', style: { fontSize: opts.fs || 9, color: 'var(--text-faint)' } }, opts.empty || 'لا أحداث مسجّلة لهذا الكيان بعد'));
@@ -167,6 +179,6 @@
   }
   KIVO.BassamAudit = { VER: 1, hash: hash, newId: newId, legacyId: legacyId,@@SYS:activity.taskId.export@@@@SYS:activity.stampPlan.export@@ stampRounds: stampRounds, stampList: stampList, stampSite: stampSite,
     describe: describe, rowVM: rowVM, detailRows: detailRows, ctxText: ctxText, fetch: fetchAud, entityHistory: entityHistory, panelNodes: panelNodes,
-    ACT_AR: ACT_AR, ET_AR: ET_AR, get ET_FILTER() { return ET_FILTER.filter(etLive); }, ACT_FILTER: ACT_FILTER, MONTHS: MONTHS, mLabel: mLabel, dLabel: dLabel, clock: clock, dateTxt: dateTxt, fieldAr: fieldAr };
+    ACT_AR: ACT_AR, ET_AR: ET_AR, get ET_FILTER() { return ET_FILTER.filter(etLive); }, ACT_FILTER: ACT_FILTER, MONTHS: MONTHS, GMONTHS: GMONTHS, mLabel: mLabel, dLabel: dLabel, clock: clock, dateTxt: dateTxt, hdateTxt: hdateTxt, preCal: preCal, fieldAr: fieldAr };
 })();
 

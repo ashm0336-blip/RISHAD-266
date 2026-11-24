@@ -3,8 +3,8 @@
 /* irDailyManager → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 function irDailyPlan(ctx, day) {
   var scope = irQueryScope(ctx, 'r'), p = { args: scope.args.slice() },
-    where = scope.sql + ' AND r.hijri_year=' + irQueryParam(p, day.y) +
-      ' AND r.hijri_month=' + irQueryParam(p, day.m) + ' AND r.hijri_day=' + irQueryParam(p, day.d),
+    where = scope.sql + ' AND r.greg_year=' + irQueryParam(p, day.y) +
+      ' AND r.greg_month=' + irQueryParam(p, day.m) + ' AND r.greg_day=' + irQueryParam(p, day.d),
     label = "COALESCE(NULLIF(r.location,''),'—')",
     count = 'SELECT COUNT(*) FROM irshad_reports r WHERE ' + where,
     top = 'SELECT ' + label + ' FROM irshad_reports r WHERE ' + where + ' GROUP BY ' + label + ' ORDER BY COUNT(*) DESC,MIN(r.sequence) LIMIT 1';
@@ -22,7 +22,8 @@ async function nfIrshadDaily(env, actor, url, windowAt) {
     throw e;
   }
   if (!irDailyManager(ctx.A)) return { emitted: 0 };
-  var day = pfHijriAt(when), once = 'ir_day:' + day.dk, scope = nfScope(d),
+  /* V7 · 53 تقويم (ق1 · §1.6): اليومُ الميلادي لمفتاح «مرةً واحدة» والتجميع (ir_day:2026-11-24) */
+  var day = pfGregAt(when), once = 'ir_day:' + day.dk, scope = nfScope(d),
     existing = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
   if (existing) return { emitted: 0, checked: 1, settled: 1 };   /* checked/settled: the shared due gate (019 nfDueRun · decision h) */
   var aggregate = irDailyPlan(ctx, day), guards = ctx.guards.concat([rsEpochGuard(ctx.env.DB, ctx.base.epoch), irRetiredGuard(ctx.env)]), result;

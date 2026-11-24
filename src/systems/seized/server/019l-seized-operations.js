@@ -248,13 +248,14 @@ function szReportData(ctx, b, old, catalog, now) {
     ["y", "m", "d"].forEach(function (k) {
       if (!Number.isSafeInteger(out[k])) throw szError("seized-date");
     });
+    /* V7 · 53 تقويم (ق1 · §1.10): يومٌ ميلاديٌّ صحيح — اليومُ الهجري من عميلٍ قديم يُرفض */
     if (
-      out.y < 1000 ||
-      out.y > 9999 ||
+      out.y < 1900 ||
+      out.y > 2199 ||
       out.m < 1 ||
       out.m > 12 ||
       out.d < 1 ||
-      out.d > 30
+      out.d > calGMonthDays(out.y, out.m)
     )
       throw szError("seized-date");
     out.id = "sz-" + randTok();
@@ -740,9 +741,9 @@ async function hSeizedAct(env, actor, b, meta) {
           p = { args: scope.args.slice() };
         where =
           scope.sql +
-          " AND r.hijri_year=" +
-          irQueryParam(p, irQueryInt(b.year, 0, 1000, 9999)) +
-          " AND r.hijri_month=" +
+          " AND r.greg_year=" +
+          irQueryParam(p, irQueryInt(b.year, 0, 1900, 2199)) +
+          " AND r.greg_month=" +
           irQueryParam(p, irQueryInt(b.month, 0, 1, 12));
         selected = (
           await szReadBatch(ctx, [
