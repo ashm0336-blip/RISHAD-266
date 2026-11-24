@@ -51,7 +51,9 @@ var DS_FIELDS = { haram: DS_METRICS.slice(0, 4), nabawi: [DS_METRICS[0]].concat(
 function dsDomainShape(v) { return dsShapeAt(v) === ''; }
 /* V7 · د6 (QA): يومٌ مخزَّنٌ مخالفٌ لا يمنع حفظاً لا يمسّه (قفلُ الشهر · أرقامُ يومٍ آخر) — يُفحص من الأيام ما غيّره الحفظُ وحده
    (cur = المخزَّن؛ بلا cur يُفحص كلُّ يوم كما كان: الاستعادة · المحوِّل)، والرفضُ يسمّي اليومَ المخالف «site|date» بدل الصمت */
-function dsShapeAt(v, cur) {
+/* V7 · 53 تقويم: legacy = وثيقةُ KV قديمة قبل 0004 (تحويلُ الترحيل وحده — dsLegacyConvert): مفاتيحُها الهجرية بقاعدتها القديمة، ويحوّلها 0014 بعدها.
+   كلُّ ما عداها (الحفظ · الاستعادة · المحوِّل) ميلاديٌّ صارم */
+function dsShapeAt(v, cur, legacy) {
   if (!isObj(v) || Object.keys(v).some(function (k) { return DS_SITES.concat(['locks']).indexOf(k) < 0; })) return '$';
   for (var s of DS_SITES) {
     if (v[s] === undefined) continue;
@@ -60,7 +62,7 @@ function dsShapeAt(v, cur) {
       var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date), r = v[s][date], at = s + '|' + date;
       if (cur && isObj(cur[s]) && Object.prototype.hasOwnProperty.call(cur[s], date) && deq(cur[s][date], r)) continue;
       /* V7 · 53 تقويم (ق1 · §1.10): اليومُ ميلاديٌّ ISO صحيح (1900–2199 · طولُ الشهر) — اليومُ الهجري من عميلٍ قديم يُرفض باسمه */
-      if (!m || !calIsGKey(date, 'day') || !dsDayOk(r)) return at;
+      if (!m || !(legacy ? +m[1] >= 1000 && +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 30 : calIsGKey(date, 'day')) || !dsDayOk(r)) return at;
       if (Object.keys(r).some(function (k) { return k !== '__m' && k !== '__f' && DS_FIELDS[s].indexOf(k) < 0; })) return at;
       if (r.__f && Object.keys(r.__f).some(function (k) { return DS_FIELDS[s].indexOf(k) < 0; })) return at;
       if (JSON.stringify(r).length > 60000) return at;
@@ -70,9 +72,9 @@ function dsShapeAt(v, cur) {
     if (!isObj(v.locks)) return 'locks';
     for (var k in v.locks) {
       /* V7 · 53 تقويم (ق1): قفلُ الشهر «site|YYYY-MM» ميلادي مبطَّن، وأيامُه 1–طولِ الشهر الميلادي */
-      var km = /^(haram|nabawi)\|(\d{4}-\d{2})$/.exec(k);
-      if (!km || !calIsGKey(km[2], 'month') || !dsLockOk(v.locks[k])) return 'locks|' + k;
-      var lock = v.locks[k], nd = calGMonthDays(km[2]);
+      var km = legacy ? /^(haram|nabawi)\|([1-9]\d{3}-(?:[1-9]|1[0-2]))$/.exec(k) : /^(haram|nabawi)\|(\d{4}-\d{2})$/.exec(k);
+      if (!km || !(legacy || calIsGKey(km[2], 'month')) || !dsLockOk(v.locks[k])) return 'locks|' + k;
+      var lock = v.locks[k], nd = legacy ? 30 : calGMonthDays(km[2]);
       for (var f of ['dopen', 'dshut']) if (isObj(lock) && lock[f]) for (var d in lock[f]) if (!/^[1-9]\d?$/.test(d) || +d > nd) return 'locks|' + k;
     }
   }
@@ -86,7 +88,7 @@ function dsDomainRows(v) {
     rows.days.push(row);
   }); });
   Object.keys(v.locks || {}).sort().forEach(function (key) {
-    var m = /^(haram|nabawi)\|(\d{4})-(\d{2})$/.exec(key), r0 = v.locks[key], r = r0 === true ? { ap: 1 } : r0;
+    var m = /^(haram|nabawi)\|(\d{4})-(\d{1,2})$/.exec(key), r0 = v.locks[key], r = r0 === true ? { ap: 1 } : r0;
     rows.months.push({ site: m[1], greg_year: +m[2], greg_month: +m[3], approved: r.ap ? 1 : 0, reopened: r.mo ? 1 : 0, legacy_boolean: r0 === true ? 1 : 0 });
     var days = {}; Object.keys(r.dopen || {}).concat(Object.keys(r.dshut || {})).forEach(function (d) { days[d] = 1; });
     Object.keys(days).forEach(function (d) { rows.locks.push({ site: m[1], greg_year: +m[2], greg_month: +m[3], greg_day: +d, is_open: r.dopen && r.dopen[d] ? 1 : 0, is_shut: r.dshut && r.dshut[d] ? 1 : 0 }); });
@@ -244,7 +246,7 @@ function dsLegacyConvert(raw) {
     });
     data.locks = locks;
   }
-  if (!dsDomainShape(data)) throw new Error('dstats-cutover-shape');
+  if (dsShapeAt(data, null, true) !== '') throw new Error('dstats-cutover-shape');
   return data;
 }
 async function dsLegacyPrepare(env) {

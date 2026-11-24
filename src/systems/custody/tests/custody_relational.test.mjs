@@ -1,5 +1,9 @@
 import {cuInflate} from './custody_legacy_oracle.mjs';
 import { test } from 'node:test';
+import { hYmdToG, gMonthOfH } from '../../../../tests/unit/cal_rest_fx.mjs';
+/* V7 · 53 تقويم: الوثيقةُ القديمة هجريةٌ كما في Production؛ بعد الترحيل (0006 ثم 0014) تُقرأ بأيامها الميلادية — المتوقَّعُ هو الوثيقةُ نفسُها وتواريخُها محوَّلةً بأم القرى (اليومُ 0 يبقى 0 · ق10) */
+const gDoc = (raw) => { const d = JSON.parse(raw); d.moves = d.moves.map(hYmdToG); return d; };
+const H1 = gMonthOfH(1400, 1, 1), H2 = gMonthOfH(1400, 2, 2);
 import { inspectOperationalFixture, replaceOperationalFixture, installOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 import { operationSaveBody } from '../../../../tests/unit/world_fx.mjs';
 import assert from 'node:assert/strict';
@@ -213,7 +217,7 @@ test('real candidate migration preserves typed history, orphan keys, blank seria
   const W = await legacy(),
     before = identitySnapshot(W.DB);
   await W.W.initDb(W.env);
-  assert.deepEqual(cuInflate(custodyRows(W.DB)), JSON.parse(W.raw));
+  assert.deepEqual(cuInflate(custodyRows(W.DB)), gDoc(W.raw));
   assert.deepEqual(identitySnapshot(W.DB), before);
   assert.equal(W.DB.q('SELECT COUNT(*) n FROM kv WHERE k=?', W.key)[0].n, 0);
   assert.equal(W.DB.q("SELECT COUNT(*) n FROM d1_migrations WHERE name='0006_custody'")[0].n, 1);
@@ -288,7 +292,7 @@ test('late legacy insertion failure rolls back source retirement, typed DDL, rev
   assert.deepEqual(copy(W.DB.q('SELECT * FROM revs ORDER BY k')), revs);
   assert.equal(W.DB.q("SELECT COUNT(*) n FROM sqlite_master WHERE type='table' AND name GLOB 'custody_*'")[0].n, 0);
   await W.W.initDb(W.env);
-  assert.deepEqual(cuInflate(custodyRows(W.DB)), JSON.parse(W.raw));
+  assert.deepEqual(cuInflate(custodyRows(W.DB)), gDoc(W.raw));
 });
 
 test('month groups, holder pages, catalog totals and counters are server-wide rather than page counts', async () => {
@@ -388,11 +392,11 @@ test('historical catalog and opening balances use the requested month while defa
   const B = await legacy();
   await B.W.initDb(B.env);
   const A = await B.W.actorOf(B.env, IDS.super);
-  const first = await B.W.cuRead(B.env, A, { dept: D1, year: 1400, month: 1 });
+  const first = await B.W.cuRead(B.env, A, { dept: D1, ...H1 });
   assert.equal(first.summary.held, 1);
   assert.equal(first.summary.openingHeld, 0);
   assert.equal(first.items.find((i) => i.name === 'TEST_ONLY radio').held, 1);
-  const next = await B.W.cuRead(B.env, A, { dept: D1, year: 1400, month: 2 });
+  const next = await B.W.cuRead(B.env, A, { dept: D1, ...H2 });
   assert.equal(next.summary.held, 0);
   assert.equal(next.summary.openingHeld, 1);
   assert.equal(next.summary.in, 1);
@@ -411,14 +415,14 @@ test('holder resolution follows a unique recreated employee and leaves ambiguous
   const W = B.W;
   await W.initDb(B.env);
   const A = await W.actorOf(B.env, IDS.super);
-  const linked = await W.cuRead(B.env, A, { dept: D1, year: 1400, month: 1 });
+  const linked = await W.cuRead(B.env, A, { dept: D1, ...H1 });
   assert.equal(linked.rows[0].holderKey, EKEYS.employee1);
   assert.equal(linked.rows[0].orphan, false);
   employees.push({ eid: 'TEST_ONLY_ambiguous_recreated', nid: found.nid, name: 'TEST_ONLY second matching identity' });
   { /* schema 10: initDb already cut the roster over to typed rows; mutate it through the canonical typed writer */
     const ek = 'bsdept:' + D1 + ':bassam_employees_v1', rev = B.DB.q('SELECT rev FROM revs WHERE k=?', ek)[0]?.rev || 0, plan = await W.opChangeStatements(B.env, ek, JSON.stringify(employees), { base: rev });
     await B.DB.batch(plan.guards.concat(plan.statements)); }
-  const ambiguous = await W.cuRead(B.env, A, { dept: D1, year: 1400, month: 1 });
+  const ambiguous = await W.cuRead(B.env, A, { dept: D1, ...H1 });
   assert.equal(ambiguous.rows[0].holderKey, 'TEST_ONLY_old_holder');
   assert.equal(ambiguous.rows[0].orphan, true);
   assert.equal(ambiguous.rows[0].ambiguous, true);
@@ -439,7 +443,7 @@ test('bounded SQL returns no foreign-department ledger rows and uses the custody
     .run(D2, 'TEST_ONLY_foreign_item', 'TEST_ONLY foreign', 500, 'F', '#fff', 7);
   const issue = W.DB.db.prepare('INSERT INTO custody_issues VALUES(?,?,?,?,?,NULL)'),
     move = W.DB.db.prepare(
-      'INSERT INTO custody_movements(department_id,move_id,issue_id,item_id,sequence,kind,holder_key,hijri_year,hijri_month,hijri_day,presence_mask) VALUES(?,?,?,?,?,?,?,?,?,?,0)',
+      'INSERT INTO custody_movements(department_id,move_id,issue_id,item_id,sequence,kind,holder_key,greg_year,greg_month,greg_day,presence_mask) VALUES(?,?,?,?,?,?,?,?,?,?,0)',
     ),
     clock = W.W.cuClock();
   for (let i = 0; i < 500; i++) {
@@ -560,8 +564,13 @@ test('server clock and session guards reject forged dates, other identities, fro
   assert.equal((await W.get('frozen')).status, 401);
   assert.equal((await W.api('super', '/api/custody/act', null)).status, 400);
   const out = ok(await W.act('super', body)),
-    row = W.DB.q('SELECT hijri_year y,hijri_month m,hijri_day d FROM custody_movements WHERE move_id=?', out.outputs[0].moveId)[0];
+    row = W.DB.q('SELECT greg_year y,greg_month m,greg_day d FROM custody_movements WHERE move_id=?', out.outputs[0].moveId)[0];
   assert.deepEqual(copy(row), copy(W.W.cuClock()));
+  /* V7 · 53 تقويم (ق1 · ق2): الحركةُ تُكتب بيوم الرياض الميلادي في أعمدة greg_* — والسنةُ الهجرية من عميلٍ قديم تُرفض في القراءة */
+  const riyadh = new Date(Date.now() + 3 * 3600 * 1000);
+  assert.deepEqual(copy(row), { y: riyadh.getUTCFullYear(), m: riyadh.getUTCMonth() + 1, d: riyadh.getUTCDate() });
+  assert.equal((await W.get('super', { year: 1448, month: 5 })).status, 400, 'A Hijri month from a stale client is refused');
+  assert.equal((await W.get('super', { year: riyadh.getUTCFullYear(), month: riyadh.getUTCMonth() + 1 })).status, 200);
   W.DB.db.prepare('INSERT INTO kv(k,seq,v) VALUES(?,0,?)').run('bsdept:' + D1 + ':bassam_custody_v1', '{"items":[],"moves":[]}');
   assert.equal((await W.get()).status, 503);
   assert.equal((await W.act('super', body)).status, 503);

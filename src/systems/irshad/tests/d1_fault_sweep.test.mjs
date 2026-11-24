@@ -19,9 +19,11 @@ import { installCurrentSchemaFixture } from '../../../../tests/unit/current_sche
 import {installIrshadFixture} from '../../../../tests/unit/irshad_legacy_seed_fx.mjs';
 import {inspectOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 const TODAY=(()=>{const f=new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{timeZone:'Asia/Riyadh',year:'numeric',month:'numeric',day:'numeric'}),o={};f.formatToParts(new Date()).forEach(p=>{o[p.type]=+p.value;});return {y:o.year,m:o.month,d:o.day};})();
+/* V7 · 53 تقويم: الاسترشادُ ميلادي — يومُ الرياض الميلادي للقراءة والإنشاء (TODAY الهجري يبقى لبذرة الأنظمة الأخرى) */
+const GTODAY=(()=>{const g=new Date(Date.now()+3*3600*1000);return {y:g.getUTCFullYear(),m:g.getUTCMonth()+1,d:g.getUTCDate()};})();
 function seedSql(){
   const out=fs.mkdtempSync(path.join(os.tmpdir(),'kivo_fx_flt_'));
-  execFileSync(PYTHON,[ROOT+'/tests/fixtures/gen_fixture.py','--today',TODAY.y+'-'+TODAY.m+'-'+TODAY.d,'--out',out],{stdio:'pipe'});
+  execFileSync(PYTHON,[ROOT+'/tests/fixtures/gen_fixture.py','--today',TODAY.y+'-'+TODAY.m+'-'+TODAY.d,'--gtoday',GTODAY.y+'-'+String(GTODAY.m).padStart(2,'0')+'-'+String(GTODAY.d).padStart(2,'0'),'--out',out],{stdio:'pipe'});
   return fs.readFileSync(path.join(out,'test_seed.sql'),'utf8');
 }
 const D1='tst_d1',D2='tst_d2',K1='bsdept:'+D1+':bassam_irshad_v1',K2='bsdept:'+D2+':bassam_irshad_v1',KP='bassam_perms_v1';
@@ -56,7 +58,7 @@ for(const mode of ['enforce']){
     const employee=inspectOperationalFixture(env,'bsdept:'+D1+':bassam_employees_v1').find(e=>e.eid===EID);   /* schema 10: typed roster */
     const actor=JSON.parse(truth('bassam_auth_users_v1')).find(u=>u.id===UID);
     assert.ok(employee&&actor);
-    const read=(dept=D1,cookie=emp.ck,extra={})=>C.api('/api/irshad?'+new URLSearchParams({dept,view:'records',year:TODAY.y,month:TODAY.m,limit:200,...extra}),{cookie});
+    const read=(dept=D1,cookie=emp.ck,extra={})=>C.api('/api/irshad?'+new URLSearchParams({dept,view:'records',year:GTODAY.y,month:GTODAY.m,limit:200,...extra}),{cookie});
     let seq=0,firstLocation;
     const REQ={
       read:{
@@ -73,7 +75,7 @@ for(const mode of ['enforce']){
           const view=await read();assert.equal(view.status,200);assert.equal(view.j.ok,1);
           const id='TEST_ONLY_fault_'+mode+'_'+ ++seq,loc='TEST_ONLY fault probe '+mode+' '+seq;
           if(!firstLocation)firstLocation=loc;
-          const data={...TODAY,shift:'TST-A',eid:EID,loc,langs:[{lang:'TEST_ONLY language A',count:seq+1},{lang:'TEST_ONLY language B',count:seq+2}],bro:seq+3,pros:2,pol:1};
+          const data={...GTODAY,shift:'TST-A',eid:EID,loc,langs:[{lang:'TEST_ONLY language A',count:seq+1},{lang:'TEST_ONLY language B',count:seq+2}],bro:seq+3,pros:2,pol:1};
           return {data,body:{uid:UID,dept:D1,requestId:id,base:copy(view.j.base),op:'create',reason:'TEST_ONLY fault sweep',data},old:raw(D1),oldReceipts:receipts(),rev0:revOf(K1)};
         },
         run:async x=>C.api('/api/irshad/act',{cookie:emp.ck,method:'POST',body:x.body}),
@@ -104,7 +106,7 @@ for(const mode of ['enforce']){
         },
       },
       denyDepartment:{
-        prep:async()=>{const v=await read(D2,su.ck);assert.equal(v.status,200);assert.equal(v.j.ok,1);return {body:{uid:UID,dept:D2,requestId:'TEST_ONLY_forbidden_'+mode+'_'+ ++seq,base:v.j.base,op:'create',data:{...TODAY,shift:'TST-A',eid:'tst_e_emp2',loc:'TEST_ONLY forbidden',langs:[],bro:0,pros:0,pol:0}}};},
+        prep:async()=>{const v=await read(D2,su.ck);assert.equal(v.status,200);assert.equal(v.j.ok,1);return {body:{uid:UID,dept:D2,requestId:'TEST_ONLY_forbidden_'+mode+'_'+ ++seq,base:v.j.base,op:'create',data:{...GTODAY,shift:'TST-A',eid:'tst_e_emp2',loc:'TEST_ONLY forbidden',langs:[],bro:0,pros:0,pol:0}}};},
         run:async x=>C.api('/api/irshad/act',{cookie:emp.ck,method:'POST',body:x.body}),
         check:async r=>{assert.ok(!(r.status===200&&r.j?.ok===1),'Other-department create never ACKs');assert.deepEqual(foreignState(),foreign0,'Other-department typed rows, children, receipts and resource revisions never change');return {ok:true};},
       },

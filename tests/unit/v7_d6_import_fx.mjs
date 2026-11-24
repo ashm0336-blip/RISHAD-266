@@ -57,6 +57,8 @@ export function jpeg(chars, seed = 1) {
 }
 
 let docsCache = null;
+/* V7 · 53 تقويم: وثائقُ العرض من عاملٍ آخر (السابق للتقويم — بياناتُه الهجرية كما صدّرها Preview) تُعطى للمولّد بدل توليدها بالعامل الحالي */
+export function setLegacyDocs(docs) { docsCache = JSON.stringify(docs); }
 export async function legacyDocs() {
   if (docsCache) return JSON.parse(docsCache);
   const lab = await startLab();

@@ -204,15 +204,18 @@ async function migrateDb(env) {
     state.tables = null;
   }
   for (i = 0; i < pending.length; i++) {
-    var dataPlan = @@SYS:db.prepare.dstats@@pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) :@@SYS:db.prepare.custody@@@@SYS:db.prepare.irshad@@ pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : pending[i].name === '0013_period_storage' ? opPeriodsLegacyPrepare(env) : null;
+    /* V7 · 53 تقويم (قرارُ الاقتران، cal_api.md): خطواتُ 0004/0006/0008/0009 تُشغَّل على قاعدةٍ تعيد أسماءَ greg_* إلى hijri_* (calLegacyEnv) — جداولُها بعدُ هجرية ويحوّلها 0014 */
+    var dataPlan = await (async function (env) { return @@SYS:db.prepare.dstats@@pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) :@@SYS:db.prepare.custody@@@@SYS:db.prepare.irshad@@ pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : pending[i].name === '0013_period_storage' ? opPeriodsLegacyPrepare(env) : pending[i].name === '0014_gregorian_calendar' ? await calMigPrepare(env) : null; })(/^000[4689]_/.test(pending[i].name) ? calLegacyEnv(env) : env);
     var st = [dbMigrationFence(env, state, permit)], first = i;
     if (dataPlan) st = st.concat(dataPlan.before);
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
     /* V7 · د6 (schemafix): تحويلُ KV التشغيلي (0010) يكتب صفوفَه بمرمّز اليوم — فجداولُه وأعمدتُه التي أضافتها ترحيلاتٌ بعد 0010 (0012: القراءةُ بالسعة)
        يجب أن توجد قبله: ترحيلاتُ هذا التشغيل التي بعد 0010 تُطبَّق في الدفعة نفسِها قبل صفوف التحويل — ذرّيّةٌ واحدة كما كانت */
+    /* V7 · 53 تقويم: وخطةُ بيانات 0014 (المطابقة قبل عباراته، وما بعدها في آخر الدفعة بعد صفوف 0010) — فقاعدةٌ أقدم من 10 تصل ميلاديةً في التشغيل نفسِه */
+    var foldAfter = [];
     if (dataPlan && pending[i].name === '0010_operational_domains')
-      while (i + 1 < pending.length) { i++; for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j])); }
-    if (dataPlan) st = st.concat(dataPlan.after);
+      while (i + 1 < pending.length) { i++; var fold = pending[i].name === '0014_gregorian_calendar' ? await calMigPrepare(env) : null; if (fold) st = st.concat(fold.before); for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j])); if (fold) foldAfter = foldAfter.concat(fold.after); }
+    if (dataPlan) st = st.concat(dataPlan.after, foldAfter);
     if (permit && pending[i].name === names[names.length - 1])
       st.push(env.DB.prepare('DELETE FROM meta WHERE k=?1 AND v=?2').bind(DB_UPGRADE_PERMIT, permit.raw));
     /* V7 · د5-ح (القفل): قاعدةٌ وُلدت الآن (لا جدولَ ولا سجلَّ ترحيلٍ قبلها) لا بياناتِ صلاحياتٍ قديمة فيها ⇒ تُختم enforce مع آخر ترحيل.

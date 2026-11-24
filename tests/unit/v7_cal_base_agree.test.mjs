@@ -109,12 +109,18 @@ test('⑤ keys: format detection by year, strict ISO, names, letters, card state
   assert.equal(C.fileTag('2026-11'), '2026-11'); assert.equal(C.fmtDayLong('2026-11-24'), 'الثلاثاء 24 نوفمبر 2026');
   assert.equal(C.monthOptions(2026).length, 12); assert.equal(C.monthOptions(2026)[10].sub, C.hRangeOfMonth('2026-11'));
   assert.deepEqual(J(C.yearOptions(2026, 2027)), [{ v: 2026, t: '2026', sub: '1447 – 1448 هـ' }, { v: 2027, t: '2027', sub: C.hRangeOfYear(2027) }]);
-  const tip = (o) => C.cardState(o).tip;
-  assert.equal(tip({ k: '2026-11-24', closed: true, why: 'ap' }), 'الثلاثاء 24 نوفمبر 2026 · 14 جمادى الآخرة 1448 — مغلق: اعتُمد');
-  assert.match(tip({ k: '2026-11-24', closed: true, why: 'past' }), /— مغلق: أُغلق تلقائياً$/);
-  assert.match(tip({ k: '2026-11-24', closed: true, why: 'gone' }), /— مغلق: مضى$/);
-  assert.match(tip({ k: '2026-11', closed: false, why: 'retro', until: '30 نوفمبر' }), /^نوفمبر 2026 · 21 جمادى الأولى – 20 جمادى الآخرة 1448 — مفتوح للاستدراك حتى 30 نوفمبر$/);
-  assert.match(tip({ k: '2026' }), /^2026 · 1447 – 1448 هـ — مفتوح$/);
-  assert.equal(C.cardState({ k: '2026-11-24', closed: true, why: 'zzz' }).label, 'مغلق');
-  assert.equal(C.cardState({ k: '2026-11-24', why: 'ap' }).why, '', 'an open card carries no closing reason');
+  /* التلميح (day_card_design.md): «الأحد 1 نوفمبر 2026 م» · «21 جمادى الأولى 1448 هـ» · الحالة بسببها الإداري */
+  const tip = (o) => C.cardState(Object.assign({ T: '2026-11-24' }, o)).tip;
+  assert.equal(tip({ k: '2026-11-01', closed: true, why: 'past' }), 'الأحد 1 نوفمبر 2026 م\n21 جمادى الأولى 1448 هـ\nمغلق — أُغلق تلقائياً بلا اعتماد');
+  assert.equal(tip({ k: '2026-11-24', closed: true, why: 'ap' }), 'الثلاثاء 24 نوفمبر 2026 م\n14 جمادى الآخرة 1448 هـ\nمغلق — اعتُمد');
+  assert.match(tip({ k: '2026-11-20', closed: true, why: 'gone' }), /\nمغلق — مضى$/);
+  assert.match(tip({ k: '2026-11-20', closed: true, why: 'shut' }), /\nمغلق — أُغلق يدوياً$/);
+  assert.match(tip({ k: '2026-11-17', until: '30 نوفمبر' }), /\nمفتوح — للاستدراك حتى 30 نوفمبر$/);
+  assert.match(tip({ k: '2026-11-27' }), /\nمفتوح — قادم$/);
+  assert.match(tip({ k: '2026-11-24' }), /\nمفتوح$/);
+  assert.equal(tip({ k: '2026-11' }), 'نوفمبر 2026 م\n21 جمادى الأولى – 20 جمادى الآخرة 1448 هـ\nمفتوح');
+  assert.equal(tip({ k: '2026', closed: true, why: 'ap' }), '2026 م\n1447 – 1448 هـ\nمغلق — اعتُمد');
+  assert.equal(C.cardState({ k: '2026-11-24', closed: true, why: 'zzz', T: '2026-11-24' }).label, 'مغلق');
+  assert.equal(C.cardState({ k: '2026-11-27', why: 'ap', T: '2026-11-24' }).why, '', 'an open card carries no closing reason');
+  for (const [k, w] of [['2026-11-23', 'past'], ['2026-11-24', 'now'], ['2026-11-25', 'future'], ['2026-10', 'past'], ['2026-11', 'now'], ['2027', 'future']]) assert.equal(C.cardState({ k, T: '2026-11-24' }).when, w, k);
 });

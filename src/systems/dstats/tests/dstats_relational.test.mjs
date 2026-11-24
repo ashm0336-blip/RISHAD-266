@@ -39,11 +39,11 @@ async function world() {
 const empty = () => ({ haram: {}, nabawi: {}, locks: {} });
 const populated = () => ({
   haram: {
-    '9999-01-01': { worshippers: 0, umrah: null, carts: 8, __m: { u: 'TEST_ONLY-u', n: 'اختبار', t: 42 }, __f: { carts: 0 } },
-    '9999-01-02': { worshippers: 20, hijr_ismail: 3 }
+    '2199-01-01': { worshippers: 0, umrah: null, carts: 8, __m: { u: 'TEST_ONLY-u', n: 'اختبار', t: 42 }, __f: { carts: 0 } },
+    '2199-01-02': { worshippers: 20, hijr_ismail: 3 }
   },
-  nabawi: { '9999-01-01': { worshippers: 40, salam_corridor: 12, rawdah_men_actual: 2, rawdah_women_actual: 1 } },
-  locks: { 'haram|9999-1': { mo: 1, dopen: { 1: 1 }, dshut: { 2: 1 } }, 'nabawi|9999-2': true }
+  nabawi: { '2199-01-01': { worshippers: 40, salam_corridor: 12, rawdah_men_actual: 2, rawdah_women_actual: 1 } },
+  locks: { 'haram|2199-01': { mo: 1, dopen: { 1: 1 }, dshut: { 2: 1 } }, 'nabawi|2199-02': true }
 });
 function actor(W, uid = 'super', { enf = true, allowed = true } = {}) {   /* V7 · د5-ح (القفل): كلُّ فاعلٍ بالمحرّك النافذ — لا فاعلَ قديماً */
   const keys = {
@@ -58,7 +58,7 @@ function actor(W, uid = 'super', { enf = true, allowed = true } = {}) {   /* V7 
   return A;
 }
 async function seed(W, env, data) { const st = W.dsDomainStatements(env, empty(), data); if (st.length) await env.DB.batch(st); }
-const domainRows = DB => ({ days: cp(DB.q('SELECT * FROM daily_stats_days ORDER BY site,hijri_date')), months: cp(DB.q('SELECT * FROM daily_stats_month_locks ORDER BY site,hijri_year,hijri_month')), locks: cp(DB.q('SELECT * FROM daily_stats_day_locks ORDER BY site,hijri_year,hijri_month,hijri_day')) });
+const domainRows = DB => ({ days: cp(DB.q('SELECT * FROM daily_stats_days ORDER BY site,greg_date')), months: cp(DB.q('SELECT * FROM daily_stats_month_locks ORDER BY site,greg_year,greg_month')), locks: cp(DB.q('SELECT * FROM daily_stats_day_locks ORDER BY site,greg_year,greg_month,greg_day')) });
 
 test('migration replay and a pre-existing empty domain table are safe without changing existing relational records', async () => {
   const DB = new D1Shim();
@@ -67,10 +67,12 @@ test('migration replay and a pre-existing empty domain table are safe without ch
   const firstTable = sql.slice(sql.indexOf('CREATE TABLE'), sql.indexOf('CREATE TABLE IF NOT EXISTS daily_stats_month_locks'));
   DB.exec(firstTable);
   DB.exec(sql);
+  /* V7 · 53 تقويم: هذا ترحيلُ 0004 نفسُه بمخطّطه التاريخي (4) — أعمدتُه hijri_* حتى 0014 */
+  const historicalRows = () => ({ days: cp(DB.q('SELECT * FROM daily_stats_days ORDER BY site,hijri_date')), months: cp(DB.q('SELECT * FROM daily_stats_month_locks ORDER BY site,hijri_year,hijri_month')), locks: cp(DB.q('SELECT * FROM daily_stats_day_locks ORDER BY site,hijri_year,hijri_month,hijri_day')) });
   DB.exec("INSERT INTO daily_stats_days(site,hijri_date,field_mask,worshippers) VALUES('haram','9999-01-01',1,44)");
-  const before = domainRows(DB);
+  const before = historicalRows();
   DB.exec(sql);
-  assert.deepEqual(domainRows(DB), before);
+  assert.deepEqual(historicalRows(), before);
   assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '4');
   assert.deepEqual(DB.q('PRAGMA foreign_key_check'), []);
 });
@@ -107,15 +109,15 @@ test('relational schema round-trips absent/null/zero metrics, attribution and bo
   assert.equal(W.dsDomainShape(data), true);
   await seed(W, env, data);
   assert.deepEqual((await W.dsDomainRead(env)).data, data);
-  const day = DB.q("SELECT * FROM daily_stats_days WHERE site='haram' AND hijri_date='9999-01-01'")[0];
+  const day = DB.q("SELECT * FROM daily_stats_days WHERE site='haram' AND greg_date='2199-01-01'")[0];
   assert.equal(day.worshippers, 0); assert.equal(day.umrah, null);
-  assert.equal(Object.hasOwn((await W.dsDomainRead(env)).data.haram['9999-01-01'], 'hijr_ismail'), false, 'An omitted metric stays omitted rather than becoming a stored null');
+  assert.equal(Object.hasOwn((await W.dsDomainRead(env)).data.haram['2199-01-01'], 'hijr_ismail'), false, 'An omitted metric stays omitted rather than becoming a stored null');
   assert.equal(DB.q('SELECT COUNT(*) AS n FROM daily_stats_days')[0].n, 3);
   assert.equal(DB.q('SELECT COUNT(*) AS n FROM daily_stats_month_locks')[0].n, 2);
   assert.equal(DB.q('SELECT COUNT(*) AS n FROM daily_stats_day_locks')[0].n, 2);
   assert.equal(DB.q('SELECT COUNT(*) AS n FROM kv WHERE k=?1', KEY)[0].n, 0, 'No duplicate business document in KV');
   assert.deepEqual(W.dsDomainStatements(env, data, data), [], 'A no-op produces no data statement');
-  const next = cp(data); delete next.haram['9999-01-02']; delete next.locks['haram|9999-1']; next.nabawi['9999-01-01'].worshippers = 90;
+  const next = cp(data); delete next.haram['2199-01-02']; delete next.locks['haram|2199-01']; next.nabawi['2199-01-01'].worshippers = 90;
   await DB.batch(W.dsDomainStatements(env, data, next));
   assert.deepEqual((await W.dsDomainRead(env)).data, next);
   assert.equal(DB.q("SELECT COUNT(*) AS n FROM daily_stats_day_locks WHERE site='haram'")[0].n, 0, 'Removed month leaves no orphan day locks');
@@ -123,7 +125,7 @@ test('relational schema round-trips absent/null/zero metrics, attribution and bo
 
 test('domain shape rejects unexpected fields, invalid dates, foreign-site metrics and malformed lock days', async () => {
   const { W } = await world();
-  const invalid = [null, [], { other: {} }, { haram: [] }, { haram: { '9999-00-01': { worshippers: 1 } } }, { haram: { '9999-01-31': { worshippers: 1 } } }, { haram: { '9999-01-01': { password: 1 } } }, { haram: { '9999-01-01': { salam_corridor: 1 } } }, { nabawi: { '9999-01-01': { worshippers: Infinity } } }, { locks: { 'haram|9999-13': { ap: 1 } } }, { locks: { 'haram|9999-1': { dopen: { 0: 1 } } } }, { haram: { '9999-01-01': { __f: { password: 0 } } } }];
+  const invalid = [null, [], { other: {} }, { haram: [] }, { haram: { '2199-00-01': { worshippers: 1 } } }, { haram: { '2199-02-30': { worshippers: 1 } } }, { haram: { '1448-01-01': { worshippers: 1 } } }, { locks: { 'haram|1448-5': { ap: 1 } } }, { haram: { '2199-01-01': { password: 1 } } }, { haram: { '2199-01-01': { salam_corridor: 1 } } }, { nabawi: { '2199-01-01': { worshippers: Infinity } } }, { locks: { 'haram|2199-13': { ap: 1 } } }, { locks: { 'haram|2199-01': { dopen: { 0: 1 } } } }, { haram: { '2199-01-01': { __f: { password: 0 } } } }];
   for (const value of invalid) assert.equal(W.dsDomainShape(value), false, JSON.stringify(value));
 });
 
@@ -152,8 +154,8 @@ test('a failure late in the normalized write rolls back days, month locks, day l
 
 test('simultaneous writers using one domain revision have one winner and one explicit conflict', async () => {
   const { W, env } = await world();
-  const first = { ...empty(), haram: { '9999-01-01': { worshippers: 11 } } };
-  const second = { ...empty(), haram: { '9999-01-01': { worshippers: 22 } } };
+  const first = { ...empty(), haram: { '2199-01-01': { worshippers: 11 } } };
+  const second = { ...empty(), haram: { '2199-01-01': { worshippers: 22 } } };
   const results = await Promise.all([W.dsDomainCommit(env, actor(W), { base: 0, data: first }), W.dsDomainCommit(env, actor(W), { base: 0, data: second })]);
   assert.deepEqual(results.map(r => r.status).sort(), [200, 409]);
   const winner = results.find(r => r.status === 200);
@@ -184,8 +186,8 @@ test('enforced Source scope hides another mosque and rejects forged hidden data 
   const A = actor(W, 'staff', { enf: true });
   assert.deepEqual(W.enfSources(A, 'read'), { haram: true, nabawi: false });
   const view = await W.dsDomainView(env, A, data, { recs: {} });
-  assert.equal(view.nabawi, undefined); assert.equal(view.locks['nabawi|9999-2'], undefined);
-  const forged = cp(view); forged.nabawi = { '9999-01-01': { worshippers: 0 } };
+  assert.equal(view.nabawi, undefined); assert.equal(view.locks['nabawi|2199-02'], undefined);
+  const forged = cp(view); forged.nabawi = { '2199-01-01': { worshippers: 0 } };
   const r = await W.dsDomainCommit(env, actor(W, 'staff', { enf: true }), { base: 0, data: forged });
   assert.equal(r.status, 403); assert.equal(r.body.why, 'scope');
   assert.deepEqual((await W.dsDomainRead(env)).data, data);
@@ -209,7 +211,7 @@ test('historical import remains a super-only operation; the platform admin is no
 
 test('the original enforced DateRange and day-lock guards apply to the new tables', async () => {
   const { W, env } = await world();
-  const past = { ...empty(), haram: { '1440-01-01': { worshippers: 5 } } };
+  const past = { ...empty(), haram: { '2018-01-01': { worshippers: 5 } } };
   /* Owner decision (prompt 43, root 1): the platform admin has no restriction at all — the closed period no longer refuses him
      (this loop used to assert 403 for 'super' as well). Everyone else is refused as before. */
   {
@@ -220,9 +222,9 @@ test('the original enforced DateRange and day-lock guards apply to the new table
     assert.equal(rs.status, 200, 'the platform admin is not held by the closed period: ' + JSON.stringify(rs.body).slice(0, 200));
     assert.deepEqual((await S.W.dsDomainRead(S.env)).data.haram, past.haram);
   }
-  const locked = { ...empty(), haram: { '1500-01-01': { worshippers: 5 } }, locks: { 'haram|1500-1': { dshut: { 1: 1 } } } };
+  const locked = { ...empty(), haram: { '2078-01-01': { worshippers: 5 } }, locks: { 'haram|2078-01': { dshut: { 1: 1 } } } };
   await seed(W, env, locked);
-  const next = cp(locked); next.haram['1500-01-01'].worshippers = 6;
+  const next = cp(locked); next.haram['2078-01-01'].worshippers = 6;
   const r = await W.dsDomainCommit(env, actor(W, 'staff'), { base: 0, data: next });
   assert.equal(r.status, 403); assert.equal(r.body.why, 'scope', JSON.stringify(r.body));   /* V7 · د5-ح: قفلُ اليوم يحكمه نطاقُ DateRange في المحرّك النافذ (كان 'dslock' في dstatsRule القديم المحذوف) */
   assert.deepEqual((await W.dsDomainRead(env)).data, locked);
@@ -277,7 +279,7 @@ test('client reads a cloned in-memory snapshot and waits for a complete server a
   assert.equal(D.ready(), false);
   assert.equal(await D.save(populated()), false); assert.equal(D.error(), 'not-ready'); assert.equal(calls.length, 0);
   await D.refresh(); assert.equal(D.ready(), true); assert.equal(D.revision(), 4);
-  const copy = D.read(); assert.equal(copy.__dsbase, 4); copy.haram['9999-01-01'] = { worshippers: 80 };
+  const copy = D.read(); assert.equal(copy.__dsbase, 4); copy.haram['2199-01-01'] = { worshippers: 80 };
   assert.deepEqual(cp(D.read()), empty(), 'Editing a render snapshot never mutates the acknowledged cache');
   W.__BS_BOOT.uid = 'TEST_ONLY-another-tab-account';
   const pending = D.save(copy);
@@ -302,10 +304,10 @@ test('network failure, denial and malformed success leave the cache and caller d
   ];
   for (const [name, bad] of invalid) {
     const { D, persistence } = browser(async (url, options) => options.method === 'POST' ? bad() : response({ ok: 1, rev: 7, data: empty() }));
-    await D.refresh(); const draft = D.read(); draft.haram['9999-01-01'] = { worshippers: 30 };
+    await D.refresh(); const draft = D.read(); draft.haram['2199-01-01'] = { worshippers: 30 };
     assert.equal(await D.save(draft), false, name);
     assert.deepEqual(cp(D.read()), empty(), name + ': cache remains acknowledged state');
-    assert.equal(D.revision(), 7, name); assert.equal(draft.haram['9999-01-01'].worshippers, 30, name + ': draft retained');
+    assert.equal(D.revision(), 7, name); assert.equal(draft.haram['2199-01-01'].worshippers, 30, name + ': draft retained');
     assert.deepEqual(persistence, [], name + ': no local persistence');
   }
 });
@@ -314,7 +316,7 @@ test('client conflict preserves the draft and cache until an explicit refresh in
   let reads = 0;
   const latest = populated();
   const { D, calls } = browser(async (url, options) => options.method === 'POST' ? response({ ok: 0, err: 'conflict', rev: 10, data: latest }, 409) : response({ ok: 1, rev: ++reads === 1 ? 9 : 10, data: reads === 1 ? empty() : latest }));
-  await D.refresh(); const draft = D.read(); draft.haram['9999-01-01'] = { worshippers: 100 };
+  await D.refresh(); const draft = D.read(); draft.haram['2199-01-01'] = { worshippers: 100 };
   assert.equal(await D.save(draft), false); assert.equal(D.error(), 'conflict'); assert.equal(D.revision(), 9);
   assert.deepEqual(cp(D.read()), empty(), 'The rejected snapshot is not silently rebased');
   await D.refresh(); assert.equal(D.revision(), 10); assert.deepEqual(cp(D.read()), latest);
@@ -324,9 +326,9 @@ test('client conflict preserves the draft and cache until an explicit refresh in
 
 test('a success-shaped response with an older revision cannot acknowledge or discard a new draft', async () => {
   const { D, persistence } = browser(async (url, options) => options.method === 'POST' ? response({ ok: 1, rev: 6, data: populated() }) : response({ ok: 1, rev: 7, data: empty() }));
-  await D.refresh(); const draft = D.read(); draft.haram['9999-01-01'] = { worshippers: 75 };
+  await D.refresh(); const draft = D.read(); draft.haram['2199-01-01'] = { worshippers: 75 };
   assert.equal(await D.save(draft), false, 'A server revision preceding the request base is not a valid acknowledgement');
-  assert.equal(D.revision(), 7); assert.deepEqual(cp(D.read()), empty()); assert.equal(draft.haram['9999-01-01'].worshippers, 75); assert.deepEqual(persistence, []);
+  assert.equal(D.revision(), 7); assert.deepEqual(cp(D.read()), empty()); assert.equal(draft.haram['2199-01-01'].worshippers, 75); assert.deepEqual(persistence, []);
 });
 
 test('client rejects concurrent saves and ignores refreshes older than the acknowledged mutation', async () => {
@@ -336,7 +338,7 @@ test('client rejects concurrent saves and ignores refreshes older than the ackno
     if (++reads === 1) return response({ ok: 1, rev: 1, data: empty() });
     return await new Promise(resolve => { delayedRead = resolve; });
   });
-  await D.refresh(); const draft = D.read(); draft.haram['9999-01-01'] = { worshippers: 15 };
+  await D.refresh(); const draft = D.read(); draft.haram['2199-01-01'] = { worshippers: 15 };
   const saving = D.save(draft); const refreshing = D.refresh();
   assert.equal(await D.save(draft), false); assert.equal(D.error(), 'busy');
   write(response({ ok: 1, rev: 2, data: cp(draft) })); assert.equal(await saving, true);
@@ -347,7 +349,7 @@ test('client rejects concurrent saves and ignores refreshes older than the ackno
 test('session failures keep the captured identity and unconfirmed draft out of browser persistence', async () => {
   for (const status of [401, 409]) {
     const { D, calls, persistence } = browser(async (url, options) => options.method === 'POST' ? response({ ok: 0, err: status === 401 ? 'session' : 'session-changed' }, status) : response({ ok: 1, rev: 2, data: empty() }));
-    await D.refresh(); const draft = D.read(); draft.haram['9999-01-01'] = { worshippers: 5 };
+    await D.refresh(); const draft = D.read(); draft.haram['2199-01-01'] = { worshippers: 5 };
     assert.equal(await D.save(draft), false); assert.equal(D.error(), status === 401 ? 'session' : 'session-changed');
     assert.equal(JSON.parse(calls.at(-1).body).uid, 'TEST_ONLY-owner'); assert.deepEqual(cp(D.read()), empty()); assert.deepEqual(persistence, []);
   }
@@ -359,7 +361,7 @@ function dailyPage(B) {
   B.W.KIVO.BassamPageKit = { base: () => class {} }; B.W.DCLogic = class {};
   const C = vm.runInContext(read('src/systems/dstats/client/logic.js') + '\nComponent;', B.context);
   const page = new C(), toasts = [];
-  page.state = { ...page.state, site: 'haram', year: 9999, month: 1, day: 1, draft: { worshippers: '99' } };
+  page.state = { ...page.state, site: 'haram', year: 2199, month: 1, day: 1, draft: { worshippers: '99' } };
   page.MONTHS = ['اختبار']; page.PC = () => true; page._dayLockMsg = () => '';
   page.setState = next => { page.state = { ...page.state, ...(typeof next === 'function' ? next(page.state) : next) }; };
   page.bsToast = (message, kind) => toasts.push({ message, kind });
@@ -382,7 +384,7 @@ test('daily entry clears its exact submitted draft only after a confirmed server
   await B.D.refresh(); const { page, toasts } = dailyPage(B);
   const saving = page.saveDay(); assert.ok(page.state.draft);
   settle(response({ ok: 1, rev: 4, data: sent.data })); await saving;
-  assert.equal(page.state.draft, null); assert.equal(toasts.filter(t => t.kind === 'ok').length, 1); assert.equal(B.D.read().haram['9999-01-01'].worshippers, 99);
+  assert.equal(page.state.draft, null); assert.equal(toasts.filter(t => t.kind === 'ok').length, 1); assert.equal(B.D.read().haram['2199-01-01'].worshippers, 99);
 });
 
 const parsed = new Map();
@@ -461,7 +463,7 @@ test('full restore entry points use the shared atomic API for relational daily s
   // writer rolls back daily rows, NF, custody, revisions and the whole backup.
   const B = await backupWorld(); await seedTypedDomains(B, populated());
   const C = await backupBrowser(B), file = await exportFull(C), before = backupSnapshot(B.DB);
-  file.domains.dailyStats.data.haram['9999-01-01'].worshippers = 55;
+  file.domains.dailyStats.data.haram['2199-01-01'].worshippers = 55;
   file.domains.notifications.messages[0].title = 'TEST_ONLY SQL rollback target';
   C.page._fbkPend = { file, ticket: null }; B.DB.failIf = sql => /INSERT .*INTO notification_messages/.test(sql);
   await C.method('src/modules/admin/logic.js', 'fbkCommit').call(C.page, 'replace'); B.DB.failIf = null;

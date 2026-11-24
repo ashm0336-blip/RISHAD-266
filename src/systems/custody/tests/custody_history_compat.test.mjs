@@ -6,6 +6,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {isDeepStrictEqual} from 'node:util';
 import {world as fixture,legacyWorld,canonicalWorker,D1,IDS} from '../../../../tests/unit/canonical_fx.mjs';
+import {hYmdToG} from '../../../../tests/unit/cal_rest_fx.mjs';
+/* V7 · 53 تقويم: بعد الترحيل/الاستيراد تُقرأ الوثيقةُ القديمة بأيامها الميلادية (0014 · التحويلُ قبل الترميز) — وكلُّ ما عدا التاريخ كما كان حرفاً */
+const gDoc=doc=>({...doc,moves:doc.moves.map(hYmdToG)});
 const legacyDocument=()=>({items:[{name:'TEST_ONLY radio',qty:3,prefix:'TEST',color:'#b99751'}],moves:[{t:'out',eid:'TEST_ONLY_old_employee',item:'TEST_ONLY radio',ser:'TEST-001',y:1448,m:5,d:1,name:'x'.repeat(5000),nid:'TEST_ONLY_legacy',empno:''}]});
 
 test('canonical typed conversion preserves the tolerated 5000-character snapshot under the test-only inverse projection',async()=>{
@@ -22,7 +25,7 @@ test('actual startup custody migration and typed export preserve long UTF-8 hist
   const A=await legacyWorld(),W=A.W,legacy=legacyDocument();legacy.moves[0].name='ن'.repeat(5000);
   const key='bsdept:'+D1+':bassam_custody_v1';await A.DB.batch(W.kvPutStmts(A.env,'kv',key,JSON.stringify(legacy)));await W.initDb(A.env);
   const response=await W.default.fetch(new Request('http://x/api/custody/export?dept='+D1,{headers:{Cookie:'bs_tok=TEST_ONLY_session_super'}}),A.env),body=await response.json();
-  assert.equal(response.status,200);assert.equal(body.ok,1);assert.ok(isDeepStrictEqual(cuInflate(body.domains[0].rows),legacy),'Migration/export changed historical UTF-8 text');
+  assert.equal(response.status,200);assert.equal(body.ok,1);assert.ok(isDeepStrictEqual(cuInflate(body.domains[0].rows),gDoc(legacy)),'Migration/export changed historical UTF-8 text');
   assert.equal(A.DB.q('SELECT COUNT(*) n FROM kv WHERE k=?1',key)[0].n,0);assert.equal(A.DB.q('SELECT holder_name_snapshot FROM custody_movements')[0].holder_name_snapshot.length,5000);
 });
 
@@ -31,7 +34,7 @@ test('legacy backup conversion, normalized restore validation and caller-owned S
   const mode=await W.enfModeOf(A.env),actor=await W.actorOf({...A.env,__enf:mode},IDS.super),legacy=legacyDocument(),reference={inputKeys:Object.fromEntries(Object.entries(A.keys).map(([key,value])=>[key,JSON.stringify(value)])),inputRevs:{}};
   const converted=await W.rsConvertBackup(A.env,actor,{app:'bassam-crowd',version:3,kind:'full',data:{bassam_depts_v1:JSON.stringify(A.keys.bassam_depts_v1),['bsdept:'+D1+':bassam_custody_v1']:JSON.stringify(legacy)}},{scope:{kind:'full'},mode:'replace',legacyConsent:true,reference});
   const domain=converted.domains.custody.find(value=>value.scope.departmentId===D1),plan=await W.cuPlanRestore(A.env,actor,domain,{dept:D1,base:await W.cuRev(A.env,D1),scope:'full',mode:'replace',reason:'TEST_ONLY historical backup compatibility',finalKeys:new Set(Object.keys(converted.keys))});
-  await A.DB.batch(plan.guards.concat(plan.statements));const rows=await W.cuSnapshotRows(A.env,D1);assert.ok(isDeepStrictEqual(cuInflate(rows),legacy),'Legacy backup/normalized restore rewrote historical text');
+  await A.DB.batch(plan.guards.concat(plan.statements));const rows=await W.cuSnapshotRows(A.env,D1);assert.ok(isDeepStrictEqual(cuInflate(rows),gDoc(legacy)),'Legacy backup/normalized restore rewrote historical text');
 });
 
 test('preserving an old long snapshot does not relax the current type-create text limit or return a save ACK',async()=>{
