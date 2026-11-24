@@ -3818,9 +3818,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         };
       }),
       ...(function () {
+        /* V7 · د7 (52): الرئيسُ والنائب خانتان مستقلّتان من القائمتين المنسدلتين، وكلُّ دورٍ من أدوار الإدارة يُعدّ بحامليه في الوردية.
+           كان الكرت يعامل أولَ دورين على أنهما الخانتان (r[0] = chief · r[1] = deputy) ولا يعدّ إلا من الثالث — فإدارةٌ بدورين تُظهر 0.
+           المعيَّنان رئيساً ونائباً يُعدّان في خانتيهما وحدهما (لا مرّتين). */
         var t = ["#8A6F35", "#3e8ac4", "#9c3d6b", "#0e7490", "#b45309", "#53565a", "#a5566e", "#047857"],
-          r = dr.map(function () {
-            return 0;
+          L = [
+            { name: "رئيس الوردية", slot: "chief" },
+            { name: "نائب رئيس الوردية", slot: "deputy" },
+          ].concat(
+            dr.map(function (x) {
+              return { name: x.name || "", role: 1 };
+            }),
+          ),
+          r = L.map(function (x) {
+            return x.slot ? (or[x.slot] ? 1 : 0) : 0;
           }),
           e = {};
         (or.chief && (e[or.chief] = 1),
@@ -3828,11 +3839,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           B.forEach(function (t) {
             if (!e[t.ekey]) {
               var n = lr(t.ekey);
-              n >= 2 && n < r.length && r[n]++;
+              n >= 0 && n < dr.length && r[n + 2]++;
             }
-          }),
-          r.length > 0 && (r[0] = or.chief ? 1 : 0),
-          r.length > 1 && (r[1] = or.deputy ? 1 : 0));
+          }));
         var n = 0;
         r.forEach(function (t) {
           n += t;
@@ -3845,7 +3854,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               return t > 0;
             }).length > 1;
         return (
-          dr.forEach(function (e, n) {
+          L.forEach(function (e, n) {
             if (r[n] && Z) {
               var d = (a * r[n]) / Z,
                 p = o ? Math.min(3, 0.12 * d) : 0;
@@ -3864,24 +3873,25 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             rpPmSub: Z ? "من " + Z + " في الوردية" : "لم يُسحب الجدول بعد",
             rpPmEmpty: !n,
             rpPmRing: s,
-            rpPmRows: dr.map(function (e, n) {
-              var a = 0 === n || 1 === n;
+            rpPmRows: L.map(function (e, n) {
               return {
-                label: e.name || "دور " + (n + 1),
+                label: e.name || "دور " + (n - 1),
                 n: String(r[n]),
                 color: r[n] ? t[n % t.length] : "#94a3b8",
                 pct: Z ? Math.round((100 * r[n]) / Z) + "٪" : "—",
-                tip: a
+                tip: e.slot
                   ? "«" +
+                    e.name +
+                    "»: يُحتسب من القائمة المنسدلة أعلى التقرير — " +
+                    (or[e.slot]
+                      ? "المختار «" + xr(or[e.slot]) + "» يُعدّ واحداً ولو كان بديلاً بلا دور."
+                      : "القائمة فارغة فالخانة صفر.")
+                  : "حاملو الدور «" +
                     (e.name || "") +
-                    "»: يُحتسب من القائمة المنسدلة أعلى التقرير — الاسم المختار " +
-                    (0 === n ? "رئيساً" : "نائباً") +
-                    " يُعدّ واحداً ولو كان بديلاً بلا صلاحيات، والقائمة الفارغة صفر."
-                  : "أصحاب صلاحية «" +
-                    (e.name || "") +
-                    "» المسحوبون في هذه الوردية: " +
+                    "» في هذه الوردية: " +
                     r[n] +
-                    (Z ? " من " + Z + " — تُقرأ من أدوار الإدارة، ولا يُعدّ فيها المعيَّنان رئيساً ونائباً" : ""),
+                    (Z ? " من " + Z : "") +
+                    " — تُقرأ من أدوار الإدارة، ولا يُعدّ فيها المعيَّنان رئيساً ونائباً (يُعدّان في خانتيهما)",
               };
             }),
           }
