@@ -74,8 +74,8 @@ async function tkCreate(env, request, A, b) {
   if (!tkStrOk(b.desc, 4000)) return tkNo(400, 'bad-body', '', { at: 'desc' }).err;
   if (b.prio != null && !TK_PRIO[b.prio]) return tkNo(400, 'bad-body', '', { at: 'prio' }).err;
   if (!(typeof b.s === 'number' && typeof b.e === 'number' && isFinite(b.s) && isFinite(b.e) && b.e > b.s && b.e - b.s <= 14 * 864e5)) return tkNo(400, 'bad-body', 'نهايةُ المهمة يجب أن تكون بعد بدايتها (≤ 14 يوماً)', { at: 's' }).err;
-  /* يومُ الصفّ = اليومُ الهجريّ لبدايتها (± يومٌ لحدود منتصف الليل والوردية الليلية) */
-  var kOk = [b.s - 864e5, b.s, b.s + 864e5].some(function (t) { var h = tkHij(t); return h && h.k === String(b.k).replace(/-0(\d)/g, '-$1'); });
+  /* يومُ الصفّ = يومُ الرياض الميلاديّ لبدايتها (± يومٌ لحدود منتصف الليل والوردية الليلية) — V7 · 53 تقويم: المفتاحُ ISO مبطَّن كما هو، بلا تطبيع */
+  var kOk = [b.s - 864e5, b.s, b.s + 864e5].some(function (t) { var h = tkDay(t); return h && h.k === String(b.k); });
   if (!kOk) return tkNo(400, 'bad-body', 'يومُ المهمة لا يطابق وقتَ بدايتها', { at: 'k' }).err;
   /* KIVO_265 · البند 12: shift {name} بدل asg (الورديةُ كيانٌ — لا سقفَ 50) · وكلاهما معاً التباسٌ يُرفض */
   if (SH !== null) {
@@ -101,7 +101,7 @@ async function tkCreate(env, request, A, b) {
     /* KIVO_265 · البند 12: مكلَّفو الوردية يومَها بسياق الأهلية (072 tkShiftAsg) — بلا حسابٍ نشط (hard) أو بلا معرّفٍ فريد أو المراجِعُ نفسُه ⇒ يُتخطّى بسببه
        (لا 409 كالقائمة: الورديةُ كيانٌ والقائمةُ تُطهَّر هنا) · وما بعد سقف 500 يُقطع ويُبلَّغ · ثم «غير متاح» بقاعدة القائمة نفسِها (409 elig إلا بـforce) */
     var SA = await tkShiftAsg(env, A, d, shName, b.k, b.s, b.e, NE.needs); emps = SA.C.emps;
-    if (!SA.n) return tkNo(400, 'shift', 'لا موظفَ في وردية «' + shName + '» يومَ المهمة — لا في الجدول الشهري لشهر ' + tkYm(b.k) + ' ولا في تقرير اليوم', { at: 'shift' }).err;
+    if (!SA.n) return tkNo(400, 'shift', 'لا موظفَ في وردية «' + shName + '» يومَ المهمة — لا في الجدول الشهري لشهر ' + (calGMonthText(tkYm(b.k)) || tkYm(b.k)) + ' ولا في تقرير اليوم', { at: 'shift' }).err;
     SA.items.forEach(function (q) {
       var skip = function (why, code) { skipped.push({ ekey: q.ekey, name: q.name, why: why, code: code }); };
       if (q.hard || q.code === 'unknown_emp') return skip(q.why, q.code);
@@ -124,14 +124,14 @@ async function tkCreate(env, request, A, b) {
   var R = await tkSave(env, request, A, K, function (S) {
     var used = tkIdsUsed(S), base = now, rows = [], aud = [], recId = RC.rec ? 'r' + now.toString(36) + Math.floor(Math.random() * 1e6).toString(36) : '';
     var grp = asg.length > 1 ? 'g' + now + Math.floor(1e3 * Math.random()) : null, grpL = asg.length > 1 ? (String(b.grpL || '').trim() || (SH ? shName + ' كاملة' : asg.length + ' موظفين')) : null;   /* البند 12: وسمُ الوردية */
-    var dur = Math.round((b.e - b.s) / 6e4) || null, who = tkWho(A), kN = String(b.k).replace(/-0(\d)/g, '-$1');
+    var dur = Math.round((b.e - b.s) / 6e4) || null, who = tkWho(A), kN = String(b.k);
     var mk = function (ek) {
       var em = ek ? byE[ek] : null, el = ek ? EL.filter(function (q) { return q.ekey === ek; })[0] : null;
       var x = { v: 2, by: who, pol: P.pol, rv: RV.rv, dec: b.dec === 0 ? 0 : 1 };
       if (WI.win) x.win = WI.win;
       if (NE.needs.length) x.needs = NE.needs;
       if (el) x.elig = { res: el.result, code: el.code, at: now };
-      /* srvrec: مفتاحُ النسخة بيومٍ بلا أصفار (كما يحسبه tkRecurRun من tkHij) — يومٌ مُرسَلٌ «1447-04-05» كان مفتاحاً لا يطابقه التوليد فتُولَّد نسخةُ يوم البدء مرتين */
+      /* srvrec: مفتاحُ النسخة بيومها كما يحسبه tkRecurRun (tkDay) — V7 · 53 تقويم: ISO مبطَّن «2026-11-04» (METK_DAY_RX لا يقبل غيره) فالمفتاحُ واحدٌ ولا تُولَّد نسخةُ يوم البدء مرتين */
       if (RC.rec) { x.rec = Object.assign({}, RC.rec, { id: recId, ver: 1, from: kN, paused: 0, asg: asg.slice() }); if (ek) x.idem = 'r:' + recId + ':' + kN + ':' + ek; }
       var r = [String(b.t).trim(), String(b.desc || '').trim(), b.prio || 'normal', 'pending', 'normal', 'مضافة', null, em ? [String(em.name || '؟').charAt(0)] : [], em ? String(em.name || '') : '',
         who.n, dur, null, null, tkNewId(used, base), ek || null, b.s, b.e, grp, grpL, ek ? null : (String(b.wt || '').trim() || null), null, null, null, x];
@@ -211,7 +211,7 @@ async function tkExtend(env, request, A, b) {
     return { S2: tkPut(S, b.k, P0.L, P0.idx, r1), aud: [tkAud(K, r0, 'extended', { day: b.k, via: 'srv' }, { e: r0[16] || null }, { e: b.e, why: tkWhyOf(b) || undefined })] };
   });
   if (R.err) return R.err;
-  if (out.r1[14]) await tkNotify(env, request, A, d, [{ type: 'task_chg', own: [String(out.r1[14])], vars: { 'الفعل': 'مُدّدت مهلة', 'المهمة': String(out.r1[0] || 'مهمة'), 'التفصيل': 'حتى ' + tkClock(b.e) + (tkHij(b.e) ? ' · ' + tkHij(b.e).k.split('-').reverse().join('/') : '') } }]);
+  if (out.r1[14]) await tkNotify(env, request, A, d, [{ type: 'task_chg', own: [String(out.r1[14])], vars: { 'الفعل': 'مُدّدت مهلة', 'المهمة': String(out.r1[0] || 'مهمة'), 'التفصيل': 'حتى ' + tkClock(b.e) + (tkDay(b.e) ? ' · ' + tkDay(b.e).k.split('-').reverse().join('/') : '') } }]);
   return json({ ok: 1, rev: R.rev, e: b.e });
 }
 /* ── POST /api/tasks/reassign — نسخةٌ جديدة بهويةٍ فريدة (13) للمكلَّف الجديد، والقديمةُ تبقى بسجلّها وإثباتها موسومةً «أُعيد إسنادها» (RC-13) ── */
@@ -521,7 +521,7 @@ async function tkLinkage(env, A, url) {
   /* PRIVACY (019u (1b)/(4)): a row linked by nid shows the token the reader got in the register (eid · 'nx:'), never a nid he may not see */
   var emps = tkEmps(H0[KE0]), PT = privTok(A, d, H0), pt = function (t) { return PT && PT.M[t] !== undefined ? PT.M[t] : t; };
   var cnt = { eid: 0, nid: 0, name: 0, unknown: 0, ambiguous: 0, none: 0 }, rows = [], dk;
-  if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (ym && tkYm(dk) !== ym.replace(/-0(\d)$/, '-$1'))) continue;
+  if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (ym && tkYm(dk) !== ym)) continue;
     S[dk].forEach(function (r, i) {
       if (!Array.isArray(r)) return;
       var lk = tkLink(emps, r[14]); cnt[lk.by]++;

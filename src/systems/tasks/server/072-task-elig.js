@@ -68,10 +68,10 @@ function tkEligOne(C, ek, s, e, needsMiss) {
      المراجعةُ الموحّدة (R-3): الحسابُ الذي مفتاحُه رقمُ الهوية قاطعٌ بسببه (acct_nid) — يرى المهمة ولا ينفّذها (062c: العمود 14 = مفتاحُ الحساب حرفاً) */
   var AC = tkAcctOf(C.users, C.emps, C.d, emp, C.acIx || (C.acIx = tkAcctIx(C.users, C.emps, C.d))); it.acct = AC.st === 'active' ? 1 : 0; it.acctSt = AC.st;   /* فهرسٌ واحدٌ للسياق (N-3) */
   if (AC.st !== 'active') { it.result = TK_EL_NO; it.code = AC.st === 'disabled' ? 'acct_disabled' : AC.st === 'nid' ? 'acct_nid' : 'no_acct'; it.why = TK_ACCT_WHY[AC.st]; it.hard = 1; return it; }
-  var H = tkHij(s); if (!H) { it.code = 'no_date'; it.why = 'تعذّر حسابُ يوم التنفيذ'; return it; }
+  var H = tkDay(s); if (!H) { it.code = 'no_date'; it.why = 'تعذّر حسابُ يوم التنفيذ'; return it; }
   var m0 = tkMinOfDay(s), dur = Math.max(1, Math.round((e - s) / 6e4)), E = tkEntryOf(C, H.ym, emp), win = E.e ? tkShiftWin(C, String(E.e.shift || '')) : null, opMs = s;
   /* الورديةُ الليلية: ما بعد منتصف الليل وقبل نهايتها تابعٌ ليوم بدئها */
-  if (win && win.over && m0 < win.b) { var Hp = tkHij(s - 864e5); if (Hp) { H = Hp; opMs = s - 864e5; E = tkEntryOf(C, H.ym, emp); win = E.e ? tkShiftWin(C, String(E.e.shift || '')) : null; } }
+  if (win && win.over && m0 < win.b) { var Hp = tkDay(s - 864e5); if (Hp) { H = Hp; opMs = s - 864e5; E = tkEntryOf(C, H.ym, emp); win = E.e ? tkShiftWin(C, String(E.e.shift || '')) : null; } }
   it.day = H.k;
   var wd = TK_WD[tkWdOf(opMs)], set = function (res, code, why) { it.result = res; it.code = code; it.why = C.detail || res === TK_EL_OK ? why : (res === TK_EL_NO ? 'غيرُ متاحٍ في موعد التنفيذ' : 'يحتاج تحقّقاً من الجدول'); };
   /* التعارضُ مع مهامه الأخرى (تحذيرٌ لا منع) */
@@ -83,9 +83,9 @@ function tkEligOne(C, ek, s, e, needsMiss) {
   }); });
   if (it.conf.length) it.warn.push('تتعارض مع ' + it.conf.length + ' من مهامه في الوقت نفسِه');
   if (needsMiss) { it.perm = needsMiss; if (needsMiss !== 'ok') it.warn.push(needsMiss === 'no-account' ? 'لا حسابَ له فلا صلاحيات — يعالَج بالتفويض النظامي' : 'لا يملك صلاحيةً تحتاجها المهمة (' + needsMiss.slice(8) + ') — يعالَج بالتفويض النظامي لا بالإسناد'); }
-  if (!E.bk) { set(TK_EL_WAIT, 'no_month', 'لا جدولَ شهريّاً لشهر ' + H.ym); return it; }
-  if (!E.e) { set(TK_EL_WAIT, 'no_row', 'لا صفَّ له في الجدول الشهري لشهر ' + H.ym); return it; }
-  if (!(isObj(C.locks) && (C.locks[H.ym] === true || C.locks[H.ym] === 1))) it.warn.push('الجدولُ الشهري لـ' + H.ym + ' غيرُ معتمدٍ بعد');
+  if (!E.bk) { set(TK_EL_WAIT, 'no_month', 'لا جدولَ شهريّاً لشهر ' + (calGMonthText(H.ym) || H.ym));   /* V7 · 53 تقويم: «نوفمبر 2026» */ return it; }
+  if (!E.e) { set(TK_EL_WAIT, 'no_row', 'لا صفَّ له في الجدول الشهري لشهر ' + (calGMonthText(H.ym) || H.ym)); return it; }
+  if (!(isObj(C.locks) && (C.locks[H.ym] === true || C.locks[H.ym] === 1))) it.warn.push('الجدولُ الشهري لـ' + (calGMonthText(H.ym) || H.ym) + ' غيرُ معتمدٍ بعد');
   var rm = tkRepMark(C, H.k, emp);
   if (rm && rm.st === 'ab') { set(TK_EL_NO, 'absent', 'غائبٌ بتقرير اليوم (' + rm.sh + ')'); return it; }
   if (rm && rm.st === 'lv') { set(TK_EL_NO, 'leave', 'في إجازةٍ بتقرير اليوم (' + rm.sh + ')'); return it; }
@@ -123,7 +123,7 @@ async function tkEligEval(env, A, d, ekeys, s, e, needs) {
    الناتج: items (حكمُ كل مرشَّح · بلا معرّفٍ ثابت ⇒ unknown_emp) — ولا سقفَ 50 لأن الحكمَ يُحسب هنا لا يُرسل */
 var TK_SHIFT_MAX = 500;
 async function tkShiftAsg(env, A, d, name, k, s, e, needs) {
-  var C = await tkEligCtx(env, A, d), ym = tkYm(k), kN = String(k).replace(/-0(\d)/g, '-$1'), seen = nmap(), cand = [], tokIx = nmap(), i;
+  var C = await tkEligCtx(env, A, d), ym = tkYm(k), kN = String(k), seen = nmap(), cand = [], tokIx = nmap(), i;
   var add = function (em) { var id = em.eid == null ? '' : String(em.eid); if (!id) { if (!seen['\u0001' + String(em.name || '')]) { seen['\u0001' + String(em.name || '')] = 1; cand.push({ ek: '', emp: em }); } return; } if (seen[id]) return; seen[id] = 1; cand.push({ ek: id, emp: em }); };
   for (i = 0; i < C.emps.length; i++) { var em0 = C.emps[i]; tkToks(em0, C.emps).forEach(function (t) { tokIx[t.v] = em0; }); }
   for (i = 0; i < C.emps.length; i++) { var E = tkEntryOf(C, ym, C.emps[i]); if (E.e && String(E.e.shift || '').trim() === name) add(C.emps[i]); }

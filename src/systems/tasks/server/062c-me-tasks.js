@@ -5,7 +5,7 @@
      bassam_notif_v1 قاعدةٌ (rule) يقرؤها كلُّ منتسبي الإدارة. فيصل التنبيهُ ولا تظهر المهمة في «ملفي ← مهامي».
      والالتفافُ الوحيد اليوم («امنحه task.view») يكشف له مهامَ زملائه كلَّها وصورَ توثيقهم — ممنوعٌ بقرار المالك.
    هنا مسارٌ ذاتيّ لا يمنح أيَّ صلاحيةٍ إدارية ولا يفتح المخزن:
-     GET  /api/me/tasks[?ym=Y-M][&since=<rev>]  صفوفي أنا فقط (العمود 14 = مفتاحي الثابت) في إدارتي — القديمةُ والجديدة، المنقضيةُ والقادمة؛
+     GET  /api/me/tasks[?ym=YYYY-MM][&since=<rev>]  صفوفي أنا فقط (العمود 14 = مفتاحي الثابت) في إدارتي — القديمةُ والجديدة، المنقضيةُ والقادمة؛
                                                 ولا شيءَ من صفوف غيري (ولا أسماؤهم ولا مفاتيحُهم ولا صورُهم)
      POST /api/me/tasks/act {k,id,i?,act,why?,note?,imgs?,rm?,steps?,meta?,idem?}   على صفّي أنا — تُبنى القيمةُ الجديدة في الخادم ثم تمرّ بالحفظ المركزي
                                                 applySave نفسِه: canWrite ⇒ selfTaskOnly (الوضع القديم) · enfDecide ⇒ self.task.respond بنطاق Own
@@ -21,7 +21,8 @@
    لا مطابقةَ بالاسم ولا باسم الدخول أبداً. والكتابةُ على صفٍّ عمودُه 14 = ekey الحساب حرفياً (شرطُ selfTaskOnly ونطاقِ Own). */
 var METK_MAX = 400;                                                   /* سقفُ الصفوف في الردّ الواحد (الأحدث أولاً) — والشهرُ بـ?ym */
 var METK_ACTS = { ack: 1, accept: 1, start: 1, decline: 1, stall: 1, resume: 1, doc: 1, submit: 1, finish: 1, expire: 1 };
-var METK_IMG_RX = /^img_tsk[a-z0-9]+_[a-z0-9]+$/, METK_DAY_RX = /^\d{4}-\d{1,2}-\d{1,2}$/, METK_YM_RX = /^\d{4}-\d{1,2}$/;
+var METK_IMG_RX = /^img_tsk[a-z0-9]+_[a-z0-9]+$/, METK_DAY_RX = /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/, METK_YM_RX = /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/;
+/* V7 · 53 تقويم (ق١ · الخطر ٤): يومُ المهمة YYYY-MM-DD وشهرُها YYYY-MM ميلاديان مبطَّنان وحدهما — مفتاحٌ هجريٌّ من عميلٍ قديم يُرفض (bad-ym · k) */
 var METK_WHY_MAX = 200, METK_NOTE_MAX = 1000, METK_IMG_N = 4;
 var METK_IDEM_RX = /^[A-Za-z0-9_-]{6,40}$/, METK_IDEM_KEEP = 8;   /* KIVO_265 · البند 9: مفتاحُ عدم التكرار للفعل الذاتي — آخرُ 8 مفاتيح في r20.q */
 /* SR-2.2 · F-3 (المراجعةُ المستقلة لحزمة 242 — والعيبُ نفسُه هنا بعد الترقية من بيانات 242): «انقضاءُ المهلة» يُسجَّل لما انتهت مهلتُه خلال 48 ساعة وحده —
@@ -125,11 +126,11 @@ async function meTkList(env, A, url, request) {
   var all = [], months = {}, dk;
   for (dk in S) {
     if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
-    var L = S[dk], p = dk.split('-'), ymk = (+p[0]) + '-' + (+p[1]);
+    var L = S[dk], ymk = dk.slice(0, 7);   /* V7 · 53 تقويم: '2026-11' */
     for (var i = 0; i < L.length; i++) {
       if (!meTkMine(L[i], I)) continue;
       months[ymk] = (months[ymk] || 0) + 1;
-      if (ym && ymk !== ym.replace(/-0(\d)$/, '-$1')) continue;
+      if (ym && ymk !== ym) continue;
       all.push(meTkView(dk, i, L[i], I, now));
     }
   }

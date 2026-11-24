@@ -29930,7 +29930,7 @@ async function meSelfRoutes(request, env, path, ss) {
      bassam_notif_v1 قاعدةٌ (rule) يقرؤها كلُّ منتسبي الإدارة. فيصل التنبيهُ ولا تظهر المهمة في «ملفي ← مهامي».
      والالتفافُ الوحيد اليوم («امنحه task.view») يكشف له مهامَ زملائه كلَّها وصورَ توثيقهم — ممنوعٌ بقرار المالك.
    هنا مسارٌ ذاتيّ لا يمنح أيَّ صلاحيةٍ إدارية ولا يفتح المخزن:
-     GET  /api/me/tasks[?ym=Y-M][&since=<rev>]  صفوفي أنا فقط (العمود 14 = مفتاحي الثابت) في إدارتي — القديمةُ والجديدة، المنقضيةُ والقادمة؛
+     GET  /api/me/tasks[?ym=YYYY-MM][&since=<rev>]  صفوفي أنا فقط (العمود 14 = مفتاحي الثابت) في إدارتي — القديمةُ والجديدة، المنقضيةُ والقادمة؛
                                                 ولا شيءَ من صفوف غيري (ولا أسماؤهم ولا مفاتيحُهم ولا صورُهم)
      POST /api/me/tasks/act {k,id,i?,act,why?,note?,imgs?,rm?,steps?,meta?,idem?}   على صفّي أنا — تُبنى القيمةُ الجديدة في الخادم ثم تمرّ بالحفظ المركزي
                                                 applySave نفسِه: canWrite ⇒ selfTaskOnly (الوضع القديم) · enfDecide ⇒ self.task.respond بنطاق Own
@@ -29946,7 +29946,8 @@ async function meSelfRoutes(request, env, path, ss) {
    لا مطابقةَ بالاسم ولا باسم الدخول أبداً. والكتابةُ على صفٍّ عمودُه 14 = ekey الحساب حرفياً (شرطُ selfTaskOnly ونطاقِ Own). */
 var METK_MAX = 400;                                                   /* سقفُ الصفوف في الردّ الواحد (الأحدث أولاً) — والشهرُ بـ?ym */
 var METK_ACTS = { ack: 1, accept: 1, start: 1, decline: 1, stall: 1, resume: 1, doc: 1, submit: 1, finish: 1, expire: 1 };
-var METK_IMG_RX = /^img_tsk[a-z0-9]+_[a-z0-9]+$/, METK_DAY_RX = /^\d{4}-\d{1,2}-\d{1,2}$/, METK_YM_RX = /^\d{4}-\d{1,2}$/;
+var METK_IMG_RX = /^img_tsk[a-z0-9]+_[a-z0-9]+$/, METK_DAY_RX = /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/, METK_YM_RX = /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/;
+/* V7 · 53 تقويم (ق١ · الخطر ٤): يومُ المهمة YYYY-MM-DD وشهرُها YYYY-MM ميلاديان مبطَّنان وحدهما — مفتاحٌ هجريٌّ من عميلٍ قديم يُرفض (bad-ym · k) */
 var METK_WHY_MAX = 200, METK_NOTE_MAX = 1000, METK_IMG_N = 4;
 var METK_IDEM_RX = /^[A-Za-z0-9_-]{6,40}$/, METK_IDEM_KEEP = 8;   /* KIVO_265 · البند 9: مفتاحُ عدم التكرار للفعل الذاتي — آخرُ 8 مفاتيح في r20.q */
 /* SR-2.2 · F-3 (المراجعةُ المستقلة لحزمة 242 — والعيبُ نفسُه هنا بعد الترقية من بيانات 242): «انقضاءُ المهلة» يُسجَّل لما انتهت مهلتُه خلال 48 ساعة وحده —
@@ -30050,11 +30051,11 @@ async function meTkList(env, A, url, request) {
   var all = [], months = {}, dk;
   for (dk in S) {
     if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
-    var L = S[dk], p = dk.split('-'), ymk = (+p[0]) + '-' + (+p[1]);
+    var L = S[dk], ymk = dk.slice(0, 7);   /* V7 · 53 تقويم: '2026-11' */
     for (var i = 0; i < L.length; i++) {
       if (!meTkMine(L[i], I)) continue;
       months[ymk] = (months[ymk] || 0) + 1;
-      if (ym && ymk !== ym.replace(/-0(\d)$/, '-$1')) continue;
+      if (ym && ymk !== ym) continue;
       all.push(meTkView(dk, i, L[i], I, now));
     }
   }
@@ -30420,16 +30421,14 @@ function tkPhase(r, now) {
   if (r[15] && now < r[15]) return 'upcoming';
   return 'new';
 }
-/* ── اليومُ الهجريّ (أم القرى · الرياض) ووقتُ اليوم بالدقائق — الرياضُ UTC+3 ثابتاً بلا توقيتٍ صيفي ── */
-/* V7 · د5-د2: المُنسِّقُ وفحصُ المدى في تقويم الخادم الواحد (016: calHijriAt · calHijriOk) — هنا الشكلُ الذي تريده المهام (k · ym) ووسمُ خطئها */
-function tkHij(ms) {
-  try {
-    var o = calHijriAt(ms);
-    if (calHijriOk(o)) return { y: o.y, m: o.m, d: o.d, k: o.y + '-' + o.m + '-' + o.d, ym: o.y + '-' + o.m };
-  } catch (e) { swallow('tk-hij', e); }
-  return null;
+/* ── يومُ المهمة ووقتُ اليوم بالدقائق — الرياضُ UTC+3 ثابتاً بلا توقيتٍ صيفي ──
+   V7 · 53 تقويم (ق١ · ق١١): اليومُ الميلاديُّ المدنيّ للرياض (calGAt · 016) — k = 'YYYY-MM-DD' · ym = 'YYYY-MM' مبطَّنان؛ لا مُنسِّقَ هجريّ هنا */
+function tkDay(ms) {
+  if (typeof ms !== 'number' || !isFinite(ms)) return null;
+  var o = calGAt(ms);
+  return { y: o.y, m: o.m, d: o.d, k: o.k, ym: o.ym };
 }
-function tkToday(now) { return tkHij(now - 3 * 3600 * 1000); }                      /* اليومُ التشغيلي — مهلةُ الثلاث ساعات نفسُها (dsToday) */
+function tkToday(now) { return tkDay(now - 3 * 3600 * 1000); }                      /* اليومُ التشغيلي — مهلةُ الثلاث ساعات نفسُها (dsToday) */
 function tkMinOfDay(ms) { return Math.floor(((ms / 60000) + 180) % 1440 + 1440) % 1440; }
 function tkWdOf(ms) { return new Date(ms + 3 * 3600 * 1000).getUTCDay(); }           /* 0 = الأحد */
 var TK_WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -30539,7 +30538,7 @@ function tkHeld(A, d, key) {
 /* ── مفاتيحُ المخازن ── */
 function tkK(d) { return 'bsdept:' + d + ':bassam_tasks_v1'; }
 async function tkRev(env, k) { var r = await env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(k).first(); return (r && r.rev) || 0; }
-function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]); }
+function tkYm(k) { return String(k).slice(0, 7); }   /* V7 · 53 تقويم: شهرُ يومٍ ISO ('2026-11-24' ⇐ '2026-11') — المفتاحُ مبطَّنٌ دائماً (METK_DAY_RX) */
 /* V7 · 53 (قرارا المالك ٧ و٨): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد ولا يُفتح إلا للاستدراك ({mo:1}).
    الرسالةُ بحسب القارئ: من يملك فتحَ الشهر (task.month.reopen) يُقال له افتحه، وغيرُه يُحال إلى مدير الإدارة */
 var TK_PAST_MGR = 'الشهر مقفل — افتحه للاستدراك أولاً', TK_PAST_EMP = 'الشهر مقفل — راجع مدير الإدارة';
@@ -30550,9 +30549,9 @@ function tkPastMsg(A, d) { return tkHeld(A, d, 'task.month.reopen') ? TK_PAST_MG
    إعادةُ الإسناد · الإلغاء · أفعالُ الموظف) على قفل الشهر وحده كما في الصفحة (_tkP2Menu). يعيد نصَّ الرفض بحسب القارئ أو '' */
 var TK_DAY_MGR = 'اليوم مقفل — افتحه للاستدراك أولاً', TK_DAY_EMP = 'اليوم مقفل — راجع مدير الإدارة';
 async function tkPeriodWhy(env, A, d, k, day) {
-  var p = String(k).split('-'), y = +p[0], m = +p[1], dd = +p[2], ym = y + '-' + m, dk = ym + '-' + dd;
+  var p = String(k).split('-'), y = +p[0], m = +p[1], dd = +p[2], ym = calGYm(y, m), dk = calGKey(y, m, dd);   /* V7 · 53 تقويم: أقفالُ YYYY-MM / YYYY-MM-DD */
   var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(L)) L = {};
-  var mv = L[ym], dv = L[dk], mo = isObj(mv) && !!mv.mo, T = dsToday(Date.now());
+  var mv = L[ym], dv = L[dk], mo = isObj(mv) && !!mv.mo, T = calToday(Date.now());
   if (mv === true || mv === 1) return 'شهرُ المهمة معتمدٌ ومقفل';
   if (day && dv === true) return 'اليومُ مُغلق — افتحه من صفحة المهام أولاً';
   if (!T || !(y > 0 && m > 0)) return '';
@@ -30847,8 +30846,8 @@ async function tkCreate(env, request, A, b) {
   if (!tkStrOk(b.desc, 4000)) return tkNo(400, 'bad-body', '', { at: 'desc' }).err;
   if (b.prio != null && !TK_PRIO[b.prio]) return tkNo(400, 'bad-body', '', { at: 'prio' }).err;
   if (!(typeof b.s === 'number' && typeof b.e === 'number' && isFinite(b.s) && isFinite(b.e) && b.e > b.s && b.e - b.s <= 14 * 864e5)) return tkNo(400, 'bad-body', 'نهايةُ المهمة يجب أن تكون بعد بدايتها (≤ 14 يوماً)', { at: 's' }).err;
-  /* يومُ الصفّ = اليومُ الهجريّ لبدايتها (± يومٌ لحدود منتصف الليل والوردية الليلية) */
-  var kOk = [b.s - 864e5, b.s, b.s + 864e5].some(function (t) { var h = tkHij(t); return h && h.k === String(b.k).replace(/-0(\d)/g, '-$1'); });
+  /* يومُ الصفّ = يومُ الرياض الميلاديّ لبدايتها (± يومٌ لحدود منتصف الليل والوردية الليلية) — V7 · 53 تقويم: المفتاحُ ISO مبطَّن كما هو، بلا تطبيع */
+  var kOk = [b.s - 864e5, b.s, b.s + 864e5].some(function (t) { var h = tkDay(t); return h && h.k === String(b.k); });
   if (!kOk) return tkNo(400, 'bad-body', 'يومُ المهمة لا يطابق وقتَ بدايتها', { at: 'k' }).err;
   /* KIVO_265 · البند 12: shift {name} بدل asg (الورديةُ كيانٌ — لا سقفَ 50) · وكلاهما معاً التباسٌ يُرفض */
   if (SH !== null) {
@@ -30874,7 +30873,7 @@ async function tkCreate(env, request, A, b) {
     /* KIVO_265 · البند 12: مكلَّفو الوردية يومَها بسياق الأهلية (072 tkShiftAsg) — بلا حسابٍ نشط (hard) أو بلا معرّفٍ فريد أو المراجِعُ نفسُه ⇒ يُتخطّى بسببه
        (لا 409 كالقائمة: الورديةُ كيانٌ والقائمةُ تُطهَّر هنا) · وما بعد سقف 500 يُقطع ويُبلَّغ · ثم «غير متاح» بقاعدة القائمة نفسِها (409 elig إلا بـforce) */
     var SA = await tkShiftAsg(env, A, d, shName, b.k, b.s, b.e, NE.needs); emps = SA.C.emps;
-    if (!SA.n) return tkNo(400, 'shift', 'لا موظفَ في وردية «' + shName + '» يومَ المهمة — لا في الجدول الشهري لشهر ' + tkYm(b.k) + ' ولا في تقرير اليوم', { at: 'shift' }).err;
+    if (!SA.n) return tkNo(400, 'shift', 'لا موظفَ في وردية «' + shName + '» يومَ المهمة — لا في الجدول الشهري لشهر ' + (calGMonthText(tkYm(b.k)) || tkYm(b.k)) + ' ولا في تقرير اليوم', { at: 'shift' }).err;
     SA.items.forEach(function (q) {
       var skip = function (why, code) { skipped.push({ ekey: q.ekey, name: q.name, why: why, code: code }); };
       if (q.hard || q.code === 'unknown_emp') return skip(q.why, q.code);
@@ -30897,14 +30896,14 @@ async function tkCreate(env, request, A, b) {
   var R = await tkSave(env, request, A, K, function (S) {
     var used = tkIdsUsed(S), base = now, rows = [], aud = [], recId = RC.rec ? 'r' + now.toString(36) + Math.floor(Math.random() * 1e6).toString(36) : '';
     var grp = asg.length > 1 ? 'g' + now + Math.floor(1e3 * Math.random()) : null, grpL = asg.length > 1 ? (String(b.grpL || '').trim() || (SH ? shName + ' كاملة' : asg.length + ' موظفين')) : null;   /* البند 12: وسمُ الوردية */
-    var dur = Math.round((b.e - b.s) / 6e4) || null, who = tkWho(A), kN = String(b.k).replace(/-0(\d)/g, '-$1');
+    var dur = Math.round((b.e - b.s) / 6e4) || null, who = tkWho(A), kN = String(b.k);
     var mk = function (ek) {
       var em = ek ? byE[ek] : null, el = ek ? EL.filter(function (q) { return q.ekey === ek; })[0] : null;
       var x = { v: 2, by: who, pol: P.pol, rv: RV.rv, dec: b.dec === 0 ? 0 : 1 };
       if (WI.win) x.win = WI.win;
       if (NE.needs.length) x.needs = NE.needs;
       if (el) x.elig = { res: el.result, code: el.code, at: now };
-      /* srvrec: مفتاحُ النسخة بيومٍ بلا أصفار (كما يحسبه tkRecurRun من tkHij) — يومٌ مُرسَلٌ «1447-04-05» كان مفتاحاً لا يطابقه التوليد فتُولَّد نسخةُ يوم البدء مرتين */
+      /* srvrec: مفتاحُ النسخة بيومها كما يحسبه tkRecurRun (tkDay) — V7 · 53 تقويم: ISO مبطَّن «2026-11-04» (METK_DAY_RX لا يقبل غيره) فالمفتاحُ واحدٌ ولا تُولَّد نسخةُ يوم البدء مرتين */
       if (RC.rec) { x.rec = Object.assign({}, RC.rec, { id: recId, ver: 1, from: kN, paused: 0, asg: asg.slice() }); if (ek) x.idem = 'r:' + recId + ':' + kN + ':' + ek; }
       var r = [String(b.t).trim(), String(b.desc || '').trim(), b.prio || 'normal', 'pending', 'normal', 'مضافة', null, em ? [String(em.name || '؟').charAt(0)] : [], em ? String(em.name || '') : '',
         who.n, dur, null, null, tkNewId(used, base), ek || null, b.s, b.e, grp, grpL, ek ? null : (String(b.wt || '').trim() || null), null, null, null, x];
@@ -30984,7 +30983,7 @@ async function tkExtend(env, request, A, b) {
     return { S2: tkPut(S, b.k, P0.L, P0.idx, r1), aud: [tkAud(K, r0, 'extended', { day: b.k, via: 'srv' }, { e: r0[16] || null }, { e: b.e, why: tkWhyOf(b) || undefined })] };
   });
   if (R.err) return R.err;
-  if (out.r1[14]) await tkNotify(env, request, A, d, [{ type: 'task_chg', own: [String(out.r1[14])], vars: { 'الفعل': 'مُدّدت مهلة', 'المهمة': String(out.r1[0] || 'مهمة'), 'التفصيل': 'حتى ' + tkClock(b.e) + (tkHij(b.e) ? ' · ' + tkHij(b.e).k.split('-').reverse().join('/') : '') } }]);
+  if (out.r1[14]) await tkNotify(env, request, A, d, [{ type: 'task_chg', own: [String(out.r1[14])], vars: { 'الفعل': 'مُدّدت مهلة', 'المهمة': String(out.r1[0] || 'مهمة'), 'التفصيل': 'حتى ' + tkClock(b.e) + (tkDay(b.e) ? ' · ' + tkDay(b.e).k.split('-').reverse().join('/') : '') } }]);
   return json({ ok: 1, rev: R.rev, e: b.e });
 }
 /* ── POST /api/tasks/reassign — نسخةٌ جديدة بهويةٍ فريدة (13) للمكلَّف الجديد، والقديمةُ تبقى بسجلّها وإثباتها موسومةً «أُعيد إسنادها» (RC-13) ── */
@@ -31294,7 +31293,7 @@ async function tkLinkage(env, A, url) {
   /* PRIVACY (019u (1b)/(4)): a row linked by nid shows the token the reader got in the register (eid · 'nx:'), never a nid he may not see */
   var emps = tkEmps(H0[KE0]), PT = privTok(A, d, H0), pt = function (t) { return PT && PT.M[t] !== undefined ? PT.M[t] : t; };
   var cnt = { eid: 0, nid: 0, name: 0, unknown: 0, ambiguous: 0, none: 0 }, rows = [], dk;
-  if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (ym && tkYm(dk) !== ym.replace(/-0(\d)$/, '-$1'))) continue;
+  if (isObj(S)) for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk]) || (ym && tkYm(dk) !== ym)) continue;
     S[dk].forEach(function (r, i) {
       if (!Array.isArray(r)) return;
       var lk = tkLink(emps, r[14]); cnt[lk.by]++;
@@ -31428,10 +31427,10 @@ function tkEligOne(C, ek, s, e, needsMiss) {
      المراجعةُ الموحّدة (R-3): الحسابُ الذي مفتاحُه رقمُ الهوية قاطعٌ بسببه (acct_nid) — يرى المهمة ولا ينفّذها (062c: العمود 14 = مفتاحُ الحساب حرفاً) */
   var AC = tkAcctOf(C.users, C.emps, C.d, emp, C.acIx || (C.acIx = tkAcctIx(C.users, C.emps, C.d))); it.acct = AC.st === 'active' ? 1 : 0; it.acctSt = AC.st;   /* فهرسٌ واحدٌ للسياق (N-3) */
   if (AC.st !== 'active') { it.result = TK_EL_NO; it.code = AC.st === 'disabled' ? 'acct_disabled' : AC.st === 'nid' ? 'acct_nid' : 'no_acct'; it.why = TK_ACCT_WHY[AC.st]; it.hard = 1; return it; }
-  var H = tkHij(s); if (!H) { it.code = 'no_date'; it.why = 'تعذّر حسابُ يوم التنفيذ'; return it; }
+  var H = tkDay(s); if (!H) { it.code = 'no_date'; it.why = 'تعذّر حسابُ يوم التنفيذ'; return it; }
   var m0 = tkMinOfDay(s), dur = Math.max(1, Math.round((e - s) / 6e4)), E = tkEntryOf(C, H.ym, emp), win = E.e ? tkShiftWin(C, String(E.e.shift || '')) : null, opMs = s;
   /* الورديةُ الليلية: ما بعد منتصف الليل وقبل نهايتها تابعٌ ليوم بدئها */
-  if (win && win.over && m0 < win.b) { var Hp = tkHij(s - 864e5); if (Hp) { H = Hp; opMs = s - 864e5; E = tkEntryOf(C, H.ym, emp); win = E.e ? tkShiftWin(C, String(E.e.shift || '')) : null; } }
+  if (win && win.over && m0 < win.b) { var Hp = tkDay(s - 864e5); if (Hp) { H = Hp; opMs = s - 864e5; E = tkEntryOf(C, H.ym, emp); win = E.e ? tkShiftWin(C, String(E.e.shift || '')) : null; } }
   it.day = H.k;
   var wd = TK_WD[tkWdOf(opMs)], set = function (res, code, why) { it.result = res; it.code = code; it.why = C.detail || res === TK_EL_OK ? why : (res === TK_EL_NO ? 'غيرُ متاحٍ في موعد التنفيذ' : 'يحتاج تحقّقاً من الجدول'); };
   /* التعارضُ مع مهامه الأخرى (تحذيرٌ لا منع) */
@@ -31443,9 +31442,9 @@ function tkEligOne(C, ek, s, e, needsMiss) {
   }); });
   if (it.conf.length) it.warn.push('تتعارض مع ' + it.conf.length + ' من مهامه في الوقت نفسِه');
   if (needsMiss) { it.perm = needsMiss; if (needsMiss !== 'ok') it.warn.push(needsMiss === 'no-account' ? 'لا حسابَ له فلا صلاحيات — يعالَج بالتفويض النظامي' : 'لا يملك صلاحيةً تحتاجها المهمة (' + needsMiss.slice(8) + ') — يعالَج بالتفويض النظامي لا بالإسناد'); }
-  if (!E.bk) { set(TK_EL_WAIT, 'no_month', 'لا جدولَ شهريّاً لشهر ' + H.ym); return it; }
-  if (!E.e) { set(TK_EL_WAIT, 'no_row', 'لا صفَّ له في الجدول الشهري لشهر ' + H.ym); return it; }
-  if (!(isObj(C.locks) && (C.locks[H.ym] === true || C.locks[H.ym] === 1))) it.warn.push('الجدولُ الشهري لـ' + H.ym + ' غيرُ معتمدٍ بعد');
+  if (!E.bk) { set(TK_EL_WAIT, 'no_month', 'لا جدولَ شهريّاً لشهر ' + (calGMonthText(H.ym) || H.ym));   /* V7 · 53 تقويم: «نوفمبر 2026» */ return it; }
+  if (!E.e) { set(TK_EL_WAIT, 'no_row', 'لا صفَّ له في الجدول الشهري لشهر ' + (calGMonthText(H.ym) || H.ym)); return it; }
+  if (!(isObj(C.locks) && (C.locks[H.ym] === true || C.locks[H.ym] === 1))) it.warn.push('الجدولُ الشهري لـ' + (calGMonthText(H.ym) || H.ym) + ' غيرُ معتمدٍ بعد');
   var rm = tkRepMark(C, H.k, emp);
   if (rm && rm.st === 'ab') { set(TK_EL_NO, 'absent', 'غائبٌ بتقرير اليوم (' + rm.sh + ')'); return it; }
   if (rm && rm.st === 'lv') { set(TK_EL_NO, 'leave', 'في إجازةٍ بتقرير اليوم (' + rm.sh + ')'); return it; }
@@ -31483,7 +31482,7 @@ async function tkEligEval(env, A, d, ekeys, s, e, needs) {
    الناتج: items (حكمُ كل مرشَّح · بلا معرّفٍ ثابت ⇒ unknown_emp) — ولا سقفَ 50 لأن الحكمَ يُحسب هنا لا يُرسل */
 var TK_SHIFT_MAX = 500;
 async function tkShiftAsg(env, A, d, name, k, s, e, needs) {
-  var C = await tkEligCtx(env, A, d), ym = tkYm(k), kN = String(k).replace(/-0(\d)/g, '-$1'), seen = nmap(), cand = [], tokIx = nmap(), i;
+  var C = await tkEligCtx(env, A, d), ym = tkYm(k), kN = String(k), seen = nmap(), cand = [], tokIx = nmap(), i;
   var add = function (em) { var id = em.eid == null ? '' : String(em.eid); if (!id) { if (!seen['\u0001' + String(em.name || '')]) { seen['\u0001' + String(em.name || '')] = 1; cand.push({ ek: '', emp: em }); } return; } if (seen[id]) return; seen[id] = 1; cand.push({ ek: id, emp: em }); };
   for (i = 0; i < C.emps.length; i++) { var em0 = C.emps[i]; tkToks(em0, C.emps).forEach(function (t) { tokIx[t.v] = em0; }); }
   for (i = 0; i < C.emps.length; i++) { var E = tkEntryOf(C, ym, C.emps[i]); if (E.e && String(E.e.shift || '').trim() === name) add(C.emps[i]); }
@@ -31510,9 +31509,9 @@ async function tkEligRoute(env, A, url) {
 /* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — المهامُ المتكررة: قالبٌ + نسخةُ تنفيذٍ مستقلة لكل موعد، تُولَّد في الخادم بلا Cron (ق5) ═══
    القالبُ لا يُخزَّن موردٌ جديد ولا صفٌّ وهميّ: تعريفُ السلسلة x.rec يحمله كلُّ صفٍّ من نُسخها (أوّلُها نسخةُ يوم البدء الحقيقية)، والنموذجُ
    للتوليد هو أحدثُ نسخةٍ غيرِ منفصلة (det) بأعلى إصدار (ver) — فحذفُ نسخةٍ لا يقتل السلسلة، و«كلُّ التنفيذات القادمة» = إصدارٌ أعلى.
-     x.rec = { id, ver, t: daily|days|weekly|monthly|every, wd:[0..6] (الأحد=0), md:1..30|'last', n:2..30 (every), from:'Y-M-D', to?:'Y-M-D' (غائبٌ = حتى الإيقاف), paused:0|1, stop?:1, by?:{u,e,n}, asg:[eid…] }
-     KIVO_265 · البند 16: every = كل n يوماً من يوم البدء (from) بعدّ الأيام المدنية (tkHijMid) · md:'last' = آخرُ يومٍ في الشهر الهجري (29 أو 30) — لا يُتخطّى
-     x.idem = 'r:<id>:<Y-M-D>:<eid>'  — مفتاحُ عدم التكرار: إعادةُ التشغيل أو تشغيلُه مرتين معاً لا تكرّر نسخة (يُعاد فحصُه على القيمة الطازجة داخل
+     x.rec = { id, ver, t: daily|days|weekly|monthly|every, wd:[0..6] (الأحد=0), md:1..31|'last', n:2..30 (every), from:'YYYY-MM-DD', to?:'YYYY-MM-DD' (غائبٌ = حتى الإيقاف), paused:0|1, stop?:1, by?:{u,e,n}, asg:[eid…] }
+     KIVO_265 · البند 16: every = كل n يوماً من يوم البدء (from) بعدّ الأيام المدنية (tkDayMid) · md:'last' = آخرُ يومٍ في الشهر (V7 · 53 تقويم: الميلادي 28–31) — لا يُتخطّى
+     x.idem = 'r:<id>:<YYYY-MM-DD>:<eid>'  — مفتاحُ عدم التكرار: إعادةُ التشغيل أو تشغيلُه مرتين معاً لا تكرّر نسخة (يُعاد فحصُه على القيمة الطازجة داخل
                                          حارس النسخة CAS — فالكاتبُ الثاني يرى ما كتبه الأول ولا يضيف شيئاً).
    التوليد: لأفقٍ محدود (TK_REC_H = 30 يوماً قادمة — KIVO_265 · البند 15: كان 7؛ Cloudflare Pages لا يدعم مشغّلات Cron فالتوليدُ يبقى كسولاً والبديلُ أفقٌ أطول
    يرى الموظفُ والمسؤولُ مواعيدَ الشهر القادم) وبسقفٍ للصفوف في التشغيل الواحد (TK_REC_MAX = 600 · كان 200 — والباقي في التشغيل التالي بمفاتيح idem نفسِها) · لا خارجَ الإدارة · لا لموظفٍ غيرِ متاحٍ يومَها (§4) — يُتخطّى ويُبلَّغ صاحبُ القالب مرةً،
@@ -31533,7 +31532,7 @@ async function tkEligRoute(env, A, url) {
        شهرٍ معتمدٍ ومقفل لا تُمسّ؛ ويحمل النموذجُ (tkSeries) القاعدةَ الجديدة دائماً (أحدثُ نسخةٍ في شهرٍ مفتوح إن لم تكن نسخةٌ قادمة) وإلا 409 month-locked.
      · rec.by: صاحبُ سلسلةٍ حُوِّلت من مهمةٍ قائمة (start) — من حوّلها، ويتحقّق منه سجلُّ الخادم بحدث rec_start كما يتحقّق من «أُنشئت» (F-2/R-21). */
 var TK_REC_H = 30, TK_REC_MAX = 600, TK_REC_T = { daily: 1, days: 1, weekly: 1, monthly: 1, every: 1 }, TK_REC_LAST = nmap(), TK_REC_GAP = 10 * 6e4;
-var TK_REC_Y = 30000;                                                        /* سقفُ النهاية الصريحة بفرق tkDayNum: ثلاثُ سنواتٍ هجرية */
+var TK_REC_Y = 30000;                                                        /* سقفُ النهاية الصريحة بفرق tkDayNum: ثلاثُ سنوات (V7 · 53 تقويم: ميلادية) */
 /* keep (التعديل): بلا to ولا open ⇒ نهايةُ السلسلة كما هي ({to} أو {} لـ«حتى الإيقاف») — لا السنةُ الافتراضية */
 function tkRecIn(v, k, keep) {
   if (v == null) return { rec: null };
@@ -31543,41 +31542,39 @@ function tkRecIn(v, k, keep) {
     if (!Array.isArray(v.wd) || !v.wd.length || v.wd.length > 7 || !v.wd.every(function (x) { return x === Math.floor(x) && x >= 0 && x <= 6; })) return { bad: 'rec.wd', msg: 'اختر أيام الأسبوع' };
     o.wd = v.wd.filter(function (x, n) { return v.wd.indexOf(x) === n; }).sort();
   }
-  /* KIVO_265 · البند 16: md:'last' آخرُ يومٍ في الشهر الهجري · every بعدد أيامٍ n من 2 إلى 30 */
-  if (v.t === 'monthly') { if (v.md === 'last') o.md = 'last'; else if (!(v.md === Math.floor(v.md) && v.md >= 1 && v.md <= 30)) return { bad: 'rec.md', msg: 'اختر يوم الشهر' }; else o.md = v.md; }
+  /* KIVO_265 · البند 16: md:'last' آخرُ يومٍ في الشهر · every بعدد أيامٍ n من 2 إلى 30 — V7 · 53 تقويم (ق٦): يومُ الشهر الميلادي 1–31 */
+  if (v.t === 'monthly') { if (v.md === 'last') o.md = 'last'; else if (!(v.md === Math.floor(v.md) && v.md >= 1 && v.md <= 31)) return { bad: 'rec.md', msg: 'اختر يوم الشهر' }; else o.md = v.md; }
   if (v.t === 'every') { if (!(typeof v.n === 'number' && v.n === Math.floor(v.n) && v.n >= 2 && v.n <= 30)) return { bad: 'rec.n', msg: 'عددُ الأيام بين موعدين من 2 إلى 30' }; o.n = v.n; }
   if (v.open != null && v.open !== 0 && v.open !== 1 && v.open !== !0 && v.open !== !1) return { bad: 'rec.open' };
   var open = v.open === 1 || v.open === !0;
   if (v.to != null && v.to !== '') {
     if (typeof v.to !== 'string') return { bad: 'rec.to' };                     /* S7: لا مصفوفةَ تصير تاريخاً بـString() — والمخطّطُ يرفضها قبل هذا */
     if (open) return { bad: 'rec.to', msg: 'اختر تاريخَ نهايةٍ أو «حتى الإيقاف» — لا كليهما' };
-    var tp = String(v.to).split('-');
-    if (!METK_DAY_RX.test(String(v.to)) || +tp[1] < 1 || +tp[1] > 12 || +tp[2] < 1 || +tp[2] > 30) return { bad: 'rec.to', msg: 'تاريخُ نهاية التكرار غيرُ صالح' };
+    var tp = String(v.to).split('-');   /* V7 · 53 تقويم: يومٌ ميلاديٌّ ISO موجود (لا 31 في شهرٍ من 30 ولا 29 فبراير في سنةٍ بسيطة) */
+    if (!METK_DAY_RX.test(String(v.to)) || !calGregOk(+tp[0], +tp[1], +tp[2])) return { bad: 'rec.to', msg: 'تاريخُ نهاية التكرار غيرُ صالح' };
     if (tkDayNum(v.to) < tkDayNum(k)) return { bad: 'rec.to', msg: 'نهايةُ التكرار قبل بدايته' };
-    if (tkDayNum(v.to) - tkDayNum(k) > TK_REC_Y) return { bad: 'rec.to', msg: 'التكرارُ ثلاثُ سنواتٍ هجرية على الأكثر — أو اختر «حتى الإيقاف»' };
+    if (tkDayNum(v.to) - tkDayNum(k) > TK_REC_Y) return { bad: 'rec.to', msg: 'التكرارُ ثلاثُ سنواتٍ على الأكثر — أو اختر «حتى الإيقاف»' };
     o.to = String(v.to);
   } else if (!open) {                                                          /* «حتى الإيقاف» (open) ⇒ لا to */
     if (keep) { if (keep.to) o.to = String(keep.to); }
-    else { var p = String(k).split('-'); o.to = (+p[0] + 1) + '-' + (+p[1]) + '-' + (+p[2]); }   /* بلا نهايةٍ ولا «حتى الإيقاف» ⇒ سنةٌ هجرية (كما كان) */
+    else { var p = String(k).split('-'), ny = +p[0] + 1, nd = Math.min(+p[2], calGMonthDays(ny, +p[1])); o.to = calGKey(ny, +p[1], nd); }   /* بلا نهايةٍ ولا «حتى الإيقاف» ⇒ سنة (V7 · 53 تقويم: ميلادية · 29 فبراير ⇐ 28) */
   }
   return { rec: o };
 }
-/* KIVO_265 · البند 16: منتصفُ ليل (الرياض) يومٍ هجريّ k قرب الوقت near — قفزةٌ تقريبية (الشهرُ الهجري ≈ 29.53 يوماً) ثم تصحيحٌ يوماً يوماً؛ لا تحويلَ هجريّ⇐ميلاديّ
-   في العامل فيُشتقّ من tkHij وحده. النتيجةُ ثابتةٌ لليوم الواحد فتُحفظ (CAL_HMID في 016 — V7 · د5-د2) */
-function tkHijMid(k, near) { return calHijriMid(k, near, tkHij); }   /* V7 · د5-د2: الحسابُ والحفظُ في تقويم الخادم (016) */
-/* dMid: منتصفُ ليل اليوم المدنيّ الذي يومُه الهجريّ H (لـevery وآخرِ الشهر — البند 16) */
+/* V7 · 53 تقويم: منتصفُ ليل (الرياض) اليوم الميلادي k — حسابٌ مباشر (Date.UTC − 3 ساعات)؛ كان بحثاً قرب near لأن العامل لا يحوّل الهجري إلى ميلادي */
+function tkDayMid(k) { var p = calGParse(k); return p && p.cal === 'g' && p.kind === 'day' ? Date.UTC(p.y, p.m - 1, p.d) - 3 * 36e5 : 0; }
+/* dMid: منتصفُ ليل اليوم المدنيّ H (لـevery — البند 16) */
 function tkRecDue(rec, H, wdi, dMid) {
   var n = tkDayNum(H.k); if (n < tkDayNum(rec.from)) return false; if (rec.to && n > tkDayNum(rec.to)) return false;
   if (rec.t === 'daily') return true;
   if (rec.t === 'days' || rec.t === 'weekly') return Array.isArray(rec.wd) && rec.wd.indexOf(wdi) !== -1;
   if (rec.t === 'monthly') {
-    if (rec.md !== 'last') return H.d === rec.md;
-    if (H.d === 30) return true; if (H.d !== 29 || typeof dMid !== 'number') return false;
-    var H2 = tkHij(dMid + 36 * 36e5); return !!H2 && H2.m !== H.m;                     /* 29 آخرُ الشهر إن كان الغدُ في شهرٍ آخر */
+    if (rec.md !== 'last') return H.d === rec.md;                                      /* يومٌ لا يحويه الشهر (31 في شهرٍ من 30) يُتخطّى كما كان */
+    return H.d === calGMonthDays(+String(H.k).slice(0, 4), H.m);                        /* V7 · 53 تقويم: آخرُ الشهر الميلادي (28–31) */
   }
   if (rec.t === 'every') {
     if (!(rec.n >= 2) || typeof dMid !== 'number') return false;
-    var fm = tkHijMid(rec.from, dMid); if (!fm) return false;
+    var fm = tkDayMid(rec.from); if (!fm) return false;
     var df = Math.round((dMid - fm) / 864e5); return df >= 0 && df % rec.n === 0;
   }
   return false;
@@ -31599,9 +31596,9 @@ function tkSeries(S) {
   return { ser: ser, idem: idem };
 }
 function tkRiyMid(t) { return calRiyadhMid(t); }   /* V7 · د5-د2: في تقويم الخادم (016) */
-/* KIVO_265 · S6 (مراجعةُ الخادم): منتصفُ ليل اليوم المدنيّ الذي يومُه الهجريّ dk — قريباً من الوقت s: يومُ الصفّ = يومُ بدايته ± يوم (071 kOk: حدودُ منتصف
-   الليل والوردية الليلية). اليومُ الهجريّ هنا (أم القرى بتوقيت الرياض) يتبدّل عند منتصف الليل المدنيّ فيقابله يومٌ مدنيٌّ واحد */
-function tkRecDayMid(dk, s) { return calHijriDayMid(dk, s, tkHij); }   /* V7 · د5-د2 */
+/* KIVO_265 · S6 (مراجعةُ الخادم): منتصفُ ليل اليوم المدنيّ dk (يومُ الصفّ = يومُ بدايته ± يوم — 071 kOk) — V7 · 53 تقويم: اليومُ ميلاديٌّ فالحسابُ مباشر؛
+   مفتاحٌ لا يُفهم ⇒ منتصفُ ليل s كما كان */
+function tkRecDayMid(dk, s) { return tkDayMid(dk) || calRiyadhMid(s); }
 /* KIVO_265 · L-3: هويةُ المصدر لكتابات التكرار في التدقيق والأمن — توليدٌ آليّ (لا عنوانَ الموظف الذي فتح «ملفي» ولا جهازُه) */
 var TK_REC_META = { ip: 'srv:recur', city: '', dev: 'srv:recur' };
 var TK_REC_TOMB_D = 40;                                                      /* أيامُ سجل الخادم التي يُبحث فيها عن نُسخٍ وُلّدت ثم حُذفت (L-5) */
@@ -31647,9 +31644,9 @@ async function tkRecurRun(env, request, d, opts) {
        (يومُ الصفّ k وبدايتُه فجرَ k+1 — 071 kOk) تبقى في يومها التالي لكل موعد — كانت نسخةُ k+1 تقع على بداية نسخة k نفسِها (نسختان في الوقت ذاته) */
     var off = Math.floor((P[15] - tkRecDayMid(s0.pk, P[15])) / 6e4) * 6e4, dur = Math.max(6e4, P[16] - P[15]);
     for (var i = 0; i < TK_REC_H && n < TK_REC_MAX; i++) {
-      var D0 = mid0 + i * 864e5, H = tkHij(D0 + 12 * 36e5), wdi = tkWdOf(D0 + 12 * 36e5); if (!H) continue;
+      var D0 = mid0 + i * 864e5, H = tkDay(D0 + 12 * 36e5), wdi = tkWdOf(D0 + 12 * 36e5); if (!H) continue;
       if (!tkRecDue(rec, H, wdi, D0)) continue;
-      if (LK[H.ym] === true || LK[H.ym] === 1) { if (!lockC[s0.id + H.ym]) { lockC[s0.id + H.ym] = 1; rep.skipped.push({ id: s0.id, k: H.k, ekey: '', why: 'شهرُ ' + H.ym + ' معتمدٌ ومقفل' }); } continue; }
+      if (LK[H.ym] === true || LK[H.ym] === 1) { if (!lockC[s0.id + H.ym]) { lockC[s0.id + H.ym] = 1; rep.skipped.push({ id: s0.id, k: H.k, ekey: '', why: 'شهرُ ' + (calGMonthText(H.ym) || H.ym) + ' معتمدٌ ومقفل' }); } continue; }
       if (LK[H.k] === true) { rep.skipped.push({ id: s0.id, k: H.k, ekey: '', why: 'اليومُ ' + H.k + ' مُغلق' }); continue; }   /* KIVO_265 · قفلُ اليوم: المُغلق بيده لا تُولَّد فيه نسخ */
       var s = D0 + off, e = s + dur;
       if (e < now) continue;                                                           /* موعدٌ انقضى اليوم لا يُولَّد بأثرٍ رجعي */
@@ -31720,7 +31717,7 @@ async function tkRecurRoute(env, request, A, url, b) {
   var D0 = tkDeptOf(A, url.searchParams.get('dept') || (b && b.dept)); if (D0.err) return D0.err; var d = D0.d;
   if (!(A.u.role === 'super' || canRead(A, tkK(d)))) return tkNo(403, 'forbidden').err;
   var day = String(url.searchParams.get('day') || ''), T = tkToday(Date.now());
-  if (day && (!T || day.replace(/-0(\d)/g, '-$1') !== T.k)) return tkNo(400, 'bad-query', 'التوليدُ لليوم الجاري وما بعده وحده', { at: 'day' }).err;
+  if (day && (!T || day !== T.k)) return tkNo(400, 'bad-query', 'التوليدُ لليوم الجاري وما بعده وحده', { at: 'day' }).err;
   TK_REC_LAST[d] = Date.now();
   var rep = await tkRecurRun(env, request, d, { A: A });
   var due = null; if (typeof tkDueRun === 'function') { TK_DUE_LAST[d] = Date.now(); try { due = await tkDueRun(env, request, d); } catch (eD) { swallow('tk-due', eD); } }   /* KIVO_265 · البند 10 (074) */
@@ -31737,11 +31734,11 @@ function tkRecEnded(rec, T) { return !!(rec && (rec.stop || (rec.to && T && tkDa
 function tkRecLk(LK, dk) { var v = LK[tkYm(dk)]; return v === true || v === 1; }
 /* القاعدةُ للتدقيق (قبل · بعد) — بلا معرّفاتِ المكلَّفين */
 function tkRecSum(rec) { var o = { t: String(rec.t || '') }; if (rec.wd) o.wd = rec.wd; if (rec.md) o.md = rec.md; if (rec.n) o.n = rec.n; o.to = rec.to ? String(rec.to) : ''; if (rec.paused) o.paused = 1; if (rec.stop) o.stop = 1; return o; }
-/* نسخةٌ قائمة يومُها dk: أهي موعدٌ بالقاعدة rec؟ — بيومها الهجريّ ويوم أسبوعه كما يولّدها tkRecurRun (بلا وقتٍ ⇒ تُعدّ موعداً فلا تُلغى).
+/* نسخةٌ قائمة يومُها dk: أهي موعدٌ بالقاعدة rec؟ — بيومها ويوم أسبوعه كما يولّدها tkRecurRun (بلا وقتٍ ⇒ تُعدّ موعداً فلا تُلغى).
    S6: يومُ الصفّ dk لا يومُ بدايته (الوردية الليلية تبدأ فجرَ اليوم التالي) — والصفُّ العاديّ يومُه يومُ بدايته فالحكمُ كما كان */
 function tkRecRowDue(rec, dk, r) {
   if (typeof r[15] !== 'number') return true;
-  var D = tkRecDayMid(dk, r[15]) + 12 * 36e5, H = tkHij(D); if (!H) return true;
+  var D = tkRecDayMid(dk, r[15]) + 12 * 36e5, H = tkDay(D); if (!H) return true;
   return tkRecDue(rec, { k: dk, d: H.d, m: H.m }, tkWdOf(D), D - 12 * 36e5);
 }
 /* KIVO_265 · S8 (مراجعةُ الخادم): سلسلةٌ أنهاها الإصدارُ السابق (to = يومُ الإنهاء بلا rec.stop) — يدلّ عليها حدثُ rec_stop كتبه الخادم (cid 'tk…' · S5)
@@ -31769,7 +31766,7 @@ async function tkRecurPrepare(env, A, b, d, K, S) {
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'إدارةُ التكرار تحتاج صلاحية تعديل المهام').err;
   var LK = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
   var out = { n: 0, cancelled: 0, ver: 0, restored: 0, kept: 0 }, id = String(b.id), n0 = tkDayNum(T.k), stopEv = await tkRecStopEv(env, K, id);
-  var keepK = b.row != null ? String(b.k).replace(/-0(\d)/g, '-$1') : '', keepR = b.row != null ? String(b.row) : '';
+  var keepK = b.row != null ? String(b.k) : '', keepR = b.row != null ? String(b.row) : '';
   var R = (function (S) {
     var Z = tkSeries(S), s0 = Z.ser[id]; out = { n: 0, cancelled: 0, ver: 0, restored: 0, kept: 0 };
     if (!s0) return tkNo(404, 'not-found');
@@ -31807,10 +31804,10 @@ async function tkRecurPrepare(env, A, b, d, K, S) {
        أحدثُ نسخةٍ سابقة في شهرٍ مفتوح بترتيب tkSeries (غيرُ المنفصلة أولاً) */
     var dk, i, anyN = false, wN = 0, wD = 0, cN = null, cD = null, keepG = '';
     /* «لمرة واحدة» لمهمةٍ جماعية: يبقى صفُّ كلِّ عضوٍ في مجموعة الصفّ المعدَّل يومَها (r[17]) — لا صفُّ المرساة وحده */
-    if (keepK) for (dk in S) { if (!Array.isArray(S[dk]) || dk.replace(/-0(\d)/g, '-$1') !== keepK) continue;
+    if (keepK) for (dk in S) { if (!Array.isArray(S[dk]) || dk !== keepK) continue;
       S[dk].forEach(function (r) { var x = tkX(r); if (!keepG && x && isObj(x.rec) && String(x.rec.id) === id && String(r[13]) === keepR && r[17]) keepG = String(r[17]); }); }
     for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
-      var lk = tkRecLk(LK, dk), dn = tkDayNum(dk), keepD = keepK && dk.replace(/-0(\d)/g, '-$1') === keepK;
+      var lk = tkRecLk(LK, dk), dn = tkDayNum(dk), keepD = keepK && dk === keepK;
       for (i = 0; i < S[dk].length; i++) {
         var r = S[dk][i], x = tkX(r); if (!x || !isObj(x.rec) || String(x.rec.id) !== id) continue;
         var kp = keepD && (String(r[13]) === keepR || (!!keepG && String(r[17] || '') === keepG)); if (kp) out.kept = 1;
@@ -31858,7 +31855,7 @@ async function tkRecurStartPrepare(env, A, b, d, K, S) {
   var RC = tkRecIn(b.rec, b.k); if (RC.bad) return tkNo(400, 'bad-body', RC.msg || '', { at: RC.bad }).err;
   if (!(tkHeld(A, d, 'task.create') && tkHeld(A, d, 'task.edit') && tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'تحويلُ المهمة إلى متكررة يحتاج صلاحياتِ إنشاء المهام وتعديلها وإسنادها').err;
   { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧) */
-  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), kN = String(b.k).replace(/-0(\d)/g, '-$1');
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), kN = String(b.k);
   var pick = function (L) {
     if (b.grp != null) { var o = []; for (var q = 0; q < L.length; q++) if (Array.isArray(L[q]) && String(L[q][17] || '') === String(b.grp)) o.push(q); return o; }
     var P0 = tkPick({ x: L }, 'x', b.id, null); return P0 ? [P0.idx] : [];
@@ -31925,7 +31922,7 @@ async function tkDueActor(env, d, uid, cache) {
 async function tkDueRun(env, request, d) {
   var K = tkK(d), now = Date.now(), rep = { soon: 0, late: 0, exp: 0, skipped: 0, sent: 0 };
   var S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) return rep;
-  var days = []; [0, 1, 2].forEach(function (b) { var H = tkHij(now - b * 864e5); if (H && days.indexOf(H.k) === -1) days.push(H.k); });   /* مفاتيحُ الصفوف أيامٌ مدنية (هجريُّ الرياض لبدايتها) لا تشغيلية: اليوم وأمس وقبله */
+  var days = []; [0, 1, 2].forEach(function (b) { var H = tkDay(now - b * 864e5); if (H && days.indexOf(H.k) === -1) days.push(H.k); });   /* مفاتيحُ الصفوف أيامٌ مدنية (يومُ الرياض الميلاديّ لبدايتها — V7 · 53 تقويم) لا تشغيلية: اليوم وأمس وقبله */
   var plan = nmap(), n = 0;
   for (var q = 0; q < days.length; q++) {
     var dk = days[q], L = Array.isArray(S[dk]) ? S[dk] : [];

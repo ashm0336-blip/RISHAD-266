@@ -21,15 +21,20 @@ export const TAG = 'TEST_ONLY';
 export const D = 'tst_d1';
 export const KN = 'bsdept:' + D + ':bassam_notif_v1';
 export const KE = 'bsdept:' + D + ':bassam_employees_v1';
-/* اليومُ الهجريّ للخادم (أم القرى · الرياض · مهلةُ 3 ساعات) — كما تفعل اختباراتُ المُثبِّت */
-export const T = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return { y: o.year, m: o.month, d: o.day }; })();
-export const hij = (ms) => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(ms)).forEach(p => { o[p.type] = +p.value; }); return o.year + '-' + o.month + '-' + o.day; };
-export const DAY = T.y + '-' + T.m + '-' + T.d;
+/* V7 · 53 تقويم (عُدّةُ التثبيت المشتركة): اليومُ التشغيلي للخادم — يومُ الرياض الميلادي بمهلة 3 ساعات (calToday · 016)، والمفاتيحُ ISO مبطَّنة.
+   كانت أم القرى والمفاتيحُ غيرَ مبطَّنة؛ الأسماءُ المصدَّرة كما هي (hij يعيد مفتاحَ اليوم ISO) فلا يتغيّر اختبارٌ يستعملها ولا تضعف مقارنة. */
+const pad2 = (n) => (n < 10 ? '0' : '') + n;
+const gOf = (ms) => { const x = new Date(ms + 3 * 3600 * 1000); return { y: x.getUTCFullYear(), m: x.getUTCMonth() + 1, d: x.getUTCDate() }; };
+export const isoDay = (y, m, d) => y + '-' + pad2(m) + '-' + pad2(d);
+export const isoYm = (y, m) => y + '-' + pad2(m);
+export const T = gOf(Date.now() - 3 * 3600 * 1000);
+export const hij = (ms) => { const o = gOf(ms); return isoDay(o.y, o.m, o.d); };
+export const DAY = isoDay(T.y, T.m, T.d);
 const NOW = Date.now(), H = 3600 * 1000;
 export const TOMORROW = hij(NOW - 3 * H + 24 * H), YESTERDAY = hij(NOW - 3 * H - 24 * H);
 const PM = T.m === 1 ? { y: T.y - 1, m: 12 } : { y: T.y, m: T.m - 1 };
-export const PDAY = PM.y + '-' + PM.m + '-10';            /* يومٌ في الشهر الماضي */
-export const ODAY = PM.y + '-' + PM.m + '-3';             /* صفٌّ قديمُ الشكل */
+export const PDAY = isoDay(PM.y, PM.m, 10);            /* يومٌ في الشهر الماضي */
+export const ODAY = isoDay(PM.y, PM.m, 3);             /* صفٌّ قديمُ الشكل */
 
 /* ── الموظفون الجدد وحساباتهم (أرقامٌ اصطناعية) ── */
 export const P0 = [1, 2, 3, 4, 5, 6, 7].map(n => ({ uid: 'tst_p0e' + n, un: String(2000000200 + n), pw: String(70200 + n), eid: 'tst_e_p0_' + n, name: TAG + ' · موظف مهام ' + n }));
