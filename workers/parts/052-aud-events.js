@@ -262,6 +262,20 @@ function dbGuardError(code, status) {
   e.dbGuardStatus = status || 503;
   return e;
 }
+/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ الأعطال 500 بلا رسالة. سقفُ الاستدعاء (32MiB — حتميٌّ، الإعادةُ لا تنفع) ⇒
+   413 batch-budget · وأيُّ خطأ D1 آخر (ذاكرة · ازدحام · مهلة) ⇒ 503 db-busy مع Retry-After. لا شيء كُتب (الدفعةُ ذرّية) والرسالةُ عربية. */
+var DB_LIMIT_MSG = { 'batch-budget': 'العملية أكبر من أن تُنفَّذ مرة واحدة. احفظ شهراً واحداً أو يوماً واحداً في كل مرة.', 'db-busy': 'الخادم مشغول الآن. أعد المحاولة بعد لحظات، وبياناتك محفوظة كما هي.' };
+function dbLimitFailure(e) {
+  var text = String((e && e.message) || e || '');
+  if (!/D1_ERROR|D1 DB|SQLITE_(?:TOOBIG|NOMEM|BUSY|FULL)|Serialized RPC|Durable Object|Network connection lost|storage operation exceeded/i.test(text)) return null;
+  var err = /Serialized RPC arguments or return values are limited|SQLITE_TOOBIG|too many SQL variables|statement too long/i.test(text) ? 'batch-budget' : 'db-busy';
+  return { err: err, status: err === 'db-busy' ? 503 : 413, msg: DB_LIMIT_MSG[err] };
+}
+function dbLimitResponse(env, e, path) {
+  var f = dbLimitFailure(e); if (!f) return null;
+  logEv('error', 'db-limit', { rid: env && env.__rid, p: path, st: f.status, code: f.err, err: errMsg(e) });
+  return json({ ok: 0, err: f.err, msg: f.msg, rid: env && env.__rid }, f.status, f.status === 503 ? { 'Retry-After': '5' } : null);
+}
 function dbGuardFailure(e) {
   var text = String((e && e.message) || e || '');
   if (e && e.dbGuardCode) return { err: e.dbGuardCode, status: e.dbGuardStatus || 503 };

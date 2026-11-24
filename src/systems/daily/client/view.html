@@ -1494,7 +1494,8 @@
         <!-- ═══ شريط الحالة — في القائمة أسفل الكانفس: العدّ ثابت يميناً، بطاقات الأبواب بالأولوية في الوسط، آخر رصد يساراً ═══ -->
         <sc-if value="{{fdBarOn}}" hint-placeholder-val="{{ false }}">
         <div class="fd-bar" dir="rtl">
-          <div class="fd-sum" title="مغلق · مفتوح">
+          <div class="fd-sum" title="{{fdBarSumTip}}">
+            <span>{{fdBarSumLbl}}</span>
             <sc-for list="{{fdBarSum}}" as="x" hint-placeholder-count="2"><span><i style="background:{{x.c}}"></i>{{x.n}}</span></sc-for>
           </div>
           <div class="fd-lane"><div class="{{fdRailCls}}" style="{{fdRailStyle}}">

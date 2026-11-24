@@ -247,6 +247,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       t = null;
     }
     if (!t || "object" != typeof t) return {};
+    return this.rpNorm(t);
+  }
+  /* V7 · 53 (writers · قاعدةُ الحمل): تطبيعُ القراءة (rpLoad) يعدّل كلَّ أيام الوثيقة (leaders.coord · شكلُ «pulled» القديم · __lv) — فالحفظُ يرسل
+     ما لم يتغيّر إلا بالتطبيع بقيمته المخزَّنة (يومٌ ماضٍ مقفل بشكلٍ قديم كان يُرفض فيُسقط الحفظَ كلَّه). لا حارسَ يُرخى: التعديلُ الحقيقي يُحكم كما كان */
+  rpCarry(t) {
+    try {
+      var S = KIVO.__BS_SRV.operations.get("bassam_dreport_v1");
+      if (!S || "object" !== typeof S || !t || "object" !== typeof t) return;
+      var N = this.rpNorm(JSON.parse(JSON.stringify(S)));
+      Object.keys(t).forEach(function (k) { if (void 0 !== S[k] && JSON.stringify(N[k]) === JSON.stringify(t[k])) t[k] = S[k]; });
+      ["__lv", "__lvU"].forEach(function (k) { if (void 0 !== S[k] && void 0 === t[k]) t[k] = S[k]; });
+    } catch (e) { /* بلا مخزَّن: يُرسل كما هو */ }
+  }
+  rpNorm(t) {
     var r = !1;
     return (
       void 0 !== t.__lv && (delete t.__lv, (r = !0)),
@@ -279,6 +293,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     );
   }
   async rpSave(t, intent = t, extra) {
+    this.rpCarry(t);
     return await this._drCommit(intent, draft => {
       draft.set("bassam_dreport_v1", t);
       if (extra) extra(draft);
@@ -525,6 +540,25 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   drRoundRec() {
     return this.drRounds()[this.drRoundKey()] || null;
   }
+  /* V7 · 53 (ك19): المعطّلُ والمغلقُ ميّتان في كل الصفحات — الباب المغلق، والمصلّى والمعلم المعطّلان (كما في «الجولات اليومية») */
+  drDead(t) {
+    return !!t && (("gates" === t.kk && !!t.closed) || (("marks" === t.kk || "zones" === t.kk) && !!t.off));
+  }
+  drDeadMsg(kk) {
+    return "gates" === kk
+      ? "الباب مغلق — لا يُنقل إليه أحد. افتحه من «الجولات اليومية» أو اختر باباً مفتوحاً"
+      : ("zones" === kk ? "المصلّى معطّل" : "المعلم معطّل") + " — فعّله من «الجولات اليومية» أو اختر موقعاً عاملاً";
+  }
+  /* V7 · 53 (ك18): احتياجُ الوردية 0 قيمةٌ حقيقية — المصدرُ الواحد KIVO.BassamNeed.of كما في «الجولات اليومية» (لا رجوعَ للاحتياج العام) */
+  drNeedOf(r, o) {
+    if (!r) return 0;
+    if (KIVO.BassamNeed && KIVO.BassamNeed.of) return +KIVO.BassamNeed.of(r, o) || 0;
+    var m = r.needS || {},
+      n = Object.prototype.hasOwnProperty.call(m, o) ? parseInt(String(null == m[o] ? "" : m[o]), 10) : NaN;
+    if (isFinite(n) && n >= 0) return n;
+    var a = parseInt(String(null == r.needN ? "" : r.needN), 10);
+    return isFinite(a) && a > 0 ? a : 0;
+  }
   drRoundSpots(t) {
     const r = [];
     return (
@@ -559,7 +593,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       : "",
                   zsub: "zones" === a ? [String(t.ztype || "").trim(), String(t.zcat || "").trim()].filter(Boolean).join(" · ") : "",
                   closed: "gates" === a && !!t.closed,
-                  off: "marks" === a && !!t.off,
+                  off: ("marks" === a || "zones" === a) && !!t.off,   /* V7 · 53 (ك19) */
                   cWhy: t.cWhy || "",
                   cAt: t.cAt || "",
                   needN: t.needN,
@@ -605,7 +639,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       l = c ? c[+d[2]] : null;
     if (!l) return;
     if ("gates" === d[1] && l.closed) return void this.bsToast("الباب مغلق — لا يُنقل إليه أحد", "warn");
-    if ("marks" === d[1] && l.off) return void this.bsToast("المعلم معطّل — فعّله من «الجولات اليومية» أو اختر موقعاً عاملاً", "warn");
+    if (("marks" === d[1] || "zones" === d[1]) && l.off) return void this.bsToast(this.drDeadMsg(d[1]), "warn");
     const f = (Array.isArray(l.emp) ? l.emp : []).some(o);
     l.emp = f ? l.emp.filter((t) => !o(t)) : (Array.isArray(l.emp) ? l.emp : []).concat([t]);
     let h = "";
@@ -695,7 +729,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (o) {
         if ("gates" === n[1] && o.closed)
           return void this.bsToast("الباب مغلق — لا يُنقل إليه أحد. افتحه من «الجولات اليومية» أو اختر باباً مفتوحاً", "warn");
-        if ("marks" === n[1] && o.off) return void this.bsToast("المعلم معطّل — فعّله من «الجولات اليومية» أو اختر موقعاً عاملاً", "warn");
+        if (("marks" === n[1] || "zones" === n[1]) && o.off) return void this.bsToast(this.drDeadMsg(n[1]), "warn");
         ((o.emp = (Array.isArray(o.emp) ? o.emp : []).concat([t])), p(o, "سكّن " + (e || "موظف") + " على الموقع"));
       }
     }
@@ -2193,6 +2227,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         } catch (t) {}
         return r;
       })(),
+      rr0 = this,   /* V7 · 53 (ك18 · ك19): الصفحةُ نفسُها لقواعد الاحتياج والموقع الميت */
       er = function (t) {
         var r = t;
         if (!((null != t.needN && "" !== t.needN) || (t.needS && "object" == typeof t.needS && Object.keys(t.needS).length > 0))) {
@@ -2204,11 +2239,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 : String(t.name || "") + "|" + t.mKind;
           r = (rr[t.kk] || {})[e] || null;
         }
-        if (!r) return 0;
-        var n = parseInt(String(null == (r.needS || {})[o] ? "" : (r.needS || {})[o]), 10);
-        if (isFinite(n) && n > 0) return n;
-        var a = parseInt(String(null == r.needN ? "" : r.needN), 10);
-        return isFinite(a) && a > 0 ? a : 0;
+        return rr0.drNeedOf(r, o);
       },
       nr =
         ((function () {
@@ -2221,23 +2252,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               s = (a.emp || []).length,
               d = er(a),
               p = d - i,
-              c = ("gates" === a.kk && a.closed) || ("marks" === a.kk && a.off),
+              c = rr0.drDead(a),
               l = {
                 id: a.id,
                 gap: p,
                 dead: c,
                 txt: a.name,
-                sub: c ? ("gates" === a.kk ? "مغلق" : "معطّل") : d > 0 ? "مسكّن " + i + " من " + d : "مسكّن " + i,
+                sub: c ? ("gates" === a.kk ? "مغلق" : "zones" === a.kk ? "معطّلة" : "معطّل") : d > 0 ? "مسكّن " + i + " من " + d : "مسكّن " + i,
                 subStyle:
                   "flex-shrink:0;font-size:9.5px;font-weight:700;font-feature-settings:'tnum';color:" +
                   (c ? "var(--fg-xdc2626)" : d > 0 ? (p > 0 ? "var(--fg-xb45309)" : "var(--fg-x059669)") : "var(--fg-x94a3b8)"),
-                deadMsg: c
-                  ? "gates" === a.kk
-                    ? "الباب مغلق — لا يُنقل إليه أحد. افتحه من «الجولات اليومية» أو اختر باباً مفتوحاً"
-                    : "المعلم معطّل — فعّله من «الجولات اليومية» أو اختر موقعاً عاملاً"
-                  : "",
+                deadMsg: c ? rr0.drDeadMsg(a.kk) : "",
                 tipo: c
-                  ? ("gates" === a.kk ? "الباب مغلق" : "المعلم معطّل") +
+                  ? ("gates" === a.kk ? "الباب مغلق" : "zones" === a.kk ? "المصلّى معطّل" : "المعلم معطّل") +
                     (a.cWhy ? " — السبب: " + a.cWhy : "") +
                     (a.cAt ? " · أُغلق الساعة " + a.cAt : "") +
                     " — لا يُنقل إليه أحد؛ " +
@@ -2257,7 +2284,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     (s > i ? " · وعليه من كل الورديات: " + s : "") +
                     " — انقر لنقل الموظف إليه",
               };
-            "gates" === a.kk ? (c ? n : t).push(l) : "zones" === a.kk ? r.push(l) : (c ? n : e).push(l);
+            "gates" === a.kk ? (c ? n : t).push(l) : "zones" === a.kk ? (c ? n : r).push(l) : (c ? n : e).push(l);
           }),
             t.sort(function (t, r) {
               return r.gap - t.gap || t.txt.localeCompare(r.txt, "ar");
@@ -2622,7 +2649,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               a =
                 (n[0],
                 function (t) {
-                  return ("gates" === t.kk && t.closed) || ("marks" === t.kk && t.off);
+                  return r.drDead(t);
                 }),
               i = n.some(a),
               s = { gates: "#8A6F35", zones: "#0e7490", marks: "#7e2a52" },

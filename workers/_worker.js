@@ -3427,6 +3427,56 @@ var NF_TYPES = {
     txt: "تغيّرت وردية {الاسم} في {الشهر} من {القديم} إلى {الجديد} — بواسطة {المُعدّل}",
     go: "افتح الجدول الشهري",
   },
+  /* V7 · 53 (FIX_53_LIVEQA ١ · ٣): الفعلُ الجماعي تنبيهٌ مجمّعٌ واحد للمدير ورئيس الوردية — والموظفُ ورديتُه هو */
+  st_shiftm: {
+    id: "st_shiftm",
+    k: "staff",
+    name: "إسناد وردية لعدة موظفين دفعة واحدة",
+    when: "فور الحفظ",
+    on: true,
+    to: ["lead", "mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "أُسندت {الوردية} لـ{العدد} في جدول {الشهر} — بواسطة {المُعدّل}",
+    go: "افتح الجدول الشهري",
+  },
+  st_myshift: {
+    id: "st_myshift",
+    k: "staff",
+    name: "ورديتك في الجدول الشهري",
+    when: "فور الحفظ",
+    on: true,
+    to: ["own"],
+    lvl: "info",
+    chan: "bell",
+    txt: "ورديتك في جدول {الشهر}: {الوردية} — بواسطة {المُعدّل}",
+    go: "",
+  },
+  /* V7 · 53 (REPLY_53_1): إلغاءُ الوردية — لصاحبها وحده، والجماعيُّ تنبيهٌ مجمّعٌ واحد للمدير ورئيس الوردية */
+  st_unshift: {
+    id: "st_unshift",
+    k: "staff",
+    name: "إلغاء ورديتك في الجدول الشهري",
+    when: "فور الحفظ",
+    on: true,
+    to: ["own"],
+    lvl: "info",
+    chan: "bell",
+    txt: "أُلغيت ورديتك في جدول {الشهر} ({القديم}) — بواسطة {المُعدّل}",
+    go: "",
+  },
+  st_unshiftm: {
+    id: "st_unshiftm",
+    k: "staff",
+    name: "إلغاء وردية عدة موظفين دفعة واحدة",
+    when: "فور الحفظ",
+    on: true,
+    to: ["lead", "mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "أُلغيت {الوردية} لـ{العدد} في جدول {الشهر} — بواسطة {المُعدّل}",
+    go: "افتح الجدول الشهري",
+  },
   st_rest: {
     id: "st_rest",
     k: "staff",
@@ -3485,6 +3535,19 @@ var NF_TYPES = {
     lvl: "info",
     chan: "toast",
     txt: "نُشر جدول {الشهر} — {العدد} موظفاً موزَّعين",
+    go: "افتح الجدول الشهري",
+  },
+  /* V7 · 53 (FIX_53_SCALE S12): ملءُ شهرٍ مضى ليس «نشر جدول شهر جديد» — تنبيهٌ واحد للمدير، ولا شيء للموظفين */
+  st_past: {
+    id: "st_past",
+    k: "staff",
+    name: "تحديث جدول شهر سابق",
+    when: "فور الحفظ",
+    on: true,
+    to: ["mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "حُدّث جدول شهر سابق: {الشهر} — {العدد} · بواسطة {المُعدّل}",
     go: "افتح الجدول الشهري",
   },
   st_lock: {
@@ -5881,7 +5944,7 @@ async function nfPlanEvents(env, A, events, internal) {
     plans = [];
   events.forEach(function (it) {
     /* cat · lvl · txt: للأحداث التي يصنعها الخادمُ نفسُه وحده (nfSecurityPoll: الرفض لنقص السبب) — حدثٌ من الطلب لا يحملها */
-    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt"] : []));
+    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt", "ownOnly", "rolesOnly"] : []));
     var T = nfType(nfStr(it.type, 80, false), cfg);
     /* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server alone, from the save it accepted
        (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included.
@@ -5908,8 +5971,8 @@ async function nfPlanEvents(env, A, events, internal) {
     if (it.link !== undefined) nfStr(it.link, 500, true);
     if (it.once !== undefined) nfStr(it.once, 500, false);
     if (it.at !== undefined) nfTime(it.at);
-    var toE = T.to.indexOf("own") >= 0 ? own : [],
-      toR = nfLeadTargets(T.to.filter(function (r) {
+    var toE = T.to.indexOf("own") >= 0 && !it.rolesOnly ? own : [],   /* V7 · 53: rolesOnly (الخادمُ وحده) — للمدير لا لأصحابه */
+      toR = it.ownOnly ? [] : nfLeadTargets(T.to.filter(function (r) {   /* V7 · 53: ownOnly (الخادمُ وحده) — لصاحبه لا للمدير */
         return r !== "own";
       }), it.vars),
       sys = toR.length === 1 && toR[0] === "sys" && !toE.length && A.u.role === "super";
@@ -5950,7 +6013,7 @@ async function nfPlanEvents(env, A, events, internal) {
         priority: it.lvl || T.lvl,
         channel: T.chan,
         title: it.title || T.name,
-        body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(T.txt, it.vars),
+        body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(it.txt || T.txt, it.vars),   /* txt: حدثُ الخادم وحده */
         created_at: it.at || Date.now(),
         author_key: String(A.u.ekey || A.u.id),
         author_name: String(A.u.name || A.u.un || ""),
@@ -6045,7 +6108,8 @@ async function nfEmitEvents(env, A, events, internal, extra) {
    else one addition per record · one aggregated deletion notice (emp_delm — owner decision, not the watcher's) when five or
    more records are removed, else one deletion per removed record · per kept record: «type» when the employment type changed,
    «edit» for the other announced fields (never the e-mail). «المُعدّل» is the actor's name. Who READS them is not decided here. */
-var NF_EMP_RES = "bassam_employees_v1";
+var NF_EMP_RES = "bassam_employees_v1",
+  NF_EMP_BULK_TXT = "عُدّلت بيانات موظفين بالجملة ({العدد}): {الحقول} — بواسطة {المُعدّل}";
 var NF_EMP_FIELDS = {
   name: "الاسم",
   nid: "رقم الهوية",
@@ -6117,7 +6181,7 @@ function nfEmployeeEvents(A, d, before, after) {
     });
   else
     added.forEach(function (e) {
-      events.push({ type: "emp_add", dept: d, vars: { الاسم: text(e.name), النوع: text(e.type || "") } });
+      events.push({ type: "emp_add", dept: d, vars: { الاسم: text(e.name), النوع: text(e.type || "بلا نوع توظيف") } });   /* V7 · 53 (١٤): لا «()» فارغة */
     });
   /* owner decision («الحذف بالجملة: إشعار واحد مجمّع»): five or more removed by one save are ONE notice with the count and the
      actor, no names — as five or more added are one emp_imp. One emp_del per record filled the unit feed (400-row retention)
@@ -6127,6 +6191,15 @@ function nfEmployeeEvents(A, d, before, after) {
     removed.forEach(function (e) {
       events.push({ type: "emp_del", dept: d, vars: { الاسم: text(e.name), المُعدّل: text(who) } });
     });
+  /* V7 · 53 (١ — قرار المنسّق: السيلُ صنفٌ واحد): خمسةُ سجلاتٍ معدَّلة فأكثر في حفظٍ واحد ⇒ كلُّ موظفٍ تنبيهُه لنفسه وحدها (ownOnly)
+     وللمدير تنبيهٌ مجمّعٌ واحد (emp_edit «بالجملة» · rolesOnly) بالعدد والحقول — لا تنبيهٌ لكل سجل */
+  var edited = both.filter(function (p) {
+      return Object.keys(NF_EMP_FIELDS).some(function (f) {
+        return f !== "email" && (p[0][f] || "") !== (p[1][f] || "");
+      });
+    }),
+    bulkEdit = edited.length >= 5,
+    bulkFields = [];
   both.forEach(function (p) {
     var a = p[0],
       b = p[1],
@@ -6134,9 +6207,13 @@ function nfEmployeeEvents(A, d, before, after) {
         return (a[f] || "") !== (b[f] || "");
       });
     if (!changed.length) return;
+    var e0 = events.length;
+    changed.forEach(function (f) {
+      if (f !== "email" && bulkFields.indexOf(NF_EMP_FIELDS[f]) < 0) bulkFields.push(NF_EMP_FIELDS[f]);
+    });
     var own = [String(key(b)).slice(0, 200)];
     if (changed.indexOf("type") !== -1)
-      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "—") } });
+      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "غير محدّد") } });   /* V7 · 53 (١٤): لا شرطةَ مكان القيمة */
     var rest = changed.filter(function (f) {
       return f !== "type" && f !== "email";
     });
@@ -6156,7 +6233,22 @@ function nfEmployeeEvents(A, d, before, after) {
           المُعدّل: text(who),
         },
       });
+    if (bulkEdit) for (var i = e0; i < events.length; i++) events[i].ownOnly = 1;
   });
+  if (bulkEdit) {
+    /* تنبيهاتُ أصحابها بالنصّ نفسِه رسالةٌ واحدة بمستلميها — فلا تُخرج 500 رسالةٍ ما قبلها من حدّ الاحتفاظ (400 للوحدة) */
+    var merged = [],
+      byText = nmap();
+    events.forEach(function (e) {
+      if (!e.ownOnly) return merged.push(e);
+      var k = e.type + "\u0001" + JSON.stringify(e.vars);
+      if (byText[k]) byText[k].own = byText[k].own.concat(e.own);
+      else merged.push((byText[k] = e));
+    });
+    events = merged;
+    /* التنبيهُ المجمّع من نوع emp_edit نفسِه (مستلموه ومستواه وفئتُه) لـ«المدير» وحده بنصٍّ للجملة — بلا نوعٍ جديد */
+    events.push({ type: "emp_edit", dept: d, rolesOnly: 1, title: "تعديل بيانات موظفين بالجملة", txt: NF_EMP_BULK_TXT, vars: { العدد: edited.length, الحقول: text(bulkFields.join("، ")), المُعدّل: text(who) } });
+  }
   return events;
 }
 /* The notification part of an accepted save plan (019e): guards + statements to append to the plan, never a commit of its own.
@@ -6415,10 +6507,12 @@ async function nfRemind(env, A, id, base, automatic) {
    • verb: the sec row does not store it. «تعديل» unless the row itself says otherwise (keydel → «حذف» · retro open/close →
      «فتح»/«إغلاق»); the notifications route logs refused reads as well, so its verb is the neutral «الوصول إلى».
    • grouping (nfSecurityPoll): rows of one poll batch, in (ts,id) order; a row joins the open group of its (uid,target,detail)
-     when its ts is within NF_DENY_WIN_MS of that group's FIRST row, else it opens a new group. One notice per group, keyed
-     security:<id of the first row> (the key that row always had), counted «(٥ محاولات خلال دقيقة)». Groups do not span polls.
-     Two overlapping polls that read batches of different length agree on the key and one of them wins, so the stored count
-     can be lower than the rows of that minute (never a second notice, never a lost group); the log holds every row.
+     when its ts is within NF_DENY_GROUP_MS of that group's FIRST row, else it opens a new group. One notice per group, keyed
+     security:<id of the first row> (the key that row always had), counted «(٥ محاولات خلال دقيقة)» — «خلال ساعة» when the
+     group spans more than NF_DENY_WIN_MS. V7 · 53 (FIX_53_LIVEQA ٥): groups SPAN polls — a refusal whose source already has a
+     notice opened within the window joins it: no new notice, and that notice's count is recounted from the log and rewritten
+     in the same batch as the checkpoint. Two overlapping polls that read batches of different length agree on the key and
+     one of them wins (never a second notice, never a lost group); the log holds every row.
    • names (independent review M1): the account name, the unit name and the kind of a node are written by managers, so they
      are sanitised before they enter the sentence (nfDenyClean — an allowlist: letters, marks, digits, space and . - ' only;
      40 characters, the kind 20), the sentence is filled in ONE pass (nfDenyBody — a value is never scanned for {var}), and an
@@ -6428,6 +6522,7 @@ async function nfRemind(env, A, id, base, automatic) {
 var NF_REASON_TITLE = "عملية تتطلب ذكر السبب",
   NF_REASON_TXT = "حاول {الاسم} ({الدور} — {الإدارة}) {الفعل} «{السجل}» في صفحة «{الصفحة}» — رُفض: هذه العملية تتطلب ذكر السبب.";
 var NF_DENY_WIN_MS = 60000,
+  NF_DENY_GROUP_MS = 3600000,   /* V7 · 53 (٥): نافذةُ تجميع المتكرر من المصدر نفسه (الحساب · السجل · السبب) — ساعة */
   NF_DENY_GENERIC = "رفضه الخادم",
   NF_DENY_REC_OTHER = "بيانات المنصة";
 /* prettier-ignore */
@@ -6548,6 +6643,10 @@ function nfDenyVerb(target, detail) {
   if (/^retro\.close:/.test(s)) return "إغلاق";
   if (s === "keydel") return "حذف";
   return "تعديل";
+}
+/* V7 · 53 (٥): «(٥ محاولات خلال دقيقة)» — أو «خلال ساعة» حين تتجاوز المجموعةُ الدقيقة */
+function nfDenySpan(n, span) {
+  return " (" + nfDenyCount(n) + (span <= NF_DENY_WIN_MS ? " خلال دقيقة" : " خلال ساعة") + ")";
 }
 function nfDenyCount(n) {
   var d = nfDenyDigits(n),
@@ -6692,7 +6791,22 @@ async function nfSecurityPoll(env, A) {
     failId = {},
     failWhy = {},
     denyOpen = {},
-    denyAll = [];
+    denyAll = [],
+    denyGrown = [];
+  /* V7 · 53 (٥): تنبيهاتُ الرفض المفتوحة في النافذة من استطلاعاتٍ سابقة — يُضمّ إليها المتكرّر من مصدرها ولا يُنشأ له تنبيهٌ جديد */
+  var denyFirst = rows.filter(function (r) { return r.act === "denied"; })[0];
+  if (denyFirst)
+    (
+      (
+        await env.DB.prepare(
+          "SELECT m.scope,m.id,s.id sid,s.ts,s.uid,s.un,s.act,s.target,s.detail,s.ip FROM notification_dedup d JOIN notification_messages m ON m.scope=d.scope AND m.id=d.message_id JOIN sec s ON d.once_key='security:'||s.id WHERE d.once_key GLOB 'security:*' AND d.created_at>=?2 AND m.type='sc_deny' AND s.act='denied' AND s.ts>=?1 ORDER BY s.ts,s.id",
+        )
+          .bind(denyFirst.ts - NF_DENY_GROUP_MS, Math.min(denyFirst.ts, Date.now()) - NF_DENY_GROUP_MS)   /* a notice is written at or after its first row */
+          .all()
+      ).results || []
+    ).forEach(function (x) {
+      denyOpen[[x.uid, x.target, x.detail].join("\u0001")] = { ts: x.ts, last: x.ts, n: 0, prev: x };
+    });
   rows.forEach(function (r) {
     max = Math.max(max, r.ts);
     if (/^tst_/.test(String(r.uid || ""))) return;
@@ -6724,13 +6838,15 @@ async function nfSecurityPoll(env, A) {
     } else if (r.act === "denied") {
       var gk = [r.uid, r.target, r.detail].join("\u0001"),
         g = denyOpen[gk];
-      if (g && r.ts - g.ts <= NF_DENY_WIN_MS) {
+      if (g && r.ts - g.ts <= NF_DENY_GROUP_MS) {
+        if (g.prev && !g.n) denyGrown.push(g);
         g.n++;
+        g.last = r.ts;
         return;
       }
       type = "sc_deny";
       vars = nfDenyVars(A, r);
-      denyAll.push((denyOpen[gk] = { ts: r.ts, n: 1, vars: vars }));
+      denyAll.push((denyOpen[gk] = { ts: r.ts, last: r.ts, n: 1, vars: vars }));
       /* إصلاح: الرفضُ لنقص السبب (detail = reason) — الفاعلُ يملك الصلاحية ولم يذكر السبب: لا «خارج الصلاحية» ولا حدثٌ أمني.
          يُكتب «رُفض: هذه العملية تتطلب ذكر السبب» بفئة «المنصة» وأولويةٍ عادية. */
       if (r.detail === "reason") {
@@ -6744,7 +6860,7 @@ async function nfSecurityPoll(env, A) {
     if (type) events.push({ type: type, vars: vars, once: "security:" + r.id });
   });
   denyAll.forEach(function (g) {
-    if (g.n > 1) g.vars["السبب"] += " (" + nfDenyCount(g.n) + " خلال دقيقة)";
+    if (g.n > 1) g.vars["السبب"] += nfDenySpan(g.n, g.last - g.ts);
   });
   /* v7-C · Issue 2 (أ): التخمينُ الموزَّع — عناوينُ مختلفة تُخفق على حسابٍ واحد — لم يكن يُنذِر ما لم تجتمع 5 إخفاقاتٍ في دفعةٍ واحدة، ومتغيّرُ IP
      فارغ. الآن يُقرأ لكل اسمٍ أخفق في هذه الدفعة ما أخفق عليه في آخر ساعة مجمَّعاً بالعنوان (استعلامٌ واحد)، فيُنذَر مديرُ النظام عند
@@ -6817,6 +6933,24 @@ async function nfSecurityPoll(env, A) {
   });
   var finalRow = rows[rows.length - 1],
     extra = [];
+  /* V7 · 53 (٥): تنبيهٌ سابق ضُمّ إليه جديد — عددُه من السجل نفسه (كلُّ صفوف مصدره في نافذته حتى آخر صفٍّ في هذه الدفعة) ونصُّه يُعاد بناؤه */
+  var grown = denyGrown;
+  if (grown.length && finalRow) {
+    var TD = nfType("sc_deny", nfCfg((await env.DB.prepare("SELECT * FROM notification_type_overrides").all()).results || []));
+    for (var gi = 0; gi < grown.length; gi++) {
+      var gp = grown[gi].prev,
+        gc = await env.DB.prepare(
+          "SELECT COUNT(*) n,MAX(ts) last FROM sec WHERE act='denied' AND uid IS ?1 AND target IS ?2 AND detail IS ?3 AND ts>=?4 AND ts<=?5 AND (ts<?6 OR (ts=?6 AND id<=?7))",
+        )
+          .bind(gp.uid, gp.target, gp.detail, gp.ts, gp.ts + NF_DENY_GROUP_MS, finalRow.ts, finalRow.id)
+          .first(),
+        gv = nfDenyVars(A, gp);
+      if (gc && gc.n > 1) gv["السبب"] += nfDenySpan(gc.n, gc.last - gp.ts);
+      extra.push(
+        env.DB.prepare("UPDATE notification_messages SET body=?3 WHERE scope=?1 AND id=?2").bind(gp.scope, gp.id, nfDenyBody(gp.detail === "reason" ? NF_REASON_TXT : TD.txt, gv)),
+      );
+    }
+  }
   if (finalRow) {
     extra.push(
       env.DB.prepare(
@@ -9466,22 +9600,7 @@ async function rsScopeOperational(env, capture, keys) {
   capture.snapshots.push.apply(capture.snapshots, state.snapshots);
   capture.guards.push.apply(capture.guards, state.guards);
 }
-/* A decision that depends on every value in the database (an image no longer referenced in
-   scope may be referenced elsewhere) widens the reference to the whole database, fenced alike. */
-async function rsReferenceWiden(env, reference) {
-  var scope = reference.scope;
-  if (!scope || scope.all || reference.noWiden) return false;   /* V7 · د6: استيرادُ الإدارة على أجزاء لا يحمّل القاعدةَ كلَّها ليحكم على صورةٍ لم تعد إدارتُه تذكرها — يحكم بفهرس المراجع (imgref)، والكنسُ يعيد الفحص قبل أي حذف (019g) */
-  var P = env.__pre, later = JSON.stringify(scope.later), where = 'NOT ' + RS_SCOPE_KV + ' AND k NOT IN (SELECT value FROM json_each(?2))',
-    rows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + where + ' ORDER BY k,seq').bind(scope.arg, later).all()).results || [],
-    joined = kvJoin(rows), departments = parseJson(reference.inputKeys[K_DEPTS] || '[]', null);
-  rows.forEach(function (row) { scope.rows.push(row); });
-  Object.keys(joined).forEach(function (k) { scope.later.push(k); P.kv[k] = joined[k]; });
-  scope.late.push.apply(scope.late, rsWitness(env, 'kv', ['k', 'seq', 'v'], rows, where, [scope.arg, later]));
-  scope.all = true;
-  if (!Array.isArray(departments) || departments.some(function (d) { return !d || !rsScopeDepartments([d.id]); })) throw ocError('departments');
-  await rsScopeOperational(env, reference.operational, rsScopeOperationalKeys(departments.map(function (d) { return d.id; })));
-  return true;
-}
+/* V7 · 53 (ملحق 4): rsReferenceWiden (توسيعُ المرجع إلى القاعدة كلها لحكم صورة) أُزيل — 019e rsImageHeldSql يسأل D1 بالمعرّفات. */
 async function rsReferenceSnapshot(env, uid, options) {
   /* One coherent reference snapshot feeds actor construction and applySave. Its
      complete row witness is rechecked INSIDE the eventual write transaction. */
@@ -10552,6 +10671,8 @@ async function rsPrepare(env, A, body, meta, internal) {
     var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
     if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
   }
+  /* V7 · 53: والنسخةُ الشاملة لكل إدارةٍ فيها سجلُّ أدوار ولا منحَ معه (قوالبُ حُوِّلت · 019f): المنحُ المترجَم فوق منح الهدف كما في نسخة الإدارة — نسخةٌ تحمل منحَها تبقى كما هي */
+  if (body.scope.kind === 'full') ((internal && internal.tplDepts) || []).forEach(function (d) { var k = perm44Key(d), gk = enfGrantsKey(d); if (keys[k] == null || keys[gk] !== undefined) return; var gv = rsRoleGrants(A, d, keys[k], inputKeys[gk]); if (gv !== null) { keys[gk] = gv; if (!Object.prototype.hasOwnProperty.call(base, gk)) base[gk] = inputRevs[gk] || 0; } });
   /* 330-auth.pruneDeptAccounts: restore only removes staff/dept identities bound
      to removed departments, never GM/Super accounts. The result still traverses
      applySave's unchanged password, uniqueness and final-super validators. */
@@ -11197,6 +11318,7 @@ async function rsBackupRun(env, A, request, body, reference, rawFingerprint, sta
       fingerprint: rawFingerprint,
       images: stage || converted.images,
       release: !!stage,
+      tplDepts: converted.tplDepts,
     });
     plan.guards.push.apply(plan.guards, converted.readGuards || []);
     converted.summary.imagesReused = plan.imagesReused;
@@ -11407,32 +11529,25 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
       plan.guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) FROM imgs WHERE k=?1)!=?2 THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g").bind(sid9, sig9));
     }
   } else {
-  // Include any upload fragments for these exact IDs. A late fragment or owner
-  // change rejects the SQL transaction even if it appeared after body matching.
+  /* V7 · 53 (ملحق 4): كانت أجسامُ كلِّ الصور المذكورة تُقرأ في استدعاءٍ واحد ثم تُرسل كلُّها شاهداً (rsWitness) — استعادةٌ فيها خرائطُ بحجمها الحقيقي
+     (عشرُ صورٍ من 3MB) تتجاوز سقفَ D1 (32MiB للاستدعاء). الآن كما الاستيرادُ على أجزاء: صورةً صورة (استدعاءٌ بحجم صورةٍ واحدة)، والسياجُ عددُ صفوف
+     جسمها ومجموعُ أطوالها داخل الدفعة؛ وجزءُ رفعٍ معلّق لمعرّفٍ منها يرفض كما كان، والغائبةُ تبقى «لا صفّ». */
   var bodyArgs = [],
-    bodyWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, bodyArgs),
-    rows = (await rsBound(env.DB.prepare('SELECT k,seq,v FROM imgs WHERE ' + bodyWhere + ' ORDER BY k,seq'), bodyArgs).all()).results || [];
-  var values = new Map();
-  for (var row of rows) {
-    if (row.k.indexOf(IMG_STG) === 0) reject();
-    values.set(row.k, (values.get(row.k) || '') + row.v);
-  }
+    bodyWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, bodyArgs);
+  if (await rsBound(env.DB.prepare("SELECT 1 x FROM imgs WHERE substr(k,1,5)='~stg~' AND " + bodyWhere + ' LIMIT 1'), bodyArgs).first()) reject();
+  var sigAll = "SELECT COALESCE(group_concat(k||'='||c||':'||n,','),'') s FROM (SELECT k,COUNT(*) c,SUM(length(v)) n FROM imgs WHERE " + bodyWhere + ' GROUP BY k ORDER BY k)',
+    sigHave = String((await rsBound(env.DB.prepare(sigAll), bodyArgs).first('s')) || ''),
+    haveIds = new Set(sigHave.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }));
+  plan.guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN (' + sigAll + ')!=?' + (bodyArgs.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), bodyArgs.concat([sigHave])));
   for (var id of ids) {
     if (gone.has(id)) continue;
-    if (!values.has(id)) reject();
-    // Inline content is the exact ordered D1 concatenation used by imgLoad;
-    // its rows are guarded below. Only the R2 marker needs an object read.
-    var actual = values.get(id);
-    if (actual === IMG_R2_MARK) {
-      try {
-        actual = await imgLoad(env, id);
-      } catch (e) {
-        reject();
-      }
-    }
-    if (actual !== (stage ? await stage.text(id) : images[id])) reject();
+    if (!haveIds.has(id)) reject();
+    // Inline content is the exact ordered D1 concatenation (imgLoad); the R2 marker reads the object.
+    var actual;
+    try { actual = await imgLoad(env, id); } catch (e) { reject(); }
+    if (actual !== images[id]) reject();
+    actual = null;
   }
-  plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], rows, bodyWhere, bodyArgs));
   }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], owners, ownWhere, ownArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
@@ -11462,6 +11577,59 @@ function rsImageFinalValues(plan, reference) {
   });
   (plan.imgTouch || []).forEach(function(t){values[t.k]=t.v;});
   return values;
+}
+/* V7 · 53 (ملحق 4): أيُّ المعرّفات ids (بشكل الماسح وحده) يذكره نصٌّ خارج المفاتيح keys — عبارةٌ واحدة تجيب بالمعرّفات لا بالنصوص.
+   kv: الصفُّ كلُّه وحدودُ الصفوف (كما IMG_KV_JOIN) · السجلاتُ التشغيلية: نصوصُ كلِّ جدول ops_* (كما opstxt — 054 imgOpsCols) خارج موارد keys
+   (والموردُ المخزَّن بالفترة res@<الفترة> من المورد نفسِه). الحدُّ بعد المطابقة كدلالة imgIdsIn ([^a-z0-9] أو نهايةُ النص).
+   الجواب: المعرّفاتُ الممسوكة مرتّبةً بفواصل؛ أو — إن حمل نصٌّ خارجها هروبَ \u00XX (قد يخفي معرّفاً لا تراه المطابقةُ الحرفية) — '!' ثم بصمةُ
+   تلك النصوص (مفتاحٌ وطولٌ لكلٍّ) فيقرؤها rsImageHeldEsc ويفكّها كما يفعل الحفظ (imgDeep)، والسياجُ البصمةُ نفسُها. */
+function rsImageHeldSql(ids, keys) {
+  var ops = keys.filter(opIsResource).map(function (k) { var i = opInfo(k); return [i.dept, i.resource]; }),
+    mine = "EXISTS(SELECT 1 FROM json_each(?3) p WHERE json_extract(p.value,'$[0]')=o.d AND (json_extract(p.value,'$[1]')=o.r OR substr(o.r,1,length(json_extract(p.value,'$[1]'))+1)=json_extract(p.value,'$[1]')||'@'))",
+    txt = imgOpsCols().map(function (x, j) { return 'SELECT ' + j + ' AS j, department_id AS d, resource AS r, row_key AS k, ' + imgOpsJoin(x[1]) + ' AS t FROM ' + x[0]; }).join(' UNION ALL '),
+    out = 'k NOT IN (SELECT value FROM json_each(?2))',
+    has = function (t) { return 'instr(' + t + ', j.value) > 0 AND (' + t + " GLOB '*' || j.value || '[^a-z0-9]*' OR " + t + " GLOB '*' || j.value)"; },
+    pair = 'FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND b.' + out;
+  return { args: [JSON.stringify(ids), JSON.stringify(keys), JSON.stringify(ops)],
+    sql: 'WITH opstxt(j, d, r, k, t) AS MATERIALIZED (' + txt + '), ops(j, d, r, k, t) AS MATERIALIZED (SELECT * FROM opstxt o WHERE NOT ' + mine + ')' +
+      ', esck(k) AS MATERIALIZED (SELECT k FROM kv WHERE ' + out + ' AND ' + imgEscCond('v') + ' UNION SELECT b.k ' + pair + ' AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
+      ", esc(s) AS MATERIALIZED (SELECT 'k' || k || char(2) || (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = esck.k) FROM esck" +
+      " UNION ALL SELECT 'o' || j || char(2) || d || char(2) || r || char(2) || k || char(2) || length(CAST(t AS BLOB)) FROM ops WHERE " + imgEscCond('t') + ')' +
+      " SELECT CASE WHEN EXISTS(SELECT 1 FROM esc) THEN '!' || (SELECT group_concat(s, char(1)) FROM (SELECT s FROM esc ORDER BY s))" +
+      " ELSE COALESCE((SELECT group_concat(id, ',') FROM (SELECT j.value AS id FROM json_each(?1) j WHERE" +
+      ' EXISTS(SELECT 1 FROM kv WHERE ' + out + ' AND ' + has('v') + ')' +
+      ' OR EXISTS(SELECT 1 ' + pair + ' AND instr(substr(CAST(a.v AS BLOB), -(length(CAST(j.value AS BLOB)) - 1)) || substr(CAST(b.v AS BLOB), 1, length(CAST(j.value AS BLOB)) - 1), j.value) > 0)' +
+      " OR EXISTS(SELECT 1 FROM ops WHERE " + has('t') + ") ORDER BY j.value)), '') END AS h" };
+}
+/* '!' من rsImageHeldSql: تُقرأ النصوصُ التي تحمل الهروبَ (وحدها، صفحاتٍ ≤ IMG_ESC_PAGE بايت، ومجموعها ≤ IMG_ESC_CHARS) وتُفكّ — يعيد المعرّفاتِ
+   التي يذكرها أحدُها، أو null إن لم يُحسم (أكبرُ من الحد · فكٌّ لم ينتهِ) فيبقى كلُّ شيءٍ كما هو (لا يتيم). */
+async function rsImageHeldEsc(env, ids, held) {
+  var T = imgOpsCols(), kvs = [], ops = {}, total = 0, found = new Set(), undecided = false;
+  held.slice(1).split('\u0001').forEach(function (e) {
+    var f = e.slice(1).split('\u0002'), n = Number(f[f.length - 1]) || 0; total += n;
+    if (e.charAt(0) === 'k') kvs.push({ k: f.slice(0, -1).join('\u0002'), n: n });
+    else (ops[f[0]] = ops[f[0]] || []).push({ at: [f[1], f[2], f[3]], n: n });
+  });
+  if (total > IMG_ESC_CHARS) return null;
+  var see = function (t) {
+    var o = {};
+    if (imgEsc(t)) { var dd = imgDeep(t); if (dd.und) undecided = true; o = dd.ids; } else imgScanInto(t, o);
+    ids.forEach(function (id) { if (o[id]) found.add(id); });
+  };
+  var pages = function (list) { var out = [], cur = [], n = 0; list.forEach(function (x) { if (cur.length && n + x.n > IMG_ESC_PAGE) { out.push(cur); cur = []; n = 0; } cur.push(x); n += x.n; }); if (cur.length) out.push(cur); return out; };
+  for (var page of pages(kvs)) {
+    var rows = (await env.DB.prepare('SELECT k, json_quote(v) AS q FROM kv WHERE k IN (SELECT value FROM json_each(?1)) ORDER BY k, seq').bind(JSON.stringify(page.map(function (x) { return x.k; }))).all()).results || [];
+    for (var i = 0, got; i < rows.length; i = got) { var text = ''; for (got = i; got < rows.length && rows[got].k === rows[i].k; got++) text += JSON.parse(rows[got].q); see(text); }
+  }
+  for (var j of Object.keys(ops)) {
+    var tb = T[Number(j)]; if (!tb) return null;
+    for (var part of pages(ops[j])) {
+      var got2 = (await env.DB.prepare('SELECT json_quote(' + imgOpsJoin(tb[1]) + ') AS q FROM ' + tb[0] + " WHERE (department_id, resource, row_key) IN (SELECT json_extract(value,'$[0]'), json_extract(value,'$[1]'), json_extract(value,'$[2]') FROM json_each(?1))")
+        .bind(JSON.stringify(part.map(function (x) { return x.at; }))).all()).results || [];
+      got2.forEach(function (r) { JSON.parse(r.q).split('\u0001').forEach(see); });
+    }
+  }
+  return undecided ? null : found;
 }
 /* Same image ownership/reference semantics as imgSync, prepared before commit.
    Bodies and R2 garbage collection are deliberately never called by this path: V7-F — the sweep runs AFTER the commit
@@ -11500,22 +11668,15 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       bodyWhere = rsImageIn('k', newIds, bodyArgs),
       /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور المذكورة ليعرف القائمَ منها — يسأل عن معرّفاتها وتوقيعها (عددُ الصفوف ومجموعُ الأطوال)، وسياجُه التوقيعُ نفسُه */
       bodySig = "SELECT COALESCE(group_concat(k||'='||c||':'||n,','),'') s FROM (SELECT k,COUNT(*) c,SUM(length(v)) n FROM imgs WHERE " + bodyWhere + ' GROUP BY k ORDER BY k)',
-      knownBodies = plan.imagesFresh ? [] :
-        (await rsBound(env.DB.prepare('SELECT k,seq,v FROM imgs WHERE ' + bodyWhere + ' ORDER BY k,seq'), bodyArgs).all()).results || [],
-      sigNow = plan.imagesFresh ? String((await rsBound(env.DB.prepare(bodySig), bodyArgs).first('s')) || '') : '',
-      known = new Set(
-        plan.imagesFresh ? sigNow.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }) :
-        knownBodies.map(function (r) {
-          return r.k;
-        }),
-      );
+      /* V7 · 53 (ملحق 4): المعرّفاتُ والتوقيعُ وحدهما دائماً (لا أجسامُ الصور ولا شاهدُها — استعادةٌ بخرائط حقيقية كانت تتجاوز 32MiB للاستدعاء) */
+      sigNow = String((await rsBound(env.DB.prepare(bodySig), bodyArgs).first('s')) || ''),
+      known = new Set(sigNow.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }));
     /* V7-F · owner decision 2 (ii): a backup that mentions an image the platform no longer holds (swept after its grace) is still restored —
        the reference is written as it is and READS AS MISSING (054 imgVerdict → 404); the witness below still fences that the body is absent
        at commit, and the receipt carries the warning. No image body is ever written by a restore. */
     var missing = newIds.filter(function (id) { return !known.has(id) && !(plan.imagesFresh && plan.imagesFresh.has(id)); });   /* V7 · د6: الصورةُ الجديدة يُكتب جسمُها في الدفعة نفسِها (019g) فليست مفقودة */
     if (missing.length) { rsImageMissingNote(plan, missing); plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
-    if (plan.imagesFresh) plan.guards.push(rsBound(env.DB.prepare("SELECT CASE WHEN (" + bodySig + ")!=?" + (bodyArgs.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), bodyArgs.concat([sigNow])));
-    else plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
+    plan.guards.push(rsBound(env.DB.prepare("SELECT CASE WHEN (" + bodySig + ")!=?" + (bodyArgs.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), bodyArgs.concat([sigNow])));
   }
   var ownArgs = [],
     ownWhere = rsImageIn('img', Array.from(ids), ownArgs),
@@ -11533,15 +11694,27 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     plan.snapshots.push({ domain: 'images', table: 'imgref', rows: oldRefs }, { domain: 'images', table: 'imgown', rows: oldOwn });
   }
   var live = new Set();
-  for (;;) {
-    Object.keys(values).forEach(function (k) {
-      Object.keys(imgIdsIn(values[k] || '')).forEach(function (id) {
-        live.add(id);
-      });
+  Object.keys(values).forEach(function (k) {
+    Object.keys(imgIdsIn(values[k] || '')).forEach(function (id) {
+      live.add(id);
     });
-    // RISHAD-266 · s1: an image the scoped values no longer mention may be mentioned anywhere else — decide on the whole database (fenced).
-    if (Array.from(ids).every(function (id) { return live.has(id); }) || !(await rsReferenceWiden(reference.env, reference))) break;
-    values = rsImageFinalValues(plan, reference);
+  });
+  /* V7 · 53 (ملحق 4 · السبب الجذري لـ500 على Preview): صورةٌ لم تعد القيمُ المنطاقة تذكرها قد يذكرها مفتاحٌ آخر في القاعدة. كان الحكمُ يوسّع المرجعَ
+     إلى القاعدة كلها (rsReferenceWiden: كلُّ kv خارج النطاق وكلُّ الموارد التشغيلية لكل الإدارات إلى العامل، ثم كلُّها شاهداً في دفعة الحفظ) —
+     فيكبر الاستدعاءُ بحجم القاعدة لا بحجم الحفظ، ويتجاوز سقفَ D1 (32MiB للاستدعاء) فيعود 500 save-failed. الآن يسأل D1 نفسَها بعبارةٍ واحدة
+     (rsImageHeldSql) أيُّ هذه المعرّفات ما زال نصٌّ خارج المفاتيح المحفوظة يذكره — kv صفّاً صفّاً وعبر حدود الصفوف · نصوصُ السجلات التشغيلية —
+     فلا يعبر إلا المعرّفات. والسياجُ العبارةُ نفسُها داخل دفعة الحفظ: أيُّ كتابةٍ متزامنة تغيّر الجواب ⇒ KIVO_REV_CONFLICT (كما كان الشاهد).
+     نصٌّ قديم يحمل هروبَ \u00XX (قد يخفي معرّفاً) خارج المحفوظ ⇒ لا يُحكم: كلُّها تبقى كما هي (لا يتيم) — والكنسُ (054 imgSweep) يقرّر وحده بعد ذلك. */
+  var lost = Array.from(ids).filter(function (id) { return !live.has(id); }), scope = reference.scope;
+  if (lost.length && scope && !scope.all && !reference.noWiden) {
+    lost.filter(function (id) { return !IMG_SCAN_ID_RX.test(id); }).forEach(function (id) { live.add(id); });
+    var ask = lost.filter(function (id) { return IMG_SCAN_ID_RX.test(id); });
+    if (ask.length) {
+      var proof = rsImageHeldSql(ask, keys), held = String((await rsBound(env.DB.prepare(proof.sql), proof.args).first('h')) || '');
+      var heldIds = held.charAt(0) !== '!' ? held.split(',').filter(Boolean) : await rsImageHeldEsc(env, ask, held);
+      (heldIds ? Array.from(heldIds) : ask).forEach(function (id) { live.add(id); });
+      plan.guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN (' + proof.sql + ') IS NOT ?' + (proof.args.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), proof.args.concat([held])));
+    }
   }
   var refs = [],
     updates = new Map(),
@@ -12393,7 +12566,8 @@ function rsBCTplsRoles(keys, perms, d, src, summary) {
   Object.keys(of || {}).forEach(function (ek) { if (!isMgrKey(ek)) assign[ek] = of[ek]; });
   var X = enfRolesFromTpls(tpls, assign, rsBCOwn(keys, rk) ? parseJson(keys[rk], null) : null);
   if (X.rep.roles || X.rep.people) keys[rk] = JSON.stringify(X.rec);
-  summary.tplRoles = { roles: X.rep.roles, people: X.rep.people, unknownTpl: X.rep.unknownTpl, lensDropped: X.rep.lensDropped };
+  var S = summary.tplRoles || (summary.tplRoles = { roles: 0, people: 0, unknownTpl: 0, lensDropped: 0 }); for (var q in S) S[q] += X.rep[q];   /* V7 · 53: يُجمع لكل إدارةٍ في النسخة الشاملة */
+  return X.rep.people > 0;
 }
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
@@ -12810,6 +12984,8 @@ async function rsConvertBackup(env, A, file, opt) {
 
      V7 · د7 (51ب): في نسخة الإدارة تصير أدواراً قبل الإسقاط (rsBCTplsRoles) */
   if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
+  /* V7 · 53 (رد المالك د7_1): النسخةُ الشاملة كذلك، إدارةً إدارة — إسناداتُ كلٍّ من tplOf[<الإدارة>] في سجلّ صلاحياتها (019d rsRoleGrants يبني المنح) */
+  else if (scope.kind === 'full') { var fp9 = parseJson(keys[K_PERM], null), of9 = isObj(fp9) && isObj(fp9.tplOf) ? fp9.tplOf : {}; var tplD9 = deptIds.filter(function (d) { return rsBCTplsRoles(keys, { tplOf: isObj(of9[d]) ? of9[d] : {} }, d, d, summary); }); }
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });
@@ -12847,6 +13023,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
   if (scope.kind === 'dept') rsBCMgrSheetDrop(perms, summary);
   if (perms !== undefined) result.permissionSlice = perms;
+  if (tplD9 && tplD9.length) result.tplDepts = tplD9;   /* V7 · 53: إداراتُ النسخة الشاملة التي صارت قوالبُها أدواراً بأشخاص (019d يبني منحها) */
   return result;
 }
 /* Typed Irshad business domain. Plans never commit or allocate revisions. */
@@ -13580,7 +13757,7 @@ async function irExport(env, A, url) {
     if (!d) for (var dept of depts) contexts.push(await irQueryContext(env, { u: { id: uid } }, dept, { write: true }));
     contexts.forEach(function (ctx) {
       var actor = ctx.A;
-      if ((!d && actor.u.role !== 'super') || !canRead(actor, irKey(ctx.d)) || !deptInScope(actor, ctx.d) ||
+      if ((!d && actor.u.role !== 'super') || !(canRead(actor, irKey(ctx.d)) || (d && bkOffMgr(actor, d, irKey(d)))) || !deptInScope(actor, ctx.d) ||   /* V7 · 53: 019u bkOffMgr */
           !bkExportOk(actor, ctx.d))   /* IP39 (019u): backup.view alone does not export */
         throw irError('irshad-export-permission', 403);
       authorityGuards.push.apply(authorityGuards, ctx.guards);
@@ -14437,7 +14614,7 @@ function rsiFieldList(recs) {
 /* V7 · د7: قوالبُ نسخة الإدارة تصير أدواراً (019f) */
 function rsiSkipWhy(k, v, kind) {
   var n = resName(k), r = resOf(k);
-  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? (kind === 'dept' && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
+  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? ((kind === 'dept' || kind === 'full') && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
 }
 function rsiSweepStmt(env, now, uid) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id IN (SELECT snapshot_id FROM ' + RSI_T + " WHERE domain='meta' AND snapshot_id>='stage:' AND snapshot_id<'stage;' AND (row_number<?1 OR table_key=?2))").bind(now - RSI_TTL, uid);
@@ -18445,7 +18622,7 @@ function bdRestoreReferences(plan,def,d,domain,addition) {
 function bdRestoreCeiling(A,def,d,values) {
   if(A.u.role==='super')return;
   def.names.forEach(function(name,i){
-    if(!deq(values.before[name],values.after[name])&&!canRead(A,def.key(d,i)))throw rsError('restore-'+def.name+'-resource-denied',403);
+    if(!deq(values.before[name],values.after[name])&&!canRead(A,def.key(d,i))&&!bkOffMgr(A,d,def.key(d,i)))throw rsError('restore-'+def.name+'-resource-denied',403);
   });
 }
 function bdResetStatements(env) {
@@ -18500,9 +18677,9 @@ async function bdExport(env,actor,url,name) {
     if(!requested&&name==='awards') depts.push('');
     for(var dept of depts) {
       var ctx=await def.context(env,fresh,dept,{write:true,global:dept===''}), k=dept===''?AW_RES[1]:def.key(dept,0);
-      if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
+      if(!(canRead(ctx.A,k)||(dept&&bkOffMgr(ctx.A,dept,k)))||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
       var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
-      if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
+      if(readResources.some(function(resource){var rk=dept?'bsdept:'+dept+':'+resource:resource;return !canRead(ctx.A,rk)&&!(dept&&bkOffMgr(ctx.A,dept,rk));}))   /* V7 · 53: 019u bkOffMgr */throw rsError('domain-export-permission',403);
       var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose; the copy marked redacted
       if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept)&&privRowsBlank(ctx.A,exported,'records',['phone','email','employee_number'],'employee_key'))redacted.push('awards:'+dept);
       domains.push(exported);
@@ -20492,6 +20669,7 @@ function opReadFailed(error) {
   var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
   if (error.rs || error.ocCode) return json({ ok: 0, err: error.rs || error.ocCode }, error.status || 400);
   if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
+  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 (§3ب.7) */
   throw error;
 }
 async function opReadOnce(env, url, session) {
@@ -21412,6 +21590,9 @@ function bkExportOk(A, d) {
   });
 }
 /* backup.view as a read key of every department collection (RD_ANY · readKeysFor): only for its own stamp, or for an exporter */
+/* V7 · 53 (قرار المالك ٦): نسخةُ الإدارة كاملةٌ دائماً — مجالُ نظامٍ مطفأٍ في سقف الوحدة (الاسترشاد · المضبوطات · الجائزة) يُقرأ للنسخ ويُعاد بالاستعادة
+   كما هو بلا أثر، لمدير الإدارة في إدارته وحدها (كالعهد اليوم). كان canRead يرفضه فيسقط تصديرُ النسخة كلُّه. لا يفتح قراءةً حيّة ولا كتابة */
+function bkOffMgr(A, d, k) { var R = resOf(k); return !!R && enfDeptMgrFull(A, d) && !resOnCeiling(A, d, R); }
 function bkReadAnyOk(A, d, rn) { return rn === 'bassam_last_export_v1' || bkExportOk(A, d); }
 /* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══
    كان المفتاحُ لمدير النظام وحده في الخادم، والشاشةُ تفتح الإدخالَ لكلِّ من مُنح الصفحة — فيُرفض حفظُه
@@ -24003,6 +24184,20 @@ function dbGuardError(code, status) {
   e.dbGuardCode = code;
   e.dbGuardStatus = status || 503;
   return e;
+}
+/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ الأعطال 500 بلا رسالة. سقفُ الاستدعاء (32MiB — حتميٌّ، الإعادةُ لا تنفع) ⇒
+   413 batch-budget · وأيُّ خطأ D1 آخر (ذاكرة · ازدحام · مهلة) ⇒ 503 db-busy مع Retry-After. لا شيء كُتب (الدفعةُ ذرّية) والرسالةُ عربية. */
+var DB_LIMIT_MSG = { 'batch-budget': 'العملية أكبر من أن تُنفَّذ مرة واحدة. احفظ شهراً واحداً أو يوماً واحداً في كل مرة.', 'db-busy': 'الخادم مشغول الآن. أعد المحاولة بعد لحظات، وبياناتك محفوظة كما هي.' };
+function dbLimitFailure(e) {
+  var text = String((e && e.message) || e || '');
+  if (!/D1_ERROR|D1 DB|SQLITE_(?:TOOBIG|NOMEM|BUSY|FULL)|Serialized RPC|Durable Object|Network connection lost|storage operation exceeded/i.test(text)) return null;
+  var err = /Serialized RPC arguments or return values are limited|SQLITE_TOOBIG|too many SQL variables|statement too long/i.test(text) ? 'batch-budget' : 'db-busy';
+  return { err: err, status: err === 'db-busy' ? 503 : 413, msg: DB_LIMIT_MSG[err] };
+}
+function dbLimitResponse(env, e, path) {
+  var f = dbLimitFailure(e); if (!f) return null;
+  logEv('error', 'db-limit', { rid: env && env.__rid, p: path, st: f.status, code: f.err, err: errMsg(e) });
+  return json({ ok: 0, err: f.err, msg: f.msg, rid: env && env.__rid }, f.status, f.status === 503 ? { 'Retry-After': '5' } : null);
 }
 function dbGuardFailure(e) {
   var text = String((e && e.message) || e || '');
@@ -27225,6 +27420,9 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
      «ذاتياً» حين actor.ekey = العمود 14؛ فلا يُعطى هويةَ الذات على مخزن المهام إلا من ذلك المسار — والحفظُ الخامّ /api/save يُصنَّف بمفاتيح
      الفعل نفسِها (task.accept · task.finish · task.evidence …) بلا بديل «الذات» — كان يصنع «منجزة» بأداءٍ وطوابعَ بلا سياسة إثبات ولا مراجِع */
   var cx = { dept: d, actor: { id: A.u.id, ekey: enfTaskSelfEkey(A, rn), role: A.u.role }, imp: !!(X && X.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(X && X.restore), op: (X && X.op && X.op.op) || '' };
+  /* V7 · 53 (قرار المالك ٩): الموقعُ المعتمد والشهرُ الماضي بلا mo مقفلان لأي تغيير — لا لنوع الختم وحده: مفتاحُ هندسة البوابة بلا بُعد DateRange، وطوابقُ floors بلا فترة، فكانا يمرّان.
+     إلا مديرَ المنصة (enfSuperGate لا يصلها) والاستعادةَ الخادمية (enfLockBypass)؛ ونافذةُ الاستدراك في الخطة هي فتحُ الشهر (mo) */
+  if (rn === 'bassam_plan_v1' && A.u.role !== 'super' && !enfLockBypass(A, d, X)) { var pl9 = KIVO_SCOPE.extract(rn, a, b, { today: dsToday(Date.now()) }).filter(function (x) { return !x.lockOp && x.lock && x.lock.locked; })[0]; if (pl9) return enfNo('scope', { dims: ['DateRange'], detail: pl9.path + ': locked-period: ' + pl9.lock.why }); }
   var res = KIVO_GUARDS.covers.indexOf(rn) !== -1 ? enfPlugOps(KIVO_GUARDS.classify(rn, a, b, cx)) : null;
   var real = [], anyG = [], alt = [], i, j, key;
   if (res) {
@@ -28002,7 +28200,10 @@ async function authPublicRoutes(request, env, path, url) {
       await guardReset(env, gkU); await guardOk(env, gkI, gkP);   /* v7-C · Issue 2 (ج): الزوجُ وعدّادُ الإنذار يُحذفان كما كانا؛ المصدرُ يُغتفر له عدُّ هذا الزوج وحده (guardOk · M1) */
       /* V7 · د5-هـ (x1): التنبيهُ يحمل مِقبضَ الجلسة الجديدة (link 'sess:<sid>' — بصمةٌ لا الرمز) ليُنهيها «ليس أنا» · مرةً لكل جهاز (once) · لا تنبيهَ لشاشة العرض */
       try { if (u.role !== 'super' && u.role !== 'display' && u.ekey && u.deptId) { var dvR = await env.DB.prepare("SELECT MAX(detail = ?2) n FROM sec WHERE act = 'login_ok' AND ts > ?3 AND uid = ?1 AND detail LIKE 'dv:%'").bind(u.id, dvS, now - 15552e6).first();
-        if (dvR && dvR.n === 0) { var Adv = await actorOf(env, u.id); if (Adv) await nfEmitEvents(env, Adv, [{ type: 'sc_dev', dept: u.deptId, own: [String(u.ekey)], vars: { 'الجهاز': (rm.dev === 'm' ? 'هاتف' : 'حاسوب') + ' · ' + dvB + (rm.city ? ' · ' + rm.city : ''), 'المدينة': rm.city || '' }, link: 'sess:' + (await sessSid(tok)), once: 'sc_dev:' + u.id + ':' + dvC }], true); } } } catch (eDv) { swallow('sc-dev', eDv, env.__rid); }
+        /* V7 · 53 (FIX_53_SCALE S11): المتصفحُ الذي لا يحفظ كعكةَ الجهاز يأتي بمعرّفٍ جديد كلَّ دخول (72 تنبيهاً في ساعة من العنوان والمتصفح نفسيهما) —
+           الجهازُ نفسُه أيضاً = العنوان + المتصفح + نوع الجهاز (بصمةٌ مجزّأة لا العنوانُ نفسُه): نُبّه له خلال SC_DEV_WIN_MS فلا تنبيهَ ثانٍ */
+        var dvF = 'sc_dev:' + u.id + ':fp:' + (await devPrint(rm, dvB)) + ':', dvSeen = dvR && dvR.n === 0 ? await env.DB.prepare('SELECT 1 n FROM notification_dedup WHERE substr(once_key, 1, length(?1)) = ?1 AND created_at > ?2 LIMIT 1').bind(dvF, now - SC_DEV_WIN_MS).first() : null;
+        if (dvR && dvR.n === 0 && !dvSeen) { var Adv = await actorOf(env, u.id); if (Adv) await nfEmitEvents(env, Adv, [{ type: 'sc_dev', dept: u.deptId, own: [String(u.ekey)], vars: { 'الجهاز': (rm.dev === 'm' ? 'هاتف' : 'حاسوب') + ' · ' + dvB + (rm.city ? ' · ' + rm.city : ''), 'المدينة': rm.city || '' }, link: 'sess:' + (await sessSid(tok)), once: dvF + dvC }], true); } } } catch (eDv) { swallow('sc-dev', eDv, env.__rid); }
       await secLog(env, { uid: u.id, un: u.un, act: 'login_ok', detail: dvS, ip: rm.ip, city: rm.city, dev: rm.dev });
       /* mc على السجل: كلمة مؤقتة عيّنها مدير النظام — تُفرض على أي دور */
       var mustChange = u.role === 'display' ? false : !!u.mc || ((u.role === 'staff' || u.role === 'gm') ? false : (!pwCheck(pw, u.role) || !unCheck(u.un)));
@@ -28043,6 +28244,13 @@ async function authPublicRoutes(request, env, path, url) {
   }
 
   return null;
+}
+/* V7 · 53 (S11): بصمةُ «الجهاز نفسه» لتنبيه الجهاز الجديد — 16 hex من SHA-256 للعنوان والمتصفح ونوع الجهاز · ونافذتُها يوم */
+var SC_DEV_WIN_MS = 864e5;
+async function devPrint(rm, br) {
+  var h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('bs-dev:' + [rm.ip || '', br || '', rm.dev || ''].join('|')))), o = '';
+  for (var i = 0; i < 8; i++) o += ('0' + h[i].toString(16)).slice(-2);
+  return o;
 }
 /* V7 · د5-هـ (x1): مِقبضُ الجلسة — أوّلُ 16 hex من SHA-256 لرمزها: يُعرض ويُرسل بدل الرمز ولا يُعكس إليه */
 async function sessSid(tok) {
@@ -31595,7 +31803,7 @@ async function saveRoute(env, request, path, ss) {
   } catch (eS) {
     var guardSave=dbGuardFailure(eS);if(guardSave)return json({ok:0,err:guardSave.err},guardSave.status);
     /* فشل الحفظ يظهر باسمه في سجلات المشروع وفي فاحص الشبكة — لا صمت */
-    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
+    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); var limS = dbLimitResponse(env, eS, path); if (limS) return limS; logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
   }
 }
 /* KIVO_264 · C1 للقراءة (اختياري — العقدُ نفسُه لـ/api/save): ?uid= على /api/changes و/api/get = هويةُ الجلسة التي بُني لها التبويب (BOOT.uid)؛

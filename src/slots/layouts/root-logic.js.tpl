@@ -47,6 +47,22 @@ class Component extends DCLogic {
   _hashKey() {
     try { const m = /^#\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
   }
+  /* V7 · 53 (ج): حسمُ العنوان المرفوض عند التحميل — ينتظر الصلاحيات (BassamPerm.ready · حتى ١٥ ث) ثم يقرّر مرّةً واحدة */
+  _hashRefused53() {
+    const R = this.__hashRefused; if (!R) return; this.__hashRefused = null;
+    const decide = (n) => {
+      try {
+        const P = KIVO.BassamPerm;
+        if (P && P.ready && !P.ready() && n < 60) { setTimeout(() => decide(n + 1), 250); return; }
+        if (this._hashKey() !== "profile" || this.state.active !== "profile") return;   /* المستخدمُ انتقل في الأثناء */
+        const ok = this._pageAllowed(R.key);
+        if (ok && ok !== "help") { try { history.replaceState(null, "", location.pathname + location.search + R.href); } catch (e) {} this._applyHashTab(ok); this.setState({ active: ok }); return; }
+        try { history.replaceState(null, "", location.pathname + location.search + "#/profile"); } catch (e) {}
+        this.bkToast("هذه الصفحة غير متاحة لك", 3500);
+      } catch (e) { /* الحسمُ عرضٌ فقط */ }
+    };
+    decide(0);
+  }
   _hashTab() {
     try { const m = /^#\/[a-z]+\/([a-z]+(?:-[a-z]+)*)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }   /* V7 · د6: رمزُ تبويبٍ بشرطة (#/kpis/haram-analysis) */
   }
@@ -112,7 +128,11 @@ class Component extends DCLogic {
         return "profile";
       };
       /* عنوانٌ صالح ومسموح يغلب الصفحة المحفوظة وهبوط أول دخول — فمن فتح رابطاً وسجّل دخوله وصل إلى مقصده */
-      const hk = this._pageAllowed(this._hashKey());
+      const hk0 = this._hashKey(), hk = this._pageAllowed(hk0);
+      /* V7 · 53 (ج): عنوانُ صفحةٍ معروفة مرفوضٌ بالصلاحية عند التحميل الأول أو إعادة التحميل (المساعدةُ نافذةٌ لا صفحة، والمقطعُ المجهول كما كان) — لا تُرسم الصفحةُ المرفوضة ولا يُرتدّ بصمت إلى صفحةٍ محفوظة:
+         تُفتح «صفحتي» ويُحسم العنوانُ بعد ثبوت الصلاحيات (_hashRefused53 عند التركيب) — تحويلٌ برسالة، أو الصفحةُ نفسُها إن صارت متاحة */
+      const NAV0 = Object.assign({ profile: null, sysadmin: null, kpis: null }, (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || {});
+      if (hk0 && !hk && hk0 !== "help" && Object.prototype.hasOwnProperty.call(NAV0, hk0)) { const P0 = KIVO.BassamPerm; this.__hashRefused = { key: hk0, href: String(location.hash || ""), wait: !!(P0 && P0.ready && !P0.ready()) }; return "profile"; }
       if (hk === "help") this._helpRequested=true;
       if (hk && hk !== "help") { try { const RAWH = KIVO.__BS_RAWLS; if (RAWH && RAWH.getItem.call(localStorage, "bassam_fresh_login_v1") === "1") RAWH.removeItem.call(localStorage, "bassam_fresh_login_v1"); } catch (eh) {} this._applyHashTab(hk); return hk; }
       /* بطلب المستخدم: كل تسجيل دخول جديد يهبط على «الصفحة الشخصية» — فهي
@@ -180,6 +200,7 @@ class Component extends DCLogic {
       window.addEventListener("resize", this._onResizeSB);
       /* ═══ العنوان: الرجوع/التقدّم أو رابطٌ ملصوق → نفس حرّاس الصفحة المحفوظة ═══ */
       this._hashWrite(this.state.active, false);
+      this._hashRefused53();
       this._onHash = () => { try {
         const k = this._hashKey(); if (!k) return;
         /* V7 · د6: عنوانٌ تغيّر (رجوعٌ · عنوانٌ مكتوب · رابط) وفي شاشة «الإدارات والصلاحيات» تغييرٌ غيرُ محفوظ — يُعاد عنوانُها ويُسأل حارسُها أولاً،
@@ -851,8 +872,9 @@ class Component extends DCLogic {
             /* ختمُ آخر تصدير لهذه الإدارة — يقرؤه سطحُ الإعدادات فيُذكّر بدوريّة النسخ */
             /* KIVO_263: الختمُ رقمُ اللحظة (JSON صالح) — نصُّ ISO الخام ليس JSON فيرفضه الخادمُ في الإنفاذ («shape») فلا يصل الختمُ بقيةَ الأجهزة؛ القرّاءُ (bkTime · _expInfo) يقبلون الصيغتين */
             try { D.raw.setItem.call(localStorage, "bsdept:" + id + ":bassam_last_export_v1", String(dt.getTime())); } catch (eStamp) {}
-            this.bkToast("✓ تم تصدير نسخة «" + nm + "» (" + KIVO.BassamCount(Object.keys(data).length,"مجموعة بيانات") + "" + this.bkCapNote(Object.keys(data), id) + " و " + KIVO.BassamCount(Object.keys(business.images || {}).length,"صورة") + ")" + (KIVO.BackupRestore.missingNote ? KIVO.BackupRestore.missingNote(business.missing) : ""));
-          } catch (e) { this.bkToast("تعذّر التصدير"); }
+            const grp = Object.keys(data).concat(Object.keys(business.domains || {}).filter(n => n !== "operations").map(n => n === "awards" ? "bassam_award_v1" : "bassam_" + n + "_v1"));   /* V7 · 53 (قرار المالك ٦): مجالُ النظام المطفأ يُعدّ «محفوظة — غير مفعّلة» كالمفاتيح */
+            this.bkToast("✓ تم تصدير نسخة «" + nm + "» (" + KIVO.BassamCount(grp.length,"مجموعة بيانات") + "" + this.bkCapNote(grp, id) + " و " + KIVO.BassamCount(Object.keys(business.images || {}).length,"صورة") + ")" + (KIVO.BackupRestore.missingNote ? KIVO.BackupRestore.missingNote(business.missing) : ""));
+          } catch (e) { this.bkToast("تعذّر التصدير" + (e && e.message ? ": " + e.message : ""), true); }   /* V7 · 53 (قرار المالك ٦): الرسالةُ تذكر سببها */
         };
         if (iids.length && KIVO.BassamIDB) {
           const imgs = {}; let done = 0;
@@ -1004,6 +1026,7 @@ class Component extends DCLogic {
     return {
       bkcSumOn: (step === "pick" || step === "confirm") && (!!sum || !!c.sumErr),
       bkcSumLine: sum ? "المصدر: «" + (sum.dept || c.src) + "»" + (when ? " · صُدّرت: " + when : "") + " · " + N(sum.keys, "مجموعة بيانات") + " و" + N(sum.images, "صورة") + " · الحجم: " + mb(sum.fileBytes || sum.bytes) +
+        (sum.lens ? " · العدسات " + sum.lens + " (ما ليس في النسخة يُطفأ في الإدارة)" : "") +   /* V7 · 53: 548 lensNarrow */
         (sum.legacy ? " · نسخة بالشكل القديم: تُحوَّل إلى المخطط الحالي قبل الكتابة." : "") : c.sumErr || "",
       bkcSkipOn: skip.length > 0, bkcSkip: skip, bkcSkipHead: "لن يُنقل (" + skip.length + ") — لا مقابل له في المنصة الحالية:",
       bkcRun: step === "run", bkcRunHead: run.step === "commit" ? "جارٍ اعتماد النسخة…" : run.step === "review" ? "بانتظار تأكيدك" : "جارٍ إرسال النسخة على أجزاء…", bkcRunText: runText,

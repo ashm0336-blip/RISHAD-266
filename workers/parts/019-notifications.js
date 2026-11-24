@@ -306,6 +306,56 @@ var NF_TYPES = {
     txt: "تغيّرت وردية {الاسم} في {الشهر} من {القديم} إلى {الجديد} — بواسطة {المُعدّل}",
     go: "افتح الجدول الشهري",
   },
+  /* V7 · 53 (FIX_53_LIVEQA ١ · ٣): الفعلُ الجماعي تنبيهٌ مجمّعٌ واحد للمدير ورئيس الوردية — والموظفُ ورديتُه هو */
+  st_shiftm: {
+    id: "st_shiftm",
+    k: "staff",
+    name: "إسناد وردية لعدة موظفين دفعة واحدة",
+    when: "فور الحفظ",
+    on: true,
+    to: ["lead", "mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "أُسندت {الوردية} لـ{العدد} في جدول {الشهر} — بواسطة {المُعدّل}",
+    go: "افتح الجدول الشهري",
+  },
+  st_myshift: {
+    id: "st_myshift",
+    k: "staff",
+    name: "ورديتك في الجدول الشهري",
+    when: "فور الحفظ",
+    on: true,
+    to: ["own"],
+    lvl: "info",
+    chan: "bell",
+    txt: "ورديتك في جدول {الشهر}: {الوردية} — بواسطة {المُعدّل}",
+    go: "",
+  },
+  /* V7 · 53 (REPLY_53_1): إلغاءُ الوردية — لصاحبها وحده، والجماعيُّ تنبيهٌ مجمّعٌ واحد للمدير ورئيس الوردية */
+  st_unshift: {
+    id: "st_unshift",
+    k: "staff",
+    name: "إلغاء ورديتك في الجدول الشهري",
+    when: "فور الحفظ",
+    on: true,
+    to: ["own"],
+    lvl: "info",
+    chan: "bell",
+    txt: "أُلغيت ورديتك في جدول {الشهر} ({القديم}) — بواسطة {المُعدّل}",
+    go: "",
+  },
+  st_unshiftm: {
+    id: "st_unshiftm",
+    k: "staff",
+    name: "إلغاء وردية عدة موظفين دفعة واحدة",
+    when: "فور الحفظ",
+    on: true,
+    to: ["lead", "mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "أُلغيت {الوردية} لـ{العدد} في جدول {الشهر} — بواسطة {المُعدّل}",
+    go: "افتح الجدول الشهري",
+  },
   st_rest: {
     id: "st_rest",
     k: "staff",
@@ -364,6 +414,19 @@ var NF_TYPES = {
     lvl: "info",
     chan: "toast",
     txt: "نُشر جدول {الشهر} — {العدد} موظفاً موزَّعين",
+    go: "افتح الجدول الشهري",
+  },
+  /* V7 · 53 (FIX_53_SCALE S12): ملءُ شهرٍ مضى ليس «نشر جدول شهر جديد» — تنبيهٌ واحد للمدير، ولا شيء للموظفين */
+  st_past: {
+    id: "st_past",
+    k: "staff",
+    name: "تحديث جدول شهر سابق",
+    when: "فور الحفظ",
+    on: true,
+    to: ["mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "حُدّث جدول شهر سابق: {الشهر} — {العدد} · بواسطة {المُعدّل}",
     go: "افتح الجدول الشهري",
   },
   st_lock: {
@@ -2760,7 +2823,7 @@ async function nfPlanEvents(env, A, events, internal) {
     plans = [];
   events.forEach(function (it) {
     /* cat · lvl · txt: للأحداث التي يصنعها الخادمُ نفسُه وحده (nfSecurityPoll: الرفض لنقص السبب) — حدثٌ من الطلب لا يحملها */
-    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt"] : []));
+    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt", "ownOnly", "rolesOnly"] : []));
     var T = nfType(nfStr(it.type, 80, false), cfg);
     /* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server alone, from the save it accepted
        (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included.
@@ -2787,8 +2850,8 @@ async function nfPlanEvents(env, A, events, internal) {
     if (it.link !== undefined) nfStr(it.link, 500, true);
     if (it.once !== undefined) nfStr(it.once, 500, false);
     if (it.at !== undefined) nfTime(it.at);
-    var toE = T.to.indexOf("own") >= 0 ? own : [],
-      toR = nfLeadTargets(T.to.filter(function (r) {
+    var toE = T.to.indexOf("own") >= 0 && !it.rolesOnly ? own : [],   /* V7 · 53: rolesOnly (الخادمُ وحده) — للمدير لا لأصحابه */
+      toR = it.ownOnly ? [] : nfLeadTargets(T.to.filter(function (r) {   /* V7 · 53: ownOnly (الخادمُ وحده) — لصاحبه لا للمدير */
         return r !== "own";
       }), it.vars),
       sys = toR.length === 1 && toR[0] === "sys" && !toE.length && A.u.role === "super";
@@ -2829,7 +2892,7 @@ async function nfPlanEvents(env, A, events, internal) {
         priority: it.lvl || T.lvl,
         channel: T.chan,
         title: it.title || T.name,
-        body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(T.txt, it.vars),
+        body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(it.txt || T.txt, it.vars),   /* txt: حدثُ الخادم وحده */
         created_at: it.at || Date.now(),
         author_key: String(A.u.ekey || A.u.id),
         author_name: String(A.u.name || A.u.un || ""),
@@ -2924,7 +2987,8 @@ async function nfEmitEvents(env, A, events, internal, extra) {
    else one addition per record · one aggregated deletion notice (emp_delm — owner decision, not the watcher's) when five or
    more records are removed, else one deletion per removed record · per kept record: «type» when the employment type changed,
    «edit» for the other announced fields (never the e-mail). «المُعدّل» is the actor's name. Who READS them is not decided here. */
-var NF_EMP_RES = "bassam_employees_v1";
+var NF_EMP_RES = "bassam_employees_v1",
+  NF_EMP_BULK_TXT = "عُدّلت بيانات موظفين بالجملة ({العدد}): {الحقول} — بواسطة {المُعدّل}";
 var NF_EMP_FIELDS = {
   name: "الاسم",
   nid: "رقم الهوية",
@@ -2996,7 +3060,7 @@ function nfEmployeeEvents(A, d, before, after) {
     });
   else
     added.forEach(function (e) {
-      events.push({ type: "emp_add", dept: d, vars: { الاسم: text(e.name), النوع: text(e.type || "") } });
+      events.push({ type: "emp_add", dept: d, vars: { الاسم: text(e.name), النوع: text(e.type || "بلا نوع توظيف") } });   /* V7 · 53 (١٤): لا «()» فارغة */
     });
   /* owner decision («الحذف بالجملة: إشعار واحد مجمّع»): five or more removed by one save are ONE notice with the count and the
      actor, no names — as five or more added are one emp_imp. One emp_del per record filled the unit feed (400-row retention)
@@ -3006,6 +3070,15 @@ function nfEmployeeEvents(A, d, before, after) {
     removed.forEach(function (e) {
       events.push({ type: "emp_del", dept: d, vars: { الاسم: text(e.name), المُعدّل: text(who) } });
     });
+  /* V7 · 53 (١ — قرار المنسّق: السيلُ صنفٌ واحد): خمسةُ سجلاتٍ معدَّلة فأكثر في حفظٍ واحد ⇒ كلُّ موظفٍ تنبيهُه لنفسه وحدها (ownOnly)
+     وللمدير تنبيهٌ مجمّعٌ واحد (emp_edit «بالجملة» · rolesOnly) بالعدد والحقول — لا تنبيهٌ لكل سجل */
+  var edited = both.filter(function (p) {
+      return Object.keys(NF_EMP_FIELDS).some(function (f) {
+        return f !== "email" && (p[0][f] || "") !== (p[1][f] || "");
+      });
+    }),
+    bulkEdit = edited.length >= 5,
+    bulkFields = [];
   both.forEach(function (p) {
     var a = p[0],
       b = p[1],
@@ -3013,9 +3086,13 @@ function nfEmployeeEvents(A, d, before, after) {
         return (a[f] || "") !== (b[f] || "");
       });
     if (!changed.length) return;
+    var e0 = events.length;
+    changed.forEach(function (f) {
+      if (f !== "email" && bulkFields.indexOf(NF_EMP_FIELDS[f]) < 0) bulkFields.push(NF_EMP_FIELDS[f]);
+    });
     var own = [String(key(b)).slice(0, 200)];
     if (changed.indexOf("type") !== -1)
-      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "—") } });
+      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "غير محدّد") } });   /* V7 · 53 (١٤): لا شرطةَ مكان القيمة */
     var rest = changed.filter(function (f) {
       return f !== "type" && f !== "email";
     });
@@ -3035,7 +3112,22 @@ function nfEmployeeEvents(A, d, before, after) {
           المُعدّل: text(who),
         },
       });
+    if (bulkEdit) for (var i = e0; i < events.length; i++) events[i].ownOnly = 1;
   });
+  if (bulkEdit) {
+    /* تنبيهاتُ أصحابها بالنصّ نفسِه رسالةٌ واحدة بمستلميها — فلا تُخرج 500 رسالةٍ ما قبلها من حدّ الاحتفاظ (400 للوحدة) */
+    var merged = [],
+      byText = nmap();
+    events.forEach(function (e) {
+      if (!e.ownOnly) return merged.push(e);
+      var k = e.type + "\u0001" + JSON.stringify(e.vars);
+      if (byText[k]) byText[k].own = byText[k].own.concat(e.own);
+      else merged.push((byText[k] = e));
+    });
+    events = merged;
+    /* التنبيهُ المجمّع من نوع emp_edit نفسِه (مستلموه ومستواه وفئتُه) لـ«المدير» وحده بنصٍّ للجملة — بلا نوعٍ جديد */
+    events.push({ type: "emp_edit", dept: d, rolesOnly: 1, title: "تعديل بيانات موظفين بالجملة", txt: NF_EMP_BULK_TXT, vars: { العدد: edited.length, الحقول: text(bulkFields.join("، ")), المُعدّل: text(who) } });
+  }
   return events;
 }
 /* The notification part of an accepted save plan (019e): guards + statements to append to the plan, never a commit of its own.
@@ -3294,10 +3386,12 @@ async function nfRemind(env, A, id, base, automatic) {
    • verb: the sec row does not store it. «تعديل» unless the row itself says otherwise (keydel → «حذف» · retro open/close →
      «فتح»/«إغلاق»); the notifications route logs refused reads as well, so its verb is the neutral «الوصول إلى».
    • grouping (nfSecurityPoll): rows of one poll batch, in (ts,id) order; a row joins the open group of its (uid,target,detail)
-     when its ts is within NF_DENY_WIN_MS of that group's FIRST row, else it opens a new group. One notice per group, keyed
-     security:<id of the first row> (the key that row always had), counted «(٥ محاولات خلال دقيقة)». Groups do not span polls.
-     Two overlapping polls that read batches of different length agree on the key and one of them wins, so the stored count
-     can be lower than the rows of that minute (never a second notice, never a lost group); the log holds every row.
+     when its ts is within NF_DENY_GROUP_MS of that group's FIRST row, else it opens a new group. One notice per group, keyed
+     security:<id of the first row> (the key that row always had), counted «(٥ محاولات خلال دقيقة)» — «خلال ساعة» when the
+     group spans more than NF_DENY_WIN_MS. V7 · 53 (FIX_53_LIVEQA ٥): groups SPAN polls — a refusal whose source already has a
+     notice opened within the window joins it: no new notice, and that notice's count is recounted from the log and rewritten
+     in the same batch as the checkpoint. Two overlapping polls that read batches of different length agree on the key and
+     one of them wins (never a second notice, never a lost group); the log holds every row.
    • names (independent review M1): the account name, the unit name and the kind of a node are written by managers, so they
      are sanitised before they enter the sentence (nfDenyClean — an allowlist: letters, marks, digits, space and . - ' only;
      40 characters, the kind 20), the sentence is filled in ONE pass (nfDenyBody — a value is never scanned for {var}), and an
@@ -3307,6 +3401,7 @@ async function nfRemind(env, A, id, base, automatic) {
 var NF_REASON_TITLE = "عملية تتطلب ذكر السبب",
   NF_REASON_TXT = "حاول {الاسم} ({الدور} — {الإدارة}) {الفعل} «{السجل}» في صفحة «{الصفحة}» — رُفض: هذه العملية تتطلب ذكر السبب.";
 var NF_DENY_WIN_MS = 60000,
+  NF_DENY_GROUP_MS = 3600000,   /* V7 · 53 (٥): نافذةُ تجميع المتكرر من المصدر نفسه (الحساب · السجل · السبب) — ساعة */
   NF_DENY_GENERIC = "رفضه الخادم",
   NF_DENY_REC_OTHER = "بيانات المنصة";
 /* prettier-ignore */
@@ -3427,6 +3522,10 @@ function nfDenyVerb(target, detail) {
   if (/^retro\.close:/.test(s)) return "إغلاق";
   if (s === "keydel") return "حذف";
   return "تعديل";
+}
+/* V7 · 53 (٥): «(٥ محاولات خلال دقيقة)» — أو «خلال ساعة» حين تتجاوز المجموعةُ الدقيقة */
+function nfDenySpan(n, span) {
+  return " (" + nfDenyCount(n) + (span <= NF_DENY_WIN_MS ? " خلال دقيقة" : " خلال ساعة") + ")";
 }
 function nfDenyCount(n) {
   var d = nfDenyDigits(n),
@@ -3571,7 +3670,22 @@ async function nfSecurityPoll(env, A) {
     failId = {},
     failWhy = {},
     denyOpen = {},
-    denyAll = [];
+    denyAll = [],
+    denyGrown = [];
+  /* V7 · 53 (٥): تنبيهاتُ الرفض المفتوحة في النافذة من استطلاعاتٍ سابقة — يُضمّ إليها المتكرّر من مصدرها ولا يُنشأ له تنبيهٌ جديد */
+  var denyFirst = rows.filter(function (r) { return r.act === "denied"; })[0];
+  if (denyFirst)
+    (
+      (
+        await env.DB.prepare(
+          "SELECT m.scope,m.id,s.id sid,s.ts,s.uid,s.un,s.act,s.target,s.detail,s.ip FROM notification_dedup d JOIN notification_messages m ON m.scope=d.scope AND m.id=d.message_id JOIN sec s ON d.once_key='security:'||s.id WHERE d.once_key GLOB 'security:*' AND d.created_at>=?2 AND m.type='sc_deny' AND s.act='denied' AND s.ts>=?1 ORDER BY s.ts,s.id",
+        )
+          .bind(denyFirst.ts - NF_DENY_GROUP_MS, Math.min(denyFirst.ts, Date.now()) - NF_DENY_GROUP_MS)   /* a notice is written at or after its first row */
+          .all()
+      ).results || []
+    ).forEach(function (x) {
+      denyOpen[[x.uid, x.target, x.detail].join("\u0001")] = { ts: x.ts, last: x.ts, n: 0, prev: x };
+    });
   rows.forEach(function (r) {
     max = Math.max(max, r.ts);
     if (/^tst_/.test(String(r.uid || ""))) return;
@@ -3603,13 +3717,15 @@ async function nfSecurityPoll(env, A) {
     } else if (r.act === "denied") {
       var gk = [r.uid, r.target, r.detail].join("\u0001"),
         g = denyOpen[gk];
-      if (g && r.ts - g.ts <= NF_DENY_WIN_MS) {
+      if (g && r.ts - g.ts <= NF_DENY_GROUP_MS) {
+        if (g.prev && !g.n) denyGrown.push(g);
         g.n++;
+        g.last = r.ts;
         return;
       }
       type = "sc_deny";
       vars = nfDenyVars(A, r);
-      denyAll.push((denyOpen[gk] = { ts: r.ts, n: 1, vars: vars }));
+      denyAll.push((denyOpen[gk] = { ts: r.ts, last: r.ts, n: 1, vars: vars }));
       /* إصلاح: الرفضُ لنقص السبب (detail = reason) — الفاعلُ يملك الصلاحية ولم يذكر السبب: لا «خارج الصلاحية» ولا حدثٌ أمني.
          يُكتب «رُفض: هذه العملية تتطلب ذكر السبب» بفئة «المنصة» وأولويةٍ عادية. */
       if (r.detail === "reason") {
@@ -3623,7 +3739,7 @@ async function nfSecurityPoll(env, A) {
     if (type) events.push({ type: type, vars: vars, once: "security:" + r.id });
   });
   denyAll.forEach(function (g) {
-    if (g.n > 1) g.vars["السبب"] += " (" + nfDenyCount(g.n) + " خلال دقيقة)";
+    if (g.n > 1) g.vars["السبب"] += nfDenySpan(g.n, g.last - g.ts);
   });
   /* v7-C · Issue 2 (أ): التخمينُ الموزَّع — عناوينُ مختلفة تُخفق على حسابٍ واحد — لم يكن يُنذِر ما لم تجتمع 5 إخفاقاتٍ في دفعةٍ واحدة، ومتغيّرُ IP
      فارغ. الآن يُقرأ لكل اسمٍ أخفق في هذه الدفعة ما أخفق عليه في آخر ساعة مجمَّعاً بالعنوان (استعلامٌ واحد)، فيُنذَر مديرُ النظام عند
@@ -3696,6 +3812,24 @@ async function nfSecurityPoll(env, A) {
   });
   var finalRow = rows[rows.length - 1],
     extra = [];
+  /* V7 · 53 (٥): تنبيهٌ سابق ضُمّ إليه جديد — عددُه من السجل نفسه (كلُّ صفوف مصدره في نافذته حتى آخر صفٍّ في هذه الدفعة) ونصُّه يُعاد بناؤه */
+  var grown = denyGrown;
+  if (grown.length && finalRow) {
+    var TD = nfType("sc_deny", nfCfg((await env.DB.prepare("SELECT * FROM notification_type_overrides").all()).results || []));
+    for (var gi = 0; gi < grown.length; gi++) {
+      var gp = grown[gi].prev,
+        gc = await env.DB.prepare(
+          "SELECT COUNT(*) n,MAX(ts) last FROM sec WHERE act='denied' AND uid IS ?1 AND target IS ?2 AND detail IS ?3 AND ts>=?4 AND ts<=?5 AND (ts<?6 OR (ts=?6 AND id<=?7))",
+        )
+          .bind(gp.uid, gp.target, gp.detail, gp.ts, gp.ts + NF_DENY_GROUP_MS, finalRow.ts, finalRow.id)
+          .first(),
+        gv = nfDenyVars(A, gp);
+      if (gc && gc.n > 1) gv["السبب"] += nfDenySpan(gc.n, gc.last - gp.ts);
+      extra.push(
+        env.DB.prepare("UPDATE notification_messages SET body=?3 WHERE scope=?1 AND id=?2").bind(gp.scope, gp.id, nfDenyBody(gp.detail === "reason" ? NF_REASON_TXT : TD.txt, gv)),
+      );
+    }
+  }
   if (finalRow) {
     extra.push(
       env.DB.prepare(

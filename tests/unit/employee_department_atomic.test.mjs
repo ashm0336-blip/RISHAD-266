@@ -72,7 +72,7 @@ test('failure after employee rows are written rolls back matched custody, employ
   B.DB.failIf = (sql) => /^DELETE FROM custody_movements/.test(sql);
   const response = await B.api('super', '/api/save', body);
   B.DB.failIf = null;
-  assert.equal(response.status, 500, JSON.stringify(response.json));
+  assert.equal(response.status, 503, JSON.stringify(response.json)); assert.equal(response.json.err, 'db-busy');   /* V7 · 53 (§3ب.7): خطأُ D1 المجهول في الحفظ ⇒ 503 db-busy برسالة (كان 500 بلا رسالة) — والتراجعُ كما هو */
   assert.deepEqual(snap(B.DB), before);
   saved(await B.api('super', '/api/save', body));
 });

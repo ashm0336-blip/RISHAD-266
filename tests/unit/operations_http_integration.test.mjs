@@ -112,7 +112,7 @@ test('a late SQL fault in HTTP Operations save rolls back typed rows, revisions,
   let reached = false; B.DB.log = [];
   B.DB.failIf = sql => { if (/^INSERT INTO restore_operations/.test(sql)) { reached = true; return true; } return false; };
   const failed = await save(B, body); B.DB.failIf = null;
-  assert.equal(reached, true, 'Failure must occur in the real receipt write after business statements'); assert.equal(failed.status, 500);
+  assert.equal(reached, true, 'Failure must occur in the real receipt write after business statements'); assert.equal(failed.status, 503); assert.equal(failed.json.err, 'db-busy');   /* V7 · 53 (§3ب.7): 503 db-busy برسالة (كان 500) — والتراجعُ أدناه كما هو */
   const receiptAt = B.DB.log.findIndex(sql => /^INSERT INTO restore_operations/.test(sql));
   assert.ok(B.DB.log.slice(0, receiptAt).some(sql => /^INSERT INTO ops_/.test(sql)), 'Typed writes were attempted before the injected failure');
   assert.deepEqual(transactionalSnapshot(B), before); assert.deepEqual(B.DB.q('PRAGMA foreign_key_check'), []);
