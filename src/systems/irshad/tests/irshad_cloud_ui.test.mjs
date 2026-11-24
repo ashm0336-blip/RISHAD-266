@@ -80,7 +80,7 @@ function browser(handler = async () => json({ ok: 0 }, 500)) {
     fetch: async (url, options = {}) => { calls.push({ url: String(url), options }); return handler(String(url), options); }, print() { notices.push('print'); } };
   W.window = W; vm.createContext(W); calendar(W);
   /* V7 · 53 تقويم: «اليوم» الثابت للاختبار (كان hToday = 1448-5-19) — اليومُ التشغيلي الميلادي من الخدمة نفسِها، مثبَّتاً على 2026-05-19 */
-  { const C = KIVO.BassamCal, T = C.gAt(Date.parse('2026-05-19T09:00:00Z')); KIVO.BassamCal = Object.freeze({ ...C, gToday: () => T }); }
+  { const C = KIVO.BassamCal, T = C.gAt(Date.parse('2026-05-19T09:00:00Z')); KIVO.BassamCal = Object.freeze({ ...C, gToday: () => T, gAt: (d) => (d == null || Math.abs(+d - Date.now()) < 6e4 ? T : C.gAt(d)) }); }   /* V7 · 53 تقويم (REVIEW 46): «اليوم» في الصفحة gAt(new Date()) — يُثبَّت كما كان gToday */
   for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/534-staff-g4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), W);   /* V7 · د5-د2: الناقل (قلب المنصة) وقراءاتُ الجدول الشهري المعلنة عليه — الصفحةُ تسأل بالاسم */
   vm.runInContext(source + '\n' + kpiRing + '\nglobalThis.TestComponent = Component;', W);
   const page = new W.TestComponent();

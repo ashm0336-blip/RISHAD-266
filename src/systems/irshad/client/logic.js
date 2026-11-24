@@ -144,7 +144,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       limit: Math.min(200, this.state.irLedgerPerPage || 200), page: this.state.irLedgerPerPage === 0 ? 1 : this.state.irLedgerPage || 1 };
   }
   _irDashboardQuery() {
-    const t = this.state, today = KIVO.BassamCal.gToday(), available = t.irDashboard?.dashboard?.available || { years: [today.y], months: [] };
+    const t = this.state, today = KIVO.BassamCal.gAt(new Date()), available = t.irDashboard?.dashboard?.available || { years: [today.y], months: [] };
     const years = available.years.length ? available.years : [today.y], all = t.irDashYear == null || String(t.irDashYear) === "all";
     const year = all || !years.includes(+t.irDashYear) ? years[0] : +t.irDashYear;
     const months = available.months.filter(p => p.y === year).map(p => p.m).sort((a, b) => a - b);
@@ -356,7 +356,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return { shift: "", eid: "", loc: "", bro: "", pros: "", pol: "", langs: [], langSel: "", langN: "" };
   }
   state = (() => {
-    const t = KIVO.BassamCal.gToday();
+    /* V7 · 53 تقويم (REVIEW 46): «اليوم» يومُ الرياض المدني (gAt) كساعة الخادم (cuClock · pfDayAt) والمتابعة اليومية وما قبل 53 — لا gToday بالمهلة */
+    const t = KIVO.BassamCal.gAt(new Date());
     return {
       rowMenu: null,
       irTab: "dash",
@@ -516,7 +517,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return (g && Object.assign(c, this._recordsCalVals()), d && Object.assign(c, this._dashVals()), c);
   }
   _dashVals() {
-    const t = this.state, e = KIVO.BassamCal.gToday(), a = 864e5, i = KIVO.BassamCal.G_MONTHS,
+    const t = this.state, e = KIVO.BassamCal.gAt(new Date()), a = 864e5, i = KIVO.BassamCal.G_MONTHS,
       dash = t.irDashboard?.dashboard || {}, available = dash.available || { total: 0, years: [], months: [] },
       totals = dash.totals || {}, previous = dash.previous || {},
       n = v => KIVO.bsPct ? KIVO.bsPct(v) : String(Math.round(v || 0)),
@@ -1066,7 +1067,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   _recordsCalVals() {
     const t = this.state,
-      e = KIVO.BassamCal.gToday(),
+      e = KIVO.BassamCal.gAt(new Date()),
       r = t.irYear,
       a = t.irMonth,
       calendar = t.irCalendar || { total: 0, yearTotal: 0, months: [], days: [], monthTotals: {} },

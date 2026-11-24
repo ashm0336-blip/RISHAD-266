@@ -83,7 +83,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._szDraftStamp = null; this._szNeedsReview = false; this.setState({ irDraft: this.emptyDraft(), irSaveErrMsg: "", irEditId: null, bcMessage: "" });
   }
   _szDashboardQuery() {
-    const state = this.state, today = KIVO.BassamCal.gToday(), context = this._bcContext();
+    const state = this.state, today = KIVO.BassamCal.gAt(new Date()), context = this._bcContext();
     const available = this._bcData("dashboard")?.dashboard.available || (this._szAvailable?.context === context?.key ? this._szAvailable.value : { years: [], months: [] });
     const years = available.years.length ? available.years : [today.y], all = state.irDashYear == null || String(state.irDashYear) === "all";
     const year = all || !years.includes(+state.irDashYear) ? years[0] : +state.irDashYear;
@@ -355,7 +355,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return { ...data, shiftOf: eid => Object.keys(data.rows || {}).filter(shift => data.rows[shift].some(row => row.eid === eid)).pop() || "" };
   }
   state = (() => {
-    const t = KIVO.BassamCal.gToday();
+    /* V7 · 53 تقويم (REVIEW 46): «اليوم» يومُ الرياض المدني (gAt) كساعة الخادم (cuClock · pfDayAt) والمتابعة اليومية وما قبل 53 — لا gToday بالمهلة */
+    const t = KIVO.BassamCal.gAt(new Date());
     return {
       rowMenu: null,
       irTab: "dash",
@@ -552,7 +553,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }, totals = dash.totals, previous = dash.previous;
     if (source) this._szAvailable = { context: source._contextKey, value: dash.available };
     const t = this.state,
-      e = KIVO.BassamCal.gToday(),
+      e = KIVO.BassamCal.gAt(new Date()),
       s = dash.heat,
       a = 864e5,
       r = KIVO.BassamCal.G_MONTHS,
@@ -1274,7 +1275,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._bcEnsure("context", { year: this.state.irYear, month: this.state.irMonth, day: this.state.irDay });
     this._szEnsureRetro();
     const t = this.state,
-      e = KIVO.BassamCal.gToday(),
+      e = KIVO.BassamCal.gAt(new Date()),
       s = t.irYear,
       a = t.irMonth,
       calendar = this._bcData("calendar"),
