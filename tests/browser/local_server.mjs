@@ -19,7 +19,7 @@ const hashOf = (pw) => { const m = /"ph":"(p2\$[^"]+)"/.exec(makeSql({ username:
 async function loadWorker() {
   const src = fs.readFileSync(process.env.KIVO_WORKER || WORKER, 'utf8');
   const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'lab-')), f = path.join(dir, 'w.mjs');
-  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, opLegacyPrepare, opGuardRetired, opChangeStatements, opInfo, opPrepared, ocPhysicalTables, ocFromPhysical, ocInflate };   /* the typed fixture helpers (replaceOperationalFixture) */\n');
+  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, opLegacyPrepare, opGuardRetired, opChangeStatements, opInfo, opPrepared, ocPhysicalTables, ocFromPhysical, ocInflate, opSplit, opJoin, opPeriodOrder, opLoadMany, dbGuard, dbGuardFallback, opTag };   /* the typed fixture helpers (replaceOperationalFixture) · V7 · 53: the period layer (v7_d53_*) */\n');
   try { return await import(pathToFileURL(f).href); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 

@@ -202,8 +202,13 @@ function ocConvert(prepared, department, resource, value, present) {
   if (present !== false) write(root.spec, value, '$', null, null, 0);
   return { departmentId: department, resource: resource, rows: rows };
 }
-function ocInflate(prepared, domain) {
-  var root = prepared.resources[domain.resource], rows = domain.rows, used = new Set(), byTable = {};
+/* V7 · 53 (§3ب.4 الفكّ): opts.trust — صفوفٌ قرأها الخادمُ نفسُه من D1 (القراءةُ والحفظ): بلا إعادة الترميز والمقارنة القانونية (noncanonical-rows)،
+   وهي باقيةٌ لكل ما يأتي من خارجه (الاستيراد · الاستعادة · الاختبارات). opts.partial — صفوفُ الرأس وفتراتٍ بعينها (019w): أعضاءُ الخريطة بترتيب
+   مواضعها المخزَّنة بلا اشتراط التتابع، ولا «يتيم» لما لم يُطلب. وأبناءُ كلِّ عقدة من فهرسٍ يُبنى مرةً (parent_key) — كان كلُّ عقدة خريطةٍ أو قائمة
+   يمسح جدولَ أبنائه كلَّه (تربيعيّ). */
+function ocInflate(prepared, domain, opts) {
+  opts = opts || {};
+  var root = prepared.resources[domain.resource], rows = domain.rows, used = new Set(), byTable = {}, kids = {};
   if (!root || !rows || !ocObj(rows)) throw ocError('domain');
   prepared.order.forEach(function (spec) {
     var list = rows[spec.table] || [], map = new Map();
@@ -212,8 +217,10 @@ function ocInflate(prepared, domain) {
       if (!ocObj(row) || row.department_id !== domain.departmentId || row.resource !== domain.resource || typeof row.row_key !== 'string' || map.has(row.row_key) ||
           Object.keys(row).length !== spec.columns.length || spec.columns.some(function (c) { return !ocOwn(row, c); })) throw ocError('row');
       map.set(row.row_key, row);
+      if (row.parent_key != null) { var bucket = kids[spec.table] || (kids[spec.table] = new Map()), list = bucket.get(row.parent_key); if (list) list.push(row); else bucket.set(row.parent_key, [row]); }
     }); byTable[spec.table] = map;
   });
+  function children(table, parent) { var bucket = kids[table]; return (bucket && bucket.get(parent)) || []; }
   function read(spec, row) {
     used.add(spec.table + '\0' + row.row_key);
     if (row.node_kind === 1) return null;
@@ -228,7 +235,7 @@ function ocInflate(prepared, domain) {
     }
     value = kind === 'array' || kind === 'tuple' ? [] : {};
     if (kind === 'array') {
-      var entries = Array.from(byTable[spec.entry.table].values()).filter(function (r) { return r.parent_key === row.row_key; }).sort(function (a, b) { return a.position - b.position; });
+      var entries = children(spec.entry.table, row.row_key).slice().sort(function (a, b) { return a.position - b.position; });
       entries.forEach(function (entry, index) { if (entry.position !== index) throw ocError('array-position'); value.push(read(spec.entry, entry)); });
       return value;
     }
@@ -252,25 +259,28 @@ function ocInflate(prepared, domain) {
     });
     if (kind === 'map') {
       var candidates = [spec.entry].concat(spec.patterns.map(function (p) { return p.spec; })).filter(Boolean), entries = [], visited = new Set();
-      candidates.forEach(function (candidate) { if (visited.has(candidate.table)) return; visited.add(candidate.table); byTable[candidate.table].forEach(function (entry) { if (entry.parent_key === row.row_key && entry.row_key.startsWith(row.row_key + '/e:')) entries.push({ spec: candidate, row: entry }); }); });
+      candidates.forEach(function (candidate) { if (visited.has(candidate.table)) return; visited.add(candidate.table); children(candidate.table, row.row_key).forEach(function (entry) { if (entry.row_key.startsWith(row.row_key + '/e:')) entries.push({ spec: candidate, row: entry }); }); });
+      var seenKeys = new Set(members.map(function (m) { return m.key; }));
       entries.sort(function (a, b) { return a.row.position - b.row.position; }).forEach(function (entry) {
         var key = entry.row.member_key;
-        if (typeof key !== 'string' || members.some(function (m) { return m.key === key; }) || ocOwn(spec.fields, key) || ocEntry(spec, key) !== entry.spec) throw ocError('map-member');
+        if (typeof key !== 'string' || seenKeys.has(key) || ocOwn(spec.fields, key) || ocEntry(spec, key) !== entry.spec) throw ocError('map-member');
+        seenKeys.add(key);
         members.push({ key: key, value: read(entry.spec, entry.row), position: entry.row.position });
       });
     }
     members.sort(function (a, b) { return a.position - b.position; }).forEach(function (member, index) {
-      if (member.position !== index) throw ocError('member-position');
+      if (member.position !== index && !(opts.partial && kind === 'map')) throw ocError('member-position');
       ocSet(value, member.key, member.value);
     });
     if (kind === 'tuple' && (!Number.isSafeInteger(row.tuple_length) || row.tuple_length < 0 || row.tuple_length > spec.node.slots.length || value.length !== row.tuple_length)) throw ocError('tuple-length');
     return value;
   }
   var rootRow = byTable[root.spec.table].get('$'), result = rootRow ? { present: true, value: read(root.spec, rootRow) } : { present: false };
+  if (opts.partial || opts.trust) { if (!opts.partial) prepared.order.forEach(function (spec) { byTable[spec.table].forEach(function (row) { if (!used.has(spec.table + '\0' + row.row_key)) throw ocError('orphan-row'); }); }); return result; }
   prepared.order.forEach(function (spec) { byTable[spec.table].forEach(function (row) { if (!used.has(spec.table + '\0' + row.row_key)) throw ocError('orphan-row'); }); });
   var canonical = ocConvert(prepared, domain.departmentId, domain.resource, result.value, result.present);
   prepared.order.forEach(function (spec) {
-    function sorted(list) { return list.slice().sort(function (a, b) { return a.row_key.localeCompare(b.row_key); }).map(function (r) { return spec.columns.map(function (c) { return r[c]; }); }); }
+    function sorted(list) { return list.slice().sort(function (a, b) { return a.row_key < b.row_key ? -1 : a.row_key > b.row_key ? 1 : 0; }).map(function (r) { return spec.columns.map(function (c) { return r[c]; }); }); }
     if (JSON.stringify(sorted(canonical.rows[spec.table])) !== JSON.stringify(sorted(rows[spec.table] || []))) throw ocError('noncanonical-rows');
   });
   return result;
@@ -293,10 +303,10 @@ function ocPhysicalRows(prepared, domain) {
       }
     });
   });
-  out.ops_nodes.sort(function (a, b) { return a.row_key.split('/').length - b.row_key.split('/').length || a.row_key.localeCompare(b.row_key); });
+  out.ops_nodes.sort(function (a, b) { return a.row_key.split('/').length - b.row_key.split('/').length || (a.row_key < b.row_key ? -1 : a.row_key > b.row_key ? 1 : 0); });   /* V7 · 53: مقارنةٌ ثنائية لا localeCompare */
   return out;
 }
-function ocFromPhysical(prepared, department, resource, physical) {
+function ocFromPhysical(prepared, department, resource, physical, opts) {
   var domain = { departmentId: department, resource: resource, rows: {} }, entities = {}, used = new Set();
   var physicalTables = ocPhysicalTables(prepared), nodeIds = new Set();
   if (!ocObj(physical) || Object.keys(physical).some(function (table) { return !ocOwn(physicalTables, table); })) throw ocError('physical-tables');
@@ -322,7 +332,7 @@ function ocFromPhysical(prepared, department, resource, physical) {
     domain.rows[spec.table].push(row);
   });
   Object.keys(entities).forEach(function (name) { entities[name].forEach(function (row) { if (!used.has(name + '\0' + row.row_key)) throw ocError('orphan-entity'); }); });
-  ocInflate(prepared, domain); return domain;
+  if (!opts || !opts.skip) ocInflate(prepared, domain, opts); return domain;   /* V7 · 53: opts.skip — المستدعي يفكّه بنفسه مرةً واحدة (019r) */
 }
 function ocCreateStatements(prepared) {
   var out = ["CREATE TABLE IF NOT EXISTS ops_nodes(department_id TEXT NOT NULL,resource TEXT NOT NULL,row_key TEXT NOT NULL,parent_key TEXT,member_key TEXT,position INTEGER NOT NULL,node_kind INTEGER NOT NULL,variant INTEGER,tuple_length INTEGER,schema_id TEXT NOT NULL,entity_kind TEXT,PRIMARY KEY(department_id,resource,row_key),UNIQUE(department_id,resource,row_key,entity_kind),FOREIGN KEY(department_id,resource,parent_key)REFERENCES ops_nodes(department_id,resource,row_key)ON DELETE CASCADE)WITHOUT ROWID",
