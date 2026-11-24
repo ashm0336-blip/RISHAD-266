@@ -99,6 +99,11 @@ test('V7 · د7 (52 · الكامن) ① a system turned OFF after a role grant:
     const e = await openAs(b, lab, LAB.empA, LAB.pw); await e.go('#/profile', 3000);
     assert.equal(await e.page.evaluate(() => KIVO.BassamPerm.can('dstats', 'view')), true, 'ON again ⇒ his ' + OFF.k + ' right is back as before');
     assert.deepEqual(e.errs, [], 'no page errors (employee)');
+    /* item 4: a legitimate refusal of this guard reads in the manager's words — the employee and the system, no «بيانات المنصة» */
+    const s = await openAs(b, lab, LAB.superUn, LAB.superPw); await s.go('#/sysadmin/org/' + A + '/roles', 3000);
+    const msg = await s.page.evaluate((d) => ({ t: KIVO.Perm44.latentText('latent: grant TEST_ONLY_eA1 dstats.haram.view | x', d), l: KIVO.BassamKeyLabels.label('bsdept:' + d + ':bassam_grants_v1') }), A);
+    assert.match(msg.t, /TEST_ONLY موظف أ[\s\S]*الإحصائيات اليومية/, 'the refusal names the employee and the system: ' + msg.t);
+    assert.equal(msg.l, 'منح الصلاحيات', 'the grants record has a name (was «بيانات المنصة»)');
   } finally { await b.close(); await lab.close(); }
 });
 
