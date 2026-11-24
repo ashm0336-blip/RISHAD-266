@@ -15,7 +15,7 @@ import { SRC, moduleDir, SYSTEMS, needs } from '../../../../tests/unit/harness.m
 const core = fs.readFileSync(path.join(SRC, 'systems', '_shared', 'print', '566-print-core.js'), 'utf8');
 
 test('الخريطةُ صورةٌ واحدة عاليةُ الدقّة (ملفٌّ خفيف) بخطّ المنصة واتجاهها — والمتّجهُ بخيارٍ صريح وحده', () => {
-  const guard = core.indexOf('if (O.vector || !O.dialog) return void e();');
+  const guard = core.indexOf('if (O.vector || (!O.dialog && !isWK())) return void e();');   /* V7 · 53 (البند 9): وفي سفاري صورةٌ قبل الرسّام البديل */
   const raster = core.indexOf('toDataURL("image/jpeg", 0.92)');
   assert.ok(guard > 0 && raster > guard, 'التحويلُ إلى صورةٍ هو الافتراضي، وO.vector يتخطّاه');
   assert.doesNotMatch(core, /if \(!O\.raster\)/);
@@ -117,10 +117,20 @@ test('كاتبُ PDF: ملفٌّ صالح البنية — صفحةٌ لكل ص�
 });
 
 test('الطابعةُ تُنزل الملفَّ مباشرةً ونافذةُ الطباعة مسارٌ بديل عند التعذّر', () => {
-  assert.match(core, /if \(O\.dialog\) return void dialog\(\);\s*pdfDownload\(x, f\)\.then\(\(ok\) => \{\s*if \(!ok\) return void dialog\(\);/);
-  assert.match(core, /let scales = coarse \? \[3, 2\] : \[4, 3, 2\];/, 'دقّةٌ ×4 على الحاسوب و×3 على اللمس، وتنزل عند الرفض');
+  assert.match(core, /if \(O\.dialog\) return void dialog\(\);\s*pdfDownload\(x, f, coverInfo\(o, i\)\)\.then\(\(ok\) => \{\s*if \(!ok\) return void dialog\(\);/);   /* V7 · 53 (البند 10): والغلافُ صفحةً أولى */
+  assert.match(core, /let scales = wk \? \[2, 1\.5\] : coarse \? \[3, 2\] : \[4, 3, 2\], alt = wk, rf = null;/, 'دقّةٌ ×4 على الحاسوب و×3 على اللمس و×2 في سفاري، وتنزل عند الرفض');
+  /* V7 · 53 (ملحق 6 · البند 9): أسبابُ سفاري الثلاثة التي كانت تُسقط التنزيلَ إلى نافذة الطباعة على الآيباد والآيفون */
+  assert.match(core, /return \/\^Apple\/\.test\(navigator\.vendor \|\| ""\);/, 'محرّكُ سفاري يُعرف بمورّده');
+  assert.match(core, /\n\s+requestAnimationFrame\(\(\) => setTimeout\(k, 80\)\);/, '(1) الانتظارُ من الصفحة');
+  assert.doesNotMatch(core, /m\.contentWindow\.requestAnimationFrame/, '(1) لا انتظارَ بنافذة الإطار المحمي');
+  assert.match(core, /Promise\.race\(\[x\.fonts\.ready, new Promise\(\(t\) => setTimeout\(t, 3500\)\)\]\)\.then\(v, v\), setTimeout\(v, 3600\)/, '(1) لانتظار الخطوط مهلة');
+  assert.match(core, /if \(!alt && altOk\(e\)\) return \(\(alt = !0\), \(scales = \[2, 1\.5\]\), go\(0\)\);/, '(2) رفضُ القراءة في متصفحٍ آخر ينقل إلى الرسّام البديل');
+  assert.match(core, /const H2C_URL = "@@KIVO_ASSET:vendor\/html2canvas-1\.4\.1\.min\.js@@";/, 'المكتبةُ ملفٌّ في الحزمة');
+  assert.match(core, /foreignObjectRendering: !1/, 'الرسّامُ البديل بلا foreignObject');
+  assert.match(core, /\(alt \? raster\(k\)\.then\(\(P\) => pageImageAlt\(P, scales\[i\]\)\)/, '(3) من نسخة الصفحة في إطارٍ مؤقّت');
+  assert.match(core, /m\.setAttribute\("sandbox", "allow-same-origin allow-modals"\)/, 'إطارُ الطباعة باقٍ محمياً كما كان');
   assert.match(core, /if \(!\(d\.length > 2e3 && 0 === d\.indexOf\("data:image\/jpeg"\)\)\) throw new Error/, 'لوحةٌ فارغة ⇒ القياسُ التالي');
-  assert.match(core, /if \(O\.vector \|\| !O\.dialog\) return void e\(\);/, 'الخريطةُ تُرسم مرّةً واحدة بدقّة الصفحة في مسار التنزيل');
+  assert.match(core, /if \(O\.vector \|\| \(!O\.dialog && !isWK\(\)\)\) return void e\(\);/, 'الخريطةُ تُرسم مرّةً واحدة بدقّة الصفحة في مسار التنزيل — وفي سفاري صورةٌ قبل الرسّام البديل');
   assert.match(core, /img\.src = "data:image\/svg\+xml;charset=utf-8," \+ encodeURIComponent\(svg\);/, 'data: لا blob: (اللوحةُ لا تتلوّث)');
   assert.doesNotMatch(core, /"<\/body>|<\/body>"/, 'لا وسمَ إغلاقٍ حرفيّ في نصّ الكتلة');
 });
@@ -151,4 +161,71 @@ test('شروطُ @media في أنماط صورة الصفحة تُثبَّت ب�
 test('تحجيمُ اللوحة الجانبية على ارتفاع عمودها الفعليّ ناقصاً بكسلاً — لا على المقرَّب (كان يزيد كسرَ بكسل فيُقصّ حدُّها السفلي)', () => {
   assert.ok(core.includes('availH: Math.floor(e.getBoundingClientRect().height) - 1,'));
   assert.doesNotMatch(core, /availH: e\.clientHeight/);
+});
+
+/* ══ V7 · 53 (ملحق 6 — نقلُ سلوك البرودكشن بأدوات النواة) ══
+   البند 9 (9ff484d · c26d55f · ba52a5d · d071fc9): PDF على الآيباد والآيفون — محرّكُ سفاري يُعرف بمورّده، وشاشةُ «الملف جاهز» (المشاركة) لأجهزة أبل اللمسية
+   وحدها، وستارٌ صادق «جاري تحميل الملف…» بالصفحة ن من م يبقى حتى يجهز الملف.
+   البند 10 (6171818): غلافُ التقرير صفحةً أولى كاملةً بلا هوامش، والسنةُ والإدارتان من المنصة. المسارُ الحيّ في المتصفح: v7_53_print_ios (browser). */
+const loadCoreWith = (nav, K = {}) => { const KIVO = K; vm.runInNewContext(core, { KIVO, navigator: nav, TextEncoder, Uint8Array, URL, Blob, setTimeout, console, document: {}, window: {} }); return KIVO.BassamPrintCore; };
+const IPAD = { vendor: 'Apple Computer, Inc.', maxTouchPoints: 5, userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15', share: () => Promise.resolve(), canShare: () => true };
+
+test('53 · البند 10: الغلافُ صفحةٌ كاملة بلا هوامش (A3 كلُّها) وصفحاتُ المواقع بهوامشها كما كانت', () => {
+  const C = loadCore(), jpg = (n) => { const u = new Uint8Array(n); u[0] = 0xff; u[1] = 0xd8; u[n - 2] = 0xff; u[n - 1] = 0xd9; return u; };
+  const txt = Buffer.from(C.pdfBytes([{ jpg: jpg(900), pw: 2480, ph: 1754, w: 2480, h: 1754, full: true }, { jpg: jpg(1000), pw: 4491, ph: 3129, w: 1497, h: 1043 }], 'TEST_ONLY')).toString('latin1');
+  assert.match(txt, /\/Type \/Pages \/Count 2 \/Kids \[4 0 R 7 0 R\]/);
+  const cms = [...txt.matchAll(/q [^\n]* cm \/Im0 Do Q/g)].map((m) => m[0]);
+  assert.deepEqual(cms, ['q 1190.55 0 0 841.89 0.00 0.00 cm /Im0 Do Q', 'q 1122.75 0 0 782.25 34.02 25.62 cm /Im0 Do Q'], 'الغلافُ يملأ الصفحة · الموقعُ بهوامش 12mm');
+  assert.match(txt, /\/Width 2480 \/Height 1754 \/ColorSpace \/DeviceRGB/);
+  const sx = +/startxref\n(\d+)\n%%EOF/.exec(txt)[1];
+  txt.slice(sx).split('\n').slice(3, 12).forEach((r, i) => assert.ok(txt.slice(+r.slice(0, 10)).startsWith((i + 1) + ' 0 obj\n'), 'الكائن ' + (i + 1)));
+});
+
+test('53 · البند 10: بياناتُ الغلاف — سنةُ التقرير من سطر تاريخه وإلا السنةُ الجارية، والإدارةُ العامة والإدارة النشطتان', () => {
+  const K = { BassamDepts: { activeGroupName: () => 'TEST_ONLY الإدارة العامة' }, BassamHijri: { now: () => ({ y: 1448, m: 1, d: 1 }) } };
+  const C = loadCoreWith(IPAD, K);
+  assert.deepEqual(JSON.parse(JSON.stringify(C.coverInfo('جولة يوم 5 رجب 1447هـ الموافق 25 ديسمبر 2025', 'TEST_ONLY إدارة'))), { dept: 'TEST_ONLY إدارة', group: 'TEST_ONLY الإدارة العامة', year: '1447' });
+  assert.equal(C.coverInfo('', 'TEST_ONLY إدارة').year, '1448', 'بلا سطر تاريخ ⇒ السنةُ الهجرية الجارية');
+  const C2 = loadCoreWith(IPAD, { BassamHijri: { now: () => ({ y: 1447 }) } });
+  assert.deepEqual(JSON.parse(JSON.stringify(C2.coverInfo('12 شعبان 1447هـ', ''))), { dept: '', group: '', year: '1447' }, 'بلا خدمة الإدارات ⇒ سطرٌ فارغ لا عطل');
+  /* الغلافُ من الأصل في الحزمة، ويُرسم بلا نسخٍ للوثيقة؛ وتعذّرُ خلفيته لا يُسقط الملف */
+  assert.match(core, /const COVER_URL = "@@KIVO_ASSET:img\/report-cover\.jpg@@";/);
+  assert.match(core, /\.reduce\(\(q, pg, k\) => q\.then\(\(\) => \(say\(k\), one\(pg, k\)\)\)\.then\(\(r\) => void imgs\.push\(r\)\), cover\)/, 'الغلافُ قبل الصفحات');
+  assert.match(core, /coverPage\(cov\)\.then\(\s*\(r\) => void imgs\.push\(r\),\s*\(e\) => \{/, 'تعذّرُ الغلاف ⇒ الملفُّ بلا غلاف');
+});
+
+test('53 · البند 9: محرّكُ سفاري ومسارُ «الملف جاهز» — أجهزةُ أبل اللمسية وحدها (الحاسوبُ وأندرويد على التنزيل المباشر)', () => {
+  const file = { name: 'TEST_ONLY.pdf', type: 'application/pdf' };
+  const cases = [
+    ['iPad (سطح مكتب الطلب)', IPAD, true, true],
+    ['iPhone', Object.assign({}, IPAD, { maxTouchPoints: 5, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15' }), true, true],
+    ['سفاري على الماك (بلا لمس)', Object.assign({}, IPAD, { maxTouchPoints: 0 }), true, false],
+    ['iPad بلا مشاركة ملفات', Object.assign({}, IPAD, { canShare: () => false }), true, false],
+    ['iPad بلا navigator.share', Object.assign({}, IPAD, { share: undefined }), true, false],
+    ['Chrome أندرويد', { vendor: 'Google Inc.', maxTouchPoints: 5, userAgent: 'Mozilla/5.0 (Linux; Android 14)', share: () => Promise.resolve(), canShare: () => true }, false, false],
+    ['Chrome الحاسوب', { vendor: 'Google Inc.', maxTouchPoints: 0, userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' }, false, false],
+  ];
+  for (const [who, nav, wk, share] of cases) {
+    const C = loadCoreWith(nav);
+    assert.equal(C.isWK(), wk, who + ': محرّكُ سفاري'); assert.equal(C.shareMode(file), share, who + ': شاشةُ المشاركة');
+  }
+  assert.equal(loadCoreWith(Object.assign({}, IPAD, { canShare: () => { throw new Error('x'); } })).shareMode(file), false, 'canShare يرمي ⇒ التنزيلُ المباشر');
+  /* الزرُّ يفتح قائمةَ المشاركة بلمسة المستخدم (لا تلقائياً)، والملفُّ نفسُه؛ وإلغاءُ القائمة ليس خطأً */
+  assert.match(core, /if \(file && shareMode\(file\) && pdfReady\(file\)\) return \(drop\(\), "share"\);/);
+  assert.match(core, /navigator\.share\(\{ files: \[file\], title: name \}\)/);
+  assert.ok(core.indexOf('navigator.share({') > core.indexOf('v.addEventListener("click"'), 'المشاركةُ من نقرة الزر');
+  assert.ok(core.includes('>الملف جاهز</div>') && core.includes('>حفظ أو مشاركة الملف</button>'));
+  assert.match(core, /if \(ok === "share"\) return;/, 'شاشةُ «الملف جاهز» تتولّى الإشعار');
+});
+
+test('53 · البند 9: ستارٌ صادق — «جاري تحميل الملف…» والصفحة ن من م، ويبقى بعد مؤقّت الأمان ما دام الملفُّ يُصنع', () => {
+  assert.match(core, /say = \(k\) => veilSay\("جاري تحميل الملف…", N > 1 \? "الصفحة " \+ \(k \+ 1\) \+ " من " \+ N : "صفحة واحدة"\);/);
+  assert.match(core, /v\.dataset\.pdf = "1";/);
+  assert.ok(core.includes('KIVO.BassamBusy.flash("تم تنزيل التقرير PDF", "تجده في التنزيلات", "ok")'), 'إشعارُ النجاح');
+  for (const m of ['plan', 'daily'].filter((k) => SYSTEMS.includes(k))) {
+    const lg = fs.readFileSync(path.join(moduleDir(m), 'logic.js'), 'utf8');
+    assert.ok(lg.includes('جاري تحميل الملف…</div>'), m + ': نصُّ الستار');
+    assert.doesNotMatch(lg, /جاري تجهيز التقرير للطباعة/, m + ': لا «للطباعة» والملفُّ PDF');
+    assert.match(lg, /t && \(t\.dataset\.pdf \? setTimeout\(\(\) => \{ try \{ t\.remove\(\); \} catch \(e\) \{\} \}, 15e4\) : t\.remove\(\)\);/, m + ': مؤقّتُ الأمان (30 ث) لا يرفع الستارَ والملفُّ يُصنع');
+  }
 });
