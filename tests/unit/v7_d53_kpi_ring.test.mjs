@@ -100,11 +100,12 @@ test('③ الكروتُ كلُّها كما في Production (0013) — أرقا
 test('④ السجلّ الموحَّد: سنة/شهر/يوم هـ · ميلاديٌّ رقمي · ساعةٌ بأربعٍ وعشرين · «المسجِّل» عمودٌ مستقل', () => {
   for (const f of ['seized', 'irshad']) {
     const L = rd('src/systems/' + f + '/client/logic.js'), V = rd('src/systems/' + f + '/client/view.html');
-    assert.match(L, /dayLabel: t\.y \+ "\/" \+ String\(t\.m\)\.padStart\(2, "0"\) \+ "\/" \+ String\(t\.d\)\.padStart\(2, "0"\)/, f + ': هجريٌّ رقمي');
-    assert.match(L, /\.getFullYear\(\) \+ "\/" \+ String\([a-z]\.getMonth\(\) \+ 1\)\.padStart\(2, "0"\) \+ "\/" \+ String\([a-z]\.getDate\(\)\)\.padStart\(2, "0"\)/, f + ': ميلاديٌّ رقمي');
+    /* V7 · 53 تقويم (§7): السجلُّ ميلاديٌّ أساساً — dayLabel هو اليومُ الميلادي المخزَّن رقمياً، والهجريُّ المقابل رقميٌّ في السطر الصغير (gregLabel) من الخدمة الواحدة */
+    assert.match(L, /dayLabel: t\.y \+ "\/" \+ String\(t\.m\)\.padStart\(2, "0"\) \+ "\/" \+ String\(t\.d\)\.padStart\(2, "0"\)/, f + ': ميلاديٌّ رقمي');
+    assert.match(L, /const h = KIVO\.BassamCal\.hOf\(KIVO\.BassamCal\.gKey\(t\.y, t\.m, t\.d\)\);\s*h && \([a-z] = h\.y \+ "\/" \+ String\(h\.m\)\.padStart\(2, "0"\) \+ "\/" \+ String\(h\.d\)\.padStart\(2, "0"\) \+ " هـ"\);/, f + ': هجريٌّ رقمي');
     assert.match(L, /String\(e\.getHours\(\)\)\.padStart\(2, "0"\) \+ ":" \+ String\(e\.getMinutes\(\)\)\.padStart\(2, "0"\);/, f + ': ٢٤ ساعة');
     assert.doesNotMatch(L, /\? "م" : "ص"/, f + ': لا ص/م في السجل');
-    assert.match(V, /\{\{v\.dayLabel\}\} هـ<\/span>/); assert.doesNotMatch(V, /\{\{v\.gregLabel\}\} · \{\{v\.timeLabel\}\}/);
+    assert.match(V, /\{\{v\.dayLabel\}\}<\/span>\s*<span[^>]*font-size:10px[^>]*>\{\{v\.gregLabel\}\}<\/span>/, f + ': الميلاديُّ ثم سطرُ الهجري الصغير'); assert.doesNotMatch(V, /\{\{v\.dayLabel\}\} هـ/); assert.doesNotMatch(V, /\{\{v\.gregLabel\}\} · \{\{v\.timeLabel\}\}/);
     assert.match(V, />المسجِّل<\/span><\/div><\/th>/, f + ': رأسُ العمود');
     const row = V.slice(V.indexOf('<sc-for list="{{irLedgerRows}}"')), dateCell = row.slice(0, row.indexOf('</td>'));
     assert.doesNotMatch(dateCell, /\{\{v\.actor\}\}/, f + ': المسجِّلُ خارج خلية التاريخ');
