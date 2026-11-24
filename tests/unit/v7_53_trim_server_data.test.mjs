@@ -47,6 +47,30 @@ function traces(ast, all) {
   const tro = traceReads(S, (e) => idx(e, (o) => mem(o, (x) => isId(x, 'RB'), 'routes'))); eq(tro.reads, ['key', 'source'], 'routes[]');
   const tk = traceReads(ast, (e) => e.type === 'CallExpression' && mem(e.callee, 'KIVO_SCOPE', 'readKeysFor')); eq(tk.reads, ['keys', 'known'], 'ناتجُ readKeysFor في العامل'); eq(tk.escapes, [], 'ناتجُ readKeysFor لا يهرب');
   T['readBindings.byResource.*.routes[]'] = tro;
+  /* V7 · 53 (الحالةُ الخاصة): cls · routes[].key · routes[].source تُقرأ في readKeysFor وحدها، ولا تصل إلا إلى حقول ناتجه cls · sources · routes —
+     وناتجُه لا يُقرأ منه في العامل إلا keys · known (tk أعلاه)، ولا يُستدعى في المحرّك نفسِه. فهي «تُقرأ لتُرمى»: تُحذف بلا أثرٍ يُرى. */
+  const rkf = all.find((n) => n.type === 'FunctionDeclaration' && n.id.name === 'readKeysFor' && n.start > S.start && n.end < S.end);
+  assert.ok(rkf, 'readKeysFor في المحرّك');
+  const inRkf = (n) => n.start >= rkf.start && n.end <= rkf.end;
+  const sub = []; (function w(n) { if (!n || typeof n.type !== 'string') return; sub.push(n); for (const k in n) { const v = n[k]; if (Array.isArray(v)) v.forEach(w); else if (v && typeof v.type === 'string') w(v); } })(S.body);
+  const rbAlias = tre.isAlias, routesAlias = tro.isAlias;
+  for (const n of sub) {
+    if (n.type !== 'MemberExpression' || n.computed) continue;
+    const onRB = rbAlias(n.object) || (n.object.type === 'MemberExpression' && n.object.computed && isRBmap(n.object.object));
+    const onRoute = n.object.type === 'MemberExpression' && n.object.computed && mem(n.object.object, (x) => rbAlias(x), 'routes') || routesAlias(n.object);
+    if ((onRB && ['cls', 'routes'].includes(n.property.name)) || (onRoute && ['key', 'source'].includes(n.property.name))) assert.ok(inRkf(n), 'قراءةُ ' + n.property.name + ' خارج readKeysFor');
+  }
+  /* داخل readKeysFor: sources محليٌّ لا يخرج إلا قيمةَ العضو sources في المردود؛ وRB.cls وRB.routes لا يخرجان إلا عضوَين cls وroutes */
+  const rets = sub.filter((n) => n.type === 'ReturnStatement' && inRkf(n) && n.argument && n.argument.type === 'ObjectExpression');
+  const fed = {}; rets.forEach((r) => r.argument.properties.forEach((p) => { const v = p.value; const src = isId(v, 'sources') ? 'sources' : (v.type === 'MemberExpression' && !v.computed && rbAlias(v.object) ? v.property.name : null); if (src) fed[p.key.name] = src; }));
+  eq(fed, { cls: 'cls', scope: 'scope', sources: 'sources', routes: 'routes' }, 'ما تغذّيه cls · routes · sources في ناتج readKeysFor');
+  const keyIds = new Set(sub.filter((n) => n.type === 'Property' && !n.computed).map((n) => n.key)), srcUses = sub.filter((n) => isId(n, 'sources') && inRkf(n) && !keyIds.has(n)).length, srcDecl = sub.filter((n) => n.type === 'VariableDeclarator' && isId(n.id, 'sources') && inRkf(n)).length;
+  assert.equal(srcDecl, 1, 'sources معرَّفٌ مرةً');
+  const srcUp = sub.filter((n) => n.type === 'MemberExpression' && n.computed && isId(n.object, 'sources') && inRkf(n)).length;
+  assert.equal(srcUses, srcDecl + srcUp + 1, 'sources لا يُستعمل إلا مفهرَساً والعضوَ sources في المردود');
+  assert.equal(sub.filter((n) => n.type === 'CallExpression' && isId(n.callee, 'readKeysFor')).length, 0, 'readKeysFor لا يُستدعى داخل المحرّك');
+  T['readBindings.byResource.*'].readsToDiscard = ['cls'];
+  T['readBindings.byResource.*.routes[]'] = Object.assign({}, tro, { readsToDiscard: ['key', 'source'] });
   /* حاوياتُ النطاق المعروضة في واجهة المحرّك لا تُقرأ في العامل (ولا عبر معامل محرّكٍ آخر يتلقّى KIVO_SCOPE) */
   const viaScope = new Set();
   for (const n of all) {
@@ -129,7 +153,7 @@ test('V7 · 53 ②: لا قارئَ في العامل لأيّ حقلٍ محذو
         /* الحاويةُ مقروءة في المحرّك: تتبّعُ القرّاء (TRACE أدناه) يغطّي حاويةَ الحقل، والحقلُ ليس فيما يُقرأ منها */
         const cont = ks.slice(0, -1).join('.'), leaf = ks[ks.length - 1], tr = (TRACE[t.source] || {})[cont];
         assert.ok(tr, E + ': «' + p + '» بلا تتبّعٍ لقرّاء حاويته ' + cont);
-        assert.ok(!tr.reads.includes(leaf) && !tr.reads.includes('[computed]'), E + ': «' + p + '» يُقرأ (' + tr.reads.join(' · ') + ')');
+        assert.ok((!tr.reads.includes(leaf) || (tr.readsToDiscard || []).includes(leaf)) && !tr.reads.includes('[computed]'), E + ': «' + p + '» يُقرأ (' + tr.reads.join(' · ') + ')');
       }
     }
     /* عضوُ الواجهة الذي يحمل حقلاً محذوفاً لا يُقرأ؛ والمحرّكُ لا يُستعمل إلا بعضوٍ مسمّى (أو وسيطاً لمحرّكٍ آخر نفحص معامله بالقاعدة نفسها) */

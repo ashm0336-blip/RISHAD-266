@@ -51,7 +51,10 @@
     "migration.*.evidence",
     "readBindings.byResource.*.note",
     "readBindings.byResource.*.routes[].cap",
-    "readBindings.meta"
+    "readBindings.meta",
+    "readBindings.byResource.*.cls",
+    "readBindings.byResource.*.routes[].key",
+    "readBindings.byResource.*.routes[].source"
    ]
   },
   {
