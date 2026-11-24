@@ -1461,8 +1461,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       rzStop: stop,
     };
   }
-  rzSaveCase(c) {
+  async rzSaveCase(c) {
     if (!this.PC("add")) return void this.permDeny();
+    if (this._rzSaving) return;
     if (!c.canEnter) return void this.setState({ rzSaveErrMsg: "هذا اليوم مقفل — افتحه للاستدراك أولاً" });
     const nowHM = this.rzHM(new Date()),
       dr = this.state.rzDraft || this.emptyDraft(),
@@ -1488,6 +1489,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       notes: v.rec.notes,
       att: dr.att ? dr.att.iid : null,
     };
+    /* V7 · 53 (nosilent · REVIEW 37 ب1): المرفقُ يصل أولاً — وإلا لا تُحفظ الحالة ويُقال السبب، والمسودةُ ومرفقُها باقيان لإعادة المحاولة */
+    if (dr.att) {
+      const up = (this._rzUp || {})[dr.att.iid];
+      this._rzSaving = !0;
+      let okUp = !1, why = "";
+      try { okUp = !!up && (await up) === !0; } catch (e) { why = (e && e.message) || ""; }
+      this._rzSaving = !1;
+      if (!okUp) {
+        if (up) delete this._rzUp[dr.att.iid];
+        const msg = "لم تُحفظ الحالة — لم يصل المرفق" + (why && /[\u0600-\u06FF]/.test(why) ? " (" + why.replace(/\s*—\s*أعد المحاولة$/, "") + ")" : why ? " (تعذّر الاتصال)" : "") + ". أزل المرفق وأعد إرفاقه ثم احفظ";
+        this.setState({ rzSaveErrMsg: msg });
+        this.bsToast(msg, "err");
+        return;
+      }
+    }
     const d = this.loadRasd();
     if (!this.saveRasd({ ...d, reports: [...(d.reports || []), rec] })) return;
     dr.att && ((this._rzImg = this._rzImg || {}), (this._rzImg[dr.att.iid] = dr.att.url));
@@ -1526,11 +1542,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           iid = "img_rzd" + Date.now().toString(36) + "_" + Math.floor(1e9 * Math.random()).toString(36);
         URL.revokeObjectURL(u);
         (this._rzImg = this._rzImg || {})[iid] = data;
-        try {
-          KIVO.BassamIDB && KIVO.BassamIDB.set(iid, data);
-        } catch (e) {
-          this.bsToast("تعذّر حفظ الصورة في المخزن");
-        }
+        /* V7 · 53 (nosilent · REVIEW 37 ب1): الرفعُ يُحفظ وعدُه — الحالةُ لا تُحفظ قبل أن يقرّ المستودعُ بالصورة (rzSaveCase) */
+        (this._rzUp = this._rzUp || {})[iid] = KIVO.BassamIDB ? Promise.resolve().then(() => KIVO.BassamIDB.set(iid, data)) : Promise.reject(new Error("لا مخزن صور"));
+        this._rzUp[iid].catch(() => {});
         const cur = this.state.rzDraft || this.emptyDraft();
         cur.att && this.rzDropImg(cur.att.iid);
         this.setState({ rzDraft: { ...cur, att: { iid: iid, url: data, name: f.name || "صورة" } } });

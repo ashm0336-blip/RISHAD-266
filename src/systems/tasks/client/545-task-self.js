@@ -31,7 +31,10 @@
   var SECTIONS = ['returned', 'today', 'running', 'review', 'upcoming', 'overdue', 'history'];
   function emit() { for (var i = 0; i < subs.length; i++) { try { subs[i](S); } catch (e) { /* مشتركٌ معطوب لا يوقف بقيةَ المشتركين */ } } try { window.dispatchEvent(new CustomEvent('bassam:mytasks', { detail: { rev: S.rev } })); } catch (e) { /* إعلانٌ إضافيّ — المشتركون أُبلغوا */ } }
   function req(url, opt) {
+    /* V7 · 53 (nosilent · REVIEW 26 ب2/ب3): الكتابةُ (POST) في مؤشر التحميل الموحّد — الزرُّ يتجمّد والمغادرةُ تُسأل حتى يصل الرد */
+    var B = opt && opt.method === 'POST' && KIVO.BassamBusy, busy = B ? B.start('جارٍ الحفظ…') : null, done = function () { if (busy) busy.done(); };
     return fetch(url, Object.assign({ credentials: 'same-origin', cache: 'no-store' }, opt || {}))
+      .then(function (r) { done(); return r; }, function (e) { done(); throw e; })
       .then(function (r) { return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (e) { /* ردٌّ غيرُ JSON (صفحةُ خطأ) ⇒ j=null فيُعامَل فشلاً صريحاً */ } return { status: r.status, j: j, t: t }; }); });
   }
   /* حالةُ المهمة من منظور الموظف: ما يقرّره الخادمُ وحده (مراجعة · إعادة · تعثّر · إلغاء · إعادةُ إسناد) يُؤخذ منه، وما يتغيّر بالساعة يُعاد

@@ -401,23 +401,27 @@ class Component extends DCLogic {
     const sid = this._nfSid(x); if (!sid) return;
     this.setState({ nfToast: null });
     let j = null;
-    try { const r = await fetch("/api/me/sess/kill-one", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sid: sid, why: "not-me" }) }); j = await r.json().catch(() => null); } catch (e) { this.bkToast("لا اتصال — حاول مجددًا بعد قليل", 4000); return; }
-    if (!j || (!j.ok && j.err !== "not-found")) { this.bkToast(j && j.err === "current" ? "هذه جلستك الحالية — استعمل «تسجيل الخروج»" : "تعذّر إنهاء الجلسة — حاول مجددًا", 4000); return; }
+    try { const r = await fetch("/api/me/sess/kill-one", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sid: sid, why: "not-me" }) }); j = await r.json().catch(() => null); } catch (e) { this.bkToast("لا اتصال — حاول مجددًا بعد قليل", 4000, "err"); return; }
+    if (!j || (!j.ok && j.err !== "not-found")) { this.bkToast(j && j.err === "current" ? "هذه جلستك الحالية — استعمل «تسجيل الخروج»" : "تعذّر إنهاء الجلسة — حاول مجددًا", 4000, j && j.err === "current" ? "warn" : "err"); return; }
     try { const NF = KIVO.BassamNotif; if (NF && NF.markRead) await NF.markRead(x.id); } catch (e) { /* القراءةُ علامةٌ لا شرط */ }
     const y = await KIVO.bsConfirm({ title: j.ok ? "أُنهيت تلك الجلسة" : "انتهت تلك الجلسة من قبل", msg: "خرج ذلك الجهاز من حسابك. إن لم تكن أنت فغيّر كلمة المرور الآن.", ok: "تغيير كلمة المرور", cancel: "لاحقاً" });
     if (!y) return;
     KIVO.__BS_OPEN_TAB = { page: "profile", tab: "acct" }; this._savePage("profile"); this.setState({ active: "profile", nfOpen: false, sidebarOpen: false });
   }
-  async _nfWork(run) {
+  /* V7 · 53 (nosilent · REVIEW 26 ب1–ب3): label ⇒ فعلٌ صريح (تعليمُ الكل · حذفُ الكل · إرسالُ تعميم) يمرّ بمؤشر التحميل الموحّد: الزرُّ يتجمّد
+     والمغادرةُ تُسأل حتى يصل الإقرار. فتحُ تنبيهٍ واحد بلا label — لا حبّةَ تومض عند كل نقرة */
+  async _nfWork(run, label) {
+    const B = label && KIVO.BassamBusy, tk = B ? B.start(label) : null;
     try {
       const result = await run();
       if (!result || result.ok !== 1) {
-        this.bkToast((result && result.err) || "تعذّر تأكيد التغيير — حاول مجددًا", 4000);
+        this.bkToast((result && result.err) || "تعذّر تأكيد التغيير — حاول مجددًا", 4000, "err");
         return null;
       }
       this._nfRefresh(false);
       return result;
-    } catch (e) { this.bkToast("لا اتصال — حاول مجددًا بعد قليل", 4000); return null; }
+    } catch (e) { this.bkToast("لا اتصال — حاول مجددًا بعد قليل", 4000, "err"); return null; }
+    finally { if (tk) tk.done(); }
   }
   async _nfOpenItem(x) {
     const NF=KIVO.BassamNotif; if (!NF) return;
@@ -488,10 +492,10 @@ class Component extends DCLogic {
       nfDeptTip: allD ? "يعرض تنبيهاتِ كل الإدارات — اضغط للعودة إلى الإدارة النشطة" + (adName ? " «" + adName + "»" : "") : "الجرسُ يعرض الإدارةَ النشطة" + (adName ? " «" + adName + "»" : "") + " وتنبيهاتِ المنصة — اضغط لعرض كل الإدارات (غيرُ المقروء خارجها: " + hidN + ")",
       nfDeptStyle: "font-size:10px;font-weight:600;padding:2px 9px;border-radius:9999px;cursor:pointer;border:1px solid " + (allD ? "rgba(14,116,144,.4);background:var(--bg-a141161440p07);color:var(--fg-x0e7490)" : "#e2e8f0;background:var(--bg-xffffff);color:var(--fg-x94a3b8)"),
       nfDeptToggle:()=>this._nfReload({nfAllDepts:!this.state.nfAllDepts}),
-      nfReadAll: () => this._nfWork(()=>NF.markAll({all:allD})),
+      nfReadAll: () => this._nfWork(()=>NF.markAll({all:allD}), "جارٍ تعليم التنبيهات مقروءة…"),
       nfClearAll: async () => {
         /* R169-CC3: الحذفُ لا يمسّ ما ينتظر تأكيدك — والرسالةُ تقول ذلك صراحةً بدل أن تسكت عنه */
-        const result=await this._nfWork(()=>NF.dismissAll(false,{all:allD}));
+        const result=await this._nfWork(()=>NF.dismissAll(false,{all:allD}), "جارٍ حذف التنبيهات…");
         if (!result) return;
         const n=Number(result.n)||0, rest=Number((NF.status().counters || {}).pendingAck)||0;
         this._nfRefresh(false);
@@ -526,10 +530,10 @@ class Component extends DCLogic {
         const c=this.state.nfCompose || {}, submitted=JSON.stringify(c);
         this._nfSending=true;
         try {
-          const result=await this._nfWork(()=>NF.bcSendDept({title:c.title,body:c.body,lvl:c.lvl,ack:c.ack,pin:c.pin}));
+          const result=await this._nfWork(()=>NF.bcSendDept({title:c.title,body:c.body,lvl:c.lvl,ack:c.ack,pin:c.pin}), "جارٍ إرسال التعميم…");
           if (!result) return;
           if (JSON.stringify(this.state.nfCompose || {})===submitted) this.setState({nfCompose:null});
-          this.bkToast("حُفظ التعميم وأصبح متاحًا في جرس منسوبي الإدارة", 3000);
+          this.bkToast("حُفظ التعميم وأصبح متاحًا في جرس منسوبي الإدارة", 3000, "ok");
         } finally { this._nfSending=false; }
       },
       /* التوست الفوري */
@@ -737,6 +741,12 @@ class Component extends DCLogic {
      الآن: إن كان في الطابور ما لم يُحفظ يُسأل المستخدم (KIVO.bsConfirm)، ثم flushAsync — ولا يُبدَّل ولا يُعاد التحميل إلا إن صدق الحفظ. */
   async _unsavedGuard() {
     const S = KIVO.__BS_SRV;
+    /* V7 · 53 (nosilent · REVIEW 26 ب3): عمليةٌ ظاهرة في مؤشر التحميل الموحّد (ملفٌّ يُجهَّز · صورةٌ تُرفع · طلبٌ ينتظر تأكيده) تنقطع بالانتقال — يُسأل قبلها */
+    if (this._busyNow()) {
+      let go = false;
+      try { go = !!(await KIVO.bsConfirm({ title: "عملية جارية", msg: "لم تكتمل العملية الجارية بعد (يظهر تقدّمها أعلى الصفحة). الانتقال الآن يقطعها ولا يُحفظ ما لم يصل منها.", ok: "انتقل وأوقفها", cancel: "ابقَ حتى تكتمل", danger: true })); } catch (e) { go = false; }
+      if (!go) return false;
+    }
     let pending = false;
     try { pending = !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch (e) { pending = true; }
     if (pending) {
@@ -749,16 +759,37 @@ class Component extends DCLogic {
     if (S && S.flushAsync) { try { ok = (await S.flushAsync(4000)) === true; } catch (e) { ok = false; } }
     /* V7 · د5-هـ (أمن ١): رُفض تعديلٌ أثناء الحفظ ⇒ لا انتقال — يبقى المستخدمُ أمام رسالة الرفض (لا «حُفظ» ولا تبديلٌ يمحوها) */
     let refused = false; try { refused = !!(S && S.denied && (+S.denied() || 0) > d0); } catch (e) {}
-    if (!ok && refused) { this.bkToast("رُفض حفظ بعض تعديلاتك (السببُ في الرسالة) — لم ننتقل", true); return false; }
+    if (!ok && refused) { this.bkToast("رُفض حفظ بعض تعديلاتك (السببُ في الرسالة) — لم ننتقل", true, "err"); return false; }
     if (!ok) { let still = true; try { still = !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch (e) { still = true; }
-      if (still) { this.bkToast("لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ", true); return false; } }   /* لا تعديلَ معلَّق (جلسةٌ منتهية · عمليةٌ عالقة) ⇒ لا رسالةَ كاذبة ولا منع */
+      if (still) { this.bkToast("لم تُحفظ تعديلاتك بعد — لن ننتقل حتى تُحفظ", true, "err"); return false; } }   /* لا تعديلَ معلَّق (جلسةٌ منتهية · عمليةٌ عالقة) ⇒ لا رسالةَ كاذبة ولا منع */
     return true;
+  }
+  _busyNow() {
+    try { const B = KIVO.BassamBusy, I = KIVO.__BS_IMG_INFLIGHT; return !!(B && B.active && B.active() > 0) || !!(I && I.length); } catch (e) { return false; }
+  }
+  /* V7 · 53 (nosilent · REVIEW 26 ب3/ب4): الخروج — ما في الطابور يُحفظ أولاً أمام المستخدم، وما لم يُحفظ لا يُسقط بصمت: يُسأل قبل إسقاطه */
+  async _logoutSafe() {
+    const S = KIVO.__BS_SRV, A = KIVO.BassamAuth;
+    if (!A) return;
+    let pending = false; try { pending = !!(S && ((S.dirty && S.dirty()) || (S.inflight && S.inflight()))); } catch (e) { pending = true; }
+    let ok = true;
+    if (pending && S && S.flushAsync) {
+      const tk = KIVO.BassamBusy ? KIVO.BassamBusy.start("جارٍ حفظ ما تبقّى قبل الخروج…") : null;
+      try { ok = (await S.flushAsync(4000)) === true; } catch (e) { ok = false; } finally { if (tk) tk.done(); }
+    }
+    const busy = this._busyNow();
+    if (!ok || busy) {
+      let go = false;
+      try { go = !!(await KIVO.bsConfirm({ title: !ok ? "تعديلات لم تُحفظ" : "عملية جارية", msg: !ok ? "لم يكتمل حفظ بعض تعديلاتك. الخروج الآن يُسقطها — لن تصل إلى الفريق." : "لم تكتمل العملية الجارية بعد (يظهر تقدّمها أعلى الصفحة). الخروج الآن يقطعها.", ok: !ok ? "اخرج دون حفظها" : "اخرج وأوقفها", cancel: "ابقَ هنا", danger: true })); } catch (e) { go = false; }
+      if (!go) return;
+    }
+    A.logout();
   }
   async _switchUnit(id, name) {
     if (!(await this._unsavedGuard())) return false;
     const D = KIVO.BassamDepts;
     let set = false; try { set = !!(D && D.setActive(id)); } catch (e) { set = false; }
-    if (!set) { this.bkToast("تعذّر التبديل إلى «" + name + "»", true); return false; }
+    if (!set) { this.bkToast("تعذّر التبديل إلى «" + name + "»", true, "err"); return false; }
     this.bkToast("جارٍ التبديل إلى «" + name + "»…");
     try { location.reload(); } catch (e) {}
     return true;
@@ -1053,8 +1084,9 @@ class Component extends DCLogic {
     };
   }
   /* CORE-01: رسالةُ الإطار تمرّ بالتوست الواحد (KIVO.bsToast · 280) — long: true ⇒ 4.2 ث · رقمٌ ⇒ مدّتُه */
-  bkToast(msg, long) {
-    try { KIVO.bsToast(msg, { ms: typeof long === "number" ? long : long ? 4200 : 2600 }); } catch (e) { /* عرضٌ فقط */ }
+  /* V7 · 53 (nosilent · REVIEW 26 ب4): tone (ok · warn · err) نبرةُ السطر في التوست الواحد — الفشلُ يُرى فشلاً */
+  bkToast(msg, long, tone) {
+    try { KIVO.bsToast(msg, { ms: typeof long === "number" ? long : long ? 4200 : 2600, tone: tone || "" }); } catch (e) { /* عرضٌ فقط */ }
   }
   /* ═══ CORE-02 S7 · «مركز إدارة رشاد» مساحةٌ مستقلّة داخل التطبيق ═══
      الخريطةُ هنا وحدها (ترتيبُ الشريط وتسمياتُ الصفحات) · التوافرُ قاعدةُ صفحة الإدارة نفسُها تنشرها بـ conSync ·
@@ -1359,7 +1391,7 @@ class Component extends DCLogic {
         /* V7 · د5-هـ (44): زرُّ «+ قسم» في القائمة الجانبية حُذف — الأقسامُ يضيفها مدير المنصة من «الإدارات» وحدها (والخادمُ يرفض غيرَه) */
         return {
           /* زر الخروج داخل شريحة المستخدم في القائمة الجانبية: يُوقَف تصعيد النقرة كي لا تفتح «بياناتي» قبل الخروج */
-          doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) KIVO.BassamAuth.logout(); },
+          doLogout: (ev) => { try { if (ev && ev.stopPropagation) ev.stopPropagation(); if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {} if (KIVO.BassamAuth) this._logoutSafe(); },
           deptName: deptLabel,
           conExitTitle: "الانتقال إلى مساحة العمل التشغيلية — الوحدة النشطة: " + deptLabel,
           crumbUnit: platPage ? "المنصة" : deptLabel,

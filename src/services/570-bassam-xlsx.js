@@ -174,9 +174,16 @@ KIVO.BassamXLSX = (function () {
     return rows;
   }
 
-  function download(aoa, filename) {
+  /* V7 · 53 (nosilent · REVIEW 37 ب2): للتنزيل نهايةٌ حقيقية — الوعدُ يُحلّ true بعد بناء الملف وتسليمه للمتصفح، وfalse عند الإخفاق؛
+     والرسالةُ بعدها لا قبلها: «نُزّل «اسم الملف» — N صف» أو «تعذّر إنشاء ملف Excel — السبب». o.quiet: الصفحةُ تقول نجاحَها بنفسها بعد الوعد */
+  function download(aoa, filename, o) {
     var B = KIVO.BassamBusy;
-    if (B && !download._in) { var n = (aoa || []).length; return B.run(function(){ download._in = 1; try { download(aoa, filename); } finally { download._in = 0; } }, 'جارٍ تجهيز ملف Excel…', { sub: n ? KIVO.BassamCount(n - 1, "صف") : '' }); }
+    if (B && !download._in) {
+      var n = (aoa || []).length, rows = n ? KIVO.BassamCount(n - 1, "صف") : '';
+      return B.run(function(){ download._in = 1; try { download(aoa, filename); } finally { download._in = 0; } }, 'جارٍ تجهيز ملف Excel…', { sub: rows })
+        .then(function(){ if (!(o && o.quiet)) B.flash('نُزّل «' + filename + '»', rows, 'ok'); return true; },
+              function(e){ B.flash('تعذّر إنشاء ملف Excel', ((e && e.message) || 'خطأ غير متوقع') + ' — لم يُنزَّل شيء؛ أعد المحاولة', 'err'); return false; });
+    }
     var data = build(aoa);
     var blob = new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     var url = URL.createObjectURL(blob);

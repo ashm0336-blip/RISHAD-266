@@ -180,8 +180,22 @@
         t && t.parentNode === v ? v.insertBefore(u, t.nextSibling) : v.appendChild(u);
       }
       u.textContent = sub || "";
+      /* V7 · 53 (nosilent · REVIEW 26 ب7): «إلغاء» آمن على الستار نفسِه — يتوقّف الصنعُ بعد الصفحة الجارية، ولا يُنزَّل ملفٌّ ناقص */
+      if (PDF_RUN53 && !v.querySelector(".bs-veil-stop")) {
+        const b = document.createElement("button");
+        ((b.type = "button"), (b.className = "bs-veil-stop"), (b.textContent = "إلغاء"));
+        b.setAttribute("style", "margin-top:6px;height:36px;padding:0 22px;border:1px solid var(--bd-a185151810p22);border-radius:10px;background:transparent;color:var(--fg-x475569);font:600 13px Cairo,sans-serif;cursor:pointer");
+        b.addEventListener("click", () => {
+          if (!PDF_RUN53) return;
+          PDF_RUN53.stop = !0;
+          ((b.disabled = !0), (b.textContent = "يتوقّف بعد الصفحة الجارية…"));
+        });
+        v.appendChild(b);
+      }
     } catch (e) {}
   }
+  let PDF_RUN53 = null;
+  const PDF_STOP53 = new Error("pdf-cancelled");
   /* أجهزةُ أبل اللمسية (الآيباد والآيفون) — وخاصةً المنصةُ مفتوحةً تطبيقاً من الشاشة الرئيسية — لا تحفظ رابطَ التنزيل المباشر (a[download]): يُصنع الملفُّ
      ثم لا يُحفظ في أي مكان. فتُعرض شاشةُ «الملف جاهز» بزرٍّ يفتح قائمةَ المشاركة في الجهاز (حفظ في الملفات · واتساب · بريد · طباعة).
      الزرُّ لازم: قائمةُ المشاركة لا تُفتح إلا بلمسةٍ من المستخدم، ولمسةُ الطابعة انتهت صلاحيتُها أثناء صنع الصفحات. والحاسوبُ يبقى على التنزيل المباشر */
@@ -324,10 +338,14 @@
     return { dept: dept || "", group: grp, year: yr, hyear: hy };
   }
   function pdfDownload(x, title, cov) {
+    let end = (r) => r;
     try {
       const pgs = [].slice.call(x.querySelectorAll(".pg"));
       if (!pgs.length) return Promise.resolve(!1);
       const N = pgs.length, say = (k) => veilSay("جاري تحميل الملف…", N > 1 ? "الصفحة " + (k + 1) + " من " + N : "صفحة واحدة");
+      /* V7 · 53 (nosilent · REVIEW 26 ب3/ب7): التشغيلةُ الجارية (لزرّ «إلغاء») ورمزٌ في مؤشر التحميل الموحّد يُبقي سؤالَ المغادرة قائماً حتى تنتهي */
+      const run = (PDF_RUN53 = { stop: !1 }), B = KIVO.BassamBusy, tk = B ? B.start("جاري تحميل الملف…", { btn: null }) : null;
+      end = (r) => (PDF_RUN53 === run && (PDF_RUN53 = null), tk && tk.done(), r);
       say(0);
       const css = frozenMedia(
           [].map.call(x.querySelectorAll("style"), (t) => t.textContent || "").join("\n"),
@@ -386,14 +404,15 @@
           )
         : Promise.resolve();
       return pgs
-        .reduce((q, pg, k) => q.then(() => (say(k), one(pg, k))).then((r) => void imgs.push(r)), cover)
+        .reduce((q, pg, k) => q.then(() => { if (run.stop) throw PDF_STOP53; return (say(k), one(pg, k)); }).then((r) => void imgs.push(r)), cover)
+        .then(() => { if (run.stop) throw PDF_STOP53; })
         .then(() => {
           const bytes = pdfBytes(imgs, title), fname = String(title || "report").replace(/[\\/:*?"<>|]+/g, " ").trim() + ".pdf";
           let file = null;
           try {
             file = new File([bytes], fname, { type: "application/pdf" });
           } catch (e) {}
-          if (file && shareMode(file) && pdfReady(file)) return (drop(), "share");
+          if (file && shareMode(file) && pdfReady(file)) return (drop(), end("share"));
           const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })), a = document.createElement("a");
           ((a.href = url), (a.download = fname), (a.style.display = "none"));
           (document.body.appendChild(a), a.click());
@@ -402,17 +421,18 @@
               (a.remove(), URL.revokeObjectURL(url));
             } catch (e) {}
           }, 6e4);
-          return (drop(), !0);
+          return (drop(), end(!0));
         })
         .catch((e) => {
           drop();
+          if (e === PDF_STOP53) return end("cancel");
           try {
             console.warn("[print-pdf]", e);
           } catch (e2) {}
-          return !1;
+          return end(!1);
         });
     } catch (e) {
-      return Promise.resolve(!1);
+      return Promise.resolve(end(!1));
     }
   }
   function build(ctx, t, O) {
@@ -987,7 +1007,20 @@
               /* الأصل: ملفُّ PDF يُنزَّل مباشرةً (كلُّ صفحةٍ صورةٌ جاهزة). O.dialog يطلب نافذةَ الطباعة صراحةً */
               if (O.dialog) return void dialog();
               pdfDownload(x, f, coverInfo(o, i)).then((ok) => {
-                if (!ok) return void dialog();
+                /* V7 · 53 (nosilent · REVIEW 26 ب4/ب7): الإلغاءُ يُقال، والرجوعُ إلى نافذة الطباعة يقول سببَه — لا انتقالَ صامت */
+                if ("cancel" === ok) {
+                  (n(), drop());
+                  try {
+                    KIVO.BassamBusy && KIVO.BassamBusy.flash("أُلغي تجهيز ملف PDF — لم يُنزَّل شيء", "", "warn");
+                  } catch (e) {}
+                  return;
+                }
+                if (!ok) {
+                  try {
+                    KIVO.BassamBusy && KIVO.BassamBusy.flash("تعذّر صنع ملف PDF في هذا المتصفح", "فُتحت نافذة الطباعة بدلاً منه — اختر «حفظ بصيغة PDF»", "warn");
+                  } catch (e) {}
+                  return void dialog();
+                }
                 (n(), drop());
                 if (ok === "share") return;   /* شاشةُ «الملف جاهز» تتولّى الحفظ والإشعار */
                 try {
