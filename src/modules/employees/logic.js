@@ -491,24 +491,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       return "—";
     }
   }
-  CU_MONTHS = [
-    "محرم",
-    "صفر",
-    "ربيع الأول",
-    "ربيع الآخر",
-    "جمادى الأولى",
-    "جمادى الآخرة",
-    "رجب",
-    "شعبان",
-    "رمضان",
-    "شوال",
-    "ذو القعدة",
-    "ذو الحجة",
-  ];
-  /* V7 · د5-د2: تقويمُ العهد من الخدمة الواحدة (385-calendar) — كانت هنا نسخةٌ كاملة من الدوالّ الأربع */
-  cuGreg(t, e, r) { return KIVO.BassamCal.hGreg(t, e, r); }
-  cuGregMonthLabel(t, e) { return KIVO.BassamCal.hGregMonthLabel(t, e); }
-  cuGregYearRange(t) { return KIVO.BassamCal.hGregYearRange(t); }
+  /* V7 · 53 تقويم (ق1 · §7): العهدُ بالأشهر الميلادية (ساعةُ الخادم cuClock ميلادية) — الاسمُ الميلادي أساساً والهجريُّ المقابل سطرٌ صغير
+     (cuGregMonthLabel/cuGregYearRange: الاسمان باقيان، والسطرُ الصغير هو المدى الهجري) من الخدمة الواحدة */
+  CU_MONTHS = KIVO.BassamCal.G_MONTHS.slice();
+  cuGreg(t, e, r) { return new Date(t, e - 1, r); }
+  cuGregMonthLabel(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
+  cuGregYearRange(t) { return KIVO.BassamCal.hRangeOfYear(t); }
   cuShiftOpts() {
     try {
       const t = KIVO.__BS_SRV.operations.text("bassam_shift_options_v1");
@@ -554,7 +542,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const R = this.cuHijri0();
     return ((this._bsHjV = { y: R.y, m: R.m }), (this._bsHjT = N), R);
   }
-  cuHijri0() { return this.state.cuClock || KIVO.BassamCal.hNow(void 0, { y: 1448, m: 1, d: 1 }); }
+  cuHijri0() { return this.state.cuClock || KIVO.BassamCal.gToday(); }   /* V7 · 53 تقويم: ساعةُ الخادم الميلادية وإلا اليومُ الميلادي */
   cuPast(t, e) {
     const r = this.cuHijri();
     return +t < r.y || (+t === r.y && +e < r.m);
@@ -629,10 +617,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       cuReviewDrafts: () => this._cuReviewDrafts(),
       cuHolderNext: !!(t.cuHolder && t.cuHolder.next), cuHolderProgress: t.cuHolder ? "المعروض " + t.cuHolder.rows.length + " من " + t.cuHolder.total + " عهدة نشطة؛ تفاصيل الحالة تخص المعروض" : "", cuHolderMore: () => this._cuLoadHolder(t.cuHolder.key, true),
       cuCatalogNext: !!((t.cuData || {}).catalogNext), cuCatalogMore: () => this._cuMoreCatalog(),
-      cuMonths: a,
-      cuYearLabel: r + " هـ",
+      /* V7 · 53 تقويم (§7 · day_card_design): كرتُ الشهر من المكوّن الواحد — الميلاديُّ وتحته المدى الهجري؛ الماضي مغلق (أرشيف) والجاري مفتوح */
+      cuMonths: a.map((x, k) => Object.assign(x, { card: KIVO.BassamCalCard.month({ key: KIVO.BassamCal.gYm(r, k + 1), ym: KIVO.BassamCal.gYm(r, k + 1), closed: this.cuPast(r, k + 1), why: this.cuPast(r, k + 1) ? "past" : "", sel: n === k + 1, T: KIVO.BassamCal.gKey(e.y, e.m, e.d || 1), onClick: x.click, attrs: { "data-strip-cur": String(x.isCurrent) } }) })),
+      cuYearLabel: String(r),
       cuGregRange: this.cuGregYearRange(r),
-      cuBadgeLabel: "عهد " + i + " " + r + " هـ — " + (o ? "مقفل (أرشيف)" : s ? "الشهر الجاري" : "لم يبدأ بعد"),
+      cuBadgeLabel: "عهد " + i + " " + r + " — " + (o ? "مقفل (أرشيف)" : s ? "الشهر الجاري" : "لم يبدأ بعد"),
       cuBadgeStyle:
         "display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;border-radius:9999px;padding:4px 12px;font-family:'Cairo',sans-serif;border:1px solid " +
         (s
@@ -667,14 +656,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!s.length) return void this.bsToast("لا توجد أصناف بعهدة هذا الموظف في " + (this.CU_MONTHS[a - 1] || "") + " — لا سند للطباعة");
     let l = 1;
     try {
-      l = KIVO.BassamCal.hNow(void 0, { d: 1 }).d;
+      l = KIVO.BassamCal.gToday().d;
     } catch (t) {}
     const d = (e.employees || []).findIndex((e) => (e.eid || e.name) === t) + 1,
       c = "#" + n + String(a).padStart(2, "0") + String(d).padStart(2, "0"),
-      p = l + " " + (this.CU_MONTHS[a - 1] || "") + " " + n + " هـ";
+      p = l + " " + (this.CU_MONTHS[a - 1] || "") + " " + n;
     let m = "";
     try {
-      m = new Date().toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" });
+      /* V7 · 53 تقويم (§7): سطرُ السند ميلاديٌّ و«الموافق» هجري */
+      m = (KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(n, a, l)) || "") + (KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(n, a, l)) ? " هـ" : "");
     } catch (t) {}
     let h = "الإدارة";
     try {
@@ -1056,7 +1046,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         .slice(0, 2)
         .map((t) => t[0])
         .join(""),
-      ecMonth: (this.CU_MONTHS[e - 1] || "") + " " + t + " هـ",
+      ecMonth: (this.CU_MONTHS[e - 1] || "") + " " + t,
       ecBadgeLbl: !ready ? n.cuHolderError ? "تعذّرت القراءة" : "يُحدَّث من الخادم" : total ? KIVO.BassamCount(total, "صنف") + " بعهدته" : "لا عهدة",
       ecBadge:
         "display:inline-flex;align-items:center;margin-right:9px;border-radius:9999px;padding:3px 11px;font-size:10.5px;font-weight:600;font-family:'Cairo',sans-serif;" +
@@ -1113,7 +1103,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (this.CU_MONTHS[e - 1] || "") +
             " " +
             t +
-            " هـ" +
             (r.ser ? " · " + r.ser : "") +
             (r.note ? " · " + r.note : ""),
           dot:
@@ -1141,7 +1130,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       n = this.cuHijri();
     let a = 1;
     try {
-      a = KIVO.BassamCal.hNow(void 0, { d: 1 }).d;
+      a = KIVO.BassamCal.gToday().d;
     } catch (t) {}
     const i = this.cuHeldAt(n.y, n.m, !1),
       o = (e.q || "").trim(),
@@ -1288,7 +1277,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         n.y +
         String(n.m).padStart(2, "0") +
         String((t.employees || []).findIndex((t) => (t.eid || t.name) === e.eid) + 1).padStart(2, "0"),
-      wzDate: a + " " + (this.CU_MONTHS[n.m - 1] || "") + " " + n.y + " هـ",
+      wzDate: a + " " + (this.CU_MONTHS[n.m - 1] || "") + " " + n.y,
       wzFoot:
         1 === m
           ? "اختر موظفاً للمتابعة"
@@ -1532,7 +1521,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       cuLogCount: KIVO.BassamCount(String(n.total || 0), "حركة") + "",
       cuLogCountStyle:
         "display:inline-flex;align-items:center;margin-right:8px;border-radius:9999px;padding:3px 11px;font-size:10.5px;font-weight:600;font-family:'Cairo',sans-serif;background:var(--bg-a185151810p12);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p3)",
-      cuLogSub: "كل عمليات التسليم والإرجاع والتلف خلال " + (this.CU_MONTHS[e - 1] || "") + " " + t + " هـ",
+      cuLogSub: "كل عمليات التسليم والإرجاع والتلف خلال " + (this.CU_MONTHS[e - 1] || "") + " " + t,
       cuLogChips: l,
       cuLogCols: d.map(([t, e], r) => ({
         name: t,

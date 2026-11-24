@@ -30,6 +30,8 @@ async function world(){
   W.window=W;W.globalThis=W;vm.createContext(W);
   const transport={C:{req:(route,options={})=>{const headers={};if(options.cookie)headers.Cookie=options.cookie;const method=options.method||'GET';if(method!=='GET'){headers.Origin='http://x';headers['Content-Type']='application/json';}return worker.default.fetch(new Request('http://x'+route,{method,headers,...(options.body!==undefined?{body:typeof options.body==='string'?options.body:JSON.stringify(options.body)}:{})}),base.env);}}};
   await attachTaskOperations(W,{W:transport,ck:'bs_tok=TEST_ONLY_session_super',uid:IDS.super,dept:D1});
+  /* V7 · 53 تقويم: خدمةُ التقويم الواحدة وكرتُها كما في الصفحة (العهدُ بالأشهر الميلادية) */
+  W.React={createElement:(t,p,...ch)=>({t,p,ch}),Fragment:'F'};for(const f of ['src/i18n/380-hijri-fallback.js','src/i18n/385-calendar.js'])vm.runInContext(read(f),W);
   vm.runInContext(read('src/services/440-count.js'),W);
   vm.runInContext(read('src/systems/custody/client/547-custody-api.js'),W);
   vm.runInContext(read('src/modules/employees/logic.js')+'\nglobalThis.TEST_ONLY_Page=Component;',W);
@@ -131,4 +133,17 @@ test('a late movement read for the previous holder cannot be displayed under the
   B.page.state.cuLogKind="lost";B.page._cuOpenHolder(EKEYS.employee1,true);const initial=B.page._custodyCardVals(data.year,data.month,data.clock);assert.equal(initial.ecNoMoves,false);assert.equal(initial.ecMoves.length,0);const old=B.page._cuLoadMoves(false,EKEYS.employee1);await begin;
   B.page._cuOpenHolder(EKEYS.leader,true);const pending=B.page._custodyCardVals(data.year,data.month,data.clock);assert.equal(pending.ecNoMoves,false);assert.equal(pending.ecMoves.length,0);await B.page._cuLoadMoves(false,EKEYS.leader);settle();await old;
   const final=B.page._custodyCardVals(data.year,data.month,data.clock);assert.equal(B.page.state.cuMoves.key,EKEYS.leader);assert.ok(B.page.state.cuMoves.rows.every(row=>row.eid===EKEYS.leader));assert.equal(final.ecMoves.length,1);assert.equal(final.ecNoMoves,false);assert.match(final.ecMovesProgress,/1 من 1/);
+});
+
+test('V7 · 53 تقويم: the custody month strip is Gregorian — the server clock, the one month card with its Hijri line, the past month closed',async()=>{
+  const B=await world();B.page.state.empTab='custody';await B.page._cuRefresh();
+  const clock=B.page.state.cuData.clock,riyadh=new Date(Date.now()+3*3600*1000);
+  assert.deepEqual({y:clock.y,m:clock.m,d:clock.d},{y:riyadh.getUTCFullYear(),m:riyadh.getUTCMonth()+1,d:riyadh.getUTCDate()},'the server custody clock is the Riyadh Gregorian day');
+  const v=B.page._custodyVals(),C=B.W.KIVO.BassamCal,cur=v.cuMonths[clock.m-1].card,kids=c=>[].concat(...c.ch).filter(x=>x&&x.p);
+  assert.equal(v.cuMonths.length,12);assert.equal(cur.p['data-cal-key'],C.gYm(clock.y,clock.m));assert.equal(cur.p['data-cal-state'],'open');
+  assert.equal(kids(cur)[0].ch[0],C.G_MONTHS[clock.m-1],'the month IS the Gregorian month');
+  assert.ok(kids(cur)[1].ch[0].length>0,'its Hijri span is the small line');
+  if(clock.m>1)assert.equal(v.cuMonths[clock.m-2].card.p['data-cal-state'],'closed','a past month is closed (archive)');
+  assert.equal(v.cuYearLabel,String(clock.y));assert.equal(v.cuGregRange,C.hRangeOfYear(clock.y));
+  assert.doesNotMatch(v.cuBadgeLabel,/هـ/);
 });

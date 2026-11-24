@@ -306,9 +306,10 @@ test('⑤ no other place computes the calendar: one client service, one server p
     ['src/systems/dstats/client/logic.js', 'hOfDate', /^return \{ year:dt\.getFullYear\(\), month:dt\.getMonth\(\)\+1, day:dt\.getDate\(\) \};$/],
     ['src/systems/dstats/client/logic.js', 'gOf', /^return new Date\(Date\.UTC\(y,m-1,d\)\);$/],
     ['src/systems/dstats/client/logic.js', 'dim', /^return KIVO\.BassamCal\.gMonthDays\(y,m\);$/],
-    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGreg', /^return KIVO\.BassamCal\.hGreg\(t, e, r\);$/],
-    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregMonthLabel', /^return KIVO\.BassamCal\.hGregMonthLabel\(t, e\);$/],
-    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregYearRange', /^return KIVO\.BassamCal\.hGregYearRange\(t\);$/],
+    /* V7 · 53 تقويم: العهدُ ميلادي — اليومُ حسابٌ ميلاديٌّ خالص، والسطرُ الصغير المدى الهجري من الخدمة الواحدة */
+    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGreg', /^return new Date\(t, e - 1, r\);$/],
+    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregMonthLabel', /^return KIVO\.BassamCal\.hRangeOfMonth\(KIVO\.BassamCal\.gYm\(t, e\)\);$/],
+    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregYearRange', /^return KIVO\.BassamCal\.hRangeOfYear\(t\);$/],
     ['src/systems/daily/client/520-field-monitor.js', 'function hParts', /^return KIVO\.BassamCal\.hPartsSafe\(dt\);$/],
     ['src/systems/tasks/server/070-task-core.js', 'function tkDayNum', /^return calDayNum\(k\);$/],
     ['src/systems/tasks/server/073-task-recur.js', 'function tkHijMid', /^return calHijriMid\(k, near, tkHij\);$/],
