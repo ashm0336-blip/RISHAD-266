@@ -4804,57 +4804,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   /* V7 · 53 (kpi · التخزين بالفترة): الصفحةُ تحمّل الفترةَ المعروضة وحدها، ومؤشراتُ «التشغيل اليومي» و«الإشغال» و«المصليات» تُحسب
      على الفترة كلها. ما لم يُحمَّل من الفترات يأتي من ملخّص الخادم (operations.summary ← ops_period_summary · الحقل v.kpi): نسخةٌ خفيفة
-     من قيمة الفترة بالحقول التي تقرؤها هذه المؤشرات وحدها (_kLean — القائمةُ نفسُها في الخادم). تُدمج مع المحمَّل (المحمَّلُ أولاً)
+     من قيمة الفترة بالحقول التي تقرؤها هذه المؤشرات وحدها — يُسقطها الخادمُ بقائمةٍ يعلنها النظامُ المالك لمورده (OS_KPI_* · osKpi*). تُدمج مع المحمَّل (المحمَّلُ أولاً)
      فيُحسب كلُّ رقمٍ بالدوالّ نفسِها كما كان على التاريخ كله. للعرض وحده: لا يدخل الحالة ولا يُحفظ. */
-  _kLean(kind, p, v) {
-    if (!v || "object" != typeof v) return v;
-    const pick = (o, ks) => {
-        const r = {};
-        if (o && "object" === typeof o) ks.forEach((k) => void 0 !== o[k] && (r[k] = o[k]));
-        return r;
-      },
-      arr = (a, f) => (Array.isArray(a) ? a.map((x) => (x && "object" === typeof x ? f(x) : x)) : a);
-    if ("bassam_rounds_v1" === kind) {
-      if (/^m:/.test(p) || Array.isArray(v)) return null;
-      const Z = ["uid", "code", "name", "ztype", "zcat", "off", "cap", "yard", "region", "level", "pc", "count", "emp", "needN", "needS", "fAt"],
-        G = ["gid", "leafN", "pOf", "num", "label", "name", "closed", "cWhy", "cAt", "emp", "needN", "needS", "fAt"],
-        M = ["label", "name", "kind", "off", "emp", "needN", "needS", "fAt"];
-      return Object.assign(pick(v, ["ap"]), {
-        d: arr(v.d, (f) => ({
-          zones: arr(f.zones, (z) => pick(z, Z)),
-          gates: arr(f.gates, (g) => pick(g, G)),
-          marks: arr(f.marks, (m) => pick(m, M)),
-          paths: Array.isArray(f.paths) ? f.paths.map(() => 0) : f.paths,
-        })),
-      });
+  /* مفتاحُ مورد نظامٍ آخر بقراءته المعلنة (resources@1) — هذا النظامُ لا يسمّي مفاتيحَ غيره · بغياب المالك "" فلا ملخّص */
+  _kRes(t) {
+    try {
+      const e = "plan" === t ? KIVO.bus.read("plan.resources@1", "doc") : "dreport" === t ? KIVO.bus.read("dreport.resources@1", "doc") : KIVO.bus.read("staff.resources@1", "schedule");
+      return (Array.isArray(e) && e[0]) || "";
+    } catch (t) {
+      return "";
     }
-    if ("bassam_dreport_v1" === kind) {
-      if (/^m:/.test(p) || Array.isArray(v)) return null;
-      const sh = {};
-      Object.keys(v.shifts && "object" === typeof v.shifts ? v.shifts : {}).forEach((k) => {
-        const s = v.shifts[k];
-        s && "object" === typeof s && (sh[k] = Object.assign(pick(s, ["pulled", "ap", "rest", "tout"]), { roster: arr(s.roster, (r) => pick(r, ["st", "ekey"])) }));
-      });
-      return Object.assign(pick(v, ["created"]), { shifts: sh });
-    }
-    if ("bassam_staffing_v3" === kind) {
-      const r = {};
-      Object.keys(v).forEach((k) => {
-        0 !== k.indexOf("__") && v[k] && "object" === typeof v[k] && (r[k] = pick(v[k], ["rest"]));
-      });
-      return r;
-    }
-    if ("bassam_plan_v1" === kind) {
-      const d = Array.isArray(v) ? v : v.d;
-      return {
-        d: arr(d, (f) => ({
-          zones: arr(f.zones, (z) => pick(z, ["code", "name", "needN", "needS"])),
-          gates: arr(f.gates, (g) => pick(g, ["num", "label", "needN", "needS"])),
-          marks: arr(f.marks, (m) => pick(m, ["label", "kind", "needN", "needS"])),
-        })),
-      };
-    }
-    return null;
   }
   /* الفتراتُ غيرُ المحمَّلة من ملخّص الخادم: فهرسُ المورد ثم ملخّصاتُ أشهره (≤26 شهراً في الطلب) — مرّةً، ويُجدَّد كل دقيقة ما دامت
      المؤشراتُ معروضة؛ الفترةُ التي لم تتغيّر مراجعتُها لا يُعاد طلبها. ملخّصٌ بلا v.kpi يُسجَّل ناقصاً (this._kSumMiss) */
@@ -4896,6 +4855,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   /* وثيقةُ المورد للمؤشرات: الفتراتُ المحمَّلة (loaded) فوق ملخّصات غير المحمَّل */
   _kAll(name, loaded) {
+    if (!name) return loaded;
     this._kSumWant(name);
     const c = this._kSum && this._kSum[name];
     if (!c || !Object.keys(c.rows).length) return loaded;
@@ -4906,7 +4866,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   _kRep() {
     try {
       const t = KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k));
-      return this._kAll("bassam_dreport_v1", t && "object" === typeof t ? t : {});
+      return this._kAll(this._kRes("dreport"), t && "object" === typeof t ? t : {});
     } catch (t) {
       return {};
     }
@@ -4915,7 +4875,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     try {
       const t = KIVO.bus.read("staff.schedule@1", (k) => this._opRead(k)),   /* V7 · د5-د2: المالكُ يقرأ بمسودة الصفحة — بغيابه {} */
         e = t && "object" == typeof t ? t : {};
-      return this._kAll("bassam_staffing_v3", e);
+      return this._kAll(this._kRes("staff"), e);
     } catch (t) {
       return {};
     }
@@ -5007,7 +4967,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         if (d[s]) return d[s];
         const n = { zones: {}, gates: {}, marks: {} };
         try {
-          const t = this._kAll("bassam_plan_v1", (KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)) || {}).months || {})[s];   /* V7 · 53 */
+          const t = this._kAll(this._kRes("plan"), (KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)) || {}).months || {})[s];   /* V7 · 53 */
           ((t && (Array.isArray(t) ? t : t.d)) || []).forEach((t) => {
             ((t.gates || []).forEach((t) => {
               const e = String(null == t.num ? "" : t.num).trim() || "L:" + String(t.label || "");
