@@ -44,7 +44,8 @@ test('① المولَّدُ = الإضافات: KIVO_LENS_PLUGINS (المفات
 test('② الحرّاس: الحارسُ المرجعي يصنّف كلَّ موردٍ معلن في كل إضافة بمفتاحه المعلن (الخطة والجولات)', () => {
   const G = W.KIVO_GUARDS, ctx = { dept: 'd1', actor: { id: 'u', ekey: 'e1', role: 'staff' } };
   const plan = (fl) => ({ floors: [Object.assign({ sid: 'S1', name: 'الدور' }, fl)] });
-  const rounds = (fl) => ({ '1447-3-5': { d: [Object.assign({ sid: 'S1', name: 'الدور' }, fl)] } });
+  /* V7 · 53 تقويم: مفاتيحُ الجولات والخطة ISO ميلادية — المفتاحُ الهجري (1447-3-5) لا يعرفه المخطّطُ فلا يُصنَّف */
+  const rounds = (fl) => ({ '2025-09-05': { d: [Object.assign({ sid: 'S1', name: 'الدور' }, fl)] } });
   const keysOf = (res, a, b) => G.classify(res, a, b, ctx).keys();
   let n = 0;
   for (const m of M) {
@@ -91,11 +92,11 @@ function floor(R, sid) {
   return f;
 }
 function planOf(R) {
-  const v = { floors: [floor(R, 'S1'), floor(R, 'S2')], months: { '1447-3': { d: [floor(R, 'S1')] }, '1447-4': [floor(R, 'S2')] }, cfg: { a: 1 } };
+  const v = { floors: [floor(R, 'S1'), floor(R, 'S2')], months: { '2025-09': { d: [floor(R, 'S1')] }, '2025-10': [floor(R, 'S2')] }, cfg: { a: 1 } };
   for (const col of ['zones', 'gates', 'marks', 'paths']) if (R() < 0.6) v[col] = Array.from({ length: Math.floor(R() * 3) }, (_, i) => elem(R, col, i));
   return v;
 }
-function roundsOf(R) { return { '1447-3-5': { d: [floor(R, 'S1'), floor(R, 'S2')], ap: R() < 0.5 }, '1447-3-6': { d: [floor(R, 'S1')] }, meta: { x: 1 } }; }
+function roundsOf(R) { return { '2025-09-05': { d: [floor(R, 'S1'), floor(R, 'S2')], ap: R() < 0.5 }, '2025-09-06': { d: [floor(R, 'S1')] }, meta: { x: 1 } }; }
 /* F24: ثابتُ الدمج على طابق (cf: نظيرُه في الخادم أو null): كلُّ حقلٍ محجوبٍ في العنصر الناتج قيمتُه من نظيره بالـuid نفسِه، أو غائبٌ إن كان جديداً ·
    والعمودُ المطفأ كلُّه من الخادم (إن وُجد الطابق) */
 const COLS = ['zones', 'gates', 'marks', 'paths'];

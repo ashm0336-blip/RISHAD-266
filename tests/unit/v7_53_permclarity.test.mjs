@@ -126,23 +126,24 @@ test('53 · وضوح ④ الواجهة — الأربعُ «للمدير فقط
 const D = 'tst_d1', KR = 'bsdept:' + D + ':bassam_roles_v1', KG = 'bsdept:' + D + ':bassam_grants_v1';
 const ACC = [['0000000101', '70101'], ['0000000102', '70102'], ['0000000103', '70103'], ['0000000104', '70104'], ['0000000111', '70111'], ['0000000112', '70112'], ['0000000113', '70113'], ['0000000114', '70114'],
   ['0000000115', '70115'], ['0000000116', '70116'], ['0000000117', '70117'], ['0000000118', '70118'], ['0000000119', '70119'], ['0000000120', '70120'], ['0000000121', '70121']];
-let SEED = null;
-function seedSql() {
-  if (SEED) return SEED;
+const SEED = {};
+/* V7 · 53 تقويم: البذرةُ من مولِّد الشجرة نفسِها (root) — للأساس مولِّدُه هو من git (هجريٌّ بأعمدة hijri_*)، وللحالي الميلاديُّ (greg_*)؛ كلُّ عاملٍ ببياناتٍ بمخطّطه */
+function seedSql(root = ROOT) {
+  if (SEED[root]) return SEED[root];
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_fx_pc_'));
-  execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', '1447-6-1', '--out', out], { stdio: 'pipe' });
-  return (SEED = fs.readFileSync(out + '/test_seed.sql', 'utf8'));
+  execFileSync(PYTHON, [root + '/tests/fixtures/gen_fixture.py', '--today', '1447-6-1', '--out', out], { stdio: 'pipe' });
+  return (SEED[root] = fs.readFileSync(out + '/test_seed.sql', 'utf8'));
 }
 function serverEngine(src) {
   const ctx = { console }; vm.createContext(ctx);
   vm.runInContext(src + '\n;this.E = perm44E();', ctx);
   return ctx.E;
 }
-async function world(workerFile, mk) {
+async function world(workerFile, mk, seedRoot, install = installCurrentSchemaFixture) {
   const env = (mk || makeEnv)(); env.__worker = (await import(pathToFileURL(workerFile).href + '?pc=' + Math.random())).default;
   const C = client(env);
   assert.ok((await C.login('admin', 'admin')).ok);
-  await applySql(env.DB, seedSql()); await installCurrentSchemaFixture(env);
+  await applySql(env.DB, seedSql(seedRoot)); await install(env);
   const sup = await C.login('admin', 'admin');
   const kv = (k) => { const r = env.DB.db.prepare('SELECT v FROM kv WHERE k=? ORDER BY seq').all(k); return r.length ? JSON.parse(r.map((x) => x.v).join('')) : null; };
   const save = async (set) => {
@@ -165,8 +166,8 @@ function rolesFor(E) {
   people.tst_e_field = { role: null, ex: [{ key: 'field.view', until: null }] };
   return { v: 1, roles, people };
 }
-async function effective(workerFile, coreSrc, mk) {
-  const W = await world(workerFile, mk), E = serverEngine(coreSrc), rec = rolesFor(E), cur = W.kv(KG) || { v: 1, emp: {} }, emp = Object.assign({}, cur.emp);
+async function effective(workerFile, coreSrc, mk, seedRoot, install) {
+  const W = await world(workerFile, mk, seedRoot, install), E = serverEngine(coreSrc), rec = rolesFor(E), cur = W.kv(KG) || { v: 1, emp: {} }, emp = Object.assign({}, cur.emp);
   const C = (k) => true;
   for (const e of Object.keys(rec.people)) emp[e] = J(E.grantOf(rec.people[e], rec, C, Date.now(), null));
   const r = await W.save({ [KR]: rec, [KG]: Object.assign({}, cur, { emp }) });
@@ -178,31 +179,36 @@ async function effective(workerFile, coreSrc, mk) {
   return out;
 }
 const BASE = process.env.KIVO_PERMCLARITY_BASE || 'c090be0';
-function baseWorker() {
+async function baseWorker() {
   try {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_pc_base_')), f = path.join(dir, 'worker_base.mjs');
-    fs.writeFileSync(f, execFileSync('git', ['-C', ROOT, 'show', BASE + ':workers/_worker.js'], { maxBuffer: 64 << 20 }));
-    const core = ['workers/parts/004-registry-2.js', 'workers/parts/057b-perm44.js'].map((p) => execFileSync('git', ['-C', ROOT, 'show', BASE + ':' + p], { maxBuffer: 64 << 20 }).toString()).join('\n');
-    /* V7 · 53: كلُّ عاملٍ على قاعدةٍ بمخطّطه هو — ترحيلاتُ الأساس نفسُها من git (makeLegacyTestEnv للأساس: الخطّ الأساسي + إذنُ الترقية بقائمة ترحيلاته) */
-    const mig = execFileSync('git', ['-C', ROOT, 'ls-tree', '--name-only', BASE, 'migrations/'], { encoding: 'utf8' }).split('\n').map((x) => x.replace(/^migrations\//, '')).filter((x) => /^\d{4}_.+\.sql$/.test(x)).sort().map((x) => x.slice(0, -4));
-    const baseline = execFileSync('git', ['-C', ROOT, 'show', BASE + ':migrations/0001_baseline.sql'], { encoding: 'utf8' });
+    /* V7 · 53 تقويم: الأساسُ شجرتُه كاملةً من git (العامل · الترحيلات · مولِّدُ البذرة · عُددُ التركيب) — الأساسُ هجريٌّ (hijri_*) والحاليُّ ميلاديٌّ (greg_*)،
+       فكلُّ عاملٍ يُبنى عالمُه ببذرته وعُدّته هو؛ المقارنةُ (الصلاحياتُ الفعلية لكل شخص) لا تمسّ التقويم */
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_pc_base_')), f = path.join(dir, 'workers', '_worker.js');
+    execFileSync('sh', ['-c', 'git -C "$0" archive "$1" tests tools workers migrations src config package.json | tar -x -C "$2"', ROOT, BASE, dir], { maxBuffer: 64 << 20 });
+    fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(dir, 'node_modules'));
+    fs.symlinkSync(DIST, path.join(dir, 'pk251'));   /* ASSETS (index.html) كما كانت: حزمةُ الشجرة المختبَرة */
+    const H = await import(pathToFileURL(path.join(dir, 'tests', 'unit', 'harness.mjs')).href), FX = await import(pathToFileURL(path.join(dir, 'tests', 'unit', 'current_schema_fx.mjs')).href);
+    const core = ['workers/parts/004-registry-2.js', 'workers/parts/057b-perm44.js'].map((p) => fs.readFileSync(path.join(dir, p), 'utf8')).join('\n');
+    /* V7 · 53: كلُّ عاملٍ على قاعدةٍ بمخطّطه هو — ترحيلاتُ الأساس نفسُها (makeLegacyTestEnv للأساس: الخطّ الأساسي + إذنُ الترقية بقائمة ترحيلاته) */
+    const mig = fs.readdirSync(path.join(dir, 'migrations')).filter((x) => /^\d{4}_.+\.sql$/.test(x)).sort().map((x) => x.slice(0, -4));
+    const baseline = fs.readFileSync(path.join(dir, 'migrations', '0001_baseline.sql'), 'utf8');
     const mk = () => {
-      const env = emptyEnv();
+      const env = H.makeEnv();
       env.DB.exec(baseline);
       env.DB.exec('CREATE TABLE d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
       env.DB.db.prepare('INSERT INTO d1_migrations(name) VALUES(?)').run('0001_baseline');
       const from = Number(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v || 0), expiresAt = Date.now() + 600000;
       env.DB.db.prepare('INSERT INTO meta(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v').run('schema_upgrade_permit_v1', JSON.stringify({ version: 1, from, to: mig.length, migrations: mig.slice(from), operationId: randomUUID(), expiresAt }));
       env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO NOTHING");
-      return seedLegacyTestAdmin(env);
+      return H.seedLegacyTestAdmin(env);
     };
-    return { f, core, mk, n: mig.length };
+    return { f, core, mk, n: mig.length, root: dir, install: FX.installCurrentSchemaFixture };
   } catch (e) { return null; }
 }
-const B0 = baseWorker();
+const B0 = await baseWorker();
 
 test('53 · وضوح ③ الصلاحياتُ الفعلية لكل شخص (العامل الحقيقي · بيانات بشكل Production) قبل التغيير = بعده — صفرُ فرق', { timeout: 600000, skip: B0 ? false : 'الأساس ' + BASE + ' غيرُ موجود في تاريخ git (KIVO_PERMCLARITY_BASE)' }, async () => {
-  const before = await effective(B0.f, B0.core, B0.mk);   /* الأساسُ على قاعدةٍ بترحيلاته هو (B0.n) */
+  const before = await effective(B0.f, B0.core, B0.mk, B0.root, B0.install);   /* الأساسُ على قاعدةٍ بترحيلاته هو (B0.n) */
   const after = await effective(path.join(ROOT, 'workers', '_worker.js'), rd('workers/parts/004-registry-2.js') + '\n' + rd('workers/parts/057b-perm44.js'));
   assert.deepEqual(before.save, [200, {}], 'the roles + grants save (before)'); assert.deepEqual(after.save, [200, {}], 'the roles + grants save (after)');
   const n = Object.values(after.me).filter((x) => Array.isArray(x) && x[0] === 200 && x[1]).length;

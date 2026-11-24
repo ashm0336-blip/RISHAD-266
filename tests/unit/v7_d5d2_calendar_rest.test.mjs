@@ -309,6 +309,9 @@ test('⑤ no other place computes the calendar: one client service, one server p
   }
   assert.deepEqual(bad, [], 'ملفٌّ يبني تقويمَ أم القرى خارج الموضعين');
   assert.deepEqual(names, [], 'اسمٌ قديم باقٍ');
+  /* V7 · 53 تقويم (REVIEW 43): وأسماءُ التقويم الهجري التي أزالها التقويمُ الميلادي غائبةٌ كلمةً كاملة من كل شيفرة — التعليقاتُ (سجلُّ التغيير) وحدها تذكرها */
+  const GONE2 = /\b(calHijriMid|calHijriDayMid|pfHijriAt)\b/, code = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\'"])\/\/.*$/gm, '$1');
+  assert.deepEqual(files.map((f) => [path.relative(ROOT, f).split(path.sep).join('/'), GONE2.exec(code(fs.readFileSync(f, 'utf8')))]).filter((x) => x[1]).map((x) => x[0] + ' :: ' + x[1][1]), [], 'اسمٌ هجريٌّ مُزال باقٍ في الشيفرة');
   /* V7 · 53 تقويم: pfHijriAt أُزيل (pfDayAt.h بدلَه) — لا تعريفَ له في أي موضع */
   assert.deepEqual(files.filter((f) => /function pfHijriAt\s*\(/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(ROOT, f)), [], 'pfHijriAt removed');
   assert.deepEqual(table, [], 'جدولُ الاحتياط يُسأل من الخدمة وحدها (hNow)');

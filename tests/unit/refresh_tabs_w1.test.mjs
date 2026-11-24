@@ -202,7 +202,7 @@ test('الخطة التشغيلية (PLAN-11): التبويبُ المزروع �
   assert.match(rd('modules/planning/logic.js'), /state = \{ ptab: null, seen: \{\} \};/, 'ptab في الحالة الأولى (null يقبل الزرع)');
 });
 
-/* DG-14: صفحةُ المهام في vm بساعةٍ ثابتة (ظهرُ 2026-10-20 = 9 جمادى الأولى 1448) وبلا مهام */
+/* DG-14: صفحةُ المهام في vm بساعةٍ ثابتة (ظهرُ 2026-10-20 = 9 جمادى الأولى 1448) وبلا مهام — V7 · 53 تقويم: الصفحةُ على الشهر الميلادي 2026-10 */
 const NOW = new Date(2026, 9, 20, 12, 0, 0).getTime();
 function tasksPage() {
   const KIVO = {}, store = new Map();
@@ -236,7 +236,7 @@ function tasksPage() {
 }
 
 test('المهام (DG-14): «الشهر كاملاً» واليومُ المختار يُحملان بمفتاحين بدائيين تحفظهما حالةُ العرض (tkDayK · tkDayD) — وعرضُ kanban (sub)', needs('tasks'), () => {
-  const P = tasksPage(), SK = '1448-5';
+  const P = tasksPage(), SK = '2026-10';   /* V7 · 53 تقويم: المهامُ ميلادية — مفتاحُ الشهر ISO والعنوانُ ميلاديٌّ والهجريُّ سطرُه التابع */
   assert.ok('tkDayK' in P.c.state && 'tkDayD' in P.c.state && 'sub' in P.c.state, 'في الحالة الأولى (فيُزرع المحفوظُ قبل أوّل رسم)');
   let V = P.V();
   assert.equal(V.tkDayTitle.indexOf('مهام اليوم'), 0, 'الافتراضيّ: اليومُ الجاري');
@@ -246,11 +246,11 @@ test('المهام (DG-14): «الشهر كاملاً» واليومُ المخ�
   const R = tasksPage();
   R.c.state = Object.assign({}, R.c.state, { tkDaySel: null, tkDayK: SK, tkDayD: 0, sub: 'kanban' });
   V = R.V();
-  assert.equal(V.tkDayTitle, 'مهام شهر جمادى الأولى 1448 هـ — كل الأيام', '«الشهر كاملاً» يعود بعد التحديث والرجوع');
+  assert.equal(V.tkDayTitle, 'مهام شهر أكتوبر 2026 — كل الأيام', '«الشهر كاملاً» يعود بعد التحديث والرجوع'); assert.match(V.tkDaySub, /^الموافق .*1448 هـ$/);
   R.c.state = Object.assign({}, R.c.state, { tkDayK: SK, tkDayD: 7 });
-  assert.match(R.V().tkDayTitle, /^مهام يوم .* 7 جمادى الأولى 1448 هـ$/, 'واليومُ المختار');
-  R.c.state = Object.assign({}, R.c.state, { month: 4 });
-  assert.equal(R.V().tkDayTitle, 'مهام شهر ربيع الآخر 1448 هـ — كل الأيام', 'المفتاحُ لشهرٍ آخر لا يُطبَّق');
+  assert.match(R.V().tkDayTitle, /^مهام يوم .* 7 أكتوبر 2026$/, 'واليومُ المختار');
+  R.c.state = Object.assign({}, R.c.state, { month: 9 });
+  assert.equal(R.V().tkDayTitle, 'مهام شهر سبتمبر 2026 — كل الأيام', 'المفتاحُ لشهرٍ آخر لا يُطبَّق');
   R.V().goToday();
   assert.deepEqual({ k: R.c.state.tkDayK, d: R.c.state.tkDayD, s: R.c.state.tkDaySel }, { k: '', d: 0, s: null }, '«اليوم» يمحوه');
   R.V().tkDays[2].click();

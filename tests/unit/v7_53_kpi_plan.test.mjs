@@ -15,11 +15,12 @@ function plan({ people = [], zones = [], sup = [], st = {} } = {}) {
   W.store.set('bassam_employees_v1', JSON.stringify(people.map((p) => ({ eid: id(p.id), name: 'TEST_ONLY ' + p.id, work: 'ميداني' }))));
   W.store.set('bassam_shift_options_v1', JSON.stringify(SH.map((n) => ({ name: n, color: '#b99751' }))));
   const sched = {}; people.forEach((p) => { sched[id(p.id)] = { shift: p.shift || SH[1] }; });
-  W.store.set('bassam_staffing_v3', JSON.stringify({ '1448-5': sched }));
+  /* V7 · 53 تقويم: الخطةُ ميلادية — شهرُ الجدول والخطة مفتاحٌ ISO (YYYY-MM)؛ المفتاحُ الهجري 1448-5 لا تقرؤه الصفحة */
+  W.store.set('bassam_staffing_v3', JSON.stringify({ '2026-10': sched }));
   W.KIVO.BassamSup = { supName: (k) => (sup.map(id).includes(k) ? 'TEST_ONLY مشرف' : ''), isSup: (k) => sup.map(id).includes(k) };
   const zs = zones.map((z, i) => Object.assign({ uid: id('z' + i), code: 'Z' + i, d: 'M100 100 L400 100 L400 300 L100 300 Z', cx: 250, cy: 200, emp: [] }, z));
   const site = { sid: 's_TEST_ONLY_1', name: 'TEST_ONLY', num: 1, zones: zs, gates: [], marks: [], paths: [], sectors: [] };
-  c.state = Object.assign({}, c.state, { year: 1448, month: 5, floor: 0, floors: [site], zones: zs, gates: [], marks: [], paths: [], planMonths: { '1448-5': { c: 1, d: [site] } },
+  c.state = Object.assign({}, c.state, { year: 2026, month: 10, floor: 0, floors: [site], zones: zs, gates: [], marks: [], paths: [], planMonths: { '2026-10': { c: 1, d: [site] } },
     sel: null, selMulti: [], tool: 'select', lens: 'plan', view: { x: 0, y: 0, w: 1000, h: 600 } }, st);
   c.savePlan = () => {};
   return { W, c };
