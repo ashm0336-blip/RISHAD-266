@@ -1257,14 +1257,12 @@
   function periodHeadNorm9(name, head) { var field = PERIOD_RES9[name], h = isObj(head) ? head : {}; if (field && !isObj(h[field])) { h = Object.assign({}, h); h[field] = {}; } return h; }
   /* «الآن» بأسماء المفاتيح القائمة: الشهرُ واليومُ اليوم وأمس (اليومُ التشغيلي يمتد بعد منتصف الليل) — من التقويم، لا من هذه الطبقة */
   function periodNow9() {
-    var C = KIVO.BassamCal, out = { groups: [], days: [] };
+    var out = { groups: [], days: [] };
+    /* V7 · 53 تقويم (cal-ops): مفاتيحُ الفترات ميلاديةٌ ISO — اليومُ وأمسُ يومُ الرياض المدني (UTC+3 ثابتاً) بحسابٍ مباشر بلا مُنسِّق ولا جدول؛
+       كان أم القرى («1448-6»)، فكانت الصفحةُ تطلب فترةً لا وجود لها ويغيب شهرُها الجاري (الجدول الشهري) */
     [0, 864e5].forEach(function (back) {
-      var h = null;
-      try { h = C && C.hNow ? C.hNow(new Date(Date.now() - back), null) : null; } catch (e) { h = null; }
-      /* V7 · 53: بلا جدول التقويم (صفحةٌ لم تحمّله بعد · بيئةٌ بلا 385) يُحسب «اليوم» بأم القرى في الرياض كما يحسبه الخادم — وإلا لا فترةَ مطلوبة فتُقرأ الوثيقةُ رأساً بلا أيام */
-      if (!h) try { var fp = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(Date.now() - back)), pk = function (t) { var x = fp.find(function (q) { return q.type === t; }); return x ? +x.value : 0; }; h = { y: pk('year'), m: pk('month'), d: pk('day') }; } catch (e) { h = null; }
-      if (!h || !h.y || !h.m || !h.d) return;
-      var g = h.y + '-' + h.m, d = g + '-' + h.d;
+      var x = new Date(Date.now() - back + 3 * 36e5), z = function (n) { return (n < 10 ? '0' : '') + n; };
+      var g = x.getUTCFullYear() + '-' + z(x.getUTCMonth() + 1), d = g + '-' + z(x.getUTCDate());
       if (out.groups.indexOf(g) === -1) out.groups.push(g);
       if (out.days.indexOf(d) === -1) out.days.push(d);
     });
