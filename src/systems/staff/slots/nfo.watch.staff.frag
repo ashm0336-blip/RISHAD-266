@@ -21,6 +21,11 @@
       nfByShift(asg).forEach(function(g){ emit('st_myshift', { dept: did, own: g.eks, vars: { 'الوردية': g.s, 'الشهر': mon, 'المُعدّل': who() } }); });
       if (newMonth) { emit('st_pub', { dept: did, vars: { 'الشهر': mon, 'العدد': rows.length, 'المُعدّل': who() } }); return; }
       var bulk = asg.length >= NF_STAFF_BULK;
+      /* V7 · 53 (قرار المالك REPLY_53_1): إلغاءُ وردية موظف يُبلَّغ به الموظفُ نفسُه وحده (st_unshift — رسالةٌ لكل ورديةٍ أُلغيت، مستلموها أصحابُها)؛
+         ومن NF_STAFF_BULK إلغاءً فأكثر في حفظٍ واحد للمدير ورئيس تلك الوردية تنبيهٌ مجمّعٌ واحد (st_unshiftm). الفاعلُ لا يصله شيء (السجلّ: «فور الحفظ») */
+      var unasg = Object.keys(om).filter(function(ek){ var a = om[ek], b = nm[ek]; return ek.indexOf('__') !== 0 && a && typeof a === 'object' && a.shift && !(b && typeof b === 'object' && b.shift); }).map(function(ek){ return { ek: ek, s: String(om[ek].shift) }; });
+      nfByShift(unasg).forEach(function(g){ emit('st_unshift', { dept: did, own: g.eks, vars: { 'القديم': g.s, 'الشهر': mon, 'المُعدّل': who() } }); });
+      if (unasg.length >= NF_STAFF_BULK) nfByShift(unasg).forEach(function(g){ emit('st_unshiftm', { dept: did, vars: { 'الوردية': g.s, 'العدد': KIVO.BassamCount(g.eks.length, 'موظف', 'g'), 'الشهر': mon, 'المُعدّل': who() } }); });
       if (bulk) nfByShift(asg).forEach(function(g){ emit('st_shiftm', { dept: did, vars: { 'الوردية': g.s, 'العدد': KIVO.BassamCount(g.eks.length, 'موظف', 'g'), 'الشهر': mon, 'المُعدّل': who() } }); });
       rows.forEach(function(ek){ var a = om[ek] || {}, b = nm[ek] || {}; var nm1 = empName(did, ek);
         if (!bulk && (a.shift || '') !== (b.shift || '') && b.shift && Object.keys(a).length) emit('st_shift', { dept: did, vars: { 'الاسم': nm1, 'الشهر': mon, 'القديم': a.shift || 'بلا وردية', 'الجديد': b.shift, 'المُعدّل': who() } });

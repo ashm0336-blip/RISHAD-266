@@ -172,3 +172,35 @@ test('53 · S12: back-filling a month two years old → no «نشر جدول ش�
   const m2 = (await feed(W, w.env, 'm')).filter((x) => x.type === 'st_pub'); assert.equal(m2.length, 1);
   assert.equal((await feed(W, w.env, 'u0')).filter((x) => x.type === 'st_myshift').length, 1, 'publishing the current month tells the employee his shift');
 });
+
+/* V7 · 53 (قرار المالك REPLY_53_1): إلغاءُ وردية الموظف يُبلَّغ به هو وحده «أُلغيت ورديتك …»؛ ومن خمسة إلغاءات في حفظٍ واحد للمدير تنبيهٌ مجمّعٌ واحد؛ والفاعلُ لا شيء */
+test('53 · ٣ (removal): removing the shift of 500 → each employee exactly one «أُلغيت ورديتك …»; the manager ONE grouped notice (none when he is the actor); two removals → the two employees only', { timeout: 600000 }, async () => {
+  for (const actor of ['super', 'm']) {
+    const W = await load(), w = await world(W), C = client(W, w.env, w, actor), M = months(C.KIVO);
+    const before = { [M.cur]: {} }, after = { [M.cur]: {} };
+    for (let i = 0; i < N; i++) { before[M.cur][ek(i)] = row(SH1); after[M.cur][ek(i)] = { shift: '', rest: [] }; }
+    before[M.cur][ek(500)] = { rest: [] }; after[M.cur][ek(500)] = { rest: [] };   /* بلا وردية من قبل: لا يعنيه شيء */
+    const sent = await C.save(before, after);
+    assert.ok(sent.length > 0 && sent.length <= 5, actor + ': a handful of messages: ' + sent.length);
+    const mi = (await feed(W, w.env, 'm')).filter((x) => ST.test(x.type));
+    if (actor === 'super') {
+      assert.deepEqual(mi.map((x) => x.type), ['st_unshiftm'], 'the manager: one grouped notice');
+      assert.match(mi[0].b, new RegExp('^أُلغيت ' + SH1 + ' لـ500 موظف في جدول .+ — بواسطة TEST_ONLY مسؤول$'), mi[0].b);
+    } else assert.deepEqual(mi, [], 'the actor gets nothing');
+    const ids = sent.map((m) => m.id), per = {};
+    for (const t of targets(w.env, ids).filter((t) => t.kind === 'employee')) per[t.value] = (per[t.value] || 0) + 1;
+    for (let i = 0; i < N; i++) assert.equal(per[ek(i)], 1, actor + ': ' + ek(i));
+    assert.equal(per[ek(500)], undefined);
+    for (const i of [0, 499]) {
+      const its = (await feed(W, w.env, 'u' + i)).filter((x) => ST.test(x.type));
+      assert.deepEqual(its.map((x) => x.type), ['st_unshift'], actor + ' u' + i);
+      assert.match(its[0].b, new RegExp('^أُلغيت ورديتك في جدول .+ \\(' + SH1 + '\\) — بواسطة '), its[0].b);
+    }
+    assert.deepEqual((await feed(W, w.env, 'u500')).filter((x) => ST.test(x.type)), []);
+  }
+  /* إلغاءان: لصاحبيهما وحدهما، ولا شيء للمدير */
+  const W = await load(), w = await world(W), C = client(W, w.env, w, 'super'), M = months(C.KIVO);
+  await C.save({ [M.cur]: { [ek(0)]: row(SH1), [ek(1)]: row(SH2) } }, { [M.cur]: { [ek(0)]: { shift: '', rest: [] } } });
+  assert.deepEqual((await feed(W, w.env, 'm')).filter((x) => ST.test(x.type)), [], 'below five: nothing to the manager');
+  for (const i of [0, 1]) assert.equal((await feed(W, w.env, 'u' + i)).filter((x) => x.type === 'st_unshift').length, 1, 'u' + i);
+});

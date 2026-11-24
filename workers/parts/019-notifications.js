@@ -331,6 +331,31 @@ var NF_TYPES = {
     txt: "ورديتك في جدول {الشهر}: {الوردية} — بواسطة {المُعدّل}",
     go: "",
   },
+  /* V7 · 53 (REPLY_53_1): إلغاءُ الوردية — لصاحبها وحده، والجماعيُّ تنبيهٌ مجمّعٌ واحد للمدير ورئيس الوردية */
+  st_unshift: {
+    id: "st_unshift",
+    k: "staff",
+    name: "إلغاء ورديتك في الجدول الشهري",
+    when: "فور الحفظ",
+    on: true,
+    to: ["own"],
+    lvl: "info",
+    chan: "bell",
+    txt: "أُلغيت ورديتك في جدول {الشهر} ({القديم}) — بواسطة {المُعدّل}",
+    go: "",
+  },
+  st_unshiftm: {
+    id: "st_unshiftm",
+    k: "staff",
+    name: "إلغاء وردية عدة موظفين دفعة واحدة",
+    when: "فور الحفظ",
+    on: true,
+    to: ["lead", "mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "أُلغيت {الوردية} لـ{العدد} في جدول {الشهر} — بواسطة {المُعدّل}",
+    go: "افتح الجدول الشهري",
+  },
   st_rest: {
     id: "st_rest",
     k: "staff",
@@ -2798,7 +2823,7 @@ async function nfPlanEvents(env, A, events, internal) {
     plans = [];
   events.forEach(function (it) {
     /* cat · lvl · txt: للأحداث التي يصنعها الخادمُ نفسُه وحده (nfSecurityPoll: الرفض لنقص السبب) — حدثٌ من الطلب لا يحملها */
-    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt"] : []));
+    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt", "ownOnly", "rolesOnly"] : []));
     var T = nfType(nfStr(it.type, 80, false), cfg);
     /* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server alone, from the save it accepted
        (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included.
@@ -2825,8 +2850,8 @@ async function nfPlanEvents(env, A, events, internal) {
     if (it.link !== undefined) nfStr(it.link, 500, true);
     if (it.once !== undefined) nfStr(it.once, 500, false);
     if (it.at !== undefined) nfTime(it.at);
-    var toE = T.to.indexOf("own") >= 0 ? own : [],
-      toR = nfLeadTargets(T.to.filter(function (r) {
+    var toE = T.to.indexOf("own") >= 0 && !it.rolesOnly ? own : [],   /* V7 · 53: rolesOnly (الخادمُ وحده) — للمدير لا لأصحابه */
+      toR = it.ownOnly ? [] : nfLeadTargets(T.to.filter(function (r) {   /* V7 · 53: ownOnly (الخادمُ وحده) — لصاحبه لا للمدير */
         return r !== "own";
       }), it.vars),
       sys = toR.length === 1 && toR[0] === "sys" && !toE.length && A.u.role === "super";
@@ -2867,7 +2892,7 @@ async function nfPlanEvents(env, A, events, internal) {
         priority: it.lvl || T.lvl,
         channel: T.chan,
         title: it.title || T.name,
-        body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(T.txt, it.vars),
+        body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(it.txt || T.txt, it.vars),   /* txt: حدثُ الخادم وحده */
         created_at: it.at || Date.now(),
         author_key: String(A.u.ekey || A.u.id),
         author_name: String(A.u.name || A.u.un || ""),
@@ -2962,7 +2987,8 @@ async function nfEmitEvents(env, A, events, internal, extra) {
    else one addition per record · one aggregated deletion notice (emp_delm — owner decision, not the watcher's) when five or
    more records are removed, else one deletion per removed record · per kept record: «type» when the employment type changed,
    «edit» for the other announced fields (never the e-mail). «المُعدّل» is the actor's name. Who READS them is not decided here. */
-var NF_EMP_RES = "bassam_employees_v1";
+var NF_EMP_RES = "bassam_employees_v1",
+  NF_EMP_BULK_TXT = "عُدّلت بيانات موظفين بالجملة ({العدد}): {الحقول} — بواسطة {المُعدّل}";
 var NF_EMP_FIELDS = {
   name: "الاسم",
   nid: "رقم الهوية",
@@ -3044,6 +3070,15 @@ function nfEmployeeEvents(A, d, before, after) {
     removed.forEach(function (e) {
       events.push({ type: "emp_del", dept: d, vars: { الاسم: text(e.name), المُعدّل: text(who) } });
     });
+  /* V7 · 53 (١ — قرار المنسّق: السيلُ صنفٌ واحد): خمسةُ سجلاتٍ معدَّلة فأكثر في حفظٍ واحد ⇒ كلُّ موظفٍ تنبيهُه لنفسه وحدها (ownOnly)
+     وللمدير تنبيهٌ مجمّعٌ واحد (emp_edit «بالجملة» · rolesOnly) بالعدد والحقول — لا تنبيهٌ لكل سجل */
+  var edited = both.filter(function (p) {
+      return Object.keys(NF_EMP_FIELDS).some(function (f) {
+        return f !== "email" && (p[0][f] || "") !== (p[1][f] || "");
+      });
+    }),
+    bulkEdit = edited.length >= 5,
+    bulkFields = [];
   both.forEach(function (p) {
     var a = p[0],
       b = p[1],
@@ -3051,6 +3086,10 @@ function nfEmployeeEvents(A, d, before, after) {
         return (a[f] || "") !== (b[f] || "");
       });
     if (!changed.length) return;
+    var e0 = events.length;
+    changed.forEach(function (f) {
+      if (f !== "email" && bulkFields.indexOf(NF_EMP_FIELDS[f]) < 0) bulkFields.push(NF_EMP_FIELDS[f]);
+    });
     var own = [String(key(b)).slice(0, 200)];
     if (changed.indexOf("type") !== -1)
       events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "غير محدّد") } });   /* V7 · 53 (١٤): لا شرطةَ مكان القيمة */
@@ -3073,7 +3112,22 @@ function nfEmployeeEvents(A, d, before, after) {
           المُعدّل: text(who),
         },
       });
+    if (bulkEdit) for (var i = e0; i < events.length; i++) events[i].ownOnly = 1;
   });
+  if (bulkEdit) {
+    /* تنبيهاتُ أصحابها بالنصّ نفسِه رسالةٌ واحدة بمستلميها — فلا تُخرج 500 رسالةٍ ما قبلها من حدّ الاحتفاظ (400 للوحدة) */
+    var merged = [],
+      byText = nmap();
+    events.forEach(function (e) {
+      if (!e.ownOnly) return merged.push(e);
+      var k = e.type + "\u0001" + JSON.stringify(e.vars);
+      if (byText[k]) byText[k].own = byText[k].own.concat(e.own);
+      else merged.push((byText[k] = e));
+    });
+    events = merged;
+    /* التنبيهُ المجمّع من نوع emp_edit نفسِه (مستلموه ومستواه وفئتُه) لـ«المدير» وحده بنصٍّ للجملة — بلا نوعٍ جديد */
+    events.push({ type: "emp_edit", dept: d, rolesOnly: 1, title: "تعديل بيانات موظفين بالجملة", txt: NF_EMP_BULK_TXT, vars: { العدد: edited.length, الحقول: text(bulkFields.join("، ")), المُعدّل: text(who) } });
+  }
   return events;
 }
 /* The notification part of an accepted save plan (019e): guards + statements to append to the plan, never a commit of its own.
