@@ -4,7 +4,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {world,ok,snap,copy,D1,D2,OPTIONS,backupBrowser,exportFull,exportDepartment,seedTypedDomains,until,tick,currentOperationResources} from './backup_review_fx.mjs';
 import { needs } from './harness.mjs';
-const ds=()=>({haram:{'9999-01-01':{worshippers:0,umrah:null}},nabawi:{},locks:{}});
+const ds=()=>({haram:{'2199-01-01':{worshippers:0,umrah:null}},nabawi:{},locks:{}});
 const oldKeys=['bassam_notif_v1','bassam_notif_sys_v1','bassam_notif_cfg_v1','bassam_bc_v1'];
 const commitPosts=C=>C.requests.filter(r=>r.method==='POST'&&JSON.parse(r.body).phase==='commit');
 

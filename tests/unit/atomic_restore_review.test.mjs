@@ -454,7 +454,7 @@ test('full merge adds only missing departments and their typed custody; existing
       },
       domains: {
         custody: [domain],
-        dailyStats: { version: 1, data: { haram: { '1448-01-02': { worshippers: 999 } }, nabawi: {}, locks: {} } },
+        dailyStats: { version: 1, data: { haram: { '2026-01-02': { worshippers: 999 } }, nabawi: {}, locks: {} } },
       },
     });
   body.base.kv[newOptions] = 0;

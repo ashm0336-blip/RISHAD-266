@@ -204,7 +204,7 @@ async function mixed(B) {
     domains: {
       dailyStats: {
         version: 1,
-        data: { haram: { '1448-01-02': { worshippers: 0, umrah: null } }, nabawi: {}, locks: { 'haram|1448-1': true } },
+        data: { haram: { '2026-01-02': { worshippers: 0, umrah: null } }, nabawi: {}, locks: { 'haram|2026-01': true } },   /* V7 · 53 تقويم: جسمُ الاستعادة الحالي ميلادي (ق1) */
       },
       notifications: n,
     },

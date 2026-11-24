@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {world,ok,snap,seedTypedDomains,copy} from './backup_review_fx.mjs';
 import { needs } from './harness.mjs';
 
-const numbers=()=>({haram:{'9999-01-01':{worshippers:0,umrah:5.5,carts:null}},nabawi:{},locks:{}});
+const numbers=()=>({haram:{'2199-01-01':{worshippers:0,umrah:5.5,carts:null}},nabawi:{},locks:{}});
 
 test('actual atomic restore accepts unchanged REAL zero/fraction and SQL NULL without a JSON-text false conflict',needs('award', 'custody', 'dstats', 'seized', 'tasks'), async()=>{
   const B=await world();await seedTypedDomains(B,numbers());
