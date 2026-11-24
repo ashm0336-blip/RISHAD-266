@@ -51,7 +51,8 @@ body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-se
 .rz-kpi .kf .dv{flex:none;width:1px;background:var(--bg-surface-4);margin:2px 6px}
 .rz-duo{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:14px;margin-top:14px;align-items:stretch}
 .rz-trio2{display:grid;grid-template-columns:1.05fr 1fr;gap:14px;margin-top:14px}
-@media (max-width:1150px){.rz-lead{grid-template-columns:1fr}.rz-kpis{grid-template-columns:repeat(2,1fr)}.rz-duo{grid-template-columns:1fr}.rz-trio2{grid-template-columns:1fr}}
+/* V7 · 53: الموجة 2 · KD-08 (نقلُ سلوك Production): «1fr» = minmax(auto,1fr) لا ينكمش دون محتواه فيُقصّ التاريخُ والتحيةُ وفترتا المقارنة على الجوال */
+@media (max-width:1150px){.rz-lead{grid-template-columns:minmax(0,1fr)}.rz-kpis{grid-template-columns:repeat(2,1fr)}.rz-duo{grid-template-columns:1fr}.rz-trio2{grid-template-columns:1fr}}
 /* ═══ ما تحتاجه هذه الصفحةُ وحدَها ═══
    تسمياتُ المحورين نصُّ HTML لا نصُّ SVG: محرّكُ القالب يلفُّ كلَّ قيمةٍ في عنصر span،
    وعنصرُ HTML داخل نصِّ SVG لا يرسمه المتصفّحُ إطلاقاً. وبالخروج إلى HTML نكسب
@@ -546,7 +547,8 @@ html[data-theme="dark"] .dz-glow{opacity:.3}
   <div style="display:flex;background:var(--bg-xf8f9fb);border:1px solid var(--bd-xe6e9ed);border-radius:11px;padding:3px;gap:2px;flex-shrink:0">
     <sc-for list="{{tcTypes}}" as="o" hint-placeholder-count="3"><button onClick="{{o.click}}" style="{{o.style}}">{{o.lbl}}</button></sc-for>
   </div>
-  <div style="display:flex;align-items:center;gap:7px;border:1px solid rgba(185,151,81,.45);background:rgba(185,151,81,.07);border-radius:12px;padding:4px 11px;flex-shrink:0">
+  <!-- V7 · 53: الموجة 2 · KD-08 — كبسولةُ «النطاق | المؤشر» تنكمش وتلتفّ (كانت flex-shrink:0 فتتجاوز بطاقتها على الجوال) -->
+  <div style="display:flex;align-items:center;gap:7px;border:1px solid rgba(185,151,81,.45);background:rgba(185,151,81,.07);border-radius:12px;padding:4px 11px;flex-shrink:1;flex-wrap:wrap;min-width:0;max-width:100%">
     <span style="color:var(--fg-x8a6f35);display:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M6 21V9l6-5 6 5v12"></path></svg></span>
     <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">النطاق</span>
     <select value="{{tcScope}}" onChange="{{tcSetScope}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
@@ -2228,6 +2230,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
 
   /* ── ٤) المؤشرُ القياديّ بتصميم «مؤشرات المصليات» (_kPaneZn): مفعّلة/معطّلة ← مسجّل/فارغ ── */
   ZH(t){ return t>=90?"#15803d":(t<80?"#C9702A":"#8A6F35"); }
+  /* V7 · 53: الموجة 2 · KD-09 (نقلُ سلوك Production): النصُّ على ملء ZH — العنبرُ (--warning-strong) فاتحٌ في الداكن فيُكتب عليه بـ--warning-on-strong؛ الأخضرُ والذهبيُّ بالأبيض كما كانا */
+  ZHon(t){ return t<80?"var(--warning-on-strong)":"var(--fg-xffffff)"; }
   ZP1(a,b){ return b?Math.round(a/b*1000)/10:0; }
   ZPT(v){ return String(v).replace(/\.0$/,"")+"٪"; }
   ZDW(n){ return n===1?"يوم واحد":n===2?"يومين":(n>=3&&n<=10)?n+" أيام":KIVO.BassamCount(n,"يوم")+""; }
@@ -2307,10 +2311,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
         barSt:"height:100%;width:"+(c.tot/mxT*100).toFixed(0)+"%;background:linear-gradient(90deg,"+c.col+","+c.col+");border-radius:4px;display:block",
         onSt:"flex:0 0 28px;text-align:center;font-size:11px;font-weight:800;color:"+(c.on?"var(--fg-x16a34a)":"var(--fg-xcfc7b4)"),
         offSt:"flex:0 0 28px;text-align:center;font-size:11px;font-weight:800;color:"+(c.off?"var(--fg-x6b7280)":"var(--fg-xcfc7b4)"),
-        pSt:"flex:0 0 42px;text-align:center;font-size:9.5px;font-weight:800;color:var(--fg-xffffff);background:"+pc+";border-radius:9999px;padding:2px 0;box-shadow:0 2px 6px -3px "+pc }; });
+        pSt:"flex:0 0 42px;text-align:center;font-size:9.5px;font-weight:800;color:"+self.ZHon(c.onP)+";background:"+pc+";border-radius:9999px;padding:2px 0;box-shadow:0 2px 6px -3px "+pc }; });
     const cc=this.ZH(cov);
     A.ztTot=this.CMP2(grand); A.ztOn=String(recN); A.ztOff=String(Math.max(0,el-recN)); A.ztP=this.ZPT(cov);
-    A.ztPSt="flex:0 0 42px;text-align:center;font-size:9.5px;font-weight:800;color:var(--fg-xffffff);background:"+cc+";border-radius:9999px;padding:2px 0";
+    A.ztPSt="flex:0 0 42px;text-align:center;font-size:9.5px;font-weight:800;color:"+this.ZHon(cov)+";background:"+cc+";border-radius:9999px;padding:2px 0";
     /* العدّادات: تغطيةُ كلِّ أسبوعٍ (أو شهرٍ أو سنة) من الفترة — نصفُ القوس = نسبةُ الأيام المسجّلة */
     const WN={ w:["أسبوع","أسبوعين","أسابيع","أسبوعاً"], m:["شهر","شهرين","أشهر","شهراً"], y:["سنة","سنتين","سنوات","سنة"] };
     let groups=[], gk="w";

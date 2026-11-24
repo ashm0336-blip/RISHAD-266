@@ -3971,6 +3971,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       { line: a, area: "M" + r(0).toFixed(1) + " " + s + " " + a.slice(1) + "L" + r(i - 1).toFixed(1) + " " + s + " Z" }
     );
   }
+  /* V7 · 53: الموجة 2 · KD-06 (نقلُ سلوك Production): نصوصُ الرسوم المرسَّخة بطرفها الأيمن (حدُّ الازدحام · أسماءُ الصلوات · أرقامُ المحاور) = text-anchor="start"
+     مع direction="rtl" — الرسمُ يرث RTL، و"end" فيه هو الطرفُ الأيسر فيمتدّ النصُّ يميناً خارج الرسم («ا» من «الفجر»، و«٪» وحدها من «حدّ الازدحام ٨٥٪») */
   _kArea(t, e, s, n, i, o, r, a) {
     if (!t.length) return "";
     ((s = s || 1e3), (n = n || 170), (i = i || this.KGOLD_D), (o = o || "url(#kHero)"), (a = a || ""));
@@ -4017,7 +4019,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         (s - 3) +
         '" y="' +
         (((n - 26) * t) / 4 + 4).toFixed(0) +
-        '" font-size="9" fill="var(--fg-x94a3b8)" text-anchor="end">' +
+        '" font-size="9" fill="var(--fg-x94a3b8)" text-anchor="start" direction="rtl">' +
         Math.round(l - (l * t) / 4) +
         "</text>";
     for (let t = 0; t < p; t += h)
@@ -4078,7 +4080,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         (s - 3) +
         '" y="' +
         (((n - 26) * t) / 5 + 4).toFixed(0) +
-        '" font-size="9" fill="var(--fg-x94a3b8)" text-anchor="end">' +
+        '" font-size="9" fill="var(--fg-x94a3b8)" text-anchor="start" direction="rtl">' +
         Math.round(i - (i * t) / 5) +
         "</text>";
     for (let t = 0; t < r; t += a)
@@ -4285,7 +4287,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         (e - 4) +
         '" y="' +
         (t - 7).toFixed(0) +
-        '" font-size="9.5" font-weight="600" fill="var(--fg-xb91c1c)" text-anchor="end">حدّ الازدحام ' +
+        '" font-size="9.5" font-weight="600" fill="var(--fg-xb91c1c)" text-anchor="start" direction="rtl">حدّ الازدحام ' +
         i +
         "٪</text>";
     }
@@ -4303,7 +4305,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         (n - 2) +
         '" y="' +
         (26 * o + 13 + 4).toFixed(0) +
-        '" font-size="10" font-weight="600" fill="var(--fg-x53565a)" text-anchor="end">' +
+        '" font-size="10" font-weight="600" fill="var(--fg-x53565a)" text-anchor="start" direction="rtl">' +
         e[1] +
         "</text>"),
         t.forEach((t, a) => {
@@ -4403,7 +4405,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         (e - 2) +
         '" y="' +
         (((s - 30) * t) / 4 + 4).toFixed(0) +
-        '" font-size="9" fill="var(--fg-x94a3b8)" text-anchor="end">' +
+        '" font-size="9" fill="var(--fg-x94a3b8)" text-anchor="start" direction="rtl">' +
         Math.round(i - (i * t) / 4) +
         "٪</text>";
     for (let t = 0; t < 6; t++)
@@ -5909,6 +5911,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     }
   }
   _kPaneZn(t) {
+    /* V7 · 53: الموجة 2 · KD-04 (نقلُ سلوك Production): كتلتا الافتتاح بحدٍّ أدنى min(440px,100%) وmin(400px,100%) — كانتا تفرضان 440/400px داخل بطاقةٍ قاصّة على الجوال (≈312px) */
     const e = this.KGOLD_D,
       s = this.KNAVY,
       n = (this.KLINE, this.KCBC),
@@ -5931,6 +5934,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       d = Math.max.apply(null, i.map((e) => t.combo[e].tot).concat([1])),
       p = (t, e) => (e ? Math.round((t / e) * 1e3) / 10 : 0),
       h = (t) => (t >= 90 ? "#15803d" : t < 80 ? "#C9702A" : e),
+      /* V7 · 53: الموجة 2 · KD-09 (نقلُ سلوك Production): النصُّ على ملء h — العنبرُ (--warning-strong) فاتحٌ في الداكن فيُكتب عليه بـ--warning-on-strong */
+      hOn = (t) => (t < 80 ? "var(--warning-on-strong)" : "var(--fg-xffffff)"),
       c = (t) =>
         '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xa79878)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 2px">' +
         t +
@@ -6036,7 +6041,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             (a.off || "—") +
             '</b><span dir="ltr" style="' +
             b +
-            ";text-align:center;font-size:9.5px;font-weight:800;color:var(--fg-xffffff);background:" +
+            ";text-align:center;font-size:9.5px;font-weight:800;color:" +
+            hOn(a.onP) +
+            ";background:" +
             h(a.onP) +
             ";border-radius:9999px;padding:2px 0;box-shadow:0 2px 6px -3px " +
             h(a.onP) +
@@ -6073,7 +6080,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         r.off +
         '</b><span dir="ltr" style="' +
         b +
-        ";text-align:center;font-size:9.5px;font-weight:800;color:var(--fg-xffffff);background:" +
+        ";text-align:center;font-size:9.5px;font-weight:800;color:" +
+        hOn(r.onP) +
+        ";background:" +
         h(r.onP) +
         ';border-radius:9999px;padding:2px 0">' +
         r.onP +
@@ -6436,7 +6445,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             )
           : "",
       K =
-        '<div style="position:relative;border-radius:24px;padding:22px;overflow:hidden;margin-bottom:14px;background:var(--brand-pattern) center/96px 96px,linear-gradient(125deg,var(--hero-1) 0%,var(--hero-2) 38%,var(--hero-3) 72%,var(--hero-4) 100%);border:1px solid var(--bd-a185151810p34);box-shadow:0 24px 60px -34px rgba(138,111,53,.75),0 2px 10px -6px rgba(138,111,53,.35)"><div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:24px"><div style="position:absolute;width:420px;height:420px;border-radius:50%;top:-190px;right:-120px;filter:blur(60px);background:radial-gradient(circle,var(--bg-a2552552550p75),transparent 70%)"></div><div style="position:absolute;width:340px;height:340px;border-radius:50%;bottom:-170px;left:-90px;filter:blur(70px);background:radial-gradient(circle,var(--bg-a138111530p28),transparent 70%)"></div><div style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 42%,var(--bg-a2552552550p32) 50%,transparent 58%)"></div></div><div style="position:relative;display:flex;gap:26px;align-items:stretch;flex-wrap:wrap"><div style="flex:1.35;min-width:440px;display:flex;flex-direction:column"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px"><span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:5px 12px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a138111530p42);color:' +
+        '<div style="position:relative;border-radius:24px;padding:22px;overflow:hidden;margin-bottom:14px;background:var(--brand-pattern) center/96px 96px,linear-gradient(125deg,var(--hero-1) 0%,var(--hero-2) 38%,var(--hero-3) 72%,var(--hero-4) 100%);border:1px solid var(--bd-a185151810p34);box-shadow:0 24px 60px -34px rgba(138,111,53,.75),0 2px 10px -6px rgba(138,111,53,.35)"><div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:24px"><div style="position:absolute;width:420px;height:420px;border-radius:50%;top:-190px;right:-120px;filter:blur(60px);background:radial-gradient(circle,var(--bg-a2552552550p75),transparent 70%)"></div><div style="position:absolute;width:340px;height:340px;border-radius:50%;bottom:-170px;left:-90px;filter:blur(70px);background:radial-gradient(circle,var(--bg-a138111530p28),transparent 70%)"></div><div style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 42%,var(--bg-a2552552550p32) 50%,transparent 58%)"></div></div><div style="position:relative;display:flex;gap:26px;align-items:stretch;flex-wrap:wrap"><div style="flex:1.35;min-width:min(440px,100%);display:flex;flex-direction:column"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px"><span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:5px 12px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a138111530p42);color:' +
         e +
         ';background:var(--bg-a2552552550p62)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>المؤشر القيادي</span><span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:5px 12px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a09900p3);color:var(--fg-x006300);background:var(--bg-a12163120p1)"><span style="width:6px;height:6px;border-radius:9999px;background:var(--bg-x006300);display:inline-block"></span>محسوب من الجولات</span></div><div style="font-size:13px;font-weight:600;color:' +
         e +
@@ -6455,7 +6464,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         "</div>" +
         j +
         Z +
-        '</div><div style="flex:1;min-width:400px;background:var(--bg-a2552552550p74);border:1px solid var(--bd-a138111530p2);border-radius:18px;padding:15px 16px;box-shadow:0 8px 24px -18px rgba(138,111,53,.7);display:flex;flex-direction:column"><div style="display:flex;flex-direction:column">' +
+        '</div><div style="flex:1;min-width:min(400px,100%);background:var(--bg-a2552552550p74);border:1px solid var(--bd-a138111530p2);border-radius:18px;padding:15px 16px;box-shadow:0 8px 24px -18px rgba(138,111,53,.7);display:flex;flex-direction:column"><div style="display:flex;flex-direction:column">' +
         v +
         w +
         S +

@@ -639,9 +639,9 @@
        شكلاً لتعدّله. صار لا يظهر إلا مع أداة رسم نشطة، ويختفي كلياً بلا نص. -->
   <sc-if value="{{toolHintOn}}" hint-placeholder-val="{{ true }}">
 
-  <div class="bs-hbar" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-top:1px solid var(--bd-a2252252250p6);background:var(--bg-a2482502520p6);flex-wrap:wrap">
+  <div class="bs-hbar bs-wrap" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-top:1px solid var(--bd-a2252252250p6);background:var(--bg-a2482502520p6);flex-wrap:wrap">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-b8548f13"></svg>
-    <span style="font-size:10px;font-weight:400;color:var(--fg-x64748b)">{{toolHint}}</span>
+    <span class="bs-wraptxt" style="font-size:10px;font-weight:400;color:var(--fg-x64748b)">{{toolHint}}</span>
     <sc-if value="{{isDistLens}}" hint-placeholder-val="{{ false }}">
     <span style="display:inline-flex;align-items:center;gap:12px;padding-right:12px;margin-right:4px;border-right:1px solid var(--bd-a2032132250p8)">
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:3px;background:var(--bg-x22c55e)"></span><span style="font-size:10px;font-weight:400;color:var(--fg-x475569)">مسكَّنة</span></span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:3px;background:var(--bg-xef4444)"></span><span style="font-size:10px;font-weight:400;color:var(--fg-x475569)">بلا تسكين</span></span><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:3px;background:var(--bg-x94a3b8)"></span><span style="font-size:10px;font-weight:400;color:var(--fg-x475569)">معطّلة</span></span>
@@ -1231,8 +1231,8 @@
       </div>
       </sc-if>
       <sc-if value="{{pm.showSrc}}" hint-placeholder-val="{{ false }}">
-      <div class="bs-hbar" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 4px;border-right:2px solid var(--bd-a185151810p25);margin-right:16px">
-        <sc-if value="{{noSrcMonths}}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;color:var(--fg-xb45309);background:var(--bg-xfffbeb);border:1px solid var(--bd-a245158110p35);border-radius:8px;padding:6px 10px">{{noSrcMsg}}</span></sc-if>
+      <div class="bs-hbar bs-wrap" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 4px;border-right:2px solid var(--bd-a185151810p25);margin-right:16px">
+        <sc-if value="{{noSrcMonths}}" hint-placeholder-val="{{ false }}"><span class="bs-wraptxt" style="font-size:11px;color:var(--fg-xb45309);background:var(--bg-xfffbeb);border:1px solid var(--bd-a245158110p35);border-radius:8px;padding:6px 10px">{{noSrcMsg}}</span></sc-if>
         <sc-for list="{{srcMonths}}" as="sm" hint-placeholder-count="3">
         <button onClick="{{sm.pick}}" style="{{sm.style}}">{{sm.label}}</button>
         </sc-for>
