@@ -2,10 +2,12 @@
    ① مديرُ الإدارة وموظفٌ بدور «إدخال» على المضبوطات: من «نظام المضبوطات» (اليومُ الحالي) يختار التصنيف والكمية ثم «إضافة» ⇒ يُحفظ المحضر في الخادم
       (seized_reports) ويبقى بعد إعادة التحميل («سجل الحركة الشهري» = 1 محضر) · واليومُ المنقضي مقفل: لا نموذجَ إضافة بل «اليوم انقضى — مقفل»،
       والطلبُ المصطنع لذلك اليوم يُرفض برسالةٍ عربية ولا يتغيّر شيء.
+   ③ التصدير: مديرُ الإدارة وموظفٌ بدور «كامل»: «سجل الحركة الشهري» ← «ملفات» ← «تصدير Excel» ⇒ يُنزَّل ‎.xlsx‎ غيرُ فارغ فيه صفُّ المحضر ·
+      «طباعة / حفظ PDF» ⇒ نافذةُ الطباعة (window.print) — وبدور «مشاهدة» لا «ملفات» ولا تصدير.
    ② موظفٌ بدور «مشاهدة» على المضبوطات: لا نموذجَ إضافة، والطلبُ المصطنع من منطق الصفحة يُرفض («صلاحيتك لا تشمل هذا الإجراء») ظاهراً في الصفحة، ولا يتغيّر شيء. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { world, grant, ACTORS, LAB, A, chromium, openAs, mainText, norm, reloadAt, refusals, logicOf, isArabicRefusal, until } from '../../../../../tests/browser/d7_cov_lib.mjs';
+import { world, grant, ACTORS, LAB, A, chromium, openAs, mainText, norm, reloadAt, refusals, logicOf, isArabicRefusal, until, launchUtf8, downloaded, fileOk, watchPrint, prints } from '../../../../../tests/browser/d7_cov_lib.mjs';
 
 const reports = (lab) => lab.env.DB.q('SELECT COUNT(*) AS n FROM seized_reports WHERE department_id=?1', A)[0].n;
 const FORM = 'محضر مضبوطات — يوم';
@@ -77,5 +79,34 @@ test('مضبوطات ②: موظفٌ بدور «مشاهدة» لا يرى نم�
     assert.ok(isArabicRefusal(f.message) && f.shown, 'رفضٌ عربيٌّ ظاهر: ' + JSON.stringify(f));
     await lab.idle(); assert.equal(reports(lab), before, 'لا يتغيّر شيء');
     assert.deepEqual(s.errs, []);
+  } finally { await b.close(); await lab.close(); }
+});
+
+test('مضبوطات ③: التصدير — مديرُ الإدارة وموظفٌ بدور «كامل» يصدّران Excel (‎.xlsx‎ غيرُ فارغ) ويطبعان PDF · وبدور «مشاهدة» لا تصدير', { timeout: 600000 }, async () => {
+  const lab = await world(), b = await launchUtf8();
+  try {
+    await grant(b, lab, { seized: 'full' });
+    for (const { who, un } of ACTORS) {
+      const s = await openAs(b, lab, un, LAB.pw, { context: { acceptDownloads: true } }), p = s.page; p.setDefaultTimeout(20000);
+      await s.go('#/seized', 5000);
+      assert.equal((await addOne(p)).status(), 200, who + ': المحضرُ حُفظ'); await lab.idle();
+      await reloadAt(s, '#/seized', 5000);
+      await p.getByText('سجل الحركة الشهري').first().click();
+      await p.getByRole('button', { name: 'ملفات' }).first().click();
+      const f = await downloaded(p, () => p.getByText('تصدير Excel', { exact: true }).first().click());
+      assert.deepEqual(fileOk(f, 'xlsx'), [], who + ': ' + f.name + ' · ' + f.bytes.length + ' بايت');
+      await watchPrint(p);
+      await p.getByRole('button', { name: 'ملفات' }).first().click();
+      await p.getByText('طباعة / حفظ PDF', { exact: true }).first().click();
+      await until(async () => (await prints(p)) === 1, who + ': نافذةُ الطباعة (حفظ PDF)');
+      assert.deepEqual(s.errs, [], who + ': لا أخطاء صفحة');
+      await s.ctx.close();
+    }
+    await grant(b, lab, { seized: 'view' });
+    const s = await openAs(b, lab, LAB.empA, LAB.pw), p = s.page;
+    await s.go('#/seized', 5000);
+    await p.getByText('سجل الحركة الشهري').first().click(); await p.waitForTimeout(800);
+    assert.equal(await p.getByRole('button', { name: 'ملفات' }).count(), 0, 'بدور «مشاهدة» لا «ملفات» ولا تصدير');
+    await s.ctx.close();
   } finally { await b.close(); await lab.close(); }
 });

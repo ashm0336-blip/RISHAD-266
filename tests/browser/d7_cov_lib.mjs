@@ -78,3 +78,38 @@ export function png(w = 120, h = 60, rgb = [30, 60, 120]) {
   fs.writeFileSync(f, Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]));
   return f;
 }
+/* المتصفحُ بلغةٍ UTF-8: بـLANG فارغ يستبدل Chromium الآلي اسمَ أيِّ تنزيلٍ غيرِ لاتيني بـ«download» بلا امتداد (انظر v7_port_print) — وهذا من
+   بيئة المختبر لا من المنتج؛ مجموعةُ uifix تتحقّق منه في Chrome الحقيقي (BassamXLSX.download) */
+export const launchUtf8 = () => chromium.launch({ env: Object.assign({}, process.env, { LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' }) });
+/* window.print مُراقَب (لا نافذةَ طباعة في المتصفح الآلي): يعدّ الاستدعاءات — «طباعة / حفظ PDF» في الصفحات الجدولية هي نافذةُ الطباعة نفسُها */
+export const watchPrint = (p) => p.evaluate(() => { window.__prints = 0; window.print = () => { window.__prints++; }; });
+export const prints = (p) => p.evaluate(() => window.__prints || 0);
+/* يضغط ما يُطلق التنزيل ويعيد اسمَه المقترح وبايتاته */
+export async function downloaded(p, click, ms = 30000) {
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: ms }), click()]);
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'd7dl-')), 'file'); await dl.saveAs(f);
+  return { name: dl.suggestedFilename(), bytes: fs.readFileSync(f) };
+}
+/* ملفٌّ بالامتداد الصحيح ومحتوًى غيرِ فارغ يطابق نوعَه: xlsx = حزمةُ ZIP فيها ورقةٌ · csv = BOM + سطرُ عناوين وسطرٌ على الأقل · pdf = %PDF- */
+export function fileOk(f, ext) {
+  const out = [];
+  if (!new RegExp('\\.' + ext + '$', 'i').test(f.name)) out.push('الامتداد: ' + f.name);
+  if (!f.bytes.length) out.push('ملفٌّ فارغ');
+  if (ext === 'xlsx' && !(f.bytes[0] === 0x50 && f.bytes[1] === 0x4b && f.bytes.includes(Buffer.from('xl/worksheets/sheet1.xml')))) out.push('ليس مصنّف xlsx');
+  if (ext === 'xlsx' && (f.bytes.toString('utf8').match(/<row[ >]/g) || []).length < 2) out.push('مصنّفٌ بلا صفوف بيانات (العناوينُ وحدها)');   /* zipStored: الأوراقُ غيرُ مضغوطة */
+  if (ext === 'csv' && !(f.bytes.toString('utf8').replace(/^﻿/, '').split('\n').filter(Boolean).length >= 2)) out.push('CSV بلا صفوف');
+  if (ext === 'pdf' && f.bytes.slice(0, 5).toString() !== '%PDF-') out.push('ليس PDF');
+  return out;
+}
+/* «ملفات» ← «تصدير Excel» (تنزيلٌ يُفحص) ثم «ملفات» ← «طباعة / حفظ PDF» (نافذةُ الطباعة) — الشريطُ نفسُه في المهام والجدول الشهري والمضبوطات */
+export async function filesMenu(p, who) {
+  const files = () => p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).first();
+  await files().click();
+  const f = await downloaded(p, () => p.getByText('تصدير Excel', { exact: true }).first().click());
+  const bad = fileOk(f, 'xlsx');
+  await watchPrint(p);
+  await files().click();
+  await p.getByText('طباعة / حفظ PDF', { exact: true }).first().click();
+  await until(async () => (await prints(p)) === 1, who + ': نافذةُ الطباعة (حفظ PDF)');
+  return { f, bad };
+}

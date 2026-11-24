@@ -7,7 +7,7 @@
       ولا يتغيّر شيء. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { world, grant, ACTORS, LAB, A, chromium, openAs, mainText, norm, reloadAt, logicOf, isArabicRefusal, until, toasts, seen } from '../../../../../tests/browser/d7_cov_lib.mjs';
+import { world, grant, ACTORS, LAB, A, chromium, openAs, mainText, norm, reloadAt, logicOf, isArabicRefusal, until, toasts, seen, launchUtf8, filesMenu } from '../../../../../tests/browser/d7_cov_lib.mjs';
 import { replaceOperationalFixture } from '../../../../../tests/unit/world_fx.mjs';
 
 const K = 'bsdept:' + A + ':bassam_staffing_v3', KL = 'bsdept:' + A + ':bassam_staffing_locks_v1';
@@ -92,5 +92,29 @@ test('جدول ②: موظفٌ بدورٍ بلا مفتاح الحذف لا يُ
     await until(async () => (await seen(s)).slice(t0).some(isArabicRefusal), 'رسالةُ رفضٍ عربية').catch(async (e) => { throw new Error(e.message + ' ' + JSON.stringify(await seen(s))); });
     await lab.idle(); assert.equal(JSON.stringify((await doc(s))[y + '-' + m]), v0, 'لا يتغيّر شيء');
     assert.deepEqual(s.errs, []);
+  } finally { await b.close(); await lab.close(); }
+});
+
+/* V7 · د7 (ج ١٥ — تصديرُ الملفات): «ملفات» ← «تصدير Excel» ⇒ ‎.xlsx‎ غيرُ فارغ · «طباعة / حفظ PDF» ⇒ نافذةُ الطباعة — لمدير الإدارة وموظفٍ بدور «كامل»؛
+   وبدور «مشاهدة» لا يُعرض «ملفات» */
+test('جدول ③: التصدير — مديرُ الإدارة وموظفٌ بدور «كامل» يصدّران Excel ويطبعان PDF · وبدور «مشاهدة» لا تصدير', { timeout: 600000 }, async () => {
+  const lab = await world(), b = await launchUtf8();
+  try {
+    await grant(b, lab, { staff: 'full' });
+    for (const { who, un } of ACTORS) {
+      const s = await openAs(b, lab, un, LAB.pw, { context: { acceptDownloads: true } }), p = s.page; p.setDefaultTimeout(20000);
+      await s.go('#/staffing', 5000);
+      if (!(await p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).count())) { assert.equal((await createMonth(p)).status(), 200, who); await lab.idle(); await reloadAt(s, '#/staffing', 5000); }
+      const { f, bad } = await filesMenu(p, who);
+      assert.deepEqual(bad, [], who + ': ' + f.name + ' · ' + f.bytes.length + ' بايت');
+      assert.deepEqual(s.errs, [], who + ': لا أخطاء صفحة');
+      await s.ctx.close();
+    }
+    await grant(b, lab, { staff: 'view' });
+    const s = await openAs(b, lab, LAB.empA, LAB.pw), p = s.page;
+    await s.go('#/staffing', 5000);
+    assert.ok(!(await mainText(p)).includes('لا يوجد جدول لشهر'), 'الجدولُ معروضٌ للمشاهدة');
+    assert.equal(await p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).count(), 0, 'بدور «مشاهدة» لا «ملفات» ولا تصدير');
+    await s.ctx.close();
   } finally { await b.close(); await lab.close(); }
 });
