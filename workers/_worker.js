@@ -21474,13 +21474,14 @@ function calMonthLockRule(gm, src) {
    المفتاحُ الذي لا يُعرف تحويلُه يرمي calendar-unmapped باسم مساره، والمختلطُ calendar-mixed، والميلاديُّ يعود كما هو. ══ */
 var CAL_CONV_RES = ['bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_dreport_v1', 'bassam_tasks_v1', 'bassam_tasks_locks_v1', 'bassam_staffing_v3', 'bassam_staffing_v2', 'bassam_staffing_locks_v1', 'bassam_plan_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1'];
 function calConvIs(resource) { return CAL_CONV_RES.indexOf(resource) >= 0; }
-function calConvError(code, path, status) { var e = rsError(code, status || 409); if (path) e.path = String(path).slice(0, 200); return e; }
+function calConvError(code, path, status) { var e = rsError(code, status || 409); if (path) e.details = { at: e.path = String(path).slice(0, 200) }; return e; }   /* V7 · 53 تقويم (cal-import): الموضعُ في الردّ (details.at) — تعرضه المعاينة */
 function calConvRep() { return { days: 0, months: 0, conflicts: [], recurring: [], plan: [], locks: [], extra: [], custodyDay0: 0, retro: 0 }; }
 function calConvClone(v) { return v === undefined ? v : JSON.parse(JSON.stringify(v)); }
 /* القيمةُ الواحدة: نصٌّ هو يومٌ هجري (مبطَّن أو لا، ولاحقةُ الجولات) ⇐ يومُه الميلادي · يومٌ هجريٌّ لا وجود له ⇐ calendar-unmapped باسم مساره · غيرُ ذلك يعود كما هو.
    (cal-import يلفّ كاشفَه — dd/mm/yyyy · أرقامُ Excel · أسماءُ الأشهر · «هـ/م» — حول هذه الدالة) */
-function calConvDay(v, path) {
-  var p = typeof v === 'string' ? calGParse(v) : null; if (!p || p.cal !== 'h' || p.kind !== 'day') return v;
+/* V7 · 53 تقويم (cal-import · شرطُ REVIEW 28): f = حقلُ يومٍ معروف — يقبل ISO الميلادي أو يوماً هجرياً وحدهما؛ نصٌّ آخر (dd/mm/yyyy من عميلٍ قديم أو طلبٍ مباشر) يُرفض بموضعه لا يُحفظ */
+function calConvDay(v, path, f) {
+  var p = typeof v === 'string' ? calGParse(v) : null; if (f && v && !p) throw calConvError('calendar-unmapped', path); if (!p || p.cal !== 'h' || p.kind !== 'day') return v;
   var g = calHtoGDay(v); if (!g) throw calConvError('calendar-unmapped', path || v); return g;
 }
 /* الثلاثيُّ الواحد: o[fy]/o[fm]/o[fd] بسنةٍ هجرية ⇐ ميلادي في مكانه (اليومُ الغائب ⇐ شهرُ يومه الأول · يومُ 0 يبقى 0، ق10 · نوعُ كل قيمةٍ كما كان) ⇒ true إن حوّل */
@@ -21498,18 +21499,18 @@ function calConvDayValue(resource, v, ctx, path) {
   if (v === null || typeof v !== 'object') return v;
   var x = calConvClone(v);
   if (resource === 'bassam_rounds_v1' || resource === 'bassam_rounds_arc_v1') {
-    if (isObj(x.imp) && typeof x.imp.day === 'string') x.imp.day = calConvDay(x.imp.day, path + '/imp.day');
-    if (typeof x.from === 'string') x.from = calConvDay(x.from, path + '/from');
+    if (isObj(x.imp) && typeof x.imp.day === 'string') x.imp.day = calConvDay(x.imp.day, path + '/imp.day', 1);
+    if (typeof x.from === 'string') x.from = calConvDay(x.from, path + '/from', 1);
   } else if (resource === 'bassam_dreport_v1') {
-    if (typeof x.cont === 'string') x.cont = calConvDay(x.cont, path + '/cont');
-    if (isObj(x.shifts)) Object.keys(x.shifts).forEach(function (s) { var o = x.shifts[s]; if (isObj(o) && typeof o.cont === 'string') o.cont = calConvDay(o.cont, path + '/' + s + '/cont'); });
+    if (typeof x.cont === 'string') x.cont = calConvDay(x.cont, path + '/cont', 1);
+    if (isObj(x.shifts)) Object.keys(x.shifts).forEach(function (s) { var o = x.shifts[s]; if (isObj(o) && typeof o.cont === 'string') o.cont = calConvDay(o.cont, path + '/' + s + '/cont', 1); });
   } else if (resource === 'bassam_tasks_v1' && Array.isArray(x)) {
     x.forEach(function (row, i) {
       var m = Array.isArray(row) ? row[23] : null; if (!isObj(m)) return;
-      if (typeof m.idem === 'string') m.idem = m.idem.replace(/^(r:[^:]*:)([^:]+)(:.*)?$/, function (all, a, d, b) { return a + calConvDay(d, path + '[' + i + '].idem') + (b || ''); });
+      if (typeof m.idem === 'string') m.idem = m.idem.replace(/^(r:[^:]*:)([^:]+)(:.*)?$/, function (all, a, d, b) { return a + calConvDay(d, path + '[' + i + '].idem', 1) + (b || ''); });
       var r = m.rec; if (!isObj(r)) return;
-      if (typeof r.from === 'string') r.from = calConvDay(r.from, path + '[' + i + '].rec.from');
-      if (typeof r.to === 'string') r.to = calConvDay(r.to, path + '[' + i + '].rec.to');
+      if (typeof r.from === 'string') r.from = calConvDay(r.from, path + '[' + i + '].rec.from', 1);
+      if (typeof r.to === 'string') r.to = calConvDay(r.to, path + '[' + i + '].rec.to', 1);
       if (r.t === 'monthly' && r.md !== 'last' && r.md != null && !r.calMd) {
         var md = calHtoGMd(r.md, ctx.T); if (md == null) throw calConvError('calendar-unmapped', path + '[' + i + '].rec.md');
         if (ctx.rep && !ctx.rep.recurring.some(function (q) { return q.id === r.id; })) ctx.rep.recurring.push({ id: r.id, from: r.md, to: md });

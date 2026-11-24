@@ -1,7 +1,9 @@
 /* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/services/548-import-kit.js.tpl */
 /* V7 · 53 تقويم (REVIEW 23–27): أداةُ الاستيراد — تُجلب مرةً عند أول استيراد (548-atomic-backup.js · kit()) ولا تُحمَّل مع الغلاف.
    نُقل إليها مسارُ الاستيراد كما هو (التقطيع · الأجزاء · الملخّص · التأكيد · نصوصُ الرفض) بلا تغيير سلوك، ومعه:
-   · systems — ما سيُنقل لكل نظام وما لن يُنقل ولماذا (والنظامُ المطفأ للعقدة: «محفوظة — غير مفعّلة»). */
+   · dateIn — كاشفُ التاريخ ملفوفاً حول المحوّل الواحد (calDateInCore: النصُّ نفسُه في 019v حول calConvDay؛ هنا حول مرآته بأم القرى)؛
+   · fileDates — تواريخُ نسخة الإدارة/ملف Production قبل الرفع («كما في الملف ← كما سيُحفظ» · ما لا يوجد يومُه يوقف الرفع)؛
+   · تنبيهُ المغادرة أثناء استيرادٍ لم يُعتمد. */
 (function () {
   'use strict';
   KIVO.BackupRestore.register(function (core) {
@@ -65,8 +67,8 @@
       /* V7 · د6: كلُّ رفضٍ يُعرض بسببه */
       'body-large': 'الجزء المرسل أكبر من حد الطلب؛ لم يتغيّر شيء',
       'restore-policy': 'لا تملك صلاحية استعادة النسخة لهذه الإدارة؛ لم يتغيّر شيء',
-      /* V7 · 53 تقويم (REVIEW 24): بياناتُ نظامٍ مطفأ للعقدة — لا تُسقط ولا يُخفى الرفض */
-      'restore-operations-resource-denied': 'في النسخة بياناتُ نظامٍ مطفأ لهذه العقدة أو خارج صلاحيتك؛ لم يتغيّر شيء — يستوردها مدير المنصة فتُحفظ «محفوظة — غير مفعّلة»، أو فعّل النظام للعقدة ثم أعد الاستيراد',
+      /* V7 · 53 تقويم (REVIEW 23): تاريخٌ لا يُعرف يومُه في الملف — الخادمُ يسمّي موضعه (at) */
+      'calendar-unmapped': 'في النسخة تاريخٌ لا يُعرف يومُه' + (data && data.details && data.details.at ? ' في «' + data.details.at + '»' : '') + ' (ليس ميلادياً YYYY-MM-DD ولا يوماً هجرياً موجوداً)؛ لم يتغيّر شيء — صحّحه في الملف ثم أعد الاستيراد',
       'import-unknown': 'لم يجد الخادم ملف الاستيراد المؤقت (أُلغي أو بدأ استيراد آخر بالحساب نفسه)؛ لم يتغيّر شيء — أعد المحاولة من البداية',
       'import-expired': 'انقضت مهلة الاستيراد (ساعة) وحُذف المؤقت؛ لم يتغيّر شيء — أعد المحاولة من البداية',
       'import-incomplete': 'لم تكتمل أجزاء النسخة على الخادم؛ لم يتغيّر شيء — أعد المحاولة من البداية',
@@ -326,8 +328,8 @@
       skip: skipList((read.data.skip || []).map(function (x) { var n = null; if (x && x.why === 'grants') { try { n = Object.keys((JSON.parse(file.data[x.k]) || {}).emp || {}).length; } catch (e) { n = null; } } return n === null ? x : Object.assign({}, x, { n: n }); })).concat(permItems(permPreview(file, scope))),
       /* V7 · 53 (ملحق 5): سطرٌ واحد بعد المُسقَط من صلاحيات الموظفين */
       permNote: PERM_NOTE,
-      /* V7 · 53 تقويم (REVIEW 24): ما يذهب لكل نظام (والمطفأُ للعقدة «محفوظة — غير مفعّلة») */
-      systems: systems(file, scope) };
+      /* V7 · 53 تقويم (REVIEW 23): التواريخُ قبل الرفع — كما في الملف ← كما سيُحفظ، وما لا يوجد يومُه يوقف الرفع */
+      dates: fileDates(file) };
   }
   /* الأجزاء: كلُّ جزءٍ طلبٌ؛ الفاشلُ بلا ردٍّ مؤكَّد يُعاد وحده ثلاثاً، ثم يُعاد الفشلُ ومعه job لإكمالٍ لاحق من الجزء نفسِه */
   async function upload(job, stamp, progress) {
@@ -370,10 +372,6 @@
     if (!id || !file || typeof file !== 'object' || !['replace', 'merge'].includes(opt.mode) || !['full', 'dept'].includes(scope.kind))
       return failure('invalid');
     namesOf(file);   /* V7 · 53 (ملحق 5): أسماءُ الموظفين للملخّص ورسالة الرفض */
-    /* V7 · 53 تقويم (REVIEW 24 · القاعدتان 2 و5): مديرُ العقدة يملك ما فُعِّل لعقدته وحده — بياناتُ نظامٍ مطفأ في نسخته لا تُسقط بصمت ولا تُرسل لتُرفض بعد الرفع:
-       تُذكر قبل أي طلب باسم النظام وما العمل (مديرُ المنصة يستوردها فتُحفظ «محفوظة — غير مفعّلة») */
-    var offs = scope.kind === 'dept' && !isSuper() ? systems(file, scope).filter(function (x) { return x.off; }) : [];
-    if (!job && offs.length) return Object.assign(failure('restore-operations-resource-denied', 403), { message: 'لم يُرفع شيء ولم يتغيّر شيء: في النسخة بياناتُ ' + offs.map(function (x) { return '«' + x.name + '»'; }).join(' و') + ' — نظامٌ مطفأ لهذه العقدة. يستوردها مدير المنصة فتُحفظ «محفوظة — غير مفعّلة» ولا يُسقط منها شيء، أو فعّل النظام للعقدة من «الصلاحيات ← الأنظمة» ثم أعد الاستيراد.' });
     /* PRIVACY batch (019u privRedacted): a copy exported without personal data is refused before any request (the server refuses it too) */
     var fd = file.domains && typeof file.domains === 'object' ? file.domains : {};
     if ((file.manifest && file.manifest.redacted) || Object.keys(fd).some(function (k) { return [].concat(fd[k]).some(function (x) { return !!(x && x.redacted); }); }))
@@ -383,6 +381,14 @@
       else if (job) live.delete(job.id);
       result.resumable = !!job && !gone(result);
       return result;
+    }
+    /* V7 · 53 تقويم (REVIEW 23 · 26): «فحص التواريخ» مرحلةٌ ظاهرة قبل أي طلب — ولا تخمينَ صامت: يومٌ لا يوجد في شهره يوقف الرفع ويُسمّى بموضعه */
+    var fdates = null;
+    if (!job) {
+      progress({ step: 'check' });
+      fdates = fileDates(file);
+      progress({ step: 'check', dates: fdates.days + fdates.months + fdates.values, bad: fdates.bad.length });
+      if (fdates.bad.length) return Object.assign(failure('import-dates', 422), { message: 'لم يُرفع شيء ولم يتغيّر شيء:' + dateLine({ days: 0, months: 0, values: 0, conv: [], bad: fdates.bad }) + ' صحّح هذه التواريخ في الملف ثم ارفعه من جديد.', dates: fdates });
     }
     if (!job) {
       /* V7 · 53 (noreason · قرارُ المالك): لا يُسأل أحدٌ عن سبب — نافذةُ المراجعة قبل الاستيراد هي التأكيد؛ ملاحظةٌ يمرّرها المستدعي (opt.reason) تُرسل كما هي وإلا فارغة */
@@ -461,7 +467,7 @@
     body.phase = 'commit';
     var ticket = Object.freeze({ requestId: id });
     tickets.set(ticket, { stamp: stamp, body: body, inspection: clone(inspection), approved: false });
-    return { ok: 1, ticket: ticket, inspection: clone(inspection), systems: systems(file, scope) };
+    return { ok: 1, ticket: ticket, inspection: clone(inspection), dates: fdates || fileDates(file) };
   }
   function approve(ticket) {
     var entry = tickets.get(ticket);
@@ -547,8 +553,8 @@
         (nfLost.length ? ' تنبيهات لن تُنقل (' + nfLost.reduce(function (n, x) { return n + (x.n || 0); }, 0) + '): ' + nfLost.map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + '.' : '') +
         remapLine(i.summary) +
         permsLine(c) +
-        /* V7 · 53 تقويم (REVIEW 24): ما يذهب لكل نظام — من الملف نفسِه */
-        sysLine(prepared.systems) +
+        /* V7 · 53 تقويم (REVIEW 23): التواريخُ المحوَّلة (كما في الملف ← كما سيُحفظ) */
+        dateLine(prepared.dates) +
         (i.summary.imagesNew > 0 ? ' ستُكتب ' + i.summary.imagesNew + ' صورة تحملها النسخة وليست على المنصة.' : '') +
         (i.summary.imagesReused
           ? ' سيُعاد استخدام ' + i.summary.imagesReused + ' صورة موجودة بعد تطابقها؛ أجسامها الحالية تبقى معتمدة.'
@@ -568,37 +574,132 @@
       ? !!(await KIVO.bsConfirm({ title: (labels && labels.title) || 'اعتماد استعادة النسخة', msg: text, ok: (labels && labels.ok) || 'استعادة النسخة', cancel: 'إلغاء' }))
       : !!window.confirm(text);
   }
-  /* ══ V7 · 53 تقويم (REVIEW 24): ما سيذهب لكل نظام — المفتاحُ إلى نظامه آلياً بلا ربطٍ يدوي، والنظامُ المطفأ للعقدة تُحفظ بياناتُه «محفوظة — غير مفعّلة» ══ */
-  var SYS = [['emps', 'موظفو الإدارة', /^bassam_employees_v1$/], ['staff', 'الجدول الشهري والإجازات', /^bassam_(staffing_v3|staffing_v2|staffing_locks_v1|shift_options_v1|dayshift_v1)$/],
-    ['plan', 'الخطة والمواقع والخرائط', /^bassam_(plan_v1|zone_opts_v1|gate_opts_v1)$/], ['daily', 'الجولات (الأشهر المقفلة إلى الأرشيف)', /^bassam_(rounds_v1|rounds_arc_v1|dayfocus_v1)$/],
-    ['dreport', 'التقرير اليومي', /^bassam_dreport_v1$/], ['tasks', 'المهام وأقفالها', /^bassam_tasks(_locks)?_v1$/], ['custody', 'العهد', /^bassam_custody_v1$/],
-    ['seized', 'المضبوطات', /^bassam_seized_v1$/], ['irshad', 'الاسترشاد', /^bassam_irshad_v1$/], ['rasd', 'الرصد', /^bassam_rasd_v1$/], ['dstats', 'الإحصائيات اليومية', /^bassam_(dstats|daily_stats)_v1$/],
-    ['award', 'الجائزة', /^bassam_award\w*$/], ['', 'التنبيهات', /^bassam_notif_v1$/], ['', 'الصلاحيات (أدوارٌ بالتضييق)', /^bassam_perm_tpls_v1$/], ['', 'إعدادات الإدارة', /^bassam_options_v1$/]];
-  function isSuper() { try { var u = KIVO.BassamAuth.user(); return !!u && u.role === 'super'; } catch (e) { return false; } }
-  function systems(file, scope) {
-    var cap = null, by = {}, out = [];
-    try { if (scope && scope.kind === 'dept' && KIVO.BassamPerm && KIVO.BassamPerm.deptCap) cap = KIVO.BassamPerm.deptCap(scope.departmentId); } catch (e) { cap = null; }
+  /* @@CAL_DATEIN_BEGIN — V7 · 53 تقويم (REVIEW 23 · 28): كاشفُ التاريخ في الاستيراد، ملفوفٌ حول المحوّل الواحد (calConvDay). نصٌّ واحد حرفاً في الخادم
+     (workers/parts/019v-calendar-convert.js) وأداة الاستيراد (src/slots/services/548-import-kit.js.tpl)، يفرضه tests/unit/v7_cal_datein.test.mjs.
+     نقيٌّ سريع: لا تخزين ولا ساعة ولا طلب. التحويلُ نفسُه من المستدعي (A.day: الخادمُ calConvDay · الواجهةُ مرآتُه بـKIVO.BassamCal.hOf) — لا جدولَ ثانياً ولا محرّكَ ثانٍ.
+     A = { yc(y) ⇒ 'h'|'g'|null · md(y, m) أيامُ الشهر الميلادي · key(y, m, d) ⇒ 'YYYY-MM-DD' · day('y-m-d' هجري) ⇒ يومُه الميلادي أو null · G · H أسماءُ الأشهر }.
+     dateIn(v) ⇒ { ok:1, cal, k:'YYYY-MM-DD', from, h? } · { ok:0, empty:1, from } · { ok:0, from, why } (السببُ بالعربي).
+     القاعدة: السنةُ أولاً (1300–1599 هجري · 1900–2199 ميلادي) ثم اللاحقة («هـ» · «م») واسمُ الشهر — وتعارضُها خطأٌ لا ترجيح. الصيغ: yyyy-mm-dd · dd/mm/yyyy · d/m/yyyy
+     (و«.» و«\») · yyyymmdd · رقمُ Excel التسلسلي وخليةُ التاريخ ({k:'d'|'dt'|'i'|'f'} من 570) · الأرقامُ العربية والفارسية والغربية · أسماءُ الأشهر الهجرية والميلادية
+     (والشامية والمغاربية والإنجليزية) · اسمُ اليوم قبلها · وقتٌ بعدها. الملتبسُ (ترتيبٌ · سنةٌ بخانتين) ويومٌ لا يوجد في شهره ⇒ مرفوضٌ بسببه. */
+  function calDateInCore(A) {
+    var MN = {};
+    function fold(s) { return String(s).replace(/[ً-ْـ‎‏؜]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[ \s]+/g, ' ').trim().toLowerCase(); }
+    [['h', A.H], ['g', A.G], ['g', 'january february march april may june july august september october november december'.split(' ')], ['g', 'jan feb mar apr may jun jul aug sep oct nov dec'.split(' ')]]
+      .forEach(function (L) { L[1].forEach(function (x, i) { MN[fold(x)] = [L[0], i + 1]; }); });
+    /* أسماءٌ أخرى للشهر نفسِه: <التقويم><الرقم><الاسم> */
+    ('h1المحرم|h3ربيع أول|h4ربيع الثاني|h4ربيع ثاني|h5جماد أول|h6جمادى الثانية|h6جماد ثاني|h11ذي القعدة|h12ذي الحجة|g1كانون الثاني|g2شباط|g3آذار|g4نيسان|g5أيار|g6حزيران|g7تموز|g8آب|g9أيلول|' +
+     'g10تشرين الأول|g11تشرين الثاني|g12كانون الأول|g4إبريل|g6يونيه|g7يوليه|g1جانفي|g2فيفري|g4أفريل|g5ماي|g6جوان|g7جويلية|g8أوت|g9sept').split('|')
+      .forEach(function (x) { var m = /^([hg])(\d+)(.+)$/.exec(x); MN[fold(m[3])] = [m[1], +m[2]]; });
+    function bad(from, why) { return { ok: 0, from: from, why: why }; }
+    return function dateIn(v) {
+      var o = !!v && typeof v === 'object' && !Array.isArray(v), from = v == null ? '' : o ? String(v.s != null ? v.s : v.n != null ? v.n : '') : String(v), s = '', m, y, mo, d, ac = '', mc = '', serial = null, nm, hit;
+      if (o && (v.k === 'd' || v.k === 'dt')) s = from.slice(0, 10);                       /* خليةُ تاريخ Excel: ميلاديةٌ دائماً */
+      else if (o && (v.k === 'i' || v.k === 'f')) serial = +v.n;
+      else if (o && v.k) return bad(from, 'القيمة ليست تاريخاً (وقتٌ أو مدّة)');
+      else if (typeof v === 'number') serial = v;
+      if (serial === null) {
+        s = fold((s || from).replace(/[٠-٩]/g, function (c) { return c.charCodeAt(0) - 0x660; }).replace(/[۰-۹]/g, function (c) { return c.charCodeAt(0) - 0x6f0; }));
+        if (!s) return { ok: 0, empty: 1, from: from };
+        s = s.replace(/[,،]/g, ' ').replace(/^(?:يوم )?(?:الاحد|الاثنين|الثلاثاء|الاربعاء|الخميس|الجمعه|السبت|sun\w*|mon\w*|tue\w*|wed\w*|thu\w*|fri\w*|sat\w*) /, '').replace(/[ t]\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?: ?[ap]m| ?ص| ?م)?$/, '').replace(/ +/g, ' ').trim();
+        if ((m = /^(.*\d) ?(ه|هجري|هجريه|h|ah)\.?$/.exec(s))) { ac = 'h'; s = m[1]; } else if ((m = /^(.*\d) ?(م|ميلادي|ميلاديه|g|ad)\.?$/.exec(s))) { ac = 'g'; s = m[1]; }
+        if (/^\d{5,6}$/.test(s)) serial = +s;
+      }
+      if (serial !== null) {
+        if (!(serial >= 1 && serial < 109573) || serial === 60) return bad(from, 'رقمُ تاريخ Excel خارج المدى');
+        s = new Date(Date.UTC(1899, 11, serial < 60 ? 31 : 30) + Math.floor(serial) * 864e5).toISOString().slice(0, 10); ac = 'g';
+      }
+      if ((m = /^(\d{4})[-/.\\](\d{1,2})[-/.\\](\d{1,2})$/.exec(s)) || (m = /^(\d{4})(\d{2})(\d{2})$/.exec(s))) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+      else if ((m = /^(\d{1,2})[-/.\\](\d{1,2})[-/.\\](\d{4})$/.exec(s))) {
+        d = +m[1]; mo = +m[2]; y = +m[3];
+        if (mo > 12 && d <= 12) return bad(from, 'ترتيبُ اليوم والشهر ملتبس — المقبول يوم/شهر/سنة');
+      } else if ((m = /^(\d{1,2}) (\D+?) (\d{4})$/.exec(s)) || (m = /^(\D+?) (\d{1,2}) (\d{4})$/.exec(s))) {
+        nm = /^\d/.test(m[1]) ? m[2] : m[1]; hit = MN[nm] || MN[nm.replace(/^ال/, '')];
+        if (!hit) return bad(from, 'اسمُ الشهر «' + nm + '» غير معروف');
+        mc = hit[0]; mo = hit[1]; d = +(/^\d/.test(m[1]) ? m[1] : m[2]); y = +m[3];
+      } else if (/^\d{1,2}[-/.\\]\d{1,2}[-/.\\]\d{2}$/.test(s)) return bad(from, 'السنةُ بخانتين لا تكفي — اكتبها كاملة (1448 أو 2026)');
+      else return bad(from, 'صيغةُ تاريخ غير معروفة');
+      var cal = A.yc(y), CN = { h: 'هجرية', g: 'ميلادية' };
+      if (!cal) return bad(from, 'السنة ' + y + ' خارج المدى (هجري 1300–1599 · ميلادي 1900–2199)');
+      if (ac && ac !== cal) return bad(from, 'السنة ' + y + ' ' + CN[cal] + ' واللاحقةُ «' + (ac === 'h' ? 'هـ' : 'م') + '» ' + CN[ac] + ' — صحّح أحدهما');
+      if (mc && mc !== cal) return bad(from, 'الشهر «' + (mc === 'h' ? A.H : A.G)[mo - 1] + '» ' + (mc === 'h' ? 'هجري' : 'ميلادي') + ' والسنة ' + y + ' ' + CN[cal]);
+      if (!(mo >= 1 && mo <= 12)) return bad(from, 'الشهر ' + mo + ' غير موجود');
+      if (cal === 'g') {
+        var n = A.md(y, mo);
+        return d >= 1 && d <= n ? { ok: 1, cal: 'g', k: A.key(y, mo, d), from: from } : bad(from, 'اليوم ' + d + ' غير موجود في ' + A.G[mo - 1] + ' ' + y + ' (' + n + ' يوماً)');
+      }
+      var g = d >= 1 && d <= 30 ? A.day(y + '-' + mo + '-' + d) : null;
+      return g ? { ok: 1, cal: 'h', k: g, from: from, h: { y: y, m: mo, d: d } } : bad(from, 'اليوم ' + d + ' غير موجود في ' + A.H[mo - 1] + ' ' + y + ' هـ بتقويم أم القرى' + (d === 30 ? ' (الشهرُ 29 يوماً)' : ''));
+    };
+  }
+  /* @@CAL_DATEIN_END */
+  /* مرآةُ calConvDay في الواجهة: اليومُ الهجري ⇐ الميلادي بأم القرى (KIVO.BassamCal.hOf — تقويمُ المنصة الواحد) · يومٌ لا وجود له ⇒ null */
+  var CAL = KIVO.BassamCal, H2G = {};
+  function hToG(k) {
+    var p = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(k), y, m, d, g, i, h, off;
+    if (!p) return null; if (k in H2G) return H2G[k]; y = +p[1]; m = +p[2]; d = +p[3];
+    g = new Date(Date.UTC(622, 6, 16) + Math.round(864e5 * (354.36667 * (y - 1) + 29.5306 * (m - 1) + (d - 1)))).toISOString().slice(0, 10);
+    for (i = 0; i < 12 && g; i++) {
+      h = CAL.hOf(g); if (!h) break;
+      if (h.y === y && h.m === m && h.d === d) return (H2G[k] = g);
+      off = (h.y - y) * 354.367 + (h.m - m) * 29.53 + (h.d - d);
+      g = CAL.gAddDays(g, -(Math.round(off) || (off > 0 ? 1 : -1)));
+    }
+    return (H2G[k] = null);
+  }
+  var dateIn0 = null;   /* يُبنى عند أول قيمة — تقويمُ المنصة (385) حاضرٌ حينها */
+  function dateIn(v) { CAL = KIVO.BassamCal; return (dateIn0 || (dateIn0 = calDateInCore({ yc: function (y) { return CAL.keyCal(y + '-1'); }, md: CAL.gMonthDays, key: CAL.gKey, day: hToG, G: CAL.G_MONTHS, H: CAL.H_MONTHS })))(v); }
+  /* ══ V7 · 53 تقويم (REVIEW 23): تواريخُ نسخة الإدارة/ملف Production قبل الرفع — مفاتيحُ الأيام والأشهر في مواردها وتواريخُ السجلات {y,m,d}، كلٌّ بالكاشف نفسِه.
+     الخادمُ يحوّلها عند الاستيراد بالقاعدة نفسِها (019f/019g calMigDoc); وهنا تُعرض قبل الرفع: «كما في الملف ← كما سيُحفظ»، وما لا يوجد يومُه يُسمّى بموضعه ويوقف الرفع. ══ */
+  /* الأساسُ لا يعرف أسماءَ موارد الأنظمة (العزل): يُفحص كلُّ موردٍ في الملف بشكله — مفاتيحُ أيامٍ/أشهرٍ في جذره وفي months، وسجلاتُ {y,m,d} في moves/reports */
+  function fileDates(file) {
+    var out = { days: 0, months: 0, values: 0, conv: [], bad: [] }, seen = {};
+    function one(at, raw, kind) {
+      var p = /^(m:)?(\d{4})-(\d{1,2})(?:-(\d{1,2})(-.+)?)?$/.exec(raw); if (!p || CAL.keyCal(p[2] + '-1') !== 'h') return;
+      if (p[4] == null) {                                          /* شهرٌ هجري ⇐ الشهران الميلاديان اللذان يلمسهما (يحسم الخادمُ الأغلبية ق4/ق5) */
+        var a = dateIn(p[2] + '-' + p[3] + '-1');
+        if (!a.ok) { out.bad.push({ at: at, from: raw, why: a.why }); return; }
+        var b = dateIn(p[2] + '-' + p[3] + '-29'); out.months++;
+        if (out.conv.length < 24 && !seen[raw]) { seen[raw] = 1; out.conv.push({ at: at, from: raw, to: (p[1] || '') + a.k.slice(0, 7) + (b.ok && b.k.slice(0, 7) !== a.k.slice(0, 7) ? ' و' + b.k.slice(0, 7) : '') }); }
+        return;
+      }
+      var r = dateIn(p[2] + '-' + p[3] + '-' + p[4]);
+      if (!r.ok) { out.bad.push({ at: at, from: raw, why: r.why }); return; }
+      if (kind) out.values++; else out.days++;
+      if (out.conv.length < 24 && !seen[raw]) { seen[raw] = 1; out.conv.push({ at: at, from: raw, to: r.k + (p[5] || '') }); }
+    }
+    function walk(res, doc) {
+      if (!record(doc) && !Array.isArray(doc)) return;
+      if (record(doc)) Object.keys(doc).forEach(function (k) { one(res + ' › ' + k, k); });
+      if (record(doc) && record(doc.months)) Object.keys(doc.months).forEach(function (k) { one(res + ' › months › ' + k, k); });
+      /* سجلاتٌ بتاريخ {y,m,d} (العهدة · الاسترشاد · المضبوطات) — اليومُ 0 «غير معروف» (ق10) يُقبل في شهر يومه الأول */
+      [].concat(record(doc) ? [doc.moves, doc.reports] : [doc]).forEach(function (L) {
+        (Array.isArray(L) ? L : []).forEach(function (x, i) { if (record(x) && +x.y >= 1300 && +x.y <= 1599) one(res + ' › ' + (x.id || '#' + (i + 1)), x.y + '-' + x.m + '-' + (+x.d || 1), 1); });
+      });
+    }
     Object.keys(record(file && file.data) ? file.data : {}).forEach(function (k) {
-      var name = k.replace(/^bsdept:[^:]+:/, ''), v = file.data[k];
-      if (v == null || v === '' || v === '{}' || v === '[]') return;
-      SYS.forEach(function (s, i) { if (s[2].test(name)) by[i] = (by[i] || 0) + 1; });
+      var v = file.data[k], doc;
+      if (typeof v !== 'string' || !/^[[{]/.test(v)) return;
+      try { doc = JSON.parse(v); } catch (e) { return; }
+      walk(k, doc);
     });
+    /* نسخةٌ حديثة: أسماءُ أعضاء الجذر في صفوف الموارد التشغيلية */
     (record(file && file.domains) && Array.isArray(file.domains.operations) ? file.domains.operations : []).forEach(function (d) {
-      if (record(d) && record(d.rows) && (d.rows.ops_nodes || []).length) SYS.forEach(function (s, i) { if (s[2].test(String(d.resource))) by[i] = (by[i] || 0) + 1; });
+      if (!record(d) || !record(d.rows) || !Array.isArray(d.rows.ops_nodes)) return;
+      d.rows.ops_nodes.forEach(function (r) { if (r && typeof r.member_key === 'string') one(d.resource + ' › ' + r.member_key, r.member_key); });
     });
-    Object.keys(by).forEach(function (i) {
-      var s = SYS[i], off = !!(cap && s[0] && cap.indexOf(s[0]) < 0);
-      out.push({ sys: s[0], name: s[1], n: by[i], off: off, text: s[1] + (off ? (isSuper() ? ' — محفوظة — غير مفعّلة لهذه العقدة (تظهر حين يُفعَّل النظام)' : ' — نظامٌ مطفأ لهذه العقدة: يستوردها مدير المنصة أو فعّله أولاً') : '') });
-    });
-    var img = Object.keys(record(file && file.idbImages) ? file.idbImages : {}).length;
-    if (img) out.push({ sys: '', name: 'الصور', n: img, off: false, text: 'الصور (' + img + ')' });
     return out;
   }
-  function sysLine(list) { return list && list.length ? ' يذهب كلٌّ إلى نظامه: ' + list.map(function (x) { return x.text; }).join(' · ') + '.' : ''; }
+  function dateLine(fd) {
+    if (!fd || !(fd.days + fd.months + fd.values) && !fd.bad.length) return '';
+    return (fd.days + fd.months + fd.values ? ' تواريخ هجرية تُحوَّل إلى الميلادي (أم القرى): ' + fd.days + ' يوماً و' + fd.months + ' شهراً' + (fd.values ? ' و' + fd.values + ' سجلاً' : '') +
+      ' — كما في الملف ← كما سيُحفظ: ' + fd.conv.slice(0, 6).map(function (x) { return x.from + ' ← ' + x.to; }).join(' · ') + (fd.conv.length > 6 ? ' · …' : '') + '.' : '') +
+      (fd.bad.length ? ' ' + fd.bad.length + ' تاريخاً لا يوجد يومُه — لا يُرفع شيء حتى يُصحَّح: ' + fd.bad.slice(0, 8).map(function (x) { return '«' + x.at + '» ' + x.from + ': ' + x.why; }).join(' · ') + '.' : '');
+  }
   /* ══ V7 · 53 تقويم (REVIEW 26): لا مغادرةَ صامتة أثناء استيرادٍ لم يُعتمد — تنبيهُ المتصفح نفسُه (كتنبيه الحفظ في 280) ══ */
   if (typeof window !== 'undefined' && window.addEventListener)
     window.addEventListener('beforeunload', function (e) { if (!live.size) return; try { e.preventDefault(); e.returnValue = ''; } catch (x) { /* متصفحٌ قديم */ } return ''; });
   return { summary: summary, prepare: prepare, approve: approve, send: send, cancel: cancel, confirm: confirm, remapLine: remapLine, permsLine: permsLine, permItems: permItems,
-    systems: systems, sysLine: sysLine };
+    dateIn: dateIn, fileDates: fileDates, dateLine: dateLine };
   });
 })();

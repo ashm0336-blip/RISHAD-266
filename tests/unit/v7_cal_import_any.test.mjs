@@ -1,15 +1,13 @@
 /* V7 · 53 تقويم (cal-import · REVIEW 24 · 25): ملفُّ Production (fixture مجهّلة TEST_ONLY بالبنية نفسِها — v7_d6_import_fx.mjs oldFile:
    app=bassam-crowd · version 3 · kind=dept · 29 مفتاحَ بيانات · idbImages · preImport · تواريخُ هجرية) يُستورد لأي عقدة، وكلُّ مفتاحٍ يذهب لنظامه آلياً.
    ① إدارتان مختلفتان (مدير المنصة يختار العقدة) — على دفعات وبالمسار الواحد: الـ29 كلُّها لها مصير (موردٌ تشغيلي يُقرأ · KV · أدوار · عهدة · تنبيهات · أو «لن يُنقل» بسببه) ·
-      كلُّ موردٍ يُقرأ بـ200 ويطابق الوثيقةَ المحوَّلة (calMigDoc) · لا مفتاحَ هجرياً باقٍ · كلُّ صورةٍ تُقرأ بجسمها.
+      كلُّ موردٍ يُقرأ بـ200 ويطابق الوثيقةَ المحوَّلة (calConvDoc) · لا مفتاحَ هجرياً باقٍ · كلُّ صورةٍ تُقرأ بجسمها.
    ② ملفٌّ متعدد الإدارات لمدير المنصة: يتوزّع كلٌّ في عقدته · كلُّ إدارةٍ ميلادية بعده.
    ③ إدارةٌ صغيرة (قسمٌ تحت إدارة) يستورد إليها مديرُ الإدارة الأم (عقدتُه وما تحتها) · ونظامٌ مطفأٌ للعقدة: بياناتُه محفوظة (لا تُسقط).
-   ④ المعاينةُ قبل الرفع (أداةُ الاستيراد 548-import-kit systems): ما يذهب لكل نظام · والمطفأُ «محفوظة — غير مفعّلة». */
+   ⑤ الخادمُ يرفض تاريخاً بصيغةٍ حرّة تجاوز الواجهة (calendar-unmapped بموضعه). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import path from 'node:path';
-import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
 import { ROOT, WORKER, hasSystem, D1Shim } from './harness.mjs';
 import { target, oldFile, protocol, readBack, wantOf, setLegacyDocs, readImage, NOT_TRANSFERRED, LAB } from './v7_d6_import_fx.mjs';
@@ -56,7 +54,7 @@ async function importDept(T, NEW, who, file, dept, slice) {
   assert.equal(out.inspect && out.inspect.status, 200, (out.inspect || out.part || out.begin).t.slice(0, 400));
   assert.equal(out.commit && out.commit.status, 200, out.commit && out.commit.t.slice(0, 400));
   const expect = {};
-  for (const [r, doc] of Object.entries(want)) expect[r] = CALR.includes(r) ? NEW.calMigDoc(r, doc, { T: Tday, rep: null }) : doc;
+  for (const [r, doc] of Object.entries(want)) expect[r] = CALR.includes(r) ? NEW.calConvDoc(r, doc, { T: Tday, rep: null }) : doc;
   const got = await readBack(T, dept, Object.fromEntries(Object.entries(expect).filter(([r]) => r !== 'bassam_rounds_v1')));
   const rounds = { ...(got.bassam_rounds_arc_v1 || {}), ...(got.bassam_rounds_v1 || {}) };
   if (expect.bassam_rounds_v1) assert.deepEqual(Object.keys(rounds).sort(), Object.keys(expect.bassam_rounds_v1).sort(), dept + ': الجولات — الأيامُ كلُّها (الحيُّ + الأرشيف)');
@@ -99,7 +97,7 @@ test('② ملفٌّ متعدد الإدارات لمدير المنصة يتو�
   } finally { await T.close(); }
 });
 
-test('③ إدارةٌ صغيرة: مديرُ الإدارة الأم يستورد إلى قسمٍ تحتها (عقدتُه وما تحتها) · ونظامٌ مطفأٌ للعقدة: مديرُ المنصة تُحفظ بياناتُه، ومديرُ العقدة يُرفض بسببه بلا أثر', { ...need, timeout: 600000 }, async () => {
+test('③ إدارةٌ صغيرة: مديرُ الإدارة الأم يستورد إلى قسمٍ تحتها (عقدتُه وما تحتها) · ونظامٌ مطفأٌ للعقدة: مديرُ المنصة تُحفظ بياناتُه «محفوظة — غير مفعّلة»', { ...need, timeout: 600000 }, async () => {
   await oldDocs();
   const NEW = await load(fs.readFileSync(WORKER, 'utf8'), 'new'), T = await target(), S1 = 'TEST_ONLY_A_S1';
   try {
@@ -114,36 +112,28 @@ test('③ إدارةٌ صغيرة: مديرُ الإدارة الأم يستور
     p0.caps[S1] = p0.caps[S1].filter((x) => x !== 'plan');
     await T.DB.batch([...T.lab.W.kvPutStmts(T.lab.env, 'kv', 'bassam_perms_v1', JSON.stringify(p0)), T.DB.prepare('UPDATE revs SET rev=rev+1 WHERE k=?1').bind('bassam_perms_v1')]);
     const withPlan = await small(['bassam_employees_v1', 'bassam_staffing_v3', 'bassam_plan_v1']);
-    /* (ب) مديرُ العقدة: الخادمُ يرفض كلَّ الاستيراد (لا يُسقط الخطة بصمت) ولا يتغيّر شيء — والأداةُ تقولها قبل الرفع (④) */
-    const before = T.DB.q('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1', S1)[0].n;
-    const b = await protocol(T, mgrA, withPlan, { scope: { kind: 'dept', departmentId: S1 }, slice: false }).run();
-    assert.equal((b.commit || b.inspect || b.begin).status, 403, 'مديرُ العقدة: بياناتُ النظام المطفأ تُرفض كلُّها');
-    assert.equal(T.DB.q('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1', S1)[0].n, before, 'لا أثر');
     /* (ج) مديرُ المنصة: تُحفظ الخطةُ «محفوظة — غير مفعّلة» ولا يُسقط شيء */
     const c = await importDept(T, NEW, T.su, withPlan, S1, false);
     assert.ok(c.got.bassam_plan_v1 && c.got.bassam_plan_v1.floors.length, 'الخطةُ محفوظةٌ في القسم والنظامُ مطفأ');
   } finally { await T.close(); }
 });
 
-test('④ المعاينة قبل الرفع: ما يذهب لكل نظام · والنظامُ المطفأ للعقدة «محفوظة — غير مفعّلة»', () => {
-  const C = vm.createContext({ KIVO: { BassamPerm: { deptCap: () => ['emps', 'staff', 'daily', 'tasks', 'dreport'] }, BassamAuth: { user: () => ({ id: 'TEST_ONLY_s', role: 'super' }) } }, window: { addEventListener() {} }, console });
-  const SRC = process.env.KIVO_SRC || path.join(ROOT, 'src');
-  vm.runInContext(fs.readFileSync(path.join(SRC, 'services/548-atomic-backup.js'), 'utf8'), C);
-  vm.runInContext(fs.readFileSync(path.join(SRC, 'services/548-import-kit.js'), 'utf8'), C);
-  let kit = null; C.KIVO.BackupRestore.kit().then((k) => { kit = k; }, () => {});
-  return new Promise((r) => setTimeout(r, 0)).then(() => {
-    assert.ok(kit, 'الأداةُ مسجّلة');
-    const file = { data: { bassam_employees_v1: '[{"eid":"x"}]', bassam_staffing_v3: '{"1448-6":{}}', bassam_plan_v1: '{"floors":[]}', bassam_rounds_v1: '{"1448-6-1":{}}', bassam_grants_v1: null, bassam_perm_tpls_v1: '[{"id":"t"}]' }, idbImages: { img_a: 'data:x' } };
-    const L = kit.systems(file, { kind: 'dept', departmentId: 'TEST_ONLY_A' }), by = Object.fromEntries(L.map((x) => [x.name, x]));
-    assert.equal(by['موظفو الإدارة'].off, false); assert.equal(by['الجدول الشهري والإجازات'].off, false); assert.equal(by['الجولات (الأشهر المقفلة إلى الأرشيف)'].off, false);
-    assert.equal(by['الخطة والمواقع والخرائط'].off, true); assert.match(by['الخطة والمواقع والخرائط'].text, /محفوظة — غير مفعّلة/);
-    assert.ok(by['الصلاحيات (أدوارٌ بالتضييق)'] && by['الصور'].n === 1);
-    assert.match(kit.sysLine(L), /^ يذهب كلٌّ إلى نظامه: /);
-    /* مديرُ العقدة: الرفضُ قبل أي طلب باسم النظام وما العمل */
-    C.window.__BS_BOOT = { srv: 1, cf: 1, uid: 'TEST_ONLY_m', v: 1 }; C.KIVO.BassamAuth = { user: () => ({ id: 'TEST_ONLY_m', role: 'staff', mgr: 1 }) };
-    C.fetch = () => { throw new Error('لا طلبَ قبل رفض النظام المطفأ'); }; C.window.crypto = { getRandomValues: (b) => b };
-    return kit.prepare(file, { mode: 'replace', scope: { kind: 'dept', departmentId: 'TEST_ONLY_A' } }).then((r) => {
-      assert.equal(r.status, 403); assert.match(r.message, /«الخطة والمواقع والخرائط».*مطفأ.*مدير المنصة.*«محفوظة — غير مفعّلة»/);
-    });
-  });
+/* ⑤ (شرطُ المراجع على REVIEW 28): الخادمُ لا يحفظ تاريخاً بصيغةٍ حرّة تجاوزت الواجهة (عميلٌ قديم · طلبٌ مباشر) — يقبل ISO الميلادي أو يوماً هجرياً يحوّله calConvDay،
+   وما سواهما يُرفض calendar-unmapped بموضعه، ولا يتغيّر شيء */
+for (const [label, edit, at] of [
+  ['مفتاحُ يومٍ dd/mm/yyyy في الجولات', (f) => { const r = JSON.parse(f.data.bassam_rounds_v1); r['24/11/2026'] = r[Object.keys(r).find((k) => /^\d{4}-/.test(k))]; f.data.bassam_rounds_v1 = JSON.stringify(r); }, /bassam_rounds_v1.*24\/11\/2026/],
+  ['rec.from بصيغة dd/mm/yyyy في المهام', (f) => { const t = JSON.parse(f.data.bassam_tasks_v1), d = Object.keys(t)[0]; t[d][0][23] = { ...t[d][0][23], rec: { id: 'TEST_ONLY_r9', ver: 1, t: 'weekly', from: '24/11/2026', to: '', paused: 0 } }; f.data.bassam_tasks_v1 = JSON.stringify(t); }, /rec\.from/],
+]) for (const slice of [true, false]) test('⑤ ' + label + ' (' + (slice ? 'دفعات' : 'مسارٌ واحد') + '): الخادمُ يرفضه calendar-unmapped بموضعه ولا يتغيّر شيء', { ...need, timeout: 600000 }, async () => {
+  await oldDocs();
+  const T = await target(), dept = 'TEST_ONLY_A';
+  try {
+    const file = await oldFile({ small: true }); edit(file);
+    const before = T.DB.q('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1', dept)[0].n;
+    const out = await protocol(T, T.su, file, { scope: { kind: 'dept', departmentId: dept }, slice: slice ? 1 : false, sliceTarget: 6000 }).run();
+    const last = out.commit || out.inspect || out.slice || out.part || out.begin;
+    assert.notEqual(last.status, 200, 'لا يُحفظ: ' + last.t.slice(0, 300));
+    assert.equal(last.j && last.j.err, 'calendar-unmapped', last.t.slice(0, 300));
+    assert.match(JSON.stringify(last.j), at, 'الموضعُ مذكور: ' + last.t.slice(0, 300));
+    assert.equal(T.DB.q('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1', dept)[0].n, before, 'لا أثر');
+  } finally { await T.close(); }
 });
