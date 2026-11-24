@@ -17,6 +17,8 @@ async function copyWithRasd() {
   doc.reports.push(report(5, { att: IMG, impact: 'حرج', type: 'ممنوعات' }));
   /* سجلٌّ قديم يحمل حقولاً تجاوزها Production (st/cAt/cBy — «حالة الحالة» المرفوضة): يبقى كما هو ولا يُقرأ منه شيء */
   doc.reports.push(report(6, { st: 'open', cAt: 1795000000000, cBy: 'TEST_ONLY_u1' }));
+  /* V7 · 53 تقويم: ملفُّ Production هجريٌّ (عُدّةُ الرصد صارت ميلادية للصفحة) — أيامُ الحالات في السنة الهجرية 1448 كما يكتبها Production */
+  doc.reports.forEach((r) => { r.y = 1448; });
   file.data[REC] = JSON.stringify(doc);
   file.data[OPT] = JSON.stringify(OPTS());
   file.idbImages[IMG] = png(1400, 77);

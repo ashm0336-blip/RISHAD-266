@@ -21,7 +21,8 @@ function world({ seized } = {}) {
     BassamFind: { filter: (q, rows, f) => rows.filter((r) => !q || f(r).some((x) => String(x).indexOf(q) >= 0)) },
     BassamAck: { toast: (c, t) => (acks.push(t), Promise.resolve(true)) },
   };
-  const C = { KIVO, window: null, DCLogic: class { constructor(p) { this.props = p || {}; } setState(s) { this.state = { ...this.state, ...(typeof s === 'function' ? s(this.state) : s) }; } },
+  /* V7 · 53 تقويم: كروتُ التقويم عناصرُ React من المكوّن الواحد (KIVO.BassamCalCard) — React الصفحة كما في المتصفح */
+  const C = { KIVO, React: { createElement: (t, p, ...ch) => ({ t, p, ch }), Fragment: 'F' }, window: null, DCLogic: class { constructor(p) { this.props = p || {}; } setState(s) { this.state = { ...this.state, ...(typeof s === 'function' ? s(this.state) : s) }; } },
     console, Date, Intl, Math, JSON, setTimeout, clearTimeout, location: { hash: '#/rasd', pathname: '/', search: '' }, history: {}, document: { getElementById: () => null },
     localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => { writes.push(k); store.set(k, String(v)); }, removeItem: (k) => store.delete(k) } };
   C.window = C; C.globalThis = C;
@@ -170,4 +171,17 @@ test('rasd · الصلاحيات في الواجهة: بلا «add» لا محض
   assert.equal(dv.irDashGauges.length, 3);
   eq(dv.irDashGauges.map((g) => g.name), ['عالية/حرجة', 'اتُّخذ فيها إجراء', 'أُبلغت فيها جهة مختصة']);
   assert.equal(dv.irEmptyShow, true);
+});
+
+test('V7 · 53 تقويم: رصد الحالات بالأشهر الميلادية — كرتا الشهر واليوم من المكوّن الواحد، والهجريُّ سطرٌ صغير، والتاريخُ في السجل ميلاديٌّ ثم الهجري', () => {
+  const { page } = world();
+  const K = (c) => [].concat(...c.ch).filter((x) => x && x.p);
+  page.state = { ...page.state, rzYear: 2026, rzMonth: 11, rzDay: 24 };
+  const v = page._rzCalVals(), cal = v.rzMonths[10].card, day = v.rzDays[23].card;
+  assert.equal(v.rzMonths.length, 12); assert.equal(v.rzDays.length, 30, 'November has 30 Gregorian days');
+  assert.equal(cal.p['data-cal-key'], '2026-11'); assert.equal(K(cal)[0].ch[0], 'نوفمبر');
+  assert.equal(K(cal).find((x) => x.p['data-cal-line'] === '1').ch[0], '21 جمادى الأولى – 20 جمادى الآخرة', 'the Hijri span of November 2026 is the small line');
+  assert.deepEqual(K(day).filter((x) => x.p['data-cal-line']).map((x) => x.ch[0]), ['ث', '24', '14']);
+  assert.match(v.rzSelDateLabel, /^24 نوفمبر 2026 · 14 جمادى الآخرة 1448 هـ$/);
+  assert.deepEqual(X(page.rzDateCells({ y: 2026, m: 11, d: 24 })), { hij: '1448/06/14', greg: '2026/11/24' });
 });
