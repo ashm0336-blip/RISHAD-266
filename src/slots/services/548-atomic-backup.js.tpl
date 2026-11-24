@@ -40,7 +40,7 @@
   var NAMES = {};
   function namesOf(file) { NAMES = {}; try { JSON.parse(file.data.bassam_employees_v1).forEach(function (x) { if (x && x.name) NAMES[x.eid] = String(x.name); }); } catch (e) { /* بلا أسماء: يُعرض المفتاح */ } }
   function empName(ek) { return NAMES[ek] || ek; }
-  function pageName(p) { var P = KIVO.BassamPerm; return p === 'admin/ptpls' ? 'الإدارة · قوالب الصلاحيات' : P && P.nameOf ? P.nameOf(p) : p; }
+  function pageName(p) { var P = KIVO.BassamPerm; return p === 'admin/ptpls' ? 'الإعدادات · قوالب الصلاحيات' : P && P.nameOf ? P.nameOf(p) : p; }
   /* المُسقَطُ بالعربي مجمَّعاً لكل موظفٍ وصفحة: { k: اسمُ الموظف, why: 'perm-grant', text: الصفحةُ والإجراءات } */
   function permItems(list) {
     var by = {}, A = (KIVO.BassamPerm || {}).ACT_NAMES || {};
@@ -52,13 +52,14 @@
     try {
       var P = KIVO.BassamPerm, u = KIVO.BassamAuth.user(), d = scope.departmentId, mine = null, cap = P.deptCap(d), cur = {}, inc = {}, k, mgr = function (x) { return /^mgr:/.test(x); };
       if (u.role === 'super' || scope.kind !== 'dept') return [];
-      var c0 = (JSON.parse(localStorage.getItem('bassam_perms_v1')).emps || {})[d] || {};
+      var c0 = (JSON.parse(localStorage.getItem('bassam_perms_v1')).emps || {})[d] || {}, mi = {};
+      P.p24.grantOf(u.ekey, d).minus.forEach(function (x) { ((P.p24.R().byKey[x] || {}).asisMap || []).forEach(function (y) { mi[y] = 1; }); });   /* ما ضيّقه مديرُ المنصة بالمنح الصريح (كمفاتيح الإنفاذ في الخادم) */
       for (k in c0) if (!mgr(k)) cur[k] = c0[k];
       for (k in file.perms.emps) if (!mgr(k)) inc[k] = file.perms.emps[k];
       return KIVO.Perm44.narrowSheets(cur, inc, {
         self: String(u.ekey || ''), target: function (x) { return !mgr(x); }, kind: function () { return {}; }, isContainer: P.isContainer, lensHosts: function () { return []; },
         expand: function (x) { return P.expandPerms(x, d); }, capAll: function () { return P.capAllPerms(d); }, inCap: function (pk) { return cap.indexOf(pk.split('/')[0]) !== -1; },
-        have: function (lf) { return (mine || (mine = P.myPerms()))[lf] || []; },
+        have: function (lf) { return ((mine || (mine = P.myPerms()))[lf] || []).filter(function (a) { return !mi[lf + ':' + a]; }); },
       }).drops.map(function (x) { x.why = 'perm-grant'; return x; });
     } catch (e) { return []; }
   }
