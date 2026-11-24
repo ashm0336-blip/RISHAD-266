@@ -3624,9 +3624,9 @@ async function nfSecurityPoll(env, A) {
     (
       (
         await env.DB.prepare(
-          "SELECT m.scope,m.id,s.id sid,s.ts,s.uid,s.un,s.act,s.target,s.detail,s.ip FROM notification_dedup d JOIN notification_messages m ON m.scope=d.scope AND m.id=d.message_id JOIN sec s ON d.once_key='security:'||s.id WHERE d.once_key GLOB 'security:*' AND d.created_at>=?1 AND m.type='sc_deny' AND s.act='denied' AND s.ts>=?1 ORDER BY s.ts,s.id",
+          "SELECT m.scope,m.id,s.id sid,s.ts,s.uid,s.un,s.act,s.target,s.detail,s.ip FROM notification_dedup d JOIN notification_messages m ON m.scope=d.scope AND m.id=d.message_id JOIN sec s ON d.once_key='security:'||s.id WHERE d.once_key GLOB 'security:*' AND d.created_at>=?2 AND m.type='sc_deny' AND s.act='denied' AND s.ts>=?1 ORDER BY s.ts,s.id",
         )
-          .bind(denyFirst.ts - NF_DENY_GROUP_MS)
+          .bind(denyFirst.ts - NF_DENY_GROUP_MS, Math.min(denyFirst.ts, Date.now()) - NF_DENY_GROUP_MS)   /* a notice is written at or after its first row */
           .all()
       ).results || []
     ).forEach(function (x) {
