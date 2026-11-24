@@ -121,7 +121,7 @@ function rsBCRemapRec(from, to) {
 }
 /* V7 · د7: القوالب ← أدوار الهدف (063 enfRolesFromTpls) · tplOf بالموظف أو بالإدارة · mgr:* لا يُسند (ب1) */
 function rsBCTplsRoles(keys, perms, d, src, summary) {
-  var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = 'bsdept:' + d + ':bassam_perm_tpls_v1', rk = perm44Key(d);
+  var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = enfTplsDeptKey(d), rk = perm44Key(d);
   if (T0) {
     of = Object.keys(T0).every(function (k) { return typeof T0[k] === 'string'; }) ? T0 : (isObj(T0[src]) ? T0[src] : isObj(T0[d]) ? T0[d] : null);
     delete perms.tplOf;

@@ -143,6 +143,9 @@ async function enfRetirePlan(env, seed, now, T, keys, revs, capture, reference) 
    (والاسمان بلا إدارة إن وُجدا) يُحذف بلقطةٍ كاملة ورجوعٍ بالمسار القائم (rollback) — مثل «scope-retire» حرفاً. الشرط: ترحيلُ «perm44-roles» لا يبقى له
    ما يكتبه (القوالبُ مصدرُه الوحيد — تُقرأ خاماً من D1 قبل هذه الخطوة). الإسنادُ tplOf في bassam_perms_v1 بيانٌ يبقى ولا يُقرأ بعد الترحيل. */
 var ENF_TPLS_PART = 'tpls-retire', ENF_TPLS_RES = { bassam_perm_tpls_v1: 1, bassam_perm_tpls_named_v1: 1 };
+/* V7 · 53: موردُ القوالب الذي يُحوَّل أدواراً عند الاستيراد (019f · 019g — قرار 51ب) يُسمّى هنا وحده (v7_d5h_deleted_residue ②) */
+var ENF_TPLS_ROLES_RES = 'bassam_perm_tpls_v1';
+function enfTplsDeptKey(d) { return 'bsdept:' + d + ':' + ENF_TPLS_ROLES_RES; }
 function enfTplsKey(k) { k = String(k); return !!ENF_TPLS_RES[resName(k)] && (k.indexOf('bsdept:') === 0 || !!ENF_TPLS_RES[k]); }
 async function enfTplsPlan(env, seed, now, T, keys, revs, capture) {
   var ks = Object.keys(keys).filter(enfTplsKey).sort(), W = {}, sig = [ENF_TPLS_PART, seed], i;

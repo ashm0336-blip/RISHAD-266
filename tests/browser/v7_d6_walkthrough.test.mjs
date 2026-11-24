@@ -101,6 +101,8 @@ const NARROW = { widths: [{ width: 390, height: 844 }, { width: 768, height: 102
 /* ══ ③ KNOWN_D6 — موجوداتُ الشجرة الأساس (f73613d)، كلٌّ باسمه: يُحذف المدخلُ حين يُصلَح خللُه (الاختبارُ يسقط إن بقي مدخلٌ لا يتكرر) ══
    rule · accounts · states · viewports ('*' = الكل) · page / tab / detail (تعابير) · owner: المجموعةُ التي يُحال إليها · some: يكفي أن يتكرر في خانةٍ واحدة */
 const KNOWN_D6 = [
+  /* V7 · 53 (trimcov — أوّلُ تشغيلٍ لحالة العدسة المطفأة): سجلُّ الحركة يعرض زرَّ تصفيةٍ باسم العدسة المطفأة للوحدة («المسارات») — يُحال للمدمج (الإعدادات ← سجل الحركة) */
+  { id: 'd53-oplog-lens-chip', rule: 'off', accounts: ['super-in', 'gm', 'mgr', 'sec'], states: ['lensOffDept'], viewports: [1366], page: /الإعدادات/, tab: /سجل الحركة/, detail: /button«المسارات»/, owner: 'integrator (oplog filters)' },
 ];
 
 const pick = (env, all, key) => { const v = (process.env[env] || '').split(',').map((x) => x.trim()).filter(Boolean); return v.length ? all.filter((x) => v.includes(String(key(x)))) : all; };

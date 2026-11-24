@@ -18,8 +18,10 @@ const acorn = createRequire(path.join(ROOT, 'package.json'))('acorn');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const SPEC = JSON.parse(rd('workers/bindings/targets.json'));
 const ENGINE = { 'guard-bindings': 'KIVO_GUARDS', 'build-bindings': 'KIVO_BUILD', 'scope-bindings': 'KIVO_SCOPE', 'identity-migration': 'KIVO_IDENTITY_MIGRATION' };
-const omit = (data, paths) => { const o = JSON.parse(JSON.stringify(data)); for (const p of paths) { const ks = p.split('.'), last = ks.pop(); let x = o; for (const k of ks) x = x[k]; delete x[last]; } return o; };
-const has = (data, p) => { let x = data; for (const k of p.split('.')) { if (!x || typeof x !== 'object' || !(k in x)) return false; x = x[k]; } return true; };
+/* «أب[].ابن» = الحقلُ في كلِّ عنصرٍ من المصفوفة (كما في tools/generate.py omit_paths) */
+const drop = (o, ks) => { const k = ks[0].replace(/\[\]$/, ''), arr = ks[0].endsWith('[]'); if (ks.length === 1) { delete o[k]; return; } if (arr) o[k].forEach((x) => drop(x, ks.slice(1))); else drop(o[k], ks.slice(1)); };
+const omit = (data, paths) => { const o = JSON.parse(JSON.stringify(data)); for (const p of paths) drop(o, p.split('.')); return o; };
+const has = (x, ks) => { if (!ks.length) return true; const k = ks[0].replace(/\[\]$/, ''), arr = ks[0].endsWith('[]'); if (!x || typeof x !== 'object' || !(k in x)) return false; if (ks.length === 1) return !arr; return arr ? Array.isArray(x[k]) && x[k].length > 0 && x[k].every((y) => has(y, ks.slice(1))) : has(x[k], ks.slice(1)); };
 const literal = (part, v) => { const t = rd('workers/parts/' + part), a = t.indexOf('var ' + v + ' = '), b = t.indexOf(';\n', a); assert.ok(a >= 0 && b > a, part + ': حرفيُّ ' + v); return t.slice(a + ('var ' + v + ' = ').length, b); };
 
 test('V7 · 53 ①: حرفيُّ كل وحدةٍ مرجعية = مصدرُها بلا مسارات omit (بايتاً) — والمسارات موجودةٌ في المصدر', () => {
@@ -27,7 +29,7 @@ test('V7 · 53 ①: حرفيُّ كل وحدةٍ مرجعية = مصدرُها �
   for (const t of SPEC.targets) {
     assert.ok(Array.isArray(t.omit) && t.omit.length, t.source + ': omit مُعلَن');
     const src = JSON.parse(rd('workers/bindings/' + t.source + '/data.json'));
-    for (const p of t.omit) assert.ok(has(src, p), t.source + ': «' + p + '» في المصدر');
+    for (const p of t.omit) assert.ok(has(src, p.split('.')), t.source + ': «' + p + '» في المصدر');
     const lit = literal(t.part, t.var), want = JSON.stringify(omit(src, t.omit));
     assert.equal(lit, want, t.part + ' = المصدرُ بلا omit');
     dropped += JSON.stringify(src).length - want.length;
@@ -58,18 +60,19 @@ test('V7 · 53 ②: لا قارئَ في العامل لأيّ حقلٍ محذو
     const bare = inFn.filter((n) => n.type === 'Identifier' && n.name === P && parents.get(n) !== fn && !(parents.get(n).type === 'MemberExpression' && parents.get(n).object === n && !parents.get(n).computed));
     assert.deepEqual(bare.map(at), [], E + ': ' + P + ' لا يُمرَّر كاملاً ولا يُعدَّد');
     const exposed = new Set();
+    /* قراءاتُ P.<أعلى> في المحرّك: «عرضٌ» = قيمةُ عضوٍ في كائن الواجهة المردود (P.x أو P.x || null) — ويُجمع اسمُ العضو */
+    const exposure = (top) => inFn.filter((n) => isMem(n, P) && n.property.name === top).map((r) => {
+      let v = r, up = parents.get(r); if (up.type === 'LogicalExpression' && up.left === r) { v = up; up = parents.get(up); }
+      return up.type === 'Property' && up.value === v && parents.get(up).type === 'ObjectExpression' && parents.get(parents.get(up)).type === 'ReturnStatement' ? (up.key.name || up.key.value) : null;
+    });
     for (const p of t.omit) {
-      const ks = p.split('.');
-      const reads = inFn.filter((n) => isMem(n, P) && n.property.name === ks[0]);
-      if (ks.length === 1) {
-        /* القراءةُ الوحيدة المسموحة: قيمةُ عضوٍ في كائن الواجهة المردود (P.x أو P.x || null) */
-        for (const r of reads) {
-          let v = r, up = parents.get(r); if (up.type === 'LogicalExpression' && up.left === r) { v = up; up = parents.get(up); }
-          assert.ok(up.type === 'Property' && up.value === v && parents.get(up).type === 'ObjectExpression' && parents.get(parents.get(up)).type === 'ReturnStatement', E + ': ' + P + '.' + ks[0] + ' يُقرأ خارج كائن الواجهة (' + at(r) + ')');
-          exposed.add(up.key.name || up.key.value);
-        }
+      const ks = p.split('.'), top = ks[0].replace(/\[\]$/, ''), ex = exposure(top);
+      if (ks.length === 1 || ex.every(Boolean)) {
+        /* الحقلُ (أو حاويتُه) لا يُقرأ في المحرّك إلا عرضاً في كائن الواجهة — والعضوُ المعروض يُفحص أدناه ألّا يُقرأ */
+        assert.ok(ex.every(Boolean), E + ': ' + P + '.' + top + ' يُقرأ خارج كائن الواجهة');
+        ex.forEach((m) => exposed.add(m));
       } else {
-        /* حقلٌ متداخل (readBindings.noReadKey): لا يُذكر اسمُه عضواً ولا نصّاً في أيّ موضع */
+        /* الحاويةُ مقروءة (readBindings): الحقلُ المتداخل لا يُذكر اسمُه عضواً ولا نصّاً في أيّ موضع */
         const name = ks[ks.length - 1];
         const hits = all.filter((n) => !dataLits.some((d) => n.start >= d.start && n.end <= d.end) && ((n.type === 'MemberExpression' && !n.computed && n.property.name === name) || (n.type === 'Literal' && n.value === name) || (n.type === 'Property' && (n.key.name === name || n.key.value === name))));
         assert.deepEqual(hits.map(at), [], E + ': «' + p + '» يُقرأ');
@@ -114,8 +117,8 @@ test('V7 · 53 ③: المحرّكاتُ بالبيانات الكاملة (قب
     const gone = [], src0 = JSON.parse(rd('workers/bindings/' + t.source + '/data.json'));
     for (const m of Object.keys(a)) {
       if (typeof a[m] === 'function') continue;
-      const nested = t.omit.filter((p) => p.includes('.') && p.split('.')[0] === m && JSON.stringify(plain(a[m])) === JSON.stringify(src0[m]));
-      if (nested.length) { assert.deepEqual(plain(b[m]), omit({ [m]: plain(a[m]) }, nested)[m], E + '.' + m + ' = الأصلُ بلا ' + nested.join(' · ')); continue; }
+      const nested = t.omit.filter((p) => p.includes('.') && p.split('.')[0].replace(/\[\]$/, '') === m && JSON.stringify(plain(a[m])) === JSON.stringify(src0[m]));
+      if (nested.length) { assert.deepEqual(plain(b[m]), omit({ [m]: plain(a[m]) }, nested.map((p) => p.replace(/^[^.\[]+/, m)))[m], E + '.' + m + ' = الأصلُ بلا ' + nested.join(' · ')); continue; }
       if (b[m] === undefined && a[m] !== undefined) { gone.push(m); continue; }
       if (b[m] === null && a[m] !== null && t.omit.length) { gone.push(m); continue; }
       assert.deepEqual(plain(b[m]), plain(a[m]), E + '.' + m);
