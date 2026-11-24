@@ -236,9 +236,11 @@ test('AT-10 سياسةُ الإثبات لكل مهمة (ق2) · الاعتذا�
 
 test('AT-11 الإلغاءُ منطقيّ (يبقى الصفُّ وسجلُّه) · قفلُ الشهر = الاعتمادُ الصريح وحده ({mo:1} شهرٌ مفتوح)', async () => {
   const W = await world({ worker: WU.file }); const me = await W.login(ME.un, ME.pw), dm = await W.login(...DM);
-  assert.equal((await post(W, dm.ck, '/api/tasks/cancel', { k: DAY, id: 1760000000102, ekey: ME.eid })).status, 400, 'الإلغاءُ بسبب');
-  assert.equal((await post(W, dm.ck, '/api/tasks/cancel', { k: DAY, id: 1760000000102, ekey: ME.eid, why: 'TEST_ONLY' })).status, 200);
-  const v = await mine(W, me.ck, 1760000000102); assert.equal(v.ph, 'cancelled'); assert.equal(v.can.why, 'TEST_ONLY');
+  /* V7 · 53 (REVIEW ١١-أ): سببُ الإلغاء اختياريّ — كان 400 «اذكر سبب الإلغاء» بلا سبب؛ الآن يُقبل ويُحفظ فارغاً، وما كُتب يُحفظ (tasks_review265 · tasks_page_bulk265) */
+  const c0 = await post(W, dm.ck, '/api/tasks/cancel', { k: DAY, id: 1760000000102, ekey: ME.eid });
+  assert.equal(c0.status, 200, 'الإلغاءُ بلا سبب يُقبل: ' + JSON.stringify(c0.j));
+  const v = await mine(W, me.ck, 1760000000102); assert.equal(v.ph, 'cancelled'); assert.equal(v.can.why, '');
+  assert.equal((await post(W, dm.ck, '/api/tasks/cancel', { k: DAY, id: 1760000000102, ekey: ME.eid, why: 'x'.repeat(5000) })).status, 400, 'حدُّ الطول باقٍ لما يُكتب');
   assert.equal((await act(W, me.ck, { k: DAY, id: 1760000000102, act: 'start' })).status, 409);
   assert.equal((await post(W, dm.ck, '/api/tasks/cancel', { k: DAY, id: 1760000000110, why: 'x' })).status, 404, 'مجموعةٌ قديمةٌ تتشارك الهوية بلا مكلَّف ⇒ ملتبسة');
   /* قفلُ الشهر: {mo:1} شهرٌ منقضٍ فُتح — لا يمنع · true اعتمادٌ — يمنع (كان الخادمُ يعدّ {mo:1} قفلاً — عيبٌ في المرحلة الأولى أُصلح) */

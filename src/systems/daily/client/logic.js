@@ -15866,7 +15866,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   .filter(Boolean)
               : [],
             i = t ? String(t.why || "") : "",
-            o = !(!t || !i.trim()),
+            o = !!t,   /* V7 · 53 (REVIEW ١١-أ): سببُ إغلاق الباب اختياريّ — يُحفظ إن كُتب، ومؤشّرُ الأبواب المغلقة يعدّ الفارغَ «بلا سبب مسجّل» */
             r = [];
           for (let t = 0; t < 24; t++) r.push(e(t));
           const a = [];
@@ -15907,7 +15907,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             onGcWhy: (t) => this.setState((e) => ({ gClose: { ...(e.gClose || {}), why: t.target.value } })),
             gcWhyStyle:
               "width:100%;height:38px;border:1px solid " +
-              (i.trim() ? "var(--bd-xe1e1e1)" : "var(--bd-a22038380p5)") +
+              "var(--bd-xe1e1e1)" +
               ";border-radius:9px;padding:0 12px;font-size:13px;font-weight:400;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box",
             gcH: t ? t.h : "",
             gcM: t ? t.m : "",
@@ -15942,7 +15942,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               const t = this.state.gClose;
               if (!t) return;
               const e = String(t.why || "").trim();
-              if (!e) return;
               const s = t.h + ":" + t.m,
                 n = t.idx || [];
               (this._updRoundAt(this.state.floor >= 0 ? this.state.floor : 0, (t) => {

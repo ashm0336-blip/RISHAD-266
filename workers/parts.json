@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "df9978e4484bb63c3aabeb5019c7b65e977384f00929ad371f5175155a81bce1",
+  "sha256": "5f07d44865819293a3e8cc5285a29aaa47532e2716e56e7b37114169ab1986e5",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -977,8 +977,8 @@
         23934,
         23992
       ],
-      "bytes": 24267,
-      "sha256": "2c961b457790a7baaf37fb9b54bff66d527713a9a879eb31e8ba7cafb70a10f0",
+      "bytes": 24261,
+      "sha256": "6bd73c23c5cf101c12551fafcd76d4d0fb2749dfb0eb1d48c43cfa92154db2a0",
       "head": "/* ═══ KIVO_263 · SOT-101 — مخطّطاتُ أجسام الطلبات المغيِّرة: المصدرُ src/schemas/api/bodies.schema.json (JSON Schema) ═══"
     },
     {
@@ -1175,8 +1175,8 @@
     {
       "file": "../../src/systems/tasks/server/071-task-mgmt.js",
       "new": "KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول /api/tasks/* (إنشاء · مراجعة · تمديد · إعادةُ إسناد · إلغاء · ربط · مجموعة)",
-      "bytes": 61125,
-      "sha256": "5ae58b06fb28668630d662a2cb834536dc4634ee4d3683f7910e0d8cb0c6df91",
+      "bytes": 61272,
+      "sha256": "01151d8b89e3d41e9e3acf4d09328964d1db254de0a4040bf0d859f854316e70",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول: الإنشاء · المراجعة · التمديد · إعادةُ الإسناد · الإلغاء · الربط · المجموعة ═══",
       "lines": [
         29757,

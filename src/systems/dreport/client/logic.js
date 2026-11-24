@@ -3104,16 +3104,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           mkTrGo: (function (t, e, n) {
             return function () {
               if (r.state.drTrSel) {
+                /* V7 · 53 (REVIEW ١١-أ): سببُ التحويل اختياريّ — يُحفظ إن كُتب */
                 var a = (r.state.drTrWhy || "").trim();
-                a
-                  ? r.setState({ drTrConfirm: { ekey: t, name: e, empno: n, from: o, to: r.state.drTrSel, why: a } })
-                  : r.bsToast("اكتب سبب التحويل أولاً — حقل مطلوب", "warn");
+                r.setState({ drTrConfirm: { ekey: t, name: e, empno: n, from: o, to: r.state.drTrSel, why: a } });
               } else r.bsToast("اختر الوردية المحوَّل إليها أولاً", "warn");
             };
           })(e.ekey, e.name, e.empno),
           mkTrGoStyle:
             "height:27px;border-radius:8px;font-size:11px;font-weight:700;font-family:'Cairo',sans-serif;border:0;color:var(--fg-xffffff);transition:background .15s;" +
-            (t.drTrSel && (t.drTrWhy || "").trim()
+            (t.drTrSel
               ? /* الموجة 2 · ES-4: ملءُ النيلي ونصُّه بالرمزين */ "cursor:pointer;background:var(--bg-x4f46e5);color:var(--indigo-on)"
               : "cursor:default;background:var(--bg-xcbd5e1)"),
           mkAbTip: "ab" === e.mark ? "غيابٌ مؤشَّر — اضغط لإلغائه وإعادته حاضراً" : "تسجيل غياب اليوم",
@@ -3472,7 +3471,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       drTrWhyVal: t.drTrWhy || "",
       drTrWhyStyle:
         "height:28px;border-radius:8px;padding:0 9px;font-size:10.5px;font-family:'Cairo',sans-serif;color:var(--fg-x141414);outline:none;width:100%;box-sizing:border-box;transition:border-color .15s;border:1px solid " +
-        ((t.drTrWhy || "").trim() ? "#E1E1E1;background:var(--bg-xf7f9fa)" : "rgba(220,38,38,0.45);background:var(--bg-a2542422420p6)"),
+        "#E1E1E1;background:var(--bg-xf7f9fa)",
       onDrTrWhy: function (t) {
         r.setState({ drTrWhy: t.target.value });
       },

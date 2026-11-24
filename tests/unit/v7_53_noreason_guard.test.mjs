@@ -141,3 +141,55 @@ test('noreason · العامل: لا يشترط الخادمُ سبباً ولا
   /* السجلاتُ القديمة مقروءة: تنبيهُ صفّ الرفض القديم بـdetail «reason» باقٍ */
   assert.match(src, /r\.detail === "reason"/, 'the bell still words old «reason» rows');
 });
+
+/* V7 · 53 (REVIEW ١١-أ — قرارُ المراجع): ثلاثةُ حقولٍ صارت اختيارية ولا تعود إلزاميةً أبداً — تبقى وتُحفظ إن كُتبت، ولا يُرفض الفعلُ بغيابها:
+   ① سببُ إلغاء المهمة: الخادم (tkCancel لا يطلب why · مخطّطُ الجسم لا يضعه في required) والصفحة (لا «اذكر سبب الإلغاء»)
+   ② سببُ التحويل في نموذج التقرير اليومي: «موافق» (mkTrGo) لا يشترطه · لا «حقل مطلوب» · لا «(مطلوب)» في الحقل
+   ③ سببُ إغلاق الباب: المتابعة اليومية («تأكيد الإغلاق» gcDo لا يعود بغيابه · لا نجمةَ إلزام) · «صفحتي» (حوارُ الإغلاق يُتاح للباب بلا سبب) ·
+      خدمةُ رصد الميدان (لا «سبب الإغلاق مطلوب»). نصُّ اعتذار الموظف خارجها (يبقى كما هو). */
+const fnProp = (tree, key) => { const out = []; walk(tree, (n) => { if (n.type === 'Property' && name(n.key) === key) out.push(n.value); }); return out; };
+const declsFrom = (node, src, rx) => { const s = new Set(); walk(node, (n) => { if (n.type === 'VariableDeclarator' && n.init && n.id.type === 'Identifier' && n.init.end - n.init.start < 160 && !/function|=>/.test(src.slice(n.init.start, n.init.end)) && rx.test(src.slice(n.init.start, n.init.end))) s.add(n.id.name); }); return s; };
+const negTests = (node, names) => { const out = []; walk(node, (n) => { const t = n.type === 'IfStatement' || n.type === 'ConditionalExpression' ? n.test : null; if (!t) return;
+  const ids = []; walk(t, (m) => { if (m.type === 'Identifier' && names.has(m.name)) ids.push(m.name); }); if (ids.length) out.push(n); }); return out; };
+
+test('REVIEW ١١-أ: سببُ إلغاء المهمة وسببُ التحويل وسببُ إغلاق الباب اختيارية — لا يُرفض الفعلُ بغيابها (الصفحاتُ المبنيّة والعامل)', () => {
+  const bad = [], js = files(path.join(DIST, 'assets'), /\.js$/), tpl = files(path.join(DIST, 'assets'), /\.dc\.txt$/);
+  const one = (rx) => { const f = js.filter((x) => rx.test(path.basename(x))); assert.equal(f.length, 1, String(rx)); return [f[0], fs.readFileSync(f[0], 'utf8')]; };
+  const REQ = ['اذكر سبب الإلغاء', 'اكتب سبب التحويل', 'سبب التحويل * (مطلوب)', 'سبب الإغلاق مطلوب'];
+  for (const f of js.concat(tpl)) { const s = fs.readFileSync(f, 'utf8'); for (const t of REQ) if (s.includes(t)) bad.push('R ' + path.relative(DIST, f) + ' «' + t + '»'); }
+  for (const f of tpl) if (/سبب الإغلاق\s*<span[^>]*>\s*\*/.test(fs.readFileSync(f, 'utf8'))) bad.push('R ' + path.relative(DIST, f) + ' gate-closure reason marked required (*)');
+  /* ② التحويل: «موافق» لا يفحص قيمةَ drTrWhy في أيّ شرط */
+  { const [f, src] = one(/^Daily-Report\.logic\./), tree = ast(src, f), fns = fnProp(tree, 'mkTrGo');
+    assert.ok(fns.length >= 1, 'mkTrGo found');
+    for (const fn of fns) for (const n of negTests(fn, declsFrom(fn, src, /drTrWhy/))) bad.push('T dreport mkTrGo ' + at(src, n));
+    walk(tree, (n) => { if ((n.type === 'IfStatement' || n.type === 'ConditionalExpression') && fns.some((fn) => n.start >= fn.start && n.end <= fn.end) && /drTrWhy/.test(src.slice(n.test.start, n.test.end))) bad.push('T dreport mkTrGo test on drTrWhy ' + at(src, n)); }); }
+  /* ③ المتابعة اليومية: gcDo لا يعود بغياب السبب · وزرُّ التأكيد (gcOkOn) لا يتوقّف عليه */
+  { const [f, src] = one(/^Daily-Sessions\.logic\./), tree = ast(src, f), fns = fnProp(tree, 'gcDo');
+    assert.ok(fns.length >= 1, 'gcDo found');
+    for (const fn of fns) for (const n of negTests(fn, declsFrom(fn, src, /\.why\b/))) bad.push('G daily gcDo ' + at(src, n));
+    for (const ok of fnProp(tree, 'gcOkOn')) { const ids = []; walk(ok, (m) => { if (m.type === 'Identifier') ids.push(m.name); });
+      walk(tree, (n) => { if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier' && ids.includes(n.id.name) && n.init && /\.trim\(\)/.test(src.slice(n.init.start, n.init.end)) && n.start > ok.start - 4000 && n.start < ok.start) bad.push('G daily gcOkOn depends on the reason ' + at(src, n)); }); } }
+  /* ③ «صفحتي»: حوارُ الإغلاق متاحٌ للباب بلا سبب (const ‹ok› = ‹f›.kind === "gates" || …) */
+  { const [f, src] = one(/^Profile\.logic\./), tree = ast(src, f); let seen = 0;
+    walk(tree, (n) => { if (n.type !== 'VariableDeclarator' || !n.init || n.init.type === 'ConditionalExpression') return; const t = src.slice(n.init.start, n.init.end);   /* الشرطُ المنطقيّ لإتاحة الحوار، لا تركيبُ النصّ */
+      if (!/"أخرى"/.test(t) || !/\.why\b/.test(t) || !/\.txt\b/.test(t)) return; seen++;
+      const L = n.init, gates = L.type === 'LogicalExpression' && L.operator === '||' && L.left.type === 'BinaryExpression' && /===?/.test(L.left.operator)
+        && [L.left.left, L.left.right].some((x) => x.type === 'Literal' && x.value === 'gates') && [L.left.left, L.left.right].some((x) => propName(x) === 'kind');
+      if (!gates) bad.push('G profile closure dialog requires a reason for gates ' + at(src, n)); });
+    assert.ok(seen >= 1, 'the «صفحتي» closure-dialog condition was inspected'); }
+  /* ③ خدمةُ رصد الميدان: إغلاقُ الباب (kind gates) لا يُرفض بلا سبب */
+  { const [, src] = one(/^520-field-monitor\./);
+    const m = /if\s*\(([^)]*st\s*===\s*["']closed["'][^)]*)\)\s*return\s*\{\s*ok:\s*(?:false|!1)/.exec(src);
+    if (m && !/kind\s*!==\s*["']gates["']|["']gates["']\s*!==\s*kind/.test(m[1])) bad.push('G 520 refuses a gate closure without a reason: ' + m[0].slice(0, 160)); }
+  /* ① الخادم: tkCancel لا يطلب السبب · ومخطّطُ الجسم لا يضعه في required */
+  { const src = fs.readFileSync(WORKER, 'utf8'), tree = ast(src, 'worker'); let fnSeen = 0;
+    walk(tree, (n) => { if (n.type !== 'FunctionDeclaration' || name(n.id) !== 'tkCancel') return; fnSeen++;
+      walk(n, (c) => { if (c.type === 'CallExpression' && name(c.callee) === 'tkStrOk' && /\.why$/.test(src.slice(c.arguments[0].start, c.arguments[0].end)) && c.arguments[2] && !(c.arguments[2].type === 'Literal' && !c.arguments[2].value)) bad.push('C tkCancel requires why ' + at(src, c)); });
+      for (const t of negTests(n, declsFrom(n, src, /\.why\b|tkWhyOf/))) bad.push('C tkCancel tests why ' + at(src, t));
+      walk(n, (c) => { if (c.type === 'IfStatement' && /!\s*(?:tkWhyOf\(\w+\)|\w+\.why)\b/.test(src.slice(c.test.start, c.test.end))) bad.push('C tkCancel !why ' + at(src, c)); }); });
+    assert.equal(fnSeen, 1, 'tkCancel inspected');
+    const sm = /var KIVO_BODY_SCHEMAS = (\{[\s\S]*?\});\n/.exec(src); assert.ok(sm, 'KIVO_BODY_SCHEMAS');
+    const sc = JSON.parse(sm[1])['/api/tasks/cancel']; assert.ok(sc, 'cancel body schema');
+    if ((sc.required || []).includes('why')) bad.push('C body schema /api/tasks/cancel requires why'); }
+  assert.deepEqual(bad, [], 'a REVIEW 11-a field became required again:\n' + bad.join('\n'));
+});

@@ -121,11 +121,22 @@ test('البند 11 · تمديدٌ جماعي بقيمةٍ واحدة: بلا �
   assert.deepEqual(Object.keys(P.c.state.tkSel).sort(), [DAY + '#' + D1 + '#' + ME.eid, DAY + '#' + F1 + '#' + ME.eid].sort(), 'الفاشلةُ والمتخطّاةُ تبقيان محدَّدتين');
 });
 
+/* V7 · 53 (REVIEW ١١-أ — قرارُ المراجع): سببُ الإلغاء اختياريّ — الإلغاءُ الجماعيّ بلا سبب يمضي ويُحفظ فارغاً (كان يُرفض «اذكر سبب الإلغاء» في الصفحة وفي الخادم) */
+test('REVIEW ١١-أ: إلغاءٌ جماعيٌّ بلا سبب يمضي — يُلغى في الخادم وسببُه فارغ', async () => {
+  const { W, P } = await setup();
+  let V = sel(P, [P2]);
+  V.tkBulkActs[3].click(); V = P.c.renderVals(); assert.equal(V.tkBulkHead, 'إلغاء المهام المحدَّدة');
+  const R = await run(P);
+  assert.equal(P.c.state.tkBulkErr || '', '', 'لا رسالةَ «اذكر سبب الإلغاء»');
+  assert.equal(R.ok, 1, JSON.stringify(R)); assert.equal(srv(W, P2)[23].asg, 'cancelled'); assert.equal(srv(W, P2)[23].can.why, '');
+});
+
 test('البند 11 · إلغاءٌ جماعي بسببٍ واحد (العامةُ أيضاً) · وإعادةُ إسنادٍ جماعية إلى موظفٍ واحد — المسندةُ إليه أصلاً والعامةُ تُتخطّيان', async () => {
   const { W, P } = await setup();
   let V = sel(P, [P2, G1, D1]);
   V.tkBulkActs[3].click(); V = P.c.renderVals(); assert.equal(V.tkBulkHead, 'إلغاء المهام المحدَّدة');
-  V.tkBulkDo(); assert.match(P.c.state.tkBulkErr, /اذكر سبب الإلغاء/);
+  /* V7 · 53 (REVIEW ١١-أ): سببُ الإلغاء اختياريّ — لا رسالةَ «اذكر سبب الإلغاء»، والحقلُ يقول «اختياري» (إلغاءٌ بلا سبب: الاختبار التالي) */
+  assert.match(V.tkBulkWhyPh, /اختياري/);
   P.c.renderVals().onTkBulkWhy({ target: { value: 'TEST_ONLY أُلغيت جماعياً' } });
   let R = await run(P);
   assert.equal(R.ok, 2); assert.equal(R.skip.length, 1); assert.match(R.skip[0].why, /منجزة/);

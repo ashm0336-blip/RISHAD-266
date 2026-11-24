@@ -118,16 +118,17 @@
       }))),
       (t.fdWhyTxt = f.txt),
       (t.fdOnWhy = (t) => this.setState({ fdDlg: { ...f, txt: t.target.value } })),
-      (t.fdWhyPh = "أخرى" === f.why ? "اكتب السبب — مطلوب مع «أخرى»" : "تفصيل السبب (اختياري)"),
+      (t.fdWhyPh = "أخرى" === f.why && "gates" !== f.kind ? "اكتب السبب — مطلوب مع «أخرى»" : "تفصيل السبب (اختياري)"),
       (t.fdNow = a.clock()),
       (t.fdMe = (KIVO.BassamAuth && KIVO.BassamAuth.display && KIVO.BassamAuth.display().name) || ""));
-    const l = !(!f.why || ("أخرى" === f.why && !f.txt.trim()));
+    /* V7 · 53 (REVIEW ١١-أ): سببُ إغلاق الباب اختياريّ — يُسجَّل الإغلاقُ بلا سبب، ويُحفظ ما كُتب */
+    const l = "gates" === f.kind || !(!f.why || ("أخرى" === f.why && !f.txt.trim()));
     ((t.fdOkDis = !l),
       (t.fdDlgNo = () => this._pfFieldPending ? this.bsToast("الرصد السابق لم يُحسم — أعد تأكيد الطلب نفسه قبل إغلاق المسودة", "warn") : this.setState({ fdDlg: null })),
       (t.fdDlgOk = async () => {
         if (!l) return;
         this._pfFieldPending = true;
-        const t = "أخرى" === f.why ? f.txt.trim() : f.txt.trim() ? f.why + " — " + f.txt.trim() : f.why,
+        const t = "أخرى" === f.why || !f.why ? f.txt.trim() : f.txt.trim() ? f.why + " — " + f.txt.trim() : f.why,
           e = await a.observe(n, f.fi, f.gi, { st: "closed", why: t, kind: f.kind, expected: f.g });
         i(e, "سُجّل إغلاق " + (f.name || "") + " الساعة " + a.clock());
       }));
