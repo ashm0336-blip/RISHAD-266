@@ -23,3 +23,27 @@ export function hYmdToG(o) {
 }
 /* gMonthOfH(y, m, d=1) — {year, month} الميلاديان ليومٍ هجري (للاستعلام بالشهر الميلادي المقابل) */
 export function gMonthOfH(y, m, d = 1) { const g = hYmdToG({ y, m, d }); return { year: g.y, month: g.m }; }
+/* الإحصائياتُ القديمة بعد الترحيل (0004 ثم 0014) — متوقَّعٌ مستقلّ لا يعيد كتابةَ دالة الترحيل:
+   dsDaysG(old)                 أيامُ المسجدين بمفاتيحها الميلادية (hToIso بأم القرى) وقيمُها كما هي حرفاً.
+   dsLockDiff(oldLocks, newLocks, now)  «السلوكُ اليومي المطابق» (ق3): لكل يومٍ ميلادي في الأشهر التي تمسّها الأقفالُ القديمة، قفلُه بالقاعدة نفسِها
+                                (calLockedIn · 010) قبل الترحيل (هجرياً) = بعده (ميلادياً)؛ يُرجع الأيامَ المختلفة (فارغةً إن طابق). */
+export function dsDaysG(old) {
+  const out = {};
+  for (const s of Object.keys(old)) { if (s === 'locks') continue; out[s] = {}; for (const k of Object.keys(old[s])) out[s][hToIsoDay(k)] = old[s][k]; }
+  return out;
+}
+function hToIsoDay(k) { const S = S1 || (S1 = loadServerCal()); return S.calHtoGDay(k) || k; }
+export function dsLockDiff(oldLocks, newLocks, now = Date.now()) {
+  const S = S1 || (S1 = loadServerCal()), Tg = S.calToday(now), Th = S.calHOf(Tg.k), bad = [];
+  const months = new Set(), src = {};
+  for (const k of Object.keys(oldLocks)) { const q = /^(\w+)\|(\d{4})-(\d{1,2})$/.exec(k); (src[q[1]] ||= {})[(+q[2]) + '-' + (+q[3])] = oldLocks[k]; for (const x of S.calGMonthsOfH(+q[2], +q[3])) months.add(q[1] + '|' + x.g); }
+  for (const sk of months) {
+    const [site, gm] = sk.split('|');
+    for (const day of S.calGDays(gm)) {
+      const g = S.calGParse(day), h = S.calHOf(day), before = S.calLockedIn(src[site][h.y + '-' + h.m], h.y, h.m, h.d, Th), after = S.calLockedIn(newLocks[sk], g.y, g.m, g.d, Tg);
+      if (before !== after) bad.push(site + ' ' + day + ' ' + before + '→' + after);
+    }
+  }
+  for (const k of Object.keys(newLocks)) if (!months.has(k)) bad.push('unexpected ' + k);
+  return bad;
+}

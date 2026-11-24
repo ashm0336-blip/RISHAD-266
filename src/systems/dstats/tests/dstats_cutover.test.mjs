@@ -7,6 +7,10 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { D1Shim, ROOT, allowTestSchemaUpgrade } from '../../../../tests/unit/harness.mjs';
+import { dsDaysG, dsLockDiff } from '../../../../tests/unit/cal_rest_fx.mjs';
+/* V7 · 53 تقويم: بعد الترحيل (0004 ثم 0014) الأيامُ بمفاتيحها الميلادية وقيمُها حرفاً، والأقفالُ تعطي «السلوكَ اليومي المطابق» (ق3) يوماً يوماً */
+const gregOf = (current, legacy) => { const { locks, ...days } = current; assert.deepEqual(days, dsDaysG(legacy)); assert.deepEqual(dsLockDiff(legacy.locks || {}, locks || {}), []); };
+const G1500 = dsDaysG({ haram: { '1500-01-01': 0 } }) && Object.keys(dsDaysG({ haram: { '1500-01-01': 0 } }).haram)[0];
 
 const KEY = 'bassam_dstats_v1';
 const copy = value => JSON.parse(JSON.stringify(value));
@@ -47,15 +51,15 @@ test('startup cutover retains null, absent metrics, zero, attribution and all lo
   const {W,DB,env,keys}=await legacy({count:13006}),before=identities(DB);
   await W.initDb(env);
   const current=await W.dsDomainRead(env);
-  assert.deepEqual(current.data,expectedData());
-  assert.equal(Object.hasOwn(current.data.haram['1500-01-01'],'hijr_ismail'),false);
+  gregOf(current.data,expectedData());
+  assert.equal(Object.hasOwn(current.data.haram[G1500],'hijr_ismail'),false);
   assert.equal(DB.q('SELECT COUNT(*) n FROM kv WHERE k=?1',KEY)[0].n,0);
   assert.equal(DB.q("SELECT COUNT(*) n FROM meta WHERE k='ds_cutover_ready'")[0].n,0);
   assert.equal(DB.q("SELECT COUNT(*) n FROM d1_migrations WHERE name='0004_daily_stats'")[0].n,1);
   assert.equal(identities(DB),before);
   assert.equal(JSON.parse(DB.q("SELECT v FROM kv WHERE k='bassam_auth_users_v1' ORDER BY seq").map(r=>r.v).join('')).length,13006);
   const A=W.actorFromKeys(Object.fromEntries(Object.entries(keys).map(([k,v])=>[k,JSON.stringify(v)])),'TEST_ONLY_u0');
-  const changed=copy(current.data);changed.haram['1500-01-01'].carts=4;
+  const changed=copy(current.data);changed.haram[G1500].carts=4;
   assert.equal((await W.dsDomainCommit(env,A,{base:current.rev,data:changed})).status,200);
   assert.equal((await W.dsDomainCommit(env,A,{base:current.rev,data:current.data})).status,409);
   assert.equal(identities(DB),before);
@@ -85,7 +89,7 @@ test('late typed-write failure rolls back DDL, migration stamp, source retiremen
   await assert.rejects(W.initDb(env),/injected failure/);DB.failIf=null;
   assert.deepEqual(schema(DB),before.schema);assert.deepEqual(old(DB),before.old);assert.equal(identities(DB),before.identities);assert.deepEqual(copy(DB.q('SELECT * FROM revs ORDER BY k')),before.revs);
   assert.equal(DB.q("SELECT COUNT(*) n FROM meta WHERE k='ds_cutover_ready'")[0].n,0);
-  await W.initDb(env);assert.deepEqual((await W.dsDomainRead(env)).data,expectedData());
+  await W.initDb(env);gregOf((await W.dsDomainRead(env)).data,expectedData());
 });
 
 test('cutover refuses to overwrite a pre-existing relational day with an older KV document',async()=>{

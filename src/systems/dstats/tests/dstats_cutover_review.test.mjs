@@ -6,6 +6,9 @@ import path from 'node:path';
 import os from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { D1Shim, ROOT, allowTestSchemaUpgrade } from '../../../../tests/unit/harness.mjs';
+import { dsDaysG, dsLockDiff } from '../../../../tests/unit/cal_rest_fx.mjs';
+/* V7 · 53 تقويم: بعد الترحيل (0004 ثم 0014) الأيامُ بمفاتيحها الميلادية وقيمُها حرفاً، والأقفالُ تعطي «السلوكَ اليومي المطابق» (ق3) يوماً يوماً */
+const gregOf = (current, legacy) => { const { locks, ...days } = current; assert.deepEqual(days, dsDaysG(legacy)); assert.deepEqual(dsLockDiff(legacy.locks || {}, locks || {}), []); };
 
 const KEY = 'bassam_dstats_v1', copy = value => JSON.parse(JSON.stringify(value));
 const metrics = { haram: ['worshippers', 'umrah', 'hijr_ismail', 'carts'], nabawi: ['worshippers', 'salam_corridor', 'rawdah_men_published', 'rawdah_men_reserved', 'rawdah_men_actual', 'rawdah_women_published', 'rawdah_women_reserved', 'rawdah_women_actual'] };
@@ -43,9 +46,10 @@ test('multi-chunk cutover preserves every metric presence bit, null, zero, attri
   const { W, DB, env, data } = await fixture(), identities = identity(DB), policy = DB.q("SELECT v FROM meta WHERE k='policy'")[0].v;
   await W.initDb(env); const current = await W.dsDomainRead(env), expected = copy(data);
   expected.locks['haram|1500-1'] = { ap: 1, mo: 1, dopen: { 1: 1, 30: 1 }, dshut: { 1: 1 } }; delete expected.locks['haram|1500-01'];
-  assert.deepEqual(current.data, expected); assert.ok(current.rev > 600); assert.deepEqual(identity(DB), identities); assert.equal(DB.q("SELECT v FROM meta WHERE k='policy'")[0].v, policy);
+  gregOf(current.data, expected); assert.ok(current.rev > 600); assert.deepEqual(identity(DB), identities); assert.equal(DB.q("SELECT v FROM meta WHERE k='policy'")[0].v, policy);
   for (const [site, fields] of Object.entries(metrics)) for (const field of fields) {
-    assert.equal(current.data[site]['1500-01-01'][field], 0); assert.equal(current.data[site]['1500-01-02'][field], null); assert.equal(Object.hasOwn(current.data[site]['1500-01-03'], field), false);
+    const g = k => Object.keys(dsDaysG({ x: { [k]: 0 } }).x)[0];
+    assert.equal(current.data[site][g('1500-01-01')][field], 0); assert.equal(current.data[site][g('1500-01-02')][field], null); assert.equal(Object.hasOwn(current.data[site][g('1500-01-03')], field), false);
   }
   assert.equal(DB.q('SELECT COUNT(*) n FROM kv WHERE k=?1', KEY)[0].n, 0); assert.equal(DB.q("SELECT COUNT(*) n FROM meta WHERE k='ds_cutover_ready'")[0].n, 0);
   assert.equal(DB.q("SELECT rev FROM revs WHERE k='bassam_auth_users_v1'")[0].rev, 600);
