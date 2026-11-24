@@ -10552,6 +10552,8 @@ async function rsPrepare(env, A, body, meta, internal) {
     var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
     if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
   }
+  /* V7 · 53: والنسخةُ الشاملة لكل إدارةٍ فيها سجلُّ أدوار — منحُ النسخة أساسٌ (لا منحُ الهدف: الاستبدالُ كامل) */
+  if (body.scope.kind === 'full') Object.keys(keys).forEach(function (k) { var d = parseKey(k).dept, gk = enfGrantsKey(d); if (!d || k !== perm44Key(d) || keys[k] == null) return; var gv = rsRoleGrants(A, d, keys[k], keys[gk]); if (gv !== null) { keys[gk] = gv; if (!Object.prototype.hasOwnProperty.call(base, gk)) base[gk] = inputRevs[gk] || 0; } });
   /* 330-auth.pruneDeptAccounts: restore only removes staff/dept identities bound
      to removed departments, never GM/Super accounts. The result still traverses
      applySave's unchanged password, uniqueness and final-super validators. */
@@ -12393,7 +12395,7 @@ function rsBCTplsRoles(keys, perms, d, src, summary) {
   Object.keys(of || {}).forEach(function (ek) { if (!isMgrKey(ek)) assign[ek] = of[ek]; });
   var X = enfRolesFromTpls(tpls, assign, rsBCOwn(keys, rk) ? parseJson(keys[rk], null) : null);
   if (X.rep.roles || X.rep.people) keys[rk] = JSON.stringify(X.rec);
-  summary.tplRoles = { roles: X.rep.roles, people: X.rep.people, unknownTpl: X.rep.unknownTpl, lensDropped: X.rep.lensDropped };
+  var S = summary.tplRoles || (summary.tplRoles = { roles: 0, people: 0, unknownTpl: 0, lensDropped: 0 }); for (var q in S) S[q] += X.rep[q];   /* V7 · 53: يُجمع لكل إدارةٍ في النسخة الشاملة */
 }
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
@@ -12810,6 +12812,8 @@ async function rsConvertBackup(env, A, file, opt) {
 
      V7 · د7 (51ب): في نسخة الإدارة تصير أدواراً قبل الإسقاط (rsBCTplsRoles) */
   if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
+  /* V7 · 53 (رد المالك د7_1): النسخةُ الشاملة كذلك، إدارةً إدارة — إسناداتُ كلٍّ من tplOf[<الإدارة>] في سجلّ صلاحياتها (019d rsRoleGrants يبني المنح) */
+  else if (scope.kind === 'full') { var fp9 = parseJson(keys[K_PERM], null), of9 = isObj(fp9) && isObj(fp9.tplOf) ? fp9.tplOf : {}; deptIds.forEach(function (d) { rsBCTplsRoles(keys, { tplOf: isObj(of9[d]) ? of9[d] : {} }, d, d, summary); }); }
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });
@@ -14437,7 +14441,7 @@ function rsiFieldList(recs) {
 /* V7 · د7: قوالبُ نسخة الإدارة تصير أدواراً (019f) */
 function rsiSkipWhy(k, v, kind) {
   var n = resName(k), r = resOf(k);
-  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? (kind === 'dept' && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
+  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? ((kind === 'dept' || kind === 'full') && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
 }
 function rsiSweepStmt(env, now, uid) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id IN (SELECT snapshot_id FROM ' + RSI_T + " WHERE domain='meta' AND snapshot_id>='stage:' AND snapshot_id<'stage;' AND (row_number<?1 OR table_key=?2))").bind(now - RSI_TTL, uid);
