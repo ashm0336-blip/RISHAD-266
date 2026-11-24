@@ -62,7 +62,7 @@ test('V7 · د7 (أ) ① — the platform admin switches a lens OFF for a depart
     assert.equal(await lz(p, 'lens.gates').locator('button.p44-sw').isDisabled(), true);
     /* the manager: not in his «الإعدادات ← الصلاحيات», not on the map (lensOn), and the server does not apply its action */
     await open(m, '#/admin/perm/' + A + '/systems', 'main .p44-row');
-    const mine = await q.locator('main .p44-lrow').evaluateAll((L) => L.map((e) => e.dataset.sys));
+    const mine = await q.locator('main .p44-lrow').evaluateAll((L) => [...new Set(L.map((e) => e.dataset.sys))]);
     assert.deepEqual(mine, ALL.filter((k) => k !== 'gates').map((L) => 'lens.' + L), 'his read-only list: the ON lenses only');
     assert.doesNotMatch(await q.locator('main [data-org-tab="systems"]').innerText(), /البوابات/, 'the OFF lens is not even named');
     assert.equal(await q.evaluate((d) => KIVO.BassamPerm.lensOn('gates', d), A), false, 'map buttons · panels · KPIs: lensOn false');

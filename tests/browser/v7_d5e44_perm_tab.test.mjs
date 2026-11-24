@@ -55,7 +55,8 @@ test('V7 · د5-هـ (44) · «الصلاحيات»: super sees four sections an
     const SYS = await p.evaluate(() => KIVO.Perm44.sysList().filter((x) => x.toggle !== false).map((x) => x.name));
     const rows = await P('.p44-row').count(); assert.equal(rows, SYS.length, 'a row per toggleable system of the engine (' + SYS.length + ')');
     assert.deepEqual((await P('.p44-row[data-on="true"] b').allInnerTexts()).map((x) => x.trim()), ['الإحصائيات اليومية', 'عهد الموظفين', 'الجدول الشهري', 'التشغيل الميداني', 'المتابعة اليومية', 'التقرير اليومي', 'المهام'], 'ON in this unit\'s ceiling');
-    assert.equal(await P('button.p44-sw[role=switch][aria-label]').count(), SYS.length, 'every switch is a labelled switch');
+    assert.equal(await P('.p44-row button.p44-sw[role=switch][aria-label]').count(), SYS.length, 'every system switch is a labelled switch');
+    assert.equal(await P('.p44-lrow button.p44-sw[role=switch][aria-label]').count(), await P('.p44-lrow').count(), 'V7 · د7 (أ): every lens switch too (lens rows under their hosts)');
     assert.match(await P('').innerText(), /إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل\./);
     assert.match(await P('aside[aria-label="المعاينة"]').first().innerText(), /صفحتي/);
     await shot(p, 'p44_1_systems_super');
