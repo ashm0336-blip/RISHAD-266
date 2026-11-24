@@ -1,7 +1,13 @@
 /* V7 · د7 — عُدّةُ النسخة الشاملة (TEST_ONLY · مولَّدة في الذاكرة): fullOf(T, [[إدارة, خياراتُ oldFile, وسم]...]) ⇒ { full, want }
    نسخةٌ شاملة بالشكل القديم (version 3 · kind:'full') سجلاتُها العامة من المنصة الهدف نفسِها (T.DB) ولكل إدارةٍ نسخةُ إدارةٍ قديمة (oldFile) بمفاتيح «bsdept:<إدارة>:…»
    وصورٍ وموظفين بأسمائها · want: لكل إدارةٍ ما يُتوقَّع أن يُقرأ (readBack) · rowsOf(T): كلُّ ما يكتبه الاستيراد — للمقارنة بين مسارين. */
+import fs from 'node:fs';
 import { oldFile, withoutDropped } from './v7_d6_import_fx.mjs';
+import { WORKER } from './harness.mjs';
+import { load } from './v7_cal_migrate_fx.mjs';
+/* V7 · 53 تقويم: النسخةُ القديمة هجرية (oldFile) والاستيرادُ يحوّلها بالدالة الواحدة (calConvDoc · ق3–ق7) — فالمتوقَّعُ لمواردها الزمنية هو المحوَّل، كما في v7_cal_import14 */
+export const CALR = ['bassam_rounds_v1', 'bassam_dreport_v1', 'bassam_tasks_v1', 'bassam_staffing_v3', 'bassam_plan_v1', 'bassam_tasks_locks_v1', 'bassam_staffing_locks_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1'];
+let NEW = null;
 
 /* ما لا تحمله النسخةُ الشاملة القديمة من مفاتيح الإدارة هنا (التنبيهاتُ القديمة لكل إدارة · المنحُ والقوالب · الطوابع) — كما في اختبار د6 (٧) و(١٥) */
 const DROP = /:bassam_(notif_v1|notif_dev_v1.*|grants_v1|perm_tpls_v1|first_boot_v1|last_export_v1|dr_grp_v1)$/;
@@ -24,7 +30,10 @@ export async function fullOf(T, list) {
       const dk = 'bsdept:' + d + ':' + k;
       if (v === null || DROP.test(dk)) continue;
       full.data[dk] = ren(v);
-      if (T.lab && T.lab.W.opInfo(dk)) want[d][k] = withoutDropped(JSON.parse(full.data[dk]));
+      if (T.lab && T.lab.W.opInfo(dk)) {
+        const doc = withoutDropped(JSON.parse(full.data[dk]));
+        want[d][k] = CALR.includes(k) ? (NEW ||= await load(fs.readFileSync(WORKER, 'utf8'), 'new')).calConvDoc(k, doc, { T: new Date().toISOString().slice(0, 10), rep: null }) : doc;
+      }
     }
     for (const [id, body] of Object.entries(f.idbImages)) full.idbImages[ren(id)] = body;
   }
