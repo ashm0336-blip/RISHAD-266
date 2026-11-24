@@ -190,7 +190,7 @@ function szItemData(ctx, value, old, index, catalog, now) {
     out.hist.push({
       from: old.act || "",
       to: out.act,
-      at: new Date(now).toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" }),
+      at: new Date(now).toLocaleString("ar-SA-u-ca-gregory", { timeZone: "Asia/Riyadh" }),   /* V7 · 53 تقويم: نصُّ السجل الجديد ميلادي (القديمُ يبقى كما كُتب — ق9) */
       by: String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id),
       t: now,
     });
@@ -821,7 +821,7 @@ async function hSeizedAct(env, actor, b, meta) {
           item.hist.push({
             from: item.act || "",
             to: b.act,
-            at: new Date(now).toLocaleString("ar-SA", {
+            at: new Date(now).toLocaleString("ar-SA-u-ca-gregory", {   /* V7 · 53 تقويم: ميلادي */
               timeZone: "Asia/Riyadh",
             }),
             by: String(A.u.name || A.u.un || A.u.id),
