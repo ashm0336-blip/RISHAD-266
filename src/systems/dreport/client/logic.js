@@ -1523,7 +1523,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._drWant = sig;
     var w = function (name, spec) { return S.resources.indexOf(name) !== -1 && S.split(name) ? S.want(name, spec) : Promise.resolve({ ok: 1 }); },
       days = [dk, "m:" + ym].concat(t.rpD > 1 ? [ym + "-" + (t.rpD - 1)] : []);
-    Promise.all([w("bassam_dreport_v1", { periods: days }), w("bassam_staffing_v3", { groups: [ym] }), w("bassam_plan_v1", { groups: [ym] })]);   /* فشلٌ ⇒ حالةُ الخطأ في القراءة؛ التنقّلُ يعيد الطلب */
+    /* التقريرُ بأيامه (يملكه هذا النظام)، وما سواه من مجموعة القراءة المعلنة بلا تسميته (wantPage) */
+    Promise.all([w("bassam_dreport_v1", { periods: days }), S.wantPage("Daily Report", { groups: [ym], except: ["bassam_dreport_v1"] })]);   /* فشلٌ ⇒ حالةُ الخطأ في القراءة؛ التنقّلُ يعيد الطلب */
     if (this._drSumYear !== t.rpY) {
       this._drSumYear = t.rpY;
       S.summary("bassam_dreport_v1", { groups: this.MONTHS.map(function (a, i) { return t.rpY + "-" + (i + 1); }) }).then(function (q) {

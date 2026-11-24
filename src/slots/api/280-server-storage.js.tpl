@@ -1384,6 +1384,16 @@
       return bad || all[all.length - 1];
     });
   }
+  /* شهرُ الصفحة لكل موردٍ مقسَّم في مجموعة قراءتها المعلنة (KIVO_MANIFEST.operationsReadSets) — فلا تسمّي الصفحةُ مواردَ الأنظمة الأخرى.
+     spec: { groups: [شهر] · periods: [أيام] (للموارد التي تُقرأ بالأيام) · except: [أسماءٌ تطلبها الصفحةُ بنفسها] } */
+  function periodWantPage9(page, spec) {
+    var M = KIVO.KIVO_MANIFEST, sets = M && M.keys && M.keys.indexOf('operationsReadSets') !== -1 ? M.clone('operationsReadSets') : {};
+    var names = (sets[page] || []).filter(function (n) { return periodName9(n) && !((spec && spec.except) || []).some(function (x) { return x === n; }); });
+    return Promise.all(names.map(function (n) {
+      var day = !!PERIOD_DAY9[n], want = day ? { periods: (spec && spec.periods) || [] } : { groups: (spec && spec.groups) || [] };
+      return (want.periods || want.groups).length ? periodWant9Read(n, want) : Promise.resolve({ ok: 1 });
+    }));
+  }
   /* فهرسُ فترات المورد بلا محتوى ({ p, grp, seq, rev, bytes } بترتيب seq) — لما يسرد الأشهرَ كلها (نسخُ خطة شهرٍ آخر) */
   async function periodIndex9(name) {
     var stamp = operationContext9(), K;
@@ -2339,7 +2349,8 @@
         return known.state === 'ready' ? JSON.parse(mem[K + '@' + p]) : known.state === 'absent' ? null : undefined;
       },
       summary: periodSummary9,
-      index: periodIndex9
+      index: periodIndex9,
+      wantPage: periodWantPage9
     })
   };
 })();
