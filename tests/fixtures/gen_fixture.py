@@ -154,13 +154,13 @@ CU_DEPT, CU_MARK = 'tst_d1', 'tst_fixture_custody_v1'
 CU_ROWS = {
     'custody_items': [{'department_id': CU_DEPT, 'item_id': 'tst_fixture_item', 'name': TAG + ' جهاز', 'qty': 5, 'prefix': None, 'color': None, 'presence_mask': 1}],
     'custody_issues': [{'department_id': CU_DEPT, 'issue_id': 'tst_fixture_issue', 'item_id': 'tst_fixture_item', 'serial': 'TST-001', 'serial_number': 1, 'legacy_identity': 'serial:TST-001'}],
-    'custody_movements': [{'department_id': CU_DEPT, 'move_id': 'tst_fixture_move', 'issue_id': 'tst_fixture_issue', 'item_id': 'tst_fixture_item', 'sequence': 0, 'kind': 'out', 'holder_key': 'tst_e_emp1', 'hijri_year': y, 'hijri_month': m, 'hijri_day': d, 'condition': None, 'note': None, 'color_snapshot': None, 'actor_uid': None, 'actor_label': None, 'holder_nid_snapshot': None, 'holder_empno_snapshot': None, 'holder_name_snapshot': None, 'presence_mask': 0, 'created_at': None}],
+    'custody_movements': [{'department_id': CU_DEPT, 'move_id': 'tst_fixture_move', 'issue_id': 'tst_fixture_issue', 'item_id': 'tst_fixture_item', 'sequence': 0, 'kind': 'out', 'holder_key': 'tst_e_emp1', 'greg_year': y, 'greg_month': m, 'greg_day': d, 'condition': None, 'note': None, 'color_snapshot': None, 'actor_uid': None, 'actor_label': None, 'holder_nid_snapshot': None, 'holder_empno_snapshot': None, 'holder_name_snapshot': None, 'presence_mask': 0, 'created_at': None}],
     'custody_requests': [], 'custody_request_outputs': []
 }
 CU_COLUMNS = {
     'custody_items': ['department_id','item_id','name','qty','prefix','color','presence_mask'],
     'custody_issues': ['department_id','issue_id','item_id','serial','serial_number','legacy_identity'],
-    'custody_movements': ['department_id','move_id','issue_id','item_id','sequence','kind','holder_key','hijri_year','hijri_month','hijri_day','condition','note','color_snapshot','actor_uid','actor_label','holder_nid_snapshot','holder_empno_snapshot','holder_name_snapshot','presence_mask','created_at'],
+    'custody_movements': ['department_id','move_id','issue_id','item_id','sequence','kind','holder_key','greg_year','greg_month','greg_day','condition','note','color_snapshot','actor_uid','actor_label','holder_nid_snapshot','holder_empno_snapshot','holder_name_snapshot','presence_mask','created_at'],
     'custody_requests': ['department_id','account_uid','request_id','fingerprint','resource_rev','operation','result_n','item_id','created_at'],
     'custody_request_outputs': ['department_id','account_uid','request_id','position','issue_id','move_id','serial']
 }
@@ -267,17 +267,17 @@ def ds_schema():
     return '-- Canonical daily-statistics tables; no schema/migration stamp.\n' + '\n'.join(' '.join(t.split()) for t in tables) + '\n'
 def ds_preflight():
     if A.daily_stats_storage == 'legacy-kv': return ''
-    return ("SELECT CASE WHEN EXISTS (SELECT 1 FROM daily_stats_days WHERE hijri_date LIKE '9999-01-%%' AND (hijri_date NOT IN %s OR NOT (%s))) "
-            "OR EXISTS (SELECT 1 FROM daily_stats_month_locks WHERE hijri_year = 9999 AND hijri_month = 1 AND NOT (%s)) "
-            "OR EXISTS (SELECT 1 FROM daily_stats_day_locks WHERE hijri_year = 9999 AND hijri_month = 1 AND (hijri_day != 1 OR NOT (%s))) "
+    return ("SELECT CASE WHEN EXISTS (SELECT 1 FROM daily_stats_days WHERE greg_date LIKE '9999-01-%%' AND (greg_date NOT IN %s OR NOT (%s))) "
+            "OR EXISTS (SELECT 1 FROM daily_stats_month_locks WHERE greg_year = 9999 AND greg_month = 1 AND NOT (%s)) "
+            "OR EXISTS (SELECT 1 FROM daily_stats_day_locks WHERE greg_year = 9999 AND greg_month = 1 AND (greg_day != 1 OR NOT (%s))) "
             "THEN json_extract('{}', 'KIVO_FIXTURE_DSTATS_TARGET_COLLISION') END;\n") % (DS_DATES, DS_TAGGED, DS_OWNED, DS_OWNED)
 def ds_remove():
     if A.daily_stats_storage == 'legacy-kv': return obj_remove('bassam_dstats_v1', DSTATS_DEL)
-    return ("DELETE FROM daily_stats_day_locks WHERE hijri_year = 9999 AND hijri_month = 1 AND hijri_day = 1 AND %s;\n"
-            "DELETE FROM daily_stats_days WHERE hijri_date IN %s AND (%s);\n"
-            "DELETE FROM daily_stats_month_locks WHERE hijri_year = 9999 AND hijri_month = 1 AND %s "
-            "AND NOT EXISTS (SELECT 1 FROM daily_stats_day_locks d WHERE d.site = daily_stats_month_locks.site AND d.hijri_year = 9999 AND d.hijri_month = 1) "
-            "AND NOT EXISTS (SELECT 1 FROM daily_stats_days d WHERE d.site = daily_stats_month_locks.site AND d.hijri_date LIKE '9999-01-%%');\n"
+    return ("DELETE FROM daily_stats_day_locks WHERE greg_year = 9999 AND greg_month = 1 AND greg_day = 1 AND %s;\n"
+            "DELETE FROM daily_stats_days WHERE greg_date IN %s AND (%s);\n"
+            "DELETE FROM daily_stats_month_locks WHERE greg_year = 9999 AND greg_month = 1 AND %s "
+            "AND NOT EXISTS (SELECT 1 FROM daily_stats_day_locks d WHERE d.site = daily_stats_month_locks.site AND d.greg_year = 9999 AND d.greg_month = 1) "
+            "AND NOT EXISTS (SELECT 1 FROM daily_stats_days d WHERE d.site = daily_stats_month_locks.site AND d.greg_date LIKE '9999-01-%%');\n"
             "DELETE FROM meta WHERE k = %s;\n") % (DS_OWNED, DS_DATES, DS_TAGGED, DS_OWNED, q(DS_MARK))
 def ds_seed():
     if A.daily_stats_storage == 'legacy-kv': return obj_patch('bassam_dstats_v1', DSTATS_ADD)
@@ -286,11 +286,11 @@ def ds_seed():
     for site in ['haram', 'nabawi']:
         for date, row in DSTATS_ADD[site].items():
             fields = [field for field in metrics if field in row]
-            columns = ['site', 'hijri_date', 'field_mask'] + fields + ['meta_json']
+            columns = ['site', 'greg_date', 'field_mask'] + fields + ['meta_json']
             values = [q(site), q(date), str(sum(1 << metrics.index(field) for field in fields))] + [str(row[field]) for field in fields] + [q(J(row['__m']))]
             s += 'INSERT INTO daily_stats_days (%s) VALUES (%s);\n' % (', '.join(columns), ', '.join(values))
-        s += "INSERT INTO daily_stats_month_locks (site, hijri_year, hijri_month, approved, reopened, legacy_boolean) VALUES (%s, 9999, 1, 0, 1, 0);\n" % q(site)
-        s += "INSERT INTO daily_stats_day_locks (site, hijri_year, hijri_month, hijri_day, is_open, is_shut) VALUES (%s, 9999, 1, 1, 1, 0);\n" % q(site)
+        s += "INSERT INTO daily_stats_month_locks (site, greg_year, greg_month, approved, reopened, legacy_boolean) VALUES (%s, 9999, 1, 0, 1, 0);\n" % q(site)
+        s += "INSERT INTO daily_stats_day_locks (site, greg_year, greg_month, greg_day, is_open, is_shut) VALUES (%s, 9999, 1, 1, 1, 0);\n" % q(site)
     return s + "INSERT INTO meta (k, v) VALUES (%s, '1');\n" % q(DS_MARK)
 # CU ownership is an exact witness for the known TEST_ONLY row set. Refuse
 # collision/drift before global account or scoped cleanup, including reset.

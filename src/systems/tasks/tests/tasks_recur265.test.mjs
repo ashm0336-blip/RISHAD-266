@@ -16,6 +16,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { world, workerUnderTest, ME, MATE, KT, D, DAY, PDAY, TAG, stored, putKV, hij, MID, HR, wdOf, ymOf, taskCommandBody, replaceOperationalFixture, operationSaveBody } from './tasks_fx.mjs';
 
+const p2 = (n) => String(n).padStart(2, '0');   /* V7 · 53 تقويم: المفاتيحُ ISO مبطَّنة */
 const WU = workerUnderTest();
 const DM = ['0000000101', '70101'], EMP1 = ['0000000113', '70113'], SUP_UID = 'tst_sup1', DM_UID = 'tst_dm1';
 const KL = 'bsdept:' + D + ':bassam_tasks_locks_v1', PK = 'bassam_perms_v1', PMK = ymOf(PDAY);
@@ -73,22 +74,24 @@ for (const mode of ['enforce']) {
     };
     await bad({ t: 'hourly' }, 'rec.t'); await bad({ t: 'toString' }, 'rec.t');                 /* لا مفتاحَ من النموذج الأب قاعدةً لا تولِّد */
     await bad({ t: 'weekly' }, 'rec.wd'); await bad({ t: 'weekly', wd: [7] }, 'rec.wd'); await bad({ t: 'days', wd: [] }, 'rec.wd'); await bad({ t: 'weekly', wd: [0, 1, 2, 3, 4, 5, 6, 0] }, 'rec.wd');
-    await bad({ t: 'monthly' }, 'rec.md'); await bad({ t: 'monthly', md: 31 }, 'rec.md'); await bad({ t: 'monthly', md: 0 }, 'rec.md');
+    await bad({ t: 'monthly' }, 'rec.md'); await bad({ t: 'monthly', md: 32 }, 'rec.md');   /* V7 · 53 تقويم (ق٦): يومُ الشهر الميلادي 1–31 */ await bad({ t: 'monthly', md: 0 }, 'rec.md');
     await bad({ t: 'daily', to: kOf(-1) }, 'rec.to');                                        /* قبل يوم البداية */
-    await bad({ t: 'daily', to: (Y + 4) + '-' + Mo + '-' + Dd }, 'rec.to');                  /* أبعدُ من ثلاث سنوات هجرية */
-    await bad({ t: 'daily', to: Y + '-13-1' }, 'rec.to');
+    await bad({ t: 'daily', to: (Y + 4) + '-' + p2(Mo) + '-' + p2(Dd) }, 'rec.to');          /* أبعدُ من ثلاث سنوات */
+    await bad({ t: 'daily', to: (Y - 579) + '-' + Mo + '-' + Dd }, 'rec.to');                /* V7 · 53 تقويم: نهايةٌ هجريةٌ من عميلٍ قديم تُرفض */
+    await bad({ t: 'daily', to: Y + '-02-30' }, 'rec.to');                                    /* يومٌ لا يوجد في الشهر الميلادي */
+    await bad({ t: 'daily', to: Y + '-13-01' }, 'rec.to');
     await bad({ t: 'daily', to: kOf(5), open: 1 }, 'rec.to');                                /* نهايةٌ و«حتى الإيقاف» معاً */
     await bad({ t: 'daily', open: 'yes' }, 'rec.open');
     const na = await mk(W, dm.ck, { body: { asg: [], rec: { t: 'daily' } } });
     assert.equal(na.status, 400, show(na)); assert.equal(na.j.err, 'rec-asg', 'متكررةٌ بلا مكلَّف لا تولِّد شيئاً — تُرفض');
     assert.equal(allRows(W).length, n0, 'لم يُكتب شيء');
     for (const yy of [2, 3]) {
-      const to = (Y + yy) + '-' + Mo + '-' + Dd, c = await mk(W, dm.ck, { title: 'نهايةٌ بعد ' + yy, body: { rec: { t: 'daily', to } } });
+      const to = (Y + yy) + '-' + p2(Mo) + '-' + p2(Dd), c = await mk(W, dm.ck, { title: 'نهايةٌ بعد ' + yy, body: { rec: { t: 'daily', to } } });
       assert.equal(c.status, 200, yy + ' سنوات: ' + show(c)); assert.equal(ser(W, recIdOf(W, c))[0].r[23].rec.to, to);
     }
   });
 
-  test(M + '(ج) «حتى الإيقاف»: لا نهايةَ مخزَّنة ويولِّد · وبلا نهايةٍ ولا «حتى الإيقاف» سنةٌ هجرية كما كان', async () => {
+  test(M + '(ج) «حتى الإيقاف»: لا نهايةَ مخزَّنة ويولِّد · وبلا نهايةٍ ولا «حتى الإيقاف» سنةٌ (ميلادية) كما كان', async () => {
     const W = await world({ worker: WU.file, mode }); const dm = await W.login(...DM);
     const c = await mk(W, dm.ck, { title: 'حتى الإيقاف', body: { rec: { t: 'daily', open: 1 } } }); assert.equal(c.status, 200, show(c));
     const id = recIdOf(W, c); assert.ok(!('to' in ser(W, id)[0].r[23].rec), 'لا to: ' + JSON.stringify(ser(W, id)[0].r[23].rec));
@@ -97,7 +100,7 @@ for (const mode of ['enforce']) {
     assert.ok(ser(W, id).every((q) => !('to' in q.r[23].rec)), 'والمولَّدةُ بلا نهاية');
     const [Y, Mo, Dd] = kOf(0).split('-').map(Number);
     const d0 = await mk(W, dm.ck, { title: 'افتراضية', body: { rec: { t: 'daily' } } }); assert.equal(d0.status, 200, show(d0));
-    assert.equal(ser(W, recIdOf(W, d0))[0].r[23].rec.to, (Y + 1) + '-' + Mo + '-' + Dd, 'التوافقُ الخلفيّ: سنةٌ هجرية');
+    assert.equal(ser(W, recIdOf(W, d0))[0].r[23].rec.to, (Y + 1) + '-' + p2(Mo) + '-' + p2(Dd), 'التوافقُ الخلفيّ: سنة (V7 · 53 تقويم: ميلادية)');
   });
 
   test(M + '(د) تعديلُ القاعدة: القادمةُ المعلّقة غيرُ المطابقة تُلغى بسببها · المطابقةُ باقية · المنجزةُ والمبدوءة وإثباتُها وسجلُّها لا تُمسّ · الإصدارُ يعلو · ولا تكرار', async () => {
