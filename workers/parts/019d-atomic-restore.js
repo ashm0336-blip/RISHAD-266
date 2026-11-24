@@ -1116,6 +1116,7 @@ async function rsPrepare(env, A, body, meta, internal) {
         })
       : [];
   physicalDeletes.push.apply(physicalDeletes,operationalInput.physicalDeletes);
+  var permDrops = [];
   if (body.scope.kind === 'dept' && (body.permissionSlice !== undefined || Object.prototype.hasOwnProperty.call(keys, K_PERM))) {
     var requestedPerms = body.permissionSlice;
     if (requestedPerms === undefined) {
@@ -1129,7 +1130,9 @@ async function rsPrepare(env, A, body, meta, internal) {
       };
     }
     rsShape(requestedPerms, ['capSet', 'cap', 'emps', 'lenses']);
-    var retainedPerms = rsDeptPermsKeep(JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))), dept, requestedPerms, body.mode);   /* V7 · د6 (QA ٦ — قرارُ المالك ب): السقفُ والمدير لا يغيّرهما استيراد */
+    /* V7 · 53 (ملحق 5): غيرُ مدير المنصة — أوراقُ الموظفين تُضيَّق إلى ما يستطيع منحَه (018c permsImportNarrow) بدل رفض المجموعة كلِّها؛ والمُسقَطُ يُذكر في «لن يُنقل» */
+    var narrowPerms = A.u.role === 'super' ? null : function (c0, i0) { var nr = permsImportNarrow(A, dept, c0, i0, parseJson(inputKeys[K_PERM], {})); permDrops = nr.drops; return nr.out; };
+    var retainedPerms = rsDeptPermsKeep(JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))), dept, requestedPerms, body.mode, narrowPerms);   /* V7 · د6 (QA ٦ — قرارُ المالك ب): السقفُ والمدير لا يغيّرهما استيراد */
     if (retainedPerms !== null) {
       keys[K_PERM] = JSON.stringify(retainedPerms);
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
@@ -1261,7 +1264,10 @@ async function rsPrepare(env, A, body, meta, internal) {
     quiet: true,
     __restorePlan: RESTORE_INTERNAL_TOKEN,
     __srvRestore: RESTORE_INTERNAL_TOKEN,   // RISHAD266: the verified server restore route; only it may remove units (018 deptShapeWhy)
+    __srvRestoreDept: body.scope.kind === 'dept' ? dept : '',   // V7 · 53: 062 — the unit of a department restore whose only change is its perms slice (lens narrowing)
   });
+  /* V7 · 53 (ملحق 5): رفضٌ باقٍ على صلاحيات الإدارة يُسمّي الموظفَ والصفحة (rsPermsDenyWho) — فتقول الرسالةُ للمستخدم ما يفعل */
+  if (!kv.ok && kv.denied && kv.denied[K_PERM] && body.scope.kind === 'dept' && keys[K_PERM] != null) kv.denied[K_PERM].who = rsPermsDenyWho(A, dept, keys[K_PERM], inputKeys[K_PERM]);
   if (!kv.__plan || !kv.ok)
     throw Object.assign(
       rsError(
@@ -1291,6 +1297,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
+    permDrops: permDrops,
   };
   /* This also covers explicit grants, scoped locks, import references and policy;
      a permission edit between actor construction and commit cannot grant a stale request. */
@@ -1710,14 +1717,17 @@ function rsRoleGrants(A, d, rolesVal, curVal) {
   if (!isObj(cur) && !Object.keys(out.emp).length) return null;
   return deq(out, cur) ? null : JSON.stringify(out);
 }
-function rsDeptPermsKeep(pm, id, PP, mode) {
+function rsDeptPermsKeep(pm, id, PP, mode, narrow) {
   if (!id || !isObj(PP)) return null;
   pm = isObj(pm) ? pm : {}; pm.emps = isObj(pm.emps) ? pm.emps : {};
-  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, empKeys = false;
+  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, empKeys = false, c0 = {}, i0 = {};
   for (ek in cur) if (!isMgrKey(ek)) empKeys = true;
   if (mode !== 'replace' && empKeys) return null;
-  for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek];
-  for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) out[ek] = inc[ek];
+  for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek]; else c0[ek] = cur[ek];
+  for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) i0[ek] = inc[ek];
+  /* V7 · 53 (ملحق 5): narrow(القائم, القادم) ⇒ القادمُ مضيَّقاً بما يستطيع المستورِدُ منحَه (null لمدير المنصة: كما في النسخة) */
+  if (narrow) i0 = narrow(c0, i0);
+  for (ek in i0) out[ek] = i0[ek];
   var lens = rsDeptLensNarrow(pm, id, PP), same = deq(out, cur);
   if (same && lens === null) return null;
   if (!same) pm.emps[id] = out;
@@ -1737,6 +1747,24 @@ function rsDeptLensNarrow(pm, id, PP) {
     next = (had || all).filter(function (L) { return PP.lenses.indexOf(L) !== -1; });
   if (had ? deq(had, next) : next.length === all.length) return null;
   return next;
+}
+/* V7 · 53 (ملحق 5): أوّلُ موظفٍ ترفض القاعدةُ (permsRule ثم مفاتيحُ الإنفاذ) ورقتَه وحدها في الحفظة — { e, p, why } ليسمّيه العميلُ بالعربية ('' = لم يُعرف) */
+function rsPermsDenyWho(A, d, nv, cv) {
+  try {
+    var n = parseJson(nv, {}), o = parseJson(cv, {}), en = ((n && n.emps) || {})[d] || {}, eo = ((o && o.emps) || {})[d] || {}, ek;
+    var ks = {}; Object.keys(en).concat(Object.keys(eo)).forEach(function (x) { ks[x] = 1; });
+    for (ek in ks) {
+      if (deq(en[ek], eo[ek])) continue;
+      var c = JSON.parse(JSON.stringify(o)); c.emps = isObj(c.emps) ? c.emps : {}; c.emps[d] = isObj(c.emps[d]) ? c.emps[d] : {};
+      if (en[ek] === undefined) delete c.emps[d][ek]; else c.emps[d][ek] = en[ek];
+      var pr = permsRule(A, JSON.stringify(c), JSON.stringify(o)), key = pr.ok ? enfPermsHeldWhy(A, c, o) : '';
+      if (pr.ok && !key) continue;
+      var s1 = isObj(en[ek]) ? en[ek] : {}, s0 = isObj(eo[ek]) ? eo[ek] : {}, e = key ? KIVO_REGISTRY.byKey[key] : null, m = e && /^([A-Za-z]+(?:\/[A-Za-z]+)?):/.exec(String((e.asisMap || [])[0] || ''));
+      var p = m ? m[1] : Object.keys(s1).filter(function (x) { return !deq(s1[x], s0[x]); })[0] || '';
+      return { e: ek, p: p, why: pr.ok ? 'grant' : pr.why };
+    }
+  } catch (err) { swallow('perms-deny-who', err); }
+  return '';
 }
 /* V7 · د6: ثلاثُ قطعٍ من مسار الاستعادة صارت دوالَّ ليشاركه فيها الاستيرادُ على أجزاء (019g) بلا نسخةٍ ثانية: حكمُ الصلاحية · تحويلُ النسخة وتخطيطُها واعتمادُها · ترجمةُ الرفض */
 function rsScopeDenied(A, s) {
@@ -1797,6 +1825,8 @@ async function rsBackupRun(env, A, request, body, reference, rawFingerprint, sta
     var unitsPd = ((plan.kv && plan.kv.pend) || []).filter(function (pd) { return pd.k === K_DEPTS; })[0];
     if (unitsPd) rsImageUnitStamp(env, A, plan, unitsPd.act === 'del' ? [] : parseJson(unitsPd.v, []));
     if (stage) stage.done(plan, converted.summary);
+    /* V7 · 53 (ملحق 5): ما ضُيِّق من أوراق الموظفين (لا يُكتب) — بنداً بنداً في «لن يُنقل»: الموظفُ والصفحةُ والإجراء (الأسماءُ العربية عند العميل 548) */
+    if (plan.permDrops && plan.permDrops.length) converted.summary.notTransferred = (converted.summary.notTransferred || []).concat(plan.permDrops.map(function (x) { return { k: 'bassam_perms_v1 · ' + x.e + ' · ' + x.p + ':' + x.a, why: 'perm-grant', e: x.e, p: x.p, a: x.a }; }));
     if (body.phase === 'inspect') return { ok: 1, inspection: { scope: body.scope, base: base, counts: plan.counts, summary: converted.summary || {} } };
     return await rsCommit(env, A, plan, reqMeta(request));
 }
