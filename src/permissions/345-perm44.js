@@ -113,6 +113,18 @@ function perm44Make(R, D) {
     if (Object.keys(E.until).length) g.until = E.until;
     return g;
   }
+  /* V7 · د7 (52 · الكامن): القاعدةُ الواحدة لمنحٍ يُعاد بناؤه من الدور — ما في مدخله المخزَّن (old) من مفاتيح plus/minus خارج السقف (keyOn كاذبة)
+     يُحمل معه كما هو، فيعود كما كان متى وُسِّع السقف؛ وداخلَ السقف الدورُ وحده. يكتب به العميلُ (345 recompile) ويحكم به الخادمُ (057b perm44GrantsWhy)
+     — نصٌّ واحد بالطرفين، وهو ما يطلبه الحارس (021 latentLossWhy · capStaleBatch: مفتاحٌ خارج السقف لا يسقط من مدخلٍ باقٍ) */
+  function keepOff(nx, old, keyOn) {
+    if (!isObj(nx) || !isObj(old)) return nx;
+    var g = clone(nx), f, n;
+    for (f in { plus: 1, minus: 1 }) {
+      var a = Array.isArray(g[f]) ? g[f] : (g[f] = []), o = Array.isArray(old[f]) ? old[f] : [];
+      for (n = 0; n < o.length; n++) { var k = String(o[n]); if (!keyOn(k) && a.indexOf(k) === -1) a.push(k); }
+    }
+    return g;
+  }
   function normRec(rec) {
     var r = isObj(rec) ? clone(rec) : {};
     return { v: 1, roles: Array.isArray(r.roles) ? r.roles : [], people: isObj(r.people) ? r.people : {} };
@@ -211,7 +223,7 @@ function perm44Make(R, D) {
     return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
   }
   return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
-           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, normRec: normRec, shapeWhy: shapeWhy,
+           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }
 /* V7 · د5-هـ (44): KIVO.Perm44 — واجهةُ المحرّك في المتصفح. القراءةُ والكتابة عبر المخزن الذي تستعمله 331/334 (localStorage المعترَض في 280 ⇒ ذاكرةُ
@@ -268,7 +280,7 @@ function recompile(dr, d, rec, ekeys) {
   var E = eng(), C = ceiling(d).key, g = dget(dr, d, GRANTS), u = curUser(), now = Date.now();
   g = obj(g) && obj(g.emp) ? g : { v: 1, emp: {} };
   ekeys.forEach(function (e) {
-    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.grantOf(pr, rec, C, now, legacyT(e, d)) : null;
+    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.keepOff(E.grantOf(pr, rec, C, now, legacyT(e, d)), old, C) : null;   /* V7 · د7 (52 · الكامن): المخفيُّ خارج السقف يُحمل (perm44-core keepOff) */
     if (!nx) { if (old && /^(role:|p44:)/.test(String(old.src || ''))) delete g.emp[e]; return; }
     var same = old && JSON.stringify((old.plus || []).slice().sort()) === JSON.stringify(nx.plus.slice().sort()) && JSON.stringify((old.minus || []).slice().sort()) === JSON.stringify(nx.minus.slice().sort()) && old.src === nx.src && JSON.stringify(old.until || null) === JSON.stringify(nx.until || null);
     if (!same) { nx.at = now; nx.by = u ? String(u.id) : ''; g.emp[e] = nx; }
@@ -356,7 +368,20 @@ function roleNameOf(ekey, did) {
   } catch (e0) { /* تعذّرت القراءة: بلا صلاحيات */ }
   return N.none;
 }
+/* V7 · د7 (52 · الكامن): نصُّ رفض الحارس (021 latentLossWhy: «latent: grant|sheet|lens <ekey> <مفتاح> | …») بلغة المدير — اسمُ الموظف واسمُ النظام */
+function latentText(detail, did) {
+  var m = /^latent: (grant|sheet|lens) (\S+) (\S+) \|/.exec(String(detail || '')); if (!m) return '';
+  var E = eng(), d = did || activeDept(), ek = m[2], x = m[3], who = '', sys = '';
+  try { (rd(kOf(d, 'bassam_employees_v1')) || []).forEach(function (r) { if (r && String(r.eid) === ek && r.name) who = String(r.name); }); } catch (e) { who = ''; }
+  if (!who) try { (rd('bassam_auth_users_v1') || []).forEach(function (u) { if (u && String(u.ekey || '') === ek && u.name) who = String(u.name); }); } catch (e) { who = ''; }
+  var S = E.sysList(), nm = function (k) { for (var i = 0; i < S.length; i++) if (S[i].key === k) return S[i].name; return ''; };
+  if (m[1] === 'grant') sys = E.sysOfKey(x).map(nm).filter(Boolean).join(' · ');
+  else if (m[1] === 'lens') E.lensList().forEach(function (L) { if (L.lens === x) sys = L.name; });
+  else S.forEach(function (s) { if (!sys && s.leaves.indexOf(x) !== -1) sys = s.name; });
+  return 'لم يُحفظ شيء: الحفظُ كان سيحذف صلاحيةَ «' + (who || 'موظف') + '» في «' + (sys || 'نظامٍ مطفأ') + '» — النظامُ مطفأٌ في سقف الوحدة فصلاحيتُه فيه مخفيّة، وتعود كما كانت متى أُعيد تشغيلُه. أعد تحميل الصفحة ثم كرّر التعديل';
+}
 var API = {
+  latentText: latentText,
   levels: function () { return eng().levels(); },
   keysFor: function (s, l, c) { return eng().keysFor(s, l, c); },
   compileRole: function (r, f) { return eng().compileRole(r, f); },

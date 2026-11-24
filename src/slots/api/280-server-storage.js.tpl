@@ -164,7 +164,7 @@
               "scope-unknown": "تعذّر التحقق من قفل الفترة لهذا التعديل — أعد المحاولة بعد قليل، وإن تكرر فأبلغ مسؤول المنصة",
               "scope-retired": WHY["scope-retired"], reason: "هذه العملية تتطلب ذكر السبب",
               "restore-policy": "الاستعادةُ لمسؤول المنصة أو لمدير الإدارة الممنوح مفتاحها", "import-allowlist": "هذا السجلّ خارج قائمة الاستيراد المسموحة",
-              grant: "لا تملك منح هذا المفتاح", unmapped: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً", residual: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً",
+              grant: "لا تملك منح هذا المفتاح", "p44-grants": "يُحفظ الدورُ ومنحُ حامليه معاً — رُفض جزءٌ من الحفظة نفسِها فلم يُحفظ هذا أيضاً",   /* V7 · د7 (52) */ unmapped: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً", residual: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً",
               unbound: "تعديلٌ غيرُ مصنَّف — رُفض احتياطاً", keydel: "حذفُ السجل كاملاً غيرُ مسموح", shape: "صيغةُ البيانات لم تُقبل", ph: "كلمةُ المرور لم تُحفظ: صيغةُ تشفيرها قديمة — حدّث الصفحة ثم أعد المحاولة" };   /* KIVO_262 */
   /* «فحص الصلاحيات العميق (2026-10-21)» — المرحلة 0 (منقولٌ من الخطّ القديم 0ab9fa7 · 70279e7): أسبابُ رفض قاعدة المانح وحسابات المديرين بأسمائها
      (018 permsGrantWhy · usersEkeyWhy · usersA1Why · 059) — بالوضعين */
@@ -184,7 +184,7 @@
       bassam_employees_v1:["قائمة الموظفين"],@@SYS:store.keyLabels.staff@@@@SYS:store.keyLabels.daily@@@@SYS:store.keyLabels.dreport@@
 @@SYS:store.keyLabels.plan@@      @@SYS:store.keyLabels.tasks@@@@SYS:store.keyLabels.custody@@
 @@SYS:store.keyLabels@@      bassam_options_v1:["خيارات الموظفين"], bassam_shift_options_v1:["الورديات"],@@SYS:store.keyLabels.dreport.lk@@@@SYS:store.keyLabels.staff.callsigns@@
-      bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_roles_v1:["أدوار الصلاحيات"],
+      bassam_auth_users_v1:["حسابات الدخول"], bassam_perms_v1:["الصلاحيات"], bassam_roles_v1:["أدوار الصلاحيات"], bassam_grants_v1:["منح الصلاحيات"],
       bassam_depts_v1:["الإدارات"], bassam_gdepts_v1:["الهيكل التنظيمي"], bassam_platform_v1:["إعدادات المنصة"], bassam_profile_v1:["الملف الشخصي"],
       bassam_media:["الصور والملفات"], bassam_notifications_domain_v1:["التنبيهات والتعاميم"],
       bassam_last_export_v1:["آخر تصدير"], bassam_last_full_export_v1:["آخر نسخة شاملة"],
@@ -612,6 +612,7 @@
       }
       /* caps-own: a refusal that protects latent permissions carries its own text (021 latentLossWhy · capStaleBatch) */
       var lm9 = /^stale-client: (.+)$/.exec(String(d.detail || "")) || /^latent: .*? \| (.+)$/.exec(String(d.detail || ""));
+      try { var lt9 = KIVO.Perm44 && KIVO.Perm44.latentText ? KIVO.Perm44.latentText(d.detail, (/^bsdept:([^:]+):/.exec(k) || [])[1]) : ""; if (lt9) lm9 = [0, lt9]; } catch (eL9) { /* V7 · د7 (52): بلا المحرّك يبقى نصُّ الخادم */ }
       if (d.why !== "flag") bsToast(fx9 ? usersDupMsg9(fx9) : "لم يُحفظ تعديلك على «" + lbl(k) + "» — " + (lm9 ? lm9[1] : whyText9(d.why)) + ". أُعيدت القيمة المحفوظة", { tone: "err" });
     }
     var cf = j.conflicts || {}, banners = [];

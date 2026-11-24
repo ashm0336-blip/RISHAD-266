@@ -52,7 +52,7 @@ function recompile(dr, d, rec, ekeys) {
   var E = eng(), C = ceiling(d).key, g = dget(dr, d, GRANTS), u = curUser(), now = Date.now();
   g = obj(g) && obj(g.emp) ? g : { v: 1, emp: {} };
   ekeys.forEach(function (e) {
-    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.grantOf(pr, rec, C, now, legacyT(e, d)) : null;
+    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.keepOff(E.grantOf(pr, rec, C, now, legacyT(e, d)), old, C) : null;   /* V7 · د7 (52 · الكامن): المخفيُّ خارج السقف يُحمل (perm44-core keepOff) */
     if (!nx) { if (old && /^(role:|p44:)/.test(String(old.src || ''))) delete g.emp[e]; return; }
     var same = old && JSON.stringify((old.plus || []).slice().sort()) === JSON.stringify(nx.plus.slice().sort()) && JSON.stringify((old.minus || []).slice().sort()) === JSON.stringify(nx.minus.slice().sort()) && old.src === nx.src && JSON.stringify(old.until || null) === JSON.stringify(nx.until || null);
     if (!same) { nx.at = now; nx.by = u ? String(u.id) : ''; g.emp[e] = nx; }
@@ -140,7 +140,20 @@ function roleNameOf(ekey, did) {
   } catch (e0) { /* تعذّرت القراءة: بلا صلاحيات */ }
   return N.none;
 }
+/* V7 · د7 (52 · الكامن): نصُّ رفض الحارس (021 latentLossWhy: «latent: grant|sheet|lens <ekey> <مفتاح> | …») بلغة المدير — اسمُ الموظف واسمُ النظام */
+function latentText(detail, did) {
+  var m = /^latent: (grant|sheet|lens) (\S+) (\S+) \|/.exec(String(detail || '')); if (!m) return '';
+  var E = eng(), d = did || activeDept(), ek = m[2], x = m[3], who = '', sys = '';
+  try { (rd(kOf(d, 'bassam_employees_v1')) || []).forEach(function (r) { if (r && String(r.eid) === ek && r.name) who = String(r.name); }); } catch (e) { who = ''; }
+  if (!who) try { (rd('bassam_auth_users_v1') || []).forEach(function (u) { if (u && String(u.ekey || '') === ek && u.name) who = String(u.name); }); } catch (e) { who = ''; }
+  var S = E.sysList(), nm = function (k) { for (var i = 0; i < S.length; i++) if (S[i].key === k) return S[i].name; return ''; };
+  if (m[1] === 'grant') sys = E.sysOfKey(x).map(nm).filter(Boolean).join(' · ');
+  else if (m[1] === 'lens') E.lensList().forEach(function (L) { if (L.lens === x) sys = L.name; });
+  else S.forEach(function (s) { if (!sys && s.leaves.indexOf(x) !== -1) sys = s.name; });
+  return 'لم يُحفظ شيء: الحفظُ كان سيحذف صلاحيةَ «' + (who || 'موظف') + '» في «' + (sys || 'نظامٍ مطفأ') + '» — النظامُ مطفأٌ في سقف الوحدة فصلاحيتُه فيه مخفيّة، وتعود كما كانت متى أُعيد تشغيلُه. أعد تحميل الصفحة ثم كرّر التعديل';
+}
 var API = {
+  latentText: latentText,
   levels: function () { return eng().levels(); },
   keysFor: function (s, l, c) { return eng().keysFor(s, l, c); },
   compileRole: function (r, f) { return eng().compileRole(r, f); },

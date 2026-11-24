@@ -91,7 +91,7 @@ test('V7 · د7 (52 · الكامن) ① a system turned OFF after a role grant:
     const g0 = kv(lab, KG).emp[EMP], hidden = g0.plus.filter((k) => /^dstats\./.test(k));
     assert.ok(hidden.length, 'the role grants ' + OFF.k + ' keys: ' + JSON.stringify(g0));
     await flip(b, lab, OFF, false);
-    const nr = await managerEdits(b, lab, role.name, 'TEST_ONLY دور جديد د7', 'TEST_ONLY موظف أ');
+    const nr = await managerEdits(b, lab, role.name, 'TEST_ONLY دور جديد للكامن', 'TEST_ONLY موظف أ');
     const g1 = kv(lab, KG).emp[EMP];
     assert.equal(g1.src, 'role:' + nr.id, 'the employee now holds the other role');
     assert.deepEqual(hidden.filter((k) => !g1.plus.includes(k)), [], 'the hidden ' + OFF.k + ' keys are kept with his grant: ' + JSON.stringify(g1));

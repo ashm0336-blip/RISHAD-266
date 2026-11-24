@@ -111,6 +111,18 @@ function perm44Make(R, D) {
     if (Object.keys(E.until).length) g.until = E.until;
     return g;
   }
+  /* V7 · د7 (52 · الكامن): القاعدةُ الواحدة لمنحٍ يُعاد بناؤه من الدور — ما في مدخله المخزَّن (old) من مفاتيح plus/minus خارج السقف (keyOn كاذبة)
+     يُحمل معه كما هو، فيعود كما كان متى وُسِّع السقف؛ وداخلَ السقف الدورُ وحده. يكتب به العميلُ (345 recompile) ويحكم به الخادمُ (057b perm44GrantsWhy)
+     — نصٌّ واحد بالطرفين، وهو ما يطلبه الحارس (021 latentLossWhy · capStaleBatch: مفتاحٌ خارج السقف لا يسقط من مدخلٍ باقٍ) */
+  function keepOff(nx, old, keyOn) {
+    if (!isObj(nx) || !isObj(old)) return nx;
+    var g = clone(nx), f, n;
+    for (f in { plus: 1, minus: 1 }) {
+      var a = Array.isArray(g[f]) ? g[f] : (g[f] = []), o = Array.isArray(old[f]) ? old[f] : [];
+      for (n = 0; n < o.length; n++) { var k = String(o[n]); if (!keyOn(k) && a.indexOf(k) === -1) a.push(k); }
+    }
+    return g;
+  }
   function normRec(rec) {
     var r = isObj(rec) ? clone(rec) : {};
     return { v: 1, roles: Array.isArray(r.roles) ? r.roles : [], people: isObj(r.people) ? r.people : {} };
@@ -209,7 +221,7 @@ function perm44Make(R, D) {
     return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
   }
   return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
-           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, normRec: normRec, shapeWhy: shapeWhy,
+           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }
 /* ══ V7 · د5-هـ (44): الأدوارُ في الخادم — سجلُّ الأدوار bsdept:<d>:bassam_roles_v1 (مصدرُ الحقيقة) ومنحُه المترجَم bsdept:<d>:bassam_grants_v1 يُكتبان معاً ══
@@ -286,7 +298,9 @@ function perm44GrantsWhy(A, d) {
     var want = people[e] ? perm44Effective(people[e], R, C, now) : { keys: [], role: null, live: [] }, g = emp[e];
     var has = isObj(g) && Array.isArray(g.plus) ? g.plus.map(String).slice().sort() : [];
     if (!want.role && !want.live.length) { if (isObj(g) && PERM44_SRC.test(String(g.src || '')) && has.length) return 'p44-grants'; continue; }
-    if (!isObj(g) || JSON.stringify(has) !== JSON.stringify(want.keys.slice().sort())) return 'p44-grants';
+    /* V7 · د7 (52 · الكامن): المتوقَّعُ = الدورُ داخل السقف + ما كان في مدخله المخزَّن خارجَه (perm44-core keepOff — القاعدةُ نفسُها التي يكتب بها العميل) */
+    var wk = E.keepOff({ plus: want.keys }, emp0[e], C).plus.map(String).slice().sort();
+    if (!isObj(g) || JSON.stringify(has) !== JSON.stringify(wk)) return 'p44-grants';
   }
   return '';
 }
