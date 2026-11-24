@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from '../browser/lab_browser.mjs';   /* Playwright المثبَّت للمختبر */
+import vm from 'node:vm';
 import { ROOT } from './harness.mjs';
 
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -58,3 +59,44 @@ for (const theme of ['light', 'dark']) {
     } finally { await b.close(); }
   });
 }
+
+/* REVIEW 47: الشهرُ الجاري بحالة td المعتمدة (حلقةٌ ذهبية 2px كيوم «اليوم») حين لا يكون محدَّداً — بعرض 84 ولا تداخل؛ والمحدَّدُ يغلبها */
+for (const theme of ['light', 'dark']) {
+  test('الشهرُ الجاري (' + theme + '): td بالحلقة الذهبية 2px وهو غيرُ محدَّد · عرضُه 84 · لا تداخل · والمحدَّدُ يغلب الحلقة', async () => {
+    const b = await chromium.launch();
+    try {
+      const p = await (await b.newContext({ viewport: { width: 1200, height: 200 }, deviceScaleFactor: 2 })).newPage();
+      await p.setContent(html(theme));
+      const R = await p.evaluate(() => {
+        const h = React.createElement, T = '2026-11-20', run = (selM) => { const cards = []; for (let m = 1; m <= 12; m++) { const ym = '2026-' + (m < 10 ? '0' : '') + m;
+          cards.push(h('div', { className: 'bs-calcell', key: ym }, KIVO.BassamCalCard.month({ ym, T, closed: m < 10, why: 'past', sel: m === selM }))); }
+          const host = document.createElement('div'); host.style.width = '1200px'; document.body.appendChild(host);   /* حاويةٌ جديدة لكل رسم — لا انتقالَ (transition) من رسمٍ سابق */
+          ReactDOM.render(h('div', { className: 'bs-calstrip' }, cards), host);
+          const gold = getComputedStyle(document.documentElement).getPropertyValue('--cal-gold').trim();
+          const B = [...host.querySelectorAll('[data-cal-kind="month"]')].map((c) => { const r = c.getBoundingClientRect(); return { k: c.getAttribute('data-cal-key'), td: c.getAttribute('data-cal-td'), sh: getComputedStyle(c).boxShadow, l: r.left, r: r.right, w: r.width }; });
+          return { B, gold }; };
+        const probe = document.createElement('i'); document.body.appendChild(probe);
+        const a = run(10); document.body.lastChild.remove(); const b = run(11); probe.style.color = 'var(--cal-gold)'; const goldRgb = getComputedStyle(probe).color;
+        return { a, b, goldRgb };
+      });
+      const nov = R.a.B.find((x) => x.k === '2026-11');
+      assert.equal(nov.td, '1', 'الشهرُ الجاري td'); assert.equal(R.a.B.filter((x) => x.td === '1').length, 1, 'شهرٌ واحدٌ جارٍ');
+      assert.ok(nov.sh.indexOf(R.goldRgb + ' 0px 0px 0px 2px') === 0, 'الحلقةُ الذهبية 2px أولاً كـ td: ' + nov.sh + ' / ' + R.goldRgb);
+      assert.equal(Math.round(nov.w), 84);
+      const S = R.a.B.slice().sort((x, y) => x.l - y.l); for (let i = 1; i < S.length; i++) assert.ok(S[i].l - S[i - 1].r > 2.9, 'لا تداخل: ' + S[i - 1].k + '/' + S[i].k);
+      const nov2 = R.b.B.find((x) => x.k === '2026-11');
+      assert.equal(nov2.td, '1'); assert.ok(nov2.sh.indexOf('0px 0px 0px 2px') === -1 && /0px 4px 12px/.test(nov2.sh), 'المحدَّدُ يغلب الحلقة: ' + nov2.sh);
+    } finally { await b.close(); }
+  });
+}
+
+/* REVIEW 47 (2): عددُ الأيام المسجّلة في كرت شهر الإحصائيات سطرٌ في التلميح عبر hint — «N/M يوماً مسجّلاً» */
+test('الإحصائيات: «N/M يوماً مسجّلاً» سطرٌ في تلميح كرت الشهر عبر hint', () => {
+  const src = read('src/systems/dstats/client/logic.js');
+  assert.match(src, /cnt: has \? has\+"\/"\+mnd\+" يوماً مسجّلاً" : ""/);
+  assert.match(src, /hint: x\.cnt \? x\.tip\+"\\n"\+x\.cnt : x\.tip/);
+  const ctx = vm.createContext({ KIVO: {}, Intl, Date, Math, JSON, Object, Array, String, Number, RegExp, Map, Set, Error }); ctx.window = ctx;
+  for (const f of ['src/i18n/380-hijri-fallback.js', 'src/i18n/385-calendar.js']) vm.runInContext(read(f), ctx);
+  const M = ctx.KIVO.BassamCalCard.model('month', { ym: '2026-11', T: '2026-11-20', hint: 'لا أرقام لهذا الشهر بعد\n1/30 يوماً مسجّلاً' });
+  assert.equal(M.title.split('\n').slice(-2).join('|'), 'لا أرقام لهذا الشهر بعد|1/30 يوماً مسجّلاً', 'السطرُ في التلميح بعد حالة الكرت');
+});

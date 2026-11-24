@@ -314,7 +314,7 @@
     /* V7 · 53 تقويم (REVIEW 45): المحدَّدُ يتوسّط شريطَه عند الفتح (مرةً لكل عنصر) — بلا قفزٍ رأسيّ للصفحة */
     var ref = M.sel ? function (el) { if (!el || el.__bsCen) return; el.__bsCen = 1; var s = el.parentNode; while (s && s.classList && !s.classList.contains('bs-calstrip')) s = s.parentNode;
       if (s && s.classList) try { var d = (el.getBoundingClientRect().left + el.offsetWidth / 2) - (s.getBoundingClientRect().left + s.clientWidth / 2); s.scrollTo({ left: s.scrollLeft + d, behavior: 'instant' }); } catch (e) {} } : undefined;
-    return h('div', assign({}, p.attrs || {}, { key: p.key, ref: ref, title: M.title, 'aria-label': M.title.replace(/\n/g, ' · '), 'data-cal-kind': kind, 'data-cal-state': M.state, 'data-cal-when': M.when,
+    return h('div', assign({}, p.attrs || {}, { key: p.key, ref: ref, title: M.title, 'aria-label': M.title.replace(/\n/g, ' · '), 'data-cal-kind': kind, 'data-cal-state': M.state, 'data-cal-when': M.when, 'data-cal-td': M.when === 'now' ? '1' : '0',   /* V7 · 53 تقويم (REVIEW 47): «اليوم/الشهر الجاري» = حالةُ td المعتمدة (الحلقةُ الذهبية 2px؛ والمحدَّدُ يغلبها) */
       'data-cal-sel': M.sel ? '1' : '0', 'data-cal-key': M.k, onClick: p.onClick, onDoubleClick: p.onDoubleClick, style: M.style,
       /* تفاعلُ المرور المعتمد (المرجعُ المرئي): يرتفع الكرتُ 2px ويكبر 6% فوق جيرانه — تحويلٌ لا يمسّ مقاسَه في الشريط */
       onMouseEnter: function (e) { var t = e.currentTarget.style; t.transform = 'translateY(-2px) scale(1.06)'; t.zIndex = 5; if (p.attrs && p.attrs.onMouseEnter) p.attrs.onMouseEnter(e); },

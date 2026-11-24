@@ -2615,7 +2615,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
         : has ? KIVO.BassamCount(has,"يوم")+" "+KIVO.BassamCount.agr(has,"فيه","فيهما","فيها")+" أرقام من "+mnd+(allFull<has?" · "+(has-allFull)+" منها ناقصةُ الحقول":"")
         : past ? "الشهرُ انقضى ولا أرقامَ فيه" : "لا أرقام لهذا الشهر بعد";
       return { name:nm, greg:greg, nameColor:nameColor, footColor:footColor, footLabel:footLabel, footIcon:footIcon,
-        footP1:p1, footP2:p2, isCurrent:cur, style:c, tip:tip,
+        footP1:p1, footP2:p2, isCurrent:cur, style:c, tip:tip, cnt: has ? has+"/"+mnd+" يوماً مسجّلاً" : "",   /* V7 · 53 تقويم (REVIEW 47): عددُ الأيام المسجّلة من سطر الحالة القديم — سطرٌ في تلميح الكرت */
         click:()=>self.setState({month:m,day:Math.min(s.day,self.dim(s.year,m)),draft:null}),
         /* الرحلةُ الرباعية على النقر المزدوج — لا فتحَ ولا قفلَ ولا اعتمادَ بصمت */
         dbl:()=>{ if(!canApprove){ self.bsToast("الاعتمادُ والقفل يحتاج صلاحية الاعتماد","warn"); return; }
@@ -2725,7 +2725,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       /* V7 · 53 تقويم (§7 · day_card_design · REVIEW 21): كرتا الشهر واليوم من المكوّن الواحد KIVO.BassamCalCard — الميلاديُّ أساساً والهجريُّ سطرٌ صغير،
          وحالتان فقط (مغلق بقفل · مفتوح)؛ والسببُ الإداري (اعتُمد · أُغلق تلقائياً · أُغلق يدوياً · مفتوح للاستدراك) في التلميح */
       mcards:mcards.map((x,i)=>{ const m=i+1, ym=KIVO.BassamCal.gYm(s.year,m), appr=self.mApproved(site,s.year,m), past=(s.year<T.y)||(s.year===T.y&&m<T.m), oflag=self.mOpenFlag(site,s.year,m), closed=appr||(past&&!oflag);
-        return Object.assign(x,{ card:KIVO.BassamCalCard.month({ key:ym, ym:ym, closed:closed, why:appr?"ap":closed?"past":past&&oflag?"retro":"", sel:m===s.month, T:T.k, hint: x.tip, onClick:x.click, onDoubleClick:x.dbl, attrs:{ "data-strip-cur":String(x.isCurrent) } }) }); }),
+        return Object.assign(x,{ card:KIVO.BassamCalCard.month({ key:ym, ym:ym, closed:closed, why:appr?"ap":closed?"past":past&&oflag?"retro":"", sel:m===s.month, T:T.k, hint: x.cnt ? x.tip+"\n"+x.cnt : x.tip, onClick:x.click, onDoubleClick:x.dbl, attrs:{ "data-strip-cur":String(x.isCurrent) } }) }); }),
       dcards:dcards.map((x,i)=>{ const d=+x.num, k=KIVO.BassamCal.gKey(s.year,s.month,d), past=self.dPast(s.year,s.month,d);
         return Object.assign(x,{ card:KIVO.BassamCalCard.day({ key:k, k:k, closed:x.lockClosed, why:x.lockClosed?(mApp?"ap":past?"past":"shut"):x.lockOpen?"retro":"", sel:d===s.day, T:T.k, hint: x.tip, onClick:x.click, onDoubleClick:x.dbl, attrs:{ "data-strip-cur":String(x.isToday) } }) }); }),
       monthName:KIVO.BassamCal.G_MONTHS[s.month-1], dayProg: KIVO.BassamCount(fullDays,"يوم|مكتمل")+" · "+filled+" "+KIVO.BassamCount.agr(filled,"فيه","فيهما","فيها")+" أرقام من "+nd,
