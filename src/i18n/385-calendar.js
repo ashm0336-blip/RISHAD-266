@@ -228,3 +228,56 @@
     hRangeOfYear: hRangeOfYear, fmtMonth: fmtMonth, fmtMonthName: fmtMonthName, fmtDay: fmtDay, fmtDayLong: fmtDayLong, fmtPrint: fmtPrint, fileTag: fileTag,
     monthOptions: monthOptions, yearOptions: yearOptions, cardState: cardState });
 })();
+
+/* ═══ V7 · 53 تقويم: كرتُ اليوم/الشهر/السنة المشترك (cal_api.md §2 · التصميم §7) — KIVO.BassamCalCard ═══
+   مكوّنٌ واحد لكل شرائط التقويم: كرتُ اليوم ثلاثةُ أسطر في المقاس الحالي نفسِه (حرفُ اليوم فوق · اليومُ الميلادي في الوسط · الهجريُّ تحت بخطٍّ أصغر)،
+   وكرتا الشهر والسنة بالاسم الميلادي وتحتهما المدى الهجري. حالتان فقط: «مغلق» بلونٍ واحد وقفل، و«مفتوح» بلا قفل — والسببُ الإداري في التلميح وحده
+   (BassamCal.cardState). المقاسُ مقاسُ المستدعي (style)، وإلا مقاسُ كرت شريط المتابعة اليومية. الألوانُ رموزٌ قائمة لا ألوانٌ خام.
+     day({k, closed, why, until, sel, today, style, onClick, onDoubleClick, key, attrs}) · month({ym, …}) · year({y, …}) ⇒ عنصرُ React
+     model(kind, p) ⇒ { style, title, lines:[نص…], closed } لمن يبني بغير React */
+(function () {
+  var C = KIVO.BassamCal;
+  var DAY_STYLE = { position: 'relative', height: 24, minWidth: 28, flex: '1 1 auto', padding: '0 3px', borderRadius: 4 };
+  var MONTH_STYLE = { position: 'relative', height: 40, minWidth: 64, flex: '1 1 auto', padding: '2px 4px', borderRadius: 8 };
+  var YEAR_STYLE = { position: 'relative', height: 40, minWidth: 72, padding: '2px 6px', borderRadius: 8 };
+  var LINES = {
+    day: [{ fontSize: 6.5, fontWeight: 700 }, { fontSize: 9, fontWeight: 800 }, { fontSize: 6, fontWeight: 400, opacity: 0.85 }],
+    month: [{ fontSize: 11, fontWeight: 800 }, { fontSize: 7.5, fontWeight: 400, opacity: 0.85 }],
+    year: [{ fontSize: 12, fontWeight: 800 }, { fontSize: 7.5, fontWeight: 400, opacity: 0.85 }]
+  };
+  function assign(a) { for (var i = 1; i < arguments.length; i++) { var b = arguments[i]; if (b) for (var k in b) if (Object.prototype.hasOwnProperty.call(b, k)) a[k] = b[k]; } return a; }
+  function keyOf(kind, p) { return kind === 'day' ? String(p.k || '') : kind === 'month' ? String(p.ym || p.k || '') : String(p.y || p.k || ''); }
+  function text(kind, k) {
+    if (kind === 'day') return [C.gLetter(k), String((C.gParse(k) || {}).d || ''), C.hLine(k)];
+    if (kind === 'month') {
+      var r = C.hRangeOfMonth(k), h = C.hMonthsOf(k), y = h.length && h[0].y === h[h.length - 1].y ? ' ' + h[0].y : '';
+      return [C.fmtMonthName(k), y && r.slice(-y.length) === y ? r.slice(0, -y.length) : r];
+    }
+    return [k, C.hRangeOfYear(+k)];
+  }
+  function model(kind, p) {
+    p = p || {};
+    var k = keyOf(kind, p), st = C.cardState({ k: k, closed: p.closed, why: p.why, until: p.until }), ring = p.sel || p.today;
+    var style = assign({}, kind === 'day' ? DAY_STYLE : kind === 'month' ? MONTH_STYLE : YEAR_STYLE, p.style, {
+      boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'visible',
+      cursor: 'pointer', userSelect: 'none', textAlign: 'center',
+      background: st.closed ? 'var(--bg-x64748b)' : 'var(--bg-xffffff)', color: st.closed ? 'var(--fg-xffffff)' : 'var(--fg-x53565a)',
+      border: '1px solid ' + (st.closed ? 'var(--bd-x64748b)' : 'var(--bd-xe1e1e1)'),
+      boxShadow: ring ? '0 0 0 2px var(--bd-xb99751)' : 'none'
+    });
+    return { kind: kind, k: k, style: style, title: st.tip, closed: st.closed, label: st.label, why: st.why, lines: text(kind, k) };
+  }
+  var LOCK = 'M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM7 11V7a5 5 0 0 1 10 0v4';
+  function render(kind, p) {
+    var R = (typeof window !== 'undefined' && window.React) || KIVO.React, h = R.createElement, M = model(kind, p || {}), L = LINES[kind];
+    var kids = M.lines.map(function (t, i) { return h('span', { key: 'l' + i, 'data-cal-line': String(i), style: assign({ display: 'block', lineHeight: 1, whiteSpace: 'nowrap' }, L[i]) }, t); });
+    if (M.closed) kids.push(h('span', { key: 'lock', 'data-cal-lock': '1', 'aria-hidden': 'true', style: { position: 'absolute', top: -4, left: -3, width: 12, height: 12, borderRadius: 9999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-xffffff)', border: '1px solid var(--bd-x64748b)', boxSizing: 'border-box' } },
+      h('svg', { width: 7, height: 7, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--fg-x64748b)', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }, h('path', { d: LOCK }))));
+    return h('div', assign({}, (p && p.attrs) || {}, { key: p && p.key, title: M.title, 'aria-label': M.title, 'data-cal-kind': kind, 'data-cal-state': M.closed ? 'closed' : 'open', 'data-cal-key': M.k,
+      onClick: p && p.onClick, onDoubleClick: p && p.onDoubleClick, style: M.style }), kids);
+  }
+  KIVO.BassamCalCard = Object.freeze({
+    day: function (p) { return render('day', p); }, month: function (p) { return render('month', p); }, year: function (p) { return render('year', p); },
+    model: model, DAY_STYLE: Object.freeze(DAY_STYLE), MONTH_STYLE: Object.freeze(MONTH_STYLE), YEAR_STYLE: Object.freeze(YEAR_STYLE)
+  });
+})();
