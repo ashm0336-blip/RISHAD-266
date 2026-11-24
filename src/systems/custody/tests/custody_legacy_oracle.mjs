@@ -54,5 +54,6 @@ function cuInflate(rows) {
   };
 }
 
-export const CU_LEGACY_ORACLE_SOURCE_SHA256="7519a4b9ebf1f6de15faddbd6a51787586e7d825e1763e342138e376b89afc86";
+/* V7 · 53 تقويم (ق2): الدالةُ المجمَّدة نفسُها، وأسماءُ أعمدتها greg_* بعد 0014 (كان 7519a4b9…) — لا تغييرَ غيرُها */
+export const CU_LEGACY_ORACLE_SOURCE_SHA256="b9e2869b3cdd08be0413c73fb204a488e098444262396ed5b6212335bacb9237";
 export {cuInflate};
