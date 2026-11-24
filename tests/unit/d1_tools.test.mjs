@@ -32,7 +32,7 @@ test('نسخةٌ احتياطية → تحقّق → استعادة → العا
   await applySql(env.DB, seedSql());
   await installCurrentSchemaFixture(env);   /* RISHAD-266: legacy seed → current D1 storage */
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok);
-  env.DB.exec("INSERT INTO daily_stats_days(site,hijri_date,field_mask,worshippers,umrah) VALUES('haram','1499-01-01',3,0,NULL); INSERT INTO daily_stats_month_locks(site,hijri_year,hijri_month,approved,reopened,legacy_boolean) VALUES('haram',1499,1,1,0,0); INSERT INTO daily_stats_day_locks(site,hijri_year,hijri_month,hijri_day,is_open,is_shut) VALUES('haram',1499,1,1,0,1)");
+  env.DB.exec("INSERT INTO daily_stats_days(site,greg_date,field_mask,worshippers,umrah) VALUES('haram','2099-01-01',3,0,NULL); INSERT INTO daily_stats_month_locks(site,greg_year,greg_month,approved,reopened,legacy_boolean) VALUES('haram',2099,1,1,0,0); INSERT INTO daily_stats_day_locks(site,greg_year,greg_month,greg_day,is_open,is_shut) VALUES('haram',2099,1,1,0,1)");
   const notice = await C.api('/api/notifications/act', { method: 'POST', cookie: su.ck, body: { op: 'emit', type: 'task_new', dept: 'tst_d1', own: ['tst_e_emp1'], vars: { 'المهمة': 'TEST_ONLY backup relationships', 'الوقت': 'TEST_ONLY' } } });
   assert.equal(notice.status, 200); assert.equal(notice.j.ok, 1); assert.ok(notice.j.id);
   const acknowledged = await C.api('/api/notifications/act', { method: 'POST', cookie: emp.ck, body: { op: 'state', action: 'ack', id: notice.j.id } }); assert.equal(acknowledged.status, 200); assert.equal(acknowledged.j.ok, 1);

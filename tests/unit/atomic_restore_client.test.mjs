@@ -380,7 +380,7 @@ test('actual legacy HTTP conversion guards preserved global NF state and DS even
           ]);
         else
           await rawBatch([
-            B.DB.prepare("INSERT INTO daily_stats_days(site,hijri_date,field_mask,worshippers) VALUES('haram','1448-01-01',1,0)"),
+            B.DB.prepare("INSERT INTO daily_stats_days(site,greg_date,field_mask,worshippers) VALUES('haram','2026-01-01',1,0)"),
           ]);
         afterConcurrent = snap(B.DB);
       }

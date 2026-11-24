@@ -119,8 +119,8 @@ test('place 062 historical-import reason (audHist) — not reachable through /ap
   const dropped = await markerSave('manager1', { reason: 'TEST_ONLY marker reason' }, { aud: ev });
   assert.ok(dropped.ok && dropped.changed, 'the foreign import event does not turn the save into a historical import: ' + JSON.stringify(dropped.r.json));
   /* (2) the branch itself: POST /api/dstats operation historical-import (020 dsDomainCommit passes historical to enfSavePrep) */
-  const rows = (B) => B.DB.q('SELECT site,hijri_date,worshippers FROM daily_stats_days');
-  const data = { haram: { '9999-01-01': { worshippers: 5 } }, nabawi: {}, locks: {} };
+  const rows = (B) => B.DB.q('SELECT site,greg_date,worshippers FROM daily_stats_days');
+  const data = { haram: { '2199-01-01': { worshippers: 5 } }, nabawi: {}, locks: {} };
   const imp = async (who, reason) => { const B = await fresh(), g = await B.api(who, '/api/dstats'); assert.equal(g.status, 200); assert.deepEqual(rows(B), []);
     const r = await B.api(who, '/api/dstats', { uid: IDS[who], base: g.json.rev, data, operation: 'historical-import', ...(reason === undefined ? {} : { reason }) });
     return { B, r, status: r.status, ok: r.status === 200 && r.json.ok === 1, changed: rows(B).length === 1 && rows(B)[0].worshippers === 5, rows: authz(B) }; };
