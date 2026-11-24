@@ -15,7 +15,8 @@ const site = () => ({ sid: 's_TEST_ONLY_1', name: 'TEST_ONLY موقع 1', num: 1
 
 test('V7 · د5-ح (13): حفظةٌ حقيقية من صفحة الجولات تنقل الشهرَ المقفل إلى الأرشيف · العميلُ يرى النجاح · الصفحةُ تقرأ الأرشيف ولا ترسله', { timeout: 600000 }, async () => {
   const lab = await startLab(), { env } = lab;
-  const parts = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
+  /* V7 · 53 تقويم: يومُ الصفحة هو يومُ الرياض المدني (gAt · UTC+3) — لا يومُ الجهاز (UTC هنا): يختلفان بين 00:00 و03:00 بالرياض */
+  const parts = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
   const num = (t) => +parts.find((x) => x.type === t).value, T = { y: num('year'), m: num('month'), d: num('day') };
   const x = T.y * 12 + (T.m - 1) - 2, Y = Math.floor(x / 12), M = (x % 12) + 1, OLD = Y + '-' + String(M).padStart(2, '0');   /* الشهرُ قبل الماضي — مقفلٌ للأرشفة */
   await replaceOperationalFixture(env, KP, { pMig: 3, zones: [], gates: [], marks: [], paths: [], floors: [site()], months: { [T.y + '-' + String(T.m).padStart(2, '0')]: { c: 1, d: [site()] } }, cfg: {}, delMonths: {} });
