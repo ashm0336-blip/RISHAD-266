@@ -28,21 +28,21 @@ async function flip(b, lab, sys, wantOn) {
   await s.ctx.close();
 }
 /* مديرُ المنصة يمنح بدورٍ (المسارُ الواحد KIVO.Perm44: مسودةٌ تُثبَّت مرة) */
-async function grantByRole(b, lab, role, ekey) {
+async function grantByRole(b, lab, role, ekey, others = []) {
   const s = await openAs(b, lab, LAB.superUn, LAB.superPw); s.page.setDefaultTimeout(15000);
   await s.go('#/sysadmin/org/' + A + '/roles', 3000);
-  const r = await s.page.evaluate(async ([d, role, e]) => {
+  const r = await s.page.evaluate(async ([d, role, e, others]) => {
     const E = KIVO.Perm44, rec = E.rolesOf(d), dr = E.draft(d);
-    rec.roles.push(role); rec.people[e] = { role: role.id, ex: [] };
+    rec.roles.push(role, ...others); rec.people[e] = { role: role.id, ex: [] };
     const w = E.setRoles(dr, d, rec); if (!w.ok) return w;
     return E.commit(dr);
-  }, [A, role, ekey]);
+  }, [A, role, ekey, others]);
   await settle(lab, s.page, 1200);
   assert.equal(r.ok, true, 'the platform admin grants by role: ' + JSON.stringify(r));
   await s.ctx.close();
 }
 /* مديرُ الإدارة: الحفظاتُ الثلاث من الواجهة — كلٌّ بلا رفض */
-async function managerEdits(b, lab, roleName, newRole, ekeyName) {
+async function managerEdits(b, lab, roleName, newRole, ekeyName, assignName = newRole) {
   const m = await openAs(b, lab, LAB.mgrA, LAB.pw, { viewport: { width: 1366, height: 1100 } }); const p = m.page; p.setDefaultTimeout(15000);
   const answers = []; p.on('response', async (r) => { if (r.request().method() === 'POST' && /\/api\/save$/.test(new URL(r.url()).pathname)) { let j = null; try { j = await r.json(); } catch (e) { j = null; } answers.push(j || {}); } });
   const toasts = []; await p.exposeFunction('__d7toast', (t) => toasts.push(t));
@@ -76,28 +76,36 @@ async function managerEdits(b, lab, roleName, newRole, ekeyName) {
   /* ③ assign the other role to the employee */
   await T(p, { hasText: 'الأشخاص' }).click(); await p.waitForTimeout(600);
   await P(p, 'table.p44-people button', { hasText: ekeyName }).first().click(); await p.waitForTimeout(400);
-  await P(p, 'aside[aria-label="تفاصيل الشخص"] [role=radio]', { hasText: newRole }).click(); await p.waitForTimeout(300);
+  await P(p, 'aside[aria-label="تفاصيل الشخص"] [role=radio]', { hasText: assignName }).click(); await p.waitForTimeout(300);
   await save('assign another role');
   assert.deepEqual(m.errs, [], 'no page errors (manager)');
   await m.ctx.close();
-  return nr;
+  return kv(lab, KR).roles.find((r) => r.name === assignName);
 }
 
-test('V7 · د7 (52 · الكامن) ① a system turned OFF after a role grant: the manager changes the level, creates a role, assigns another — all saved; ON again ⇒ the grant is back', { timeout: 600000 }, async () => {
+/* V7 · د7 (52 · قرارُ المالك REPLY_52 §1): الدورُ الحالي هو المرجع — دورُ (أ) بمستوى «كامل» للنظام X، يُطفأ X، يُسند (ب) بمستوى «مشاهدة» لـX،
+   يُعاد تشغيلُ X ⇒ يظهر مستوى (ب) لا (أ)، بلا أيّ حفظٍ إضافي */
+test('V7 · د7 (52 · الكامن) ① a system turned OFF after a role grant: the manager changes the level, creates a role, assigns role B — all saved; ON again ⇒ B\'s level for the system, not A\'s', { timeout: 600000 }, async () => {
   const lab = await startLab(); const b = await chromium.launch();
   try {
-    const role = { id: 'TEST_ONLY_r_d7', name: 'TEST_ONLY تجربة مشاهد', sys: { tasks: { lvl: 'view' }, [OFF.k]: { lvl: 'view' } } };
-    await grantByRole(b, lab, role, EMP);
-    const g0 = kv(lab, KG).emp[EMP], hidden = g0.plus.filter((k) => /^dstats\./.test(k));
-    assert.ok(hidden.length, 'the role grants ' + OFF.k + ' keys: ' + JSON.stringify(g0));
+    const role = { id: 'TEST_ONLY_r_d7', name: 'TEST_ONLY تجربة مشاهد', sys: { tasks: { lvl: 'view' }, [OFF.k]: { lvl: 'full' } } };
+    const roleB = { id: 'TEST_ONLY_r_d7b', name: 'TEST_ONLY دور ب للكامن', sys: { tasks: { lvl: 'input' }, [OFF.k]: { lvl: 'view' } } };
+    await grantByRole(b, lab, role, EMP, [roleB]);
+    const g0 = kv(lab, KG).emp[EMP], hidden = g0.plus.filter((k) => /^dstats\./.test(k)), aOnly = hidden.filter((k) => /\.entry$/.test(k)), bKeys = hidden.filter((k) => /\.view$/.test(k));
+    assert.ok(aOnly.length && bKeys.length, 'role A grants ' + OFF.k + ' view + entry keys: ' + JSON.stringify(g0));
     await flip(b, lab, OFF, false);
-    const nr = await managerEdits(b, lab, role.name, 'TEST_ONLY دور جديد للكامن', 'TEST_ONLY موظف أ');
+    const nr = await managerEdits(b, lab, role.name, 'TEST_ONLY دور جديد للكامن', 'TEST_ONLY موظف أ', roleB.name);
     const g1 = kv(lab, KG).emp[EMP];
-    assert.equal(g1.src, 'role:' + nr.id, 'the employee now holds the other role');
-    assert.deepEqual(hidden.filter((k) => !g1.plus.includes(k)), [], 'the hidden ' + OFF.k + ' keys are kept with his grant: ' + JSON.stringify(g1));
+    assert.equal(g1.src, 'role:' + nr.id, 'the employee now holds role B');
+    assert.deepEqual(bKeys.filter((k) => !g1.plus.includes(k)), [], 'B\'s hidden ' + OFF.k + ' keys go with his grant: ' + JSON.stringify(g1));
+    assert.deepEqual(bKeys.filter((k) => (g1.minus || []).includes(k)), [], 'B\'s keys are not masked');
+    assert.deepEqual(aOnly.filter((k) => g1.plus.includes(k) && !(g1.minus || []).includes(k)), [], 'A\'s keys (entry) do not stay effective — kept stored and masked (no guard relaxed): ' + JSON.stringify(g1));
     await flip(b, lab, OFF, true);
+    assert.deepEqual(kv(lab, KG).emp[EMP], g1, 'no additional save of his grant');
     const e = await openAs(b, lab, LAB.empA, LAB.pw); await e.go('#/profile', 3000);
-    assert.equal(await e.page.evaluate(() => KIVO.BassamPerm.can('dstats', 'view')), true, 'ON again ⇒ his ' + OFF.k + ' right is back as before');
+    assert.equal(await e.page.evaluate(() => KIVO.BassamPerm.can('dstats', 'view')), true, 'ON again ⇒ B\'s ' + OFF.k + ' view right');
+    const held = await e.page.evaluate(() => Object.keys((KIVO.__BS_AUTHZ && KIVO.__BS_AUTHZ.depts && Object.values(KIVO.__BS_AUTHZ.depts)[0]) || {}).filter((k) => /^dstats\./.test(k)));
+    if (held.length) { assert.ok(bKeys.every((k) => held.includes(k)), 'held: B\'s keys ' + JSON.stringify(held)); assert.ok(!aOnly.some((k) => held.includes(k)), 'held: not A\'s entry keys ' + JSON.stringify(held)); }
     assert.deepEqual(e.errs, [], 'no page errors (employee)');
     /* item 4: a legitimate refusal of this guard reads in the manager's words — the employee and the system, no «بيانات المنصة» */
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw); await s.go('#/sysadmin/org/' + A + '/roles', 3000);

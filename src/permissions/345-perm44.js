@@ -114,15 +114,18 @@ function perm44Make(R, D) {
     return g;
   }
   /* V7 · د7 (52 · الكامن): القاعدةُ الواحدة لمنحٍ يُعاد بناؤه من الدور — ما في مدخله المخزَّن (old) من مفاتيح plus/minus خارج السقف (keyOn كاذبة)
-     يُحمل معه كما هو، فيعود كما كان متى وُسِّع السقف؛ وداخلَ السقف الدورُ وحده. يكتب به العميلُ (345 recompile) ويحكم به الخادمُ (057b perm44GrantsWhy)
-     — نصٌّ واحد بالطرفين، وهو ما يطلبه الحارس (021 latentLossWhy · capStaleBatch: مفتاحٌ خارج السقف لا يسقط من مدخلٍ باقٍ) */
-  function keepOff(nx, old, keyOn) {
+     يُحمل معه كما هو (فلا يرفضه حارسُ الكامن 021 latentLossWhy · capStaleBatch، ولا يُضاف مفتاحٌ جديد خارج السقف فلا يرفضه سقفُ المنح 059).
+     قرارُ المالك (REPLY_52 §1 — الدورُ الحالي هو المرجع): full = فعليُّ الدور الحالي بلا قصّ (effective بلا دالّة سقف)؛ إن كان old مشتقاً من دور فما حُمل
+     في plus خارج السقف ولا يمنحه الدورُ الحالي يُضاف إلى minus (يُحجب — التضييقُ مقبولٌ في كل الحرّاس)، فلا تعود مفاتيحُ دورٍ سابق متى وُسِّع السقف.
+     المنحُ الصريح (old بلا src دور) لا يُحجب منه شيء. يكتب به العميلُ (345 recompile) ويحكم الخادمُ على plus بالقاعدة نفسِها (057b perm44GrantsWhy). */
+  function keepOff(nx, old, keyOn, full) {
     if (!isObj(nx) || !isObj(old)) return nx;
-    var g = clone(nx), f, n;
+    var g = clone(nx), f, n, k, F = isObj(full) && Array.isArray(full.keys) ? full.keys : null;
     for (f in { plus: 1, minus: 1 }) {
       var a = Array.isArray(g[f]) ? g[f] : (g[f] = []), o = Array.isArray(old[f]) ? old[f] : [];
-      for (n = 0; n < o.length; n++) { var k = String(o[n]); if (!keyOn(k) && a.indexOf(k) === -1) a.push(k); }
+      for (n = 0; n < o.length; n++) { k = String(o[n]); if (!keyOn(k) && a.indexOf(k) === -1) a.push(k); }
     }
+    if (F && /^(role:|p44:)/.test(String(old.src || ''))) for (n = 0; n < g.plus.length; n++) { k = String(g.plus[n]); if (!keyOn(k) && F.indexOf(k) === -1 && g.minus.indexOf(k) === -1) g.minus.push(k); }
     return g;
   }
   function normRec(rec) {
@@ -280,7 +283,7 @@ function recompile(dr, d, rec, ekeys) {
   var E = eng(), C = ceiling(d).key, g = dget(dr, d, GRANTS), u = curUser(), now = Date.now();
   g = obj(g) && obj(g.emp) ? g : { v: 1, emp: {} };
   ekeys.forEach(function (e) {
-    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.keepOff(E.grantOf(pr, rec, C, now, legacyT(e, d)), old, C) : null;   /* V7 · د7 (52 · الكامن): المخفيُّ خارج السقف يُحمل (perm44-core keepOff) */
+    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.keepOff(E.grantOf(pr, rec, C, now, legacyT(e, d)), old, C, E.effective(pr, rec, null, now)) : null;   /* V7 · د7 (52 · الكامن): المخفيُّ يُحمل، وما لا يمنحه الدورُ الحالي منه يُحجب (perm44-core keepOff) */
     if (!nx) { if (old && /^(role:|p44:)/.test(String(old.src || ''))) delete g.emp[e]; return; }
     var same = old && JSON.stringify((old.plus || []).slice().sort()) === JSON.stringify(nx.plus.slice().sort()) && JSON.stringify((old.minus || []).slice().sort()) === JSON.stringify(nx.minus.slice().sort()) && old.src === nx.src && JSON.stringify(old.until || null) === JSON.stringify(nx.until || null);
     if (!same) { nx.at = now; nx.by = u ? String(u.id) : ''; g.emp[e] = nx; }

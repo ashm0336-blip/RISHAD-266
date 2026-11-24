@@ -52,7 +52,7 @@ function recompile(dr, d, rec, ekeys) {
   var E = eng(), C = ceiling(d).key, g = dget(dr, d, GRANTS), u = curUser(), now = Date.now();
   g = obj(g) && obj(g.emp) ? g : { v: 1, emp: {} };
   ekeys.forEach(function (e) {
-    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.keepOff(E.grantOf(pr, rec, C, now, legacyT(e, d)), old, C) : null;   /* V7 · د7 (52 · الكامن): المخفيُّ خارج السقف يُحمل (perm44-core keepOff) */
+    var pr = rec.people[e], old = g.emp[e], nx = pr ? E.keepOff(E.grantOf(pr, rec, C, now, legacyT(e, d)), old, C, E.effective(pr, rec, null, now)) : null;   /* V7 · د7 (52 · الكامن): المخفيُّ يُحمل، وما لا يمنحه الدورُ الحالي منه يُحجب (perm44-core keepOff) */
     if (!nx) { if (old && /^(role:|p44:)/.test(String(old.src || ''))) delete g.emp[e]; return; }
     var same = old && JSON.stringify((old.plus || []).slice().sort()) === JSON.stringify(nx.plus.slice().sort()) && JSON.stringify((old.minus || []).slice().sort()) === JSON.stringify(nx.minus.slice().sort()) && old.src === nx.src && JSON.stringify(old.until || null) === JSON.stringify(nx.until || null);
     if (!same) { nx.at = now; nx.by = u ? String(u.id) : ''; g.emp[e] = nx; }
