@@ -615,6 +615,9 @@ async function rsConvertBackup(env, A, file, opt) {
   manifest.domains.operations = 1;
   manifest.keys = Object.keys(keys).map(function (k) { return scope.kind === 'dept' ? resName(k) : k; });
   rsBCManifest(manifest, scope, keys, domains, deptIds);
+  /* V7 · 53 تقويم (ف٧ · ق12): نسخةٌ قديمة أو ملفُّ Production (هجري) ⇐ ميلاديةٌ بالقاعدة نفسِها التي يرحّل بها 0014 — قبل التخطيط والحفظ (calMigBackup، 019v1).
+     النسخةُ الميلادية تعود كما هي، والمختلطةُ تُرفض باسم مفتاحها. T = يومُ بدء الاستيراد (019g env.__calT) أو اليوم */
+  calMigBackup(keys, domains, summary, (env && env.__calT) || calToday(Date.now()).k);
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
   if (scope.kind === 'dept') rsBCMgrSheetDrop(perms, summary);
   if (perms !== undefined) result.permissionSlice = perms;

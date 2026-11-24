@@ -205,8 +205,9 @@ async function migrateDb(env) {
     state.tables = null;
   }
   for (i = 0; i < pending.length; i++) {
-    var dataPlan = pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :
-      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : pending[i].name === '0013_period_storage' ? opPeriodsLegacyPrepare(env) : null;
+    /* V7 · 53 تقويم (قرارُ الاقتران، cal_api.md): خطواتُ 0004/0006/0008/0009 تُشغَّل على قاعدةٍ تعيد أسماءَ greg_* إلى hijri_* (calLegacyEnv) — جداولُها بعدُ هجرية ويحوّلها 0014 */
+    var dataPlan = await (async function (env) { return pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :
+      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : pending[i].name === '0013_period_storage' ? opPeriodsLegacyPrepare(env) : pending[i].name === '0014_gregorian_calendar' ? await calMigPrepare(env) : null; })(/^000[4689]_/.test(pending[i].name) ? calLegacyEnv(env) : env);
     var st = [dbMigrationFence(env, state, permit)], first = i;
     if (dataPlan) st = st.concat(dataPlan.before);
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));

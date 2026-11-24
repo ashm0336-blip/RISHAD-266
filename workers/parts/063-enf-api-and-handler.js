@@ -1219,6 +1219,7 @@ export default {
       if (path === '/api/operations/summary') return await opSummaryRoute(env,request,url,ss);   /* V7 · 53 (019w) */
       if (path === '/api/operations/receipt') return await opReceiptRoute(env,request,url,ss);
       if (path === '/api/operations/periods-migrate') return await opPeriodsMigrateRoute(env,request,ss);
+      if (path === '/api/operations/calendar-migrate') return await calMigRoute(env,request,ss);   /* V7 · 53 تقويم: المرحلة ٢ من 0014 */
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
       /* ── ماذا تغيّر منذ نسختي؟ — تستعمله لافتة «تحديثات جديدة» ── */
