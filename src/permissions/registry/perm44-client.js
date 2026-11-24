@@ -63,6 +63,8 @@ function recompile(dr, d, rec, ekeys) {
 function setRoles(dr, did, roles) {
   var E = eng(), d = String(did), before = E.normRec(dget(dr, d, RES)), rec = E.normRec(before);
   if (Array.isArray(roles)) rec.roles = JSON.parse(JSON.stringify(roles)); else if (obj(roles)) rec = E.normRec(roles);
+  /* V7 · د7 (52 · الجرد ٧): ما في السجلّ المخزَّن من حقلٍ أعلى لا يحمله ما أرسله المحرّر يُحمل كما هو */
+  for (var f in before) if (Object.prototype.hasOwnProperty.call(before, f) && !Object.prototype.hasOwnProperty.call(rec, f)) rec[f] = before[f];
   var w = E.shapeWhy(rec); if (w) return { ok: false, err: w };
   dset(dr, d, RES, rec);
   recompile(dr, d, rec, E.diff(before, rec).affected);

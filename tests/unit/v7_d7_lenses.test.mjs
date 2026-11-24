@@ -275,4 +275,22 @@ test('⑧ carry what is outside the view: a lens row of a role sits outside the 
   assert.ok((await plusOf(W, 'role', A)).includes('lens.gates.edit'), 'ON again ⇒ the grant is back unchanged');
 });
 
+test('⑨ the role editor «إيقاف الكل» turns OFF the SHOWN rows (systems and lenses enabled for the unit) and keeps a hidden lens row (OFF for the unit) as stored', needs('plan', 'daily'), async () => {
+  const W = await holdersWorld();
+  await applyState(W, 'allOn');
+  const c = await clientOf(W, 'su', A), x = uiOf(c);
+  try {
+    assert.equal(c.P.setDeptLenses(A, ALL.filter((k) => k !== 'gates')).ok, true); await c.settle();
+    const role = { id: 'TEST_ONLY_ro', name: 'TEST_ONLY دور', desc: '', sys: { plan: { lvl: 'edit' }, 'lens.zones': { lvl: 'view' }, 'lens.gates': { lvl: 'edit' } } };
+    const d = { roles: [role], people: {}, base: { roles: [J(role)], people: {} } };
+    x.state = { p44: { d, sel: role.id } };
+    const v = x._p44RoleVals(A, x.state.p44.d, false, false);
+    const shown = J(v.p44SysEd).flatMap((r) => [r.k].concat((r.lz || []).map((z) => z.k)));
+    assert.ok(shown.includes('lens.zones') && !shown.includes('lens.gates'), 'zones shown, gates (OFF) hidden');
+    assert.ok(J(v.p44ChkKeys).some((o) => o.v === 'lens.zones.view'), '«اختبار الوصول» lists the lens actions');
+    v.p44AllOff();
+    assert.deepEqual(J(x.state.p44.d.roles[0].sys), { 'lens.gates': { lvl: 'edit' } }, 'shown rows OFF (plan · zones); the hidden lens row carried as stored');
+  } finally { c.dispose(); }
+});
+
 function deq6(L, m) { assert.deepEqual(L, ALL, m); }

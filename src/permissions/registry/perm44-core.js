@@ -125,9 +125,12 @@ function perm44Make(R, D) {
     }
     return g;
   }
+  /* V7 · د7 (52 · الجرد ٧): حقلٌ أعلى لا يعرفه هذا البناء يُحمل كما هو مخزَّن (كان السجلُّ يُبنى من {v, roles, people} وحدها فيضيع ما سواها بصمت) */
   function normRec(rec) {
-    var r = isObj(rec) ? clone(rec) : {};
-    return { v: 1, roles: Array.isArray(r.roles) ? r.roles : [], people: isObj(r.people) ? r.people : {} };
+    var r = isObj(rec) ? clone(rec) : {}, o = {}, f;
+    for (f in r) if (Object.prototype.hasOwnProperty.call(r, f) && f !== 'v' && f !== 'roles' && f !== 'people') o[f] = r[f];
+    o.v = 1; o.roles = Array.isArray(r.roles) ? r.roles : []; o.people = isObj(r.people) ? r.people : {};
+    return o;
   }
   /* شكلُ السجلّ: '' سليم · وإلا السبب */
   function shapeWhy(rec) {

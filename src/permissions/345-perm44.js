@@ -130,9 +130,12 @@ function perm44Make(R, D) {
     }
     return g;
   }
+  /* V7 · د7 (52 · الجرد ٧): حقلٌ أعلى لا يعرفه هذا البناء يُحمل كما هو مخزَّن (كان السجلُّ يُبنى من {v, roles, people} وحدها فيضيع ما سواها بصمت) */
   function normRec(rec) {
-    var r = isObj(rec) ? clone(rec) : {};
-    return { v: 1, roles: Array.isArray(r.roles) ? r.roles : [], people: isObj(r.people) ? r.people : {} };
+    var r = isObj(rec) ? clone(rec) : {}, o = {}, f;
+    for (f in r) if (Object.prototype.hasOwnProperty.call(r, f) && f !== 'v' && f !== 'roles' && f !== 'people') o[f] = r[f];
+    o.v = 1; o.roles = Array.isArray(r.roles) ? r.roles : []; o.people = isObj(r.people) ? r.people : {};
+    return o;
   }
   /* شكلُ السجلّ: '' سليم · وإلا السبب */
   function shapeWhy(rec) {
@@ -296,6 +299,8 @@ function recompile(dr, d, rec, ekeys) {
 function setRoles(dr, did, roles) {
   var E = eng(), d = String(did), before = E.normRec(dget(dr, d, RES)), rec = E.normRec(before);
   if (Array.isArray(roles)) rec.roles = JSON.parse(JSON.stringify(roles)); else if (obj(roles)) rec = E.normRec(roles);
+  /* V7 · د7 (52 · الجرد ٧): ما في السجلّ المخزَّن من حقلٍ أعلى لا يحمله ما أرسله المحرّر يُحمل كما هو */
+  for (var f in before) if (Object.prototype.hasOwnProperty.call(before, f) && !Object.prototype.hasOwnProperty.call(rec, f)) rec[f] = before[f];
   var w = E.shapeWhy(rec); if (w) return { ok: false, err: w };
   dset(dr, d, RES, rec);
   recompile(dr, d, rec, E.diff(before, rec).affected);
