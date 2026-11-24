@@ -393,6 +393,9 @@ async function opReadOnce(env, url, session) {
     if (Object.keys(failed).length) body.failed = failed;
     if (rangeIn.length) body.ranges = ranges;
     if (indexIn.length) body.index = index;
+    /* V7 · 53 (periodsui طلب 6): المراجعةُ المنطقية لكل موردٍ قُرئ بفتراته — لمساراتٍ ما زالت تحرس بها (أوامرُ المهام) */
+    var logical = {}; Object.keys(groups).forEach(function (K) { if (!groups[K].full && groups[K].periods.size && eligible.has(K) && !failed[K]) logical[K] = state.revs[K] || 0; });
+    if (Object.keys(logical).length) body.logical = logical;
     return json(body);
   }
 }
@@ -425,7 +428,12 @@ async function opPeriodSaveBody(env, A, bs) {
   (bs.del || []).forEach(function (k) { if (String(k).indexOf('@') < 0) out.del.push(k); });
   Ks.forEach(function (K) {
     var G = byK[K], raw = cur.values[K], doc = raw == null ? undefined : JSON.parse(raw), parts = opSplit(G.info, doc), bases = {};
-    G.keys.forEach(function (k) { var p = k.slice(K.length + 1); if (!replay && opPeriodRev(cur.revs, K, p) !== bs.base[k]) conflicts[k] = { why: 'conflict' }; bases[p] = bs.base[k]; });
+    /* V7 · 53 (periodsui خلل 7): base 0 لفترةٍ غائبةٍ الآن = «أعرف أنها غائبة» فيُقبل (ومراجعتُها الحالية تُحرس حتى الاعتماد)؛ وما سواه بمراجعتها الفعلية */
+    G.keys.forEach(function (k) {
+      var p = k.slice(K.length + 1), now = opPeriodRev(cur.revs, K, p), absentNow = p === '' ? doc === undefined : !ocOwn(parts.periods, p);
+      if (!replay && now !== bs.base[k] && !(bs.base[k] === 0 && absentNow)) conflicts[k] = { why: 'conflict' };
+      bases[p] = bs.base[k] === 0 && absentNow ? now : bs.base[k];
+    });
     /* ما قرأته الترجمةُ من رأسٍ وسياق يبقى كما هو حتى الاعتماد — وإلا تعارضٌ فيُعاد البناء */
     scopes[K].periods.concat(['']).forEach(function (p) { if (!ocOwn(bases, p)) bases[p] = opPeriodRev(cur.revs, K, p); });
     var head = ocOwn(G.set, '') ? JSON.parse(G.set['']) : parts.head;

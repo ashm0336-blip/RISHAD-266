@@ -62,11 +62,12 @@ function osSumPlan(p, v) { var d = v && typeof v === 'object' ? (Array.isArray(v
 function osSumReport(p, v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return { kind: 'scalar' };
   if (/^m:/.test(p)) return { ap: v.ap ? 1 : 0, mo: v.mo ? 1 : 0, open: Object.keys(v.dopen || {}).length, shut: Object.keys(v.dshut || {}).length };
-  var out = { shifts: 0, roster: 0, byStatus: {}, byShift: {} };
+  var out = { created: v.created ? 1 : 0, ap: 0, anyAp: 0, shifts: 0, roster: 0, byStatus: {}, byShift: {} }, apN = 0;
   Object.keys(v.shifts && typeof v.shifts === 'object' ? v.shifts : {}).forEach(function (sh) {
-    var s = v.shifts[sh]; out.shifts++;
+    var s = v.shifts[sh]; out.shifts++; if (s && s.ap) apN++;
     (s && Array.isArray(s.roster) ? s.roster : []).forEach(function (r) { out.roster++; var st = r && r.st ? String(r.st) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; out.byShift[sh] = (out.byShift[sh] || 0) + 1; });
   });
+  out.ap = out.shifts && apN === out.shifts ? 1 : 0; out.anyAp = apN ? 1 : 0;   // V7 · 53 (periodsui طلب 1): ألوانُ التقويم للأيام غير المحمَّلة
   return out;
 }
 function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }

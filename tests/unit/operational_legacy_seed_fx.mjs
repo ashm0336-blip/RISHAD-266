@@ -59,7 +59,8 @@ export async function replaceOperationalFixture(env, key, value, { present = tru
   const plan = await W.opChangeStatements(env, key, present ? JSON.stringify(value) : null, { base: revision });
   await env.DB.batch(plan.guards.concat(plan.statements, [
     env.DB.prepare("INSERT INTO meta(k,v)VALUES('rev',CAST((SELECT MAX(n)+1 FROM(SELECT COALESCE(MAX(rev),0)n FROM revs UNION ALL SELECT COALESCE(CAST(v AS INTEGER),0)FROM meta WHERE k='rev'))AS TEXT))ON CONFLICT(k)DO UPDATE SET v=excluded.v"),
-    env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,(SELECT CAST(v AS INTEGER)FROM meta WHERE k='rev'))ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(key),
+    /* V7 · 53: ومراجعاتُ الفترات التي غيّرها (plan.revisionKeys) — كما يفعل كلُّ كاتبٍ في الخادم (الثابت في dbGuard) */
+    ...[...new Set([key].concat(plan.revisionKeys || []))].map((k) => env.DB.prepare("INSERT INTO revs(k,rev)VALUES(?1,(SELECT CAST(v AS INTEGER)FROM meta WHERE k='rev'))ON CONFLICT(k)DO UPDATE SET rev=excluded.rev").bind(k)),
   ]));
   return inspectOperationalFixture(env, key);
 }

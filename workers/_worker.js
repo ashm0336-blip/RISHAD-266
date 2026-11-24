@@ -19696,11 +19696,12 @@ function osSumPlan(p, v) { var d = v && typeof v === 'object' ? (Array.isArray(v
 function osSumReport(p, v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return { kind: 'scalar' };
   if (/^m:/.test(p)) return { ap: v.ap ? 1 : 0, mo: v.mo ? 1 : 0, open: Object.keys(v.dopen || {}).length, shut: Object.keys(v.dshut || {}).length };
-  var out = { shifts: 0, roster: 0, byStatus: {}, byShift: {} };
+  var out = { created: v.created ? 1 : 0, ap: 0, anyAp: 0, shifts: 0, roster: 0, byStatus: {}, byShift: {} }, apN = 0;
   Object.keys(v.shifts && typeof v.shifts === 'object' ? v.shifts : {}).forEach(function (sh) {
-    var s = v.shifts[sh]; out.shifts++;
+    var s = v.shifts[sh]; out.shifts++; if (s && s.ap) apN++;
     (s && Array.isArray(s.roster) ? s.roster : []).forEach(function (r) { out.roster++; var st = r && r.st ? String(r.st) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; out.byShift[sh] = (out.byShift[sh] || 0) + 1; });
   });
+  out.ap = out.shifts && apN === out.shifts ? 1 : 0; out.anyAp = apN ? 1 : 0;   // V7 · 53 (periodsui طلب 1): ألوانُ التقويم للأيام غير المحمَّلة
   return out;
 }
 function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }
@@ -20925,6 +20926,9 @@ async function opReadOnce(env, url, session) {
     if (Object.keys(failed).length) body.failed = failed;
     if (rangeIn.length) body.ranges = ranges;
     if (indexIn.length) body.index = index;
+    /* V7 · 53 (periodsui طلب 6): المراجعةُ المنطقية لكل موردٍ قُرئ بفتراته — لمساراتٍ ما زالت تحرس بها (أوامرُ المهام) */
+    var logical = {}; Object.keys(groups).forEach(function (K) { if (!groups[K].full && groups[K].periods.size && eligible.has(K) && !failed[K]) logical[K] = state.revs[K] || 0; });
+    if (Object.keys(logical).length) body.logical = logical;
     return json(body);
   }
 }
@@ -20957,7 +20961,12 @@ async function opPeriodSaveBody(env, A, bs) {
   (bs.del || []).forEach(function (k) { if (String(k).indexOf('@') < 0) out.del.push(k); });
   Ks.forEach(function (K) {
     var G = byK[K], raw = cur.values[K], doc = raw == null ? undefined : JSON.parse(raw), parts = opSplit(G.info, doc), bases = {};
-    G.keys.forEach(function (k) { var p = k.slice(K.length + 1); if (!replay && opPeriodRev(cur.revs, K, p) !== bs.base[k]) conflicts[k] = { why: 'conflict' }; bases[p] = bs.base[k]; });
+    /* V7 · 53 (periodsui خلل 7): base 0 لفترةٍ غائبةٍ الآن = «أعرف أنها غائبة» فيُقبل (ومراجعتُها الحالية تُحرس حتى الاعتماد)؛ وما سواه بمراجعتها الفعلية */
+    G.keys.forEach(function (k) {
+      var p = k.slice(K.length + 1), now = opPeriodRev(cur.revs, K, p), absentNow = p === '' ? doc === undefined : !ocOwn(parts.periods, p);
+      if (!replay && now !== bs.base[k] && !(bs.base[k] === 0 && absentNow)) conflicts[k] = { why: 'conflict' };
+      bases[p] = bs.base[k] === 0 && absentNow ? now : bs.base[k];
+    });
     /* ما قرأته الترجمةُ من رأسٍ وسياق يبقى كما هو حتى الاعتماد — وإلا تعارضٌ فيُعاد البناء */
     scopes[K].periods.concat(['']).forEach(function (p) { if (!ocOwn(bases, p)) bases[p] = opPeriodRev(cur.revs, K, p); });
     var head = ocOwn(G.set, '') ? JSON.parse(G.set['']) : parts.head;
@@ -31730,6 +31739,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
       }else if(opIsResource(w.k)){
         var add2=await opChangeStatements(env,w.k,R2.W[w.k].v,{base:w.rev});
         guards2.push.apply(guards2,add2.guards);st2.push.apply(st2,add2.statements);
+        add2.revisionKeys.filter(function(k){return k!==w.k;}).forEach(function(k){st2.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(k,rev));});   // V7 · 53: ومراجعاتُ فتراته
       }else{
         guards2.push(revGuard(env,w.k,w.rev));
         st2 = st2.concat(kvPutStmts(env, 'kv', w.k, R2.W[w.k].v));
@@ -31776,6 +31786,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
       if(opIsResource(kk)){
         var add3=await opChangeStatements(env,kk,byK[kk].existed?byK[kk].v:null,{base:revNow[kk]||0});
         guards3.push.apply(guards3,add3.guards);st3.push.apply(st3,add3.statements);
+        add3.revisionKeys.filter(function(k){return k!==kk;}).forEach(function(k){st3.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(k,rev2));});   // V7 · 53: ومراجعاتُ فتراته
       }else{
         guards3.push(revGuard(env,kk,revNow[kk]||0));
         if (byK[kk].existed) st3 = st3.concat(kvPutStmts(env, 'kv', kk, byK[kk].v)); else st3.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(kk));

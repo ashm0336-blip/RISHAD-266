@@ -337,6 +337,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
       }else if(opIsResource(w.k)){
         var add2=await opChangeStatements(env,w.k,R2.W[w.k].v,{base:w.rev});
         guards2.push.apply(guards2,add2.guards);st2.push.apply(st2,add2.statements);
+        add2.revisionKeys.filter(function(k){return k!==w.k;}).forEach(function(k){st2.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(k,rev));});   // V7 · 53: ومراجعاتُ فتراته
       }else{
         guards2.push(revGuard(env,w.k,w.rev));
         st2 = st2.concat(kvPutStmts(env, 'kv', w.k, R2.W[w.k].v));
@@ -383,6 +384,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
       if(opIsResource(kk)){
         var add3=await opChangeStatements(env,kk,byK[kk].existed?byK[kk].v:null,{base:revNow[kk]||0});
         guards3.push.apply(guards3,add3.guards);st3.push.apply(st3,add3.statements);
+        add3.revisionKeys.filter(function(k){return k!==kk;}).forEach(function(k){st3.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(k,rev2));});   // V7 · 53: ومراجعاتُ فتراته
       }else{
         guards3.push(revGuard(env,kk,revNow[kk]||0));
         if (byK[kk].existed) st3 = st3.concat(kvPutStmts(env, 'kv', kk, byK[kk].v)); else st3.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(kk));
