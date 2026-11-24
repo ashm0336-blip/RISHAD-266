@@ -44,6 +44,14 @@
   "order": 10,
   "text": "|dreport"
  },
+ "store.period.dreport": {
+  "order": 10,
+  "text": " bassam_dreport_v1: '',"
+ },
+ "store.periodDay.dreport": {
+  "order": 10,
+  "text": " bassam_dreport_v1: 1,"
+ },
  "store.opResources.dreport": {
   "order": 10,
   "text": ",\n    'bassam_dreport_v1', 'bassam_dr_grp_v1', 'bassam_leave_kinds_v1'"

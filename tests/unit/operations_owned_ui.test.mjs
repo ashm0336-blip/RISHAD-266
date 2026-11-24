@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { loadClient, until } from './k264_vm.mjs';
+import { periodRead, periodSave } from './periods_fake_fx.mjs';   /* V7 · 53: split resources speak the period wire */
 import nodePath from 'node:path';
 import { fileURLToPath as _f2p } from 'node:url';
 import { moduleDir as _md } from '../../tools/systems_paths.mjs';
@@ -19,13 +20,15 @@ async function page(module, documents, save) {
   const docs = clone(documents), requests = [], messages = [], scope = { uid: UID, dept: DEPT };
   const C = { req: async (route, options = {}) => {
     if (route.startsWith('/api/operations/read?')) {
-      const keys = new URL(route, 'http://x').searchParams.get('keys').split(','), resources = {}, absent = [], base = {};
-      for (const k of keys) { const name = k.split(':').at(-1); base[k] = 1; if (Object.hasOwn(docs, name)) resources[k] = docs[name]; else absent.push(k); }
-      return response({ ok: 1, uid: UID, epoch: 2, v: 4, resources, absent, denied: [], base });
+      const out = { ok: 1, uid: UID, epoch: 2, v: 4, resources: {}, absent: [], denied: [], base: {} };
+      const keys = periodRead(new URL(route, 'http://x'), docs, 1, out);
+      for (const k of keys) { const name = k.split(':').at(-1); out.base[k] = 1; if (Object.hasOwn(docs, name)) out.resources[k] = docs[name]; else out.absent.push(k); }
+      return response(out);
     }
     if (route === '/api/save') {
       const body = JSON.parse(options.body); requests.push(options.body);
-      for (const [k, value] of Object.entries(body.set)) docs[k.split(':').at(-1)] = JSON.parse(value);
+      for (const [k, value] of Object.entries(body.set)) if (!periodSave(k, JSON.parse(value), docs)) docs[k.split(':').at(-1)] = JSON.parse(value);
+      body.del.forEach(k => periodSave(k, undefined, docs));
       const ack = { ok: 1, requestId: body.requestId, epoch: body.epoch, atomic: 1, revs: Object.fromEntries([...Object.keys(body.set), ...body.del].map(k => [k, 2])) };
       return save ? save({ body, ack, requests, docs }) : response(ack);
     }
@@ -37,6 +40,7 @@ async function page(module, documents, save) {
   K.__BS_I = { auth: { cur: () => K.BassamAuth.user(), isMgrKey: value => String(value || '').startsWith('mgr:') } };
   K.BassamDepts = { active: () => scope.dept }; K.BassamCount = count => String(count);
   K.BassamPerm = { deptCap: () => ['daily', 'dreport'], on: () => true };
+  K.BassamCal = { hNow: () => ({ y: 1448, m: 5, d: 19 }) };   /* V7 · 53: the page's day — the period layer reads its month by name */
   K.BassamPageKit = { base: () => class { setState(patch, done) { const value = typeof patch === 'function' ? patch(this.state, {}) : patch; this.state = { ...this.state, ...value }; done?.(); } } };
   T.W.DCLogic = class {};
   vm.runInContext(source('src/services/332-find-day.js'), T.ctx);
@@ -93,7 +97,7 @@ test('monthly callsign rename saves its catalog and employee assignments in one 
     f.instance.setState({ csEdit: { old: 'TEST_ONLY old', val: 'TEST_ONLY new' } });
     await f.instance.csRename('TEST_ONLY old', 'TEST_ONLY new');
     assert.equal(f.requests.length, 1);
-    assert.deepEqual(Object.keys(JSON.parse(f.requests[0]).set).sort(), [key('bassam_callsigns_v1'), key('bassam_staffing_v3')].sort());
+    assert.deepEqual(Object.keys(JSON.parse(f.requests[0]).set).sort(), [key('bassam_callsigns_v1'), key('bassam_staffing_v3') + '@1448-5'].sort(), 'V7 · 53: only the month that changed');
     assert.equal(f.instance.state.staffing['1448-5']['TEST_ONLY e1'].cs, 'TEST_ONLY new'); assert.equal(f.instance.state.csEdit, null);
   } finally { f.T.dispose(); }
 });
@@ -124,7 +128,7 @@ test('report approval uses the actual round and dayshift helpers in one transact
     assert.equal(await f.instance.drSetAp(true), true);
     assert.equal(f.requests.length, 2); assert.equal(f.requests[0], f.requests[1]);
     const set = JSON.parse(f.requests[0]).set;
-    assert.deepEqual(Object.keys(set).sort(), ['bassam_dreport_v1', 'bassam_rounds_v1', 'bassam_dayshift_v1'].map(key).sort());
+    assert.deepEqual(Object.keys(set).sort(), [key('bassam_dreport_v1') + '@' + day, key('bassam_rounds_v1') + '@' + day, key('bassam_dayshift_v1')].sort(), 'V7 · 53: only the day that changed');
     assert.equal(f.ops.get('bassam_dreport_v1')[day].shifts[shift].ap, 1);
     assert.equal(f.ops.get('bassam_rounds_v1')[day].shAp[shift].ap, 1);
     assert.equal(f.ops.get('bassam_rounds_v1')[day].d[0].zones[0].count, null);
@@ -155,7 +159,7 @@ test('report leadership and its monthly callsign reassignment share one receipt'
     f.instance.setState({ drLdOpen: 'chief' });
     assert.equal(await f.instance.rpSetLeader('chief', 'TEST_ONLY next'), true);
     assert.equal(f.requests.length, 1);
-    assert.deepEqual(Object.keys(JSON.parse(f.requests[0]).set).sort(), ['bassam_dreport_v1', 'bassam_staffing_v3'].map(key).sort());
+    assert.deepEqual(Object.keys(JSON.parse(f.requests[0]).set).sort(), [key('bassam_dreport_v1') + '@' + day, key('bassam_staffing_v3') + '@1448-5'].sort(), 'V7 · 53: only the day and the month that changed');
     const staffing = f.ops.get('bassam_staffing_v3')['1448-5'];
     assert.equal(staffing['TEST_ONLY old'].cs, ''); assert.equal(staffing['TEST_ONLY next'].cs, roleCs);
     assert.equal(f.ops.get('bassam_dreport_v1')[day].shifts[shift].leaders.chief, 'TEST_ONLY next');
