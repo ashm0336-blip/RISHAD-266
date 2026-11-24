@@ -278,6 +278,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {}
   }
   componentDidUpdate(t, e) {
+    /* V7 · 53 (ملحق 6 · 11): شهرٌ آخر ⇒ صورُ لقطته */
+    e && (e.year !== this.state.year || e.month !== this.state.month) && this._loadFloorImgs();
     try {
       var s = this.state,
         n = s.year + "-" + s.month + "-" + s.day;
@@ -1744,26 +1746,50 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       return false;
     }
   }
+  /* V7 · 53 (ملحق 6 · 11): صورةُ خريطة الموقع من لقطة شهر الجولة المعروضة، مطابَقةً بمعرّف الموقع (sid) — كانت من طوابق الخطة الحالية
+     بترتيبها، فجولةُ شهرٍ ماضٍ تغيّرت خريطتُه أو ترتيبُ مواقعه تُظهر صورةً خاطئة. شهرٌ بلا لقطة ⇒ طوابقُ الخطة الحالية كما كان؛
+     لقطةٌ بلا هذا الموقع أو بلا صورة ⇒ لا صورة (لا يُستعار غيرُها)؛ والموضعُ للبيانات القديمة التي لا sid فيها أصلاً وحدها. */
+  _floorImgRefs(plan) {
+    const s = this.state,
+      key = s.year + "-" + s.month,
+      floors = plan && Array.isArray(plan.floors) ? plan.floors : [],
+      has = !!(plan && plan.months && Object.prototype.hasOwnProperty.call(plan.months, key)),
+      mo = has ? plan.months[key] : null,
+      monthly = has ? (Array.isArray(mo) ? mo : mo && Array.isArray(mo.d) ? mo.d : []) : null,
+      bySid = new Map(),
+      noSid = (x) => !x || null == x.sid || "" === x.sid;
+    (monthly || []).forEach((x) => {
+      if (!noSid(x)) bySid.set(String(x.sid), bySid.has(String(x.sid)) ? null : x);
+    });
+    const legacy = !!monthly && monthly.every(noSid) && floors.every(noSid);
+    return {
+      key,
+      refs: floors.map((f, i) => {
+        const src = !monthly ? f : !noSid(f) ? bySid.get(String(f.sid)) : legacy ? monthly[i] : null;
+        return (src && src.iid) || null;
+      }),
+    };
+  }
   _loadFloorImgs() {
     try {
-      const plan = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)),
-        PK = (KIVO.bus.read("plan.resources@1", "doc") || [])[0],   /* V7 · د5-هـ: مسودةُ الخطة باسمها من مالكها */
-        draft = PK ? this._opDrafts[PK] : null,
+      const read = () => KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)),
+        plan = read(),
         stamp = JSON.stringify(this._opService().context());
       if (!plan || !Array.isArray(plan.floors) || !KIVO.BassamIDB) return;
-      plan.floors.forEach((floor, index) => {
-        if (!floor || !floor.iid) return;
-        const iid = floor.iid,
-          sid = floor.sid;
+      const ctx = this._floorImgRefs(plan),
+        req = (this._fimgReq = (this._fimgReq || 0) + 1);
+      this.state.fimgsM !== ctx.key && this.setState({ fimgs: {}, fimgsM: ctx.key });
+      ctx.refs.forEach((iid, index) => {
+        if (!iid) return;
         KIVO.BassamIDB.get(iid)
           .then((image) => {
-            if (!image || stamp !== JSON.stringify(this._opService().context()))
+            if (!image || req !== this._fimgReq || stamp !== JSON.stringify(this._opService().context()))
               return;
-            const fresh = KIVO.bus.read("plan.doc@1", draft),
-              current = fresh && fresh.floors && fresh.floors[index];
-            if (current && current.iid === iid && current.sid === sid)
+            const now = this._floorImgRefs(read());
+            if (now.key === ctx.key && now.refs[index] === iid)
               this.setState((state) => ({
                 fimgs: { ...(state.fimgs || {}), [index]: image },
+                fimgsM: ctx.key,
               }));
           })
           .catch(() => {});
@@ -17432,7 +17458,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           );
         }),
         floorImgNode:
-          s.fimgs && s.fimgs[f]
+          s.fimgs && s.fimgs[f] && (null == s.fimgsM || s.fimgsM === s.year + "-" + s.month)   /* V7 · 53 (ملحق 6 · 11): صورُ شهرٍ آخر لا تُعرض */
             ? ((s9, N9) =>
                 React.createElement(
                   React.Fragment,
