@@ -151,13 +151,13 @@
     </div>
   </div>
   <div class="bs-hscroll" style="overflow-x:auto">
-    <div style="display:flex;gap:12px;padding:16px 12px;min-width:100%;box-sizing:border-box">
+    <div class="bs-calstrip" tabindex="0" aria-label="أشهر السنة">
       <sc-for list="{{months}}" as="m" hint-placeholder-count="12">
       <!-- كان width:100px مع flex-shrink:0 داخل حاوية justify-content:center — فالبطاقات
            تتوسّط ويبقى فراغ على الطرفين. صارت تنمو لتملأ الإطار، وتقف عند 100px
            وتمرّ حين لا يتّسع — نفس مبدأ خانات الأيام. -->
       <!-- V7 · 53 تقويم (§7): كرتُ الشهر المشترك (KIVO.BassamCalCard.month) — الاسمُ الميلادي وتحته المدى الهجري، وحالتان فقط -->
-      <div style="position:relative;flex:1 1 auto;min-width:100px;display:flex">{{m.card}}</div>
+      <div class="bs-calcell">{{m.card}}</div>
       </sc-for>
     </div>
   </div>

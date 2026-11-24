@@ -252,9 +252,11 @@
      model(kind, p) ⇒ { style, lineStyles, title, lines, closed, state } لمن يبني بغير React */
 (function () {
   var C = KIVO.BassamCal;
+  var MONTH_W = 84;   /* أطولُ سطرٍ ثانٍ مقيساً بخط Cairo 7.5px/600: «ربيع الآخر – جمادى الأولى» ≈ 78px، وهامشٌ 3px من كل جانب */
   var BOX = {
     day: { height: 36, minWidth: 28, flex: '1 0 28px' },
-    month: { height: 36, minWidth: 64, flex: '1 0 auto', padding: '0 6px' },   /* العرضُ على قدر سطر المدى الهجري: لا يفيض نصٌّ خارج الكرت */
+    /* V7 · 53 تقويم (REVIEW 45): عرضٌ واحدٌ ثابت لكل كروت الشهر (أطولُ سطرٍ هجريٍّ مختصر مقيساً) — المدى لا يمدّ الكرت؛ المدى كاملاً في التلميح */
+    month: { height: 36, width: MONTH_W, minWidth: MONTH_W, flex: '0 0 ' + MONTH_W + 'px', padding: 0, scrollSnapAlign: 'center' },
     year: { height: 36, minWidth: 72, flex: '0 0 auto', padding: '0 8px' }
   };
   var LINE = {
@@ -267,8 +269,13 @@
   function text(kind, k) {
     if (kind === 'day') return [C.gLetter(k), String((C.gParse(k) || {}).d || ''), String((C.hOf(k) || {}).d || '')];
     if (kind === 'month') {
-      var r = C.hRangeOfMonth(k), h = C.hMonthsOf(k), y = h.length && h[0].y === h[h.length - 1].y ? ' ' + h[0].y : '';
-      return [C.fmtMonthName(k), y && r.slice(-y.length) === y ? r.slice(0, -y.length) : r];
+      /* V7 · 53 تقويم (REVIEW 45 · قرارُ المنسّق): السطرُ الثاني أشهرُ الهجري التي يمتدّ عليها الشهر بلا أيام، والكلمةُ المكرّرة تُحذف
+         («جمادى الأولى – الآخرة» · «ذو الحجة – محرم»)، والثالثُ زوجُ السنتين حين يعبر المدى سنةً هجرية («1447 – 1448») وحده */
+      var h = C.hMonthsOf(k), N = C.H_MONTHS, a = h[0], b = h[h.length - 1];
+      if (!a) return [C.fmtMonthName(k), ''];
+      var na = N[a.m - 1], nb = N[b.m - 1], wa = na.split(' '), wb = nb.split(' ');
+      var short = a.m === b.m && a.y === b.y ? na : wa.length > 1 && wb.length > 1 && wa[0] === wb[0] ? na + ' – ' + wb.slice(1).join(' ') : na + ' – ' + nb;
+      return a.y === b.y ? [C.fmtMonthName(k), short] : [C.fmtMonthName(k), short, a.y + ' – ' + b.y];
     }
     return [k, C.hRangeOfYear(+k)];
   }
@@ -288,7 +295,7 @@
     if (sel) { style.background = 'linear-gradient(180deg, var(--cal-sel-a), var(--cal-sel-b))'; style.border = '1px solid transparent'; style.color = 'var(--cal-on-sel)';
       style.boxShadow = '0 4px 12px var(--cal-sel-glow)'; style.zIndex = 4; num = null; }
     var L = kind === 'day' ? [assign({}, LINE.w, we ? { color: 'var(--cal-gold)' } : null), assign({}, LINE.g, num ? { color: num } : null), assign({}, LINE.h)]
-      : [assign({}, LINE.g, num ? { color: num } : null), assign({}, LINE.h)];
+      : [assign({}, LINE.g, num ? { color: num } : null), assign({}, LINE.h), assign({}, LINE.h)];
     if (sel) L = L.map(function (s) { return assign(s, { color: 'var(--cal-on-sel)' }); });
     var hint = p.hint == null ? '' : String(p.hint).trim();
     return { kind: kind, k: k, style: style, lineStyles: L, title: hint ? st.tip + '\n' + hint : st.tip, closed: st.closed, label: st.label, why: st.why, when: st.when, sel: sel,
@@ -304,11 +311,28 @@
       background: 'var(--cal-card)', border: '1px solid var(--cal-line)', display: 'grid', placeItems: 'center' } },
       h('svg', { viewBox: '0 0 24 24', width: 6, height: 6, fill: 'none', stroke: 'var(--cal-lock)', strokeWidth: 3 },
         h('rect', { x: 5, y: 11, width: 14, height: 10, rx: 2 }), h('path', { d: 'M8 11V7a4 4 0 0 1 8 0v4' }))));
-    return h('div', assign({}, p.attrs || {}, { key: p.key, title: M.title, 'aria-label': M.title.replace(/\n/g, ' · '), 'data-cal-kind': kind, 'data-cal-state': M.state, 'data-cal-when': M.when,
+    /* V7 · 53 تقويم (REVIEW 45): المحدَّدُ يتوسّط شريطَه عند الفتح (مرةً لكل عنصر) — بلا قفزٍ رأسيّ للصفحة */
+    var ref = M.sel ? function (el) { if (!el || el.__bsCen) return; el.__bsCen = 1; var s = el.parentNode; while (s && s.classList && !s.classList.contains('bs-calstrip')) s = s.parentNode;
+      if (s && s.classList) try { var d = (el.getBoundingClientRect().left + el.offsetWidth / 2) - (s.getBoundingClientRect().left + s.clientWidth / 2); s.scrollTo({ left: s.scrollLeft + d, behavior: 'instant' }); } catch (e) {} } : undefined;
+    return h('div', assign({}, p.attrs || {}, { key: p.key, ref: ref, title: M.title, 'aria-label': M.title.replace(/\n/g, ' · '), 'data-cal-kind': kind, 'data-cal-state': M.state, 'data-cal-when': M.when,
       'data-cal-sel': M.sel ? '1' : '0', 'data-cal-key': M.k, onClick: p.onClick, onDoubleClick: p.onDoubleClick, style: M.style,
       /* تفاعلُ المرور المعتمد (المرجعُ المرئي): يرتفع الكرتُ 2px ويكبر 6% فوق جيرانه — تحويلٌ لا يمسّ مقاسَه في الشريط */
       onMouseEnter: function (e) { var t = e.currentTarget.style; t.transform = 'translateY(-2px) scale(1.06)'; t.zIndex = 5; if (p.attrs && p.attrs.onMouseEnter) p.attrs.onMouseEnter(e); },
       onMouseLeave: function (e) { var t = e.currentTarget.style; t.transform = ''; t.zIndex = M.style.zIndex == null ? '' : M.style.zIndex; if (p.attrs && p.attrs.onMouseLeave) p.attrs.onMouseLeave(e); } }), kids);
+  }
+  /* V7 · 53 تقويم (REVIEW 45): شريطُ الكروت المشترك — مرجعُ الصفحة المعتمدة حرفاً (.strip: flex · gap 3px · overflow-x · padding 8px 2px · بلا شريط تمرير)
+     مع التقاط التمرير (scroll-snap) وتمريرٍ ناعم باللمس والعجلة (العجلةُ الرأسيةُ أفقيةٌ فوقه) والأسهم (tabindex). الخلايا (bs-calcell) بعرض كرتها لا تنكمش. */
+  if (typeof document !== 'undefined' && document.head && !document.getElementById('bs-calstrip-css')) {
+    var css = document.createElement('style'); css.id = 'bs-calstrip-css';
+    css.textContent = '.bs-calstrip{display:flex;justify-content:safe center;gap:3px;overflow-x:auto;padding:8px 2px 8px;scrollbar-width:none;scroll-snap-type:x proximity;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}'
+      + '.bs-calstrip::-webkit-scrollbar{display:none}.bs-calstrip:focus-visible{outline:2px solid var(--cal-gold);outline-offset:2px}'
+      + '.bs-calcell{position:relative;flex:0 0 auto;display:flex;scroll-snap-align:center}';
+    document.head.appendChild(css);
+    document.addEventListener('wheel', function (e) {
+      var s = e.target && e.target.closest ? e.target.closest('.bs-calstrip') : null;
+      if (!s || Math.abs(e.deltaX) >= Math.abs(e.deltaY) || s.scrollWidth <= s.clientWidth) return;
+      s.scrollLeft -= e.deltaY; e.preventDefault();   /* RTL: العجلةُ إلى الأسفل تمضي إلى الأشهر التالية (يساراً) */
+    }, { passive: false });
   }
   KIVO.BassamCalCard = Object.freeze({
     day: function (p) { return render('day', p); }, month: function (p) { return render('month', p); }, year: function (p) { return render('year', p); }, model: model

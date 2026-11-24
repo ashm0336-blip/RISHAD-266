@@ -37,11 +37,12 @@ test('الأنظمة المرتبطة: الشهرُ الميلادي وسطرُ�
       const M = await until(() => p.evaluate((ym) => {
         const c = document.querySelector('[data-cal-kind="month"][data-cal-key="' + ym + '"]'); if (!c) return null;
         const C = KIVO.BassamCal, lines = [...c.querySelectorAll('[data-cal-line]')].map((x) => x.textContent);
-        return { lines, want0: C.fmtMonthName(ym), range: C.hRangeOfMonth(ym), n: document.querySelectorAll('[data-cal-kind="month"]').length };
+        return { lines, want0: C.fmtMonthName(ym), range: C.hRangeOfMonth(ym), hm: C.hMonthsOf(ym).map((x) => C.H_MONTHS[x.m - 1]), n: document.querySelectorAll('[data-cal-kind="month"]').length };
       }, YM), P.name + ': the current month card');
       assert.equal(M.n, 12, P.name + ': twelve month cards from the shared component');
       assert.equal(norm(M.lines[0]), M.want0, P.name + ': Gregorian month name first: ' + JSON.stringify(M));
-      assert.ok(M.lines[1] && M.range.indexOf(norm(M.lines[1])) === 0, P.name + ': the small Hijri line under it: ' + JSON.stringify(M));
+      /* V7 · 53 تقويم (REVIEW 45): السطرُ الصغير أشهرُ الهجري المقابلة بلا أيام (الكلمةُ المكرّرة محذوفة) — المدى كاملاً في التلميح */
+      assert.ok(M.lines[1] && M.lines[1].indexOf(M.hm[0]) === 0 && M.hm.slice(1).every((n) => M.lines[1].indexOf(n.split(' ').slice(-1)[0]) > 0) && !/\d/.test(norm(M.lines[1])), P.name + ': the small Hijri line under it: ' + JSON.stringify(M));
       if (P.days) {
         const D = await until(() => p.evaluate((dk) => {
           const all = [...document.querySelectorAll('[data-cal-kind="day"]')], c = document.querySelector('[data-cal-kind="day"][data-cal-key="' + dk + '"]'); if (!c) return null;

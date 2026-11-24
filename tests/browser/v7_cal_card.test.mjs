@@ -123,7 +123,8 @@ for (const [name, dev] of VIEWS) for (const theme of ['light', 'dark']) {
       assert.match(by('2026-11-17').title, /\nمفتوح — للاستدراك حتى 30 نوفمبر$/); assert.match(by('2026-11-25').title, /\nمفتوح — قادم$/);
       for (const c of all) assert.ok(!/اعتُمد|تلقائياً|مضى|يدوياً|مغلق|مفتوح/.test(c.text), c.key + ' reason not in the card: ' + c.text);
       /* ⑤ الشهر والسنة */
-      assert.deepEqual(R.mon[10].lines.map((l) => l.t), ['نوفمبر', '21 جمادى الأولى – 20 جمادى الآخرة']);
+      assert.deepEqual(R.mon[10].lines.map((l) => l.t), ['نوفمبر', 'جمادى الأولى – الآخرة']);   /* V7 · 53 تقويم (REVIEW 45): الهجريُّ مختصراً داخل الكرت (أشهرُه بلا أيام والكلمةُ المكرّرة محذوفة)، والمدى كاملاً في التلميح */
+      assert.deepEqual(R.mon[5].lines.map((l) => l.t.replace(/[\u2066-\u2069\u202a-\u202e]/g, '')), ['يونيو', 'ذو الحجة – محرم', '1447 – 1448'], 'يعبر سنةً هجرية: السطرُ الثالث');
       assert.deepEqual(R.yr[1].lines.map((l) => l.t), ['2026', '1447 – 1448 هـ']);
       assert.equal(R.mon[10].title, 'نوفمبر 2026 م\n21 جمادى الأولى – 20 جمادى الآخرة 1448 هـ\nمفتوح');
       assert.equal(R.mon[0].state, 'closed'); assert.match(R.mon[0].title, /\nمغلق — اعتُمد$/); assert.match(R.mon[9].title, /\nمفتوح — للاستدراك$/);
