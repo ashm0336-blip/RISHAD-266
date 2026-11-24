@@ -17,6 +17,12 @@ STUB = ("/* KIVO_263 · SOT-173: أداةُ الاختبار الداخلية م
 RX = re.compile(r'/\* @@KIVO_TEST_TOOL_BEGIN[^\n]*\*/\n.*?/\* @@KIVO_TEST_TOOL_END \*/\n', re.S)
 sha = lambda b: hashlib.sha256(b).hexdigest()
 
+def strip_worker(text):
+    """V7 · 53 (REVIEW.md البند ١٦): النزعُ نفسُه في مكانٍ واحد — main() يكتب به حزمةَ الإنتاج، وverify يتحقّق به، وtools/perf_budget.py يقيس به عاملَ الإنتاج.
+       None إن لم تكن علامتا أداة الاختبار مرةً واحدة بالضبط."""
+    if len(RX.findall(text)) != 1: return None
+    return RX.sub(STUB, text)
+
 def verify(src, dst):
     bad = []
     w = open(os.path.join(dst, '_worker.js'), encoding='utf-8').read()
@@ -26,8 +32,8 @@ def verify(src, dst):
     # KIVO_263 · N4 (سلامةُ الإنتاج): عاملُ الإنتاج = نزعُ عامل المرشّح «الحالي» بايتاً — كانت الموازنةُ تتخطّى _worker.js فيمرّ pk<N>.prod قديمٌ إن تغيّر
     #   العاملُ وحده بعد آخر prod_strip، فيغلّف pack.py عاملَ إنتاجٍ قديماً. المتوقَّعُ يُحسب كما يكتبه main() نفسُه: قراءةٌ نصّية ثم RX.sub(STUB, …)
     sp = os.path.join(src, '_worker.js'); sw = open(sp, encoding='utf-8').read() if os.path.isfile(sp) else ''
-    if len(RX.findall(sw)) != 1: bad.append('علامتا أداة الاختبار غيرُ موجودتين مرةً واحدة في عامل المرشّح')
-    elif open(os.path.join(dst, '_worker.js'), 'rb').read() != RX.sub(STUB, sw).encode('utf-8'):
+    if strip_worker(sw) is None: bad.append('علامتا أداة الاختبار غيرُ موجودتين مرةً واحدة في عامل المرشّح')
+    elif open(os.path.join(dst, '_worker.js'), 'rb').read() != strip_worker(sw).encode('utf-8'):
         bad.append('عاملُ الإنتاج ليس نزعَ عامل المرشّح الحالي (تغيّر العاملُ بعد آخر prod_strip — أعد: python3 tools/prod_strip.py %s)' % os.path.relpath(src, ROOT))
     # KIVO_263 (مراجعةٌ مستقلة): العاملُ المنزوع يُحمَّل فعلاً — فحصُ الصياغة بـnode على نسخةٍ .mjs (العاملُ وحدةُ ES)
     try:
@@ -53,10 +59,10 @@ def main(a):
     src = os.path.join(ROOT, a[0].rstrip('/\\')); dst = src + '.prod'   # «pk263/» ⇒ pk263 (لا نسخَ داخل المرشّح نفسِه)
     if '--check' not in a:
         w = open(os.path.join(src, '_worker.js'), encoding='utf-8').read()
-        if len(RX.findall(w)) != 1: print('✘ علامتا أداة الاختبار غيرُ موجودتين مرةً واحدة في', a[0]); return 1
+        if strip_worker(w) is None: print('✘ علامتا أداة الاختبار غيرُ موجودتين مرةً واحدة في', a[0]); return 1
         if os.path.exists(dst): shutil.rmtree(dst)
         shutil.copytree(src, dst)
-        open(os.path.join(dst, '_worker.js'), 'w', encoding='utf-8', newline='').write(RX.sub(STUB, w))
+        open(os.path.join(dst, '_worker.js'), 'w', encoding='utf-8', newline='').write(strip_worker(w))
         lines = []
         for d, _, fs in os.walk(dst):
             for f in sorted(fs):
