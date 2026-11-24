@@ -222,6 +222,18 @@ def gen_lens_part(S):
 
 # ── KIVO_249 · AUD-022: الترحيلاتُ المرقَّمة → جزءُ الخادم (KIVO_MIGRATIONS) ───────────────────────────────────────────────
 MIG_PART = '051a-schema-migrations.js'
+# V7 · 53 (S2): استعادةُ وسط الترحيل المضغوط عند أول قراءة لـ sql — من ocCreateStatements نفسِها (الجداولُ بترتيبها، بلا المتخطّى، والمثبَّتُ حرفاً)؛
+# العددُ وبصمةُ FNV-1a على وحدات UTF-16 يجب أن يطابقا ما ختمه المولِّد وإلا ترمي (مغلقةً: لا قاعدةَ بمخطّطٍ آخر).
+MIG_OC_JS = (
+    "function kivoMigOcExpand(m, prepared) {\n"
+    "  var c = m.oc, mid = ocCreateStatements(prepared || ocPrepare(opDefinitions(), OC_TABLE_NAMES)).filter(function (s) { var t = /IF NOT EXISTS (\\w+)/.exec(s); return !(t && c.skip.indexOf(t[1]) >= 0); })\n"
+    "    .map(function (s) { var t = /IF NOT EXISTS (\\w+)/.exec(s); return t && Object.prototype.hasOwnProperty.call(c.pin, t[1]) ? c.pin[t[1]] : s; });\n"
+    "  var u = mid.map(function (s) { return s + '\\n'; }).join(''), h = 0x811c9dc5, i;\n"
+    "  for (i = 0; i < u.length; i++) { h ^= u.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }\n"
+    "  if (mid.length !== c.n || ('00000000' + h.toString(16)).slice(-8) !== c.fnv) throw new Error('migration-compact-drift: ' + m.name);\n"
+    "  return c.head.concat(mid, c.tail);\n"
+    "}\n"
+    "KIVO_MIGRATIONS.forEach(function (m) { if (!m.oc) return; var v = null; Object.defineProperty(m, 'sql', { enumerable: true, get: function () { return v || (v = kivoMigOcExpand(m)); } }); });\n")
 def split_sql(text):
     """يقسم ملف SQL إلى عبارات: يُسقط أسطر التعليق (--) والفراغ، ويقطع عند ; في نهاية السطر. (لا فاصلةَ منقوطة داخل القيم في ملفاتنا — يُتحقَّق منه)"""
     stmts, cur = [], []
@@ -245,11 +257,28 @@ def gen_migrations(S):
         if not m['sql']: raise SystemExit('empty migration ' + m['name'])
         for st in m['sql']:
             if ';' in st: raise SystemExit('semicolon inside statement in ' + m['name'] + ': ' + st[:80])
+    # V7 · 53 (S2): ترحيلٌ عباراتُ جداول كياناته من المرمِّز (tools/migration_compact.json) — يُشحن رأسُه وذيلُه والمثبَّتُ حرفاً، والوسطُ يُستعاد في العامل
+    cp = os.path.join(ROOT, 'tools', 'migration_compact.json')
+    spec = json.load(open(cp, encoding='utf-8'))['migrations'] if os.path.isfile(cp) else {}
+    for m in migs:
+        c = spec.get(m['name'])
+        if not c: continue
+        st = m['sql']; h, t = int(c['head']), int(c['tail']); mid = st[h:len(st) - t]
+        names = [__import__('re').match(r'CREATE (?:TABLE|INDEX) IF NOT EXISTS (\w+)', x) for x in mid]
+        if not mid or any(n is None for n in names): raise SystemExit('migration_compact: ' + m['name'] + ' — الوسطُ ليس عباراتِ CREATE وحدها')
+        pin = {n.group(1): x for n, x in zip(names, mid) if n.group(1) in c.get('pin', [])}
+        if sorted(pin) != sorted(c.get('pin', [])): raise SystemExit('migration_compact: ' + m['name'] + ' — جدولٌ مثبَّتٌ غائب')
+        u = ''.join(x + '\n' for x in mid); fnv = 0x811c9dc5
+        for code in [ord(q) for q in u]:
+            if code > 0xFFFF: raise SystemExit('migration_compact: non-BMP')
+            fnv ^= code; fnv = (fnv * 0x01000193) & 0xFFFFFFFF
+        m['oc'] = {'head': st[:h], 'tail': st[len(st) - t:], 'skip': c.get('skip', []), 'pin': pin, 'n': len(mid), 'fnv': '%08x' % fnv}
+        del m['sql']
     js = ('/* ═══ KIVO_249 · AUD-022 — الترحيلاتُ المرقَّمة (schema): مولَّدةٌ من migrations/NNNN_<name>.sql بأداة tools/generate.py؛ لا تُحرَّر يدوياً.\n'
           '   يطبّقها initDb (052) مرّةً لكل قاعدة بترتيبها ويسجّل كلَّ اسمٍ في d1_migrations (جدولُ wrangler نفسُه) — فيتبادل العاملُ وwrangler d1 migrations apply السجلَّ نفسَه.\n'
           '   KIVO_SCHEMA_VERSION = عددُ الترحيلات المعروفة لهذا الإصدار؛ meta.schema_version يختمه آخرُ ترحيلٍ مطبَّق. ═══ */\n'
           'var KIVO_MIGRATIONS = ' + json.dumps(migs, ensure_ascii=False, indent=1) + ';\n'
-          'var KIVO_SCHEMA_VERSION = ' + str(len(migs)) + ';\n')
+          'var KIVO_SCHEMA_VERSION = ' + str(len(migs)) + ';\n' + (MIG_OC_JS if any('oc' in m for m in migs) else ''))
     return {norm(layout(S)['workersParts']) + '/' + MIG_PART: js.encode('utf-8')}
 
 def gen_body_schemas(S):
