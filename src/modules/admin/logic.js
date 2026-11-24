@@ -2760,15 +2760,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     this._deptDeleteBusy = true;
     try {
-      /* V7 · د5-هـ (44): السببُ يُسأل قبل الإرسال لا بعد رفضه (مدير المنصة لا يُسأل أبداً) — والطلبُ يُرسل مرّةً واحدة؛ الإلغاءُ لا يُرسل شيئاً */
-      const pre = await this._reasonFirst("bsdept:" + draft.dept + ":bassam_employees_v1", draft.reasonKeys || []);
-      if (!pre.go) return;
-      if (pre.reason && draft.ticket.reason !== pre.reason) draft.ticket = { ...draft.ticket, reason: pre.reason };
+      /* V7 · 53 (noreason · قرارُ المالك): لا يُسأل عن سبب — تأكيدُ الحذف قبله يكفي، والطلبُ يُرسل مرّةً واحدة */
       const result = await this._wpCall(draft.dept, draft.ticket, actor, "delete");
       const srv = KIVO.__BS_SRV;
       if (!result.ok) {
         draft.uncertain = ["network", "receipt", "server", "session"].includes(result.err); draft.needsReview = result.err === "conflict";
-        return this.bsToast(draft.needsReview ? "تغيّرت بيانات " + W.the + "؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "unknown-data" ? W.has + " على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ " + W.gone + " حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف " + W.the + "؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
+        return this.bsToast(draft.needsReview ? "تغيّرت بيانات " + W.the + "؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "unknown-data" ? W.has + " على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ " + W.gone + " حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف " + W.the + "؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
       }
       const receipt = result.body, natural = value => Number.isSafeInteger(value) && value >= 0;
       if (receipt.mode !== "dept-delete" || receipt.dept !== draft.dept || receipt.requestId !== draft.ticket.requestId || !natural(receipt.rev) || !receipt.revs || typeof receipt.revs !== "object" || Array.isArray(receipt.revs) || Object.values(receipt.revs).some(value => !natural(value)) || !receipt.counts || ["keys", "accounts", "custody", "notifications", "irshad", "seized", "awards"].some(key => !natural(receipt.counts[key]))) {
@@ -2784,13 +2781,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } finally { this._deptDeleteBusy = false; }
   }
 
-  /* V7 · د5-هـ (44): «اسأل أولاً ثم أرسل» لمسارات الخادم المحمية — مدير المنصة معفًى دائماً (لا نافذة)، وبغيره تُفتح نافذةُ السبب (280 reasonFirst)
-     قبل أي طلب: { go:false } عند الإلغاء فلا يُرسل شيء · { go:true, reason } بعده */
-  _reasonFirst(k, keys) {
-    const srv = KIVO.__BS_SRV;
-    if (!srv || (srv.reasonExempt && srv.reasonExempt()) || typeof srv.reasonFirst !== "function" || !(keys && keys.length)) return Promise.resolve({ go: true, reason: "" });
-    return new Promise(resolve => srv.reasonFirst(k, keys, resolve));
-  }
   _wpActor() {
     const auth = KIVO.BassamAuth, user = auth && auth.user && auth.user(), boot = window.__BS_BOOT || {};
     return user && user.role === "super" && auth.isSuper() && boot.srv === 1 && boot.cf === 1 && String(boot.uid || "") === String(user.id) ? String(user.id) : null;
@@ -2825,10 +2815,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       let result; try { result = await response.json(); } catch (_) { return { ok: 0, err: "receipt" }; }
       if (this._wpActor() !== actor) return { ok: 0, err: "session" };
       if (!response.ok || !result || result.ok !== 1) {
-        const denied = Object.entries(result && result.denied || {}), reasonOnly = denied.length && denied.every(([, value]) => value && value.why === "reason");
+        const denied = Object.entries(result && result.denied || {});
         /* Owner decision (b): a unit holding keys the platform does not classify is refused as a data-integrity problem, not a permission refusal */
         if (response.status === 403 && result && result.err === "unit-unknown-data") return { ok: 0, err: "unknown-data", unknownCount: denied.filter(([key, value]) => value && value.why === "unknown" && key.startsWith("bsdept:" + dept + ":")).length };
-        if (response.status === 403 && result && (result.why === "reason" || reasonOnly)) return { ok: 0, err: "reason", reasonKey: denied.length ? denied[0][0] : "bsdept:" + dept + ":bassam_employees_v1", reasonKeys: [...new Set([...(Array.isArray(result.reasonKeys) ? result.reasonKeys : []), ...denied.flatMap(([, value]) => Array.isArray(value.reasonKeys) ? value.reasonKeys : [])].filter(key => typeof key === "string"))] };
         return { ok: 0, err: response.status === 409 ? "conflict" : response.status === 401 ? "session" : response.status === 403 ? "permission" : "server" };
       }
       return { ok: 1, body: result };
@@ -2865,18 +2854,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const requestId = "wipe-" + Array.from(random, value => value.toString(16).padStart(2, "0")).join("");
       this._wpTicket = { dept, base, body: { uid: actor, dept, requestId, base: JSON.parse(JSON.stringify(base)) } };
     }
-    let ticket = this._wpTicket;
+    const ticket = this._wpTicket;
     this._wpBusy = true; this.setState({ wpBusy: true, wpMsg: "جارٍ انتظار تأكيد مسح الإدارة من الخادم…" });
     try {
-      /* V7 · د5-هـ (44): السببُ قبل الإرسال (مدير المنصة لا يُسأل) — طلبٌ واحد؛ الإلغاءُ لا يُرسل شيئاً ولا يُظهر رفضاً */
-      const pre = await this._reasonFirst("bsdept:" + dept + ":bassam_employees_v1", ticket.reasonKeys || []);
-      if (!pre.go) return void this.setState({ wpMsg: "" });
-      if (pre.reason && ticket.body.reason !== pre.reason) { ticket = { ...ticket, body: { ...ticket.body, reason: pre.reason } }; this._wpTicket = ticket; }
+      /* V7 · 53 (noreason · قرارُ المالك): لا يُسأل عن سبب — تأكيدُ المسح قبله يكفي، طلبٌ واحد */
       const result = await this._wpCall(dept, ticket.body, actor);
       const srv = KIVO.__BS_SRV;
       if (!result.ok) {
         this._wpUncertain = ["network", "receipt", "server", "session"].includes(result.err);
-        return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "reason" ? "يشترط الخادم سبباً لهذا الإجراء؛ تأكيد المسح محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });
+        return void this.setState({ wpNeedsReview: result.err === "conflict", wpMsg: result.err === "conflict" ? "تغيّرت بيانات الإدارة؛ لم يُنفّذ طلب المسح بهذه النسخة. أعد مراجعة الجرد قبل التأكيد." : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُمسح بيانات الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تشمل مسح الإدارة" : "لم يصل تأكيد المسح؛ محفوظ طلبك لإعادة المحاولة نفسها دون ادعاء نجاح" });
       }
       const receipt = result.body;
       if (receipt.dept !== dept || receipt.requestId !== ticket.body.requestId || !Number.isSafeInteger(receipt.rev) || receipt.rev < 0 || !receipt.counts || ["keys", "custody", "notifications", "irshad", "seized", "awards"].some(key => !Number.isSafeInteger(receipt.counts[key]) || receipt.counts[key] < 0))
@@ -3467,14 +3453,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       const HI = KIVO.BassamHistImport, D = KIVO.DailyStats;
       if (!D) throw new Error("خدمة الإحصائيات غير متاحة");
-      const R = KIVO.__BS_SRV;
-      if (!R || !R.askReason) throw new Error("نافذة سبب الاستيراد غير متاحة");
-      /* مدير المنصة لا يُطلب منه سبب (المسارُ له وحده): لا نافذة — والخادمُ يسجّل «بلا سبب (مدير المنصة)» */
-      const exempt = !!(R.reasonExempt && R.reasonExempt());
-      const reason = exempt ? "" : await new Promise(resolve => R.askReason(HI.KEY, ["sys.histimp.run"], resolve));
-      if (!reason && !exempt) return;
+      /* V7 · 53 (noreason · قرارُ المالك): لا يُسأل عن سبب — المعاينةُ ثم «تنفيذ الاستيراد» هما التأكيد */
       const buf = await f.arrayBuffer(), x = await HI.execute(buf, H.mode || "add", H.blank || "ignore", this.hiMeta(f));
-      if (!await D.save(x.store, { operation: "historical-import", reason: reason })) {
+      if (!await D.save(x.store, { operation: "historical-import" })) {
         this.bsToast(D.message(), "err"); return;
       }
       const res = Object.assign({}, x.res);

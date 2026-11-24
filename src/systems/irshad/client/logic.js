@@ -43,7 +43,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const sessions = Component._irSessions.get(window), retained = sessions?.get(sessionKey);
     if (retained) {
       sessions.delete(sessionKey);
-      this._irDraftStamp = retained.stamp; this._irTickets = retained.tickets; this._irReasonRequired = retained.reasons;
+      this._irDraftStamp = retained.stamp; this._irTickets = retained.tickets;
       this._irReads = new Map();
       this.setState({ irDraft: retained.draft, irEditId: retained.editId, irYear: retained.year, irMonth: retained.month, irDay: retained.day, irSaveErrMsg: retained.message });
     }
@@ -71,7 +71,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       let sessions = Component._irSessions.get(window); if (!sessions) { sessions = new Map(); Component._irSessions.set(window, sessions); }
       const key = context.key + "\0" + (this.props?.solo || "");
       if (JSON.stringify(this.state.irDraft) !== JSON.stringify(this.emptyDraft()) || this._irTickets?.size) {
-        sessions.set(key, { draft: this._irClone(this.state.irDraft), editId: this.state.irEditId, year: this.state.irYear, month: this.state.irMonth, day: this.state.irDay, stamp: this._irDraftStamp, tickets: this._irTickets || new Map(), reasons: this._irReasonRequired, message: this.state.irSaveErrMsg || "مسودتك باقية في هذه الجلسة؛ راجعها قبل الحفظ" });
+        sessions.set(key, { draft: this._irClone(this.state.irDraft), editId: this.state.irEditId, year: this.state.irYear, month: this.state.irMonth, day: this.state.irDay, stamp: this._irDraftStamp, tickets: this._irTickets || new Map(), message: this.state.irSaveErrMsg || "مسودتك باقية في هذه الجلسة؛ راجعها قبل الحفظ" });
       } else sessions.delete(key);
     }
     this._irGone = true; this._irReads = new Map();
@@ -255,24 +255,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (draft && !this._irSame(draft.context)) return this._irFailure("context");
       const base = draft ? draft.base : source?.base;
       if (!this._irBase(base)) return this._irFailure("invalid");
-      let reason;
-      const required = this._irReasonRequired?.get(signature);
-      if (required) {
-        const srv = KIVO.__BS_SRV;
-        if (!srv || typeof srv.askReason !== "function") return this._irFailure("reason");
-        this._irAsking = this._irAsking || new Set();
-        if (this._irAsking.has(signature)) return this._irFailure("pending");
-        this._irAsking.add(signature);
-        try { reason = await new Promise(resolve => srv.askReason("bsdept:" + context.dept + ":bassam_irshad_v1", required, resolve)); }
-        finally { this._irAsking.delete(signature); }
-        if (!reason) return this._irFailure("cancelled");
-        if (!this._irSame(context)) return this._irFailure("session", 401);
-      }
+      /* V7 · 53 (noreason · قرارُ المالك): لا نافذةَ سبب ولا إعادةَ إرسالٍ بسبب — التأكيدُ في الصفحة يكفي */
       if (!window.crypto || !window.crypto.getRandomValues) return this._irFailure("invalid");
       const bytes = new Uint8Array(20); window.crypto.getRandomValues(bytes);
       const requestId = "ir-" + Array.from(bytes, n => n.toString(16).padStart(2, "0")).join("");
       const body = { uid: context.uid, dept: context.dept, requestId, base: this._irClone(base), op, ...this._irClone(fields) };
-      if (reason) body.reason = String(reason);
       ticket = { context, requestId, op, signature, intent, body: JSON.stringify(body), expected, busy: false };
       this._irTickets.set(signature, ticket);
     }
@@ -284,11 +271,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!result.ok) {
         if (result.status >= 400 && result.status < 500 && result.status !== 429) this._irTickets.delete(ticket.signature);
         if (result.status === 409) this._irConflict = true;
-        if (result.status === 403 && result.why === "reason") {
-          this._irReasonRequired = this._irReasonRequired || new Map();
-          this._irReasonRequired.set(signature, Array.isArray(result.keys) ? result.keys : []);
-          result.message = "هذا الإجراء يتطلب سببًا؛ مسودتك باقية، اضغط الحفظ لإدخال السبب";
-        }
         return result;
       }
       const ack = result.data;

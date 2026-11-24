@@ -40,7 +40,7 @@ function harness(opts={}){
   context.window=context;vm.createContext(context);
   /* V7 · د6: الوحدةُ المختارة في عنوان شاشة «الإدارات والصلاحيات» لا في حالة هذه الصفحة (sysSel حُذف) — بعد إقرار الحذف تعود الشاشةُ إلى «المنصة كلها» (_orgGoto) */
   const self={state:{admArm:opts.arm||null},setState(value){calls.state.push(value);Object.assign(this.state,value);},bsToast:message=>calls.toast.push(message),bsAck:(...args)=>calls.ack.push(args),_orgGoto:(...args)=>calls.nav.push(args)};
-  for(const name of ['_wpActor','_reasonFirst','_wpCall','_businessBaseValid','deptDel','_deptDelGo']){
+  for(const name of ['_wpActor','_wpCall','_businessBaseValid','deptDel','_deptDelGo']){
     const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name+' موجودة');
     self[name]=vm.runInContext('({'+L.slice(node.start,node.end)+'}).'+name,context);
   }

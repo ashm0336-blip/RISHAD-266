@@ -23,7 +23,7 @@ function world(fetch){let uid=IDS.super,accept=true,reason='';const calls=[],con
   C.KIVO.BassamCount=COUNT;
   /* V7 · د6 (م1 · الإطار): بعد الحذف تُفتح الشاشةُ الجديدة على صف «المنصة كلها» (Admin _orgGoto ← KIVO.BassamOrgRoute، خدمةٌ في كل حزمة) بدل تفريغ sysSel القديم */
   vm.runInContext(ORG_ROUTE,C);
-  for(const name of ['_wpActor','_reasonFirst','_wpCall','_businessBaseValid','deptDel','_deptDelGo','_orgGoto']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,C);}
+  for(const name of ['_wpActor','_wpCall','_businessBaseValid','deptDel','_deptDelGo','_orgGoto']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,C);}
   return {page,location:C.location,route:C.KIVO.BassamOrgRoute,calls,confirmations,prompts,acks,toasts,writes,syncs,reloads,setReason(value){reason=value;},setConfirm(value){accept=value;},switchActor(){uid='TEST_ONLY_other_super';C.__BS_BOOT.uid=uid;}};
 }
 test('department deletion inventories the server and types the authoritative name before waiting for complete ACK',async()=>{

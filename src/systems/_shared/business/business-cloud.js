@@ -120,16 +120,10 @@ Object.assign(Component.prototype, {
       const captured = stamp || this._bcStamp();
       if (captured && !captured.base) captured.base = this._bcStamp()?.base;
       if (!captured || !this._bcSame(captured.context) || !this._bcBase(captured.base)) return this._bcFailure("invalid");
-      const keys = this._bcReasons?.get(intent), srv = KIVO.__BS_SRV;
-      let reason;
-      if (keys) {
-        if (typeof srv?.askReason !== "function") return this._bcFailure("forbidden", 403);
-        reason = await new Promise(resolve => srv.askReason("bsdept:" + context.dept + ":" + this._businessSpec().logical, keys, resolve));
-        if (!reason || !this._bcSame(context)) return this._bcFailure("forbidden", 403);
-      }
+      /* V7 · 53 (noreason · قرارُ المالك): لا نافذةَ سبب — الطلبُ يُرسل كما هو بعد تأكيد الصفحة، ولا يُعاد بسبب */
       const random = new Uint8Array(16); crypto.getRandomValues(random);
       const requestId = this._businessSpec().prefix + "-" + Array.from(random, value => value.toString(16).padStart(2, "0")).join("");
-      const body = { dept: context.dept, uid: context.uid, requestId, base: this._bcClone(captured.base), op, ...this._bcClone(fields), ...(reason ? { reason } : {}) };
+      const body = { dept: context.dept, uid: context.uid, requestId, base: this._bcClone(captured.base), op, ...this._bcClone(fields) };
       ticket = { context, body, wire: JSON.stringify(body), count, intent }; this._bcTickets.set(intent, ticket);
     }
     if (ticket.pending) return ticket.pending.then(result => result.ok ? { ...result, matches: this._bcFieldsSame(fields, result.sent) } : result);
@@ -139,7 +133,6 @@ Object.assign(Component.prototype, {
         if (result.status >= 400 && result.status < 500 && result.err !== "session") {
           if (ticket.uncertain) { this._bcInvalidate(); return { ...result, message: "الطلب السابق ما زال غير مؤكد؛ راجع السجل قبل التخلي عنه أو بدء طلب آخر. مسودتك باقية" }; }
           this._bcTickets.delete(intent);
-          if (result.why === "reason") { this._bcReasons = this._bcReasons || new Map(); this._bcReasons.set(intent, result.keys || []); }
           if (result.status === 409) {
             if (/^(?:(?:seized-|award-)?conflict|(?:award-)?restore-epoch-changed)$/.test(result.code)) this._businessConflict?.();
             this._bcInvalidate();
@@ -149,7 +142,7 @@ Object.assign(Component.prototype, {
       }
       const ack = result.data;
       if (!this._bcBase(ack.base) || !this._bcInteger(ack.rev) || ack.requestId !== ticket.body.requestId || ack.op !== ticket.body.op || !this._bcInteger(ack.n) || ticket.count !== null && ack.n !== ticket.count || ack.base.epoch !== ticket.body.base.epoch || !this._businessAckValid(ack, ticket.body)) { ticket.uncertain = true; return this._bcFailure("invalid"); }
-      this._bcTickets.delete(intent); this._bcReasons?.delete(intent); this._bcInvalidate();
+      this._bcTickets.delete(intent); this._bcInvalidate();
       return { ok: 1, data: ack, sent: ticket.body, context: ticket.context };
     };
     ticket.pending = run(); this.setState({ bcPending: true });
@@ -161,7 +154,7 @@ Object.assign(Component.prototype, {
     const context = this._bcContext(), sessions = Component._businessSessions.get(window), key = context && context.key + "\0" + (this.props?.solo || "");
     const saved = sessions?.get(key);
     if (saved) {
-      sessions.delete(key); this._bcTickets = saved.tickets; this._bcReasons = saved.reasons; this._businessRestore(saved.draft);
+      sessions.delete(key); this._bcTickets = saved.tickets; this._businessRestore(saved.draft);
     }
     this._bcOnRemote = event => {
       const context = this._bcContext(), dept = context?.dept || this._bcActor?.split("\0")[1];
@@ -180,7 +173,7 @@ Object.assign(Component.prototype, {
     const draft = this._businessRetain(), context = draft?.context || this._bcTickets?.values().next().value?.context || this._bcContext();
     if (context && (draft || this._bcTickets?.size)) {
       let sessions = Component._businessSessions.get(window); if (!sessions) { sessions = new Map(); Component._businessSessions.set(window, sessions); }
-      sessions.set(context.key + "\0" + (this.props?.solo || ""), { draft, tickets: this._bcTickets || new Map(), reasons: this._bcReasons });
+      sessions.set(context.key + "\0" + (this.props?.solo || ""), { draft, tickets: this._bcTickets || new Map() });
     }
     this._bcGone = true; this._bcReads = new Map();
     if (this._bcOnRemote) { window.removeEventListener("bassam:remote", this._bcOnRemote); window.removeEventListener("bassam:authz", this._bcOnRemote); }

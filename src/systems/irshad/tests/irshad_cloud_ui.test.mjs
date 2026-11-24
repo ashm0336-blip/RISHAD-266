@@ -146,20 +146,24 @@ test('an uncertain ticket is retried even when employee shift references changed
   assert.equal(B.page.state.irDraft.langs.length, 0);
 });
 
-test('a definite reason refusal opens the existing reason dialog before making a fresh reasoned ticket', async t => {
+/* V7 · 53 (noreason · قرارُ المالك 23 نوفمبر): كان يثبت «رفضُ why:reason ⇒ نافذةُ السبب ثم تذكرةٌ جديدة بالسبب»؛ الآن رفضٌ عاديّ والمحاولةُ التالية بلا سبب */
+test('a legacy why:reason refusal never opens a reason dialog; the retry is a fresh ticket without a reason', async t => {
+  let first = true;
   const B = browser(async (_, options) => {
     const body = JSON.parse(options.body);
-    return body.reason ? ack(body) : json({ ok: 0, err: 'irshad-denied', why: 'reason', keys: ['ir.rec.edit'] }, 403);
+    if (first) { first = false; return json({ ok: 0, err: 'irshad-denied', why: 'reason', keys: ['ir.rec.edit'] }, 403); }
+    return ack(body);
   }); t.after(B.cleanup);
   const reasons = [];
   B.W.KIVO.__BS_SRV.askReason = (key, keys, cb) => { reasons.push({ key, keys: [...keys] }); cb('TEST_ONLY reviewed reason'); };
   B.page.state.irDraft = draft();
   await B.page._recordsCalVals().irSaveReport();
-  assert.equal(B.calls.length, 1); assert.equal(B.page.state.irDraft.langs.length, 1);
+  assert.equal(B.calls.length, 1); assert.equal(B.page.state.irDraft.langs.length, 1, 'the draft stays after the refusal');
+  assert.doesNotMatch(String(B.page.state.irSaveErrMsg || ''), /سبب/, 'the refusal does not ask for a reason');
   await B.page._recordsCalVals().irSaveReport();
-  const first = JSON.parse(B.calls[0].options.body), second = JSON.parse(B.calls[1].options.body);
-  assert.notEqual(first.requestId, second.requestId); assert.equal(second.reason, 'TEST_ONLY reviewed reason');
-  assert.equal(reasons.length, 1); assert.equal(reasons[0].keys[0], 'ir.rec.edit');
+  const one = JSON.parse(B.calls[0].options.body), two = JSON.parse(B.calls[1].options.body);
+  assert.notEqual(one.requestId, two.requestId); assert.equal(Object.hasOwn(one, 'reason'), false); assert.equal(Object.hasOwn(two, 'reason'), false);
+  assert.equal(reasons.length, 0, 'no reason dialog');
   assert.equal(B.page.state.irDraft.langs.length, 0);
 });
 
