@@ -419,7 +419,7 @@ export async function buildState(W, st) {
     /* V7 · 53: العدسات — المطفأُ لإدارة أ (st.lensOff) وما سواه مفعّل (يُعاد تشغيلُه من أيّ حالةٍ سابقة) */
     const lensOff = unit === UNITS.A ? st.lensOff || [] : [];
     const wantL = unit === '__plat' ? [] : await p.evaluate(([sel, off, lenses]) => {
-      const out = []; document.querySelectorAll(sel).forEach((b) => { if (!b.closest('[data-kind=lens]')) return; const n = b.getAttribute('aria-label') || '', L = lenses.find((x) => x.name === n); if (!L || out.includes(n)) return; const on = b.getAttribute('aria-checked') === 'true', goal = !off.includes(L.key); if (on !== goal && !b.disabled) out.push(n); });
+      const out = []; document.querySelectorAll(sel).forEach((b) => { if (!b.closest('[data-kind=lens]')) return; const n = b.getAttribute('aria-label') || '', L = lenses.find((x) => x.name === n || 'عدسة ' + x.name === n);   /* المفتاحُ باسم «عدسة <الاسم>» (label البيان) */ if (!L || out.includes(n)) return; const on = b.getAttribute('aria-checked') === 'true', goal = !off.includes(L.key); if (on !== goal && !b.disabled) out.push(n); });
       return out;
     }, [S.save.sw, lensOff, cat.lenses || []]);
     if (!want.length && !wantL.length) continue;
