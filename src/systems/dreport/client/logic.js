@@ -3383,7 +3383,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         wr = "";
       }
     return {
-      dYearLabel: t.rpY + " · " + KIVO.BassamCal.hRangeOfYear(t.rpY),
+      dYearLabel: String(t.rpY),   /* V7 · 53 (القاعدة 11): السطرُ الرئيس ميلاديٌّ وحده — المدى الهجري في السطر الصغير لا يتكرّر */
       dGregRange: this.hLineOfYear(t.rpY),
       roundDaysCount: String(h),
       ...KIVO.BassamCount.pair("dimTotal", String(a), "يوم|مسجّل"),

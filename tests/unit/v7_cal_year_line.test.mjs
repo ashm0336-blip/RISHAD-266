@@ -51,3 +51,13 @@ test('الصفحاتُ الخمس تربط سطرَ السنة بالمدى ال
     assert.match(html, /\{\{d?[gG]regRange\}\}/, v + ': سطرُ السنة في القالب');
   }
 });
+
+/* V7 · 53 (القاعدة 18 · لقطات develop/بعد): السطرُ الرئيس لسنة المتابعة والتقرير اليومي ميلاديٌّ وحده — كان «2026 · 1447 – 1448 هـ» والسطرُ الصغير تحته يكرّر المدى الهجري */
+test('V7 · 53: the main year line on daily and dreport is the Gregorian year alone (no Hijri range repeated above its small line)', () => {
+  for (const f of ['src/systems/daily/client/logic.js', 'src/systems/dreport/client/logic.js']) {
+    const src = fs.readFileSync(path.join(ROOT, f), 'utf8'), m = /dYearLabel:\s*([^,\n]+),/.exec(src);
+    assert.ok(m, f + ': dYearLabel');
+    assert.doesNotMatch(m[1], /hRangeOfYear|هـ/, f + ': the main year line carries no Hijri');
+    assert.match(m[1], /^String\(/, f + ': the Gregorian year itself');
+  }
+});

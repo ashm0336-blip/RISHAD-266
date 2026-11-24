@@ -19908,7 +19908,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         prevYear: () => this.setState((t) => ({ year: t.year - 1, day: t.year - 1 === g.y && t.month === g.m ? g.d : 0, roundAdd: !1 })),
         nextYear: () => this.setState((t) => ({ year: t.year + 1, day: t.year + 1 === g.y && t.month === g.m ? g.d : 0, roundAdd: !1 })),
         goCurrent: () => this.setState({ year: g.y, month: g.m, day: g.d }),
-        dYearLabel: s.year + " · " + KIVO.BassamCal.hRangeOfYear(s.year),
+        dYearLabel: String(s.year),   /* V7 · 53 (القاعدة 11): السطرُ الرئيس ميلاديٌّ وحده — المدى الهجري في السطر الصغير (dGregRange) لا يتكرّر */
         dGregRange: this.hLineOfYear(s.year),
         dayOpen: !H,
         ...t,
