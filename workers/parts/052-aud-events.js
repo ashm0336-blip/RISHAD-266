@@ -250,7 +250,7 @@ function initDb(env) {
    على env.__pre، وتستهلكها kvGet/metaGet/session/revsAll ما دامت «حيّة». الضمانُ الدلالي: اللقطةُ تُطفأ عند أوّل كتابةٍ في الطلب
    (dbGuard يلفّ env.DB: batch · exec · أيُّ عبارةِ تعديل مهما كان منفذُها) فلا قراءةَ قديمةً بعد كتابة — والقراءاتُ بعدها حيّةٌ كما كانت.
    إن أخفق جلبُ اللقطة (تعذّرُ D1) يُترك env.__pre فارغاً وتعمل كلُّ المسارات كما قبل 255 (ومنها وضعُ الحماية fail-closed في enfModeOf). */
-var PRE_META_BASE = ['policy', 'rev', 'rk', 'schema_version', 'restore_epoch'], PRE_META_AUTHZ = ['authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig'];   /* مفاتيحُ الإنفاذ — V7 · د5-ح: تُقرأ في كل بيئة (لا وضعَ قديماً) والعبارةُ تحمل علامةَ pre:authz */
+var PRE_META_BASE = ['policy', 'rev', 'rk', 'schema_version', 'restore_epoch', 'cal_pend'], PRE_META_AUTHZ = ['authz_mode', 'authz_perm_mig', 'authz_scope_mig', 'authz_id_mig'];   /* مفاتيحُ الإنفاذ — V7 · د5-ح: تُقرأ في كل بيئة (لا وضعَ قديماً) والعبارةُ تحمل علامةَ pre:authz */
 var PRE_KV = [K_USERS, K_PERM, K_DEPTS, K_GDEPTS, K_PLAT];
 function kvJoin(rows) {
   var out = {}, i; rows = rows || [];

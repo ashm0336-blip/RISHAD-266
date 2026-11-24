@@ -5,8 +5,7 @@ var OP_LIM_MSG = {
   'period-too-large': 'بيانات هذه الفترة تجاوزت الحد المسموح. راجع الإدخال أو تواصل مع مدير المنصة.',
   'batch-budget': 'العملية أكبر من أن تُنفَّذ مرة واحدة. احفظ شهراً واحداً أو يوماً واحداً في كل مرة.',
   'ops-layout-pending': 'جارٍ تحويل تخزين بيانات هذه الإدارة. أعد المحاولة بعد دقائق.',
-  'operations-period-required': 'حُدِّثت المنصة. أعد تحميل الصفحة ثم احفظ.',
-  'calendar-pending': 'جارٍ تحويل التقويم لهذه الإدارة إلى الميلادي. أعد المحاولة بعد دقائق.'   /* V7 · 53 تقويم: 0014 المرحلة ٢ */
+  'operations-period-required': 'حُدِّثت المنصة. أعد تحميل الصفحة ثم احفظ.'
 };
 var OP_PERIOD_RX = /^[^,@*;\u0000-\u001f\u007f]{1,64}$/, OP_LAYOUT_KEY = 'ops_layout_pending';
 function opLimError(code, status, extra) { var e = rsError(code, status || 413); e.msg = OP_LIM_MSG[code] || ''; if (extra) e.details = extra; return e; }
@@ -93,7 +92,7 @@ function opSummaryStatements(env, info, changes) {
 function opKeyOf(info) { return 'bsdept:' + info.dept + ':' + info.resource; }
 function opTag(statement, keys) { try { statement.__opKeys = keys; } catch (e) { return statement; } return statement; }
 function opLayoutPendingOf(row) { var v = parseJson(row && row.v, []); return Array.isArray(v) ? v.filter(function (d) { return typeof d === 'string'; }) : []; }
-function opLayoutStatement(env) { return env.DB.prepare("SELECT (SELECT v FROM meta WHERE k='" + OP_LAYOUT_KEY + "') v,(SELECT v FROM meta WHERE k='cal_ops_pending') c"); }   /* V7 · 53 تقويم: c = إداراتُ 0014 المعلَّقة (calMigPendingOf) */
+function opLayoutStatement(env) { return env.DB.prepare("SELECT v FROM meta WHERE k='" + OP_LAYOUT_KEY + "'"); }
 function opSplitResources() { return opDefinitions().filter(function (d) { return !!d.period; }).map(function (d) { return d.resource; }); }
 function opPeriodsLegacyPrepare(env) {
   return { before: [], after: [env.DB.prepare("INSERT INTO meta(k,v) SELECT '" + OP_LAYOUT_KEY + "',x FROM (SELECT json_group_array(d) x,COUNT(*) n FROM (SELECT DISTINCT department_id d FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY d)) WHERE n>0 ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(opSplitResources()))] };
@@ -154,10 +153,12 @@ async function opPeriodsMigrateRoute(env, request, session) {
     var A = await actorOf(env, session.uid); if (!A) return json({ ok: 0, err: 'session' }, 401);
     if (A.u.role !== 'super') return json({ ok: 0, err: 'operations-periods-migrate-permission' }, 403);
     var body = parseJson(await request.text(), null); if (!isObj(body) || typeof body.dept !== 'string') return json({ ok: 0, err: 'bad-body' }, 400);
-    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];       var t0 = Date.now(), budget = Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000), from = isObj(body.from) ? body.from : null;
+    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.concat(Object.keys(await calPend(env)).filter(function (x) { return pending.indexOf(x) < 0; })) : rsScopeDepartments([body.dept]) || [], out = [];       var t0 = Date.now(), budget = Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000), from = isObj(body.from) ? body.from : null;
     for (var d of list) {
       var rep = { dept: d, resources: {}, ok: 0 }, revPairs = [], Rs = opSplitResources(), r0 = from && d === body.dept ? Math.max(0, Rs.indexOf(from.r)) : 0;
       try {
+        /* V7 · 53 تقويم (REVIEW 33): المسارُ الخلفي للمدير — فتراتُ الإدارة الهجرية كلُّها بالمحوِّل نفسِه وبتقدّمٍ مرئي، ثم التحقّقُ كما كان */
+        var cl = await calLazyDept(env, d, Math.max(1000, budget - (Date.now() - t0))); if (cl.left) { rep.more = 1; rep.calendar = cl; out.push(rep); return json({ ok: 0, more: 1, departments: out, next: { dept: d }, pending: pending }); }
         for (var ri = 0; ri < Rs.length; ri++) {
           var R = Rs[ri];
           var K = 'bsdept:' + d + ':' + R, info = opInfo(K), def = opPeriodDef(info), tables = ocPhysicalTables(info.prepared);

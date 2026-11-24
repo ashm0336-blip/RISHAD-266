@@ -47,7 +47,8 @@ const key = (d, r) => 'bsdept:' + d + ':' + r;
 const SPLIT = ['bassam_plan_v1', 'bassam_staffing_v3', 'bassam_rounds_v1', 'bassam_dreport_v1', 'bassam_tasks_v1'];
 const ALL = SPLIT.concat(['bassam_employees_v1', 'bassam_shift_options_v1']);
 async function readAll(call, d) {
-  const r = await call('/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: ALL.map((x) => key(d, x)).join(',') }));
+  let r;   /* V7 · 53 تقويم: «تُجهَّز البيانات» (503 calendar-preparing بتقدّمه) ⇒ تعيد الصفحةُ الطلبَ — كما هنا */
+  for (let n = 0; ; n++) { r = await call('/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: ALL.map((x) => key(d, x)).join(',') })); if (!(r.status === 503 && r.json && r.json.err === 'calendar-preparing') || n > 60) break; }
   assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300));
   return r.json;
 }
@@ -108,12 +109,10 @@ test('53 · 0013 على قاعدةٍ بالمخطط 12 بناها العاملُ
   assert.deepEqual(E.DB.q("SELECT name FROM d1_migrations ORDER BY id DESC LIMIT 2").map((r) => r.name), ['0014_gregorian_calendar', '0013_period_storage']);
   assert.equal(E.DB.q("SELECT COUNT(*) n FROM meta WHERE k='schema_upgrade_permit_v1'")[0].n, 0, 'التصريحُ استُهلك');
   assert.deepEqual(JSON.parse(E.DB.q("SELECT v FROM meta WHERE k='ops_layout_pending'")[0].v), [D1, D2].sort());
-  assert.deepEqual(JSON.parse(E.DB.q("SELECT v FROM meta WHERE k='cal_ops_pending'")[0].v), [D1, D2].sort());
+  assert.deepEqual(Object.keys(JSON.parse(E.DB.q("SELECT v FROM meta WHERE k='cal_pend'")[0].v)).sort(), [D1, D2].sort());
   const T14 = E.DB.q("SELECT v FROM meta WHERE k='cal_mig_t'")[0].v, CNEW = await loadCal(fs.readFileSync(WORKER, 'utf8'), 'new');
   assert.deepEqual(E.DB.q('PRAGMA foreign_key_check'), []);
-  /* V7 · 53 تقويم: ما دامت الإدارةُ معلَّقةً تقويمياً لا تُقرأ مواردُها التقويمية (صفوفُها تتحوّل) — calendar-migrate أولاً ثم periods-migrate */
-  const cmr = await (async () => { for (let n = 0; n < 200; n++) { const r = await call2('/api/operations/calendar-migrate', { method: 'POST', body: { dept: 'all' } }); assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 400)); if (!r.json.more) return r; } throw new Error('calendar-migrate'); })();
-  assert.equal(cmr.json.ok, 1, JSON.stringify(cmr.json).slice(0, 600));
+    /* V7 · 53 تقويم (REVIEW 33): لا خطوة — القراءةُ الأولى تحوّل كلَّ فترةٍ تلمسها بالمحوِّل الواحد (019v1 calLazyEnsure) */
   const conv = (d, r) => CNEW.calConvDoc(r, before[d][key(d, r)], { T: T14, rep: null });
   for (const d of [D1, D2]) {
     const after = (await readAll(call2, d)).resources;

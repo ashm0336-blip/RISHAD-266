@@ -54,6 +54,7 @@ function opLegacyError(error) {
 async function opLoadMany(env, keys, retired, scopes) {
   scopes = scopes || env.__opScope || {};
   var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {}, revKeys = [];
+  await calLazyEnsure(env, wanted, calWantScopes(scopes));   /* V7 · 53 تقويم (REVIEW 33): الفترةُ الهجرية تُحوَّل ذرّياً قبل قراءة صفوفها أو الكتابة فوقها (019v1) */
   wanted.forEach(function (key) {
     var info = opInfo(key); if (!info) throw ocError('resource');
     var def = opPeriodDef(info), scope = def && ocOwn(scopes, key) ? Object.assign({}, scopes[key], { periods: Array.from(new Set(scopes[key].periods)) }) : null, ranges = [['', '￿']];
@@ -100,9 +101,7 @@ async function opLoadMany(env, keys, retired, scopes) {
     piece.forEach(function (x, i) { (got[i].results || []).forEach(function (row) { var key = 'bsdept:' + row.department_id + ':' + row.resource; if (!physicalByKey[key] || !physicalByKey[key][x.table]) throw ocError('read-scope'); physicalByKey[key][x.table].push(row); }); });
   }
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
-  var pending = opLayoutPendingOf(((result[revisionIndex + 2].results) || [])[0]), calPend = calMigPendingOf(((result[revisionIndex + 2].results) || [])[0]);
-  /* V7 · 53 تقويم: إدارةٌ لم تُتمّ المرحلةَ ٢ من 0014 — مواردُها التقويمية لا تُقرأ ولا تُكتب (صفوفُها مختلطةٌ أثناء التحويل) */
-  requests.forEach(function (r) { if (calPend.indexOf(r.info.dept) >= 0 && calConvIs(r.info.resource)) throw opLimError('calendar-pending', 503); });
+  var pending = opLayoutPendingOf(((result[revisionIndex + 2].results) || [])[0]);
   if (scoped.length) (result[revisionIndex + 3].results || []).forEach(function (row) { var k = 'bsdept:' + row.d + ':' + row.r; (members[k] = members[k] || []).push({ p: row.m, k: row.k, pos: row.p }); });
   requests.forEach(function (request) {
     var info = request.info, physical = physicalByKey[request.key], key = request.key;
@@ -310,6 +309,8 @@ async function opReadOnce(env, url, session) {
     var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: depts }), A = reference.A;
     env = reference.env;
     var eligible = new Set(Object.keys(groups).filter(function (K) { return canRead(A, K); }));
+    /* V7 · 53 تقويم (REVIEW 33): قبل جرد الأعضاء (المديات تُحلّ بأسماء الفترات) — وإن حُوِّل شيءٌ تُؤخذ اللقطةُ من جديد */
+    if (await calLazyEnsure(env, Array.from(eligible), calWantRead(groups, rangeOf))) { reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: depts }); A = reference.A; env = reference.env; }
     /* أعضاءُ الحاوية للمديات والفهارس (صفٌّ لكل فترة) — قبل تحميل أي محتوى */
     var listed = Object.keys(groups).filter(function (K) { return eligible.has(K) && opPeriodDef(groups[K].info) && (rangeOf[K] || indexIn.indexOf(K) >= 0 || groups[K].full); }), memberOf = {}, nodesOf = {};
     if (listed.length) {
