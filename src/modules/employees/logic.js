@@ -242,6 +242,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this.setState({ confirmBulk: !!bulk, confirmDel: bulk ? null : indices[0], empDeleteError: "", empDeleteBusy: true, empDeleteReview: false });
     return this._empDeleteReview();
   }
+  /* V7 · 53 (البند 4): جردُ الحذف (قراءةُ الخادم لما يُحذف مع الموظف) يبدأ قبل فتح النافذة — عند فتح الصفحة لمن يملك الحذف وعند فتح قائمة الصف —
+     فتجده النافذةُ جاهزاً أو جارياً بدل أن تبدأه وزرُّ «تأكيد الحذف» معطّل. صالحٌ ما دامت القائمةُ هي هي (أيُّ تغييرٍ يستبدل مصفوفتَها) ولدقيقتين؛
+     والخادمُ يبقى الحَكَم: الحذفُ يُرسل مراجعَ الجرد (base) فيُرفض إن تغيّرت البيانات بعده */
+  _empDeletePrefetch() {
+    const API = this._empTransition();
+    if (!API || !this.PC("del") || this._empDeleteBusy) return;
+    const list = this.state.employees, pre = this._empPre;
+    if (pre && pre.list === list && Date.now() - pre.at < 12e4) return;
+    this._empPre = { list, at: Date.now(), p: Promise.resolve().then(() => API.read("delete")).catch(() => null) };
+  }
   async _empDeleteReview() {
     const draft = this._empDeleteDraft, API = this._empTransition();
     if (!draft) return;
@@ -250,7 +260,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (draft.uncertain) { this.setState({ empDeleteError: "لم يُحسم طلب الحذف السابق؛ أعد محاولة الطلب نفسه" }); return; }
     this._empDeleteBusy = true; this.setState({ empDeleteBusy: true, empDeleteError: "" });
     try {
-      const result = await API.read("delete"); if (this._empDeleteDraft !== draft) return;
+      const pre = this._empPre; this._empPre = null;
+      let result = pre && pre.list === this.state.employees && Date.now() - pre.at < 12e4 ? await pre.p : null;
+      if (!result || !result.ok) result = await API.read("delete");
+      if (this._empDeleteDraft !== draft) return;
       if (!result.ok) { this.setState({ empDeleteError: result.message, empDeleteReview: true }); return; }
       const matches = new Map(); result.data.employees.forEach(row => { const key = this._empKey(row); if (draft.keys.includes(key)) { if (!matches.has(key)) matches.set(key, []); matches.get(key).push(row); } });
       if (draft.keys.some(key => !matches.has(key) || matches.get(key).length !== 1)) {
@@ -1823,7 +1836,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       rmHas: r.length > 0,
       rmOpen: n,
       rmToggle: (e) => {
-        (e && e.stopPropagation && e.stopPropagation(), this.setState((e) => ({ rowMenu: e.rowMenu === t ? null : t })));
+        (e && e.stopPropagation && e.stopPropagation(), this.setState((e) => ({ rowMenu: e.rowMenu === t ? null : t })), this._empDeletePrefetch());
       },
       rmBtnStyle:
         "width:28px;height:28px;border-radius:8px;cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;border:1px solid " +
@@ -2143,6 +2156,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   componentDidMount() {
     ((this._bsOutM = (t) => this._bsOutsideMenus(t)), document.addEventListener("click", this._bsOutM, !0));
+    this._empPreT = setTimeout(() => this._empDeletePrefetch(), 1500);   /* V7 · 53 (البند 4) */
     try {
       this._bsPulseLast = this._bsMinKey();
       this._pt = setInterval(() => {
@@ -2177,6 +2191,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     );
   }
   componentWillUnmount() {
+    clearTimeout(this._empPreT);
     this._bsOutM && document.removeEventListener("click", this._bsOutM, !0);
     try {
       clearInterval(this._pt);
@@ -3257,7 +3272,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       scoreParts: mt,
       score: String(ct),
       gaugeDash: bt.toFixed(1) + " " + (ft - bt).toFixed(1),
-      greeting: r >= 4 && r < 12 ? "صباح الخير" : r >= 12 && r < 17 ? "نهارك سعيد" : r >= 17 && r < 21 ? "مساء الخير" : "ليلة هانئة",
+      greeting: KIVO.BassamGreet(r).text /* V7 · 53: قاعدةُ التحية الواحدة (440-count) */,
       timeShort: e.toLocaleTimeString("ar-SA-u-nu-latn", { hour: "2-digit", minute: "2-digit", hour12: !0 }),
       gregShort: e.toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", { weekday: "long", day: "numeric", month: "long" }),
       hijriShort: KIVO.BassamCal.hText(e, { day: "numeric", month: "long", year: "numeric" }),
@@ -5879,7 +5894,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             })
           : (n[this.state.editIdx] = { ...n[this.state.editIdx], ...t }),
           await this.setEmp(n, { index: this.state.editIdx, form: t }) &&
-          this.setState({ addOpen: !1 }));
+          (this.setState({ addOpen: !1 }),
+          /* V7 · 53 (البند 11): رسالةُ النجاح بعد إضافة موظف — بالشكل الموجود (bsAck «ok» بعد إقرار الخادم) */
+          null === this.state.editIdx && this.bsAck("أُضيف الموظف «" + t.name.trim() + "»", "ok")));
       },
       bulkClear: () => this.setState({ selected: {} }),
       bulkAccOn: l,
@@ -6098,10 +6115,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           r = 0 === e.perPage ? 0 : e.perPage || 10,
           n = 0 === r ? Math.max(1, t) : r,
           a = Math.max(1, Math.ceil(t / n)),
-          i = Math.min(Math.max(1, e.page || 1), a),
+          /* V7 · 53 (البند 10): بعد اعتماد الاستيراد ينتقل الجدولُ إلى صفحة أول صفٍّ مستورد — الترتيبُ الافتراضي (الحساب · الدور · الاسم)
+             يضع المستوردَ بين 500 موظف في صفحةٍ أخرى فيبدو الجدولُ كأنه لم يتحدّث */
+          jx = e.impJump ? c.findIndex((r) => e.impJump.some((q) => q.name === r.name && String(q.nid || "") === String(r.nid || ""))) : -1,
+          i = Math.min(Math.max(1, jx >= 0 ? Math.floor(jx / n) + 1 : e.page || 1), a),
           o = (i - 1) * n,
           s = c.slice(o, o + n).map((t, e) => ({ ...t, sn: String(o + e + 1) })),
           l = [];
+        e.impJump && Promise.resolve().then(() => this.setState({ impJump: null, page: i }));
         {
           const t = [],
             e = (e) => {

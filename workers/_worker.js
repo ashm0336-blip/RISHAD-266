@@ -1087,6 +1087,8 @@ var KIVO_SCOPE = (function (S, R) {
     a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), L = ctx.locks ? ctx.locks.tasks : undefined;
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; var x = arr(a[k]), y = arr(b[k]); if (deq(x, y)) continue; var day = parseDay(k), mk = day ? day.y + '-' + day.m : '', ls = lockState(L, mk), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_tasks_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
+      /* V7 · 53 (قرار المالك ٧): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد، ولا يُفتح إلا للاستدراك ({mo:1}) */
+      if (ls === false && day && closedPeriod(ctx.today, day.y, day.m) && !(isObj(obj(L)[mk]) && obj(L)[mk].mo)) lk = { locked: true, why: 'month-past' };
       var m = matchById(x, y, function (r) { return Array.isArray(r) && r[13] != null ? String(r[13]) : null; });
       for (q = 0; q < m.added.length; q++) items.push(it({ what: 'task', kind: 'added', id: m.added[q].id, path: k + '[' + m.added[q].id + ']', period: pair(null, day), owner: pair(null, str(arr(m.added[q].b)[14])), lock: lk }));
       for (q = 0; q < m.removed.length; q++) items.push(it({ what: 'task', kind: 'removed', id: m.removed[q].id, path: k + '[' + m.removed[q].id + ']', period: pair(day, null), owner: pair(str(arr(m.removed[q].a)[14]), null), lock: lk }));
@@ -18802,7 +18804,16 @@ function ocOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 function ocObj(o) { return o !== null && typeof o === 'object' && !Array.isArray(o) && Object.prototype.toString.call(o) === '[object Object]'; }
 function ocSet(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, configurable: true, writable: true }); }
 function ocIdentifier(s) { if (typeof s !== 'string' || !/^[a-z][a-z0-9_]*$/.test(s)) throw ocError('sql-identifier'); return s; }
+/* V7 · 53 (البند 6 · الأداء): اسمُ العمود دالةٌ نقيّة لاسم الحقل — يُحفظ بعد أول حساب (كان يُعاد بتعبيرين منتظمين لكل حقلٍ في كل صفّ عند كل قراءة) */
+var OC_FIELD_CACHE = new Map();
+/* V7 · 53 (الأداء): أعمدةُ «_kind» (قيمتُها الافتراضية 0) لكل قائمة أعمدة — تُحسب مرةً لا لكل صفّ */
+var OC_KIND_COLS = new WeakMap();
+function ocKindCols(columns) { var k = OC_KIND_COLS.get(columns); if (!k) { k = columns.map(function (c) { return /_kind$/.test(c); }); OC_KIND_COLS.set(columns, k); } return k; }
 function ocField(k) {
+  var hit = OC_FIELD_CACHE.get(k); if (hit !== undefined) return hit;
+  var out = ocFieldOf(k); if (OC_FIELD_CACHE.size < 4096) OC_FIELD_CACHE.set(k, out); return out;
+}
+function ocFieldOf(k) {
   if (!/^[A-Za-z0-9_]+$/.test(k)) throw ocError('field-definition');
   // SQLite identifiers ignore case; cAt and cat are distinct business fields.
   // Escape underscores too, so a literal escape-looking key cannot collide.
@@ -18923,7 +18934,9 @@ function ocScalarUnpack(row, prefix, type, missing) {
   var kind = row[prefix + 'kind'], text = row[prefix + 'text'], number = row[prefix + 'number'];
   if (kind === 0 && missing) { if (text !== null || number !== null) throw ocError('noncanonical-scalar'); return undefined; }
   var value = kind === 1 ? null : kind === 2 ? text : kind === 3 ? number : kind === 4 && (number === 0 || number === 1) ? !!number : undefined;
-  if (value === undefined || JSON.stringify(ocScalarPack(value, type)) !== JSON.stringify([kind, text, number])) throw ocError('noncanonical-scalar');
+  /* V7 · 53 (الأداء): المقارنةُ نفسُها عنصراً بعنصر بدل JSON.stringify مرتين لكل قيمة (الأعدادُ منتهية، و0/−0 سواءٌ في الطريقتين) */
+  var canon = value === undefined ? null : ocScalarPack(value, type);
+  if (value === undefined || canon[0] !== kind || canon[1] !== text || canon[2] !== number) throw ocError('noncanonical-scalar');
   return value;
 }
 function ocEntry(spec, key) {
@@ -18941,7 +18954,7 @@ function ocConvert(prepared, department, resource, value, present) {
   var root = prepared.resources[resource]; if (!root) throw ocError('resource');
   var rows = {}; prepared.order.forEach(function (spec) { rows[spec.table] = []; });
   function freshRow(spec, key, parent, member, position) {
-    var row = {}; spec.columns.forEach(function (column) { row[column] = /_kind$/.test(column) ? 0 : null; });
+    var row = {}, K = ocKindCols(spec.columns); spec.columns.forEach(function (column, n) { row[column] = K[n] ? 0 : null; });
     Object.assign(row, { department_id: department, resource: resource, row_key: key, parent_key: parent, member_key: member, position: position });
     rows[spec.table].push(row); return row;
   }
@@ -19001,6 +19014,14 @@ function ocInflate(prepared, domain) {
       map.set(row.row_key, row);
     }); byTable[spec.table] = map;
   });
+  /* V7 · 53 (البند 6 · الأداء): فهرسُ الأبناء بالأب لكل جدول — يُبنى مرةً عند أول حاجة. كان كلُّ عنصرِ مصفوفةٍ أو خريطة يمسح الجدولَ كلَّه
+     (تربيعيٌّ في حجم المستند: 500 موظف · أيامُ الجدول والتقرير). الترتيبُ داخل كل أبٍ ترتيبُ الإدراج نفسُه، فالنتيجةُ هي هي */
+  var kids = {};
+  function childrenOf(table, parent) {
+    var idx = kids[table];
+    if (!idx) { idx = kids[table] = new Map(); byTable[table].forEach(function (r) { var a = idx.get(r.parent_key); if (!a) idx.set(r.parent_key, a = []); a.push(r); }); }
+    return idx.get(parent) || [];
+  }
   function read(spec, row) {
     used.add(spec.table + '\0' + row.row_key);
     if (row.node_kind === 1) return null;
@@ -19015,7 +19036,7 @@ function ocInflate(prepared, domain) {
     }
     value = kind === 'array' || kind === 'tuple' ? [] : {};
     if (kind === 'array') {
-      var entries = Array.from(byTable[spec.entry.table].values()).filter(function (r) { return r.parent_key === row.row_key; }).sort(function (a, b) { return a.position - b.position; });
+      var entries = childrenOf(spec.entry.table, row.row_key).slice().sort(function (a, b) { return a.position - b.position; });
       entries.forEach(function (entry, index) { if (entry.position !== index) throw ocError('array-position'); value.push(read(spec.entry, entry)); });
       return value;
     }
@@ -19039,7 +19060,7 @@ function ocInflate(prepared, domain) {
     });
     if (kind === 'map') {
       var candidates = [spec.entry].concat(spec.patterns.map(function (p) { return p.spec; })).filter(Boolean), entries = [], visited = new Set();
-      candidates.forEach(function (candidate) { if (visited.has(candidate.table)) return; visited.add(candidate.table); byTable[candidate.table].forEach(function (entry) { if (entry.parent_key === row.row_key && entry.row_key.startsWith(row.row_key + '/e:')) entries.push({ spec: candidate, row: entry }); }); });
+      candidates.forEach(function (candidate) { if (visited.has(candidate.table)) return; visited.add(candidate.table); childrenOf(candidate.table, row.row_key).forEach(function (entry) { if (entry.parent_key === row.row_key && entry.row_key.startsWith(row.row_key + '/e:')) entries.push({ spec: candidate, row: entry }); }); });
       entries.sort(function (a, b) { return a.row.position - b.row.position; }).forEach(function (entry) {
         var key = entry.row.member_key;
         if (typeof key !== 'string' || members.some(function (m) { return m.key === key; }) || ocOwn(spec.fields, key) || ocEntry(spec, key) !== entry.spec) throw ocError('map-member');
@@ -19057,7 +19078,8 @@ function ocInflate(prepared, domain) {
   prepared.order.forEach(function (spec) { byTable[spec.table].forEach(function (row) { if (!used.has(spec.table + '\0' + row.row_key)) throw ocError('orphan-row'); }); });
   var canonical = ocConvert(prepared, domain.departmentId, domain.resource, result.value, result.present);
   prepared.order.forEach(function (spec) {
-    function sorted(list) { return list.slice().sort(function (a, b) { return a.row_key.localeCompare(b.row_key); }).map(function (r) { return spec.columns.map(function (c) { return r[c]; }); }); }
+    /* V7 · 53 (الأداء): ترتيبٌ ثابت بوحدات النص بدل localeCompare — المفاتيحُ فريدة في الطرفين (row · byTable)، فالمساواةُ بعد الترتيب هي هي */
+    function sorted(list) { return list.slice().sort(function (a, b) { return a.row_key < b.row_key ? -1 : a.row_key > b.row_key ? 1 : 0; }).map(function (r) { return spec.columns.map(function (c) { return r[c]; }); }); }
     if (JSON.stringify(sorted(canonical.rows[spec.table])) !== JSON.stringify(sorted(rows[spec.table] || []))) throw ocError('noncanonical-rows');
   });
   return result;
@@ -19105,11 +19127,19 @@ function ocFromPhysical(prepared, department, resource, physical) {
     var entity = spec.entityTable ? entities[spec.entityTable].get(node.row_key) : {};
     if (!entity) throw ocError('missing-entity');
     if (spec.entityTable) used.add(spec.entityTable + '\0' + node.row_key);
-    var row = {}; spec.columns.forEach(function (column) { row[column] = ocOwn(node, column) ? node[column] : ocOwn(entity, column) ? entity[column] : /_kind$/.test(column) ? 0 : null; });
+    var row = {}, K = ocKindCols(spec.columns); spec.columns.forEach(function (column, n) { row[column] = ocOwn(node, column) ? node[column] : ocOwn(entity, column) ? entity[column] : K[n] ? 0 : null; });
     domain.rows[spec.table].push(row);
   });
   Object.keys(entities).forEach(function (name) { entities[name].forEach(function (row) { if (!used.has(name + '\0' + row.row_key)) throw ocError('orphan-entity'); }); });
-  ocInflate(prepared, domain); return domain;
+  OC_INFLATED.set(domain, ocInflate(prepared, domain)); return domain;
+}
+/* V7 · 53 (البند 6 · الأداء): القراءةُ (019r) كانت تفكّ المستندَ مرتين — ocFromPhysical تفكّه للتحقق ثم ocInflate من جديد للقيمة نفسها.
+   ocFromPhysicalRead تعيد الاثنين من فكٍّ واحد؛ ocFromPhysical وocInflate لبقية المستدعين كما هما */
+var OC_INFLATED = new WeakMap();
+function ocFromPhysicalRead(prepared, department, resource, physical) {
+  var domain = ocFromPhysical(prepared, department, resource, physical), projection = OC_INFLATED.get(domain);
+  OC_INFLATED.delete(domain);
+  return { domain: domain, projection: projection || ocInflate(prepared, domain) };
 }
 function ocCreateStatements(prepared) {
   var out = ["CREATE TABLE IF NOT EXISTS ops_nodes(department_id TEXT NOT NULL,resource TEXT NOT NULL,row_key TEXT NOT NULL,parent_key TEXT,member_key TEXT,position INTEGER NOT NULL,node_kind INTEGER NOT NULL,variant INTEGER,tuple_length INTEGER,schema_id TEXT NOT NULL,entity_kind TEXT,PRIMARY KEY(department_id,resource,row_key),UNIQUE(department_id,resource,row_key,entity_kind),FOREIGN KEY(department_id,resource,parent_key)REFERENCES ops_nodes(department_id,resource,row_key)ON DELETE CASCADE)WITHOUT ROWID",
@@ -20558,7 +20588,7 @@ async function opLoadMany(env, keys, retired) {
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
   requests.forEach(function (request) {
     var info = request.info, physical = physicalByKey[request.key];
-    var domain = ocFromPhysical(info.prepared, info.dept, info.resource, physical), projection = ocInflate(info.prepared, domain);
+    var read53 = ocFromPhysicalRead(info.prepared, info.dept, info.resource, physical), domain = read53.domain, projection = read53.projection;   /* V7 · 53 (البند 6): فكٌّ واحد لا اثنان */
     values[request.key] = projection.present ? JSON.stringify(projection.value) : null;
     domains[request.key] = domain;
     guards.push.apply(guards, opStateGuards(env, info, domain, empty));
@@ -20684,7 +20714,9 @@ async function opReadOnce(env, url, session) {
     // a foreign department requested by a malicious/obsolete client.
     var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: wanted.map(function (key) { return opInfo(key).dept; }) }), A = reference.A,
       eligible=new Set(wanted.filter(function(key){return canRead(A,key);})),refs=Array.from(eligible);
-    eligible.forEach(function (key) { var d = opInfo(key).dept; ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { refs.push('bsdept:' + d + ':' + r); }); });
+    /* V7 · 53 (البند 6 · الأداء): مراجعُ البرامج (الجدولُ الشهريّ من قطعته) لإسقاط ENF_PROJ وحده (061 enfRefsFor · enfProjectStr يعيد القيمةَ كما هي لما لا إسقاطَ له،
+       والخصوصيةُ 019u تقرأ سجلَّ الموظفين فقط) — فقراءةُ «الموظفين» لا تحمّل الجدولَ بتاريخه كلّه (كان كلُّ طلبٍ يفكّ الجدولَ كاملاً معها) */
+    eligible.forEach(function (key) { var d = opInfo(key).dept, pj = ocOwn(ENF_PROJ, resName(resReadAs(key))); ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { if (!pj && r !== 'bassam_shift_options_v1' && r !== 'bassam_employees_v1') return; refs.push('bsdept:' + d + ':' + r); }); });
     var operational=await opCaptureReferences(reference.env,reference.inputKeys,refs);
     reference.operational=operational;reference.inputKeys=operational.keys;Object.assign(reference.inputRevs,operational.revs);
     reference.env=Object.assign({},reference.env,{__opCapture:operational,__pre:Object.assign({},reference.env.__pre,{kv:operational.keys,revs:reference.inputRevs})});
@@ -29374,6 +29406,15 @@ async function tkLocked(env, d, ym) {
   var v = isObj(L) ? L[ym] : undefined; return v === true || v === 1;
 }
 function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]); }
+/* V7 · 53 (قرارا المالك ٧ و٨): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد ولا يُفتح إلا للاستدراك ({mo:1}).
+   الرسالةُ بحسب القارئ: من يملك فتحَ الشهر (task.month.reopen) يُقال له افتحه، وغيرُه يُحال إلى مدير الإدارة */
+var TK_PAST_MGR = 'الشهر مقفل — افتحه للاستدراك أولاً', TK_PAST_EMP = 'الشهر مقفل — راجع مدير الإدارة';
+async function tkPastLocked(env, d, ym) {
+  var p = String(ym).split('-'), y = +p[0], m = +p[1], T = dsToday(Date.now()); if (!T || !(y > 0 && m > 0) || 12 * y + m >= 12 * T.y + T.m) return false;
+  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}), v = isObj(L) ? L[y + '-' + m] : undefined;
+  return !(isObj(v) && v.mo);
+}
+function tkPastMsg(A, d) { return tkHeld(A, d, 'task.month.reopen') ? TK_PAST_MGR : TK_PAST_EMP; }
 /* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */
 async function tkDayShut(env, d, k) {
   var p = String(k).split('-'), L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
@@ -29685,6 +29726,7 @@ async function tkCreate(env, request, A, b) {
   if (RC.rec && !asg.length && !SH) return tkNo(400, 'rec-asg', 'المهمةُ المتكررة تحتاج مكلَّفاً واحداً على الأقل — تُولَّد نسخةٌ لكل مكلَّف', { at: 'rec' }).err;   /* S10: مفاتيحُ 400 المعقودة (ok · err · at) */
   if (!tkHeld(A, d, 'task.create') || ((asg.length || SH) && !tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'إنشاءُ المهام وإسنادُها للمديرين والمخوَّلين').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  if (await tkPastLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', tkPastMsg(A, d)).err;   /* V7 · 53 (قرار ٧): إنشاءٌ في شهرٍ ماضٍ لم يُفتح للاستدراك */
   if (await tkDayShut(env, d, b.k)) return tkNo(409, 'locked', 'اليومُ مُغلق — افتحه من صفحة المهام أولاً').err;
   var RV = await tkRvIn(env, A, d, b.rv); if (RV.bad) return tkNo(400, 'bad-body', RV.msg || '', { at: RV.bad }).err;
   if (RV.rv && RV.rv.e && asg.indexOf(RV.rv.e) !== -1) return tkNo(400, 'bad-body', 'المراجِعُ لا يكون المكلَّفَ نفسَه', { at: 'rv' }).err;

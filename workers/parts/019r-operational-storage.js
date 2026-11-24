@@ -105,7 +105,7 @@ async function opLoadMany(env, keys, retired) {
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
   requests.forEach(function (request) {
     var info = request.info, physical = physicalByKey[request.key];
-    var domain = ocFromPhysical(info.prepared, info.dept, info.resource, physical), projection = ocInflate(info.prepared, domain);
+    var read53 = ocFromPhysicalRead(info.prepared, info.dept, info.resource, physical), domain = read53.domain, projection = read53.projection;   /* V7 · 53 (البند 6): فكٌّ واحد لا اثنان */
     values[request.key] = projection.present ? JSON.stringify(projection.value) : null;
     domains[request.key] = domain;
     guards.push.apply(guards, opStateGuards(env, info, domain, empty));
@@ -231,7 +231,9 @@ async function opReadOnce(env, url, session) {
     // a foreign department requested by a malicious/obsolete client.
     var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: wanted.map(function (key) { return opInfo(key).dept; }) }), A = reference.A,
       eligible=new Set(wanted.filter(function(key){return canRead(A,key);})),refs=Array.from(eligible);
-    eligible.forEach(function (key) { var d = opInfo(key).dept; ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { refs.push('bsdept:' + d + ':' + r); }); });
+    /* V7 · 53 (البند 6 · الأداء): مراجعُ البرامج (الجدولُ الشهريّ من قطعته) لإسقاط ENF_PROJ وحده (061 enfRefsFor · enfProjectStr يعيد القيمةَ كما هي لما لا إسقاطَ له،
+       والخصوصيةُ 019u تقرأ سجلَّ الموظفين فقط) — فقراءةُ «الموظفين» لا تحمّل الجدولَ بتاريخه كلّه (كان كلُّ طلبٍ يفكّ الجدولَ كاملاً معها) */
+    eligible.forEach(function (key) { var d = opInfo(key).dept, pj = ocOwn(ENF_PROJ, resName(resReadAs(key))); ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { if (!pj && r !== 'bassam_shift_options_v1' && r !== 'bassam_employees_v1') return; refs.push('bsdept:' + d + ':' + r); }); });
     var operational=await opCaptureReferences(reference.env,reference.inputKeys,refs);
     reference.operational=operational;reference.inputKeys=operational.keys;Object.assign(reference.inputRevs,operational.revs);
     reference.env=Object.assign({},reference.env,{__opCapture:operational,__pre:Object.assign({},reference.env.__pre,{kv:operational.keys,revs:reference.inputRevs})});
