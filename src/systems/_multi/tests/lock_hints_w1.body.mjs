@@ -149,79 +149,80 @@ test('IRSZ-4 · المضبوطات: إلغاء التأكيد أو رفض الخ
   }
 });
 
+/* V7 · 53 تقويم: تلميحُ الخانة «اليومُ الميلادي · الهجري — السبب» (لا « م — ») */
 test('IRSZ-4 · التقرير اليومي: بلا «الاعتماد» خانةُ اليوم المنقضي وبطاقةُ الشهر بلا «نقرة مزدوجة» · والنقرةُ تشرح ولا تفتح نافذةً يُرفض زرُّها', needs('tasks'), async () => {
   const P = await opsPage('dreport', { can: NOAP });
-  P.c.setState({ rpM: 5, rpD: 9 });
+  P.c.setState({ rpM: 10, rpD: 20 });
   let V = P.V();
-  assert.equal(V.days[2].tip.split(' م — ')[1], 'فارغ — انقضى ومقفل · فتحه يحتاج صلاحية الاعتماد');
-  assert.doesNotMatch(V.months[3].tip, DBL); assert.match(V.months[3].tip, NEED);
-  assert.doesNotMatch(V.days[8].tip, DBL, 'اليومُ الجاري أيضاً: لا «نقرة مزدوجة لإغلاقه»');
+  assert.equal(V.days[2].tip.split(' — ').slice(1).join(' — '), 'فارغ — انقضى ومقفل · فتحه يحتاج صلاحية الاعتماد');
+  assert.doesNotMatch(V.months[8].tip, DBL); assert.match(V.months[8].tip, NEED);
+  assert.doesNotMatch(V.days[19].tip, DBL, 'اليومُ الجاري أيضاً: لا «نقرة مزدوجة لإغلاقه»');
   V.days[2].dbl(EV);
   assert.equal(P.c.state.drRt, null, 'لا نافذةَ فتحٍ تنتهي برفض'); assert.equal(P.c.state.rpD, 3, 'واليومُ يُختار');
   assert.match(P.toasts.at(-1)[0], /يحتاج صلاحية الاعتماد/);
   const Q = await opsPage('dreport', { can: ALL });
-  Q.c.setState({ rpM: 5, rpD: 9 });
+  Q.c.setState({ rpM: 10, rpD: 20 });
   V = Q.V();
-  assert.equal(V.days[2].tip.split(' م — ')[1], 'فارغ — انقضى ومقفل · نقرة مزدوجة لفتحه وإنشاء تقريره بأثر رجعي');
+  assert.equal(V.days[2].tip.split(' — ').slice(1).join(' — '), 'فارغ — انقضى ومقفل · نقرة مزدوجة لفتحه وإنشاء تقريره بأثر رجعي');
   V.days[2].dbl(EV);
   assert.deepEqual(J(Q.c.state.drRt), { d: 3, open: true }, 'من يملك الاعتماد: نافذةُ الفتح كما كانت'); assert.equal(Q.toasts.length, 0);
 });
 
 test('IRSZ-4 · المهام: شارةُ اليوم وتلميحُ الشهر ومفتاحُ الألوان وبطاقةُ الشهر بحسب الصلاحية · ونقرةُ الشهر المقفل تشرح', needs('tasks'), async () => {
   const P = await opsPage('tasks', { can: NOAP });
-  P.c.setState({ perPage: 0, tkDaySel: { k: '1448-5', d: 3 } });
+  P.c.setState({ perPage: 0, tkDaySel: { k: '2026-10', d: 3 } });
   let V = P.V();
   assert.equal(V.tkDayLockTxt, 'اليوم انقضى — المهام مقفلة تلقائياً · فتحه بأثر رجعي يحتاج صلاحية الاعتماد');
   assert.equal(V.tkLegendLockTxt, 'انقضى — مقفل');
   assert.doesNotMatch(V.tkDays[2].tip, DBL);
-  assert.equal(V.mcards[3].tip, 'الشهر انقضى — مقفل · فتحه يحتاج صلاحية الاعتماد');
-  V.mcards[3].dbl(EV);
+  assert.equal(V.mcards[8].tip, 'الشهر انقضى — مقفل · فتحه يحتاج صلاحية الاعتماد');
+  V.mcards[8].dbl(EV);
   assert.match(P.toasts.at(-1)[0], /يحتاج صلاحية الاعتماد/); assert.ok(!P.c.state.retroAsk && !P.c.state.lockConfirm, 'ولا تُفتح نافذة');
-  const n = P.toasts.length; V.mcards[6].dbl(EV); assert.equal(P.toasts.length, n, 'شهرٌ قادمٌ بلا مهام: لا شيء يُشرح');
-  assert.match(P.c._tkLockTxt(1448, 5, 3), /^اليوم مقفل — فتحُه يحتاج صلاحية الاعتماد/);
-  P.c.setState({ month: 4 }); V = P.V();
+  const n = P.toasts.length; V.mcards[11].dbl(EV); assert.equal(P.toasts.length, n, 'شهرٌ قادمٌ بلا مهام: لا شيء يُشرح');
+  assert.match(P.c._tkLockTxt(2026, 10, 3), /^اليوم مقفل — فتحُه يحتاج صلاحية الاعتماد/);
+  P.c.setState({ month: 9 }); V = P.V();
   assert.equal(V.tasksAutoHint, true); assert.doesNotMatch(V.tasksAutoTxt, DBL); assert.match(V.tasksAutoTxt, NEED);
   const Q = await opsPage('tasks', { can: ALL });
-  Q.c.setState({ perPage: 0, tkDaySel: { k: '1448-5', d: 3 } });
+  Q.c.setState({ perPage: 0, tkDaySel: { k: '2026-10', d: 3 } });
   V = Q.V();
   assert.equal(V.tkDayLockTxt, 'اليوم انقضى — المهام مقفلة تلقائياً · افتحه بأثر رجعي بنقرة مزدوجة على خانته', 'من يملك الاعتماد: النصُّ كما كان');
   assert.equal(V.tkLegendLockTxt, 'انقضى — مقفل · نقرة مزدوجة لفتحه');
-  assert.equal(V.mcards[3].tip, 'الشهر انقضى — مقفل · نقرة مزدوجة لفتحه للاستدراك');
-  V.mcards[3].dbl(EV); assert.deepEqual(J(Q.c.state.retroAsk), { m: 4, open: true }); assert.equal(Q.toasts.length, 0);
+  assert.equal(V.mcards[8].tip, 'الشهر انقضى — مقفل · نقرة مزدوجة لفتحه للاستدراك');
+  V.mcards[8].dbl(EV); assert.deepEqual(J(Q.c.state.retroAsk), { m: 9, open: true }); assert.equal(Q.toasts.length, 0);
 });
 
 const EMPS = [{ eid: 'tst_e_a', name: 'TEST_ONLY أ' }];
 const SCHED = { tst_e_a: { shift: 'TST-A', rest: [] } };
 async function staffPage(can) {
-  /* صفر 1448: منقضٍ بجدولٍ غيرِ معتمد · ربيع الأول: منقضٍ بجدولٍ معتمد · ربيع الآخر: منقضٍ بلا جدول · جمادى الأولى (الجاري): مسودة · جمادى الآخرة: لا جدول */
-  return opsPage('staff', { can, store: { bassam_employees_v1: EMPS, bassam_staffing_v3: { '1448-2': SCHED, '1448-3': SCHED, '1448-5': SCHED }, bassam_staffing_locks_v1: { '1448-3': true } } });
+  /* V7 · 53 تقويم (مفاتيحُ ISO بقاعدة world_fx hFx: 1448-m ⇐ 2026-(m+5)): يوليو منقضٍ بجدولٍ غيرِ معتمد · أغسطس منقضٍ بجدولٍ معتمد · سبتمبر منقضٍ بلا جدول · أكتوبر (الجاري): مسودة · نوفمبر: لا جدول */
+  return opsPage('staff', { can, store: { bassam_employees_v1: EMPS, bassam_staffing_v3: { '2026-07': SCHED, '2026-08': SCHED, '2026-10': SCHED }, bassam_staffing_locks_v1: { '2026-08': true } } });
 }
 test('ES-8 · شارةُ الجدول الشهري: وجودُ الجدول أولاً — المنقضي بلا جدول «لا يوجد جدول · الشهر مقفل» رمادية (كان «معتمد ومقفل» خضراء)', needs('tasks'), async () => {
   const P = await staffPage(ALL), at = (m) => { P.c.setState({ month: m }); return P.V(); };
-  let V = at(4);
-  assert.equal(V.badgeKind, 'none'); assert.equal(V.badgeLabel, 'جدول ربيع الآخر 1448 هـ — لا يوجد جدول · الشهر مقفل');
+  let V = at(9);
+  assert.equal(V.badgeKind, 'none'); assert.equal(V.badgeLabel, 'جدول سبتمبر 2026 — لا يوجد جدول · الشهر مقفل');
   assert.match(V.badgeStyle, /var\(--fg-x64748b\)/); assert.doesNotMatch(V.badgeStyle, /fg-x008450/);
   assert.equal(V.noSchedule, true, 'والجسمُ «لا يوجد جدول» — الشارةُ لا تناقضه');
-  V = at(3); assert.equal(V.badgeKind, 'ok'); assert.equal(V.badgeLabel, 'جدول ربيع الأول 1448 هـ — معتمد ومقفل'); assert.match(V.badgeStyle, /var\(--fg-x008450\)/);
-  V = at(2); assert.equal(V.badgeKind, 'past', 'منقضٍ بجدولٍ لم يُعتمد: لا يُدّعى اعتمادُه'); assert.equal(V.badgeLabel, 'جدول صفر 1448 هـ — انقضى — مقفل'); assert.match(V.badgeStyle, /var\(--fg-x475569\)/);
-  V = at(5); assert.equal(V.badgeKind, 'draft'); assert.equal(V.badgeLabel, 'جدول جمادى الأولى 1448 هـ — مسودة مفتوحة');
-  V = at(6); assert.equal(V.badgeKind, 'none'); assert.equal(V.badgeLabel, 'جدول جمادى الآخرة 1448 هـ — لا يوجد جدول', 'شهرٌ قادمٌ غيرُ مقفل: بلا «الشهر مقفل»');
+  V = at(8); assert.equal(V.badgeKind, 'ok'); assert.equal(V.badgeLabel, 'جدول أغسطس 2026 — معتمد ومقفل'); assert.match(V.badgeStyle, /var\(--fg-x008450\)/);
+  V = at(7); assert.equal(V.badgeKind, 'past', 'منقضٍ بجدولٍ لم يُعتمد: لا يُدّعى اعتمادُه'); assert.equal(V.badgeLabel, 'جدول يوليو 2026 — انقضى — مقفل'); assert.match(V.badgeStyle, /var\(--fg-x475569\)/);
+  V = at(10); assert.equal(V.badgeKind, 'draft'); assert.equal(V.badgeLabel, 'جدول أكتوبر 2026 — مسودة مفتوحة');
+  V = at(11); assert.equal(V.badgeKind, 'none'); assert.equal(V.badgeLabel, 'جدول نوفمبر 2026 — لا يوجد جدول', 'شهرٌ قادمٌ غيرُ مقفل: بلا «الشهر مقفل»');
 });
 
 test('IRSZ-4 · الجدول الشهري: بلا «الاعتماد» بطاقاتُ الشهر وشرحُ القفل بلا «نقرة مزدوجة» والنقرةُ تشرح · ومن يملكه كما كان', needs('tasks'), async () => {
   const P = await staffPage(NOAP);
-  P.c.setState({ month: 4 });
+  P.c.setState({ month: 9 });
   let V = P.V();
-  assert.equal(V.months[3].tip, 'الشهر انقضى — مقفل · فتحه للاستدراك يحتاج صلاحية الاعتماد');
-  assert.equal(V.months[2].tip, 'الجدول معتمد ومقفل · فكُّ اعتماده يحتاج صلاحية الاعتماد');
-  assert.equal(V.months[4].tip, 'مسودة · اعتمادُ الجدول يحتاج صلاحية الاعتماد');
+  assert.equal(V.months[8].tip, 'الشهر انقضى — مقفل · فتحه للاستدراك يحتاج صلاحية الاعتماد');
+  assert.equal(V.months[7].tip, 'الجدول معتمد ومقفل · فكُّ اعتماده يحتاج صلاحية الاعتماد');
+  assert.equal(V.months[9].tip, 'مسودة · اعتمادُ الجدول يحتاج صلاحية الاعتماد');
   assert.doesNotMatch(V.schedLockedMsg + V.schedApprovedMsg, DBL);
-  V.months[3].dbl(EV);
+  V.months[8].dbl(EV);
   assert.equal(P.toasts.length, 1); assert.match(P.toasts[0][0], /لا تشمل هذا الإجراء/); assert.ok(!P.c.state.retroAsk && !P.c.state.lockConfirm);
-  V.months[5].dbl(EV); assert.equal(P.toasts.length, 1, 'شهرٌ قادمٌ بلا جدول: لا شيء يُشرح');
+  V.months[10].dbl(EV); assert.equal(P.toasts.length, 1, 'شهرٌ قادمٌ بلا جدول: لا شيء يُشرح');
   const Q = await staffPage(ALL);
-  Q.c.setState({ month: 4 }); V = Q.V();
-  assert.equal(V.months[3].tip, 'الشهر انقضى — مقفل · نقرة مزدوجة لفتحه ثم أضف الجدول');
+  Q.c.setState({ month: 9 }); V = Q.V();
+  assert.equal(V.months[8].tip, 'الشهر انقضى — مقفل · نقرة مزدوجة لفتحه ثم أضف الجدول');
   assert.equal(V.schedLockedMsg, 'الشهر انقضى — مقفل · انقر بطاقة الشهر نقرة مزدوجة لفتحه ثم أضف الجدول');
-  V.months[3].dbl(EV); assert.deepEqual(J(Q.c.state.retroAsk), { m: 4, open: true }); assert.equal(Q.toasts.length, 0);
+  V.months[8].dbl(EV); assert.deepEqual(J(Q.c.state.retroAsk), { m: 9, open: true }); assert.equal(Q.toasts.length, 0);
 });
