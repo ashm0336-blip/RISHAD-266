@@ -13,8 +13,7 @@ function empIdents(rows) {
   });
   return m;
 }
-/* V7 · د7 (استيراد Excel): الحكمُ نفسُه بتفصيله — كلُّ قيمةٍ مكرّرة: الحقل (nid · phone · empno) والقيمةُ وأين (file: مكرّرةٌ في الدفعة نفسِها ·
-   other: لموظفٍ في إدارةٍ أخرى · account: اسمُ دخولٍ لحسابٍ خارج هذه الإدارة). empDupWhy = «أيُّ تكرار» منه (مصدرٌ واحد). */
+/* V7 · د7: التكرارُ بتفصيله {f, v, where: file|other|account} — empDupWhy منه */
 function empDupList(A, a, b, d, E) {
   var out = []; if (!E || !Array.isArray(b)) return out;
   var old = empIdents(a), seen = { n: {}, p: {}, o: {} }, other = { n: {}, p: {}, o: {} }, dd, i, e, m, F = { n: 'nid', p: 'phone', o: 'empno' };

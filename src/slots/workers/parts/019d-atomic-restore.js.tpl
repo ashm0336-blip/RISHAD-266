@@ -1084,8 +1084,7 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
     } else delete keys[K_PERM];
   }
-  /* V7 · د7: نسخةُ الإدارة تحمل سجلَّ أدوار (حديثةً، أو محوَّلاً من قوالبها — 019f rsBCTplsRoles) ⇒ منحُه المترجَم يُبنى هنا بسقف الهدف (لا يغيّره الاستيراد — ب3)
-     كما يبنيه محرّرُ الأدوار (perm44 grantOf): فالحفظةُ ذرّيةٌ بالسجلّين (057b perm44GrantsWhy). ما خارج السقف يُخزَّن بلا أثر */
+  /* V7 · د7: سجلُّ أدوار النسخة ⇒ منحُه بسقف الهدف (perm44GrantsWhy) */
   if (body.scope.kind === 'dept' && Object.prototype.hasOwnProperty.call(keys, perm44Key(dept)) && keys[perm44Key(dept)] != null) {
     var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
     if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
@@ -1474,13 +1473,13 @@ function rsPermsCounts(A, d, keys) {
   }
   return out;
 }
-/* V7 · د7: المنحُ المترجَم لسجلّ أدوارٍ يُكتب بالاستعادة — مدخلاتُ غير الأدوار في منح الهدف كما هي، ومدخلُ كلِّ شخصٍ في السجلّ = grantOf بسقف الوحدة. null = لا تغيير */
+/* V7 · د7: منحُ الأدوار grantOf — غيرُ الأدوار كما هو · null = لا تغيير */
 function rsRoleGrants(A, d, rolesVal, curVal) {
   var E = perm44E(), R = E.normRec(perm44Rec(rolesVal)), cur = perm44Rec(curVal), out = isObj(cur) ? JSON.parse(JSON.stringify(cur)) : { v: 1, emp: {} }, C = perm44CeilingFn(A, d), now = Date.now(), e;
   if (!isObj(out.emp)) out.emp = {};
   for (e in out.emp) if (isObj(out.emp[e]) && PERM44_SRC.test(String(out.emp[e].src || ''))) delete out.emp[e];
   for (e in R.people) { var g = E.grantOf(R.people[e], R, C, now, null); if (g) { var o = isObj(cur) && isObj(cur.emp) ? cur.emp[e] : null; out.emp[e] = o && deq(o.plus, g.plus) && deq(o.minus || [], g.minus) && o.src === g.src ? o : Object.assign(g, { at: now, by: String(A.u.id || '') }); } }
-  if (!isObj(cur) && !Object.keys(out.emp).length) return null;   /* لا منحَ قائم ولا شخصَ في الأدوار ⇒ لا وثيقةَ فارغة */
+  if (!isObj(cur) && !Object.keys(out.emp).length) return null;
   return deq(out, cur) ? null : JSON.stringify(out);
 }
 function rsDeptPermsKeep(pm, id, PP, mode) {

@@ -355,8 +355,7 @@ function empApplySchedule(values, meta, validKeys, result) {
   result.counts.schedule = rows.length;
 }
 /* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — لا يمنح الاستيرادُ صلاحياتٍ بعمود «الصلاحيات» بعد اليوم؛ الأدوارُ تُسنَد من «الصلاحيات ← الأشخاص» */
-/* V7 · د7: سياقُ التفرّد كما يبنيه مسارُ الحفظ (054 edCtx9): موظفو الإدارات الأخرى بقيمتهم الحالية وحساباتُ الدخول — لا قراءةَ إلا إن حملت الدفعةُ
-   هويةً أو جوالاً أو رقماً وظيفياً ليس في القيمة الحالية */
+/* V7 · د7: سياقُ التفرّد (كـ054 edCtx9) */
 async function empDupContext(env, A, d, before, after) {
   var o = empIdents(before), n = empIdents(after), q, chg = false;
   for (q in n.n) if (!o.n[q]) chg = true; for (q in n.p) if (!o.p[q]) chg = true; for (q in n.o) if (!o.o[q]) chg = true;
@@ -450,8 +449,7 @@ async function empPrepareTransition(env, A, input) {
       counts: { removed: removed.length, employees: after.length, accountsCreated: 0, accountsRemoved: 0, schedule: 0 },
       warnings: [],
     };
-  /* V7 · د7 (استيراد Excel): التكرارُ مع إدارةٍ أخرى أو حسابِ دخول يُرفض قبل الحفظ بتفصيله (الحقل · القيمة · أين) — فيذكر العميلُ رقمَ الصف
-     وسببه بدل «تكرار» مجرّد. الحكمُ نفسُه (018c empDupList) يبقى في مسار الحفظ دفاعاً. القيمُ من ملفّ المدير نفسِه ولا يُذكر اسمُ الإدارة الأخرى */
+  /* V7 · د7: تكرارٌ مع إدارةٍ أخرى أو حساب ⇒ رفضٌ بتفصيله (يذكر العميلُ الصف) */
   if (input.intent === 'import') {
     var dupList = empDupList(A, before, after, d, await empDupContext(env, A, d, before, after));
     if (dupList.length) { var dupErr = cuError('emp-dup', 403); dupErr.cuDup = dupList.slice(0, 200); throw dupErr; }

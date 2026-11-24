@@ -2507,8 +2507,7 @@ function empIdents(rows) {
   });
   return m;
 }
-/* V7 · د7 (استيراد Excel): الحكمُ نفسُه بتفصيله — كلُّ قيمةٍ مكرّرة: الحقل (nid · phone · empno) والقيمةُ وأين (file: مكرّرةٌ في الدفعة نفسِها ·
-   other: لموظفٍ في إدارةٍ أخرى · account: اسمُ دخولٍ لحسابٍ خارج هذه الإدارة). empDupWhy = «أيُّ تكرار» منه (مصدرٌ واحد). */
+/* V7 · د7: التكرارُ بتفصيله {f, v, where: file|other|account} — empDupWhy منه */
 function empDupList(A, a, b, d, E) {
   var out = []; if (!E || !Array.isArray(b)) return out;
   var old = empIdents(a), seen = { n: {}, p: {}, o: {} }, other = { n: {}, p: {}, o: {} }, dd, i, e, m, F = { n: 'nid', p: 'phone', o: 'empno' };
@@ -4411,10 +4410,7 @@ var NF_TYPES = {
   },
 };
 
-/* V7 · د7 (البند ٨): لا يُنبَّه أحدٌ بفعلٍ قام به هو. الحكمُ من السجلّ نفسه: نوعٌ «فور …» (يقع عند فعلِ شخص) يُحجب عن فاعله،
-   وتُستثنى أحداثُ الأمان (فئة sec: sc_*) وكلُّ نوعٍ شرطيّ أو زمنيّ («عند …» · «الساعة …» · «فحص يومي» · «بعد …»: sy_nobk · sy_sync ·
-   task_late · st_gap · bx_old …) لأن author_key فيها هو من صادف الطلبَ لا من قام بالفعل. bc_dept تعميمُ الوحدة («فور الإرسال» كـ bc_new).
-   المعاينةُ لنفسك (preview) مقصودةٌ له فلا تُحجب. يُطبَّق عند القراءة (nfFeedRows: القائمة والعدّادات) وفي عدّ المستلمين (nfTargetHit). */
+/* V7 · د7 (٨): الفاعلُ لا يُنبَّه بفعله — نوعٌ «فور…» غيرُ أمني (السجلّ: when) · لا المعاينة */
 function nfActorType(type) {
   if (type === "bc_dept") return true;
   var T = Object.prototype.hasOwnProperty.call(NF_TYPES, type) ? NF_TYPES[type] : null;
@@ -4867,7 +4863,7 @@ function nfPage(A, d, type, cat, act) {
   );
 }
 function nfTargetHit(A, m, targets, u, refs) {
-  if (nfSelfAct(m, u)) return false;   /* V7 · د7 (البند ٨): الفاعلُ ليس مستلماً لفعله */
+  if (nfSelfAct(m, u)) return false;
   if (m.kind === "broadcast") {
     if (u.role === "super") return true;
     if (u.dis) return false;
@@ -5568,7 +5564,7 @@ async function nfFeedRows(env, A, opts) {
     audience.off.forEach(function (o) { (byScope9[o.scope] = byScope9[o.scope] || []).push(o.type); });
     where += " AND NOT (m.kind='event' AND (" + Object.keys(byScope9).map(function (sc) { return "(m.scope=" + q9(sc) + " AND m.type IN (" + byScope9[sc].map(q9).join(",") + "))"; }).join(" OR ") + "))";
   }
-  /* V7 · د7 (البند ٨): فعلُك لا يصلك تنبيهاً — الشرطُ نفسُه للقائمة والعدّادات (nfActorType). القيمُ من الجلسة والسجلّ وتُهرَّب */
+  /* V7 · د7 (٨): القائمة والعدّادات */
   var q8 = function (s) { return "'" + String(s).replace(/'/g, "''") + "'"; },
     me8 = [String(A.u.id || "")].concat(A.u.ekey ? [String(A.u.ekey)] : []).filter(Boolean);
   if (me8.length)
@@ -9127,8 +9123,7 @@ function empApplySchedule(values, meta, validKeys, result) {
   result.counts.schedule = rows.length;
 }
 /* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — لا يمنح الاستيرادُ صلاحياتٍ بعمود «الصلاحيات» بعد اليوم؛ الأدوارُ تُسنَد من «الصلاحيات ← الأشخاص» */
-/* V7 · د7: سياقُ التفرّد كما يبنيه مسارُ الحفظ (054 edCtx9): موظفو الإدارات الأخرى بقيمتهم الحالية وحساباتُ الدخول — لا قراءةَ إلا إن حملت الدفعةُ
-   هويةً أو جوالاً أو رقماً وظيفياً ليس في القيمة الحالية */
+/* V7 · د7: سياقُ التفرّد (كـ054 edCtx9) */
 async function empDupContext(env, A, d, before, after) {
   var o = empIdents(before), n = empIdents(after), q, chg = false;
   for (q in n.n) if (!o.n[q]) chg = true; for (q in n.p) if (!o.p[q]) chg = true; for (q in n.o) if (!o.o[q]) chg = true;
@@ -9222,8 +9217,7 @@ async function empPrepareTransition(env, A, input) {
       counts: { removed: removed.length, employees: after.length, accountsCreated: 0, accountsRemoved: 0, schedule: 0 },
       warnings: [],
     };
-  /* V7 · د7 (استيراد Excel): التكرارُ مع إدارةٍ أخرى أو حسابِ دخول يُرفض قبل الحفظ بتفصيله (الحقل · القيمة · أين) — فيذكر العميلُ رقمَ الصف
-     وسببه بدل «تكرار» مجرّد. الحكمُ نفسُه (018c empDupList) يبقى في مسار الحفظ دفاعاً. القيمُ من ملفّ المدير نفسِه ولا يُذكر اسمُ الإدارة الأخرى */
+  /* V7 · د7: تكرارٌ مع إدارةٍ أخرى أو حساب ⇒ رفضٌ بتفصيله (يذكر العميلُ الصف) */
   if (input.intent === 'import') {
     var dupList = empDupList(A, before, after, d, await empDupContext(env, A, d, before, after));
     if (dupList.length) { var dupErr = cuError('emp-dup', 403); dupErr.cuDup = dupList.slice(0, 200); throw dupErr; }
@@ -10538,8 +10532,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
     } else delete keys[K_PERM];
   }
-  /* V7 · د7: نسخةُ الإدارة تحمل سجلَّ أدوار (حديثةً، أو محوَّلاً من قوالبها — 019f rsBCTplsRoles) ⇒ منحُه المترجَم يُبنى هنا بسقف الهدف (لا يغيّره الاستيراد — ب3)
-     كما يبنيه محرّرُ الأدوار (perm44 grantOf): فالحفظةُ ذرّيةٌ بالسجلّين (057b perm44GrantsWhy). ما خارج السقف يُخزَّن بلا أثر */
+  /* V7 · د7: سجلُّ أدوار النسخة ⇒ منحُه بسقف الهدف (perm44GrantsWhy) */
   if (body.scope.kind === 'dept' && Object.prototype.hasOwnProperty.call(keys, perm44Key(dept)) && keys[perm44Key(dept)] != null) {
     var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
     if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
@@ -11103,13 +11096,13 @@ function rsPermsCounts(A, d, keys) {
   }
   return out;
 }
-/* V7 · د7: المنحُ المترجَم لسجلّ أدوارٍ يُكتب بالاستعادة — مدخلاتُ غير الأدوار في منح الهدف كما هي، ومدخلُ كلِّ شخصٍ في السجلّ = grantOf بسقف الوحدة. null = لا تغيير */
+/* V7 · د7: منحُ الأدوار grantOf — غيرُ الأدوار كما هو · null = لا تغيير */
 function rsRoleGrants(A, d, rolesVal, curVal) {
   var E = perm44E(), R = E.normRec(perm44Rec(rolesVal)), cur = perm44Rec(curVal), out = isObj(cur) ? JSON.parse(JSON.stringify(cur)) : { v: 1, emp: {} }, C = perm44CeilingFn(A, d), now = Date.now(), e;
   if (!isObj(out.emp)) out.emp = {};
   for (e in out.emp) if (isObj(out.emp[e]) && PERM44_SRC.test(String(out.emp[e].src || ''))) delete out.emp[e];
   for (e in R.people) { var g = E.grantOf(R.people[e], R, C, now, null); if (g) { var o = isObj(cur) && isObj(cur.emp) ? cur.emp[e] : null; out.emp[e] = o && deq(o.plus, g.plus) && deq(o.minus || [], g.minus) && o.src === g.src ? o : Object.assign(g, { at: now, by: String(A.u.id || '') }); } }
-  if (!isObj(cur) && !Object.keys(out.emp).length) return null;   /* لا منحَ قائم ولا شخصَ في الأدوار ⇒ لا وثيقةَ فارغة */
+  if (!isObj(cur) && !Object.keys(out.emp).length) return null;
   return deq(out, cur) ? null : JSON.stringify(out);
 }
 function rsDeptPermsKeep(pm, id, PP, mode) {
@@ -12146,7 +12139,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
     if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
-    if (e.cuCode) return json(Object.assign({ ok: 0, err: e.cuCode }, e.cuDup ? { dup: e.cuDup } : {}), e.cuStatus);   /* V7 · د7: تفصيلُ التكرار (019c empDupList) */
+    if (e.cuCode) return json(Object.assign({ ok: 0, err: e.cuCode }, e.cuDup ? { dup: e.cuDup } : {}), e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))
@@ -12356,8 +12349,7 @@ function rsBCForbiddenKey(key) {
   var n = resName(key);
   return isDeviceKey(key) || isDeviceKey(n) || /(?:^|_)(?:sessions?|recovery|recover|cookies?|tokens?|credentials?)(?:_|$)/i.test(n);
 }
-/* V7 · د7: قوالبُ نسخة الإدارة ← سجلُّ أدوار الوحدة الهدف (الأدوارُ في النسخة إن وُجدت أساسٌ لا يُستبدل) · tplOf: {مفتاحُ الموظف: القالب} — أو بالإدارة.
-   صحيفةُ المدير (mgr:*) لا يحكمها دور (قرار المالك ب1) فلا تُسند. ما حُوِّل يُذكر في الملخّص (summary.tplRoles) */
+/* V7 · د7: القوالب ← أدوار الهدف (063 enfRolesFromTpls) · tplOf بالموظف أو بالإدارة · mgr:* لا يُسند (ب1) */
 function rsBCTplsRoles(keys, perms, d, src, summary) {
   var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = 'bsdept:' + d + ':bassam_perm_tpls_v1', rk = perm44Key(d);
   if (T0) {
@@ -12784,8 +12776,8 @@ async function rsConvertBackup(env, A, file, opt) {
     delete keys[k];
   });
   /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها)
-     V7 · د7 (قرار المالك — 51ب): في نسخة الإدارة تُحوَّل قبل الإسقاط إلى أدوار الوحدة الهدف بالقاعدة نفسِها التي رحّلت المنصةَ (063 enfRolesFromTpls)،
-     وإسناداتُها من tplOf في شريحة الصلاحيات (ثم يُزال منها فيبقى شكلُ الشريحة كما هو — 019d). المنحُ المترجَم يبنيه الخادمُ عند الاعتماد (019d rsRoleGrants) */
+
+     V7 · د7 (51ب): في نسخة الإدارة تصير أدواراً قبل الإسقاط (rsBCTplsRoles) */
   if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
@@ -14401,7 +14393,7 @@ function rsiFieldList(recs) {
 }
 /* سببُ عدم نقل مفتاحٍ من نسخةٍ قديمة ('' = يُنقل): null قيمةٌ فارغة في الملف · device تفضيلُ جهازٍ أو مستخدم · tpls قوالبُ الصلاحيات (حُذفت — الأدوارُ بديلُها) ·
    grants منحٌ صريحة لموظفين (لا تُفتح صلاحيةٌ لم تكن) · unknown لا موردَ له في سجل الموارد الحالي */
-/* V7 · د7: قوالبُ نسخة الإدارة (bassam_perm_tpls_v1) لا تُسقط هنا — تصير أدواراً في التحويل (019f rsBCTplsRoles). النسخةُ الشاملة وصيغةُ «named» كما كانتا */
+/* V7 · د7: قوالبُ نسخة الإدارة تصير أدواراً (019f) */
 function rsiSkipWhy(k, v, kind) {
   var n = resName(k), r = resOf(k);
   return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? (kind === 'dept' && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
@@ -26875,8 +26867,7 @@ function perm44RolesWhy(A, k, newVal, curVal) {
     if (!perm44Held(A, d, 'perm.assign')) return 'grant';
     /* ما يضيفه المديرُ أو يغيّره في دورٍ: داخل سقف وحدته · ويحمله هو — والمحفوظُ خارج السقف (نظامٌ أُطفئ بعدُ) يبقى كما هو بلا مساس */
     var C = perm44CeilingFn(A, d), D0 = E.diff(o, n), i, j;
-    /* V7 · د7 (قرار المالك — 51ب): في الاستعادة الخادمية المتحقَّقة (A.__srvRst) لمدير الإدارة نفسِه، مفتاحُ دورٍ خارج سقف الوحدة يُخزَّن بلا أثر
-       (يقصّه السقفُ وقتَ القرار) — لا يُرفض به استيرادُ نسخته. داخل السقف يبقى الحكمُ كما هو (يحمله هو) */
+    /* V7 · د7: الاستعادةُ المتحقَّقة لمدير الإدارة: خارجُ السقف يُخزَّن بلا أثر */
     var rst44 = !!A.__srvRst && enfDeptMgrFull(A, d);
     for (i = 0; i < D0.changes.length; i++) {
       var c = D0.changes[i], sysEntries = [];

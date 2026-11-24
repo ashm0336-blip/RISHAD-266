@@ -18,8 +18,8 @@ function fn(name) {
   for (let k = j; k < SRC.length; k++) { if (SRC[k] === '{') d++; else if (SRC[k] === '}' && --d === 0) { j = k + 1; break; } }
   return SRC.slice(i + 1, j);
 }
-const ctx = { isObj: (x) => !!x && typeof x === 'object' && !Array.isArray(x), Array, String };
-vm.runInNewContext(fn('empIdents') + '\n' + fn('empDupWhy') + '\nthis.empDupWhy = empDupWhy; this.empIdents = empIdents;', ctx);
+const ctx = { isObj: (x) => !!x && typeof x === 'object' && !Array.isArray(x), Array, String };   /* V7 · د7: empDupWhy = «أيُّ تكرار» من empDupList (التفصيل للاستيراد) */
+vm.runInNewContext(fn('empIdents') + '\n' + fn('empDupList') + '\n' + fn('empDupWhy') + '\nthis.empDupWhy = empDupWhy; this.empIdents = empIdents;', ctx);
 const why = (a, b, ed, d = 'd1') => ctx.empDupWhy({}, a, b, d, ed === undefined ? { ed: { others: {}, users: [] } } : ed);
 const E = (nid, phone, empno, x) => Object.assign({ nid, phone, empno, name: 'م' }, x || {});
 const OTHERS = { d2: [E('2000020001', '0500020001', '020001')] };

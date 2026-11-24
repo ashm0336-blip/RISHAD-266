@@ -119,8 +119,7 @@ function rsBCRemapRec(from, to) {
   var n = resName(key);
   return isDeviceKey(key) || isDeviceKey(n) || /(?:^|_)(?:sessions?|recovery|recover|cookies?|tokens?|credentials?)(?:_|$)/i.test(n);
 }
-/* V7 · د7: قوالبُ نسخة الإدارة ← سجلُّ أدوار الوحدة الهدف (الأدوارُ في النسخة إن وُجدت أساسٌ لا يُستبدل) · tplOf: {مفتاحُ الموظف: القالب} — أو بالإدارة.
-   صحيفةُ المدير (mgr:*) لا يحكمها دور (قرار المالك ب1) فلا تُسند. ما حُوِّل يُذكر في الملخّص (summary.tplRoles) */
+/* V7 · د7: القوالب ← أدوار الهدف (063 enfRolesFromTpls) · tplOf بالموظف أو بالإدارة · mgr:* لا يُسند (ب1) */
 function rsBCTplsRoles(keys, perms, d, src, summary) {
   var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = 'bsdept:' + d + ':bassam_perm_tpls_v1', rk = perm44Key(d);
   if (T0) {
@@ -452,8 +451,8 @@ async function rsConvertBackup(env, A, file, opt) {
     delete keys[k];
   });
   /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها)
-     V7 · د7 (قرار المالك — 51ب): في نسخة الإدارة تُحوَّل قبل الإسقاط إلى أدوار الوحدة الهدف بالقاعدة نفسِها التي رحّلت المنصةَ (063 enfRolesFromTpls)،
-     وإسناداتُها من tplOf في شريحة الصلاحيات (ثم يُزال منها فيبقى شكلُ الشريحة كما هو — 019d). المنحُ المترجَم يبنيه الخادمُ عند الاعتماد (019d rsRoleGrants) */
+
+     V7 · د7 (51ب): في نسخة الإدارة تصير أدواراً قبل الإسقاط (rsBCTplsRoles) */
   if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];

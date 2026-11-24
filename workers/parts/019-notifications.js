@@ -1304,10 +1304,7 @@ var NF_TYPES = {
   },
 };
 
-/* V7 · د7 (البند ٨): لا يُنبَّه أحدٌ بفعلٍ قام به هو. الحكمُ من السجلّ نفسه: نوعٌ «فور …» (يقع عند فعلِ شخص) يُحجب عن فاعله،
-   وتُستثنى أحداثُ الأمان (فئة sec: sc_*) وكلُّ نوعٍ شرطيّ أو زمنيّ («عند …» · «الساعة …» · «فحص يومي» · «بعد …»: sy_nobk · sy_sync ·
-   task_late · st_gap · bx_old …) لأن author_key فيها هو من صادف الطلبَ لا من قام بالفعل. bc_dept تعميمُ الوحدة («فور الإرسال» كـ bc_new).
-   المعاينةُ لنفسك (preview) مقصودةٌ له فلا تُحجب. يُطبَّق عند القراءة (nfFeedRows: القائمة والعدّادات) وفي عدّ المستلمين (nfTargetHit). */
+/* V7 · د7 (٨): الفاعلُ لا يُنبَّه بفعله — نوعٌ «فور…» غيرُ أمني (السجلّ: when) · لا المعاينة */
 function nfActorType(type) {
   if (type === "bc_dept") return true;
   var T = Object.prototype.hasOwnProperty.call(NF_TYPES, type) ? NF_TYPES[type] : null;
@@ -1760,7 +1757,7 @@ function nfPage(A, d, type, cat, act) {
   );
 }
 function nfTargetHit(A, m, targets, u, refs) {
-  if (nfSelfAct(m, u)) return false;   /* V7 · د7 (البند ٨): الفاعلُ ليس مستلماً لفعله */
+  if (nfSelfAct(m, u)) return false;
   if (m.kind === "broadcast") {
     if (u.role === "super") return true;
     if (u.dis) return false;
@@ -2461,7 +2458,7 @@ async function nfFeedRows(env, A, opts) {
     audience.off.forEach(function (o) { (byScope9[o.scope] = byScope9[o.scope] || []).push(o.type); });
     where += " AND NOT (m.kind='event' AND (" + Object.keys(byScope9).map(function (sc) { return "(m.scope=" + q9(sc) + " AND m.type IN (" + byScope9[sc].map(q9).join(",") + "))"; }).join(" OR ") + "))";
   }
-  /* V7 · د7 (البند ٨): فعلُك لا يصلك تنبيهاً — الشرطُ نفسُه للقائمة والعدّادات (nfActorType). القيمُ من الجلسة والسجلّ وتُهرَّب */
+  /* V7 · د7 (٨): القائمة والعدّادات */
   var q8 = function (s) { return "'" + String(s).replace(/'/g, "''") + "'"; },
     me8 = [String(A.u.id || "")].concat(A.u.ekey ? [String(A.u.ekey)] : []).filter(Boolean);
   if (me8.length)
