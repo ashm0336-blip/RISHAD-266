@@ -778,7 +778,8 @@ Object.assign(Component.prototype, {
       p44OnN: String(rows.filter((r) => r.isOn).length),
       p44AllN: String(rows.length),
       p44AllOn: () => upd((r) => ((r.sys = r.sys || {}), sys.forEach((s) => r.sys[s.k] || (r.sys[s.k] = { lvl: "view" })))),
-      p44AllOff: () => upd((r) => (r.sys = {})),
+      /* V7 · د7 (52 · الجرد ٢): «إيقاف الكل» يُطفئ الصفوفَ المعروضة وحدها (sys = المفعّلُ في السقف) — صفوفُ الأنظمة المطفأة والعدسات التي لا يعرضها المحرّر تُحمل كما هي مخزّنة، فتعود متى أُعيد التشغيل */
+      p44AllOff: () => upd((r) => ((r.sys = r.sys || {}), sys.forEach((s) => delete r.sys[s.k]))),
       p44Nav: this._p44Menu(comp, role, did),
       p44CmpOpts: [{ v: "", t: "— اختر دوراً —" }].concat(d.roles.filter((r) => r.id !== role.id).map((r) => ({ v: r.id, t: r.name || "بلا اسم" }))),
       p44CmpVal: cmpId,

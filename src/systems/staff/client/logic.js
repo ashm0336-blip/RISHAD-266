@@ -848,13 +848,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       window.addEventListener("bs:ptab-shown", this._bsShown);
     } catch (t) {}
     ((this._bsOutM = (t) => this._bsOutsideMenus(t)), document.addEventListener("click", this._bsOutM, !0));
-    try {
-      const t = KIVO.BassamPerm;
-      if (t && t.pruneOrphanEmpPerms) {
-        const e = t.pruneOrphanEmpPerms();
-        e && e.removed && this.setState({ permTick: (this.state.permTick || 0) + 1 });
-      }
-    } catch (t) {}
+    /* V7 · د7 (52 · الجرد ٤): لا تنظيفَ تلقائياً للصلاحيات عند فتح الجدول — كان pruneOrphanEmpPerms يحذف صحائفَ كاملة بقائمة حساباتٍ مُرشَّحة
+       بلا فعلٍ من المستخدم ولا تحقّقٍ من المدير. الحذفُ فعلٌ صريح وحده (حذفُ الحساب ← dropEmpPerms) */
   }
   renderVals() {
     const t = this,
