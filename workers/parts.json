@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "abfd0613197bb11cd02dee4cede5a2405e90790dfc2ae08dcc95c0d66e9c6fc3",
+  "sha256": "6f820cf51aa86cf07bd5158e87a92eda822855df2c949a1660f6a6c81dc482c0",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -68,8 +68,8 @@
         226,
         734
       ],
-      "bytes": 85031,
-      "sha256": "f2b8abb82d02ec069095942f3bc8370ed469d5d45341401cb27e6ed56ef86fcb",
+      "bytes": 46219,
+      "sha256": "44c5d98226eb2d685c46f8829c31b21d8af90df2df0d7e6ebca5b02789039c0a",
       "head": "/* ═══ KIVO · R203 · Phase 4.5 — Guard Binding Shadow على v24.9 (مولَّدٌ آلياً من registry10/guard_bindings.py — لا يُحرَّر يدوياً؛ المصنِّفُ كما في Phase 3) ═══"
     },
     {
@@ -99,8 +99,8 @@
         740,
         821
       ],
-      "bytes": 28738,
-      "sha256": "3123630d4316fc5a03625cf1ac118ea836142f1adc75501ca081241182535e0b",
+      "bytes": 8036,
+      "sha256": "625da50d64fb10cf6fe851c27cbb43e7f54b6aafdecbf2f11838efa1923f5c2b",
       "head": "/* ═══ KIVO · R203 · Phase 4.5 — Build Missing Guards (shadow) على v24.9 (مولَّدٌ آلياً من registry10/build_bindings.py — لا يُحرَّر يدوياً؛ الآلياتُ كما في Phase 3) ═══"
     },
     {
@@ -119,8 +119,8 @@
         823,
         1398
       ],
-      "bytes": 204761,
-      "sha256": "3957d0651840c85073e4192147bedbe08ca6a3cc558ca4320b601633d2d9cacb",
+      "bytes": 189285,
+      "sha256": "dcfe4881a5440585e62275f186e8fb405df9e2dbfbf6cf73f742ec605eddf9e6",
       "head": "/* ═══ KIVO · R203 · Phase 4.5 — Read Binding Closure + Identity Binding على v24.9 (مولَّدٌ آلياً من registry10/scope_bindings.py + scope_engine.js + read_inventory.json — لا يُحرَّر يدوياً) ═══"
     },
     {
@@ -139,8 +139,8 @@
         1400,
         1690
       ],
-      "bytes": 74196,
-      "sha256": "4fcfdfd5c62509b47439f0bcb09a816c17fd413bbddf30abc72caa9c1e6a453d",
+      "bytes": 54772,
+      "sha256": "54a8e3ce50dd918982a3305686a509afd6f5cec3a4ddfabaf30ac1cf0a6e281c",
       "head": "/* ═══ KIVO · R203 · Phase 4.5 — Identity Migration Rehearsal + Site Identity Closure على v24.9 (مولَّدٌ آلياً من registry10/gen_identity.py + identity_engine.js — لا يُحرَّر يدوياً) ═══"
     },
     {
