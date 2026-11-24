@@ -345,9 +345,7 @@ test('V7 nf-deny · record labels and pages cannot drift from the client (KIVO.B
          CONFLICT answer and is never logged, plus diagnostics and Arabic task texts that are not reason codes.)
    Ternaries and ||/&& are followed. WHITELIST: the …Why helpers below return a human DETAIL sentence (stored in the verdict's
    «detail», never in «why» and never in sec.detail) — verified at their call sites (018 · 059: enfNo('grant', { detail: … })). */
-/* V7 · 53: tkPeriodWhy (070b — حكمُ فترة المهام) يعيد جملةً للقارئ تُرسَل في «msg» لردّ 409 locked (071 tkNo(409, 'locked', msg) · 062c json msg · 073)
-   ولا تُكتب في sec.detail ولا «why» — تحقّقتُ من كل مواضع ندائه */
-const DETAIL_HELPERS = ['latentLossWhy', 'usersGrantWhy', 'usersSheetWhy', 'enfPermsHeldWhy', 'enfMinusLiftWhy', 'tkPeriodWhy'];
+const DETAIL_HELPERS = ['latentLossWhy', 'usersGrantWhy', 'usersSheetWhy', 'enfPermsHeldWhy', 'enfMinusLiftWhy'];
 function reasonCodes(src) {
   const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' }), out = new Map(), roots = new Set(), assigns = [], returns = new Map();
   /* the variable a non-literal expression hangs from: pvNo9[k] → pvNo9 · (a || b) → none */

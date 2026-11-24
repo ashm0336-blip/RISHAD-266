@@ -47,7 +47,7 @@ function tkPastMsg(A, d) { return tkHeld(A, d, 'task.month.reopen') ? TK_PAST_MG
    اليومُ المُغلق بيده مقفل · واليومُ المنقضي من الشهر الجاري مقفلٌ ما لم يُفتح هو أو شهرُه. day = 'shut' (التعديل — كما كان tkDayShut): المُغلقُ بيده وحده. أفعالُ سير العمل (المراجعة · التمديد ·
    إعادةُ الإسناد · الإلغاء · أفعالُ الموظف) على قفل الشهر وحده كما في الصفحة (_tkP2Menu). يعيد نصَّ الرفض بحسب القارئ أو '' */
 var TK_DAY_MGR = 'اليوم مقفل — افتحه للاستدراك أولاً', TK_DAY_EMP = 'اليوم مقفل — راجع مدير الإدارة';
-async function tkPeriodWhy(env, A, d, k, day) {
+async function tkPeriodMsg(env, A, d, k, day) {
   var p = String(k).split('-'), y = +p[0], m = +p[1], dd = +p[2], ym = y + '-' + m, dk = ym + '-' + dd;
   var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(L)) L = {};
   var mv = L[ym], dv = L[dk], mo = isObj(mv) && !!mv.mo, T = dsToday(Date.now());
