@@ -6,7 +6,7 @@
  },
  "save.pre.daily": {
   "order": 10,
-  "text": "  await dailyArcPre(env, body);   /* V7 · د5-ح (13): الجولاتُ وثيقةٌ منطقية (الأرشيفُ تحت الحيّ) لأحكام الحفظ — 019p3 */\n"
+  "text": "  var arcNo = await dailyArcPre(env, body);   /* V7 · د5-ح (13): الجولاتُ وثيقةٌ منطقية (الأرشيفُ تحت الحيّ) لأحكام الحفظ — 019p3 */\n  if (arcNo) return { ok: 0, requestId: operationRequestId, epoch: body.epoch, v: await curRev(env), revs: {}, denied: arcNo, conflicts: {}, atomic: 1 };   /* V7 · 53 (S13): يومٌ وحده في شهرٍ مقفل ⇒ رفضٌ صريح */\n"
  },
  "save.fill.daily": {
   "order": 10,

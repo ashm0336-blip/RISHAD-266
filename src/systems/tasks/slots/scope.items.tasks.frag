@@ -4,9 +4,17 @@
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; var x = arr(a[k]), y = arr(b[k]); if (deq(x, y)) continue; var day = parseDay(k), mk = day ? day.y + '-' + day.m : '', ls = lockState(L, mk), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_tasks_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
       /* V7 · 53 (قرار المالك ٧): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد، ولا يُفتح إلا للاستدراك ({mo:1}) */
-      if (ls === false && day && closedPeriod(ctx.today, day.y, day.m) && !(isObj(obj(L)[mk]) && obj(L)[mk].mo)) lk = { locked: true, why: 'month-past' };
+      var dl = null;
+      if (ls === false && day) {   /* V7 · 53: واليومُ (قاعدةُ الصفحة _tkDayLockOf): المُغلقُ بيده · والمنقضي من الشهر الجاري ما لم يُفتح هو أو شهرُه */
+        var mo9 = isObj(obj(L)[mk]) && obj(L)[mk].mo, dv9 = obj(L)[mk + '-' + day.d];
+        if (closedPeriod(ctx.today, day.y, day.m)) { if (!mo9) lk = { locked: true, why: 'month-past' }; }
+        /* اليومُ للحفظ الخامّ وحده — مساراتُ الخادم والاستعادة (ctx.srvRoute) تحكم اليومَ بنفسها: الإنشاءُ والتعديلُ باليوم، وسيرُ العمل بالشهر */
+        else if (!ctx.srvRoute && dv9 === true) dl = { locked: true, why: 'day-shut' };
+        else if (!ctx.srvRoute && closedPeriod(ctx.today, day.y, day.m, day.d) && !mo9 && !(isObj(dv9) && dv9.mo)) dl = { locked: true, why: 'day-past' };
+      }
+      dl = dl || lk;   /* قفلُ اليوم للإضافة (زرُّ الإضافة في الصفحة · tasksCanAdd)؛ التعديلُ والحذفُ على قفل الشهر (والحذفُ الفعليّ للحديث وحده · task-del) */
       var m = matchById(x, y, function (r) { return Array.isArray(r) && r[13] != null ? String(r[13]) : null; });
-      for (q = 0; q < m.added.length; q++) items.push(it({ what: 'task', kind: 'added', id: m.added[q].id, path: k + '[' + m.added[q].id + ']', period: pair(null, day), owner: pair(null, str(arr(m.added[q].b)[14])), lock: lk }));
+      for (q = 0; q < m.added.length; q++) items.push(it({ what: 'task', kind: 'added', id: m.added[q].id, path: k + '[' + m.added[q].id + ']', period: pair(null, day), owner: pair(null, str(arr(m.added[q].b)[14])), lock: dl }));
       for (q = 0; q < m.removed.length; q++) items.push(it({ what: 'task', kind: 'removed', id: m.removed[q].id, path: k + '[' + m.removed[q].id + ']', period: pair(day, null), owner: pair(str(arr(m.removed[q].a)[14]), null), lock: lk }));
       for (q = 0; q < m.changed.length; q++) items.push(it({ what: 'task', kind: 'changed', id: m.changed[q].id, path: k + '[' + m.changed[q].id + ']', period: pair(day, day), owner: pair(str(arr(m.changed[q].a)[14]), str(arr(m.changed[q].b)[14])), lock: lk }));
     }

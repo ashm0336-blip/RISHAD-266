@@ -93,9 +93,7 @@ async function tkCreate(env, request, A, b) {
   /* KIVO_265 · srvrec: سلسلةٌ بلا مكلَّف لا تولِّد شيئاً أبداً (نسخةٌ لكل مكلَّف) — تُرفض بدل أن تُقبل صامتة */
   if (RC.rec && !asg.length && !SH) return tkNo(400, 'rec-asg', 'المهمةُ المتكررة تحتاج مكلَّفاً واحداً على الأقل — تُولَّد نسخةٌ لكل مكلَّف', { at: 'rec' }).err;   /* S10: مفاتيحُ 400 المعقودة (ok · err · at) */
   if (!tkHeld(A, d, 'task.create') || ((asg.length || SH) && !tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'إنشاءُ المهام وإسنادُها للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
-  if (await tkPastLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', tkPastMsg(A, d)).err;   /* V7 · 53 (قرار ٧): إنشاءٌ في شهرٍ ماضٍ لم يُفتح للاستدراك */
-  if (await tkDayShut(env, d, b.k)) return tkNo(409, 'locked', 'اليومُ مُغلق — افتحه من صفحة المهام أولاً').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k, true); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد — الإنشاءُ باليوم */
   var RV = await tkRvIn(env, A, d, b.rv); if (RV.bad) return tkNo(400, 'bad-body', RV.msg || '', { at: RV.bad }).err;
   if (RV.rv && RV.rv.e && asg.indexOf(RV.rv.e) !== -1) return tkNo(400, 'bad-body', 'المراجِعُ لا يكون المكلَّفَ نفسَه', { at: 'rv' }).err;
   var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), byE = nmap(), EL = [], skipped = [], i;
@@ -172,7 +170,7 @@ async function tkReview(env, request, A, b) {
   if (!tkStrOk(b.why, METK_WHY_MAX)) return tkNo(400, 'bad-body', '', { at: 'why' }).err;
   var why = tkWhyOf(b); if (b.decision === 'return' && !why) return tkNo(400, 'bad-body', 'اذكر ما ينقص الإثبات', { at: 'why' }).err;
   if (!canRead(A, K)) return tkNo(403, 'forbidden').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var out = null;
   var R = await tkSave(env, request, A, K, function (S) {
     var P0 = tkPick(S, b.k, b.id, b.ekey); if (!P0) return tkNo(404, 'not-found');
@@ -199,7 +197,7 @@ async function tkExtend(env, request, A, b) {
   if (!(typeof b.e === 'number' && isFinite(b.e))) return tkNo(400, 'bad-body', '', { at: 'e' }).err;
   if (!tkStrOk(b.why, METK_WHY_MAX)) return tkNo(400, 'bad-body', '', { at: 'why' }).err;
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'تمديدُ المهلة يحتاج صلاحية تعديل المهام').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var out = null;
   var R = await tkSave(env, request, A, K, function (S) {
     var P0 = tkPick(S, b.k, b.id, b.ekey); if (!P0) return tkNo(404, 'not-found');
@@ -224,7 +222,7 @@ async function tkReassign(env, request, A, b) {
   if (b.e != null && !(typeof b.e === 'number' && isFinite(b.e))) return tkNo(400, 'bad-body', '', { at: 'e' }).err;
   if (String(b.from) === String(b.to)) return tkNo(400, 'bad-body', 'المكلَّفُ الجديد هو نفسُه', { at: 'to' }).err;
   if (!tkHeld(A, d, 'task.assign')) return tkNo(403, 'denied', 'إعادةُ الإسناد للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
   if (!em) return tkNo(400, 'asg', tkEidShared(emps, b.to) ? TK_EID_DUP : 'موظفٌ غير معروف بمعرّفه الثابت في سجل الإدارة', { at: 'to' }).err;
   var S00 = parseJson(await opResourceGet(env, K), {}), P00 = isObj(S00) ? tkPick(S00, b.k, b.id, b.from) : null; if (!P00) return tkNo(404, 'not-found').err;
@@ -267,7 +265,7 @@ async function tkCancel(env, request, A, b) {
   if (!METK_DAY_RX.test(String(b.k || '')) || !tkIdOk(b.id) || !(b.ekey == null || tkStrOk(b.ekey, 80))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkStrOk(b.why, METK_WHY_MAX, true)) return tkNo(400, 'bad-body', 'اذكر سبب الإلغاء', { at: 'why' }).err;
   if (!(tkHeld(A, d, 'task.delete') || tkHeld(A, d, 'task.edit'))) return tkNo(403, 'denied', 'الإلغاءُ للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var out = null;
   var R = await tkSave(env, request, A, K, function (S) {
     var P0 = tkPick(S, b.k, b.id, b.ekey == null ? null : b.ekey); if (!P0) return tkNo(404, 'not-found');
@@ -286,7 +284,7 @@ async function tkRelink(env, request, A, b) {
   var D0 = tkDeptOf(A, b.dept); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
   if (!METK_DAY_RX.test(String(b.k || '')) || !tkIdOk(b.id) || !tkStrOk(b.from, 160, true) || !tkStrOk(b.to, 80, true)) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkHeld(A, d, 'task.assign')) return tkNo(403, 'denied', 'ربطُ الإسناد للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
   if (!em) return tkNo(400, 'asg', tkEidShared(emps, b.to) ? TK_EID_DUP : 'موظفٌ غير معروف بمعرّفه الثابت', { at: 'to' }).err;
   /* KIVO_265 · المراجعةُ الموحّدة (R-6 — منخفض): الربطُ تصحيحُ هويةٍ لا إسنادٌ لغير صاحب الصفّ — كان يقبل صفّاً «مرتبطاً برقم الهوية» وصفّاً منجزاً
@@ -324,7 +322,7 @@ async function tkSettingsPrepare(env, A, b, d, K, S) {
   if (b.dec != null && b.dec !== 0 && b.dec !== 1) return tkNo(400, 'bad-body', '', { at: 'dec' }).err;
   var P = b.pol === undefined ? null : tkPolIn(b.pol); if (P && P.bad) return tkNo(400, 'bad-body', '', { at: P.bad }).err;
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'تعديلُ إعدادات المهمة يحتاج صلاحية تعديل المهام').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   /* المراجِع: «المنشئ» = منشئُ المهمة المسجَّل (x.by) إن ملك الاعتماد — وإلا أنت (كما في الإنشاء) · «بلا» · أو حسابٌ مسمّى يملك الاعتماد */
   var S00 = S, L00 = isObj(S00) && Array.isArray(S00[b.k]) ? S00[b.k] : [];
   var pick = function (L) {
@@ -380,8 +378,7 @@ async function tkEditPrepare(env, A, b, d, K, S, rev) {
       !tkStrOk(edit.t, 300, true) || !tkStrOk(edit.desc, 4000) || !(edit.prio === null || typeof edit.prio === 'string') ||
       !Number.isFinite(edit.s) || !Number.isFinite(edit.e) || edit.e <= edit.s ||
       !(edit.ekey == null || tkStrOk(edit.ekey, 80)) || !tkStrOk(edit.wt, 80)) return tkNo(400, 'bad-body', '', { at: 'edit' });
-  if (await tkLocked(env, d, tkYm(b.k)) || await tkLocked(env, d, tkYm(edit.k)) ||
-      await tkDayShut(env, d, b.k) || await tkDayShut(env, d, edit.k)) return tkNo(409, 'locked');
+  { var lw53 = (await tkPeriodWhy(env, A, d, b.k, 'shut')) || (await tkPeriodWhy(env, A, d, edit.k, 'shut')); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧) */
   var L = Array.isArray(S[b.k]) ? S[b.k] : [], ix = [];
   if (b.grp != null) L.forEach(function (row, index) { if (Array.isArray(row) && String(row[17] || '') === String(b.grp)) ix.push(index); });
   else { var picked = tkPick(S, b.k, b.id, b.ekey == null ? null : b.ekey); if (picked) ix.push(picked.idx); }
@@ -471,7 +468,7 @@ async function tkReopen(env, request, A, b) {
   if (!METK_DAY_RX.test(String(b.k || '')) || !tkIdOk(b.id) || !(b.ekey == null || tkStrOk(b.ekey, 80))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkStrOk(b.why, METK_WHY_MAX)) return tkNo(400, 'bad-body', '', { at: 'why' }).err;
   if (!(tkHeld(A, d, 'task.reopen') || tkHeld(A, d, 'task.edit'))) return tkNo(403, 'denied', 'إعادةُ فتح المهمة للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var out = null;
   var R = await tkSave(env, request, A, K, function (S) {
     var P0 = tkPick(S, b.k, b.id, b.ekey == null ? null : b.ekey); if (!P0) return tkNo(404, 'not-found');
