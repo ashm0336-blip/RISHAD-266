@@ -30,6 +30,13 @@ def main(a):
                 for d, ds, fs in os.walk(os.path.join(full, 'systems', k)):
                     for f in fs:
                         if f.endswith(('.js', '.html', '.json', '.css', '.frag', '.tpl')): gone.append(open(os.path.join(d, f), encoding='utf-8', errors='replace').read())
+        # V7 · 53: والقطعُ المشتركة الغائبة معها (systems/_shared/<قطعة> — نواةُ الطباعة تُحذف بغياب الخطة والمتابعة، ومعها مستعمِلُ غلاف التقرير)
+        SH = os.path.join(full, 'systems', '_shared')
+        for k in sorted(os.listdir(SH)) if os.path.isdir(SH) else []:
+            if os.path.isdir(os.path.join(SH, k)) and not os.path.isdir(os.path.join(src, 'systems', '_shared', k)):
+                for d, ds, fs in os.walk(os.path.join(SH, k)):
+                    for f in fs:
+                        if f.endswith(('.js', '.html', '.json', '.css', '.frag', '.tpl')): gone.append(open(os.path.join(d, f), encoding='utf-8', errors='replace').read())
     gone = '\n'.join(gone)
     bad, n = [], 0
     for sub in ('images', 'fonts'):
