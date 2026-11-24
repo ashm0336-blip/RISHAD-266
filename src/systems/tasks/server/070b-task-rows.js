@@ -43,6 +43,15 @@ async function tkLocked(env, d, ym) {
   var v = isObj(L) ? L[ym] : undefined; return v === true || v === 1;
 }
 function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]); }
+/* V7 · 53 (قرارا المالك ٧ و٨): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد ولا يُفتح إلا للاستدراك ({mo:1}).
+   الرسالةُ بحسب القارئ: من يملك فتحَ الشهر (task.month.reopen) يُقال له افتحه، وغيرُه يُحال إلى مدير الإدارة */
+var TK_PAST_MGR = 'الشهر مقفل — افتحه للاستدراك أولاً', TK_PAST_EMP = 'الشهر مقفل — راجع مدير الإدارة';
+async function tkPastLocked(env, d, ym) {
+  var p = String(ym).split('-'), y = +p[0], m = +p[1], T = dsToday(Date.now()); if (!T || !(y > 0 && m > 0) || 12 * y + m >= 12 * T.y + T.m) return false;
+  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}), v = isObj(L) ? L[y + '-' + m] : undefined;
+  return !(isObj(v) && v.mo);
+}
+function tkPastMsg(A, d) { return tkHeld(A, d, 'task.month.reopen') ? TK_PAST_MGR : TK_PAST_EMP; }
 /* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */
 async function tkDayShut(env, d, k) {
   var p = String(k).split('-'), L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
@@ -175,7 +184,7 @@ function tkClock(ms) { try { if (!TK_TFMT) TK_TFMT = new Intl.DateTimeFormat('ar
 async function tkNotify(env, request, A, d, items, meta) {
   if (!items || !items.length || !d) return 0;
   try {
-    var events = items.filter(function(it){ return TK_NOTIFICATION_TYPES.indexOf(it.type) !== -1; }).map(function(it){ var e={type:it.type,dept:d,own:it.own||[],vars:it.vars||{}}; if(it.once)e.once=it.once; return e; });
+    var events = items.filter(function(it){ return TK_NOTIFICATION_TYPES.indexOf(it.type) !== -1; }).map(function(it){ var e={type:it.type,dept:d,own:it.own||[],vars:it.vars||{}}; if(it.once)e.once=it.once; if(it.sys)e.sys=1; /* V7 · 53: حدثُ الخادم بلا فاعل (019 nfPlanEvents) */ return e; });
     if (!events.length) return 0;
     return (await nfEmitEvents(env,A,events,true)).n || 0;
   } catch(e) { swallow('tk-notify',e,env.__rid); return 0; }

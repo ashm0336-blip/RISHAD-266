@@ -15,7 +15,16 @@ function ocOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 function ocObj(o) { return o !== null && typeof o === 'object' && !Array.isArray(o) && Object.prototype.toString.call(o) === '[object Object]'; }
 function ocSet(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, configurable: true, writable: true }); }
 function ocIdentifier(s) { if (typeof s !== 'string' || !/^[a-z][a-z0-9_]*$/.test(s)) throw ocError('sql-identifier'); return s; }
+/* V7 · 53 (البند 6 · الأداء): اسمُ العمود دالةٌ نقيّة لاسم الحقل — يُحفظ بعد أول حساب (كان يُعاد بتعبيرين منتظمين لكل حقلٍ في كل صفّ عند كل قراءة) */
+var OC_FIELD_CACHE = new Map();
+/* V7 · 53 (الأداء): أعمدةُ «_kind» (قيمتُها الافتراضية 0) لكل قائمة أعمدة — تُحسب مرةً لا لكل صفّ */
+var OC_KIND_COLS = new WeakMap();
+function ocKindCols(columns) { var k = OC_KIND_COLS.get(columns); if (!k) { k = columns.map(function (c) { return /_kind$/.test(c); }); OC_KIND_COLS.set(columns, k); } return k; }
 function ocField(k) {
+  var hit = OC_FIELD_CACHE.get(k); if (hit !== undefined) return hit;
+  var out = ocFieldOf(k); if (OC_FIELD_CACHE.size < 4096) OC_FIELD_CACHE.set(k, out); return out;
+}
+function ocFieldOf(k) {
   if (!/^[A-Za-z0-9_]+$/.test(k)) throw ocError('field-definition');
   // SQLite identifiers ignore case; cAt and cat are distinct business fields.
   // Escape underscores too, so a literal escape-looking key cannot collide.
@@ -136,7 +145,9 @@ function ocScalarUnpack(row, prefix, type, missing) {
   var kind = row[prefix + 'kind'], text = row[prefix + 'text'], number = row[prefix + 'number'];
   if (kind === 0 && missing) { if (text !== null || number !== null) throw ocError('noncanonical-scalar'); return undefined; }
   var value = kind === 1 ? null : kind === 2 ? text : kind === 3 ? number : kind === 4 && (number === 0 || number === 1) ? !!number : undefined;
-  if (value === undefined || JSON.stringify(ocScalarPack(value, type)) !== JSON.stringify([kind, text, number])) throw ocError('noncanonical-scalar');
+  /* V7 · 53 (الأداء): المقارنةُ نفسُها عنصراً بعنصر بدل JSON.stringify مرتين لكل قيمة (الأعدادُ منتهية، و0/−0 سواءٌ في الطريقتين) */
+  var canon = value === undefined ? null : ocScalarPack(value, type);
+  if (value === undefined || canon[0] !== kind || canon[1] !== text || canon[2] !== number) throw ocError('noncanonical-scalar');
   return value;
 }
 function ocEntry(spec, key) {
@@ -154,7 +165,7 @@ function ocConvert(prepared, department, resource, value, present) {
   var root = prepared.resources[resource]; if (!root) throw ocError('resource');
   var rows = {}; prepared.order.forEach(function (spec) { rows[spec.table] = []; });
   function freshRow(spec, key, parent, member, position) {
-    var row = {}; spec.columns.forEach(function (column) { row[column] = /_kind$/.test(column) ? 0 : null; });
+    var row = {}, K = ocKindCols(spec.columns); spec.columns.forEach(function (column, n) { row[column] = K[n] ? 0 : null; });
     Object.assign(row, { department_id: department, resource: resource, row_key: key, parent_key: parent, member_key: member, position: position });
     rows[spec.table].push(row); return row;
   }
@@ -303,6 +314,11 @@ function ocPhysicalRows(prepared, domain) {
   out.ops_nodes.sort(function (a, b) { return a.row_key.split('/').length - b.row_key.split('/').length || (a.row_key < b.row_key ? -1 : a.row_key > b.row_key ? 1 : 0); });   /* V7 · 53: مقارنةٌ ثنائية لا localeCompare */
   return out;
 }
+/* V7 · 53 (البند 6 · uiqa): فكٌّ واحد للقراءة مع التحقق الكامل — على opts.skip */
+function ocFromPhysicalRead(prepared, department, resource, physical) {
+  var domain = ocFromPhysical(prepared, department, resource, physical, { skip: 1 });
+  return { domain: domain, projection: ocInflate(prepared, domain) };
+}
 function ocFromPhysical(prepared, department, resource, physical, opts) {
   var domain = { departmentId: department, resource: resource, rows: {} }, entities = {}, used = new Set();
   var physicalTables = ocPhysicalTables(prepared), nodeIds = new Set();
@@ -325,7 +341,7 @@ function ocFromPhysical(prepared, department, resource, physical, opts) {
     var entity = spec.entityTable ? entities[spec.entityTable].get(node.row_key) : {};
     if (!entity) throw ocError('missing-entity');
     if (spec.entityTable) used.add(spec.entityTable + '\0' + node.row_key);
-    var row = {}; spec.columns.forEach(function (column) { row[column] = ocOwn(node, column) ? node[column] : ocOwn(entity, column) ? entity[column] : /_kind$/.test(column) ? 0 : null; });
+    var row = {}, K = ocKindCols(spec.columns); spec.columns.forEach(function (column, n) { row[column] = ocOwn(node, column) ? node[column] : ocOwn(entity, column) ? entity[column] : K[n] ? 0 : null; });
     domain.rows[spec.table].push(row);
   });
   Object.keys(entities).forEach(function (name) { entities[name].forEach(function (row) { if (!used.has(name + '\0' + row.row_key)) throw ocError('orphan-entity'); }); });

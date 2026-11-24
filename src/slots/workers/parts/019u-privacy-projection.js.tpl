@@ -451,4 +451,7 @@ function bkExportOk(A, d) {
   });
 }
 /* backup.view as a read key of every department collection (RD_ANY · readKeysFor): only for its own stamp, or for an exporter */
+/* V7 · 53 (قرار المالك ٦): نسخةُ الإدارة كاملةٌ دائماً — مجالُ نظامٍ مطفأٍ في سقف الوحدة (الاسترشاد · المضبوطات · الجائزة) يُقرأ للنسخ ويُعاد بالاستعادة
+   كما هو بلا أثر، لمدير الإدارة في إدارته وحدها (كالعهد اليوم). كان canRead يرفضه فيسقط تصديرُ النسخة كلُّه. لا يفتح قراءةً حيّة ولا كتابة */
+function bkOffMgr(A, d, k) { var R = resOf(k); return !!R && enfDeptMgrFull(A, d) && !resOnCeiling(A, d, R); }
 function bkReadAnyOk(A, d, rn) { return rn === 'bassam_last_export_v1' || bkExportOk(A, d); }

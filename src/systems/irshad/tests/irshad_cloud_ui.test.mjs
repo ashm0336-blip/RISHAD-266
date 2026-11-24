@@ -316,3 +316,24 @@ test('lost retro ACK refreshes windows using GET only and a later explicit click
   assert.equal(B.calls.filter(c => c.options.method === 'POST').length, 2);
   assert.deepEqual(B.storage, []);
 });
+
+/* V7 · 53 (S10): «تعذّر تحميل سجلات الاسترشاد» عند أول فتح — سباقُ القراءة (409 irshad-read-race) يُعاد آلياً؛ وشهرٌ بلا جدولٍ معتمد يُقال بسببه */
+test('V7 · 53 (S10): a read race (409 irshad-read-race) is retried automatically and the read succeeds — no failure shown', async t => {
+  let n = 0;
+  const catalogs = { languages: { present: true, values: ['العربية'] }, locations: { present: true, values: ['TEST_ONLY_location'] } };
+  const B = browser(async () => (++n === 1 ? json({ ok: 0, err: 'irshad-read-race' }, 409) : json({ ok: 1, dept: 'TEST_ONLY_department', view: 'catalogs', base: { ...base }, clock, catalogs }))); t.after(B.cleanup);
+  const result = await B.page._irRead('catalogs');
+  assert.equal(result.ok, 1, JSON.stringify(result));
+  assert.equal(B.calls.length, 2, 'one automatic retry of the read');
+});
+test('V7 · 53 (S10): a read race that persists is still reported after two automatic retries (no loop)', async t => {
+  const B = browser(async () => json({ ok: 0, err: 'irshad-read-race' }, 409)); t.after(B.cleanup);
+  const result = await B.page._irRead('catalogs');
+  assert.equal(result.ok, 0); assert.equal(B.calls.length, 3);
+});
+test('V7 · 53 (S10): a save refused with 400 irshad-data says «لا جدول معتمد لهذا الشهر»', async t => {
+  const B = browser(async () => json({ ok: 0, err: 'irshad-data' }, 400)); t.after(B.cleanup);
+  B.page.state.irDraft = draft();
+  await B.page._recordsCalVals().irSaveReport();
+  assert.ok(B.notices.some((m) => String(m).includes('لا جدول معتمد لهذا الشهر')), JSON.stringify(B.notices));
+});

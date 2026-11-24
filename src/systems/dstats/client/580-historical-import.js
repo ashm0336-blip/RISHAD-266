@@ -15,14 +15,16 @@ KIVO.DailyStats = (function () {
   function clone(v) { return JSON.parse(JSON.stringify(v)); }
   function read() { var v = clone(cache); Object.defineProperty(v, '__dsbase', { value: rev, enumerable: false }); return v; }
   /* V7 · د6 (QA): رفضُ الشكل يحمل اليومَ المخالف (at = «site|y-m-d») فتسمّيه الرسالة */
-  var errAt = '';
-  function fail(code, at) { error = code || 'network'; errAt = String(at || ''); return false; }
+  var errAt = '', errWhy = '';
+  function fail(code, at, why) { error = code || 'network'; errAt = String(at || ''); errWhy = String(why || ''); return false; }
   function message() {
     if (error === 'dstats-shape') { var p = /^(haram|nabawi)\|(\d{4})-(\d{2})-(\d{2})$/.exec(errAt);
       return p ? 'لم يُحفظ — يومُ ' + (+p[4]) + '/' + (+p[3]) + '/' + p[2] + ' في ' + (p[1] === 'haram' ? 'المسجد الحرام' : 'المسجد النبوي') + ' فيه حقلٌ أو قيمةٌ غيرُ مسموحة — صحّح أرقامَ ذلك اليوم ثم أعد الحفظ'
         : 'لم يُحفظ — في البيانات المرسلة حقلٌ أو قيمةٌ غيرُ مسموحة'; }
     if (error === 'conflict' || error === 'stale') return 'تغيّرت البيانات منذ فتحها — حدّث الصفحة ثم راجع مسودتك وأعد الحفظ';
     if (error === 'session' || error === 'session-changed') return 'تغيّرت جلسة الدخول — أعد تحميل الصفحة قبل الحفظ';
+    /* V7 · 53 (S15): رفضُ الصلاحية أو النطاق يقول لمن الإدخال — بدل الرسالة العامة */
+    if (error === 'denied' && /^(scope|perm|view)$/.test(errWhy)) return 'لم يُحفظ — إدخالُ الإحصائيات اليومية لمدير المنصة أو لمن يملك صلاحية «الإحصائيات اليومية» في إدارته';
     if (error === 'denied') return 'رفض الخادم الحفظ — راجع الصلاحية ونطاق البيانات والأقفال';
     if (error === 'busy') return 'انتظر اكتمال الحفظ الجاري';
     if (error === 'not-ready') return 'لم تكتمل قراءة الإحصائيات من الخادم';
@@ -60,7 +62,7 @@ KIVO.DailyStats = (function () {
         }
         break;
       }
-      if (!r.ok || !valid(v) || v.rev < base) return fail(v && v.err || 'network', v && v.at);
+      if (!r.ok || !valid(v) || v.rev < base) return fail(v && v.err || 'network', v && v.at, v && v.why);
       cache = clone(v.data); rev = v.rev; error = ''; return true;
     } catch (e) { return fail('network'); } finally { busy = false; }
   }

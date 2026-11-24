@@ -336,7 +336,9 @@ async function opReadOnce(env, url, session) {
     /* مراجعُ الإسقاط لكل إدارةٍ مقروءة: الموظفون وخياراتُ الورديات كاملين (صغيران)، والجدولُ الشهريُّ بشهوره اللازمة وحدها */
     var refKeys = [];
     Array.from(new Set(loadKeys.map(function (K) { return groups[K].info.dept; }))).forEach(function (d) {
+      var pj = loadKeys.some(function (K) { return groups[K].info.dept === d && ocOwn(ENF_PROJ, resName(resReadAs(K))); });   // uiqa (البند 6): مراجعُ البرامج للإسقاط وحده
       OP_READ_REFS.forEach(function (r) {
+        if (!pj && r !== 'bassam_shift_options_v1' && r !== 'bassam_employees_v1') return;
         var R = 'bsdept:' + d + ':' + r, I = opSplitResource(R);
         if (ocOwn(groups, R) && groups[R].full) return;
         if (I) {

@@ -215,7 +215,7 @@ function rsiFieldList(recs) {
 /* V7 · د7: قوالبُ نسخة الإدارة تصير أدواراً (019f) */
 function rsiSkipWhy(k, v, kind) {
   var n = resName(k), r = resOf(k);
-  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? (kind === 'dept' && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
+  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? ((kind === 'dept' || kind === 'full') && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
 }
 function rsiSweepStmt(env, now, uid) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id IN (SELECT snapshot_id FROM ' + RSI_T + " WHERE domain='meta' AND snapshot_id>='stage:' AND snapshot_id<'stage;' AND (row_number<?1 OR table_key=?2))").bind(now - RSI_TTL, uid);

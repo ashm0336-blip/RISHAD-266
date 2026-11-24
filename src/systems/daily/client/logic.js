@@ -1341,7 +1341,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     }
     const f = o.summary(e);
     if (!f.n) return r;
+    /* V7 · 53 (ك11): شريطُ الحقل يعدّ كل الأدوار — عنوانٌ يذكر نطاقه · وللمصلّى والمعلم كلمةٌ واحدة في المنصة «معطّلة/معطّل» (والباب «مغلق») */
+    const sw = (t, e) => ("closed" === t && "gates" !== e ? ("zones" === e ? "معطّلة" : "معطّل") : o.STATES[t].t);
     ((r.fdBarOn = !0),
+      (r.fdBarSumLbl = "كل الأدوار"),
+      (r.fdBarSumTip = "كل الأدوار — مغلق/معطّل " + f.closed + " · مفتوح " + f.open),
       (r.fdBarSum = [
         ["closed", f.closed],
         ["open", f.open],
@@ -1356,11 +1360,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         tip:
           o.label(t.g, t.kind) +
           " — " +
-          o.STATES[t.st].t +
+          sw(t.st, t.kind) +
           (t.flow && "closed" !== t.st && this.bsLensOn("paths") ? " · " + o.FLOWS[t.flow].t : "") +
           (t.at ? " · " + o.clock(t.at) + (t.by ? " · " + t.by : "") : ""),
         sub:
-          o.STATES[t.st].t +
+          sw(t.st, t.kind) +
           ("closed" === t.st && t.g.cWhy ? " — " + t.g.cWhy : "") +
           (t.flow && "closed" !== t.st && this.bsLensOn("paths") ? " · " + o.FLOWS[t.flow].t : "") +
           (t.at ? " · " + o.clock(t.at) + (t.by ? " · " + String(t.by).split(/\s+/).slice(0, 2).join(" ") : "") : ""),
@@ -3730,8 +3734,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     let i = { ...(this.state.rounds || {}) };
     (n
       ? (i = this.dayPastDS(t, e, s) ? this._setDOpenIn(i, t, e, s, !1) : this._setDShut(i, t, e, s, !0))
-      : ((i = this._setDShut(i, t, e, s, !1)), this.dayPastDS(t, e, s) && (i = this._setDOpenIn(i, t, e, s, !0))),
+      : ((i = this._setDShut(i, t, e, s, !1)), this.dayPastDS(t, e, s) && (i = this._setDOpenIn(i, t, e, s, !0)), (i = this._dayNeedsMonth(i, t, e))),
       this.saveRounds(i));
+  }
+  /* V7 · 53 (S13): يومٌ في شهرٍ مقفل (معتمد أو ماضٍ لم يُفتح) لا يُفتح وحده — كان يُحفظ فتحُ اليوم بلا أثر. فتحُه يفتح شهرَه معه للاستدراك
+     (كما يفعل «فتح الشهر»: يُلغى الاعتماد، والماضي يُعلَّم {mo:1}) في الحفظة نفسها، وتبقى أيامُه الأخرى مقفلةً بانقضائها */
+  _dayNeedsMonth(i, t, e) {
+    if (!this.isMonthAp(i, t, e)) return i;
+    const k = this.mKey(t, e), o = { ...(i[k] || {}) };
+    return (delete o.ap, delete o.auto, this.monthPastDS(t, e) && (o.mo = 1), Object.keys(o).length ? (i[k] = o) : delete i[k], i);
+  }
+  /* V7 · 53 (S13): عددُ أيام الشهر التي فيها جولة — اعتمادُ شهرٍ بلا جولات يُحذَّر منه قبل الاعتماد */
+  _monthRoundDays(t, e) {
+    const R = this.state.rounds || {}, p = t + "-" + e + "-";
+    return Object.keys(R).filter((k) => k.indexOf(p) === 0 && R[k] && Array.isArray(R[k].d) && R[k].d.length).length;
   }
   _setRoundApLock(t, e, s, n) {
     let i = { ...(this.state.rounds || {}) };
@@ -4508,16 +4524,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             (i.markN += Array.isArray(h.marks) ? h.marks.length : 0),
             c.forEach((h) => {
               (i.zoneObs++, l++, h.emp && h.emp.length && (i.empObs++, d++, (h.emp || []).forEach((t) => (i.emps[t] = 1))));
-              const c = String(null == h.code ? "" : h.code) || "#" + i.zoneObs,
+              /* V7 · 53 (ك21): المصلّى يُعدّ بمعرّفه الفريد (uid) لا برمزه — تغيّرُ الرمز لا يضخّم العدد ومصلياتٌ تشترك في رمزٍ لا تندمج ·
+                 والحالةُ بقاعدةٍ ثابتة لا يغيّرها ترتيبُ الأيام: مفعّلٌ في الفترة إن فُعِّل في يومٍ واحدٍ منها على الأقل */
+              const c = (h.uid ? "u:" + h.uid : "") || String(null == h.code ? "" : h.code) || "#" + i.zoneObs,
                 g = String(h.ztype || "").trim() || "بلا نوع",
-                f = String(h.zcat || "").trim() || "بلا فئة";
+                f = String(h.zcat || "").trim() || "بلا فئة",
+                o0 = i.uniq[c];
               (i.TY.indexOf(g) < 0 && i.TY.push(g),
                 i.CA.indexOf(f) < 0 && i.CA.push(f),
                 (i.uniq[c] = {
-                  code: c,
+                  code: String(null == h.code ? "" : h.code) || c,
                   ztype: g,
                   zcat: f,
-                  off: !!h.off,
+                  off: o0 ? o0.off && !!h.off : !!h.off,
                   cap: +h.cap || 0,
                   yard: String(h.yard || "").trim() || "بلا ساحة",
                   region: h.region || "",
@@ -5870,6 +5889,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         return L("marks");
       case "القراءات":
       case "متوسط الإشغال":
+      case "الإشغال الموزون":
         return L("dens");
       default:
         return !0;
@@ -6420,7 +6440,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         e +
         ';background:var(--bg-a2552552550p62)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>المؤشر القيادي</span><span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:5px 12px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a09900p3);color:var(--fg-x006300);background:var(--bg-a12163120p1)"><span style="width:6px;height:6px;border-radius:9999px;background:var(--bg-x006300);display:inline-block"></span>محسوب من الجولات</span></div><div style="font-size:13px;font-weight:600;color:' +
         e +
-        ';opacity:.92">إجمالي المصليات المفعّلة · بحسب النوع والفئة</div><div style="display:flex;align-items:flex-end;gap:15px;margin:4px 0 2px;flex-wrap:wrap"><div dir="ltr" style="font-size:78px;font-weight:800;line-height:.95;letter-spacing:-3px;background:linear-gradient(165deg,' +
+        ';opacity:.92" title="المصليات المميَّزة بمعرّفها في الفترة المختارة — المصلّى مفعّل إن فُعِّل في يومٍ واحدٍ منها على الأقل">إجمالي المصليات المفعّلة · بحسب النوع والفئة</div><div style="display:flex;align-items:flex-end;gap:15px;margin:4px 0 2px;flex-wrap:wrap"><div dir="ltr" style="font-size:78px;font-weight:800;line-height:.95;letter-spacing:-3px;background:linear-gradient(165deg,' +
         e +
         ' 0%,#6B5527 55%,#4A3B1C 100%);-webkit-background-clip:text;background-clip:text;color:transparent">' +
         r.on +
@@ -6634,6 +6654,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       X = 0;
     const J = {};
     j.forEach((t) => (J[t[0]] = 0));
+    /* V7 · 53 (ك22 · ك23): «المصليات» = المصليات المميَّزة بمعرّفها (zU) لا سجلاتُ مصلى-يوم (I) · والإشغالُ رقمٌ واحد = الموزون (wN ÷ wC) */
+    const zU = new Set();
+    let wN = 0,
+      wC = 0;
     const V = {},
       q = {};
     P.forEach((t) => {
@@ -6648,6 +6672,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             (Z += Array.isArray(e.marks) ? e.marks.length : 0),
             s.forEach((e) => {
               (K++,
+                zU.add(e && e.uid ? "u:" + e.uid : "c:" + String((e && e.code) || K)),
                 j.forEach((s) => {
                   const n = ((t, e) => {
                     if (!t) return null;
@@ -6665,6 +6690,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     if ("object" == typeof t) {
                       const e = +t.cap || 0,
                         s = null == t.n || "" === t.n ? null : +t.n;
+                      e > 0 && null != s && ((wN += s), (wC += e));
                       return e > 0 && null != s ? (s / e) * 100 : null == t.p ? null : +t.p;
                     }
                     const e = +t;
@@ -6797,12 +6823,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           ]
         : [
             { dot: "#b99751", n: "أيام مسجّلة", v: r(Q), p: W ? "من " + a(W) : "" },
-            { dot: "#25343F", n: "المصليات", v: r(I), p: "" },
-            { dot: "#4a97cf", n: "الأبواب", v: r(R), p: "" },
-            { dot: "#2fa372", n: "المسارات", v: r(G), p: "" },
-            { dot: "#d9793a", n: "المعالم", v: r(Z), p: "" },
+            /* V7 · 53 (S14 · ك22): المصليات بعددها المميَّز بالمعرّف (وسجلاتُها في التلميح)؛ والأبواب والمسارات والمعالم مجموعُ سجلات «عنصر × يوم» والتسميةُ تقول ذلك */
+            { dot: "#25343F", n: "المصليات", v: r(zU.size), p: "", tip: "مصليات مميَّزة بمعرّفها في الفترة · سجلات مصلى-يوم: " + r(I) },
+            { dot: "#4a97cf", n: "سجلات الأبواب", v: r(R), p: "باب × يوم" },
+            { dot: "#2fa372", n: "سجلات المسارات", v: r(G), p: "مسار × يوم" },
+            { dot: "#d9793a", n: "سجلات المعالم", v: r(Z), p: "معلم × يوم" },
             { dot: "#8A6F35", n: "القراءات", v: r(Y), p: K ? "من " + r(5 * K) : "" },
-            { dot: "#047857", n: "متوسط الإشغال", v: o(_) + "٪", p: "" },
+            { dot: "#047857", n: "الإشغال الموزون", v: o(wC ? Math.round((wN / wC) * 1e3) / 10 : 0) + "٪", p: "", tip: "مجموع الأعداد ÷ مجموع السعات — يُوزَن كل مصلى بسعته · متوسط القراءات (بلا وزن): " + o(_) + "٪" },
             { dot: "#7b8a94", n: "أيام معتمدة", v: r(H), p: Q ? "(" + o((H / Q) * 100) + "٪)" : "" },
           ],
       et = (t) => ({
@@ -7339,6 +7366,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       X =
         (U && U.map((t) => !(!t || !t.ap)), G || Z || !!(U && this._rdAt(U, f) && this._rdAt(U, f).ap)),
       J = H || X,
+      /* V7 · 53 (ك8): نصُّ «عرض فقط» في «حالة التغطية» بحسب الحالة الحقيقية — معتمدة أو مقفلة لمضيّ اليوم (أو يدوياً) */
+      covRo = K || (U && this._rdAt(U, f) && this._rdAt(U, f).ap)
+        ? "الجولة معتمدة — عرض فقط"
+        : G
+          ? "الشهر معتمد — عرض فقط"
+          : Z
+            ? Y
+              ? "الجولة مقفلة — مضى اليوم · عرض فقط"
+              : "الجولة مقفلة يدوياً — عرض فقط"
+            : "الجولة معتمدة — عرض فقط",
       V = R && R.shAp && j ? R.shAp[j] : null,
       q = !!(V && V.ap && Array.isArray(V.snap)),
       Q = !(!U || J || q);
@@ -8408,49 +8445,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           labelColor: i ? "#b99751" : "#64748b",
           style: "cursor:pointer",
         };
-      }),
-      Le = F[f] || {},
-      Be = Array.isArray(Le.zones) ? Le.zones : [],
-      Ne = Array.isArray(Le.gates) ? Le.gates : [],
-      We = {};
-    Be.forEach((t) => {
-      t && t.code && (We[t.code] = t);
-    });
-    const je = new Set(de.map((t) => t.code).filter(Boolean)),
-      Ie =
-        (de.filter((t) => {
-          const e = t.code ? We[t.code] : null;
-          return !e || String(e.d) !== String(t.d);
-        }).length,
-        Be.filter((t) => t && t.code && !je.has(t.code)).length,
-        de.filter((t) => !!t.off).length,
-        de.length,
-        de.filter((t) => t.region && t.level).length,
-        de.length,
-        de.reduce((t, e) => t + (+e.capNow > 0 ? +e.capNow : 0), 0),
-        he.filter((t) => "in" === (t.type || "in")).length,
-        he.filter((t) => "out" === t.type).length,
-        he.filter((t) => "emg" === t.type).length,
-        he.filter((t) => "svc" === t.type).length,
-        he.filter((t) => "two" === t.dir).length,
-        he.filter((t) => !1 === t.active).length,
-        pe.filter((t) => !t.closed).length);
-    (pe.length,
-      pe.length && Math.round((Ie / pe.length) * 100),
-      pe.filter((t, e) => {
-        const s =
-          Ne.find((e) => e && ((null != t.num && "" !== t.num && String(e.num) === String(t.num)) || (t.label && e.label === t.label))) ||
-          Ne[e];
-        return !!s && !!s.closed != !!t.closed;
-      }).length,
-      pe.filter((t) => null == t.num || "" === t.num).length,
-      pe.filter((t) => !String(t.kind || "").trim()).length,
-      de.length && Math.round((Ce.length / de.length) * 100),
-      de.some((t) => null != t.nNow && "" !== t.nNow),
-      de.reduce((t, e) => t + ((null != e.nNow && "" !== e.nNow && +e.nNow) || 0), 0),
-      Ce.filter((t) => +t.count > 100).length,
-      Ce.filter((t) => +t.count >= 75 && +t.count <= 100).length,
-      Ce.length && Ce.reduce((t, e) => (+e.count > +t.count ? e : t), Ce[0]));
+      });
+    /* V7 · 53 (ك27): حُذف كودٌ ميّت كان يحسب مؤشراتٍ قديمة لا تُعرض (مقارنة الدور بالخطة · نسب الأبواب والكثافة) */
     let Re = [];
     const Ge = [
         ["men", "مصليات الرجال", "#22c55e"],
@@ -8477,11 +8473,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           i = (t, i) => {
             (null == e[t] && ((e[t] = 0), s.push(t), (n[t] = i)), e[t]++);
           },
-          o = de.filter((t) => !t.off);
+          /* V7 · 53 (ك10): أساسٌ واحد في اللوحة كلها = مصليات الدور كلها — المعطّلُ في سطره «معطّلة» في كل تفصيل */
+          cO = "#64748b",
+          cU = "#94a3b8",
+          o = "fill" === t || "read" === t ? [] : de.filter((t) => !t.off || (i("معطّلة", cO), !1));
         "fill" === t
           ? de.forEach((t) => {
-              if (t.off) return void i("معطّلة", "#94a3b8");
-              const e = null == t.count || "" === t.count ? 0 : +t.count;
+              if (t.off) return void i("معطّلة", cO);
+              /* V7 · 53 (ك9): المصلّى بلا قراءة «بلا قراءة» — لا يُحسب 0٪ «منخفضة» */
+              if (null == t.count || "" === t.count) return void i("بلا قراءة", cU);
+              const e = +t.count;
               e > 100
                 ? i("اكتظاظ", "#991b1b")
                 : e >= 75
@@ -8492,7 +8493,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             })
           : "read" === t
             ? de.forEach((t) =>
-                i(null != t.count && "" !== t.count ? "مقروءة" : "بلا قراءة", null != t.count && "" !== t.count ? "#10b981" : "#94a3b8"),
+                t.off
+                  ? i("معطّلة", cO)
+                  : i(null != t.count && "" !== t.count ? "مقروءة" : "بلا قراءة", null != t.count && "" !== t.count ? "#10b981" : cU),
               )
             : "zcat" === t
               ? o.forEach((t) => {
@@ -8804,7 +8807,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             }
           })(),
           O = (t) => (M ? M.mukOf(t) : !(!0 !== (Dt[t] || {}).muk)),
-          F = (t) => (t.emp || []).filter(ss),
+          /* V7 · 53 (ك2): «حالة التغطية» على وردية الكرت (x) دائماً — زرُّ «توسيع مؤشرات التوزيع» يغيّر فلتر التوزيع (ss) وحده */
+          cs = x && x !== Gt ? x : null,
+          F = (t) => (t.emp || []).filter((t) => null == cs || (Kt(t) || "") === cs),
           C = (t) => F(t).filter((t) => !S(Nt(t))),
           D = (t) => (x ? e.of(t, x) : e.tot(t, Zt)),
           P = (t) => C(t).length,
@@ -8854,15 +8859,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             const e = N(t);
             return e.closed ? 0 : Math.max(0, e.need - e.c);
           },
+          /* V7 · 53 (ك5): من على موقعٍ احتياجُه 0 (أو بلا احتياج) فائضٌ قابلٌ للنقل — لا يسقط من مصادر التغطية */
           K = (t) => {
             const e = N(t);
-            return e.closed || 0 === e.need ? 0 : Math.max(0, e.c - e.need);
+            return e.closed ? 0 : Math.max(0, e.c - e.need);
           },
+          /* V7 · 53 (15): الفائض القابل للنقل فعلاً — حاضرٌ غيرُ مكلَّف (الإشرافي خارج C أصلاً)، ولا يتجاوز فائضَ الموقع */
+          Km = (t) => Math.min(K(t), C(t).filter((t) => E(Nt(t)) && !O(Nt(t))).length),
           U = G.reduce((t, e) => t + (g(e.g) ? 0 : D(e.g)), 0),
           X = G.reduce((t, e) => t + (g(e.g) ? 0 : Math.min(D(e.g), B(e.g))), 0),
           V = U ? Math.round((X / U) * 100) : 0,
           q = G.reduce((t, e) => t + Y(e.g), 0),
-          Q = G.reduce((t, e) => t + K(e.g), 0),
+          Q = G.reduce((t, e) => t + Km(e.g), 0),
           _ = G.reduce((t, e) => t + (g(e.g) ? P(e.g) : 0), 0),
           $ = new Set();
         [pe, de, ce].forEach((t) =>
@@ -8875,20 +8883,31 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           }),
           et = tt.map((t) => Tt(t)).filter((t) => !$.has(t) && E(t) && !S(t)),
           st = tt.filter((t) => S(Tt(t))).length,
+          /* V7 · 53 (15 · ك17): الاحتياطُ القابل للنقل (غيرُ المكلَّف) · والحاضرون من الطاقم الإشرافي */
+          Rm = et.filter((t) => !O(t)).length,
+          cN = i.non,   /* لونُ «لا احتياج» نفسُه في مفتاح الخريطة */
+          pS = tt.filter((t) => E(Tt(t)) && S(Tt(t))).length,
           nt = (t, e) => {
             const s = f(t),
               n = f(e);
             return Math.hypot(s.x - n.x, s.y - n.y);
           },
-          it = (t) => {
-            const e = G.filter((e) => e.g !== t && K(e.g) > 0)
-              .map((e) => ({ x: e, d: nt(e.g, t) + (u(e.g) === u(t) ? 0 : 150) }))
+          /* V7 · 53 (ك6): «نفس الموقع» فقط إن كان للموقعين موقعٌ جغرافيّ وهو نفسُه */
+          sl = (t, e) => !!u(t) && u(t) === u(e),
+          /* V7 · 53 (ك3 · ك4): كلُّ شخصٍ يُقترح لصفٍّ واحد (U: من اقتُرح قبلُ) ولا يُؤخذ من موقعٍ أكثرُ من فائضه القابل للنقل ·
+             الشرطُ نفسُه للفائض والاحتياط: حاضرٌ غيرُ مكلَّف */
+          it = (t, U) => {
+            U = U || new Set();
+            const e = G.filter((e) => e.g !== t && Km(e.g) > 0)
+              .map((e) => ({ x: e, d: nt(e.g, t) + (sl(e.g, t) ? 0 : 150) }))
               .sort((t, e) => t.d - e.d);
             for (const t of e) {
-              const e = C(t.x.g).find((t) => E(Nt(t)) && !O(Nt(t)));
-              if (e) return { fromI: t.x.i, from: t.x.g, tok: e, key: Nt(e) };
+              if (C(t.x.g).filter((t) => U.has(Nt(t))).length >= Km(t.x.g)) continue;
+              const e = C(t.x.g).find((t) => E(Nt(t)) && !O(Nt(t)) && !U.has(Nt(t)));
+              if (e) return (U.add(Nt(e)), { fromI: t.x.i, from: t.x.g, tok: e, key: Nt(e) });
             }
-            return et.length ? { fromI: -1, from: null, tok: et[0], key: et[0] } : null;
+            const r = et.find((t) => !O(t) && !U.has(t));
+            return null != r ? (U.add(r), { fromI: -1, from: null, tok: r, key: r }) : null;
           },
           ot = { أ: 3, ب: 2, ج: 1 },
           rt = (t) =>
@@ -9374,13 +9393,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               ("gates" === Te ? "gates" !== d : "marks" === Te ? "marks" !== d : "zones" !== d)
             )
               return null;
+            /* V7 · 53 (ك7): بلا احتياجٍ محدَّد الحلقةُ «—» بلونٍ محايد لا 0٪ أحمر */
             const t = 2 * Math.PI * 40,
-              e = V >= 90 ? "#059669" : V >= 75 ? "#d97706" : "#dc2626",
-              i = (t, e, s, i, o) =>
+              e = U ? (V >= 90 ? "#059669" : V >= 75 ? "#d97706" : "#dc2626") : cN,
+              i = (t, e, s, i, o, a, l) =>
                 n(
                   "div",
                   {
                     onClick: o,
+                    title: a || void 0,
                     style: {
                       borderRadius: 9,
                       padding: "6px 4px",
@@ -9392,6 +9413,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   },
                   n("div", { style: { fontSize: 17, fontWeight: 700, fontFeatureSettings: "'tnum'", color: s } }, String(t)),
                   n("div", { style: { fontSize: 9.5, color: "var(--fg-x64748b)" } }, e),
+                  l ? n("div", { style: { fontSize: 9.5, color: "var(--fg-x64748b)" } }, l) : null,
                 ),
               o = (t, e) =>
                 n(
@@ -9462,8 +9484,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                       n(
                         "div",
                         { style: { textAlign: "center" } },
-                        n("div", { style: { fontSize: 22, fontWeight: 700, lineHeight: 1 } }, V + "%"),
-                        n("div", { style: { fontSize: 9.5, color: "var(--fg-x64748b)" } }, X + " من " + U),
+                        n("div", { style: { fontSize: 22, fontWeight: 700, lineHeight: 1, color: U ? void 0 : e } }, U ? V + "%" : "—"),
+                        n("div", { style: { fontSize: 9.5, color: "var(--fg-x64748b)" } }, U ? X + " من " + U : "لا احتياج محدد"),
                       ),
                     ),
                     n(
@@ -9478,15 +9500,34 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         "div",
                         { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 } },
                         i(q, "عجز (موظف)", "#dc2626", "rgba(220,38,38,.06)", gt("red")),
-                        i(Q, "فائض قابل للنقل", "#3e8ac4", "rgba(37,99,235,.06)", gt("blu")),
+                        /* V7 · 53 (15): «متاح للتغطية» = الاحتياط + الفائض — من يمكن نقلُه فعلاً: حاضرٌ غيرُ مكلَّف وغيرُ إشرافي
+                           (ومن على موقعٍ احتياجُه 0 أو بلا احتياج) · يتبع «مخطط/فعلي» بالفائض · مفهومُ الفائض ولونُه في الخريطة باقيان */
+                        i(
+                          Rm + Q,
+                          "متاح للتغطية",
+                          "#3e8ac4",
+                          "rgba(37,99,235,.06)",
+                          gt("blu"),
+                          "الاحتياط: حاضر لم يُسكَّن في أي موقع · الفائض: مسكَّن فوق احتياج موقعه، قابل للنقل — بلا الغائب والمكلَّف والإشرافي",
+                          n(
+                            "span",
+                            null,
+                            n("span", { title: "حاضر لم يُسكَّن في أي موقع" }, "احتياط " + Rm),
+                            " · ",
+                            n("span", { title: "مسكَّن فوق احتياج موقعه، قابل للنقل" }, "فائض " + Q),
+                          ),
+                        ),
                         i(_, "بلا موقع فعّال", "#b45309", "rgba(245,158,11,.08)", gt("cls")),
                       ),
+                      /* V7 · 53 (ك17): الحاضرون بقاعدةٍ واحدة في كل الصفحات (الإشرافيُّ منهم) · ويُذكر «منهم إشرافي» حيث يُستبعدون */
                       n(
                         "div",
                         { style: { fontSize: 9.5, color: "var(--fg-x64748b)", marginTop: 5 } },
-                        "الاحتياط غير المسكَّن: ",
-                        n("b", null, String(et.length)),
-                        " · الحاضرون الآن " + tt.filter((t) => E(Tt(t)) && !S(Tt(t))).length + " من " + (tt.length - st),
+                        "الحاضرون الآن " +
+                          tt.filter((t) => E(Tt(t))).length +
+                          " من " +
+                          tt.length +
+                          (pS ? " · منهم إشرافي " + pS : ""),
                       ),
                       st
                         ? n(
@@ -9592,7 +9633,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               f = p
                 .filter((t) => Y(t.g) > 0)
                 .sort((t, e) => (0 === N(e.g).c) - (0 === N(t.g).c) || (ot[e.g.pri] || 0) - (ot[t.g.pri] || 0) || Y(e.g) - Y(t.g)),
-              m = p.filter((t) => K(t.g) > 0).sort((t, e) => K(e.g) - K(t.g)),
+              m = p.filter((t) => Km(t.g) > 0).sort((t, e) => Km(e.g) - Km(t.g)),
+              Us = new Set(),
               b = [];
             (h.length &&
               b.push(
@@ -9637,7 +9679,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   ),
                   f.length
                     ? f.map((t) => {
-                        const e = ut ? it(t.g) : null;
+                        const e = ut ? it(t.g, Us) : null;
                         return St(
                           t,
                           e
@@ -9648,7 +9690,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                                   "span",
                                   { key: "c", style: { color: "var(--fg-x64748b)" } },
                                   e.from
-                                    ? "من " + W(e.from) + " (فائض " + K(e.from) + (u(e.from) === u(t.g) ? " · نفس الموقع" : "") + ")"
+                                    ? "من " + W(e.from) + " (فائض " + Km(e.from) + (sl(e.from, t.g) ? " · نفس الموقع" : "") + ")"
                                     : "من الاحتياط",
                                 ),
                                 bt(
@@ -9670,7 +9712,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                               : null,
                         );
                       })
-                    : n("div", { style: { fontSize: 11, color: "var(--fg-x059669)", padding: 6 } }, "لا عجز — التغطية مكتملة ✓"),
+                    : U
+                      ? n("div", { style: { fontSize: 11, color: "var(--fg-x059669)", padding: 6 } }, "لا عجز — التغطية مكتملة ✓")
+                      : n("div", { style: { fontSize: 11, color: "var(--fg-x64748b)", padding: 6 } }, "لا احتياج محدد"),
                 ),
               ),
               b.push(
@@ -9686,7 +9730,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         c.one +
                         " · " +
                         KIVO.BassamCount(
-                          m.reduce((t, e) => t + K(e.g), 0),
+                          m.reduce((t, e) => t + Km(e.g), 0),
                           "موظف",
                         ) +
                         "",
@@ -9728,7 +9772,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               n(
                 "small",
                 { style: { fontSize: 10, color: "var(--fg-x64748b)", fontWeight: 400 } },
-                ut ? "اسحب موظفاً من الفائض وأفلته على الصف" : "الجولة معتمدة — عرض فقط",
+                /* V7 · 53 (ك8): النصُّ بحسب الحالة الحقيقية — معتمدة أو مقفلة لمضيّ اليوم (أو يدوياً) */
+                ut ? "اسحب موظفاً من الفائض وأفلته على الصف" : covRo,
               ),
               n("div", null, ...b),
             );
@@ -10026,6 +10071,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         color: t.color,
         count: String(t.n),
         pct: String(Ks ? Math.round((t.n / Ks) * 100) : 0),
+        pctTxt: KIVO.bsPct(Ks ? (t.n / Ks) * 100 : 0),   /* V7 · 53 (ك12): نصُّ النسبة بالتقريب الواحد (pct يبقى لعرض الشريط) */
         pillBorder: t.color + "30",
       })),
       Xs = KIVO.BassamMix.donutCss(
@@ -10082,12 +10128,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             if (t.off) return "معطّلة";
             const e = null == t.count || "" === t.count ? null : +t.count;
             return null == e
-              ? "منخفضة · بلا قراءة"
+              ? "بلا قراءة"   /* V7 · 53 (ك9) */
               : (e < 40 ? "منخفضة" : e < 75 ? "متوسطة" : e <= 100 ? "مرتفعة" : "اكتظاظ") + " · " + e + "%";
           })(),
           densStyle: (() => {
-            const e = t.off ? -1 : null == t.count || "" === t.count ? 0 : +t.count,
-              s = t.off
+            const e = t.off ? -1 : null == t.count || "" === t.count ? null : +t.count,
+              s = t.off || null == e
                 ? ["rgba(148,163,184,0.14)", "#64748b", "rgba(148,163,184,0.35)"]
                 : e < 40
                   ? ["rgba(34,197,94,0.12)", "#15803d", "rgba(34,197,94,0.32)"]
@@ -10632,7 +10678,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               t(
                 "span",
                 { style: { fontSize: 9, fontWeight: 400, color: "var(--fg-x94a3b8)", marginTop: 3, whiteSpace: "nowrap" } },
-                "إجمالي المصليات",
+                "إجمالي مصليات الدور",   /* V7 · 53 (ك13): النصُّ يذكر النطاق — مصليات الدور الحالي */
               ),
             ),
             t("div", { key: "sp", style: { width: 1, background: "linear-gradient(180deg,transparent,var(--bg-xe6e8eb),transparent)" } }),
@@ -10650,8 +10696,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   ["M22 11.08V12a10 10 0 1 1-5.93-9.14", "m9 11 3 3L22 4"],
                   "rgba(0,132,80,0.10)",
                   "rgba(0,132,80,0.25)",
+                  KIVO.bsPct(s ? (n / s) * 100 : 0),   /* V7 · 53 (ك12): تقريبٌ واحد في المنصة */
                 ],
-                ["off", i, 100 - o, "#94a3b8", "#94a3b8", "معطّلة", ["M18.36 6.64A9 9 0 1 1 5.64 6.64", "M12 2v10"], "#F5F6F8", "#E6E8EB"],
+                ["off", i, 100 - o, "#94a3b8", "#94a3b8", "معطّلة", ["M18.36 6.64A9 9 0 1 1 5.64 6.64", "M12 2v10"], "#F5F6F8", "#E6E8EB", KIVO.bsPct(s ? (i / s) * 100 : 0)],
               ].map((e) => {
                 return t(
                   "div",
@@ -10716,7 +10763,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     t(
                       "em",
                       { style: { fontStyle: "normal", fontSize: 7.5, fontWeight: 400, color: "var(--fg-x8e959d)", marginRight: 2 } },
-                      e[2] + "٪",
+                      e[9] + "٪",
                     ),
                   ),
                 );
@@ -11380,7 +11427,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 ? (() => {
                     const s = t.hero,
                       i = (s.onN || 0) + (s.offN || 0),
-                      o = i ? Math.round(((s.onN || 0) / i) * 100) : 0;
+                      o = i ? Math.round(((s.onN || 0) / i) * 100) : 0,
+                      oR = i ? ((s.onN || 0) / i) * 100 : 0;   /* V7 · 53 (ك12): تقريبٌ واحد في المنصة (KIVO.bsPct) للعرض */
                     return [
                       [
                         "on",
@@ -11392,6 +11440,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         ["M22 11.08V12a10 10 0 1 1-5.93-9.14", "m9 11 3 3L22 4"],
                         "rgba(0,132,80,0.10)",
                         "rgba(0,132,80,0.25)",
+                        KIVO.bsPct(oR),
                       ],
                       [
                         "off",
@@ -11403,6 +11452,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         ["M18.36 6.64A9 9 0 1 1 5.64 6.64", "M12 2v10"],
                         "#F5F6F8",
                         "#E6E8EB",
+                        KIVO.bsPct(i ? 100 - oR : 0),
                       ],
                     ].map((t) => {
                       return e(
@@ -11468,7 +11518,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                           e(
                             "em",
                             { style: { fontStyle: "normal", fontSize: 7.5, fontWeight: 400, color: "var(--fg-x8e959d)", marginRight: 2 } },
-                            t[2] + "٪",
+                            t[9] + "٪",
                           ),
                         ),
                       );
@@ -11969,7 +12019,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                       t(
                         "em",
                         { style: { fontStyle: "normal", fontSize: 7.5, fontWeight: 400, color: "var(--fg-x8e959d)", marginRight: 2 } },
-                        e[2] + "٪",
+                        KIVO.bsPct(n ? (("on" === e[0] ? i : o) / n) * 100 : 0) + "٪"   /* V7 · 53 (ك12): تقريبٌ واحد */,
                       ),
                     ),
                   );
@@ -12589,17 +12639,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         f = 0,
         u = 0,
         y = 0,
-        m = 0;
+        m = 0,
+        sp = 0;
+      /* V7 · 53 (ك14 · ك17): الطاقمُ الإشرافي خارج التسكين في كل اللوحات (القاعدةُ نفسُها في «حالة التغطية» ks.isSup) —
+         يُعدّ في الحضور الفعلي ويُذكر «منهم إشرافي N»، ولا يُعدّ في «مسكّنون» ولا «متاح للتسكين» */
       ae.concat(le).forEach((t) => {
         if (!t || !t.name || !d(t)) return;
         const e = Tt(t),
           s = l.has(t.name),
           i = !s && n.has(e);
         if (s || i) return (a[e] && y++, void (s ? f++ : u++));
-        (h++, a[e] ? (c++, r[e] && m++) : g++);
+        (h++, ks.isSup(e) ? sp++ : a[e] ? (c++, r[e] && m++) : g++);
       });
       const x = null != _e ? Jt(_e) : "كل الورديات",
         b = h ? Math.round((100 * c) / h) : 0,
+        bg = h ? Math.round((100 * g) / h) : 0,
         k = KIVO.__bsCssObj,
         v = (t, e) => {
           const s = KIVO.BassamMix.rowStyles({ pc: t, color: e, track: "#EEF0F2" });
@@ -12676,7 +12730,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             o(
               "span",
               { style: { fontSize: 9, fontWeight: 400, color: "var(--fg-x94a3b8)", marginTop: 3, whiteSpace: "nowrap" } },
-              "الحضور الفعلي — " + x,
+              "الحضور الفعلي — " + x + (sp ? " · منهم إشرافي " + sp : ""),
             ),
           ),
           o("div", { key: "sp", style: { width: 1, background: "linear-gradient(180deg,transparent,var(--bg-xe6e8eb),transparent)" } }),
@@ -12701,25 +12755,35 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   " من " +
                   h +
                   " (" +
-                  b +
+                  KIVO.bsPct(h ? (100 * c) / h : 0) +
                   "٪) — على " +
                   t.word +
                   " " +
                   m +
                   " وعلى غيرها " +
                   (c - m),
+                KIVO.bsPct(h ? (100 * c) / h : 0),
               ],
               [
                 "av",
                 g,
-                100 - b,
+                bg,
                 "#b45309",
                 "#e5b563",
                 "متاح للتسكين",
                 [["M13 2 3 14h9l-1 8 10-12h-9l1-8"]],
                 "rgba(245,158,11,0.10)",
                 "rgba(245,158,11,0.28)",
-                "حاضرون بلا أي تسكين بعد: " + g + " من " + h + " (" + (100 - b) + "٪) — مسكّنون + متاح = الحضور الفعلي دائماً",
+                "حاضرون بلا أي تسكين بعد: " +
+                  g +
+                  " من " +
+                  h +
+                  " (" +
+                  KIVO.bsPct(h ? (100 * g) / h : 0) +
+                  "٪) — مسكّنون + متاح" +
+                  (sp ? " + الطاقم الإشرافي (" + sp + ") — خارج التسكين —" : "") +
+                  " = الحضور الفعلي دائماً",
+                KIVO.bsPct(h ? (100 * g) / h : 0),
               ],
             ].map((t) =>
               o(
@@ -12766,7 +12830,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   o(
                     "em",
                     { style: { fontStyle: "normal", fontSize: 7.5, fontWeight: 400, color: "var(--fg-x8e959d)", marginRight: 2 } },
-                    t[2] + "٪",
+                    t[10] + "٪",   /* V7 · 53 (ك12): تقريبٌ واحد */
                   ),
                 ),
               ),
@@ -12776,23 +12840,35 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         z = (t) => (null != _e && _e !== Gt ? KIVO.BassamNeed.of(t, _e) : KIVO.BassamNeed.tot(t, Zt)),
         E = ["#b99751", "#9A7E40", "#c9ab6f", "#876a33", "#d6c08a", "#7c6320"],
         M = { fontSize: 8, fontWeight: 400, opacity: 0.62, marginRight: 2, letterSpacing: 0 },
+        /* V7 · 53 (ك15): العجزُ = مجموعُ عجز كل موقع والزائدُ = مجموعُ زائد كل موقع (لا صافيَ يُخفي فيه فائضُ موقعٍ عجزَ آخر) ·
+           المغلقُ والمعطّلُ ميّتان: خارج الاحتياج والعجز والزائد (القاعدةُ نفسُها في «حالة التغطية») */
+        dd = (t) => ("gates" === Te ? (KIVO.BassamLeaf && KIVO.BassamLeaf.closedOf ? KIVO.BassamLeaf.closedOf(pe, t) : !!t.closed) : !!t.off),
         O = t.dims
           .map((s, n) => {
             const r = {},
               a = [];
             e.forEach((e) => {
-              const n = z(e),
-                o = (e.emp || []).filter(i).length;
+              const D = dd(e),
+                n = D ? 0 : z(e),
+                o = (e.emp || []).filter(i).length,
+                df = D ? 0 : Math.max(0, n - o),
+                ex = D ? 0 : Math.max(0, o - n);
               t.vals(e, s[0]).forEach((t) => {
-                (null == r[t] && ((r[t] = { need: 0, plc: 0 }), a.push(t)), (r[t].need += n), (r[t].plc += o));
+                (null == r[t] && ((r[t] = { need: 0, plc: 0, df: 0, ex: 0 }), a.push(t)),
+                  (r[t].need += n),
+                  (r[t].plc += o),
+                  (r[t].df += df),
+                  (r[t].ex += ex));
               });
             });
             const l = a
-              .map((t) => ({ label: t, need: r[t].need, plc: r[t].plc }))
+              .map((t) => ({ label: t, need: r[t].need, plc: r[t].plc, df: r[t].df, ex: r[t].ex }))
               .sort((t, e) => e.need - t.need || e.plc - t.plc || t.label.localeCompare(e.label, "ar"));
             if (!l.length) return null;
             const d = l.reduce((t, e) => t + e.need, 0),
               p = l.reduce((t, e) => t + e.plc, 0),
+              pd = l.reduce((t, e) => t + e.df, 0),
+              px = l.reduce((t, e) => t + e.ex, 0),
               h = "cats" === s[0] ? " · الباب متعدد التخصيصات يُحسب احتياجه وتسكينه في كل تخصيص ينتمي إليه" : "",
               c = (e) => {
                 if (t.g && "loc" === s[0]) {
@@ -12974,23 +13050,25 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         o(
                           "span",
                           { style: { fontSize: 9, fontWeight: 400, color: "var(--fg-x8b9099)", whiteSpace: "nowrap" } },
-                          "كل القيم متساوية الاحتياج",
+                          g ? "كل القيم متساوية الاحتياج" : "لا احتياج محدد",   /* V7 · 53 (ك16) */
                         ),
-                        o(
-                          "span",
-                          {
-                            dir: "ltr",
-                            style: {
-                              fontSize: 11,
-                              fontWeight: 700,
-                              color: "var(--fg-x6f7276)",
-                              lineHeight: 1,
-                              fontFamily: "'Cairo',sans-serif",
-                              fontFeatureSettings: "'tnum'",
-                            },
-                          },
-                          String(g),
-                        ),
+                        g
+                          ? o(
+                              "span",
+                              {
+                                dir: "ltr",
+                                style: {
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  color: "var(--fg-x6f7276)",
+                                  lineHeight: 1,
+                                  fontFamily: "'Cairo',sans-serif",
+                                  fontFeatureSettings: "'tnum'",
+                                },
+                              },
+                              String(g),
+                            )
+                          : null,
                       ),
                     )
                   : o("div", { style: { display: "flex", gap: 6, marginBottom: 6 } }, m(!0, "#dc2626", u, g), m(!1, "#047857", y, f)),
@@ -13031,9 +13109,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   ),
                 ),
               ),
-              v = (t, e, s, n, i, r) => {
-                const a = Math.max(0, e - s),
-                  l = Math.max(0, s - e),
+              v = (t, e, s, n, i, r, df, ex) => {
+                const a = null != df ? df : Math.max(0, e - s),
+                  l = null != ex ? ex : Math.max(0, s - e),
                   p = d ? Math.round((e / d) * 100) : 0,
                   c = d ? (e / d) * 100 : 0,
                   g = e ? Math.round((100 * s) / e) : 0,
@@ -13210,6 +13288,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                             strokeLinejoin: "round",
                           }),
                         ),
+                        t.df,
+                        t.ex,
                       );
                     })
                     .concat([
@@ -13229,6 +13309,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                             opacity: 0.85,
                           },
                         }),
+                        pd,
+                        px,
                       ),
                     ]),
                 ),
@@ -13254,14 +13336,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         ((zn = !0),
         (En = An({
           total: de.length,
-          totalLabel: "إجمالي المصليات",
+          totalLabel: "إجمالي مصليات الدور",   /* V7 · 53 (ك13): النصُّ يذكر النطاق */
           unit: "مصلى",
           unitOf: () => "مصلى",
           dims: He,
           itemsOf: (t) => Ue(t).map((t) => ({ label: t.label, n: t.n, color: t.color })),
+          /* V7 · 53 (ك10): «بلا قراءة» للمفعّل غير المقروء وحده — والمعطّلُ في سطره من التفصيل */
           hero: {
             onN: de.filter((t) => !t.off && null != t.count && "" !== t.count).length,
-            offN: de.filter((t) => t.off || null == t.count || "" === t.count).length,
+            offN: de.filter((t) => !t.off && (null == t.count || "" === t.count)).length,
             onWord: "مقروءة",
             offWord: "بلا قراءة",
           },
@@ -17516,13 +17599,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   pct: t.pct,
                   hasSwatch: !0,
                   swatch: yn(t.color),
-                  pctAll: t.pct + "٪",
+                  pctAll: t.pctTxt + "٪",
                   subPct: "font-size:8px;font-weight:400;opacity:.62;margin-right:2px;letter-spacing:0",
                   markOn: !!KIVO.BassamMix.markOf(e, s),
                   mark: (KIVO.BassamMix.markOf(e, s) || {}).ch,
                   markTitle: (KIVO.BassamMix.markOf(e, s) || {}).title,
                   markStyle: KIVO.BassamMix.markStyle,
-                  tip: t.label + " — " + t.count + " (" + t.pct + "٪)",
+                  tip: t.label + " — " + t.count + " (" + t.pctTxt + "٪)",
                   ...KIVO.BassamMix.rowStyles({ pc: t.pct, lead: !1, color: t.color, track: t.color + "1f", num: t.color, numWidth: 24 }),
                 }));
           return {
@@ -19159,7 +19242,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 " " +
                 s.year +
                 " هـ وإلغاء اعتماده ليصبح متاحاً للتعديل — يمكنك إعادة اعتماده لاحقاً بنقرة مزدوجة على كرته."
-              : "سيتم اعتماد شهر " +
+              : (this._monthRoundDays(s.year, t.n) ? "" : "⚠ لا جولات مسجّلة في هذا الشهر — اعتمادُه يقفله فارغاً. ") +
+                "سيتم اعتماد شهر " +
                 e +
                 " " +
                 s.year +
@@ -19209,7 +19293,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 retroTitle: t.open ? "فتح " + i + " بأثر رجعي" : "إعادة قفل " + i,
                 retroMsg: t.open
                   ? n
-                    ? "هذا اليوم انقضى وأُقفل تلقائياً. فتحه يتيح لك بدء جولته أو تعديلها بأثر رجعي."
+                    ? "هذا اليوم انقضى وأُقفل تلقائياً. فتحه يتيح لك بدء جولته أو تعديلها بأثر رجعي." +
+                      (this.isMonthAp(s.rounds, s.year, t.m) ? " وشهرُه مقفل، فيُفتح الشهرُ معه للاستدراك (تبقى أيامُه الأخرى مقفلة)." : "")
                     : "هذا الشهر انقضى وأُقفل تلقائياً. فتحه يتيح لك إضافة جولاته أو تعديلها بأثر رجعي."
                   : n
                     ? "سيعود اليوم إلى حالته المقفلة بانقضائه، ولن يمكن تعديل جولته حتى تفتحه من جديد."

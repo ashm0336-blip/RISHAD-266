@@ -1074,6 +1074,8 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
     var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
     if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
   }
+  /* V7 · 53: والنسخةُ الشاملة لكل إدارةٍ فيها سجلُّ أدوار ولا منحَ معه (قوالبُ حُوِّلت · 019f): المنحُ المترجَم فوق منح الهدف كما في نسخة الإدارة — نسخةٌ تحمل منحَها تبقى كما هي */
+  if (body.scope.kind === 'full') ((internal && internal.tplDepts) || []).forEach(function (d) { var k = perm44Key(d), gk = enfGrantsKey(d); if (keys[k] == null || keys[gk] !== undefined) return; var gv = rsRoleGrants(A, d, keys[k], inputKeys[gk]); if (gv !== null) { keys[gk] = gv; if (!Object.prototype.hasOwnProperty.call(base, gk)) base[gk] = inputRevs[gk] || 0; } });
   /* 330-auth.pruneDeptAccounts: restore only removes staff/dept identities bound
      to removed departments, never GM/Super accounts. The result still traverses
      applySave's unchanged password, uniqueness and final-super validators. */
@@ -1447,9 +1449,12 @@ void rsPermSlice;   /* V7 · د6 (QA ٦): قاعدةُ الشريحة (051c ← 
    مطفأٌ في سقف الهدف (لكل نظام: عددُ الأدوار والأوراق التي تحمله). مصدرٌ واحد لملخّص ما قبل التأكيد (inspection.counts) وملخّص النجاح (counts) — 548 permsLine */
 function rsPermsCounts(A, d, keys) {
   var out = { roles: 0, assignments: 0, inert: {} }, rk = perm44Key(d), E = perm44E(), on = perm44LeafOn(A, d), add = function (s) { out.inert[s] = (out.inert[s] || 0) + 1; };
+  /* V7 · 53: صفُّ العدسة (52) ليس نظاماً — حيٌّ متى كانت العدسةُ في سقف الوحدة ومضيفٌ لها مفعّل (= 345 keyOn) فلا يُعدّ «بلا أثر» وهو يُمنح */
+  var lensOn = perm44LensOn(A, d), LZ = {}; E.lensList().forEach(function (x) { LZ[x.key] = x; });
+  var rowOn = function (sy) { var L = LZ[sy]; return L ? lensOn(L.lens) && L.hosts.some(on) : E.sysOn(sy, on); };
   if (Object.prototype.hasOwnProperty.call(keys, rk)) {
     var R = perm44Rec(keys[rk]) || { roles: [], people: {} };
-    (R.roles || []).forEach(function (r) { out.roles++; Object.keys(isObj(r && r.sys) ? r.sys : {}).forEach(function (sy) { if (!E.sysOn(sy, on)) add(sy); }); });
+    (R.roles || []).forEach(function (r) { out.roles++; Object.keys(isObj(r && r.sys) ? r.sys : {}).forEach(function (sy) { if (!rowOn(sy)) add(sy); }); });
     out.assignments += Object.keys(isObj(R.people) ? R.people : {}).length;
   }
   if (Object.prototype.hasOwnProperty.call(keys, K_PERM)) {
@@ -1544,6 +1549,7 @@ async function rsBackupRun(env, A, request, body, reference, rawFingerprint, sta
       fingerprint: rawFingerprint,
       images: stage || converted.images,
       release: !!stage,
+      tplDepts: converted.tplDepts,
     });
     plan.guards.push.apply(plan.guards, converted.readGuards || []);
     converted.summary.imagesReused = plan.imagesReused;

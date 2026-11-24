@@ -729,7 +729,7 @@ async function irExport(env, A, url) {
     if (!d) for (var dept of depts) contexts.push(await irQueryContext(env, { u: { id: uid } }, dept, { write: true }));
     contexts.forEach(function (ctx) {
       var actor = ctx.A;
-      if ((!d && actor.u.role !== 'super') || !canRead(actor, irKey(ctx.d)) || !deptInScope(actor, ctx.d) ||
+      if ((!d && actor.u.role !== 'super') || !(canRead(actor, irKey(ctx.d)) || (d && bkOffMgr(actor, d, irKey(d)))) || !deptInScope(actor, ctx.d) ||   /* V7 · 53: 019u bkOffMgr */
           !bkExportOk(actor, ctx.d))   /* IP39 (019u): backup.view alone does not export */
         throw irError('irshad-export-permission', 403);
       authorityGuards.push.apply(authorityGuards, ctx.guards);

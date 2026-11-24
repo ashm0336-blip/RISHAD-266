@@ -510,6 +510,10 @@
    "order": 30,
    "text": "awards:1,"
   },
+  "root.deptBackup.domainKey": {
+   "order": 30,
+   "text": "awards:\"bassam_award_v1\", "
+  },
   "tree.keyCap": {
    "order": 30,
    "text": "    bassam_award_v1:'award', bassam_award_docs_v1:'award', bassam_award_docs_v2:'award'"
