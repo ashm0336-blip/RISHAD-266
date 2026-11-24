@@ -851,7 +851,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     /* V7 · د7 (52 · الجرد ٤): لا تنظيفَ تلقائياً للصلاحيات عند فتح الجدول — كان pruneOrphanEmpPerms يحذف صحائفَ كاملة بقائمة حساباتٍ مُرشَّحة
        بلا فعلٍ من المستخدم ولا تحقّقٍ من المدير. الحذفُ فعلٌ صريح وحده (حذفُ الحساب ← dropEmpPerms) */
   }
+  /* V7 · 53: الجدولُ مخزَّنٌ بالشهر — أشهرُ السنة المعروضة (بطاقاتُها الاثنتا عشرة) والشهرُ السابق للمختار (النسخُ منه) تُطلب مرةً، وما حُمِّل لا يُعاد */
+  _stPeriods(s) {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (!S || !S.split || !S.split("bassam_staffing_v3")) return;
+    const want = this.MONTHS.map((t, i) => this._mk(s.year, i + 1)).concat([this.prevMonthKey(s.year, s.month)]),
+      sig = want.join(",");
+    if (this._stWant === sig) return;
+    this._stWant = sig;
+    S.want("bassam_staffing_v3", { groups: want });   /* فشلٌ ⇒ حالةُ الخطأ في القراءة؛ التنقّلُ يعيد الطلب (لا إعادةَ مع كل رسم) */
+  }
   renderVals() {
+    this._stPeriods(this.state);
     const t = this,
       e = this._stPermVals(),
       s = this.state,

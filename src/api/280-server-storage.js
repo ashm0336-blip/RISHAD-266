@@ -31,7 +31,7 @@
   ]);
   /* V7 · 53: الموارد المخزّنة بالفترة (عقد الخادم) — الحقلُ الحاوي للفترات ('' = أعضاءُ الجذر) · والمواردُ التي تُقرأ بالأيام افتراضاً */
   var PERIOD_RES9 = Object.freeze({ bassam_plan_v1: 'months', bassam_staffing_v3: '', bassam_rounds_v1: '', bassam_rounds_arc_v1: '', bassam_dreport_v1: '', bassam_tasks_v1: '' });
-  var PERIOD_DAY9 = Object.freeze({ bassam_dreport_v1: 1 });
+  var PERIOD_DAY9 = Object.freeze({ bassam_dreport_v1: 1 }), PERIOD_MONTHLY9 = Object.freeze({ bassam_plan_v1: 1, bassam_staffing_v3: 1 });   /* شهرُها فترةٌ واحدة */
   function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '').replace(/@[^@]*$/, '')) !== -1; }   /* V7 · 53: K@p مورد عمليات كذلك */
   function operationKey9(k) { return typeof k === 'string' && (/^bsdept:[^:\s,]+:bassam_[A-Za-z0-9_]+$/.test(k) && operationResource9(k) || !!periodParse9(k)); }
   var DEVK9 = { bassam_session_v1: 1, bassam_theme: 1,
@@ -1149,7 +1149,7 @@
      الحفظُ يغيّر ما غيّره المستخدم وحده). اسمُ الفترة نصُّ المفتاح القائم كما هو، ولا تحليلَ تاريخٍ في هذه الطبقة: «الشهرُ الحالي واليوم»
      يسمّيهما التقويمُ في periodNow9 وحدها، والصفحةُ تطلب ما تعرضه بـoperations.want. */
   var periodWant9 = Object.create(null), periodGroups9 = Object.create(null), periodOrder9 = Object.create(null);
-  var periodGrpOf9 = Object.create(null), periodViewRev9 = Object.create(null), periodTextRev9 = Object.create(null), periodSeq9 = 0, periodLoadSeq9 = Object.create(null), periodGetSeq9 = Object.create(null), periodPk9 = null;
+  var periodLogicalRev9 = Object.create(null), periodGrpOf9 = Object.create(null), periodViewRev9 = Object.create(null), periodTextRev9 = Object.create(null), periodSeq9 = 0, periodLoadSeq9 = Object.create(null), periodGetSeq9 = Object.create(null), periodPk9 = null;
   function periodName9(name) { return Object.prototype.hasOwnProperty.call(PERIOD_RES9, name) && operationResources9.indexOf(name) !== -1; }
   function periodParse9(k) { var m = /^(bsdept:[^:\s,@]+:(bassam_[A-Za-z0-9_]+))@([^,@*;\u0000-\u001f]{0,64})$/.exec(String(k)); return m && periodName9(m[2]) ? { K: m[1], name: m[2], p: m[3] } : null; }
   function periodLogical9(k) { var m = /^bsdept:[^:\s,@]+:(bassam_[A-Za-z0-9_]+)$/.exec(String(k)); return !!m && periodName9(m[1]); }
@@ -1213,7 +1213,7 @@
   function periodForgetAll9(K) {
     var pre = K + '@';
     Object.keys(operationKnown9).forEach(function (key) { if (key.indexOf(pre) === 0) { delete mem[key]; delete baseVal[key]; delete krev[key]; operationKnown9[key] = { state: 'unloaded' }; } });
-    delete periodGroups9[K];
+    delete periodGroups9[K]; delete periodLogicalRev9[K];
   }
   /* «الوثيقة» المعروضة للصفحة: الرأس + الفتراتُ المحمَّلة. known.rev (أساسُ المسودة) يتقدّم حين يتغيّر ما سبق تحميلُه فقط —
      فتحميلُ شهرٍ آخر بالتنقّل لا يُبطل مسودةً مفتوحة؛ krev يتقدّم مع كل تغيّرٍ في النص (بصمةُ الرسم في الصفحات). */
@@ -1231,7 +1231,7 @@
     if (present) { mem[K] = JSON.stringify(periodJoin9(name, head.state === 'ready' ? JSON.parse(mem[hk]) : periodHeadNorm9(name, {}), periods, periodOrder9[K])); baseVal[K] = mem[K]; }
     else { delete mem[K]; delete baseVal[K]; }
     if (before !== mem[K] || !periodOwn9(periodTextRev9, K)) periodTextRev9[K] = (periodTextRev9[K] || 0) + 1;
-    krev[K] = periodTextRev9[K];
+    krev[K] = periodOwn9(periodLogicalRev9, K) ? periodLogicalRev9[K] : periodTextRev9[K];   /* مراجعةُ K في الخادم إن أرسلها (أوامرُ المهام تحملها) */
     operationKnown9[K] = { state: present ? 'ready' : 'absent', epoch: head.epoch, rev: periodViewRev9[K], stamp: head.stamp, split: 1 };
   }
   function periodQuery9(q, stamp) {
@@ -1241,6 +1241,7 @@
     if (!operationObject9(data) || data.ok !== 1 || data.uid !== stamp.uid || !operationInteger9(data.epoch) || !operationInteger9(data.v)
         || !operationObject9(data.resources) || !Array.isArray(data.absent) || !Array.isArray(data.denied) || !operationObject9(data.base)) return false;
     var failed = data.failed === undefined ? {} : data.failed, ranges = data.ranges === undefined ? {} : data.ranges;
+    if (data.logical !== undefined && (!operationObject9(data.logical) || Object.keys(data.logical).some(function (k) { return k !== q.K || !operationInteger9(data.logical[k]); }))) return false;
     if (!operationObject9(failed) || !operationObject9(ranges) || Object.keys(ranges).some(function (r) { return q.range.indexOf(r) === -1; })) return false;
     var expect = q.keys.slice();
     for (var i = 0; i < q.range.length; i++) {
@@ -1257,7 +1258,7 @@
     var response = await fetch(periodQuery9(q, stamp), { credentials: 'same-origin', cache: 'no-store' }), data = null;
     try { data = await response.json(); } catch (e) { data = null; }
     /* شهرُ موردٍ يوميٍّ تجاوز حدَّ القراءة (تقريرُ إدارةٍ كبيرة · S6): يُطلب اليومان وعلامةُ الشهر وحدها، ويبقى المورد بالأيام في هذه الصفحة */
-    if (response.status === 413 && data && data.err === 'read-too-large' && q.K && q.range.length && !q.retried) {
+    if (response.status === 413 && data && data.err === 'read-too-large' && q.K && q.logical && q.range.length && !q.retried) {
       var now = periodNow9(), w = periodWant9[q.K] || (periodWant9[q.K] = { groups: [], periods: [], day: false });
       w.day = true; w.groups = w.groups.filter(function (g) { return q.range.indexOf(q.K + '@' + g) === -1; });
       var ks = q.keys.slice();
@@ -1268,7 +1269,7 @@
   }
   /* قراءةٌ فيها مفتاحُ موردٍ مقسَّم (منطقيٌّ K أو فترة K@p): طلبٌ لكل مورد مقسَّم (≤ 40 فترة لكلٍّ في العقد) وطلبٌ للبقية، معاً.
      الجوابُ للمستدعي بشكله القديم (resources/base بالمفاتيح المنطقية)، والفتراتُ في الذاكرة بمفاتيحها ومراجعاتها. */
-  async function periodRead9(keys, extra) {
+  async function periodRead9(keys, extra, quiet) {
     var stamp = operationContext9(), response = null;
     if (!stamp) return operationFailure9('session', 401);
     if (!Array.isArray(keys) || !keys.length || keys.length > 80 || new Set(keys).size !== keys.length || !keys.every(operationKey9)) return operationFailure9('keys', 400);
@@ -1310,6 +1311,7 @@
       var out = { ok: 1, uid: stamp.uid, epoch: epoch, v: v, resources: {}, absent: [], denied: [], base: {} }, failedAll = {}, bump = Object.create(null);
       answers.forEach(function (x) {
         var data = x.data, failed = data.failed || {};
+        if (x.q.K && data.logical && periodOwn9(data.logical, x.q.K)) periodLogicalRev9[x.q.K] = data.logical[x.q.K];
         Object.keys(data.ranges || {}).forEach(function (r) {
           var K = x.q.K, g = r.slice(K.length + 1), order = (periodOrder9[K] || []).slice(), list = data.ranges[r];
           /* فترةٌ كانت في هذا الشهر عندي ولم تعد في جوابه: حُذفت في الخادم ⇒ تُنسى (لا تبقى قيمةً قديمة) */
@@ -1340,7 +1342,7 @@
         else if (known.state === 'denied') out.denied.push(K);
       });
       operationSnapshot9 = { uid: stamp.uid, dept: stamp.dept, generation: stamp.generation, epoch: epoch, v: v, keys: keys.slice(), base: operationClone9(out.base) };
-      plain.concat(Object.keys(split)).forEach(notify);
+      plain.concat(Object.keys(split)).forEach(function (key) { if (!quiet || !periodOwn9(split, key)) notify(key); });   /* quiet: الصفحةُ الطالبة تضمّ الفترةَ بنفسها */
       var codes = Object.keys(failedAll);
       if (codes.length) return Object.assign(operationFailure9(failedAll[codes[0]], failedAll[codes[0]] === 'db-busy' ? 503 : 413), { failed: failedAll });
       return out;
@@ -1372,8 +1374,24 @@
       var known = operationKnown9[K + '@' + p]; return !fresh || !known || !known.stamp || !operationSame9(known.stamp) || known.epoch !== operationEpoch9 || (known.state !== 'ready' && known.state !== 'absent');
     });
     if (!needG.length && !needP.length) return Promise.resolve({ ok: 1, cached: 1 });
-    var extra = {}; extra[K] = { groups: needG, periods: needP };
-    return periodRead9([K + '@'], extra);
+    var quiet = !!(spec && spec.quiet), parts = PERIOD_MONTHLY9[name] || needG.length < 2 ? [{ groups: needG, periods: needP }]
+      : needG.map(function (g) { return { groups: [g], periods: [] }; }).concat(needP.length ? [{ groups: [], periods: needP }] : []);   /* شهرُ أيامٍ لكل طلب (≤ 40 فترة) */
+    return Promise.all(parts.map(function (part) { var extra = {}; extra[K] = part; return periodRead9([K + '@'], extra, quiet); })).then(function (all) {
+      return all.filter(function (r) { return !r || r.ok !== 1; })[0] || all[all.length - 1];
+    });
+  }
+  /* فهرسُ فترات المورد بلا محتوى ({ p, grp, seq, rev, bytes } بترتيب seq) — لما يسرد الأشهرَ كلها (نسخُ خطة شهرٍ آخر) */
+  async function periodIndex9(name) {
+    var stamp = operationContext9(), K;
+    if (!stamp) return operationFailure9('session', 401);
+    try { K = operationScoped9(name); } catch (error) { return operationFailure9('scope', 400); }
+    if (!periodName9(name)) return operationFailure9('not-split', 400);
+    try {
+      var response = await fetch('/api/operations/read?keys=' + encodeURIComponent(K + '@') + '&index=' + encodeURIComponent(K) + '&uid=' + encodeURIComponent(stamp.uid), { credentials: 'same-origin', cache: 'no-store' }), data = await response.json();
+      if (!operationSame9(stamp)) return operationFailure9('stale', 409);
+      if (!response.ok || !operationObject9(data) || data.ok !== 1 || !operationObject9(data.index) || !Array.isArray(data.index[K])) return operationFailure9((data && data.err) || 'index', response.status);
+      return { ok: 1, key: K, index: data.index[K].filter(function (x) { return x && typeof x.p === 'string' && x.p; }) };
+    } catch (error) { return operationFailure9('index', 0); }
   }
   /* الحفظ: الوثيقةُ التي تكتبها الصفحة ⇒ الرأسُ إن تغيّر + كلُّ فترةٍ تغيّرت (أو جديدة) + حذفُ فترةٍ محمَّلةٍ رأتها الصفحةُ ثم أزالتها.
      فترةٌ لم تُقرأ قط تُكتب على المراجعة 0 (الخادمُ يردّها تعارضاً إن وُجدت). بلا فرقٍ أصلاً ⇒ إيصالٌ محلّي بلا طلب. */
@@ -2315,7 +2333,8 @@
         if (!known || !known.stamp || !operationSame9(known.stamp)) return undefined;
         return known.state === 'ready' ? JSON.parse(mem[K + '@' + p]) : known.state === 'absent' ? null : undefined;
       },
-      summary: periodSummary9
+      summary: periodSummary9,
+      index: periodIndex9
     })
   };
 })();
