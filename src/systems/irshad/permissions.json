@@ -16,6 +16,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "عرض لوحة المؤشرات",
+     "verb": "يعرض لوحة مؤشرات الاسترشاد",
+     "place": "نظام الاسترشاد ← لوحة المؤشرات",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -69,6 +71,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "عرض السجلات",
+     "verb": "يعرض سجلات الاسترشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -120,6 +124,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "إضافة سجل",
+     "verb": "يضيف سجل استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -171,6 +177,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "تعديل سجل",
+     "verb": "يعدّل سجل استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -222,6 +230,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "تغيير الحالة",
+     "verb": "يغيّر حالة سجل استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -267,6 +277,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "حذف سجل",
+     "verb": "يحذف سجل استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -318,6 +330,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "عرض مواقع الاسترشاد",
+     "verb": "يعرض مواقع الاسترشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -367,6 +381,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "إضافة موقع استرشاد",
+     "verb": "يضيف موقع استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -416,6 +432,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "تعديل موقع استرشاد",
+     "verb": "يعدّل موقع استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -465,6 +483,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "حذف موقع استرشاد",
+     "verb": "يحذف موقع استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -514,6 +534,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "عرض لغات الاسترشاد",
+     "verb": "يعرض لغات الاسترشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -563,6 +585,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "إضافة لغة استرشاد",
+     "verb": "يضيف لغة استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -612,6 +636,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "تعديل لغة استرشاد",
+     "verb": "يعدّل لغة استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -661,6 +687,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "حذف لغة استرشاد",
+     "verb": "يحذف لغة استرشاد",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -710,6 +738,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "حذف جميع تقارير الاسترشاد للشهر",
+     "verb": "يحذف جميع تقارير الاسترشاد لشهر",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -761,6 +791,8 @@
      "ownerKind": "page",
      "domain": "irshad",
      "label": "فتح شهر/يوم مقفل للاستدراك",
+     "verb": "يفتح شهراً أو يوماً مقفلاً للاستدراك",
+     "place": "نظام الاسترشاد ← السجلات",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -928,7 +960,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.ir.dash.export"
-     ]
+     ],
+     "verb": "يصدّر لوحة مؤشرات الاسترشاد إلى ملف",
+     "place": "نظام الاسترشاد ← لوحة المؤشرات"
     }
    },
    {
@@ -1027,7 +1061,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.ir.rec.export"
-     ]
+     ],
+     "verb": "يصدّر سجلات الاسترشاد إلى ملف",
+     "place": "نظام الاسترشاد ← السجلات"
     }
    },
    {

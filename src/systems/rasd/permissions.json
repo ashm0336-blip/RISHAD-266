@@ -16,6 +16,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "عرض لوحة المؤشرات",
+     "verb": "يعرض لوحة مؤشرات رصد الحالات",
+     "place": "نظام رصد الحالات ← لوحة المؤشرات",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -68,6 +70,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "عرض السجلات",
+     "verb": "يعرض سجلات رصد الحالات",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -118,6 +122,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "إضافة سجل",
+     "verb": "يضيف سجل رصد",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -168,6 +174,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "تعديل سجل",
+     "verb": "يعدّل سجل رصد",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -218,6 +226,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "تغيير الحالة",
+     "verb": "يغيّر حالة سجل رصد",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -263,6 +273,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "حذف سجل",
+     "verb": "يحذف سجل رصد",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -313,6 +325,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "عرض قوائم رصد الحالات",
+     "verb": "يعرض قوائم رصد الحالات",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -362,6 +376,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "إضافة بند إلى قوائم رصد الحالات",
+     "verb": "يضيف بنداً إلى قوائم رصد الحالات",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -411,6 +427,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "تعديل بند في قوائم رصد الحالات",
+     "verb": "يعدّل بنداً في قوائم رصد الحالات",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -460,6 +478,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "حذف بند من قوائم رصد الحالات",
+     "verb": "يحذف بنداً من قوائم رصد الحالات",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -509,6 +529,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "حذف جميع تقارير رصد الحالات للشهر",
+     "verb": "يحذف جميع تقارير رصد الحالات لشهر",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -559,6 +581,8 @@
      "ownerKind": "page",
      "domain": "rasd",
      "label": "فتح شهر/يوم مقفل للاستدراك",
+     "verb": "يفتح شهراً أو يوماً مقفلاً للاستدراك",
+     "place": "نظام رصد الحالات ← السجلات",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -702,7 +726,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.rz.dash.export"
-     ]
+     ],
+     "verb": "يصدّر لوحة مؤشرات رصد الحالات إلى ملف",
+     "place": "نظام رصد الحالات ← لوحة المؤشرات"
     }
    },
    {
@@ -797,7 +823,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.rz.rec.export"
-     ]
+     ],
+     "verb": "يصدّر سجلات رصد الحالات إلى ملف",
+     "place": "نظام رصد الحالات ← السجلات"
     }
    },
    {

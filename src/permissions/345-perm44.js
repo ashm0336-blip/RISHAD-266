@@ -2,7 +2,7 @@
    perm44-core.js (المحرّكُ المشترك — نصُّه في الواجهة والخادم حرفاً) وperm44-client.js وقائمةِ الأنظمة من manifests/pages.json — لا يُحرَّر يدوياً. ═══ */
 (function () {
   'use strict';
-var KIVO_PERM44_DATA = {"v":1,"levels":[{"key":"view","name":"مشاهدة فقط","types":["access","view"],"sensitive":false},{"key":"input","name":"إدخال","types":["access","view","create"],"sensitive":false},{"key":"edit","name":"تعديل","types":["access","view","create","edit"],"sensitive":false},{"key":"full","name":"كامل","types":"*","sensitive":false,"ff":true},{"key":"sensitive","name":"حسّاس","types":"*","sensitive":true,"ff":true},{"key":"custom","name":"مخصّص","custom":true}],"names":{"custom":"صلاحيات مخصّصة","none":"بلا صلاحيات","super":"صلاحية كاملة بلا أي قيد"},"systems":[{"key":"dstats","name":"الإحصائيات اليومية","leaves":["dstats","dstats/haram","dstats/nabawi","dstats/anHaram","dstats/anNabawi","dstats/anCmp","dstats/anTime"],"toggle":true,"plat":false},{"key":"emps","name":"موظفو الإدارة","leaves":["emps","emps/data"],"toggle":false,"plat":false},{"key":"custody","name":"عهد الموظفين","leaves":["emps/custody"],"toggle":true,"plat":false,"under":"emps"},{"key":"planning","name":"الخطة التشغيلية","leaves":["planning","planning/readiness"],"toggle":true,"plat":true},{"key":"staff","name":"الجدول الشهري","leaves":["staff"],"toggle":true,"plat":false,"under":"planning"},{"key":"plan","name":"التشغيل الميداني","leaves":["plan"],"toggle":true,"plat":false,"under":"planning"},{"key":"daily","name":"المتابعة اليومية","leaves":["daily","daily/kpiDaily","daily/kpiOcc","daily/kpiZones","daily/rounds","daily/field"],"toggle":true,"plat":true},{"key":"dreport","name":"التقرير اليومي","leaves":["dreport"],"toggle":true,"plat":false,"under":"daily"},{"key":"tasks","name":"المهام","leaves":["tasks"],"toggle":true,"plat":false,"under":"daily"},{"key":"irshad","name":"نظام الاسترشاد","leaves":["irshad","irshad/dash","irshad/records"],"toggle":true,"plat":true},{"key":"seized","name":"نظام المضبوطات","leaves":["seized","seized/dash","seized/records"],"toggle":true,"plat":true},{"key":"rasd","name":"نظام رصد الحالات","leaves":["rasd","rasd/dash","rasd/records"],"toggle":true,"plat":true,"optIn":true},{"key":"award","name":"جائزة التميز","leaves":["award","award/new","award/res","award/doc"],"toggle":true,"plat":true},{"key":"links","name":"مواقع ذات صلة","leaves":["links"],"toggle":true,"plat":false},{"key":"help","name":"المساعدة","leaves":["help"],"toggle":true,"plat":false}],"lenses":[{"key":"zones","name":"المصليات","hosts":["plan","daily/rounds"]},{"key":"paths","name":"المسارات","hosts":["plan","daily/rounds"]},{"key":"gates","name":"البوابات","hosts":["plan","daily/rounds"]},{"key":"marks","name":"العلامات","hosts":["plan","daily/rounds"]},{"key":"dist","name":"التوزيع","hosts":["plan","daily/rounds"]},{"key":"dens","name":"الكثافة","hosts":["plan","daily/rounds"]}]};
+var KIVO_PERM44_DATA = {"v":1,"levels":[{"key":"view","name":"مشاهدة","desc":"يشاهد فقط","types":["access","view"],"sensitive":false},{"key":"input","name":"إدخال","desc":"+ يضيف جديداً","types":["access","view","create"],"sensitive":false},{"key":"edit","name":"تعديل","desc":"+ يعدّل ويُسند ويُرفق","types":["access","view","create","edit"],"sensitive":false},{"key":"full","name":"تشغيل","desc":"+ يقبل وينهي ويصدّر","types":"*","sensitive":false,"ff":true},{"key":"sensitive","name":"إشراف","desc":"+ يحذف ويعتمد ويقفل ويعيد الفتح","types":"*","sensitive":true,"ff":true},{"key":"custom","name":"مخصّص","desc":"تختار الأفعال واحداً واحداً","custom":true}],"names":{"custom":"صلاحيات مخصّصة","none":"بلا صلاحيات","super":"صلاحية كاملة بلا أي قيد"},"systems":[{"key":"dstats","name":"الإحصائيات اليومية","leaves":["dstats","dstats/haram","dstats/nabawi","dstats/anHaram","dstats/anNabawi","dstats/anCmp","dstats/anTime"],"toggle":true,"plat":false},{"key":"emps","name":"موظفو الإدارة","leaves":["emps","emps/data"],"toggle":false,"plat":false},{"key":"custody","name":"عهد الموظفين","leaves":["emps/custody"],"toggle":true,"plat":false,"under":"emps"},{"key":"planning","name":"الخطة التشغيلية","leaves":["planning","planning/readiness"],"toggle":true,"plat":true},{"key":"staff","name":"الجدول الشهري","leaves":["staff"],"toggle":true,"plat":false,"under":"planning"},{"key":"plan","name":"التشغيل الميداني","leaves":["plan"],"toggle":true,"plat":false,"under":"planning"},{"key":"daily","name":"المتابعة اليومية","leaves":["daily","daily/kpiDaily","daily/kpiOcc","daily/kpiZones","daily/rounds","daily/field"],"toggle":true,"plat":true},{"key":"dreport","name":"التقرير اليومي","leaves":["dreport"],"toggle":true,"plat":false,"under":"daily"},{"key":"tasks","name":"المهام","leaves":["tasks"],"toggle":true,"plat":false,"under":"daily"},{"key":"irshad","name":"نظام الاسترشاد","leaves":["irshad","irshad/dash","irshad/records"],"toggle":true,"plat":true},{"key":"seized","name":"نظام المضبوطات","leaves":["seized","seized/dash","seized/records"],"toggle":true,"plat":true},{"key":"rasd","name":"نظام رصد الحالات","leaves":["rasd","rasd/dash","rasd/records"],"toggle":true,"plat":true,"optIn":true},{"key":"award","name":"جائزة التميز","leaves":["award","award/new","award/res","award/doc"],"toggle":true,"plat":true},{"key":"links","name":"مواقع ذات صلة","leaves":["links"],"toggle":true,"plat":false},{"key":"help","name":"المساعدة","leaves":["help"],"toggle":true,"plat":false}],"lenses":[{"key":"zones","name":"المصليات","hosts":["plan","daily/rounds"]},{"key":"paths","name":"المسارات","hosts":["plan","daily/rounds"]},{"key":"gates","name":"البوابات","hosts":["plan","daily/rounds"]},{"key":"marks","name":"العلامات","hosts":["plan","daily/rounds"]},{"key":"dist","name":"التوزيع","hosts":["plan","daily/rounds"]},{"key":"dens","name":"الكثافة","hosts":["plan","daily/rounds"]}]};
 /* V7 · د5-هـ (44): المحرّكُ المشترك للأدوار — نصٌّ واحدٌ يُحقن حرفياً في الواجهة (345-perm44.js) والخادم (057b-perm44.js) بأداة tools/generate.py.
    دالّةٌ نقيّة: لا تقرأ مخزناً ولا جلسة — السجلُّ (R = KIVO_REGISTRY) والجدول (D = KIVO_PERM44_DATA) والسقفُ (دالّةٌ على المفتاح) تأتيها من المضيف. */
 function perm44Make(R, D) {
@@ -16,7 +16,7 @@ function perm44Make(R, D) {
   var leafSys = {};
   for (i = 0; i < D.systems.length; i++) for (j = 0; j < D.systems[i].leaves.length; j++) leafSys[D.systems[i].leaves[j]] = D.systems[i].key;
   /* V7 · 53 (قرار المالك — التصدير «أ»): أعلامُ التصدير ff.<نظام>.export — ذرّاتُ «تصدير» حُوِّلت إلى أعلام ميزات (converted_to_feature) فلا مفاتيحَ لها
-     في السجلّ ولا تحملها بتّاتُ الخادم. يحملها مستوى ff (كامل · حسّاس) ويُختار العلمُ في «مخصّص»؛ لا تُعطى لمشاهدة ولا إدخال ولا تعديل · FFL[علم] = ورقتُه */
+     في السجلّ ولا تحملها بتّاتُ الخادم. يحملها مستوى ff (تشغيل full · إشراف sensitive) ويُختار العلمُ في «مخصّص»؛ لا تُعطى لمشاهدة ولا إدخال ولا تعديل · FFL[علم] = ورقتُه */
   var FFS = {}, FFL = {}, AT = R.atoms || {}, ak;
   for (ak in AT) {
     var at0 = AT[ak]; if (!at0 || at0.act !== 'export' || at0.disposition !== 'converted_to_feature') continue;
@@ -476,6 +476,30 @@ function latentText(detail, did) {
   else S.forEach(function (s) { if (!sys && s.leaves.indexOf(x) !== -1) sys = s.name; });
   return 'لم يُحفظ شيء: الحفظُ كان سيحذف صلاحيةَ «' + (who || 'موظف') + '» في «' + (sys || 'نظامٍ مطفأ') + '» — النظامُ مطفأٌ في سقف الوحدة فصلاحيتُه فيه مخفيّة، وتعود كما كانت متى أُعيد تشغيلُه. أعد تحميل الصفحة ثم كرّر التعديل';
 }
+/* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): جدولُ أفعال صفٍّ في الدور (نظامٌ أو عدسة) بترتيب السجلّ = ما يحكمه الصفّ في المحرّك نفسِه: keysFor «إشراف»
+   وأعلامُ تصديره (sysFlags)، بلا مفاتيح عدسةٍ لها صفٌّ في الدور rs (يحكمها صفُّها — compileRole)؛ ومعها ما لا يُمنح بالأدوار من أفعال النظام:
+   grant none ⇒ «للمدير فقط» · self ⇒ «لكل موظف على ما يخصه» (بلا مربع). النصّان (الفعل a · المكان w) من السجلّ المولَّد (verb · place) وحده؛ m = أدنى مستوى
+   يحمل الفعل؛ st = حالتُه في المستوى lvl («✔» · «✕ يحتاج <المستوى>») — وفي «مخصّص» (ck: مربعٌ عند كل فعلٍ يُمنح) اسمُ مستواه. عرضٌ فقط: لا يغيّر منحاً */
+function acts(sk, rs, lvl) {
+  var E = eng(), R = (typeof KIVO_REGISTRY !== 'undefined' && KIVO_REGISTRY) || KIVO.KIVO_REGISTRY, lz = /^lens\./.test(sk), S = null, fe = {}, nm = {}, cust = false, out = [], q;
+  E.sysList().forEach(function (x) { if (x.key === sk) S = x; });
+  for (q in R.atoms) (R.atoms[q].targets || []).forEach(function (f) { fe[f] = R.atoms[q]; });
+  var L = E.levels().filter(function (l) { nm[l.key] = l.name; if (l.key === lvl) cust = !!l.custom; return !l.custom; });
+  var gk = E.keysFor(sk, 'sensitive'), hv = cust ? [] : E.keysFor(sk, lvl).concat(E.flagsFor(sk, lvl));
+  function row(k, e, f) {
+    var m = '', n, no = e && e.grant === 'none' ? 'للمدير فقط' : e && e.grant === 'self' ? 'لكل موظف على ما يخصه' : '';
+    for (n = 0; n < L.length && !m; n++) if ((f ? E.flagsFor(sk, L[n].key) : E.keysFor(sk, L[n].key)).indexOf(k) !== -1) m = L[n].key;
+    return { k: k, a: (e && (e.verb || e.label)) || k, w: (e && e.place) || '', m: m, ck: cust && !no, st: no || (cust ? nm[m] || '' : hv.indexOf(k) !== -1 ? '✔' : '✕ يحتاج ' + (nm[m] || '')) };
+  }
+  R.keys.forEach(function (k) {
+    var e = R.byKey[k];
+    if (gk.indexOf(k) !== -1 ? !lz && obj(rs) && /^lens\./.test(e.owner) && obj(rs[e.owner])
+      : lz || !S || !((e.grant === 'none' && e.ownerKind === 'page' && S.leaves.indexOf(e.owner) !== -1) || (e.grant === 'self' && E.sysOfKey(k).indexOf(sk) !== -1))) return;
+    out.push(row(k, e, false));
+  });
+  E.sysFlags(sk).forEach(function (f) { out.push(row(f, fe[f], true)); });
+  return out;
+}
 var API = {
   latentText: latentText,
   refreshUnits: refreshUnits,
@@ -492,6 +516,7 @@ var API = {
   offClosure: function (list) { return eng().offClosure(list); },
   offWith: function (keys, onFn) { return eng().offWith(keys, onFn); },   /* V7 · د6: ما يُطفأ مع تغييرٍ معلَّق (لـ«أثر الحفظ») */   /* V7 · د6: إغلاقُ المطفأ على المنصة (المحرّكُ المشترك) */
   sysKeys: function (s) { return eng().sysKeys(s); },
+  acts: acts,   /* V7 · 53 (وضوح الصلاحيات): جدولُ أفعال الصف تحت مستواه */
   sysFlags: function (s) { return eng().sysFlags(s); },   /* V7 · 53: أعلامُ التصدير — أفعالُ «مخصّص» */
   flagsFor: function (s, lvl, custom) { return eng().flagsFor(s, lvl, custom); },
   flagsOf: function (rec, roles, leafOn) { return eng().flagsOf(rec, roles, leafOn); },

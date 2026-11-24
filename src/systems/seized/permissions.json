@@ -16,6 +16,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "عرض لوحة المؤشرات",
+     "verb": "يعرض لوحة مؤشرات المضبوطات",
+     "place": "نظام المضبوطات ← لوحة المؤشرات",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -71,6 +73,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "عرض المضبوطات",
+     "verb": "يعرض المضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -123,6 +127,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "تسجيل مضبوطة",
+     "verb": "يسجّل مضبوطة",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -175,6 +181,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "تعديل البيانات",
+     "verb": "يعدّل بيانات مضبوطة",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -227,6 +235,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "حذف سجل",
+     "verb": "يحذف سجل مضبوطة",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -279,6 +289,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "عرض مواقع الضبط",
+     "verb": "يعرض مواقع الضبط",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -327,6 +339,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "إضافة موقع ضبط",
+     "verb": "يضيف موقع ضبط",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -375,6 +389,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "تعديل موقع ضبط",
+     "verb": "يعدّل موقع ضبط",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -423,6 +439,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "حذف موقع ضبط",
+     "verb": "يحذف موقع ضبط",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -471,6 +489,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "عرض تصنيفات المضبوطات",
+     "verb": "يعرض تصنيفات المضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -519,6 +539,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "إضافة تصنيف مضبوطات",
+     "verb": "يضيف تصنيف مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -567,6 +589,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "تعديل تصنيف مضبوطات",
+     "verb": "يعدّل تصنيف مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -615,6 +639,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "حذف تصنيف مضبوطات",
+     "verb": "يحذف تصنيف مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -663,6 +689,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "عرض بنود المضبوطات",
+     "verb": "يعرض بنود المضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -711,6 +739,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "إضافة بند مضبوطات",
+     "verb": "يضيف بند مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -759,6 +789,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "تعديل بند مضبوطات",
+     "verb": "يعدّل بند مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -807,6 +839,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "حذف بند مضبوطات",
+     "verb": "يحذف بند مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -855,6 +889,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "عرض أنواع المضبوطات",
+     "verb": "يعرض أنواع المضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -903,6 +939,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "إضافة نوع مضبوطات",
+     "verb": "يضيف نوع مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -951,6 +989,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "تعديل نوع مضبوطات",
+     "verb": "يعدّل نوع مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -999,6 +1039,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "حذف نوع مضبوطات",
+     "verb": "يحذف نوع مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -1047,6 +1089,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "عرض إجراءات المضبوطات",
+     "verb": "يعرض إجراءات المضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -1095,6 +1139,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "إضافة إجراء مضبوطات",
+     "verb": "يضيف إجراء مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -1143,6 +1189,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "تعديل إجراء مضبوطات",
+     "verb": "يعدّل إجراء مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -1191,6 +1239,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "حذف إجراء مضبوطات",
+     "verb": "يحذف إجراء مضبوطات",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -1239,6 +1289,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "حذف جميع محاضر الشهر",
+     "verb": "يحذف جميع محاضر شهر",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -1291,6 +1343,8 @@
      "ownerKind": "page",
      "domain": "seized",
      "label": "فتح شهر/يوم مقفل للاستدراك",
+     "verb": "يفتح شهراً أو يوماً مقفلاً للاستدراك",
+     "place": "نظام المضبوطات ← السجلات",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -1458,7 +1512,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.sz.dash.export"
-     ]
+     ],
+     "verb": "يصدّر لوحة مؤشرات المضبوطات إلى ملف",
+     "place": "نظام المضبوطات ← لوحة المؤشرات"
     }
    },
    {
@@ -1569,7 +1625,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.sz.rec.export"
-     ]
+     ],
+     "verb": "يصدّر سجلات المضبوطات إلى ملف",
+     "place": "نظام المضبوطات ← السجلات"
     }
    },
    {

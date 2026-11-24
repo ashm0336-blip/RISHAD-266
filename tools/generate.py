@@ -33,8 +33,13 @@ def gen_registry(S):
     spec = json.load(open(os.path.join(S, R, 'targets.json'), encoding='utf-8'))
     obj = json.load(open(os.path.join(S, R, spec['source']), encoding='utf-8'))
     engine = rd(os.path.join(S, R, spec['engine']))
-    data = 'var KIVO_REGISTRY_DATA = ' + json.dumps(obj, ensure_ascii=False, separators=(',', ':')) + ';\n'
-    return {norm(t['file']): (t['header'] + data + engine + t['tail']).encode('utf-8') for t in spec['targets']}
+    # V7 · 53 (وضوح الصلاحيات): omitFields — نصوصُ العرض (verb · place) تقرؤها الواجهة وحدها؛ لا تُشحن في الخادم (المصدرُ كما هو)
+    def body(t):
+        o, drop = obj, t.get('omitFields') or []
+        if drop:
+            o = dict(obj, **{a: [{k: v for k, v in e.items() if k not in drop} if isinstance(e, dict) else e for e in obj[a]] for a in ('registry', 'atoms')})
+        return 'var KIVO_REGISTRY_DATA = ' + json.dumps(o, ensure_ascii=False, separators=(',', ':')) + ';\n'
+    return {norm(t['file']): (t['header'] + body(t) + engine + t['tail']).encode('utf-8') for t in spec['targets']}
 
 def gen_worker(S, produced):
     L = layout(S); PD = norm(L['workersParts'])

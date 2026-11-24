@@ -265,8 +265,8 @@
           <span class="p44-f"><b>{{s.n}}</b><small>{{s.sub}}</small></span>
           <sc-if value="{{s.isOn}}" hint-placeholder-val="{{ true }}"><label class="p44-lv"><span>المستوى</span><select value="{{s.lv}}" onChange="{{s.setLv}}" aria-label="مستوى {{s.n}}"><sc-for list="{{p44Lvls}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label></sc-if>
           <button type="button" class="p44-sw" role="switch" aria-checked="{{s.onTxt}}" aria-label="تفعيل {{s.n}} لهذا الدور" onClick="{{s.flip}}"></button>
-          <sc-if value="{{s.custom}}" hint-placeholder-val="{{ false }}">
-          <div class="p44-keys" role="group" aria-label="أفعال {{s.n}}"><sc-for list="{{s.keys}}" as="x" hint-placeholder-count="4"><button type="button" class="p44-key" aria-pressed="{{x.on}}" onClick="{{x.flip}}">{{x.n}}<sc-if value="{{x.sens}}" hint-placeholder-val="{{ false }}"><span class="p44-sens">حسّاس</span></sc-if></button></sc-for></div>
+          <sc-if value="{{s.isOn}}" hint-placeholder-val="{{ true }}">
+          <div class="p44-keys"><small class="p44-mute">{{s.lvD}}</small><div class="p44-scroll"><table class="p44-tb" aria-label="أفعال {{s.n}}"><thead><tr><th scope="col">الفعل</th><th scope="col">المكان</th><th scope="col">الحالة</th></tr></thead><tbody><sc-for list="{{s.tb}}" as="x" hint-placeholder-count="4"><tr data-k="{{x.k}}"><td>{{x.a}}</td><td>{{x.w}}</td><td><sc-if value="{{x.ck}}" hint-placeholder-val="{{ false }}"><button type="button" class="og-ck" role="checkbox" aria-checked="{{x.on}}" aria-label="{{x.a}}" onClick="{{x.flip}}"></button></sc-if>{{x.st}}</td></tr></sc-for></tbody></table></div></div>
           </sc-if>
         </li>
         <!-- V7 · د7 (أ): كلُّ عدسةٍ مفعّلةٍ للوحدة صفٌّ تحت مضيفها بالمستويات نفسِها (52 · قرار المالك ٣: تلميحُ «مخصّص» بلا أفعال) -->
@@ -276,8 +276,8 @@
             <span class="p44-f"><b>{{z.n}}</b><small>{{z.sub}}</small></span>
             <sc-if value="{{z.isOn}}" hint-placeholder-val="{{ true }}"><label class="p44-lv"><span>المستوى</span><select value="{{z.lv}}" onChange="{{z.setLv}}" aria-label="مستوى {{z.n}}"><sc-for list="{{p44Lvls}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label></sc-if>
             <button type="button" class="p44-sw" role="switch" aria-checked="{{z.onTxt}}" aria-label="تفعيل {{z.n}} لهذا الدور" onClick="{{z.flip}}"></button>
-            <sc-if value="{{z.custom}}" hint-placeholder-val="{{ false }}">
-            <div class="p44-keys" role="group" aria-label="أفعال {{z.n}}"><sc-for list="{{z.keys}}" as="x" hint-placeholder-count="4"><button type="button" class="p44-key" aria-pressed="{{x.on}}" onClick="{{x.flip}}">{{x.n}}<sc-if value="{{x.sens}}" hint-placeholder-val="{{ false }}"><span class="p44-sens">حسّاس</span></sc-if></button></sc-for></div>
+            <sc-if value="{{z.isOn}}" hint-placeholder-val="{{ true }}">
+            <div class="p44-keys"><small class="p44-mute">{{z.lvD}}</small><div class="p44-scroll"><table class="p44-tb" aria-label="أفعال {{z.n}}"><thead><tr><th scope="col">الفعل</th><th scope="col">المكان</th><th scope="col">الحالة</th></tr></thead><tbody><sc-for list="{{z.tb}}" as="x" hint-placeholder-count="4"><tr data-k="{{x.k}}"><td>{{x.a}}</td><td>{{x.w}}</td><td><sc-if value="{{x.ck}}" hint-placeholder-val="{{ false }}"><button type="button" class="og-ck" role="checkbox" aria-checked="{{x.on}}" aria-label="{{x.a}}" onClick="{{x.flip}}"></button></sc-if>{{x.st}}</td></tr></sc-for></tbody></table></div></div>
             </sc-if>
           </li>
           </sc-for>
