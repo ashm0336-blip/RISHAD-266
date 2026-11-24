@@ -1861,8 +1861,12 @@
         "400": {
           "keys": [
             "ok",
-            "err"
-          ]
+            "err",
+            "at"
+          ],
+          "err": "bad-body",
+          "schema": "src/schemas/api/bodies.schema.json#/bodies//api/operations/periods-migrate",
+          "note": "V7 · 53: الجلسة ودور مدير المنصة قبل فحص الشكل."
         }
       }
     }

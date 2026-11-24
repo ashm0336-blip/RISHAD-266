@@ -182,11 +182,11 @@ test('53 · البند 10: الغلافُ صفحةٌ كاملة بلا هوام�
 });
 
 test('53 · البند 10: بياناتُ الغلاف — سنةُ التقرير من سطر تاريخه وإلا السنةُ الجارية، والإدارةُ العامة والإدارة النشطتان', () => {
-  const K = { BassamDepts: { activeGroupName: () => 'TEST_ONLY الإدارة العامة' }, BassamHijri: { now: () => ({ y: 1448, m: 1, d: 1 }) } };
+  const K = { BassamDepts: { activeGroupName: () => 'TEST_ONLY الإدارة العامة' }, BassamCal: { hToday: () => ({ y: 1448, m: 1, d: 1 }) } };
   const C = loadCoreWith(IPAD, K);
   assert.deepEqual(JSON.parse(JSON.stringify(C.coverInfo('جولة يوم 5 رجب 1447هـ الموافق 25 ديسمبر 2025', 'TEST_ONLY إدارة'))), { dept: 'TEST_ONLY إدارة', group: 'TEST_ONLY الإدارة العامة', year: '1447' });
   assert.equal(C.coverInfo('', 'TEST_ONLY إدارة').year, '1448', 'بلا سطر تاريخ ⇒ السنةُ الهجرية الجارية');
-  const C2 = loadCoreWith(IPAD, { BassamHijri: { now: () => ({ y: 1447 }) } });
+  const C2 = loadCoreWith(IPAD, { BassamCal: { hToday: () => ({ y: 1447 }) } });
   assert.deepEqual(JSON.parse(JSON.stringify(C2.coverInfo('12 شعبان 1447هـ', ''))), { dept: '', group: '', year: '1447' }, 'بلا خدمة الإدارات ⇒ سطرٌ فارغ لا عطل');
   /* الغلافُ من الأصل في الحزمة، ويُرسم بلا نسخٍ للوثيقة؛ وتعذّرُ خلفيته لا يُسقط الملف */
   assert.match(core, /const COVER_URL = "@@KIVO_ASSET:img\/report-cover\.jpg@@";/);

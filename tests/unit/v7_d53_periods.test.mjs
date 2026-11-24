@@ -223,3 +223,30 @@ test('53 · سقفُ القراءة المنطقية: ما فوق readNodes يف
     assert.deepEqual(r.j.resources[RK + '@1448-6-2'], ROUNDS['1448-6-2'], 'والقراءةُ بالفترة لا يحدّها سقفُ القراءة الكاملة');
   } finally { W.OP_LIM.readNodes = keep; await T.close(); }
 });
+
+/* V7 · 53 (وحدات ما بعد الدمج): مدىً واحدٌ للفترة لا يجلب أختَها التي تمدّ اسمَها · والكتابةُ العمياء لفترةٍ قائمة تُحكم بمراجعة K المنطقية */
+test('53 · مدى الفترة: «1448-6-1» لا تجلب «1448-6-1-x» · وكتابةٌ عمياء (base 0) لفترةٍ قائمة تُقبل بمراجعة K المنطقية غيرِ المتغيّرة وتتعارض بغيرها', { timeout: 120000 }, async () => {
+  const { T, read, save } = await lab();
+  try {
+    const doc = { ...ROUNDS, '1448-6-1-x': day(9) };
+    let r = await save({ set: { [RK]: JSON.stringify(doc) }, base: { [RK]: 0 } });
+    assert.equal(r.status, 200, r.t.slice(0, 300));
+    r = await read('keys=' + encodeURIComponent([RK + '@1448-6-1', RK + '@1448-6-1-x'].join(',')));
+    assert.equal(r.status, 200, r.t.slice(0, 400));
+    assert.deepEqual(r.j.resources[RK + '@1448-6-1'], ROUNDS['1448-6-1'], 'الفترةُ وحدها');
+    assert.deepEqual(r.j.resources[RK + '@1448-6-1-x'], day(9), 'وأختُها بقراءتها');
+    r = await read('keys=' + encodeURIComponent(RK + '@1448-6-1'));
+    assert.deepEqual(Object.keys(r.j.resources), [RK + '@1448-6-1']); assert.deepEqual(r.j.resources[RK + '@1448-6-1'], ROUNDS['1448-6-1'], 'لا صفَّ من الأخت في فكّ الفترة');
+    /* الكتابةُ العمياء: العميلُ قرأ الرأسَ وحده (logical) ثم كتب يوماً قائماً لم يقرأه */
+    const h = await read('keys=' + encodeURIComponent(RK + '@')), L = h.j.logical[RK];
+    assert.ok(Number.isSafeInteger(L), JSON.stringify(h.j));
+    r = await save({ set: { [RK + '@1448-6-2']: JSON.stringify(day(7)) }, base: { [RK + '@1448-6-2']: 0 } });
+    assert.equal(r.status, 409, 'بلا مراجعةٍ منطقية: تعارض · ' + r.t.slice(0, 200));
+    r = await save({ set: { [RK + '@1448-6-2']: JSON.stringify(day(7)) }, base: { [RK + '@1448-6-2']: 0, [RK]: L - 1 } });
+    assert.equal(r.status, 409, 'بمراجعةٍ منطقيةٍ قديمة: تعارض · ' + r.t.slice(0, 200));
+    r = await save({ set: { [RK + '@1448-6-2']: JSON.stringify(day(7)) }, base: { [RK + '@1448-6-2']: 0, [RK]: L } });
+    assert.equal(r.status, 200, 'بالمراجعة المنطقية المقروءة: تُقبل · ' + r.t.slice(0, 300));
+    r = await read('keys=' + encodeURIComponent(RK + '@1448-6-2'));
+    assert.deepEqual(r.j.resources[RK + '@1448-6-2'], day(7));
+  } finally { await T.close(); }
+});

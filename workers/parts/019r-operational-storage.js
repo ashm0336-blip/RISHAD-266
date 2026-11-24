@@ -53,7 +53,12 @@ function opLegacyError(error) {
 /* V7 · 53: scopes { <key>: { periods:[…], base? , bases:{p:rev}? } } */
 async function opLoadMany(env, keys, retired, scopes) {
   scopes = scopes || env.__opScope || {};
-  var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {}, revKeys = [];
+  var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {}, revKeys = [], rootsOf = {};
+  /* مدياتُ الفترات قد تتداخل (فترةٌ وأختُها التي تمدّ اسمَها كلتاهما مطلوبتان) ⇒ الصفُّ يُعدّ مرةً لكل جدول */
+  var seenRow = {}, keep = function (key, row, table) {
+    var R = rootsOf[key]; if (!R) return true; if (!opRowInScope(R.def, R.roots, row.row_key)) return false;
+    var s0 = seenRow[key + '\n' + table] || (seenRow[key + '\n' + table] = new Set()); if (s0.has(row.row_key)) return false; s0.add(row.row_key); return true;
+  };
   wanted.forEach(function (key) {
     var info = opInfo(key); if (!info) throw ocError('resource');
     var def = opPeriodDef(info), scope = def && ocOwn(scopes, key) ? Object.assign({}, scopes[key], { periods: Array.from(new Set(scopes[key].periods)) }) : null, ranges = [['', '￿']];
@@ -63,6 +68,7 @@ async function opLoadMany(env, keys, retired, scopes) {
       revKeys.push(key + '@', key + '@*'); scope.periods.forEach(function (p) { revKeys.push(key + '@' + p); });
     }
     var request = { key: key, info: info, def: def, scope: scope, tables: ocPhysicalTables(info.prepared) }; physicalByKey[key] = {};
+    if (scope) rootsOf[key] = { def: def, roots: new Set(scope.periods.map(function (p) { return opPeriodRoot(def, p); })) };
     Object.keys(request.tables).forEach(function (table) {
       if (!tableRequests[table]) tableRequests[table] = { columns:request.tables[table], ranges:[] };
       ranges.forEach(function (r) { tableRequests[table].ranges.push([info.dept, info.resource, r[0], r[1]]); });
@@ -74,7 +80,7 @@ async function opLoadMany(env, keys, retired, scopes) {
   /* V7 · 53: مدياتٌ كثيرة (فتراتٌ كثيرة) تُقرأ قطعاً في استدعاءات D1 متتالية بعد هذه الدفعة (مراجعاتُها فيها، وحارسُ CAS عند الاعتماد) — فلا يقترب استدعاءٌ من سقف 32MiB */
   tableNames.forEach(function(table){
     var query=tableRequests[table], sel='SELECT '+query.columns.map(function(c){return 't.'+c;}).join(',')+' FROM json_each(?1) q CROSS JOIN '+table+" t ON t.department_id=json_extract(q.value,'$[0]') AND t.resource=json_extract(q.value,'$[1]') AND t.row_key>=json_extract(q.value,'$[2]') AND t.row_key<json_extract(q.value,'$[3]')";
-    for (var c0 = 0; c0 < query.ranges.length || !c0; c0 += 48) { var st0 = env.DB.prepare(sel).bind(JSON.stringify(query.ranges.slice(c0, c0 + 48))); if (!c0) batch.push(st0); else (later[c0 / 48 - 1] = later[c0 / 48 - 1] || []).push({ table: table, st: st0 }); }
+    for (var c0 = 0; c0 < query.ranges.length || !c0; c0 += OP_RANGE_CHUNK) { var st0 = env.DB.prepare(sel).bind(JSON.stringify(query.ranges.slice(c0, c0 + OP_RANGE_CHUNK))); if (!c0) batch.push(st0); else (later[c0 / OP_RANGE_CHUNK - 1] = later[c0 / OP_RANGE_CHUNK - 1] || []).push({ table: table, st: st0 }); }
   });
   if (!batch.length) { if (retired) await opGuardRetired(env); return { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, members: {}, globalRev:await bdGlobalRevision(env) }; }
   if (retired) batch.unshift(opRetiredGuard(env));
@@ -93,11 +99,11 @@ async function opLoadMany(env, keys, retired, scopes) {
   tableNames.forEach(function(table,index){(result[index].results||[]).forEach(function(row){
     var key='bsdept:'+row.department_id+':'+row.resource;
     if(!physicalByKey[key]||!physicalByKey[key][table])throw ocError('read-scope');
-    physicalByKey[key][table].push(row);
+    if(keep(key,row,table))physicalByKey[key][table].push(row);
   });});
   for (var piece of later) {
     var got = await env.DB.batch(piece.map(function (x) { return x.st; }));
-    piece.forEach(function (x, i) { (got[i].results || []).forEach(function (row) { var key = 'bsdept:' + row.department_id + ':' + row.resource; if (!physicalByKey[key] || !physicalByKey[key][x.table]) throw ocError('read-scope'); physicalByKey[key][x.table].push(row); }); });
+    piece.forEach(function (x, i) { (got[i].results || []).forEach(function (row) { var key = 'bsdept:' + row.department_id + ':' + row.resource; if (!physicalByKey[key] || !physicalByKey[key][x.table]) throw ocError('read-scope'); if (keep(key, row, x.table)) physicalByKey[key][x.table].push(row); }); });
   }
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
   var pending = opLayoutPendingOf(((result[revisionIndex + 2].results) || [])[0]), calPend = calMigPendingOf(((result[revisionIndex + 2].results) || [])[0]);
@@ -452,8 +458,10 @@ async function opPeriodSaveBody(env, A, bs) {
     /* V7 · 53 (periodsui خلل 7): base 0 لفترةٍ غائبةٍ الآن = «أعرف أنها غائبة» فيُقبل (ومراجعتُها الحالية تُحرس حتى الاعتماد)؛ وما سواه بمراجعتها الفعلية */
     G.keys.forEach(function (k) {
       var p = k.slice(K.length + 1), now = opPeriodRev(cur.revs, K, p), absentNow = p === '' ? doc === undefined : !ocOwn(parts.periods, p);
-      if (!replay && now !== bs.base[k] && !(bs.base[k] === 0 && absentNow)) conflicts[k] = { why: 'conflict' };
-      bases[p] = bs.base[k] === 0 && absentNow ? now : bs.base[k];
+      /* V7 · 53: كتابةٌ عمياء (base 0) لفترةٍ قائمةٍ لم يقرأها العميل تُقبل إن حمل مراجعةَ K المنطقية التي قرأها ولم يتغيّر K منذها — حكمُ الوثيقة كلِّها نفسُه (وK محروسٌ بها حتى الاعتماد) */
+      var blind = bs.base[k] === 0 && !absentNow && Number.isSafeInteger(bs.base[K]) && bs.base[K] === (cur.revs[K] || 0);
+      if (!replay && now !== bs.base[k] && !(bs.base[k] === 0 && absentNow) && !blind) conflicts[k] = { why: 'conflict' };
+      bases[p] = bs.base[k] === 0 && (absentNow || blind) ? now : bs.base[k];
     });
     /* ما قرأته الترجمةُ من رأسٍ وسياق يبقى كما هو حتى الاعتماد — وإلا تعارضٌ فيُعاد البناء */
     scopes[K].periods.concat(['']).forEach(function (p) { if (!ocOwn(bases, p)) bases[p] = opPeriodRev(cur.revs, K, p); });
@@ -485,6 +493,8 @@ async function opPeriodSaveBody(env, A, bs) {
 async function opPeriodSaveResult(env, ps, r) {
   var out = Object.assign({}, r), map = function (obj) { var m = {}; Object.keys(obj || {}).forEach(function (K) { if (ocOwn(ps.byK, K)) ps.byK[K].keys.forEach(function (k) { m[k] = obj[K]; }); else m[K] = obj[K]; }); return m; };
   out.denied = map(r.denied); out.conflicts = map(r.conflicts);
+  /* V7 · 53 (periodsui): المراجعةُ المنطقية لكل K كُتبت فتراتُه — يأخذها العميلُ من الإيصال (أوامرُ المهام تحملها base) بلا قراءةٍ أخرى */
+  if (r.revs) Object.keys(ps.byK).forEach(function (K) { if (Number.isSafeInteger(r.revs[K])) (out.logical || (out.logical = {}))[K] = r.revs[K]; });
   if (r.revs) {
     var want = []; Object.keys(ps.byK).forEach(function (K) { want.push(K + '@*'); ps.byK[K].keys.forEach(function (k) { want.push(k); }); });
     var rows = (await env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(want)).all()).results || [], revs = {};

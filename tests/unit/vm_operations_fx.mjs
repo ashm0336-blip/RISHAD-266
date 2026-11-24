@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { afterEach } from "node:test";
 import { loadClient } from "./k264_vm.mjs";
+import { periodRead, periodSave, periodIndex, loadAllPeriods } from "./periods_fake_fx.mjs";   /* V7 · 53 */
 
 const tabs = new Set();
 afterEach(() => {
@@ -45,10 +46,13 @@ export async function attachTaskOperations(
           if (route.startsWith("/api/operations/read?")) {
             const resources = {},
               absent = [],
-              revs = {};
-            for (const key of new URL(route, "http://x").searchParams
-              .get("keys")
-              .split(",")) {
+              revs = {},
+              /* V7 · 53: الموارد المخزّنة بالفترة بسلكها (K@ · K@p · range= · index=) — tests/unit/periods_fake_fx.mjs */
+              url = new URL(route, "http://x"),
+              docs = Object.fromEntries([...store].map(([k, t]) => [k, JSON.parse(t)])),
+              out = { resources, absent, base: revs };
+            periodIndex(url, docs, (k) => base.get(k) || 1, out);
+            for (const key of periodRead(url, docs, (k) => base.get(k) || 1, out)) {
               const name = key.split(":").at(-1);
               revs[key] = base.get(key) || 1;
               if (store.has(name)) resources[key] = JSON.parse(store.get(name));
@@ -63,6 +67,8 @@ export async function attachTaskOperations(
               absent,
               denied: [],
               base: revs,
+              ranges: out.ranges,
+              ...(out.index ? { index: out.index } : {}),
             });
           }
           if (route === "/api/save") {
@@ -70,12 +76,16 @@ export async function attachTaskOperations(
             calls.push(body);
             const revs = {};
             v++;
+            const pdocs = Object.fromEntries([...store].map(([k, t]) => [k, JSON.parse(t)])),
+              pkeep = (key) => { const name = key.split(":").at(-1).replace(/@.*$/, ""); if (pdocs[name] !== undefined) store.set(name, JSON.stringify(pdocs[name])); };
             for (const [key, text] of Object.entries(body.set || {})) {
+              if (periodSave(key, JSON.parse(text), pdocs)) { pkeep(key); base.set(key, v); revs[key] = v; continue; }
               store.set(key.split(":").at(-1), text);
               base.set(key, v);
               revs[key] = v;
             }
             for (const key of body.del || []) {
+              if (periodSave(key, undefined, pdocs)) { pkeep(key); base.set(key, v); revs[key] = v; continue; }
               store.delete(key.split(":").at(-1));
               base.set(key, v);
               revs[key] = v;
@@ -123,16 +133,7 @@ export async function attachTaskOperations(
   /* V7 · 53 (basefix): المورد المخزَّن بالفترة (المهام · الخطة · الجدول … — 280 split) يُقرأ رأسُه وحده بقراءة المفتاح المنطقي، وتطلب الصفحةُ
      أشهرَها (want) ثم تعيد القراءة بخبر «bassam:remote» — والصفحةُ هنا في vm آخر لا يصله الخبر، وتُرسم متزامنةً. فتُحمَّل هنا فتراتُ كلِّ موردٍ
      مقسومٍ كلُّها من فهرس الخادم (280 index → want) قبل بناء الصفحة وعند كلِّ مزامنة — كأن الصفحةَ أكملت تحميلَ ما طلبته. على العامل الحقيقي وحده */
-  const loadPeriods = async () => {
-    if (!W || !operations.split) return;
-    for (const name of operations.resources) {
-      if (!operations.split(name)) continue;
-      const ix = await operations.index(name);
-      assert.equal(ix.ok, 1, "period index " + name + ": " + JSON.stringify(ix));
-      const periods = ix.index.map((x) => x.p);
-      if (periods.length) { const r = await operations.want(name, { periods, quiet: true }); assert.equal(r.ok, 1, "period load " + name + ": " + JSON.stringify(r)); }
-    }
-  };
+  const loadPeriods = () => loadAllPeriods(operations);   /* periods_fake_fx — العاملُ الحقيقي والنقلُ المصطنع معاً */
   await loadPeriods();
   // Existing tests retain a Map for device preferences and assertion access.
   // Its business reads are confirmed in-memory projections, never Storage.

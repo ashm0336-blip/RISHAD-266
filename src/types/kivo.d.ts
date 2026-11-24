@@ -311,7 +311,7 @@ export interface KivoApi {
   "/api/operations/export": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; version: unknown; globalRev: unknown; epoch: unknown; domains: unknown }; "400": { ok: unknown; err: unknown } } };
   "/api/operations/summary": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; key: unknown; rows: unknown }; "400": { ok: unknown; err: unknown } } };
   "/api/operations/receipt": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; found: unknown }; "400": { ok: unknown; err: unknown } } };
-  "/api/operations/periods-migrate": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown; departments: unknown; pending: unknown }; "400": { ok: unknown; err: unknown } } };
+  "/api/operations/periods-migrate": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown; departments: unknown; pending: unknown }; "400": { ok: unknown; err: unknown; at: unknown } } };
 }
 export type KivoApiPath = keyof KivoApi;
 

@@ -1190,6 +1190,47 @@
         }
       }
     },
+    "/api/operations/periods-migrate": {
+      "type": "object",
+      "required": [
+        "dept"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "dept": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "budgetMs": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "from": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "r": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "i": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
     "/api/checkpw": {
       "type": "object",
       "properties": {
