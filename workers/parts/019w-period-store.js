@@ -1,5 +1,5 @@
 /* V7 · 53: التخزين بالفترة (§3ب) — طبقةٌ لا تعرف شكل التاريخ؛ التفصيل في تقرير periods ووثيقة العقد. */
-var OP_LIM = { day: 1048576, mctl: 524288, month: 3145728, head: 3145728, readPeriods: 40, readNodes: 30000, batchBytes: 30000000, batchStmts: 900, rangeGroups: 26, summaryRows: 800 };
+var OP_LIM = { day: 1048576, mctl: 524288, month: 3145728, head: 3145728, readPeriods: 40, readNodes: 60000, batchBytes: 30000000, batchStmts: 900, rangeGroups: 26, summaryRows: 800 };   /* V7 · 53: readNodes = عُقدُ القراءة المنطقية الكاملة لموردٍ مقسوم؛ مقيسٌ: 39001 عقدة ≈ ≤6.4MB في نداءٍ واحد (v7_d6_import ١٥) ⇒ 60000 ≈ ≤10MB، ثلثُ سقف 32MiB */
 var OP_LIM_MSG = {
   'read-too-large': 'طُلبت فترات أكثر من المسموح في قراءة واحدة. اختر مدى أقصر.',
   'period-too-large': 'بيانات هذه الفترة تجاوزت الحد المسموح. راجع الإدخال أو تواصل مع مدير المنصة.',

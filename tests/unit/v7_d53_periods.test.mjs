@@ -196,3 +196,30 @@ test('53 · periodsui 9: حفظُ يومٍ بالفترة يُجري خطوةَ 
     assert.deepEqual(live['1460-1-1'], day(2));
   } finally { await T.close(); }
 });
+
+/* V7 · 53: سقفُ القراءة المنطقية الكاملة بعدد العُقد — ما فوقه يفشل وحده (failed: read-too-large) وما دونه يُقرأ في الطلب نفسِه؛
+   والسقفُ مقيسٌ لا تقديريّ: 39001 عقدة ≈ ≤6.4MB (v7_d6_import ١٥ كانت تفشل بسقف 30000) ⇒ 60000 ودون ثلث 32MiB */
+test('53 · سقفُ القراءة المنطقية: ما فوق readNodes يفشل وحده بـread-too-large · وما دونه يُقرأ · والسقفُ ≥ 39001 عقدة المقيسة', { timeout: 120000 }, async () => {
+  const { T, read, save, W } = await lab();
+  const keep = W.OP_LIM.readNodes;
+  try {
+    assert.ok(keep >= 39001 && keep <= 120000, 'السقفُ بين المقيس (39001 عقدة ≈ 6.4MB) وما يبقى دون 32MiB: ' + keep);
+    const EK = K('bassam_employees_v1');
+    let r = await save({ set: { [RK]: JSON.stringify(ROUNDS) }, base: { [RK]: 0 } });
+    assert.equal(r.status, 200, r.t.slice(0, 300));
+    r = await read('keys=' + encodeURIComponent(EK));
+    if (r.j.resources[EK] == null) { r = await save({ set: { [EK]: JSON.stringify([{ key: 'tst_e1', name: 'TEST_ONLY · موظف' }]) }, base: { [EK]: r.j.base[EK] || 0 } }); assert.equal(r.status, 200, r.t.slice(0, 300)); }
+    const n = Number(T.lab.env.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource='bassam_rounds_v1'", A)[0].n);
+    assert.ok(n > 4, 'للجولات عُقد: ' + n);
+    r = await read('keys=' + encodeURIComponent([RK, EK].join(',')));
+    assert.equal(r.status, 200, r.t.slice(0, 300));
+    assert.deepEqual(r.j.resources[RK], ROUNDS, 'دون السقف تُقرأ كاملة');
+    W.OP_LIM.readNodes = n - 1;
+    r = await read('keys=' + encodeURIComponent([RK, EK].join(',')));
+    assert.equal(r.status, 200, r.t.slice(0, 300));
+    assert.equal(r.j.failed && r.j.failed[RK], 'read-too-large', 'فوق السقف تفشل وحدها: ' + JSON.stringify(r.j.failed));
+    assert.ok(r.j.resources[EK] != null && !(r.j.failed || {})[EK], 'وغيرُها في الطلب نفسِه يُقرأ');
+    r = await read('keys=' + encodeURIComponent(RK + '@1448-6-2'));
+    assert.deepEqual(r.j.resources[RK + '@1448-6-2'], ROUNDS['1448-6-2'], 'والقراءةُ بالفترة لا يحدّها سقفُ القراءة الكاملة');
+  } finally { W.OP_LIM.readNodes = keep; await T.close(); }
+});

@@ -177,7 +177,8 @@ async function opChangeStatements(env, key, nextRaw, options) {
   /* V7 · 53: إدارةٌ لم تُتمَّ المرحلةَ الثانية من 0013 */
   if (def && before && before.scope && before.scope.pending) throw opLimError('ops-layout-pending', 503);
   var after = ocConvert(info.prepared, info.dept, info.resource, next, nextRaw != null), statements = [], changed = false, extra = [], periodKeys = [], sums = [];
-  if (def) {
+  if (def && options.bulk) { periodKeys.push(key + '@*'); }   /* استبدالٌ بالجملة (الاستعادة · الاستيراد): K@* بلا مقارنة فترات ولا ملخّصات */
+  else if (def) {
     /* ما تغيّر من الفترات والرأس (بالقيمة) — لمراجعاتها وملخّصاتها وحدّ حجمها */
     var prevRaw = state.values && ocOwn(state.values, key) ? state.values[key] : null, prev = prevRaw == null ? undefined : JSON.parse(prevRaw),
       A0 = opSplit(info, prev), B0 = opSplit(info, next), names = new Set(Object.keys(A0.periods).concat(Object.keys(B0.periods)));
@@ -213,7 +214,8 @@ async function opChangeStatements(env, key, nextRaw, options) {
     statements.push.apply(statements, opUpsertRows(env, spec, write));
   });
   if (extra.length) { changed = true; statements.push.apply(statements, extra); }
-  if (changed && def) statements.push.apply(statements, opSummaryStatements(env, info, sums));
+  if (changed && def && options.bulk) statements.push(env.DB.prepare('DELETE FROM ops_period_summary WHERE department_id=?1 AND resource=?2').bind(info.dept, info.resource));
+  else if (changed && def) statements.push.apply(statements, opSummaryStatements(env, info, sums));
   statements.forEach(function (st) { opTag(st, [key]); });
   return { guards: [opRetiredGuard(env)].concat(state.guards), statements: statements, snapshots: state.snapshots,
     revisionKeys: changed ? [key].concat(periodKeys) : [], changed: changed, domain: after };
@@ -255,16 +257,9 @@ async function opCompilePending(env, plan, pending, capture) {
       var current=capture&&capture.domains[item.k]|| (await opLoadMany(env,[item.k])).domains[item.k];
       if(ocInflate(opInfo(item.k).prepared,current).present)throw rsError('restore-operations-merge-target-not-empty',409);
     }
-    var addition = await opChangeStatements(env, item.k, item.act === 'del' ? null : item.v, { base: item.have, state: capture && capture.domains[item.k] ? {
+    var addition = await opChangeStatements(env, item.k, item.act === 'del' ? null : item.v, { bulk: plan.operation !== 'save', base: item.have, state: capture && capture.domains[item.k] ? {
       domains: capture.domains, revs: capture.revs, values: capture.keys, guards: [] , snapshots: capture.snapshots.filter(function (s) { return s.table.startsWith(item.k + ':'); })
     } : undefined });
-    /* V7 · 53: الاستعادةُ والاستيرادُ استبدالٌ بالجملة — كالاستيراد على دفعات (019g): K@* بدل مراجعات الفترات، وملخّصاتُ المورد تُحذف (تُحسب عند القراءة وتُبنى بـperiods-migrate)؛ فالطريقان صفّاً بصف */
-    if (plan.operation !== 'save' && addition.revisionKeys.some(function (k) { return k.indexOf('@') > 0; })) {
-      var I9 = opInfo(item.k);
-      addition.revisionKeys = addition.revisionKeys.filter(function (k) { return k.indexOf('@') < 0; }).concat([item.k + '@*']);
-      addition.statements = addition.statements.filter(function (st) { return !/ops_period_summary/.test(String(st.__sql || st.sql || '')); });
-      addition.statements.push(opTag(env.DB.prepare('DELETE FROM ops_period_summary WHERE department_id=?1 AND resource=?2').bind(I9.dept, I9.resource), [item.k]));
-    }
     plan.guards.push.apply(plan.guards, addition.guards); plan.statements.push.apply(plan.statements, addition.statements);
     plan.revisionKeys.push.apply(plan.revisionKeys, addition.revisionKeys); plan.snapshots.push.apply(plan.snapshots, addition.snapshots);
   }
