@@ -2282,17 +2282,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             n.length && (i.push(a("مغلقة ومعطّلة — للاطّلاع لا للنقل")), (i = i.concat(n))));
         })(),
         st.slice(Nt, Nt + Yt)),
-      ar =
-        (nr.length,
-        (function () {
-          try {
-            var t = KIVO.BassamDayFocus ? KIVO.BassamDayFocus.get() : null,
-              r = KIVO.BassamCal.hNow(new Date());
-            return !t || (+t.y === +r.y && +t.m === +r.m && +t.d === +r.d);
-          } catch (t) {
-            return !1;
-          }
-        })()),
+      /* V7 · 53 (البند 7): «هل اليومُ المختار هو اليوم؟» (ar) كان لعمود الحالة بساعة الوردية وحده — أُزيل معه */
       ir = nr.map(function (e, n) {
         var a = null;
         N.forEach(function (t) {
