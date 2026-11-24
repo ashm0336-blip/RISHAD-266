@@ -124,7 +124,7 @@
       if(!current())throw Error('تغيّرت البيانات قبل اكتمال النسخة');
       var route='/api/'+spec[0]+'/export?uid='+encodeURIComponent(stamp.uid)+(options.full?'':'&dept='+encodeURIComponent(departments[0])),response=await request(route,{},stamp),value=response.data;
       var expected=departments.concat(options.full&&spec[0]==='award'?['']:[]).sort();
-      if(!response.ok||!current()||value.globalRev!==options.v||!Array.isArray(value.domains)){var pg=KIVO.BassamPerm&&KIVO.BassamPerm.PAGE_OF&&KIVO.BassamPerm.PAGE_OF[spec[0]];throw Error('تعذّر تصدير «'+((pg&&pg.name)||spec[0])+'»: '+(!response.ok?(response.status===403?'الخادم رفض قراءة بياناته لهذا الحساب ('+response.err+')':response.message):'تغيّرت البيانات قبل اكتمال النسخة'));}   /* V7 · 53 (قرار المالك ٦): الرسالةُ تذكر المجالَ وسببه */
+      if(!response.ok||!current()||value.globalRev!==options.v||!Array.isArray(value.domains)){var pg=KIVO.BassamPerm&&KIVO.BassamPerm.PAGE_OF&&KIVO.BassamPerm.PAGE_OF[spec[0]];throw Error('تعذّر تصدير «'+((pg&&pg.name)||spec[0])+'»: '+(response.ok?'تغيّرت البيانات':response.message));}   /* V7 · 53 (قرار المالك ٦): الرسالةُ تذكر المجالَ وسببه */
       var scope=function(d){return d&&d.scope&&d.scope.kind==='global'?'':d&&d.scope&&d.scope.departmentId;};
       if(JSON.stringify(value.domains.map(scope).sort())!==JSON.stringify(expected)||value.domains.some(function(d){return d.version!==1||!record(d.resources)||!record(d.rows)||spec[1].some(function(k){return typeof d.resources[k]!=='boolean';})||JSON.stringify(Object.keys(d.rows).sort())!==JSON.stringify(spec[2].slice().sort())||spec[2].some(function(k){return !Array.isArray(d.rows[k])||d.rows[k].some(function(row){return !record(row)||row.department_id!==scope(d);});});}))throw Error('مجال النسخة ناقص أو خارج نطاقها');
       domains[spec[0]==='award'?'awards':spec[0]]=value.domains;
@@ -379,6 +379,10 @@
   function skipList(list) {
     return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { return { k: x.k, why: String(x.why || ''), n: integer(x.n) ? x.n : null, text: (WHY[x.why] || String(x.why || '')) + (integer(x.n) ? ' — العدد: ' + x.n : '') }; });
   }
+  /* V7 · 53 (بقايا 52): تضييقُ العدسات الذي سيجريه الاستيراد (019d rsDeptLensNarrow: عدساتُ الوحدة ∩ عدساتُ النسخة) يُذكر في الملخّص — «العدسات 3 من 6» */
+  function lensNarrow(file, scope) {
+    try { var P = KIVO.BassamPerm, L = file.perms.lenses, h = P.deptLenses(scope.departmentId), n = h.filter(function (x) { return L.indexOf(x) >= 0; }).length; return n < h.length ? n + ' من ' + P.LENS_KEYS.length : 0; } catch (e) { return 0; }
+  }
   /* ملخّصُ ما قبل التأكيد — لا يودِع شيئاً (begin dry): الخادمُ يفحص الصلاحية ويعيد ما لن يُنقل من نسخةٍ قديمة */
   async function summary(file, scope) {
     var stamp = context(), id = identity();
@@ -391,7 +395,7 @@
     var bytes = parts.text.length;
     parts.ids.forEach(function (k) { bytes += String(parts.images[k]).length; });
     return { ok: 1, legacy: legacy, kind: file.kind || scope.kind, dept: typeof file.dept === 'string' ? file.dept : '', exportedAt: typeof file.exportedAt === 'string' ? file.exportedAt : '',
-      keys: names.length, images: parts.ids.length, bytes: bytes, noPerms: file.perms == null,
+      keys: names.length, images: parts.ids.length, bytes: bytes, noPerms: file.perms == null, lens: lensNarrow(file, scope),
       /* المنحُ القديمة تُذكر بعددها (يُحسب من الملف؛ والخادمُ يعيده مؤكَّداً بعد الرفع) */
       skip: skipList((read.data.skip || []).map(function (x) { var n = null; if (x && x.why === 'grants') { try { n = Object.keys((JSON.parse(file.data[x.k]) || {}).emp || {}).length; } catch (e) { n = null; } } return n === null ? x : Object.assign({}, x, { n: n }); })) };
   }

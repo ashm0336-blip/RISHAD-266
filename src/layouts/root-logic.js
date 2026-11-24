@@ -1010,6 +1010,7 @@ class Component extends DCLogic {
     return {
       bkcSumOn: (step === "pick" || step === "confirm") && (!!sum || !!c.sumErr),
       bkcSumLine: sum ? "المصدر: «" + (sum.dept || c.src) + "»" + (when ? " · صُدّرت: " + when : "") + " · " + N(sum.keys, "مجموعة بيانات") + " و" + N(sum.images, "صورة") + " · الحجم: " + mb(sum.fileBytes || sum.bytes) +
+        (sum.lens ? " · العدسات " + sum.lens + " (ما ليس في النسخة يُطفأ في الإدارة)" : "") +   /* V7 · 53: 548 lensNarrow */
         (sum.legacy ? " · نسخة بالشكل القديم: تُحوَّل إلى المخطط الحالي قبل الكتابة." : "") : c.sumErr || "",
       bkcSkipOn: skip.length > 0, bkcSkip: skip, bkcSkipHead: "لن يُنقل (" + skip.length + ") — لا مقابل له في المنصة الحالية:",
       bkcRun: step === "run", bkcRunHead: run.step === "commit" ? "جارٍ اعتماد النسخة…" : run.step === "review" ? "بانتظار تأكيدك" : "جارٍ إرسال النسخة على أجزاء…", bkcRunText: runText,
