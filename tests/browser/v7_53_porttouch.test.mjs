@@ -192,3 +192,44 @@ test('PLAN-05 · iPad Pro 11 landscape: the map side panel does not open by itse
   await noSideScroll(p, 'iPad landscape · plan');
   assert.deepEqual(s.errs, [], 'no page errors'); await s.ctx.close();
 });
+
+/* Follow-up (coordinator, after dba210b): two defects found while porting, outside wave 2. */
+test('Daily Stats «ذروة/أدنى» chips: ≥ 4.5:1 in light and dark, text colour from a token — iPhone 13 and iPad Pro 11', { timeout: 300000 }, async () => {
+  for (const [tag, dev] of DEVS) {
+    const s = await open(dev); const p = s.page;
+    await kpiTab(s, 'تحليل المسجد الحرام');
+    for (const theme of ['light', 'dark']) {
+      await p.evaluate((t) => KIVO.__bsThemeSet(t), theme); await p.waitForTimeout(900);
+      const c = await p.evaluate(() => {
+        const rgb = (c) => (c.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+        const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+        const cr = (a, b) => { const x = lum(rgb(a)), y = lum(rgb(b)); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+        /* the «ذروة/أدنى» pill of each comparison tile: a 9999px chip with padding 2.5px 8px */
+        return [...document.querySelectorAll('main span, main div, main b')].filter((e) => e.getClientRects().length && /9999px/.test(e.getAttribute('style') || '') && /padding: 2\.5px 8px/.test(e.getAttribute('style') || ''))
+          .map((e) => { const cs = getComputedStyle(e), fg = (/(?:^|;)\s*color:\s*([^;]+)/.exec(e.getAttribute('style')) || [])[1] || '';
+            return { t: e.textContent.trim(), fg: cs.color, bg: cs.backgroundColor, cr: Math.round(cr(cs.color, cs.backgroundColor) * 100) / 100, tok: /^var\(--/.test(fg.trim()) }; });
+      });
+      assert.ok(c.length >= 2, tag + ' · ' + theme + ': the «ذروة» and «أدنى» chips are shown ' + JSON.stringify(c));
+      for (const x of c) {
+        assert.ok(x.cr >= 4.5, tag + ' · ' + theme + ': «' + x.t + '» ' + x.fg + ' on ' + x.bg + ' is ' + x.cr + ':1 (needs 4.5)');
+        assert.ok(x.tok, tag + ': «' + x.t + '» text colour is a token variable');
+      }
+    }
+    await p.evaluate(() => KIVO.__bsThemeSet('light'));
+    assert.deepEqual(s.errs, [], tag + ': no page errors'); await s.ctx.close();
+  }
+});
+
+test('pagination bars on a phone keep «لكل صفحة» and every page button on screen — tasks, daily report, monthly roster (iPhone 13)', { timeout: 300000 }, async () => {
+  const s = await open(PHONE); const p = s.page;
+  for (const h of ['#/tasks', '#/daily/dreport', '#/staffing']) {
+    await s.go(h, 5000);
+    const bars = await p.evaluate(() => [...document.querySelectorAll('main .bs-hbar')].filter((e) => e.getClientRects().length && e.innerText.includes('لكل صفحة')).map((e) => ({
+      sw: e.scrollWidth, cw: e.clientWidth,
+      out: [...e.querySelectorAll('select, button')].filter((x) => x.getClientRects().length).filter((x) => { const q = x.getBoundingClientRect(); return q.right > innerWidth + 1 || q.left < -1; }).map((x) => x.getAttribute('aria-label') || x.tagName) })));
+    assert.ok(bars.length >= 1, h + ': the pagination bar is shown');
+    for (const x of bars) assert.ok(x.sw <= x.cw + 1 && !x.out.length, h + ': the pagination bar hides nothing ' + JSON.stringify(x));
+    await noSideScroll(p, h);
+  }
+  assert.deepEqual(s.errs, [], 'no page errors'); await s.ctx.close();
+});
