@@ -22239,9 +22239,9 @@ async function calLazyDays(env, info, want, ctx, deadline) {
     return calLazyDays(env, info, want, ctx, deadline);
   }
   var todo = days.filter(function (x) { return !want || want(calConvDay(x.m, R + '/' + x.m)); });
-  for (var i = 0; i < todo.length; i += 8) {
+  for (var i = 0; i < todo.length; i += 1) {   /* REVIEW 45: يومٌ لكل دفعة — حذفُ صفوف اليوم يفحص 235 قيدَ FK لكل صف (≈3 م.ث/صف)، فثمانيةُ أيامٍ تتجاوز مهلةَ الطلب كثيراً */
     if (Date.now() > deadline) throw calPrepError(gd + i, total);
-    var part = todo.slice(i, i + 8), all = days.length - i - part.length === 0 && todo.length === days.length, st2 = [], sums = [], rd = (await calMigRead(env, d, R, calMigHeadRanges('$').concat(calMigMemberRanges('$', part.map(function (x) { return x.m; }))), true)) || {};
+    var part = todo.slice(i, i + 1), all = days.length - i - part.length === 0 && todo.length === days.length, st2 = [], sums = [], rd = (await calMigRead(env, d, R, calMigHeadRanges('$').concat(calMigMemberRanges('$', part.map(function (x) { return x.m; }))), true)) || {};
     part.forEach(function (x) {
       if (!ocOwn(rd, x.m)) throw calConvError('calendar-read', R + '/' + x.m);
       var g = calConvDay(x.m, R + '/' + x.m), v = calConvDayValue(R, rd[x.m], ctx, R + '/' + x.m), w2 = {}; ocSet(w2, g, v);

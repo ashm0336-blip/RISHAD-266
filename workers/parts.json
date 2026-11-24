@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "08d5402637534c2e81194f85d14b9ef6cd5fc7eaaf6e5299db922111e1718bae",
+  "sha256": "f42ec609d5e5e8da0436aeff249b17470d6aef89daf167a9ef703feaf0fe8b74",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -675,8 +675,8 @@
         22018,
         22345
       ],
-      "bytes": 37005,
-      "sha256": "5061b087b43b87a78f60cf0a1454877c4f132648960a4c5310a6248d6ec34146"
+      "bytes": 37215,
+      "sha256": "1e9fb3d215f90b922525c24f6df9202f6c50e8c03697a6181f808270e2848128"
     },
     {
       "file": "019s-operational-migration.js",
