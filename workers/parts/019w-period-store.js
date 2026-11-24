@@ -106,7 +106,7 @@ function opRouteError(error) {
 }
 async function opPeriodMembers(env, info) {
   var def = opPeriodDef(info), spec = opContainerSpec(info);
-  var rows = (await env.DB.prepare('SELECT member_key AS m, position AS p FROM ops_nodes WHERE department_id=?1 AND resource=?2 AND parent_key=?3').bind(info.dept, info.resource, opContainerKey(def)).all()).results || [];
+  var rows = (await env.DB.prepare('SELECT member_key AS m, position AS p FROM ops_nodes WHERE department_id=?1 AND resource=?2 AND parent_key=?3 ORDER BY position, member_key').bind(info.dept, info.resource, opContainerKey(def)).all()).results || [];
   return rows.filter(function (r) { return typeof r.m === 'string' && (def.field || !ocOwn(spec.fields || {}, r.m)); });
 }
 async function opSummaryRoute(env, request, url, session) {
@@ -154,10 +154,12 @@ async function opPeriodsMigrateRoute(env, request, session) {
     var A = await actorOf(env, session.uid); if (!A) return json({ ok: 0, err: 'session' }, 401);
     if (A.u.role !== 'super') return json({ ok: 0, err: 'operations-periods-migrate-permission' }, 403);
     var body = parseJson(await request.text(), null); if (!isObj(body) || typeof body.dept !== 'string') return json({ ok: 0, err: 'bad-body' }, 400);
-    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];       for (var d of list) {
-      var rep = { dept: d, resources: {}, ok: 0 }, revPairs = [];
+    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];       var t0 = Date.now(), budget = Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000), from = isObj(body.from) ? body.from : null;
+    for (var d of list) {
+      var rep = { dept: d, resources: {}, ok: 0 }, revPairs = [], Rs = opSplitResources(), r0 = from && d === body.dept ? Math.max(0, Rs.indexOf(from.r)) : 0;
       try {
-        for (var R of opSplitResources()) {
+        for (var ri = 0; ri < Rs.length; ri++) {
+          var R = Rs[ri];
           var K = 'bsdept:' + d + ':' + R, info = opInfo(K), def = opPeriodDef(info), tables = ocPhysicalTables(info.prepared);
           var members = await opPeriodMembers(env, info), rv = await env.DB.prepare('SELECT rev FROM revs WHERE k=?1').bind(K).first();
           revPairs.push([K, rsNat(rv && rv.rev || 0)]);
@@ -168,7 +170,10 @@ async function opPeriodsMigrateRoute(env, request, session) {
           var names = members.map(function (m) { return m.m; }), sums = [], ranges = opHeadRanges(def);
           names.forEach(function (p) { ranges = ranges.concat(opPeriodRanges(def, p)); });
           var covered = Number((await env.DB.prepare(sum(function (t2) { return "json_each(?3) q JOIN " + t2 + " t ON t.department_id=?1 AND t.resource=?2 AND t.row_key>=json_extract(q.value,'$[0]') AND t.row_key<json_extract(q.value,'$[1]')"; })).bind(d, R, JSON.stringify(ranges)).first('n')) || 0);
-          for (var i = 0; i < names.length; i += 20) {
+          if (ri < r0) { rep.resources[R] = { periods: names.length, rows: total, earlier: 1 }; if (covered !== total) throw Object.assign(ocError('period-coverage'), { rows: total, covered: covered }); continue; }
+          var i0 = from && ri === r0 && d === body.dept ? Math.max(0, Number(from.i) || 0) : 0;
+          for (var i = i0; i < names.length; i += 20) {
+            if (Date.now() - t0 > budget) { if (sums.length) for (var j0 = 0; j0 < sums.length; j0 += 200) await env.DB.batch(opSummaryStatements(env, info, sums.slice(j0, j0 + 200))); rep.more = 1; rep.next = { r: R, i: i }; out.push(rep); return json({ ok: 0, more: 1, departments: out, next: { dept: d, from: rep.next }, pending: opLayoutPendingOf(await opLayoutStatement(env).first()) }); }
             var part = names.slice(i, i + 20), sc = {}; sc[K] = { periods: part };
             var st = await opLoadMany(env, [K], 1, sc), parts = opSplit(info, st.values[K] == null ? undefined : JSON.parse(st.values[K]));
             part.forEach(function (p) { if (!ocOwn(parts.periods, p)) throw Object.assign(ocError('period-verify'), { period: p }); sums.push({ p: p, value: parts.periods[p] }); });

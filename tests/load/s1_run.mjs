@@ -53,7 +53,10 @@ if (period) {
   for (const [n, keys] of Object.entries(ppages)) await measure('read(period) ' + n, () => read(keys));
   await measure('read(range) rounds month', () => read([], '&range=' + encodeURIComponent(R.rounds + '@' + cur)));
   await measure('summary rounds 24 months (KPIs)', () => call('/api/operations/summary?key=' + encodeURIComponent(R.rounds) + '&grp=' + encodeURIComponent(world.months.slice(-24).join(',')) + '&uid=' + encodeURIComponent(su.uid), { ck: su.ck }), 1);
-  await measure('phase-2 rebuild (verify + summaries) of the dept', () => call('/api/operations/periods-migrate', { ck: su.ck, body: { dept: 'TEST_ONLY_A' } }), 1);
+  /* المرحلة ٢ بميزانية زمنٍ لكل طلب (20 ث): تُستأنف بـnext حتى تكتمل — يُقاس كلُّ طلبٍ وعددُها */
+  let p2 = { j: { more: 1, next: { dept: 'TEST_ONLY_A' } } }, calls = 0; const p2t = performance.now();
+  while (p2.j && p2.j.more && calls < 200) { const nx = p2.j.next; await measure('phase-2 call ' + ++calls, async () => (p2 = await call('/api/operations/periods-migrate', { ck: su.ck, body: nx.from ? { dept: nx.dept, from: nx.from } : { dept: nx.dept } })), 1); }
+  results.push({ name: 'phase-2 total', calls, ms: Math.round(performance.now() - p2t), ok: p2.j && p2.j.ok }); quiet(JSON.stringify(results[results.length - 1]));
   await measure('summary rounds 24 months (KPIs, materialized)', () => call('/api/operations/summary?key=' + encodeURIComponent(R.rounds) + '&grp=' + encodeURIComponent(world.months.slice(-24).join(',')) + '&uid=' + encodeURIComponent(su.uid), { ck: su.ck }), 1);
   /* ③ الحفظُ بالفترة: يومٌ وشهرٌ في أول السنتين وآخرها */
   const daySave = (key, p) => async (i) => {

@@ -11584,19 +11584,24 @@ function rsImageFinalValues(plan, reference) {
 }
 /* V7 · 53 (ملحق 4): أيُّ المعرّفات ids (بشكل الماسح وحده) يذكره نصٌّ */
 function rsImageHeldSql(ids, keys) {
-  /* V7 · 53 (طلبُ المراجع على fc76361): السجلاتُ التشغيلية بفهرس imgref (مكتملٌ بعد imgref_scan_v1='done'؛ وقبله لا يُحكم: '!*') لا بمسح نصوصها */
-  var out = 'k NOT IN (SELECT value FROM json_each(?2))',
+  /* V7 · 53 (طلبُ المراجع على fc76361): السجلاتُ التشغيلية بفهرس imgref متى اكتمل (imgref_scan_v1='done')، وقبل ذلك وحده بمسح نصوصها (opstxt) */
+  var ops = keys.filter(opIsResource).map(function (k) { var i = opInfo(k); return [i.dept, i.resource]; }),
+    mine = "EXISTS(SELECT 1 FROM json_each(?3) p WHERE json_extract(p.value,'$[0]')=o.d AND (json_extract(p.value,'$[1]')=o.r OR substr(o.r,1,length(json_extract(p.value,'$[1]'))+1)=json_extract(p.value,'$[1]')||'@'))",
+    txt = imgOpsCols().map(function (x, j) { return 'SELECT ' + j + ' AS j, department_id AS d, resource AS r, row_key AS k, ' + imgOpsJoin(x[1]) + ' AS t FROM ' + x[0]; }).join(' UNION ALL '),
+    out = 'k NOT IN (SELECT value FROM json_each(?2))', done = "(SELECT v FROM meta WHERE k='" + IMG_SCAN_KEY + "') IS 'done'",
     has = function (t) { return 'instr(' + t + ', j.value) > 0 AND (' + t + " GLOB '*' || j.value || '[^a-z0-9]*' OR " + t + " GLOB '*' || j.value)"; },
     pair = 'FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND b.' + out;
-  return { args: [JSON.stringify(ids), JSON.stringify(keys)],
-    sql: 'WITH esck(k) AS MATERIALIZED (SELECT k FROM kv WHERE ' + out + ' AND ' + imgEscCond('v') + ' UNION SELECT b.k ' + pair + ' AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
-      " SELECT CASE WHEN (SELECT v FROM meta WHERE k='" + IMG_SCAN_KEY + "') IS NOT 'done' THEN '!*'" +
-      " WHEN EXISTS(SELECT 1 FROM esck) THEN '!' || (SELECT group_concat(s, char(1)) FROM (SELECT 'k' || k || char(2) || (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = esck.k) AS s FROM esck ORDER BY s))" +
+  return { args: [JSON.stringify(ids), JSON.stringify(keys), JSON.stringify(ops)],
+    sql: 'WITH opstxt(j, d, r, k, t) AS NOT MATERIALIZED (' + txt + '), ops(j, d, r, k, t) AS NOT MATERIALIZED (SELECT * FROM opstxt o WHERE NOT ' + mine + ')' +   /* بلا تجسيد: شرطُ «لم يكتمل الفهرس» الثابت يمنع المسحَ كلَّه متى اكتمل */
+      ', esck(k) AS MATERIALIZED (SELECT k FROM kv WHERE ' + out + ' AND ' + imgEscCond('v') + ' UNION SELECT b.k ' + pair + ' AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
+      ", esc(s) AS MATERIALIZED (SELECT 'k' || k || char(2) || (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = esck.k) FROM esck" +
+      " UNION ALL SELECT 'o' || j || char(2) || d || char(2) || r || char(2) || k || char(2) || length(CAST(t AS BLOB)) FROM ops WHERE NOT " + done + ' AND ' + imgEscCond('t') + ')' +
+      " SELECT CASE WHEN EXISTS(SELECT 1 FROM esc) THEN '!' || (SELECT group_concat(s, char(1)) FROM (SELECT s FROM esc ORDER BY s))" +
       " ELSE COALESCE((SELECT group_concat(id, ',') FROM (SELECT j.value AS id FROM json_each(?1) j WHERE" +
-      ' EXISTS(SELECT 1 FROM imgref r WHERE r.img = j.value AND r.' + out + ')' +
+      ' (' + done + ' AND EXISTS(SELECT 1 FROM imgref r WHERE r.img = j.value AND r.' + out + '))' +
       ' OR EXISTS(SELECT 1 FROM kv WHERE ' + out + ' AND ' + has('v') + ')' +
       ' OR EXISTS(SELECT 1 ' + pair + ' AND instr(substr(CAST(a.v AS BLOB), -(length(CAST(j.value AS BLOB)) - 1)) || substr(CAST(b.v AS BLOB), 1, length(CAST(j.value AS BLOB)) - 1), j.value) > 0)' +
-      " ORDER BY j.value)), '') END AS h" };
+      " OR (NOT " + done + " AND EXISTS(SELECT 1 FROM ops WHERE " + has('t') + ")) ORDER BY j.value)), '') END AS h" };
 }
 /* '!' من rsImageHeldSql: تُقرأ النصوصُ التي تحمل الهروبَ (وحدها، صفحاتٍ ≤ IMG_ESC_PAGE بايت، ومجموعها ≤ IMG_ESC_CHARS) وتُفكّ — يعيد المعرّفاتِ
    التي يذكرها أحدُها، أو null إن لم يُحسم (أكبرُ من الحد · فكٌّ لم ينتهِ) فيبقى كلُّ شيءٍ كما هو (لا يتيم). */
@@ -11703,7 +11708,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     var ask = lost.filter(function (id) { return IMG_SCAN_ID_RX.test(id); });
     if (ask.length) {
       var proof = rsImageHeldSql(ask, keys), held = String((await rsBound(env.DB.prepare(proof.sql), proof.args).first('h')) || '');
-      var heldIds = held === '!*' ? null : held.charAt(0) !== '!' ? held.split(',').filter(Boolean) : await rsImageHeldEsc(env, ask, held);
+      var heldIds = held.charAt(0) !== '!' ? held.split(',').filter(Boolean) : await rsImageHeldEsc(env, ask, held);
       (heldIds ? Array.from(heldIds) : ask).forEach(function (id) { live.add(id); });
       plan.guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN (' + proof.sql + ') IS NOT ?' + (proof.args.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), proof.args.concat([held])));
     }
@@ -21099,7 +21104,7 @@ function opRouteError(error) {
 }
 async function opPeriodMembers(env, info) {
   var def = opPeriodDef(info), spec = opContainerSpec(info);
-  var rows = (await env.DB.prepare('SELECT member_key AS m, position AS p FROM ops_nodes WHERE department_id=?1 AND resource=?2 AND parent_key=?3').bind(info.dept, info.resource, opContainerKey(def)).all()).results || [];
+  var rows = (await env.DB.prepare('SELECT member_key AS m, position AS p FROM ops_nodes WHERE department_id=?1 AND resource=?2 AND parent_key=?3 ORDER BY position, member_key').bind(info.dept, info.resource, opContainerKey(def)).all()).results || [];
   return rows.filter(function (r) { return typeof r.m === 'string' && (def.field || !ocOwn(spec.fields || {}, r.m)); });
 }
 async function opSummaryRoute(env, request, url, session) {
@@ -21147,10 +21152,12 @@ async function opPeriodsMigrateRoute(env, request, session) {
     var A = await actorOf(env, session.uid); if (!A) return json({ ok: 0, err: 'session' }, 401);
     if (A.u.role !== 'super') return json({ ok: 0, err: 'operations-periods-migrate-permission' }, 403);
     var body = parseJson(await request.text(), null); if (!isObj(body) || typeof body.dept !== 'string') return json({ ok: 0, err: 'bad-body' }, 400);
-    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];       for (var d of list) {
-      var rep = { dept: d, resources: {}, ok: 0 }, revPairs = [];
+    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];       var t0 = Date.now(), budget = Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000), from = isObj(body.from) ? body.from : null;
+    for (var d of list) {
+      var rep = { dept: d, resources: {}, ok: 0 }, revPairs = [], Rs = opSplitResources(), r0 = from && d === body.dept ? Math.max(0, Rs.indexOf(from.r)) : 0;
       try {
-        for (var R of opSplitResources()) {
+        for (var ri = 0; ri < Rs.length; ri++) {
+          var R = Rs[ri];
           var K = 'bsdept:' + d + ':' + R, info = opInfo(K), def = opPeriodDef(info), tables = ocPhysicalTables(info.prepared);
           var members = await opPeriodMembers(env, info), rv = await env.DB.prepare('SELECT rev FROM revs WHERE k=?1').bind(K).first();
           revPairs.push([K, rsNat(rv && rv.rev || 0)]);
@@ -21161,7 +21168,10 @@ async function opPeriodsMigrateRoute(env, request, session) {
           var names = members.map(function (m) { return m.m; }), sums = [], ranges = opHeadRanges(def);
           names.forEach(function (p) { ranges = ranges.concat(opPeriodRanges(def, p)); });
           var covered = Number((await env.DB.prepare(sum(function (t2) { return "json_each(?3) q JOIN " + t2 + " t ON t.department_id=?1 AND t.resource=?2 AND t.row_key>=json_extract(q.value,'$[0]') AND t.row_key<json_extract(q.value,'$[1]')"; })).bind(d, R, JSON.stringify(ranges)).first('n')) || 0);
-          for (var i = 0; i < names.length; i += 20) {
+          if (ri < r0) { rep.resources[R] = { periods: names.length, rows: total, earlier: 1 }; if (covered !== total) throw Object.assign(ocError('period-coverage'), { rows: total, covered: covered }); continue; }
+          var i0 = from && ri === r0 && d === body.dept ? Math.max(0, Number(from.i) || 0) : 0;
+          for (var i = i0; i < names.length; i += 20) {
+            if (Date.now() - t0 > budget) { if (sums.length) for (var j0 = 0; j0 < sums.length; j0 += 200) await env.DB.batch(opSummaryStatements(env, info, sums.slice(j0, j0 + 200))); rep.more = 1; rep.next = { r: R, i: i }; out.push(rep); return json({ ok: 0, more: 1, departments: out, next: { dept: d, from: rep.next }, pending: opLayoutPendingOf(await opLayoutStatement(env).first()) }); }
             var part = names.slice(i, i + 20), sc = {}; sc[K] = { periods: part };
             var st = await opLoadMany(env, [K], 1, sc), parts = opSplit(info, st.values[K] == null ? undefined : JSON.parse(st.values[K]));
             part.forEach(function (p) { if (!ocOwn(parts.periods, p)) throw Object.assign(ocError('period-verify'), { period: p }); sums.push({ p: p, value: parts.periods[p] }); });

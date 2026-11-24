@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "86479375271f7ed4464a52b3760090887e48449b4f21bfe2f6a7d83f9468b291",
+  "sha256": "cd05c5180bf51d87daf440f32ce2b59b4452df943d861eb23a20b6cbfce51104",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -375,17 +375,17 @@
       "head": "/* RISHAD 266 — server-owned relational storage. */",
       "lines": [
         11403,
-        12397
+        12402
       ],
-      "bytes": 63416,
-      "sha256": "89cf3a221a840a3366c5c23c699850ed0f9d236af41975f5d67193a4a2961f1a"
+      "bytes": 64524,
+      "sha256": "dc7eaedeface6936326bbd4383507e51895f1c43c17def6305df17a8029c951c"
     },
     {
       "file": "019f-backup-converter.js",
       "head": "/* RISHAD 266 — server-owned relational storage. */",
       "lines": [
-        12398,
-        13020
+        12403,
+        13025
       ],
       "bytes": 35588,
       "sha256": "0da677f61d6add2487673b27a374e6d9b6c40b35ab686a8f3b7cf990cb9195a1"
@@ -393,8 +393,8 @@
     {
       "file": "../../src/systems/irshad/server/019g-irshad-domain.js",
       "lines": [
-        13021,
-        13778
+        13026,
+        13783
       ],
       "bytes": 31359,
       "sha256": "8aabfaa00993a63f5a28eefb908585352d869f5e4307d475bab4174f08bbdc0b"
@@ -402,8 +402,8 @@
     {
       "file": "../../src/systems/irshad/server/019h-irshad-query.js",
       "lines": [
-        13779,
-        14064
+        13784,
+        14069
       ],
       "bytes": 21790,
       "sha256": "e35135c835f097818f8c3a557afd65a61930e5bf893fd2e76613b0cd3b654b85"
@@ -411,8 +411,8 @@
     {
       "file": "../../src/systems/irshad/server/019i-irshad-operations.js",
       "lines": [
-        14065,
-        14322
+        14070,
+        14327
       ],
       "bytes": 19061,
       "sha256": "8cdb355ff4e11bbbc4c04546a2aec11abfe736adcdf40b71cc7c62ce05aa886d"
@@ -420,8 +420,8 @@
     {
       "file": "../../src/systems/irshad/server/019j-irshad-daily.js",
       "lines": [
-        14323,
-        14391
+        14328,
+        14396
       ],
       "bytes": 4831,
       "sha256": "c22cad6fe49b218d69a946b849961c66e933a5364a2dd9570d2de5eab7e9d68f"
@@ -429,8 +429,8 @@
     {
       "file": "019g-backup-import.js",
       "lines": [
-        14392,
-        14831
+        14397,
+        14836
       ],
       "bytes": 46698,
       "sha256": "b575179229c1ee49efbb2e705004d483aa093b657b80aa231b2cff13d7fb617e"
@@ -438,8 +438,8 @@
     {
       "file": "019k-business-context.js",
       "lines": [
-        14832,
-        14906
+        14837,
+        14911
       ],
       "bytes": 6280,
       "sha256": "925e7d3e5bec320fb366657d56a0e05cad5fed1a8388dd506ed0111cdec89656"
@@ -447,8 +447,8 @@
     {
       "file": "019k-seized-defaults.js",
       "lines": [
-        14907,
-        14908
+        14912,
+        14913
       ],
       "bytes": 11091,
       "sha256": "2b6851ba1df486d66ecd8e98fd70af1006091dd8c07c1e36693fa6d6390487fe"
@@ -456,8 +456,8 @@
     {
       "file": "019k-award-reference-html.js",
       "lines": [
-        14909,
-        14942
+        14914,
+        14947
       ],
       "bytes": 1053,
       "sha256": "55cc421a423ee7a1a1d02eee2974606e61152bf45157c08e6b72d108c79ff913"
@@ -465,8 +465,8 @@
     {
       "file": "../../src/systems/seized/server/019l-seized.js",
       "lines": [
-        14943,
-        16126
+        14948,
+        16131
       ],
       "bytes": 34724,
       "sha256": "df2b3ec033aab0c7d929399f4b9761f7aa3b7de8a7f7c609516c67c863b5ade4"
@@ -474,8 +474,8 @@
     {
       "file": "../../src/systems/seized/server/019l-seized-query.js",
       "lines": [
-        16127,
-        16795
+        16132,
+        16800
       ],
       "bytes": 22065,
       "sha256": "92a5cf6af66899ce75a387abf1f0fbecba450f657aa6bd8857fdc86e0a028a1f"
@@ -483,8 +483,8 @@
     {
       "file": "../../src/systems/seized/server/019l-seized-dashboard.js",
       "lines": [
-        16796,
-        17151
+        16801,
+        17156
       ],
       "bytes": 10963,
       "sha256": "bd3b62c2cb19d459c4b91e3e5d534b702f53d560a137dcdf215c02147d5805b4"
@@ -492,8 +492,8 @@
     {
       "file": "../../src/systems/seized/server/019l-seized-operations.js",
       "lines": [
-        17152,
-        18159
+        17157,
+        18164
       ],
       "bytes": 32182,
       "sha256": "531a9ec268517f8e704ec6b0029c0a75e7e426bf2c668347d24cc941f05c7bdd"
@@ -501,8 +501,8 @@
     {
       "file": "../../src/systems/award/server/019m-award.js",
       "lines": [
-        18160,
-        18559
+        18165,
+        18564
       ],
       "bytes": 48410,
       "sha256": "3867ca931a3c73703911584b477972039ebf83e775fbcf4c6a2f7371bac9e462"
@@ -510,8 +510,8 @@
     {
       "file": "019n-business-integration.js",
       "lines": [
-        18560,
-        18741
+        18565,
+        18746
       ],
       "bytes": 14982,
       "sha256": "f0860ab5cbb872aa5918611f4db2de2ce352d3daf9cc42d4274aed44be0f9226"
@@ -519,8 +519,8 @@
     {
       "file": "../../src/systems/seized/server/019n-seized-due.js",
       "lines": [
-        18742,
-        18779
+        18747,
+        18784
       ],
       "bytes": 4607,
       "sha256": "3190425d07ab28ac9b98b981e580af098303965e6d1941668dd20b5219f56b62"
@@ -528,8 +528,8 @@
     {
       "file": "019o-operational-codec.js",
       "lines": [
-        18780,
-        19142
+        18785,
+        19147
       ],
       "bytes": 27528,
       "sha256": "46a31c0ab011e237e9d39f912411fc712fe5f440d06c8fd9a2851c2039c81c29"
@@ -537,8 +537,8 @@
     {
       "file": "019o1-table-names.js",
       "lines": [
-        19143,
-        19602
+        19148,
+        19607
       ],
       "bytes": 51451,
       "sha256": "f7609f6afc0c2ef82345a3ed20a31d0139dbb8f2246776f71fbe5c1c430fd3ae"
@@ -546,8 +546,8 @@
     {
       "file": "019p-operations-scheduling.js",
       "lines": [
-        19603,
-        19629
+        19608,
+        19634
       ],
       "bytes": 779,
       "sha256": "0e4cf6fb12ac0395a86a91f74a2633070aeea39824eba75f570c1df9e8d91dab"
@@ -555,8 +555,8 @@
     {
       "file": "019p0-scheduling-base.js",
       "lines": [
-        19630,
-        19703
+        19635,
+        19708
       ],
       "bytes": 4885,
       "sha256": "1c0d368e6d4a2f1d0b330c5b144036ec6a601e33dae094b4be3fe0790fcf748f"
@@ -564,8 +564,8 @@
     {
       "file": "../../src/systems/staff/server/019p1-scheduling-staff.js",
       "lines": [
-        19704,
-        19789
+        19709,
+        19794
       ],
       "bytes": 2555,
       "sha256": "e4621ef3934ba50939f2020a1d1f22001d6e781aa2a8161d2e8fc6d4b35832b3"
@@ -573,8 +573,8 @@
     {
       "file": "019p5-scheduling-floors.js",
       "lines": [
-        19790,
-        20027
+        19795,
+        20032
       ],
       "bytes": 8345,
       "sha256": "bb6321e38880235d37127d9212b3da657e07f8d8cc83ac5cc288d3ab0555dcb8"
@@ -582,8 +582,8 @@
     {
       "file": "../../src/systems/daily/server/019p3-scheduling-rounds.js",
       "lines": [
-        20028,
-        20245
+        20033,
+        20250
       ],
       "bytes": 14406,
       "sha256": "c4adb1b2446ab624597f59acdc8aec44dab2c8dab40c880df061115491b8b682"
@@ -591,8 +591,8 @@
     {
       "file": "../../src/systems/plan/server/019p2-scheduling-plan.js",
       "lines": [
-        20246,
-        20271
+        20251,
+        20276
       ],
       "bytes": 991,
       "sha256": "91b059dfb8cc920f2b2ef1c1cc89029addf0a5de326c3794f1b8d2f87413100e"
@@ -600,8 +600,8 @@
     {
       "file": "../../src/systems/plan/server/019p4-scheduling-plan-options.js",
       "lines": [
-        20272,
-        20343
+        20277,
+        20348
       ],
       "bytes": 1851,
       "sha256": "708e5b9eccc42be839c8f1aa4ab2d76f44fa6730b19ba3cf56fc6c0de190f44e"
@@ -609,8 +609,8 @@
     {
       "file": "019p9-scheduling-registry.js",
       "lines": [
-        20344,
-        20351
+        20349,
+        20356
       ],
       "bytes": 485,
       "sha256": "346cac8d3dd3a083078c81ab3a9ae519c93025ce1343fac095ee77b2c3d0634c"
@@ -618,8 +618,8 @@
     {
       "file": "019q-operations-people-tasks.js",
       "lines": [
-        20352,
-        20526
+        20357,
+        20531
       ],
       "bytes": 9252,
       "sha256": "9a5f3fb100333b44635b3bf6c63b71dd8de33829e383520571b42daab44f0ce9"
@@ -627,8 +627,8 @@
     {
       "file": "019r-operational-storage.js",
       "lines": [
-        20527,
-        20993
+        20532,
+        20998
       ],
       "bytes": 40082,
       "sha256": "611651ae4b2f463cbb21677b4bd83ffb5af7a32f1fbcb0d9d238527ead273722"
@@ -636,17 +636,17 @@
     {
       "file": "019w-period-store.js",
       "lines": [
-        20994,
-        21189
+        20999,
+        21199
       ],
-      "bytes": 17408,
-      "sha256": "077ab737d4fab66752216e39eb1fffcd557bee0a92fc67b59c31ad65b72b6473"
+      "bytes": 18412,
+      "sha256": "15c744f1ce71012bfa934db7b67a991dea6af92daf7c5cccd369b81786031d86"
     },
     {
       "file": "019s-operational-migration.js",
       "lines": [
-        21190,
-        21459
+        21200,
+        21469
       ],
       "bytes": 8237,
       "sha256": "707aa8928068212fc3eb68ee26269882d3cfe2f05770a2a961938f09f243a195"
@@ -654,8 +654,8 @@
     {
       "file": "019t-operational-backup.js",
       "lines": [
-        21460,
-        21567
+        21470,
+        21577
       ],
       "bytes": 8050,
       "sha256": "72632fee5cd81b8f6a8c987b25cd491de4de7c30d19fbda236ff2b3967848573"
@@ -663,8 +663,8 @@
     {
       "file": "019u-privacy-projection.js",
       "lines": [
-        21568,
-        22085
+        21578,
+        22095
       ],
       "bytes": 37417,
       "sha256": "a922aaa5fac3defcf10833fb5a2e37f8e142b1fe80fa7fff82162b42f5655d34",
@@ -673,8 +673,8 @@
     {
       "file": "../../src/systems/dstats/server/020-dstats.js",
       "lines": [
-        22086,
-        22356
+        22096,
+        22366
       ],
       "bytes": 22704,
       "sha256": "b3817adafa540296a8a083d1b28ec690136dbce1f9a92f3d52eaed4d364c43c8",
@@ -683,8 +683,8 @@
     {
       "file": "021-authz-core-intro.js",
       "lines": [
-        22357,
-        22593
+        22367,
+        22603
       ],
       "bytes": 17627,
       "sha256": "489f3e08f46622106999380885e302dacf8766a034fe8e875058d004c32ba162",
@@ -693,8 +693,8 @@
     {
       "file": "022-myperms.js",
       "lines": [
-        22594,
-        22625
+        22604,
+        22635
       ],
       "bytes": 2683,
       "sha256": "6cb0725916f03b76162dbc8f752db779967c60d29f4f0010ffb6430dc4e53e6e",
@@ -703,8 +703,8 @@
     {
       "file": "023-resources.js",
       "lines": [
-        22626,
-        22758
+        22636,
+        22768
       ],
       "bytes": 11041,
       "sha256": "c27892dba2e6361c742feda57df3b7772869db752298023c01a33c1fee6f0b18",
@@ -713,8 +713,8 @@
     {
       "file": "024-entities.js",
       "lines": [
-        22759,
-        22767
+        22769,
+        22777
       ],
       "bytes": 1063,
       "sha256": "972487913e49ff7b202764addc70d9def98653ea9b63d17984d897a44607ac88",
@@ -723,8 +723,8 @@
     {
       "file": "025-entities-2.js",
       "lines": [
-        22768,
-        22849
+        22778,
+        22859
       ],
       "bytes": 6547,
       "sha256": "bc0311ca8bb68daec9275d238bf77b258aeadc8994ca4ef94fa36c6fb3965e72",
@@ -733,8 +733,8 @@
     {
       "file": "026-domain-ops.js",
       "lines": [
-        22850,
-        22919
+        22860,
+        22929
       ],
       "bytes": 4316,
       "sha256": "4c2251c8af3e23c0848ab38f86ae27598fd437221e8d4106b7be0d7ebc91a2b1",
@@ -743,8 +743,8 @@
     {
       "file": "027-approvals.js",
       "lines": [
-        22920,
-        22951
+        22930,
+        22961
       ],
       "bytes": 2013,
       "sha256": "2191e9f4968f4c666e7353baa826463735cd3478aa38ecfcfece0d18036e89a4",
@@ -753,8 +753,8 @@
     {
       "file": "028-approval-shapes.js",
       "lines": [
-        22952,
-        23061
+        22962,
+        23071
       ],
       "bytes": 5994,
       "sha256": "afc6f1d3a60beba8647dbc972494c7bc8269162629e143aad728b68a1df6c8f7",
@@ -763,8 +763,8 @@
     {
       "file": "029-primitive-lists.js",
       "lines": [
-        23062,
-        23106
+        23072,
+        23116
       ],
       "bytes": 2434,
       "sha256": "d1ba4ad78569c272edb5b972cf4e8c2379e365da29b51bb260c18ba323d0a2a7",
@@ -773,8 +773,8 @@
     {
       "file": "030-shape-constants.js",
       "lines": [
-        23107,
-        23110
+        23117,
+        23120
       ],
       "bytes": 524,
       "sha256": "3a8615147aeb5375a7c7b6def37ea0b15b7ac7882997c7228d2f1debc901845a",
@@ -783,8 +783,8 @@
     {
       "file": "031-fields.js",
       "lines": [
-        23111,
-        23284
+        23121,
+        23294
       ],
       "bytes": 10785,
       "sha256": "6a06d47e3aa25178d84a66beb4ce08b89332978bd1bc5fc59137e41f314afa18",
@@ -793,8 +793,8 @@
     {
       "file": "032-legacy-align.js",
       "lines": [
-        23285,
-        23359
+        23295,
+        23369
       ],
       "bytes": 4190,
       "sha256": "663ad706f27ef6be0c1e97ae53e18cb2047b6a1ad1882096a67c54fa4e51d3ae",
@@ -803,8 +803,8 @@
     {
       "file": "033-entity-identity.js",
       "lines": [
-        23360,
-        23367
+        23370,
+        23377
       ],
       "bytes": 901,
       "sha256": "7d4e8a79e63cc4f296238a1250a085da15852933bbd54c30121d96f5727bd194",
@@ -813,8 +813,8 @@
     {
       "file": "034-name-swap.js",
       "lines": [
-        23368,
-        23428
+        23378,
+        23438
       ],
       "bytes": 4189,
       "sha256": "832cda5b9f9a3696c721b13b16be4f365b0d25dc399c67d425e701c9bfc7ed5e",
@@ -823,8 +823,8 @@
     {
       "file": "035-fastpath-constants.js",
       "lines": [
-        23429,
-        23457
+        23439,
+        23467
       ],
       "bytes": 1992,
       "sha256": "f6a5cf865e342939884eaf46fdeaff8555fb15116ff3242c417828f2141fbaf1",
@@ -833,8 +833,8 @@
     {
       "file": "036-moves-append.js",
       "lines": [
-        23458,
-        23471
+        23468,
+        23481
       ],
       "bytes": 1000,
       "sha256": "588576090fe5b9050321cab90740b91d4e7bfe41a2b4604c3571ee80a6b113f4",
@@ -843,8 +843,8 @@
     {
       "file": "037-entity-classify.js",
       "lines": [
-        23472,
-        23546
+        23482,
+        23556
       ],
       "bytes": 4152,
       "sha256": "392a38bae5903225b27839cde381f9555d555cf2d353d213d4f9def34eba9207",
@@ -853,8 +853,8 @@
     {
       "file": "038-domain-cleanups.js",
       "lines": [
-        23547,
-        23560
+        23557,
+        23570
       ],
       "bytes": 1312,
       "sha256": "c587e2bb216b3d7d7693c6d92a1b0c730b6287df53d5d0912e4937dbf769a1a5",
@@ -863,8 +863,8 @@
     {
       "file": "040-employee-delete-cleanup.js",
       "lines": [
-        23561,
-        23593
+        23571,
+        23603
       ],
       "bytes": 2189,
       "sha256": "40b5362a1812510725bed61ad0466c8dd0572ae56614e3b9a260cd42ac55a2a6",
@@ -873,8 +873,8 @@
     {
       "file": "../../src/systems/staff/server/041a-shift-rename.js",
       "lines": [
-        23594,
-        23616
+        23604,
+        23626
       ],
       "bytes": 1931,
       "sha256": "302176ed7f3da195993407a6bda1127382cbe8e478e444d9e9fd9130604138d1",
@@ -883,8 +883,8 @@
     {
       "file": "041-acts-held.js",
       "lines": [
-        23617,
-        23625
+        23627,
+        23635
       ],
       "bytes": 569,
       "sha256": "f2e30e95e26d198aa47056c137b89f83bc43221c1f4e2e59b4b6e1026aa946cf",
@@ -893,8 +893,8 @@
     {
       "file": "043-myperms-2.js",
       "lines": [
-        23626,
-        23637
+        23636,
+        23647
       ],
       "bytes": 1034,
       "sha256": "38d66943390ec6e88863248b8aa17b9f629819e720f272137654adb53231ab3f",
@@ -903,8 +903,8 @@
     {
       "file": "044-protected-ops.js",
       "lines": [
-        23638,
-        23654
+        23648,
+        23664
       ],
       "bytes": 1380,
       "sha256": "5b6ac9c7122a279741387aab7ca04d14c7bbaa8e36ea6a59040106e7da6f2b68",
@@ -913,8 +913,8 @@
     {
       "file": "046-kivo-build-3.js",
       "lines": [
-        23655,
-        23677
+        23665,
+        23687
       ],
       "bytes": 2836,
       "sha256": "d9fff0386d3a56832203fa074db3e5a33a10d011f2c11f4775afdd539a91a5ed",
@@ -923,8 +923,8 @@
     {
       "file": "047-retro.js",
       "lines": [
-        23678,
-        23756
+        23688,
+        23766
       ],
       "bytes": 8030,
       "sha256": "58b294c59bfaa2319be733d9269e2c12e52b56d915075b3799cbecd5fc84d7cd",
@@ -933,8 +933,8 @@
     {
       "file": "../../src/systems/rasd/server/047r-rasd-retro.js",
       "lines": [
-        23757,
-        23783
+        23767,
+        23793
       ],
       "bytes": 2443,
       "sha256": "ed12d8fc5f0e3b3794d89d3dfa22d515bf64e2d0fb43fb4e4a9306fc9cb244b4"
@@ -942,8 +942,8 @@
     {
       "file": "048-permv4.js",
       "lines": [
-        23784,
-        23867
+        23794,
+        23877
       ],
       "bytes": 8676,
       "sha256": "ce94c50a2e732bada481376a448810741e1fe5f53da88e9b3f2d460b27998dfa",
@@ -952,8 +952,8 @@
     {
       "file": "050-read-map.js",
       "lines": [
-        23868,
-        23971
+        23878,
+        23981
       ],
       "bytes": 9072,
       "sha256": "24abfd8dd1f7c54856b46965b3ec3344e112fcf48a92efc7505f8b1494b1b986",
@@ -962,8 +962,8 @@
     {
       "file": "051-audit-diff.js",
       "lines": [
-        23972,
-        24063
+        23982,
+        24073
       ],
       "bytes": 5963,
       "sha256": "237338c99044b71a688e6c18a150905a980a875b34990f5eda0ee444cab2f536",
@@ -974,8 +974,8 @@
       "generated": "tools/generate.py ← migrations/*.sql",
       "head": "/* ═══ KIVO_249 · AUD-022 — الترحيلاتُ المرقَّمة (schema): مولَّدةٌ من migrations/NNNN_<name>.sql بأداة tools/generate.py؛ لا تُحرَّر يدوياً.",
       "lines": [
-        24064,
-        24331
+        24074,
+        24341
       ],
       "bytes": 96209,
       "sha256": "4eb825db697d5c3a1acfaa9f2667bd5e192194433642304fe56173deaa5f7ae1"
@@ -983,8 +983,8 @@
     {
       "file": "051b-body-schemas.js",
       "lines": [
-        24332,
-        24390
+        24342,
+        24400
       ],
       "bytes": 24267,
       "sha256": "2c961b457790a7baaf37fb9b54bff66d527713a9a879eb31e8ba7cafb70a10f0",
@@ -994,8 +994,8 @@
       "file": "051c-department-permission-slice.js",
       "head": "/* Generated from the existing department permission slice. */",
       "lines": [
-        24391,
-        24419
+        24401,
+        24429
       ],
       "bytes": 3522,
       "sha256": "1272319e534468545aea491dd87b12691ed1aa694526c58a07fc1fa509534848"
@@ -1003,8 +1003,8 @@
     {
       "file": "052-aud-events.js",
       "lines": [
-        24420,
-        24988
+        24430,
+        24998
       ],
       "bytes": 36164,
       "sha256": "5c5cdeac8af411de9c34be001bb9a0e068745c900611b8aa829eabd4bfae7d17",
@@ -1013,8 +1013,8 @@
     {
       "file": "053-images.js",
       "lines": [
-        24989,
-        24997
+        24999,
+        25007
       ],
       "bytes": 1057,
       "sha256": "88a42a87c4c59403c1a88c204fe42bf0f854c0bda24a331117ce5525adcd3d67",
@@ -1023,8 +1023,8 @@
     {
       "file": "054-image-contract.js",
       "lines": [
-        24998,
-        26947
+        25008,
+        26957
       ],
       "bytes": 201994,
       "sha256": "78474c0714b2ec7abba46b3cc612d9b1b78702d91db6378847122e9f802961ca",
@@ -1033,8 +1033,8 @@
     {
       "file": "055-sec-headers.js",
       "lines": [
-        26948,
-        26992
+        26958,
+        27002
       ],
       "bytes": 4948,
       "sha256": "82146f879d13083357ccc410520de2d56c21b90d4a59f62aa81ecafde94536f1",
@@ -1043,8 +1043,8 @@
     {
       "file": "056-enforce.js",
       "lines": [
-        26993,
-        27082
+        27003,
+        27092
       ],
       "bytes": 11477,
       "sha256": "3faa39fa2a4bb2e4e939bcaefb38c61b748b8f44d9a3eb4fdd19d9bc956c1541",
@@ -1053,8 +1053,8 @@
     {
       "file": "057-enf-index.js",
       "lines": [
-        27083,
-        27401
+        27093,
+        27411
       ],
       "bytes": 34745,
       "sha256": "34fea20357a3b97d72dfaf8ce71ba458084108b25563470ed5802093e6204ce1",
@@ -1065,8 +1065,8 @@
       "generated": "permissions/registry/perm44-levels.json + perm44-core.js + perm44-server.js + manifests/pages.json → محرّكُ الأدوار في الخادم (V7 · د5-هـ 44 · tools/generate.py)",
       "head": "/* ═══ V7 · د5-هـ (44) — محرّكُ الأدوار (الخادم): مولَّدٌ بأداة tools/generate.py من permissions/registry/perm44-levels.json (جدولُ المستويات) و",
       "lines": [
-        27402,
-        27800
+        27412,
+        27810
       ],
       "bytes": 37383,
       "sha256": "fc84766df4da784db80d1656dc82938d263ee6fa2af9a2419f9d3fbb86be8f40"
@@ -1074,8 +1074,8 @@
     {
       "file": "058-enf-scope.js",
       "lines": [
-        27801,
-        27853
+        27811,
+        27863
       ],
       "bytes": 5661,
       "sha256": "3612cb27f087056fe1f8ba4e24ecfeac44aef9033ed953194917d41ef4d32bdf",
@@ -1084,8 +1084,8 @@
     {
       "file": "059-protected-ops-2.js",
       "lines": [
-        27854,
-        28182
+        27864,
+        28192
       ],
       "bytes": 33588,
       "sha256": "5a8ccc55c45d036f8cb1cbf82b2edcd7298944b00abbc8e3dc87d7824ec65f8b",
@@ -1094,8 +1094,8 @@
     {
       "file": "060-enf-canwrite.js",
       "lines": [
-        28183,
-        28253
+        28193,
+        28263
       ],
       "bytes": 8309,
       "sha256": "ccb59b9869f720ef010d0ecffca1183a9cf342c37f3fe9e2f80ef168497390c1",
@@ -1104,8 +1104,8 @@
     {
       "file": "061-enf-read.js",
       "lines": [
-        28254,
-        28514
+        28264,
+        28524
       ],
       "bytes": 23377,
       "sha256": "1e21f71f9d4dd32de246c3726d34b95090cd905d0071dc46dc4bdde5b31d39d3",
@@ -1114,8 +1114,8 @@
     {
       "file": "062-enf-save.js",
       "lines": [
-        28515,
-        28600
+        28525,
+        28610
       ],
       "bytes": 8905,
       "sha256": "675c14c8f522d2785171eafa4d6343f4d0b5c9eee770d2a699eef3f081ecd5af",
@@ -1124,8 +1124,8 @@
     {
       "file": "062a-auth-routes.js",
       "lines": [
-        28601,
-        28839
+        28611,
+        28849
       ],
       "bytes": 25771,
       "sha256": "33ecef606837f389b55e85b835c1f269002a19c9fe42f0d206733b86becbba1a",
@@ -1134,8 +1134,8 @@
     {
       "file": "062b-me-history.js",
       "lines": [
-        28840,
-        29276
+        28850,
+        29286
       ],
       "bytes": 35680,
       "sha256": "541799bea01a4101ea97094cd7c53f25b44c8095f4669cc7c0dfc329739f4a62",
@@ -1148,8 +1148,8 @@
       "sha256": "78980ec04c35fe35211847785217b943136d0ddba6dc08d38bda48690bb99cfb",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks — «ملفي ← مهامي»: قراءةُ الموظف لمهامه هو وحده، ودورةُ حياتها من جهته، من الخادم ═══",
       "lines": [
-        29277,
-        29654
+        29287,
+        29664
       ]
     },
     {
@@ -1159,15 +1159,15 @@
       "sha256": "09340a58f4d79efefb2ba88d3e616889932e006713e43ce6c9b807f49af3d20c",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة في الخادم: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيه ═══",
       "lines": [
-        29655,
-        29838
+        29665,
+        29848
       ]
     },
     {
       "file": "062d-record-shared.js",
       "lines": [
-        29839,
-        29851
+        29849,
+        29861
       ],
       "bytes": 1271,
       "sha256": "bd39c4bb69c1f042df024f4c7bb744496f12e99c3e01b0242c51c5ff41569ff2"
@@ -1175,8 +1175,8 @@
     {
       "file": "../../src/systems/tasks/server/070b-task-rows.js",
       "lines": [
-        29852,
-        30120
+        29862,
+        30130
       ],
       "bytes": 24419,
       "sha256": "7fb1c1f3b1177f240028153e18a2623255be835a7ead0ab50494e4518b8d6f77"
@@ -1188,8 +1188,8 @@
       "sha256": "63a70fc7340448fb2373b0f616a3a43205ad1350a791cd0e005ec94b5c25a9f2",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول: الإنشاء · المراجعة · التمديد · إعادةُ الإسناد · الإلغاء · الربط · المجموعة ═══",
       "lines": [
-        30121,
-        30712
+        30131,
+        30722
       ]
     },
     {
@@ -1199,8 +1199,8 @@
       "sha256": "c6fa0c8534a720a812983256bbed0bc49404497cf743b7c3b4fa61fb1359167a",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══",
       "lines": [
-        30713,
-        30861
+        30723,
+        30871
       ]
     },
     {
@@ -1210,8 +1210,8 @@
       "sha256": "717168aa9b4d2fd2d4a5a75ac0e2f21266350c80229789df96ed70436263a40a",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — المهامُ المتكررة: قالبٌ + نسخةُ تنفيذٍ مستقلة لكل موعد، تُولَّد في الخادم بلا Cron (ق5) ═══",
       "lines": [
-        30862,
-        31253
+        30872,
+        31263
       ]
     },
     {
@@ -1221,15 +1221,15 @@
       "sha256": "19ae36ed22074e6b1754e85eda2c226e60ed4dab93145d505e5c314cf66308f8",
       "head": "/* ═══ KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (البند 10 — قرارُ المالك 2026-10-19) ═══",
       "lines": [
-        31254,
-        31381
+        31264,
+        31391
       ]
     },
     {
       "file": "063-enf-api-and-handler.js",
       "lines": [
-        31382,
-        33076
+        31392,
+        33086
       ],
       "bytes": 175976,
       "sha256": "f049c8ec6ef68750cd9877d4efb428e9663b1a5807b6ab73dd9e4fef475973fb",
