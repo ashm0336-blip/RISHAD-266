@@ -501,9 +501,11 @@ Object.assign(Component.prototype, {
       }),
       /* V7 · د7 (أ): تحت النظام المضيف عدساتُه بمفتاحٍ كالأنظمة — مسودتُها في المسودة نفسِها (lens.<L> = في سجلّ عدسات الوحدة؟)؛ المقفلُ من أصلٍ
          «مطفأ من: <المصدر>»، والمضيفُ المطفأ (في المسودة أو المحفوظ) يطفئها معه ويقفلها — وسجلُّها يبقى فتعود كما كانت بعودته. لا عدساتَ في صف المنصة */
-      rows = "__plat" === u ? rows0 : this._p44LensInject(u, rows0, dr, setDr, off),
-      /* «تشغيل الكل» / «إطفاء الكل»: المسودةُ لكل صفٍّ غيرِ مقفل — المقفلُ لا يُمسّ */
-      allTo = (v) => setDr((c) => rows.forEach((r) => (r.lens ? !!r.by : r.locked) || (v === r.was ? delete c[r.k] : (c[r.k] = v)))),   /* V7 · د7 (أ): العدسةُ المقفلةُ بمضيفها وحده تتبع الزرَّ مع مضيفها (المقفلةُ من أصلٍ لا تُمسّ) */
+      rows = rows0,
+      lzRows = "__plat" === u ? [] : this._p44LensInject(u, rows0, dr, setDr, off),
+      /* «تشغيل الكل» / «إطفاء الكل»: المسودةُ لكل صفٍّ غيرِ مقفل — المقفلُ لا يُمسّ.
+         V7 · د7 (أ): والعدسات: «تشغيل الكل» يشغّل كلَّ عدسةٍ غيرِ مقفلةٍ من أصل؛ «إطفاء الكل» يطفئها مع مضيفها (سجلُّها يبقى فتعود كما كانت بتشغيله) */
+      allTo = (v) => setDr((c) => (rows.forEach((r) => r.locked || (v === r.was ? delete c[r.k] : (c[r.k] = v))), lzRows.forEach((z) => z.by || (v && !z.was ? (c[z.k] = !0) : delete c[z.k])))),
       eff = this._p44SysEffect(u, dr),
       dirtyN = Object.keys(dr).length,
       people = "__plat" === u ? this._p44Users().filter((x) => "super" !== x.role).length : this._p44Users().filter((x) => x.deptId === u || this._p44Try(() => (D.ancestorsOf(x.deptId) || []).indexOf(u) !== -1, !1)).length;
@@ -568,10 +570,12 @@ Object.assign(Component.prototype, {
           flip: () => { if (L || !hOn) return; setDr((c) => ((c[x.k] = !cur), c[x.k] === own && delete c[x.k])); },
         };
       };
+    /* تُعلَّق على صفّ مضيفها (r.lz · r.lzOn) فيبقى p44SysRows صفوفَ الأنظمة (العدّادُ = عمودُ الشجرة) — وتُعاد مسطّحةً لـ«تشغيل الكل» */
     const out = [], done = {};
     rows.forEach((r) => {
-      out.push(r);
-      lz.forEach((x) => { if (!done[x.k] && x.sys.indexOf(r.k) !== -1) { done[x.k] = 1; out.push(mk(x)); } });
+      r.lz = [];
+      lz.forEach((x) => { if (!done[x.k] && x.sys.indexOf(r.k) !== -1) { done[x.k] = 1; const z = mk(x); r.lz.push(z); out.push(z); } });
+      r.lzOn = r.lz.length > 0;
     });
     return out;
   },
@@ -588,7 +592,10 @@ Object.assign(Component.prototype, {
         .filter((s) => s.tg && this.p44SysOnEff(did, s, off))   /* V7 · د6 (م6 · ب12): المفعّلُ فعلياً وحده */
         .map((s) => ({ k: s.k, n: s.n, kind: "sys", on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّل لإدارتك", flip: () => {} }))
         /* V7 · د7 (أ): والعدساتُ المفعّلة فعلياً تحت مضيفها — المطفأةُ لا تظهر له */
-        .reduce((acc, r) => acc.concat([r], this._p44Lenses().filter((x) => x.sys[0] === r.k || (x.sys.indexOf(r.k) !== -1 && !acc.some((y) => x.sys.indexOf(y.k) !== -1))).filter((x) => this.p44LensOnEff(did, x, off)).map((x) => ({ k: x.k, n: x.n, kind: "lens", on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّلة لإدارتك", flip: () => {} }))), []),
+        .map((r, i, all) => {
+          const lz = this._p44Lenses().filter((x) => x.sys.indexOf(r.k) !== -1 && !all.slice(0, i).some((y) => x.sys.indexOf(y.k) !== -1) && this.p44LensOnEff(did, x, off));
+          return Object.assign(r, { lz: lz.map((x) => ({ k: x.k, n: x.n, kind: "lens", on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّلة لإدارتك", flip: () => {} })), lzOn: lz.length > 0 });
+        }),
       people = this._p44Users().filter((x) => x.deptId === did || this._p44Try(() => (D.ancestorsOf(x.deptId) || []).indexOf(did) !== -1, !1)).length;
     return {
       p44SysRO: !0,
@@ -797,7 +804,7 @@ Object.assign(Component.prototype, {
           const r = x.roles.filter((y) => y.id === role.id)[0];
           r && fn(r);
         });
-    const rows = sys.map((s) => {
+    let rows = sys.map((s) => {
       const g = (role.sys || {})[s.k],
         isOn = !!g,
         lv = g ? g.lvl : "",
@@ -809,7 +816,7 @@ Object.assign(Component.prototype, {
         isOn: isOn,
         onTxt: isOn ? "true" : "false",
         lv: lv || "view",
-        sub: isOn ? this._p44LvName(lv) + ("custom" === lv ? " · " + KIVO.BassamCount((g.keys || []).length, ["فعل واحد", "فعلان", "فعلين", "أفعال", "فعلاً", "فعل"]) : "") : "غير مفعّل لهذا الدور",
+        sub: isOn ? this._p44LvName(lv) + ("custom" === lv ? " · " + KIVO.BassamCount((g.keys || []).length, ["فعل واحد", "فعلان", "فعلين", "أفعال", "فعلاً", "فعل"]) : "") : s.lens ? "تتبع مستوى النظام المضيف — فعّلها لتحدّد مستواها" : "غير مفعّل لهذا الدور",
         flip: () => upd((r) => ((r.sys = r.sys || {}), r.sys[s.k] ? delete r.sys[s.k] : (r.sys[s.k] = { lvl: "view" }))),
         setLv: (ev) => {
           const n = String((ev && ev.target && ev.target.value) || "view");
@@ -834,6 +841,10 @@ Object.assign(Component.prototype, {
           : [],
       };
     });
+    /* V7 · د7 (أ): صفوفُ العدسات تُعلَّق على صفّ مضيفها (r.lz) — p44SysEd صفوفُ الأنظمة كما كان */
+    rows.forEach((r, i) => { if (r.kind === "lens") return; r.lz = []; for (let j = i + 1; j < rows.length && rows[j].kind === "lens"; j++) r.lz.push(rows[j]); r.lzOn = r.lz.length > 0; });
+    const rowsAll = rows;
+    rows = rowsAll.filter((r) => r.kind !== "lens");
     const comp = this._p44Compile(role, did),
       cmpId = S.cmp && d.roles.some((r) => r.id === S.cmp && r.id !== role.id) ? S.cmp : "",
       cmp = cmpId ? d.roles.filter((r) => r.id === cmpId)[0] : null,
@@ -862,7 +873,7 @@ Object.assign(Component.prototype, {
       p44SysEdNone: !rows.length,
       p44OnN: String(rows.filter((r) => r.isOn).length),
       p44AllN: String(rows.length),
-      p44AllOn: () => upd((r) => ((r.sys = r.sys || {}), sys.forEach((s) => r.sys[s.k] || (r.sys[s.k] = { lvl: "view" })))),
+      p44AllOn: () => upd((r) => ((r.sys = r.sys || {}), sys.forEach((s) => s.lens || r.sys[s.k] || (r.sys[s.k] = { lvl: "view" })))),   /* V7 · د7 (أ): العدسةُ بلا صفٍّ تتبع مستوى مضيفها */
       p44AllOff: () => upd((r) => (r.sys = {})),
       p44Nav: this._p44Menu(comp, role, did),
       p44CmpOpts: [{ v: "", t: "— اختر دوراً —" }].concat(d.roles.filter((r) => r.id !== role.id).map((r) => ({ v: r.id, t: r.name || "بلا اسم" }))),
@@ -870,7 +881,7 @@ Object.assign(Component.prototype, {
       p44CmpSet: (ev) => this._p44Set({ cmp: String((ev && ev.target && ev.target.value) || "") }),
       p44CmpOn: !!cmp,
       p44CmpName: cmp ? cmp.name : "",
-      p44CmpRows: cmp ? this.p44Compare(role, cmp, sys) : [],
+      p44CmpRows: cmp ? this.p44Compare(role, cmp, sys) : [],   /* V7 · د7 (أ): والعدساتُ صفوفٌ في المقارنة */
       p44ChkKeys: chkKeys,
       p44ChkKey: ck,
       p44ChkSet: (ev) => this._p44Set({ chk: { key: String((ev && ev.target && ev.target.value) || "") } }),
