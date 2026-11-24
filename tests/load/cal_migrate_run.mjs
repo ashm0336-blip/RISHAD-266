@@ -9,7 +9,11 @@ const quiet = console.log; console.log = (...a) => { const s = a.join(' '); if (
 const HF = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'UTC', year: 'numeric', month: 'numeric', day: 'numeric' }), o = {};
 HF.formatToParts(new Date()).forEach((p) => { o[p.type] = +p.value; });
 const curH = o.year + '-' + o.month, Tg = new Date().toISOString().slice(0, 10);
-const t0 = performance.now(), world = build(C, curH), counts = seed(lab, { bassam_employees_v1: world.docs.bassam_employees_v1, bassam_staffing_v3: world.docs.bassam_staffing_v3 }, world.specs);
+/* المولّدُ يكتب اليوم 30 لكل شهر — وفي أم القرى أشهرٌ من 29: يومٌ لا وجود له يوقف ترحيلَ إدارته باسمه (§3.1، يُقاس ذلك وحدَه بـ KEEP_BAD=1) — فيُحذف من العالم هنا */
+const HV = new Set(); for (let t = Date.UTC(2015, 0, 1); t < Date.UTC(2035, 0, 1); t += 864e5) { const q = {}; HF.formatToParts(new Date(t)).forEach((p) => { q[p.type] = +p.value; }); HV.add(q.year + '-' + q.month + '-' + q.day); }
+const okDay = (k) => process.env.KEEP_BAD === '1' || !/^\d{4}-\d{1,2}-\d{1,2}$/.test(k) || HV.has(k.split('-').map(Number).join('-'));
+const world0 = build(C, curH), world = { ...world0, specs: Object.fromEntries(Object.entries(world0.specs).map(([r, sp]) => [r, { ...sp, periods: function* () { for (const pv of sp.periods()) if (okDay(pv[0])) yield pv; } }])) };
+const t0 = performance.now(), counts = seed(lab, { bassam_employees_v1: world.docs.bassam_employees_v1, bassam_staffing_v3: world.docs.bassam_staffing_v3 }, world.specs);
 const seedMs = Math.round(performance.now() - t0);
 const CAL = ['bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_dreport_v1', 'bassam_tasks_v1', 'bassam_staffing_v3', 'bassam_plan_v1'];
 const members = (res, cal) => DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource=?2 AND parent_key=?3 AND member_key GLOB ?4", DEPT, res, res === 'bassam_plan_v1' ? '$/f:months' : '$', cal === 'h' ? '1[3-5]*' : '2[0-1]*')[0].n;
