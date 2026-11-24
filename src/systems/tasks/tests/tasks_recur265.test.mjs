@@ -175,7 +175,7 @@ for (const mode of ['enforce']) {
     let i0 = -1; while (i0 > -45 && ymOf(hij(MID(N0) + i0 * 864e5 + 12 * HR)) !== PMK) i0--;
     assert.equal(ymOf(hij(MID(N0) + i0 * 864e5 + 12 * HR)), PMK, 'آخرُ يومٍ من الشهر الماضي');
     const sP = MID(N0) + i0 * 864e5 + 8 * HR, kP = hij(sP);
-    await replaceOperationalFixture(W.env, KL, {});                                                           /* الشهرُ الماضي مفتوحٌ وقتَ الإنشاء */
+    await replaceOperationalFixture(W.env, KL, { [PMK]: { mo: 1 } });   /* V7 · 53 (قرار المالك ٧): الشهرُ الماضي مقفلٌ ما لم يُفتح للاستدراك — يُفتح وقتَ الإنشاء */                                                           /* الشهرُ الماضي مفتوحٌ وقتَ الإنشاء */
     const B = (t) => ({ k: kP, t: TAG + ' ' + t, s: sP, e: sP + HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily', open: 1 } });
     const c = await post(W, dm.ck, '/api/tasks/create', B('تعبر شهراً مقفلاً')); assert.equal(c.status, 200, show(c));
     const c2 = await post(W, dm.ck, '/api/tasks/create', B('نموذجُها في شهرٍ مقفل')); assert.equal(c2.status, 200, show(c2));
