@@ -22,19 +22,19 @@ function row(o) { const r = ['TEST_ONLY ' + (o.t || 'مهمة'), '', 'normal', o
 const S0 = 1760000000000;
 function store() {
   return {
-    '1448-4-1': [
+    '2026-04-01': [
       row({ t: 'في الوقت بصورة', st: 'done', perf: ['on_time', 'في الوقت'], s: S0, acc: S0 + 10 * MIN, fin: S0 + 60 * MIN, r21: { imgs: ['img_tskx_1'], note: '' } }),
       row({ t: 'مبكرة بملاحظة', st: 'done', perf: ['early', 'مبكر'], s: S0, acc: S0 + 20 * MIN, fin: S0 + 30 * MIN, r21: { imgs: [], note: 'تم' } }),
       row({ t: 'متأخرة بلا إثبات', st: 'done', perf: ['late', 'متأخر 5 د'], s: S0, acc: S0 - 30 * MIN, fin: S0 + 120 * MIN, r21: null }),
       'ليس صفاً',
     ],
-    '1448-4-9': [
+    '2026-04-09': [
       row({ t: 'جارية', st: 'in_progress', s: S0, acc: S0 + 40 * MIN }),
       row({ t: 'لم تُقبل', st: 'pending', s: S0 }),
       row({ t: 'اعتذار', st: 'declined', s: S0 }),
     ],
-    '1448-3-30': [row({ t: 'الشهر الماضي متأخرة', st: 'done', perf: ['late', 'متأخر'], s: S0, acc: S0 + 5 * MIN, fin: S0 + MIN, r21: { imgs: ['img_tskx_2'] } })],
-    '1448-4': 'مفتاحٌ ناقص',
+    '2026-03-30': [row({ t: 'الشهر الماضي متأخرة', st: 'done', perf: ['late', 'متأخر'], s: S0, acc: S0 + 5 * MIN, fin: S0 + MIN, r21: { imgs: ['img_tskx_2'] } })],
+    '2026-04': 'مفتاحٌ ناقص',
     'x-y-z': [row({ st: 'done', perf: ['on_time', ''] })],
   };
 }
@@ -47,7 +47,7 @@ function page(o = {}) {
   vm.createContext(ctx);
   const can = o.can || (() => true);
   KIVO.BassamPerm = { can: (k, a) => can(k, a), kpiPanelOk: (pk, sk) => (sk ? !!(o.others && o.others(pk, sk)) : can(pk, 'view')),   /* V7 P4 · G6: a page-level ref (the tasks panel) = the page's view right, as in 334 */ canSub: () => true, on: () => true };
-  KIVO.BassamHijri = { now: () => ({ y: 1448, m: 4, d: 27 }) };
+  KIVO.BassamHijri = { now: () => ({ y: 2026, m: 4, d: 27 }) };
   /* schema 10: tasks come from the confirmed Operations projection, and operational pages require a ready registered department context */
   KIVO.BassamDepts = { context: () => (o.scope || { state: 'ready' }) };
   KIVO.__BS_SRV = { operations: { get: (k) => { if (k !== 'bassam_tasks_v1' || !LS.has(k)) return null; try { return JSON.parse(LS.get(k)); } catch (e) { return null; } } } };
@@ -58,32 +58,32 @@ function page(o = {}) {
   vm.runInContext('globalThis.__P = class extends DCLogic { constructor() { super(); this.props = { solo: "kpi" }; } };', ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/i18n/385-calendar.js'), 'utf8'), ctx);   /* V7 · د5-د2: التقويمُ الموحّد — الصفحةُ تسأله (الساعةُ المثبَّتة عبر BassamHijri كما كانت) */
   vm.runInContext('(function (Component) {' + fs.readFileSync(PANEL, 'utf8') + '\n})(globalThis.__P);', ctx, { filename: 'tasks/logic-kpi.js' });
-  const c = new ctx.__P();
+  const c = new ctx.__P(); c._tkNow = () => ({ y: 2026, m: 4, d: 27 });   /* V7 · 53 تقويم: «الآن» الصريح للاختبار (كان عبر BassamHijri) */
   const V = () => { const e = k.renderVals(); return e.on_tk ? Object.assign(e, c._tkSoloVals()) : e; };
   return { c, k, V, LS };
 }
 
 test('(1) الحسابُ النقيّ للشهر: المنجزةُ ونسبُها (في الوقت · متأخرة · موثّقة) ومتوسطُ زمن القبول — صفوفُ الشهر وحدها، وما ليس صفاً أو مفتاحاً يُهمل', () => {
-  const P = page(), k = P.c._tkKpi(store(), 1448, 4);
-  assert.equal(k.n, 6, 'ستُّ مهام في ربيع الآخر (لا الشهرَ الماضي ولا المفاتيحَ الفاسدة)');
+  const P = page(), k = P.c._tkKpi(store(), 2026, 4);
+  assert.equal(k.n, 6, 'ستُّ مهام في أبريل (لا الشهرَ الماضي ولا المفاتيحَ الفاسدة)');
   assert.equal(k.done, 3); assert.equal(k.open, 2); assert.equal(k.dec, 1);
   assert.equal(k.on, 2); assert.equal(k.onPct, 67, 'في الوقت أو مبكرة من المنجزة = 2/3');
   assert.equal(k.late, 1); assert.equal(k.latePct, 33);
   assert.equal(k.doc, 2); assert.equal(k.docImg, 1); assert.equal(k.docPct, 67, 'بصورةٍ أو ملاحظة من المنجزة = 2/3');
   assert.equal(k.acc, 4, 'المقبولة: ثلاثُ منجزاتٍ + الجارية'); assert.equal(k.accAvg, 10, 'متوسط (11 − 15): (10 + 20 − 30 + 40) / 4 = 10 د');
-  const k3 = P.c._tkKpi(store(), 1448, 3);
+  const k3 = P.c._tkKpi(store(), 2026, 3);
   assert.equal(k3.n, 1); assert.equal(k3.latePct, 100); assert.equal(k3.onPct, 0); assert.equal(k3.docPct, 100); assert.equal(k3.accAvg, 5);
-  const k0 = P.c._tkKpi(store(), 1448, 5);
+  const k0 = P.c._tkKpi(store(), 2026, 5);
   assert.equal(k0.n, 0); assert.equal(k0.onPct, null, 'بلا منجزة ⇒ لا نسبة (null لا 0)'); assert.equal(k0.accAvg, null);
-  assert.deepEqual(P.c._tkKpi(null, 1448, 4).n, 0, 'مخزنٌ غائب');
-  assert.equal(P.c._tkKpi({ '1448-4-1': [row({ st: 'in_progress', s: S0, acc: S0 - 90 * MIN })] }, 1448, 4).accAvg, -90, 'بدءٌ قبل الموعد ⇒ سالب');
+  assert.deepEqual(P.c._tkKpi(null, 2026, 4).n, 0, 'مخزنٌ غائب');
+  assert.equal(P.c._tkKpi({ '2026-04-01': [row({ st: 'in_progress', s: S0, acc: S0 - 90 * MIN })] }, 2026, 4).accAvg, -90, 'بدءٌ قبل الموعد ⇒ سالب');
 });
 
 test('(2) الشاشة: التبويبُ لمن يرى المهام · البطاقاتُ الأربع بقيمها وألوانها الدلالية · الشهرُ الحالي ثم السابق/التالي بلفّ السنة · الفارغ · المخزنُ الفاسد', () => {
   const P = page();
   let t = P.V();
   assert.equal(t.ok_tk, true); assert.equal(t.on_tk, true, 'اللوحةُ الوحيدةُ المتاحة تُفتح تلقائياً'); assert.equal(t.stripOn, false); assert.equal(t.noneOn, false);
-  assert.equal(t.tkKpiTitle, 'ربيع الآخر 1448 — الشهر الحالي');
+  assert.equal(t.tkKpiTitle, 'أبريل 2026 — الشهر الحالي');
   assert.equal(t.tkKpiSub, '6 مهمة · 3 منجزة · 2 مفتوحة · 1 معتذَر عنها');
   assert.equal(t.tkKpiEmpty, false); assert.equal(t.tkKpiNoDone, false);
   const C = t.tkKpiCards; assert.equal(C.length, 4);
@@ -95,18 +95,18 @@ test('(2) الشاشة: التبويبُ لمن يرى المهام · البط�
   for (const c of C) assert.match(c.c, /^var\(--(success|warning|danger)-text\)$/, 'رموزٌ دلاليةٌ وحدها: ' + c.c);
   /* الشهرُ السابق */
   t.tkKpiPrev(); t = P.V();
-  assert.equal(t.tkKpiTitle, 'ربيع الأول 1448'); assert.equal(t.tkKpiCards[1].v, '100٪'); assert.equal(t.tkKpiCards[1].c, 'var(--danger-text)');
+  assert.equal(t.tkKpiTitle, 'مارس 2026'); assert.equal(t.tkKpiCards[1].v, '100٪'); assert.equal(t.tkKpiCards[1].c, 'var(--danger-text)');
   assert.equal(t.tkKpiCards[0].v, '0٪'); assert.equal(t.tkKpiCards[0].c, 'var(--danger-text)'); assert.equal(t.tkKpiCards[2].c, 'var(--success-text)');
   /* التالي ⇒ الحالي · ثم التالي ⇒ فارغ */
-  t.tkKpiNext(); t = P.V(); assert.equal(t.tkKpiTitle, 'ربيع الآخر 1448 — الشهر الحالي');
+  t.tkKpiNext(); t = P.V(); assert.equal(t.tkKpiTitle, 'أبريل 2026 — الشهر الحالي');
   t.tkKpiNext(); t = P.V();
-  assert.equal(t.tkKpiTitle, 'جمادى الأولى 1448'); assert.equal(t.tkKpiEmpty, true); assert.equal(t.tkKpiSub, '');
+  assert.equal(t.tkKpiTitle, 'مايو 2026'); assert.equal(t.tkKpiEmpty, true); assert.equal(t.tkKpiSub, '');
   assert.equal(t.tkKpiCards.map((c) => c.v).join(''), '————'); assert.ok(t.tkKpiCards.every((c) => c.c === 'var(--text-muted)'), 'بلا لون');
   /* لفُّ السنة */
-  P.c.setState({ tkY: 1448, tkM: 1 }); t = P.V(); t.tkKpiPrev(); t = P.V(); assert.equal(t.tkKpiTitle, 'ذو الحجة 1447');
-  t.tkKpiNext(); t = P.V(); assert.equal(t.tkKpiTitle, 'محرم 1448');
+  P.c.setState({ tkY: 2026, tkM: 1 }); t = P.V(); t.tkKpiPrev(); t = P.V(); assert.equal(t.tkKpiTitle, 'ديسمبر 2025');
+  t.tkKpiNext(); t = P.V(); assert.equal(t.tkKpiTitle, 'يناير 2026');
   /* شهرٌ فيه مهامٌ بلا منجزة */
-  const P2 = page({ tasks: { '1448-4-3': [row({ st: 'pending' })] } }); t = P2.V();
+  const P2 = page({ tasks: { '2026-04-03': [row({ st: 'pending' })] } }); t = P2.V();
   assert.equal(t.tkKpiNoDone, true); assert.equal(t.tkKpiEmpty, false); assert.equal(t.tkKpiCards[0].v, '—');
   /* مخزنٌ فاسد أو غائب ⇒ فارغٌ بلا انهيار */
   assert.equal(page({ tasks: '{bad json' }).V().tkKpiEmpty, true);
@@ -122,9 +122,9 @@ test('(2) الشاشة: التبويبُ لمن يرى المهام · البط�
   t.go_tk(); t = P4.V(); assert.equal(t.on_tk, true); assert.equal(t.on_read, false); assert.equal(t.tkKpiCards.length, 4);
   assert.equal(t.tkMount, true); assert.equal(t.tkShow, '');
   /* الشهرُ المختار يبقى بعد التنقّل بين التبويبات (كما كان حين كانت الحالةُ في العارض): اللوحةُ تبقى مركَّبةً مخفيّة */
-  t.tkKpiPrev(); t = P4.V(); assert.equal(t.tkKpiTitle, 'ربيع الأول 1448');
+  t.tkKpiPrev(); t = P4.V(); assert.equal(t.tkKpiTitle, 'مارس 2026');
   t.go_read(); t = P4.V(); assert.equal(t.on_tk, false); assert.equal(t.tkMount, true, 'تبقى مركَّبة'); assert.equal(t.tkShow, 'display:none', 'مخفيّة');
-  t.go_tk(); t = P4.V(); assert.equal(t.tkKpiTitle, 'ربيع الأول 1448', 'الشهرُ المختار باقٍ'); assert.equal(t.tkShow, '');
+  t.go_tk(); t = P4.V(); assert.equal(t.tkKpiTitle, 'مارس 2026', 'الشهرُ المختار باقٍ'); assert.equal(t.tkShow, '');
 });
 
 test('(3) القالب: تبويبُ «مؤشرات المهام» في الشريط وقسمُه بالبطاقات والتنقّل والفراغ — بالرموز الدلالية وحدها داخل القسم', () => {

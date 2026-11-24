@@ -9,7 +9,7 @@ import { loadClient } from '../../../../tests/unit/k264_vm.mjs';
 import { world, workerUnderTest, P0, MATE, KT, DAY, row, stored, putKV, replaceOperationalFixture } from './tasks_fx.mjs';
 import { MgrClient, upImg, act, findRow, reviewAndApply } from './tasks_conc_fx.mjs';
 
-const K = 'bsdept:tst_d1:bassam_tasks_v1', D = '1448-4-15';
+const K = 'bsdept:tst_d1:bassam_tasks_v1', D = '2026-09-15';   /* V7 · 53 تقويم: مفتاحُ يومٍ ISO (world_fx hFx: الشهرُ الهجري ⇐ الميلادي المقابل له اليوم، واليومُ نفسُه) */
 const R = (id, eid, o = {}) => ['t' + id, o.desc || '', 'normal', o.st || 'pending', 'normal', 'مضافة', null, [], '', 'mgr', 60, o.acc || null, null, id, eid, 1, 2, o.g || null, o.g ? 'G' : null, null, o.r20 || null, null];
 function client() { const T = loadClient({ C: { req: async () => { throw new Error('offline'); } }, boot: { srv: 1, cf: 1, v: 1, keys: {}, revs: {} } }); return { M3: T.W.KIVO.__BS_SRV.merge3, T }; }
 const J = (x) => JSON.stringify(x), C = (x) => JSON.parse(J(x));

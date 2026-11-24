@@ -51,12 +51,7 @@ Object.assign(Component.prototype, {
     return Object.assign(o, { onPct: pct(o.on, o.done), latePct: pct(o.late, o.done), docPct: pct(o.doc, o.done), accAvg: o.acc ? Math.round(o.accSum / o.acc / 6e4) : null });
   },
   _tkNow() {
-    try {
-      const C = KIVO.BassamCal;   /* V7 · د5-د2: اليومُ من جدول الاحتياط، وبغيابه يومُ الرياض — كلاهما من الخدمة */
-      return C.hNow(void 0, null) || C.hPartsRiyadh(new Date());
-    } catch (t) {
-      return { y: 1447, m: 1, d: 1 };
-    }
+    return KIVO.BassamCal.gAt(new Date());   /* V7 · 53 تقويم: يومُ الرياض الميلادي (الشهرُ الجاري للمؤشرات) */
   },
   _tkDur(m) {
     const a = Math.abs(m),
@@ -83,7 +78,7 @@ Object.assign(Component.prototype, {
       T = this._tkNow(),
       Y = s.tkY || T.y,
       M = s.tkM || T.m,
-      HM = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"],
+      HM = KIVO.BassamCal.G_MONTHS,   /* V7 · 53 تقويم: الشهرُ ميلادي */
       k = (this._tkKpiWant(KIVO.BassamCal.gYm(Y, M)), this._tkKpi(this._tkStore(), Y, M)),
       P = (v) => (null == v ? "—" : v + "٪");
     ((e.tkKpiTitle = HM[M - 1] + " " + Y + (Y === T.y && M === T.m ? " — الشهر الحالي" : "")),

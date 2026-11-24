@@ -27,6 +27,12 @@ const pad2 = (n) => (n < 10 ? '0' : '') + n;
 const gOf = (ms) => { const x = new Date(ms + 3 * 3600 * 1000); return { y: x.getUTCFullYear(), m: x.getUTCMonth() + 1, d: x.getUTCDate() }; };
 export const isoDay = (y, m, d) => y + '-' + pad2(m) + '-' + pad2(d);
 export const isoYm = (y, m) => y + '-' + pad2(m);
+/* hFx — نقلُ مفاتيح بيانات الاختبار المصطنعة (TEST_ONLY) من الهجري إلى ISO بقاعدةٍ واحدة تحفظ بنيةَ الاختبار: الشهرُ الهجري n من 1448 ⇐ الشهرُ الميلادي
+   الذي يقابل أيامَه اليوم (1448-6 ⇐ 2026-11 · وساعةُ الاختبار 1448-5-9 ⇐ 2026-10)، ورقمُ اليوم كما هو (1–30) — فالماضي ماضٍ والجاري جارٍ والقادم قادم.
+   ليس تحويلاً تقويمياً (ذاك hToIso في cal_fx.mjs للتواريخ الحقيقية): هو لبيانات الاختبار التي تعني «هذا الشهر · الشهر الماضي · اليوم 3». المفتاحُ الميلادي يعود كما هو. */
+export const hFxYM = (y, m) => { const i = (y - 1448) * 12 + (m - 1) + 2026 * 12 + 5; return { y: Math.floor(i / 12), m: (i % 12) + 1 }; };
+export const hFx = (k) => { const x = /^(m:)?(\d{4})-(\d{1,2})(?:-(\d{1,2}))?(-.+)?$/.exec(String(k)); if (!x || +x[2] < 1300 || +x[2] > 1599) return k;
+  const g = hFxYM(+x[2], +x[3]); return (x[1] || '') + isoYm(g.y, g.m) + (x[4] ? '-' + pad2(+x[4]) : '') + (x[5] || ''); };
 export const T = gOf(Date.now() - 3 * 3600 * 1000);
 export const hij = (ms) => { const o = gOf(ms); return isoDay(o.y, o.m, o.d); };
 export const DAY = isoDay(T.y, T.m, T.d);
