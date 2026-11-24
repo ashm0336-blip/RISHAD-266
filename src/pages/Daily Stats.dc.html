@@ -2244,7 +2244,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     icB:"width:27px;height:27px;border-radius:9999px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:"+c+";box-shadow:0 3px 8px -4px "+c,
     lblSt:"font-size:8.5px;font-weight:700;letter-spacing:.3px;color:"+c+";opacity:.72;white-space:nowrap",
     totSt:"margin-right:auto;flex-shrink:0;font-size:16px;font-weight:800;color:"+c,
-    pSt:"flex-shrink:0;font-size:9.5px;font-weight:800;color:var(--fg-xffffff);background:"+c+";border-radius:9999px;padding:2.5px 8px;box-shadow:0 2px 6px -3px "+c }; }
+    /* V7 · 53 (porttouch): نصُّ رقاقة «ذروة/أدنى» على ملئها — الملءُ (الذهبيّ، و«أدنى» بـ--text-secondary) يفتح في الداكن، فالأبيضُ كان 1.4:1 على «أدنى» و3.6:1 على «ذروة».
+       --warning-on-strong أبيضُ في الفاتح (كما كان) وداكنٌ في الداكن: ≥ 4.5:1 في السمتين */
+    pSt:"flex-shrink:0;font-size:9.5px;font-weight:800;color:var(--warning-on-strong);background:"+c+";border-radius:9999px;padding:2.5px 8px;box-shadow:0 2px 6px -3px "+c }; }
   _zHero(site,days,A){
     const self=this, s=this.state, H=site==="haram", md=this.ZMODE();
     const GOLD="#8A6F35", NAVY="var(--text-secondary)", PAL=["var(--chart-1)","var(--chart-11)","var(--chart-7)","var(--chart-2)","var(--chart-3)","var(--chart-4)"];
