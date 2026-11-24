@@ -306,7 +306,7 @@
     let yr = (String(dateLine || "").match(/(\d{4})\s*هـ/) || [])[1] || "", grp = "";
     if (!yr)
       try {
-        yr = String(KIVO.BassamHijri.now().y || "");
+        yr = String(KIVO.BassamCal.hToday().y || "");   /* V7 · 53: من خدمة التقويم الواحدة (v7_d5d2_calendar_rest ⑤) */
       } catch (e) {}
     try {
       grp = (KIVO.BassamDepts && KIVO.BassamDepts.activeGroupName && KIVO.BassamDepts.activeGroupName()) || "";

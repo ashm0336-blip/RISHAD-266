@@ -182,8 +182,9 @@ test('Staff renderVals weekly-rest Sunday callback writes the name/eid-only empl
   assert.equal(request.json.ok, 1);
   assert.equal(request.json.atomic, 1);
   const body = JSON.parse(request.body);
-  assert.deepEqual(Object.keys(body.set), [scoped('bassam_staffing_v3')]);
-  assert.deepEqual(JSON.parse(body.set[scoped('bassam_staffing_v3')])[f.month][EMPLOYEE.eid].rest, ['الأحد']);
+  /* V7 · 53: الجدولُ مخزَّنٌ بالشهر — الحفظُ يرسل الشهرَ الذي تغيّر وحده (K@<الشهر>)، وقيمتُه الشهرُ نفسُه */
+  assert.deepEqual(Object.keys(body.set), [scoped('bassam_staffing_v3') + '@' + f.month]);
+  assert.deepEqual(JSON.parse(body.set[scoped('bassam_staffing_v3') + '@' + f.month])[EMPLOYEE.eid].rest, ['الأحد']);
   assert.deepEqual(inspectOperationalFixture(f.B.env, scoped('bassam_staffing_v3'))[f.month][EMPLOYEE.eid], {
     shift: SHIFT, rest: ['الأحد'],
   });
@@ -206,7 +207,7 @@ test('Staff renderVals weekly-rest Sunday callback writes the name/eid-only empl
   assert.notEqual(secondBody.requestId, body.requestId, 'A different intent gets a new request ID');
   assert.equal(secondBody.base[scoped('bassam_staffing_v3')], request.json.revs[scoped('bassam_staffing_v3')],
     'The second command uses the first acknowledged resource revision');
-  assert.deepEqual(JSON.parse(secondBody.set[scoped('bassam_staffing_v3')])[f.month][EMPLOYEE.eid].rest, ['الأحد', 'الاثنين']);
+  assert.deepEqual(JSON.parse(secondBody.set[scoped('bassam_staffing_v3') + '@' + f.month])[EMPLOYEE.eid].rest, ['الأحد', 'الاثنين']);   /* V7 · 53: الشهرُ وحده */
   assert.deepEqual(inspectOperationalFixture(f.B.env, scoped('bassam_staffing_v3'))[f.month][EMPLOYEE.eid], {
     shift: SHIFT, rest: ['الأحد', 'الاثنين'],
   });

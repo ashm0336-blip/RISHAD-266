@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { loadClient, until } from '../../../../tests/unit/k264_vm.mjs';
-import { periodRead, periodSave, loadAllPeriods } from '../../../../tests/unit/vm_operations_fx.mjs';   /* V7 · 53: المهامُ مخزّنةٌ بالفترة — النقلُ المصطنع يجيب كالخادم */
+import { periodRead, periodSave, periodIndex, loadAllPeriods } from '../../../../tests/unit/periods_fake_fx.mjs';   /* V7 · 53: المهامُ مخزّنةٌ بالفترة — النقلُ المصطنع يجيب بسلك الخادم (الخادمُ المزيّف الواحد) */
 
 const UID = 'TEST_ONLY task owner', DEPT = 'dA', TASK = 'bsdept:dA:bassam_tasks_v1', LOCK = 'bsdept:dA:bassam_tasks_locks_v1';
 const read = name => fs.readFileSync(new URL('../../../../' + name, import.meta.url), 'utf8');
@@ -15,8 +15,16 @@ async function world({ save, command, deniedTask = false } = {}) {
   let rev = 4;
   const C = { req: async (url, options = {}) => {
     if (url.startsWith('/api/operations/read?')) {
-      const P = periodRead(url, { uid: actor.uid, epoch: 3, v: rev, get: (K) => (K in docs ? docs[K] : undefined), rev: () => rev, denied: (K) => deniedTask && K === TASK });
-      if (P) return response(P);
+      /* V7 · 53: سلكُ الفترات (periods_fake_fx) على الوثائق الكاملة · والمحجوبُ: مفتاحُه وكلُّ فتراته محجوبة ولا مدى له */
+      const U = new URL(url, 'http://x'), isTask = (k) => k === TASK || k.indexOf(TASK + '@') === 0, pdocs = Object.fromEntries(Object.entries(docs).filter(([k]) => !(deniedTask && k === TASK)).map(([k, x]) => [k.split(':').at(-1), x]));
+      const pdenied = deniedTask ? (U.searchParams.get('keys') || '').split(',').filter(isTask) : [];
+      if (deniedTask) { U.searchParams.set('keys', (U.searchParams.get('keys') || '').split(',').filter((k) => k && !isTask(k)).join(',')); const r0 = (U.searchParams.get('range') || '').split(',').filter((r) => r && !isTask(r)); if (r0.length) U.searchParams.set('range', r0.join(',')); else U.searchParams.delete('range'); }
+      if ((U.searchParams.get('keys') || '').includes('@') || U.searchParams.get('range') || U.searchParams.get('index') || pdenied.some((k) => k.includes('@'))) {
+        const out = { resources: {}, absent: [], base: {} };
+        periodIndex(U, pdocs, () => rev, out);
+        for (const k of periodRead(U, pdocs, () => rev, out)) { if (k in docs) out.resources[k] = docs[k]; else out.absent.push(k); out.base[k] = rev; }
+        return response({ ok: 1, uid: actor.uid, epoch: 3, v: rev, resources: out.resources, absent: out.absent, denied: pdenied, base: out.base, ranges: out.ranges, ...(out.index ? { index: out.index } : {}) });
+      }
       const keys = new URL(url, 'http://x').searchParams.get('keys').split(',');
       const denied = deniedTask ? keys.filter(key => key === TASK) : [], readable = keys.filter(key => !denied.includes(key));
       return response({ ok: 1, uid: actor.uid, epoch: 3, v: rev, resources: Object.fromEntries(readable.filter(k => k in docs).map(k => [k, docs[k]])), absent: readable.filter(k => !(k in docs)), denied, base: Object.fromEntries(readable.map(k => [k, rev])) });
@@ -24,9 +32,10 @@ async function world({ save, command, deniedTask = false } = {}) {
     if (url === '/api/save') {
       calls.push({ url, body: options.body });
       const body = JSON.parse(options.body), ack = () => {
-        const whole = periodSave(body, (K) => docs[K]);   /* V7 · 53: مفاتيحُ الفترات تُدمج في الوثيقة الكاملة */
-        for (const [key, value] of Object.entries(whole.set)) docs[key] = JSON.parse(value);
-        for (const key of whole.del) delete docs[key];
+        /* V7 · 53: مفاتيحُ الفترات (K@p) تُدمج في الوثيقة الكاملة (periods_fake_fx) · وما سواها كما كان */
+        const pdocs = Object.fromEntries(Object.entries(docs).map(([k, x]) => [k.split(':').at(-1), x])), whole = (k) => 'bsdept:' + DEPT + ':' + k.slice(0, k.indexOf('@')).split(':').at(-1);
+        for (const [key, value] of Object.entries(body.set)) { if (periodSave(key, JSON.parse(value), pdocs)) docs[whole(key)] = pdocs[whole(key).split(':').at(-1)]; else docs[key] = JSON.parse(value); }
+        for (const key of body.del) { if (periodSave(key, undefined, pdocs)) docs[whole(key)] = pdocs[whole(key).split(':').at(-1)]; else delete docs[key]; }
         rev++;
         return response({ ok: 1, requestId: body.requestId, epoch: body.epoch, atomic: 1, revs: Object.fromEntries(Object.keys(body.set).concat(body.del).map(k => [k, rev])) });
       };
