@@ -25,7 +25,7 @@ function opPhysicalTables() {
 function opResetStatements(env) {
   return Object.keys(opPhysicalTables()).filter(function (table) { return table !== 'ops_nodes'; })
     .map(function (table) { return env.DB.prepare('DELETE FROM ' + table); })
-    .concat([env.DB.prepare('UPDATE ops_nodes SET parent_key=NULL'),env.DB.prepare('DELETE FROM ops_nodes'),env.DB.prepare('DELETE FROM ops_period_summary')]);   /* V7 · 53: والملخّصاتُ معها */
+    .concat([env.DB.prepare('DELETE FROM ops_period_summary'),env.DB.prepare('UPDATE ops_nodes SET parent_key=NULL'),env.DB.prepare('DELETE FROM ops_nodes')]);   /* V7 · 53: والملخّصاتُ معها */
 }
 function opBulkInstall(env, resource, domain) {
   var statements = [], prepared = opPrepared(resource), rows = ocPhysicalRows(prepared, domain), tables = ocPhysicalTables(prepared);
@@ -258,6 +258,13 @@ async function opCompilePending(env, plan, pending, capture) {
     var addition = await opChangeStatements(env, item.k, item.act === 'del' ? null : item.v, { base: item.have, state: capture && capture.domains[item.k] ? {
       domains: capture.domains, revs: capture.revs, values: capture.keys, guards: [] , snapshots: capture.snapshots.filter(function (s) { return s.table.startsWith(item.k + ':'); })
     } : undefined });
+    /* V7 · 53: الاستعادةُ والاستيرادُ استبدالٌ بالجملة — كالاستيراد على دفعات (019g): K@* بدل مراجعات الفترات، وملخّصاتُ المورد تُحذف (تُحسب عند القراءة وتُبنى بـperiods-migrate)؛ فالطريقان صفّاً بصف */
+    if (plan.operation !== 'save' && addition.revisionKeys.some(function (k) { return k.indexOf('@') > 0; })) {
+      var I9 = opInfo(item.k);
+      addition.revisionKeys = addition.revisionKeys.filter(function (k) { return k.indexOf('@') < 0; }).concat([item.k + '@*']);
+      addition.statements = addition.statements.filter(function (st) { return !/ops_period_summary/.test(String(st.__sql || st.sql || '')); });
+      addition.statements.push(opTag(env.DB.prepare('DELETE FROM ops_period_summary WHERE department_id=?1 AND resource=?2').bind(I9.dept, I9.resource), [item.k]));
+    }
     plan.guards.push.apply(plan.guards, addition.guards); plan.statements.push.apply(plan.statements, addition.statements);
     plan.revisionKeys.push.apply(plan.revisionKeys, addition.revisionKeys); plan.snapshots.push.apply(plan.snapshots, addition.snapshots);
   }

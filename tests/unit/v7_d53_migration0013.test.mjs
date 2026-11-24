@@ -130,7 +130,7 @@ test('53 · 0013 على قاعدةٍ بالمخطط 12 بناها العاملُ
   for (const d of [D1, D2]) for (const r of SPLIT) {
     const doc = before[d][key(d, r)]; if (doc == null) continue;
     const info = N.opInfo(key(d, r)), parts = N.opSplit(info, doc), rows = Object.fromEntries(E.DB.q('SELECT period,v_json FROM ops_period_summary WHERE department_id=?1 AND resource=?2', d, r).map((x) => [x.period, JSON.parse(x.v_json)]));
-    for (const p of Object.keys(parts.periods)) { assert.deepEqual(rows[p], JSON.parse(JSON.stringify(info.definition.period.summary(p, parts.periods[p]))), d + ' ' + r + ' ' + p); compared++; }
+    for (const p of Object.keys(parts.periods)) { const want = info.definition.period.summary(p, parts.periods[p]); if (want && typeof info.definition.period.kpi === 'function') want.kpi = info.definition.period.kpi(p, parts.periods[p]); assert.deepEqual(rows[p], JSON.parse(JSON.stringify(want)), d + ' ' + r + ' ' + p); compared++; }
     assert.equal(Object.keys(rows).length, Object.keys(parts.periods).length, d + ' ' + r + ': صفٌّ لكل فترة');
   }
   assert.ok(compared > 60, 'مطابقةُ ' + compared + ' فترة');
