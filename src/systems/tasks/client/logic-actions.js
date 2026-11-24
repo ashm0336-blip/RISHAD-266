@@ -163,8 +163,8 @@ Object.assign(Component.prototype, {
       if (hard && !st.tkActForce) return void this.setState({ tkActForce: !0, tkActErr: "«" + (el.name || "") + "» غيرُ متاحٍ في موعدها: " + (el.why || "") + " — اضغط مرةً أخرى للإسناد رغم ذلك" });
       ((p = "/api/tasks/reassign"), (b = Object.assign(base, { from: a.ekey, to: st.tkActTo, why: why || void 0, force: hard ? !0 : void 0 })));
     } else if ("cancel" === a.kind) {
-      if (!why) return void this.setState({ tkActErr: "اذكر سبب الإلغاء — يصل الموظفَ نصُّه" });
-      ((p = "/api/tasks/cancel"), (b = Object.assign(base, { ekey: a.ekey, why: why })));
+      /* V7 · 53 (REVIEW ١١-أ): سببُ الإلغاء اختياريّ — يصل الموظفَ إن كُتب */
+      ((p = "/api/tasks/cancel"), (b = Object.assign(base, { ekey: a.ekey, why: why || void 0 })));
     } else if ("relink" === a.kind) {
       if (!st.tkActTo) return void this.setState({ tkActErr: "اختر الموظفَ صاحبَ المهمة" });
       ((p = "/api/tasks/relink"), (b = Object.assign(base, { from: a.ekey, to: st.tkActTo })));
@@ -197,7 +197,7 @@ Object.assign(Component.prototype, {
       REC = { recpause: " · لا تُولَّد مواعيدُ جديدة حتى الاستئناف — والمولَّدةُ تبقى", recresume: " · تُولَّد المواعيدُ القادمة من جديد", recstop: " · تُلغى المواعيدُ القادمة التي لم تبدأ، وتبقى المنجزةُ والجارية بسجلّها" },
       W = {
         return: "ما الذي ينقص؟ (يصل الموظفَ نصُّه — مثال: صورة البوابة من الخارج)",
-        cancel: "سبب الإلغاء (يصل الموظفَ نصُّه)",
+        cancel: "سبب الإلغاء (اختياري — يصل الموظفَ نصُّه)",
         extend: "سبب التمديد (اختياري)",
         reassign: "سبب إعادة الإسناد (اختياري)",
         approve: "ملاحظة (اختياري)",

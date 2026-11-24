@@ -710,7 +710,7 @@
                   <sc-for list="{{e.mkTrShifts}}" as="ts" hint-placeholder-count="2">
                   <button onClick="{{ts.pick}}" style="{{ts.style}}"><span style="width:8px;height:8px;border-radius:9999px;flex-shrink:0;background:{{ts.color}}"></span><span style="flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ts.name}}</span></button>
                   </sc-for>
-                  <input value="{{drTrWhyVal}}" onInput="{{onDrTrWhy}}" placeholder="سبب التحويل * (مطلوب)" style="{{drTrWhyStyle}}">
+                  <input value="{{drTrWhyVal}}" onInput="{{onDrTrWhy}}" placeholder="سبب التحويل (اختياري)" style="{{drTrWhyStyle}}">
                   <button onClick="{{e.mkTrGo}}" style="{{e.mkTrGoStyle}}">موافق</button>
                 </div>
                 </sc-if>
@@ -840,7 +840,7 @@
               <sc-for list="{{e.mkTrShifts}}" as="ts" hint-placeholder-count="2">
               <button onClick="{{ts.pick}}" style="{{ts.style}}"><span style="width:8px;height:8px;border-radius:9999px;flex-shrink:0;background:{{ts.color}}"></span><span style="flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ts.name}}</span></button>
               </sc-for>
-              <input value="{{drTrWhyVal}}" onInput="{{onDrTrWhy}}" placeholder="سبب التحويل * (مطلوب)" style="{{drTrWhyStyle}}">
+              <input value="{{drTrWhyVal}}" onInput="{{onDrTrWhy}}" placeholder="سبب التحويل (اختياري)" style="{{drTrWhyStyle}}">
               <button onClick="{{e.mkTrGo}}" style="{{e.mkTrGoStyle}}">موافق</button>
             </div>
             </sc-if>

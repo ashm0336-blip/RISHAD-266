@@ -54,7 +54,7 @@ Object.assign(Component.prototype, {
     if (!b || st.tkBulkBusy || st.tkBulkRes) return;
     const why = String(st.tkBulkWhy || "").trim(),
       kind = b.kind;
-    if ("cancel" === kind && !why) return void this.setState({ tkBulkErr: "اذكر سبب الإلغاء — يصل كلَّ موظفٍ نصُّه" });
+    /* V7 · 53 (REVIEW ١١-أ): سببُ الإلغاء اختياريّ */
     if ("extend" === kind && !st.tkBulkExt) return void this.setState({ tkBulkErr: "اختر المهلةَ الجديدة" });
     if ("reassign" === kind && !st.tkBulkTo) return void this.setState({ tkBulkErr: "اختر الموظفَ الجديد" });
     const keys = this._tkBulkKeys(),
@@ -75,7 +75,7 @@ Object.assign(Component.prototype, {
           : "extend" === kind
             ? ["/api/tasks/extend", Object.assign(base(r), { ekey: null == r[14] ? null : String(r[14]), e: +st.tkBulkExt, why: why || void 0 })]
             : "cancel" === kind
-              ? ["/api/tasks/cancel", Object.assign(base(r), { ekey: null == r[14] ? null : String(r[14]), why: why })]
+              ? ["/api/tasks/cancel", Object.assign(base(r), { ekey: null == r[14] ? null : String(r[14]), why: why || void 0 })]
               : ["/api/tasks/reassign", Object.assign(base(r), { from: String(r[14]), to: st.tkBulkTo, why: why || void 0 })];
     this.setState({ tkBulkBusy: !0, tkBulkErr: "", tkBulkProg: { done: 0, total: jobs.length, cur: jobs[0].r[0] || "" } });
     const okKeys = [];
@@ -112,7 +112,7 @@ Object.assign(Component.prototype, {
       b = e.tkBulk,
       H = { approve: "اعتماد الإنجاز لكل المحدَّد", extend: "تمديد مهلة المحدَّد", cancel: "إلغاء المهام المحدَّدة", reassign: "إعادة إسناد المحدَّد إلى موظف" },
       B = { approve: "اعتماد", extend: "تمديد", cancel: "إلغاء المهام", reassign: "إعادة الإسناد" },
-      W = { cancel: "سبب الإلغاء (يصل كلَّ موظفٍ نصُّه)", extend: "سبب التمديد (اختياري)", reassign: "سبب إعادة الإسناد (اختياري)", approve: "ملاحظة (اختياري)" },
+      W = { cancel: "سبب الإلغاء (اختياري — يصل كلَّ موظفٍ نصُّه)", extend: "سبب التمديد (اختياري)", reassign: "سبب إعادة الإسناد (اختياري)", approve: "ملاحظة (اختياري)" },
       kind = b ? b.kind : "",
       EA = b ? this.loadEmps() : [],
       AC = "reassign" === kind ? this._tkAcctMap(EA) : null,

@@ -629,3 +629,23 @@ test("known import conflict leaves all confirmed business data and the import ed
   assert.equal(w.component.state.imp.busy, false);
   assert.equal(w.op.control.stages.length, 1);
 });
+/* V7 · 53 (REVIEW ١١-أ — قرارُ المراجع): سببُ إغلاق الباب اختياريّ — «تأكيد الإغلاق» بلا سبب يُغلق الباب ويُحفظ (كان gcDo يعود بلا شيء)،
+   والسببُ المكتوب يُحفظ كما هو، ومؤشّرُ «الأبواب المغلقة — عدداً وسبباً» يعدّ الفارغَ «بلا سبب مسجّل» */
+test("REVIEW 11-a: the Daily gate-closure dialog saves with an empty reason; the closed-gates KPI counts it as «بلا سبب مسجّل»", async () => {
+  for (const why of ["", "TEST_ONLY صيانة"]) {
+    const w = world();
+    vm.runInContext(fs.readFileSync("src/services/410-gate-units.js", "utf8"), w.C);   /* KIVO.BassamLeaf — أبوابُ الإغلاق الورقية */
+    w.component.state.gClose = { idx: [0], why, h: "10", m: "05", dd: null };
+    action(w, "gcDo")();
+    for (let i = 0; i < 50 && !w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0].closed; i++) await new Promise((r) => setTimeout(r, 10));
+    const gate = w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0];
+    assert.equal(gate.closed, true, "closed with reason «" + why + "»");
+    assert.equal(gate.cWhy, why);
+    assert.equal(gate.cAt, "10:05");
+    assert.equal(w.component.state.gClose, null, "the dialog closes");
+    let k = null;
+    try { k = w.component._kDataDy([{ y: 1448, m: 1, d: 2, rec: gate && w.op.data.bassam_rounds_v1["1448-1-2"] }], [2]); } catch (e) { k = { err: String(e && e.message) }; }
+    assert.ok(k && !k.err, "the KPI computes: " + JSON.stringify(k && k.err));
+    assert.equal(k.gClosed, 1); assert.deepEqual(Object.keys(k.gWhy), [why || "بلا سبب مسجّل"]);
+  }
+});

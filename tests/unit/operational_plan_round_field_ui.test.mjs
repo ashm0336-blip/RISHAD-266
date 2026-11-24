@@ -497,3 +497,15 @@ test("identical concurrent round/field callers share the in-flight result and re
     assert.equal(w.op.control.stages.length, 1, kind);
   }
 });
+/* V7 · 53 (REVIEW ١١-أ — قرارُ المراجع): سببُ إغلاق الباب اختياريّ في رصد الميدان («صفحتي») — كان observe يرفض «سبب الإغلاق مطلوب» */
+test("REVIEW 11-a: a gate closure from «صفحتي» (field service) is saved with an empty reason; a written reason is kept", async () => {
+  for (const why of ["", "TEST_ONLY ازدحام"]) {
+    const w = world();
+    service(w, "520-field-monitor.js");
+    const expected = clone(w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0]);
+    const r = await w.KIVO.BassamField.observe("1448-1-2", 0, 0, { st: "closed", why, kind: "gates", expected });
+    assert.equal(r.ok, true, "closed with reason «" + why + "»: " + JSON.stringify(r));
+    const gate = w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0];
+    assert.equal(gate.closed, true); assert.equal(gate.cWhy, why); assert.equal(gate.fLog.length, 1);
+  }
+});

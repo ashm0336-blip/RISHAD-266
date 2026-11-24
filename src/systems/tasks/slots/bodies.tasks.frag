@@ -534,8 +534,7 @@
       "type": "object",
       "required": [
         "k",
-        "id",
-        "why"
+        "id"
       ],
       "additionalProperties": false,
       "properties": {

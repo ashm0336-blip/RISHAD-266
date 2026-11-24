@@ -263,7 +263,7 @@ async function tkReassign(env, request, A, b) {
 async function tkCancel(env, request, A, b) {
   var D0 = tkDeptOf(A, b.dept); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
   if (!METK_DAY_RX.test(String(b.k || '')) || !tkIdOk(b.id) || !(b.ekey == null || tkStrOk(b.ekey, 80))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
-  if (!tkStrOk(b.why, METK_WHY_MAX, true)) return tkNo(400, 'bad-body', 'اذكر سبب الإلغاء', { at: 'why' }).err;
+  if (!tkStrOk(b.why, METK_WHY_MAX)) return tkNo(400, 'bad-body', '', { at: 'why' }).err;   /* V7 · 53 (REVIEW ١١-أ): سببُ الإلغاء اختياريّ — يُحفظ إن كُتب ولا يُرفض الإلغاءُ بغيابه */
   if (!(tkHeld(A, d, 'task.delete') || tkHeld(A, d, 'task.edit'))) return tkNo(403, 'denied', 'الإلغاءُ للمديرين والمخوَّلين').err;
   { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var out = null;
@@ -276,7 +276,7 @@ async function tkCancel(env, request, A, b) {
     return { S2: tkPut(S, b.k, P0.L, P0.idx, r1), aud: [tkAud(K, r0, 'cancelled', { day: b.k, via: 'srv' }, { asg: S0.asg, exe: S0.exe }, { asg: 'cancelled', why: tkWhyOf(b) })] };
   });
   if (R.err) return R.err;
-  if (out.r0[14] && out.r0[3] !== 'declined') await tkNotify(env, request, A, d, [{ type: 'task_chg', own: [String(out.r0[14])], vars: { 'الفعل': 'أُلغيت', 'المهمة': String(out.r0[0] || 'مهمة'), 'التفصيل': tkWhyOf(b) } }]);
+  if (out.r0[14] && out.r0[3] !== 'declined') await tkNotify(env, request, A, d, [{ type: 'task_chg', own: [String(out.r0[14])], vars: { 'الفعل': 'أُلغيت', 'المهمة': String(out.r0[0] || 'مهمة'), 'التفصيل': tkWhyOf(b) || 'بلا سبب مذكور' } }]);
   return json({ ok: 1, rev: R.rev });
 }
 /* ── POST /api/tasks/relink — ق4: ربطٌ يدويٌّ لصفٍّ غير مرتبط (اسمٌ أو رمزٌ لا يطابق معرّفاً) بسجلّ موظف — بقرار المسؤول وحده، لا تلقائياً ── */

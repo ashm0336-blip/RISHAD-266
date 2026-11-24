@@ -6,7 +6,7 @@
    في جولة اليوم نفسها (bassam_rounds_v1) — لا مخزن موازٍ — فينعكس على كانفس
    الجولات ومنبثق الباب وسجل الأبواب ومؤشرات التشغيل وشريط الحالة، وعلى صفحة
    الموظف. الإغلاق يكتب نفس حقول إغلاق الباب التي يستعملها المدير (closed · cAt
-   · cWhy) ويضيف مَن أغلق، فالسبب مطلوب وساعة الإغلاق هي ساعة الرصد.           */
+   · cWhy) ويضيف مَن أغلق؛ سببُ إغلاق الباب اختياريّ وساعة الإغلاق هي ساعة الرصد.           */
 (function () {
   var K_R = "bassam_rounds_v1",
     LOG_CAP = 60,
@@ -407,11 +407,9 @@
         return failure({ err: "review-required", status: 409 });
       var st = STATES[o.st] ? o.st : stateOf(g, kind);
       var fl = flowOn(kind) ? (FLOWS[o.flow] ? o.flow : flowOf(g)) : "";
-      if (st === "closed" && !String(o.why || "").trim() && !offOf(g, kind))
-        return {
-          ok: false,
-          err: kind === "gates" ? "سبب الإغلاق مطلوب" : "سبب التعطيل مطلوب",
-        };
+      /* V7 · 53 (REVIEW ١١-أ): سببُ إغلاق الباب اختياريّ (يُحفظ إن كُتب) — وسببُ تعطيل غيره من المواقع كما هو */
+      if (st === "closed" && kind !== "gates" && !String(o.why || "").trim() && !offOf(g, kind))
+        return { ok: false, err: "سبب التعطيل مطلوب" };
       var prevSt = stateOf(g, kind),
         prevFl = flowOf(g);
       if (st === prevSt && fl === prevFl && !o.why)
