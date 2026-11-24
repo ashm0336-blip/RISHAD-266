@@ -394,7 +394,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       O = this.loadRzOpts(),
       DAY = 864e5,
       MN = KIVO.BassamCal.G_MONTHS,
-      GM = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
       pc = (x) => (KIVO.bsPct ? KIVO.bsPct(x) : String(Math.round(x || 0))),
       n = (x) => Math.round(x || 0).toLocaleString("en-US"),
       ar = (x) => n(x).replace(/[0-9]/g, (d) => "٠١٢٣٤٥٦٧٨٩"[+d]),

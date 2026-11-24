@@ -1674,8 +1674,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             }
           );
         }),
-        g = this.gDate(t.rpY, t.rpM, 1),
-        y = new Date(g.getFullYear(), g.getMonth(), g.getDate(), 12),
         b = [],
         k = 1;
       k <= a;
