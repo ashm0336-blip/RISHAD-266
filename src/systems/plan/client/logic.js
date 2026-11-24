@@ -4070,11 +4070,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {}
     ((this._bsOutM = (t) => this._bsOutsideMenus(t)),
       document.addEventListener("click", this._bsOutM, !0),
-      (this._wideNow = "undefined" == typeof window || window.innerWidth > 980),
+      /* V7 · 53: الموجة 2 · PLAN-05 (نقلُ سلوك Production): اللوحةُ الجانبية تُفتح تلقائياً فوق 1200 لا 980 — على اللوحي أفقياً كانت تضغط الخريطة؛ تبقى بزرّها لمن أرادها */
+      (this._wideNow = "undefined" == typeof window || window.innerWidth > 1200),
       (this._rs = () => {
         (this._rsT && clearTimeout(this._rsT),
           (this._rsT = setTimeout(() => {
-            const t = window.innerWidth > 980;
+            const t = window.innerWidth > 1200;
             t !== this._wideNow && ((this._wideNow = t), this.setState({ panelOpen: t }));
           }, 160)));
       }));
@@ -12989,7 +12990,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         };
       })(),
       ...(() => {
-        const t = void 0 === e.panelOpen ? "undefined" != typeof window && window.innerWidth > 980 : !!e.panelOpen,
+        const t = void 0 === e.panelOpen ? "undefined" != typeof window && window.innerWidth > 1200 : !!e.panelOpen,
           s = "dist" === e.lens && this.bsLensOn("dist"),
           i = "density" === e.lens && this.bsLensOn("dens");
         this.bsLensOn("zones") ||
@@ -13205,10 +13206,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     .sort((t, e) => e.n - t.n || t.label.localeCompare(e.label, "ar"));
                   return { key: t.f, items: l };
                 }),
-          rt = [["summary", "مؤشرات المصليات"]]
-            .concat(this.bsLensOn("paths") ? [["paths", "مؤشرات المسارات"]] : [])
-            .concat(this.bsLensOn("dist") ? [["dsum", "مؤشرات التوزيع"]] : [])
-            .concat(this.bsLensOn("dens") ? [["dens", "مؤشرات الكثافة"]] : []),
+          /* V7 · 53: الموجة 2 · PLAN-05 (نقلُ سلوك Production): ثلاثُ شاراتٍ فأكثر في اللوحة الجانبية تُقتطع أسماؤها («مؤشرات المصليا…»)،
+             فتسقط «مؤشرات» المكرَّرة وتبقى الأسماءُ كاملة؛ والشارتان تبقيان بالاسم الكامل. المفاتيحُ كما هي */
+          rt = (function (L) {
+            return L.length > 2 ? L.map((t) => [t[0], t[1].replace(/^مؤشرات /, "")]) : L;
+          })(
+            [["summary", "مؤشرات المصليات"]]
+              .concat(this.bsLensOn("paths") ? [["paths", "مؤشرات المسارات"]] : [])
+              .concat(this.bsLensOn("dist") ? [["dsum", "مؤشرات التوزيع"]] : [])
+              .concat(this.bsLensOn("dens") ? [["dens", "مؤشرات الكثافة"]] : []),
+          ),
           lt = rt.some((t) => t[0] === e.brkDim) ? e.brkDim : "region",
           ot = et.find((t) => t.key === lt),
           dt = ot ? ot.items : [],
