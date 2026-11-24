@@ -247,6 +247,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       t = null;
     }
     if (!t || "object" != typeof t) return {};
+    return this.rpNorm(t);
+  }
+  /* V7 · 53 (writers · قاعدةُ الحمل): تطبيعُ القراءة (rpLoad) يعدّل كلَّ أيام الوثيقة (leaders.coord · شكلُ «pulled» القديم · __lv) — فالحفظُ يرسل
+     ما لم يتغيّر إلا بالتطبيع بقيمته المخزَّنة (يومٌ ماضٍ مقفل بشكلٍ قديم كان يُرفض فيُسقط الحفظَ كلَّه). لا حارسَ يُرخى: التعديلُ الحقيقي يُحكم كما كان */
+  rpCarry(t) {
+    try {
+      var S = KIVO.__BS_SRV.operations.get("bassam_dreport_v1");
+      if (!S || "object" != typeof S || !t || "object" != typeof t) return;
+      var N = this.rpNorm(JSON.parse(JSON.stringify(S)));
+      Object.keys(t).forEach(function (k) { if (void 0 !== S[k] && JSON.stringify(N[k]) === JSON.stringify(t[k])) t[k] = S[k]; });
+      ["__lv", "__lvU"].forEach(function (k) { if (void 0 !== S[k] && void 0 === t[k]) t[k] = S[k]; });
+    } catch (e) { /* بلا مخزَّن: يُرسل كما هو */ }
+  }
+  rpNorm(t) {
     var r = !1;
     return (
       void 0 !== t.__lv && (delete t.__lv, (r = !0)),
@@ -279,6 +293,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     );
   }
   async rpSave(t, intent = t, extra) {
+    this.rpCarry(t);
     return await this._drCommit(intent, draft => {
       draft.set("bassam_dreport_v1", t);
       if (extra) extra(draft);
