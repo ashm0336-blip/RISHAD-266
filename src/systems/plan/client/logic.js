@@ -167,6 +167,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           return main;
         }
       }
+      /* V7 · 53 (ملحق 4 البند 4): فشلٌ مؤكَّد (الخادمُ لم يكتب شيئاً — تحقّقت منه خدمةُ الإيداع بقراءة المورد) ⇒ لا تبقى الواجهةُ على حالةٍ توحي
+         بالنجاح (موقعٌ محذوفٌ لم يُحذف): رسالةٌ صريحة، ثم تعود الصفحةُ إلى المحفوظ فعلاً، والإجراءُ التالي طلبٌ جديد */
+      if (result && result.failed) {
+        delete this._opActions[action];
+        this._opTicket = null;
+        this.bsToast("تعذّر الحفظ فلم يُحفظ تعديلك — عادت الصفحة إلى المحفوظ فعلاً. أعد الإجراء؛ لن يتكرّر.", "err");
+        try {
+          this._bsLiveReload(names, !0);
+        } catch (e) {}
+        return result;
+      }
       if (!result || result.ok !== 1) {
         this.bsToast(
           result && result.uncertain
@@ -2478,8 +2489,31 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     try {
       const t = this._opRead("bassam_plan_v1");
       if (t) return t;
-    } catch (t) {}
+    } catch (t) {
+      this._planLateRead();
+    }
     return null;
+  }
+  /* V7 · 53 (ملحق 4 · الملاحظة الثانية): الخطةُ قُرئت والصفحةُ بُنيت قبل وصول قراءتها (سباقُ تحميل) ⇒ كانت تعرض «لا توجد خطة لشهر …»
+     والخادمُ يعيد الشهر. الآن تنتظر الصفحةُ جاهزيةَ المفتاح ثم تعيد بناءَ نفسِها من المحفوظ — بحدٍّ (دقيقة)، ولا تكتب شيئاً. */
+  _planLateRead() {
+    if (this._planLateT) return;
+    const service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations,
+      until = Date.now() + 6e4,
+      tick = () => {
+        this._planLateT = 0;
+        let known = "";
+        try {
+          known = service && typeof service.state === "function" ? service.state("bassam_plan_v1") : "";
+        } catch (e) {}
+        if ("ready" === known || "absent" === known) {
+          try {
+            if (this._bsLiveReload(["bassam_plan_v1"], !0) !== false) return;
+          } catch (e) {}
+        }
+        Date.now() < until && (this._planLateT = setTimeout(tick, 300));
+      };
+    this._planLateT = setTimeout(tick, 300);
   }
   async _putImg(value, previous) {
     const service = this._opService(),
@@ -4179,6 +4213,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     }
   }
   componentWillUnmount() {
+    clearTimeout(this._planLateT);   /* V7 · 53 */
+    this._planLateT = 0;
     try {
       window.removeEventListener("bs:ptab-shown", this._bsShown);
     } catch (t) {}
