@@ -70,7 +70,7 @@
     /* رموزُ الخادم لأحداث مجموعات البيانات (054 · 019e · 063 · 019 · 020 · 019a/i/m) — بالعربية لا بالرمز */
     changed: 'عُدِّل', updated: 'حُدِّث', added: 'أُضيف', migrated: 'رُحِّل', rolled_back: 'أُعيد إلى ما قبل التعديل', emitted: 'أُرسل تنبيه', remind: 'أُرسل تذكير', config: 'عُدِّلت إعداداته', state: 'حُدِّثت حالته',
     create: 'أُنشئ', edit: 'عُدِّل', delete: 'حُذف', status: 'تغيّرت حالته', issue: 'سُلِّم', close: 'أُغلق' };
-  var ET_AR = { zone: 'المصلى', gate: 'الباب', mark: 'المعلم', path: 'المسار', sector: 'النطاق', site: 'الموقع', plan: 'خطة الشهر', plan_site: 'خطة الموقع', round: 'جولة اليوم', round_site: 'موقع الجولة', round_month: 'جولات الشهر', round_shift: 'جولة الوردية', round_lock: 'قفل اليوم', task: 'المهمة', employee: 'الموظف', staffing: 'التسكين الشهري', dreport: 'التقرير اليومي', seized: 'محضر المضبوطات', irshad: 'تقرير الاسترشاد', rasd: 'حالة رصد', award: 'ترشيح الجائزة', dataset: 'مجموعة البيانات', system: 'المنصة', dept_unit: 'الإدارة', dept_sec: 'القسم' };   /* V7 · د7 (٩): حذفُ الوحدة باسم نوعها (019e rsSaveAudit) */
+  var ET_AR = { zone: 'المصلى', gate: 'الباب', mark: 'المعلم', path: 'المسار', sector: 'النطاق', site: 'الموقع', plan: 'خطة الشهر', plan_site: 'خطة الموقع', round: 'جولة اليوم', round_site: 'موقع الجولة', round_month: 'جولات الشهر', round_shift: 'جولة الوردية', round_lock: 'قفل اليوم', task: 'المهمة', employee: 'الموظف', staffing: 'التسكين الشهري', dreport: 'التقرير اليومي', seized: 'محضر المضبوطات', irshad: 'تقرير الاسترشاد', rasd: 'حالة رصد', award: 'ترشيح الجائزة', dataset: 'مجموعة البيانات', system: 'المنصة' };
   var ET_FILTER = [['zone', 'المصليات'], ['gate', 'الأبواب'], ['mark', 'المعالم'], ['path', 'المسارات'], ['sector', 'النطاقات'], ['site', 'المواقع'], ['plan', 'خطط الشهور', 'plan'], ['round', 'الجولات'], ['task', 'المهام', 'tasks'], ['employee', 'الموظفون'], ['staffing', 'التسكين الشهري', 'staff'], ['dreport', 'التقرير اليومي', 'dreport'], ['seized', 'المضبوطات', 'seized'], ['irshad', 'الاسترشاد', 'irshad'], ['rasd', 'رصد الحالات'], ['award', 'الجائزة', 'award'], ['dataset', 'مجموعات البيانات']];
   var ACT_FILTER = [['created', 'إنشاء'], ['edited', 'تعديل'], ['geometry_changed', 'تعديل الشكل'], ['moved', 'نقل'], ['enabled', 'تفعيل'], ['disabled', 'تعطيل'], ['status_changed', 'تغيير حالة'], ['reassigned', 'إعادة توزيع'], ['approved', 'اعتماد'], ['approval_revoked', 'إلغاء اعتماد'], ['locked', 'قفل'], ['unlocked', 'فتح'], ['completed', 'إنجاز'], ['deleted', 'حذف'], ['restore', 'استعادة'], ['import', 'استيراد'], ['wipe', 'مسح بيانات']];
   var FIELD_AR = { name: 'الاسم', code: 'الرمز', ser: 'التسلسل', cat: 'الفئة', label: 'التسمية', num: 'الرقم', kind: 'النوع', loc: 'الموقع', gtype: 'نوع الباب', route: 'المسار', cls: 'التصنيف', pri: 'الأولوية', cats: 'الفئات', needN: 'الاحتياج', hideLabel: 'إخفاء التسمية', region: 'المنطقة', level: 'الدور', ztype: 'النوع', zcat: 'الفئة', yard: 'الساحة', off: 'معطَّل', closed: 'مغلق', active: 'مفعَّل', color: 'اللون', line: 'الخط', w: 'العرض', lead: 'المسؤول', note: 'ملاحظة', showLbl: 'إظهار التسمية', chip: 'الشارة', iid: 'الخريطة', phone: 'الجوال', email: 'البريد', type: 'النوع', work: 'نوع العمل', gender: 'الجنس', shift: 'الوردية', group: 'المجموعة', nid: 'الهوية', empno: 'الرقم الوظيفي', title: 'العنوان', desc: 'الوصف', prio: 'الأولوية', dur: 'المدة', from: 'من', until: 'إلى', wt: 'نوع العمل', rest: 'الراحة', muk: 'مكلَّف', cs: 'رمز النداء', status: 'الحالة', st: 'الحالة', ok: 'مقبول', score: 'الدرجة', items: 'الأصناف', langs: 'اللغات', bro: 'مطويات', pros: 'نشرات', pol: 'استطلاع', actor: 'المنفّذ', lsz: 'حجم الخط', lang: 'دوران الخط', hideSectors: 'إخفاء النطاقات' };
@@ -94,9 +94,19 @@
     var known = function (k) { return !!KL.all[String(k || '').replace(/^bsdept:[^:]+:/, '').replace(/:.*$/, '')]; };
     return KL.label(known(n) || !known(r.k) ? n : r.k);
   }
+  /* V7 · د7 (٩): حذفُ وحدةٍ (/api/admin/dept-delete) يصل حدثاً على مجموعة «الإدارات» فرقُه يحمل سجلَّ الوحدة المحذوفة كاملاً (f بلا t) —
+     فيُسمّى بنوعها: «حُذف القسم «…»» أو «حُذفت الإدارة «…»» بدل «عُدِّل — الإدارات». يصحّ للأحداث القديمة أيضاً (لا تغييرَ في الخادم) */
+  function unitGone(r) {
+    if (r.etype !== 'dataset' || (r.eid !== 'bassam_depts_v1' && r.k !== 'bassam_depts_v1')) return '';
+    var a = parseJ(r.aft != null ? r.aft : r.after), out = [];
+    if (!Array.isArray(a)) return '';
+    for (var i = 0; i < a.length; i++) { var d = a[i]; if (!isObj(d) || d.t !== undefined || !isObj(d.f) || !d.f.id || !/^\[[^\]]+\]$/.test(String(d.p || ''))) continue; out.push((d.f.kind === 'قسم' ? 'حُذف القسم «' : 'حُذفت الإدارة «') + String(d.f.name || d.f.id) + '»'); }
+    return out.join(' · ');
+  }
   function describe(r) {
     var et = ET_AR[r.etype] || r.etype, act = actAr(r.act);
     var nm = r.ename ? ' «' + r.ename + '»' : '';
+    var gone = unitGone(r); if (gone) return gone;
     if (r.etype === 'dataset' || r.etype === 'system') return act + ' — ' + dsName(r);
     return act + ' ' + et + nm;
   }

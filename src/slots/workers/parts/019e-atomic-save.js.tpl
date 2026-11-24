@@ -313,7 +313,6 @@ function rsSaveAudit(env, plan, A, meta, sid) {
       return !/^tk/i.test(e.cid);
     });
   supplied = supplied.filter(function (e) { return e.etype !== 'perm44'; });   /* V7 · د5-هـ (44): «سجل الصلاحيات» يكتبه الخادمُ وحده */
-  supplied = supplied.filter(function (e) { return e.etype !== 'dept_unit' && e.etype !== 'dept_sec'; });   /* V7 · د7 (٩): حدثُ «حُذف القسم/الإدارة» يكتبه الخادمُ وحده */
   plan.kv.pend.forEach(function (pd) {
     var incoming = supplied.filter(function (e) {
       return e.k === pd.k;
@@ -336,17 +335,6 @@ function rsSaveAudit(env, plan, A, meta, sid) {
               : audClip(pd.k === K_USERS ? jsonDiff(stripPh(pd.cur || '[]'), stripPh(pd.v || '[]')) : jsonDiff(pd.cur, pd.v), AUD_STR),
         },
       ];
-    /* V7 · د7 (٩): حذفُ وحدةٍ ذرّيّاً (/api/admin/dept-delete) يُسجَّل باسمها ونوعها الصحيح — «حُذف القسم «…»» أو «حُذف الإدارة «…»» (النوعُ من السجل المخزَّن نفسِه) */
-    if (pd.k === K_DEPTS && plan.body && plan.body.mode === 'dept-delete') {
-      var after0 = {}, units0 = [];
-      try { units0 = JSON.parse(pd.cur || '[]'); (JSON.parse(pd.v || '[]') || []).forEach(function (u) { if (u && u.id) after0[u.id] = 1; }); } catch (e0) { units0 = []; }
-      (Array.isArray(units0) ? units0 : []).forEach(function (u) {
-        if (!u || !u.id || after0[u.id]) return;
-        var sec = u.kind === DEPT_SEC_KIND;
-        incoming.push({ cid: sid + '_u' + rows.length + '_' + incoming.length, k: pd.k, etype: sec ? 'dept_sec' : 'dept_unit', eid: String(u.id).slice(0, 80), ename: audClip(u.name, 160), act: 'deleted',
-          ctx: JSON.stringify({ atomic: true }), bef: audClip(JSON.stringify({ name: String(u.name || ''), kind: sec ? DEPT_SEC_KIND : DEPT_UNIT_KIND }), AUD_STR), aft: '' });
-      });
-    }
     incoming.forEach(function (e) {
       rows.push(
         Object.assign({}, e, {
