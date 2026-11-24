@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { startLab, LAB } from './local_server.mjs';
 import { chromium, openAs } from './lab_browser.mjs';
+import { replaceOperationalFixture } from '../unit/operational_legacy_seed_fx.mjs';
 
 const A = 'TEST_ONLY_A', TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'd53emp-'));
 const HEAD = ['اسم الموظف', 'الجنس', 'رقم الهوية', 'الرقم الوظيفي', 'رقم الجوال', 'البريد الإلكتروني', 'نوع التوظيف', 'نوع العمل'];
@@ -23,9 +24,11 @@ const tableHas = (p, n) => p.evaluate((n) => [...document.querySelectorAll('main
 test('V7 · 53 — البند 10: الاستيراد يحدّث جدولَ الموظفين فوراً · البند 11: رسالةُ نجاحٍ بعد إضافة موظف', { timeout: 300000 }, async () => {
   const lab = await startLab(), b = await chromium.launch();
   try {
+    const N = 500;   /* حجمُ الفحص الحي: 500 موظف (الترتيبُ يضع المستوردَ في صفحةٍ أخرى) */
+    if (N) await replaceOperationalFixture(lab.env, 'bsdept:' + A + ':bassam_employees_v1', [{ eid: 'TEST_ONLY_eA1', name: 'TEST_ONLY موظف أ', nid: LAB.empA }, { eid: 'TEST_ONLY_eA2', name: 'TEST_ONLY موظف أ٢', nid: '1200000002' }].concat(Array.from({ length: N }, (_, i) => ({ eid: 'TEST_ONLY_n' + i, name: 'TEST_ONLY كثير ' + i, nid: String(1400000000 + i) }))));
     const m = await openAs(b, lab, LAB.mgrA, LAB.pw), p = m.page; p.setDefaultTimeout(15000);
     await m.go('#/employees', 4000);
-    await until(() => tableHas(p, 'TEST_ONLY موظف أ٢'), 'the table');
+    await until(() => tableHas(p, 'TEST_ONLY موظف أ'), 'the table');
     /* ── البند 10 ── */
     const NEW = 'TEST_ONLY مستورد ٥٣';
     await p.locator('main button', { hasText: 'ملفات' }).first().click(); await p.waitForTimeout(500);

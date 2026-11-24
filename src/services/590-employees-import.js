@@ -360,7 +360,8 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       if (!parts.length) parts.push('اعتمد الخادم الاستيراد');
       ST.pend = null; ST.snapshot = null; ST.ticket = null; ST.uncertain = false; ST.needsReview = false; host.close(); toast(parts.join(' · '), ST.plan.rejected || warnings.length ? 'warn' : 'ok');
       /* V7 · د1-د: المضيفُ يعرض القائمة نفسها (صفحة الموظفين) — يُعلَم عند الاعتماد وبعد إعادة القراءة ليحدّث جدوله */
-      var done9 = function () { try { if (host.done) host.done(); } catch (error) {} }; done9();
+      var jump9 = (ST.plan.jump || []).slice(0, 50);   /* V7 · 53 (البند 10): هويةُ المستورد (الاسم والهوية) لينتقل الجدولُ إلى صفحته */
+      var done9 = function () { try { if (host.done) host.done(jump9); } catch (error) {} }; done9();
       try { var sync = KIVO.__BS_SRV; if (sync && sync.resync) Promise.resolve(sync.resync(false)).then(done9, done9); } catch (error) {}
     } finally { ST.busy = false; notify(); }
   }
@@ -432,7 +433,8 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     });
     // كان: وضع الاستبدال يعكس ترتيب الملف رغم أن الملف هو القائمة كاملة — العكس للإضافة فقط (محاكاة unshift)
     const finalList = mode === "replace" ? fresh.concat(list) : fresh.slice().reverse().concat(list);
-    return { finalRows: finalList, options: opts, schedule: schedRows, added: added, updated: updated, skipped: skipped, rejected: rejected, same: same, rejects: rejects };
+    const jump = (fresh.length ? fresh : []).map((e) => ({ name: e.name, nid: e.nid || "" }));   /* V7 · 53: المضافُ أولاً (والمحدَّثُ في مكانه) */
+    return { finalRows: finalList, options: opts, schedule: schedRows, added: added, updated: updated, skipped: skipped, rejected: rejected, same: same, rejects: rejects, jump: jump };
   }
   /* الملتقِط: يفتح مربّع الملفات ثم يقرأ ويحضّر المرشّحين — كما كان حرفاً بحرف */
   function pickFile() {
@@ -583,7 +585,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
         close: () => { HS.conf = null; HS.step = "pick"; tick(c); },
         toast: (message, kind) => c.bsToast(message, kind || "warn"),
         change: () => tick(c),
-        done: () => c.setState({ employees: c.loadEmp(), selected: {} }),   /* الجدولُ يُحدَّث فور الاعتماد */
+        done: (jump) => c.setState(Object.assign({ employees: c.loadEmp(), selected: {} }, jump && jump.length ? { impJump: jump } : {})),   /* الجدولُ يُحدَّث فور الاعتماد — V7 · 53: ويُعرض أولُ صفٍّ مستورد */
       }));
   }
   function impVals(c) {

@@ -6100,10 +6100,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           r = 0 === e.perPage ? 0 : e.perPage || 10,
           n = 0 === r ? Math.max(1, t) : r,
           a = Math.max(1, Math.ceil(t / n)),
-          i = Math.min(Math.max(1, e.page || 1), a),
+          /* V7 · 53 (البند 10): بعد اعتماد الاستيراد ينتقل الجدولُ إلى صفحة أول صفٍّ مستورد — الترتيبُ الافتراضي (الحساب · الدور · الاسم)
+             يضع المستوردَ بين 500 موظف في صفحةٍ أخرى فيبدو الجدولُ كأنه لم يتحدّث */
+          jx = e.impJump ? c.findIndex((r) => e.impJump.some((q) => q.name === r.name && String(q.nid || "") === String(r.nid || ""))) : -1,
+          i = Math.min(Math.max(1, jx >= 0 ? Math.floor(jx / n) + 1 : e.page || 1), a),
           o = (i - 1) * n,
           s = c.slice(o, o + n).map((t, e) => ({ ...t, sn: String(o + e + 1) })),
           l = [];
+        e.impJump && Promise.resolve().then(() => this.setState({ impJump: null, page: i }));
         {
           const t = [],
             e = (e) => {
