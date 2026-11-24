@@ -2641,7 +2641,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
         style:"position:relative;height:24px;flex:1 1 auto;min-width:28px;padding:0 3px;border-radius:4px;font-size:8px;font-weight:"+(sel?"900":"700")
           +";display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;background:"+bg+";color:"+fg+";border:"+bd
           +(sel?";box-shadow:var(--shadow-card);z-index:10":"")+(today&&!sel?";box-shadow:0 0 0 2px rgba(185,151,81,0.7)":""),
-        tip:d+" "+KIVO.BassamCal.G_MONTHS[s.month-1]+" "+s.year+" هـ — الموافق "+this.gLong(s.year,s.month,d)+" — "
+        tip:d+" "+KIVO.BassamCal.G_MONTHS[s.month-1]+" "+s.year+" — الموافق "+this.gLong(s.year,s.month,d)+" — "
           +(state==="c"?"مكتمل":(state==="p"?cnt+" من "+KIVO.BassamCount(flds.length,"حقل","g")+"":"لم يُدخل"))
           +(mLock?" · الشهرُ مقفل":(dlk?" · مقفل — نقرتان لفتحه":" · مفتوح — نقرتان لقفله")),
         click:()=>self.setState({day:d,draft:null}),
@@ -2721,9 +2721,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       /* V7 · 53 تقويم (§7 · day_card_design · REVIEW 21): كرتا الشهر واليوم من المكوّن الواحد KIVO.BassamCalCard — الميلاديُّ أساساً والهجريُّ سطرٌ صغير،
          وحالتان فقط (مغلق بقفل · مفتوح)؛ والسببُ الإداري (اعتُمد · أُغلق تلقائياً · أُغلق يدوياً · مفتوح للاستدراك) في التلميح */
       mcards:mcards.map((x,i)=>{ const m=i+1, ym=KIVO.BassamCal.gYm(s.year,m), appr=self.mApproved(site,s.year,m), past=(s.year<T.y)||(s.year===T.y&&m<T.m), oflag=self.mOpenFlag(site,s.year,m), closed=appr||(past&&!oflag);
-        return Object.assign(x,{ card:KIVO.BassamCalCard.month({ key:ym, ym:ym, closed:closed, why:appr?"ap":closed?"past":past&&oflag?"retro":"", sel:m===s.month, T:T.k, onClick:x.click, onDoubleClick:x.dbl, attrs:{ "data-strip-cur":String(x.isCurrent) } }) }); }),
+        return Object.assign(x,{ card:KIVO.BassamCalCard.month({ key:ym, ym:ym, closed:closed, why:appr?"ap":closed?"past":past&&oflag?"retro":"", sel:m===s.month, T:T.k, hint: x.tip, onClick:x.click, onDoubleClick:x.dbl, attrs:{ "data-strip-cur":String(x.isCurrent) } }) }); }),
       dcards:dcards.map((x,i)=>{ const d=+x.num, k=KIVO.BassamCal.gKey(s.year,s.month,d), past=self.dPast(s.year,s.month,d);
-        return Object.assign(x,{ card:KIVO.BassamCalCard.day({ key:k, k:k, closed:x.lockClosed, why:x.lockClosed?(mApp?"ap":past?"past":"shut"):x.lockOpen?"retro":"", sel:d===s.day, T:T.k, onClick:x.click, onDoubleClick:x.dbl, attrs:{ "data-strip-cur":String(x.isToday) } }) }); }),
+        return Object.assign(x,{ card:KIVO.BassamCalCard.day({ key:k, k:k, closed:x.lockClosed, why:x.lockClosed?(mApp?"ap":past?"past":"shut"):x.lockOpen?"retro":"", sel:d===s.day, T:T.k, hint: x.tip, onClick:x.click, onDoubleClick:x.dbl, attrs:{ "data-strip-cur":String(x.isToday) } }) }); }),
       monthName:KIVO.BassamCal.G_MONTHS[s.month-1], dayProg: KIVO.BassamCount(fullDays,"يوم|مكتمل")+" · "+filled+" "+KIVO.BassamCount.agr(filled,"فيه","فيهما","فيها")+" أرقام من "+nd,
       entTitle: s.day+" "+KIVO.BassamCal.G_MONTHS[s.month-1]+" "+s.year, entGreg:this.gLong(s.year,s.month,s.day),
       entBadge:entBadge, entBadgeStyle:entBadgeStyle,

@@ -1108,49 +1108,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           p = !!l[g],
           m = c && !p,
           u = s(r, n);
-        let f =
-            "position:relative;width:100%;border-radius:12px;padding:8px;text-align:center;transition:all .2s;box-shadow:var(--shadow-card);cursor:pointer;box-sizing:border-box;font-family:'Cairo',sans-serif;border:1px ",
-          b = "#53565a",
-          S = "#cbd5e1",
-          x = "لا تقارير",
-          y = !1,
-          D = "",
-          L = "";
-        const w = "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z",
-          v = "M14 2v6h6";
         return (
-          m
-            ? ((f +=
-                (h ? "solid #64748b;box-shadow:0 0 0 2px rgba(100,116,139,0.25);" : "solid rgba(100,116,139,0.35);") +
-                "background:var(--bg-a1001161390p08)"),
-              (b = "#475569"),
-              (S = "#475569"),
-              (y = !0),
-              (x = u ? KIVO.BassamCount(u, "تقرير") + "" : "انقضى — مقفل"),
-              (D = "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"),
-              (L = ""))
-            : h
-              ? ((f += "solid #b99751;box-shadow:0 0 0 2px rgba(185,151,81,0.3);background:var(--bg-a185151810p06)"),
-                (b = "#b99751"),
-                u && ((x = KIVO.BassamCount(u, "تقرير") + ""), (S = "#b99751"), (y = !0), (D = w), (L = v)))
-              : u
-                ? ((f += "solid #E1E1E1;background:var(--bg-xffffff)"),
-                  (x = KIVO.BassamCount(u, "تقرير") + ""),
-                  (S = "#b99751"),
-                  (y = !0),
-                  (D = w),
-                  (L = v))
-                : (f += "dashed #E1E1E1;background:var(--bg-a2452452450p7);opacity:.9"),
           {
             name: t,
-            greg: KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(r, n)),
-            style: f,
-            nameColor: b,
-            cntColor: S,
-            cntLabel: x,
-            cntIcon: y,
-            footP1: D,
-            footP2: L,
             isCurrent: d,
             tip: m
               ? (u ? KIVO.BassamCount(u, "تقرير|مسجّل") + " في " + t + " · " : "") + (this.PC("approve") ? "الشهر انقضى — مقفل · نقرة مزدوجة لفتحه للاستدراك" : "الشهر انقضى — مقفل · فتحه للاستدراك يحتاج صلاحية الاعتماد")
@@ -1181,8 +1141,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       m = !!l[c],
       u = p && !m,
       f = KIVO.BassamCal.gMonthDays(r, a),
-      b = this.gDate(r, a, 1),
-      S = new Date(b.getFullYear(), b.getMonth(), b.getDate(), 12),
       x = [];
     for (let i = 1; i <= f; i++) {
       const n = s(r, a, i),
@@ -1193,27 +1151,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         b = !!h[m],
         y = u || (f && !b),
         D = !y && f && b;
-      let L = "#fff",
-        w = "#53565a",
-        v = "2px solid #E1E1E1";
-      (n
-        ? ((L = y ? "#64748b" : "#b99751"), (w = "#fff"), (v = "2px solid transparent"))
-        : y && ((L = "rgba(148,163,184,0.12)"), (w = "#94a3b8")),
-        l && (v = "2px solid " + (y ? "#64748b" : "#b99751")));
-      const P = new Date(S.getTime() + 864e5 * (i - 1));
-      let M = "";
-      try {
-        M = P.toLocaleDateString("ar-u-ca-gregory-nu-latn", { day: "numeric", month: "long", year: "numeric" });
-      } catch (t) {}
+      const M = KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(r, a, i));   /* V7 · 53 تقويم (§7): الموافقُ الهجري للتلميح */
       x.push({
-        num: String(i),
-        gnum: String(P.getDate()),
         isToday: d,
         lockClosed: y,
         lockOpen: D,
-        sepStyle:
-          "display:block;width:9px;height:1px;flex-shrink:0;margin:1px 0;background:" +
-          (n ? "var(--bg-a2552552550p5)" : "var(--bg-a1481631840p55)"),
         tip:
           "يوم " +
           i +
@@ -1221,9 +1163,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           KIVO.BassamCal.G_MONTHS[a - 1] +
           " " +
           r +
-          " هـ — الموافق " +
-          M +
-          " م" +
+          (M ? " · الموافق " + M + " هـ" : "") +
           (n ? " — " + KIVO.BassamCount(n, "تقرير") + "" : " — لا تقارير") +
           (y ? " — انقضى، مقفل · " + (this.PC("approve") ? "نقرة مزدوجة لفتحه" : "فتحه يحتاج صلاحية الاعتماد") : D ? " — مفتوح للاستدراك" + (this.PC("approve") ? " · نقرة مزدوجة لإغلاقه" : "") : ""),
         click: () => this.setState(l ? { irDay: i } : { irDay: i, irLedgerOpen: !1 }),
@@ -1235,17 +1175,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 : f && this._irRetroToggle({ y: r, m: a, d: i })
               : (u || f) && this.bsToast("فتحُ الشهر أو اليوم المقفل للاستدراك وإعادةُ قفله تحتاج صلاحية الاعتماد — راجع مدير الإدارة"));
         },
-        style:
-          "position:relative;height:24px;flex:1 1 auto;min-width:28px;padding:0 3px;border-radius:4px;font-size:8px;font-weight:" +
-          (l ? "900" : "700") +
-          ";display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;background:" +
-          L +
-          ";color:" +
-          w +
-          ";border:" +
-          v +
-          (l ? ";box-shadow:var(--shadow-card);z-index:10" : "") +
-          (d && !l ? ";box-shadow:0 0 0 2px rgba(185,151,81,0.7)" : ""),
       });
     }
     const y = r === e.y && a === e.m,
@@ -1418,7 +1347,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
          وحالتان فقط (مغلق بقفل · مفتوح)، والسببُ الإداري في التلميح. القفلُ والاستدراك بالقاعدة نفسِها (m: انقضى بلا نافذة · c&&p: نافذةٌ سارية) */
       irMonths: d.map((x, i) => {
         const n = i + 1, ym = KIVO.BassamCal.gYm(r, n), past = 12 * r + n < o, open = !!l[r + "-" + n];
-        return Object.assign(x, { card: KIVO.BassamCalCard.month({ key: ym, ym, closed: past && !open, why: past && !open ? "past" : past && open ? "retro" : "", sel: a === n, T: e.k, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }) });
+        return Object.assign(x, { card: KIVO.BassamCalCard.month({ key: ym, ym, closed: past && !open, why: past && !open ? "past" : past && open ? "retro" : "", sel: a === n, T: e.k, hint: x.tip, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }) });
       }),
       irYearLabel: r + "",
       irGregRange: KIVO.BassamCal.hRangeOfYear(r),
@@ -1433,7 +1362,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irGoCurrent: () => this.setState({ irYear: e.y, irMonth: e.m, irDay: e.d, irLedgerOpen: !1 }),
       irDays: x.map((v, i) => {
         const k = KIVO.BassamCal.gKey(r, a, i + 1);
-        return Object.assign(v, { card: KIVO.BassamCalCard.day({ key: k, k, closed: v.lockClosed, why: v.lockClosed ? "past" : v.lockOpen ? "retro" : "", sel: t.irDay === i + 1, T: e.k, onClick: v.click, onDoubleClick: v.dbl, attrs: { "data-strip-cur": String(v.isToday) } }) });
+        return Object.assign(v, { card: KIVO.BassamCalCard.day({ key: k, k, closed: v.lockClosed, why: v.lockClosed ? "past" : v.lockOpen ? "retro" : "", sel: t.irDay === i + 1, T: e.k, hint: v.tip, onClick: v.click, onDoubleClick: v.dbl, attrs: { "data-strip-cur": String(v.isToday) } }) });
       }),
       irSelDateLabel: t.irDay + " " + KIVO.BassamCal.G_MONTHS[a - 1] + " " + r + (KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(r, a, t.irDay)) ? " · " + KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(r, a, t.irDay)) + " هـ" : ""),
       irMonthAutoHint: u,

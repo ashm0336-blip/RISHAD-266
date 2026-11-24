@@ -311,7 +311,7 @@
       cuHolderNext: !!(t.cuHolder && t.cuHolder.next), cuHolderProgress: t.cuHolder ? "المعروض " + t.cuHolder.rows.length + " من " + t.cuHolder.total + " عهدة نشطة؛ تفاصيل الحالة تخص المعروض" : "", cuHolderMore: () => this._cuLoadHolder(t.cuHolder.key, true),
       cuCatalogNext: !!((t.cuData || {}).catalogNext), cuCatalogMore: () => this._cuMoreCatalog(),
       /* V7 · 53 تقويم (§7 · day_card_design): كرتُ الشهر من المكوّن الواحد — الميلاديُّ وتحته المدى الهجري؛ الماضي مغلق (أرشيف) والجاري مفتوح */
-      cuMonths: a.map((x, k) => Object.assign(x, { card: KIVO.BassamCalCard.month({ key: KIVO.BassamCal.gYm(r, k + 1), ym: KIVO.BassamCal.gYm(r, k + 1), closed: this.cuPast(r, k + 1), why: this.cuPast(r, k + 1) ? "past" : "", sel: n === k + 1, T: KIVO.BassamCal.gKey(e.y, e.m, e.d || 1), onClick: x.click, attrs: { "data-strip-cur": String(x.isCurrent) } }) })),
+      cuMonths: a.map((x, k) => Object.assign(x, { card: KIVO.BassamCalCard.month({ key: KIVO.BassamCal.gYm(r, k + 1), ym: KIVO.BassamCal.gYm(r, k + 1), closed: this.cuPast(r, k + 1), why: this.cuPast(r, k + 1) ? "past" : "", sel: n === k + 1, T: KIVO.BassamCal.gKey(e.y, e.m, e.d || 1), hint: x.tip, onClick: x.click, attrs: { "data-strip-cur": String(x.isCurrent) } }) })),
       cuYearLabel: String(r),
       cuGregRange: this.cuGregYearRange(r),
       cuBadgeLabel: "عهد " + i + " " + r + " — " + (o ? "مقفل (أرشيف)" : s ? "الشهر الجاري" : "لم يبدأ بعد"),
