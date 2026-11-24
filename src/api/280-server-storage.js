@@ -29,8 +29,12 @@
     'bassam_mark_kinds_v1', 'bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1',
     'bassam_dreport_v1', 'bassam_dr_grp_v1', 'bassam_leave_kinds_v1', 'bassam_tasks_v1', 'bassam_tasks_locks_v1'
   ]);
-  function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '')) !== -1; }
-  function operationKey9(k) { return typeof k === 'string' && /^bsdept:[^:\s,]+:bassam_[A-Za-z0-9_]+$/.test(k) && operationResource9(k); }
+  /* V7 · 53: الموارد المخزّنة بالفترة (عقد الخادم) — الحقلُ الحاوي للفترات ('' = أعضاءُ الجذر) · والمواردُ التي تُقرأ بالأيام افتراضاً.
+     يعلنها كلُّ نظامٍ في قطعته (store.period · store.periodDay · store.periodMonthly) — القاعدةُ لا تسمّي مواردَ الأنظمة */
+  var PERIOD_RES9 = Object.freeze({ bassam_plan_v1: 'months', bassam_staffing_v3: '', bassam_rounds_v1: '', bassam_rounds_arc_v1: '', bassam_dreport_v1: '', bassam_tasks_v1: '', });
+  var PERIOD_DAY9 = Object.freeze({ bassam_dreport_v1: 1, }), PERIOD_MONTHLY9 = Object.freeze({ bassam_plan_v1: 1, bassam_staffing_v3: 1, });   /* شهرُها فترةٌ واحدة */
+  function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '').replace(/@[^@]*$/, '')) !== -1; }   /* V7 · 53: K@p مورد عمليات كذلك */
+  function operationKey9(k) { return typeof k === 'string' && (/^bsdept:[^:\s,]+:bassam_[A-Za-z0-9_]+$/.test(k) && operationResource9(k) || !!periodParse9(k)); }
   var DEVK9 = { bassam_session_v1: 1, bassam_theme: 1,
                 bassam_active_dept_v1: 1, bassam_fresh_login_v1: 1, bassam_notif_mute_v1: 1,
                 bassam_con_cx_v1: 1 };   /* CORE-02 S7: طيُّ شريط «مركز إدارة رشاد» تفضيلُ جهازٍ كالسمة — لا يُرسل للخادم */
@@ -800,6 +804,7 @@
   function operationForget9(key, state, quiet) {
     delete mem[key]; delete baseVal[key]; delete krev[key];
     operationKnown9[key] = { state: state || 'unloaded' };
+    periodForget9(key, quiet);   /* V7 · 53 */
     if (!quiet) notify(key);
   }
   function operationInvalidate9(keys, quiet) {
@@ -812,6 +817,7 @@
     if (selected.length && !quiet) setTimeout(function () { try { if (KIVO.__dcRevalidate) KIVO.__dcRevalidate(); } catch (e) { /* إعادةُ القراءة يطلبها الرسمُ التالي كذلك */ } }, 0);
   }
   async function operationRead9(keys) {
+    if (Array.isArray(keys) && keys.some(periodAny9)) return periodRead9(periodCollapse9(keys));   /* V7 · 53: مورد مقسَّم ⇒ بالفترة */
     var stamp = operationContext9();
     if (!stamp) return operationFailure9('session', 401);
     if (!Array.isArray(keys) || !keys.length || keys.length > 80 || new Set(keys).size !== keys.length || !keys.every(operationKey9)) return operationFailure9('keys', 400);
@@ -858,9 +864,19 @@
   function operationReference9(key) {
     if (!operationContext9() || !operationKey9(key)) throw Error('operations-scope-required');
     if (KIVO.__bsReadHook) KIVO.__bsReadHook(key);
+    if (periodLogical9(key)) periodGetSeq9[key] = periodSeq9;   /* V7 · 53: ما رأته الصفحةُ من الفترات (يجوز حذفُه بغيابه من حفظها) */
     var known = operationKnown9[key];
     if (!known || !known.stamp || !operationSame9(known.stamp) || (known.state !== 'ready' && known.state !== 'absent')) throw Error('operations-read-required');
     return known.state === 'absent' ? null : JSON.parse(mem[key]);
+  }
+  function operationText9(key) {
+    var stamp = operationContext9();
+    if (!stamp || !operationKey9(key) || key.split(':')[1] !== stamp.dept) throw Error('operations-scope-required');
+    if (KIVO.__bsReadHook) KIVO.__bsReadHook(key);
+    if (periodLogical9(key)) periodGetSeq9[key] = periodSeq9;
+    var known = operationKnown9[key];
+    if (!known || !known.stamp || !operationSame9(known.stamp) || (known.state !== 'ready' && known.state !== 'absent')) throw Error('operations-read-required');
+    return known.state === 'absent' || mem[key] === undefined ? null : mem[key];
   }
   function operationScoped9(name) {
     var stamp = operationContext9();
@@ -1066,6 +1082,10 @@
     if (!stamp) return operationFailure9('session', 401);
     if (operationActive9 || dirty || inflight) return operationFailure9('pending', 409);
     if (!operationObject9(changes) || !operationObject9(changes.set || {}) || !Array.isArray(changes.del || [])) return operationFailure9('changes', 400);
+    var period9 = periodStage9(changes, stamp);   /* V7 · 53: الوثيقة ⇒ الفتراتُ التي تغيّرت */
+    if (period9 && period9.ok === 0) return period9;
+    if (period9 && period9.noop) return period9.noop;
+    if (period9) changes = period9.changes;
     var set = changes.set || {}, del = changes.del || [], keys = Object.keys(set).concat(del);
     if (!keys.length || keys.length > 80 || new Set(keys).size !== keys.length || keys.some(function (key) { return !operationKey9(key) || key.split(':')[1] !== stamp.dept; })) return operationFailure9('keys', 400);
     if (!operationInteger9(operationEpoch9) || keys.some(function (key) { var known = operationKnown9[key]; return !known || !known.stamp || !operationSame9(known.stamp) || !['ready', 'absent'].includes(known.state) || known.epoch !== operationEpoch9; })) return operationFailure9('read-required', 409);
@@ -1087,7 +1107,7 @@
     Object.keys(readBase).forEach(function (key) { body.base[key] = readBase[key]; });
     var before = Object.create(null);
     keys.forEach(function (key) { before[key] = baseVal[key] == null ? null : baseVal[key]; });
-    operationActive9 = { ticket: ticket, stamp: stamp, keys: keys, snap: snap, before: before, body: JSON.stringify(body), epoch: operationEpoch9, state: 'staged', result: null };
+    operationActive9 = { ticket: ticket, stamp: stamp, keys: keys, snap: snap, before: before, body: JSON.stringify(body), epoch: operationEpoch9, state: 'staged', result: null, period: period9 ? period9.meta : null };
     operationsTickets9.set(ticket, operationActive9);
     return ticket;
   }
@@ -1126,7 +1146,7 @@
     if (!operationSame9(operation.stamp)) return;
     try { window.dispatchEvent(new CustomEvent('bassam:operations-commit', { detail: {
       uid: operation.stamp.uid, dept: operation.stamp.dept, requestId: operation.ticket.requestId,
-      changes: operation.keys.map(function (key) { return { key: key, before: operation.before[key], after: key in operation.snap.set ? operation.snap.set[key] : null }; })
+      changes: periodCommitChanges9(operation, operation.keys.map(function (key) { return { key: key, before: operation.before[key], after: key in operation.snap.set ? operation.snap.set[key] : null }; }))
     } })); } catch (error) {}
   }
   async function operationSettle9(operation, status, data) {
@@ -1179,6 +1199,7 @@
           operationUncertain9(operation, 'confirmation-read', status); operation.result.committed = 1; return;
         }
       }
+      if (operation.period) periodSettled9(operation);   /* V7 · 53 */
       inflight = null; operation.state = 'confirmed'; operation.result = { ok: 1, receipt: operationClone9(data) }; operationActive9 = null;
       operationCommitted9(operation);
       warn(false); settleWaiters(!dirty); kickIfDirty(); return;
@@ -1192,7 +1213,7 @@
     });
     if (blocked && barriers.length) {
       inflight = null; operation.state = status === 409 ? 'conflict' : 'denied';
-      operation.result = { ok: 0, err: operation.state, status: status, uncertain: false, details: operationClone9(data) };
+      operation.result = { ok: 0, err: operation.state, status: status, uncertain: false, details: operation.period ? periodDetails9(data) : operationClone9(data) };
       operationActive9 = null; operationInvalidate9(operation.keys); settleWaiters(false); return;
     }
     operationUncertain9(operation, 'ack', status);
@@ -1216,6 +1237,369 @@
   }
   /* تغيّرُ صلاحياتي الفعلي يُسقط قراءات العمليات كما كان (المسوداتُ لا تتبنّى صلاحيةً جديدة بصمت · جيلٌ جديد). الجديد: الحدثُ لا يُطلَق
      إلا إن تغيّر وصفُ صلاحياتي فعلاً (authzSync9)، والصفحةُ المعروضة لا تُهدم بالإسقاط — تبقى شجرتُها حتى تصل القراءةُ الجديدة (050). */
+  /* ═══ V7 · 53: التخزين بالفترة — طبقةُ العميل (عقد الخادم: /api/operations/read بمفاتيح K@p و range=، والحفظُ بـK@p) ═══
+     المورد المقسَّم (PERIOD_RES9) يُقرأ رأساً (K@) وفتراتٍ (K@p) ويُحفظ بالفترة التي تغيّرت وحدها. الصفحاتُ ترى «الوثيقة» نفسها كما كانت
+     (get · draft · patch): الرأسُ + الفتراتُ المحمَّلة. ما لم يُحمَّل لا يظهر، ولا يُرسل، ولا يُحذف — يبقى في الخادم كما خُزِّن (قاعدةُ د6/52:
+     الحفظُ يغيّر ما غيّره المستخدم وحده). اسمُ الفترة نصُّ المفتاح القائم كما هو، ولا تحليلَ تاريخٍ في هذه الطبقة: «الشهرُ الحالي واليوم»
+     يسمّيهما التقويمُ في periodNow9 وحدها، والصفحةُ تطلب ما تعرضه بـoperations.want. */
+  var periodWant9 = Object.create(null), periodGroups9 = Object.create(null), periodOrder9 = Object.create(null);
+  var periodWantP9 = Object.create(null), periodLogicalRev9 = Object.create(null), periodGrpOf9 = Object.create(null), periodViewRev9 = Object.create(null), periodTextRev9 = Object.create(null), periodSeq9 = 0, periodLoadSeq9 = Object.create(null), periodGetSeq9 = Object.create(null), periodPk9 = null;
+  function periodName9(name) { return Object.prototype.hasOwnProperty.call(PERIOD_RES9, name) && operationResources9.indexOf(name) !== -1; }
+  function periodParse9(k) { var m = /^(bsdept:[^:\s,@]+:(bassam_[A-Za-z0-9_]+))@([^,@*;\u0000-\u001f]{0,64})$/.exec(String(k)); return m && periodName9(m[2]) ? { K: m[1], name: m[2], p: m[3] } : null; }
+  function periodLogical9(k) { var m = /^bsdept:[^:\s,@]+:(bassam_[A-Za-z0-9_]+)$/.exec(String(k)); return !!m && periodName9(m[1]); }
+  function periodAny9(k) { return periodLogical9(k) || !!periodParse9(k); }
+  function periodOwn9(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  /* الرأسُ والفترات (مطابقٌ لـopSplit في الخادم): للخطة أعضاءُ months فترات، وفي الرأس months:{}؛ ولغيرها أعضاءُ الجذر فترات إلا الحقولَ الثابتة (__…) */
+  function periodSplit9(name, doc) {
+    if (!isObj(doc)) return null;
+    var field = PERIOD_RES9[name], head = {}, periods = {}, order = [];
+    Object.keys(doc).forEach(function (k) {
+      if (field) { head[k] = k === field ? {} : doc[k]; return; }
+      if (k.indexOf('__') === 0) head[k] = doc[k]; else { periods[k] = doc[k]; order.push(k); }
+    });
+    if (field) {
+      if (!periodOwn9(head, field)) head[field] = {};
+      var M = isObj(doc[field]) ? doc[field] : {};
+      Object.keys(M).forEach(function (p) { periods[p] = M[p]; order.push(p); });
+    }
+    return { head: head, periods: periods, order: order };
+  }
+  function periodJoin9(name, head, periods, order) {
+    var field = PERIOD_RES9[name], out = {}, P = {};
+    (order || []).forEach(function (p) { if (periodOwn9(periods, p) && !periodOwn9(P, p)) P[p] = periods[p]; });
+    Object.keys(periods).forEach(function (p) { if (!periodOwn9(P, p)) P[p] = periods[p]; });
+    Object.keys(head || {}).forEach(function (k) { out[k] = field && k === field ? P : head[k]; });
+    if (field) { if (!periodOwn9(out, field)) out[field] = P; return out; }
+    Object.keys(P).forEach(function (p) { out[p] = P[p]; });
+    return out;
+  }
+  function periodHeadNorm9(name, head) { var field = PERIOD_RES9[name], h = isObj(head) ? head : {}; if (field && !isObj(h[field])) { h = Object.assign({}, h); h[field] = {}; } return h; }
+  /* «الآن» بأسماء المفاتيح القائمة: الشهرُ واليومُ اليوم وأمس (اليومُ التشغيلي يمتد بعد منتصف الليل) — من التقويم، لا من هذه الطبقة */
+  function periodNow9() {
+    var C = KIVO.BassamCal, out = { groups: [], days: [] };
+    [0, 864e5].forEach(function (back) {
+      var h = null;
+      try { h = C && C.hNow ? C.hNow(new Date(Date.now() - back), null) : null; } catch (e) { h = null; }
+      if (!h || !h.y || !h.m || !h.d) return;
+      var g = h.y + '-' + h.m, d = g + '-' + h.d;
+      if (out.groups.indexOf(g) === -1) out.groups.push(g);
+      if (out.days.indexOf(d) === -1) out.days.push(d);
+    });
+    return out;
+  }
+  /* ما تحتاجه الصفحةُ من المورد: الافتراضيُّ (الشهرُ الحالي كلُّه، أو لتقرير اليوم: اليومُ وأمسُ وعلامةُ الشهر) + ما طلبته الصفحة */
+  function periodWanted9(K) {
+    var name = unscoped(K), now = periodNow9(), w = periodWant9[K] || { groups: [], periods: [], day: !!PERIOD_DAY9[name] };
+    var groups = w.day ? [] : now.groups.slice(), periods = w.day ? now.days.concat(now.groups.map(function (g) { return 'm:' + g; })) : [];
+    w.groups.forEach(function (g) { if (groups.indexOf(g) === -1) groups.push(g); });
+    w.periods.forEach(function (p) { if (periods.indexOf(p) === -1) periods.push(p); });
+    return { groups: groups, periods: periods };
+  }
+  function periodLoaded9(K) {
+    var pre = K + '@', out = [];
+    Object.keys(operationKnown9).forEach(function (key) {
+      if (key.length <= pre.length || key.indexOf(pre) !== 0) return;
+      var known = operationKnown9[key];
+      if (known && known.stamp && operationSame9(known.stamp) && known.state === 'ready') out.push(key.slice(pre.length));
+    });
+    return out;
+  }
+  function periodForgetAll9(K) {
+    var pre = K + '@';
+    Object.keys(operationKnown9).forEach(function (key) { if (key.indexOf(pre) === 0) { delete mem[key]; delete baseVal[key]; delete krev[key]; operationKnown9[key] = { state: 'unloaded' }; } });
+    delete periodGroups9[K]; delete periodLogicalRev9[K];
+  }
+  /* «الوثيقة» المعروضة للصفحة: الرأس + الفتراتُ المحمَّلة. known.rev (أساسُ المسودة) يتقدّم حين يتغيّر ما سبق تحميلُه فقط —
+     فتحميلُ شهرٍ آخر بالتنقّل لا يُبطل مسودةً مفتوحة؛ krev يتقدّم مع كل تغيّرٍ في النص (بصمةُ الرسم في الصفحات). */
+  function periodView9(K, bump) {
+    var name = unscoped(K), hk = K + '@', head = operationKnown9[hk];
+    if (!head || !head.stamp || !operationSame9(head.stamp) || (head.state !== 'ready' && head.state !== 'absent')) {
+      delete mem[K]; delete baseVal[K];
+      operationKnown9[K] = { state: head && (head.state === 'denied' || head.state === 'error') ? head.state : 'unloaded', stamp: head && head.stamp, split: 1 };
+      return;
+    }
+    var loaded = periodLoaded9(K), periods = {};
+    loaded.forEach(function (p) { periods[p] = JSON.parse(mem[K + '@' + p]); });
+    var present = head.state === 'ready' || loaded.length > 0, before = mem[K];
+    if (bump || !periodOwn9(periodViewRev9, K)) periodViewRev9[K] = (periodViewRev9[K] || 0) + 1;
+    if (present) { mem[K] = JSON.stringify(periodJoin9(name, head.state === 'ready' ? JSON.parse(mem[hk]) : periodHeadNorm9(name, {}), periods, periodOrder9[K])); baseVal[K] = mem[K]; }
+    else { delete mem[K]; delete baseVal[K]; }
+    if (before !== mem[K] || !periodOwn9(periodTextRev9, K)) periodTextRev9[K] = (periodTextRev9[K] || 0) + 1;
+    krev[K] = periodOwn9(periodLogicalRev9, K) ? periodLogicalRev9[K] : periodTextRev9[K];   /* مراجعةُ K في الخادم إن أرسلها (أوامرُ المهام تحملها) */
+    operationKnown9[K] = { state: present ? 'ready' : 'absent', epoch: head.epoch, rev: periodViewRev9[K], stamp: head.stamp, split: 1 };
+  }
+  function periodQuery9(q, stamp) {
+    return '/api/operations/read?keys=' + encodeURIComponent(q.keys.join(',')) + (q.range.length ? '&range=' + encodeURIComponent(q.range.join(',')) : '') + '&uid=' + encodeURIComponent(stamp.uid);
+  }
+  function periodValid9(q, data, stamp) {
+    if (!operationObject9(data) || data.ok !== 1 || data.uid !== stamp.uid || !operationInteger9(data.epoch) || !operationInteger9(data.v)
+        || !operationObject9(data.resources) || !Array.isArray(data.absent) || !Array.isArray(data.denied) || !operationObject9(data.base)) return false;
+    var failed = data.failed === undefined ? {} : data.failed, ranges = data.ranges === undefined ? {} : data.ranges;
+    if (data.logical !== undefined && (!operationObject9(data.logical) || Object.keys(data.logical).some(function (k) { return q.Ks.indexOf(k) === -1 || !operationInteger9(data.logical[k]); }))) return false;
+    if (!operationObject9(failed) || !operationObject9(ranges) || Object.keys(ranges).some(function (r) { return q.range.indexOf(r) === -1; })) return false;
+    var expect = q.keys.slice();
+    for (var i = 0; i < q.range.length; i++) {
+      var list = ranges[q.range[i]], rK = q.range[i].slice(0, q.range[i].lastIndexOf('@'));
+      if (list === undefined && data.denied.indexOf(rK + '@') !== -1) list = [];   /* المورد محجوب: لا مدى في الجواب */
+      if (!Array.isArray(list) || list.some(function (key) { var x = periodParse9(key); return !x || x.K !== rK; })) return false;
+      list.forEach(function (key) { if (expect.indexOf(key) === -1) expect.push(key); });
+    }
+    var covered = Object.keys(data.resources).concat(data.absent, data.denied, Object.keys(failed)), readable = Object.keys(data.resources).concat(data.absent);
+    return covered.length === expect.length && new Set(covered).size === covered.length && covered.every(function (key) { return expect.indexOf(key) !== -1; })
+      && Object.keys(data.base).length === readable.length && readable.every(function (key) { return operationInteger9(data.base[key]); })
+      && Object.keys(data.base).every(function (key) { return readable.indexOf(key) !== -1; });
+  }
+  async function periodFetch9(q, stamp) {
+    var response = await fetch(periodQuery9(q, stamp), { credentials: 'same-origin', cache: 'no-store' }), data = null;
+    try { data = await response.json(); } catch (e) { data = null; }
+    /* شهرُ موردٍ يوميٍّ تجاوز حدَّ القراءة (تقريرُ إدارةٍ كبيرة · S6): يُطلب اليومان وعلامةُ الشهر وحدها، ويبقى المورد بالأيام في هذه الصفحة */
+    if (response.status === 413 && data && data.err === 'read-too-large' && q.K && q.logical && q.range.length && !q.retried) {
+      var now = periodNow9(), w = periodWant9[q.K] || (periodWant9[q.K] = { groups: [], periods: [], day: false });
+      w.day = true; w.groups = w.groups.filter(function (g) { return q.range.indexOf(q.K + '@' + g) === -1; });
+      var ks = q.keys.slice();
+      now.days.concat(now.groups.map(function (g) { return 'm:' + g; })).forEach(function (p) { if (ks.indexOf(q.K + '@' + p) === -1) ks.push(q.K + '@' + p); });
+      return periodFetch9({ K: q.K, Ks: [q.K], keys: ks, range: [], retried: 1 }, stamp);
+    }
+    return { q: q, response: response, data: data };
+  }
+  /* قراءةٌ فيها مفتاحُ موردٍ مقسَّم (منطقيٌّ K أو فترة K@p): طلبٌ لكل مورد مقسَّم (≤ 40 فترة لكلٍّ في العقد) وطلبٌ للبقية، معاً.
+     الجوابُ للمستدعي بشكله القديم (resources/base بالمفاتيح المنطقية)، والفتراتُ في الذاكرة بمفاتيحها ومراجعاتها. */
+  async function periodRead9(keys, extra, quiet) {
+    var stamp = operationContext9(), response = null;
+    if (!stamp) return operationFailure9('session', 401);
+    if (!Array.isArray(keys) || !keys.length || keys.length > 80 || new Set(keys).size !== keys.length || !keys.every(operationKey9)) return operationFailure9('keys', 400);
+    keys = keys.slice();
+    var plain = [], split = Object.create(null), add = function (K) { return split[K] || (split[K] = { keys: [], logical: false }); };
+    keys.forEach(function (key) {
+      var x = periodParse9(key);
+      if (x) { if (add(x.K).keys.indexOf(key) === -1) split[x.K].keys.push(key); return; }
+      if (periodLogical9(key)) { add(key).logical = true; return; }
+      plain.push(key);
+    });
+    var reqs = plain.length ? [{ K: null, Ks: [], keys: plain, range: [], small: true, cost: 0 }] : [];
+    Object.keys(split).forEach(function (K) {
+      var s = split[K], want = s.logical ? periodWanted9(K) : { groups: [], periods: [] }, more = (extra && extra[K]) || { groups: [], periods: [] }, ks = [K + '@'], range = [];
+      (s.logical ? [] : s.keys).concat(want.periods.concat(more.periods || []).map(function (p) { return K + '@' + p; })).forEach(function (k) { if (ks.indexOf(k) === -1) ks.push(k); });
+      want.groups.concat(more.groups || []).forEach(function (g) { if (range.indexOf(K + '@' + g) === -1) range.push(K + '@' + g); });
+      /* مواردُ شهرُها فترةٌ واحدة أو تُقرأ بالأيام (عددُ فتراتها معروف) تُضمّ إلى طلبٍ واحد ما دام ≤ 40 فترة — طلباتٌ أقل (كلفةُ كلِّ طلبٍ في D1) */
+      /* أشهرُ موردٍ يومي كثيرة (بطاقاتُ السنة): طلبٌ لكل شهر (≤ 40 فترة لكلٍّ)، في القراءة الواحدة نفسِها */
+      if (more.chunk && range.length > 1) { range.forEach(function (r, i) { reqs.push({ K: K, Ks: [K], logical: s.logical, keys: i ? [K + '@'] : ks, range: [r], small: false, cost: 0 }); }); return; }
+      var known = PERIOD_MONTHLY9[unscoped(K)] || !range.length, cost = ks.length - 1 + range.length, into = known && reqs.filter(function (q) { return q.small && q.cost + cost <= 40; })[0];
+      if (into) { into.Ks.push(K); into.keys = into.keys.concat(ks); into.range = into.range.concat(range); into.cost += cost; into.K = null; return; }
+      reqs.push({ K: K, Ks: [K], logical: s.logical, keys: ks, range: range, small: known, cost: cost });
+    });
+    var readId = ++operationReadId9;
+    keys.forEach(function (key) { operationReads9[key] = readId; });
+    try {
+      var answers = await Promise.all(reqs.map(function (q) { return periodFetch9(q, stamp); }));
+      for (var a = 0; a < answers.length; a++) {
+        response = answers[a].response;
+        if (response.status === 401) { sessGone9(); operationInvalidate9(); return operationFailure9('session', 401); }
+        if (response.status === 409 && answers[a].data && answers[a].data.err === 'session-changed') { sesChanged9(null, '409'); operationInvalidate9(); return operationFailure9('session', 409); }
+      }
+      if (!operationSame9(stamp) || keys.some(function (key) { return operationReads9[key] !== readId; })) return operationFailure9('stale', 409);
+      var refused = answers.filter(function (x) { return !x.response.ok; })[0];
+      if (refused) {
+        var rd = refused.data || {};
+        keys.forEach(function (key) { if (operationReads9[key] === readId) operationForget9(key, 'error'); });
+        return Object.assign(operationFailure9(typeof rd.err === 'string' ? rd.err : 'read', refused.response.status), typeof rd.msg === 'string' ? { msg: rd.msg } : {});
+      }
+      /* جوابٌ كلُّه محجوب لا يحمل حقبةً (0): لا يدخل في اتّساق الحقبة */
+      var dated = answers.filter(function (x) { return x.data && operationObject9(x.data.resources) && (Object.keys(x.data.resources).length || (Array.isArray(x.data.absent) && x.data.absent.length)); });
+      if (answers.some(function (x) { return !periodValid9(x.q, x.data, stamp); }) || new Set(dated.map(function (x) { return x.data.epoch; })).size > 1) throw Error('operations-read-invalid');
+      var epoch = dated.length ? dated[0].data.epoch : (operationEpoch9 !== null ? operationEpoch9 : answers[0].data.epoch), v = Math.max.apply(null, answers.map(function (x) { return x.data.v; }));
+      if (operationEpoch9 !== null && operationEpoch9 !== epoch) { operationInvalidate9(); stamp = operationContext9(); }
+      operationEpoch9 = epoch;
+      var out = { ok: 1, uid: stamp.uid, epoch: epoch, v: v, resources: {}, absent: [], denied: [], base: {} }, failedAll = {}, bump = Object.create(null);
+      answers.forEach(function (x) {
+        var data = x.data, failed = data.failed || {};
+        if (data.logical) x.q.Ks.forEach(function (K) { if (periodOwn9(data.logical, K)) periodLogicalRev9[K] = data.logical[K]; });
+        Object.keys(data.ranges || {}).forEach(function (r) {
+          var K = r.slice(0, r.lastIndexOf('@')), g = r.slice(K.length + 1), order = (periodOrder9[K] || []).slice(), list = data.ranges[r];
+          /* فترةٌ كانت في هذا الشهر عندي ولم تعد في جوابه: حُذفت في الخادم ⇒ تُنسى (لا تبقى قيمةً قديمة) */
+          Object.keys(periodGrpOf9).forEach(function (key) { if (periodGrpOf9[key] === g && key.indexOf(K + '@') === 0 && list.indexOf(key) === -1) { delete periodGrpOf9[key]; delete mem[key]; delete baseVal[key]; delete krev[key]; operationKnown9[key] = { state: 'unloaded' }; bump[K] = 1; } });
+          list.forEach(function (key) { var p = periodParse9(key).p; periodGrpOf9[key] = g; if (order.indexOf(p) === -1) order.push(p); });
+          periodOrder9[K] = order; (periodGroups9[K] || (periodGroups9[K] = Object.create(null)))[g] = 1;
+        });
+        Object.keys(data.resources).concat(data.absent, data.denied, Object.keys(failed)).forEach(function (key) {
+          var x2 = periodParse9(key), prior = operationKnown9[key], had = prior && prior.stamp && operationSame9(prior.stamp) && (prior.state === 'ready' || prior.state === 'absent'), priorText = mem[key];
+          if (data.denied.indexOf(key) !== -1) { operationForget9(key, 'denied', !!x2); operationKnown9[key].stamp = stamp; if (x2) bump[x2.K] = 1; else out.denied.push(key); return; }
+          if (periodOwn9(failed, key)) { operationForget9(key, 'error', !!x2); operationKnown9[key].stamp = stamp; failedAll[key] = String(failed[key]); if (x2) bump[x2.K] = 1; return; }
+          var present = periodOwn9(data.resources, key);
+          if (present) { mem[key] = JSON.stringify(data.resources[key]); baseVal[key] = mem[key]; } else { delete mem[key]; delete baseVal[key]; }
+          krev[key] = data.base[key];
+          if (x2 && keys.indexOf(key) !== -1) { if (present) out.resources[key] = data.resources[key]; else out.absent.push(key); out.base[key] = data.base[key]; }   /* فترةٌ طُلبت بعينها (قراءةُ التحقق) */
+          if (x2) {
+            if (had && (prior.state !== (present ? 'ready' : 'absent') || (present && priorText !== mem[key]))) bump[x2.K] = 1;   /* المحتوى تغيّر (لا مجرّدُ المراجعة) ⇒ المسودةُ المبنيّةُ عليه تُراجَع */
+            if (!had || prior.state !== 'ready') periodLoadSeq9[key] = ++periodSeq9;
+            if (x2.p && present && (periodOrder9[x2.K] || []).indexOf(x2.p) === -1) (periodOrder9[x2.K] || (periodOrder9[x2.K] = [])).push(x2.p);
+          } else { out.resources[key] = data.resources[key]; if (!present) { delete out.resources[key]; out.absent.push(key); } out.base[key] = data.base[key]; }
+          operationKnown9[key] = { state: present ? 'ready' : 'absent', epoch: epoch, rev: data.base[key], stamp: stamp };
+        });
+      });
+      Object.keys(split).forEach(function (K) {
+        periodView9(K, !!bump[K]);
+        var known = operationKnown9[K];
+        if (known.state === 'ready') { out.resources[K] = JSON.parse(mem[K]); out.base[K] = known.rev; }
+        else if (known.state === 'absent') { out.absent.push(K); out.base[K] = known.rev; }
+        else if (known.state === 'denied') out.denied.push(K);
+      });
+      operationSnapshot9 = { uid: stamp.uid, dept: stamp.dept, generation: stamp.generation, epoch: epoch, v: v, keys: keys.slice(), base: operationClone9(out.base) };
+      plain.concat(Object.keys(split)).forEach(function (key) { if (!quiet || !periodOwn9(split, key)) notify(key); });   /* quiet: الصفحةُ الطالبة تضمّ الفترةَ بنفسها */
+      var codes = Object.keys(failedAll);
+      if (codes.length) return Object.assign(operationFailure9(failedAll[codes[0]], failedAll[codes[0]] === 'db-busy' ? 503 : 413), { failed: failedAll });
+      return out;
+    } catch (error) {
+      if (operationSnapshot9 && operationSnapshot9.keys.some(function (key) { return keys.indexOf(key) !== -1; })) operationSnapshot9 = null;
+      if (operationSame9(stamp)) keys.forEach(function (key) { if (operationReads9[key] === readId) operationForget9(key, 'error'); });
+      return operationFailure9('read', response && response.status);
+    }
+  }
+  /* مفاتيحُ فتراتٍ مع مفتاحها المنطقي (إعادةُ قراءة ما في الذاكرة: تغيّرُ الصلاحيات · خبرُ التغييرات) ⇒ المنطقيُّ وحده: يعيد الرأسَ وما تطلبه الصفحة */
+  function periodCollapse9(keys) {
+    var many = keys.length > 80, out = [];
+    keys.forEach(function (key) { var x = periodParse9(key), k = x && (many || keys.indexOf(x.K) !== -1) ? x.K : key; if (out.indexOf(k) === -1) out.push(k); });
+    return out;
+  }
+  /* الصفحةُ تطلب ما تعرضه (التنقّلُ إلى شهرٍ أو يوم): groups أشهرٌ كاملة (range)، وperiods فتراتٌ بعينها. ما حُمِّل لا يُعاد طلبه.
+     يُحفظ في «المطلوب» فتعيده كلُّ إعادة قراءةٍ للمورد (تغيّرُ الصلاحيات · خبرُ التغييرات). */
+  function periodWant9Read(name, spec) {
+    var K;
+    try { K = operationScoped9(name); } catch (error) { return Promise.resolve(operationFailure9('scope', 400)); }
+    if (!periodName9(name)) return Promise.resolve(operationFailure9('not-split', 400));
+    var ok = function (x) { return typeof x === 'string' && x.length >= 1 && x.length <= 64 && !/[,@*;\u0000-\u001f]/.test(x); };
+    var groups = (spec && Array.isArray(spec.groups) ? spec.groups : []).filter(ok), periods = (spec && Array.isArray(spec.periods) ? spec.periods : []).filter(ok);
+    var w = periodWant9[K] || (periodWant9[K] = { groups: [], periods: [], day: !!PERIOD_DAY9[name] });
+    groups.forEach(function (g) { if (w.groups.indexOf(g) === -1) w.groups.push(g); });
+    periods.forEach(function (p) { if (w.periods.indexOf(p) === -1) w.periods.push(p); });
+    var head = operationKnown9[K + '@'], fresh = !!(head && head.stamp && operationSame9(head.stamp) && head.epoch === operationEpoch9 && (head.state === 'ready' || head.state === 'absent'));
+    var needG = groups.filter(function (g) { return !fresh || !(periodGroups9[K] && periodGroups9[K][g]); }), needP = periods.filter(function (p) {
+      var known = operationKnown9[K + '@' + p]; return !fresh || !known || !known.stamp || !operationSame9(known.stamp) || known.epoch !== operationEpoch9 || (known.state !== 'ready' && known.state !== 'absent');
+    });
+    if (!needG.length && !needP.length) return Promise.resolve({ ok: 1, cached: 1 });
+    var quiet = !!(spec && spec.quiet), extra = {};
+    extra[K] = { groups: needG, periods: needP, chunk: !PERIOD_MONTHLY9[name] };   /* شهرُ أيامٍ لكل طلب (≤ 40 فترة) */
+    /* طلبان للمورد نفسِه في الوقت نفسِه يُسقط أحدُهما الآخر («stale»): الثاني ينتظر الأول */
+    var run = (periodWantP9[K] || Promise.resolve()).then(function () { return periodRead9([K + '@'], extra, quiet); });
+    periodWantP9[K] = run.then(function () {}, function () {});
+    return run.then(function (r) {
+      var all = [r], bad = all.filter(function (x) { return !x || x.ok !== 1; })[0];
+      /* الصفحاتُ تعيد قراءة حالتها بخبر «bassam:remote» (root-logic _bsLiveReload) — خبرٌ مؤكَّد (لا يُسقط ما قُرئ للتوّ) وليس من جهازٍ آخر */
+      if (!bad && !quiet) { try { operationDispatchRemote9([K], BOOT.v, [K], []); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
+      return bad || all[all.length - 1];
+    });
+  }
+  /* فهرسُ فترات المورد بلا محتوى ({ p, grp, seq, rev, bytes } بترتيب seq) — لما يسرد الأشهرَ كلها (نسخُ خطة شهرٍ آخر) */
+  async function periodIndex9(name) {
+    var stamp = operationContext9(), K;
+    if (!stamp) return operationFailure9('session', 401);
+    try { K = operationScoped9(name); } catch (error) { return operationFailure9('scope', 400); }
+    if (!periodName9(name)) return operationFailure9('not-split', 400);
+    try {
+      var response = await fetch('/api/operations/read?keys=' + encodeURIComponent(K + '@') + '&index=' + encodeURIComponent(K) + '&uid=' + encodeURIComponent(stamp.uid), { credentials: 'same-origin', cache: 'no-store' }), data = await response.json();
+      if (!operationSame9(stamp)) return operationFailure9('stale', 409);
+      if (!response.ok || !operationObject9(data) || data.ok !== 1 || !operationObject9(data.index) || !Array.isArray(data.index[K])) return operationFailure9((data && data.err) || 'index', response.status);
+      return { ok: 1, key: K, index: data.index[K].filter(function (x) { return x && typeof x.p === 'string' && x.p; }) };
+    } catch (error) { return operationFailure9('index', 0); }
+  }
+  /* الحفظ: الوثيقةُ التي تكتبها الصفحة ⇒ الرأسُ إن تغيّر + كلُّ فترةٍ تغيّرت (أو جديدة) + حذفُ فترةٍ محمَّلةٍ رأتها الصفحةُ ثم أزالتها.
+     فترةٌ لم تُقرأ قط تُكتب على المراجعة 0 (الخادمُ يردّها تعارضاً إن وُجدت). بلا فرقٍ أصلاً ⇒ إيصالٌ محلّي بلا طلب. */
+  function periodStage9(changes, stamp) {
+    var set = changes.set || {}, del = changes.del || [], rb = changes.readBase || {};
+    var touched = Object.keys(set).concat(del).filter(periodLogical9);
+    if (!touched.length) return null;
+    var out = { set: {}, del: [], readBase: {} }, meta = { Ks: touched, docs: {}, before: {} }, fail = null;
+    Object.keys(set).forEach(function (k) { if (!periodLogical9(k)) out.set[k] = set[k]; });
+    del.forEach(function (k) { if (!periodLogical9(k)) out.del.push(k); });
+    Object.keys(rb).forEach(function (k) { if (!periodLogical9(k)) out.readBase[k] = rb[k]; });
+    touched.forEach(function (K) {
+      if (fail) return;
+      var known = operationKnown9[K], hk = K + '@', head = operationKnown9[hk], name = unscoped(K);
+      if (Object.keys(out.set).concat(out.del).some(function (k) { var x = periodParse9(k); return x && x.K === K; })) { fail = operationFailure9('operations-period-mixed', 400); return; }
+      if (!known || !known.split || !known.stamp || !operationSame9(known.stamp) || (known.state !== 'ready' && known.state !== 'absent') || known.epoch !== operationEpoch9
+          || !head || (head.state !== 'ready' && head.state !== 'absent') || (periodOwn9(rb, K) && rb[K] !== known.rev)) { fail = operationFailure9('read-required', 409); return; }
+      var loaded = periodLoaded9(K), seen = periodGetSeq9[K] || 0, sp = null;
+      meta.before[K] = periodOwn9(mem, K) ? mem[K] : null;
+      if (periodOwn9(set, K) && set[K] !== null) {
+        sp = periodSplit9(name, set[K]);
+        if (!sp) { fail = operationFailure9('changes', 400); return; }
+        meta.docs[K] = JSON.stringify(set[K]);
+        if (cj9(periodHeadNorm9(name, head.state === 'ready' ? JSON.parse(mem[hk]) : {})) !== cj9(sp.head)) out.set[hk] = sp.head;
+        sp.order.forEach(function (p) {
+          var pk = K + '@' + p, pn = operationKnown9[pk], v = sp.periods[p];
+          var live = pn && pn.stamp && operationSame9(pn.stamp) && pn.epoch === operationEpoch9;
+          if (live && pn.state === 'ready') { if (cj9(JSON.parse(mem[pk])) !== cj9(v)) out.set[pk] = v; return; }
+          if (!(live && pn.state === 'absent')) { operationKnown9[pk] = { state: 'absent', epoch: operationEpoch9, rev: 0, stamp: stamp, blind: 1 }; krev[pk] = 0; delete mem[pk]; delete baseVal[pk]; }
+          out.set[pk] = v;
+        });
+      }
+      loaded.forEach(function (p) { if ((!sp || !periodOwn9(sp.periods, p)) && (periodLoadSeq9[K + '@' + p] || 0) <= seen) out.del.push(K + '@' + p); });
+    });
+    if (fail) return fail;
+    if (!Object.keys(out.set).length && !out.del.length) {
+      var ticket = Object.freeze({ requestId: 'period-noop-' + (++periodSeq9) });
+      operationsTickets9.set(ticket, { ticket: ticket, stamp: stamp, keys: [], snap: { set: Object.create(null), del: Object.create(null) }, before: Object.create(null), epoch: operationEpoch9, state: 'confirmed', result: { ok: 1, noop: 1, receipt: { ok: 1, revs: {} } }, period: meta });
+      return { noop: ticket };
+    }
+    return { changes: out, meta: meta };
+  }
+  /* بعد إيصال الحفظ: تُبنى «الوثيقة» من جديد (ونصُّها نصُّ ما كتبته الصفحةُ إن طابقه، فمقارنةُ الصفحة لحفظها تصدق) */
+  function periodSettled9(operation) {
+    (operation.period.Ks || []).forEach(function (K) {
+      periodView9(K, true);
+      var doc = operation.period.docs[K];
+      if (doc !== null && doc !== undefined && periodOwn9(mem, K) && cj9(JSON.parse(doc)) === cj9(JSON.parse(mem[K]))) { mem[K] = doc; baseVal[K] = doc; }
+      notify(K);
+    });
+  }
+  /* الإيصالُ والرفضُ والتعارضُ بمفاتيح الفترات ⇒ بالمفتاح المنطقي للصفحات (تعرف مواردها بأسمائها لا بفتراتها) */
+  function periodDetails9(details) {
+    if (!operationObject9(details)) return details;
+    var out = operationClone9(details);
+    ['denied', 'conflicts'].forEach(function (kind) {
+      if (!operationObject9(out[kind])) return;
+      var m = {};
+      Object.keys(out[kind]).forEach(function (key) { var x = periodParse9(key), L = x ? x.K : key; if (!periodOwn9(m, L)) m[L] = out[kind][key]; });
+      out[kind] = m;
+    });
+    return out;
+  }
+  function periodCommitChanges9(operation, list) {
+    if (!operation.period) return list;
+    var out = list.filter(function (c) { return !periodParse9(c.key); });
+    (operation.period.Ks || []).forEach(function (K) { out.push({ key: K, before: operation.period.before[K], after: periodOwn9(mem, K) ? mem[K] : null }); });
+    return out;
+  }
+  /* خبرُ التغييرات: K تغيّر لأن فترةً منه تغيّرت (pk). إن كانت كلُّ فتراته المتغيّرة خارج ما حمّلته الصفحة، أو صدى حفظي (مراجعتُها عندي ≥ v)، فلا إسقاط */
+  function periodEcho9(K, v) {
+    if (!periodLogical9(K) || !Array.isArray(periodPk9)) return false;
+    var mine = periodPk9.filter(function (key) { var x = periodParse9(key); return x && x.K === K; });
+    if (!mine.length) return false;
+    return mine.every(function (key) {
+      var known = operationKnown9[key];
+      if (!known || !known.stamp || !operationSame9(known.stamp) || (known.state !== 'ready' && known.state !== 'absent')) return key !== K + '@' && !periodWanted9(K).periods.some(function (p) { return K + '@' + p === key; });
+      return known.epoch === operationEpoch9 && operationInteger9(known.rev) && operationInteger9(v) && known.rev >= v;
+    });
+  }
+  /* الملخّصات (المؤشرات والأرشيف): صفٌّ لكل فترة من الخادم بدل تحميل التاريخ — { ok, key, rows:[{p, grp, seq, rev, v}] } */
+  async function periodSummary9(name, q) {
+    var stamp = operationContext9(), K;
+    if (!stamp) return operationFailure9('session', 401);
+    try { K = operationScoped9(name); } catch (error) { return operationFailure9('scope', 400); }
+    if (!periodName9(name) || !q || !(Array.isArray(q.groups) && q.groups.length || (typeof q.from === 'string' && typeof q.to === 'string'))) return operationFailure9('summary', 400);
+    var url = '/api/operations/summary?key=' + encodeURIComponent(K) + (Array.isArray(q.groups) && q.groups.length ? '&grp=' + encodeURIComponent(q.groups.join(',')) : '&from=' + encodeURIComponent(q.from) + '&to=' + encodeURIComponent(q.to)) + '&uid=' + encodeURIComponent(stamp.uid);
+    try {
+      var response = await fetch(url, { credentials: 'same-origin', cache: 'no-store' }), data = await response.json();
+      if (!operationSame9(stamp)) return operationFailure9('stale', 409);
+      if (!response.ok || !operationObject9(data) || data.ok !== 1 || !Array.isArray(data.rows)) return Object.assign(operationFailure9((data && data.err) || 'summary', response.status), data && typeof data.msg === 'string' ? { msg: data.msg } : {});
+      return { ok: 1, key: K, rows: data.rows };
+    } catch (error) { return operationFailure9('summary', 0); }
+  }
+  function periodForget9(key, quiet) {
+    if (periodLogical9(key)) { periodForgetAll9(key); return; }
+    var x = periodParse9(key);
+    if (x && operationKnown9[x.K] && operationKnown9[x.K].split && operationKnown9[x.K].state !== 'unloaded') { delete mem[x.K]; delete baseVal[x.K]; operationKnown9[x.K] = { state: 'unloaded' }; if (!quiet) notify(x.K); }
+  }
   window.addEventListener('bassam:authz', function () { operationInvalidate9(); });
   function liveLog9(kind, why, keys) { try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog(kind, 'operations', why, keys); } catch (e) { /* تشخيصٌ فقط */ } }
   // Only this closure can prove that a dispatched change event already has a
@@ -1777,7 +2161,7 @@
       });
       // Keep the cursor behind a queued/uncertain command. The normal polling
       // backoff retries after that exact ticket is settled; never rebase it.
-      if (operationKeys.some(function (key) { return busyKey9(key) || !!(operationActive9 && operationActive9.keys.indexOf(key) !== -1); }))
+      if (operationKeys.some(function (key) { return busyKey9(key) || !!(operationActive9 && operationActive9.keys.some(function (k) { return k === key || k.indexOf(key + '@') === 0; })); }))   /* V7 · 53: وفتراتُه */
         return Promise.reject(Error('operations-sync-pending'));
       // Do not render a transient empty value between invalidation and ACK.
       // A failed read still publishes its normal fail-closed error state.
@@ -1787,6 +2171,7 @@
          وإن فشلت القراءةُ أُسقط كما كان يُسقط — فالنتيجةُ عند الفشل والمنع واحدة. ما عداه يُسقط قبل القراءة كما كان. */
       var echoKeys9 = operationKeys.filter(function (key) {
         var known = operationKnown9[key];
+        if (periodLogical9(key)) return periodEcho9(key, v);   /* V7 · 53 */
         return !!(known && known.stamp && operationSame9(known.stamp) && ['ready', 'absent'].includes(known.state) && known.epoch === operationEpoch9 && operationInteger9(known.rev) && operationInteger9(v) && known.rev >= v);
       });
       var dropKeys9 = operationKeys.filter(function (key) { return echoKeys9.indexOf(key) === -1; });
@@ -1941,6 +2326,7 @@
             try { if (j.am !== undefined || j.az) authzSync9(j); } catch (eA9) {}   /* KIVO_243: الخادمُ في بيئة الإنفاذ وحده يرسل am/az */
             if (!(j.v != null && j.v > since)) return;
             var ks = j.keys || [];
+            periodPk9 = Array.isArray(j.pk) ? j.pk : null;   /* V7 · 53: فتراتُ ما تغيّر */
             return pull9(ks, j.v).then(function (result) {
               var meNow = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user(), meContext = operationContext9();
               if ((j.meChanged === 1 || j.tasksChanged === 1) && meStamp && meContext && meContext.uid === meStamp.uid && meContext.dept === meStamp.dept && meNow && meIdentity &&
@@ -2024,7 +2410,9 @@
       reference: operationReference9,
       key: operationScoped9,
       get: function (name) { return operationValue9(operationScoped9(name)); },
-      text: function (name) { var value = operationValue9(operationScoped9(name)); return value === null ? null : JSON.stringify(value); },
+      /* V7 · 53 (S2 في العميل): النصُّ المخزَّن نفسُه — كان يُفكّ ثم يُرمَّز في كل نداء (الصفحاتُ تسأل عنه لكل موظفٍ وعنصر: 16 ث من 20 في فتح الخطة بـ500 موظف).
+         mem يحمل دائماً ناتجَ JSON.stringify، فهو هو JSON.stringify(JSON.parse(mem)) حرفاً؛ والفحوصُ فحوصُ value نفسُها */
+      text: function (name) { var key = operationScoped9(name); return operationText9(key); },
       state: function (name) { var key = operationScoped9(name), known = operationKnown9[key]; if (KIVO.__bsReadHook) KIVO.__bsReadHook(key); return known && known.stamp && operationSame9(known.stamp) ? known.state : 'unloaded'; },
       draft: operationDraft9,
       begin: operationBegin9,
@@ -2049,7 +2437,18 @@
         return Array.from(new Set(parts.filter(Boolean))).join(' · ');
       },
       ready: operationReady9,
-      invalidate: operationInvalidate9
+      invalidate: operationInvalidate9,
+      /* V7 · 53: التخزين بالفترة — split(اسم) · want(اسم, {groups, periods}) · loaded(اسم) · period(اسم, فترة) · summary(اسم, {groups} | {from, to}) */
+      split: periodName9,
+      want: periodWant9Read,
+      loaded: function (name) { var K = operationScoped9(name); return { groups: Object.keys(periodGroups9[K] || {}), periods: periodLoaded9(K) }; },
+      period: function (name, p) {
+        var K = operationScoped9(name), known = operationKnown9[K + '@' + p];
+        if (!known || !known.stamp || !operationSame9(known.stamp)) return undefined;
+        return known.state === 'ready' ? JSON.parse(mem[K + '@' + p]) : known.state === 'absent' ? null : undefined;
+      },
+      summary: periodSummary9,
+      index: periodIndex9
     })
   };
 })();

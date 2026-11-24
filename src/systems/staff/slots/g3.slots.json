@@ -1,4 +1,12 @@
 {
+ "store.period.staff": {
+  "order": 10,
+  "text": " bassam_staffing_v3: '',"
+ },
+ "store.periodMonthly.staff": {
+  "order": 10,
+  "text": " bassam_staffing_v3: 1,"
+ },
  "store.opResources.staff": {
   "order": 10,
   "text": " 'bassam_staffing_v3', 'bassam_staffing_v2',\n    'bassam_staffing_snap_v1', 'bassam_staffing_locks_v1', 'bassam_callsigns_v1', 'bassam_perm_limit_v1',"

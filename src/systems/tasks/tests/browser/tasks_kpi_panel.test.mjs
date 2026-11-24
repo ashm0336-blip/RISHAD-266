@@ -55,8 +55,9 @@ test('KPIs page · tasks tab: owner panel values, month navigation, no saves; Ta
     await s.go('#/kpis', 4500);
     assert.ok(await click(s.page, 'مؤشرات المهام'), 'manager with tasks:view sees the tasks tab');
     await s.page.waitForTimeout(2500);
-    const store = await s.page.evaluate(() => KIVO.__BS_SRV.operations.get('bassam_tasks_v1'));
-    assert.ok(store && Object.keys(store).length > 3, 'the page holds the unit tasks store');
+    /* V7 · 53: the tasks store is held by period — the page loads the months it shows; the owner computation runs on the stored store (server) */
+    const store = (await s.api('/api/operations/read?keys=' + encodeURIComponent('bsdept:' + A + ':bassam_tasks_v1'))).j.resources['bsdept:' + A + ':bassam_tasks_v1'];
+    assert.ok(store && Object.keys(store).length > 3, 'the unit tasks store (server)');
     let [y, m] = [T.y, T.m];
     const want0 = expected(store, y, m), got0 = await shown(s.page);
     assert.ok(want0.cards.length === 4, 'fixture month has tasks (4 cards)');
