@@ -48,9 +48,16 @@ function perm44RolesWhy(A, k, newVal, curVal) {
       var c = D0.changes[i], sysEntries = [];
       if (c.what === 'sys' && c.to) sysEntries.push([c.sys, c.to]);
       if (c.what === 'role' && c.to && isObj(c.to.sys)) for (var s in c.to.sys) sysEntries.push([s, c.to.sys[s]]);
+      var rl = E.roleById(n, c.role), rs = rl && isObj(rl.sys) ? rl.sys : {};
       for (j = 0; j < sysEntries.length; j++) {
-        var ks = perm44KeysFor(sysEntries[j][0], sysEntries[j][1].lvl, sysEntries[j][1].keys);
-        for (var q = 0; q < ks.length; q++) { if (!C(ks[q])) return 'cap'; if (!perm44Held(A, d, ks[q])) return 'grant'; }
+        var ks = perm44KeysFor(sysEntries[j][0], sysEntries[j][1].lvl, sysEntries[j][1].keys), hostRow = !/^lens\./.test(sysEntries[j][0]);
+        for (var q = 0; q < ks.length; q++) {
+          /* V7 · د7 (أ): في صفِّ النظام المضيف مفتاحُ عدسةٍ لها صفُّها في الدور لا يمنحه المضيف (compileRole)، ومفتاحُ عدسةٍ مطفأةٍ للوحدة يُقصّ بالسقف كما يُقصّ وقتَ القرار
+             — لا يُرفض به حفظُ صفِّ المضيف؛ وصفُّ العدسة المطفأة نفسُه يبقى مرفوضاً ('cap') */
+          var ow = (KIVO_REGISTRY.byKey[ks[q]] || {}).owner || '';
+          if (hostRow && /^lens\./.test(ow) && (isObj(rs[ow]) || !C(ks[q]))) continue;
+          if (!C(ks[q])) return 'cap'; if (!perm44Held(A, d, ks[q])) return 'grant';
+        }
       }
       if (c.what === 'ex' && c.to) { if (!E.grantable(c.to.key) || !C(c.to.key)) return 'cap'; if (!perm44Held(A, d, c.to.key)) return 'grant'; }
       if ((c.what === 'person' || c.what === 'ex') && c.person === String(u.ekey || '')) return 'self';   /* لا يمنح المرءُ نفسَه */

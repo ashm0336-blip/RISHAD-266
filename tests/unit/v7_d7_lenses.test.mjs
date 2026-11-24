@@ -54,7 +54,15 @@ test('② the shared engine: each lens is a row with the systems\' levels; its c
     assert.ok(ed.includes('lens.zones.create') && ed.includes('lens.zones.data.edit') && !ed.includes('lens.zones.delete') && !ed.includes('lens.zones.geometry.edit'), JSON.stringify(ed));
     assert.ok(c.ev('KIVO.Perm44.keysFor("lens.zones", "sensitive")').includes('lens.zones.delete'));
     assert.ok(!c.ev('KIVO.Perm44.keysFor("lens.zones", "sensitive")').includes('lens.zones.enable'), 'the enable gate is not granted by a role');
-    for (const s of ['plan', 'daily']) assert.deepEqual(c.ev('KIVO.Perm44.sysKeys(' + JSON.stringify(s) + ')').filter((k) => /^lens\./.test(k)), [], s + ': the host row grants no lens key (existing roles unchanged)');
+    /* existing roles unchanged: the host row still carries its lenses' keys (as before); a lens row, when present, governs that lens alone */
+    const lensOfPlanView = c.ev('KIVO.Perm44.keysFor("plan", "view")').filter((k) => /^lens\./.test(k));
+    for (const L of ALL) assert.ok(lensOfPlanView.includes('lens.' + L + '.view'), 'plan@view still grants lens.' + L + '.view');
+    const comp = (sys) => c.ev('KIVO.Perm44.compileRole(' + JSON.stringify({ id: 'x', name: 'x', sys }) + ', null)');
+    const base = comp({ plan: { lvl: 'edit' } }), over = comp({ plan: { lvl: 'edit' }, 'lens.zones': { lvl: 'view' } });
+    assert.ok(base.includes('lens.zones.data.edit') && base.includes('lens.gates.edit'));
+    assert.ok(over.includes('lens.zones.view') && !over.includes('lens.zones.data.edit') && !over.includes('lens.zones.create'), 'the lens row governs zones');
+    assert.ok(over.includes('lens.gates.edit'), 'the other lenses follow the host level as before');
+    assert.deepEqual(base.filter((k) => !/^lens\.zones\.|^ref\.zone\./.test(k)), over.filter((k) => !/^lens\.zones\.|^ref\.zone\./.test(k)), 'nothing else moves');
     assert.equal(c.ev('KIVO.Perm44.ceiling(' + JSON.stringify(A) + ').key("lens.dens.view")'), true);
     /* host OFF (both hosts) ⇒ the lens keys are off the ceiling */
     const ALLP = c.ev('KIVO.BassamPerm.PAGE_KEYS');
@@ -72,7 +80,7 @@ test('③ a role with a lens at «مشاهدة» carries its view keys only; at 
   const save = async (lvl) => {
     const c = await clientOf(W, 'su', A);
     try {
-      const dr = c.K.Perm44.draft(A), role = { id: 'TEST_ONLY_rl', name: 'TEST_ONLY دور عدسة', desc: '', sys: { plan: { lvl: 'view' }, 'lens.zones': { lvl } } };
+      const dr = c.K.Perm44.draft(A), role = { id: 'TEST_ONLY_rl', name: 'TEST_ONLY دور عدسة', desc: '', sys: { plan: { lvl: 'edit' }, 'lens.zones': { lvl } } };
       assert.equal(c.K.Perm44.setRoles(dr, A, { v: 1, roles: [role], people: { [E_ROLE]: { role: role.id, ex: [] } } }).ok, true);
       const x = await c.K.Perm44.commit(dr); assert.equal(x.ok, true, 'saved by the worker: ' + JSON.stringify(x));
     } finally { c.dispose(); }
@@ -169,6 +177,27 @@ test('⑤ «الأنظمة»: under the host system its six lenses with switches
     assert.equal(m.ev('KIVO.BassamPerm.lensOn("gates", ' + JSON.stringify(A) + ')'), false, 'map buttons · panels: lensOn false');
     assert.equal(m.ev('KIVO.BassamPerm.lensOn("zones", ' + JSON.stringify(A) + ')'), true);
   } finally { m.dispose(); }
+});
+
+test('⑥ the unit manager grants within his ceiling with a lens OFF for his unit: a host row and an ON lens row are accepted; the OFF lens is refused (ceiling)', needs('plan', 'daily'), async () => {
+  const W = await holdersWorld();
+  await applyState(W, 'allOn');
+  const c = await clientOf(W, 'su', A);
+  try { assert.equal(c.P.setDeptLenses(A, ALL.filter((k) => k !== 'gates')).ok, true); await c.settle(); } finally { c.dispose(); }
+  const save = async (sys) => {
+    const m = await clientOf(W, 'mgr', A);
+    try {
+      const dr = m.K.Perm44.draft(A), role = { id: 'TEST_ONLY_rm', name: 'TEST_ONLY دور المدير', desc: '', sys };
+      assert.equal(m.K.Perm44.setRoles(dr, A, { v: 1, roles: [role], people: { [E_ROLE]: { role: role.id, ex: [] } } }).ok, true);
+      return await m.K.Perm44.commit(dr);
+    } finally { m.dispose(); }
+  };
+  const ok = await save({ plan: { lvl: 'edit' }, 'lens.zones': { lvl: 'view' } });
+  assert.equal(ok.ok, true, 'host row + ON lens row accepted: ' + JSON.stringify(ok));
+  const p = await plusOf(W, 'role', A);
+  assert.ok(p.includes('lens.zones.view') && !p.includes('lens.zones.data.edit') && !p.some((k) => /^lens\.gates\./.test(k)), JSON.stringify(p));
+  const no = await save({ plan: { lvl: 'edit' }, 'lens.gates': { lvl: 'view' } });
+  assert.equal(no.ok, false, 'the OFF lens row is refused');
 });
 
 function deq6(L, m) { assert.deepEqual(L, ALL, m); }

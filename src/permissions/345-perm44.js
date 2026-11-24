@@ -27,7 +27,7 @@ function perm44Make(R, D) {
     var o = R.owners[e.owner], own = [];
     if (e.ownerKind === 'page') { ix.leaf[k] = e.owner; own = [e.owner]; }
     else if (e.ownerKind === 'reference') { ix.leaf[k] = (o && o.managedIn) || leaves[0] || ''; own = [ix.leaf[k]]; }
-    else if (e.ownerKind === 'lens') { ix.hosts[k] = leaves.length ? leaves : ((LZ[e.owner] && LZ[e.owner].hosts) || []).slice(); own = ix.hosts[k]; }   /* V7 · د7 (أ): بلا ذرّة = مضيفو العدسة (= 057 enfIx) — كان [] فلا سقفَ لمفتاح العدسة */
+    else if (e.ownerKind === 'lens') { ix.hosts[k] = leaves.length ? leaves : ((LZ[e.owner] && LZ[e.owner].hosts) || []).slice(); own = ix.hosts[k]; }   /* V7 · د7 (أ): مفتاحُ عدسةٍ بلا ذرّة (احتياطاً) = مضيفو العدسة من ملفّها — كما 057 enfIx */
     var ss = [];
     for (j = 0; j < own.length; j++) if (leafSys[own[j]] && ss.indexOf(leafSys[own[j]]) === -1) ss.push(leafSys[own[j]]);
     if (ss.length) ix.sys[k] = ss;
@@ -37,8 +37,8 @@ function perm44Make(R, D) {
   function sysKeys(s) {
     if (sysKeysC[s]) return sysKeysC[s].slice();
     var out = [], n;
-    /* V7 · د7 (أ): صفُّ العدسة = مفاتيحُها (مالكُها lens.<L>) · وصفُّ النظام المضيف بلا مفاتيح العدسات — فلا يتغيّر ما يمنحه دورٌ قائم */
-    for (n = 0; n < R.keys.length; n++) { var q = R.keys[n]; if (!grantable(q)) continue; if (LZ[s] ? R.byKey[q].owner === s : (ix.sys[q] && ix.sys[q].indexOf(s) !== -1 && !LZ[R.byKey[q].owner])) out.push(q); }
+    /* V7 · د7 (أ): صفُّ العدسة = مفاتيحُها (مالكُها lens.<L>) · وصفُّ النظام المضيف كما كان (يحمل مفاتيحَ عدساته — فلا يتغيّر ما يمنحه دورٌ قائم) */
+    for (n = 0; n < R.keys.length; n++) { var q = R.keys[n]; if (!grantable(q)) continue; if (LZ[s] ? R.byKey[q].owner === s : (ix.sys[q] && ix.sys[q].indexOf(s) !== -1)) out.push(q); }
     return (sysKeysC[s] = out).slice();
   }
   function levels() { return clone(D.levels); }
@@ -80,7 +80,12 @@ function perm44Make(R, D) {
     for (s in role.sys) {
       var x = role.sys[s]; if (!isObj(x)) continue;
       var ks = keysFor(s, x.lvl, x.keys);
-      for (n = 0; n < ks.length; n++) if (!ceilingFn || ceilingFn(ks[n])) map[ks[n]] = 1;
+      for (n = 0; n < ks.length; n++) if (!ceilingFn || ceilingFn(ks[n])) {
+        /* V7 · د7 (أ): صفُّ العدسة في الدور يحكم مفاتيحَها وحده — فلا يمنحها صفُّ مضيفها؛ وبلا صفٍّ لها تتبع مستوى المضيف كما كانت */
+        var ow = R.byKey[ks[n]] && R.byKey[ks[n]].owner;
+        if (!LZ[s] && LZ[ow] && isObj(role.sys[ow])) continue;
+        map[ks[n]] = 1;
+      }
     }
     return order(map);
   }
