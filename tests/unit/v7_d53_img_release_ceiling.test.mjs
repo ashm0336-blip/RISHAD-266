@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { target, png } from './v7_d6_import_fx.mjs';
 import { operationSaveBody } from './world_fx.mjs';
 import { D1_LIMITS } from './harness.mjs';
+import { seed } from '../load/s1_world.mjs';
 
 const A = 'TEST_ONLY_A', B = 'TEST_ONLY_B', K = (d, r) => 'bsdept:' + d + ':' + r;
 const IDS = ['img_testonly_mapone', 'img_testonly_maptwo', 'img_testonly_mapthree'];
@@ -25,6 +26,8 @@ async function world() {
   const st = [];
   IDS.forEach((id, i) => { st.push(...W.kvPutStmts(env, 'imgs', id, bodies[i])); st.push(env.DB.prepare("INSERT INTO imgown(img,st,k,uid,dept,ts) VALUES(?1,'claim','',?2,'',?3)").bind(id, T.su.uid, Date.now())); });
   await env.DB.batch(st);
+  /* V7 · 53: فهرسُ imgref مكتملٌ لسجلات هذه القاعدة (كلُّها كتبها هذا الإصدار) — كما يختمه imgRefScan في أول مرور للكنس */
+  env.DB.q("INSERT INTO meta(k,v) VALUES('imgref_scan_v1','done') ON CONFLICT(k) DO UPDATE SET v='done'");
   const save = async (k, v) => {
     const rd = await T.call('/api/operations/read?keys=' + encodeURIComponent(k), { ck: T.su.ck });
     assert.equal(rd.status, 200, rd.t.slice(0, 200));
@@ -38,8 +41,8 @@ async function world() {
   /* الإدارة ب: جدولٌ شهري لـ500 موظف — بياناتُ إدارةٍ أخرى لا يمسّها الحفظ */
   const eids = Array.from({ length: EMP }, (_, i) => 'TEST_ONLY_e' + i), staffing = {};
   for (let m = 0; m < STF_M; m++) staffing[(1446 + Math.floor(m / 12)) + "-" + (m % 12 + 1)] = Object.fromEntries(eids.map((e, i) => [e, { shift: 'TEST_ONLY-' + 'ABCD'[(i + m) % 4], rest: [['fri', 'sat', 'sun'][i % 3]], leaves: {}, perm: {}, cs: '', muk: false }]));
-  const s0 = await save(K(B, 'bassam_staffing_v3'), staffing);
-  assert.equal(s0.status, 200, s0.t.slice(0, 300));
+  /* V7 · 53: يُبذر بالمرمِّز نفسِه (حفظُ 26 شهراً دفعةً واحدة يُرفض الآن مبكراً 413 batch-budget) — الصفوفُ هي التي كان يكتبها الحفظ */
+  seed(T.lab, { bassam_staffing_v3: staffing }, {}, B);
   return { T, env, save, plan };
 }
 

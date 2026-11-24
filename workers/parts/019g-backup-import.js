@@ -383,14 +383,18 @@ async function rsImportRoute(env, request, ss) {
                 D.prepare('INSERT INTO ' + T + "(snapshot_id,domain,table_key,row_number,row_json) SELECT ?3,'operations-sql',?4,ROW_NUMBER() OVER (ORDER BY row_key),json_array(" + packs.join(',') + ') FROM ' + t + where).bind(info.dept, info.resource, snap, k + ':' + t)];
             });
           });
+          var st0 = plan.statements.length;
           plan.statements.push(D.prepare('UPDATE ops_nodes SET parent_key=NULL' + where).bind(info.dept, info.resource));
           names.slice().reverse().forEach(function (t) { plan.statements.push(D.prepare('DELETE FROM ' + t + where).bind(info.dept, info.resource)); });
           plan.revisionKeys.push(k); plan.counts.operations++;
+          /* V7 · 53: كتابةٌ بالجملة لا تعرف فتراتها ⇒ K@* (مراجعةُ كل فترةٍ */
+          if (opSplitResource(k)) { plan.revisionKeys.push(k + '@*'); plan.statements.push(D.prepare('DELETE FROM ops_period_summary WHERE department_id=?1 AND resource=?2').bind(info.dept, info.resource)); }
+          plan.statements.slice(st0).forEach(function (st) { opTag(st, [k]); });
         });
         rows.sort(function (x, y) { return x[2] - y[2]; }).forEach(function (r) {
           var cols = ocPhysicalTables(opInfo(r[0]).prepared)[r[1]], mutable = cols.filter(function (c) { return c !== 'department_id' && c !== 'resource' && c !== 'row_key'; });
-          plan.statements.push(D.prepare('INSERT INTO ' + r[1] + '(' + cols.join(',') + ') SELECT ' + cols.map(function (c) { return "json_extract(j.value,'$." + c + "')"; }).join(',') + ' FROM ' + T +
-            " s, json_each(s.row_json) j WHERE s.snapshot_id=?1 AND s.domain='q' AND s.row_number=?2 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET " + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(id, r[2]));
+          plan.statements.push(opTag(D.prepare('INSERT INTO ' + r[1] + '(' + cols.join(',') + ') SELECT ' + cols.map(function (c) { return "json_extract(j.value,'$." + c + "')"; }).join(',') + ' FROM ' + T +
+            " s, json_each(s.row_json) j WHERE s.snapshot_id=?1 AND s.domain='q' AND s.row_number=?2 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET " + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(id, r[2]), [r[0]]));
         });
         /* ما أُخرج من نصّ الملف ليُرسل دفعاتٍ ليس «مجموعةً غائبة عن النسخة» */
         Object.keys(M.slices).forEach(function (k) { var gone = 'operations:' + fk(k); summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== gone; }); });

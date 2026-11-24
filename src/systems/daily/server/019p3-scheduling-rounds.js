@@ -59,6 +59,7 @@ function osSchemaRoundsResources() {
     {
       resource: "bassam_rounds_v1",
       name: "rounds",
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
       schema: ocMap("ops_rounds", null, {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
@@ -78,6 +79,7 @@ function osSchemaRoundsResources() {
     {
       resource: DAILY_ARC_RES,
       name: "rounds_arc",
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds },
       late: 1,   /* نسخٌ احتياطية قبل هذه الحزمة لا تحمله: يُستعاد منها فارغاً (019t opValidateBackupDomains) */
       schema: ocMap("ops_rounds_arc", null, {
         fixed: { __pMig: ocScalar("scalar") },
