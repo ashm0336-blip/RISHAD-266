@@ -432,8 +432,9 @@
       <sc-if value="{{bkcSkipOn}}" hint-placeholder-val="{{ false }}">
       <div data-bkc="skip-head" style="margin-top:4px;font-weight:600;color:var(--fg-xb45309)">{{bkcSkipHead}}</div>
       <ul data-bkc="skip" style="margin:2px 0 0;padding:0 18px 0 0;max-height:132px;overflow:auto">
-        <sc-for list="{{bkcSkip}}" as="x" hint-placeholder-count="2"><li><bdi dir="ltr">{{x.k}}</bdi> — {{x.text}}</li></sc-for>
+        <sc-for list="{{bkcSkip}}" as="x" hint-placeholder-count="2"><li><bdi dir="auto">{{x.k}}</bdi> — {{x.text}}</li></sc-for>
       </ul>
+      <sc-if value="{{bkcSkipNoteOn}}" hint-placeholder-val="{{ false }}"><div data-bkc="skip-note" style="margin-top:2px">{{bkcSkipNote}}</div></sc-if>
       </sc-if>
     </div>
     </sc-if>

@@ -234,7 +234,44 @@ function perm44Make(R, D) {
     var base = Array.isArray(keys) ? keys : [];
     return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
   }
-  return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
+  /* V7 · 53 (ملحق 5): تضييقُ أوراق الموظفين في استيراد نسخة الإدارة بدل رفضها كلِّها — القاعدةُ الواحدة في الواجهة (548 summary: ما لن يُنقل قبل الرفع)
+     والخادم (018c permsImportNarrow ← 019d). حكمُ permsRule/permsGrantWhy نفسُه بخطواته: الذاتُ والهدفُ (لا تُكتب ورقتُه: يبقى القائم) ·
+     السقف (صفحةٌ خارجه لا يُضاف إليها ما لم يكن في الورقة القائمة) · المنح (فعلٌ لا يملكه المستورِد ولم يكن للموظف) · العدسة (ورقةٌ جديدة تحمل صفحةً
+     لعدسةٍ لا يفتحها المستورِد). ما يزيد يُسقط ولا يُكتب، ويُعاد بنداً بنداً { e, p, a }. لا يفتح شيئاً: الخادمُ يتحقّق بعدها بالقاعدة نفسِها بلا تغيير.
+     J (أدواتُ المضيف): self · target(ek) · kind(ek) ⇒ { inh, inhAll } · expand(ورقة) · capAll() · inCap(pk) · have(leaf) ⇒ أفعال · isContainer(pk) · lensHosts(ek) ⇒ بادئات.
+     cur/inc: { مفتاح: ورقة } القائمُ والقادم (بلا صحائف المديرين) ⇒ { out, drops } — out: القادمُ مضيَّقاً + القائمُ الذي لا يُحذف (حذفُه توسيع) */
+  function narrowSheets(cur, inc, J) {
+    cur = isObj(cur) ? cur : {}; inc = isObj(inc) ? inc : {};
+    var out = {}, drops = [], ek, pk, lf;
+    function A(v) { return Array.isArray(v) ? v : []; }
+    function split(e, p, list, ok) { var y = []; list.forEach(function (a) { if (ok(a)) y.push(a); else drops.push({ e: e, p: p, a: a }); }); return y; }
+    function bar(ek) { return ek === J.self || !J.target(ek); }
+    for (ek in inc) {
+      var s0 = isObj(cur[ek]) ? cur[ek] : undefined, s1 = inc[ek];
+      if (same(s0, s1) || !isObj(s1)) { out[ek] = clone(s1); continue; }   /* بلا تغيير · أو شكلٌ يحكمه التحقّق */
+      if (bar(ek)) { if (s0) out[ek] = clone(s0); for (pk in s1) split(ek, pk, A(s1[pk]), function (a) { return s0 && A(s0[pk]).indexOf(a) !== -1; }); continue; }
+      var t = J.kind(ek) || {}, x0 = s0 ? J.expand(s0) : {}, s = {}, res = {};
+      for (pk in s1) {
+        var h = J.inCap(pk) ? null : A(s0 && s0[pk]).concat(A(x0[pk])), k1 = split(ek, pk, A(s1[pk]), function (a) { return !h || h.indexOf(a) !== -1; });
+        if (k1.length || !A(s1[pk]).length) s[pk] = k1;
+      }
+      var was = s0 ? x0 : t.inhAll ? J.capAll() : {}, cutL = s0 || t.inhAll ? [] : J.lensHosts(ek) || [];
+      for (pk in s) {
+        var one = {}, part = {}, n0 = drops.length; one[pk] = s[pk];
+        var lv = J.isContainer(pk) ? J.expand(one) : one;
+        for (lf in lv) {
+          var cut = cutL.some(function (x) { return lf === x || lf.indexOf(x + '/') === 0; }), ok = split(ek, lf, A(lv[lf]), function (a) { return !cut && (A(was[lf]).indexOf(a) !== -1 || A(J.have(lf)).indexOf(a) !== -1); });
+          if (ok.length) part[lf] = ok;
+        }
+        if (drops.length === n0) res[pk] = s[pk]; else for (lf in part) res[lf] = part[lf];
+      }
+      out[ek] = res;
+    }
+    /* حذفُ ورقةٍ قائمة: لصاحبٍ يرث (حذفُها توسيعٌ إلى السقف) أو لا تُكتب ورقتُه — تبقى كما هي */
+    for (ek in cur) if (!(ek in inc) && isObj(cur[ek]) && (bar(ek) || (J.kind(ek) || {}).inh)) out[ek] = clone(cur[ek]);
+    return { out: out, drops: drops };
+  }
+  return { offClosure: offClosure, offWith: offWith, narrowSheets: narrowSheets, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
            keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, derived: derived, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }
@@ -444,6 +481,7 @@ var API = {
   isSuper: isSup,
   mgrOf: mgrOf, unitMgr: function () { return mgrOf(curUser(), activeDept()); },
   names: function () { return JSON.parse(JSON.stringify(eng().names)); },
+  narrowSheets: function (cur, inc, J) { return eng().narrowSheets(cur, inc, J); },   /* V7 · 53 (ملحق 5): معاينةُ تضييق أوراق الموظفين في استيراد نسخة الإدارة (548) */
   RES: RES
 };
 KIVO.Perm44 = Object.freeze(API);

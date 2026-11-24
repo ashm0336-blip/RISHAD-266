@@ -204,6 +204,7 @@ var API = {
   isSuper: isSup,
   mgrOf: mgrOf, unitMgr: function () { return mgrOf(curUser(), activeDept()); },
   names: function () { return JSON.parse(JSON.stringify(eng().names)); },
+  narrowSheets: function (cur, inc, J) { return eng().narrowSheets(cur, inc, J); },   /* V7 · 53 (ملحق 5): معاينةُ تضييق أوراق الموظفين في استيراد نسخة الإدارة (548) */
   RES: RES
 };
 KIVO.Perm44 = Object.freeze(API);

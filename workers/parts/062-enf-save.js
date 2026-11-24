@@ -48,6 +48,8 @@ async function enfSavePrep(env, A, body, set, del, keysOk, markers, restoreMarke
     X.restore = true; X.snapKind = 'restore';
     var touched = {}, glob = false;
     for (i = 0; i < ks.length; i++) { var dr = parseKey(ks[i]).dept; if (dr) touched[dr] = 1; else if (!(ks[i] === K_PERM && A.__srvRst && restoreMarker && restoreMarker.scope === 'dept')) glob = true; }   /* V7 · د6 (QA ٦): شريحةُ صلاحيات الإدارة في استعادتها الخادمية المتحقَّقة (019d rsPermSlice — تبنيها من القائم فلا يتغيّر خارج الإدارة شيء) ليست «مفتاحاً عاماً» */
+    /* V7 · 53 (ك1 · تضييقُ العدسات): استعادةُ إدارةٍ لم تغيّر إلا شريحةَ صلاحياتها تمسّ إدارتَها — كانت «لا إدارة» فيُرفض مديرُها not-mgr. isMgrOf وbackup.restore يُحكمان عليها أدناه كما هما */
+    if (A.__srvRstD && !glob && ks.indexOf(K_PERM) !== -1 && restoreMarker && restoreMarker.scope === 'dept') touched[A.__srvRstD] = 1;
     var isSup = A.u.role === 'super', nT = Object.keys(touched).length, isMgr = !glob && nT > 0, hasKey = isSup || (!glob && nT > 0), dd;
     for (dd in touched) { if (!isMgrOf(A, dd)) isMgr = false; if (!isSup && !enfHeld(A, dd, 'backup.restore')) hasKey = false; }   /* المفتاحُ في كل إدارةٍ تمسّها الحفظة */
     var reason = (restoreMarker && restoreMarker.reason) || '', wk; if (!String(reason).trim()) for (wk in X.why) { reason = X.why[wk]; break; }

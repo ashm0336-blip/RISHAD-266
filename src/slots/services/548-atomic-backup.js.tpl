@@ -34,6 +34,35 @@
     var now = context();
     return !!now && now.uid === stamp.uid;
   }
+  /* V7 · 53 (ملحق 5): أسبابُ رفض صلاحيات الموظفين بالعربي (018c permsRule/permsGrantWhy) — لا يُعرض رمزٌ للمستخدم */
+  var PERM_WHY = { grant: 'تتضمّن صلاحية لا تملك منحها', cap: 'تتضمّن صفحة خارج سقف الإدارة', super: 'تغيّر سقف الإدارة (لمدير المنصة وحده)' };   /* الذاتُ والهدفُ لا يبقيان بعد التضييق (018c) */
+  /* أسماءُ الموظفين من سجلّ الموظفين في آخر نسخةٍ قُرئت — للملخّص ورسالة الرفض */
+  var NAMES = {};
+  function namesOf(file) { NAMES = {}; try { JSON.parse(file.data.bassam_employees_v1).forEach(function (x) { if (x && x.name) NAMES[x.eid] = String(x.name); }); } catch (e) { /* بلا أسماء: يُعرض المفتاح */ } }
+  function empName(ek) { return NAMES[ek] || ek; }
+  function pageName(p) { var P = KIVO.BassamPerm; return p === 'admin/ptpls' ? 'الإعدادات · قوالب الصلاحيات' : P && P.nameOf ? P.nameOf(p) : p; }
+  /* المُسقَطُ بالعربي مجمَّعاً لكل موظفٍ وصفحة: { k: اسمُ الموظف, why: 'perm-grant', text: الصفحةُ والإجراءات } */
+  function permItems(list) {
+    var by = {}, A = (KIVO.BassamPerm || {}).ACT_NAMES || {};
+    (list || []).forEach(function (x) { if (x && x.why === 'perm-grant' && x.e) { var g = by[x.e + ' ' + x.p] = by[x.e + ' ' + x.p] || { k: empName(x.e), why: x.why, n: null, p: x.p, a: [] }; if (g.a.indexOf(A[x.a] || x.a) < 0) g.a.push(A[x.a] || x.a); } });
+    return Object.keys(by).map(function (id) { var g = by[id]; return { k: g.k, why: g.why, n: null, text: 'الصفحة «' + pageName(g.p) + '» — ' + g.a.join('، ') + ' (لا تملك منحها)' }; });
+  }
+  /* معاينةُ التضييق قبل الرفع — المحرّكُ المشترك نفسُه (perm44 narrowSheets) بأدوات الواجهة (331): ما لا تستطيع منحه من أوراق موظفي النسخة. الخادمُ يحسمه بعد الرفع */
+  function permPreview(file, scope) {
+    try {
+      var P = KIVO.BassamPerm, u = KIVO.BassamAuth.user(), d = scope.departmentId, mine = null, cap = P.deptCap(d), cur = {}, inc = {}, k, mgr = function (x) { return /^mgr:/.test(x); };
+      if (u.role === 'super' || scope.kind !== 'dept') return [];
+      var c0 = (JSON.parse(localStorage.getItem('bassam_perms_v1')).emps || {})[d] || {}, mi = {};
+      P.p24.grantOf(u.ekey, d).minus.forEach(function (x) { ((P.p24.R().byKey[x] || {}).asisMap || []).forEach(function (y) { mi[y] = 1; }); });   /* ما ضيّقه مديرُ المنصة بالمنح الصريح (كمفاتيح الإنفاذ في الخادم) */
+      for (k in c0) if (!mgr(k)) cur[k] = c0[k];
+      for (k in file.perms.emps) if (!mgr(k)) inc[k] = file.perms.emps[k];
+      return KIVO.Perm44.narrowSheets(cur, inc, {
+        self: String(u.ekey || ''), target: function (x) { return !mgr(x); }, kind: function () { return {}; }, isContainer: P.isContainer, lensHosts: function () { return []; },
+        expand: function (x) { return P.expandPerms(x, d); }, capAll: function () { return P.capAllPerms(d); }, inCap: function (pk) { return cap.indexOf(pk.split('/')[0]) !== -1; },
+        have: function (lf) { return ((mine || (mine = P.myPerms()))[lf] || []).filter(function (a) { return !mi[lf + ':' + a]; }); },
+      }).drops.map(function (x) { x.why = 'perm-grant'; return x; });
+    } catch (e) { return []; }
+  }
   function failure(code, status, data) {
     var messages = {
       session: 'سجّل الدخول بالحساب الحالي أولًا؛ كلمة ملف النسخة ليست مصادقة على الخادم',
@@ -71,9 +100,16 @@
     };
     /* V7 · د6: مفتاحٌ رفضه الخادم يُذكر باسمه وسببه (مثلاً موظفٌ مسجَّل في إدارةٍ أخرى) · وخطأُ الخادم (5xx أو ردٌّ بلا إقرار) يُقال صراحةً · وغيرُ المعروف يُعرض رمزُه */
     var denied = data && data.details && data.details.denied, why = { 'emp-dup': 'موظف مسجَّل في إدارة أخرى بالهوية نفسها', shape: 'شكل غير مقبول', 'not-mgr': 'خارج صلاحيتك', 'mgr-no-key': 'لا تملك مفتاح الاستعادة' };
+    /* V7 · 53 (ملحق 5): الرفضُ بالعربي بلا رموز (grant · cap …) — والصلاحياتُ تُسمّي الموظفَ والصفحة وما يفعله المستخدم */
+    Object.assign(why, PERM_WHY);
     if (code === 'restore-key-denied' && denied)
       messages[code] = 'رفض الخادم ' + Object.keys(denied).length + ' مجموعة بيانات؛ لم يتغيّر شيء: ' +
-        Object.keys(denied).slice(0, 4).map(function (k) { return k.replace(/^bsdept:[^:]+:/, '') + ' (' + (why[denied[k].why] || denied[k].why || 'مرفوض') + ')'; }).join(' · ');
+        Object.keys(denied).slice(0, 4).map(function (k) {
+          var d = denied[k] || {}, w = d.why;
+          if (k === 'bassam_perms_v1') return 'مجموعة «صلاحيات موظفي الإدارة» (bassam_perms_v1)' + (d.who ? ': ورقة الموظف «' + empName(d.who.e) + '»' + (d.who.p ? ' في صفحة «' + pageName(d.who.p) + '»' : '') : '') + ' ' + (why[w] || 'رفضتها قواعد الصلاحية') +
+            '. ما العمل: اطلب من مدير المنصة منح هذه الصلاحية أو استيراد النسخة بنفسه، أو احذفها من ورقة الموظف في النسخة ثم أعد المحاولة';
+          return k.replace(/^bsdept:[^:]+:/, '') + ' (' + (why[w] || 'مرفوض') + ')';
+        }).join(' · ');
     if (!messages[code] && status >= 500) messages[code] = 'تعذّر على الخادم إكمال الخطوة (رمز ' + status + ')؛ لم يتغيّر شيء — أعد المحاولة، وإن تكرّر فالنسخة أكبر مما يحتمله الخادم في طلب واحد';
     return {
       ok: 0,
@@ -354,6 +390,7 @@
     /* V7 · د6 (QA ٦ — قرارُ المالك ب1) */
     'mgr-sheet': 'صحيفة صلاحيات مدير المصدر — مدير الوحدة يبقى كامل الصلاحية في إدارته، والسقف كما هو',
   };
+  var PERM_NOTE = 'يمنحها مدير المنصة لاحقاً إن لزم.';
   function nfItem(x) { return /^nf-/.test(x.why); }
   /* «أُعيد ربط N إشارة من <المصدر> إلى <الهدف>» بتفصيلها لكل مورد · ومعرّفاتٌ أخرى لم تُربط · وما بقي فيه المعرّفُ المصدر نصاً — '' إن لم يكن ربط */
   function remapLine(s) {
@@ -371,7 +408,7 @@
   }
   var FIELD_WHY = { transient: 1, field: 1, 'field-type': 1 };
   function skipList(list) {
-    return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { return { k: x.k, why: String(x.why || ''), n: integer(x.n) ? x.n : null, text: (WHY[x.why] || String(x.why || '')) + (integer(x.n) ? ' — العدد: ' + x.n : '') }; });
+    return (Array.isArray(list) ? list : []).filter(function (x) { return record(x) && typeof x.k === 'string'; }).map(function (x) { var o = { k: x.k, why: String(x.why || ''), n: integer(x.n) ? x.n : null, text: (WHY[x.why] || String(x.why || '')) + (integer(x.n) ? ' — العدد: ' + x.n : '') }; if (x.why === 'perm-grant') { o.e = x.e; o.p = x.p; o.a = x.a; } return o; });
   }
   /* V7 · 53 (بقايا 52): تضييقُ العدسات الذي سيجريه الاستيراد (019d rsDeptLensNarrow: عدساتُ الوحدة ∩ عدساتُ النسخة) يُذكر في الملخّص — «العدسات 3 من 6» */
   function lensNarrow(file, scope) {
@@ -383,6 +420,7 @@
     if (!stamp) return failure('session', 401);
     if (!id || !record(file) || !record(file.data) || !record(scope)) return failure('invalid');
     var parts = split(file, {}, 0), legacy = !file.manifest, keys = {}, names = Object.keys(file.data);
+    namesOf(file);
     names.forEach(function (k) { keys[k] = file.data[k] === null ? 1 : 0; });
     var read = await post({ op: 'begin', dry: true, requestId: id, scope: scope, keys: legacy ? keys : {} }, stamp);
     if (!read.ok) return read;
@@ -391,7 +429,9 @@
     return { ok: 1, legacy: legacy, kind: file.kind || scope.kind, dept: typeof file.dept === 'string' ? file.dept : '', exportedAt: typeof file.exportedAt === 'string' ? file.exportedAt : '',
       keys: names.length, images: parts.ids.length, bytes: bytes, noPerms: file.perms == null, lens: lensNarrow(file, scope),
       /* المنحُ القديمة تُذكر بعددها (يُحسب من الملف؛ والخادمُ يعيده مؤكَّداً بعد الرفع) */
-      skip: skipList((read.data.skip || []).map(function (x) { var n = null; if (x && x.why === 'grants') { try { n = Object.keys((JSON.parse(file.data[x.k]) || {}).emp || {}).length; } catch (e) { n = null; } } return n === null ? x : Object.assign({}, x, { n: n }); })) };
+      skip: skipList((read.data.skip || []).map(function (x) { var n = null; if (x && x.why === 'grants') { try { n = Object.keys((JSON.parse(file.data[x.k]) || {}).emp || {}).length; } catch (e) { n = null; } } return n === null ? x : Object.assign({}, x, { n: n }); })).concat(permItems(permPreview(file, scope))),
+      /* V7 · 53 (ملحق 5): سطرٌ واحد بعد المُسقَط من صلاحيات الموظفين */
+      permNote: PERM_NOTE };
   }
   /* الأجزاء: كلُّ جزءٍ طلبٌ؛ الفاشلُ بلا ردٍّ مؤكَّد يُعاد وحده ثلاثاً، ثم يُعاد الفشلُ ومعه job لإكمالٍ لاحق من الجزء نفسِه */
   async function upload(job, stamp, progress) {
@@ -433,6 +473,7 @@
     if (!stamp) return failure('session', 401);
     if (!id || !file || typeof file !== 'object' || !['replace', 'merge'].includes(opt.mode) || !['full', 'dept'].includes(scope.kind))
       return failure('invalid');
+    namesOf(file);   /* V7 · 53 (ملحق 5): أسماءُ الموظفين للملخّص ورسالة الرفض */
     /* PRIVACY batch (019u privRedacted): a copy exported without personal data is refused before any request (the server refuses it too) */
     var fd = file.domains && typeof file.domains === 'object' ? file.domains : {};
     if ((file.manifest && file.manifest.redacted) || Object.keys(fd).some(function (k) { return [].concat(fd[k]).some(function (x) { return !!(x && x.redacted); }); }))
@@ -588,7 +629,8 @@
       lost = Array.isArray(i.summary.notTransferred) ? i.summary.notTransferred : [],
       fieldsLost = lost.filter(function (x) { return FIELD_WHY[x.why]; }),
       nfLost = lost.filter(nfItem),
-      keysLost = lost.filter(function (x) { return !FIELD_WHY[x.why] && !nfItem(x); }),
+      permLost = permItems(lost),   /* V7 · 53 (ملحق 5) */
+      keysLost = lost.filter(function (x) { return !FIELD_WHY[x.why] && !nfItem(x) && x.why !== 'perm-grant'; }),
       legacy = i.summary && i.summary.legacy,
       text =
         'سيُعتمد ' +
@@ -601,6 +643,7 @@
           : '') +
         /* V7 · د6 (schemafix): حقولُ الموارد التي لن تُنقل — كلُّها بمسارها وعددها، والباقي يُنقل */
         (fieldsLost.length ? ' حقول لن تُنقل (' + fieldsLost.length + '): ' + fieldsLost.map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + '.' : '') +
+        (permLost.length ? ' لن يُنقل من صلاحيات الموظفين (' + permLost.length + '): ' + permLost.map(function (x) { return '«' + x.k + '»: ' + x.text; }).join(' · ') + '. ' + PERM_NOTE : '') +
         (nfLost.length ? ' تنبيهات لن تُنقل (' + nfLost.reduce(function (n, x) { return n + (x.n || 0); }, 0) + '): ' + nfLost.map(function (x) { return x.k + ' — ' + x.text; }).join(' · ') + '.' : '') +
         remapLine(i.summary) +
         permsLine(c) +
@@ -644,6 +687,8 @@
     confirm: confirm,
     remapLine: remapLine,
     permsLine: permsLine,
+    permItems: permItems,
+    PERM_NOTE: PERM_NOTE,
     refresh: refresh,
   });
 })();
