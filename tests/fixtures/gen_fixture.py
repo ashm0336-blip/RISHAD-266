@@ -22,6 +22,7 @@ ap.add_argument('--custody-storage', choices=['relational', 'legacy-kv'], defaul
 ap.add_argument('--gtoday', default=None, help='V7 · 53 تقويم: اليومُ الميلادي YYYY-MM-DD للأنظمة العلائقية الميلادية (العهد) — بغيابه يُقدَّر من --today حسابياً (TEST_ONLY)')
 A = ap.parse_args()
 y, m, d = [int(x) for x in A.today.split('-')]
+if A.gtoday: y, m, d = [int(x) for x in A.gtoday.split('-')]   # V7 · 53 تقويم (cal-ops): مفاتيحُ العمليات (الجدول MK · الجولات · التقرير · المهام) على يوم --gtoday نفسِه
 # V7 · 53 تقويم (ق١): the fixture's keys are ISO padded Gregorian (YYYY-MM-DD · YYYY-MM). A Hijri --today from an older caller is the same day
 # converted exactly with the platform's calendar (Umm al-Qura, Asia/Riyadh — node Intl), so 'same --today ⇒ same bytes' still holds.
 if 1300 <= y <= 1599:
