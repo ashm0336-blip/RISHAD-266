@@ -1,5 +1,7 @@
 /* V7 · 53: التخزين بالفترة (§3ب) — طبقةٌ لا تعرف شكل التاريخ؛ التفصيل في تقرير periods ووثيقة العقد. */
 var OP_LIM = { day: 1048576, mctl: 524288, month: 3145728, head: 3145728, readPeriods: 40, readNodes: 60000, batchBytes: 30000000, batchStmts: 900, rangeGroups: 26, summaryRows: 800 };   /* V7 · 53: readNodes = عُقدُ القراءة المنطقية الكاملة لموردٍ مقسوم؛ مقيسٌ: 39001 عقدة ≈ ≤6.4MB في نداءٍ واحد (v7_d6_import ١٥) ⇒ 60000 ≈ ≤10MB، ثلثُ سقف 32MiB */
+/* V7 · 53: مدياتُ الفترات في استدعاء D1 الواحد لكل جدول — مدىً لكل فترة (ومدَيان للرأس) ⇒ ≤64 فترة؛ «صفحتي» (اليوم: أسبوعُ التقرير وشهرُه · الجدولُ 3 أشهر · الخطة · الجولات) تقع في استدعاءٍ واحد (me_history ٦: ≤4 جولات) */
+var OP_RANGE_CHUNK = 64;
 var OP_LIM_MSG = {
   'read-too-large': 'طُلبت فترات أكثر من المسموح في قراءة واحدة. اختر مدى أقصر.',
   'period-too-large': 'بيانات هذه الفترة تجاوزت الحد المسموح. راجع الإدخال أو تواصل مع مدير المنصة.',
@@ -63,7 +65,12 @@ function opJoin(info, parts) {
   return r;
 }
 function opHeadRanges(def) { var e = opContainerKey(def) + '/e'; return [['', e + ':'], [e + ';', '￿']]; }
-function opPeriodRanges(def, p) { var r = opPeriodRoot(def, p); return [[r, r + '\u0001'], [r + '/', r + '0']]; }
+/* V7 · 53: مدىً واحدٌ للفترة (العقدةُ وشجرتُها معاً: r … r/… < r0) — وما يقع فيه من فتراتٍ أخواتٍ تمدّ اسمَها ('1448-6-1-x') يُطرح بعد القراءة (opRowInScope) */
+function opPeriodRanges(def, p) { var r = opPeriodRoot(def, p); return [[r, r + '0']]; }
+function opRowInScope(def, roots, rowKey) {
+  var e = opContainerKey(def) + '/e:'; if (rowKey < e || rowKey >= opContainerKey(def) + '/e;') return true;   /* الرأس */
+  var i = rowKey.indexOf('/', e.length); return roots.has(i < 0 ? rowKey : rowKey.slice(0, i));
+}
 function opPeriodRev(revs, key, p) { return Math.max(rsNat(revs[key + '@' + p] || 0), rsNat(revs[key + '@*'] || 0)); }
 function opPeriodRevGuards(env, items) {
   return rsChunks(items.map(function (x) { return { a: x[0] + '@' + x[1], b: x[0] + '@*', r: x[2] }; })).map(function (part) {
@@ -152,7 +159,7 @@ async function opPeriodsMigrateRoute(env, request, session) {
   try {
     var A = await actorOf(env, session.uid); if (!A) return json({ ok: 0, err: 'session' }, 401);
     if (A.u.role !== 'super') return json({ ok: 0, err: 'operations-periods-migrate-permission' }, 403);
-    var body = parseJson(await request.text(), null); if (!isObj(body) || typeof body.dept !== 'string') return json({ ok: 0, err: 'bad-body' }, 400);
+    var body = parseJson(await request.text(), null), shapeError = bodyCheck('/api/operations/periods-migrate', body); if (shapeError) return json({ ok: 0, err: 'bad-body', at: shapeError }, 400);   /* V7 · 53: SOT-101 */
     var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];       var t0 = Date.now(), budget = Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000), from = isObj(body.from) ? body.from : null;
     for (var d of list) {
       var rep = { dept: d, resources: {}, ok: 0 }, revPairs = [], Rs = opSplitResources(), r0 = from && d === body.dept ? Math.max(0, Rs.indexOf(from.r)) : 0;

@@ -1103,6 +1103,7 @@
     recount();
     var body = JSON.parse(payload()); body.requestId = requestId; body.epoch = operationEpoch9;
     Object.keys(readBase).forEach(function (key) { body.base[key] = readBase[key]; });
+    if (period9 && period9.meta && period9.meta.logical) Object.keys(period9.meta.logical).forEach(function (K) { body.base[K] = period9.meta.logical[K]; });   /* V7 · 53: مع الكتابة العمياء للفترة */
     var before = Object.create(null);
     keys.forEach(function (key) { before[key] = baseVal[key] == null ? null : baseVal[key]; });
     operationActive9 = { ticket: ticket, stamp: stamp, keys: keys, snap: snap, before: before, body: JSON.stringify(body), epoch: operationEpoch9, state: 'staged', result: null, period: period9 ? period9.meta : null };
@@ -1281,6 +1282,8 @@
     [0, 864e5].forEach(function (back) {
       var h = null;
       try { h = C && C.hNow ? C.hNow(new Date(Date.now() - back), null) : null; } catch (e) { h = null; }
+      /* V7 · 53: بلا جدول التقويم (صفحةٌ لم تحمّله بعد · بيئةٌ بلا 385) يُحسب «اليوم» بأم القرى في الرياض كما يحسبه الخادم — وإلا لا فترةَ مطلوبة فتُقرأ الوثيقةُ رأساً بلا أيام */
+      if (!h) try { var fp = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(Date.now() - back)), pk = function (t) { var x = fp.find(function (q) { return q.type === t; }); return x ? +x.value : 0; }; h = { y: pk('year'), m: pk('month'), d: pk('day') }; } catch (e) { h = null; }
       if (!h || !h.y || !h.m || !h.d) return;
       var g = h.y + '-' + h.m, d = g + '-' + h.d;
       if (out.groups.indexOf(g) === -1) out.groups.push(g);
@@ -1521,7 +1524,7 @@
     var set = changes.set || {}, del = changes.del || [], rb = changes.readBase || {};
     var touched = Object.keys(set).concat(del).filter(periodLogical9);
     if (!touched.length) return null;
-    var out = { set: {}, del: [], readBase: {} }, meta = { Ks: touched, docs: {}, before: {} }, fail = null;
+    var out = { set: {}, del: [], readBase: {} }, meta = { Ks: touched, docs: {}, before: {}, logical: {} }, fail = null;
     Object.keys(set).forEach(function (k) { if (!periodLogical9(k)) out.set[k] = set[k]; });
     del.forEach(function (k) { if (!periodLogical9(k)) out.del.push(k); });
     Object.keys(rb).forEach(function (k) { if (!periodLogical9(k)) out.readBase[k] = rb[k]; });
@@ -1542,7 +1545,9 @@
           var pk = K + '@' + p, pn = operationKnown9[pk], v = sp.periods[p];
           var live = pn && pn.stamp && operationSame9(pn.stamp) && pn.epoch === operationEpoch9;
           if (live && pn.state === 'ready') { if (cj9(JSON.parse(mem[pk])) !== cj9(v)) out.set[pk] = v; return; }
-          if (!(live && pn.state === 'absent')) { operationKnown9[pk] = { state: 'absent', epoch: operationEpoch9, rev: 0, stamp: stamp, blind: 1 }; krev[pk] = 0; delete mem[pk]; delete baseVal[pk]; }
+          if (!(live && pn.state === 'absent')) { operationKnown9[pk] = { state: 'absent', epoch: operationEpoch9, rev: 0, stamp: stamp, blind: 1 }; krev[pk] = 0; delete mem[pk]; delete baseVal[pk]; 
+            /* V7 · 53: فترةٌ لم تُقرأ تُكتب كتابةً عمياء (base 0) ومعها مراجعةُ K المنطقية المقروءة (logical) — فيحكم الخادم كما كان للوثيقة كلِّها: لم يتغيّر K منذ القراءة ⇒ تُقبل */
+            if (periodOwn9(periodLogicalRev9, K) && operationInteger9(periodLogicalRev9[K])) meta.logical[K] = periodLogicalRev9[K]; }
           out.set[pk] = v;
         });
       }

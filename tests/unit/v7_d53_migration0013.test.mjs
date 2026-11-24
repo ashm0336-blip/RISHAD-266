@@ -122,6 +122,11 @@ test('53 · 0013 على قاعدةٍ بالمخطط 12 بناها العاملُ
   assert.equal(refused.status, 503, JSON.stringify(refused.json)); assert.equal(refused.json.err, 'ops-layout-pending'); assert.match(refused.json.msg, /تحويل تخزين/);
   assert.equal((await api(await load(oldSource, 'old'), E)('/api/ping')).status, 503, 'الحزمةُ القديمة لا تعمل على 13');
   /* ④ المرحلة ٢ لكل إدارة: الملخّصاتُ صفّاً بصف مع ما يُحسب من الوثائق القديمة */
+  /* V7 · 53 (SOT-101): جسمٌ خاطئ ⇒ 400 bad-body بموضعه قبل أي عمل */
+  for (const [bad, at] of [[{ dept: 'all', x: 1 }, 'x'], [{ dept: 'all', from: { r: 1 } }, 'from.r'], [{}, 'dept']]) {
+    const b = await call2('/api/operations/periods-migrate', { method: 'POST', body: bad });
+    assert.equal(b.status, 400, JSON.stringify(b.json)); assert.equal(b.json.err, 'bad-body'); assert.ok(String(b.json.at || '').includes(at), JSON.stringify(b.json));
+  }
   const mig = await call2('/api/operations/periods-migrate', { method: 'POST', body: { dept: 'all' } });
   assert.equal(mig.status, 200, JSON.stringify(mig.json).slice(0, 600)); assert.equal(mig.json.ok, 1, JSON.stringify(mig.json).slice(0, 600));
   assert.deepEqual(mig.json.pending, []);
