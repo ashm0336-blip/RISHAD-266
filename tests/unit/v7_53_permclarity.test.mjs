@@ -16,7 +16,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { ROOT, SRC, DIST, PYTHON, makeLegacyTestEnv as makeEnv, client, applySql } from './harness.mjs';
+import { randomUUID } from 'node:crypto';
+import { ROOT, SRC, DIST, PYTHON, makeLegacyTestEnv as makeEnv, makeEnv as emptyEnv, seedLegacyTestAdmin, client, applySql } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 
 const rd = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -137,8 +138,8 @@ function serverEngine(src) {
   vm.runInContext(src + '\n;this.E = perm44E();', ctx);
   return ctx.E;
 }
-async function world(workerFile) {
-  const env = makeEnv(); env.__worker = (await import(pathToFileURL(workerFile).href + '?pc=' + Math.random())).default;
+async function world(workerFile, mk) {
+  const env = (mk || makeEnv)(); env.__worker = (await import(pathToFileURL(workerFile).href + '?pc=' + Math.random())).default;
   const C = client(env);
   assert.ok((await C.login('admin', 'admin')).ok);
   await applySql(env.DB, seedSql()); await installCurrentSchemaFixture(env);
@@ -164,8 +165,8 @@ function rolesFor(E) {
   people.tst_e_field = { role: null, ex: [{ key: 'field.view', until: null }] };
   return { v: 1, roles, people };
 }
-async function effective(workerFile, coreSrc) {
-  const W = await world(workerFile), E = serverEngine(coreSrc), rec = rolesFor(E), cur = W.kv(KG) || { v: 1, emp: {} }, emp = Object.assign({}, cur.emp);
+async function effective(workerFile, coreSrc, mk) {
+  const W = await world(workerFile, mk), E = serverEngine(coreSrc), rec = rolesFor(E), cur = W.kv(KG) || { v: 1, emp: {} }, emp = Object.assign({}, cur.emp);
   const C = (k) => true;
   for (const e of Object.keys(rec.people)) emp[e] = J(E.grantOf(rec.people[e], rec, C, Date.now(), null));
   const r = await W.save({ [KR]: rec, [KG]: Object.assign({}, cur, { emp }) });
@@ -182,13 +183,26 @@ function baseWorker() {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_pc_base_')), f = path.join(dir, 'worker_base.mjs');
     fs.writeFileSync(f, execFileSync('git', ['-C', ROOT, 'show', BASE + ':workers/_worker.js'], { maxBuffer: 64 << 20 }));
     const core = ['workers/parts/004-registry-2.js', 'workers/parts/057b-perm44.js'].map((p) => execFileSync('git', ['-C', ROOT, 'show', BASE + ':' + p], { maxBuffer: 64 << 20 }).toString()).join('\n');
-    return { f, core };
+    /* V7 · 53: كلُّ عاملٍ على قاعدةٍ بمخطّطه هو — ترحيلاتُ الأساس نفسُها من git (makeLegacyTestEnv للأساس: الخطّ الأساسي + إذنُ الترقية بقائمة ترحيلاته) */
+    const mig = execFileSync('git', ['-C', ROOT, 'ls-tree', '--name-only', BASE, 'migrations/'], { encoding: 'utf8' }).split('\n').map((x) => x.replace(/^migrations\//, '')).filter((x) => /^\d{4}_.+\.sql$/.test(x)).sort().map((x) => x.slice(0, -4));
+    const baseline = execFileSync('git', ['-C', ROOT, 'show', BASE + ':migrations/0001_baseline.sql'], { encoding: 'utf8' });
+    const mk = () => {
+      const env = emptyEnv();
+      env.DB.exec(baseline);
+      env.DB.exec('CREATE TABLE d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+      env.DB.db.prepare('INSERT INTO d1_migrations(name) VALUES(?)').run('0001_baseline');
+      const from = Number(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v || 0), expiresAt = Date.now() + 600000;
+      env.DB.db.prepare('INSERT INTO meta(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v').run('schema_upgrade_permit_v1', JSON.stringify({ version: 1, from, to: mig.length, migrations: mig.slice(from), operationId: randomUUID(), expiresAt }));
+      env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO NOTHING");
+      return seedLegacyTestAdmin(env);
+    };
+    return { f, core, mk, n: mig.length };
   } catch (e) { return null; }
 }
 const B0 = baseWorker();
 
 test('53 · وضوح ③ الصلاحياتُ الفعلية لكل شخص (العامل الحقيقي · بيانات بشكل Production) قبل التغيير = بعده — صفرُ فرق', { timeout: 600000, skip: B0 ? false : 'الأساس ' + BASE + ' غيرُ موجود في تاريخ git (KIVO_PERMCLARITY_BASE)' }, async () => {
-  const before = await effective(B0.f, B0.core);
+  const before = await effective(B0.f, B0.core, B0.mk);   /* الأساسُ على قاعدةٍ بترحيلاته هو (B0.n) */
   const after = await effective(path.join(ROOT, 'workers', '_worker.js'), rd('workers/parts/004-registry-2.js') + '\n' + rd('workers/parts/057b-perm44.js'));
   assert.deepEqual(before.save, [200, {}], 'the roles + grants save (before)'); assert.deepEqual(after.save, [200, {}], 'the roles + grants save (after)');
   const n = Object.values(after.me).filter((x) => Array.isArray(x) && x[0] === 200 && x[1]).length;
