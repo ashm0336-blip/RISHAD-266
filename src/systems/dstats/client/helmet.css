@@ -41,7 +41,8 @@ body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-se
 .rz-kpi .kf .dv{flex:none;width:1px;background:var(--bg-surface-4);margin:2px 6px}
 .rz-duo{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:14px;margin-top:14px;align-items:stretch}
 .rz-trio2{display:grid;grid-template-columns:1.05fr 1fr;gap:14px;margin-top:14px}
-@media (max-width:1150px){.rz-lead{grid-template-columns:1fr}.rz-kpis{grid-template-columns:repeat(2,1fr)}.rz-duo{grid-template-columns:1fr}.rz-trio2{grid-template-columns:1fr}}
+/* V7 · 53: الموجة 2 · KD-08 (نقلُ سلوك Production): «1fr» = minmax(auto,1fr) لا ينكمش دون محتواه فيُقصّ التاريخُ والتحيةُ وفترتا المقارنة على الجوال */
+@media (max-width:1150px){.rz-lead{grid-template-columns:minmax(0,1fr)}.rz-kpis{grid-template-columns:repeat(2,1fr)}.rz-duo{grid-template-columns:1fr}.rz-trio2{grid-template-columns:1fr}}
 /* ═══ ما تحتاجه هذه الصفحةُ وحدَها ═══
    تسمياتُ المحورين نصُّ HTML لا نصُّ SVG: محرّكُ القالب يلفُّ كلَّ قيمةٍ في عنصر span،
    وعنصرُ HTML داخل نصِّ SVG لا يرسمه المتصفّحُ إطلاقاً. وبالخروج إلى HTML نكسب

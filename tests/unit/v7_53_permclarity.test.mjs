@@ -270,8 +270,10 @@ test('53 · وضوح ⑥ الهامش: page:Admin ≤ 94,560 gz (≥ 4%) · page
   assert.ok(o <= Math.floor(oc * 0.98), 'page:Org keeps ≥ 2%: ' + o + ' / ' + oc);
 });
 
+/* V7 · 53 (REVIEW.md البند ١٦، الخيار ب — trimcov): حقولُ مدخلٍ لا يقرؤها الخادم محذوفةٌ أيضاً من 004 (omitFields) — برهانُها في v7_53_registry_detail */
+const SRV_UNREAD = ['v23', 'reservedReason', 'uiOnly', 'splitFrom', 'mergedFrom'];
 test('53 · وضوح — نصّا الفعل والمكان في الواجهة وحدها: جزءُ الخادم 004 = السجلُّ بلا verb · place (targets.json omitFields)، ولا قارئَ لهما في العامل', () => {
-  const R = JSON.parse(rd('src/permissions/registry/registry-v24.9.json')), drop = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== 'verb' && k !== 'place'));
+  const R = JSON.parse(rd('src/permissions/registry/registry-v24.9.json')), drop = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== 'verb' && k !== 'place' && !SRV_UNREAD.includes(k)));
   const dataOf = (f) => JSON.parse(/var KIVO_REGISTRY_DATA = (.*);\n/.exec(rd(f))[1]);
   assert.deepEqual(dataOf('src/permissions/340-registry-v24-9.js'), R, 'the client carries the registry as generated (with the texts)');
   /* والفرقُ المعلن الآخر (REVIEW البند ٨: guard.detail علامةً في نسخة الخادم وحدها · targets.json guardDetailMarker) — من المصدر نفسه */

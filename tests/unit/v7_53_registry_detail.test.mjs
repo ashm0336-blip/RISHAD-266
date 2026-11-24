@@ -32,6 +32,9 @@ test('V7 · 53 ①: نسخةُ الواجهة = السجلُّ حرفاً · ن�
   const want = JSON.parse(c); let n = 0;
   for (const e of want.registry) if (e.guard && e.guard.detail) { e.guard.detail = MARK; n++; }
   /* والفرقُ المعلن الآخر في الهدف نفسه (وضوح الصلاحيات: omitFields — نصّا العرض verb · place للواجهة وحدها) — يُطبَّق من targets.json نفسه، ولا فرقَ غيرُهما */
+  /* V7 · 53 (REVIEW.md البند ١٦، الخيار ب): المجموعةُ المعلنة بالضبط — نصّا العرض (وضوح الصلاحيات) وحقولُ المدخل التي لا يقرؤها الخادم؛ لا أكثر */
+  assert.deepEqual(SERVER.omitFields, ['verb', 'place', 'v23', 'reservedReason', 'uiOnly', 'splitFrom', 'mergedFrom'], 'omitFields = المجموعةُ المعلنة بالضبط');
+  assert.equal(CLIENT.omitFields, undefined, 'نسخةُ الواجهة كاملة');
   const OMIT = SERVER.omitFields || [], cut = (x) => (x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).filter(([k]) => !OMIT.includes(k))) : x);
   if (OMIT.length) { want.registry = want.registry.map(cut); want.atoms = want.atoms.map(cut); }
   assert.deepEqual(Object.keys(SERVER).filter((k) => !['file', 'header', 'tail'].includes(k)).sort(), ['guardDetailMarker', 'omitFields'].filter((k) => k in SERVER).sort(), 'لا فرقَ معلنٌ ثالث');
@@ -70,6 +73,9 @@ test('V7 · 53 ②: لا قارئَ لنصّ guard.detail في الخادم إل
   const C = traceReads(ast, isCont);
   const E = traceReads(ast, (e) => e.type === 'MemberExpression' && e.computed && (isCont(e.object) || C.isAlias(e.object)));
   assert.ok(E.reads.includes('guard'), 'المداخلُ تُقرأ guard');
+  /* V7 · 53 (الخيار ب): ما يُقرأ من مدخل السجلّ في العامل — قائمةٌ حرفية؛ وحقولُ omitFields ليست فيها */
+  assert.deepEqual(E.reads, ['asisMap', 'audit', 'grant', 'guard', 'key', 'managedIn', 'owner', 'ownerKind', 'references', 'scopeDims', 'sensitive', 'status', 'type'], 'ما يُقرأ من مدخل السجلّ');
+  for (const f of SERVER.omitFields) assert.ok(!E.reads.includes(f), f + ' يُقرأ من مدخل السجلّ');
   const esc = E.escapes.map((x) => W.slice(+x.split('@')[1] - 30, +x.split('@')[1] + 1));
   assert.deepEqual(esc.filter((s) => !/byKey\[e\.key\] = e$/.test(s)), [], 'مدخلُ السجلّ لا يُمرَّر كاملاً (إلا byKey[e.key] = e في المحرّك)');
   /* KIVO_REGISTRY وأسماؤه ومعاملاتُ المحرّكات التي تتلقّاه (والمحرّكُ نفسُه: D) — لا قراءةَ لـ data */

@@ -1173,6 +1173,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
 
   /* ── ٤) المؤشرُ القياديّ بتصميم «مؤشرات المصليات» (_kPaneZn): مفعّلة/معطّلة ← مسجّل/فارغ ── */
   ZH(t){ return t>=90?"#15803d":(t<80?"#C9702A":"#8A6F35"); }
+  /* V7 · 53: الموجة 2 · KD-09 (نقلُ سلوك Production): النصُّ على ملء ZH — العنبرُ (--warning-strong) فاتحٌ في الداكن فيُكتب عليه بـ--warning-on-strong؛ الأخضرُ والذهبيُّ بالأبيض كما كانا */
+  ZHon(t){ return t<80?"var(--warning-on-strong)":"var(--fg-xffffff)"; }
   ZP1(a,b){ return b?Math.round(a/b*1000)/10:0; }
   ZPT(v){ return String(v).replace(/\.0$/,"")+"٪"; }
   ZDW(n){ return n===1?"يوم واحد":n===2?"يومين":(n>=3&&n<=10)?n+" أيام":KIVO.BassamCount(n,"يوم")+""; }
@@ -1185,7 +1187,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     icB:"width:27px;height:27px;border-radius:9999px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:"+c+";box-shadow:0 3px 8px -4px "+c,
     lblSt:"font-size:8.5px;font-weight:700;letter-spacing:.3px;color:"+c+";opacity:.72;white-space:nowrap",
     totSt:"margin-right:auto;flex-shrink:0;font-size:16px;font-weight:800;color:"+c,
-    pSt:"flex-shrink:0;font-size:9.5px;font-weight:800;color:var(--fg-xffffff);background:"+c+";border-radius:9999px;padding:2.5px 8px;box-shadow:0 2px 6px -3px "+c }; }
+    /* V7 · 53 (porttouch): نصُّ رقاقة «ذروة/أدنى» على ملئها — الملءُ (الذهبيّ، و«أدنى» بـ--text-secondary) يفتح في الداكن، فالأبيضُ كان 1.4:1 على «أدنى» و3.6:1 على «ذروة».
+       --warning-on-strong أبيضُ في الفاتح (كما كان) وداكنٌ في الداكن: ≥ 4.5:1 في السمتين */
+    pSt:"flex-shrink:0;font-size:9.5px;font-weight:800;color:var(--warning-on-strong);background:"+c+";border-radius:9999px;padding:2.5px 8px;box-shadow:0 2px 6px -3px "+c }; }
   _zHero(site,days,A){
     const self=this, s=this.state, H=site==="haram", md=this.ZMODE();
     const GOLD="#8A6F35", NAVY="var(--text-secondary)", PAL=["var(--chart-1)","var(--chart-11)","var(--chart-7)","var(--chart-2)","var(--chart-3)","var(--chart-4)"];
@@ -1252,10 +1256,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
         barSt:"height:100%;width:"+(c.tot/mxT*100).toFixed(0)+"%;background:linear-gradient(90deg,"+c.col+","+c.col+");border-radius:4px;display:block",
         onSt:"flex:0 0 28px;text-align:center;font-size:11px;font-weight:800;color:"+(c.on?"var(--fg-x16a34a)":"var(--fg-xcfc7b4)"),
         offSt:"flex:0 0 28px;text-align:center;font-size:11px;font-weight:800;color:"+(c.off?"var(--fg-x6b7280)":"var(--fg-xcfc7b4)"),
-        pSt:"flex:0 0 42px;text-align:center;font-size:9.5px;font-weight:800;color:var(--fg-xffffff);background:"+pc+";border-radius:9999px;padding:2px 0;box-shadow:0 2px 6px -3px "+pc }; });
+        pSt:"flex:0 0 42px;text-align:center;font-size:9.5px;font-weight:800;color:"+self.ZHon(c.onP)+";background:"+pc+";border-radius:9999px;padding:2px 0;box-shadow:0 2px 6px -3px "+pc }; });
     const cc=this.ZH(cov);
     A.ztTot=this.CMP2(grand); A.ztOn=String(recN); A.ztOff=String(Math.max(0,el-recN)); A.ztP=this.ZPT(cov);
-    A.ztPSt="flex:0 0 42px;text-align:center;font-size:9.5px;font-weight:800;color:var(--fg-xffffff);background:"+cc+";border-radius:9999px;padding:2px 0";
+    A.ztPSt="flex:0 0 42px;text-align:center;font-size:9.5px;font-weight:800;color:"+this.ZHon(cov)+";background:"+cc+";border-radius:9999px;padding:2px 0";
     /* العدّادات: تغطيةُ كلِّ أسبوعٍ (أو شهرٍ أو سنة) من الفترة — نصفُ القوس = نسبةُ الأيام المسجّلة */
     const WN={ w:["أسبوع","أسبوعين","أسابيع","أسبوعاً"], m:["شهر","شهرين","أشهر","شهراً"], y:["سنة","سنتين","سنوات","سنة"] };
     let groups=[], gk="w";

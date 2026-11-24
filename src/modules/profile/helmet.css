@@ -359,4 +359,12 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 .pf-fact.sk .pf-fval,.pf-fact.sk .pf-fsub{color:var(--text-faint)}
 /* الجوال: النصُّ يلتفّ فالبطاقةُ النهائية سطرَين (118px) وبطاقةُ «…» سطراً واحداً (104px) — يُحجز ارتفاعُ النهائية */
 @media (max-width:640px){.pf-facts-on{min-height:118px}}
+/* V7 · 53: الموجة 2 · AUX-13 (نقلُ سلوك Production): أهدافُ اللمس على الإصبع وحده — أزرارُ الرأس والنوافذ كانت ٣٠px، ورقائقُ التصفية ٢٦px،
+   وروابطُ «سجل مهامك» (شريطُ الأرقام وتذييلُ المهام) ٢٠px. الحاسوبُ كما هو؛ وحاشيةُ .bs-tap (660) تُكمل المساحةَ إلى ٤٤ */
+@media (pointer: coarse){
+  .pf-btn{min-height:36px}
+  .pf-linkbtn,.tk-foot>span[style*="cursor: pointer"],.pf-stats>span[style*="cursor: pointer"]{min-height:32px;display:inline-flex;align-items:center}
+  .fd-chip,.pf-whychip{min-height:32px}
+  .fd-fb,.fd-tg{min-width:32px;min-height:32px}
+}
 </style>

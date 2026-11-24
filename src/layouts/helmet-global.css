@@ -51,8 +51,9 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
   .bs-tabstrip > *{min-width:118px!important;padding:9px 10px!important;gap:4px!important}
   .bs-tabstrip > * > div:first-child{width:28px!important;height:28px!important}
   /* شريطُ ترقيم الصفحات (قطعةٌ واحدة في كل الجداول) على الجوال: يلتفّ سطرين بدل أن ينزلق — أزرارُه كلُّها داخل الشاشة */
-  .bs-hbar:has(button[title="الصفحة الأخيرة"]){flex-wrap:wrap!important;overflow:visible!important;justify-content:center!important;row-gap:8px}
-  .bs-hbar:has(button[title="الصفحة الأخيرة"]) > *{flex-shrink:1!important;flex-wrap:wrap;justify-content:center;max-width:100%;min-width:0}
+  /* V7 · 53 (porttouch): أشرطةُ «المهام» و«التقرير اليومي» و«الجدول الشهري» تسمّي الزرَّ بـaria-label وحده — كانت القاعدةُ لا تطابقها فيبقى «لكل صفحة» خارج الشاشة */
+  .bs-hbar:has(button[title="الصفحة الأخيرة"]),.bs-hbar:has(button[aria-label="الصفحة الأخيرة"]){flex-wrap:wrap!important;overflow:visible!important;justify-content:center!important;row-gap:8px}
+  .bs-hbar:has(button[title="الصفحة الأخيرة"]) > *,.bs-hbar:has(button[aria-label="الصفحة الأخيرة"]) > *{flex-shrink:1!important;flex-wrap:wrap;justify-content:center;max-width:100%;min-width:0}
   /* ثلاثة تبويبات على الجوال تتقاسم العرض: تظهر كلُّها كاملةً بلا سحبٍ ولا قصّ (أثناء التحميل وبعده) */
   .bs-tabstrip > :first-child:nth-last-child(3),.bs-tabstrip > :first-child:nth-last-child(3) ~ *{flex:1 1 0!important;min-width:0!important;padding:9px 4px!important;text-align:center;white-space:normal;overflow-wrap:anywhere}
   /* R183 (الملاحظة ١٣): «مواقع ذات صلة» على الجوال — النطاقُ يُخفى فيأخذ اسمُ الموقع مكانه */
@@ -121,6 +122,9 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 /* شريط داخل شريط: القاعدة أعلاه تمنع الداخلي من الانكماش، فلا يبلغ العرض الذي
    يشغّل تمريره ويفيض من الخارجي بدل أن يمرّ في نفسه. يُستثنى ليتقلّص ويمرّ. */
 .bs-hbar>.bs-hbar{flex-shrink:1;min-width:0}
+/* V7 · 53: الموجة 2 · PLAN-05/DG-05 (نقلُ سلوك Production): bs-wrap مخرجٌ صريح من الصفّ الواحد — الشريطُ يلتفّ بدل أن يُخفي أدواته خارج الشاشة */
+.bs-hbar.bs-wrap{flex-wrap:wrap!important;overflow:visible;row-gap:6px}
+.bs-hbar.bs-wrap>.bs-wraptxt{flex:1 1 0;min-width:0;max-width:max-content;white-space:normal}
 /* V7 · د7 (١٠): ترويسةُ السنة فوق شريط الأشهر (السنة · «الحالية» · شارةُ «٢٩/٣ يوماً مسجّلاً») تلتفّ سطرين حين لا تتّسع بدل أن تُقصّ الشارةُ خلف الحافة */
 .bs-hbar:has(> * > button[title="السنة السابقة"]){flex-wrap:wrap!important;overflow:visible;row-gap:6px}
 /* قرار المالك 2026-11-11 · ترويسةُ الخريطة (التشغيل الميداني والجولات اليومية): صفٌّ واحد دائماً — لا التفافَ إلى سطرٍ ثانٍ،

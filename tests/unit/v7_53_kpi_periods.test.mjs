@@ -58,6 +58,22 @@ function data(h) {
   });
   return { emps, staffing, plan, rounds, dreport };
 }
+/* إسقاطُ الخادم نفسُه (v.kpi): دوالُّ osKpi* وقوائمُ OS_KPI_* كما في العامل المبني (workers/_worker.js) — لا نسخةَ في الاختبار */
+function serverKpi() {
+  const W = fs.readFileSync(process.env.KIVO_WORKER || path.join(ROOT, 'workers/_worker.js'), 'utf8').split('\n');
+  const take = (re) => {
+    const i = W.findIndex((l) => re.test(l)); assert.ok(i >= 0, 'في العامل: ' + re);
+    let d = 0, out = [];
+    for (let j = i; j < W.length; j++) { out.push(W[j]); for (const ch of W[j]) d += ch === '{' ? 1 : ch === '}' ? -1 : 0; if (d <= 0 && /[;}]\s*(\/\/.*)?$/.test(W[j].trim())) break; }
+    return out.join('\n');
+  };
+  const src = ['osKpiPick', 'osKpiArr', 'osKpiFloors', 'osKpiRounds', 'osKpiReport', 'osKpiStaffing', 'osKpiPlan'].map((n) => take(new RegExp('^function ' + n + '\\b')))
+    .concat(['OS_KPI_ROUNDS', 'OS_KPI_PLAN'].map((n) => take(new RegExp('^var ' + n + '\\b'))));
+  const ctx = {}; vm.createContext(ctx);
+  vm.runInContext(src.join('\n') + '\n;globalThis.K = { bassam_rounds_v1: osKpiRounds, bassam_dreport_v1: osKpiReport, bassam_staffing_v3: osKpiStaffing, bassam_plan_v1: osKpiPlan };', ctx);
+  return ctx.K;
+}
+const KPI = serverKpi();
 const RES = { rounds: 'bassam_rounds_v1', dreport: 'bassam_dreport_v1', staffing: 'bassam_staffing_v3', plan: 'bassam_plan_v1' };
 const grpOf = (p) => { const m = /^(?:m:)?(\d+-\d+)/.exec(p); return m ? m[1] : p; };
 
@@ -85,8 +101,8 @@ async function page(mode, sumOff) {
     split: (n) => mode === 'period' && !!short[n],
     loaded: (n) => ({ groups: [cur], periods: periodsOf[short[n]].filter((p) => isLoaded(short[n], p)) }),
     index: async (n) => (reqs.push(['index', n]), { ok: 1, key: n, index: periodsOf[short[n]].map((p, i) => ({ p, grp: grpOf(p), seq: i, rev: 1 })) }),
-    /* الملخّص كما يحسبه الخادم: v.kpi = الإسقاطُ نفسُه (_kLean) على قيمة الفترة المخزّنة */
-    summary: async (n, q) => (reqs.push(['summary', n, q.groups.length]), { ok: 1, key: n, rows: periodsOf[short[n]].filter((p) => q.groups.includes(grpOf(p))).map((p, i) => ({ p, grp: grpOf(p), seq: i, rev: 1, v: sumOff ? { readings: 1 } : { kpi: c._kLean ? c._kLean(n, p, clone(full[n][p])) : undefined } })) }),
+    /* الملخّص كما يحسبه الخادم: v.kpi بدوالّ الخادم نفسِها (serverKpi) على قيمة الفترة المخزّنة */
+    summary: async (n, q) => (reqs.push(['summary', n, q.groups.length]), { ok: 1, key: n, rows: periodsOf[short[n]].filter((p) => q.groups.includes(grpOf(p))).map((p, i) => ({ p, grp: grpOf(p), seq: i, rev: 1, v: sumOff ? { readings: 1 } : { kpi: KPI[n](p, clone(full[n][p])) } })) }),
   };
   W.KIVO.__BS_SRV.operations = ops;
   W.KIVO.BassamDayShift = { get: () => '' };
@@ -119,6 +135,8 @@ test('المؤشرات على الفترة كلها = الحسابُ على ال
   }
   assert.ok(P.reqs.some((r) => r[0] === 'summary' && r[1] === RES.rounds), 'أيامُ الجولات غيرُ المحمَّلة من ملخّص الخادم');
   assert.ok(P.reqs.some((r) => r[0] === 'summary' && r[1] === RES.dreport), 'وأيامُ التقرير');
+  assert.ok(P.reqs.some((r) => r[0] === 'summary' && r[1] === RES.staffing), 'وأشهرُ الجدول (الراحات) — باسمه من staff.resources@1');
+  assert.ok(P.reqs.some((r) => r[0] === 'summary' && r[1] === RES.plan), 'وأشهرُ الخطة (الاحتياج) — باسمه من plan.resources@1');
   assert.ok(P.reqs.every((r) => r[0] !== 'summary' || r[2] <= 26), 'كلُّ طلب ملخّصٍ ≤ 26 شهراً');
 });
 
