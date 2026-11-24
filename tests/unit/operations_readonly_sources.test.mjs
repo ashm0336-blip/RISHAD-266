@@ -48,6 +48,7 @@ function page(module, documents) {
   vm.runInNewContext(source(modRel(module) + '/logic.js') + '\nglobalThis.Page = Component;', context);
   const instance = Object.create(context.Page.prototype);
   instance.curHijri = () => ({ y: 1448, m: 5, d: 19 });
+  instance.gTodayOf = () => ({ y: 2026, m: 10, d: 19 });   /* V7 · 53 تقويم: يومُ الصفحة الميلادي ثابتٌ كما كان الهجريُّ (شهرُ الجدول «2026-10» هو الجاري) */
   instance.state = {};
   return { instance, writes, values };
 }
