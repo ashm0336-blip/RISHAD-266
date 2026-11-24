@@ -123,8 +123,13 @@ test('53 ملحق 6 · 6 — التحديدُ المتعدد على نسخةٍ �
     const t1 = Date.now(); while (W.saves.length === n1 && Date.now() - t1 < 20000) await p.waitForTimeout(200);
     await p.waitForTimeout(2500);
     const fin = await W.read();
-    assert.ok(W.saves.slice(n1).every((x) => !(x.st === 200 && x.j && x.j.ok === 1)), 'طلبُ المجموعة لم يُقبل بعد تعديل غيري: ' + JSON.stringify(W.saves.slice(n1)).slice(0, 600));
-    assert.equal(JSON.stringify(fin), JSON.stringify(mid), 'لا يُكتب من المجموعة شيء، ويبقى تعديلُ الآخر');
+    /* حالتان صحيحتان لا ثالثة: (أ) وصل تعديلُ الآخر الصفحةَ حيّاً قبل التأكيد ⇒ الحفظُ على النسخة الجديدة: المجموعةُ كلُّها وتعديلُ الآخر باقٍ؛
+       (ب) لم يصلها ⇒ تعارضٌ يرفض الطلبَ كلَّه: لا يُكتب من المجموعة شيء ويبقى تعديلُ الآخر. لا كتابةَ جزئية ولا ضياعَ لتعديل الآخر. */
+    const okSave = W.saves.slice(n1).some((x) => x.st === 200 && x.j && x.j.ok === 1), fz = fin[DAY].d[0].zones;
+    assert.equal(fz[2].name, 'TEST_ONLY · عدّله غيري', 'تعديلُ الجلسة الأخرى باقٍ');
+    if (okSave) assert.ok(fz[0].off && fz[2].off, 'حُفظت على النسخة الجديدة: المجموعةُ كلُّها');
+    else assert.equal(JSON.stringify(fin), JSON.stringify(mid), 'رُفض الطلبُ كلُّه: لا يُكتب من المجموعة شيء');
+    console.log('# conflict branch: ' + (okSave ? 'live-rebased' : 'rejected-whole'));
     /* يومٌ مضى: لا أداة */
     if (W.PAST) {
       const [y, m, d] = W.PAST.split('-').map(Number);
