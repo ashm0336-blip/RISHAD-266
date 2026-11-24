@@ -24,12 +24,12 @@
     </div>
   </div>
   <div class="bs-hscroll" style="overflow-x:auto">
-    <div class="bs-calstrip" tabindex="0" aria-label="أشهر السنة">
+    <div style="display:flex;gap:12px;padding:16px 12px;min-width:100%;box-sizing:border-box">
       <sc-for list="{{months}}" as="m" hint-placeholder-count="12">
       <!-- موحّد مع شريط الأشهر في الخطة التشغيلية والمتابعة اليومية: تنمو لتملأ
            الإطار، وتقف عند 100px وتمرّ حين لا يتّسع. -->
       <!-- V7 · 53 تقويم (§7 · day_card_design): كرتُ الشهر المشترك KIVO.BassamCalCard.month — الميلاديُّ وتحته المدى الهجري، وحالتان فقط -->
-      <div class="bs-calcell">{{m.card}}
+      <div style="position:relative;flex:1 1 auto;min-width:100px;display:flex">{{m.card}}
 <sc-if value="{{stPmDel}}" hint-placeholder-val="{{ true }}">
     <sc-if value="{{m.hasData}}" hint-placeholder-val="{{ false }}"><span onClick="{{m.delAll}}" title="سيتم حذف جميع بيانات الشهر" style="position:absolute;z-index:6;top:2px;right:2px;width:14px;height:14px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-a22038380p08);color:var(--fg-xdc2626);cursor:pointer" style-hover="background:var(--bg-xdc2626);color:var(--fg-xffffff)"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-i="i-9bf9a6dd"></svg></span></sc-if>
 </sc-if>

@@ -252,11 +252,11 @@
      model(kind, p) ⇒ { style, lineStyles, title, lines, closed, state } لمن يبني بغير React */
 (function () {
   var C = KIVO.BassamCal;
-  var MONTH_W = 84;   /* أطولُ سطرٍ ثانٍ مقيساً بخط Cairo 7.5px/600: «ربيع الآخر – جمادى الأولى» ≈ 78px، وهامشٌ 3px من كل جانب */
   var BOX = {
     day: { height: 36, minWidth: 28, flex: '1 0 28px' },
-    /* V7 · 53 تقويم (REVIEW 45): عرضٌ واحدٌ ثابت لكل كروت الشهر (أطولُ سطرٍ هجريٍّ مختصر مقيساً) — المدى لا يمدّ الكرت؛ المدى كاملاً في التلميح */
-    month: { height: 36, width: MONTH_W, minWidth: MONTH_W, flex: '0 0 ' + MONTH_W + 'px', padding: 0, scrollSnapAlign: 'center' },
+    /* V7 · 53 تقويم (REVIEW 49 — يلغي العرضَ الثابت في 45): مقاسُ الكرت الأصلي حرفاً (ارتفاع 36 · عرضٌ أدنى 64 · يمتدّ في خليّته · حشوة 0 6px).
+       كان المدى الهجريُّ الكامل يمدّه فوق خليّته (100px) فيغطّي جاره؛ السطرُ المختصر (أقصاه ≈ 78px + الحشوة) لا يبلغ الخليّة — فلا تمدّد ولا تداخل */
+    month: { height: 36, minWidth: 64, flex: '1 0 auto', padding: '0 6px' },
     year: { height: 36, minWidth: 72, flex: '0 0 auto', padding: '0 8px' }
   };
   var LINE = {
@@ -311,28 +311,15 @@
       background: 'var(--cal-card)', border: '1px solid var(--cal-line)', display: 'grid', placeItems: 'center' } },
       h('svg', { viewBox: '0 0 24 24', width: 6, height: 6, fill: 'none', stroke: 'var(--cal-lock)', strokeWidth: 3 },
         h('rect', { x: 5, y: 11, width: 14, height: 10, rx: 2 }), h('path', { d: 'M8 11V7a4 4 0 0 1 8 0v4' }))));
-    /* V7 · 53 تقويم (REVIEW 45): المحدَّدُ يتوسّط شريطَه عند الفتح (مرةً لكل عنصر) — بلا قفزٍ رأسيّ للصفحة */
-    var ref = M.sel ? function (el) { if (!el || el.__bsCen) return; el.__bsCen = 1; var s = el.parentNode; while (s && s.classList && !s.classList.contains('bs-calstrip')) s = s.parentNode;
-      if (s && s.classList) try { var d = (el.getBoundingClientRect().left + el.offsetWidth / 2) - (s.getBoundingClientRect().left + s.clientWidth / 2); s.scrollTo({ left: s.scrollLeft + d, behavior: 'instant' }); } catch (e) {} } : undefined;
+    /* V7 · 53 تقويم (REVIEW 45 · 49): المحدَّدُ يتوسّط الشريطَ المتمرّر الذي يحويه عند الفتح (مرةً لكل عنصر) — بلا قفزٍ رأسيّ للصفحة */
+    var ref = M.sel ? function (el) { if (!el || el.__bsCen) return; el.__bsCen = 1; var s = el.parentNode;
+      while (s && s.nodeType === 1 && !(/(auto|scroll)/.test(getComputedStyle(s).overflowX) && s.scrollWidth > s.clientWidth)) s = s.parentNode;
+      if (s && s.nodeType === 1) try { var d = (el.getBoundingClientRect().left + el.offsetWidth / 2) - (s.getBoundingClientRect().left + s.clientWidth / 2); s.scrollTo({ left: s.scrollLeft + d, behavior: 'instant' }); } catch (e) {} } : undefined;
     return h('div', assign({}, p.attrs || {}, { key: p.key, ref: ref, title: M.title, 'aria-label': M.title.replace(/\n/g, ' · '), 'data-cal-kind': kind, 'data-cal-state': M.state, 'data-cal-when': M.when, 'data-cal-td': M.when === 'now' ? '1' : '0',   /* V7 · 53 تقويم (REVIEW 47): «اليوم/الشهر الجاري» = حالةُ td المعتمدة (الحلقةُ الذهبية 2px؛ والمحدَّدُ يغلبها) */
       'data-cal-sel': M.sel ? '1' : '0', 'data-cal-key': M.k, onClick: p.onClick, onDoubleClick: p.onDoubleClick, style: M.style,
       /* تفاعلُ المرور المعتمد (المرجعُ المرئي): يرتفع الكرتُ 2px ويكبر 6% فوق جيرانه — تحويلٌ لا يمسّ مقاسَه في الشريط */
       onMouseEnter: function (e) { var t = e.currentTarget.style; t.transform = 'translateY(-2px) scale(1.06)'; t.zIndex = 5; if (p.attrs && p.attrs.onMouseEnter) p.attrs.onMouseEnter(e); },
       onMouseLeave: function (e) { var t = e.currentTarget.style; t.transform = ''; t.zIndex = M.style.zIndex == null ? '' : M.style.zIndex; if (p.attrs && p.attrs.onMouseLeave) p.attrs.onMouseLeave(e); } }), kids);
-  }
-  /* V7 · 53 تقويم (REVIEW 45): شريطُ الكروت المشترك — مرجعُ الصفحة المعتمدة حرفاً (.strip: flex · gap 3px · overflow-x · padding 8px 2px · بلا شريط تمرير)
-     مع التقاط التمرير (scroll-snap) وتمريرٍ ناعم باللمس والعجلة (العجلةُ الرأسيةُ أفقيةٌ فوقه) والأسهم (tabindex). الخلايا (bs-calcell) بعرض كرتها لا تنكمش. */
-  if (typeof document !== 'undefined' && document.head && !document.getElementById('bs-calstrip-css')) {
-    var css = document.createElement('style'); css.id = 'bs-calstrip-css';
-    css.textContent = '.bs-calstrip{display:flex;justify-content:safe center;gap:3px;overflow-x:auto;padding:8px 2px 8px;scrollbar-width:none;scroll-snap-type:x proximity;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}'
-      + '.bs-calstrip::-webkit-scrollbar{display:none}.bs-calstrip:focus-visible{outline:2px solid var(--cal-gold);outline-offset:2px}'
-      + '.bs-calcell{position:relative;flex:0 0 auto;display:flex;scroll-snap-align:center}';
-    document.head.appendChild(css);
-    document.addEventListener('wheel', function (e) {
-      var s = e.target && e.target.closest ? e.target.closest('.bs-calstrip') : null;
-      if (!s || Math.abs(e.deltaX) >= Math.abs(e.deltaY) || s.scrollWidth <= s.clientWidth) return;
-      s.scrollLeft -= e.deltaY; e.preventDefault();   /* RTL: العجلةُ إلى الأسفل تمضي إلى الأشهر التالية (يساراً) */
-    }, { passive: false });
   }
   KIVO.BassamCalCard = Object.freeze({
     day: function (p) { return render('day', p); }, month: function (p) { return render('month', p); }, year: function (p) { return render('year', p); }, model: model

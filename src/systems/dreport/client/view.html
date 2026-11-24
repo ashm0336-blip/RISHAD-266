@@ -26,10 +26,10 @@
       </div>
     </div>
     <div class="bs-hscroll" style="overflow-x:auto">
-      <div class="bs-calstrip" tabindex="0" aria-label="أشهر السنة">
+      <div style="display:flex;gap:12px;padding:16px 12px;min-width:100%;box-sizing:border-box">
         <sc-for list="{{months}}" as="m" hint-placeholder-count="12">
         <!-- V7 · 53 تقويم (§7 · day_card_design): كرتُ الشهر المشترك KIVO.BassamCalCard.month — الميلاديُّ وتحته المدى الهجري، وحالتان فقط -->
-        <div class="bs-calcell">{{m.card}}</div>
+        <div style="position:relative;flex:1 1 auto;min-width:100px;display:flex">{{m.card}}</div>
         </sc-for>
       </div>
     </div>

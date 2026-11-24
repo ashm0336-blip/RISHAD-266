@@ -1,7 +1,8 @@
-/* V7 · 53 تقويم (REVIEW 45) — شريطُ كروت الشهر المشترك (KIVO.BassamCalCard.month داخل .bs-calstrip/.bs-calcell من 385) مرسوماً في متصفحٍ حقيقي
-   بالرموز الحقيقية (070/080) وبالكرت الحقيقي: عرضٌ واحدٌ ثابت لكل الكروت (ولو عبر المدى سنتين هجريتين كيونيو) · فجوةٌ 3px ثابتة · لا تداخلَ
-   بين صناديق الكروت (والمحدَّدُ لا يغطي جاره) · لا نصَّ يفيض عن كرته · القفلُ في موضعه المعتمد (top:-4px · left:-3px · 11px) — فاتحاً وداكناً.
-   كان الكرتُ يتمدّد بقدر المدى الهجري والخلايا تنكمش فتتداخل الكروت (لقطة REVIEW 44). TEST_ONLY. */
+/* V7 · 53 تقويم (REVIEW 45 → 49) — شريطُ أشهر السنة بالمكوّن الأصلي (قبل 45) وكرتِ الشهر المشترك (KIVO.BassamCalCard.month) في متصفحٍ حقيقي
+   بالرموز الحقيقية (070/080): الحاويةُ المتمرّرة bs-hscroll · الصفُّ flex (فجوة 12 · حشوة 16/12) · الخلايا مرنة flex:1 1 auto بعرضٍ أدنى 100px —
+   الكرتُ يمتدّ في خليّته ولا يمدّه محتواه، فلا يغطّي جاره (كان نوفمبر المحدَّد يغطّي نصف ديسمبر) · لا نصَّ يفيض عن كرته · القفلُ في موضعه المعتمد
+   (top:-4px · left:-3px · 11px) · الشهرُ الجاري بحلقة td الذهبية · والمحدَّدُ يتوسّط الشريطَ المتمرّر — فاتحاً وداكناً.
+   REVIEW 49 (المالك) ألغى «العرضَ الثابت 84 والفجوة 3px» من 45: سقط هذان التحقّقان وحدهما. TEST_ONLY. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -17,7 +18,7 @@ body{margin:0;background:var(--bg-page,#fff);font-family:Cairo,sans-serif}</styl
 <script>${read('src/i18n/380-hijri-fallback.js')}</script><script>${read('src/i18n/385-calendar.js')}</script></body></html>`;
 
 for (const theme of ['light', 'dark']) {
-  test('شريطُ الشهر (' + theme + '): عرضٌ واحد · فجوة 3px · لا تداخل · لا قصّ · القفلُ في موضعه · المحدَّدُ يتوسّط', async () => {
+  test('شريطُ الشهر (' + theme + '): الخلايا المرنة الأصلية · لا تداخل · لا قصّ · القفلُ في موضعه · المحدَّدُ يتوسّط', async () => {
     const b = await chromium.launch();
     try {
       const p = await (await b.newContext({ viewport: { width: 700, height: 200 }, deviceScaleFactor: 2 })).newPage();
@@ -25,9 +26,9 @@ for (const theme of ['light', 'dark']) {
       const R = await p.evaluate(() => {
         const C = KIVO.BassamCal, h = React.createElement, T = '2026-11-20';
         const cards = []; for (let m = 1; m <= 12; m++) { const ym = '2026-' + (m < 10 ? '0' : '') + m;
-          cards.push(h('div', { className: 'bs-calcell', key: ym }, KIVO.BassamCalCard.month({ ym, T, closed: m < 11, why: m < 10 ? 'past' : 'ap', sel: m === 11 }))); }
-        ReactDOM.render(h('div', { className: 'bs-calstrip', tabIndex: 0 }, cards), document.getElementById('r'));
-        const strip = document.querySelector('.bs-calstrip'), cs = getComputedStyle(strip);
+          cards.push(h('div', { style: { position: 'relative', flex: '1 1 auto', minWidth: '100px', display: 'flex' }, key: ym }, KIVO.BassamCalCard.month({ ym, T, closed: m < 11, why: m < 10 ? 'past' : 'ap', sel: m === 11 }))); }
+        ReactDOM.render(h('div', { className: 'bs-hscroll', style: { overflowX: 'auto' } }, h('div', { style: { display: 'flex', gap: '12px', padding: '16px 12px', minWidth: '100%', boxSizing: 'border-box' } }, cards)), document.getElementById('r'));
+        const strip = document.querySelector('.bs-hscroll'), cs = getComputedStyle(strip);
         const box = [...document.querySelectorAll('[data-cal-kind="month"]')].map((c) => { const r = c.getBoundingClientRect(), lk = c.querySelector('[data-cal-lock]');
           return { k: c.getAttribute('data-cal-key'), l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height, sel: c.getAttribute('data-cal-sel') === '1', z: getComputedStyle(c).zIndex,
             lines: [...c.querySelectorAll('[data-cal-line]')].map((x) => { const q = x.getBoundingClientRect(); return { t: x.textContent, l: q.left, r: q.right, t0: q.top, b: q.bottom, over: x.scrollWidth > x.clientWidth + 0.5 }; }),
@@ -38,13 +39,13 @@ for (const theme of ['light', 'dark']) {
       });
       const B = R.box;
       assert.equal(B.length, 12);
-      assert.equal(new Set(B.map((x) => x.w.toFixed(2))).size, 1, 'عرضٌ واحد: ' + B.map((x) => x.k + ':' + x.w.toFixed(1)).join(' '));
+      /* REVIEW 49: سقط «عرضٌ واحد 84» — الخليّةُ مرنةٌ بعرضٍ أدنى 100px كما قبل 45، والكرتُ يملؤها */
+      for (const x of B) assert.ok(x.w >= 100 - 2.5, 'الكرتُ يملأ خليّته (≥ 100 − الحدود): ' + x.k + ' ' + x.w);
       assert.equal(new Set(B.map((x) => x.h.toFixed(2))).size, 1); assert.equal(Math.round(B[0].h), 36, 'ارتفاعُ كرت اليوم 36');
-      assert.equal(R.gap, '3px'); assert.match(R.snap, /^x/); assert.equal(R.ox, 'auto');
+      assert.equal(R.ox, 'auto', 'الشريطُ يتمرّر أفقياً كما كان');
       const S = B.slice().sort((a, b) => a.l - b.l);
       for (let i = 1; i < S.length; i++) {
         assert.ok(S[i].l >= S[i - 1].r - 0.01, 'لا تداخل: ' + S[i - 1].k + ' / ' + S[i].k);
-        assert.ok(Math.abs(S[i].l - S[i - 1].r - 3) < 0.05, 'فجوة 3px بين ' + S[i - 1].k + ' و' + S[i].k + ': ' + (S[i].l - S[i - 1].r));
       }
       for (const x of B) for (const L of x.lines) assert.ok(!L.over && L.l >= x.l && L.r <= x.r && L.t0 >= x.t && L.b <= x.b, 'لا قصّ: ' + x.k + ' «' + L.t + '»');
       const jun = B.find((x) => x.k === '2026-06');
@@ -62,16 +63,16 @@ for (const theme of ['light', 'dark']) {
 
 /* REVIEW 47: الشهرُ الجاري بحالة td المعتمدة (حلقةٌ ذهبية 2px كيوم «اليوم») حين لا يكون محدَّداً — بعرض 84 ولا تداخل؛ والمحدَّدُ يغلبها */
 for (const theme of ['light', 'dark']) {
-  test('الشهرُ الجاري (' + theme + '): td بالحلقة الذهبية 2px وهو غيرُ محدَّد · عرضُه 84 · لا تداخل · والمحدَّدُ يغلب الحلقة', async () => {
+  test('الشهرُ الجاري (' + theme + '): td بالحلقة الذهبية 2px وهو غيرُ محدَّد · بخليّته الأصلية · لا تداخل · والمحدَّدُ يغلب الحلقة', async () => {
     const b = await chromium.launch();
     try {
       const p = await (await b.newContext({ viewport: { width: 1200, height: 200 }, deviceScaleFactor: 2 })).newPage();
       await p.setContent(html(theme));
       const R = await p.evaluate(() => {
         const h = React.createElement, T = '2026-11-20', run = (selM) => { const cards = []; for (let m = 1; m <= 12; m++) { const ym = '2026-' + (m < 10 ? '0' : '') + m;
-          cards.push(h('div', { className: 'bs-calcell', key: ym }, KIVO.BassamCalCard.month({ ym, T, closed: m < 10, why: 'past', sel: m === selM }))); }
+          cards.push(h('div', { style: { position: 'relative', flex: '1 1 auto', minWidth: '100px', display: 'flex' }, key: ym }, KIVO.BassamCalCard.month({ ym, T, closed: m < 10, why: 'past', sel: m === selM }))); }
           const host = document.createElement('div'); host.style.width = '1200px'; document.body.appendChild(host);   /* حاويةٌ جديدة لكل رسم — لا انتقالَ (transition) من رسمٍ سابق */
-          ReactDOM.render(h('div', { className: 'bs-calstrip' }, cards), host);
+          ReactDOM.render(h('div', { className: 'bs-hscroll', style: { overflowX: 'auto' } }, h('div', { style: { display: 'flex', gap: '12px', padding: '16px 12px', minWidth: '100%', boxSizing: 'border-box' } }, cards)), host);
           const gold = getComputedStyle(document.documentElement).getPropertyValue('--cal-gold').trim();
           const B = [...host.querySelectorAll('[data-cal-kind="month"]')].map((c) => { const r = c.getBoundingClientRect(); return { k: c.getAttribute('data-cal-key'), td: c.getAttribute('data-cal-td'), sh: getComputedStyle(c).boxShadow, l: r.left, r: r.right, w: r.width }; });
           return { B, gold }; };
@@ -82,8 +83,8 @@ for (const theme of ['light', 'dark']) {
       const nov = R.a.B.find((x) => x.k === '2026-11');
       assert.equal(nov.td, '1', 'الشهرُ الجاري td'); assert.equal(R.a.B.filter((x) => x.td === '1').length, 1, 'شهرٌ واحدٌ جارٍ');
       assert.ok(nov.sh.indexOf(R.goldRgb + ' 0px 0px 0px 2px') === 0, 'الحلقةُ الذهبية 2px أولاً كـ td: ' + nov.sh + ' / ' + R.goldRgb);
-      assert.equal(Math.round(nov.w), 84);
-      const S = R.a.B.slice().sort((x, y) => x.l - y.l); for (let i = 1; i < S.length; i++) assert.ok(S[i].l - S[i - 1].r > 2.9, 'لا تداخل: ' + S[i - 1].k + '/' + S[i].k);
+      assert.ok(nov.w >= 97.5, 'بمقاس خليّته الأصلية');   /* REVIEW 49: لا عرضَ ثابت 84 */
+      const S = R.a.B.slice().sort((x, y) => x.l - y.l); for (let i = 1; i < S.length; i++) assert.ok(S[i].l - S[i - 1].r >= 0, 'لا تداخل: ' + S[i - 1].k + '/' + S[i].k);
       const nov2 = R.b.B.find((x) => x.k === '2026-11');
       assert.equal(nov2.td, '1'); assert.ok(nov2.sh.indexOf('0px 0px 0px 2px') === -1 && /0px 4px 12px/.test(nov2.sh), 'المحدَّدُ يغلب الحلقة: ' + nov2.sh);
     } finally { await b.close(); }

@@ -49,10 +49,11 @@
     </div>
   </div>
   <div class="bs-hscroll" style="overflow-x:auto">
-    <div class="bs-calstrip" tabindex="0" aria-label="أشهر السنة">
+    <div style="display:flex;gap:12px;padding:16px 12px;min-width:100%;box-sizing:border-box">
       <!-- V7 · 53 تقويم (§7 · day_card_design): كرتُ الشهر من المكوّن الواحد KIVO.BassamCalCard — الميلاديُّ وتحته المدى الهجري، وحالتان فقط -->
       <sc-for list="{{mcards}}" as="m" hint-placeholder-count="12">
-      <div class="bs-calcell">{{m.card}}</div>
+      <!-- V7 · 53 تقويم (REVIEW 49): الخليّةُ الأصلية المرنة، وعرضُها الأدنى قدرُ كرتها (لا 64px يقصّ السطرَ الهجري على الجوال ولا يتمدّد الكرتُ فوق جاره) -->
+      <div style="position:relative;flex:1 1 auto;min-width:max-content;display:flex">{{m.card}}</div>
       </sc-for>
     </div>
   </div>

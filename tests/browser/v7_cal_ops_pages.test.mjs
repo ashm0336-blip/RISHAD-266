@@ -44,7 +44,9 @@ test('الأنظمة المرتبطة: الشهرُ الميلادي وسطرُ�
       /* V7 · 53 تقويم (REVIEW 45): السطرُ الصغير أشهرُ الهجري المقابلة بلا أيام (الكلمةُ المكرّرة محذوفة) — المدى كاملاً في التلميح */
       assert.ok(M.lines[1] && M.lines[1].indexOf(M.hm[0]) === 0 && M.hm.slice(1).every((n) => M.lines[1].indexOf(n.split(' ').slice(-1)[0]) > 0) && !/\d/.test(norm(M.lines[1])), P.name + ': the small Hijri line under it: ' + JSON.stringify(M));
       if (P.days) {
-        const D = await until(() => p.evaluate((dk) => {
+        /* V7 · 53 تقويم: «اليوم» هو يومُ الصفحة نفسِها (الكرتُ data-cal-when=now · اليومُ التشغيلي) — بين منتصف الليل والثالثة فجراً بالرياض يسبق اليومُ المدنيُّ (DK) اليومَ التشغيلي بيوم */
+        const D = await until(() => p.evaluate((dk0) => {
+          const now = document.querySelector('[data-cal-kind="day"][data-cal-when="now"]'), dk = now ? now.getAttribute('data-cal-key') : dk0;
           const all = [...document.querySelectorAll('[data-cal-kind="day"]')], c = document.querySelector('[data-cal-kind="day"][data-cal-key="' + dk + '"]'); if (!c) return null;
           const C = KIVO.BassamCal, ym = dk.slice(0, 7);
           return { n: all.length, want: C.gMonthDays(ym), lines: [...c.querySelectorAll('[data-cal-line]')].map((x) => x.textContent),
