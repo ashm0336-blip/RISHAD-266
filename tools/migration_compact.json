@@ -1,0 +1,15 @@
+{
+ "note": "V7 · 53 (S2 — تقليصُ العامل بلا تغيير سلوك): ترحيلٌ تولِّد عباراتِ CREATE لجداول الكيانات فيه دالةُ المرمِّز ocCreateStatements حرفاً — تُحذف من KIVO_MIGRATIONS وتُستعاد عند أول قراءة لـ sql (كاملةً بترتيبها). migrations/*.sql لا تتغيّر (wrangler) · أسماءُ d1_migrations لا تتغيّر. البرهانُ: tests/unit/v7_53_migration_compact.test.mjs (الاستعادةُ = الملفُّ عبارةً عبارة بترتيبها) — وعند الانحراف (وصفٌ تغيّر) تفشل الاستعادةُ مغلقةً (n · fnv) فلا تُنشأ قاعدةٌ بمخطّطٍ آخر.",
+ "migrations": {
+  "0010_operational_domains": {
+   "head": 1,
+   "tail": 2,
+   "skip": [
+    "ops_zone_prayer_capacity"
+   ],
+   "pin": [
+    "ops_round_day_move"
+   ]
+  }
+ }
+}
