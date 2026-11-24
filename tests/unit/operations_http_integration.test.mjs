@@ -96,13 +96,13 @@ test('HTTP generic Operations save commits a cross-resource edit once and return
 
 test('HTTP read-only revision dependencies reject a month lock changed after the editor read', async () => {
   const B = await world(), before = identity(B), employee = inspectOperationalFixture(B.env, E)[0].eid;
-  const staffing = { '9999-12': { [employee]: { shift: 'TEST_ONLY future shift', rest: [], muk: false } } };
+  const staffing = { '2199-12': { [employee]: { shift: 'TEST_ONLY future shift', rest: [], muk: false } } };
   const body = await envelope(B, { [S]: staffing }, { dependencies: [L] });
-  await replaceOperationalFixture(B.env, L, { '9999-12': true });
+  await replaceOperationalFixture(B.env, L, { '2199-12': true });
   const result = await save(B, body);
   assert.equal(result.status, 409); assert.equal(result.json.ok, 0); assert.equal(result.json.atomic, 1); assert.equal(result.json.requestId, body.requestId);
   assert.equal(result.json.conflicts[S].why, 'read-reference-changed'); assert.equal(Object.hasOwn(result.json.conflicts, L), false);
-  assert.equal(inspectOperationalFixture(B.env, S), null); assert.equal(inspectOperationalFixture(B.env, L)['9999-12'], true);
+  assert.equal(inspectOperationalFixture(B.env, S), null); assert.equal(inspectOperationalFixture(B.env, L)['2199-12'], true);
   assert.equal(B.DB.q('SELECT COUNT(*)n FROM restore_operations WHERE request_id=?1', body.requestId)[0].n, 0); assert.deepEqual(identity(B), before);
 });
 
