@@ -7043,11 +7043,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     this._dsWant = sig;
     const year = this.MONTHS.map((t, i) => s.year + "-" + (i + 1)),
       w = (name, spec) => (S.resources.indexOf(name) !== -1 && S.split(name) ? S.want(name, spec) : Promise.resolve({ ok: 1 }));
+    /* مواردُ الجولات بأسمائها (يملكها هذا النظام)، وما سواها من مجموعة القراءة المعلنة بلا تسميتها (wantPage) */
     Promise.all([
       w("bassam_rounds_v1", { groups: [ym], periods: year.map((x) => "m:" + x) }),
-      w("bassam_rounds_arc_v1", { groups: [ym] }),
-      w("bassam_plan_v1", { groups: [ym] }),
-      w("bassam_staffing_v3", { groups: [ym] }),
+      S.wantPage("Daily Sessions", { groups: [ym], except: ["bassam_rounds_v1"] }),
     ]);   /* فشلٌ ⇒ حالةُ الخطأ في القراءة؛ التنقّلُ يعيد الطلب (لا إعادةَ مع كل رسم) */
     if (this._dsSumYear !== s.year)
       ((this._dsSumYear = s.year),

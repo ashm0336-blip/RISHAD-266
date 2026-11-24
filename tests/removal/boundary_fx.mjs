@@ -88,14 +88,15 @@ export function logicState(page, method, key) {
   }, [method, key]);
 }
 
-/* طلباتُ الحفظ: [{ keys, status, ok, err }] — keys بلا بادئة الإدارة */
+/* طلباتُ الحفظ: [{ keys, periods, status, ok, err }] — keys الموارد بلا بادئة الإدارة؛ V7 · 53: مفتاحُ الفترة (K@p) يُعدّ لمورده، والفتراتُ نفسُها في periods */
 export function saves(page) {
   const out = [];
   page.on('response', async (r) => {
     if (r.request().method() !== 'POST' || !/\/api\/save\b/.test(r.url())) return;
     let body = {}, j = null; try { body = JSON.parse(r.request().postData() || '{}'); } catch (e) {}
     try { j = await r.json(); } catch (e) {}
-    out.push({ keys: Object.keys(body.set || {}).map((k) => k.replace(/^bsdept:[^:]+:/, '')).sort(), status: r.status(), ok: j && j.ok, err: j && j.err });
+    const raw = Object.keys(body.set || {}).concat(body.del || []).map((k) => k.replace(/^bsdept:[^:]+:/, ''));
+    out.push({ keys: [...new Set(Object.keys(body.set || {}).map((k) => k.replace(/^bsdept:[^:]+:/, '').replace(/@.*$/, '')))].sort(), periods: raw.filter((k) => k.includes('@')).sort(), status: r.status(), ok: j && j.ok, err: j && j.err });
   });
   return out;
 }
