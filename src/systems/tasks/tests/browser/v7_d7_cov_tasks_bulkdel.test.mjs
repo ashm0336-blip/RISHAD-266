@@ -15,7 +15,7 @@ const doc = async (s) => { const r = await s.api('/api/operations/read?keys=' + 
 const inMonth = (d, y, m) => Object.entries(d).filter(([k]) => { const p = k.split('-'); return +p[0] === y && +p[1] === m; }).reduce((n, [, v]) => n + (Array.isArray(v) ? v.length : 0), 0);
 const ym = (p) => L(p, 'return { y: L.state.year, m: L.state.month };');
 /* كرتُ الشهر m (زرُّه يحمل اسمَ الشهر) — والـ× فوقه */
-const cardX = (p, name) => p.locator(`xpath=//main//button[.//p[normalize-space()="${name}"]]//span[@title="سيتم حذف جميع بيانات الشهر"]`);
+const cardX = (p, name) => p.locator(`xpath=//main//*[p[normalize-space()="${name}"]]/span[@title="سيتم حذف جميع بيانات الشهر"]`);
 
 async function addTask(p, title) {
   const btn = p.getByRole('button', { name: /إضافة أول مهمة|مهمة جديدة|إضافة مهمة/ }).first();
