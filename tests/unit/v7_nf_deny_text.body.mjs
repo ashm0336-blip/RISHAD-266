@@ -12,6 +12,10 @@
    • grouping: rows of the same actor (uid) + same record (target) + same reason (detail) whose timestamp is within 60 000 ms of the
      FIRST row of their group, inside one poll batch, are one notice «(٥ محاولات خلال دقيقة)». Its dedup key is security:<id of the
      first row> — the same key that row had before, so nothing already emitted is emitted again.
+     V7 · 53 (FIX_53_LIVEQA ٥ — owner order «تجميع المتكرر من المصدر نفسه في نافذة زمنية»): the window is one HOUR of the first row
+     and groups span polls — a later refusal of the same source joins the open notice (no new one; its count is recounted from the
+     log, «… خلال ساعة» once the group spans more than a minute). The two cases below that encoded «60 001 ms → a new group» and
+     «groups do not span polls» now assert the owner's rule; every other assertion is unchanged.
 
    Real worker, real routes, both authorization modes, synthetic data only (TEST_ONLY · tests/fixtures/gen_fixture.py + tasks_fx.mjs).
    The poll ignores accounts whose id starts with «tst_», so two accounts are cloned from the fixture under other ids. */
@@ -106,18 +110,18 @@ const reasonSentence = (actor, row) => {
 };
 const AR = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
 const COUNT = (n) => (n === 2 ? 'محاولتان' : AR(n) + ' ' + (n % 100 >= 3 && n % 100 <= 10 ? 'محاولات' : 'محاولة'));
-const sentence = (actor, row, n = 1) => {
+const sentence = (actor, row, n = 1, span = 0) => {
   const t = TEXT[row.target]; assert.ok(t, 'test table knows ' + row.target); assert.ok(WHY[row.detail], 'test table knows the code ' + row.detail);
-  return 'حاول ' + actor + ' ' + t[2] + ' «' + t[0] + '»' + (t[1] ? ' في صفحة «' + t[1] + '»' : '') + '، ورُفض الطلب: ' + WHY[row.detail] + (n > 1 ? ' (' + COUNT(n) + ' خلال دقيقة)' : '') + '.';
+  return 'حاول ' + actor + ' ' + t[2] + ' «' + t[0] + '»' + (t[1] ? ' في صفحة «' + t[1] + '»' : '') + '، ورُفض الطلب: ' + WHY[row.detail] + (n > 1 ? ' (' + COUNT(n) + (span > 60000 ? ' خلال ساعة)' : ' خلال دقيقة)') : '') + '.';
 };
 /* the grouping rule, written independently of the worker: rows in (ts,id) order; a row joins the open group of its
-   (uid,target,detail) when its ts is within 60 000 ms of that group's FIRST row, else it opens a new group */
+   (uid,target,detail) when its ts is within 3 600 000 ms (V7 · 53: one hour) of that group's FIRST row, else it opens a new group */
 function groups(rows) {
   const open = new Map(), out = [];
   for (const r of rows) {
     const k = [r.uid, r.target, r.detail].join('\u0001'), g = open.get(k);
-    if (g && r.ts - g.first.ts <= 60000) { g.n++; continue; }
-    const ng = { first: r, n: 1 }; open.set(k, ng); out.push(ng);
+    if (g && r.ts - g.first.ts <= 3600000) { g.n++; g.last = r.ts; continue; }
+    const ng = { first: r, n: 1, last: r.ts }; open.set(k, ng); out.push(ng);
   }
   return out;
 }
@@ -210,7 +214,7 @@ for (const mode of ['enforce']) {
     assert.equal(x.byRow(re.id).body, 'حاول حساب غير معروف تعديل «قائمة الموظفين» في صفحة «موظفو الإدارة»، ورُفض الطلب: ' + WHY[re.detail] + '.');
   });
 
-  test('V7 nf-deny · ' + mode + ': repeated refusals collapse — same actor + same record + same reason within 60 s of the first → one notice «(٥ محاولات خلال دقيقة)»; old rows are never re-emitted', async () => {
+  test('V7 nf-deny · ' + mode + ': repeated refusals collapse — same actor + same record + same reason within an hour of the first → one notice «(٥ محاولات خلال دقيقة)», across polls (V7 · 53 ٥); old rows are never re-emitted', async () => {
     const x = await mk(mode);
     /* five REAL refused saves in a row */
     for (let i = 0; i < 5; i++) await SITES.rounds(x);
@@ -222,37 +226,40 @@ for (const mode of ['enforce']) {
     for (const r of five.slice(1)) assert.equal(x.byRow(r.id), undefined, 'the absorbed rows have no notice of their own');
     assert.equal((await x.poll()).n, 0, 'a second poll emits nothing'); assert.equal(x.bell().length, 1);
     /* controlled timestamps: copies of that real row at chosen offsets from a base well after it */
-    const src = five[0], T0 = src.ts + 600000;
+    const src = five[0], T0 = src.ts + 2 * 3600000;   /* V7 · 53: outside the hour of five[0] (was +10 min — now inside its window) */
     const put = (dt, o = {}) => { x.env.DB.exec("INSERT INTO sec(ts,uid,un,act,target,detail,ip,city,dev) VALUES(" + (T0 + dt) + "," + [o.uid || src.uid, src.un, 'denied', o.target || src.target, o.detail || src.detail, '', '', ''].map((s) => "'" + s + "'").join(',') + ")"); return x.env.DB.q('SELECT MAX(id) AS id FROM sec')[0].id; };
     const a1 = put(0), a2 = put(60000);          /* exactly 60 000 ms after the first → same group: «محاولتان» */
-    const b1 = put(60001);                       /* one millisecond later → a new group */
+    const b1 = put(60001);                       /* V7 · 53 (٥): one millisecond later is still within the hour → the same notice */
     const c1 = put(10, { detail: 'dept' });      /* another reason → its own notice */
     const d1 = put(20, { uid: 'nfd_mgr' });      /* another actor → its own notice */
     const e1 = put(30, { target: KE });          /* another record → its own notice */
     const o1 = put(40, { detail: 'perm' });      /* the owner's own example, to the letter */
-    const elev = []; for (let i = 0; i < 11; i++) elev.push(put(200000 + i * 1000));   /* eleven in ten seconds: «١١ محاولة» */
-    const p2 = await x.poll(); assert.equal(p2.n, 7, JSON.stringify(x.bell().map((m) => m.once + ' ' + m.body)));
-    assert.match(x.byRow(a1).body, /\(محاولتان خلال دقيقة\)\.$/); assert.equal(x.byRow(a2), undefined);
-    assert.doesNotMatch(x.byRow(b1).body, /خلال دقيقة/, 'a single attempt carries no count');
+    const elev = []; for (let i = 0; i < 11; i++) elev.push(put(200000 + i * 1000));   /* eleven more of the same source within the hour */
+    const p2 = await x.poll(); assert.equal(p2.n, 5, JSON.stringify(x.bell().map((m) => m.once + ' ' + m.body)));
+    assert.match(x.byRow(a1).body, /\(١٤ محاولة خلال ساعة\)\.$/); assert.equal(x.byRow(a2), undefined);
+    assert.equal(x.byRow(b1), undefined, 'V7 · 53: within the hour of a1 — no notice of its own');
     assert.equal(x.byRow(c1).body, 'حاول ' + ACTOR.nfd_emp + ' تعديل «الجولات اليومية» في صفحة «المتابعة اليومية»، ورُفض الطلب: السجل يخصّ إدارة أخرى.');
     assert.equal(x.byRow(o1).body, 'حاول خالد الحربي (موظف — إدارة الحشود) تعديل «الجولات اليومية» في صفحة «المتابعة اليومية»، ورُفض الطلب: صلاحيته لا تشمل هذا الإجراء.');
     assert.ok(x.byRow(d1).body.startsWith('حاول ' + ACTOR.nfd_mgr + ' ')); assert.ok(x.byRow(e1).body.includes('«قائمة الموظفين»'));
-    assert.match(x.byRow(elev[0]).body, /\(١١ محاولة خلال دقيقة\)\.$/); for (const id of elev.slice(1)) assert.equal(x.byRow(id), undefined);
+    for (const id of elev) assert.equal(x.byRow(id), undefined);
     /* deterministic: the independent reference yields the same groups and counts from the same rows */
     const ref = groups(x.sec().filter((r) => r.id >= a1));
-    assert.deepEqual(ref.map((g) => [g.first.id, g.n]).sort(), [[a1, 2], [b1, 1], [c1, 1], [d1, 1], [e1, 1], [o1, 1], [elev[0], 11]].sort());
-    for (const g of ref) assert.equal(x.byRow(g.first.id).body, sentence(ACTOR[g.first.uid], g.first, g.n));
-    /* nothing old is emitted again; a row arriving AFTER a poll is a new notice with its own key (groups do not span polls) */
+    assert.deepEqual(ref.map((g) => [g.first.id, g.n]).sort(), [[a1, 14], [c1, 1], [d1, 1], [e1, 1], [o1, 1]].sort());
+    for (const g of ref) assert.equal(x.byRow(g.first.id).body, sentence(ACTOR[g.first.uid], g.first, g.n, g.last - g.first.ts));
+    /* nothing old is emitted again; V7 · 53 (٥): a row arriving AFTER a poll joins the open notice of its source — no new notice,
+       the count recounted from the log; a row an hour after that notice's first row opens a new one */
     const all = x.bell().length; assert.equal((await x.poll()).n, 0); assert.equal(x.bell().length, all);
-    const late = put(200000 + 11000); assert.equal((await x.poll()).n, 1); assert.doesNotMatch(x.byRow(late).body, /خلال دقيقة/);
+    const late = put(200000 + 11000); assert.equal((await x.poll()).n, 0); assert.equal(x.byRow(late), undefined); assert.equal(x.bell().length, all);
+    assert.match(x.byRow(a1).body, /\(١٥ محاولة خلال ساعة\)\.$/, 'recounted: ' + x.byRow(a1).body);
+    const later = put(3600001); assert.equal((await x.poll()).n, 1); assert.doesNotMatch(x.byRow(later).body, /خلال (دقيقة|ساعة)/);
     assert.deepEqual(x.env.DB.q("SELECT once_key FROM notification_dedup WHERE once_key GLOB 'security:*' ORDER BY once_key").map((r) => r.once_key).sort(),
-      [five[0].id, a1, b1, c1, d1, e1, o1, elev[0], late].map((id) => 'security:' + id).sort(), 'dedup keys stay security:<row id>');
+      [five[0].id, a1, c1, d1, e1, o1, later].map((id) => 'security:' + id).sort(), 'dedup keys stay security:<row id>');
     /* an unknown reason code: a generic Arabic phrase, the code stays in the log */
-    const u1 = put(900000, { detail: 'TEST_ONLY-new-code' }); await x.poll();
+    const u1 = put(3600001 + 900000, { detail: 'TEST_ONLY-new-code' });   /* V7 · 53: after «later» (the checkpoint is a timestamp) */ await x.poll();
     assert.equal(x.byRow(u1).body, 'حاول ' + ACTOR.nfd_emp + ' تعديل «الجولات اليومية» في صفحة «المتابعة اليومية»، ورُفض الطلب: ' + GENERIC + '.');
     assert.equal(x.env.DB.q('SELECT detail FROM sec WHERE id=' + u1)[0].detail, 'TEST_ONLY-new-code');
     /* an unknown record: the generic label and no page clause — never the key */
-    const u2 = put(990000, { target: 'bsdept:' + D + ':TEST_ONLY_unknown_v9' }); await x.poll();
+    const u2 = put(3600001 + 990000, { target: 'bsdept:' + D + ':TEST_ONLY_unknown_v9' }); await x.poll();
     assert.equal(x.byRow(u2).body, 'حاول ' + ACTOR.nfd_emp + ' تعديل «بيانات المنصة»، ورُفض الطلب: ' + WHY[src.detail] + '.');
   });
 }

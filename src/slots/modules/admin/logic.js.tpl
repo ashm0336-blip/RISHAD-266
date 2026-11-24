@@ -985,6 +985,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
 @@SYS:admin.keyLabels.staff@@@@SYS:admin.keyLabels.daily@@@@SYS:admin.keyLabels.dreport@@@@SYS:admin.keyLabels.plan@@@@SYS:admin.keyLabels.tasks@@        bassam_auth_users_v1: "حسابات الدخول",
         bassam_perms_v1: "الصلاحيات",
         bassam_depts_v1: "الإدارات",
+        /* V7 · 53 (١٤): سجلاتٌ لا يسمّيها KIVO.BassamKeyLabels (قديمةٌ أو للجهاز) — كي لا تظهر في سجل الأمن «بيانات المنصة» */
+        bassam_notif_cfg_v1: "إعدادات التنبيهات (سجل قديم)",
+        bassam_notif_sys_v1: "تنبيهات المنصة (سجل قديم)",
+        bassam_bc_v1: "التعاميم (سجل قديم)",
+        bassam_notif_v1: "تنبيهات الإدارة (سجل قديم)",
+        bslg_v1: "عدّاد محاولات الدخول على الجهاز",
 @@SYS:admin.keyLabels@@@@SYS:admin.keyLabels.custody@@      }[s] || (KL ? KL.label(s) : "بيانات المنصة")) + (e ? " · " + this.adDept(e[1]) : "")
     );
   }
@@ -4256,7 +4262,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     : "إضافة مدير — ") + n,
               mgrHint: i
                 ? "يُنشأ له حساب دخول ينتقل به بين إدارات هذا الفرع كلها، ويرث سقف كل إدارة كاملاً — والتضييق اختياري من «الصلاحيات» في بطاقته."
-                : "يُنشأ له حساب دخول دون إدراجه في جدول موظفي الإدارة. لا يرث أي صفحة — بعد الحفظ افتح له «الصلاحيات» من جدول المستخدمين وحدّد صفحاته.",
+                : "يُنشأ له حساب دخول دون إدراجه في جدول موظفي الإدارة، ولا تُفتح له أي صفحة تلقائياً. بعد الحفظ افتح «الصلاحيات» من جدول المستخدمين واختر الصفحات التي يعمل عليها.",
               mgrName: g,
               onMgrName: (t) => this.setState({ mgrF_name: t.target.value, mgrErr: "" }),
               mgrRole: p("title", o && o.title ? o.title : ""),

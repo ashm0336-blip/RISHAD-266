@@ -287,6 +287,18 @@ def gen_system_parts(S):
 # مولّدُها الأصلي (registry10/*.py) غيرُ موجود. المصادرُ الآن workers/bindings/<name>/{data.json, engine.js} + workers/bindings/targets.json
 # (الترويسةُ كما هي حرفاً واسمُ المتغيّر) — بنمط السجل نفسه (permissions/registry/targets.json): الجزءُ = الترويسة + «var X = <JSON مضغوط>;» + المحرّك.
 # التعديلُ اليدوي على جزءٍ منها يُفشل --check (المولَّدُ ≠ الملتزَم). البياناتُ تُفحص: version و docSha256 = السجل v24.9.
+def omit_paths(data, paths, where):
+    """V7 · 53 (تقليصُ العامل): نسخةٌ من data بلا المسارات المذكورة («مفتاح» أو «أب.ابن» في كائنات). المسارُ الغائب خطأٌ (لا حذفَ صامت لما تغيّر اسمُه)."""
+    data = json.loads(json.dumps(data))
+    for p in paths:
+        *head, last = p.split('.'); o = data
+        for k in head:
+            if not isinstance(o, dict) or k not in o: raise SystemExit('bindings %s: omit «%s» — المسارُ غيرُ موجود' % (where, p))
+            o = o[k]
+        if not isinstance(o, dict) or last not in o: raise SystemExit('bindings %s: omit «%s» — المسارُ غيرُ موجود' % (where, p))
+        del o[last]
+    return data
+
 def gen_bindings(S):
     B = os.path.join(S, '..', 'workers', 'bindings'); spec_path = os.path.join(B, 'targets.json')
     if not os.path.isfile(spec_path): return {}
@@ -298,6 +310,7 @@ def gen_bindings(S):
         data = json.load(open(os.path.join(d, 'data.json'), encoding='utf-8'))
         for k in ('version', 'docSha256'):
             if data.get(k) != reg.get(k): raise SystemExit('bindings %s: %s = %r ≠ السجل %r' % (t['source'], k, data.get(k), reg.get(k)))
+        data = omit_paths(data, t.get('omit') or [], t['source'])   # V7 · 53: ما لا يقرؤه الخادم لا يُشحن فيه (المصدرُ data.json كما هو)
         body = 'var ' + t['var'] + ' = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n'
         out[norm(layout(S)['workersParts'] + '/' + t['part'])] = (t['header'] + body + rd(os.path.join(d, 'engine.js'))).encode('utf-8')
     return out
