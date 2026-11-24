@@ -10,6 +10,29 @@ function perm44Make(R, D) {
   for (i = 0; i < LENS.length; i++) LZ['lens.' + LENS[i].key] = LENS[i];
   var leafSys = {};
   for (i = 0; i < D.systems.length; i++) for (j = 0; j < D.systems[i].leaves.length; j++) leafSys[D.systems[i].leaves[j]] = D.systems[i].key;
+  /* V7 · 53 (قرار المالك — التصدير «أ»): أعلامُ التصدير ff.<نظام>.export — ذرّاتُ «تصدير» حُوِّلت إلى أعلام ميزات (converted_to_feature) فلا مفاتيحَ لها
+     في السجلّ ولا تحملها بتّاتُ الخادم. يحملها مستوى ff (كامل · حسّاس) ويُختار العلمُ في «مخصّص»؛ لا تُعطى لمشاهدة ولا إدخال ولا تعديل · FFL[علم] = ورقتُه */
+  var FFS = {}, FFL = {}, AT = R.atoms || {}, ak;
+  for (ak in AT) {
+    var at0 = AT[ak]; if (!at0 || at0.act !== 'export' || at0.disposition !== 'converted_to_feature') continue;
+    var s0 = leafSys[at0.leaf] || leafSys[String(at0.leaf || '').split('/')[0]]; if (!s0) continue;
+    for (j = 0; j < (at0.targets || []).length; j++) { var t0 = String(at0.targets[j]); FFL[t0] = at0.leaf; (FFS[s0] = FFS[s0] || []); if (FFS[s0].indexOf(t0) === -1) FFS[s0].push(t0); }
+  }
+  function sysFlags(s) { return (FFS[s] || []).slice(); }
+  function flagsFor(s, lvl, custom) {
+    var L = LV[lvl]; if (!L || !FFS[s]) return [];
+    if (L.custom) { var c = Array.isArray(custom) ? custom.map(String) : []; return FFS[s].filter(function (f) { return c.indexOf(f) !== -1; }); }
+    return L.ff ? FFS[s].slice() : [];
+  }
+  /* أعلامُ دورِ شخصٍ داخل سقف الوحدة (leafOn(ورقة) — غيابُها = بلا قصّ) */
+  function flagsOf(rec, roles, leafOn) {
+    var role = isObj(rec) ? roleById(roles, rec.role) : null, out = [], s, n;
+    if (!role || !isObj(role.sys)) return out;
+    for (s in role.sys) { var x = role.sys[s]; if (!isObj(x)) continue; var fs = flagsFor(s, x.lvl, x.keys);
+      for (n = 0; n < fs.length; n++) if (out.indexOf(fs[n]) === -1 && (!leafOn || leafOn(FFL[fs[n]]))) out.push(fs[n]); }
+    return out.sort();
+  }
+  function flagLeaf(f) { return FFL[f] || ''; }
   function clone(x) { return x == null ? x : JSON.parse(JSON.stringify(x)); }
   function same(a, b) { return JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b); }
   function isObj(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
@@ -231,5 +254,5 @@ function perm44Make(R, D) {
   }
   return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
            keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, derived: derived, normRec: normRec, shapeWhy: shapeWhy,
-           diff: diff, undo: undo, names: clone(D.names), data: D };
+           diff: diff, undo: undo, names: clone(D.names), data: D, sysFlags: sysFlags, flagsFor: flagsFor, flagsOf: flagsOf, flagLeaf: flagLeaf };
 }

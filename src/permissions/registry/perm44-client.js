@@ -192,6 +192,10 @@ var API = {
   offClosure: function (list) { return eng().offClosure(list); },
   offWith: function (keys, onFn) { return eng().offWith(keys, onFn); },   /* V7 · د6: ما يُطفأ مع تغييرٍ معلَّق (لـ«أثر الحفظ») */   /* V7 · د6: إغلاقُ المطفأ على المنصة (المحرّكُ المشترك) */
   sysKeys: function (s) { return eng().sysKeys(s); },
+  sysFlags: function (s) { return eng().sysFlags(s); },   /* V7 · 53: أعلامُ التصدير — أفعالُ «مخصّص» */
+  flagsFor: function (s, lvl, custom) { return eng().flagsFor(s, lvl, custom); },
+  flagsOf: function (rec, roles, leafOn) { return eng().flagsOf(rec, roles, leafOn); },
+  flagLeaf: function (f) { return eng().flagLeaf(f); },
   sysOfKey: function (k) { return eng().sysOfKey(k); },
   ceiling: ceiling,
   rolesOf: rolesOf,

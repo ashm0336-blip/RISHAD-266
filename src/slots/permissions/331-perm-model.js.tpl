@@ -705,7 +705,7 @@
   function azKey(k, did){ var H = azHeld(did); return H === null ? null : !!H[k]; }
   /* V7 · د6 (أ1): ما يبقى من ورقةٍ all لحامل المفاتيح H (+ ذرّاتُ المنح الصريح plus) — القاعدةُ التي تُحسب بها صلاحياتُ الجلسة من مفاتيح الخادم، دالةً واحدة:
      تُغذّى بمفاتيح الجلسة (myPerms أدناه) أو بمفاتيح حاملٍ آخر (334 holderPerms: حاملُ دور · شخصٌ بعينه) فتخرج القائمتان من الحساب نفسِه */
-  function heldPerms(all, H, plus, did){
+  function heldPerms(all, H, plus, did, ffs){
     var R = KIVO.KIVO_REGISTRY, leaves = {};
     /* V7 · د6: ذرّةُ منحٍ صريح لا تفتح ورقةً خارج سقف الوحدة (مطفأةً لها أو لأصلٍ أو على المنصة) — مفتاحُ عدسةٍ تشاركه «التشغيل الميداني»
        و«الجولات اليومية» كان يفتح تبويبَ الجولات لحامل الدور والمتابعةُ مطفأة */
@@ -736,6 +736,11 @@
       var at = R.atoms[ak]; if (!at || !at.leaf || !at.act || !at.targets) return;
       for (var i = 0; i < plus.length; i++) if (at.targets.indexOf(plus[i]) !== -1 && H[plus[i]]) { if (!leafLive(at.leaf)) break; var L = leaves[at.leaf] || (leaves[at.leaf] = []); if (L.indexOf(at.act) === -1) L.push(at.act); break; }
     });
+    /* V7 · 53 (قرار المالك — التصدير «أ»): علمُ تصديرٍ من دور الشخص (الخادم 063 enfMe f · perm44-core flagsOf) يضيف «تصدير» لورقته التي يحملها (بعد المنح الصريح: أوراقُ الدور منه) */
+    (Array.isArray(ffs) ? ffs : []).forEach(function(f){
+      var lf = KIVO.Perm44 && KIVO.Perm44.flagLeaf ? KIVO.Perm44.flagLeaf(f) : ''; if (!lf || !leaves[lf] || !leaves[lf].length) return;
+      if (leaves[lf].indexOf('export') === -1) leaves[lf].push('export');
+    });
     return derivePages(leaves);
   }
   var _myPerms2 = myPerms, _azMemo = { a: null, h: null, v: null };
@@ -747,7 +752,7 @@
     var H = azHeld(curDept()); if (H === null) return {};
     if (_azMemo.a === all && _azMemo.h === H) return _azMemo.v;
     var x = azZ().depts[curDept()];
-    var v = heldPerms(all, H, x && Array.isArray(x.p) ? x.p : []);
+    var v = heldPerms(all, H, x && Array.isArray(x.p) ? x.p : [], undefined, x && Array.isArray(x.f) ? x.f : []);
     _azMemo = { a: all, h: H, v: v };
     return v;
   };
