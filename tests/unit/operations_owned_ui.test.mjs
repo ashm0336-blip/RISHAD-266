@@ -40,7 +40,7 @@ async function page(module, documents, save) {
   K.__BS_I = { auth: { cur: () => K.BassamAuth.user(), isMgrKey: value => String(value || '').startsWith('mgr:') } };
   K.BassamDepts = { active: () => scope.dept }; K.BassamCount = count => String(count);
   K.BassamPerm = { deptCap: () => ['daily', 'dreport'], on: () => true };
-  K.BassamCal = { hNow: () => ({ y: 1448, m: 5, d: 19 }) };   /* V7 · 53: the page's day — the period layer reads its month by name */
+  K.BassamCal = Object.assign({}, K.BassamCal, { gAt: () => ({ y: 2026, m: 10, d: 19, k: '2026-10-19', ym: '2026-10' }) });   /* V7 · 53 تقويم: the page's Gregorian day (keys by world_fx hFx: 1448-5 ⇐ 2026-10) — the period layer reads its month by name */
   K.BassamPageKit = { base: () => class { setState(patch, done) { const value = typeof patch === 'function' ? patch(this.state, {}) : patch; this.state = { ...this.state, ...value }; done?.(); } } };
   T.W.DCLogic = class {};
   vm.runInContext(source('src/services/332-find-day.js'), T.ctx);
@@ -53,7 +53,7 @@ async function page(module, documents, save) {
   instance.bsToast = (text, type) => messages.push({ text, type: type || 'err' });
   instance.bsAck = (text, type) => messages.push({ text, type }); instance.PC = () => true; instance.bsOn = () => true;
   instance.autoActivate = () => messages.push({ type: 'activate' });
-  instance.curHijri = () => ({ y: 1448, m: 5, d: 19 }); instance.hMonthDays = () => 30;
+  instance.curHijri = () => ({ y: 2026, m: 10, d: 19 }); instance.hMonthDays = () => 30;
   const ops = K.__BS_SRV.operations;
   assert.equal((await ops.read(ops.resources.map(key))).ok, 1);
   return { T, K, ops, instance, requests, messages, docs, scope };
@@ -91,21 +91,21 @@ test('employee lost ACK retains the editor and retries the exact created row rat
 });
 
 test('monthly callsign rename saves its catalog and employee assignments in one acknowledged transaction', async () => {
-  const f = await page('staff', { bassam_callsigns_v1: ['TEST_ONLY old'], bassam_staffing_v3: { '1448-5': { 'TEST_ONLY e1': { cs: 'TEST_ONLY old', shift: 'TEST_ONLY shift' } } } });
+  const f = await page('staff', { bassam_callsigns_v1: ['TEST_ONLY old'], bassam_staffing_v3: { '2026-10': { 'TEST_ONLY e1': { cs: 'TEST_ONLY old', shift: 'TEST_ONLY shift' } } } });
   try {
-    f.instance.state = { year: 1448, month: 5, staffing: f.ops.get('bassam_staffing_v3'), csEdit: null };
+    f.instance.state = { year: 2026, month: 10, staffing: f.ops.get('bassam_staffing_v3'), csEdit: null };
     f.instance.setState({ csEdit: { old: 'TEST_ONLY old', val: 'TEST_ONLY new' } });
     await f.instance.csRename('TEST_ONLY old', 'TEST_ONLY new');
     assert.equal(f.requests.length, 1);
-    assert.deepEqual(Object.keys(JSON.parse(f.requests[0]).set).sort(), [key('bassam_callsigns_v1'), key('bassam_staffing_v3') + '@1448-5'].sort(), 'V7 · 53: only the month that changed');
-    assert.equal(f.instance.state.staffing['1448-5']['TEST_ONLY e1'].cs, 'TEST_ONLY new'); assert.equal(f.instance.state.csEdit, null);
+    assert.deepEqual(Object.keys(JSON.parse(f.requests[0]).set).sort(), [key('bassam_callsigns_v1'), key('bassam_staffing_v3') + '@2026-10'].sort(), 'V7 · 53: only the month that changed');
+    assert.equal(f.instance.state.staffing['2026-10']['TEST_ONLY e1'].cs, 'TEST_ONLY new'); assert.equal(f.instance.state.csEdit, null);
   } finally { f.T.dispose(); }
 });
 
 test('a monthly cell draft cannot adopt refreshed staffing revisions after it was opened', async () => {
-  const f = await page('staff', { bassam_staffing_v3: { '1448-5': { 'TEST_ONLY e1': { shift: 'TEST_ONLY old' } } } });
+  const f = await page('staff', { bassam_staffing_v3: { '2026-10': { 'TEST_ONLY e1': { shift: 'TEST_ONLY old' } } } });
   try {
-    f.instance.state = { year: 1448, month: 5, staffing: f.ops.get('bassam_staffing_v3'), sdOpen: null };
+    f.instance.state = { year: 2026, month: 10, staffing: f.ops.get('bassam_staffing_v3'), sdOpen: null };
     f.instance.setState({ sdOpen: 'TEST_ONLY e1' }); f.ops.invalidate([key('bassam_staffing_v3')]);
     assert.equal(await f.instance.setEntry('TEST_ONLY e1', { shift: 'TEST_ONLY edited' }), false);
     assert.equal(f.instance.state.sdOpen, 'TEST_ONLY e1'); assert.equal(f.requests.length, 0);
@@ -113,14 +113,14 @@ test('a monthly cell draft cannot adopt refreshed staffing revisions after it wa
 });
 
 test('report approval uses the actual round and dayshift helpers in one transaction, including lost ACK retry', async () => {
-  const day = '1448-5-19', shift = 'TEST_ONLY shift';
+  const day = '2026-10-19', shift = 'TEST_ONLY shift';
   const floor = { sid: 'TEST_ONLY site', zones: [{ uid: 'TEST_ONLY zone', emp: ['TEST_ONLY e1'], count: 5, pc: { fajr: 5 } }], gates: [], marks: [], paths: [] };
   const f = await page('dreport', {
     bassam_dreport_v1: { [day]: { created: 1, shifts: { [shift]: { pulled: true, roster: [{ ekey: 'TEST_ONLY e1', st: 'pr' }] } } } },
-    bassam_rounds_v1: {}, bassam_plan_v1: { floors: [floor], months: { '1448-5': { c: 1, d: [floor] } } }, bassam_dayshift_v1: {},
+    bassam_rounds_v1: {}, bassam_plan_v1: { floors: [floor], months: { '2026-10': { c: 1, d: [floor] } } }, bassam_dayshift_v1: {},
   }, ({ ack, requests }) => { if (requests.length === 1) throw Error('TEST_ONLY response lost after commit'); return response(ack); });
   try {
-    f.instance.state = { rpY: 1448, rpM: 5, rpD: 19, drLk: null };
+    f.instance.state = { rpY: 2026, rpM: 10, rpD: 19, drLk: null };
     f.instance.DK = () => day; f.instance.drCurShift = () => shift; f.instance.dayPastDS = () => false;
     f.instance.setState({ drLk: { shift } });
     assert.equal(await f.instance.drSetAp(true), false); assert.equal(f.messages.filter(message => message.type === 'ok').length, 0);
@@ -138,29 +138,29 @@ test('report approval uses the actual round and dayshift helpers in one transact
 });
 
 test('report readers and permission-map derivation never write or migrate the typed source while reading', async () => {
-  const f = await page('dreport', { bassam_dreport_v1: { '1448-5-19': { created: 1, shifts: {} } } });
+  const f = await page('dreport', { bassam_dreport_v1: { '2026-10-19': { created: 1, shifts: {} } } });
   try {
-    f.instance.state = { rpY: 1448, rpM: 5, rpD: 19 };
+    f.instance.state = { rpY: 2026, rpM: 10, rpD: 19 };
     const report = f.instance.rpLoad(); assert.deepEqual(clone(f.instance.drRepPerm(report)), {});
-    assert.equal(f.ops.get('bassam_dreport_v1')['m:1448-5'], undefined);
+    assert.equal(f.ops.get('bassam_dreport_v1')['m:2026-10'], undefined);
     assert.equal(f.requests.length, 0); assert.equal(f.K.__BS_SRV.dirty(), false);
   } finally { f.T.dispose(); }
 });
 
 test('report leadership and its monthly callsign reassignment share one receipt', async () => {
-  const day = '1448-5-19', shift = 'TEST_ONLY shift', roleCs = 'TEST_ONLY chief symbol';
+  const day = '2026-10-19', shift = 'TEST_ONLY shift', roleCs = 'TEST_ONLY chief symbol';
   const f = await page('dreport', {
     bassam_dreport_v1: { __ldcs: { chief: roleCs }, [day]: { created: 1, shifts: { [shift]: { leaders: { chief: 'TEST_ONLY old', deputy: '' } } } } },
-    bassam_staffing_v3: { '1448-5': { 'TEST_ONLY old': { cs: roleCs }, 'TEST_ONLY next': { cs: '' } } },
+    bassam_staffing_v3: { '2026-10': { 'TEST_ONLY old': { cs: roleCs }, 'TEST_ONLY next': { cs: '' } } },
   });
   try {
-    f.instance.state = { rpY: 1448, rpM: 5, rpD: 19, drLdOpen: null };
+    f.instance.state = { rpY: 2026, rpM: 10, rpD: 19, drLdOpen: null };
     f.instance.DK = () => day; f.instance.drCurShift = () => shift; f.instance.dayPastDS = () => false;
     f.instance.setState({ drLdOpen: 'chief' });
     assert.equal(await f.instance.rpSetLeader('chief', 'TEST_ONLY next'), true);
     assert.equal(f.requests.length, 1);
-    assert.deepEqual(Object.keys(JSON.parse(f.requests[0]).set).sort(), [key('bassam_dreport_v1') + '@' + day, key('bassam_staffing_v3') + '@1448-5'].sort(), 'V7 · 53: only the day and the month that changed');
-    const staffing = f.ops.get('bassam_staffing_v3')['1448-5'];
+    assert.deepEqual(Object.keys(JSON.parse(f.requests[0]).set).sort(), [key('bassam_dreport_v1') + '@' + day, key('bassam_staffing_v3') + '@2026-10'].sort(), 'V7 · 53: only the day and the month that changed');
+    const staffing = f.ops.get('bassam_staffing_v3')['2026-10'];
     assert.equal(staffing['TEST_ONLY old'].cs, ''); assert.equal(staffing['TEST_ONLY next'].cs, roleCs);
     assert.equal(f.ops.get('bassam_dreport_v1')[day].shifts[shift].leaders.chief, 'TEST_ONLY next');
   } finally { f.T.dispose(); }
@@ -184,9 +184,9 @@ test('DayShift does not publish a shared choice before its ACK or after the prin
   const f = await page('dreport', { bassam_dayshift_v1: {} }, async ({ ack }) => { await gate; return response(ack); });
   const events = []; f.T.W.addEventListener('bs-dayshift', event => events.push(event.detail));
   try {
-    const pending = f.K.BassamDayShift.set(1448, 5, 19, 'TEST_ONLY shift');
+    const pending = f.K.BassamDayShift.set(2026, 10, 19, 'TEST_ONLY shift');
     assert.equal(await until(() => f.requests.length === 1, 300), true);
-    assert.equal(f.K.BassamDayShift.get(1448, 5, 19), ''); assert.equal(events.length, 0);
+    assert.equal(f.K.BassamDayShift.get(2026, 10, 19), ''); assert.equal(events.length, 0);
     f.scope.uid = 'TEST_ONLY other principal'; release();
     const result = await pending; assert.equal(result.ok, 0); assert.equal(result.uncertain, true);
     assert.equal(events.length, 0); assert.deepEqual(f.T.nativeLS(), {});
@@ -212,7 +212,7 @@ test('the actual notification observer consumes confirmed Operations only and us
       flushEvents() {}, refresh() {}, deptName: () => 'TEST_ONLY department', depts: () => [], monLbl: month => 'TEST_ONLY ' + month,
     };
     f.K.__BS_I.notif = I; vm.runInContext(source('src/services/442-notif-observer.js'), f.T.ctx);
-    const ticket = f.ops.stage({ set: { [key('bassam_staffing_locks_v1')]: { '1448-5': true } } });
+    const ticket = f.ops.stage({ set: { [key('bassam_staffing_locks_v1')]: { '2026-10': true } } });
     assert.equal((await f.ops.flush(ticket)).uncertain, true); assert.equal(events.length, 0);
     assert.equal((await f.ops.retry(ticket)).ok, 1); assert.equal(events.length, 1);
     assert.equal(events[0].type, 'st_lock'); assert.equal(events[0].detail.once, 'operations:' + ticket.requestId + ':0:st_lock:0');
