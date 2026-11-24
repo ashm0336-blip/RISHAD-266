@@ -5,6 +5,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {legacyWorld,D1,IDS} from '../../../../tests/unit/canonical_fx.mjs';
 import {pageFor} from './custody_scenarios_fx.mjs';
+import {hToIso} from '../../../../tests/unit/cal_fx.mjs';
+/* V7 · 53 تقويم: الحركاتُ القديمة هجريةٌ كما في Production وتحوّلها 0014 بأم القرى؛ والقراءةُ بالشهر الميلادي المقابل لشهرها الهجري (1448-5 ⇐ أكتوبر 2026) */
+const HIST=(([y,m])=>({year:y,month:m}))(hToIso('1448-5-15').split('-').map(Number));
 import {adoptOperationalFixture,replaceOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 const copy=value=>JSON.parse(JSON.stringify(value));
 
@@ -30,7 +33,7 @@ async function fixture(moves=[],employees=EMPS){
   return {...f,W,read,act,setEmployees};
 }
 async function holder(f,key,q={}){return f.read({view:'holder',holderKey:key,...q});}
-function out(eid,serial,extra={}){return {t:'out',eid,item:'لاسلكي',ser:serial,y:2025,m:11,d:3,...extra};}
+function out(eid,serial,extra={}){return {t:'out',eid,item:'لاسلكي',ser:serial,y:1447,m:11,d:3,...extra};}
 
 test('حل الحامل: المعرّف أولًا ثم هوية أو رقم وظيفي فريدان وإلا يبقى المعرّف التاريخي معلقًا',async()=>{
   const f=await fixture([
@@ -53,10 +56,10 @@ test('رصيد الشهر يحمل عهدة السجل المعاد إنشاؤه
   const f=await fixture([
     out('eOLD','RD-001',{nid:'1234567890',name:'سعد'}),
     out('eGONE','RD-002',{name:'موظف سابق',m:12,d:9}),
-    {t:'out',eid:'eB',item:'كشاف',ser:'KS-001',y:2026,m:1,d:1},
-    {t:'in',eid:'eB',item:'كشاف',ser:'KS-001',y:2026,m:2,d:5},
+    {t:'out',eid:'eB',item:'كشاف',ser:'KS-001',y:1448,m:1,d:1},
+    {t:'in',eid:'eB',item:'كشاف',ser:'KS-001',y:1448,m:2,d:5},
   ]);
-  const historical=await f.read({year:2026,month:5}),linked=await holder(f,'eNEW',{year:2026,month:5}),orphan=await holder(f,'eGONE',{year:2026,month:5});
+  const historical=await f.read(HIST),linked=await holder(f,'eNEW',HIST),orphan=await holder(f,'eGONE',HIST);
   assert.equal(historical.summary.held,2);assert.equal(historical.summary.openingHeld,2);
   assert.equal(linked.rows[0].eid,'eNEW');assert.equal(linked.rows[0].hid,'eOLD');
   assert.equal(orphan.rows[0].eid,'eGONE');assert.equal(orphan.rows[0].snapshot.name,'موظف سابق');

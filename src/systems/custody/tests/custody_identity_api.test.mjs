@@ -4,6 +4,7 @@ import {cuInflate} from './custody_legacy_oracle.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {world,D1,IDS,EKEYS,EMP,copy,identitySnapshot,ok,act,createType,read,setEmployees,historyWorld,pageFor} from './custody_scenarios_fx.mjs';
+import {hToIso} from '../../../../tests/unit/cal_fx.mjs';
 
 const initial=()=>({items:[{name:'TEST_ONLY radio',qty:3,prefix:'TEST',color:'#b99751'}],moves:[]});
 const typed=A=>copy(Object.fromEntries(['custody_items','custody_issues','custody_movements','custody_requests'].map(table=>[table,A.DB.q('SELECT * FROM '+table)])));
@@ -87,11 +88,13 @@ test('accepting the snapshot does not broaden add, edit, department or session p
 });
 
 test('an unchanged historical snapshot is not retroactively rejected when appending a legitimate movement',async()=>{
-  const previous=initial(),out={t:'out',eid:EKEYS.employee1,item:'TEST_ONLY radio',ser:'TEST-001',y:2026,m:5,d:1,name: 'x'.repeat(5000),nid:'TEST_ONLY_legacy',empno:''};
+  const previous=initial(),out={t:'out',eid:EKEYS.employee1,item:'TEST_ONLY radio',ser:'TEST-001',y:1448,m:5,d:1,name: 'x'.repeat(5000),nid:'TEST_ONLY_legacy',empno:''};
   previous.moves.push(out);const A=await historyWorld(previous),historical=copy(firstOut(A));
   assert.equal(historical.holder_name_snapshot.length,5000);const issueId=A.DB.q('SELECT issue_id FROM custody_issues')[0].issue_id;
   ok(await act(A,'close',{issueId,kind:'in'},'manager1'));assert.deepEqual(firstOut(A),historical);
-  const rows=await A.W.cuSnapshotRows(A.env,D1);const next=cuInflate(rows);assert.deepEqual(next.moves[0],out);assert.equal(next.moves.length,2);assert.equal(next.moves[1].t,'in');
+  const rows=await A.W.cuSnapshotRows(A.env,D1);const next=cuInflate(rows);
+  /* V7 · 53 تقويم: الحركةُ القديمة الهجرية (1448-5-1) يحوّلها 0014 إلى يومها الميلادي، وما عدا التاريخ كما هو */
+  const [gy,gm,gd]=hToIso('1448-5-1').split('-').map(Number);assert.deepEqual(next.moves[0],{...out,y:gy,m:gm,d:gd});assert.equal(next.moves.length,2);assert.equal(next.moves[1].t,'in');
 });
 
 test('a database failure returns no save ACK and leaves the previous typed custody ledger intact',async()=>{
