@@ -24,6 +24,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     "البنجابية",
     "السواحلية",
   ];
+  /* V7 · 53 تقويم (ق1 · §7): الصفحةُ بالأشهر الميلادية — السنةُ والشهرُ واليومُ في الحالة ميلادية، ويومُ التقويم تاريخٌ محليٌّ بلا ساعة (الحسابُ بالأيام) */
+  gDate(y, m, d) { return new Date(y, m - 1, d); }
+  gParts(t) { return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() }; }
   _irContext() {
     const boot = window.__BS_BOOT || {}, auth = KIVO.BassamAuth, user = auth && auth.user && auth.user();
     const dept = KIVO.BassamDepts && KIVO.BassamDepts.active && KIVO.BassamDepts.active();
