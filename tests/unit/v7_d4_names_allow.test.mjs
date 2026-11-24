@@ -42,7 +42,10 @@ test('V7 · د4-أ: القطعةُ المشتركة — مالكوها يعلن�
   assert.deepEqual(piece.owners, ['award', 'seized']); assert.ok(fs.existsSync(path.join(SRC, 'systems', '_shared', 'business', 'business-cloud.js')));
   assert.ok(!fs.existsSync(path.join(SRC, 'modules', 'business-cloud.js')), 'لم تعد في مجلد وحدات القاعدة');
   for (const k of piece.owners) {
-    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(SRC, 'systems', k, 'system.json'), 'utf8')).shared, ['business'], k + ' يعلن القطعة');
+    /* V7 · 53 (basefix): المالكُ يعلن كلَّ قطعةٍ مشتركة تسمّيه مالكاً، لا «business» وحدها — port-sync (بند 8) أضاف «kpiring» (الاسترشاد · الرصد · المضبوطات) */
+    const mine = fs.readdirSync(path.join(SRC, 'systems', '_shared')).filter((x) => { const f = path.join(SRC, 'systems', '_shared', x, 'shared.json'); return fs.existsSync(f) && JSON.parse(fs.readFileSync(f, 'utf8')).owners.includes(k); }).sort();
+    assert.ok(mine.includes('business'), k + ' مالكٌ للقطعة');
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(SRC, 'systems', k, 'system.json'), 'utf8')).shared.slice().sort(), mine, k + ' يعلن القطعةَ وكلَّ قطعةٍ يملكها — لا أقلّ ولا أكثر');
     assert.ok(JSON.parse(fs.readFileSync(path.join(SRC, 'systems', k, 'client', 'meta.json'), 'utf8')).logicParts.includes('../../_shared/business/business-cloud.js'), k + ' يضمّها إلى صفحته');
   }
   const code = `
@@ -58,7 +61,7 @@ for d in b:
 out['stranger'] = SY.problems(S, b)
 c = [dict(d) for d in base]
 for d in c:
-    if d['key'] == 'seized': d['shared'] = ['business', 'nosuch']
+    if d['key'] == 'seized': d['shared'] = list(d['shared']) + ['nosuch']   # V7 · 53: قطعُه المعلنة كلُّها (business · kpiring) وقطعةٌ مجهولة
 out['missing'] = SY.problems(S, c)
 out['ownerless'] = SY.problems(S, [d for d in base if d['key'] not in ('award', 'seized', 'irshad')])
 print(json.dumps(out, ensure_ascii=False))`;
