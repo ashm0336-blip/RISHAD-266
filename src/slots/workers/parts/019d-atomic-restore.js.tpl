@@ -1462,9 +1462,12 @@ void rsPermSlice;   /* V7 · د6 (QA ٦): قاعدةُ الشريحة (051c ← 
    مطفأٌ في سقف الهدف (لكل نظام: عددُ الأدوار والأوراق التي تحمله). مصدرٌ واحد لملخّص ما قبل التأكيد (inspection.counts) وملخّص النجاح (counts) — 548 permsLine */
 function rsPermsCounts(A, d, keys) {
   var out = { roles: 0, assignments: 0, inert: {} }, rk = perm44Key(d), E = perm44E(), on = perm44LeafOn(A, d), add = function (s) { out.inert[s] = (out.inert[s] || 0) + 1; };
+  /* V7 · 53: صفُّ العدسة (52) ليس نظاماً — حيٌّ متى كانت العدسةُ في سقف الوحدة ومضيفٌ لها مفعّل (= 345 keyOn) فلا يُعدّ «بلا أثر» وهو يُمنح */
+  var lensOn = perm44LensOn(A, d), LZ = {}; E.lensList().forEach(function (x) { LZ[x.key] = x; });
+  var rowOn = function (sy) { var L = LZ[sy]; return L ? lensOn(L.lens) && L.hosts.some(on) : E.sysOn(sy, on); };
   if (Object.prototype.hasOwnProperty.call(keys, rk)) {
     var R = perm44Rec(keys[rk]) || { roles: [], people: {} };
-    (R.roles || []).forEach(function (r) { out.roles++; Object.keys(isObj(r && r.sys) ? r.sys : {}).forEach(function (sy) { if (!E.sysOn(sy, on)) add(sy); }); });
+    (R.roles || []).forEach(function (r) { out.roles++; Object.keys(isObj(r && r.sys) ? r.sys : {}).forEach(function (sy) { if (!rowOn(sy)) add(sy); }); });
     out.assignments += Object.keys(isObj(R.people) ? R.people : {}).length;
   }
   if (Object.prototype.hasOwnProperty.call(keys, K_PERM)) {

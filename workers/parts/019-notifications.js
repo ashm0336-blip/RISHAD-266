@@ -2760,7 +2760,7 @@ async function nfPlanEvents(env, A, events, internal) {
     plans = [];
   events.forEach(function (it) {
     /* cat · lvl · txt: للأحداث التي يصنعها الخادمُ نفسُه وحده (nfSecurityPoll: الرفض لنقص السبب) — حدثٌ من الطلب لا يحملها */
-    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt"] : []));
+    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt", "sys"] : []));
     var T = nfType(nfStr(it.type, 80, false), cfg);
     /* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server alone, from the save it accepted
        (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included.
@@ -2831,7 +2831,8 @@ async function nfPlanEvents(env, A, events, internal) {
         title: it.title || T.name,
         body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(T.txt, it.vars),
         created_at: it.at || Date.now(),
-        author_key: String(A.u.ekey || A.u.id),
+        /* V7 · 53: sys — حدثٌ يصنعه الخادمُ عن نفسه (توليدُ التكرار) لا فعلُ A: بلا فاعل، فلا يحجبه استثناءُ الفاعل (٨) عن صاحبه */
+        author_key: internal && it.sys ? "" : String(A.u.ekey || A.u.id),
         author_name: String(A.u.name || A.u.un || ""),
         action_text: T.go || "",
         link: it.link || "",

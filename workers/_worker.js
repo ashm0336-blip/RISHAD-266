@@ -5881,7 +5881,7 @@ async function nfPlanEvents(env, A, events, internal) {
     plans = [];
   events.forEach(function (it) {
     /* cat · lvl · txt: للأحداث التي يصنعها الخادمُ نفسُه وحده (nfSecurityPoll: الرفض لنقص السبب) — حدثٌ من الطلب لا يحملها */
-    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt"] : []));
+    nfShape(it, ["type", "dept", "own", "vars", "title", "once", "link", "at"].concat(internal ? ["cat", "lvl", "txt", "sys"] : []));
     var T = nfType(nfStr(it.type, 80, false), cfg);
     /* RISHAD-266 · issue #1 (owner decision): employee notifications are issued by the server alone, from the save it accepted
        (nfEmployeePlan below). No client may emit one — whatever it holds, the platform administrator included.
@@ -5952,7 +5952,8 @@ async function nfPlanEvents(env, A, events, internal) {
         title: it.title || T.name,
         body: T.id === "sc_deny" ? nfDenyBody(it.txt || T.txt, it.vars) : nfFill(T.txt, it.vars),
         created_at: it.at || Date.now(),
-        author_key: String(A.u.ekey || A.u.id),
+        /* V7 · 53: sys — حدثٌ يصنعه الخادمُ عن نفسه (توليدُ التكرار) لا فعلُ A: بلا فاعل، فلا يحجبه استثناءُ الفاعل (٨) عن صاحبه */
+        author_key: internal && it.sys ? "" : String(A.u.ekey || A.u.id),
         author_name: String(A.u.name || A.u.un || ""),
         action_text: T.go || "",
         link: it.link || "",
@@ -11100,9 +11101,12 @@ void rsPermSlice;   /* V7 · د6 (QA ٦): قاعدةُ الشريحة (051c ← 
    مطفأٌ في سقف الهدف (لكل نظام: عددُ الأدوار والأوراق التي تحمله). مصدرٌ واحد لملخّص ما قبل التأكيد (inspection.counts) وملخّص النجاح (counts) — 548 permsLine */
 function rsPermsCounts(A, d, keys) {
   var out = { roles: 0, assignments: 0, inert: {} }, rk = perm44Key(d), E = perm44E(), on = perm44LeafOn(A, d), add = function (s) { out.inert[s] = (out.inert[s] || 0) + 1; };
+  /* V7 · 53: صفُّ العدسة (52) ليس نظاماً — حيٌّ متى كانت العدسةُ في سقف الوحدة ومضيفٌ لها مفعّل (= 345 keyOn) فلا يُعدّ «بلا أثر» وهو يُمنح */
+  var lensOn = perm44LensOn(A, d), LZ = {}; E.lensList().forEach(function (x) { LZ[x.key] = x; });
+  var rowOn = function (sy) { var L = LZ[sy]; return L ? lensOn(L.lens) && L.hosts.some(on) : E.sysOn(sy, on); };
   if (Object.prototype.hasOwnProperty.call(keys, rk)) {
     var R = perm44Rec(keys[rk]) || { roles: [], people: {} };
-    (R.roles || []).forEach(function (r) { out.roles++; Object.keys(isObj(r && r.sys) ? r.sys : {}).forEach(function (sy) { if (!E.sysOn(sy, on)) add(sy); }); });
+    (R.roles || []).forEach(function (r) { out.roles++; Object.keys(isObj(r && r.sys) ? r.sys : {}).forEach(function (sy) { if (!rowOn(sy)) add(sy); }); });
     out.assignments += Object.keys(isObj(R.people) ? R.people : {}).length;
   }
   if (Object.prototype.hasOwnProperty.call(keys, K_PERM)) {
@@ -29294,7 +29298,7 @@ function tkClock(ms) { try { if (!TK_TFMT) TK_TFMT = new Intl.DateTimeFormat('ar
 async function tkNotify(env, request, A, d, items, meta) {
   if (!items || !items.length || !d) return 0;
   try {
-    var events = items.filter(function(it){ return TK_NOTIFICATION_TYPES.indexOf(it.type) !== -1; }).map(function(it){ var e={type:it.type,dept:d,own:it.own||[],vars:it.vars||{}}; if(it.once)e.once=it.once; return e; });
+    var events = items.filter(function(it){ return TK_NOTIFICATION_TYPES.indexOf(it.type) !== -1; }).map(function(it){ var e={type:it.type,dept:d,own:it.own||[],vars:it.vars||{}}; if(it.once)e.once=it.once; if(it.sys)e.sys=1; /* V7 · 53: حدثُ الخادم بلا فاعل (019 nfPlanEvents) */ return e; });
     if (!events.length) return 0;
     return (await nfEmitEvents(env,A,events,true)).n || 0;
   } catch(e) { swallow('tk-notify',e,env.__rid); return 0; }
@@ -30317,7 +30321,7 @@ async function tkRecurRun(env, request, d, opts) {
   var byAu = nmap(); rep.skipped.forEach(function (s1) { if (s1.author && s1.idem) (byAu[s1.author] = byAu[s1.author] || []).push(s1); });
   for (var au2 in byAu) {
     var Ab = await actorOf(env, au2); if (!Ab) continue;
-    await tkNotify(env, request, Ab, d, byAu[au2].slice(0, 20).map(function (s1) { return { type: 'task_chg', own: [String(Ab.u.ekey || Ab.u.id)], once: 'rsk:' + s1.idem, vars: { 'الفعل': 'لم تُولَّد', 'المهمة': s1.t, 'التفصيل': s1.name + ' — ' + s1.gen + ' يوم ' + s1.k } }; }), TK_REC_META);
+    await tkNotify(env, request, Ab, d, byAu[au2].slice(0, 20).map(function (s1) { return { type: 'task_chg', own: [String(Ab.u.ekey || Ab.u.id)], once: 'rsk:' + s1.idem, sys: 1, vars: { 'الفعل': 'لم تُولَّد', 'المهمة': s1.t, 'التفصيل': s1.name + ' — ' + s1.gen + ' يوم ' + s1.k } }; }), TK_REC_META);
   }
   rep.skipped = rep.skipped.map(function (s1) { return { id: s1.id, k: s1.k, ekey: s1.ekey, why: s1.why, gen: s1.gen || s1.why }; });
   return rep;

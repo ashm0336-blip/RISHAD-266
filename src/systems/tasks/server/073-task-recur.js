@@ -198,7 +198,7 @@ async function tkRecurRun(env, request, d, opts) {
   var byAu = nmap(); rep.skipped.forEach(function (s1) { if (s1.author && s1.idem) (byAu[s1.author] = byAu[s1.author] || []).push(s1); });
   for (var au2 in byAu) {
     var Ab = await actorOf(env, au2); if (!Ab) continue;
-    await tkNotify(env, request, Ab, d, byAu[au2].slice(0, 20).map(function (s1) { return { type: 'task_chg', own: [String(Ab.u.ekey || Ab.u.id)], once: 'rsk:' + s1.idem, vars: { 'الفعل': 'لم تُولَّد', 'المهمة': s1.t, 'التفصيل': s1.name + ' — ' + s1.gen + ' يوم ' + s1.k } }; }), TK_REC_META);
+    await tkNotify(env, request, Ab, d, byAu[au2].slice(0, 20).map(function (s1) { return { type: 'task_chg', own: [String(Ab.u.ekey || Ab.u.id)], once: 'rsk:' + s1.idem, sys: 1, vars: { 'الفعل': 'لم تُولَّد', 'المهمة': s1.t, 'التفصيل': s1.name + ' — ' + s1.gen + ' يوم ' + s1.k } }; }), TK_REC_META);
   }
   rep.skipped = rep.skipped.map(function (s1) { return { id: s1.id, k: s1.k, ekey: s1.ekey, why: s1.why, gen: s1.gen || s1.why }; });
   return rep;
