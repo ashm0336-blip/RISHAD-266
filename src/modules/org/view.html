@@ -161,7 +161,7 @@
       <sc-if value="{{p44SysNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">{{p44SysNoneTxt}}</div></sc-if>
       <ul class="p44-rows">
         <sc-for list="{{p44SysRows}}" as="s" hint-placeholder-count="8">
-        <li class="p44-row" data-on="{{s.on}}" data-sys="{{s.k}}">
+        <li class="p44-row" data-on="{{s.on}}" data-sys="{{s.k}}" data-kind="{{s.kind}}">
           <span class="p44-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-1b59ac83"></svg></span>
           <span class="p44-f"><b>{{s.n}}</b><small>{{s.sub}}</small></span>
           <sc-if value="{{s.locked}}" hint-placeholder-val="{{ false }}"><span class="p44-lock" data-og="lock">{{s.lockTxt}}</span></sc-if>
@@ -249,7 +249,7 @@
       <sc-if value="{{p44SysEdNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا نظام مفعّلاً في سقف هذه الإدارة — يفعّله مدير المنصة من «الأنظمة».</div></sc-if>
       <ul class="p44-rows">
         <sc-for list="{{p44SysEd}}" as="s" hint-placeholder-count="8">
-        <li class="p44-row" data-on="{{s.onTxt}}">
+        <li class="p44-row" data-on="{{s.onTxt}}" data-sys="{{s.k}}" data-kind="{{s.kind}}">
           <span class="p44-f"><b>{{s.n}}</b><small>{{s.sub}}</small></span>
           <sc-if value="{{s.isOn}}" hint-placeholder-val="{{ true }}"><label class="p44-lv"><span>المستوى</span><select value="{{s.lv}}" onChange="{{s.setLv}}" aria-label="مستوى {{s.n}}"><sc-for list="{{p44Lvls}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label></sc-if>
           <button type="button" class="p44-sw" role="switch" aria-checked="{{s.onTxt}}" aria-label="تفعيل {{s.n}} لهذا الدور" onClick="{{s.flip}}"></button>

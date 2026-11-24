@@ -8,7 +8,7 @@
      ④ النشرُ لا يطفئ شيئاً: وحدةٌ قائمة بلا سجلّ عدسات تبقى عدساتُها الستّ مفعّلة (لا ترحيل). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { holdersWorld, clientOf, applyState, A, B, A_S1, OP, E_ROLE, KP } from './v7_d6_holders_fx.mjs';
+import { holdersWorld, clientOf, permViews, applyState, A, B, A_S1, OP, E_ROLE, KP, T } from './v7_d6_holders_fx.mjs';
 import { stored } from './world_fx.mjs';
 import { needs, CURRENT_SCHEMA } from './harness.mjs';
 
@@ -110,6 +110,65 @@ test('④ deploy switches nothing OFF: on a schema-' + CURRENT_SCHEMA + ' world 
   const c = await clientOf(W, 'su', A);
   try { for (const d of [A, A_S1, OP]) assert.deepEqual(c.ev('KIVO.BassamPerm.deptLenses(' + JSON.stringify(d) + ')'), ALL, d + ': the systems tab draws every lens ON'); } finally { c.dispose(); }
   assert.deepEqual(stored(W.env, KP), P, 'reading wrote nothing (no migration)');
+});
+
+const uiOf = (c) => { const x = permViews(c).ui; x.setState = function (p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); }; x.bsToast = () => {}; x._ogPendEnd = () => {}; return x; };
+const J = (x) => JSON.parse(JSON.stringify(x));
+const rowsOf = (x, u) => J(x._p44SysVals(u, false).p44SysRows.map((r) => ({ k: r.k, on: r.isOn, locked: r.locked, lockTxt: r.lockTxt, kind: r.kind })));
+const LK = ALL.map((L) => 'lens.' + L);
+
+test('⑤ «الأنظمة»: under the host system its six lenses with switches like systems — «إطفاء الكل»/«تشغيل الكل», «أثر الحفظ», the review, save by setDeptLenses (one key); inheritance lock in the section; host OFF switches them OFF; the manager reads the ON ones only; the role editor rows', needs('plan', 'daily'), async () => {
+  const W = await holdersWorld();
+  await applyState(W, 'allOn');
+  const c = await clientOf(W, 'su', A), x = uiOf(c);
+  try {
+    let R = rowsOf(x, A);
+    const iPlan = R.findIndex((r) => r.k === 'plan');
+    assert.deepEqual(R.slice(iPlan + 1, iPlan + 7).map((r) => r.k), LK, 'the lens rows right under «التشغيل الميداني»');
+    assert.ok(R.filter((r) => r.kind === 'lens').every((r) => r.on && !r.locked), 'all ON (no lens record = all)');
+    assert.equal(R.filter((r) => LK.includes(r.k)).length, 6, 'each lens once (one record for both hosts)');
+    let v = x._p44SysVals(A, false);
+    v.p44SysRows.find((r) => r.k === 'lens.gates').flip();
+    v = x._p44SysVals(A, false);
+    assert.equal(v.p44SysDirty, true); assert.equal(v.p44SysEffOff, 'عدسة البوابات', '«أثر الحفظ» names the lens');
+    v.p44SysReview(); v = x._p44SysVals(A, false);
+    assert.equal(v.p44RevOn, true); assert.deepEqual(J(v.p44RevRows.map((r) => [r.from, r.to])), [['مفعّل', 'مطفأ']]); assert.match(v.p44RevRows[0].what, /عدسة البوابات/);
+    /* «تراجع» */
+    v.p44SysUndo(); assert.equal(x._p44SysVals(A, false).p44SysDirty, false);
+    /* «إطفاء الكل» covers the lenses, «تشغيل الكل» brings them back */
+    x._p44SysVals(A, false).p44SysAllOff(); assert.ok(LK.every((k) => x.state.p44.cap.on[k] === false), 'all-off: lenses in the draft');
+    x._p44SysVals(A, false).p44SysAllOn(); assert.ok(LK.every((k) => !(k in x.state.p44.cap.on)), 'all-on: lenses back as stored');
+    x._p44SysVals(A, false).p44SysUndo();
+    /* host OFF in the draft (both hosts) ⇒ the lenses are OFF and locked, and «يُطفأ معها» names them */
+    v = x._p44SysVals(A, false); v.p44SysRows.find((r) => r.k === 'plan').flip(); x._p44SysVals(A, false).p44SysRows.find((r) => r.k === 'daily').flip();
+    v = x._p44SysVals(A, false);
+    const lr = v.p44SysRows.filter((r) => r.kind === 'lens');
+    assert.ok(lr.every((r) => !r.isOn && r.locked), 'host OFF ⇒ lenses OFF + locked');
+    for (const L of ['المصليات', 'الكثافة']) assert.ok(v.p44SysEffWith.includes('عدسة ' + L), '«يُطفأ معها»: ' + v.p44SysEffWith);
+    v.p44SysUndo();
+    /* the real save: gates OFF for A → one key bassam_perms_v1, lenses[A] without gates */
+    x._p44SysVals(A, false).p44SysRows.find((r) => r.k === 'lens.gates').flip();
+    const dr = J(x.state.p44.cap.on);
+    assert.equal(await x._p44CapSave(A, dr), true, 'the server kept it');
+    assert.deepEqual(stored(W.env, KP).lenses[A], ALL.filter((k) => k !== 'gates'));
+    assert.deepEqual(stored(W.env, KP).caps[A], J(c.P.rawCap(A)), 'the systems ceiling untouched');
+    /* the section: inherited lock «مطفأ من: <A>» */
+    const sr = rowsOf(x, A_S1).find((r) => r.k === 'lens.gates');
+    assert.equal(sr.locked, true); assert.equal(sr.on, false); assert.equal(sr.lockTxt, 'مطفأ من: ' + T + 'إدارة أ');
+    /* the role editor rows for A: the ON lenses only, under the host */
+    const ed = J(x._p44RoleSys(A, x._p44Sys().filter((s) => x._p44Ceil(A)(s.k))).map((s) => s.k));
+    assert.deepEqual(ed.filter((k) => /^lens\./.test(k)), LK.filter((k) => k !== 'lens.gates'));
+    assert.equal(ed.indexOf('lens.zones'), ed.indexOf('plan') + 1);
+  } finally { c.dispose(); }
+  /* the unit manager (الإعدادات ← الصلاحيات — read-only «الأنظمة»): the ON lenses only, gates not even named */
+  const m = await clientOf(W, 'mgr', A), y = uiOf(m);
+  try {
+    const ro = J(y._p44SysRO(A).p44SysRows.map((r) => r.k));
+    assert.deepEqual(ro.filter((k) => /^lens\./.test(k)), LK.filter((k) => k !== 'lens.gates'));
+    assert.ok(!JSON.stringify(J(y._p44SysRO(A))).includes('البوابات'), 'the OFF lens is not named');
+    assert.equal(m.ev('KIVO.BassamPerm.lensOn("gates", ' + JSON.stringify(A) + ')'), false, 'map buttons · panels: lensOn false');
+    assert.equal(m.ev('KIVO.BassamPerm.lensOn("zones", ' + JSON.stringify(A) + ')'), true);
+  } finally { m.dispose(); }
 });
 
 function deq6(L, m) { assert.deepEqual(L, ALL, m); }

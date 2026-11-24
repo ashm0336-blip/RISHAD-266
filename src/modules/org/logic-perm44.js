@@ -54,6 +54,26 @@ Object.assign(Component.prototype, {
       .map((s) => ({ k: s.k || s.key || "", n: s.n || s.name || this._p44Try(() => KIVO.BassamPerm.nameOf(s.k || s.key), "") || s.k || s.key, cap: s.page || s.cap || (s.leaves && s.leaves[0]) || s.k || s.key, tg: !1 !== s.toggle, under: s.under || "" }))
       .filter((s) => s.k);
   },
+  /* V7 · د7 (أ — قرار المالك: العدساتُ كالأنظمة): العدساتُ القائمة من المحرّك (KIVO.Perm44.lensList — plugins/lenses) { k: lens.<L>, L, n, sys: الأنظمةُ المضيفة }.
+     سقفُها للوحدة سجلُّها القائم (BassamPerm.deptLenses · setDeptLenses — غيابُه = الكلُّ مفعّل) — لا نموذجَ ولا مفتاحَ جديد */
+  _p44Lenses() {
+    const raw = this._p44Try(() => this._p44E().lensList(), []);
+    return (Array.isArray(raw) ? raw : []).map((x) => ({ k: x.key, L: x.lens, n: "عدسة " + x.name, sys: x.sys || [], lens: !0 }));
+  },
+  _p44LensOwn(u, L) {
+    return this._p44Try(() => KIVO.BassamPerm.deptLenses(u).indexOf(L) !== -1, !0);
+  },
+  /* مصدرُ قفل العدسة: أعلى أصلٍ أطفأها (كالأنظمة _p44LockSrc) — أو null */
+  _p44LensLock(u, L) {
+    const D = KIVO.BassamDepts,
+      anc = this._p44Try(() => (D.ancestorsOf(u) || []).slice(), []);
+    for (let i = anc.length - 1; i >= 0; i--) if (!this._p44LensOwn(anc[i], L)) return { n: this._p44Try(() => D.nodeOf(anc[i]).name, "") || "الأصل", id: anc[i] };
+    return null;
+  },
+  /* العدسةُ مفعّلةٌ فعلياً في الوحدة (المحفوظ): في سجلّها ∧ لا أصلَ أطفأها ∧ مضيفٌ مفعّلٌ فعلياً (إطفاءُ المضيف يطفئ عدساتِه) */
+  p44LensOnEff(u, x, off) {
+    return this._p44LensOwn(u, x.L) && !this._p44LensLock(u, x.L) && x.sys.some((s) => this.p44SysOnEff(u, s, off));
+  },
   _p44PlatOff() {
     const pl = this._p44Try(() => KIVO.BassamPlat.get(), null);   /* المطفأُ على المنصة كلها — «admin» دائم (activation: always) */
     const raw = ((pl && pl.mods && pl.mods.off) || []).filter((k) => "admin" !== k);
@@ -233,6 +253,8 @@ Object.assign(Component.prototype, {
   /* اسمُ موضع التغيير بشكل فرق المحرّك (diff): what = role · name · desc · sup · sys (role, sys) · person · ex (person, key) —
      وفرقُ السقف من الخادم (perm44CeilDiff): what = ceil.caps · ceil.subs · ceil.lenses (unit) */
   _p44SysName(k) {
+    const lz = this._p44Lenses().filter((x) => x.k === k)[0];   /* V7 · د7 (أ) */
+    if (lz) return lz.n;
     return (this._p44Sys().filter((s) => s.k === k)[0] || { n: this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[k].label, k) }).n;
   },
   /* V7 · د5-ح: صفوفُ عرض التغييرات (المراجعة والسجل) — إنشاءُ الدور أو حذفُه يُفصَّل بأنظمته ومستوياتها صفّاً لكل نظام
@@ -447,7 +469,7 @@ Object.assign(Component.prototype, {
         fn(c);
         return { cap: { unit: u, on: c } };
       });
-    const rows = sys.map((s) => {
+    const rows0 = sys.map((s) => {
         const L = this._p44LockSrc(u, s, off),
           fixed = !!(L && L.fixed),
           by = L && !fixed ? L.n : "",
@@ -457,6 +479,7 @@ Object.assign(Component.prototype, {
         return {
           k: s.k,
           n: s.n,
+          kind: "sys",
           on: on ? "true" : "false",
           isOn: on,
           locked: !!L,
@@ -476,8 +499,11 @@ Object.assign(Component.prototype, {
           },
         };
       }),
+      /* V7 · د7 (أ): تحت النظام المضيف عدساتُه بمفتاحٍ كالأنظمة — مسودتُها في المسودة نفسِها (lens.<L> = في سجلّ عدسات الوحدة؟)؛ المقفلُ من أصلٍ
+         «مطفأ من: <المصدر>»، والمضيفُ المطفأ (في المسودة أو المحفوظ) يطفئها معه ويقفلها — وسجلُّها يبقى فتعود كما كانت بعودته. لا عدساتَ في صف المنصة */
+      rows = "__plat" === u ? rows0 : this._p44LensInject(u, rows0, dr, setDr, off),
       /* «تشغيل الكل» / «إطفاء الكل»: المسودةُ لكل صفٍّ غيرِ مقفل — المقفلُ لا يُمسّ */
-      allTo = (v) => setDr((c) => rows.forEach((r) => r.locked || (v === r.was ? delete c[r.k] : (c[r.k] = v)))),
+      allTo = (v) => setDr((c) => rows.forEach((r) => (r.lens ? !!r.by : r.locked) || (v === r.was ? delete c[r.k] : (c[r.k] = v)))),   /* V7 · د7 (أ): العدسةُ المقفلةُ بمضيفها وحده تتبع الزرَّ مع مضيفها (المقفلةُ من أصلٍ لا تُمسّ) */
       eff = this._p44SysEffect(u, dr),
       dirtyN = Object.keys(dr).length,
       people = "__plat" === u ? this._p44Users().filter((x) => "super" !== x.role).length : this._p44Users().filter((x) => x.deptId === u || this._p44Try(() => (D.ancestorsOf(x.deptId) || []).indexOf(u) !== -1, !1)).length;
@@ -494,9 +520,9 @@ Object.assign(Component.prototype, {
       p44SysNavOn: "__plat" !== u,   /* V7 · د6: صفُّ «المنصة كلها» لا مديرَ وحدةٍ له — بطاقةُ قائمته تُخفى */
       p44SysNav: "__plat" === u ? [] : this.p44NavOf(u),
       p44SysNavT: "ما يراه مدير هذه الإدارة",
-      p44SysOnN: String(rows.filter((r) => r.isOn).length),
-      /* عدّادُ «المفعّل من الكل» · «تشغيل الكل» / «إطفاء الكل» (المقفلُ لا يتأثر) */
-      p44SysOnOf: rows.filter((r) => r.isOn).length + " من " + rows.length,
+      p44SysOnN: String(rows0.filter((r) => r.isOn).length),
+      /* عدّادُ «المفعّل من الكل» · «تشغيل الكل» / «إطفاء الكل» (المقفلُ لا يتأثر) — العدّادُ للأنظمة (= عمودُ الشجرة p44SysCount)، والعدساتُ في الزرّين */
+      p44SysOnOf: rows0.filter((r) => r.isOn).length + " من " + rows0.length,
       p44SysAllOn: () => allTo(!0),
       p44SysAllOff: () => allTo(!1),
       p44SysAllOk: rows.some((r) => !r.locked),
@@ -517,6 +543,38 @@ Object.assign(Component.prototype, {
   /* V7 · د5-ح (قرار المالك): «ما يراه مدير هذه الإدارة / قائمة إدارتك» = قائمتُه الجانبية الفعلية كاملةً (الدائمةُ معها) من المصدر الذي تُرسم منه
      القائمةُ الجانبية نفسُه (BassamPerm.menuFor — root-logic يرسم منه) على صلاحيات مدير الوحدة (mgrPerms) — لا قائمةَ محسوبةً على حدة.
      تعرض المحفوظ: تغييرٌ غيرُ محفوظ يظهر فيها بعد «حفظ» */
+  /* V7 · د7 (أ): صفوفُ العدسات بعد أول مضيفٍ حاضر (العدسةُ الواحدة تسري على مضيفَيها — سجلٌّ واحد للوحدة) */
+  _p44LensInject(u, rows, dr, setDr, off) {
+    const lz = this._p44Lenses();
+    if (!lz.length) return rows;
+    const hostOn = (s) => { const r = rows.filter((x) => x.k === s)[0]; return r ? r.isOn : this.p44SysOnEff(u, s, off); },
+      hostNm = (x) => x.sys.map((s) => this._p44SysName(s)).join(" · "),
+      mk = (x) => {
+        const own = this._p44LensOwn(u, x.L),
+          L = this._p44LensLock(u, x.L),
+          hOn = x.sys.some(hostOn),
+          cur = x.k in dr ? !!dr[x.k] : own,
+          was = this.p44LensOnEff(u, x, off),
+          on = !L && hOn && cur,
+          srcOn = !!L && L.id !== u;
+        return {
+          k: x.k, n: x.n, lens: !0, kind: "lens", on: on ? "true" : "false", isOn: on, locked: !!L || !hOn, by: L ? L.n : "",
+          lockTxt: L ? "مطفأ من: " + L.n : "يُطفأ مع " + hostNm(x),
+          was: own,
+          sub: L ? "مطفأ من " + L.n + " — لا يُفعَّل هنا" : !hOn ? "مطفأة مع النظام المضيف — تعود كما كانت بتشغيله" : on ? (was ? "مفعّلة في " + hostNm(x) : "ستُفعَّل عند الحفظ") : was ? "ستُطفأ عند الحفظ" : "مطفأة — لا تظهر لأحد في هذه الوحدة",
+          srcOn: srcOn,
+          srcHref: srcOn && this.ogHref ? this.ogHref(L.id, "systems") : "",
+          srcGo: (ev) => { ev && ev.preventDefault && ev.preventDefault(); srcOn && this.go && this.go(L.id, "systems"); },
+          flip: () => { if (L || !hOn) return; setDr((c) => ((c[x.k] = !cur), c[x.k] === own && delete c[x.k])); },
+        };
+      };
+    const out = [], done = {};
+    rows.forEach((r) => {
+      out.push(r);
+      lz.forEach((x) => { if (!done[x.k] && x.sys.indexOf(r.k) !== -1) { done[x.k] = 1; out.push(mk(x)); } });
+    });
+    return out;
+  },
   p44NavOf(u) {
     /* V7 · د6 (أ1): المصدرُ الواحد لكل «ما يراه حامل» — BassamPerm.seenBy (334) */
     return this._p44Try(() => KIVO.BassamPerm.seenBy({ kind: "mgr", did: u }), [{ k: "profile", n: "صفحتي" }]);
@@ -528,7 +586,9 @@ Object.assign(Component.prototype, {
       off = this._p44PlatOff(),
       rows = this._p44Sys()
         .filter((s) => s.tg && this.p44SysOnEff(did, s, off))   /* V7 · د6 (م6 · ب12): المفعّلُ فعلياً وحده */
-        .map((s) => ({ k: s.k, n: s.n, on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّل لإدارتك", flip: () => {} })),
+        .map((s) => ({ k: s.k, n: s.n, kind: "sys", on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّل لإدارتك", flip: () => {} }))
+        /* V7 · د7 (أ): والعدساتُ المفعّلة فعلياً تحت مضيفها — المطفأةُ لا تظهر له */
+        .reduce((acc, r) => acc.concat([r], this._p44Lenses().filter((x) => x.sys[0] === r.k || (x.sys.indexOf(r.k) !== -1 && !acc.some((y) => x.sys.indexOf(y.k) !== -1))).filter((x) => this.p44LensOnEff(did, x, off)).map((x) => ({ k: x.k, n: x.n, kind: "lens", on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّلة لإدارتك", flip: () => {} }))), []),
       people = this._p44Users().filter((x) => x.deptId === did || this._p44Try(() => (D.ancestorsOf(x.deptId) || []).indexOf(did) !== -1, !1)).length;
     return {
       p44SysRO: !0,
@@ -568,8 +628,12 @@ Object.assign(Component.prototype, {
   },
   /* V7 · د6 (قرار المالك ٤): ما يُطفأ مع حاويةٍ في هذه المسودة ولم يُذكر فيها — المفعّلُ الآن وحده (الدالةُ الواحدة) */
   _p44SysWith(u, dr) {
-    const ks = Object.keys(dr || {});
-    return this._p44Try(() => KIVO.Perm44.offWith(ks.filter((k) => !dr[k]), (k) => this.p44SysOnEff(u, k)), []) || [];
+    const ks = Object.keys(dr || {}),
+      w = this._p44Try(() => KIVO.Perm44.offWith(ks.filter((k) => !dr[k] && !/^lens\./.test(k)), (k) => this.p44SysOnEff(u, k)), []) || [];
+    /* V7 · د7 (أ): العدسةُ المفعّلة التي يُطفأ كلُّ مضيفيها بهذه المسودة تُطفأ معها (تعود بعودته) */
+    if ("__plat" === u) return w;
+    const after = (s) => (s in (dr || {}) ? !!dr[s] : w.indexOf(s) === -1 && this.p44SysOnEff(u, s));
+    return w.concat(this._p44Lenses().filter((x) => !(x.k in dr) && this.p44LensOnEff(u, x) && !x.sys.some(after)).map((x) => x.k));
   },
   /* «أثر الحفظ» بالأسماء: { on: [يُفعَّل] · off: [يُطفأ] · with: [يُطفأ معها] } */
   _p44SysEffect(u, dr) {
@@ -629,7 +693,8 @@ Object.assign(Component.prototype, {
   /* الكتابةُ المتزامنة لمسودة وحدةٍ واحدة بالكتّاب القائمين — كلُّها في مفتاحٍ واحد (bassam_perms_v1 · أو bassam_platform_v1 لصف المنصة) */
   _p44CapWrite(u, dr) {
     const P = KIVO.BassamPerm,
-      keys = Object.keys(dr || {});
+      lensK = Object.keys(dr || {}).filter((k) => /^lens\./.test(k)),   /* V7 · د7 (أ): مفاتيحُ العدسات بكاتبها القائم setDeptLenses — في المفتاح نفسِه والحفظةِ نفسِها */
+      keys = Object.keys(dr || {}).filter((k) => !/^lens\./.test(k));
     let r = { ok: !0 };
     try {
       if ("__plat" === u) {
@@ -669,18 +734,37 @@ Object.assign(Component.prototype, {
             for (let i = cap.length - 1; i >= 0; i--) drop.indexOf(cap[i]) !== -1 && cap.splice(i, 1);
           }
         });
-        r.ok && (r = P.setDeptCap(u, cap) || r);
+        keys.length && r.ok && (r = P.setDeptCap(u, cap) || r);
+        if (lensK.length && r.ok) {
+          const lz = this._p44Lenses(),
+            cur = (P.deptLenses(u) || []).slice();
+          lensK.forEach((k) => { const x = lz.filter((y) => y.k === k)[0], i = x ? cur.indexOf(x.L) : -1; x && (dr[k] ? i === -1 && cur.push(x.L) : i !== -1 && cur.splice(i, 1)); });
+          r = P.setDeptLenses(u, lz.map((x) => x.L).filter((L) => cur.indexOf(L) !== -1)) || r;
+        }
       }
     } catch (e) {
       r = { ok: !1, err: "تعذّر حفظ الأنظمة" };
     }
     return r || { ok: !0 };
   },
+  /* V7 · د7 (أ): صفوفُ محرّر الدور = الأنظمةُ المفعّلة + كلُّ عدسةٍ مفعّلةٍ للوحدة تحت أول مضيفٍ حاضر (role.sys['lens.<L>'] بالمستويات نفسِها) —
+     المفعّلةُ = مفتاحُ عرضها داخل سقف الوحدة (Perm44.ceiling: العدسةُ في السلسلة ∧ مضيفٌ مفعّل) */
+  _p44RoleSys(did, sys) {
+    const C = this._p44KeyCeil(did),
+      lz = this._p44Lenses().filter((x) => this._p44Try(() => !!C(x.k + ".view"), !1)),
+      out = [],
+      done = {};
+    sys.forEach((s) => {
+      out.push(s);
+      lz.forEach((x) => { if (!done[x.k] && x.sys.indexOf(s.k) !== -1) { done[x.k] = 1; out.push({ k: x.k, n: x.n, kind: "lens", lens: !0 }); } });
+    });
+    return out;
+  },
   /* ② الأدوار */
   _p44RoleVals(did, d, mgrV, isNode) {
     const S = this._p44S(),
       on = this._p44Ceil(did),
-      sys = this._p44Sys().filter((s) => on(s.k)) /* مديرُ الإدارة لا يرى نظاماً مطفأً في سقفه — ولا مديرُ المنصة في محرّر دورٍ لهذه الإدارة */,
+      sys = this._p44RoleSys(did, this._p44Sys().filter((s) => on(s.k))) /* مديرُ الإدارة لا يرى نظاماً مطفأً في سقفه — ولا مديرُ المنصة في محرّر دورٍ لهذه الإدارة */,
       holders = (id) => Object.keys(d.people || {}).filter((ek) => (d.people[ek] || {}).role === id).length,
       /* V7 · د6: القائمةُ أدوارُ الموظفين المخصّصة وحدها — «مدير المنصة» و«مدير الوحدة» في تبويب «المسؤولون» (p44AdminsVals) */
       sel = (d.roles.filter((r) => r.id === S.sel)[0] || d.roles[0] || { id: "" }).id,
@@ -721,6 +805,7 @@ Object.assign(Component.prototype, {
       return {
         k: s.k,
         n: s.n,
+        kind: s.kind || "sys",
         isOn: isOn,
         onTxt: isOn ? "true" : "false",
         lv: lv || "view",

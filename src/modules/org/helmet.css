@@ -202,6 +202,8 @@
 .p44-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .p44-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--bg-surface)}
 .p44-row[data-on="true"]{background:var(--bg-card);border-color:var(--border-brand-soft)}
+/* V7 · د7 (أ): العدسةُ تحت نظامها المضيف — الصفُّ نفسُه بإزاحة */
+.p44-row[data-kind="lens"]{margin-inline-start:22px}
 .p44-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none;background:var(--bg-surface-3);color:var(--text-muted)}
 .p44-row[data-on="true"] .p44-ic{background:var(--brand-soft);color:var(--brand-text)}
 .p44-lock{font-size:11px;color:var(--warning-text);background:var(--warning-bg);border-radius:999px;padding:1px 9px}
