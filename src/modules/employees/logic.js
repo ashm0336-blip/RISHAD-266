@@ -3257,7 +3257,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       scoreParts: mt,
       score: String(ct),
       gaugeDash: bt.toFixed(1) + " " + (ft - bt).toFixed(1),
-      greeting: r >= 4 && r < 12 ? "صباح الخير" : r >= 12 && r < 17 ? "نهارك سعيد" : r >= 17 && r < 21 ? "مساء الخير" : "ليلة هانئة",
+      greeting: KIVO.BassamGreet(r).text /* V7 · 53: قاعدةُ التحية الواحدة (440-count) */,
       timeShort: e.toLocaleTimeString("ar-SA-u-nu-latn", { hour: "2-digit", minute: "2-digit", hour12: !0 }),
       gregShort: e.toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", { weekday: "long", day: "numeric", month: "long" }),
       hijriShort: KIVO.BassamCal.hText(e, { day: "numeric", month: "long", year: "numeric" }),

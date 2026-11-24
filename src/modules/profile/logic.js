@@ -2642,7 +2642,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
     Object.assign(r, this.pfInfoVals(i, e), this.pfDeptVals(i, e));
     const o = i.now.getHours();
-    ((r.greeting = o >= 5 && o < 12 ? "صباح الخير" : o >= 12 && o < 17 ? "نهارك سعيد" : "مساء الخير"), (r.greetIsDay = o >= 5 && o < 17), (r.greetIsNight = !r.greetIsDay));
+    /* V7 · 53: قاعدةُ التحية الواحدة (KIVO.BassamGreet · 440-count) */ const g = KIVO.BassamGreet(o);
+    ((r.greeting = g.text), (r.greetIsDay = g.day), (r.greetIsNight = !r.greetIsDay));
     const f = this.MONTHS();
     let l = "";
     try {
