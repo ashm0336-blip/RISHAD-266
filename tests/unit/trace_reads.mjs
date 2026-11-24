@@ -19,7 +19,7 @@ export function traceReads(root, isSeed) {
   const key = (id) => { const f = scopeOf(id); return (f.start) + ':' + id.name; };
   const ids = new Set(), fns = new Set();
   const isS = (e) => { if (!e) return false; if (e.type === 'LogicalExpression') return e.operator === '&&' ? isS(e.right) : isS(e.left) || isS(e.right);   /* a && b ⇒ قيمتُه b (a حارسٌ) */ if (e.type === 'ConditionalExpression') return isS(e.consequent) || isS(e.alternate);
-    if (e.type === 'Identifier') return ids.has(key(e)); if (e.type === 'CallExpression' && e.callee.type === 'Identifier' && fns.has(key(e.callee))) return true; return isSeed(e); };
+    if (e.type === 'Identifier') return ids.has(key(e)) || isSeed(e); if (e.type === 'CallExpression' && e.callee.type === 'Identifier' && fns.has(key(e.callee))) return true; return isSeed(e); };
   for (let grew = true; grew;) {
     grew = false;
     for (const n of all) {
@@ -31,7 +31,9 @@ export function traceReads(root, isSeed) {
     }
   }
   const reads = new Set(), escapes = [];
-  const isAlias = (n) => n.type === 'Identifier' && ids.has(key(n));
+  const isAlias = (n) => { if (n.type !== 'Identifier') return false; const up = parents.get(n);
+    if (up && ((up.type === 'MemberExpression' && up.property === n && !up.computed) || ((up.type === 'Property' || up.type === 'MethodDefinition') && up.key === n && !up.computed && !up.shorthand))) return false;   /* اسمُ خاصيةٍ لا متغيّر */
+    return ids.has(key(n)) || isSeed(n); };
   for (const n of all) {
     if (n.type === 'MemberExpression' && (isAlias(n.object) || (n.object.type !== 'Identifier' && isS(n.object)))) {
       if (!n.computed) reads.add(n.property.name); else if (n.property.type === 'Literal') reads.add(String(n.property.value)); else reads.add('[computed]');
@@ -45,5 +47,5 @@ export function traceReads(root, isSeed) {
       escapes.push(up.type + '@' + n.start);
     }
   }
-  return { ids: [...ids].map((x) => x.split(':')[1]).sort(), fns: [...fns].map((x) => x.split(':')[1]).sort(), reads: [...reads].sort(), escapes };
+  return { ids: [...ids].map((x) => x.split(':')[1]).sort(), fns: [...fns].map((x) => x.split(':')[1]).sort(), reads: [...reads].sort(), escapes, isAlias };   /* isAlias(عقدة): متغيّرٌ يحمل البذرة في نطاقه */
 }
