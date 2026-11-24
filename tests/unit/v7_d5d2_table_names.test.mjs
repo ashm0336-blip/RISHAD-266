@@ -23,7 +23,9 @@ test('① every existing shape is stored in exactly the same table before and af
   /* V7 · د6 (schemafix): أشكالُ «القراءة بالسعة» الثلاثة (0012) جديدة بأسمائها المعلنة (ops_zone_prayer_*) — لا اسمَ قديماً لها لتطابقه؛
      تُردّ أسماؤها بالترتيب إلى المعلنة ثم يُقارَن كلُّ ما سواها حرفاً كما كان */
   const r = run(SHAPE + `var before = ocPrepare(__DEFS), after = ocPrepare(__DEFS, OC_TABLE_NAMES), out = { resources: __DEFS.length, diff: [] };
-    function fresh(text) { return text.replace(/ops_[a-z_]+_zones_element_prayer_counts_reading_capacity/g, 'ops_zone_prayer_capacity').replace(/ops_[a-z_]+_zones_element_prayer_counts_reading/g, 'ops_zone_prayer_reading').replace(/ops_[a-z_]+_zones_element_prayer_counts/g, 'ops_zone_prayer_counts'); }
+    function fresh(text) { return text.replace(/ops_[a-z_]+_zones_element_prayer_counts_reading_capacity/g, 'ops_zone_prayer_capacity').replace(/ops_[a-z_]+_zones_element_prayer_counts_reading/g, 'ops_zone_prayer_reading').replace(/ops_[a-z_]+_zones_element_prayer_counts/g, 'ops_zone_prayer_counts')
+      /* V7 · 53 تقويم (ق٤): شكلُ calq4 الجديد (019p1) يُخزَّن في جدولين قائمين بشكلهما نفسِه (019o1) — لا اسمَ قديماً له؛ يُردّ اسمُه بالترتيب إليهما */
+      .replace(/ops_staffing_(?:month|legacy_month|archive_bucket)_calq4_values/g, 'ops_staffing_month_shifts_entry_choice_0').replace(/ops_staffing_(?:month|legacy_month|archive_bucket)_calq4/g, 'ops_staffing_month_employee_perm_days'); }
     function norm(sh, rename) { var t = JSON.parse(rename ? fresh(JSON.stringify(sh)) : JSON.stringify(sh)); t.tables.sort(); t.entities.sort(); return JSON.stringify(t); }
     __DEFS.forEach(function (d) { if (norm(shape(before, d.resource), true) !== norm(shape(after, d.resource))) out.diff.push(d.resource); });
     out.ddl = JSON.stringify(JSON.parse(fresh(JSON.stringify(ocCreateStatements(before)))).sort()) === JSON.stringify(ocCreateStatements(after).slice().sort()); out.nEntities = Object.keys(after.entities).length; return out;`);
