@@ -82,7 +82,7 @@ test('V7 · 53 ③: ينجح بهامش إنتاجٍ ≥ 4٪ وPreview تحت ا
 /* V7 · 53 (REVIEW.md البند ٤١): استثناءٌ مكتوبٌ لإصدار الشركة — بسلطته وحدّه الأدنى، والسقفُ نفسُه لا يُرفع */
 test('V7 · 53 ④ (REVIEW ٤١): الاستثناءُ المكتوب — 3٪ تمرّ بتنبيهٍ ظاهر · تحت حدّه تفشل · وبلا سلطةٍ مكتوبة لا أثرَ له', () => {
   const ex = BUD.prodWorker.exception;
-  assert.ok(ex && /البند ٤١/.test(ex.authority) && /البند ٤٢/.test(ex.authority) && ex.minMarginPct === 2.65 && /4٪/.test(ex.next), 'استثناءٌ بسلطته وحدّه وموعد إلغائه: ' + JSON.stringify(ex));
+  assert.ok(ex && /البند ٤١/.test(ex.authority) && /البند ٤٢/.test(ex.authority) && ex.minMarginPct === 2.60 && /قرار المالك 24 نوفمبر 23:13/.test(ex.authority) && /4٪/.test(ex.next), 'استثناءٌ بسلطته وحدّه وموعد إلغائه: ' + JSON.stringify(ex));
   assert.equal(BUD.prodWorker.minMarginPct, 4, 'القاعدةُ نفسُها 4٪'); assert.equal(BUD.budget['worker:_worker.js'], 488000, 'السقفُ لم يُرفع');
   const G = fakePk(); fs.writeFileSync(path.join(G.pk, '_worker.js'), fs.readFileSync(path.join(G.pk, '_worker.js'), 'utf8').replace(/'[a-z0-9]{1000,}'/, "'x'"));
   try {
