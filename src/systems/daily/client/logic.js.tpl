@@ -155,7 +155,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       const service = KIVO.BassamDayShift;
       if (!service) throw Error("operations-read-required");
       const result =
-        service.get(year, month, day) === name
+        (typeof service.all === "function" ? (service.all() || {})[KIVO.BassamCal.gKey(year, month, day)] || "" : service.get(year, month, day)) === name   /* V7 · 53: المحفوظُ وحده — الاختيارُ الصريح للوردية المشتقّة يُثبَّت */
           ? { ok: 1, value: name }
           : await service.set(year, month, day, name);
       if (!result || result.ok !== 1 || typeof result.value !== "string") {
@@ -368,28 +368,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           "bassam_dayshift_v1" !== e) ||
           ((this._drAp9 = null),
           this.setState((t) => ({ extTick: (t.extTick || 0) + 1 })),
-          planKey === e &&
-            setTimeout(async () => {
-              try {
-                const t = KIVO.BassamDayFocus && KIVO.BassamDayFocus.get();
-                if (!t) return;
-                const e = (KIVO.bus.read("dreport.doc@1", (k) => this._opRead(k)) || {} || {})[
-                  KIVO.BassamCal.gKey(t.y, t.m, t.d)
-                ];
-                if (!(e && e.shifts && Object.keys(e.shifts).some((t) => e.shifts[t] && e.shifts[t].pulled))) return;
-                (KIVO.BassamPerm &&
-                  KIVO.BassamPerm.canW &&
-                  !KIVO.BassamPerm.canW("bassam_rounds_v1", "add")) ||
-                  ("created" ===
-                    (await KIVO.BassamRound.ensure(t.y, t.m, t.d)).status &&
-                    this.bsAck(
-                      "أُنشئت جولة يوم " +
-                        t.d +
-                        " تلقائياً من التشغيل الميداني",
-                      "ok",
-                    ));
-              } catch (t) {}
-            }, 50));
+          /* V7 · 53 (لا شيء صامت · القاعدة 8): كان وصولُ الخطة (ومنه قراءتُها الأولى عند الفتح) يُنشئ جولةَ اليوم المركَّز تلقائياً بحفظٍ بلا فعلٍ من المستخدم
+             (BassamRound.ensure). الجولةُ تُنشأ عند سحب وردية التقرير (dreport.pulled@1) أو بفعل المستخدم في الصفحة — لا عند القراءة */
+          void 0);
       } catch (t) {}
     }),
       window.addEventListener("bassam:store", this._storeLis),
@@ -7482,20 +7463,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           const t =
             (KIVO.BassamDayShift && KIVO.BassamDayShift.get(T, s.month, m)) ||
             null;
+          /* V7 · 53 (لا شيء صامت · القاعدة 8): ورديةُ اليوم من الدالة الواحدة BassamDayShift.get — المحفوظةُ، وإلا ورديةُ التقرير الوحيدة المسحوبة/المعتمدة
+             مشتقّةً للعرض بلا كتابة. كانت هنا تُثبَّت بحفظٍ تلقائيّ عند فتح الصفحة (POST /api/save لـ bassam_dayshift_v1 بلا فعلٍ من المستخدم؛
+             وفي إدارةٍ معلّقة 503 وحارسُ مغادرة). التثبيتُ باختيار المستخدم وحده (_selectDayShift من قائمة الورديات) */
           if (t) return t;
-          const e = Object.keys(W).filter((t) => "__pulled" !== t && (W[t] || (W.__pulled && W.__pulled[t])));
-          if (1 === e.length && KIVO.BassamDayShift) {
-            const t = e[0];
-            return (
-              setTimeout(async () => {
-                try {
-                  KIVO.BassamDayShift.get(T, s.month, m) ||
-                    (await this._selectDayShift(T, s.month, m, t));
-                } catch (error) {}
-              }, 0),
-              t
-            );
-          }
           return null;
         } catch (t) {
           return null;

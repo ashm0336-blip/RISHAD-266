@@ -298,7 +298,17 @@
       return o && typeof o === 'object' ? o : {};
     }
     function key(y, m, d){ return KIVO.BassamCal.gKey(y, m, d); }   /* V7 · 53 تقويم: يومُ الوردية والتقرير ISO YYYY-MM-DD */
-    function get(y, m, d){ var mine = myShiftOf(y, m, d); if (mine) return mine.shift; var v = all()[key(y, m, d)]; return typeof v === 'string' ? v : ''; }
+    /* V7 · 53 (لا شيء صامت · القاعدة 8): بلا ورديةٍ مثبَّتة لليوم ⇒ ورديةُ التقرير الوحيدة المسحوبة أو المعتمدة لذلك اليوم مشتقّةً (للعرض، بلا كتابة) —
+       الدالةُ الواحدة لكل مستهلك (الجولات · التقرير · صفحتي). كانت صفحةُ الجولات تثبّتها بحفظٍ تلقائيّ عند الفتح */
+    function derived(y, m, d){
+      try {
+        var rec = (KIVO.bus.read('dreport.doc@1') || {})[key(y, m, d)], S = rec && rec.shifts;
+        if (!S || typeof S !== 'object') return '';
+        var L = Object.keys(S).filter(function(n){ return S[n] && (S[n].ap || S[n].pulled); });
+        return L.length === 1 ? L[0] : '';
+      } catch(e){ return ''; }
+    }
+    function get(y, m, d){ var mine = myShiftOf(y, m, d); if (mine) return mine.shift; var v = all()[key(y, m, d)]; return typeof v === 'string' && v ? v : derived(y, m, d); }
     function prepareSet(draft, y, m, d, name){
       var mine = myShiftOf(y, m, d);
       if (mine) return { status: 'personal', value: mine.shift };
