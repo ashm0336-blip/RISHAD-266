@@ -284,7 +284,7 @@ async function empPrepareTransition(env, A, input) {
   /* V7 · د7: تكرارٌ مع إدارةٍ أخرى أو حساب ⇒ رفضٌ بتفصيله (يذكر العميلُ الصف) */
   if (input.intent === 'import') {
     var dupList = empDupList(A, before, after, d, await empDupContext(env, A, d, before, after));
-    if (dupList.length) { var dupErr = cuError('emp-dup', 403); dupErr.cuDup = dupList.slice(0, 200); throw dupErr; }
+    if (dupList.length) { var dupErr = cuError('emp-dup', 403); dupErr.dupList = dupList.slice(0, 200);   /* V7 · 53: اسمٌ محايد — «cu» بادئةُ العهد، والقاعدةُ لا تسمّي برنامجاً (removal ④) */ throw dupErr; }
   }
   EMP_TRANSITION_RELATED.forEach(function (n) {
     var k = empTransitionKey(d, n),

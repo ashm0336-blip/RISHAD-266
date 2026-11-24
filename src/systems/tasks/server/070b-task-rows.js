@@ -37,26 +37,27 @@ function tkHeld(A, d, key) {
 /* ── مفاتيحُ المخازن ── */
 function tkK(d) { return 'bsdept:' + d + ':bassam_tasks_v1'; }
 async function tkRev(env, k) { var r = await env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(k).first(); return (r && r.rev) || 0; }
-/* قفلُ الشهر في الخادم = الاعتمادُ الصريح وحده (true) — {mo:1} شهرٌ منقضٍ فُتح فهو مفتوح (lockState في 010) */
-async function tkLocked(env, d, ym) {
-  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
-  var v = isObj(L) ? L[ym] : undefined; return v === true || v === 1;
-}
 function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]); }
 /* V7 · 53 (قرارا المالك ٧ و٨): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد ولا يُفتح إلا للاستدراك ({mo:1}).
    الرسالةُ بحسب القارئ: من يملك فتحَ الشهر (task.month.reopen) يُقال له افتحه، وغيرُه يُحال إلى مدير الإدارة */
 var TK_PAST_MGR = 'الشهر مقفل — افتحه للاستدراك أولاً', TK_PAST_EMP = 'الشهر مقفل — راجع مدير الإدارة';
-async function tkPastLocked(env, d, ym) {
-  var p = String(ym).split('-'), y = +p[0], m = +p[1], T = dsToday(Date.now()); if (!T || !(y > 0 && m > 0) || 12 * y + m >= 12 * T.y + T.m) return false;
-  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}), v = isObj(L) ? L[y + '-' + m] : undefined;
-  return !(isObj(v) && v.mo);
-}
 function tkPastMsg(A, d) { return tkHeld(A, d, 'task.month.reopen') ? TK_PAST_MGR : TK_PAST_EMP; }
-/* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */
-async function tkDayShut(env, d, k) {
-  var p = String(k).split('-'), L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
-  return isObj(L) && L[(+p[0]) + '-' + (+p[1]) + '-' + (+p[2])] === true;
+/* V7 · 53 (قرار المالك ٧ — «قاعدةُ الفترة المقفلة نفسُها كبقية الأنظمة»): حكمُ الفترة لكل كتابةٍ على مهمة (المسؤول · الموظف · التكرار) — قاعدةُ الصفحة
+   (tasks/client _tkDayLockOf): الشهرُ المعتمد مقفل · اليومُ المُغلق بيده مقفل · الشهرُ الماضي مقفلٌ ما لم يُفتح ({mo:1}) · واليومُ المنقضي من الشهر الجاري
+   مقفلٌ ما لم يُفتح هو أو شهرُه ({mo:1}). يعيد نصَّ الرفض بحسب القارئ أو '' */
+var TK_DAY_MGR = 'اليوم مقفل — افتحه للاستدراك أولاً', TK_DAY_EMP = 'اليوم مقفل — راجع مدير الإدارة';
+async function tkPeriodWhy(env, A, d, k) {
+  var p = String(k).split('-'), y = +p[0], m = +p[1], dd = +p[2], ym = y + '-' + m, dk = ym + '-' + dd;
+  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(L)) L = {};
+  var mv = L[ym], dv = L[dk], mo = isObj(mv) && !!mv.mo, T = dsToday(Date.now());
+  if (mv === true || mv === 1) return 'شهرُ المهمة معتمدٌ ومقفل';
+  if (dv === true) return 'اليومُ مُغلق — افتحه من صفحة المهام أولاً';
+  if (!T || !(y > 0 && m > 0)) return '';
+  if (12 * y + m < 12 * T.y + T.m) return mo ? '' : tkPastMsg(A, d);
+  if (12 * y + m === 12 * T.y + T.m && dd > 0 && dd < T.d && !mo && !(isObj(dv) && dv.mo)) return tkHeld(A, d, 'task.month.reopen') ? TK_DAY_MGR : TK_DAY_EMP;
+  return '';
 }
+/* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */
 /* ── حدثُ تدقيقٍ للمهمة (etype=task · eid = هويةُ الكيان) ── */
 function tkAud(K, r, act, ctx, bef, aft) {
   var now = Date.now();

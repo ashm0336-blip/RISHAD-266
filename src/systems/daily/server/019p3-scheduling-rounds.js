@@ -143,9 +143,28 @@ function dailyArcStep(live, arc, T) {
    ③ dailyArcPend (بعد الحكم · قبل تصفية غير المتغيّر): القيمةُ المقبولة تُقسم بخطوة الأرشفة إلى الحيّ (الأشهرُ المفتوحة + العلامات) والأرشيف
       (الأشهرُ المقفلة) — كتابتان في الدفعة الذرّية نفسِها بنسختيهما المقروءتين (حارسُ النسخة يرفض التزامن)، ويعود المرجعُ إلى المخزَّن.
    الردُّ يسمّي ما طلبه العميلُ وحده (revs ← plan.operationKeys). والاستعادةُ (019d) تقسم ما تستعيده بالخطوة نفسِها (③ بلا ①②). */
+/* V7 · 53 (S13): يومٌ يُفتح (dopen جديد) في شهرٍ مقفل — معتمد، أو ماضٍ لم يُفتح للاستدراك (mo) — لا يُقبل وحده: كان يُحفظ ولا أثرَ له
+   (قاعدةُ الصفحة isMonthAp والخادم lockedIn: الشهرُ المقفل يغلب أيامَه). يعيد خريطةَ الرفض لمفتاحه أو null */
+function dailyLoneDayOpen(cur, next, T) {
+  var c = isObj(cur) ? cur : {}, n = isObj(next) ? next : {}, q, m, r, o, d;
+  for (q in n) {
+    if (!Object.prototype.hasOwnProperty.call(n, q) || !(m = /^m:(\d{4})-(\d{1,2})$/.exec(q))) continue;
+    r = n[q] === true || n[q] === 1 ? { ap: 1 } : isObj(n[q]) ? n[q] : {}; o = isObj(c[q]) ? c[q] : {};
+    var past = !!(T && T.y > 0 && (+m[1] * 12 + +m[2]) < (T.y * 12 + T.m)), locked = !!r.ap || (past && !r.mo);
+    if (!locked || !isObj(r.dopen)) continue;
+    for (d in r.dopen) if (Object.prototype.hasOwnProperty.call(r.dopen, d) && r.dopen[d] && !(isObj(o.dopen) && o.dopen[d])) return { why: 'day-needs-month', detail: q + '-' + d };
+  }
+  return null;
+}
 async function dailyArcPre(env, body) {
-  var set = (body && body.set) || {}, cap = env.__opCapture, T = dsToday(Date.now()), k;
-  if (!cap || !cap.keys || !env.__pre || !env.__pre.live) return;
+  var set = (body && body.set) || {}, cap = env.__opCapture, T = dsToday(Date.now()), k, no = null;
+  for (k in set) {
+    if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || resName(k) !== 'bassam_rounds_v1') continue;
+    var lone = dailyLoneDayOpen(parseJson(await opResourceGet(env, k), null), parseJson(set[k], null), T);
+    if (lone) (no = no || {})[k] = lone;
+  }
+  if (no) return no;
+  if (!cap || !cap.keys || !env.__pre || !env.__pre.live) return null;
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || resName(k) !== 'bassam_rounds_v1') continue;
     var d = parseKey(k).dept; if (!d) continue;
@@ -162,7 +181,9 @@ async function dailyArcPre(env, body) {
     (env.__dailyArc = env.__dailyArc || Object.create(null))[k] = { live: liveRaw, keep: keep };
     if (Object.keys(arc).length && isObj(live)) cap.keys[k] = JSON.stringify(L);
   }
+  return null;
 }
+
 function dailyArcFill(env, k, v, cur) {
   var X = env.__dailyArc && env.__dailyArc[k]; if (!X || v == null || cur == null) return v;
   var n = parseJson(v, null), c = parseJson(cur, null), add = 0, q;

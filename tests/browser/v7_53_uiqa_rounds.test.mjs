@@ -35,3 +35,23 @@ test('S13 — فتحُ يومٍ في شهرٍ ماضٍ يفتح شهرَه مع�
     assert.deepEqual(m.errs, []);
   } finally { await b.close(); await lab.close(); }
 });
+
+/* S13 في الخادم: حفظٌ يفتح يوماً وحده (dopen) في شهرٍ ماضٍ مقفل — كما كانت ترسله الصفحةُ قبل الإصلاح — يُرفض برسالة ولا يتغيّر شيء */
+test('S13 — الخادم يرفض فتحَ يومٍ وحده في شهرٍ ماضٍ مقفل برسالةٍ صريحة · ومع فتح الشهر يُقبل', { timeout: 300000 }, async () => {
+  const lab = await world(), b = await chromium.launch();
+  try {
+    const m = await openAs(b, lab, LAB.mgrA, LAB.pw), p = m.page; let n = 0;
+    const EP = () => Number(lab.env.DB.q("SELECT v FROM meta WHERE k='restore_epoch'")[0]?.v || 0), mk = 'm:' + PM.y + '-' + PM.m;
+    const send = async (rec) => { const g = await m.api('/api/operations/read?keys=' + encodeURIComponent(KR)); const v = Object.assign({}, (g.j.resources || {})[KR] || {}, { [mk]: rec });
+      return m.api('/api/save', { method: 'POST', body: JSON.stringify({ requestId: 'TEST_ONLY_s13_' + (++n) + '_xxxx', epoch: EP(), set: { [KR]: JSON.stringify(v) }, base: { [KR]: (g.j.base || {})[KR] || 0 } }) }); };
+    const r = await send({ dopen: { 10: 1 } });
+    assert.equal(r.status, 403, JSON.stringify(r.j).slice(0, 300));
+    assert.equal(r.j.denied[KR].why, 'day-needs-month');
+    const g = await m.api('/api/operations/read?keys=' + encodeURIComponent(KR));
+    assert.ok(!(((g.j.resources || {})[KR] || {})[mk]), 'nothing saved');
+    const t = await p.evaluate((d) => KIVO.__BS_SRV.operations.explain({ details: { denied: d } }), r.j.denied);
+    assert.match(t, /اليومُ في شهرٍ مقفل لا يُفتح وحده/, t);
+    const r2 = await send({ mo: 1, dopen: { 10: 1 } });
+    assert.equal(r2.status, 200, JSON.stringify(r2.j).slice(0, 300));
+  } finally { await b.close(); await lab.close(); }
+});
