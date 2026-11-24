@@ -115,7 +115,10 @@ async function authPublicRoutes(request, env, path, url) {
       await guardReset(env, gkU); await guardOk(env, gkI, gkP);   /* v7-C · Issue 2 (ج): الزوجُ وعدّادُ الإنذار يُحذفان كما كانا؛ المصدرُ يُغتفر له عدُّ هذا الزوج وحده (guardOk · M1) */
       /* V7 · د5-هـ (x1): التنبيهُ يحمل مِقبضَ الجلسة الجديدة (link 'sess:<sid>' — بصمةٌ لا الرمز) ليُنهيها «ليس أنا» · مرةً لكل جهاز (once) · لا تنبيهَ لشاشة العرض */
       try { if (u.role !== 'super' && u.role !== 'display' && u.ekey && u.deptId) { var dvR = await env.DB.prepare("SELECT MAX(detail = ?2) n FROM sec WHERE act = 'login_ok' AND ts > ?3 AND uid = ?1 AND detail LIKE 'dv:%'").bind(u.id, dvS, now - 15552e6).first();
-        if (dvR && dvR.n === 0) { var Adv = await actorOf(env, u.id); if (Adv) await nfEmitEvents(env, Adv, [{ type: 'sc_dev', dept: u.deptId, own: [String(u.ekey)], vars: { 'الجهاز': (rm.dev === 'm' ? 'هاتف' : 'حاسوب') + ' · ' + dvB + (rm.city ? ' · ' + rm.city : ''), 'المدينة': rm.city || '' }, link: 'sess:' + (await sessSid(tok)), once: 'sc_dev:' + u.id + ':' + dvC }], true); } } } catch (eDv) { swallow('sc-dev', eDv, env.__rid); }
+        /* V7 · 53 (FIX_53_SCALE S11): المتصفحُ الذي لا يحفظ كعكةَ الجهاز يأتي بمعرّفٍ جديد كلَّ دخول (72 تنبيهاً في ساعة من العنوان والمتصفح نفسيهما) —
+           الجهازُ نفسُه أيضاً = العنوان + المتصفح + نوع الجهاز (بصمةٌ مجزّأة لا العنوانُ نفسُه): نُبّه له خلال SC_DEV_WIN_MS فلا تنبيهَ ثانٍ */
+        var dvF = 'sc_dev:' + u.id + ':fp:' + (await devPrint(rm, dvB)) + ':', dvSeen = dvR && dvR.n === 0 ? await env.DB.prepare('SELECT 1 n FROM notification_dedup WHERE substr(once_key, 1, length(?1)) = ?1 AND created_at > ?2 LIMIT 1').bind(dvF, now - SC_DEV_WIN_MS).first() : null;
+        if (dvR && dvR.n === 0 && !dvSeen) { var Adv = await actorOf(env, u.id); if (Adv) await nfEmitEvents(env, Adv, [{ type: 'sc_dev', dept: u.deptId, own: [String(u.ekey)], vars: { 'الجهاز': (rm.dev === 'm' ? 'هاتف' : 'حاسوب') + ' · ' + dvB + (rm.city ? ' · ' + rm.city : ''), 'المدينة': rm.city || '' }, link: 'sess:' + (await sessSid(tok)), once: dvF + dvC }], true); } } } catch (eDv) { swallow('sc-dev', eDv, env.__rid); }
       await secLog(env, { uid: u.id, un: u.un, act: 'login_ok', detail: dvS, ip: rm.ip, city: rm.city, dev: rm.dev });
       /* mc على السجل: كلمة مؤقتة عيّنها مدير النظام — تُفرض على أي دور */
       var mustChange = u.role === 'display' ? false : !!u.mc || ((u.role === 'staff' || u.role === 'gm') ? false : (!pwCheck(pw, u.role) || !unCheck(u.un)));
@@ -156,6 +159,13 @@ async function authPublicRoutes(request, env, path, url) {
   }
 
   return null;
+}
+/* V7 · 53 (S11): بصمةُ «الجهاز نفسه» لتنبيه الجهاز الجديد — 16 hex من SHA-256 للعنوان والمتصفح ونوع الجهاز · ونافذتُها يوم */
+var SC_DEV_WIN_MS = 864e5;
+async function devPrint(rm, br) {
+  var h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('bs-dev:' + [rm.ip || '', br || '', rm.dev || ''].join('|')))), o = '';
+  for (var i = 0; i < 8; i++) o += ('0' + h[i].toString(16)).slice(-2);
+  return o;
 }
 /* V7 · د5-هـ (x1): مِقبضُ الجلسة — أوّلُ 16 hex من SHA-256 لرمزها: يُعرض ويُرسل بدل الرمز ولا يُعكس إليه */
 async function sessSid(tok) {

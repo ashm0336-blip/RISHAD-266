@@ -304,7 +304,7 @@
   },
   "admin.keyLabels": {
    "order": 25,
-   "text": "        bassam_rasd_v1: \"نظام رصد الحالات\",\r\n        bassam_rasd_opts_v1: \"قوائم رصد الحالات\",\r\n"
+   "text": "        bassam_rasd_retro_v1: \"نافذة استدراك رصد الحالات\",\r\n        bassam_rasd_v1: \"نظام رصد الحالات\",\r\n        bassam_rasd_opts_v1: \"قوائم رصد الحالات\",\r\n"
   },
   "admin.wipe.labels": {
    "order": 35,

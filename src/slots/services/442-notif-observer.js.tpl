@@ -55,7 +55,7 @@
   };
   /* تعريفات الورديات صفحةٌ في إعدادات الإدارة — ولكل تغييرٍ فيها حدثه. V7 · د5-هـ (44): قوالبُ الصلاحيات حُذفت (مراقبُها معها) —
      تغييراتُ الأدوار والإسناد يسجّلها «سجلُّ» تبويب «الصلاحيات». */
-@@SYS:nfo.watch.staff.shdef@@  /* الجدول الشهري تخطيطٌ بين مدير الإدارة ورؤساء الورديات — تنبيهاته لهم وحدهم، ولا يصل الموظفَ شيء منه؛ تشغيله يبدأ بسحب التقرير اليومي */
+@@SYS:nfo.watch.staff.shdef@@  /* الجدول الشهري تخطيطٌ بين مدير الإدارة ورؤساء الورديات — تنبيهاته لهم؛ والموظفُ تصله ورديتُه هو وحدها (V7 · 53: st_myshift)؛ تشغيله يبدأ بسحب التقرير اليومي */
   function empName(did, key){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []) || []; var e = emps.filter(function(x){ return x.eid === key || x.nid === key || x.name === key; })[0]; return e ? e.name : String(key); } catch(e){ return String(key); } }
 @@SYS:nfo.watch.staff@@@@SYS:nfo.watch.tasks@@  // Custody notifications belong to the typed server transaction; no retired KV observer.
 @@SYS:nfo.watch.dreport@@  var WD = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
