@@ -140,13 +140,9 @@ function cuConvert(dept, doc) {
     if (
       ['out', 'in', 'dmg', 'lost'].indexOf(m.t) < 0 ||
       ![m.y, m.m, m.d].every(Number.isSafeInteger) ||
-      m.y < 1900 ||
-      m.y > 2199 ||
-      m.m < 1 ||
-      m.m > 12 ||
-      m.d < 0 ||
-      m.d > calGMonthDays(m.y, m.m)
-    )   /* V7 · 53 تقويم (ق1 · ق10 · §1.10): يومٌ ميلادي (الصفرُ = يومٌ غير معروف) — الحركةُ بتاريخٍ هجري تُرفض */
+      !(calYearCal(m.y) === 'h' ? m.m >= 1 && m.m <= 12 && m.d >= 0 && m.d <= 30 : calGregOk(m.y, m.m, m.d, true))
+    )   /* V7 · 53 تقويم (ق10 · §1.10): هذا محوِّلُ الوثيقة القديمة (الترحيل · النسخ القديمة · العرض التجريبي) — يومُها الهجري بقاعدته القديمة (≤ 30، ويحوّله 0014/الاستيراد)،
+           والميلادي يومٌ صحيح بطول شهره (الصفرُ = يومٌ غير معروف). وما سواهما يُرفض */
       throw cuError('custody-cutover-date-kind');
     ['cond', 'note', 'by', 'nid', 'empno', 'name', 'color'].forEach(function (k) {
       if (m[k] !== undefined) cuHistoricalText(m[k]);

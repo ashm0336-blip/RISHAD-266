@@ -87,7 +87,7 @@ test('accepting the snapshot does not broaden add, edit, department or session p
 });
 
 test('an unchanged historical snapshot is not retroactively rejected when appending a legitimate movement',async()=>{
-  const previous=initial(),out={t:'out',eid:EKEYS.employee1,item:'TEST_ONLY radio',ser:'TEST-001',y:1448,m:5,d:1,name: 'x'.repeat(5000),nid:'TEST_ONLY_legacy',empno:''};
+  const previous=initial(),out={t:'out',eid:EKEYS.employee1,item:'TEST_ONLY radio',ser:'TEST-001',y:2026,m:5,d:1,name: 'x'.repeat(5000),nid:'TEST_ONLY_legacy',empno:''};
   previous.moves.push(out);const A=await historyWorld(previous),historical=copy(firstOut(A));
   assert.equal(historical.holder_name_snapshot.length,5000);const issueId=A.DB.q('SELECT issue_id FROM custody_issues')[0].issue_id;
   ok(await act(A,'close',{issueId,kind:'in'},'manager1'));assert.deepEqual(firstOut(A),historical);

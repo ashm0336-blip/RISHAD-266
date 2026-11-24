@@ -33,9 +33,9 @@ function cuInflate(rows) {
           eid: r.holder_key,
           item: names.get(r.item_id),
           ser: issues.get(r.issue_id).serial,
-          y: r.hijri_year,
-          m: r.hijri_month,
-          d: r.hijri_day,
+          y: r.greg_year,
+          m: r.greg_month,
+          d: r.greg_day,
         };
         var opts = {
           cond: 'condition',

@@ -18,11 +18,12 @@ async function clockTest(fn) {
   finally { globalThis.Date = RealDate; }
 }
 async function fixture({ rows = true } = {}) {
-  const B = await world({ extraExports: ['nfIrshadDaily', 'pfHijriAt', 'NF_REV', 'nfFeed'] });
+  const B = await world({ extraExports: ['nfIrshadDaily', 'pfDayAt', 'NF_REV', 'nfFeed'] });
   const perms = clone(B.keys.bassam_perms_v1);
   Object.keys(perms.caps).forEach(d => { if (!perms.caps[d].includes('irshad')) perms.caps[d].push('irshad'); });
   B.DB.db.prepare('UPDATE kv SET v=? WHERE k=? AND seq=0').run(JSON.stringify(perms), 'bassam_perms_v1');
-  const day = B.W.pfHijriAt(DUE), reports = rows ? [
+  const day = B.W.pfDayAt(DUE),   /* V7 · 53 تقويم: اليومُ الميلادي — ir_day:YYYY-MM-DD */
+    reports = rows ? [
     { id: 'TEST_ONLY_daily_first', y: day.y, m: day.m, d: day.d, shift: 'TEST_ONLY_shift', loc: 'TEST_ONLY_first_location', langs: [{ lang: 'TEST_ONLY', count: 99 }], bro: 88, n: 77 },
     { id: 'TEST_ONLY_daily_second', y: day.y, m: day.m, d: day.d, shift: 'TEST_ONLY_shift', loc: 'TEST_ONLY_second_location', langs: [{ lang: 'TEST_ONLY', count: 20 }] },
   ] : [];
@@ -45,7 +46,7 @@ function raceBeforeCommit(B, change) {
   return () => fired;
 }
 
-test('Daily uses the old unpadded Hijri once key and only the23:30 Riyadh window', async () => clockTest(async set => {
+test('Daily uses the Gregorian ISO once key (V7 · 53 تقويم) and only the23:30 Riyadh window', async () => clockTest(async set => {
   const B = await fixture(), source = fs.readFileSync(path.join(ROOT, 'src/services/442-notif-observer.js'), 'utf8');
   const start = source.indexOf('function todayKey()'), end = source.indexOf('  function tick()', start);
   const context = { KIVO: {}, Date: globalThis.Date, Intl: { DateTimeFormat: function (locale, opts) { return new Intl.DateTimeFormat(locale, { ...opts, timeZone: 'Asia/Riyadh' }); } } };
@@ -57,6 +58,7 @@ test('Daily uses the old unpadded Hijri once key and only the23:30 Riyadh window
   set(DUE); assert.equal((await B.poll()).emitted, 1);
   const message = messages(B)[0], once = B.DB.q('SELECT once_key FROM notification_dedup WHERE scope=? AND message_id=?', message.scope, message.id);
   assert.deepEqual(once.map(r => r.once_key), ['ir_day:' + B.day.dk]);
+  assert.deepEqual(once.map(r => r.once_key), ['ir_day:2026-10-30'], 'V7 · 53 تقويم: مفتاحُ «مرةً واحدة» هو اليومُ الميلادي ISO (23:31 بالرياض يوم 30 أكتوبر)');
 }));
 
 test('The current reports summary preserves items/n count0 and first-sequence location ties, active department only', async () => clockTest(async () => {

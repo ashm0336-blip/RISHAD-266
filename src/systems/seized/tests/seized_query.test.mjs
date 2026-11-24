@@ -417,6 +417,6 @@ test("V7 · 53: calendar month totals carry the KPI groups (category · item pie
   assert.deepEqual(g("i"), { "TEST_ONLY money": 2, "TEST_ONLY jewelry": 4 }, "وبالبند");
   assert.deepEqual(g("l"), { "TEST_ONLY location": 1, "TEST_ONLY free location": 1 }, "المحاضرُ بالموقع");
   assert.deepEqual(g("b"), { "TEST_ONLY owner": 2 }, "وبالمسجِّل");
-  const empty = (await B.read({ view: "calendar", year: 1400, month: 1 })).monthTotals;
+  const empty = (await B.read({ view: "calendar", year: 1990, month: 1 })).monthTotals;   /* V7 · 53 تقويم: شهرٌ ميلاديٌّ فارغ (1400 صار سنةً هجرية تُرفض) */
   assert.deepEqual(empty.by, [], "الشهرُ الفارغ بلا مجاميع");
 });
