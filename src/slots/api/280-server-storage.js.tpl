@@ -175,6 +175,11 @@
   WHY["mgr-key"] = "حساب مدير الإدارة لا تُنزع عنه الإدارة — احذف الحساب أو أبقه مديراً";
   WHY.grant = "لا تمنح موظفاً صفحةً أو إجراءً أو عدسةً لا تملكها أنت في هذه الإدارة";
   WHY["dept-role"] = "«حسابات الإدارة» أُلغيت: لا يُنشأ حسابٌ بهذا النوع ولا يُعدَّل — للدخول باسم الإدارة أنشئ حسابَ موظفٍ بشارة «مدير» في الإدارة، ويمكن حذفُ الحساب القديم";
+  function monthLockedText9() {
+    var u = null; try { u = KIVO.BassamAuth && KIVO.BassamAuth.user && KIVO.BassamAuth.user(); } catch (e) {}
+    var mgr = !!(u && (u.role === "super" || u.role === "gm" || u.role === "dept" || (u.role === "staff" && u.mgr)));
+    return mgr ? "الشهر مقفل — افتحه للاستدراك أولاً" : "الشهر مقفل — راجع مدير الإدارة";
+  }
   function whyText9(w) { return (KIVO.__BS_AUTHZ && WHY_ENF[w]) || WHY[w] || "صلاحيتك لا تشمله"; }
   /* ═══ أسماء مفاتيح التخزين كما تُعرض للمستخدم — مصدر واحد للسجلات والمراقبة والأمن ═══
      كانت ثلاث خرائط ناقصة في ثلاثة مواضع، وما نقص منها ظهر للمستخدم بالاسم الداخلي («dayfocus» · «notif_sys»).
@@ -1934,6 +1939,8 @@
         var details = result && result.details, denied = details && details.denied, conflicts = details && details.conflicts;
         var parts = operationObject9(denied) ? Object.keys(denied).map(function (key) {
           var value = denied[key];
+          /* V7 · 53 (قرار المالك ٨): رفضُ الشهر المقفل يُقال بحسب قارئه — مديرُ الإدارة يفتحه للاستدراك، والموظفُ يراجع مديرَ الإدارة */
+          if (operationObject9(value) && value.why === 'scope' && /locked-period: month-/.test(String(value.detail || ''))) return monthLockedText9();
           return operationObject9(value) && typeof value.why === 'string' ? whyText9(value.why) : '';
         }) : [];
         if (operationObject9(conflicts) && Object.keys(conflicts).length) parts.push(OPERATION_CONFLICT9);

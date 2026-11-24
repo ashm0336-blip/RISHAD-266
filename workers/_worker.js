@@ -1087,6 +1087,8 @@ var KIVO_SCOPE = (function (S, R) {
     a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), L = ctx.locks ? ctx.locks.tasks : undefined;
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; var x = arr(a[k]), y = arr(b[k]); if (deq(x, y)) continue; var day = parseDay(k), mk = day ? day.y + '-' + day.m : '', ls = lockState(L, mk), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_tasks_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
+      /* V7 · 53 (قرار المالك ٧): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد، ولا يُفتح إلا للاستدراك ({mo:1}) */
+      if (ls === false && day && closedPeriod(ctx.today, day.y, day.m) && !(isObj(obj(L)[mk]) && obj(L)[mk].mo)) lk = { locked: true, why: 'month-past' };
       var m = matchById(x, y, function (r) { return Array.isArray(r) && r[13] != null ? String(r[13]) : null; });
       for (q = 0; q < m.added.length; q++) items.push(it({ what: 'task', kind: 'added', id: m.added[q].id, path: k + '[' + m.added[q].id + ']', period: pair(null, day), owner: pair(null, str(arr(m.added[q].b)[14])), lock: lk }));
       for (q = 0; q < m.removed.length; q++) items.push(it({ what: 'task', kind: 'removed', id: m.removed[q].id, path: k + '[' + m.removed[q].id + ']', period: pair(day, null), owner: pair(str(arr(m.removed[q].a)[14]), null), lock: lk }));
@@ -29162,6 +29164,15 @@ async function tkLocked(env, d, ym) {
   var v = isObj(L) ? L[ym] : undefined; return v === true || v === 1;
 }
 function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]); }
+/* V7 · 53 (قرارا المالك ٧ و٨): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد ولا يُفتح إلا للاستدراك ({mo:1}).
+   الرسالةُ بحسب القارئ: من يملك فتحَ الشهر (task.month.reopen) يُقال له افتحه، وغيرُه يُحال إلى مدير الإدارة */
+var TK_PAST_MGR = 'الشهر مقفل — افتحه للاستدراك أولاً', TK_PAST_EMP = 'الشهر مقفل — راجع مدير الإدارة';
+async function tkPastLocked(env, d, ym) {
+  var p = String(ym).split('-'), y = +p[0], m = +p[1], T = dsToday(Date.now()); if (!T || !(y > 0 && m > 0) || 12 * y + m >= 12 * T.y + T.m) return false;
+  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}), v = isObj(L) ? L[y + '-' + m] : undefined;
+  return !(isObj(v) && v.mo);
+}
+function tkPastMsg(A, d) { return tkHeld(A, d, 'task.month.reopen') ? TK_PAST_MGR : TK_PAST_EMP; }
 /* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */
 async function tkDayShut(env, d, k) {
   var p = String(k).split('-'), L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
@@ -29473,6 +29484,7 @@ async function tkCreate(env, request, A, b) {
   if (RC.rec && !asg.length && !SH) return tkNo(400, 'rec-asg', 'المهمةُ المتكررة تحتاج مكلَّفاً واحداً على الأقل — تُولَّد نسخةٌ لكل مكلَّف', { at: 'rec' }).err;   /* S10: مفاتيحُ 400 المعقودة (ok · err · at) */
   if (!tkHeld(A, d, 'task.create') || ((asg.length || SH) && !tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'إنشاءُ المهام وإسنادُها للمديرين والمخوَّلين').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  if (await tkPastLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', tkPastMsg(A, d)).err;   /* V7 · 53 (قرار ٧): إنشاءٌ في شهرٍ ماضٍ لم يُفتح للاستدراك */
   if (await tkDayShut(env, d, b.k)) return tkNo(409, 'locked', 'اليومُ مُغلق — افتحه من صفحة المهام أولاً').err;
   var RV = await tkRvIn(env, A, d, b.rv); if (RV.bad) return tkNo(400, 'bad-body', RV.msg || '', { at: RV.bad }).err;
   if (RV.rv && RV.rv.e && asg.indexOf(RV.rv.e) !== -1) return tkNo(400, 'bad-body', 'المراجِعُ لا يكون المكلَّفَ نفسَه', { at: 'rv' }).err;

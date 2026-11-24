@@ -94,6 +94,7 @@ async function tkCreate(env, request, A, b) {
   if (RC.rec && !asg.length && !SH) return tkNo(400, 'rec-asg', 'المهمةُ المتكررة تحتاج مكلَّفاً واحداً على الأقل — تُولَّد نسخةٌ لكل مكلَّف', { at: 'rec' }).err;   /* S10: مفاتيحُ 400 المعقودة (ok · err · at) */
   if (!tkHeld(A, d, 'task.create') || ((asg.length || SH) && !tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'إنشاءُ المهام وإسنادُها للمديرين والمخوَّلين').err;
   if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  if (await tkPastLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', tkPastMsg(A, d)).err;   /* V7 · 53 (قرار ٧): إنشاءٌ في شهرٍ ماضٍ لم يُفتح للاستدراك */
   if (await tkDayShut(env, d, b.k)) return tkNo(409, 'locked', 'اليومُ مُغلق — افتحه من صفحة المهام أولاً').err;
   var RV = await tkRvIn(env, A, d, b.rv); if (RV.bad) return tkNo(400, 'bad-body', RV.msg || '', { at: RV.bad }).err;
   if (RV.rv && RV.rv.e && asg.indexOf(RV.rv.e) !== -1) return tkNo(400, 'bad-body', 'المراجِعُ لا يكون المكلَّفَ نفسَه', { at: 'rv' }).err;
