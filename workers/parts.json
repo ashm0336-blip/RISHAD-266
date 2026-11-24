@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "b7baf41f7038892293bc79442383ad487b11799da68430297e570fd8d79c5453",
+  "sha256": "87da50131bbe433137aed4032b7781f86d2e2019908d7a24aff9961df6aa31b9",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -119,8 +119,8 @@
         823,
         1408
       ],
-      "bytes": 140164,
-      "sha256": "7beb51c6ac1502a4a80ed96203198d610e2218d6d1b9ec9df3929382533d9b1c",
+      "bytes": 124579,
+      "sha256": "df41a2cb31f822bef29d70d6d0a9ac49579c3e7e98d062d82e26e28bd8d82a8e",
       "head": "/* ═══ KIVO · R203 · Phase 4.5 — Read Binding Closure + Identity Binding على v24.9 (مولَّدٌ آلياً من registry10/scope_bindings.py + scope_engine.js + read_inventory.json — لا يُحرَّر يدوياً) ═══"
     },
     {
