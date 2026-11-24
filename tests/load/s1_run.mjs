@@ -87,7 +87,10 @@ await measure('save(logical) rounds one day changed', async (i) => {
 if (typeof W.rsImageHeldSql === 'function') {
   const ids = ['img_testonly_loadmap'], q = W.rsImageHeldSql(ids, ['bsdept:TEST_ONLY_B:bassam_plan_v1']);
   const bind = Object.fromEntries(q.args.map((v, i) => [String(i + 1), v]));
-  for (let i = 0; i < 3; i++) { const a = performance.now(); DB.db.prepare(q.sql).get(bind); results.push({ name: 'rsImageHeldSql scan (SQLite, in-process)', ms: Math.round(performance.now() - a), sqlKB: Math.round(q.sql.length / 1024) }); quiet(JSON.stringify(results[results.length - 1])); }
+  for (const done of [false, true]) {   /* قبل اكتمال فهرس imgref (مسحُ النصوص) وبعده (الفهرس) */
+    if (done) DB.db.prepare("INSERT INTO meta(k,v) VALUES('imgref_scan_v1','done') ON CONFLICT(k) DO UPDATE SET v='done'").run();
+    for (let i = 0; i < 3; i++) { const a = performance.now(); DB.db.prepare(q.sql).get(bind); results.push({ name: 'rsImageHeldSql ' + (done ? '(imgref index)' : '(text scan, index incomplete)') + ' in-process SQLite', ms: Math.round(performance.now() - a), sqlKB: Math.round(q.sql.length / 1024) }); quiet(JSON.stringify(results[results.length - 1])); }
+  }
   const AK = 'bsdept:TEST_ONLY_B:bassam_plan_v1', st = [...W.kvPutStmts(lab.env, 'imgs', ids[0], 'data:image/png;base64,' + 'A'.repeat(3000000)), lab.env.DB.prepare("INSERT INTO imgown(img,st,k,uid,dept,ts) VALUES(?1,'claim','',?2,'',?3)").bind(ids[0], su.uid, Date.now())];
   DB.limits = false; await lab.env.DB.batch(st); DB.limits = process.env.LIMITS !== '0';
   const pr = await read([AK]), plan = { floors: [{ sid: 'tsA', name: 'TEST_ONLY · موقع', iid: ids[0], zones: [], gates: [], marks: [], paths: [] }], months: {}, delMonths: {} };
