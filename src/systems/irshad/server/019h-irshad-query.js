@@ -81,8 +81,10 @@ function irQueryText(v, max) {
   if (typeof v !== 'string' || v.length > max) throw irError('irshad-query');
   return v;
 }
+/* V7 · 53 تقويم (ق1 · ق2): السنةُ والشهرُ واليومُ ميلاديةٌ في الأعمدة greg_* والاستعلام — السنةُ 1900–2199 فقط، فيُرفض رقمٌ هجري (13xx–15xx)
+   من عميلٍ قديم مخبوء برسالة irshad-query بدل أن يُقرأ شهراً آخر صامتاً */
 function irQueryMonth(plan, y, m) {
-  return 'hijri_year=' + irQueryParam(plan, y) + ' AND hijri_month=' + irQueryParam(plan, m);
+  return 'greg_year=' + irQueryParam(plan, y) + ' AND greg_month=' + irQueryParam(plan, m);
 }
 function irQueryCatalogPlan(ctx) {
   var p = irQueryPlan(ctx);
@@ -98,11 +100,11 @@ async function irQueryCatalogs(ctx) {
   return irQueryCatalogDto(ctx, (await irQueryBatch(ctx, [irQueryCatalogPlan(ctx)]))[0]);
 }
 async function irQueryCalendar(ctx, q, clock) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999), m = irQueryInt(q.month, clock.m, 1, 12),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199), m = irQueryInt(q.month, clock.m, 1, 12),
     total = irQueryPlan(ctx), months = irQueryPlan(ctx), days = irQueryPlan(ctx), stats = irQueryPlan(ctx);
-  total.sql = 'SELECT COUNT(*) total,COALESCE(SUM(hijri_year=' + irQueryParam(total, y) + '),0) yearTotal FROM data';
-  months.sql = 'SELECT hijri_month m,COUNT(*) n FROM data WHERE hijri_year=' + irQueryParam(months, y) + ' GROUP BY hijri_month ORDER BY hijri_month';
-  days.sql = 'SELECT hijri_day d,COUNT(*) n FROM data WHERE ' + irQueryMonth(days, y, m) + ' GROUP BY hijri_day ORDER BY hijri_day';
+  total.sql = 'SELECT COUNT(*) total,COALESCE(SUM(greg_year=' + irQueryParam(total, y) + '),0) yearTotal FROM data';
+  months.sql = 'SELECT greg_month m,COUNT(*) n FROM data WHERE greg_year=' + irQueryParam(months, y) + ' GROUP BY greg_month ORDER BY greg_month';
+  days.sql = 'SELECT greg_day d,COUNT(*) n FROM data WHERE ' + irQueryMonth(days, y, m) + ' GROUP BY greg_day ORDER BY greg_day';
   stats.sql = 'SELECT ' + irQueryMetricSql() + ' FROM data WHERE ' + irQueryMonth(stats, y, m);
   /* V7 · 53 (port-sync · بند 8 · 0013): مجاميعُ الشهر لكروت المؤشرات — مستفيدو الترجمة باللغة، والتقاريرُ بالوردية، والمستفيدون بالموقع ([نوع, اسم, عدد]) */
   var by = irQueryPlan(ctx), w = irQueryMonth(by, y, m);
@@ -112,10 +114,10 @@ async function irQueryCalendar(ctx, q, clock) {
   metrics.by = rows[4].map(function (x) { return [x.t, x.k, x.n]; });
   return { year: y, month: m, total: rows[0][0].total, yearTotal: rows[0][0].yearTotal,
     months: rows[1].filter(function (r) { return r.m >= 1 && r.m <= 12; }),
-    days: rows[2].filter(function (r) { return r.d >= 1 && r.d <= 30; }), monthTotals: metrics };
+    days: rows[2].filter(function (r) { return r.d >= 1 && r.d <= calGMonthDays(y, m); }), monthTotals: metrics };
 }
 async function irQueryRecords(ctx, q, clock) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999), m = irQueryInt(q.month, clock.m, 1, 12),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199), m = irQueryInt(q.month, clock.m, 1, 12),
     limit = irQueryInt(q.limit, 10, 1, 200), query = irQueryText(q.q, 500).trim(),
     shift = q.shift == null ? null : irQueryText(q.shift, 4000),
     loc = q.loc == null ? null : irQueryText(q.loc, 4000),
@@ -152,12 +154,12 @@ async function irQueryRecords(ctx, q, clock) {
   var counts = await irQueryBatch(ctx, [count, monthCount]), total = counts[0][0].n,
     pages = Math.max(1, Math.ceil(total / limit));
   page = Math.min(page, pages);
-  var anchor = irQueryPlan(ctx), order = ' ORDER BY COALESCE(hijri_day,0) DESC,COALESCE(created_at,0) DESC,sequence';
-  anchor.sql = 'SELECT COALESCE(hijri_day,0) d,COALESCE(created_at,0) ts,sequence FROM data WHERE ' + matches(anchor) + order + ' LIMIT 1 OFFSET ' + ((page - 1) * limit);
+  var anchor = irQueryPlan(ctx), order = ' ORDER BY COALESCE(greg_day,0) DESC,COALESCE(created_at,0) DESC,sequence';
+  anchor.sql = 'SELECT COALESCE(greg_day,0) d,COALESCE(created_at,0) ts,sequence FROM data WHERE ' + matches(anchor) + order + ' LIMIT 1 OFFSET ' + ((page - 1) * limit);
   var edge = (await irQueryBatch(ctx, [anchor]))[0][0], dto = [];
   if (edge) {
     var selected = irQueryPlan(ctx), f = matches(selected), dslot = irQueryParam(selected, edge.d), tslot = irQueryParam(selected, edge.ts), sslot = irQueryParam(selected, edge.sequence);
-    selected.sql = 'SELECT report_id FROM data WHERE ' + f + ' AND (COALESCE(hijri_day,0)<' + dslot + ' OR (COALESCE(hijri_day,0)=' + dslot + ' AND (COALESCE(created_at,0)<' + tslot + ' OR (COALESCE(created_at,0)=' + tslot + ' AND sequence>=' + sslot + '))))' + order + ' LIMIT ' + limit;
+    selected.sql = 'SELECT report_id FROM data WHERE ' + f + ' AND (COALESCE(greg_day,0)<' + dslot + ' OR (COALESCE(greg_day,0)=' + dslot + ' AND (COALESCE(created_at,0)<' + tslot + ' OR (COALESCE(created_at,0)=' + tslot + ' AND sequence>=' + sslot + '))))' + order + ' LIMIT ' + limit;
     var selectedIds = (await irQueryBatch(ctx, [selected]))[0].map(function (r) { return r.report_id; }),
       decoded = await irRowRead(ctx.env, ctx.d, selectedIds), map = new Map();
     decoded.forEach(function (r) { map.set(r.id, r); });
@@ -168,18 +170,18 @@ async function irQueryRecords(ctx, q, clock) {
     next: page < pages ? cursor(page + 1) : '', prev: page > 1 ? cursor(page - 1) : '' };
 }
 function irQueryDate(value) {
-  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value || '');
-  if (!m) throw irError('irshad-range');
-  var y = irQueryInt(m[1], 0, 1000, 9999), mo = irQueryInt(m[2], 0, 1, 12), d = irQueryInt(m[3], 0, 1, 30);
-  return { text: y + '-' + mo + '-' + d, n: y * 10000 + mo * 100 + d };
+  /* V7 · 53 تقويم (ق1): يومٌ ميلاديٌّ ISO مبطَّن صحيح (يومُه في طول شهره) — والمفتاحُ الهجري يُرفض */
+  if (typeof value !== 'string' || !calIsGKey(value, 'day') || value.length !== 10) throw irError('irshad-range');
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value), y = irQueryInt(m[1], 0, 1900, 2199), mo = +m[2], d = +m[3];
+  return { text: calGKey(y, mo, d), n: y * 10000 + mo * 100 + d };
 }
 function irQueryRange(plan, range) {
   if (!range) return '0';
   var clauses = [];
-  if (range.y !== undefined) clauses.push('hijri_year=' + irQueryParam(plan, range.y));
-  if (range.m !== undefined) clauses.push('hijri_month=' + irQueryParam(plan, range.m));
-  if (range.from !== undefined) clauses.push('hijri_year*10000+hijri_month*100+hijri_day>=' + irQueryParam(plan, range.from));
-  if (range.to !== undefined) clauses.push('hijri_year*10000+hijri_month*100+hijri_day<=' + irQueryParam(plan, range.to));
+  if (range.y !== undefined) clauses.push('greg_year=' + irQueryParam(plan, range.y));
+  if (range.m !== undefined) clauses.push('greg_month=' + irQueryParam(plan, range.m));
+  if (range.from !== undefined) clauses.push('greg_year*10000+greg_month*100+greg_day>=' + irQueryParam(plan, range.from));
+  if (range.to !== undefined) clauses.push('greg_year*10000+greg_month*100+greg_day<=' + irQueryParam(plan, range.to));
   return clauses.length ? clauses.join(' AND ') : '1';
 }
 function irQueryShiftNames(ctx) {
@@ -194,7 +196,7 @@ function irQueryTopGroups(plan, groupSql, label) {
 }
 async function irQueryDashboard(ctx, q, clock) {
   var availability = irQueryPlan(ctx);
-  availability.sql = 'SELECT hijri_year y,hijri_month m,COUNT(*) n,MIN(hijri_day) firstDay FROM data GROUP BY hijri_year,hijri_month ORDER BY hijri_year,hijri_month';
+  availability.sql = 'SELECT greg_year y,greg_month m,COUNT(*) n,MIN(greg_day) firstDay FROM data GROUP BY greg_year,greg_month ORDER BY greg_year,greg_month';
   var initial = await irQueryBatch(ctx, [availability, irQueryCatalogPlan(ctx)]),
     availableRows = initial[0], catalog = irQueryCatalogDto(ctx, initial[1]), years = [], first = null, total = 0;
   availableRows.forEach(function (r) {
@@ -207,9 +209,9 @@ async function irQueryDashboard(ctx, q, clock) {
   });
   years.sort(function (a, b) { return b - a; });
   if (!years.length) years.push(clock.y);
-  var mode = q.mode || 'all', year = irQueryInt(q.year, years[0], 1000, 9999),
+  var mode = q.mode || 'all', year = irQueryInt(q.year, years[0], 1900, 2199),
     month = q.month === 'all' || mode === 'all' ? 'all' : irQueryInt(q.month, clock.m, 1, 12),
-    heatYear = irQueryInt(q.heatYear, year, 1000, 9999), bucket = q.bucket || (month === 'all' ? 'month' : 'day'),
+    heatYear = irQueryInt(q.heatYear, year, 1900, 2199), bucket = q.bucket || (month === 'all' ? 'month' : 'day'),
     selection = { mode: mode, year: year, month: month, from: null, to: null, previousFrom: null, previousTo: null, heatYear: heatYear, bucket: bucket },
     range = {}, previous = null;
   if (['all', 'month', 'custom'].indexOf(mode) < 0 || ['day', 'month'].indexOf(bucket) < 0) throw irError('irshad-range');
@@ -231,10 +233,10 @@ async function irQueryDashboard(ctx, q, clock) {
   }
   plan('SELECT ' + irQueryMetricSql() + ' FROM data WHERE $WHERE', range);
   plan('SELECT ' + irQueryMetricSql() + ' FROM data WHERE $WHERE', previous);
-  var day = bucket === 'day' ? 'hijri_day' : 'NULL', groups = 'hijri_year,hijri_month' + (bucket === 'day' ? ',hijri_day' : '');
-  plan('SELECT hijri_year y,hijri_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, range);
-  plan('SELECT hijri_year y,hijri_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, previous);
-  plan('SELECT hijri_month m,hijri_day d,SUM(ben) ben FROM data WHERE $WHERE GROUP BY hijri_month,hijri_day ORDER BY hijri_month,hijri_day', { y: heatYear, to: clock.y * 10000 + clock.m * 100 + clock.d });
+  var day = bucket === 'day' ? 'greg_day' : 'NULL', groups = 'greg_year,greg_month' + (bucket === 'day' ? ',greg_day' : '');
+  plan('SELECT greg_year y,greg_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, range);
+  plan('SELECT greg_year y,greg_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, previous);
+  plan('SELECT greg_month m,greg_day d,SUM(ben) ben FROM data WHERE $WHERE GROUP BY greg_month,greg_day ORDER BY greg_month,greg_day', { y: heatYear, to: clock.y * 10000 + clock.m * 100 + clock.d });
   var languages = irQueryPlan(ctx), languageWhere = irQueryRange(languages, range);
   irQueryTopGroups(languages, "SELECT CASE WHEN (l.presence_mask & 1)=0 THEN 'undefined' WHEN l.language IS NULL THEN 'null' ELSE l.language END name,COALESCE(SUM(l.count),0) value,0 previous,MIN(r.sequence) firstSequence,MIN(printf('%020d:%020d',r.sequence,l.position)) orderKey FROM data r JOIN irshad_report_languages l ON l.department_id=r.department_id AND l.report_id=r.report_id WHERE " + languageWhere + ' GROUP BY name', 'لغات أخرى');
   plans.push(languages);
@@ -243,10 +245,10 @@ async function irQueryDashboard(ctx, q, clock) {
   plans.push(locations);
   plan('SELECT shift name,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY shift', range);
   var shiftPoints = irQueryPlan(ctx);
-  shiftPoints.sql = 'SELECT shift name,hijri_year y,hijri_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(shiftPoints, range) + ' AND shift IN(SELECT value FROM json_each(' + irQueryParam(shiftPoints, JSON.stringify(names)) + ')) GROUP BY shift,' + groups + ' ORDER BY ' + groups;
+  shiftPoints.sql = 'SELECT shift name,greg_year y,greg_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(shiftPoints, range) + ' AND shift IN(SELECT value FROM json_each(' + irQueryParam(shiftPoints, JSON.stringify(names)) + ')) GROUP BY shift,' + groups + ' ORDER BY ' + groups;
   plans.push(shiftPoints);
   var locationNames = catalog.catalogs.locations.values.slice(0, 6), locationPoints = irQueryPlan(ctx);
-  locationPoints.sql = 'SELECT location name,hijri_year y,hijri_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(locationPoints, range) + ' AND location IN(SELECT value FROM json_each(' + irQueryParam(locationPoints, JSON.stringify(locationNames)) + ')) GROUP BY location,' + groups + ' ORDER BY ' + groups;
+  locationPoints.sql = 'SELECT location name,greg_year y,greg_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(locationPoints, range) + ' AND location IN(SELECT value FROM json_each(' + irQueryParam(locationPoints, JSON.stringify(locationNames)) + ')) GROUP BY location,' + groups + ' ORDER BY ' + groups;
   plans.push(locationPoints);
   plan("SELECT employee_key key,COUNT(*) reports,SUM(ben) ben,MIN(sequence) firstSequence,MAX(sequence) lastSequence FROM data WHERE $WHERE AND employee_key IS NOT NULL AND employee_key!='' GROUP BY employee_key ORDER BY ben DESC,firstSequence LIMIT 6", range);
   var results = await irQueryBatch(ctx, plans), shiftsByName = new Map();

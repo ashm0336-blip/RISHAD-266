@@ -26,7 +26,7 @@ function szDashboardMetric(row) {
 async function szDashboard(ctx, q, clock, catalog) {
   var available = szPlan(ctx, catalog);
   available.sql =
-    "SELECT hijri_year y,hijri_month m,MIN(hijri_day)d,COUNT(*)n FROM data GROUP BY hijri_year,hijri_month ORDER BY hijri_year,hijri_month";
+    "SELECT greg_year y,greg_month m,MIN(greg_day)d,COUNT(*)n FROM data GROUP BY greg_year,greg_month ORDER BY greg_year,greg_month";
   var availability = (await szPlans(ctx, [available]))[0],
     years = [],
     first = null,
@@ -49,12 +49,12 @@ async function szDashboard(ctx, q, clock, catalog) {
   });
   if (!years.length) years.push(clock.y);
   var mode = q.mode || "all",
-    year = irQueryInt(q.year, years[0], 1000, 9999),
+    year = irQueryInt(q.year, years[0], 1900, 2199),
     month =
       q.month === "all" || mode === "all"
         ? "all"
         : irQueryInt(q.month, clock.m, 1, 12),
-    heatYear = irQueryInt(q.heatYear, year, 1000, 9999),
+    heatYear = irQueryInt(q.heatYear, year, 1900, 2199),
     bucket = q.bucket || (month === "all" ? "month" : "day"),
     range = {},
     previous = null,
@@ -103,11 +103,11 @@ async function szDashboard(ctx, q, clock, catalog) {
   }
   var plans = [],
     names = irQueryShiftNames(ctx),
-    day = bucket === "day" ? "hijri_day" : "NULL",
-    group = "hijri_year,hijri_month" + (bucket === "day" ? ",hijri_day" : ""),
+    day = bucket === "day" ? "greg_day" : "NULL",
+    group = "greg_year,greg_month" + (bucket === "day" ? ",greg_day" : ""),
     correlation =
-      "x.hijri_year IS r.hijri_year AND x.hijri_month IS r.hijri_month" +
-      (bucket === "day" ? " AND x.hijri_day IS r.hijri_day" : "");
+      "x.greg_year IS r.greg_year AND x.greg_month IS r.greg_month" +
+      (bucket === "day" ? " AND x.greg_day IS r.greg_day" : "");
   function add(sql) {
     var p = szDashboardPlan(ctx, catalog, range, previous);
     p.sql = sql;
@@ -129,7 +129,7 @@ async function szDashboard(ctx, q, clock, catalog) {
       " FROM previous",
   );
   add(
-    "SELECT hijri_year y,hijri_month m," +
+    "SELECT greg_year y,greg_month m," +
       day +
       " d," +
       szMetricsSql() +
@@ -141,7 +141,7 @@ async function szDashboard(ctx, q, clock, catalog) {
       group,
   );
   add(
-    "SELECT hijri_year y,hijri_month m," +
+    "SELECT greg_year y,greg_month m," +
       day +
       " d," +
       szMetricsSql() +
@@ -154,9 +154,9 @@ async function szDashboard(ctx, q, clock, catalog) {
   );
   var heat = szPlan(ctx, catalog);
   heat.sql =
-    "SELECT hijri_year y,hijri_month m,hijri_day d,SUM(qty)qty FROM data WHERE hijri_year=" +
+    "SELECT greg_year y,greg_month m,greg_day d,SUM(qty)qty FROM data WHERE greg_year=" +
     irQueryParam(heat, heatYear) +
-    " GROUP BY hijri_month,hijri_day ORDER BY hijri_month,hijri_day";
+    " GROUP BY greg_month,greg_day ORDER BY greg_month,greg_day";
   plans.push(heat);
   var categories = szDashboardPlan(ctx, catalog, range, previous);
   irQueryTopGroups(
@@ -181,7 +181,7 @@ async function szDashboard(ctx, q, clock, catalog) {
   );
   var shiftPoints = add("");
   shiftPoints.sql =
-    "SELECT effective_shift name,hijri_year y,hijri_month m," +
+    "SELECT effective_shift name,greg_year y,greg_month m," +
     day +
     " d,SUM(qty)qty FROM selected WHERE effective_shift IN(SELECT value FROM json_each(" +
     irQueryParam(shiftPoints, JSON.stringify(names)) +
@@ -194,7 +194,7 @@ async function szDashboard(ctx, q, clock, catalog) {
       : [],
     locationPoints = add("");
   locationPoints.sql =
-    "SELECT location name,hijri_year y,hijri_month m," +
+    "SELECT location name,greg_year y,greg_month m," +
     day +
     " d,SUM(qty)qty FROM selected WHERE location IN(SELECT value FROM json_each(" +
     irQueryParam(locationPoints, JSON.stringify(locationNames)) +

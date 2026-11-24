@@ -11,9 +11,9 @@ var SZ_RES = [
 var SZ_NAMES = ["reports", "catalog", "actions", "locations", "jew", "retro"];
 var SZ_REPORT_FIELDS = [
   ["id", "report_id", "text"],
-  ["y", "hijri_year", "number"],
-  ["m", "hijri_month", "number"],
-  ["d", "hijri_day", "number"],
+  ["y", "greg_year", "number"],
+  ["m", "greg_month", "number"],
+  ["d", "greg_day", "number"],
   ["ts", "created_at", "number"],
   ["loc", "location", "text"],
   ["actor", "actor_label", "text"],

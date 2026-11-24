@@ -59,7 +59,8 @@ function dsShapeAt(v, cur) {
     for (var date in v[s]) {
       var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date), r = v[s][date], at = s + '|' + date;
       if (cur && isObj(cur[s]) && Object.prototype.hasOwnProperty.call(cur[s], date) && deq(cur[s][date], r)) continue;
-      if (!m || +m[1] < 1000 || +m[2] < 1 || +m[2] > 12 || +m[3] < 1 || +m[3] > 30 || !dsDayOk(r)) return at;
+      /* V7 · 53 تقويم (ق1 · §1.10): اليومُ ميلاديٌّ ISO صحيح (1900–2199 · طولُ الشهر) — اليومُ الهجري من عميلٍ قديم يُرفض باسمه */
+      if (!m || !calIsGKey(date, 'day') || !dsDayOk(r)) return at;
       if (Object.keys(r).some(function (k) { return k !== '__m' && k !== '__f' && DS_FIELDS[s].indexOf(k) < 0; })) return at;
       if (r.__f && Object.keys(r.__f).some(function (k) { return DS_FIELDS[s].indexOf(k) < 0; })) return at;
       if (JSON.stringify(r).length > 60000) return at;
@@ -68,9 +69,11 @@ function dsShapeAt(v, cur) {
   if (v.locks !== undefined) {
     if (!isObj(v.locks)) return 'locks';
     for (var k in v.locks) {
-      if (!/^(haram|nabawi)\|[1-9]\d{3}-(?:[1-9]|1[0-2])$/.test(k) || !dsLockOk(v.locks[k])) return 'locks|' + k;
-      var lock = v.locks[k];
-      for (var f of ['dopen', 'dshut']) if (isObj(lock) && lock[f]) for (var d in lock[f]) if (!/^(?:[1-9]|[12]\d|30)$/.test(d)) return 'locks|' + k;
+      /* V7 · 53 تقويم (ق1): قفلُ الشهر «site|YYYY-MM» ميلادي مبطَّن، وأيامُه 1–طولِ الشهر الميلادي */
+      var km = /^(haram|nabawi)\|(\d{4}-\d{2})$/.exec(k);
+      if (!km || !calIsGKey(km[2], 'month') || !dsLockOk(v.locks[k])) return 'locks|' + k;
+      var lock = v.locks[k], nd = calGMonthDays(km[2]);
+      for (var f of ['dopen', 'dshut']) if (isObj(lock) && lock[f]) for (var d in lock[f]) if (!/^[1-9]\d?$/.test(d) || +d > nd) return 'locks|' + k;
     }
   }
   return '';
@@ -78,33 +81,33 @@ function dsShapeAt(v, cur) {
 function dsDomainRows(v) {
   var rows = { days: [], months: [], locks: [] };
   DS_SITES.forEach(function (s) { Object.keys(v[s] || {}).sort().forEach(function (date) {
-    var r = v[s][date], row = { site: s, hijri_date: date, field_mask: 0, meta_json: r.__m === undefined ? null : JSON.stringify(r.__m), fields_json: r.__f === undefined ? null : JSON.stringify(r.__f) };
+    var r = v[s][date], row = { site: s, greg_date: date, field_mask: 0, meta_json: r.__m === undefined ? null : JSON.stringify(r.__m), fields_json: r.__f === undefined ? null : JSON.stringify(r.__f) };
     DS_METRICS.forEach(function (f, i) { if (Object.prototype.hasOwnProperty.call(r, f)) row.field_mask |= (1 << i); row[f] = r[f] == null ? null : r[f]; });
     rows.days.push(row);
   }); });
   Object.keys(v.locks || {}).sort().forEach(function (key) {
-    var m = /^(haram|nabawi)\|(\d{4})-(\d{1,2})$/.exec(key), r0 = v.locks[key], r = r0 === true ? { ap: 1 } : r0;
-    rows.months.push({ site: m[1], hijri_year: +m[2], hijri_month: +m[3], approved: r.ap ? 1 : 0, reopened: r.mo ? 1 : 0, legacy_boolean: r0 === true ? 1 : 0 });
+    var m = /^(haram|nabawi)\|(\d{4})-(\d{2})$/.exec(key), r0 = v.locks[key], r = r0 === true ? { ap: 1 } : r0;
+    rows.months.push({ site: m[1], greg_year: +m[2], greg_month: +m[3], approved: r.ap ? 1 : 0, reopened: r.mo ? 1 : 0, legacy_boolean: r0 === true ? 1 : 0 });
     var days = {}; Object.keys(r.dopen || {}).concat(Object.keys(r.dshut || {})).forEach(function (d) { days[d] = 1; });
-    Object.keys(days).forEach(function (d) { rows.locks.push({ site: m[1], hijri_year: +m[2], hijri_month: +m[3], hijri_day: +d, is_open: r.dopen && r.dopen[d] ? 1 : 0, is_shut: r.dshut && r.dshut[d] ? 1 : 0 }); });
+    Object.keys(days).forEach(function (d) { rows.locks.push({ site: m[1], greg_year: +m[2], greg_month: +m[3], greg_day: +d, is_open: r.dopen && r.dopen[d] ? 1 : 0, is_shut: r.dshut && r.dshut[d] ? 1 : 0 }); });
   });
   return rows;
 }
 function dsDomainInflate(rows) {
   var v = { haram: {}, nabawi: {}, locks: {} };
   rows.days.forEach(function (r) { var day = {}; DS_METRICS.forEach(function (f, i) { if (r.field_mask & (1 << i)) day[f] = r[f]; });
-    if (r.meta_json != null) day.__m = JSON.parse(r.meta_json); if (r.fields_json != null) day.__f = JSON.parse(r.fields_json); v[r.site][r.hijri_date] = day; });
-  rows.months.forEach(function (r) { var key = r.site + '|' + r.hijri_year + '-' + r.hijri_month, lock = {}; if (r.approved) lock.ap = 1; if (r.reopened) lock.mo = 1; v.locks[key] = r.legacy_boolean ? true : lock; });
-  rows.locks.forEach(function (r) { var key = r.site + '|' + r.hijri_year + '-' + r.hijri_month, lock = v.locks[key]; if (lock === true) lock = v.locks[key] = { ap: 1 };
-    if (r.is_open) (lock.dopen || (lock.dopen = {}))[r.hijri_day] = 1; if (r.is_shut) (lock.dshut || (lock.dshut = {}))[r.hijri_day] = 1; });
+    if (r.meta_json != null) day.__m = JSON.parse(r.meta_json); if (r.fields_json != null) day.__f = JSON.parse(r.fields_json); v[r.site][r.greg_date] = day; });
+  rows.months.forEach(function (r) { var key = r.site + '|' + calGYm(r.greg_year, r.greg_month), lock = {}; if (r.approved) lock.ap = 1; if (r.reopened) lock.mo = 1; v.locks[key] = r.legacy_boolean ? true : lock; });
+  rows.locks.forEach(function (r) { var key = r.site + '|' + calGYm(r.greg_year, r.greg_month), lock = v.locks[key]; if (lock === true) lock = v.locks[key] = { ap: 1 };
+    if (r.is_open) (lock.dopen || (lock.dopen = {}))[r.greg_day] = 1; if (r.is_shut) (lock.dshut || (lock.dshut = {}))[r.greg_day] = 1; });
   return v;
 }
 async function dsDomainRead(env) {
   /* One D1 batch gives a consistent snapshot, including the revision used for CAS. */
   var b = await env.DB.batch([
-    env.DB.prepare('SELECT * FROM daily_stats_days ORDER BY site,hijri_date'),
-    env.DB.prepare('SELECT * FROM daily_stats_month_locks ORDER BY site,hijri_year,hijri_month'),
-    env.DB.prepare('SELECT * FROM daily_stats_day_locks ORDER BY site,hijri_year,hijri_month,hijri_day'),
+    env.DB.prepare('SELECT * FROM daily_stats_days ORDER BY site,greg_date'),
+    env.DB.prepare('SELECT * FROM daily_stats_month_locks ORDER BY site,greg_year,greg_month'),
+    env.DB.prepare('SELECT * FROM daily_stats_day_locks ORDER BY site,greg_year,greg_month,greg_day'),
     env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(K_DSTATS)
   ]);
   return { data: dsDomainInflate({ days: b[0].results || [], months: b[1].results || [], locks: b[2].results || [] }), rev: b[3].results && b[3].results[0] ? b[3].results[0].rev : 0 };
@@ -114,9 +117,9 @@ function dsDomainStatements(env, before, after) {
   /* json_each is a parameter transport, never a stored JSON business document. Each
      table has one delete and one upsert; even a historical import is a single transaction. */
   var specs = [
-    { name: 'days', table: 'daily_stats_days', pk: ['site', 'hijri_date'], cols: ['site', 'hijri_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json']) },
-    { name: 'months', table: 'daily_stats_month_locks', pk: ['site', 'hijri_year', 'hijri_month'], cols: ['site', 'hijri_year', 'hijri_month', 'approved', 'reopened', 'legacy_boolean'] },
-    { name: 'locks', table: 'daily_stats_day_locks', pk: ['site', 'hijri_year', 'hijri_month', 'hijri_day'], cols: ['site', 'hijri_year', 'hijri_month', 'hijri_day', 'is_open', 'is_shut'] }
+    { name: 'days', table: 'daily_stats_days', pk: ['site', 'greg_date'], cols: ['site', 'greg_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json']) },
+    { name: 'months', table: 'daily_stats_month_locks', pk: ['site', 'greg_year', 'greg_month'], cols: ['site', 'greg_year', 'greg_month', 'approved', 'reopened', 'legacy_boolean'] },
+    { name: 'locks', table: 'daily_stats_day_locks', pk: ['site', 'greg_year', 'greg_month', 'greg_day'], cols: ['site', 'greg_year', 'greg_month', 'greg_day', 'is_open', 'is_shut'] }
   ];
   var changes = {};
   /* Bound every parameter below D1's value limit while keeping ALL chunks in the

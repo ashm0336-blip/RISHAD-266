@@ -88,8 +88,9 @@ function irMutationData(ctx, b, before, now) {
       throw irError('irshad-language-count');
   });
   if (create) {
-    if (!Number.isSafeInteger(out.y) || out.y < 1 || out.y > 9999 || !Number.isSafeInteger(out.m) || out.m < 1 || out.m > 12 ||
-        !Number.isSafeInteger(out.d) || out.d < 1 || out.d > 30) throw irError('irshad-date');
+    /* V7 · 53 تقويم (ق1 · §1.10): يومٌ ميلاديٌّ صحيح (1900–2199 · اليومُ ≤ طولِ الشهر) — اليومُ الهجري من عميلٍ قديم يُرفض */
+    if (!Number.isSafeInteger(out.y) || out.y < 1900 || out.y > 2199 || !Number.isSafeInteger(out.m) || out.m < 1 || out.m > 12 ||
+        !Number.isSafeInteger(out.d) || out.d < 1 || out.d > calGMonthDays(out.y, out.m)) throw irError('irshad-date');
     out.id = 'ir-' + randTok(); out.ts = now; out.actor = String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id);
   } else { out.editedTs = now; out.editedBy = String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id); }
   // A historical employee snapshot remains historical when its identity is unchanged.
@@ -100,7 +101,7 @@ function irMutationData(ctx, b, before, now) {
     if (matches.length !== 1) throw irError('irshad-employee');
     if (create || out.eid !== before.eid) out.name = String(matches[0].name || 'بدون اسم');
     if (srvBusRead('staff.enabled@1', ctx.A, ctx.d)) {   /* V7 · د5-د2: بغياب مالك الجدول كالمعطَّل — لا تحقّقَ من الوردية */
-      var month = srvBusRead('staff.scheduleRef@1', ctx), schedule = isObj(month) && month[out.y + '-' + out.m], row = isObj(schedule) && schedule[out.eid];
+      var month = srvBusRead('staff.scheduleRef@1', ctx), schedule = isObj(month) && month[calGYm(out.y, out.m)], row = isObj(schedule) && schedule[out.eid];
       if (!isObj(row) || row.shift !== out.shift || (Array.isArray(row.rest) && row.rest.indexOf(out.d) >= 0))
         throw irError('irshad-employee-shift');
     }
@@ -172,10 +173,10 @@ async function irAct(env, A, b, meta) {
     } else {
       if (b.op === 'delete-month') {
         if (!canRead(A, k)) throw irError('irshad-denied', 403);
-        if (!Number.isSafeInteger(b.year) || !Number.isSafeInteger(b.month) || b.month < 1 || b.month > 12) throw irError('irshad-date');
+        if (!Number.isSafeInteger(b.year) || b.year < 1900 || b.year > 2199 || !Number.isSafeInteger(b.month) || b.month < 1 || b.month > 12) throw irError('irshad-date');   /* V7 · 53 تقويم: الشهرُ ميلادي — سنةٌ هجرية تُرفض */
         var scope = irQueryScope(ctx, 'irshad_reports'); args = scope.args.slice();
         args.push(b.year); var yearSlot = '?' + args.length; args.push(b.month);
-        where = scope.sql + ' AND hijri_year=' + yearSlot + ' AND hijri_month=?' + args.length;
+        where = scope.sql + ' AND greg_year=' + yearSlot + ' AND greg_month=?' + args.length;
       } else { irRequestString(b.id, 100000); where = 'department_id=?1 AND report_id=?2'; args = [ctx.d, b.id]; }
       raw = (await rsBound(env.DB.prepare('SELECT * FROM irshad_reports WHERE ' + where + ' ORDER BY sequence'), args).all()).results || [];
       if (!raw.length) throw irError('irshad-report-missing', 404);

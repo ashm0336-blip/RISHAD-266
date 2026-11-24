@@ -11,9 +11,9 @@ function cuIssueDto(row) {
     eid: row.hkey,
     hid: row.holder_key,
     snapshot: { nid: row.holder_nid_snapshot || '', empno: row.holder_empno_snapshot || '', name: row.holder_name_snapshot || '' },
-    y: row.hijri_year,
-    m: row.hijri_month,
-    d: row.hijri_day,
+    y: row.greg_year,
+    m: row.greg_month,
+    d: row.greg_day,
     note: row.note || '',
     by: row.actor_label || '',
     orphan: !row.exact_key && row.alias_n !== 1,
@@ -59,8 +59,8 @@ async function cuRead(env, A, q) {
     kind = q.kind || '';
   if (
     !Number.isSafeInteger(y) ||
-    y < 1000 ||
-    y > 9999 ||
+    y < 1900 ||   /* V7 · 53 تقويم (ق1): الشهرُ ميلادي — سنةٌ هجرية من عميلٍ قديم تُرفض */
+    y > 2199 ||
     !Number.isSafeInteger(m) ||
     m < 1 ||
     m > 12 ||
@@ -121,7 +121,7 @@ async function cuRead(env, A, q) {
     if (view === 'month') {
       pageSql =
         cte +
-        "SELECT r.hkey AS holderKey,COUNT(*) AS heldCount,MAX(r.hijri_year*10000+r.hijri_month*100+r.hijri_day) AS last_day,MAX(COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')) AS name,MAX(COALESCE(r.holder_nid_snapshot,'')) AS nid,MAX(COALESCE(r.holder_empno_snapshot,'')) AS empno,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n!=1 THEN 1 ELSE 0 END) AS orphan,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n>1 THEN 1 ELSE 0 END) AS ambiguous" +
+        "SELECT r.hkey AS holderKey,COUNT(*) AS heldCount,MAX(r.greg_year*10000+r.greg_month*100+r.greg_day) AS last_day,MAX(COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')) AS name,MAX(COALESCE(r.holder_nid_snapshot,'')) AS nid,MAX(COALESCE(r.holder_empno_snapshot,'')) AS empno,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n!=1 THEN 1 ELSE 0 END) AS orphan,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n>1 THEN 1 ELSE 0 END) AS ambiguous" +
         from +
         ' GROUP BY r.hkey ORDER BY r.hkey LIMIT ' +
         (limit + 1) +
@@ -132,8 +132,8 @@ async function cuRead(env, A, q) {
         cte +
         'SELECT r.*' +
         from +
-        (token ? ' AND (r.hijri_year,r.hijri_month,r.hijri_day,r.sequence,r.move_id)>(?7,?8,?9,?10,?11)' : '') +
-        ' ORDER BY r.hijri_year,r.hijri_month,r.hijri_day,r.sequence,r.move_id LIMIT ' +
+        (token ? ' AND (r.greg_year,r.greg_month,r.greg_day,r.sequence,r.move_id)>(?7,?8,?9,?10,?11)' : '') +
+        ' ORDER BY r.greg_year,r.greg_month,r.greg_day,r.sequence,r.move_id LIMIT ' +
         (limit + 1);
       if (token) pageArgs.push.apply(pageArgs, token.key);
     }
@@ -160,7 +160,7 @@ async function cuRead(env, A, q) {
       env.DB.prepare(stateSql).bind(d, cutoff),
       env.DB.prepare(stateSql).bind(d, cutoff - 1),
       env.DB.prepare(
-        'SELECT kind,COUNT(*) n FROM custody_movements WHERE department_id=?1 AND hijri_year=?2 AND hijri_month=?3 GROUP BY kind',
+        'SELECT kind,COUNT(*) n FROM custody_movements WHERE department_id=?1 AND greg_year=?2 AND greg_month=?3 GROUP BY kind',
       ).bind(d, y, m),
       cuBind(env, topSql, [d, cutoff, employeeJson]),
     ];
@@ -247,7 +247,7 @@ async function cuRead(env, A, q) {
               ? [(token ? token.key[0] : 0) + rows.length]
               : view === 'catalog'
                 ? [last.item_id]
-                : [last.hijri_year, last.hijri_month, last.hijri_day, last.sequence, last.move_id],
+                : [last.greg_year, last.greg_month, last.greg_day, last.sequence, last.move_id],
           )
         : '',
       catalogNext: catMore ? cursor('catalog', [catalog[catalog.length - 1].item_id]) : '',
@@ -419,9 +419,9 @@ async function cuAct(env, A, b, meta) {
           sequence: ++sequence,
           kind: 'out',
           holder_key: holder,
-          hijri_year: clock.y,
-          hijri_month: clock.m,
-          hijri_day: clock.d,
+          greg_year: clock.y,
+          greg_month: clock.m,
+          greg_day: clock.d,
           condition: line.condition === undefined ? 'جديد' : cuString(line.condition, 4096, true),
           note: null,
           color_snapshot: line.color === undefined ? item.color || '#b99751' : cuString(line.color, 4096, true),
@@ -444,7 +444,7 @@ async function cuAct(env, A, b, meta) {
       var closeId = cuString(b.issueId, 200, false);
       if (['in', 'dmg', 'lost'].indexOf(b.kind) < 0) throw cuError('custody-close-kind');
       var held = await env.DB.prepare(
-        'SELECT m.*,s.serial FROM custody_movements m JOIN custody_issues s ON s.department_id=m.department_id AND s.issue_id=m.issue_id WHERE m.department_id=?1 AND m.issue_id=?2 ORDER BY m.hijri_year DESC,m.hijri_month DESC,m.hijri_day DESC,m.sequence DESC LIMIT 1',
+        'SELECT m.*,s.serial FROM custody_movements m JOIN custody_issues s ON s.department_id=m.department_id AND s.issue_id=m.issue_id WHERE m.department_id=?1 AND m.issue_id=?2 ORDER BY m.greg_year DESC,m.greg_month DESC,m.greg_day DESC,m.sequence DESC LIMIT 1',
       )
         .bind(d, closeId)
         .first();
@@ -453,9 +453,9 @@ async function cuAct(env, A, b, meta) {
         move_id: 'move-' + randTok(),
         sequence: ++sequence,
         kind: b.kind,
-        hijri_year: clock.y,
-        hijri_month: clock.m,
-        hijri_day: clock.d,
+        greg_year: clock.y,
+        greg_month: clock.m,
+        greg_day: clock.d,
         note: b.note === undefined ? '' : cuString(b.note, 4096, true),
         actor_uid: A.u.id,
         actor_label: String(A.u.name || A.u.id),
