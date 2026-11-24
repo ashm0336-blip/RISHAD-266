@@ -237,9 +237,9 @@
      model(kind, p) ⇒ { style, title, lines:[نص…], closed } لمن يبني بغير React */
 (function () {
   var C = KIVO.BassamCal;
-  var DAY_STYLE = { position: 'relative', height: 24, minWidth: 28, flex: '1 1 auto', padding: '0 3px', borderRadius: 4 };
-  var MONTH_STYLE = { position: 'relative', height: 40, minWidth: 64, flex: '1 1 auto', padding: '2px 4px', borderRadius: 8 };
-  var YEAR_STYLE = { position: 'relative', height: 40, minWidth: 72, padding: '2px 6px', borderRadius: 8 };
+  var DAY_STYLE = { position: 'relative', height: 24, minWidth: 28, flex: '1 1 auto', padding: '0 3px', borderRadius: 4, borderWidth: 2 };   /* = كرتُ شريط المتابعة اليومية (حدٌّ 2px خارج الارتفاع) */
+  var MONTH_STYLE = { position: 'relative', height: 40, minWidth: 64, flex: '1 1 auto', padding: '2px 4px', borderRadius: 8, borderWidth: 1, boxSizing: 'border-box' };
+  var YEAR_STYLE = { position: 'relative', height: 40, minWidth: 72, padding: '2px 6px', borderRadius: 8, borderWidth: 1, boxSizing: 'border-box' };
   var LINES = {
     day: [{ fontSize: 6.5, fontWeight: 700 }, { fontSize: 9, fontWeight: 800 }, { fontSize: 6, fontWeight: 400, opacity: 0.85 }],
     month: [{ fontSize: 11, fontWeight: 800 }, { fontSize: 7.5, fontWeight: 400, opacity: 0.85 }],
@@ -258,19 +258,23 @@
   function model(kind, p) {
     p = p || {};
     var k = keyOf(kind, p), st = C.cardState({ k: k, closed: p.closed, why: p.why, until: p.until }), ring = p.sel || p.today;
-    var style = assign({}, kind === 'day' ? DAY_STYLE : kind === 'month' ? MONTH_STYLE : YEAR_STYLE, p.style, {
-      boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'visible',
+    var style = assign({}, kind === 'day' ? DAY_STYLE : kind === 'month' ? MONTH_STYLE : YEAR_STYLE, p.style), bw = style.borderWidth == null ? 1 : style.borderWidth;
+    delete style.borderWidth;
+    style = assign(style, {
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'visible',
       cursor: 'pointer', userSelect: 'none', textAlign: 'center',
       background: st.closed ? 'var(--bg-x64748b)' : 'var(--bg-xffffff)', color: st.closed ? 'var(--fg-xffffff)' : 'var(--fg-x53565a)',
-      border: '1px solid ' + (st.closed ? 'var(--bd-x64748b)' : 'var(--bd-xe1e1e1)'),
+      border: bw + 'px solid ' + (st.closed ? 'var(--bd-x64748b)' : 'var(--bd-xe1e1e1)'),
       boxShadow: ring ? '0 0 0 2px var(--bd-xb99751)' : 'none'
     });
     return { kind: kind, k: k, style: style, title: st.tip, closed: st.closed, label: st.label, why: st.why, lines: text(kind, k) };
   }
+  /* سطرُ كرت اليوم بعرضٍ صفري يتوسّطه نصُّه: لا يدخل في عرض الكرت، فيبقى عرضُ كل كرتٍ في الشريط المرن هو هو أياً كان نصّه («1/6» أو «14/6») */
+  var LINE_DAY = { display: 'flex', justifyContent: 'center', width: 0, lineHeight: 1, whiteSpace: 'nowrap' };
   var LOCK = 'M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM7 11V7a5 5 0 0 1 10 0v4';
   function render(kind, p) {
     var R = (typeof window !== 'undefined' && window.React) || KIVO.React, h = R.createElement, M = model(kind, p || {}), L = LINES[kind];
-    var kids = M.lines.map(function (t, i) { return h('span', { key: 'l' + i, 'data-cal-line': String(i), style: assign({ display: 'block', lineHeight: 1, whiteSpace: 'nowrap' }, L[i]) }, t); });
+    var kids = M.lines.map(function (t, i) { return h('span', { key: 'l' + i, 'data-cal-line': String(i), style: assign({}, kind === 'day' ? LINE_DAY : { display: 'block', lineHeight: 1, whiteSpace: 'nowrap' }, L[i]) }, t); });
     if (M.closed) kids.push(h('span', { key: 'lock', 'data-cal-lock': '1', 'aria-hidden': 'true', style: { position: 'absolute', top: -4, left: -3, width: 12, height: 12, borderRadius: 9999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-xffffff)', border: '1px solid var(--bd-x64748b)', boxSizing: 'border-box' } },
       h('svg', { width: 7, height: 7, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--fg-x64748b)', strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }, h('path', { d: LOCK }))));
     return h('div', assign({}, (p && p.attrs) || {}, { key: p && p.key, title: M.title, 'aria-label': M.title, 'data-cal-kind': kind, 'data-cal-state': M.closed ? 'closed' : 'open', 'data-cal-key': M.k,
