@@ -379,7 +379,7 @@ async function rsImportRoute(env, request, ss) {
           plan.statements.push(D.prepare('UPDATE ops_nodes SET parent_key=NULL' + where).bind(info.dept, info.resource));
           names.slice().reverse().forEach(function (t) { plan.statements.push(D.prepare('DELETE FROM ' + t + where).bind(info.dept, info.resource)); });
           plan.revisionKeys.push(k); plan.counts.operations++;
-          /* V7 · 53: كتابةٌ بالجملة لا تعرف فتراتها ⇒ K@* (مراجعةُ كل فترةٍ فعلياً MAX(K@p, K@*)) · وملخّصاتُ الفترات القديمة تُحذف (تُحسب من فتراتها عند القراءة) */
+          /* V7 · 53: كتابةٌ بالجملة لا تعرف فتراتها ⇒ K@* (مراجعةُ كل فترةٍ */
           if (opSplitResource(k)) { plan.revisionKeys.push(k + '@*'); plan.statements.push(D.prepare('DELETE FROM ops_period_summary WHERE department_id=?1 AND resource=?2').bind(info.dept, info.resource)); }
           plan.statements.slice(st0).forEach(function (st) { opTag(st, [k]); });
         });

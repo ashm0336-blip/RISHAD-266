@@ -313,8 +313,7 @@ function meRec(rec) {
   for (i = 0; i < F.length; i++) if (rec[F[i]] != null && String(rec[F[i]]).trim() !== '') o[F[i]] = String(rec[F[i]]).trim().slice(0, 120);
   return o;
 }
-/* V7 · 53 (§3ب.5 «صفحتي»): بلا ?ym= تقرأ الصفحةُ اليومَ وأسبوعَه وشهرَه — فالمواردُ المقسَّمة تُقرأ بفترات الشهر السابق والجاري والتالي وحدها
-   (الأيام وعلاماتُ الأشهر · أشهرُ الجدول والخطة) لا تاريخَها كلَّه. أسماءُ الفترات بنصّ المفاتيح القائمة (مولِّدُها هنا كما في بقية هذا الجزء). */
+/* V7 · 53 */
 function meScopes(deptId, C) {
   var yms = [], y = C.y, m = C.m, out = {}, i, d;
   [-1, 0, 1].forEach(function (k) { var mm = m + k, yy = y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } yms.push(yy + '-' + mm); });

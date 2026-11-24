@@ -20,9 +20,7 @@ function osSchemaBaseResources() {
     },
   ];
 }
-/* V7 · 53 (التخزين بالفترة): هنا وحده يُقرأ نصُّ مفتاح الفترة القائم ('1448-6-14' · 'm:1448-6' · '1448-6') — طبقةُ الفترات (019w) لا تعرف شكلَ التاريخ.
-   grp: الشهرُ الذي تنتمي إليه الفترة (نصُّه كما هو) · seq: ترتيبٌ عددي (لا نصّي: '1448-10' بعد '1448-9') · kind: day | mctl | month (لحدّ الحجم).
-   ctx: ما يلزم أحكامَ الحفظ من فتراتٍ أخرى (اليومُ ⇐ علامةُ شهره). إن اعتُمد التقويمُ لاحقاً تغيّر هذا الموضعُ وحده. */
+/* V7 · 53 (التخزين بالفترة): هنا وحده يُقرأ نصُّ مفتاح الفترة القائم */
 function osPeriodIndex(p) {
   var m = /^(m:)?(\d+)-(\d+)(?:-(\d+))?/.exec(String(p));
   if (!m) return { grp: '', seq: 0, kind: 'day' };
@@ -72,5 +70,5 @@ function osSumReport(p, v) {
   return out;
 }
 function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }
-/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') — مرجعُ الإسقاط في القراءة بالفترة (019r) يقرأ شهرَه وحده من الجدول */
+/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') */
 function osPeriodNowMonth() { var T = dsToday(Date.now()); return T ? T.y + '-' + T.m : ''; }

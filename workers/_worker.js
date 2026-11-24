@@ -9466,7 +9466,7 @@ async function rsScopeOperational(env, capture, keys) {
   capture.snapshots.push.apply(capture.snapshots, state.snapshots);
   capture.guards.push.apply(capture.guards, state.guards);
 }
-/* V7 · 53 (ملحق 4): rsReferenceWiden (توسيعُ المرجع إلى القاعدة كلها لحكم صورة) أُزيل — 019e rsImageHeldSql يسأل D1 بالمعرّفات. */
+/* V7 · 53 (ملحق 4): rsReferenceWiden (توسيعُ المرجع إلى القاعدة كلها */
 async function rsReferenceSnapshot(env, uid, options) {
   /* One coherent reference snapshot feeds actor construction and applySave. Its
      complete row witness is rechecked INSIDE the eventual write transaction. */
@@ -11392,9 +11392,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
       plan.guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) FROM imgs WHERE k=?1)!=?2 THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g").bind(sid9, sig9));
     }
   } else {
-  /* V7 · 53 (ملحق 4): كانت أجسامُ كلِّ الصور المذكورة تُقرأ في استدعاءٍ واحد ثم تُرسل كلُّها شاهداً (rsWitness) — استعادةٌ فيها خرائطُ بحجمها الحقيقي
-     (عشرُ صورٍ من 3MB) تتجاوز سقفَ D1 (32MiB للاستدعاء). الآن كما الاستيرادُ على أجزاء: صورةً صورة (استدعاءٌ بحجم صورةٍ واحدة)، والسياجُ عددُ صفوف
-     جسمها ومجموعُ أطوالها داخل الدفعة؛ وجزءُ رفعٍ معلّق لمعرّفٍ منها يرفض كما كان، والغائبةُ تبقى «لا صفّ». */
+  /* V7 · 53 (ملحق 4): كانت أجسامُ كلِّ الصور المذكورة تُقرأ في استدعاءٍ */
   var bodyArgs = [],
     bodyWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, bodyArgs);
   if (await rsBound(env.DB.prepare("SELECT 1 x FROM imgs WHERE substr(k,1,5)='~stg~' AND " + bodyWhere + ' LIMIT 1'), bodyArgs).first()) reject();
@@ -11441,11 +11439,7 @@ function rsImageFinalValues(plan, reference) {
   (plan.imgTouch || []).forEach(function(t){values[t.k]=t.v;});
   return values;
 }
-/* V7 · 53 (ملحق 4): أيُّ المعرّفات ids (بشكل الماسح وحده) يذكره نصٌّ خارج المفاتيح keys — عبارةٌ واحدة تجيب بالمعرّفات لا بالنصوص.
-   kv: الصفُّ كلُّه وحدودُ الصفوف (كما IMG_KV_JOIN) · السجلاتُ التشغيلية: نصوصُ كلِّ جدول ops_* (كما opstxt — 054 imgOpsCols) خارج موارد keys
-   (والموردُ المخزَّن بالفترة res@<الفترة> من المورد نفسِه). الحدُّ بعد المطابقة كدلالة imgIdsIn ([^a-z0-9] أو نهايةُ النص).
-   الجواب: المعرّفاتُ الممسوكة مرتّبةً بفواصل؛ أو — إن حمل نصٌّ خارجها هروبَ \u00XX (قد يخفي معرّفاً لا تراه المطابقةُ الحرفية) — '!' ثم بصمةُ
-   تلك النصوص (مفتاحٌ وطولٌ لكلٍّ) فيقرؤها rsImageHeldEsc ويفكّها كما يفعل الحفظ (imgDeep)، والسياجُ البصمةُ نفسُها. */
+/* V7 · 53 (ملحق 4): أيُّ المعرّفات ids (بشكل الماسح وحده) يذكره نصٌّ */
 function rsImageHeldSql(ids, keys) {
   var ops = keys.filter(opIsResource).map(function (k) { var i = opInfo(k); return [i.dept, i.resource]; }),
     mine = "EXISTS(SELECT 1 FROM json_each(?3) p WHERE json_extract(p.value,'$[0]')=o.d AND (json_extract(p.value,'$[1]')=o.r OR substr(o.r,1,length(json_extract(p.value,'$[1]'))+1)=json_extract(p.value,'$[1]')||'@'))",
@@ -11531,7 +11525,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       bodyWhere = rsImageIn('k', newIds, bodyArgs),
       /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور المذكورة ليعرف القائمَ منها — يسأل عن معرّفاتها وتوقيعها (عددُ الصفوف ومجموعُ الأطوال)، وسياجُه التوقيعُ نفسُه */
       bodySig = "SELECT COALESCE(group_concat(k||'='||c||':'||n,','),'') s FROM (SELECT k,COUNT(*) c,SUM(length(v)) n FROM imgs WHERE " + bodyWhere + ' GROUP BY k ORDER BY k)',
-      /* V7 · 53 (ملحق 4): المعرّفاتُ والتوقيعُ وحدهما دائماً (لا أجسامُ الصور ولا شاهدُها — استعادةٌ بخرائط حقيقية كانت تتجاوز 32MiB للاستدعاء) */
+      /* V7 · 53 (ملحق 4): المعرّفاتُ والتوقيعُ وحدهما دائماً (لا أجسامُ الصور */
       sigNow = String((await rsBound(env.DB.prepare(bodySig), bodyArgs).first('s')) || ''),
       known = new Set(sigNow.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }));
     /* V7-F · owner decision 2 (ii): a backup that mentions an image the platform no longer holds (swept after its grace) is still restored —
@@ -11562,12 +11556,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       live.add(id);
     });
   });
-  /* V7 · 53 (ملحق 4 · السبب الجذري لـ500 على Preview): صورةٌ لم تعد القيمُ المنطاقة تذكرها قد يذكرها مفتاحٌ آخر في القاعدة. كان الحكمُ يوسّع المرجعَ
-     إلى القاعدة كلها (rsReferenceWiden: كلُّ kv خارج النطاق وكلُّ الموارد التشغيلية لكل الإدارات إلى العامل، ثم كلُّها شاهداً في دفعة الحفظ) —
-     فيكبر الاستدعاءُ بحجم القاعدة لا بحجم الحفظ، ويتجاوز سقفَ D1 (32MiB للاستدعاء) فيعود 500 save-failed. الآن يسأل D1 نفسَها بعبارةٍ واحدة
-     (rsImageHeldSql) أيُّ هذه المعرّفات ما زال نصٌّ خارج المفاتيح المحفوظة يذكره — kv صفّاً صفّاً وعبر حدود الصفوف · نصوصُ السجلات التشغيلية —
-     فلا يعبر إلا المعرّفات. والسياجُ العبارةُ نفسُها داخل دفعة الحفظ: أيُّ كتابةٍ متزامنة تغيّر الجواب ⇒ KIVO_REV_CONFLICT (كما كان الشاهد).
-     نصٌّ قديم يحمل هروبَ \u00XX (قد يخفي معرّفاً) خارج المحفوظ ⇒ لا يُحكم: كلُّها تبقى كما هي (لا يتيم) — والكنسُ (054 imgSweep) يقرّر وحده بعد ذلك. */
+  /* V7 · 53 (ملحق 4 · السبب الجذري لـ500 على Preview): صورةٌ لم تعد */
   var lost = Array.from(ids).filter(function (id) { return !live.has(id); }), scope = reference.scope;
   if (lost.length && scope && !scope.all && !reference.noWiden) {
     lost.filter(function (id) { return !IMG_SCAN_ID_RX.test(id); }).forEach(function (id) { live.add(id); });
@@ -14645,7 +14634,7 @@ async function rsImportRoute(env, request, ss) {
           plan.statements.push(D.prepare('UPDATE ops_nodes SET parent_key=NULL' + where).bind(info.dept, info.resource));
           names.slice().reverse().forEach(function (t) { plan.statements.push(D.prepare('DELETE FROM ' + t + where).bind(info.dept, info.resource)); });
           plan.revisionKeys.push(k); plan.counts.operations++;
-          /* V7 · 53: كتابةٌ بالجملة لا تعرف فتراتها ⇒ K@* (مراجعةُ كل فترةٍ فعلياً MAX(K@p, K@*)) · وملخّصاتُ الفترات القديمة تُحذف (تُحسب من فتراتها عند القراءة) */
+          /* V7 · 53: كتابةٌ بالجملة لا تعرف فتراتها ⇒ K@* (مراجعةُ كل فترةٍ */
           if (opSplitResource(k)) { plan.revisionKeys.push(k + '@*'); plan.statements.push(D.prepare('DELETE FROM ops_period_summary WHERE department_id=?1 AND resource=?2').bind(info.dept, info.resource)); }
           plan.statements.slice(st0).forEach(function (st) { opTag(st, [k]); });
         });
@@ -18848,10 +18837,7 @@ function ocConvert(prepared, department, resource, value, present) {
   if (present !== false) write(root.spec, value, '$', null, null, 0);
   return { departmentId: department, resource: resource, rows: rows };
 }
-/* V7 · 53 (§3ب.4 الفكّ): opts.trust — صفوفٌ قرأها الخادمُ نفسُه من D1 (القراءةُ والحفظ): بلا إعادة الترميز والمقارنة القانونية (noncanonical-rows)،
-   وهي باقيةٌ لكل ما يأتي من خارجه (الاستيراد · الاستعادة · الاختبارات). opts.partial — صفوفُ الرأس وفتراتٍ بعينها (019w): أعضاءُ الخريطة بترتيب
-   مواضعها المخزَّنة بلا اشتراط التتابع، ولا «يتيم» لما لم يُطلب. وأبناءُ كلِّ عقدة من فهرسٍ يُبنى مرةً (parent_key) — كان كلُّ عقدة خريطةٍ أو قائمة
-   يمسح جدولَ أبنائه كلَّه (تربيعيّ). */
+/* V7 · 53 */
 function ocInflate(prepared, domain, opts) {
   opts = opts || {};
   var root = prepared.resources[domain.resource], rows = domain.rows, used = new Set(), byTable = {}, kids = {};
@@ -18978,7 +18964,7 @@ function ocFromPhysical(prepared, department, resource, physical, opts) {
     domain.rows[spec.table].push(row);
   });
   Object.keys(entities).forEach(function (name) { entities[name].forEach(function (row) { if (!used.has(name + '\0' + row.row_key)) throw ocError('orphan-entity'); }); });
-  if (!opts || !opts.skip) ocInflate(prepared, domain, opts); return domain;   /* V7 · 53: opts.skip — المستدعي يفكّه بنفسه مرةً واحدة (019r) */
+  if (!opts || !opts.skip) ocInflate(prepared, domain, opts); return domain;   /* V7 · 53: opts.skip */
 }
 function ocCreateStatements(prepared) {
   var out = ["CREATE TABLE IF NOT EXISTS ops_nodes(department_id TEXT NOT NULL,resource TEXT NOT NULL,row_key TEXT NOT NULL,parent_key TEXT,member_key TEXT,position INTEGER NOT NULL,node_kind INTEGER NOT NULL,variant INTEGER,tuple_length INTEGER,schema_id TEXT NOT NULL,entity_kind TEXT,PRIMARY KEY(department_id,resource,row_key),UNIQUE(department_id,resource,row_key,entity_kind),FOREIGN KEY(department_id,resource,parent_key)REFERENCES ops_nodes(department_id,resource,row_key)ON DELETE CASCADE)WITHOUT ROWID",
@@ -19503,9 +19489,7 @@ function osSchemaBaseResources() {
     },
   ];
 }
-/* V7 · 53 (التخزين بالفترة): هنا وحده يُقرأ نصُّ مفتاح الفترة القائم ('1448-6-14' · 'm:1448-6' · '1448-6') — طبقةُ الفترات (019w) لا تعرف شكلَ التاريخ.
-   grp: الشهرُ الذي تنتمي إليه الفترة (نصُّه كما هو) · seq: ترتيبٌ عددي (لا نصّي: '1448-10' بعد '1448-9') · kind: day | mctl | month (لحدّ الحجم).
-   ctx: ما يلزم أحكامَ الحفظ من فتراتٍ أخرى (اليومُ ⇐ علامةُ شهره). إن اعتُمد التقويمُ لاحقاً تغيّر هذا الموضعُ وحده. */
+/* V7 · 53 (التخزين بالفترة): هنا وحده يُقرأ نصُّ مفتاح الفترة القائم */
 function osPeriodIndex(p) {
   var m = /^(m:)?(\d+)-(\d+)(?:-(\d+))?/.exec(String(p));
   if (!m) return { grp: '', seq: 0, kind: 'day' };
@@ -19555,7 +19539,7 @@ function osSumReport(p, v) {
   return out;
 }
 function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }
-/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') — مرجعُ الإسقاط في القراءة بالفترة (019r) يقرأ شهرَه وحده من الجدول */
+/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') */
 function osPeriodNowMonth() { var T = dsToday(Date.now()); return T ? T.y + '-' + T.m : ''; }
 function osSchemaStaffRow(table) {
   var fields = osSchemaFields(["shift", "muk", "cs"]);
@@ -20421,9 +20405,7 @@ function opUpsertRows(env, spec, rows) {
       ' FROM json_each(?1) j WHERE 1 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET ' + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(JSON.stringify(part));
   });
 }
-/* V7 · 53 (§3ب.4 · الحارس مراجعةٌ لا شاهد): كانت القراءةُ تبني شاهدَ EXCEPT بكل صفوف كل موردٍ مقروء (rsWitness) وتعيد إرسالها في دفعة الحارس —
-   فما يُرسل إلى D1 يساوي ما جاء منها (خطة 166KB ⇐ 8.5MB ذهاباً وإياباً) حتى سقفِ الاستدعاء. الآن عبارةُ CAS واحدة على revs لكل مفتاحٍ مقروء
-   (opRevGuards) — صحيحةٌ لأن كلَّ كتابةٍ على ops_* ترفع مراجعةَ مفتاحها في الدفعة نفسِها (يفرضه 052 dbGuard: db-unrevised-ops-write). */
+/* V7 · 53 */
 function opRevGuards(env, pairs) {
   return rsChunks(pairs).map(function (part) {
     return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1)j WHERE COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$[0]')),0)<>json_extract(j.value,'$[1]'))THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(JSON.stringify(part));
@@ -20434,9 +20416,7 @@ function opLegacyError(error) {
   var e = ocError('legacy-source-present'); e.status = 503; return e;
 }
 // retired: also run opRetiredGuard inside the read batch (replaces a separate opGuardRetired round trip).
-/* V7 · 53: scopes { <key>: { periods:[…], base? , bases:{p:rev}? } } (أو env.__opScope) — موردٌ مقسَّم يُقرأ رأسُه وفتراتٌ بعينها بمديات row_key
-   (019w) لا الوثيقةَ كلها؛ وقيمتُه وثيقةٌ جزئية بالشكل نفسِه (الرأس + تلك الفترات بمواضعها). الحارس: مراجعاتُ تلك الفترات والرأس (opPeriodRevGuards).
-   بلا نطاق: الوثيقةُ كلُّها كما كانت، وحارسُها مراجعةُ المفتاح. والفكُّ مرةً واحدة خطّية (019o opts.trust|partial). */
+/* V7 · 53: scopes { <key>: { periods:[…], base? , bases:{p:rev}? } } */
 async function opLoadMany(env, keys, retired, scopes) {
   scopes = scopes || env.__opScope || {};
   var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {}, revKeys = [];
@@ -20555,7 +20535,7 @@ async function opChangeStatements(env, key, nextRaw, options) {
   var next;
   try { next = nextRaw == null ? undefined : JSON.parse(nextRaw); } catch (e) { throw ocError('json'); }
   var def = opPeriodDef(info), scope = before && before.scope && before.scope.periods ? before.scope : null;
-  /* V7 · 53: إدارةٌ لم تُتمَّ المرحلةَ الثانية من 0013 — لا كتابةَ تشغيلية على مواردها المقسَّمة حتى يُتمّها مديرُ المنصة (رسالةٌ عربية) */
+  /* V7 · 53: إدارةٌ لم تُتمَّ المرحلةَ الثانية من 0013 */
   if (def && before && before.scope && before.scope.pending) throw opLimError('ops-layout-pending', 503);
   var after = ocConvert(info.prepared, info.dept, info.resource, next, nextRaw != null), statements = [], changed = false, extra = [], periodKeys = [], sums = [];
   if (def) {
@@ -20599,9 +20579,7 @@ async function opChangeStatements(env, key, nextRaw, options) {
   return { guards: [opRetiredGuard(env)].concat(state.guards), statements: statements, snapshots: state.snapshots,
     revisionKeys: changed ? [key].concat(periodKeys) : [], changed: changed, domain: after };
 }
-/* V7 · 53: حفظٌ منطاق (الرأس + فتراتٌ بعينها): ocConvert رقّم أعضاءَ الحاوية بمواضعهم في الوثيقة الجزئية — تُعاد إلى مواضعهم في الوثيقة كلها
-   (القائمُ يبقى في موضعه · المحذوفُ يُطوى · الجديدُ آخراً، كما تفعل الكتابةُ على كائن JS)، وأعضاءٌ خارج النطاق تغيّر موضعُها بحذفٍ تُحدَّث مواضعُها
-   بعبارةٍ واحدة. يعيد عباراتِ تلك التحديثات. */
+/* V7 · 53: حفظٌ منطاق (الرأس + فتراتٌ بعينها): ocConvert رقّم أعضاءَ */
 function opScopedPositions(env, info, def, before, after, scope, next) {
   var C = opContainerKey(def), cspec = opContainerSpec(info), oldPos = {}, members = scope.members || [];
   members.forEach(function (m) { if (typeof m.p === 'string') oldPos[m.p] = m.pos; });
@@ -20662,13 +20640,10 @@ function opReadFailed(error) {
   var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
   if (error.rs || error.ocCode) return json(Object.assign({ ok: 0, err: error.rs || error.ocCode }, error.msg ? { msg: error.msg } : {}, error.details ? { at: error.details } : {}), error.status || 400);
   if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
-  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 (§3ب.7) */
+  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 */
   throw error;
 }
-/* V7 · 53 (§3ب.4 · العقد في scratchpad/d7/periods_api.md): keys= مفاتيحُ منطقية كما كانت، أو مفاتيحُ فترة K@<p> ورأس K@ لموردٍ مقسَّم؛
-   range=K@<grp> كلُّ فترات المجموعة · index=K قائمةُ الفترات بلا محتوى. يُحمَّل رأسُ المورد والفتراتُ المطلوبة وحدها (opLoadMany بنطاق)،
-   والجدولُ الشهري مرجعاً للإسقاط بشهر اليوم التشغيلي وشهور الفترات المطلوبة وحدها (كان يُحمَّل كلُّه مع كل مفتاح). الحدود قبل أي تحميل؛
-   وفشلُ موردٍ واحد (حدٌّ · خطأُ D1) يقع في failed لا في القراءة كلها. */
+/* V7 · 53 */
 var OP_READ_REFS = ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'];
 function opReadList(url, name) { return Array.from(new Set(String(url.searchParams.get(name) || '').split(',').filter(Boolean))); }
 async function opReadOnce(env, url, session) {
@@ -20782,10 +20757,7 @@ async function opReadOnce(env, url, session) {
   }
 }
 
-/* V7 · 53 (§3ب.5 · العقد §2): حفظٌ بالفترة على /api/save — set/del بمفاتيح K@<p> (وK@ للرأس) وbase بمراجعاتها. يُترجم قبل أي حكم إلى حفظ المفتاح
-   المنطقي K بوثيقةٍ جزئية (الرأس + الفترات المكتوبة + سياقُها: لليوم علامةُ شهره) فتحكم أحكامُ الحفظ كلُّها كما هي على الشكل نفسِه، ويُحمَّل
-   ويُكتب ذلك النطاقُ وحده (env.__opScope ⇒ opLoadMany · opChangeStatements). التعارضُ بمراجعة كل فترةٍ أرسلها العميل (ومراجعةِ الرأس والسياق كما
-   قرأتهما الترجمة)، لا بمراجعة الوثيقة كلها: يومان يُحفظان معاً بلا تعارض. يعيد null إن لم يكن في الحفظ مفتاحُ فترة. */
+/* V7 · 53 */
 async function opPeriodSaveBody(env, A, bs) {
   var keys = Object.keys(bs.set || {}).concat(bs.del || []).map(String);
   if (!keys.some(function (k) { return k.indexOf('@') >= 0; })) return null;
@@ -20841,15 +20813,8 @@ async function opPeriodSaveResult(env, ps, r) {
   }
   return out;
 }
-/* ═══ V7 · 53 · التخزين بالفترة (§3ب، الشروط في رد المراجع §4) — طبقةٌ لا تعرف شكلَ التاريخ ═══════════════════════════════════════════════
-   المورد الشهري/اليومي (تعريفُه يحمل period: { root | field, index, ctx, summary } — 019p1/019p3/019p4/019q) يبقى وثيقةً منطقية واحدة بمفتاحها،
-   وصفوفُه في ops_nodes وجداول الكيانات كما يكتبها المرمِّز (019o). الفترةُ = عضوٌ من «الحاوية» (جذرُ الخريطة، أو حقل months في الخطة) واسمُها
-   نصُّ المفتاح القائم كما هو ('1448-6-14' · 'm:1448-6' · '1448-6')، وصفوفُها شجرةٌ تحت row_key = <الحاوية>/e:<الاسم مرمَّزاً> — فتُقرأ وتُكتب
-   بمدى على المفتاح الأساسي (department_id, resource, row_key) لا بالوثيقة كلها. «الرأس» ما سوى الفترات (الجذرُ وحقوله الثابتة).
-   لا تحليلَ لتاريخٍ هنا: الترتيبُ والمجموعة (grp) من دالة التعريف index (019p0)، والمقارنةُ عددية (seq) لا نصّية.
-   المراجعات: K (الوثيقة كلها) ترتفع مع كل كتابة كما كانت · K@<p> مراجعةُ الفترة · K@ مراجعةُ الرأس · K@* كتابةٌ بالجملة لا تعرف فتراتها
-   (استيرادٌ على دفعات): مراجعةُ الفترة الفعلية = MAX(K@p, K@*). وكلُّ كتابةٍ على ops_* ترفع مراجعةَ مفتاحها في الدفعة نفسِها (052 dbGuard يفرضه). */
-var OP_LIM = { day: 524288, mctl: 524288, month: 1572864, head: 1048576, readPeriods: 40, readNodes: 60000, batchBytes: 12582912, batchStmts: 400, rangeGroups: 26, summaryRows: 800 };
+/* V7 · 53: التخزين بالفترة (§3ب) — طبقةٌ لا تعرف شكل التاريخ؛ التفصيل في تقرير periods ووثيقة العقد. */
+var OP_LIM = { day: 524288, mctl: 524288, month: 1572864, head: 1048576, readPeriods: 40, readNodes: 30000, batchBytes: 12582912, batchStmts: 400, rangeGroups: 26, summaryRows: 800 };
 var OP_LIM_MSG = {
   'read-too-large': 'طُلبت فترات أكثر من المسموح في قراءة واحدة. اختر مدى أقصر.',
   'period-too-large': 'بيانات هذه الفترة تجاوزت الحد المسموح. راجع الإدخال أو تواصل مع مدير المنصة.',
@@ -20861,7 +20826,6 @@ var OP_PERIOD_RX = /^[^,@*;\u0000-\u001f\u007f]{1,64}$/, OP_LAYOUT_KEY = 'ops_la
 function opLimError(code, status, extra) { var e = rsError(code, status || 413); e.msg = OP_LIM_MSG[code] || ''; if (extra) e.details = extra; return e; }
 function opPeriodDef(info) { return (info && info.definition && info.definition.period) || null; }
 function opSplitResource(key) { var info = null; try { info = opInfo(key); } catch (e) { info = null; } return info && opPeriodDef(info) ? info : null; }
-/* 'bsdept:<d>:<res>@<p>' ⇒ { key, period, info } — '' الرأس · '*' علامةُ الكتابة بالجملة (للمراجعات وحدها) */
 function opPeriodKey(k) {
   var s = String(k), i = s.indexOf('@'); if (i < 0) return null;
   var key = s.slice(0, i), p = s.slice(i + 1), info = opSplitResource(key);
@@ -20879,7 +20843,6 @@ function opPeriodOrder(def, list) {
   return list.slice().sort(function (a, b) { var x = opPeriodIdx(def, a), y = opPeriodIdx(def, b); return x.seq - y.seq || (a < b ? -1 : a > b ? 1 : 0); });
 }
 function opPeriodCtx(def, p) { var c = typeof def.ctx === 'function' ? def.ctx(p) : []; return Array.isArray(c) ? c.filter(function (x) { return typeof x === 'string' && x !== p; }) : []; }
-/* الرأسُ والفترات من الوثيقة، مع موضع كل عضوٍ في حاويته (opJoin يعيدها حرفاً بترتيبها) */
 function opSplit(info, doc) {
   var def = opPeriodDef(info), out = { head: doc, hpos: {}, periods: {}, pos: {} };
   if (doc === undefined || doc === null) return out;
@@ -20914,27 +20877,23 @@ function opJoin(info, parts) {
   var r = {}; all.slice().sort(byPos(pos)).forEach(function (k) { ocSet(r, k, ocOwn(head, k) ? head[k] : parts.periods[k]); });
   return r;
 }
-/* مدياتُ row_key: الرأس (ما سوى الحاوية/e:) وفترةٌ بعينها (جذرُها وشجرتُها) — كلُّ مدى [من، إلى) على المفتاح الأساسي */
 function opHeadRanges(def) { var e = opContainerKey(def) + '/e'; return [['', e + ':'], [e + ';', '￿']]; }
 function opPeriodRanges(def, p) { var r = opPeriodRoot(def, p); return [[r, r + '\u0001'], [r + '/', r + '0']]; }
-/* مراجعةُ الفترة الفعلية: MAX(K@p, K@*) — والرأس: MAX(K@, K@*) */
 function opPeriodRev(revs, key, p) { return Math.max(rsNat(revs[key + '@' + p] || 0), rsNat(revs[key + '@*'] || 0)); }
-function opPeriodRevGuards(env, items) {   // items: [[key, period, rev]]
+function opPeriodRevGuards(env, items) {
   return rsChunks(items.map(function (x) { return { a: x[0] + '@' + x[1], b: x[0] + '@*', r: x[2] }; })).map(function (part) {
     return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1)j WHERE MAX(COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$.a')),0),COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$.b')),0))<>json_extract(j.value,'$.r'))THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(JSON.stringify(part));
   });
 }
-/* حدُّ حجم الفترة عند الحفظ (JSON) */
 function opPeriodSizeCheck(def, p, value) {
   var kind = p === '' ? 'head' : opPeriodIdx(def, p).kind, cap = OP_LIM[kind] || OP_LIM.day, n = value === undefined ? 0 : JSON.stringify(value).length;
   if (n > cap) throw opLimError('period-too-large', 413, { period: p, bytes: n, cap: cap });
 }
-/* ملخّصُ الفترة (ops_period_summary): يُكتب في دفعة حفظها بمراجعتها (meta.rev بعد رفعه)، ويُحذف بحذفها */
 function opSummaryValue(info, p, value) {
   var def = opPeriodDef(info); if (p === '' || typeof def.summary !== 'function') return null;
   try { return def.summary(p, value); } catch (e) { return null; }
 }
-function opSummaryStatements(env, info, changes) {   // changes: [{p, value|undefined}]
+function opSummaryStatements(env, info, changes) {
   var put = [], drop = [];
   changes.forEach(function (c) { if (c.p === '') return; var v = c.value === undefined ? undefined : opSummaryValue(info, c.p, c.value); if (v == null) drop.push(c.p); else put.push({ p: c.p, v: JSON.stringify(v) }); });
   var st = [];
@@ -20946,17 +20905,13 @@ function opSummaryStatements(env, info, changes) {   // changes: [{p, value|unde
   return st;
 }
 function opKeyOf(info) { return 'bsdept:' + info.dept + ':' + info.resource; }
-/* وسمُ عبارة كتابةٍ على ops_* بمفاتيحها المنطقية — 052 dbGuard يرفض دفعةً فيها كتابةٌ لا ترفع مراجعةَ مفتاحها */
-function opTag(statement, keys) { try { statement.__opKeys = keys; } catch (e) { /* عبارةٌ مجمَّدة: الفحصُ في dbGuard يعدّها غيرَ موسومة */ } return statement; }
-/* الإدارات التي لم تُتمَّ المرحلةَ الثانية من 0013 — كتابتُها التشغيلية مرفوضة 503 ops-layout-pending حتى يُتمّها مديرُ المنصة */
+function opTag(statement, keys) { try { statement.__opKeys = keys; } catch (e) {  } return statement; }
 function opLayoutPendingOf(row) { var v = parseJson(row && row.v, []); return Array.isArray(v) ? v.filter(function (d) { return typeof d === 'string'; }) : []; }
 function opLayoutStatement(env) { return env.DB.prepare("SELECT v FROM meta WHERE k='" + OP_LAYOUT_KEY + "'"); }
-/* 0013 المرحلة ١ (052 migrateDb): الإداراتُ التي لها صفوفٌ في الموارد المقسَّمة ⇒ meta.ops_layout_pending — في دفعة الترحيل الذرّية نفسِها، بـSQL وحده */
 function opSplitResources() { return opDefinitions().filter(function (d) { return !!d.period; }).map(function (d) { return d.resource; }); }
 function opPeriodsLegacyPrepare(env) {
   return { before: [], after: [env.DB.prepare("INSERT INTO meta(k,v) SELECT '" + OP_LAYOUT_KEY + "',x FROM (SELECT json_group_array(d) x,COUNT(*) n FROM (SELECT DISTINCT department_id d FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY d)) WHERE n>0 ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(opSplitResources()))] };
 }
-/* ═══ المسارات (063 يوجّه إليها) ═══ */
 function opRouteError(error) {
   var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
   if (error && (error.rs || error.ocCode)) return json(Object.assign({ ok: 0, err: error.rs || error.ocCode }, error.msg ? { msg: error.msg } : {}), error.status || 400);
@@ -20964,13 +20919,11 @@ function opRouteError(error) {
   var lim = dbLimitResponse(null, error, '/api/operations'); if (lim) return lim;
   throw error;
 }
-/* أعضاءُ حاوية موردٍ مقسَّم (أسماءُ الفترات) — صفٌّ لكل فترة من فهرس ops_nodes_parent */
 async function opPeriodMembers(env, info) {
   var def = opPeriodDef(info), spec = opContainerSpec(info);
   var rows = (await env.DB.prepare('SELECT member_key AS m, position AS p FROM ops_nodes WHERE department_id=?1 AND resource=?2 AND parent_key=?3').bind(info.dept, info.resource, opContainerKey(def)).all()).results || [];
   return rows.filter(function (r) { return typeof r.m === 'string' && (def.field || !ocOwn(spec.fields || {}, r.m)); });
 }
-/* GET /api/operations/summary?key=K&grp=<g>[,<g>] | &from=<p>&to=<p> — ملخّصاتُ الفترات بترتيبٍ عددي؛ ما غاب ملخّصُه أو قدُم يُحسب من فترته (لا يُكتب عند القراءة) */
 async function opSummaryRoute(env, request, url, session) {
   if (request.method !== 'GET') return json({ ok: 0, err: 'method' }, 405);
   var mismatch = sessUidMismatch(env, url, session, '/api/operations/summary'); if (mismatch) return mismatch;
@@ -20989,17 +20942,17 @@ async function opSummaryRoute(env, request, url, session) {
       env.DB.prepare('SELECT period,rev,v_json FROM ops_period_summary WHERE department_id=?1 AND resource=?2 AND period IN(SELECT value FROM json_each(?3))').bind(info.dept, info.resource, JSON.stringify(names)),
       env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(names.map(function (p) { return K + '@' + p; }).concat([K + '@*'])))]);
     var have = {}, revs = {}; (got[0].results || []).forEach(function (r) { have[r.period] = r; }); (got[1].results || []).forEach(function (r) { revs[r.k] = rsNat(r.rev); });
-    var stale = names.filter(function (p) { return !have[p] || rsNat(have[p].rev) < opPeriodRev(revs, K, p); }), fresh = {};
+    var stale = names.filter(function (p) { return !have[p] || rsNat(have[p].rev) < opPeriodRev(revs, K, p); }), fresh = {}, later = stale.slice(OP_LIM.readPeriods * 3);
+    stale = stale.slice(0, OP_LIM.readPeriods * 3);
     for (var i = 0; i < stale.length; i += OP_LIM.readPeriods) {
       var part = stale.slice(i, i + OP_LIM.readPeriods), sc = {}; sc[K] = { periods: part };
       var st = await opLoadMany(env, [K], 1, sc), parts = opSplit(info, st.values[K] == null ? undefined : JSON.parse(st.values[K]));
       part.forEach(function (p) { fresh[p] = ocOwn(parts.periods, p) ? opSummaryValue(info, p, parts.periods[p]) : null; });
     }
     await env.DB.batch(rsReferenceGuards(env, reference));
-    return json({ ok: 1, key: K, rows: names.map(function (p) { var x = opPeriodIdx(def, p); return { p: p, grp: x.grp, seq: x.seq, rev: opPeriodRev(revs, K, p), v: ocOwn(fresh, p) ? fresh[p] : parseJson(have[p].v_json, null) }; }) });
+    return json({ ok: 1, key: K, rows: names.map(function (p) { var x = opPeriodIdx(def, p); return { p: p, grp: x.grp, seq: x.seq, rev: opPeriodRev(revs, K, p), v: ocOwn(fresh, p) ? fresh[p] : later.indexOf(p) >= 0 ? null : parseJson(have[p].v_json, null), stale: later.indexOf(p) >= 0 ? 1 : undefined }; }) });
   } catch (error) { return opRouteError(error); }
 }
-/* GET /api/operations/receipt?id=<requestId> (S8): هل اعتُمد هذا الحفظ؟ — صفٌّ واحد من restore_operations لصاحب الجلسة */
 async function opReceiptRoute(env, request, url, session) {
   if (request.method !== 'GET') return json({ ok: 0, err: 'method' }, 405);
   var mismatch = sessUidMismatch(env, url, session, '/api/operations/receipt'); if (mismatch) return mismatch;
@@ -21010,18 +20963,13 @@ async function opReceiptRoute(env, request, url, session) {
   var r = parseJson(row.result_json, {}) || {};
   return json({ ok: 1, found: 1, v: rsNat(row.revision), revs: isObj(r.revs) ? r.revs : {} });
 }
-/* POST /api/operations/periods-migrate {dept: '<id>' | 'all'} — المرحلة ٢ من 0013 (مديرُ المنصة وحده): لكل إدارةٍ معلَّقة ولكل موردٍ مقسَّم:
-   ① الصفوفُ كلُّها مغطّاةٌ بالرأس وفتراتٍ لا تتداخل (عددُها = مجموعُ مدياتها) ② مواضعُ أعضاء الحاوية متتابعة ③ كلُّ فترةٍ تُفكّ مع الرأس وحدها
-   (opJoin(opSplit) = ما يُقرأ) ④ ملخّصاتُها تُكتب ⑤ ثم قلبٌ ذرّيّ: الإدارةُ تخرج من ops_layout_pending بحارس مراجعاتها كما قُرئت. ذروةُ الذاكرة
-   والاستدعاء = فترات دفعةٍ واحدة لا الوثيقة. فشلُ إدارةٍ يُبقيها معلَّقة ويذكر الفترة، ولا يغيّر شيئاً. إعادتُه على إدارةٍ مُتمَّة لا تفعل شيئاً. */
 async function opPeriodsMigrateRoute(env, request, session) {
   if (request.method !== 'POST') return json({ ok: 0, err: 'method' }, 405);
   try {
     var A = await actorOf(env, session.uid); if (!A) return json({ ok: 0, err: 'session' }, 401);
     if (A.u.role !== 'super') return json({ ok: 0, err: 'operations-periods-migrate-permission' }, 403);
     var body = parseJson(await request.text(), null); if (!isObj(body) || typeof body.dept !== 'string') return json({ ok: 0, err: 'bad-body' }, 400);
-    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];   /* إدارةٌ مسمّاةٌ ليست معلَّقة: تحقّقٌ وإعادةُ بناء ملخّصاتها (والقلبُ لا يغيّر شيئاً) */
-    for (var d of list) {
+    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];       for (var d of list) {
       var rep = { dept: d, resources: {}, ok: 0 }, revPairs = [];
       try {
         for (var R of opSplitResources()) {
@@ -21042,12 +20990,10 @@ async function opPeriodsMigrateRoute(env, request, session) {
             part.forEach(function (p) { if (!ocOwn(parts.periods, p)) throw Object.assign(ocError('period-verify'), { period: p }); sums.push({ p: p, value: parts.periods[p] }); });
           }
           if (covered !== total) throw Object.assign(ocError('period-coverage'), { rows: total, covered: covered });
-          if (new Set(pos).size !== pos.length) throw ocError('period-positions');   /* لا عضوان في موضعٍ واحد */
-          for (var j = 0; j < sums.length; j += 200) await env.DB.batch(opSummaryStatements(env, info, sums.slice(j, j + 200)));
+          if (new Set(pos).size !== pos.length) throw ocError('period-positions');             for (var j = 0; j < sums.length; j += 200) await env.DB.batch(opSummaryStatements(env, info, sums.slice(j, j + 200)));
           rep.resources[R] = { periods: names.length, rows: total };
         }
-        /* القلبُ الذرّي: الإدارةُ تخرج من القائمة إن لم تتغيّر مراجعاتُها منذ التحقق */
-        await env.DB.batch(opRevGuards(env, revPairs).concat([env.DB.prepare("UPDATE meta SET v=(SELECT COALESCE(json_group_array(value),'[]') FROM json_each(meta.v) WHERE value<>?1) WHERE k='" + OP_LAYOUT_KEY + "'").bind(d)]));
+                await env.DB.batch(opRevGuards(env, revPairs).concat([env.DB.prepare("UPDATE meta SET v=(SELECT COALESCE(json_group_array(value),'[]') FROM json_each(meta.v) WHERE value<>?1) WHERE k='" + OP_LAYOUT_KEY + "'").bind(d)]));
         rep.ok = 1;
         logEv('info', 'ops-periods-migrate', { rid: env.__rid, dept: d, res: Object.keys(rep.resources).length });
       } catch (e) {
@@ -21060,7 +21006,6 @@ async function opPeriodsMigrateRoute(env, request, session) {
     return json({ ok: out.every(function (r) { return r.ok; }) ? 1 : 0, departments: out, pending: left });
   } catch (error) { return opRouteError(error); }
 }
-/* ميزانيةُ دفعة الحفظ قبل الإرسال (§3ب.7): نصوصُ عباراتها ومعاملاتها (≤ 12M حرف: ضعفُها بالمسلسل ثنائيِّ البايت < سقف 32MiB للاستدعاء) وعددُها */
 function opSaveBudget(statements) {
   var n = 0; statements.forEach(function (s) { n += String((s && s.__sql) || '').length; ((s && s.__args) || []).forEach(function (v) { if (typeof v === 'string') n += v.length; }); });
   if (statements.length > OP_LIM.batchStmts || n > OP_LIM.batchBytes) throw opLimError('batch-budget', 413, { statements: statements.length, bytes: n });
@@ -24556,8 +24501,7 @@ function dbGuardError(code, status) {
   e.dbGuardStatus = status || 503;
   return e;
 }
-/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ الأعطال 500 بلا رسالة. سقفُ الاستدعاء (32MiB — حتميٌّ، الإعادةُ لا تنفع) ⇒
-   413 batch-budget · وأيُّ خطأ D1 آخر (ذاكرة · ازدحام · مهلة) ⇒ 503 db-busy مع Retry-After. لا شيء كُتب (الدفعةُ ذرّية) والرسالةُ عربية. */
+/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ */
 var DB_LIMIT_MSG = { 'batch-budget': 'العملية أكبر من أن تُنفَّذ مرة واحدة. احفظ شهراً واحداً أو يوماً واحداً في كل مرة.', 'db-busy': 'الخادم مشغول الآن. أعد المحاولة بعد لحظات، وبياناتك محفوظة كما هي.' };
 function dbLimitFailure(e) {
   var text = String((e && e.message) || e || '');
@@ -24654,9 +24598,7 @@ async function dbGuardFallback(env, tok) {
     guard: dbGuardCapture(meta, (result[1] && result[1].results) || []),
   };
 }
-/* V7 · 53 (§3ب.4 · الثابت الذي يجعل حارسَ المراجعة صحيحاً): لا كتابةَ على ops_* إلا وترفع مراجعةَ مفتاحها المنطقي في الدفعة نفسِها.
-   عبارةُ الكتابة يسمها كاتبُها بمفاتيحها (019w opTag → __opKeys)؛ ورفعُ المراجعة يُعرف من عبارة INTO revs ومعاملاتها (مفتاحٌ أو قائمةٌ JSON).
-   كتابةٌ غيرُ موسومة لا تُقبل إلا في دفعةٍ تُبطل كلَّ القراءات (restore_epoch أو حذفُ revs كلِّها: الاستعادة · التصفير). وإلا ⇒ db-unrevised-ops-write. */
+/* V7 · 53 */
 var DB_OPS_WRITE = /^\s*(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|UPDATE|DELETE\s+FROM)\s+(ops_\w+)/i;
 function dbGuardRevised(a) {
   var bumped = new Set(), wide = false, need = [];
@@ -29017,8 +28959,7 @@ function meRec(rec) {
   for (i = 0; i < F.length; i++) if (rec[F[i]] != null && String(rec[F[i]]).trim() !== '') o[F[i]] = String(rec[F[i]]).trim().slice(0, 120);
   return o;
 }
-/* V7 · 53 (§3ب.5 «صفحتي»): بلا ?ym= تقرأ الصفحةُ اليومَ وأسبوعَه وشهرَه — فالمواردُ المقسَّمة تُقرأ بفترات الشهر السابق والجاري والتالي وحدها
-   (الأيام وعلاماتُ الأشهر · أشهرُ الجدول والخطة) لا تاريخَها كلَّه. أسماءُ الفترات بنصّ المفاتيح القائمة (مولِّدُها هنا كما في بقية هذا الجزء). */
+/* V7 · 53 */
 function meScopes(deptId, C) {
   var yms = [], y = C.y, m = C.m, out = {}, i, d;
   [-1, 0, 1].forEach(function (k) { var mm = m + k, yy = y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } yms.push(yy + '-' + mm); });
@@ -32178,7 +32119,7 @@ async function saveRoute(env, request, path, ss) {
     A1.sessTs = ss.ts;   /* KIVO_264 · D14: لحظةُ الدخول — «الدخولُ الأوّل الإجباري» بجلسةٍ حديثة وحدها (selfCurState) */
     var rlS = await rlHit(env, 'sv', A1.u.id, RL_SAVE);
     if (rlS) return tooMany(rlS);
-    /* V7 · 53: حفظٌ بمفاتيح الفترة (K@p) يُترجم إلى حفظ K بوثيقةٍ جزئية ونطاقٍ يُحمَّل ويُكتب وحده (019r opPeriodSaveBody) */
+    /* V7 · 53: حفظٌ بمفاتيح الفترة (K@p) يُترجم إلى حفظ K بوثيقةٍ جزئية */
     var ps = await opPeriodSaveBody(env, A1, bs), bsIn = bs;
     if (ps && Object.keys(ps.conflicts).length) return json({ ok: 0, requestId: bs.requestId, epoch: bs.epoch, atomic: 1, revs: {}, denied: {}, conflicts: ps.conflicts }, 409);
     if (ps) { bs = ps.body; env = Object.assign({}, env, { __opScope: ps.scopes }); }
@@ -32246,7 +32187,7 @@ async function changesRoute(env, url, ss) {
   if (meSnapshotChanged(AC, (ch && ch.results) || [], vC)) outC.meChanged = 1;
   if (meTasksChanged(AC, (ch && ch.results) || [], vC)) outC.tasksChanged = 1;
   if (cutC.more) outC.more = 1;
-  /* V7 · 53 (العقد §5): مفاتيحُ الفترات التي تغيّرت (K@p · K@) بحكم رؤية مفتاحها المنطقي — keys تبقى منطقيةً كما كانت (كلُّ كتابةٍ ترفع K أيضاً) */
+  /* V7 · 53 (العقد §5): مفاتيحُ الفترات التي تغيّرت (K@p · K@) بحكم رؤية */
   var pkC = ((ch && ch.results) || []).filter(function (r) { if (r.rev > vC) return false; var x = String(r.k).indexOf('@') > 0 ? opPeriodKey(r.k) : null; return x && x.period !== '*' && canSee(AC, x.key); }).map(function (r) { return r.k; });
   if (pkC.length) outC.pk = pkC.slice(0, CHANGES_MAX * 4);
   return json(outC);

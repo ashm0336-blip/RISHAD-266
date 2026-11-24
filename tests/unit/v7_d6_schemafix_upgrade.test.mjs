@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { D1Shim, ROOT, WORKER, allowTestSchemaUpgrade, hasSystem } from './harness.mjs';
+import { D1Shim, ROOT, WORKER, CURRENT_SCHEMA, allowTestSchemaUpgrade, hasSystem } from './harness.mjs';
 import { world as canvas } from './canvas_world.mjs';
 
 const OLD_REV = process.env.KIVO_UPGRADE_REV || '0113db33';
@@ -126,11 +126,12 @@ test('(١) قاعدةٌ بناها العاملُ القديم (الإصدار 1
   assert.ok(refused.status >= 500, 'بلا تصريح لا ترقية: ' + refused.status);
   assert.equal(E.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '10');
   const permit = JSON.parse(allowTestSchemaUpgrade(E.DB));
-  assert.deepEqual([permit.from, permit.to, permit.migrations], [10, 12, ['0011_session_device', '0012_prayer_readings']]);
+  /* V7 · 53: إلى المخطط الحالي (0013 التخزين بالفترة بعد 0012) — لا رقمَ مخطّطٍ حرفيّ للحالي */
+  assert.deepEqual([permit.from, permit.to, permit.migrations.slice(0, 2)], [10, CURRENT_SCHEMA, ['0011_session_device', '0012_prayer_readings']]);
   const NEW2 = await newWorker(), call2 = api(NEW2, E), ping = await call2('/api/ping');
   assert.equal(ping.status, 200, JSON.stringify(ping.json));
-  assert.equal(E.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '12');
-  assert.deepEqual(E.DB.q('SELECT name FROM d1_migrations ORDER BY id').map((r) => r.name).slice(-2), ['0011_session_device', '0012_prayer_readings']);
+  assert.equal(E.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, String(CURRENT_SCHEMA));
+  assert.deepEqual(E.DB.q('SELECT name FROM d1_migrations ORDER BY id').map((r) => r.name).slice(10, 12), ['0011_session_device', '0012_prayer_readings']);
   assert.equal(E.DB.q("SELECT COUNT(*) n FROM meta WHERE k='schema_upgrade_permit_v1'")[0].n, 0, 'التصريحُ استُهلك');
   assert.equal(E.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE schema_id='ops_plan_deleted_months' AND member_key='pc'")[0].n, 0, 'لا صفَّ pc بالترميز القديم');
   assert.deepEqual(E.DB.q('PRAGMA foreign_key_check'), []);
@@ -145,6 +146,9 @@ test('(١) قاعدةٌ بناها العاملُ القديم (الإصدار 1
     for (const r of ALL) assert.equal(docsOf[key(r)], JSON.stringify(before[key(r)]), 'تصديرُ الإدارة ' + tag + ': ' + r);
   }
 
+  /* V7 · 53: الكتابةُ التشغيلية بعد 0013 تنتظر المرحلةَ ٢ لهذه الإدارة (أمرُ مدير المنصة) — كما في دليل الترحيل */
+  const m13 = await call2('/api/operations/periods-migrate', { method: 'POST', body: { dept: D } });
+  assert.equal(m13.status, 200, JSON.stringify(m13.json)); assert.equal(m13.json.ok, 1, JSON.stringify(m13.json));
   /* (ب) الحفظُ الحيّ بعد الترقية — بطرق كتابة الصفحتين الحقيقية */
   const W1 = canvas(), daily = W1.logic('daily');
   W1.store.set('bassam_rounds_v1', JSON.stringify(after[key('bassam_rounds_v1')]));

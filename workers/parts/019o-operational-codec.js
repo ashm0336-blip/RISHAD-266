@@ -202,10 +202,7 @@ function ocConvert(prepared, department, resource, value, present) {
   if (present !== false) write(root.spec, value, '$', null, null, 0);
   return { departmentId: department, resource: resource, rows: rows };
 }
-/* V7 · 53 (§3ب.4 الفكّ): opts.trust — صفوفٌ قرأها الخادمُ نفسُه من D1 (القراءةُ والحفظ): بلا إعادة الترميز والمقارنة القانونية (noncanonical-rows)،
-   وهي باقيةٌ لكل ما يأتي من خارجه (الاستيراد · الاستعادة · الاختبارات). opts.partial — صفوفُ الرأس وفتراتٍ بعينها (019w): أعضاءُ الخريطة بترتيب
-   مواضعها المخزَّنة بلا اشتراط التتابع، ولا «يتيم» لما لم يُطلب. وأبناءُ كلِّ عقدة من فهرسٍ يُبنى مرةً (parent_key) — كان كلُّ عقدة خريطةٍ أو قائمة
-   يمسح جدولَ أبنائه كلَّه (تربيعيّ). */
+/* V7 · 53 */
 function ocInflate(prepared, domain, opts) {
   opts = opts || {};
   var root = prepared.resources[domain.resource], rows = domain.rows, used = new Set(), byTable = {}, kids = {};
@@ -332,7 +329,7 @@ function ocFromPhysical(prepared, department, resource, physical, opts) {
     domain.rows[spec.table].push(row);
   });
   Object.keys(entities).forEach(function (name) { entities[name].forEach(function (row) { if (!used.has(name + '\0' + row.row_key)) throw ocError('orphan-entity'); }); });
-  if (!opts || !opts.skip) ocInflate(prepared, domain, opts); return domain;   /* V7 · 53: opts.skip — المستدعي يفكّه بنفسه مرةً واحدة (019r) */
+  if (!opts || !opts.skip) ocInflate(prepared, domain, opts); return domain;   /* V7 · 53: opts.skip */
 }
 function ocCreateStatements(prepared) {
   var out = ["CREATE TABLE IF NOT EXISTS ops_nodes(department_id TEXT NOT NULL,resource TEXT NOT NULL,row_key TEXT NOT NULL,parent_key TEXT,member_key TEXT,position INTEGER NOT NULL,node_kind INTEGER NOT NULL,variant INTEGER,tuple_length INTEGER,schema_id TEXT NOT NULL,entity_kind TEXT,PRIMARY KEY(department_id,resource,row_key),UNIQUE(department_id,resource,row_key,entity_kind),FOREIGN KEY(department_id,resource,parent_key)REFERENCES ops_nodes(department_id,resource,row_key)ON DELETE CASCADE)WITHOUT ROWID",

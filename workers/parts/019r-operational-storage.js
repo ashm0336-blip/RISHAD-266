@@ -39,9 +39,7 @@ function opUpsertRows(env, spec, rows) {
       ' FROM json_each(?1) j WHERE 1 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET ' + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(JSON.stringify(part));
   });
 }
-/* V7 · 53 (§3ب.4 · الحارس مراجعةٌ لا شاهد): كانت القراءةُ تبني شاهدَ EXCEPT بكل صفوف كل موردٍ مقروء (rsWitness) وتعيد إرسالها في دفعة الحارس —
-   فما يُرسل إلى D1 يساوي ما جاء منها (خطة 166KB ⇐ 8.5MB ذهاباً وإياباً) حتى سقفِ الاستدعاء. الآن عبارةُ CAS واحدة على revs لكل مفتاحٍ مقروء
-   (opRevGuards) — صحيحةٌ لأن كلَّ كتابةٍ على ops_* ترفع مراجعةَ مفتاحها في الدفعة نفسِها (يفرضه 052 dbGuard: db-unrevised-ops-write). */
+/* V7 · 53 */
 function opRevGuards(env, pairs) {
   return rsChunks(pairs).map(function (part) {
     return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1)j WHERE COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$[0]')),0)<>json_extract(j.value,'$[1]'))THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(JSON.stringify(part));
@@ -52,9 +50,7 @@ function opLegacyError(error) {
   var e = ocError('legacy-source-present'); e.status = 503; return e;
 }
 // retired: also run opRetiredGuard inside the read batch (replaces a separate opGuardRetired round trip).
-/* V7 · 53: scopes { <key>: { periods:[…], base? , bases:{p:rev}? } } (أو env.__opScope) — موردٌ مقسَّم يُقرأ رأسُه وفتراتٌ بعينها بمديات row_key
-   (019w) لا الوثيقةَ كلها؛ وقيمتُه وثيقةٌ جزئية بالشكل نفسِه (الرأس + تلك الفترات بمواضعها). الحارس: مراجعاتُ تلك الفترات والرأس (opPeriodRevGuards).
-   بلا نطاق: الوثيقةُ كلُّها كما كانت، وحارسُها مراجعةُ المفتاح. والفكُّ مرةً واحدة خطّية (019o opts.trust|partial). */
+/* V7 · 53: scopes { <key>: { periods:[…], base? , bases:{p:rev}? } } */
 async function opLoadMany(env, keys, retired, scopes) {
   scopes = scopes || env.__opScope || {};
   var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {}, revKeys = [];
@@ -173,7 +169,7 @@ async function opChangeStatements(env, key, nextRaw, options) {
   var next;
   try { next = nextRaw == null ? undefined : JSON.parse(nextRaw); } catch (e) { throw ocError('json'); }
   var def = opPeriodDef(info), scope = before && before.scope && before.scope.periods ? before.scope : null;
-  /* V7 · 53: إدارةٌ لم تُتمَّ المرحلةَ الثانية من 0013 — لا كتابةَ تشغيلية على مواردها المقسَّمة حتى يُتمّها مديرُ المنصة (رسالةٌ عربية) */
+  /* V7 · 53: إدارةٌ لم تُتمَّ المرحلةَ الثانية من 0013 */
   if (def && before && before.scope && before.scope.pending) throw opLimError('ops-layout-pending', 503);
   var after = ocConvert(info.prepared, info.dept, info.resource, next, nextRaw != null), statements = [], changed = false, extra = [], periodKeys = [], sums = [];
   if (def) {
@@ -217,9 +213,7 @@ async function opChangeStatements(env, key, nextRaw, options) {
   return { guards: [opRetiredGuard(env)].concat(state.guards), statements: statements, snapshots: state.snapshots,
     revisionKeys: changed ? [key].concat(periodKeys) : [], changed: changed, domain: after };
 }
-/* V7 · 53: حفظٌ منطاق (الرأس + فتراتٌ بعينها): ocConvert رقّم أعضاءَ الحاوية بمواضعهم في الوثيقة الجزئية — تُعاد إلى مواضعهم في الوثيقة كلها
-   (القائمُ يبقى في موضعه · المحذوفُ يُطوى · الجديدُ آخراً، كما تفعل الكتابةُ على كائن JS)، وأعضاءٌ خارج النطاق تغيّر موضعُها بحذفٍ تُحدَّث مواضعُها
-   بعبارةٍ واحدة. يعيد عباراتِ تلك التحديثات. */
+/* V7 · 53: حفظٌ منطاق (الرأس + فتراتٌ بعينها): ocConvert رقّم أعضاءَ */
 function opScopedPositions(env, info, def, before, after, scope, next) {
   var C = opContainerKey(def), cspec = opContainerSpec(info), oldPos = {}, members = scope.members || [];
   members.forEach(function (m) { if (typeof m.p === 'string') oldPos[m.p] = m.pos; });
@@ -280,13 +274,10 @@ function opReadFailed(error) {
   var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
   if (error.rs || error.ocCode) return json(Object.assign({ ok: 0, err: error.rs || error.ocCode }, error.msg ? { msg: error.msg } : {}, error.details ? { at: error.details } : {}), error.status || 400);
   if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
-  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 (§3ب.7) */
+  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 */
   throw error;
 }
-/* V7 · 53 (§3ب.4 · العقد في scratchpad/d7/periods_api.md): keys= مفاتيحُ منطقية كما كانت، أو مفاتيحُ فترة K@<p> ورأس K@ لموردٍ مقسَّم؛
-   range=K@<grp> كلُّ فترات المجموعة · index=K قائمةُ الفترات بلا محتوى. يُحمَّل رأسُ المورد والفتراتُ المطلوبة وحدها (opLoadMany بنطاق)،
-   والجدولُ الشهري مرجعاً للإسقاط بشهر اليوم التشغيلي وشهور الفترات المطلوبة وحدها (كان يُحمَّل كلُّه مع كل مفتاح). الحدود قبل أي تحميل؛
-   وفشلُ موردٍ واحد (حدٌّ · خطأُ D1) يقع في failed لا في القراءة كلها. */
+/* V7 · 53 */
 var OP_READ_REFS = ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'];
 function opReadList(url, name) { return Array.from(new Set(String(url.searchParams.get(name) || '').split(',').filter(Boolean))); }
 async function opReadOnce(env, url, session) {
@@ -400,10 +391,7 @@ async function opReadOnce(env, url, session) {
   }
 }
 
-/* V7 · 53 (§3ب.5 · العقد §2): حفظٌ بالفترة على /api/save — set/del بمفاتيح K@<p> (وK@ للرأس) وbase بمراجعاتها. يُترجم قبل أي حكم إلى حفظ المفتاح
-   المنطقي K بوثيقةٍ جزئية (الرأس + الفترات المكتوبة + سياقُها: لليوم علامةُ شهره) فتحكم أحكامُ الحفظ كلُّها كما هي على الشكل نفسِه، ويُحمَّل
-   ويُكتب ذلك النطاقُ وحده (env.__opScope ⇒ opLoadMany · opChangeStatements). التعارضُ بمراجعة كل فترةٍ أرسلها العميل (ومراجعةِ الرأس والسياق كما
-   قرأتهما الترجمة)، لا بمراجعة الوثيقة كلها: يومان يُحفظان معاً بلا تعارض. يعيد null إن لم يكن في الحفظ مفتاحُ فترة. */
+/* V7 · 53 */
 async function opPeriodSaveBody(env, A, bs) {
   var keys = Object.keys(bs.set || {}).concat(bs.del || []).map(String);
   if (!keys.some(function (k) { return k.indexOf('@') >= 0; })) return null;

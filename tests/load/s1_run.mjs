@@ -38,7 +38,7 @@ quiet(JSON.stringify({ mode: period ? 'periods' : 'legacy', worker: process.env.
 /* ① الصفحاتُ كما يقرؤها العميلُ الحالي (المفاتيحُ المنطقية) — S1: «خطة+جولات+تقرير» وأخواتها */
 const pages = { 'S1 plan+rounds+dreport': [R.plan, R.rounds, R.dreport], plan: [R.plan], rounds: [R.rounds, R.plan, R.emps, R.shifts], dreport: [R.dreport, R.emps, R.shifts], staffing: [R.staffing, R.emps, R.shifts], tasks: [R.tasks, R.emps], employees: [R.emps] };
 for (const [n, keys] of Object.entries(pages)) await measure('read(logical) ' + n, () => read(keys));
-await measure('me (صفحتي، موظف)', () => call('/api/me', { ck: emp.ck }));
+await measure('me/today (صفحتي، موظف)', () => call('/api/me/today', { ck: emp.ck }));
 if (period) {
   /* ② الصفحاتُ بالفترة (ما يطلبه العميلُ الجديد — العقد periods_api.md) */
   const pk = (k, p) => k + '@' + p;
