@@ -286,10 +286,15 @@ var REG = [
     return view.items.filter(function(x){
       if (x.exp && x.exp < Date.now()) return false;
       if (x.at > Date.now()) return false;
+      if (selfAct(x)) return false;
       /* V7 · د5-ح (البند ٧): تنبيهُ نظامٍ مطفأ لا يصل هنا أصلاً — يحجبه الخادمُ بحكمٍ واحد للقائمة والعدّاد (019 nfSysOff في nfAudience) لكل أحد */
       return !sup || all || !x.dept || x.dept === c.dept || x.k === 'sys' || x.k === 'sec' || x.isBc;
     }).map(function(x){return JSON.parse(JSON.stringify(x));}).sort(function(a,b){ return ((b.pin && b.un) ? 1 : 0) - ((a.pin && a.un) ? 1 : 0) || b.at - a.at; });
   }
+  /* V7 · د7 (البند ٨): لا يصلك تنبيهٌ بفعلٍ قمتَ به — القاعدةُ نفسُها في الخادم (019 nfActorType): نوعٌ «فور …» غيرُ أمني، وتعميمُ الوحدة bc_dept؛
+     الشرطيُّ والزمنيُّ والأمانُ ومعاينةُ نفسك تبقى. الخادمُ يحجبها من القائمة والعدّاد؛ هذا حارسُ العرض والتوست للنسخة المحفوظة */
+  function actorType(type){ if (type === 'bc_dept') return true; var l = LEAF_OF[type]; return !!(l && l.k !== 'sec' && /^فور/.test(String(l.when || ''))); }
+  function selfAct(x){ var u = me(); if (!x || !u || x.test || !x.by || !actorType(x.type)) return false; var a = String(x.by); return a === String(u.id || '') || (!!u.ekey && a === String(u.ekey)); }
   function unread(){ return list().filter(function(x){ return x.un; }).length; }
   function cfg(){ current(); return JSON.parse(JSON.stringify(view.cfg)); }
   function typeOf(id){ current(); var l = LEAF_OF[id]; if (!l) return null; var o = view.cfg.t[id] || {}; return { id:id, k:l.k, page:l.page, sub:l.sub, name:l.name, when:l.when, on:o.on != null ? !!o.on : l.on, to:Array.isArray(o.to) ? o.to.slice() : l.to.slice(), lvl:o.lvl || l.lvl, chan:o.chan || l.chan, txt:typeof o.txt === 'string' ? o.txt : l.txt, go:l.go, isDef:!Object.keys(o).length }; }
@@ -373,5 +378,5 @@ var REG = [
   I.ack=ack; I.act=act; I.bcAll=bcAll; I.bcDue=bcDue; I.bcPreviewMe=bcPreviewMe; I.bcRemind=bcRemind; I.bcSend=bcSend; I.bcSendDept=bcSendDept; I.bcStats=bcStats; I.bcWithdraw=bcWithdraw;
   I.bkTime=bkTime; I.cfg=cfg; I.deptName=deptName; I.depts=depts; I.dismiss=dismiss; I.dismissAll=dismissAll; I.emit=emit; I.exportDomain=exportDomain; I.fill=fill; I.flushEvents=flushEvents; I.goOk=goOk;
   I.isMgr=isMgr; I.isSuper=isSuper; I.list=list; I.markAll=markAll; I.markRead=markRead; I.me=me; I.monLbl=monLbl; I.muteGet=muteGet; I.muteSet=muteSet; I.myDept=myDept;
-  I.rawGet=rawGet; I.rawSet=rawSet; I.refresh=refresh; I.poll=poll; I.loadMore=loadMore; I.refreshManagement=refreshManagement; I.loadMoreBroadcasts=loadMoreBroadcasts; I.resetCfg=resetCfg; I.securityPoll=securityPoll; I.setCfg=setCfg; I.status=status; I.targets=targets; I.typeOf=typeOf; I.types=types; I.unread=unread;
+  I.rawGet=rawGet; I.rawSet=rawSet; I.refresh=refresh; I.poll=poll; I.loadMore=loadMore; I.refreshManagement=refreshManagement; I.loadMoreBroadcasts=loadMoreBroadcasts; I.resetCfg=resetCfg; I.securityPoll=securityPoll; I.setCfg=setCfg; I.status=status; I.targets=targets; I.typeOf=typeOf; I.types=types; I.unread=unread; I.actorType=actorType; I.selfAct=selfAct;
 })();
