@@ -38,28 +38,9 @@ function opUpsertRows(env, spec, rows) {
       ' FROM json_each(?1) j WHERE 1 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET ' + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(JSON.stringify(part));
   });
 }
-function opStateGuards(env, info, domain, empty) {
-  var guards = [];
-  var tables = ocPhysicalTables(info.prepared), physical = ocPhysicalRows(info.prepared, domain);
-  Object.keys(tables).forEach(function (table) {
-    var rows = physical[table] || [];
-    if (!rows.length) (empty[table] = empty[table] || []).push([info.dept, info.resource]);
-    else guards.push.apply(guards, rsWitness(env, table, tables[table], rows, 'department_id=?1 AND resource=?2', [info.dept, info.resource]));
-  });
-  return guards;
-}
-// Set-based form of the per-resource guards: one EXISTS per physical table over
-// every (department, resource) pair that read empty, and one CAS over all revs.
-function opEmptyGuards(env, empty) {
-  var tables = Object.keys(empty), guards = [];
-  for (var i = 0; i < tables.length; i += 24) {
-    var part = tables.slice(i, i + 24);
-    guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN ' + part.map(function (table, n) {
-      return 'EXISTS(SELECT 1 FROM ' + ocIdentifier(table) + " WHERE (department_id,resource) IN(SELECT json_extract(j.value,'$[0]'),json_extract(j.value,'$[1]')FROM json_each(?" + (n + 1) + ')j))';
-    }).join(' OR ') + " THEN json_extract('{}','KIVO_RESTORE_TARGET') END"), part.map(function (table) { return JSON.stringify(empty[table]); })));
-  }
-  return guards;
-}
+/* V7 · 53 (§3ب.4 · الحارس مراجعةٌ لا شاهد): كانت القراءةُ تبني شاهدَ EXCEPT بكل صفوف كل موردٍ مقروء (rsWitness) وتعيد إرسالها في دفعة الحارس —
+   فما يُرسل إلى D1 يساوي ما جاء منها (خطة 166KB ⇐ 8.5MB ذهاباً وإياباً) حتى سقفِ الاستدعاء. الآن عبارةُ CAS واحدة على revs لكل مفتاحٍ مقروء
+   (opRevGuards) — صحيحةٌ لأن كلَّ كتابةٍ على ops_* ترفع مراجعةَ مفتاحها في الدفعة نفسِها (يفرضه 052 dbGuard: db-unrevised-ops-write). */
 function opRevGuards(env, pairs) {
   return rsChunks(pairs).map(function (part) {
     return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1)j WHERE COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$[0]')),0)<>json_extract(j.value,'$[1]'))THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(JSON.stringify(part));
@@ -70,29 +51,44 @@ function opLegacyError(error) {
   var e = ocError('legacy-source-present'); e.status = 503; return e;
 }
 // retired: also run opRetiredGuard inside the read batch (replaces a separate opGuardRetired round trip).
-async function opLoadMany(env, keys, retired) {
-  var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {};
+/* V7 · 53: scopes { <key>: { periods:[…], base? , bases:{p:rev}? } } (أو env.__opScope) — موردٌ مقسَّم يُقرأ رأسُه وفتراتٌ بعينها بمديات row_key
+   (019w) لا الوثيقةَ كلها؛ وقيمتُه وثيقةٌ جزئية بالشكل نفسِه (الرأس + تلك الفترات بمواضعها). الحارس: مراجعاتُ تلك الفترات والرأس (opPeriodRevGuards).
+   بلا نطاق: الوثيقةُ كلُّها كما كانت، وحارسُها مراجعةُ المفتاح. والفكُّ مرةً واحدة خطّية (019o opts.trust|partial). */
+async function opLoadMany(env, keys, retired, scopes) {
+  scopes = scopes || env.__opScope || {};
+  var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {}, revKeys = [];
   wanted.forEach(function (key) {
     var info = opInfo(key); if (!info) throw ocError('resource');
-    var request = { key: key, info: info, tables: ocPhysicalTables(info.prepared) }; physicalByKey[key] = {};
+    var def = opPeriodDef(info), scope = def && ocOwn(scopes, key) ? scopes[key] : null, ranges = [['', '￿']];
+    if (scope) {
+      ranges = opHeadRanges(def);
+      scope.periods.forEach(function (p) { ranges = ranges.concat(opPeriodRanges(def, p)); });
+      revKeys.push(key + '@', key + '@*'); scope.periods.forEach(function (p) { revKeys.push(key + '@' + p); });
+    }
+    var request = { key: key, info: info, def: def, scope: scope, tables: ocPhysicalTables(info.prepared) }; physicalByKey[key] = {};
     Object.keys(request.tables).forEach(function (table) {
-      if (!tableRequests[table]) tableRequests[table] = { columns:request.tables[table], pairs:[] };
-      tableRequests[table].pairs.push({department_id:info.dept,resource:info.resource}); physicalByKey[key][table] = [];
+      if (!tableRequests[table]) tableRequests[table] = { columns:request.tables[table], ranges:[] };
+      ranges.forEach(function (r) { tableRequests[table].ranges.push([info.dept, info.resource, r[0], r[1]]); });
+      physicalByKey[key][table] = [];
     });
     requests.push(request);
   });
   var tableNames=Object.keys(tableRequests);
   tableNames.forEach(function(table){
     var query=tableRequests[table];
-    batch.push(env.DB.prepare('SELECT '+query.columns.join(',')+' FROM '+table+" WHERE (department_id,resource) IN(SELECT json_extract(j.value,'$.department_id'),json_extract(j.value,'$.resource')FROM json_each(?1)j)").bind(JSON.stringify(query.pairs)));
+    batch.push(env.DB.prepare('SELECT '+query.columns.map(function(c){return 't.'+c;}).join(',')+' FROM json_each(?1) q JOIN '+table+" t ON t.department_id=json_extract(q.value,'$[0]') AND t.resource=json_extract(q.value,'$[1]') AND t.row_key>=json_extract(q.value,'$[2]') AND t.row_key<json_extract(q.value,'$[3]')").bind(JSON.stringify(query.ranges)));
   });
-  if (!batch.length) { if (retired) await opGuardRetired(env); return { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, globalRev:await bdGlobalRevision(env) }; }
+  if (!batch.length) { if (retired) await opGuardRetired(env); return { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, members: {}, globalRev:await bdGlobalRevision(env) }; }
   if (retired) batch.unshift(opRetiredGuard(env));
   var offset = retired ? 1 : 0;
-  var revisionIndex=batch.length-offset;
-  batch.push(env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(wanted)));
+  var revisionIndex=batch.length-offset, scoped = requests.filter(function (r) { return r.scope; });
+  batch.push(env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(wanted.concat(revKeys))));
   batch.push(env.DB.prepare("SELECT v FROM meta WHERE k='rev'"));
-  var result, values = {}, domains = {}, guards = [], snapshots = [], empty = {}, revPairs = [];
+  batch.push(opLayoutStatement(env));
+  /* أعضاءُ الحاوية (اسمُ الفترة · row_key · موضعُها) لكل موردٍ منطاق — من فهرس ops_nodes_parent، صفٌّ لكل فترة لا شجرتُها */
+  if (scoped.length) batch.push(env.DB.prepare("SELECT n.department_id d,n.resource r,n.member_key m,n.row_key k,n.position p FROM json_each(?1) q JOIN ops_nodes n ON n.department_id=json_extract(q.value,'$[0]') AND n.resource=json_extract(q.value,'$[1]') AND n.parent_key=json_extract(q.value,'$[2]')")
+    .bind(JSON.stringify(scoped.map(function (r) { return [r.info.dept, r.info.resource, opContainerKey(r.def)]; }))));
+  var result, values = {}, domains = {}, guards = [], snapshots = [], revPairs = [], periodItems = [], members = {};
   try { result = await env.DB.batch(batch); } catch (error) { throw opLegacyError(error); }
   result.forEach(function (entry) { if (!entry || entry.success === false) throw ocError('read'); });
   result = result.slice(offset);
@@ -102,18 +98,28 @@ async function opLoadMany(env, keys, retired) {
     physicalByKey[key][table].push(row);
   });});
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
+  var pending = opLayoutPendingOf(((result[revisionIndex + 2].results) || [])[0]);
+  if (scoped.length) (result[revisionIndex + 3].results || []).forEach(function (row) { var k = 'bsdept:' + row.d + ':' + row.r; (members[k] = members[k] || []).push({ p: row.m, k: row.k, pos: row.p }); });
   requests.forEach(function (request) {
-    var info = request.info, physical = physicalByKey[request.key];
-    var domain = ocFromPhysical(info.prepared, info.dept, info.resource, physical), projection = ocInflate(info.prepared, domain);
-    values[request.key] = projection.present ? JSON.stringify(projection.value) : null;
-    domains[request.key] = domain;
-    guards.push.apply(guards, opStateGuards(env, info, domain, empty));
-    Object.keys(request.tables).forEach(function (table) { snapshots.push({ domain: 'operations', table: request.key + ':' + table, rows: physical[table] }); });
-    if (!ocOwn(revs, request.key)) revs[request.key] = 0;
-    revPairs.push([request.key, revs[request.key]]);
+    var info = request.info, physical = physicalByKey[request.key], key = request.key;
+    var domain = ocFromPhysical(info.prepared, info.dept, info.resource, physical, { skip: 1 }), projection = ocInflate(info.prepared, domain, request.scope ? { partial: 1 } : { trust: 1 });
+    values[key] = projection.present ? JSON.stringify(projection.value) : null;
+    domains[key] = domain;
+    if (request.scope) {
+      domain.scope = { periods: request.scope.periods.slice(), members: members[key] || [], pending: pending.indexOf(info.dept) >= 0 };
+      /* الحفظُ بالفترة (063 opPeriodSave): ما قرأه العميلُ لكل فترةٍ يطابق الآن — وإلا تعارض؛ ومراجعةُ المفتاح كلِّه لا تُحرس (فتراتٌ أخرى تُكتب بالتوازي بلا تعارض) */
+      var bases = request.scope.bases || {};
+      Object.keys(bases).forEach(function (p) { if (opPeriodRev(revs, key, p) !== bases[p]) { var e = rsError('conflict', 409); e.period = p; e.key = key; throw e; } });
+      if (request.scope.base !== undefined) revs[key] = request.scope.base;
+      periodItems.push([key, '', opPeriodRev(revs, key, '')]);
+      request.scope.periods.forEach(function (p) { periodItems.push([key, p, opPeriodRev(revs, key, p)]); });
+    } else domain.scope = { pending: pending.indexOf(info.dept) >= 0 };
+    Object.keys(request.tables).forEach(function (table) { snapshots.push({ domain: 'operations', table: key + ':' + table, rows: physical[table] }); });
+    if (!ocOwn(revs, key)) revs[key] = 0;
+    if (!request.scope) revPairs.push([key, revs[key]]);
   });
-  guards.push.apply(guards, opEmptyGuards(env, empty).concat(opRevGuards(env, revPairs)));
-  return { values: values, domains: domains, guards: guards, snapshots: snapshots, revs: revs, globalRev:opGlobalRevOf(result[revisionIndex+1]) };
+  guards.push.apply(guards, opRevGuards(env, revPairs).concat(periodItems.length ? opPeriodRevGuards(env, periodItems) : []));
+  return { values: values, domains: domains, guards: guards, snapshots: snapshots, revs: revs, members: members, pending: pending, globalRev:opGlobalRevOf(result[revisionIndex+1]) };
 }
 function opGlobalRevOf(r) { var row=(r&&r.results||[])[0];if(!row)return 0;var value=Number(row.v);if(!Number.isSafeInteger(value)||value<0)throw rsError('domain-revision',503);return value; }   // RISHAD-266: an absent global rev row is 0 (as every writer COALESCEs it); a corrupt one is a named 503, not a TypeError 500
 async function opResourceMany(env, keys) {
@@ -165,8 +171,25 @@ async function opChangeStatements(env, key, nextRaw, options) {
   if (base !== state.revs[key]) throw rsError('conflict', 409);
   var next;
   try { next = nextRaw == null ? undefined : JSON.parse(nextRaw); } catch (e) { throw ocError('json'); }
-  var after = ocConvert(info.prepared, info.dept, info.resource, next, nextRaw != null), statements = [], changed = false,
-    physicalBefore = ocPhysicalRows(info.prepared, before), physicalAfter = ocPhysicalRows(info.prepared, after), tables = ocPhysicalTables(info.prepared);
+  var def = opPeriodDef(info), scope = before && before.scope && before.scope.periods ? before.scope : null;
+  /* V7 · 53: إدارةٌ لم تُتمَّ المرحلةَ الثانية من 0013 — لا كتابةَ تشغيلية على مواردها المقسَّمة حتى يُتمّها مديرُ المنصة (رسالةٌ عربية) */
+  if (def && before && before.scope && before.scope.pending) throw opLimError('ops-layout-pending', 503);
+  var after = ocConvert(info.prepared, info.dept, info.resource, next, nextRaw != null), statements = [], changed = false, extra = [], periodKeys = [], sums = [];
+  if (def) {
+    /* ما تغيّر من الفترات والرأس (بالقيمة) — لمراجعاتها وملخّصاتها وحدّ حجمها */
+    var prevRaw = state.values && ocOwn(state.values, key) ? state.values[key] : null, prev = prevRaw == null ? undefined : JSON.parse(prevRaw),
+      A0 = opSplit(info, prev), B0 = opSplit(info, next), names = new Set(Object.keys(A0.periods).concat(Object.keys(B0.periods)));
+    if (scope) Array.from(names).forEach(function (p) { if (scope.periods.indexOf(p) < 0) throw ocError('period-scope'); });
+    names.forEach(function (p) {
+      var x = ocOwn(A0.periods, p) ? JSON.stringify(A0.periods[p]) : undefined, y = ocOwn(B0.periods, p) ? JSON.stringify(B0.periods[p]) : undefined;
+      if (x === y) return;
+      if (y !== undefined) opPeriodSizeCheck(def, p, B0.periods[p]);
+      periodKeys.push(key + '@' + p); sums.push({ p: p, value: y === undefined ? undefined : B0.periods[p] });
+    });
+    if (JSON.stringify(A0.head) !== JSON.stringify(B0.head)) { opPeriodSizeCheck(def, '', B0.head); periodKeys.push(key + '@'); }
+    if (scope) extra = opScopedPositions(env, info, def, before, after, scope, next);
+  }
+  var physicalBefore = ocPhysicalRows(info.prepared, before), physicalAfter = ocPhysicalRows(info.prepared, after), tables = ocPhysicalTables(info.prepared);
   Object.keys(tables).reverse().forEach(function (table) {
     var keep = new Set(physicalAfter[table].map(function (row) { return row.row_key; })), remove = physicalBefore[table].filter(function (row) { return !keep.has(row.row_key); });
     if (!remove.length) return; changed = true;
@@ -187,8 +210,44 @@ async function opChangeStatements(env, key, nextRaw, options) {
     if (write.length) changed = true;
     statements.push.apply(statements, opUpsertRows(env, spec, write));
   });
+  if (extra.length) { changed = true; statements.push.apply(statements, extra); }
+  if (changed && def) statements.push.apply(statements, opSummaryStatements(env, info, sums));
+  statements.forEach(function (st) { opTag(st, [key]); });
   return { guards: [opRetiredGuard(env)].concat(state.guards), statements: statements, snapshots: state.snapshots,
-    revisionKeys: changed ? [key] : [], changed: changed, domain: after };
+    revisionKeys: changed ? [key].concat(periodKeys) : [], changed: changed, domain: after };
+}
+/* V7 · 53: حفظٌ منطاق (الرأس + فتراتٌ بعينها): ocConvert رقّم أعضاءَ الحاوية بمواضعهم في الوثيقة الجزئية — تُعاد إلى مواضعهم في الوثيقة كلها
+   (القائمُ يبقى في موضعه · المحذوفُ يُطوى · الجديدُ آخراً، كما تفعل الكتابةُ على كائن JS)، وأعضاءٌ خارج النطاق تغيّر موضعُها بحذفٍ تُحدَّث مواضعُها
+   بعبارةٍ واحدة. يعيد عباراتِ تلك التحديثات. */
+function opScopedPositions(env, info, def, before, after, scope, next) {
+  var C = opContainerKey(def), cspec = opContainerSpec(info), oldPos = {}, members = scope.members || [];
+  members.forEach(function (m) { if (typeof m.p === 'string') oldPos[m.p] = m.pos; });
+  var crow = function (rows, table, rk) { return (rows[table] || []).filter(function (r) { return r.row_key === rk; })[0]; };
+  Object.keys(cspec.fields || {}).forEach(function (f) {
+    if (cspec.fields[f].kind !== 'scalar') return;
+    var seg = cspec.fieldSpecs[f], rk = seg === cspec ? C : C + '/p:' + cspec.segments.indexOf(seg), r = crow(before.rows, seg.table, rk);
+    if (r && r[ocField(f) + '_kind'] !== 0) oldPos[f] = r[ocField(f) + '_position'];
+  });
+  var box = def.field ? (next && ocObj(next) && ocObj(next[def.field]) ? next[def.field] : null) : (ocObj(next) ? next : null);
+  if (!box) return [];
+  var nextKeys = Object.keys(box), inNext = new Set(nextKeys), inScope = new Set(scope.periods);
+  var fixed = function (k) { return ocOwn(cspec.fields || {}, k); };
+  var order = Object.keys(oldPos).sort(function (a, b) { return oldPos[a] - oldPos[b]; })
+    .filter(function (k) { return inNext.has(k) || !(inScope.has(k) || fixed(k)); });
+  nextKeys.forEach(function (k) { if (!ocOwn(oldPos, k)) order.push(k); });
+  var newPos = {}; order.forEach(function (k, i) { newPos[k] = i; });
+  /* الصفوفُ المكتوبة: مواضعُ أعضاء الحاوية والحقولِ الثابتة المفردة */
+  Object.keys(after.rows).forEach(function (table) {
+    after.rows[table].forEach(function (r) {
+      if (r.parent_key === C && typeof r.member_key === 'string' && ocOwn(newPos, r.member_key)) r.position = newPos[r.member_key];
+      if (r.row_key === C || r.row_key.indexOf(C + '/p:') === 0 && r.parent_key === C)
+        Object.keys(cspec.fields || {}).forEach(function (f) { if (cspec.fields[f].kind === 'scalar' && ocOwn(r, ocField(f) + '_position') && r[ocField(f) + '_kind'] !== 0 && ocOwn(newPos, f)) r[ocField(f) + '_position'] = newPos[f]; });
+    });
+  });
+  var moved = members.filter(function (m) { return !inScope.has(m.p) && !fixed(m.p) && ocOwn(newPos, m.p) && newPos[m.p] !== m.pos; }).map(function (m) { return [m.k, newPos[m.p]]; });
+  return rsChunks(moved).map(function (part) {
+    return env.DB.prepare("UPDATE ops_nodes SET position=(SELECT json_extract(j.value,'$[1]') FROM json_each(?3)j WHERE json_extract(j.value,'$[0]')=ops_nodes.row_key) WHERE department_id=?1 AND resource=?2 AND row_key IN(SELECT json_extract(value,'$[0]') FROM json_each(?3))").bind(info.dept, info.resource, JSON.stringify(part));
+  });
 }
 async function opCompilePending(env, plan, pending, capture) {
   for (var item of pending) {
@@ -197,7 +256,7 @@ async function opCompilePending(env, plan, pending, capture) {
       if(ocInflate(opInfo(item.k).prepared,current).present)throw rsError('restore-operations-merge-target-not-empty',409);
     }
     var addition = await opChangeStatements(env, item.k, item.act === 'del' ? null : item.v, { base: item.have, state: capture && capture.domains[item.k] ? {
-      domains: capture.domains, revs: capture.revs, guards: [] , snapshots: capture.snapshots.filter(function (s) { return s.table.startsWith(item.k + ':'); })
+      domains: capture.domains, revs: capture.revs, values: capture.keys, guards: [] , snapshots: capture.snapshots.filter(function (s) { return s.table.startsWith(item.k + ':'); })
     } : undefined });
     plan.guards.push.apply(plan.guards, addition.guards); plan.statements.push.apply(plan.statements, addition.statements);
     plan.revisionKeys.push.apply(plan.revisionKeys, addition.revisionKeys); plan.snapshots.push.apply(plan.snapshots, addition.snapshots);
@@ -217,33 +276,184 @@ async function opReadRoute(env, request, url, session) {
 }
 function opReadFailed(error) {
   var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
-  if (error.rs || error.ocCode) return json({ ok: 0, err: error.rs || error.ocCode }, error.status || 400);
+  if (error.rs || error.ocCode) return json(Object.assign({ ok: 0, err: error.rs || error.ocCode }, error.msg ? { msg: error.msg } : {}, error.details ? { at: error.details } : {}), error.status || 400);
   if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
+  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 (§3ب.7) */
   throw error;
 }
+/* V7 · 53 (§3ب.4 · العقد في scratchpad/d7/periods_api.md): keys= مفاتيحُ منطقية كما كانت، أو مفاتيحُ فترة K@<p> ورأس K@ لموردٍ مقسَّم؛
+   range=K@<grp> كلُّ فترات المجموعة · index=K قائمةُ الفترات بلا محتوى. يُحمَّل رأسُ المورد والفتراتُ المطلوبة وحدها (opLoadMany بنطاق)،
+   والجدولُ الشهري مرجعاً للإسقاط بشهر اليوم التشغيلي وشهور الفترات المطلوبة وحدها (كان يُحمَّل كلُّه مع كل مفتاح). الحدود قبل أي تحميل؛
+   وفشلُ موردٍ واحد (حدٌّ · خطأُ D1) يقع في failed لا في القراءة كلها. */
+var OP_READ_REFS = [@@SYS:oc.read.refs.staff@@'bassam_shift_options_v1', 'bassam_employees_v1'];
+function opReadList(url, name) { return Array.from(new Set(String(url.searchParams.get(name) || '').split(',').filter(Boolean))); }
 async function opReadOnce(env, url, session) {
   {
-    var wanted = Array.from(new Set(String(url.searchParams.get('keys') || '').split(',').filter(Boolean)));
-    if (!wanted.length || wanted.length > GET_MAX || wanted.some(function (key) { return !opInfo(key); })) throw ocError('read-keys');
+    var wanted = opReadList(url, 'keys'), rangeIn = opReadList(url, 'range'), indexIn = opReadList(url, 'index'), groups = {}, mixed = false;
+    var group = function (K) { return groups[K] || (groups[K] = { periods: new Set(), full: false, info: opInfo(K) }); };
+    if ((!wanted.length && !rangeIn.length && !indexIn.length) || wanted.length > GET_MAX || rangeIn.length > OP_LIM.rangeGroups || indexIn.length > GET_MAX) throw ocError('read-keys');
+    wanted.forEach(function (key) {
+      var pk = key.indexOf('@') >= 0 ? opPeriodKey(key) : null;
+      if (pk) { if (pk.period === '*') throw ocError('read-keys'); group(pk.key).periods.add(pk.period); return; }
+      if (!opInfo(key)) throw ocError('read-keys'); group(key).full = true;
+    });
+    var rangeOf = {};
+    rangeIn.forEach(function (r) { var i = r.lastIndexOf('@'), K = r.slice(0, i), g = r.slice(i + 1); if (i < 0 || !g || !opSplitResource(K)) throw ocError('read-keys'); (rangeOf[K] = rangeOf[K] || []).push(g); group(K); });
+    indexIn.forEach(function (K) { if (!opSplitResource(K)) throw ocError('read-keys'); group(K); });
+    Object.keys(groups).forEach(function (K) { if (groups[K].full && (groups[K].periods.size || rangeOf[K])) mixed = true; });
+    if (mixed) throw ocError('period-mixed');
+    var depts = Array.from(new Set(Object.keys(groups).map(function (K) { return groups[K].info.dept; })));
     // Establish authority before loading any business rows, including rows of
     // a foreign department requested by a malicious/obsolete client.
-    var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: wanted.map(function (key) { return opInfo(key).dept; }) }), A = reference.A,
-      eligible=new Set(wanted.filter(function(key){return canRead(A,key);})),refs=Array.from(eligible);
-    eligible.forEach(function (key) { var d = opInfo(key).dept; [@@SYS:oc.read.refs.staff@@'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { refs.push('bsdept:' + d + ':' + r); }); });
-    var operational=await opCaptureReferences(reference.env,reference.inputKeys,refs);
-    reference.operational=operational;reference.inputKeys=operational.keys;Object.assign(reference.inputRevs,operational.revs);
-    reference.env=Object.assign({},reference.env,{__opCapture:operational,__pre:Object.assign({},reference.env.__pre,{kv:operational.keys,revs:reference.inputRevs})});
+    var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: depts }), A = reference.A;
     env = reference.env;
-    var resources = {}, absent = [], denied = [], base = {}, enfRefs = await enfRefsFor(env, Array.from(new Set(wanted.map(function (key) { return opInfo(key).dept; }))), reference.inputKeys);
-    wanted.forEach(function (key) {
-      if (!eligible.has(key)||!canRead(A, key)) { denied.push(key); return; }
-      var raw = reference.inputKeys[key];
-      if (raw != null) raw = enfProjectStr(A, key, raw, enfRefs);
-      raw = privOut(A, key, raw, reference.inputKeys);   // PRIVACY batch (019u): personal fields by purpose · old nid references as eid
-      if (raw == null) absent.push(key); else resources[key] = JSON.parse(raw);
-      base[key] = reference.inputRevs[key] || 0;
+    var eligible = new Set(Object.keys(groups).filter(function (K) { return canRead(A, K); }));
+    /* أعضاءُ الحاوية للمديات والفهارس (صفٌّ لكل فترة) — قبل تحميل أي محتوى */
+    var listed = Object.keys(groups).filter(function (K) { return eligible.has(K) && opPeriodDef(groups[K].info) && (rangeOf[K] || indexIn.indexOf(K) >= 0 || groups[K].full); }), memberOf = {}, nodesOf = {};
+    if (listed.length) {
+      var lr = await env.DB.batch([
+        env.DB.prepare("SELECT n.department_id d,n.resource r,n.member_key m FROM json_each(?1) q JOIN ops_nodes n ON n.department_id=json_extract(q.value,'$[0]') AND n.resource=json_extract(q.value,'$[1]') AND n.parent_key=json_extract(q.value,'$[2]')")
+          .bind(JSON.stringify(listed.map(function (K) { var I = groups[K].info; return [I.dept, I.resource, opContainerKey(opPeriodDef(I))]; }))),
+        env.DB.prepare("SELECT q.value AS k,(SELECT COUNT(*) FROM ops_nodes n WHERE n.department_id=json_extract(q.value,'$[1]') AND n.resource=json_extract(q.value,'$[2]')) AS n FROM json_each(?1) q")
+          .bind(JSON.stringify(listed.filter(function (K) { return groups[K].full; }).map(function (K) { var I = groups[K].info; return [K, I.dept, I.resource]; })))]);
+      (lr[0].results || []).forEach(function (row) { var K = 'bsdept:' + row.d + ':' + row.r, I = groups[K].info; if (typeof row.m === 'string' && !ocOwn(opContainerSpec(I).fields || {}, row.m) || opPeriodDef(I).field) (memberOf[K] = memberOf[K] || []).push(row.m); });
+      (lr[1].results || []).forEach(function (row) { var x = parseJson(row.k, null); if (Array.isArray(x)) nodesOf[x[0]] = Number(row.n) || 0; });
+    }
+    var ranges = {};
+    Object.keys(rangeOf).forEach(function (K) {
+      if (!eligible.has(K)) return; var def = opPeriodDef(groups[K].info);
+      rangeOf[K].forEach(function (g) {
+        var hit = opPeriodOrder(def, (memberOf[K] || []).filter(function (p) { return opPeriodIdx(def, p).grp === g; }));
+        ranges[K + '@' + g] = hit.map(function (p) { groups[K].periods.add(p); return K + '@' + p; });
+      });
+    });
+    var periodCount = 0; Object.keys(groups).forEach(function (K) { periodCount += groups[K].periods.size; });
+    if (periodCount > OP_LIM.readPeriods) throw opLimError('read-too-large', 413, { periods: periodCount, cap: OP_LIM.readPeriods });
+    var failed = {}, scopes = {}, loadKeys = [];
+    Object.keys(groups).forEach(function (K) {
+      if (!eligible.has(K)) return;
+      var G = groups[K];
+      if (G.full) { if (opPeriodDef(G.info) && (nodesOf[K] || 0) > OP_LIM.readNodes) { failed[K] = 'read-too-large'; return; } loadKeys.push(K); }
+      else if (G.periods.size) { scopes[K] = { periods: Array.from(G.periods).filter(function (p) { return p !== ''; }) }; loadKeys.push(K); }
+    });
+    /* مراجعُ الإسقاط لكل إدارةٍ مقروءة: الموظفون وخياراتُ الورديات كاملين (صغيران)، والجدولُ الشهريُّ بشهوره اللازمة وحدها */
+    var refKeys = [];
+    Array.from(new Set(loadKeys.map(function (K) { return groups[K].info.dept; }))).forEach(function (d) {
+      OP_READ_REFS.forEach(function (r) {
+        var R = 'bsdept:' + d + ':' + r, I = opSplitResource(R);
+        if (ocOwn(groups, R) && groups[R].full) return;
+        if (I) {
+          var months = new Set(), cur = typeof opPeriodDef(I).current === 'function' ? opPeriodDef(I).current() : '';
+          if (cur) months.add(cur);
+          loadKeys.filter(function (K) { return groups[K].info.dept === d; }).forEach(function (K) { var def = opPeriodDef(groups[K].info); if (def) groups[K].periods.forEach(function (p) { if (p) { var g = opPeriodIdx(def, p).grp; if (g) months.add(g); } }); });
+          if (!ocOwn(scopes, R)) { scopes[R] = { periods: Array.from(months) }; refKeys.push(R); }
+        } else if (refKeys.indexOf(R) < 0 && loadKeys.indexOf(R) < 0) refKeys.push(R);
+      });
+    });
+    var state = { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, globalRev: 0 }, merge = function (x) { ['values', 'domains', 'revs'].forEach(function (f) { Object.assign(state[f], x[f]); }); state.guards = state.guards.concat(x.guards); state.globalRev = Math.max(state.globalRev, x.globalRev || 0); };
+    var all = loadKeys.concat(refKeys.filter(function (k) { return loadKeys.indexOf(k) < 0; }));
+    if (all.length) {
+      try { merge(await opLoadMany(env, all, 1, scopes)); }
+      catch (error) {
+        if (!dbLimitFailure(error) && !(error && error.rs === 'period-too-large')) throw error;
+        /* فشلُ دفعةٍ واحدة لا يُسقط القراءة: كلُّ موردٍ في دفعته، وما فشل وحده في failed */
+        for (var one of all) {
+          try { merge(await opLoadMany(env, [one], 1, scopes)); }
+          catch (e1) { var f1 = dbLimitFailure(e1); if (!f1) throw e1; if (loadKeys.indexOf(one) >= 0) failed[one] = f1.err; }
+        }
+      }
+    }
+    reference.operational = { guards: state.guards, keys: state.values, domains: state.domains, revs: state.revs, globalRev: state.globalRev, snapshots: [] };
+    Object.assign(reference.inputRevs, state.revs);
+    var projKeys = Object.assign(Object.create(null), reference.inputKeys, state.values);
+    var resources = {}, absent = [], denied = [], base = {}, enfRefs = await enfRefsFor(env, depts, projKeys), index = {};
+    var out = function (key, has, value, rev) { if (has) resources[key] = value; else absent.push(key); base[key] = rev; };
+    Object.keys(groups).forEach(function (K) {
+      var G = groups[K], def = opPeriodDef(G.info), periodKeys = Array.from(G.periods).map(function (p) { return K + '@' + p; });
+      var named = (G.full ? [K] : []).concat(periodKeys.filter(function (pk) { return wanted.indexOf(pk) >= 0 || Object.keys(ranges).some(function (r) { return ranges[r].indexOf(pk) >= 0; }); }));
+      if (!eligible.has(K) || !canRead(A, K)) { named.forEach(function (k) { denied.push(k); }); return; }
+      if (failed[K]) { periodKeys.forEach(function (pk) { if (named.indexOf(pk) >= 0) failed[pk] = failed[K]; }); if (!G.full) delete failed[K]; return; }
+      if (indexIn.indexOf(K) >= 0) index[K] = opPeriodOrder(def, memberOf[K] || []).map(function (p) { var x = opPeriodIdx(def, p); return { p: p, grp: x.grp, seq: x.seq, rev: opPeriodRev(state.revs, K, p) }; });
+      if (!named.length) return;
+      var raw = ocOwn(state.values, K) ? state.values[K] : null;
+      try {
+        if (raw != null) raw = enfProjectStr(A, K, raw, enfRefs);
+        raw = privOut(A, K, raw, projKeys);   // PRIVACY batch (019u): personal fields by purpose · old nid references as eid
+      } catch (eP) { if (eP && (eP.rs || eP.ocCode)) { named.forEach(function (k) { failed[k] = eP.rs || eP.ocCode; }); return; } throw eP; }
+      if (G.full) { out(K, raw != null, raw == null ? null : JSON.parse(raw), state.revs[K] || reference.inputRevs[K] || 0); }
+      if (!periodKeys.length) return;
+      var parts = opSplit(G.info, raw == null ? undefined : JSON.parse(raw));
+      named.forEach(function (pk) {
+        if (pk === K) return; var p = pk.slice(K.length + 1);
+        if (p === '') out(pk, raw != null, parts.head, opPeriodRev(state.revs, K, ''));
+        else out(pk, ocOwn(parts.periods, p), parts.periods[p], opPeriodRev(state.revs, K, p));
+      });
     });
     await env.DB.batch(rsReferenceGuards(env,reference));
-    return json({ ok: 1, uid: session.uid, v:reference.operational.globalRev, epoch: Number(reference.inputMeta.restore_epoch || 0), resources: resources, absent: absent, denied: denied, base: base });
+    var body = { ok: 1, uid: session.uid, v:reference.operational.globalRev, epoch: Number(reference.inputMeta.restore_epoch || 0), resources: resources, absent: absent, denied: denied, base: base };
+    if (Object.keys(failed).length) body.failed = failed;
+    if (rangeIn.length) body.ranges = ranges;
+    if (indexIn.length) body.index = index;
+    return json(body);
   }
+}
+
+/* V7 · 53 (§3ب.5 · العقد §2): حفظٌ بالفترة على /api/save — set/del بمفاتيح K@<p> (وK@ للرأس) وbase بمراجعاتها. يُترجم قبل أي حكم إلى حفظ المفتاح
+   المنطقي K بوثيقةٍ جزئية (الرأس + الفترات المكتوبة + سياقُها: لليوم علامةُ شهره) فتحكم أحكامُ الحفظ كلُّها كما هي على الشكل نفسِه، ويُحمَّل
+   ويُكتب ذلك النطاقُ وحده (env.__opScope ⇒ opLoadMany · opChangeStatements). التعارضُ بمراجعة كل فترةٍ أرسلها العميل (ومراجعةِ الرأس والسياق كما
+   قرأتهما الترجمة)، لا بمراجعة الوثيقة كلها: يومان يُحفظان معاً بلا تعارض. يعيد null إن لم يكن في الحفظ مفتاحُ فترة. */
+async function opPeriodSaveBody(env, A, bs) {
+  var keys = Object.keys(bs.set || {}).concat(bs.del || []).map(String);
+  if (!keys.some(function (k) { return k.indexOf('@') >= 0; })) return null;
+  var byK = {}, origin = {};
+  keys.forEach(function (k) {
+    if (k.indexOf('@') < 0) return;
+    var x = opPeriodKey(k); if (!x || x.period === '*') throw ocError('period-key');
+    var G = byK[x.key] || (byK[x.key] = { info: x.info, set: {}, del: [], keys: [] });
+    G.keys.push(k); origin[k] = x.key;
+    if (ocOwn(bs.set || {}, k)) G.set[x.period] = bs.set[k]; else { if (x.period === '') throw ocError('period-head'); G.del.push(x.period); }
+    if (!bs.base || !Number.isSafeInteger(bs.base[k]) || bs.base[k] < 0) throw ocError('period-base');
+  });
+  keys.forEach(function (k) { if (ocOwn(byK, k)) throw ocError('period-mixed'); });
+  var Ks = Object.keys(byK), scopes = {}, fp = await cuFingerprint({ uid: A.u.id, body: bs });
+  if (Ks.some(function (K) { return !canRead(A, K); })) throw rsError('operations-denied', 403);   /* السلطةُ قبل أي صفّ */
+  var replay = typeof bs.requestId === 'string' && await env.DB.prepare('SELECT 1 AS x FROM restore_operations WHERE account_uid=?1 AND request_id=?2').bind(A.u.id, bs.requestId).first();
+  Ks.forEach(function (K) {
+    var G = byK[K], def = opPeriodDef(G.info), written = Object.keys(G.set).filter(function (p) { return p !== ''; }).concat(G.del), ctx = [];
+    written.forEach(function (p) { opPeriodCtx(def, p).forEach(function (c) { if (written.indexOf(c) < 0 && ctx.indexOf(c) < 0) ctx.push(c); }); });
+    G.written = written; scopes[K] = { periods: written.concat(ctx) };
+  });
+  var cur = await opLoadMany(env, Ks, 1, scopes), out = { set: {}, del: [], base: {} }, conflicts = {};
+  Object.keys(bs.base || {}).forEach(function (k) { if (k.indexOf('@') < 0) out.base[k] = bs.base[k]; });
+  Object.keys(bs.set || {}).forEach(function (k) { if (k.indexOf('@') < 0) out.set[k] = bs.set[k]; });
+  (bs.del || []).forEach(function (k) { if (String(k).indexOf('@') < 0) out.del.push(k); });
+  Ks.forEach(function (K) {
+    var G = byK[K], raw = cur.values[K], doc = raw == null ? undefined : JSON.parse(raw), parts = opSplit(G.info, doc), bases = {};
+    G.keys.forEach(function (k) { var p = k.slice(K.length + 1); if (!replay && opPeriodRev(cur.revs, K, p) !== bs.base[k]) conflicts[k] = { why: 'conflict' }; bases[p] = bs.base[k]; });
+    /* ما قرأته الترجمةُ من رأسٍ وسياق يبقى كما هو حتى الاعتماد — وإلا تعارضٌ فيُعاد البناء */
+    scopes[K].periods.concat(['']).forEach(function (p) { if (!ocOwn(bases, p)) bases[p] = opPeriodRev(cur.revs, K, p); });
+    var head = ocOwn(G.set, '') ? JSON.parse(G.set['']) : parts.head;
+    if (head === undefined || head === null) head = opPeriodDef(G.info).field ? (function () { var h = {}; h[opPeriodDef(G.info).field] = {}; return h; })() : {};
+    var pos = Object.assign({}, parts.pos), top = Math.max.apply(null, [-1].concat(Object.keys(parts.pos).map(function (p) { return parts.pos[p]; }), Object.keys(parts.hpos).map(function (k) { return parts.hpos[k]; })));
+    G.del.forEach(function (p) { delete parts.periods[p]; });
+    Object.keys(G.set).forEach(function (p) { if (p === '') return; var v; try { v = JSON.parse(G.set[p]); } catch (e) { throw ocError('json'); } ocSet(parts.periods, p, v); if (!ocOwn(pos, p)) pos[p] = ++top; });
+    var next = opJoin(G.info, { head: head, hpos: parts.hpos, periods: parts.periods, pos: pos });
+    out.set[K] = JSON.stringify(next); out.base[K] = cur.revs[K] || 0;
+    scopes[K] = { periods: scopes[K].periods, bases: replay ? {} : bases, base: cur.revs[K] || 0 };
+  });
+  var body = Object.assign({}, bs, out);
+  if (Array.isArray(bs.aud)) body.aud = bs.aud.map(function (e) { return e && ocOwn(origin, e.k) ? Object.assign({}, e, { k: origin[e.k] }) : e; });
+  return { body: body, scopes: scopes, byK: byK, fp: fp, conflicts: conflicts, origin: origin };
+}
+/* نتيجةُ الحفظ المنطقي بمفاتيح الفترة التي أرسلها العميل: مراجعةُ كلِّ فترةٍ بعد الاعتماد (MAX(K@p, K@*)) · الرفضُ والتعارضُ لكلِّ مفتاحٍ منها */
+async function opPeriodSaveResult(env, ps, r) {
+  var out = Object.assign({}, r), map = function (obj) { var m = {}; Object.keys(obj || {}).forEach(function (K) { if (ocOwn(ps.byK, K)) ps.byK[K].keys.forEach(function (k) { m[k] = obj[K]; }); else m[K] = obj[K]; }); return m; };
+  out.denied = map(r.denied); out.conflicts = map(r.conflicts);
+  if (r.revs) {
+    var want = []; Object.keys(ps.byK).forEach(function (K) { want.push(K + '@*'); ps.byK[K].keys.forEach(function (k) { want.push(k); }); });
+    var rows = (await env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(want)).all()).results || [], revs = {};
+    rows.forEach(function (row) { revs[row.k] = rsNat(row.rev); });
+    out.revs = {}; Object.keys(r.revs).forEach(function (K) { if (ocOwn(ps.byK, K)) ps.byK[K].keys.forEach(function (k) { out.revs[k] = opPeriodRev(revs, K, k.slice(K.length + 1)); }); else out.revs[K] = r.revs[K]; });
+  }
+  return out;
 }

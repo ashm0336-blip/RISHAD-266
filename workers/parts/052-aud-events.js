@@ -206,7 +206,7 @@ async function migrateDb(env) {
   }
   for (i = 0; i < pending.length; i++) {
     var dataPlan = pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :
-      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : null;
+      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : pending[i].name === '0013_period_storage' ? opPeriodsLegacyPrepare(env) : null;
     var st = [dbMigrationFence(env, state, permit)], first = i;
     if (dataPlan) st = st.concat(dataPlan.before);
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
@@ -261,6 +261,20 @@ function dbGuardError(code, status) {
   e.dbGuardCode = code;
   e.dbGuardStatus = status || 503;
   return e;
+}
+/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ الأعطال 500 بلا رسالة. سقفُ الاستدعاء (32MiB — حتميٌّ، الإعادةُ لا تنفع) ⇒
+   413 batch-budget · وأيُّ خطأ D1 آخر (ذاكرة · ازدحام · مهلة) ⇒ 503 db-busy مع Retry-After. لا شيء كُتب (الدفعةُ ذرّية) والرسالةُ عربية. */
+var DB_LIMIT_MSG = { 'batch-budget': 'العملية أكبر من أن تُنفَّذ مرة واحدة. احفظ شهراً واحداً أو يوماً واحداً في كل مرة.', 'db-busy': 'الخادم مشغول الآن. أعد المحاولة بعد لحظات، وبياناتك محفوظة كما هي.' };
+function dbLimitFailure(e) {
+  var text = String((e && e.message) || e || '');
+  if (!/D1_ERROR|D1 DB|SQLITE_(?:TOOBIG|NOMEM|BUSY|FULL)|Serialized RPC|Durable Object|Network connection lost|storage operation exceeded/i.test(text)) return null;
+  var err = /Serialized RPC arguments or return values are limited|SQLITE_TOOBIG|too many SQL variables|statement too long/i.test(text) ? 'batch-budget' : 'db-busy';
+  return { err: err, status: err === 'db-busy' ? 503 : 413, msg: DB_LIMIT_MSG[err] };
+}
+function dbLimitResponse(env, e, path) {
+  var f = dbLimitFailure(e); if (!f) return null;
+  logEv('error', 'db-limit', { rid: env && env.__rid, p: path, st: f.status, code: f.err, err: errMsg(e) });
+  return json({ ok: 0, err: f.err, msg: f.msg, rid: env && env.__rid }, f.status, f.status === 503 ? { 'Retry-After': '5' } : null);
 }
 function dbGuardFailure(e) {
   var text = String((e && e.message) || e || '');
@@ -346,6 +360,27 @@ async function dbGuardFallback(env, tok) {
     guard: dbGuardCapture(meta, (result[1] && result[1].results) || []),
   };
 }
+/* V7 · 53 (§3ب.4 · الثابت الذي يجعل حارسَ المراجعة صحيحاً): لا كتابةَ على ops_* إلا وترفع مراجعةَ مفتاحها المنطقي في الدفعة نفسِها.
+   عبارةُ الكتابة يسمها كاتبُها بمفاتيحها (019w opTag → __opKeys)؛ ورفعُ المراجعة يُعرف من عبارة INTO revs ومعاملاتها (مفتاحٌ أو قائمةٌ JSON).
+   كتابةٌ غيرُ موسومة لا تُقبل إلا في دفعةٍ تُبطل كلَّ القراءات (restore_epoch أو حذفُ revs كلِّها: الاستعادة · التصفير). وإلا ⇒ db-unrevised-ops-write. */
+var DB_OPS_WRITE = /^\s*(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|UPDATE|DELETE\s+FROM)\s+(ops_\w+)/i;
+function dbGuardRevised(a) {
+  var bumped = new Set(), wide = false, need = [];
+  a.forEach(function (s) {
+    var sql = String((s && s.__sql) || '');
+    if (/restore_epoch|DELETE\s+FROM\s+revs\b/i.test(sql)) wide = true;
+    if (/INTO\s+revs\b/i.test(sql)) (s.__args || []).forEach(function (v) {
+      if (typeof v !== 'string') return;
+      if (v.slice(0, 7) === 'bsdept:') bumped.add(v);
+      else if (v.charAt(0) === '[') { var j = parseJson(v, null); if (Array.isArray(j)) j.forEach(function (x) { var k = typeof x === 'string' ? x : x && x.k; if (typeof k === 'string') bumped.add(k); }); }
+    });
+    if (s && s.__guardReadOnly !== true && DB_OPS_WRITE.test(sql)) need.push(s);
+  });
+  need.forEach(function (s) {
+    var keys = s.__opKeys;
+    if (!keys ? !wide : keys.some(function (k) { return !bumped.has(k); })) throw dbGuardError('db-unrevised-ops-write', 500);
+  });
+}
 function dbGuard(DB, pre, preserve) {
   var capture = pre.guard;
   if (!capture) throw dbGuardError('db-guard-unavailable');
@@ -376,7 +411,7 @@ function dbGuard(DB, pre, preserve) {
   }
   function wrap(st, sql, args) {
     var read = dbGuardReadOnly(sql),
-      q = { __st: st, __guard: capture, __guardReadOnly: read };
+      q = { __st: st, __guard: capture, __guardReadOnly: read, __sql: sql, __args: args || [] };
     q.bind = function () {
       return wrap(st.bind.apply(st, arguments), sql, Array.prototype.slice.call(arguments));
     };
@@ -386,7 +421,7 @@ function dbGuard(DB, pre, preserve) {
           if (!read) throw dbGuardError('db-unfenced-raw', 409);
           return st.raw.apply(st, arguments);
         }
-        if (!read) off(sql, args);
+        if (!read) { off(sql, args); dbGuardRevised([q]); }
         var out = await DB.batch([dbGuardStatement(DB, capture), unwrap(st)]);
         return resultOf(out[1], method, arguments);
       };
@@ -400,6 +435,7 @@ function dbGuard(DB, pre, preserve) {
     batch: async function (statements) {
       var a = statements || [];
       a.forEach(compatible);
+      dbGuardRevised(a);
       if (
         a.some(function (s) {
           return !s || s.__guardReadOnly !== true;

@@ -803,15 +803,20 @@ async function saveRoute(env, request, path, ss) {
     A1.sessTs = ss.ts;   /* KIVO_264 · D14: لحظةُ الدخول — «الدخولُ الأوّل الإجباري» بجلسةٍ حديثة وحدها (selfCurState) */
     var rlS = await rlHit(env, 'sv', A1.u.id, RL_SAVE);
     if (rlS) return tooMany(rlS);
+    /* V7 · 53: حفظٌ بمفاتيح الفترة (K@p) يُترجم إلى حفظ K بوثيقةٍ جزئية ونطاقٍ يُحمَّل ويُكتب وحده (019r opPeriodSaveBody) */
+    var ps = await opPeriodSaveBody(env, A1, bs), bsIn = bs;
+    if (ps && Object.keys(ps.conflicts).length) return json({ ok: 0, requestId: bs.requestId, epoch: bs.epoch, atomic: 1, revs: {}, denied: {}, conflicts: ps.conflicts }, 409);
+    if (ps) { bs = ps.body; env = Object.assign({}, env, { __opScope: ps.scopes }); }
     var operationKeys=Object.keys(bs.set||{}).concat(bs.del||[]), operationalSave=operationKeys.some(opIsResource);
     if(operationalSave && (typeof bs.requestId!=='string'||!/^[-A-Za-z0-9_]{8,100}$/.test(bs.requestId)||!Number.isSafeInteger(bs.epoch)||bs.epoch<0||operationKeys.some(function(k){return !bs.base||!Number.isSafeInteger(bs.base[k])||bs.base[k]<0;})))
       return json({ok:0,err:'operations-request-envelope'},400);
     /* V7 · د5-هـ (أمن ٣): حفظُ موردٍ تشغيلي يُعاد مرّةً واحدة إن أخفق سياجُ مرجعه بكتابةٍ متزامنة (لم يُكتب شيء — الدفعةُ ذرّية): الإعادةُ لقطةٌ جديدة
        تعيد الحكمَ بالسلطة الحالية وتقارن «base» العميل بالنسخة الحالية — فتعديلُ المورد نفسِه يبقى تعارضاً (409)، والكتابةُ غيرُ ذات الصلة لا تُفشله. */
     for (var svTry = 0; ; svTry++) {
-      try { var r2 = await applySave(env, bs, A1, reqMeta(request)); break; }
+      try { var r2 = await applySave(env, bs, A1, reqMeta(request), ps ? { __operationFingerprint: ps.fp } : undefined); break; }
       catch (eT) { if (svTry || !operationalSave || !opFenceRetry(eT)) throw eT; }
     }
+    if (ps) r2 = await opPeriodSaveResult(env, ps, r2);
     if(operationalSave) return json(Object.assign({},r2,{ok:r2.ok===1?1:0,requestId:bs.requestId,epoch:bs.epoch,atomic:1}),r2.ok===1?200:Object.keys(r2.conflicts||{}).length?409:403);
     /* V7 · د5-هـ (أمن ١): لا ok:1 لحفظٍ لم يُكتب منه مفتاح — كلُّ مفتاحٍ طُلب رُفض أو تعارض ⇒ ok:0 (والنتيجةُ لكل مفتاح كما هي).
        للعميل الذي يعلن فهمه (ack ≥ 2) وحده: صفحةٌ قديمة في نافذة الإصدارين ترى ok:0 إقراراً غيرَ صالح فتعيد الإرسالَ بلا نهاية (caps_own_stale) */
@@ -820,7 +825,8 @@ async function saveRoute(env, request, path, ss) {
   } catch (eS) {
     var guardSave=dbGuardFailure(eS);if(guardSave)return json({ok:0,err:guardSave.err},guardSave.status);
     /* فشل الحفظ يظهر باسمه في سجلات المشروع وفي فاحص الشبكة — لا صمت */
-    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT@@SYS:rs.conflict.custodyTrigger@@/.test(String(eS)))return json({ok:0,err:'conflict'},409); logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
+    if (ps && eS && eS.rs === 'conflict' && eS.period !== undefined && eS.key) { var cfP = {}; (ps.byK[eS.key] ? ps.byK[eS.key].keys : []).forEach(function (k) { cfP[k] = { why: 'conflict' }; }); return json({ ok: 0, requestId: bsIn.requestId, epoch: bsIn.epoch, atomic: 1, revs: {}, denied: {}, conflicts: cfP }, 409); }   /* V7 · 53 */
+    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json(Object.assign({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.msg?{msg:eS.msg}:{}),eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT@@SYS:rs.conflict.custodyTrigger@@/.test(String(eS)))return json({ok:0,err:'conflict'},409); var limS = dbLimitResponse(env, eS, path); if (limS) return limS; logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
   }
 }
 /* KIVO_264 · C1 للقراءة (اختياري — العقدُ نفسُه لـ/api/save): ?uid= على /api/changes و/api/get = هويةُ الجلسة التي بُني لها التبويب (BOOT.uid)؛
