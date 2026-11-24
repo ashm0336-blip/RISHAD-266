@@ -4,7 +4,9 @@ import { FakeStorage, loadClient, sleep, until } from './k264_vm.mjs';
 import { needs } from './harness.mjs';
 
 const E = 'bsdept:dA:bassam_employees_v1';
-const S = 'bsdept:dA:bassam_staffing_v3';
+/* V7 · 53: the sample second resource is one stored whole (callsigns) — the schedule (staffing_v3) is now stored by period, and its
+   period wire format is covered by tests/unit/v7_d53_periods_client.test.mjs; every assertion here is unchanged */
+const S = 'bsdept:dA:bassam_callsigns_v1';
 const L = 'bsdept:dA:bassam_staffing_locks_v1';
 const UID = 'TEST_ONLY owner';
 const copy = value => JSON.parse(JSON.stringify(value));
@@ -234,7 +236,7 @@ test('one scoped draft builds a typed cross-resource transaction without a secon
     const employees = draft.get('bassam_employees_v1');
     employees.push({ eid: 'TEST_ONLY e2' });
     draft.set('bassam_employees_v1', employees);
-    draft.set('bassam_staffing_v3', { '1448-5': { 'TEST_ONLY e2': { shift: 'TEST_ONLY new' } } });
+    draft.set('bassam_callsigns_v1', { '1448-5': { 'TEST_ONLY e2': { shift: 'TEST_ONLY new' } } });
     assert.equal(f.T.W.KIVO.__BS_SRV.dirty(), false, 'A draft has no transport queue until staged');
     const ticket = draft.stage();
     assert.equal((await f.operations.flush(ticket)).ok, 1);
@@ -274,7 +276,7 @@ test('an editor commit retains its original draft and invokes its edit callback 
     await f.operations.read([E, S]);
     const owner = {}, intent = { employee: 'TEST_ONLY e2' };
     assert.equal(f.operations.begin(owner, 'editor').ok, 1);
-    const edit = draft => { edits++; draft.set('bassam_employees_v1', [...draft.get('bassam_employees_v1'), { eid: intent.employee }]); draft.set('bassam_staffing_v3', {}); };
+    const edit = draft => { edits++; draft.set('bassam_employees_v1', [...draft.get('bassam_employees_v1'), { eid: intent.employee }]); draft.set('bassam_callsigns_v1', {}); };
     const first = await f.operations.commit(owner, 'editor', intent, edit);
     assert.equal(first.uncertain, true); assert.equal(edits, 1);
     assert.equal((await f.operations.commit(owner, 'editor', { employee: 'TEST_ONLY changed' }, edit)).err, 'review-required');

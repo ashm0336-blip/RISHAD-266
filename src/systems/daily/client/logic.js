@@ -7022,8 +7022,41 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     );
     var ot;
   }
+  /* V7 · 53: الجولاتُ مخزّنةٌ باليوم — يُطلب الشهرُ المعروض (أيامُه وعلامتُه) من الجولات والأرشيف والخطة والجدول، وعلاماتُ أشهر السنة،
+     وبطاقاتُ الأشهر الأخرى من ملخّص الخادم (يومٌ موجود · معتمد) لا من تحميل أيامها. ما حُمِّل لا يُعاد طلبه */
+  _dsPeriods(s) {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (!S || !S.split || !S.split("bassam_rounds_v1")) return;
+    const ym = s.year + "-" + s.month,
+      sig = ym;
+    if (this._dsWant === sig) return;
+    this._dsWant = sig;
+    const year = this.MONTHS.map((t, i) => s.year + "-" + (i + 1)),
+      w = (name, spec) => (S.resources.indexOf(name) !== -1 && S.split(name) ? S.want(name, spec) : Promise.resolve({ ok: 1 }));
+    /* مواردُ الجولات بأسمائها (يملكها هذا النظام)، وما سواها من مجموعة القراءة المعلنة بلا تسميتها (wantPage) */
+    Promise.all([
+      w("bassam_rounds_v1", { groups: [ym], periods: year.map((x) => "m:" + x) }),
+      S.wantPage("Daily Sessions", { groups: [ym], except: ["bassam_rounds_v1"] }),
+    ]);   /* فشلٌ ⇒ حالةُ الخطأ في القراءة؛ التنقّلُ يعيد الطلب (لا إعادةَ مع كل رسم) */
+    if (this._dsSumYear !== s.year)
+      ((this._dsSumYear = s.year),
+      S.summary("bassam_rounds_v1", { groups: year }).then((r) => {
+        if (!r || 1 !== r.ok) return;
+        const m = {};
+        r.rows.forEach((x) => {
+          x && "string" === typeof x.p && 0 !== x.p.indexOf("m:") && (m[x.p] = { d: [], ap: x.v && x.v.ap ? 1 : 0 });
+        });
+        this._dsSum = m;
+        this.setState((t) => ({ extTick: (t.extTick || 0) + 1 }));
+      }));
+  }
+  /* بطاقاتُ الأشهر: الأيامُ المحمَّلة كما هي، وما لم يُحمَّل من الملخّص (للعرض وحده — لا يُحفظ ولا يدخل الحالة) */
+  _dsCardRounds(R) {
+    return this._dsSum ? { ...this._dsSum, ...(R || {}) } : R;
+  }
   renderVals() {
     this._bsHR();
+    this._dsPeriods(this.state);
     const t = this._dsPermVals(),
       e = (t) => {
         try {
@@ -7085,15 +7118,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         const n = e + 1,
           i = s.month === n,
           o = s.year === g.y && n === g.m,
-          r = Object.keys(s.rounds || {}).filter((t) => 0 === t.indexOf(s.year + "-" + n + "-")).length > 0,
-          a = this.isMonthAp(s.rounds, s.year, n),
+          R9 = this._dsCardRounds(s.rounds),
+          r = Object.keys(R9 || {}).filter((t) => 0 === t.indexOf(s.year + "-" + n + "-")).length > 0,
+          a = this.isMonthAp(R9, s.year, n),
           l = (() => {
             const t = (s.rounds || {})[this.mKey(s.year, n)];
             return !(!t || !t.ap);
           })(),
           d = a && !l,
           p = l,
-          h = this.monthDaysAllAp(s.rounds, s.year, n);
+          h = this.monthDaysAllAp(R9, s.year, n);
         let c =
             "position:relative;width:100%;border-radius:12px;padding:8px;text-align:center;transition:all .2s;box-shadow:var(--shadow-card);cursor:pointer;box-sizing:border-box;font-family:'Cairo',sans-serif;border:1px ",
           f = "#53565a",
