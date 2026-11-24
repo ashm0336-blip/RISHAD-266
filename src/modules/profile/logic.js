@@ -901,7 +901,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       txt: v.txt || v.act || "",
       by: v.by || "",
       why: v.why ? "«" + v.why + "»" : "",
+      /* V7 · 53 تقويم (القاعدة 11): اليومُ الميلادي ثم الهجريُّ المقابل سطراً تابعاً (whenH) */
       when: (h ? h.d + " " + this.MONTHS()[h.m - 1] + " · " : "") + this._tkHM(v.at) + ("row" === v.src ? " · من بيانات المهمة" : ""),
+      whenH: h && KIVO.BassamCal.hDayText(h.k) ? KIVO.BassamCal.hDayText(h.k) + " هـ" : "",
     };
   }
   /* سطرُ حالة المهمة في بطاقة «الأهم الآن» [النص, النمط] — رموزُ الألوان الدلالية وحدها */
