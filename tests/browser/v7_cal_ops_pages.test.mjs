@@ -47,9 +47,9 @@ test('الأنظمة المرتبطة: الشهرُ الميلادي وسطرُ�
           const all = [...document.querySelectorAll('[data-cal-kind="day"]')], c = document.querySelector('[data-cal-kind="day"][data-cal-key="' + dk + '"]'); if (!c) return null;
           const C = KIVO.BassamCal, ym = dk.slice(0, 7);
           return { n: all.length, want: C.gMonthDays(ym), lines: [...c.querySelectorAll('[data-cal-line]')].map((x) => x.textContent),
-            exp: [C.gLetter(dk), String(+dk.slice(8)), C.hLine(dk)],
+            exp: [C.gLetter(dk), String(+dk.slice(8)), String((C.hOf(dk) || {}).d)],   /* day_card_design: السطرُ الأسفل رقمُ اليوم الهجري */
             states: [...new Set(all.map((x) => x.getAttribute('data-cal-state')))].sort(),
-            closedNoWhy: all.filter((x) => x.getAttribute('data-cal-state') === 'closed' && !/مغلق: (اعتُمد|أُغلق تلقائياً|أُغلق يدوياً|مضى)/.test(x.title)).map((x) => x.getAttribute('data-cal-key')),
+            closedNoWhy: all.filter((x) => x.getAttribute('data-cal-state') === 'closed' && !/مغلق — (اعتُمد|أُغلق تلقائياً|أُغلق يدوياً|مضى)/.test(x.title)).map((x) => x.getAttribute('data-cal-key')),
             pastOpen: all.filter((x) => x.getAttribute('data-cal-key') < dk && x.getAttribute('data-cal-state') !== 'closed' && !/للاستدراك/.test(x.title)).map((x) => x.getAttribute('data-cal-key')),
             textHasReason: all.some((x) => /اعتُمد|أُغلق/.test(x.textContent)) };
         }, DK), P.name + ': the day strip');
@@ -82,7 +82,7 @@ test('الجولات: الحفظُ يكتب علامةَ الشهر ISO ويوم
     assert.deepEqual(Object.keys(R).filter((k) => /^(m:)?1[3-5]\d\d-/.test(k)), [], 'no Hijri key stored');
     await p.evaluate(`${L}.setState({ dsTab: 'rounds' })`);
     const st = await until(() => p.evaluate((dk) => { const c = document.querySelector('[data-cal-kind="day"][data-cal-key="' + dk + '"]'); return c && c.getAttribute('data-cal-state') === 'closed' ? c.title : null; }, DK), 'today closed in the strip');
-    assert.match(st, /مغلق: أُغلق يدوياً/, 'the reason in the tooltip');
+    assert.match(norm(st), /مغلق — أُغلق يدوياً/, 'the reason in the tooltip');
     assert.deepEqual(m.errs, []);
   } finally { await b.close(); await lab.close(); }
 });

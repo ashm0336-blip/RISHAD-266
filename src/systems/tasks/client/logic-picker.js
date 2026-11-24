@@ -10,7 +10,7 @@ Object.assign(Component.prototype, {
           r = a.getHours();
         let s = n;
         try {
-          const e = this.tkHParts(t);
+          const e = this.tkGParts(t);
           e && e.d && (s = e.d);
         } catch (t) {}
         return { d: s, h: r % 12 || 12, m: a.getMinutes(), ap: r >= 12 ? "م" : "ص" };

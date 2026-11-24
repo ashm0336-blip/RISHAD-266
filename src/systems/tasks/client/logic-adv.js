@@ -119,7 +119,7 @@ Object.assign(Component.prototype, {
   /* يومُ المهمة في النموذج (Y-M-D) — «يبدأ من» للإنشاء والتحويل */
   _tkFormK() {
     const e = this.state,
-      T = this.hToday(),
+      T = this.gTodayOf(),
       n = this.mDays(e.year, e.month - 1),
       d0 = e.year === T.y && e.month === T.m ? T.d : 1;
     return KIVO.BassamCal.gKey(e.year, e.month, Math.min(Math.max(1, +(e.newDay || d0) || 1), n));

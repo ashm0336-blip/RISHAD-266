@@ -63,19 +63,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* V7 · 53 تقويم (ف٣ · ق١ · §7): هذه الصفحة ميلادية — rpY/rpM/rpD ميلادية والمفاتيحُ ISO (KIVO.BassamCal.gKey/gYm/gMk)؛ أسماءُ عُدّة الصفحات (h*)
      باقيةٌ لمستدعيها ومعناها هنا ميلادي (يومُ الرياض المدني بلا مهلة — كما كانت)، والهجريُّ سطرٌ صغير محسوب لا مخزَّن */
   MONTHS = KIVO.BassamCal.G_MONTHS.slice();
-  hParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
-  hToday() { return this.hParts(new Date()); }
-  hGreg(t, e, s) { return new Date(t, e - 1, s, 12); }
-  hMonthDays(t, r) { return KIVO.BassamCal.gMonthDays(t, r); }
-  hGregMonthLabel(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
-  hGregYearRange(t) { return KIVO.BassamCal.hRangeOfYear(t); }
-  curHijri() { const t = this.hToday(); return { y: t.y, m: t.m }; }
+  gParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
+  gTodayOf() { return this.gParts(new Date()); }
+  gDate(t, e, s) { return new Date(t, e - 1, s, 12); }
+  gMonthDaysOf(t, r) { return KIVO.BassamCal.gMonthDays(t, r); }
+  hLineOfMonth(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
+  hLineOfYear(t) { return KIVO.BassamCal.hRangeOfYear(t); }
+  curMonth() { const t = this.gTodayOf(); return { y: t.y, m: t.m }; }
   dayPastDS(t, r, e) {
     let n;
     try {
-      n = this.hParts(new Date());
+      n = this.gParts(new Date());
     } catch (t) {
-      n = this.hParts(Date.now());
+      n = this.gParts(Date.now());
     }
     return t < n.y || (t === n.y && r < n.m) || (t === n.y && r === n.m && e < n.d);
   }
@@ -243,7 +243,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!t) return;
       var r = this.state;
       if (t.y === r.rpY && t.m === r.rpM && t.d === r.rpD) return;
-      var e = this.hMonthDays(t.y, t.m);
+      var e = this.gMonthDaysOf(t.y, t.m);
       this.setState({ rpY: t.y, rpM: t.m, rpD: Math.min(t.d, e) });
     } catch (t) {}
   }
@@ -1506,7 +1506,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     );
   }
   permDaysOf(t, r, e) {
-    var n = this.hMonthDays(r, e),
+    var n = this.gMonthDaysOf(r, e),
       a = Array.isArray(t && t.perm) ? t.perm : [],
       i = {},
       s = [];
@@ -1594,10 +1594,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._drPeriods(this.state);
     var t = this.state,
       r = this,
-      e = this.hParts(new Date()),
+      e = this.gParts(new Date()),
       n = this.rpLoad(),
       N9 = this._drSum ? Object.assign({}, this._drSum, n) : n,
-      a = this.hMonthDays(t.rpY, t.rpM),
+      a = this.gMonthDaysOf(t.rpY, t.rpM),
       i = this.drDistShifts(),
       s = this.drDayShifts(),
       o = this.drCurShift(),
@@ -1633,7 +1633,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             c = t.rpY < e.y || (t.rpY === e.y && s < e.m),
             l = (function () {
               if (!p) return !1;
-              var e = r.hMonthDays(t.rpY, s);
+              var e = r.gMonthDaysOf(t.rpY, s);
               if (!e) return !1;
               var a = r.drDistShiftsFor(r.drBucketFor(t.rpY, s));
               if (!a.length) return !1;
@@ -1689,7 +1689,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             {
               cal9: { ym: KIVO.BassamCal.gYm(t.rpY, s), closed: c, why: c ? (l ? "ap" : "past") : "", sel: o, cur: d },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
               name: a,
-              greg: r.hGregMonthLabel(t.rpY, s),
+              greg: r.hLineOfMonth(t.rpY, s),
               style: f,
               nameColor: h,
               footColor: u,
@@ -1725,7 +1725,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             }
           );
         }),
-        g = this.hGreg(t.rpY, t.rpM, 1),
+        g = this.gDate(t.rpY, t.rpM, 1),
         y = new Date(g.getFullYear(), g.getMonth(), g.getDate(), 12),
         b = [],
         k = 1;
@@ -1886,7 +1886,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
     var J = "";
     try {
-      J = r.hGreg(t.rpY, t.rpM, t.rpD).toLocaleDateString("ar-SA-u-nu-latn", { weekday: "long" });
+      J = r.gDate(t.rpY, t.rpM, t.rpD).toLocaleDateString("ar-SA-u-nu-latn", { weekday: "long" });
     } catch (t) {}
     var Q = function (t) {
         return (
@@ -3440,7 +3440,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (D && E && E.apAt)
       try {
         var Or = new Date(E.apAt),
-          Tr = this.hParts(Or);
+          Tr = this.gParts(Or);
         wr =
           " في " +
           Tr.d +
@@ -3457,7 +3457,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
     return {
       dYearLabel: t.rpY + " · " + KIVO.BassamCal.hRangeOfYear(t.rpY),
-      dGregRange: this.hGregYearRange(t.rpY),
+      dGregRange: this.hLineOfYear(t.rpY),
       roundDaysCount: String(h),
       ...KIVO.BassamCount.pair("dimTotal", String(a), "يوم|مسجّل"),
       /* V7 · 53 تقويم (§7): الكرتُ المشترك لكل شهرٍ ويوم — حالتان فقط والسببُ في التلميح */
@@ -3469,7 +3469,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         var e = "",
           n = "";
         try {
-          var a = r.hGreg(t.rpY, t.rpM, t.rpD);
+          var a = r.gDate(t.rpY, t.rpM, t.rpD);
           ((e = a.toLocaleDateString("ar-SA-u-nu-latn", { weekday: "long" }) + " "),
             (n = " · " + KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(t.rpY, t.rpM, t.rpD))));   /* V7 · 53 تقويم: الميلاديُّ أولاً والهجريُّ تابع */
         } catch (t) {}
@@ -4260,7 +4260,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         };
       })(),
       goCurrent: function () {
-        var t = r.hParts(new Date());
+        var t = r.gParts(new Date());
         r.setState({ rpY: t.y, rpM: t.m, rpD: t.d });
       },
       prevYear: function () {

@@ -2,13 +2,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   /* V7 · 53 تقويم (ف٤ · ق١ · §7): هذه الصفحة ميلادية — السنةُ والشهرُ واليومُ في حالتها ميلادية والمفاتيحُ ISO (KIVO.BassamCal.gKey/gYm/gMk)؛
      أسماءُ عُدّة الصفحات (h*) باقيةٌ لمستدعيها ومعناها هنا ميلادي (يومُ الرياض المدني بلا مهلة — كما كانت)، والهجريُّ سطرٌ صغير محسوب لا مخزَّن */
   MONTHS = KIVO.BassamCal.G_MONTHS.slice();
-  hParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
-  hToday() { return this.hParts(new Date()); }
-  hGreg(t, e, s) { return new Date(t, e - 1, s, 12); }
-  hMonthDays(t, e) { return KIVO.BassamCal.gMonthDays(t, e); }
-  hGregMonthLabel(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
-  hGregYearRange(t) { return KIVO.BassamCal.hRangeOfYear(t); }
-  curHijri() { const t = this.hToday(); return { y: t.y, m: t.m }; }
+  gParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
+  gTodayOf() { return this.gParts(new Date()); }
+  gDate(t, e, s) { return new Date(t, e - 1, s, 12); }
+  gMonthDaysOf(t, e) { return KIVO.BassamCal.gMonthDays(t, e); }
+  hLineOfMonth(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
+  hLineOfYear(t) { return KIVO.BassamCal.hRangeOfYear(t); }
+  curMonth() { const t = this.gTodayOf(); return { y: t.y, m: t.m }; }
   setState(update, done) {
     const capture = (patch, state) => {
       const editors = ["sdOpen", "restOpen", "permOpen", "csOpen", "csEdit", "wkOpen", "mkNew", "lockConfirm", "delMonth", "retroAsk"];
@@ -69,7 +69,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
   }
   state = (() => {
-    const t = this.curHijri();
+    const t = this.curMonth();
     return {
       permTick: 0,
       pmOpen: null,
@@ -138,7 +138,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return "__shifts";
   }
   monthPastS(t, e) {
-    const s = this.curHijri();
+    const s = this.curMonth();
     return +t < s.y || (+t === s.y && +e < s.m);
   }
   monthOpenFlagS(t, e) {
@@ -393,7 +393,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this.setState({ permLimit: e });
   }
   permDaysOf(t, e, s) {
-    const r = this.hMonthDays(e, s),
+    const r = this.gMonthDaysOf(e, s),
       n = Array.isArray(t && t.perm) ? t.perm : [],
       i = {},
       a = [];
@@ -715,7 +715,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       });
       const s = KIVO.__BS_SRV.operations.get("bassam_staffing_locks_v1") || {},
         r = KIVO.__BS_SRV.operations.get("bassam_staffing_v3") || {},
-        n = this.curHijri();
+        n = this.curMonth();
       Object.keys(r).forEach((a) => {
           if (!0 === s[a]) return;
           const o = String(a).split("-"),
@@ -905,7 +905,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       n = this._stCanWrite(),
       i = r || !n,
       a = this.MONTHS.map((t, e) => {
-        const r = this.curHijri(),
+        const r = this.curMonth(),
           n = e + 1,
           i = s.month === n,
           a = s.year === r.y && n === r.m,
@@ -1276,7 +1276,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           })),
           y = (() => {
             const t = [],
-              r = this.hMonthDays(s.year, s.month);
+              r = this.gMonthDaysOf(s.year, s.month);
             for (let s = 1; s <= r; s++) {
               const r = -1 !== m.indexOf(s),
                 n = !r && u;
@@ -2275,7 +2275,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       prevYear: () => this.setState((t) => ({ year: t.year - 1 })),
       nextYear: () => this.setState((t) => ({ year: t.year + 1 })),
       goCurrent: () => {
-        const t = this.curHijri();
+        const t = this.curMonth();
         this.setState({ year: t.y, month: t.m, restOpen: null, sdOpen: null, stSel: {} });
       },
       selMonthName: kt,

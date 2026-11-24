@@ -166,7 +166,7 @@
     <sc-for list="{{days}}" as="d" hint-placeholder-count="30">
     <!-- V7 · 53 تقويم (§7): كرتُ اليوم المشترك (KIVO.BassamCalCard.day) بالمقاس نفسِه — حرفُ اليوم · الميلادي · الهجري، وحالتان فقط والسببُ في التلميح -->
     <div style="position:relative;flex:1 1 auto;min-width:28px;display:flex">{{d.card}}
-      <sc-if value="{{d.canReset}}" hint-placeholder-val="{{ false }}"><span onClick="{{d.reset}}" title="{{d.resetTip}}" style="position:absolute;top:-4px;right:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a22038380p45);color:var(--fg-xdc2626);cursor:pointer;z-index:12;box-shadow:var(--shadow-card)" style-hover="background:var(--bg-xdc2626);color:var(--fg-xffffff);border-color:var(--bd-xdc2626)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-0732b330"></svg></span></sc-if>
+      <sc-if value="{{d.canReset}}" hint-placeholder-val="{{ false }}"><span onClick="{{d.reset}}" title="{{d.resetTip}}" style="position:absolute;z-index:3;top:-4px;right:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a22038380p45);color:var(--fg-xdc2626);cursor:pointer;z-index:12;box-shadow:var(--shadow-card)" style-hover="background:var(--bg-xdc2626);color:var(--fg-xffffff);border-color:var(--bd-xdc2626)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-0732b330"></svg></span></sc-if>
     </div>
     </sc-for>
   </div>

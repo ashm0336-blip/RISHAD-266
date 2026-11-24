@@ -42,7 +42,7 @@ test('V7 port · real print button: plan = one page per site, rounds = indicator
   const b = await chromium.launch({ env: Object.assign({}, process.env, { LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' }) });
   try {
     const s = await openAs(b, lab, LAB.mgrA, LAB.pw, { context: { acceptDownloads: true } }), p = s.page; p.setDefaultTimeout(20000);
-    assert.deepEqual(await p.evaluate(() => KIVO.BassamHijri.now()), T, 'the page and the fixture agree on today');
+    assert.deepEqual(await p.evaluate(() => { const g = KIVO.BassamCal.gAt(new Date()); return { y: g.y, m: g.m, d: g.d }; }), T, 'the page and the fixture agree on today');   /* V7 · 53 تقويم: يومُ الصفحة الميلادي */
     assert.equal(await p.evaluate(() => matchMedia('(hover:hover) and (pointer:fine)').matches), true, 'a desktop: the touch-only register is hidden on the page');
     for (const [name, hash, svg, titles] of [
       ['plan', '#/plan', 'svg[data-map-zoom]', ['TEST_ONLY موقع 1', 'TEST_ONLY موقع 2']],

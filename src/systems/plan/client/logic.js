@@ -12,13 +12,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   /* V7 · 53 تقويم (ف٤ · ق١ · §7): هذه الصفحة ميلادية — السنةُ والشهرُ واليومُ في حالتها ميلادية والمفاتيحُ ISO (KIVO.BassamCal.gKey/gYm/gMk)؛
      أسماءُ عُدّة الصفحات (h*) باقيةٌ لمستدعيها ومعناها هنا ميلادي (يومُ الرياض المدني بلا مهلة — كما كانت)، والهجريُّ سطرٌ صغير محسوب لا مخزَّن */
   MONTHS = KIVO.BassamCal.G_MONTHS.slice();
-  hParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
-  hToday() { return this.hParts(new Date()); }
-  hGreg(t, e, s) { return new Date(t, e - 1, s, 12); }
-  hMonthDays(t, e) { return KIVO.BassamCal.gMonthDays(t, e); }
-  hGregMonthLabel(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
-  hGregYearRange(t) { return KIVO.BassamCal.hRangeOfYear(t); }
-  curHijri() { const t = this.hToday(); return { y: t.y, m: t.m }; }
+  gParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
+  gTodayOf() { return this.gParts(new Date()); }
+  gDate(t, e, s) { return new Date(t, e - 1, s, 12); }
+  gMonthDaysOf(t, e) { return KIVO.BassamCal.gMonthDays(t, e); }
+  hLineOfMonth(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
+  hLineOfYear(t) { return KIVO.BassamCal.hRangeOfYear(t); }
+  curMonth() { const t = this.gTodayOf(); return { y: t.y, m: t.m }; }
   _opService() {
     const service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
     if (!service) throw Error("operations-read-required");
@@ -2641,7 +2641,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   _plAround() {
     const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
     if (!S || !S.split || !S.split("bassam_plan_v1")) return;
-    const c = this.curHijri(),
+    const c = this.curMonth(),
       g = [];
     for (let i = -12; i <= 2; i++) {
       const n = c.y * 12 + (c.m - 1) + i;
@@ -3781,7 +3781,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       this.setState({ planMonths: a }, () => this.savePlan()));
   }
   monthPast(t, e) {
-    const s = this.curHijri(),
+    const s = this.curMonth(),
       n = void 0 === t ? this.state.year : t,
       a = void 0 === e ? this.state.month : e;
     return n < s.y || (n === s.y && a < s.m);
@@ -3864,8 +3864,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   initState() {
     const t = {
         view: { x: 0, y: 0, w: 1e3, h: 600 },
-        year: this.curHijri().y,
-        month: this.curHijri().m,
+        year: this.curMonth().y,
+        month: this.curMonth().m,
         lens: "plan",
         brkDim: "summary",
         gateDim: "summary",
@@ -6685,7 +6685,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                             .filter(Boolean)
                             .join(" و") +
                           " من شريط واحد · نقرة مزدوجة على أي عنصر تفتح بياناته · Ctrl+Z للتراجع",
-      p = this.curHijri(),
+      p = this.curMonth(),
       c = this.MONTHS.map((t, s) => {
         const n = s + 1,
           a = e.month === n,
@@ -12144,7 +12144,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       prevYear: () => this.goTo(this.state.year - 1, this.state.month),
       nextYear: () => this.goTo(this.state.year + 1, this.state.month),
       goCurrent: () => {
-        const t = this.curHijri();
+        const t = this.curMonth();
         this.goTo(t.y, t.m);
       },
       pickerMonthLabel: (this.MONTHS[e.month - 1] || "") + " " + e.year,

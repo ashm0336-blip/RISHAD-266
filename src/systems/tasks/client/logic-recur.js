@@ -31,8 +31,8 @@ Object.assign(Component.prototype, {
       n = { w1: 7, w2: 14, m1: 30, m3: 90, y1: 365 }[v];   /* V7 · 53 تقويم: السنةُ ميلادية */
     if (!n) return this._tkDayN(v) ? v : "";
     const a = String(b).split("-").map(Number),
-      g = this.hGreg(a[0], a[1], a[2]),
-      h = g ? this.tkHParts(g.getTime() + 864e5 * n) : null;
+      g = this.gDate(a[0], a[1], a[2]),
+      h = g ? this.tkGParts(g.getTime() + 864e5 * n) : null;
     return h ? KIVO.BassamCal.gKey(h.y, h.m, h.d) : "";
   },
   /* بصمةُ القاعدة (النوع · الأيام · يوم الشهر · النهاية) — تغييرُها في النموذج وحده يرسل «تعديل التكرار» */
@@ -245,7 +245,7 @@ Object.assign(Component.prototype, {
       WD = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
       wd = this._tkRecWd(k),
       md = "last" === e.newRecMd ? "last" : +e.newRecMd || +k.split("-")[2] || 1,
-      setTo = (y, m, d) => this.setState({ newRecTo: KIVO.BassamCal.gKey(y, m, Math.min(Math.max(1, d), this.hMonthDays(y, m))) }),
+      setTo = (y, m, d) => this.setState({ newRecTo: KIVO.BassamCal.gKey(y, m, Math.min(Math.max(1, d), this.gMonthDaysOf(y, m))) }),
       tone = ser && ser.ended ? "var(--border-strong);background:var(--bg-surface-3);color:var(--text-muted)" : ser && ser.paused ? "var(--warning-border);background:var(--warning-bg);color:var(--warning-text)" : "var(--success-border);background:var(--success-bg);color:var(--success-text)",
       typ = (label, sel, off, click) => ({ label: label, aria: sel ? "true" : "false", ariaDis: off ? "true" : "false", tip: off && dis ? dis : "", style: this._tkSeg(sel, off), click: click });
     return {
@@ -299,7 +299,7 @@ Object.assign(Component.prototype, {
         ["date", "في تاريخ"],
       ].map(([v, l]) => ({ label: l, click: () => this.setState({ newRecEnd: v }), style: chip(("date" === e.newRecEnd ? "date" : "open") === v) })),
       tkRecToOn: "date" === e.newRecEnd,
-      tkRecToDs: to ? Array.from({ length: this.hMonthDays(to[0], to[1]) }, (q, i) => ({ v: String(i + 1), label: String(i + 1), sel: i + 1 === to[2] })) : [],
+      tkRecToDs: to ? Array.from({ length: this.gMonthDaysOf(to[0], to[1]) }, (q, i) => ({ v: String(i + 1), label: String(i + 1), sel: i + 1 === to[2] })) : [],
       tkRecToMs: this.MONTHS.map((l, i) => ({ v: String(i + 1), label: l, sel: !!to && i + 1 === to[1] })),
       tkRecToYs: [0, 1, 2, 3].map((q) => ({ v: String(y0 + q), label: String(y0 + q), sel: y0 + q === ty })),
       onTkRecToD: (t) => to && setTo(to[0], to[1], +t.target.value),

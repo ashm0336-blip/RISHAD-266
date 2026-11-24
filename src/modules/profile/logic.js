@@ -331,7 +331,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (KIVO.BassamNav && KIVO.BassamNav.go) return void KIVO.BassamNav.go(t);
     } catch (t) {}
   }
-  hParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }   /* V7 · 53 تقويم: «صفحتي» ميلادية — يومُ الرياض المدني (الاسمُ قديم) */
+  gParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }   /* V7 · 53 تقويم: «صفحتي» ميلادية — يومُ الرياض المدني (الاسمُ قديم) */
   MONTHS() {
     return KIVO.BassamCal.G_MONTHS.slice();   /* V7 · 53 تقويم: الأشهرُ ميلادية */
   }
@@ -595,7 +595,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         new Intl.DateTimeFormat(loc, Object.assign({ timeZone: tz }, o)).formatToParts(d).forEach((p) => (q[p.type] = p.value));
         return q;
       };
-      const H = KIVO.BassamCal.hPartsRiyadh(d),   /* V7 · د5-د2: يومُ الرياض الهجري من الخدمة */
+      const H = KIVO.BassamCal.hOf(KIVO.BassamCal.gAt(d).k) || {},   /* V7 · 53 تقويم: الهجريُّ المقابل سطرٌ تابع للميلادي */
         G = P("en-u-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
       ((h = H.d + "/" + H.m + "/" + H.y + "هـ"), (g = G.day + "/" + G.month + "/" + G.year + "م"), (c = G.hour + ":" + G.minute));
     } catch (t) {
@@ -605,7 +605,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       geo && "number" === typeof geo.lat && "number" === typeof geo.lng
         ? geo.lat.toFixed(5) + ", " + geo.lng.toFixed(5) + (geo.acc ? " (±" + Math.round(geo.acc) + " م)" : "")
         : "بلا موقع";
-    return [[h, g, c].filter(Boolean).join(" · ") + " · " + loc, [String(name || "").trim(), String(title || "").trim()].filter(Boolean).join(" · ") || "توثيق مهمة"];
+    return [[g, h, c].filter(Boolean).join(" · ") + " · " + loc,   /* V7 · 53 تقويم: الميلاديُّ أولاً ثم الهجري */ [String(name || "").trim(), String(title || "").trim()].filter(Boolean).join(" · ") || "توثيق مهمة"];
   }
   /* الرسمُ على اللوحة نفسِها قبل الترميز: شريطٌ سفليٌّ داكن وسطران أبيضان من اليمين — فالصورةُ المرفوعة تحمل الختمَ في بكسلاتها لا في الواجهة */
   _tkStampDraw(cv, lines) {
@@ -894,9 +894,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       (t.tkTlBack = () => this.setState({ pfPanel: (L && L.back) || "", tkTl: null })),
       (t.tkTlRows = L && "ok" === L.st ? L.ev.map((v) => this._tkEv(v)) : []));
   }
-  /* حدثٌ في سجلّ المهمة: ما جرى · مَن (أنت / اسمُ المسؤول) · السبب · متى (هجرياً) — والمستمدُّ من طوابع صفٍّ قديم موسومٌ بذلك */
+  /* حدثٌ في سجلّ المهمة: ما جرى · مَن (أنت / اسمُ المسؤول) · السبب · متى (ميلادياً — V7 · 53 تقويم) — والمستمدُّ من طوابع صفٍّ قديم موسومٌ بذلك */
   _tkEv(v) {
-    const h = v.at ? this.hParts(new Date(v.at)) : null;
+    const h = v.at ? KIVO.BassamCal.gAt(new Date(v.at)) : null;   /* V7 · 53 تقويم: يومُ الحدث الميلادي */
     return {
       txt: v.txt || v.act || "",
       by: v.by || "",
@@ -1933,7 +1933,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
        وبنودُ المدير؛ (٢) اليومُ التشغيليّ Pop لحقائقي (الورديةُ الليلية تتبع يومَ بدئها — OD-10) ومنه شهرُ «السجل» الجاري. يختلفان بعد منتصف الليل
        في ورديةٍ ليلية وحدها — ولا يُنقل رصدُ الميدان إلى جولة الأمس (كان سيُكتب حيث لا تراه المتابعةُ اليومية). */
     const c = new Date(),
-      P0 = this.hParts(c),
+      P0 = this.gParts(c),
       p = P0,
       Pop = l && MM && MM.day ? { y: MM.day.y, m: MM.day.m, d: MM.day.d } : P0,
       wdOp = l && MM && MM.day ? MM.day.wd : this.wdName(c),
@@ -2132,7 +2132,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!l)
       for (let t = 6; t >= 0; t--) {
         const e = new Date(c.getTime() - 864e5 * t),
-          s = this.hParts(e),
+          s = this.gParts(e),
           a = KIVO.BassamCal.gKey(s.y, s.m, s.d),
           r = this.wdName(e),
           n = B[a];
@@ -2633,7 +2633,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     /* V7 · 53: قاعدةُ التحية الواحدة (KIVO.BassamGreet · 440-count) */ const greet53 = KIVO.BassamGreet(o);
     ((r.greeting = greet53.text), (r.greetIsDay = greet53.day), (r.greetIsNight = !r.greetIsDay));
     const f = this.MONTHS();
-    const H0 = this.hParts(i.now);
+    const H0 = this.gParts(i.now);
     r.dateLine = this.wdName(i.now) + " " + H0.d + " " + f[H0.m - 1] + " " + H0.y + " · " + KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(H0.y, H0.m, H0.d));   /* V7 · 53 تقويم: الميلاديُّ ثم الهجريُّ التابع */
     /* KIVO_264 · D12: الإدارةُ في سطر الدور إدارةُ الحساب (لا الإدارةُ النشطة في الجلسة) — ومدير النظام بلا إدارة */
     const h = e && e.deptId ? this.deptNameOf(e.deptId) : "",
