@@ -281,7 +281,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   /* «الصف 5 — الاسم: السبب» — نصٌّ واحد للمعاينة والملخّص */
   function rejLine(x) { return 'الصف ' + x.row + (x.name ? ' (' + x.name + ')' : '') + ': ' + x.why; }
   function rejList(list, max) { max = max || 5; return list.slice(0, max).map(rejLine).join(' · ') + (list.length > max ? ' · و' + (list.length - max) + ' صفاً آخر' : ''); }
-  var DUP_F = { nid: 'رقم الهوية', phone: 'رقم الجوال', empno: 'الرقم الوظيفي' }, DUP_W = { file: 'مكرر في الملف نفسه', other: 'مسجّل لموظف في إدارة أخرى', account: 'مسجّل اسمَ دخول لحساب خارج هذه الإدارة' };
+  var DUP_F = { nid: 'رقم الهوية', phone: 'رقم الجوال', empno: 'الرقم الوظيفي' }, DUP_W = { file: 'مكرر في الملف نفسه', other: 'مكرر — مسجّل لموظف في إدارة أخرى', account: 'مكرر — مسجّل اسمَ دخول لحساب خارج هذه الإدارة' };
   function matchKeys(emp) {
     var keys = [], nid = String(emp && emp.nid || '').trim(), no = String(emp && emp.empno || '').trim(), name = normAr(emp && emp.name);
     if (nid) keys.push(nid); if (no) keys.push('E:' + no); if (name) keys.push('N:' + name + '|' + String(emp && emp.phone || '').trim()); return keys;

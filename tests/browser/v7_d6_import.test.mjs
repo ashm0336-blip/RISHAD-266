@@ -54,7 +54,8 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
     assert.match(skipHead, new RegExp('لن يُنقل \\(' + Object.keys(NOT_TRANSFERRED).length + '\\)'), skipHead);
     for (const k of ['bassam_grants_v1', 'bassam_dr_grp_v1', 'bassam_notif_dev_v1:TEST_ONLY_u8']) assert.ok(skip.includes(k), 'ما لن يُنقل يُذكر باسمه: ' + k);
     assert.ok(!skip.includes('bassam_perm_tpls_v1'), 'V7 · د7 (51ب): القوالبُ لا تُذكر فيما لن يُنقل — تصير أدواراً');
-    assert.match(skip, /صلاحيات بنظام قديم أُلغي/); assert.match(skip, /لا تُنقل حتى لا تُفتح صلاحية/);
+    /* V7 · د7 (51ب): القوالبُ صارت أدواراً فلا يُذكر «صلاحيات بنظام قديم» فيما لن يُنقل */
+    assert.doesNotMatch(skip, /صلاحيات بنظام قديم أُلغي/); assert.match(skip, /لا تُنقل حتى لا تُفتح صلاحية/);
     assert.match(skip, /bassam_grants_v1[^¦]*العدد: 1/, 'المنحُ القديمة بعددها: ' + skip);
     assert.equal(staged(lab.env.DB), 0, 'الملخّصُ لا يودِع شيئاً في المؤقت');
     const before = snapshot(lab.env.DB);

@@ -87,8 +87,8 @@ test('V7 · د7 — Excel import: the preview names every rejected row before ch
     assert.equal(await choose(p, 'add'), 403, 'the server refuses the duplicates');
     assert.equal(JSON.stringify(await emps(m)), before3, 'nothing was saved (read back from the server)');
     t = lat((await toastsOf(p)).join(' | ') + ' | ' + await p.evaluate(() => document.body.innerText));
-    assert.match(t, /الصف 2 \(TEST_ONLY هوية إدارة أخرى\): رقم الهوية 1200000101 مسجّل لموظف في إدارة أخرى/, 'row 2 and where: ' + t.slice(0, 600));
-    assert.match(t, new RegExp('الصف 3 \\(TEST_ONLY جوال حساب\\): رقم الجوال ' + LAB.mgrB + ' مسجّل اسمَ دخول لحساب خارج هذه الإدارة'), 'row 3 and where');
+    assert.match(t, /الصف 2 \(TEST_ONLY هوية إدارة أخرى\): رقم الهوية 1200000101 مكرر — مسجّل لموظف في إدارة أخرى/, 'row 2 and where: ' + t.slice(0, 600));
+    assert.match(t, new RegExp('الصف 3 \\(TEST_ONLY جوال حساب\\): رقم الجوال ' + LAB.mgrB + ' مكرر — مسجّل اسمَ دخول لحساب خارج هذه الإدارة'), 'row 3 and where');
     assert.doesNotMatch(t, /TEST_ONLY_B|TEST_ONLY موظف ب/, 'the other department and its employee are not named');
     assert.deepEqual(m.errs, [], 'no page errors');
   } finally { await b.close(); await lab.close(); }
