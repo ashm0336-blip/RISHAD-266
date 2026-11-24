@@ -285,15 +285,6 @@
    "why": "دورُ الحساب في «ملفي» محفوظٌ في متغيّرٍ محلي (i · r) ويُقارن بالدور"
   },
   {
-   "file": "*",
-   "match": [
-    "role=staff/deptId",
-    "يُطبَّق على staff/gm"
-   ],
-   "kind": "legit",
-   "why": "نثرُ الدور في وثائق الحراسة والبناء (يُطبَّق على حسابات الموظفين ومديري العموم) — في البيانات المولَّدة وأجزائها"
-  },
-  {
    "file": "workers/parts/019o1-table-names.js",
    "match": [
     "ops_staffing_month_employee_perm_days_values",
