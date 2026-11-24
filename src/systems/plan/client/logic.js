@@ -3463,6 +3463,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     const d = { key: s, id: t, patternUnits: "userSpaceOnUse", width: a, height: a };
     return (l && (d.patternTransform = l), n("pattern", d, o));
   }
+  _optRefSend(q, cats) {
+    const M = { "opt-missing": "تغيّرت الخيارات — أعد فتح القائمة", "opt-duplicate": "يوجد خيار بهذا الاسم", "opt-code-duplicate": "هذا الرمز مستخدم لخيار آخر", conflict: "تغيّرت الخيارات على الخادم — أعد فتح القائمة ثم أعد التعديل", denied: "صلاحيتك لا تشمل تعديل هذا الخيار في كل ما يتبعه", forbidden: "صلاحيتك لا تشمل تعديل هذا الخيار في كل ما يتبعه" };
+    return Promise.resolve(KIVO.bus.call("plan.optRef@1", q)).then((j) => {
+      if (!j || 1 !== j.ok) return void this.bsToast(M[j && j.err] || "تعذّر تعديل الخيار — أعد المحاولة");
+      this.bsToast("عُدّل الخيار في كل الأشهر والجولات", "ok");
+      if (cats) { const o = this._opRead("bassam_zone_opts_v1") || {}; this.saveZoneOpts({ ...o, ztype: (o.ztype || []).map((x) => (this._optName(x) === q.name ? { ...x, c: cats } : x)) }); }
+    });
+  }
   saveZoneOptEdit() {
     const t = this.state.zDdEdit;
     if (!t) return;
@@ -3492,16 +3500,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       if (("region" === t.key || "ztype" === t.key) && n.some((t, e) => e !== a && this._optCode(t) === d))
         return void this.bsToast("هذا الرمز مستخدم لخيار آخر");
     }
-    if (s !== r) {
-      const e = (e) => (!e || e[t.key] !== r || ("level" === t.key && l && e.region !== l) ? e : { ...e, [t.key]: s });
-      this.setState({
-          zones: (this.state.zones || []).map(e),
-          floors: (this.state.floors || []).map((t) => ({ ...t, zones: (t.zones || []).map(e) })),
-          zEdit: this.state.zEdit ? e(this.state.zEdit) : this.state.zEdit,
-        });
-    }
     const h = "ztype" === t.key && Array.isArray(this.state.zDdEditT) ? this.state.zDdEditT.filter(Boolean) : null;
     this.setState({ zDdEdit: null, zDdEditT: null });
+    /* V7 · 53 (port-sync · بند 3 · قرار المالك 24 نوفمبر): تغييرُ الاسم أو الرمز يسري على كل ما يتبعه — الشهرُ المعروض وكلُّ الأشهر والجولات، ومنها المقفلُ والمعتمد
+       والمنقضي — بأمرٍ خادميٍّ واحد معلن (plan.optRef ← 019p6): الخادمُ يحسبه من المخزَّن ويسجّله باسم المعدِّل، ويصل أثرُه بالانعكاس الحيّ.
+       كان: الشهرُ المعروض وحده (state.zones/floors) فتبقى الأشهرُ الأخرى والجولاتُ بالاسم القديم. */
+    if (s !== r || (e && d !== this._optCode(i)))
+      return void this._optRefSend({ kind: t.key, was: r, reg: l, name: s, code: d }, __zt && h && JSON.stringify(h) !== JSON.stringify(this._optCats(i) || []) ? h : null);
     const p = {
       ...(this.state.zoneOpts || {}),
       [t.key]: n.map((t, n) =>

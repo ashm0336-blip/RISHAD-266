@@ -14,6 +14,7 @@
      read     plan.resources@1(…kinds)    أسماءُ موارد الخطة بحسب النوع: doc · zoneOpts · gateOpts (بلا نوعٍ: كلُّها) — لمن ينتظر تغيّرَها.
      command  plan.doc.set@1      { value } داخل مسودة المستدعي: يكتب وثيقةَ الخطة كما أعدّها.
      command  plan.zoneOpts.set@1 { value } داخل مسودة المستدعي: يكتب خياراتِ المصليات.
+     command  plan.optRef@1 { kind, was, reg?, name, code? } ← Promise: الأمرُ الخادمي المعلن (V7 · 53) — تعديلُ الخيار بالمرجع في كل الأشهر والجولات.
      command  plan.gateOpts.set@1 { value } داخل مسودة المستدعي: يكتب خياراتِ الأبواب. */
 (function () {
   var bus = KIVO.bus;
@@ -46,4 +47,17 @@
   setter('plan.doc.set@1', RES.doc);
   setter('plan.zoneOpts.set@1', RES.zoneOpts);
   setter('plan.gateOpts.set@1', RES.gateOpts);
+  /* V7 · 53 (port-sync · بند 3 · قرار المالك 24 نوفمبر): تعديلُ اسم خيار المصلى أو رمزه يسري على كل الأشهر والجولات (المقفلة والمعتمدة والمنقضية)
+     بالأمر الخادمي المعلن plan.optRef (POST /api/plan/opt-ref — src/systems/plan/server/019p6): يُرسل الخيارُ وحده لا الوثائق، وأساسُه نسخةُ الكتالوج
+     التي قرأها المعدِّل؛ وبعد النجاح تُعاد قراءةُ مجموعة القراءة فيصل الأثرُ إلى الصفحات بالانعكاس الحيّ. ← { ok, zones } أو { ok:0, err } */
+  bus.command('plan.optRef@1', function (p) {
+    var S = KIVO.__BS_SRV, O = S && S.operations, c = O && O.context && O.context();
+    if (!c || !p) return Promise.resolve({ ok: 0, err: 'session' });
+    var body = { uid: c.uid, dept: c.dept, kind: p.kind, was: p.was, name: p.name, base: S.rev(O.key(RES.zoneOpts)) || 0 };
+    if (p.reg) body.reg = p.reg; if (p.kind !== 'zcat') body.code = p.code;
+    return fetch('/api/plan/opt-ref', { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { return j && j.ok === 1 && S.resync ? S.resync().then(function () { return j; }) : j || { ok: 0, err: 'invalid' }; })
+      .catch(function () { return { ok: 0, err: 'network' }; });
+  });
 })();

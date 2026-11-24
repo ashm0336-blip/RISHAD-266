@@ -41,6 +41,11 @@
     "file": "server/019p4-scheduling-plan-options.js",
     "after": "019p5-scheduling-floors.js",
     "order": 30
+   },
+   {
+    "file": "server/019p6-plan-opt-ref.js",
+    "after": "019p5-scheduling-floors.js",
+    "order": 40
    }
   ]
  },
@@ -119,6 +124,18 @@
   "planning.css": {
    "order": 20,
    "file": "slots/planning.css.frag"
+  },
+  "routes.dispatch": {
+   "order": 50,
+   "text": "      if (path === '/api/plan/opt-ref') return await poRoute(env, request, url, ss);\n"
+  },
+  "bodies.systems": {
+   "order": 40,
+   "file": "slots/bodies.plan.frag"
+  },
+  "contracts.systems": {
+   "order": 40,
+   "file": "slots/contracts.plan.frag"
   }
  }
 }

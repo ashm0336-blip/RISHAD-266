@@ -89,6 +89,7 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   /* النطاق — كلُّ عنصرٍ متأثر (deny أو unknown ⇒ رفض) */
   var sc = opts.noScope ? { composite: 'not_applicable', denyDims: [], unknownDims: [], items: 0, why: '' } : enfScopeEval(A, d, k, rn, a, b, used, X);
   if (sc.composite !== 'not_applicable' && sc.composite !== 'allow' && enfLockBypass(A, d, X) && (sc.denyDims || []).concat(sc.unknownDims || []).every(function (q) { return q === 'DateRange'; })) sc = { composite: 'allow', denyDims: [], unknownDims: [], items: sc.items, why: 'mgr-restore-locked (' + sc.why + ')' };   /* V7 · د6 (QA ٦): 057 enfLockBypass */
+  if (sc.composite === 'deny' && enfOptRefLock(A, rn) && !(sc.unknownDims || []).length && (sc.denyDims || []).every(function (q) { return q === 'DateRange'; })) sc = { composite: 'allow', denyDims: [], unknownDims: [], items: sc.items, why: 'plan.optRef (' + sc.why + ')' };   /* V7 · 53 (port-sync · بند 3): 057 enfOptRefLock */
   if (sc.composite === 'deny') return enfNo('scope', { keys: used, dims: sc.denyDims, detail: sc.why, items: sc.items });
   if (sc.composite === 'unknown') return enfNo('scope-unknown', { keys: used, dims: sc.unknownDims, detail: sc.why, items: sc.items });
   /* V7 · د6 (QA) · البند ١: لا سببَ إلزامياً لأحد (قرارُ المالك) — أُزيل رفضُ enfNo('reason') لمفاتيح audit.reason؛ ما أرسله عميلٌ قديم من سببٍ يُسجَّل كما هو */

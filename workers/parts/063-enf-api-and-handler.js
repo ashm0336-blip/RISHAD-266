@@ -1176,6 +1176,7 @@ export default {
       if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');
       if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
+      if (path === '/api/plan/opt-ref') return await poRoute(env, request, url, ss);
       /* RISHAD266: توليدُ المواعيد المتكررة ومسحُ المواعيد (التذكير · التأخر · الانقضاء) تشغيلُ نظامٍ يجري عند قراءة مخزن مهام الإدارة — كما كان طلبُ الصفحة المحذوف.
          يجري بعد أن تقبل القراءةُ نفسُها الطلبَ (الطريقة · الجلسة uid · المفاتيح · الصلاحية: 019r) ولم تحجب مفتاحَ المهام عن القارئ، وبالحارس المشترك 074؛
          فالطلبُ المرفوض لا يمسّ شيئاً. وإن جرى عملٌ أُعيدت القراءةُ ليصل أثرُه في الردّ نفسِه */

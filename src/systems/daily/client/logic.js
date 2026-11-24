@@ -2007,6 +2007,25 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       if (("region" === t.key || "ztype" === t.key) && n.some((t, e) => e !== i && this._optCode(t) === d))
         return void this.bsToast("هذا الرمز مستخدم لخيار آخر");
     }
+    /* V7 · 53 (port-sync · بند 3 · قرار المالك 24 نوفمبر): تغييرُ الاسم أو الرمز يسري على كل الجولات والأشهر — ومنها المقفلُ والمعتمد والمنقضي — بأمر الخطة
+       الخادمي المعلن (plan.optRef ← server/019p6)؛ كان: أيامُ الجولات غيرُ المعتمدة وحدها. بغياب الخطة يبقى المسارُ القديم أدناه */
+    if (s !== r || (e && d !== this._optCode(o))) {
+      const p0 = "ztype" === t.key && Array.isArray(this.state.zDdEditT) ? this.state.zDdEditT.filter(Boolean) : null,
+        M = { "opt-missing": "تغيّرت الخيارات — أعد فتح القائمة", "opt-duplicate": "يوجد خيار بهذا الاسم", "opt-code-duplicate": "هذا الرمز مستخدم لخيار آخر", conflict: "تغيّرت الخيارات على الخادم — أعد فتح القائمة ثم أعد التعديل", denied: "صلاحيتك لا تشمل تعديل هذا الخيار في كل ما يتبعه", forbidden: "صلاحيتك لا تشمل تعديل هذا الخيار في كل ما يتبعه" },
+        q = { kind: t.key, was: r, reg: a, name: s, code: d },
+        j0 = KIVO.bus.call("plan.optRef@1", q);
+      if (!(j0 && j0.absent)) {
+        this.setState({ zDdEdit: null, zDdEditT: null });
+        return void Promise.resolve(j0).then((j) => {
+          if (!j || 1 !== j.ok) return void this.bsToast(M[j && j.err] || "تعذّر تعديل الخيار — أعد المحاولة");
+          this.bsToast("عُدّل الخيار في كل الأشهر والجولات", "ok");
+          if (__zt && p0 && JSON.stringify(p0) !== JSON.stringify(this._optCats(o) || [])) {
+            const x = KIVO.bus.read("plan.zoneOpts@1", (k) => this._opRead(k)) || {};
+            this.saveZoneOpts({ ...x, ztype: (x.ztype || []).map((y) => (this._optName(y) === s ? { ...y, c: p0 } : y)) });
+          }
+        });
+      }
+    }
     if (s !== r) {
       const e = (e) => (!e || e[t.key] !== r || ("level" === t.key && a && e.region !== a) ? e : { ...e, [t.key]: s });
       try {
