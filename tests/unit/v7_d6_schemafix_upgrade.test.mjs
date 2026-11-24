@@ -138,7 +138,7 @@ test('(١) قاعدةٌ بناها العاملُ القديم (الإصدار 1
   assert.deepEqual(E.DB.q('PRAGMA foreign_key_check'), []);
 
   /* V7 · 53 تقويم: 0014 في التشغيل نفسِه — الإدارةُ معلَّقةٌ تقويمياً حتى المرحلة ٢ (calendar-migrate قبل periods-migrate) — والقيمُ بعدها هي قيمُ ما قبل الترقية محوَّلةً بالدالة الواحدة */
-  for (let n = 0, r; n < 200; n++) { r = await call2('/api/operations/calendar-migrate', { method: 'POST', body: { dept: D } }); assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300)); if (!r.json.more) { assert.equal(r.json.ok, 1, JSON.stringify(r.json).slice(0, 300)); break; } }
+  for (let n = 0, r; n < 200; n++) { r = await call2('/api/operations/periods-migrate', { method: 'POST', body: { dept: D } }); assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300)); if (!r.json.more) { assert.equal(r.json.ok, 1, JSON.stringify(r.json).slice(0, 300)); break; } }
   const T14 = E.DB.q("SELECT v FROM meta WHERE k='cal_mig_t'")[0].v, CAL14 = await loadCal(fs.readFileSync(WORKER, 'utf8'), 'new'), conv = Object.fromEntries(ALL.map((r) => [key(r), CAL14.calConvDoc(r, before[key(r)], { T: T14, rep: null })]));
   /* (أ) كلُّ قيمةٍ كما كُتبت: القراءةُ المرمَّزة حرفاً · وتصديرُ الإدارة (الجديد · والقديم المصدَّر قبل الترقية) مفكوكاً مفتاحاً مفتاحاً */
   const after = (await read(call2, ALL)).json.resources;

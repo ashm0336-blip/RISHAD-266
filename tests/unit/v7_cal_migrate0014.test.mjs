@@ -3,7 +3,8 @@
    (الإحصائيات وأقفالُها · العهدةُ بيوم 0 · الاسترشاد ونوافذُه السارية والمنتهية · المضبوطات · الجائزة · dedup حديث · الرصد في KV).
    الأوراكل مستقلٌّ عن الكود: التقويمُ من Intl (أم القرى) هنا، وقاعدةُ القفل نسخةٌ من 010 lockedIn — يوماً يوماً، قبل الترحيل وبعده.
    ① بلا تصريح: يرفض ولا يكتب · ⑥ فشلُ الدفعة: لا أثر · ② بالتصريح 13 ← 14: الأعمدةُ greg_* · الصفوفُ صفّاً بصف · foreign_key_check فارغ · القائمةُ المعلَّقة
-   ③ الإدارةُ المعلَّقة: الكتابةُ والقراءةُ 503 calendar-pending برسالة · ④ المرحلةُ ٢ (على أجزاءٍ تُستأنف): لا يُسقط يوم ولا يتغيّر قفلُ يوم · الإعادةُ لا تغيّر شيئاً ·
+   ③ أولُ قراءةٍ لفترةٍ تحوّلها وحدها ذرّياً (REVIEW 33) · ④ القراءةُ الكاملة تحوّل الباقي: لا يُسقط يوم ولا يتغيّر قفلُ يوم · لا يُعاد ·
+   ⑥ قراءتان أوليان متزامنتان تحوّلان مرةً · ⑦ الكتابةُ على فترةٍ لم تُحوَّل تحوّلها أولاً · ⑧ المسارُ الخلفي للمدير (periods-migrate) بالمحوِّل نفسِه ·
    ⑤ الرجوع: نقطةُ الاسترجاع + الحزمةُ السابقة ⇒ كلُّ شيءٍ كما كان. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -138,7 +139,7 @@ test('53 تقويم · 0014 على قاعدةٍ بالمخطط 13 بناها ا�
   const bookmark = snapshot(E.DB);
   /* ⑥ فشلُ الدفعة الذرّية: لا عمودَ أُعيدت تسميتُه ولا جدولَ مطابقةٍ ولا تعليق */
   allowTestSchemaUpgrade(E.DB);
-  E.DB.failIf = (sql) => /cal_ops_pending/.test(sql) && /^INSERT/.test(sql);
+  E.DB.failIf = (sql) => /cal_pend/.test(sql) && /^INSERT/.test(sql);
   assert.ok((await api(await load(NEWSRC, 'new'), E)('/api/ping')).status >= 500);
   E.DB.failIf = null;
   assert.equal(E.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, String(CURRENT_SCHEMA - 1));
@@ -152,8 +153,9 @@ test('53 تقويم · 0014 على قاعدةٍ بالمخطط 13 بناها ا�
   assert.equal(E.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, String(CURRENT_SCHEMA));
   assert.equal(E.DB.q('SELECT name FROM d1_migrations ORDER BY id DESC LIMIT 1')[0].name, '0014_gregorian_calendar');
   assert.equal(E.DB.q("SELECT COUNT(*) n FROM meta WHERE k='schema_upgrade_permit_v1'")[0].n, 0, 'التصريحُ استُهلك');
-  assert.deepEqual(JSON.parse(E.DB.q("SELECT v FROM meta WHERE k='cal_ops_pending'")[0].v), E.DB.q("SELECT DISTINCT department_id d FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY d", JSON.stringify(CAL.concat(['bassam_tasks_v1', 'bassam_staffing_v2', 'bassam_dayfocus_v1']))).map((r) => r.d));
-  assert.ok(JSON.parse(E.DB.q("SELECT v FROM meta WHERE k='cal_ops_pending'")[0].v).includes(D1) && JSON.parse(E.DB.q("SELECT v FROM meta WHERE k='cal_ops_pending'")[0].v).includes(D2));
+  const pendIs = JSON.parse(E.DB.q("SELECT v FROM meta WHERE k='cal_pend'")[0].v);
+  assert.deepEqual(Object.keys(pendIs).sort(), E.DB.q("SELECT DISTINCT department_id d FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY d", JSON.stringify(CAL.concat(['bassam_tasks_v1', 'bassam_staffing_v2', 'bassam_dayfocus_v1']))).map((r) => r.d), 'العلامة: كلُّ إدارةٍ لها موردٌ تقويمي');
+  assert.ok(pendIs[D1].includes('bassam_rounds_v1') && pendIs[D2].includes('bassam_staffing_v3'));
   assert.deepEqual(E.DB.q('PRAGMA foreign_key_check'), []);
   for (const t of ['custody_movements', 'irshad_reports', 'seized_reports', 'irshad_retro_windows', 'seized_retro_windows', 'daily_stats_day_locks']) {
     const cols = E.DB.q('PRAGMA table_info(' + t + ')').map((c) => c.name);
@@ -202,51 +204,87 @@ test('53 تقويم · 0014 على قاعدةٍ بالمخطط 13 بناها ا�
   assert.ok(keysNow.includes('ir_day:' + gToday) && keysNow.includes('ir_day:' + today) && keysNow.includes('rep_late:' + gToday + ':TEST_ONLY_sh'), keysNow.join(' '));
   const rasd = JSON.parse(E.DB.q('SELECT v FROM kv WHERE k=?1', key(D1, 'bassam_rasd_v1'))[0].v), g7 = gOf(cy, cm, 7);
   assert.deepEqual([rasd.reports[0].y, rasd.reports[0].m, rasd.reports[0].d], [+g7.slice(0, 4), +g7.slice(5, 7), +g7.slice(8)]);
-  /* ③ الإدارةُ المعلَّقة: كتابتُها وقراءتُها التقويميةُ مرفوضةٌ برسالةٍ واضحة · والحزمةُ السابقة لا تعمل على 14 */
-  const e0 = (await call('/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: key(D2, 'bassam_employees_v1') }))).json, kd = key(D2, 'bassam_dayshift_v1');
-  const refused = await call('/api/save', { method: 'POST', body: { uid: SUPER, requestId: 'TEST_ONLY_c14_pend', epoch: e0.epoch, base: { [kd]: (E.DB.q('SELECT rev FROM revs WHERE k=?1', kd)[0] || { rev: 0 }).rev }, set: { [kd]: JSON.stringify({ '2026-11-02': 'x' }) }, del: [] } });
-  assert.equal(refused.status, 503, JSON.stringify(refused.json)); assert.match(JSON.stringify(refused.json), /calendar-pending/);
-  const rd = await call('/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: key(D2, 'bassam_rounds_v1') }));
-  assert.match(JSON.stringify(rd.json), /calendar-pending|جارٍ تحويل التقويم/, 'القراءةُ تقول «جارٍ تحويل التقويم»');
   assert.equal((await api(await load(oldSource, 'old'), E)('/api/ping')).status, 503, 'الحزمةُ السابقة لا تعمل على 14');
-  /* ④ المرحلة ٢ — على أجزاءٍ صغيرة تُستأنف من حالتها (ميزانيةُ وقتٍ قصيرة) */
-  let calls = 0, last = null;
-  for (;;) {
-    last = await call('/api/operations/calendar-migrate', { method: 'POST', body: { dept: 'all', budgetMs: 1000 } }); calls++;
-    assert.equal(last.status, 200, JSON.stringify(last.json).slice(0, 600));
-    if (!last.json.more) break;
-    assert.ok(calls < 400, 'تتقدّم');
-  }
-  assert.equal(last.json.ok, 1, JSON.stringify(last.json).slice(0, 800));
-  assert.deepEqual(last.json.pending, []);
-  assert.ok(calls > 1, 'استُؤنفت المرحلةُ ٢ على أكثر من نداء (' + calls + ')');
+  const pend0 = JSON.parse(E.DB.q("SELECT v FROM meta WHERE k='cal_pend'")[0].v), stage = snapshot(E.DB);   /* الحالُ بعد النشر وقبل أي لمس — لنسخ التزامن والكتابة */
+  /* ③ أولُ قراءةٍ لفترةٍ واحدة تحوّلها وحدها (ومعها علاماتُ الأشهر، ق3) ذرّياً — الأيامُ الأخرى باقيةٌ هجريةً حتى تُلمس */
+  const RK2 = key(D2, 'bassam_rounds_v1'), hDays = Object.keys(before[D2][RK2]).filter((k) => /^\d/.test(k)), h0 = hDays[hDays.length - 1], g0 = H2G.get(h0.split('-').map(Number).join('-'));
+  const one = await call('/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: RK2 + '@' + g0 }));
+  assert.equal(one.status, 200, JSON.stringify(one.json).slice(0, 300));
+  assert.deepEqual(one.json.resources[RK2 + '@' + g0], before[D2][RK2][h0], 'الفترةُ ' + h0 + ' ← ' + g0 + ' كما هي');
+  const leftH = E.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource='bassam_rounds_v1' AND parent_key='$' AND member_key GLOB '1[3-5]*'", D2)[0].n;
+  assert.equal(leftH, hDays.length - 1, 'يومٌ واحدٌ حُوِّل وعلاماتُ الأشهر · الباقي بانتظار لمسه');
+  /* ④ القراءةُ الكاملة تحوّل الباقي (بميزانيةٍ — ما لا يتمّ ⇒ 503 calendar-preparing بتقدّمه والصفحةُ تعيد) */
+  const readFull = async (d) => { for (let n = 0; ; n++) { const r = await call('/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: ALL.concat(['bassam_tasks_v1', 'bassam_staffing_v2', 'bassam_dayfocus_v1']).map((x) => key(d, x)).join(',') })); if (r.status === 200) return r.json.resources; assert.equal(r.status, 503, JSON.stringify(r.json).slice(0, 300)); assert.equal(r.json.err, 'calendar-preparing'); assert.match(r.json.msg, /تُجهَّز البيانات/); assert.ok(n < 60); } };
+  const after = { [D1]: await readFull(D1), [D2]: await readFull(D2) };
+  { const pl = JSON.parse((E.DB.q("SELECT v FROM meta WHERE k='cal_pend'")[0] || { v: '{}' }).v); assert.ok(!pl[D1] && !pl[D2], 'الإدارتان خرجتا من العلامة: ' + JSON.stringify(pl)); }
   assert.deepEqual(E.DB.q('PRAGMA foreign_key_check'), []);
-  const after = { [D1]: (await readAll(call, D1)).resources, [D2]: (await readAll(call, D2)).resources };
   let checked = 0;
   for (const d of [D1, D2]) {
     checked += oracle(merged(before, d), merged(after, d), T, d + ' الجولات');
     if (before[d][key(d, 'bassam_dreport_v1')]) checked += oracle(before[d][key(d, 'bassam_dreport_v1')], after[d][key(d, 'bassam_dreport_v1')], T, d + ' التقرير');
-    /* كلُّ موردٍ حرفاً (بترتيب مفاتيحه) ما تكتبه الدالةُ الواحدة للوثيقة كلِّها — الطريقُ الذي يسلكه الاستيرادُ أيضاً */
+    /* كلُّ موردٍ بمحتواه ما يكتبه المحوِّلُ الواحد للوثيقة كلِّها (الطريقُ الذي يسلكه الاستيرادُ أيضاً) */
     for (const r of CAL.filter((x) => x !== 'bassam_rounds_v1' && x !== 'bassam_rounds_arc_v1')) {
       const b = before[d][key(d, r)]; if (b == null) continue;
-      assert.equal(JSON.stringify(after[d][key(d, r)]), JSON.stringify(NEW.calConvDoc(r, b, { T, rep: null })), d + ' ' + r);
+      const want = NEW.calConvDoc(r, b, { T, rep: null }), got = after[d][key(d, r)];
+      assert.deepEqual(Object.keys(got).sort(), Object.keys(want).sort(), d + ' ' + r + ': المفاتيح'); for (const k of Object.keys(want)) assert.deepEqual(got[k], want[k], d + ' ' + r + ' ' + k);
     }
     const wantR = NEW.calConvDoc('bassam_rounds_v1', merged(before, d), { T, rep: null }), gotR = merged(after, d);
     assert.deepEqual(Object.keys(gotR).sort(), Object.keys(wantR).sort(), d + ' الجولات: المفاتيح'); for (const k of Object.keys(wantR)) assert.deepEqual(gotR[k], wantR[k], d + ' الجولات ' + k);
     for (const r of ['bassam_employees_v1', 'bassam_shift_options_v1']) assert.equal(JSON.stringify(after[d][key(d, r)]), JSON.stringify(before[d][key(d, r)]), d + ' ' + r + ' لم يُمسّ');
   }
-  assert.ok(checked > 100, 'أوراكلُ الأقفال على ' + checked + ' يوماً'); console.log('cal14 oracle days', checked, 'phase-2 calls', calls);
+  assert.ok(checked > 100, 'أوراكلُ الأقفال على ' + checked + ' يوماً'); console.log('cal14 oracle days', checked);
   /* ق4: الموظفُ الذي تغيّرت ورديتُه في نصف الشهر يُذكر لمدير الإدارة في الشهر المشترك */
-  const dep1 = last.json.departments.find((x) => x.dept === D1) || {}, sum1 = JSON.parse(E.DB.q('SELECT v FROM meta WHERE k=?1', 'cal_migration_summary:' + D1)[0].v);
+  const sum1 = JSON.parse(E.DB.q('SELECT v FROM meta WHERE k=?1', 'cal_migration_summary:' + D1)[0].v);
   assert.ok(sum1.conflicts.some((c) => c.items.some((q) => q.e === emp0 && q.f === 'shift')), 'تعارضُ الوردية في الملخّص: ' + JSON.stringify(sum1.conflicts).slice(0, 300));
-  assert.ok(dep1.ok === 1 || dep1.dept === undefined);
-  /* إعادتُها لا تغيّر شيئاً */
-  const fp = { ...E.DB.q('SELECT COUNT(*) n, SUM(length(row_key)) s FROM ops_nodes')[0] }, again = await call('/api/operations/calendar-migrate', { method: 'POST', body: { dept: 'all' } });
-  assert.deepEqual([again.status, again.json.departments.length], [200, 0], 'الإعادةُ لا تفعل شيئاً');
-  assert.deepEqual({ ...E.DB.q('SELECT COUNT(*) n, SUM(length(row_key)) s FROM ops_nodes')[0] }, fp);
-  /* الحفظُ يعمل بعد الترحيل */
+  /* لا يُعاد: قراءةٌ ثانية لا تغيّر صفاً ولا نسخة */
+  const fp = () => JSON.stringify([E.DB.q('SELECT COUNT(*) n, SUM(length(row_key)) s, SUM(position) p FROM ops_nodes')[0], E.DB.q("SELECT k,rev FROM revs WHERE k GLOB 'bsdept:*' ORDER BY k")]), f0 = fp();
+  await readFull(D1); await readFull(D2);
+  assert.equal(fp(), f0, 'التحويلُ مرّةً واحدة');
   const ok = await saveDoc(call, D2, 'bassam_dayshift_v1', { [T]: 'TEST_ONLY مسائية' });
   assert.equal(ok.status, 200, JSON.stringify(ok.json).slice(0, 300));
+  /* ⑥ قراءتان أوليان متزامنتان لموردٍ لم يُلمس: كلتاهما 200 والتحويلُ مرّةً (حارسُ النسخة يرفض الثاني فيعيد على الحال الجديدة) */
+  {
+    const E2 = env(restore(stage)), c2 = api(await load(NEWSRC, 'new'), E2), c3 = api(await load(NEWSRC, 'new'), E2), q = '/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: key(D2, 'bassam_dreport_v1') });
+    const [a, b] = await Promise.all([c2(q), c3(q)]);
+    assert.deepEqual([a.status, b.status], [200, 200], JSON.stringify([a.json, b.json]).slice(0, 300));
+    assert.equal(JSON.stringify(a.json.resources), JSON.stringify(b.json.resources), 'القراءتان ترَيان الشيءَ نفسَه');
+    assert.equal(JSON.stringify(a.json.resources[key(D2, 'bassam_dreport_v1')]), JSON.stringify(after[D2][key(D2, 'bassam_dreport_v1')]), 'ومحوَّلاً مرةً كما في القاعدة الأولى');
+    assert.equal(E2.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource='bassam_dreport_v1' AND member_key GLOB '1[3-5]*'", D2)[0].n, 0);
+  }
+  /* ⑦ الكتابةُ على فترةٍ لم تُحوَّل تحوّلها أولاً: حفظُ يومٍ من التقرير بلا قراءةٍ قبله */
+  {
+    const E3 = env(restore(stage)), c4 = api(await load(NEWSRC, 'new'), E3), DK = key(D2, 'bassam_dreport_v1'), dh = Object.keys(before[D2][DK]).filter((k) => /^\d/.test(k)), hx = dh[0], gx = H2G.get(hx.split('-').map(Number).join('-'));
+    const ep = (await c4('/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: key(D2, 'bassam_employees_v1') }))).json.epoch;
+    const val = { ...before[D2][DK][hx], created: 'TEST_ONLY_c14_write' };
+    const w = await c4('/api/save', { method: 'POST', body: { uid: SUPER, requestId: 'TEST_ONLY_c14_wfirst', epoch: ep, base: { [DK + '@' + gx]: 0 }, set: { [DK + '@' + gx]: JSON.stringify(val) }, del: [] } });
+    assert.equal(w.status, 200, JSON.stringify(w.json).slice(0, 400));
+    const r = (await c4('/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: DK + '@' + gx }))).json.resources[DK + '@' + gx];
+    assert.deepEqual(r, val, 'الكتابةُ وقعت على اليوم الميلادي بعد تحويله');
+    assert.equal(E3.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource='bassam_dreport_v1' AND parent_key='$' AND member_key=?2", D2, hx)[0].n, 0, 'لا نسخةَ هجرية باقية لليوم');
+  }
+  /* ⑦ب ما لا يتمّ في ميزانية الطلب ⇒ 503 calendar-preparing بتقدّمه ونصِّه العربي («تُجهَّز البيانات … (n من m)») — والصفحةُ تعيد الطلبَ حتى يكتمل */
+  {
+    const E5 = env(restore(stage)); E5.KIVO_CAL_LAZY_MS = '1';
+    const c6 = api(await load(NEWSRC, 'new'), E5), q = '/api/operations/read?' + new URLSearchParams({ uid: SUPER, keys: key(D2, 'bassam_rounds_v1') });
+    let r = await c6(q), seen = 0, prog = [];
+    while (r.status === 503) { assert.equal(r.json.err, 'calendar-preparing'); assert.match(r.json.msg, /^تُجهَّز البيانات للتقويم الميلادي \(\d+ من \d+\)\. تُعرض بعد لحظات\.$/); prog.push(r.json.msg); seen++; assert.ok(seen < 400); r = await c6(q); }
+    assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300));
+    assert.ok(seen >= 2, 'ظهرت «تُجهَّز البيانات» بتقدّم: ' + prog.slice(0, 3).join(' | '));
+    assert.deepEqual(r.json.resources[key(D2, 'bassam_rounds_v1')], after[D2][key(D2, 'bassam_rounds_v1')], 'وبعدها القيمُ نفسُها');
+    console.log('cal14 preparing steps', seen, prog[0], prog[prog.length - 1]);
+  }
+  /* ⑧ المسارُ الخلفي للمدير (periods-migrate نفسُه): كلُّ الفترات دفعاتٍ بتقدّم، ثم العلامةُ فارغة */
+  {
+    const E4 = env(restore(stage)), c5 = api(await load(NEWSRC, 'new'), E4);
+    let n = 0, r;
+    do { r = await c5('/api/operations/periods-migrate', { method: 'POST', body: { dept: 'all', budgetMs: 1000 } }); assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300)); n++; assert.ok(n < 300); } while (r.json.more);
+    assert.equal(r.json.ok, 1, JSON.stringify(r.json).slice(0, 400));
+    assert.deepEqual(JSON.parse((E4.DB.q("SELECT v FROM meta WHERE k='cal_pend'")[0] || { v: '{}' }).v), {}, 'كلُّ الإدارات حُوِّلت');
+    const b4 = (await readAll(c5, D2)).resources;
+    for (const r2 of CAL) assert.equal(JSON.stringify(b4[key(D2, r2)] && Object.keys(b4[key(D2, r2)]).sort()), JSON.stringify(after[D2][key(D2, r2)] && Object.keys(after[D2][key(D2, r2)]).sort()), 'المسارُ الخلفي = الكسول: ' + r2);
+    console.log('cal14 manager batch calls', n);
+  }
+  fs.rmSync(stage, { force: true });
   /* ⑤ الرجوع: نقطةُ الاسترجاع + الحزمةُ السابقة ⇒ المخطط 13 والبياناتُ كما كانت */
   const E0 = env(restore(bookmark)), back = api(await load(oldSource, 'old'), E0);
   assert.equal((await back('/api/ping')).status, 200);
