@@ -65,7 +65,7 @@ test('V7 · د6 م6 · ب6 · ب7 · ب8 · ب12 in the real UI: the node\'s own
     /* ب8: the unit manager — one line above his real menu */
     await p.locator('main table.p44-people button', { hasText: 'TEST_ONLY مدير أ' }).first().click();
     await p.locator('main [data-og="mgr-line"]').waitFor();
-    assert.match((await p.locator('main [data-og="mgr-line"]').innerText()).trim(), /^مدير الوحدة [·-] كامل داخل سقف وحدته$/, 'the one line (the page draws «·» as «-»)');
+    assert.match((await p.locator('main [data-og="mgr-line"]').innerText()).trim(), /^مدير الوحدة [·-] يعمل بسقف وحدته كله$/, 'the one line (the page draws «·» as «-») — V7 · 53 · REVIEW بند 4: بلا «كامل»');
     const menu = await p.evaluate(() => { const l = document.querySelector('main [data-og="mgr-line"]').nextElementSibling; return l && l.matches('ul.p44-menu') ? [...l.querySelectorAll('li')].map((li) => (li.querySelector('span') || li).textContent.trim()) : null; });
     const real = await p.evaluate((d) => KIVO.BassamPerm.seenBy({ kind: 'mgr', did: d }).map((x) => x.n), A);
     assert.deepEqual(menu, real, 'the list below the line is his real menu (seenBy)');
