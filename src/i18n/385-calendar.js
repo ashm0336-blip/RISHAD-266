@@ -246,7 +246,8 @@
    مفتوح (ماضٍ فُتح للاستدراك) = إطارٌ ذهبيٌّ متقطّع 1.5px بلا قفل · اليوم = حلقةٌ ذهبية 2px · المحدَّد = تدرّجٌ ذهبيٌّ ممتلئ ونصٌّ أبيض · القادم = شفافية 0.55.
    السببُ الإداري في التلميح وحده (BassamCal.cardState). كرتا الشهر والسنة بالآلية نفسها: الاسمُ الميلادي كبيراً والهجريُّ المقابل سطراً صغيراً.
    الألوانُ رموزٌ دلالية (--cal-* · --bg/--text) فيتبعها الوضعُ الداكن، ولا لونَ خاماً هنا.
-     day({k, closed, why, until, sel, T, style, onClick, onDoubleClick, key, attrs}) · month({ym, …}) · year({y, …}) ⇒ عنصرُ React
+     day({k, closed, why, until, sel, T, hint, style, onClick, onDoubleClick, key, attrs}) · month({ym, …}) · year({y, …}) ⇒ عنصرُ React
+     hint (اختياري، نصٌّ عادي): سطرٌ رابع في التلميح بعد أسطر حالة الكرت — التمييزُ الإداري وإرشادُ الصلاحية (القاعدة 10 · 4)، بلا حالةٍ ولا نمطٍ جديد
      T = اليومُ المرجعي (افتراضاً BassamCal.gToday().k) ومنه «اليوم» و«القادم» و«الماضي» · style للتخطيط وحده (flex · هامش) لا للمقاس
      model(kind, p) ⇒ { style, lineStyles, title, lines, closed, state } لمن يبني بغير React */
 (function () {
@@ -289,7 +290,8 @@
     var L = kind === 'day' ? [assign({}, LINE.w, we ? { color: 'var(--cal-gold)' } : null), assign({}, LINE.g, num ? { color: num } : null), assign({}, LINE.h)]
       : [assign({}, LINE.g, num ? { color: num } : null), assign({}, LINE.h)];
     if (sel) L = L.map(function (s) { return assign(s, { color: 'var(--cal-on-sel)' }); });
-    return { kind: kind, k: k, style: style, lineStyles: L, title: st.tip, closed: st.closed, label: st.label, why: st.why, when: st.when, sel: sel,
+    var hint = p.hint == null ? '' : String(p.hint).trim();
+    return { kind: kind, k: k, style: style, lineStyles: L, title: hint ? st.tip + '\n' + hint : st.tip, closed: st.closed, label: st.label, why: st.why, when: st.when, sel: sel,
       state: st.closed ? 'closed' : 'open', lines: text(kind, k) };
   }
   function render(kind, p) {
