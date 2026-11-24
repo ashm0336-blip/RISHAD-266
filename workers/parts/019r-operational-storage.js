@@ -471,14 +471,14 @@ async function opPeriodSaveBody(env, A, bs) {
   });
   /* V7 · 53: مراجعُ أحكام الحفظ بنطاقها كذلك — الجدولُ الشهري بشهور الفترات المكتوبة والشهر الجاري (048 actorShift)، وأرشيفُ الجولات بأيامها (019p3 dailyArcPre) */
   Ks.forEach(function (K) {
-    var I = byK[K].info, def = opPeriodDef(I), S = 'bsdept:' + I.dept + ':bassam_staffing_v3', SI = opSplitResource(S), months = new Set();
-    if (SI && !ocOwn(scopes, S)) {
-      var cur0 = typeof opPeriodDef(SI).current === 'function' ? opPeriodDef(SI).current() : ''; if (cur0) months.add(cur0);
+    var I = byK[K].info, def = opPeriodDef(I);
+    /* مرجعُ الشهر الذي يعلنه نظامُه (period.current — الجدولُ الشهري) بشهور الفترات المكتوبة والشهر الجاري */
+    opDefinitions().filter(function (d0) { return d0.period && typeof d0.period.current === 'function'; }).forEach(function (d0) {
+      var S = 'bsdept:' + I.dept + ':' + d0.resource, months = new Set(), cur0 = d0.period.current(); if (!opSplitResource(S) || ocOwn(scopes, S)) return;
+      if (cur0) months.add(cur0);
       byK[K].written.forEach(function (p) { var g = opPeriodIdx(def, p).grp; if (g) months.add(g); });
       scopes[S] = { periods: Array.from(months) };
-    }
-    var AR = typeof DAILY_ARC_RES === 'string' && I.resource === 'bassam_rounds_v1' ? 'bsdept:' + I.dept + ':' + DAILY_ARC_RES : null;
-    if (AR && opSplitResource(AR) && !ocOwn(scopes, AR)) scopes[AR] = { periods: scopes[K].periods.slice() };
+    });
   });
   var body = Object.assign({}, bs, out);
   if (Array.isArray(bs.aud)) body.aud = bs.aud.map(function (e) { return e && ocOwn(origin, e.k) ? Object.assign({}, e, { k: origin[e.k] }) : e; });

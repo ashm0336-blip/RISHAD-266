@@ -19763,38 +19763,11 @@ function osSumReport(p, v) {
 function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }
 /* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') */
 function osPeriodNowMonth() { var T = dsToday(Date.now()); return T ? T.y + '-' + T.m : ''; }
-/* V7 · 53 (kpi طلب 9): v.kpi — إسقاطٌ بقائمة حقولٍ ثابتة لقيمة الفترة كما خُزّنت (بلا إعادة تسمية ولا قيمٍ افتراضية)، مرآةُ _kLean في
-   src/systems/daily/client/logic.js.tpl حرفاً. القوائمُ إعلانٌ واحد هنا (OS_KPI_LEAN) — من يغيّر أحدهما يغيّر الآخر (اختبارُ v7_d53_periods يقارنهما). */
-var OS_KPI_LEAN = {
-  rounds: { top: ['ap'], zones: ['uid', 'code', 'name', 'ztype', 'zcat', 'off', 'cap', 'yard', 'region', 'level', 'pc', 'count', 'emp', 'needN', 'needS', 'fAt'],
-    gates: ['gid', 'leafN', 'pOf', 'num', 'label', 'name', 'closed', 'cWhy', 'cAt', 'emp', 'needN', 'needS', 'fAt'], marks: ['label', 'name', 'kind', 'off', 'emp', 'needN', 'needS', 'fAt'] },
-  dreport: { top: ['created'], shift: ['pulled', 'ap', 'rest', 'tout'], roster: ['st', 'ekey'] },
-  staffing: { row: ['rest'] },
-  plan: { zones: ['code', 'name', 'needN', 'needS'], gates: ['num', 'label', 'needN', 'needS'], marks: ['label', 'kind', 'needN', 'needS'] }
-};
+/* V7 · 53 (kpi طلب 9): أدواتُ إسقاط v.kpi المشتركة — قوائمُ الحقول يعلنها كلُّ نظامٍ لمورده (مرآةُ _kLean) */
 function osKpiPick(o, ks) { var r = {}; if (o && typeof o === 'object') ks.forEach(function (k) { if (o[k] !== undefined) r[k] = o[k]; }); return r; }
 function osKpiArr(a, f) { return Array.isArray(a) ? a.map(function (x) { return x && typeof x === 'object' ? f(x) : x; }) : a; }
-function osKpiLean(kind, p, v) {
-  if (!v || typeof v !== 'object') return v;
-  var L = OS_KPI_LEAN[kind];
-  if (kind === 'rounds') {
-    if (/^m:/.test(p) || Array.isArray(v)) return null;
-    return Object.assign(osKpiPick(v, L.top), { d: osKpiArr(v.d, function (f) { return { zones: osKpiArr(f.zones, function (z) { return osKpiPick(z, L.zones); }), gates: osKpiArr(f.gates, function (g) { return osKpiPick(g, L.gates); }), marks: osKpiArr(f.marks, function (m) { return osKpiPick(m, L.marks); }), paths: Array.isArray(f.paths) ? f.paths.map(function () { return 0; }) : f.paths }; }) });
-  }
-  if (kind === 'dreport') {
-    if (/^m:/.test(p) || Array.isArray(v)) return null;
-    var sh = {};
-    Object.keys(v.shifts && typeof v.shifts === 'object' ? v.shifts : {}).forEach(function (k) { var s = v.shifts[k]; if (s && typeof s === 'object') sh[k] = Object.assign(osKpiPick(s, L.shift), { roster: osKpiArr(s.roster, function (r) { return osKpiPick(r, L.roster); }) }); });
-    return Object.assign(osKpiPick(v, L.top), { shifts: sh });
-  }
-  if (kind === 'staffing') { var r = {}; Object.keys(v).forEach(function (k) { if (k.indexOf('__') !== 0 && v[k] && typeof v[k] === 'object') r[k] = osKpiPick(v[k], L.row); }); return r; }
-  if (kind === 'plan') {
-    var d = Array.isArray(v) ? v : v.d;
-    return { d: osKpiArr(d, function (f) { return { zones: osKpiArr(f.zones, function (z) { return osKpiPick(z, L.zones); }), gates: osKpiArr(f.gates, function (g) { return osKpiPick(g, L.gates); }), marks: osKpiArr(f.marks, function (m) { return osKpiPick(m, L.marks); }) }; }) };
-  }
-  return null;
-}
-function osKpiOf(kind) { return function (p, v) { return osKpiLean(kind, p, v); }; }
+/* أرضياتُ المواقع (zones · gates · marks) بقوائم حقولٍ يعلنها النظام — paths بعددها أصفاراً إن طُلب */
+function osKpiFloors(d, L, paths) { return osKpiArr(d, function (f) { var o = { zones: osKpiArr(f.zones, function (z) { return osKpiPick(z, L.zones); }), gates: osKpiArr(f.gates, function (g) { return osKpiPick(g, L.gates); }), marks: osKpiArr(f.marks, function (m) { return osKpiPick(m, L.marks); }) }; if (paths) o.paths = Array.isArray(f.paths) ? f.paths.map(function () { return 0; }) : f.paths; return o; }); }
 function osSchemaStaffRow(table) {
   var fields = osSchemaFields(["shift", "muk", "cs"]);
   fields.rest = osSchemaScalars(table + "_rest");
@@ -19830,7 +19803,7 @@ function osSchemaStaffResources() {
     {
       resource: "bassam_staffing_v3",
       name: "staffing",
-      period: { root: 1, index: osPeriodIndex, summary: osSumStaffing, kpi: osKpiOf('staffing'), current: osPeriodNowMonth },   // V7 · 53: كلُّ شهرٍ فترة (019w)
+      period: { root: 1, index: osPeriodIndex, summary: osSumStaffing, kpi: osKpiStaffing, current: osPeriodNowMonth, me: 'months3' },   // V7 · 53: كلُّ شهرٍ فترة (019w)
       schema: ocMap("ops_staffing", osSchemaMonthBucket("ops_staffing_month")),
     },
     {
@@ -19881,6 +19854,9 @@ function osSchemaStaffResources() {
     },
   ];
 }
+
+/* V7 · 53 (kpi 9): v.kpi للشهر — مرآةُ _kLean */
+function osKpiStaffing(p, v) { if (!v || typeof v !== 'object') return v; var r = {}; Object.keys(v).forEach(function (k) { if (k.indexOf('__') !== 0 && v[k] && typeof v[k] === 'object') r[k] = osKpiPick(v[k], ['rest']); }); return r; }
 // V7 · د5-هـ (م1): شكلُ الطابق وعناصره (أبواب · مصليات · مسارات · معالم · نطاقات) مشتركٌ بين الخطة وأيام الجولات المنسوخة منها — جزءُ قاعدة.
 // كان في جزء الخطة (019p2)؛ تبقى أيامُ الجولات تُقرأ وتُكتب بشكلها ولو غاب التشغيلُ الميداني.
 function osSchemaPoint(table) {
@@ -20180,7 +20156,7 @@ function osSchemaRoundsResources() {
     {
       resource: "bassam_rounds_v1",
       name: "rounds",
-      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds'), arc: { res: DAILY_ARC_RES, due: dailyArcDue } },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiRounds, arc: { res: DAILY_ARC_RES, due: dailyArcDue }, me: 'today' },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
       schema: ocMap("ops_rounds", null, {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
@@ -20200,7 +20176,7 @@ function osSchemaRoundsResources() {
     {
       resource: DAILY_ARC_RES,
       name: "rounds_arc",
-      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds') },
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiRounds, me: 'today' },
       late: 1,   /* نسخٌ احتياطية قبل هذه الحزمة لا تحمله: يُستعاد منها فارغاً (019t opValidateBackupDomains) */
       schema: ocMap("ops_rounds_arc", null, {
         fixed: { __pMig: ocScalar("scalar") },
@@ -20241,6 +20217,10 @@ function dailyArcClosed(ctrl, y, m, T) {
 }
 /* V7 · 53 (periodsui 9): أيامُ الحيّ التي تنتقل إلى الأرشيف (شهرٌ مقفل) — حفظُ الفترة يضيفها إلى نطاقه فتنتقل في دفعته (dailyArcPend)؛ أقدمُها
    أولاً و31 يوماً على الأكثر في الحفظة (حيٌّ تراكمَ فيه تاريخٌ طويل يُفرَّغ على حفظات، لا في دفعةٍ تتجاوز الميزانية) */
+/* V7 · 53 (kpi 9): v.kpi لليوم — مرآةُ _kLean (daily client) حرفاً */
+var OS_KPI_ROUNDS = { top: ['ap'], zones: ['uid', 'code', 'name', 'ztype', 'zcat', 'off', 'cap', 'yard', 'region', 'level', 'pc', 'count', 'emp', 'needN', 'needS', 'fAt'],
+  gates: ['gid', 'leafN', 'pOf', 'num', 'label', 'name', 'closed', 'cWhy', 'cAt', 'emp', 'needN', 'needS', 'fAt'], marks: ['label', 'name', 'kind', 'off', 'emp', 'needN', 'needS', 'fAt'] };
+function osKpiRounds(p, v) { if (!v || typeof v !== 'object') return v; if (/^m:/.test(p) || Array.isArray(v)) return null; return Object.assign(osKpiPick(v, OS_KPI_ROUNDS.top), { d: osKpiFloors(v.d, OS_KPI_ROUNDS, 1) }); }
 function dailyArcDue(names, ctl) {
   var T = dsToday(Date.now());
   return names.filter(function (p) { var d = dailyArcDay(p); return d && dailyArcClosed(ctl[d.mk], d.y, d.m, T); })
@@ -20423,7 +20403,7 @@ function osSchemaPlanResources() {
       resource: "bassam_plan_v1",
       name: "plan",
       schema: osSchemaPlan("ops_plan"),
-      period: { field: "months", index: osPeriodIndex, summary: osSumPlan, kpi: osKpiOf('plan') },   // V7 · 53: كلُّ شهرٍ من months فترة (019w)
+      period: { field: "months", index: osPeriodIndex, summary: osSumPlan, kpi: osKpiPlan, me: 'month' },   // V7 · 53: كلُّ شهرٍ من months فترة (019w)
     },
     {
       resource: "bassam_zone_opts_v1",
@@ -20442,6 +20422,10 @@ function osSchemaPlanResources() {
     },
   ];
 }
+
+/* V7 · 53 (kpi 9): v.kpi للشهر — مرآةُ _kLean */
+var OS_KPI_PLAN = { zones: ['code', 'name', 'needN', 'needS'], gates: ['num', 'label', 'needN', 'needS'], marks: ['label', 'kind', 'needN', 'needS'] };
+function osKpiPlan(p, v) { if (!v || typeof v !== 'object') return v; return { d: osKpiFloors(Array.isArray(v) ? v : v.d, OS_KPI_PLAN, 0) }; }
 /* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019p9-scheduling-registry.js.tpl */
 // V7 · د5-د: مواردُ الجدولة المسجَّلة = ما يعلنه كلُّ برنامجٍ حاضر (قطعةٌ من مجلده) ثم مواردُ القاعدة ثم الخطة.
 var OC_SCHEDULING_RESOURCES = [].concat(
@@ -20572,6 +20556,8 @@ function ocptReportMonth(table) {
     })
   ]);
 }
+/* V7 · 53 (kpi 9): v.kpi ليوم التقرير — مرآةُ _kLean */
+function osKpiReport(p,v){if(!v||typeof v!=='object')return v;if(/^m:/.test(p)||Array.isArray(v))return null;var sh={};Object.keys(v.shifts&&typeof v.shifts==='object'?v.shifts:{}).forEach(function(k){var s=v.shifts[k];if(s&&typeof s==='object')sh[k]=Object.assign(osKpiPick(s,['pulled','ap','rest','tout']),{roster:osKpiArr(s.roster,function(r){return osKpiPick(r,['st','ekey']);})});});return Object.assign(osKpiPick(v,['created']),{shifts:sh});}
 var OC_PEOPLE_TASK_RESOURCES = [
   {
     resource:'bassam_employees_v1',name:'employees',
@@ -20595,7 +20581,7 @@ var OC_PEOPLE_TASK_RESOURCES = [
   },
   {
     resource:'bassam_dreport_v1',name:'dailyReports',
-    period:{root:1,index:osPeriodIndex,ctx:osPeriodCtx,summary:osSumReport,kpi:osKpiOf('dreport')},   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
+    period:{root:1,index:osPeriodIndex,ctx:osPeriodCtx,summary:osSumReport,kpi:osKpiReport,me:'monthWeek'},   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
     schema:ocMap('ops_daily_reports',null, {
       fixed:{__ldcs:ocMap('ops_report_leader_callsigns',ocScalar('text'))},
       patterns:[
@@ -21098,14 +21084,14 @@ async function opPeriodSaveBody(env, A, bs) {
   });
   /* V7 · 53: مراجعُ أحكام الحفظ بنطاقها كذلك — الجدولُ الشهري بشهور الفترات المكتوبة والشهر الجاري (048 actorShift)، وأرشيفُ الجولات بأيامها (019p3 dailyArcPre) */
   Ks.forEach(function (K) {
-    var I = byK[K].info, def = opPeriodDef(I), S = 'bsdept:' + I.dept + ':bassam_staffing_v3', SI = opSplitResource(S), months = new Set();
-    if (SI && !ocOwn(scopes, S)) {
-      var cur0 = typeof opPeriodDef(SI).current === 'function' ? opPeriodDef(SI).current() : ''; if (cur0) months.add(cur0);
+    var I = byK[K].info, def = opPeriodDef(I);
+    /* مرجعُ الشهر الذي يعلنه نظامُه (period.current — الجدولُ الشهري) بشهور الفترات المكتوبة والشهر الجاري */
+    opDefinitions().filter(function (d0) { return d0.period && typeof d0.period.current === 'function'; }).forEach(function (d0) {
+      var S = 'bsdept:' + I.dept + ':' + d0.resource, months = new Set(), cur0 = d0.period.current(); if (!opSplitResource(S) || ocOwn(scopes, S)) return;
+      if (cur0) months.add(cur0);
       byK[K].written.forEach(function (p) { var g = opPeriodIdx(def, p).grp; if (g) months.add(g); });
       scopes[S] = { periods: Array.from(months) };
-    }
-    var AR = typeof DAILY_ARC_RES === 'string' && I.resource === 'bassam_rounds_v1' ? 'bsdept:' + I.dept + ':' + DAILY_ARC_RES : null;
-    if (AR && opSplitResource(AR) && !ocOwn(scopes, AR)) scopes[AR] = { periods: scopes[K].periods.slice() };
+    });
   });
   var body = Object.assign({}, bs, out);
   if (Array.isArray(bs.aud)) body.aud = bs.aud.map(function (e) { return e && ocOwn(origin, e.k) ? Object.assign({}, e, { k: origin[e.k] }) : e; });
@@ -29376,11 +29362,11 @@ function meRec(rec) {
 }
 /* V7 · 53 */
 function meScopes(deptId, C) {
+  /* ما تقرؤه «صفحتي» من كل موردٍ مقسَّم يعلنه نظامُه (period.me): months3 · month · monthWeek · today */
   var ym = function (k) { var mm = C.m + k, yy = C.y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } return yy + '-' + mm; }, P = pfHijriAt(Date.now() - 86400000), out = {}, i, d;
-  var days = function (list) { var o = []; list.forEach(function (x) { o.push('m:' + x); for (d = 1; d <= 30; d++) o.push(x + '-' + d); }); return o; };
-  var span = { bassam_staffing_v3: [ym(-1), ym(0), ym(1)], bassam_plan_v1: [ym(0)], bassam_dreport_v1: days([ym(0)]).concat([1, 2, 3, 4, 5, 6, 7].map(function (k) { return pfHijriAt(Date.now() - k * 86400000).dk; })),
-    bassam_rounds_v1: ['m:' + ym(0), C.dk, P.dk], bassam_rounds_arc_v1: ['m:' + ym(0), C.dk, P.dk] };
-  for (i = 0; i < ME_KEYS.length; i++) { var K = 'bsdept:' + deptId + ':' + ME_KEYS[i]; if (opSplitResource(K) && span[ME_KEYS[i]]) out[K] = { periods: span[ME_KEYS[i]] }; }
+  var days = function (x) { var o = ['m:' + x]; for (d = 1; d <= 30; d++) o.push(x + '-' + d); return o; };
+  var span = { months3: [ym(-1), ym(0), ym(1)], month: [ym(0)], monthWeek: days(ym(0)).concat([1, 2, 3, 4, 5, 6, 7].map(function (k) { return pfHijriAt(Date.now() - k * 86400000).dk; })), today: ['m:' + ym(0), C.dk, P.dk] };
+  for (i = 0; i < ME_KEYS.length; i++) { var K = 'bsdept:' + deptId + ':' + ME_KEYS[i], I = opSplitResource(K), me = I && opPeriodDef(I).me; if (me && span[me]) out[K] = { periods: span[me] }; }
   return out;
 }
 async function meDeptData(env, deptId, extra, A, scopes) {

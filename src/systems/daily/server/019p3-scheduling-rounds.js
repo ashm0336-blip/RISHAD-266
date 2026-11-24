@@ -59,7 +59,7 @@ function osSchemaRoundsResources() {
     {
       resource: "bassam_rounds_v1",
       name: "rounds",
-      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds'), arc: { res: DAILY_ARC_RES, due: dailyArcDue } },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiRounds, arc: { res: DAILY_ARC_RES, due: dailyArcDue }, me: 'today' },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
       schema: ocMap("ops_rounds", null, {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
@@ -79,7 +79,7 @@ function osSchemaRoundsResources() {
     {
       resource: DAILY_ARC_RES,
       name: "rounds_arc",
-      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds') },
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiRounds, me: 'today' },
       late: 1,   /* نسخٌ احتياطية قبل هذه الحزمة لا تحمله: يُستعاد منها فارغاً (019t opValidateBackupDomains) */
       schema: ocMap("ops_rounds_arc", null, {
         fixed: { __pMig: ocScalar("scalar") },
@@ -120,6 +120,10 @@ function dailyArcClosed(ctrl, y, m, T) {
 }
 /* V7 · 53 (periodsui 9): أيامُ الحيّ التي تنتقل إلى الأرشيف (شهرٌ مقفل) — حفظُ الفترة يضيفها إلى نطاقه فتنتقل في دفعته (dailyArcPend)؛ أقدمُها
    أولاً و31 يوماً على الأكثر في الحفظة (حيٌّ تراكمَ فيه تاريخٌ طويل يُفرَّغ على حفظات، لا في دفعةٍ تتجاوز الميزانية) */
+/* V7 · 53 (kpi 9): v.kpi لليوم — مرآةُ _kLean (daily client) حرفاً */
+var OS_KPI_ROUNDS = { top: ['ap'], zones: ['uid', 'code', 'name', 'ztype', 'zcat', 'off', 'cap', 'yard', 'region', 'level', 'pc', 'count', 'emp', 'needN', 'needS', 'fAt'],
+  gates: ['gid', 'leafN', 'pOf', 'num', 'label', 'name', 'closed', 'cWhy', 'cAt', 'emp', 'needN', 'needS', 'fAt'], marks: ['label', 'name', 'kind', 'off', 'emp', 'needN', 'needS', 'fAt'] };
+function osKpiRounds(p, v) { if (!v || typeof v !== 'object') return v; if (/^m:/.test(p) || Array.isArray(v)) return null; return Object.assign(osKpiPick(v, OS_KPI_ROUNDS.top), { d: osKpiFloors(v.d, OS_KPI_ROUNDS, 1) }); }
 function dailyArcDue(names, ctl) {
   var T = dsToday(Date.now());
   return names.filter(function (p) { var d = dailyArcDay(p); return d && dailyArcClosed(ctl[d.mk], d.y, d.m, T); })

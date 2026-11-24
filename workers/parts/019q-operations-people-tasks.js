@@ -120,6 +120,8 @@ function ocptReportMonth(table) {
     })
   ]);
 }
+/* V7 · 53 (kpi 9): v.kpi ليوم التقرير — مرآةُ _kLean */
+function osKpiReport(p,v){if(!v||typeof v!=='object')return v;if(/^m:/.test(p)||Array.isArray(v))return null;var sh={};Object.keys(v.shifts&&typeof v.shifts==='object'?v.shifts:{}).forEach(function(k){var s=v.shifts[k];if(s&&typeof s==='object')sh[k]=Object.assign(osKpiPick(s,['pulled','ap','rest','tout']),{roster:osKpiArr(s.roster,function(r){return osKpiPick(r,['st','ekey']);})});});return Object.assign(osKpiPick(v,['created']),{shifts:sh});}
 var OC_PEOPLE_TASK_RESOURCES = [
   {
     resource:'bassam_employees_v1',name:'employees',
@@ -143,7 +145,7 @@ var OC_PEOPLE_TASK_RESOURCES = [
   },
   {
     resource:'bassam_dreport_v1',name:'dailyReports',
-    period:{root:1,index:osPeriodIndex,ctx:osPeriodCtx,summary:osSumReport,kpi:osKpiOf('dreport')},   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
+    period:{root:1,index:osPeriodIndex,ctx:osPeriodCtx,summary:osSumReport,kpi:osKpiReport,me:'monthWeek'},   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
     schema:ocMap('ops_daily_reports',null, {
       fixed:{__ldcs:ocMap('ops_report_leader_callsigns',ocScalar('text'))},
       patterns:[

@@ -33,7 +33,7 @@ function osSchemaStaffResources() {
     {
       resource: "bassam_staffing_v3",
       name: "staffing",
-      period: { root: 1, index: osPeriodIndex, summary: osSumStaffing, kpi: osKpiOf('staffing'), current: osPeriodNowMonth },   // V7 · 53: كلُّ شهرٍ فترة (019w)
+      period: { root: 1, index: osPeriodIndex, summary: osSumStaffing, kpi: osKpiStaffing, current: osPeriodNowMonth, me: 'months3' },   // V7 · 53: كلُّ شهرٍ فترة (019w)
       schema: ocMap("ops_staffing", osSchemaMonthBucket("ops_staffing_month")),
     },
     {
@@ -84,3 +84,6 @@ function osSchemaStaffResources() {
     },
   ];
 }
+
+/* V7 · 53 (kpi 9): v.kpi للشهر — مرآةُ _kLean */
+function osKpiStaffing(p, v) { if (!v || typeof v !== 'object') return v; var r = {}; Object.keys(v).forEach(function (k) { if (k.indexOf('__') !== 0 && v[k] && typeof v[k] === 'object') r[k] = osKpiPick(v[k], ['rest']); }); return r; }
