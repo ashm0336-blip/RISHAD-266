@@ -41,7 +41,9 @@ def prod_worker(pk, rule, B):
     g, mn = rule['group'], float(rule['minMarginPct'])
     if s is None or g not in B: return {'group': g, 'gz': 0, 'margin': 0.0, 'min': rule['minMarginPct'], 'ok': False}
     gz = len(gzip.compress(s.encode('utf-8'), 9)); margin = (B[g] - gz) * 100.0 / B[g]
-    return {'group': g, 'gz': gz, 'margin': margin, 'min': rule['minMarginPct'], 'ok': margin >= mn}
+    ex = rule.get('exception') if isinstance(rule.get('exception'), dict) else None
+    exok = bool(ex and ex.get('authority') and margin < mn and margin >= float(ex['minMarginPct']))   # V7 · 53 (REVIEW ٤١): استثناءٌ مكتوب بسلطته وحدّه، لا يمسّ السقف
+    return {'group': g, 'gz': gz, 'margin': margin, 'min': rule['minMarginPct'], 'ok': margin >= mn or exok, 'exception': (ex['authority'] if exok else None)}
 
 def main(a):
     if not a: print(__doc__); return 2
@@ -61,7 +63,7 @@ def main(a):
     if prod:
         g = prod['group']
         print('  %s %-28s gz %8d / %8s   (Preview · مع أداة الاختبار — تحت السقف دائماً)' % ('✘' if M.get(g, {}).get('gz', 0) > B.get(g, 0) else '✔', g, M.get(g, {}).get('gz', 0), B.get(g, '—')))
-        print('  %s %-28s gz %8d / %8s   هامش %.2f٪ (الحدُّ الأدنى %s٪ — العاملُ الذي يُشحن: نزعُ tools/prod_strip.py)' % ('✔' if prod['ok'] else '✘', g + ' prod', prod['gz'], B.get(g, '—'), prod['margin'], prod['min']))
+        print('  %s %-28s gz %8d / %8s   هامش %.2f٪ (الحدُّ الأدنى %s٪ — العاملُ الذي يُشحن: نزعُ tools/prod_strip.py)' % ('✔' if prod['ok'] else '✘', g + ' prod', prod['gz'], B.get(g, '—'), prod['margin'], prod['min']) + (('   ⚠ استثناءٌ مكتوب: ' + prod['exception']) if prod.get('exception') else ''))
     print('   صفحاتٌ > 300 KB خاماً (تقسيمُها مفتوح — السقّاطةُ تمنع نموَّها): ' + (' · '.join(big) or 'لا شيء'))
     print('النتيجة: %d حجماً تحت سقوفها · %d تجاوز' % (len(M) - len(bad), len(bad)))
     return 1 if bad else 0
