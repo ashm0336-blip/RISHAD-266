@@ -764,6 +764,8 @@
     await operationSettle9(operation, 200, { ok: 1, requestId: operation.ticket.requestId, epoch: operation.epoch, atomic: 1, revs: revs, verified: 1 });
     return operation.state === 'confirmed' ? Object.assign({}, operation.result, { verified: 1 }) : null;
   }
+  /* V7 · 53 (S7): قراءةٌ معلّقة لا تُبقي الصفحةَ على الهيكل للأبد — تُقطع بعد 30 ث فتصير فشلاً تعرضه بطاقةُ «أعد المحاولة» */
+  function saveReadSignal53() { try { return typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(30000) : undefined; } catch (e) { return undefined; } }
   /* انتظارُ إيصالٍ ما زال في الطريق (حفظٌ يطول أكثر من مهلة الإفراغ · إعادةٌ مجدولة) — بحدّ، ثم قراءةُ التحقق */
   async function saveAwait53(operation) {
     for (var tick = 0; tick < SAVE_WAIT53 / 250 && !operation.result && ['sending', 'queued'].includes(operation.state) && operationActive9 === operation; tick++)
@@ -791,7 +793,7 @@
     var readId = ++operationReadId9;
     keys.forEach(function (key) { operationReads9[key] = readId; });
     try {
-      var response = await fetch('/api/operations/read?keys=' + encodeURIComponent(keys.join(',')) + '&uid=' + encodeURIComponent(stamp.uid), { credentials: 'same-origin', cache: 'no-store' });
+      var response = await fetch('/api/operations/read?keys=' + encodeURIComponent(keys.join(',')) + '&uid=' + encodeURIComponent(stamp.uid), { credentials: 'same-origin', cache: 'no-store', signal: saveReadSignal53() });
       if (response.status === 401) { sessGone9(); operationInvalidate9(); return operationFailure9('session', 401); }
       var data = await response.json();
       if (response.status === 409 && data && data.err === 'session-changed') { sesChanged9(null, '409'); operationInvalidate9(); return operationFailure9('session', 409); }

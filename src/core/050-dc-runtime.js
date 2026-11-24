@@ -1793,6 +1793,8 @@
 
   /* RISHAD-266: فشلُ بيانات الشاشة بعد انتهاء الجلسة لا يُنسب إلى الاتصال */
   const DATA_RETRY_MS = [1000, 2000, 4000];
+  /* V7 · 53 (S7): قراءةٌ بطيئةٌ تفشل (كل محاولةٍ ثوانٍ) لا تُبقي الهيكلَ دقيقةً كاملة — بعد هذه المدة يُعلَن الفشلُ عند أول إخفاقٍ تالٍ ببطاقة «أعد المحاولة» */
+  const DATA_SLOW_MS = 10000;
   /* CORE-01: نصٌّ واحدٌ بلغةٍ عادية لكل شاشةٍ تعذّر عرضُها — والتفصيلُ التقني (اسمُ المكوّن · نصُّ الاستثناء)
      لمدير المنصة أو بيئة التطوير وحدهما، ووحدةُ التحكم للجميع */
   const SCREEN_ERROR = "تعذّر عرض هذه الشاشة الآن";
@@ -1879,8 +1881,9 @@
         tm = setTimeout(go, ms);
         try { window.addEventListener("online", go); } catch (e) {}
       });
+      const t0 = Date.now();
       const run = (n) => attempt().catch((error) => {
-        if (pageContextKey(name) !== key || n >= DATA_RETRY_MS.length || sessionGone()) throw error;
+        if (pageContextKey(name) !== key || n >= DATA_RETRY_MS.length || sessionGone() || Date.now() - t0 > DATA_SLOW_MS) throw error;
         return pause(DATA_RETRY_MS[n]).then(() => pageContextKey(name) === key ? run(n + 1) : void 0);
       });
       const promise = run(0).then(() => {

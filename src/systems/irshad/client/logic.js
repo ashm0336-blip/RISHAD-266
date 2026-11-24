@@ -89,6 +89,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       invalid: "لم يصل تأكيد كامل من الخادم؛ مسودتك باقية، أعد المحاولة بالطلب نفسه",
       network: "تعذّر تأكيد العملية على الخادم؛ مسودتك باقية لإعادة المحاولة",
       forbidden: "صلاحيتك لا تشمل هذا الإجراء",
+      /* V7 · 53 (S10): شهرٌ بلا جدولٍ معتمد يصل الاستمارةَ بلا وردية فيرفضه الحفظ بـirshad-data — يُقال سببُه لا رمزُه */
+      "irshad-data": "لا جدول معتمد لهذا الشهر",
     };
     return { ok: 0, err: code, status: status || 0, message: text[code] || "رفض الخادم العملية (" + code + ")؛ لم يُعرض نجاح" };
   }
@@ -111,7 +113,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!context) return this._irFailure("session", 401);
     const query = new URLSearchParams({ uid: context.uid, dept: context.dept, view });
     Object.keys(options).forEach(k => { if (options[k] !== undefined && options[k] !== null) query.set(k, String(options[k])); });
-    const result = await this._irRequest("/api/irshad?" + query, { method: "GET" }, context);
+    let result = await this._irRequest("/api/irshad?" + query, { method: "GET" }, context);
+    /* V7 · 53 (S10): القراءةُ بلا أثر — سباقُ قراءةٍ مع كتابةٍ متزامنة (409 irshad-read-race · الخادمُ لا يعيد لقطةً مختلطة) يُعاد آلياً مرّتين بمهلةٍ قصيرة
+       قبل أيّ رسالة «تعذّر التحميل» */
+    for (let again = 0; !result.ok && result.status === 409 && result.err === "conflict" && again < 2 && this._irSame(context); again++) {
+      await new Promise((resume) => setTimeout(resume, 250 * (again + 1)));
+      result = await this._irRequest("/api/irshad?" + query, { method: "GET" }, context);
+    }
     if (!result.ok) return result;
     const data = result.data;
     if (data.dept !== context.dept || data.view !== view || !this._irBase(data.base) || !data.clock || !["y", "m", "d"].every(k => Number.isSafeInteger(data.clock[k]))) return this._irFailure("invalid");
