@@ -83,10 +83,16 @@ test('(١) قاعدةٌ بناها العاملُ القديم (الإصدار 1
   E.DB.db.prepare('INSERT INTO sess(tok,uid,ts,la,dev,city) VALUES(?,?,?,?,?,?)').run(TOK, SUPER, Date.now(), Date.now(), 'TEST_ONLY', 'TEST_ONLY');
 
   /* ② البياناتُ بطرق كتابة العامل القديم: يومُ اليوم (كما تحسبه صفحةُ الجولات) ويومٌ من شهرٍ منقضٍ (يُنقل إلى الأرشيف) */
-  /* يومُ شهرٍ منقضٍ لا يُنشئه العاملُ القديم إلا في يومه (قفلُ الفترة) — فيُكتب بساعةٍ مُرجَعة 45 يوماً ثم تُعاد الساعة */
-  const RealDate = Date, SHIFT = 45 * 864e5;
+  /* يومُ شهرٍ منقضٍ لا يُنشئه العاملُ القديم إلا في يومه (قفلُ الفترة) — فيُكتب بساعةٍ مُرجَعة 75 يوماً ثم تُعاد الساعة */
+  /* V7 · 53 تقويم: 75 يوماً (لا 45) — الأرشيفُ يأخذ شهراً قبل الجاري بشهرين (dailyArcClosed: ≤ الجاري − 2)؛ وبالشهر الميلادي كانت 45 يوماً في الشهر السابق وحده فلا تُؤرشف */
+  const RealDate = Date, SHIFT = 75 * 864e5;
   const page = canvas().logic('daily'), h = page.hParts(new Date()), today = h.y + '-' + h.m + '-' + h.d, hp = page.hParts(new RealDate(RealDate.now() - SHIFT)), past = hp.y + '-' + hp.m + '-' + hp.d;
   assert.notEqual(hp.y + '-' + hp.m, h.y + '-' + h.m, 'اليومُ المُرجَع من شهرٍ سابق');
+  /* V7 · 53 تقويم: العاملُ القديم والصفحاتُ القديمة كتبت بالمفتاح الهجري (hParts · أعلاه) — وبعد الترقية وترحيل التقويم (calConvDoc) تكتب الصفحاتُ
+     الحالية باليوم الميلادي ISO (gParts · YYYY-MM-DD) للحظة نفسِها: فالحفظُ الحيّ في (ب) بمفاتيح gToday/gPast لا بالهجرية (كان يُرفض unknown-map-key) */
+  const p2 = (n) => String(n).padStart(2, '0'), g = page.gParts(new Date()), gp = page.gParts(new RealDate(RealDate.now() - SHIFT));
+  const gToday = g.y + '-' + p2(g.m) + '-' + p2(g.d), gPast = gp.y + '-' + p2(gp.m) + '-' + p2(gp.d), gMonth = g.y + '-' + p2(g.m);
+  assert.ok(gp.y * 12 + gp.m <= g.y * 12 + g.m - 2, 'اليومُ المُرجَع من شهرٍ يُؤرشف (الجاري − 2 أو قبله)');
   const day = (n) => ({ t: 1 + n, d: [{ sid: 'TEST_ONLY_S1', name: 'TEST_ONLY موقع', zones: PCS.map((pc, i) => zone('TEST_ONLY_z' + n + '_' + i, i, pc)).concat([zone('TEST_ONLY_z' + n + '_np', 6)]), gates: [], marks: [], paths: [] }],
     mvLog: [{ t: '07:00', kind: 'gates', key: 'TEST_ONLY_e1', tok: 'TEST_ONLY_e1', fromI: -1, toI: 0, fromLbl: '', toLbl: 'TEST_ONLY', by: 'TEST_ONLY', name: 'TEST_ONLY' }] });
   const site = { sid: 'TEST_ONLY_S1', name: 'TEST_ONLY موقع', num: 1, mpu: 2, zones: PCS.map((pc, i) => zone('TEST_ONLY_p' + i, i, pc)), gates: [], marks: [], paths: [], sectors: [] };
@@ -147,7 +153,8 @@ test('(١) قاعدةٌ بناها العاملُ القديم (الإصدار 1
   assert.equal(newExport.status, 200, JSON.stringify(newExport.json).slice(0, 300));
   for (const [tag, ex] of [['الجديد', newExport.json], ['القديم (قبل الترقية)', oldExport.json]]) {
     const docsOf = Object.fromEntries(ex.domains.map((dom) => { const dec = I.opBackupDecode(dom), p = I.ocInflate(dec.info.prepared, dec.domain); return [dec.key, p.present ? JSON.stringify(p.value) : null]; }));
-    for (const r of ALL) assert.equal(docsOf[key(r)], JSON.stringify((tag === 'الجديد' ? conv : before)[key(r)]), 'تصديرُ الإدارة ' + tag + ': ' + r);
+    /* V7 · 53 تقويم (ق12): النسخةُ القديمة (مفاتيحُها هجرية) يفكّها العاملُ الجديد محوَّلةً بالقاعدة نفسِها التي رحّل بها 0014 القاعدة — فتساوي conv كالجديدة */
+    for (const r of ALL) assert.equal(docsOf[key(r)], JSON.stringify(conv[key(r)]), 'تصديرُ الإدارة ' + tag + ': ' + r);
   }
 
   /* V7 · 53: الكتابةُ التشغيلية بعد 0013 تنتظر المرحلةَ ٢ لهذه الإدارة (أمرُ مدير المنصة) — كما في دليل الترحيل */
@@ -156,15 +163,15 @@ test('(١) قاعدةٌ بناها العاملُ القديم (الإصدار 1
   /* (ب) الحفظُ الحيّ بعد الترقية — بطرق كتابة الصفحتين الحقيقية */
   const W1 = canvas(), daily = W1.logic('daily');
   W1.store.set('bassam_rounds_v1', JSON.stringify(after[key('bassam_rounds_v1')]));
-  daily.state = Object.assign({}, daily.state, { year: h.y, month: h.m, day: h.d, floor: 0, lens: 'zones', tool: 'select', prayer: 'maghrib', dview: { x: 0, y: 0, w: 1000, h: 600 }, dsSel: { t: 'zone', i: 0 }, rounds: after[key('bassam_rounds_v1')] });
+  daily.state = Object.assign({}, daily.state, { year: g.y, month: g.m, day: g.d, floor: 0, lens: 'zones', tool: 'select', prayer: 'maghrib', dview: { x: 0, y: 0, w: 1000, h: 600 }, dsSel: { t: 'zone', i: 0 }, rounds: after[key('bassam_rounds_v1')] });
   daily.renderVals(); daily._occApply.n(240);
   const rounds = JSON.parse(W1.store.get('bassam_rounds_v1'));
-  assert.deepEqual(rounds[today].d[0].zones[0].pc, { fajr: 35, dhuhr: '12', maghrib: { n: 240, cap: 300 } }, 'الصفحةُ تكتب القراءةَ بالسعة بجانب القيم القديمة');
+  assert.deepEqual(rounds[gToday].d[0].zones[0].pc, { fajr: 35, dhuhr: '12', maghrib: { n: 240, cap: 300 } }, 'الصفحةُ تكتب القراءةَ بالسعة بجانب القيم القديمة');
   const s1 = await save(call2, { bassam_rounds_v1: rounds }, 'TEST_ONLY_upgrade_new_reading');
   assert.equal(s1.status, 200, JSON.stringify(s1.json)); assert.equal(s1.json.ok, 1);
-  const W2 = canvas(), plan = W2.logic('plan'), P = after[key('bassam_plan_v1')], F = JSON.parse(JSON.stringify(P.floors)), month = h.y + '-' + h.m;
+  const W2 = canvas(), plan = W2.logic('plan'), P = after[key('bassam_plan_v1')], F = JSON.parse(JSON.stringify(P.floors)), month = gMonth;
   W2.store.set('bassam_plan_v1', JSON.stringify(P));
-  plan.state = Object.assign({}, plan.state, { year: h.y, month: h.m, floor: 0, floors: F, zones: F[0].zones.slice(), gates: [], marks: [], paths: [], planMonths: JSON.parse(JSON.stringify(P.months)), sel: null, selMulti: [], tool: 'select', lens: 'plan', clearAsk: { kind: 'cap' } });
+  plan.state = Object.assign({}, plan.state, { year: g.y, month: g.m, floor: 0, floors: F, zones: F[0].zones.slice(), gates: [], marks: [], paths: [], planMonths: JSON.parse(JSON.stringify(P.months)), sel: null, selMulti: [], tool: 'select', lens: 'plan', clearAsk: { kind: 'cap' } });
   plan.renderVals().clearAskDo();
   await new Promise((go) => setTimeout(go, 0)); W2.flushTimers();
   const plan2 = JSON.parse(W2.store.get('bassam_plan_v1'));
@@ -173,7 +180,7 @@ test('(١) قاعدةٌ بناها العاملُ القديم (الإصدار 1
   assert.equal(s2.status, 200, JSON.stringify(s2.json)); assert.equal(s2.json.ok, 1);
   const back = (await read(call2, ['bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_plan_v1'])).json.resources;
   /* العاملُ الجديد ينقل يومَ الشهر المنقضي إلى الأرشيف عند الحفظ — بقراءاته كما هي */
-  assert.deepEqual(back[key('bassam_rounds_arc_v1')] && back[key('bassam_rounds_arc_v1')][past], rounds[past], 'الأرشيفُ يحمل اليومَ المنقضي بقراءاته (أرقام · نص · null · خريطة فارغة · pc: null)');
+  assert.deepEqual(back[key('bassam_rounds_arc_v1')] && back[key('bassam_rounds_arc_v1')][gPast], rounds[gPast], 'الأرشيفُ يحمل اليومَ المنقضي بقراءاته (أرقام · نص · null · خريطة فارغة · pc: null)');
   const sorted = (o) => JSON.stringify(Object.keys(o).sort().map((k) => [k, o[k]]));
   assert.equal(sorted({ ...back[key('bassam_rounds_arc_v1')], ...back[key('bassam_rounds_v1')] }), sorted(rounds), 'الجولاتُ (مع أرشيفها) تعود كما حُفظت');
   assert.equal(JSON.stringify(back[key('bassam_plan_v1')]), JSON.stringify(plan2), 'المخططُ يعود كما حُفظ');

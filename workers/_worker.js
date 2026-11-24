@@ -22616,7 +22616,8 @@ function opBackupDecode(domain) {
   rsShape(domain,['version','scope','resource','rows']); rsShape(domain.scope,['departmentId']);
   if(domain.version!==1||typeof domain.resource!=='string'||!opRegistry()[domain.resource])throw rsError('restore-operations-domain');
   var d=domain.scope.departmentId, k='bsdept:'+d+':'+domain.resource, info=opInfo(k);
-  return {key:k,domain:ocFromPhysical(info.prepared,d,info.resource,osLegacyPhysical(domain.rows,ocPhysicalTables(info.prepared))),info:info};   /* V7 · د6 (schemafix): صفوفُ نسخةٍ قبل الترحيل 0012 بترميزها الجديد */
+  try{return{key:k,domain:ocFromPhysical(info.prepared,d,info.resource,osLegacyPhysical(domain.rows,ocPhysicalTables(info.prepared))),info:info};}   /* V7 · د6 (schemafix): صفوفُ نسخةٍ قبل الترحيل 0012 بترميزها الجديد */
+  catch(e){/* V7 · 53 تقويم (ق12): نسخةٌ هجرية قبل 0014 ⇐ تُفكّ بالمخطّط الموسَّع وتُحوَّل بـcalConvDoc */if(e.ocCode!=='operations-unknown-map-key'||!calConvIs(info.resource))throw e;var W=calWideRegistry()[info.resource],v=ocInflate(W,ocFromPhysical(W,d,info.resource,osLegacyPhysical(domain.rows,ocPhysicalTables(W))));return{key:k,domain:ocConvert(info.prepared,d,info.resource,v.present?calConvDoc(info.resource,v.value,{T:calToday(Date.now()).k}):v.value,v.present),info:info};}
 }
 function opValidateBackupDomains(domains,departments) {
   if(!Array.isArray(domains))throw rsError('restore-incomplete-operations');
