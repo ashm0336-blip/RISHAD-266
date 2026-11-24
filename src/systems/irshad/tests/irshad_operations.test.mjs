@@ -233,8 +233,14 @@ test('typed export respects inactive module ceilings despite backup.view and ref
   const B=await fixture();await seed(B,{reports:{reports:[stored(B,'TEST_ONLY_private')]}});
   const stale=await B.actor('super'),permissions=copy(B.permissions);for(const d of Object.keys(permissions.caps))permissions.caps[d]=permissions.caps[d].filter(cap=>cap!=='irshad');
   await put(B,'bassam_perms_v1',permissions);const manager=(await B.W.irQueryContext(B.env,await B.actor('manager1'),D1,{write:true})).A;
-  assert.equal(B.W.canRead(manager,B.W.irKey(D1)),false);
-  await assert.rejects(B.W.irExport(B.env,manager,new URL('http://x/export?dept='+D1)),e=>e.irStatus===403);
+  /* V7 · 53 (basefix): قرار المالك ٦ (REPLY_52_3) — نسخةُ الإدارة تحمل بياناتِ النظام المطفأ «محفوظة — غير مفعّلة» (019u bkOffMgr): مديرُ الإدارة يصدّرها في نسختها.
+     كان هذا الموضعُ يثبّت القاعدةَ السابقة (403). يبقى صارماً: القراءةُ الحيّة للنظام المطفأ مرفوضة · ومن لا يملك النسخ (موظف · مديرُ وحدةٍ أخرى · نسخةٌ شاملة) يُرفض */
+  assert.equal(B.W.canRead(manager,B.W.irKey(D1)),false,'live read of the OFF system is refused');
+  await assert.rejects(B.W.irRead(B.env,await B.actor('manager1'),{dept:D1,view:'records',year:B.W.cuClock().y,month:B.W.cuClock().m,limit:200}),e=>e.irStatus===403,'the live records read is refused');
+  const own=await B.W.irExport(B.env,manager,new URL('http://x/export?dept='+D1));
+  assert.equal(own.domains.length,1);assert.equal(own.domains[0].rows.reports.length,1,'the unit copy carries the OFF system data (decision 6)');
+  for(const who of ['employee1','manager2'])await assert.rejects(B.W.irExport(B.env,await B.actor(who),new URL('http://x/export?dept='+D1)),e=>e.irStatus===403,who+': no backup right ⇒ refused');
+  await assert.rejects(B.W.irExport(B.env,manager,new URL('http://x/export')),e=>e.irStatus===403,'a full copy stays super-only');
   assert.equal((await B.W.irExport(B.env,stale,new URL('http://x/export'))).domains[0].rows.reports.length,1,'Full super backup remains readable');
   const users=copy(B.users);Object.assign(users.find(u=>u.id===IDS.super),{role:'staff',deptId:D1,ekey:'TEST_ONLY_revoked',mgr:0});rawPut(B,'bassam_auth_users_v1',users);
   await assert.rejects(B.W.irExport(B.env,stale,new URL('http://x/export')),e=>e.irStatus===403);

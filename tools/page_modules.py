@@ -63,7 +63,10 @@ def join(mods, pages, minify):
         meta = json.load(open(os.path.join(d, 'meta.json'), encoding='utf-8'))
         logic = inline_assets(read_logic(d, meta), mods)   # KIVO_265 · البند 19: logic.js + أجزاؤه
         if minify and meta['minifiedSource']:
-            r = subprocess.run([os.environ.get('KIVO_NODE', 'node'), os.path.join(ROOT, 'node_modules', 'esbuild', 'bin', 'esbuild'), '--minify-whitespace', '--minify-syntax', '--target=es2020', '--charset=utf8', '--log-level=error'], input=logic, capture_output=True, text=True, encoding='utf-8')
+            # V7 · 53: meta.json "minifyIdentifiers": true ⇒ وإعادةُ تسمية المعرّفات المحلية (esbuild --minify-identifiers؛ لا خصائصَ ولا أسماءَ عامة) —
+            # تحويلٌ حافظٌ للمعنى يبرهنه tests/unit/v7_53_admin_identifiers.test.mjs (تيّارُ الرموز نفسُه عدا أسماءِ الروابط المحلية)
+            fl = ['--minify-whitespace', '--minify-syntax'] + (['--minify-identifiers'] if meta.get('minifyIdentifiers') is True else [])
+            r = subprocess.run([os.environ.get('KIVO_NODE', 'node'), os.path.join(ROOT, 'node_modules', 'esbuild', 'bin', 'esbuild')] + fl + ['--target=es2020', '--charset=utf8', '--log-level=error'], input=logic, capture_output=True, text=True, encoding='utf-8')
             if r.returncode != 0: raise SystemExit('esbuild failed for ' + it['name'] + ': ' + r.stderr[:300])
             logic = r.stdout.rstrip('\n')
         view = inline_assets(open(os.path.join(d, 'view.html'), encoding='utf-8', newline='').read(), mods)

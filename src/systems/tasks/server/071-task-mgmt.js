@@ -413,7 +413,7 @@ async function tkEditPrepare(env, A, b, d, K, S, rev) {
   if (!S2[b.k].length) delete S2[b.k];
   S2[edit.k] = (Array.isArray(S2[edit.k]) ? S2[edit.k] : []).concat(rows);
   var body = { set: {}, base: {} }; body.set[K] = JSON.stringify(S2); body.base[K] = rev;
-  /* V7 · د5-ح (القفل): الإنفاذُ وحده يقرّر — إسنادُ المعتذَر عنها بالتعديل يعيدها «بانتظار الاستلام» (task.reopen) فيطلب سبباً؛ سببُ نافذة 280 (askReason) يصل هنا */
+  /* V7 · د5-ح (القفل): الإنفاذُ وحده يقرّر — إسنادُ المعتذَر عنها بالتعديل يعيدها «بانتظار الاستلام» (task.reopen) — والسببُ اختياريّ: يُمرَّر إن أرسله عميلٌ ولا يُطلب (V7 · 53 noreason) */
   if (tkWhyOf(b)) { body.why = {}; body.why[K] = tkWhyOf(b); }
   var rawActor = Object.assign({}, A); delete rawActor.__tkSrv; delete rawActor.__tkSelf;
   var permission = await applySave(env, body, rawActor, {}, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN });
@@ -477,9 +477,7 @@ async function tkReopen(env, request, A, b) {
     var P0 = tkPick(S, b.k, b.id, b.ekey == null ? null : b.ekey); if (!P0) return tkNo(404, 'not-found');
     var now = Date.now(), r0 = P0.r0, S0 = tkState(r0, now);
     if (r0[3] !== 'done' || S0.asg === 'cancelled' || S0.asg === 'reassigned') return tkNo(409, 'state', 'تُعاد فتحُ المهمة المنجزة وحدها', { asg: S0.asg });
-    /* k265-fix (بوابة 265 · k259journeys بالإنفاذ): سببُ العميل وحده (cw) يُمرَّر للحفظ المركزي — فتطلب سياسةُ الإنفاذ سببَ task.reopen كما في 263/264
-       (بلا سبب ⇒ رفضُ «يتطلب سبباً» · والواجهةُ تعرض نافذةَ السبب في 280 ثم تعيد الطلبَ به) — والنصُّ الافتراضيُّ للعرض وحده (التنبيه · قرارُ المراجعة · التدقيق).
-       كان الافتراضيُّ يُرسل سبباً فيُستوفى الشرطُ بنصٍّ جاهز. القديمُ كما هو (لا سببَ مطلوب) */
+    /* سببُ العميل (cw) اختياريّ يُمرَّر للحفظ المركزي إن وُجد، ولا يُطلب (V7 · 53 noreason) — والنصُّ الافتراضيُّ للعرض وحده (التنبيه · قرارُ المراجعة · التدقيق) */
     var r1 = tkRowCols(tkPad(r0)), cw = tkWhyOf(b), why = cw || 'أعاد المسؤولُ فتحَ المهمة', r21 = tkObj(r0[21]) || {}, sub = typeof r21.sub === 'number' ? r21.sub : 0;
     r1[3] = 'in_progress'; r1[12] = null; r1[6] = null;
     var x0 = tkX(r0);

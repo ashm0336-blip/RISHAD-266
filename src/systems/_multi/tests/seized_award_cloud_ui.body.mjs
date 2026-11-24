@@ -396,17 +396,20 @@ test('a definitive catalog-in-use refusal does not mark an unrelated seized reco
 });
 
 for (const module of ['seized', 'award']) {
-  test(module + ' asks for a required canonical nested reason only on the user explicit retry after a definitive refusal', async t => {
+  /* V7 · 53 (noreason · قرارُ المالك 23 نوفمبر): كان هذا الاختبار يثبت «رفضٌ why:reason ⇒ نافذةُ السبب في المحاولة التالية ثم طلبٌ بالسبب»؛
+     الآن: رفضٌ بـwhy:reason (من خادمٍ قديم) رفضٌ نهائيّ عاديّ — المحاولةُ التالية طلبٌ جديد بلا نافذة سبب ولا حقل reason */
+  test(module + ' never asks for a reason: a legacy why:reason refusal is ordinary and the explicit retry sends no reason', async t => {
     let first = true, asked = 0;
     const B = browser(module, async (_, options) => {
       if (first) { first = false; return json({ ok: 0, err: module + '-denied', denied: { why: 'reason', reasonKeys: ['TEST_ONLY_permission'] } }, 403); }
       return ack(module, JSON.parse(options.body));
     }); t.after(B.cleanup); seedForm(B, module);
-    B.KIVO.__BS_SRV.askReason = (_, keys, done) => { asked++; assert.equal(keys[0], 'TEST_ONLY_permission'); done('TEST_ONLY reviewed reason'); };
+    B.KIVO.__BS_SRV.askReason = () => { asked++; };
     await save(B.page, module); assert.equal(asked, 0); assert.equal(B.calls.length, 1); assert.equal(B.page._bcTickets.size, 0);
-    await save(B.page, module); assert.equal(asked, 1); assert.equal(B.calls.length, 2);
+    assert.doesNotMatch(String(B.page.state.bcMessage || ''), /سبب/, 'the refusal does not ask for a reason');
+    await save(B.page, module); assert.equal(asked, 0, 'no reason dialog on the retry'); assert.equal(B.calls.length, 2);
     const refused = JSON.parse(B.calls[0].options.body), accepted = JSON.parse(B.calls[1].options.body);
-    assert.equal(Object.hasOwn(refused, 'reason'), false); assert.equal(accepted.reason, 'TEST_ONLY reviewed reason'); assert.notEqual(accepted.requestId, refused.requestId);
+    assert.equal(Object.hasOwn(refused, 'reason'), false); assert.equal(Object.hasOwn(accepted, 'reason'), false); assert.notEqual(accepted.requestId, refused.requestId);
     assert.equal(B.page._bcTickets.size, 0); assert.deepEqual(B.storage, []);
   });
 }

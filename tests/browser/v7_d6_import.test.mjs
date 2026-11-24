@@ -78,7 +78,9 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
     /* V7 · د6 (QA ٦ — قرارُ المالك ب1/ب4): صحيفةُ صلاحيات مدير المصدر لا تنتقل وتُذكر بندًا (11 + 1) · والصلاحياتُ المنقولة بعددها، والسقفُ والمدير كما هما */
     assert.match(confirmText, new RegExp('لن يُنقل ' + (Object.keys(NOT_TRANSFERRED).length + 1) + ' '), 'ملخّصُ الخادم في التأكيد');
     assert.match(confirmText, /perms - mgr — صحيفة صلاحيات مدير المصدر — [^.]*العدد: 1/, 'صحيفةُ مدير المصدر تُذكر بعددها');
-    assert.match(confirmText, /الصلاحيات: 0 دور و1 إسناد تنتقل — ويبقى سقف الوحدة ومديرها كما هما/, 'الصلاحياتُ المنقولة بعددها');
+    /* V7 · 53 (basefix): قرار المالك 51ب — قوالبُ النسخة الثلاثة (v7_d6_import_fx: bassam_perm_tpls_v1 · TEST_ONLY_t1..t3) تصير أدواراً للوحدة الهدف
+       بلا أشخاص (لا tplOf — كما v7_d7_tpls_roles ②) فتُعدّ في الملخّص: 3 أدوار · والإسنادُ الواحد ورقةُ الموظف كما كان */
+    assert.match(confirmText, /الصلاحيات: 3 دور و1 إسناد تنتقل — ويبقى سقف الوحدة ومديرها كما هما/, 'الصلاحياتُ المنقولة بعددها');
     /* V7 · د6 (schemafix): وحقولُ الموارد التي لن تُنقل — كلُّها قبل التأكيد بمسارها وعددها (الملفُ يحملها كما يكتبها Production) */
     const fd = fieldDrops(f), plain = confirmText.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/ - /g, ' · '),   /* نافذةُ التأكيد تعرض الفاصل «·» شرطةً */ at = plain.indexOf('حقول لن تُنقل');
     assert.match(plain, /حقول لن تُنقل \(\d+\)/, 'حقولُ الموارد في التأكيد');
@@ -95,7 +97,7 @@ test('د6: اختيار الملف ← الملخّص ← التقدّم ← ا�
     /* ملخّص النجاح */
     await s.page.waitForSelector('[data-bkc="done"]', { timeout: 60000 });
     const done = await text(s.page, '[data-bkc="done-msg"]');
-    assert.match(done, /الصور: 2 جديدة و0 موجودة/, done); assert.match(done, new RegExp('لم يُنقل ' + (Object.keys(NOT_TRANSFERRED).length + 1) + ':'), done); assert.match(done, /perms [·-] mgr/, done); assert.match(done, /مطابقة [·-] الصلاحيات: 0 دور و1 إسناد تنتقل/, done);
+    assert.match(done, /الصور: 2 جديدة و0 موجودة/, done); assert.match(done, new RegExp('لم يُنقل ' + (Object.keys(NOT_TRANSFERRED).length + 1) + ':'), done); assert.match(done, /perms [·-] mgr/, done); assert.match(done, /مطابقة [·-] الصلاحيات: 3 دور و1 إسناد تنتقل/, done);   /* V7 · 53: القوالبُ الثلاثة أدوارٌ (51ب) */
     assert.ok(done.includes('أُعيد ربط ' + R.n + ' إشارة من «' + SRC_DEPT + '» إلى «' + B + '»'), 'وفي ملخّص النجاح: ' + done); assert.ok(done.includes('تنبيهات لم تُنقل: ' + nNf + ' ('), done); assert.match(done, /حقول لم تُنقل: \d+ في \d+ مساراً/, done); assert.match(done, /لقطة ما قبل الاستيراد/, done);
     assert.equal(staged(lab.env.DB), 0, 'المؤقتُ حُذف مع الاعتماد');
     assert.equal(posts.filter((x) => x.op === 'commit' && x.s === 200 && x.ok === 1).length, 1, 'اعتمادٌ واحد: ' + JSON.stringify(posts));

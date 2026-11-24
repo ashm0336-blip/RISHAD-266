@@ -26,6 +26,8 @@
    "ownerKind": "page",
    "domain": "planning",
    "label": "عرض المؤشرات",
+   "verb": "يعرض مؤشرات الجاهزية",
+   "place": "الخطة التشغيلية ← مؤشرات الجاهزية",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -460,6 +462,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "فتح صفحة بيانات الموظفين",
+   "verb": "يفتح صفحة بيانات الموظفين",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -504,6 +508,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "إضافة موظف",
+   "verb": "يضيف موظفاً",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -544,6 +550,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تعديل بيانات موظف",
+   "verb": "يعدّل بيانات موظف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -586,6 +594,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "حذف موظف",
+   "verb": "يحذف موظفاً",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -626,6 +636,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "حذف المحدد / حذف الكل (جماعي)",
+   "verb": "يحذف الموظفين المحدّدين أو الكل دفعةً واحدة",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -666,6 +678,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تفعيل حسابات الدخول للمحددين",
+   "verb": "يفعّل حسابات الدخول للموظفين المحدّدين",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -705,6 +719,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تجميد حسابات الدخول للمحددين",
+   "verb": "يجمّد حسابات الدخول للموظفين المحدّدين",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -744,6 +760,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "عرض قائمة أنواع التوظيف",
+   "verb": "يعرض قائمة أنواع التوظيف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -785,6 +803,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "إضافة نوع توظيف",
+   "verb": "يضيف نوع توظيف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -824,6 +844,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تعديل اسم نوع التوظيف وترحيله للسجلات",
+   "verb": "يعدّل اسم نوع توظيف ويرحّله إلى السجلات",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -863,6 +885,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "حذف نوع توظيف",
+   "verb": "يحذف نوع توظيف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -902,6 +926,8 @@
    "ownerKind": "page",
    "domain": "links",
    "label": "عرض صفحة مواقع ذات صلة",
+   "verb": "يعرض صفحة مواقع ذات صلة",
+   "place": "مواقع ذات صلة",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -938,6 +964,8 @@
    "ownerKind": "page",
    "domain": "help",
    "label": "عرض صفحة المساعدة",
+   "verb": "يعرض صفحة المساعدة",
+   "place": "المساعدة",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -1052,6 +1080,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تفعيل/إنشاء حساب دخول موظف",
+   "verb": "يفعّل حساب دخول موظف أو ينشئه",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -1089,6 +1119,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تجميد حساب دخول موظف",
+   "verb": "يجمّد حساب دخول موظف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -2157,7 +2189,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.emp.export"
-   ]
+   ],
+   "verb": "يصدّر بيانات الموظفين إلى ملف",
+   "place": "موظفو الإدارة ← بيانات الموظفين"
   },
   {
    "leaf": "planning/readiness",
@@ -2197,7 +2231,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.ready.export"
-   ]
+   ],
+   "verb": "يصدّر مؤشرات الجاهزية إلى ملف",
+   "place": "الخطة التشغيلية ← مؤشرات الجاهزية"
   },
   {
    "leaf": "admin/backup",

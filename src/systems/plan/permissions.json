@@ -16,6 +16,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "عرض التشغيل الميداني",
+     "verb": "يعرض التشغيل الميداني",
+     "place": "التشغيل الميداني",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -67,6 +69,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "إنشاء خطة جديدة",
+     "verb": "ينشئ خطة جديدة",
+     "place": "التشغيل الميداني",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -118,6 +122,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "حذف خطة",
+     "verb": "يحذف خطة",
+     "place": "التشغيل الميداني",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -169,6 +175,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "إضافة موقع",
+     "verb": "يضيف موقعاً",
+     "place": "التشغيل الميداني",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -220,6 +228,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "تعديل بيانات الموقع",
+     "verb": "يعدّل بيانات موقع",
+     "place": "التشغيل الميداني",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -271,6 +281,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "رفع/استبدال الخريطة",
+     "verb": "يرفع خريطة الموقع أو يستبدلها",
+     "place": "التشغيل الميداني",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -322,6 +334,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "حذف موقع",
+     "verb": "يحذف موقعاً",
+     "place": "التشغيل الميداني",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -373,6 +387,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "اعتماد الخطة",
+     "verb": "يعتمد الخطة",
+     "place": "التشغيل الميداني",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -424,6 +440,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "إعادة فتح خطة معتمدة",
+     "verb": "يعيد فتح خطة معتمدة",
+     "place": "التشغيل الميداني",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -475,6 +493,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "اعتماد/فتح موقع داخل الخطة",
+     "verb": "يعتمد موقعاً داخل الخطة أو يفتحه",
+     "place": "التشغيل الميداني",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -526,6 +546,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "معايرة مقياس خريطة الموقع",
+     "verb": "يعاير مقياس خريطة الموقع",
+     "place": "التشغيل الميداني",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -577,6 +599,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "إضافة نطاق تشغيلي",
+     "verb": "يضيف نطاقاً تشغيلياً",
+     "place": "التشغيل الميداني",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -628,6 +652,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "تعديل نطاق تشغيلي",
+     "verb": "يعدّل نطاقاً تشغيلياً",
+     "place": "التشغيل الميداني",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -679,6 +705,8 @@
      "ownerKind": "page",
      "domain": "plan",
      "label": "حذف نطاق تشغيلي",
+     "verb": "يحذف نطاقاً تشغيلياً",
+     "place": "التشغيل الميداني",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -972,7 +1000,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.plan.export"
-     ]
+     ],
+     "verb": "يصدّر التشغيل الميداني إلى ملف",
+     "place": "التشغيل الميداني"
     }
    },
    {

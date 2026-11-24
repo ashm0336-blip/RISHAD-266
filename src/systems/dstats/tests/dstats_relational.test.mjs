@@ -425,13 +425,13 @@ test('admin historical import retains its result until the relational server con
   for (const approved of [false, true]) {
     let settle, sent;
     const B = browser(async (url, options) => { if (options.method === 'POST') { sent = JSON.parse(options.body); return await new Promise(resolve => { settle = resolve; }); } return response({ ok: 1, rev: 7, data: empty() }); });
-    B.W.KIVO.__BS_SRV = { askReason: (key, keys, done) => done('TEST_ONLY historical import') };
+    let asked = 0; B.W.KIVO.__BS_SRV = { askReason: (key, keys, done) => { asked++; done('TEST_ONLY historical import'); } };   /* V7 · 53 (noreason): لا يُسأل عن سبب */
     B.W.KIVO.BassamXLSX = { parseBook: async () => ({ sheets: ['TEST_ONLY'], active: 'TEST_ONLY', rows: [['التاريخ', 'الحرم - المصلين'], ['1448-01-01', { k: 'i', n: 50, s: '50' }]] }) };
     const H = { preview: { total_rows: 1 }, file: { arrayBuffer: async () => new ArrayBuffer(0) }, mode: 'add', blank: 'ignore' }, toasts = [];
     const page = { hiS: () => H, hiSet: x => Object.assign(H, x), hiMeta: () => ({ filename: 'TEST_ONLY.xlsx', size_bytes: 0, content_type: 'test' }), bsToast: (message, kind) => toasts.push({ message, kind }) };
     const running = adminMethod(B, 'hiDoImport').call(page); await tick();
     assert.equal(H.importing, true); assert.equal(H.result, undefined); assert.equal(toasts.filter(t => t.kind === 'ok').length, 0);
-    assert.equal(sent.operation, 'historical-import'); assert.equal(sent.reason, 'TEST_ONLY historical import'); assert.equal(sent.base, 7);
+    assert.equal(sent.operation, 'historical-import'); assert.equal(Object.hasOwn(sent, 'reason'), false, 'no reason sent'); assert.equal(asked, 0, 'no reason dialog'); assert.equal(sent.base, 7);
     settle(approved ? response({ ok: 1, rev: 8, data: sent.data }) : response({ ok: 0, err: 'denied' }, 403)); await running;
     assert.equal(H.importing, false); assert.equal(!!H.result, approved); assert.equal(toasts.filter(t => t.kind === 'ok').length, approved ? 1 : 0);
     assert.deepEqual(B.persistence, []);

@@ -86,14 +86,9 @@
     try {
       const HI = KIVO.BassamHistImport, D = KIVO.DailyStats;
       if (!D) throw new Error("خدمة الإحصائيات غير متاحة");
-      const R = KIVO.__BS_SRV;
-      if (!R || !R.askReason) throw new Error("نافذة سبب الاستيراد غير متاحة");
-      /* مدير المنصة لا يُطلب منه سبب (المسارُ له وحده): لا نافذة — والخادمُ يسجّل «بلا سبب (مدير المنصة)» */
-      const exempt = !!(R.reasonExempt && R.reasonExempt());
-      const reason = exempt ? "" : await new Promise(resolve => R.askReason(HI.KEY, ["sys.histimp.run"], resolve));
-      if (!reason && !exempt) return;
+      /* V7 · 53 (noreason · قرارُ المالك): لا يُسأل عن سبب — المعاينةُ ثم «تنفيذ الاستيراد» هما التأكيد */
       const buf = await f.arrayBuffer(), x = await HI.execute(buf, H.mode || "add", H.blank || "ignore", this.hiMeta(f));
-      if (!await D.save(x.store, { operation: "historical-import", reason: reason })) {
+      if (!await D.save(x.store, { operation: "historical-import" })) {
         this.bsToast(D.message(), "err"); return;
       }
       const res = Object.assign({}, x.res);

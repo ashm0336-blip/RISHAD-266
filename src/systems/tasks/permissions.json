@@ -16,6 +16,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "عرض المهام",
+     "verb": "يعرض المهام",
+     "place": "المهام",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -68,6 +70,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "إنشاء مهمة",
+     "verb": "ينشئ مهمة",
+     "place": "المهام",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -118,6 +122,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "تعديل المهمة",
+     "verb": "يعدّل مهمة",
+     "place": "المهام",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -168,6 +174,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "إسناد/إعادة إسناد",
+     "verb": "يسند مهمة أو يعيد إسنادها",
+     "place": "المهام",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -218,6 +226,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "إضافة إثبات/مرفق",
+     "verb": "يضيف إثباتاً أو مرفقاً لمهمة",
+     "place": "المهام",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -268,6 +278,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "حذف مهمة",
+     "verb": "يحذف مهمة",
+     "place": "المهام",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -318,6 +330,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "قبول المهمة",
+     "verb": "يقبل المهمة",
+     "place": "المهام",
      "type": "operation",
      "sensitive": false,
      "guard": {
@@ -368,6 +382,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "إنهاء المهمة",
+     "verb": "ينهي المهمة",
+     "place": "المهام",
      "type": "operation",
      "sensitive": false,
      "guard": {
@@ -418,6 +434,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "إعادة فتح مهمة منجزة",
+     "verb": "يعيد فتح مهمة منجزة",
+     "place": "المهام",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -468,6 +486,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "اعتماد وإغلاق شهر المهام",
+     "verb": "يعتمد شهر المهام ويغلقه",
+     "place": "المهام",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -518,6 +538,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "إعادة فتح شهر المهام",
+     "verb": "يعيد فتح شهر المهام",
+     "place": "المهام",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -568,6 +590,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "حذف جميع مهام شهر",
+     "verb": "يحذف جميع مهام شهر",
+     "place": "المهام",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -618,6 +642,8 @@
      "ownerKind": "page",
      "domain": "tasks",
      "label": "قبول/اعتذار/إنهاء مهمتي المسنَدة",
+     "verb": "يقبل مهمته المسنَدة أو يعتذر عنها أو ينهيها",
+     "place": "المهام · صفحتي",
      "type": "operation",
      "sensitive": false,
      "guard": {
@@ -797,7 +823,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.task.export"
-     ]
+     ],
+     "verb": "يصدّر المهام إلى ملف",
+     "place": "المهام"
     }
    },
    {

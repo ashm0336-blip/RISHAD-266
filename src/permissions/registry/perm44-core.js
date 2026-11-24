@@ -11,7 +11,7 @@ function perm44Make(R, D) {
   var leafSys = {};
   for (i = 0; i < D.systems.length; i++) for (j = 0; j < D.systems[i].leaves.length; j++) leafSys[D.systems[i].leaves[j]] = D.systems[i].key;
   /* V7 · 53 (قرار المالك — التصدير «أ»): أعلامُ التصدير ff.<نظام>.export — ذرّاتُ «تصدير» حُوِّلت إلى أعلام ميزات (converted_to_feature) فلا مفاتيحَ لها
-     في السجلّ ولا تحملها بتّاتُ الخادم. يحملها مستوى ff (كامل · حسّاس) ويُختار العلمُ في «مخصّص»؛ لا تُعطى لمشاهدة ولا إدخال ولا تعديل · FFL[علم] = ورقتُه */
+     في السجلّ ولا تحملها بتّاتُ الخادم. يحملها مستوى ff (تشغيل full · إشراف sensitive) ويُختار العلمُ في «مخصّص»؛ لا تُعطى لمشاهدة ولا إدخال ولا تعديل · FFL[علم] = ورقتُه */
   var FFS = {}, FFL = {}, AT = R.atoms || {}, ak;
   for (ak in AT) {
     var at0 = AT[ak]; if (!at0 || at0.act !== 'export' || at0.disposition !== 'converted_to_feature') continue;

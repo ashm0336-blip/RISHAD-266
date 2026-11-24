@@ -21,7 +21,7 @@ function world(fetch){
   const page={state:{wpDid:'',wpTxt:'',tick:0},setState(p){this.state={...this.state,...p};},bsAck:(...args)=>acks.push(args)};
   /* the shell always loads the shared Arabic counter (src/services/440-count.js); the page's messages use it */
   context.KIVO.BassamCount=COUNT;
-  for(const name of ['_wpActor','_reasonFirst','_wpCall','_businessBaseValid','wpOpen','wpReview','wpGo','wpClose']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,context);}
+  for(const name of ['_wpActor','_wpCall','_businessBaseValid','wpOpen','wpReview','wpGo','wpClose']){const node=klass.body.body.find(node=>node.type==='MethodDefinition'&&node.key.name===name);assert.ok(node,name);page[name]=vm.runInContext('({'+source.slice(node.start,node.end)+'}).'+name,context);}
   return {page,calls,acks,reloads,timers,prompts,syncs,setReason(value){reasonText=value;},switchActor(){uid='TEST_ONLY_other_super';context.__BS_BOOT.uid=uid;}};
 }
 function receipt(options,revision=5){const body=JSON.parse(options.body);return {ok:1,dept:body.dept,requestId:body.requestId,rev:revision,counts:{keys:1,custody:2,notifications:3,irshad:4,seized:5,awards:6}};}

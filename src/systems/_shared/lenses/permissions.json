@@ -16,6 +16,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "تفعيل عدسة المصليات",
+     "verb": "يفعّل عدسة المصليات",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "capability",
      "sensitive": false,
      "guard": {
@@ -62,6 +64,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "عرض المصليات",
+     "verb": "يعرض المصليات",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -108,6 +112,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "إضافة مصلى",
+     "verb": "يضيف مصلى",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -154,6 +160,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "تعديل بيانات المصلى",
+     "verb": "يعدّل بيانات مصلى",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -200,6 +208,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "تعديل رسم وحدود المصلى",
+     "verb": "يعدّل رسم المصلى وحدوده",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -246,6 +256,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "تغيير حالة المصلى",
+     "verb": "يغيّر حالة المصلى",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -292,6 +304,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "حذف المصلى",
+     "verb": "يحذف مصلى",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -384,6 +398,8 @@
      "ownerKind": "lens",
      "domain": "lens.paths",
      "label": "تفعيل عدسة المسارات",
+     "verb": "يفعّل عدسة المسارات",
+     "place": "الخريطة ← عدسة المسارات",
      "type": "capability",
      "sensitive": false,
      "guard": {
@@ -430,6 +446,8 @@
      "ownerKind": "lens",
      "domain": "lens.paths",
      "label": "عرض المسارات",
+     "verb": "يعرض المسارات",
+     "place": "الخريطة ← عدسة المسارات",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -474,6 +492,8 @@
      "ownerKind": "lens",
      "domain": "lens.paths",
      "label": "إضافة مسار",
+     "verb": "يضيف مساراً",
+     "place": "الخريطة ← عدسة المسارات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -518,6 +538,8 @@
      "ownerKind": "lens",
      "domain": "lens.paths",
      "label": "تعديل بيانات المسار",
+     "verb": "يعدّل بيانات مسار",
+     "place": "الخريطة ← عدسة المسارات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -562,6 +584,8 @@
      "ownerKind": "lens",
      "domain": "lens.paths",
      "label": "تعديل رسم المسار",
+     "verb": "يعدّل رسم المسار",
+     "place": "الخريطة ← عدسة المسارات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -606,6 +630,8 @@
      "ownerKind": "lens",
      "domain": "lens.paths",
      "label": "تغيير حالة المسار",
+     "verb": "يغيّر حالة المسار",
+     "place": "الخريطة ← عدسة المسارات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -651,6 +677,8 @@
      "ownerKind": "lens",
      "domain": "lens.paths",
      "label": "حذف مسار",
+     "verb": "يحذف مساراً",
+     "place": "الخريطة ← عدسة المسارات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -783,6 +811,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "تفعيل عدسة البوابات",
+     "verb": "يفعّل عدسة البوابات",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "capability",
      "sensitive": false,
      "guard": {
@@ -829,6 +859,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "عرض البوابات",
+     "verb": "يعرض البوابات",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -875,6 +907,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "إضافة بوابة",
+     "verb": "يضيف بوابة",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -921,6 +955,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "تعديل بيانات البوابة",
+     "verb": "يعدّل بيانات بوابة",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -967,6 +1003,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "تغيير حالة البوابة",
+     "verb": "يغيّر حالة البوابة",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -1013,6 +1051,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "حذف بوابة",
+     "verb": "يحذف بوابة",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -1151,6 +1191,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "تفعيل عدسة العلامات",
+     "verb": "يفعّل عدسة العلامات",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "capability",
      "sensitive": false,
      "guard": {
@@ -1197,6 +1239,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "عرض العلامات",
+     "verb": "يعرض العلامات",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -1243,6 +1287,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "إضافة علامة",
+     "verb": "يضيف علامة",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -1289,6 +1335,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "تعديل علامة",
+     "verb": "يعدّل علامة",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -1335,6 +1383,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "تعديل موقع العلامة",
+     "verb": "يعدّل موقع العلامة",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -1381,6 +1431,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "حذف علامة",
+     "verb": "يحذف علامة",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -1519,6 +1571,8 @@
      "ownerKind": "lens",
      "domain": "lens.dist",
      "label": "تفعيل عدسة التوزيع",
+     "verb": "يفعّل عدسة التوزيع",
+     "place": "الخريطة ← عدسة التوزيع",
      "type": "capability",
      "sensitive": false,
      "guard": {
@@ -1565,6 +1619,8 @@
      "ownerKind": "lens",
      "domain": "lens.dist",
      "label": "عرض التوزيع",
+     "verb": "يعرض التوزيع",
+     "place": "الخريطة ← عدسة التوزيع",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -1611,6 +1667,8 @@
      "ownerKind": "lens",
      "domain": "lens.dist",
      "label": "تسكين موظف على عنصر (التوزيع)",
+     "verb": "يسكّن موظفاً على عنصر في التوزيع",
+     "place": "الخريطة ← عدسة التوزيع",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -1795,6 +1853,8 @@
      "ownerKind": "lens",
      "domain": "lens.dens",
      "label": "تفعيل عدسة الكثافة",
+     "verb": "يفعّل عدسة الكثافة",
+     "place": "الخريطة ← عدسة الكثافة",
      "type": "capability",
      "sensitive": false,
      "guard": {
@@ -1841,6 +1901,8 @@
      "ownerKind": "lens",
      "domain": "lens.dens",
      "label": "عرض الكثافة",
+     "verb": "يعرض الكثافة",
+     "place": "الخريطة ← عدسة الكثافة",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -1887,6 +1949,8 @@
      "ownerKind": "lens",
      "domain": "lens.dens",
      "label": "ضبط حدود التنبيه",
+     "verb": "يضبط حدود تنبيه الكثافة",
+     "place": "الخريطة ← عدسة الكثافة",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -1979,6 +2043,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "عرض مؤشرات المصليات",
+     "verb": "يعرض مؤشرات المصليات",
+     "place": "المتابعة اليومية ← مؤشرات المتابعة — المصليات",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -2027,6 +2093,8 @@
      "ownerKind": "lens",
      "domain": "lens.dens",
      "label": "عرض مؤشرات الإشغال والكثافة",
+     "verb": "يعرض مؤشرات الإشغال والكثافة",
+     "place": "المتابعة اليومية ← مؤشرات المتابعة — الإشغال",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -2075,6 +2143,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "تغيير حالة العلامة/المعلم",
+     "verb": "يغيّر حالة العلامة أو المعلم",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -2121,6 +2191,8 @@
      "ownerKind": "lens",
      "domain": "lens.dist",
      "label": "تحديد الاحتياج على العنصر (needN · needS)",
+     "verb": "يحدّد الاحتياج على العنصر",
+     "place": "الخريطة ← عدسة التوزيع",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -2162,6 +2234,8 @@
      "ownerKind": "lens",
      "domain": "lens.dens",
      "label": "تسجيل/مسح قراءة الكثافة للمصلى",
+     "verb": "يسجّل قراءة كثافة المصلى أو يمسحها",
+     "place": "الخريطة ← عدسة الكثافة",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -2205,6 +2279,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "نقل موضع البوابة على الخريطة",
+     "verb": "ينقل موضع البوابة على الخريطة",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -2245,6 +2321,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "عرض أنواع/خيارات المصليات",
+     "verb": "يعرض أنواع المصليات وخياراتها",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -2284,6 +2362,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "إضافة أنواع/خيارات المصليات",
+     "verb": "يضيف نوعاً أو خياراً للمصليات",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -2323,6 +2403,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "تعديل أنواع/خيارات المصليات",
+     "verb": "يعدّل نوعاً أو خياراً للمصليات",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -2362,6 +2444,8 @@
      "ownerKind": "lens",
      "domain": "lens.zones",
      "label": "حذف أنواع/خيارات المصليات",
+     "verb": "يحذف نوعاً أو خياراً للمصليات",
+     "place": "الخريطة ← عدسة المصليات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -2401,6 +2485,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "عرض أنواع/خيارات البوابات",
+     "verb": "يعرض أنواع البوابات وخياراتها",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -2440,6 +2526,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "إضافة أنواع/خيارات البوابات",
+     "verb": "يضيف نوعاً أو خياراً للبوابات",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -2479,6 +2567,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "تعديل أنواع/خيارات البوابات",
+     "verb": "يعدّل نوعاً أو خياراً للبوابات",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -2518,6 +2608,8 @@
      "ownerKind": "lens",
      "domain": "lens.gates",
      "label": "حذف أنواع/خيارات البوابات",
+     "verb": "يحذف نوعاً أو خياراً للبوابات",
+     "place": "الخريطة ← عدسة البوابات",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -2557,6 +2649,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "عرض أنواع العلامات",
+     "verb": "يعرض أنواع العلامات",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -2596,6 +2690,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "إضافة أنواع العلامات",
+     "verb": "يضيف نوع علامة",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -2635,6 +2731,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "تعديل أنواع العلامات",
+     "verb": "يعدّل نوع علامة",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -2674,6 +2772,8 @@
      "ownerKind": "lens",
      "domain": "lens.marks",
      "label": "حذف أنواع العلامات",
+     "verb": "يحذف نوع علامة",
+     "place": "الخريطة ← عدسة العلامات",
      "type": "delete",
      "sensitive": true,
      "guard": {

@@ -16,6 +16,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "عرض بيانات المسجد الحرام",
+     "verb": "يعرض إحصاءات المسجد الحرام",
+     "place": "الإحصائيات اليومية ← المسجد الحرام",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -63,6 +65,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "إدخال/تعديل الإحصاءات اليومية",
+     "verb": "يُدخل الإحصاءات اليومية للمسجد الحرام ويعدّلها",
+     "place": "الإحصائيات اليومية ← المسجد الحرام",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -112,6 +116,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "اعتماد/قفل اليوم أو الشهر",
+     "verb": "يعتمد يوم أو شهر المسجد الحرام ويقفله",
+     "place": "الإحصائيات اليومية ← المسجد الحرام",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -159,6 +165,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "فتح يوم/شهر مقفل وفق الضوابط",
+     "verb": "يعيد فتح يوم أو شهر مقفل للمسجد الحرام",
+     "place": "الإحصائيات اليومية ← المسجد الحرام",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -206,6 +214,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "عرض بيانات المسجد النبوي",
+     "verb": "يعرض إحصاءات المسجد النبوي",
+     "place": "الإحصائيات اليومية ← المسجد النبوي",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -253,6 +263,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "إدخال/تعديل الإحصاءات اليومية",
+     "verb": "يُدخل الإحصاءات اليومية للمسجد النبوي ويعدّلها",
+     "place": "الإحصائيات اليومية ← المسجد النبوي",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -302,6 +314,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "اعتماد/قفل اليوم أو الشهر",
+     "verb": "يعتمد يوم أو شهر المسجد النبوي ويقفله",
+     "place": "الإحصائيات اليومية ← المسجد النبوي",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -349,6 +363,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "فتح يوم/شهر مقفل وفق الضوابط",
+     "verb": "يعيد فتح يوم أو شهر مقفل للمسجد النبوي",
+     "place": "الإحصائيات اليومية ← المسجد النبوي",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -396,6 +412,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "عرض تحليل المسجد الحرام",
+     "verb": "يعرض تحليل المسجد الحرام",
+     "place": "الإحصائيات اليومية ← تحليل المسجد الحرام",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -445,6 +463,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "عرض تحليل المسجد النبوي",
+     "verb": "يعرض تحليل المسجد النبوي",
+     "place": "الإحصائيات اليومية ← تحليل المسجد النبوي",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -494,6 +514,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "عرض مقارنة الحرمين",
+     "verb": "يعرض مقارنة الحرمين",
+     "place": "الإحصائيات اليومية ← مقارنة الحرمين",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -543,6 +565,8 @@
      "ownerKind": "page",
      "domain": "dstats",
      "label": "عرض المقارنة الزمنية",
+     "verb": "يعرض المقارنة الزمنية",
+     "place": "الإحصائيات اليومية ← المقارنة الزمنية",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -758,7 +782,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.dstats.haram.export"
-     ]
+     ],
+     "verb": "يصدّر إحصاءات المسجد الحرام إلى ملف",
+     "place": "الإحصائيات اليومية ← المسجد الحرام"
     }
    },
    {
@@ -849,7 +875,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.dstats.nabawi.export"
-     ]
+     ],
+     "verb": "يصدّر إحصاءات المسجد النبوي إلى ملف",
+     "place": "الإحصائيات اليومية ← المسجد النبوي"
     }
    },
    {
@@ -931,7 +959,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.dstats.anHaram.export"
-     ]
+     ],
+     "verb": "يصدّر تحليل المسجد الحرام إلى ملف",
+     "place": "الإحصائيات اليومية ← تحليل المسجد الحرام"
     }
    },
    {
@@ -1013,7 +1043,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.dstats.anNabawi.export"
-     ]
+     ],
+     "verb": "يصدّر تحليل المسجد النبوي إلى ملف",
+     "place": "الإحصائيات اليومية ← تحليل المسجد النبوي"
     }
    },
    {
@@ -1095,7 +1127,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.dstats.anCmp.export"
-     ]
+     ],
+     "verb": "يصدّر مقارنة الحرمين إلى ملف",
+     "place": "الإحصائيات اليومية ← مقارنة الحرمين"
     }
    },
    {
@@ -1177,7 +1211,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.dstats.anTime.export"
-     ]
+     ],
+     "verb": "يصدّر المقارنة الزمنية إلى ملف",
+     "place": "الإحصائيات اليومية ← المقارنة الزمنية"
     }
    },
    {

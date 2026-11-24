@@ -1409,7 +1409,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     };
   }
   /* نافذةُ فتح اليوم وإغلاقه (نافذةُ «فتح الشهر بأثر رجعي» نفسُها بنصوص اليوم): open يومٌ منقضٍ يُفتح بأثر رجعي · relock يُعاد قفلُه ·
-     close يُغلق يومٌ مفتوح بيده · unshut يُفتح ما أُغلق — والفتحُ في وضع الإنفاذ يطلب السببَ من نافذة السبب المعتادة (task.month.reopen) */
+     close يُغلق يومٌ مفتوح بيده · unshut يُفتح ما أُغلق — والفتحُ (task.month.reopen) يمضي بتأكيد هذه النافذة وحدها، بلا سؤالٍ عن سبب لأحد (V7 · 53 noreason · قرارُ المالك) */
   _tkDayAskVals(t, n) {
     const e = this.state,
       G = this.hGreg(e.year, t.m, t.day),

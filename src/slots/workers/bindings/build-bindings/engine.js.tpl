@@ -46,11 +46,11 @@ var KIVO_BUILD = (function (B, R, G) {
     for (var k in A) push(A[k], 'removed');
     return out;
   }
-  /* ── B: سياسةُ الاستعادة المستهدفة: super OR (role:mgr AND backup.restore) · السببُ إلزاميٌّ في TO-BE (يُحصى غيابُه ولا يمنع في Phase 3) ── */
-  function restorePolicy(isSuper, isMgr, hasKey, reason) {
+  /* ── B: سياسةُ الاستعادة: super OR (role:mgr AND backup.restore) · السببُ ليس شرطاً لأحد (V7 · 53 noreason · قرارُ المالك) ── */
+  function restorePolicy(isSuper, isMgr, hasKey) {
     var why = isSuper ? 'super' : (isMgr ? (hasKey ? 'mgr-key' : 'mgr-no-key') : 'not-mgr');
-    var ok = !!isSuper || (!!isMgr && !!hasKey), missingReason = !(reason && String(reason).trim());
-    return { ok: ok, why: why, missingReason: missingReason, final: ok && !missingReason, finalWhy: ok ? (missingReason ? 'missing-reason' : why) : why };
+    var ok = !!isSuper || (!!isMgr && !!hasKey);
+    return { ok: ok, why: why, final: ok, finalWhy: why };
   }
   /* ── A/B: علاماتُ العمليات (غيرُ موثوقة) — تعقيمٌ صارم: op من قائمةٍ مغلقة · حقولٌ قصيرة · مفاتيحُ هذا الطلب فقط؛ لا تُستعمل في أي حكمٍ نافذ ── */
   function marker(x) {

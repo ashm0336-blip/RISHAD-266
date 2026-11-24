@@ -154,8 +154,6 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       network: 'تعذّر تأكيد الحفظ؛ المسودة محفوظة، أعد المحاولة بنفس الطلب',
       invalid: 'لم يصل تأكيد حفظ كامل؛ المسودة محفوظة، أعد المحاولة بنفس الطلب',
       uncertain: 'توجد عملية لم يُحسم تأكيدها؛ أعد محاولة العملية نفسها قبل تغيير المسودة',
-      reason: 'يشترط الخادم سبباً لهذا الإجراء؛ المسودة محفوظة حتى تأكيده',
-      'reason-cancelled': 'أُلغي إدخال السبب؛ لم يُعتمد التغيير والمسودة محفوظة',
       'emp-dup': 'توجد هوية أو جوال أو رقم وظيفي مكرر؛ راجع البيانات، لم يُعتمد الاستيراد',
     };
     return { ok: 0, err: code, status: status || 0, message: messages[code] || 'رفض الخادم العملية؛ راجع البيانات والصلاحية ثم أعد المحاولة' };
@@ -173,12 +171,8 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       var value; try { value = await response.json(); } catch (error) { return fail('invalid', response.status); }
       if (!sameActor(stamp)) return fail('session', 401);
       if (!response.ok || !value || value.ok !== 1) {
-        var denials = Object.entries(value && value.denied || {}), reasonOnly = denials.length && denials.every(function (pair) { return pair[1] && pair[1].why === 'reason'; });
-        if (response.status === 403 && value && (value.why === 'reason' || reasonOnly)) {
-          var reasonKeys = Array.isArray(value.reasonKeys) ? value.reasonKeys.slice() : [];
-          denials.forEach(function (pair) { if (Array.isArray(pair[1].reasonKeys)) reasonKeys.push.apply(reasonKeys, pair[1].reasonKeys); });
-          return Object.assign(fail('reason', 403), { reasonKey: denials.length ? denials[0][0] : 'bsdept:' + stamp.dept + ':bassam_employees_v1', reasonKeys: Array.from(new Set(reasonKeys.filter(function (key) { return typeof key === 'string'; }))) });
-        }
+        /* V7 · 53 (noreason · قرارُ المالك): لا سببَ يُطلب — رفضٌ ما (ولو why:reason من خادمٍ قديم) رفضٌ عاديّ لا نافذةَ سببٍ بعده */
+        var denials = Object.entries(value && value.denied || {});
         /* V7 · د1-د: رفضٌ سببُه تكرارُ الهوية أو الجوال أو الرقم الوظيفي (emp-dup — قد يكون مع موظفٍ في وحدةٍ أخرى) يُقال بسببه، لا «صلاحيتك لا تسمح» */
         if (response.status === 403 && denials.length && denials.every(function (pair) { return pair[1] && pair[1].why === 'emp-dup'; })) return fail('emp-dup', 403);
         /* V7 · د7: رفضُ التكرار المفصَّل من الانتقال (019c empDupList): الحقل · القيمة · أين — يُترجمه المستدعي إلى أرقام صفوف الملف */
@@ -244,21 +238,10 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     var ticket = Object.freeze({ requestId: requestId, intent: intent });
     transitionTickets.set(ticket, { stamp: stamp, body: JSON.stringify(body) }); return ticket;
   }
-  async function transitionSend(ticket, asked) {
+  async function transitionSend(ticket) {
     var prepared = transitionTickets.get(ticket); if (!prepared || !sameActor(prepared.stamp)) return fail('session', 401);
     var result = await transitionRequest('/api/employees/transition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: prepared.body }, prepared.stamp);
-    if (!result.ok) {
-      var srv = KIVO.__BS_SRV;
-      if (result.err !== 'reason' || asked || !srv || typeof srv.askReason !== 'function') return result;
-      var reason = await new Promise(function (resolve) { srv.askReason(result.reasonKey, result.reasonKeys, resolve); });
-      if (!sameActor(prepared.stamp)) return fail('session', 401);
-      if (typeof reason !== 'string' || !reason.trim()) return fail('reason-cancelled');
-      var body = JSON.parse(prepared.body), bytes = new Uint8Array(20); window.crypto.getRandomValues(bytes);
-      body.requestId = 'emp-' + Array.from(bytes, function (n) { return n.toString(16).padStart(2, '0'); }).join(''); body.reason = reason.trim();
-      var next = Object.freeze({ requestId: body.requestId, intent: ticket.intent });
-      transitionTickets.set(next, { stamp: prepared.stamp, body: JSON.stringify(body) });
-      var retried = await transitionSend(next, true); retried.ticket = next; return retried;
-    }
+    if (!result.ok) return result;   /* V7 · 53 (noreason): لا إعادةَ إرسالٍ بسببٍ يُسأل عنه */
     var ack = result.data;
     if (ack.dept !== prepared.stamp.dept || ack.intent !== ticket.intent || ack.requestId !== ticket.requestId || !nonnegative(ack.rev) || !ack.revs || typeof ack.revs !== 'object' || Array.isArray(ack.revs) || !Object.keys(ack.revs).every(function (key) { return nonnegative(ack.revs[key]); }) || !ack.counts || typeof ack.counts !== 'object' || Array.isArray(ack.counts) || !['employees', 'removed', 'accountsCreated', 'accountsRemoved', 'schedule'].every(function (name) { return nonnegative(ack.counts[name]); })) return fail('invalid');
     try { if (KIVO.__BS_SRV && KIVO.__BS_SRV.mine) await KIVO.__BS_SRV.mine(ack.revs); } catch (e) { /* V7 · د6 (QA) · البند ٥: علامةٌ للشريط · V7 · د7: وتجديدُ حقبة طبقة الحفظ قبل إعلان النجاح (280 srvSettle9) */ }   /* نقلٌ · إنشاءُ حسابات · استيراد · حذف: من فعلي */
@@ -343,7 +326,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
         }
         ST.error = result.message; ST.needsReview = result.err === 'conflict';
         ST.uncertain = result.err === 'network' || result.err === 'invalid' || result.err === 'session';
-        if (!ST.uncertain && !ST.needsReview && result.err !== 'reason' && result.err !== 'reason-cancelled') ST.ticket = null;
+        if (!ST.uncertain && !ST.needsReview) ST.ticket = null;
         toast(result.message); return;
       }
       var parts = summaryParts(ST.plan, pend), warnings = result.receipt.warnings || [];
