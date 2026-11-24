@@ -26,6 +26,23 @@ DB.exec("INSERT INTO meta(k,v) VALUES('cal_pend','" + JSON.stringify({ [DEPT]: C
 if (process.env.NOPEND === "1") DB.exec("DELETE FROM meta WHERE k='cal_pend'");
 if (process.env.ONLY_TASKS === "1") { const ep0 = (await call("/api/operations/read?keys=" + encodeURIComponent(K("bassam_employees_v1")), { ck: su.ck })).j.epoch; const r = await call("/api/tasks/create", { ck: su.ck, body: { requestId: "TEST_ONLY_r45_x", epoch: ep0, dept: DEPT, k: Tg, t: "TEST_ONLY r45", s: Date.now() - 60e3, e: Date.now() + 7200e3, asg: [], rv: "none", force: true } }); quiet(JSON.stringify({ pend: (DB.q("SELECT v FROM meta WHERE k='cal_pend'")[0] || {}).v, st: r.status, j: r.j })); process.exit(0); }
 DB.limits = process.env.LIMITS !== '0';
+/* REVIEW 45 ②: فتحُ الصفحات على إدارةٍ معلَّقة — قراءةُ ما تقرؤه كلُّ صفحة، والعميلُ يعيد على 503 calendar-preparing حتى 200 (PAGES=1) */
+if (process.env.PLANONLY === '1') {
+  const PK = K('bassam_plan_v1'), sz = DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource='bassam_plan_v1'", DEPT)[0].n, out2 = [];
+  for (const [nm, q] of [['plan month read', 'keys=' + encodeURIComponent(PK + '@' + Tg.slice(0, 7))], ['plan whole read', 'keys=' + encodeURIComponent(PK)]]) { let r, n = 0; const a = performance.now(), per = []; for (;;) { const b = performance.now(); r = await call('/api/operations/read?' + q, { ck: su.ck }); per.push(Math.round(performance.now() - b)); if (r.status !== 503 || ++n > 200) break; } out2.push({ nm, st: r.status, err: r.j && r.j.err, n503: n, total: Math.round(performance.now() - a), per }); }
+  quiet(JSON.stringify({ planNodes: sz, out2 })); process.exit(0);
+}
+if (process.env.PAGES === '1') {
+  const SQLT = new Map(); if (process.env.SQLPROF === '1') { const raw = DB.db, P0 = raw.prepare.bind(raw); raw.prepare = (sql) => { const s = P0(sql); return new Proxy(s, { get(o, k) { const v = o[k]; if (typeof v !== 'function') return v; if (!['all', 'run', 'get'].includes(k)) return v.bind(o); return (...a) => { const t = performance.now(); try { return v.apply(o, a); } finally { const key = sql.replace(/\s+/g, ' ').slice(0, 140); SQLT.set(key, (SQLT.get(key) || 0) + performance.now() - t); } }; } }); }; process.on('exit', () => { [...SQLT].sort((x, y) => y[1] - x[1]).slice(0, 10).forEach(([k, v]) => process.stderr.write('SQL ' + Math.round(v) + 'ms ' + k + '\n')); }); }
+  const ym = Tg.slice(0, 7), pages = [['staffing', 'keys=' + encodeURIComponent(K('bassam_staffing_v3'))], ['plan', 'keys=' + encodeURIComponent(K('bassam_plan_v1'))], ['daily (rounds month)', 'keys=' + encodeURIComponent(K('bassam_rounds_v1') + '@') + '&range=' + encodeURIComponent(K('bassam_rounds_v1') + '@' + ym)], ['dreport (month)', 'keys=' + encodeURIComponent(K('bassam_dreport_v1') + '@') + '&range=' + encodeURIComponent(K('bassam_dreport_v1') + '@' + ym)], ['tasks', 'keys=' + encodeURIComponent(K('bassam_tasks_v1'))]];
+  const res = [], ops0 = DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n, aud0 = DB.q('SELECT COUNT(*) n FROM aud')[0].n;
+  for (const [name, q] of pages) {
+    const a = performance.now(), per = []; let r, n = 0;
+    for (;;) { DB.peak = 0; const b = performance.now(); r = await call('/api/operations/read?' + q, { ck: su.ck }); per.push(Math.round(performance.now() - b)); process.stderr.write('PAGE ' + name + ' ' + r.status + ' ' + per[per.length - 1] + 'ms ' + ((r.j && r.j.msg) || '') + '\n'); if (r.status !== 503 || ++n > 200) break; }
+    res.push({ name, status: r.status, err: r.j && r.j.err, msg: r.j && r.j.msg, totalMs: Math.round(performance.now() - a), rounds503: n, maxRequestMs: Math.max(...per), lastPeakMB: +(DB.peak / 1048576).toFixed(2) });
+  }
+  quiet(JSON.stringify({ world: C, limits: DB.limits, pages: res, savesByOpening: DB.q('SELECT COUNT(*) n FROM restore_operations')[0].n - ops0, audByOpening: DB.q('SELECT COUNT(*) n FROM aud')[0].n - aud0 }, null, 1)); process.exit(0);
+}
 
 /* REVIEW 45: المساراتُ العادية على إدارةٍ معلَّقة بتاريخٍ واقعي، كما تفعلها الصفحة (قراءةُ الفترة ثم حفظُها بأساسها) — وكتابةٌ بلا قراءة قبلها */
 const nodes = DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource='bassam_rounds_v1'", DEPT)[0].n;
@@ -45,6 +62,17 @@ await readSave('rounds day (today)', K('bassam_rounds_v1') + '@' + Tg, (v) => (v
 await readSave('staffing month', K('bassam_staffing_v3') + '@' + Tg.slice(0, 7), (v) => v);
 await readSave('plan month', K('bassam_plan_v1') + '@' + Tg.slice(0, 7), (v) => v);
 await readSave('dreport day (today)', K('bassam_dreport_v1') + '@' + Tg, (v) => v);
+/* حفظُ الخطة بالوثيقة كلِّها عبر /api/save (رسمُ مصلى ثم «حفظ البيانات» في صفحة الخطة): العميلُ يعيد على 503 calendar-preparing بالطلب نفسِه حتى 200 */
+{
+  const PK = K('bassam_plan_v1'); let r0, n0 = 0; const a0 = performance.now();
+  for (;;) { r0 = await read([PK]); if (r0.status !== 503 || ++n0 > 200) break; }
+  out.push({ name: 'plan whole read (page open)', status: r0.status, rounds503: n0, totalMs: Math.round(performance.now() - a0) });
+  const v = r0.j.resources[PK], body = { requestId: 'TEST_ONLY_r45_plan', epoch: r0.j.epoch, base: { [PK]: r0.j.base[PK] }, set: { [PK]: JSON.stringify(v) }, del: [] };
+  let r, n = 0, per = []; const a = performance.now();
+  for (;;) { const b = performance.now(); r = await call('/api/save', { ck: su.ck, body }); per.push(Math.round(performance.now() - b)); if (r.status !== 503 || ++n > 200) break; }
+  const back = await read([PK]);
+  out.push({ name: 'plan whole save via /api/save', status: r.status, err: r.j && r.j.err, rounds503: n, totalMs: Math.round(performance.now() - a), maxRequestMs: Math.max(...per), saved: JSON.stringify(back.j.resources[PK]) === JSON.stringify(v) });
+}
 /* كتابةٌ أولى بلا قراءة: يومٌ ماضٍ لم يُلمس (base 0) — يُحوَّل قبل أساس الطلب */
 {
   const k = K('bassam_rounds_v1') + '@' + dayOf(5), ep = (await read([K('bassam_employees_v1')])).j.epoch;
