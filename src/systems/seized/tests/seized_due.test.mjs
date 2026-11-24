@@ -7,7 +7,7 @@ import { needs } from '../../../../tests/unit/harness.mjs';
 const DUE=Date.parse('2026-10-31T06:01:00Z'); // Saturday09:01 Riyadh.
 async function clock(fn){const RealDate=globalThis.Date,box={now:DUE};globalThis.Date=class extends RealDate{constructor(...a){super(...(a.length?a:[box.now]));}static now(){return box.now;}};try{await fn(v=>box.now=RealDate.parse(v));}finally{globalThis.Date=RealDate;}}
 async function fixture({empty=false}={}){
- const B=await world({schema:CURRENT_SCHEMA}),W=await candidateWorker(['nfSeizedDue','NF_REV','pfHijriAt','szKey','szRevs']);
+ const B=await world({schema:CURRENT_SCHEMA}),W=await candidateWorker(['nfSeizedDue','NF_REV','pfDayAt','szKey','szRevs']);
  /* V7 · d5h (owner rule, item 7): a notification of an OFF system is never generated -- and the shared world ceiling (canonical_fx) does not carry
     seized, so it is turned ON for the departments and their parent first (as section_mgr_reload turns systems ON before opening their addresses).
     The OFF case itself: tests/unit/v7_d5h_notif_off.test.mjs and tests/browser/v7_d5h_notif_off.test.mjs */
@@ -23,11 +23,12 @@ const messages=B=>clone(B.DB.q("SELECT * FROM notification_messages WHERE type I
 const state=B=>Object.fromEntries(['meta','revs','aud','notification_messages','notification_targets','notification_dedup'].map(t=>[t,clone(B.DB.q('SELECT * FROM '+t))]));
 function beforeCommit(B,change){const batch=B.DB.batch.bind(B.DB);let fired=false;B.DB.batch=async st=>{if(!fired&&st.some(s=>s.sql.includes('KIVO_SEIZED_DUE_SEEN'))){fired=true;change();}batchBounds(st);return batch(st);};return ()=>fired;}
 
-test('Seized due keeps Riyadh windows and original unpadded daily/weekly once keys',needs('award', 'custody', 'dstats'), async()=>clock(async set=>{
+test('Seized due keeps Riyadh windows and Gregorian ISO daily/weekly once keys (V7 · 53 تقويم)',needs('award', 'custody', 'dstats'), async()=>clock(async set=>{
  const B=await fixture();set('2026-10-31T04:59:00Z');assert.equal((await B.poll()).emitted,0);
  set('2026-10-31T05:01:00Z');assert.equal((await B.poll()).emitted,1);assert.deepEqual(messages(B).map(r=>r.type),['bx_wk']);
- set('2026-10-31T06:01:00Z');assert.equal((await B.poll()).emitted,1);const day=B.W.pfHijriAt(DUE),keys=B.DB.q("SELECT once_key FROM notification_dedup WHERE once_key LIKE 'bx_%'").map(r=>r.once_key).sort();
- assert.deepEqual(keys,['bx_old:'+day.y+'-'+day.m+'-'+day.d,'bx_wk:'+day.y+'-'+day.m+'-'+day.d].sort());
+ set('2026-10-31T06:01:00Z');assert.equal((await B.poll()).emitted,1);const day=B.W.pfDayAt(DUE),keys=B.DB.q("SELECT once_key FROM notification_dedup WHERE once_key LIKE 'bx_%'").map(r=>r.once_key).sort();
+ assert.deepEqual(keys,['bx_old:'+day.dk,'bx_wk:'+day.dk].sort());
+ assert.deepEqual(keys,['bx_old:2026-10-31','bx_wk:2026-10-31'],'V7 · 53 تقويم: اليومُ الميلادي ISO المبطَّن');
 }));
 test('SQL storage facts preserve quantity/value notification semantics and active department',needs('award', 'custody', 'dstats'), async()=>clock(async()=>{
  const B=await fixture(),revs=await B.W.szRevs(B.env,D1);assert.equal((await B.poll()).emitted,2);const rows=messages(B);assert.equal(rows.length,2);assert.ok(rows.every(r=>r.department===D1));assert.ok(rows.every(r=>!r.body.includes('99999')));assert.match(rows.find(r=>r.type==='bx_wk').body,/1,200/);assert.deepEqual(await B.W.szRevs(B.env,D1),revs);

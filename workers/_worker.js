@@ -705,7 +705,7 @@ var KIVO_GUARDS = (function (B, R) {
       var ks = union(a, b); for (i = 0; i < ks.length; i++) if (ks[i] !== 'reports' && !deq(a[ks[i]], b[ks[i]])) R.res(ks[i], 'unknown-root-key');
     };
   }
-  C['bassam_irshad_v1'] = recBulk('ir.rec'); C['bassam_seized_v1'] = recBulk('sz.rec'); C['bassam_rasd_v1'] = recBulk('rz.rec');
+  C['bassam_irshad_v1'] = recBulk('ir.rec'); C['bassam_seized_v1'] = recBulk('sz.rec'); C['bassam_rasd_v1'] = (function (f) { return function (R, a, b, ctx) { f(R, a, b, ctx); var was = {}; arr(isObj(a) ? a.reports : []).forEach(function (r) { if (isObj(r) && r.id != null) was['r:' + r.id] = r; }); arr(isObj(b) ? b.reports : []).forEach(function (r) { if (isObj(r) && /^1[3-5]\d{2}$/.test(String(r.y)) && !deq(was['r:' + r.id], r)) R.res('reports[' + r.id + '].y', 'V7 · 53 تقويم: تاريخٌ هجري من عميلٍ قديم — اليومُ ميلادي'); }); }; })(recBulk('rz.rec'));
   C['bassam_last_export_v1'] = function (R) { R.op('backup.create', 'stamp'); };
   /* ═══ الواجهة ═══ */
   function classify(resName, a, b, ctx) {
@@ -1840,8 +1840,10 @@ function cuError(code, status) {
   e.cuStatus = status || 400;
   return e;
 }
+/* V7 · 53 تقويم (cal-rest · ق1 · ق2): ساعةُ الأنظمة العلائقية (العهد · الاسترشاد · المضبوطات · نقلُ الموظف) ميلاديةٌ — تاريخُ الرياض المدنيّ بلا مهلة
+   كما كانت (pfHijriAt)، وكلُّ مستهلكيها يكتبون أو يقرؤون أعمدةَ greg_* */
 function cuClock() {
-  var x = pfHijriAt(Date.now());
+  var x = pfDayAt(Date.now());
   if (!x || !x.y || !x.m || !x.d) throw cuError('custody-clock-unavailable', 503);
   return { y: x.y, m: x.m, d: x.d };
 }
@@ -4947,7 +4949,8 @@ function nfLeadShifts(A, u, d, refs) {
    ورديةٌ ليلية (نهايتُها ≤ بدايتها) من ورديات أمس (تقريرُه · جدولُ شهره · ورديات الإدارة) لم تنتهِ بعد ⇒ اليومُ يومُ أمس، وإلا يومُ التقويم (pfOpDay بالقاعدة نفسِها
    لكن على ورديات الإدارة كلِّها). كان يُحسب بوردية الشخص وحده (pfOpDay(dayOf)) فيُعدّ رئيسُ اليوم التالي — ولا ورديةَ له أمس — رئيساً بعد منتصف الليل والليلةُ لم تنتهِ */
 function nfDeptOpDay(dr, st, opts, now) {
-  var C = pfHijriAt(now), P = pfHijriAt(now - 86400000), n = pfRiyadhMins(now), rep = isObj(dr) ? dr[P.dk] : null, bk = isObj(st) && isObj(st[P.ym]) ? st[P.ym] : {}, defs = [], s;
+  /* V7 · 53 تقويم (ق1): اليومُ ميلادي — مفاتيحُ التقرير (YYYY-MM-DD) والجدول (YYYY-MM) كما تكتبها الصفحات بعد 0014 */
+  var C = pfDayAt(now), P = pfDayAt(now - 86400000), n = pfRiyadhMins(now), rep = isObj(dr) ? dr[P.dk] : null, bk = isObj(st) && isObj(st[P.ym]) ? st[P.ym] : {}, defs = [], s;
   if (isObj(rep) && isObj(rep.shifts)) for (s in rep.shifts) { var x = rep.shifts[s]; defs.push(isObj(x) && isObj(x.def) && (x.def.tStart || x.def.tEnd) ? x.def : pfDef(bk, s, opts)); }
   (Array.isArray(bk.__shifts) && bk.__shifts.length ? bk.__shifts : Array.isArray(opts) ? opts : []).forEach(function (o) { if (isObj(o)) defs.push(o); });
   var night = defs.some(function (q) { var a = pfMins(q && q.tStart), b = pfMins(q && q.tEnd); return a != null && b != null && b <= a && n < b; });
@@ -7391,9 +7394,9 @@ var CU_TABLES = {
       'sequence',
       'kind',
       'holder_key',
-      'hijri_year',
-      'hijri_month',
-      'hijri_day',
+      'greg_year',
+      'greg_month',
+      'greg_day',
       'condition',
       'note',
       'color_snapshot',
@@ -7518,13 +7521,9 @@ function cuConvert(dept, doc) {
     if (
       ['out', 'in', 'dmg', 'lost'].indexOf(m.t) < 0 ||
       ![m.y, m.m, m.d].every(Number.isSafeInteger) ||
-      m.y < 1000 ||
-      m.y > 9999 ||
-      m.m < 1 ||
-      m.m > 12 ||
-      m.d < 0 ||
-      m.d > 30
-    )
+      !(calYearCal(m.y) === 'h' ? m.m >= 1 && m.m <= 12 && m.d >= 0 && m.d <= 30 : calGregOk(m.y, m.m, m.d, true))
+    )   /* V7 · 53 تقويم (ق10 · §1.10): هذا محوِّلُ الوثيقة القديمة (الترحيل · النسخ القديمة · العرض التجريبي) — يومُها الهجري بقاعدته القديمة (≤ 30، ويحوّله 0014/الاستيراد)،
+           والميلادي يومٌ صحيح بطول شهره (الصفرُ = يومٌ غير معروف). وما سواهما يُرفض */
       throw cuError('custody-cutover-date-kind');
     ['cond', 'note', 'by', 'nid', 'empno', 'name', 'color'].forEach(function (k) {
       if (m[k] !== undefined) cuHistoricalText(m[k]);
@@ -7562,9 +7561,9 @@ function cuConvert(dept, doc) {
       sequence: index,
       kind: m.t,
       holder_key: m.eid,
-      hijri_year: m.y,
-      hijri_month: m.m,
-      hijri_day: m.d,
+      greg_year: m.y,
+      greg_month: m.m,
+      greg_day: m.d,
       presence_mask: 0,
       created_at: null,
       actor_uid: null,
@@ -7686,11 +7685,11 @@ function cuLatest(deptSlot, cutoffSlot) {
   return (
     'm.department_id=' +
     deptSlot +
-    ' AND m.hijri_year*12+m.hijri_month<=' +
+    ' AND m.greg_year*12+m.greg_month<=' +
     cutoffSlot +
-    ' AND NOT EXISTS(SELECT 1 FROM custody_movements z WHERE z.department_id=m.department_id AND z.issue_id=m.issue_id AND z.hijri_year*12+z.hijri_month<=' +
+    ' AND NOT EXISTS(SELECT 1 FROM custody_movements z WHERE z.department_id=m.department_id AND z.issue_id=m.issue_id AND z.greg_year*12+z.greg_month<=' +
     cutoffSlot +
-    ' AND (z.hijri_year,z.hijri_month,z.hijri_day,z.sequence)>(m.hijri_year,m.hijri_month,m.hijri_day,m.sequence))'
+    ' AND (z.greg_year,z.greg_month,z.greg_day,z.sequence)>(m.greg_year,m.greg_month,m.greg_day,m.sequence))'
   );
 }
 async function cuAuthority(env, A, d, op, meta) {
@@ -7765,7 +7764,7 @@ async function cuNotifyCommitted(env, A, d, ack) {
         الرقم: r.serial,
         الاسم: r.holder_name_snapshot || r.holder_key,
         الحالة: r.kind === 'dmg' ? 'تالفة' : 'مفقودة',
-        التاريخ: r.hijri_year + '-' + r.hijri_month + '-' + r.hijri_day,
+        التاريخ: r.greg_day ? calGKey(r.greg_year, r.greg_month, r.greg_day) : calGYm(r.greg_year, r.greg_month),   /* V7 · 53 تقويم: ISO ميلادي */
       },
     };
   });
@@ -7830,7 +7829,7 @@ function cuUncursor(s) {
   }
 }
 function cuResolvedCte(allMoves) {
-  var where = allMoves ? 'm.department_id=?1 AND m.hijri_year*12+m.hijri_month=?2' : cuLatest('?1', '?2');
+  var where = allMoves ? 'm.department_id=?1 AND m.greg_year*12+m.greg_month=?2' : cuLatest('?1', '?2');
   return (
     "WITH employees AS (SELECT COALESCE(NULLIF(json_extract(value,'$.eid'),''),json_extract(value,'$.name')) AS ek,json_extract(value,'$.nid') AS nid,json_extract(value,'$.empno') AS empno,json_extract(value,'$.name') AS name FROM json_each(?3)), base AS (SELECT m.*,s.serial,i.name AS item_name FROM custody_movements m JOIN custody_issues s ON s.department_id=m.department_id AND s.issue_id=m.issue_id JOIN custody_items i ON i.department_id=m.department_id AND i.item_id=m.item_id WHERE " +
     where +
@@ -7855,9 +7854,9 @@ function cuIssueDto(row) {
     eid: row.hkey,
     hid: row.holder_key,
     snapshot: { nid: row.holder_nid_snapshot || '', empno: row.holder_empno_snapshot || '', name: row.holder_name_snapshot || '' },
-    y: row.hijri_year,
-    m: row.hijri_month,
-    d: row.hijri_day,
+    y: row.greg_year,
+    m: row.greg_month,
+    d: row.greg_day,
     note: row.note || '',
     by: row.actor_label || '',
     orphan: !row.exact_key && row.alias_n !== 1,
@@ -7903,8 +7902,8 @@ async function cuRead(env, A, q) {
     kind = q.kind || '';
   if (
     !Number.isSafeInteger(y) ||
-    y < 1000 ||
-    y > 9999 ||
+    y < 1900 ||   /* V7 · 53 تقويم (ق1): الشهرُ ميلادي — سنةٌ هجرية من عميلٍ قديم تُرفض */
+    y > 2199 ||
     !Number.isSafeInteger(m) ||
     m < 1 ||
     m > 12 ||
@@ -7965,7 +7964,7 @@ async function cuRead(env, A, q) {
     if (view === 'month') {
       pageSql =
         cte +
-        "SELECT r.hkey AS holderKey,COUNT(*) AS heldCount,MAX(r.hijri_year*10000+r.hijri_month*100+r.hijri_day) AS last_day,MAX(COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')) AS name,MAX(COALESCE(r.holder_nid_snapshot,'')) AS nid,MAX(COALESCE(r.holder_empno_snapshot,'')) AS empno,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n!=1 THEN 1 ELSE 0 END) AS orphan,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n>1 THEN 1 ELSE 0 END) AS ambiguous" +
+        "SELECT r.hkey AS holderKey,COUNT(*) AS heldCount,MAX(r.greg_year*10000+r.greg_month*100+r.greg_day) AS last_day,MAX(COALESCE((SELECT MIN(name) FROM employees e WHERE e.ek=r.hkey),r.holder_name_snapshot,'')) AS name,MAX(COALESCE(r.holder_nid_snapshot,'')) AS nid,MAX(COALESCE(r.holder_empno_snapshot,'')) AS empno,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n!=1 THEN 1 ELSE 0 END) AS orphan,MAX(CASE WHEN r.exact_key IS NULL AND r.alias_n>1 THEN 1 ELSE 0 END) AS ambiguous" +
         from +
         ' GROUP BY r.hkey ORDER BY r.hkey LIMIT ' +
         (limit + 1) +
@@ -7976,8 +7975,8 @@ async function cuRead(env, A, q) {
         cte +
         'SELECT r.*' +
         from +
-        (token ? ' AND (r.hijri_year,r.hijri_month,r.hijri_day,r.sequence,r.move_id)>(?7,?8,?9,?10,?11)' : '') +
-        ' ORDER BY r.hijri_year,r.hijri_month,r.hijri_day,r.sequence,r.move_id LIMIT ' +
+        (token ? ' AND (r.greg_year,r.greg_month,r.greg_day,r.sequence,r.move_id)>(?7,?8,?9,?10,?11)' : '') +
+        ' ORDER BY r.greg_year,r.greg_month,r.greg_day,r.sequence,r.move_id LIMIT ' +
         (limit + 1);
       if (token) pageArgs.push.apply(pageArgs, token.key);
     }
@@ -8004,7 +8003,7 @@ async function cuRead(env, A, q) {
       env.DB.prepare(stateSql).bind(d, cutoff),
       env.DB.prepare(stateSql).bind(d, cutoff - 1),
       env.DB.prepare(
-        'SELECT kind,COUNT(*) n FROM custody_movements WHERE department_id=?1 AND hijri_year=?2 AND hijri_month=?3 GROUP BY kind',
+        'SELECT kind,COUNT(*) n FROM custody_movements WHERE department_id=?1 AND greg_year=?2 AND greg_month=?3 GROUP BY kind',
       ).bind(d, y, m),
       cuBind(env, topSql, [d, cutoff, employeeJson]),
     ];
@@ -8091,7 +8090,7 @@ async function cuRead(env, A, q) {
               ? [(token ? token.key[0] : 0) + rows.length]
               : view === 'catalog'
                 ? [last.item_id]
-                : [last.hijri_year, last.hijri_month, last.hijri_day, last.sequence, last.move_id],
+                : [last.greg_year, last.greg_month, last.greg_day, last.sequence, last.move_id],
           )
         : '',
       catalogNext: catMore ? cursor('catalog', [catalog[catalog.length - 1].item_id]) : '',
@@ -8263,9 +8262,9 @@ async function cuAct(env, A, b, meta) {
           sequence: ++sequence,
           kind: 'out',
           holder_key: holder,
-          hijri_year: clock.y,
-          hijri_month: clock.m,
-          hijri_day: clock.d,
+          greg_year: clock.y,
+          greg_month: clock.m,
+          greg_day: clock.d,
           condition: line.condition === undefined ? 'جديد' : cuString(line.condition, 4096, true),
           note: null,
           color_snapshot: line.color === undefined ? item.color || '#b99751' : cuString(line.color, 4096, true),
@@ -8288,7 +8287,7 @@ async function cuAct(env, A, b, meta) {
       var closeId = cuString(b.issueId, 200, false);
       if (['in', 'dmg', 'lost'].indexOf(b.kind) < 0) throw cuError('custody-close-kind');
       var held = await env.DB.prepare(
-        'SELECT m.*,s.serial FROM custody_movements m JOIN custody_issues s ON s.department_id=m.department_id AND s.issue_id=m.issue_id WHERE m.department_id=?1 AND m.issue_id=?2 ORDER BY m.hijri_year DESC,m.hijri_month DESC,m.hijri_day DESC,m.sequence DESC LIMIT 1',
+        'SELECT m.*,s.serial FROM custody_movements m JOIN custody_issues s ON s.department_id=m.department_id AND s.issue_id=m.issue_id WHERE m.department_id=?1 AND m.issue_id=?2 ORDER BY m.greg_year DESC,m.greg_month DESC,m.greg_day DESC,m.sequence DESC LIMIT 1',
       )
         .bind(d, closeId)
         .first();
@@ -8297,9 +8296,9 @@ async function cuAct(env, A, b, meta) {
         move_id: 'move-' + randTok(),
         sequence: ++sequence,
         kind: b.kind,
-        hijri_year: clock.y,
-        hijri_month: clock.m,
-        hijri_day: clock.d,
+        greg_year: clock.y,
+        greg_month: clock.m,
+        greg_day: clock.d,
         note: b.note === undefined ? '' : cuString(b.note, 4096, true),
         actor_uid: A.u.id,
         actor_label: String(A.u.name || A.u.id),
@@ -8538,7 +8537,7 @@ async function cuCleanupPermission(env, A, dept, intent, oldEmployees, newEmploy
   var before = {
       items: [{ name: 'CLEANUP_WITNESS', qty: 0 }],
       moves: moves.map(function (r, i) {
-        return { t: r.kind, eid: r.holder_key, item: 'CLEANUP_WITNESS', ser: 'W-' + i, y: r.hijri_year, m: r.hijri_month, d: r.hijri_day };
+        return { t: r.kind, eid: r.holder_key, item: 'CLEANUP_WITNESS', ser: 'W-' + i, y: r.greg_year, m: r.greg_month, d: r.greg_day };
       }),
     },
     after = { items: before.items, moves: [] };
@@ -8737,15 +8736,15 @@ function cuValidateDomain(domain, dept) {
     if (
       !Number.isSafeInteger(r.sequence) ||
       r.sequence < 0 ||
-      !Number.isSafeInteger(r.hijri_year) ||
-      r.hijri_year < 1000 ||
-      r.hijri_year > 9999 ||
-      !Number.isSafeInteger(r.hijri_month) ||
-      r.hijri_month < 1 ||
-      r.hijri_month > 12 ||
-      !Number.isSafeInteger(r.hijri_day) ||
-      r.hijri_day < 0 ||
-      r.hijri_day > 30 ||
+      !Number.isSafeInteger(r.greg_year) ||
+      r.greg_year < 1900 ||
+      r.greg_year > 2199 ||
+      !Number.isSafeInteger(r.greg_month) ||
+      r.greg_month < 1 ||
+      r.greg_month > 12 ||
+      !Number.isSafeInteger(r.greg_day) ||
+      r.greg_day < 0 ||
+      r.greg_day > 31 ||   /* V7 · 53 تقويم (§1.10): يومُ الشهر الميلادي 0–31 (قيدُ الجدول نفسُه) */
       ['out', 'in', 'dmg', 'lost'].indexOf(r.kind) < 0 ||
       !Number.isSafeInteger(r.presence_mask) ||
       r.presence_mask < 0 ||
@@ -10996,9 +10995,9 @@ async function rsPrepare(env, A, body, meta, internal) {
     }
     plan.guards.push(revGuard(env, K_DSTATS, body.base.dailyStats));
     var specs = [
-      ['daily_stats_days', ['site', 'hijri_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
-      ['daily_stats_month_locks', ['site', 'hijri_year', 'hijri_month', 'approved', 'reopened', 'legacy_boolean']],
-      ['daily_stats_day_locks', ['site', 'hijri_year', 'hijri_month', 'hijri_day', 'is_open', 'is_shut']],
+      ['daily_stats_days', ['site', 'greg_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
+      ['daily_stats_month_locks', ['site', 'greg_year', 'greg_month', 'approved', 'reopened', 'legacy_boolean']],
+      ['daily_stats_day_locks', ['site', 'greg_year', 'greg_month', 'greg_day', 'is_open', 'is_shut']],
     ];
     var dsChanges = dsDomainStatements(env, current.data, next);
     for (var sp of specs) {
@@ -13022,9 +13021,9 @@ async function rsConvertBackup(env, A, file, opt) {
       domains.dailyStats = { version: 1, data: current.data };
       summary.preservedGlobals.push('dailyStats');
       [
-        ['days', 'daily_stats_days', ['site', 'hijri_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
-        ['months', 'daily_stats_month_locks', ['site', 'hijri_year', 'hijri_month', 'approved', 'reopened', 'legacy_boolean']],
-        ['locks', 'daily_stats_day_locks', ['site', 'hijri_year', 'hijri_month', 'hijri_day', 'is_open', 'is_shut']],
+        ['days', 'daily_stats_days', ['site', 'greg_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
+        ['months', 'daily_stats_month_locks', ['site', 'greg_year', 'greg_month', 'approved', 'reopened', 'legacy_boolean']],
+        ['locks', 'daily_stats_day_locks', ['site', 'greg_year', 'greg_month', 'greg_day', 'is_open', 'is_shut']],
       ].forEach(function (spec) {
         readGuards.push.apply(readGuards, rsWitness(env, spec[1], spec[2], current.rows[spec[0]]));
       });
@@ -13187,9 +13186,9 @@ var IR_RES_NAMES = ['reports', 'languages', 'locations', 'retro'];
 var IR_REQUEST_COLS = ['department_id', 'account_uid', 'request_id', 'fingerprint', 'resource_key', 'resource_rev', 'operation', 'result_n', 'result_id', 'created_at'];
 var IR_FIELDS = [
   ['id', 'report_id', 'text'],
-  ['y', 'hijri_year', 'number'],
-  ['m', 'hijri_month', 'number'],
-  ['d', 'hijri_day', 'number'],
+  ['y', 'greg_year', 'number'],
+  ['m', 'greg_month', 'number'],
+  ['d', 'greg_day', 'number'],
   ['ts', 'created_at', 'number'],
   ['shift', 'shift', 'text'],
   ['eid', 'employee_key', 'text'],
@@ -13219,9 +13218,9 @@ var IR_WIN_FIELDS = [
   ['closedAt', 'closed_at', 'number'],
 ];
 var IR_SCOPE_FIELDS = [
-  ['y', 'hijri_year', 'number'],
-  ['m', 'hijri_month', 'number'],
-  ['d', 'hijri_day', 'number'],
+  ['y', 'greg_year', 'number'],
+  ['m', 'greg_month', 'number'],
+  ['d', 'greg_day', 'number'],
 ];
 var IR_BY_FIELDS = [
   ['id', 'by_id', 'text'],
@@ -14022,8 +14021,10 @@ function irQueryText(v, max) {
   if (typeof v !== 'string' || v.length > max) throw irError('irshad-query');
   return v;
 }
+/* V7 · 53 تقويم (ق1 · ق2): السنةُ والشهرُ واليومُ ميلاديةٌ في الأعمدة greg_* والاستعلام — السنةُ 1900–2199 فقط، فيُرفض رقمٌ هجري (13xx–15xx)
+   من عميلٍ قديم مخبوء برسالة irshad-query بدل أن يُقرأ شهراً آخر صامتاً */
 function irQueryMonth(plan, y, m) {
-  return 'hijri_year=' + irQueryParam(plan, y) + ' AND hijri_month=' + irQueryParam(plan, m);
+  return 'greg_year=' + irQueryParam(plan, y) + ' AND greg_month=' + irQueryParam(plan, m);
 }
 function irQueryCatalogPlan(ctx) {
   var p = irQueryPlan(ctx);
@@ -14039,11 +14040,11 @@ async function irQueryCatalogs(ctx) {
   return irQueryCatalogDto(ctx, (await irQueryBatch(ctx, [irQueryCatalogPlan(ctx)]))[0]);
 }
 async function irQueryCalendar(ctx, q, clock) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999), m = irQueryInt(q.month, clock.m, 1, 12),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199), m = irQueryInt(q.month, clock.m, 1, 12),
     total = irQueryPlan(ctx), months = irQueryPlan(ctx), days = irQueryPlan(ctx), stats = irQueryPlan(ctx);
-  total.sql = 'SELECT COUNT(*) total,COALESCE(SUM(hijri_year=' + irQueryParam(total, y) + '),0) yearTotal FROM data';
-  months.sql = 'SELECT hijri_month m,COUNT(*) n FROM data WHERE hijri_year=' + irQueryParam(months, y) + ' GROUP BY hijri_month ORDER BY hijri_month';
-  days.sql = 'SELECT hijri_day d,COUNT(*) n FROM data WHERE ' + irQueryMonth(days, y, m) + ' GROUP BY hijri_day ORDER BY hijri_day';
+  total.sql = 'SELECT COUNT(*) total,COALESCE(SUM(greg_year=' + irQueryParam(total, y) + '),0) yearTotal FROM data';
+  months.sql = 'SELECT greg_month m,COUNT(*) n FROM data WHERE greg_year=' + irQueryParam(months, y) + ' GROUP BY greg_month ORDER BY greg_month';
+  days.sql = 'SELECT greg_day d,COUNT(*) n FROM data WHERE ' + irQueryMonth(days, y, m) + ' GROUP BY greg_day ORDER BY greg_day';
   stats.sql = 'SELECT ' + irQueryMetricSql() + ' FROM data WHERE ' + irQueryMonth(stats, y, m);
   /* V7 · 53 (port-sync · بند 8 · 0013): مجاميعُ الشهر لكروت المؤشرات — مستفيدو الترجمة باللغة، والتقاريرُ بالوردية، والمستفيدون بالموقع ([نوع, اسم, عدد]) */
   var by = irQueryPlan(ctx), w = irQueryMonth(by, y, m);
@@ -14053,10 +14054,10 @@ async function irQueryCalendar(ctx, q, clock) {
   metrics.by = rows[4].map(function (x) { return [x.t, x.k, x.n]; });
   return { year: y, month: m, total: rows[0][0].total, yearTotal: rows[0][0].yearTotal,
     months: rows[1].filter(function (r) { return r.m >= 1 && r.m <= 12; }),
-    days: rows[2].filter(function (r) { return r.d >= 1 && r.d <= 30; }), monthTotals: metrics };
+    days: rows[2].filter(function (r) { return r.d >= 1 && r.d <= calGMonthDays(y, m); }), monthTotals: metrics };
 }
 async function irQueryRecords(ctx, q, clock) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999), m = irQueryInt(q.month, clock.m, 1, 12),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199), m = irQueryInt(q.month, clock.m, 1, 12),
     limit = irQueryInt(q.limit, 10, 1, 200), query = irQueryText(q.q, 500).trim(),
     shift = q.shift == null ? null : irQueryText(q.shift, 4000),
     loc = q.loc == null ? null : irQueryText(q.loc, 4000),
@@ -14093,12 +14094,12 @@ async function irQueryRecords(ctx, q, clock) {
   var counts = await irQueryBatch(ctx, [count, monthCount]), total = counts[0][0].n,
     pages = Math.max(1, Math.ceil(total / limit));
   page = Math.min(page, pages);
-  var anchor = irQueryPlan(ctx), order = ' ORDER BY COALESCE(hijri_day,0) DESC,COALESCE(created_at,0) DESC,sequence';
-  anchor.sql = 'SELECT COALESCE(hijri_day,0) d,COALESCE(created_at,0) ts,sequence FROM data WHERE ' + matches(anchor) + order + ' LIMIT 1 OFFSET ' + ((page - 1) * limit);
+  var anchor = irQueryPlan(ctx), order = ' ORDER BY COALESCE(greg_day,0) DESC,COALESCE(created_at,0) DESC,sequence';
+  anchor.sql = 'SELECT COALESCE(greg_day,0) d,COALESCE(created_at,0) ts,sequence FROM data WHERE ' + matches(anchor) + order + ' LIMIT 1 OFFSET ' + ((page - 1) * limit);
   var edge = (await irQueryBatch(ctx, [anchor]))[0][0], dto = [];
   if (edge) {
     var selected = irQueryPlan(ctx), f = matches(selected), dslot = irQueryParam(selected, edge.d), tslot = irQueryParam(selected, edge.ts), sslot = irQueryParam(selected, edge.sequence);
-    selected.sql = 'SELECT report_id FROM data WHERE ' + f + ' AND (COALESCE(hijri_day,0)<' + dslot + ' OR (COALESCE(hijri_day,0)=' + dslot + ' AND (COALESCE(created_at,0)<' + tslot + ' OR (COALESCE(created_at,0)=' + tslot + ' AND sequence>=' + sslot + '))))' + order + ' LIMIT ' + limit;
+    selected.sql = 'SELECT report_id FROM data WHERE ' + f + ' AND (COALESCE(greg_day,0)<' + dslot + ' OR (COALESCE(greg_day,0)=' + dslot + ' AND (COALESCE(created_at,0)<' + tslot + ' OR (COALESCE(created_at,0)=' + tslot + ' AND sequence>=' + sslot + '))))' + order + ' LIMIT ' + limit;
     var selectedIds = (await irQueryBatch(ctx, [selected]))[0].map(function (r) { return r.report_id; }),
       decoded = await irRowRead(ctx.env, ctx.d, selectedIds), map = new Map();
     decoded.forEach(function (r) { map.set(r.id, r); });
@@ -14109,18 +14110,18 @@ async function irQueryRecords(ctx, q, clock) {
     next: page < pages ? cursor(page + 1) : '', prev: page > 1 ? cursor(page - 1) : '' };
 }
 function irQueryDate(value) {
-  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value || '');
-  if (!m) throw irError('irshad-range');
-  var y = irQueryInt(m[1], 0, 1000, 9999), mo = irQueryInt(m[2], 0, 1, 12), d = irQueryInt(m[3], 0, 1, 30);
-  return { text: y + '-' + mo + '-' + d, n: y * 10000 + mo * 100 + d };
+  /* V7 · 53 تقويم (ق1): يومٌ ميلاديٌّ ISO مبطَّن صحيح (يومُه في طول شهره) — والمفتاحُ الهجري يُرفض */
+  if (typeof value !== 'string' || !calIsGKey(value, 'day') || value.length !== 10) throw irError('irshad-range');
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value), y = irQueryInt(m[1], 0, 1900, 2199), mo = +m[2], d = +m[3];
+  return { text: calGKey(y, mo, d), n: y * 10000 + mo * 100 + d };
 }
 function irQueryRange(plan, range) {
   if (!range) return '0';
   var clauses = [];
-  if (range.y !== undefined) clauses.push('hijri_year=' + irQueryParam(plan, range.y));
-  if (range.m !== undefined) clauses.push('hijri_month=' + irQueryParam(plan, range.m));
-  if (range.from !== undefined) clauses.push('hijri_year*10000+hijri_month*100+hijri_day>=' + irQueryParam(plan, range.from));
-  if (range.to !== undefined) clauses.push('hijri_year*10000+hijri_month*100+hijri_day<=' + irQueryParam(plan, range.to));
+  if (range.y !== undefined) clauses.push('greg_year=' + irQueryParam(plan, range.y));
+  if (range.m !== undefined) clauses.push('greg_month=' + irQueryParam(plan, range.m));
+  if (range.from !== undefined) clauses.push('greg_year*10000+greg_month*100+greg_day>=' + irQueryParam(plan, range.from));
+  if (range.to !== undefined) clauses.push('greg_year*10000+greg_month*100+greg_day<=' + irQueryParam(plan, range.to));
   return clauses.length ? clauses.join(' AND ') : '1';
 }
 function irQueryShiftNames(ctx) {
@@ -14135,7 +14136,7 @@ function irQueryTopGroups(plan, groupSql, label) {
 }
 async function irQueryDashboard(ctx, q, clock) {
   var availability = irQueryPlan(ctx);
-  availability.sql = 'SELECT hijri_year y,hijri_month m,COUNT(*) n,MIN(hijri_day) firstDay FROM data GROUP BY hijri_year,hijri_month ORDER BY hijri_year,hijri_month';
+  availability.sql = 'SELECT greg_year y,greg_month m,COUNT(*) n,MIN(greg_day) firstDay FROM data GROUP BY greg_year,greg_month ORDER BY greg_year,greg_month';
   var initial = await irQueryBatch(ctx, [availability, irQueryCatalogPlan(ctx)]),
     availableRows = initial[0], catalog = irQueryCatalogDto(ctx, initial[1]), years = [], first = null, total = 0;
   availableRows.forEach(function (r) {
@@ -14148,9 +14149,9 @@ async function irQueryDashboard(ctx, q, clock) {
   });
   years.sort(function (a, b) { return b - a; });
   if (!years.length) years.push(clock.y);
-  var mode = q.mode || 'all', year = irQueryInt(q.year, years[0], 1000, 9999),
+  var mode = q.mode || 'all', year = irQueryInt(q.year, years[0], 1900, 2199),
     month = q.month === 'all' || mode === 'all' ? 'all' : irQueryInt(q.month, clock.m, 1, 12),
-    heatYear = irQueryInt(q.heatYear, year, 1000, 9999), bucket = q.bucket || (month === 'all' ? 'month' : 'day'),
+    heatYear = irQueryInt(q.heatYear, year, 1900, 2199), bucket = q.bucket || (month === 'all' ? 'month' : 'day'),
     selection = { mode: mode, year: year, month: month, from: null, to: null, previousFrom: null, previousTo: null, heatYear: heatYear, bucket: bucket },
     range = {}, previous = null;
   if (['all', 'month', 'custom'].indexOf(mode) < 0 || ['day', 'month'].indexOf(bucket) < 0) throw irError('irshad-range');
@@ -14172,10 +14173,10 @@ async function irQueryDashboard(ctx, q, clock) {
   }
   plan('SELECT ' + irQueryMetricSql() + ' FROM data WHERE $WHERE', range);
   plan('SELECT ' + irQueryMetricSql() + ' FROM data WHERE $WHERE', previous);
-  var day = bucket === 'day' ? 'hijri_day' : 'NULL', groups = 'hijri_year,hijri_month' + (bucket === 'day' ? ',hijri_day' : '');
-  plan('SELECT hijri_year y,hijri_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, range);
-  plan('SELECT hijri_year y,hijri_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, previous);
-  plan('SELECT hijri_month m,hijri_day d,SUM(ben) ben FROM data WHERE $WHERE GROUP BY hijri_month,hijri_day ORDER BY hijri_month,hijri_day', { y: heatYear, to: clock.y * 10000 + clock.m * 100 + clock.d });
+  var day = bucket === 'day' ? 'greg_day' : 'NULL', groups = 'greg_year,greg_month' + (bucket === 'day' ? ',greg_day' : '');
+  plan('SELECT greg_year y,greg_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, range);
+  plan('SELECT greg_year y,greg_month m,' + day + ' d,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY ' + groups + ' ORDER BY ' + groups, previous);
+  plan('SELECT greg_month m,greg_day d,SUM(ben) ben FROM data WHERE $WHERE GROUP BY greg_month,greg_day ORDER BY greg_month,greg_day', { y: heatYear, to: clock.y * 10000 + clock.m * 100 + clock.d });
   var languages = irQueryPlan(ctx), languageWhere = irQueryRange(languages, range);
   irQueryTopGroups(languages, "SELECT CASE WHEN (l.presence_mask & 1)=0 THEN 'undefined' WHEN l.language IS NULL THEN 'null' ELSE l.language END name,COALESCE(SUM(l.count),0) value,0 previous,MIN(r.sequence) firstSequence,MIN(printf('%020d:%020d',r.sequence,l.position)) orderKey FROM data r JOIN irshad_report_languages l ON l.department_id=r.department_id AND l.report_id=r.report_id WHERE " + languageWhere + ' GROUP BY name', 'لغات أخرى');
   plans.push(languages);
@@ -14184,10 +14185,10 @@ async function irQueryDashboard(ctx, q, clock) {
   plans.push(locations);
   plan('SELECT shift name,' + irQueryMetricSql() + ' FROM data WHERE $WHERE GROUP BY shift', range);
   var shiftPoints = irQueryPlan(ctx);
-  shiftPoints.sql = 'SELECT shift name,hijri_year y,hijri_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(shiftPoints, range) + ' AND shift IN(SELECT value FROM json_each(' + irQueryParam(shiftPoints, JSON.stringify(names)) + ')) GROUP BY shift,' + groups + ' ORDER BY ' + groups;
+  shiftPoints.sql = 'SELECT shift name,greg_year y,greg_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(shiftPoints, range) + ' AND shift IN(SELECT value FROM json_each(' + irQueryParam(shiftPoints, JSON.stringify(names)) + ')) GROUP BY shift,' + groups + ' ORDER BY ' + groups;
   plans.push(shiftPoints);
   var locationNames = catalog.catalogs.locations.values.slice(0, 6), locationPoints = irQueryPlan(ctx);
-  locationPoints.sql = 'SELECT location name,hijri_year y,hijri_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(locationPoints, range) + ' AND location IN(SELECT value FROM json_each(' + irQueryParam(locationPoints, JSON.stringify(locationNames)) + ')) GROUP BY location,' + groups + ' ORDER BY ' + groups;
+  locationPoints.sql = 'SELECT location name,greg_year y,greg_month m,' + day + ' d,SUM(ben) ben FROM data WHERE ' + irQueryRange(locationPoints, range) + ' AND location IN(SELECT value FROM json_each(' + irQueryParam(locationPoints, JSON.stringify(locationNames)) + ')) GROUP BY location,' + groups + ' ORDER BY ' + groups;
   plans.push(locationPoints);
   plan("SELECT employee_key key,COUNT(*) reports,SUM(ben) ben,MIN(sequence) firstSequence,MAX(sequence) lastSequence FROM data WHERE $WHERE AND employee_key IS NOT NULL AND employee_key!='' GROUP BY employee_key ORDER BY ben DESC,firstSequence LIMIT 6", range);
   var results = await irQueryBatch(ctx, plans), shiftsByName = new Map();
@@ -14319,8 +14320,9 @@ function irMutationData(ctx, b, before, now) {
       throw irError('irshad-language-count');
   });
   if (create) {
-    if (!Number.isSafeInteger(out.y) || out.y < 1 || out.y > 9999 || !Number.isSafeInteger(out.m) || out.m < 1 || out.m > 12 ||
-        !Number.isSafeInteger(out.d) || out.d < 1 || out.d > 30) throw irError('irshad-date');
+    /* V7 · 53 تقويم (ق1 · §1.10): يومٌ ميلاديٌّ صحيح (1900–2199 · اليومُ ≤ طولِ الشهر) — اليومُ الهجري من عميلٍ قديم يُرفض */
+    if (!Number.isSafeInteger(out.y) || out.y < 1900 || out.y > 2199 || !Number.isSafeInteger(out.m) || out.m < 1 || out.m > 12 ||
+        !Number.isSafeInteger(out.d) || out.d < 1 || out.d > calGMonthDays(out.y, out.m)) throw irError('irshad-date');
     out.id = 'ir-' + randTok(); out.ts = now; out.actor = String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id);
   } else { out.editedTs = now; out.editedBy = String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id); }
   // A historical employee snapshot remains historical when its identity is unchanged.
@@ -14331,7 +14333,7 @@ function irMutationData(ctx, b, before, now) {
     if (matches.length !== 1) throw irError('irshad-employee');
     if (create || out.eid !== before.eid) out.name = String(matches[0].name || 'بدون اسم');
     if (srvBusRead('staff.enabled@1', ctx.A, ctx.d)) {   /* V7 · د5-د2: بغياب مالك الجدول كالمعطَّل — لا تحقّقَ من الوردية */
-      var month = srvBusRead('staff.scheduleRef@1', ctx), schedule = isObj(month) && month[out.y + '-' + out.m], row = isObj(schedule) && schedule[out.eid];
+      var month = srvBusRead('staff.scheduleRef@1', ctx), schedule = isObj(month) && month[calGYm(out.y, out.m)], row = isObj(schedule) && schedule[out.eid];
       if (!isObj(row) || row.shift !== out.shift || (Array.isArray(row.rest) && row.rest.indexOf(out.d) >= 0))
         throw irError('irshad-employee-shift');
     }
@@ -14403,10 +14405,10 @@ async function irAct(env, A, b, meta) {
     } else {
       if (b.op === 'delete-month') {
         if (!canRead(A, k)) throw irError('irshad-denied', 403);
-        if (!Number.isSafeInteger(b.year) || !Number.isSafeInteger(b.month) || b.month < 1 || b.month > 12) throw irError('irshad-date');
+        if (!Number.isSafeInteger(b.year) || b.year < 1900 || b.year > 2199 || !Number.isSafeInteger(b.month) || b.month < 1 || b.month > 12) throw irError('irshad-date');   /* V7 · 53 تقويم: الشهرُ ميلادي — سنةٌ هجرية تُرفض */
         var scope = irQueryScope(ctx, 'irshad_reports'); args = scope.args.slice();
         args.push(b.year); var yearSlot = '?' + args.length; args.push(b.month);
-        where = scope.sql + ' AND hijri_year=' + yearSlot + ' AND hijri_month=?' + args.length;
+        where = scope.sql + ' AND greg_year=' + yearSlot + ' AND greg_month=?' + args.length;
       } else { irRequestString(b.id, 100000); where = 'department_id=?1 AND report_id=?2'; args = [ctx.d, b.id]; }
       raw = (await rsBound(env.DB.prepare('SELECT * FROM irshad_reports WHERE ' + where + ' ORDER BY sequence'), args).all()).results || [];
       if (!raw.length) throw irError('irshad-report-missing', 404);
@@ -14492,8 +14494,8 @@ function irErrorResponse(error) {
 /* irDailyManager → 016-base-shared.js (V7 · المرحلة 2 · الحزمة أ) */
 function irDailyPlan(ctx, day) {
   var scope = irQueryScope(ctx, 'r'), p = { args: scope.args.slice() },
-    where = scope.sql + ' AND r.hijri_year=' + irQueryParam(p, day.y) +
-      ' AND r.hijri_month=' + irQueryParam(p, day.m) + ' AND r.hijri_day=' + irQueryParam(p, day.d),
+    where = scope.sql + ' AND r.greg_year=' + irQueryParam(p, day.y) +
+      ' AND r.greg_month=' + irQueryParam(p, day.m) + ' AND r.greg_day=' + irQueryParam(p, day.d),
     label = "COALESCE(NULLIF(r.location,''),'—')",
     count = 'SELECT COUNT(*) FROM irshad_reports r WHERE ' + where,
     top = 'SELECT ' + label + ' FROM irshad_reports r WHERE ' + where + ' GROUP BY ' + label + ' ORDER BY COUNT(*) DESC,MIN(r.sequence) LIMIT 1';
@@ -14511,7 +14513,8 @@ async function nfIrshadDaily(env, actor, url, windowAt) {
     throw e;
   }
   if (!irDailyManager(ctx.A)) return { emitted: 0 };
-  var day = pfHijriAt(when), once = 'ir_day:' + day.dk, scope = nfScope(d),
+  /* V7 · 53 تقويم (ق1 · §1.6): اليومُ الميلادي لمفتاح «مرةً واحدة» والتجميع (ir_day:2026-11-24) */
+  var day = pfDayAt(when), once = 'ir_day:' + day.dk, scope = nfScope(d),
     existing = await ctx.env.DB.prepare('SELECT 1 FROM notification_dedup WHERE scope=?1 AND once_key=?2').bind(scope, once).first();
   if (existing) return { emitted: 0, checked: 1, settled: 1 };   /* checked/settled: the shared due gate (019 nfDueRun · decision h) */
   var aggregate = irDailyPlan(ctx, day), guards = ctx.guards.concat([rsEpochGuard(ctx.env.DB, ctx.base.epoch), irRetiredGuard(ctx.env)]), result;
@@ -15129,9 +15132,9 @@ var SZ_RES = [
 var SZ_NAMES = ["reports", "catalog", "actions", "locations", "jew", "retro"];
 var SZ_REPORT_FIELDS = [
   ["id", "report_id", "text"],
-  ["y", "hijri_year", "number"],
-  ["m", "hijri_month", "number"],
-  ["d", "hijri_day", "number"],
+  ["y", "greg_year", "number"],
+  ["m", "greg_month", "number"],
+  ["d", "greg_day", "number"],
   ["ts", "created_at", "number"],
   ["loc", "location", "text"],
   ["actor", "actor_label", "text"],
@@ -16605,7 +16608,7 @@ async function szRows(ctx, ids) {
   });
 }
 async function szCalendar(ctx, q, clock, catalog) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199),
     m = irQueryInt(q.month, clock.m, 1, 12),
     plans = [];
   function add(sql) {
@@ -16622,13 +16625,13 @@ async function szCalendar(ctx, q, clock, catalog) {
     plans.push(p);
   }
   add(
-    "SELECT COUNT(*)total,COALESCE(SUM(hijri_year=$YEAR),0)yearTotal FROM data",
+    "SELECT COUNT(*)total,COALESCE(SUM(greg_year=$YEAR),0)yearTotal FROM data",
   );
   add(
-    "SELECT hijri_month m,COUNT(*)n FROM data WHERE hijri_year=$YEAR GROUP BY hijri_month ORDER BY hijri_month",
+    "SELECT greg_month m,COUNT(*)n FROM data WHERE greg_year=$YEAR GROUP BY greg_month ORDER BY greg_month",
   );
   add(
-    "SELECT hijri_day d,COUNT(*)n FROM data WHERE $MONTH GROUP BY hijri_day ORDER BY hijri_day",
+    "SELECT greg_day d,COUNT(*)n FROM data WHERE $MONTH GROUP BY greg_day ORDER BY greg_day",
   );
   add("SELECT " + szMetricsSql() + " FROM data WHERE $MONTH");
   add(
@@ -16655,7 +16658,7 @@ async function szCalendar(ctx, q, clock, catalog) {
       return x.m >= 1 && x.m <= 12;
     }),
     days: r[2].filter(function (x) {
-      return x.d >= 1 && x.d <= 30;
+      return x.d >= 1 && x.d <= calGMonthDays(y, m);   /* V7 · 53 تقويم: الشهرُ ميلادي (28–31) */
     }),
     monthTotals: Object.assign(szMetrics(r[3][0], actions), { by: r[6].map(function (x) { return [x.t, x.k, x.n]; }) }),
     facets: {
@@ -16666,7 +16669,7 @@ async function szCalendar(ctx, q, clock, catalog) {
   };
 }
 async function szRecords(ctx, q, clock, catalog) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199),
     m = irQueryInt(q.month, clock.m, 1, 12),
     limit = irQueryInt(q.limit, 10, 1, 200),
     term = irQueryText(q.q, 500).trim(),
@@ -16676,7 +16679,7 @@ async function szRecords(ctx, q, clock, catalog) {
     descriptor = {
       year: y,
       month: m,
-      day: irQueryInt(q.day, clock.d, 1, 30),
+      day: irQueryInt(q.day, clock.d, 1, 31),
       limit: limit,
       q: term,
       loc: loc,
@@ -16762,7 +16765,7 @@ async function szRecords(ctx, q, clock, catalog) {
   selected.sql =
     "SELECT report_id FROM data WHERE " +
     matches(selected) +
-    " ORDER BY COALESCE(hijri_day,0)DESC,COALESCE(created_at,0)DESC,sequence LIMIT " +
+    " ORDER BY COALESCE(greg_day,0)DESC,COALESCE(created_at,0)DESC,sequence LIMIT " +
     limit +
     " OFFSET " +
     (page - 1) * limit;
@@ -16797,10 +16800,10 @@ function szReference(ctx, name) {
   return parseJson(enfProjectStr(ctx.A, k, ctx.rawKeys[k], ctx.refs), null);
 }
 function szDayContext(ctx, q, clock) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199),
     m = irQueryInt(q.month, clock.m, 1, 12),
-    day = irQueryInt(q.day, clock.d, 1, 30),
-    key = y + "-" + m + "-" + day,
+    day = irQueryInt(q.day, clock.d, 1, calGMonthDays(y, m)),   /* V7 · 53 تقويم (ق1): يومٌ ميلاديٌّ ومفاتيحُ ISO مبطَّنة */
+    key = calGKey(y, m, day),
     employees = szReference(ctx, "bassam_employees_v1"),
     index = Object.create(null);
   (Array.isArray(employees) ? employees : []).forEach(function (e) {
@@ -16809,7 +16812,7 @@ function szDayContext(ctx, q, clock) {
     });
   });
   var report = (srvBusRead("dreport.docSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب مالك التقرير {} — لا تقريرَ لليوم */
-    sched = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
+    sched = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[calGYm(y, m)] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
     round = (srvBusRead("daily.daysSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب المتابعة اليومية {} — لا جولةَ لليوم */
     shifts = [],
     rows = {},
@@ -17001,7 +17004,7 @@ function szDashboardMetric(row) {
 async function szDashboard(ctx, q, clock, catalog) {
   var available = szPlan(ctx, catalog);
   available.sql =
-    "SELECT hijri_year y,hijri_month m,MIN(hijri_day)d,COUNT(*)n FROM data GROUP BY hijri_year,hijri_month ORDER BY hijri_year,hijri_month";
+    "SELECT greg_year y,greg_month m,MIN(greg_day)d,COUNT(*)n FROM data GROUP BY greg_year,greg_month ORDER BY greg_year,greg_month";
   var availability = (await szPlans(ctx, [available]))[0],
     years = [],
     first = null,
@@ -17024,12 +17027,12 @@ async function szDashboard(ctx, q, clock, catalog) {
   });
   if (!years.length) years.push(clock.y);
   var mode = q.mode || "all",
-    year = irQueryInt(q.year, years[0], 1000, 9999),
+    year = irQueryInt(q.year, years[0], 1900, 2199),
     month =
       q.month === "all" || mode === "all"
         ? "all"
         : irQueryInt(q.month, clock.m, 1, 12),
-    heatYear = irQueryInt(q.heatYear, year, 1000, 9999),
+    heatYear = irQueryInt(q.heatYear, year, 1900, 2199),
     bucket = q.bucket || (month === "all" ? "month" : "day"),
     range = {},
     previous = null,
@@ -17078,11 +17081,11 @@ async function szDashboard(ctx, q, clock, catalog) {
   }
   var plans = [],
     names = irQueryShiftNames(ctx),
-    day = bucket === "day" ? "hijri_day" : "NULL",
-    group = "hijri_year,hijri_month" + (bucket === "day" ? ",hijri_day" : ""),
+    day = bucket === "day" ? "greg_day" : "NULL",
+    group = "greg_year,greg_month" + (bucket === "day" ? ",greg_day" : ""),
     correlation =
-      "x.hijri_year IS r.hijri_year AND x.hijri_month IS r.hijri_month" +
-      (bucket === "day" ? " AND x.hijri_day IS r.hijri_day" : "");
+      "x.greg_year IS r.greg_year AND x.greg_month IS r.greg_month" +
+      (bucket === "day" ? " AND x.greg_day IS r.greg_day" : "");
   function add(sql) {
     var p = szDashboardPlan(ctx, catalog, range, previous);
     p.sql = sql;
@@ -17104,7 +17107,7 @@ async function szDashboard(ctx, q, clock, catalog) {
       " FROM previous",
   );
   add(
-    "SELECT hijri_year y,hijri_month m," +
+    "SELECT greg_year y,greg_month m," +
       day +
       " d," +
       szMetricsSql() +
@@ -17116,7 +17119,7 @@ async function szDashboard(ctx, q, clock, catalog) {
       group,
   );
   add(
-    "SELECT hijri_year y,hijri_month m," +
+    "SELECT greg_year y,greg_month m," +
       day +
       " d," +
       szMetricsSql() +
@@ -17129,9 +17132,9 @@ async function szDashboard(ctx, q, clock, catalog) {
   );
   var heat = szPlan(ctx, catalog);
   heat.sql =
-    "SELECT hijri_year y,hijri_month m,hijri_day d,SUM(qty)qty FROM data WHERE hijri_year=" +
+    "SELECT greg_year y,greg_month m,greg_day d,SUM(qty)qty FROM data WHERE greg_year=" +
     irQueryParam(heat, heatYear) +
-    " GROUP BY hijri_month,hijri_day ORDER BY hijri_month,hijri_day";
+    " GROUP BY greg_month,greg_day ORDER BY greg_month,greg_day";
   plans.push(heat);
   var categories = szDashboardPlan(ctx, catalog, range, previous);
   irQueryTopGroups(
@@ -17156,7 +17159,7 @@ async function szDashboard(ctx, q, clock, catalog) {
   );
   var shiftPoints = add("");
   shiftPoints.sql =
-    "SELECT effective_shift name,hijri_year y,hijri_month m," +
+    "SELECT effective_shift name,greg_year y,greg_month m," +
     day +
     " d,SUM(qty)qty FROM selected WHERE effective_shift IN(SELECT value FROM json_each(" +
     irQueryParam(shiftPoints, JSON.stringify(names)) +
@@ -17169,7 +17172,7 @@ async function szDashboard(ctx, q, clock, catalog) {
       : [],
     locationPoints = add("");
   locationPoints.sql =
-    "SELECT location name,hijri_year y,hijri_month m," +
+    "SELECT location name,greg_year y,greg_month m," +
     day +
     " d,SUM(qty)qty FROM selected WHERE location IN(SELECT value FROM json_each(" +
     irQueryParam(locationPoints, JSON.stringify(locationNames)) +
@@ -17521,7 +17524,7 @@ function szItemData(ctx, value, old, index, catalog, now) {
     out.hist.push({
       from: old.act || "",
       to: out.act,
-      at: new Date(now).toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" }),
+      at: new Date(now).toLocaleString("ar-SA-u-ca-gregory", { timeZone: "Asia/Riyadh" }),   /* V7 · 53 تقويم: نصُّ السجل الجديد ميلادي (القديمُ يبقى كما كُتب — ق9) */
       by: String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id),
       t: now,
     });
@@ -17579,13 +17582,14 @@ function szReportData(ctx, b, old, catalog, now) {
     ["y", "m", "d"].forEach(function (k) {
       if (!Number.isSafeInteger(out[k])) throw szError("seized-date");
     });
+    /* V7 · 53 تقويم (ق1 · §1.10): يومٌ ميلاديٌّ صحيح — اليومُ الهجري من عميلٍ قديم يُرفض */
     if (
-      out.y < 1000 ||
-      out.y > 9999 ||
+      out.y < 1900 ||
+      out.y > 2199 ||
       out.m < 1 ||
       out.m > 12 ||
       out.d < 1 ||
-      out.d > 30
+      out.d > calGMonthDays(out.y, out.m)
     )
       throw szError("seized-date");
     out.id = "sz-" + randTok();
@@ -18071,9 +18075,9 @@ async function hSeizedAct(env, actor, b, meta) {
           p = { args: scope.args.slice() };
         where =
           scope.sql +
-          " AND r.hijri_year=" +
-          irQueryParam(p, irQueryInt(b.year, 0, 1000, 9999)) +
-          " AND r.hijri_month=" +
+          " AND r.greg_year=" +
+          irQueryParam(p, irQueryInt(b.year, 0, 1900, 2199)) +
+          " AND r.greg_month=" +
           irQueryParam(p, irQueryInt(b.month, 0, 1, 12));
         selected = (
           await szReadBatch(ctx, [
@@ -18151,7 +18155,7 @@ async function hSeizedAct(env, actor, b, meta) {
           item.hist.push({
             from: item.act || "",
             to: b.act,
-            at: new Date(now).toLocaleString("ar-SA", {
+            at: new Date(now).toLocaleString("ar-SA-u-ca-gregory", {   /* V7 · 53 تقويم: ميلادي */
               timeZone: "Asia/Riyadh",
             }),
             by: String(A.u.name || A.u.un || A.u.id),
@@ -18342,7 +18346,7 @@ async function hSeizedAct(env, actor, b, meta) {
 var AW_RES = ['bassam_award_v1', 'bassam_award_docs_v1', 'bassam_award_docs_v2'];
 var AW_NAMES = ['records', 'docsV1', 'docsV2'];
 var AW_FIELDS = [
-  ['id','business_id','text'], ['ekey','employee_key','text'], ['cat','category','text'], ['hij','hijri_date','text'],
+  ['id','business_id','text'], ['ekey','employee_key','text'], ['cat','category','text'], ['hij','greg_date','text'],
   ['score','score','number'], ['cases','case_count','number'], ['fileOk','file_ok','boolean'], ['ok','eligible','boolean'],
   ['st','status','text'], ['comp','employee_number','text'], ['city','city','text'], ['field','work_field','text'],
   ['phone','phone','text'], ['email','email','text'], ['declName','declarer_name','text'], ['by','approver_name','text'],
@@ -18667,12 +18671,14 @@ async function awEventPlan(ctx,b,before,after){
   events.forEach(function(event){Object.keys(event.vars).forEach(function(k){if(typeof event.vars[k]==='string')event.vars[k]=event.vars[k].slice(0,4000);});});
   var plan=await nfPlanEvents(ctx.env,ctx.A,events,true);return {guards:plan.guards,statements:plan.statements.concat(nfRetention(ctx.env,Date.now(),plan.scopes)),active:plan.plans.length};
 }
+/* V7 · 53 تقويم (ق1 · ق2): تاريخُ الإقرار (hij ← greg_date) يومٌ ميلاديٌّ ISO مبطَّن — والتاريخُ الهجري من عميلٍ قديم يُرفض (الاسمُ hij باقٍ توافقاً، ومعناه ميلادي) */
+function awDateOk(data){if(isObj(data)&&awOwn(data,'hij')&&data.hij!==null&&data.hij!==''&&!(typeof data.hij==='string'&&calIsGKey(data.hij,'day')))throw awError('date');}
 function awCommandShape(b){
   var extras={create:['data'],edit:['id','data'],status:['id','status'],delete:['id'],'reference-replace':['version','document']};
   if(!isObj(b)||!awOwn(extras,b.op))throw awError('operation');awShape(b,['uid','dept','requestId','base','op','reason'].concat(extras[b.op]));
   if(typeof b.dept!=='string'||!b.dept)throw awError('global-references-readonly',403);awScope(b.dept);awText(b.requestId,100);if(!b.requestId)throw awError('request');
   awShape(b.base,['epoch'].concat(AW_NAMES));['epoch'].concat(AW_NAMES).forEach(function(n){awNatural(b.base[n]);});
-  if(b.reason!==undefined&&typeof b.reason!=='string')throw awError('reason');return b;
+  if(b.reason!==undefined&&typeof b.reason!=='string')throw awError('reason');if(b.op==='create'||b.op==='edit')awDateOk(b.data);return b;
 }
 async function hAwardAct(env,A,b,meta){
   awCommandShape(b);if(b.uid!==undefined&&b.uid!==A.u.id){var identity=awError('session-changed',409);identity.awCode='session-changed';throw identity;}
@@ -18923,9 +18929,9 @@ async function bdRoute(env,request,url,ss,name) {
 async function nfSeizedDueRun(env,actor,url,windowAt) {
   var now=Date.now(),when=windowAt==null?now:windowAt,minutes=pfRiyadhMins(when),d=url.searchParams.get('dept')||'';   /* windowAt: the due gate's catch-up of a closed window (019 nfDueRun) */
   if(!d||minutes<480||!irDailyManager(actor))return {emitted:0};
-  var saturday=new Date(when+3*3600000).getUTCDay()===6,day=pfHijriAt(when),candidates=[];
-  if(minutes>=540)candidates.push({type:'bx_old',once:'bx_old:'+day.y+'-'+day.m+'-'+day.d});
-  if(saturday)candidates.push({type:'bx_wk',once:'bx_wk:'+day.y+'-'+day.m+'-'+day.d});
+  var saturday=new Date(when+3*3600000).getUTCDay()===6,day=pfDayAt(when),candidates=[];   /* V7 · 53 تقويم (ق1 · §1.6): مفتاحُ «مرةً واحدة» باليوم الميلادي ISO (bx_old:2026-11-24) */
+  if(minutes>=540)candidates.push({type:'bx_old',once:'bx_old:'+day.dk});
+  if(saturday)candidates.push({type:'bx_wk',once:'bx_wk:'+day.dk});
   if(!candidates.length)return {emitted:0};
   var ctx;
   try{ctx=await szQueryContext(env,actor,d);}catch(error){if(error.szStatus===403)return {emitted:0};throw error;}
@@ -23305,7 +23311,9 @@ var DS_FIELDS = { haram: DS_METRICS.slice(0, 4), nabawi: [DS_METRICS[0]].concat(
 function dsDomainShape(v) { return dsShapeAt(v) === ''; }
 /* V7 · د6 (QA): يومٌ مخزَّنٌ مخالفٌ لا يمنع حفظاً لا يمسّه (قفلُ الشهر · أرقامُ يومٍ آخر) — يُفحص من الأيام ما غيّره الحفظُ وحده
    (cur = المخزَّن؛ بلا cur يُفحص كلُّ يوم كما كان: الاستعادة · المحوِّل)، والرفضُ يسمّي اليومَ المخالف «site|date» بدل الصمت */
-function dsShapeAt(v, cur) {
+/* V7 · 53 تقويم: legacy = وثيقةُ KV قديمة قبل 0004 (تحويلُ الترحيل وحده — dsLegacyConvert): مفاتيحُها الهجرية بقاعدتها القديمة، ويحوّلها 0014 بعدها.
+   كلُّ ما عداها (الحفظ · الاستعادة · المحوِّل) ميلاديٌّ صارم */
+function dsShapeAt(v, cur, legacy) {
   if (!isObj(v) || Object.keys(v).some(function (k) { return DS_SITES.concat(['locks']).indexOf(k) < 0; })) return '$';
   for (var s of DS_SITES) {
     if (v[s] === undefined) continue;
@@ -23313,7 +23321,8 @@ function dsShapeAt(v, cur) {
     for (var date in v[s]) {
       var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date), r = v[s][date], at = s + '|' + date;
       if (cur && isObj(cur[s]) && Object.prototype.hasOwnProperty.call(cur[s], date) && deq(cur[s][date], r)) continue;
-      if (!m || +m[1] < 1000 || +m[2] < 1 || +m[2] > 12 || +m[3] < 1 || +m[3] > 30 || !dsDayOk(r)) return at;
+      /* V7 · 53 تقويم (ق1 · §1.10): اليومُ ميلاديٌّ ISO صحيح (1900–2199 · طولُ الشهر) — اليومُ الهجري من عميلٍ قديم يُرفض باسمه */
+      if (!m || !(legacy ? +m[1] >= 1000 && +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 30 : calIsGKey(date, 'day')) || !dsDayOk(r)) return at;
       if (Object.keys(r).some(function (k) { return k !== '__m' && k !== '__f' && DS_FIELDS[s].indexOf(k) < 0; })) return at;
       if (r.__f && Object.keys(r.__f).some(function (k) { return DS_FIELDS[s].indexOf(k) < 0; })) return at;
       if (JSON.stringify(r).length > 60000) return at;
@@ -23322,9 +23331,11 @@ function dsShapeAt(v, cur) {
   if (v.locks !== undefined) {
     if (!isObj(v.locks)) return 'locks';
     for (var k in v.locks) {
-      if (!/^(haram|nabawi)\|[1-9]\d{3}-(?:[1-9]|1[0-2])$/.test(k) || !dsLockOk(v.locks[k])) return 'locks|' + k;
-      var lock = v.locks[k];
-      for (var f of ['dopen', 'dshut']) if (isObj(lock) && lock[f]) for (var d in lock[f]) if (!/^(?:[1-9]|[12]\d|30)$/.test(d)) return 'locks|' + k;
+      /* V7 · 53 تقويم (ق1): قفلُ الشهر «site|YYYY-MM» ميلادي مبطَّن، وأيامُه 1–طولِ الشهر الميلادي */
+      var km = legacy ? /^(haram|nabawi)\|([1-9]\d{3}-(?:[1-9]|1[0-2]))$/.exec(k) : /^(haram|nabawi)\|(\d{4}-\d{2})$/.exec(k);
+      if (!km || !(legacy || calIsGKey(km[2], 'month')) || !dsLockOk(v.locks[k])) return 'locks|' + k;
+      var lock = v.locks[k], nd = legacy ? 30 : calGMonthDays(km[2]);
+      for (var f of ['dopen', 'dshut']) if (isObj(lock) && lock[f]) for (var d in lock[f]) if (!/^[1-9]\d?$/.test(d) || +d > nd) return 'locks|' + k;
     }
   }
   return '';
@@ -23332,33 +23343,33 @@ function dsShapeAt(v, cur) {
 function dsDomainRows(v) {
   var rows = { days: [], months: [], locks: [] };
   DS_SITES.forEach(function (s) { Object.keys(v[s] || {}).sort().forEach(function (date) {
-    var r = v[s][date], row = { site: s, hijri_date: date, field_mask: 0, meta_json: r.__m === undefined ? null : JSON.stringify(r.__m), fields_json: r.__f === undefined ? null : JSON.stringify(r.__f) };
+    var r = v[s][date], row = { site: s, greg_date: date, field_mask: 0, meta_json: r.__m === undefined ? null : JSON.stringify(r.__m), fields_json: r.__f === undefined ? null : JSON.stringify(r.__f) };
     DS_METRICS.forEach(function (f, i) { if (Object.prototype.hasOwnProperty.call(r, f)) row.field_mask |= (1 << i); row[f] = r[f] == null ? null : r[f]; });
     rows.days.push(row);
   }); });
   Object.keys(v.locks || {}).sort().forEach(function (key) {
     var m = /^(haram|nabawi)\|(\d{4})-(\d{1,2})$/.exec(key), r0 = v.locks[key], r = r0 === true ? { ap: 1 } : r0;
-    rows.months.push({ site: m[1], hijri_year: +m[2], hijri_month: +m[3], approved: r.ap ? 1 : 0, reopened: r.mo ? 1 : 0, legacy_boolean: r0 === true ? 1 : 0 });
+    rows.months.push({ site: m[1], greg_year: +m[2], greg_month: +m[3], approved: r.ap ? 1 : 0, reopened: r.mo ? 1 : 0, legacy_boolean: r0 === true ? 1 : 0 });
     var days = {}; Object.keys(r.dopen || {}).concat(Object.keys(r.dshut || {})).forEach(function (d) { days[d] = 1; });
-    Object.keys(days).forEach(function (d) { rows.locks.push({ site: m[1], hijri_year: +m[2], hijri_month: +m[3], hijri_day: +d, is_open: r.dopen && r.dopen[d] ? 1 : 0, is_shut: r.dshut && r.dshut[d] ? 1 : 0 }); });
+    Object.keys(days).forEach(function (d) { rows.locks.push({ site: m[1], greg_year: +m[2], greg_month: +m[3], greg_day: +d, is_open: r.dopen && r.dopen[d] ? 1 : 0, is_shut: r.dshut && r.dshut[d] ? 1 : 0 }); });
   });
   return rows;
 }
 function dsDomainInflate(rows) {
   var v = { haram: {}, nabawi: {}, locks: {} };
   rows.days.forEach(function (r) { var day = {}; DS_METRICS.forEach(function (f, i) { if (r.field_mask & (1 << i)) day[f] = r[f]; });
-    if (r.meta_json != null) day.__m = JSON.parse(r.meta_json); if (r.fields_json != null) day.__f = JSON.parse(r.fields_json); v[r.site][r.hijri_date] = day; });
-  rows.months.forEach(function (r) { var key = r.site + '|' + r.hijri_year + '-' + r.hijri_month, lock = {}; if (r.approved) lock.ap = 1; if (r.reopened) lock.mo = 1; v.locks[key] = r.legacy_boolean ? true : lock; });
-  rows.locks.forEach(function (r) { var key = r.site + '|' + r.hijri_year + '-' + r.hijri_month, lock = v.locks[key]; if (lock === true) lock = v.locks[key] = { ap: 1 };
-    if (r.is_open) (lock.dopen || (lock.dopen = {}))[r.hijri_day] = 1; if (r.is_shut) (lock.dshut || (lock.dshut = {}))[r.hijri_day] = 1; });
+    if (r.meta_json != null) day.__m = JSON.parse(r.meta_json); if (r.fields_json != null) day.__f = JSON.parse(r.fields_json); v[r.site][r.greg_date] = day; });
+  rows.months.forEach(function (r) { var key = r.site + '|' + calGYm(r.greg_year, r.greg_month), lock = {}; if (r.approved) lock.ap = 1; if (r.reopened) lock.mo = 1; v.locks[key] = r.legacy_boolean ? true : lock; });
+  rows.locks.forEach(function (r) { var key = r.site + '|' + calGYm(r.greg_year, r.greg_month), lock = v.locks[key]; if (lock === true) lock = v.locks[key] = { ap: 1 };
+    if (r.is_open) (lock.dopen || (lock.dopen = {}))[r.greg_day] = 1; if (r.is_shut) (lock.dshut || (lock.dshut = {}))[r.greg_day] = 1; });
   return v;
 }
 async function dsDomainRead(env) {
   /* One D1 batch gives a consistent snapshot, including the revision used for CAS. */
   var b = await env.DB.batch([
-    env.DB.prepare('SELECT * FROM daily_stats_days ORDER BY site,hijri_date'),
-    env.DB.prepare('SELECT * FROM daily_stats_month_locks ORDER BY site,hijri_year,hijri_month'),
-    env.DB.prepare('SELECT * FROM daily_stats_day_locks ORDER BY site,hijri_year,hijri_month,hijri_day'),
+    env.DB.prepare('SELECT * FROM daily_stats_days ORDER BY site,greg_date'),
+    env.DB.prepare('SELECT * FROM daily_stats_month_locks ORDER BY site,greg_year,greg_month'),
+    env.DB.prepare('SELECT * FROM daily_stats_day_locks ORDER BY site,greg_year,greg_month,greg_day'),
     env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(K_DSTATS)
   ]);
   return { data: dsDomainInflate({ days: b[0].results || [], months: b[1].results || [], locks: b[2].results || [] }), rev: b[3].results && b[3].results[0] ? b[3].results[0].rev : 0 };
@@ -23368,9 +23379,9 @@ function dsDomainStatements(env, before, after) {
   /* json_each is a parameter transport, never a stored JSON business document. Each
      table has one delete and one upsert; even a historical import is a single transaction. */
   var specs = [
-    { name: 'days', table: 'daily_stats_days', pk: ['site', 'hijri_date'], cols: ['site', 'hijri_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json']) },
-    { name: 'months', table: 'daily_stats_month_locks', pk: ['site', 'hijri_year', 'hijri_month'], cols: ['site', 'hijri_year', 'hijri_month', 'approved', 'reopened', 'legacy_boolean'] },
-    { name: 'locks', table: 'daily_stats_day_locks', pk: ['site', 'hijri_year', 'hijri_month', 'hijri_day'], cols: ['site', 'hijri_year', 'hijri_month', 'hijri_day', 'is_open', 'is_shut'] }
+    { name: 'days', table: 'daily_stats_days', pk: ['site', 'greg_date'], cols: ['site', 'greg_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json']) },
+    { name: 'months', table: 'daily_stats_month_locks', pk: ['site', 'greg_year', 'greg_month'], cols: ['site', 'greg_year', 'greg_month', 'approved', 'reopened', 'legacy_boolean'] },
+    { name: 'locks', table: 'daily_stats_day_locks', pk: ['site', 'greg_year', 'greg_month', 'greg_day'], cols: ['site', 'greg_year', 'greg_month', 'greg_day', 'is_open', 'is_shut'] }
   ];
   var changes = {};
   /* Bound every parameter below D1's value limit while keeping ALL chunks in the
@@ -23495,7 +23506,7 @@ function dsLegacyConvert(raw) {
     });
     data.locks = locks;
   }
-  if (!dsDomainShape(data)) throw new Error('dstats-cutover-shape');
+  if (dsShapeAt(data, null, true) !== '') throw new Error('dstats-cutover-shape');
   return data;
 }
 async function dsLegacyPrepare(env) {
@@ -24837,7 +24848,8 @@ async function retroState(env, d, sys) {
 }
 /* من يفتح نافذةَ استدراك: مدير النظام، أو حاملُ approve على ورقة السجلات في الإدارة — ذرّةُ G‑08 نفسُها التي تفتح الشهرَ واجهياً اليوم (وهي ترجمةُ ir/sz.rec.retro.open) */
 function retroMay(A, d, sys) { return enfRetroMay(A, d, sys); }   /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
-function retroScopeKey(sc) { return sc.y + '-' + sc.m + (sc.d == null ? '' : '-' + sc.d); }
+/* V7 · 53 تقويم (ق1): نصُّ النطاق في التدقيق ISO مبطَّن (2026-11 · 2026-11-24) */
+function retroScopeKey(sc) { return sc.d == null ? calGYm(sc.y, sc.m) : calGKey(sc.y, sc.m, sc.d); }
 /* سياقُ الاستدراك للحفظة: نوافذُ كلِّ (إدارة · نظام) تمسّه الكتابةُ — قراءةٌ واحدة لكلٍّ (الاسمُ باقٍ توافقاً: يقرؤه الإنفاذ والإحصائيات) */
 async function permv3RetroLoad(env, set, del) {
   var out = {}, k, i, ks = Object.keys(set || {}); for (i = 0; i < (del || []).length; i++) ks.push(String(del[i]));
@@ -24852,7 +24864,7 @@ async function retroApi(env, request, A, url, meta) {
   catch (error) { return bdErrorResponse(error); }
 }
 async function retroApiRun(env, request, A, url, meta) {
-  var now = Date.now(), T = dsToday(now), b = null, sys, d;
+  var now = Date.now(), T = calToday(now), b = null, sys, d;   /* V7 · 53 تقويم (ق11): اليومُ التشغيلي الميلادي (مهلةُ الثلاث ساعات) */
   if (request.method === 'GET') { sys = String(url.searchParams.get('res') || ''); d = String(url.searchParams.get('dept') || A.u.deptId || ''); }
   else { var rb = await bodyRead(request, '/api/retro'); if (rb.res) return rb.res; b = rb.v; sys = String(b.res || ''); d = String(b.dept || A.u.deptId || ''); }   /* KIVO_264 · SOT-101: مخطّطُ الجسم (src/schemas/api/bodies.schema.json) */
   if (!Object.prototype.hasOwnProperty.call(RETRO, sys)) return json({ ok: 0, err: 'res' }, 400);   /* KIVO_264: «__proto__» وأمثالُه ليست نظاماً (كانت تمرّ فتنهار 500) */
@@ -24877,7 +24889,8 @@ async function retroApiRun(env, request, A, url, meta) {
   var st9 = domainState.state, w, scope;
   if (act === 'open') {
     var sc0 = isObj(b.scope) ? b.scope : {}, y = parseInt(sc0.y, 10), m = parseInt(sc0.m, 10), dd0 = (sc0.d == null || sc0.d === '') ? null : parseInt(sc0.d, 10);
-    if (!(y > 1300 && y < 1700 && m >= 1 && m <= 12) || (dd0 !== null && !(dd0 >= 1 && dd0 <= 30))) return json({ ok: 0, err: 'scope' }, 400);
+    /* V7 · 53 تقويم (ق1 · §1.10): النطاقُ شهرٌ أو يومٌ ميلادي (1900–2199 · اليومُ ≤ طولِ الشهر) — نطاقٌ هجري من عميلٍ قديم يُرفض */
+    if (!(y >= 1900 && y <= 2199 && m >= 1 && m <= 12) || (dd0 !== null && !(dd0 >= 1 && dd0 <= calGMonthDays(y, m)))) return json({ ok: 0, err: 'scope' }, 400);
     scope = { y: y, m: m, d: dd0 };
     if (!T) return json({ ok: 0, err: 'today' }, 500);
     if (!KIVO_BUILD.retroClosed(T, y, m, dd0)) return json({ ok: 0, err: 'not-closed', today: T }, 400);          /* الفترةُ المفتوحة لا تحتاج استدراكاً */
@@ -24972,7 +24985,7 @@ function permv4Sources(A) {
 function permv4DeptCeiling(dim, dept, actor) { return null; }
 function permv4Ctx(A, d, k, okMap, ctx) {
   var ac = permv4Actor(A), pv4 = (ctx && ctx.pv4) || {}, staffing = pv4.staffing || null;
-  return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: dsToday(Date.now()), now: Date.now(),
+  return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: calToday(Date.now()), now: Date.now(),   /* V7 · 53 تقويم (ق11): يومُ الإنفاذ ميلادي (calToday) */
            retroWin: (ctx && ctx.retroWin) || {}, locks: { staffing: pv4.staffingLocks, tasks: pv4.tasksLocks },
            srvRoute: !!(A.__tkSrv || A.__tkSelf || (ctx && ctx.restore)),   /* V7 · 53: كتابةُ مسارٍ خادمي (يحكم فترتَه بنفسه) أو استعادةٌ خادمية — لا الحفظُ الخامّ */
            actorShift: function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; },
@@ -29430,13 +29443,14 @@ function enfDstatsWrite(A, k, newVal, curVal, ctx, X) {
     if (DS_SITES.indexOf(kk) !== -1) {
       var a9 = o[kk] === undefined ? {} : o[kk], b9 = n[kk] === undefined ? {} : n[kk];
       if (!isObj(a9) || !isObj(b9)) return enfNo('dstats');
-      for (q in b9) if (!deq(a9[q], b9[q]) && (!/^\d{4}-\d{2}-\d{2}$/.test(q) || !dsDayOk(b9[q]))) return enfNo('dstats');
+      for (q in b9) if (!deq(a9[q], b9[q]) && (!/^\d{4}-\d{2}-\d{2}$/.test(q) || calKeyCal(q) !== 'g' || !dsDayOk(b9[q]))) return enfNo('dstats');
       continue;
     }
     if (kk === 'locks') {
       var la = o.locks === undefined ? {} : o.locks, lb = n.locks === undefined ? {} : n.locks;
       if (!isObj(la) || !isObj(lb)) return enfNo('dstats');
-      for (q in lb) if (!deq(la[q], lb[q]) && (!/^(haram|nabawi)\|\d{4}-\d{1,2}$/.test(String(q)) || !dsLockOk(lb[q]))) return enfNo('dstats');
+      /* V7 · 53 تقويم (ق1): قفلٌ جديدٌ أو معدَّل بمفتاحٍ ميلادي «site|YYYY-MM» وحده — المفتاحُ الهجري من عميلٍ قديم يُرفض؛ وحذفُ مفتاحٍ قديم (هجري) يبقى مسموحاً */
+      for (q in lb) if (!deq(la[q], lb[q]) && (!/^(haram|nabawi)\|\d{4}-\d{2}$/.test(String(q)) || calKeyCal(String(q).split('|')[1]) !== 'g' || !dsLockOk(lb[q]))) return enfNo('dstats');
       for (q in la) if (lb[q] === undefined && !/^(haram|nabawi)\|\d{4}-\d{1,2}$/.test(String(q))) return enfNo('dstats');
       continue;
     }
@@ -33206,7 +33220,7 @@ function demoKvPut(env, k, text, lens) {
 function demoRandDigits(n) { var b = new Uint8Array(n), s = '', i; crypto.getRandomValues(b); for (i = 0; i < n; i++) s += String(b[i] % 10); return s.charAt(0) === '0' ? '7' + s.slice(1) : s; }
 /* ── السياق: ما يحتاجه كلُّ نظامٍ ليكتب محتواه — اليومُ الهجري · الإدارات · الموظفون · الورديات · المواقعُ (نموذجُ الطوابق المشترك) ── */
 function demoContext(now) {
-  var t = pfHijriAt(now); if (!t || !t.y) throw new Error('demo-clock');
+  var t = pfDayAt(now); if (!t || !t.y) throw new Error('demo-clock');   /* V7 · 53 تقويم (ق1): بياناتُ العرض التجريبي على اليوم الميلادي، ومفاتيحُ الشهر ISO مبطَّنة */
   var T = { y: t.y, m: t.m, d: t.d }, P = T.m > 1 ? { y: T.y, m: T.m - 1 } : { y: T.y - 1, m: 12 }, days = [];
   for (var i = 0; i < 3 && T.d - i >= 1; i++) days.push({ y: T.y, m: T.m, d: T.d - i });
   var D = { g: DEMO_PRE + 'g', d1: DEMO_PRE + 'd1', d2: DEMO_PRE + 'd2', s1: DEMO_PRE + 's1' };
@@ -33224,7 +33238,7 @@ function demoContext(now) {
       paths: [{ uid: 'tstdp' + k, id: 'DP' + k, pts: [{ x: 0, y: 0 }, { x: 5, y: 5 * num }], active: true }] };
   }
   var sites = {}; sites[D.d1] = [site(D.d1, 11, 'موقع تجريبي ١', 1), site(D.d1, 12, 'موقع تجريبي ٢', 2)]; sites[D.d2] = [site(D.d2, 21, 'موقع الإدارة ٢', 1)];
-  return { now: now, today: T, prev: P, days: days, mk: T.y + '-' + T.m, pmk: P.y + '-' + P.m, pre: DEMO_PRE, tag: DEMO_TAG, depts: D, units: [D.d1, D.d2], emps: emps, shifts: shifts, sites: sites,
+  return { now: now, today: T, prev: P, days: days, mk: calGYm(T.y, T.m), pmk: calGYm(P.y, P.m), pre: DEMO_PRE, tag: DEMO_TAG, depts: D, units: [D.d1, D.d2], emps: emps, shifts: shifts, sites: sites,
     copy: function (o) { return JSON.parse(JSON.stringify(o)); } };
 }
 /* ── الخطة: الإداراتُ والحساباتُ والصلاحياتُ (دمجاً) ثم قطعُ الأنظمة — بلا كتابة ── */
@@ -33419,7 +33433,7 @@ async function enfDemoApi(env, request, A) {
 demoProvide({ sys: 'award', caps: ['award'], seed: async function (env, C, out) {
   for (var i = 0; i < C.units.length; i++) {
     var d = C.units[i], emps = C.emps[d] || [], recs = emps.slice(0, 3).map(function (e, j) {
-      return { id: C.pre + 'aw_' + d.slice(C.pre.length) + '_' + j, ekey: e.eid, cat: C.tag + 'فئة', hij: C.today.y + '-' + C.today.m + '-' + C.today.d, score: 70 + j, st: 'قيد التحكيم', declName: e.name };
+      return { id: C.pre + 'aw_' + d.slice(C.pre.length) + '_' + j, ekey: e.eid, cat: C.tag + 'فئة', hij: calGKey(C.today.y, C.today.m, C.today.d), score: 70 + j, st: 'قيد التحكيم', declName: e.name };
     });
     if (!recs.length) continue;
     var domain = awConvert(d, { records: { recs: recs } });

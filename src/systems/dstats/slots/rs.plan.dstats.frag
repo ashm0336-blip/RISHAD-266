@@ -16,9 +16,9 @@
     }
     plan.guards.push(revGuard(env, K_DSTATS, body.base.dailyStats));
     var specs = [
-      ['daily_stats_days', ['site', 'hijri_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
-      ['daily_stats_month_locks', ['site', 'hijri_year', 'hijri_month', 'approved', 'reopened', 'legacy_boolean']],
-      ['daily_stats_day_locks', ['site', 'hijri_year', 'hijri_month', 'hijri_day', 'is_open', 'is_shut']],
+      ['daily_stats_days', ['site', 'greg_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
+      ['daily_stats_month_locks', ['site', 'greg_year', 'greg_month', 'approved', 'reopened', 'legacy_boolean']],
+      ['daily_stats_day_locks', ['site', 'greg_year', 'greg_month', 'greg_day', 'is_open', 'is_shut']],
     ];
     var dsChanges = dsDomainStatements(env, current.data, next);
     for (var sp of specs) {

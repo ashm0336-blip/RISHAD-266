@@ -8,7 +8,8 @@ async function retroState(env, d, sys) {
 }
 /* من يفتح نافذةَ استدراك: مدير النظام، أو حاملُ approve على ورقة السجلات في الإدارة — ذرّةُ G‑08 نفسُها التي تفتح الشهرَ واجهياً اليوم (وهي ترجمةُ ir/sz.rec.retro.open) */
 function retroMay(A, d, sys) { return enfRetroMay(A, d, sys); }   /* V7 · د5-ح (القفل): المحرّكُ النافذ وحده */
-function retroScopeKey(sc) { return sc.y + '-' + sc.m + (sc.d == null ? '' : '-' + sc.d); }
+/* V7 · 53 تقويم (ق1): نصُّ النطاق في التدقيق ISO مبطَّن (2026-11 · 2026-11-24) */
+function retroScopeKey(sc) { return sc.d == null ? calGYm(sc.y, sc.m) : calGKey(sc.y, sc.m, sc.d); }
 /* سياقُ الاستدراك للحفظة: نوافذُ كلِّ (إدارة · نظام) تمسّه الكتابةُ — قراءةٌ واحدة لكلٍّ (الاسمُ باقٍ توافقاً: يقرؤه الإنفاذ والإحصائيات) */
 async function permv3RetroLoad(env, set, del) {
   var out = {}, k, i, ks = Object.keys(set || {}); for (i = 0; i < (del || []).length; i++) ks.push(String(del[i]));

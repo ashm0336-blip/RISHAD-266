@@ -11,7 +11,7 @@ import { calendar, callers } from '../../../../tests/unit/cal_kit.mjs';   /* V7 
 const source = fs.readFileSync(path.join(ROOT, 'src/systems/irshad/client/logic.js'), 'utf8');
 const kpiRing = fs.readFileSync(path.join(ROOT, 'src/systems/_shared/kpiring/kpi-ring.js'), 'utf8');   /* V7 · 53: القطعةُ المشتركة كما تضمّها الصفحة (meta.json ← logicParts) */
 const base = { epoch: 2, reports: 3, languages: 4, locations: 5, retro: 6 };
-const clock = { y: 1448, m: 5, d: 19, now: 1793318400000 };
+const clock = { y: 2026, m: 5, d: 19, now: 1793318400000 };
 const json = (value, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => value });
 const ack = (body, extra = {}) => json({ ok: 1, requestId: body.requestId, op: body.op, rev: 8, n: 1, id: 'TEST_ONLY_report', base: { ...base, reports: 8 }, ...extra });
 const draft = () => ({ shift: 'TEST_ONLY_shift', eid: 'TEST_ONLY_employee', loc: 'TEST_ONLY_location', langs: [{ lang: 'العربية', count: 9 }], bro: '2', pros: '1', pol: '0', langSel: '', langN: '' });
@@ -55,7 +55,7 @@ function browser(handler = async () => json({ ok: 0 }, 500)) {
   const Count = (n, label) => String(n) + ' ' + label;
   Count.pair = (prefix, value) => ({ [prefix]: value }); Count.agr = () => 'فيها';
   class Base {
-    hToday() { return { y: 1448, m: 5, d: 19 }; }
+    hToday() { return { y: 2026, m: 5, d: 19 }; }
     _hfmt() { return new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { year: 'numeric', month: 'numeric', day: 'numeric' }); }
     setState(patch) { Object.assign(this.state, typeof patch === 'function' ? patch(this.state) : patch); }
     MONTHS = Array.from({ length: 12 }, (_, n) => 'شهر' + (n + 1));
@@ -69,7 +69,8 @@ function browser(handler = async () => json({ ok: 0 }, 500)) {
   }
   const KIVO = { BassamPageKit: { base: () => callers(Base, KIVO) }, BassamCount: Count, BassamAuth: { user: () => ({ id: user }) },
     BassamDepts: { active: () => dept, has: value => value === dept && !!dept }, BassamPerm: { can: () => true, subOn: () => true }, __BS_SRV: { sesChanged: () => false }, bsPct: Math.round };
-  const W = { KIVO, DCLogic: Base, URLSearchParams, AbortController, Uint8Array, crypto: webcrypto, Intl, Date, console,
+  /* V7 · 53 تقويم: كروتُ التقويم عناصرُ React من المكوّن الواحد (KIVO.BassamCalCard) — React الصفحة كما في المتصفح */
+  const W = { KIVO, DCLogic: Base, React: { createElement: (t, p, ...ch) => ({ t, p, ch }), Fragment: 'F' }, URLSearchParams, AbortController, Uint8Array, crypto: webcrypto, Intl, Date, console,
     __BS_BOOT: { srv: 1, cf: 1, uid: user },
     localStorage: { getItem(k) { storage.push(['get', k]); throw Error('Device storage forbidden'); }, setItem(k) { storage.push(['set', k]); throw Error('Device storage forbidden'); } },
     setTimeout(fn, ms) { const timer = setTimeout(fn, ms); timers.push(timer); return timer; }, clearTimeout,
@@ -78,11 +79,13 @@ function browser(handler = async () => json({ ok: 0 }, 500)) {
     dispatchEvent(event) { for (const fn of events.get(event.type) || []) fn(event); },
     fetch: async (url, options = {}) => { calls.push({ url: String(url), options }); return handler(String(url), options); }, print() { notices.push('print'); } };
   W.window = W; vm.createContext(W); calendar(W);
+  /* V7 · 53 تقويم: «اليوم» الثابت للاختبار (كان hToday = 1448-5-19) — اليومُ التشغيلي الميلادي من الخدمة نفسِها، مثبَّتاً على 2026-05-19 */
+  { const C = KIVO.BassamCal, T = C.gAt(Date.parse('2026-05-19T09:00:00Z')); KIVO.BassamCal = Object.freeze({ ...C, gToday: () => T }); }
   for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/534-staff-g4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), W);   /* V7 · د5-د2: الناقل (قلب المنصة) وقراءاتُ الجدول الشهري المعلنة عليه — الصفحةُ تسأل بالاسم */
   vm.runInContext(source + '\n' + kpiRing + '\nglobalThis.TestComponent = Component;', W);
   const page = new W.TestComponent();
   page.bsToast = message => notices.push(message); page.bsAck = message => notices.push(message);
-  page.state.irTab = 'records'; page.state.irYear = 1448; page.state.irMonth = 5; page.state.irDay = 19;
+  page.state.irTab = 'records'; page.state.irYear = 2026; page.state.irMonth = 5; page.state.irDay = 19;
   const context = { dept, _contextKey: user + '\0' + dept };
   page.state.irCalendar = { ...context, base: { ...base }, total: 20, yearTotal: 20, months: [{ m: 5, n: 20 }], days: [{ d: 19, n: 20 }], monthTotals: { reports: 20, ben: 260, trans: 180, bro: 40, pros: 20, pol: 20 } };
   page.state.irRecords = { ...context, base: { ...base }, rows: [], total: 20, monthTotal: 20, page: 1, pageSize: 10 };
@@ -213,7 +216,7 @@ test('401 and server session-changed freeze all old-context writes without stora
 
 test('record counts and KPIs use complete server totals while only a bounded page is rendered', t => {
   const B = browser(); t.after(B.cleanup);
-  B.page.state.irRecords = { ...B.page.state.irRecords, total: 13, page: 2, rows: [{ id: 'TEST_ONLY_page2', y: 1448, m: 5, d: 19, shift: 'TEST_ONLY_shift', langs: [], bro: 1 }] };
+  B.page.state.irRecords = { ...B.page.state.irRecords, total: 13, page: 2, rows: [{ id: 'TEST_ONLY_page2', y: 2026, m: 5, d: 19, shift: 'TEST_ONLY_shift', langs: [], bro: 1 }] };
   B.page.state.irLedgerPage = 2;
   const values = B.page._recordsCalVals();
   assert.equal(values.irLedgerRows.length, 1); assert.equal(values.irLgShownCount, '13');
@@ -227,10 +230,10 @@ test('filtered collection follows bounded cursors and refuses changed base, loop
     const B = browser(async () => {
       page++;
       return json({ ok: 1, dept: 'TEST_ONLY_department', view: 'records', base: failure === 'base' && page === 2 ? { ...base, reports: 4 } : base, clock,
-        year: 1448, month: 5, rows: [{ id: 'TEST_ONLY_' + page }], total: failure === 'truncated' ? 3 : 2, monthTotal: 20, page, pageSize: 200,
+        year: 2026, month: 5, rows: [{ id: 'TEST_ONLY_' + page }], total: failure === 'truncated' ? 3 : 2, monthTotal: 20, page, pageSize: 200,
         next: page === 1 || failure === 'loop' ? 'TEST_ONLY_cursor' : null, prev: null });
     }); t.after(B.cleanup);
-    const result = await B.page._irCollect({ year: 1448, month: 5, shift: 'TEST_ONLY_shift', q: 'أحمد ١٢' });
+    const result = await B.page._irCollect({ year: 2026, month: 5, shift: 'TEST_ONLY_shift', q: 'أحمد ١٢' });
     assert.equal(result.ok, failure ? 0 : 1, failure);
     if (!failure) { assert.equal(result.rows.length, 2); assert.equal(new URL(B.calls[1].url, 'https://example.invalid').searchParams.get('q'), 'أحمد ١٢'); }
     assert.equal(B.calls.length, 2); assert.deepEqual(B.storage, []);
@@ -240,10 +243,10 @@ test('filtered collection follows bounded cursors and refuses changed base, loop
 test('aggregate dashboard renders SQL metrics, distinct summary employees and historical employee snapshots without report history', t => {
   const B = browser(); t.after(B.cleanup);
   const metrics = { reports: 3, employees: 2, trans: 18, bro: 4, pros: 2, pol: 1, ben: 25 };
-  B.page.state.irDashYear = 1448; B.page.state.irDashMonth = '5';
-  B.page.state.irDashboard = { base, dashboard: { available: { total: 3, years: [1448], months: [{ y: 1448, m: 5 }], first: { y: 1448, m: 5, d: 1 } },
+  B.page.state.irDashYear = 2026; B.page.state.irDashMonth = '5';
+  B.page.state.irDashboard = { base, dashboard: { available: { total: 3, years: [2026], months: [{ y: 2026, m: 5 }], first: { y: 2026, m: 5, d: 1 } },
     totals: metrics, previous: { reports: 1, trans: 4, bro: 1, pros: 0, pol: 0, ben: 5 },
-    series: [{ y: 1448, m: 5, d: 1, ...metrics }], previousSeries: [{ y: 1448, m: 4, d: 1, ben: 5 }], heat: [{ m: 5, d: 1, ben: 25 }],
+    series: [{ y: 2026, m: 5, d: 1, ...metrics }], previousSeries: [{ y: 2026, m: 4, d: 1, ben: 5 }], heat: [{ m: 5, d: 1, ben: 25 }],
     languages: [{ name: 'العربية', value: 18 }], locations: [{ name: 'TEST_ONLY_location', value: 25, previous: 5 }],
     shifts: [{ name: 'TEST_ONLY_shift', ...metrics }], shiftSeries: [], locationSeries: [],
     employees: [{ key: 'TEST_ONLY_employee', name: 'TEST_ONLY_historical_name', shift: 'TEST_ONLY_shift', reports: 2, ben: 25, previous: 5 }],
@@ -298,7 +301,7 @@ test('module remount restores an uncertain draft/ticket only in the same session
 });
 
 test('lost retro ACK refreshes windows using GET only and a later explicit click closes the confirmed active window', async t => {
-  let active = { id: 'TEST_ONLY_window', scope: { y: 1448, m: 4, d: null }, until: Date.now() + 3600000 };
+  let active = { id: 'TEST_ONLY_window', scope: { y: 2026, m: 4, d: null }, until: Date.now() + 3600000 };
   const B = browser(async (url, options) => {
     if (options.method === 'GET') return json({ ok: 1, windows: [active], now: Date.now() });
     const body = JSON.parse(options.body);
@@ -341,4 +344,25 @@ test('V7 · 53 (S10): a save refused with 400 irshad-data says «لا جدول �
   B.page.state.irDraft = draft();
   await B.page._recordsCalVals().irSaveReport();
   assert.ok(B.notices.some((m) => String(m).includes('لا جدول معتمد لهذا الشهر')), JSON.stringify(B.notices));
+});
+
+test('V7 · 53 تقويم: the records calendar is Gregorian — month and day cards from the one card component, the Hijri line under each, two states only', t => {
+  const B = browser(); t.after(B.cleanup);
+  B.page._irPermVals = () => ({});
+  const v = B.page._recordsCalVals(), C = B.W.KIVO.BassamCal, kids = c => [].concat(...c.ch).filter(x => x && x.p);
+  assert.equal(v.irMonths.length, 12);
+  const may = v.irMonths[4].card, jan = v.irMonths[0].card, jun = v.irMonths[5].card;
+  assert.equal(may.p['data-cal-kind'], 'month'); assert.equal(may.p['data-cal-key'], '2026-05'); assert.equal(may.p['data-cal-sel'], '1');
+  assert.equal(kids(may).find(x => x.p['data-cal-line'] === '0').ch[0], 'مايو', 'the month IS the Gregorian month');
+  assert.match(kids(may).find(x => x.p['data-cal-line'] === '1').ch[0], /ذو القعدة|شوال|ذو الحجة/, 'its Hijri span is the small line');
+  assert.equal(jan.p['data-cal-state'], 'closed', 'a past month without a window is closed (one state, with the lock)');
+  assert.ok(kids(jan).some(x => x.p['data-cal-lock']), 'the closed card carries the lock');
+  assert.equal(jun.p['data-cal-state'], 'open');
+  assert.equal(v.irDays.length, C.gMonthDays(2026, 5), 'May has 31 Gregorian days');
+  const d19 = v.irDays[18].card, d1 = v.irDays[0].card, lines = c => kids(c).filter(x => x.p['data-cal-line']).map(x => x.ch[0]);
+  assert.equal(d19.p['data-cal-key'], '2026-05-19'); assert.equal(d19.p['data-cal-sel'], '1');
+  assert.deepEqual(lines(d19), [C.gLetter('2026-05-19'), '19', String(C.hOf('2026-05-19').d)], 'letter · Gregorian day · Hijri day');
+  assert.equal(d1.p['data-cal-state'], 'closed'); assert.equal(v.irDays[25].card.p['data-cal-when'], 'future');
+  assert.equal(v.irSelDateLabel, '19 مايو 2026 · ' + C.hDayText('2026-05-19') + ' هـ');
+  assert.equal(v.irYearLabel, '2026'); assert.equal(v.irGregRange, C.hRangeOfYear(2026));
 });

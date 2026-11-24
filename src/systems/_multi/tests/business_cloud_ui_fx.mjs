@@ -7,7 +7,8 @@ import { ROOT, moduleDir } from '../../../../tests/unit/harness.mjs';
 import assert from 'node:assert/strict';
 export { ROOT };
 const json = (value, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => value });
-const clock = { y: 1448, m: 5, d: 19, now: 1793318400000 };
+/* V7 · 53 تقويم: «اليوم» الثابت للاختبار ميلادي (كان 1448-5-19) — الصفحاتُ تسأل KIVO.BassamCal.gToday */
+const clock = { y: 2026, m: 5, d: 19, now: 1793318400000 };
 const bases = {
   seized: { epoch: 2, reports: 3, catalog: 4, actions: 5, locations: 6, jew: 7, retro: 8 },
   award: { epoch: 2, records: 3, docsV1: 4, docsV2: 5 },
@@ -54,7 +55,8 @@ function browser(module, handler, currentClock = clock) {
     BassamDepts: { active: () => dept, has: value => value === dept && !!dept, activeName: () => 'TEST_ONLY_department' },
     BassamPerm: { can: () => true, subOn: () => true, key: () => true, deptCap: () => cap.slice() },
     __BS_SRV: { sesChanged: () => false }, BassamFind: { filter: (_, rows) => rows, match: () => true } };
-  const W = { KIVO, DCLogic: Base, URLSearchParams, AbortController, Uint8Array, crypto: webcrypto, Intl, Date, console,
+  /* V7 · 53 تقويم: كروتُ التقويم عناصرُ React من المكوّن الواحد (KIVO.BassamCalCard) — React الصفحة كما في المتصفح */
+  const W = { KIVO, DCLogic: Base, React: { createElement: (t, p, ...ch) => ({ t, p, ch }), Fragment: 'F' }, URLSearchParams, AbortController, Uint8Array, crypto: webcrypto, Intl, Date, console,
     __BS_BOOT: { srv: 1, cf: 1, uid },
     localStorage: { getItem(key) { storage.push(['get', key]); throw Error('TEST_ONLY device store forbidden'); }, setItem(key) { storage.push(['set', key]); throw Error('TEST_ONLY device store forbidden'); } },
     setTimeout(fn, delay) { const timer = setTimeout(fn, delay); timers.add(timer); return timer; }, clearTimeout,
@@ -73,6 +75,7 @@ function browser(module, handler, currentClock = clock) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), W);
   const pageKitBase = W.KIVO.BassamPageKit.base;
   W.KIVO.BassamPageKit.base = (base, traits) => class extends pageKitBase(base, traits) { hToday() { return currentClock; } };
+  { const C = W.KIVO.BassamCal; W.KIVO.BassamCal = Object.freeze({ ...C, gToday: () => ({ ...currentClock, k: C.gKey(currentClock.y, currentClock.m, currentClock.d), ym: C.gYm(currentClock.y, currentClock.m) }) }); }
   const dir = moduleDir(module), meta = JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8'));
   const source = ['logic.js', ...(meta.logicParts || [])].map(file => fs.readFileSync(path.join(dir, file), 'utf8')).join('\n');
   vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);

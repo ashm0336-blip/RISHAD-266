@@ -3,7 +3,7 @@
 var AW_RES = ['bassam_award_v1', 'bassam_award_docs_v1', 'bassam_award_docs_v2'];
 var AW_NAMES = ['records', 'docsV1', 'docsV2'];
 var AW_FIELDS = [
-  ['id','business_id','text'], ['ekey','employee_key','text'], ['cat','category','text'], ['hij','hijri_date','text'],
+  ['id','business_id','text'], ['ekey','employee_key','text'], ['cat','category','text'], ['hij','greg_date','text'],
   ['score','score','number'], ['cases','case_count','number'], ['fileOk','file_ok','boolean'], ['ok','eligible','boolean'],
   ['st','status','text'], ['comp','employee_number','text'], ['city','city','text'], ['field','work_field','text'],
   ['phone','phone','text'], ['email','email','text'], ['declName','declarer_name','text'], ['by','approver_name','text'],
@@ -328,12 +328,14 @@ async function awEventPlan(ctx,b,before,after){
   events.forEach(function(event){Object.keys(event.vars).forEach(function(k){if(typeof event.vars[k]==='string')event.vars[k]=event.vars[k].slice(0,4000);});});
   var plan=await nfPlanEvents(ctx.env,ctx.A,events,true);return {guards:plan.guards,statements:plan.statements.concat(nfRetention(ctx.env,Date.now(),plan.scopes)),active:plan.plans.length};
 }
+/* V7 · 53 تقويم (ق1 · ق2): تاريخُ الإقرار (hij ← greg_date) يومٌ ميلاديٌّ ISO مبطَّن — والتاريخُ الهجري من عميلٍ قديم يُرفض (الاسمُ hij باقٍ توافقاً، ومعناه ميلادي) */
+function awDateOk(data){if(isObj(data)&&awOwn(data,'hij')&&data.hij!==null&&data.hij!==''&&!(typeof data.hij==='string'&&calIsGKey(data.hij,'day')))throw awError('date');}
 function awCommandShape(b){
   var extras={create:['data'],edit:['id','data'],status:['id','status'],delete:['id'],'reference-replace':['version','document']};
   if(!isObj(b)||!awOwn(extras,b.op))throw awError('operation');awShape(b,['uid','dept','requestId','base','op','reason'].concat(extras[b.op]));
   if(typeof b.dept!=='string'||!b.dept)throw awError('global-references-readonly',403);awScope(b.dept);awText(b.requestId,100);if(!b.requestId)throw awError('request');
   awShape(b.base,['epoch'].concat(AW_NAMES));['epoch'].concat(AW_NAMES).forEach(function(n){awNatural(b.base[n]);});
-  if(b.reason!==undefined&&typeof b.reason!=='string')throw awError('reason');return b;
+  if(b.reason!==undefined&&typeof b.reason!=='string')throw awError('reason');if(b.op==='create'||b.op==='edit')awDateOk(b.data);return b;
 }
 async function hAwardAct(env,A,b,meta){
   awCommandShape(b);if(b.uid!==undefined&&b.uid!==A.u.id){var identity=awError('session-changed',409);identity.awCode='session-changed';throw identity;}

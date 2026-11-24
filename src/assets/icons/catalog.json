@@ -608,10 +608,6 @@
     "modules/org/view.html": 1,
     "systems/daily/client/view.html": 1,
     "systems/dreport/client/view.html": 3,
-    "systems/dstats/client/view.html": 1,
-    "systems/irshad/client/view.html": 1,
-    "systems/rasd/client/view.html": 1,
-    "systems/seized/client/view.html": 1,
     "systems/tasks/client/view.html": 2
    },
    "viewBox": "0 0 24 24"
@@ -1040,7 +1036,7 @@
     "systems/daily/client/view.html": 3,
     "systems/irshad/client/view.html": 5,
     "systems/plan/client/view.html": 1,
-    "systems/rasd/client/view.html": 5,
+    "systems/rasd/client/view.html": 4,
     "systems/seized/client/view.html": 5,
     "systems/staff/client/view.html": 1,
     "systems/tasks/client/view.html": 1
@@ -1355,14 +1351,9 @@
   "i-81de76b2": {
    "body": "<path d=\"{{m.footP1}}\"></path><path d=\"{{m.footP2}}\"></path>",
    "uses": {
-    "modules/employees/view.html": 1,
     "systems/daily/client/view.html": 1,
     "systems/dreport/client/view.html": 1,
-    "systems/dstats/client/view.html": 1,
-    "systems/irshad/client/view.html": 1,
     "systems/plan/client/view.html": 1,
-    "systems/rasd/client/view.html": 1,
-    "systems/seized/client/view.html": 1,
     "systems/staff/client/view.html": 1
    },
    "viewBox": "0 0 24 24"
@@ -2104,10 +2095,6 @@
    "uses": {
     "systems/daily/client/view.html": 1,
     "systems/dreport/client/view.html": 1,
-    "systems/dstats/client/view.html": 1,
-    "systems/irshad/client/view.html": 1,
-    "systems/rasd/client/view.html": 1,
-    "systems/seized/client/view.html": 1,
     "systems/tasks/client/view.html": 2
    },
    "viewBox": "0 0 24 24"

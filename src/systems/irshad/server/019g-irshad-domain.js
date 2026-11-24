@@ -4,9 +4,9 @@ var IR_RES_NAMES = ['reports', 'languages', 'locations', 'retro'];
 var IR_REQUEST_COLS = ['department_id', 'account_uid', 'request_id', 'fingerprint', 'resource_key', 'resource_rev', 'operation', 'result_n', 'result_id', 'created_at'];
 var IR_FIELDS = [
   ['id', 'report_id', 'text'],
-  ['y', 'hijri_year', 'number'],
-  ['m', 'hijri_month', 'number'],
-  ['d', 'hijri_day', 'number'],
+  ['y', 'greg_year', 'number'],
+  ['m', 'greg_month', 'number'],
+  ['d', 'greg_day', 'number'],
   ['ts', 'created_at', 'number'],
   ['shift', 'shift', 'text'],
   ['eid', 'employee_key', 'text'],
@@ -36,9 +36,9 @@ var IR_WIN_FIELDS = [
   ['closedAt', 'closed_at', 'number'],
 ];
 var IR_SCOPE_FIELDS = [
-  ['y', 'hijri_year', 'number'],
-  ['m', 'hijri_month', 'number'],
-  ['d', 'hijri_day', 'number'],
+  ['y', 'greg_year', 'number'],
+  ['m', 'greg_month', 'number'],
+  ['d', 'greg_day', 'number'],
 ];
 var IR_BY_FIELDS = [
   ['id', 'by_id', 'text'],

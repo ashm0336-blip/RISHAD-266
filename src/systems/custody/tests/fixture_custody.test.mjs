@@ -9,6 +9,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { D1Shim, PYTHON, ROOT, applySql } from "../../../../tests/unit/harness.mjs";
 import { cuInflate } from "./custody_legacy_oracle.mjs";
+import { gregDdl } from "../../../../tests/unit/cal_rest_fx.mjs";
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8"),
   CU = [
     "custody_items",
@@ -53,12 +54,12 @@ function database() {
   DB.exec(
     "PRAGMA foreign_keys=ON;INSERT INTO meta(k,v) VALUES('schema_version','7'),('authz_mode','enforce') ON CONFLICT(k) DO UPDATE SET v=excluded.v;",
   );
-  custodySchema().forEach((sql) => DB.exec(sql));
+  custodySchema().forEach((sql) => DB.exec(gregDdl(sql)));   /* V7 · 53 تقويم: الشكلُ الحالي بعد 0014 */
   read("migrations/0004_daily_stats.sql")
     .match(
       /CREATE TABLE IF NOT EXISTS daily_stats_\w+\s*\([\s\S]*?\) WITHOUT ROWID;/g,
     )
-    .forEach((sql) => DB.exec(sql));
+    .forEach((sql) => DB.exec(gregDdl(sql)));
   DB.db
     .prepare("INSERT INTO kv(k,seq,v) VALUES(?,0,?)")
     .run(

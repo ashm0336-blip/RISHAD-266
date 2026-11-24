@@ -218,18 +218,9 @@ html[data-theme="dark"] .dz-glow{opacity:.3}
   </div>
   <div class="bs-hscroll" style="overflow-x:auto">
     <div style="display:flex;gap:12px;padding:16px 12px;min-width:100%;box-sizing:border-box">
+      <!-- V7 · 53 تقويم (§7 · day_card_design): كرتُ الشهر من المكوّن الواحد KIVO.BassamCalCard — الميلاديُّ وتحته المدى الهجري، وحالتان فقط -->
       <sc-for list="{{mcards}}" as="m" hint-placeholder-count="12">
-      <div style="position:relative;flex:1 1 auto;min-width:100px">
-        <div data-strip-cur="{{m.isCurrent}}" onClick="{{m.click}}" onDoubleClick="{{m.dbl}}" title="{{m.tip}}" style="{{m.style}}" style-hover="box-shadow:var(--shadow-soft)">
-          <sc-if value="{{m.isCurrent}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-x3b82f6)" title="الشهر الحالي"></span></sc-if>
-          <p style="font-size:11px;font-weight:400;line-height:1.3;margin:0;color:{{m.nameColor}}">{{m.name}}</p>
-          <p style="font-size:9px;color:var(--fg-x53565a);margin:2px 0 0;line-height:1.3">{{m.greg}}</p>
-          <div style="margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-size:8px;font-weight:400;color:{{m.footColor}}">
-            <sc-if value="{{m.footIcon}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{m.footP1}}"></path><path d="{{m.footP2}}"></path></svg></sc-if>
-            <span>{{m.footLabel}}</span>
-          </div>
-        </div>
-      </div>
+      <div style="position:relative;flex:1 1 auto;min-width:64px;display:flex">{{m.card}}</div>
       </sc-for>
     </div>
   </div>
@@ -242,24 +233,12 @@ html[data-theme="dark"] .dz-glow{opacity:.3}
       <span style="font-size:10px;color:var(--fg-x53565a)">تقدم الأيام:</span>
       <span style="font-size:10px;font-weight:400;color:var(--fg-xb99751)">{{dayProg}}</span>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-x047857)"></span><span style="font-size:8px;color:var(--fg-x53565a)">معتمد</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xb99751)"></span><span style="font-size:8px;color:var(--fg-x53565a)">مفتوح — فيه أرقام</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-x64748b)"></span><span style="font-size:8px;color:var(--fg-x53565a)">مقفل</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);box-sizing:border-box"></span><span style="font-size:8px;color:var(--fg-x53565a)">فارغ</span></div>
-    </div>
+    <!-- V7 · 53 تقويم (§7): لا مفتاحَ ألوان — حالتان فقط في الكرت (مغلق بقفل · مفتوح)، والسببُ في التلميح -->
   </div>
   <div class="bs-daystrip" style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap;padding:4px 0 6px">
-    <sc-for list="{{dcards}}" as="d" hint-placeholder-count="30">
-    <div data-strip-cur="{{d.isToday}}" onClick="{{d.click}}" onDoubleClick="{{d.dbl}}" title="{{d.tip}}" style="{{d.style}}" style-hover="transform:scale(1.05)">
-      <span style="line-height:1;display:block">{{d.num}}</span>
-      <span style="{{d.sepStyle}}"></span>
-      <span style="line-height:1;display:block;font-weight:400">{{d.gnum}}</span>
-      <sc-if value="{{d.isToday}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-xb99751);box-shadow:0 0 0 1px var(--bg-card)"></span></sc-if>
-      <!-- قفلٌ صغيرٌ يحكي حالةَ اليوم: مغلقٌ رماديّ = مقفل · مفتوحٌ ذهبيّ = فُتح بأثر رجعي -->
-      <sc-if value="{{d.lockClosed}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-xcbd5e1);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x475569)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span></sc-if>
-      <sc-if value="{{d.lockOpen}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p6);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg></span></sc-if>
-    </div>
+    <!-- V7 · 53 تقويم (§7 · day_card_design): كرتُ اليوم من المكوّن الواحد — حرفُ اليوم · الميلادي · الهجري، وحالتان فقط والسببُ في التلميح -->
+    <sc-for list="{{dcards}}" as="d" hint-placeholder-count="31">
+    <div style="position:relative;flex:1 1 auto;min-width:28px;display:flex">{{d.card}}</div>
     </sc-for>
   </div>
 </div>
@@ -1112,13 +1091,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
 
   /* ══ التقويم ══ */
   /* V7 · د5-د2: حساباتُ التقويم من الخدمة الواحدة (385-calendar) — كانت هنا بمُنسِّقٍ وبحثٍ ثنائي خاصَّين. gOf = لحظةُ منتصف ليل UTC (تُقرأ بدوالّ UTC أدناه) */
-  hOfDate(dt){ const h=KIVO.BassamCal.hParts(dt); return { year:h.y, month:h.m, day:h.d }; }
-  gOf(y,m,d){ return KIVO.BassamCal.hGregUTC(y,m,d); }
-  dim(y,m){ return KIVO.BassamCal.hMonthDaysNoon(y,m,29); }
+  /* V7 · 53 تقويم (ق1 · §7): الإحصائياتُ بالأيام والأشهر الميلادية (المفتاح YYYY-MM-DD) — gOf = منتصفُ ليل UTC لليوم الميلادي (تُقرأ بدوالّ UTC أدناه)،
+     والهجريُّ المقابل للعرض وحده (gTxt قصيراً · gLong طويلاً «الموافق») من الخدمة الواحدة */
+  calToday(){ const g=KIVO.BassamCal.gToday(); return { y:g.y, m:g.m, d:g.d, k:g.k }; }
+  hOfDate(dt){ return { year:dt.getFullYear(), month:dt.getMonth()+1, day:dt.getDate() }; }
+  gOf(y,m,d){ return new Date(Date.UTC(y,m-1,d)); }
+  dim(y,m){ return KIVO.BassamCal.gMonthDays(y,m); }
   mStart(y,i){ return this.gOf(y,i+1,1) || new Date(); }
-  gTxt(y,m,d){ const g=this.gOf(y,m,d); return g ? g.getUTCDate()+"/"+(g.getUTCMonth()+1)+"/"+g.getUTCFullYear() : "—"; }
-  gLong(y,m,d){ const g=this.gOf(y,m,d); if(!g) return "—";
-    try { return g.toLocaleDateString("ar-u-ca-gregory-nu-latn",{day:"numeric",month:"long",year:"numeric"}); } catch(e){ return this.gTxt(y,m,d); } }
+  gTxt(y,m,d){ const h=KIVO.BassamCal.hOf(KIVO.BassamCal.gKey(y,m,d)); return h ? h.d+"/"+h.m+"/"+h.y : "—"; }
+  gLong(y,m,d){ const t=KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(y,m,d)); return t ? t+" هـ" : "—"; }
   iso(dt){ return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"); }
 
   /* ══ المخزن ══ */
@@ -1128,7 +1109,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   dk(y,m,d){ return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0"); }
   rec(site,y,m,d){ const all=this.load(); const s=all[site]||{}; return s[this.dk(y,m,d)]||{}; }
   /* السنواتُ التي فيها أرقامٌ فعلاً — قائمةُ «السنة» تُبنى منها لا من فراغ */
-  YEARS(){ const all=this.load(), set={}, T=this.hToday();
+  YEARS(){ const all=this.load(), set={}, T=this.calToday();
     ["haram","nabawi"].forEach(st=>{ const s=all[st]||{}; Object.keys(s).forEach(k=>{ const y=+String(k).slice(0,4); if(y) set[y]=1; }); });
     set[T.y]=1;
     return Object.keys(set).map(Number).sort((a,b)=>b-a); }
@@ -1155,13 +1136,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   _rec(site,y,m){ const v=this._locks()[this.MKEY(site,y,m)];
     if(v===true) return {ap:1};                       /* شكلٌ قديمٌ من 208 — يُقرأ ولا يُكسر */
     return (v&&typeof v==="object")?v:{}; }
-  mPast(y,m){ const T=this.hToday(); return (y<T.y)||(y===T.y&&m<T.m); }
+  mPast(y,m){ const T=this.calToday(); return (y<T.y)||(y===T.y&&m<T.m); }
   mOpenFlag(site,y,m){ return !!this._rec(site,y,m).mo; }
   mApproved(site,y,m){ return !!this._rec(site,y,m).ap; }
 
   /* ══ قفلُ اليوم — نموذجُ «المتابعة اليومية» نفسُه ══
      منقضٍ ⇒ مقفولٌ ما لم يُفتح (dopen) · لم ينقضِ ⇒ مفتوحٌ ما لم يُقفل يدوياً (dshut) */
-  dPast(y,m,d){ const T=this.hToday();
+  dPast(y,m,d){ const T=this.calToday();
     return (y<T.y)||(y===T.y&&m<T.m)||(y===T.y&&m===T.m&&d<T.d); }
   isDayOpen(site,y,m,d){ const r=this._rec(site,y,m); return !!(r.dopen&&r.dopen[d]); }
   isDayShut(site,y,m,d){ const r=this._rec(site,y,m); return !!(r.dshut&&r.dshut[d]); }
@@ -1176,7 +1157,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     if(Object.keys(shut).length) r.dshut=shut; else delete r.dshut;
     if(Object.keys(r).length) L[key]=r; else delete L[key];
     const ok=await this._saveLocks(L,site);
-    if(ok) this.bsToast(lock?("أُقفل يومُ "+d+" "+this.MONTHS[m-1]):("فُتح يومُ "+d+" "+this.MONTHS[m-1]+" — التعديلُ متاح"),"ok");
+    if(ok) this.bsToast(lock?("أُقفل يومُ "+d+" "+KIVO.BassamCal.G_MONTHS[m-1]):("فُتح يومُ "+d+" "+KIVO.BassamCal.G_MONTHS[m-1]+" — التعديلُ متاح"),"ok");
     return ok; }
   mAutoLocked(site,y,m){ return this.mPast(y,m)&&!this.mOpenFlag(site,y,m)&&!this.mApproved(site,y,m); }
   mLocked(site,y,m){ return this.mApproved(site,y,m)||this.mAutoLocked(site,y,m); }
@@ -1238,10 +1219,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     const wd=this.WDAYS[dt.getDay()]||"";
     let a=dt.getHours(); const mi=dt.getMinutes(), ap=a>=12?"م":"ص"; a%=12; if(a===0) a=12;
     const tm=String(a).padStart(2,"0")+":"+String(mi).padStart(2,"0")+" "+ap;
-    const hs=h.day?(h.day+"/"+h.month+"/"+h.year):"—", gs=dt.getDate()+"/"+(dt.getMonth()+1)+"/"+dt.getFullYear();
+    /* V7 · 53 تقويم (§7): يومُ الإدخال ميلاديٌّ أساساً (hs) والهجريُّ المقابل بعده (gs) */
+    const hs=h.day?(h.day+"/"+h.month+"/"+h.year):"—", gs=h.day?this.gTxt(h.year,h.month,h.day):"—";
     const nm=String(st.n||"—");
     return (ck[key]={ n:nm+(st.x?" · استيراد":""), s1:wd+" "+hs, s2:gs+" · "+tm,
-      tip:"أدخله: "+nm+(st.x?" (استيراد Excel)":"")+" — يوم "+wd+" "+hs+" هـ الموافق "+gs+" م — الساعة "+tm }); }
+      tip:"أدخله: "+nm+(st.x?" (استيراد Excel)":"")+" — يوم "+wd+" "+hs+" الموافق "+gs+" هـ — الساعة "+tm }); }
   /* خليّةُ رقمٍ في السجل: الرقمُ ثم بصمتُه تحته */
   VCELL(r,k){ const v=(r[k]==null||r[k]==="")?null:Number(r[k]), o=this.STX(this.STOF(r,k));
     return { v:v==null?"—":this.NM(v), vst:"font-size:12px;font-weight:400;color:var(--fg-x141414)"+(v==null?";opacity:.4":""),
@@ -1249,7 +1231,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
 
   /* «تعديل»: اليومُ يُفتح في نموذج الإدخال نفسِه — والأقفالُ تُشرح لا تُتجاوز */
   lgEditDay(d){
-    const s=this.state, site=this.SITE(), nm=this.MONTHS[s.month-1];
+    const s=this.state, site=this.SITE(), nm=KIVO.BassamCal.G_MONTHS[s.month-1];
     this.setState({day:d,draft:null,rowMenu:null});
     try { setTimeout(()=>{ try { const el=document.querySelector("[data-ds-entry]"); if(el&&el.scrollIntoView) el.scrollIntoView({behavior:"smooth",block:"center"}); } catch(x){} },60); } catch(e){}
     /* يومُ السجل فيه أرقامٌ — فتغييرُها تعديل (R180) */
@@ -1259,7 +1241,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     this.bsToast("أرقامُ يوم "+d+" "+nm+" في نموذج الإدخال — عدّلها ثم احفظ","ok"); }
   /* «حذف»: أرقامُ اليوم وحدَه — بنافذة التأكيد المعتمدة، ولصاحب صلاحية الحذف، وفي يومٍ غير مقفل */
   lgDelAsk(d){
-    const self=this, s=this.state, site=this.SITE(), nm=this.MONTHS[s.month-1], y=s.year, m=s.month;
+    const self=this, s=this.state, site=this.SITE(), nm=KIVO.BassamCal.G_MONTHS[s.month-1], y=s.year, m=s.month;
     if(!this.PC("del",site)){ this.bsToast("الحذفُ يحتاج صلاحية الحذف","warn"); return; }
     if(this.mLocked(site,y,m)){ this.bsToast("الشهرُ مقفل — افتحه بأثر رجعي أوّلاً","warn"); return; }
     if(this.dayLocked(site,y,m,d)){ this.bsToast("يومُ "+d+" "+nm+" مقفل — افتحه بنقرتين على كرته أوّلاً","warn"); return; }
@@ -1270,8 +1252,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       if(await self.save(all)){ self.setState(p=>({tick:(p.tick||0)+1,draft:(p.day===d&&p.month===m&&p.year===y)?null:p.draft})); self.bsToast("حُذفت أرقامُ يوم "+d+" "+nm,"ok"); }
       else self.bsToast("تعذّر الحذف","err"); };
     /* التأكيدُ بنافذة المنصّة وحدها (KIVO.bsConfirm) — غيابُها لا يحذف شيئاً */
-    try { KIVO.bsConfirm({ title:"حذفُ أرقام يوم "+d+" "+nm+" "+y+" هـ",
-                msg:"ستُمحى أرقامُ هذا اليوم في "+this.SN[site]+" ("+d+"/"+m+"/"+y+" هـ الموافق "+this.gTxt(y,m,d)+" م) نهائياً، ولا يمكن التراجع. بقيّةُ أيام الشهر لا تتأثّر.",
+    try { KIVO.bsConfirm({ title:"حذفُ أرقام يوم "+d+" "+nm+" "+y,
+                msg:"ستُمحى أرقامُ هذا اليوم في "+this.SN[site]+" ("+d+"/"+m+"/"+y+" الموافق "+this.gTxt(y,m,d)+" هـ) نهائياً، ولا يمكن التراجع. بقيّةُ أيام الشهر لا تتأثّر.",
                 ok:"حذف أرقام اليوم", cancel:"إلغاء", danger:true }).then(go); } catch(e){} }
   MBTN(on){ return "height:34px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;"+
     "font-family:'Cairo',sans-serif;border-radius:10px;cursor:pointer;transition:all .2s;box-sizing:border-box;border:1px solid "+
@@ -1327,7 +1309,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
 
   /* حذفُ أرقام الشهر للمسجد المعروض — بنافذة التأكيد المعتمدة، ولصاحب صلاحية الحذف */
   clearMonthAsk(){
-    const self=this, s=this.state, nm=this.MONTHS[s.month-1], site=this.SITE();
+    const self=this, s=this.state, nm=KIVO.BassamCal.G_MONTHS[s.month-1], site=this.SITE();
     const siteName = site==="haram"?"المسجد الحرام":"المسجد النبوي";
     if(!this.PC("del",site)){ this.bsToast("الحذفُ يحتاج صلاحية الحذف","warn"); return; }
     if(this.mLocked(site,s.year,s.month)){ this.bsToast("الشهرُ مقفل — افتحه بأثر رجعي أوّلاً","warn"); return; }
@@ -1343,7 +1325,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       all[site]=st;
       if(await self.save(all)){ self.setState(p=>({tick:(p.tick||0)+1,draft:null})); self.bsToast("حُذفت أرقامُ "+nm+" ("+KIVO.BassamCount(n,"يوم")+")"+(keep.length?" — وبقي "+KIVO.BassamCount(keep.length,"يوم|مقفل")+" "+KIVO.BassamCount.agr(keep.length,"كما هو","كما هما","كما هي"):""),"ok"); }
       else self.bsToast("تعذّر الحذف","err"); };
-    try { KIVO.bsConfirm({ title:"حذفُ أرقام "+nm+" "+s.year+" هـ", msg:"سيُمحى كلُّ ما أُدخل لهذا الشهر في "+siteName+" نهائياً، ولا يمكن التراجع."+(nLk0?" ويبقى "+KIVO.BassamCount(nLk0,"يوم|مقفل")+" "+KIVO.BassamCount.agr(nLk0,"كما هو — افتحه بنقرتين على كرته إن أردت حذفَه.","كما هما — افتحهما بنقرتين على كرتيهما إن أردت حذفَهما.","كما هي — افتحها بنقرتين على كروتها إن أردت حذفَها."):""),
+    try { KIVO.bsConfirm({ title:"حذفُ أرقام "+nm+" "+s.year, msg:"سيُمحى كلُّ ما أُدخل لهذا الشهر في "+siteName+" نهائياً، ولا يمكن التراجع."+(nLk0?" ويبقى "+KIVO.BassamCount(nLk0,"يوم|مقفل")+" "+KIVO.BassamCount.agr(nLk0,"كما هو — افتحه بنقرتين على كرته إن أردت حذفَه.","كما هما — افتحهما بنقرتين على كرتيهما إن أردت حذفَهما.","كما هي — افتحها بنقرتين على كروتها إن أردت حذفَها."):""),
                 ok:"حذف الكل نهائياً", cancel:"إلغاء", danger:true }).then(go); } catch(e){} }
 
   /* نوافذُ معيار الكروت: «فتح بأثر رجعي/إعادة القفل» و«اعتماد وإغلاق/فكّ الاعتماد» */
@@ -1351,7 +1333,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     const self=this, s=this.state, R=s.retroAsk, K=s.lockAsk;
     const out={ retroOn:false, lockOn2:false, retroStop:(e)=>{ try{ e.stopPropagation(); }catch(x){} } };
     if(R&&R.d){                                   /* ══ مستوى اليوم ══ */
-      const nm=this.MONTHS[R.m-1]||"", past=this.dPast(s.year,R.m,R.d), lbl=R.d+" "+nm+" "+s.year+" هـ";
+      const nm=KIVO.BassamCal.G_MONTHS[R.m-1]||"", past=this.dPast(s.year,R.m,R.d), lbl=R.d+" "+nm+" "+s.year;
       out.retroOn=true;
       out.retroTitle=R.open?("فتح يوم "+lbl+(past?" بأثر رجعي":"")):("قفل يوم "+lbl);
       out.retroMsg=R.open
@@ -1365,9 +1347,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       out.retroBtnStyle="height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;border:0;cursor:pointer;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;background:"+(R.open?"var(--bg-xb45309)":"var(--bg-x64748b)");
       out.retroDo=async()=>{ if(await self.setDayLock(site,s.year,R.m,R.d,!R.open)) self.setState({retroAsk:null}); };
       out.retroCancel=()=>self.setState({retroAsk:null}); }
-    else if(R){ const nm=this.MONTHS[R.m-1]||"";
+    else if(R){ const nm=KIVO.BassamCal.G_MONTHS[R.m-1]||"";
       out.retroOn=true;
-      out.retroTitle=R.open?("فتح شهر "+nm+" "+s.year+" هـ بأثر رجعي"):("إعادة قفل شهر "+nm+" "+s.year+" هـ");
+      out.retroTitle=R.open?("فتح شهر "+nm+" "+s.year+" بأثر رجعي"):("إعادة قفل شهر "+nm+" "+s.year);
       out.retroMsg=R.open?"هذا الشهر انقضى وأُقفل تلقائياً. فتحه يتيح لك إدخالَ أرقامه أو تصحيحَها بأثر رجعي."
                          :"سيعود الشهر إلى حالته المقفلة بانقضائه، ولن يمكن تعديلُ أرقامه حتى تفتحه من جديد.";
       out.retroB1=R.open?"ما تُدخله يُسجَّل ضمن هذا الشهر المنقضي":"ما أدخلته يبقى محفوظاً كما هو";
@@ -1377,7 +1359,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       out.retroBtnStyle="height:38px;padding:0 20px;border-radius:10px;font-size:13px;font-weight:400;border:0;cursor:pointer;color:var(--fg-xffffff);font-family:'Cairo',sans-serif;background:"+(R.open?"var(--bg-xb45309)":"var(--bg-x64748b)");
       out.retroDo=async()=>{ if(await self.setMonthOpen(site,s.year,R.m,!!R.open)) self.setState({retroAsk:null}); };
       out.retroCancel=()=>self.setState({retroAsk:null}); }
-    if(K){ const nm=this.MONTHS[K.m-1]||"";
+    if(K){ const nm=KIVO.BassamCal.G_MONTHS[K.m-1]||"";
       out.lockOn2=true;
       out.lcIconBox="width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"+
         (K.on?"background:var(--bg-a0132800p1);color:var(--fg-x047857);border:1px solid rgba(0,132,80,0.3)"
@@ -1474,7 +1456,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       const nDays=Math.min(400, Math.round((b-a)/86400000)+1);
       for(let i=0;i<nDays;i++){ const dt=new Date(a.getTime()+i*86400000), o=this.hOfDate(dt);
         const r=store[this.dk(o.year,o.month,o.day)]||{};
-        out.push(this._mkUnit(site, String(o.day), o.day+" "+this.MONTHS[o.month-1]+" "+o.year,
+        out.push(this._mkUnit(site, String(o.day), o.day+" "+KIVO.BassamCal.G_MONTHS[o.month-1]+" "+o.year,
           r, flds.some(f=>r[f.k]!=null)?1:0, flds.every(f=>r[f.k]!=null)?1:0, this.dk(o.year,o.month,o.day))); }
       return out;
     }
@@ -1482,26 +1464,26 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       this.YEARS().slice().sort((x,z)=>x-z).forEach(y=>{ let keys=[];
         for(let m=1;m<=12;m++) keys=keys.concat(this.MKEYS(y,m));
         const g=this._aggDays(site,keys);
-        out.push(this._mkUnit(site, String(y), y+" هـ", g.rec, g.days, g.full?1:0)); });
+        out.push(this._mkUnit(site, String(y), String(y), g.rec, g.days, g.full?1:0)); });
       return out;
     }
     const y=s.anY;
     if(s.anM==="all"){
       for(let m=1;m<=12;m++){ const g=this._aggDays(site,this.MKEYS(y,m));
-        out.push(this._mkUnit(site, this.MONTHS[m-1], this.MONTHS[m-1]+" "+y, g.rec, g.days, g.full?1:0, y+"-"+String(m).padStart(2,"0"))); }
+        out.push(this._mkUnit(site, KIVO.BassamCal.G_MONTHS[m-1], KIVO.BassamCal.G_MONTHS[m-1]+" "+y, g.rec, g.days, g.full?1:0, y+"-"+String(m).padStart(2,"0"))); }
       return out;
     }
     const m=+s.anM, nd=this.dim(y,m);
     for(let d=1;d<=nd;d++){ const r=store[this.dk(y,m,d)]||{};
-      out.push(this._mkUnit(site, String(d), d+" "+this.MONTHS[m-1],
+      out.push(this._mkUnit(site, String(d), d+" "+KIVO.BassamCal.G_MONTHS[m-1],
         r, flds.some(f=>r[f.k]!=null)?1:0, flds.every(f=>r[f.k]!=null)?1:0, this.dk(y,m,d))); }
     return out;
   }
   APER(){ const s=this.state;
     if(s.anMode==="custom" && s.anFrom && s.anTo) return "من "+s.anFrom+" إلى "+s.anTo;
     if(s.anY==="all") return "كل السنوات";
-    if(s.anM==="all") return s.anY+" هـ — كل الأشهر";
-    return this.MONTHS[(+s.anM)-1]+" "+s.anY+" هـ"; }
+    if(s.anM==="all") return s.anY+" — كل الأشهر";
+    return KIVO.BassamCal.G_MONTHS[(+s.anM)-1]+" "+s.anY; }
   AUNITW(){ const s=this.state;
     if(s.anMode==="custom") return {one:"يوم", many:"يوماً", al:"الأيّام"};
     if(s.anY==="all") return {one:"سنة", many:"سنةً", al:"السنوات"};
@@ -1571,7 +1553,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   TDN(v,o){ return this.TD(v==null?"—":this.NM(v), Object.assign({faint:v==null}, o||{})); }
 
   /* الفحص العميق 2026-10-21 (R2): اليومُ المحفوظ (يُزرع قبل أول رسم من حالة العرض) لا يُستبدل باليوم الجاري عند التركيب */
-  componentDidMount(){ this._dsGone=false; this.refreshStats(); this._dsEvent=()=>{ if(!this.state.draft) this.refreshStats(); }; window.addEventListener("daily-stats-refresh",this._dsEvent); const t=this.hToday(), s0=this.state, kept=!!(s0.year&&s0.month&&s0.day);
+  componentDidMount(){ this._dsGone=false; this.refreshStats(); this._dsEvent=()=>{ if(!this.state.draft) this.refreshStats(); }; window.addEventListener("daily-stats-refresh",this._dsEvent); const t=this.calToday(), s0=this.state, kept=!!(s0.year&&s0.month&&s0.day);
     const prev = t.m>1 ? {y:t.y,m:t.m-1} : {y:t.y-1,m:12};
     this.setState({ year:kept?s0.year:t.y, month:kept?s0.month:t.m, day:kept?s0.day:t.d, anY:t.y, anM:String(t.m),
       tcA:{y:prev.y,m:prev.m,d:1}, tcB:{y:t.y,m:t.m,d:t.d} });
@@ -1579,7 +1561,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     this._bsOutM=t=>this._bsOutsideMenus(t),document.addEventListener("click",this._bsOutM,!0); }
 
   /* R182: اليومُ المقفل لا يُكتب في حقوله ولا يُحفظ — الحارسُ هنا كما في الشاشة */
-  _dayLockMsg(site){ const s=this.state, nm=this.MONTHS[s.month-1];
+  _dayLockMsg(site){ const s=this.state, nm=KIVO.BassamCal.G_MONTHS[s.month-1];
     if(this.mLocked(site,s.year,s.month)) return "شهرُ "+nm+" مقفل — افتحه بأثر رجعي من كرت الشهر ثم عدّل";
     if(this.dayLocked(site,s.year,s.month,s.day)) return "يومُ "+s.day+" "+nm+" مقفل — افتحه بنقرتين على كرته ثم عدّل";
     return ""; }
@@ -1608,7 +1590,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     if(!await this.save(all,{base:this._draftRev===undefined?all.__dsbase:this._draftRev})) return;
     this._draftRev=undefined;
     this.setState(p=>({draft:p.draft===draftAtSend?null:p.draft,tick:(p.tick||0)+1}));
-    this.bsToast("حُفظت أرقام "+s.day+" "+this.MONTHS[s.month-1],"ok");
+    this.bsToast("حُفظت أرقام "+s.day+" "+KIVO.BassamCal.G_MONTHS[s.month-1],"ok");
   }
 
   /* ══════════ إكسل ══════════ */
@@ -1629,11 +1611,23 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   NUMV(t){ if(t==null) return null;
     const x=this.DIG(t).replace(/[,\s٫٬،]/g,"").trim();
     if(x==="") return null; const n=Number(x); return isNaN(n)?null:n; }
+  /* V7 · 53 تقويم (ق1 · ق12): تاريخُ الصف ميلاديٌّ يُؤخذ كما هو؛ وتاريخٌ هجري (ملفُّ Production · سنةٌ 13xx–15xx أو اسمُ شهرٍ هجري) يُحوَّل إلى يومه الميلادي
+     بأم القرى من الخدمة الواحدة (hGregExact) — وما لا يُعرف يومُه تماماً يُردّ صفّاً غيرَ صالح بدل يومٍ قريب */
   HD(t){ const x=this.DIG(t).trim(); if(!x) return null;
-    let m=x.match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})/); if(m) return {y:+m[1],m:+m[2],d:+m[3]};
-    m=x.match(/^(\d{1,2})\D(\d{1,2})\D(\d{4})/);     if(m) return {y:+m[3],m:+m[2],d:+m[1]};
-    m=x.match(/^(\d{1,2})\s+(\S+)\s+(\d{4})/);
-    if(m){ const i=this.MONTHS.map(v=>this.NRM(v)).indexOf(this.NRM(m[2])); if(i>=0) return {y:+m[3],m:i+1,d:+m[1]}; }
+    let m=x.match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})/), o=null;
+    if(m) o={y:+m[1],m:+m[2],d:+m[3]};
+    else if((m=x.match(/^(\d{1,2})\D(\d{1,2})\D(\d{4})/))) o={y:+m[3],m:+m[2],d:+m[1]};
+    else if((m=x.match(/^(\d{1,2})\s+(\S+)\s+(\d{4})/))){ const C=KIVO.BassamCal, g=C.G_MONTHS.map(v=>this.NRM(v)).indexOf(this.NRM(m[2])), h=C.H_MONTHS.map(v=>this.NRM(v)).indexOf(this.NRM(m[2]));
+      if(g>=0) o={y:+m[3],m:g+1,d:+m[1]}; else if(h>=0) o={y:+m[3],m:h+1,d:+m[1],h:1}; }
+    if(!o) return null;
+    return this.GOFH(o); }
+  GOFH(o){ const C=KIVO.BassamCal, cal=o.y>=1300&&o.y<=1599?"h":o.y>=1900&&o.y<=2199?"g":null;
+    if(cal==="g"&&!o.h) return o.m>=1&&o.m<=12&&o.d>=1&&o.d<=C.gMonthDays(o.y,o.m) ? {y:o.y,m:o.m,d:o.d} : null;
+    if(cal!=="h"||o.m<1||o.m>12||o.d<1||o.d>30) return null;
+    const g=C.hGregExact(o.y,o.m,o.d); if(!g) return null;
+    /* اليومُ الذي هجريُّه بالرياض (hOf) هو المطلوب تماماً — حول تقدير البحث، فلا يُزيحه توقيتُ الجهاز */
+    const k0=g.toISOString().slice(0,10);
+    for(const s of [0,-1,1,-2,2]){ const k=C.gAddDays(k0,s), h=k&&C.hOf(k); if(h&&h.y===o.y&&h.m===o.m&&h.d===o.d){ const p=C.gParse(k); return {y:p.y,m:p.m,d:p.d}; } }
     return null; }
   SITEOF(t){ const x=this.NRM(t); if(!x) return null;
     if(x.indexOf("حرام")>=0||x.indexOf("مكه")>=0||x==="haram") return "haram";
@@ -1651,7 +1645,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
         : c[0]==="__gd" ? (g? this.iso(new Date(Date.UTC(g.getUTCFullYear(),g.getUTCMonth(),g.getUTCDate()))) : "")
         : (r[c[0]]==null ? "" : r[c[0]]) ));
     }
-    try { KIVO.BassamXLSX.download(aoa, "الإحصائيات-"+this.SN[site]+"-"+this.MONTHS[s.month-1]+"-"+s.year+"هـ.xlsx"); }
+    try { KIVO.BassamXLSX.download(aoa, "الإحصائيات-"+this.SN[site]+"-"+KIVO.BassamCal.fileTag(KIVO.BassamCal.gYm(s.year,s.month))+".xlsx"); }
     catch(e){ return this.bsToast("تعذّر تجهيز ملف Excel","err"); }
     this.bsToast("صُدِّر "+KIVO.BassamCount(nd,"يوم")+" — الأعمدةُ نفسُها تصلح للاستيراد","ok");
   }
@@ -1710,7 +1704,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     for(let i=hi+1;i<rows.length;i++){
       const row=rows[i]||[]; if(!row.length) continue;
       const hd=this.HD(row[map.date]);
-      if(!hd||hd.m<1||hd.m>12||hd.d<1||hd.d>30){ if(row.some(c=>String(c==null?"":c).trim()!=="")) bad++; continue; }
+      if(!hd){ if(row.some(c=>String(c==null?"":c).trim()!=="")) bad++; continue; }
       const site=(map.site>=0 ? this.SITEOF(row[map.site]) : null) || this.SITE();
       const rec={}; let any=false, nc=0;
       map.f[site].forEach(p=>{ const v=this.NUMV(row[p.c]); if(v!=null){ rec[p.k]=v; any=true; nc++; } });
@@ -1783,16 +1777,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
 
   /* ══════════ شريطُ التقويم المعتمد ══════════ */
   _barVals(site){
-    const self=this, s=this.state, T=this.hToday(), custom=(s.anMode==="custom"), allY=(s.anY==="all");
+    const self=this, s=this.state, T=this.calToday(), custom=(s.anMode==="custom"), allY=(s.anY==="all");
     const years=this.YEARS();
     const V={};
     V.anYmBoxStyle=this.YMBOX(custom);
     V.anYear=allY?"all":String(s.anY);
-    V.anYearOpts=[{v:"all",lbl:"كل السنوات"}].concat(years.map(y=>({v:String(y),lbl:y+" هـ"})));
+    V.anYearOpts=[{v:"all",lbl:"كل السنوات"}].concat(years.map(y=>({v:String(y),lbl:String(y),sub:KIVO.BassamCal.hRangeOfYear(y)})));
     V.anSetYear=(e)=>{ const v=e&&e.target?e.target.value:""; self.setState({anY: v==="all"?"all":+v, anMode:null}); };
     V.anMonth=allY?"all":String(s.anM);
     V.anMonthOpts= allY ? [{v:"all",lbl:"كل الأشهر"}]
-      : this.MONTHS.map((nm,i)=>({v:String(i+1),lbl:nm+" ("+String(i+1).padStart(2,"0")+")"})).concat([{v:"all",lbl:"كل أشهر السنة"}]);
+      : KIVO.BassamCal.G_MONTHS.map((nm,i)=>({v:String(i+1),lbl:nm+" ("+String(i+1).padStart(2,"0")+")"})).concat([{v:"all",lbl:"كل أشهر السنة"}]);
     V.anSetMonth=(e)=>{ const v=e&&e.target?e.target.value:""; self.setState({anM:v, anMode:null}); };
     V.anModeOpts=[{ lbl:"نطاق مخصص", style:this.MODEBTN(custom),
       click:()=>{ const g=self.gOf(T.y,T.m,T.d)||new Date();
@@ -2092,7 +2086,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       ms.forEach(m=>{ const nd=this.dim(y,m); for(let d=1;d<=nd;d++) add(y,m,d); }); });
     return out; }
   /* أيّامُ الفترة كلُّها (مسجّلةً أو فارغة) بيوم الأسبوع وهل انقضت — للتغطية وأيّام الأسبوع */
-  PDAYS(){ const s=this.state, T=this.hToday(), tk=T.y*10000+T.m*100+T.d, ck=this.__pd||(this.__pd={});
+  PDAYS(){ const s=this.state, T=this.calToday(), tk=T.y*10000+T.m*100+T.d, ck=this.__pd||(this.__pd={});
     let a=null, b=null, key="";
     if(s.anMode==="custom" && s.anFrom && s.anTo){ a=new Date(s.anFrom+"T12:00:00"); b=new Date(s.anTo+"T12:00:00");
       if(isNaN(a)||isNaN(b)) return []; if(a>b){ const t=a; a=b; b=t; } key="c|"+s.anFrom+"|"+s.anTo; }
@@ -2199,7 +2193,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   /* ── ٣) خرائطُ الكثافة — AnalyticsDensityHeatmap: لونٌ = color-mix(اللون 18+٪×78، شفّاف) ── */
   _zHeat(site,days,A){
     const self=this, s=this.state, md=this.ZMODE();
-    const SH=["محرم","صفر","ر١","ر٢","ج١","ج٢","رجب","شعبان","رمضان","شوال","ق","ح"];
+    const SH=KIVO.BassamCal.G_MONTHS.map(x=>x.slice(0,3));   /* V7 · 53 تقويم: أشهرُ الخريطة ميلادية (اختصارٌ بثلاثة أحرف) */
     A.hmTitle= md==="y"?"خرائط الكثافة الشهرية":md==="a"?"خرائط الكثافة السنوية":"خرائط الكثافة اليومية";
     A.hmSub= md==="y"?"توزيع كل مؤشر شهريًا خلال السنة المختارة. مربعات أغمق = حركة أكبر."
       : md==="a"?"توزيع كل مؤشر سنةً بسنة عبر السنوات المسجّلة. مربعات أغمق = حركة أكبر."
@@ -2221,7 +2215,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
         const bg=(!has||it===0)?"color-mix(in srgb, var(--text-primary) 4%, var(--bg-card))":"color-mix(in srgb, "+c+" "+Math.round(18+it*78)+"%, transparent)";
         /* R188: «ألف/مليون» كلمةً في سطرٍ تحت الرقم — الخليّةُ أضيقُ من «١٫٤ مليون» في سطرٍ واحد على الحاسب والجهاز اللوحي */
         return { t:sl.lbl, v:self.ZFC(v).replace(" ","\n"), hv:(v!=null&&v>0),
-          tip:sl.lbl+(md==="y"?" ("+s.anY+"هـ)":"")+": "+(v==null?"بدون بيانات":self.ZF(v)),
+          tip:sl.lbl+(md==="y"?" ("+s.anY+")":"")+": "+(v==null?"بدون بيانات":self.ZF(v)),
           st:"background-color:"+bg+";color:"+(it>0.55?"var(--bg-card)":"var(--fg-x53565a)")
             +";box-shadow:"+(has?"inset 0 0 0 1px color-mix(in srgb, "+c+" 35%, transparent)":"none")+";font-size:"+(yearly?10:9)+"px" }; });
       return { lbl:l, gcls:yearly?"dz-hg y":"dz-hg", cells:cells,
@@ -2323,7 +2317,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     if(md==="m"||md==="c"){ gk="w"; for(let i=0;i<pd.length;i+=7){ const ch=pd.slice(i,i+7), ps=ch.filter(x=>x.past); if(!ps.length) continue;
         groups.push({ nm:"الأسبوع "+(i/7+1), rng:ch[0].d+" "+self.MONTHS[ch[0].m-1]+" – "+ch[ch.length-1].d+" "+self.MONTHS[ch[ch.length-1].m-1], ps:ps }); } }
     else if(md==="y"){ gk="m"; for(let m=1;m<=12;m++){ const ps=past.filter(x=>x.m===m); if(ps.length) groups.push({ nm:self.MONTHS[m-1], rng:self.MONTHS[m-1]+" "+s.anY, ps:ps }); } }
-    else { gk="y"; this.YEARS().slice().sort((a,b)=>a-b).forEach(y=>{ const ps=past.filter(x=>x.y===y); if(ps.length) groups.push({ nm:String(y), rng:y+" هـ", ps:ps }); }); }
+    else { gk="y"; this.YEARS().slice().sort((a,b)=>a-b).forEach(y=>{ const ps=past.filter(x=>x.y===y); if(ps.length) groups.push({ nm:String(y), rng:String(y), ps:ps }); }); }
     const cnt=groups.length, wn=WN[gk], wl=cnt===1?wn[0]:cnt===2?wn[1]:(cnt>=3&&cnt<=10)?cnt+" "+wn[2]:cnt+" "+wn[3];
     A.zgTitle="مؤشرات التغطية بحسب "+(gk==="w"?"الأسبوع":gk==="m"?"الشهر":"السنة");
     A.zgNote=wl+" · القوس = نسبة التغطية"; A.zgHas=cnt>0; A.zgNone=!A.zgHas;
@@ -2369,20 +2363,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   TCUNITS(p,type,scope,mid){
     const H=(this.load().haram)||{}, N=(this.load().nabawi)||{}, out=[];
     const val=(y,m,d)=>{ const k=this.dk(y,m,d); return this.MVAL(mid,scope,H[k]||{},N[k]||{}); };
-    if(type==="day"){ out.push({ label:String(p.d), full:p.d+" "+this.MONTHS[p.m-1]+" "+p.y, num:this.dk(p.y,p.m,p.d), v:val(p.y,p.m,p.d) }); return out; }
+    if(type==="day"){ out.push({ label:String(p.d), full:p.d+" "+KIVO.BassamCal.G_MONTHS[p.m-1]+" "+p.y, num:this.dk(p.y,p.m,p.d), v:val(p.y,p.m,p.d) }); return out; }
     if(type==="month"){ const nd=this.dim(p.y,p.m);
-      for(let d=1;d<=nd;d++) out.push({ label:String(d), full:d+" "+this.MONTHS[p.m-1]+" "+p.y, num:this.dk(p.y,p.m,d), v:val(p.y,p.m,d) });
+      for(let d=1;d<=nd;d++) out.push({ label:String(d), full:d+" "+KIVO.BassamCal.G_MONTHS[p.m-1]+" "+p.y, num:this.dk(p.y,p.m,d), v:val(p.y,p.m,d) });
       return out; }
     for(let m=1;m<=12;m++){ const nd=this.dim(p.y,m); let sum=0, any=false;
       for(let d=1;d<=nd;d++){ const v=val(p.y,m,d); if(v!=null){ sum+=v; any=true; } }
-      out.push({ label:this.MONTHS[m-1], full:this.MONTHS[m-1]+" "+p.y, num:p.y+"-"+String(m).padStart(2,"0"), v:any?sum:null }); }
+      out.push({ label:KIVO.BassamCal.G_MONTHS[m-1], full:KIVO.BassamCal.G_MONTHS[m-1]+" "+p.y, num:p.y+"-"+String(m).padStart(2,"0"), v:any?sum:null }); }
     return out;
   }
-  PLBL2(p,type){ return type==="day" ? (p.d+" "+this.MONTHS[p.m-1]+" "+p.y+" هـ")
-    : type==="month" ? (this.MONTHS[p.m-1]+" "+p.y+" هـ") : (p.y+" هـ"); }
+  PLBL2(p,type){ return type==="day" ? (p.d+" "+KIVO.BassamCal.G_MONTHS[p.m-1]+" "+p.y)
+    : type==="month" ? (KIVO.BassamCal.G_MONTHS[p.m-1]+" "+p.y) : String(p.y); }
 
   _anTime(A){
-    const self=this, s=this.state, T=this.hToday();
+    const self=this, s=this.state, T=this.calToday();
     const type=s.tcType, scope=s.tcScope;
     const mets=this.TCM.filter(m=>m.sc.indexOf(scope)>=0);
     let mid=s.tcMetric; if(!mets.some(m=>m.id===mid)) mid=mets[0].id;
@@ -2397,8 +2391,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     A.tcMetricOpts=mets.map(m=>({v:m.id,lbl:m.l}));
     A.tcSetMetric=(e)=>self.setState({tcMetric:e&&e.target?e.target.value:mid});
 
-    const yOpts=years.map(y=>({v:String(y),lbl:y+" هـ"}));
-    const mOpts=this.MONTHS.map((nm,i)=>({v:String(i+1),lbl:nm}));
+    const yOpts=years.map(y=>({v:String(y),lbl:String(y)}));
+    const mOpts=KIVO.BassamCal.G_MONTHS.map((nm,i)=>({v:String(i+1),lbl:nm}));
     const mkPick=(key,p,badge,title)=>{
       const sels=[{ lbl:"السنة", v:String(p.y), opts:yOpts,
         set:(e)=>self.setState(st=>({[key]:Object.assign({},st[key],{y:+((e&&e.target?e.target.value:p.y))})})) }];
@@ -2550,7 +2544,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     this._bsHT(k); } catch(e) { /* لا يمنع العرض — يُتجاوز بصمت */ } }
   renderVals(){
     this._bsHR();
-    const self=this, s=this.state, T=this.hToday(), solo=this.SOLO();
+    const self=this, s=this.state, T=this.calToday(), solo=this.SOLO();
     if(!s.year||!s.anY) return Object.assign(this.EMPTY(), this.EMPTY_AN());   /* قبل التركيب (اليومُ مزروعٌ ولوحةُ التحليل لم تُهيَّأ بعد): رسمٌ فارغ لا يُعرض */
 
     /* ══ شاشةُ تحليلٍ داخل «مؤشرات الإدارة» — ورقتُها تحكمها صفحةُ المؤشرات (R180) ══ */
@@ -2579,7 +2573,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       name:n, on:site===k, style:this.TABST(site===k), icon:this.TABIC(site===k), lbl:this.TABLB(site===k),
       click:()=>{ self.setState({site:k,draft:null}); self._bsHT(k==="haram"?"":k); } }));
 
-    const mcards=this.MONTHS.map((nm,i)=>{
+    const mcards=KIVO.BassamCal.G_MONTHS.map((nm,i)=>{
       const m=i+1, cur=(s.year===T.y&&m===T.m), sel=(m===s.month);
       const past=(s.year<T.y)||(s.year===T.y&&m<T.m);
       const mnd=this.dim(s.year,m);
@@ -2647,7 +2641,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
         style:"position:relative;height:24px;flex:1 1 auto;min-width:28px;padding:0 3px;border-radius:4px;font-size:8px;font-weight:"+(sel?"900":"700")
           +";display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;background:"+bg+";color:"+fg+";border:"+bd
           +(sel?";box-shadow:var(--shadow-card);z-index:10":"")+(today&&!sel?";box-shadow:0 0 0 2px rgba(185,151,81,0.7)":""),
-        tip:d+" "+this.MONTHS[s.month-1]+" "+s.year+" هـ — الموافق "+this.gLong(s.year,s.month,d)+" — "
+        tip:d+" "+KIVO.BassamCal.G_MONTHS[s.month-1]+" "+s.year+" — الموافق "+this.gLong(s.year,s.month,d)+" — "
           +(state==="c"?"مكتمل":(state==="p"?cnt+" من "+KIVO.BassamCount(flds.length,"حقل","g")+"":"لم يُدخل"))
           +(mLock?" · الشهرُ مقفل":(dlk?" · مقفل — نقرتان لفتحه":" · مفتوح — نقرتان لقفله")),
         click:()=>self.setState({day:d,draft:null}),
@@ -2687,7 +2681,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       if(s.lgFs==="part"&&n>=flds.length) return false;
       if(!q) return true;
       /* البحثُ يعرف التاريخين بالأرقام واسمَ المُدخِل أيضاً */
-      const hay=r.__d+" "+this.MONTHS[s.month-1]+" "+r.__d+"/"+s.month+"/"+s.year+" "+this.gTxt(s.year,s.month,r.__d)+" "+
+      const hay=r.__d+" "+KIVO.BassamCal.G_MONTHS[s.month-1]+" "+r.__d+"/"+s.month+"/"+s.year+" "+this.gTxt(s.year,s.month,r.__d)+" "+
         flds.map(f=>r[f.k]==null?"":String(r[f.k])).join(" ")+" "+
         flds.map(f=>{ const x=this.STOF(r,f.k); return x?String(x.n||""):""; }).join(" ");
       return KIVO.BassamFind.dig(hay).indexOf(q)>=0; });
@@ -2706,7 +2700,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
         this._rowMenu("lg"+s.year+"-"+s.month+"-"+d,[
           canEd?{name:"تعديل أرقام اليوم",color:"#b99751",p1:"M12 20h9",p2:"M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z",run:()=>self.lgEditDay(d)}:null,
           canDel?{name:"حذف أرقام اليوم",color:"#dc2626",danger:!0,p1:"M3 6h18",p2:"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",run:()=>self.lgDelAsk(d)}:null ])); });
-    const totRow=[this.TD("إجمالي "+this.MONTHS[s.month-1],{rtl:true,w:700,c:"var(--fg-x8a6f35)",nowrap:true})]
+    const totRow=[this.TD("إجمالي "+KIVO.BassamCal.G_MONTHS[s.month-1],{rtl:true,w:700,c:"var(--fg-x8a6f35)",nowrap:true})]
       .concat(flds.map(f=>this.TD(this.NM(this.ST(shown.map(r=>r[f.k])).total),{w:700})))
       .concat([this.TD(this.NM(this.ST(shown.map(r=>this.TOT(site,r))).total),{w:700,c:"var(--fg-x8a6f35)",fs:"12.5px"})]);
 
@@ -2717,16 +2711,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       roSite:this.SN[site], lgCanExport:this.PC("export",site), lgCanClear:canDel&&!mLock&&!dLock,
       /* R190: «ملفات» لمن عنده بندٌ فيها — تصديرٌ أو استيرادٌ أو حذف */
       lgFilesOn:this.PC("export",site)||(canEdit&&!mLock&&!dLock)||(canDel&&!mLock&&!dLock),
-      yearLabel: s.year+" هـ",
-      gregRange: (()=>{ try { return this.mStart(s.year,0).getFullYear()+" – "+this.mStart(s.year,11).getFullYear()+" م"; } catch(e){ return ""; } })(),
+      yearLabel: String(s.year),
+      gregRange: KIVO.BassamCal.hRangeOfYear(s.year),   /* V7 · 53 تقويم: السطرُ الصغير هو المدى الهجري للسنة الميلادية */
       filledDays:String(filled), ...KIVO.BassamCount.pair("monthDays",String(nd),"يوم|مسجّل"),
       prevYear:()=>self.setState(p=>({year:p.year-1,draft:null})),
       nextYear:()=>self.setState(p=>({year:p.year+1,draft:null})),
       goToday:()=>self.setState({year:T.y,month:T.m,day:T.d,draft:null}),
       impXlsx:()=>self.impXlsx(), expXlsx:()=>self.expXlsx(),
-      mcards:mcards, dcards:dcards,
-      monthName:this.MONTHS[s.month-1], dayProg: KIVO.BassamCount(fullDays,"يوم|مكتمل")+" · "+filled+" "+KIVO.BassamCount.agr(filled,"فيه","فيهما","فيها")+" أرقام من "+nd,
-      entTitle: s.day+" "+this.MONTHS[s.month-1]+" "+s.year+" هـ", entGreg:this.gLong(s.year,s.month,s.day),
+      /* V7 · 53 تقويم (§7 · day_card_design · REVIEW 21): كرتا الشهر واليوم من المكوّن الواحد KIVO.BassamCalCard — الميلاديُّ أساساً والهجريُّ سطرٌ صغير،
+         وحالتان فقط (مغلق بقفل · مفتوح)؛ والسببُ الإداري (اعتُمد · أُغلق تلقائياً · أُغلق يدوياً · مفتوح للاستدراك) في التلميح */
+      mcards:mcards.map((x,i)=>{ const m=i+1, ym=KIVO.BassamCal.gYm(s.year,m), appr=self.mApproved(site,s.year,m), past=(s.year<T.y)||(s.year===T.y&&m<T.m), oflag=self.mOpenFlag(site,s.year,m), closed=appr||(past&&!oflag);
+        return Object.assign(x,{ card:KIVO.BassamCalCard.month({ key:ym, ym:ym, closed:closed, why:appr?"ap":closed?"past":past&&oflag?"retro":"", sel:m===s.month, T:T.k, hint: x.tip, onClick:x.click, onDoubleClick:x.dbl, attrs:{ "data-strip-cur":String(x.isCurrent) } }) }); }),
+      dcards:dcards.map((x,i)=>{ const d=+x.num, k=KIVO.BassamCal.gKey(s.year,s.month,d), past=self.dPast(s.year,s.month,d);
+        return Object.assign(x,{ card:KIVO.BassamCalCard.day({ key:k, k:k, closed:x.lockClosed, why:x.lockClosed?(mApp?"ap":past?"past":"shut"):x.lockOpen?"retro":"", sel:d===s.day, T:T.k, hint: x.tip, onClick:x.click, onDoubleClick:x.dbl, attrs:{ "data-strip-cur":String(x.isToday) } }) }); }),
+      monthName:KIVO.BassamCal.G_MONTHS[s.month-1], dayProg: KIVO.BassamCount(fullDays,"يوم|مكتمل")+" · "+filled+" "+KIVO.BassamCount.agr(filled,"فيه","فيهما","فيها")+" أرقام من "+nd,
+      entTitle: s.day+" "+KIVO.BassamCal.G_MONTHS[s.month-1]+" "+s.year, entGreg:this.gLong(s.year,s.month,s.day),
       entBadge:entBadge, entBadgeStyle:entBadgeStyle,
       fields: site==="haram"? this.F.haram.map(mkF):[],
       fieldsMain: site==="nabawi"? this.F.nabawi.filter(f=>!f.g).map(mkF):[],
@@ -2734,8 +2733,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
       fieldsWomen: site==="nabawi"? this.F.nabawi.filter(f=>f.g==="women").map(mkF):[],
       canEdit:canEdit&&!mLock&&!dLock, canSaveDay:canEdit&&!mLock&&!dLock&&!pLock, readOnly:!canEdit,
       lockOn:mLock||dLock||pLock, lockApproved:mApp, lockAuto:mAuto, lockDay:dLock,
-      lockHint: mApp ? ("شهرُ "+this.MONTHS[s.month-1]+" معتمدٌ ومغلق — انقر كرتَ الشهر مرّتين لفكّ الاعتماد")
-                     : mLock ? ("شهرُ "+this.MONTHS[s.month-1]+" انقضى وأُقفل تلقائياً — انقر كرتَ الشهر مرّتين لفتحه بأثر رجعي")
+      lockHint: mApp ? ("شهرُ "+KIVO.BassamCal.G_MONTHS[s.month-1]+" معتمدٌ ومغلق — انقر كرتَ الشهر مرّتين لفكّ الاعتماد")
+                     : mLock ? ("شهرُ "+KIVO.BassamCal.G_MONTHS[s.month-1]+" انقضى وأُقفل تلقائياً — انقر كرتَ الشهر مرّتين لفتحه بأثر رجعي")
                      : pLock ? ("عرضٌ فقط — "+(pNeed==="edit"?"تعديلُ أرقامٍ قائمةٍ يحتاج صلاحية التعديل":"إدخالُ أرقام يومٍ جديدٍ يحتاج صلاحية الإضافة"))
                      : dPastSel ? "اليومُ انقضى — مقفل تلقائياً · عرضٌ فقط (نقرةٌ مزدوجةٌ على كرت اليوم لفتحه)"
                                 : "اليومُ مقفلٌ يدوياً — عرضٌ فقط (نقرةٌ مزدوجةٌ على كرت اليوم لفتحه)",

@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {world,seed,receipt,tableSnapshot,D1,D2,IDS,identitySnapshot} from '../../../../tests/unit/irshad_domain_fx.mjs';
 import { needs } from '../../../../tests/unit/harness.mjs';
+import { hYmdToG } from '../../../../tests/unit/cal_rest_fx.mjs';
 
 const clone=x=>JSON.parse(JSON.stringify(x));
 const docs=(id='TEST_ONLY_record')=>({reports:{reports:[{id,y:1448,m:1,d:2,ts:12,shift:'TEST_ONLY_shift',eid:'TEST_ONLY_old_employee',name:'TEST_ONLY historical name',langs:[{lang:'TEST_ONLY',count:0}],bro:0}]},
@@ -87,7 +88,8 @@ test('baseline manifest v1 Irshad JSON converts losslessly to explicit v3 typed 
   assert.equal(converted.manifest.version,4);assert.equal(converted.manifest.domains.irshad,1);
   assert.deepEqual(converted.manifest.keys,[]);assert.deepEqual(Object.keys(converted.keys),[]);
   assert.equal(converted.domains.irshad[0].scope.departmentId,D2);
-  assert.deepEqual(B.W.irInflate(converted.domains.irshad[0]),original);
+  /* V7 · 53 تقويم (ق12): النسخةُ القديمة الهجرية تُستورد بأيامها الميلادية (أم القرى) — وكلُّ ما عدا التاريخ كما كان */
+  assert.deepEqual(B.W.irInflate(converted.domains.irshad[0]),{...original,reports:{...original.reports,reports:original.reports.reports.map(hYmdToG)}});
   assert.equal(Object.prototype.hasOwnProperty.call(converted.domains.irshad[0].rows,'requests'),false);
 });
 

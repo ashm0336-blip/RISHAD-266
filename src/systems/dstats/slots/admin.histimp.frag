@@ -428,7 +428,7 @@
           h(
             "p",
             { style: { margin: 0, fontSize: 12, lineHeight: "16px", color: C.mu, fontFamily: FF } },
-            "ارفع ملف Excel موحّد يحتوي بيانات الحرم والنبوي معاً. كل صف = يوم هجري واحد.",
+            "ارفع ملف Excel موحّد يحتوي بيانات الحرم والنبوي معاً. كل صف = يوم واحد (التاريخ الهجري يُحوَّل إلى يومه الميلادي بأم القرى، والميلادي يُقبل كما هو).",
           ),
         ),
         content(16, [
@@ -763,7 +763,7 @@
               "ul",
               { className: "bshi-sc", style: { margin: "8px 0 0 0", padding: 0, listStyle: "none", maxHeight: 160, overflowY: "auto" } },
               ...dups.map((d, i) =>
-                h("li", { key: i, style: { marginTop: i ? 4 : 0 } }, "صف " + d.row + " — " + d.site + " / " + d.date_hijri),
+                h("li", { key: i, style: { marginTop: i ? 4 : 0 } }, "صف " + d.row + " — " + d.site + " / " + (KIVO.BassamCal.fmtDay(d.date_hijri) || d.date_hijri)),   /* V7 · 53 تقويم: اليومُ الميلادي */
               ),
             ),
           ),
@@ -833,7 +833,7 @@
                   h(
                     "tr",
                     null,
-                    ...["التاريخ الهجري", "الموقع", "الحقل", "القيمة الحالية", "قيمة Excel", "الإجراء"].map((t) =>
+                    ...["التاريخ", "الموقع", "الحقل", "القيمة الحالية", "قيمة Excel", "الإجراء"].map((t) =>
                       h("th", { key: t, style: TH }, t),
                     ),
                   ),
@@ -848,7 +848,7 @@
                       h(
                         "td",
                         { style: Object.assign({}, TD, { fontVariantNumeric: "tabular-nums", fontWeight: 700, color: C.warn }) },
-                        row.date_hijri,
+                        KIVO.BassamCal.fmtDay(row.date_hijri) || row.date_hijri,
                       ),
                       h("td", { style: TD }, row.site_label),
                       h("td", { style: TD }, row.field_label),

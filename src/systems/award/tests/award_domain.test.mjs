@@ -8,12 +8,13 @@ import {D1Shim,CURRENT_SCHEMA} from '../../../../tests/unit/harness.mjs';
 import {world as baseWorld, ROOT, D1, D2, IDS, EKEYS, identitySnapshot} from '../../../../tests/unit/canonical_fx.mjs';
 import {candidateWorker} from '../../../../tests/unit/irshad_domain_fx.mjs';
 import {installOperationalFixture} from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
+import {gregDdl} from '../../../../tests/unit/cal_rest_fx.mjs';
 
 const NAMED=['AW_RES','AW_NAMES','AW_FIELDS','AW_TABLES','awKey','awConvert','awInflate','awValidateDomain','awEmptyDomain',
   'awInstallStatements','awExportDomain','awDomainPlan','awLegacyPrepare','awPlanEmployeeCleanup','awRevs','awQueryContext',
   'hAwardGet','hAwardAct','awPermission','awPhysicalTables','awRecordKey','rsEpochGuard','canRead','KIVO_FIND','KIVO_GUARDS'];
 const copy=value=>JSON.parse(JSON.stringify(value));
-const sample=(id='TEST_ONLY_award',patch={})=>({id,ekey:EKEYS.employee1,cat:'emp',hij:'1448-1-2',score:85,cases:3,fileOk:null,ok:true,st:'قيد التحكيم',
+const sample=(id='TEST_ONLY_award',patch={})=>({id,ekey:EKEYS.employee1,cat:'emp',hij:'2026-01-02',score:85,cases:3,fileOk:null,ok:true,st:'قيد التحكيم',
   comp:'١٢٣',declName:'اسم تاريخي',by:'المرشح',byTitle:'مشرف',wdesc:'وصف',wevid:'دليل',pic:'data:image/png;base64,TEST_ONLY',sigEmp:'',sigBy:null,
   caseTxt:['أ',null,''],ans:[true,false,null],scores:[[1,2],[],[null]],...patch});
 const references=mark=>Object.fromEntries(['A','B','C'].map(k=>[k,{title:k+mark,lead:'مقدمة',foot:'خاتمة',secs:[{title:'قسم',body:'<p dir="rtl">'+mark+'&amp; نص</p>'}]}]));
@@ -36,7 +37,7 @@ async function world({mode='enforce',docs={}}={}){
 function domainSnapshot(B){return Object.fromEntries(Object.values(B.W.awPhysicalTables()).map(([table])=>[table,copy(B.DB.q('SELECT * FROM '+table))]));}
 function committedSnapshot(B){return {...domainSnapshot(B),revs:copy(B.DB.q('SELECT * FROM revs ORDER BY k')),meta:copy(B.DB.q('SELECT * FROM meta ORDER BY k')),aud:copy(B.DB.q('SELECT * FROM aud ORDER BY cid')),
   notification_messages:copy(B.DB.q('SELECT * FROM notification_messages ORDER BY id')),notification_dedup:copy(B.DB.q('SELECT * FROM notification_dedup ORDER BY scope,once_key'))};}
-function installCanonicalAwardDDL(W,DB){const migration=W.KIVO_MIGRATIONS.find(m=>m.name==='0009_seized_awards');assert.ok(migration);const ddl=migration.sql.filter(sql=>/CREATE\s+(?:TABLE|INDEX)\s+IF NOT EXISTS\s+award_/i.test(sql));assert.equal(ddl.length,13,'11 canonical tables and two indexes');for(const sql of ddl)DB.exec(sql);}
+function installCanonicalAwardDDL(W,DB){const migration=W.KIVO_MIGRATIONS.find(m=>m.name==='0009_seized_awards');assert.ok(migration);const ddl=migration.sql.filter(sql=>/CREATE\s+(?:TABLE|INDEX)\s+IF NOT EXISTS\s+award_/i.test(sql));assert.equal(ddl.length,13,'11 canonical tables and two indexes');for(const sql of ddl)DB.exec(gregDdl(sql));}   /* V7 · 53 تقويم: الشكلُ الحالي بعد 0014 (greg_date) */
 
 test('Award codec preserves all known fields, null/absence, empty score rows, HTML and missing legacy business id',async()=>{
   const W=await candidateWorker(NAMED),full=sample();
@@ -114,6 +115,9 @@ test('Award references preserve versions and explicit global scope without cross
 
 test('Award create/read/status/edit/delete use one atomic ACK, current authority and exact v2 reset classifier',async()=>{
   const B=await world({docs:{records:{recs:[sample('neighbour')]}}}),identity=identitySnapshot(B.DB);
+  /* V7 · 53 تقويم (ق1): تاريخُ الإقرار يومٌ ميلاديٌّ ISO — التاريخُ الهجري من عميلٍ قديم يُرفض بلا أي كتابة */
+  for(const hij of ['1448-1-2','1448-01-02','2026-1-2','2026-02-30']){const stale=await B.command('create',{data:{...sample('ignored'),id:undefined,hij}});delete stale.data.id;delete stale.data.st;delete stale.data.byUser;
+    const before=copy(B.DB.q('SELECT * FROM award_records ORDER BY sequence'));await assert.rejects(B.act(stale),/award-date/,hij);assert.deepEqual(copy(B.DB.q('SELECT * FROM award_records ORDER BY sequence')),before);}
   const body=await B.command('create',{data:{...sample('ignored'),id:undefined}});delete body.data.id;delete body.data.st;delete body.data.byUser;
   const first=await B.act(body);assert.equal(first.n,1);assert.equal(first.affected,'records');assert.equal(first.base.records,first.rev);assert.equal(first.base.docsV1,body.base.docsV1);assert.equal(first.base.epoch,body.base.epoch);assert.ok(first.id);
   const record=(await B.read('super',{view:'record',id:first.id})).record;assert.equal(record.st,'قيد التحكيم');assert.equal(record.byUser,B.users.find(u=>u.id===IDS.super).name);assert.deepEqual(record.scores,body.data.scores);

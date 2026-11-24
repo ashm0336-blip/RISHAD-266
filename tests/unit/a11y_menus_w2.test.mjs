@@ -99,10 +99,11 @@ test('IRSZ-8 · «الاسترشاد» و«المضبوطات»: بلا تصدي
   }
 });
 
+/* V7 · 53 تقويم: الشهرُ ميلاديٌّ فلا لاحقةَ «هـ» في اسمه — والرسالةُ نفسُها */
 test('IRSZ-8 · «حذف الكل» بلا سجلاتٍ في الشهر لا يصمت: يقول السببَ وما يُفعل · وبلا صلاحية الحذف يمرّ برسالة الصلاحية', needs('seized'), () => {
   for (const [slug, word] of [['irshad', 'تقارير'], ['seized', 'محاضر']]) {
     const src = moduleLogic(slug);
-    assert.match(src, new RegExp('this\\.bsToast\\("لا ' + word + ' في " \\+ [A-Za-z]+ \\+ " " \\+ [A-Za-z]+ \\+ " هـ لحذفها — اختر شهراً فيه ' + word + '\\."\\)'), slug);
+    assert.match(src, new RegExp('this\\.bsToast\\("لا ' + word + ' في " \\+ [A-Za-z]+ \\+ " " \\+ [A-Za-z]+ \\+ " لحذفها — اختر شهراً فيه ' + word + '\\."\\)'), slug);
     const i = src.indexOf('irLgClearAllAsk: () => {'), body = src.slice(i, src.indexOf('},', i));
     assert.match(body, /this\.PC\("del"\)/); assert.match(body, /this\.permDeny\(\)/); assert.match(body, /irLgClearAllConfirm: !0/);
   }

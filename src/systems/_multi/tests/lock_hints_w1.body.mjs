@@ -2,7 +2,7 @@
    والنقرةُ لا تفعل شيئاً بصمت (الاسترشاد · المضبوطات) أو تفتح نافذةً يُرفض زرُّها (التقرير اليومي). الآن: الإرشادُ لمن يملك الاعتماد وحده،
    وغيرُه يُخبَر بالسبب نصّاً (التلميح · الشرح · بطاقة الشهر · خانة اليوم) وعند النقر (رسالة) — ومن يملكه يفتح كما كان.
    + ES-8 — شارةُ الجدول الشهري: شهرٌ منقضٍ بلا جدول كان «معتمد ومقفل» (الخضراء) فوق «لا يوجد جدول».
-   منطقُ الصفحات الحقيقي في vm بساعةٍ ثابتة (w1_pages.mjs: 9 جمادى الأولى 1448 هـ ⇒ ربيع الآخر منقضٍ مقفل) — بياناتٌ اصطناعية (TEST_ONLY). */
+   منطقُ الصفحات الحقيقي في vm بساعةٍ ثابتة (w1_pages.mjs: 20 أكتوبر 2026 ⇒ سبتمبر منقضٍ مقفل — V7 · 53 تقويم: الاسترشادُ والمضبوطات بالأشهر الميلادية) — بياناتٌ اصطناعية (TEST_ONLY). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -36,7 +36,7 @@ function irHintPage(can, {confirm=true,denied=false}={}) {
   P.requests=[];P.reasons=[];P.c._irContext=()=>context;
   /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سبب — رسالةُ التأكيد (KIVO.bsConfirm) هي البوابة؛ نافذةُ السبب لا تُطلب أبداً */
   P.confirms=[];P.KIVO.__BS_SRV={askReason:(key,keys)=>{P.reasons.push({key,keys});}};P.KIVO.bsConfirm=(o)=>{P.confirms.push(o);return Promise.resolve(confirm);};
-  const dto=()=>({ok:1,res:'irshad',dept:context.dept,today:P.c.hToday(),now:NOW,maxHours:24,defHours:1,may:true,windows:J(windows)});
+  const dto=()=>({ok:1,res:'irshad',dept:context.dept,today:P.KIVO.BassamCal.gToday(),now:NOW,maxHours:24,defHours:1,may:true,windows:J(windows)});
   P.c.state.irRetro=dto();
   P.c._irRequest=async(route,options)=>{
     P.requests.push({route,options});
@@ -44,7 +44,7 @@ function irHintPage(can, {confirm=true,denied=false}={}) {
     const body=JSON.parse(options.body);
     if(denied)return{ok:0,status:403,message:'TEST_ONLY server refusal'};
     const window={id:'TEST_ONLY_window_'+windows.length,scope:body.scope,by:{id:context.uid},at:NOW,until:NOW+3600000,hours:1,reason:body.reason};
-    windows.push(window);return{ok:1,data:{ok:1,window:J(window),today:P.c.hToday(),now:NOW}};
+    windows.push(window);return{ok:1,data:{ok:1,window:J(window),today:P.KIVO.BassamCal.gToday(),now:NOW}};
   };
   P.V=()=>P.c._recordsCalVals();
   P.pull=async()=>{const result=await P.c._irRequest('/api/retro?uid='+context.uid+'&dept='+context.dept+'&res=irshad',{method:'GET'});P.c.setState({irRetro:result.data});};
@@ -62,13 +62,13 @@ function szHintPage(can, {confirm=true,denied=false}={}) {
   P.confirms=[];P.KIVO.__BS_SRV={askReason:(key,keys)=>{P.reasons.push({key,keys});}};P.KIVO.bsConfirm=(o)=>{P.confirms.push(o);return Promise.resolve(confirm);};
   const defaults=JSON.parse(fs.readFileSync(path.join(SRC,'systems/seized/client/defaults.json'),'utf8'));
   P.c.state.szCatalogs={_contextKey:context.key,base,catalogs:{catalog:{present:false,value:{ver:P.c.SZ_VER,cats:defaults.cats}},actions:{present:false,value:defaults.actions},jew:{present:false,value:defaults.kinds},locations:{present:false,value:[]}}};
-  const dto=()=>({ok:1,res:'seized',dept:context.dept,today:P.c.hToday(),now:NOW,maxHours:24,defHours:1,may:true,windows:J(windows),_contextKey:context.key,_received:NOW});
+  const dto=()=>({ok:1,res:'seized',dept:context.dept,today:P.KIVO.BassamCal.gToday(),now:NOW,maxHours:24,defHours:1,may:true,windows:J(windows),_contextKey:context.key,_received:NOW});
   P.c.state.szRetro=dto();
   P.c._bcRequest=async(route,options)=>{
     P.requests.push({route,options});if(options.method==='GET')return{ok:1,data:dto()};
     const body=JSON.parse(options.body);if(denied)return{ok:0,status:403,message:'TEST_ONLY server refusal'};
     const window={id:'TEST_ONLY_window_'+windows.length,scope:{...body.scope,d:body.scope.d??null},by:{id:context.uid},at:NOW,until:NOW+3600000,hours:1,reason:body.reason};
-    windows.push(window);return{ok:1,data:{ok:1,window:J(window),today:P.c.hToday(),now:NOW}};
+    windows.push(window);return{ok:1,data:{ok:1,window:J(window),today:P.KIVO.BassamCal.gToday(),now:NOW}};
   };
   P.pull=async()=>{const result=await P.c._bcRequest('/api/retro?uid='+context.uid+'&dept='+context.dept+'&res=seized',{method:'GET'});P.c.setState({szRetro:result.data});};
   P.settle=()=>new Promise(resolve=>setImmediate(resolve));return P;
@@ -78,62 +78,62 @@ for (const slug of ['irshad', 'seized']) {
   const noun = slug === 'irshad' ? 'تقريرك' : 'محضرك';
   test('IRSZ-4 · ' + slug + ': بلا «الاعتماد» لا دعوةَ إلى نقرةٍ مزدوجة — التلميحُ والشرحُ وبطاقةُ الشهر وخانةُ اليوم تذكر السبب، والنقرةُ المزدوجة تشرحه ولا تفتح', needs('tasks'), () => {
     const P = slug==='irshad'?irHintPage(NOAP):szHintPage(NOAP);
-    P.c.setState({ irMonth: 4, irDay: 3 });
+    P.c.setState({ irMonth: 9, irDay: 3 });
     let V = P.V();
     assert.equal(V.irPmApprove, false);
-    assert.equal(V.irMonthAutoHint, true, 'ربيعُ الآخر منقضٍ مقفل');
+    assert.equal(V.irMonthAutoHint, true, 'سبتمبر منقضٍ مقفل');
     assert.doesNotMatch(V.irMonthAutoTxt, DBL); assert.match(V.irMonthAutoTxt, NEED);
     assert.equal(V.irLegendLockTxt, 'انقضى — مقفل');
-    assert.doesNotMatch(V.irMonths[3].tip, DBL); assert.match(V.irMonths[3].tip, /^الشهر انقضى — مقفل · فتحه للاستدراك يحتاج صلاحية الاعتماد$/);
+    assert.doesNotMatch(V.irMonths[8].tip, DBL); assert.match(V.irMonths[8].tip, /^الشهر انقضى — مقفل · فتحه للاستدراك يحتاج صلاحية الاعتماد$/);
     assert.doesNotMatch(V.irDays[2].tip, DBL); assert.match(V.irDays[2].tip, /انقضى، مقفل · فتحه يحتاج صلاحية الاعتماد$/);
-    V.irMonths[3].dbl(EV);
+    V.irMonths[8].dbl(EV);
     assert.equal(P.toasts.length, 1, 'النقرةُ المزدوجة لم تعد صامتة'); assert.match(P.toasts[0][0], NEED);
     assert.deepEqual(J(P.c.state.irOpenMonths || {}), {}, 'ولا يُفتح الشهر');
     /* يومٌ منقضٍ في الشهر الجاري */
-    P.c.setState({ irMonth: 5, irDay: 3 });
+    P.c.setState({ irMonth: 10, irDay: 3 });
     V = P.V();
     assert.equal(V.irDayLockedHint, true);
     assert.doesNotMatch(V.irDayLockedTxt, DBL); assert.match(V.irDayLockedTxt, NEED);
     V.irDays[2].dbl(EV);
     assert.equal(P.toasts.length, 2); assert.deepEqual(J(P.c.state.irOpenDays || {}), {});
     /* الشهرُ الجاري غيرُ المقفل: لا شيء يُفتح ⇒ لا رسالة */
-    V.irMonths[4].dbl(EV); assert.equal(P.toasts.length, 2);
+    V.irMonths[9].dbl(EV); assert.equal(P.toasts.length, 2);
   });
   test('IRSZ-4 · ' + slug + ': من يملك «الاعتماد» يرى الإرشادَ كما كان وتفتح نقرتُه المزدوجة الشهرَ واليومَ بلا رسالة', needs('tasks'), async () => {
     const P = slug==='irshad'?irHintPage(ALL):szHintPage(ALL);
-    P.c.setState({ irMonth: 4, irDay: 3 });
+    P.c.setState({ irMonth: 9, irDay: 3 });
     let V = P.V();
     assert.equal(V.irMonthAutoTxt, 'الشهر انقضى — مقفل · انقر بطاقة الشهر نقرة مزدوجة لفتحه ثم أضف ' + noun + (slug === 'irshad' ? ' اليومي' : ''));
     assert.equal(V.irLegendLockTxt, 'انقضى — مقفل · نقرة مزدوجة لفتحه');
-    assert.equal(V.irMonths[3].tip, 'الشهر انقضى — مقفل · نقرة مزدوجة لفتحه للاستدراك');
-    V.irMonths[3].dbl(EV);
+    assert.equal(V.irMonths[8].tip, 'الشهر انقضى — مقفل · نقرة مزدوجة لفتحه للاستدراك');
+    V.irMonths[8].dbl(EV);
     if(slug==='irshad'){
       await P.settle();assert.equal(P.c.state.irRetro,null,'ACK alone is not an active-window read');assert.equal(P.V().irMonthAutoHint,true);
       assert.equal(P.confirms.length,1);assert.equal(P.confirms[0].title,'فتح الفترة للاستدراك');assert.equal(P.reasons.length,0,'no reason dialog');assert.equal(JSON.parse(P.requests[0].options.body).reason,undefined,'no reason in the POST');
-      await P.pull();assert.equal(P.V().irMonthAutoHint,false);assert.deepEqual(J(P.c.state.irRetro.windows[0].scope),{y:1448,m:4,d:null});
+      await P.pull();assert.equal(P.V().irMonthAutoHint,false);assert.deepEqual(J(P.c.state.irRetro.windows[0].scope),{y:2026,m:9,d:null});
     }else{
       await P.settle();assert.equal(P.c.state.szRetro,null,'ACK alone is not an active-window read');assert.equal(P.V().irMonthAutoHint,true);
       assert.equal(P.confirms.length,1);assert.equal(P.confirms[0].title,'فتح الفترة للاستدراك');assert.equal(P.reasons.length,0,'no reason dialog');assert.equal(JSON.parse(P.requests[0].options.body).reason,undefined,'no reason in the POST');
-      await P.pull();assert.equal(P.V().irMonthAutoHint,false);assert.deepEqual(J(P.c.state.szRetro.windows[0].scope),{y:1448,m:4,d:null});
+      await P.pull();assert.equal(P.V().irMonthAutoHint,false);assert.deepEqual(J(P.c.state.szRetro.windows[0].scope),{y:2026,m:9,d:null});
     }
     assert.equal(P.toasts.length, 0);
-    P.c.setState({ irMonth: 5, irDay: 3, irOpenMonths: {} });
+    P.c.setState({ irMonth: 10, irDay: 3, irOpenMonths: {} });
     V = P.V();
     assert.equal(V.irDayLockedTxt, 'اليوم انقضى — مقفل · انقر بطاقة اليوم نقرة مزدوجة لفتحه ثم سجّل ' + noun);
     V.irDays[2].dbl(EV);
     if(slug==='irshad'){
       await P.settle();assert.equal(P.V().irDayLockedHint,true);await P.pull();assert.equal(P.V().irDayLockedHint,false);
-      assert.deepEqual(J(P.c.state.irRetro.windows[1].scope),{y:1448,m:5,d:3});
+      assert.deepEqual(J(P.c.state.irRetro.windows[1].scope),{y:2026,m:10,d:3});
     }else{
       await P.settle();assert.equal(P.V().irDayLockedHint,true);await P.pull();assert.equal(P.V().irDayLockedHint,false);
-      assert.deepEqual(J(P.c.state.szRetro.windows[1].scope),{y:1448,m:5,d:3});
+      assert.deepEqual(J(P.c.state.szRetro.windows[1].scope),{y:2026,m:10,d:3});
     }
   });
 }
 
 test('IRSZ-4 · الاسترشاد: إلغاء التأكيد أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',needs('tasks'), async()=>{
   for(const options of [{confirm:false},{denied:true}]){
-    const P=irHintPage(ALL,options);P.c.setState({irMonth:4,irDay:3});P.V().irMonths[3].dbl(EV);await P.settle();
+    const P=irHintPage(ALL,options);P.c.setState({irMonth:9,irDay:3});P.V().irMonths[8].dbl(EV);await P.settle();
     assert.equal(P.confirms.length,1);assert.equal(P.reasons.length,0);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
     await P.pull();assert.deepEqual(J(P.c.state.irRetro.windows),[]);assert.equal(P.V().irMonthAutoHint,true);
     assert.deepEqual(J(P.c.state.irOpenMonths||{}),{});if(options.denied)assert.match(P.toasts.at(-1)[0],/server refusal/);
@@ -142,7 +142,7 @@ test('IRSZ-4 · الاسترشاد: إلغاء التأكيد أو رفض الخ
 
 test('IRSZ-4 · المضبوطات: إلغاء التأكيد أو رفض الخادم لا يفتح نافذة ولا يعرض اعتمادًا محليًا',needs('tasks'), async()=>{
   for(const options of [{confirm:false},{denied:true}]){
-    const P=szHintPage(ALL,options);P.c.setState({irMonth:4,irDay:3});P.V().irMonths[3].dbl(EV);await P.settle();
+    const P=szHintPage(ALL,options);P.c.setState({irMonth:9,irDay:3});P.V().irMonths[8].dbl(EV);await P.settle();
     assert.equal(P.confirms.length,1);assert.equal(P.reasons.length,0);assert.equal(P.requests.filter(r=>r.options.method==='POST').length,options.denied?1:0);
     await P.pull();assert.deepEqual(J(P.c.state.szRetro.windows),[]);assert.equal(P.V().irMonthAutoHint,true);
     assert.deepEqual(J(P.c._szRetroFlags().months),{});if(options.denied)assert.match(P.toasts.at(-1)[0],/server refusal/);
