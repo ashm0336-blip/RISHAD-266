@@ -255,3 +255,29 @@ test('53 تقويم · 0014 على قاعدةٍ بالمخطط 13 بناها ا�
   assert.equal(JSON.stringify(E0.DB.q('SELECT move_id,hijri_year y,hijri_month m,hijri_day d FROM custody_movements ORDER BY move_id')), JSON.stringify(relBefore.cus), 'بعد الرجوع: العهدة هجرية كما كانت');
   fs.rmSync(bookmark, { force: true });
 });
+
+/* قاعدةٌ بشكل Production قديمةٌ جداً (المخطط 5: العهدةُ وثيقةُ KV {y,m,d} هجرية) ← 14 في تشغيلٍ واحد بتصريحٍ واحد: خطوةُ 0006 تكتب صفوفَها
+   (hijri_*، بالقاعدة التي تعيد أسماءَ greg_* — calLegacyEnv، قرارُ الاقتران مع cal-rest) ثم 0014 يحوّلها بالمطابقة نفسِها: greg_* ميلادية · لا حركةَ سقطت ·
+   يومُ 0 يبقى 0 في شهر يومه الأول (ق10). */
+test('53 تقويم · قاعدةٌ بالمخطط 5 (Production قديم) ← 14 في تشغيلٍ واحد: صفوفُ العهدة greg_* ميلادية · لا يومَ سقط', { timeout: 600000, ...(hasSystem('custody') ? {} : { skip: 'يحتاج نظام العهد' }) }, async () => {
+  const { legacyWorld, D1: CD } = await import('./canonical_fx.mjs'), B = await legacyWorld();
+  const moves = [[1400, 1, 1], [1447, 9, 30], [1448, 5, 0], [1448, 6, 14]].map(([y, m, d], i) => ({ t: i % 2 ? 'in' : 'out', eid: 'TEST_ONLY_h' + i, item: 'TEST_ONLY radio c14', ser: 'C14-' + i, y, m, d: H2G.has(y + '-' + m + '-' + d) || d === 0 ? d : 29 }));
+  const doc = { items: [{ name: 'TEST_ONLY radio c14', qty: 4, prefix: 'C14', color: '#123456' }], moves };
+  await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', 'bsdept:' + CD + ':bassam_custody_v1', JSON.stringify(doc)));
+  await B.W.initDb(B.env);
+  assert.equal(B.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, String(CURRENT_SCHEMA));
+  assert.deepEqual(B.DB.q('SELECT name FROM d1_migrations ORDER BY id').map((r) => r.name).slice(-2), ['0013_period_storage', '0014_gregorian_calendar']);
+  const rows = B.DB.q('SELECT greg_year y,greg_month m,greg_day d FROM custody_movements WHERE department_id=?1 ORDER BY sequence', CD);
+  assert.equal(rows.length, moves.length, 'لا حركةَ سقطت');
+  moves.forEach((mv, i) => { const g = H2G.get(mv.y + '-' + mv.m + '-' + Math.max(1, mv.d)); assert.deepEqual([rows[i].y, rows[i].m, rows[i].d], [+g.slice(0, 4), +g.slice(5, 7), mv.d === 0 ? 0 : +g.slice(8)], 'الحركة ' + i + ' ' + mv.y + '-' + mv.m + '-' + mv.d + ' ← ' + g); });
+  assert.deepEqual(B.DB.q('PRAGMA foreign_key_check'), []);
+});
+
+/* calLegacyEnv (قرارُ الاقتران): يعيد معرّفاتِ greg_* إلى hijri_* في نصّ العبارة وحده — مساراتُ json_extract ('$.greg_year') تقرأ مفاتيحَ الصفوف المربوطة
+   كما هي، فلا تعود NULL (كما في rsBulk/dsDomainStatements: «NOT NULL constraint failed: …hijri_year» قبل الإصلاح) */
+test('53 تقويم · calLegacyEnv: المعرّفاتُ hijri_* ومساراتُ json_extract كما هي — لا NULL', async () => {
+  const W = await load(fs.readFileSync(WORKER, 'utf8'), 'new'), DB = new D1Shim(), E = W.calLegacyEnv({ DB });
+  DB.exec('CREATE TABLE t(hijri_year INTEGER NOT NULL,hijri_month INTEGER NOT NULL,hijri_day INTEGER,hijri_date TEXT)');
+  await E.DB.batch([E.DB.prepare("INSERT INTO t(greg_year,greg_month,greg_day,greg_date) SELECT json_extract(j.value,'$.greg_year'),json_extract(j.value,'$.greg_month'),json_extract(j.value,'$.greg_day'),json_extract(j.value,'$.greg_date') FROM json_each(?1) j").bind(JSON.stringify([{ greg_year: 1448, greg_month: 6, greg_day: 14, greg_date: '1448-06-14' }]))]);
+  assert.deepEqual({ ...DB.q('SELECT * FROM t')[0] }, { hijri_year: 1448, hijri_month: 6, hijri_day: 14, hijri_date: '1448-06-14' });
+});

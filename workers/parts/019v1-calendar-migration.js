@@ -220,7 +220,8 @@ function calMigOnce(k) {
 /* V7 · 53 تقويم (قرارُ الاقتران مع cal-rest، cal_api.md): خطواتُ 0004/0006/0008/0009 تكتب بخرائط أعمدةٍ صارت greg_* والجداولُ بعدُ hijri_* — تُشغَّل
    على قاعدةٍ تعيد كتابة الأسماء إلى hijri_* ما دام 0014 لم يُطبَّق، فيحوّلها 0014 بالمطابقة نفسِها كأيِّ صفٍّ آخر. */
 function calLegacyEnv(env) {
-  var DB = env.DB, rx = /\bgreg_(year|month|day|date)\b/g, out = Object.assign({}, env);
+  /* المعرّفاتُ وحدها: مساراتُ json_extract ('$.greg_year') تقرأ مفاتيحَ الصفوف المربوطة كما هي (greg_*) فلا تُمسّ — وإلا عادت القيمُ NULL */
+  var DB = env.DB, rx = /(?<!\$\.)\bgreg_(year|month|day|date)\b/g, out = Object.assign({}, env);
   out.DB = { prepare: function (s) { return DB.prepare(String(s).replace(rx, 'hijri_$1')); }, batch: function (a) { return DB.batch(a); }, exec: function (s) { return DB.exec(String(s).replace(rx, 'hijri_$1')); } };
   return out;
 }
@@ -382,6 +383,8 @@ async function calMigPrepare(env) {
   var dd = ((await D.prepare('SELECT scope,once_key,created_at,message_id FROM notification_dedup WHERE created_at>?1').bind(now - 7 * 864e5).all()).results) || [], drows2 = [];
   dd.forEach(function (r) { calMigOnce(String(r.once_key)).forEach(function (k2) { drows2.push([r.scope, k2, r.created_at, r.message_id]); }); });
   calMigChunks(drows2).forEach(function (part) { after.push(D.prepare("INSERT OR IGNORE INTO notification_dedup(scope,once_key,created_at,message_id) SELECT json_extract(j.value,'$[0]'),json_extract(j.value,'$[1]'),json_extract(j.value,'$[2]'),json_extract(j.value,'$[3]') FROM json_each(?1) j").bind(JSON.stringify(part))); });
+  /* ⑥ب الإداراتُ المعلَّقة (كما في ملف 0014) — تُعاد هنا في آخر الدفعة: على قاعدةٍ أقدم من 10 تُكتب صفوفُ 0010 التشغيلية بعد عبارات 0014 */
+  after.push(D.prepare("INSERT INTO meta (k, v) SELECT '" + CAL_MIG_PENDING + "', x FROM (SELECT json_group_array(d) x, COUNT(*) n FROM (SELECT DISTINCT department_id d FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY d)) WHERE n > 0 ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(CAL_MIG_RES)));
   /* ⑥ اليومُ المرجعي T للمرحلة ٢ (ثابتٌ لكل إداراتها، فإعادتُها حتمية) */
   after.push(D.prepare("INSERT INTO meta(k,v) VALUES('" + CAL_MIG_TKEY + "',?1) ON CONFLICT(k) DO NOTHING").bind(T));
   return { before: before, after: after };

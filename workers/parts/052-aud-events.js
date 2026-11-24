@@ -213,9 +213,11 @@ async function migrateDb(env) {
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
     /* V7 · د6 (schemafix): تحويلُ KV التشغيلي (0010) يكتب صفوفَه بمرمّز اليوم — فجداولُه وأعمدتُه التي أضافتها ترحيلاتٌ بعد 0010 (0012: القراءةُ بالسعة)
        يجب أن توجد قبله: ترحيلاتُ هذا التشغيل التي بعد 0010 تُطبَّق في الدفعة نفسِها قبل صفوف التحويل — ذرّيّةٌ واحدة كما كانت */
+    /* V7 · 53 تقويم: وخطةُ بيانات 0014 (المطابقة قبل عباراته، وما بعدها في آخر الدفعة بعد صفوف 0010) — فقاعدةٌ أقدم من 10 تصل ميلاديةً في التشغيل نفسِه */
+    var foldAfter = [];
     if (dataPlan && pending[i].name === '0010_operational_domains')
-      while (i + 1 < pending.length) { i++; for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j])); }
-    if (dataPlan) st = st.concat(dataPlan.after);
+      while (i + 1 < pending.length) { i++; var fold = pending[i].name === '0014_gregorian_calendar' ? await calMigPrepare(env) : null; if (fold) st = st.concat(fold.before); for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j])); if (fold) foldAfter = foldAfter.concat(fold.after); }
+    if (dataPlan) st = st.concat(dataPlan.after, foldAfter);
     if (permit && pending[i].name === names[names.length - 1])
       st.push(env.DB.prepare('DELETE FROM meta WHERE k=?1 AND v=?2').bind(DB_UPGRADE_PERMIT, permit.raw));
     /* V7 · د5-ح (القفل): قاعدةٌ وُلدت الآن (لا جدولَ ولا سجلَّ ترحيلٍ قبلها) لا بياناتِ صلاحياتٍ قديمة فيها ⇒ تُختم enforce مع آخر ترحيل.
