@@ -1142,16 +1142,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           : { method: "POST", credentials: "same-origin", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ dept: this._tkDept() || void 0, uid: U || void 0 }, b)) };
     void 0 === b && U && (p += (p.indexOf("?") >= 0 ? "&" : "?") + "uid=" + encodeURIComponent(U));
     /* V7 · 53 (nosilent · REVIEW 26 ب2/ب3): الكتابةُ (POST) في مؤشر التحميل الموحّد — الزرُّ يتجمّد والمغادرةُ تُسأل حتى يصل الرد؛ القراءةُ بلا مؤشر */
+    const fetch = (u, q) => this._tkFetch(u, q, b, 0);
     const B = void 0 !== b && KIVO.BassamBusy, busy = B ? B.start("جارٍ الحفظ…") : null;
-    /* V7 · 53 تقويم (REVIEW 45): الخادمُ يحوّل فتراتِ الإدارة الهجرية ⇒ 503 calendar-preparing بتقدّمه: الطلبُ نفسُه (معرّفُه وجسمُه) يُعاد تلقائياً
-       حتى يكتمل التحويل (بحدّ)، والسببُ الحقيقي ظاهر «… — سيُحفظ تعديلك تلقائياً» — لا فشلَ ولا «تم» قبل الإيصال */
-    const prep = (n) => fetch(p, o).then((r) => (r.status !== 503 || n >= 120 ? r : r.clone().json().then((j) => {
-      if (!j || j.err !== "calendar-preparing") return r;
-      const d = j.details, t = "تُجهَّز البيانات للتقويم الميلادي" + (d && d.total ? " (" + d.done + " من " + d.total + ")" : "") + (void 0 === b ? "" : " — سيُحفظ تعديلك تلقائياً");
-      try { KIVO.bsToast && KIVO.bsToast(t, { ms: 4000 }); if (KIVO.__bsPrep) KIVO.__bsPrep(t); } catch (e) { /* عرضٌ فقط */ }
-      return new Promise((go) => setTimeout(go, 1200)).then(() => prep(n + 1));
-    }, () => r)));
-    return prep(0).finally(() => busy && busy.done()).then(
+    return fetch(p, o).finally(() => busy && busy.done()).then(
       (r) =>
         r.text().then((t) => {
           let j = null;
@@ -1173,6 +1166,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }),
       () => ({ status: 0, j: null }),
     );
+  }
+    /* V7 · 53 تقويم (REVIEW 45): الخادمُ يحوّل فتراتِ الإدارة الهجرية ⇒ 503 calendar-preparing بتقدّمه: الطلبُ نفسُه (معرّفُه وجسمُه) يُعاد تلقائياً
+       حتى يكتمل التحويل (بحدّ)، والسببُ الحقيقي ظاهر «… — سيُحفظ تعديلك تلقائياً» — لا فشلَ ولا «تم» قبل الإيصال */
+  _tkFetch(u, q, b, n) {
+    return window.fetch(u, q).then((r) => (r.status !== 503 || n >= 120 ? r : r.clone().json().then((j) => {
+      if (!j || j.err !== "calendar-preparing") return r;
+      const d = j.details, t = "تُجهَّز البيانات للتقويم الميلادي" + (d && d.total ? " (" + d.done + " من " + d.total + ")" : "") + (void 0 === b ? "" : " — سيُحفظ تعديلك تلقائياً");
+      try { KIVO.bsToast && KIVO.bsToast(t, { ms: 4000 }); if (KIVO.__bsPrep) KIVO.__bsPrep(t); } catch (e) { /* عرضٌ فقط */ }
+      return new Promise((go) => setTimeout(go, 1200)).then(() => this._tkFetch(u, q, b, n + 1));
+    }, () => r)));
   }
   async _tkCommandApi(path, intent, slot) {
     slot = slot || "newTaskOpen";
