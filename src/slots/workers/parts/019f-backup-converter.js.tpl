@@ -460,6 +460,9 @@ async function rsConvertBackup(env, A, file, opt) {
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });
+  /* V7 · 53 تقويم (ف٧ · ق12): نسخةٌ قديمة أو ملفُّ Production (هجري) ⇐ ميلاديةٌ بالقاعدة نفسِها التي يرحّل بها 0014 — قبل ترميز المواردِ التشغيلية صفوفاً (opConvertBackupBoundary) والتخطيطِ والحفظ (calMigBackup، 019v1).
+     النسخةُ الميلادية تعود كما هي، والمختلطةُ تُرفض باسم مفتاحها. T = يومُ بدء الاستيراد (019g env.__calT) أو اليوم */
+  calMigBackup(keys, domains, summary, (env && env.__calT) || calToday(Date.now()).k);
   opConvertBackupBoundary(keys,domains,deptIds,scope,source,modern?file.manifest.version:0,summary);
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
   // its existing hash, final-owner and session policy for the eventual commit.
