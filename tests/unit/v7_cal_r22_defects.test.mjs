@@ -106,3 +106,10 @@ test('REVIEW 22 ⑥: dstats Excel export — the «التاريخ الهجري»
   assert.notEqual(row[H], row[G], 'the Hijri column is not the Gregorian date again');
   assert.deepEqual(JSON.parse(JSON.stringify(page.HD(row[H]))), { y: 2026, m: 11, d: 24 }, 'importing the Hijri column gives back the same Gregorian day');
 });
+
+test('REVIEW 22 ⑦: activity log filters — the month and day examples are Gregorian («2026-11» · «2026-11-24»), not «1448-4» / «1448-4-10»', () => {
+  const src = rd('modules/admin/logic.js');
+  assert.match(src, /inp\("plan", "الشهر \(2026-11\)", 110\)/);
+  assert.match(src, /inp\("day", "اليوم \(2026-11-24\)", 120\)/);
+  assert.doesNotMatch(src, /الشهر \(1448-4\)|اليوم \(1448-4-10\)/);
+});

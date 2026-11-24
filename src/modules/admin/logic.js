@@ -4914,10 +4914,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         inp("q", "بحث بالاسم أو المعرّف", 170);
     const fSite =
         inp("site", "الموقع", 120);
+    /* V7 · 53 تقويم (REVIEW 22 — لقطة سجل الحركة): مثالُ الحقل ميلادي كمفاتيح السجل الجديدة؛ السطورُ القديمة بمفتاحٍ هجري تبقى كما كُتبت (ق9) وتُبحث بكتابته */
     const fPlan =
-        inp("plan", "الشهر (1448-4)", 110);
+        inp("plan", "الشهر (2026-11)", 110);
     const fDay =
-        inp("day", "اليوم (1448-4-10)", 120);
+        inp("day", "اليوم (2026-11-24)", 120);
     const fFromL =
         h("span", { key: "fl", style: { fontSize: 10.5, color: "var(--text-muted)" } }, "من");
     const fFrom =
