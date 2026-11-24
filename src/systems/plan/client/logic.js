@@ -1494,18 +1494,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           this.setState({ olFilesOpen: !1 });
           const fpX = fpOn && "staff" !== V,
             aoa = [exp.head.concat(fpX ? ["آخر حركة"] : [])].concat(M.map((m) => exp.row(m).concat(fpX ? [FPT(m.eid)] : [])));
+          /* V7 · 53 (nosilent · REVIEW 37 ب2): «صُدِّر» بعد أن يُبنى الملفُ فعلاً — الإخفاقُ يقوله 570 بسببه */
+          let done;
           try {
-            KIVO.BassamXLSX.download(
+            done = KIVO.BassamXLSX.download(
               aoa,
               "سجل-" + exp.name + "-" + site + "-" + (this.MONTHS[s.month - 1] || s.month) + "-" + s.year + "هـ.xlsx",
+              { quiet: !0 },
             );
           } catch (e) {
             return void this.bsToast("تعذّر تجهيز ملف Excel", "err");
           }
-          this.bsToast(
+          Promise.resolve(done).then((ok) => ok !== !1 && this.bsToast(
             "صُدِّر " + C(M.length, unit, "g") + (["zones", "gates", "marks"].indexOf(V) >= 0 ? " — الأعمدةُ نفسُها تصلح للاستيراد" : ""),
             "ok",
-          );
+          ));
         },
         olCanImport: canImp,
         olImport: () => this._olImport(V, site),
