@@ -27,7 +27,7 @@ test('V7 · د5-ح (13): حفظةٌ حقيقية من صفحة الجولات ت
     const saves = [];
     p.on('request', (r) => { if (r.method() === 'POST' && /\/api\/save\b/.test(r.url())) try { saves.push(JSON.parse(r.postData() || '{}')); } catch (e) {} });
     await s.go('#/daily/rounds', 5000);
-    assert.equal(await p.evaluate(() => KIVO.BassamHijri.now().d), T.d, 'الصفحةُ والمُثبِّتُ على يومٍ واحد');
+    assert.equal(await p.evaluate(() => KIVO.BassamCal.gAt(new Date()).d), T.d, 'الصفحةُ والمُثبِّتُ على يومٍ واحد');   /* V7 · 53 تقويم: يومُ الصفحة الميلادي */
     /* جولةُ اليوم بطريق الصفحة نفسِه (التقريرُ اليومي والجولاتُ ينشئانها هكذا) */
     const r = await p.evaluate(([y, m, d]) => KIVO.BassamRound.ensure(y, m, d).then((x) => ({ status: x.status, err: x.err || '' })), [T.y, T.m, T.d]);
     assert.equal(r.status, 'created', JSON.stringify(r));
@@ -42,7 +42,7 @@ test('V7 · د5-ح (13): حفظةٌ حقيقية من صفحة الجولات ت
     await p.evaluate((ka) => KIVO.__BS_SRV.operations.read([ka]), KA);
     /* V7 · 53: الأرشيفُ مخزَّنٌ باليوم — الصفحةُ تطلب شهرَه حين تعرضه (القراءةُ المنطقية تجلب الشهرَ الجاري وحده) */
     await p.evaluate((old) => KIVO.__BS_SRV.operations.want('bassam_rounds_arc_v1', { groups: [old] }), OLD);
-    await p.waitForFunction((old) => { try { const v = KIVO.__BS_SRV.operations.get('bassam_rounds_arc_v1'); return !!(v && v[old + '-1']); } catch (e) { return false; } }, OLD, { timeout: 60000 });
+    await p.waitForFunction((old) => { try { const v = KIVO.__BS_SRV.operations.get('bassam_rounds_arc_v1'); return !!(v && v[old + '-01']); } catch (e) { return false; } }, OLD, { timeout: 60000 });
     const seen = await p.evaluate((old) => { const v = KIVO.bus.read('daily.days@1') || {}; return Object.keys(v).filter((k) => k.startsWith(old + '-')).length; }, OLD);
     assert.equal(seen, 10, 'daily.days@1 يرى الأيامَ المؤرشفة');
     /* حفظةٌ ثانية من الصفحة (اعتمادُ جولة ورديةٍ اليوم): لا ترسل الأيامَ المؤرشفة */

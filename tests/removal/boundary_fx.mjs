@@ -123,8 +123,8 @@ export async function openRoute(s, hash, ms = 60000) {
   await s.page.waitForFunction(() => { const m = document.querySelector('main'); return !!m && m.innerText.replace(/\s+/g, ' ').length > 40 && !m.querySelector('[data-bs-skeleton], .bs-skel-page'); }, null, { timeout: ms });
 }
 
-/* اليومُ الهجري (أم القرى · الرياض) كما تراه الصفحة */
-export const today = () => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date()).forEach((p) => { if (p.type !== 'literal') o[p.type] = +p.value; }); return { y: o.year, m: o.month, d: o.day }; };
+/* اليومُ كما تراه الصفحة — V7 · 53 تقويم: يومُ الرياض الميلادي، ومفتاحاه ISO (ym · dk) */
+export const today = () => { const f = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date()).forEach((p) => { if (p.type !== 'literal') o[p.type] = +p.value; }); const z = (n) => String(n).padStart(2, '0'); return { y: o.year, m: o.month, d: o.day, ym: o.year + '-' + z(o.month), dk: o.year + '-' + z(o.month) + '-' + z(o.day) }; };
 
 /* صورةٌ PNG صغيرة حقيقية (لخريطة موقع) */
 export function png(name, w, h, rgb) {
