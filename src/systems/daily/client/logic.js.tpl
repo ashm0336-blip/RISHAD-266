@@ -7464,10 +7464,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         "e" === e && o && ((d = "rgba(148,163,184,0.12)"), (p = "#94a3b8")),
         a && (h = "2px solid #b99751"));
       const c = new Date(A.getTime() + 864e5 * (t - 1));
-      let f = "";
-      try {
-        f = c.toLocaleDateString("ar-u-ca-gregory-nu-latn", { day: "numeric", month: "long", year: "numeric" });
-      } catch (t) {}
       const u = "c" === e,
         y = this.dayPastDS(s.year, s.month, t) && this.isDayOpen(s.rounds, s.year, s.month, t);
       /* V7 · 53 تقويم (§7): كرتُ اليوم المشترك — حرفُ اليوم · اليومُ الميلادي · الهجريُّ الصغير، وحالتان فقط (مغلق · مفتوح) والسببُ في التلميح */

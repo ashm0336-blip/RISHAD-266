@@ -1747,11 +1747,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         ("c" === i && ((m = s ? "#047857" : c ? "#64748b" : "#b99751"), (g = "#fff"), (k = "2px solid transparent")),
           "e" === i && c && ((m = "rgba(148,163,184,0.12)"), (g = "#94a3b8")),
           h && (k = "2px solid #b99751"));
-        var S = new Date(y.getTime() + 864e5 * (a - 1)),
-          x = "";
-        try {
-          x = S.toLocaleDateString("ar-u-ca-gregory-nu-latn", { day: "numeric", month: "long", year: "numeric" });
-        } catch (t) {}
+        var S = new Date(y.getTime() + 864e5 * (a - 1));
         var v =
             "position:relative;height:24px;flex:1 1 auto;min-width:28px;padding:0 3px;border-radius:4px;font-size:8px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;background:" +
             m +

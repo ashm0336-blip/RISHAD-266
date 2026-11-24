@@ -2017,8 +2017,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               +s[0] === t && +s[1] === e && (n += (r[a] || []).filter((t) => this.tkVisible(t, VW)).length);
             }
             return n;
-          })(e.year, a),
-          h = new Date(this.mStart(e.year, n).getTime() + 12096e5);
+          })(e.year, a);
         let c =
           "position:relative;flex:1 1 auto;min-width:100px;border-radius:12px;padding:8px;text-align:center;transition:all .2s;box-shadow:var(--shadow-card);cursor:pointer;box-sizing:border-box;font-family:'Cairo',sans-serif;border:1px ";
         const d = this.monthApprovedT(e.year, a),
