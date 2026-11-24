@@ -122,8 +122,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         .then(() => { e.promise = null; this._nfDisposed || this.setState({ m1Tick: Date.now() }); });
     return { state: e.failed ? "error" : "loading", retry: () => { e.failed = !1; this.setState({ m1Tick: Date.now() }); } };
   }
+  /* مفاتيحُ الجدول تأتي من إعلان نظام الجدول (staff/system.json ← admin.sfNeed.keys) — بغيابه لا شيء */
   _sfNeed() {
-    return this._m1Need(["bassam_shift_options_v1"].concat(this.sfUsage("").on ? ["bassam_staffing_v3", "bassam_staffing_locks_v1"] : []));
+    return this._m1Need(["bassam_shift_options_v1"].concat(this.sfUsage("").on ? [@@SYS:admin.sfNeed.keys|empty=""@@] : []));
   }
   sfRead() {
     return this.sfItems(KIVO.__BS_SRV.operations.get("bassam_shift_options_v1")).filter(t => t && t.name);

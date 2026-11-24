@@ -130,6 +130,10 @@
    "order": 10,
    "text": ", \"staff\""
   },
+  "admin.sfNeed.keys": {
+   "order": 40,
+   "text": "\"bassam_staffing_v3\", \"bassam_staffing_locks_v1\""
+  },
   "root.planning.perms": {
    "order": 10,
    "text": ",\"staff\""
