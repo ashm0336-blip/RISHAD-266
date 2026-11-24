@@ -1383,7 +1383,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           n.apBy = "—";
         }
         n.apAt = new Date().toISOString();
-      } else (delete n.ap, delete n.apBy, delete n.apAt);
+      } else {
+        delete n.ap; delete n.apBy; delete n.apAt;
+        /* V7 · 53 (البند 8): فتحُ تقريرٍ معتمد في يومٍ مقفل (منقضٍ أو مُغلق) يفتح يومَه في الحفظة نفسها — عكسُ ما يفعله الاعتماد أدناه (يُقفل اليومَ
+           المنقضي حين تُعتمد ورديّاتُه كلُّها)؛ تأكيدٌ فقط بلا سبب، كفتح الشهر */
+        if (this.drLockedDay(r, this.state.rpY, this.state.rpM, this.state.rpD)) {
+          const mk9 = "m:" + this.state.rpY + "-" + this.state.rpM, month9 = { ...(r[mk9] || {}) }, d9 = this.state.rpD;
+          if (month9.dshut) { month9.dshut = { ...month9.dshut }; delete month9.dshut[d9]; if (!Object.keys(month9.dshut).length) delete month9.dshut; }
+          if (this.dayPastDS(this.state.rpY, this.state.rpM, d9)) month9.dopen = { ...(month9.dopen || {}), [d9]: 1 };
+          Object.keys(month9).length ? (r[mk9] = month9) : delete r[mk9];
+        }
+      }
       if (t && this.dayPastDS(this.state.rpY, this.state.rpM, this.state.rpD) && this.drDayAllAp(r, this.state.rpY, this.state.rpM, this.state.rpD, this.drDistShifts())) {
         const month = r["m:" + this.state.rpY + "-" + this.state.rpM];
         if (month && month.dopen) {
@@ -2586,9 +2596,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? T || "إجازة"
                   : e.onRest
                     ? "راحة"
-                    : KIVO.bus.has("staff.availText@1")
-                      ? KIVO.bus.read("staff.availText@1", e.shift || e.sh, ar)
-                      : "متاح",
+                    : /* V7 · 53 (البند 7): مصدرٌ واحد — تأشيرُ تقرير اليوم كما في نافذة الموظف والتصدير («حاضر»)؛ كان العمودُ يقرأ ساعةَ الوردية الآن
+                         (staff.availText) فيقول «غير متاح» لحاضرٍ خارج وقت ورديته */
+                      "حاضر",
           statusColor: "ab" === e.mark ? "#b91c1c" : "pm" === e.mark ? "#C9702A" : O ? "#0e7490" : e.onRest ? "#d97706" : "#059669",
           statusTip:
             ("ab" === e.mark
@@ -2599,7 +2609,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? "إجازة مؤشَّرة في تقرير هذا اليوم" + (T ? " — نوعها: " + T : "") + " · تُلغى من قائمة التأشير"
                   : e.onRest
                     ? "في راحة اليوم"
-                    : "متاح للعمل") + (E.length ? "  ·  استُهلك من نصاب استئذانات هذا الشهر: " + E.length + " من " + at : ""),
+                    : "حاضر — لا غياب ولا استئذان ولا إجازة مسجّلة في تقرير اليوم") + (E.length ? "  ·  استُهلك من نصاب استئذانات هذا الشهر: " + E.length + " من " + at : ""),
           onLeaveNow: !!O,
           sdLockedView: !0,
           sdCanEdit: !1,
@@ -3674,7 +3684,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
       ...this.drFilterDD("fst", "drFst", "كل الحالات", [
         { v: "all", name: "كل الحالات" },
-        { v: "active", name: "متاح" },
+        { v: "active", name: "حاضر" },
         { v: "ab", name: "غائب" },
         { v: "pm", name: "مستأذن" },
         { v: "leave", name: "في إجازة" },
@@ -4149,7 +4159,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             r.bsAck(t ? "فُتح تقرير " + o + " للتعديل" : "اعتُمد تقرير " + o + " وأُقفل", "ok"));
         } else r.permDeny();
       },
-      shApBtnOn: x && !T && !(!E || !E.pulled),
+      /* V7 · 53 (البند 8): زرُّ الاعتماد/الفتح ظاهرٌ لمن يعتمد على تقريرٍ معتمد في يومٍ مقفل أيضاً — كان يختفي فلا طريقَ ظاهراً لفتحه */
+      shApBtnOn: x && (!T || (D && M)) && !(!E || !E.pulled),
       shApBtnTip: D ? "تقرير " + o + " معتمد ومقفل — اضغط لفتحه للتعديل" : "اعتماد وقفل تقرير " + o + " وحدها",
       shApBtnStyle:
         "width:41px;height:41px;flex-shrink:0;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:'Cairo',sans-serif;border:1px solid " +
