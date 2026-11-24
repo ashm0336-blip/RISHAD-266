@@ -79,3 +79,17 @@ test('V7 · د7 (52 §3): كرت «الصلاحيات» — إدارةٌ بدو�
     assert.deepEqual(s.errs, [], 'بلا أخطاء صفحة');
   } finally { await b.close(); await lab.close(); }
 });
+
+/* ④ في الموضع نفسه (52 §3): تلميحُ «الطاقم الإشرافي» في الجولات يصف المعيارَ الحالي — دورٌ إشرافي (sup:true · KIVO.BassamSup) ورئيسُ/نائبُ الوردية من التقرير —
+   لا «قالب صلاحيات موسوم إشرافي» (القوالبُ حُذفت). يُقرأ من القالبين ومن الملفّين المولَّدين معاً. */
+test('V7 · د7 (52 §3): تلميحُ «الطاقم الإشرافي» في الجولات يشير إلى الأدوار لا إلى القوالب', { skip: !present('daily') }, async () => {
+  const fs = await import('node:fs'), path = await import('node:path'), { fileURLToPath } = await import('node:url');
+  const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
+  for (const f of ['src/systems/daily/client/logic.js.tpl', 'src/systems/daily/client/logic.js', 'src/systems/daily/client/view.html.tpl', 'src/systems/daily/client/view.html']) {
+    const s = fs.readFileSync(path.join(ROOT, f), 'utf8');
+    assert.doesNotMatch(s, /قالب صلاحيات موسوم/, f + ': لا ذكرَ لقالب الصلاحيات');
+    assert.match(s, /دورٍ إشرافي من أدوار الإدارة ورئيس ونائب الوردية من تقرير اليوم/, f + ': التلميحُ يصف الأدوار');
+  }
+  const sup = fs.readFileSync(path.join(ROOT, 'src/slots/permissions/334-perm-tree-tpl.js.tpl'), 'utf8');
+  assert.match(sup, /function isSupRole\(r\)\{ return !!\(r && r\.sup === true\); \}/, 'المعيارُ نفسُه: علامةُ الدور sup:true');
+});
