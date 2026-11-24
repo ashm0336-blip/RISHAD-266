@@ -11,7 +11,7 @@ export const A = 'TEST_ONLY_A', EKEY = 'TEST_ONLY_eA1', ROLE_ID = 'TEST_ONLY_d7_
 export const FULL = ['dstats', 'planning', 'staff', 'plan', 'daily', 'dreport', 'tasks', 'irshad', 'seized', 'award', 'links', 'help', 'admin', 'emps'];
 export const ACTORS = [{ who: 'مدير الإدارة', un: LAB.mgrA }, { who: 'موظف بدور', un: LAB.empA }];
 /* نصٌّ عربيٌّ واضح: حروفٌ عربية وفيه كلمةُ رفضٍ أو منع (لا رمزٌ تقنيٌّ وحده) */
-export const AR_REFUSAL = /صلاحيت|لا تملك|لا يمكن|لم يُ|لم ي|مقفل|مغلق|رفض|غير متاح|لا يحق|ممنوع|تعذّر/;
+export const AR_REFUSAL = /صلاحيت|خارج نطاق|لا تملك|لا يمكن|لم يُ|لم ي|مقفل|مغلق|رفض|غير متاح|لا يحق|ممنوع|تعذّر/;
 export const isArabicRefusal = (t) => /[ء-ي]{3}/.test(String(t || '')) && AR_REFUSAL.test(String(t || ''));
 
 const log0 = console.log; console.log = (...a) => { if (typeof a[0] === 'string' && a[0].startsWith('{"v":1,"t":')) return; log0(...a); };   /* سجلُّ طلبات العامل يُسكَت */
@@ -41,11 +41,14 @@ export async function grant(b, lab, sys, ekey = EKEY) {
   if (!r || !r.ok) throw new Error('role not saved: ' + JSON.stringify(r));
   return r;
 }
-export const toasts = (s) => s.page.evaluate(() => {
-  window.__toasts = [];
+/* يُركَّب في الصفحة الحالية وفي كل تحميلٍ بعدها (addInitScript) — فلا يضيع بإعادة التحميل */
+const TOASTS = () => {
+  if (window.__toastsOn) return; window.__toastsOn = 1; window.__toasts = window.__toasts || [];
   const take = () => { const t = document.getElementById('bs-toast'); const x = t && t.textContent && t.textContent.trim(); if (x && window.__toasts[window.__toasts.length - 1] !== x) window.__toasts.push(x); };
-  new MutationObserver(take).observe(document.body, { childList: true, subtree: true, characterData: true });
-});
+  const go = () => new MutationObserver(take).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+  if (document.documentElement) go(); else document.addEventListener('DOMContentLoaded', go);
+};
+export const toasts = async (s) => { await s.page.addInitScript(TOASTS); await s.page.evaluate(TOASTS); };
 export const seen = (s) => s.page.evaluate(() => window.__toasts || []);
 export const mainText = (p) => p.evaluate(() => (document.querySelector('main') || document.body).innerText);
 /* الأرقامُ تُعرض هنديةً مع علامات اتجاه — تُطبَّع قبل المطابقة */
