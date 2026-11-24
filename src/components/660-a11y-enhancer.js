@@ -14,6 +14,8 @@
     (document.head||document.documentElement).appendChild(st);
   }catch(e){}
   function clean(s){ return (s||"").replace(/\s+/g," ").replace(/[*:：]\s*$/,"").trim(); }
+  /* V7 · 53 (REVIEW 44): الاسمُ من نصّ العنصر بفاصلٍ عند كل حدّ عنصر — القالبُ المضغوط (بلا مسافاتٍ بين الوسوم) كان يلصق «موظفو الإدارة» بـ«حاوية» في aria-label */
+  function words(n){ var o=""; for(var c=n.firstChild;c;c=c.nextSibling){ o+=c.nodeType===3?c.nodeValue:c.nodeType===1?" "+words(c)+" ":""; } return o; }
   function nameFor(el){
     try{ if(el.id){ var esc=(window.CSS&&CSS.escape)?CSS.escape(el.id):el.id; var l=document.querySelector('label[for="'+esc+'"]'); if(l){var t=clean(l.textContent); if(t)return t;} } }catch(e){}
     var w=el.closest?el.closest("label"):null; if(w){ var wt=clean(w.textContent); if(wt) return wt; }
@@ -53,7 +55,7 @@
         if(e2.closest("button,a"))continue;
         if(e2.querySelector("button,a,input,select,textarea"))continue;
         e2.setAttribute("role","button"); e2.setAttribute("tabindex","0");
-        if(!e2.getAttribute("aria-label")){ var kn=clean(e2.textContent)||clean(e2.getAttribute("title")); if(kn) e2.setAttribute("aria-label", kn); }
+        if(!e2.getAttribute("aria-label")){ var kn=clean(words(e2))||clean(e2.getAttribute("title")); if(kn) e2.setAttribute("aria-label", kn); }
       }
     }catch(e){}
   }
