@@ -115,7 +115,7 @@
   "page:Employees d5e-x2": "د5-هـ (أمن · x2): 164700 إلى 165000 (هامش 2.11٪ على 161512 المقيس) — رسائلُ نجاح إجراءات الحسابات بعد إقرار الخادم (impAck).",
   "unchanged": "بقيةُ السقوف كما هي — كلٌّ هامشُه ≥ 2٪ (أدناها العامل 2.05٪ وPlanning 2.35٪ وSeized 2.36٪)."
  },
- "prodWorker": {"group": "worker:_worker.js", "minMarginPct": 4, "exception": {"minMarginPct": 2.7, "authority": "REVIEW.md البند ٤١ (قرار المالك (أ) بتفويضه، 24 نوفمبر): استثناءٌ مكتوب لإصدار الشركة 53 وحده", "scope": "إصدار الشركة 53 وحده؛ السقفُ 488000 لم يُرفع، وPreview تحت السقف", "next": "التقليص إلى 4٪ أولُ بند في التحديث التالي (إعادة هيكلة المحوّل 019v/019v1)"}, "measure": "tools/prod_strip.strip_worker(pk<N>/_worker.js) — العاملُ الذي يُشحن (pk<N>.prod)"},
+ "prodWorker": {"group": "worker:_worker.js", "minMarginPct": 4, "exception": {"minMarginPct": 2.65, "authority": "REVIEW.md البند ٤١ ثم البند ٤٢ (الحدّ 2.65٪ لإصلاح استعادة نسخة ما قبل الترقية، الصحة أولاً) — قرار المالك (أ) بتفويضه، 24 نوفمبر: استثناءٌ مكتوب لإصدار الشركة 53 وحده", "scope": "إصدار الشركة 53 وحده؛ السقفُ 488000 لم يُرفع، وPreview تحت السقف", "next": "التقليص إلى 4٪ أولُ بند في التحديث التالي (إعادة هيكلة المحوّل 019v/019v1)"}, "measure": "tools/prod_strip.strip_worker(pk<N>/_worker.js) — العاملُ الذي يُشحن (pk<N>.prod)"},
  "d53Review16Decision": {
   "date": "2026-11-24",
   "authority": "REVIEW.md البند ١٦ — قرارُ المراجع بتفويض المالك: الخيار (أ) بشرطين",
