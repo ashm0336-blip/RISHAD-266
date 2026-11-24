@@ -62,7 +62,7 @@ test('(2) kept entry points still exist (same data shown in different useful pla
     assert.ok(word(OL, now), 'org logic provides ' + now + ' (was ' + old + ')');
     assert.ok(OV.includes('{{' + now + '}}') || OV.includes('"{{' + now + '}}"'), 'org view renders ' + now);
   }
-  for (const gone of ['_nodeRows', '_nodeHead', '_parentOpts', 'nodePick', 'sysPick', '_trDragProps', '_trMove', '_trFilter', '_trSetAll', '_grpFlip', 'orgBack'])
+  for (const gone of ['_nodeRows', '_nodeHead', '_parentOpts', 'nodePick', 'sysPick', '_trDragProps', '_trMove', '_trFilter', '_trSetAll', '_grpFlip', 'orgBack', 'userDis', 'userDel'])   /* V7 · 53: userDis/userDel — أفعالُ صفّ الشجرة القديمة، لا مستدعيَ لهما بعد انتقالها إلى صفحة الإدارات */
     assert.ok(!word(L, gone) && !V.includes(gone), gone + ' is not kept twice');
   /* the security-log row icon draws its per-kind path through the icon catalog body (<path d="{{r.icoPath}}">): icoPath is live, kept */
   assert.ok(word(L, 'icoPath') && PG.includes('{{r.icoPath}}'), 'security-log icons keep their per-kind path');

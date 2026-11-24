@@ -2712,43 +2712,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         : this.setState({ mgrErr: (t && t.err) || "تعذّر الحفظ" });
     });
   }
-  userDis(t, e, s) {
-    const a = KIVO.BassamAuth,
-      r = KIVO.BassamDepts;
-    if (!a || !r) return;
-    const i = (t, e) => {
-      t && t.ok
-        ? (this.setState({ tick: (this.state.tick || 0) + 1 }), this.bsAck(e, "ok"))
-        : this.bsToast((t && t.err) || "تعذّر تنفيذ الإجراء");
-    };
-    const fx = a.acctFixedWhy ? a.acctFixedWhy(t, !t.dis) : "";
-    if (fx) return void this.bsToast(fx, "warn");
-    if (s) {
-      const s = a.setDeptManagerDis(e, !t.dis, t.id);
-      return void i(s, t.dis ? "فُعّل حساب مدير الإدارة" : "أُوقف حساب مدير الإدارة");
-    }
-    if (!t.dis) return void i(a.freezeStaff(t.ekey, e), "أُوقف حساب «" + (t.name || "المستخدم") + "»");
-    let n = null;
-    try {
-      let a = null;
-      try {
-        a = KIVO.__BS_SRV.operations.reference("bsdept:" + e + ":bassam_employees_v1");
-      } catch (t) {}
-      if ((Array.isArray(a) || (a = []), e === r.active()))
-        try {
-          const t = KIVO.__BS_SRV.operations.get("bassam_employees_v1");
-          Array.isArray(t) && t.length > a.length && (a = t);
-        } catch (t) {}
-      n = a.filter((e) => (e.eid || e.name) === t.ekey)[0] || null;
-    } catch (t) {
-      n = null;
-    }
-    n
-      ? Promise.resolve(a.activateStaff({ ekey: t.ekey, deptId: e, nid: n.nid, phone: n.phone, empno: n.empno, name: n.name })).then((t) =>
-          i(t, "فُعّل حساب «" + (n.name || "المستخدم") + "»"),
-        )
-      : this.bsToast("لم يُعثر على سجل الموظف — أعد التفعيل من صفحة الموظفين");
-  }
   async deptDel(target) {
     if (!target || !target.id || this._deptDeleteBusy || this._wpBusy || this._wpUncertain) return;
     const actor = this._wpActor(); if (!actor) return this.bsToast("حذف الإدارة يتطلب جلسة مسؤول المنصة الحالية", "warn");
@@ -2930,21 +2893,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._wpTicket = null; this.setState({ wpDid: "", wpTxt: "", wpMsg: "" });
   }
 
-  userDel(t, e, s) {
-    const a = KIVO.BassamAuth;
-    if (!a) return;
-    const r = t.name || "المستخدم",
-      i = s
-        ? "حذف حساب مدير الإدارة «" + r + "» — ستبقى الإدارة بلا مسؤول حتى تعيّن مديراً جديداً. متابعة؟"
-        : "حذف حساب دخول «" + r + "» — يبقى سجل الموظف في جدول الموظفين كما هو. متابعة؟";
-    KIVO.bsConfirm({ title: s ? "حذف حساب مدير الإدارة" : "حذف حساب الدخول", msg: i, ok: "حذف الحساب", danger: !0 }).then((y) => {
-      if (!y) return;
-      const n = s ? a.removeDeptManager(e) : a.removeStaffAccount(t.ekey, e);
-      n && n.ok
-        ? (this.setState({ tick: (this.state.tick || 0) + 1 }), this.bsAck("حُذف حساب «" + r + "»", "ok"))
-        : this.bsToast((n && n.err) || "تعذّر الحذف");
-    });
-  }
   /* ═══ KIVO_256 · SOT-003/004/010/015 — شجرةُ الصلاحيات TO-BE v24.9 (وثيقة الشجرة · القسم ٣): الحاويات · الأوراق · العدسات · المنصة · المراجع ═══
      تُشتقّ وقتَ التشغيل من بنية المنصة الحقيقية (KIVO_MANIFEST ← manifests/pages.json: الصفحات · التبويبات · الصفحاتُ تحت حاوية · ترتيبُ seq ·
      عناوينُ التبويبات tabAddr · حاويةُ «مؤشرات الإدارة») ومن السجلّ (KIVO_REGISTRY: المالكون · المفاتيحُ النشطة والمحجوزة) — ومطابقتُها لـ
