@@ -31,7 +31,8 @@ async function worldIn(lab, b, shape) {
   const m1 = seed.j.secrets.find((x) => x.id === 'tst_demo_u_m1'), saves = [];
   const H = await sa.page.evaluate(() => KIVO.BassamCal.hNow(new Date(), null));   /* يومُ الصفحة بتقويمها */
   await sa.ctx.close();
-  const f = await oldFile({ small: true, open: { y: H.y, m: H.m, days: [H.d - 2, H.d - 1, H.d].filter((d) => d >= 1) } });
+  /* V7 · د7 (ك1): نسخةٌ بلا قائمة عدسات (الكلُّ مفعّل) — الاستيرادُ صار يضيّق العدسات إلى ما في النسخة، وهذا الاختبارُ يعدّل البوابات (ما يُرسله الختم) لا العدسات */
+  const f = await oldFile({ small: true, lenses: null, open: { y: H.y, m: H.m, days: [H.d - 2, H.d - 1, H.d].filter((d) => d >= 1) } });
   const plan = JSON.parse(f.data.bassam_plan_v1), rounds = JSON.parse(f.data.bassam_rounds_v1);
   shape({ plan, rounds, H });
   f.data.bassam_plan_v1 = JSON.stringify(plan); f.data.bassam_rounds_v1 = JSON.stringify(rounds);

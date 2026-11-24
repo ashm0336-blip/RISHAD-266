@@ -1476,9 +1476,25 @@ function rsDeptPermsKeep(pm, id, PP, mode) {
   if (mode !== 'replace' && empKeys) return null;
   for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek];
   for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) out[ek] = inc[ek];
-  if (deq(out, cur)) return null;
-  pm.emps[id] = out;
+  var lens = rsDeptLensNarrow(pm, id, PP), same = deq(out, cur);
+  if (same && lens === null) return null;
+  if (!same) pm.emps[id] = out;
+  if (lens !== null) { pm.lenses = isObj(pm.lenses) ? pm.lenses : {}; pm.lenses[id] = lens; }
   return pm;
+}
+/* V7 · د7 (ك1 — «إعدادُ العدسات في النسخة يُحترم عند الاستيراد، وما لم يكن مفعّلاً لا يُفعَّل»): كان rsDeptPermsKeep يُسقط perms.lenses من النسخة كلياً،
+   فوحدةٌ بلا سجلّ عدسات (الغيابُ = الستُّ مفعّلة) تبقى بالستّ بعد استيراد نسخةٍ عدساتُها ثلاث. القاعدةُ الواحدة لمدير المنصة ومدير الإدارة:
+   عدساتُ الوحدة بعد الاستيراد = عدساتُها قبله ∩ عدساتُ النسخة — تضييقٌ لا توسيع (قرارُ المالك ب3: الاستيرادُ لا يوسّع السقف · ومديرُ الإدارة لا يوسّع سقفَ نفسه).
+   نسخةٌ بلا قائمة عدسات (Production: الغيابُ = الكلّ) لا تغيّر شيئاً؛ والقائمةُ الفارغة = لا عدسة. وتُطبَّق حيث تُطبَّق أوراقُ الموظفين (الاستبدال ·
+   أو الدمجُ في وحدةٍ بلا أوراق). null = لا تغيير. الموضعُ الواحد القابلُ للرجوع: إن قرّر المالك أن «يُطبَّق سقفُ النسخة كما هو» لمدير المنصة
+   (ب4 القديم) فهنا وحده: cur = all حين A.u.role === 'super'. */
+function rsDeptLensNarrow(pm, id, PP) {
+  if (!Array.isArray(PP.lenses)) return null;
+  var all = perm44E().lensList().map(function (x) { return x.lens; }),
+    had = isObj(pm.lenses) && Array.isArray(pm.lenses[id]) ? pm.lenses[id] : null,
+    next = (had || all).filter(function (L) { return PP.lenses.indexOf(L) !== -1; });
+  if (had ? deq(had, next) : next.length === all.length) return null;
+  return next;
 }
 /* V7 · د6: ثلاثُ قطعٍ من مسار الاستعادة صارت دوالَّ ليشاركه فيها الاستيرادُ على أجزاء (019g) بلا نسخةٍ ثانية: حكمُ الصلاحية · تحويلُ النسخة وتخطيطُها واعتمادُها · ترجمةُ الرفض */
 function rsScopeDenied(A, s) {

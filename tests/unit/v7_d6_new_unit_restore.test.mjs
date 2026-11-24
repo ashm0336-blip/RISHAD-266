@@ -52,11 +52,16 @@ async function run(kind, mode, slice, f) {
   const B = await world(), pm = await unit(B, kind, f), raw = copy(B.DB.q('SELECT * FROM kv WHERE k=?1', KP));
   /* V7 · د6 (QA ٦ — قرارُ المالك ب3، يلغي ب4 «الاستيرادُ يُبقي السقفَ المرفق»): السقفُ (caps · subs · lenses · capOwn · العلامة) لا يغيّره استيرادُ الإدارة ولا استعادتُها —
      وشريحةٌ بلا أوراق موظفين لا تكتب شيئاً. كان: الخادم = قاعدةُ العميل (320 permSlice) */
-  const want = null; void DEPTS; void pages; void lenses;
+  void DEPTS; void pages;
+  /* V7 · د7 (ك1 — ملف المالك 53): الاستثناءُ الوحيد — عدساتُ الوحدة = عدساتُها ∩ عدساتُ النسخة (019d rsDeptLensNarrow: تضييقٌ لا توسيع)، حيث تُطبَّق أوراقُ الموظفين
+     (الاستبدال · أو الدمجُ في وحدةٍ بلا أوراق). كان: العدساتُ كما في الهدف ⇒ وحدةٌ بلا سجلّ تبقى بالستّ بعد نسخةٍ عدساتُها واحدة */
+  const had = Array.isArray((pm.lenses || {})[D1]) ? pm.lenses[D1] : null;
+  const narrowed = Array.isArray(slice.lenses) && (mode === 'replace' || !Object.keys(pm.emps[D1] || {}).length) ? (had || lenses).filter((L) => slice.lenses.includes(L)) : null;
+  const want = narrowed && !(had ? JSON.stringify(had) === JSON.stringify(narrowed) : narrowed.length === lenses.length) ? { ...copy(pm), lenses: { ...(pm.lenses || {}), [D1]: narrowed } } : null;
   ok(await B.restore(await B.body({ scope: { kind: 'dept', departmentId: D1 }, mode, permissionSlice: slice })));
   const v = readPerms(B);
   if (want === null) assert.deepEqual(copy(B.DB.q('SELECT * FROM kv WHERE k=?1', KP)), raw, kind + ' · ' + mode + ': nothing written — byte-identical');
-  else assert.deepEqual(v, copy(want), kind + ' · ' + mode + ': server = the client rule (320 permSlice)');
+  else assert.deepEqual(v, copy(want), kind + ' · ' + mode + ': only the unit\'s lenses narrowed to the copy\'s (ك1) — everything else as it was');
   assert.deepEqual(rest(v), rest(pm), kind + ' · ' + mode + ': every other unit (and its mark) as it was');
   return { v, pm, wrote: want !== null };
 }
@@ -64,7 +69,8 @@ async function run(kind, mode, slice, f) {
 test('V7 · د6 (QA ٦ — ب3) — import / restore into a NEW unit (seeded record, untouched): the target\'s ceiling, sections, lenses and seed mark stay — the copy\'s attached ceiling is NOT applied (was ب4)', needs('award', 'custody', 'dstats', 'seized'), async () => {
   for (const kind of ['off', 'parent']) for (const mode of ['merge', 'replace']) for (const slice of [WITH, NONE]) {
     const { v, pm, wrote } = await run(kind, mode, slice), L = kind + ' · ' + mode + ' · ' + (slice === WITH ? 'with' : 'none') + ': ';
-    assert.equal(wrote, false, L + 'nothing written');
+    assert.equal(wrote, slice === WITH, L + (slice === WITH ? 'only the lenses written (ك1: the copy has zones alone)' : 'nothing written'));
+    if (wrote) assert.deepEqual(v.lenses[D1], ['zones'], L + 'lenses = the copy\'s');
     assert.deepEqual(v.caps[D1], pm.caps[D1], L + 'the unit\'s ceiling as it was'); assert.deepEqual(v.capSeed[D1], pm.capSeed[D1], L + 'and its mark');
   }
 });
@@ -75,7 +81,7 @@ test('V7 · د6 (QA ٦ — ب3) — once a person has set the ceiling, import / 
   const own = (pm) => { pm.capOwn = Object.assign({}, pm.capOwn, { [D1]: true }); };
   for (const [name, f] of [['cleared', cleared], ['edited', edited], ['lenses set', lensSet], ['independent', own]]) for (const mode of ['merge', 'replace']) for (const slice of [WITH, NONE]) {
     const r = await run('off', mode, slice, f);
-    assert.equal(r.wrote, false, name + ' · ' + mode + ': nothing written');
+    assert.equal(r.wrote, slice === WITH && name !== 'lenses set', name + ' · ' + mode + ': nothing written but the narrowed lenses (ك1)');
   }
   const g = await run('off', 'merge', WITH, (pm) => { pm.emps[D1] = { TEST_ONLY_e: { emps: ['view'] } }; });
   assert.equal(g.wrote, false, 'existing employee grants: merge is a no-op, the seed and its mark stay');

@@ -1000,7 +1000,9 @@ test('permission slice filters against current page/lens registries including ad
   );
   /* V7 · د6 (QA ٦ — قرارُ المالك ب3): سقفُ النسخة وعدساتُها لا تُكتب على الوحدة — تبقى كما في الهدف */
   assert.deepEqual(value.caps[D1], B.keys.bassam_perms_v1.caps[D1]);
-  assert.deepEqual((value.lenses || {})[D1], (B.keys.bassam_perms_v1.lenses || {})[D1]);
+  /* V7 · د7 (ك1 — ملف المالك 53): العدساتُ وحدها تضيق إلى ما في النسخة (019d rsDeptLensNarrow) — الهدفُ بلا سجلّ (كلُّها) ∩ [zones, paths] · المجهولةُ تسقط */
+  assert.equal((B.keys.bassam_perms_v1.lenses || {})[D1], undefined);
+  assert.deepEqual(value.lenses[D1], ['zones', 'paths']);
 });
 
 test('restoring a known image reference changes ownership metadata atomically while retaining its existing body and never touching R2', needs('award', 'custody', 'dstats', 'seized'), async () => {
