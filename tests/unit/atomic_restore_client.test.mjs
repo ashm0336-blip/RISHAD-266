@@ -115,6 +115,7 @@ async function browser(B) {
     },
   });
   vm.runInContext(fs.readFileSync(path.join(CLIENT, 'services/548-atomic-backup.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(CLIENT, 'services/548-import-kit.js'), 'utf8'), context);   /* V7 · 53 تقويم: أداةُ الاستيراد الكسولة — تُحمَّل كما تحمّلها الواجهةُ عند أول استيراد (548 kit()) */
   for (const helper of ['_wpActor', '_irBackupCapture', '_irBackupFence'])
     page[helper] = vm.runInContext('({' + sourcePart('modules/admin/logic.js', 'MethodDefinition', helper) + '}).' + helper, context);
   return {

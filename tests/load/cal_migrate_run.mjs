@@ -30,12 +30,13 @@ for (const [name, k] of [['rounds today', K('bassam_rounds_v1') + '@' + Tg], ['d
 }
 /* ثم المسارُ الخلفي للمدير حتى يكتمل */
 const calls = []; let last = null; const t1 = performance.now();
-for (let i = 0; i < 2000; i++) {
+for (let i = 0; i < (process.env.NO_BATCH === '1' ? 0 : 2000); i++) {
   DB.peak = 0; const a = performance.now();
   last = await call('/api/operations/periods-migrate', { ck: su.ck, body: { dept: DEPT, budgetMs: 25000 } });
   calls.push({ ms: Math.round(performance.now() - a), status: last.status, peakMB: +(DB.peak / 1048576).toFixed(2), progress: last.j && last.j.departments && last.j.departments[0] && last.j.departments[0].calendar });
   if (last.status !== 200 || !last.j.more) break;
 }
+if (process.env.NO_BATCH === '1') { quiet(JSON.stringify({ world: C, seedMs, first }, null, 1)); process.exit(0); }
 const totalMs = Math.round(performance.now() - t1);
 const after = Object.fromEntries(CAL.map((r) => [r, { h: members(r, 'h'), g: members(r, 'g'), mk: marks(r, 'g') }]));
 const dayRes = ['bassam_rounds_v1', 'bassam_rounds_arc_v1'];

@@ -192,6 +192,20 @@ def tmin_js(body, bid, preserve_test_tool=False):
     r = json.loads(pr.stdout.readline())
     assert 'err' not in r, 'jsmin_tokens failed for ' + bid + ': ' + r.get('err', '')
     return r['t']
+# V7 · 53 تقويم (REVIEW 27 — الهامشُ بالتقليص لا برفع السقف): كتلةٌ كسولة (blocks.json "lazy": true) لا وسمَ لها في الغلاف؛ مرجعُها @@KIVO_LAZY:<id>@@
+# داخل كتلةٍ أخرى يصير رابطَها ذا البصمة /assets/js/<الاسم>.<بصمة>.js (المُصرَّف) أو data: من البايتات نفسِها (المونوليث — كالمكتبة المورَّدة، فيبقى
+# تكافؤُ التركيب في tests/source/k265eq.py)، والكتلةُ نفسُها تُصغَّر حافظةً للرموز كغيرها. تُجلب عند أول حاجة (548 kit()).
+LAZY_SEEN = {}
+def lazy_body(bid, mode):
+    b = BLK[bid]; assert b.get('lazy') is True and b['kind'] == 'js', 'KIVO_LAZY: ' + bid + ' ليست كتلةً كسولة'
+    body = resolve_assets(rd(bid), mode)
+    if META.get('minify') == 'tokens': body = tmin_js(body, bid)
+    return body.encode('utf-8')
+def resolve_lazy(text, mode):
+    def one(m):
+        bid = m.group(1); data = lazy_body(bid, mode); stem, ext = os.path.splitext(os.path.basename(bid)); LAZY_SEEN[bid] = LAZY_SEEN.get(bid, 0) + 1
+        return 'data:text/javascript;base64,' + base64.b64encode(data).decode('ascii') if mode == 'monolith' else hashed('js', stem, ext, data)
+    return re.sub(r'@@KIVO_LAZY:([^@]+)@@', one, text)
 def render_block(bid, mode):
     b = BLK[bid]; body = rd(bid)
     is_pages = bid.endswith('-pages-loader.js')
@@ -200,7 +214,7 @@ def render_block(bid, mode):
     if is_pages and (mode == 'monolith' or A.pages == 'bundled'): body = body.replace('@@KIVO_PAGES@@', pages_json()) + (logic_inline() if PRECOMPILED and META.get('dcLogicInline') != 'body-end' else '')
     elif is_pages: body = lazy_loader(body)
     if b['kind'] == 'inline-css': body = strip_css_comments(body)
-    body = resolve_assets(body, mode)
+    body = resolve_lazy(resolve_assets(body, mode), mode)
     if META.get('minify') == 'tokens' and b['kind'] == 'js' and not is_pages: body = tmin_js(body, bid)
     if PRECOMPILED and bid == ROOT_LOGIC:
         tail = ('\n<script>' + root_logic() + '</script>') if mode == 'monolith' else ('\n<script src="' + hashed('js', 'root-logic', '.js', root_logic().encode('utf-8')) + '"></script>')
@@ -246,6 +260,8 @@ def render_shell(mode):
         t = t.replace('</body>', '<script>' + logic_inline() + '</script>\n</body>')
     t = resolve_assets(t, mode)
     assert '@@KIVO_' not in t, 'unresolved marker'
+    lazy = sorted(b['id'] for b in META['blocks'] if b.get('lazy'))   # V7 · 53 تقويم: كلُّ كتلةٍ كسولة مشارٌ إليها مرةً واحدة بالضبط
+    assert sorted(LAZY_SEEN) == lazy and all(n == 1 for n in LAZY_SEEN.values()), 'KIVO_LAZY: ' + repr(LAZY_SEEN) + ' / ' + repr(lazy)
     return t
 
 if A.mode == 'monolith':

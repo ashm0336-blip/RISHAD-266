@@ -55,7 +55,10 @@ info = json.load(open(DIR + '.mono/build.json', encoding='utf-8')) if os.path.ex
 # كلاهما مشارٌ إليه من ملف النواة لا من الغلاف: يُعدّ مرجعاً من سكربتٍ كما تُعدّ الصورُ والخطوط — باسمه الكامل المعلن وحده (لا أيُّ /assets/js)
 _VDIR = os.path.join(ROOT, 'src', json.load(open(os.path.join(ROOT, 'src', 'layout.json'), encoding='utf-8'))['assets'].get('vendor', 'assets/vendor'))
 VEN_STEMS = sorted(os.path.splitext(f)[0] for f in os.listdir(_VDIR) if f.endswith('.js')) if os.path.isdir(_VDIR) else []
-VEN = re.compile(r'/assets/js/(?:' + '|'.join(re.escape(s) for s in VEN_STEMS) + r')\.[0-9a-f]{10}\.js' if VEN_STEMS else r'(?!x)x')
+# V7 · 53 تقويم (REVIEW 27): الكتلُ الكسولة (blocks.json "lazy": true — أداةُ الاستيراد) لا وسمَ لها في الغلاف: يشير إليها سكربتٌ آخر باسمها الكامل
+# المعلن كالمكتبة المورَّدة تماماً، والمونوليثُ يحملها data: من البايتات نفسِها — فتُعدّ معها مرجعاً ومن ملفات js (لا أيُّ /assets/js آخر)
+LAZY_STEMS = sorted(os.path.splitext(os.path.basename(b['id']))[0] for b in json.load(open(os.path.join(ROOT, 'src', 'blocks.json'), encoding='utf-8'))['blocks'] if b.get('lazy'))
+VEN = re.compile(r'/assets/js/(?:' + '|'.join(re.escape(s) for s in VEN_STEMS + LAZY_STEMS) + r')\.[0-9a-f]{10}\.js' if VEN_STEMS + LAZY_STEMS else r'(?!x)x')
 def js_refs(text): return set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', text)) | set(VEN.findall(text))
 print('╔═ البصماتُ والمراجع ═╗')
 bad = [u for u, b in files.items() if not re.fullmatch(r'/assets/(js|css|fonts|img|pages)/[A-Za-z0-9_.-]+\.([0-9a-f]{10})\.[a-z0-9.]+', u) or re.search(r'\.([0-9a-f]{10})\.[a-z0-9.]+$', u).group(1) != sha(b)[:10]]
@@ -99,7 +102,7 @@ kinds = {}
 for u in files:
     if u in retained: continue   # أصولُ الإصدارات السابقة المُبقاة (أُثبتت أعلاه) لا تُعدّ في أصناف الإصدار الحالي
     kinds[u.split('/')[2]] = kinds.get(u.split('/')[2], 0) + 1
-ok(kinds.get('js') == N_JS + N_VEN and N_VEN == (len(VEN_STEMS) if PRINT_ON else 0) and kinds.get('css') == 11 and kinds.get('fonts') == 6 and kinds.get('img') == N_IMG and (kinds.get('pages', 0) >= N_PG if info.get('pages') == 'lazy' else 'pages' not in kinds), '   الأصناف: ' + json.dumps(kinds, ensure_ascii=False), '')
+ok(kinds.get('js') == N_JS + N_VEN and N_VEN == (len(VEN_STEMS) if PRINT_ON else 0) + len(LAZY_STEMS) and kinds.get('css') == 11 and kinds.get('fonts') == 6 and kinds.get('img') == N_IMG and (kinds.get('pages', 0) >= N_PG if info.get('pages') == 'lazy' else 'pages' not in kinds), '   الأصناف: ' + json.dumps(kinds, ensure_ascii=False), '')
 JS = re.findall(r'<script([^>]*) src="(/assets/js/[^"]+)"></script>', shell)
 CSS = re.findall(r'<link rel="stylesheet"([^>]*) href="(/assets/css/[^"]+)">', shell)
 tags = re.findall(r'<script\b[^>]*>', shell)
