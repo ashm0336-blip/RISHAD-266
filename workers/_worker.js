@@ -21296,7 +21296,9 @@ async function opPeriodSaveBody(env, A, bs) {
   for (var K0 of Ks) {
     var I0 = byK[K0].info, def0 = opPeriodDef(I0); if (!def0.arc || typeof def0.arc.due !== 'function') continue;
     var AK = 'bsdept:' + I0.dept + ':' + def0.arc.res, AI = opSplitResource(AK);
-    var names0 = (await opPeriodMembers(env, I0)).map(function (m) { return m.m; }), mct = names0.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; });
+    /* REVIEW 45: ما يكتبه الحفظُ (وعلاماتُ الأشهر) يُحوَّل أولاً بمهلة الطلب؛ والأرشفةُ لا تُدخل يوماً هجرياً لم يُحوَّل — يبقى حيّاً كما خُزِّن حتى تحوّله قراءةٌ أو دفعةُ المدير، ثم يُؤرشف في حفظٍ لاحق */
+    await calLazyEnsure(env, [K0], calWantScopes(scopes));
+    var names0 = (await opPeriodMembers(env, I0)).map(function (m) { return m.m; }).filter(function (p) { return calKeyCal(p) !== 'h'; }), mct = names0.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; });
     var sc0 = {}; sc0[K0] = { periods: mct };
     var ctlDoc = mct.length ? (await opLoadMany(env, [K0], 1, sc0)).values[K0] : null, ctl = opSplit(I0, ctlDoc == null ? undefined : JSON.parse(ctlDoc)).periods;
     var due = def0.arc.due(names0.filter(function (p) { return opPeriodIdx(def0, p).kind !== 'mctl'; }), ctl);
@@ -22307,11 +22309,11 @@ async function calLazySmall(env, info, ctx) {
 async function calLazyEnsure(env, keys, want, opts) {
   if (CAL_LAZY_DONE) return 0;
   var pend = await calPend(env); if (!Object.keys(pend).length) { CAL_LAZY_DONE = true; return 0; }
-  var Trow = await env.DB.prepare("SELECT v FROM meta WHERE k='" + CAL_MIG_TKEY + "'").first(), ctx = { T: (Trow && Trow.v) || calToday(Date.now()).k, rep: calConvRep() }, deadline = Date.now() + ((opts && opts.budget) || +env.KIVO_CAL_LAZY_MS || CAL_LAZY_MS), n = 0;   /* KIVO_CAL_LAZY_MS: ميزانيةُ المختبر وحده */
+  var Trow = await env.DB.prepare("SELECT v FROM meta WHERE k='" + CAL_MIG_TKEY + "'").first(), ctx = { T: (Trow && Trow.v) || calToday(Date.now()).k, rep: calConvRep() }, H = env.__calReq || {}, deadline = H.dl || (H.dl = Date.now() + ((opts && opts.budget) || +env.KIVO_CAL_LAZY_MS || CAL_LAZY_MS)), n = 0;   /* REVIEW 45: مهلةٌ واحدة للطلب كلِّه (env.__calReq، 063) · فترةُ الرأس '' لا تطابق كلَّ يوم (كانت تحوّل المورد كلَّه في كل قراءةٍ معها الرأس) */   /* KIVO_CAL_LAZY_MS: ميزانيةُ المختبر وحده */
   for (var k of Array.from(new Set(keys))) {
     var info = null; try { info = opInfo(k); } catch (e) { info = null; }
     if (!info || (pend[info.dept] || []).indexOf(info.resource) < 0) continue;
-    var w = want && want[k], f = w && w.length ? function (g) { return w.some(function (p) { return p === g || p === 'm:' + g.slice(0, 7) || g.indexOf(p) === 0; }); } : null;
+    var w = want && want[k], f = w && w.length ? function (g) { return w.some(function (p) { return p && (p === g || g.indexOf(p) === 0); }); } : null;
     for (var tries = 0; ; tries++) {
       try {
         var kd = calConvKind(info.resource);
@@ -22319,7 +22321,7 @@ async function calLazyEnsure(env, keys, want, opts) {
         else if (kd === 'monthStaff' && opPeriodDef(info) || kd === 'monthPlan') await calLazyMonths(env, info, f, ctx, deadline);
         else await calLazySmall(env, info, ctx);
         break;
-      } catch (e) { if (tries < 2 && /KIVO_REV_CONFLICT/.test(String(e && e.message || e))) continue; throw e; }   /* كاتبٌ آخر سبق: يُعاد على حالته فلا يُحوَّل مرتين */
+      } catch (e) { if (/KIVO_REV_CONFLICT/.test(String(e && e.message || e))) { if (tries < 2) continue; throw calPrepError(0, 0); } throw e; }   /* كاتبٌ آخر سبق: يُعاد على حالته فلا يُحوَّل مرتين */
     }
     n++;
   }
@@ -31208,7 +31210,6 @@ var TK_TRIES = 8;
 function tkPause(n, ms) { return Math.min(1500, Math.max(5, ms || 0) * (0.5 + Math.random()) + 15 * n); }
 async function tkSave(env, request, A, K, fn, meta, command) {
   var mq = meta || (request ? reqMeta(request) : {}), last = 0;
-  await calLazyEnsure(env, [K], null);   /* V7 · 53 تقويم (REVIEW 45): الوثيقةُ تُحوَّل قبل أخذ نسختها (tkRev) — وإلا رفعها التحويلُ داخل applySave فتعارضَ الأمرُ مع نفسه (409) */
   for (var attempt = 0; attempt < (command ? 1 : TK_TRIES); attempt++) {
     if (attempt) await new Promise(function (r) { setTimeout(r, tkPause(attempt, last)); });
     var t0 = Date.now();
@@ -31362,8 +31363,7 @@ async function tkCommandContext(env, A, body, command, actions) {
       ((!append || body.base !== undefined) && (!Number.isSafeInteger(body.base) || body.base < 0)))
     return tkNo(400, 'bad-body', '', { at: 'base' });
   // RISHAD-266 · s1: the command's department (and what it reads beyond it, fenced on first read) — never every department.
-  var d0 = String(body.dept || A.u.deptId || '');
-  await calLazyEnsure(env, ['bassam_tasks_v1', 'bassam_tasks_locks_v1', 'bassam_staffing_v3', 'bassam_staffing_locks_v1', 'bassam_dayshift_v1'].map(function (r) { return 'bsdept:' + d0 + ':' + r; }), null);   /* V7 · 53 تقويم (REVIEW 45): ما يقرؤه أمرُ المهام يُحوَّل قبل لقطة المرجع (نسخُها أساسُ الأمر وسياجُه) — لا تعارضَ يصنعه تحويلُنا */
+  await calLazyEnsure(env, 'tasks_v1 tasks_locks_v1 staffing_v3 staffing_locks_v1 dayshift_v1'.split(' ').map(function (r) { return 'bsdept:' + (body.dept || A.u.deptId) + ':bassam_' + r; }), null);   /* V7 · 53 تقويم (REVIEW 45): ما يقرؤه أمرُ المهام يُحوَّل قبل لقطة المرجع (نسخُها أساسُ الأمر وسياجُه) — لا تعارضَ يصنعه تحويلُنا */
   var reference = await rsReferenceSnapshot(env, A.u.id, { departments: [String(body.dept || A.u.deptId || '')] }), actor = reference.A;
   if (!actor || !actor.u) return tkNo(401, 'session');
   ['tok', 'sessTs', '__tkSrv', '__tkSelf'].forEach(function (key) { if (A[key] !== undefined) actor[key] = A[key]; });
@@ -33748,7 +33748,7 @@ export default {
     var m0 = request.method;
     var rid = ridNew();   /* KIVO_250 · SOT-144: معرّفُ الطلب — في الرأس X-Kivo-Rid وأجسام الأخطاء والسجل المنظَّم */
     var nonce = nonceNew();   /* KIVO_253 · AUD-005: nonce الطلب — في رأس CSP وفي سكربت __BS_BOOT المحقون و<meta> الغلاف */
-    env = Object.assign({}, env, { __rid: rid, __nonce: nonce, __ctx: ctx || null });   /* KIVO_255 · AUD-037: سياقُ التنفيذ لإتمام لمس الجلسة بعد الردّ */
+    env = Object.assign({}, env, { __rid: rid, __nonce: nonce, __ctx: ctx || null, __calReq: {} });   /* KIVO_255 · AUD-037: سياقُ التنفيذ لإتمام لمس الجلسة بعد الردّ */
     if (m0 === 'POST' || m0 === 'PUT' || m0 === 'DELETE') {
       /* المصدر: إن أرسل المتصفح Origin فيجب أن يكون الموقع نفسه */
       var org = request.headers.get('Origin'), sfs = request.headers.get('Sec-Fetch-Site');

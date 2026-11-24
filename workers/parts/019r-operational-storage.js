@@ -439,7 +439,9 @@ async function opPeriodSaveBody(env, A, bs) {
   for (var K0 of Ks) {
     var I0 = byK[K0].info, def0 = opPeriodDef(I0); if (!def0.arc || typeof def0.arc.due !== 'function') continue;
     var AK = 'bsdept:' + I0.dept + ':' + def0.arc.res, AI = opSplitResource(AK);
-    var names0 = (await opPeriodMembers(env, I0)).map(function (m) { return m.m; }), mct = names0.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; });
+    /* REVIEW 45: ما يكتبه الحفظُ (وعلاماتُ الأشهر) يُحوَّل أولاً بمهلة الطلب؛ والأرشفةُ لا تُدخل يوماً هجرياً لم يُحوَّل — يبقى حيّاً كما خُزِّن حتى تحوّله قراءةٌ أو دفعةُ المدير، ثم يُؤرشف في حفظٍ لاحق */
+    await calLazyEnsure(env, [K0], calWantScopes(scopes));
+    var names0 = (await opPeriodMembers(env, I0)).map(function (m) { return m.m; }).filter(function (p) { return calKeyCal(p) !== 'h'; }), mct = names0.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; });
     var sc0 = {}; sc0[K0] = { periods: mct };
     var ctlDoc = mct.length ? (await opLoadMany(env, [K0], 1, sc0)).values[K0] : null, ctl = opSplit(I0, ctlDoc == null ? undefined : JSON.parse(ctlDoc)).periods;
     var due = def0.arc.due(names0.filter(function (p) { return opPeriodIdx(def0, p).kind !== 'mctl'; }), ctl);

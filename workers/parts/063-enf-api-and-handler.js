@@ -1088,7 +1088,7 @@ export default {
     var m0 = request.method;
     var rid = ridNew();   /* KIVO_250 · SOT-144: معرّفُ الطلب — في الرأس X-Kivo-Rid وأجسام الأخطاء والسجل المنظَّم */
     var nonce = nonceNew();   /* KIVO_253 · AUD-005: nonce الطلب — في رأس CSP وفي سكربت __BS_BOOT المحقون و<meta> الغلاف */
-    env = Object.assign({}, env, { __rid: rid, __nonce: nonce, __ctx: ctx || null });   /* KIVO_255 · AUD-037: سياقُ التنفيذ لإتمام لمس الجلسة بعد الردّ */
+    env = Object.assign({}, env, { __rid: rid, __nonce: nonce, __ctx: ctx || null, __calReq: {} });   /* KIVO_255 · AUD-037: سياقُ التنفيذ لإتمام لمس الجلسة بعد الردّ */
     if (m0 === 'POST' || m0 === 'PUT' || m0 === 'DELETE') {
       /* المصدر: إن أرسل المتصفح Origin فيجب أن يكون الموقع نفسه */
       var org = request.headers.get('Origin'), sfs = request.headers.get('Sec-Fetch-Site');

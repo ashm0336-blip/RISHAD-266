@@ -292,11 +292,11 @@ async function calLazySmall(env, info, ctx) {
 async function calLazyEnsure(env, keys, want, opts) {
   if (CAL_LAZY_DONE) return 0;
   var pend = await calPend(env); if (!Object.keys(pend).length) { CAL_LAZY_DONE = true; return 0; }
-  var Trow = await env.DB.prepare("SELECT v FROM meta WHERE k='" + CAL_MIG_TKEY + "'").first(), ctx = { T: (Trow && Trow.v) || calToday(Date.now()).k, rep: calConvRep() }, deadline = Date.now() + ((opts && opts.budget) || +env.KIVO_CAL_LAZY_MS || CAL_LAZY_MS), n = 0;   /* KIVO_CAL_LAZY_MS: ميزانيةُ المختبر وحده */
+  var Trow = await env.DB.prepare("SELECT v FROM meta WHERE k='" + CAL_MIG_TKEY + "'").first(), ctx = { T: (Trow && Trow.v) || calToday(Date.now()).k, rep: calConvRep() }, H = env.__calReq || {}, deadline = H.dl || (H.dl = Date.now() + ((opts && opts.budget) || +env.KIVO_CAL_LAZY_MS || CAL_LAZY_MS)), n = 0;   /* REVIEW 45: مهلةٌ واحدة للطلب كلِّه (env.__calReq، 063) · فترةُ الرأس '' لا تطابق كلَّ يوم (كانت تحوّل المورد كلَّه في كل قراءةٍ معها الرأس) */   /* KIVO_CAL_LAZY_MS: ميزانيةُ المختبر وحده */
   for (var k of Array.from(new Set(keys))) {
     var info = null; try { info = opInfo(k); } catch (e) { info = null; }
     if (!info || (pend[info.dept] || []).indexOf(info.resource) < 0) continue;
-    var w = want && want[k], f = w && w.length ? function (g) { return w.some(function (p) { return p === g || p === 'm:' + g.slice(0, 7) || g.indexOf(p) === 0; }); } : null;
+    var w = want && want[k], f = w && w.length ? function (g) { return w.some(function (p) { return p && (p === g || g.indexOf(p) === 0); }); } : null;
     for (var tries = 0; ; tries++) {
       try {
         var kd = calConvKind(info.resource);
@@ -304,7 +304,7 @@ async function calLazyEnsure(env, keys, want, opts) {
         else if (kd === 'monthStaff' && opPeriodDef(info) || kd === 'monthPlan') await calLazyMonths(env, info, f, ctx, deadline);
         else await calLazySmall(env, info, ctx);
         break;
-      } catch (e) { if (tries < 2 && /KIVO_REV_CONFLICT/.test(String(e && e.message || e))) continue; throw e; }   /* كاتبٌ آخر سبق: يُعاد على حالته فلا يُحوَّل مرتين */
+      } catch (e) { if (/KIVO_REV_CONFLICT/.test(String(e && e.message || e))) { if (tries < 2) continue; throw calPrepError(0, 0); } throw e; }   /* كاتبٌ آخر سبق: يُعاد على حالته فلا يُحوَّل مرتين */
     }
     n++;
   }

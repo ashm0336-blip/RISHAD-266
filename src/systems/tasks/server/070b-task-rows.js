@@ -76,7 +76,6 @@ var TK_TRIES = 8;
 function tkPause(n, ms) { return Math.min(1500, Math.max(5, ms || 0) * (0.5 + Math.random()) + 15 * n); }
 async function tkSave(env, request, A, K, fn, meta, command) {
   var mq = meta || (request ? reqMeta(request) : {}), last = 0;
-  await calLazyEnsure(env, [K], null);   /* V7 · 53 تقويم (REVIEW 45): الوثيقةُ تُحوَّل قبل أخذ نسختها (tkRev) — وإلا رفعها التحويلُ داخل applySave فتعارضَ الأمرُ مع نفسه (409) */
   for (var attempt = 0; attempt < (command ? 1 : TK_TRIES); attempt++) {
     if (attempt) await new Promise(function (r) { setTimeout(r, tkPause(attempt, last)); });
     var t0 = Date.now();
@@ -230,8 +229,7 @@ async function tkCommandContext(env, A, body, command, actions) {
       ((!append || body.base !== undefined) && (!Number.isSafeInteger(body.base) || body.base < 0)))
     return tkNo(400, 'bad-body', '', { at: 'base' });
   // RISHAD-266 · s1: the command's department (and what it reads beyond it, fenced on first read) — never every department.
-  var d0 = String(body.dept || A.u.deptId || '');
-  await calLazyEnsure(env, ['bassam_tasks_v1', 'bassam_tasks_locks_v1', 'bassam_staffing_v3', 'bassam_staffing_locks_v1', 'bassam_dayshift_v1'].map(function (r) { return 'bsdept:' + d0 + ':' + r; }), null);   /* V7 · 53 تقويم (REVIEW 45): ما يقرؤه أمرُ المهام يُحوَّل قبل لقطة المرجع (نسخُها أساسُ الأمر وسياجُه) — لا تعارضَ يصنعه تحويلُنا */
+  await calLazyEnsure(env, 'tasks_v1 tasks_locks_v1 staffing_v3 staffing_locks_v1 dayshift_v1'.split(' ').map(function (r) { return 'bsdept:' + (body.dept || A.u.deptId) + ':bassam_' + r; }), null);   /* V7 · 53 تقويم (REVIEW 45): ما يقرؤه أمرُ المهام يُحوَّل قبل لقطة المرجع (نسخُها أساسُ الأمر وسياجُه) — لا تعارضَ يصنعه تحويلُنا */
   var reference = await rsReferenceSnapshot(env, A.u.id, { departments: [String(body.dept || A.u.deptId || '')] }), actor = reference.A;
   if (!actor || !actor.u) return tkNo(401, 'session');
   ['tok', 'sessTs', '__tkSrv', '__tkSelf'].forEach(function (key) { if (A[key] !== undefined) actor[key] = A[key]; });
