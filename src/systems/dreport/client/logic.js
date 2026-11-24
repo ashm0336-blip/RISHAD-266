@@ -60,23 +60,31 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         }, 3200)));
     } catch (t) {}
   }
-  hGreg(t, e, s) { return KIVO.BassamCal.hGregNoon(t, e, s); }   /* V7 · د5-د: نسخةُ الساعة 12 — هذه الصفحة تحسب بالأيام (385-calendar) */
-  hMonthDays(t, r) { return KIVO.BassamCal.hMonthDaysNoon(t, r); }   /* V7 · د5-د2: نسخةُ الظهر — هذه الصفحة تحسب بالأيام (385-calendar) */
+  /* V7 · 53 تقويم (ف٣ · ق١ · §7): هذه الصفحة ميلادية — rpY/rpM/rpD ميلادية والمفاتيحُ ISO (KIVO.BassamCal.gKey/gYm/gMk)؛ أسماءُ عُدّة الصفحات (h*)
+     باقيةٌ لمستدعيها ومعناها هنا ميلادي (يومُ الرياض المدني بلا مهلة — كما كانت)، والهجريُّ سطرٌ صغير محسوب لا مخزَّن */
+  MONTHS = KIVO.BassamCal.G_MONTHS.slice();
+  hParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
+  hToday() { return this.hParts(new Date()); }
+  hGreg(t, e, s) { return new Date(t, e - 1, s, 12); }
+  hMonthDays(t, r) { return KIVO.BassamCal.gMonthDays(t, r); }
+  hGregMonthLabel(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
+  hGregYearRange(t) { return KIVO.BassamCal.hRangeOfYear(t); }
+  curHijri() { const t = this.hToday(); return { y: t.y, m: t.m }; }
   dayPastDS(t, r, e) {
     let n;
     try {
       n = this.hParts(new Date());
     } catch (t) {
-      n = { y: 1448, m: 1, d: 1 };
+      n = this.hParts(Date.now());
     }
     return t < n.y || (t === n.y && r < n.m) || (t === n.y && r === n.m && e < n.d);
   }
   state = (() => {
     let t;
     try {
-      t = KIVO.BassamCal.hParts(new Date());   /* V7 · د5-د2 */
+      t = KIVO.BassamCal.gAt(new Date());   /* V7 · 53 تقويم: يومُ الرياض الميلادي */
     } catch (r) {
-      t = { y: 1448, m: 1, d: 1 };
+      t = { y: 2026, m: 1, d: 1 };
     }
     return {
       rpY: t.y,
@@ -118,7 +126,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     };
   })();
   DK() {
-    return this.state.rpY + "-" + this.state.rpM + "-" + this.state.rpD;
+    return KIVO.BassamCal.gKey(this.state.rpY, this.state.rpM, this.state.rpD);
   }
   bsMenusPatch() {
     return {
@@ -214,11 +222,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   componentDidUpdate(t, r) {
     try {
       var e = this.state,
-        n = e.rpY + "-" + e.rpM + "-" + e.rpD;
+        n = KIVO.BassamCal.gKey(e.rpY, e.rpM, e.rpD);
       if (!r || r.rpY !== e.rpY || r.rpM !== e.rpM || r.rpD !== e.rpD) return (this.drFocusSet(e.rpY, e.rpM, e.rpD), void (this._fsig = n));
       var a = KIVO.BassamDayFocus ? KIVO.BassamDayFocus.get() : null;
       if (!a) return;
-      var i = a.y + "-" + a.m + "-" + a.d;
+      var i = KIVO.BassamCal.gKey(a.y, a.m, a.d);
       if (i === n) return void (this._fsig = i);
       if (this._fsig === i) return;
       ((this._fsig = i), this.drFocusApply());
@@ -323,12 +331,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   async drCsPersist(t, r) {
     /* V7 · د5-د: رمزُ النداء يكتبه مالكُه (الجدول الشهري) بأمرٍ معلن داخل مسودتنا — التقريرُ لا يكتب مفتاحَ الجدول. */
-    var e = this.state.rpY + "-" + this.state.rpM;
+    var e = KIVO.BassamCal.gYm(this.state.rpY, this.state.rpM);
     if (!KIVO.bus.has("staff.callsign.set@1")) return (this.bsToast("إسناد رمز النداء غير متاح", "warn"), false);
     return await this._drCommit({ op: "callsign", month: e, employee: t, value: r }, draft => { KIVO.bus.call("staff.callsign.set@1", { month: e, changes: [{ ekey: t, cs: r }] }, draft); });
   }
   drBucketFor(t, r) {
-    return this.rpSched()[t + "-" + r] || {};
+    return this.rpSched()[KIVO.BassamCal.gYm(t, r)] || {};
   }
   rpMonthBucket() {
     return this.drBucketFor(this.state.rpY, this.state.rpM);
@@ -535,7 +543,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
   }
   drRoundKey() {
-    return this.state.rpY + "-" + this.state.rpM + "-" + this.state.rpD;
+    return KIVO.BassamCal.gKey(this.state.rpY, this.state.rpM, this.state.rpD);
   }
   drRoundRec() {
     return this.drRounds()[this.drRoundKey()] || null;
@@ -836,15 +844,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } catch (t) {}
   }
   drDayOpen(t, r, e, n) {
-    var a = t["m:" + r + "-" + e];
+    var a = t[KIVO.BassamCal.gMk(r, e)];
     return !!(a && a.dopen && a.dopen[n]);
   }
   drDayClosed(t, r, e, n) {
-    var a = t["m:" + r + "-" + e];
+    var a = t[KIVO.BassamCal.gMk(r, e)];
     return !!(a && a.dshut && a.dshut[n]);
   }
   async drToggleDayLock(t, r, e, n) {
-    const report = this.rpLoad(), key = "m:" + t + "-" + r, month = { ...(report[key] || {}) };
+    const report = this.rpLoad(), key = KIVO.BassamCal.gMk(t, r), month = { ...(report[key] || {}) };
     const open = { ...(month.dopen || {}) }, closed = { ...(month.dshut || {}) };
     if (n) { if (this.dayPastDS(t, r, e)) delete open[e]; else closed[e] = 1; }
     else { delete closed[e]; if (this.dayPastDS(t, r, e)) open[e] = 1; }
@@ -866,7 +874,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return (e && e.shifts && e.shifts[r]) || null;
   }
   drDayAllAp(t, r, e, n, a) {
-    var i = t[r + "-" + e + "-" + n];
+    var i = t[KIVO.BassamCal.gKey(r, e, n)];
     if (!i || !i.created) return !1;
     if (void 0 !== i.__sumAp) return !!i.__sumAp;   /* V7 · 53: يومٌ من الملخّص (غيرُ محمَّل) */
     var s = {},
@@ -928,7 +936,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   drSchedApproved(t, r) {
     try {
       var e = KIVO.bus.read("staff.locks@1");   /* V7 · د5-د2: بغياب مالك الجدول لا شهرَ معتمداً */
-      return !(!e || !0 !== e[t + "-" + r]);
+      return !(!e || !0 !== e[KIVO.BassamCal.gYm(t, r)]);
     } catch (t) {
       return !1;
     }
@@ -1054,7 +1062,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     } else this.permDeny();
   }
   drRepPerm(t) {
-    var r = "m:" + this.state.rpY + "-" + this.state.rpM,
+    var r = KIVO.BassamCal.gMk(this.state.rpY, this.state.rpM),
       e = (t[r] = t[r] || {});
     return e.perm || (e.perm = {});
   }
@@ -1126,7 +1134,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   drLastRepOf(t) {
     for (var r = this.rpLoad(), e = this.state.rpY, n = this.state.rpM, a = this.state.rpD - 1; a >= 1; a--) {
-      var i = r[e + "-" + n + "-" + a],
+      var i = r[KIVO.BassamCal.gKey(e, n, a)],
         s = i && i.shifts && i.shifts[t];
       if (s && s.pulled && (s.roster || []).length) return { d: a, sr: s, ap: !!s.ap };
     }
@@ -1346,7 +1354,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               const changes = [];
               if (s && s !== r) changes.push({ ekey: s, cs: "", ifCs: o });
               if (r && r !== s) changes.push({ ekey: r, cs: o });
-              KIVO.bus.call("staff.callsign.set@1", { month: this.state.rpY + "-" + this.state.rpM, changes }, draft);
+              KIVO.bus.call("staff.callsign.set@1", { month: KIVO.BassamCal.gYm(this.state.rpY, this.state.rpM), changes }, draft);
             })) return false;
             this.setState({ rpTick: (this.state.rpTick || 0) + 1 });
             return true;
@@ -1378,7 +1386,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!await this.rpSave(e, { op: "leader-callsign", day: this.DK(), role: t, value: r || "" }, draft => {
       var a = this.drShiftRec(e, this.drCurShift()),
         i = (a && a.leaders && a.leaders[t]) || "";
-      if (i) KIVO.bus.call("staff.callsign.set@1", { month: this.state.rpY + "-" + this.state.rpM, changes: [{ ekey: i, cs: r || "" }] }, draft);
+      if (i) KIVO.bus.call("staff.callsign.set@1", { month: KIVO.BassamCal.gYm(this.state.rpY, this.state.rpM), changes: [{ ekey: i, cs: r || "" }] }, draft);
     })) return false;
     this.setState({ drCsOpen: null, rpTick: (this.state.rpTick || 0) + 1 });
   }
@@ -1424,17 +1432,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         /* V7 · 53 (البند 8): فتحُ تقريرٍ معتمد في يومٍ مقفل (منقضٍ أو مُغلق) يفتح يومَه في الحفظة نفسها — عكسُ ما يفعله الاعتماد أدناه (يُقفل اليومَ
            المنقضي حين تُعتمد ورديّاتُه كلُّها)؛ تأكيدٌ فقط بلا سبب، كفتح الشهر */
         if (this.drLockedDay(r, this.state.rpY, this.state.rpM, this.state.rpD)) {
-          const mk9 = "m:" + this.state.rpY + "-" + this.state.rpM, month9 = { ...(r[mk9] || {}) }, d9 = this.state.rpD;
+          const mk9 = KIVO.BassamCal.gMk(this.state.rpY, this.state.rpM), month9 = { ...(r[mk9] || {}) }, d9 = this.state.rpD;
           if (month9.dshut) { month9.dshut = { ...month9.dshut }; delete month9.dshut[d9]; if (!Object.keys(month9.dshut).length) delete month9.dshut; }
           if (this.dayPastDS(this.state.rpY, this.state.rpM, d9)) month9.dopen = { ...(month9.dopen || {}), [d9]: 1 };
           Object.keys(month9).length ? (r[mk9] = month9) : delete r[mk9];
         }
       }
       if (t && this.dayPastDS(this.state.rpY, this.state.rpM, this.state.rpD) && this.drDayAllAp(r, this.state.rpY, this.state.rpM, this.state.rpD, this.drDistShifts())) {
-        const month = r["m:" + this.state.rpY + "-" + this.state.rpM];
+        const month = r[KIVO.BassamCal.gMk(this.state.rpY, this.state.rpM)];
         if (month && month.dopen) {
           delete month.dopen[this.state.rpD]; if (!Object.keys(month.dopen).length) delete month.dopen;
-          if (!Object.keys(month).length) delete r["m:" + this.state.rpY + "-" + this.state.rpM];
+          if (!Object.keys(month).length) delete r[KIVO.BassamCal.gMk(this.state.rpY, this.state.rpM)];
         }
       }
       if (!await this.rpSave(r, { op: "shift-approval", day: this.DK(), shift: e, value: !!t }, draft => {
@@ -1562,16 +1570,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _drPeriods(t) {
     var S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations, r = this;
     if (!S || !S.split || !S.split("bassam_dreport_v1")) return;
-    var ym = t.rpY + "-" + t.rpM, dk = ym + "-" + t.rpD, sig = dk;
+    var ym = KIVO.BassamCal.gYm(t.rpY, t.rpM), dk = KIVO.BassamCal.gKey(t.rpY, t.rpM, t.rpD), sig = dk;   /* V7 · 53 تقويم: فتراتٌ ISO */
     if (this._drWant === sig) return;
     this._drWant = sig;
     var w = function (name, spec) { return S.resources.indexOf(name) !== -1 && S.split(name) ? S.want(name, spec) : Promise.resolve({ ok: 1 }); },
-      days = [dk, "m:" + ym].concat(t.rpD > 1 ? [ym + "-" + (t.rpD - 1)] : []);
+      days = [dk, "m:" + ym].concat(t.rpD > 1 ? [KIVO.BassamCal.gKey(t.rpY, t.rpM, t.rpD - 1)] : []);
     /* التقريرُ بأيامه (يملكه هذا النظام)، وما سواه من مجموعة القراءة المعلنة بلا تسميته (wantPage) */
     Promise.all([w("bassam_dreport_v1", { periods: days }), S.wantPage("Daily Report", { groups: [ym], except: ["bassam_dreport_v1"] })]);   /* فشلٌ ⇒ حالةُ الخطأ في القراءة؛ التنقّلُ يعيد الطلب */
     if (this._drSumYear !== t.rpY) {
       this._drSumYear = t.rpY;
-      S.summary("bassam_dreport_v1", { groups: this.MONTHS.map(function (a, i) { return t.rpY + "-" + (i + 1); }) }).then(function (q) {
+      S.summary("bassam_dreport_v1", { groups: this.MONTHS.map(function (a, i) { return KIVO.BassamCal.gYm(t.rpY, (i + 1)); }) }).then(function (q) {
         if (!q || 1 !== q.ok) return;
         var m = {};
         q.rows.forEach(function (x) {
@@ -1601,7 +1609,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     for (
       var c = (p && p.color) || "#b99751",
         l = function (r) {
-          var e = N9[t.rpY + "-" + t.rpM + "-" + r];
+          var e = N9[KIVO.BassamCal.gKey(t.rpY, t.rpM, r)];
           return !(!e || !e.created);
         },
         f = function (e) {
@@ -1620,7 +1628,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             d = t.rpY === e.y && s === e.m,
             p =
               Object.keys(N9).filter(function (r) {
-                return 0 === r.indexOf(t.rpY + "-" + s + "-") && N9[r] && N9[r].created;
+                return 0 === r.indexOf(KIVO.BassamCal.gYm(t.rpY, s) + "-") && N9[r] && N9[r].created;
               }).length > 0,
             c = t.rpY < e.y || (t.rpY === e.y && s < e.m),
             l = (function () {
@@ -1679,8 +1687,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                       (g = !1))
                     : (f += "dashed #E1E1E1;background:var(--bg-a2452452450p7);opacity:.9"),
             {
+              cal9: { ym: KIVO.BassamCal.gYm(t.rpY, s), closed: c, why: c ? (l ? "ap" : "past") : "", sel: o, cur: d },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
               name: a,
-              greg: r.hGregMonthLabel(t.rpY, s) || r.GREG[i],
+              greg: r.hGregMonthLabel(t.rpY, s),
               style: f,
               nameColor: h,
               footColor: u,
@@ -1699,7 +1708,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 a +
                 " " +
                 t.rpY +
-                " هـ" +
                 (c
                   ? l
                     ? " — كل أيامه معتمدة، مكتمل ومقفل بانقضائه"
@@ -1754,8 +1762,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           w =
             "display:block;width:9px;height:1px;flex-shrink:0;margin:1px 0;background:" +
             ("c" === i ? "rgba(255,255,255,0.5)" : "rgba(148,163,184,0.55)"),
-          O = N9[t.rpY + "-" + t.rpM + "-" + a];
+          O = N9[KIVO.BassamCal.gKey(t.rpY, t.rpM, a)];
         b.push({
+          cal9: { k: KIVO.BassamCal.gKey(t.rpY, t.rpM, a), closed: s || c, why: s ? "ap" : p ? "shut" : c ? "past" : d && o ? "retro" : "", sel: h, today: u },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
           num: String(a),
           gnum: String(S.getDate()),
           style: v,
@@ -1771,24 +1780,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 n.stopPropagation();
               } catch (t) {}
               var a = r.rpLoad(),
-                i = a[t.rpY + "-" + t.rpM + "-" + e];
+                i = a[KIVO.BassamCal.gKey(t.rpY, t.rpM, e)];
               i &&
                 i.created &&
                 !r.drAnyShiftAp(i) &&
                 (r.drLockedDay(a, t.rpY, t.rpM, e) ||
                   r.setState({
                     rpD: e,
-                    drRs: { d: e, label: "يوم " + e + " " + (r.MONTHS[t.rpM - 1] || "") + " " + t.rpY + " هـ" },
+                    drRs: { d: e, label: "يوم " + KIVO.BassamCal.fmtDay(KIVO.BassamCal.gKey(t.rpY, t.rpM, e)) },
                     drRsAck: !1,
                   }));
             };
           })(a),
           tip:
-            "يوم " +
-            a +
-            " هـ — الموافق " +
-            x +
-            " م — " +
+            KIVO.BassamCal.fmtDayLong(KIVO.BassamCal.gKey(t.rpY, t.rpM, a)) + " · " + KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(t.rpY, t.rpM, a)) + " — " +
             /* الموجة 1 · IRSZ-4: «نقرة مزدوجة…» لمن يملك الاعتماد وحده — وغيرُه يُخبَر بالسبب (كان يُدعى إلى نقرةٍ تنتهي برفض) */
             (r.PC("approve")
               ? "c" === i
@@ -1864,7 +1869,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       e && e.ap && P++;
     });
     var B = E && E.pulled && Array.isArray(E.roster) ? E.roster : [],
-      R = (n["m:" + t.rpY + "-" + t.rpM] || {}).perm || {},
+      R = (n[KIVO.BassamCal.gMk(t.rpY, t.rpM)] || {}).perm || {},
       _ = 0,
       F = 0,
       Y = 0,
@@ -2249,7 +2254,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     var rr = (function () {
         var r = { gates: {}, zones: {}, marks: {} };
         try {
-          var e = ((KIVO.bus.read("plan.doc@1") || {}).months || {})[t.rpY + "-" + t.rpM];   /* V7 · د5-هـ: قراءةٌ معلنة من مالك الخطة — بغيابه لا احتياج */
+          var e = ((KIVO.bus.read("plan.doc@1") || {}).months || {})[KIVO.BassamCal.gYm(t.rpY, t.rpM)];   /* V7 · د5-هـ: قراءةٌ معلنة من مالك الخطة — بغيابه لا احتياج */
           ((e && (Array.isArray(e) ? e : e.d)) || []).forEach(function (t) {
             ((t.gates || []).forEach(function (t) {
               var e = String(null == t.num ? "" : t.num).trim();
@@ -2412,7 +2417,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           P = E.map(function (e) {
             return {
               txt: "⏱ " + String(e),
-              tip: "استئذان يوم " + e + " " + r.MONTHS[t.rpM - 1] + " " + t.rpY + " هـ — " + Gt,
+              tip: "استئذان يوم " + e + " " + r.MONTHS[t.rpM - 1] + " " + t.rpY + " — " + Gt,
               remove: function () {},
               style:
                 "display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:9.5px;font-weight:600;font-feature-settings:'tnum';background:var(--bg-a185151810p12);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p35);transition:all .15s;opacity:.55",
@@ -3447,7 +3452,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           this.MONTHS[Tr.m - 1] +
           " " +
           Tr.y +
-          " هـ · " +
+          " · " +
           ("0" + Or.getHours()).slice(-2) +
           ":" +
           ("0" + Or.getMinutes()).slice(-2);
@@ -3455,12 +3460,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         wr = "";
       }
     return {
-      dYearLabel: t.rpY + " هـ",
+      dYearLabel: t.rpY + " · " + KIVO.BassamCal.hRangeOfYear(t.rpY),
       dGregRange: this.hGregYearRange(t.rpY),
       roundDaysCount: String(h),
       ...KIVO.BassamCount.pair("dimTotal", String(a), "يوم|مسجّل"),
-      months: m,
-      days: b,
+      /* V7 · 53 تقويم (§7): الكرتُ المشترك لكل شهرٍ ويوم — حالتان فقط والسببُ في التلميح */
+      months: m.map(function (x) { return Object.assign(x, { card: KIVO.BassamCalCard.month(Object.assign({ key: x.cal9.ym, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }, x.cal9)) }); }),
+      days: b.map(function (x) { return Object.assign(x, { card: KIVO.BassamCalCard.day(Object.assign({ key: x.cal9.k, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isToday) } }, x.cal9)) }); }),
       drSubOn: !((x && T) || (v && w)),
       rpDayShut: O,
       rpDayLabel: (function (r) {
@@ -3469,10 +3475,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         try {
           var a = r.hGreg(t.rpY, t.rpM, t.rpD);
           ((e = a.toLocaleDateString("ar-SA-u-nu-latn", { weekday: "long" }) + " "),
-            (n =
-              " — الموافق " + a.toLocaleDateString("ar-u-ca-gregory-nu-latn", { day: "numeric", month: "long", year: "numeric" }) + " م"));
+            (n = " · " + KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(t.rpY, t.rpM, t.rpD))));   /* V7 · 53 تقويم: الميلاديُّ أولاً والهجريُّ تابع */
         } catch (t) {}
-        return e + t.rpD + " " + r.MONTHS[t.rpM - 1] + " " + t.rpY + " هـ" + n;
+        return e + t.rpD + " " + r.MONTHS[t.rpM - 1] + " " + t.rpY + n;
       })(this),
       rpDaySub: C
         ? "معتمد ومقفل — كل الورديات"
@@ -3709,7 +3714,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             a = [["اسم الموظف", "الرقم الوظيفي", "رقم الجوال", "أيام الراحة", "الاستئذانات", "المكلف", "حالة اليوم", "التأشير"]].concat(n);
           try {
             KIVO.BassamXLSX
-              ? KIVO.BassamXLSX.download(a, "dreport-" + (r.MONTHS[t.rpM - 1] || "") + "-" + t.rpD + ".xlsx")
+              ? KIVO.BassamXLSX.download(a, "dreport-" + KIVO.BassamCal.fileTag(KIVO.BassamCal.gKey(t.rpY, t.rpM, t.rpD)) + ".xlsx")   /* V7 · 53 تقويم: dreport-2026-11-24.xlsx */
               : r.bsToast(
                   "تعذّر تصدير Excel — مكتبة الجداول غير متاحة في هذه الجلسة. حدّث الصفحة وأعد المحاولة، أو استخدم «طباعة / حفظ PDF».",
                 );
@@ -4096,7 +4101,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         "width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;" +
         (T ? "background:var(--bg-a1001161390p1);color:var(--fg-x64748b)" : "background:var(--bg-a185151810p08);color:var(--fg-xb99751)"),
       drEmptyTitle:
-        (T ? "اليوم انقضى ومقفل — " : "لا يوجد تقرير لهذا اليوم — ") + t.rpD + " " + this.MONTHS[t.rpM - 1] + " " + t.rpY + " هـ",
+        (T ? "اليوم انقضى ومقفل — " : "لا يوجد تقرير لهذا اليوم — ") + t.rpD + " " + this.MONTHS[t.rpM - 1] + " " + t.rpY,
       drEmptySub: T
         ? M
           ? "لم يُنشأ تقرير لهذا اليوم قبل انقضائه. افتحه بأثر رجعي بنقرة مزدوجة على خانة اليوم لإنشاء تقريره."
@@ -4162,7 +4167,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           var e = r.state.drRs;
           if (e) {
             var n = r.rpLoad(),
-              a = t.rpY + "-" + t.rpM + "-" + e.d,
+              a = KIVO.BassamCal.gKey(t.rpY, t.rpM, e.d),
               i = n[a];
             (i && r.drAnyShiftAp(i)) || r.drLockedDay(n, t.rpY, t.rpM, e.d)
               ? r.setState({ drRs: null, drRsAck: !1 })
@@ -4218,7 +4223,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ...(function () {
         var e = t.drRt;
         if (!e) return { drRtOn: !1 };
-        var n = "يوم " + e.d + " " + r.MONTHS[t.rpM - 1] + " " + t.rpY + " هـ";
+        var n = "يوم " + e.d + " " + r.MONTHS[t.rpM - 1] + " " + t.rpY;
         return {
           drRtOn: !0,
           drRtTitle: e.open
