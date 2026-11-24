@@ -775,11 +775,13 @@
   T["plan+staff"] = function (B) {
     return class extends B {
       curHijri() { const t = KIVO.BassamCal.hToday(); return { y: t.y, m: t.m }; }   /* V7 · د5-د2: سنةُ اليوم وشهرُه من الخدمة (كانت تبني مُنسِّقَين هنا — الناتجُ والتراجعُ هما هما) */
+      /* V7 · 53 تقويم (REVIEW 44): السنةُ والشهرُ في الصفحتين ميلاديان — السطرُ الصغير هو المدى الهجري المقابل («1447 – 1448 هـ»)؛
+         كانا يُحوَّلان كأنّهما هجريان (hGregYearRange(2026) ⇒ «2587 – 2588 م») */
       gregOf(t, e) {
-        return this.hGregMonthLabel(t, e + 1);
+        return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e + 1));
       }
       gregYearRange(t) {
-        return this.hGregYearRange(t);
+        return KIVO.BassamCal.hRangeOfYear(t);
       }
     };
   };
