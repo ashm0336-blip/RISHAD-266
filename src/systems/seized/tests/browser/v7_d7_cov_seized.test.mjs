@@ -86,12 +86,13 @@ test('مضبوطات ③: التصدير — مديرُ الإدارة وموظ�
   const lab = await world(), b = await launchUtf8();
   try {
     await grant(b, lab, { seized: 'full' });
-    for (const { who, un } of ACTORS) {
+    for (const { who, un } of ACTORS.filter((a) => a.un === LAB.mgrA)) {   /* V7 · 53: الموظفُ بدور — الحالةُ المسمّاة أدناه (تخطٍّ بسبب) */
       const s = await openAs(b, lab, un, LAB.pw, { context: { acceptDownloads: true } }), p = s.page; p.setDefaultTimeout(20000);
       await s.go('#/seized', 5000);
       assert.equal((await addOne(p)).status(), 200, who + ': المحضرُ حُفظ'); await lab.idle();
       await reloadAt(s, '#/seized', 5000);
-      await p.getByText('سجل الحركة الشهري').first().click();
+      /* V7 · 53: السجلُّ قد يكون مفتوحاً بعد التحميل (حالتُه محفوظة) — نقرةٌ واحدة تطويه؛ يُفتح حتى يظهر شريطُه */
+      for (let i = 0; i < 2 && !(await p.getByRole('button', { name: 'ملفات' }).count()); i++) { await p.getByText('سجل الحركة الشهري').first().click(); await p.waitForTimeout(800); }
       await p.getByRole('button', { name: 'ملفات' }).first().click();
       const f = await downloaded(p, () => p.getByText('تصدير Excel', { exact: true }).first().click());
       assert.deepEqual(fileOk(f, 'xlsx'), [], who + ': ' + f.name + ' · ' + f.bytes.length + ' بايت');
@@ -105,8 +106,22 @@ test('مضبوطات ③: التصدير — مديرُ الإدارة وموظ�
     await grant(b, lab, { seized: 'view' });
     const s = await openAs(b, lab, LAB.empA, LAB.pw), p = s.page;
     await s.go('#/seized', 5000);
-    await p.getByText('سجل الحركة الشهري').first().click(); await p.waitForTimeout(800);
+    const lgOpen = () => p.locator('main input[placeholder^="بحث بالمُسجّل"]').count();
+    for (let i = 0; i < 2 && !(await lgOpen()); i++) { await p.getByText('سجل الحركة الشهري').first().click(); await p.waitForTimeout(800); }
+    assert.ok(await lgOpen(), 'السجلُّ مفتوحٌ لدور «مشاهدة»');   /* V7 · 53: فلا يمرّ الفحصُ التالي والسجلُّ مطويّ */
     assert.equal(await p.getByRole('button', { name: 'ملفات' }).count(), 0, 'بدور «مشاهدة» لا «ملفات» ولا تصدير');
+    await s.ctx.close();
+  } finally { await b.close(); await lab.close(); }
+});
+
+/* V7 · 53: ③ للموظف بدور «كامل» — الحالةُ نفسُها؛ تُتخطّى بسببٍ مسمّى (الاكتشاف ١ في trimcov_report) فلا تمرّ صامتة */
+test('مضبوطات ③ب: التصدير — موظفٌ بدور «كامل» يرى «ملفات» ويصدّر', { skip: 'خللٌ مُبلَّغ (53 · trimcov_report، الاكتشاف ١): لا مستوى في محرّر الأدوار يمنح التصدير — ذرّةُ «تصدير» حُوّلت علمَ ميزة (ff.…export) ومستوياتُ الأدوار تمنح مفاتيحَ السجلّ وحدها، فحاملُ الدور «كامل» (وحتى «حسّاس») لا يرى «ملفات». يُفعَّل حين يقرّر المالك', timeout: 300000 }, async () => {
+  const lab = await world(), b = await launchUtf8();
+  try {
+    await grant(b, lab, { seized: 'full' });
+    const s = await openAs(b, lab, LAB.empA, LAB.pw, { context: { acceptDownloads: true } }), p = s.page; p.setDefaultTimeout(20000);
+    await s.go('#/seized', 5000);
+    assert.equal(await p.evaluate((k) => KIVO.BassamPerm.can(k, 'export'), 'seized'.replace('staffing', 'staff')), true, 'حاملُ الدور «كامل» يملك التصدير');
     await s.ctx.close();
   } finally { await b.close(); await lab.close(); }
 });

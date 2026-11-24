@@ -86,12 +86,14 @@ const SPECIAL = {
 };
 
 /* ══ ② الحالات — تُبنى بالترتيب على عالَمٍ واحد، كلٌّ بحفظٍ حقيقي ثم إعادة تحميل · ONE_DEPT و ONE_PLAT: النظامُ الواحد المطفأ ══ */
-const ONE_DEPT = process.env.KIVO_D6_ONE_DEPT || 'tasks', ONE_PLAT = process.env.KIVO_D6_ONE_PLAT || 'daily';   /* المهام: تبويبٌ ولوحةٌ وتنبيهاتٌ وقطعةٌ في «صفحتي» · المتابعة: حاويةٌ تسكنها صفحتان */
+const ONE_DEPT = process.env.KIVO_D6_ONE_DEPT || 'tasks', ONE_PLAT = process.env.KIVO_D6_ONE_PLAT || 'daily', ONE_LENS = process.env.KIVO_D6_ONE_LENS || 'paths';   /* V7 · 53: المسارات — تبويبٌ باسمها في المضيفَين */   /* المهام: تبويبٌ ولوحةٌ وتنبيهاتٌ وقطعةٌ في «صفحتي» · المتابعة: حاويةٌ تسكنها صفحتان */
 const STATES = (toggle) => [
   { key: 'allOn', name: 'كل الأنظمة مفعّلة', plat: [], unitOff: [] },
   { key: 'oneOffDept', name: 'واحدٌ مطفأ لإدارة أ («' + ONE_DEPT + '»)', plat: [], unitOff: [ONE_DEPT] },
   { key: 'allOffDept', name: 'كلها مطفأة لإدارة أ', plat: [], unitOff: toggle },
   { key: 'oneOffPlat', name: 'واحدٌ مطفأ على المنصة («' + ONE_PLAT + '»)', plat: [ONE_PLAT], unitOff: [] },
+  /* V7 · 53: عدسةٌ مطفأة لإدارة أ (الأنظمةُ كلُّها مفعّلة) — اسمُها لا يظهر في مساحة أ وقسمِها (d6_walk_lib: forbiddenFor · buildState) */
+  { key: 'lensOffDept', name: 'عدسةٌ مطفأة لإدارة أ («' + ONE_LENS + '»)', plat: [], unitOff: [], lensOff: [ONE_LENS] },
 ];
 /* ج9: العرضان الضيّقان — المجموعةُ المصغّرة (الحسابات × الحالات) التي تُمشى بهما؛ العرضُ 1366 يمشي المصفوفةَ كلَّها */
 const NARROW = { widths: [{ width: 390, height: 844 }, { width: 768, height: 1024 }], accounts: ['super-center', 'super-in', 'mgr', 'emp-role'], states: ['allOn', 'oneOffDept'] };
@@ -99,6 +101,8 @@ const NARROW = { widths: [{ width: 390, height: 844 }, { width: 768, height: 102
 /* ══ ③ KNOWN_D6 — موجوداتُ الشجرة الأساس (f73613d)، كلٌّ باسمه: يُحذف المدخلُ حين يُصلَح خللُه (الاختبارُ يسقط إن بقي مدخلٌ لا يتكرر) ══
    rule · accounts · states · viewports ('*' = الكل) · page / tab / detail (تعابير) · owner: المجموعةُ التي يُحال إليها · some: يكفي أن يتكرر في خانةٍ واحدة */
 const KNOWN_D6 = [
+  /* V7 · 53 (trimcov — أوّلُ تشغيلٍ لحالة العدسة المطفأة): سجلُّ الحركة يعرض زرَّ تصفيةٍ باسم العدسة المطفأة للوحدة («المسارات») — يُحال للمدمج (الإعدادات ← سجل الحركة) */
+  { id: 'd53-oplog-lens-chip', rule: 'off', accounts: ['super-in', 'gm', 'mgr', 'sec'], states: ['lensOffDept'], viewports: [1366], page: /الإعدادات/, tab: /سجل الحركة/, detail: /button«المسارات»/, owner: 'integrator (oplog filters)' },
 ];
 
 const pick = (env, all, key) => { const v = (process.env[env] || '').split(',').map((x) => x.trim()).filter(Boolean); return v.length ? all.filter((x) => v.includes(String(key(x)))) : all; };

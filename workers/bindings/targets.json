@@ -8,8 +8,16 @@
    "header": "/* ═══ KIVO · R203 · Phase 4.5 — Guard Binding Shadow على v24.9 (مولَّدٌ آلياً من registry10/guard_bindings.py — لا يُحرَّر يدوياً؛ المصنِّفُ كما في Phase 3) ═══\n   الوثيقةُ المرجعية v24.9 · SHA-256 6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde\n   يُحمَّل بعد KIVO_REGISTRY ولا يمسّه. الوضع: shadow — المصنِّفُ يُخرج مفاتيحَ v24.5.1 المطلوبة للكتابة، والحكمُ النافذ للنظام القديم. */\n",
    "omit": [
     "shadowOnly",
-    "bindings",
-    "decisions"
+    "decisions",
+    "bindings[].where",
+    "bindings[].how",
+    "bindings[].asis",
+    "bindings[].decl",
+    "bindings[].res",
+    "bindings[].owner",
+    "bindings[].type",
+    "bindings[].guardKind",
+    "bindings[].dup"
    ]
   },
   {
@@ -32,7 +40,18 @@
     "terminology",
     "readPolicy",
     "readBindings.noReadKey",
-    "readBindings.readKindOutsideRoutes"
+    "readBindings.readKindOutsideRoutes",
+    "bindings[].resources",
+    "bindings[].g",
+    "bindings[].type",
+    "bindings[].owner",
+    "byResource.*.evidence",
+    "byResource.*.lock",
+    "byResource.*.na",
+    "migration.*.evidence",
+    "readBindings.byResource.*.note",
+    "readBindings.byResource.*.routes[].cap",
+    "readBindings.meta"
    ]
   },
   {
@@ -53,5 +72,5 @@
    ]
   }
  ],
- "omitNote": "V7 · 53: «omit» = مساراتٌ في data.json لا يقرؤها الخادم (نصوصُ توثيقٍ وجداولُ تصميم: لا يقرؤها محرّكُها ولا أيُّ جزءٍ آخر من العامل — تبرهنه tests/unit/v7_53_trim_server_data.test.mjs)؛ تبقى في data.json (المصدر) وتُحذف من الجزء المولَّد وحده فيصغر العامل بلا تغيير سلوك. الصيغة: مفتاحٌ أو «أب.ابن». قراءةُ أحدها في الخادم لاحقاً = أزِله من هنا أولاً (الاختبارُ يفشل وإلا)."
+ "omitNote": "V7 · 53: «omit» = مساراتٌ في data.json لا يقرؤها الخادم (نصوصُ توثيقٍ وجداولُ تصميم: لا يقرؤها محرّكُها ولا أيُّ جزءٍ آخر من العامل — تبرهنه tests/unit/v7_53_trim_server_data.test.mjs)؛ تبقى في data.json (المصدر) وتُحذف من الجزء المولَّد وحده فيصغر العامل بلا تغيير سلوك. الصيغة: مفتاحٌ أو «أب.ابن» أو «أب[].ابن» (الحقلُ في كلِّ عنصر) أو «أب.*.ابن» (في كلِّ قيمة). الحقولُ داخل حاويةٍ يقرؤها المحرّك تُبرهن بتتبّع القرّاء (tests/unit/trace_reads.mjs) لكلِّ حاويةٍ في v7_53_trim_server_data. KIVO_GUARDS.bindings تبقى بعددها وحقولِ هويّتها (يقرؤها اختبارُ الحذف tests/removal/server.test.mjs). قراءةُ أحدها في الخادم لاحقاً = أزِله من هنا أولاً (الاختبارُ يفشل وإلا)."
 }

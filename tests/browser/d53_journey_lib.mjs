@@ -77,10 +77,12 @@ export async function actor(W, who) {
 /* مكوّنُ الصفحة الذي يحمل الطريقة (الكاتبُ الحقيقي) */
 export async function comp(s, hash, method, ready = 'true') {
   await s.go(hash, 3000);
-  await s.page.waitForFunction(([m, rd]) => {
-    for (const el of document.querySelectorAll('main *')) { const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let x = fk ? el[fk] : null; while (x) { const n = x.stateNode; for (const c of [n, n && n.logic]) if (c && typeof c[m] === 'function' && (0, eval)('(c) => ' + rd)(c)) { window.__c = c; return true; } x = x.return; } }
-    return false;
-  }, [method, ready], { timeout: 60000, polling: 250 });
+  /* المحمولُ نصٌّ يُترجَم عبر CDP (لا eval في الصفحة — سياسةُ CSP ترفضه) */
+  const pred = '(() => { const ok = (c) => { try { return !!(' + ready + '); } catch (e) { return false; } }; ' +
+    'const els = document.querySelectorAll("main *"), all = els.length ? els : document.querySelectorAll("body *"); ' +
+    'for (const el of Array.prototype.slice.call(all, 0, 6000)) { const fk = Object.keys(el).find((k) => k.indexOf("__reactFiber") === 0); let x = fk ? el[fk] : null; ' +
+    'while (x) { const n = x.stateNode; for (const c of [n, n && n.logic]) if (c && typeof c[' + JSON.stringify(method) + '] === "function" && ok(c)) { window.__c = c; return true; } x = x.return; } } return false; })()';
+  await s.page.waitForFunction(pred, null, { timeout: 60000, polling: 250 });
 }
 /* بعد فعلٍ: كلُّ حفظٍ أُرسل مقبولٌ بلا رفض */
 export async function settled(s, n0, label) {
@@ -105,3 +107,17 @@ export function judge(t, S0, S1, expect) {
   if (noise.length) t.diagnostic('تغيّرت مفاتيحُ الأفعال وحدها: ' + noise.join(' · '));
 }
 export const ymOf = (H) => H.y + '-' + H.m, dkOf = (H, d = H.d) => H.y + '-' + H.m + '-' + d;
+/* مجالٌ علائقي: كلُّ جداوله كما كانت إلا صفوفَ الجدول المسمّى — يعيد عددَ الصفوف المعدَّلة في مكانها والمضافة (الصفُّ يُعرف بمعرّفه) */
+export function domDelta(t, A, B, rowTable) {
+  assert.ok(Array.isArray(A) && Array.isArray(B) && A.length === B.length, 'المجالُ مقروءٌ قبلُ وبعدُ: ' + JSON.stringify([A, B]).slice(0, 300));
+  let changed = 0, added = 0;
+  for (let q = 0; q < A.length; q++) for (const tb of Object.keys({ ...A[q], ...B[q] })) {
+    const a = (A[q][tb] || []).map((x) => JSON.stringify(x)), b = (B[q][tb] || []).map((x) => JSON.stringify(x));
+    if (JSON.stringify(a) === JSON.stringify(b)) continue;
+    const gone = a.filter((x) => !b.includes(x)), come = b.filter((x) => !a.includes(x));
+    t.diagnostic(tb + ': ' + gone.length + ' صفاً خرج · ' + come.length + ' دخل' + (gone.length ? ' — مثال: ' + gone[0].slice(0, 260) + ' ⇒ ' + (come[0] || '').slice(0, 260) : ''));
+    if (!rowTable.test(tb)) { if (gone.length) assert.fail(tb + ': جدولٌ غيرُ السجلات تغيّر: ' + JSON.stringify({ gone, come }).slice(0, 600)); continue; }
+    changed += gone.length; added += come.length - gone.length;
+  }
+  return { changed, added };
+}

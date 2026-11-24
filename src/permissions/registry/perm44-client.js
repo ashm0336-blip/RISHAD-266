@@ -25,12 +25,12 @@ function chainOf(d) {
 }
 function ceiling(did) {
   var d = did || (KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : ''), Pm = P24(), E = eng();
-  if (!Pm.ceil || !Pm.leafOn) return { on: E.sysList().map(function (s) { return s.key; }), key: function () { return true; } };
+  if (!Pm.ceil || !Pm.leafOn) return { on: E.sysList().map(function (s) { return s.key; }), key: function () { return true; }, leaf: function () { return true; } };
   var Cs = chainOf(d).map(function (x) { return Pm.ceil(x); });
   var leafOn = function (leaf) { for (var i = 0; i < Cs.length; i++) if (!Pm.leafOn(Cs[i], leaf)) return false; return true; };
   var lensOn = function (L) { for (var i = 0; i < Cs.length; i++) if (!Cs[i].lens(L)) return false; return true; };
   var memo = {}, key = function (k) { if (memo[k] === undefined) memo[k] = E.keyOn(k, leafOn, lensOn); return memo[k]; };
-  return { on: E.sysList().filter(function (s) { return E.sysOn(s.key, leafOn); }).map(function (s) { return s.key; }), key: key };
+  return { on: E.sysList().filter(function (s) { return E.sysOn(s.key, leafOn); }).map(function (s) { return s.key; }), key: key, leaf: leafOn };   /* V7 · 53: leaf — لأعلام التصدير (flagsOf) */
 }
 function rolesOf(did) { return eng().normRec(rd(kOf(did, RES))); }
 /* المسودة: { did, set: {مفتاح: قيمة} } — أو مسودةُ العمليات */
@@ -192,6 +192,10 @@ var API = {
   offClosure: function (list) { return eng().offClosure(list); },
   offWith: function (keys, onFn) { return eng().offWith(keys, onFn); },   /* V7 · د6: ما يُطفأ مع تغييرٍ معلَّق (لـ«أثر الحفظ») */   /* V7 · د6: إغلاقُ المطفأ على المنصة (المحرّكُ المشترك) */
   sysKeys: function (s) { return eng().sysKeys(s); },
+  sysFlags: function (s) { return eng().sysFlags(s); },   /* V7 · 53: أعلامُ التصدير — أفعالُ «مخصّص» */
+  flagsFor: function (s, lvl, custom) { return eng().flagsFor(s, lvl, custom); },
+  flagsOf: function (rec, roles, leafOn) { return eng().flagsOf(rec, roles, leafOn); },
+  flagLeaf: function (f) { return eng().flagLeaf(f); },
   sysOfKey: function (k) { return eng().sysOfKey(k); },
   ceiling: ceiling,
   rolesOf: rolesOf,
@@ -204,6 +208,7 @@ var API = {
   isSuper: isSup,
   mgrOf: mgrOf, unitMgr: function () { return mgrOf(curUser(), activeDept()); },
   names: function () { return JSON.parse(JSON.stringify(eng().names)); },
+  narrowSheets: function (cur, inc, J) { return eng().narrowSheets(cur, inc, J); },   /* V7 · 53 (ملحق 5): معاينةُ تضييق أوراق الموظفين في استيراد نسخة الإدارة (548) */
   RES: RES
 };
 KIVO.Perm44 = Object.freeze(API);

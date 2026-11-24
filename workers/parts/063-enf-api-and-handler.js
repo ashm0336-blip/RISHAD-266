@@ -17,7 +17,19 @@ function enfDeptsOf(A) {
   }
   return out;
 }
-function enfMe(A, refs) {
+/* V7 · 53 (قرار المالك — التصدير «أ»): سجلُّ أدوار كلِّ وحدةٍ للفاعل — من المقروء (keys) وإلا من القاعدة (قراءةٌ واحدة) — لأعلام التصدير في enfMe */
+async function enfRolesFor(env, A, keys) {
+  var out = {}, ds = A && A.u && A.u.role !== 'super' && A.u.ekey ? enfDeptsOf(A) : [], need = [], i;
+  for (i = 0; i < ds.length; i++) { var k = perm44Key(ds[i]); if (keys && Object.prototype.hasOwnProperty.call(keys, k)) out[ds[i]] = perm44Rec(keys[k]); else need.push(ds[i]); }
+  for (i = 0; i < need.length; i += 80) {
+    var part = need.slice(i, i + 80), ph = part.map(function (x, n) { return '?' + (n + 1); }).join(', '), st = env.DB.prepare('SELECT k, v FROM kv WHERE k IN (' + ph + ') ORDER BY k, seq');
+    var r = await st.bind.apply(st, part.map(perm44Key)).all(), acc = {};
+    ((r && r.results) || []).forEach(function (row) { acc[row.k] = (acc[row.k] || '') + row.v; });
+    part.forEach(function (d) { out[d] = acc[perm44Key(d)] == null ? null : perm44Rec(acc[perm44Key(d)]); });
+  }
+  return out;
+}
+function enfMe(A, refs, roles) {
   var ds = enfDeptsOf(A), out = { ver: ENF_VER, mode: 'enforce', n: enfIx().order.length, perm: enfPermMigrated(A), depts: {} }, i, L;
   for (i = 0; i < ds.length; i++) {
     var d = ds[i], lens = [];
@@ -25,7 +37,9 @@ function enfMe(A, refs) {
     /* p: مفاتيحُ المنح الصريح (plus) المحمولة فعلاً — لتُضاف أفعالُها إلى الواجهة (الورقةُ القديمة لا تعرفها) */
     var gr = A.__grants && A.__grants[d] && A.u.ekey ? A.__grants[d].emp[A.u.ekey] : null, plus = [];
     if (isObj(gr) && Array.isArray(gr.plus)) gr.plus.forEach(function (k) { k = String(k); if (enfHeld(A, d, k) && plus.indexOf(k) === -1) plus.push(k); });
-    out.depts[d] = { h: enfBits(A, d), lens: lens, p: plus };
+    /* f: أعلامُ التصدير من دور الشخص (perm44-core flagsOf) داخل سقف الوحدة — تُضاف «تصدير» إلى أوراقٍ يحملها (331 heldPerms) */
+    var R9 = roles && roles[d], f = R9 && isObj(R9.people) && A.u.ekey ? perm44E().flagsOf(R9.people[String(A.u.ekey)], R9, perm44LeafOn(A, d)) : [];
+    out.depts[d] = { h: enfBits(A, d), lens: lens, p: plus, f: f };
   }
   return out;
 }
@@ -33,7 +47,7 @@ async function enfAuthzApi(env, request, A, url, path) {
   var M = env.__enfm || await enfModeOf(env);
   if (path === '/api/authz') {
     var out = { ok: 1, ver: ENF_VER, mode: M.mode, env: M.env, d1: M.d1 || null, perm: M.perm, scope: M.scope, ident: M.ident, fixture: M.fixture };
-    out.me = enfMe(A, await enfRefsFor(env, enfDeptsOf(A), null));
+    out.me = enfMe(A, await enfRefsFor(env, enfDeptsOf(A), null), await enfRolesFor(env, A, null));
     return json(out);
   }
   if (A.u.role !== 'super') return json({ ok: 0, err: 'forbidden' }, 403);
@@ -131,6 +145,9 @@ async function enfRetirePlan(env, seed, now, T, keys, revs, capture, reference) 
    (والاسمان بلا إدارة إن وُجدا) يُحذف بلقطةٍ كاملة ورجوعٍ بالمسار القائم (rollback) — مثل «scope-retire» حرفاً. الشرط: ترحيلُ «perm44-roles» لا يبقى له
    ما يكتبه (القوالبُ مصدرُه الوحيد — تُقرأ خاماً من D1 قبل هذه الخطوة). الإسنادُ tplOf في bassam_perms_v1 بيانٌ يبقى ولا يُقرأ بعد الترحيل. */
 var ENF_TPLS_PART = 'tpls-retire', ENF_TPLS_RES = { bassam_perm_tpls_v1: 1, bassam_perm_tpls_named_v1: 1 };
+/* V7 · 53: موردُ القوالب الذي يُحوَّل أدواراً عند الاستيراد (019f · 019g — قرار 51ب) يُسمّى هنا وحده (v7_d5h_deleted_residue ②) */
+var ENF_TPLS_ROLES_RES = 'bassam_perm_tpls_v1';
+function enfTplsDeptKey(d) { return 'bsdept:' + d + ':' + ENF_TPLS_ROLES_RES; }
 function enfTplsKey(k) { k = String(k); return !!ENF_TPLS_RES[resName(k)] && (k.indexOf('bsdept:') === 0 || !!ENF_TPLS_RES[k]); }
 async function enfTplsPlan(env, seed, now, T, keys, revs, capture) {
   var ks = Object.keys(keys).filter(enfTplsKey).sort(), W = {}, sig = [ENF_TPLS_PART, seed], i;
@@ -1640,7 +1657,7 @@ export default {
       /* الفحصُ العميق 2026-10-21 (R4 · IRSZ-3 · DG-07 · AUX-14): والقائمةُ نفسُها بأقلّ امتياز — لا هويةَ ولا جوالَ ولا حسابَ لموظفي غير نطاقه (054 usersScopeOut) */
       if (keys[K_USERS] != null) { await privPrepDepts(env, AB, (AB.depts || []).map(function (x) { return x && x.id; })); keys[K_USERS] = usersScopeOut(keys[K_USERS], AB); }   /* 019u (9) */
       var rvB = await revsAll(env), revsOut = {};
-      var enfRB = await enfRefsFor(env, enfDeptsOf(AB), keys);
+      var enfRB = await enfRefsFor(env, enfDeptsOf(AB), keys), rolesB = await enfRolesFor(env, AB, keys);   /* V7 · 53: قبل قصّ المقروء */
       for (var bk in keys) {
         var okB = canRead(AB, bk);
         /* D4‑01 (v24.5): ظلُّ نطاق القراءة — بعد الحكم، على القيمة كما ستُحقن أو كما كانت ستُحذف؛ لا يمسّ keys ولا الحكم */
@@ -1650,7 +1667,7 @@ export default {
         revsOut[bk] = rvB[bk] || 0;
       }
       boot = { srv: 1, cf: 1, v: await curRev(env), uid: s3.uid, keys: keys, revs: revsOut, rk: (await metaGet(env, 'rk')) ? 1 : 0 };
-      boot.authz = enfMe(AB, enfRB);                                     /* KIVO_243: المفاتيحُ المحمولة لكل إدارة · العدسات · النطاق — V7 · د5-ح: دائماً */
+      boot.authz = enfMe(AB, enfRB, rolesB);                                     /* KIVO_243: المفاتيحُ المحمولة لكل إدارة · العدسات · النطاق — V7 · د5-ح: دائماً */
       if (keys[K_USERS] != null) { var usB = usersLensFp(AB); if (usB) boot.uscope = usB; }
       if (keys[K_PERM] != null) { var psB = privPermsFp(AB); if (psB) boot.pscope = psB; }   /* PRIVACY batch (019u) */   /* مراجعةُ التكامل W1-R1: بصمةُ عدسة القائمة المحقونة (054 usersLensFp) */
       }

@@ -300,7 +300,7 @@ Object.assign(Component.prototype, {
     return u ? u.name || u.un : ek;
   },
   _p44Label(k) {
-    return this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[k].label, "") || k;
+    return this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[k].label, "") || (/^ff\.[\w.]+\.export$/.test(k) ? "تصدير" : k);   /* V7 · 53: علمُ التصدير (ليس مفتاحاً في السجلّ) */
   },
   _p44Keys(sk) {
     const E = this._p44E(),
@@ -322,7 +322,7 @@ Object.assign(Component.prototype, {
      «المتابعة اليومية»)، أو «استثناء» لنظامٍ خارج دوره */
   _p44Menu(keys, role, did, person) {
     const S = this._p44Sys(),
-      h = person ? { kind: "person", did: did, ekey: person.ekey, mgr: !!person.mgr } : { kind: "role", did: did, keys: keys || [] },
+      h = person ? { kind: "person", did: did, ekey: person.ekey, mgr: !!person.mgr } : { kind: "role", did: did, keys: keys || [], role: role || null },   /* V7 · 53: role — لأعلام التصدير (334 holderFlags) */
       lvOf = (k) => (role && role.sys && role.sys[k] ? this._p44LvName(role.sys[k].lvl) : "");
     person && Array.isArray(keys) && (h.keys = keys);
     return this._p44Try(() => KIVO.BassamPerm.seenBy(h), [{ k: "profile", n: "صفحتي" }]).map((x) => {
@@ -825,12 +825,12 @@ Object.assign(Component.prototype, {
             const was = (r.sys || {})[s.k] || {};
             r.sys = r.sys || {};
             /* «مخصّص» يبدأ من مفاتيح المستوى السابق — فلا يتغيّر شيءٌ حتى يُختار */
-            r.sys[s.k] = "custom" === n ? { lvl: "custom", keys: was.keys || this._p44Try(() => this._p44E().keysFor(s.k, was.lvl || "view"), []) || [] } : { lvl: n };
+            r.sys[s.k] = "custom" === n ? { lvl: "custom", keys: was.keys || this._p44Try(() => this._p44E().keysFor(s.k, was.lvl || "view").concat(this._p44E().flagsFor(s.k, was.lvl || "view")), []) || [] } : { lvl: n };   /* V7 · 53: ومعها علمُ التصدير إن حمله المستوى */
           });
         },
         custom: open,
         keys: open
-          ? keysAll(s.k).map((k) => {
+          ? keysAll(s.k).concat(this._p44Try(() => this._p44E().sysFlags(s.k), []) || []).map((k) => {   /* V7 · 53: «تصدير» فعلٌ يُختار في «مخصّص» */
               const has = (g.keys || []).indexOf(k) !== -1;
               return {
                 n: this._p44Label(k),
