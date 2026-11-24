@@ -54,3 +54,39 @@ test('V7 · 53 — البند 10: الاستيراد يحدّث جدولَ ال�
     assert.deepEqual(m.errs, [], 'no page errors');
   } finally { await b.close(); await lab.close(); }
 });
+
+/* البند 4: «تأكيد الحذف» لا ينتظر الجرد بعد فتح النافذة — الجردُ يبدأ قبلها (فتح الصفحة · قائمة الصف)، وأثناءه حالةُ «جارٍ الحساب» ظاهرة.
+   جردُ الخادم يُبطَّأ هنا 4 ثوانٍ (كما على Preview مع 500 موظف: 6–21 ث) */
+test('V7 · 53 — البند 4: جردُ الحذف قبل النافذة — «تأكيد الحذف» متاحٌ فوراً، و«جارٍ الحساب» ظاهرةٌ ما دام الجرد جارياً', { timeout: 300000 }, async () => {
+  const lab = await startLab(), b = await chromium.launch(), LAG = 4000;
+  try {
+    await replaceOperationalFixture(lab.env, 'bsdept:' + A + ':bassam_employees_v1', [{ eid: 'TEST_ONLY_eA1', name: 'TEST_ONLY موظف أ', nid: LAB.empA }].concat(Array.from({ length: 500 }, (_, i) => ({ eid: 'TEST_ONLY_n' + i, name: 'TEST_ONLY كثير ' + i, nid: String(1400000000 + i) }))));
+    lab.delay = (p0, m) => (p0 === '/api/employees/transition' && m === 'GET' ? LAG : 0);
+    const m = await openAs(b, lab, LAB.mgrA, LAB.pw), p = m.page; p.setDefaultTimeout(15000);
+    const openDelete = async () => {
+      await p.evaluate(() => { const tr = [...document.querySelectorAll('main table tbody tr')].find((r) => r.innerText.includes('TEST_ONLY كثير')); tr.setAttribute('data-qa-row', '1'); });
+      const row = p.locator('main tr[data-qa-row="1"]');
+      await row.locator('button[title="إجراءات هذا السجل"]').click();
+      await row.locator('button[title="حذف"]').click();
+      const ok = p.locator('button', { hasText: 'تأكيد الحذف' }); await ok.waitFor(); return ok;
+    };
+    /* (أ) النافذةُ تُفتح والجردُ جارٍ: الحالةُ ظاهرة والزرُّ معطّل */
+    await m.go('#/employees', 0);
+    await until(() => tableHas(p, 'TEST_ONLY كثير'), 'the table');
+    let ok = await openDelete();
+    assert.equal(await ok.isDisabled(), true, 'disabled while the inventory is computed');
+    assert.match(await p.evaluate(() => document.body.innerText), /جارٍ الحساب/, 'a clear «جارٍ الحساب» state');
+    await until(async () => !(await ok.isDisabled()), 'the inventory', 20000);
+    await p.locator('button', { hasText: /^\s*إلغاء\s*$/ }).last().click();
+    await until(async () => !(await p.locator('button', { hasText: 'تأكيد الحذف' }).count()), 'the dialog to close');
+    /* (ب) الصفحةُ مفتوحةٌ منذ مدة (الجردُ جاهز): «تأكيد الحذف» متاحٌ في أقلّ من ثانية من فتح النافذة — لا ينتظر جرد الخادم (4 ث) */
+    await m.go('#/profile', 1500); await m.go('#/employees', 0);
+    await until(() => tableHas(p, 'TEST_ONLY كثير'), 'the table again');
+    await p.waitForTimeout(LAG + 3000);
+    const t0 = Date.now(); ok = await openDelete();
+    await until(async () => !(await ok.isDisabled()), 'the confirm button', 20000);
+    const ms = Date.now() - t0;
+    assert.ok(ms < 1500, '«تأكيد الحذف» enabled ' + ms + ' ms after opening (inventory was computed before the dialog)');
+    assert.deepEqual(m.errs, [], 'no page errors');
+  } finally { await b.close(); await lab.close(); }
+});
