@@ -15,6 +15,7 @@ import { world } from './d7_cov_lib.mjs';
 import { chromium, openAs } from './lab_browser.mjs';
 import { hasSystem } from '../unit/harness.mjs';
 import { staged } from '../unit/v7_d6_import_fx.mjs';
+import { replaceOperationalFixture } from '../unit/world_fx.mjs';
 
 const need = {};
 void hasSystem;
@@ -23,9 +24,17 @@ const click = async (p, t) => { const el = p.getByText(t, { exact: true }).last(
 test('د6 (QA ٦): مديرُ الإدارة يصدّر نسخةَ إدارته ويستوردها بالاستبدال الكامل فينجح — ويُرفض على إدارةٍ أخرى وعلى النسخة الشاملة', { timeout: 300000, ...need }, async () => {
   const lab = await world(), b = await chromium.launch();
   try {
+    /* V7 · د7: بياناتٌ تشغيلية حقيقية في الإدارة قبل النسخ (جولةُ يومٍ ماضٍ TEST_ONLY) — ليكون للمطابقة بعد الاستبدال معنى */
+    await replaceOperationalFixture(lab.env, 'bsdept:TEST_ONLY_B:bassam_rounds_v1', { '1447-1-3': { d: [] } });
     const s = await openAs(b, lab, LAB.mgrB, LAB.pw), p = s.page, refused = [];
     p.on('response', async (r) => { if (/\/api\/backup\/(import|restore)/.test(r.url()) && r.status() >= 400) { let t = ''; try { t = (await r.text()).slice(0, 300); } catch (e) { /* بلا جسم */ } refused.push(r.status() + ' ' + t); } });
     await s.go('#/admin/backup', 3500);
+    /* V7 · د7: قراءةُ كل موردٍ تشغيلي للإدارة وموظفيها قبل التصدير — تُعاد بعد الاعتماد وتُطابَق (readBack) */
+    const readAll = () => p.evaluate(async (d) => { const R = KIVO.__BS_SRV.operations.resources.map((r) => 'bsdept:' + d + ':' + r).concat(['bsdept:' + d + ':bassam_employees_v1']), out = {};
+      for (const k of R) { const r = await fetch('/api/operations/read?keys=' + encodeURIComponent(k), { cache: 'no-store' }); const j = await r.json().catch(() => null); out[k] = { s: r.status, v: j && j.resources ? j.resources[k] : null }; } return out; }, 'TEST_ONLY_B');
+    const before = await readAll();
+    assert.deepEqual(before['bsdept:TEST_ONLY_B:bassam_rounds_v1'].v, { '1447-1-3': { d: [] } }, 'الجولةُ المبذورة مقروءة');
+    assert.ok(Object.values(before).every((x) => x.s === 200), 'كلُّ موردٍ يُقرأ قبل التصدير: ' + JSON.stringify(Object.entries(before).filter(([, x]) => x.s !== 200).map(([k, x]) => k + ' ' + x.s)));
     const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 60000 }), p.locator('main button', { hasText: 'تصدير نسخة هذ' }).first().click()]);
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'd6-mgr-')), 'TEST_ONLY-mgr-copy.json'); await dl.saveAs(file);
     const bk = JSON.parse(fs.readFileSync(file, 'utf8')); assert.equal(bk.kind, 'dept');
@@ -39,6 +48,9 @@ test('د6 (QA ٦): مديرُ الإدارة يصدّر نسخةَ إدارته 
     await p.waitForSelector('[data-bkc="done"]', { timeout: 120000 });
     await click(p, 'تم');
     assert.deepEqual(refused, [], 'لا رفضَ في مسار المدير');
+    await lab.idle();
+    const after = await readAll();
+    for (const k of Object.keys(before)) assert.deepEqual(after[k], before[k], k + ': بعد الاستبدال الكامل يُقرأ كما كان في النسخة');
     assert.equal(lab.env.DB.prepare ? 1 : 1, 1); assert.equal(staged(lab.env.DB), 0, 'المؤقتُ حُذف مع الاعتماد');
     /* إدارةٌ أخرى · والنسخةُ الشاملة: الخادمُ يرفض قبل أي رفع */
     const begin = (scope) => p.evaluate(async (sc) => { const r = await fetch('/api/backup/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'begin', requestId: 'TEST_ONLY_mgr_' + sc.kind + '_' + Date.now(), scope: sc, n: 1, f: 1 }) }); return { s: r.status, j: await r.json().catch(() => null) }; }, scope);
