@@ -51,13 +51,14 @@ async function seedReal(W) {
   assert.equal(s3.j.ok, 1, JSON.stringify(s3));
   if (hasSystem('dstats')) {
     const v = await C.api('/api/dstats?uid=' + encodeURIComponent(su.j.u?.id || su.j.uid || ''), { cookie: su.ck });
-    const t = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(Date.now() - 3 * 3600e3)).reduce((o, p) => (o[p.type] = +p.value, o), {});
+    const t = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(Date.now() - 3 * 3600e3)).reduce((o, p) => (o[p.type] = +p.value, o), {});
     W.realDay = t.year + '-' + String(t.month).padStart(2, '0') + '-' + String(t.day).padStart(2, '0');
     const r = await W.post('/api/dstats', { base: v.j.rev, data: { haram: { [W.realDay]: { worshippers: 4242 } }, nabawi: {}, locks: {} } });
     assert.equal(r.status, 200, JSON.stringify(r.j));
   }
 }
-const today = () => new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(Date.now() - 3 * 3600e3)).reduce((o, p) => (o[p.type] = +p.value, o), {});
+/* V7 · 53 تقويم: اليومُ التشغيلي (الرياض بمهلة ثلاث ساعات) ميلادي — الإحصائياتُ والاسترشادُ والمضبوطات بمفاتيح ISO ميلادية (كان هجرياً) */
+const today = () => new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(Date.now() - 3 * 3600e3)).reduce((o, p) => (o[p.type] = +p.value, o), {});
 
 test('(أ) لقطة ← زرع (كلُّ نظامٍ حاضر له محتوى من مسارات القراءة) ← حذف ⇒ كلُّ جدولٍ غيرِ سجلٍّ = اللقطة، والحقيقيُّ لم يُمسّ', async (t) => {
   const W = await world(), { env, C, su, demo } = W;
