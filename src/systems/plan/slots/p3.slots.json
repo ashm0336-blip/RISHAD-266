@@ -1,4 +1,12 @@
 {
+ "store.period.plan": {
+  "order": 10,
+  "text": " bassam_plan_v1: 'months',"
+ },
+ "store.periodMonthly.plan": {
+  "order": 10,
+  "text": " bassam_plan_v1: 1,"
+ },
  "store.opResources.plan": {
   "order": 10,
   "text": " 'bassam_plan_v1', 'bassam_zone_opts_v1', 'bassam_gate_opts_v1',\n    'bassam_mark_kinds_v1',"

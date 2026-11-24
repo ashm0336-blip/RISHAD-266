@@ -25,6 +25,34 @@
     } catch (e) { return undefined; }
   });
 
+  /* V7 · 53: الجدولُ مخزَّنٌ بالشهر — الأشهرُ غيرُ المحمَّلة تُعدّ من ملخّص الخادم (byShift لكل شهر)، و«load» يحمّل ما يستعمل الوردية منها
+     قبل إعادة التسمية أو الحذف (المشاركُ أدناه يعدّل كلَّ شهرٍ مفتوحٍ محمَّل، كما كان يعدّل كلَّ شهر) */
+  var usageSum = null, usageAt = 0, usageP = null;
+  function usageSummary(force) {
+    var S = ops();
+    if (!S.split || !S.split('bassam_staffing_v3')) return Promise.resolve(null);
+    if (usageP || (!force && usageAt && Date.now() - usageAt < 30000)) return usageP || Promise.resolve(usageSum);
+    usageAt = Date.now();
+    usageP = S.index('bassam_staffing_v3').then(function (x) {
+      return x && x.ok === 1 && x.index.length ? S.summary('bassam_staffing_v3', { from: x.index[0].p, to: x.index[x.index.length - 1].p }) : { ok: 1, rows: [] };
+    }).then(function (r) {
+      usageP = null;
+      if (!r || r.ok !== 1) return usageSum;
+      usageSum = {}; r.rows.forEach(function (row) { if (row && typeof row.p === 'string') usageSum[row.p] = (row.v && row.v.byShift) || {}; });
+      try { window.dispatchEvent(new CustomEvent('bassam:store', { detail: { key: 'bassam_staffing_v3', remote: true } })); } catch (e) { /* إبلاغٌ للشاشات فقط */ }
+      return usageSum;
+    }, function () { usageP = null; return usageSum; });
+    return usageP;
+  }
+  /* الأشهرُ غيرُ المحمَّلة التي تستعمل الوردية (من الملخّص الطازج) تُحمَّل — قبل مسودة إعادة التسمية أو الحذف */
+  function usageLoad(shift) {
+    return usageSummary(true).then(function (sum) {
+      var S = ops(), all = {}, need = [];
+      try { all = S.get('bassam_staffing_v3') || {}; } catch (e) { return { ok: 0, err: 'read' }; }
+      Object.keys(sum || {}).forEach(function (month) { if ((+sum[month][shift] || 0) && !Object.prototype.hasOwnProperty.call(all, month)) need.push(month); });   /* والمقفلةُ كذلك: المشاركُ يرفض الحذفَ بها */
+      return need.length ? S.want('bassam_staffing_v3', { groups: need }) : { ok: 1 };
+    });
+  }
   bus.provide('staff.shiftUsage@1', function (shift) {
     var out = { on: on(), records: 0, months: 0, locked: [] }, seen = {};
     /* V7 · د5-ح (السببُ الجذري لاختفاء «الإعدادات ← الورديات»): كانت أقفالُ الجدول تُقرأ قبل سؤال «هل الجدولُ مفعَّل؟» — وبإطفائه للإدارة
@@ -40,8 +68,15 @@
           Object.keys(bucket).forEach(function (emp) { if (emp !== '__shifts' && bucket[emp] && bucket[emp].shift === shift) { out.records++; seen[month] = 1; hit++; } });
           if (hit && locks[month]) out.locked.push(month);
         });
+        usageSummary();
+        if (usageSum) Object.keys(usageSum).forEach(function (month) {
+          var n = +usageSum[month][shift] || 0;
+          if (!n || Object.prototype.hasOwnProperty.call(all, month)) return;
+          out.records += n; seen[month] = 1; if (locks[month]) out.locked.push(month);
+        });
       } catch (e) { /* كما كان: قراءةٌ تعذّرت ⇒ ما عُدّ حتى الآن */ }
     out.months = Object.keys(seen).length;
+    if (ops().split && ops().split('bassam_staffing_v3')) out.load = function () { return usageLoad(shift); };
     return out;
   });
 

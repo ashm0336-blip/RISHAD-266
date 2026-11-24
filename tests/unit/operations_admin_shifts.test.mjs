@@ -12,15 +12,24 @@ async function page(save, read) {
   const docs={bassam_shift_options_v1:[{name:'TEST_ONLY old',color:'#abcdef',tStart:'08:00',tEnd:'16:00'}],bassam_staffing_locks_v1:{},bassam_staffing_v3:{'1448-5':{e1:{shift:'TEST_ONLY old',cs:'TEST_ONLY cs'}},'1448-6':{e2:{shift:'TEST_ONLY old'}}}},requests=[],messages=[],scope={uid:UID,dept:DEPT};
   let rev=1;
   const T=loadClient({C:{req:async(route,options={})=>{
+    /* V7 · 53: the schedule (staffing_v3) and the plan are stored by period (periods_api.md v1) — this TEST_ONLY server answers K@ (head) and K@<month>,
+       range=K@<month>, index= and the summary; everything else as before */
+    const split=name=>/^bassam_(staffing_v3|plan_v1)@/.test(name),at=k=>k.split(':').at(-1),pv=(name)=>{const[r,p]=name.split('@');const d=docs[r];return p===''?(d?{}:undefined):d&&Object.hasOwn(d,p)?d[p]:undefined;};
+    if(route.startsWith('/api/operations/summary?')) {
+      const u=new URL(route,'http://x'),r=at(u.searchParams.get('key'));
+      return response({ok:1,key:u.searchParams.get('key'),rows:Object.keys(docs[r]||{}).map((p,seq)=>({p,grp:p,seq,rev,v:{byShift:Object.values(docs[r][p]).reduce((o,x)=>(x&&x.shift&&(o[x.shift]=(o[x.shift]||0)+1),o),{})}}))});
+    }
     if(route.startsWith('/api/operations/read?')) {
-      const keys=new URL(route,'http://x').searchParams.get('keys').split(','),resources={},absent=[],base={};
+      const u=new URL(route,'http://x'),keys=u.searchParams.get('keys').split(','),resources={},absent=[],base={},ranges={},index={};
       const custom=read&&await read(keys);if(custom)return custom;
-      for(const k of keys){const name=k.split(':').at(-1);base[k]=rev;if(Object.hasOwn(docs,name))resources[k]=clone(docs[name]);else absent.push(k);}
-      return response({ok:1,uid:UID,epoch:2,v:rev,resources,absent,denied:[],base});
+      const all=keys.slice();(u.searchParams.get('range')||'').split(',').filter(Boolean).forEach(r=>{const[K,g]=r.split('@');ranges[r]=Object.hasOwn(docs[at(K)]||{},g)?[K+'@'+g]:[];ranges[r].forEach(k=>all.includes(k)||all.push(k));});
+      (u.searchParams.get('index')||'').split(',').filter(Boolean).forEach(K=>{index[K]=Object.keys(docs[at(K)]||{}).map((p,seq)=>({p,grp:p,seq,rev,bytes:1}));});
+      for(const k of all){const name=at(k),v=split(name)?pv(name):Object.hasOwn(docs,name)?docs[name]:undefined;base[k]=rev;if(v!==undefined)resources[k]=clone(v);else absent.push(k);}
+      return response({ok:1,uid:UID,epoch:2,v:rev,resources,absent,denied:[],base,ranges,index});
     }
     if(route==='/api/save') {
       const body=JSON.parse(options.body);requests.push(options.body);
-      for(const[k,value]of Object.entries(body.set))docs[k.split(':').at(-1)]=JSON.parse(value);
+      for(const[k,value]of Object.entries(body.set)){const name=at(k);if(split(name)){const[r,p]=name.split('@');if(p)(docs[r]||(docs[r]={}))[p]=JSON.parse(value);}else docs[name]=JSON.parse(value);}
       const ack={ok:1,atomic:1,requestId:body.requestId,epoch:body.epoch,revs:Object.fromEntries([...Object.keys(body.set),...body.del].map(k=>[k,++rev]))};
       return save?save({body,ack,requests,docs}):response(ack);
     }
@@ -29,7 +38,7 @@ async function page(save, read) {
   T.W.document.hidden=true;const K=T.W.KIVO;
   K.BassamAuth={user:()=>({id:scope.uid,role:'dept',deptId:scope.dept})};
   K.__BS_I={auth:{cur:()=>K.BassamAuth.user()}};K.BassamDepts={active:()=>scope.dept};K.BassamCount=String;
-  K.BassamPerm={on:()=>true};
+  K.BassamPerm={on:()=>true};K.BassamCal={hNow:()=>({y:1448,m:6,d:14})};   /* V7 · 53: the shown month (the period layer reads it by name) */
   K.BassamPageKit={base:()=>class{setState(patch,done){this.state={...this.state,...(typeof patch==='function'?patch(this.state,{}):patch)};done?.();}}};T.W.DCLogic=class{};
   vm.runInContext(fs.readFileSync(new URL('../../src/modules/admin/logic.js',import.meta.url),'utf8')+'\nglobalThis.TEST_ONLY_Page=Component;',T.ctx);
   const instance=Object.create(T.W.TEST_ONLY_Page.prototype);instance.state={};instance.PC=()=>true;instance.bsOn=()=>true;
@@ -45,10 +54,10 @@ test('Admin shift rename waits for one ACK for catalog and open staffing, retain
     f.instance.sfVals().sfRows[0].renOpen();f.instance.setState({shRen:{of:'TEST_ONLY old',v:'TEST_ONLY new'}});
     const pending=f.instance.sfRename('TEST_ONLY old','TEST_ONLY new');
     await until(()=>f.requests.length===1,250);
-    assert.ok(f.instance.state.shRen);assert.equal(f.messages.length,0);
+    assert.ok(f.instance.state.shRen);assert.equal(f.messages.length,0,JSON.stringify(f.messages)+JSON.stringify(f.requests.length));
     assert.equal(f.ops.get('bassam_shift_options_v1')[0].name,'TEST_ONLY old');
     release();assert.equal(await pending,true);assert.equal(f.instance.state.shRen,null);
-    const body=JSON.parse(f.requests[0]);assert.deepEqual(Object.keys(body.set).sort(),['bassam_shift_options_v1','bassam_staffing_v3'].map(key).sort());
+    const body=JSON.parse(f.requests[0]);assert.deepEqual(Object.keys(body.set).sort(),[key('bassam_shift_options_v1'),key('bassam_staffing_v3')+'@1448-5'].sort(),'V7 · 53: only the month renamed (the locked month is not sent)');
     assert.ok(Object.hasOwn(body.base,key('bassam_staffing_locks_v1')));
     assert.equal(f.ops.get('bassam_staffing_v3')['1448-5'].e1.shift,'TEST_ONLY new');
     assert.equal(f.ops.get('bassam_staffing_v3')['1448-6'].e2.shift,'TEST_ONLY old');
