@@ -18,8 +18,8 @@ async function setup() {
  const B=await world(); await installOperationalFixture(B.env,B.W);
  const perms=copy(B.keys.bassam_perms_v1);perms.emps[D1][EKEYS.employee1]={};
  await B.DB.batch(B.W.kvPutStmts(B.env,'kv','bassam_perms_v1',JSON.stringify(perms)));
- const now=Date.now(), h=new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{timeZone:'Asia/Riyadh',year:'numeric',month:'numeric',day:'numeric'}), parts={};
- h.formatToParts(new Date(now)).forEach(x=>parts[x.type]=+x.value); const day=[parts.year,parts.month,parts.day].join('-');
+ const now=Date.now(), h=new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn',{timeZone:'Asia/Riyadh',year:'numeric',month:'numeric',day:'numeric'}), parts={};
+ h.formatToParts(new Date(now)).forEach(x=>parts[x.type]=+x.value); const day=[parts.year,parts.month,parts.day].map((n,i)=>i?String(n).padStart(2,'0'):String(n)).join('-');   /* V7 · 53 تقويم: يومُ الرياض الميلادي ISO */
  const row=['TEST_ONLY public task','', 'normal','pending','normal','مضافة',null,[],'','TEST_ONLY owner',60,null,null,now-10000,null,now-60000,now+3600000,null,null,'TEST_ONLY work',null,null];
  await replaceOperationalFixture(B.env,scoped(),{[day]:[row]});
  await replaceOperationalFixture(B.env,scoped(D2),{[day]:[row.map((x,i)=>i===13?now-20000:x)]});

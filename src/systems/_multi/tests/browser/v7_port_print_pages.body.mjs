@@ -34,10 +34,10 @@ function jpegs(buf) {
 
 test('V7 port · real print button: plan = one page per site, rounds = indicators page + one page per site; the side panel is whole in the file', { timeout: 600000 }, async () => {
   const lab = await startLab(), { env } = lab;
-  const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
+  const parts = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
   const num = (t) => +parts.find((x) => x.type === t).value, T = { y: num('year'), m: num('month'), d: num('day') }, F = sites();
-  await replaceOperationalFixture(env, KPLAN, { pMig: 3, zones: F[0].zones, gates: [], marks: [], paths: F[0].paths, floors: F, months: { [T.y + '-' + T.m]: { c: 1, d: F } }, cfg: {}, delMonths: {} });
-  await replaceOperationalFixture(env, KROUNDS, { [T.y + '-' + T.m + '-' + T.d]: { ap: false, t: 12345, d: sites() } });
+  await replaceOperationalFixture(env, KPLAN, { pMig: 3, zones: F[0].zones, gates: [], marks: [], paths: F[0].paths, floors: F, months: { [T.y + '-' + String(T.m).padStart(2, '0')]: { c: 1, d: F } }, cfg: {}, delMonths: {} });
+  await replaceOperationalFixture(env, KROUNDS, { [T.y + '-' + String(T.m).padStart(2, '0') + '-' + String(T.d).padStart(2, '0')]: { ap: false, t: 12345, d: sites() } });
   /* a UTF-8 locale for the browser process: with an empty LANG headless Chromium replaces a non-ASCII download name by «download» */
   const b = await chromium.launch({ env: Object.assign({}, process.env, { LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' }) });
   try {

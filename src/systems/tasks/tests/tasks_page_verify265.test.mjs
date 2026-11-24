@@ -72,8 +72,8 @@ async function page(storeJson, emps, users, ext) {
   c._tkApi = (route, body) => { const promise = api(route, body); requests.push({ route, body, promise }); return promise; };
   return { c, store, toasts, W, opsFixture, requests, drain: async () => { for (const call of requests) await call.promise; } };
 }
-const HIJ = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600e3)).forEach((p) => { o[p.type] = +p.value; }); return o; })();
-const DAY = HIJ.year + '-' + HIJ.month + '-' + HIJ.day;
+const HIJ = (() => { const f = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600e3)).forEach((p) => { o[p.type] = +p.value; }); return o; })();
+const DAY = HIJ.year + '-' + String(HIJ.month).padStart(2, '0') + '-' + String(HIJ.day).padStart(2, '0');
 /* بدايةُ المهام: ظهرُ يومِ DAY نفسِه بتوقيت الرياض (لا «الآن + ساعة») — كانت تقع في اليوم التالي بين 23:00 و03:00 فينقلها الحفظُ إليه (تحقّقُ c4f79a0 · C-2) */
 const NOON = (() => { const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() - 3 * 3600e3)); return Date.parse(f + 'T12:00:00+03:00'); })();
 const emp = (i, o) => Object.assign({ eid: 'tst_e_p0_' + i, nid: String(1991000000 + i), name: TAG + ' · موظف ' + i, empno: String(71000 + i), work: TAG + ' مراقب' }, o || {});
@@ -97,7 +97,7 @@ test('اليوم التشغيلي في fixture الصفحة الحقيقي يت�
     return await page('{}', emps, users, { Date: RD, Intl: IR });
   };
   const before = await make(boundary - 1), after = await make(boundary);
-  const key = value => value.y + '-' + value.m + '-' + value.d;
+  const key = value => value.y + '-' + String(value.m).padStart(2, '0') + '-' + String(value.d).padStart(2, '0');
   assert.equal(key(before.c.hToday()), key(after.c.hToday()), '02:59:59 و03:00 في اليوم المدني نفسه');
   assert.notEqual(before.c._tkTodayK(), key(before.c.hToday()), 'قبل03:00 اليوم التشغيلي هو السابق');
   assert.equal(after.c._tkTodayK(), key(after.c.hToday()), 'عند03:00 يبدأ اليوم التشغيلي الجديد');

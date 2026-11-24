@@ -15,10 +15,10 @@ const sites = () => [{ sid: 's_TEST_ONLY_1', name: 'TEST_ONLY موقع 1', num: 
 
 test('53 · البند 1: «مشاهدة» يطبع الخريطة (الخطة والجولات) ولا يصدّر السجلات', { timeout: 600000 }, async () => {
   const lab = await world(), { env } = lab;
-  const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
+  const parts = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
   const num = (t) => +parts.find((x) => x.type === t).value, T = { y: num('year'), m: num('month'), d: num('day') }, F = sites();
-  await replaceOperationalFixture(env, KPLAN, { pMig: 3, zones: F[0].zones, gates: [], marks: [], paths: [], floors: F, months: { [T.y + '-' + T.m]: { c: 1, d: F } }, cfg: {}, delMonths: {} });
-  await replaceOperationalFixture(env, KROUNDS, { [T.y + '-' + T.m + '-' + T.d]: { ap: false, t: 12345, d: sites() } });
+  await replaceOperationalFixture(env, KPLAN, { pMig: 3, zones: F[0].zones, gates: [], marks: [], paths: [], floors: F, months: { [T.y + '-' + String(T.m).padStart(2, '0')]: { c: 1, d: F } }, cfg: {}, delMonths: {} });
+  await replaceOperationalFixture(env, KROUNDS, { [T.y + '-' + String(T.m).padStart(2, '0') + '-' + String(T.d).padStart(2, '0')]: { ap: false, t: 12345, d: sites() } });
   const b = await launchUtf8();
   try {
     await grant(b, lab, { plan: 'view', daily: 'view' });

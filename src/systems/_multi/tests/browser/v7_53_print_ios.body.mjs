@@ -63,10 +63,10 @@ function pdfOf(buf) {
 }
 async function seeded() {
   const lab = await startLab(), { env } = lab;
-  const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
+  const parts = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
   const num = (t) => +parts.find((x) => x.type === t).value, T = { y: num('year'), m: num('month'), d: num('day') }, F = sites();
-  await replaceOperationalFixture(env, KPLAN, { pMig: 3, zones: F[0].zones, gates: [], marks: [], paths: [], floors: F, months: { [T.y + '-' + T.m]: { c: 1, d: F } }, cfg: {}, delMonths: {} });
-  await replaceOperationalFixture(env, KROUNDS, { [T.y + '-' + T.m + '-' + T.d]: { ap: false, t: 12345, d: sites() } });
+  await replaceOperationalFixture(env, KPLAN, { pMig: 3, zones: F[0].zones, gates: [], marks: [], paths: [], floors: F, months: { [T.y + '-' + String(T.m).padStart(2, '0')]: { c: 1, d: F } }, cfg: {}, delMonths: {} });
+  await replaceOperationalFixture(env, KROUNDS, { [T.y + '-' + String(T.m).padStart(2, '0') + '-' + String(T.d).padStart(2, '0')]: { ap: false, t: 12345, d: sites() } });
   return { lab, T };
 }
 const COVER_FULL = 'q 1190.55 0 0 841.89 0.00 0.00 cm /Im0 Do Q';
