@@ -26,6 +26,8 @@ var RSI_SLICE = {
   'bassam_dreport_v1': ['^.', ['bassam_dreport_v1']],   /* V7 · د6: التقريرُ اليومي خريطةُ أيام — يُقسم أياماً */
 };
 var RSI_SLICE_MIN = 1500000;
+/* V7 · 53 تقويم: علاماتُ أشهر التقرير (m:) مشتركةٌ في كل دفعة كما في الجولات — قاعدةُ ق3 تحتاج علاماتِ الشهرين الهجريين معاً لكل شهرٍ ميلادي */
+if (RSI_SLICE.bassam_dreport_v1) RSI_SLICE.bassam_dreport_v1 = ['^\\d{4}-\\d{1,2}-\\d{1,2}$', RSI_SLICE.bassam_dreport_v1[1]];
 /* V7 · د6 (QA ٦ — قرارُ المالك): الدفعاتُ (مسارُ الذاكرة المحدودة) لمدير المنصة ولمدير الإدارة على إدارته (057 enfDeptMgrFull) — كان لمدير المنصة وحده فتُرفض نسخةُ Production لمديرها */
 function rsiSliceOk(A, d) { return A.u.role === 'super' || enfDeptMgrFull(A, d); }
 async function rsiSliceSpec(env, A, s, keys, mode) {
@@ -97,6 +99,9 @@ async function rsiSlice(env, A, request, id, M, b) {
       if (lc) remap.left[base] = lc;
     }
   }
+  /* V7 · 53 تقويم (ف٧): الدفعةُ ⇐ ميلادية قبل applySave وocConvert — المشتركةُ (__pMig وكلُّ علامات m:) تتحوّل في كل دفعةٍ بالنتيجة نفسِها (T ثابتٌ للاستيراد) */
+  var calRep = calConvRep();
+  text = calConvText(base, text, { T: M.calT || calToday(Date.now()).k, rep: calRep });
   set[key] = text; bs[key] = reference.inputRevs[key] || 0; ops[key] = { op: 'backup.restore', scope: 'dept', mode: 'replace', reason: b.reason || '' }; why[key] = b.reason || '';
   got = null;
   var kv = await applySave(env, { set: set, del: [], base: bs, ops: ops, why: why }, A, reqMeta(request), { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN, __srvRestore: RESTORE_INTERNAL_TOKEN });
@@ -108,7 +113,7 @@ async function rsiSlice(env, A, request, id, M, b) {
   if (!b.i || Object.keys(M.slices)[b.i - 1].replace(/#\d+$/, '') !== name.replace(/#\d+$/, '')) out.authz = kv.authzRows || [];
   /* أولُ دفعةٍ لموردها: ما كان قائماً من الأسرة ولم يرد في حكمها يُكتب فارغاً (جذرُه وحده) — فيُستبدل القائمُ ولو لم تأتِ له أيام */
   if (out.authz) held.forEach(function (k) { if (!kv.pend.some(function (pd) { return pd.k === k; })) kv.pend.push({ k: k, act: 'set', v: (ENT[resName(k)] && ENT[resName(k)].empty) || '{}', have: reference.inputRevs[k] || 0 }); });
-  out.fields = {};
+  out.fields = {}; out.cal = calRep;
   if (remap) out.remap = remap;
   kv.pend.forEach(function (pd) {
     if (legacy && pd.act === 'set') pd.v = rsiFields(out.fields, pd.k, pd.v);   /* V7 · د6 (schemafix): ما لا يعرفه المخطّط يُذكر ولا يُرفض به الاستيراد */
@@ -262,7 +267,7 @@ async function rsImportRoute(env, request, ss) {
       var skip = Object.keys(b.keys || {}).map(function (k) { return { k: k, why: rsiSkipWhy(k, b.keys[k] ? null : '', s.kind) }; }).filter(function (x) { return x.why; });
       var spec = await rsiSliceSpec(env, A, s, b.resources || b.keys || {}, b.mode);
       if (b.dry) return json({ ok: 1, skip: skip, slice: spec, sliceMin: RSI_SLICE_MIN });
-      var im = b.images || {}, ids = Object.keys(im), total = b.n, meta = { scope: s, n: b.n, f: b.f, images: {}, slices: b.slices || {}, mode: b.mode || '' }, bases = {};
+      var im = b.images || {}, ids = Object.keys(im), total = b.n, meta = { scope: s, n: b.n, f: b.f, images: {}, slices: b.slices || {}, mode: b.mode || '', calT: calToday(now).k }, bases = {};
       Object.keys(meta.slices).forEach(function (k) {
         var sb = k.replace(/#\d+$/, ''), sn = rsiName(s, k);
         if (!sn[0] || !ocOwn(spec, sb = sn[1]) || !(meta.slices[k] > 1) || (spec[sb][0] && meta.slices[k] > RSI_SEG.f)) throw rsError('import-shape');
@@ -409,6 +414,9 @@ async function rsImportRoute(env, request, ss) {
         });
         summary.notTransferred = drop.concat(rsiFieldList([rsiFieldRec(summary.notTransferred)].concat(sr.map(function (o) { return o.fields; }))), stage.unref.map(function (k) { return { k: k, why: 'image-unreferenced' }; }));
         summary.imagesNew = stage.fresh.length;
+        /* V7 · 53 تقويم: ما حُوِّل في الدفعات يُجمع إلى سطر الملخّص (بقيةُ الملف حوّلها 019f) */
+        var cs = calConvSummaryText(sr.reduce(function (a, o) { return calConvMergeRep(a, o.cal); }, calConvRep())), c0 = summary.calendar || calConvSummaryText(calConvRep());
+        summary.calendar = { days: c0.days + cs.days, months: c0.months + cs.months, conflicts: c0.conflicts + cs.conflicts, conflictMonths: c0.conflictMonths.concat(cs.conflictMonths), recurring: c0.recurring.concat(cs.recurring).slice(0, 50), plan: c0.plan.concat(cs.plan), custodyDay0: c0.custodyDay0 + cs.custodyDay0 };
         if (op === 'commit') plan.statements.push(rsiDrop(env, id));
       },
     };
@@ -422,6 +430,7 @@ async function rsImportRoute(env, request, ss) {
     var reference = await rsReferenceSnapshot(env, A.u.id, s.kind === 'dept' || stage.skip.length ? { departments: full ? null : ds, operationalKeys: rsScopeOperationalKeys(ds).filter(function (k) { return stage.skip.indexOf(k) < 0; }) } : undefined);
     if (rsScopeDenied(reference.A, s)) throw rsError('restore-policy', 403);
     reference.noWiden = s.kind === 'dept';
+    reference.env.__calT = M.calT || calToday(now).k;   /* V7 · 53 تقويم: يومُ الاستيراد نفسُه لبقية الملف (019f calConvBackup) */
     var run = { version: 1, uid: A.u.id, requestId: b.requestId, scope: s, mode: b.mode, reason: b.reason, base: b.base, backup: file, legacyConsent: b.legacyConsent === true, phase: op };
     file = null;
     var out = await rsBackupRun(reference.env, reference.A, request, run, reference, fp, stage);

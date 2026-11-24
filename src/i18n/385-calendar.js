@@ -127,6 +127,104 @@
     } catch (e) { /* بلا دعم: -1 */ }
     return -1;
   }
+  /* ── V7 · 53 تقويم: الميلادي أساساً (cal_api.md §1) — مرآةُ تقويم الخادم (016: cal*) حرفاً في الناتج (tests/unit/v7_cal_base_agree.test.mjs).
+     المفاتيح ISO مبطَّنة · السنةُ تميّز الصيغتين (1300–1599 هجري · 1900–2199 ميلادي) · التاريخُ المدنيّ تاريخُ الرياض أياً كانت منطقةُ الجهاز ·
+     gToday يومٌ تشغيليٌّ بمهلة الثلاث ساعات (ق11) كيوم الخادم · الهجريُّ سطرٌ للعرض محسوبٌ من المفتاح الميلادي، لا يُخزَّن. ── */
+  var G_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  var H_MONTHS = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
+  var WD_NAMES = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  var DAY_LETTERS = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+  var KEY_RX = /^(m:)?(\d{4})-(\d{1,2})(?:-(\d{1,2})(?:-(.+))?)?$/, GRACE = 3 * 3600 * 1000;
+  function pad(n) { n = +n; return (n < 10 ? '0' : '') + n; }
+  function gKey(y, m, d) { return y + '-' + pad(m) + '-' + pad(d); }
+  function gYm(y, m) { return y + '-' + pad(m); }
+  function gMk(a, m) { return 'm:' + (m == null ? String(a) : gYm(a, m)); }
+  function yearCal(y) { return y >= 1300 && y <= 1599 ? 'h' : y >= 1900 && y <= 2199 ? 'g' : null; }
+  function gMonthDays(y, m) {
+    if (m == null) { var p = /^(?:m:)?(\d{4})-(\d{1,2})$/.exec(String(y)); if (!p) return 0; y = +p[1]; m = +p[2]; }
+    return m >= 1 && m <= 12 ? new Date(Date.UTC(+y, +m, 0)).getUTCDate() : 0;
+  }
+  function gParse(k) {
+    var p = KEY_RX.exec(String(k == null ? '' : k)); if (!p) return null;
+    var y = +p[2], m = +p[3], d = p[4] == null ? null : +p[4], cal = yearCal(y);
+    if (!cal || m < 1 || m > 12) return null;
+    if (p[1] && d != null) return null;
+    if (d != null && (d < 1 || d > (cal === 'g' ? gMonthDays(y, m) : 30))) return null;
+    return { cal: cal, kind: p[1] ? 'mctl' : d == null ? 'month' : 'day', y: y, m: m, d: d, suffix: p[5] || '' };
+  }
+  function keyCal(k) { var p = gParse(k); return p ? p.cal : null; }
+  function isGKey(k, kind) {
+    var p = gParse(k); if (!p || p.cal !== 'g' || (kind && p.kind !== kind)) return false;
+    var c = p.kind === 'day' ? gKey(p.y, p.m, p.d) + (p.suffix ? '-' + p.suffix : '') : (p.kind === 'mctl' ? 'm:' : '') + gYm(p.y, p.m);
+    return c === String(k);
+  }
+  function gMonthOf(k) { var p = gParse(k); return p && p.cal === 'g' ? gYm(p.y, p.m) : null; }
+  function gDayNum(k) { var p = gParse(k); return p ? p.y * 10000 + p.m * 100 + (p.d || 0) : 0; }
+  function gCmp(a, b) { var x = gDayNum(a), y = gDayNum(b); return x < y ? -1 : x > y ? 1 : 0; }
+  function ofUTC(t) { var x = new Date(t), y = x.getUTCFullYear(), m = x.getUTCMonth() + 1, d = x.getUTCDate(); return { y: y, m: m, d: d, k: gKey(y, m, d), key: gKey(y, m, d), ym: gYm(y, m), mk: 'm:' + gYm(y, m), wd: x.getUTCDay() }; }
+  function gAt(date) { return ofUTC((date == null ? Date.now() : +date) + 3 * 36e5); }
+  function gToday(date) { return gAt((date == null ? Date.now() : +date) - GRACE); }
+  function gAddDays(k, n) { var p = gParse(k); return p && p.kind === 'day' ? ofUTC(Date.UTC(p.y, p.m - 1, p.d + (+n || 0))).k : null; }
+  function gAddMonths(ym, n) { var p = gParse(ym); if (!p) return null; var i = p.y * 12 + p.m - 1 + (+n || 0); return gYm(Math.floor(i / 12), (i % 12) + 1); }
+  function gPrevMonth(ym) { return gAddMonths(ym, -1); }
+  function gNextMonth(ym) { return gAddMonths(ym, 1); }
+  function gWeekday(k) { var p = gParse(k); return p && p.kind === 'day' ? new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay() : -1; }
+  function gDays(ym) { var p = gParse(ym), out = [], n, i; if (!p || p.cal !== 'g') return out; n = gMonthDays(p.y, p.m); for (i = 1; i <= n; i++) out.push(gKey(p.y, p.m, i)); return out; }
+  function gMonthRange(ym) { var L = gDays(ym); return L.length ? { from: L[0], to: L[L.length - 1], days: L.length } : null; }
+  function gRange(from, to) { var out = [], k = isGKey(from, 'day') ? from : null; while (k && gCmp(k, to) <= 0 && out.length < 4000) { out.push(k); k = gAddDays(k, 1); } return out; }
+  function gYears(a, b) { var out = []; for (var y = +a; y <= +b; y++) out.push(y); return out; }
+  function gLetter(k) { var w = gWeekday(k); return w < 0 ? '' : DAY_LETTERS[w]; }
+  /* الهجريُّ المقابل ليومٍ ميلادي: ظهرَ UTC (الثالثةُ عصراً بالرياض) بأم القرى بتوقيت الرياض، وبغياب الدعم جدولُ الاحتياط (380) ليومه المحلي ظهراً */
+  function hOf(k) {
+    var p = gParse(k); if (!p || p.cal !== 'g' || p.kind !== 'day') return null;
+    var h = null;
+    try { h = hPartsRiyadh(new Date(Date.UTC(p.y, p.m - 1, p.d, 12))); } catch (e) { try { h = KIVO.BassamHijri.now(new Date(p.y, p.m - 1, p.d, 12)); } catch (e2) { h = null; } }
+    return h && h.y > 1300 && h.m >= 1 && h.m <= 12 && h.d >= 1 && h.d <= 30 ? { y: h.y, m: h.m, d: h.d } : null;
+  }
+  function hLine(k) { var h = hOf(k); return h ? h.d + '/' + h.m : ''; }
+  function hDayText(k) { var h = hOf(k); return h ? h.d + ' ' + H_MONTHS[h.m - 1] + ' ' + h.y : ''; }
+  function hMonthsOf(ym) {
+    var out = [], last = null;
+    gDays(ym).forEach(function (k) {
+      var h = hOf(k); if (!h) return;
+      if (last && last.y === h.y && last.m === h.m) { last.days++; last.to = k; } else { last = { y: h.y, m: h.m, days: 1, from: k, to: k }; out.push(last); }
+    });
+    return out;
+  }
+  function hRangeOfMonth(ym) {
+    var L = gDays(ym); if (!L.length) return '';
+    var a = hOf(L[0]), b = hOf(L[L.length - 1]), N = H_MONTHS; if (!a || !b) return '';
+    if (a.y === b.y && a.m === b.m) return a.d + ' – ' + b.d + ' ' + N[a.m - 1] + ' ' + a.y;
+    if (a.y === b.y) return a.d + ' ' + N[a.m - 1] + ' – ' + b.d + ' ' + N[b.m - 1] + ' ' + a.y;
+    return a.d + ' ' + N[a.m - 1] + ' ' + a.y + ' – ' + b.d + ' ' + N[b.m - 1] + ' ' + b.y;
+  }
+  function hRangeOfYear(y) { var a = hOf(gKey(+y, 1, 1)), b = hOf(gKey(+y, 12, 31)); return !a || !b ? '' : a.y === b.y ? a.y + ' هـ' : a.y + ' – ' + b.y + ' هـ'; }
+  function fmtMonthName(ym) { var p = gParse(ym); return p && p.cal === 'g' ? G_MONTHS[p.m - 1] : ''; }
+  function fmtMonth(ym) { var p = gParse(ym); return p && p.cal === 'g' ? G_MONTHS[p.m - 1] + ' ' + p.y : ''; }
+  function fmtDay(k) { var p = gParse(k); return p && p.cal === 'g' && p.kind === 'day' ? p.d + ' ' + G_MONTHS[p.m - 1] + ' ' + p.y : ''; }
+  function fmtDayLong(k) { var t = fmtDay(k); return t ? WD_NAMES[gWeekday(k)] + ' ' + t : ''; }
+  function fmtPrint(k) { var t = fmtDay(k), h = hDayText(k); return t && h ? t + ' · الموافق ' + h : t; }
+  function fileTag(k) { var p = gParse(k); return !p || p.cal !== 'g' ? '' : p.kind === 'day' ? gKey(p.y, p.m, p.d) : gYm(p.y, p.m); }
+  function monthOptions(y) { var out = []; for (var m = 1; m <= 12; m++) out.push({ v: gYm(+y, m), t: G_MONTHS[m - 1], sub: hRangeOfMonth(gYm(+y, m)) }); return out; }
+  function yearOptions(a, b) { return gYears(a, b).map(function (y) { return { v: y, t: String(y), sub: hRangeOfYear(y) }; }); }
+  /* حالتا الكرت (§7): «مغلق» و«مفتوح» وحدهما؛ السببُ الإداري في التلميح مع التاريخين كاملين. k يوم أو شهر أو سنة 'YYYY' */
+  var WHY = { ap: 'اعتُمد', auto: 'أُغلق تلقائياً', past: 'أُغلق تلقائياً', shut: 'أُغلق يدوياً', gone: 'مضى' };
+  function cardState(o) {
+    o = o || {};
+    var k = String(o.k == null ? '' : o.k), closed = !!o.closed, why = closed ? (WHY[o.why] ? o.why : '') : o.why === 'retro' ? 'retro' : '', head, reason;
+    if (/^\d{4}$/.test(k)) head = k + ' · ' + hRangeOfYear(+k);
+    else if (isGKey(k, 'month')) head = fmtMonth(k) + ' · ' + hRangeOfMonth(k);
+    else head = fmtDayLong(k) + (hDayText(k) ? ' · ' + hDayText(k) : '');
+    reason = closed ? 'مغلق' + (why ? ': ' + WHY[why] : '') : why === 'retro' ? 'مفتوح للاستدراك' + (o.until ? ' حتى ' + (typeof o.until === 'number' ? fmtDay(gAt(o.until).k) : o.until) : '') : 'مفتوح';
+    return { closed: closed, why: why, label: closed ? 'مغلق' : 'مفتوح', tip: head + ' — ' + reason };
+  }
   KIVO.BassamCal = Object.freeze({ hParts: hParts, hPartsSafe: hPartsSafe, hToday: hToday, hGreg: hGreg, hGregNoon: hGregNoon, hGregMonthLabel: hGregMonthLabel, hGregYearRange: hGregYearRange,
-    hPartsRiyadh: hPartsRiyadh, hNow: hNow, hText: hText, hGregExact: hGregExact, hGregUTC: hGregUTC, hMonthDays: hMonthDays, hMonthDaysNoon: hMonthDaysNoon, hWeekdayIndex: hWeekdayIndex });
+    hPartsRiyadh: hPartsRiyadh, hNow: hNow, hText: hText, hGregExact: hGregExact, hGregUTC: hGregUTC, hMonthDays: hMonthDays, hMonthDaysNoon: hMonthDaysNoon, hWeekdayIndex: hWeekdayIndex,
+    /* V7 · 53 تقويم: الميلادي أساساً (cal_api.md §1) */
+    G_MONTHS: Object.freeze(G_MONTHS), H_MONTHS: Object.freeze(H_MONTHS), WD_NAMES: Object.freeze(WD_NAMES), DAY_LETTERS: Object.freeze(DAY_LETTERS),
+    gToday: gToday, gAt: gAt, gKey: gKey, gYm: gYm, gMk: gMk, gParse: gParse, keyCal: keyCal, isGKey: isGKey, gMonthOf: gMonthOf, gMonthDays: gMonthDays, gDays: gDays,
+    gMonthRange: gMonthRange, gRange: gRange, gAddDays: gAddDays, gAddMonths: gAddMonths, gPrevMonth: gPrevMonth, gNextMonth: gNextMonth, gCmp: gCmp, gDayNum: gDayNum,
+    gWeekday: gWeekday, gYears: gYears, gLetter: gLetter, hOf: hOf, hLine: hLine, hDayText: hDayText, hMonthsOf: hMonthsOf, hRangeOfMonth: hRangeOfMonth,
+    hRangeOfYear: hRangeOfYear, fmtMonth: fmtMonth, fmtMonthName: fmtMonthName, fmtDay: fmtDay, fmtDayLong: fmtDayLong, fmtPrint: fmtPrint, fileTag: fileTag,
+    monthOptions: monthOptions, yearOptions: yearOptions, cardState: cardState });
 })();

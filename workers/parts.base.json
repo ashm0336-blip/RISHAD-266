@@ -272,7 +272,19 @@
    "sha256": null
   },
   {
+   "file": "019v-calendar-convert.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
    "file": "019w-period-store.js",
+   "lines": null,
+   "bytes": null,
+   "sha256": null
+  },
+  {
+   "file": "019v1-calendar-migration.js",
    "lines": null,
    "bytes": null,
    "sha256": null
