@@ -1195,7 +1195,6 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
     quiet: true,
     __restorePlan: RESTORE_INTERNAL_TOKEN,
     __srvRestore: RESTORE_INTERNAL_TOKEN,   // RISHAD266: the verified server restore route; only it may remove units (018 deptShapeWhy)
-    __srvRestoreDept: body.scope.kind === 'dept' ? dept : '',   // V7 · 53: 062 — the unit of a department restore whose only change is its perms slice
   });
   if (!kv.__plan || !kv.ok)
     throw Object.assign(

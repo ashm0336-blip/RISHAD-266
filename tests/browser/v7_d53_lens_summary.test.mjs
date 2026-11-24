@@ -1,5 +1,5 @@
 /* V7 · 53 (writers · بقايا 52): ملخّصُ الاستيراد يذكر تضييقَ العدسات — «العدسات 3 من 6». الاستيرادُ يضيّق عدساتِ الوحدة إلى ما في النسخة
-   (019d rsDeptLensNarrow · ك1) وكان الملخّصُ قبل التأكيد صامتاً عنه. مديرُ الإدارة TEST_ONLY_B (عدساتُها الستّ) يصدّر نسختها، ونسختُها بثلاث عدسات
+   (019d rsDeptLensNarrow · ك1) وكان الملخّصُ قبل التأكيد صامتاً عنه. مديرُ المنصة على TEST_ONLY_B (عدساتُها الستّ) يصدّر نسختها، ونسختُها بثلاث عدسات
    (شكلُ Production: zones · paths · dens)، فيقرأ الملخّصُ «العدسات 3 من 6»، وبعد «استبدال كامل» السقفُ في الخادم ثلاث — والملخّصُ صادق. مختبرٌ معزول TEST_ONLY. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +17,8 @@ test('53: ملخّصُ استيراد نسخة الإدارة يذكر تضيي�
   try {
     const P0 = kv(lab, 'bassam_perms_v1');
     assert.ok(!Array.isArray((P0.lenses || {})[B]) || P0.lenses[B].length === 6, 'الوحدةُ بعدساتها الستّ قبل الاستيراد');
-    const s = await openAs(b, lab, LAB.mgrB, LAB.pw), p = s.page;   /* مديرُ الإدارة (كان يُرفض restore-policy · not-mgr: حفظةٌ لا تمسّ إلا شريحةَ الصلاحيات — 062) */
+    const s = await openAs(b, lab, LAB.superUn, LAB.superPw), p = s.page;   /* مديرُ المنصة على الوحدة (التضييقُ قاعدةٌ واحدة له ولمدير الإدارة — ك1) */
+    await p.evaluate((d) => KIVO.BassamDepts.setActive(d), B); await p.waitForTimeout(1500);
     await s.go('#/admin/backup', 3500);
     const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 60000 }), p.locator('main button', { hasText: 'تصدير نسخة هذ' }).first().click()]);
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'd53-lens-')), file = path.join(dir, 'TEST_ONLY-copy.json'); await dl.saveAs(file);
