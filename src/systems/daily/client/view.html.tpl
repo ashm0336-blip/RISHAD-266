@@ -1412,7 +1412,7 @@
             </div>
             <sc-if value="{{assignSupOn}}" hint-placeholder-val="{{ false }}">
             <div style="margin-top:4px;border-top:1px dashed var(--bd-a185151810p35);padding-top:4px">
-              <button onClick="{{assignSupTog}}" title="حاملو قالب صلاحيات موسوم «إشرافي» ورئيس ونائب الوردية في تقرير اليوم — للاطّلاع؛ لا يُسكَّنون ولا يُحسبون في التغطية" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:6px;height:26px;padding:0 6px;border:0;background:transparent;cursor:pointer;font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;color:var(--fg-x8a6f35)" style-hover="background:var(--bg-a185151810p06)">
+              <button onClick="{{assignSupTog}}" title="حاملو دورٍ إشرافي من أدوار الإدارة ورئيس ونائب الوردية من تقرير اليوم — للاطّلاع؛ لا يُسكَّنون ولا يُحسبون في التغطية" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:6px;height:26px;padding:0 6px;border:0;background:transparent;cursor:pointer;font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;color:var(--fg-x8a6f35)" style-hover="background:var(--bg-a185151810p06)">
                 <span>طاقم إشرافي ({{assignSupN}}) — خارج التسكين</span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{assignSupChev}}" data-i="i-c92915c6"></svg>
               </button>

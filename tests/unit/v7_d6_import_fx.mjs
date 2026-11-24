@@ -87,7 +87,7 @@ export const NOT_TRANSFERRED = {
 /* V7 · د6 (posfix): مفاتيحُ الأيام في وثيقة الجولات (لا __pMig ولا m:y-m) */
 export const isDay = (k) => /^\d{4}-\d{1,2}-\d{1,2}(?:-.+)?$/.test(k);
 export const dayKeys = (doc) => Object.keys(doc).filter(isDay);
-export async function oldFile({ scale = 1, small = false, images = true, planRows = 1, openDays = 0, open = null } = {}) {
+export async function oldFile({ scale = 1, small = false, images = true, planRows = 1, openDays = 0, open = null, lenses = PROD_LENSES } = {}) {
   /* open: { y, m, days: [...] } — أيامٌ حيّة في شهرٍ بعينه (اختبارُ المتصفح: الشهرُ الجاري ليوم الصفحة) · openDays: n ⇒ 1448-6 من 1 إلى n */
   const O = open || (openDays ? { y: 1448, m: 6, days: Array.from({ length: openDays }, (_, i) => i + 1) } : null), nOpen = O ? O.days.length : 0;
   const docs = await legacyDocs(), J = JSON.stringify;
@@ -159,7 +159,7 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
   };
   for (let u = 1; u <= 8; u++) data['bassam_notif_dev_v1:TEST_ONLY_u' + u] = u === 8 ? '1795000000003' : null;
   const file = { app: 'bassam-crowd', version: 3, kind: 'dept', dept: 'TEST_ONLY إدارة قديمة', exportedAt: '2026-11-20T10:00:00.000Z', data,
-    perms: { capSet: true, cap: ['plan', 'daily', 'emps', 'admin'], emps: { tst_demo_e11: { plan: ['view'] }, ['mgr:' + SRC_DEPT]: { plan: ['view'] } }, lenses: [] }, idbImages: idb, preImport: false };
+    perms: { capSet: true, cap: ['plan', 'daily', 'emps', 'admin'], emps: { tst_demo_e11: { plan: ['view'] }, ['mgr:' + SRC_DEPT]: { plan: ['view'] } }, ...(lenses === null ? {} : { lenses: lenses.slice() }) }, idbImages: idb, preImport: false };
   DROPS.set(file, drops);
   /* ما يُعاد ربطه (019f rsBCDeptWalk) بعدده: لكل تنبيهٍ dept (إلا OTHER) و by وما في to.e من مفتاح المدير · علامةُ القراءة (رمزُ المدير) · لكل مهمةٍ by و rv · صحيفةُ المدير */
   const nfRefs = items.reduce((n, x) => n + (x.dept === SRC_DEPT ? 1 : 0) + 1 + x.to.e.filter((e) => e === 'mgr:' + SRC_DEPT).length, 0) + 1;
@@ -170,6 +170,9 @@ export async function oldFile({ scale = 1, small = false, images = true, planRow
   return file;
 }
 /* V7 · د6 (schemafix): حقولُ المصلى التي لا يعرفها المخطّط في الملف القديم — يُسقطها الاستيرادُ ويذكرها؛ المطابقةُ مفتاحاً مفتاحاً تكون على الوثيقة بدونها */
+/* V7 · د7 (ك1): عدساتُ الإدارة في ملف Production كما ذكرها المالك (perms.lenses = [zones, paths, dens] — 019d rsDeptLensNarrow يحترمها عند الاستيراد).
+   كان المولّدُ يكتب [] (لا عدسة) فلم يلتقط اختبارٌ أن الاستيراد يُسقطها. lenses: null ⇒ نسخةٌ بلا قائمة (Production: الغيابُ = كلُّ العدسات) */
+export const PROD_LENSES = ['zones', 'paths', 'dens'];
 export const DROPPED_FIELDS = ['nNow', 'capNow', 'share', 'shareName'];
 const DROPS = new WeakMap(), REMAP = new WeakMap();
 /* V7 · د6 (remap): معرّفُ إدارة المصدر في الملف القديم (كما في Production: معرّفٌ لا يوجد على المنصة الهدف) · ومعرّفٌ أجنبي في تنبيهٍ واحد */

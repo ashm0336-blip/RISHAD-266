@@ -329,6 +329,8 @@ def gen_perm44(S, produced):
     lv = json.load(open(os.path.join(R, PERM44['levels']), encoding='utf-8'))
     opt_in = sorted(d['key'] for d in (json.load(open(f, encoding='utf-8')) for f in __import__('glob').glob(os.path.join(S, 'systems', '*', 'system.json'))) if d.get('optIn') is True)
     data = {'v': lv['v'], 'levels': lv['levels'], 'names': lv['names'], 'systems': perm44_systems(M, opt_in)}
+    # V7 · د7 (أ): العدساتُ القائمة (plugins/lenses — مفاتيحُها lens.<L>.* في السجلّ) صفوفٌ في محرّر الأدوار بمستويات الأنظمة؛ مضيفوها من ملفّها (= 057 enfIx)
+    data['lenses'] = [{'key': x['key'], 'name': x['name'], 'hosts': x['hosts']} for x in lenses_of(S, M)]
     dj = 'var KIVO_PERM44_DATA = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n'
     core = rd(os.path.join(R, PERM44['core']))
     head = ('/* ═══ V7 · د5-هـ (44) — محرّكُ الأدوار (%s): مولَّدٌ بأداة tools/generate.py من permissions/registry/perm44-levels.json (جدولُ المستويات) و\n'

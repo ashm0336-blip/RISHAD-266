@@ -21,7 +21,7 @@ function enfMe(A, refs) {
   var ds = enfDeptsOf(A), out = { ver: ENF_VER, mode: 'enforce', n: enfIx().order.length, perm: enfPermMigrated(A), depts: {} }, i, L;
   for (i = 0; i < ds.length; i++) {
     var d = ds[i], lens = [];
-    for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) { L = KIVO_LENS_PLUGINS.keys[li]; if (KIVO_BUILD.lensGate(A.perms, A.u, d, L).on) lens.push(L); }   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (الترتيبُ نفسُه) */
+    for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) { L = KIVO_LENS_PLUGINS.keys[li]; if (enfLensGate(A, d, L).on) lens.push(L); }   /* V7 · د7 (أ): بالوراثة (057) */   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (الترتيبُ نفسُه) */
     /* p: مفاتيحُ المنح الصريح (plus) المحمولة فعلاً — لتُضاف أفعالُها إلى الواجهة (الورقةُ القديمة لا تعرفها) */
     var gr = A.__grants && A.__grants[d] && A.u.ekey ? A.__grants[d].emp[A.u.ekey] : null, plus = [];
     if (isObj(gr) && Array.isArray(gr.plus)) gr.plus.forEach(function (k) { k = String(k); if (enfHeld(A, d, k) && plus.indexOf(k) === -1) plus.push(k); });

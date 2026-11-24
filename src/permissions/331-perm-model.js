@@ -114,6 +114,8 @@
       /* caps-own: the ceiling mode travels with the registry (the server refuses a save that drops it — 021 capOwnWhy) */
       if (o.capOwn !== undefined) r.capOwn = o.capOwn; if (o.capMode !== undefined) r.capMode = o.capMode;
       if (o.capSeed !== undefined) r.capSeed = o.capSeed;   /* V7 · د6 (ب4): علامةُ «سجلٌّ مبذورٌ لم يضبطه أحد» تسافر مع السجلّ (أدناه unseed · seedUnit) */
+      /* V7 · د7 (52 · الجرد ٦): كلُّ حقلٍ أعلى آخر لا يعرفه هذا البناء يُحمل كما هو مخزَّن — كانت الوثيقةُ تُبنى من القائمة أعلاه وحدها فيُسقطه أولُ حفظ */
+      Object.keys(o).forEach(function(f9){ if (!Object.prototype.hasOwnProperty.call(r, f9)) r[f9] = o[f9]; });
       /* تسامح: مفتاح الورقة القديم emps/tasks (من عهد «التوأم») يُقرأ tasks */
       try { var mv = false; Object.keys(r.emps).forEach(function(d9){ Object.keys(r.emps[d9] || {}).forEach(function(ek){ var pm9 = r.emps[d9][ek] || {}; if (pm9['emps/tasks']) { if (!pm9.tasks) pm9.tasks = pm9['emps/tasks']; delete pm9['emps/tasks']; mv = true; } }); }); if (mv) permSave(r); } catch (e9) {}
       /* ترقية: «المناطق» انضمّت لسقف العدسات — المصفوفات المخزونة قبلها تعدّها مفعّلة */
@@ -399,7 +401,9 @@
     if (pg && pg.subStore === 'lenses') return setDeptLenses(did, arr);
     var o = permStore(), d = did || curDept();
     o.subs = o.subs || {}; o.subs[d] = o.subs[d] || {};
-    o.subs[d][pk] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; });
+    /* V7 · د7 (52 · الجرد ٧): مفتاحُ قسمٍ مخزَّن لا يعرفه هذا البناء (عميلٌ أقدم بعد إضافة نظام) يُحمل كما هو — المحرّرُ يضبط ما يعرضه وحده */
+    var keep9 = (Array.isArray(o.subs[d][pk]) ? o.subs[d][pk] : []).filter(function(k){ return all.indexOf(k) === -1; });
+    o.subs[d][pk] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; }).concat(keep9);
     unseed(o, d); permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
   }
   /* ── مجموعة السقف الثانية: التبويبات ──────────────────────────────────────
@@ -436,7 +440,8 @@
     var all = tabKeysOf(pk); if (!all.length) return { ok:false, err:'لا تبويبات لهذه الصفحة' };
     var o = permStore(), d = did || curDept();
     o.subs = o.subs || {}; o.subs[d] = o.subs[d] || {};
-    o.subs[d][tabSlot(pk)] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; });
+    var keep9 = (Array.isArray(o.subs[d][tabSlot(pk)]) ? o.subs[d][tabSlot(pk)] : []).filter(function(k){ return all.indexOf(k) === -1; });   /* V7 · د7 (52 · الجرد ٧): كالأقسام — المجهولُ يُحمل */
+    o.subs[d][tabSlot(pk)] = (Array.isArray(arr) ? arr : []).filter(function(k){ return all.indexOf(k) !== -1; }).concat(keep9);
     unseed(o, d); permSave(o); return { ok:true };   /* caps-own: no trim — read-time narrowing (setDeptCap) */
   }
   function tabOn(pk, tk){
@@ -555,7 +560,10 @@
   }
   /* مكنسة: تمسح صلاحيات كل مفتاحٍ لا حساب دخول له في الإدارة — تنظّف ما خلّفته
      عمليات حذفٍ سابقة قبل ربط الصلاحيات بالحساب. تُستدعى عند فتح الجداول. */
+  /* V7 · د7 (52 · الجرد ٤): لا يستدعيه شيءٌ تلقائياً بعد اليوم (كان فتحُ الجدول الشهري) — وإن استُدعي فلمديرٍ صراحةً، ولا يحذف إلا ما يُثبت غيابُه:
+     قائمةُ الحسابات في العميل مُرشَّحة (054 usersScopeOut) فلا تُثبت غياباً، فلا يحذف هنا شيئاً إلا لمدير المنصة */
   function pruneOrphanEmpPerms(did){
+    if (!isSuper()) return { ok:true, removed:0, skipped:true };
     try {
       var d = did || curDept(); var o = permStore();
       var mp = (o.emps || {})[d]; if (!mp) return { ok:true, removed:0 };
@@ -894,7 +902,8 @@
     keepL(pl, g0.plus); keepL(mi, g0.minus);
     var old = JSON.stringify(rec.emp[ekey] || null);
     if (!pl.length && !mi.length) delete rec.emp[ekey];
-    else { rec.emp[ekey] = { plus: pl.sort(), minus: mi.sort(), at: Date.now(), by: u ? u.id : '' }; if (src) rec.emp[ekey].src = String(src); }
+    else { var src9 = src != null && src !== '' ? src : g0.src;   /* V7 · د7 (52 · الجرد ٨): بلا src يبقى مصدرُ المدخل المخزَّن — فلا يصير المنحُ المشتقّ من دورٍ صريحاً بصمت */
+      rec.emp[ekey] = { plus: pl.sort(), minus: mi.sort(), at: Date.now(), by: u ? u.id : '' }; if (src9) rec.emp[ekey].src = String(src9); }
     var cmp = function(x){ return x ? JSON.stringify({ p: (x.plus || []).slice().sort(), m: (x.minus || []).slice().sort(), s: x.src || '' }) : 'null'; };   /* caps-own: order-insensitive — an equal entry is not rewritten */
     if (cmp(old === 'null' ? null : JSON.parse(old)) === cmp(rec.emp[ekey] || null)) return { ok:true, same:true, dropped: dropped };
     try { RAW.setItem.call(localStorage, 'bsdept:' + d + ':bassam_grants_v1', JSON.stringify(rec)); } catch(e){ return { ok:false, err:'تعذّر الحفظ' }; }

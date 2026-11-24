@@ -80,6 +80,13 @@ function enfIx() {
 }
 /* سقفُ العدسة للإدارة: perms.lenses[d] (غيابُه = كلُّ العدسات — نصُّ الواجهة نفسُه) */
 function enfLensDeptOn(A, d, L) { var dl = ((A.perms && A.perms.lenses) || {})[d]; return Array.isArray(dl) ? dl.indexOf(L) !== -1 : true; }
+/* V7 · د7 (أ — قرار المالك: العدساتُ كالأنظمة): بوابةُ العدسة بالوراثة — lensGate (سقفُ الوحدة · عدساتُ الموظف) ∧ سقفُ كلِّ أصل (perm44LensOn: السلسلةُ
+   نفسُها لسقف الأدوار). كانت lensGate تقرأ سقفَ الوحدة وحده فتبقى العدسةُ المطفأةُ في الإدارة مفتوحةً في قسمها على الخادم. مديرُ المنصة كما كان */
+function enfLensGate(A, d, L) {
+  var g = KIVO_BUILD.lensGate(A.perms, A.u, d, L);
+  if (g.on && !(A.u && A.u.role === 'super') && !perm44LensOn(A, d)(L)) { g.on = false; g.deptOn = false; g.anc = true; }
+  return g;
+}
 /* Department Ceiling: المفتاحُ داخل سقف الإدارة؟ (صفحتُه/ورقتُه على السقف · مضيفُ العدسة على السقف ∧ العدسةُ في سقف الإدارة)
    — لا يتجاوزه أحدٌ ولو مُنح صراحةً؛ والإعداداتُ لمدير النظام دائماً (admFree كما في AS‑IS) */
 function enfKeyOnCeiling(A, d, key) {
@@ -148,6 +155,16 @@ var ENF_MGR_FULL = { 'backup.restore': 1, 'import.replace': 1 };
 /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يكتب في الفترات المقفلة/المنقضية من إدارته بلا نافذةٍ رجعية — في الاستيراد والاستعادة الخادمية المتحقَّقة وحدها (A.__srvRst).
    هذا هو الموضعُ الواحد القابلُ للرجوع: إن قرّر المالك أن يشمل الكتابةَ الحيّة كذلك يُحذف شرطُ (X.restore ∧ A.__srvRst) هنا وحده. */
 function enfLockBypass(A, d, X) { return !!(X && X.restore && A && A.__srvRst) && enfDeptMgrFull(A, d); }
+/* V7 · د7 (ك1): استيرادُ مدير الإدارة نسخةَ إدارته يضيّق عدساتِها إلى ما في النسخة (019d rsDeptLensNarrow)، ونسخةُ Production تحمل بياناتِ عدساتها المطفأة
+   (البوابات · العلامات في المخطط) — فكان استيرادُها مرةً ثانية يُرفض «lens.gates.create». في الاستيراد والاستعادة الخادمية المتحقَّقة (A.__srvRst) وحدها
+   ولمدير الإدارة في إدارته وحدها: مفتاحُ عدسةٍ مطفأة نظامُها المضيف مفعّلٌ في السقف = بياناتٌ مخزَّنةٌ بلا أثر (كأوراق الموظفين خارج السقف · قرارُ المالك ب3) —
+   العدسةُ تبقى مطفأةً لا تظهر لأحد، والكتابةُ الحيّة على حكمها. الموضعُ الواحد القابلُ للرجوع: حذفُ هذه الدالة يعيد الرفض */
+function enfLensInertRestore(A, d, key) {
+  var ix = enfIx(), hs = ix.hosts[key];
+  if (!hs || !ix.lens[key] || !(A && A.__srvRst) || !enfDeptMgrFull(A, d)) return false;
+  for (var i = 0; i < hs.length; i++) if (capOnDept(A, d, hs[i])) return true;
+  return false;
+}
 function enfDeptMgrFull(A, d) { return !!(A && A.u) && A.u.role === 'staff' && !!d && isUnitId(A, d) && isMgrOf(A, d); }   /* V7 · د6 (QA): دورُ «dept» المتقاعد ليس مديرَ إدارة هنا — يبقى مرفوضاً في التصدير وجرد الاستعادة (privacy_backup f) */
 /* هل يحمل الفاعلُ المفتاحَ في الإدارة d؟ (سقف الإدارة ∧ بوابة العدسة ∧ الدور ∧ الترجمة/المنح الصريح − الإسقاط) */
 function enfHeld(A, d, key) {
@@ -170,11 +187,12 @@ function enfHeld0(A, d, key) {
   /* …وكلُّ مفتاحٍ بعدها: لا مفتاحَ على عقدةٍ فوقية ولا معرّفٍ مجهول لأحد (gm على عقدةٍ كان يحمل على العقدة تحتها مفاتيحَ الوحدة) */
   if (!isUnitId(A, d)) return false;
   if (!sup && !deptInScope(A, d)) return false;
+  if (enfLensInertRestore(A, d, key)) return true;   /* V7 · د7 (ك1) */
   if (!enfKeyOnCeiling(A, d, key)) return false;
   if (ENF_MGR_FULL[key] && enfDeptMgrFull(A, d) && !enfGrantOf(A, d).minus[key]) return true;   /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يحمل الاستعادةَ والاستبدال في إدارته وحدها — بلا منحٍ صريح (الإسقاطُ الصريح من مدير المنصة يبقى نافذاً) */
   var L = ix.lens[key];
   if (L) {                                                               /* D3-04: Ceiling ∧ Employee Lens Assignment — enable بوابةٌ لا تمنح العملية */
-    var g = KIVO_BUILD.lensGate(A.perms, u, d, L);
+    var g = enfLensGate(A, d, L);   /* V7 · د7 (أ): بالوراثة */
     if (!g.on) return false;
     if (key === 'lens.' + L + '.enable') return true;
   }

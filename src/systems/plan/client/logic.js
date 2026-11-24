@@ -104,6 +104,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   }
   async _opCommit(changes) {
     try {
+      /* V7 · د7 (planprove): ما لم يتغيّر فيه إلا الختم يُرسل بقيمته المخزّنة — نظيرُ _dsUnstamped في الجولات (د6) */
+      if (changes && changes.bassam_plan_v1 && typeof this._plUnstamped === "function") changes = { ...changes, bassam_plan_v1: this._plUnstamped(changes.bassam_plan_v1) };
       const service = this._opService(),
         names = Object.keys(changes).sort(),
         action = "plan:" + names.join("|");
@@ -196,6 +198,59 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       );
       return { ok: 0, err: "review-required" };
     }
+  }
+  /* V7 · د7 (planprove · جرد الكتّاب ١): stampPlan عند التحميل وstampSite عند الحفظ يختمان eid/id/sid على كل طابقٍ وكل شهر —
+     وبيانات Production المستوردة أو القديمة عناصرُها بلا eid، فكان تعديلٌ في موقعٍ مفتوح يحمل «تعديلاً» على الموقع المعتمد (site-approved)
+     وعلى الأشهر الماضية بلا mo (past-month-without-mo) فيُرفض الحفظُ كلُّه. والصفحةُ تشتقّ أيضاً (cap من _withCaps · شكلُ _snapshot للشهر).
+     هنا (كـ_dsUnstamped في د6): الطابقُ المعتمد في المخزَّن وما زال معتمداً، والشهرُ الماضي بلا mo في المخزَّن وما زال بلا mo — يُرسلان بقيمتهما
+     المخزّنة (الصفحةُ لا تعدّلهما، والخادمُ يرفض تعديلهما)؛ وكلُّ طابقٍ أو شهرٍ آخر لا يختلف عن المخزَّن إلا بحقول الختم يُرسل بقيمته المخزّنة.
+     الاعتمادُ وفكُّه وفتحُ الشهر (approved · mo) وكلُّ تعديلٍ حقيقي يُرسل كما هو ويحكم فيه الخادم — لا حارسَ يُرخى. */
+  _plUnstamped(value) {
+    if (!value || "object" !== typeof value) return value;
+    let base;
+    try {
+      base = this._opService().get("bassam_plan_v1");
+    } catch (e) {
+      return value;
+    }
+    if (!base || "object" !== typeof base) return value;
+    const STAMP = { eid: 1, id: 1, sid: 1 },
+      own = (o, k) => Object.prototype.hasOwnProperty.call(o, k),
+      same = (v, b) => {
+        if (v === b) return !0;
+        if (Array.isArray(b)) return Array.isArray(v) && v.length === b.length && b.every((x, i) => same(v[i], x));
+        if (!b || "object" !== typeof b || !v || "object" !== typeof v || Array.isArray(v)) return JSON.stringify(v) === JSON.stringify(b);
+        if (!Object.keys(b).every((k) => own(v, k) && same(v[k], b[k]))) return !1;
+        return Object.keys(v).every((k) => own(b, k) || STAMP[k]);
+      },
+      floors = (v, b) => {
+        if (!Array.isArray(v) || !Array.isArray(b)) return v;
+        return v.map((f, i) => {
+          const o = (f && null != f.sid && b.find((x) => x && x.sid === f.sid)) || (b[i] && null == b[i].sid ? b[i] : void 0);
+          if (void 0 === o || f === o) return f;
+          if (o && !0 === o.approved && f && !0 === f.approved) return o;   /* معتمدٌ قبلُ وبعدُ ⇒ كما خُزِّن */
+          return same(f, o) ? o : f;
+        });
+      },
+      cur = this.state && this.state.year + "-" + this.state.month,
+      out = { ...value };
+    if (Array.isArray(value.floors)) out.floors = floors(value.floors, base.floors);
+    if (value.months && "object" === typeof value.months && base.months && "object" === typeof base.months) {
+      const M = {};
+      Object.keys(value.months).forEach((k) => {
+        const v = value.months[k], b = base.months[k],
+          ym = /^(\d+)-(\d+)$/.exec(k),
+          mo = (x) => !!x && !Array.isArray(x) && "object" === typeof x && !!x.mo;
+        if (void 0 === b || v === b) M[k] = v;
+        else if (same(v, b)) M[k] = b;
+        else if (ym && k !== cur && this.monthPast(+ym[1], +ym[2]) && !mo(b) && !mo(v)) M[k] = b;   /* شهرٌ ماضٍ مقفل قبلُ وبعدُ وليس الشهرَ المعروض ⇒ كما خُزِّن (V7 · د7 52: تعديلُ المستخدم في الشهر المعروض يُرسل كما هو ويحكم فيه الخادم) */
+        else if (Array.isArray(v)) M[k] = floors(v, b);
+        else if (v && "object" === typeof v && Array.isArray(v.d) && b && "object" === typeof b && Array.isArray(b.d)) M[k] = { ...v, d: floors(v.d, b.d) };
+        else M[k] = v;
+      });
+      out.months = M;
+    }
+    return out;
   }
   /* V7 · د5-هـ: قاعدةُ «اليومَ فصاعداً» للكتابة العابرة في أيام الجولات (برومت 43 · الجذر 3) صارت عند مالكها: src/services/421-round-links.js */
   _opWrite(name, value) {

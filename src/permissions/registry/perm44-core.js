@@ -5,6 +5,9 @@ function perm44Make(R, D) {
   var LV = {}, SY = {}, sysKeysC = {}, ix = { leaf: {}, hosts: {}, sys: {} }, i, j;
   for (i = 0; i < D.levels.length; i++) LV[D.levels[i].key] = D.levels[i];
   for (i = 0; i < D.systems.length; i++) SY[D.systems[i].key] = D.systems[i];
+  /* V7 · د7 (أ): العدساتُ صفوفٌ في الدور بمفتاح مالكها في السجلّ (lens.<L>) ومستوياتِ الأنظمة نفسِها — LZ[lens.<L>] = { key, name, hosts } */
+  var LZ = {}, LENS = Array.isArray(D.lenses) ? D.lenses : [];
+  for (i = 0; i < LENS.length; i++) LZ['lens.' + LENS[i].key] = LENS[i];
   var leafSys = {};
   for (i = 0; i < D.systems.length; i++) for (j = 0; j < D.systems[i].leaves.length; j++) leafSys[D.systems[i].leaves[j]] = D.systems[i].key;
   function clone(x) { return x == null ? x : JSON.parse(JSON.stringify(x)); }
@@ -19,7 +22,7 @@ function perm44Make(R, D) {
     var o = R.owners[e.owner], own = [];
     if (e.ownerKind === 'page') { ix.leaf[k] = e.owner; own = [e.owner]; }
     else if (e.ownerKind === 'reference') { ix.leaf[k] = (o && o.managedIn) || leaves[0] || ''; own = [ix.leaf[k]]; }
-    else if (e.ownerKind === 'lens') { ix.hosts[k] = leaves; own = leaves; }
+    else if (e.ownerKind === 'lens') { ix.hosts[k] = leaves.length ? leaves : ((LZ[e.owner] && LZ[e.owner].hosts) || []).slice(); own = ix.hosts[k]; }   /* V7 · د7 (أ): مفتاحُ عدسةٍ بلا ذرّة (احتياطاً) = مضيفو العدسة من ملفّها — كما 057 enfIx */
     var ss = [];
     for (j = 0; j < own.length; j++) if (leafSys[own[j]] && ss.indexOf(leafSys[own[j]]) === -1) ss.push(leafSys[own[j]]);
     if (ss.length) ix.sys[k] = ss;
@@ -29,14 +32,17 @@ function perm44Make(R, D) {
   function sysKeys(s) {
     if (sysKeysC[s]) return sysKeysC[s].slice();
     var out = [], n;
-    for (n = 0; n < R.keys.length; n++) { var q = R.keys[n]; if (grantable(q) && ix.sys[q] && ix.sys[q].indexOf(s) !== -1) out.push(q); }
+    /* V7 · د7 (أ): صفُّ العدسة = مفاتيحُها (مالكُها lens.<L>) · وصفُّ النظام المضيف كما كان (يحمل مفاتيحَ عدساته — فلا يتغيّر ما يمنحه دورٌ قائم) */
+    for (n = 0; n < R.keys.length; n++) { var q = R.keys[n]; if (!grantable(q)) continue; if (LZ[s] ? R.byKey[q].owner === s : (ix.sys[q] && ix.sys[q].indexOf(s) !== -1)) out.push(q); }
     return (sysKeysC[s] = out).slice();
   }
   function levels() { return clone(D.levels); }
   function sysList() { return clone(D.systems); }
+  /* V7 · د7 (أ): العدساتُ { key: lens.<L>, name, hosts, lens: L } — وsys: الأنظمةُ المضيفة (مالكو أوراق مضيفيها) */
+  function lensList() { return LENS.map(function (x) { var ss = []; x.hosts.forEach(function (h) { if (leafSys[h] && ss.indexOf(leafSys[h]) === -1) ss.push(leafSys[h]); }); return { key: 'lens.' + x.key, name: x.name, hosts: x.hosts.slice(), lens: x.key, sys: ss }; }); }
   /* مستوى → مفاتيح (بترتيب السجلّ): view {access, view} · input +create · edit +edit · full كلُّ غير الحسّاس · sensitive الكلّ · custom القائمةُ ∩ مفاتيحُ النظام */
   function keysFor(s, lvl, custom) {
-    if (!SY[s]) return [];
+    if (!SY[s] && !LZ[s]) return [];
     var L = LV[lvl], all = sysKeys(s), out = [], n;
     if (!L) return [];
     if (L.custom) { var want = {}; (Array.isArray(custom) ? custom : []).forEach(function (x) { want[String(x)] = 1; }); return all.filter(function (x) { return want[x]; }); }
@@ -69,7 +75,12 @@ function perm44Make(R, D) {
     for (s in role.sys) {
       var x = role.sys[s]; if (!isObj(x)) continue;
       var ks = keysFor(s, x.lvl, x.keys);
-      for (n = 0; n < ks.length; n++) if (!ceilingFn || ceilingFn(ks[n])) map[ks[n]] = 1;
+      for (n = 0; n < ks.length; n++) if (!ceilingFn || ceilingFn(ks[n])) {
+        /* V7 · د7 (أ): صفُّ العدسة في الدور يحكم مفاتيحَها وحده — فلا يمنحها صفُّ مضيفها؛ وبلا صفٍّ لها تتبع مستوى المضيف كما كانت */
+        var ow = R.byKey[ks[n]] && R.byKey[ks[n]].owner;
+        if (!LZ[s] && LZ[ow] && isObj(role.sys[ow])) continue;
+        map[ks[n]] = 1;
+      }
     }
     return order(map);
   }
@@ -102,9 +113,28 @@ function perm44Make(R, D) {
     if (Object.keys(E.until).length) g.until = E.until;
     return g;
   }
+  /* V7 · د7 (52 · الكامن): القاعدةُ الواحدة لمنحٍ يُعاد بناؤه من الدور — ما في مدخله المخزَّن (old) من مفاتيح plus/minus خارج السقف (keyOn كاذبة)
+     يُحمل معه كما هو (فلا يرفضه حارسُ الكامن 021 latentLossWhy · capStaleBatch، ولا يُضاف مفتاحٌ جديد خارج السقف فلا يرفضه سقفُ المنح 059).
+     قرارُ المالك (REPLY_52 §1 — الدورُ الحالي هو المرجع): full = فعليُّ الدور الحالي بلا قصّ (effective بلا دالّة سقف)؛ إن كان old مشتقاً من دور فما حُمل
+     في plus خارج السقف ولا يمنحه الدورُ الحالي يُضاف إلى minus (يُحجب — التضييقُ مقبولٌ في كل الحرّاس)، فلا تعود مفاتيحُ دورٍ سابق متى وُسِّع السقف.
+     المنحُ الصريح (old بلا src دور) لا يُحجب منه شيء. يكتب به العميلُ (345 recompile) ويحكم الخادمُ على plus بالقاعدة نفسِها (057b perm44GrantsWhy). */
+  function derived(g) { return isObj(g) && /^(role:|p44:)/.test(String(g.src || '')); }
+  function keepOff(nx, old, keyOn, full) {
+    if (!isObj(nx) || !isObj(old)) return nx;
+    var g = clone(nx), f, n, k, F = isObj(full) && Array.isArray(full.keys) ? full.keys : null;
+    for (f in { plus: 1, minus: 1 }) {
+      var a = Array.isArray(g[f]) ? g[f] : (g[f] = []), o = Array.isArray(old[f]) ? old[f] : [];
+      for (n = 0; n < o.length; n++) { k = String(o[n]); if (!keyOn(k) && a.indexOf(k) === -1) a.push(k); }
+    }
+    if (F && /^(role:|p44:)/.test(String(old.src || ''))) for (n = 0; n < g.plus.length; n++) { k = String(g.plus[n]); if (!keyOn(k) && F.indexOf(k) === -1 && g.minus.indexOf(k) === -1) g.minus.push(k); }
+    return g;
+  }
+  /* V7 · د7 (52 · الجرد ٧): حقلٌ أعلى لا يعرفه هذا البناء يُحمل كما هو مخزَّن (كان السجلُّ يُبنى من {v, roles, people} وحدها فيضيع ما سواها بصمت) */
   function normRec(rec) {
-    var r = isObj(rec) ? clone(rec) : {};
-    return { v: 1, roles: Array.isArray(r.roles) ? r.roles : [], people: isObj(r.people) ? r.people : {} };
+    var r = isObj(rec) ? clone(rec) : {}, o = {}, f;
+    for (f in r) if (Object.prototype.hasOwnProperty.call(r, f) && f !== 'v' && f !== 'roles' && f !== 'people') o[f] = r[f];
+    o.v = 1; o.roles = Array.isArray(r.roles) ? r.roles : []; o.people = isObj(r.people) ? r.people : {};
+    return o;
   }
   /* شكلُ السجلّ: '' سليم · وإلا السبب */
   function shapeWhy(rec) {
@@ -199,7 +229,7 @@ function perm44Make(R, D) {
     var base = Array.isArray(keys) ? keys : [];
     return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
   }
-  return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
-           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, normRec: normRec, shapeWhy: shapeWhy,
+  return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
+           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, derived: derived, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }

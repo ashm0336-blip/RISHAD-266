@@ -157,7 +157,7 @@ test('V7 · د6 ب2 · the tree: columns of the seeded org, kind badges, the gol
     await s.go('#/sysadmin/org/' + G + '/people', 2000);
     assert.equal(await p.locator('main [data-org-tab="people"] tbody tr').count(), 4, 'a node: its branch');
     await s.go('#/sysadmin/org/' + A + '/systems', 2000);
-    assert.equal(String(await p.locator('main [data-org-tab="systems"] .p44-sw[aria-checked="true"]').count()), R[2][6].split('/')[0], '«الأنظمة» column = the ON switches of the tab');
+    assert.equal(String(await p.locator('main [data-org-tab="systems"] .p44-row .p44-sw[aria-checked="true"]').count()), R[2][6].split('/')[0], '«الأنظمة» column = the ON switches of the tab');
     assert.equal(String(await p.locator('main [data-org-tab="systems"] .p44-row').count()), sysAll, 'out of every switchable system');
     /* شارةُ النوع بلونٍ لكل نوع · كلُّ وحدةٍ في إطار · المختارةُ بإطارٍ ذهبي · خطوطُ التوصيل */
     const st = (id) => p.evaluate((i) => { const e = document.querySelector('main .og-rw[data-og-id="' + i + '"]'), c = getComputedStyle(e), k = getComputedStyle(e.querySelector('.og-kd'));

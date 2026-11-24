@@ -168,6 +168,17 @@
           <sc-if value="{{s.srcOn}}" hint-placeholder-val="{{ false }}"><a class="p44-src" href="{{s.srcHref}}" data-og-act="src" onClick="{{s.srcGo}}">افتح مصدره</a></sc-if>
           <sc-if value="{{s.sw}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-sw" role="switch" aria-checked="{{s.on}}" aria-label="{{s.n}}" disabled="{{s.locked}}" onClick="{{s.flip}}"></button></sc-if>
         </li>
+        <!-- V7 · د7 (أ): عدساتُ النظام المضيف تحته — الصفُّ نفسُه (المفتاح · القفل · «افتح مصدره») -->
+        <sc-if value="{{s.lzOn}}" hint-placeholder-val="{{ false }}"><li class="p44-lz"><ul class="p44-rows" aria-label="عدسات {{s.n}}">
+          <sc-for list="{{s.lz}}" as="z" hint-placeholder-count="6">
+          <li class="p44-lrow" data-on="{{z.on}}" data-sys="{{z.k}}" data-kind="lens">
+            <span class="p44-f"><b>{{z.n}}</b><small>{{z.sub}}</small></span>
+            <sc-if value="{{z.locked}}" hint-placeholder-val="{{ false }}"><span class="p44-lock" data-og="lock">{{z.lockTxt}}</span></sc-if>
+            <sc-if value="{{z.srcOn}}" hint-placeholder-val="{{ false }}"><a class="p44-src" href="{{z.srcHref}}" data-og-act="src" onClick="{{z.srcGo}}">افتح مصدره</a></sc-if>
+            <sc-if value="{{z.sw}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-sw" role="switch" aria-checked="{{z.on}}" aria-label="{{z.n}}" disabled="{{z.locked}}" onClick="{{z.flip}}"></button></sc-if>
+          </li>
+          </sc-for>
+        </ul></li></sc-if>
         </sc-for>
       </ul>
     </section>
@@ -186,6 +197,7 @@
           <sc-if value="{{p44SysEffOn}}" hint-placeholder-val="{{ false }}"><li data-og-eff="on"><b>سيُفعَّل:</b> {{p44SysEffOn}}</li></sc-if>
           <sc-if value="{{p44SysEffOff}}" hint-placeholder-val="{{ false }}"><li data-og-eff="off"><b>سيُطفأ:</b> {{p44SysEffOff}}</li></sc-if>
           <sc-if value="{{p44SysEffWith}}" hint-placeholder-val="{{ false }}"><li data-og-eff="with"><b>يُطفأ معها:</b> {{p44SysEffWith}}</li></sc-if>
+          <sc-if value="{{p44SysEffVia}}" hint-placeholder-val="{{ false }}"><li data-og-eff="via"><b>تبقى عاملة:</b> {{p44SysEffVia}}</li></sc-if>
         </ul>
         <p class="p44-note">إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل.</p>
       </section>
@@ -257,6 +269,19 @@
           <div class="p44-keys" role="group" aria-label="أفعال {{s.n}}"><sc-for list="{{s.keys}}" as="x" hint-placeholder-count="4"><button type="button" class="p44-key" aria-pressed="{{x.on}}" onClick="{{x.flip}}">{{x.n}}<sc-if value="{{x.sens}}" hint-placeholder-val="{{ false }}"><span class="p44-sens">حسّاس</span></sc-if></button></sc-for></div>
           </sc-if>
         </li>
+        <!-- V7 · د7 (أ): كلُّ عدسةٍ مفعّلةٍ للوحدة صفٌّ تحت مضيفها بالمستويات نفسِها (52 · قرار المالك ٣: تلميحُ «مخصّص» بلا أفعال) -->
+        <sc-if value="{{s.lzOn}}" hint-placeholder-val="{{ false }}"><li class="p44-lz" title="العدسةُ بلا صفٍّ في الدور تأخذ مستوى نظامها. لمنع عدسةٍ وحدها: «مخصّص» بلا أفعال."><small class="p44-mute">العدسةُ بلا صفٍّ تأخذ مستوى نظامها · لمنعها وحدها: «مخصّص» بلا أفعال</small><ul class="p44-rows" aria-label="عدسات {{s.n}}">
+          <sc-for list="{{s.lz}}" as="z" hint-placeholder-count="6">
+          <li class="p44-lrow" data-on="{{z.onTxt}}" data-sys="{{z.k}}" data-kind="lens">
+            <span class="p44-f"><b>{{z.n}}</b><small>{{z.sub}}</small></span>
+            <sc-if value="{{z.isOn}}" hint-placeholder-val="{{ true }}"><label class="p44-lv"><span>المستوى</span><select value="{{z.lv}}" onChange="{{z.setLv}}" aria-label="مستوى {{z.n}}"><sc-for list="{{p44Lvls}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label></sc-if>
+            <button type="button" class="p44-sw" role="switch" aria-checked="{{z.onTxt}}" aria-label="تفعيل {{z.n}} لهذا الدور" onClick="{{z.flip}}"></button>
+            <sc-if value="{{z.custom}}" hint-placeholder-val="{{ false }}">
+            <div class="p44-keys" role="group" aria-label="أفعال {{z.n}}"><sc-for list="{{z.keys}}" as="x" hint-placeholder-count="4"><button type="button" class="p44-key" aria-pressed="{{x.on}}" onClick="{{x.flip}}">{{x.n}}<sc-if value="{{x.sens}}" hint-placeholder-val="{{ false }}"><span class="p44-sens">حسّاس</span></sc-if></button></sc-for></div>
+            </sc-if>
+          </li>
+          </sc-for>
+        </ul></li></sc-if>
         </sc-for>
       </ul>
       <section class="p44-cmp" aria-label="قارن مع دور آخر">
