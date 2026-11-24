@@ -442,8 +442,8 @@ for (const kind of Object.keys(FAILS).filter((k) => k !== 'session401')) {
 
 /* ── P4 (القاعدةُ وحدها): «عُدّل التكرار» كـ«أُنهي التكرار» · والإلغاءُ اليدوي والمستلَمةُ ونسخةُ اليوم وغيرُ المتكررة باقية ── */
 test('P4 · _tkUnseen: ما لا يراه الموظف من نُسخ السلسلة وحده', () => {
-  const { c } = page(null, null), T0 = { y: 1448, m: 5, d: 10 };
-  const q = (st, d, x, r11, rid = 'R1') => { const r = []; r[11] = r11 || null; r.__x = Object.assign({ rid }, x || {}); return { y: 1448, m: 5, d, st, r }; };
+  const { c } = page(null, null), T0 = { y: 2026, m: 10, d: 10 };   /* V7 · 53 تقويم: يومٌ ميلاديّ (YYYY-MM-DD) */
+  const q = (st, d, x, r11, rid = 'R1') => { const r = []; r[11] = r11 || null; r.__x = Object.assign({ rid }, x || {}); return { y: 2026, m: 10, d, st, r }; };
   const can = (why, o) => Object.assign({ can: { at: 1, why } }, o || {});
   const cases = [
     [q('upcoming', 11), true, 'قادمةٌ بعد اليوم لم تبدأ'], [q('new', 12), true, 'جديدةٌ بعد اليوم'],

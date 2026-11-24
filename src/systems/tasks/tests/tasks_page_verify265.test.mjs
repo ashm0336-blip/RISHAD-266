@@ -49,7 +49,7 @@ async function page(storeJson, emps, users, ext) {
   Object.assign(ctx, ext || {});
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
-  /* اليوم التشغيلي من خدمة الغلاف الحقيقية؛ hToday وحده يتقدم يومًا بين 00:00 و03:00 الرياض. */
+  /* اليوم التشغيلي من خدمة الغلاف الحقيقية؛ gTodayOf وحده يتقدم يومًا بين 00:00 و03:00 الرياض. */
   for (const f of ['src/services/490-emp-key.js', 'src/services/440-count.js', 'src/services/535-profile-facts.js', 'src/systems/tasks/client/546-task-model.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);
   KIVO.BassamPerm = { can: () => true, on: () => true }; KIVO.bsPct = (a, b) => (b ? Math.round(100 * a / b) : 0) + '٪';
   KIVO.BassamAuth = { user: () => ({ id: 'tst_dm1', role: 'staff', mgr: true, ekey: 'mgr:tst_d1', deptId: D, name: 'TEST_ONLY مدير' }), display: () => ({ name: 'TEST_ONLY مدير' }), users: () => users };
@@ -98,9 +98,9 @@ test('اليوم التشغيلي في fixture الصفحة الحقيقي يت�
   };
   const before = await make(boundary - 1), after = await make(boundary);
   const key = value => value.y + '-' + String(value.m).padStart(2, '0') + '-' + String(value.d).padStart(2, '0');
-  assert.equal(key(before.c.hToday()), key(after.c.hToday()), '02:59:59 و03:00 في اليوم المدني نفسه');
-  assert.notEqual(before.c._tkTodayK(), key(before.c.hToday()), 'قبل03:00 اليوم التشغيلي هو السابق');
-  assert.equal(after.c._tkTodayK(), key(after.c.hToday()), 'عند03:00 يبدأ اليوم التشغيلي الجديد');
+  assert.equal(key(before.c.gTodayOf()), key(after.c.gTodayOf()), '02:59:59 و03:00 في اليوم المدني نفسه');
+  assert.notEqual(before.c._tkTodayK(), key(before.c.gTodayOf()), 'قبل03:00 اليوم التشغيلي هو السابق');
+  assert.equal(after.c._tkTodayK(), key(after.c.gTodayOf()), 'عند03:00 يبدأ اليوم التشغيلي الجديد');
   const previous = before.c._tkTodayK().split('-').map(Number);
   assert.equal(before.c._tkDayLockOf(...previous).locked, false, 'اليوم الجاري مفتوح قبل الحد');
   assert.equal(after.c._tkDayLockOf(...previous).locked, true, 'اليوم نفسه يصبح منقضيًا ومقفلًا عند الحد');

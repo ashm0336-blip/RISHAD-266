@@ -1341,7 +1341,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                   ? " · نقرة مزدوجة لإغلاق اليوم"
                   : "";
       days.push({
-        cal9: { k: KIVO.BassamCal.gKey(e.year, e.month, a), closed: !!(D.locked || D.approved || D.shut), why: D.approved ? "ap" : D.shut ? "shut" : D.locked ? "past" : D.past ? "retro" : "", sel: a === sel, today: cur && a === s.d },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
+        cal9: { k: KIVO.BassamCal.gKey(e.year, e.month, a), closed: !!(D.locked || D.approved || D.shut), why: D.approved ? "ap" : D.shut ? "shut" : D.locked ? "past" : D.past ? "retro" : "", sel: a === sel, today: cur && a === s.d, hint: hint.replace(/^ · /, "") },   /* V7 · 53 تقويم: حالةُ الكرت المشترك · وإرشادُ الصلاحية سطرُ التلميح الرابع (hint) */
         num: String(a),
         gnum: String(G.getDate()),
         isToday: cur && a === s.d,
@@ -1371,14 +1371,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     const today = !!eff && cur && eff === s.d,
       DL = eff ? this._tkDayLockOf(e.year, e.month, eff) : null;
+    /* V7 · 53 تقويم: العنوانُ ميلاديٌّ والهجريُّ المقابل سطرُه التابع («الموافق …») — لليوم ولـ«الشهر كاملاً» */
     let title = "مهام شهر " + MN + " " + e.year + " — كل الأيام",
-      sub = "";
+      sub = KIVO.BassamCal.hRangeOfMonth(SK) ? "الموافق " + KIVO.BassamCal.hRangeOfMonth(SK) + " هـ" : "";
     if (eff) {
-      const G = gd(eff);
+      const G = gd(eff), H = KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(e.year, e.month, eff));
       title = (today ? "مهام اليوم — " : "مهام يوم ") + WD[G.getDay()] + " " + eff + " " + MN + " " + e.year;
-      try {
-        sub = "الموافق " + G.toLocaleDateString("ar-u-ca-gregory-nu-latn", { day: "numeric", month: "long", year: "numeric" }) + " م";
-      } catch (x) { /* بلا تقويم ميلادي في المتصفح ⇒ بلا سطر «الموافق» */ }
+      sub = H ? "الموافق " + H + " هـ" : "";
     } else if (sel) title = "نتائج البحث في مهام شهر " + MN + " " + e.year;
     return {
       tkDayStripOn: "prod" !== e.sub,
@@ -2299,7 +2298,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             ],
           ].concat(t);
         try {
-          KIVO.BassamXLSX && KIVO.BassamXLSX.download(n, "tasks-" + (SD ? SD + "-" : "") + KIVO.BassamCal.fileTag(KIVO.BassamCal.gYm(e.year, e.month)) + ".xlsx");
+          KIVO.BassamXLSX && KIVO.BassamXLSX.download(n, "tasks-" + KIVO.BassamCal.fileTag(SD ? KIVO.BassamCal.gKey(e.year, e.month, SD) : KIVO.BassamCal.gYm(e.year, e.month)) + ".xlsx");
         } catch (t) {}
         this.setState({ filesOpen: !1 });
       },
