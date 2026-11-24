@@ -7337,6 +7337,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       X =
         (U && U.map((t) => !(!t || !t.ap)), G || Z || !!(U && this._rdAt(U, f) && this._rdAt(U, f).ap)),
       J = H || X,
+      /* V7 · 53 (ك8): نصُّ «عرض فقط» في «حالة التغطية» بحسب الحالة الحقيقية — معتمدة أو مقفلة لمضيّ اليوم (أو يدوياً) */
+      covRo = K || (U && this._rdAt(U, f) && this._rdAt(U, f).ap)
+        ? "الجولة معتمدة — عرض فقط"
+        : G
+          ? "الشهر معتمد — عرض فقط"
+          : Z
+            ? Y
+              ? "الجولة مقفلة — مضى اليوم · عرض فقط"
+              : "الجولة مقفلة يدوياً — عرض فقط"
+            : "الجولة معتمدة — عرض فقط",
       V = R && R.shAp && j ? R.shAp[j] : null,
       q = !!(V && V.ap && Array.isArray(V.snap)),
       Q = !(!U || J || q);
@@ -8802,7 +8812,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             }
           })(),
           O = (t) => (M ? M.mukOf(t) : !(!0 !== (Dt[t] || {}).muk)),
-          F = (t) => (t.emp || []).filter(ss),
+          /* V7 · 53 (ك2): «حالة التغطية» على وردية الكرت (x) دائماً — زرُّ «توسيع مؤشرات التوزيع» يغيّر فلتر التوزيع (ss) وحده */
+          cs = x && x !== Gt ? x : null,
+          F = (t) => (t.emp || []).filter((t) => null == cs || (Kt(t) || "") === cs),
           C = (t) => F(t).filter((t) => !S(Nt(t))),
           D = (t) => (x ? e.of(t, x) : e.tot(t, Zt)),
           P = (t) => C(t).length,
@@ -8852,15 +8864,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             const e = N(t);
             return e.closed ? 0 : Math.max(0, e.need - e.c);
           },
+          /* V7 · 53 (ك5): من على موقعٍ احتياجُه 0 (أو بلا احتياج) فائضٌ قابلٌ للنقل — لا يسقط من مصادر التغطية */
           K = (t) => {
             const e = N(t);
-            return e.closed || 0 === e.need ? 0 : Math.max(0, e.c - e.need);
+            return e.closed ? 0 : Math.max(0, e.c - e.need);
           },
+          /* V7 · 53 (15): الفائض القابل للنقل فعلاً — حاضرٌ غيرُ مكلَّف (الإشرافي خارج C أصلاً)، ولا يتجاوز فائضَ الموقع */
+          Km = (t) => Math.min(K(t), C(t).filter((t) => E(Nt(t)) && !O(Nt(t))).length),
           U = G.reduce((t, e) => t + (g(e.g) ? 0 : D(e.g)), 0),
           X = G.reduce((t, e) => t + (g(e.g) ? 0 : Math.min(D(e.g), B(e.g))), 0),
           V = U ? Math.round((X / U) * 100) : 0,
           q = G.reduce((t, e) => t + Y(e.g), 0),
-          Q = G.reduce((t, e) => t + K(e.g), 0),
+          Q = G.reduce((t, e) => t + Km(e.g), 0),
           _ = G.reduce((t, e) => t + (g(e.g) ? P(e.g) : 0), 0),
           $ = new Set();
         [pe, de, ce].forEach((t) =>
@@ -8873,20 +8888,30 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           }),
           et = tt.map((t) => Tt(t)).filter((t) => !$.has(t) && E(t) && !S(t)),
           st = tt.filter((t) => S(Tt(t))).length,
+          /* V7 · 53 (15 · ك17): الاحتياطُ القابل للنقل (غيرُ المكلَّف) · والحاضرون من الطاقم الإشرافي */
+          Rm = et.filter((t) => !O(t)).length,
+          pS = tt.filter((t) => E(Tt(t)) && S(Tt(t))).length,
           nt = (t, e) => {
             const s = f(t),
               n = f(e);
             return Math.hypot(s.x - n.x, s.y - n.y);
           },
-          it = (t) => {
-            const e = G.filter((e) => e.g !== t && K(e.g) > 0)
-              .map((e) => ({ x: e, d: nt(e.g, t) + (u(e.g) === u(t) ? 0 : 150) }))
+          /* V7 · 53 (ك6): «نفس الموقع» فقط إن كان للموقعين موقعٌ جغرافيّ وهو نفسُه */
+          sl = (t, e) => !!u(t) && u(t) === u(e),
+          /* V7 · 53 (ك3 · ك4): كلُّ شخصٍ يُقترح لصفٍّ واحد (U: من اقتُرح قبلُ) ولا يُؤخذ من موقعٍ أكثرُ من فائضه القابل للنقل ·
+             الشرطُ نفسُه للفائض والاحتياط: حاضرٌ غيرُ مكلَّف */
+          it = (t, U) => {
+            U = U || new Set();
+            const e = G.filter((e) => e.g !== t && Km(e.g) > 0)
+              .map((e) => ({ x: e, d: nt(e.g, t) + (sl(e.g, t) ? 0 : 150) }))
               .sort((t, e) => t.d - e.d);
             for (const t of e) {
-              const e = C(t.x.g).find((t) => E(Nt(t)) && !O(Nt(t)));
-              if (e) return { fromI: t.x.i, from: t.x.g, tok: e, key: Nt(e) };
+              if (C(t.x.g).filter((t) => U.has(Nt(t))).length >= Km(t.x.g)) continue;
+              const e = C(t.x.g).find((t) => E(Nt(t)) && !O(Nt(t)) && !U.has(Nt(t)));
+              if (e) return (U.add(Nt(e)), { fromI: t.x.i, from: t.x.g, tok: e, key: Nt(e) });
             }
-            return et.length ? { fromI: -1, from: null, tok: et[0], key: et[0] } : null;
+            const r = et.find((t) => !O(t) && !U.has(t));
+            return null != r ? (U.add(r), { fromI: -1, from: null, tok: r, key: r }) : null;
           },
           ot = { أ: 3, ب: 2, ج: 1 },
           rt = (t) =>
@@ -9372,13 +9397,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               ("gates" === Te ? "gates" !== d : "marks" === Te ? "marks" !== d : "zones" !== d)
             )
               return null;
+            /* V7 · 53 (ك7): بلا احتياجٍ محدَّد الحلقةُ «—» بلونٍ محايد لا 0٪ أحمر */
             const t = 2 * Math.PI * 40,
-              e = V >= 90 ? "#059669" : V >= 75 ? "#d97706" : "#dc2626",
-              i = (t, e, s, i, o) =>
+              e = U ? (V >= 90 ? "#059669" : V >= 75 ? "#d97706" : "#dc2626") : "#94a3b8",
+              i = (t, e, s, i, o, a, l) =>
                 n(
                   "div",
                   {
                     onClick: o,
+                    title: a || void 0,
                     style: {
                       borderRadius: 9,
                       padding: "6px 4px",
@@ -9390,6 +9417,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   },
                   n("div", { style: { fontSize: 17, fontWeight: 700, fontFeatureSettings: "'tnum'", color: s } }, String(t)),
                   n("div", { style: { fontSize: 9.5, color: "var(--fg-x64748b)" } }, e),
+                  l ? n("div", { style: { fontSize: 9.5, color: "var(--fg-x64748b)" } }, l) : null,
                 ),
               o = (t, e) =>
                 n(
@@ -9460,8 +9488,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                       n(
                         "div",
                         { style: { textAlign: "center" } },
-                        n("div", { style: { fontSize: 22, fontWeight: 700, lineHeight: 1 } }, V + "%"),
-                        n("div", { style: { fontSize: 9.5, color: "var(--fg-x64748b)" } }, X + " من " + U),
+                        n("div", { style: { fontSize: 22, fontWeight: 700, lineHeight: 1, color: U ? void 0 : e } }, U ? V + "%" : "—"),
+                        n("div", { style: { fontSize: 9.5, color: "var(--fg-x64748b)" } }, U ? X + " من " + U : "لا احتياج محدد"),
                       ),
                     ),
                     n(
@@ -9476,15 +9504,34 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         "div",
                         { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 } },
                         i(q, "عجز (موظف)", "#dc2626", "rgba(220,38,38,.06)", gt("red")),
-                        i(Q, "فائض قابل للنقل", "#3e8ac4", "rgba(37,99,235,.06)", gt("blu")),
+                        /* V7 · 53 (15): «متاح للتغطية» = الاحتياط + الفائض — من يمكن نقلُه فعلاً: حاضرٌ غيرُ مكلَّف وغيرُ إشرافي
+                           (ومن على موقعٍ احتياجُه 0 أو بلا احتياج) · يتبع «مخطط/فعلي» بالفائض · مفهومُ الفائض ولونُه في الخريطة باقيان */
+                        i(
+                          Rm + Q,
+                          "متاح للتغطية",
+                          "#3e8ac4",
+                          "rgba(37,99,235,.06)",
+                          gt("blu"),
+                          "الاحتياط: حاضر لم يُسكَّن في أي موقع · الفائض: مسكَّن فوق احتياج موقعه، قابل للنقل — بلا الغائب والمكلَّف والإشرافي",
+                          n(
+                            "span",
+                            null,
+                            n("span", { title: "حاضر لم يُسكَّن في أي موقع" }, "احتياط " + Rm),
+                            " · ",
+                            n("span", { title: "مسكَّن فوق احتياج موقعه، قابل للنقل" }, "فائض " + Q),
+                          ),
+                        ),
                         i(_, "بلا موقع فعّال", "#b45309", "rgba(245,158,11,.08)", gt("cls")),
                       ),
+                      /* V7 · 53 (ك17): الحاضرون بقاعدةٍ واحدة في كل الصفحات (الإشرافيُّ منهم) · ويُذكر «منهم إشرافي» حيث يُستبعدون */
                       n(
                         "div",
                         { style: { fontSize: 9.5, color: "var(--fg-x64748b)", marginTop: 5 } },
-                        "الاحتياط غير المسكَّن: ",
-                        n("b", null, String(et.length)),
-                        " · الحاضرون الآن " + tt.filter((t) => E(Tt(t)) && !S(Tt(t))).length + " من " + (tt.length - st),
+                        "الحاضرون الآن " +
+                          tt.filter((t) => E(Tt(t))).length +
+                          " من " +
+                          tt.length +
+                          (pS ? " · منهم إشرافي " + pS : ""),
                       ),
                       st
                         ? n(
@@ -9590,7 +9637,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               f = p
                 .filter((t) => Y(t.g) > 0)
                 .sort((t, e) => (0 === N(e.g).c) - (0 === N(t.g).c) || (ot[e.g.pri] || 0) - (ot[t.g.pri] || 0) || Y(e.g) - Y(t.g)),
-              m = p.filter((t) => K(t.g) > 0).sort((t, e) => K(e.g) - K(t.g)),
+              m = p.filter((t) => Km(t.g) > 0).sort((t, e) => Km(e.g) - Km(t.g)),
+              Us = new Set(),
               b = [];
             (h.length &&
               b.push(
@@ -9635,7 +9683,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   ),
                   f.length
                     ? f.map((t) => {
-                        const e = ut ? it(t.g) : null;
+                        const e = ut ? it(t.g, Us) : null;
                         return St(
                           t,
                           e
@@ -9646,7 +9694,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                                   "span",
                                   { key: "c", style: { color: "var(--fg-x64748b)" } },
                                   e.from
-                                    ? "من " + W(e.from) + " (فائض " + K(e.from) + (u(e.from) === u(t.g) ? " · نفس الموقع" : "") + ")"
+                                    ? "من " + W(e.from) + " (فائض " + Km(e.from) + (sl(e.from, t.g) ? " · نفس الموقع" : "") + ")"
                                     : "من الاحتياط",
                                 ),
                                 bt(
@@ -9668,7 +9716,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                               : null,
                         );
                       })
-                    : n("div", { style: { fontSize: 11, color: "var(--fg-x059669)", padding: 6 } }, "لا عجز — التغطية مكتملة ✓"),
+                    : U
+                      ? n("div", { style: { fontSize: 11, color: "var(--fg-x059669)", padding: 6 } }, "لا عجز — التغطية مكتملة ✓")
+                      : n("div", { style: { fontSize: 11, color: "var(--fg-x64748b)", padding: 6 } }, "لا احتياج محدد"),
                 ),
               ),
               b.push(
@@ -9684,7 +9734,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         c.one +
                         " · " +
                         KIVO.BassamCount(
-                          m.reduce((t, e) => t + K(e.g), 0),
+                          m.reduce((t, e) => t + Km(e.g), 0),
                           "موظف",
                         ) +
                         "",
@@ -9726,7 +9776,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               n(
                 "small",
                 { style: { fontSize: 10, color: "var(--fg-x64748b)", fontWeight: 400 } },
-                ut ? "اسحب موظفاً من الفائض وأفلته على الصف" : "الجولة معتمدة — عرض فقط",
+                /* V7 · 53 (ك8): النصُّ بحسب الحالة الحقيقية — معتمدة أو مقفلة لمضيّ اليوم (أو يدوياً) */
+                ut ? "اسحب موظفاً من الفائض وأفلته على الصف" : covRo,
               ),
               n("div", null, ...b),
             );

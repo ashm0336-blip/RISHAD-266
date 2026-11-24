@@ -8,15 +8,15 @@ export const SRC = process.env.DAILY_LOGIC ? fs.readFileSync(process.env.DAILY_L
 export const SH = ['الوردية الأولى', 'الوردية الثانية'];
 export const sq = (x, y) => 'M' + x + ' ' + y + ' L' + (x + 40) + ' ' + y + ' L' + (x + 40) + ' ' + (y + 40) + ' L' + x + ' ' + (y + 40) + ' Z';
 /* people: [{ id, shift, sup? }] · zones: [{ emp:[ids], needN, needS?, off?, region? }] · st: حالةٌ إضافية · sup: معرّفاتٌ إشرافية · muk: معرّفاتٌ مكلّفة */
-export function covWorld({ people = [], zones = [], st = {}, sup = [], muk = [], rest = [], extra } = {}) {
+export function covWorld({ people = [], zones = [], st = {}, sup = [], muk = [], rest = [], extra, past = false, rec = {} } = {}) {
   const W = world(), c = W.logic('daily', SRC);
-  const h = c.hParts(new Date()), RK = h.y + '-' + h.m + '-' + h.d, YM = h.y + '-' + h.m;
+  const h0 = c.hParts(new Date()), h = past ? { y: h0.m > 1 ? h0.y : h0.y - 1, m: h0.m > 1 ? h0.m - 1 : 12, d: 1 } : h0, RK = h.y + '-' + h.m + '-' + h.d, YM = h.y + '-' + h.m;
   W.store.set('bassam_employees_v1', JSON.stringify(people.map((p) => ({ eid: p.id, name: 'TEST_ONLY ' + p.id }))));
   W.store.set('bassam_shift_options_v1', JSON.stringify(SH.map((n, i) => ({ name: n, color: i ? '#2f8f86' : '#b99751' }))));
   const sched = {}; people.forEach((p) => { sched[p.id] = { shift: p.shift || '' }; if (muk.includes(p.id)) sched[p.id].muk = true; if (rest.includes(p.id)) sched[p.id].rest = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة']; });
   W.store.set('bassam_staffing_v3', JSON.stringify({ [YM]: sched }));
   const zs = zones.map((z, i) => Object.assign({ uid: 'TEST_ONLY_z' + i, d: sq(50 + 60 * i, 50), cx: 70 + 60 * i, cy: 70, code: 'Z' + i }, z));
-  const rounds = { [RK]: { d: [{ zones: zs, paths: [], gates: [], marks: [] }] } };
+  const rounds = { [RK]: Object.assign({ d: [{ zones: zs, paths: [], gates: [], marks: [] }] }, rec) };
   W.store.set('bassam_rounds_v1', JSON.stringify(rounds));
   W.KIVO.BassamSup = { supName: (k) => (sup.includes(k) ? 'TEST_ONLY مشرف' : ''), isSup: (k) => sup.includes(k) };
   if (extra) extra(W, c);
