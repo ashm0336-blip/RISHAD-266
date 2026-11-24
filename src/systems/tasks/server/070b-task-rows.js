@@ -43,18 +43,19 @@ function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]);
 var TK_PAST_MGR = 'الشهر مقفل — افتحه للاستدراك أولاً', TK_PAST_EMP = 'الشهر مقفل — راجع مدير الإدارة';
 function tkPastMsg(A, d) { return tkHeld(A, d, 'task.month.reopen') ? TK_PAST_MGR : TK_PAST_EMP; }
 /* V7 · 53 (قرار المالك ٧ — «قاعدةُ الفترة المقفلة نفسُها كبقية الأنظمة»): حكمُ الفترة لكل كتابةٍ على مهمة (المسؤول · الموظف · التكرار) — قاعدةُ الصفحة
-   (tasks/client _tkDayLockOf): الشهرُ المعتمد مقفل · اليومُ المُغلق بيده مقفل · الشهرُ الماضي مقفلٌ ما لم يُفتح ({mo:1}) · واليومُ المنقضي من الشهر الجاري
-   مقفلٌ ما لم يُفتح هو أو شهرُه ({mo:1}). يعيد نصَّ الرفض بحسب القارئ أو '' */
+   (tasks/client): الشهرُ المعتمد مقفل · الشهرُ الماضي مقفلٌ ما لم يُفتح ({mo:1}) — لكل كتابة (monthLockedT). day = true (الإنشاء — tasksCanAdd):
+   اليومُ المُغلق بيده مقفل · واليومُ المنقضي من الشهر الجاري مقفلٌ ما لم يُفتح هو أو شهرُه. day = 'shut' (التعديل — كما كان tkDayShut): المُغلقُ بيده وحده. أفعالُ سير العمل (المراجعة · التمديد ·
+   إعادةُ الإسناد · الإلغاء · أفعالُ الموظف) على قفل الشهر وحده كما في الصفحة (_tkP2Menu). يعيد نصَّ الرفض بحسب القارئ أو '' */
 var TK_DAY_MGR = 'اليوم مقفل — افتحه للاستدراك أولاً', TK_DAY_EMP = 'اليوم مقفل — راجع مدير الإدارة';
-async function tkPeriodWhy(env, A, d, k) {
+async function tkPeriodWhy(env, A, d, k, day) {
   var p = String(k).split('-'), y = +p[0], m = +p[1], dd = +p[2], ym = y + '-' + m, dk = ym + '-' + dd;
   var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(L)) L = {};
   var mv = L[ym], dv = L[dk], mo = isObj(mv) && !!mv.mo, T = dsToday(Date.now());
   if (mv === true || mv === 1) return 'شهرُ المهمة معتمدٌ ومقفل';
-  if (dv === true) return 'اليومُ مُغلق — افتحه من صفحة المهام أولاً';
+  if (day && dv === true) return 'اليومُ مُغلق — افتحه من صفحة المهام أولاً';
   if (!T || !(y > 0 && m > 0)) return '';
   if (12 * y + m < 12 * T.y + T.m) return mo ? '' : tkPastMsg(A, d);
-  if (12 * y + m === 12 * T.y + T.m && dd > 0 && dd < T.d && !mo && !(isObj(dv) && dv.mo)) return tkHeld(A, d, 'task.month.reopen') ? TK_DAY_MGR : TK_DAY_EMP;
+  if (day === true && 12 * y + m === 12 * T.y + T.m && dd > 0 && dd < T.d && !mo && !(isObj(dv) && dv.mo)) return tkHeld(A, d, 'task.month.reopen') ? TK_DAY_MGR : TK_DAY_EMP;
   return '';
 }
 /* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */

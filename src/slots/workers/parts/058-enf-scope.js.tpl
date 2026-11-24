@@ -25,7 +25,7 @@ function enfSources(A, mode) {
    + المصادر + مفاتيحُ الفاعل المحمولة (لا قرارُ الظلّ) — cx.enf علامةُ الإنفاذ للمقيِّمات أعلاه */
 function enfScopeCtx(A, d, k, heldMap, X, mode) {
   X = X || {};
-  var cx = permv4Ctx(A, d, k, heldMap, { pv4: X.pv4 || {}, retroWin: X.retroWin || {} });
+  var cx = permv4Ctx(A, d, k, heldMap, { pv4: X.pv4 || {}, retroWin: X.retroWin || {}, restore: enfLockBypass(A, d, X) });
   cx.enf = { mode: mode || 'write' };
   cx.sources = enfSources(A, mode || 'write');
   cx.scopeValues = null;

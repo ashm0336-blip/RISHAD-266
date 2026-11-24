@@ -163,6 +163,7 @@ for (const mode of ['enforce']) {
     assert.equal((await run(W)).j.created, 0, 'المنتهيةُ لا تُولَّد');
     /* سلسلةٌ مضت نهايتُها (قبل يومين) — الإنهاءُ لا يقدّمها إلى اليوم، والاستئنافُ ممنوع */
     const sP = MID(N0) - 5 * 864e5 + 8 * HR, toP = hij(MID(N0) - 2 * 864e5 + 12 * HR);
+    await replaceOperationalFixture(W.env, KL, { [ymOf(hij(sP))]: { mo: 1 } });   /* V7 · 53 (قرار المالك ٧): الإنشاءُ في يومٍ منقضٍ يحتاج فتحَه — يُفتح شهرُه للاستدراك */
     const p = await post(W, dm.ck, '/api/tasks/create', { k: hij(sP), t: TAG + ' مضت', s: sP, e: sP + HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'daily', to: toP } });
     assert.equal(p.status, 200, show(p)); const idp = recIdOf(W, p);
     const rs = await op(W, dm.ck, { id: idp, op: 'resume' }); assert.equal(rs.status, 409, show(rs)); assert.equal(rs.j.err, 'rec-ended');

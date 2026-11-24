@@ -211,7 +211,9 @@ async function meTkAct(env, request, A, b) {
   var K = meTkKey(I), act = String(b.act), dk = String(b.k);
   if (act === 'accept') act = 'start'; else if (act === 'finish') act = 'submit';                  /* أسماءُ المرحلة الأولى (والحزمةُ 242 SR-2) باقية */
   if ((act === 'decline' || act === 'stall') && !String(b.why || '').trim()) return json({ ok: 0, err: 'bad-body', at: 'why' }, 400);
-  { var lw53 = await tkPeriodWhy(env, A, I.dept, dk); if (lw53) return json({ ok: 0, err: 'locked', msg: lw53 }, 409); }   /* V7 · 53 (قرار ٧): قاعدةُ الفترة نفسُها لكتابة الموظف */
+  /* V7 · 53 (قرار ٧): قاعدةُ الفترة نفسُها لكتابة الموظف — عدا «الانقضاء» (expire): تسجيلٌ آليٌّ لحالةٍ وقعت (تفتحه «ملفي» بنفسها · F-3)، لا فعلٌ للموظف */
+  if (act !== 'expire') { var lw53 = await tkPeriodWhy(env, A, I.dept, dk); if (lw53) return json({ ok: 0, err: 'locked', msg: lw53 }, 409); }
+  else if (await tkPeriodWhy(env, A, I.dept, dk) === 'شهرُ المهمة معتمدٌ ومقفل') return json({ ok: 0, err: 'locked', msg: 'شهرُ المهمة معتمدٌ ومقفل' }, 409);   /* كما كان: المعتمدُ وحده */
   /* وسمُ الخادم: كتابةُ الذات على مخزن المهام تأتي من هذا المسار وحده (الرقعة 06: selfTaskOnly وself.task.respond يشترطانه — فلا تُصنع
      حالةٌ أو أداءٌ أو تجاوزٌ للمراجعة بحفظٍ خام /api/save ممّن يقرأ المخزن). لا يصل إليه مدخلٌ من الطلب: الفاعلُ يُبنى في الخادم من الجلسة */
   try { Object.defineProperty(A, '__tkSelf', { value: 1, enumerable: false, configurable: true }); } catch (eM) { A.__tkSelf = 1; }
