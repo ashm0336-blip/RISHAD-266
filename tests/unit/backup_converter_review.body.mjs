@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { D1, D2, IDS, copy } from './notifications_review_fx.mjs';
 import { world as custodyWorld } from './canonical_fx.mjs';
 import { needs } from './harness.mjs';
+import { H2G } from './v7_cal_migrate_fx.mjs';
 async function world() {
   const f = await custodyWorld(),
     W = f.W;
@@ -109,7 +110,10 @@ test('legacy custody uses the validated converter and preserves optional empty f
     legacy = doc(),
     out = await t.convert(full(t, { ['bsdept:' + D1 + ':bassam_custody_v1']: JSON.stringify(legacy) })),
     domain = out.domains.custody.find((d) => d.scope.departmentId === D1);
-  assert.deepEqual(cuInflate(domain.rows), legacy);
+  /* V7 · 53 تقويم (ق12 · ق10): الحركةُ الهجرية تصل بيومها الميلادي (أوراكل Intl) — ويومُ 0 يبقى 0 في شهر يومه الأول */
+  const want = copy(legacy);
+  (want.moves || []).forEach((mv) => { if (mv.y == null) return; const g = H2G.get(mv.y + '-' + mv.m + '-' + (+mv.d || 1)); mv.y = +g.slice(0, 4); mv.m = +g.slice(5, 7); if (+mv.d) mv.d = +g.slice(8); });
+  assert.deepEqual(cuInflate(domain.rows), want);
   assert.equal(out.keys['bsdept:' + D1 + ':bassam_custody_v1'], undefined);
   assert.equal(domain.rows.moves[0].holder_key, 'TEST_ONLY_orphan');
 });
@@ -117,13 +121,13 @@ test('legacy custody uses the validated converter and preserves optional empty f
 test('legacy daily stats retain absent versus null versus zero and normalize only the documented legacy lock key', needs('dstats'), async () => {
   const t = await world(),
     data = {
-      haram: { '1448-01-01': { worshippers: 0, umrah: null } },
-      nabawi: { '1448-01-01': { worshippers: null, rawdah_men_reserved: 0 } },
-      locks: { 'haram|1448-01': true },
+      haram: { '2026-01-01': { worshippers: 0, umrah: null } },   /* V7 · 53 تقويم: بمفاتيح ميلادية (الهجريةُ تُحوَّل — v7_cal_import14) */
+      nabawi: { '2026-01-01': { worshippers: null, rawdah_men_reserved: 0 } },
+      locks: { 'haram|2026-01': true },
     },
     out = await t.convert(full(t, { bassam_dstats_v1: JSON.stringify(data) }));
-  assert.deepEqual(out.domains.dailyStats.data, { ...data, locks: { 'haram|1448-1': true } });
-  assert.equal(Object.hasOwn(out.domains.dailyStats.data.haram['1448-01-01'], 'carts'), false);
+  assert.deepEqual(out.domains.dailyStats.data, { ...data, locks: { 'haram|2026-1': true } });
+  assert.equal(Object.hasOwn(out.domains.dailyStats.data.haram['2026-01-01'], 'carts'), false);
   assert.equal(out.keys.bassam_dstats_v1, undefined);
   assert.equal(out.summary.preservedGlobals.includes('dailyStats'), false);
 });
@@ -319,7 +323,7 @@ test('preserved notification states are guarded across conversion and planning e
 test('preserved daily-stat rows use exact read witnesses against a raw writer that leaves the revision untouched', needs('dstats'), async () => {
   const t = await world(),
     out = await t.convert(full(t));
-  await t.DB.batch([t.DB.prepare("INSERT INTO daily_stats_days(site,hijri_date,field_mask,worshippers) VALUES('haram','1448-01-01',1,0)")]);
+  await t.DB.batch([t.DB.prepare("INSERT INTO daily_stats_days(site,greg_date,field_mask,worshippers) VALUES('haram','2026-01-01',1,0)")]);
   const afterConcurrent = snap(t);
   await assert.rejects(
     t.DB.batch([...out.readGuards, t.DB.prepare("INSERT INTO kv(k,seq,v) VALUES('TEST_ONLY_should_not_write',0,'{}')")]),
