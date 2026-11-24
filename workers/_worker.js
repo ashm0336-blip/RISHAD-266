@@ -13580,7 +13580,7 @@ async function irExport(env, A, url) {
     if (!d) for (var dept of depts) contexts.push(await irQueryContext(env, { u: { id: uid } }, dept, { write: true }));
     contexts.forEach(function (ctx) {
       var actor = ctx.A;
-      if ((!d && actor.u.role !== 'super') || !canRead(actor, irKey(ctx.d)) || !deptInScope(actor, ctx.d) ||
+      if ((!d && actor.u.role !== 'super') || !(canRead(actor, irKey(ctx.d)) || (d && bkOffMgr(actor, d, irKey(d)))) || !deptInScope(actor, ctx.d) ||   /* V7 · 53: 019u bkOffMgr */
           !bkExportOk(actor, ctx.d))   /* IP39 (019u): backup.view alone does not export */
         throw irError('irshad-export-permission', 403);
       authorityGuards.push.apply(authorityGuards, ctx.guards);
@@ -18445,7 +18445,7 @@ function bdRestoreReferences(plan,def,d,domain,addition) {
 function bdRestoreCeiling(A,def,d,values) {
   if(A.u.role==='super')return;
   def.names.forEach(function(name,i){
-    if(!deq(values.before[name],values.after[name])&&!canRead(A,def.key(d,i)))throw rsError('restore-'+def.name+'-resource-denied',403);
+    if(!deq(values.before[name],values.after[name])&&!canRead(A,def.key(d,i))&&!bkOffMgr(A,d,def.key(d,i)))throw rsError('restore-'+def.name+'-resource-denied',403);
   });
 }
 function bdResetStatements(env) {
@@ -18500,9 +18500,9 @@ async function bdExport(env,actor,url,name) {
     if(!requested&&name==='awards') depts.push('');
     for(var dept of depts) {
       var ctx=await def.context(env,fresh,dept,{write:true,global:dept===''}), k=dept===''?AW_RES[1]:def.key(dept,0);
-      if(!canRead(ctx.A,k)||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
+      if(!(canRead(ctx.A,k)||(dept&&bkOffMgr(ctx.A,dept,k)))||(!dept&&ctx.A.u.role!=='super')||(dept&&!bkExportOk(ctx.A,dept))) throw rsError('domain-export-permission',403);
       var readResources=(name==='seized'?def.resources.slice(0,5):def.resources).filter(function(_,i){return dept!==''||i>0;});
-      if(readResources.some(function(resource){return !canRead(ctx.A,dept?'bsdept:'+dept+':'+resource:resource);}))throw rsError('domain-export-permission',403);
+      if(readResources.some(function(resource){var rk=dept?'bsdept:'+dept+':'+resource:resource;return !canRead(ctx.A,rk)&&!(dept&&bkOffMgr(ctx.A,dept,rk));}))   /* V7 · 53: 019u bkOffMgr */throw rsError('domain-export-permission',403);
       var exported=await def.exportDomain(ctx.env,dept);   // PRIVACY batch (019u): award contact fields by purpose; the copy marked redacted
       if(name==='awards'&&dept&&!privAwardOk(ctx.A,dept)&&privRowsBlank(ctx.A,exported,'records',['phone','email','employee_number'],'employee_key'))redacted.push('awards:'+dept);
       domains.push(exported);
@@ -21412,6 +21412,9 @@ function bkExportOk(A, d) {
   });
 }
 /* backup.view as a read key of every department collection (RD_ANY · readKeysFor): only for its own stamp, or for an exporter */
+/* V7 · 53 (قرار المالك ٦): نسخةُ الإدارة كاملةٌ دائماً — مجالُ نظامٍ مطفأٍ في سقف الوحدة (الاسترشاد · المضبوطات · الجائزة) يُقرأ للنسخ ويُعاد بالاستعادة
+   كما هو بلا أثر، لمدير الإدارة في إدارته وحدها (كالعهد اليوم). كان canRead يرفضه فيسقط تصديرُ النسخة كلُّه. لا يفتح قراءةً حيّة ولا كتابة */
+function bkOffMgr(A, d, k) { var R = resOf(k); return !!R && enfDeptMgrFull(A, d) && !resOnCeiling(A, d, R); }
 function bkReadAnyOk(A, d, rn) { return rn === 'bassam_last_export_v1' || bkExportOk(A, d); }
 /* ═══ R180: «الإحصائيات اليومية» — مخزنٌ عامٌّ واحد تحكمه أوراقُ الصفحة ═══
    كان المفتاحُ لمدير النظام وحده في الخادم، والشاشةُ تفتح الإدخالَ لكلِّ من مُنح الصفحة — فيُرفض حفظُه
