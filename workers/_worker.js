@@ -26663,6 +26663,7 @@ function perm44Make(R, D) {
      قرارُ المالك (REPLY_52 §1 — الدورُ الحالي هو المرجع): full = فعليُّ الدور الحالي بلا قصّ (effective بلا دالّة سقف)؛ إن كان old مشتقاً من دور فما حُمل
      في plus خارج السقف ولا يمنحه الدورُ الحالي يُضاف إلى minus (يُحجب — التضييقُ مقبولٌ في كل الحرّاس)، فلا تعود مفاتيحُ دورٍ سابق متى وُسِّع السقف.
      المنحُ الصريح (old بلا src دور) لا يُحجب منه شيء. يكتب به العميلُ (345 recompile) ويحكم الخادمُ على plus بالقاعدة نفسِها (057b perm44GrantsWhy). */
+  function derived(g) { return isObj(g) && /^(role:|p44:)/.test(String(g.src || '')); }
   function keepOff(nx, old, keyOn, full) {
     if (!isObj(nx) || !isObj(old)) return nx;
     var g = clone(nx), f, n, k, F = isObj(full) && Array.isArray(full.keys) ? full.keys : null;
@@ -26771,7 +26772,7 @@ function perm44Make(R, D) {
     return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
   }
   return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
-           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, normRec: normRec, shapeWhy: shapeWhy,
+           keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, keepOff: keepOff, derived: derived, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }
 /* ══ V7 · د5-هـ (44): الأدوارُ في الخادم — سجلُّ الأدوار bsdept:<d>:bassam_roles_v1 (مصدرُ الحقيقة) ومنحُه المترجَم bsdept:<d>:bassam_grants_v1 يُكتبان معاً ══

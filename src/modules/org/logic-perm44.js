@@ -601,6 +601,7 @@ Object.assign(Component.prototype, {
       if ("unsent" === why) return (this.bsToast("لم يصل تأكيد حفظ أنظمة «" + nm + "» بعد — يُعاد الإرسال تلقائياً", "warn"), this._ogPendEnd(!1), !1);
       this.bsToast("حُفظت أنظمة «" + nm + "» — البيانات باقية كما هي", "ok");
       this._ogPendEnd(!0);
+      keys.some((k) => dr[k]) && this._p44Widened([u]);   /* V7 · د7 (52 · الكامن): تفعيلٌ ⇒ الخطوةُ الثانية */
       return !0;
     });
   },
@@ -1265,7 +1266,16 @@ Object.assign(Component.prototype, {
     this._p44Set({ bulk: null });
     this.setState({ ogSel: {} });
     this.bsToast((("on" === B.mode) ? "فُعّلت" : "أُطفئت") + " الأنظمة المختارة في " + KIVO.BassamCount(plan.length, "وحدة") + " — البيانات باقية كما هي", "ok");
+    "on" === B.mode && this._p44Widened(plan.map((p) => p.u));   /* V7 · د7 (52 · الكامن) */
     return !0;
+  },
+  /* V7 · د7 (52 · الكامن): بعد توسيع سقفٍ أكّده الخادم — منحُ الأدوار في الوحدات وفروعها يُعاد حسابُه بالسقف الجديد (KIVO.Perm44.refreshUnits) في حفظٍ ثانٍ.
+     فشلُه لا يُكتم: السقفُ موسَّعٌ كما حُفظ، والمنحُ كما كان، والحافظُ يُعلَم */
+  _p44Widened(units) {
+    const msg = "وُسِّع السقف، وتعذّر تحديث صلاحيات الأدوار: تظهر عند أول حفظ لدور الموظف";
+    let p;
+    try { p = KIVO.Perm44 && KIVO.Perm44.refreshUnits ? KIVO.Perm44.refreshUnits(units) : null; } catch (e) { p = Promise.resolve({ ok: !1 }); }
+    return Promise.resolve(p).then((x) => { if (x && !1 === x.ok) this.bsToast(msg, "err"); return x; }, () => (this.bsToast(msg, "err"), { ok: !1 }));
   },
   /* ═══════════ V7 · د6 (ب11 · م5): حارسُ التغييرات غير المحفوظة — واجهةُ logic.js (dirty ← orgDirty · canLeave ← orgGuard) ═══════════
      سجلٌّ صغير لمصادر المسودّات: كلُّ تبويبٍ يحمل تعديلاً غيرَ محفوظ مصدرٌ { k, t, unit, tab, dirty(), review(), drop() } — review تفتح «مراجعة قبل الحفظ»
