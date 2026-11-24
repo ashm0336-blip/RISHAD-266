@@ -21,7 +21,7 @@
 |---|---|---|---|---|---|
 | admin (Admin) | 39 | 33 | 213 | 2 | 23 |
 | award (Award) | 8 | 1 | 33 | 0 | 0 |
-| daily (Daily Sessions) | 64 | 9 | 187 | 0 | 4 |
+| daily (Daily Sessions) | 64 | 9 | 188 | 0 | 4 |
 | dreport (Daily Report) | 20 | 0 | 75 | 0 | 1 |
 | dstats (Daily Stats) | 14 | 1 | 37 | 0 | 0 |
 | employees (Employees) | 53 | 9 | 109 | 0 | 7 |
