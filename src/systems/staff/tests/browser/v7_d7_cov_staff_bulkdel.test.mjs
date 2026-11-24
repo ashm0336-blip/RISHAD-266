@@ -7,7 +7,7 @@
       ولا يتغيّر شيء. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { world, grant, ACTORS, LAB, A, chromium, openAs, mainText, norm, reloadAt, logicOf, isArabicRefusal, until, toasts, seen, launchUtf8, filesMenu } from '../../../../../tests/browser/d7_cov_lib.mjs';
+import { world, grant, ACTORS, LAB, A, chromium, openAs, mainText, norm, reloadAt, logicOf, isArabicRefusal, until, toasts, seen, launchUtf8, filesMenu, revealAll } from '../../../../../tests/browser/d7_cov_lib.mjs';
 import { replaceOperationalFixture } from '../../../../../tests/unit/world_fx.mjs';
 
 const K = 'bsdept:' + A + ':bassam_staffing_v3', KL = 'bsdept:' + A + ':bassam_staffing_locks_v1';
@@ -104,7 +104,7 @@ test('جدول ③: التصدير — مديرُ الإدارة وموظفٌ ب
     for (const { who, un } of ACTORS) {
       const s = await openAs(b, lab, un, LAB.pw, { context: { acceptDownloads: true } }), p = s.page; p.setDefaultTimeout(20000);
       await s.go('#/staffing', 5000);
-      if (!(await p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).count())) { assert.equal((await createMonth(p)).status(), 200, who); await lab.idle(); await reloadAt(s, '#/staffing', 5000); }
+      await revealAll(p); if (!(await p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).count())) { assert.equal((await createMonth(p)).status(), 200, who); await lab.idle(); await reloadAt(s, '#/staffing', 5000); }
       const { f, bad } = await filesMenu(p, who);
       assert.deepEqual(bad, [], who + ': ' + f.name + ' · ' + f.bytes.length + ' بايت');
       assert.deepEqual(s.errs, [], who + ': لا أخطاء صفحة');
@@ -114,6 +114,7 @@ test('جدول ③: التصدير — مديرُ الإدارة وموظفٌ ب
     const s = await openAs(b, lab, LAB.empA, LAB.pw), p = s.page;
     await s.go('#/staffing', 5000);
     assert.ok(!(await mainText(p)).includes('لا يوجد جدول لشهر'), 'الجدولُ معروضٌ للمشاهدة');
+    await revealAll(p); assert.ok(await p.locator('main input[placeholder^="بحث"]:visible').count(), 'شريطُ الجدول مرسوم (فلا يمرّ فحصُ الغياب على صفحةٍ لم تُرسم)');
     assert.equal(await p.locator('main button:visible', { hasText: /^\s*ملفات\s*$/ }).count(), 0, 'بدور «مشاهدة» لا «ملفات» ولا تصدير');
     await s.ctx.close();
   } finally { await b.close(); await lab.close(); }

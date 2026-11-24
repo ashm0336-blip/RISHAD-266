@@ -46,7 +46,7 @@ test('V7 · 53 ① mobile «إيقاف الكل» (iPhone 13): the manager turns
   try {
     await world(b, lab);
     const r0 = kv(lab, KR).roles.find((r) => r.id === ROLE.id), g0 = kv(lab, KG).emp[EMP];
-    assert.ok(g0.plus.some((k) => /^tasks\./.test(k)) && g0.plus.some((k) => k.startsWith(LROW + '.')), 'the role grants tasks and the zones lens: ' + JSON.stringify(g0));
+    assert.ok(g0.plus.some((k) => /^tasks?\./.test(k)) && g0.plus.some((k) => k.startsWith(LROW + '.')), 'the role grants tasks and the zones lens: ' + JSON.stringify(g0));
     const e0 = await openAs(b, lab, LAB.empA, LAB.pw, phone); await e0.go('#/profile', 3000);
     assert.equal(await e0.page.evaluate(() => KIVO.BassamPerm.can('tasks', 'view')), true, 'before: the role holder sees tasks');
     await e0.ctx.close();
@@ -82,13 +82,13 @@ test('V7 · 53 ① mobile «إيقاف الكل» (iPhone 13): the manager turns
     const e1 = await openAs(b, lab, LAB.empA, LAB.pw, phone); await e1.go('#/profile', 3000);
     assert.equal(await e1.page.evaluate(() => KIVO.BassamPerm.can('tasks', 'view')), false, 'after: the role holder no longer sees tasks');
     const g1 = kv(lab, KG).emp[EMP];
-    assert.ok(!g1 || !(g1.plus || []).some((k) => /^tasks\./.test(k) || k.startsWith(LROW + '.')), 'his grant lost tasks and the lens: ' + JSON.stringify(g1));
+    assert.ok(!g1 || !(g1.plus || []).some((k) => /^tasks?\./.test(k) || k.startsWith(LROW + '.')), 'his grant lost tasks and the lens: ' + JSON.stringify(g1));
     assert.deepEqual(e1.errs, [], 'no page errors (employee)');
     await e1.ctx.close();
   } finally { await b.close(); await lab.close(); }
 });
 
-test('V7 · 53 ② mobile: the role holder has no role editor, and a roles save from his page is refused in Arabic and changes nothing', { timeout: 600000 }, async () => {
+test('V7 · 53 ② mobile: the role holder has no role editor, the page shows no editor (redirect or Arabic message), a roles save from his page is refused by the server and changes nothing', { timeout: 600000 }, async () => {
   const lab = await startLab(), b = await chromium.launch();
   try {
     await world(b, lab);
@@ -105,8 +105,10 @@ test('V7 · 53 ② mobile: the role holder has no role editor, and a roles save 
     }, [A, ROLE.id]);
     await lab.idle();
     assert.notEqual(r && r.ok, true, 'the roles save is refused: ' + JSON.stringify(r));
-    const why = JSON.stringify(r);
-    assert.ok(isArabicRefusal(why) || isArabicRefusal(await p.evaluate(() => (document.getElementById('bs-toast') || {}).textContent || '')), 'the refusal is clear Arabic: ' + why);
+    assert.ok((r.denied || []).includes(KR), 'the server refuses the roles record: ' + JSON.stringify(r));
+    /* ما يراه حاملُ الدور على الشاشة: لا محرّر، بل تحويلٌ أو رسالةُ عدم إتاحة عربية (كما في اختبار CSV) */
+    const shown = await p.evaluate(() => ({ hash: location.hash, text: (document.querySelector('main') || document.body).innerText }));
+    assert.ok(!/^#\/admin\/perm/.test(shown.hash) || isArabicRefusal(shown.text) || /غير متاحة لك/.test(shown.text), 'the page shows no editor (redirect or Arabic message): ' + shown.hash + ' · ' + shown.text.slice(0, 200));
     assert.equal(JSON.stringify(kv(lab, KR)), before, 'roles record unchanged');
     assert.equal(JSON.stringify(kv(lab, KG)), gBefore, 'grants unchanged');
     assert.deepEqual(e.errs, [], 'no page errors');

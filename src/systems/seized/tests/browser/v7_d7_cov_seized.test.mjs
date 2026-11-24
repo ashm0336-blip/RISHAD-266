@@ -91,7 +91,8 @@ test('مضبوطات ③: التصدير — مديرُ الإدارة وموظ�
       await s.go('#/seized', 5000);
       assert.equal((await addOne(p)).status(), 200, who + ': المحضرُ حُفظ'); await lab.idle();
       await reloadAt(s, '#/seized', 5000);
-      await p.getByText('سجل الحركة الشهري').first().click();
+      /* V7 · 53: السجلُّ قد يكون مفتوحاً بعد التحميل (حالتُه محفوظة) — نقرةٌ واحدة تطويه؛ يُفتح حتى يظهر شريطُه */
+      for (let i = 0; i < 2 && !(await p.getByRole('button', { name: 'ملفات' }).count()); i++) { await p.getByText('سجل الحركة الشهري').first().click(); await p.waitForTimeout(800); }
       await p.getByRole('button', { name: 'ملفات' }).first().click();
       const f = await downloaded(p, () => p.getByText('تصدير Excel', { exact: true }).first().click());
       assert.deepEqual(fileOk(f, 'xlsx'), [], who + ': ' + f.name + ' · ' + f.bytes.length + ' بايت');
@@ -105,7 +106,9 @@ test('مضبوطات ③: التصدير — مديرُ الإدارة وموظ�
     await grant(b, lab, { seized: 'view' });
     const s = await openAs(b, lab, LAB.empA, LAB.pw), p = s.page;
     await s.go('#/seized', 5000);
-    await p.getByText('سجل الحركة الشهري').first().click(); await p.waitForTimeout(800);
+    const lgOpen = () => p.locator('main input[placeholder^="بحث بالمُسجّل"]').count();
+    for (let i = 0; i < 2 && !(await lgOpen()); i++) { await p.getByText('سجل الحركة الشهري').first().click(); await p.waitForTimeout(800); }
+    assert.ok(await lgOpen(), 'السجلُّ مفتوحٌ لدور «مشاهدة»');   /* V7 · 53: فلا يمرّ الفحصُ التالي والسجلُّ مطويّ */
     assert.equal(await p.getByRole('button', { name: 'ملفات' }).count(), 0, 'بدور «مشاهدة» لا «ملفات» ولا تصدير');
     await s.ctx.close();
   } finally { await b.close(); await lab.close(); }
