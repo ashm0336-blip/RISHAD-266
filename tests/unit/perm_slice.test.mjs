@@ -59,7 +59,13 @@ test('permSlice الأصلية نفسها مولدة للخادم؛ الاستع
   const noCm = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(noCm(rs), /rsPermSlice\s*\(/, 'لا يطبّق الخادمُ شريحةَ السقف على نسخ الإدارة (قرار المالك ب3)');
   const keep = /function rsDeptPermsKeep\([\s\S]*?\n}\n/.exec(rs); assert.ok(keep, 'rsDeptPermsKeep موجودة');
-  assert.doesNotMatch(keep[0], /\.(caps|lenses|subs|capOwn|capSeed)\b/, 'rsDeptPermsKeep لا تمسّ السقفَ ولا العدسات');
+  assert.doesNotMatch(keep[0], /\.(caps|subs|capOwn|capSeed)\b/, 'rsDeptPermsKeep لا تمسّ السقف');
+  /* V7 · د7 (52 · ك1): العدساتُ لا تُمسّ إلا تضييقاً من قائمة النسخة (rsDeptLensNarrow = ما قبلُ ∩ النسخة) — لا كتابةَ أخرى للعدسات؛
+     والسلوكُ (لا تُفعَّل عدسةٌ لم تكن مفعّلة · نسخةٌ بلا قائمة لا تغيّر شيئاً) في v7_d7_lensimp ①②③. */
+  const lensW = keep[0].match(/\.lenses\b[^;\n]*/g) || [];
+  assert.deepEqual(lensW.filter((w) => /=(?!=)/.test(w) && !/^\.lenses = isObj\(pm\.lenses\)/.test(w) && !/^\.lenses\[id\] = lens$/.test(w)), [], 'لا كتابةَ للعدسات إلا نتيجةَ rsDeptLensNarrow');
+  assert.match(keep[0], /var lens = rsDeptLensNarrow\(pm, id, PP\)/, 'العدساتُ من rsDeptLensNarrow وحدها');
+  const narrow = /function rsDeptLensNarrow\([\s\S]*?\n}\n/.exec(rs); assert.ok(narrow, 'rsDeptLensNarrow موجودة');
 });
 
 test('★ الاستبدال: السقفُ والعدساتُ المستعادة = ما في النسخة (مصفّاةً بمفاتيح المنصة الحالية وحدها) — لا تسقط صفحةٌ ولا عدسةٌ أُضيفت لاحقاً', needs('award', 'seized'), () => {
