@@ -29,18 +29,10 @@ Object.assign(Component.prototype, {
   _p44Set(patch) {
     this.setState((s) => ({ p44: Object.assign({}, s.p44 || {}, typeof patch === "function" ? patch(s.p44 || {}) : patch) }));
   },
-  P44_LV() {
-    return { view: "مشاهدة فقط", input: "إدخال", edit: "تعديل", full: "كامل", sensitive: "حسّاس", custom: "مخصّص" };
-  },
-  /* المستوياتُ من المحرّك (levels) — مصفوفةُ رموزٍ أو {k|key|id, n|name|label}؛ الأسماءُ الافتراضية لما لا اسمَ له */
+  /* المستوياتُ من المحرّك (levels) { v: المفتاح · t: الاسم · d: سطرُه الوصفي } — V7 · 53 (وضوح الصلاحيات): الاسمُ والسطرُ من perm44-levels.json وحده (لا قائمةَ أسماءٍ هنا) */
   _p44Lvls() {
-    const L = this.P44_LV(),
-      raw = this._p44Try(() => this._p44E().levels(), null);
-    const out = (Array.isArray(raw) ? raw : Object.keys(L)).map((x) => {
-      const k = "string" === typeof x ? x : x && (x.k || x.key || x.id);
-      return k ? { v: k, t: ("object" === typeof x && x && (x.n || x.name || x.label)) || L[k] || k } : null;
-    });
-    return out.filter(Boolean);
+    const raw = this._p44Try(() => this._p44E().levels(), null);
+    return (Array.isArray(raw) ? raw : []).map((x) => ({ v: x.key, t: x.name || x.key, d: x.desc || "" }));
   },
   _p44LvName(k) {
     const x = this._p44Lvls().filter((l) => l.v === k)[0];
@@ -238,7 +230,7 @@ Object.assign(Component.prototype, {
     if (v == null || "" === v) return "—";
     if (!0 === v) return "مفعّل";
     if (!1 === v) return "مطفأ";
-    if ("string" === typeof v) return this.P44_LV()[v] ? this._p44LvName(v) : this._p44RoleName(v) || v;
+    if ("string" === typeof v) return this._p44Lvls().some((l) => l.v === v) ? this._p44LvName(v) : this._p44RoleName(v) || v;
     if (Array.isArray(v)) return v.length ? v.map((x) => (x && x.key ? this._p44Label(x.key) : "string" === typeof x ? this._p44Try(() => KIVO.BassamPerm.nameOf(x), "") || this._p44Txt(x) : this._p44Txt(x))).join("، ") : "—";
     if (v.lvl) return this._p44LvName(v.lvl) + (v.keys && "custom" === v.lvl ? " (" + v.keys.length + ")" : "");
     if (v.name) return v.name;
@@ -301,6 +293,22 @@ Object.assign(Component.prototype, {
   },
   _p44Label(k) {
     return this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[k].label, "") || (/^ff\.[\w.]+\.export$/.test(k) ? "تصدير" : k);   /* V7 · 53: علمُ التصدير (ليس مفتاحاً في السجلّ) */
+  },
+  /* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): أفعالُ صفٍّ في الدور بترتيب السجلّ { k · a: الفعل · w: المكان (verb · place من السجلّ المولَّد وحده)
+     · m: أدنى مستوى يحمله · f: علمُ تصدير · no: ما لا يُمنح بالأدوار — grant none «للمدير فقط» · self «لكل موظف على ما يخصه» }:
+     ما يحكمه الصفّ في المحرّك نفسِه (keysFor «إشراف» + أعلامُ النظام) — ومفاتيحُ عدسةٍ لها صفٌّ في الدور يحكمها صفُّها (compileRole) فلا تُعدّ هنا */
+  _p44Acts(sk, rs) {
+    const E = this._p44E(),
+      R = KIVO.KIVO_REGISTRY,
+      lz = /^lens\./.test(sk),
+      S = lz ? null : this._p44Try(() => E.sysList().filter((x) => x.key === sk)[0], null),
+      L = this._p44Lvls().filter((l) => "custom" !== l.v).map((l) => l.v),
+      fe = {};
+    Object.keys(R.atoms || {}).forEach((q) => (R.atoms[q].targets || []).forEach((f) => (fe[f] = R.atoms[q])));
+    const gk = this._p44Keys(sk).filter((k) => !(!lz && rs && rs[R.byKey[k].owner] && /^lens\./.test(R.byKey[k].owner))),
+      no = lz || !S ? [] : R.keys.filter((k) => { const e = R.byKey[k]; return ("none" === e.grant && "page" === e.ownerKind && S.leaves.indexOf(e.owner) !== -1) || ("self" === e.grant && (E.sysOfKey(k) || []).indexOf(sk) !== -1); }),
+      row = (k, e, f) => ({ k: k, a: (e && e.verb) || this._p44Label(k), w: (e && e.place) || "", f: f, m: L.filter((l) => (f ? E.flagsFor(sk, l) : E.keysFor(sk, l)).indexOf(k) !== -1)[0] || "", no: e && "none" === e.grant ? "للمدير فقط" : e && "self" === e.grant ? "لكل موظف على ما يخصه" : "" });
+    return R.keys.filter((k) => gk.indexOf(k) !== -1 || no.indexOf(k) !== -1).map((k) => row(k, R.byKey[k], !1)).concat((this._p44Try(() => E.sysFlags(sk), []) || []).map((f) => row(f, fe[f], !0)));
   },
   _p44Keys(sk) {
     const E = this._p44E(),
@@ -828,15 +836,20 @@ Object.assign(Component.prototype, {
             r.sys[s.k] = "custom" === n ? { lvl: "custom", keys: was.keys || this._p44Try(() => this._p44E().keysFor(s.k, was.lvl || "view").concat(this._p44E().flagsFor(s.k, was.lvl || "view")), []) || [] } : { lvl: n };   /* V7 · 53: ومعها علمُ التصدير إن حمله المستوى */
           });
         },
-        custom: open,
-        keys: open
-          ? keysAll(s.k).concat(this._p44Try(() => this._p44E().sysFlags(s.k), []) || []).map((k) => {   /* V7 · 53: «تصدير» فعلٌ يُختار في «مخصّص» */
-              const has = (g.keys || []).indexOf(k) !== -1;
+        /* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): تحت المستوى المختار سطرُه الوصفي وجدولُ أفعال الصف كلِّها (الفعل · المكان · الحالة) — وفي «مخصّص» مربعٌ عند كل فعلٍ يُمنح */
+        lvD: isOn ? (this._p44Lvls().filter((l) => l.v === lv)[0] || {}).d || "" : "",
+        tb: isOn
+          ? this._p44Acts(s.k, role.sys).map((x, i, A) => {   /* V7 · 53: «تصدير» فعلٌ يُختار في «مخصّص» */
+              const has = (g.keys || []).indexOf(x.k) !== -1,
+                hv = A.hv || (A.hv = open ? [] : this._p44E().keysFor(s.k, lv).concat(this._p44E().flagsFor(s.k, lv)));
               return {
-                n: this._p44Label(k),
-                sens: this._p44Try(() => !!KIVO.KIVO_REGISTRY.byKey[k].sensitive, !1),
+                k: x.k,
+                a: x.a,
+                w: x.w,
+                st: x.no || (open ? this._p44LvName(x.m) : hv.indexOf(x.k) !== -1 ? "✔" : "✕ يحتاج " + this._p44LvName(x.m)),   /* «مخصّص»: بجانب المربع مستوى الفعل (الحسّاسُ «إشراف») */
+                ck: open && !x.no,
                 on: has ? "true" : "false",
-                flip: () => upd((r) => ((r.sys[s.k].keys = has ? r.sys[s.k].keys.filter((x) => x !== k) : (r.sys[s.k].keys || []).concat([k])))),
+                flip: () => upd((r) => ((r.sys[s.k].keys = has ? r.sys[s.k].keys.filter((y) => y !== x.k) : (r.sys[s.k].keys || []).concat([x.k])))),
               };
             })
           : [],
@@ -1087,7 +1100,7 @@ Object.assign(Component.prototype, {
       p44PSel: { n: sel.name || sel.un, i: String(sel.name || "؟").trim().charAt(0) || "؟", id: sel.empno || sel.no || sel.un || "", role: roleOf(sel), mgr: !!sel.mgr },
       p44PMgr: !!sel.mgr,
       /* V7 · د6 (قرار المالك — الرد 2 · ٣): سطرٌ واحد فوق قائمته الحقيقية، وصفاً لا بديلاً عنها */
-      p44PMgrLine: sel.mgr ? "مدير الوحدة · كامل داخل سقف وحدته" : "",
+      p44PMgrLine: sel.mgr ? "مدير الوحدة · يعمل بسقف وحدته كله" : "",
       p44PSelf: self(sel),
       p44PEdit: !sel.mgr && !self(sel),
       p44PRoles: [{ id: null, name: "بلا دور" }].concat(roles).map((x) => ({ t: x.name || "بلا اسم", on: (r.role || null) === x.id ? "true" : "false", pick: () => setRec((p) => (p.role = x.id)) })),

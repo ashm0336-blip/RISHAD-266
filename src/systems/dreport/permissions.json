@@ -16,6 +16,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "عرض التقرير",
+     "verb": "يعرض التقرير اليومي",
+     "place": "التقرير اليومي",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -69,6 +71,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "إنشاء تقرير/وردية",
+     "verb": "ينشئ تقريراً أو وردية",
+     "place": "التقرير اليومي",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -122,6 +126,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "تعديل بيانات التقرير",
+     "verb": "يعدّل بيانات التقرير",
+     "place": "التقرير اليومي",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -175,6 +181,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "اعتماد الوردية/اليوم",
+     "verb": "يعتمد الوردية أو اليوم",
+     "place": "التقرير اليومي",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -228,6 +236,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "إعادة فتح التقرير",
+     "verb": "يعيد فتح تقرير معتمد",
+     "place": "التقرير اليومي",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -281,6 +291,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "تحويل موظف بين المواقع/الورديات",
+     "verb": "يحوّل موظفاً بين المواقع أو الورديات",
+     "place": "التقرير اليومي",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -334,6 +346,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "تسجيل غياب",
+     "verb": "يسجّل غياباً",
+     "place": "التقرير اليومي",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -387,6 +401,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "تسجيل إجازة",
+     "verb": "يسجّل إجازة",
+     "place": "التقرير اليومي",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -440,6 +456,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "تسجيل تأخر عن بداية الوردية",
+     "verb": "يسجّل تأخراً عن بداية الوردية",
+     "place": "التقرير اليومي",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -493,6 +511,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "تسجيل انصراف مبكر",
+     "verb": "يسجّل انصرافاً مبكراً",
+     "place": "التقرير اليومي",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -546,6 +566,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "إسناد رمز نداء داخل التقرير",
+     "verb": "يسند رمز نداء داخل التقرير",
+     "place": "التقرير اليومي",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -599,6 +621,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "عرض أنواع الإجازات",
+     "verb": "يعرض أنواع الإجازات",
+     "place": "التقرير اليومي",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -648,6 +672,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "إضافة نوع إجازة",
+     "verb": "يضيف نوع إجازة",
+     "place": "التقرير اليومي",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -697,6 +723,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "حذف نوع إجازة",
+     "verb": "يحذف نوع إجازة",
+     "place": "التقرير اليومي",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -746,6 +774,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "حذف يوم التقرير اليومي (إعادة ضبط اليوم)",
+     "verb": "يحذف يوم التقرير ويعيد ضبطه",
+     "place": "التقرير اليومي",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -790,6 +820,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "عرض مؤشرات التشغيل اليومي",
+     "verb": "يعرض مؤشرات التشغيل اليومي",
+     "place": "المتابعة اليومية ← مؤشرات المتابعة — التشغيل اليومي",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -839,6 +871,8 @@
      "ownerKind": "page",
      "domain": "dreport",
      "label": "تعديل نوع إجازة",
+     "verb": "يعدّل نوع إجازة",
+     "place": "التقرير اليومي",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -1026,7 +1060,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.report.export"
-     ]
+     ],
+     "verb": "يصدّر التقرير اليومي إلى ملف",
+     "place": "التقرير اليومي"
     }
    },
    {

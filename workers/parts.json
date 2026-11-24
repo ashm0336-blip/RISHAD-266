@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "b06eaca8463a32112f033752729e438546d665f8117502c382bb714b211df79b",
+  "sha256": "84a55f4d7756207567c3d5377c03172333624e5102ea30a76e1d79ab612f05f6",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -1059,8 +1059,8 @@
         26979,
         27437
       ],
-      "bytes": 43004,
-      "sha256": "05905079a1f7ae35993f477d2b32ca5468672d7a4d4f36f6ad2fdc6fb506e95d"
+      "bytes": 43295,
+      "sha256": "3a9a1a18d43359e47f3d8de65bd3271028854a74ac74bd44c4e5ecc299fbe031"
     },
     {
       "file": "058-enf-scope.js",

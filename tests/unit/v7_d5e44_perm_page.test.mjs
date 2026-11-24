@@ -181,7 +181,7 @@ test('② roles: a level change is a dirty draft; review names the diff and the 
   assert.match(v.p44AffTxt, /^يتأثر بها 1 /, 'one holder affected');
   v.p44Review(); v = W.render();
   assert.equal(v.p44RevOn, true);
-  assert.deepEqual(J(v.p44RevRows), [{ what: 'TEST_ONLY مراقب · الجدول الشهري', from: 'مشاهدة فقط', to: 'تعديل' }], 'the engine\'s diff, named');
+  assert.deepEqual(J(v.p44RevRows), [{ what: 'TEST_ONLY مراقب · الجدول الشهري', from: 'مشاهدة', to: 'تعديل' }], 'the engine\'s diff, named');
   assert.deepEqual(J(v.p44RevAff), ['TEST_ONLY سعد']);
   await v.p44RevSave();
   /* ONE engine draft, committed once: the roles record AND the compiled grants of the affected holder, together */
@@ -204,13 +204,14 @@ test('② roles: a level change is a dirty draft; review names the diff and the 
   /* custom = an explicit key list, starting from the previous level's keys */
   W.render().p44SysEd.find((s) => s.k === 'tasks').setLv({ target: { value: 'custom' } });
   const t = W.render().p44SysEd.find((s) => s.k === 'tasks');
-  const lab = (k) => W.KIVO.KIVO_REGISTRY.byKey[k].label;
-  assert.equal(t.custom, true); assert.deepEqual(J(t.keys.filter((k) => k.on === 'true').map((k) => k.n)), J(W.E.keysFor('tasks', 'input').map(lab)), 'custom starts from «إدخال»');
+  /* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): «مخصّص» = جدولُ أفعال النظام بمربعٍ عند كل فعلٍ يُمنح (كانت أزرارَ الأفعال) — الفعلُ بنصّه من السجلّ (verb) */
+  const keys = t.tb.filter((x) => x.ck), lab = (k) => W.KIVO.KIVO_REGISTRY.byKey[k].verb;
+  assert.equal(t.lv, 'custom'); assert.deepEqual(J(keys.filter((k) => k.on === 'true').map((k) => k.a)), J(W.E.keysFor('tasks', 'input').map(lab)), 'custom starts from «إدخال»');
   /* V7 · 53 (قرار المالك — التصدير «أ»): و«تصدير» (علمُ ff.task.export — ليس مفتاحاً) فعلٌ يُختار في «مخصّص» بعد مفاتيح النظام */
-  assert.deepEqual(J(t.keys.map((k) => k.n)), J(W.E.sysKeys('tasks').map(lab).concat(['تصدير'])), 'every key of the system to choose from, then the export action');
-  assert.equal(t.keys[t.keys.length - 1].on, 'false', 'export is not chosen when «مخصّص» starts from «إدخال»');
+  assert.deepEqual(J(keys.map((k) => k.k)), J(W.E.sysKeys('tasks').concat(['ff.task.export'])), 'every key of the system to choose from, then the export action');
+  assert.equal(keys[keys.length - 1].on, 'false', 'export is not chosen when «مخصّص» starts from «إدخال»');
   const sens = W.E.sysKeys('tasks').filter((k) => W.KIVO.KIVO_REGISTRY.byKey[k].sensitive);
-  assert.ok(sens.length && sens.every((k) => t.keys.find((x) => x.n === lab(k)).sens === true), 'a sensitive key is marked');
+  assert.ok(sens.length && sens.every((k) => t.tb.find((x) => x.k === k).st === 'إشراف'), 'a sensitive key is marked (its level «إشراف» — was the badge «حسّاس»)');
 });
 
 test('a department manager never sees a system that is OFF in his ceiling — not in the editor, the menu or the sections; no platform-admin role', () => {
@@ -293,7 +294,7 @@ test('④ log: the server rows (/api/perm44/log → {rows}) in the engine\'s dif
   await W.page._p44LogLoad(DID);
   let v = W.sub('log');
   assert.equal(v.p44LogItems.length, 1); assert.equal(v.p44LogItems[0].who, 'TEST_ONLY المالك'); assert.equal(v.p44LogItems[0].kind, 'role');
-  assert.deepEqual(J(v.p44LogItems[0].ch.map((c) => [c.sys, c.from, c.to])), [['TEST_ONLY مراقب · الجدول الشهري', 'إدخال', 'مشاهدة فقط'], ['TEST_ONLY فهد · الدور', 'TEST_ONLY مراقب', 'TEST_ONLY رئيس وردية']]);
+  assert.deepEqual(J(v.p44LogItems[0].ch.map((c) => [c.sys, c.from, c.to])), [['TEST_ONLY مراقب · الجدول الشهري', 'إدخال', 'مشاهدة'], ['TEST_ONLY فهد · الدور', 'TEST_ONLY مراقب', 'TEST_ONLY رئيس وردية']]);
   v.p44LogItems[0].undo(); v = W.render();
   assert.equal(v.p44OnRoles, true); assert.equal(v.p44RevOn, true); assert.equal(v.p44Dirty, true);
   assert.equal(W.page.state.p44.d.roles.find((r) => r.id === 'r_obs').sys.staff.lvl, 'input'); assert.equal(W.page.state.p44.d.people.TEST_ONLY_e2.role, 'r_obs');
@@ -638,20 +639,20 @@ test('V7 · د5-ح ⑥ creating a role is logged with its systems and their leve
   assert.deepEqual(J(v.p44LogItems[0].ch.map((c) => [c.sys, c.from, c.to])), [
     ['دور جديد · TEST_ONLY جديد', '—', 'TEST_ONLY جديد'],
     ['TEST_ONLY جديد · المهام', '—', 'إدخال'],
-    ['TEST_ONLY جديد · الجدول الشهري', '—', 'مشاهدة فقط'],
+    ['TEST_ONLY جديد · الجدول الشهري', '—', 'مشاهدة'],
     ['TEST_ONLY جديد · إشرافي', '—', 'نعم'],
   ]);
   assert.equal(v.p44LogItems[0].undoOn, true, 'undo still uses the change itself');
   /* a deleted role: its systems back to «—»; a new role without systems says so */
   assert.deepEqual(J(W.page.p44Rows([{ what: 'role', role: 'TEST_ONLY_rn', from: { id: 'TEST_ONLY_rn', name: 'TEST_ONLY جديد', sys: { tasks: { lvl: 'full' } } }, to: null }]).map((r) => [r.what, r.from, r.to])),
-    [['حذف دور · TEST_ONLY جديد', 'TEST_ONLY جديد', '—'], ['TEST_ONLY جديد · المهام', 'كامل', '—']]);
+    [['حذف دور · TEST_ONLY جديد', 'TEST_ONLY جديد', '—'], ['TEST_ONLY جديد · المهام', 'تشغيل', '—']]);   /* V7 · 53 (وضوح الصلاحيات): full = «تشغيل» */
   assert.deepEqual(J(W.page.p44Rows([{ what: 'role', role: 'q', from: null, to: { id: 'q', name: 'TEST_ONLY فارغ', sys: {} } }]).map((r) => r.to)), ['TEST_ONLY فارغ', 'بلا أنظمة']);
   /* the review before saving a new role names them too */
   const R = world();
   R.sub('roles', { viewer: 'plat' }).p44RoleNew();
   R.render().p44SysEd.find((s) => s.k === 'tasks').flip();
   const rv = R.render(); rv.p44Review();
-  assert.deepEqual(J(R.render().p44RevRows.map((r) => [r.what, r.to])), [['دور جديد · دور جديد', 'دور جديد'], ['دور جديد · المهام', 'مشاهدة فقط']]);
+  assert.deepEqual(J(R.render().p44RevRows.map((r) => [r.what, r.to])), [['دور جديد · دور جديد', 'دور جديد'], ['دور جديد · المهام', 'مشاهدة']]);
 });
 
 /* ── V7 · د5-ح (off2 · البند ٦): «الإعدادات» لا ترسم تبويباً قبل حسم الصلاحية · المطلوبُ غيرُ المسموح ⇒ أولُ مسموح · لا مسموحَ ⇒ رسالة ── */
@@ -686,8 +687,9 @@ test('④ custom level with zero actions: the save is refused with «اختر ف
   W.sub('roles', { viewer: 'plat', sel: 'r_obs' });
   const tasks = () => W.render().p44SysEd.find((s) => s.k === 'tasks');
   tasks().setLv({ target: { value: 'custom' } });
-  for (const k of tasks().keys.filter((x) => x.on === 'true')) tasks().keys.find((x) => x.n === k.n).flip();
-  assert.equal(tasks().keys.filter((x) => x.on === 'true').length, 0, 'every action off');
+  const keys = () => tasks().tb.filter((x) => x.ck);   /* V7 · 53: مربعاتُ «مخصّص» في جدول الأفعال */
+  for (const k of keys().filter((x) => x.on === 'true')) keys().find((x) => x.k === k.k).flip();
+  assert.equal(keys().filter((x) => x.on === 'true').length, 0, 'every action off');
   let v = W.render(); assert.equal(v.p44Dirty, true);
   v.p44Review(); v = W.render();
   assert.match(v.p44RevErr, /^اختر فعلاً واحداً على الأقل أو أطفئ النظام — TEST_ONLY مراقب · /, 'named before saving');
@@ -697,7 +699,7 @@ test('④ custom level with zero actions: the save is refused with «اختر ف
   assert.deepEqual(W.writes, [], 'nothing written');
   assert.ok(!W.toasts.some((t) => /حُفظت الصلاحيات/.test(t[0])));
   /* one action back ⇒ the save goes through */
-  tasks().keys[0].flip(); v = W.render(); v.p44Review(); v = W.render();
+  keys()[0].flip(); v = W.render(); v.p44Review(); v = W.render();
   assert.equal(v.p44RevErr, '');
   assert.equal(await v.p44RevSave(), true);
 });

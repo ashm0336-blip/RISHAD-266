@@ -16,6 +16,8 @@
      "ownerKind": "page",
      "domain": "daily",
      "label": "عرض الجولات",
+     "verb": "يعرض الجولات",
+     "place": "المتابعة اليومية ← الجولات اليومية",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -71,6 +73,8 @@
      "ownerKind": "page",
      "domain": "daily",
      "label": "إنشاء جولة",
+     "verb": "ينشئ جولة",
+     "place": "المتابعة اليومية ← الجولات اليومية",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -123,6 +127,8 @@
      "ownerKind": "page",
      "domain": "daily",
      "label": "تعديل بيانات الجولة",
+     "verb": "يعدّل بيانات جولة",
+     "place": "المتابعة اليومية ← الجولات اليومية",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -175,6 +181,8 @@
      "ownerKind": "page",
      "domain": "daily",
      "label": "حذف جولة",
+     "verb": "يحذف جولة",
+     "place": "المتابعة اليومية ← الجولات اليومية",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -227,6 +235,8 @@
      "ownerKind": "page",
      "domain": "daily",
      "label": "اعتماد الجولة",
+     "verb": "يعتمد الجولة",
+     "place": "المتابعة اليومية ← الجولات اليومية",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -279,6 +289,8 @@
      "ownerKind": "page",
      "domain": "daily",
      "label": "إعادة فتح الجولة",
+     "verb": "يعيد فتح جولة معتمدة",
+     "place": "المتابعة اليومية ← الجولات اليومية",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -331,6 +343,8 @@
      "ownerKind": "page",
      "domain": "daily",
      "label": "الوصول إلى رصد الميدان",
+     "verb": "يفتح رصد الميدان",
+     "place": "المتابعة اليومية ← رصد الميدان",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -381,6 +395,8 @@
      "ownerKind": "page",
      "domain": "daily",
      "label": "تحديث الجولة من الخطة التشغيلية",
+     "verb": "يحدّث الجولة من الخطة التشغيلية",
+     "place": "المتابعة اليومية ← الجولات اليومية",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -433,6 +449,8 @@
      "ownerKind": "page",
      "domain": "daily",
      "label": "تعطيل/إعادة تفعيل يوم الجولة",
+     "verb": "يعطّل جولات يوم كامل",
+     "place": "المتابعة اليومية ← الجولات اليومية",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -584,7 +602,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.round.export"
-     ]
+     ],
+     "verb": "يصدّر الجولات إلى ملف",
+     "place": "المتابعة اليومية ← الجولات اليومية"
     }
    },
    {
@@ -742,7 +762,9 @@
      "leaf": "daily/kpiDaily",
      "act": "export",
      "disposition": "converted_to_feature",
-     "targets": []
+     "targets": [],
+     "verb": "يصدّر مؤشرات التشغيل اليومي إلى ملف",
+     "place": "المتابعة اليومية ← مؤشرات المتابعة — التشغيل اليومي"
     }
    },
    {
@@ -822,7 +844,9 @@
      "leaf": "daily/kpiOcc",
      "act": "export",
      "disposition": "converted_to_feature",
-     "targets": []
+     "targets": [],
+     "verb": "يصدّر مؤشرات الإشغال إلى ملف",
+     "place": "المتابعة اليومية ← مؤشرات المتابعة — الإشغال"
     }
    },
    {
@@ -902,7 +926,9 @@
      "leaf": "daily/kpiZones",
      "act": "export",
      "disposition": "converted_to_feature",
-     "targets": []
+     "targets": [],
+     "verb": "يصدّر مؤشرات المصليات إلى ملف",
+     "place": "المتابعة اليومية ← مؤشرات المتابعة — المصليات"
     }
    },
    {

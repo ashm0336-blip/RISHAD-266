@@ -27,6 +27,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "عرض بيانات المسجد الحرام",
+   "verb": "يعرض إحصاءات المسجد الحرام",
+   "place": "الإحصائيات اليومية ← المسجد الحرام",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -67,6 +69,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "إدخال/تعديل الإحصاءات اليومية",
+   "verb": "يُدخل الإحصاءات اليومية للمسجد الحرام ويعدّلها",
+   "place": "الإحصائيات اليومية ← المسجد الحرام",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -109,6 +113,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "اعتماد/قفل اليوم أو الشهر",
+   "verb": "يعتمد يوم أو شهر المسجد الحرام ويقفله",
+   "place": "الإحصائيات اليومية ← المسجد الحرام",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -149,6 +155,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "فتح يوم/شهر مقفل وفق الضوابط",
+   "verb": "يعيد فتح يوم أو شهر مقفل للمسجد الحرام",
+   "place": "الإحصائيات اليومية ← المسجد الحرام",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -189,6 +197,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "عرض بيانات المسجد النبوي",
+   "verb": "يعرض إحصاءات المسجد النبوي",
+   "place": "الإحصائيات اليومية ← المسجد النبوي",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -229,6 +239,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "إدخال/تعديل الإحصاءات اليومية",
+   "verb": "يُدخل الإحصاءات اليومية للمسجد النبوي ويعدّلها",
+   "place": "الإحصائيات اليومية ← المسجد النبوي",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -271,6 +283,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "اعتماد/قفل اليوم أو الشهر",
+   "verb": "يعتمد يوم أو شهر المسجد النبوي ويقفله",
+   "place": "الإحصائيات اليومية ← المسجد النبوي",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -311,6 +325,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "فتح يوم/شهر مقفل وفق الضوابط",
+   "verb": "يعيد فتح يوم أو شهر مقفل للمسجد النبوي",
+   "place": "الإحصائيات اليومية ← المسجد النبوي",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -351,6 +367,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "عرض تحليل المسجد الحرام",
+   "verb": "يعرض تحليل المسجد الحرام",
+   "place": "الإحصائيات اليومية ← تحليل المسجد الحرام",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -393,6 +411,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "عرض تحليل المسجد النبوي",
+   "verb": "يعرض تحليل المسجد النبوي",
+   "place": "الإحصائيات اليومية ← تحليل المسجد النبوي",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -435,6 +455,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "عرض مقارنة الحرمين",
+   "verb": "يعرض مقارنة الحرمين",
+   "place": "الإحصائيات اليومية ← مقارنة الحرمين",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -477,6 +499,8 @@
    "ownerKind": "page",
    "domain": "dstats",
    "label": "عرض المقارنة الزمنية",
+   "verb": "يعرض المقارنة الزمنية",
+   "place": "الإحصائيات اليومية ← المقارنة الزمنية",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -519,6 +543,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "عرض العهد",
+   "verb": "يعرض العهد",
+   "place": "موظفو الإدارة ← عهد الموظفين",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -558,6 +584,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "إنشاء صنف عهدة",
+   "verb": "ينشئ صنف عهدة",
+   "place": "موظفو الإدارة ← عهد الموظفين",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -597,6 +625,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تعديل صنف عهدة",
+   "verb": "يعدّل صنف عهدة",
+   "place": "موظفو الإدارة ← عهد الموظفين",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -636,6 +666,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تسليم عهدة",
+   "verb": "يسلّم عهدة لموظف",
+   "place": "موظفو الإدارة ← عهد الموظفين",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -676,6 +708,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "استرجاع عهدة",
+   "verb": "يسترجع عهدة من موظف",
+   "place": "موظفو الإدارة ← عهد الموظفين",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -715,6 +749,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تسجيل تالف",
+   "verb": "يسجّل عهدة تالفة",
+   "place": "موظفو الإدارة ← عهد الموظفين",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -754,6 +790,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تسجيل مفقود",
+   "verb": "يسجّل عهدة مفقودة",
+   "place": "موظفو الإدارة ← عهد الموظفين",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -793,6 +831,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "حذف صنف",
+   "verb": "يحذف صنف عهدة",
+   "place": "موظفو الإدارة ← عهد الموظفين",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -832,6 +872,8 @@
    "ownerKind": "page",
    "domain": "planning",
    "label": "عرض المؤشرات",
+   "verb": "يعرض مؤشرات الجاهزية",
+   "place": "الخطة التشغيلية ← مؤشرات الجاهزية",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -879,6 +921,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "عرض الجدول",
+   "verb": "يعرض الجدول الشهري",
+   "place": "الجدول الشهري",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -925,6 +969,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "إنشاء جدول شهر",
+   "verb": "ينشئ جدول شهر",
+   "place": "الجدول الشهري",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -971,6 +1017,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "نقل بين الورديات",
+   "verb": "ينقل موظفاً بين الورديات",
+   "place": "الجدول الشهري",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -1017,6 +1065,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "إدارة الراحات",
+   "verb": "يدير الراحات",
+   "place": "الجدول الشهري",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -1065,6 +1115,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "حذف تسكين موظف من الشهر",
+   "verb": "يحذف تسكين موظف من الشهر",
+   "place": "الجدول الشهري",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -1111,6 +1163,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "اعتماد/قفل الشهر",
+   "verb": "يعتمد الشهر ويقفله",
+   "place": "الجدول الشهري",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -1157,6 +1211,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "إعادة فتح الشهر",
+   "verb": "يعيد فتح شهر مقفل",
+   "place": "الجدول الشهري",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -1203,6 +1259,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "عرض التشغيل الميداني",
+   "verb": "يعرض التشغيل الميداني",
+   "place": "التشغيل الميداني",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -1247,6 +1305,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "إنشاء خطة جديدة",
+   "verb": "ينشئ خطة جديدة",
+   "place": "التشغيل الميداني",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -1291,6 +1351,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "حذف خطة",
+   "verb": "يحذف خطة",
+   "place": "التشغيل الميداني",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -1335,6 +1397,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "إضافة موقع",
+   "verb": "يضيف موقعاً",
+   "place": "التشغيل الميداني",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -1381,6 +1445,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "تعديل بيانات الموقع",
+   "verb": "يعدّل بيانات موقع",
+   "place": "التشغيل الميداني",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -1427,6 +1493,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "رفع/استبدال الخريطة",
+   "verb": "يرفع خريطة الموقع أو يستبدلها",
+   "place": "التشغيل الميداني",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -1471,6 +1539,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "حذف موقع",
+   "verb": "يحذف موقعاً",
+   "place": "التشغيل الميداني",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -1517,6 +1587,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "اعتماد الخطة",
+   "verb": "يعتمد الخطة",
+   "place": "التشغيل الميداني",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -1561,6 +1633,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "إعادة فتح خطة معتمدة",
+   "verb": "يعيد فتح خطة معتمدة",
+   "place": "التشغيل الميداني",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -1605,6 +1679,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "عرض التقرير",
+   "verb": "يعرض التقرير اليومي",
+   "place": "التقرير اليومي",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -1651,6 +1727,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "إنشاء تقرير/وردية",
+   "verb": "ينشئ تقريراً أو وردية",
+   "place": "التقرير اليومي",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -1697,6 +1775,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "تعديل بيانات التقرير",
+   "verb": "يعدّل بيانات التقرير",
+   "place": "التقرير اليومي",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -1743,6 +1823,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "اعتماد الوردية/اليوم",
+   "verb": "يعتمد الوردية أو اليوم",
+   "place": "التقرير اليومي",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -1789,6 +1871,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "إعادة فتح التقرير",
+   "verb": "يعيد فتح تقرير معتمد",
+   "place": "التقرير اليومي",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -1835,6 +1919,8 @@
    "ownerKind": "page",
    "domain": "daily",
    "label": "عرض الجولات",
+   "verb": "يعرض الجولات",
+   "place": "المتابعة اليومية ← الجولات اليومية",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -1883,6 +1969,8 @@
    "ownerKind": "page",
    "domain": "daily",
    "label": "إنشاء جولة",
+   "verb": "ينشئ جولة",
+   "place": "المتابعة اليومية ← الجولات اليومية",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -1928,6 +2016,8 @@
    "ownerKind": "page",
    "domain": "daily",
    "label": "تعديل بيانات الجولة",
+   "verb": "يعدّل بيانات جولة",
+   "place": "المتابعة اليومية ← الجولات اليومية",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -1973,6 +2063,8 @@
    "ownerKind": "page",
    "domain": "daily",
    "label": "حذف جولة",
+   "verb": "يحذف جولة",
+   "place": "المتابعة اليومية ← الجولات اليومية",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -2018,6 +2110,8 @@
    "ownerKind": "page",
    "domain": "daily",
    "label": "اعتماد الجولة",
+   "verb": "يعتمد الجولة",
+   "place": "المتابعة اليومية ← الجولات اليومية",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -2063,6 +2157,8 @@
    "ownerKind": "page",
    "domain": "daily",
    "label": "إعادة فتح الجولة",
+   "verb": "يعيد فتح جولة معتمدة",
+   "place": "المتابعة اليومية ← الجولات اليومية",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -2108,6 +2204,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "عرض المهام",
+   "verb": "يعرض المهام",
+   "place": "المهام",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -2153,6 +2251,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "إنشاء مهمة",
+   "verb": "ينشئ مهمة",
+   "place": "المهام",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -2196,6 +2296,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "تعديل المهمة",
+   "verb": "يعدّل مهمة",
+   "place": "المهام",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -2239,6 +2341,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "إسناد/إعادة إسناد",
+   "verb": "يسند مهمة أو يعيد إسنادها",
+   "place": "المهام",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -2282,6 +2386,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "إضافة إثبات/مرفق",
+   "verb": "يضيف إثباتاً أو مرفقاً لمهمة",
+   "place": "المهام",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -2325,6 +2431,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "حذف مهمة",
+   "verb": "يحذف مهمة",
+   "place": "المهام",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -2368,6 +2476,8 @@
    "ownerKind": "page",
    "domain": "daily",
    "label": "الوصول إلى رصد الميدان",
+   "verb": "يفتح رصد الميدان",
+   "place": "المتابعة اليومية ← رصد الميدان",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -2411,6 +2521,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "عرض لوحة المؤشرات",
+   "verb": "يعرض لوحة مؤشرات الاسترشاد",
+   "place": "نظام الاسترشاد ← لوحة المؤشرات",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -2457,6 +2569,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "عرض السجلات",
+   "verb": "يعرض سجلات الاسترشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -2501,6 +2615,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "إضافة سجل",
+   "verb": "يضيف سجل استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -2545,6 +2661,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "تعديل سجل",
+   "verb": "يعدّل سجل استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -2589,6 +2707,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "تغيير الحالة",
+   "verb": "يغيّر حالة سجل استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -2627,6 +2747,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "حذف سجل",
+   "verb": "يحذف سجل استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -2671,6 +2793,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "عرض لوحة المؤشرات",
+   "verb": "يعرض لوحة مؤشرات المضبوطات",
+   "place": "نظام المضبوطات ← لوحة المؤشرات",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -2719,6 +2843,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "عرض المضبوطات",
+   "verb": "يعرض المضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -2764,6 +2890,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "تسجيل مضبوطة",
+   "verb": "يسجّل مضبوطة",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -2809,6 +2937,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "تعديل البيانات",
+   "verb": "يعدّل بيانات مضبوطة",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -2854,6 +2984,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "حذف سجل",
+   "verb": "يحذف سجل مضبوطة",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -2899,6 +3031,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "عرض لوحة المؤشرات",
+   "verb": "يعرض لوحة مؤشرات رصد الحالات",
+   "place": "نظام رصد الحالات ← لوحة المؤشرات",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -2944,6 +3078,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "عرض السجلات",
+   "verb": "يعرض سجلات رصد الحالات",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -2987,6 +3123,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "إضافة سجل",
+   "verb": "يضيف سجل رصد",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -3030,6 +3168,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "تعديل سجل",
+   "verb": "يعدّل سجل رصد",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -3073,6 +3213,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "تغيير الحالة",
+   "verb": "يغيّر حالة سجل رصد",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -3111,6 +3253,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "حذف سجل",
+   "verb": "يحذف سجل رصد",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -3154,6 +3298,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "عرض نموذج الترشيح",
+   "verb": "يعرض نموذج الترشيح",
+   "place": "جائزة التميز ← ترشيح جديد",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -3193,6 +3339,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "إنشاء ترشيح",
+   "verb": "ينشئ ترشيحاً",
+   "place": "جائزة التميز ← ترشيح جديد",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -3232,6 +3380,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "عرض النتائج",
+   "verb": "يعرض نتائج الترشيحات",
+   "place": "جائزة التميز ← لوحة النتائج",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -3272,6 +3422,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "تعديل الترشيح",
+   "verb": "يعدّل ترشيحاً",
+   "place": "جائزة التميز ← لوحة النتائج",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -3312,6 +3464,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "اعتماد الترشيح",
+   "verb": "يعتمد ترشيحاً",
+   "place": "جائزة التميز ← لوحة النتائج",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -3352,6 +3506,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "استبعاد/رفض الترشيح (بسبب)",
+   "verb": "يستبعد ترشيحاً أو يرفضه بسبب",
+   "place": "جائزة التميز ← لوحة النتائج",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -3392,6 +3548,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "حذف الترشيح",
+   "verb": "يحذف ترشيحاً",
+   "place": "جائزة التميز ← لوحة النتائج",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -3432,6 +3590,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "عرض المراجع",
+   "verb": "يعرض المراجع المعتمدة",
+   "place": "جائزة التميز ← المراجع المعتمدة",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -3475,6 +3635,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "إضافة مرجع",
+   "verb": "يضيف مرجعاً",
+   "place": "جائزة التميز ← المراجع المعتمدة",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -3515,6 +3677,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "تعديل مرجع",
+   "verb": "يعدّل مرجعاً",
+   "place": "جائزة التميز ← المراجع المعتمدة",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -3555,6 +3719,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "حذف مرجع",
+   "verb": "يحذف مرجعاً",
+   "place": "جائزة التميز ← المراجع المعتمدة",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -3999,6 +4165,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "تفعيل عدسة المصليات",
+   "verb": "يفعّل عدسة المصليات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "capability",
    "sensitive": false,
    "guard": {
@@ -4038,6 +4206,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "عرض المصليات",
+   "verb": "يعرض المصليات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -4084,6 +4254,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "إضافة مصلى",
+   "verb": "يضيف مصلى",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -4130,6 +4302,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "تعديل بيانات المصلى",
+   "verb": "يعدّل بيانات مصلى",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -4176,6 +4350,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "تعديل رسم وحدود المصلى",
+   "verb": "يعدّل رسم المصلى وحدوده",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -4222,6 +4398,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "تغيير حالة المصلى",
+   "verb": "يغيّر حالة المصلى",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -4271,6 +4449,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "حذف المصلى",
+   "verb": "يحذف مصلى",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -4356,6 +4536,8 @@
    "ownerKind": "lens",
    "domain": "lens.paths",
    "label": "تفعيل عدسة المسارات",
+   "verb": "يفعّل عدسة المسارات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المسارات",
    "type": "capability",
    "sensitive": false,
    "guard": {
@@ -4395,6 +4577,8 @@
    "ownerKind": "lens",
    "domain": "lens.paths",
    "label": "عرض المسارات",
+   "verb": "يعرض المسارات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المسارات",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -4438,6 +4622,8 @@
    "ownerKind": "lens",
    "domain": "lens.paths",
    "label": "إضافة مسار",
+   "verb": "يضيف مساراً",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المسارات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -4481,6 +4667,8 @@
    "ownerKind": "lens",
    "domain": "lens.paths",
    "label": "تعديل بيانات المسار",
+   "verb": "يعدّل بيانات مسار",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المسارات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -4524,6 +4712,8 @@
    "ownerKind": "lens",
    "domain": "lens.paths",
    "label": "تعديل رسم المسار",
+   "verb": "يعدّل رسم المسار",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المسارات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -4567,6 +4757,8 @@
    "ownerKind": "lens",
    "domain": "lens.paths",
    "label": "تغيير حالة المسار",
+   "verb": "يغيّر حالة المسار",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المسارات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -4611,6 +4803,8 @@
    "ownerKind": "lens",
    "domain": "lens.paths",
    "label": "حذف مسار",
+   "verb": "يحذف مساراً",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المسارات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -4728,6 +4922,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "تفعيل عدسة البوابات",
+   "verb": "يفعّل عدسة البوابات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "capability",
    "sensitive": false,
    "guard": {
@@ -4767,6 +4963,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "عرض البوابات",
+   "verb": "يعرض البوابات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -4813,6 +5011,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "إضافة بوابة",
+   "verb": "يضيف بوابة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -4859,6 +5059,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "تعديل بيانات البوابة",
+   "verb": "يعدّل بيانات بوابة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -4905,6 +5107,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "تغيير حالة البوابة",
+   "verb": "يغيّر حالة البوابة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -4954,6 +5158,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "حذف بوابة",
+   "verb": "يحذف بوابة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -5078,6 +5284,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "تفعيل عدسة العلامات",
+   "verb": "يفعّل عدسة العلامات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "capability",
    "sensitive": false,
    "guard": {
@@ -5117,6 +5325,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "عرض العلامات",
+   "verb": "يعرض العلامات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -5163,6 +5373,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "إضافة علامة",
+   "verb": "يضيف علامة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -5209,6 +5421,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "تعديل علامة",
+   "verb": "يعدّل علامة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -5255,6 +5469,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "تعديل موقع العلامة",
+   "verb": "يعدّل موقع العلامة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -5301,6 +5517,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "حذف علامة",
+   "verb": "يحذف علامة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -5425,6 +5643,8 @@
    "ownerKind": "lens",
    "domain": "lens.dist",
    "label": "تفعيل عدسة التوزيع",
+   "verb": "يفعّل عدسة التوزيع",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة التوزيع",
    "type": "capability",
    "sensitive": false,
    "guard": {
@@ -5464,6 +5684,8 @@
    "ownerKind": "lens",
    "domain": "lens.dist",
    "label": "عرض التوزيع",
+   "verb": "يعرض التوزيع",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة التوزيع",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -5509,6 +5731,8 @@
    "ownerKind": "lens",
    "domain": "lens.dist",
    "label": "تسكين موظف على عنصر (التوزيع)",
+   "verb": "يسكّن موظفاً على عنصر في التوزيع",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة التوزيع",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -5674,6 +5898,8 @@
    "ownerKind": "lens",
    "domain": "lens.dens",
    "label": "تفعيل عدسة الكثافة",
+   "verb": "يفعّل عدسة الكثافة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة الكثافة",
    "type": "capability",
    "sensitive": false,
    "guard": {
@@ -5713,6 +5939,8 @@
    "ownerKind": "lens",
    "domain": "lens.dens",
    "label": "عرض الكثافة",
+   "verb": "يعرض الكثافة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة الكثافة",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -5757,6 +5985,8 @@
    "ownerKind": "lens",
    "domain": "lens.dens",
    "label": "ضبط حدود التنبيه",
+   "verb": "يضبط حدود تنبيه الكثافة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة الكثافة",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -5839,6 +6069,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "عرض مؤشرات المصليات",
+   "verb": "يعرض مؤشرات المصليات",
+   "place": "المتابعة اليومية ← مؤشرات المتابعة — المصليات",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -5887,6 +6119,8 @@
    "ownerKind": "lens",
    "domain": "lens.dens",
    "label": "عرض مؤشرات الإشغال والكثافة",
+   "verb": "يعرض مؤشرات الإشغال والكثافة",
+   "place": "المتابعة اليومية ← مؤشرات المتابعة — الإشغال",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -5933,6 +6167,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "فتح صفحة بيانات الموظفين",
+   "verb": "يفتح صفحة بيانات الموظفين",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -5986,6 +6222,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "إضافة موظف",
+   "verb": "يضيف موظفاً",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -6026,6 +6264,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تعديل بيانات موظف",
+   "verb": "يعدّل بيانات موظف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -6068,6 +6308,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "حذف موظف",
+   "verb": "يحذف موظفاً",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -6108,6 +6350,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "حذف المحدد / حذف الكل (جماعي)",
+   "verb": "يحذف الموظفين المحدّدين أو الكل دفعةً واحدة",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -6148,6 +6392,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تفعيل حسابات الدخول للمحددين",
+   "verb": "يفعّل حسابات الدخول للموظفين المحدّدين",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -6187,6 +6433,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تجميد حسابات الدخول للمحددين",
+   "verb": "يجمّد حسابات الدخول للموظفين المحدّدين",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -6226,6 +6474,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "عرض قائمة أنواع التوظيف",
+   "verb": "يعرض قائمة أنواع التوظيف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -6269,6 +6519,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "إضافة نوع توظيف",
+   "verb": "يضيف نوع توظيف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -6308,6 +6560,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تعديل اسم نوع التوظيف وترحيله للسجلات",
+   "verb": "يعدّل اسم نوع توظيف ويرحّله إلى السجلات",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -6347,6 +6601,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "حذف نوع توظيف",
+   "verb": "يحذف نوع توظيف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -6386,6 +6642,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "تسكين موظف في وردية",
+   "verb": "يسكّن موظفاً في وردية",
+   "place": "الجدول الشهري",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -6434,6 +6692,8 @@
    "ownerKind": "page",
    "domain": "links",
    "label": "عرض صفحة مواقع ذات صلة",
+   "verb": "يعرض صفحة مواقع ذات صلة",
+   "place": "مواقع ذات صلة",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -6470,6 +6730,8 @@
    "ownerKind": "page",
    "domain": "help",
    "label": "عرض صفحة المساعدة",
+   "verb": "يعرض صفحة المساعدة",
+   "place": "المساعدة",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -6506,6 +6768,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "تعيين نوع التوظيف من الجدول",
+   "verb": "يعيّن نوع التوظيف من الجدول",
+   "place": "الجدول الشهري",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -6552,6 +6816,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "تعيين نوع العمل",
+   "verb": "يعيّن نوع العمل",
+   "place": "الجدول الشهري",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -6598,6 +6864,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "تعيين رمز النداء",
+   "verb": "يعيّن رمز النداء",
+   "place": "الجدول الشهري",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -6646,6 +6914,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "إدارة التكليف",
+   "verb": "يدير التكليف",
+   "place": "الجدول الشهري",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -6692,6 +6962,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "حذف جميع بيانات شهر",
+   "verb": "يحذف جميع بيانات شهر",
+   "place": "الجدول الشهري",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -6738,6 +7010,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "عرض قائمة أنواع العمل",
+   "verb": "يعرض قائمة أنواع العمل",
+   "place": "الجدول الشهري",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -6779,6 +7053,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "إضافة نوع عمل",
+   "verb": "يضيف نوع عمل",
+   "place": "الجدول الشهري",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -6820,6 +7096,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "تعديل نوع عمل",
+   "verb": "يعدّل نوع عمل",
+   "place": "الجدول الشهري",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -6861,6 +7139,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "حذف نوع عمل",
+   "verb": "يحذف نوع عمل",
+   "place": "الجدول الشهري",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -6902,6 +7182,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "عرض قائمة رموز النداء",
+   "verb": "يعرض قائمة رموز النداء",
+   "place": "الجدول الشهري",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -6946,6 +7228,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "إضافة رمز نداء",
+   "verb": "يضيف رمز نداء",
+   "place": "الجدول الشهري",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -6987,6 +7271,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "تعديل رمز نداء",
+   "verb": "يعدّل رمز نداء",
+   "place": "الجدول الشهري",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -7028,6 +7314,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "حذف رمز نداء",
+   "verb": "يحذف رمز نداء",
+   "place": "الجدول الشهري",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -7069,6 +7357,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "تحويل موظف بين المواقع/الورديات",
+   "verb": "يحوّل موظفاً بين المواقع أو الورديات",
+   "place": "التقرير اليومي",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -7115,6 +7405,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "تسجيل غياب",
+   "verb": "يسجّل غياباً",
+   "place": "التقرير اليومي",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -7161,6 +7453,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "تسجيل إجازة",
+   "verb": "يسجّل إجازة",
+   "place": "التقرير اليومي",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -7207,6 +7501,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "تسجيل تأخر عن بداية الوردية",
+   "verb": "يسجّل تأخراً عن بداية الوردية",
+   "place": "التقرير اليومي",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -7253,6 +7549,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "تسجيل انصراف مبكر",
+   "verb": "يسجّل انصرافاً مبكراً",
+   "place": "التقرير اليومي",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -7299,6 +7597,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "إسناد رمز نداء داخل التقرير",
+   "verb": "يسند رمز نداء داخل التقرير",
+   "place": "التقرير اليومي",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -7345,6 +7645,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "عرض أنواع الإجازات",
+   "verb": "يعرض أنواع الإجازات",
+   "place": "التقرير اليومي",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -7389,6 +7691,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "إضافة نوع إجازة",
+   "verb": "يضيف نوع إجازة",
+   "place": "التقرير اليومي",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -7431,6 +7735,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "حذف نوع إجازة",
+   "verb": "يحذف نوع إجازة",
+   "place": "التقرير اليومي",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -7473,6 +7779,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "اعتماد/فتح موقع داخل الخطة",
+   "verb": "يعتمد موقعاً داخل الخطة أو يفتحه",
+   "place": "التشغيل الميداني",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -7517,6 +7825,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "معايرة مقياس خريطة الموقع",
+   "verb": "يعاير مقياس خريطة الموقع",
+   "place": "التشغيل الميداني",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -7561,6 +7871,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "إضافة نطاق تشغيلي",
+   "verb": "يضيف نطاقاً تشغيلياً",
+   "place": "التشغيل الميداني",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -7605,6 +7917,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "تعديل نطاق تشغيلي",
+   "verb": "يعدّل نطاقاً تشغيلياً",
+   "place": "التشغيل الميداني",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -7649,6 +7963,8 @@
    "ownerKind": "page",
    "domain": "plan",
    "label": "حذف نطاق تشغيلي",
+   "verb": "يحذف نطاقاً تشغيلياً",
+   "place": "التشغيل الميداني",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -7693,6 +8009,8 @@
    "ownerKind": "page",
    "domain": "daily",
    "label": "تحديث الجولة من الخطة التشغيلية",
+   "verb": "يحدّث الجولة من الخطة التشغيلية",
+   "place": "المتابعة اليومية ← الجولات اليومية",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -7738,6 +8056,8 @@
    "ownerKind": "page",
    "domain": "daily",
    "label": "تعطيل/إعادة تفعيل يوم الجولة",
+   "verb": "يعطّل جولات يوم كامل",
+   "place": "المتابعة اليومية ← الجولات اليومية",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -7777,6 +8097,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "قبول المهمة",
+   "verb": "يقبل المهمة",
+   "place": "المهام",
    "type": "operation",
    "sensitive": false,
    "guard": {
@@ -7820,6 +8142,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "إنهاء المهمة",
+   "verb": "ينهي المهمة",
+   "place": "المهام",
    "type": "operation",
    "sensitive": false,
    "guard": {
@@ -7863,6 +8187,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "إعادة فتح مهمة منجزة",
+   "verb": "يعيد فتح مهمة منجزة",
+   "place": "المهام",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -7906,6 +8232,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "اعتماد وإغلاق شهر المهام",
+   "verb": "يعتمد شهر المهام ويغلقه",
+   "place": "المهام",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -7949,6 +8277,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "إعادة فتح شهر المهام",
+   "verb": "يعيد فتح شهر المهام",
+   "place": "المهام",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -7992,6 +8322,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "حذف جميع مهام شهر",
+   "verb": "يحذف جميع مهام شهر",
+   "place": "المهام",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -8035,6 +8367,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "عرض مواقع الاسترشاد",
+   "verb": "يعرض مواقع الاسترشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -8077,6 +8411,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "إضافة موقع استرشاد",
+   "verb": "يضيف موقع استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -8119,6 +8455,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "تعديل موقع استرشاد",
+   "verb": "يعدّل موقع استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -8161,6 +8499,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "حذف موقع استرشاد",
+   "verb": "يحذف موقع استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -8203,6 +8543,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "عرض لغات الاسترشاد",
+   "verb": "يعرض لغات الاسترشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -8245,6 +8587,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "إضافة لغة استرشاد",
+   "verb": "يضيف لغة استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -8287,6 +8631,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "تعديل لغة استرشاد",
+   "verb": "يعدّل لغة استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -8329,6 +8675,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "حذف لغة استرشاد",
+   "verb": "يحذف لغة استرشاد",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -8371,6 +8719,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "حذف جميع تقارير الاسترشاد للشهر",
+   "verb": "يحذف جميع تقارير الاسترشاد لشهر",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -8415,6 +8765,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "عرض مواقع الضبط",
+   "verb": "يعرض مواقع الضبط",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -8456,6 +8808,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "إضافة موقع ضبط",
+   "verb": "يضيف موقع ضبط",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -8497,6 +8851,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "تعديل موقع ضبط",
+   "verb": "يعدّل موقع ضبط",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -8538,6 +8894,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "حذف موقع ضبط",
+   "verb": "يحذف موقع ضبط",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -8579,6 +8937,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "عرض تصنيفات المضبوطات",
+   "verb": "يعرض تصنيفات المضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -8620,6 +8980,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "إضافة تصنيف مضبوطات",
+   "verb": "يضيف تصنيف مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -8661,6 +9023,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "تعديل تصنيف مضبوطات",
+   "verb": "يعدّل تصنيف مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -8702,6 +9066,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "حذف تصنيف مضبوطات",
+   "verb": "يحذف تصنيف مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -8743,6 +9109,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "عرض بنود المضبوطات",
+   "verb": "يعرض بنود المضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -8784,6 +9152,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "إضافة بند مضبوطات",
+   "verb": "يضيف بند مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -8825,6 +9195,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "تعديل بند مضبوطات",
+   "verb": "يعدّل بند مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -8866,6 +9238,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "حذف بند مضبوطات",
+   "verb": "يحذف بند مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -8907,6 +9281,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "عرض أنواع المضبوطات",
+   "verb": "يعرض أنواع المضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -8948,6 +9324,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "إضافة نوع مضبوطات",
+   "verb": "يضيف نوع مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -8989,6 +9367,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "تعديل نوع مضبوطات",
+   "verb": "يعدّل نوع مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -9030,6 +9410,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "حذف نوع مضبوطات",
+   "verb": "يحذف نوع مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -9071,6 +9453,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "عرض إجراءات المضبوطات",
+   "verb": "يعرض إجراءات المضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -9112,6 +9496,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "إضافة إجراء مضبوطات",
+   "verb": "يضيف إجراء مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -9153,6 +9539,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "تعديل إجراء مضبوطات",
+   "verb": "يعدّل إجراء مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -9194,6 +9582,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "حذف إجراء مضبوطات",
+   "verb": "يحذف إجراء مضبوطات",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -9235,6 +9625,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "حذف جميع محاضر الشهر",
+   "verb": "يحذف جميع محاضر شهر",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -9280,6 +9672,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "عرض قوائم رصد الحالات",
+   "verb": "يعرض قوائم رصد الحالات",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -9322,6 +9716,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "إضافة بند إلى قوائم رصد الحالات",
+   "verb": "يضيف بنداً إلى قوائم رصد الحالات",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -9364,6 +9760,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "تعديل بند في قوائم رصد الحالات",
+   "verb": "يعدّل بنداً في قوائم رصد الحالات",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -9406,6 +9804,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "حذف بند من قوائم رصد الحالات",
+   "verb": "يحذف بنداً من قوائم رصد الحالات",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -9448,6 +9848,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "حذف جميع تقارير رصد الحالات للشهر",
+   "verb": "يحذف جميع تقارير رصد الحالات لشهر",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -9491,6 +9893,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "إعادة ضبط/تهيئة المراجع",
+   "verb": "يعيد ضبط المراجع إلى الافتراضي",
+   "place": "جائزة التميز ← المراجع المعتمدة",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -9531,6 +9935,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "تغيير حالة العلامة/المعلم",
+   "verb": "يغيّر حالة العلامة أو المعلم",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -9580,6 +9986,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "حذف يوم التقرير اليومي (إعادة ضبط اليوم)",
+   "verb": "يحذف يوم التقرير ويعيد ضبطه",
+   "place": "التقرير اليومي",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -9617,6 +10025,8 @@
    "ownerKind": "page",
    "domain": "award",
    "label": "إعادة الترشيح إلى «قيد التحكيم»",
+   "verb": "يعيد فتح ترشيح معتمد",
+   "place": "جائزة التميز ← لوحة النتائج",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -9651,6 +10061,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "عرض أصناف العهد",
+   "verb": "يعرض أصناف العهد",
+   "place": "موظفو الإدارة ← عهد الموظفين",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -9687,6 +10099,8 @@
    "ownerKind": "page",
    "domain": "staff",
    "label": "ضبط سقف الاستئذانات",
+   "verb": "يضبط سقف الاستئذانات",
+   "place": "الجدول الشهري",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -9769,6 +10183,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "عرض مؤشرات التشغيل اليومي",
+   "verb": "يعرض مؤشرات التشغيل اليومي",
+   "place": "المتابعة اليومية ← مؤشرات المتابعة — التشغيل اليومي",
    "type": "access",
    "sensitive": false,
    "guard": {
@@ -9816,6 +10232,8 @@
    "ownerKind": "page",
    "domain": "dreport",
    "label": "تعديل نوع إجازة",
+   "verb": "يعدّل نوع إجازة",
+   "place": "التقرير اليومي",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -9852,6 +10270,8 @@
    "ownerKind": "page",
    "domain": "irshad",
    "label": "فتح شهر/يوم مقفل للاستدراك",
+   "verb": "يفتح شهراً أو يوماً مقفلاً للاستدراك",
+   "place": "نظام الاسترشاد ← السجلات",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -9889,6 +10309,8 @@
    "ownerKind": "page",
    "domain": "seized",
    "label": "فتح شهر/يوم مقفل للاستدراك",
+   "verb": "يفتح شهراً أو يوماً مقفلاً للاستدراك",
+   "place": "نظام المضبوطات ← السجلات",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -9926,6 +10348,8 @@
    "ownerKind": "page",
    "domain": "rasd",
    "label": "فتح شهر/يوم مقفل للاستدراك",
+   "verb": "يفتح شهراً أو يوماً مقفلاً للاستدراك",
+   "place": "نظام رصد الحالات ← السجلات",
    "type": "decision",
    "sensitive": true,
    "guard": {
@@ -10004,6 +10428,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تفعيل/إنشاء حساب دخول موظف",
+   "verb": "يفعّل حساب دخول موظف أو ينشئه",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -10041,6 +10467,8 @@
    "ownerKind": "page",
    "domain": "emps",
    "label": "تجميد حساب دخول موظف",
+   "verb": "يجمّد حساب دخول موظف",
+   "place": "موظفو الإدارة ← بيانات الموظفين",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -10078,6 +10506,8 @@
    "ownerKind": "lens",
    "domain": "lens.dist",
    "label": "تحديد الاحتياج على العنصر (needN · needS)",
+   "verb": "يحدّد الاحتياج على العنصر",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة التوزيع",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -10121,6 +10551,8 @@
    "ownerKind": "lens",
    "domain": "lens.dens",
    "label": "تسجيل/مسح قراءة الكثافة للمصلى",
+   "verb": "يسجّل قراءة كثافة المصلى أو يمسحها",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة الكثافة",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -10163,6 +10595,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "نقل موضع البوابة على الخريطة",
+   "verb": "ينقل موضع البوابة على الخريطة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "operation",
    "sensitive": true,
    "guard": {
@@ -10200,6 +10634,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "عرض أنواع/خيارات المصليات",
+   "verb": "يعرض أنواع المصليات وخياراتها",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -10238,6 +10674,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "إضافة أنواع/خيارات المصليات",
+   "verb": "يضيف نوعاً أو خياراً للمصليات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -10274,6 +10712,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "تعديل أنواع/خيارات المصليات",
+   "verb": "يعدّل نوعاً أو خياراً للمصليات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -10310,6 +10750,8 @@
    "ownerKind": "lens",
    "domain": "lens.zones",
    "label": "حذف أنواع/خيارات المصليات",
+   "verb": "يحذف نوعاً أو خياراً للمصليات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة المصليات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -10346,6 +10788,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "عرض أنواع/خيارات البوابات",
+   "verb": "يعرض أنواع البوابات وخياراتها",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -10384,6 +10828,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "إضافة أنواع/خيارات البوابات",
+   "verb": "يضيف نوعاً أو خياراً للبوابات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -10420,6 +10866,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "تعديل أنواع/خيارات البوابات",
+   "verb": "يعدّل نوعاً أو خياراً للبوابات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -10456,6 +10904,8 @@
    "ownerKind": "lens",
    "domain": "lens.gates",
    "label": "حذف أنواع/خيارات البوابات",
+   "verb": "يحذف نوعاً أو خياراً للبوابات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة البوابات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -10492,6 +10942,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "عرض أنواع العلامات",
+   "verb": "يعرض أنواع العلامات",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "view",
    "sensitive": false,
    "guard": {
@@ -10530,6 +10982,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "إضافة أنواع العلامات",
+   "verb": "يضيف نوع علامة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "create",
    "sensitive": false,
    "guard": {
@@ -10566,6 +11020,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "تعديل أنواع العلامات",
+   "verb": "يعدّل نوع علامة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "edit",
    "sensitive": false,
    "guard": {
@@ -10602,6 +11058,8 @@
    "ownerKind": "lens",
    "domain": "lens.marks",
    "label": "حذف أنواع العلامات",
+   "verb": "يحذف نوع علامة",
+   "place": "التشغيل الميداني · الجولات اليومية ← عدسة العلامات",
    "type": "delete",
    "sensitive": true,
    "guard": {
@@ -11407,6 +11865,8 @@
    "ownerKind": "page",
    "domain": "tasks",
    "label": "قبول/اعتذار/إنهاء مهمتي المسنَدة",
+   "verb": "يقبل مهمته المسنَدة أو يعتذر عنها أو ينهيها",
+   "place": "المهام · صفحتي",
    "type": "operation",
    "sensitive": false,
    "guard": {
@@ -11923,7 +12383,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.dstats.haram.export"
-   ]
+   ],
+   "verb": "يصدّر إحصاءات المسجد الحرام إلى ملف",
+   "place": "الإحصائيات اليومية ← المسجد الحرام"
   },
   {
    "leaf": "dstats/nabawi",
@@ -11972,7 +12434,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.dstats.nabawi.export"
-   ]
+   ],
+   "verb": "يصدّر إحصاءات المسجد النبوي إلى ملف",
+   "place": "الإحصائيات اليومية ← المسجد النبوي"
   },
   {
    "leaf": "dstats/anHaram",
@@ -12012,7 +12476,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.dstats.anHaram.export"
-   ]
+   ],
+   "verb": "يصدّر تحليل المسجد الحرام إلى ملف",
+   "place": "الإحصائيات اليومية ← تحليل المسجد الحرام"
   },
   {
    "leaf": "dstats/anNabawi",
@@ -12052,7 +12518,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.dstats.anNabawi.export"
-   ]
+   ],
+   "verb": "يصدّر تحليل المسجد النبوي إلى ملف",
+   "place": "الإحصائيات اليومية ← تحليل المسجد النبوي"
   },
   {
    "leaf": "dstats/anCmp",
@@ -12092,7 +12560,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.dstats.anCmp.export"
-   ]
+   ],
+   "verb": "يصدّر مقارنة الحرمين إلى ملف",
+   "place": "الإحصائيات اليومية ← مقارنة الحرمين"
   },
   {
    "leaf": "dstats/anTime",
@@ -12132,7 +12602,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.dstats.anTime.export"
-   ]
+   ],
+   "verb": "يصدّر المقارنة الزمنية إلى ملف",
+   "place": "الإحصائيات اليومية ← المقارنة الزمنية"
   },
   {
    "leaf": "emps/data",
@@ -12187,7 +12659,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.emp.export"
-   ]
+   ],
+   "verb": "يصدّر بيانات الموظفين إلى ملف",
+   "place": "موظفو الإدارة ← بيانات الموظفين"
   },
   {
    "leaf": "emps/custody",
@@ -12239,7 +12713,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.cust.export"
-   ]
+   ],
+   "verb": "يصدّر العهد إلى ملف",
+   "place": "موظفو الإدارة ← عهد الموظفين"
   },
   {
    "leaf": "planning/readiness",
@@ -12279,7 +12755,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.ready.export"
-   ]
+   ],
+   "verb": "يصدّر مؤشرات الجاهزية إلى ملف",
+   "place": "الخطة التشغيلية ← مؤشرات الجاهزية"
   },
   {
    "leaf": "staff",
@@ -12344,7 +12822,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.staff.export"
-   ]
+   ],
+   "verb": "يصدّر الجدول الشهري إلى ملف",
+   "place": "الجدول الشهري"
   },
   {
    "leaf": "plan",
@@ -12438,7 +12918,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.plan.export"
-   ]
+   ],
+   "verb": "يصدّر التشغيل الميداني إلى ملف",
+   "place": "التشغيل الميداني"
   },
   {
    "leaf": "dreport",
@@ -12498,7 +12980,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.report.export"
-   ]
+   ],
+   "verb": "يصدّر التقرير اليومي إلى ملف",
+   "place": "التقرير اليومي"
   },
   {
    "leaf": "daily/rounds",
@@ -12576,7 +13060,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.round.export"
-   ]
+   ],
+   "verb": "يصدّر الجولات إلى ملف",
+   "place": "المتابعة اليومية ← الجولات اليومية"
   },
   {
    "leaf": "daily/field",
@@ -12654,7 +13140,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.report.indicators.export"
-   ]
+   ],
+   "verb": "يصدّر مؤشرات التشغيل اليومي إلى ملف",
+   "place": "المتابعة اليومية ← مؤشرات المتابعة — التشغيل اليومي"
   },
   {
    "leaf": "daily/kpiOcc",
@@ -12694,7 +13182,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.lens.dens.indicators.export"
-   ]
+   ],
+   "verb": "يصدّر مؤشرات الإشغال إلى ملف",
+   "place": "المتابعة اليومية ← مؤشرات المتابعة — الإشغال"
   },
   {
    "leaf": "daily/kpiZones",
@@ -12734,7 +13224,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.lens.zones.indicators.export"
-   ]
+   ],
+   "verb": "يصدّر مؤشرات المصليات إلى ملف",
+   "place": "المتابعة اليومية ← مؤشرات المتابعة — المصليات"
   },
   {
    "leaf": "tasks",
@@ -12789,7 +13281,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.task.export"
-   ]
+   ],
+   "verb": "يصدّر المهام إلى ملف",
+   "place": "المهام"
   },
   {
    "leaf": "irshad/dash",
@@ -12829,7 +13323,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.ir.dash.export"
-   ]
+   ],
+   "verb": "يصدّر لوحة مؤشرات الاسترشاد إلى ملف",
+   "place": "نظام الاسترشاد ← لوحة المؤشرات"
   },
   {
    "leaf": "irshad/records",
@@ -12886,7 +13382,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.ir.rec.export"
-   ]
+   ],
+   "verb": "يصدّر سجلات الاسترشاد إلى ملف",
+   "place": "نظام الاسترشاد ← السجلات"
   },
   {
    "leaf": "seized/dash",
@@ -12926,7 +13424,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.sz.dash.export"
-   ]
+   ],
+   "verb": "يصدّر لوحة مؤشرات المضبوطات إلى ملف",
+   "place": "نظام المضبوطات ← لوحة المؤشرات"
   },
   {
    "leaf": "seized/records",
@@ -12995,7 +13495,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.sz.rec.export"
-   ]
+   ],
+   "verb": "يصدّر سجلات المضبوطات إلى ملف",
+   "place": "نظام المضبوطات ← السجلات"
   },
   {
    "leaf": "rasd/dash",
@@ -13035,7 +13537,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.rz.dash.export"
-   ]
+   ],
+   "verb": "يصدّر لوحة مؤشرات رصد الحالات إلى ملف",
+   "place": "نظام رصد الحالات ← لوحة المؤشرات"
   },
   {
    "leaf": "rasd/records",
@@ -13088,7 +13592,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.rz.rec.export"
-   ]
+   ],
+   "verb": "يصدّر سجلات رصد الحالات إلى ملف",
+   "place": "نظام رصد الحالات ← السجلات"
   },
   {
    "leaf": "award/new",
@@ -13175,7 +13681,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.award.res.export"
-   ]
+   ],
+   "verb": "يصدّر نتائج الترشيحات إلى ملف",
+   "place": "جائزة التميز ← لوحة النتائج"
   },
   {
    "leaf": "award/doc",
@@ -13222,7 +13730,9 @@
    "disposition": "converted_to_feature",
    "targets": [
     "ff.award.doc.print"
-   ]
+   ],
+   "verb": "يطبع المراجع المعتمدة",
+   "place": "جائزة التميز ← المراجع المعتمدة"
   },
   {
    "leaf": "admin/backup",

@@ -16,6 +16,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "عرض الجدول",
+     "verb": "يعرض الجدول الشهري",
+     "place": "الجدول الشهري",
      "type": "access",
      "sensitive": false,
      "guard": {
@@ -69,6 +71,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "إنشاء جدول شهر",
+     "verb": "ينشئ جدول شهر",
+     "place": "الجدول الشهري",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -122,6 +126,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "نقل بين الورديات",
+     "verb": "ينقل موظفاً بين الورديات",
+     "place": "الجدول الشهري",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -175,6 +181,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "إدارة الراحات",
+     "verb": "يدير الراحات",
+     "place": "الجدول الشهري",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -228,6 +236,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "حذف تسكين موظف من الشهر",
+     "verb": "يحذف تسكين موظف من الشهر",
+     "place": "الجدول الشهري",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -281,6 +291,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "اعتماد/قفل الشهر",
+     "verb": "يعتمد الشهر ويقفله",
+     "place": "الجدول الشهري",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -334,6 +346,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "إعادة فتح الشهر",
+     "verb": "يعيد فتح شهر مقفل",
+     "place": "الجدول الشهري",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -387,6 +401,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "تسكين موظف في وردية",
+     "verb": "يسكّن موظفاً في وردية",
+     "place": "الجدول الشهري",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -442,6 +458,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "تعيين نوع التوظيف من الجدول",
+     "verb": "يعيّن نوع التوظيف من الجدول",
+     "place": "الجدول الشهري",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -495,6 +513,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "تعيين نوع العمل",
+     "verb": "يعيّن نوع العمل",
+     "place": "الجدول الشهري",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -548,6 +568,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "تعيين رمز النداء",
+     "verb": "يعيّن رمز النداء",
+     "place": "الجدول الشهري",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -601,6 +623,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "إدارة التكليف",
+     "verb": "يدير التكليف",
+     "place": "الجدول الشهري",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -654,6 +678,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "حذف جميع بيانات شهر",
+     "verb": "يحذف جميع بيانات شهر",
+     "place": "الجدول الشهري",
      "type": "operation",
      "sensitive": true,
      "guard": {
@@ -707,6 +733,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "عرض قائمة أنواع العمل",
+     "verb": "يعرض قائمة أنواع العمل",
+     "place": "الجدول الشهري",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -755,6 +783,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "إضافة نوع عمل",
+     "verb": "يضيف نوع عمل",
+     "place": "الجدول الشهري",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -803,6 +833,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "تعديل نوع عمل",
+     "verb": "يعدّل نوع عمل",
+     "place": "الجدول الشهري",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -851,6 +883,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "حذف نوع عمل",
+     "verb": "يحذف نوع عمل",
+     "place": "الجدول الشهري",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -899,6 +933,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "عرض قائمة رموز النداء",
+     "verb": "يعرض قائمة رموز النداء",
+     "place": "الجدول الشهري",
      "type": "view",
      "sensitive": false,
      "guard": {
@@ -947,6 +983,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "إضافة رمز نداء",
+     "verb": "يضيف رمز نداء",
+     "place": "الجدول الشهري",
      "type": "create",
      "sensitive": false,
      "guard": {
@@ -995,6 +1033,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "تعديل رمز نداء",
+     "verb": "يعدّل رمز نداء",
+     "place": "الجدول الشهري",
      "type": "edit",
      "sensitive": false,
      "guard": {
@@ -1043,6 +1083,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "حذف رمز نداء",
+     "verb": "يحذف رمز نداء",
+     "place": "الجدول الشهري",
      "type": "delete",
      "sensitive": true,
      "guard": {
@@ -1091,6 +1133,8 @@
      "ownerKind": "page",
      "domain": "staff",
      "label": "ضبط سقف الاستئذانات",
+     "verb": "يضبط سقف الاستئذانات",
+     "place": "الجدول الشهري",
      "type": "decision",
      "sensitive": true,
      "guard": {
@@ -1294,7 +1338,9 @@
      "disposition": "converted_to_feature",
      "targets": [
       "ff.staff.export"
-     ]
+     ],
+     "verb": "يصدّر الجدول الشهري إلى ملف",
+     "place": "الجدول الشهري"
     }
    },
    {
