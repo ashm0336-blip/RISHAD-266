@@ -14861,6 +14861,9 @@ async function rsImportRoute(env, request, ss) {
       return json({ ok: 1 });
     }
     M.slices = M.slices || {};
+    /* V7 · 53 تقويم (مانعُ Preview): الاستبدالُ يطرح القائمَ كلَّه — تاريخُه الهجري المعلَّق (cal_pend) لا يُحوَّل داخل طلبات الاستيراد (019v1 calLazyEnsure يتخطّاه):
+       كان أولُ دفعةٍ يحوّل تاريخَ الإدارة كلَّه في طلبها فيتجاوز حدودَ الطلب (500) أو يغيّر نسخَ الموارد بعد قراءتها (409). ما يبقى بلا استبدالٍ يُحوَّل كما كان */
+    if (M.mode === 'replace') env = Object.assign({}, env, { __calS: M.scope.departmentId || '*', __calW: {} });
     if (op === 'slice') { await rsiSlice(env, A, request, id, M, b); return json({ ok: 1 }); }
     if ((op !== 'inspect' && op !== 'commit') || !deq(M.scope, s) || (Object.keys(M.slices).length && M.mode !== b.mode)) throw rsError('restore-shape');
     var sr = (await D.prepare('SELECT row_json j FROM ' + T + " WHERE snapshot_id=?1 AND domain='sr' ORDER BY row_number").bind(id).all()).results || [];
@@ -20968,7 +20971,7 @@ async function opLoadMany(env, keys, retired, scopes) {
   if (scoped.length) (result[revisionIndex + 3].results || []).forEach(function (row) { var k = 'bsdept:' + row.d + ':' + row.r; (members[k] = members[k] || []).push({ p: row.m, k: row.k, pos: row.p }); });
   requests.forEach(function (request) {
     var info = request.info, physical = physicalByKey[request.key], key = request.key;
-    var read53 = ocFromPhysicalRead(info.prepared, info.dept, info.resource, physical, request.scope ? { partial: 1 } : { trust: 1 }), domain = read53.domain, projection = read53.projection;
+    var read53 = ocFromPhysicalRead((env.__calW || {})[key] ? calWideRegistry()[info.resource] : info.prepared, info.dept, info.resource, physical, request.scope ? { partial: 1 } : { trust: 1 }), domain = read53.domain, projection = read53.projection;
     values[key] = projection.present ? JSON.stringify(projection.value) : null;
     domains[key] = domain;
     if (request.scope) {
@@ -22226,9 +22229,9 @@ async function calLazyDays(env, info, want, ctx, deadline) {
   var mk = H.filter(function (x) { return calGParse(x.m).kind === 'mctl'; }), days = H.filter(function (x) { return calGParse(x.m).kind === 'day'; }), gd = lay.filter(function (x) { var p = !x.sc && calGParse(x.m); return p && p.cal === 'g' && p.kind === 'day'; }).length, total = gd + days.length;   /* التقدّم: أيامُ المورد كلُّها، والمحوَّلُ منها */
   if (mk.length) {
     /* ق3: علاماتُ المورد كلُّها في دفعةٍ واحدة — تحلّ الميلاديةُ محلَّ أولى الهجرية في الترتيب، والمواضعُ تُعاد متصلة */
-    var got = (await calMigRead(env, d, R, calMigHeadRanges('$').concat(calMigMemberRanges('$', mk.map(function (x) { return x.m; }))), true)) || {}, src = {};
+    var mr = calMigMemberRanges('$', mk.map(function (x) { return x.m; })), got = (await calMigRead(env, d, R, calMigHeadRanges('$').concat(mr), true)) || {}, src = {};
     mk.forEach(function (x) { var p = calGParse(x.m); if (ocOwn(got, x.m)) src[p.y + '-' + p.m] = got[x.m]; });
-    var G = calConvMarks(src, ctx, R), names = Object.keys(G), at = lay.indexOf(mk[0]), order = [], st = calMigDrop(env, d, R, calMigMemberRanges('$', mk.map(function (x) { return x.m; })));
+    var G = calConvMarks(src, ctx, R), names = Object.keys(G), at = lay.indexOf(mk[0]), order = [], st = calMigDrop(env, d, R, mr);
     lay.forEach(function (x, i) { if (i === at) names.forEach(function (g) { order.push({ m: g, p: -1, g: 1 }); }); if (mk.indexOf(x) < 0) order.push(x); });
     var w = {}; names.forEach(function (g) { ocSet(w, g, G[g]); });
     order.forEach(function (x, i) { if (x.g) st = st.concat(calMigMemberRows(env, d, R, '$', w, x.m, i)); });
@@ -22313,6 +22316,8 @@ async function calLazyEnsure(env, keys, want, opts) {
   for (var k of Array.from(new Set(keys))) {
     var info = null; try { info = opInfo(k); } catch (e) { info = null; }
     if (!info || (pend[info.dept] || []).indexOf(info.resource) < 0) continue;
+    /* الاستيرادُ بالاستبدال (019g __calS · __calW): ما يُطرح لا يُحوَّل — صفوفُه القديمة تُقرأ بالمخطّط الموسَّع (019r) ولا تُفكّ بالمضيَّق */
+    if (env.__calS == '*' || env.__calS == info.dept) { env.__calW[k] = 1; continue; }
     var w = want && want[k], f = w && w.length ? function (g) { return w.some(function (p) { return p && (p === g || g.indexOf(p) === 0); }); } : null;
     for (var tries = 0; ; tries++) {
       try {

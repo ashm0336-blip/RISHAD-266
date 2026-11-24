@@ -311,6 +311,9 @@ async function rsImportRoute(env, request, ss) {
       return json({ ok: 1 });
     }
     M.slices = M.slices || {};
+    /* V7 · 53 تقويم (مانعُ Preview): الاستبدالُ يطرح القائمَ كلَّه — تاريخُه الهجري المعلَّق (cal_pend) لا يُحوَّل داخل طلبات الاستيراد (019v1 calLazyEnsure يتخطّاه):
+       كان أولُ دفعةٍ يحوّل تاريخَ الإدارة كلَّه في طلبها فيتجاوز حدودَ الطلب (500) أو يغيّر نسخَ الموارد بعد قراءتها (409). ما يبقى بلا استبدالٍ يُحوَّل كما كان */
+    if (M.mode === 'replace') env = Object.assign({}, env, { __calS: M.scope.departmentId || '*', __calW: {} });
     if (op === 'slice') { await rsiSlice(env, A, request, id, M, b); return json({ ok: 1 }); }
     if ((op !== 'inspect' && op !== 'commit') || !deq(M.scope, s) || (Object.keys(M.slices).length && M.mode !== b.mode)) throw rsError('restore-shape');
     var sr = (await D.prepare('SELECT row_json j FROM ' + T + " WHERE snapshot_id=?1 AND domain='sr' ORDER BY row_number").bind(id).all()).results || [];

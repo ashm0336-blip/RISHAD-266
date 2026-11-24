@@ -209,9 +209,9 @@ async function calLazyDays(env, info, want, ctx, deadline) {
   var mk = H.filter(function (x) { return calGParse(x.m).kind === 'mctl'; }), days = H.filter(function (x) { return calGParse(x.m).kind === 'day'; }), gd = lay.filter(function (x) { var p = !x.sc && calGParse(x.m); return p && p.cal === 'g' && p.kind === 'day'; }).length, total = gd + days.length;   /* التقدّم: أيامُ المورد كلُّها، والمحوَّلُ منها */
   if (mk.length) {
     /* ق3: علاماتُ المورد كلُّها في دفعةٍ واحدة — تحلّ الميلاديةُ محلَّ أولى الهجرية في الترتيب، والمواضعُ تُعاد متصلة */
-    var got = (await calMigRead(env, d, R, calMigHeadRanges('$').concat(calMigMemberRanges('$', mk.map(function (x) { return x.m; }))), true)) || {}, src = {};
+    var mr = calMigMemberRanges('$', mk.map(function (x) { return x.m; })), got = (await calMigRead(env, d, R, calMigHeadRanges('$').concat(mr), true)) || {}, src = {};
     mk.forEach(function (x) { var p = calGParse(x.m); if (ocOwn(got, x.m)) src[p.y + '-' + p.m] = got[x.m]; });
-    var G = calConvMarks(src, ctx, R), names = Object.keys(G), at = lay.indexOf(mk[0]), order = [], st = calMigDrop(env, d, R, calMigMemberRanges('$', mk.map(function (x) { return x.m; })));
+    var G = calConvMarks(src, ctx, R), names = Object.keys(G), at = lay.indexOf(mk[0]), order = [], st = calMigDrop(env, d, R, mr);
     lay.forEach(function (x, i) { if (i === at) names.forEach(function (g) { order.push({ m: g, p: -1, g: 1 }); }); if (mk.indexOf(x) < 0) order.push(x); });
     var w = {}; names.forEach(function (g) { ocSet(w, g, G[g]); });
     order.forEach(function (x, i) { if (x.g) st = st.concat(calMigMemberRows(env, d, R, '$', w, x.m, i)); });
@@ -296,6 +296,8 @@ async function calLazyEnsure(env, keys, want, opts) {
   for (var k of Array.from(new Set(keys))) {
     var info = null; try { info = opInfo(k); } catch (e) { info = null; }
     if (!info || (pend[info.dept] || []).indexOf(info.resource) < 0) continue;
+    /* الاستيرادُ بالاستبدال (019g __calS · __calW): ما يُطرح لا يُحوَّل — صفوفُه القديمة تُقرأ بالمخطّط الموسَّع (019r) ولا تُفكّ بالمضيَّق */
+    if (env.__calS == '*' || env.__calS == info.dept) { env.__calW[k] = 1; continue; }
     var w = want && want[k], f = w && w.length ? function (g) { return w.some(function (p) { return p && (p === g || g.indexOf(p) === 0); }); } : null;
     for (var tries = 0; ; tries++) {
       try {

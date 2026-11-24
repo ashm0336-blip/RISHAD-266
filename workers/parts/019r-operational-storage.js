@@ -111,7 +111,7 @@ async function opLoadMany(env, keys, retired, scopes) {
   if (scoped.length) (result[revisionIndex + 3].results || []).forEach(function (row) { var k = 'bsdept:' + row.d + ':' + row.r; (members[k] = members[k] || []).push({ p: row.m, k: row.k, pos: row.p }); });
   requests.forEach(function (request) {
     var info = request.info, physical = physicalByKey[request.key], key = request.key;
-    var read53 = ocFromPhysicalRead(info.prepared, info.dept, info.resource, physical, request.scope ? { partial: 1 } : { trust: 1 }), domain = read53.domain, projection = read53.projection;
+    var read53 = ocFromPhysicalRead((env.__calW || {})[key] ? calWideRegistry()[info.resource] : info.prepared, info.dept, info.resource, physical, request.scope ? { partial: 1 } : { trust: 1 }), domain = read53.domain, projection = read53.projection;
     values[key] = projection.present ? JSON.stringify(projection.value) : null;
     domains[key] = domain;
     if (request.scope) {
