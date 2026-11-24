@@ -194,7 +194,8 @@ export async function catalogue(W) {
     P.PAGE_REG.forEach((p) => { add(p.name, leafSys[p.key]); (p.subs || []).concat(p.tabs || []).forEach((t) => add(t.name, leafSys[p.key + '/' + t.key])); });
     P.NAV_REG.forEach((g) => (g.refs || []).forEach((r) => add((g.names || {})[r], leafSys[r])));
     const nav = {}; sys.forEach((x) => { const n = P.PERM2NAV[x.key]; if (n) nav[x.key] = n; });
-    return { sys, leafSys, names, nav, toggle: sys.filter((x) => x.toggle !== false).map((x) => x.key), containers: P.NAV_REG.map((g) => ({ key: g.key, name: g.name, refs: g.refs || [] })), pages: P.PAGE_REG.map((p) => ({ key: p.key, name: p.name, under: p.under || '', nav: p.nav || '' })) };
+    const lenses = (KIVO.Perm44.lensList ? KIVO.Perm44.lensList() : []).map((x) => ({ key: x.lens, name: x.name, hosts: x.hosts }));   /* V7 · 53: العدساتُ من المحرّك وقتَ التشغيل */
+    return { sys, leafSys, names, nav, lenses, toggle: sys.filter((x) => x.toggle !== false).map((x) => x.key), containers: P.NAV_REG.map((g) => ({ key: g.key, name: g.name, refs: g.refs || [] })), pages: P.PAGE_REG.map((p) => ({ key: p.key, name: p.name, under: p.under || '', nav: p.nav || '' })) };
   });
   return W.cat;
 }
@@ -210,6 +211,8 @@ export function forbiddenFor(W, acc, st) {
   const labels = Object.keys(cat.names).filter((n) => cat.names[n].every((k) => set.has(k)));
   const keys = off.slice();
   cat.containers.forEach((g) => { if (g.refs.length && g.refs.every((r) => set.has(cat.leafSys[r]))) { keys.push(g.key); labels.push(g.name); } });
+  /* V7 · 53: عدسةٌ مطفأة لإدارة أ (st.lensOff) — اسمُها لا يظهر في مساحة أ ولا قسمِها (يرثها): لا تبويب ولا رابط ولا بقيّة في مضيفَيها */
+  if (acc.space === 'unit' && [UNITS.A, UNITS.S1].includes(acc.unit)) (st.lensOff || []).forEach((k) => { const L = (cat.lenses || []).find((x) => x.key === k); if (!L) throw new Error('d6: unknown lens ' + k); labels.push(L.name); });
   return { off, offKeys: keys, offLabels: [...new Set(labels)], offAllowed: acc.key.startsWith('super') ? W.SPECIAL.offNameAllowed.map((r) => r.source) : [] };
 }
 
@@ -413,8 +416,15 @@ export async function buildState(W, st) {
       const out = []; document.querySelectorAll(sel).forEach((b) => { const n = b.getAttribute('aria-label') || ''; const k = Object.keys(names).find((x) => names[x] === n); if (!k) return; const on = b.getAttribute('aria-checked') === 'true', goal = !off.includes(k); if (on !== goal && !b.disabled) out.push(n); });
       return out;
     }, [S.save.sw, off, Object.fromEntries(cat.sys.map((x) => [x.key, x.name]))]);
-    if (!want.length) continue;
+    /* V7 · 53: العدسات — المطفأُ لإدارة أ (st.lensOff) وما سواه مفعّل (يُعاد تشغيلُه من أيّ حالةٍ سابقة) */
+    const lensOff = unit === UNITS.A ? st.lensOff || [] : [];
+    const wantL = unit === '__plat' ? [] : await p.evaluate(([sel, off, lenses]) => {
+      const out = []; document.querySelectorAll(sel).forEach((b) => { if (!b.closest('[data-kind=lens]')) return; const n = b.getAttribute('aria-label') || '', L = lenses.find((x) => x.name === n); if (!L || out.includes(n)) return; const on = b.getAttribute('aria-checked') === 'true', goal = !off.includes(L.key); if (on !== goal && !b.disabled) out.push(n); });
+      return out;
+    }, [S.save.sw, lensOff, cat.lenses || []]);
+    if (!want.length && !wantL.length) continue;
     for (const n of want) await p.locator(S.save.sw + '[aria-label="' + n + '"]').click();
+    for (const n of wantL) await p.locator('main [data-kind=lens] ' + S.save.sw.replace(/^main\s+/, '') + '[aria-label="' + n + '"]').first().click();
     await p.locator(S.save.review).first().click();
     await p.locator(S.save.dialog).first().waitFor();
     const sent = p.waitForResponse((r) => /\/api\/save\b/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 });
@@ -427,6 +437,10 @@ export async function buildState(W, st) {
   const plat = (readK(W.lab, 'bassam_platform_v1') || {}).mods || {};
   const gotPlat = (plat.off || []).slice().sort(), wantPlat = st.plat.slice().sort();
   if (JSON.stringify(gotPlat) !== JSON.stringify(wantPlat)) throw new Error('d6: state ' + st.key + ': platform OFF stored ' + JSON.stringify(gotPlat) + ', wanted ' + JSON.stringify(wantPlat));
+  /* V7 · 53: سقفُ عدسات أ المخزَّن (bassam_perms_v1.lenses — غيابُه = الكلُّ مفعّل): المطفأُ مطفأ وما سواه مفعّل */
+  const lensRec = ((readK(W.lab, 'bassam_perms_v1') || {}).lenses || {})[UNITS.A], lensOnA = Array.isArray(lensRec) ? lensRec : (cat.lenses || []).map((x) => x.key);
+  const lensBad = (cat.lenses || []).filter((x) => (st.lensOff || []).includes(x.key) === lensOnA.includes(x.key)).map((x) => x.key);
+  if (lensBad.length) throw new Error('d6: state ' + st.key + ': lenses of A stored ' + JSON.stringify(lensRec) + ', wanted OFF ' + JSON.stringify(st.lensOff || []));
   await p.evaluate((h) => { location.hash = h; }, S.centerHome); await p.reload({ waitUntil: 'domcontentloaded' }); await settleCold(p);
   const eff = await p.evaluate((U) => Object.fromEntries(U.map((u) => [u, KIVO.Perm44.ceiling(u).on])), [UNITS.G, UNITS.A, UNITS.B, UNITS.S1]);
   const tog = cat.toggle, offNow = (u) => tog.filter((k) => !eff[u].includes(k)).sort();
