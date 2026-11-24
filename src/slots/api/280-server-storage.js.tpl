@@ -1354,6 +1354,7 @@
   }
   /* قراءةٌ فيها مفتاحُ موردٍ مقسَّم (منطقيٌّ K أو فترة K@p): طلبٌ لكل مورد مقسَّم (≤ 40 فترة لكلٍّ في العقد) وطلبٌ للبقية، معاً.
      الجوابُ للمستدعي بشكله القديم (resources/base بالمفاتيح المنطقية)، والفتراتُ في الذاكرة بمفاتيحها ومراجعاتها. */
+  var PERIOD_RANGE_MAX9 = 26;   /* = OP_LIM.rangeGroups في الخادم (019w) — اختبارُ v7_53_read_range_cap يثبّت التساوي */
   async function periodRead9(keys, extra, quiet) {
     var stamp = operationContext9(), response = null;
     if (!stamp) return operationFailure9('session', 401);
@@ -1374,7 +1375,9 @@
       /* مواردُ شهرُها فترةٌ واحدة أو تُقرأ بالأيام (عددُ فتراتها معروف) تُضمّ إلى طلبٍ واحد ما دام ≤ 40 فترة — طلباتٌ أقل (كلفةُ كلِّ طلبٍ في D1) */
       /* أشهرُ موردٍ يومي كثيرة (بطاقاتُ السنة): طلبٌ لكل شهر (≤ 40 فترة لكلٍّ)، في القراءة الواحدة نفسِها */
       if (more.chunk && range.length > 1) { range.forEach(function (r, i) { reqs.push({ K: K, Ks: [K], logical: s.logical, keys: i ? [K + '@'] : ks, range: [r], small: false, cost: 0 }); }); return; }
-      var known = PERIOD_MONTHLY9[unscoped(K)] || !range.length, cost = ks.length - 1 + range.length, into = known && reqs.filter(function (q) { return q.small && q.cost + cost <= 40; })[0];
+      /* V7 · 53 (عائق «صفحتي» على Preview): الطلبُ الواحد لا يتجاوز حدَّ الخادم لمجموعات المدى (OP_LIM.rangeGroups = PERIOD_RANGE_MAX9) — لا يُضمّ موردٌ إلى طلبٍ يتجاوزه، ومجموعاتُ موردٍ واحد فوقه تُقسَّم على طلباتٍ في القراءة الواحدة نفسِها (الرأسُ في أولها) */
+      if (range.length > PERIOD_RANGE_MAX9) { for (var c0 = 0; c0 < range.length; c0 += PERIOD_RANGE_MAX9) reqs.push({ K: K, Ks: [K], logical: s.logical, keys: c0 ? [K + '@'] : ks, range: range.slice(c0, c0 + PERIOD_RANGE_MAX9), small: false, cost: 0 }); return; }
+      var known = PERIOD_MONTHLY9[unscoped(K)] || !range.length, cost = ks.length - 1 + range.length, into = known && reqs.filter(function (q) { return q.small && q.cost + cost <= 40 && q.range.length + range.length <= PERIOD_RANGE_MAX9; })[0];
       if (into) { into.Ks.push(K); into.keys = into.keys.concat(ks); into.range = into.range.concat(range); into.cost += cost; into.K = null; return; }
       reqs.push({ K: K, Ks: [K], logical: s.logical, keys: ks, range: range, small: known, cost: cost });
     });

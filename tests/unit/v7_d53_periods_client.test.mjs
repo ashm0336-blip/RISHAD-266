@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { loadClient } from './k264_vm.mjs';
 
 const UID = 'TEST_ONLY owner', D = 'dA', K = (r) => 'bsdept:' + D + ':' + r;
-const PL = K('bassam_plan_v1'), RD = K('bassam_rounds_v1'), DR = K('bassam_dreport_v1'), E = K('bassam_employees_v1');
+const ST = K('bassam_staffing_v3'), PL = K('bassam_plan_v1'), RD = K('bassam_rounds_v1'), DR = K('bassam_dreport_v1'), E = K('bassam_employees_v1');
 const copy = (v) => JSON.parse(JSON.stringify(v));
 const json = (v, status = 200) => new Response(JSON.stringify(v), { status, headers: { 'Content-Type': 'application/json' } });
 const NOW = { y: 2026, m: 11, d: 14 };   /* V7 · 53 تقويم: «الآن» الميلادي المثبَّت (المفاتيحُ ISO بقاعدة world_fx hFx: 1448-6 ⇐ 2026-11) */
@@ -27,6 +27,7 @@ function server() {
   }
   put(PL, { floors: [site(0)], cfg: { TEST_ONLY: 1 }, months: { '2026-09': { d: [site(4)] }, '2026-10': { d: [site(5)] }, '2026-11': { d: [site(6)] } }, delMonths: {} });
   put(RD, { __pMig: 2, 'm:2026-10': { ap: 1 }, '2026-10-29': { t: 1 }, 'm:2026-11': { ap: 0 }, '2026-11-13': { t: 2 }, '2026-11-14': { t: 3 } });
+  put(ST, { '2026-10': { TEST_ONLY_e1: 'A' }, '2026-11': { TEST_ONLY_e1: 'B' } });
   put(DR, { '2026-11-12': { x: 1 }, '2026-11-13': { x: 2 }, '2026-11-14': { x: 3 } });
   const reads = [], saves = [];
   const C = { req: async (route, o = {}) => {
@@ -34,6 +35,7 @@ function server() {
     if (u.pathname === '/api/operations/read') {
       const keys = (u.searchParams.get('keys') || '').split(',').filter(Boolean), range = (u.searchParams.get('range') || '').split(',').filter(Boolean);
       reads.push({ keys, range });
+      if (range.length > 26) return json({ ok: 0, err: 'operations-read-keys' }, 400);   /* كالخادم: OP_LIM.rangeGroups = 26 */
       const hidden = (k) => !!S.deny && S.deny.some((d) => k === d || k.indexOf(d + '@') === 0);   /* as the «periods» server: a denied resource has no range; alone, no epoch */
       if (keys.every(hidden)) return json({ ok: 1, uid: UID, v: 0, epoch: 0, resources: {}, absent: [], denied: keys.slice(), base: {}, ranges: {} });
       const out = { ok: 1, uid: UID, epoch: 3, v, resources: {}, absent: [], denied: [], failed: {}, base: {}, ranges: {} };
@@ -43,7 +45,7 @@ function server() {
       all.forEach((k) => {
         if (hidden(k)) { out.denied.push(k); return; }
         const val = k in S.heads ? S.heads[k] : k in S.periods ? S.periods[k] : k in S.plain ? S.plain[k] : undefined;
-        if (/@/.test(k) ? !(/^bsdept:[^:]+:bassam_(plan|rounds|dreport)_v1@/.test(k)) : /bassam_(plan|rounds|dreport)_v1$/.test(k)) { out.failed[k] = 'operations-period-key'; return; }
+        if (/@/.test(k) ? !(/^bsdept:[^:]+:bassam_(plan_v1|rounds_v1|dreport_v1|staffing_v3)@/.test(k)) : /bassam_(plan_v1|rounds_v1|dreport_v1|staffing_v3)$/.test(k)) { out.failed[k] = 'operations-period-key'; return; }
         if (val === undefined) out.absent.push(k); else out.resources[k] = copy(val);
         out.base[k] = S.rev[k] || 0;
       });
@@ -243,4 +245,46 @@ test('several months of a day resource are read month by month in one read, all 
     assert.ok(f.reads.slice(n0).every((q) => q.range.length <= 1), 'one month per request: ' + JSON.stringify(f.reads.slice(n0)));
     assert.deepEqual(copy(f.ops.get('bassam_rounds_v1'))['2026-10-29'], { t: 1 });
   } finally { f.T.dispose(); }
+});
+
+/* V7 · 53 (عائق حيّ على Preview: «صفحتي» لا تفتح): قراءةٌ تجمع مجموعاتِ مدى من موردين شهريين (الخطة 15 شهراً + الجدول 12) كانت
+   طلباً واحداً بـ27 مجموعة فيرفضه الخادم 400 operations-read-keys (OP_LIM.rangeGroups = 26). الآن لا يتجاوز طلبٌ الحدّ، وتُحمَّل الأشهر كلها. */
+const months = (n, y0 = 2025, m0 = 9) => Array.from({ length: n }, (_, i) => { const t = (m0 - 1) + i, y = y0 + Math.floor(t / 12), m = (t % 12) + 1; return y + '-' + String(m).padStart(2, '0'); });
+test('a read whose range groups exceed the server ceiling (plan 15 months + schedule 12) is split, every request ≤ 26 groups, all months loaded', async () => {
+  const f = client();
+  try {
+    assert.equal((await f.ops.want('bassam_plan_v1', { groups: months(15) })).ok, 1);
+    assert.equal((await f.ops.want('bassam_staffing_v3', { groups: months(12) })).ok, 1);
+    const n0 = f.reads.length;
+    const r = await f.ops.read([PL, ST]);
+    assert.equal(r.ok, 1, 'the page opens: ' + JSON.stringify(r).slice(0, 200));
+    const reqs = f.reads.slice(n0);
+    assert.ok(reqs.every((q) => q.range.length <= 26), 'no request over the server ceiling: ' + JSON.stringify(reqs.map((q) => q.range.length)));
+    const asked = new Set([].concat(...reqs.map((q) => q.range)));
+    assert.ok(asked.size > 26, 'more than one request was needed: ' + asked.size);
+    assert.ok(months(15).every((g) => asked.has(PL + '@' + g)) && months(12).every((g) => asked.has(ST + '@' + g)), 'every wanted month is still asked');
+    const lp = copy(f.ops.loaded('bassam_plan_v1').groups), ls = copy(f.ops.loaded('bassam_staffing_v3').groups);
+    assert.ok(months(15).every((g) => lp.includes(g)), 'every plan month loaded: ' + lp);
+    assert.ok(months(12).every((g) => ls.includes(g)), 'every schedule month loaded: ' + ls);
+    assert.deepEqual(copy(f.ops.get('bassam_staffing_v3'))['2026-11'], { TEST_ONLY_e1: 'B' });
+  } finally { f.T.dispose(); }
+});
+test('one resource asking more month groups than the ceiling (30, 29 not loaded) is read in several requests in the same read; the head stays whole', async () => {
+  const f = client();
+  try {
+    await f.ops.read([PL]);
+    const n0 = f.reads.length;
+    const r = await f.ops.want('bassam_plan_v1', { groups: months(30) });
+    assert.equal(r.ok, 1, JSON.stringify(r).slice(0, 200));
+    const reqs = f.reads.slice(n0);
+    assert.ok(reqs.length >= 2 && reqs.every((q) => q.range.length <= 26), JSON.stringify(reqs.map((q) => q.range.length)));
+    assert.equal(new Set([].concat(...reqs.map((q) => q.range))).size, 29, 'the 29 months not yet loaded');
+    assert.deepEqual(copy(f.ops.loaded('bassam_plan_v1').groups).sort(), months(30).sort());
+    assert.deepEqual(copy(f.ops.get('bassam_plan_v1')).floors, [site(0)], 'the head is whole');
+  } finally { f.T.dispose(); }
+});
+test('the client ceiling equals the server ceiling (PERIOD_RANGE_MAX9 = OP_LIM.rangeGroups)', async () => {
+  const fs = await import('node:fs'), path = await import('node:path'), { ROOT } = await import('./harness.mjs');
+  const cli = fs.readFileSync(path.join(ROOT, 'src/slots/api/280-server-storage.js.tpl'), 'utf8'), srv = fs.readFileSync(path.join(ROOT, 'workers/parts/019w-period-store.js'), 'utf8');
+  assert.equal(+/var PERIOD_RANGE_MAX9 = (\d+)/.exec(cli)[1], +/rangeGroups:\s*(\d+)/.exec(srv)[1]);
 });
