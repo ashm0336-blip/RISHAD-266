@@ -81,34 +81,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["dreport+irshad+planni
     "read" === e && (e = ids[0] || "none");
     ok.indexOf(e) < 0 && (e = ok[0] || "none");
     this._bsHT(e);
-    var n = function (t) {
-        return (
-          "position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;border-radius:12px;transition:all .3s;flex-shrink:0;min-width:170px;cursor:pointer;font-family:'Cairo',sans-serif;border:1px solid " +
-          (t
-            ? "rgba(185,151,81,0.45);background:var(--bg-xffffff);box-shadow:0 3px 10px -4px rgba(138,111,53,0.45)"
-            : "transparent;background:transparent")
-        );
-      },
-      a = function (t) {
-        return (
-          "width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .3s;" +
-          (t ? "background:var(--bg-a185151810p1);color:var(--fg-xb99751)" : "background:var(--bg-a2452452450p9);color:var(--fg-x94a3b8)")
-        );
-      },
-      r = function (t) {
-        return (
-          "font-size:12px;transition:color .3s;" +
-          (t ? "font-weight:600;color:var(--fg-xb99751)" : "font-weight:400;color:var(--fg-x53565a)")
-        );
-      };
+    /* V7 · 53 (ميزانية الصفحة — REVIEW 28): تبويبُ «مؤشرات الجاهزية» بأصناف التبويبات المشتركة (.pt-tab · .pt-ico · .pt-lbl) — كانت أنماطُه نسخةً مضمَّنة منها */
     var v = {
       ptab: e,
       ptOn: ok.join(" "),   /* KIVO_261: المعرّفاتُ المتاحة بلا فراغٍ أوّل — قاعدةُ إخفاء الشريط ذي التبويب الواحد تطابقها */
       onRead: "read" === e,
       readAllowed: !1,
-      readStyle: n("read" === e),
-      readIcon: a("read" === e),
-      readLbl: r("read" === e),
       goRead: function () {
         t._bsGo("read");
       },

@@ -1639,64 +1639,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               if (!a.length) return !1;
               for (var i = 1; i <= e; i++) if (!r.drDayAllAp(N9, t.rpY, s, i, a)) return !1;
               return !0;
-            })(),
-            f =
-              "position:relative;width:100%;border-radius:12px;padding:8px;text-align:center;transition:all .2s;box-shadow:var(--shadow-card);cursor:pointer;box-sizing:border-box;font-family:'Cairo',sans-serif;border:1px ",
-            h = "#53565a",
-            u = "#cbd5e1",
-            m = "—",
-            g = !1,
-            y = "M12 3a9 9 0 0 1 9 9",
-            b = "M12 21a9 9 0 0 1-9-9";
+            })();
+          /* V7 · 53 تقويم: ألوانُ الكرت القديم ونمطُه حلّ محلَّها الكرتُ المشترك (حالتان) */
           return (
-            c && l
-              ? ((f +=
-                  (o ? "solid #0e7490;box-shadow:0 0 0 2px rgba(14,116,144,0.25);" : "solid rgba(14,116,144,0.4);") +
-                  "background:var(--bg-a141161440p07)"),
-                (h = "#0e7490"),
-                (u = "#0e7490"),
-                (m = "مكتمل — مقفل"),
-                (g = !0),
-                (y = "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"),
-                (b = "m9 12 2 2 4-4"))
-              : c
-                ? ((f +=
-                    (o ? "solid #64748b;box-shadow:0 0 0 2px rgba(100,116,139,0.25);" : "solid rgba(100,116,139,0.35);") +
-                    "background:var(--bg-a1001161390p08)"),
-                  (h = "#475569"),
-                  (u = "#475569"),
-                  (m = "انقضى — مقفل"),
-                  (g = !0),
-                  (y = "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"),
-                  (b = ""))
-                : p
-                  ? ((f +=
-                      (o ? "solid #b99751;box-shadow:0 0 0 2px rgba(185,151,81,0.3);" : "solid rgba(245,158,11,0.35);") +
-                      "background:var(--bg-a245158110p08)"),
-                    (h = o ? "#b99751" : "#b45309"),
-                    (u = "#b45309"),
-                    (m = "مسودة"),
-                    (g = !0),
-                    (y = "M7 11V7a5 5 0 0 1 9.9-1"),
-                    (b = "M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"))
-                  : o
-                    ? ((f += "solid #b99751;box-shadow:0 0 0 2px rgba(185,151,81,0.3);background:var(--bg-a185151810p06)"),
-                      (h = "#b99751"),
-                      (u = "#cbd5e1"),
-                      (m = "—"),
-                      (g = !1))
-                    : (f += "dashed #E1E1E1;background:var(--bg-a2452452450p7);opacity:.9"),
             {
               cal9: { ym: KIVO.BassamCal.gYm(t.rpY, s), closed: c, why: c ? (l ? "ap" : "past") : "", sel: o, cur: d },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
               name: a,
               greg: r.hLineOfMonth(t.rpY, s),
-              style: f,
-              nameColor: h,
-              footColor: u,
-              footLabel: m,
-              footP1: y,
-              footP2: b,
-              footIcon: g,
               isCurrent: d,
               showBadge: !1,
               dbl: function (t) {
@@ -1740,31 +1689,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           p = r.drDayClosed(n, t.rpY, t.rpM, a),
           c = (d && !o) || p,
           h = a === t.rpD,
-          u = t.rpY === e.y && t.rpM === e.m && a === e.d,
-          m = "#fff",
-          g = "#53565a",
-          k = "2px solid #E1E1E1";
-        ("c" === i && ((m = s ? "#047857" : c ? "#64748b" : "#b99751"), (g = "#fff"), (k = "2px solid transparent")),
-          "e" === i && c && ((m = "rgba(148,163,184,0.12)"), (g = "#94a3b8")),
-          h && (k = "2px solid #b99751"));
-        var S = new Date(y.getTime() + 864e5 * (a - 1));
-        var v =
-            "position:relative;height:24px;flex:1 1 auto;min-width:28px;padding:0 3px;border-radius:4px;font-size:8px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;background:" +
-            m +
-            ";color:" +
-            g +
-            ";border:" +
-            k,
-          w =
-            "display:block;width:9px;height:1px;flex-shrink:0;margin:1px 0;background:" +
-            ("c" === i ? "rgba(255,255,255,0.5)" : "rgba(148,163,184,0.55)"),
-          O = N9[KIVO.BassamCal.gKey(t.rpY, t.rpM, a)];
+          u = t.rpY === e.y && t.rpM === e.m && a === e.d;
+        var O = N9[KIVO.BassamCal.gKey(t.rpY, t.rpM, a)];
         b.push({
           cal9: { k: KIVO.BassamCal.gKey(t.rpY, t.rpM, a), closed: s || c, why: s ? "ap" : p ? "shut" : c ? "past" : d && o ? "retro" : "", sel: h, today: u },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
           num: String(a),
-          gnum: String(S.getDate()),
-          style: v,
-          sepStyle: w,
           isToday: u,
           lockClosed: s || c,
           lockOpen: !s && d && o,
@@ -3461,8 +3390,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       roundDaysCount: String(h),
       ...KIVO.BassamCount.pair("dimTotal", String(a), "يوم|مسجّل"),
       /* V7 · 53 تقويم (§7): الكرتُ المشترك لكل شهرٍ ويوم — حالتان فقط والسببُ في التلميح */
-      months: m.map(function (x) { return Object.assign(x, { card: KIVO.BassamCalCard.month(Object.assign({ key: x.cal9.ym, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }, x.cal9)) }); }),
-      days: b.map(function (x) { return Object.assign(x, { card: KIVO.BassamCalCard.day(Object.assign({ key: x.cal9.k, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isToday) } }, x.cal9)) }); }),
+      months: m.map(function (x) { return Object.assign(x, { card: KIVO.BassamCalCard.month(Object.assign({ key: x.cal9.ym, hint: String(x.tip || "").split(" — ").slice(1).join(" — "), onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }, x.cal9)) }); }),
+      days: b.map(function (x) { return Object.assign(x, { card: KIVO.BassamCalCard.day(Object.assign({ key: x.cal9.k, hint: String(x.tip || "").split(" — ").slice(1).join(" — "), onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isToday) } }, x.cal9)) }); }),
       drSubOn: !((x && T) || (v && w)),
       rpDayShut: O,
       rpDayLabel: (function (r) {

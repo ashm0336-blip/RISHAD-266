@@ -7328,61 +7328,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           d = a && !l,
           p = l,
           h = this.monthDaysAllAp(R9, s.year, n);
-        let c =
-            "position:relative;width:100%;border-radius:12px;padding:8px;text-align:center;transition:all .2s;box-shadow:var(--shadow-card);cursor:pointer;box-sizing:border-box;font-family:'Cairo',sans-serif;border:1px ",
-          f = "#53565a",
-          u = "#cbd5e1",
-          y = "—",
-          m = !1,
-          x = "M12 3a9 9 0 0 1 9 9",
-          b = "M12 21a9 9 0 0 1-9-9";
-        p
-          ? ((c +=
-              (i ? "solid #008450;box-shadow:0 0 0 2px rgba(0,132,80,0.25);" : "solid rgba(0,132,80,0.35);") +
-              "background:var(--bg-a0132800p07)"),
-            (f = "#047857"),
-            (u = "#047857"),
-            (y = "معتمد ومقفل"),
-            (m = !0),
-            (x = "M7 11V7a5 5 0 0 1 10 0v4"),
-            (b = "M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"))
-          : d && h
-            ? ((c +=
-                (i ? "solid #0e7490;box-shadow:0 0 0 2px rgba(14,116,144,0.25);" : "solid rgba(14,116,144,0.4);") +
-                "background:var(--bg-a141161440p07)"),
-              (f = "#0e7490"),
-              (u = "#0e7490"),
-              (y = "مكتمل — مقفل"),
-              (m = !0),
-              (x = "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"),
-              (b = "m9 12 2 2 4-4"))
-            : d
-              ? ((c +=
-                  (i ? "solid #64748b;box-shadow:0 0 0 2px rgba(100,116,139,0.25);" : "solid rgba(100,116,139,0.35);") +
-                  "background:var(--bg-a1001161390p08)"),
-                (f = "#475569"),
-                (u = "#475569"),
-                (y = "انقضى — مقفل"),
-                (m = !0),
-                (x = "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"),
-                (b = ""))
-              : r
-                ? ((c +=
-                    (i ? "solid #b99751;box-shadow:0 0 0 2px rgba(185,151,81,0.3);" : "solid rgba(245,158,11,0.35);") +
-                    "background:var(--bg-a245158110p08)"),
-                  (f = i ? "#b99751" : "#b45309"),
-                  (u = "#b45309"),
-                  (y = "مسودة"),
-                  (m = !0),
-                  (x = "M7 11V7a5 5 0 0 1 9.9-1"),
-                  (b = "M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"))
-                : i
-                  ? ((c += "solid #b99751;box-shadow:0 0 0 2px rgba(185,151,81,0.3);background:var(--bg-a185151810p06)"),
-                    (f = "#b99751"),
-                    (u = "#cbd5e1"),
-                    (y = "—"),
-                    (m = !1))
-                  : (c += "dashed #E1E1E1;background:var(--bg-a2452452450p7);opacity:.9");
+        /* V7 · 53 تقويم: ألوانُ الكرت القديم ونمطُه حلّ محلَّها الكرتُ المشترك (حالتان) */
         const k = l
           ? "الشهر معتمد ومقفل — كل أيامه للعرض فقط · نقرة مزدوجة لفتح الشهر"
           : d
@@ -7414,18 +7360,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         return {
           /* V7 · 53 تقويم (§7): كرتُ الشهر المشترك — «نوفمبر» وتحته المدى الهجري؛ مغلقٌ إن اعتُمد أو انقضى بلا فتح، والسببُ في التلميح */
           card: KIVO.BassamCalCard.month({ key: ym9, ym: ym9, closed: a, why: l ? "ap" : d ? "past" : this._mOpenFlag(s.year, n) ? "retro" : "", sel: i, cur: o,
-            style: { width: "100%", minWidth: 100 }, onClick: mclick9, onDoubleClick: mdbl9, attrs: { "data-strip-cur": String(o) } }),
+            hint: k, onClick: mclick9, onDoubleClick: mdbl9, attrs: { "data-strip-cur": String(o) } }),
           name: t,
           greg: KIVO.BassamCal.hRangeOfMonth(ym9),
-          style: c,
-          nameColor: f,
-          footColor: u,
-          footLabel: y,
-          footP1: x,
-          footP2: b,
-          footIcon: m,
           isCurrent: o,
-          showBadge: !1,
           isMAp: a,
           tip: k,
           dbl: mdbl9,
@@ -7455,15 +7393,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         r = z || i || o,
         a = t === m,
         l = s.year === g.y && s.month === g.m && t === g.d;
-      let d = "#fff",
-        p = "#53565a",
-        h = "2px solid #E1E1E1";
-      ("c" === e
-        ? ((d = E || i ? "#047857" : o || M ? "#64748b" : "#b99751"), (p = "#fff"), (h = "2px solid transparent"))
-        : "p" === e && ((d = "rgba(185,151,81,0.4)"), (p = "#fff"), (h = "2px solid transparent")),
-        "e" === e && o && ((d = "rgba(148,163,184,0.12)"), (p = "#94a3b8")),
-        a && (h = "2px solid #b99751"));
-      const c = new Date(A.getTime() + 864e5 * (t - 1));
       const u = "c" === e,
         y = this.dayPastDS(s.year, s.month, t) && this.isDayOpen(s.rounds, s.year, s.month, t);
       /* V7 · 53 تقويم (§7): كرتُ اليوم المشترك — حرفُ اليوم · اليومُ الميلادي · الهجريُّ الصغير، وحالتان فقط (مغلق · مفتوح) والسببُ في التلميح */
@@ -7472,9 +7401,24 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           const n = this.dayLockedDS(this.state.rounds, s.year, s.month, t);
           this.setState({ day: t, dsSel: null, selMulti: [] }, () => this.setState({ retroAsk: { m: s.month, d: t, open: n } }));
         }, click9 = () => this.setState({ day: t, dsSel: null, selMulti: [], dsHovZ: null, dsHovG: null });
+      /* سطرُ التلميح الرابع (hint): ما يفعله النقرُ المزدوج — التاريخان والحالةُ يكتبها الكرت */
+      const tip9 =
+          ("c" === e
+            ? E
+              ? "الشهر معتمد ومقفل — افتح الشهر لتعديل اليوم"
+              : M
+                ? "الشهر انقضى ومقفل — نقرة مزدوجة على بطاقة الشهر لفتحه"
+                : i
+                  ? "جولة معتمدة ومقفلة — نقرة مزدوجة لفتحها"
+                  : o
+                    ? "اليوم انقضى — مقفل · نقرة مزدوجة لفتحه للاستدراك"
+                    : "جولة مسودة — نقرة مزدوجة لاعتمادها وقفلها"
+            : o
+              ? "فارغ — انقضى ومقفل · نقرة مزدوجة لفتحه وتسجيل جولة بأثر رجعي"
+              : "فارغ");
       k.push({
         card: KIVO.BassamCalCard.day({ key: dk9, k: dk9, closed: r, why: E || i ? "ap" : M || this.dayPastDS(s.year, s.month, t) ? "past" : r ? "shut" : y ? "retro" : "",
-          sel: a, today: l, onClick: click9, onDoubleClick: dbl9, attrs: { "data-strip-cur": String(l) } }),
+          sel: a, today: l, hint: tip9, onClick: click9, onDoubleClick: dbl9, attrs: { "data-strip-cur": String(l) } }),
         num: String(t),
         isToday: l,
         hasR: u,
@@ -7493,37 +7437,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               resetDayAck: !1,
             });
         },
-        gnum: String(c.getDate()),
-        sepStyle:
-          "display:block;width:9px;height:1px;flex-shrink:0;margin:1px 0;background:" +
-          ("c" === e ? "rgba(255,255,255,0.5)" : "rgba(148,163,184,0.55)"),
-        tip:
-          KIVO.BassamCal.fmtDayLong(dk9) + " · " + KIVO.BassamCal.hDayText(dk9) + " — " +
-          ("c" === e
-            ? E
-              ? "الشهر معتمد ومقفل — افتح الشهر لتعديل اليوم"
-              : M
-                ? "الشهر انقضى ومقفل — نقرة مزدوجة على بطاقة الشهر لفتحه"
-                : i
-                  ? "جولة معتمدة ومقفلة — نقرة مزدوجة لفتحها"
-                  : o
-                    ? "اليوم انقضى — مقفل · نقرة مزدوجة لفتحه للاستدراك"
-                    : "جولة مسودة — نقرة مزدوجة لاعتمادها وقفلها"
-            : o
-              ? "فارغ — انقضى ومقفل · نقرة مزدوجة لفتحه وتسجيل جولة بأثر رجعي"
-              : "فارغ"),
+        tip: tip9,
         click: click9,
-        style:
-          "position:relative;height:24px;flex:1 1 auto;min-width:28px;padding:0 3px;border-radius:4px;font-size:8px;font-weight:" +
-          (a ? "900" : "700") +
-          ";display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;background:" +
-          d +
-          ";color:" +
-          p +
-          ";border:" +
-          h +
-          (a ? ";box-shadow:var(--shadow-card);z-index:10" : "") +
-          (l && !a ? ";box-shadow:0 0 0 2px rgba(185,151,81,0.7)" : ""),
       });
     }
     let O = [],
