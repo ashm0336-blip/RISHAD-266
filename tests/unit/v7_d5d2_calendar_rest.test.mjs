@@ -302,9 +302,10 @@ test('⑤ no other place computes the calendar: one client service, one server p
     ['src/components/565-page-kit.js', 'curHijri', /^const t = KIVO\.BassamCal\.hToday\(\); return \{ y: t\.y, m: t\.m \};$/],
     ['src/systems/daily/client/logic.js.tpl', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, e\);$/],
     ['src/systems/dreport/client/logic.js', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, r\);$/],
-    ['src/systems/dstats/client/logic.js', 'hOfDate', /^const h=KIVO\.BassamCal\.hParts\(dt\); return \{ year:h\.y, month:h\.m, day:h\.d \};$/],
-    ['src/systems/dstats/client/logic.js', 'gOf', /^return KIVO\.BassamCal\.hGregUTC\(y,m,d\);$/],
-    ['src/systems/dstats/client/logic.js', 'dim', /^return KIVO\.BassamCal\.hMonthDaysNoon\(y,m,29\);$/],
+    /* V7 · 53 تقويم: الإحصائياتُ ميلادية — اليومُ حسابٌ ميلاديٌّ خالص (بلا Intl) وطولُ الشهر من الخدمة الواحدة */
+    ['src/systems/dstats/client/logic.js', 'hOfDate', /^return \{ year:dt\.getFullYear\(\), month:dt\.getMonth\(\)\+1, day:dt\.getDate\(\) \};$/],
+    ['src/systems/dstats/client/logic.js', 'gOf', /^return new Date\(Date\.UTC\(y,m-1,d\)\);$/],
+    ['src/systems/dstats/client/logic.js', 'dim', /^return KIVO\.BassamCal\.gMonthDays\(y,m\);$/],
     ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGreg', /^return KIVO\.BassamCal\.hGreg\(t, e, r\);$/],
     ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregMonthLabel', /^return KIVO\.BassamCal\.hGregMonthLabel\(t, e\);$/],
     ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregYearRange', /^return KIVO\.BassamCal\.hGregYearRange\(t\);$/],

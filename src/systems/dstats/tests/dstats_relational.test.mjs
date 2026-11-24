@@ -264,11 +264,13 @@ test('HTTP domain access keeps session/CSRF guards while retired KV reads and bo
 const response = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 function browser(transport, incoming = { srv: 1, cf: 1, uid: 'TEST_ONLY-owner' }) {
   const calls = [], persistence = [];
-  const W = { KIVO: {}, __BS_BOOT: incoming && cp(incoming), console, Response, Request, URL, TextEncoder, TextDecoder };
+  const W = { KIVO: {}, __BS_BOOT: incoming && cp(incoming), console, Response, Request, URL, TextEncoder, TextDecoder, Intl, Date };
   W.window = W;
   W.localStorage = { getItem(k) { persistence.push(['get', k]); throw new Error('No business browser storage'); }, setItem(k) { persistence.push(['set', k]); throw new Error('No business browser storage'); } };
   W.fetch = async (url, options = {}) => { calls.push({ url, ...options }); return transport(url, options); };
   const context = vm.createContext(W);
+  /* V7 · 53 تقويم: خدمةُ التقويم الواحدة كما في الصفحة — الاستيرادُ يحوّل التاريخ الهجري إلى يومه الميلادي */
+  for (const f of ['src/i18n/380-hijri-fallback.js', 'src/i18n/385-calendar.js']) vm.runInContext(read(f), context);
   vm.runInContext(read('src/systems/dstats/client/580-historical-import.js'), context);
   return { W, context, D: W.KIVO.DailyStats, calls, persistence };
 }
@@ -362,7 +364,7 @@ function dailyPage(B) {
   const C = vm.runInContext(read('src/systems/dstats/client/logic.js') + '\nComponent;', B.context);
   const page = new C(), toasts = [];
   page.state = { ...page.state, site: 'haram', year: 2199, month: 1, day: 1, draft: { worshippers: '99' } };
-  page.MONTHS = ['اختبار']; page.PC = () => true; page._dayLockMsg = () => '';
+  page.PC = () => true; page._dayLockMsg = () => '';
   page.setState = next => { page.state = { ...page.state, ...(typeof next === 'function' ? next(page.state) : next) }; };
   page.bsToast = (message, kind) => toasts.push({ message, kind });
   return { page, toasts };
@@ -411,14 +413,16 @@ function startFullBackup(C) {
 }
 
 test('historical workbook parsing uses a fresh API snapshot and its revision without browser business data', async () => {
-  const old = { ...empty(), haram: { '1448-01-01': { worshippers: 1, umrah: 9 } } };
+  /* V7 · 53 تقويم (ق12): ملفُّ Production هجري (1448-01-01) — يُخزَّن في يومه الميلادي (أم القرى: 2026-06-16) ويلتقي بأرقامه المخزَّنة الميلادية */
+  const G = '2026-06-16', old = { ...empty(), haram: { [G]: { worshippers: 1, umrah: 9 } } };
   const B = browser(async () => response({ ok: 1, rev: 7, data: old }));
   B.W.KIVO.BassamXLSX = { parseBook: async () => ({ sheets: ['TEST_ONLY'], active: 'TEST_ONLY', rows: [['التاريخ', 'الحرم - المصلين', 'النبوي - المصلين'], ['1448-01-01', { k: 'i', n: 50, s: '50' }, { k: 'i', n: 60, s: '60' }]] }) };
   const meta = { filename: 'TEST_ONLY.xlsx', size_bytes: 0, content_type: 'test' };
   const preview = await B.W.KIVO.BassamHistImport.preview(new ArrayBuffer(0), meta);
   assert.equal(preview.total_rows, 1); assert.equal(preview.existing_records, 1); assert.equal(preview.new_records, 1);
   const result = await B.W.KIVO.BassamHistImport.execute(new ArrayBuffer(0), 'update', 'ignore', meta);
-  assert.equal(result.store.__dsbase, 7); assert.equal(result.store.haram['1448-01-01'].worshippers, 50); assert.equal(result.store.haram['1448-01-01'].umrah, 9); assert.equal(result.store.nabawi['1448-01-01'].worshippers, 60);
+  assert.equal(result.store.__dsbase, 7); assert.equal(result.store.haram[G].worshippers, 50); assert.equal(result.store.haram[G].umrah, 9); assert.equal(result.store.nabawi[G].worshippers, 60);
+  assert.equal(result.store.haram['1448-01-01'], undefined, 'no Hijri key is stored');
   assert.equal(B.calls.length, 2); assert.ok(B.calls.every(c => !c.method), 'Preview and execution each refresh before computing their import');
   assert.deepEqual(B.persistence, []); assert.deepEqual(cp(B.D.read()), old, 'Parsing alone does not acknowledge business writes');
 });

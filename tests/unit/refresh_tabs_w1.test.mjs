@@ -143,24 +143,25 @@ test('الإحصائيات اليومية (KD-03 · R7): #/dstats/nabawi يفت�
      starting nor completing that read may overwrite the restored calendar state. */
   let resolveRead, reads = 0;
   const lifecycle = ['componentDidMount(){', 'async refreshStats(){', 'componentWillUnmount(){'];
-  const own = { hToday: () => ({ y: 1448, m: 5, d: 10 }), _bsOutsideMenus() {}, bsToast() { assert.fail('لا يُتوقع فشل القراءة الاصطناعية'); } };
-  const D = page('dstats', lifecycle, { state: { site: 'nabawi', year: 1447, month: 9, day: 3 }, self: own, kivo: { DailyStats: { refresh() { reads++; return new Promise(resolve => { resolveRead = resolve; }); } } } });
+  /* V7 · 53 تقويم: الإحصائياتُ ميلادية — اليومُ الجاري من calToday (كان hToday الهجري) */
+  const own = { calToday: () => ({ y: 2026, m: 5, d: 10, k: '2026-05-10' }), _bsOutsideMenus() {}, bsToast() { assert.fail('لا يُتوقع فشل القراءة الاصطناعية'); } };
+  const D = page('dstats', lifecycle, { state: { site: 'nabawi', year: 2025, month: 9, day: 3 }, self: own, kivo: { DailyStats: { refresh() { reads++; return new Promise(resolve => { resolveRead = resolve; }); } } } });
   const setState = target => update => { const patch = typeof update === 'function' ? update(target.state) : update; target.state = { ...target.state, ...patch }; };
   D.c.setState = setState(D.c);
   D.c.componentDidMount();
   const date = c => ({ y: c.state.year, m: c.state.month, d: c.state.day });
   assert.equal(reads, 1); assert.equal(D.c.state.tick, undefined, 'القراءة معلقة ولم يُعلن تحديث الرسم');
-  assert.deepEqual(date(D.c), { y: 1447, m: 9, d: 3 }, 'اليومُ المحفوظ يبقى أثناء القراءة');
+  assert.deepEqual(date(D.c), { y: 2025, m: 9, d: 3 }, 'اليومُ المحفوظ يبقى أثناء القراءة');
   resolveRead(); await new Promise(resolve => setImmediate(resolve));
   assert.equal(D.c.state.tick, 1, 'الدالة الفعلية تؤكد اكتمال القراءة بإعادة الرسم');
-  assert.deepEqual(date(D.c), { y: 1447, m: 9, d: 3 }, 'ولا تستبدله القراءة المكتملة');
+  assert.deepEqual(date(D.c), { y: 2025, m: 9, d: 3 }, 'ولا تستبدله القراءة المكتملة');
   assert.ok(D.listeners.has('daily-stats-refresh')); D.c.componentWillUnmount();
   assert.equal(D.listeners.has('daily-stats-refresh'), false, 'يُزال اشتراك تحديث المجال عند مغادرة الصفحة');
   const E = page('dstats', lifecycle, { state: { site: 'haram', year: 0, month: 0, day: 0 }, self: own, kivo: { DailyStats: { refresh: async () => { reads++; } } } });
   E.c.setState = setState(E.c); E.c.componentDidMount();
-  assert.deepEqual(date(E.c), { y: 1448, m: 5, d: 10 }, 'وبلا محفوظ: اليومُ الجاري');
+  assert.deepEqual(date(E.c), { y: 2026, m: 5, d: 10 }, 'وبلا محفوظ: اليومُ الجاري');
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(reads, 2); assert.equal(E.c.state.tick, 1); assert.deepEqual(date(E.c), { y: 1448, m: 5, d: 10 }); E.c.componentWillUnmount();
+  assert.equal(reads, 2); assert.equal(E.c.state.tick, 1); assert.deepEqual(date(E.c), { y: 2026, m: 5, d: 10 }); E.c.componentWillUnmount();
   assert.match(src, /if\(!s\.year\|\|!s\.anY\) return Object\.assign\(this\.EMPTY\(\), this\.EMPTY_AN\(\)\);/, 'الرسمُ قبل التركيب فارغٌ لا يُعرض');
 });
 
