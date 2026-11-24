@@ -15,10 +15,10 @@ const kv = (lab, k) => { try { return inspectOperationalFixture(lab.env, k); } c
 
 const K = (r) => 'bsdept:' + A + ':' + r;
 const REASON_TEXT = ['هذا الإجراء يتطلب سبباً', 'حفظ بالسبب', 'تذكّر هذا السبب', 'اكتب السبب', 'يشترط الخادم سبباً', 'يتطلب سببًا'];
-const MONTHS = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
+const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];   /* V7 · 53 تقويم: الأشهرُ ميلادية (كرتُ الشهر المشترك) */
 /* اليومُ الهجريّ للخادم (أم القرى · الرياض − 3 ساعات) والشهرُ الماضي */
-const T = (() => { const o = {}; new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(Date.now() - 3 * 3600e3)).forEach((p) => { o[p.type] = p.value; }); return { y: parseInt(o.year, 10), m: +o.month, d: +o.day }; })();
-const PM = T.m === 1 ? { y: T.y - 1, m: 12 } : { y: T.y, m: T.m - 1 }, PMK = PM.y + '-' + PM.m;
+const T = (() => { const o = {}; new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(Date.now() - 3 * 3600e3)).forEach((p) => { o[p.type] = p.value; }); return { y: parseInt(o.year, 10), m: +o.month, d: +o.day }; })();
+const PM = T.m === 1 ? { y: T.y - 1, m: 12 } : { y: T.y, m: T.m - 1 }, PMK = PM.y + '-' + String(PM.m).padStart(2, '0');
 const L = (p, name, fn, arg) => p.evaluate(async ([src, fn, arg]) => { const x = new Function('return ' + src)(); return new Function('L', 'arg', 'return (async () => {' + fn + '})()')(x, arg); }, [logicOf(name), fn, arg]);
 
 /* النافذةُ المفتوحة التي فيها العنوان: أقربُ سلفٍ ثابت الموضع (fixed) — حقولُها النصّية وأزرارُها الظاهرة */

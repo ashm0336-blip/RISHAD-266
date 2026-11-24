@@ -71,7 +71,7 @@ function enfSeed() { var b = new Uint8Array(32), s = '', i; crypto.getRandomValu
 async function enfMigPlan(env, seed, opts) {
   opts = opts || {};
   /* الخطةُ دالّةٌ حتمية في (البذرة · لحظةِ التوليد · البيانات): التطبيقُ يعيد بناءها بلحظة الخطة نفسِها فتتطابق البصمةُ ما لم تتغيّر البيانات */
-  var now = opts.now || Date.now(), T = dsToday(now), reference = opts.reference,
+  var now = opts.now || Date.now(), T = calToday(now), reference = opts.reference,   /* V7 · 53 تقويم: يومُ الخطة ميلادي (أرشيفُ الجولات 019p3) */
     capture = reference ? reference.operational : await opCaptureReferences(env, await kvAll(env, 'kv')),
     keys = reference ? reference.inputKeys : capture.keys,
     revs = reference ? reference.inputRevs : Object.assign({},await revsAll(env),capture.revs), i, d;
@@ -776,7 +776,7 @@ demoProvide({ sys: 'daily', caps: ['daily'], seed: async function (env, C) {
     C.days.forEach(function (day, k) {
       var fs = C.copy(floors);
       fs.forEach(function (f) { if (f.zones[0]) Object.assign(f.zones[0], { fst: 'open', fAt: C.now - k * 864e5 }); if (f.zones[1]) Object.assign(f.zones[1], { fst: 'closed', cWhy: C.tag + 'صيانة', fAt: C.now - k * 864e5 + 1000 }); });
-      doc[day.y + '-' + day.m + '-' + day.d] = { t: C.now - k * 864e5, d: fs, shAp: {} };
+      doc[calGKey(day.y, day.m, day.d)] = { t: C.now - k * 864e5, d: fs, shAp: {} };
     });
     await C.op('bsdept:' + d + ':bassam_rounds_v1', doc); C.count('daily', 'days', C.days.length);
   }
@@ -791,7 +791,7 @@ demoProvide({ sys: 'dreport', caps: ['dreport'], seed: async function (env, C) {
         var roster = emps.filter(function (e, q) { return q % C.shifts.length === j; }).map(function (e) { return { ekey: e.eid, st: 'pr', shift: s.name }; });
         shifts[s.name] = Object.assign({ pulled: true, roster: roster }, k > 0 ? { ap: 1, apAt: day.d + '/' + day.m, apBy: C.tag + 'مدير' } : {});
       });
-      doc[day.y + '-' + day.m + '-' + day.d] = { created: C.now - k * 864e5, shifts: shifts };
+      doc[calGKey(day.y, day.m, day.d)] = { created: C.now - k * 864e5, shifts: shifts };
     });
     await C.op('bsdept:' + d + ':bassam_dreport_v1', doc); C.count('dreport', 'days', C.days.length);
   }
@@ -871,7 +871,7 @@ demoProvide({ sys: 'tasks', caps: ['tasks'], seed: async function (env, C) {
   }
   for (var i = 0; i < C.units.length; i++) {
     var d = C.units[i], emps = C.emps[d] || [], doc = {}, n = 0, T = C.days[0], Y = C.days[1] || C.days[0];
-    var DT = T.y + '-' + T.m + '-' + T.d, DY = Y.y + '-' + Y.m + '-' + Y.d;
+    var DT = calGKey(T.y, T.m, T.d), DY = calGKey(Y.y, Y.m, Y.d);   /* V7 · 53 تقويم: ISO */
     doc[DT] = []; if (DY !== DT) doc[DY] = [];
     emps.forEach(function (e, j) {
       doc[DT].push(row({ title: 'مهمة اليوم ' + (j + 1), e: e, st: j % 2 ? 'in_progress' : 'pending', acc: j % 2 ? C.now - H / 2 : null, s: C.now - H, f: C.now + 3 * H })); n++;

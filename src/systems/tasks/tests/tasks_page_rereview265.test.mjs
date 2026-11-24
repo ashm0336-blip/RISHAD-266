@@ -45,8 +45,8 @@ async function page(storeJson, emps, users) {
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);
   return { c, opsFixture, store, toasts };
 }
-const HIJ = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600e3)).forEach((p) => { o[p.type] = +p.value; }); return o; })();
-const DAY = HIJ.year + '-' + HIJ.month + '-' + HIJ.day;
+const HIJ = (() => { const f = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600e3)).forEach((p) => { o[p.type] = +p.value; }); return o; })();
+const DAY = HIJ.year + '-' + String(HIJ.month).padStart(2, '0') + '-' + String(HIJ.day).padStart(2, '0');
 const emp = (i, o) => Object.assign({ eid: 'tst_e_big_' + i, nid: String(1990000000 + i), name: TAG + ' · موظف ' + i, empno: String(70000 + i), work: TAG + ' مراقب' }, o || {});
 const acc = (i, o) => Object.assign({ id: 'tst_big_' + i, role: 'staff', deptId: D, ekey: 'tst_e_big_' + i, dis: 0 }, o || {});
 const tRow = (o) => { const r = new Array(24).fill(null); Object.assign(r, { 0: TAG + ' ' + (o.t || 'مهمة'), 1: '', 2: 'normal', 3: o.st || 'pending', 4: 'normal', 5: 'مضافة', 7: o.eid ? ['م'] : [], 8: o.name || '', 9: TAG, 10: 60, 13: o.id, 14: o.eid || null, 15: o.s, 16: o.e, 23: o.x || null }); return r; };

@@ -15,11 +15,12 @@ import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from '../../../../tests/unit/harness.mjs';
 import { installCurrentSchemaFixture } from '../../../../tests/unit/current_schema_fx.mjs';
 
-const T = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach((p) => { if (p.type !== 'literal') o[p.type] = +p.value; }); return o; })();
+const T = (() => { const x = new Date(Date.now()); return { year: x.getUTCFullYear(), month: x.getUTCMonth() + 1, day: x.getUTCDate() }; })();   /* V7 · 53 تقويم: اليومُ التشغيلي ميلادي (الرياض − 3 ساعات) */
+const P2 = (n) => String(n).padStart(2, '0');
 const back = (n) => { let y = T.year, m = T.month - n; while (m < 1) { m += 12; y--; } return { y, m }; };
 const P1 = back(1), P3 = back(3);
-const MK = T.year + '-' + T.month, PMK = P1.y + '-' + P1.m, OMK = P3.y + '-' + P3.m;
-const DAY = MK + '-' + T.day, PDAY = PMK + '-5', ODAY = OMK + '-7';
+const MK = T.year + '-' + P2(T.month), PMK = P1.y + '-' + P2(P1.m), OMK = P3.y + '-' + P2(P3.m);
+const DAY = MK + '-' + P2(T.day), PDAY = PMK + '-05', ODAY = OMK + '-07';
 const D = 'tst_d1', K = (r) => 'bsdept:' + D + ':' + r;
 const KP = K('bassam_plan_v1'), KO = K('bassam_zone_opts_v1'), KR = K('bassam_rounds_v1'), KA = K('bassam_rounds_arc_v1');
 const RG = 'TEST_ONLY منطقة', RG2 = 'TEST_ONLY منطقة جديدة', LV = 'TEST_ONLY دور', TY = 'TEST_ONLY نوع', TY2 = 'TEST_ONLY نوع جديد', CT = 'TEST_ONLY فئة';

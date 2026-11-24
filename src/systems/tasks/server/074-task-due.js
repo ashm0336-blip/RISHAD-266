@@ -24,7 +24,7 @@ async function tkDueActor(env, d, uid, cache) {
 async function tkDueRun(env, request, d) {
   var K = tkK(d), now = Date.now(), rep = { soon: 0, late: 0, exp: 0, skipped: 0, sent: 0 };
   var S = parseJson(await opResourceGet(env, K), {}); if (!isObj(S)) return rep;
-  var days = []; [0, 1, 2].forEach(function (b) { var H = tkHij(now - b * 864e5); if (H && days.indexOf(H.k) === -1) days.push(H.k); });   /* مفاتيحُ الصفوف أيامٌ مدنية (هجريُّ الرياض لبدايتها) لا تشغيلية: اليوم وأمس وقبله */
+  var days = []; [0, 1, 2].forEach(function (b) { var H = tkDay(now - b * 864e5); if (H && days.indexOf(H.k) === -1) days.push(H.k); });   /* مفاتيحُ الصفوف أيامٌ مدنية (يومُ الرياض الميلاديّ لبدايتها — V7 · 53 تقويم) لا تشغيلية: اليوم وأمس وقبله */
   var plan = nmap(), n = 0;
   for (var q = 0; q < days.length; q++) {
     var dk = days[q], L = Array.isArray(S[dk]) ? S[dk] : [];

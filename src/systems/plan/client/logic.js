@@ -9,6 +9,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   "daily+plan",
   "plan+staff",
 ]) {
+  /* V7 · 53 تقويم (ف٤ · ق١ · §7): هذه الصفحة ميلادية — السنةُ والشهرُ واليومُ في حالتها ميلادية والمفاتيحُ ISO (KIVO.BassamCal.gKey/gYm/gMk)؛
+     أسماءُ عُدّة الصفحات (h*) باقيةٌ لمستدعيها ومعناها هنا ميلادي (يومُ الرياض المدني بلا مهلة — كما كانت)، والهجريُّ سطرٌ صغير محسوب لا مخزَّن */
+  MONTHS = KIVO.BassamCal.G_MONTHS.slice();
+  gParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
+  gTodayOf() { return this.gParts(new Date()); }
+  gDate(t, e, s) { return new Date(t, e - 1, s, 12); }
+  gMonthDaysOf(t, e) { return KIVO.BassamCal.gMonthDays(t, e); }
+  hLineOfMonth(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
+  hLineOfYear(t) { return KIVO.BassamCal.hRangeOfYear(t); }
+  curMonth() { const t = this.gTodayOf(); return { y: t.y, m: t.m }; }
   _opService() {
     const service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
     if (!service) throw Error("operations-read-required");
@@ -243,7 +253,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           return same(f, o) ? o : f;
         });
       },
-      cur = this.state && this.state.year + "-" + this.state.month,
+      cur = this.state && KIVO.BassamCal.gYm(this.state.year, this.state.month),
       out = { ...value };
     if (Array.isArray(value.floors)) out.floors = floors(value.floors, base.floors);
     if (value.months && "object" === typeof value.months && base.months && "object" === typeof base.months) {
@@ -512,8 +522,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     if (isNaN(dt.getTime())) return null;
     let h = {};
     try {
-      const p = KIVO.BassamCal.hParts(dt);   /* V7 · د5-د2 */
-      h = { year: p.y, month: p.m, day: p.d };
+      const p = KIVO.BassamCal.hOf(KIVO.BassamCal.gAt(dt).k);   /* V7 · 53 تقويم: الهجريُّ المقابل سطرٌ تابع (الميلاديُّ أولاً) */
+      h = p ? { year: p.y, month: p.m, day: p.d } : {};
     } catch (e) {
       h = {};
     }
@@ -532,10 +542,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     return {
       act: act,
       n: nm,
-      s1: wd + " " + hs,
-      s2: gs + " · " + tm,
-      tip: "آخر حركة: " + act + " — " + nm + " — يوم " + wd + " " + hs + " هـ الموافق " + gs + " م — الساعة " + tm,
-      txt: act + " — " + nm + " — " + wd + " " + hs + " هـ — " + gs + " م " + tm,
+      s1: wd + " " + gs,
+      s2: hs + " · " + tm,
+      tip: "آخر حركة: " + act + " — " + nm + " — يوم " + wd + " " + gs + " الموافق " + hs + " هـ — الساعة " + tm,
+      txt: act + " — " + nm + " — " + wd + " " + gs + " — " + hs + " هـ " + tm,
     };
   }
   _olAct(r) {
@@ -1497,7 +1507,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           try {
             KIVO.BassamXLSX.download(
               aoa,
-              "سجل-" + exp.name + "-" + site + "-" + (this.MONTHS[s.month - 1] || s.month) + "-" + s.year + "هـ.xlsx",
+              "سجل-" + exp.name + "-" + site + "-" + KIVO.BassamCal.fileTag(KIVO.BassamCal.gYm(s.year, s.month)) + ".xlsx",   /* V7 · 53 تقويم: سجل-…-2026-11.xlsx */
             );
           } catch (e) {
             return void this.bsToast("تعذّر تجهيز ملف Excel", "err");
@@ -2532,7 +2542,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     return id;
   }
   _mKey(t, e) {
-    return t + "-" + e;
+    return KIVO.BassamCal.gYm(t, e);
   }
   _stageSchedOk(t, e) {
     return !0;
@@ -2631,7 +2641,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   _plAround() {
     const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
     if (!S || !S.split || !S.split("bassam_plan_v1")) return;
-    const c = this.curHijri(),
+    const c = this.curMonth(),
       g = [];
     for (let i = -12; i <= 2; i++) {
       const n = c.y * 12 + (c.m - 1) + i;
@@ -3771,7 +3781,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       this.setState({ planMonths: a }, () => this.savePlan()));
   }
   monthPast(t, e) {
-    const s = this.curHijri(),
+    const s = this.curMonth(),
       n = void 0 === t ? this.state.year : t,
       a = void 0 === e ? this.state.month : e;
     return n < s.y || (n === s.y && a < s.m);
@@ -3854,8 +3864,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   initState() {
     const t = {
         view: { x: 0, y: 0, w: 1e3, h: 600 },
-        year: this.curHijri().y,
-        month: this.curHijri().m,
+        year: this.curMonth().y,
+        month: this.curMonth().m,
         lens: "plan",
         brkDim: "summary",
         gateDim: "summary",
@@ -3922,7 +3932,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           paths: (n === e && t.paths) || [],
         }))),
       (s = s.map((t) => ({ ...t, zones: (t.zones || []).map((t) => (void 0 === t.count ? { ...t, count: null } : t)) }))));
-    const a = t.year + "-" + t.month;
+    const a = KIVO.BassamCal.gYm(t.year, t.month);
     let i = this._normMonths(t.months);
     if (!((t.months && "object" == typeof t.months) || Object.keys(i).length)) {
       const t = this._snapshot(s);
@@ -6629,7 +6639,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       n = e.sel ? e.sel.t : null,
       a = s.length > 1,
       i = (t, e) => n === t && s.indexOf(e) >= 0,
-      r = e.lens + "|" + e.floor + "|" + e.year + "-" + e.month;
+      r = e.lens + "|" + e.floor + "|" + KIVO.BassamCal.gYm(e.year, e.month);
     this._histCtx !== r && ((this._histCtx = r), (this._undoStack = []), (this._redoStack = []), (this._lastSnap = this._snapNow()));
     const l = !!e.mapFs,
       o = (() => {
@@ -6675,7 +6685,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                             .filter(Boolean)
                             .join(" و") +
                           " من شريط واحد · نقرة مزدوجة على أي عنصر تفتح بياناته · Ctrl+Z للتراجع",
-      p = this.curHijri(),
+      p = this.curMonth(),
       c = this.MONTHS.map((t, s) => {
         const n = s + 1,
           a = e.month === n,
@@ -6732,8 +6742,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     (m = !1))
                   : (c += "dashed #E1E1E1;background:var(--bg-a2452452450p7);opacity:.9"),
           {
+            cal9: { ym: KIVO.BassamCal.gYm(e.year, n), closed: d || h, why: d ? "ap" : h ? "past" : this.monthOpenFlag(e.year, n) ? "retro" : "", sel: a, cur: i },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
             name: t,
-            greg: this.gregOf(e.year, s),
+            greg: KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(e.year, n)),
             style: c,
             nameColor: g,
             footColor: f,
@@ -6841,7 +6852,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           r
         );
       })(),
-      k = m[e.year + "-" + e.month] || {},
+      k = m[KIVO.BassamCal.gYm(e.year, e.month)] || {},
       A = {},
       v = f.filter((t) => {
         const e = ((t) => {
@@ -6865,7 +6876,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {}
     const z = (() => {
         try {
-          const t = KIVO.BassamCal.hNow(new Date(), null);
+          const t = KIVO.BassamCal.gAt(new Date());
           return (t && KIVO.bus.read("staff.dayFacts@1", t.y, t.m, t.d)) || null;
         } catch (t) {
           return null;
@@ -12128,15 +12139,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                                     )
                                   : this.setState({ clearAsk: null });
       },
-      yearLabel: e.year + " هـ",
+      yearLabel: e.year,
       gregRange: this.gregYearRange(e.year),
       prevYear: () => this.goTo(this.state.year - 1, this.state.month),
       nextYear: () => this.goTo(this.state.year + 1, this.state.month),
       goCurrent: () => {
-        const t = this.curHijri();
+        const t = this.curMonth();
         this.goTo(t.y, t.m);
       },
-      pickerMonthLabel: (this.MONTHS[e.month - 1] || "") + " " + e.year + " هـ",
+      pickerMonthLabel: (this.MONTHS[e.month - 1] || "") + " " + e.year,
       floorImgNode:
         e.floors[e.floor] && e.floors[e.floor].img
           ? ((s9, N9) =>
@@ -12472,7 +12483,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           stageLocked: !this._stageSchedOk(e.year, e.month) && !n,
           noPlanTitle:
             this._stageSchedOk(e.year, e.month) || n
-              ? "لا توجد خطة لشهر " + a + " " + e.year + " هـ"
+              ? "لا توجد خطة لشهر " + a + " " + e.year
               : "مرحلة التشغيل الميداني لشهر " + a + " مقفلة",
           noPlanSub:
             this._stageSchedOk(e.year, e.month) || n
@@ -12678,7 +12689,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   e && "object" == typeof e && (i = e);
                 }
               } catch (t) {}
-              const r = i[s + "-" + n + "-" + a],
+              const r = i[KIVO.BassamCal.gKey(s, n, a)],
                 l = r && Array.isArray(r.d) ? r.d : null,
                 /* V7 · د5-هـ (t4): موقعُ يوم الجولة يُطابَق بموقع الخطة ولقطتها بمعرّفه sid لا بموضعه — طابقٌ بلا sid أو بمعرّفِ موقعٍ ليس في الخطة «غير مربوط» فلا يُنسخ اليوم */
                 U9 = l ? l.filter((x) => x && !(null != x.sid && "" !== x.sid && (this.state.floors || []).some((f) => f && String(f.sid) === String(x.sid)))).length : 0;
@@ -12694,7 +12705,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     (this.MONTHS[n - 1] || "") +
                     " " +
                     s +
-                    " هـ — اختر يوماً آخر أو استخدم «نسخ من شهر سابق».",
+                    " — اختر يوماً آخر أو استخدم «نسخ من شهر سابق».",
                 );
               const o = this.loadEmpList
                   ? this.loadEmpList()
@@ -12708,7 +12719,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     })(),
                 d = (t) => (t || []).map((t) => this._ck(t)).filter(Boolean),
                 h =
-                  this._mData(this.state.planMonths, s + "-" + n) ||
+                  this._mData(this.state.planMonths, KIVO.BassamCal.gYm(s, n)) ||
                   this.state.floors ||
                   [];
               const S9 = (L9, t) => (L9 || []).find((x) => x && null != x.sid && String(x.sid) === String(t.sid)) || {};
@@ -12844,7 +12855,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         return {
           retroOn: !0,
           retroOpening: !!t.open,
-          retroTitle: t.open ? "فتح شهر " + s + " " + t.y + " هـ بأثر رجعي" : "إعادة قفل شهر " + s + " " + t.y + " هـ",
+          retroTitle: t.open ? "فتح شهر " + s + " " + t.y + " بأثر رجعي" : "إعادة قفل شهر " + s + " " + t.y,
           retroMsg: t.open
             ? "هذا الشهر انقضى وأُقفل تلقائياً. فتحه يتيح لك إضافة خطته أو تعديلها بأثر رجعي."
             : "سيعود الشهر إلى حالته المقفلة بانقضائه، ولن يمكن تعديل خطته حتى تفتحه من جديد.",
@@ -12872,12 +12883,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           plTitle: t && t.approved ? "فتح الشهر للتعديل" : "قفل شهر التشغيل الميداني",
           plMsg: t
             ? t.approved
-              ? "سيتم فتح شهر " + s + " " + t.y + " هـ وفكّ قفله ليصبح متاحاً للتعديل في جميع المواقع."
+              ? "سيتم فتح شهر " + s + " " + t.y + " وفكّ قفله ليصبح متاحاً للتعديل في جميع المواقع."
               : "سيتم قفل تشغيل شهر " +
                 s +
                 " " +
                 t.y +
-                " هـ — تصبح جميع المواقع للعرض فقط دون أي تعديل. القفل حماية من التعديل العرضي فقط، ولا يتوقف عليه سحب التقارير اليومية ولا الجولات."
+                " — تصبح جميع المواقع للعرض فقط دون أي تعديل. القفل حماية من التعديل العرضي فقط، ولا يتوقف عليه سحب التقارير اليومية ولا الجولات."
             : "",
           plNote: t && t.approved ? "يمكنك قفله لاحقاً بنقرة مزدوجة على كرت الشهر." : "يمكنك فتحها لاحقاً بنقرة مزدوجة على كرت الشهر.",
           plNoteColor: t && t.approved ? "#b45309" : "#047857",
@@ -12917,7 +12928,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               (this.MONTHS[t.m - 1] || "") +
               " " +
               t.y +
-              " هـ بالكامل: خريطة كل موقع (صورته) والمصليات والأبواب والمعالم والمسارات والنطاقات والتسكين والكثافات، وجولات المتابعة اليومية لهذا الشهر — تبقى أسماء المواقع وأرقامها فقط. لا يمكن التراجع."
+              " بالكامل: خريطة كل موقع (صورته) والمصليات والأبواب والمعالم والمسارات والنطاقات والتسكين والكثافات، وجولات المتابعة اليومية لهذا الشهر — تبقى أسماء المواقع وأرقامها فقط. لا يمكن التراجع."
             : "",
           planDelCancel: () => this.setState({ planDelMonth: null }),
           planDelDo: () => {
@@ -16163,17 +16174,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           })(),
           repToday: (() => {
             try {
-              const t = KIVO.BassamCal.hNow();
-              return (
-                t.d +
-                " " +
-                (this.MONTHS[t.m] || "") +
-                " " +
-                t.y +
-                "هـ" +
-                " الموافق " +
-                new Date().toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" })
-              );
+              return KIVO.BassamCal.fmtPrint(KIVO.BassamCal.gAt(new Date()).k);   /* V7 · 53 تقويم: الميلاديُّ ثم «الموافق» الهجري */
             } catch (t) {
               return "";
             }
@@ -16922,7 +16923,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           printMeta:
             "الموقع: " +
             (e.floors && e.floors.length ? (e.floors[e.floor] || e.floors[0] || {}).name || "موقع بلا اسم" : "لا يوجد موقع نشط"),
-          printDate: new Date().toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" }),
+          printDate: KIVO.BassamCal.fmtPrint(KIVO.BassamCal.gAt(new Date()).k),   /* V7 · 53 تقويم: «24 نوفمبر 2026 · الموافق 14 جمادى الآخرة 1448» */
           donutHitNode: Rt ? ys : ye ? bs : Ue ? xs : ds ? ks : ms,
           onHitNode: As,
           showOnRing: gs,
@@ -17006,7 +17007,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             (e.registryOpen ? "transform:rotate(180deg)" : ""),
         };
       })(),
-      months: c,
+      months: c.map((x) => Object.assign(x, { card: KIVO.BassamCalCard.month(Object.assign({ key: x.cal9.ym, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }, x.cal9)) })),   /* V7 · 53 تقويم (§7) */
       zones: J,
       zoneLabelNodes: lt,
       gateNodes: ft,
@@ -18663,7 +18664,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           a = n && s && s.length > 0 && s.every((t) => !!t.approved);
         return {
           planChipText: function () {
-            const t = "خطة " + (this.MONTHS[e.month - 1] || "") + " " + e.year + " هـ";
+            const t = "خطة " + (this.MONTHS[e.month - 1] || "") + " " + e.year;
             return n ? (a ? t + " — مقفل" : t + " — مفتوحة") : t + " — لا توجد خطة";
           }.call(this),
           planChipStyle:

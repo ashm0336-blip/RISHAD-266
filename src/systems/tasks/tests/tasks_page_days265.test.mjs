@@ -3,6 +3,7 @@ import { attachTaskOperations } from '../../../../tests/unit/vm_operations_fx.mj
 import { world, workerUnderTest, KT, KE } from './tasks_fx.mjs';
 import { replaceOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 import { until } from '../../../../tests/unit/k264_vm.mjs';
+import { isoDay, isoYm } from '../../../../tests/unit/world_fx.mjs';
 /* KIVO_265 · صفحةُ المهام بتصميمها المعتمد للإنتاج (طلبُ المالك 2026-10-20) — logic.js وأجزاؤه في vm بلا خادم وبساعةٍ ثابتة:
      · شريطُ الأيام (tkDays · _tkDayStrip) واليومُ الافتراضي = اليومُ الجاري في الشهر الجاري (_tkDayDef) · رأسُ كرت اليوم (tkDayTitle/Sub/Count)
        · اختيارُ يومٍ آخر و«الشهر كاملاً» / «عرض اليوم» (tkDaySel {k:"y-m", d})
@@ -10,7 +11,7 @@ import { until } from '../../../../tests/unit/k264_vm.mjs';
      · «أوسمة اليوم» الخمسة (_tkDayKpis) وهندسةُ العلامات (_tkTicks) وحلقةُ الزمن (أسرع/أبطأ/بلا مخطط) · وتصفيةُ الجدول بالمؤشر (tkKf لليوم نفسِه)
      · قفلُ اليوم في bassam_tasks_locks_v1 بمفاتيح «y-m-d» ({mo:1} مفتوحٌ بأثر رجعي · true مُغلقٌ بيده) — والمنقضي مقفلٌ تلقائياً · اعتمادُ الشهر يقفل الكل
        · delMonthDo يحذف مفاتيحَ أيام الشهر · وعمودُ «الوردية» من الجدول الشهري (_tkShiftCell).
-   الساعةُ ثابتةٌ (ظهرُ 2026-10-20 بتوقيت الجهاز = الثلاثاء 9 جمادى الأولى 1448 هـ) فالأيامُ والقيمُ حتميةٌ مهما كان يومُ التشغيل. بياناتٌ اصطناعية (TEST_ONLY). */
+   الساعةُ ثابتةٌ (ظهرُ الثلاثاء 2026-10-20 بتوقيت الجهاز · الموافق 9 جمادى الأولى 1448 هـ) فالأيامُ والقيمُ حتميةٌ مهما كان يومُ التشغيل. بياناتٌ اصطناعية (TEST_ONLY). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -21,8 +22,10 @@ import { row, ME, MATE } from './tasks_fx.mjs';
 
 const LOGIC = moduleLogic('tasks');
 const NOW = new Date(2026, 9, 20, 12, 0, 0).getTime(), MIN = 6e4, H = 36e5;
-const Y = 1448, M = 5, TD = 9, SK = Y + '-' + M, K = (d, m = M) => Y + '-' + m + '-' + d;
-const MN = 'جمادى الأولى';
+/* V7 · 53 تقويم: مفاتيحُ ISO الميلادية (YYYY-MM · YYYY-MM-DD) — اليومُ التشغيليّ 2026-10-20 = 9 جمادى الأولى 1448 هـ (سطرُه الهجريّ التابع) ·
+   أمسُ YD · اليوم 18 (كان «اليوم 7») · يومٌ قادمٌ D12 · والشهرُ الآخر سبتمبر — الأيامُ نفسُها بعلاقاتها وأيامِ أسبوعها */
+const Y = 2026, M = 10, TD = 20, YD = 19, D7 = 18, D11 = 22, D12 = 23, PM = 9, SK = isoYm(Y, M), K = (d, m = M) => isoDay(Y, m, d);
+const MN = 'أكتوبر', HTD = '9 جمادى الأولى 1448', HYD = '8 جمادى الأولى 1448';
 const P1 = '0.62 0.38', rep = (k, p = P1) => Array(k).fill(p).join(' ');
 const LOCKS = 'bassam_tasks_locks_v1';
 const EMPS = [{ eid: ME.eid, name: ME.name, work: 'TEST_ONLY مراقب' }, { eid: MATE.eid, name: MATE.name, work: 'TEST_ONLY مراقب' }];
@@ -64,7 +67,7 @@ async function page(store) {
 }
 const rv = { v: 1, rv: { u: 'tst_dm1', e: 'mgr:tst_d1', n: 'TEST_ONLY مدير' } };
 const withX = (r, x) => { r[22] = null; r[23] = x; return r; };
-/* اليومُ الجاري (9): ثماني مهام بحالاتٍ معروفة — ترتيبُ المخزن غيرُ ترتيب الإدخال (العمود 13 = وقتُ الإدخال)
+/* اليومُ الجاري (TD = 20): ثماني مهام بحالاتٍ معروفة — ترتيبُ المخزن غيرُ ترتيب الإدخال (العمود 13 = وقتُ الإدخال)
    A منجزةٌ في الوقت (فعلي 60 / مخطط 90) · B منجزةٌ مبكرة (30/60) · C منجزةٌ متأخرة (120/30) · D متأخرةٌ عن المهلة · E انقضت بلا قبول (عامة)
    F و G بانتظار الاعتماد (سُلّمتا قبل 150 و30 دقيقة) · H قادمةٌ عامة */
 const ID = { A: NOW - 8 * H, B: NOW - 1 * H, C: NOW - 6 * H, D: NOW - 2 * H, E: NOW - 7 * H, F: NOW - 3 * H, G: NOW - 30 * MIN, H: NOW - 4 * H,
@@ -79,16 +82,16 @@ const TODAY = [
   withX(row({ id: ID.G, title: 'G بانتظار الاعتماد', eid: ME.eid, st: 'in_progress', acc: NOW - 2 * H, dur: 600, s: NOW - 2 * H, e: NOW + 8 * H, r21: { imgs: [], note: 'TEST_ONLY تم', sub: NOW - 30 * MIN, at: NOW - 30 * MIN } }), rv),
   row({ id: ID.H, title: 'H قادمة عامة', s: NOW + 1 * H, e: NOW + 3 * H }),
 ];
-/* أمس (8): Y1 بانتظار القبول · Y2 منجزةٌ أسرع من المخطط (60 / 120 — فوق 96 دقيقة فتُقاس الحلقة) */
+/* أمس (YD = 19): Y1 بانتظار القبول · Y2 منجزةٌ أسرع من المخطط (60 / 120 — فوق 96 دقيقة فتُقاس الحلقة) */
 const YDAY = [
   row({ id: ID.Y1, title: 'Y1 أمس بانتظار القبول', eid: ME.eid, s: NOW - 20 * H, e: NOW + 30 * H }),
   row({ id: ID.Y2, title: 'Y2 أمس منجزة أسرع', eid: MATE.eid, st: 'done', perf: ['on_time', 'في الوقت'], acc: NOW - 26 * H, fin: NOW - 25 * H, dur: 120, s: NOW - 26 * H, e: NOW - 24 * H }),
 ];
-/* اليوم 7: Z1 منجزةٌ بلا مدةٍ مخططة (فعلي 30) · Z0 صفٌّ قديم الشكل (15 عموداً) بلا وقت إدخال */
+/* اليوم D7 = 18: Z1 منجزةٌ بلا مدةٍ مخططة (فعلي 30) · Z0 صفٌّ قديم الشكل (15 عموداً) بلا وقت إدخال */
 const Z0 = ['TEST_ONLY Z0 قديمة بلا وقت إدخال', '', 'normal', 'pending', 'normal', 'مضافة', null, [], '', 'TEST_ONLY مدير', 30, null, null, null, null];
 const DAY7 = [Z0, row({ id: ID.Z1, title: 'Z1 منجزة بلا مخطط', eid: ME.eid, st: 'done', perf: ['on_time', 'في الوقت'], acc: NOW - 50 * H, fin: NOW - 49.5 * H, dur: 0, s: NOW - 50 * H, e: NOW - 48 * H })];
 async function seed(extra) {
-  const S = { [K(7)]: DAY7, [K(TD)]: TODAY, [K(8)]: YDAY, [K(20, 4)]: [row({ id: ID.P, title: 'P الشهر الماضي', eid: ME.eid })] };
+  const S = { [K(D7)]: DAY7, [K(TD)]: TODAY, [K(YD)]: YDAY, [K(30, PM)]: [row({ id: ID.P, title: 'P الشهر الماضي', eid: ME.eid })] };
   const store = new Map([['bassam_tasks_v1', JSON.stringify(S)], ['bassam_employees_v1', JSON.stringify(EMPS)]].concat(Object.entries(extra || {})));
   return await page(store);
 }
@@ -99,28 +102,28 @@ const rowOf = (V, id) => V.allFiltered.find((t) => t.tkcT[13] === id);
 const lastToast = (P) => P.toasts.at(-1) || [];
 const J = (o) => JSON.parse(JSON.stringify(o));   /* قيمُ vm بنماذجِ عالمها — تُقارن بعد نسخها */
 
-test('الساعةُ الثابتة: اليومُ التشغيليّ للصفحة 9 جمادى الأولى 1448 هـ (أساسُ القيم كلها)', async () => {
+test('الساعةُ الثابتة: اليومُ التشغيليّ للصفحة 20 أكتوبر 2026 (أساسُ القيم كلها)', async () => {
   const { c } = await seed();
-  assert.deepEqual({ ...c.hToday() }, { y: Y, m: M, d: TD });
+  assert.deepEqual({ ...c.gTodayOf() }, { y: Y, m: M, d: TD });
   assert.equal(c._tkTodayN(), Y * 1e4 + M * 100 + TD);
   assert.equal(c.MONTHS[M - 1], MN);
 });
 
 test('اليومُ الافتراضي = اليومُ الجاري: رأسُ كرت اليوم (العنوان · الموافق · العدد) وشريطُ الأيام بخانة اليوم المختارة', async () => {
   const P = await seed(), V = P.V();
-  assert.equal(P.c._tkDayDef(P.c.state, P.c.hToday()), TD, 'الافتراضي في الشهر الجاري اليومُ الجاري');
-  assert.equal(P.c._tkDayDef(Object.assign({}, P.c.state, { month: 4 }), P.c.hToday()), 0, 'وفي غيره الشهرُ كاملاً');
+  assert.equal(P.c._tkDayDef(P.c.state, P.c.gTodayOf()), TD, 'الافتراضي في الشهر الجاري اليومُ الجاري');
+  assert.equal(P.c._tkDayDef(Object.assign({}, P.c.state, { month: PM }), P.c.gTodayOf()), 0, 'وفي غيره الشهرُ كاملاً');
   assert.equal(V.tkDayStripOn, true);
-  assert.equal(V.tkDayTitle, 'مهام اليوم — الثلاثاء 9 ' + MN + ' 1448 هـ');
-  assert.equal(V.tkDaySub, 'الموافق 20 أكتوبر 2026 م');
+  assert.equal(V.tkDayTitle, 'مهام اليوم — الثلاثاء 20 ' + MN + ' 2026');
+  assert.equal(V.tkDaySub, 'الموافق ' + HTD + ' هـ');
   assert.equal(V.tkDayCount, '8 مهام');
   assert.equal(V.tkDayAllOn, true); assert.equal(V.tkDayAllTxt, 'الشهر كاملاً');
   assert.equal(V.tkDays.length, P.c.mDays(Y, M - 1), 'خانةٌ لكل يومٍ في الشهر');
-  const d9 = V.tkDays[TD - 1], d8 = V.tkDays[7], d12 = V.tkDays[11];
-  assert.equal(d9.num, '9'); assert.equal(d9.gnum, '20'); assert.equal(d9.isToday, true); assert.match(d9.style, /border:2px solid var\(--bd-xb99751\)$/, 'حدُّ المختار ذهبيّ');
-  assert.match(d9.tip, /^الثلاثاء 9 جمادى الأولى — 8 مهام · 3 منجزة · نقرة مزدوجة لإغلاق اليوم$/);
-  assert.equal(d8.isToday, false); assert.match(d8.tip, /^الاثنين 8 جمادى الأولى — مهمتان · 1 منجزة · انقضى — مقفل/);
-  assert.match(d12.tip, /^الجمعة 12 جمادى الأولى — لا مهام · نقرة مزدوجة لإغلاق اليوم$/); assert.equal(V.tkDaysN, '3', 'ثلاثةُ أيامٍ فيها مهام');
+  const d9 = V.tkDays[TD - 1], d8 = V.tkDays[YD - 1], d12 = V.tkDays[D12 - 1];
+  assert.equal(d9.num, '20'); assert.equal(d9.gnum, '20'); assert.equal(d9.isToday, true); assert.match(d9.style, /border:2px solid var\(--bd-xb99751\)$/, 'حدُّ المختار ذهبيّ');
+  assert.match(d9.tip, /^الثلاثاء 20 أكتوبر — 8 مهام · 3 منجزة · نقرة مزدوجة لإغلاق اليوم$/);
+  assert.equal(d8.isToday, false); assert.match(d8.tip, /^الاثنين 19 أكتوبر — مهمتان · 1 منجزة · انقضى — مقفل/);
+  assert.match(d12.tip, /^الجمعة 23 أكتوبر — لا مهام · نقرة مزدوجة لإغلاق اليوم$/); assert.equal(V.tkDaysN, '3', 'ثلاثةُ أيامٍ فيها مهام');
   assert.deepEqual(names(V), ['G', 'B', 'D', 'F', 'H', 'C', 'E', 'A'], 'مهامُ اليوم وحدَه');
   assert.equal(V.allFiltered.some((t) => t.dayHeadOn), false, 'عرضُ اليوم بلا رؤوس أقسام');
   assert.equal(V.tkK1L, 'مهام اليوم'); assert.equal(V.tkK1Cap, 'إجمالي اليوم'); assert.equal(V.tkKCapT, 'مؤشرات اليوم');
@@ -128,29 +131,29 @@ test('اليومُ الافتراضي = اليومُ الجاري: رأسُ كر
 
 test('اختيارُ يومٍ آخر من الشريط · «الشهر كاملاً» يعرض الشهرَ بأقسامه · «عرض اليوم» يعود إلى اليوم الجاري · والبحثُ في الشهر كله', async () => {
   const P = await seed();
-  P.V().tkDays[7].click();
-  assert.deepEqual({ ...P.c.state.tkDaySel }, { k: SK, d: 8 });
+  P.V().tkDays[YD - 1].click();
+  assert.deepEqual({ ...P.c.state.tkDaySel }, { k: SK, d: YD });
   let V = P.V();
-  assert.equal(V.tkDayTitle, 'مهام يوم الاثنين 8 ' + MN + ' 1448 هـ'); assert.equal(V.tkDaySub, 'الموافق 19 أكتوبر 2026 م');
+  assert.equal(V.tkDayTitle, 'مهام يوم الاثنين 19 ' + MN + ' 2026'); assert.equal(V.tkDaySub, 'الموافق ' + HYD + ' هـ');
   assert.equal(V.tkDayCount, 'مهمتان'); assert.deepEqual(names(V), ['Y2', 'Y1']);
-  assert.equal(V.tkK1L, 'مهام هذا اليوم'); assert.match(V.tkDays[7].style, /border:2px solid var\(--bd-xb99751\)$/); assert.doesNotMatch(V.tkDays[TD - 1].style, /bd-xb99751\)$/);
+  assert.equal(V.tkK1L, 'مهام هذا اليوم'); assert.match(V.tkDays[YD - 1].style, /border:2px solid var\(--bd-xb99751\)$/); assert.doesNotMatch(V.tkDays[TD - 1].style, /bd-xb99751\)$/);
   assert.equal(V.tkDayAllOn, true); assert.equal(V.tkDayAllTxt, 'الشهر كاملاً');
   V.tkDayAll();
   assert.deepEqual({ ...P.c.state.tkDaySel }, { k: SK, d: 0 });
   V = P.V();
-  assert.equal(V.tkDayTitle, 'مهام شهر ' + MN + ' 1448 هـ — كل الأيام'); assert.equal(V.tkDaySub, '');
+  assert.equal(V.tkDayTitle, 'مهام شهر ' + MN + ' 2026 — كل الأيام'); assert.equal(V.tkDaySub, 'الموافق 20 ربيع الآخر – 20 جمادى الأولى 1448 هـ', 'والشهرُ كاملاً سطرُه الهجريّ مداه');
   assert.equal(V.tkDayCount, '12 مهمة'); assert.equal(V.tkK1L, 'مهام الشهر'); assert.equal(V.tkK1Cap, 'إجمالي الشهر'); assert.equal(V.tkKCapT, 'مؤشرات الشهر'); assert.equal(V.tkK1N, '12');
   assert.equal(V.tkDayLockOn, false, 'لا شارةَ قفلٍ في الشهر كاملاً');
   assert.equal(V.tkDayAllOn, true); assert.equal(V.tkDayAllTxt, 'عرض اليوم');
   V.tkDayAll();
   assert.deepEqual({ ...P.c.state.tkDaySel }, { k: SK, d: TD });
-  assert.equal(P.V().tkDayTitle, 'مهام اليوم — الثلاثاء 9 ' + MN + ' 1448 هـ');
+  assert.equal(P.V().tkDayTitle, 'مهام اليوم — الثلاثاء 20 ' + MN + ' 2026');
   P.c.setState({ search: 'Y1' });
   V = P.V();
-  assert.equal(V.tkDayTitle, 'نتائج البحث في مهام شهر ' + MN + ' 1448 هـ'); assert.deepEqual(names(V), ['Y1'], 'البحثُ يتجاوز اليومَ المختار'); assert.equal(V.allFiltered[0].dayHeadOn, true);
-  P.c.setState({ search: '', month: 4 });
+  assert.equal(V.tkDayTitle, 'نتائج البحث في مهام شهر ' + MN + ' 2026'); assert.deepEqual(names(V), ['Y1'], 'البحثُ يتجاوز اليومَ المختار'); assert.equal(V.allFiltered[0].dayHeadOn, true);
+  P.c.setState({ search: '', month: PM });
   V = P.V();
-  assert.equal(V.tkDayTitle, 'مهام شهر ربيع الآخر 1448 هـ — كل الأيام', 'شهرٌ آخر: الشهرُ كاملاً افتراضياً'); assert.equal(V.tkDayAllOn, false); assert.deepEqual(names(V), ['P']);
+  assert.equal(V.tkDayTitle, 'مهام شهر سبتمبر 2026 — كل الأيام', 'شهرٌ آخر: الشهرُ كاملاً افتراضياً'); assert.equal(V.tkDayAllOn, false); assert.deepEqual(names(V), ['P']);
 });
 
 test('الأحدثُ إدخالاً أولاً داخل اليوم · وفي الشهر كاملاً أقسامُ الأيام من الأحدث برؤوسها (اليوم/أمس · العدد · المنجزة والمتأخرة) وطيُّها', async () => {
@@ -163,16 +166,16 @@ test('الأحدثُ إدخالاً أولاً داخل اليوم · وفي ا�
   assert.deepEqual(names(V), ['G', 'B', 'D', 'F', 'H', 'C', 'E', 'A', 'Y2', 'Y1', 'Z1', 'Z0'], 'الأيامُ من الأحدث · والصفُّ بلا وقت إدخالٍ آخرَ يومه');
   const heads = Array.from(V.allFiltered.filter((t) => t.dayHeadOn), (t) => [nm(t), t.dayTitle, t.dayTag, t.dayN, t.daySub]);
   assert.deepEqual(heads, [
-    ['G', 'الثلاثاء 9 ' + MN + ' 1448 هـ', 'اليوم', '8 مهام', '3 منجزة · 2 متأخرة'],
-    ['Y2', 'الاثنين 8 ' + MN + ' 1448 هـ', 'أمس', 'مهمتان', '1 منجزة'],
-    ['Z1', 'الأحد 7 ' + MN + ' 1448 هـ', '', 'مهمتان', '1 منجزة'],
+    ['G', 'الثلاثاء 20 ' + MN + ' 2026', 'اليوم', '8 مهام', '3 منجزة · 2 متأخرة'],
+    ['Y2', 'الاثنين 19 ' + MN + ' 2026', 'أمس', 'مهمتان', '1 منجزة'],
+    ['Z1', 'الأحد 18 ' + MN + ' 2026', '', 'مهمتان', '1 منجزة'],
   ]);
   assert.equal(V.allFiltered[1].dayHeadOn, undefined, 'الصفُّ الثاني من اليوم بلا رأس');
   assert.equal(V.allFiltered[0].dayOpenA, 'true'); assert.match(V.allFiltered[0].dayDot, /brand-fg/); assert.match(V.allFiltered[8].dayDot, /text-faint/);
   V.allFiltered[8].dayToggle();
-  assert.deepEqual({ ...P.c.state.tkDayClosed }, { [K(8)]: true });
+  assert.deepEqual({ ...P.c.state.tkDayClosed }, { [K(YD)]: true });
   V = P.V();
-  const y = V.allFiltered.filter((t) => t.secK === K(8));
+  const y = V.allFiltered.filter((t) => t.secK === K(YD));
   assert.equal(y.length, 1, 'اليومُ المطويّ مرساةٌ واحدة'); assert.equal(y[0].dayHidden, true); assert.match(y[0].trStyle, /display:none$/);
   assert.equal(y[0].dayOpenA, 'false'); assert.match(y[0].dayTip, /^فرد /); assert.equal(V.tkDayCount, '12 مهمة', 'الطيُّ لا يمسّ العدّ');
   y[0].dayToggle();
@@ -206,24 +209,24 @@ test('«أوسمة اليوم» لليوم الجاري: القيمُ · نسب�
 
 test('حلقةُ الزمن: «أسرع من المخطط» بقياسٍ فوق 96 دقيقة (أمس) · «بلا مدةٍ مخططة» (اليوم 7) · وبلا منجزةٍ «—»', async () => {
   const P = await seed();
-  P.V().tkDays[7].click();
+  P.V().tkDays[YD - 1].click();
   let V = P.V();
   assert.deepEqual([V.tkK5N, V.tkK5U, V.tkK5Chip, V.tkK5Sub], ['1 س', '', 'من 120 د', 'أسرع من المخطط بـ 1 س']);
   assert.deepEqual([V.tkK5T, V.tkK5Lit, V.tkK5Xtra, V.tkK5XtraStyle], ['96', rep(48) + ' 0 96', '0 48 ' + rep(48) + ' 0 96', ''], 'المقامُ 120 د ⇒ 96 علامة: الفعليُّ 48 والموفَّرُ 48');
   assert.match(V.tkK5SubStyle, /success-text/);
   assert.deepEqual([V.tkK1N, V.tkK2N, V.tkK2Chip, V.tkK2Lit], ['2', '1', '50٪', P1 + ' 0 2']);
-  P.V().tkDays[6].click();
+  P.V().tkDays[D7 - 1].click();
   V = P.V();
   assert.deepEqual([V.tkK5N, V.tkK5U, V.tkK5Chip, V.tkK5Sub, V.tkK5SubStyle], ['30', 'د', 'بلا مخطط', 'بلا مدةٍ مخططة', '']);
   assert.deepEqual([V.tkK5T, V.tkK5Lit, V.tkK5Xtra, V.tkK5XtraStyle], ['30', P1, '0 30', '']);
-  P.V().tkDays[TD].click();   /* اليوم 10: بلا مهام */
+  P.V().tkDays[TD].click();   /* الغدُ (TD + 1): بلا مهام */
   V = P.V();
   assert.deepEqual([V.tkK5N, V.tkK5U, V.tkK5Chip, V.tkK5Sub, V.tkK5T, V.tkK5Lit, V.tkK5Xtra], ['—', '', '—', 'لا مهام منجزة بعد', '45', '0 45', '0 45']);
 });
 
 test('هندسةُ العلامات: يومٌ بلا مهام 48 علامةً مطفأة · حتى 96 علامةٌ لكل مهمة · وفوقها تُقاس بالنسبة (والحصّةُ الصغيرة علامةٌ واحدة على الأقل)', async () => {
   const P = await seed();
-  P.V().tkDays[11].click();
+  P.V().tkDays[D12 - 1].click();
   const V = P.V();
   assert.equal(V.tkDayCount, '0 مهمة');
   assert.deepEqual([V.tkK1N, V.tkK1T, V.tkK1Lit, V.tkK1Chip, V.tkK2Chip, V.tkK2T, V.tkK2Lit], ['0', '48', '0 48', 'لا مهام', '0٪', '48', '0 48']);
@@ -268,7 +271,7 @@ test('تصفيةُ الجدول بالمؤشر: «متأخرة عن المهلة
   V.tkK1Go(); V = P.V(); assert.equal(V.tkKfOn, false); assert.equal(V.allFiltered.length, 8);
   /* التصفيةُ لليوم نفسِه: يومٌ آخر أو الشهرُ كاملاً بلا تصفية */
   P.V().tkK3Go();
-  P.V().tkDays[7].click();
+  P.V().tkDays[YD - 1].click();
   V = P.V(); assert.deepEqual(names(V), ['Y2', 'Y1']); assert.equal(V.tkKfOn, false); assert.equal(V.tkK3On, false); assert.equal(V.tkKfCnt, '');
   V.tkDayAll();
   V = P.V(); assert.equal(V.allFiltered.length, 12); assert.equal(V.tkKfOn, false);
@@ -276,14 +279,14 @@ test('تصفيةُ الجدول بالمؤشر: «متأخرة عن المهلة
 
 test('قفلُ اليوم: أمسُ مقفلٌ تلقائياً — شارتُه وخانتُه · التعديلُ والقبولُ والإنهاءُ مرفوضةٌ بتنبيه · واليومُ الجاري والقادمُ مفتوحان', async () => {
   const P = await seed();
-  assert.deepEqual({ ...P.c._tkDayLockOf(Y, M, 8) }, { past: true, opened: false, shut: false, viaMonth: false, approved: false, locked: true });
-  assert.equal(P.c.tkLockedAt(Y, M, 8), true); assert.equal(P.c.tkLockedAt(Y, M, 1), true);
-  assert.equal(P.c.tkLockedAt(Y, M, TD), false); assert.equal(P.c.tkLockedAt(Y, M, 12), false);
+  assert.deepEqual({ ...P.c._tkDayLockOf(Y, M, YD) }, { past: true, opened: false, shut: false, viaMonth: false, approved: false, locked: true });
+  assert.equal(P.c.tkLockedAt(Y, M, YD), true); assert.equal(P.c.tkLockedAt(Y, M, 1), true);
+  assert.equal(P.c.tkLockedAt(Y, M, TD), false); assert.equal(P.c.tkLockedAt(Y, M, D12), false);
   let V = P.V();
-  assert.equal(V.tkDays[7].lockClosed, true); assert.equal(V.tkDays[7].lockOpen, false); assert.match(V.tkDays[7].style, /background:var\(--bg-x64748b\)/, 'مقفلٌ فيه مهام: رماديٌّ داكن');
-  assert.equal(V.tkDays[TD - 1].lockClosed, false); assert.equal(V.tkDays[11].lockClosed, false);
+  assert.equal(V.tkDays[YD - 1].lockClosed, true); assert.equal(V.tkDays[YD - 1].lockOpen, false); assert.match(V.tkDays[YD - 1].style, /background:var\(--bg-x64748b\)/, 'مقفلٌ فيه مهام: رماديٌّ داكن');
+  assert.equal(V.tkDays[TD - 1].lockClosed, false); assert.equal(V.tkDays[D12 - 1].lockClosed, false);
   assert.equal(V.tkDayLockOn, false, 'اليومُ الجاري بلا شارة'); assert.equal(V.tasksCanAdd, true);
-  V.tkDays[7].click();
+  V.tkDays[YD - 1].click();
   V = P.V();
   assert.equal(V.tkDayLockOn, true); assert.equal(V.tkDayLockShut, true); assert.equal(V.tkDayLockOpenI, false);
   assert.equal(V.tkDayLockTxt, 'اليوم انقضى — المهام مقفلة تلقائياً · افتحه بأثر رجعي بنقرة مزدوجة على خانته');
@@ -303,49 +306,49 @@ test('قفلُ اليوم: أمسُ مقفلٌ تلقائياً — شارتُه
 
 test('فتحُ أمسِ بأثر رجعي بالنقر المزدوج على خانته: النافذة · الإلغاء · {mo:1} على مفتاح «y-m-d» يفتحه · وإعادةُ القفل تحذف المفتاح', async () => {
   const P = await seed();
-  P.V().tkDays[7].click();
-  P.V().tkDays[7].dbl({ stopPropagation() {} });
-  assert.deepEqual({ ...P.c.state.retroAsk }, { m: M, day: 8, op: 'open' });
+  P.V().tkDays[YD - 1].click();
+  P.V().tkDays[YD - 1].dbl({ stopPropagation() {} });
+  assert.deepEqual({ ...P.c.state.retroAsk }, { m: M, day: YD, op: 'open' });
   let V = P.V();
-  assert.equal(V.retroOn, true); assert.equal(V.retroTitle, 'فتح يوم الاثنين 8 ' + MN + ' 1448 هـ بأثر رجعي'); assert.equal(V.retroBtn, 'فتح بأثر رجعي'); assert.match(V.retroBtnStyle, /bg-xb45309/);
+  assert.equal(V.retroOn, true); assert.equal(V.retroTitle, 'فتح يوم الاثنين 19 ' + MN + ' 2026 بأثر رجعي'); assert.equal(V.retroBtn, 'فتح بأثر رجعي'); assert.match(V.retroBtnStyle, /bg-xb45309/);
   V.retroCancel();
   assert.equal(P.c.state.retroAsk, null); assert.equal(P.store.has(LOCKS), false, 'الإلغاءُ لا يكتب شيئاً'); assert.equal(P.V().retroOn, false);
-  P.V().tkDays[7].dbl();
+  P.V().tkDays[YD - 1].dbl();
   await P.V().retroDo();
-  assert.deepEqual(locks(P), { [K(8)]: { mo: 1 } }); assert.deepEqual(J(P.c.state.locked), { [K(8)]: { mo: 1 } });
+  assert.deepEqual(locks(P), { [K(YD)]: { mo: 1 } }); assert.deepEqual(J(P.c.state.locked), { [K(YD)]: { mo: 1 } });
   assert.equal(P.c.state.retroAsk, null); assert.deepEqual(lastToast(P), ['فُتح اليوم — يمكنك الآن إضافة مهامه وتعديلها', 'ok']);
-  assert.equal(P.c.tkLockedAt(Y, M, 8), false); assert.equal(P.c.tkLockedAt(Y, M, 7), true, 'الأيامُ المنقضيةُ الأخرى باقيةٌ على قفلها');
+  assert.equal(P.c.tkLockedAt(Y, M, YD), false); assert.equal(P.c.tkLockedAt(Y, M, D7), true, 'الأيامُ المنقضيةُ الأخرى باقيةٌ على قفلها');
   V = P.V();
   assert.equal(V.tkDayLockOn, true); assert.equal(V.tkDayLockShut, false); assert.equal(V.tkDayLockOpenI, true);
   assert.equal(V.tkDayLockTxt, 'يوم منقضٍ مفتوح بأثر رجعي — يُعاد قفله بنقرة مزدوجة على خانته');
-  assert.equal(V.tkDays[7].lockOpen, true); assert.equal(V.tkDays[7].lockClosed, false); assert.match(V.tkDays[7].tip, / · مفتوح بأثر رجعي — نقرة مزدوجة لإغلاقه$/);
+  assert.equal(V.tkDays[YD - 1].lockOpen, true); assert.equal(V.tkDays[YD - 1].lockClosed, false); assert.match(V.tkDays[YD - 1].tip, / · مفتوح بأثر رجعي — نقرة مزدوجة لإغلاقه$/);
   assert.equal(V.tasksCanAdd, true);
   rowOf(V, ID.Y1).edit();
-  assert.equal(P.c.state.newTaskOpen, true); assert.equal(P.c.state.editRef.d, 8, 'اليومُ المفتوح يُعدَّل');
+  assert.equal(P.c.state.newTaskOpen, true); assert.equal(P.c.state.editRef.d, YD, 'اليومُ المفتوح يُعدَّل');
   P.c.setState({ newTaskOpen: false, editRef: null });
-  P.V().tkDays[7].dbl();
+  P.V().tkDays[YD - 1].dbl();
   assert.equal(P.c.state.retroAsk.op, 'relock');
-  V = P.V(); assert.equal(V.retroTitle, 'إعادة قفل يوم الاثنين 8 ' + MN + ' 1448 هـ'); assert.equal(V.retroBtn, 'إعادة القفل');
+  V = P.V(); assert.equal(V.retroTitle, 'إعادة قفل يوم الاثنين 19 ' + MN + ' 2026'); assert.equal(V.retroBtn, 'إعادة القفل');
   await V.retroDo();
-  assert.deepEqual(locks(P), {}, 'إعادةُ القفل تحذف المفتاح'); assert.equal(P.c.tkLockedAt(Y, M, 8), true);
+  assert.deepEqual(locks(P), {}, 'إعادةُ القفل تحذف المفتاح'); assert.equal(P.c.tkLockedAt(Y, M, YD), true);
   assert.deepEqual(lastToast(P), ['أُعيد قفلُ اليوم — صار عرضاً فقط', 'ok']);
 });
 
 test('_setDayLockT: open ⇒ {mo:1} · close على اليوم الجاري ⇒ true ويُقفل (والحفظُ مرفوض) · clear يحذف المفتاح · ومفاتيحُ الأيام لا تمسّ مفتاح الشهر', async () => {
   const P = await seed();
-  await P.c._setDayLockT(Y, M, 8, 'open');
-  assert.deepEqual(locks(P), { [K(8)]: { mo: 1 } }); assert.equal(P.c.tkLockedAt(Y, M, 8), false);
-  /* نموذجُ تعديل D (اليوم 9) مفتوحٌ ثم يُغلق يومُه: نقلُها إلى يومٍ مفتوح (10) يُرفض بحارس اليوم في submitTask — من يومٍ مقفلٍ لا يُنقل شيء */
+  await P.c._setDayLockT(Y, M, YD, 'open');
+  assert.deepEqual(locks(P), { [K(YD)]: { mo: 1 } }); assert.equal(P.c.tkLockedAt(Y, M, YD), false);
+  /* نموذجُ تعديل D (اليوم الجاري TD) مفتوحٌ ثم يُغلق يومُه: نقلُها إلى يومٍ مفتوح (الغد TD + 1) يُرفض بحارس اليوم في submitTask — من يومٍ مقفلٍ لا يُنقل شيء */
   rowOf(P.V(), ID.D).edit();
   assert.equal(P.c.state.newTaskOpen, true);
   await P.c._setDayLockT(Y, M, TD, 'close');
-  assert.deepEqual(locks(P), { [K(8)]: { mo: 1 }, [K(TD)]: true });
+  assert.deepEqual(locks(P), { [K(YD)]: { mo: 1 }, [K(TD)]: true });
   assert.deepEqual({ ...P.c._tkDayLockOf(Y, M, TD) }, { past: false, opened: false, shut: true, viaMonth: false, approved: false, locked: true });
   assert.equal(P.c.monthLockedT(Y, M), false, 'الشهرُ نفسُه غيرُ مقفل');
   const before = P.store.get('bassam_tasks_v1');
-  P.c.setState({ newTitle: 'TEST_ONLY D معدَّلة', newDay: 10, newEDay: 10 });
+  P.c.setState({ newTitle: 'TEST_ONLY D معدَّلة', newDay: TD + 1, newEDay: TD + 1 });
   await P.V().submitTask();
-  assert.deepEqual(lastToast(P), ['اليوم 9 ' + MN + ' مقفل — افتحه أولاً بنقرة مزدوجة على خانته في شريط الأيام.', 'err']);
+  assert.deepEqual(lastToast(P), ['اليوم 20 ' + MN + ' مقفل — افتحه أولاً بنقرة مزدوجة على خانته في شريط الأيام.', 'err']);
   assert.equal(P.store.get('bassam_tasks_v1'), before, 'لا كتابة'); assert.equal(P.c.state.newTaskOpen, true);
   P.c.setState({ newTaskOpen: false, editRef: null });
   let V = P.V();
@@ -355,37 +358,37 @@ test('_setDayLockT: open ⇒ {mo:1} · close على اليوم الجاري ⇒ 
   P.toasts.length = 0;
   rowOf(V, ID.D).edit(); assert.deepEqual(lastToast(P), ['اليوم مقفل — افتحه بنقرة مزدوجة على خانته في شريط الأيام.', 'err']); assert.equal(P.c.state.newTaskOpen, false);
   V.tkDays[TD - 1].dbl();
-  assert.equal(P.c.state.retroAsk.op, 'unshut'); assert.equal(P.V().retroTitle, 'فتح يوم الثلاثاء 9 ' + MN + ' 1448 هـ');
+  assert.equal(P.c.state.retroAsk.op, 'unshut'); assert.equal(P.V().retroTitle, 'فتح يوم الثلاثاء 20 ' + MN + ' 2026');
   P.c.setState({ retroAsk: null });
   await P.c._setDayLockT(Y, M, TD, 'clear');
-  assert.deepEqual(locks(P), { [K(8)]: { mo: 1 } }); assert.equal(P.c.tkLockedAt(Y, M, TD), false); assert.equal(P.V().tasksCanAdd, true);
-  await P.c._setDayLockT(Y, M, 8, 'clear');
-  assert.deepEqual(locks(P), {}); assert.equal(P.c.tkLockedAt(Y, M, 8), true, 'بلا مفتاح يعود المنقضي مقفلاً تلقائياً');
-  await P.c._setDayLockT(Y, M, 12, 'close');
-  assert.equal(P.c.tkLockedAt(Y, M, 12), true, 'ويُغلق يومٌ قادمٌ بيده'); assert.equal(P.c.tkLockedAt(Y, M, 11), false);
+  assert.deepEqual(locks(P), { [K(YD)]: { mo: 1 } }); assert.equal(P.c.tkLockedAt(Y, M, TD), false); assert.equal(P.V().tasksCanAdd, true);
+  await P.c._setDayLockT(Y, M, YD, 'clear');
+  assert.deepEqual(locks(P), {}); assert.equal(P.c.tkLockedAt(Y, M, YD), true, 'بلا مفتاح يعود المنقضي مقفلاً تلقائياً');
+  await P.c._setDayLockT(Y, M, D12, 'close');
+  assert.equal(P.c.tkLockedAt(Y, M, D12), true, 'ويُغلق يومٌ قادمٌ بيده'); assert.equal(P.c.tkLockedAt(Y, M, D11), false);
 });
 
 test('حارسُ الحفظ بحسب اليوم: مهمةٌ جديدةٌ في أمسِ المقفل مرفوضة · وبعد فتحه بأثر رجعي تُحفظ في يومه', async () => {
   const P = await seed();
-  const form = { newTaskOpen: true, editRef: null, newTitle: 'TEST_ONLY جديدة لأمس', newDesc: '', newPrio: 'normal', newDay: 8, newEDay: 8, newSh: 8, newSm: 0, newSap: 'ص', newEh: 10, newEm: 0, newEap: 'ص',
+  const form = { newTaskOpen: true, editRef: null, newTitle: 'TEST_ONLY جديدة لأمس', newDesc: '', newPrio: 'normal', newDay: YD, newEDay: YD, newSh: 8, newSm: 0, newSap: 'ص', newEh: 10, newEm: 0, newEap: 'ص',
     newAsg: 'general', newPick: {}, pickWt: 'TEST_ONLY مراقب', newDur: '120' };
   P.c.setState(form);
   const before = P.store.get('bassam_tasks_v1');
   await P.V().submitTask();
-  assert.deepEqual(lastToast(P), ['اليوم 8 ' + MN + ' مقفل — افتحه أولاً بنقرة مزدوجة على خانته في شريط الأيام.', 'err']);
+  assert.deepEqual(lastToast(P), ['اليوم 19 ' + MN + ' مقفل — افتحه أولاً بنقرة مزدوجة على خانته في شريط الأيام.', 'err']);
   assert.equal(P.store.get('bassam_tasks_v1'), before);
-  await P.c._setDayLockT(Y, M, 8, 'open');
+  await P.c._setDayLockT(Y, M, YD, 'open');
   P.c.setState(form);
   await P.V().submitTask();
   assert.ok(await until(() => !P.c.state.newTaskOpen), JSON.stringify(P.toasts));
   const S = JSON.parse(P.store.get('bassam_tasks_v1'));
-  assert.equal(S[K(8)].length, 3, 'أُضيفت في يومها'); assert.ok(S[K(8)].some((r) => r[0] === 'TEST_ONLY جديدة لأمس'));
+  assert.equal(S[K(YD)].length, 3, 'أُضيفت في يومها'); assert.ok(S[K(YD)].some((r) => r[0] === 'TEST_ONLY جديدة لأمس'));
   assert.equal(P.c.state.newTaskOpen, false);
 });
 
 test('اعتمادُ الشهر («y-m»: true) يقفل كلَّ أيامه ولو فُتح يومٌ بأثر رجعي · وعلَمُ فتح الشهر {mo:1} يفتح أيامه المنقضية', async () => {
-  let P = await seed({ [LOCKS]: JSON.stringify({ [SK]: true, [K(8)]: { mo: 1 } }) });
-  for (const d of [1, 8, TD, 12]) assert.equal(P.c.tkLockedAt(Y, M, d), true, 'اليوم ' + d);
+  let P = await seed({ [LOCKS]: JSON.stringify({ [SK]: true, [K(YD)]: { mo: 1 } }) });
+  for (const d of [1, YD, TD, D12]) assert.equal(P.c.tkLockedAt(Y, M, d), true, 'اليوم ' + d);
   assert.equal(P.c._tkLockTxt(Y, M, TD), 'الشهر معتمد ومقفل.');
   let V = P.V();
   assert.equal(V.tkDayLockOn, true); assert.equal(V.tkDayLockTxt, 'الشهر معتمد ومقفل — المهام للعرض فقط'); assert.equal(V.tasksCanAdd, false);
@@ -395,15 +398,15 @@ test('اعتمادُ الشهر («y-m»: true) يقفل كلَّ أيامه و�
   assert.deepEqual(lastToast(P), ['الشهر معتمد ومقفل — افتحه أولاً بنقرة مزدوجة على كرت الشهر.', 'err']); assert.ok(!P.c.state.retroAsk, 'لا نافذةَ لفتح يومٍ في شهرٍ معتمد');
   P.c.setState({ newTaskOpen: true, editRef: null, newTitle: 'TEST_ONLY في شهرٍ معتمد', newDesc: '', newPrio: 'normal', newDay: TD, newEDay: TD, newSh: 8, newSm: 0, newSap: 'ص', newEh: 10, newEm: 0, newEap: 'ص', newAsg: 'general', newPick: {}, pickWt: '', newDur: '' });
   await P.V().submitTask();
-  assert.match(lastToast(P)[0], /^شهر جمادى الأولى 1448 هـ معتمد ومقفل — لا يمكن حفظ المهمة فيه\./);
+  assert.match(lastToast(P)[0], /^شهر أكتوبر 2026 معتمد ومقفل — لا يمكن حفظ المهمة فيه\./);
   P = await seed({ [LOCKS]: JSON.stringify({ [SK]: { mo: 1 } }) });
-  assert.equal(P.c.tkLockedAt(Y, M, 8), false, 'علَمُ فتح الشهر يفتح المنقضي'); assert.equal(P.c._tkDayLockOf(Y, M, 8).viaMonth, true);
-  P.V().tkDays[7].click();
+  assert.equal(P.c.tkLockedAt(Y, M, YD), false, 'علَمُ فتح الشهر يفتح المنقضي'); assert.equal(P.c._tkDayLockOf(Y, M, YD).viaMonth, true);
+  P.V().tkDays[YD - 1].click();
   V = P.V(); assert.equal(V.tkDayLockOn, true); assert.equal(V.tkDayLockShut, false); assert.equal(V.tkDayLockTxt, 'يوم منقضٍ مفتوح بأثر رجعي — يُعاد قفله بنقرة مزدوجة على خانته');
 });
 
 test('delMonthDo: حذفُ الشهر يحذف مهامَه ومفتاحَ قفله ومفاتيحَ أيامه كلها — ويُبقي الشهرَ الآخر ومفاتيحَه', async () => {
-  const L0 = { [SK]: { mo: 1 }, [K(8)]: { mo: 1 }, [K(TD)]: true, [K(12)]: true, [Y + '-4']: true, [K(20, 4)]: { mo: 1 } };
+  const L0 = { [SK]: { mo: 1 }, [K(YD)]: { mo: 1 }, [K(TD)]: true, [K(D12)]: true, [isoYm(Y, PM)]: true, [K(30, PM)]: { mo: 1 } };
   const active = await seed({ [LOCKS]: JSON.stringify(L0) }), before = active.opsFixture.text('bassam_tasks_v1');
   active.c._tkOpen({ delMonth: { n: M } });
   await active.V().delMonthDo();
@@ -412,25 +415,25 @@ test('delMonthDo: حذفُ الشهر يحذف مهامَه ومفتاحَ قف�
   await active.opsFixture.sync();
   assert.equal(active.opsFixture.text('bassam_tasks_v1'), before, 'يبقى إثبات المهام التي بدأ عليها نشاط');
   const pending = {
-    [K(8)]: [row({ id: NOW - 1000, title: 'خطأ حديث أمس', s: NOW - 24 * H, e: NOW - 23 * H })],
+    [K(YD)]: [row({ id: NOW - 1000, title: 'خطأ حديث أمس', s: NOW - 24 * H, e: NOW - 23 * H })],
     [K(TD)]: [row({ id: NOW - 2000, title: 'خطأ حديث اليوم', s: NOW + H, e: NOW + 2 * H })],
-    [K(20, 4)]: [row({ id: NOW - 3000, title: 'شهر آخر', s: NOW + H, e: NOW + 2 * H })],
+    [K(30, PM)]: [row({ id: NOW - 3000, title: 'شهر آخر', s: NOW + H, e: NOW + 2 * H })],
   };
   const P = await seed({ [LOCKS]: JSON.stringify(L0), bassam_tasks_v1: JSON.stringify(pending) });
   P.c._tkOpen({ delMonth: { n: M } });
   const V = P.V();
-  assert.equal(V.delMonthOn, true); assert.match(V.delMonthMsg, /^سيتم حذف جميع مهام شهر جمادى الأولى 1448 هـ نهائياً/);
+  assert.equal(V.delMonthOn, true); assert.match(V.delMonthMsg, /^سيتم حذف جميع مهام شهر أكتوبر 2026 نهائياً/);
   await V.delMonthDo();
-  assert.deepEqual(Object.keys(JSON.parse(P.store.get('bassam_tasks_v1'))), [K(20, 4)], 'مهامُ الشهر الآخر باقية');
-  assert.deepEqual(locks(P), { [Y + '-4']: true, [K(20, 4)]: { mo: 1 } });
+  assert.deepEqual(Object.keys(JSON.parse(P.store.get('bassam_tasks_v1'))), [K(30, PM)], 'مهامُ الشهر الآخر باقية');
+  assert.deepEqual(locks(P), { [isoYm(Y, PM)]: true, [K(30, PM)]: { mo: 1 } });
   assert.deepEqual(J(P.c.state.locked), locks(P)); assert.equal(P.c.state.delMonth, null);
-  assert.equal(P.c.tkLockedAt(Y, M, 8), true, 'أمسُ يعود مقفلاً تلقائياً'); assert.equal(P.c.tkLockedAt(Y, M, TD), false);
+  assert.equal(P.c.tkLockedAt(Y, M, YD), true, 'أمسُ يعود مقفلاً تلقائياً'); assert.equal(P.c.tkLockedAt(Y, M, TD), false);
   assert.equal(P.V().tkDayCount, '0 مهمة');
 });
 
 test('عمودُ «الوردية»: ورديةُ المكلَّف من الجدول الشهري بلونها ووقتها · «بلا وردية» لمن لا وردية له · «—» للعامة ولمن لا يُربط بسجلّ', async () => {
   const P = await seed({
-    bassam_staffing_v3: JSON.stringify({ [SK]: { [ME.eid]: { shift: 'TST-A', rest: [] } }, [Y + '-4']: { [MATE.eid]: { shift: 'TST-B', rest: [] } } }),
+    bassam_staffing_v3: JSON.stringify({ [SK]: { [ME.eid]: { shift: 'TST-A', rest: [] } }, [isoYm(Y, PM)]: { [MATE.eid]: { shift: 'TST-B', rest: [] } } }),
     bassam_shift_options_v1: JSON.stringify([{ name: 'TST-A', color: '#0f766e', tStart: '07:00', tEnd: '15:00' }, { name: 'TST-B', color: '#2f5f8a' }]),
   });
   const S = JSON.parse(P.store.get('bassam_tasks_v1'));
@@ -450,7 +453,10 @@ test('عمودُ «الوردية»: ورديةُ المكلَّف من الجد
 test('القالب: خانةُ اليوم بنقرٍ ونقرٍ مزدوج · «الشهر كاملاً» · أزرارُ المؤشرات وشريحةُ التصفية · وعمودُ «الوردية»', () => {
   const V = fs.readFileSync(path.join(ROOT, 'src/systems/tasks/client/view.html'), 'utf8');
   /* V7 · 53: uifix (١٠) وسَم خانةَ اليوم الجاري data-strip-cur ليُمرَّر الشريطُ إليها — الوسمُ جزءٌ من القالب المثبَّت */
-  assert.match(V, /<div data-strip-cur="\{\{d\.isToday\}\}" onClick="\{\{d\.click\}\}" onDoubleClick="\{\{d\.dbl\}\}" title="\{\{d\.tip\}\}" style="\{\{d\.style\}\}"/);
+  /* V7 · 53 تقويم (day_card_design): خانةُ اليوم كرتُ KIVO.BassamCalCard.day المشترك — القالبُ يضع {{d.card}} وحده، والنقرُ والنقرُ المزدوج ووسمُ اليوم الجاري يُمرَّر إليه */
+  assert.match(V, /<sc-for list="\{\{tkDays\}\}" as="d"[^>]*>(?:(?!<\/sc-for>)[\s\S])*\{\{d\.card\}\}(?:(?!<\/sc-for>)[\s\S])*<\/sc-for>/);
+  assert.doesNotMatch(V, /\{\{d\.style\}\}/, 'بلا ترميزِ خانةٍ محليّ');
+  assert.match(LOGIC, /tkDays: days\.map\(\(x\) => Object\.assign\(x, \{ card: KIVO\.BassamCalCard\.day\(Object\.assign\(\{ key: x\.cal9\.k, onClick: x\.click, onDoubleClick: x\.dbl, attrs: \{ "data-strip-cur": String\(x\.isToday\) \} \}, x\.cal9\)\) \}\)\)/);
   assert.match(V, /<sc-if value="\{\{tkDayAllOn\}\}"[^>]*><button type="button" onClick="\{\{tkDayAll\}\}" class="tk-dayall">\{\{tkDayAllTxt\}\}<\/button>/);
   for (const n of [2, 3, 4, 5]) assert.match(V, new RegExp('aria-pressed="\\{\\{tkK' + n + 'On\\}\\}" aria-label="\\{\\{tkK' + n + 'Aria\\}\\}" onClick="\\{\\{tkK' + n + 'Go\\}\\}"'), 'المؤشر ' + n);
   assert.match(V, /onClick="\{\{tkKfClear\}\}" aria-label="\{\{tkKfAria\}\}">\{\{tkKfTxt\}\}/);
@@ -460,15 +466,15 @@ test('القالب: خانةُ اليوم بنقرٍ ونقرٍ مزدوج · «
 
 /* ── مراجعةُ ما قبل النشر (KIVO_265 · task-days): ما أكّدته المراجعةُ المستقلة وأُصلح ── */
 test('مراجعة: «فتح» يومٍ أُغلق بيده ثم انقضى يفتحه بأثر رجعي ({mo:1}) — لا يمحو الإغلاقَ فيعود مقفلاً بانقضائه', async () => {
-  const P = await seed({ [LOCKS]: JSON.stringify({ [K(8)]: true }) });
+  const P = await seed({ [LOCKS]: JSON.stringify({ [K(YD)]: true }) });
   P.c.setState({ locked: JSON.parse(P.store.get(LOCKS)) });
-  P.V().tkDays[7].click();
-  assert.equal(P.c.tkLockedAt(Y, M, 8), true, 'مُغلقٌ بيده');
-  P.V().tkDays[7].dbl({ stopPropagation() {} });
+  P.V().tkDays[YD - 1].click();
+  assert.equal(P.c.tkLockedAt(Y, M, YD), true, 'مُغلقٌ بيده');
+  P.V().tkDays[YD - 1].dbl({ stopPropagation() {} });
   assert.equal(P.c.state.retroAsk.op, 'unshut');
   await P.V().retroDo();
-  assert.deepEqual(JSON.parse(P.store.get(LOCKS))[K(8)], { mo: 1 }, 'فتحٌ بأثر رجعي لا حذفٌ للمفتاح');
-  assert.equal(P.c.tkLockedAt(Y, M, 8), false, 'اليومُ مفتوحٌ فعلاً كما تقول الرسالة');
+  assert.deepEqual(JSON.parse(P.store.get(LOCKS))[K(YD)], { mo: 1 }, 'فتحٌ بأثر رجعي لا حذفٌ للمفتاح');
+  assert.equal(P.c.tkLockedAt(Y, M, YD), false, 'اليومُ مفتوحٌ فعلاً كما تقول الرسالة');
   /* واليومُ الجاري المُغلق بيده يُفتح بحذف الإغلاق كما كان */
   await P.c._setDayLockT(Y, M, TD, 'close');
   P.V().tkDays[TD - 1].click(); P.V().tkDays[TD - 1].dbl({ stopPropagation() {} });
@@ -478,30 +484,30 @@ test('مراجعة: «فتح» يومٍ أُغلق بيده ثم انقضى يف
 test('مراجعة: الاختيارُ الجماعي يتبع قفلَ الشهر لا قفلَ اليوم — صفوفُ الأمس المقفلة تُختار للاعتماد الجماعي', async () => {
   const P = await seed();
   P.c._tkSrv = () => true;
-  P.V().tkDays[7].click();
+  P.V().tkDays[YD - 1].click();
   const y1 = P.V().allFiltered.find((t) => /Y1/.test(t.title));
-  assert.equal(P.c.tkLockedAt(Y, M, 8), true, 'الأمسُ مقفلٌ بانقضائه'); assert.equal(y1.selCan, true, 'ومع ذلك يُختار');
+  assert.equal(P.c.tkLockedAt(Y, M, YD), true, 'الأمسُ مقفلٌ بانقضائه'); assert.equal(y1.selCan, true, 'ومع ذلك يُختار');
   P.c.setState({ locked: { [SK]: true } });
   assert.equal(P.V().allFiltered.find((t) => /Y1/.test(t.title)).selCan, false, 'الشهرُ المعتمد يمنع الاختيار');
 });
 test('مراجعة: تغييرُ اليوم يُلغي تصفيةَ المؤشر (ولا تعود بالرجوع) ويُنهي البحث · «الحالية» تعيد كرتَ اليوم الجاري', async () => {
   const P = await seed();
   P.V().tkK3Go(); assert.equal(P.V().tkKfOn, true);
-  P.V().tkDays[7].click(); assert.equal(P.c.state.tkKf, null);
+  P.V().tkDays[YD - 1].click(); assert.equal(P.c.state.tkKf, null);
   P.V().tkDays[TD - 1].click(); assert.equal(P.V().tkKfOn, false, 'لا تعود التصفيةُ بالرجوع إلى اليوم');
-  P.c.setState({ search: 'A' }); P.V().tkDays[7].click();
+  P.c.setState({ search: 'A' }); P.V().tkDays[YD - 1].click();
   assert.equal(P.c.state.search, ''); assert.match(P.V().tkDayTitle, /^مهام يوم /);
   P.V().goToday();
-  assert.equal(P.c.state.tkDaySel, null); assert.match(P.V().tkDayTitle, /^مهام اليوم — الثلاثاء 9 /);
+  assert.equal(P.c.state.tkDaySel, null); assert.match(P.V().tkDayTitle, /^مهام اليوم — الثلاثاء 20 /);
   P.V().tkK2Go(); P.V().tkDayAll(); assert.equal(P.c.state.tkKf, null, '«الشهر كاملاً» يُلغيها كذلك');
 });
 test('مراجعة: تصديرُ يومٍ مختار يُسمّى باليوم (الملفُّ والوصف) — والشهرُ كاملاً باسم الشهر', async () => {
   const P = await seed(); let name = null, rows = 0;
   P.KIVO.BassamXLSX = { download: (aoa, n) => { name = n; rows = aoa.length; } };
-  let V = P.V(); assert.equal(V.tkExpLbl, 'مهام يوم 9 ' + MN);
-  V.exportCsv(); assert.equal(name, 'tasks-9-' + MN + '-' + Y + '.xlsx'); assert.ok(rows > 1);
+  let V = P.V(); assert.equal(V.tkExpLbl, 'مهام يوم 20 ' + MN);
+  V.exportCsv(); assert.equal(name, 'tasks-' + K(TD) + '.xlsx'); assert.ok(rows > 1);
   P.V().tkDayAll(); V = P.V(); assert.match(V.tkExpLbl, new RegExp('^مهام ' + MN));
-  V.exportCsv(); assert.equal(name, 'tasks-' + MN + '-' + Y + '.xlsx');
+  V.exportCsv(); assert.equal(name, 'tasks-' + SK + '.xlsx');
 });
 test('مراجعة: القالبُ بلا وسومِ إغلاقٍ يتيمة — بطاقةُ المهام وكلُّ النوافذ داخل جذر الصفحة كما في main', () => {
   const v = fs.readFileSync(path.join(ROOT, 'src/systems/tasks/client/view.html'), 'utf8');

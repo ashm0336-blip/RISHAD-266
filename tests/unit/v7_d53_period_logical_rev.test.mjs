@@ -10,11 +10,11 @@ import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { loadClient } from './k264_vm.mjs';
 
 const K = 'bsdept:' + D1 + ':bassam_tasks_v1';
-const today = () => { const p = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric', timeZone: 'Asia/Riyadh' }).formatToParts(new Date()); const n = (t) => +p.find((x) => x.type === t).value; return { y: n('year'), m: n('month'), d: n('day') }; };
+const today = () => { const p = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric', timeZone: 'Asia/Riyadh' }).formatToParts(new Date()); const n = (t) => +p.find((x) => x.type === t).value; return { y: n('year'), m: n('month'), d: n('day') }; };
 
 test('after its own period save the client holds the logical revision: the next task command is accepted (no 409 busy)', async (t) => {
   const B = await world(); await installOperationalFixture(B.env, B.W);
-  const H = today(), day = H.y + '-' + H.m + '-' + H.d;
+  const H = today(), day = H.y + '-' + String(H.m).padStart(2, '0') + '-' + String(H.d).padStart(2, '0');
   const initial = (await B.api('super', '/api/get?keys=' + encodeURIComponent('bassam_perms_v1,bassam_depts_v1'))).json;
   const T = loadClient({ jar: { cookie: 'bs_tok=TEST_ONLY_session_super' },
     boot: { srv: 1, cf: 1, uid: IDS.super, v: initial.v, keys: {}, revs: {} },
@@ -26,7 +26,7 @@ test('after its own period save the client holds the logical revision: the next 
   t.after(() => T.dispose());
   const W = T.W, KV = W.KIVO; W.document.hidden = true; W.URLSearchParams = URLSearchParams;
   KV.BassamAuth = { user: () => B.users.find((u) => u.id === IDS.super) }; KV.BassamDepts = { active: () => D1 };
-  KV.BassamCal = { hNow: () => ({ ...H }) };
+  KV.BassamCal = { gAt: () => ({ ...H }) };   /* V7 · 53 تقويم: «الآن» الميلادي للفترات (280 periodNow9) */
   const ops = KV.__BS_SRV.operations;
   assert.equal((await ops.read([K])).ok, 1);
   const post = async (route, body) => { const r = await W.fetch(route, { method: 'POST', body: JSON.stringify(body) }); return { status: r.status, j: await r.json() }; };
@@ -41,7 +41,7 @@ test('after its own period save the client holds the logical revision: the next 
   /* the page's own raw save (mutateStore: one row removed) — a period save of K@<today> */
   const keep = rows[1], saved = await ops.patch({}, 'TEST_ONLY:del', 'bassam_tasks_v1', (doc) => { doc[day] = doc[day].filter((r) => r[13] !== rows[0][13]); return doc; });
   assert.equal(saved.ok, 1, JSON.stringify(saved));
-  const logical = (await B.api('super', '/api/operations/read?uid=' + IDS.super + '&keys=' + encodeURIComponent(K + '@') + '&range=' + encodeURIComponent(K + '@' + H.y + '-' + H.m))).json.logical;
+  const logical = (await B.api('super', '/api/operations/read?uid=' + IDS.super + '&keys=' + encodeURIComponent(K + '@') + '&range=' + encodeURIComponent(K + '@' + H.y + '-' + String(H.m).padStart(2, '0')))).json.logical;
   assert.ok(logical && Number.isSafeInteger(logical[K]), 'the server reports the logical revision: ' + JSON.stringify(logical));
   assert.equal(KV.__BS_SRV.rev(K), logical[K], 'rev(K) after the own period save = the server logical revision (from the save receipt)');
   /* the next command with that base: accepted */

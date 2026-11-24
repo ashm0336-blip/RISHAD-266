@@ -9,7 +9,6 @@
    (٥) الورديةُ الليلية تتبع يومَ بدئها (OD-10 — افتراضٌ موثَّق) · (٦) التوقيتُ توقيتُ الرياض (UTC+3 بلا توقيتٍ صيفي). ══ */
 var PF_WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 var PF_KINDS = ['gates', 'zones', 'marks'];
-var PF_EP = Date.UTC(622, 6, 19, 12);
 var PF_HF = null;
 function pfNoAl(s) { return String(s == null ? '' : s).replace(/^ال/, ''); }
 function pfRestOn(rest, wd) {
@@ -76,25 +75,18 @@ function pfEntry(bucket, toks) {
 }
 function pfMins(s) { var m = /^(\d{1,2}):(\d{2})$/.exec(String(s == null ? '' : s).trim()); return m ? 60 * +m[1] + +m[2] : null; }
 function pfRiyadhMins(ts) { return Math.floor((((ts + 3 * 3600000) % 86400000) + 86400000) % 86400000 / 60000); }
-/* التاريخُ الهجري (أم القرى) لِلحظةٍ بتوقيت الرياض + اسمُ يوم الأسبوع */
-function pfHijriAt(ts) {
-  var o = {}, d = new Date(ts + 3 * 3600000);
+/* الهجريُّ المقابل (أم القرى · الرياض) لِلحظة — للعرض وحده (سطرٌ تابع)، لا مفتاحَ يُبنى منه. V7 · 53 تقويم: كان pfHijriAt أساسَ «اليوم» ومفاتيحه */
+function pfHOf(ts) {
+  var o = {};
   if (!PF_HF) PF_HF = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
   PF_HF.formatToParts(new Date(ts)).forEach(function (p) { o[p.type] = +p.value; });
-  return { y: o.year, m: o.month, d: o.day, ym: o.year + '-' + o.month, dk: o.year + '-' + o.month + '-' + o.day, wd: PF_WD[d.getUTCDay()] };
+  return { y: o.year, m: o.month, d: o.day };
 }
-/* أيامُ الشهر الهجري: [{ d, wd }] — بمسحٍ حول تقديرٍ ميلادي (لا جداولَ تحويل) */
-function pfMonthDays(y, m) {
-  var c = PF_EP + Math.round(((y - 1) * 12 + (m - 1)) * 29.530588853) * 86400000, out = [], k, ts, h;
-  for (k = -25; k <= 45; k++) {
-    ts = c + k * 86400000; h = pfHijriAt(ts - 3 * 3600000);
-    if (h.y === y && h.m === m) out.push({ d: h.d, wd: h.wd });
-  }
-  return out;
-}
-/* V7 · 53 تقويم: اليومُ الميلادي (تاريخُ الرياض المدنيّ، بلا مهلة — كما pfHijriAt) ومفاتيحُه ISO مبطَّنة، والهجريُّ المقابل للعرض (h) */
+/* أيامُ الشهر الميلادي: [{ d, wd }] (V7 · 53 تقويم: كانت أيامَ الشهر الهجري) */
+function pfMonthDays(y, m) { return pfGregMonthDays(y + '-' + (m < 10 ? '0' : '') + m); }
+/* V7 · 53 تقويم: اليومُ الميلادي (تاريخُ الرياض المدنيّ، بلا مهلة) ومفاتيحُه ISO مبطَّنة، والهجريُّ المقابل للعرض (h) */
 function pfDayAt(ts) {
-  var d = new Date(ts + 3 * 3600000), y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, dd = d.getUTCDate(), z = function (n) { return (n < 10 ? '0' : '') + n; }, h = pfHijriAt(ts);
+  var d = new Date(ts + 3 * 3600000), y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, dd = d.getUTCDate(), z = function (n) { return (n < 10 ? '0' : '') + n; }, h = pfHOf(ts);
   return { y: y, m: m, d: dd, ym: y + '-' + z(m), dk: y + '-' + z(m) + '-' + z(dd), wd: PF_WD[d.getUTCDay()], h: { y: h.y, m: h.m, d: h.d } };
 }
 /* أيامُ الشهر الميلادي 'YYYY-MM': [{ d, wd }] — حسابٌ خالص */
@@ -153,7 +145,7 @@ function pfDay(o) {
 }
 /* اليومُ التشغيلي: الورديةُ الليلية (نهايتُها ≤ بدايتها) التي بدأت أمس ولم تنتهِ بعد تجعل «اليوم» يومَ بدئها (OD-10) */
 function pfOpDay(ts, dayOf) {
-  var C = pfHijriAt(ts), P = pfHijriAt(ts - 86400000), f = dayOf ? dayOf(P) : null, df = f && f.shift ? f.shift.def : null;
+  var C = pfDayAt(ts), P = pfDayAt(ts - 86400000), f = dayOf ? dayOf(P) : null, df = f && f.shift ? f.shift.def : null;
   var a = pfMins(df && df.tStart), b = pfMins(df && df.tEnd), n = pfRiyadhMins(ts);
   if (f && f.shift.name && !f.rest.today && a != null && b != null && b <= a && n < b) { P.op = 'night'; return P; }
   C.op = 'calendar';
@@ -226,7 +218,7 @@ function pfMates(o) {
 function pfWeek(o) {
   var out = [], t, T, bk, ent, f, toks = o.toks || [];
   for (t = 6; t >= 0; t--) {
-    T = pfHijriAt(o.end - t * 86400000); bk = (o.months && o.months[T.ym]) || {}; ent = pfEntry(bk, toks);
+    T = pfDayAt(o.end - t * 86400000); bk = (o.months && o.months[T.ym]) || {}; ent = pfEntry(bk, toks);
     f = pfDay({ bucket: bk, rep: (o.reports && o.reports[T.dk]) || null, toks: toks, wd: T.wd, opts: o.opts });
     out.push({ dk: T.dk, ym: T.ym, d: T.d, m: T.m, y: T.y, wd: T.wd, today: t === 0, sched: ent ? pfRestOn(ent.rest, T.wd) : null,
       act: f.report.mine ? { code: f.status.code, approved: f.report.approved } : null, any: f.report.any });
@@ -253,7 +245,7 @@ function pfHist(o) {
     def: def ? { tStart: def.tStart, tEnd: def.tEnd } : null, defEv: def ? (def.src === 'month' ? (locked ? 'saved_approved' : 'saved_open') : 'current') : 'none', ev: ent ? (locked ? 'saved_approved' : 'saved_open') : 'none' };
   var days = [], runs = [], last = null, nRep = 0, nAp = 0, nRnd = 0, upto = o.upto == null ? 31 : o.upto;
   (o.days || []).forEach(function (x) {
-    var dk = ym + '-' + x.d, f = pfDay({ bucket: bucket, rep: (o.reports && o.reports[dk]) || null, toks: toks, wd: x.wd, opts: o.opts });
+    var dk = ym + '-' + (x.d < 10 ? '0' : '') + x.d, f = pfDay({ bucket: bucket, rep: (o.reports && o.reports[dk]) || null, toks: toks, wd: x.wd, opts: o.opts });
     var row = { d: x.d, wd: x.wd, sched: { rest: ent ? pfRestOn(ent.rest, x.wd) : null, shift: (ent && ent.shift) || '' }, act: null, rep: 'none', ev: x.d > upto ? 'future' : 'none' };
     if (x.d <= upto && f.report.mine) {
       row.act = { st: f.status.st, kind: f.status.kind, sh: f.shift.name, rest: f.rest.src === 'report' ? pfRestOn(f.rest.days, x.wd) : null, restSrc: f.rest.dayChanged ? 'day' : f.rest.src === 'report' ? 'sched' : '',
@@ -300,15 +292,15 @@ function meSnapshotChanged(A, rows, through) {
 var ME_SEC = ['acct_add', 'acct_del', 'acct_freeze', 'acct_unfreeze', 'admin', 'pw_change'];
 /* قرارُ المالك (KIVO_264): لا نقلَ بين الإدارات الآن — «السجل» يصرّح بأن لا تاريخَ تنقّلات (لا «لا أدلة» كأن شيئاً فُقد) */
 var ME_NO_MOVES = 'لا يوجد تاريخُ تنقّلٍ بين الإدارات — النقلُ بين الإدارات غيرُ مدعومٍ في النظام حالياً، فلا تنقّلاتٍ مسجّلةً لك';
-/* ym بصيغة YYYY-M (أو YYYY-MM) داخل [1400-1 · الشهرُ الجاري + 1] — وإلا null */
+/* ym بصيغة YYYY-MM ميلادية (V7 · 53 تقويم: أو YYYY-M — يُبطَّن) داخل [1900-1 · الشهرُ الجاري + 1] — وإلا null؛ الهجريُّ (13xx–15xx) من عميلٍ قديم يُرفض */
 function meYm(v, T) {
   var m = /^(\d{4})-(\d{1,2})$/.exec(String(v == null ? '' : v).trim()), y, mo, cur, x;
   if (!m) return null;
   y = +m[1]; mo = +m[2];
-  if (mo < 1 || mo > 12 || y < 1400) return null;
+  if (mo < 1 || mo > 12 || y < 1900) return null;
   cur = T.y * 12 + T.m; x = y * 12 + mo;
   if (x > cur + 1) return null;
-  return y + '-' + mo;
+  return y + '-' + (mo < 10 ? '0' : '') + mo;
 }
 function meDeptName(depts, id) {
   var d = (Array.isArray(depts) ? depts : []).filter(function (x) { return x && x.id === id; })[0];
@@ -328,9 +320,9 @@ function meRec(rec) {
 /* V7 · 53 */
 function meScopes(deptId, C) {
   /* ما تقرؤه «صفحتي» من كل موردٍ مقسَّم يعلنه نظامُه (period.me): months3 · month · monthWeek · today */
-  var ym = function (k) { var mm = C.m + k, yy = C.y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } return yy + '-' + mm; }, P = pfHijriAt(Date.now() - 86400000), out = {}, i, d;
-  var days = function (x) { var o = ['m:' + x]; for (d = 1; d <= 30; d++) o.push(x + '-' + d); return o; };
-  var span = { months3: [ym(-1), ym(0), ym(1)], month: [ym(0)], monthWeek: days(ym(0)).concat([1, 2, 3, 4, 5, 6, 7].map(function (k) { return pfHijriAt(Date.now() - k * 86400000).dk; })), today: ['m:' + ym(0), C.dk, P.dk] };
+  var ym = function (k) { var mm = C.m + k, yy = C.y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } return yy + '-' + (mm < 10 ? '0' : '') + mm; }, P = pfDayAt(Date.now() - 86400000), out = {}, i, d;   /* V7 · 53 تقويم: فتراتٌ ISO */
+  var days = function (x) { var o = ['m:' + x]; for (d = 1; d <= 31; d++) o.push(x + '-' + (d < 10 ? '0' : '') + d); return o; };
+  var span = { months3: [ym(-1), ym(0), ym(1)], month: [ym(0)], monthWeek: days(ym(0)).concat([1, 2, 3, 4, 5, 6, 7].map(function (k) { return pfDayAt(Date.now() - k * 86400000).dk; })), today: ['m:' + ym(0), C.dk, P.dk] };
   for (i = 0; i < ME_KEYS.length; i++) { var K = 'bsdept:' + deptId + ':' + ME_KEYS[i], I = opSplitResource(K), me = I && opPeriodDef(I).me; if (me && span[me]) out[K] = { periods: span[me] }; }
   return out;
 }
@@ -365,7 +357,7 @@ function meMoves(rows, uid, depts) {
 }
 function meRange(D, toks, T) {
   var best = null, see = function (y, m) { var v = y * 12 + m; if (!best || v < best.v) best = { v: v, y: y, m: m }; };
-@@SYS:me.range.staff@@@@SYS:me.range.dreport@@  return { first: best ? best.y + '-' + best.m : T.ym, cur: T.ym };
+@@SYS:me.range.staff@@@@SYS:me.range.dreport@@  return { first: best ? best.y + '-' + (best.m < 10 ? '0' : '') + best.m : T.ym, cur: T.ym };
 }
 async function meSelfRoutes(request, env, path, ss) {
   if (request.method !== 'GET') return json({ ok: 0, err: 'read-only' }, 405);
@@ -374,7 +366,7 @@ async function meSelfRoutes(request, env, path, ss) {
   var users = (await usersList(env)) || [], depts = parseJson(await kvGet(env, 'kv', K_DEPTS), []);
   var u = users.filter(function (x) { return x && x.id === ss.uid; })[0];
   if (!u) return json({ ok: 0, err: 'session' }, 401);
-  var C = pfHijriAt(now), ymQ = null;
+  var C = pfDayAt(now), ymQ = null;
   if (hist && url.searchParams.has('ym')) { ymQ = meYm(url.searchParams.get('ym'), C); if (!ymQ) return json({ ok: 0, err: 'bad-ym' }, 400); }
   /* V7 · د6 (قرار المالك — القاعدةُ الواحدة 050 resLeafOffAt): الفاعلُ من لقطة مقدّمة الطلب (PRE_KV — بلا جولةٍ إضافية ما دامت حيّة) قبل حدّ المعدّل */
   var preK = {}; for (var pk = 0; pk < PRE_KV.length; pk++) preK[PRE_KV[pk]] = await kvGet(env, 'kv', PRE_KV[pk]);
@@ -389,7 +381,7 @@ async function meSelfRoutes(request, env, path, ss) {
   if (eligible) { try { D = await meDeptData(env, u.deptId, extra, A, hist ? null : meScopes(u.deptId, C)); } catch (eM) { var limM = dbLimitResponse(env, eM, path); if (limM) return limM; throw eM; } ex = D.extra; I = meIdent(u, D, users); }   // V7 · 53: لا 500 لخطأ D1
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: @@SYS:me.bucket.day|empty="{}"@@, rep: @@SYS:me.rep.day.dreport|empty="null"@@, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
-  var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
+  var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfDayAt(now); x.op = 'calendar'; return x; })();
   var ident = { linked: !!I.L.rec, by: I.L.by, keyed: I.toks.length > 0 };
   if (!hist) {
     var out = { ok: 1, v: 1, day: { y: T.y, m: T.m, d: T.d, dk: T.dk, ym: T.ym, wd: T.wd, op: T.op }, account: acct, identity: Object.assign({ rec: meRec(I.L.rec) }, ident),

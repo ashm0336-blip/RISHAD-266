@@ -20,6 +20,13 @@ function osSchemaBaseResources() {
     },
   ];
 }
+/* V7 · 53 تقويم (ق١ · الخطر ٤): أنماطُ مفاتيح الموارد الزمنية — ميلاديةٌ مبطَّنة ISO: اليوم YYYY-MM-DD · الشهر YYYY-MM · علامةُ الشهر m:YYYY-MM.
+   السنةُ 19xx–21xx وحدها: مفتاحٌ هجريٌّ (13xx–15xx) من عميلٍ قديمٍ مخبوء يُرفض في المخطّط (unknown-map-key) بدل أن يخلط الصيغتين.
+   مصدرٌ واحد لمخطّطات الجولات والأرشيف (019p3) والتقرير والمهام (019q) والجدول وأقفاله (019p1) والخطة (019p2) وحرّاس 062c */
+var OS_RX_Y = "(?:19|20|21)\\d{2}", OS_RX_M = "(?:0[1-9]|1[0-2])", OS_RX_D = "(?:0[1-9]|[12]\\d|3[01])";
+var OS_RX_YM = "^" + OS_RX_Y + "-" + OS_RX_M + "$", OS_RX_DAY = "^" + OS_RX_Y + "-" + OS_RX_M + "-" + OS_RX_D + "$";
+var OS_RX_YM_OR_DAY = "^" + OS_RX_Y + "-" + OS_RX_M + "(?:-" + OS_RX_D + ")?$";
+var OS_RX_MCTL = "^m:" + OS_RX_Y + "-" + OS_RX_M + "$", OS_RX_DAY_LEGACY = "^" + OS_RX_Y + "-" + OS_RX_M + "-" + OS_RX_D + "(?:-.+)?$";
 /* V7 · 53 (التخزين بالفترة): هنا وحده يُقرأ نصُّ مفتاح الفترة القائم */
 function osPeriodIndex(p) {
   var m = /^(m:)?(\d+)-(\d+)(?:-(\d+))?/.exec(String(p));
@@ -71,8 +78,8 @@ function osSumReport(p, v) {
   return out;
 }
 function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }
-/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') */
-function osPeriodNowMonth() { var T = dsToday(Date.now()); return T ? T.y + '-' + T.m : ''; }
+/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم */
+function osPeriodNowMonth() { var T = calToday(Date.now()); return T ? T.ym : ''; }   /* V7 · 53 تقويم: '2026-11' (calToday · 016) */
 /* V7 · 53 (kpi طلب 9): أدواتُ إسقاط v.kpi المشتركة — قوائمُ الحقول يعلنها كلُّ نظامٍ لمورده (مرآةُ _kLean) */
 function osKpiPick(o, ks) { var r = {}; if (o && typeof o === 'object') ks.forEach(function (k) { if (o[k] !== undefined) r[k] = o[k]; }); return r; }
 function osKpiArr(a, f) { return Array.isArray(a) ? a.map(function (x) { return x && typeof x === 'object' ? f(x) : x; }) : a; }

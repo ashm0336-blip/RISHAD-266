@@ -34,15 +34,15 @@ function jpegs(buf) {
 
 test('V7 port · real print button: plan = one page per site, rounds = indicators page + one page per site; the side panel is whole in the file', { timeout: 600000 }, async () => {
   const lab = await startLab(), { env } = lab;
-  const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
+  const parts = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
   const num = (t) => +parts.find((x) => x.type === t).value, T = { y: num('year'), m: num('month'), d: num('day') }, F = sites();
-  await replaceOperationalFixture(env, KPLAN, { pMig: 3, zones: F[0].zones, gates: [], marks: [], paths: F[0].paths, floors: F, months: { [T.y + '-' + T.m]: { c: 1, d: F } }, cfg: {}, delMonths: {} });
-  await replaceOperationalFixture(env, KROUNDS, { [T.y + '-' + T.m + '-' + T.d]: { ap: false, t: 12345, d: sites() } });
+  await replaceOperationalFixture(env, KPLAN, { pMig: 3, zones: F[0].zones, gates: [], marks: [], paths: F[0].paths, floors: F, months: { [T.y + '-' + String(T.m).padStart(2, '0')]: { c: 1, d: F } }, cfg: {}, delMonths: {} });
+  await replaceOperationalFixture(env, KROUNDS, { [T.y + '-' + String(T.m).padStart(2, '0') + '-' + String(T.d).padStart(2, '0')]: { ap: false, t: 12345, d: sites() } });
   /* a UTF-8 locale for the browser process: with an empty LANG headless Chromium replaces a non-ASCII download name by «download» */
   const b = await chromium.launch({ env: Object.assign({}, process.env, { LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' }) });
   try {
     const s = await openAs(b, lab, LAB.mgrA, LAB.pw, { context: { acceptDownloads: true } }), p = s.page; p.setDefaultTimeout(20000);
-    assert.deepEqual(await p.evaluate(() => KIVO.BassamHijri.now()), T, 'the page and the fixture agree on today');
+    assert.deepEqual(await p.evaluate(() => { const g = KIVO.BassamCal.gAt(new Date()); return { y: g.y, m: g.m, d: g.d }; }), T, 'the page and the fixture agree on today');   /* V7 · 53 تقويم: يومُ الصفحة الميلادي */
     assert.equal(await p.evaluate(() => matchMedia('(hover:hover) and (pointer:fine)').matches), true, 'a desktop: the touch-only register is hidden on the page');
     for (const [name, hash, svg, titles] of [
       ['plan', '#/plan', 'svg[data-map-zoom]', ['TEST_ONLY موقع 1', 'TEST_ONLY موقع 2']],

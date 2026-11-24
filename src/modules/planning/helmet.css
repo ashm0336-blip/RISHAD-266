@@ -4,18 +4,14 @@
 #bsPtRoot .pt-lbl{font-size:12px;transition:color .3s;font-weight:400;color:var(--text-secondary)}
 #bsPtRoot .pt-ul{display:none;position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:2px;border-radius:9999px;background:var(--border-brand)}
 #bsPtRoot[data-pton=""] .pt-strip{display:none}
-#bsPtRoot[data-ptab="sched"] .pt-tab.pt-sched{border-color:var(--tone-gold-50-a45);background:var(--bg-surface);box-shadow:0 3px 10px -4px rgba(138,111,53,0.45)}
-#bsPtRoot[data-ptab="sched"] .pt-sched .pt-ico{background:var(--tone-gold-50-a10);color:var(--brand-fg)}
-#bsPtRoot[data-ptab="sched"] .pt-sched .pt-lbl{font-weight:600;color:var(--brand-fg)}
-#bsPtRoot[data-ptab="sched"] .pt-sched .pt-ul{display:block}
-#bsPtRoot:not([data-ptab="sched"]) #bsPtSched{display:none}
-#bsPtRoot[data-pton="sched"] .pt-strip{display:none}
-#bsPtRoot:not([data-pton~="sched"]) .pt-sched{display:none}
-#bsPtRoot[data-ptab="plan"] .pt-tab.pt-plan{border-color:var(--tone-gold-50-a45);background:var(--bg-surface);box-shadow:0 3px 10px -4px rgba(138,111,53,0.45)}
-#bsPtRoot[data-ptab="plan"] .pt-plan .pt-ico{background:var(--tone-gold-50-a10);color:var(--brand-fg)}
-#bsPtRoot[data-ptab="plan"] .pt-plan .pt-lbl{font-weight:600;color:var(--brand-fg)}
-#bsPtRoot[data-ptab="plan"] .pt-plan .pt-ul{display:block}
-#bsPtRoot:not([data-ptab="plan"]) #bsPtPlan{display:none}
-#bsPtRoot[data-pton="plan"] .pt-strip{display:none}
-#bsPtRoot:not([data-pton~="plan"]) .pt-plan{display:none}
+#bsPtRoot[data-ptab=sched] .pt-sched{border-color:var(--tone-gold-50-a45);background:var(--bg-surface);box-shadow:0 3px 10px -4px rgba(138,111,53,0.45)}
+#bsPtRoot[data-ptab=sched] .pt-sched .pt-ico{background:var(--tone-gold-50-a10);color:var(--brand-fg)}
+#bsPtRoot[data-ptab=sched] .pt-sched .pt-lbl{font-weight:600;color:var(--brand-fg)}
+#bsPtRoot[data-ptab=sched] .pt-sched .pt-ul{display:block}
+#bsPtRoot:not([data-ptab=sched]) #bsPtSched,[data-pton=sched] .pt-strip,#bsPtRoot:not([data-pton~=sched]) .pt-sched{display:none}
+#bsPtRoot[data-ptab=plan] .pt-plan{border-color:var(--tone-gold-50-a45);background:var(--bg-surface);box-shadow:0 3px 10px -4px rgba(138,111,53,0.45)}
+#bsPtRoot[data-ptab=plan] .pt-plan .pt-ico{background:var(--tone-gold-50-a10);color:var(--brand-fg)}
+#bsPtRoot[data-ptab=plan] .pt-plan .pt-lbl{font-weight:600;color:var(--brand-fg)}
+#bsPtRoot[data-ptab=plan] .pt-plan .pt-ul{display:block}
+#bsPtRoot:not([data-ptab=plan]) #bsPtPlan,[data-pton=plan] .pt-strip,#bsPtRoot:not([data-pton~=plan]) .pt-plan{display:none}
 </style>

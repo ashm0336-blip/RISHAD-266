@@ -15,13 +15,22 @@ import json, hashlib, argparse, os, re
 from pathlib import Path
 
 ap = argparse.ArgumentParser()
-ap.add_argument('--today', required=True, help='Hijri today Y-M-D (server day, Umm al-Qura, Asia/Riyadh with 3h grace)')
+ap.add_argument('--today', required=True, help='today Y-M-D: the Gregorian server day (Asia/Riyadh with 3h grace); a Hijri date (year 1300-1599, older callers) is converted exactly (Umm al-Qura via node Intl)')
 ap.add_argument('--out', required=True)
 ap.add_argument('--daily-stats-storage', choices=['relational', 'legacy-kv'], default='relational', help='legacy-kv is only for explicitly testing historical workers')
 ap.add_argument('--custody-storage', choices=['relational', 'legacy-kv'], default='relational', help='legacy-kv is explicit historical-fixture data only; never a fallback')
 ap.add_argument('--gtoday', default=None, help='V7 · 53 تقويم: اليومُ الميلادي YYYY-MM-DD للأنظمة العلائقية الميلادية (العهد) — بغيابه يُقدَّر من --today حسابياً (TEST_ONLY)')
 A = ap.parse_args()
 y, m, d = [int(x) for x in A.today.split('-')]
+if A.gtoday: y, m, d = [int(x) for x in A.gtoday.split('-')]   # V7 · 53 تقويم (cal-ops): مفاتيحُ العمليات (الجدول MK · الجولات · التقرير · المهام) على يوم --gtoday نفسِه
+# V7 · 53 تقويم (ق١): the fixture's keys are ISO padded Gregorian (YYYY-MM-DD · YYYY-MM). A Hijri --today from an older caller is the same day
+# converted exactly with the platform's calendar (Umm al-Qura, Asia/Riyadh — node Intl), so 'same --today ⇒ same bytes' still holds.
+if 1300 <= y <= 1599:
+    import subprocess
+    _js = ("const [Y,M,D]=process.argv.slice(1).map(Number);const f=new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn',{timeZone:'Asia/Riyadh',year:'numeric',month:'numeric',day:'numeric'});"
+           "const h=(t)=>{const o={};f.formatToParts(new Date(t)).forEach(p=>{o[p.type]=+p.value});return o};let t=Date.UTC(622,6,16)+((Y-1)*354.367+(M-1)*29.53+D-1)*864e5+9*36e5;"
+           "for(let i=0;i<80;i++){const o=h(t),c=(o.year-Y)*400+(o.month-M)*31+(o.day-D);if(!c){const g=new Date(t+3*36e5);console.log(g.getUTCFullYear()+'-'+(g.getUTCMonth()+1)+'-'+g.getUTCDate());process.exit(0)}t-=Math.sign(c)*864e5*(Math.abs(c)>40?20:1)}process.exit(1)")
+    y, m, d = [int(x) for x in subprocess.check_output(['node', '-e', _js, str(y), str(m), str(d)]).decode().strip().split('-')]
 T = {'y': y, 'm': m, 'd': d}
 def _greg_of(hy, hm, hd):
     # V7 · 53 تقويم: --today الميلادي (1900–2199) يُؤخذ كما هو؛ والهجري يُقدَّر بالتقويم الهجري الحسابي (TEST_ONLY: يومٌ ميلاديٌّ صحيحٌ حتميّ قريبٌ من أم القرى)
@@ -31,9 +40,9 @@ def _greg_of(hy, hm, hd):
     return datetime.date.fromordinal(jd - 1721425).timetuple()[:3]
 GY, GM, GD = [int(x) for x in A.gtoday.split('-')] if A.gtoday else _greg_of(y, m, d)
 PM = {'y': y - 1, 'm': 12} if m == 1 else {'y': y, 'm': m - 1}
-MK, PMK = '%d-%d' % (y, m), '%d-%d' % (PM['y'], PM['m'])
-DAY = '%d-%d-%d' % (y, m, d)
-PDAY = '%d-%d-%d' % (PM['y'], PM['m'], 10)                           # a day in the previous (closed) month
+MK, PMK = '%04d-%02d' % (y, m), '%04d-%02d' % (PM['y'], PM['m'])
+DAY = '%04d-%02d-%02d' % (y, m, d)
+PDAY = '%04d-%02d-%02d' % (PM['y'], PM['m'], 10)                           # a day in the previous (closed) month
 TS0 = 1760000000000                                                  # fixed epoch for every stamp (deterministic)
 TAG = 'TEST_ONLY'
 J = lambda o: json.dumps(o, ensure_ascii=False, separators=(',', ':'), sort_keys=False)

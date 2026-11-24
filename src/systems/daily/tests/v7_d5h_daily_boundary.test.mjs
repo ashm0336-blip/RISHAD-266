@@ -15,7 +15,7 @@ import { replaceOperationalFixture } from '../../../../tests/unit/operational_le
 import { partners, present, busFacts, assertBus, saves, savedCount, assertNoAbsentKeys, openRoute, today } from '../../../../tests/removal/boundary_fx.mjs';
 
 const SYS = 'daily', P = partners(SYS), A = 'TEST_ONLY_A', KP = 'bsdept:' + A + ':bassam_plan_v1', KR = 'bsdept:' + A + ':bassam_rounds_v1';
-const H = today(), TODAY = H.y + '-' + H.m + '-' + H.d, SHIFT = 'TEST_ONLY_SHIFT';
+const H = today(), TODAY = H.dk, SHIFT = 'TEST_ONLY_SHIFT';
 const site = () => ({ sid: 's_TEST_ONLY_1', name: 'TEST_ONLY موقع 1', num: 1, gates: [], marks: [], paths: [], sectors: [],
   zones: [{ uid: 'TEST_ONLY_z1', name: 'TEST_ONLY', code: '01', ser: '01', cat: 'men', d: 'M100 100 L400 100 L400 250 L100 250 Z', cx: 250, cy: 175 }] });
 const absentOwners = P.owners.filter((o) => !present(o));
@@ -24,7 +24,7 @@ const tabOn = (p, label) => p.evaluate((t) => [...(document.querySelector('main'
 test('V7 · د5-ح (rmall): «المتابعة اليومية» بغياب [' + (absentOwners.join(' · ') || 'لا شريك') + '] — صفحتُها · قراءاتُها من الغائب absent · حفظُها', { timeout: 600000 }, async () => {
   assert.ok(['plan', 'staff', 'dreport'].every((o) => P.owners.includes(o)), 'شركاؤها من عقدها: ' + P.owners.join(' · '));
   const lab = await startLab();
-  if (present('plan')) await replaceOperationalFixture(lab.env, KP, { pMig: 3, zones: [], gates: [], marks: [], paths: [], floors: [site()], months: { [H.y + '-' + H.m]: { c: 1, d: [site()] } }, cfg: {}, delMonths: {} });
+  if (present('plan')) await replaceOperationalFixture(lab.env, KP, { pMig: 3, zones: [], gates: [], marks: [], paths: [], floors: [site()], months: { [H.ym]: { c: 1, d: [site()] } }, cfg: {}, delMonths: {} });
   const b = await chromium.launch();
   try {
     const s = await openAs(b, lab, LAB.mgrA, LAB.pw), p = s.page; p.setDefaultTimeout(30000);

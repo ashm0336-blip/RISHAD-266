@@ -10,12 +10,13 @@ import { calendar, callers } from './cal_kit.mjs';   /* V7 · د5-د: التقو
 const rd = (p) => fs.readFileSync(p, 'utf8');
 export const LOGIC = process.env.PROFILE_LOGIC || path.join(SRC, 'modules', 'profile', 'logic.js');
 const SERVICES = ['060-bus.js', '490-emp-key.js', '530-emp-day-facts.js', '533-staff-g3.js', '403-plan-p3.js', '404-plan-p4.js', '405-dreport-links.js', '407-dreport-r3.js', '421-round-links.js', '422-daily-t2.js', '440-count.js', '400-shift-need.js', '410-gate-units.js', '535-profile-facts.js'];
-/* اليومُ كما تحسبه القواعد (أم القرى · الرياض) — منه تُبنى مفاتيحُ البيانات في كل عالَم */
+/* اليومُ كما تحسبه القواعد (الرياض) — منه تُبنى مفاتيحُ البيانات في كل عالَم.
+   V7 · 53 تقويم: يومٌ ميلاديّ بمفاتيح ISO (YM = YYYY-MM · DK = YYYY-MM-DD) — كان هجرياً (أم القرى) فرفضه المرمِّز (unknown-map-key) */
 export function riyadhDay(ts = Date.now()) {
-  const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
+  const f = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
   const o = {}; f.formatToParts(new Date(ts)).forEach((p) => { o[p.type] = +p.value; });
-  const WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-  return { y: o.year, m: o.month, d: o.day, YM: o.year + '-' + o.month, DK: o.year + '-' + o.month + '-' + o.day, WD: WD[new Date(ts + 3 * 3600000).getUTCDay()] };
+  const WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'], p2 = (n) => String(n).padStart(2, '0');
+  return { y: o.year, m: o.month, d: o.day, YM: o.year + '-' + p2(o.month), DK: o.year + '-' + p2(o.month) + '-' + p2(o.day), WD: WD[new Date(ts + 3 * 3600000).getUTCDay()] };
 }
 export function world(o) {
   const store = new Map();

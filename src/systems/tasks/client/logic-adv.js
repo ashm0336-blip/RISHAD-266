@@ -119,17 +119,17 @@ Object.assign(Component.prototype, {
   /* يومُ المهمة في النموذج (Y-M-D) — «يبدأ من» للإنشاء والتحويل */
   _tkFormK() {
     const e = this.state,
-      T = this.hToday(),
+      T = this.gTodayOf(),
       n = this.mDays(e.year, e.month - 1),
       d0 = e.year === T.y && e.month === T.m ? T.d : 1;
-    return e.year + "-" + e.month + "-" + Math.min(Math.max(1, +(e.newDay || d0) || 1), n);
+    return KIVO.BassamCal.gKey(e.year, e.month, Math.min(Math.max(1, +(e.newDay || d0) || 1), n));
   },
   /* الصفُّ الذي يُعدَّل (بهويته — كالحفظ) · وفي المجموعة: الفردُ الذي مُلئ النموذجُ له */
   _tkEditRow(S) {
     const e = this.state,
       R = e.editRef;
     if (!R) return null;
-    const L = (S || e.tasksAll || this.loadAllTasks())[e.year + "-" + e.month + "-" + R.d] || [];
+    const L = (S || e.tasksAll || this.loadAllTasks())[KIVO.BassamCal.gKey(e.year, e.month, R.d)] || [];
     if (R.grp) {
       const G = L.filter((t) => Array.isArray(t) && t[17] === R.grp);
       return G.filter((t) => String(t[13]) === String(e.newRecFor || ""))[0] || G[0] || null;

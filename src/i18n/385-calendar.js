@@ -296,7 +296,9 @@
   }
   function render(kind, p) {
     p = p || {};
-    var R = (typeof window !== 'undefined' && window.React) || KIVO.React, h = R.createElement, M = model(kind, p);
+    var R = (typeof window !== 'undefined' && window.React) || KIVO.React;
+    if (!R || !R.createElement) return null;   /* V7 · 53 تقويم (cal-ops): بلا React (حاضناتُ منطق الصفحة في الاختبار) لا عنصرَ يُرسم — model() يعطي البيانات نفسَها */
+    var h = R.createElement, M = model(kind, p);
     var kids = M.lines.map(function (t, i) { return h('span', { key: 'l' + i, 'data-cal-line': String(i), style: assign({ display: 'block' }, M.lineStyles[i]) }, t); });
     if (M.closed) kids.unshift(h('i', { key: 'lock', 'data-cal-lock': '1', 'aria-hidden': 'true', style: { position: 'absolute', top: -4, left: -3, width: 11, height: 11, borderRadius: '50%', boxSizing: 'border-box',
       background: 'var(--cal-card)', border: '1px solid var(--cal-line)', display: 'grid', placeItems: 'center' } },

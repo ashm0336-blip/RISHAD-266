@@ -22,10 +22,11 @@ import { isOperationalFixtureKey, inspectOperationalFixture, replaceOperationalF
 const HAS = (() => { try { return fs.readFileSync(WORKER, 'utf8').includes('function meSelfRoutes('); } catch (e) { return false; } })();
 const G = HAS ? {} : { skip: 'العاملُ المختبَر بلا مساري /api/me/today · /api/me/history (أقدمُ من KIVO_264)' };
 const WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-/* يومُ الرياض التقويميّ (أم القرى) — كما يحسبه المساران (لا مهلةَ ثلاث ساعات: اليومُ التشغيليّ تحدّده الورديةُ الليلية وحدها — OD-10) */
-const hij = (ts) => { const o = {}; new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(ts)).forEach((p) => { o[p.type] = +p.value; }); return { y: o.year, m: o.month, d: o.day, wd: WD[new Date(ts + 3 * 3600000).getUTCDay()] }; };
+/* يومُ الرياض التقويميّ (V7 · 53 تقويم: الميلادي، والمفاتيحُ ISO) — كما يحسبه المساران (لا مهلةَ ثلاث ساعات: اليومُ التشغيليّ تحدّده الورديةُ الليلية وحدها — OD-10) */
+const hij = (ts) => { const o = {}; new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(ts)).forEach((p) => { o[p.type] = +p.value; }); return { y: o.year, m: o.month, d: o.day, wd: WD[new Date(ts + 3 * 3600000).getUTCDay()] }; };
 const T = hij(Date.now());
-const MK = T.y + '-' + T.m, DAY = MK + '-' + T.d, PM = T.m === 1 ? { y: T.y - 1, m: 12 } : { y: T.y, m: T.m - 1 }, PMK = PM.y + '-' + PM.m, PDAY = PMK + '-10';
+const P2 = (n) => String(n).padStart(2, '0');
+const MK = T.y + '-' + P2(T.m), DAY = MK + '-' + P2(T.d), PM = T.m === 1 ? { y: T.y - 1, m: 12 } : { y: T.y, m: T.m - 1 }, PMK = PM.y + '-' + P2(PM.m), PDAY = PMK + '-10';
 const TAG = 'TEST_ONLY', SA = 'TST-A', SB = 'TST-B';
 const K = (r) => 'bsdept:tst_d1:' + r;
 const q = (s) => "'" + String(s).replace(/'/g, "''") + "'";
@@ -200,8 +201,8 @@ test('(٥) «السجل»: دليلُ كل يوم — لا إعادةَ بناء
 
 test('(٦) العقد: 400 bad-ym · 405 لغير GET · 401 بلا جلسة · جولاتُ D1 محدودة · tst_emp2 بلا جدول ⇒ «لا جدول» لا حقائقَ مختلقة', G, async () => {
   const W = await world(), ck = await W.login('0000000113', '70113');
-  const nx = T.m >= 11 ? (T.y + 1) + '-' + (T.m - 10) : T.y + '-' + (T.m + 2);
-  for (const ym of ['1448-13', 'abc', '1399-12', '1448-0', nx, MK + '-1', ' ']) {
+  const nx = T.m >= 11 ? (T.y + 1) + '-' + P2(T.m - 10) : T.y + '-' + P2(T.m + 2);
+  for (const ym of ['1448-13', 'abc', '1399-12', '1448-0', nx, MK + '-1', ' ', '2026-13', '1899-12', '2026-00', '1448-6']) {   /* V7 · 53 تقويم: وشهرٌ هجريٌّ صالح من عميلٍ قديم يُرفض */
     const r = await W.get('/api/me/history?ym=' + encodeURIComponent(ym), ck);
     assert.equal(r.status, 400, ym); assert.deepEqual(r.j, { ok: 0, err: 'bad-ym' });
   }

@@ -253,6 +253,7 @@ async function empPrepareTransition(env, A, input) {
       !['add', 'update', 'replace'].includes(mode) ||
       !Number.isInteger(input.import.year) ||
       !/^\d{4}$/.test(String(input.import.year)) ||
+      calYearCal(input.import.year) !== 'g' ||   /* V7 · 53 تقويم: سنةُ الجدول ميلادية — هجريةٌ من عميلٍ قديم تُرفض */
       !Number.isInteger(input.import.month) ||
       input.import.month < 1 ||
       input.import.month > 12 ||

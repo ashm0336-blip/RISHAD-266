@@ -149,7 +149,7 @@
         new Intl.DateTimeFormat(loc, Object.assign({ timeZone: tz }, o)).formatToParts(d).forEach((p) => (q[p.type] = p.value));
         return q;
       };
-      const H = KIVO.BassamCal.hPartsRiyadh(d),   /* V7 · د5-د2: يومُ الرياض الهجري من الخدمة */
+      const H = KIVO.BassamCal.hOf(KIVO.BassamCal.gAt(d).k) || {},   /* V7 · 53 تقويم: الهجريُّ المقابل سطرٌ تابع للميلادي */
         G = P("en-u-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
       ((h = H.d + "/" + H.m + "/" + H.y + "هـ"), (g = G.day + "/" + G.month + "/" + G.year + "م"), (c = G.hour + ":" + G.minute));
     } catch (t) {
@@ -159,7 +159,7 @@
       geo && "number" === typeof geo.lat && "number" === typeof geo.lng
         ? geo.lat.toFixed(5) + ", " + geo.lng.toFixed(5) + (geo.acc ? " (±" + Math.round(geo.acc) + " م)" : "")
         : "بلا موقع";
-    return [[h, g, c].filter(Boolean).join(" · ") + " · " + loc, [String(name || "").trim(), String(title || "").trim()].filter(Boolean).join(" · ") || "توثيق مهمة"];
+    return [[g, h, c].filter(Boolean).join(" · ") + " · " + loc,   /* V7 · 53 تقويم: الميلاديُّ أولاً ثم الهجري */ [String(name || "").trim(), String(title || "").trim()].filter(Boolean).join(" · ") || "توثيق مهمة"];
   }
   /* الرسمُ على اللوحة نفسِها قبل الترميز: شريطٌ سفليٌّ داكن وسطران أبيضان من اليمين — فالصورةُ المرفوعة تحمل الختمَ في بكسلاتها لا في الواجهة */
   _tkStampDraw(cv, lines) {
@@ -448,9 +448,9 @@
       (t.tkTlBack = () => this.setState({ pfPanel: (L && L.back) || "", tkTl: null })),
       (t.tkTlRows = L && "ok" === L.st ? L.ev.map((v) => this._tkEv(v)) : []));
   }
-  /* حدثٌ في سجلّ المهمة: ما جرى · مَن (أنت / اسمُ المسؤول) · السبب · متى (هجرياً) — والمستمدُّ من طوابع صفٍّ قديم موسومٌ بذلك */
+  /* حدثٌ في سجلّ المهمة: ما جرى · مَن (أنت / اسمُ المسؤول) · السبب · متى (ميلادياً — V7 · 53 تقويم) — والمستمدُّ من طوابع صفٍّ قديم موسومٌ بذلك */
   _tkEv(v) {
-    const h = v.at ? this.hParts(new Date(v.at)) : null;
+    const h = v.at ? KIVO.BassamCal.gAt(new Date(v.at)) : null;   /* V7 · 53 تقويم: يومُ الحدث الميلادي */
     return {
       txt: v.txt || v.act || "",
       by: v.by || "",

@@ -75,7 +75,9 @@ async function mk(W, ck, title, rec, asg = [ME.eid]) {
   assert.equal(c.status, 200, JSON.stringify(c.j));
   return { k, id: c.j.rows[0].id, s };
 }
-const addDays = (P, k, n) => { const a = k.split('-').map(Number), g = P.c.hGreg(a[0], a[1], a[2]), h = P.c.tkHParts(g.getTime() + n * 864e5); return h.y + '-' + h.m + '-' + h.d; };
+/* V7 · 53 تقويم: إزاحةُ يومٍ ميلاديّ (YYYY-MM-DD) بأيامٍ — بأجزاء الصفحة نفسِها (gDate · tkGParts) */
+const isoDay = (y, m, d) => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+const addDays = (P, k, n) => { const a = k.split('-').map(Number), g = P.c.gDate(a[0], a[1], a[2]), h = P.c.tkGParts(g.getTime() + n * 864e5), p2 = (x) => String(x).padStart(2, '0'); return h.y + '-' + p2(h.m) + '-' + p2(h.d); };
 /* يفتح صفَّ اليوم k بهويته في الجدول (شهرُه في الصفحة) */
 function rowOf(P, k, id) { const [y, m] = k.split('-').map(Number); P.c.setState({ year: y, month: m, search: '', fStatus: 'all', fPrio: 'all', perPage: 0 }); return allRows(P.c.renderVals()).find((t) => t.tkcT[13] === id); }
 
@@ -131,11 +133,11 @@ test('النموذج · «نوع المهمة» ظاهرٌ افتراضياً (�
   assert.equal(V.tkRecSum, 'تتكرر شهرياً: يوم 15 · من ' + k0 + ' حتى ' + t1);
   await V.submitTask(); assert.deepEqual(J(bodies.pop().rec), { t: 'monthly', md: 15, to: t1 });
   V.onTkRecToD({ target: { value: '1' } }); V = P.c.renderVals();
-  assert.equal(P.c.state.newRecTo, ty + '-' + tm + '-1'); assert.ok(!V.tkRecQuick.some(on), 'تاريخٌ صريح — لا اختصار');
-  await V.submitTask(); assert.deepEqual(J(bodies.pop().rec), { t: 'monthly', md: 15, to: ty + '-' + tm + '-1' });
+  assert.equal(P.c.state.newRecTo, isoDay(ty, tm, 1)); assert.ok(!V.tkRecQuick.some(on), 'تاريخٌ صريح — لا اختصار');
+  await V.submitTask(); assert.deepEqual(J(bodies.pop().rec), { t: 'monthly', md: 15, to: isoDay(ty, tm, 1) });
   P.c.renderVals().tkRecQuick[0].click(); await P.c.renderVals().submitTask(); assert.deepEqual(J(bodies.pop().rec), { t: 'monthly', md: 15, to: addDays(P, k0, 7) });
   /* نهايةٌ قبل البداية ⇒ لا إرسال */
-  if (k0 !== y + '-1-1') {
+  if (k0 !== isoDay(y, 1, 1)) {
     V = P.c.renderVals(); V.onTkRecToM({ target: { value: '1' } }); V = P.c.renderVals(); V.onTkRecToY({ target: { value: String(y) } }); V = P.c.renderVals();
     assert.equal(V.tkRecSum, 'تاريخ النهاية قبل تاريخ البدء'); const n1 = bodies.length; await V.submitTask(); assert.equal(bodies.length, n1);
   }
@@ -553,19 +555,19 @@ test('U5 · نهايةٌ قبل اليوم: في التحويل «اختر تا�
     const [ky, km, kd] = k.split('-').map(Number);
     P.c.renderVals().tkRecTypes[1].click(); P.c.renderVals().tkRecEnds[1].click();
     P.c.renderVals().onTkRecToY({ target: { value: String(ky) } }); P.c.renderVals().onTkRecToM({ target: { value: String(km) } }); P.c.renderVals().onTkRecToD({ target: { value: String(kd + 1) } });
-    assert.equal(P.c.state.newRecTo, ky + '-' + km + '-' + (kd + 1), 'نهايةٌ أمس');
+    assert.equal(P.c.state.newRecTo, isoDay(ky, km, kd + 1), 'نهايةٌ أمس');
     const V = P.c.renderVals(); assert.equal(V.tkRecSum, ONE); assert.match(V.tkRecWarn, /تتحوّل المهمة إلى متكررة/);
     const n0 = P.toasts.length; await V.submitTask(); assert.deepEqual(P.toasts[n0], [ONE, 'warn'], 'لا حفظ'); assert.equal(recCalls(P).length, 0);
   }
 });
 
-test('U6 · «اليوم» للتكرار هو اليومُ التشغيلي كالخادم (هجريُّ الرياض قبل ثلاث ساعات) — لا يومَ الجهاز بين 00:00 و03:00', async () => {
+test('U6 · «اليوم» للتكرار هو اليومُ التشغيلي كالخادم (يومُ الرياض الميلاديّ قبل ثلاث ساعات) — لا يومَ الجهاز بين 00:00 و03:00', async () => {
   const W = await world({ worker: WU.file }); const dm = await W.login('0000000101', '70101');
   /* جهازٌ بتوقيت الرياض الساعةَ 01:30: يومُه المدنيّ D والخادمُ ما زال في D−1 (070 tkToday) */
   const T0 = MID(Date.now()) + 1.5 * HR, RD = class extends Date { constructor(...a) { if (a.length) super(...a); else super(T0); } static now() { return T0; } };
   const IR = Object.create(Intl); IR.DateTimeFormat = function (l, o) { return new Intl.DateTimeFormat(l, Object.assign({ timeZone: 'Asia/Riyadh' }, o || {})); };
   const P = await pageFor(W, dm.ck, {}, { Date: RD, Intl: IR });
-  const dev = P.c.hToday(), devK = dev.y + '-' + dev.m + '-' + dev.d, op = hij(T0 - 3 * HR);
+  const dev = P.c.gTodayOf(), devK = dev.y + '-' + String(dev.m).padStart(2, '0') + '-' + String(dev.d).padStart(2, '0'), op = hij(T0 - 3 * HR);
   assert.equal(devK, hij(T0), 'يومُ الجهاز (الرياض) مدنيٌّ'); assert.notEqual(devK, op);
   assert.equal(P.c._tkTodayK(), op, 'اليومُ التشغيلي'); assert.equal(P.c._tkTodayN(), P.c._tkDayN(op));
   /* سلسلةٌ نهايتُها اليومُ التشغيلي ليست «قبل اليوم» (الخادمُ يقبلها ويولّدها) */

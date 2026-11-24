@@ -1257,12 +1257,15 @@
   function periodHeadNorm9(name, head) { var field = PERIOD_RES9[name], h = isObj(head) ? head : {}; if (field && !isObj(h[field])) { h = Object.assign({}, h); h[field] = {}; } return h; }
   /* «الآن» بأسماء المفاتيح القائمة: الشهرُ واليومُ اليوم وأمس (اليومُ التشغيلي يمتد بعد منتصف الليل) — من التقويم، لا من هذه الطبقة */
   function periodNow9() {
-    var C = KIVO.BassamCal, out = { groups: [], days: [] };
+    var out = { groups: [], days: [] };
+    /* V7 · 53 تقويم (cal-ops): مفاتيحُ الفترات ميلاديةٌ ISO — اليومُ وأمسُ يومُ الرياض المدني (UTC+3 ثابتاً) بحسابٍ مباشر بلا مُنسِّق ولا جدول؛
+       كان أم القرى («1448-6»)، فكانت الصفحةُ تطلب فترةً لا وجود لها ويغيب شهرُها الجاري (الجدول الشهري) */
+    var C = KIVO.BassamCal;
     [0, 864e5].forEach(function (back) {
-      var h = null;
-      try { h = C && C.hNow ? C.hNow(new Date(Date.now() - back), null) : null; } catch (e) { h = null; }
-      if (!h || !h.y || !h.m || !h.d) return;
-      var g = h.y + '-' + h.m, d = g + '-' + h.d;
+      var at = new Date(Date.now() - back), h = null, z = function (n) { return (n < 10 ? '0' : '') + n; };
+      try { h = C && C.gAt ? C.gAt(at) : null; } catch (e) { h = null; }   /* خدمةُ التقويم إن حضرت (والاختبارُ يثبّت بها «الآن») */
+      if (!h || !h.y || !h.m || !h.d) return;   /* بلا خدمة التقويم لا «يوم» يُحسب هنا (v7_d5d2_calendar_rest ⑤)
+      var g = h.y + '-' + z(h.m), d = g + '-' + z(h.d);
       if (out.groups.indexOf(g) === -1) out.groups.push(g);
       if (out.days.indexOf(d) === -1) out.days.push(d);
     });

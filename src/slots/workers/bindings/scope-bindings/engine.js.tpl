@@ -72,8 +72,11 @@ var KIVO_SCOPE = (function (S, R) {
     if (d == null) return false;
     return dPast ? !(isObj(rec.dopen) && rec.dopen[d]) : !!(isObj(rec.dshut) && rec.dshut[d]);
   }
-  function parseDay(k) { var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
-  function parseMonth(k) { var m = /^(?:m:)?(\d{4})-(\d{1,2})$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: null } : null; }
+  /* V7 · 53 تقويم (ق١): مفاتيحُ الفترة ميلاديةٌ مبطَّنة ISO وحدها — مفتاحٌ هجريٌّ (13xx–15xx) أو غيرُ مبطَّن لا يُفهم يوماً ولا شهراً (dayOther) */
+  function parseDay(k) { var m = /^((?:19|20|21)\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
+  function parseMonth(k) { var m = /^(?:m:)?((?:19|20|21)\d{2})-(0[1-9]|1[0-2])$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: null } : null; }
+  function ymOf(p) { return p.y + '-' + (p.m < 10 ? '0' : '') + p.m; }   /* '2026-11' من {y,m} */
+  function mkOf(p) { return 'm:' + ymOf(p); }
   function ymd(x) { if (!isObj(x) || x.y == null || x.m == null) return null; return { y: +x.y, m: +x.m, d: x.d == null ? null : +x.d }; }
   function pk(p) { return p ? p.y + '-' + p.m + (p.d == null ? '' : '-' + p.d) : ''; }
   function sides(it, f) { var o = it[f]; if (!o) return []; var out = []; if (it.kind !== 'added' && o.old != null && o.old !== '') out.push({ side: 'old', v: o.old }); if (it.kind !== 'removed' && o.new != null && o.new !== '') out.push({ side: 'new', v: o.new }); if (!out.length && it.kind === 'added' && o.new != null) out.push({ side: 'new', v: o.new }); return out; }

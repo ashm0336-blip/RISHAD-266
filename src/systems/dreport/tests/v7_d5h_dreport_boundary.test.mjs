@@ -15,7 +15,7 @@ import { replaceOperationalFixture } from '../../../../tests/unit/operational_le
 import { partners, present, busFacts, assertBus, saves, savedCount, assertNoAbsentKeys, openRoute, today, logicOf, callLogic, watchToasts, waitToast } from '../../../../tests/removal/boundary_fx.mjs';
 
 const SYS = 'dreport', P = partners(SYS), A = 'TEST_ONLY_A', KS = 'bsdept:' + A + ':bassam_staffing_v3', KD = 'bsdept:' + A + ':bassam_dreport_v1', KL = 'bsdept:' + A + ':bassam_leave_kinds_v1';
-const H = today(), YM = H.y + '-' + H.m, SHIFT = 'TEST_ONLY_S', KIND = 'TEST_ONLY إجازة';
+const H = today(), YM = H.ym, SHIFT = 'TEST_ONLY_S', KIND = 'TEST_ONLY إجازة';
 const absentOwners = P.owners.filter((o) => !present(o));
 
 test('V7 · د5-ح (rmall): «التقرير اليومي» بغياب [' + (absentOwners.join(' · ') || 'لا شريك') + '] — صفحتُه · قراءاتُه من الغائب absent · حفظُه', { timeout: 600000 }, async () => {

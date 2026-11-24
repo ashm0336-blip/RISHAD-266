@@ -1,9 +1,9 @@
 /* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — المهامُ المتكررة: قالبٌ + نسخةُ تنفيذٍ مستقلة لكل موعد، تُولَّد في الخادم بلا Cron (ق5) ═══
    القالبُ لا يُخزَّن موردٌ جديد ولا صفٌّ وهميّ: تعريفُ السلسلة x.rec يحمله كلُّ صفٍّ من نُسخها (أوّلُها نسخةُ يوم البدء الحقيقية)، والنموذجُ
    للتوليد هو أحدثُ نسخةٍ غيرِ منفصلة (det) بأعلى إصدار (ver) — فحذفُ نسخةٍ لا يقتل السلسلة، و«كلُّ التنفيذات القادمة» = إصدارٌ أعلى.
-     x.rec = { id, ver, t: daily|days|weekly|monthly|every, wd:[0..6] (الأحد=0), md:1..30|'last', n:2..30 (every), from:'Y-M-D', to?:'Y-M-D' (غائبٌ = حتى الإيقاف), paused:0|1, stop?:1, by?:{u,e,n}, asg:[eid…] }
-     KIVO_265 · البند 16: every = كل n يوماً من يوم البدء (from) بعدّ الأيام المدنية (tkHijMid) · md:'last' = آخرُ يومٍ في الشهر الهجري (29 أو 30) — لا يُتخطّى
-     x.idem = 'r:<id>:<Y-M-D>:<eid>'  — مفتاحُ عدم التكرار: إعادةُ التشغيل أو تشغيلُه مرتين معاً لا تكرّر نسخة (يُعاد فحصُه على القيمة الطازجة داخل
+     x.rec = { id, ver, t: daily|days|weekly|monthly|every, wd:[0..6] (الأحد=0), md:1..31|'last', n:2..30 (every), from:'YYYY-MM-DD', to?:'YYYY-MM-DD' (غائبٌ = حتى الإيقاف), paused:0|1, stop?:1, by?:{u,e,n}, asg:[eid…] }
+     KIVO_265 · البند 16: every = كل n يوماً من يوم البدء (from) بعدّ الأيام المدنية (tkDayMid) · md:'last' = آخرُ يومٍ في الشهر (V7 · 53 تقويم: الميلادي 28–31) — لا يُتخطّى
+     x.idem = 'r:<id>:<YYYY-MM-DD>:<eid>'  — مفتاحُ عدم التكرار: إعادةُ التشغيل أو تشغيلُه مرتين معاً لا تكرّر نسخة (يُعاد فحصُه على القيمة الطازجة داخل
                                          حارس النسخة CAS — فالكاتبُ الثاني يرى ما كتبه الأول ولا يضيف شيئاً).
    التوليد: لأفقٍ محدود (TK_REC_H = 30 يوماً قادمة — KIVO_265 · البند 15: كان 7؛ Cloudflare Pages لا يدعم مشغّلات Cron فالتوليدُ يبقى كسولاً والبديلُ أفقٌ أطول
    يرى الموظفُ والمسؤولُ مواعيدَ الشهر القادم) وبسقفٍ للصفوف في التشغيل الواحد (TK_REC_MAX = 600 · كان 200 — والباقي في التشغيل التالي بمفاتيح idem نفسِها) · لا خارجَ الإدارة · لا لموظفٍ غيرِ متاحٍ يومَها (§4) — يُتخطّى ويُبلَّغ صاحبُ القالب مرةً،
@@ -24,7 +24,7 @@
        شهرٍ معتمدٍ ومقفل لا تُمسّ؛ ويحمل النموذجُ (tkSeries) القاعدةَ الجديدة دائماً (أحدثُ نسخةٍ في شهرٍ مفتوح إن لم تكن نسخةٌ قادمة) وإلا 409 month-locked.
      · rec.by: صاحبُ سلسلةٍ حُوِّلت من مهمةٍ قائمة (start) — من حوّلها، ويتحقّق منه سجلُّ الخادم بحدث rec_start كما يتحقّق من «أُنشئت» (F-2/R-21). */
 var TK_REC_H = 30, TK_REC_MAX = 600, TK_REC_T = { daily: 1, days: 1, weekly: 1, monthly: 1, every: 1 }, TK_REC_LAST = nmap(), TK_REC_GAP = 10 * 6e4;
-var TK_REC_Y = 30000;                                                        /* سقفُ النهاية الصريحة بفرق tkDayNum: ثلاثُ سنواتٍ هجرية */
+var TK_REC_Y = 30000;                                                        /* سقفُ النهاية الصريحة بفرق tkDayNum: ثلاثُ سنوات (V7 · 53 تقويم: ميلادية) */
 /* keep (التعديل): بلا to ولا open ⇒ نهايةُ السلسلة كما هي ({to} أو {} لـ«حتى الإيقاف») — لا السنةُ الافتراضية */
 function tkRecIn(v, k, keep) {
   if (v == null) return { rec: null };
@@ -34,41 +34,39 @@ function tkRecIn(v, k, keep) {
     if (!Array.isArray(v.wd) || !v.wd.length || v.wd.length > 7 || !v.wd.every(function (x) { return x === Math.floor(x) && x >= 0 && x <= 6; })) return { bad: 'rec.wd', msg: 'اختر أيام الأسبوع' };
     o.wd = v.wd.filter(function (x, n) { return v.wd.indexOf(x) === n; }).sort();
   }
-  /* KIVO_265 · البند 16: md:'last' آخرُ يومٍ في الشهر الهجري · every بعدد أيامٍ n من 2 إلى 30 */
-  if (v.t === 'monthly') { if (v.md === 'last') o.md = 'last'; else if (!(v.md === Math.floor(v.md) && v.md >= 1 && v.md <= 30)) return { bad: 'rec.md', msg: 'اختر يوم الشهر' }; else o.md = v.md; }
+  /* KIVO_265 · البند 16: md:'last' آخرُ يومٍ في الشهر · every بعدد أيامٍ n من 2 إلى 30 — V7 · 53 تقويم (ق٦): يومُ الشهر الميلادي 1–31 */
+  if (v.t === 'monthly') { if (v.md === 'last') o.md = 'last'; else if (!(v.md === Math.floor(v.md) && v.md >= 1 && v.md <= 31)) return { bad: 'rec.md', msg: 'اختر يوم الشهر' }; else o.md = v.md; }
   if (v.t === 'every') { if (!(typeof v.n === 'number' && v.n === Math.floor(v.n) && v.n >= 2 && v.n <= 30)) return { bad: 'rec.n', msg: 'عددُ الأيام بين موعدين من 2 إلى 30' }; o.n = v.n; }
   if (v.open != null && v.open !== 0 && v.open !== 1 && v.open !== !0 && v.open !== !1) return { bad: 'rec.open' };
   var open = v.open === 1 || v.open === !0;
   if (v.to != null && v.to !== '') {
     if (typeof v.to !== 'string') return { bad: 'rec.to' };                     /* S7: لا مصفوفةَ تصير تاريخاً بـString() — والمخطّطُ يرفضها قبل هذا */
     if (open) return { bad: 'rec.to', msg: 'اختر تاريخَ نهايةٍ أو «حتى الإيقاف» — لا كليهما' };
-    var tp = String(v.to).split('-');
-    if (!METK_DAY_RX.test(String(v.to)) || +tp[1] < 1 || +tp[1] > 12 || +tp[2] < 1 || +tp[2] > 30) return { bad: 'rec.to', msg: 'تاريخُ نهاية التكرار غيرُ صالح' };
+    var tp = String(v.to).split('-');   /* V7 · 53 تقويم: يومٌ ميلاديٌّ ISO موجود (لا 31 في شهرٍ من 30 ولا 29 فبراير في سنةٍ بسيطة) */
+    if (!METK_DAY_RX.test(String(v.to)) || !calGregOk(+tp[0], +tp[1], +tp[2])) return { bad: 'rec.to', msg: 'تاريخُ نهاية التكرار غيرُ صالح' };
     if (tkDayNum(v.to) < tkDayNum(k)) return { bad: 'rec.to', msg: 'نهايةُ التكرار قبل بدايته' };
-    if (tkDayNum(v.to) - tkDayNum(k) > TK_REC_Y) return { bad: 'rec.to', msg: 'التكرارُ ثلاثُ سنواتٍ هجرية على الأكثر — أو اختر «حتى الإيقاف»' };
+    if (tkDayNum(v.to) - tkDayNum(k) > TK_REC_Y) return { bad: 'rec.to', msg: 'التكرارُ ثلاثُ سنواتٍ على الأكثر — أو اختر «حتى الإيقاف»' };
     o.to = String(v.to);
   } else if (!open) {                                                          /* «حتى الإيقاف» (open) ⇒ لا to */
     if (keep) { if (keep.to) o.to = String(keep.to); }
-    else { var p = String(k).split('-'); o.to = (+p[0] + 1) + '-' + (+p[1]) + '-' + (+p[2]); }   /* بلا نهايةٍ ولا «حتى الإيقاف» ⇒ سنةٌ هجرية (كما كان) */
+    else { var p = String(k).split('-'), ny = +p[0] + 1, nd = Math.min(+p[2], calGMonthDays(ny, +p[1])); o.to = calGKey(ny, +p[1], nd); }   /* بلا نهايةٍ ولا «حتى الإيقاف» ⇒ سنة (V7 · 53 تقويم: ميلادية · 29 فبراير ⇐ 28) */
   }
   return { rec: o };
 }
-/* KIVO_265 · البند 16: منتصفُ ليل (الرياض) يومٍ هجريّ k قرب الوقت near — قفزةٌ تقريبية (الشهرُ الهجري ≈ 29.53 يوماً) ثم تصحيحٌ يوماً يوماً؛ لا تحويلَ هجريّ⇐ميلاديّ
-   في العامل فيُشتقّ من tkHij وحده. النتيجةُ ثابتةٌ لليوم الواحد فتُحفظ (CAL_HMID في 016 — V7 · د5-د2) */
-function tkHijMid(k, near) { return calHijriMid(k, near, tkHij); }   /* V7 · د5-د2: الحسابُ والحفظُ في تقويم الخادم (016) */
-/* dMid: منتصفُ ليل اليوم المدنيّ الذي يومُه الهجريّ H (لـevery وآخرِ الشهر — البند 16) */
+/* V7 · 53 تقويم: منتصفُ ليل (الرياض) اليوم الميلادي k — حسابٌ مباشر (Date.UTC − 3 ساعات)؛ كان بحثاً قرب near لأن العامل لا يحوّل الهجري إلى ميلادي */
+function tkDayMid(k) { var p = calGParse(k); return p && p.cal === 'g' && p.kind === 'day' ? Date.UTC(p.y, p.m - 1, p.d) - 3 * 36e5 : 0; }
+/* dMid: منتصفُ ليل اليوم المدنيّ H (لـevery — البند 16) */
 function tkRecDue(rec, H, wdi, dMid) {
   var n = tkDayNum(H.k); if (n < tkDayNum(rec.from)) return false; if (rec.to && n > tkDayNum(rec.to)) return false;
   if (rec.t === 'daily') return true;
   if (rec.t === 'days' || rec.t === 'weekly') return Array.isArray(rec.wd) && rec.wd.indexOf(wdi) !== -1;
   if (rec.t === 'monthly') {
-    if (rec.md !== 'last') return H.d === rec.md;
-    if (H.d === 30) return true; if (H.d !== 29 || typeof dMid !== 'number') return false;
-    var H2 = tkHij(dMid + 36 * 36e5); return !!H2 && H2.m !== H.m;                     /* 29 آخرُ الشهر إن كان الغدُ في شهرٍ آخر */
+    if (rec.md !== 'last') return H.d === rec.md;                                      /* يومٌ لا يحويه الشهر (31 في شهرٍ من 30) يُتخطّى كما كان */
+    return H.d === calGMonthDays(+String(H.k).slice(0, 4), H.m);                        /* V7 · 53 تقويم: آخرُ الشهر الميلادي (28–31) */
   }
   if (rec.t === 'every') {
     if (!(rec.n >= 2) || typeof dMid !== 'number') return false;
-    var fm = tkHijMid(rec.from, dMid); if (!fm) return false;
+    var fm = tkDayMid(rec.from); if (!fm) return false;
     var df = Math.round((dMid - fm) / 864e5); return df >= 0 && df % rec.n === 0;
   }
   return false;
@@ -90,9 +88,9 @@ function tkSeries(S) {
   return { ser: ser, idem: idem };
 }
 function tkRiyMid(t) { return calRiyadhMid(t); }   /* V7 · د5-د2: في تقويم الخادم (016) */
-/* KIVO_265 · S6 (مراجعةُ الخادم): منتصفُ ليل اليوم المدنيّ الذي يومُه الهجريّ dk — قريباً من الوقت s: يومُ الصفّ = يومُ بدايته ± يوم (071 kOk: حدودُ منتصف
-   الليل والوردية الليلية). اليومُ الهجريّ هنا (أم القرى بتوقيت الرياض) يتبدّل عند منتصف الليل المدنيّ فيقابله يومٌ مدنيٌّ واحد */
-function tkRecDayMid(dk, s) { return calHijriDayMid(dk, s, tkHij); }   /* V7 · د5-د2 */
+/* KIVO_265 · S6 (مراجعةُ الخادم): منتصفُ ليل اليوم المدنيّ dk (يومُ الصفّ = يومُ بدايته ± يوم — 071 kOk) — V7 · 53 تقويم: اليومُ ميلاديٌّ فالحسابُ مباشر؛
+   مفتاحٌ لا يُفهم ⇒ منتصفُ ليل s كما كان */
+function tkRecDayMid(dk, s) { return tkDayMid(dk) || calRiyadhMid(s); }
 /* KIVO_265 · L-3: هويةُ المصدر لكتابات التكرار في التدقيق والأمن — توليدٌ آليّ (لا عنوانَ الموظف الذي فتح «ملفي» ولا جهازُه) */
 var TK_REC_META = { ip: 'srv:recur', city: '', dev: 'srv:recur' };
 var TK_REC_TOMB_D = 40;                                                      /* أيامُ سجل الخادم التي يُبحث فيها عن نُسخٍ وُلّدت ثم حُذفت (L-5) */
@@ -138,9 +136,9 @@ async function tkRecurRun(env, request, d, opts) {
        (يومُ الصفّ k وبدايتُه فجرَ k+1 — 071 kOk) تبقى في يومها التالي لكل موعد — كانت نسخةُ k+1 تقع على بداية نسخة k نفسِها (نسختان في الوقت ذاته) */
     var off = Math.floor((P[15] - tkRecDayMid(s0.pk, P[15])) / 6e4) * 6e4, dur = Math.max(6e4, P[16] - P[15]);
     for (var i = 0; i < TK_REC_H && n < TK_REC_MAX; i++) {
-      var D0 = mid0 + i * 864e5, H = tkHij(D0 + 12 * 36e5), wdi = tkWdOf(D0 + 12 * 36e5); if (!H) continue;
+      var D0 = mid0 + i * 864e5, H = tkDay(D0 + 12 * 36e5), wdi = tkWdOf(D0 + 12 * 36e5); if (!H) continue;
       if (!tkRecDue(rec, H, wdi, D0)) continue;
-      if (LK[H.ym] === true || LK[H.ym] === 1) { if (!lockC[s0.id + H.ym]) { lockC[s0.id + H.ym] = 1; rep.skipped.push({ id: s0.id, k: H.k, ekey: '', why: 'شهرُ ' + H.ym + ' معتمدٌ ومقفل' }); } continue; }
+      if (LK[H.ym] === true || LK[H.ym] === 1) { if (!lockC[s0.id + H.ym]) { lockC[s0.id + H.ym] = 1; rep.skipped.push({ id: s0.id, k: H.k, ekey: '', why: 'شهرُ ' + (calGMonthText(H.ym) || H.ym) + ' معتمدٌ ومقفل' }); } continue; }
       if (LK[H.k] === true) { rep.skipped.push({ id: s0.id, k: H.k, ekey: '', why: 'اليومُ ' + H.k + ' مُغلق' }); continue; }   /* KIVO_265 · قفلُ اليوم: المُغلق بيده لا تُولَّد فيه نسخ */
       var s = D0 + off, e = s + dur;
       if (e < now) continue;                                                           /* موعدٌ انقضى اليوم لا يُولَّد بأثرٍ رجعي */
@@ -211,7 +209,7 @@ async function tkRecurRoute(env, request, A, url, b) {
   var D0 = tkDeptOf(A, url.searchParams.get('dept') || (b && b.dept)); if (D0.err) return D0.err; var d = D0.d;
   if (!(A.u.role === 'super' || canRead(A, tkK(d)))) return tkNo(403, 'forbidden').err;
   var day = String(url.searchParams.get('day') || ''), T = tkToday(Date.now());
-  if (day && (!T || day.replace(/-0(\d)/g, '-$1') !== T.k)) return tkNo(400, 'bad-query', 'التوليدُ لليوم الجاري وما بعده وحده', { at: 'day' }).err;
+  if (day && (!T || day !== T.k)) return tkNo(400, 'bad-query', 'التوليدُ لليوم الجاري وما بعده وحده', { at: 'day' }).err;
   TK_REC_LAST[d] = Date.now();
   var rep = await tkRecurRun(env, request, d, { A: A });
   var due = null; if (typeof tkDueRun === 'function') { TK_DUE_LAST[d] = Date.now(); try { due = await tkDueRun(env, request, d); } catch (eD) { swallow('tk-due', eD); } }   /* KIVO_265 · البند 10 (074) */
@@ -228,11 +226,11 @@ function tkRecEnded(rec, T) { return !!(rec && (rec.stop || (rec.to && T && tkDa
 function tkRecLk(LK, dk) { var v = LK[tkYm(dk)]; return v === true || v === 1; }
 /* القاعدةُ للتدقيق (قبل · بعد) — بلا معرّفاتِ المكلَّفين */
 function tkRecSum(rec) { var o = { t: String(rec.t || '') }; if (rec.wd) o.wd = rec.wd; if (rec.md) o.md = rec.md; if (rec.n) o.n = rec.n; o.to = rec.to ? String(rec.to) : ''; if (rec.paused) o.paused = 1; if (rec.stop) o.stop = 1; return o; }
-/* نسخةٌ قائمة يومُها dk: أهي موعدٌ بالقاعدة rec؟ — بيومها الهجريّ ويوم أسبوعه كما يولّدها tkRecurRun (بلا وقتٍ ⇒ تُعدّ موعداً فلا تُلغى).
+/* نسخةٌ قائمة يومُها dk: أهي موعدٌ بالقاعدة rec؟ — بيومها ويوم أسبوعه كما يولّدها tkRecurRun (بلا وقتٍ ⇒ تُعدّ موعداً فلا تُلغى).
    S6: يومُ الصفّ dk لا يومُ بدايته (الوردية الليلية تبدأ فجرَ اليوم التالي) — والصفُّ العاديّ يومُه يومُ بدايته فالحكمُ كما كان */
 function tkRecRowDue(rec, dk, r) {
   if (typeof r[15] !== 'number') return true;
-  var D = tkRecDayMid(dk, r[15]) + 12 * 36e5, H = tkHij(D); if (!H) return true;
+  var D = tkRecDayMid(dk, r[15]) + 12 * 36e5, H = tkDay(D); if (!H) return true;
   return tkRecDue(rec, { k: dk, d: H.d, m: H.m }, tkWdOf(D), D - 12 * 36e5);
 }
 /* KIVO_265 · S8 (مراجعةُ الخادم): سلسلةٌ أنهاها الإصدارُ السابق (to = يومُ الإنهاء بلا rec.stop) — يدلّ عليها حدثُ rec_stop كتبه الخادم (cid 'tk…' · S5)
@@ -260,7 +258,7 @@ async function tkRecurPrepare(env, A, b, d, K, S) {
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'إدارةُ التكرار تحتاج صلاحية تعديل المهام').err;
   var LK = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(LK)) LK = {};
   var out = { n: 0, cancelled: 0, ver: 0, restored: 0, kept: 0 }, id = String(b.id), n0 = tkDayNum(T.k), stopEv = await tkRecStopEv(env, K, id);
-  var keepK = b.row != null ? String(b.k).replace(/-0(\d)/g, '-$1') : '', keepR = b.row != null ? String(b.row) : '';
+  var keepK = b.row != null ? String(b.k) : '', keepR = b.row != null ? String(b.row) : '';
   var R = (function (S) {
     var Z = tkSeries(S), s0 = Z.ser[id]; out = { n: 0, cancelled: 0, ver: 0, restored: 0, kept: 0 };
     if (!s0) return tkNo(404, 'not-found');
@@ -298,10 +296,10 @@ async function tkRecurPrepare(env, A, b, d, K, S) {
        أحدثُ نسخةٍ سابقة في شهرٍ مفتوح بترتيب tkSeries (غيرُ المنفصلة أولاً) */
     var dk, i, anyN = false, wN = 0, wD = 0, cN = null, cD = null, keepG = '';
     /* «لمرة واحدة» لمهمةٍ جماعية: يبقى صفُّ كلِّ عضوٍ في مجموعة الصفّ المعدَّل يومَها (r[17]) — لا صفُّ المرساة وحده */
-    if (keepK) for (dk in S) { if (!Array.isArray(S[dk]) || dk.replace(/-0(\d)/g, '-$1') !== keepK) continue;
+    if (keepK) for (dk in S) { if (!Array.isArray(S[dk]) || dk !== keepK) continue;
       S[dk].forEach(function (r) { var x = tkX(r); if (!keepG && x && isObj(x.rec) && String(x.rec.id) === id && String(r[13]) === keepR && r[17]) keepG = String(r[17]); }); }
     for (dk in S) { if (!METK_DAY_RX.test(dk) || !Array.isArray(S[dk])) continue;
-      var lk = tkRecLk(LK, dk), dn = tkDayNum(dk), keepD = keepK && dk.replace(/-0(\d)/g, '-$1') === keepK;
+      var lk = tkRecLk(LK, dk), dn = tkDayNum(dk), keepD = keepK && dk === keepK;
       for (i = 0; i < S[dk].length; i++) {
         var r = S[dk][i], x = tkX(r); if (!x || !isObj(x.rec) || String(x.rec.id) !== id) continue;
         var kp = keepD && (String(r[13]) === keepR || (!!keepG && String(r[17] || '') === keepG)); if (kp) out.kept = 1;
@@ -349,7 +347,7 @@ async function tkRecurStartPrepare(env, A, b, d, K, S) {
   var RC = tkRecIn(b.rec, b.k); if (RC.bad) return tkNo(400, 'bad-body', RC.msg || '', { at: RC.bad }).err;
   if (!(tkHeld(A, d, 'task.create') && tkHeld(A, d, 'task.edit') && tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'تحويلُ المهمة إلى متكررة يحتاج صلاحياتِ إنشاء المهام وتعديلها وإسنادها').err;
   { var lw53 = await tkPeriodMsg(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧) */
-  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), kN = String(b.k).replace(/-0(\d)/g, '-$1');
+  var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), kN = String(b.k);
   var pick = function (L) {
     if (b.grp != null) { var o = []; for (var q = 0; q < L.length; q++) if (Array.isArray(L[q]) && String(L[q][17] || '') === String(b.grp)) o.push(q); return o; }
     var P0 = tkPick({ x: L }, 'x', b.id, null); return P0 ? [P0.idx] : [];

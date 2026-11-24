@@ -15,7 +15,9 @@ const doc = async (s) => { const r = await s.api('/api/operations/read?keys=' + 
 const inMonth = (d, y, m) => Object.entries(d).filter(([k]) => { const p = k.split('-'); return +p[0] === y && +p[1] === m; }).reduce((n, [, v]) => n + (Array.isArray(v) ? v.length : 0), 0);
 const ym = (p) => L(p, 'return { y: L.state.year, m: L.state.month };');
 /* كرتُ الشهر m (زرُّه يحمل اسمَ الشهر) — والـ× فوقه */
-const cardX = (p, name) => p.locator(`xpath=//main//*[p[normalize-space()="${name}"]]/span[@title="سيتم حذف جميع بيانات الشهر"]`);
+/* V7 · 53 تقويم: كرتُ الشهر من المكوّن المشترك (KIVO.BassamCalCard.month · data-cal-key="YYYY-MM") — والـ× بجانبه في غلافه */
+const MK = (y, m) => y + '-' + String(m).padStart(2, '0');
+const cardX = (p, key) => p.locator(`xpath=//main//*[*[@data-cal-kind="month" and @data-cal-key="${key}"]]/span[@title="سيتم حذف جميع بيانات الشهر"]`);
 
 async function addTask(p, title) {
   const btn = p.getByRole('button', { name: /إضافة أول مهمة|مهمة جديدة|إضافة مهمة/ }).first();
@@ -32,7 +34,6 @@ async function deleteMonth(p, name) {
   await p.getByRole('button', { name: 'حذف نهائي' }).click();
   return post;
 }
-const MONTHS = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
 
 test('مهام ①: مديرُ الإدارة وموظفٌ بدور يُنشئان مهامَّ ثم يحذفان الشهرَ كلَّه — يُحفظ ويبقى بعد التحميل · والشهرُ المقفل يُرفض حذفُه برسالةٍ عربية', { timeout: 600000 }, async () => {
   const lab = await world(), b = await chromium.launch();
@@ -50,7 +51,7 @@ test('مهام ①: مديرُ الإدارة وموظفٌ بدور يُنشئا
       await until(async () => (await mainText(p)).includes('TEST_ONLY مهمة ٢'), who + ': المهامُّ بعد التحميل').catch(fail);
       const made = Object.entries(await doc(s)).filter(([k]) => { const q = k.split('-'); return +q[0] === y && +q[1] === m; });   /* صفوفٌ حقيقية كتبتها الواجهة — تُبذر في الشهر المقفل أدناه */
       /* الحذفُ الجماعي للشهر الجاري */
-      const del = await deleteMonth(p, MONTHS[m - 1]).catch(fail);
+      const del = await deleteMonth(p, MK(y, m)).catch(fail);
       assert.ok(del && del.status() === 200, who + ': حذفُ الشهر: ' + (del ? del.status() + ' ' + (await del.text()).slice(0, 300) : 'لا طلب'));
       await lab.idle(); assert.equal(inMonth(await doc(s), y, m), 0, who + ': الشهرُ خالٍ في الخادم');
       await reloadAt(s, '#/tasks', 5000);
@@ -60,15 +61,15 @@ test('مهام ①: مديرُ الإدارة وموظفٌ بدور يُنشئا
       /* صفوفُ الواجهة نفسُها منقولةً إلى الشهر السابق (هويةٌ وأوقاتٌ قبل 30 يوماً · TEST_ONLY) — والشهرُ معتمدٌ مقفل (bassam_tasks_locks_v1: قفلُ الخادم؛
          الشهرُ المنقضي بلا اعتماد قفلُه في الواجهة وحدها — lockState في scope.items.tasks) */
       const D30 = 30 * 86400000, seeded = { ...before };
-      made.forEach(([k, v]) => { seeded[py + '-' + pm + '-' + k.split('-')[2]] = v.map((r) => { const x = JSON.parse(JSON.stringify(r)); x[13] -= D30; x[15] -= D30; x[16] -= D30; x[22] = 'TEST_ONLY_lk_' + x[22]; return x; }); });
+      made.forEach(([k, v]) => { seeded[MK(py, pm) + '-' + k.split('-')[2]] = v.map((r) => { const x = JSON.parse(JSON.stringify(r)); x[13] -= D30; x[15] -= D30; x[16] -= D30; x[22] = 'TEST_ONLY_lk_' + x[22]; return x; }); });
       await replaceOperationalFixture(lab.env, K, seeded);
-      await replaceOperationalFixture(lab.env, 'bsdept:' + A + ':bassam_tasks_locks_v1', { [py + '-' + pm]: true });
+      await replaceOperationalFixture(lab.env, 'bsdept:' + A + ':bassam_tasks_locks_v1', { [MK(py, pm)]: true });
       await reloadAt(s, '#/tasks', 5000);
       const n0 = inMonth(await doc(s), py, pm); assert.ok(n0 > 0, who + ': الشهرُ المقفل فيه مهام');
       await L(p, 'L.setState({ month: arg.m, year: arg.y }); await new Promise((go) => setTimeout(go, 800));', { y: py, m: pm });
       const t0 = (await seen(s)).length;
-      const x = await cardX(p, MONTHS[pm - 1]).count();
-      if (x) await deleteMonth(p, MONTHS[pm - 1]).catch(() => null);
+      const x = await cardX(p, MK(py, pm)).count();
+      if (x) await deleteMonth(p, MK(py, pm)).catch(() => null);
       else await L(p, 'await L._tkDeleteMonth(arg.y, arg.m);', { y: py, m: pm });
       await until(async () => (await seen(s)).slice(t0).some(isArabicRefusal), who + ': رسالةُ رفضٍ عربية لحذف شهرٍ مقفل (× ' + (x ? 'ظاهر' : 'غير ظاهر') + ') · في الخادم الآن ' + inMonth(await doc(s), py, pm) + ' من ' + n0).catch(fail);
       await lab.idle(); assert.equal(inMonth(await doc(s), py, pm), n0, who + ': لا يتغيّر شيء في الشهر المقفل');

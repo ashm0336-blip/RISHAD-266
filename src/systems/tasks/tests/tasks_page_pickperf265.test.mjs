@@ -15,8 +15,8 @@ const PERF_ONLY = !!process.env.KIVO_PERF_ONLY;
 const N = 1200, D = 'tst_d1', TAG = 'TEST_ONLY';
 const SHIFTS = ['الوردية الأولى', 'الوردية الثانية', 'الوردية الثالثة', 'الوردية الرابعة'];
 const FAM = ['العتيبي', 'الحربي', 'القحطاني', 'الشمري', 'الزهراني', 'الغامدي', 'المطيري'];
-const hij = (ms) => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(ms)).forEach(p => { o[p.type] = +p.value; }); return o; };
-const T = hij(Date.now()), YM = T.year + '-' + T.month, DAYK = YM + '-' + T.day;
+const hij = (ms) => { const f = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(ms)).forEach(p => { o[p.type] = +p.value; }); return o; };
+const T = hij(Date.now()), YM = T.year + '-' + String(T.month).padStart(2, '0'), DAYK = YM + '-' + String(T.day).padStart(2, '0');
 
 function dept() {
   const emps = [], st = {}, roster = { shifts: {} }, users = [];

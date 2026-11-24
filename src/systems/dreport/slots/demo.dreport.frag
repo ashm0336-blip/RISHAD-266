@@ -8,7 +8,7 @@ demoProvide({ sys: 'dreport', caps: ['dreport'], seed: async function (env, C) {
         var roster = emps.filter(function (e, q) { return q % C.shifts.length === j; }).map(function (e) { return { ekey: e.eid, st: 'pr', shift: s.name }; });
         shifts[s.name] = Object.assign({ pulled: true, roster: roster }, k > 0 ? { ap: 1, apAt: day.d + '/' + day.m, apBy: C.tag + 'مدير' } : {});
       });
-      doc[day.y + '-' + day.m + '-' + day.d] = { created: C.now - k * 864e5, shifts: shifts };
+      doc[calGKey(day.y, day.m, day.d)] = { created: C.now - k * 864e5, shifts: shifts };
     });
     await C.op('bsdept:' + d + ':bassam_dreport_v1', doc); C.count('dreport', 'days', C.days.length);
   }

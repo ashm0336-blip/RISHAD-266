@@ -12,7 +12,7 @@ import { chromium, openAs } from '../../../../tests/browser/lab_browser.mjs';
 import { replaceOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 import { present, openRoute, today, logicOf, callLogic } from '../../../../tests/removal/boundary_fx.mjs';
 
-const A = 'TEST_ONLY_A', SHIFT = 'TEST_ONLY_S', H = today(), YM = H.y + '-' + H.m, DAY = H.y + '-' + H.m + '-' + H.d;
+const A = 'TEST_ONLY_A', SHIFT = 'TEST_ONLY_S', H = today(), YM = H.ym, DAY = H.dk;
 const R1 = { id: 'TEST_ONLY_r1', name: 'TEST_ONLY دور أول', sys: {} }, R2 = { id: 'TEST_ONLY_r2', name: 'TEST_ONLY دور ثانٍ', sys: {} };
 const EMPS = [1, 2, 3, 4, 5, 6].map((i) => ({ eid: 'TEST_ONLY_eA' + i, name: 'TEST_ONLY موظف أ' + i, nid: '12000000' + String(i).padStart(2, '0') }));
 /* حملةُ الأدوار: eA1 · eA3 · eA4 ← الدور الأول · eA2 · eA5 ← الدور الثاني · eA6 بلا دور */

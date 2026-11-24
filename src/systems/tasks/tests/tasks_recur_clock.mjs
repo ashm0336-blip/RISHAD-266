@@ -7,7 +7,10 @@
      m30 — 2026-03-03: tomorrow 1447-9-15, the horizon ends a 30-day month (1447-9-30)  · the default (tasks_recur_patterns265)
      m29 — 2026-02-01: tomorrow 1447-8-14, the horizon ends a 29-day month (1447-8-29)  · tasks_recur_last29_265 (globalThis.__KIVO_RECUR_ANCHOR)
    Only Date.now() is shifted: the worker's own clock reads go through it (its one `new Date()` is a log timestamp). */
-export const RECUR_ANCHORS = { m30: Date.parse('2026-03-03T07:00:00Z'), m29: Date.parse('2026-02-01T07:00:00Z') };
+/* V7 · 53 تقويم: الشهرُ ميلاديٌّ (28–31 يوماً) — المرساتان تجعلان الأفقَ ينتهي بشهرٍ من 30 يوماً (m30: الغدُ 2026-04-03 ⇒ 2026-04-30)
+   وبأقصر شهر (m28: الغدُ 2026-02-02 ⇒ 2026-02-28) — فيُفحص md:"last" على شهرين بطولين مختلفين كل تشغيل كما كان */
+export const RECUR_ANCHORS = { m30: Date.parse('2026-04-02T07:00:00Z'), m28: Date.parse('2026-02-01T07:00:00Z') };
+export const RECUR_LAST = { m30: 30, m28: 28 };
 export const RECUR_ANCHOR = Object.prototype.hasOwnProperty.call(RECUR_ANCHORS, globalThis.__KIVO_RECUR_ANCHOR) ? globalThis.__KIVO_RECUR_ANCHOR : 'm30';
 const REAL_NOW = Date.now.bind(Date), OFFSET = RECUR_ANCHORS[RECUR_ANCHOR] - REAL_NOW();
 Date.now = () => REAL_NOW() + OFFSET;

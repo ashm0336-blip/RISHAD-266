@@ -421,6 +421,7 @@ async function empPrepareTransition(env, A, input) {
       !['add', 'update', 'replace'].includes(mode) ||
       !Number.isInteger(input.import.year) ||
       !/^\d{4}$/.test(String(input.import.year)) ||
+      calYearCal(input.import.year) !== 'g' ||   /* V7 · 53 تقويم: سنةُ الجدول ميلادية — هجريةٌ من عميلٍ قديم تُرفض */
       !Number.isInteger(input.import.month) ||
       input.import.month < 1 ||
       input.import.month > 12 ||
@@ -466,7 +467,7 @@ async function empPrepareTransition(env, A, input) {
   values.__dreportOn = input.intent === 'delete' || capOnDept(A, d, 'dreport');
   empCleanupValues(values, replace ? before : removed, after, replace, wipe, values.__staffOn);
   if (replace && values.__staffOn) {
-    var mk = input.import.year + '-' + input.import.month;
+    var mk = calGYm(input.import.year, input.import.month);   /* V7 · 53 تقويم: شهرُ الجدول ISO YYYY-MM (019p1) — السنةُ ميلادية (calYearCal يرفض غيرها أعلاه) */
     delete values.bassam_staffing_locks_v1[mk];
   }
   values.bassam_employees_v1 = after;

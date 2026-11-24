@@ -10,7 +10,7 @@ const UID = 'TEST_ONLY owner', D = 'dA', K = (r) => 'bsdept:' + D + ':' + r;
 const PL = K('bassam_plan_v1'), RD = K('bassam_rounds_v1'), DR = K('bassam_dreport_v1'), E = K('bassam_employees_v1');
 const copy = (v) => JSON.parse(JSON.stringify(v));
 const json = (v, status = 200) => new Response(JSON.stringify(v), { status, headers: { 'Content-Type': 'application/json' } });
-const NOW = { y: 1448, m: 6, d: 14 };
+const NOW = { y: 2026, m: 11, d: 14 };   /* V7 · 53 تقويم: «الآن» الميلادي المثبَّت (المفاتيحُ ISO بقاعدة world_fx hFx: 1448-6 ⇐ 2026-11) */
 const site = (n) => ({ sid: 'TEST_ONLY_s' + n, name: 'TEST_ONLY · موقع ' + n, zones: [{ uid: 'TEST_ONLY_z' + n, n: 'TEST_ONLY' }] });
 /* خادمٌ مزيَّف بالعقد: لكل مورد مقسَّم رأسٌ وفترات، ومراجعةٌ لكل فترة؛ grp يحسبه «الخادم» (هنا الاختبار) لا العميل */
 function server() {
@@ -25,9 +25,9 @@ function server() {
     S.heads[k + '@'] = head;
     Object.keys(S.heads).concat(Object.keys(S.periods)).forEach((x) => { S.rev[x] = S.rev[x] || 5; });
   }
-  put(PL, { floors: [site(0)], cfg: { TEST_ONLY: 1 }, months: { '1448-4': { d: [site(4)] }, '1448-5': { d: [site(5)] }, '1448-6': { d: [site(6)] } }, delMonths: {} });
-  put(RD, { __pMig: 2, 'm:1448-5': { ap: 1 }, '1448-5-29': { t: 1 }, 'm:1448-6': { ap: 0 }, '1448-6-13': { t: 2 }, '1448-6-14': { t: 3 } });
-  put(DR, { '1448-6-12': { x: 1 }, '1448-6-13': { x: 2 }, '1448-6-14': { x: 3 } });
+  put(PL, { floors: [site(0)], cfg: { TEST_ONLY: 1 }, months: { '2026-09': { d: [site(4)] }, '2026-10': { d: [site(5)] }, '2026-11': { d: [site(6)] } }, delMonths: {} });
+  put(RD, { __pMig: 2, 'm:2026-10': { ap: 1 }, '2026-10-29': { t: 1 }, 'm:2026-11': { ap: 0 }, '2026-11-13': { t: 2 }, '2026-11-14': { t: 3 } });
+  put(DR, { '2026-11-12': { x: 1 }, '2026-11-13': { x: 2 }, '2026-11-14': { x: 3 } });
   const reads = [], saves = [];
   const C = { req: async (route, o = {}) => {
     const u = new URL(route, 'http://x');
@@ -69,7 +69,7 @@ function client() {
   T.W.document.hidden = true;
   T.W.KIVO.BassamAuth = { user: () => ({ id: UID, role: 'dept', deptId: D }) };
   T.W.KIVO.BassamDepts = { active: () => D };
-  T.W.KIVO.BassamCal = { hNow: (date) => (Date.now() - date.getTime() > 1000 ? { ...NOW, d: NOW.d - 1 } : { ...NOW }) };
+  T.W.KIVO.BassamCal = { gAt: (date) => (Date.now() - date.getTime() > 1000 ? { ...NOW, d: NOW.d - 1 } : { ...NOW }) };
   return { ...srv, T, ops: T.W.KIVO.__BS_SRV.operations };
 }
 const owner = {};
@@ -85,12 +85,12 @@ test('a split resource is read as its head + the current month only; the page st
     assert.equal(r.ok, 1, JSON.stringify(r));
     assert.ok(f.reads.every((q) => !q.keys.includes(PL) && !q.keys.includes(RD)), 'never the whole document: ' + JSON.stringify(f.reads));
     const qp = f.reads.find((q) => q.keys.includes(PL + '@'));
-    assert.deepEqual(qp.range, [PL + '@1448-6'], 'the plan: this month');
+    assert.deepEqual(qp.range, [PL + '@2026-11'], 'the plan: this month');
     const plan = copy(f.ops.get('bassam_plan_v1'));
-    assert.deepEqual(Object.keys(plan.months), ['1448-6'], 'only the shown month is in memory');
+    assert.deepEqual(Object.keys(plan.months), ['2026-11'], 'only the shown month is in memory');
     assert.deepEqual(plan.floors, [site(0)], 'the head is whole');
     const rounds = copy(f.ops.get('bassam_rounds_v1'));
-    assert.deepEqual(Object.keys(rounds).sort(), ['1448-6-13', '1448-6-14', '__pMig', 'm:1448-6'], 'rounds: this month days + its month control');
+    assert.deepEqual(Object.keys(rounds).sort(), ['2026-11-13', '2026-11-14', '__pMig', 'm:2026-11'], 'rounds: this month days + its month control');
     assert.deepEqual(copy(f.ops.get('bassam_employees_v1')), f.S.plain[E], 'unsplit resources unchanged');
     assert.equal(f.ops.ready([PL, RD, E]), true);
   } finally { f.T.dispose(); }
@@ -100,19 +100,19 @@ test('saving a month sends only that month (request bytes), never the head or th
   const f = client();
   try {
     await f.ops.read([PL]);
-    await f.ops.want('bassam_plan_v1', { groups: ['1448-5'] });
-    assert.deepEqual(Object.keys(copy(f.ops.get('bassam_plan_v1')).months).sort(), ['1448-5', '1448-6'], 'navigation loads the other month');
-    const r = await save(f, 'bassam_plan_v1', (d) => { d.months['1448-6'].d[0].name = 'TEST_ONLY · معدَّل'; });
+    await f.ops.want('bassam_plan_v1', { groups: ['2026-10'] });
+    assert.deepEqual(Object.keys(copy(f.ops.get('bassam_plan_v1')).months).sort(), ['2026-10', '2026-11'], 'navigation loads the other month');
+    const r = await save(f, 'bassam_plan_v1', (d) => { d.months['2026-11'].d[0].name = 'TEST_ONLY · معدَّل'; });
     assert.equal(r.ok, 1, JSON.stringify(r));
     assert.equal(f.saves.length, 1);
     const b = f.saves[0].body;
-    assert.deepEqual(Object.keys(b.set), [PL + '@1448-6'], 'only the changed month');
+    assert.deepEqual(Object.keys(b.set), [PL + '@2026-11'], 'only the changed month');
     assert.deepEqual(b.del, []);
-    assert.equal(b.base[PL + '@1448-6'], 5, 'its own period revision');
-    const monthBytes = JSON.stringify(JSON.stringify(f.S.periods[PL + '@1448-6'])).length;
+    assert.equal(b.base[PL + '@2026-11'], 5, 'its own period revision');
+    const monthBytes = JSON.stringify(JSON.stringify(f.S.periods[PL + '@2026-11'])).length;
     assert.ok(f.saves[0].bytes < monthBytes + 1500, 'request ≈ one month: ' + f.saves[0].bytes + ' vs month ' + monthBytes);
-    assert.deepEqual(f.S.periods[PL + '@1448-4'], { d: [site(4)] }, 'the month never loaded is stored as it was');
-    assert.equal(copy(f.ops.get('bassam_plan_v1')).months['1448-6'].d[0].name, 'TEST_ONLY · معدَّل');
+    assert.deepEqual(f.S.periods[PL + '@2026-09'], { d: [site(4)] }, 'the month never loaded is stored as it was');
+    assert.equal(copy(f.ops.get('bassam_plan_v1')).months['2026-11'].d[0].name, 'TEST_ONLY · معدَّل');
   } finally { f.T.dispose(); }
 });
 
@@ -135,17 +135,17 @@ test('a day save sends only that day; removing a shown day deletes that day only
   const f = client();
   try {
     await f.ops.read([RD]);
-    let r = await save(f, 'bassam_rounds_v1', (d) => { d['1448-6-14'].t = 99; });
+    let r = await save(f, 'bassam_rounds_v1', (d) => { d['2026-11-14'].t = 99; });
     assert.equal(r.ok, 1, JSON.stringify(r));
-    assert.deepEqual(Object.keys(f.saves[0].body.set), [RD + '@1448-6-14']);
-    r = await save(f, 'bassam_rounds_v1', (d) => { delete d['1448-6-13']; d['1448-6-15'] = { t: 4 }; });
+    assert.deepEqual(Object.keys(f.saves[0].body.set), [RD + '@2026-11-14']);
+    r = await save(f, 'bassam_rounds_v1', (d) => { delete d['2026-11-13']; d['2026-11-15'] = { t: 4 }; });
     assert.equal(r.ok, 1, JSON.stringify(r));
     const b = f.saves[1].body;
-    assert.deepEqual(Object.keys(b.set), [RD + '@1448-6-15']);
-    assert.equal(b.base[RD + '@1448-6-15'], 0);
-    assert.deepEqual(b.del, [RD + '@1448-6-13']);
-    assert.deepEqual(f.S.periods[RD + '@1448-5-29'], { t: 1 }, 'the month not shown is untouched');
-    assert.ok(!(RD + '@1448-6-13' in f.S.periods));
+    assert.deepEqual(Object.keys(b.set), [RD + '@2026-11-15']);
+    assert.equal(b.base[RD + '@2026-11-15'], 0);
+    assert.deepEqual(b.del, [RD + '@2026-11-13']);
+    assert.deepEqual(f.S.periods[RD + '@2026-10-29'], { t: 1 }, 'the month not shown is untouched');
+    assert.ok(!(RD + '@2026-11-13' in f.S.periods));
   } finally { f.T.dispose(); }
 });
 
@@ -154,15 +154,15 @@ test('a period loaded after the page last read the document is never deleted by 
   try {
     await f.ops.read([PL]);
     const stale = copy(f.ops.get('bassam_plan_v1'));          /* what the page holds */
-    await f.ops.want('bassam_plan_v1', { groups: ['1448-5'] }); /* loaded later, not yet read by the page */
+    await f.ops.want('bassam_plan_v1', { groups: ['2026-10'] }); /* loaded later, not yet read by the page */
     const d = f.ops.draft();
-    stale.months['1448-6'].c = 1;
+    stale.months['2026-11'].c = 1;
     d.set('bassam_plan_v1', stale);
     const r = await f.ops.flush(d.stage());
     assert.equal(r.ok, 1, JSON.stringify(r));
     assert.deepEqual(f.saves[0].body.del, [], 'the later month is not deleted');
-    assert.deepEqual(Object.keys(f.saves[0].body.set), [PL + '@1448-6']);
-    assert.deepEqual(f.S.periods[PL + '@1448-5'], { d: [site(5)] });
+    assert.deepEqual(Object.keys(f.saves[0].body.set), [PL + '@2026-11']);
+    assert.deepEqual(f.S.periods[PL + '@2026-10'], { d: [site(5)] });
   } finally { f.T.dispose(); }
 });
 
@@ -171,12 +171,12 @@ test('loading another month does not invalidate an open draft; a changed shown p
   try {
     await f.ops.read([PL]);
     const d = f.ops.draft(); d.get('bassam_plan_v1');
-    await f.ops.want('bassam_plan_v1', { groups: ['1448-5'] });
-    const doc = d.get('bassam_plan_v1'); doc.months['1448-6'].c = 2; d.set('bassam_plan_v1', doc);
+    await f.ops.want('bassam_plan_v1', { groups: ['2026-10'] });
+    const doc = d.get('bassam_plan_v1'); doc.months['2026-11'].c = 2; d.set('bassam_plan_v1', doc);
     const r = await f.ops.flush(d.stage());
     assert.equal(r.ok, 1, JSON.stringify(r));
     const d2 = f.ops.draft(); d2.get('bassam_plan_v1');
-    f.S.rev[PL + '@1448-6'] = 90; f.S.periods[PL + '@1448-6'] = { d: [], TEST_ONLY: 'غيري' };   /* another editor changed the shown month */
+    f.S.rev[PL + '@2026-11'] = 90; f.S.periods[PL + '@2026-11'] = { d: [], TEST_ONLY: 'غيري' };   /* another editor changed the shown month */
     await f.ops.read([PL]);
     assert.throws(() => d2.get('bassam_plan_v1'), /operations-draft-review-required/, 'the draft built on the old month is refused, as before');
   } finally { f.T.dispose(); }
@@ -186,8 +186,8 @@ test('a conflict on a period is reported on the logical key (pages know their re
   const f = client();
   try {
     await f.ops.read([RD]);
-    f.S.rev[RD + '@1448-6-14'] = 77;   /* someone else saved that day */
-    const d = f.ops.draft(), doc = d.get('bassam_rounds_v1'); doc['1448-6-14'].t = 5; d.set('bassam_rounds_v1', doc);
+    f.S.rev[RD + '@2026-11-14'] = 77;   /* someone else saved that day */
+    const d = f.ops.draft(), doc = d.get('bassam_rounds_v1'); doc['2026-11-14'].t = 5; d.set('bassam_rounds_v1', doc);
     const r = await f.ops.flush(d.stage());
     assert.equal(r.ok, 0); assert.equal(r.err, 'conflict');
     assert.deepEqual(Object.keys(r.details.conflicts), [RD]);
@@ -201,22 +201,22 @@ test('the daily report is read by day (today, yesterday, month control), not by 
     assert.equal(r.ok, 1, JSON.stringify(r));
     const q = f.reads.find((x) => x.keys.includes(DR + '@'));
     assert.deepEqual(q.range, []);
-    assert.deepEqual(q.keys.slice().sort(), [DR + '@', DR + '@1448-6-13', DR + '@1448-6-14', DR + '@m:1448-6'].sort());
-    assert.deepEqual(Object.keys(copy(f.ops.get('bassam_dreport_v1'))).sort(), ['1448-6-13', '1448-6-14']);
-    assert.equal(f.ops.period('bassam_dreport_v1', 'm:1448-6'), null, 'month control absent');
-    assert.equal(f.ops.period('bassam_dreport_v1', '1448-6-12'), undefined, 'not loaded');
+    assert.deepEqual(q.keys.slice().sort(), [DR + '@', DR + '@2026-11-13', DR + '@2026-11-14', DR + '@m:2026-11'].sort());
+    assert.deepEqual(Object.keys(copy(f.ops.get('bassam_dreport_v1'))).sort(), ['2026-11-13', '2026-11-14']);
+    assert.equal(f.ops.period('bassam_dreport_v1', 'm:2026-11'), null, 'month control absent');
+    assert.equal(f.ops.period('bassam_dreport_v1', '2026-11-12'), undefined, 'not loaded');
   } finally { f.T.dispose(); }
 });
 
 test('a month range over the read limit falls back to the shown days', async () => {
   const f = client();
   try {
-    for (let i = 1; i <= 45; i++) f.S.periods[RD + '@1448-6-x' + i] = { t: i };   /* > 40 periods in the month (grp: 1448-6 by the TEST_ONLY server) */
+    for (let i = 1; i <= 45; i++) f.S.periods[RD + '@2026-11-x' + i] = { t: i };   /* > 40 periods in the month (grp: 1448-6 by the TEST_ONLY server) */
     const r = await f.ops.read([RD]);
     assert.equal(r.ok, 1, JSON.stringify(r));
     const last = f.reads[f.reads.length - 1];
     assert.deepEqual(last.range, []);
-    assert.ok(last.keys.includes(RD + '@1448-6-14') && last.keys.includes(RD + '@m:1448-6'));
+    assert.ok(last.keys.includes(RD + '@2026-11-14') && last.keys.includes(RD + '@m:2026-11'));
   } finally { f.T.dispose(); }
 });
 
@@ -237,10 +237,10 @@ test('several months of a day resource are read month by month in one read, all 
   try {
     await f.ops.read([RD]);
     const n0 = f.reads.length;
-    const [a, b] = await Promise.all([f.ops.want('bassam_rounds_v1', { groups: ['1448-5', '1448-6', '1448-4'] }), f.ops.want('bassam_rounds_v1', { periods: ['m:1448-3'] })]);
+    const [a, b] = await Promise.all([f.ops.want('bassam_rounds_v1', { groups: ['2026-10', '2026-11', '2026-09'] }), f.ops.want('bassam_rounds_v1', { periods: ['m:2026-08'] })]);
     assert.equal(a.ok, 1, JSON.stringify(a)); assert.equal(b.ok, 1, JSON.stringify(b));
-    assert.deepEqual(copy(f.ops.loaded('bassam_rounds_v1').groups).sort(), ['1448-4', '1448-5', '1448-6']);
+    assert.deepEqual(copy(f.ops.loaded('bassam_rounds_v1').groups).sort(), ['2026-09', '2026-10', '2026-11']);
     assert.ok(f.reads.slice(n0).every((q) => q.range.length <= 1), 'one month per request: ' + JSON.stringify(f.reads.slice(n0)));
-    assert.deepEqual(copy(f.ops.get('bassam_rounds_v1'))['1448-5-29'], { t: 1 });
+    assert.deepEqual(copy(f.ops.get('bassam_rounds_v1'))['2026-10-29'], { t: 1 });
   } finally { f.T.dispose(); }
 });

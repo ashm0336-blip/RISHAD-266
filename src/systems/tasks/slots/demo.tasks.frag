@@ -8,7 +8,7 @@ demoProvide({ sys: 'tasks', caps: ['tasks'], seed: async function (env, C) {
   }
   for (var i = 0; i < C.units.length; i++) {
     var d = C.units[i], emps = C.emps[d] || [], doc = {}, n = 0, T = C.days[0], Y = C.days[1] || C.days[0];
-    var DT = T.y + '-' + T.m + '-' + T.d, DY = Y.y + '-' + Y.m + '-' + Y.d;
+    var DT = calGKey(T.y, T.m, T.d), DY = calGKey(Y.y, Y.m, Y.d);   /* V7 · 53 تقويم: ISO */
     doc[DT] = []; if (DY !== DT) doc[DY] = [];
     emps.forEach(function (e, j) {
       doc[DT].push(row({ title: 'مهمة اليوم ' + (j + 1), e: e, st: j % 2 ? 'in_progress' : 'pending', acc: j % 2 ? C.now - H / 2 : null, s: C.now - H, f: C.now + 3 * H })); n++;

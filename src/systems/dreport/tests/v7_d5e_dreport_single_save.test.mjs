@@ -16,7 +16,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const rd = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const copy = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 const LOGIC = rd('src/systems/dreport/client/logic.js');
-const Y = 1500, M = 3, D = 7, SHIFT = 'TEST_ONLY_S';
+const Y = 2100, M = 3, D = 7, SHIFT = 'TEST_ONLY_S';   /* V7 · 53 تقويم: يومٌ قادم ميلادي (كان 1500 هـ) — المفاتيحُ ISO كما تكتبها الصفحة */
+const P2 = (n) => String(n).padStart(2, '0'), YM = Y + '-' + P2(M), DK = (d) => YM + '-' + P2(d);
 
 /* ── الكودُ القديم (src/systems/dreport/client/logic.js قبل د5-هـ · r4) حرفياً: يُحقن مكانَ الجديد ليُقارَن الناتجُ ── */
 const SWAP = [
@@ -55,17 +56,17 @@ function oldLogic() {
 
 function planDoc() {
   const floor = (n) => ({ sid: 'TEST_ONLY_S' + n, zones: [{ code: 'TEST_ONLY_Z' + n, count: 9, pc: { a: 1 }, emp: [] }], gates: [{ num: n, emp: [] }], marks: [], paths: [] });
-  return { floors: [floor(0), floor(1)], months: { [Y + '-' + M]: { d: [floor(0), floor(1)] } } };
+  return { floors: [floor(0), floor(1)], months: { [YM]: { d: [floor(0), floor(1)] } } };
 }
 function baseStore({ round = false, pulled = false } = {}) {
-  const day = Y + '-' + M + '-' + D, shifts = {};
+  const day = DK(D), shifts = {};
   if (pulled) shifts[SHIFT] = { pulled: true, roster: [{ ekey: 'TEST_ONLY_E1', st: 'pr' }], leaders: { chief: '', deputy: '' }, def: null };
   const store = {
     bassam_dreport_v1: { [day]: { created: 1, shifts } },
     bassam_plan_v1: planDoc(),
     bassam_employees_v1: [{ eid: 'TEST_ONLY_E1', name: 'TEST_ONLY_A' }, { eid: 'TEST_ONLY_E2', name: 'TEST_ONLY_B' }],
     bassam_shift_options_v1: [{ name: SHIFT }],
-    bassam_rounds_v1: { [Y + '-' + M + '-' + (D - 2)]: { t: 1, ap: 0, d: [{ sid: 'TEST_ONLY_S0', zones: [{ code: 'TEST_ONLY_old', emp: ['TEST_ONLY_E2'] }], gates: [], marks: [], paths: [] }] } },
+    bassam_rounds_v1: { [DK(D - 2)]: { t: 1, ap: 0, d: [{ sid: 'TEST_ONLY_S0', zones: [{ code: 'TEST_ONLY_old', emp: ['TEST_ONLY_E2'] }], gates: [], marks: [], paths: [] }] } },
   };
   if (round) store.bassam_rounds_v1[day] = { t: 1, ap: 0, d: [{ sid: 'TEST_ONLY_S0', zones: [{ code: 'TEST_ONLY_Z', emp: [] }], gates: [{ num: 3, emp: [] }], marks: [], paths: [] }] };
   return store;
