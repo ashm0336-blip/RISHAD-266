@@ -21,7 +21,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     };
     return super.setState(typeof update === "function" ? (state, props) => capture(update(state, props), state) : capture(update, this.state), done);
   }
-  _stMonthName(n) { return "«" + ((this.MONTHS && this.MONTHS[n - 1]) || n) + " " + this.state.year + " هـ»"; }
+  /* V7 · 53 تقويم (REVIEW 22 · عيب 3): الشهرُ ميلادي («نوفمبر 2026») — كان موسوماً بـ«هـ» */
+  _stMonthName(n) { return "«" + ((this.MONTHS && this.MONTHS[n - 1]) || n) + " " + this.state.year + "»"; }
   async _opsSave(intent, edit) {
     if (!["sdOpen", "restOpen", "permOpen", "csOpen", "csEdit", "wkOpen", "mkNew", "lockConfirm", "delMonth", "retroAsk"].some(key => this.state[key] != null && this.state[key] !== false) && KIVO.__BS_SRV.operations.status().state === "idle") KIVO.__BS_SRV.operations.begin(this, "staff-editor");
     const result = await KIVO.__BS_SRV.operations.commit(this, "staff-editor", intent, draft => {
