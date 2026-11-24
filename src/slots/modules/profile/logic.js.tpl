@@ -181,7 +181,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       emps = this.LS("bassam_employees_v1", []),
       L = PF.link(u, emps),
       toks = PF.tokens(u, L.rec, emps),
-      T = PF.hijriAt(Date.now()),
+      T = PF.dayAt(Date.now()),   /* V7 · 53 تقويم: يومُ الرياض الميلادي ومفاتيحُه ISO */
       y0 = ym || T.ym,
       p = /^(\d+)-(\d+)$/.exec(y0),
       y = +p[1],
@@ -309,22 +309,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (KIVO.BassamNav && KIVO.BassamNav.go) return void KIVO.BassamNav.go(t);
     } catch (t) {}
   }
-  hParts(t) { return KIVO.BassamCal.hPartsSafe(t); }   /* V7 · د5-د: بتراجعٍ إن غاب دعمُ التقويم (385-calendar) */
+  hParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }   /* V7 · 53 تقويم: «صفحتي» ميلادية — يومُ الرياض المدني (الاسمُ قديم) */
   MONTHS() {
-    return [
-      "محرم",
-      "صفر",
-      "ربيع الأول",
-      "ربيع الآخر",
-      "جمادى الأولى",
-      "جمادى الآخرة",
-      "رجب",
-      "شعبان",
-      "رمضان",
-      "شوال",
-      "ذو القعدة",
-      "ذو الحجة",
-    ];
+    return KIVO.BassamCal.G_MONTHS.slice();   /* V7 · 53 تقويم: الأشهرُ ميلادية */
   }
   wdName(t) {
     try {
@@ -463,9 +450,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       p = P0,
       Pop = l && MM && MM.day ? { y: MM.day.y, m: MM.day.m, d: MM.day.d } : P0,
       wdOp = l && MM && MM.day ? MM.day.wd : this.wdName(c),
-      m = p.y + "-" + p.m + "-" + p.d,
+      m = KIVO.BassamCal.gKey(p.y, p.m, p.d),
       d = this.wdName(c),
-      g = u[p.y + "-" + p.m] || {},
+      g = u[KIVO.BassamCal.gYm(p.y, p.m)] || {},
       w = Array.isArray(g.__shifts) && g.__shifts.length ? g.__shifts : GO,
       S = (t) => (s ? s.entryKey(g, t) : (t && (t.eid || t.nid || t.name)) || ""),
       b = {};
@@ -535,7 +522,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     /* الخريطة: جولةُ اليوم، وإلا مواقعُ خطة الشهر (تُرسم الخريطةُ نفسُها ولو كانت مسودة — لكن المسودة لا تُعلَّم «موقعك» — OD-5) */
     const Q = RND[m] || null,
       tt = Array.isArray(Z.floors) ? Z.floors : [],
-      et = (Z.months || {})[p.y + "-" + p.m],
+      et = (Z.months || {})[KIVO.BassamCal.gYm(p.y, p.m)],
       st = et ? (Array.isArray(et) ? et : et.d) : null,
       at =
         !(Q && Array.isArray(Q.d)) &&
@@ -659,7 +646,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       for (let t = 6; t >= 0; t--) {
         const e = new Date(c.getTime() - 864e5 * t),
           s = this.hParts(e),
-          a = s.y + "-" + s.m + "-" + s.d,
+          a = KIVO.BassamCal.gKey(s.y, s.m, s.d),
           r = this.wdName(e),
           n = B[a];
         let i = "none",
@@ -780,7 +767,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
      الفتحُ يعيد جلبَ الشهر (المحفوظُ في الحالة يُعرض حتى يصل الأحدث) فلا يبقى سجلٌّ قديم بعد تعديلٍ من الإدارة */
   pfOpenHist(type, ym) {
     const T = this.pfData().Top,
-      cur = T.y + "-" + T.m,
+      cur = KIVO.BassamCal.gYm(T.y, T.m),
       y0 = ym || cur;
     this.setState({ pfPanel: "hist", histType: type || "all", histYm: y0, histErr: "", pfMsg: "", pfAccMsg: "" });
     this.pfHistLoad(y0 === cur ? "" : y0, !0);
@@ -788,7 +775,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   pfHistReload() {
     const T = this.pfData().Top,
-      cur = T.y + "-" + T.m,
+      cur = KIVO.BassamCal.gYm(T.y, T.m),
       ym = this.state.histYm || cur;
     this.pfHistLoad(ym === cur ? "" : ym, !0);
   }
@@ -1159,12 +1146,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     /* V7 · 53: قاعدةُ التحية الواحدة (KIVO.BassamGreet · 440-count) */ const greet53 = KIVO.BassamGreet(o);
     ((r.greeting = greet53.text), (r.greetIsDay = greet53.day), (r.greetIsNight = !r.greetIsDay));
     const f = this.MONTHS();
-    let l = "";
-    try {
-      l = i.now.toLocaleDateString("ar-u-ca-gregory-nu-latn", { day: "numeric", month: "long", year: "numeric" });
-    } catch (t) {}
     const H0 = this.hParts(i.now);
-    r.dateLine = this.wdName(i.now) + " " + H0.d + " " + f[H0.m - 1] + " " + H0.y + (l ? " · " + l : "");
+    r.dateLine = this.wdName(i.now) + " " + H0.d + " " + f[H0.m - 1] + " " + H0.y + " · " + KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(H0.y, H0.m, H0.d));   /* V7 · 53 تقويم: الميلاديُّ ثم الهجريُّ التابع */
     /* KIVO_264 · D12: الإدارةُ في سطر الدور إدارةُ الحساب (لا الإدارةُ النشطة في الجلسة) — ومدير النظام بلا إدارة */
     const h = e && e.deptId ? this.deptNameOf(e.deptId) : "",
       p = (() => {
@@ -1529,7 +1512,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ST = (PF && PF.ST) || {},
       r = {},
       noAl = (t) => String(t || "").replace(/^ال/, ""),
-      cur = i.Top.y + "-" + i.Top.m;
+      cur = KIVO.BassamCal.gYm(i.Top.y, i.Top.m);
     if (i.isStaff) {
       r.week = (i.pfWeek || []).map((w) => {
         const c = w.act ? w.act.code || "pr" : "",
@@ -1649,7 +1632,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       TD = SITE && SITE.today,
       DR = SITE && SITE.draft,
       EV = (PF && PF.EV) || {},
-      ml = PF ? PF.monthLabel((SITE && SITE.planYm) || i.Top.y + "-" + i.Top.m) : "",
+      ml = PF ? PF.monthLabel((SITE && SITE.planYm) || KIVO.BassamCal.gYm(i.Top.y, i.Top.m)) : "",
       row = (k, l, v, s, ev, src) => ({ k, l, v, s, sOn: !!s, ev, evl: EV[ev] || "", evCls: "pf-ev ev-" + ev, src, srcOn: !!src });
     if (!i.isStaff) return r;
     if (!SITE) r.spotRows.push(row("off", "الموقع المُسنَد", i.ME && i.ME.loading ? "جارٍ التحميل…" : "لا بيانات موقعٍ مرتبطة بحسابك", "", "none", ""));
@@ -1684,7 +1667,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   pfHistGo(ym) {
     const T = this.pfData().Top,
-      cur = T.y + "-" + T.m;
+      cur = KIVO.BassamCal.gYm(T.y, T.m);
     this.setState({ histYm: ym, histErr: "" });
     this.pfHistLoad(ym === cur ? "" : ym);
   }
@@ -1694,7 +1677,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const r = { histFilters: [], histSections: [], histGrid: [], histGridOn: !1 };
     if ("hist" !== a.pfPanel) return r;
     const PF = KIVO.BassamProfileFacts,
-      cur = i.Top.y + "-" + i.Top.m,
+      cur = KIVO.BassamCal.gYm(i.Top.y, i.Top.m),
       ym = a.histYm || cur,
       HS = a.pfHist || {},
       H = HS[ym] || (ym === cur ? HS.cur : null),
