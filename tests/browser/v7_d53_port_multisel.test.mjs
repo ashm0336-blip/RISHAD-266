@@ -17,9 +17,9 @@ const B = 'tst_demo_d1', SCOPE = { kind: 'dept', departmentId: B }, RK = 'bsdept
 const need = hasSystem('plan', 'daily') ? {} : { skip: 'يحتاج نظامَي الخطة والجولات' };
 const clone = (v) => JSON.parse(JSON.stringify(v));
 const noEid = (z) => { const x = { ...z }; delete x.eid; return JSON.stringify(x); };
-/* مكوّنُ صفحة الجولات (الصنفُ الذي يحمل _dsBulkStatus) */
-const L = `(() => { for (const el of document.querySelectorAll('main *')) { const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let x = fk ? el[fk] : null;
-  while (x) { const n = x.stateNode; for (const c of [n, n && n.logic]) if (c && typeof c._dsBulkStatus === 'function' && c.state && c.state.rounds) return c; x = x.return; } } return null; })()`;
+/* مكوّنُ صفحة الجولات (الصنفُ الذي يحمل _dsCanEditZones) — دالّةٌ تُرسل إلى الصفحة (لا eval داخلها: CSP) */
+const finder = () => { for (const el of document.querySelectorAll('main *')) { const fk = Object.keys(el).find((k) => k.indexOf('__reactFiber') === 0); let x = fk ? el[fk] : null;
+  while (x) { const n = x.stateNode; for (const c of [n, n && n.logic]) if (c && typeof c._dsCanEditZones === 'function' && c.state && c.state.rounds && Object.keys(c.state.rounds).length) { window.__pc = c; return true; } x = x.return; } } return false; };
 
 async function world() {
   const lab = await startLab(), b = await chromium.launch();
@@ -46,26 +46,26 @@ async function world() {
     const s = await openAs(b, lab, m1.un, m1.pw), p = s.page, saves = [];
     p.on('response', async (r) => { if (r.request().method() === 'POST' && /\/api\/save\b/.test(r.url())) { let j = null; try { j = await r.json(); } catch (e) { /* بلا جسم */ } saves.push({ st: r.status(), j }); } });
     await s.go('#/daily/rounds', 3000);
-    await p.waitForFunction((src) => { const c = (0, eval)(src); return !!(c && c.state.rounds && Object.keys(c.state.rounds).length); }, L, { timeout: 60000, polling: 250 });
+    await p.waitForFunction(finder, null, { timeout: 60000, polling: 250 });
     const read = async () => (await s.api('/api/operations/read?keys=' + encodeURIComponent(RK))).j.resources[RK];
     const close = async () => { await b.close(); await lab.close(); };
     return { lab, T, s, p, saves, H, DAY, PAST, m1, read, close, b, su };
   } catch (e) { await b.close(); await lab.close(); throw e; }
 }
 /* الصفحةُ على يومٍ وموقعه الأول في عدسة المصليات وشريطُ الأدوات مفتوح */
-const at = (p, y, m, d) => p.evaluate(([src, y, m, d]) => new Promise((r) => (0, eval)(src).setState({ year: y, month: m, day: d, floor: 0, dsTab: 'rounds', lens: 'zones', panelTab: 'zones', dsAsn: false, tool: 'select', dsToolsOpen: true, dsSel: null, selMulti: [], dsMulti: false, dview: { x: 0, y: 0, w: 1000, h: 600 } }, r)), [L, y, m, d]);
+const at = (p, y, m, d) => p.evaluate(([y, m, d]) => new Promise((r) => window.__pc.setState({ year: y, month: m, day: d, floor: 0, dsTab: 'rounds', lens: 'zones', panelTab: 'zones', dsAsn: false, tool: 'select', dsToolsOpen: true, dsSel: null, selMulti: [], dsMulti: false, dview: { x: 0, y: 0, w: 1000, h: 600 } }, r)), [y, m, d]);
 /* لمسُ مصلى i في الخريطة: نقرةٌ حقيقية على عنصره (معالجُ React نفسُه) */
-const tapZone = (p, i) => p.evaluate(([src, i]) => {
-  const c = (0, eval)(src), s = c.state, k = s.year + '-' + s.month + '-' + s.day, site = c._rdAt(s.rounds[k].d, s.floor), d = site.zones[i].d;
+const tapZone = (p, i) => p.evaluate((i) => {
+  const c = window.__pc, s = c.state, k = s.year + '-' + s.month + '-' + s.day, site = c._rdAt(s.rounds[k].d, s.floor), d = site.zones[i].d;
   const el = [...document.querySelectorAll('svg[data-ds-zoom] path')].find((x) => x.getAttribute('d') === d && x.getAttribute('fill') !== 'none');
   if (!el) return false;
   for (const t of ['pointerdown', 'pointerup']) el.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerType: 'touch', isPrimary: true, pointerId: 7 }));
   el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   return true;
-}, [L, i]);
+}, i);
 /* زرُّ شريط الأفعال الجماعية (لوحةٌ قائمة: «تفعيل» · «تعطيل») */
 const dock = (p, name) => p.locator('div[data-dock="1"] button').filter({ hasText: new RegExp('^\\s*' + name + '\\s*$') });
-const selected = (p) => p.evaluate((src) => JSON.stringify((0, eval)(src).state.selMulti), L);
+const selected = (p) => p.evaluate(() => JSON.stringify(window.__pc.state.selMulti));
 
 test('53 ملحق 6 · 6 — التحديدُ المتعدد على نسخةٍ بشكل Production: تأكيدٌ ثم حفظٌ ذرّيٌّ واحد · التاريخُ كما هو · التعارضُ يرفض الكل · اليومُ الماضي بلا أداة', { timeout: 900000, ...need }, async () => {
   const W = await world(), { p, H, DAY } = W;
@@ -73,8 +73,8 @@ test('53 ملحق 6 · 6 — التحديدُ المتعدد على نسخةٍ �
     const before = await W.read();
     await at(p, H.y, H.m, H.d); await p.waitForTimeout(600);
     const tool = p.getByRole('button', { name: 'تحديد متعدد للمصليات', exact: true });
-    const why = await p.evaluate((src) => { const c = (0, eval)(src), s = c.state, v = c.renderVals(), k = s.year + '-' + s.month + '-' + s.day;
-      const btn = document.querySelector('[aria-label="تحديد متعدد للمصليات"]'), bar = document.getElementById('bsDsToolsBar'); return { dom: !!btn, rect: btn && JSON.stringify(btn.getBoundingClientRect()), barOn: !!bar, barRect: bar && JSON.stringify(bar.getBoundingClientRect()), hash: location.hash, k, has: !!(s.rounds[k]), lock: c._dsLockInfo(), canW: c._dsCanWrite(), lens: c.bsLensOn('zones'), on: v.dsMultiToolOn, open: v.dsToolsOpenOn, bar: v.dsCanDrawBar, edit: c._dsCanEditZones() }; }, L);
+    const why = await p.evaluate(() => { const c = window.__pc, s = c.state, v = c.renderVals(), k = s.year + '-' + s.month + '-' + s.day;
+      const btn = document.querySelector('[aria-label="تحديد متعدد للمصليات"]'), bar = document.getElementById('bsDsToolsBar'); return { dom: !!btn, rect: btn && JSON.stringify(btn.getBoundingClientRect()), barOn: !!bar, barRect: bar && JSON.stringify(bar.getBoundingClientRect()), hash: location.hash, k, has: !!(s.rounds[k]), lock: c._dsLockInfo(), canW: c._dsCanWrite(), lens: c.bsLensOn('zones'), on: v.dsMultiToolOn, open: v.dsToolsOpenOn, bar: v.dsCanDrawBar, edit: c._dsCanEditZones() }; });
     assert.ok(await tool.isVisible(), 'الأداةُ في شريط أدوات المصليات: ' + JSON.stringify(why));
     await tool.click(); await p.waitForTimeout(300);
     assert.equal(await tool.getAttribute('aria-pressed'), 'true');
