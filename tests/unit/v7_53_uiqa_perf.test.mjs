@@ -25,7 +25,7 @@ test('٦ — قراءةُ «الموظفين» (500 موظف) لا تقرأ صف
     await replaceOperationalFixture(lab.env, K('bassam_staffing_v3'), staffing());
     const ck = await session(lab, LAB.mgrA), DB = lab.env.DB, orig = DB.prepare.bind(DB), seen = [];
     DB.prepare = (sql) => { const s = orig(sql), b = s.bind.bind(s); s.bind = (...a) => { seen.push(a); return b(...a); }; return s; };
-    const get = async (k) => { seen.length = 0; const r = await fetch(lab.base + '/api/operations/read?keys=' + encodeURIComponent(k), { headers: { cookie: ck } }); const j = await r.json(); return { j, touched: seen.some((a) => a.some((v) => v === 'bassam_staffing_v3' || v === K('bassam_staffing_v3'))) }; };
+    const get = async (k) => { seen.length = 0; const r = await fetch(lab.base + '/api/operations/read?keys=' + encodeURIComponent(k), { headers: { cookie: ck } }); const j = await r.json(); return { j, touched: seen.some((a) => a.some((v) => v === 'bassam_staffing_v3' || v === K('bassam_staffing_v3') || (typeof v === 'string' && (v.includes(K('bassam_staffing_v3')) || /"[^"]+","bassam_staffing_v3"/.test(v))))   /* V7 · 53 (periods): قراءةُ المدى تربط [الإدارة، المورد] داخل JSON — فالكشفُ يراه هناك أيضاً (أشدّ لا أرخى) */) }; };
     const e = await get(K('bassam_employees_v1'));
     assert.equal(e.j.ok, 1); assert.equal(e.j.resources[K('bassam_employees_v1')].length, 500);
     assert.equal(e.touched, false, 'the employees read does not load the staffing table');

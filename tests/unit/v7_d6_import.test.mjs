@@ -385,7 +385,7 @@ test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدف�
     assert.equal(done.status, 200, JSON.stringify(done.j).slice(0, 300));
     /* فرقٌ واحد معلوم: ما يُطبَّق على دفعات (الجولاتُ الحيّة · المخطط · جدولُ الورديات) يُعاد كتابتُه دائماً ولو لم يتغيّر محتواه فتتقدّم نسختُه — والصفوفُ هي هي */
     const live = 'bsdept:' + B + ':bassam_rounds_v1', extra = Object.keys(done.j.revs).filter((k) => !(k in mono.commit.j.revs));
-    assert.deepEqual(Object.keys(mono.commit.j.revs).filter((k) => !(k in done.j.revs)), []); assert.ok(extra.every((k) => k === live || k === 'bsdept:' + B + ':bassam_plan_v1' || k === 'bsdept:' + B + ':bassam_staffing_v3'), JSON.stringify(extra));
+    assert.deepEqual(Object.keys(mono.commit.j.revs).filter((k) => !(k in done.j.revs)), []); assert.ok(extra.map((k) => k.replace(/@\*$/, '')).every((k) => k === live || k === 'bsdept:' + B + ':bassam_plan_v1' || k === 'bsdept:' + B + ':bassam_staffing_v3'), JSON.stringify(extra));   /* V7 · 53: ومراجعةُ الكتابة بالجملة (K@*) للموارد نفسِها */
     assert.deepEqual({ ...done.j.counts, operations: 0 }, { ...mono.commit.j.counts, operations: 0 }, 'العدّاداتُ الأخرى واحدة'); assert.ok(done.j.counts.operations >= mono.commit.j.counts.operations && done.j.counts.operations <= mono.commit.j.counts.operations + extra.length, 'المواردُ التشغيلية: ما أُعيدت كتابتُه بلا تغيير يُعدّ');
     const a = rowsOf(A), z = rowsOf(Z);
     for (const t of Object.keys(a)) assert.deepEqual(z[t], a[t], 'جدول ' + t + ' بعد الاستبدال');

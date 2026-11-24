@@ -51,6 +51,7 @@ function osSchemaPlanResources() {
       resource: "bassam_plan_v1",
       name: "plan",
       schema: osSchemaPlan("ops_plan"),
+      period: { field: "months", index: osPeriodIndex, summary: osSumPlan, kpi: osKpiPlan, me: 'month' },   // V7 · 53: كلُّ شهرٍ من months فترة (019w)
     },
     {
       resource: "bassam_zone_opts_v1",
@@ -69,3 +70,7 @@ function osSchemaPlanResources() {
     },
   ];
 }
+
+/* V7 · 53 (kpi 9): v.kpi للشهر — مرآةُ _kLean */
+var OS_KPI_PLAN = { zones: ['code', 'name', 'needN', 'needS'], gates: ['num', 'label', 'needN', 'needS'], marks: ['label', 'kind', 'needN', 'needS'] };
+function osKpiPlan(p, v) { if (!v || typeof v !== 'object') return v; return { d: osKpiFloors(Array.isArray(v) ? v : v.d, OS_KPI_PLAN, 0) }; }
