@@ -75,7 +75,7 @@ function browser(module, handler, currentClock = clock) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), W);
   const pageKitBase = W.KIVO.BassamPageKit.base;
   W.KIVO.BassamPageKit.base = (base, traits) => class extends pageKitBase(base, traits) { hToday() { return currentClock; } };
-  { const C = W.KIVO.BassamCal; W.KIVO.BassamCal = Object.freeze({ ...C, gToday: () => ({ ...currentClock, k: C.gKey(currentClock.y, currentClock.m, currentClock.d), ym: C.gYm(currentClock.y, currentClock.m) }) }); }
+  { const C = W.KIVO.BassamCal; W.KIVO.BassamCal = Object.freeze({ ...C, gToday: () => ({ ...currentClock, k: C.gKey(currentClock.y, currentClock.m, currentClock.d), ym: C.gYm(currentClock.y, currentClock.m) }), gAt: (d) => (d == null || Math.abs(+d - Date.now()) < 6e4 ? ({ ...currentClock, k: C.gKey(currentClock.y, currentClock.m, currentClock.d), ym: C.gYm(currentClock.y, currentClock.m) }) : C.gAt(d)) }); }   /* V7 · 53: «اليوم» المدني (gAt الآن) مثبَّتٌ كـgToday — الصفحاتُ تسأل gAt(new Date()) منذ 403b3f7f (كما في عُدّة الاسترشاد) */
   const dir = moduleDir(module), meta = JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8'));
   const source = ['logic.js', ...(meta.logicParts || [])].map(file => fs.readFileSync(path.join(dir, file), 'utf8')).join('\n');
   vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
