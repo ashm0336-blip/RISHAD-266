@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { loadClient, until } from '../../../../tests/unit/k264_vm.mjs';
+import { periodRead, periodSave, loadAllPeriods } from '../../../../tests/unit/vm_operations_fx.mjs';   /* V7 · 53: المهامُ مخزّنةٌ بالفترة — النقلُ المصطنع يجيب كالخادم */
 
 const UID = 'TEST_ONLY task owner', DEPT = 'dA', TASK = 'bsdept:dA:bassam_tasks_v1', LOCK = 'bsdept:dA:bassam_tasks_locks_v1';
 const read = name => fs.readFileSync(new URL('../../../../' + name, import.meta.url), 'utf8');
@@ -14,6 +15,8 @@ async function world({ save, command, deniedTask = false } = {}) {
   let rev = 4;
   const C = { req: async (url, options = {}) => {
     if (url.startsWith('/api/operations/read?')) {
+      const P = periodRead(url, { uid: actor.uid, epoch: 3, v: rev, get: (K) => (K in docs ? docs[K] : undefined), rev: () => rev, denied: (K) => deniedTask && K === TASK });
+      if (P) return response(P);
       const keys = new URL(url, 'http://x').searchParams.get('keys').split(',');
       const denied = deniedTask ? keys.filter(key => key === TASK) : [], readable = keys.filter(key => !denied.includes(key));
       return response({ ok: 1, uid: actor.uid, epoch: 3, v: rev, resources: Object.fromEntries(readable.filter(k => k in docs).map(k => [k, docs[k]])), absent: readable.filter(k => !(k in docs)), denied, base: Object.fromEntries(readable.map(k => [k, rev])) });
@@ -21,8 +24,9 @@ async function world({ save, command, deniedTask = false } = {}) {
     if (url === '/api/save') {
       calls.push({ url, body: options.body });
       const body = JSON.parse(options.body), ack = () => {
-        for (const [key, value] of Object.entries(body.set)) docs[key] = JSON.parse(value);
-        for (const key of body.del) delete docs[key];
+        const whole = periodSave(body, (K) => docs[K]);   /* V7 · 53: مفاتيحُ الفترات تُدمج في الوثيقة الكاملة */
+        for (const [key, value] of Object.entries(whole.set)) docs[key] = JSON.parse(value);
+        for (const key of whole.del) delete docs[key];
         rev++;
         return response({ ok: 1, requestId: body.requestId, epoch: body.epoch, atomic: 1, revs: Object.fromEntries(Object.keys(body.set).concat(body.del).map(k => [k, rev])) });
       };
@@ -47,6 +51,7 @@ async function world({ save, command, deniedTask = false } = {}) {
     setState(value, done) { Object.assign(this.state, typeof value === 'function' ? value(this.state) : value); done?.(); },
     bsToast(message, kind) { toasts.push({ message, kind }); }, _tkCanWrite: () => true, PC: () => true, _tkIdx: (_list, index) => index, _tkShut: () => false });
   await KIVO.__BS_SRV.operations.read([TASK, LOCK]);
+  if (!deniedTask) await loadAllPeriods(KIVO.__BS_SRV.operations);   /* V7 · 53: أشهرُ المهام المخزّنة بالفترة (كما تطلبها الصفحة) */
   return { T, c, docs, calls, actor, toasts, ops: KIVO.__BS_SRV.operations };
 }
 
@@ -87,7 +92,9 @@ test('Deleting a task month and its month/day locks uses one atomic ticket and p
     W.c._tkOpen({ delMonth: { n: 5 } });
     assert.equal(await W.c._tkDeleteMonth(1448, 5), true);
     assert.equal(W.calls.length, 1);
-    assert.deepEqual(Object.keys(JSON.parse(W.calls[0].body).set).sort(), [LOCK, TASK].sort());
+    /* V7 · 53 (basefix): المهامُ مخزّنةٌ بالفترة (periodsui) — التذكرةُ الواحدة تحمل الأقفالَ كاملةً وحذفَ أيام الشهر من المهام (لا وثيقةَ المهام كلَّها) */
+    const sent = JSON.parse(W.calls[0].body);
+    assert.deepEqual(Object.keys(sent.set).sort(), [LOCK]); assert.deepEqual(sent.del.slice().sort(), [TASK + '@1448-5-1']);
     assert.deepEqual(Object.keys(W.docs[TASK]), ['1448-6-1']); assert.deepEqual(W.docs[LOCK], { '1448-6': true });
   } finally { W.T.dispose(); }
 });
@@ -97,7 +104,8 @@ test('An editor opened before another confirmed revision is rejected; no stale w
   try {
     W.c._tkOpen({ confirmFinish: { d: 1, i: 0 } });
     // Confirm a distinct write through the same real queue, then try the old editor.
-    const d = W.ops.draft(); d.set('bassam_tasks_locks_v1', {}); await W.ops.flush(d.stage());
+    /* V7 · 53 (basefix): بالفترات لا تُبطل كتابةٌ لا تمسّ المهامَ المحمَّلة محرِّراً مفتوحاً (280 periodView9) — فالمراجعةُ الأخرى المؤكَّدة تغيّر المهامَ نفسَها */
+    const d = W.ops.draft(), t = d.get('bassam_tasks_v1'); t['1448-6-1'][0][0] = 'TEST_ONLY another confirmed revision'; d.set('bassam_tasks_v1', t); d.set('bassam_tasks_locks_v1', {}); await W.ops.flush(d.stage());
     await W.ops.read([TASK, LOCK]);
     assert.equal(await W.c._doFinish(1, 0), false);
     assert.equal(W.calls.length, 1);
