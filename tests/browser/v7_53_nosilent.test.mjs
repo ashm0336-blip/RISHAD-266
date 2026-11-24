@@ -38,7 +38,7 @@ test('nosilent ①–④: save indicator · leave guard · toast tones · PDF ve
     /* ── ① «يُحفظ…» ثم «حُفظ» ── */
     await blankPlan(su);
     let hold = 1600;
-    await P.route('**/api/save', async (route) => { await new Promise((r) => setTimeout(r, hold)); return route.continue(); });
+    await P.route('**/api/save', async (route) => { await new Promise((r) => setTimeout(r, hold)); return route.continue().catch(() => {}); });
     await P.getByText('أضف أول موقع', { exact: true }).last().click(); await P.waitForTimeout(900);
     await P.locator('input[placeholder^="مثال"]').last().fill(S1);
     await P.evaluate(() => { window.__lk = [document.querySelector('.bs-link')?.getAttribute('data-st') || '']; });
@@ -52,13 +52,14 @@ test('nosilent ①–④: save indicator · leave guard · toast tones · PDF ve
     assert.equal(await P.evaluate(() => document.querySelector('.bs-link .l').textContent), 'حُفظ');
     await shot(P, 'b1_saved_light', box);
     await P.waitForFunction(() => { const l = document.querySelector('.bs-link'); return l && getComputedStyle(l).display === 'none'; }, null, { timeout: 6000 });
+    await P.waitForTimeout(200);   /* the 30 ms recorder catches the last state */
     const seq = await P.evaluate(() => window.__lk);
     assert.deepEqual(seq.filter((s, i) => s !== seq[i - 1]).slice(0, 4), ['on', 'saving', 'saved', 'on'], 'on → saving → saved → on');
 
     /* dark: the same states */
     await theme(P, 'dark');
     await P.unroute('**/api/save');
-    await P.route('**/api/save', async (route) => { await new Promise((r) => setTimeout(r, hold)); return route.continue(); });
+    await P.route('**/api/save', async (route) => { await new Promise((r) => setTimeout(r, hold)); return route.continue().catch(() => {}); });
     await P.evaluate(() => { const S = KIVO.__BS_SRV; window.__probe = S; });
     await P.locator('.bs-canvas-site-trigger').first().click(); await P.waitForTimeout(700);
     await P.getByText('إضافة موقع جديد', { exact: true }).first().click(); await P.waitForTimeout(900);
@@ -72,7 +73,7 @@ test('nosilent ①–④: save indicator · leave guard · toast tones · PDF ve
 
     /* a refused save never says «حُفظ» */
     await P.unroute('**/api/save');
-    await P.route('**/api/save', async (route) => { await new Promise((r) => setTimeout(r, 900)); return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ ok: 0, err: 'save-failed' }) }); });
+    await P.route('**/api/save', async (route) => { await new Promise((r) => setTimeout(r, 900)); return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ ok: 0, err: 'save-failed' }) }).catch(() => {}); });
     await P.evaluate(() => { window.__lk = []; });
     await P.locator('.bs-canvas-site-trigger').first().click(); await P.waitForTimeout(700);
     await P.locator('button[title="حذف الموقع"]').last().click(); await P.waitForTimeout(600);
@@ -129,7 +130,9 @@ test('nosilent ①–④: save indicator · leave guard · toast tones · PDF ve
 
     /* fallback: the browser refuses to read the canvas ⇒ the print dialog, announced */
     await P.evaluate(() => { const k = HTMLCanvasElement.prototype; k.__t = k.toDataURL; k.toDataURL = function () { const e = new Error('TEST_ONLY tainted'); e.name = 'SecurityError'; throw e; }; window.print = () => {}; });
-    await P.evaluate(() => { window.__msgs = []; });
+    await P.reload({ waitUntil: 'domcontentloaded' }); await P.waitForTimeout(6000); await su.go('#/plan', 6000);
+    await P.evaluate(() => { const k = HTMLCanvasElement.prototype; k.toDataURL = function () { const e = new Error('TEST_ONLY tainted'); e.name = 'SecurityError'; throw e; }; window.print = () => {}; });
+    await P.evaluate(() => { window.__msgs = []; new MutationObserver(() => { const t = document.getElementById('bs-stoast'); if (t && !window.__msgs.includes(t.textContent)) window.__msgs.push(t.textContent); }).observe(document.body, { childList: true, subtree: true, characterData: true }); });
     await P.locator('button[title="طباعة الخريطة والمؤشرات — أو حفظها PDF"]').first().click();
     await P.waitForFunction(() => window.__msgs.join(' ').includes('تعذّر صنع ملف PDF في هذا المتصفح'), null, { timeout: 90000 });
     await shot(P, 'b4_fallback_light');
