@@ -12,17 +12,13 @@
   var WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   function J(k, d) { var S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations; if (!S) throw Error('operations-read-required'); if (S.state(k) === 'denied') return d; var v = S.get(k); return v == null ? d : v; }
   function wdName(dt) { try { return new Date(dt).toLocaleDateString('ar-SA', { weekday: 'long' }); } catch (e) { return WD[new Date(dt).getDay()] || ''; } }
-  /* اسم يوم الأسبوع لتاريخ هجري — بلا تحويل: اليومُ المطلوب هو اليوم الجاري في
-     الغالب، وما عداه يُحسب بفارق الأيام عن اليوم الجاري في تقويم أم القرى */
+  /* اسم يوم الأسبوع — V7 · 53 تقويم: اليومُ ميلاديٌّ فاسمُ يومه حسابٌ مباشر (كان فارقَ أيامٍ عن اليوم الجاري بأم القرى) */
   function wdOf(y, m, d) {
-    try {
-      var T = KIVO.BassamCal.hNow(new Date(), null);   /* V7 · د5-د2: «اليوم» من الخدمة الواحدة */
-      if (T && +T.y === +y && +T.m === +m) { var dt = new Date(); dt.setDate(dt.getDate() + (+d - +T.d)); return wdName(dt); }
-    } catch (e) {}
-    return wdName(new Date());
+    var w = KIVO.BassamCal.gWeekday(KIVO.BassamCal.gKey(+y, +m, +d));
+    return w >= 0 ? WD[w] : wdName(new Date());
   }
   function of(y, m, d) {
-    var YM = y + '-' + m, DK = y + '-' + m + '-' + d;
+    var YM = KIVO.BassamCal.gYm(+y, +m), DK = KIVO.BassamCal.gKey(+y, +m, +d);   /* V7 · 53 تقويم: مفاتيحُ الجدول والتقرير ISO */
     var E = KIVO.BassamEmp;
     var emps = J('bassam_employees_v1', []); if (!Array.isArray(emps)) emps = [];
     var staffing = J('bassam_staffing_v3', {}) || {};
@@ -84,7 +80,7 @@
       rec: rec, bucket: bucket, emps: emps, keyOf: keyOf, keyOfTok: keyOfTok, entryOf: entryOf, isRestOn: isRestOn,
       rowOf: rowOf, restOf: restOf, restToday: restToday, shiftOf: shiftOf, mukOf: mukOf, known: known };
   }
-  function today() { try { var T = KIVO.BassamCal.hNow(new Date()); return of(T.y, T.m, T.d); } catch (e) { return of(0, 0, 0); } }
+  function today() { try { var T = KIVO.BassamCal.gAt(new Date()); return of(T.y, T.m, T.d); } catch (e) { return of(0, 0, 0); } }   /* V7 · 53 تقويم: يومُ الرياض الميلادي */
   /* ── «متاح» و«غير متاح»: حالةٌ تُحسب ولا تُخزَّن ─────────────────────────────
      من لم يُؤشَّر له حضورٌ ولا غياب، وليس في راحةٍ ولا إجازة، فهو «متاح» داخل
      وقت ورديته المسندة و«غير متاح» خارجه — قبل أن تبدأ أو بعد أن تنتهي.

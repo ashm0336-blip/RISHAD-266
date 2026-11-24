@@ -1,4 +1,14 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+plan+seized+staff","dreport+staff","employees+staff","plan+staff"]) {
+  /* V7 · 53 تقويم (ف٤ · ق١ · §7): هذه الصفحة ميلادية — السنةُ والشهرُ واليومُ في حالتها ميلادية والمفاتيحُ ISO (KIVO.BassamCal.gKey/gYm/gMk)؛
+     أسماءُ عُدّة الصفحات (h*) باقيةٌ لمستدعيها ومعناها هنا ميلادي (يومُ الرياض المدني بلا مهلة — كما كانت)، والهجريُّ سطرٌ صغير محسوب لا مخزَّن */
+  MONTHS = KIVO.BassamCal.G_MONTHS.slice();
+  hParts(t) { const o = KIVO.BassamCal.gAt(t == null ? new Date() : t); return { y: o.y, m: o.m, d: o.d }; }
+  hToday() { return this.hParts(new Date()); }
+  hGreg(t, e, s) { return new Date(t, e - 1, s, 12); }
+  hMonthDays(t, e) { return KIVO.BassamCal.gMonthDays(t, e); }
+  hGregMonthLabel(t, e) { return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e)); }
+  hGregYearRange(t) { return KIVO.BassamCal.hRangeOfYear(t); }
+  curHijri() { const t = this.hToday(); return { y: t.y, m: t.m }; }
   setState(update, done) {
     const capture = (patch, state) => {
       const editors = ["sdOpen", "restOpen", "permOpen", "csOpen", "csEdit", "wkOpen", "mkNew", "lockConfirm", "delMonth", "retroAsk"];
@@ -14,7 +24,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   async _opsSave(intent, edit) {
     if (!["sdOpen", "restOpen", "permOpen", "csOpen", "csEdit", "wkOpen", "mkNew", "lockConfirm", "delMonth", "retroAsk"].some(key => this.state[key] != null && this.state[key] !== false) && KIVO.__BS_SRV.operations.status().state === "idle") KIVO.__BS_SRV.operations.begin(this, "staff-editor");
     const result = await KIVO.__BS_SRV.operations.commit(this, "staff-editor", intent, draft => {
-      if (["entry", "staffing", "callsign-rename", "callsign-delete", "delete-month", "month-approval"].includes(intent.op)) draft.get("bassam_staffing_locks_v1");
+      if (["entry", "staffing", "callsign-rename", "callsign-delete", "delete-month", "month-approval", "calq4-reviewed"].includes(intent.op)) draft.get("bassam_staffing_locks_v1");
       edit(draft);
     });
     if (!result || result.ok !== 1) {
@@ -100,6 +110,30 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       perPage: 10,
     };
   })();
+  /* V7 · 53 تقويم (ق٤ — قرار المالك: داخل المنصة لمدير الإدارة): تقريرُ التعارضات الذي كتبه الترحيلُ في الشهر الميلادي الذي جمع شهرين هجريين
+     بقيمتين مختلفتين (calq4: سطورٌ JSON { e, f, a, b, ha, hb, pick, tie }). يراه من يملك تعديل الورديات وحده (القاعدة ٤)، و«تمت المراجعة» يحذفه
+     بنافذة تأكيدٍ واحدة بلا سبب (القاعدتان ٦ و٧) في حفظة الشهر نفسِه — والرسالةُ بعد تأكيد الخادم وحده (القاعدة ٨) */
+  calQ4List(ym) {
+    const b = (this.state.staffing || {})[ym || this.monthKey()] || {}, L = Array.isArray(b.__calq4) ? b.__calq4 : [], emps = this.loadEmp(), F = { shift: "الوردية", muk: "التكليف", cs: "رمز النداء", __shifts: "تعريفات الورديات" };
+    const nameOf = (k) => { const e = emps.find((x) => this.empKey(x) === k); return (e && (e.name || e.eid)) || k; };
+    const H = (h) => { const m = /^(\d+)-(\d+)$/.exec(String(h || "")); return m ? (KIVO.BassamCal.H_MONTHS[+m[2] - 1] || m[2]) + " " + m[1] + " هـ" : String(h || ""); };
+    const V = (v) => (v == null || v === "" ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v));
+    return L.map((t) => { try { return JSON.parse(t); } catch (e) { return null; } }).filter((x) => x && "object" == typeof x).map((q) => ({
+      who: q.e === "__shifts" ? "تعريفات الورديات" : nameOf(q.e), field: F[q.f] || String(q.f || ""),
+      txt: H(q.ha) + ": " + V(q.a) + " · " + H(q.hb) + ": " + V(q.b) + " — المعتمد الآن: " + V(q.pick === "a" ? q.a : q.b) + (q.tie ? " (تساوي الأيام)" : ""),
+    }));
+  }
+  async calQ4Reviewed() {
+    if (!this.PC("edit")) return;
+    const month = this.monthKey();
+    const ok = await KIVO.bsConfirm({ title: "تمت مراجعة التعارضات", msg: "تُزال قائمةُ تعارضات الورديات لشهر " + KIVO.BassamCal.fmtMonth(month) + " بعد مراجعتها. الجدولُ نفسُه لا يتغيّر." });
+    if (!ok) return;
+    if (!await this._opsSave({ op: "calq4-reviewed", month }, (draft) => {
+      const staffing = draft.get("bassam_staffing_v3") || {}, bucket = { ...(staffing[month] || {}) };
+      delete bucket.__calq4; staffing[month] = bucket; draft.set("bassam_staffing_v3", staffing);
+    })) return;
+    this.setState({ staffing: this.loadStaffing() }, () => this.bsToast("أُزيلت قائمةُ التعارضات لهذا الشهر", "ok"));
+  }
   snapKey() {
     return "__shifts";
   }
@@ -108,20 +142,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return +t < s.y || (+t === s.y && +e < s.m);
   }
   monthOpenFlagS(t, e) {
-    const s = (this.state.locked || {})[t + "-" + e];
+    const s = (this.state.locked || {})[KIVO.BassamCal.gYm(t, e)];
     return !(!s || "object" != typeof s || !s.mo);
   }
   monthAutoLockedS(t, e) {
     return this.monthPastS(t, e) && !this.monthOpenFlagS(t, e);
   }
   monthApprovedS(t, e) {
-    return !0 === (this.state.locked || {})[t + "-" + e];
+    return !0 === (this.state.locked || {})[KIVO.BassamCal.gYm(t, e)];
   }
   monthLockedS(t, e) {
     return this.monthApprovedS(t, e) || this.monthAutoLockedS(t, e);
   }
   async _setMonthOpenS(t, e, s) {
-    const r = t + "-" + e,
+    const r = KIVO.BassamCal.gYm(t, e),
       n = { ...(this.state.locked || {}) };
     s ? (n[r] = { mo: 1 }) : delete n[r];
     return await this.saveLocks(n);
@@ -131,7 +165,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const e = (this.state.staffing || {})[t];
       return (
         !!e &&
-        (Object.keys(e).filter((t) => t !== this.snapKey()).length
+        (Object.keys(e).filter((t) => 0 !== t.indexOf("__")).length   /* V7 · 53 تقويم: __shifts و__calq4 ليسا صفوفاً */
           ? this.loadEmp().some((t) => e[this.empKey(t)])
           : this.loadEmp().length > 0)
       );
@@ -144,7 +178,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   mkLabel(t) {
     const e = String(t).split("-");
-    return (this.MONTHS[+e[1] - 1] || t) + " " + e[0] + " هـ";
+    return (this.MONTHS[+e[1] - 1] || t) + " " + e[0];
   }
   shiftDefsFor(t) {
     if ((this.state.locked || {})[t]) {
@@ -336,7 +370,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     ((e.on = !!t), this.stGrpSave(e));
   }
   monthKey() {
-    return this.state.year + "-" + this.state.month;
+    return KIVO.BassamCal.gYm(this.state.year, this.state.month);
   }
   entryOf(t) {
     const e = this.monthKey(),
@@ -385,7 +419,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return 1 === +e ? this._mk(+t - 1, 12) : this._mk(+t, +e - 1);
   }
   _mk(t, e) {
-    return t + "-" + e;
+    return KIVO.BassamCal.gYm(t, e);
   }
   drpLoad() {
     try {
@@ -886,7 +920,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           f = !1,
           u = "M12 3a9 9 0 0 1 9 9",
           g = "M12 21a9 9 0 0 1-9-9";
-        const y = this.hasLiveSched(s.year + "-" + n);
+        const y = this.hasLiveSched(KIVO.BassamCal.gYm(s.year, n));
         return (
           o
             ? ((p +=
@@ -926,8 +960,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                     (f = !1))
                   : (p += "dashed #E1E1E1;background:var(--bg-a2452452450p7);opacity:.9"),
           {
+            cal9: { ym: KIVO.BassamCal.gYm(s.year, n), closed: c, why: o ? "ap" : l ? "past" : this.monthOpenFlagS(s.year, n) ? "retro" : "", sel: i, cur: a },   /* V7 · 53 تقويم: حالةُ الكرت المشترك */
             name: t,
-            greg: this.gregOf(s.year, e),
+            greg: KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(s.year, n)),
             style: p,
             nameColor: h,
             footColor: d,
@@ -1170,7 +1205,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       E = this.loadWkOpts(),
       _ = (() => {
         try {
-          const t = KIVO.BassamCal.hNow(new Date());
+          const t = KIVO.BassamCal.gAt(new Date());
           return +t.y === +s.year && +t.m === +s.month;
         } catch (t) {
           return !1;
@@ -1233,7 +1268,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           u = m.length >= f,
           g = m.map((t) => ({
             txt: "⏱ " + String(t),
-            tip: "استئذان يوم " + t + " " + this.MONTHS[s.month - 1] + " " + s.year + " هـ — يُدار من «التقرير اليومي»",
+            tip: "استئذان يوم " + t + " " + this.MONTHS[s.month - 1] + " " + s.year + " — يُدار من «التقرير اليومي»",
             remove: () => {},
             style:
               "display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:9.5px;font-weight:600;font-feature-settings:'tnum';background:var(--bg-a185151810p12);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p35);transition:all .15s" +
@@ -1683,7 +1718,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "width:20px;height:20px;border-radius:6px;border:1px dashed " +
             (s.permOpen === this.empKey(e) ? "#b99751;color:var(--fg-xb99751)" : "#cbd5e1;color:var(--fg-x94a3b8)") +
             ";background:transparent;font-size:11px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0",
-          permMonthLbl: "اختر يوم الاستئذان · " + this.MONTHS[s.month - 1] + " " + s.year + " هـ",
+          permMonthLbl: "اختر يوم الاستئذان · " + this.MONTHS[s.month - 1] + " " + s.year,
           permLimCanEdit: this.PC("approve") && !r,
           permLimDown: () => this.savePermLimit(this.state.permLimit - 1),
           permLimUp: () => this.savePermLimit(this.state.permLimit + 1),
@@ -1966,7 +2001,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       bt = yt.reduce((t, e) => t + ("بدون صلاحية" === e.label || "بلا حساب" === e.label ? 0 : e.n), 0),
       kt = this.MONTHS[s.month - 1];
     return {
-      months: a,
+      months: a.map((x) => Object.assign(x, { card: KIVO.BassamCalCard.month(Object.assign({ key: x.cal9.ym, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }, x.cal9)) })),   /* V7 · 53 تقويم (§7) */
       ...(() => {
         const t = P.length,
           e = 0 === s.perPage ? 0 : s.perPage || 10,
@@ -2235,7 +2270,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       skGVal: String(lt ? lt.n : 0),
       skGPct: q(lt ? lt.n : 0),
       skGSub: "من " + KIVO.BassamCount(N, "موظف", "g") + "",
-      yearLabel: s.year + " هـ",
+      yearLabel: s.year,
       gregRange: this.gregYearRange(s.year),
       prevYear: () => this.setState((t) => ({ year: t.year - 1 })),
       nextYear: () => this.setState((t) => ({ year: t.year + 1 })),
@@ -2247,7 +2282,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       /* الموجة 1 · ES-8: وجودُ الجدول أولاً — شهرٌ منقضٍ بلا جدول كان «معتمد ومقفل» (monthLockedS صادقٌ لكل شهرٍ منقضٍ بالتاريخ) ·
          و«معتمد» للمعتمد وحده كبطاقة الشهر (المنقضي غيرُ المعتمد «انقضى — مقفل» لا «معتمد») */
       ...(() => {
-        const HS = this.hasLiveSched(s.year + "-" + s.month),
+        const HS = this.hasLiveSched(KIVO.BassamCal.gYm(s.year, s.month)),
           AP = this.monthApprovedS(s.year, s.month),
           k = !HS ? "none" : AP ? "ok" : r ? "past" : "draft";
         return {
@@ -2257,7 +2292,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             kt +
             " " +
             s.year +
-            " هـ — " +
+            " — " +
             ("ok" === k ? "معتمد ومقفل" : "past" === k ? "انقضى — مقفل" : "draft" === k ? "مسودة مفتوحة" : "لا يوجد جدول" + (r ? " · الشهر مقفل" : "")),
           badgeStyle:
             "display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;border-radius:9999px;padding:4px 12px;font-family:'Cairo',sans-serif;border:1px solid " +
@@ -2276,16 +2311,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           this.MONTHS[s.delMonth.n - 1] +
           " " +
           s.year +
-          " هـ بكل تسكيناته وراحاته وتكاليفه نهائياً وسيعود الكرت فارغاً — لا يمكن التراجع."
+          " بكل تسكيناته وراحاته وتكاليفه نهائياً وسيعود الكرت فارغاً — لا يمكن التراجع."
         : "",
       delMonthCancel: () => this.setState({ delMonth: null }),
       delMonthDo: async () => {
         const t = this.state.delMonth;
         if (!t) return;
         const e = { ...this.state.staffing };
-        delete e[this.state.year + "-" + t.n];
+        delete e[KIVO.BassamCal.gYm(this.state.year, t.n)];
         const s = { ...this.state.locked };
-        delete s[this.state.year + "-" + t.n];
+        delete s[KIVO.BassamCal.gYm(this.state.year, t.n)];
         if (await this._opsSave({ op: "delete-month", year: this.state.year, month: t.n }, draft => {
           draft.set("bassam_staffing_v3", e); draft.set("bassam_staffing_locks_v1", s);
         })) this.setState({ delMonth: null, staffing: this.loadStaffing(), locked: this.loadLocks() });
@@ -2296,7 +2331,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       lockDo: async () => {
         const t = this.state.lockConfirm;
         if (!t) return;
-        const e = this.state.year + "-" + t.n;
+        const e = KIVO.BassamCal.gYm(this.state.year, t.n);
         const s = { ...this.state.locked };
         t.locked ? (this.monthPastS(this.state.year, t.n) ? (s[e] = { mo: 1 }) : delete s[e]) : (s[e] = !0);
         const r = { ...(this.state.staffing || {}) };
@@ -2352,15 +2387,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             this.MONTHS[s.lockConfirm.n - 1] +
             " " +
             s.year +
-            " هـ وإلغاء اعتماده ليصبح متاحاً للتعديل. تعديلاتك تنعكس فوراً على صفحات الموظفين في الأيام التي لم يُسحب تقريرها؛ والأيام المسحوبة تبقى كما سُحبت إلا بإعادة سحبها من التقرير اليومي."
+            " وإلغاء اعتماده ليصبح متاحاً للتعديل. تعديلاتك تنعكس فوراً على صفحات الموظفين في الأيام التي لم يُسحب تقريرها؛ والأيام المسحوبة تبقى كما سُحبت إلا بإعادة سحبها من التقرير اليومي."
           : "سيتم اعتماد جدول " +
             this.MONTHS[s.lockConfirm.n - 1] +
             " " +
             s.year +
-            " هـ وإغلاقه — لن يمكن تعديل الورديات وأيام الراحة بعد الإغلاق. الاعتماد هو ما يسمح للتقرير اليومي بسحب ورديات هذا الشهر." +
+            " وإغلاقه — لن يمكن تعديل الورديات وأيام الراحة بعد الإغلاق. الاعتماد هو ما يسمح للتقرير اليومي بسحب ورديات هذا الشهر." +
             (() => {
               try {
-                const k = s.year + "-" + s.lockConfirm.n,
+                const k = KIVO.BassamCal.gYm(s.year, s.lockConfirm.n),
                   st = this.state.staffing[k] || {},
                   df = this.shiftDefsFor(k).map((t) => t.name),
                   n = this.loadEmp().filter((t) => {
@@ -2506,10 +2541,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       subKanbanStyle:
         "height:28px;width:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:0;cursor:pointer;transition:all .2s;" +
         ("grid" === s.sub ? "background:var(--bg-xb99751);color:var(--text-on-brand)" : "background:transparent;color:var(--fg-x94a3b8)"),
+      calQ4: this.PC("edit") ? this.calQ4List() : [],   /* V7 · 53 تقويم (ق٤): لمن يملك تعديل الورديات وحده */
+      calQ4On: this.PC("edit") && this.calQ4List().length > 0,
+      calQ4Title: "تعارضات الورديات بعد تحويل التقويم — " + KIVO.BassamCal.fmtMonth(this.monthKey()),
+      calQ4Done: () => this.calQ4Reviewed(),
       hasSchedule: this.hasLiveSched(this.monthKey()),
       noSchedule: !this.hasLiveSched(this.monthKey()),
-      createScheduleLabel: "إنشاء جدول " + kt + " " + s.year + " هـ",
-      noScheduleTitle: "لا يوجد جدول لشهر " + kt + " " + s.year + " هـ",
+      createScheduleLabel: "إنشاء جدول " + kt + " " + s.year,
+      noScheduleTitle: "لا يوجد جدول لشهر " + kt + " " + s.year,
       schedLockedNote: r && !this.monthApprovedS(s.year, s.month),
       schedLockedMsg: "الشهر انقضى — مقفل · " + (this.PC("approve") ? "انقر بطاقة الشهر نقرة مزدوجة لفتحه ثم أضف الجدول" : "فتحه للاستدراك يحتاج صلاحية الاعتماد — راجع مدير الإدارة"),
       schedApprovedNote: this.monthApprovedS(s.year, s.month),
@@ -2522,7 +2561,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         const e = this.MONTHS[t.m - 1] || "";
         return {
           retroOn: !0,
-          retroTitle: t.open ? "فتح شهر " + e + " " + s.year + " هـ بأثر رجعي" : "إعادة قفل شهر " + e + " " + s.year + " هـ",
+          retroTitle: t.open ? "فتح شهر " + e + " " + s.year + " بأثر رجعي" : "إعادة قفل شهر " + e + " " + s.year,
           retroMsg: t.open
             ? "هذا الشهر انقضى وأُقفل تلقائياً. فتحه يتيح لك إضافة جدوله أو تعديل الورديات والراحات والإجازات بأثر رجعي."
             : "سيعود الشهر إلى حالته المقفلة بانقضائه، ولن يمكن تعديل جدوله حتى تفتحه من جديد.",
@@ -2561,7 +2600,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             (t ? "rgba(185,151,81,0.55);background:var(--bg-a185151810p07)" : "#E1E1E1;background:var(--bg-xffffff)");
         return {
           mkNewOn: !0,
-          mkNewTitle: "إنشاء جدول " + (this.MONTHS[s.month - 1] || "") + " " + s.year + " هـ",
+          mkNewTitle: "إنشاء جدول " + (this.MONTHS[s.month - 1] || "") + " " + s.year,
           mkNewIsNew: "new" === t.mode,
           mkNewIsCopy: "copy" === t.mode,
           mkPickNew: () => this.setState({ mkNew: { mode: "new" } }),

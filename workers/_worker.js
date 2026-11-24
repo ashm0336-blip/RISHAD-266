@@ -554,10 +554,12 @@ var KIVO_GUARDS = (function (B, R) {
       if (y === undefined) { R.op('staff.bulk.delete', mk, 'month-removed'); continue; }
       if (!isObj(x) || !isObj(y)) { R.res(mk, 'shape'); continue; }
       var eks = union(x, y), q, removed = [], cleaned = 0, rowsBefore = 0, ek, r0, r1, p;
-      for (ek in x) if (ek !== '__shifts') rowsBefore++;
+      for (ek in x) if (ek !== '__shifts' && ek !== '__calq4') rowsBefore++;
       for (q = 0; q < eks.length; q++) {
         ek = eks[q]; r0 = x[ek]; r1 = y[ek]; if (deq(r0, r1)) continue; p = mk + '[' + ek + ']';
         if (ek === '__shifts') { R.op(r1 !== undefined ? 'staff.lock' : 'staff.reopen', p, 'snapshot'); continue; }
+        /* V7 · 53 تقويم (ق٤): تقريرُ التعارضات يكتبه الترحيلُ وحده — والعميلُ يحذفه «تمت المراجعة» (من يملك تعديل الورديات) ولا يكتبه */
+        if (ek === '__calq4') { if (r1 === undefined) R.op('staff.shift.assign', p, 'calq4-reviewed'); else R.res(p, 'calq4-client-write'); continue; }
         if (r0 === undefined) { R.op('staff.shift.assign', p, 'row-added (D-18)'); continue; }
         if (r1 === undefined) { if (gone(ctx, ek)) { cleaned++; R.op(ctx && ctx.empsEmpty ? 'emp.record.bulk.delete' : 'emp.record.delete', p, 'cleanup-gone'); } else removed.push(p); continue; }
         if (!isObj(r0) || !isObj(r1)) { R.res(p, 'shape'); continue; }
@@ -1075,13 +1077,14 @@ var KIVO_SCOPE = (function (S, R) {
       k = ks[i]; if (deq(a[k], b[k])) continue; var per = parseMonth(k), ls = lockState(L, k), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_staffing_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
       if (a[k] === undefined) {
         items.push(it({ what: 'month', kind: 'added', id: k, path: k, period: pair(null, per), lock: lk }));
-        if (ctx.read) { var ym = obj(b[k]), q3; for (q3 in ym) { if (q3 === '__shifts') continue; var r3 = obj(ym[q3]); items.push(it({ what: 'row', kind: 'added', id: k + '|' + q3, path: k + '[' + q3 + ']', period: pair(null, per), owner: pair(null, q3), shift: pair(null, r3.shift || null), lock: lk })); } }
+        if (ctx.read) { var ym = obj(b[k]), q3; for (q3 in ym) { if (q3 === '__shifts' || q3 === '__calq4') continue; var r3 = obj(ym[q3]); items.push(it({ what: 'row', kind: 'added', id: k + '|' + q3, path: k + '[' + q3 + ']', period: pair(null, per), owner: pair(null, q3), shift: pair(null, r3.shift || null), lock: lk })); } }
         continue;
       }
       if (b[k] === undefined) { items.push(it({ what: 'month', kind: 'removed', id: k, path: k, period: pair(per, null), lock: lk })); continue; }
       var x = obj(a[k]), y = obj(b[k]), eks = union(x, y);
       for (q = 0; q < eks.length; q++) {
         var ek = eks[q]; if (deq(x[ek], y[ek])) continue;
+        if (ek === '__calq4') { items.push(it({ what: 'calq4', kind: kindOf(x[ek], y[ek]), id: k + '|__calq4', path: k + '[__calq4]', period: pair(per, per), lockOp: true })); continue; }   /* V7 · 53 تقويم (ق٤): مراجعةُ التعارضات ليست تعديلاً لفترة */
         if (ek === '__shifts') { items.push(it({ what: 'snapshot', kind: kindOf(x[ek], y[ek]), id: k + '|__shifts', path: k + '[__shifts]', period: pair(per, per), lockOp: true })); continue; }
         var r0 = obj(x[ek]), r1 = obj(y[ek]), kd = kindOf(x[ek], y[ek]);
         items.push(it({ what: 'row', kind: kd, id: k + '|' + ek, path: k + '[' + ek + ']', period: pair(kd === 'added' ? null : per, kd === 'removed' ? null : per), owner: pair(kd === 'added' ? null : ek, kd === 'removed' ? null : ek), shift: pair(kd === 'added' ? null : (r0.shift || null), kd === 'removed' ? null : (r1.shift || null)), lock: lk }));
@@ -20458,7 +20461,6 @@ async function dailyArcPend(env, kv, reference) {
    خطةٌ حتمية (البذرة · لحظةُ التوليد · القيم ونسخُها) ⇒ تغيّرٌ بينها وبين التطبيق = plan-changed؛ لقطةٌ كاملة (الحيّ والأرشيف) قبل الكتابة؛ الرجوعُ يعيدهما حرفاً.
    الثانيةُ بلا كتابة (applied:0). لكل إدارة: الأيامُ المنقولة وحجمُ الملف الحيّ قبل/بعد. */
 async function dailyArcMigPlan(env, seed, now, T, keys, revs, capture) {
-  T = calToday(now);   /* V7 · 53 تقويم: الأشهرُ ميلادية — اليومُ التشغيليُّ الميلادي (016) لا ما يمرّره الموجِّه (dsToday الهجري حتى القلب) */
   var W = {}, sig = [DAILY_ARC_PART, seed], tot = { moved: 0, back: 0, liveBefore: 0, liveAfter: 0 };
   var plan = { version: ENF_VER, seed: seed, today: T, generated: now, parts: [DAILY_ARC_PART], writes: [], arc: [] };
   Object.keys(keys).filter(function (k) { return /^bsdept:[^:]+:bassam_rounds_v1$/.test(k); }).sort().forEach(function (lk) {
@@ -32111,7 +32113,7 @@ function enfSeed() { var b = new Uint8Array(32), s = '', i; crypto.getRandomValu
 async function enfMigPlan(env, seed, opts) {
   opts = opts || {};
   /* الخطةُ دالّةٌ حتمية في (البذرة · لحظةِ التوليد · البيانات): التطبيقُ يعيد بناءها بلحظة الخطة نفسِها فتتطابق البصمةُ ما لم تتغيّر البيانات */
-  var now = opts.now || Date.now(), T = dsToday(now), reference = opts.reference,
+  var now = opts.now || Date.now(), T = calToday(now), reference = opts.reference,   /* V7 · 53 تقويم: يومُ الخطة ميلادي (أرشيفُ الجولات 019p3) */
     capture = reference ? reference.operational : await opCaptureReferences(env, await kvAll(env, 'kv')),
     keys = reference ? reference.inputKeys : capture.keys,
     revs = reference ? reference.inputRevs : Object.assign({},await revsAll(env),capture.revs), i, d;

@@ -228,7 +228,6 @@ async function dailyArcPend(env, kv, reference) {
    خطةٌ حتمية (البذرة · لحظةُ التوليد · القيم ونسخُها) ⇒ تغيّرٌ بينها وبين التطبيق = plan-changed؛ لقطةٌ كاملة (الحيّ والأرشيف) قبل الكتابة؛ الرجوعُ يعيدهما حرفاً.
    الثانيةُ بلا كتابة (applied:0). لكل إدارة: الأيامُ المنقولة وحجمُ الملف الحيّ قبل/بعد. */
 async function dailyArcMigPlan(env, seed, now, T, keys, revs, capture) {
-  T = calToday(now);   /* V7 · 53 تقويم: الأشهرُ ميلادية — اليومُ التشغيليُّ الميلادي (016) لا ما يمرّره الموجِّه (dsToday الهجري حتى القلب) */
   var W = {}, sig = [DAILY_ARC_PART, seed], tot = { moved: 0, back: 0, liveBefore: 0, liveAfter: 0 };
   var plan = { version: ENF_VER, seed: seed, today: T, generated: now, parts: [DAILY_ARC_PART], writes: [], arc: [] };
   Object.keys(keys).filter(function (k) { return /^bsdept:[^:]+:bassam_rounds_v1$/.test(k); }).sort().forEach(function (lk) {

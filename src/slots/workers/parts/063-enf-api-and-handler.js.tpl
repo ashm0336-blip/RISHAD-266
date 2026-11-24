@@ -70,7 +70,7 @@ function enfSeed() { var b = new Uint8Array(32), s = '', i; crypto.getRandomValu
 async function enfMigPlan(env, seed, opts) {
   opts = opts || {};
   /* الخطةُ دالّةٌ حتمية في (البذرة · لحظةِ التوليد · البيانات): التطبيقُ يعيد بناءها بلحظة الخطة نفسِها فتتطابق البصمةُ ما لم تتغيّر البيانات */
-  var now = opts.now || Date.now(), T = dsToday(now), reference = opts.reference,
+  var now = opts.now || Date.now(), T = calToday(now), reference = opts.reference,   /* V7 · 53 تقويم: يومُ الخطة ميلادي (أرشيفُ الجولات 019p3) */
     capture = reference ? reference.operational : await opCaptureReferences(env, await kvAll(env, 'kv')),
     keys = reference ? reference.inputKeys : capture.keys,
     revs = reference ? reference.inputRevs : Object.assign({},await revsAll(env),capture.revs), i, d;

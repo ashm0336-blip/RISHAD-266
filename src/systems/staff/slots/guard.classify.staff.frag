@@ -9,10 +9,12 @@
       if (y === undefined) { R.op('staff.bulk.delete', mk, 'month-removed'); continue; }
       if (!isObj(x) || !isObj(y)) { R.res(mk, 'shape'); continue; }
       var eks = union(x, y), q, removed = [], cleaned = 0, rowsBefore = 0, ek, r0, r1, p;
-      for (ek in x) if (ek !== '__shifts') rowsBefore++;
+      for (ek in x) if (ek !== '__shifts' && ek !== '__calq4') rowsBefore++;
       for (q = 0; q < eks.length; q++) {
         ek = eks[q]; r0 = x[ek]; r1 = y[ek]; if (deq(r0, r1)) continue; p = mk + '[' + ek + ']';
         if (ek === '__shifts') { R.op(r1 !== undefined ? 'staff.lock' : 'staff.reopen', p, 'snapshot'); continue; }
+        /* V7 · 53 تقويم (ق٤): تقريرُ التعارضات يكتبه الترحيلُ وحده — والعميلُ يحذفه «تمت المراجعة» (من يملك تعديل الورديات) ولا يكتبه */
+        if (ek === '__calq4') { if (r1 === undefined) R.op('staff.shift.assign', p, 'calq4-reviewed'); else R.res(p, 'calq4-client-write'); continue; }
         if (r0 === undefined) { R.op('staff.shift.assign', p, 'row-added (D-18)'); continue; }
         if (r1 === undefined) { if (gone(ctx, ek)) { cleaned++; R.op(ctx && ctx.empsEmpty ? 'emp.record.bulk.delete' : 'emp.record.delete', p, 'cleanup-gone'); } else removed.push(p); continue; }
         if (!isObj(r0) || !isObj(r1)) { R.res(p, 'shape'); continue; }
