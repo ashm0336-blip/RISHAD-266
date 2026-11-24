@@ -279,6 +279,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {}
   }
   componentDidUpdate(t, e) {
+    /* V7 · 53 (ملحق 6 · 11): شهرٌ آخر ⇒ صورُ لقطته */
+    e && (e.year !== this.state.year || e.month !== this.state.month) && this._loadFloorImgs();
     try {
       var s = this.state,
         n = s.year + "-" + s.month + "-" + s.day;
@@ -568,8 +570,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   _occStop() {
     (this._occT && (clearTimeout(this._occT), (this._occT = null)), this._occI && (clearInterval(this._occI), (this._occI = null)));
   }
+  /* V7 · 53 (ملحق 6 · أ): تسجيلُ قراءة الكثافة — تعديلُ المتابعة اليومية ومفتاحُ lens.dens.reading.record، والجولةُ غيرُ مقفلة (open) */
+  _dsDensCan(open) {
+    if (!open || !this._dsCanWrite()) return !1;
+    try {
+      const K = KIVO.BassamPerm && KIVO.BassamPerm.key;
+      return !K || K("lens.dens.reading.record") !== !1;
+    } catch (e) {
+      return !0;   /* بلا طبقة الصلاحيات: الخادمُ يحكم */
+    }
+  }
   _occHold(t, e) {
     this._occStop();
+    if (!this._dsDensCan(!0)) return;
     const s = this._occApply;
     if (!s || !s[t]) return;
     let n = "n" === t ? (null == s.curN ? 0 : +s.curN) : null == s.curP ? 0 : +s.curP;
@@ -635,7 +648,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     if (!t) return "";
     const e = this._covKind || "gates";
     if ("marks" === e) return t.label || t.kind || "معلم";
-    if ("zones" === e) return t.code || t.name || "مصلى";
+    if ("zones" === e) return this._zc(t.code) || t.name || "مصلى";
     const s = KIVO.BassamLeaf,
       n = this._covCurGates(),
       i = t.pOf ? s.leafLabel(s.parentOf(n, t) || t, t) : t.num || "";
@@ -1068,6 +1081,76 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       const n = "gates" === i ? this._leafIdx(e.gates, s) : s;
       e[i] = (e[i] || []).map((e, s) => (n.indexOf(s) >= 0 ? t(e, s) : e));
     });
+  }
+  /* V7 · 53 (ملحق 6 · 6): التحديدُ المتعدد للمصليات وتغييرُ حالتها دفعةً واحدة بنافذة تأكيد (سلوكُ البرودكشن e5b8756…27b7c70 بأدوات هذه المنصة).
+     أداةُ «تحديد متعدد» في شريط أدوات المصليات: كلُّ نقرةٍ أو لمسةٍ على مصلى تضيفه إلى التحديد أو تُخرجه (بلا Ctrl، فتعمل على اللوحي) ولا تسحبه.
+     «تفعيل/تعطيل المحدَّد» يسأل أولاً، ثم يكتب الحالةَ بختم الميدان (_fdTog) في طلبٍ ذرّيٍّ واحد (saveRounds ← _opCommit): يُقبل كلُّه أو يُرفض كلُّه،
+     ولا يُكتب يومٌ لم يتغيّر غيرُ يوم الجولة (_dsLiveOnly · _dsUnstamped) — والأقفالُ (الشهر · اليوم · الجولة · الموقع · الوردية) تُفحص قبل التأكيد وبعده،
+     والخادمُ يحرسها. المصلياتُ تُطابَق بمعرّفها الثابت (uid/eid) لا بموضعها. */
+  _dsMultiOn() {
+    const t = this.state;
+    return !!t.dsMulti && "select" === t.tool && "zones" === t.lens && !t.dsAsn && this._dsCanEditZones();
+  }
+  _dsMultiScope() {
+    const t = this.state,
+      key = t.year + "-" + t.month + "-" + Math.min(t.day, this.hMonthDays(t.year, t.month)),
+      R = (t.rounds || {})[key],
+      site = R && Array.isArray(R.d) ? this._rdAt(R.d, t.floor) : null;
+    return { key, site, floor: t.floor >= 0 ? t.floor : 0, sig: JSON.stringify([key, t.floor, (site && site.sid) || ""]) };
+  }
+  async _dsBulkStatus(off) {
+    off = !!off;
+    const t = this.state,
+      sel = Array.isArray(t.selMulti) ? t.selMulti.slice() : [],
+      idOf = (z) => String((z && (z.uid || z.eid)) || "");
+    if (!t.dsSel || "zone" !== t.dsSel.t || !sel.length || this._dsBulkBusy) return !1;
+    const L = this._dsLockInfo();
+    if (L.locked) return (this.bsToast(L.text, "warn"), !1);
+    if (!this._dsCanEditZones()) return (this.permDeny(), !1);
+    const c = this._dsMultiScope(),
+      zs = (c.site && c.site.zones) || [],
+      ids = sel.map((i) => idOf(zs[i]));
+    if (!c.site || ids.some((id) => !id || zs.filter((z) => idOf(z) === id).length !== 1))
+      return (this.bsToast("تعذّر تحديد المصليات: معرّفُ أحدها غير متاح أو مكرر — أعد التحديد", "warn"), !1);
+    const n = ids.length,
+      same = sel.filter((i) => !!zs[i].off === off).length;
+    if (same === n) return (this.bsToast("المصليات المحددة " + (off ? "متوقفة" : "مفعّلة") + " أصلًا — لم يلزم أي تغيير", "warn"), !1);
+    this._dsBulkBusy = !0;
+    try {
+      let yes = !1;
+      try {
+        yes = await KIVO.bsConfirm({
+          title: "تأكيد تغيير حالة المصليات",
+          msg:
+            "هل تريد " + (off ? "إيقاف " : "تفعيل ") + KIVO.BassamCount(n, "مصلى") + " في جولة الموقع الحالية؟" +
+            (same ? " " + KIVO.BassamCount(same, "مصلى") + " " + (off ? "متوقفة" : "مفعّلة") + " أصلًا ولن تتغيّر." : ""),
+          ok: off ? "إيقاف المحدد" : "تفعيل المحدد",
+          danger: off,
+        });
+      } catch (e) {
+        yes = !1;
+      }
+      if (!yes) return !1;
+      /* بعد التأكيد: السياقُ نفسُه والقفلُ كما كان، والمصلياتُ المحددة نفسُها بمعرّفاتها */
+      const c2 = this._dsMultiScope(),
+        z2 = (c2.site && c2.site.zones) || [];
+      if (c2.sig !== c.sig || this._dsLockInfo().locked || !this._dsCanEditZones() || ids.some((id) => z2.filter((z) => idOf(z) === id).length !== 1))
+        return (this.bsToast("تغيّر سياق الجولة أو قفلها أو المصليات المحددة — لم تُنفَّذ العملية؛ أعد التحديد", "warn"), !1);
+      const changed = z2.filter((z) => ids.indexOf(idOf(z)) >= 0 && !!z.off !== off).length;
+      if (
+        !this._updRoundAt(c2.floor, (f) => {
+          f.zones = (f.zones || []).map((z) => (ids.indexOf(idOf(z)) >= 0 && !!z.off !== off ? this._fdTog(z, "zones") : z));
+        })
+      )
+        return (this.bsToast("لا توجد جولة موقع محفوظة في السياق الحالي", "warn"), !1);
+      const r = await this._opLastSave;
+      if (!r || 1 !== r.ok) return !1;   /* سببُ الرفض أعلنه _opCommit — ولم يُكتب شيء */
+      this.setState({ dsSel: null, selMulti: [] });
+      this.bsToast("تم " + (off ? "إيقاف " : "تفعيل ") + KIVO.BassamCount(changed, "مصلى") + " وحفظها في جولة الموقع", "ok");
+      return !0;
+    } finally {
+      this._dsBulkBusy = !1;
+    }
   }
   _bulkDelete() {
     const t = this.state,
@@ -1745,26 +1828,57 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       return false;
     }
   }
+  /* V7 · 53 (ملحق 6 · 11): صورةُ خريطة الموقع من لقطة شهر الجولة المعروضة، مطابَقةً بمعرّف الموقع (sid) — كانت من طوابق الخطة الحالية
+     بترتيبها، فجولةُ شهرٍ ماضٍ تغيّرت خريطتُه أو ترتيبُ مواقعه تُظهر صورةً خاطئة. شهرٌ بلا لقطة ⇒ طوابقُ الخطة الحالية كما كان؛
+     لقطةٌ بلا هذا الموقع أو بلا صورة ⇒ لا صورة (لا يُستعار غيرُها)؛ والموضعُ للبيانات القديمة التي لا sid فيها أصلاً وحدها. */
+  /* موقعُ لقطة الشهر المعروض المقابلُ لموقع الخطة f (بلا لقطة ⇒ موقعُ الخطة الحالية) — للصورة والنطاقات معاً */
+  _floorImgSite(plan, f) {
+    const s = this.state,
+      key = s.year + "-" + s.month,
+      floors = plan && Array.isArray(plan.floors) ? plan.floors : [],
+      has = !!(plan && plan.months && Object.prototype.hasOwnProperty.call(plan.months, key)),
+      mo = has ? plan.months[key] : null,
+      monthly = has ? (Array.isArray(mo) ? mo : mo && Array.isArray(mo.d) ? mo.d : []) : null,
+      noSid = (x) => !x || null == x.sid || "" === x.sid,
+      fl = floors[f];
+    if (!monthly) return fl;
+    if (!noSid(fl)) {
+      const hit = monthly.filter((x) => !noSid(x) && String(x.sid) === String(fl.sid));
+      return 1 === hit.length ? hit[0] : null;
+    }
+    return monthly.every(noSid) && floors.every(noSid) ? monthly[f] : null;
+  }
+  _floorImgRefs(plan) {
+    const s = this.state,
+      floors = plan && Array.isArray(plan.floors) ? plan.floors : [];
+    return {
+      key: s.year + "-" + s.month,
+      refs: floors.map((f, i) => {
+        const src = this._floorImgSite(plan, i);
+        return (src && src.iid) || null;
+      }),
+    };
+  }
   _loadFloorImgs() {
     try {
-      const plan = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)),
-        PK = (KIVO.bus.read("plan.resources@1", "doc") || [])[0],   /* V7 · د5-هـ: مسودةُ الخطة باسمها من مالكها */
-        draft = PK ? this._opDrafts[PK] : null,
+      const read = () => KIVO.bus.read("plan.doc@1", (k) => this._opRead(k)),
+        plan = read(),
         stamp = JSON.stringify(this._opService().context());
       if (!plan || !Array.isArray(plan.floors) || !KIVO.BassamIDB) return;
-      plan.floors.forEach((floor, index) => {
-        if (!floor || !floor.iid) return;
-        const iid = floor.iid,
-          sid = floor.sid;
+      const ctx = this._floorImgRefs(plan),
+        req = (this._fimgReq = (this._fimgReq || 0) + 1);
+      this.state.fimgsM !== ctx.key && this.setState({ fimgs: {}, fimgsM: ctx.key });
+      ctx.refs.forEach((iid, index) => {
+        if (!iid) return;
         KIVO.BassamIDB.get(iid)
           .then((image) => {
-            if (!image || stamp !== JSON.stringify(this._opService().context()))
+            if (!image || req !== this._fimgReq || stamp !== JSON.stringify(this._opService().context()))
               return;
-            const fresh = KIVO.bus.read("plan.doc@1", draft),
-              current = fresh && fresh.floors && fresh.floors[index];
-            if (current && current.iid === iid && current.sid === sid)
+            const now = this._floorImgRefs(read());
+            if (now.key === ctx.key && now.refs[index] === iid)
               this.setState((state) => ({
                 fimgs: { ...(state.fimgs || {}), [index]: image },
+                fimgsM: ctx.key,
               }));
           })
           .catch(() => {});
@@ -1889,7 +2003,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       if (!t) return void this.bsToast("اختر المنطقة أولاً — قائمة الأدوار / المستويات تتبع المنطقة المختارة");
       if (n.some((e) => this._optName(e) === s && ((e && e.r) || "") === t))
         return void this.bsToast("يوجد خيار بهذا الاسم في هذه المنطقة");
-      const e = (this.state.zDdNewC || "").trim();
+      const e = this._codeOk(this.state.zDdNewC);
       return e
         ? (this.setState({ zDdNew: "", zDdNewC: "" }),
           void this.saveZoneOpts({ ...(this.state.zoneOpts || {}), level: [...n, { n: s, c: e, r: t }] }))
@@ -1898,7 +2012,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     if ("zcat" !== t && n.some((t) => this._optName(t) === s)) this.bsToast("يوجد خيار بهذا الاسم");
     else {
       if (e) {
-        const e = (this.state.zDdNewC || "").trim();
+        const e = this._codeOk(this.state.zDdNewC);
         return e
           ? ("region" === t || "ztype" === t) && n.some((t) => this._optCode(t) === e)
             ? void this.bsToast("هذا الرمز مستخدم لخيار آخر")
@@ -2003,7 +2117,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       );
     let d = "";
     if (e) {
-      if (((d = (this.state.zDdEditC || "").trim()), !d)) return void this.bsToast("اكتب الرمز — حرف أو رقم يميّز هذا الخيار");
+      if (((d = this._codeOk(this.state.zDdEditC)), !d)) return void this.bsToast("اكتب الرمز — حرف أو رقم يميّز هذا الخيار");
       if (("region" === t.key || "ztype" === t.key) && n.some((t, e) => e !== i && this._optCode(t) === d))
         return void this.bsToast("هذا الرمز مستخدم لخيار آخر");
     }
@@ -2157,7 +2271,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         const e = String(null == t.lsz ? "" : t.lsz).trim();
         if ("" === e) return null;
         let s = parseFloat(e);
-        return isNaN(s) ? null : Math.min(40, Math.max(4, Math.round(10 * s) / 10));
+        return isNaN(s) ? null : Math.min(40, Math.max(0.5, Math.round(10 * s) / 10));   /* V7 · 53 (ملحق 6 · 4): حجمُ خط رمز المصلى ينزل إلى 0.5 */
       })();
     (this._updRound((o) => {
       const r = (o.zones || [])[t.i];
@@ -7713,7 +7827,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           ? (_.zones || [])
               .map((t, e) => {
                 const n = s.dsZoneTmp && s.dsZoneTmp.i === e ? { ...t, ...s.dsZoneTmp.z } : t,
-                  i = n.code || "";
+                  i = n.code ? this._zc(n.code) : "",   /* V7 · 53 (ملحق 6 · 2): الملصقُ بفاصل « / » — والرمزُ المخزَّن كما هو */
+                  iL = KIVO.zoneCodeLen(n.code);
                 if (!bt || n.hideLabel || !i) return null;
                 const o = this._dsPtsHs(n.d).pts;
                 if (!o || o.length < 3) return null;
@@ -7765,9 +7880,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   z = w ? w.w : c,
                   E = w ? w.h : g,
                   M = w ? w.deg : 0;
-                let O = Math.min(0.62 * E, (0.92 * z) / Math.max(1, 0.6 * i.length));
+                let O = Math.min(0.62 * E, (0.92 * z) / Math.max(1, 0.6 * iL));
                 ((O = Math.min(O, 17)), v && this._rotLab && null != this._rotLab.fs && (O = this._rotLab.fs));
-                for (let t = 0; t < 26 && O > 1.2 && !this._boxFits(S, A, O * i.length * 0.6, 0.78 * O, M, o); t++) O *= 0.88;
+                for (let t = 0; t < 26 && O > 1.2 && !this._boxFits(S, A, O * iL * 0.6, 0.78 * O, M, o); t++) O *= 0.88;
                 return (
                   O < 1.2 && (O = 1.2),
                   v && this._rotLab && null == this._rotLab.fs && (this._rotLab.fs = O),
@@ -8973,7 +9088,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           },
           W = (e) => {
             if ("marks" === d) return e.label || e.kind || "معلم";
-            if ("zones" === d) return (e.code || e.name || "مصلى") + (e.zcat ? " — " + e.zcat : "");
+            if ("zones" === d) return (this._zc(e.code) || e.name || "مصلى") + (e.zcat ? " — " + e.zcat : "");
             const s = !!e.pOf,
               n = s ? t.leafLabel(t.parentOf(pe, e) || e, e) : e.num || "",
               i = (!s && (e.label || e.name)) || "";
@@ -10249,8 +10364,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           edit: () => {
             Q && this.openZoneEditor(e);
           },
+          zcode: t.code || "",
           name:
-            (t.code || "مصلى") +
+            (this._zc(t.code) || "مصلى") +
             " — " +
             ([String(t.ztype || "").trim(), String(t.zcat || "").trim()].filter(Boolean).join(" · ") ||
               ((s = t.cat), "men" === s ? "مصلى رجال" : "women" === s ? "مصلى نساء" : "service" === s ? "منطقة خدمات" : "مصلى")),
@@ -13689,7 +13805,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           ((t[o] = t[o] ? t[o] + " · " + n : n), e[o] || (e[o] = i));
         };
       ((("dist" === Te && this.bsLensOn("zones")) || "zones" === Te ? de : []).forEach((t, e) =>
-        (t.emp || []).forEach((n) => s(n, t.code || "مصلى", { t: "zone", i: e })),
+        (t.emp || []).forEach((n) => s(n, this._zc(t.code) || "مصلى", { t: "zone", i: e })),
       ),
         (("dist" === Te && this.bsLensOn("gates")) || "gates" === Te ? pe : []).forEach((t, e) =>
           (t.emp || []).forEach((n) => s(n, t.label || t.name || "باب", { t: "gate", i: e })),
@@ -13770,6 +13886,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         t.meta,
         t.code,
         t.type,
+        t.zcode || "",   /* V7 · 53 (ملحق 6 · 2): الاسمُ بفاصل « / » والبحثُ بالرمز المخزَّن أيضاً */
       ]));
     const Gn = s.regOpen || {},
       Zn = [],
@@ -13978,6 +14095,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   code: n.code || "",
                   down: (t) => {
                     if ("gates" === this.state.lens) return;
+                    if (this._dsMultiOn()) return void (t && t.stopPropagation && t.stopPropagation());   /* V7 · 53 (ملحق 6 · 6): التحديدُ المتعدد لا يسحب */
                     if (!this._dsCanEditZones() || "select" !== this.state.tool) return;
                     t && t.stopPropagation && t.stopPropagation();
                     const s = t && (t.ctrlKey || t.metaKey),
@@ -13988,6 +14106,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   },
                   click: (t) => {
                     if ("gates" === this.state.lens) return;
+                    if (this._dsMultiOn())
+                      return (t && t.stopPropagation && t.stopPropagation(), void (this._dsDragged || this._pickSel("zone", e, !0)));
                     const s = this._dsCanEditZones() && "select" === this.state.tool;
                     if (this._dsCanEditZones())
                       return (
@@ -14132,6 +14252,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 dsPolyCursor: null,
                 dsSel: "select" === t ? this.state.dsSel : null,
                 selMulti: "select" === t ? this.state.selMulti : [],
+                dsMulti: !1,
               }),
                 "path" !== t ||
                   $ ||
@@ -14141,7 +14262,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             };
           return {
             dsToolSelect: e("select"),
-            dsTSelStyle: t("select" === s.tool),
+            dsTSelStyle: t("select" === s.tool && !s.dsMulti),
+            /* V7 · 53 (ملحق 6 · 6): أداةُ التحديد المتعدد */
+            dsMultiToolOn: yt,
+            dsTMultiStyle: t(this._dsMultiOn()),
+            dsMultiPressed: this._dsMultiOn() ? "true" : "false",
+            dsMultiToggle: () =>
+              this._dsMultiOn()
+                ? this.setState({ dsMulti: !1 })
+                : this.setState({ dsMulti: !0, tool: "select", draft: null, dsPolyPts: [], dsPolyCursor: null, zdrag: null, dsShapeFly: null }),
             ...(() => {
               const t = { poly: "حر", rect: "مستطيل", square: "مربع", circle: "دائرة" },
                 n = !!t[s.tool],
@@ -14541,7 +14670,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             n = (t.ser || "").trim() || "00";
           return {
             zeTitle: t.isNew ? "بيانات المصلى الجديد" : "تعديل بيانات المصلى",
-            zeCodePreview: s.zEdit ? this._composeZoneCode(t.region, t.level, n, null, t.ztype) : "",
+            zeCodePreview: s.zEdit ? this._zc(this._composeZoneCode(t.region, t.level, n, null, t.ztype)) : "",
             zeSer: null != t.ser ? t.ser : "",
             onZeSer: (t) => this.setState({ zEdit: { ...this.state.zEdit, ser: t.target.value.replace(/[^0-9]/g, "").slice(0, 3) } }),
             onZeKey: (t) => {
@@ -14678,7 +14807,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                                 flexShrink: 0,
                               },
                             },
-                            "#" + t,
+                            "/\u2009" + t,   /* V7 · 53 (ملحق 6 · 2): رمزُ الخيار جزءٌ من رمز المصلى — يسبقه « / » لا # */
                           ),
                         v = f.map((s) => {
                           const r = s.o,
@@ -15347,7 +15476,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         e(
                           "div",
                           { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
-                          o("lsz", "حجم الخط (4–40)", 4, 40, 0.5),
+                          o("lsz", "حجم الخط (0.5–40)", 0.5, 40, 0.5),
                           o("lang", "الدوران (°)", -360, 360, 1),
                         ),
                         e(
@@ -15688,12 +15817,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   ? ("" !== (t.num || "") ? "#" + t.num + " — " : "") + (t.label || t.name || "باب")
                   : "marks" === l
                     ? t.label || t.name || "معلم"
-                    : (t.code ? t.code + " — " : "") + (t.name || "مصلى"),
+                    : (t.code ? this._zc(t.code) + " — " : "") + (t.name || "مصلى"),
               n = "zones" === l ? o[t.cat] || t.ztype || "مصلى" : t.kind || "بلا نوع",
               i = "gates" === l ? !!t.closed : !!t.off;
             return { i: e, el: t, name: s, meta: n, dead: i, deadTxt: i ? ("gates" === l ? "مغلق" : "معطّل") : "" };
           });
-          n && (h = KIVO.BassamFind.filter(n, h, (t) => [t.name, t.meta]));
+          n && (h = KIVO.BassamFind.filter(n, h, (t) => [t.name, t.meta, (t.el && t.el.code) || ""]));
           const c = h.map((t) => {
               const e = ((t) => {
                   const e = parseInt(String(null == t ? "" : t).trim(), 10);
@@ -15882,7 +16011,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             dsHovZ: null,
             dsHovG: null,
           }),
-        bulkOn: yt && d && "gate" !== l,
+        bulkOn: yt && (d || (this._dsMultiOn() && a.length > 0)) && "gate" !== l,
         dsGateBarOn: mt,
         dsGateSelOn: mt && "gate" === l && a.length >= 1,
         ...(() => {
@@ -15971,10 +16100,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         })(),
         bulkFull: "gate" !== l,
         bulkOn2: () =>
-          this._bulk((t) =>
-            "gate" === l ? this._fdOpen(t) : { ...t, off: !1 },
-          ),
+          "zone" === l
+            ? void this._dsBulkStatus(!1)   /* V7 · 53 (ملحق 6 · 6): بتأكيدٍ وحفظٍ ذرّيٍّ واحد */
+            : this._bulk((t) =>
+                "gate" === l ? this._fdOpen(t) : { ...t, off: !1 },
+              ),
         bulkOff: () => {
+          if ("zone" === l) return void this._dsBulkStatus(!0);
           if ("gate" !== l) return void this._bulk((t) => ({ ...t, off: !0 }));
           const t = a.map((t) => _ && (_.gates || [])[t]).filter(Boolean);
           if (!t.length || t.every((t) => !!t.closed)) return;
@@ -16117,7 +16249,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     flexShrink: 0,
                   },
                 },
-                "#" + t,
+                "/\u2009" + t,
               ),
             o = (t) =>
               e("span", {
@@ -17594,7 +17726,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           );
         }),
         floorImgNode:
-          s.fimgs && s.fimgs[f]
+          s.fimgs && s.fimgs[f] && (null == s.fimgsM || s.fimgsM === s.year + "-" + s.month)   /* V7 · 53 (ملحق 6 · 11): صورُ شهرٍ آخر لا تُعرض */
             ? ((s9, N9) =>
                 React.createElement(
                   React.Fragment,
@@ -17628,9 +17760,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           try {
             const t = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k));
             if (!t) return null;
-            const e = t.months && t.months[s.year + "-" + s.month],
-              n = e ? (Array.isArray(e) ? e : e.d) : null,
-              i = Array.isArray(n) && n[f] ? n[f] : (t.floors || [])[f];
+            /* V7 · 53 (ملحق 6 · ج): نطاقاتُ الموقع من لقطة شهر الجولة بمعرّف الموقع (sid) لا بموضع الصف — كصورته (_floorImgSite) */
+            const i = this._floorImgSite(t, f);
             if (
               !i ||
               !0 === i.hideSectors ||
@@ -18161,6 +18292,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 )),
             ),
             dsDbl: () => {
+              if (this._dsMultiOn()) return;   /* V7 · 53 (ملحق 6 · 6): لا محرّرَ في التحديد المتعدد */
               if (this._dsCanEditZones()) {
                 if ("poly" === this.state.tool && this.state.dsPolyPts.length >= 3)
                   return void this._dsAddZoneFromPts(this.state.dsPolyPts);
@@ -18331,7 +18463,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               return "gate" === t.t
                 ? (null == e.num ? "" : String(e.num).trim()) || e.label || "باب"
                 : "zone" === t.t
-                  ? e.code || e.name || "مصلى"
+                  ? this._zc(e.code) || e.name || "مصلى"
                   : e.label || e.kind || "معلم";
             },
             S = d.map((t) => {
@@ -18540,7 +18672,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 !("dist" === s.lens && !this.bsLensOn("dist")) &&
                 !("density" === s.lens && !this.bsLensOn("dens")),
               selLabel: n
-                ? n.code || "مصلى"
+                ? this._zc(n.code) || "مصلى"
                 : i
                   ? (() => {
                       const t = KIVO.BassamLeaf,
@@ -18657,13 +18789,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               capNowOn: et > 0,
               capNoneOn: et <= 0,
               capNoneHint: "هذا المصلى بلا سعة — عرّف مساحته في عدسة الكثافة بالخطة التشغيلية ليتحوّل الإدخال إلى عددٍ ونسبة معاً",
+              /* V7 · 53 (ملحق 6 · أ): حقولُ القراءة للعرض فقط لمن لا يملك التعديل (مشاهدة) أو والجولةُ مقفلة — نمطُ disabled القائم؛ والكتابةُ تُرفض هنا أيضاً */
+              occRO: !this._dsDensCan(!this._dsLockInfo().locked),
               occNVal: at && "n" === at.k ? at.v : null == pt ? "" : String(pt),
               onOccN: (t) => {
+                if (!this._dsDensCan(!this._dsLockInfo().locked)) return;
                 const e = ht(String(null == t.target.value ? "" : t.target.value)).replace(/[^0-9]/g, "");
                 (this.setState({ occDraft: { k: "n", v: e, i: ot, pid: nt } }), st("" !== e ? Math.max(0, parseInt(e, 10)) : null));
               },
               occPctVal: at && "p" === at.k ? at.v : null == dt ? "" : String(dt),
               onOccPct: (t) => {
+                if (!this._dsDensCan(!this._dsLockInfo().locked)) return;
                 let e = ht(String(null == t.target.value ? "" : t.target.value)).replace(/[^0-9.]/g, "");
                 const s = e.indexOf(".");
                 if (
@@ -19661,7 +19797,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     o(b, g),
                     {
                       accent: b ? b.S.c : u,
-                      code: t.code || "—",
+                      code: this._zc(t.code) || "—",
                       title: t.ztype || "مصلى",
                       status: b
                         ? { text: b.S.t, tone: "closed" === b.st ? "off" : "open" === b.st ? "ok" : "warn" }
