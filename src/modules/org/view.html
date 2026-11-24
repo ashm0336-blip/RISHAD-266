@@ -339,7 +339,7 @@
       <div><div class="p44-cap">الدور (واحد لكل شخص)</div><div class="p44-chips" role="radiogroup" aria-label="الدور"><sc-for list="{{p44PRoles}}" as="c" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{c.on}}" onClick="{{c.pick}}">{{c.t}}</button></sc-for></div></div>
       <div><div class="p44-cap">استثناءات على هذا الشخص</div>
         <sc-if value="{{p44PExNone}}" hint-placeholder-val="{{ true }}"><p class="p44-mute">لا استثناءات — صلاحياته هي دوره بالضبط.</p></sc-if>
-        <sc-for list="{{p44PEx}}" as="x" hint-placeholder-count="1"><div class="p44-ex" data-live="{{x.live}}"><span><b>{{x.n}}</b><small>{{x.meta}}</small></span><button type="button" class="p44-b" onClick="{{x.del}}" aria-label="إزالة الاستثناء">إزالة</button></div></sc-for>
+        <sc-for list="{{p44PEx}}" as="x" hint-placeholder-count="1"><div class="p44-ex" data-live="{{x.live}}"><span><b>{{x.n}}</b><small>{{x.meta}}</small><sc-if value="{{x.metaH}}" hint-placeholder-val="{{ false }}"><small style="font-size:10px;opacity:.85">{{x.metaH}}</small></sc-if></span><button type="button" class="p44-b" onClick="{{x.del}}" aria-label="إزالة الاستثناء">إزالة</button></div></sc-for>
         <sc-if value="{{p44ExFormOn}}" hint-placeholder-val="{{ false }}">
         <div class="p44-exf" role="group" aria-label="استثناء مؤقت">
           <sc-if value="{{p44ExNoKeys}}" hint-placeholder-val="{{ false }}"><p class="p44-mute">دوره يشمل كل أفعال الأنظمة المفعّلة — لا استثناء يُضاف.</p></sc-if>

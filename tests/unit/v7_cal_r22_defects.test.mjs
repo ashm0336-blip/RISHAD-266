@@ -47,16 +47,17 @@ test('REVIEW 22 ①: dstats Analytics — a January period shows «يناير» 
   }
 });
 
-test('REVIEW 22 ②: org temporary grant expiry — the Gregorian day first, then the Hijri day', () => {
+test('REVIEW 22 ②: org temporary grant expiry — the Gregorian day, with the Hijri day as a small line under it', () => {
   const { C } = ctx();
-  const src = rd('modules/org/logic-perm44.js'), m = /  _p44Day\(ms\) \{[\s\S]*?\n  \}/.exec(src);
-  assert.ok(m, '_p44Day exists');
-  const P = vm.runInContext('({' + m[0].trim() + '})', C);
+  const src = rd('modules/org/logic-perm44.js'), m = /  _p44Day\(ms\) \{[\s\S]*?\n  \}/.exec(src), mh = /  _p44DayH\(ms\) \{[\s\S]*?\n  \}/.exec(src);
+  assert.ok(m && mh, '_p44Day and _p44DayH exist');
+  const P = vm.runInContext('({' + m[0].trim() + ', ' + mh[0].trim() + '})', C);
   const ms = Date.UTC(2026, 10, 24, 9, 0);   /* 24 Nov 2026, Riyadh */
-  const k = C.KIVO.BassamCal.gAt(new Date(ms)).k, h = C.KIVO.BassamCal.hDayText(k);
-  const out = P._p44Day(ms);
-  assert.equal(out, C.KIVO.BassamCal.fmtDay(k) + ' · ' + h + ' هـ');
-  assert.match(out, /^24 نوفمبر 2026 · /);
+  const k = C.KIVO.BassamCal.gAt(new Date(ms)).k;
+  assert.equal(P._p44Day(ms), '24 نوفمبر 2026', 'the expiry date is Gregorian');
+  assert.equal(P._p44DayH(ms), C.KIVO.BassamCal.hDayText(k) + ' هـ');
+  assert.match(src, /metaH: x\.until \? this\._p44DayH\(x\.until\) : ""/);
+  assert.match(rd('modules/org/view.html'), /<small>\{\{x\.meta\}\}<\/small><sc-if value="\{\{x\.metaH\}\}"[^>]*><small style="font-size:10px;opacity:\.85">\{\{x\.metaH\}\}<\/small><\/sc-if>/, 'a second small line under the meta line (.p44-ex small is display:block)');
 });
 
 test('REVIEW 22 ③: staff approve / reopen / delete for 2026-11 say «نوفمبر 2026» with no «هـ»', () => {

@@ -1082,6 +1082,7 @@ Object.assign(Component.prototype, {
         vis: "mgr" !== this._p44Viewer() || this._p44KeyCeil(did)(x.key),
         n: "+ " + this._p44Label(x.key),
         meta: "منحه " + byName(x.by) + " · " + (x.until ? (live(x) ? "ينتهي " : "انتهى ") + this._p44Day(x.until) : "بلا تاريخ انتهاء"),
+        metaH: x.until ? this._p44DayH(x.until) : "",
         live: live(x) ? "true" : "false",
         del: () => setRec((p) => p.ex.splice(i, 1)),
       })).filter((x) => x.vis),
@@ -1118,11 +1119,14 @@ Object.assign(Component.prototype, {
     }
     return { ok: !0, rec: { key: ef.key, until: until, by: by, at: now, note: ef.note || "" } };
   },
+  _p44DayH(ms) {
+    try { const C = KIVO.BassamCal, h = C.hDayText(C.gAt(new Date(ms)).k); return h ? h + " هـ" : ""; } catch (e) { return ""; }
+  },
   _p44Day(ms) {
     try {
-      /* V7 · 53 تقويم (REVIEW 22 · عيب 2 · القاعدة 11): اليومُ الميلادي أساساً والهجريُّ المقابل بعده — كان هجرياً وحده */
-      const C = KIVO.BassamCal, k = C.gAt(new Date(ms)).k, h = C.hDayText(k);
-      return C.fmtDay(k) + (h ? " · " + h + " هـ" : "");
+      /* V7 · 53 تقويم (REVIEW 22 · عيب 2 · القاعدة 11): اليومُ الميلادي — والهجريُّ المقابل سطرٌ صغير تحته (_p44DayH · metaH) */
+      const C = KIVO.BassamCal;
+      return C.fmtDay(C.gAt(new Date(ms)).k);
     } catch (e) {
       return new Date(ms).toISOString().slice(0, 10);
     }
