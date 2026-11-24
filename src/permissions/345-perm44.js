@@ -243,42 +243,32 @@ function perm44Make(R, D) {
   function narrowSheets(cur, inc, J) {
     cur = isObj(cur) ? cur : {}; inc = isObj(inc) ? inc : {};
     var out = {}, drops = [], ek, pk, lf;
-    function acts(v) { return Array.isArray(v) ? v : []; }
-    function drop(e, p, list) { for (var q = 0; q < list.length; q++) drops.push({ e: e, p: p, a: list[q] }); }
+    function A(v) { return Array.isArray(v) ? v : []; }
+    function split(e, p, list, ok) { var y = []; list.forEach(function (a) { if (ok(a)) y.push(a); else drops.push({ e: e, p: p, a: a }); }); return y; }
+    function bar(ek) { return ek === J.self || !J.target(ek); }
     for (ek in inc) {
       var s0 = isObj(cur[ek]) ? cur[ek] : undefined, s1 = inc[ek];
       if (same(s0, s1) || !isObj(s1)) { out[ek] = clone(s1); continue; }   /* بلا تغيير · أو شكلٌ يحكمه التحقّق */
-      if (ek === J.self || !J.target(ek)) {
-        if (s0) out[ek] = clone(s0);
-        for (pk in s1) drop(ek, pk, acts(s1[pk]).filter(function (a) { return !(s0 && acts(s0[pk]).indexOf(a) !== -1); }));
-        continue;
-      }
-      var t = J.kind(ek) || {}, x0 = s0 ? J.expand(s0) : null, s = {};
+      if (bar(ek)) { if (s0) out[ek] = clone(s0); for (pk in s1) split(ek, pk, A(s1[pk]), function (a) { return s0 && A(s0[pk]).indexOf(a) !== -1; }); continue; }
+      var t = J.kind(ek) || {}, x0 = s0 ? J.expand(s0) : {}, s = {}, res = {};
       for (pk in s1) {
-        var A1 = acts(s1[pk]);
-        if (J.inCap(pk)) { s[pk] = A1.slice(); continue; }
-        var h = s0 ? acts(s0[pk]).concat(acts(x0[pk])) : [];
-        drop(ek, pk, A1.filter(function (a) { return h.indexOf(a) === -1; }));
-        var keep = A1.filter(function (a) { return h.indexOf(a) !== -1; });
-        if (keep.length || !A1.length) s[pk] = keep;
+        var h = J.inCap(pk) ? null : A(s0 && s0[pk]).concat(A(x0[pk])), k1 = split(ek, pk, A(s1[pk]), function (a) { return !h || h.indexOf(a) !== -1; });
+        if (k1.length || !A(s1[pk]).length) s[pk] = k1;
       }
-      var was = s0 ? x0 : (t.inhAll ? J.capAll() : {}), cutL = !s0 && !t.inhAll ? (J.lensHosts(ek) || []) : [], res = {};
+      var was = s0 ? x0 : t.inhAll ? J.capAll() : {}, cutL = s0 || t.inhAll ? [] : J.lensHosts(ek) || [];
       for (pk in s) {
-        var one = {}; one[pk] = s[pk];
-        var leaves = J.isContainer(pk) ? J.expand(one) : one, part = {}, whole = true;
-        for (lf in leaves) {
-          var had = acts(was[lf]), have = acts(J.have(lf)), hostCut = cutL.some(function (x) { return lf === x || lf.indexOf(x + '/') === 0; });
-          var ok = acts(leaves[lf]).filter(function (a) { return !hostCut && (had.indexOf(a) !== -1 || have.indexOf(a) !== -1); });
-          var lost = acts(leaves[lf]).filter(function (a) { return ok.indexOf(a) === -1; });
-          if (lost.length) { whole = false; drop(ek, lf, lost); }
+        var one = {}, part = {}, n0 = drops.length; one[pk] = s[pk];
+        var lv = J.isContainer(pk) ? J.expand(one) : one;
+        for (lf in lv) {
+          var cut = cutL.some(function (x) { return lf === x || lf.indexOf(x + '/') === 0; }), ok = split(ek, lf, A(lv[lf]), function (a) { return !cut && (A(was[lf]).indexOf(a) !== -1 || A(J.have(lf)).indexOf(a) !== -1); });
           if (ok.length) part[lf] = ok;
         }
-        if (whole) res[pk] = s[pk]; else for (lf in part) res[lf] = part[lf];
+        if (drops.length === n0) res[pk] = s[pk]; else for (lf in part) res[lf] = part[lf];
       }
       out[ek] = res;
     }
     /* حذفُ ورقةٍ قائمة: لصاحبٍ يرث (حذفُها توسيعٌ إلى السقف) أو لا تُكتب ورقتُه — تبقى كما هي */
-    for (ek in cur) if (!Object.prototype.hasOwnProperty.call(inc, ek) && isObj(cur[ek]) && (ek === J.self || !J.target(ek) || (J.kind(ek) || {}).inh)) out[ek] = clone(cur[ek]);
+    for (ek in cur) if (!(ek in inc) && isObj(cur[ek]) && (bar(ek) || (J.kind(ek) || {}).inh)) out[ek] = clone(cur[ek]);
     return { out: out, drops: drops };
   }
   return { offClosure: offClosure, offWith: offWith, narrowSheets: narrowSheets, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
@@ -491,6 +481,7 @@ var API = {
   isSuper: isSup,
   mgrOf: mgrOf, unitMgr: function () { return mgrOf(curUser(), activeDept()); },
   names: function () { return JSON.parse(JSON.stringify(eng().names)); },
+  narrowSheets: function (cur, inc, J) { return eng().narrowSheets(cur, inc, J); },   /* V7 · 53 (ملحق 5): معاينةُ تضييق أوراق الموظفين في استيراد نسخة الإدارة (548) */
   RES: RES
 };
 KIVO.Perm44 = Object.freeze(API);

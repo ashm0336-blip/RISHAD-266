@@ -406,56 +406,32 @@ function permsGrantWhy(A, d, eo, en, to, tn, lo, ln) {
    لا حكمَ يُرخى: الحفظةُ بعد ذلك تمرّ بـ permsRule وenfPermsHeldWhy بلا تغيير (applySave). cur/inc: أوراقُ الوحدة القائمة والقادمة بلا صحائف المديرين.
    ⇒ { out, drops: [{ e, p, a }] } — drops: ما لا يُكتب، بنداً بنداً (019d ← ملخّص ما قبل التأكيد «لن يُنقل») */
 function permsImportNarrow(A, d, cur, inc, base) {
-  var B = permOnAll(A), cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : pgOpen(), mine = null, P = A.perms || {};
-  var dl = (P.lenses || {})[d], el = isObj((P.empLens || {})[d]) ? P.empLens[d] : {}, allL = KIVO_LENS_PLUGINS.keys;
-  var J = {
-    self: String(A.u.ekey || ''),
-    target: function (ek) { return permTargetOk(A, ek, d); },
-    kind: function (ek) { return permTargetOf(A, ek); },
-    expand: function (s) { return expandPermsOf(B, d, s); },
-    capAll: function () { return capAllPermsOf(B, d); },
-    inCap: function (pk) { return cap.indexOf(String(pk).split('/')[0]) !== -1; },
-    have: function (lf) { if (!mine) mine = myPermsOf(B, d); return mine[lf] || []; },
-    isContainer: pgIsContainer,
-    lensHosts: function (ek) {
-      var l1 = el[ek], hs = [];
-      allL.forEach(function (L) { if ((!Array.isArray(dl) || dl.indexOf(L) !== -1) && (!Array.isArray(l1) || l1.indexOf(L) !== -1) && !KIVO_BUILD.lensGate(P, A.u, d, L).on) hs = hs.concat(permLensHostsOf(L)); });
-      return hs;
-    },
-  };
-  var r = perm44E().narrowSheets(cur, inc, J), out = r.out, drops = r.drops, ek;
-  var at = function (ek, sheet) { var n = JSON.parse(JSON.stringify(isObj(base) ? base : {})); n.emps = isObj(n.emps) ? n.emps : {}; n.emps[d] = isObj(n.emps[d]) ? n.emps[d] : {}; if (sheet === undefined) delete n.emps[d][ek]; else n.emps[d][ek] = sheet; return n; };
-  var o = isObj(base) ? base : {};
-  for (ek in out) {
-    if (deq(out[ek], isObj(cur) ? cur[ek] : undefined)) continue;
-    for (var g = 0; g < 48; g++) {
-      var n = at(ek, out[ek]), key = permsRule(A, JSON.stringify(n), JSON.stringify(o)).ok ? enfPermsHeldWhy(A, n, o) : '*';
-      if (!key) break;
-      var e = key === '*' ? null : KIVO_REGISTRY.byKey[key], atoms = ((e && e.asisMap) || []).map(function (x) { return /^([A-Za-z]+(?:\/[A-Za-z]+)?):(view|add|edit|del|approve|export)$/.exec(String(x)); }).filter(Boolean), hit = false;
-      atoms.forEach(function (m) { if (permsSheetDrop(B, d, out[ek], m[1], m[2])) { hit = true; drops.push({ e: ek, p: m[1], a: m[2] }); } });
-      if (hit) continue;
-      /* لا ذرّةَ تُسقط (أو القاعدةُ ما زالت ترفض): الورقةُ كما كانت في الوحدة — وما زاد عليها يُذكر */
-      var s0 = isObj(cur) && isObj(cur[ek]) ? cur[ek] : undefined, x1 = expandPermsOf(B, d, out[ek] || {}), x0 = s0 ? expandPermsOf(B, d, s0) : {};
-      Object.keys(x1).forEach(function (lf) { (x1[lf] || []).forEach(function (a) { if ((x0[lf] || []).indexOf(a) === -1) drops.push({ e: ek, p: lf, a: a }); }); });
-      if (s0) out[ek] = JSON.parse(JSON.stringify(s0)); else delete out[ek];
-      break;
-    }
+  var B = permOnAll(A), cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : pgOpen(), mine = null, P = A.perms || {}, dl = (P.lenses || {})[d], el = (P.empLens || {})[d] || {};
+  var r = perm44E().narrowSheets(cur, inc, {
+    self: String(A.u.ekey || ''), target: function (ek) { return permTargetOk(A, ek, d); }, kind: function (ek) { return permTargetOf(A, ek); },
+    expand: function (s) { return expandPermsOf(B, d, s); }, capAll: function () { return capAllPermsOf(B, d); }, isContainer: pgIsContainer,
+    inCap: function (pk) { return cap.indexOf(String(pk).split('/')[0]) !== -1; }, have: function (lf) { return (mine || (mine = myPermsOf(B, d)))[lf] || []; },
+    lensHosts: function (ek) { var l1 = el[ek], hs = []; KIVO_LENS_PLUGINS.keys.forEach(function (L) { if ((!Array.isArray(dl) || dl.indexOf(L) !== -1) && (!Array.isArray(l1) || l1.indexOf(L) !== -1) && !KIVO_BUILD.lensGate(P, A.u, d, L).on) hs = hs.concat(permLensHostsOf(L)); }); return hs; },
+  }), out = r.out, drops = r.drops, o = isObj(base) ? base : {}, oj = JSON.stringify(o), seen = {}, ek;
+  for (ek in out) for (var g = 0; g < 48 && !deq(out[ek], cur[ek]); g++) {
+    var n = JSON.parse(oj); n.emps = isObj(n.emps) ? n.emps : {}; n.emps[d] = Object.assign({}, n.emps[d]); n.emps[d][ek] = out[ek];
+    var key = permsRule(A, JSON.stringify(n), oj).ok ? enfPermsHeldWhy(A, n, o) : '*', e = KIVO_REGISTRY.byKey[key], hit = 0;
+    if (!key) break;
+    ((e && e.asisMap) || []).forEach(function (x) { var m = /^([A-Za-z]+(?:\/[A-Za-z]+)?):([a-z]+)$/.exec(String(x)); if (m && permsSheetDrop(B, d, out[ek], m[1], m[2])) { hit = 1; drops.push({ e: ek, p: m[1], a: m[2] }); } });
+    if (hit) continue;
+    /* لا ذرّةَ تُسقط أو القاعدةُ ما زالت ترفض: الورقةُ كما كانت في الوحدة — وما زاد عليها يُذكر */
+    var x1 = expandPermsOf(B, d, out[ek]), x0 = isObj(cur[ek]) ? expandPermsOf(B, d, cur[ek]) : {};
+    Object.keys(x1).forEach(function (lf) { x1[lf].forEach(function (a) { if ((x0[lf] || []).indexOf(a) === -1) drops.push({ e: ek, p: lf, a: a }); }); });
+    if (isObj(cur[ek])) out[ek] = JSON.parse(JSON.stringify(cur[ek])); else delete out[ek];
+    break;
   }
-  var seen = {};
-  return { out: out, drops: drops.filter(function (x) { var k = x.e + '|' + x.p + '|' + x.a; if (seen[k]) return false; seen[k] = 1; return true; }) };
+  return { out: out, drops: drops.filter(function (x) { var k = x.e + '|' + x.p + '|' + x.a; return !seen[k] && (seen[k] = 1); }) };
 }
-/* يُسقط الفعلَ a من الورقة leaf (أو من أوراق الحاوية · أو يفكّ الحاويةَ التي تحمل الورقة إلى أوراقها ثم يُسقطه) — true إن أسقط شيئاً */
+/* يُسقط الفعلَ a من الورقة leaf (ومن أوراق الحاوية leaf · أو يفكّ الحاويةَ التي تحملها إلى أوراقها أولاً) — true إن أسقط شيئاً */
 function permsSheetDrop(B, d, sheet, leaf, a) {
-  if (!isObj(sheet)) return false;
-  var hit = false, k;
-  var cut = function (x) { var acts = sheet[x]; if (!Array.isArray(acts) || acts.indexOf(a) === -1) return; sheet[x] = acts.filter(function (y) { return y !== a; }); if (!sheet[x].length) delete sheet[x]; hit = true; };
-  var top = String(leaf).split('/')[0];
-  if (leaf !== top && pgIsContainer(top) && Array.isArray(sheet[top]) && sheet[top].indexOf(a) !== -1) {
-    var one = {}; one[top] = sheet[top]; var ex = expandPermsOf(B, d, one); delete sheet[top];
-    for (k in ex) sheet[k] = (sheet[k] || []).concat(ex[k].filter(function (y) { return (sheet[k] || []).indexOf(y) === -1; }));
-  }
-  cut(leaf);
-  if (pgIsContainer(leaf)) for (k in sheet) if (k.indexOf(leaf + '/') === 0) cut(k);
+  var hit = false, top = String(leaf).split('/')[0], k;
+  if (leaf !== top && pgIsContainer(top) && (sheet[top] || []).indexOf(a) !== -1) { var one = {}; one[top] = sheet[top]; delete sheet[top]; one = expandPermsOf(B, d, one); for (k in one) sheet[k] = (sheet[k] || []).concat(one[k].filter(function (y) { return (sheet[k] || []).indexOf(y) === -1; })); }
+  for (k in sheet) if ((k === leaf || (pgIsContainer(leaf) && k.indexOf(leaf + '/') === 0)) && (sheet[k] || []).indexOf(a) !== -1) { sheet[k] = sheet[k].filter(function (y) { return y !== a; }); if (!sheet[k].length) delete sheet[k]; hit = true; }
   return hit;
 }
 /* هل تحمل الورقةُ (الموسَّعة) صفحةً تعمل عليها العدسةُ L؟ (مضيفو مفتاح lens.<L>.view في فهرس الإنفاذ — الخطة والجولات افتراضاً) */

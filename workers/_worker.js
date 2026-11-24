@@ -2902,56 +2902,32 @@ function permsGrantWhy(A, d, eo, en, to, tn, lo, ln) {
    لا حكمَ يُرخى: الحفظةُ بعد ذلك تمرّ بـ permsRule وenfPermsHeldWhy بلا تغيير (applySave). cur/inc: أوراقُ الوحدة القائمة والقادمة بلا صحائف المديرين.
    ⇒ { out, drops: [{ e, p, a }] } — drops: ما لا يُكتب، بنداً بنداً (019d ← ملخّص ما قبل التأكيد «لن يُنقل») */
 function permsImportNarrow(A, d, cur, inc, base) {
-  var B = permOnAll(A), cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : pgOpen(), mine = null, P = A.perms || {};
-  var dl = (P.lenses || {})[d], el = isObj((P.empLens || {})[d]) ? P.empLens[d] : {}, allL = KIVO_LENS_PLUGINS.keys;
-  var J = {
-    self: String(A.u.ekey || ''),
-    target: function (ek) { return permTargetOk(A, ek, d); },
-    kind: function (ek) { return permTargetOf(A, ek); },
-    expand: function (s) { return expandPermsOf(B, d, s); },
-    capAll: function () { return capAllPermsOf(B, d); },
-    inCap: function (pk) { return cap.indexOf(String(pk).split('/')[0]) !== -1; },
-    have: function (lf) { if (!mine) mine = myPermsOf(B, d); return mine[lf] || []; },
-    isContainer: pgIsContainer,
-    lensHosts: function (ek) {
-      var l1 = el[ek], hs = [];
-      allL.forEach(function (L) { if ((!Array.isArray(dl) || dl.indexOf(L) !== -1) && (!Array.isArray(l1) || l1.indexOf(L) !== -1) && !KIVO_BUILD.lensGate(P, A.u, d, L).on) hs = hs.concat(permLensHostsOf(L)); });
-      return hs;
-    },
-  };
-  var r = perm44E().narrowSheets(cur, inc, J), out = r.out, drops = r.drops, ek;
-  var at = function (ek, sheet) { var n = JSON.parse(JSON.stringify(isObj(base) ? base : {})); n.emps = isObj(n.emps) ? n.emps : {}; n.emps[d] = isObj(n.emps[d]) ? n.emps[d] : {}; if (sheet === undefined) delete n.emps[d][ek]; else n.emps[d][ek] = sheet; return n; };
-  var o = isObj(base) ? base : {};
-  for (ek in out) {
-    if (deq(out[ek], isObj(cur) ? cur[ek] : undefined)) continue;
-    for (var g = 0; g < 48; g++) {
-      var n = at(ek, out[ek]), key = permsRule(A, JSON.stringify(n), JSON.stringify(o)).ok ? enfPermsHeldWhy(A, n, o) : '*';
-      if (!key) break;
-      var e = key === '*' ? null : KIVO_REGISTRY.byKey[key], atoms = ((e && e.asisMap) || []).map(function (x) { return /^([A-Za-z]+(?:\/[A-Za-z]+)?):(view|add|edit|del|approve|export)$/.exec(String(x)); }).filter(Boolean), hit = false;
-      atoms.forEach(function (m) { if (permsSheetDrop(B, d, out[ek], m[1], m[2])) { hit = true; drops.push({ e: ek, p: m[1], a: m[2] }); } });
-      if (hit) continue;
-      /* لا ذرّةَ تُسقط (أو القاعدةُ ما زالت ترفض): الورقةُ كما كانت في الوحدة — وما زاد عليها يُذكر */
-      var s0 = isObj(cur) && isObj(cur[ek]) ? cur[ek] : undefined, x1 = expandPermsOf(B, d, out[ek] || {}), x0 = s0 ? expandPermsOf(B, d, s0) : {};
-      Object.keys(x1).forEach(function (lf) { (x1[lf] || []).forEach(function (a) { if ((x0[lf] || []).indexOf(a) === -1) drops.push({ e: ek, p: lf, a: a }); }); });
-      if (s0) out[ek] = JSON.parse(JSON.stringify(s0)); else delete out[ek];
-      break;
-    }
+  var B = permOnAll(A), cap = capSetAnywhereOf(A, d) ? effCapOf(A, d) : pgOpen(), mine = null, P = A.perms || {}, dl = (P.lenses || {})[d], el = (P.empLens || {})[d] || {};
+  var r = perm44E().narrowSheets(cur, inc, {
+    self: String(A.u.ekey || ''), target: function (ek) { return permTargetOk(A, ek, d); }, kind: function (ek) { return permTargetOf(A, ek); },
+    expand: function (s) { return expandPermsOf(B, d, s); }, capAll: function () { return capAllPermsOf(B, d); }, isContainer: pgIsContainer,
+    inCap: function (pk) { return cap.indexOf(String(pk).split('/')[0]) !== -1; }, have: function (lf) { return (mine || (mine = myPermsOf(B, d)))[lf] || []; },
+    lensHosts: function (ek) { var l1 = el[ek], hs = []; KIVO_LENS_PLUGINS.keys.forEach(function (L) { if ((!Array.isArray(dl) || dl.indexOf(L) !== -1) && (!Array.isArray(l1) || l1.indexOf(L) !== -1) && !KIVO_BUILD.lensGate(P, A.u, d, L).on) hs = hs.concat(permLensHostsOf(L)); }); return hs; },
+  }), out = r.out, drops = r.drops, o = isObj(base) ? base : {}, oj = JSON.stringify(o), seen = {}, ek;
+  for (ek in out) for (var g = 0; g < 48 && !deq(out[ek], cur[ek]); g++) {
+    var n = JSON.parse(oj); n.emps = isObj(n.emps) ? n.emps : {}; n.emps[d] = Object.assign({}, n.emps[d]); n.emps[d][ek] = out[ek];
+    var key = permsRule(A, JSON.stringify(n), oj).ok ? enfPermsHeldWhy(A, n, o) : '*', e = KIVO_REGISTRY.byKey[key], hit = 0;
+    if (!key) break;
+    ((e && e.asisMap) || []).forEach(function (x) { var m = /^([A-Za-z]+(?:\/[A-Za-z]+)?):([a-z]+)$/.exec(String(x)); if (m && permsSheetDrop(B, d, out[ek], m[1], m[2])) { hit = 1; drops.push({ e: ek, p: m[1], a: m[2] }); } });
+    if (hit) continue;
+    /* لا ذرّةَ تُسقط أو القاعدةُ ما زالت ترفض: الورقةُ كما كانت في الوحدة — وما زاد عليها يُذكر */
+    var x1 = expandPermsOf(B, d, out[ek]), x0 = isObj(cur[ek]) ? expandPermsOf(B, d, cur[ek]) : {};
+    Object.keys(x1).forEach(function (lf) { x1[lf].forEach(function (a) { if ((x0[lf] || []).indexOf(a) === -1) drops.push({ e: ek, p: lf, a: a }); }); });
+    if (isObj(cur[ek])) out[ek] = JSON.parse(JSON.stringify(cur[ek])); else delete out[ek];
+    break;
   }
-  var seen = {};
-  return { out: out, drops: drops.filter(function (x) { var k = x.e + '|' + x.p + '|' + x.a; if (seen[k]) return false; seen[k] = 1; return true; }) };
+  return { out: out, drops: drops.filter(function (x) { var k = x.e + '|' + x.p + '|' + x.a; return !seen[k] && (seen[k] = 1); }) };
 }
-/* يُسقط الفعلَ a من الورقة leaf (أو من أوراق الحاوية · أو يفكّ الحاويةَ التي تحمل الورقة إلى أوراقها ثم يُسقطه) — true إن أسقط شيئاً */
+/* يُسقط الفعلَ a من الورقة leaf (ومن أوراق الحاوية leaf · أو يفكّ الحاويةَ التي تحملها إلى أوراقها أولاً) — true إن أسقط شيئاً */
 function permsSheetDrop(B, d, sheet, leaf, a) {
-  if (!isObj(sheet)) return false;
-  var hit = false, k;
-  var cut = function (x) { var acts = sheet[x]; if (!Array.isArray(acts) || acts.indexOf(a) === -1) return; sheet[x] = acts.filter(function (y) { return y !== a; }); if (!sheet[x].length) delete sheet[x]; hit = true; };
-  var top = String(leaf).split('/')[0];
-  if (leaf !== top && pgIsContainer(top) && Array.isArray(sheet[top]) && sheet[top].indexOf(a) !== -1) {
-    var one = {}; one[top] = sheet[top]; var ex = expandPermsOf(B, d, one); delete sheet[top];
-    for (k in ex) sheet[k] = (sheet[k] || []).concat(ex[k].filter(function (y) { return (sheet[k] || []).indexOf(y) === -1; }));
-  }
-  cut(leaf);
-  if (pgIsContainer(leaf)) for (k in sheet) if (k.indexOf(leaf + '/') === 0) cut(k);
+  var hit = false, top = String(leaf).split('/')[0], k;
+  if (leaf !== top && pgIsContainer(top) && (sheet[top] || []).indexOf(a) !== -1) { var one = {}; one[top] = sheet[top]; delete sheet[top]; one = expandPermsOf(B, d, one); for (k in one) sheet[k] = (sheet[k] || []).concat(one[k].filter(function (y) { return (sheet[k] || []).indexOf(y) === -1; })); }
+  for (k in sheet) if ((k === leaf || (pgIsContainer(leaf) && k.indexOf(leaf + '/') === 0)) && (sheet[k] || []).indexOf(a) !== -1) { sheet[k] = sheet[k].filter(function (y) { return y !== a; }); if (!sheet[k].length) delete sheet[k]; hit = true; }
   return hit;
 }
 /* هل تحمل الورقةُ (الموسَّعة) صفحةً تعمل عليها العدسةُ L؟ (مضيفو مفتاح lens.<L>.view في فهرس الإنفاذ — الخطة والجولات افتراضاً) */
@@ -11204,21 +11180,12 @@ function rsDeptLensNarrow(pm, id, PP) {
   if (had ? deq(had, next) : next.length === all.length) return null;
   return next;
 }
-/* V7 · 53 (ملحق 5): أوّلُ موظفٍ ترفض القاعدةُ (permsRule ثم مفاتيحُ الإنفاذ) ورقتَه وحدها في الحفظة — { e, p, why } ليسمّيه العميلُ بالعربية ('' = لم يُعرف) */
+/* V7 · 53 (ملحق 5): الموظفُ والصفحةُ في رفضٍ باقٍ على صلاحيات الإدارة — أوّلُ ما يُسقطه التضييقُ نفسُه (018c permsImportNarrow)، وإلا أوّلُ ورقةٍ تغيّرت { e, p } ليسمّيهما العميلُ بالعربي ('' = لا شيء) */
 function rsPermsDenyWho(A, d, nv, cv) {
   try {
-    var n = parseJson(nv, {}), o = parseJson(cv, {}), en = ((n && n.emps) || {})[d] || {}, eo = ((o && o.emps) || {})[d] || {}, ek;
-    var ks = {}; Object.keys(en).concat(Object.keys(eo)).forEach(function (x) { ks[x] = 1; });
-    for (ek in ks) {
-      if (deq(en[ek], eo[ek])) continue;
-      var c = JSON.parse(JSON.stringify(o)); c.emps = isObj(c.emps) ? c.emps : {}; c.emps[d] = isObj(c.emps[d]) ? c.emps[d] : {};
-      if (en[ek] === undefined) delete c.emps[d][ek]; else c.emps[d][ek] = en[ek];
-      var pr = permsRule(A, JSON.stringify(c), JSON.stringify(o)), key = pr.ok ? enfPermsHeldWhy(A, c, o) : '';
-      if (pr.ok && !key) continue;
-      var s1 = isObj(en[ek]) ? en[ek] : {}, s0 = isObj(eo[ek]) ? eo[ek] : {}, e = key ? KIVO_REGISTRY.byKey[key] : null, m = e && /^([A-Za-z]+(?:\/[A-Za-z]+)?):/.exec(String((e.asisMap || [])[0] || ''));
-      var p = m ? m[1] : Object.keys(s1).filter(function (x) { return !deq(s1[x], s0[x]); })[0] || '';
-      return { e: ek, p: p, why: pr.ok ? 'grant' : pr.why };
-    }
+    var o = parseJson(cv, {}), en = ((parseJson(nv, {}) || {}).emps || {})[d] || {}, eo = ((o || {}).emps || {})[d] || {}, x = permsImportNarrow(A, d, eo, en, o).drops[0], ek;
+    if (x) return { e: x.e, p: x.p };
+    for (ek in en) if (!deq(en[ek], eo[ek])) return { e: ek, p: '' };
   } catch (err) { swallow('perms-deny-who', err); }
   return '';
 }
@@ -27082,42 +27049,32 @@ function perm44Make(R, D) {
   function narrowSheets(cur, inc, J) {
     cur = isObj(cur) ? cur : {}; inc = isObj(inc) ? inc : {};
     var out = {}, drops = [], ek, pk, lf;
-    function acts(v) { return Array.isArray(v) ? v : []; }
-    function drop(e, p, list) { for (var q = 0; q < list.length; q++) drops.push({ e: e, p: p, a: list[q] }); }
+    function A(v) { return Array.isArray(v) ? v : []; }
+    function split(e, p, list, ok) { var y = []; list.forEach(function (a) { if (ok(a)) y.push(a); else drops.push({ e: e, p: p, a: a }); }); return y; }
+    function bar(ek) { return ek === J.self || !J.target(ek); }
     for (ek in inc) {
       var s0 = isObj(cur[ek]) ? cur[ek] : undefined, s1 = inc[ek];
       if (same(s0, s1) || !isObj(s1)) { out[ek] = clone(s1); continue; }   /* بلا تغيير · أو شكلٌ يحكمه التحقّق */
-      if (ek === J.self || !J.target(ek)) {
-        if (s0) out[ek] = clone(s0);
-        for (pk in s1) drop(ek, pk, acts(s1[pk]).filter(function (a) { return !(s0 && acts(s0[pk]).indexOf(a) !== -1); }));
-        continue;
-      }
-      var t = J.kind(ek) || {}, x0 = s0 ? J.expand(s0) : null, s = {};
+      if (bar(ek)) { if (s0) out[ek] = clone(s0); for (pk in s1) split(ek, pk, A(s1[pk]), function (a) { return s0 && A(s0[pk]).indexOf(a) !== -1; }); continue; }
+      var t = J.kind(ek) || {}, x0 = s0 ? J.expand(s0) : {}, s = {}, res = {};
       for (pk in s1) {
-        var A1 = acts(s1[pk]);
-        if (J.inCap(pk)) { s[pk] = A1.slice(); continue; }
-        var h = s0 ? acts(s0[pk]).concat(acts(x0[pk])) : [];
-        drop(ek, pk, A1.filter(function (a) { return h.indexOf(a) === -1; }));
-        var keep = A1.filter(function (a) { return h.indexOf(a) !== -1; });
-        if (keep.length || !A1.length) s[pk] = keep;
+        var h = J.inCap(pk) ? null : A(s0 && s0[pk]).concat(A(x0[pk])), k1 = split(ek, pk, A(s1[pk]), function (a) { return !h || h.indexOf(a) !== -1; });
+        if (k1.length || !A(s1[pk]).length) s[pk] = k1;
       }
-      var was = s0 ? x0 : (t.inhAll ? J.capAll() : {}), cutL = !s0 && !t.inhAll ? (J.lensHosts(ek) || []) : [], res = {};
+      var was = s0 ? x0 : t.inhAll ? J.capAll() : {}, cutL = s0 || t.inhAll ? [] : J.lensHosts(ek) || [];
       for (pk in s) {
-        var one = {}; one[pk] = s[pk];
-        var leaves = J.isContainer(pk) ? J.expand(one) : one, part = {}, whole = true;
-        for (lf in leaves) {
-          var had = acts(was[lf]), have = acts(J.have(lf)), hostCut = cutL.some(function (x) { return lf === x || lf.indexOf(x + '/') === 0; });
-          var ok = acts(leaves[lf]).filter(function (a) { return !hostCut && (had.indexOf(a) !== -1 || have.indexOf(a) !== -1); });
-          var lost = acts(leaves[lf]).filter(function (a) { return ok.indexOf(a) === -1; });
-          if (lost.length) { whole = false; drop(ek, lf, lost); }
+        var one = {}, part = {}, n0 = drops.length; one[pk] = s[pk];
+        var lv = J.isContainer(pk) ? J.expand(one) : one;
+        for (lf in lv) {
+          var cut = cutL.some(function (x) { return lf === x || lf.indexOf(x + '/') === 0; }), ok = split(ek, lf, A(lv[lf]), function (a) { return !cut && (A(was[lf]).indexOf(a) !== -1 || A(J.have(lf)).indexOf(a) !== -1); });
           if (ok.length) part[lf] = ok;
         }
-        if (whole) res[pk] = s[pk]; else for (lf in part) res[lf] = part[lf];
+        if (drops.length === n0) res[pk] = s[pk]; else for (lf in part) res[lf] = part[lf];
       }
       out[ek] = res;
     }
     /* حذفُ ورقةٍ قائمة: لصاحبٍ يرث (حذفُها توسيعٌ إلى السقف) أو لا تُكتب ورقتُه — تبقى كما هي */
-    for (ek in cur) if (!Object.prototype.hasOwnProperty.call(inc, ek) && isObj(cur[ek]) && (ek === J.self || !J.target(ek) || (J.kind(ek) || {}).inh)) out[ek] = clone(cur[ek]);
+    for (ek in cur) if (!(ek in inc) && isObj(cur[ek]) && (bar(ek) || (J.kind(ek) || {}).inh)) out[ek] = clone(cur[ek]);
     return { out: out, drops: drops };
   }
   return { offClosure: offClosure, offWith: offWith, narrowSheets: narrowSheets, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,

@@ -1748,21 +1748,12 @@ function rsDeptLensNarrow(pm, id, PP) {
   if (had ? deq(had, next) : next.length === all.length) return null;
   return next;
 }
-/* V7 · 53 (ملحق 5): أوّلُ موظفٍ ترفض القاعدةُ (permsRule ثم مفاتيحُ الإنفاذ) ورقتَه وحدها في الحفظة — { e, p, why } ليسمّيه العميلُ بالعربية ('' = لم يُعرف) */
+/* V7 · 53 (ملحق 5): الموظفُ والصفحةُ في رفضٍ باقٍ على صلاحيات الإدارة — أوّلُ ما يُسقطه التضييقُ نفسُه (018c permsImportNarrow)، وإلا أوّلُ ورقةٍ تغيّرت { e, p } ليسمّيهما العميلُ بالعربي ('' = لا شيء) */
 function rsPermsDenyWho(A, d, nv, cv) {
   try {
-    var n = parseJson(nv, {}), o = parseJson(cv, {}), en = ((n && n.emps) || {})[d] || {}, eo = ((o && o.emps) || {})[d] || {}, ek;
-    var ks = {}; Object.keys(en).concat(Object.keys(eo)).forEach(function (x) { ks[x] = 1; });
-    for (ek in ks) {
-      if (deq(en[ek], eo[ek])) continue;
-      var c = JSON.parse(JSON.stringify(o)); c.emps = isObj(c.emps) ? c.emps : {}; c.emps[d] = isObj(c.emps[d]) ? c.emps[d] : {};
-      if (en[ek] === undefined) delete c.emps[d][ek]; else c.emps[d][ek] = en[ek];
-      var pr = permsRule(A, JSON.stringify(c), JSON.stringify(o)), key = pr.ok ? enfPermsHeldWhy(A, c, o) : '';
-      if (pr.ok && !key) continue;
-      var s1 = isObj(en[ek]) ? en[ek] : {}, s0 = isObj(eo[ek]) ? eo[ek] : {}, e = key ? KIVO_REGISTRY.byKey[key] : null, m = e && /^([A-Za-z]+(?:\/[A-Za-z]+)?):/.exec(String((e.asisMap || [])[0] || ''));
-      var p = m ? m[1] : Object.keys(s1).filter(function (x) { return !deq(s1[x], s0[x]); })[0] || '';
-      return { e: ek, p: p, why: pr.ok ? 'grant' : pr.why };
-    }
+    var o = parseJson(cv, {}), en = ((parseJson(nv, {}) || {}).emps || {})[d] || {}, eo = ((o || {}).emps || {})[d] || {}, x = permsImportNarrow(A, d, eo, en, o).drops[0], ek;
+    if (x) return { e: x.e, p: x.p };
+    for (ek in en) if (!deq(en[ek], eo[ek])) return { e: ek, p: '' };
   } catch (err) { swallow('perms-deny-who', err); }
   return '';
 }

@@ -1021,14 +1021,16 @@ class Component extends DCLogic {
       : run.step === "review" ? "اكتمل الرفع والتحقق — راجع الملخّص ثم أكّد."
       : run.step === "commit" ? "تُطبَّق النسخة في خطوة واحدة…" : "تُجهَّز أجزاء النسخة…";
     /* V7 · د6 (schemafix): حقولُ الموارد التي لم تُنقل (transient · field · field-type) تُعدّ وحدها — «لم يُنقل» للمفاتيح كما كان */
-    const s2 = (done && done.summary) || {}, r = (done && done.receipt) || {}, cn = r.counts || {}, lost0 = s2.notTransferred || [], fwhy = { transient: 1, field: 1, "field-type": 1 },
-      lost = lost0.filter((x) => !fwhy[x.why] && !/^nf-/.test(x.why)), lostF = lost0.filter((x) => fwhy[x.why]), lostN = lost0.filter((x) => /^nf-/.test(x.why)), BR = KIVO.BackupRestore;
+    const BR0 = KIVO.BackupRestore, s2 = (done && done.summary) || {}, r = (done && done.receipt) || {}, cn = r.counts || {}, lost0 = s2.notTransferred || [], fwhy = { transient: 1, field: 1, "field-type": 1 },
+      lost = lost0.filter((x) => !fwhy[x.why] && !/^nf-/.test(x.why) && x.why !== "perm-grant"), lostP = BR0 && BR0.permItems ? BR0.permItems(lost0) : [], lostF = lost0.filter((x) => fwhy[x.why]), lostN = lost0.filter((x) => /^nf-/.test(x.why)), BR = KIVO.BackupRestore;
     return {
       bkcSumOn: (step === "pick" || step === "confirm") && (!!sum || !!c.sumErr),
       bkcSumLine: sum ? "المصدر: «" + (sum.dept || c.src) + "»" + (when ? " · صُدّرت: " + when : "") + " · " + N(sum.keys, "مجموعة بيانات") + " و" + N(sum.images, "صورة") + " · الحجم: " + mb(sum.fileBytes || sum.bytes) +
         (sum.lens ? " · العدسات " + sum.lens + " (ما ليس في النسخة يُطفأ في الإدارة)" : "") +   /* V7 · 53: 548 lensNarrow */
         (sum.legacy ? " · نسخة بالشكل القديم: تُحوَّل إلى المخطط الحالي قبل الكتابة." : "") : c.sumErr || "",
-      bkcSkipOn: skip.length > 0, bkcSkip: skip, bkcSkipHead: "لن يُنقل (" + skip.length + ") — لا مقابل له في المنصة الحالية:",
+      /* V7 · 53 (ملحق 5): ومنه صلاحياتُ موظفين لا يملك المستورِدُ منحها (548 permItems) — بسطرٍ واحد بعدها */
+      bkcSkipOn: skip.length > 0, bkcSkip: skip, bkcSkipHead: "لن يُنقل (" + skip.length + ")" + (skip.some((x) => x.why === "perm-grant") ? ":" : " — لا مقابل له في المنصة الحالية:"),
+      bkcSkipNoteOn: skip.some((x) => x.why === "perm-grant"), bkcSkipNote: (sum && sum.permNote) || "",
       bkcRun: step === "run", bkcRunHead: run.step === "commit" ? "جارٍ اعتماد النسخة…" : run.step === "review" ? "بانتظار تأكيدك" : "جارٍ إرسال النسخة على أجزاء…", bkcRunText: runText,
       bkcPct: pct, bkcBarStyle: "height:100%;width:" + pct + "%;background:var(--bg-x8a6f35);transition:width .2s", bkcAbortOn: step === "run" && run.step === "upload" && !run.stopping,
       bkcFail: step === "fail", bkcFailMsg: (c.fail && c.fail.msg) || "",
@@ -1037,6 +1039,7 @@ class Component extends DCLogic {
         " · الصور: " + (s2.imagesNew || 0) + " جديدة و" + (s2.imagesReused || 0) + " موجودة مطابقة" + (s2.imagesMissing ? " و" + s2.imagesMissing + " مفقودة" : "") +
         (KIVO.BackupRestore && KIVO.BackupRestore.permsLine ? KIVO.BackupRestore.permsLine(cn).replace(/^ /, " · ") : "") +   /* V7 · د6 (QA ٦ — ب4) · (QA gfx2): بفاصلٍ كبقية الأسطر — كان «مطابقة الصلاحيات:» ملتصقاً */
         (lost.length ? " · لم يُنقل " + lost.length + ": " + lost.slice(0, 12).map((x) => x.k).join("، ") + (lost.length > 12 ? "…" : "") : "") +
+        (lostP.length ? " · لم يُنقل من صلاحيات الموظفين: " + lostP.length + " (" + BR0.PERM_NOTE.replace(/\.$/, "") + ")" : "") +
         (lostF.length ? " · حقول لم تُنقل: " + lostF.reduce((n, x) => n + (x.n || 0), 0) + " في " + lostF.length + " مساراً (مذكورة في ملخّص التأكيد)" : "") +
         /* V7 · د6 (remap): التنبيهاتُ المُسقطة وحدها بعددها · وإعادةُ ربط معرّف الإدارة (النصُّ نفسُه في التأكيد — 548 remapLine) */
         (lostN.length ? " · تنبيهات لم تُنقل: " + lostN.reduce((n, x) => n + (x.n || 0), 0) + " (" + lostN.map((x) => x.k.replace(/^bassam_notif_v1 · /, "") + ": " + x.n).join("، ") + ")" : "") +
