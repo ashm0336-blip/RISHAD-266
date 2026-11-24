@@ -532,6 +532,7 @@ Object.assign(Component.prototype, {
       p44SysEffOn: eff.on.join(" · "),
       p44SysEffOff: eff.off.join(" · "),
       p44SysEffWith: eff.with.join(" · "),
+      p44SysEffVia: (eff.via || []).join(" · "),
       p44SysEffNone: !dirtyN,
       p44SysPeople: String(people),
       p44SysDirty: dirtyN > 0,
@@ -560,7 +561,7 @@ Object.assign(Component.prototype, {
           on = !L && hOn && cur,
           srcOn = !!L && L.id !== u;
         return {
-          k: x.k, n: x.n, lens: !0, kind: "lens", on: on ? "true" : "false", isOn: on, locked: !!L || !hOn, by: L ? L.n : "",
+          k: x.k, n: x.n, lens: !0, kind: "lens", sw: !0, on: on ? "true" : "false", isOn: on, locked: !!L || !hOn, by: L ? L.n : "",
           lockTxt: L ? "مطفأ من: " + L.n : "يُطفأ مع " + hostNm(x),
           was: own,
           sub: L ? "مطفأ من " + L.n + " — لا يُفعَّل هنا" : !hOn ? "مطفأة مع النظام المضيف — تعود كما كانت بتشغيله" : on ? (was ? "مفعّلة في " + hostNm(x) : "ستُفعَّل عند الحفظ") : was ? "ستُطفأ عند الحفظ" : "مطفأة — لا تظهر لأحد في هذه الوحدة",
@@ -570,11 +571,11 @@ Object.assign(Component.prototype, {
           flip: () => { if (L || !hOn) return; setDr((c) => ((c[x.k] = !cur), c[x.k] === own && delete c[x.k])); },
         };
       };
-    /* تُعلَّق على صفّ مضيفها (r.lz · r.lzOn) فيبقى p44SysRows صفوفَ الأنظمة (العدّادُ = عمودُ الشجرة) — وتُعاد مسطّحةً لـ«تشغيل الكل» */
-    const out = [], done = {};
+    /* تُعلَّق على صفِّ كلِّ مضيفٍ لها (r.lz · r.lzOn — الصفُّ نفسُه تحت المضيفَين: سجلٌّ واحد للوحدة، فالمفتاحُ تحت أيّهما يبدّلهما معاً)، فيبقى p44SysRows صفوفَ
+       الأنظمة (العدّادُ = عمودُ الشجرة) — وتُعاد مسطّحةً بلا تكرار لـ«تشغيل الكل» */
+    const out = lz.map(mk);
     rows.forEach((r) => {
-      r.lz = [];
-      lz.forEach((x) => { if (!done[x.k] && x.sys.indexOf(r.k) !== -1) { done[x.k] = 1; const z = mk(x); r.lz.push(z); out.push(z); } });
+      r.lz = out.filter((z, i) => lz[i].sys.indexOf(r.k) !== -1);
       r.lzOn = r.lz.length > 0;
     });
     return out;
@@ -593,7 +594,7 @@ Object.assign(Component.prototype, {
         .map((s) => ({ k: s.k, n: s.n, kind: "sys", on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّل لإدارتك", flip: () => {} }))
         /* V7 · د7 (أ): والعدساتُ المفعّلة فعلياً تحت مضيفها — المطفأةُ لا تظهر له */
         .map((r, i, all) => {
-          const lz = this._p44Lenses().filter((x) => x.sys.indexOf(r.k) !== -1 && !all.slice(0, i).some((y) => x.sys.indexOf(y.k) !== -1) && this.p44LensOnEff(did, x, off));
+          const lz = this._p44Lenses().filter((x) => x.sys.indexOf(r.k) !== -1 && this.p44LensOnEff(did, x, off));   /* V7 · د7 (أ): تحت كلِّ مضيف */
           return Object.assign(r, { lz: lz.map((x) => ({ k: x.k, n: x.n, kind: "lens", on: "true", isOn: !0, locked: !1, by: "", sw: !1, sub: "مفعّلة لإدارتك", flip: () => {} })), lzOn: lz.length > 0 });
         }),
       people = this._p44Users().filter((x) => x.deptId === did || this._p44Try(() => (D.ancestorsOf(x.deptId) || []).indexOf(did) !== -1, !1)).length;
@@ -646,7 +647,10 @@ Object.assign(Component.prototype, {
   _p44SysEffect(u, dr) {
     const ks = Object.keys(dr || {}),
       nm = (k) => this._p44SysName(k);
-    return { on: ks.filter((k) => dr[k]).map(nm), off: ks.filter((k) => !dr[k]).map(nm), with: this._p44SysWith(u, dr).map(nm) };
+    /* V7 · د7 (أ): عدسةٌ يُطفأ أحدُ مضيفَيها ويبقى الآخر — تبقى عاملةً عبره (القراءةُ المحافظة) ويُسمّى ذلك قبل الحفظ */
+    const after = (s) => (s in (dr || {}) ? !!dr[s] : this.p44SysOnEff(u, s)),
+      via = "__plat" === u ? [] : this._p44Lenses().filter((x) => !(x.k in (dr || {}) && !dr[x.k]) && this.p44LensOnEff(u, x) && x.sys.some((s) => s in (dr || {}) && !dr[s]) && x.sys.some(after)).map((x) => x.n + " عبر " + x.sys.filter(after).map(nm).join(" · "));
+    return { on: ks.filter((k) => dr[k]).map(nm), off: ks.filter((k) => !dr[k]).map(nm), with: this._p44SysWith(u, dr).map(nm), via: via };
   },
   /* حفظُ السقف بمساره القائم (مسؤولُ المنصة وحده — 331 setDeptCap يرفض غيرَه): التفعيلُ يضيف الصفحةَ بتبويباتها وصفحاتها، والإطفاءُ يزيلها
      ويزيل صفحاتِها التابعة — والبياناتُ وأوراقُ الموظفين باقيةٌ كما هي (تُقرأ مقصوصةً بالسقف) فتعود عند التفعيل */
@@ -763,7 +767,7 @@ Object.assign(Component.prototype, {
       done = {};
     sys.forEach((s) => {
       out.push(s);
-      lz.forEach((x) => { if (!done[x.k] && x.sys.indexOf(s.k) !== -1) { done[x.k] = 1; out.push({ k: x.k, n: x.n, kind: "lens", lens: !0 }); } });
+      lz.forEach((x) => { if (x.sys.indexOf(s.k) !== -1) out.push({ k: x.k, n: x.n, kind: "lens", lens: !0, dup: !!done[x.k] }), (done[x.k] = 1); });   /* تحت كلِّ مضيف — صفٌّ واحد في الدور (role.sys['lens.<L>']) */
     });
     return out;
   },
@@ -851,7 +855,7 @@ Object.assign(Component.prototype, {
       chk = S.chk || {},
       chkKeys = [].concat.apply(
         [],
-        sys.map((s) => keysAll(s.k).map((k) => ({ v: k, t: s.n + " · " + this._p44Label(k) }))),
+        sys.filter((s) => !s.dup).map((s) => keysAll(s.k).map((k) => ({ v: k, t: s.n + " · " + this._p44Label(k) }))),
       ),
       ck = chk.key && chkKeys.some((x) => x.v === chk.key) ? chk.key : (chkKeys[0] || {}).v || "";
     return Object.assign(v, {
@@ -881,7 +885,7 @@ Object.assign(Component.prototype, {
       p44CmpSet: (ev) => this._p44Set({ cmp: String((ev && ev.target && ev.target.value) || "") }),
       p44CmpOn: !!cmp,
       p44CmpName: cmp ? cmp.name : "",
-      p44CmpRows: cmp ? this.p44Compare(role, cmp, sys) : [],   /* V7 · د7 (أ): والعدساتُ صفوفٌ في المقارنة */
+      p44CmpRows: cmp ? this.p44Compare(role, cmp, sys.filter((s) => !s.dup)) : [],   /* V7 · د7 (أ): والعدساتُ صفوفٌ في المقارنة */
       p44ChkKeys: chkKeys,
       p44ChkKey: ck,
       p44ChkSet: (ev) => this._p44Set({ chk: { key: String((ev && ev.target && ev.target.value) || "") } }),

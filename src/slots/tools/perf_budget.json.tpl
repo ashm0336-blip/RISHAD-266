@@ -44,7 +44,7 @@
   "page:Admin": 98500,
 @@SYS:budget.page.award@@@@SYS:budget.page.dreport@@@@SYS:budget.page.daily@@@@SYS:budget.page.dstats@@  "page:Employees": 165000,
 @@SYS:budget.page.irshad@@  "page:KPIs": 8000,
-@@SYS:budget.page.plan@@  "page:Org": 42700,
+@@SYS:budget.page.plan@@  "page:Org": 43200,
   "page:Planning": 3250,
   "page:Profile": 70000,
 @@SYS:budget.page.rasd@@@@SYS:budget.page.seized@@@@SYS:budget.page.staff@@@@SYS:budget.page.tasks@@  "shell:index.html": 30100,
@@ -53,7 +53,7 @@
  "d7LensesDecision": {
   "date": "2026-11-24",
   "authority": "أمر المالك د7 (أ): العدساتُ في «الإدارات والصلاحيات» بمكوّنات الأنظمة نفسِها — لا تصميمَ جديد.",
-  "page:Org": "V7 · د7 (أ): السقف 41700 → 42700 (هامش ≥2٪ على 41821 المقيس) — صفوفُ العدسات في تبويب «الأنظمة» (مفتاح · قفل الوراثة · إطفاءُ المضيف · أثرُ الحفظ · الحفظُ بسجلّ العدسات القائم setDeptLenses) وفي محرّر الأدوار (المستوياتُ نفسُها) وقراءةُ مدير الوحدة؛ لا تُحمَّل خارج الصفحة."
+  "page:Org": "V7 · د7 (أ): السقف 41700 → 43200 (هامش 2.19٪ على 42273 المقيس) — صفوفُ العدسات في تبويب «الأنظمة» (مفتاح · قفل الوراثة · إطفاءُ المضيف · أثرُ الحفظ · الحفظُ بسجلّ العدسات القائم setDeptLenses) وفي محرّر الأدوار (المستوياتُ نفسُها) وقراءةُ مدير الوحدة؛ لا تُحمَّل خارج الصفحة."
  },
  "d6OrgPageDecision": {
   "date": "2026-11-22",

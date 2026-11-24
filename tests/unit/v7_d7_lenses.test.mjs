@@ -122,7 +122,7 @@ test('④ deploy switches nothing OFF: on a schema-' + CURRENT_SCHEMA + ' world 
 
 const uiOf = (c) => { const x = permViews(c).ui; x.setState = function (p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); }; x.bsToast = () => {}; x._ogPendEnd = () => {}; return x; };
 const J = (x) => JSON.parse(JSON.stringify(x));
-const flat = (L) => [].concat(...L.map((r) => [r].concat(r.lz || [])));
+const flat = (L) => { const seen = new Set(); return [].concat(...L.map((r) => [r].concat(r.lz || []))).filter((r) => (seen.has(r.k) ? false : (seen.add(r.k), true))); };
 const rowsOf = (x, u) => J(flat(x._p44SysVals(u, false).p44SysRows).map((r) => ({ k: r.k, on: r.isOn, locked: r.locked, lockTxt: r.lockTxt, kind: r.kind })));
 const lzOf = (v, k) => flat(v.p44SysRows).find((r) => r.k === k);
 const LK = ALL.map((L) => 'lens.' + L);
@@ -136,7 +136,15 @@ test('⑤ «الأنظمة»: under the host system its six lenses with switches
     const iPlan = R.findIndex((r) => r.k === 'plan');
     assert.deepEqual(R.slice(iPlan + 1, iPlan + 7).map((r) => r.k), LK, 'the lens rows right under «التشغيل الميداني»');
     assert.ok(R.filter((r) => r.kind === 'lens').every((r) => r.on && !r.locked), 'all ON (no lens record = all)');
-    assert.equal(R.filter((r) => LK.includes(r.k)).length, 6, 'each lens once (one record for both hosts)');
+    assert.equal(R.filter((r) => LK.includes(r.k)).length, 6, 'each lens once in the flat list (one record for both hosts)');
+    { const V = x._p44SysVals(A, false), P = V.p44SysRows.find((r) => r.k === 'plan'), Dl = V.p44SysRows.find((r) => r.k === 'daily');
+      assert.deepEqual(J(P.lz.map((z) => z.k)), LK); assert.deepEqual(J(Dl.lz.map((z) => z.k)), LK, 'under BOTH hosts');
+      assert.ok(P.lz.every((z, i) => z === Dl.lz[i]), 'the same row object: toggling under either host updates both');
+      /* one host OFF, the other ON: the lenses stay usable through the ON host, and «أثر الحفظ» says so */
+      P.flip(); const V2 = x._p44SysVals(A, false);
+      assert.ok(flat(V2.p44SysRows).filter((r) => r.kind === 'lens').every((r) => r.isOn), 'still ON via المتابعة اليومية');
+      assert.match(V2.p44SysEffVia, /عدسة المصليات عبر المتابعة اليومية/); assert.equal(V2.p44SysEffWith.includes('عدسة'), false);
+      V2.p44SysUndo(); }
     assert.equal(x._p44SysVals(A, false).p44SysRows.filter((r) => r.kind === 'lens').length, 0, 'p44SysRows = the systems (the counter = the tree column)');
     let v = x._p44SysVals(A, false);
     lzOf(v, 'lens.gates').flip();
@@ -168,7 +176,7 @@ test('⑤ «الأنظمة»: under the host system its six lenses with switches
     const sr = rowsOf(x, A_S1).find((r) => r.k === 'lens.gates');
     assert.equal(sr.locked, true); assert.equal(sr.on, false); assert.equal(sr.lockTxt, 'مطفأ من: ' + T + 'إدارة أ');
     /* the role editor rows for A: the ON lenses only, under the host */
-    const ed = J(x._p44RoleSys(A, x._p44Sys().filter((s) => x._p44Ceil(A)(s.k))).map((s) => s.k));
+    const ed = [...new Set(J(x._p44RoleSys(A, x._p44Sys().filter((s) => x._p44Ceil(A)(s.k))).map((s) => s.k)))];
     assert.deepEqual(ed.filter((k) => /^lens\./.test(k)), LK.filter((k) => k !== 'lens.gates'));
     assert.equal(ed.indexOf('lens.zones'), ed.indexOf('plan') + 1);
   } finally { c.dispose(); }
@@ -233,6 +241,36 @@ test('⑦ the server refuses a lens action for everyone in the unit when the len
   await setL(A, ALL);
   assert.equal(await addGate('mgr', A), true, 'ON again ⇒ accepted as before');
   assert.equal(await addGate('sec', A_S1), true);
+});
+
+test('⑧ carry what is outside the view: a lens row of a role sits outside the ceiling (lens OFF) — a manager\'s edit of the role keeps it as stored, and it is held again when the lens is ON', Object.assign({ todo: 'V7 · د7: يمرّ بعد دمج مجموعة «latent» (المُعيدُ يحمل منحَ ما خارج السقف كما هو — latentLossWhy يرفض الآن حفظَ المدير)' }, needs('plan', 'daily')), async () => {
+  const W = await holdersWorld();
+  await applyState(W, 'allOn');
+  const RK = 'bsdept:' + A + ':bassam_roles_v1';
+  {
+    const c = await clientOf(W, 'su', A);
+    try {
+      const dr = c.K.Perm44.draft(A), role = { id: 'TEST_ONLY_rk', name: 'TEST_ONLY دور', desc: '', sys: { plan: { lvl: 'view' }, 'lens.gates': { lvl: 'edit' } } };
+      assert.equal(c.K.Perm44.setRoles(dr, A, { v: 1, roles: [role], people: { [E_ROLE]: { role: role.id, ex: [] } } }).ok, true);
+      assert.equal((await c.K.Perm44.commit(dr)).ok, true);
+      assert.equal(c.P.setDeptLenses(A, ALL.filter((k) => k !== 'gates')).ok, true); await c.settle();
+    } finally { c.dispose(); }
+  }
+  assert.ok(!(await plusOf(W, 'role', A)).includes('lens.gates.edit'), 'OFF: not held');
+  /* the manager edits the role in the editor (the editor's own writer: _p44Upd on the draft → _p44Save) — he does not see the gates row */
+  const m = await clientOf(W, 'mgr', A), y = uiOf(m);
+  try {
+    assert.equal(J(y._p44RoleSys(A, y._p44Sys().filter((s) => y._p44Ceil(A)(s.k)))).some((r) => r.k === 'lens.gates'), false, 'the OFF lens row is not shown to him');
+    const d = m.K.Perm44.rolesOf(A), dr = m.K.Perm44.draft(A);
+    d.roles[0].name = 'TEST_ONLY دور معدّل'; d.roles[0].sys.plan = { lvl: 'edit' };
+    assert.equal(m.K.Perm44.setRoles(dr, A, d).ok, true);
+    const r = await m.K.Perm44.commit(dr); assert.equal(r.ok, true, 'his edit is accepted: ' + JSON.stringify(r));
+  } finally { m.dispose(); }
+  const st = stored(W.env, RK).roles[0];
+  assert.equal(st.name, 'TEST_ONLY دور معدّل'); assert.deepEqual(st.sys['lens.gates'], { lvl: 'edit' }, 'the hidden lens row is carried exactly as stored');
+  const c = await clientOf(W, 'su', A);
+  try { assert.equal(c.P.setDeptLenses(A, ALL).ok, true); await c.settle(); } finally { c.dispose(); }
+  assert.ok((await plusOf(W, 'role', A)).includes('lens.gates.edit'), 'ON again ⇒ the grant is back unchanged');
 });
 
 function deq6(L, m) { assert.deepEqual(L, ALL, m); }
