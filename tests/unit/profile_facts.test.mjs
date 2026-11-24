@@ -22,10 +22,10 @@ test('(أ) PF-CORE: النصُّ نفسُه حرفاً في الخادم وال�
   const a = core(fs.readFileSync(CLI, 'utf8')), b = core(fs.readFileSync(SRV, 'utf8'));
   assert.ok(a.length > 8000, 'نصٌّ حقيقي');
   assert.equal(a, b, 'أيُّ تعديلٍ على قواعد «ملفي» يُجرى في الملفين معاً');
-  for (const fn of ['pfLink', 'pfTokens', 'pfDay', 'pfOpDay', 'pfSite', 'pfMates', 'pfWeek', 'pfMon', 'pfHist', 'pfMonthDays', 'pfHijriAt']) assert.equal(typeof S[fn], 'function', 'الخادم: ' + fn);
+  for (const fn of ['pfLink', 'pfTokens', 'pfDay', 'pfOpDay', 'pfSite', 'pfMates', 'pfWeek', 'pfMon', 'pfHist', 'pfMonthDays', 'pfDayAt']) assert.equal(typeof S[fn], 'function', 'الخادم: ' + fn);
   const o = { bucket: { e1: { shift: 'أ', rest: ['الجمعة'], muk: true, cs: 'R1' } }, rep: { shifts: { 'أ': { pulled: true, ap: 1, roster: [{ ekey: 'e1', st: 'pm', pmk: 'مراجعة' }] } } }, toks: ['e1'], wd: 'الجمعة', opts: [] };
   assert.deepEqual(J(S.pfDay(o)), J(P.day(o)));
-  assert.deepEqual(J(S.pfMonthDays(1447, 9)), J(P.monthDays(1447, 9)));
+  assert.deepEqual(J(S.pfMonthDays(2026, 2)), J(P.monthDays(2026, 2)));
 });
 
 test('(ب) الربط: eid وحيد · nid للحساب القديم · الاسمُ ممنوع · مفاتيحُ الإدارة والفرع والنظام لا ترتبط', () => {
@@ -86,7 +86,7 @@ test('(ج) حقائقُ اليوم: التقريرُ المسحوب لمن ور�
 test('(د) OD-10: الورديةُ الليلية تتبع يومَ بدئها حتى تنتهي — ثم اليومُ التقويمي', () => {
   const night = { shift: { name: 'ل', def: { tStart: '22:00', tEnd: '06:00' } }, rest: { today: false } };
   const at2 = riyadh(2026, 10, 14, 2), at7 = riyadh(2026, 10, 14, 7);
-  const prevDk = P.hijriAt(at2 - DAY).dk, curDk = P.hijriAt(at2).dk;
+  const prevDk = P.dayAt(at2 - DAY).dk, curDk = P.dayAt(at2).dk;
   const dayOf = (f) => (T) => (T.dk === prevDk ? f : { shift: { name: 'ن', def: { tStart: '06:00', tEnd: '14:00' } }, rest: { today: false } });
   let d = J(P.opDay(at2, dayOf(night)));
   assert.deepEqual([d.dk, d.op], [prevDk, 'night'], 'الثانية فجراً في ليليةٍ بدأت أمس');
@@ -98,15 +98,15 @@ test('(د) OD-10: الورديةُ الليلية تتبع يومَ بدئها �
 const g = (uid, num, emp, x) => Object.assign({ uid, num, x: 10, y: 10, emp }, x || {});
 const fl = (name, approved, gates, zones) => ({ name, sid: 's-' + name, approved, gates: gates || [], zones: zones || [], marks: [] });
 test('(هـ) OD-5: الإسنادُ الرسمي = طابقٌ معتمد وحده · المسودةُ طبقةٌ مستقلة · تسكينُ اليوم (المغلقُ أولاً) · same', () => {
-  const plan = { months: { '1447-9': { d: [fl('م١', false, [g('a', '1', ['e1'])]), fl('م٢', true, [g('b', '2', ['e1']), g('c', '3', ['e1'])])] } } };
-  let s = J(P.site({ plan, round: null, ym: '1447-9', toks: ['e1'] }));
+  const plan = { months: { '2026-02': { d: [fl('م١', false, [g('a', '1', ['e1'])]), fl('م٢', true, [g('b', '2', ['e1']), g('c', '3', ['e1'])])] } } };
+  let s = J(P.site({ plan, round: null, ym: '2026-02', toks: ['e1'] }));
   assert.deepEqual([s.official.label, s.officialN, s.draft.label, s.draftN, s.today, s.round, s.plan], ['باب 2', 2, 'باب 1', 1, null, false, true]);
   const round = { d: [{ name: 'م٢', gates: [g('b', '2', ['e1']), g('c', '3', ['e1'], { closed: true })], zones: [{ uid: 'z', code: 'Z1', emp: ['e1'] }], marks: [] }] };
-  s = J(P.site({ plan, round, ym: '1447-9', toks: ['e1'] }));
+  s = J(P.site({ plan, round, ym: '2026-02', toks: ['e1'] }));
   assert.deepEqual([s.today.label, s.today.closed, s.todayN, s.same], ['باب 3', true, 3, false], 'المغلقُ أولاً — ويختلف عن الرسمي');
-  s = J(P.site({ plan: { months: { '1447-9': { d: [fl('م١', false, [g('a', '1', ['e1'])])] } } }, round: null, ym: '1447-9', toks: ['e1'] }));
+  s = J(P.site({ plan: { months: { '2026-02': { d: [fl('م١', false, [g('a', '1', ['e1'])])] } } }, round: null, ym: '2026-02', toks: ['e1'] }));
   assert.deepEqual([s.official, s.draft.label], [null, 'باب 1'], 'مسودةٌ وحدها ⇒ لا موقعَ رسمي');
-  s = J(P.site({ plan, round: { d: [fl('م٢', true, [g('b', '2', ['e1'])])] }, ym: '1447-9', toks: ['e1'] }));
+  s = J(P.site({ plan, round: { d: [fl('م٢', true, [g('b', '2', ['e1'])])] }, ym: '2026-02', toks: ['e1'] }));
   assert.equal(s.same, true);
 });
 
@@ -120,7 +120,7 @@ test('(و) OD-4: الزملاء — العنصرُ نفسُه · ورديتي ·
   assert.deepEqual(J(P.mates({ el, toks: ['me'], emps, bucket, rep, wd: 'الأحد', myShift: '' })), [], 'لا ورديةَ لي ⇒ لا زملاء');
 });
 test('(و) OD-4: الزملاءُ لموظفٍ مرتبطٍ بسجلّه وحده (today المحلي كالخادم) — حسابٌ بمفتاحٍ لا سجلَّ له يرى صفوفَه بلا اسمِ أحد', () => {
-  const now = Date.now(), T = P.hijriAt(now), opts = [{ name: 'أ', tStart: '00:00', tEnd: '23:59' }];
+  const now = Date.now(), T = P.dayAt(now), opts = [{ name: 'أ', tStart: '00:00', tEnd: '23:59' }];
   const base = { emps: [{ eid: 'me', name: 'أنا' }, { eid: 'm1', name: 'زميل' }], months: { [T.ym]: { me: { shift: 'أ' }, gone: { shift: 'أ' }, m1: { shift: 'أ' } } }, dreport: {}, plan: {}, locks: {}, opts, now,
     rounds: { [T.dk]: { d: [{ gates: [{ uid: 'g', num: '1', emp: ['me', 'gone', 'm1'] }], zones: [], marks: [] }] } } };
   const a = J(P.today(Object.assign({ user: { role: 'staff', ekey: 'me', deptId: 'd1' } }, base)));
@@ -130,25 +130,25 @@ test('(و) OD-4: الزملاءُ لموظفٍ مرتبطٍ بسجلّه وحد�
 });
 
 test('(ز) «أسبوعك»: المجدولُ من جدول شهر ذلك اليوم وحده (null حين لا جدول) · والفعليُّ من تقريره', () => {
-  let end = Date.now(); while (P.hijriAt(end).d !== 3) end -= DAY;   /* ثالثُ أيام شهرٍ هجري: أربعةُ أيامٍ من الشهر السابق في النافذة */
-  const T = P.hijriAt(end), staffing = { [T.ym]: { e1: { shift: 'أ', rest: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] } } };
+  let end = Date.now(); while (P.dayAt(end).d !== 3) end -= DAY;   /* ثالثُ أيام الشهر (الميلادي): أربعةُ أيامٍ من الشهر السابق في النافذة */
+  const T = P.dayAt(end), staffing = { [T.ym]: { e1: { shift: 'أ', rest: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'] } } };
   const dreport = { [T.dk]: { shifts: { 'أ': { pulled: true, ap: 1, roster: [{ ekey: 'e1', st: 'pr' }] } } } };
   const w = J(P.week({ end, toks: ['e1'], months: staffing, reports: dreport, opts: [] }));
   assert.equal(w.length, 7); assert.equal(w[6].dk, T.dk); assert.equal(w[6].today, true);
   w.forEach((c) => assert.equal(c.sched, c.ym === T.ym ? true : null, c.dk + ': لا سقوطَ إلى جدول شهرٍ آخر'));
   assert.equal(w.filter((c) => c.ym !== T.ym).length, 4);
   assert.deepEqual(w[6].act, { code: 'rest', approved: true }, 'تقريرُ اليوم المعتمد ورد فيه — ويومُه يومُ راحةٍ مجدولة'); assert.ok(w.slice(0, 6).every((c) => c.act === null), 'بلا تقرير ⇒ لا حالةَ فعلية');
-  const mon = J(S.pfMon({ ym: T.ym, toks: ['e1'], months: staffing, reports: Object.assign({ [T.ym + '-1']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'e1', st: 'ab' }] } } }, [T.ym + '-2']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'x', st: 'pr' }] } } } }, dreport) }));
+  const mon = J(S.pfMon({ ym: T.ym, toks: ['e1'], months: staffing, reports: Object.assign({ [T.ym + '-01']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'e1', st: 'ab' }] } } }, [T.ym + '-02']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'x', st: 'pr' }] } } } }, dreport) }));
   assert.deepEqual(mon, { pr: 1, ab: 1, pm: 0, lv: 0, tout: 0, n: 2, ap: 1 }, 'يومُ غيري لا يُحسب');
 });
 
 function histWorld(upto) {
-  const ym = '1447-9', days = P.monthDays(1447, 9), fri = days.filter((x) => x.wd === 'الجمعة').map((x) => x.d);
+  const ym = '2026-02', days = P.monthDays(2026, 2), fri = days.filter((x) => x.wd === 'الجمعة').map((x) => x.d);
   const fg = (uid, num) => ({ name: 'م١', gates: [g(uid, num, ['e1'])], zones: [], marks: [] });
   const H = J(P.hist({ ym, days, upto, toks: ['e1'], opts: [{ name: 'أ', tStart: '06:00', tEnd: '14:00' }],
     months: { [ym]: { e1: { shift: 'أ', rest: ['الجمعة'], muk: false } } }, locks: { [ym]: true },
-    reports: { [ym + '-5']: { shifts: { 'أ': { pulled: true, ap: 1, roster: [{ ekey: 'e1', st: 'pr' }] } } }, [ym + '-6']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'e1', st: 'pm', pmk: 'مراجعة' }] } } } },
-    rounds: { [ym + '-5']: { d: [fg('g1', '1')] }, [ym + '-6']: { d: [fg('g1', '1')], shAp: { 'أ': { ap: true, snap: [fg('g1', '1')] } } }, [ym + '-8']: { d: [fg('g2', '2')] }, [ym + '-9']: { d: [fg('g2', '2')] } },
+    reports: { [ym + '-05']: { shifts: { 'أ': { pulled: true, ap: 1, roster: [{ ekey: 'e1', st: 'pr' }] } } }, [ym + '-06']: { shifts: { 'أ': { pulled: true, roster: [{ ekey: 'e1', st: 'pm', pmk: 'مراجعة' }] } } } },
+    rounds: { [ym + '-05']: { d: [fg('g1', '1')] }, [ym + '-06']: { d: [fg('g1', '1')], shAp: { 'أ': { ap: true, snap: [fg('g1', '1')] } } }, [ym + '-08']: { d: [fg('g2', '2')] }, [ym + '-09']: { d: [fg('g2', '2')] } },
     plan: { months: { [ym]: { d: [Object.assign(fg('g1', '1'), { approved: true })] } } } }));
   return { H, days, fri };
 }
@@ -194,16 +194,16 @@ test('(ح) «السجل» (histView): وسمُ دليلٍ إلزاميّ لكل 
 });
 
 test('التقويم: أيامُ الشهر الهجري متتالية بأسماء أيامها · وعمليّاتُ الأشهر', () => {
-  for (const [y, m] of [[1447, 9], [1447, 12], [1448, 1], [1448, 4]]) {
+  for (const [y, m] of [[2026, 2], [2025, 12], [2026, 1], [2026, 4], [2024, 2]]) {
     const ds = J(P.monthDays(y, m));
-    assert.ok(ds.length === 29 || ds.length === 30, y + '-' + m + ': ' + ds.length);
+    assert.equal(ds.length, new Date(Date.UTC(y, m, 0)).getUTCDate(), y + '-' + m + ': ' + ds.length);   /* V7 · 53 تقويم: طولُ الشهر الميلادي بعينه (28/29/30/31) — كان 29 أو 30 للهجري */
     ds.forEach((x, i) => { assert.equal(x.d, i + 1); assert.ok(J(P.WD).includes(x.wd)); });
     for (let i = 1; i < ds.length; i++) assert.equal(J(P.WD).indexOf(ds[i].wd), (J(P.WD).indexOf(ds[i - 1].wd) + 1) % 7, 'أيامُ أسبوعٍ متتالية');
   }
-  assert.equal(P.ymAdd('1447-12', 1), '1448-1'); assert.equal(P.ymAdd('1448-1', -1), '1447-12');
-  assert.ok(P.ymCmp('1448-1', '1447-12') > 0 && P.ymCmp('1447-9', '1447-9') === 0);
-  assert.equal(P.monthLabel('1447-9'), 'رمضان 1447');
-  const h = J(P.hijriAt(riyadh(2026, 10, 13, 12)));
-  const o = {}; new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(riyadh(2026, 10, 13, 12))).forEach((p) => { o[p.type] = +p.value; });
+  assert.equal(P.ymAdd('2025-12', 1), '2026-01'); assert.equal(P.ymAdd('2026-01', -1), '2025-12');
+  assert.ok(P.ymCmp('2026-01', '2025-12') > 0 && P.ymCmp('2026-02', '2026-02') === 0);
+  assert.equal(P.monthLabel('2026-02'), 'فبراير 2026');
+  const h = J(P.dayAt(riyadh(2026, 10, 13, 12)));
+  const o = {}; new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(riyadh(2026, 10, 13, 12))).forEach((p) => { o[p.type] = +p.value; });
   assert.deepEqual([h.y, h.m, h.d, h.wd], [o.year, o.month, o.day, 'الثلاثاء']);
 });

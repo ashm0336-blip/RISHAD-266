@@ -19,7 +19,7 @@ const D0 = 'M100 100 L400 100 L400 300 L100 300 Z';
 /* جولةُ اليوم (تاريخٌ هجريٌّ حاليّ فلا قفلَ ماضٍ) بمسارٍ ذي رأسين ومصلّى مربّع (ومصلياتٌ بعده إن مُرِّرت) · عدسةُ المصليات · أداةُ التحديد · العرضُ كاملاً (1px = وحدة) */
 function page(sel, more = []) {
   const W = world(), c = W.logic('daily', SRC);
-  const h = c.hParts(new Date()), RK = h.y + '-' + h.m + '-' + h.d;
+  const h = c.gParts(new Date()), RK = h.y + '-' + String(h.m).padStart(2, '0') + '-' + String(h.d).padStart(2, '0');   /* V7 · 53 تقويم: يومُ الصفحة ميلاديٌّ ISO (كان hParts الهجري) */
   const rounds = { [RK]: { d: [{ zones: [{ uid: 'TEST_ONLY_z1', d: D0, cx: 250, cy: 200 }].concat(more), paths: [{ uid: 'TEST_ONLY_p1', pts: [{ x: 100, y: 100 }, { x: 300, y: 100 }] }], gates: [], marks: [] }] } };
   W.store.set(KR, JSON.stringify(rounds));
   c.state = Object.assign({}, c.state, { year: h.y, month: h.m, day: h.d, floor: 0, lens: 'zones', tool: 'select', dview: { x: 0, y: 0, w: 1000, h: 600 }, dsSel: sel, rounds: JSON.parse(JSON.stringify(rounds)) });

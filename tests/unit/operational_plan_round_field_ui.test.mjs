@@ -16,11 +16,11 @@ function world(extra = {}) {
       bassam_plan_v1: {
         pMig: 3,
         floors: [current],
-        months: { "1448-1": { c: 1, d: [clone(current)] } },
+        months: { "2026-06": { c: 1, d: [clone(current)] } },
         cfg: {},
         delMonths: {},
       },
-      bassam_rounds_v1: { "1448-1-2": { t: 1, ap: 0, d: [clone(current)] } },
+      bassam_rounds_v1: { "2026-06-02": { t: 1, ap: 0, d: [clone(current)] } },
       bassam_gate_opts_v1: {
         loc: ["TEST_ONLY loc"],
         gtype: [],
@@ -50,7 +50,7 @@ function world(extra = {}) {
       base: () =>
         class {
           curHijri() {
-            return { y: 1448, m: 1, d: 2 };
+            return { y: 2026, m: 6, d: 2 };
           }
         },
     },
@@ -103,7 +103,7 @@ function world(extra = {}) {
   const component = new C.TestComponent();
   component.bsToast = (...args) => seen.toasts.push(args);
   component._histPush = () => {};
-  component.curHijri = () => ({ y: 1448, m: 1, d: 2 });
+  component.curHijri = () => ({ y: 2026, m: 6, d: 2 });
   component.setState = (update, callback) => {
     component.state = {
       ...component.state,
@@ -117,8 +117,8 @@ function world(extra = {}) {
   component._opRead("bassam_rounds_v1");
   component.state = {
     ...clone(source),
-    year: 1448,
-    month: 1,
+    year: 2026,
+    month: 6,
     floor: 0,
     planMonths: clone(source.months),
     zones: clone(current.zones),
@@ -227,10 +227,10 @@ test("lost Plan ACK retries the exact ticket/body and a changed intent never rep
 });
 test("gate option deletion changes catalog, unapproved rounds and Plan in exactly one atomic ticket", async () => {
   const w = world();
-  w.op.data.bassam_rounds_v1["1448-1-3"] = { ap: 1, d: [floor()] };
+  w.op.data.bassam_rounds_v1["2026-06-03"] = { ap: 1, d: [floor()] };
   /* Owner rule (prompt 43, root 3): a cross-system write from the Plan into the rounds is limited to today and later —
-     past days are never rewritten (this test used to pin the purge of the past unapproved day 1448-1-2). */
-  w.op.data.bassam_rounds_v1["1500-1-2"] = { d: [floor()] };
+     past days are never rewritten (this test used to pin the purge of the past unapproved day 1448-1-2). V7 · 53 تقويم: ISO keys — the coming day 1500-1-2 ⇒ 2078-06-02 (world_fx hFx). */
+  w.op.data.bassam_rounds_v1["2078-06-02"] = { d: [floor()] };
   w.component.delGateOpt("loc", 0);
   assert.equal((await w.component._opLastSave).ok, 1);
   assert.equal(w.op.control.stages.length, 1);
@@ -241,10 +241,10 @@ test("gate option deletion changes catalog, unapproved rounds and Plan in exactl
     "bassam_rounds_v1",
   ]);
   assert.equal(body.bassam_plan_v1.floors[0].gates[0].loc, "");
-  assert.equal(body.bassam_rounds_v1["1500-1-2"].d[0].gates[0].loc, "", "a coming unapproved day is purged");
-  assert.equal(body.bassam_rounds_v1["1448-1-2"].d[0].gates[0].loc, "TEST_ONLY loc", "a past day is not rewritten");
+  assert.equal(body.bassam_rounds_v1["2078-06-02"].d[0].gates[0].loc, "", "a coming unapproved day is purged");
+  assert.equal(body.bassam_rounds_v1["2026-06-02"].d[0].gates[0].loc, "TEST_ONLY loc", "a past day is not rewritten");
   assert.equal(
-    body.bassam_rounds_v1["1448-1-3"].d[0].gates[0].loc,
+    body.bassam_rounds_v1["2026-06-03"].d[0].gates[0].loc,
     "TEST_ONLY loc",
   );
   assert.equal(body.bassam_plan_v1.floors[0].sid, "TEST_ONLY_SITE");
@@ -309,26 +309,26 @@ test("round factory waits for ACK and preserves the copied site and shift snapsh
   w.op.control.gate = new Promise((resolve) => {
     release = resolve;
   });
-  const promise = w.KIVO.BassamRound.ensure(1448, 1, 4);
-  assert.equal(w.op.data.bassam_rounds_v1["1448-1-4"], undefined);
+  const promise = w.KIVO.BassamRound.ensure(2026, 6, 4);
+  assert.equal(w.op.data.bassam_rounds_v1["2026-06-04"], undefined);
   release();
   const result = await promise;
   assert.equal(result.status, "created");
   assert.equal(
-    w.op.data.bassam_rounds_v1["1448-1-4"].d[0].sid,
+    w.op.data.bassam_rounds_v1["2026-06-04"].d[0].sid,
     "TEST_ONLY_SITE",
   );
   w.op.control.gate = null;
   const approval = await w.KIVO.BassamRound.setShiftAp(
-    1448,
-    1,
+    2026,
+    6,
     4,
     "TEST_ONLY shift",
     true,
   );
   assert.equal(approval.status, "approved");
   assert.equal(
-    w.op.data.bassam_rounds_v1["1448-1-4"].shAp["TEST_ONLY shift"].snap[0].sid,
+    w.op.data.bassam_rounds_v1["2026-06-04"].shAp["TEST_ONLY shift"].snap[0].sid,
     "TEST_ONLY_SITE",
   );
   assert.equal(w.seen.storage, 0);
@@ -337,13 +337,13 @@ test("round factory retries one uncertain request and blocks a different request
   const w = world();
   service(w, "420-round-factory.js");
   w.op.control.mode = "uncertain";
-  const first = await w.KIVO.BassamRound.ensure(1448, 1, 4);
+  const first = await w.KIVO.BassamRound.ensure(2026, 6, 4);
   assert.equal(first.status, "uncertain");
-  const changed = await w.KIVO.BassamRound.ensure(1448, 1, 5);
+  const changed = await w.KIVO.BassamRound.ensure(2026, 6, 5);
   assert.equal(changed.status, "conflict");
   assert.equal(w.op.control.stages.length, 1);
   w.op.control.mode = "ok";
-  const repeated = await w.KIVO.BassamRound.ensure(1448, 1, 4);
+  const repeated = await w.KIVO.BassamRound.ensure(2026, 6, 4);
   assert.equal(repeated.status, "created");
   assert.equal(w.op.control.stages.length, 1);
   assert.equal(w.op.control.sends[0], w.op.control.sends[1]);
@@ -353,7 +353,7 @@ test("field service performs no startup write and rejects a stale displayed targ
   service(w, "520-field-monitor.js");
   assert.equal(w.op.control.stages.length, 0);
   assert.equal(w.KIVO.BassamField.purgeLegacy, undefined);
-  const result = await w.KIVO.BassamField.observe("1448-1-2", 0, 0, {
+  const result = await w.KIVO.BassamField.observe("2026-06-02", 0, 0, {
     st: "closed",
     why: "TEST_ONLY",
     kind: "gates",
@@ -367,19 +367,19 @@ test("field service performs no startup write and rejects a stale displayed targ
 test("field observation writes one history entry only after ACK and retries identical bytes after loss", async () => {
   const w = world();
   service(w, "520-field-monitor.js");
-  const expected = clone(w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0]),
+  const expected = clone(w.op.data.bassam_rounds_v1["2026-06-02"].d[0].gates[0]),
     intent = { st: "closed", why: "TEST_ONLY reason", kind: "gates", expected };
   w.op.control.mode = "uncertain";
-  const first = await w.KIVO.BassamField.observe("1448-1-2", 0, 0, intent);
+  const first = await w.KIVO.BassamField.observe("2026-06-02", 0, 0, intent);
   assert.equal(first.status, "uncertain");
   assert.equal(
-    w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0].closed,
+    w.op.data.bassam_rounds_v1["2026-06-02"].d[0].gates[0].closed,
     undefined,
   );
   w.op.control.mode = "ok";
-  const ack = await w.KIVO.BassamField.observe("1448-1-2", 0, 0, intent);
+  const ack = await w.KIVO.BassamField.observe("2026-06-02", 0, 0, intent);
   assert.equal(ack.ok, true);
-  const gate = w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0];
+  const gate = w.op.data.bassam_rounds_v1["2026-06-02"].d[0].gates[0];
   assert.equal(gate.closed, true);
   assert.equal(gate.fLog.length, 1);
   assert.equal(gate.uid, "TEST_ONLY_GATE");
@@ -392,14 +392,14 @@ test("deleting the selected month preserves the existing site identity and commi
     newId: () => "NEW_TEST_ONLY_WRONG_ID",
     stampSite: () => {},
   };
-  w.component.state.planDelMonth = { y: 1448, m: 1 };
+  w.component.state.planDelMonth = { y: 2026, m: 6 };
   action(w, "planDelDo")();
   assert.equal((await w.component._opLastSave).ok, 1);
   assert.equal(w.op.control.stages.length, 1);
   const body = JSON.parse(w.op.control.stages[0].body);
   assert.equal(body.bassam_plan_v1.floors[0].sid, "TEST_ONLY_SITE");
-  assert.equal(body.bassam_rounds_v1["1448-1-2"], undefined);
-  assert.ok(body.bassam_plan_v1.delMonths["1448-1"]);
+  assert.equal(body.bassam_rounds_v1["2026-06-02"], undefined);
+  assert.ok(body.bassam_plan_v1.delMonths["2026-06"]);
 });
 test("draft round planners combine a new report and round approval without dispatching a separate request", async () => {
   const w = world({ bassam_dreport_v1: {} });
@@ -412,19 +412,19 @@ test("draft round planners combine a new report and round approval without dispa
     "TEST_ONLY_report",
     { day: 4 },
     (draft) => {
-      const ensured = w.KIVO.BassamRound.prepareEnsure(draft, 1448, 1, 4);
+      const ensured = w.KIVO.BassamRound.prepareEnsure(draft, 2026, 6, 4);
       assert.equal(ensured.status, "created");
       assert.equal(w.op.control.sends.length, 0);
       const approved = w.KIVO.BassamRound.prepareShiftAp(
         draft,
-        1448,
-        1,
+        2026,
+        6,
         4,
         "TEST_ONLY shift",
         true,
       );
       assert.equal(approved.status, "approved");
-      draft.set("bassam_dreport_v1", { "1448-1-4": { ap: 1 } });
+      draft.set("bassam_dreport_v1", { "2026-06-04": { ap: 1 } });
     },
   );
   assert.equal(result.ok, 1);
@@ -435,17 +435,17 @@ test("draft round planners combine a new report and round approval without dispa
     "bassam_rounds_v1",
   ]);
   assert.equal(
-    body.bassam_rounds_v1["1448-1-4"].shAp["TEST_ONLY shift"].snap[0].sid,
+    body.bassam_rounds_v1["2026-06-04"].shAp["TEST_ONLY shift"].snap[0].sid,
     "TEST_ONLY_SITE",
   );
 });
 test("field denial leaves the confirmed element and history unchanged", async () => {
   const w = world();
   service(w, "520-field-monitor.js");
-  const expected = clone(w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0]);
+  const expected = clone(w.op.data.bassam_rounds_v1["2026-06-02"].d[0].gates[0]);
   w.op.control.mode = "denied";
   const before = JSON.stringify(w.op.data.bassam_rounds_v1),
-    result = await w.KIVO.BassamField.observe("1448-1-2", 0, 0, {
+    result = await w.KIVO.BassamField.observe("2026-06-02", 0, 0, {
       st: "closed",
       why: "TEST_ONLY",
       kind: "gates",
@@ -463,12 +463,12 @@ test("identical concurrent round/field callers share the in-flight result and re
       kind === "round" ? "420-round-factory.js" : "520-field-monitor.js",
     );
     const expected = clone(
-      w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0],
+      w.op.data.bassam_rounds_v1["2026-06-02"].d[0].gates[0],
     );
     const call = () =>
       kind === "round"
-        ? w.KIVO.BassamRound.ensure(1448, 1, 4)
-        : w.KIVO.BassamField.observe("1448-1-2", 0, 0, {
+        ? w.KIVO.BassamRound.ensure(2026, 6, 4)
+        : w.KIVO.BassamField.observe("2026-06-02", 0, 0, {
             st: "closed",
             why: "TEST_ONLY",
             kind: "gates",
@@ -502,10 +502,10 @@ test("REVIEW 11-a: a gate closure from «صفحتي» (field service) is saved w
   for (const why of ["", "TEST_ONLY ازدحام"]) {
     const w = world();
     service(w, "520-field-monitor.js");
-    const expected = clone(w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0]);
-    const r = await w.KIVO.BassamField.observe("1448-1-2", 0, 0, { st: "closed", why, kind: "gates", expected });
+    const expected = clone(w.op.data.bassam_rounds_v1["2026-06-02"].d[0].gates[0]);
+    const r = await w.KIVO.BassamField.observe("2026-06-02", 0, 0, { st: "closed", why, kind: "gates", expected });
     assert.equal(r.ok, true, "closed with reason «" + why + "»: " + JSON.stringify(r));
-    const gate = w.op.data.bassam_rounds_v1["1448-1-2"].d[0].gates[0];
+    const gate = w.op.data.bassam_rounds_v1["2026-06-02"].d[0].gates[0];
     assert.equal(gate.closed, true); assert.equal(gate.cWhy, why); assert.equal(gate.fLog.length, 1);
   }
 });

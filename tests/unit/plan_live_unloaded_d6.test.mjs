@@ -14,15 +14,15 @@ const PLAN = process.env.PLAN_LOGIC ? fs.readFileSync(process.env.PLAN_LOGIC, 'u
 const KP = 'bassam_plan_v1';
 const gate = (uid, x, y, n) => ({ uid, x, y, label: 'باب ' + n, emp: [], hideLabel: true, eid: 'e_' + uid });   /* معرّفُ العنصر محفوظٌ كما يكتبه الخادم */
 const site = (gates) => ({ sid: 's_TEST_ONLY_1', name: 'TEST_ONLY', num: 1, zones: [], gates, marks: [], paths: [], sectors: [], iid: 'img_TEST_ONLY' });
-const stored = (F) => JSON.stringify({ pMig: 3, zones: [], gates: F[0].gates, marks: [], paths: [], floors: F, months: { '1448-5': { c: 1, d: F } }, cfg: {}, delMonths: {} });
+const stored = (F) => JSON.stringify({ pMig: 3, zones: [], gates: F[0].gates, marks: [], paths: [], floors: F, months: { '2026-10': { c: 1, d: F } }, cfg: {}, delMonths: {} });
 
 function openGate() {
   const W = world(), c = W.logic('plan', PLAN), O = W.KIVO.__BS_SRV.operations;
   const F = [site([gate('TEST_ONLY_g1', 300, 200, 1), gate('TEST_ONLY_g2', 500, 200, 2)])];
   W.store.set(KP, stored(F));
   const F1 = JSON.parse(JSON.stringify(F));
-  c.state = Object.assign({}, c.state, { year: 1448, month: 5, floor: 0, floors: F1, zones: [], gates: F1[0].gates.slice(), marks: [], paths: [],
-    planMonths: { '1448-5': { c: 1, d: F1 } }, sel: { t: 'gate', i: 1 }, selMulti: [], tool: 'select', lens: 'plan', gEdit: { i: 1 } });
+  c.state = Object.assign({}, c.state, { year: 2026, month: 10, floor: 0, floors: F1, zones: [], gates: F1[0].gates.slice(), marks: [], paths: [],
+    planMonths: { '2026-10': { c: 1, d: F1 } }, sel: { t: 'gate', i: 1 }, selMulti: [], tool: 'select', lens: 'plan', gEdit: { i: 1 } });
   const toasts = [], live = [];
   c.bsToast = (m) => toasts.push(m);
   W.KIVO.__bsLiveLog = (kind) => live.push(kind);
@@ -49,7 +49,7 @@ test('V7 · د6: مفتاحُ الخطة أُسقط ولم تصل قراءتُه
 test('V7 · د6: وصلت القراءةُ (جهازٌ آخر أضاف باباً) ⇒ يُدمج في مكانه والبابُ المفتوح بلا تعارض', () => {
   const X = openGate(), { W, c } = X;
   X.drop(true); c._bsLiveReload([KP]);
-  const F = JSON.parse(W.store.get(KP)).months['1448-5'].d;
+  const F = JSON.parse(W.store.get(KP)).months['2026-10'].d;
   F[0].gates = [gate('TEST_ONLY_gR', 50, 50, 9)].concat(F[0].gates);
   W.store.set(KP, stored(F)); X.drop(false);
   assert.equal(c._bsLiveReload([KP]), true, 'دُمج');
@@ -61,7 +61,7 @@ test('V7 · د6: وصلت القراءةُ (جهازٌ آخر أضاف بابا�
 
 test('V7 · د6: الحمايةُ الأصلية باقية — جهازٌ آخر حذف البابَ المفتوح فعلاً (والقراءةُ وصلت) ⇒ تعارضٌ وتنبيه', () => {
   const X = openGate(), { W, c } = X;
-  const F = JSON.parse(W.store.get(KP)).months['1448-5'].d;
+  const F = JSON.parse(W.store.get(KP)).months['2026-10'].d;
   F[0].gates = F[0].gates.filter((g) => g.uid !== 'TEST_ONLY_g2');
   W.store.set(KP, stored(F));
   c._bsLiveReload([KP]);

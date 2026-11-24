@@ -112,7 +112,7 @@ test('(3) الالتقاط كاملاً: بموقعٍ مسموح ⇒ الصور�
     assert.ok(await until(() => (P.c.state.tkImgs || []).length === 1), 'صورةٌ واحدة جُهّزت (' + String(geo) + ')');
     const cv = P.canvases[0]; assert.ok(cv, 'لوحةٌ رُسم عليها');
     const txt = cv.calls.filter((c) => c[0] === 'fillText').map((c) => c[1]);
-    assert.equal(txt.length, 2, 'سطرا الختم'); assert.match(txt[0], want, txt[0]); assert.match(txt[0], /هـ · \d\d\/\d\d\/20\d\dم · \d\d:\d\d/, 'التاريخان والساعة');
+    assert.equal(txt.length, 2, 'سطرا الختم'); assert.match(txt[0], want, txt[0]); assert.match(txt[0], /^\d\d\/\d\d\/20\d\dم · \d{1,2}\/\d{1,2}\/14\d\dهـ · \d\d:\d\d/, 'التاريخان والساعة');   /* V7 · 53 تقويم (REVIEW 22): الميلاديُّ أولاً ثم الهجريُّ المقابل — كما في (1) */
     assert.equal(txt[1], NAME, 'اسمُ الموظف (بلا مهمةٍ مفتوحة ⇒ بلا عنوان)');
     assert.match(P.c.state.tkImgs[0], /^data:image\/jpeg;base64,STAMPED/, 'المرمَّزُ بعد الختم — لا صورةٌ خام');
     const m = P.c.state.tkMeta[0]; assert.ok(m && m.at > 0, 'وقتُ الالتقاط');

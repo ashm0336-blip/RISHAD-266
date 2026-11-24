@@ -34,6 +34,7 @@ function page(W, ck, o = {}) {
     return { ok: r.status < 300, status: r.status, text: () => r.text(), json: () => r.json() };
   };
   vm.createContext(ctx);
+  for (const f of ['src/i18n/380-hijri-fallback.js', 'src/i18n/385-calendar.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx);   /* V7 · 53 تقويم: خدمةُ التقويم (KIVO.BassamCal) — صفحتي تقرأ منها الأشهرَ الميلادية */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/tasks/client/545-task-self.js'), 'utf8'), ctx);
   KIVO.BassamCount = (n, w) => n + ' ' + w;
   class DCLogic { constructor() { this.state = {}; } setState(p) { this.state = Object.assign({}, this.state, typeof p === 'function' ? p(this.state) : p); } }
