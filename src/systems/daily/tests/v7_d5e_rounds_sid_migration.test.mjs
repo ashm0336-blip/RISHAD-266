@@ -198,7 +198,8 @@ test('⑤ أوامرُ الجولات وإنشاءُ اليوم: بالمعرّ�
   const got = {}, r = bus.call('daily.site.remove@1', { index: 0, sid: 'B' }, { get: (k) => copy(store[k]), set: (k, v) => (got[k] = v) });
   assert.equal(r.ok, 1); assert.equal(r.unlinked, 1);
   assert.deepEqual(got.bassam_rounds_v1[next].d.map((f) => f.sid || null), ['A', null]);
-  assert.deepEqual(got.bassam_rounds_v1[(now.y - 1) + '-1-1'].d.map((f) => f.sid), ['A'], 'الموضعيةُ القديمة كانت تحذف A هنا');
+  /* V7 · د7 (planprove · رد المالك 52 §2): اليومُ الماضي لا يُمسّ (قاعدةُ sites.patch/pad) — كان يُحذف منه B فيرفض الخادمُ الحفظَ بـlocked-period */
+  assert.deepEqual(got.bassam_rounds_v1[(now.y - 1) + '-1-1'].d.map((f) => f.sid), ['B', 'A'], 'الماضي لا يُمسّ');
   /* إكمالُ المواقع: يُلحق ما لا يحمل اليومُ معرّفَه (C) — لا بالعدد (كان يُلحق sites[2] = A مكرَّراً) */
   const got2 = {}, r2 = bus.call('daily.sites.pad@1', { sites: [{ sid: 'B' }, { sid: 'A' }, { sid: 'C' }] }, { get: (k) => copy(store[k]), set: (k, v) => (got2[k] = v) });
   assert.equal(r2.changed, true); assert.deepEqual(got2.bassam_rounds_v1[next].d.map((f) => f.sid || null), ['A', 'B', null, 'C']);

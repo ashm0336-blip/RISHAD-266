@@ -10,7 +10,7 @@
      read     daily.names@1()             { مفتاحُ مورد الجولات: اسمُه للعرض } — لرسالة «لم يُحدَّث معه».
      command  daily.sites.patch@1 { site }  كلُّ موقعٍ غير معتمد في يومٍ غير معتمد من اليوم فصاعداً ← site(موقع).
      command  daily.month.clear@1 { y, m }  يحذف أيامَ الشهر وعلامتَه.
-     command  daily.site.remove@1 { index, sid } يحذف الموقعَ بمعرّفه sid من كل يوم (V7 · د5-هـ t4: لا بموضعه؛ index للتوافق فقط ولا يُقرأ).
+     command  daily.site.remove@1 { index, sid } يحذف الموقعَ بمعرّفه sid من كل يومٍ غير معتمد من اليوم فصاعداً (V7 · د7) (V7 · د5-هـ t4: لا بموضعه؛ index للتوافق فقط ولا يُقرأ).
      command  daily.sites.pad@1 { sites }   يُلحق بكل يومٍ غير معتمد من اليوم فصاعداً كلَّ موقعٍ من sites لا يحمل اليومُ معرّفَه sid (t4: لا بالعدد والموضع).
               الطابقُ بلا sid في يومٍ لا يُطابَق بموضعه ولا يُمسّ — يُعدّ في الردّ (unlinked) ويربطه ترحيلُ الهوية.
    V7 · د5-هـ (r4) — روابطُ التقرير اليومي:
@@ -99,16 +99,19 @@
   function unlinkedIn(rec) { return KIVO.BassamRound && KIVO.BassamRound.unlinked ? KIVO.BassamRound.unlinked(rec.d).length : 0; }
   bus.command('daily.site.remove@1', function (payload, draft) {
     drafted('daily.site.remove@1', draft);
-    var rounds = draft.get(KEY), sid = payload.sid, unlinked = 0;
+    var rounds = draft.get(KEY), sid = payload.sid, unlinked = 0, changed = false;
     if (!(rounds && typeof rounds === 'object')) return { ok: 1, changed: false };
     Object.keys(rounds).forEach(function (key) {
       var rec = rounds[key];
       if (!(rec && Array.isArray(rec.d))) return;
-      if (KIVO.BassamRound && KIVO.BassamRound.removeBySid) KIVO.BassamRound.removeBySid(rec.d, sid);
+      /* V7 · د7 (planprove): قاعدةُ sites.patch/pad نفسُها — اليومُ المعتمد (ap) والماضي لا يُمسّ: التاريخُ يبقى كما خُزِّن بموقعه
+         (كان يُحذف من كل يوم فيرفض الخادمُ الحفظَ الذرّيَّ كلَّه بـlocked-period على بيانات Production المستوردة) */
+      if (rec.ap || !keyNow(key)) return;
+      if (KIVO.BassamRound && KIVO.BassamRound.removeBySid && KIVO.BassamRound.removeBySid(rec.d, sid)) changed = true;
       unlinked += unlinkedIn(rec);
     });
-    draft.set(KEY, rounds);   /* كما كان: تُكتب الوثيقةُ مع حذف الموقع ولو لم يحمله يوم */
-    return { ok: 1, changed: true, unlinked: unlinked };
+    if (changed) draft.set(KEY, rounds);   /* V7 · د7 (planprove): تُكتب الوثيقةُ فقط إن حُذف الموقعُ من يوم */
+    return { ok: 1, changed: changed, unlinked: unlinked };
   });
 
   bus.command('daily.sites.pad@1', function (payload, draft) {

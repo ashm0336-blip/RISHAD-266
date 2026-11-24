@@ -61,7 +61,8 @@ const realEdit = (p, name, edit, arg = null) => p.evaluate(async ([name, src, ar
   const tk = dr.stage(); if (!tk || !tk.requestId) return { staged: tk };
   let r; try { r = await svc.flush(tk); } catch (e) { r = { err: String((e && e.message) || e) }; }
   try { svc.release(tk); } catch (e) { /* مُحرَّر */ }
-  return { ok: r && r.ok, status: r && r.status, txt: JSON.stringify(r).slice(0, 1500) };
+  const full = JSON.stringify(r);
+  return { ok: r && r.ok, status: r && r.status, txt: [...new Set(full.match(/(locked-period|site-approved|past-month-without-mo|day-approved|period-locked)[^"\\]{0,60}/g) || [])].join(' ¦ ') || full.slice(0, 600) };
 }, [name, edit.toString(), arg]);
 /* ملخّصُ ردّ الحفظ: سببُ الرفض لكل مورد وأقفالُه المذكورة */
 const why = (j) => { const t = JSON.stringify(j || {}), d = (j && j.denied) || {}; return { ok: j && j.ok, denied: Object.fromEntries(Object.entries(d).map(([k, v]) => [k.split(':').pop(), v && v.why])), locks: [...new Set(t.match(/(locked-period|site-approved|past-month-without-mo|day-approved|period-locked)[^"\\]{0,60}/g) || [])] }; };
@@ -103,14 +104,15 @@ test('د7 الحالة ١ — الخطة على نسخة Production مستورد
     assert.match(after2.floors[0].zones[1].name, /ثانٍ د7/);
     assert.deepEqual(after2.floors[1], before.floors[1]); assert.deepEqual(after2.months[prev], before.months[prev]);
     /* السالب: التعديلُ الحقيقي على المعتمد وعلى الماضي ما زال يُرفض في الخادم ولا يُخزَّن */
-    const negAp = await realEdit(p, 'bassam_plan_v1', (v) => { v.floors[1].zones[0].name += ' X'; });
+    const negAp = await realEdit(p, 'bassam_plan_v1', (v, k) => { v.months[k].d[1].gates[0].eid = 'TEST_ONLY_e1'; }, cur   /* ما كان الختمُ يرسله نفسُه: معرّفٌ على بابٍ في الموقع المعتمد من خطة الشهر */);
     t.diagnostic('negative approved: ' + JSON.stringify(negAp).slice(0, 500));
     assert.ok(negAp.ok !== 1 && negAp.status === 403 && /site-approved/.test(negAp.txt), 'الموقعُ المعتمد يُرفض (site-approved): ' + JSON.stringify(negAp));
-    const negPast = await realEdit(p, 'bassam_plan_v1', (v) => { const k = Object.keys(v.months).sort()[0]; v.months[k].d[0].zones[0].name += ' X'; });
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(3000);   /* بعد رفضٍ تطلب الخدمةُ مراجعةَ المسودة — صفحةٌ جديدة */
+    const negPast = await realEdit(p, 'bassam_plan_v1', (v) => { const k = Object.keys(v.months).sort()[0]; v.months[k].d[0].gates[0].eid = 'TEST_ONLY_e2'; }   /* والختمُ نفسُه على الشهر الماضي */);
     t.diagnostic('negative past month: ' + JSON.stringify(negPast).slice(0, 500));
     assert.ok(negPast.ok !== 1 && negPast.status === 403 && /past-month-without-mo/.test(negPast.txt), 'الشهرُ الماضي بلا mo يُرفض: ' + JSON.stringify(negPast));
     const fin = await W.read(PK);
-    assert.deepEqual(fin.floors[1], before.floors[1]); assert.deepEqual(fin.months[prev], before.months[prev]);
+    assert.deepEqual(fin.months[cur].d[1], before.months[cur].d[1]); assert.deepEqual(fin.months[prev], before.months[prev], 'المرفوضُ لم يُخزَّن');
     await W.lab.idle(); await readBack(W.T, B);   /* كلُّ موردٍ يُقرأ بعد الحفظ */
     assert.deepEqual(W.s.errs, [], 'لا أخطاء صفحة');
   } finally { await W.close(); }

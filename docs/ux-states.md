@@ -28,7 +28,7 @@
 | irshad (Irshad) | 18 | 0 | 16 | 0 | 6 |
 | kpis (KPIs) | 1 | 0 | 3 | 0 | 1 |
 | org (Org) | 33 | 3 | 41 | 0 | 12 |
-| plan (Operational Plan) | 58 | 10 | 114 | 0 | 4 |
+| plan (Operational Plan) | 58 | 10 | 115 | 0 | 4 |
 | planning (Planning) | 0 | 0 | 7 | 0 | 0 |
 | profile (Profile) | 31 | 18 | 107 | 0 | 11 |
 | rasd (Rasd) | 16 | 1 | 35 | 0 | 2 |
