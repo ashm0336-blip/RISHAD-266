@@ -111,7 +111,7 @@ test('sys.histimp.run — super imports without a reason; a manager is refused b
   let B = await mk(), r = await send(B, SUP, '');
   assert.equal(r.status, 200, JSON.stringify(r.json)); assert.equal(r.json.ok, 1);
   assert.equal(days(B), 1, 'the imported day is stored');
-  assert.equal(B.DB.q("SELECT worshippers w FROM daily_stats_days WHERE site='haram' AND hijri_date=?1", date(B))[0].w, 5);
+  assert.equal(B.DB.q("SELECT worshippers w FROM daily_stats_days WHERE site='haram' AND greg_date=?1", date(B))[0].w, 5);   /* V7 · 53 تقويم: العمودُ ميلادي (0014: hijri_date ⇒ greg_date) */
   const row = authzRow(B, SUP, '/api/dstats'), aud = B.DB.q("SELECT act,ctx FROM aud WHERE k='bassam_dstats_v1' ORDER BY ts DESC LIMIT 1")[0];
   assert.equal(aud.act, 'import');
   /* real behaviour: the import is decided by the entry key (not sensitive) so no authz row is written; the audit line of the import carries the «no reason» label for super */
