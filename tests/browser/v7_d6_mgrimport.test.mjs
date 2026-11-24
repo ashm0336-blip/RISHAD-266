@@ -1,22 +1,27 @@
 /* V7 · د6 (QA ٦ · ١٥ — قرارُ المالك): مديرُ الإدارة (بلا منحٍ صريح) من «الإعدادات ← النسخة الاحتياطية»: يصدّر نسخةَ إدارته ثم يستوردها «استبدال كامل»
-   فينجح (ملخّصُ النجاح) — ويُرفض على إدارةٍ أخرى وعلى النسخة الشاملة (الخادم 403 restore-policy). TEST_ONLY — المختبرُ المحلي ببذره. */
+   فينجح (ملخّصُ النجاح) — ويُرفض على إدارةٍ أخرى وعلى النسخة الشاملة (الخادم 403 restore-policy). TEST_ONLY — المختبرُ المحلي ببذره.
+   V7 · د7 (ج ١٥): كان متخطّى («لا حدثَ تنزيل خلال 60 ث»). السببُ ليس اسمَ الملف ولا المرساة: سقفُ الإدارة في بذر المختبر لا يحوي الاسترشاد والمضبوطات
+   والجائزة، فيرفض الخادمُ تصديرَ مجالاتها لمدير الإدارة (/api/irshad/export 403 irshad-export-permission · /api/seized|award/export 403
+   domain-export-permission — canRead على نظامٍ مطفأ) ويتوقف exportDomains (548) فيظهر «تعذّر التصدير» ولا يُنزَّل شيء. هذا الاختبار يعمل الآن في إدارةٍ
+   أنظمتُها كلها مفعّلة (d7_cov_lib.world — كما في walkfix وaward_form_refresh) دون تغيير أيّ تأكيد، ويُضاف تحته اختبارُ الخلل نفسِه (إدارةٌ أُطفئ فيها
+   نظامٌ تحمل النسخةُ مجالَه) متخطّى بسببٍ مسمّى للمُدمِج — لم يُصلَح هنا: إصلاحُه قرارُ نسخٍ واستعادة (ما تحمله نسخةُ الإدارة لنظامٍ مطفأ) لا تعديلٌ صغير. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { startLab, LAB } from './local_server.mjs';
+import { world } from './d7_cov_lib.mjs';
 import { chromium, openAs } from './lab_browser.mjs';
 import { hasSystem } from '../unit/harness.mjs';
 import { staged } from '../unit/v7_d6_import_fx.mjs';
 
-/* V7 · د6 (QA ٦): لم يكتمل قبل موعد التسليم — زرُّ «تصدير نسخة هذه الإدارة» لا يُطلق حدثَ تنزيلٍ يلتقطه Playwright في المختبر (60 ث). المسارُ نفسُه مُثبَتٌ في وحدة v7_d6_mgrimport (١)(٢)(٣). يُكمَل بعد التسليم */
-const need = { skip: 'QA ٦ — قيد الإكمال: التقاطُ تنزيل «تصدير نسخة هذه الإدارة» في المختبر (انظر mgrimport_report.md)' };
+const need = {};
 void hasSystem;
 const click = async (p, t) => { const el = p.getByText(t, { exact: true }).last(); await el.waitFor({ state: 'visible', timeout: 20000 }); await el.click(); };
 
 test('د6 (QA ٦): مديرُ الإدارة يصدّر نسخةَ إدارته ويستوردها بالاستبدال الكامل فينجح — ويُرفض على إدارةٍ أخرى وعلى النسخة الشاملة', { timeout: 300000, ...need }, async () => {
-  const lab = await startLab(), b = await chromium.launch();
+  const lab = await world(), b = await chromium.launch();
   try {
     const s = await openAs(b, lab, LAB.mgrB, LAB.pw), p = s.page, refused = [];
     p.on('response', async (r) => { if (/\/api\/backup\/(import|restore)/.test(r.url()) && r.status() >= 400) { let t = ''; try { t = (await r.text()).slice(0, 300); } catch (e) { /* بلا جسم */ } refused.push(r.status() + ' ' + t); } });
@@ -42,6 +47,27 @@ test('د6 (QA ٦): مديرُ الإدارة يصدّر نسخةَ إدارته 
     assert.equal(full.s, 403, JSON.stringify(full.j));
     assert.equal(staged(lab.env.DB), 0);
     assert.deepEqual(s.errs, [], 'لا أخطاء صفحة');
+    await s.ctx.close();
+  } finally { await b.close(); await lab.close(); }
+});
+
+/* V7 · د7 (ج ١٥) — الخللُ الذي كان يُسقط الاختبارَ أعلاه، بصورته الحقيقية: إدارةٌ أُطفئ فيها نظامٌ تحمل نسخةُ الإدارة مجالَه (هنا بذرُ المختبر:
+   الاسترشاد والمضبوطات والجائزة ليست في سقف TEST_ONLY_B). مديرُ الإدارة يضغط «تصدير نسخة هذه الإدارة» فلا يُنزَّل شيء ويظهر «تعذّر التصدير» وحده.
+   الموضع: KIVO.BackupRestore.exportDomains (src/slots/services/548-atomic-backup.js.tpl:111 — حلقةُ specs تطلب /api/<نظام>/export لكل نظامٍ مبنيّ دون
+   النظر في سقف الإدارة) · ورفضُ الخادم: irExport (src/systems/irshad/server/019g-irshad-domain.js:731 canRead) · bdExport
+   (src/slots/workers/parts/019n-business-integration.js.tpl:112 canRead) · والرسالةُ العامة: bkExportRun (src/slots/layouts/root-logic.js.tpl — catch ← «تعذّر التصدير»).
+   العهدُ (/api/custody/export) يصدَّر للنظام المطفأ بلا رفض — فالسلوكُ غيرُ متّسق بين الأنظمة. القرارُ للمُدمِج/المالك: هل تحمل نسخةُ الإدارة بياناتِ نظامٍ مطفأ
+   (bkCapNote يقول «محفوظة — غير مفعّلة في هذه الإدارة» فالنيّةُ نعم) أم يُتخطّى مجالُه ويُحفظ من الاستبدال؟ */
+const BUG = { skip: 'خللٌ مُبلَّغ (د7 ج١٥ · coverage_report): تصديرُ نسخة الإدارة يفشل كلُّه حين يكون نظامٌ تحمل النسخةُ مجالَه مطفأً في الإدارة — ينتظر قرارَ ما تحمله النسخةُ لنظامٍ مطفأ' };
+test('د7 (ج ١٥): مديرُ إدارةٍ أُطفئ فيها نظامٌ (الاسترشاد) يصدّر نسخةَ إدارته فيُنزَّل ملفٌّ صالح', { timeout: 300000, ...BUG }, async () => {
+  const lab = await startLab(), b = await chromium.launch();
+  try {
+    const s = await openAs(b, lab, LAB.mgrB, LAB.pw), p = s.page;
+    await s.go('#/admin/backup', 3500);
+    const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.locator('main button', { hasText: 'تصدير نسخة هذ' }).first().click()]);
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'd7-mgr-')), 'TEST_ONLY-mgr-copy.json'); await dl.saveAs(file);
+    assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).kind, 'dept');
+    assert.deepEqual(s.errs, []);
     await s.ctx.close();
   } finally { await b.close(); await lab.close(); }
 });
