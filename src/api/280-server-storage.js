@@ -1285,7 +1285,7 @@
     [0, 864e5].forEach(function (back) {
       var at = new Date(Date.now() - back), h = null, z = function (n) { return (n < 10 ? '0' : '') + n; };
       try { h = C && C.gAt ? C.gAt(at) : null; } catch (e) { h = null; }   /* خدمةُ التقويم إن حضرت (والاختبارُ يثبّت بها «الآن») */
-      if (!h || !h.y || !h.m || !h.d) return;   /* بلا خدمة التقويم لا «يوم» يُحسب هنا (v7_d5d2_calendar_rest ⑤)
+      if (!h || !h.y || !h.m || !h.d) return;   /* بلا خدمة التقويم لا «يوم» يُحسب هنا (v7_d5d2_calendar_rest ⑤) */
       var g = h.y + '-' + z(h.m), d = g + '-' + z(h.d);
       if (out.groups.indexOf(g) === -1) out.groups.push(g);
       if (out.days.indexOf(d) === -1) out.days.push(d);

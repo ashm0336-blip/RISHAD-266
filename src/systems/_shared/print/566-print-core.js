@@ -285,6 +285,8 @@
       g.globalAlpha = 0.95;
       g.fillText(sub, tR - lineLen - gap, sBase);
       g.fillRect(tR - lineLen, sBase - sSize * 0.42, lineLen, 0.5 * MM);
+      /* V7 · 53 تقويم (القاعدة 11): السنةُ الهجرية المقابلة سطرٌ صغير تحت السنة الميلادية («١٤٤٨هـ»)، في نهاية الصف نفسِه */
+      if (info.hyear) { const hSize = 4.4 * MM; g.font = "500 " + hSize + "px Cairo, sans-serif"; g.globalAlpha = 0.8; g.fillText(ar(info.hyear) + "هـ", tR - lineLen - gap, sBase + hSize * 1.45); }
       g.globalAlpha = 1;
       /* الإدارةُ العامة والإدارة — في وسط صندوقهما، ويصغر الخطُّ إن طال الاسم */
       const lines = [info.group, info.dept].filter((t) => t && String(t).trim()), bx = W * (0.242 + 0.316 / 2), by = H * (0.65 + 0.226 / 2), maxW = W * 0.316 - 10 * MM;
@@ -310,10 +312,16 @@
       try {
         yr = String(KIVO.BassamCal.gToday().y || "");
       } catch (e) {}
+    /* والسنةُ الهجرية المقابلة للسطر الصغير: سنةُ «الموافق» في سطر التاريخ، وإلا هجريُّ اليوم التشغيلي */
+    let hy = (String(dateLine || "").match(/(?:^|[^\d])(1[3-5]\d{2})(?!\d)/) || [])[1] || "";
+    if (!hy)
+      try {
+        hy = String((KIVO.BassamCal.hOf(KIVO.BassamCal.gToday().k) || {}).y || "");
+      } catch (e) {}
     try {
       grp = (KIVO.BassamDepts && KIVO.BassamDepts.activeGroupName && KIVO.BassamDepts.activeGroupName()) || "";
     } catch (e) {}
-    return { dept: dept || "", group: grp, year: yr };
+    return { dept: dept || "", group: grp, year: yr, hyear: hy };
   }
   function pdfDownload(x, title, cov) {
     try {

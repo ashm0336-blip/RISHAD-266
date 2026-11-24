@@ -517,7 +517,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const t = this.state, e = KIVO.BassamCal.gToday(), a = 864e5, i = KIVO.BassamCal.G_MONTHS,
       dash = t.irDashboard?.dashboard || {}, available = dash.available || { total: 0, years: [], months: [] },
       totals = dash.totals || {}, previous = dash.previous || {},
-      s = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
       n = v => KIVO.bsPct ? KIVO.bsPct(v) : String(Math.round(v || 0)),
       o = v => Math.round(v || 0).toLocaleString("en-US"),
       l = v => o(v).replace(/[0-9]/g, v => "٠١٢٣٤٥٦٧٨٩"[+v]),
@@ -579,23 +578,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         for (let t = 0; t < a.length; t++) if (r <= a[t]) return a[t] * e;
         return 10 * e;
       })(Math.max.apply(null, [1].concat(lt).concat(ht || []))),
-      gt = tt(lt, 1e3, 100, dt),
-      ct = ht ? tt(ht, 1e3, 100, dt) : null,
-      pt = [];
-    if (ot) {
-      const t = A.map(() => 0);
-      nt.forEach((e) => {
-        const r = e.ser.map((e, r) => t[r] + e),
-          a = t.slice(),
-          i = A.length,
-          s = (t) => (1 === i ? 500 : 1e3 - (t / (i - 1)) * 1e3),
-          n = (t) => 100 - (t / dt) * 100;
-        let o = "M" + s(0).toFixed(1) + " " + n(r[0]).toFixed(1) + " ";
-        for (let t = 1; t < i; t++) o += "L" + s(t).toFixed(1) + " " + n(r[t]).toFixed(1) + " ";
-        for (let t = i - 1; t >= 0; t--) o += "L" + s(t).toFixed(1) + " " + n(a[t]).toFixed(1) + " ";
-        (pt.push({ d: o + "Z", fill: e.color }), e.ser.forEach((e, r) => (t[r] += e)));
-      });
-    }
+      ct = ht ? tt(ht, 1e3, 100, dt) : null;
     const mt = [];
     for (let t = 4; t >= 0; t--) {
       const e = (dt * t) / 4,
@@ -932,7 +915,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDashHeroNum: l($),
       irDashSparkHas: X.ser.length > 1,
       irDashHeroLine: et.line,
-      irDashHeroArea: et.area,
       irDashHiVal: h(X.max),
       irDashHiSub: X.peakNum,
       irDashLoVal: h(X.min),
@@ -1003,11 +985,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDashTrendGrid: mt,
       irDashXLabels: bt,
       irDashHits: St,
-      irDashPlain: !ot,
-      irDashStacked: ot,
-      irDashStackPaths: pt,
-      irDashLine: gt.line,
-      irDashArea: gt.area,
       irDashGhostOn: !!ct,
       irDashGhost: ct ? ct.line : "",
       irDashLegend: ot
@@ -1385,7 +1362,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irKpiBen: G.toLocaleString("en-US"),
       irKpiTrans: j.toLocaleString("en-US"),
       irKpiBro: R.toLocaleString("en-US"),
-      irKpiRef: (z + U).toLocaleString("en-US"),
       irKpiPros: z.toLocaleString("en-US"),
       irKpiPol: U.toLocaleString("en-US"),
       irKpiCards: this._irKpiCards(calendar.monthTotals, monthTotal),   /* V7 · 53 (port-sync · بند 8) */
