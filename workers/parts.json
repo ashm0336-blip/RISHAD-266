@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "5d8271f3b9cb544fde2433d2077276e7014791f6419a0237e4ec577af5888186",
+  "sha256": "ef7fc816409f4e959543a42abd4632bcce02bc5b2398da63c750f3bf54495bd6",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -984,16 +984,16 @@
       "head": "/* ═══ KIVO_249 · AUD-022 — الترحيلاتُ المرقَّمة (schema): مولَّدةٌ من migrations/NNNN_<name>.sql بأداة tools/generate.py؛ لا تُحرَّر يدوياً.",
       "lines": [
         24329,
-        24596
+        24636
       ],
-      "bytes": 96209,
-      "sha256": "4eb825db697d5c3a1acfaa9f2667bd5e192194433642304fe56173deaa5f7ae1"
+      "bytes": 103694,
+      "sha256": "e53a2f28b448f5e6bdc09c0d85ea568b2dc5bc0b38078a04e017a946313b314d"
     },
     {
       "file": "051b-body-schemas.js",
       "lines": [
-        24597,
-        24655
+        24637,
+        24695
       ],
       "bytes": 24710,
       "sha256": "4ccb749ff1cda45e39e6567522d65f71768dedcec95e54015cd0a16dc703f676",
@@ -1003,8 +1003,8 @@
       "file": "051c-department-permission-slice.js",
       "head": "/* Generated from the existing department permission slice. */",
       "lines": [
-        24656,
-        24684
+        24696,
+        24724
       ],
       "bytes": 3522,
       "sha256": "1272319e534468545aea491dd87b12691ed1aa694526c58a07fc1fa509534848"
@@ -1012,8 +1012,8 @@
     {
       "file": "052-aud-events.js",
       "lines": [
-        24685,
-        25253
+        24725,
+        25293
       ],
       "bytes": 36164,
       "sha256": "5c5cdeac8af411de9c34be001bb9a0e068745c900611b8aa829eabd4bfae7d17",
@@ -1022,8 +1022,8 @@
     {
       "file": "053-images.js",
       "lines": [
-        25254,
-        25262
+        25294,
+        25302
       ],
       "bytes": 1057,
       "sha256": "88a42a87c4c59403c1a88c204fe42bf0f854c0bda24a331117ce5525adcd3d67",
@@ -1032,8 +1032,8 @@
     {
       "file": "054-image-contract.js",
       "lines": [
-        25263,
-        27244
+        25303,
+        27284
       ],
       "bytes": 205242,
       "sha256": "b06a67061a51b2893bb88cd388fed9bac79c7fb1c5a586330e1b24388f5816cc",
@@ -1042,8 +1042,8 @@
     {
       "file": "055-sec-headers.js",
       "lines": [
-        27245,
-        27289
+        27285,
+        27329
       ],
       "bytes": 4948,
       "sha256": "82146f879d13083357ccc410520de2d56c21b90d4a59f62aa81ecafde94536f1",
@@ -1052,8 +1052,8 @@
     {
       "file": "056-enforce.js",
       "lines": [
-        27290,
-        27379
+        27330,
+        27419
       ],
       "bytes": 11477,
       "sha256": "3faa39fa2a4bb2e4e939bcaefb38c61b748b8f44d9a3eb4fdd19d9bc956c1541",
@@ -1062,8 +1062,8 @@
     {
       "file": "057-enf-index.js",
       "lines": [
-        27380,
-        27704
+        27420,
+        27744
       ],
       "bytes": 35857,
       "sha256": "d90f112d7a1e0767ae495ca372532da8773cb67369740c58b2f54e0775d5d1e1",
@@ -1074,8 +1074,8 @@
       "generated": "permissions/registry/perm44-levels.json + perm44-core.js + perm44-server.js + manifests/pages.json → محرّكُ الأدوار في الخادم (V7 · د5-هـ 44 · tools/generate.py)",
       "head": "/* ═══ V7 · د5-هـ (44) — محرّكُ الأدوار (الخادم): مولَّدٌ بأداة tools/generate.py من permissions/registry/perm44-levels.json (جدولُ المستويات) و",
       "lines": [
-        27705,
-        28163
+        27745,
+        28203
       ],
       "bytes": 43317,
       "sha256": "04415b0f8edbb20718912069fd20032e721fa4401fae5d59237404ae3c24236e"
@@ -1083,8 +1083,8 @@
     {
       "file": "058-enf-scope.js",
       "lines": [
-        28164,
-        28216
+        28204,
+        28256
       ],
       "bytes": 5694,
       "sha256": "5206a6eee8b9b896e76944efde144bf990106195238752660266dada23224554",
@@ -1093,8 +1093,8 @@
     {
       "file": "059-protected-ops-2.js",
       "lines": [
-        28217,
-        28546
+        28257,
+        28586
       ],
       "bytes": 34123,
       "sha256": "dba2e289c460f5172a86672ffc50f2527f50ed3b702edf035c6fd08ae040f42d",
@@ -1103,8 +1103,8 @@
     {
       "file": "060-enf-canwrite.js",
       "lines": [
-        28547,
-        28617
+        28587,
+        28657
       ],
       "bytes": 8309,
       "sha256": "ccb59b9869f720ef010d0ecffca1183a9cf342c37f3fe9e2f80ef168497390c1",
@@ -1113,8 +1113,8 @@
     {
       "file": "061-enf-read.js",
       "lines": [
-        28618,
-        28878
+        28658,
+        28918
       ],
       "bytes": 23377,
       "sha256": "1e21f71f9d4dd32de246c3726d34b95090cd905d0071dc46dc4bdde5b31d39d3",
@@ -1123,8 +1123,8 @@
     {
       "file": "062-enf-save.js",
       "lines": [
-        28879,
-        28966
+        28919,
+        29006
       ],
       "bytes": 9355,
       "sha256": "9357071b93c945ff230c5c76ccafe2edda957f84053940ded494e103af6a0a3c",
@@ -1133,8 +1133,8 @@
     {
       "file": "062a-auth-routes.js",
       "lines": [
-        28967,
-        29205
+        29007,
+        29245
       ],
       "bytes": 25771,
       "sha256": "33ecef606837f389b55e85b835c1f269002a19c9fe42f0d206733b86becbba1a",
@@ -1143,8 +1143,8 @@
     {
       "file": "062b-me-history.js",
       "lines": [
-        29206,
-        29642
+        29246,
+        29682
       ],
       "bytes": 35710,
       "sha256": "63a992d4f3f7efea0621e92df103b3b8e3c6727197a579eaa468c344a5d19572",
@@ -1157,8 +1157,8 @@
       "sha256": "90a84268c9d9591a63ac1406d5f54b4c03b203679f1c400b948cc64f0cdeb3cf",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks — «ملفي ← مهامي»: قراءةُ الموظف لمهامه هو وحده، ودورةُ حياتها من جهته، من الخادم ═══",
       "lines": [
-        29643,
-        30022
+        29683,
+        30062
       ]
     },
     {
@@ -1168,15 +1168,15 @@
       "sha256": "09340a58f4d79efefb2ba88d3e616889932e006713e43ce6c9b807f49af3d20c",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — نواةُ نموذج المهمة في الخادم: الحالاتُ المنفصلة · سياسةُ الإثبات · المراجِع · الهوية · التنبيه ═══",
       "lines": [
-        30023,
-        30206
+        30063,
+        30246
       ]
     },
     {
       "file": "062d-record-shared.js",
       "lines": [
-        30207,
-        30219
+        30247,
+        30259
       ],
       "bytes": 1271,
       "sha256": "bd39c4bb69c1f042df024f4c7bb744496f12e99c3e01b0242c51c5ff41569ff2"
@@ -1184,8 +1184,8 @@
     {
       "file": "../../src/systems/tasks/server/070b-task-rows.js",
       "lines": [
-        30220,
-        30490
+        30260,
+        30530
       ],
       "bytes": 25473,
       "sha256": "c6e03d35471db83ea217c03b8dff038980c747922fa33aa9a072e313ce80734b"
@@ -1197,8 +1197,8 @@
       "sha256": "31abdec8b71eb06c3cec83955cacbc4328e4092b9543007c3e14d09f02dfa97a",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — مساراتُ المسؤول: الإنشاء · المراجعة · التمديد · إعادةُ الإسناد · الإلغاء · الربط · المجموعة ═══",
       "lines": [
-        30491,
-        31077
+        30531,
+        31117
       ]
     },
     {
@@ -1208,8 +1208,8 @@
       "sha256": "c6fa0c8534a720a812983256bbed0bc49404497cf743b7c3b4fa61fb1359167a",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — أهليةُ الإسناد وقتَ التنفيذ لا لحظةَ الإنشاء (TO_BE §4) ═══",
       "lines": [
-        31078,
-        31226
+        31118,
+        31266
       ]
     },
     {
@@ -1219,8 +1219,8 @@
       "sha256": "2cb95e10371ef2faf303100cc42691743bee4533dabfca89625b564c76ebe4bf",
       "head": "/* ═══ KIVO_264 · KIVO-Tasks (المرحلة الثانية) — المهامُ المتكررة: قالبٌ + نسخةُ تنفيذٍ مستقلة لكل موعد، تُولَّد في الخادم بلا Cron (ق5) ═══",
       "lines": [
-        31227,
-        31618
+        31267,
+        31658
       ]
     },
     {
@@ -1230,15 +1230,15 @@
       "sha256": "19ae36ed22074e6b1754e85eda2c226e60ed4dab93145d505e5c314cf66308f8",
       "head": "/* ═══ KIVO_265 · KIVO-Tasks — التذكيرُ قبل المهلة والتصعيدُ عند التأخر من الخادم (البند 10 — قرارُ المالك 2026-10-19) ═══",
       "lines": [
-        31619,
-        31746
+        31659,
+        31786
       ]
     },
     {
       "file": "063-enf-api-and-handler.js",
       "lines": [
-        31747,
-        33476
+        31787,
+        33516
       ],
       "bytes": 180097,
       "sha256": "c56d0645d2e0e572a16b4e9ecebbece2b3994480fa25af3c6de2a0a8ce948ae5",
