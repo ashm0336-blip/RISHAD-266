@@ -66,6 +66,8 @@ test('البند 18 · نافذةُ التوثيق: تحت كل صورة وقت�
   const [a, b, c] = V.tkProofImgs;
   /* الأولى: وقتٌ وموقع — بتوقيت الرياض صراحةً (10:05 ص) ورابطُ الخرائط بالإحداثيات نفسِها والدقةُ مقرَّبة */
   assert.equal(a.stampOn, true); assert.match(a.stampAt, /10:05/); assert.match(a.stampAt, /ص/); assert.match(a.stampAt, /1448/);
+  /* V7 · 53 تقويم (REVIEW 22): الميلاديُّ أولاً «… م» ثم الهجريُّ المقابل «… هـ» ثم الساعة — لا هجريَّ وحده */
+  assert.match(a.stampAt, /^\d{1,2} (يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر) 20\d\d م · \d{1,2} \S+(?: \S+)? 1448 هـ — 10:05 ص$/);
   assert.equal(a.geoOn, true); assert.equal(a.geoOff, false); assert.equal(a.geoUrl, 'https://maps.google.com/?q=21.4225,39.8262'); assert.equal(a.geoTxt, 'الموقع على الخريطة (±12 م)');
   /* الثانية: وقتٌ و«بلا موقع» — ولو كانت الصورةُ نفسُها تعذّر جلبُها (السطرُ لا يتعلّق بتحميل الصورة) */
   assert.equal(b.stampOn, true); assert.match(b.stampAt, /10:06/); assert.equal(b.geoOn, false); assert.equal(b.geoOff, true); assert.equal(b.geoUrl, ''); assert.equal(b.geoTxt, 'بلا موقع');
