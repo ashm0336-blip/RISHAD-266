@@ -156,6 +156,10 @@
    "order": 10,
    "text": "bassam_dstats_v1: \"الإحصائيات اليومية\", "
   },
+  "admin.keyLabels": {
+   "order": 40,
+   "text": "        bassam_dstats_v1: \"الإحصائيات اليومية\",\r\n"
+  },
   "nf.denyWhy.dstats": {
    "order": 10,
    "text": "  dstats: \"صلاحيته لا تشمل هذا التعديل في الإحصائيات اليومية\",\n"
