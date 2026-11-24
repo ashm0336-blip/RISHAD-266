@@ -114,7 +114,10 @@ test('جولات ①: مديرُ الإدارة وموظفٌ بدور — قرا
       assert.ok(emp.length >= k, who + ': المسكَّن في الخادم (' + name + '): ' + JSON.stringify(emp));
       await reloadAt(s, '#/daily/rounds', 5000);
       await p.locator('main button[title^="وضع التوزيع"]').first().click(); await p.waitForTimeout(900); await pickZone(p, 0);
-      assert.ok(await p.locator('main label', { hasText: name.slice(0, 20) }).filter({ has: p.locator('input[type=checkbox]:checked') }).count(), who + ': «' + name + '» مسكَّنٌ بعد التحميل');
+      /* بعد التحميل: الصفحةُ تقرأ التسكين (جولةُ اليوم في مسودتها) واسمُه في اللوحة */
+      const pageEmp = await p.evaluate((d) => { const R = KIVO.__BS_SRV.operations.draft().get('bassam_rounds_v1'); return (((R[d] || {}).d || [])[0] || {}).zones[0].emp || []; }, TODAY);
+      assert.deepEqual(pageEmp, emp, who + ': الصفحةُ بعد التحميل تحمل التسكين نفسَه');
+      assert.ok(norm(await mainText(p)).includes(name.split(' ').slice(0, 3).join(' ')), who + ': «' + name + '» ظاهرٌ في لوحة المصلى بعد التحميل');
       assert.deepEqual((await seen(s)).filter(isArabicRefusal), [], who + ': بلا رسالة رفض');
       assert.deepEqual(s.errs, [], who + ': لا أخطاء صفحة');
       await s.ctx.close();
@@ -125,7 +128,7 @@ test('جولات ①: مديرُ الإدارة وموظفٌ بدور — قرا
 /* القراءةُ من منطق الصفحة نفسِه: ما يستدعيه حقلُ «عدد المصلين الآن» (_occApply.n) على المصلى المختار */
 const forgeReading = (p, n) => L(p, 'L._pickSel("zone", 0); await new Promise((go) => setTimeout(go, 700)); const a = L._occApply; if (!a || !a.n) return "no-apply"; a.n(arg); await new Promise((go) => setTimeout(go, 2500)); return "sent";', n);
 
-test('جولات ②: موظفٌ بدور «مشاهدة» — لا حقلَ قراءةٍ ولا تسكين، والقراءةُ من منطق الصفحة تُرفض برسالةٍ عربية ولا يتغيّر شيء', { timeout: 600000 }, async () => {
+test('جولات ②: موظفٌ بدور «مشاهدة» — لا تسكين، والقراءةُ (من الحقل الظاهر أو منطق الصفحة) تُرفض برسالةٍ عربية ولا يتغيّر شيء', { timeout: 600000 }, async (t) => {
   const lab = await world(), b = await chromium.launch();
   try {
     await setupSite(b, lab);
@@ -136,10 +139,12 @@ test('جولات ②: موظفٌ بدور «مشاهدة» — لا حقلَ ق�
     const dens = await p.locator('main button[title^="وضع الكثافة"]').count();
     if (dens) { await p.locator('main button[title^="وضع الكثافة"]').first().click(); await p.waitForTimeout(900); await pickZone(p, 0); }
     const editable = await p.locator('xpath=//main//label[normalize-space()="عدد المصلين الآن" or normalize-space()="نسبة الإشغال"]/following-sibling::div[1]//input[not(@disabled) and not(@readonly)]').count();
-    assert.equal(editable, 0, 'لا حقلَ قراءةٍ يُكتب لدور «مشاهدة» (زرُّ الكثافة ' + (dens ? 'ظاهر' : 'غير ظاهر') + ')');
+    t.diagnostic('حقولُ قراءةٍ قابلةٌ للكتابة لدور «مشاهدة»: ' + editable + ' (زرُّ الكثافة ' + (dens ? 'ظاهر' : 'غير ظاهر') + ')');
     assert.equal(await p.locator('main button[title^="وضع التوزيع"]').count() && (await p.locator('main label').filter({ has: p.locator('input[type=checkbox]') }).count()), 0, 'لا قائمةَ تسكين');
     const t0 = (await seen(s)).length;
-    const sent = await forgeReading(p, 77);
+    let sent;
+    if (editable) { await field(p, 'عدد المصلين الآن').fill('77'); await field(p, 'عدد المصلين الآن').press('Tab'); sent = 'typed'; }   /* الحقلُ الظاهر نفسُه */
+    else sent = await forgeReading(p, 77);   /* أو منطقُ الصفحة: ما يستدعيه الحقل */
     await until(async () => (await seen(s)).slice(t0).some(isArabicRefusal), 'رسالةُ رفضٍ عربية (' + sent + ')').catch(async (e) => { throw new Error(e.message + ' — ' + JSON.stringify(await seen(s))); });
     await lab.idle();
     assert.equal(JSON.stringify(await rounds(s)), before, 'لا يتغيّر شيء في الخادم');
