@@ -8,7 +8,7 @@ let inst = 0;
 /* العاملُ مع دوالّ الترحيل مصدَّرةً (الدالةُ الواحدة للمورد) */
 export async function load(source, tag) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_c14_')), file = path.join(dir, tag + '.mjs');
-  fs.writeFileSync(file, source + (tag === 'new' ? '\nexport { ' + ['calMigDoc', 'calMigOnce', 'opInfo', 'calLegacyEnv'].filter((n) => new RegExp('function ' + n + '\\b').test(source)).join(', ') + ' };\n' : ''));
+  fs.writeFileSync(file, source + (tag === 'new' ? '\nexport { ' + ['calConvDoc', 'calConvOnce', 'opInfo', 'calLegacyEnv'].filter((n) => new RegExp('function ' + n + '\\b').test(source)).join(', ') + ' };\n' : ''));
   try { return await import(pathToFileURL(file).href + '?inst=' + ++inst); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 /* ── الأوراكل المستقل: أم القرى من Intl (لا من 016/019v) · قاعدةُ القفل نسخةٌ حرفية من 010 lockedIn ── */
