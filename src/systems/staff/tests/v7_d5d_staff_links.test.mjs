@@ -11,6 +11,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
+import { hToIso as H } from '../../../../tests/unit/cal_fx.mjs';   /* V7 · 53 تقويم: مفاتيحُ الاختبار الهجرية ⇐ ISO بالعُدّة المشتركة (الأغلبية للشهر) */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const rd = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const copy = (v) => JSON.parse(JSON.stringify(v));
@@ -47,7 +48,7 @@ test('① the stored permission limit is read and applied — not the constant d
 });
 
 test('② staff.callsign.set@1 writes exactly what the report used to write itself, in its three cases', () => {
-  const month = '1448-5', store = { bassam_staffing_v3: { [month]: { a: { shift: 'S', cs: 'C1' }, b: { shift: 'S' }, __shifts: ['S'] }, '1448-4': { a: { cs: 'OLD' } } } };
+  const month = H('1448-5'), store = { bassam_staffing_v3: { [month]: { a: { shift: 'S', cs: 'C1' }, b: { shift: 'S' }, __shifts: ['S'] }, [H('1448-4')]: { a: { cs: 'OLD' } } } };
   const viaBus = (changes) => { const c = client({ store }), d = draftOf(store); const r = c.bus.call('staff.callsign.set@1', { month, changes }, d); return { r, w: d.written }; };
   /* (1) drCsPersist — كان: a[t] = {…a[t], cs:r} دائماً */
   { const want = copy(store.bassam_staffing_v3); want[month].b = { ...want[month].b, cs: 'C9' }; const got = viaBus([{ ekey: 'b', cs: 'C9' }]); assert.deepEqual(got.w.bassam_staffing_v3, want); assert.equal(got.r.ok, 1); }
@@ -64,18 +65,18 @@ test('② staff.callsign.set@1 writes exactly what the report used to write itse
   /* (3) drLdCsSet — كان: bucket[i].cs = r || "" دائماً */
   { const want = copy(store.bassam_staffing_v3); want[month].a = { ...want[month].a, cs: '' }; assert.deepEqual(viaBus([{ ekey: 'a', cs: '' }]).w.bassam_staffing_v3, want); }
   /* لا يمسّ شهراً آخر ولا حقلاً غير cs، ويطلب مسودة */
-  const got = viaBus([{ ekey: 'a', cs: 'NEW' }]).w.bassam_staffing_v3; assert.deepEqual(got['1448-4'], store.bassam_staffing_v3['1448-4']); assert.equal(got[month].a.shift, 'S');
+  const got = viaBus([{ ekey: 'a', cs: 'NEW' }]).w.bassam_staffing_v3; assert.deepEqual(got[H('1448-4')], store.bassam_staffing_v3[H('1448-4')]); assert.equal(got[month].a.shift, 'S');
   assert.throws(() => client({ store }).bus.call('staff.callsign.set@1', { month, changes: [] }), /bus-draft-required/);
 });
 
 test('③ shifts.renamed@1 and staff.shiftUsage@1 equal what the settings page used to do on the schedule keys itself', () => {
-  const store = { bassam_staffing_locks_v1: { '1448-3': true }, bassam_staffing_v3: { '1448-3': { a: { shift: 'ليل', rest: [1] }, __shifts: ['ليل'] }, '1448-4': { a: { shift: 'ليل' }, b: { shift: 'نهار' }, c: null, __shifts: ['ليل'] }, '1448-5': 'bad', '1448-6': { d: { shift: 'ليل', cs: 'X' } } } };
+  const store = { bassam_staffing_locks_v1: { [H('1448-3')]: true }, bassam_staffing_v3: { [H('1448-3')]: { a: { shift: 'ليل', rest: [1] }, __shifts: ['ليل'] }, [H('1448-4')]: { a: { shift: 'ليل' }, b: { shift: 'نهار' }, c: null, __shifts: ['ليل'] }, [H('1448-5')]: 'bad', [H('1448-6')]: { d: { shift: 'ليل', cs: 'X' } } } };
   const oldRename = (st, t, e, deleting) => { const d = draftOf(st); const locks = d.get('bassam_staffing_locks_v1') || {}, a = d.get('bassam_staffing_v3') || {}; let r = false;
     Object.keys(a).forEach((i) => { const n = a[i]; n && 'object' == typeof n && Object.keys(n).forEach((s) => { if ('__shifts' === s || !n[s] || n[s].shift !== t) return; if (locks[i]) { if (deleting) throw Error('locked-month'); return; } n[s] = Object.assign({}, n[s], { shift: e }); r = true; }); });
     r && d.set('bassam_staffing_v3', a); return d.written; };
   const viaBus = (st, from, to, deleting, on = true) => { const c = client({ store: st, on }), d = draftOf(st); c.bus.participate('shifts.renamed@1', { from, to, deleting }, d); return d.written; };
   assert.deepEqual(viaBus(store, 'ليل', 'مسائي', false), oldRename(store, 'ليل', 'مسائي', false));
-  assert.deepEqual(viaBus(store, 'ليل', 'مسائي', false).bassam_staffing_v3['1448-3'].a.shift, 'ليل', 'الشهر المعتمد يُترك عند التسمية');
+  assert.deepEqual(viaBus(store, 'ليل', 'مسائي', false).bassam_staffing_v3[H('1448-3')].a.shift, 'ليل', 'الشهر المعتمد يُترك عند التسمية');
   assert.deepEqual(viaBus(store, 'غير موجودة', 'x', false), {}, 'لا كتابةَ بلا تغيير');
   assert.throws(() => viaBus(store, 'ليل', '', true), /locked-month/); assert.throws(() => oldRename(store, 'ليل', '', true), /locked-month/);
   const open = { ...store, bassam_staffing_locks_v1: {} };
