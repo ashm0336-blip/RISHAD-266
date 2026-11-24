@@ -20,11 +20,14 @@ test('① «إيقاف الكل» turns off the shown rows only — an OFF syste
   assert.deepEqual(v.p44SysEd.map((r) => r.k).sort(), ['plan', 'staff', 'tasks'], 'the editor shows the systems ON in the ceiling only');
   v.p44AllOff(); v = W.render();
   const d = W.page.state.p44.d.roles.find((r) => r.id === role.id);
-  assert.deepEqual(J(d.sys), { dstats: { lvl: 'view' }, 'lens.zones': { lvl: 'full' } }, 'only the shown rows are removed: ' + JSON.stringify(d.sys));
+  /* V7 · د7 (أ · دمج العدسات): صفُّ العدسة المفعّلة للوحدة صار معروضاً تحت مضيفه (r.lz) — فيُطفئه «إيقاف الكل» مع المعروض؛ والنظامُ المطفأ (dstats) يُحمل كما هو.
+     العدسةُ المخفية (مطفأةٌ للوحدة) تُحمل كما هي: tests/unit/v7_d7_lenses.test.mjs ⑨ */
+  assert.ok(J(v.p44SysEd).some((r) => (r.lz || []).some((z) => z.k === 'lens.zones')), 'the lens row is shown under its host');
+  assert.deepEqual(J(d.sys), { dstats: { lvl: 'view' } }, 'only the shown rows are removed: ' + JSON.stringify(d.sys));
   assert.equal(v.p44OnN, '0', 'every shown row is OFF');
   /* «تفعيل الكل» يضيف المعروضَ وحده ولا يمسّ المحمول */
   v.p44AllOn(); const d2 = W.page.state.p44.d.roles.find((r) => r.id === role.id);
-  assert.deepEqual(J(d2.sys), { dstats: { lvl: 'view' }, 'lens.zones': { lvl: 'full' }, plan: { lvl: 'view' }, staff: { lvl: 'view' }, tasks: { lvl: 'view' } }, '«تفعيل الكل» adds the shown rows only');
+  assert.deepEqual(J(d2.sys), { dstats: { lvl: 'view' }, plan: { lvl: 'view' }, staff: { lvl: 'view' }, tasks: { lvl: 'view' } }, '«تفعيل الكل» adds the shown system rows only (a lens without a row follows its host)');
 });
 
 test('② the roles record carries an unknown top-level field (normRec · setRoles)', () => {

@@ -763,13 +763,9 @@ Object.assign(Component.prototype, {
   _p44RoleSys(did, sys) {
     const C = this._p44KeyCeil(did),
       lz = this._p44Lenses().filter((x) => this._p44Try(() => !!C(x.k + ".view"), !1)),
-      out = [],
       done = {};
-    sys.forEach((s) => {
-      out.push(s);
-      lz.forEach((x) => { if (x.sys.indexOf(s.k) !== -1) out.push({ k: x.k, n: x.n, kind: "lens", lens: !0, dup: !!done[x.k] }), (done[x.k] = 1); });   /* تحت كلِّ مضيف — صفٌّ واحد في الدور (role.sys['lens.<L>']) */
-    });
-    return out;
+    /* flatMap: القائمةُ من نوع قائمة الأنظمة نفسِها (لا مصفوفةً جديدة من سياقٍ آخر) */
+    return sys.flatMap((s) => [s].concat(lz.filter((x) => x.sys.indexOf(s.k) !== -1).map((x) => { const z = { k: x.k, n: x.n, kind: "lens", lens: !0, dup: !!done[x.k] }; done[x.k] = 1; return z; })));   /* تحت كلِّ مضيف — صفٌّ واحد في الدور (role.sys['lens.<L>']) */
   },
   /* ② الأدوار */
   _p44RoleVals(did, d, mgrV, isNode) {
