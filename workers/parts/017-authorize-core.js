@@ -24,9 +24,9 @@ function selfFieldsOf(u) { return (u && Object.prototype.hasOwnProperty.call(SEL
 /* أي صفحة تكتب هذا المفتاح: pages = كتابة كاملة بفعل كتابة على إحداها؛
    via = صفحات تكتب فيه كتابةً ضيّقة (كرمز النداء الذي يسجّله التقرير اليومي في
    الجدول الشهري) — تُقبل إن انحصر الفرق في المواضع المسموحة فقط */
-var CS_ONLY = function (d) { return /^\d{4}-\d{1,2}\.[^.]+\.cs$/.test(d.p) || (/^\d{4}-\d{1,2}\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^\d{4}-\d{1,2}$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (ek) { return isObj(d.t[ek]) && Object.keys(d.t[ek]).every(function (q) { return q === 'cs'; }); })); };
+var CS_ONLY = function (d) { return /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])\.[^.]+\.cs$/.test(d.p) || (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (ek) { return isObj(d.t[ek]) && Object.keys(d.t[ek]).every(function (q) { return q === 'cs'; }); })); };
 /* بيان الشهر من التقرير اليومي: رمز النداء لموظف داخل البيان، أو أخذ بيان شهرٍ معتمد بلا بيان عند أول سحب (شهر كامل جديد لا تعديل موجود) */
-var SNAP_CS_ONLY = function (d) { return /^\d{4}-\d{1,2}\.bucket\.[^.]+\.cs$/.test(d.p) || (/^\d{4}-\d{1,2}\.bucket\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^\d{4}-\d{1,2}$/.test(d.p) && d.f === undefined && isObj(d.t) && isObj(d.t.bucket)); };
+var SNAP_CS_ONLY = function (d) { return /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])\.bucket\.[^.]+\.cs$/.test(d.p) || (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])\.bucket\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(d.p) && d.f === undefined && isObj(d.t) && isObj(d.t.bucket)); };
 var EMP_FIELDS = function (d) { return /^(\d+|\[[^\]]*\])\.(work|type|eid)$/.test(d.p); };
 
 /* KEY_RULES حُذف: RESOURCE_REGISTRY هو توصيف الموارد الوحيد */

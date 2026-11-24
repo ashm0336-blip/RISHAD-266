@@ -19579,6 +19579,8 @@ var OC_TABLE_NAMES = {
   ops_staffing_lock_open: { t: "ops_staffing_lock_open", e: "ops_staffing_lock_open" },
   ops_staffing_locks: { t: "ops_staffing_locks", e: null },
   ops_staffing_month: { t: "ops_staffing_month", e: null },
+  ops_staffing_month_calq4: { t: "ops_staffing_month_employee_perm_days", e: null },
+  ops_staffing_month_calq4_values: { t: "ops_staffing_month_shifts_entry_choice_0", e: "ops_staffing_month_shifts_entry_choice_0" },
   ops_staffing_month_employee: { t: "ops_staffing_month_employee", e: "ops_staffing_month_employee" },
   ops_staffing_month_employee_leave_range: { t: "ops_staffing_month_employee_leave_range", e: "ops_staffing_month_employee_leave_range" },
   ops_staffing_month_employee_leave_ranges: { t: "ops_staffing_month_employee_leave_ranges", e: null },
@@ -19728,6 +19730,13 @@ function osSchemaBaseResources() {
     },
   ];
 }
+/* V7 · 53 تقويم (ق١ · الخطر ٤): أنماطُ مفاتيح الموارد الزمنية — ميلاديةٌ مبطَّنة ISO: اليوم YYYY-MM-DD · الشهر YYYY-MM · علامةُ الشهر m:YYYY-MM.
+   السنةُ 19xx–21xx وحدها: مفتاحٌ هجريٌّ (13xx–15xx) من عميلٍ قديمٍ مخبوء يُرفض في المخطّط (unknown-map-key) بدل أن يخلط الصيغتين.
+   مصدرٌ واحد لمخطّطات الجولات والأرشيف (019p3) والتقرير والمهام (019q) والجدول وأقفاله (019p1) والخطة (019p2) وحرّاس 062c */
+var OS_RX_Y = "(?:19|20|21)\\d{2}", OS_RX_M = "(?:0[1-9]|1[0-2])", OS_RX_D = "(?:0[1-9]|[12]\\d|3[01])";
+var OS_RX_YM = "^" + OS_RX_Y + "-" + OS_RX_M + "$", OS_RX_DAY = "^" + OS_RX_Y + "-" + OS_RX_M + "-" + OS_RX_D + "$";
+var OS_RX_YM_OR_DAY = "^" + OS_RX_Y + "-" + OS_RX_M + "(?:-" + OS_RX_D + ")?$";
+var OS_RX_MCTL = "^m:" + OS_RX_Y + "-" + OS_RX_M + "$", OS_RX_DAY_LEGACY = "^" + OS_RX_Y + "-" + OS_RX_M + "-" + OS_RX_D + "(?:-.+)?$";
 /* V7 · 53 (التخزين بالفترة): هنا وحده يُقرأ نصُّ مفتاح الفترة القائم */
 function osPeriodIndex(p) {
   var m = /^(m:)?(\d+)-(\d+)(?:-(\d+))?/.exec(String(p));
@@ -19779,8 +19788,8 @@ function osSumReport(p, v) {
   return out;
 }
 function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }
-/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') */
-function osPeriodNowMonth() { var T = dsToday(Date.now()); return T ? T.y + '-' + T.m : ''; }
+/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم */
+function osPeriodNowMonth() { var T = calToday(Date.now()); return T ? T.ym : ''; }   /* V7 · 53 تقويم: '2026-11' (calToday · 016) */
 /* V7 · 53 (kpi طلب 9): أدواتُ إسقاط v.kpi المشتركة — قوائمُ الحقول يعلنها كلُّ نظامٍ لمورده (مرآةُ _kLean) */
 function osKpiPick(o, ks) { var r = {}; if (o && typeof o === 'object') ks.forEach(function (k) { if (o[k] !== undefined) r[k] = o[k]; }); return r; }
 function osKpiArr(a, f) { return Array.isArray(a) ? a.map(function (x) { return x && typeof x === 'object' ? f(x) : x; }) : a; }
@@ -19805,9 +19814,13 @@ function osSchemaStaffRow(table) {
   ]);
   return ocObject(table, fields);
 }
+/* V7 · 53 تقويم (ق٤): calq4 — تقريرُ التعارضات الذي يكتبه الترحيل 0014 في الشهر الميلادي الذي جمع شهرين هجريين بقيمتين مختلفتين
+   (وردية · مكافأة · نداء · تعريفاتُ الورديات). كلُّ سطرٍ نصُّ JSON: { e, f, a, b, ha, hb, pick, tie } — يراه مديرُ الإدارة في الجدول الشهري
+   ويحذفه «تمت المراجعة» (حفظُ فترة الشهر نفسِها). مصفوفةُ نصوصٍ بجداولَ قائمة (لا جدولَ D1 جديداً). الشكلُ واحدٌ لكل دلاء الشهر
+   (الحيّ والقديم والأرشيف) كي تبقى جداولُها جدولاً واحداً (019o توقيعُ الشكل) — ولا كاتبَ له إلا الترحيل في الحيّ */
 function osSchemaMonthBucket(table) {
   return ocMap(table, osSchemaStaffRow(table + "_employee"), {
-    fixed: { __shifts: osSchemaShiftList(table + "_shifts") },
+    fixed: { __shifts: osSchemaShiftList(table + "_shifts"), __calq4: osSchemaScalars(table + "_calq4") },
   });
 }
 function osSchemaMonthLock(table) {
@@ -19822,7 +19835,8 @@ function osSchemaStaffResources() {
       resource: "bassam_staffing_v3",
       name: "staffing",
       period: { root: 1, index: osPeriodIndex, summary: osSumStaffing, kpi: osKpiStaffing, current: osPeriodNowMonth, me: 'months3' },   // V7 · 53: كلُّ شهرٍ فترة (019w)
-      schema: ocMap("ops_staffing", osSchemaMonthBucket("ops_staffing_month")),
+      /* V7 · 53 تقويم (ق١ · الخطر ٤): مفتاحُ الشهر YYYY-MM وحده (019p0) — كان أيَّ مفتاح فيُقبل الهجريُّ من عميلٍ قديم */
+      schema: ocMap("ops_staffing", null, { patterns: [{ pattern: OS_RX_YM, schema: osSchemaMonthBucket("ops_staffing_month") }] }),
     },
     {
       resource: "bassam_staffing_v2",
@@ -19855,10 +19869,8 @@ function osSchemaStaffResources() {
     {
       resource: "bassam_staffing_locks_v1",
       name: "staffingLocks",
-      schema: ocMap(
-        "ops_staffing_locks",
-        osSchemaMonthLock("ops_staffing_lock"),
-      ),
+      /* V7 · 53 تقويم: اعتمادُ الشهر بمفتاح YYYY-MM وحده */
+      schema: ocMap("ops_staffing_locks", null, { patterns: [{ pattern: OS_RX_YM, schema: osSchemaMonthLock("ops_staffing_lock") }] }),
     },
     {
       resource: "bassam_callsigns_v1",
@@ -20179,11 +20191,11 @@ function osSchemaRoundsResources() {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
           {
-            pattern: "^m:\\d{4}-\\d{1,2}$",
+            pattern: OS_RX_MCTL,
             schema: osSchemaMonthControl("ops_round_month"),
           },
           {
-            pattern: "^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$",
+            pattern: OS_RX_DAY_LEGACY,
             schema: osSchemaRoundDay("ops_round_day"),
           },
         ],
@@ -20200,11 +20212,11 @@ function osSchemaRoundsResources() {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
           {
-            pattern: "^m:\\d{4}-\\d{1,2}$",
+            pattern: OS_RX_MCTL,
             schema: osSchemaMonthControl("ops_round_month"),
           },
           {
-            pattern: "^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$",
+            pattern: OS_RX_DAY_LEGACY,
             schema: osSchemaRoundDay("ops_round_day"),
           },
         ],
@@ -20223,9 +20235,9 @@ function osSchemaRoundsResources() {
    إلى الحيّ (الحيُّ يغلب) — فتطبيقُها مرّتين لا يغيّر شيئاً (idempotent). تجري في حفظة الجولات نفسِها (dailyArcPend · الدفعةُ الذرّية الواحدة)
    وفي ترحيل «rounds-arc» المحمي لما سبقها. لا يكتب الأرشيفَ العميلُ أبداً (RES_REG srv) — يُقرأ بسياسة الجولات حرفاً (RES_READ_AS). */
 var DAILY_ARC_RES = 'bassam_rounds_arc_v1', DAILY_ARC_PART = 'rounds-arc';
-function dailyArcDay(k) {
-  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:-.+)?$/.exec(String(k));
-  return m ? { y: +m[1], m: +m[2], mk: 'm:' + (+m[1]) + '-' + (+m[2]) } : null;
+function dailyArcDay(k) {   /* V7 · 53 تقويم: اليومُ ISO وعلامةُ شهره m:YYYY-MM من نصّه نفسِه (بلا تطبيع) */
+  var m = /^(\d{4})-(\d{2})-(\d{2})(?:-.+)?$/.exec(String(k));
+  return m ? { y: +m[1], m: +m[2], mk: 'm:' + m[1] + '-' + m[2] } : null;
 }
 function dailyArcClosed(ctrl, y, m, T) {
   var c = isObj(ctrl) ? ctrl : null;
@@ -20240,7 +20252,7 @@ var OS_KPI_ROUNDS = { top: ['ap'], zones: ['uid', 'code', 'name', 'ztype', 'zcat
   gates: ['gid', 'leafN', 'pOf', 'num', 'label', 'name', 'closed', 'cWhy', 'cAt', 'emp', 'needN', 'needS', 'fAt'], marks: ['label', 'name', 'kind', 'off', 'emp', 'needN', 'needS', 'fAt'] };
 function osKpiRounds(p, v) { if (!v || typeof v !== 'object') return v; if (/^m:/.test(p) || Array.isArray(v)) return null; return Object.assign(osKpiPick(v, OS_KPI_ROUNDS.top), { d: osKpiFloors(v.d, OS_KPI_ROUNDS, 1) }); }
 function dailyArcDue(names, ctl) {
-  var T = dsToday(Date.now());
+  var T = calToday(Date.now());
   return names.filter(function (p) { var d = dailyArcDay(p); return d && dailyArcClosed(ctl[d.mk], d.y, d.m, T); })
     .sort(function (a, b) { var x = dailyArcDay(a), y = dailyArcDay(b); return (x.y * 12 + x.m) - (y.y * 12 + y.m); }).slice(0, 31);
 }
@@ -20276,7 +20288,7 @@ function dailyArcStep(live, arc, T) {
 function dailyLoneDayOpen(cur, next, T) {
   var c = isObj(cur) ? cur : {}, n = isObj(next) ? next : {}, q, m, r, o, d;
   for (q in n) {
-    if (!Object.prototype.hasOwnProperty.call(n, q) || !(m = /^m:(\d{4})-(\d{1,2})$/.exec(q))) continue;
+    if (!Object.prototype.hasOwnProperty.call(n, q) || !(m = /^m:(\d{4})-(\d{2})$/.exec(q))) continue;
     r = n[q] === true || n[q] === 1 ? { ap: 1 } : isObj(n[q]) ? n[q] : {}; o = isObj(c[q]) ? c[q] : {};
     var past = !!(T && T.y > 0 && (+m[1] * 12 + +m[2]) < (T.y * 12 + T.m)), locked = !!r.ap || (past && !r.mo);
     if (!locked || !isObj(r.dopen)) continue;
@@ -20285,7 +20297,7 @@ function dailyLoneDayOpen(cur, next, T) {
   return null;
 }
 async function dailyArcPre(env, body) {
-  var set = (body && body.set) || {}, cap = env.__opCapture, T = dsToday(Date.now()), k, no = null;
+  var set = (body && body.set) || {}, cap = env.__opCapture, T = calToday(Date.now()), k, no = null;
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || resName(k) !== 'bassam_rounds_v1') continue;
     var lone = dailyLoneDayOpen(parseJson(await opResourceGet(env, k), null), parseJson(set[k], null), T);
@@ -20320,7 +20332,7 @@ function dailyArcFill(env, k, v, cur) {
   return add ? JSON.stringify(n) : v;
 }
 async function dailyArcPend(env, kv, reference) {
-  var T = dsToday(Date.now()), cap = env.__opCapture, n = kv.pend.length, i;
+  var T = calToday(Date.now()), cap = env.__opCapture, n = kv.pend.length, i;
   for (i = 0; i < n; i++) {
     var pd = kv.pend[i];
     if (!pd || resName(pd.k) !== 'bassam_rounds_v1') continue;
@@ -20343,6 +20355,7 @@ async function dailyArcPend(env, kv, reference) {
    خطةٌ حتمية (البذرة · لحظةُ التوليد · القيم ونسخُها) ⇒ تغيّرٌ بينها وبين التطبيق = plan-changed؛ لقطةٌ كاملة (الحيّ والأرشيف) قبل الكتابة؛ الرجوعُ يعيدهما حرفاً.
    الثانيةُ بلا كتابة (applied:0). لكل إدارة: الأيامُ المنقولة وحجمُ الملف الحيّ قبل/بعد. */
 async function dailyArcMigPlan(env, seed, now, T, keys, revs, capture) {
+  T = calToday(now);   /* V7 · 53 تقويم: الأشهرُ ميلادية — اليومُ التشغيليُّ الميلادي (016) لا ما يمرّره الموجِّه (dsToday الهجري حتى القلب) */
   var W = {}, sig = [DAILY_ARC_PART, seed], tot = { moved: 0, back: 0, liveBefore: 0, liveAfter: 0 };
   var plan = { version: ENF_VER, seed: seed, today: T, generated: now, parts: [DAILY_ARC_PART], writes: [], arc: [] };
   Object.keys(keys).filter(function (k) { return /^bsdept:[^:]+:bassam_rounds_v1$/.test(k); }).sort().forEach(function (lk) {
@@ -20382,8 +20395,9 @@ function osSchemaPlan(table) {
       osSchemaElement(table + "_root_" + kind + "_element", kind),
     );
   });
-  fields.months = ocMap(table + "_months", osSchemaPlanMonth(table + "_month"));
-  fields.delMonths = ocMap(table + "_deleted_months", ocScalar("scalar"));
+  /* V7 · 53 تقويم (ق١ · الخطر ٤): نسخُ الأشهر ومحذوفاتُها بمفتاح YYYY-MM وحده (019p0) — كان أيَّ مفتاح */
+  fields.months = ocMap(table + "_months", null, { patterns: [{ pattern: OS_RX_YM, schema: osSchemaPlanMonth(table + "_month") }] });
+  fields.delMonths = ocMap(table + "_deleted_months", null, { patterns: [{ pattern: OS_RX_YM, schema: osSchemaValue(table + "_deleted_months_values") }] });   /* اسمُ الجدول كما كان مدخلاً عاماً */
   // No inner cfg writer exists in the current source. Unknown legacy members
   // fail before DDL instead of being hidden in a JSON/attribute fallback.
   fields.cfg = ocObject(table + "_legacy_cfg", {});
@@ -20724,8 +20738,8 @@ var OC_PEOPLE_TASK_RESOURCES = [
     schema:ocMap('ops_daily_reports',null, {
       fixed:{__ldcs:ocMap('ops_report_leader_callsigns',ocScalar('text'))},
       patterns:[
-        {pattern:'^m:\\d{4}-\\d{1,2}$',schema:ocptReportMonth('ops_report_month')},
-        {pattern:'^\\d{4}-\\d{1,2}-\\d{1,2}$',schema:ocptReportDay('ops_report_day')}
+        {pattern:OS_RX_MCTL,schema:ocptReportMonth('ops_report_month')},   // V7 · 53 تقويم: m:YYYY-MM · YYYY-MM-DD وحدهما (019p0) — مفتاحٌ هجريٌّ من عميلٍ قديم يُرفض
+        {pattern:OS_RX_DAY,schema:ocptReportDay('ops_report_day')}
       ]
       //__lv/__lvU have deletion readers but no proven current value shape.
       //Reject their presence before DDL rather than invent/drop business data.
@@ -20740,14 +20754,15 @@ var OC_PEOPLE_TASK_RESOURCES = [
     resource:'bassam_tasks_v1',name:'tasks',
     period:{root:1,index:osPeriodIndex,summary:osSumTasks},   // V7 · 53: كلُّ يومٍ فترة (019w)
     schema:ocMap('ops_tasks',null, {patterns:[
-      {pattern:'^\\d{4}-\\d{1,2}-\\d{1,2}$',schema:ocArray('ops_task_day',ocptTaskRow('ops_task_row'))}
+      {pattern:OS_RX_DAY,schema:ocArray('ops_task_day',ocptTaskRow('ops_task_row'))}   // V7 · 53 تقويم: YYYY-MM-DD وحده (019p0)
     ]})
   },
   {
     resource:'bassam_tasks_locks_v1',name:'taskLocks',
-    schema:ocMap('ops_task_locks',ocUnion('ops_task_lock', [
+    /* V7 · 53 تقويم: اعتمادُ الشهر YYYY-MM وقفلُ اليوم YYYY-MM-DD وحدهما — كان أيَّ مفتاح (مدخلٌ عام) فيُقبل الهجريُّ من عميلٍ قديم */
+    schema:ocMap('ops_task_locks',null,{patterns:[{pattern:OS_RX_YM_OR_DAY,schema:ocUnion('ops_task_lock', [
       ocScalar('scalar'),ocObject('ops_task_lock_record',{mo:ocScalar('scalar')})
-    ]))
+    ])}]})
   }
 ];
 /* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019r-operational-storage.js.tpl */
