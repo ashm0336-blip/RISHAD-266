@@ -114,3 +114,37 @@ test('V7 · د7 (أ) ② — the role editor: a lens row under its host with the
     assert.deepEqual(su.errs, [], 'no page errors');
   } finally { await b.close(); await lab.close(); }
 });
+
+test('V7 · د7 (أ) ③ — carry what is outside the view: a lens grant outside the ceiling (lens OFF) survives the manager\'s role edit in the editor and is back unchanged when the lens is ON again', { timeout: 600000 }, async () => {
+  const lab = await startLab(); const b = await chromium.launch();
+  try {
+    const su = await openAs(b, lab, LAB.superUn, LAB.superPw); su.page.setDefaultTimeout(15000); const p = su.page;
+    const setL = async (L) => { const r = await p.evaluate(async ([A, L]) => { const x = KIVO.BassamPerm.setDeptLenses(A, L); await KIVO.__BS_SRV.flushAsync(15000); return x; }, [A, L]); assert.equal(r.ok, true); await lab.idle(); };
+    const r0 = await p.evaluate(async (A) => {
+      const dr = KIVO.Perm44.draft(A), role = { id: 'TEST_ONLY_rk', name: 'TEST_ONLY دور', desc: '', sys: { plan: { lvl: 'view' }, 'lens.gates': { lvl: 'edit' } } };
+      const a = KIVO.Perm44.setRoles(dr, A, { v: 1, roles: [role], people: { TEST_ONLY_eA1: { role: role.id, ex: [] } } });
+      return a.ok ? await KIVO.Perm44.commit(dr) : a;
+    }, A);
+    assert.equal(r0.ok, true, JSON.stringify(r0)); await lab.idle();
+    const held = async () => { const e = await openAs(b, lab, LAB.empA, LAB.pw); try { const r = await e.api('/api/authz'); return (((r.j.me || {}).depts || {})[A] || {}).p || []; } finally { await e.ctx.close(); } };
+    assert.ok((await held()).includes('lens.gates.edit'), 'ON: held');
+    await setL(ALL.filter((k) => k !== 'gates'));
+    assert.ok(!(await held()).includes('lens.gates.edit'), 'OFF: not held');
+    const g0 = readKV(lab, 'bsdept:' + A + ':bassam_grants_v1').emp.TEST_ONLY_eA1;
+    /* the manager edits the role in his editor (الإعدادات ← الصلاحيات ← الأدوار): renames it — he does not see the gates row */
+    const m = await openAs(b, lab, LAB.mgrA, LAB.pw); m.page.setDefaultTimeout(15000); const q = m.page;
+    await open(m, '#/admin/perm/' + A + '/roles', 'main .p44-role');
+    assert.equal(await q.locator('main .p44-lrow[data-sys="lens.gates"]').count(), 0, 'the OFF lens row is not shown to him');
+    await q.locator('main input[maxlength="60"]').fill('TEST_ONLY دور معدّل'); await q.locator('main input[maxlength="60"]').dispatchEvent('change'); await q.waitForTimeout(300);
+    await q.locator('main .p44-bar button', { hasText: 'مراجعة وحفظ' }).click(); await q.locator('[role=dialog].p44-rev').waitFor();
+    await q.locator('.p44-rev button', { hasText: 'حفظ' }).click(); await q.waitForTimeout(2000); await lab.idle();
+    const R1 = readKV(lab, 'bsdept:' + A + ':bassam_roles_v1').roles[0];
+    assert.equal(R1.name, 'TEST_ONLY دور معدّل', 'his edit is saved');
+    assert.deepEqual(R1.sys['lens.gates'], { lvl: 'edit' }, 'the hidden lens row is carried exactly as stored');
+    const g1 = readKV(lab, 'bsdept:' + A + ':bassam_grants_v1').emp.TEST_ONLY_eA1;
+    assert.deepEqual(g1.plus.filter((k) => /^lens\.gates\./.test(k)).sort(), g0.plus.filter((k) => /^lens\.gates\./.test(k)).sort(), 'the out-of-ceiling grant is carried unchanged');
+    await setL(ALL);
+    assert.ok((await held()).includes('lens.gates.edit'), 'ON again: back unchanged');
+    assert.deepEqual(m.errs, [], 'no page errors (manager)'); assert.deepEqual(su.errs, [], 'no page errors');
+  } finally { await b.close(); await lab.close(); }
+});
