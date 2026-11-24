@@ -853,6 +853,7 @@
 </dc-import>
 </sc-if>
 <!-- ═══ ورقة الإدارة: الورديات ═══ -->
+<sc-if value="{{sfWaitOn}}" hint-placeholder-val="{{ false }}"><div ref="{{sfStates}}" data-sf="state"></div></sc-if>
 <sc-if value="{{showDeptSf}}" hint-placeholder-val="{{ false }}">
 <div data-sf="panel" style="background:var(--bg-xffffff);border:1px solid var(--bd-xeceef1);border-radius:16px;overflow:hidden">
   <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-xfafaf9);border-bottom:1px solid var(--bd-xf1f5f9);flex-wrap:wrap">

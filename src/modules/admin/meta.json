@@ -10,6 +10,7 @@
  "prettified": true,
  "originalSha256": "1031958ad0643422bf0a32d5949eefe1712f5f74e97a9878309517334e28d8ef",
  "prettifiedFrom": "KIVO_255 (AST-equal · tools/ast_equal.mjs)",
+ "operationsRead": [],
  "charter": {
   "owner": "مدير النظام (الحوكمة) · مدير الإدارة (إعدادات إدارته)",
   "purpose": "حوكمةُ المنصة والإدارة: الهيكل والسقوف والحسابات والصلاحيات والورديات والقوالب والنسخ والسياسات",

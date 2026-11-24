@@ -145,6 +145,9 @@ def gen_manifest(S):
         module = json.load(open(meta_path, encoding='utf-8'))
         keys = [k for k in module.get('charter', {}).get('data', []) if re.fullmatch(r'bassam_[a-z0-9_]+', k)]
         keys += bus_read_resources(S, dirs[slug], module)   # V7 · د5-د2: ما تحتاجه قراءاتُها المعلنة من مالكٍ حاضر
+        # V7 · 53 (M1): وحدةٌ تعلن قراءتَها قبل الرسم صراحةً (meta.json "operationsRead") تُحمَّل بها وحدها — مركزُ الإدارة والإعدادات وشاشةُ
+        # «الإدارات والصلاحيات» لا تتوقّف على قراءة بيانات الوحدة النشطة؛ أقسامُها تقرأ عند فتحها. الميثاقُ (charter.data) يبقى سجلَّ الملكية كما هو
+        if isinstance(module.get('operationsRead'), list): keys = [k for k in module['operationsRead'] if re.fullmatch(r'bassam_[a-z0-9_]+', k)]
         data['operationsReadSets'][module['name']] = sorted(set(keys))
         data['pageComponents'][module['name']] = slug
         tabs = view_tabs(os.path.join(dirs[slug], 'view.html'))
