@@ -12,23 +12,6 @@ function calGMonthsOfH(y, m) {
   calGRange(s.from, s.to).forEach(function (k) { var g = calGMonthOf(k); if (last && last.g === g) last.days++; else { last = { g: g, days: 1 }; out.push(last); } });
   return out;
 }
-function calHtoGMonth(k) {
-  var p = calGParse(k); if (!p || (p.kind !== 'month' && p.kind !== 'mctl')) return null;
-  var pre = p.kind === 'mctl' ? 'm:' : '';
-  if (p.cal === 'g') return [pre + calGYm(p.y, p.m)];
-  var L = calGMonthsOfH(p.y, p.m);
-  return L.length ? L.map(function (x) { return pre + x.g; }) : null;
-}
-function calHtoGKey(k) {
-  var p = calGParse(k); if (!p) return null;
-  var out = p.kind === 'day' ? calHtoGDay(k) : calHtoGMonth(k);
-  return out ? { kind: p.kind, cal: p.cal, out: out } : null;
-}
-function calHtoGRange(from, to) {
-  var a = calHtoGDay(from), b = calHtoGDay(to); if (!a || !b) return null;
-  a = a.slice(0, 10); b = b.slice(0, 10);
-  return calGCmp(a, b) <= 0 ? { from: a, to: b } : null;
-}
 /* نطاقُ نافذةٍ أو سجلٍّ {y,m,d}: يوم ⇐ يوم · شهر (d غائب/null/'') ⇐ الشهران الميلاديان (ق7: النافذةُ تُكرَّر) · d = 0 (يومٌ غير معروف، ق10) ⇐ شهرُ اليوم الأول */
 function calHtoGScope(s) {
   if (!s || typeof s !== 'object') return null;
@@ -119,7 +102,7 @@ function calMonthLockRule(gm, src) {
 }
 
 /* ══ V7 · 53 تقويم (REVIEW 28): المحوِّلُ الواحد للبيانات المخزَّنة — الترحيلُ 0014 (019v1، منسِّقٌ رقيق) والاستيرادُ والاستعادة (019g · 019f) يستعملونه هو نفسُه،
-   ولا محرّكَ تحويلٍ ثانٍ. فوق الدوالّ النقية أعلاه (calHtoGDay · calHtoGMonth · calHtoGScope · calHtoGMd · calMonthRule · calMonthLockRule · calMajority · calHMonthsOfG):
+   ولا محرّكَ تحويلٍ ثانٍ. فوق الدوالّ النقية أعلاه (calHtoGDay · calHtoGScope · calHtoGMd · calMonthRule · calMonthLockRule · calMajority · calHMonthsOfG):
    · كشفُ القيم وتحويلُها قيمةً قيمة: calConvDay (النصُّ الواحد) · calConvYmd (الثلاثيُّ الواحد) · calConvWalk · calConvRow (صفوفٌ علائقية) · calConvLeave · calConvOnce
    · قواعدُ الموارد (ق3–ق7 · ق10): calConvMarks · calConvDayMap · calConvLocks · calConvStaffing/StaffMonth · calConvPlan* · calConvDstats · calConvRasd · calConvDoc · calConvText
    · مداخلُ النسخ: calConvBackup · calConvDomains · calConvLegacyKV — ctx = { T: اليومُ التشغيلي الميلادي الثابت للعملية · rep: calConvRep() }.
