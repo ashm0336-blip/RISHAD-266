@@ -789,6 +789,15 @@
     if (!known || !known.stamp || !operationSame9(known.stamp) || (known.state !== 'ready' && known.state !== 'absent')) throw Error('operations-read-required');
     return known.state === 'absent' ? null : JSON.parse(mem[key]);
   }
+  function operationText9(key) {
+    var stamp = operationContext9();
+    if (!stamp || !operationKey9(key) || key.split(':')[1] !== stamp.dept) throw Error('operations-scope-required');
+    if (KIVO.__bsReadHook) KIVO.__bsReadHook(key);
+    if (periodLogical9(key)) periodGetSeq9[key] = periodSeq9;
+    var known = operationKnown9[key];
+    if (!known || !known.stamp || !operationSame9(known.stamp) || (known.state !== 'ready' && known.state !== 'absent')) throw Error('operations-read-required');
+    return known.state === 'absent' || mem[key] == null ? null : mem[key];
+  }
   function operationScoped9(name) {
     var stamp = operationContext9();
     if (!stamp || operationResources9.indexOf(name) === -1) throw Error('operations-scope-required');
@@ -2304,7 +2313,9 @@
       reference: operationReference9,
       key: operationScoped9,
       get: function (name) { return operationValue9(operationScoped9(name)); },
-      text: function (name) { var value = operationValue9(operationScoped9(name)); return value === null ? null : JSON.stringify(value); },
+      /* V7 · 53 (S2 في العميل): النصُّ المخزَّن نفسُه — كان يُفكّ ثم يُرمَّز في كل نداء (الصفحاتُ تسأل عنه لكل موظفٍ وعنصر: 16 ث من 20 في فتح الخطة بـ500 موظف).
+         mem يحمل دائماً ناتجَ JSON.stringify، فهو هو JSON.stringify(JSON.parse(mem)) حرفاً؛ والفحوصُ فحوصُ value نفسُها */
+      text: function (name) { var key = operationScoped9(name); return operationText9(key); },
       state: function (name) { var key = operationScoped9(name), known = operationKnown9[key]; if (KIVO.__bsReadHook) KIVO.__bsReadHook(key); return known && known.stamp && operationSame9(known.stamp) ? known.state : 'unloaded'; },
       draft: operationDraft9,
       begin: operationBegin9,
