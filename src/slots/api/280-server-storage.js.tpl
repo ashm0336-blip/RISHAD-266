@@ -1372,7 +1372,10 @@
     var quiet = !!(spec && spec.quiet), parts = PERIOD_MONTHLY9[name] || needG.length < 2 ? [{ groups: needG, periods: needP }]
       : needG.map(function (g) { return { groups: [g], periods: [] }; }).concat(needP.length ? [{ groups: [], periods: needP }] : []);   /* شهرُ أيامٍ لكل طلب (≤ 40 فترة) */
     return Promise.all(parts.map(function (part) { var extra = {}; extra[K] = part; return periodRead9([K + '@'], extra, quiet); })).then(function (all) {
-      return all.filter(function (r) { return !r || r.ok !== 1; })[0] || all[all.length - 1];
+      var bad = all.filter(function (r) { return !r || r.ok !== 1; })[0];
+      /* الصفحاتُ تعيد قراءة حالتها بخبر «bassam:remote» (root-logic _bsLiveReload) — خبرٌ مؤكَّد (لا يُسقط ما قُرئ للتوّ) وليس من جهازٍ آخر */
+      if (!bad && !quiet) { try { operationDispatchRemote9([K], BOOT.v, [K], []); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
+      return bad || all[all.length - 1];
     });
   }
   /* فهرسُ فترات المورد بلا محتوى ({ p, grp, seq, rev, bytes } بترتيب seq) — لما يسرد الأشهرَ كلها (نسخُ خطة شهرٍ آخر) */
