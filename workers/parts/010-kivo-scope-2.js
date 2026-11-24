@@ -78,8 +78,11 @@ var KIVO_SCOPE = (function (S, R) {
     if (d == null) return false;
     return dPast ? !(isObj(rec.dopen) && rec.dopen[d]) : !!(isObj(rec.dshut) && rec.dshut[d]);
   }
-  function parseDay(k) { var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
-  function parseMonth(k) { var m = /^(?:m:)?(\d{4})-(\d{1,2})$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: null } : null; }
+  /* V7 · 53 تقويم (ق١): مفاتيحُ الفترة ميلاديةٌ مبطَّنة ISO وحدها — مفتاحٌ هجريٌّ (13xx–15xx) أو غيرُ مبطَّن لا يُفهم يوماً ولا شهراً (dayOther) */
+  function parseDay(k) { var m = /^((?:19|20|21)\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
+  function parseMonth(k) { var m = /^(?:m:)?((?:19|20|21)\d{2})-(0[1-9]|1[0-2])$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: null } : null; }
+  function ymOf(p) { return p.y + '-' + (p.m < 10 ? '0' : '') + p.m; }   /* '2026-11' من {y,m} */
+  function mkOf(p) { return 'm:' + ymOf(p); }
   function ymd(x) { if (!isObj(x) || x.y == null || x.m == null) return null; return { y: +x.y, m: +x.m, d: x.d == null ? null : +x.d }; }
   function pk(p) { return p ? p.y + '-' + p.m + (p.d == null ? '' : '-' + p.d) : ''; }
   function sides(it, f) { var o = it[f]; if (!o) return []; var out = []; if (it.kind !== 'added' && o.old != null && o.old !== '') out.push({ side: 'old', v: o.old }); if (it.kind !== 'removed' && o.new != null && o.new !== '') out.push({ side: 'new', v: o.new }); if (!out.length && it.kind === 'added' && o.new != null) out.push({ side: 'new', v: o.new }); return out; }
@@ -171,9 +174,10 @@ var KIVO_SCOPE = (function (S, R) {
     a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), T = ctx.today;
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; if (deq(a[k], b[k])) continue;
-      if (/^m:\d{4}-\d{1,2}$/.test(k)) { items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(parseMonth(k), parseMonth(k)), lockOp: true })); continue; }
+      if (/^m:(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(k)) {   /* V7 · 53 تقويم: ISO */
+      items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(parseMonth(k), parseMonth(k)), lockOp: true })); continue; }
       var day = parseDay(k); if (!day) { items.push(it({ what: 'dayOther', kind: kindOf(a[k], b[k]), id: k, path: k })); continue; }
-      var rec = a['m:' + day.y + '-' + day.m], x = a[k], y = b[k];
+      var rec = a[mkOf(day)], x = a[k], y = b[k];
       var locked = !!(isObj(x) && x.ap) || lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: locked, why: (isObj(x) && x.ap) ? 'day-approved' : (locked ? 'period-locked (m:y-m/dsLockedIn)' : 'open') };
       if (x === undefined) {
         items.push(it({ what: 'day', kind: 'added', id: k, path: k, period: pair(null, day), lock: { locked: lockedIn(rec, day.y, day.m, day.d, T), why: 'period-locked' } }));
@@ -207,7 +211,7 @@ var KIVO_SCOPE = (function (S, R) {
       k = ks[i]; if (deq(a[k], b[k])) continue;
       if (/^m:/.test(k)) { var lx = normLock(a[k]), ly = normLock(b[k]), per = parseMonth(k); if (!deq(lx.perm, ly.perm)) items.push(it({ what: 'monthPerm', kind: 'changed', id: k, path: k + '.perm', period: pair(per, per), lock: { locked: lockedIn(a[k], per.y, per.m, null, T), why: 'month-lock' } })); var rest = union(lx, ly).filter(function (f) { return f !== 'perm' && !deq(lx[f], ly[f]); }); if (rest.length) items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(per, per), lockOp: true })); continue; }
       var day = parseDay(k); if (!day) { items.push(it({ what: 'dayOther', kind: kindOf(a[k], b[k]), id: k, path: k })); continue; }
-      var rec = a['m:' + day.y + '-' + day.m], dayLocked = lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: dayLocked, why: dayLocked ? 'period-locked (m:y-m/dsLockedIn)' : 'open' };
+      var rec = a[mkOf(day)], dayLocked = lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: dayLocked, why: dayLocked ? 'period-locked (m:y-m/dsLockedIn)' : 'open' };
       var x = a[k], y = b[k];
       if (x === undefined) {
         items.push(it({ what: 'day', kind: 'added', id: k, path: k, period: pair(null, day), lock: lk }));
@@ -264,7 +268,7 @@ var KIVO_SCOPE = (function (S, R) {
   X.tasksItems = function (a, b, ctx) {
     a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), L = ctx.locks ? ctx.locks.tasks : undefined;
     for (i = 0; i < ks.length; i++) {
-      k = ks[i]; var x = arr(a[k]), y = arr(b[k]); if (deq(x, y)) continue; var day = parseDay(k), mk = day ? day.y + '-' + day.m : '', ls = lockState(L, mk), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_tasks_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
+      k = ks[i]; var x = arr(a[k]), y = arr(b[k]); if (deq(x, y)) continue; var day = parseDay(k), mk = day ? ymOf(day) : '', ls = lockState(L, mk), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_tasks_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
       /* V7 · 53 (قرار المالك ٧): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد، ولا يُفتح إلا للاستدراك ({mo:1}) */
       var dl = null;
       if (ls === false && day) {   /* V7 · 53: واليومُ (قاعدةُ الصفحة _tkDayLockOf): المُغلقُ بيده · والمنقضي من الشهر الجاري ما لم يُفتح هو أو شهرُه */

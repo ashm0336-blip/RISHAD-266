@@ -142,6 +142,7 @@ var KIVO_GUARDS = (function (B, R) {
   }
   var C = {};
   /* ═══ الخطة التشغيلية ═══ */
+  var PLAN_YM_RX = /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/;
   C['bassam_plan_v1'] = function (R, a, b, ctx) {
     a = isObj(a) ? a : {}; b = isObj(b) ? b : {};
     var m = matchById(arr(a.floors), arr(b.floors), ID.floors), i, k;
@@ -153,6 +154,7 @@ var KIVO_GUARDS = (function (B, R) {
     var ma = isObj(a.months) ? a.months : {}, mb = isObj(b.months) ? b.months : {}, ks = union(ma, mb);
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; if (deq(ma[k], mb[k])) continue;
+      if (!PLAN_YM_RX.test(k)) { R.res('months[' + k + ']', 'bad-month-key'); continue; }
       if (ma[k] === undefined) { R.op('plan.create', 'months[' + k + ']'); continue; }
       if (mb[k] === undefined) { R.op('plan.delete', 'months[' + k + ']'); continue; }
       var x = normMonth(ma[k]), y = normMonth(mb[k]);
@@ -163,7 +165,8 @@ var KIVO_GUARDS = (function (B, R) {
       for (q = 0; q < mm.changed.length; q++) classifyFloor(R, mm.changed[q].a, mm.changed[q].b, 'months[' + k + '].d[' + mm.changed[q].id + ']', 'plan', ctx);
     }
     var da = isObj(a.delMonths) ? a.delMonths : {}, db = isObj(b.delMonths) ? b.delMonths : {}; ks = union(da, db);
-    for (i = 0; i < ks.length; i++) { if (deq(da[ks[i]], db[ks[i]])) continue; R.op(db[ks[i]] === undefined ? 'plan.create' : 'plan.delete', 'delMonths[' + ks[i] + ']'); }
+    /* V7 · 53 تقويم (ق١ · الخطر ٤): مفتاحُ الشهر في months وdelMonths ميلاديٌّ ISO وحده — الهجريُّ من عميلٍ قديم بقيةٌ تُرفض */
+    for (i = 0; i < ks.length; i++) { if (deq(da[ks[i]], db[ks[i]])) continue; if (!PLAN_YM_RX.test(ks[i])) { R.res('delMonths[' + ks[i] + ']', 'bad-month-key'); continue; } R.op(db[ks[i]] === undefined ? 'plan.create' : 'plan.delete', 'delMonths[' + ks[i] + ']'); }
     if (!deq(a.cfg, b.cfg)) R.tec('cfg'); if (!deq(a.pMig, b.pMig)) R.tec('pMig');
     ks = union(a, b); for (i = 0; i < ks.length; i++) { k = ks[i]; if (k === 'floors' || k === 'months' || k === 'delMonths' || k === 'cfg' || k === 'pMig' || LENS_COLS[k]) continue; if (!deq(a[k], b[k])) R.res(k, 'unknown-root-key'); }
   };
@@ -199,9 +202,10 @@ var KIVO_GUARDS = (function (B, R) {
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; if (deq(a[k], b[k])) continue;
       if (k === '__pMig') { R.tec(k); continue; }
-      if (/^m:\d{4}-\d{1,2}$/.test(k)) { if (b[k] === undefined && a[k] && normLock(a[k]).ap) { R.op('round.reopen', k, 'month-record-removed'); continue; } classifyMonthRec(R, a[k], b[k], k, 'round.approve', 'round.reopen'); continue; }
-      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(k)) { classifyDay(R, a[k], b[k], k, ctx); continue; }
-      if (/^\d{4}-\d{1,2}-\d{1,2}-/.test(k)) { R.op(b[k] === undefined ? 'round.delete' : 'round.edit', k, 'legacy-key'); continue; }
+      if (/^m:(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(k)) {   /* V7 · 53 تقويم: ISO وحده — الهجريُّ من عميلٍ قديم unknown-root-key */
+      if (b[k] === undefined && a[k] && normLock(a[k]).ap) { R.op('round.reopen', k, 'month-record-removed'); continue; } classifyMonthRec(R, a[k], b[k], k, 'round.approve', 'round.reopen'); continue; }
+      if (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/.test(k)) { classifyDay(R, a[k], b[k], k, ctx); continue; }
+      if (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])-/.test(k)) { R.op(b[k] === undefined ? 'round.delete' : 'round.edit', k, 'legacy-key'); continue; }
       R.res(k, 'unknown-root-key');
     }
   };

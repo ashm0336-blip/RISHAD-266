@@ -367,6 +367,7 @@ var KIVO_GUARDS = (function (B, R) {
   }
   var C = {};
   /* ═══ الخطة التشغيلية ═══ */
+  var PLAN_YM_RX = /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/;
   C['bassam_plan_v1'] = function (R, a, b, ctx) {
     a = isObj(a) ? a : {}; b = isObj(b) ? b : {};
     var m = matchById(arr(a.floors), arr(b.floors), ID.floors), i, k;
@@ -378,6 +379,7 @@ var KIVO_GUARDS = (function (B, R) {
     var ma = isObj(a.months) ? a.months : {}, mb = isObj(b.months) ? b.months : {}, ks = union(ma, mb);
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; if (deq(ma[k], mb[k])) continue;
+      if (!PLAN_YM_RX.test(k)) { R.res('months[' + k + ']', 'bad-month-key'); continue; }
       if (ma[k] === undefined) { R.op('plan.create', 'months[' + k + ']'); continue; }
       if (mb[k] === undefined) { R.op('plan.delete', 'months[' + k + ']'); continue; }
       var x = normMonth(ma[k]), y = normMonth(mb[k]);
@@ -388,7 +390,8 @@ var KIVO_GUARDS = (function (B, R) {
       for (q = 0; q < mm.changed.length; q++) classifyFloor(R, mm.changed[q].a, mm.changed[q].b, 'months[' + k + '].d[' + mm.changed[q].id + ']', 'plan', ctx);
     }
     var da = isObj(a.delMonths) ? a.delMonths : {}, db = isObj(b.delMonths) ? b.delMonths : {}; ks = union(da, db);
-    for (i = 0; i < ks.length; i++) { if (deq(da[ks[i]], db[ks[i]])) continue; R.op(db[ks[i]] === undefined ? 'plan.create' : 'plan.delete', 'delMonths[' + ks[i] + ']'); }
+    /* V7 · 53 تقويم (ق١ · الخطر ٤): مفتاحُ الشهر في months وdelMonths ميلاديٌّ ISO وحده — الهجريُّ من عميلٍ قديم بقيةٌ تُرفض */
+    for (i = 0; i < ks.length; i++) { if (deq(da[ks[i]], db[ks[i]])) continue; if (!PLAN_YM_RX.test(ks[i])) { R.res('delMonths[' + ks[i] + ']', 'bad-month-key'); continue; } R.op(db[ks[i]] === undefined ? 'plan.create' : 'plan.delete', 'delMonths[' + ks[i] + ']'); }
     if (!deq(a.cfg, b.cfg)) R.tec('cfg'); if (!deq(a.pMig, b.pMig)) R.tec('pMig');
     ks = union(a, b); for (i = 0; i < ks.length; i++) { k = ks[i]; if (k === 'floors' || k === 'months' || k === 'delMonths' || k === 'cfg' || k === 'pMig' || LENS_COLS[k]) continue; if (!deq(a[k], b[k])) R.res(k, 'unknown-root-key'); }
   };
@@ -424,9 +427,10 @@ var KIVO_GUARDS = (function (B, R) {
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; if (deq(a[k], b[k])) continue;
       if (k === '__pMig') { R.tec(k); continue; }
-      if (/^m:\d{4}-\d{1,2}$/.test(k)) { if (b[k] === undefined && a[k] && normLock(a[k]).ap) { R.op('round.reopen', k, 'month-record-removed'); continue; } classifyMonthRec(R, a[k], b[k], k, 'round.approve', 'round.reopen'); continue; }
-      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(k)) { classifyDay(R, a[k], b[k], k, ctx); continue; }
-      if (/^\d{4}-\d{1,2}-\d{1,2}-/.test(k)) { R.op(b[k] === undefined ? 'round.delete' : 'round.edit', k, 'legacy-key'); continue; }
+      if (/^m:(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(k)) {   /* V7 · 53 تقويم: ISO وحده — الهجريُّ من عميلٍ قديم unknown-root-key */
+      if (b[k] === undefined && a[k] && normLock(a[k]).ap) { R.op('round.reopen', k, 'month-record-removed'); continue; } classifyMonthRec(R, a[k], b[k], k, 'round.approve', 'round.reopen'); continue; }
+      if (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/.test(k)) { classifyDay(R, a[k], b[k], k, ctx); continue; }
+      if (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])-/.test(k)) { R.op(b[k] === undefined ? 'round.delete' : 'round.edit', k, 'legacy-key'); continue; }
       R.res(k, 'unknown-root-key');
     }
   };
@@ -900,8 +904,11 @@ var KIVO_SCOPE = (function (S, R) {
     if (d == null) return false;
     return dPast ? !(isObj(rec.dopen) && rec.dopen[d]) : !!(isObj(rec.dshut) && rec.dshut[d]);
   }
-  function parseDay(k) { var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
-  function parseMonth(k) { var m = /^(?:m:)?(\d{4})-(\d{1,2})$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: null } : null; }
+  /* V7 · 53 تقويم (ق١): مفاتيحُ الفترة ميلاديةٌ مبطَّنة ISO وحدها — مفتاحٌ هجريٌّ (13xx–15xx) أو غيرُ مبطَّن لا يُفهم يوماً ولا شهراً (dayOther) */
+  function parseDay(k) { var m = /^((?:19|20|21)\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
+  function parseMonth(k) { var m = /^(?:m:)?((?:19|20|21)\d{2})-(0[1-9]|1[0-2])$/.exec(String(k)); return m ? { y: +m[1], m: +m[2], d: null } : null; }
+  function ymOf(p) { return p.y + '-' + (p.m < 10 ? '0' : '') + p.m; }   /* '2026-11' من {y,m} */
+  function mkOf(p) { return 'm:' + ymOf(p); }
   function ymd(x) { if (!isObj(x) || x.y == null || x.m == null) return null; return { y: +x.y, m: +x.m, d: x.d == null ? null : +x.d }; }
   function pk(p) { return p ? p.y + '-' + p.m + (p.d == null ? '' : '-' + p.d) : ''; }
   function sides(it, f) { var o = it[f]; if (!o) return []; var out = []; if (it.kind !== 'added' && o.old != null && o.old !== '') out.push({ side: 'old', v: o.old }); if (it.kind !== 'removed' && o.new != null && o.new !== '') out.push({ side: 'new', v: o.new }); if (!out.length && it.kind === 'added' && o.new != null) out.push({ side: 'new', v: o.new }); return out; }
@@ -993,9 +1000,10 @@ var KIVO_SCOPE = (function (S, R) {
     a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), T = ctx.today;
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; if (deq(a[k], b[k])) continue;
-      if (/^m:\d{4}-\d{1,2}$/.test(k)) { items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(parseMonth(k), parseMonth(k)), lockOp: true })); continue; }
+      if (/^m:(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(k)) {   /* V7 · 53 تقويم: ISO */
+      items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(parseMonth(k), parseMonth(k)), lockOp: true })); continue; }
       var day = parseDay(k); if (!day) { items.push(it({ what: 'dayOther', kind: kindOf(a[k], b[k]), id: k, path: k })); continue; }
-      var rec = a['m:' + day.y + '-' + day.m], x = a[k], y = b[k];
+      var rec = a[mkOf(day)], x = a[k], y = b[k];
       var locked = !!(isObj(x) && x.ap) || lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: locked, why: (isObj(x) && x.ap) ? 'day-approved' : (locked ? 'period-locked (m:y-m/dsLockedIn)' : 'open') };
       if (x === undefined) {
         items.push(it({ what: 'day', kind: 'added', id: k, path: k, period: pair(null, day), lock: { locked: lockedIn(rec, day.y, day.m, day.d, T), why: 'period-locked' } }));
@@ -1029,7 +1037,7 @@ var KIVO_SCOPE = (function (S, R) {
       k = ks[i]; if (deq(a[k], b[k])) continue;
       if (/^m:/.test(k)) { var lx = normLock(a[k]), ly = normLock(b[k]), per = parseMonth(k); if (!deq(lx.perm, ly.perm)) items.push(it({ what: 'monthPerm', kind: 'changed', id: k, path: k + '.perm', period: pair(per, per), lock: { locked: lockedIn(a[k], per.y, per.m, null, T), why: 'month-lock' } })); var rest = union(lx, ly).filter(function (f) { return f !== 'perm' && !deq(lx[f], ly[f]); }); if (rest.length) items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(per, per), lockOp: true })); continue; }
       var day = parseDay(k); if (!day) { items.push(it({ what: 'dayOther', kind: kindOf(a[k], b[k]), id: k, path: k })); continue; }
-      var rec = a['m:' + day.y + '-' + day.m], dayLocked = lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: dayLocked, why: dayLocked ? 'period-locked (m:y-m/dsLockedIn)' : 'open' };
+      var rec = a[mkOf(day)], dayLocked = lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: dayLocked, why: dayLocked ? 'period-locked (m:y-m/dsLockedIn)' : 'open' };
       var x = a[k], y = b[k];
       if (x === undefined) {
         items.push(it({ what: 'day', kind: 'added', id: k, path: k, period: pair(null, day), lock: lk }));
@@ -1086,7 +1094,7 @@ var KIVO_SCOPE = (function (S, R) {
   X.tasksItems = function (a, b, ctx) {
     a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), L = ctx.locks ? ctx.locks.tasks : undefined;
     for (i = 0; i < ks.length; i++) {
-      k = ks[i]; var x = arr(a[k]), y = arr(b[k]); if (deq(x, y)) continue; var day = parseDay(k), mk = day ? day.y + '-' + day.m : '', ls = lockState(L, mk), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_tasks_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
+      k = ks[i]; var x = arr(a[k]), y = arr(b[k]); if (deq(x, y)) continue; var day = parseDay(k), mk = day ? ymOf(day) : '', ls = lockState(L, mk), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_tasks_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
       /* V7 · 53 (قرار المالك ٧): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد، ولا يُفتح إلا للاستدراك ({mo:1}) */
       var dl = null;
       if (ls === false && day) {   /* V7 · 53: واليومُ (قاعدةُ الصفحة _tkDayLockOf): المُغلقُ بيده · والمنقضي من الشهر الجاري ما لم يُفتح هو أو شهرُه */
@@ -1741,6 +1749,92 @@ function dsToday(now) {
   } catch (e) { swallow('dstats', e); }
   return null;
 }
+/* ══ V7 · 53 تقويم: الميلادي أساساً — تقويمُ الخادم الميلادي (cal_api.md §3 · التصميم §2 · ق1 · ق11). مرآةُ دوالّ الواجهة (385: g*) حرفاً في الناتج
+   (tests/unit/v7_cal_base_agree.test.mjs). المفاتيح ISO مبطَّنة: يوم «YYYY-MM-DD» (وللجولات لاحقةٌ بعده) · شهر «YYYY-MM» · علامةُ شهر «m:YYYY-MM».
+   السنةُ تميّز الصيغتين: 1300–1599 هجري · 1900–2199 ميلادي. التاريخُ المدنيّ تاريخُ الرياض (UTC+3 ثابتاً)، واليومُ التشغيلي = تاريخُ الرياض لِـ(الآن − 3 ساعات).
+   الهجريُّ للعرض وحده محسوبٌ من المفتاح الميلادي بـcalHijriAt (لا يُخزَّن)، وجدولُ «هجري ⇐ ميلادي» يُبنى منه سنةً سنةً عند الطلب (calHDay). ══ */
+var CAL_G_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+var CAL_H_MONTHS = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
+var CAL_WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+var CAL_DAY_LETTERS = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+var CAL_KEY_RX = /^(m:)?(\d{4})-(\d{1,2})(?:-(\d{1,2})(?:-(.+))?)?$/;
+function calPad(n) { n = +n; return (n < 10 ? '0' : '') + n; }
+function calGKey(y, m, d) { return y + '-' + calPad(m) + '-' + calPad(d); }
+function calGYm(y, m) { return y + '-' + calPad(m); }
+function calGMk(a, m) { return 'm:' + (m == null ? String(a) : calGYm(a, m)); }
+function calYearCal(y) { return y >= 1300 && y <= 1599 ? 'h' : y >= 1900 && y <= 2199 ? 'g' : null; }
+function calGMonthDays(y, m) {
+  if (m == null) { var p = /^(?:m:)?(\d{4})-(\d{1,2})$/.exec(String(y)); if (!p) return 0; y = +p[1]; m = +p[2]; }
+  return m >= 1 && m <= 12 ? new Date(Date.UTC(+y, +m, 0)).getUTCDate() : 0;
+}
+/* تاريخٌ ميلاديٌّ حقيقي بسنةٍ 1900–2199 (يرفض الهجري) · allowDay0: يقبل اليوم 0 «يومٌ غير معروف» (العهد ق10) */
+function calGregOk(y, m, d, allowDay0) {
+  y = +y; m = +m; d = +d;
+  if (!(y >= 1900 && y <= 2199 && m >= 1 && m <= 12 && Math.floor(y) === y && Math.floor(m) === m && Math.floor(d) === d)) return false;
+  return (allowDay0 && d === 0) || (d >= 1 && d <= calGMonthDays(y, m));
+}
+function calGParse(k) {
+  var p = CAL_KEY_RX.exec(String(k == null ? '' : k)); if (!p) return null;
+  var y = +p[2], m = +p[3], d = p[4] == null ? null : +p[4], cal = calYearCal(y);
+  if (!cal || m < 1 || m > 12) return null;
+  if (p[1] && d != null) return null;
+  if (d != null && (d < 1 || d > (cal === 'g' ? calGMonthDays(y, m) : 30))) return null;
+  return { cal: cal, kind: p[1] ? 'mctl' : d == null ? 'month' : 'day', y: y, m: m, d: d, suffix: p[5] || '' };
+}
+function calKeyCal(k) { var p = calGParse(k); return p ? p.cal : null; }
+function calIsGKey(k, kind) {
+  var p = calGParse(k); if (!p || p.cal !== 'g' || (kind && p.kind !== kind)) return false;
+  var c = p.kind === 'day' ? calGKey(p.y, p.m, p.d) + (p.suffix ? '-' + p.suffix : '') : (p.kind === 'mctl' ? 'm:' : '') + calGYm(p.y, p.m);
+  return c === String(k);
+}
+function calGMonthOf(k) { var p = calGParse(k); return p && p.cal === 'g' ? calGYm(p.y, p.m) : null; }
+function calGDayNum(k) { var p = calGParse(k); return p ? p.y * 10000 + p.m * 100 + (p.d || 0) : 0; }
+function calGCmp(a, b) { var x = calGDayNum(a), y = calGDayNum(b); return x < y ? -1 : x > y ? 1 : 0; }
+function calGOfUTC(t) { var x = new Date(t), y = x.getUTCFullYear(), m = x.getUTCMonth() + 1, d = x.getUTCDate(); return { y: y, m: m, d: d, k: calGKey(y, m, d), key: calGKey(y, m, d), ym: calGYm(y, m), mk: 'm:' + calGYm(y, m), wd: x.getUTCDay() }; }
+function calGAt(ms) { return calGOfUTC(+ms + 3 * 36e5); }
+function calToday(now) { return calGAt((now == null ? Date.now() : +now) - DS_GRACE); }
+function calGAddDays(k, n) { var p = calGParse(k); return p && p.kind === 'day' ? calGOfUTC(Date.UTC(p.y, p.m - 1, p.d + (+n || 0))).k : null; }
+function calGAddMonths(ym, n) { var p = calGParse(ym); if (!p) return null; var i = p.y * 12 + p.m - 1 + (+n || 0); return calGYm(Math.floor(i / 12), (i % 12) + 1); }
+function calGWeekday(k) { var p = calGParse(k); return p && p.kind === 'day' ? new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay() : -1; }
+function calGDays(ym) { var p = calGParse(ym), out = [], n, i; if (!p || p.cal !== 'g') return out; n = calGMonthDays(p.y, p.m); for (i = 1; i <= n; i++) out.push(calGKey(p.y, p.m, i)); return out; }
+function calGRange(from, to) { var out = [], k = calIsGKey(from, 'day') ? from : null; while (k && calGCmp(k, to) <= 0 && out.length < 4000) { out.push(k); k = calGAddDays(k, 1); } return out; }
+/* الهجريُّ المقابل ليومٍ ميلادي (ظهرَ UTC = الثالثةُ عصراً بالرياض: اليومُ المدنيّ نفسُه) — null إن لم يُعرف */
+function calHOf(k) {
+  var p = calGParse(k); if (!p || p.cal !== 'g' || p.kind !== 'day') return null;
+  try { var h = calHijriAt(Date.UTC(p.y, p.m - 1, p.d, 12)); return calHijriOk(h) ? h : null; } catch (e) { return null; }
+}
+var CAL_HY = Object.create(null);
+function calHYear(y) {
+  if (CAL_HY[y]) return CAL_HY[y];
+  var t = {}, est = Date.UTC(2026, 5, 16, 12) + Math.round(354.367 * (y - 1448)) * 864e5, i, g, h;
+  for (i = -25; i <= 390; i++) { g = calGOfUTC(est + i * 864e5); h = calHOf(g.k); if (h && h.y === y) t[h.m + '-' + h.d] = g.k; }
+  return (CAL_HY[y] = t);
+}
+function calHDay(y, m, d) {
+  y = +y; m = +m; d = +d;
+  if (!(y >= 1300 && y <= 1599 && m >= 1 && m <= 12 && d >= 1 && d <= 30)) return null;
+  return calHYear(y)[m + '-' + d] || null;
+}
+function calHMonthLen(y, m) { return calHDay(y, m, 30) ? 30 : calHDay(y, m, 29) ? 29 : 0; }
+function calHMonthSpan(y, m) { var n = calHMonthLen(y, m); return n ? { from: calHDay(y, m, 1), to: calHDay(y, m, n), days: n } : null; }
+function calHMonthsOf(ym) {
+  var out = [], last = null;
+  calGDays(ym).forEach(function (k) {
+    var h = calHOf(k); if (!h) return;
+    if (last && last.y === h.y && last.m === h.m) { last.days++; last.to = k; } else { last = { y: h.y, m: h.m, days: 1, from: k, to: k }; out.push(last); }
+  });
+  return out;
+}
+function calHRangeOfMonth(ym) {
+  var L = calGDays(ym); if (!L.length) return '';
+  var a = calHOf(L[0]), b = calHOf(L[L.length - 1]), N = CAL_H_MONTHS; if (!a || !b) return '';
+  if (a.y === b.y && a.m === b.m) return a.d + ' – ' + b.d + ' ' + N[a.m - 1] + ' ' + a.y;
+  if (a.y === b.y) return a.d + ' ' + N[a.m - 1] + ' – ' + b.d + ' ' + N[b.m - 1] + ' ' + a.y;
+  return a.d + ' ' + N[a.m - 1] + ' ' + a.y + ' – ' + b.d + ' ' + N[b.m - 1] + ' ' + b.y;
+}
+function calGMonthText(ym) { var p = calGParse(ym); return p && p.cal === 'g' ? CAL_G_MONTHS[p.m - 1] + ' ' + p.y : ''; }
+function calGDayText(k) { var p = calGParse(k); return p && p.cal === 'g' && p.kind === 'day' ? p.d + ' ' + CAL_G_MONTHS[p.m - 1] + ' ' + p.y : ''; }
+function calPrintLine(k) { var t = calGDayText(k), h = calHOf(k); return t && h ? t + ' · الموافق ' + h.d + ' ' + CAL_H_MONTHS[h.m - 1] + ' ' + h.y : t; }
 /* ── إصلاح (مدير المنصة لا يُطلب منه سببٌ أبداً — قرارُ المالك): مدير المنصة (role=super) معفًى من كل بوابات السبب في الخادم؛ وإن لم يكتب سبباً
    يُسجَّل في سجلّ القرار والتدقيق «بلا سبب (مدير المنصة)». غيرُه: طلبُ السبب كما هو. reasonExempt = هل الفاعلُ معفًى · reasonLogged = ما يُكتب في السجل ── */
 /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا يُطلب سببٌ في أيّ فعلٍ لأيّ مستخدم — رسالةُ التأكيد في الواجهة تكفي، وسجلُّ الحركة يسجّل الفاعلَ والوقتَ وما تغيّر.
@@ -1923,9 +2017,9 @@ function selfFieldsOf(u) { return (u && Object.prototype.hasOwnProperty.call(SEL
 /* أي صفحة تكتب هذا المفتاح: pages = كتابة كاملة بفعل كتابة على إحداها؛
    via = صفحات تكتب فيه كتابةً ضيّقة (كرمز النداء الذي يسجّله التقرير اليومي في
    الجدول الشهري) — تُقبل إن انحصر الفرق في المواضع المسموحة فقط */
-var CS_ONLY = function (d) { return /^\d{4}-\d{1,2}\.[^.]+\.cs$/.test(d.p) || (/^\d{4}-\d{1,2}\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^\d{4}-\d{1,2}$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (ek) { return isObj(d.t[ek]) && Object.keys(d.t[ek]).every(function (q) { return q === 'cs'; }); })); };
+var CS_ONLY = function (d) { return /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])\.[^.]+\.cs$/.test(d.p) || (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (ek) { return isObj(d.t[ek]) && Object.keys(d.t[ek]).every(function (q) { return q === 'cs'; }); })); };
 /* بيان الشهر من التقرير اليومي: رمز النداء لموظف داخل البيان، أو أخذ بيان شهرٍ معتمد بلا بيان عند أول سحب (شهر كامل جديد لا تعديل موجود) */
-var SNAP_CS_ONLY = function (d) { return /^\d{4}-\d{1,2}\.bucket\.[^.]+\.cs$/.test(d.p) || (/^\d{4}-\d{1,2}\.bucket\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^\d{4}-\d{1,2}$/.test(d.p) && d.f === undefined && isObj(d.t) && isObj(d.t.bucket)); };
+var SNAP_CS_ONLY = function (d) { return /^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])\.bucket\.[^.]+\.cs$/.test(d.p) || (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])\.bucket\.[^.]+$/.test(d.p) && d.f === undefined && isObj(d.t) && Object.keys(d.t).every(function (q) { return q === 'cs'; })) || (/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(d.p) && d.f === undefined && isObj(d.t) && isObj(d.t.bucket)); };
 var EMP_FIELDS = function (d) { return /^(\d+|\[[^\]]*\])\.(work|type|eid)$/.test(d.p); };
 
 /* KEY_RULES حُذف: RESOURCE_REGISTRY هو توصيف الموارد الوحيد */
@@ -20395,9 +20489,10 @@ function osSchemaPlan(table) {
       osSchemaElement(table + "_root_" + kind + "_element", kind),
     );
   });
-  /* V7 · 53 تقويم (ق١ · الخطر ٤): نسخُ الأشهر ومحذوفاتُها بمفتاح YYYY-MM وحده (019p0) — كان أيَّ مفتاح */
+  /* V7 · 53 تقويم (ق١ · الخطر ٤): نسخُ الأشهر بمفتاح YYYY-MM وحده (019p0) — كان أيَّ مفتاح */
   fields.months = ocMap(table + "_months", null, { patterns: [{ pattern: OS_RX_YM, schema: osSchemaPlanMonth(table + "_month") }] });
-  fields.delMonths = ocMap(table + "_deleted_months", null, { patterns: [{ pattern: OS_RX_YM, schema: osSchemaValue(table + "_deleted_months_values") }] });   /* اسمُ الجدول كما كان مدخلاً عاماً */
+  /* delMonths يبقى مدخلاً عاماً: شكلُه (خريطةُ قيم) يشاركه جدولُه أشكالٌ أخرى (shift_needs · 019o توقيعُ الشكل) — ومفتاحُه يُحرس في المصنِّف (guard.classify.plan) */
+  fields.delMonths = ocMap(table + "_deleted_months", ocScalar("scalar"));
   // No inner cfg writer exists in the current source. Unknown legacy members
   // fail before DDL instead of being hidden in a JSON/attribute fallback.
   fields.cfg = ocObject(table + "_legacy_cfg", {});
@@ -21257,6 +21352,125 @@ async function opPeriodSaveResult(env, ps, r) {
     out.revs = {}; Object.keys(r.revs).forEach(function (K) { if (ocOwn(ps.byK, K)) ps.byK[K].keys.forEach(function (k) { out.revs[k] = opPeriodRev(revs, K, k.slice(K.length + 1)); }); else out.revs[K] = r.revs[K]; });
   }
   return out;
+}
+/* ══ V7 · 53 تقويم: الدالةُ النقية «هجري ⇐ ميلادي» (cal_api.md §4 · التصميم §3.1 · §3.3 · ق3–ق7 · ق10) — يستعملها الترحيل 0014 والاستيراد.
+   نقيةٌ حتمية: لا تخزين ولا ساعة (اليومُ المرجعي T معامل). لا تبني مُنسِّقاً: كلُّ هجريٍّ من تقويم الخادم الواحد (016: calHDay · calHOf · calHMonthsOf ·
+   calHMonthSpan · calHMonthLen). المدخلُ الميلادي يعود كما هو، فإعادةُ التحويل لا تغيّر شيئاً. المفتاحُ الذي لا يُعرف تحويله يعود null — المستدعي
+   يوقف إدارته ويذكره بمساره (§3.1)، ولا يُسقطه بصمت. ══ */
+function calHtoGDay(k) {
+  var p = calGParse(k); if (!p || p.kind !== 'day') return null;
+  var g = p.cal === 'g' ? calGKey(p.y, p.m, p.d) : calHDay(p.y, p.m, p.d);
+  return g ? g + (p.suffix ? '-' + p.suffix : '') : null;
+}
+function calGMonthsOfH(y, m) {
+  var s = calHMonthSpan(y, m), out = [], last = null; if (!s) return out;
+  calGRange(s.from, s.to).forEach(function (k) { var g = calGMonthOf(k); if (last && last.g === g) last.days++; else { last = { g: g, days: 1 }; out.push(last); } });
+  return out;
+}
+function calHtoGMonth(k) {
+  var p = calGParse(k); if (!p || (p.kind !== 'month' && p.kind !== 'mctl')) return null;
+  var pre = p.kind === 'mctl' ? 'm:' : '';
+  if (p.cal === 'g') return [pre + calGYm(p.y, p.m)];
+  var L = calGMonthsOfH(p.y, p.m);
+  return L.length ? L.map(function (x) { return pre + x.g; }) : null;
+}
+function calHtoGKey(k) {
+  var p = calGParse(k); if (!p) return null;
+  var out = p.kind === 'day' ? calHtoGDay(k) : calHtoGMonth(k);
+  return out ? { kind: p.kind, cal: p.cal, out: out } : null;
+}
+function calHtoGRange(from, to) {
+  var a = calHtoGDay(from), b = calHtoGDay(to); if (!a || !b) return null;
+  a = a.slice(0, 10); b = b.slice(0, 10);
+  return calGCmp(a, b) <= 0 ? { from: a, to: b } : null;
+}
+/* نطاقُ نافذةٍ أو سجلٍّ {y,m,d}: يوم ⇐ يوم · شهر (d غائب/null/'') ⇐ الشهران الميلاديان (ق7: النافذةُ تُكرَّر) · d = 0 (يومٌ غير معروف، ق10) ⇐ شهرُ اليوم الأول */
+function calHtoGScope(s) {
+  if (!s || typeof s !== 'object') return null;
+  var y = +s.y, m = +s.m, d = s.d == null || s.d === '' ? null : +s.d, g;
+  if (calYearCal(y) === 'g') return calGregOk(y, m, d == null ? 1 : d, true) ? [{ y: y, m: m, d: d }] : null;
+  if (calYearCal(y) !== 'h') return null;
+  if (d == null) { var L = calGMonthsOfH(y, m); return L.length ? L.map(function (x) { var q = calGParse(x.g); return { y: q.y, m: q.m, d: null }; }) : null; }
+  g = calGParse(calHDay(y, m, d === 0 ? 1 : d)); if (!g) return null;
+  return [{ y: g.y, m: g.m, d: d === 0 ? 0 : g.d }];
+}
+/* ق6: يومُ الشهر الهجري لمهمةٍ متكررة ⇐ يومُ الشهر الميلادي لأول موعدٍ قادم (في T أو بعده) · 'last' يبقى · 30 في شهرٍ من 29 ⇐ آخرُ يومه */
+function calHtoGMd(md, T) {
+  if (md === 'last') return 'last';
+  var n = +md, h = calHOf(T), i, y, m, len, g; if (!(n >= 1 && n <= 30) || !h) return null;
+  for (i = 0; i < 3; i++) {
+    y = h.y + Math.floor((h.m - 1 + i) / 12); m = ((h.m - 1 + i) % 12) + 1; len = calHMonthLen(y, m); if (!len) return null;
+    g = calHDay(y, m, Math.min(n, len)); if (g && calGCmp(g, T) >= 0) return calGParse(g).d;
+  }
+  return null;
+}
+/* الأشهرُ الهجرية في شهرٍ ميلادي، والأغلبية (ق4 · ق5): الأكثرُ أياماً، والتعادلُ للأسبق مع tie */
+function calHMonthsOfG(gm) { return calHMonthsOf(gm).map(function (x) { return { h: x.y + '-' + x.m, y: x.y, m: x.m, days: x.days, from: x.from, to: x.to }; }); }
+function calMajority(gm) {
+  var L = calHMonthsOfG(gm), best = null, tie = false;
+  L.forEach(function (x) { if (!best || x.days > best.days) { best = x; tie = false; } else if (x.days === best.days) tie = true; });
+  return best ? { h: best.h, y: best.y, m: best.m, days: best.days, tie: tie } : null;
+}
+/* قاعدةُ dsLockedIn حرفاً (010 lockedIn) — لا تعرف التقويم: rec خامٌ (true/1/{ap,mo,dopen,dshut}) · T = {y,m,d} بتقويم rec */
+function calNormLock(v) { if (v === true || v === 1) return { ap: 1 }; return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
+function calLockedIn(rec, y, m, d, T) {
+  rec = calNormLock(rec); if (rec.ap) return true;
+  var mPast = !!T && (y < T.y || (y === T.y && m < T.m)), dPast = mPast || (!!T && y === T.y && m === T.m && d != null && d < T.d);
+  if (mPast && !rec.mo) return true;
+  if (d == null) return false;
+  var o = rec.dopen, s = rec.dshut;
+  return dPast ? !(o && typeof o === 'object' && o[d]) : !!(s && typeof s === 'object' && s[d]);
+}
+function calWhy(rec, y, m, d, T) {
+  rec = calNormLock(rec); if (rec.ap) return 'ap';
+  var mPast = y < T.y || (y === T.y && m < T.m), dPast = mPast || (y === T.y && m === T.m && d < T.d);
+  if (mPast && !rec.mo) return 'past';
+  if (dPast) return rec.dopen && rec.dopen[d] ? 'open' : 'past';
+  return rec.dshut && rec.dshut[d] ? 'shut' : '';
+}
+var CAL_LOCK_F = { ap: 1, mo: 1, auto: 1, dopen: 1, dshut: 1 };
+function calSrcGet(src) { return typeof src === 'function' ? src : function (h) { var o = src || {}; return o[h] !== undefined ? o[h] : o['m:' + h]; }; }
+/* §3.3 «السلوكُ اليومي المطابق»: سجلُّ m:gm الميلادي بحيث لكل يوم: calLockedIn(الجديد، اليومُ الميلادي، T) === calLockedIn(القديم، اليومُ الهجري، هجريُّ T)
+   src(h) ⇐ القيمةُ الخامُ القديمة لعلامة الشهر الهجري 'y-m' (أو خريطةٌ بمفاتيح 'y-m' أو 'm:y-m') · T مفتاحُ اليوم التشغيلي الميلادي */
+function calMonthRule(gm, src, T) {
+  var get = calSrcGet(src), G = calGParse(gm), Tg = calGParse(T), Th = calHOf(T), days = [], srcs = {}, order = [], cnt = {}, i;
+  if (!G || G.cal !== 'g' || G.kind === 'day' || !Tg || Tg.kind !== 'day' || !Th) return { rec: null, days: [], ok: false, extra: {}, err: 'cal-bad-arg' };
+  var L = calGDays(calGYm(G.y, G.m));
+  for (i = 0; i < L.length; i++) {
+    var h = calHOf(L[i]); if (!h) return { rec: null, days: [], ok: false, extra: {}, err: 'cal-unknown-day' };
+    var hk = h.y + '-' + h.m; if (!(hk in srcs)) { srcs[hk] = get(hk); order.push(hk); cnt[hk] = 0; } cnt[hk]++;
+    days.push({ g: L[i], h: hk + '-' + h.d, locked: calLockedIn(srcs[hk], h.y, h.m, h.d, Th), why: calWhy(srcs[hk], h.y, h.m, h.d, Th) });
+  }
+  var N = order.map(function (k) { return calNormLock(srcs[k]); }), all = function (f) { return N.every(function (r) { return !!r[f]; }); };
+  var rec = {}, gPast = G.y * 12 + G.m < Tg.y * 12 + Tg.m, anyOpen = false;
+  if (all('ap')) { rec.ap = 1; if (all('auto')) rec.auto = 1; }
+  else {
+    days.forEach(function (x, j) {
+      var d = j + 1, past = gPast || (G.y === Tg.y && G.m === Tg.m && d < Tg.d);
+      if (past && !x.locked) { (rec.dopen = rec.dopen || {})[d] = 1; anyOpen = true; }
+      if (!past && x.locked) (rec.dshut = rec.dshut || {})[d] = 1;
+    });
+    if ((gPast && anyOpen) || all('mo')) rec.mo = 1;
+  }
+  /* بقيةُ الحقول (perm …) من مصدر الأغلبية، والمختلفُ يُذكر */
+  var major = order.slice().sort(function (a, b) { return cnt[b] - cnt[a]; })[0], extra = {}, fs = {};
+  N.forEach(function (r) { Object.keys(r).forEach(function (f) { if (!CAL_LOCK_F[f]) fs[f] = 1; }); });
+  Object.keys(fs).forEach(function (f) {
+    var vals = N.map(function (r) { return r[f]; }), mv = calNormLock(srcs[major])[f];
+    if (mv !== undefined) rec[f] = mv;
+    if (vals.some(function (v) { return JSON.stringify(v) !== JSON.stringify(vals[0]); })) extra[f] = vals;
+  });
+  var ok = days.every(function (x, j) { return calLockedIn(rec, G.y, G.m, j + 1, Tg) === x.locked; });
+  return { rec: Object.keys(rec).length ? rec : null, days: days, ok: ok, extra: extra };
+}
+/* ق3 للسجلات بلا أيام (أقفالُ الجدول · أقفالُ شهر المهام · أقفالُ شهر الإحصائيات): معتمدٌ إن اعتُمدت كلُّ الأشهر الهجرية الداخلة · {mo:1} إن فُتحت كلُّها · وإلا لا شيء */
+function calMonthLockRule(gm, src) {
+  var get = calSrcGet(src), L = calHMonthsOfG(gm).map(function (x) { return get(x.h); });
+  if (!L.length) return undefined;
+  var ap = function (v) { return v === true || v === 1 || (!!v && typeof v === 'object' && !!v.ap); };
+  if (L.every(ap)) return L.every(function (v) { return JSON.stringify(v) === JSON.stringify(L[0]); }) ? L[0] : true;
+  if (L.every(function (v) { return !!v && typeof v === 'object' && !!v.mo; })) return { mo: 1 };
+  return undefined;
 }
 /* V7 · 53: التخزين بالفترة (§3ب) — طبقةٌ لا تعرف شكل التاريخ؛ التفصيل في تقرير periods ووثيقة العقد. */
 var OP_LIM = { day: 1048576, mctl: 524288, month: 3145728, head: 3145728, readPeriods: 40, readNodes: 60000, batchBytes: 30000000, batchStmts: 900, rangeGroups: 26, summaryRows: 800 };   /* V7 · 53: readNodes = عُقدُ القراءة المنطقية الكاملة لموردٍ مقسوم؛ مقيسٌ: 39001 عقدة ≈ ≤6.4MB في نداءٍ واحد (v7_d6_import ١٥) ⇒ 60000 ≈ ≤10MB، ثلثُ سقف 32MiB */
@@ -24082,7 +24296,8 @@ function permv4Sources(A) {
 function permv4DeptCeiling(dim, dept, actor) { return null; }
 function permv4Ctx(A, d, k, okMap, ctx) {
   var ac = permv4Actor(A), pv4 = (ctx && ctx.pv4) || {}, staffing = pv4.staffing || null;
-  return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: dsToday(Date.now()), now: Date.now(),
+  /* V7 · 53 تقويم: today لقواعد الفترة (010 closedPeriod · lockedIn) يومُ الرياض الميلادي — المفاتيحُ ISO (calToday · 016) */
+  return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: calToday(Date.now()), now: Date.now(),
            retroWin: (ctx && ctx.retroWin) || {}, locks: { staffing: pv4.staffingLocks, tasks: pv4.tasksLocks },
            srvRoute: !!(A.__tkSrv || A.__tkSelf || (ctx && ctx.restore)),   /* V7 · 53: كتابةُ مسارٍ خادمي (يحكم فترتَه بنفسه) أو استعادةٌ خادمية — لا الحفظُ الخامّ */
            actorShift: function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; },
@@ -28315,7 +28530,7 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   var cx = { dept: d, actor: { id: A.u.id, ekey: enfTaskSelfEkey(A, rn), role: A.u.role }, imp: !!(X && X.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(X && X.restore), op: (X && X.op && X.op.op) || '' };
   /* V7 · 53 (قرار المالك ٩): الموقعُ المعتمد والشهرُ الماضي بلا mo مقفلان لأي تغيير — لا لنوع الختم وحده: مفتاحُ هندسة البوابة بلا بُعد DateRange، وطوابقُ floors بلا فترة، فكانا يمرّان.
      إلا مديرَ المنصة (enfSuperGate لا يصلها) والاستعادةَ الخادمية (enfLockBypass)؛ ونافذةُ الاستدراك في الخطة هي فتحُ الشهر (mo) · V7 · 53 (port-sync · بند 3 · قرار المالك 24 نوفمبر): والأمرُ المعلن plan.optRef (019p6 — حقولُ الخيار وحدها، poOnly) */
-  if (rn === 'bassam_plan_v1' && A.u.role !== 'super' && !enfLockBypass(A, d, X) && !enfOptRefLock(A, rn)) { var pl9 = KIVO_SCOPE.extract(rn, a, b, { today: dsToday(Date.now()) }).filter(function (x) { return !x.lockOp && x.lock && x.lock.locked; })[0]; if (pl9) return enfNo('scope', { dims: ['DateRange'], detail: pl9.path + ': locked-period: ' + pl9.lock.why }); }
+  if (rn === 'bassam_plan_v1' && A.u.role !== 'super' && !enfLockBypass(A, d, X) && !enfOptRefLock(A, rn)) { var pl9 = KIVO_SCOPE.extract(rn, a, b, { today: calToday(Date.now()) }).filter(function (x) { return !x.lockOp && x.lock && x.lock.locked; })[0]; if (pl9) return enfNo('scope', { dims: ['DateRange'], detail: pl9.path + ': locked-period: ' + pl9.lock.why }); }
   var res = KIVO_GUARDS.covers.indexOf(rn) !== -1 ? enfPlugOps(KIVO_GUARDS.classify(rn, a, b, cx)) : null;
   var real = [], anyG = [], alt = [], i, j, key;
   if (res) {
@@ -29311,6 +29526,19 @@ function pfMonthDays(y, m) {
     ts = c + k * 86400000; h = pfHijriAt(ts - 3 * 3600000);
     if (h.y === y && h.m === m) out.push({ d: h.d, wd: h.wd });
   }
+  return out;
+}
+/* V7 · 53 تقويم: اليومُ الميلادي (تاريخُ الرياض المدنيّ، بلا مهلة — كما pfHijriAt) ومفاتيحُه ISO مبطَّنة، والهجريُّ المقابل للعرض (h) */
+function pfDayAt(ts) {
+  var d = new Date(ts + 3 * 3600000), y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, dd = d.getUTCDate(), z = function (n) { return (n < 10 ? '0' : '') + n; }, h = pfHijriAt(ts);
+  return { y: y, m: m, d: dd, ym: y + '-' + z(m), dk: y + '-' + z(m) + '-' + z(dd), wd: PF_WD[d.getUTCDay()], h: { y: h.y, m: h.m, d: h.d } };
+}
+/* أيامُ الشهر الميلادي 'YYYY-MM': [{ d, wd }] — حسابٌ خالص */
+function pfGregMonthDays(ym) {
+  var p = /^(\d{4})-(\d{2})$/.exec(String(ym || '')), out = [], n, k;
+  if (!p) return out;
+  n = new Date(Date.UTC(+p[1], +p[2], 0)).getUTCDate();
+  for (k = 1; k <= n; k++) out.push({ d: k, wd: PF_WD[new Date(Date.UTC(+p[1], +p[2] - 1, k)).getUTCDay()] });
   return out;
 }
 function pfDef(bucket, name, opts) {
