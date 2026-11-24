@@ -305,13 +305,14 @@ function enfDstatsWrite(A, k, newVal, curVal, ctx, X) {
     if (DS_SITES.indexOf(kk) !== -1) {
       var a9 = o[kk] === undefined ? {} : o[kk], b9 = n[kk] === undefined ? {} : n[kk];
       if (!isObj(a9) || !isObj(b9)) return enfNo('dstats');
-      for (q in b9) if (!deq(a9[q], b9[q]) && (!/^\d{4}-\d{2}-\d{2}$/.test(q) || !dsDayOk(b9[q]))) return enfNo('dstats');
+      for (q in b9) if (!deq(a9[q], b9[q]) && (!/^\d{4}-\d{2}-\d{2}$/.test(q) || calKeyCal(q) !== 'g' || !dsDayOk(b9[q]))) return enfNo('dstats');
       continue;
     }
     if (kk === 'locks') {
       var la = o.locks === undefined ? {} : o.locks, lb = n.locks === undefined ? {} : n.locks;
       if (!isObj(la) || !isObj(lb)) return enfNo('dstats');
-      for (q in lb) if (!deq(la[q], lb[q]) && (!/^(haram|nabawi)\|\d{4}-\d{1,2}$/.test(String(q)) || !dsLockOk(lb[q]))) return enfNo('dstats');
+      /* V7 · 53 تقويم (ق1): قفلٌ جديدٌ أو معدَّل بمفتاحٍ ميلادي «site|YYYY-MM» وحده — المفتاحُ الهجري من عميلٍ قديم يُرفض؛ وحذفُ مفتاحٍ قديم (هجري) يبقى مسموحاً */
+      for (q in lb) if (!deq(la[q], lb[q]) && (!/^(haram|nabawi)\|\d{4}-\d{2}$/.test(String(q)) || calKeyCal(String(q).split('|')[1]) !== 'g' || !dsLockOk(lb[q]))) return enfNo('dstats');
       for (q in la) if (lb[q] === undefined && !/^(haram|nabawi)\|\d{4}-\d{1,2}$/.test(String(q))) return enfNo('dstats');
       continue;
     }

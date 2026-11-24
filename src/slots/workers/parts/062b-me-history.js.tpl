@@ -92,6 +92,19 @@ function pfMonthDays(y, m) {
   }
   return out;
 }
+/* V7 · 53 تقويم: اليومُ الميلادي (تاريخُ الرياض المدنيّ، بلا مهلة — كما pfHijriAt) ومفاتيحُه ISO مبطَّنة، والهجريُّ المقابل للعرض (h) */
+function pfDayAt(ts) {
+  var d = new Date(ts + 3 * 3600000), y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, dd = d.getUTCDate(), z = function (n) { return (n < 10 ? '0' : '') + n; }, h = pfHijriAt(ts);
+  return { y: y, m: m, d: dd, ym: y + '-' + z(m), dk: y + '-' + z(m) + '-' + z(dd), wd: PF_WD[d.getUTCDay()], h: { y: h.y, m: h.m, d: h.d } };
+}
+/* أيامُ الشهر الميلادي 'YYYY-MM': [{ d, wd }] — حسابٌ خالص */
+function pfGregMonthDays(ym) {
+  var p = /^(\d{4})-(\d{2})$/.exec(String(ym || '')), out = [], n, k;
+  if (!p) return out;
+  n = new Date(Date.UTC(+p[1], +p[2], 0)).getUTCDate();
+  for (k = 1; k <= n; k++) out.push({ d: k, wd: PF_WD[new Date(Date.UTC(+p[1], +p[2] - 1, k)).getUTCDay()] });
+  return out;
+}
 function pfDef(bucket, name, opts) {
   var L = bucket && Array.isArray(bucket.__shifts) && bucket.__shifts.length ? bucket.__shifts : null, src = L ? 'month' : 'current', i;
   if (!L) L = Array.isArray(opts) ? opts : [];

@@ -465,9 +465,9 @@ async function rsConvertBackup(env, A, file, opt) {
       domains.dailyStats = { version: 1, data: current.data };
       summary.preservedGlobals.push('dailyStats');
       [
-        ['days', 'daily_stats_days', ['site', 'hijri_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
-        ['months', 'daily_stats_month_locks', ['site', 'hijri_year', 'hijri_month', 'approved', 'reopened', 'legacy_boolean']],
-        ['locks', 'daily_stats_day_locks', ['site', 'hijri_year', 'hijri_month', 'hijri_day', 'is_open', 'is_shut']],
+        ['days', 'daily_stats_days', ['site', 'greg_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
+        ['months', 'daily_stats_month_locks', ['site', 'greg_year', 'greg_month', 'approved', 'reopened', 'legacy_boolean']],
+        ['locks', 'daily_stats_day_locks', ['site', 'greg_year', 'greg_month', 'greg_day', 'is_open', 'is_shut']],
       ].forEach(function (spec) {
         readGuards.push.apply(readGuards, rsWitness(env, spec[1], spec[2], current.rows[spec[0]]));
       });
