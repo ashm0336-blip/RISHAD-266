@@ -8320,7 +8320,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     .map((e, s) =>
                       s === t.floor ? { ...e, zones: t.zones, gates: t.gates, marks: t.marks || [], paths: t.paths || [] } : e,
                     )
-                    .map((t, e) => (e === s ? { ...t, chip: "خطة محرم متوفرة", chipTone: "ok", create: !1 } : t)),
+                    .map((t, e) => (e === s ? { ...t, chip: "خطة " + KIVO.BassamCal.fmtMonth(KIVO.BassamCal.gYm(this.state.year, this.state.month)) + " متوفرة", chipTone: "ok"   /* V7 · 53 تقويم: اسمُ الشهر الميلادي المعروض — كان «محرم» ثابتاً */, create: !1 } : t)),
                   n = e[s] || {};
                 return {
                   floors: e,
@@ -18118,7 +18118,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 num: this.state.floors.length,
                 name: t,
                 approved: !1,
-                chip: "بدون خطة لـ محرم",
+                chip: "بدون خطة لـ " + KIVO.BassamCal.fmtMonth(KIVO.BassamCal.gYm(this.state.year, this.state.month)),   /* V7 · 53 تقويم: الشهرُ الميلادي المعروض */
                 chipTone: "warn",
                 create: !0,
                 zones: [],
