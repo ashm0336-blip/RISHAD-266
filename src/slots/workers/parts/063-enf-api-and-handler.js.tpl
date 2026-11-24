@@ -337,6 +337,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
       }else if(opIsResource(w.k)){
         var add2=await opChangeStatements(env,w.k,R2.W[w.k].v,{base:w.rev});
         guards2.push.apply(guards2,add2.guards);st2.push.apply(st2,add2.statements);
+        add2.revisionKeys.filter(function(k){return k!==w.k;}).forEach(function(k){st2.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(k,rev));});   // V7 · 53: ومراجعاتُ فتراته
       }else{
         guards2.push(revGuard(env,w.k,w.rev));
         st2 = st2.concat(kvPutStmts(env, 'kv', w.k, R2.W[w.k].v));
@@ -383,6 +384,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
       if(opIsResource(kk)){
         var add3=await opChangeStatements(env,kk,byK[kk].existed?byK[kk].v:null,{base:revNow[kk]||0});
         guards3.push.apply(guards3,add3.guards);st3.push.apply(st3,add3.statements);
+        add3.revisionKeys.filter(function(k){return k!==kk;}).forEach(function(k){st3.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(k,rev2));});   // V7 · 53: ومراجعاتُ فتراته
       }else{
         guards3.push(revGuard(env,kk,revNow[kk]||0));
         if (byK[kk].existed) st3 = st3.concat(kvPutStmts(env, 'kv', kk, byK[kk].v)); else st3.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(kk));
@@ -803,7 +805,7 @@ async function saveRoute(env, request, path, ss) {
     A1.sessTs = ss.ts;   /* KIVO_264 · D14: لحظةُ الدخول — «الدخولُ الأوّل الإجباري» بجلسةٍ حديثة وحدها (selfCurState) */
     var rlS = await rlHit(env, 'sv', A1.u.id, RL_SAVE);
     if (rlS) return tooMany(rlS);
-    /* V7 · 53: حفظٌ بمفاتيح الفترة (K@p) يُترجم إلى حفظ K بوثيقةٍ جزئية ونطاقٍ يُحمَّل ويُكتب وحده (019r opPeriodSaveBody) */
+    /* V7 · 53: حفظٌ بمفاتيح الفترة (K@p) يُترجم إلى حفظ K بوثيقةٍ جزئية */
     var ps = await opPeriodSaveBody(env, A1, bs), bsIn = bs;
     if (ps && Object.keys(ps.conflicts).length) return json({ ok: 0, requestId: bs.requestId, epoch: bs.epoch, atomic: 1, revs: {}, denied: {}, conflicts: ps.conflicts }, 409);
     if (ps) { bs = ps.body; env = Object.assign({}, env, { __opScope: ps.scopes }); }
@@ -870,6 +872,9 @@ async function changesRoute(env, url, ss) {
   var outC = enfChangesOut(env, AC, vC, ksC, allC);
   if (meSnapshotChanged(AC, (ch && ch.results) || [], vC)) outC.meChanged = 1;
 @@SYS:changes.tasks@@  if (cutC.more) outC.more = 1;
+  /* V7 · 53 (العقد §5): مفاتيحُ الفترات التي تغيّرت (K@p · K@) بحكم رؤية */
+  var pkC = ((ch && ch.results) || []).filter(function (r) { if (r.rev > vC) return false; var x = String(r.k).indexOf('@') > 0 ? opPeriodKey(r.k) : null; return x && x.period !== '*' && canSee(AC, x.key); }).map(function (r) { return r.k; });
+  if (pkC.length) outC.pk = pkC.slice(0, CHANGES_MAX * 4);
   return json(outC);
 }
 /* ── سحب مفاتيح بعينها بأحدث قيمها — للتحديث الحي بلا إعادة تحميل (KIVO_264: نُقل من handle حرفاً + C2) ── */
@@ -1029,6 +1034,9 @@ export default {
       if (path === '/api/operations/read') { var rsp = await opReadRoute(env,request,url,ss)@@SYS:ops.read.vars.tasks@@;
 @@SYS:ops.read.jobs.tasks@@        return rsp; }
       if (path === '/api/operations/export') return await opExport(env,request,url,ss);
+      if (path === '/api/operations/summary') return await opSummaryRoute(env,request,url,ss);   /* V7 · 53 (019w) */
+      if (path === '/api/operations/receipt') return await opReceiptRoute(env,request,url,ss);
+      if (path === '/api/operations/periods-migrate') return await opPeriodsMigrateRoute(env,request,ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
       /* ── ماذا تغيّر منذ نسختي؟ — تستعمله لافتة «تحديثات جديدة» ── */

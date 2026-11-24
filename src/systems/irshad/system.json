@@ -487,7 +487,7 @@
   },
   "admin.keyLabels": {
    "order": 10,
-   "text": "        bassam_irshad_v1: \"نظام الاسترشاد\",\r\n"
+   "text": "        bassam_irshad_v1: \"نظام الاسترشاد\",\r\n        bassam_irshad_retro_v1: \"نافذة استدراك الاسترشاد\",\r\n"
   },
   "admin.counts.list.1": {
    "order": 10,
@@ -622,6 +622,10 @@
   "root.deptBackup.manifest": {
    "order": 10,
    "text": "irshad:1,"
+  },
+  "root.deptBackup.domainKey": {
+   "order": 10,
+   "text": "irshad:\"bassam_irshad_v1\", "
   },
   "bd.commitGuard.irshadShift": {
    "order": 10,

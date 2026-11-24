@@ -447,7 +447,7 @@
   },
   "admin.keyLabels": {
    "order": 20,
-   "text": "        bassam_seized_v1: \"نظام المضبوطات\",\r\n        bassam_seized_cat_v1: \"قائمة ممنوعات المضبوطات\",\r\n        bassam_seized_acts_v1: \"إجراءات المضبوطات\",\r\n        bassam_seized_locs_v1: \"مواقع المضبوطات\",\r\n        bassam_seized_jew_v1: \"أنواع قطع المجوهرات\",\r\n"
+   "text": "        bassam_seized_retro_v1: \"نافذة استدراك المضبوطات\",\r\n        bassam_seized_v1: \"نظام المضبوطات\",\r\n        bassam_seized_cat_v1: \"قائمة ممنوعات المضبوطات\",\r\n        bassam_seized_acts_v1: \"إجراءات المضبوطات\",\r\n        bassam_seized_locs_v1: \"مواقع المضبوطات\",\r\n        bassam_seized_jew_v1: \"أنواع قطع المجوهرات\",\r\n"
   },
   "admin.counts.list.1": {
    "order": 20,
@@ -584,6 +584,10 @@
   "root.deptBackup.manifest": {
    "order": 20,
    "text": "seized:1,"
+  },
+  "root.deptBackup.domainKey": {
+   "order": 20,
+   "text": "seized:\"bassam_seized_v1\", "
   },
   "enf.compat": {
    "order": 20,

@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { TAG, dk, D2, both, scene } from './v7_f_img_fx.mjs';
+import { SRC } from './harness.mjs';   /* V7 · 53: KIVO_SRC أو src المستودع — لا undefined حين يُشغَّل بلا KIVO_SRC (npm run test:unit) */
 
 const chain = (c, levels) => { for (let l = 0; l < levels; l++) c = c.replace(/\\/g, '\\u005c'); return c; };
 const plain = (s, what) => { assert.ok(s.includes('أكبر من الحد'), what + ' says the record is larger than the limit: ' + s); assert.ok(!/[A-Za-z\\]/.test(s), what + ' has no code, no Latin, no backslash: ' + s); };
@@ -19,7 +20,7 @@ both(test, 'a record past the decoding work bound is refused with a plain Arabic
 });
 
 test('the client names both image refusals in Arabic instead of the permission fallback', () => {
-  const src = readFileSync(join(process.env.KIVO_SRC, 'api', '280-server-storage.js'), 'utf8');
+  const src = readFileSync(join(SRC, 'api', '280-server-storage.js'), 'utf8');
   const get = (k) => { const m = new RegExp('WHY\\["' + k + '"\\]\\s*=\\s*"([^"]+)"').exec(src); assert.ok(m, 'WHY["' + k + '"] is defined'); return m[1]; };
   plain(get('img-escape'), 'client img-escape');
   const lim = get('img-limit'); assert.ok(/صور/.test(lim) && !/[A-Za-z\\]/.test(lim), lim);

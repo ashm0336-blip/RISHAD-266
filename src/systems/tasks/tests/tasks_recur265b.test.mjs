@@ -129,7 +129,7 @@ for (const mode of ['enforce']) {
     const T = DAY.split('-').map(Number), d0 = T[2] > 1 ? T[2] - 1 : 15;          /* يومٌ من الشهر الماضي — KIVO_265 · البند 15: الأفقُ 30 يوماً يشمل موعدَ الشهر الجاري/القادم فتُوقف السلسلةُ مؤقتاً قبل القفل لتبقى بنسخة الشهر المقفل وحدها */
     let i0 = -1; while (i0 > -70 && hij(MID(N0) + i0 * 864e5 + 12 * HR) !== PMK + '-' + d0) i0--;
     const sP = MID(N0) + i0 * 864e5 + 8 * HR, kP = hij(sP); assert.equal(kP, PMK + '-' + d0);
-    await replaceOperationalFixture(W.env, KL, {});
+    await replaceOperationalFixture(W.env, KL, { [PMK]: { mo: 1 } });   /* V7 · 53 (قرار المالك ٧): الشهرُ الماضي مقفلٌ ما لم يُفتح للاستدراك — يُفتح وقتَ الإنشاء */
     const c = await post(W, dm.ck, '/api/tasks/create', { k: kP, t: TAG + ' شهرية', s: sP, e: sP + HR, asg: [ME.eid], rv: 'none', force: true, rec: { t: 'monthly', md: d0, open: 1 } });
     assert.equal(c.status, 200, show(c)); const id = recIdOf(W, c);
     const pz = await op(W, dm.ck, { id, op: 'pause' }); assert.equal(pz.status, 200, show(pz));

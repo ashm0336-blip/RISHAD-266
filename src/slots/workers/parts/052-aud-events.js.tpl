@@ -260,8 +260,7 @@ function dbGuardError(code, status) {
   e.dbGuardStatus = status || 503;
   return e;
 }
-/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ الأعطال 500 بلا رسالة. سقفُ الاستدعاء (32MiB — حتميٌّ، الإعادةُ لا تنفع) ⇒
-   413 batch-budget · وأيُّ خطأ D1 آخر (ذاكرة · ازدحام · مهلة) ⇒ 503 db-busy مع Retry-After. لا شيء كُتب (الدفعةُ ذرّية) والرسالةُ عربية. */
+/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ */
 var DB_LIMIT_MSG = { 'batch-budget': 'العملية أكبر من أن تُنفَّذ مرة واحدة. احفظ شهراً واحداً أو يوماً واحداً في كل مرة.', 'db-busy': 'الخادم مشغول الآن. أعد المحاولة بعد لحظات، وبياناتك محفوظة كما هي.' };
 function dbLimitFailure(e) {
   var text = String((e && e.message) || e || '');
@@ -358,9 +357,7 @@ async function dbGuardFallback(env, tok) {
     guard: dbGuardCapture(meta, (result[1] && result[1].results) || []),
   };
 }
-/* V7 · 53 (§3ب.4 · الثابت الذي يجعل حارسَ المراجعة صحيحاً): لا كتابةَ على ops_* إلا وترفع مراجعةَ مفتاحها المنطقي في الدفعة نفسِها.
-   عبارةُ الكتابة يسمها كاتبُها بمفاتيحها (019w opTag → __opKeys)؛ ورفعُ المراجعة يُعرف من عبارة INTO revs ومعاملاتها (مفتاحٌ أو قائمةٌ JSON).
-   كتابةٌ غيرُ موسومة لا تُقبل إلا في دفعةٍ تُبطل كلَّ القراءات (restore_epoch أو حذفُ revs كلِّها: الاستعادة · التصفير). وإلا ⇒ db-unrevised-ops-write. */
+/* V7 · 53 */
 var DB_OPS_WRITE = /^\s*(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|UPDATE|DELETE\s+FROM)\s+(ops_\w+)/i;
 function dbGuardRevised(a) {
   var bumped = new Set(), wide = false, need = [];
@@ -372,7 +369,7 @@ function dbGuardRevised(a) {
       if (v.slice(0, 7) === 'bsdept:') bumped.add(v);
       else if (v.charAt(0) === '[') { var j = parseJson(v, null); if (Array.isArray(j)) j.forEach(function (x) { var k = typeof x === 'string' ? x : x && x.k; if (typeof k === 'string') bumped.add(k); }); }
     });
-    if (s && s.__guardReadOnly !== true && DB_OPS_WRITE.test(sql)) need.push(s);
+    if (s && s.__guardReadOnly !== true && DB_OPS_WRITE.test(sql) && !/^\s*(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|UPDATE|DELETE\s+FROM)\s+ops_period_summary\b/i.test(sql)) need.push(s);   /* الملخّصُ مشتقٌّ بمراجعته (لا يُقرأ بحارس) */
   });
   need.forEach(function (s) {
     var keys = s.__opKeys;

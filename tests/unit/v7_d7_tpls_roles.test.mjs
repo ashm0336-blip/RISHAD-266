@@ -15,7 +15,7 @@ const need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport', 'custody') 
 const quiet = console.log; console.log = (...a) => { if (!/^\{"v":1/.test(String(a[0]))) quiet(...a); };
 const kvOf = (T, k) => { const r = T.DB.q("SELECT group_concat(v,'') v FROM (SELECT v FROM kv WHERE k=?1 ORDER BY seq)", k)[0]; return r && r.v ? JSON.parse(r.v) : null; };
 const W = await internals(['perm44E']);
-const E = W.perm44E(), TASKS = E.keysFor('tasks', 'view'), OFF = { super: 'plan', mgr: 'dstats' }, OFFKEYS = { super: E.keysFor('plan', 'view'), mgr: E.keysFor('dstats', 'view') };
+const E = W.perm44E(), LENS = Object.fromEntries(E.lensList().map((x) => [x.key, x])), TASKS = E.keysFor('tasks', 'view'), OFF = { super: 'plan', mgr: 'dstats' }, OFFKEYS = { super: E.keysFor('plan', 'view'), mgr: E.keysFor('dstats', 'view') };
 
 async function fileWithTpls(as = 'super') {
   const file = await oldFile({ small: true });
@@ -55,7 +55,9 @@ test('د7 · قوالبُ نسخة الإدارة ← أدوار الوحدة ا
       assert.ok(t1.sys.tasks && t1.sys[OFF[as]], as + ': role t1 carries tasks and ' + OFF[as] + ' (stored though OFF)');
       assert.deepEqual(roles.people, { tst_demo_e11: { role: 'TEST_ONLY_t1', ex: [] } }, as + ': only the employee is assigned (no mgr:*, no unknown template)');
       /* الإسنادات: شخصُ الدور + ورقةُ الموظف · ما لا أثرَ له: كلُّ نظامٍ مطفأ يحمله الدور t1 (الخطةُ وعدساتُها) + ورقةُ plan */
-      const inert = {}; for (const sy of Object.keys(t1.sys)) if (sy !== 'tasks') inert[sy] = 1; if (as === 'super') inert.plan = (inert.plan || 0) + 1;
+      /* V7 · 53: صفُّ العدسة (52 — مالكُها lens.<L>، ومضيفاها plan وdaily/rounds) حيٌّ متى كان نظامٌ مضيفٌ لها مفعّلاً في الهدف (daily هنا) — فليس «بلا أثر» */
+      const liveLens = (sy) => { const L = LENS[sy]; return !!L && L.sys.some((x) => p0.caps[B].includes(x)); };
+      const inert = {}; for (const sy of Object.keys(t1.sys)) if (sy !== 'tasks' && !liveLens(sy)) inert[sy] = 1; if (as === 'super') inert.plan = (inert.plan || 0) + 1;
       assert.ok(Object.keys(inert).every((k) => k === OFF[as] || /^lens\./.test(k)), as + ': only the OFF system (and its lenses) is inert: ' + JSON.stringify(inert));
       const wantP = { roles: 3, assignments: 2, inert };
       assert.deepEqual(run.inspect.j.inspection.counts.perms, wantP, as + ': counts.perms before the confirmation');
@@ -63,7 +65,12 @@ test('د7 · قوالبُ نسخة الإدارة ← أدوار الوحدة ا
       const g = grants.emp.tst_demo_e11;
       assert.equal(g.src, 'role:TEST_ONLY_t1', as + ': the grant comes from the role');
       for (const k of TASKS) assert.ok(g.plus.includes(k), as + ': the role grants ' + k);
-      for (const k of OFFKEYS[as]) assert.ok(!g.plus.includes(k), as + ': ' + k + ' (' + OFF[as] + ' is OFF in the target) is inert — not granted');
+      for (const k of OFFKEYS[as]) {
+        const ow = 'lens.' + ((/^lens\.([a-z]+)\./.exec(k) || [])[1] || '');
+        /* V7 · 53: مفتاحُ عدسةٍ يحمله الدورُ في صفّها، ومضيفُها الآخر مفعّل في الهدف ⇒ في السقف فيُمنح (345 keyOn) · وما سواه للنظام المطفأ لا يُمنح */
+        if (liveLens(ow) && t1.sys[ow]) assert.ok(g.plus.includes(k), as + ': ' + k + ' (its lens is hosted by an ON system in the target) is granted by the role\'s lens row');
+        else assert.ok(!g.plus.includes(k), as + ': ' + k + ' (' + OFF[as] + ' is OFF in the target) is inert — not granted');
+      }
       assert.ok(!Object.keys(grants.emp).some((e) => e.startsWith('mgr:')), as + ': no grant for a manager');
       assert.deepEqual(now.caps[B], before.caps[B], as + ': the ceiling is unchanged');
       assert.equal(staged(T.DB), 0);

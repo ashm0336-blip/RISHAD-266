@@ -449,7 +449,8 @@ test('عمودُ «الوردية»: ورديةُ المكلَّف من الجد
 
 test('القالب: خانةُ اليوم بنقرٍ ونقرٍ مزدوج · «الشهر كاملاً» · أزرارُ المؤشرات وشريحةُ التصفية · وعمودُ «الوردية»', () => {
   const V = fs.readFileSync(path.join(ROOT, 'src/systems/tasks/client/view.html'), 'utf8');
-  assert.match(V, /<div onClick="\{\{d\.click\}\}" onDoubleClick="\{\{d\.dbl\}\}" title="\{\{d\.tip\}\}" style="\{\{d\.style\}\}"/);
+  /* V7 · 53: uifix (١٠) وسَم خانةَ اليوم الجاري data-strip-cur ليُمرَّر الشريطُ إليها — الوسمُ جزءٌ من القالب المثبَّت */
+  assert.match(V, /<div data-strip-cur="\{\{d\.isToday\}\}" onClick="\{\{d\.click\}\}" onDoubleClick="\{\{d\.dbl\}\}" title="\{\{d\.tip\}\}" style="\{\{d\.style\}\}"/);
   assert.match(V, /<sc-if value="\{\{tkDayAllOn\}\}"[^>]*><button type="button" onClick="\{\{tkDayAll\}\}" class="tk-dayall">\{\{tkDayAllTxt\}\}<\/button>/);
   for (const n of [2, 3, 4, 5]) assert.match(V, new RegExp('aria-pressed="\\{\\{tkK' + n + 'On\\}\\}" aria-label="\\{\\{tkK' + n + 'Aria\\}\\}" onClick="\\{\\{tkK' + n + 'Go\\}\\}"'), 'المؤشر ' + n);
   assert.match(V, /onClick="\{\{tkKfClear\}\}" aria-label="\{\{tkKfAria\}\}">\{\{tkKfTxt\}\}/);

@@ -167,6 +167,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           return main;
         }
       }
+      /* V7 · 53 (ملحق 4 البند 4): فشلٌ مؤكَّد (الخادمُ لم يكتب شيئاً — تحقّقت منه خدمةُ الإيداع بقراءة المورد) ⇒ لا تبقى الواجهةُ على حالةٍ توحي
+         بالنجاح (موقعٌ محذوفٌ لم يُحذف): رسالةٌ صريحة، ثم تعود الصفحةُ إلى المحفوظ فعلاً، والإجراءُ التالي طلبٌ جديد */
+      if (result && result.failed) {
+        delete this._opActions[action];
+        this._opTicket = null;
+        this.bsToast("تعذّر الحفظ فلم يُحفظ تعديلك — عادت الصفحة إلى المحفوظ فعلاً. أعد الإجراء؛ لن يتكرّر.", "err");
+        try {
+          this._bsLiveReload(names, !0);
+        } catch (e) {}
+        return result;
+      }
       if (!result || result.ok !== 1) {
         this.bsToast(
           result && result.uncertain
@@ -2478,8 +2489,31 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     try {
       const t = this._opRead("bassam_plan_v1");
       if (t) return t;
-    } catch (t) {}
+    } catch (t) {
+      this._planLateRead();
+    }
     return null;
+  }
+  /* V7 · 53 (ملحق 4 · الملاحظة الثانية): الخطةُ قُرئت والصفحةُ بُنيت قبل وصول قراءتها (سباقُ تحميل) ⇒ كانت تعرض «لا توجد خطة لشهر …»
+     والخادمُ يعيد الشهر. الآن تنتظر الصفحةُ جاهزيةَ المفتاح ثم تعيد بناءَ نفسِها من المحفوظ — بحدٍّ (دقيقة)، ولا تكتب شيئاً. */
+  _planLateRead() {
+    if (this._planLateT) return;
+    const service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations,
+      until = Date.now() + 6e4,
+      tick = () => {
+        this._planLateT = 0;
+        let known = "";
+        try {
+          known = service && typeof service.state === "function" ? service.state("bassam_plan_v1") : "";
+        } catch (e) {}
+        if ("ready" === known || "absent" === known) {
+          try {
+            if (this._bsLiveReload(["bassam_plan_v1"], !0) !== false) return;
+          } catch (e) {}
+        }
+        Date.now() < until && (this._planLateT = setTimeout(tick, 300));
+      };
+    this._planLateT = setTimeout(tick, 300);
   }
   async _putImg(value, previous) {
     const service = this._opService(),
@@ -4221,6 +4255,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     }
   }
   componentWillUnmount() {
+    clearTimeout(this._planLateT);   /* V7 · 53 */
+    this._planLateT = 0;
     try {
       window.removeEventListener("bs:ptab-shown", this._bsShown);
     } catch (t) {}
@@ -4980,6 +5016,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         .filter(Boolean);
     return e("div", { key: t.key9 }, l, p);
   }
+  /* V7 · 53 (ك20): الطاقمُ الإشرافي (حاملو دورٍ إشرافي من أدوار الإدارة — KIVO.BassamSup) خارج التسكين والتغطية كما في «الجولات اليومية» */
+  _sup53(k) {
+    try {
+      const S = KIVO.BassamSup;
+      return !!(k && S && S.supName && S.supName(k));
+    } catch (t) {
+      return !1;
+    }
+  }
   _distPanel9(t, e) {
     const s = React.createElement,
       n = (e) => {
@@ -5029,14 +5074,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       p = 0,
       c = 0,
       g = 0,
-      f = 0;
+      f = 0,
+      sp = 0;
+    /* V7 · 53 (ك20 · ك14): الإشرافيُّ يُعدّ في القوة ويُذكر «منهم إشرافي» — ولا يُعدّ في «مسكّنون» ولا «متاح للتسكين» */
     (Object.keys(i).forEach((t) => {
       d[t] || f++;
     }),
       o.forEach((t) => {
-        (h++, i[t.name] ? (p++, a[t.name] && g++) : c++);
+        (h++, this._sup53(this._ekeyOf(t)) ? sp++ : i[t.name] ? (p++, a[t.name] && g++) : c++);
       }));
     const u = h ? Math.round((100 * p) / h) : 0,
+      ug = h ? Math.round((100 * c) / h) : 0,
       m = KIVO.__bsCssObj,
       y =
         (r
@@ -5110,7 +5158,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           s(
             "span",
             { style: { fontSize: 9, fontWeight: 400, color: "var(--fg-x94a3b8)", marginTop: 3, whiteSpace: "nowrap" } },
-            r ? "القوة الميدانية" : "القوة الميدانية — لا جدول لهذا الشهر بعد",
+            (r ? "القوة الميدانية" : "القوة الميدانية — لا جدول لهذا الشهر بعد") + (sp ? " · منهم إشرافي " + sp : ""),
           ),
         ),
         s("div", { key: "sp", style: { width: 1, background: "linear-gradient(180deg,transparent,var(--bg-xe6e8eb),transparent)" } }),
@@ -5144,14 +5192,22 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             [
               "av",
               c,
-              100 - u,
+              ug,
               "var(--warning-text)",
               "var(--chart-9)",
               "متاح للتسكين",
               ["M13 2 3 14h9l-1 8 10-12h-9l1-8"],
               "var(--warning-bg)",
               "var(--warning-border)",
-              "ميدانيون بلا أي تسكين بعد: " + c + " من " + h + " (" + (100 - u) + "٪) — مسكّنون + متاح = القوة الميدانية دائماً",
+              "ميدانيون بلا أي تسكين بعد: " +
+                c +
+                " من " +
+                h +
+                " (" +
+                ug +
+                "٪) — مسكّنون + متاح" +
+                (sp ? " + الطاقم الإشرافي (" + sp + ") — خارج التسكين —" : "") +
+                " = القوة الميدانية دائماً",
             ],
           ].map((t) => {
             return s(
@@ -5512,19 +5568,30 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         .map((n, a) => {
           const i = {},
             r = [];
+          /* V7 · 53 (ك20 · ك15): الإشرافيُّ لا يُعدّ مسكَّناً · العجزُ والزائدُ مجموعُ كل موقع (لا صافي) · المغلقُ والمعطّلُ خارج الاحتياج */
           e.arr.forEach((s) => {
-            const a = KIVO.BassamNeed.tot(s, t.shiftOpts),
-              l = (s.emp || []).length;
+            const D = !!(s && (s.closed || s.off)),
+              a = D ? 0 : KIVO.BassamNeed.tot(s, t.shiftOpts),
+              l = (s.emp || []).filter((t) => !this._sup53(this._ck(t))).length,
+              df = D ? 0 : Math.max(0, a - l),
+              ex = D ? 0 : Math.max(0, l - a);
             e.valsOf(s, n[0]).forEach((t) => {
-              (null == i[t] && ((i[t] = { need: 0, plc: 0 }), r.push(t)), (i[t].need += a), (i[t].plc += l));
+              (null == i[t] && ((i[t] = { need: 0, plc: 0, df: 0, ex: 0 }), r.push(t)),
+                (i[t].need += a),
+                (i[t].plc += l),
+                (i[t].df += df),
+                (i[t].ex += ex));
             });
           });
           const l = r
-            .map((t) => ({ label: t, need: i[t].need, plc: i[t].plc }))
+            .map((t) => ({ label: t, need: i[t].need, plc: i[t].plc, df: i[t].df, ex: i[t].ex }))
             .sort((t, e) => e.need - t.need || e.plc - t.plc || t.label.localeCompare(e.label, "ar"));
           if (!l.length) return null;
           const o = l.reduce((t, e) => t + e.need, 0),
             d = l.reduce((t, e) => t + e.plc, 0),
+            pd = l.reduce((t, e) => t + e.df, 0),
+            px = l.reduce((t, e) => t + e.ex, 0),
+            t9 = t,
             h = (e.unitOf(n[0]), e.catNoteOf(n[0])),
             p = (t) => {
               if (e.locDim && n[0] === e.locDim) {
@@ -5571,9 +5638,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 ),
               ),
             ),
-            g = (t, e, n, a, i, r) => {
-              const l = Math.max(0, e - n),
-                d = Math.max(0, n - e),
+            g = (t, e, n, a, i, r, df, ex) => {
+              const l = null != df ? df : Math.max(0, e - n),
+                d = null != ex ? ex : Math.max(0, n - e),
                 p = o ? Math.round((e / o) * 100) : 0,
                 c = o ? (e / o) * 100 : 0,
                 g = e ? Math.round((100 * n) / e) : 0,
@@ -5594,7 +5661,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     t +
                     " — الاحتياج " +
                     e +
-                    (e ? " (" + p + "٪ من احتياج القسم — مجموع الورديات الأربع)" : " (بلا احتياج مُدخل)") +
+                    (e ? " (" + p + "٪ من احتياج القسم — مجموع ورديات الإدارة (" + ((t9.shiftOpts || []).length || 1) + "))" : " (بلا احتياج مُدخل)")   /* V7 · 53 (ك25): العددُ من الإعداد */ +
                     " · مسكّن " +
                     n +
                     (e ? " (" + g + "٪ من الاحتياج)" : "") +
@@ -5633,7 +5700,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               { style: { flex: 1, minWidth: 0 } },
               c,
               l
-                .map((t, e) => g(t.label, t.need, t.plc, p(t), !1, w(p(t), "sw" + a + e)))
+                .map((t, e) => g(t.label, t.need, t.plc, p(t), !1, w(p(t), "sw" + a + e), t.df, t.ex))
                 .concat([
                   g(
                     "الإجمالي",
@@ -5644,6 +5711,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     s("span", {
                       style: { width: 17, height: 11, borderRadius: 2.5, flexShrink: 0, background: "var(--bg-x9a7e40)", opacity: 0.85 },
                     }),
+                    pd,
+                    px,
                   ),
                 ]),
             ),
@@ -8487,7 +8556,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           );
         const s = {};
         f.forEach((e) => {
-          if (!e || !e.name || t.has(this._ekeyOf(e))) return;
+          if (!e || !e.name || t.has(this._ekeyOf(e)) || this._sup53(this._ekeyOf(e))) return;   /* V7 · 53 (ك20): الطاقمُ الإشرافي لا يُسكَّن آلياً */
           const n = A[e.name];
           n && (s[n] = s[n] || []).push(this._ekeyOf(e));
         });
@@ -8529,7 +8598,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           );
         const s = {};
         f.forEach((e) => {
-          if (!e || !e.name || t.has(this._ekeyOf(e))) return;
+          if (!e || !e.name || t.has(this._ekeyOf(e)) || this._sup53(this._ekeyOf(e))) return;   /* V7 · 53 (ك20): الطاقمُ الإشرافي لا يُسكَّن آلياً */
           const n = A[e.name];
           n && (s[n] = s[n] || []).push(this._ekeyOf(e));
         });
@@ -8569,7 +8638,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           );
         const s = {};
         f.forEach((e) => {
-          if (!e || !e.name || t.has(this._ekeyOf(e))) return;
+          if (!e || !e.name || t.has(this._ekeyOf(e)) || this._sup53(this._ekeyOf(e))) return;   /* V7 · 53 (ك20): الطاقمُ الإشرافي لا يُسكَّن آلياً */
           const n = A[e.name];
           n && (s[n] = s[n] || []).push(this._ekeyOf(e));
         });
@@ -11666,7 +11735,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 : " ويكتمل به احتياج المصليات كاملاً.") +
               (t.surplus
                 ? " ويبقى " +
-                  KIVO.BassamCount(t.surplus, "موظف|فائض غير مسكَّن") +
+                  KIVO.BassamCount(t.surplus, ["موظف واحد غير مسكَّن (احتياط)", "موظفان غير مسكَّنَين (احتياط)", "موظفَين غير مسكَّنَين (احتياط)", "موظفين غير مسكَّنين (احتياط)", "موظفاً غير مسكَّن (احتياط)", "موظف غير مسكَّن (احتياط)"])   /* V7 · 53 (ك26): «غير مسكَّنين (احتياط)» — «فائض» في الجولات معناه المسكَّن فوق الاحتياج */ +
                   " " +
                   KIVO.BassamCount.agr(t.surplus, "تسكّنه", "تسكّنهما", "تسكّنهم") +
                   " بيدك."
@@ -11692,7 +11761,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   KIVO.BassamCount(t.n, "مصلى", "g") +
                   "" +
                   (t.deficit ? " · بقي عجز " + t.deficit : " · اكتمل الاحتياج") +
-                  (t.surplus ? " · فائض غير مسكَّن: " + t.surplus : "")
+                  (t.surplus ? " · غير مسكَّنين (احتياط): " + t.surplus : "")
               : "لم يُسكَّن أحد — راجع احتياج المصليات وموظفي الورديات",
             t.placed ? "ok" : "warn",
           ));
@@ -11718,7 +11787,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 : " ويكتمل به احتياج المعالم كاملاً.") +
               (t.surplus
                 ? " ويبقى " +
-                  KIVO.BassamCount(t.surplus, "موظف|فائض غير مسكَّن") +
+                  KIVO.BassamCount(t.surplus, ["موظف واحد غير مسكَّن (احتياط)", "موظفان غير مسكَّنَين (احتياط)", "موظفَين غير مسكَّنَين (احتياط)", "موظفين غير مسكَّنين (احتياط)", "موظفاً غير مسكَّن (احتياط)", "موظف غير مسكَّن (احتياط)"])   /* V7 · 53 (ك26): «غير مسكَّنين (احتياط)» — «فائض» في الجولات معناه المسكَّن فوق الاحتياج */ +
                   " " +
                   KIVO.BassamCount.agr(t.surplus, "تسكّنه", "تسكّنهما", "تسكّنهم") +
                   " بيدك."
@@ -11744,7 +11813,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   KIVO.BassamCount(t.n, "معلم", "g") +
                   "" +
                   (t.deficit ? " · بقي عجز " + t.deficit : " · اكتمل الاحتياج") +
-                  (t.surplus ? " · فائض غير مسكَّن: " + t.surplus : "")
+                  (t.surplus ? " · غير مسكَّنين (احتياط): " + t.surplus : "")
               : "لم يُسكَّن أحد — راجع احتياج المعالم وموظفي الورديات",
             t.placed ? "ok" : "warn",
           ));
@@ -11772,7 +11841,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 : " ويكتمل به احتياج الأبواب كاملاً.") +
               (t.surplus
                 ? " ويبقى " +
-                  KIVO.BassamCount(t.surplus, "موظف|فائض غير مسكَّن") +
+                  KIVO.BassamCount(t.surplus, ["موظف واحد غير مسكَّن (احتياط)", "موظفان غير مسكَّنَين (احتياط)", "موظفَين غير مسكَّنَين (احتياط)", "موظفين غير مسكَّنين (احتياط)", "موظفاً غير مسكَّن (احتياط)", "موظف غير مسكَّن (احتياط)"])   /* V7 · 53 (ك26): «غير مسكَّنين (احتياط)» — «فائض» في الجولات معناه المسكَّن فوق الاحتياج */ +
                   " " +
                   KIVO.BassamCount.agr(t.surplus, "تسكّنه", "تسكّنهما", "تسكّنهم") +
                   " بيدك."
@@ -11798,7 +11867,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   KIVO.BassamCount(t.gatesN, "باب", "g") +
                   "" +
                   (t.deficit ? " · بقي عجز " + t.deficit : " · اكتمل الاحتياج") +
-                  (t.surplus ? " · فائض غير مسكَّن: " + t.surplus : "")
+                  (t.surplus ? " · غير مسكَّنين (احتياط): " + t.surplus : "")
               : "لم يُسكَّن أحد — راجع احتياج الأبواب وموظفي الورديات",
             t.placed ? "ok" : "warn",
           ));

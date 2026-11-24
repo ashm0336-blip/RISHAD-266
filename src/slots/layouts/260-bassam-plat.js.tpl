@@ -93,7 +93,7 @@
       /* KIVO_254 (AUD-020 · لوحة المفاتيح): رابطُ «المساعدة» <a> بلا href كروابط التنقّل — role="link" وtabindex="0" يدخلانه ترتيبَ Tab ويُفتح بـEnter (المُحسِّن 660) */
       /* CORE-02 S7: في مساحة «مركز إدارة رشاد» لا مجموعةَ مساعدة — المساعدةُ هناك في «حول المنصة» والجرس */
       if (aside.classList.contains("bsb--console")) { if (hg) hg.remove(); }
-      else if (nav && P.side.help && helpOk && !hg) { hg = document.createElement("div"); hg.className = "grp bs-plat-helpgrp"; hg.innerHTML = '<a class="n bs-plat-help" role="link" tabindex="0" title="حول المنصة والأدلة"><span class="ni">' + svg(I_HELP) + '</span><span class="nlbl">المساعدة</span></a>'; hg.querySelector("a").addEventListener("click", function (ev) { ev.preventDefault(); openAbout(); }); hg.style.marginTop = "0";
+      else if (nav && P.side.help && helpOk && !hg) { hg = document.createElement("div"); hg.className = "grp bs-plat-helpgrp"; hg.innerHTML = '<a class="n bs-plat-help" role="button" tabindex="0" title="حول المنصة والأدلة"><span class="ni">' + svg(I_HELP) + '</span><span class="nlbl">المساعدة</span></a>'; hg.querySelector("a").addEventListener("click", function (ev) { ev.preventDefault(); openAbout(); }); hg.style.marginTop = "0";
         /* «المساعدة» تلي «مواقع ذات صلة» مباشرة — مجموعة المراجع — لا آخر القائمة بعد «الإعدادات»؛ وتبقى مجموعةً مستقلة كي لا تختفي معها حين تُطفأ المواقع */
         var lg = nav.querySelectorAll(":scope > .grp")[1]; if (lg && lg.nextSibling) nav.insertBefore(hg, lg.nextSibling); else nav.appendChild(hg); }
       else if (hg && (!P.side.help || !helpOk)) hg.remove();
@@ -194,8 +194,14 @@
       + (gs.length ? '<div style="font-size:11px;font-weight:700;color:var(--fg-x64748b);margin-bottom:2px">الأدلة</div>' + gs.map(function (g) { return '<a class="g" href="' + esc(g.u) + '" target="_blank" rel="noopener">' + esc(g.t) + " <span style=\"color:var(--fg-xb99751)\">↗</span></a>"; }).join("") : (sup ? '<div class="m">لم تُضف أدلة بعد — تُضاف من مركز إدارة رشاد ← إعدادات المنصة ← حول المنصة.</div>' : ""))
       + (P.about.support || P.about.phone ? '<div style="margin-top:10px;border-top:1px solid var(--bd-xf1efe9);padding-top:10px"><div style="font-size:11px;font-weight:700;color:var(--fg-x64748b)">الدعم الفني</div><div class="m">' + esc([P.about.support, P.about.phone].filter(Boolean).join(" · ")) + (P.about.msg ? "<br>" + esc(P.about.msg) : "") + "</div></div>" : "")
       + '<div style="display:flex;justify-content:flex-start;margin-top:14px"><button class="bs-plat-btn" id="bsAboutX">إغلاق</button></div></div>';
+    /* V7 · 53 (البند 12): نافذةٌ لا رابط — تُغلق بـ«إغلاق» وبالنقر خارجها وبـEsc وعند أي انتقال (تغيّر العنوان)، فلا تبقى فوق الصفحة تحجب أزرارها */
+    ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "حول المنصة");
+    var shut = function () { ov.remove(); document.removeEventListener("keydown", onKey, true); window.removeEventListener("hashchange", shut); window.removeEventListener("popstate", shut); };
+    var onKey = function (e) { if (e.key === "Escape" && ov.isConnected) { e.stopPropagation(); shut(); } };
     document.body.appendChild(ov);
-    ov.addEventListener("click", function (e) { if (e.target === ov || e.target.id === "bsAboutX") ov.remove(); });
+    ov.addEventListener("click", function (e) { if (e.target === ov || e.target.id === "bsAboutX") shut(); });
+    document.addEventListener("keydown", onKey, true); window.addEventListener("hashchange", shut); window.addEventListener("popstate", shut);
+    try { var x9 = ov.querySelector("#bsAboutX"); if (x9) x9.focus(); } catch (e) {}
   }
   /* «ما الجديد» — مرة واحدة لكل إصدار على هذا الجهاز */
   function whatsNewOnce() {

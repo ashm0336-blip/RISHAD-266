@@ -104,3 +104,80 @@ test('53 · الثابت: كتابةٌ على ops_* بلا رفع مراجعة �
     await G.batch([st, bump]);
   } finally { await T.close(); }
 });
+
+/* V7 · 53 · طلباتُ periodsui (periodsui_to_periods.md): خلل 7 · خلل 8 · طلب 1 · طلب 6 */
+import { replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
+test('53 · periodsui: فترةٌ غائبة تُنشأ بـbase 0 بعد حذفها وكتابةٍ كاملة (7) · كتابةٌ كاملة تغيّر اليوم ⇒ 409 لا 403 (8) · ملخّصُ التقرير (1) · المراجعةُ المنطقية (6)', { timeout: 120000 }, async () => {
+  const { T, read, save, env } = await lab();
+  try {
+    const SK = K('bassam_staffing_v3'), DK = K('bassam_dreport_v1');
+    /* (7) شهرٌ يُكتب ثم يُحذف ثم تكتب الوثيقةُ كاملة بلا ذلك الشهر — ثم يُنشأ من جديد بـbase 0 */
+    let r = await save({ set: { [SK + '@1448-6']: JSON.stringify({ TEST_ONLY_eA1: { shift: 'A' } }) }, base: { [SK + '@1448-6']: 0 } });
+    assert.equal(r.status, 200, r.t.slice(0, 300));
+    r = await save({ del: [SK + '@1448-6'], base: { [SK + '@1448-6']: r.j.revs[SK + '@1448-6'] } });
+    assert.equal(r.status, 200, r.t.slice(0, 300));
+    await replaceOperationalFixture(env, SK, { '1448-5': { TEST_ONLY_eA1: { shift: 'B' } } });
+    r = await save({ set: { [SK + '@1448-6']: JSON.stringify({ TEST_ONLY_eA1: { shift: 'C' } }) }, base: { [SK + '@1448-6']: 0 } });
+    assert.equal(r.status, 200, 'فترةٌ غائبةٌ الآن تُنشأ بـbase 0: ' + r.t.slice(0, 300));
+    /* وbase 0 لفترةٍ حاضرة تعارضٌ كما كان */
+    r = await save({ set: { [SK + '@1448-5']: JSON.stringify({}) }, base: { [SK + '@1448-5']: 0 } });
+    assert.equal(r.status, 409, r.t.slice(0, 300));
+    /* (8) قراءةُ يومٍ ثم كتابةٌ كاملة تغيّره ⇒ حفظُ اليوم بمراجعته القديمة تعارض 409 */
+    r = await save({ set: { [RK]: JSON.stringify(ROUNDS) }, base: { [RK]: 0 } }); assert.equal(r.status, 200, r.t.slice(0, 300));
+    const rd = await read('keys=' + encodeURIComponent(RK + '@1448-6-1'));
+    await replaceOperationalFixture(env, RK, { ...ROUNDS, '1448-6-1': day(77) });
+    r = await save({ set: { [RK + '@1448-6-1']: JSON.stringify(day(78)) }, base: { [RK + '@1448-6-1']: rd.j.base[RK + '@1448-6-1'] } });
+    assert.equal(r.status, 409, r.t.slice(0, 300)); assert.deepEqual(Object.keys(r.j.conflicts), [RK + '@1448-6-1']);
+    /* والحفظُ الكاملُ الحقيقي عبر /api/save كذلك */
+    const rd2 = await read('keys=' + encodeURIComponent(RK + '@1448-6-2')), full = await read('keys=' + encodeURIComponent(RK));
+    r = await save({ set: { [RK]: JSON.stringify({ ...full.j.resources[RK], '1448-6-2': day(79) }) }, base: { [RK]: full.j.base[RK] } }); assert.equal(r.status, 200, r.t.slice(0, 300));
+    r = await save({ set: { [RK + '@1448-6-2']: JSON.stringify(day(80)) }, base: { [RK + '@1448-6-2']: rd2.j.base[RK + '@1448-6-2'] } });
+    assert.equal(r.status, 409, r.t.slice(0, 300));
+    /* (1) ملخّصُ يوم التقرير: created · ap (كلُّ الورديات معتمدة) · anyAp */
+    await replaceOperationalFixture(env, DK, { '1448-6-3': { created: 1, shifts: { A: { ap: 1, roster: [] }, B: { roster: [] } } } });   /* الاعتمادُ مسارُه وأحكامُه — هنا شكلُ الملخّص وحده */
+    const sm = await T.call('/api/operations/summary?key=' + encodeURIComponent(DK) + '&grp=1448-6&uid=' + encodeURIComponent(T.su.uid), { ck: T.su.ck });
+    assert.equal(sm.status, 200, sm.t.slice(0, 300));
+    const v = sm.j.rows.find((x) => x.p === '1448-6-3').v;
+    assert.deepEqual([v.created, v.ap, v.anyAp], [1, 0, 1]);
+    /* (6) قراءةُ الفترات تحمل المراجعةَ المنطقية لمفتاحها */
+    const lr = await read('keys=' + encodeURIComponent(RK + '@1448-6-1')), lf = await read('keys=' + encodeURIComponent(RK));
+    assert.equal(lr.j.logical[RK], lf.j.base[RK]);
+  } finally { await T.close(); }
+});
+
+/* V7 · 53 · kpi (طلب 9): v.kpi في الملخّص = إسقاطُ _kLean حرفاً — من الخادم (019p0 OS_KPI_LEAN) ومن منطق صفحة الجولات حين يحمل _kLean */
+import fs from 'node:fs';
+import { SRC } from './harness.mjs';
+function clientLean() {
+  let src = ''; try { src = fs.readFileSync(process.env.KIVO_KLEAN_FROM || SRC + '/systems/daily/client/logic.js.tpl', 'utf8'); } catch (e) { return null; }
+  const i = src.indexOf('  _kLean(kind, p, v) {'); if (i < 0) return null;
+  const j = src.indexOf('\n  }\n', i);
+  return new Function('kind', 'p', 'v', src.slice(src.indexOf('{', i) + 1, j));
+}
+test('53 · kpi: v.kpi لكل فترة (الجولات · التقرير · الجدول · الخطة) إسقاطٌ بقائمة الحقول، وm: ⇒ null، ومطابقٌ لـ_kLean في العميل', { timeout: 120000 }, async () => {
+  const { T, save, env } = await lab();
+  try {
+    const PK = K('bassam_plan_v1'), SK = K('bassam_staffing_v3'), DK = K('bassam_dreport_v1');
+    const rounds = { __pMig: 2, 'm:1448-6': { ap: 0 }, '1448-6-1': { ...day(1), d: [{ sid: 's', name: 'TEST_ONLY', zones: [{ uid: 'z', code: 'Z', name: 'TEST_ONLY', pc: { fajr: { n: 3, cap: 9 } }, emp: ['e1'], needN: 2, cx: 5, d: 'M0 0' }], gates: [{ gid: 'g', num: '1', closed: 1, cWhy: 'TEST_ONLY', x: 1 }], marks: [{ label: 'TEST_ONLY', kind: 'k', x: 2 }], paths: [{ id: 'p' }, { id: 'q' }] }] } };
+    let r = await save({ set: { [RK]: JSON.stringify(rounds) }, base: { [RK]: 0 } }); assert.equal(r.status, 200, r.t.slice(0, 300));
+    await replaceOperationalFixture(env, DK, { 'm:1448-6': { ap: 0 }, '1448-6-2': { created: 1, shifts: { A: { pulled: true, roster: [{ ekey: 'e1', st: 'pr', name: 'TEST_ONLY' }] } } } });
+    await replaceOperationalFixture(env, SK, { '1448-6': { e1: { shift: 'A', rest: ['fri'], cs: '' } } });
+    await replaceOperationalFixture(env, PK, { floors: [], months: { '1448-6': { c: 1, d: [{ sid: 's', zones: [{ code: 'Z', name: 'TEST_ONLY', needN: 1, cx: 3 }], gates: [{ num: '1', label: 'G', x: 1 }], marks: [], paths: [] }] } }, delMonths: {} });
+    const docs = { rounds: [RK, rounds], dreport: [DK, null], staffing: [SK, null], plan: [PK, null] }, lean = clientLean();
+    for (const [kind, [key]] of Object.entries(docs)) {
+      const sm = await T.call('/api/operations/summary?key=' + encodeURIComponent(key) + '&grp=1448-6&uid=' + encodeURIComponent(T.su.uid), { ck: T.su.ck });
+      assert.equal(sm.status, 200, sm.t.slice(0, 300));
+      const full = (await T.call('/api/operations/read?keys=' + encodeURIComponent(key) + '&uid=' + encodeURIComponent(T.su.uid), { ck: T.su.ck })).j.resources[key];
+      const box = kind === 'plan' ? full.months : full;
+      for (const row of sm.j.rows) {
+        if (/^m:/.test(row.p)) { assert.equal(row.v.kpi, null, kind + ' ' + row.p); continue; }
+        assert.ok(row.v.kpi && typeof row.v.kpi === 'object', kind + ' ' + row.p);
+        if (lean) assert.deepEqual(row.v.kpi, JSON.parse(JSON.stringify(lean('bassam_' + { rounds: 'rounds_v1', dreport: 'dreport_v1', staffing: 'staffing_v3', plan: 'plan_v1' }[kind], row.p, box[row.p]))), 'مطابقٌ لـ_kLean: ' + kind + ' ' + row.p);
+      }
+      if (kind === 'rounds') { const k = sm.j.rows.find((x) => x.p === '1448-6-1').v.kpi; assert.deepEqual(k.d[0].zones[0], { uid: 'z', code: 'Z', name: 'TEST_ONLY', pc: { fajr: { n: 3, cap: 9 } }, emp: ['e1'], needN: 2 }); assert.deepEqual(k.d[0].paths, [0, 0]); assert.deepEqual(k.d[0].gates[0], { gid: 'g', num: '1', closed: 1, cWhy: 'TEST_ONLY' }); }
+      if (kind === 'dreport') assert.deepEqual(sm.j.rows.find((x) => x.p === '1448-6-2').v.kpi, { created: 1, shifts: { A: { pulled: true, roster: [{ st: 'pr', ekey: 'e1' }] } } });
+      if (kind === 'staffing') assert.deepEqual(sm.j.rows[0].v.kpi, { e1: { rest: ['fri'] } });
+      if (kind === 'plan') assert.deepEqual(sm.j.rows[0].v.kpi, { d: [{ zones: [{ code: 'Z', name: 'TEST_ONLY', needN: 1 }], gates: [{ num: '1', label: 'G' }], marks: [] }] });
+    }
+  } finally { await T.close(); }
+});

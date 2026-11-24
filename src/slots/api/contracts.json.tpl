@@ -1797,6 +1797,71 @@
           ]
         }
       }
+    },
+    {
+      "path": "/api/operations/summary",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "key",
+            "rows"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/operations/receipt",
+      "methods": [
+        "GET"
+      ],
+      "access": "actor",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "found"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
+    },
+    {
+      "path": "/api/operations/periods-migrate",
+      "methods": [
+        "POST"
+      ],
+      "access": "super",
+      "responses": {
+        "200": {
+          "keys": [
+            "ok",
+            "departments",
+            "pending"
+          ]
+        },
+        "400": {
+          "keys": [
+            "ok",
+            "err"
+          ]
+        }
+      }
     }
   ]
 }

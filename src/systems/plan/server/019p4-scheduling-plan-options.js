@@ -51,7 +51,7 @@ function osSchemaPlanResources() {
       resource: "bassam_plan_v1",
       name: "plan",
       schema: osSchemaPlan("ops_plan"),
-      period: { field: "months", index: osPeriodIndex, summary: osSumPlan },   // V7 · 53: كلُّ شهرٍ من months فترة (019w)
+      period: { field: "months", index: osPeriodIndex, summary: osSumPlan, kpi: osKpiOf('plan') },   // V7 · 53: كلُّ شهرٍ من months فترة (019w)
     },
     {
       resource: "bassam_zone_opts_v1",

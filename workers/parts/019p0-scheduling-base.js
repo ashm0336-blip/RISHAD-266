@@ -20,9 +20,7 @@ function osSchemaBaseResources() {
     },
   ];
 }
-/* V7 · 53 (التخزين بالفترة): هنا وحده يُقرأ نصُّ مفتاح الفترة القائم ('1448-6-14' · 'm:1448-6' · '1448-6') — طبقةُ الفترات (019w) لا تعرف شكلَ التاريخ.
-   grp: الشهرُ الذي تنتمي إليه الفترة (نصُّه كما هو) · seq: ترتيبٌ عددي (لا نصّي: '1448-10' بعد '1448-9') · kind: day | mctl | month (لحدّ الحجم).
-   ctx: ما يلزم أحكامَ الحفظ من فتراتٍ أخرى (اليومُ ⇐ علامةُ شهره). إن اعتُمد التقويمُ لاحقاً تغيّر هذا الموضعُ وحده. */
+/* V7 · 53 (التخزين بالفترة): هنا وحده يُقرأ نصُّ مفتاح الفترة القائم */
 function osPeriodIndex(p) {
   var m = /^(m:)?(\d+)-(\d+)(?:-(\d+))?/.exec(String(p));
   if (!m) return { grp: '', seq: 0, kind: 'day' };
@@ -64,13 +62,46 @@ function osSumPlan(p, v) { var d = v && typeof v === 'object' ? (Array.isArray(v
 function osSumReport(p, v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return { kind: 'scalar' };
   if (/^m:/.test(p)) return { ap: v.ap ? 1 : 0, mo: v.mo ? 1 : 0, open: Object.keys(v.dopen || {}).length, shut: Object.keys(v.dshut || {}).length };
-  var out = { shifts: 0, roster: 0, byStatus: {}, byShift: {} };
+  var out = { created: v.created ? 1 : 0, ap: 0, anyAp: 0, shifts: 0, roster: 0, byStatus: {}, byShift: {} }, apN = 0;
   Object.keys(v.shifts && typeof v.shifts === 'object' ? v.shifts : {}).forEach(function (sh) {
-    var s = v.shifts[sh]; out.shifts++;
+    var s = v.shifts[sh]; out.shifts++; if (s && s.ap) apN++;
     (s && Array.isArray(s.roster) ? s.roster : []).forEach(function (r) { out.roster++; var st = r && r.st ? String(r.st) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; out.byShift[sh] = (out.byShift[sh] || 0) + 1; });
   });
+  out.ap = out.shifts && apN === out.shifts ? 1 : 0; out.anyAp = apN ? 1 : 0;   // V7 · 53 (periodsui طلب 1): ألوانُ التقويم للأيام غير المحمَّلة
   return out;
 }
 function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }
-/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') — مرجعُ الإسقاط في القراءة بالفترة (019r) يقرأ شهرَه وحده من الجدول */
+/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') */
 function osPeriodNowMonth() { var T = dsToday(Date.now()); return T ? T.y + '-' + T.m : ''; }
+/* V7 · 53 (kpi طلب 9): v.kpi — إسقاطٌ بقائمة حقولٍ ثابتة لقيمة الفترة كما خُزّنت (بلا إعادة تسمية ولا قيمٍ افتراضية)، مرآةُ _kLean في
+   src/systems/daily/client/logic.js.tpl حرفاً. القوائمُ إعلانٌ واحد هنا (OS_KPI_LEAN) — من يغيّر أحدهما يغيّر الآخر (اختبارُ v7_d53_periods يقارنهما). */
+var OS_KPI_LEAN = {
+  rounds: { top: ['ap'], zones: ['uid', 'code', 'name', 'ztype', 'zcat', 'off', 'cap', 'yard', 'region', 'level', 'pc', 'count', 'emp', 'needN', 'needS', 'fAt'],
+    gates: ['gid', 'leafN', 'pOf', 'num', 'label', 'name', 'closed', 'cWhy', 'cAt', 'emp', 'needN', 'needS', 'fAt'], marks: ['label', 'name', 'kind', 'off', 'emp', 'needN', 'needS', 'fAt'] },
+  dreport: { top: ['created'], shift: ['pulled', 'ap', 'rest', 'tout'], roster: ['st', 'ekey'] },
+  staffing: { row: ['rest'] },
+  plan: { zones: ['code', 'name', 'needN', 'needS'], gates: ['num', 'label', 'needN', 'needS'], marks: ['label', 'kind', 'needN', 'needS'] }
+};
+function osKpiPick(o, ks) { var r = {}; if (o && typeof o === 'object') ks.forEach(function (k) { if (o[k] !== undefined) r[k] = o[k]; }); return r; }
+function osKpiArr(a, f) { return Array.isArray(a) ? a.map(function (x) { return x && typeof x === 'object' ? f(x) : x; }) : a; }
+function osKpiLean(kind, p, v) {
+  if (!v || typeof v !== 'object') return v;
+  var L = OS_KPI_LEAN[kind];
+  if (kind === 'rounds') {
+    if (/^m:/.test(p) || Array.isArray(v)) return null;
+    return Object.assign(osKpiPick(v, L.top), { d: osKpiArr(v.d, function (f) { return { zones: osKpiArr(f.zones, function (z) { return osKpiPick(z, L.zones); }), gates: osKpiArr(f.gates, function (g) { return osKpiPick(g, L.gates); }), marks: osKpiArr(f.marks, function (m) { return osKpiPick(m, L.marks); }), paths: Array.isArray(f.paths) ? f.paths.map(function () { return 0; }) : f.paths }; }) });
+  }
+  if (kind === 'dreport') {
+    if (/^m:/.test(p) || Array.isArray(v)) return null;
+    var sh = {};
+    Object.keys(v.shifts && typeof v.shifts === 'object' ? v.shifts : {}).forEach(function (k) { var s = v.shifts[k]; if (s && typeof s === 'object') sh[k] = Object.assign(osKpiPick(s, L.shift), { roster: osKpiArr(s.roster, function (r) { return osKpiPick(r, L.roster); }) }); });
+    return Object.assign(osKpiPick(v, L.top), { shifts: sh });
+  }
+  if (kind === 'staffing') { var r = {}; Object.keys(v).forEach(function (k) { if (k.indexOf('__') !== 0 && v[k] && typeof v[k] === 'object') r[k] = osKpiPick(v[k], L.row); }); return r; }
+  if (kind === 'plan') {
+    var d = Array.isArray(v) ? v : v.d;
+    return { d: osKpiArr(d, function (f) { return { zones: osKpiArr(f.zones, function (z) { return osKpiPick(z, L.zones); }), gates: osKpiArr(f.gates, function (g) { return osKpiPick(g, L.gates); }), marks: osKpiArr(f.marks, function (m) { return osKpiPick(m, L.marks); }) }; }) };
+  }
+  return null;
+}
+function osKpiOf(kind) { return function (p, v) { return osKpiLean(kind, p, v); }; }
