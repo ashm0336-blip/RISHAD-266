@@ -180,7 +180,9 @@ test('V7 · 53 تقويم: رصد الحالات بالأشهر الميلادي
   const v = page._rzCalVals(), cal = v.rzMonths[10].card, day = v.rzDays[23].card;
   assert.equal(v.rzMonths.length, 12); assert.equal(v.rzDays.length, 30, 'November has 30 Gregorian days');
   assert.equal(cal.p['data-cal-key'], '2026-11'); assert.equal(K(cal)[0].ch[0], 'نوفمبر');
-  assert.equal(K(cal).find((x) => x.p['data-cal-line'] === '1').ch[0], '21 جمادى الأولى – 20 جمادى الآخرة', 'the Hijri span of November 2026 is the small line');
+  /* V7 · 53 (REVIEW 45): السطرُ الصغير هو المدى الهجري المختصر المعتمد (بلا أيام وبلا تكرار الكلمة)، والمدى الكامل بالأيام في التلميح */
+  assert.equal(K(cal).find((x) => x.p['data-cal-line'] === '1').ch[0], 'جمادى الأولى – الآخرة', 'the short Hijri span of November 2026 is the small line');
+  assert.match(String(cal.p.title || ''), /21 جمادى الأولى – 20 جمادى الآخرة 1448/, 'the full Hijri span with days stays in the tooltip');
   assert.deepEqual(K(day).filter((x) => x.p['data-cal-line']).map((x) => x.ch[0]), ['ث', '24', '14']);
   assert.match(v.rzSelDateLabel, /^24 نوفمبر 2026 · 14 جمادى الآخرة 1448 هـ$/);
   assert.deepEqual(X(page.rzDateCells({ y: 2026, m: 11, d: 24 })), { hij: '1448/06/14', greg: '2026/11/24' });
