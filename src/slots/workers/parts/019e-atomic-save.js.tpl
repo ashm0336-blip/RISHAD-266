@@ -181,22 +181,19 @@ function rsImageFinalValues(plan, reference) {
 }
 /* V7 · 53 (ملحق 4): أيُّ المعرّفات ids (بشكل الماسح وحده) يذكره نصٌّ */
 function rsImageHeldSql(ids, keys) {
-  var ops = keys.filter(opIsResource).map(function (k) { var i = opInfo(k); return [i.dept, i.resource]; }),
-    mine = "EXISTS(SELECT 1 FROM json_each(?3) p WHERE json_extract(p.value,'$[0]')=o.d AND (json_extract(p.value,'$[1]')=o.r OR substr(o.r,1,length(json_extract(p.value,'$[1]'))+1)=json_extract(p.value,'$[1]')||'@'))",
-    txt = imgOpsCols().map(function (x, j) { return 'SELECT ' + j + ' AS j, department_id AS d, resource AS r, row_key AS k, ' + imgOpsJoin(x[1]) + ' AS t FROM ' + x[0]; }).join(' UNION ALL '),
-    out = 'k NOT IN (SELECT value FROM json_each(?2))',
+  /* V7 · 53 (طلبُ المراجع على fc76361): السجلاتُ التشغيلية بفهرس imgref (مكتملٌ بعد imgref_scan_v1='done'؛ وقبله لا يُحكم: '!*') لا بمسح نصوصها */
+  var out = 'k NOT IN (SELECT value FROM json_each(?2))',
     has = function (t) { return 'instr(' + t + ', j.value) > 0 AND (' + t + " GLOB '*' || j.value || '[^a-z0-9]*' OR " + t + " GLOB '*' || j.value)"; },
     pair = 'FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND b.' + out;
-  return { args: [JSON.stringify(ids), JSON.stringify(keys), JSON.stringify(ops)],
-    sql: 'WITH opstxt(j, d, r, k, t) AS MATERIALIZED (' + txt + '), ops(j, d, r, k, t) AS MATERIALIZED (SELECT * FROM opstxt o WHERE NOT ' + mine + ')' +
-      ', esck(k) AS MATERIALIZED (SELECT k FROM kv WHERE ' + out + ' AND ' + imgEscCond('v') + ' UNION SELECT b.k ' + pair + ' AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
-      ", esc(s) AS MATERIALIZED (SELECT 'k' || k || char(2) || (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = esck.k) FROM esck" +
-      " UNION ALL SELECT 'o' || j || char(2) || d || char(2) || r || char(2) || k || char(2) || length(CAST(t AS BLOB)) FROM ops WHERE " + imgEscCond('t') + ')' +
-      " SELECT CASE WHEN EXISTS(SELECT 1 FROM esc) THEN '!' || (SELECT group_concat(s, char(1)) FROM (SELECT s FROM esc ORDER BY s))" +
+  return { args: [JSON.stringify(ids), JSON.stringify(keys)],
+    sql: 'WITH esck(k) AS MATERIALIZED (SELECT k FROM kv WHERE ' + out + ' AND ' + imgEscCond('v') + ' UNION SELECT b.k ' + pair + ' AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
+      " SELECT CASE WHEN (SELECT v FROM meta WHERE k='" + IMG_SCAN_KEY + "') IS NOT 'done' THEN '!*'" +
+      " WHEN EXISTS(SELECT 1 FROM esck) THEN '!' || (SELECT group_concat(s, char(1)) FROM (SELECT 'k' || k || char(2) || (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = esck.k) AS s FROM esck ORDER BY s))" +
       " ELSE COALESCE((SELECT group_concat(id, ',') FROM (SELECT j.value AS id FROM json_each(?1) j WHERE" +
-      ' EXISTS(SELECT 1 FROM kv WHERE ' + out + ' AND ' + has('v') + ')' +
+      ' EXISTS(SELECT 1 FROM imgref r WHERE r.img = j.value AND r.' + out + ')' +
+      ' OR EXISTS(SELECT 1 FROM kv WHERE ' + out + ' AND ' + has('v') + ')' +
       ' OR EXISTS(SELECT 1 ' + pair + ' AND instr(substr(CAST(a.v AS BLOB), -(length(CAST(j.value AS BLOB)) - 1)) || substr(CAST(b.v AS BLOB), 1, length(CAST(j.value AS BLOB)) - 1), j.value) > 0)' +
-      " OR EXISTS(SELECT 1 FROM ops WHERE " + has('t') + ") ORDER BY j.value)), '') END AS h" };
+      " ORDER BY j.value)), '') END AS h" };
 }
 /* '!' من rsImageHeldSql: تُقرأ النصوصُ التي تحمل الهروبَ (وحدها، صفحاتٍ ≤ IMG_ESC_PAGE بايت، ومجموعها ≤ IMG_ESC_CHARS) وتُفكّ — يعيد المعرّفاتِ
    التي يذكرها أحدُها، أو null إن لم يُحسم (أكبرُ من الحد · فكٌّ لم ينتهِ) فيبقى كلُّ شيءٍ كما هو (لا يتيم). */
@@ -303,7 +300,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     var ask = lost.filter(function (id) { return IMG_SCAN_ID_RX.test(id); });
     if (ask.length) {
       var proof = rsImageHeldSql(ask, keys), held = String((await rsBound(env.DB.prepare(proof.sql), proof.args).first('h')) || '');
-      var heldIds = held.charAt(0) !== '!' ? held.split(',').filter(Boolean) : await rsImageHeldEsc(env, ask, held);
+      var heldIds = held === '!*' ? null : held.charAt(0) !== '!' ? held.split(',').filter(Boolean) : await rsImageHeldEsc(env, ask, held);
       (heldIds ? Array.from(heldIds) : ask).forEach(function (id) { live.add(id); });
       plan.guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN (' + proof.sql + ') IS NOT ?' + (proof.args.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), proof.args.concat([held])));
     }

@@ -54,7 +54,8 @@ export function build(c, curYm) {
   return { months, dayKeys, eids, docs, specs };
 }
 /* البذرُ بصفوف المرمِّز نفسِه، في معاملةٍ واحدة لكل مورد (SQLite مباشرةً) */
-export function seed(lab, docs, specs = {}) {
+export function seed(lab, docs, specs = {}, dept = DEPT) {
+  const K = (r) => 'bsdept:' + dept + ':' + r, DEPT_ = dept;
   const { W, env } = lab, db = env.DB.db, stmts = {}, counts = {};
   const ins = (table, cols) => stmts[table] || (stmts[table] = db.prepare('INSERT INTO ' + table + '(' + cols.map((c) => '"' + c + '"').join(',') + ') VALUES(' + cols.map(() => '?').join(',') + ')'));
   const put = (info, tables, phys, keep, shift) => {
@@ -73,19 +74,19 @@ export function seed(lab, docs, specs = {}) {
     const info = W.opInfo(K(res)), tables = W.ocPhysicalTables(info.prepared), sp = specs[res];
     db.exec('BEGIN');
     try {
-      db.prepare('UPDATE ops_nodes SET parent_key=NULL WHERE department_id=? AND resource=?').run(DEPT, res);
-      for (const t of Object.keys(tables).reverse()) db.prepare('DELETE FROM ' + t + ' WHERE department_id=? AND resource=?').run(DEPT, res);
+      db.prepare('UPDATE ops_nodes SET parent_key=NULL WHERE department_id=? AND resource=?').run(DEPT_, res);
+      for (const t of Object.keys(tables).reverse()) db.prepare('DELETE FROM ' + t + ' WHERE department_id=? AND resource=?').run(DEPT_, res);
       let n = 0, json = 0;
-      if (!sp) { const doc = docs[res], dom = W.ocConvert(info.prepared, DEPT, res, doc, true); n = put(info, tables, W.ocPhysicalRows(info.prepared, dom), () => true); json = JSON.stringify(doc).length; }
+      if (!sp) { const doc = docs[res], dom = W.ocConvert(info.prepared, DEPT_, res, doc, true); n = put(info, tables, W.ocPhysicalRows(info.prepared, dom), () => true); json = JSON.stringify(doc).length; }
       else {
         /* الرأسُ أولاً، ثم الفتراتُ دفعاتٍ: صفوفُ الدفعة تحت الحاوية وحدها، ومواضعُ أعضائها بعد ما كُتب */
         const C = sp.field ? '$/f:' + encodeURIComponent(sp.field) : '$', E = C + '/e:', h = sp.field ? 0 : Object.keys(sp.head).length;
-        const head = W.ocConvert(info.prepared, DEPT, res, sp.head, true); n += put(info, tables, W.ocPhysicalRows(info.prepared, head), () => true); json += JSON.stringify(sp.head).length;
+        const head = W.ocConvert(info.prepared, DEPT_, res, sp.head, true); n += put(info, tables, W.ocPhysicalRows(info.prepared, head), () => true); json += JSON.stringify(sp.head).length;
         let chunk = [], written = 0;
         const flush = () => {
           if (!chunk.length) return;
           const doc = JSON.parse(JSON.stringify(sp.head)), box = sp.field ? doc[sp.field] : doc; chunk.forEach(([p, v]) => { box[p] = v; json += JSON.stringify(v).length; });
-          const dom = W.ocConvert(info.prepared, DEPT, res, doc, true);
+          const dom = W.ocConvert(info.prepared, DEPT_, res, doc, true);
           n += put(info, tables, W.ocPhysicalRows(info.prepared, dom), (rk) => rk.startsWith(E), { parent: C, by: written });
           written += chunk.length; chunk = [];
         };

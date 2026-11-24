@@ -162,15 +162,14 @@ async function opPeriodsMigrateRoute(env, request, session) {
           var members = await opPeriodMembers(env, info), rv = await env.DB.prepare('SELECT rev FROM revs WHERE k=?1').bind(K).first();
           revPairs.push([K, rsNat(rv && rv.rev || 0)]);
           var pos = members.map(function (m) { return m.p; }).sort(function (a, b) { return a - b; });
-          var total = 0, covered = 0;
-          for (var t of Object.keys(tables)) total += Number((await env.DB.prepare('SELECT COUNT(*) n FROM ' + t + ' WHERE department_id=?1 AND resource=?2').bind(d, R).first('n')) || 0);
+          var tnames = Object.keys(tables), sum = function (where) { return 'SELECT ' + tnames.map(function (t2) { return '(SELECT COUNT(*) FROM ' + where(t2) + ')'; }).join('+') + ' AS n'; };
+          var total = Number((await env.DB.prepare(sum(function (t2) { return t2 + ' WHERE department_id=?1 AND resource=?2'; })).bind(d, R).first('n')) || 0);
           if (!total) { rep.resources[R] = { periods: 0, rows: 0 }; continue; }
-          var count = async function (ranges) { var n = 0; for (var t2 of Object.keys(tables)) n += Number((await env.DB.prepare("SELECT COUNT(*) n FROM json_each(?3) q JOIN " + t2 + " t ON t.department_id=?1 AND t.resource=?2 AND t.row_key>=json_extract(q.value,'$[0]') AND t.row_key<json_extract(q.value,'$[1]')").bind(d, R, JSON.stringify(ranges)).first('n')) || 0); return n; };
-          covered += await count(opHeadRanges(def));
-          var names = members.map(function (m) { return m.m; }), sums = [];
+          var names = members.map(function (m) { return m.m; }), sums = [], ranges = opHeadRanges(def);
+          names.forEach(function (p) { ranges = ranges.concat(opPeriodRanges(def, p)); });
+          var covered = Number((await env.DB.prepare(sum(function (t2) { return "json_each(?3) q JOIN " + t2 + " t ON t.department_id=?1 AND t.resource=?2 AND t.row_key>=json_extract(q.value,'$[0]') AND t.row_key<json_extract(q.value,'$[1]')"; })).bind(d, R, JSON.stringify(ranges)).first('n')) || 0);
           for (var i = 0; i < names.length; i += 20) {
             var part = names.slice(i, i + 20), sc = {}; sc[K] = { periods: part };
-            covered += await count([].concat.apply([], part.map(function (p) { return opPeriodRanges(def, p); })));
             var st = await opLoadMany(env, [K], 1, sc), parts = opSplit(info, st.values[K] == null ? undefined : JSON.parse(st.values[K]));
             part.forEach(function (p) { if (!ocOwn(parts.periods, p)) throw Object.assign(ocError('period-verify'), { period: p }); sums.push({ p: p, value: parts.periods[p] }); });
           }

@@ -315,13 +315,11 @@ function meRec(rec) {
 }
 /* V7 · 53 */
 function meScopes(deptId, C) {
-  var yms = [], y = C.y, m = C.m, out = {}, i, d;
-  [-1, 0, 1].forEach(function (k) { var mm = m + k, yy = y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } yms.push(yy + '-' + mm); });
-  var days = []; yms.forEach(function (ym) { days.push('m:' + ym); for (d = 1; d <= 30; d++) days.push(ym + '-' + d); });
-  for (i = 0; i < ME_KEYS.length; i++) {
-    var K = 'bsdept:' + deptId + ':' + ME_KEYS[i], I = opSplitResource(K); if (!I) continue;
-    out[K] = { periods: opPeriodDef(I).field || ME_KEYS[i] === 'bassam_staffing_v3' ? yms.slice() : days.slice() };
-  }
+  var ym = function (k) { var mm = C.m + k, yy = C.y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } return yy + '-' + mm; }, P = pfHijriAt(Date.now() - 86400000), out = {}, i, d;
+  var days = function (list) { var o = []; list.forEach(function (x) { o.push('m:' + x); for (d = 1; d <= 30; d++) o.push(x + '-' + d); }); return o; };
+  var span = { bassam_staffing_v3: [ym(-1), ym(0), ym(1)], bassam_plan_v1: [ym(0)], bassam_dreport_v1: days([ym(-1), ym(0)]),
+    bassam_rounds_v1: ['m:' + ym(0), C.dk, P.dk], bassam_rounds_arc_v1: ['m:' + ym(0), C.dk, P.dk] };
+  for (i = 0; i < ME_KEYS.length; i++) { var K = 'bsdept:' + deptId + ':' + ME_KEYS[i]; if (opSplitResource(K) && span[ME_KEYS[i]]) out[K] = { periods: span[ME_KEYS[i]] }; }
   return out;
 }
 async function meDeptData(env, deptId, extra, A, scopes) {
@@ -392,7 +390,7 @@ async function meSelfRoutes(request, env, path, ss) {
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
   var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (eligible) { D = await meDeptData(env, u.deptId, extra, A, hist ? null : meScopes(u.deptId, C)); ex = D.extra; I = meIdent(u, D, users); }
+  if (eligible) { try { D = await meDeptData(env, u.deptId, extra, A, hist ? null : meScopes(u.deptId, C)); } catch (eM) { var limM = dbLimitResponse(env, eM, path); if (limM) return limM; throw eM; } ex = D.extra; I = meIdent(u, D, users); }   // V7 · 53: لا 500 لخطأ D1
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: (D && D.staffing && D.staffing[T0.ym]) || {}, rep: (D && D.dreport && D.dreport[T0.dk]) || null, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();

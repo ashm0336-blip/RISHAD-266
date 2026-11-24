@@ -11441,22 +11441,19 @@ function rsImageFinalValues(plan, reference) {
 }
 /* V7 · 53 (ملحق 4): أيُّ المعرّفات ids (بشكل الماسح وحده) يذكره نصٌّ */
 function rsImageHeldSql(ids, keys) {
-  var ops = keys.filter(opIsResource).map(function (k) { var i = opInfo(k); return [i.dept, i.resource]; }),
-    mine = "EXISTS(SELECT 1 FROM json_each(?3) p WHERE json_extract(p.value,'$[0]')=o.d AND (json_extract(p.value,'$[1]')=o.r OR substr(o.r,1,length(json_extract(p.value,'$[1]'))+1)=json_extract(p.value,'$[1]')||'@'))",
-    txt = imgOpsCols().map(function (x, j) { return 'SELECT ' + j + ' AS j, department_id AS d, resource AS r, row_key AS k, ' + imgOpsJoin(x[1]) + ' AS t FROM ' + x[0]; }).join(' UNION ALL '),
-    out = 'k NOT IN (SELECT value FROM json_each(?2))',
+  /* V7 · 53 (طلبُ المراجع على fc76361): السجلاتُ التشغيلية بفهرس imgref (مكتملٌ بعد imgref_scan_v1='done'؛ وقبله لا يُحكم: '!*') لا بمسح نصوصها */
+  var out = 'k NOT IN (SELECT value FROM json_each(?2))',
     has = function (t) { return 'instr(' + t + ', j.value) > 0 AND (' + t + " GLOB '*' || j.value || '[^a-z0-9]*' OR " + t + " GLOB '*' || j.value)"; },
     pair = 'FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND b.' + out;
-  return { args: [JSON.stringify(ids), JSON.stringify(keys), JSON.stringify(ops)],
-    sql: 'WITH opstxt(j, d, r, k, t) AS MATERIALIZED (' + txt + '), ops(j, d, r, k, t) AS MATERIALIZED (SELECT * FROM opstxt o WHERE NOT ' + mine + ')' +
-      ', esck(k) AS MATERIALIZED (SELECT k FROM kv WHERE ' + out + ' AND ' + imgEscCond('v') + ' UNION SELECT b.k ' + pair + ' AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
-      ", esc(s) AS MATERIALIZED (SELECT 'k' || k || char(2) || (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = esck.k) FROM esck" +
-      " UNION ALL SELECT 'o' || j || char(2) || d || char(2) || r || char(2) || k || char(2) || length(CAST(t AS BLOB)) FROM ops WHERE " + imgEscCond('t') + ')' +
-      " SELECT CASE WHEN EXISTS(SELECT 1 FROM esc) THEN '!' || (SELECT group_concat(s, char(1)) FROM (SELECT s FROM esc ORDER BY s))" +
+  return { args: [JSON.stringify(ids), JSON.stringify(keys)],
+    sql: 'WITH esck(k) AS MATERIALIZED (SELECT k FROM kv WHERE ' + out + ' AND ' + imgEscCond('v') + ' UNION SELECT b.k ' + pair + ' AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
+      " SELECT CASE WHEN (SELECT v FROM meta WHERE k='" + IMG_SCAN_KEY + "') IS NOT 'done' THEN '!*'" +
+      " WHEN EXISTS(SELECT 1 FROM esck) THEN '!' || (SELECT group_concat(s, char(1)) FROM (SELECT 'k' || k || char(2) || (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = esck.k) AS s FROM esck ORDER BY s))" +
       " ELSE COALESCE((SELECT group_concat(id, ',') FROM (SELECT j.value AS id FROM json_each(?1) j WHERE" +
-      ' EXISTS(SELECT 1 FROM kv WHERE ' + out + ' AND ' + has('v') + ')' +
+      ' EXISTS(SELECT 1 FROM imgref r WHERE r.img = j.value AND r.' + out + ')' +
+      ' OR EXISTS(SELECT 1 FROM kv WHERE ' + out + ' AND ' + has('v') + ')' +
       ' OR EXISTS(SELECT 1 ' + pair + ' AND instr(substr(CAST(a.v AS BLOB), -(length(CAST(j.value AS BLOB)) - 1)) || substr(CAST(b.v AS BLOB), 1, length(CAST(j.value AS BLOB)) - 1), j.value) > 0)' +
-      " OR EXISTS(SELECT 1 FROM ops WHERE " + has('t') + ") ORDER BY j.value)), '') END AS h" };
+      " ORDER BY j.value)), '') END AS h" };
 }
 /* '!' من rsImageHeldSql: تُقرأ النصوصُ التي تحمل الهروبَ (وحدها، صفحاتٍ ≤ IMG_ESC_PAGE بايت، ومجموعها ≤ IMG_ESC_CHARS) وتُفكّ — يعيد المعرّفاتِ
    التي يذكرها أحدُها، أو null إن لم يُحسم (أكبرُ من الحد · فكٌّ لم ينتهِ) فيبقى كلُّ شيءٍ كما هو (لا يتيم). */
@@ -11563,7 +11560,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     var ask = lost.filter(function (id) { return IMG_SCAN_ID_RX.test(id); });
     if (ask.length) {
       var proof = rsImageHeldSql(ask, keys), held = String((await rsBound(env.DB.prepare(proof.sql), proof.args).first('h')) || '');
-      var heldIds = held.charAt(0) !== '!' ? held.split(',').filter(Boolean) : await rsImageHeldEsc(env, ask, held);
+      var heldIds = held === '!*' ? null : held.charAt(0) !== '!' ? held.split(',').filter(Boolean) : await rsImageHeldEsc(env, ask, held);
       (heldIds ? Array.from(heldIds) : ask).forEach(function (id) { live.add(id); });
       plan.guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN (' + proof.sql + ') IS NOT ?' + (proof.args.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), proof.args.concat([held])));
     }
@@ -20436,10 +20433,11 @@ async function opLoadMany(env, keys, retired, scopes) {
     });
     requests.push(request);
   });
-  var tableNames=Object.keys(tableRequests);
+  var tableNames=Object.keys(tableRequests), later=[];
+  /* V7 · 53: مدياتٌ كثيرة (فتراتٌ كثيرة) تُقرأ قطعاً في استدعاءات D1 متتالية بعد هذه الدفعة (مراجعاتُها فيها، وحارسُ CAS عند الاعتماد) — فلا يقترب استدعاءٌ من سقف 32MiB */
   tableNames.forEach(function(table){
-    var query=tableRequests[table];
-    batch.push(env.DB.prepare('SELECT '+query.columns.map(function(c){return 't.'+c;}).join(',')+' FROM json_each(?1) q JOIN '+table+" t ON t.department_id=json_extract(q.value,'$[0]') AND t.resource=json_extract(q.value,'$[1]') AND t.row_key>=json_extract(q.value,'$[2]') AND t.row_key<json_extract(q.value,'$[3]')").bind(JSON.stringify(query.ranges)));
+    var query=tableRequests[table], sel='SELECT '+query.columns.map(function(c){return 't.'+c;}).join(',')+' FROM json_each(?1) q JOIN '+table+" t ON t.department_id=json_extract(q.value,'$[0]') AND t.resource=json_extract(q.value,'$[1]') AND t.row_key>=json_extract(q.value,'$[2]') AND t.row_key<json_extract(q.value,'$[3]')";
+    for (var c0 = 0; c0 < query.ranges.length || !c0; c0 += 48) { var st0 = env.DB.prepare(sel).bind(JSON.stringify(query.ranges.slice(c0, c0 + 48))); if (!c0) batch.push(st0); else (later[c0 / 48 - 1] = later[c0 / 48 - 1] || []).push({ table: table, st: st0 }); }
   });
   if (!batch.length) { if (retired) await opGuardRetired(env); return { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, members: {}, globalRev:await bdGlobalRevision(env) }; }
   if (retired) batch.unshift(opRetiredGuard(env));
@@ -20460,6 +20458,10 @@ async function opLoadMany(env, keys, retired, scopes) {
     if(!physicalByKey[key]||!physicalByKey[key][table])throw ocError('read-scope');
     physicalByKey[key][table].push(row);
   });});
+  for (var piece of later) {
+    var got = await env.DB.batch(piece.map(function (x) { return x.st; }));
+    piece.forEach(function (x, i) { (got[i].results || []).forEach(function (row) { var key = 'bsdept:' + row.department_id + ':' + row.resource; if (!physicalByKey[key] || !physicalByKey[key][x.table]) throw ocError('read-scope'); physicalByKey[key][x.table].push(row); }); });
+  }
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
   var pending = opLayoutPendingOf(((result[revisionIndex + 2].results) || [])[0]);
   if (scoped.length) (result[revisionIndex + 3].results || []).forEach(function (row) { var k = 'bsdept:' + row.d + ':' + row.r; (members[k] = members[k] || []).push({ p: row.m, k: row.k, pos: row.p }); });
@@ -20797,6 +20799,17 @@ async function opPeriodSaveBody(env, A, bs) {
     out.set[K] = JSON.stringify(next); out.base[K] = cur.revs[K] || 0;
     scopes[K] = { periods: scopes[K].periods, bases: replay ? {} : bases, base: cur.revs[K] || 0 };
   });
+  /* V7 · 53: مراجعُ أحكام الحفظ بنطاقها كذلك — الجدولُ الشهري بشهور الفترات المكتوبة والشهر الجاري (048 actorShift)، وأرشيفُ الجولات بأيامها (019p3 dailyArcPre) */
+  Ks.forEach(function (K) {
+    var I = byK[K].info, def = opPeriodDef(I), S = 'bsdept:' + I.dept + ':bassam_staffing_v3', SI = opSplitResource(S), months = new Set();
+    if (SI && !ocOwn(scopes, S)) {
+      var cur0 = typeof opPeriodDef(SI).current === 'function' ? opPeriodDef(SI).current() : ''; if (cur0) months.add(cur0);
+      byK[K].written.forEach(function (p) { var g = opPeriodIdx(def, p).grp; if (g) months.add(g); });
+      scopes[S] = { periods: Array.from(months) };
+    }
+    var AR = typeof DAILY_ARC_RES === 'string' && I.resource === 'bassam_rounds_v1' ? 'bsdept:' + I.dept + ':' + DAILY_ARC_RES : null;
+    if (AR && opSplitResource(AR) && !ocOwn(scopes, AR)) scopes[AR] = { periods: scopes[K].periods.slice() };
+  });
   var body = Object.assign({}, bs, out);
   if (Array.isArray(bs.aud)) body.aud = bs.aud.map(function (e) { return e && ocOwn(origin, e.k) ? Object.assign({}, e, { k: origin[e.k] }) : e; });
   return { body: body, scopes: scopes, byK: byK, fp: fp, conflicts: conflicts, origin: origin };
@@ -20977,15 +20990,14 @@ async function opPeriodsMigrateRoute(env, request, session) {
           var members = await opPeriodMembers(env, info), rv = await env.DB.prepare('SELECT rev FROM revs WHERE k=?1').bind(K).first();
           revPairs.push([K, rsNat(rv && rv.rev || 0)]);
           var pos = members.map(function (m) { return m.p; }).sort(function (a, b) { return a - b; });
-          var total = 0, covered = 0;
-          for (var t of Object.keys(tables)) total += Number((await env.DB.prepare('SELECT COUNT(*) n FROM ' + t + ' WHERE department_id=?1 AND resource=?2').bind(d, R).first('n')) || 0);
+          var tnames = Object.keys(tables), sum = function (where) { return 'SELECT ' + tnames.map(function (t2) { return '(SELECT COUNT(*) FROM ' + where(t2) + ')'; }).join('+') + ' AS n'; };
+          var total = Number((await env.DB.prepare(sum(function (t2) { return t2 + ' WHERE department_id=?1 AND resource=?2'; })).bind(d, R).first('n')) || 0);
           if (!total) { rep.resources[R] = { periods: 0, rows: 0 }; continue; }
-          var count = async function (ranges) { var n = 0; for (var t2 of Object.keys(tables)) n += Number((await env.DB.prepare("SELECT COUNT(*) n FROM json_each(?3) q JOIN " + t2 + " t ON t.department_id=?1 AND t.resource=?2 AND t.row_key>=json_extract(q.value,'$[0]') AND t.row_key<json_extract(q.value,'$[1]')").bind(d, R, JSON.stringify(ranges)).first('n')) || 0); return n; };
-          covered += await count(opHeadRanges(def));
-          var names = members.map(function (m) { return m.m; }), sums = [];
+          var names = members.map(function (m) { return m.m; }), sums = [], ranges = opHeadRanges(def);
+          names.forEach(function (p) { ranges = ranges.concat(opPeriodRanges(def, p)); });
+          var covered = Number((await env.DB.prepare(sum(function (t2) { return "json_each(?3) q JOIN " + t2 + " t ON t.department_id=?1 AND t.resource=?2 AND t.row_key>=json_extract(q.value,'$[0]') AND t.row_key<json_extract(q.value,'$[1]')"; })).bind(d, R, JSON.stringify(ranges)).first('n')) || 0);
           for (var i = 0; i < names.length; i += 20) {
             var part = names.slice(i, i + 20), sc = {}; sc[K] = { periods: part };
-            covered += await count([].concat.apply([], part.map(function (p) { return opPeriodRanges(def, p); })));
             var st = await opLoadMany(env, [K], 1, sc), parts = opSplit(info, st.values[K] == null ? undefined : JSON.parse(st.values[K]));
             part.forEach(function (p) { if (!ocOwn(parts.periods, p)) throw Object.assign(ocError('period-verify'), { period: p }); sums.push({ p: p, value: parts.periods[p] }); });
           }
@@ -28961,13 +28973,11 @@ function meRec(rec) {
 }
 /* V7 · 53 */
 function meScopes(deptId, C) {
-  var yms = [], y = C.y, m = C.m, out = {}, i, d;
-  [-1, 0, 1].forEach(function (k) { var mm = m + k, yy = y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } yms.push(yy + '-' + mm); });
-  var days = []; yms.forEach(function (ym) { days.push('m:' + ym); for (d = 1; d <= 30; d++) days.push(ym + '-' + d); });
-  for (i = 0; i < ME_KEYS.length; i++) {
-    var K = 'bsdept:' + deptId + ':' + ME_KEYS[i], I = opSplitResource(K); if (!I) continue;
-    out[K] = { periods: opPeriodDef(I).field || ME_KEYS[i] === 'bassam_staffing_v3' ? yms.slice() : days.slice() };
-  }
+  var ym = function (k) { var mm = C.m + k, yy = C.y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } return yy + '-' + mm; }, P = pfHijriAt(Date.now() - 86400000), out = {}, i, d;
+  var days = function (list) { var o = []; list.forEach(function (x) { o.push('m:' + x); for (d = 1; d <= 30; d++) o.push(x + '-' + d); }); return o; };
+  var span = { bassam_staffing_v3: [ym(-1), ym(0), ym(1)], bassam_plan_v1: [ym(0)], bassam_dreport_v1: days([ym(-1), ym(0)]),
+    bassam_rounds_v1: ['m:' + ym(0), C.dk, P.dk], bassam_rounds_arc_v1: ['m:' + ym(0), C.dk, P.dk] };
+  for (i = 0; i < ME_KEYS.length; i++) { var K = 'bsdept:' + deptId + ':' + ME_KEYS[i]; if (opSplitResource(K) && span[ME_KEYS[i]]) out[K] = { periods: span[ME_KEYS[i]] }; }
   return out;
 }
 async function meDeptData(env, deptId, extra, A, scopes) {
@@ -29038,7 +29048,7 @@ async function meSelfRoutes(request, env, path, ss) {
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
   var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (eligible) { D = await meDeptData(env, u.deptId, extra, A, hist ? null : meScopes(u.deptId, C)); ex = D.extra; I = meIdent(u, D, users); }
+  if (eligible) { try { D = await meDeptData(env, u.deptId, extra, A, hist ? null : meScopes(u.deptId, C)); } catch (eM) { var limM = dbLimitResponse(env, eM, path); if (limM) return limM; throw eM; } ex = D.extra; I = meIdent(u, D, users); }   // V7 · 53: لا 500 لخطأ D1
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: (D && D.staffing && D.staffing[T0.ym]) || {}, rep: (D && D.dreport && D.dreport[T0.dk]) || null, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
