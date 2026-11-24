@@ -22267,8 +22267,9 @@ async function calMigRoute(env, request, session) {
     var list = body.dept === 'all' ? P.slice() : P.indexOf(body.dept) >= 0 ? [body.dept] : [], out = [], t0 = Date.now(), budget = t0 + Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000);
     for (var d of list) {
       var rep = { dept: d, ok: 0 }, t1 = Date.now();
-      /* 0013 أولاً: إدارةٌ لم تُتمّ مرحلةَ التخزين بالفترة تُرحَّل بعد periods-migrate (ترتيبُ الأوامر في التشغيل) */
-      if (L.indexOf(d) >= 0) { rep.err = 'ops-layout-pending-first'; out.push(rep); continue; }
+      /* ترتيبُ الأوامر على قاعدةٍ تحمل 0013 و0014 معاً: calendar-migrate أولاً (يعيد ترميز الموارد المقسومة كلِّها بملخّصاتها) ثم periods-migrate
+         (يتحقق ويُخرج الإدارة من ops_layout_pending) — قراءةُ 0013 مرفوضةٌ ما دامت الإدارةُ معلَّقةً تقويمياً */
+      if (L.indexOf(d) >= 0) rep.layout = 1;
       try {
         var r = await calMigDept(env, d, T, budget);
         if (r.more) { rep.more = 1; rep.at = r.at; rep.ms = Date.now() - t1; out.push(rep); return json({ ok: 0, more: 1, departments: out, next: { dept: d }, pending: P }); }
