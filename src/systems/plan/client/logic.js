@@ -16922,7 +16922,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           printMeta:
             "الموقع: " +
             (e.floors && e.floors.length ? (e.floors[e.floor] || e.floors[0] || {}).name || "موقع بلا اسم" : "لا يوجد موقع نشط"),
-          printDate: new Date().toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" }),
+          printDate: KIVO.BassamCal.fmtPrint(KIVO.BassamCal.gAt(new Date()).k),   /* V7 · 53 تقويم: «24 نوفمبر 2026 · الموافق 14 جمادى الآخرة 1448» */
           donutHitNode: Rt ? ys : ye ? bs : Ue ? xs : ds ? ks : ms,
           onHitNode: As,
           showOnRing: gs,

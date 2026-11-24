@@ -48,7 +48,7 @@
   /* اليومُ (يومُ الرياض) أو بعده — مفتاحُ يوم أو علامةُ شهر */
   function keyNow(key) {
     try {
-      var now = KIVO.BassamCal.hPartsRiyadh(new Date()),
+      var now = KIVO.BassamCal.gAt(new Date()),   /* V7 · 53 تقويم: المفاتيحُ ميلادية ISO — اليومُ ميلاديٌّ كذلك */
         m = /^(?:m:)?(\d+)-(\d+)(?:-(\d+))?$/.exec(String(key));
       if (!m) return false;
       var y = +m[1], mo = +m[2], d = null == m[3] ? null : +m[3];

@@ -26,8 +26,8 @@
   }
   function arcShut(rounds, arc, y, m) {
     if (!arc) return false;
-    var pre = y + "-" + m + "-",
-      mrec = (rounds || {})["m:" + y + "-" + m];
+    var pre = KIVO.BassamCal.gYm(y, m) + "-",
+      mrec = (rounds || {})[KIVO.BassamCal.gMk(y, m)];
     if (mrec && (mrec.mo || (mrec.dopen && Object.keys(mrec.dopen).length))) return false;
     return Object.keys(arc).some(function (k) {
       return k.indexOf(pre) === 0;
@@ -127,11 +127,11 @@
       if (!(y > 0 && m > 0 && d > 0)) return { status: "bad" };
       var rounds = load("bassam_rounds_v1", draft) || {},
         arc = arcOf();
-      var rk = y + "-" + m + "-" + d;
+      var rk = KIVO.BassamCal.gKey(y, m, d);
       var cur = rounds[rk] || (arc && arc[rk]);   /* V7 · د5-ح (13): يومٌ مؤرشفٌ موجود */
       if (cur && Array.isArray(cur.d) && cur.d.length)
         return { status: "exists", key: rk };
-      var mrec = rounds["m:" + y + "-" + m];
+      var mrec = rounds[KIVO.BassamCal.gMk(y, m)];
       if ((mrec && mrec.ap) || arcShut(rounds, arc, y, m)) return { status: "mlock" };
       var prev = null,
         later = null,
@@ -157,7 +157,7 @@
         return sidOf(x) || undefined;
       };
       if (!any) {
-        var ent = plan && plan.months ? plan.months[y + "-" + m] : null;
+        var ent = plan && plan.months ? plan.months[KIVO.BassamCal.gYm(y, m)] : null;
         var pmd = ent ? (Array.isArray(ent) ? ent : ent.d) : null;
         if (!Array.isArray(pmd) || !pmd.length) return { status: "noplan" };
         try {
@@ -254,8 +254,8 @@
       if (!(y > 0 && m > 0 && d > 0) || !name) return { status: "bad" };
       var rounds = load("bassam_rounds_v1", draft) || {},
         arc = arcOf();
-      var rk = y + "-" + m + "-" + d;
-      var mrec = rounds["m:" + y + "-" + m];
+      var rk = KIVO.BassamCal.gKey(y, m, d);
+      var mrec = rounds[KIVO.BassamCal.gMk(y, m)];
       if ((mrec && mrec.ap) || (!rounds[rk] && arcShut(rounds, arc, y, m))) return { status: "mlock" };
       /* V7 · د5-ح (13): يومُ شهرٍ أُعيد فتحُه ولم تعد أيامُه من الأرشيف بعد — يُكتب في الحيّ (الخادمُ يبقيه حيّاً) */
       var rec = rounds[rk] || (arc && arc[rk] ? JSON.parse(JSON.stringify(arc[rk])) : null);

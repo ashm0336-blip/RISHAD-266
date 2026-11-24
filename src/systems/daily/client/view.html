@@ -156,22 +156,8 @@
       <!-- كان width:100px مع flex-shrink:0 داخل حاوية justify-content:center — فالبطاقات
            تتوسّط ويبقى فراغ على الطرفين. صارت تنمو لتملأ الإطار، وتقف عند 100px
            وتمرّ حين لا يتّسع — نفس مبدأ خانات الأيام. -->
-      <div style="position:relative;flex:1 1 auto;min-width:100px">
-        <div data-strip-cur="{{m.isCurrent}}" onClick="{{m.click}}" onDoubleClick="{{m.dbl}}" title="{{m.tip}}" style="{{m.style}}" style-hover="box-shadow:var(--shadow-soft)">
-          <sc-if value="{{m.isCurrent}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-x3b82f6)" title="الشهر الحالي"></span></sc-if>
-          <sc-if value="{{m.showBadge}}" hint-placeholder-val="{{ false }}">
-            <span style="position:absolute;top:-6px;left:-6px;width:20px;height:20px;border-radius:9999px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card),0 0 0 2px var(--bg-card);background:var(--bg-xf59e0b)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xffffff)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" data-i="i-37ad70cd"></svg>
-            </span>
-          </sc-if>
-          <p style="font-size:11px;font-weight:400;line-height:1.3;margin:0;color:{{m.nameColor}}">{{m.name}}</p>
-          <p style="font-size:9px;color:var(--fg-x53565a);margin:2px 0 0;line-height:1.3">{{m.greg}}</p>
-          <div style="margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-size:8px;font-weight:400;color:{{m.footColor}}">
-            <sc-if value="{{m.footIcon}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-81de76b2"></svg></sc-if>
-            <span>{{m.footLabel}}</span>
-          </div>
-        </div>
-      </div>
+      <!-- V7 · 53 تقويم (§7): كرتُ الشهر المشترك (KIVO.BassamCalCard.month) — الاسمُ الميلادي وتحته المدى الهجري، وحالتان فقط -->
+      <div style="position:relative;flex:1 1 auto;min-width:100px;display:flex">{{m.card}}</div>
       </sc-for>
     </div>
   </div>
@@ -186,23 +172,15 @@
       <span style="font-size:10px;font-weight:400;color:var(--fg-xb99751)">{{roundDaysCount}} فيها جولة</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xb99751)"></span><span style="font-size:8px;color:var(--fg-x53565a)">فيها جولة</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-x047857)"></span><span style="font-size:8px;color:var(--fg-x53565a)">معتمدة</span></div>
-      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);box-sizing:border-box"></span><span style="font-size:8px;color:var(--fg-x53565a)">فارغ</span></div>
+      <!-- V7 · 53 تقويم (§7): حالتان فقط — السببُ (اعتُمد · أُغلق تلقائياً · أُغلق يدوياً · مفتوح للاستدراك) في تلميح الكرت -->
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-x64748b)"></span><span style="font-size:8px;color:var(--fg-x53565a)">مغلق</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);box-sizing:border-box"></span><span style="font-size:8px;color:var(--fg-x53565a)">مفتوح</span></div>
     </div>
   </div>
   <div class="bs-daystrip" style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap;padding:4px 0 6px">
     <sc-for list="{{days}}" as="d" hint-placeholder-count="30">
-    <div data-strip-cur="{{d.isToday}}" onClick="{{d.click}}" onDoubleClick="{{d.dbl}}" title="{{d.tip}}" style="{{d.style}}" style-hover="transform:scale(1.05)">
-      <span style="line-height:1;display:block">{{d.num}}</span>
-      <span style="{{d.sepStyle}}"></span>
-      <span style="line-height:1;display:block;font-weight:400">{{d.gnum}}</span>
-      <sc-if value="{{d.isAp}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);width:12px;height:5px;border-radius:9999px;background:var(--bg-xffffff);box-shadow:0 0 0 1px rgba(4,120,87,0.5)"></span></sc-if>
-      <sc-if value="{{d.isToday}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-xb99751);box-shadow:0 0 0 1px var(--bg-card)"></span></sc-if>
-      <!-- قفل صغير يحكي حالة اليوم: مغلق = مقفل، مفتوح ذهبي = فُتح للاستدراك -->
-      <sc-if value="{{d.lockClosed}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-xcbd5e1);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x475569)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-3a0791fe"></svg></span></sc-if>
-      <sc-if value="{{d.lockOpen}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p6);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-b64167e0"></svg></span></sc-if>
-      <!-- كان: شارة إعادة التهيئة تظهر حتى على الأيام المعتمدة وتمسح بلا تأكيد — أُخفيت على المعتمد وصارت تفتح نافذة تأكيد -->
+    <!-- V7 · 53 تقويم (§7): كرتُ اليوم المشترك (KIVO.BassamCalCard.day) بالمقاس نفسِه — حرفُ اليوم · الميلادي · الهجري، وحالتان فقط والسببُ في التلميح -->
+    <div style="position:relative;flex:1 1 auto;min-width:28px;display:flex">{{d.card}}
       <sc-if value="{{d.canReset}}" hint-placeholder-val="{{ false }}"><span onClick="{{d.reset}}" title="{{d.resetTip}}" style="position:absolute;top:-4px;right:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a22038380p45);color:var(--fg-xdc2626);cursor:pointer;z-index:12;box-shadow:var(--shadow-card)" style-hover="background:var(--bg-xdc2626);color:var(--fg-xffffff);border-color:var(--bd-xdc2626)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" data-i="i-0732b330"></svg></span></sc-if>
     </div>
     </sc-for>
