@@ -36,7 +36,7 @@ async function retroApiRun(env, request, A, url, meta) {
     if (!KIVO_BUILD.retroClosed(T, y, m, dd0)) return json({ ok: 0, err: 'not-closed', today: T }, 400);          /* الفترةُ المفتوحة لا تحتاج استدراكاً */
     var hours = Number(b.hours); if (!(hours > 0)) hours = KIVO_BUILD.RETRO_DEF_H; hours = Math.min(KIVO_BUILD.RETRO_MAX_H, Math.max(1 / 3600, hours));
     var reason = String(b.reason == null ? '' : b.reason).trim().slice(0, 300);
-    if (!reason && !reasonExempt(A)) return json({ ok: 0, err: 'reason', key: RETRO[sys].key }, 400);      /* KIVO_243 · D3-03: السببُ إلزاميٌّ عند الإنفاذ */
+    /* V7 · د6 (QA) · البند ١: فتحُ نافذة الاستدراك لا يطلب سبباً (كان KIVO_243 · D3-03 إلزامياً) — يُسجَّل الفاعلُ والوقت والفترة؛ السببُ إن أُرسل يُحفظ */
     w = { id: 'rw' + now.toString(36) + Math.floor(Math.random() * 1e6).toString(36), scope: scope, by: { id: A.u.id, un: String(A.u.un || ''), ekey: String(A.u.ekey || ''), name: String(A.u.name || '') }, at: now, until: now + Math.round(hours * 3600000), hours: hours, reason: reasonLogged(A, reason), reasonMissing: !reason };
     st9.windows.push(w); if (st9.windows.length > 200) st9.windows = st9.windows.slice(-200);
   } else {
@@ -67,5 +67,5 @@ async function typedRetroCommit(ctx, sys, adapter, state, window, scope, act, me
 }
 
 function retroDomainAdapter(sys) {
-@@SYS:retro.adapter.seized@@@@SYS:retro.adapter.guard|pre="  "|post="throw rsError('retro-resource');"|empty="  throw rsError('retro-resource');"@@
+@@SYS:retro.adapter@@@@SYS:retro.adapter.seized@@@@SYS:retro.adapter.guard|pre="  "|post="throw rsError('retro-resource');"|empty="  throw rsError('retro-resource');"@@
 @@SYS:retro.adapter.irshad@@}

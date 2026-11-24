@@ -343,8 +343,9 @@ test('a seized retro POST response alone never opens a period; a lost response r
   const window = { id: 'TEST_ONLY_window', scope: { y: 1447, m: 1, d: null }, until: clock.now + 3600000 };
   const B = browser('seized', async (_, options) => options.method === 'POST' ? Promise.reject(Error('TEST_ONLY response lost after commit')) : new Promise(resolve => { releaseGet = () => resolve(json({ ok: 1, dept: 'TEST_ONLY_department', res: 'seized', now: clock.now, may: true, windows: [window] })); })); t.after(B.cleanup);
   B.seed('retro', { res: 'seized', now: clock.now, _received: Date.now(), may: true, windows: [] });
-  B.KIVO.__BS_SRV.askReason = (_, __, callback) => callback('TEST_ONLY_reason');
-  await B.page._szRetroToggle({ y: 1447, m: 1 }); assert.equal(Object.keys(B.page._szRetroFlags().months).length, 0);
+  /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سبب — رسالةُ التأكيد وحدها قبل الطلب، ولا نافذةَ سبب */
+  let confirms = 0; B.KIVO.bsConfirm = async () => { confirms++; return true; }; B.KIVO.__BS_SRV.askReason = () => assert.fail('no reason dialog');
+  await B.page._szRetroToggle({ y: 1447, m: 1 }); assert.equal(confirms, 1); assert.equal(Object.keys(B.page._szRetroFlags().months).length, 0);
   await waitFor(() => !!releaseGet); assert.equal(B.calls.filter(call => call.options.method === 'POST').length, 1);
   assert.equal(new URL(B.calls[0].url, 'https://test.invalid').searchParams.get('uid'), 'TEST_ONLY_owner');
   releaseGet(); await waitFor(() => !!B.page._bcData('retro')); assert.equal(B.page._szRetroFlags().months['1447-1'], true);

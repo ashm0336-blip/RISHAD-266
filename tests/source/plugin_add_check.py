@@ -18,7 +18,8 @@ def ok(c, n, x=''):
     print(('  ✔ ' if c else '  ✘ ') + n + (('   ← ' + str(x)[:400]) if x else ''))
 tmp = tempfile.mkdtemp(prefix='k259plug_'); S = os.path.join(tmp, 'src')
 shutil.copytree(os.path.join(ROOT, 'src'), S)
-for d in ('workers', 'migrations', 'config'):
+# V7 · د6 (قرار المالك · الخيار أ): tools/ تُنسخ أيضاً — المولِّدُ يكتب مشتقّاتٍ فيها (kivo_ns.json · perf_budget.json · ux_states.json من فتحات الأنظمة)
+for d in ('workers', 'migrations', 'config', 'tools'):
     if os.path.isdir(os.path.join(ROOT, d)): shutil.copytree(os.path.join(ROOT, d), os.path.join(tmp, d), ignore=shutil.ignore_patterns('__pycache__'))
 def snap():
     out = {}
@@ -38,8 +39,11 @@ man = {'schema': 1, 'kind': 'lens', 'key': 'heat', 'name': 'الحرارة', 'la
 os.makedirs(os.path.join(S, 'plugins', 'lenses', 'heat'))
 sys.path.insert(0, os.path.join(ROOT, 'tools')); import plugins as PL
 open(os.path.join(S, 'plugins', 'lenses', 'heat', 'manifest.json'), 'w', encoding='utf-8').write(PL.fmt(man) + '\n')
-rp = os.path.join(S, 'permissions', 'registry', 'registry-v24.9.json'); R = json.load(open(rp, encoding='utf-8'))
-base = next(e for e in R['registry'] if e['key'] == 'lens.dens.view')
+# V7 · د3/د6: registry-v24.9.json مولَّدٌ (tools/perm_parts.py: registry.base.json + permissions.json لكل نظامٍ حاضر) — فمفاتيحُ العدسة تُكتب في مصدرها
+#   الأساسي registry.base.json (عدسةٌ إضافةٌ ليست نظاماً)، والمولِّدُ يجمعها. الشكلُ يُنسخ من مدخلٍ قائمٍ في السجلّ المجموع.
+T0 = json.load(open(os.path.join(S, 'manifests', 'perm-tree24.json'), encoding='utf-8'))['counts']
+base = next(e for e in json.load(open(os.path.join(S, 'permissions', 'registry', 'registry-v24.9.json'), encoding='utf-8'))['registry'] if e['key'] == 'lens.dens.view')
+rp = os.path.join(S, 'permissions', 'registry', 'registry.base.json'); R = json.load(open(rp, encoding='utf-8'))
 def ent(key, label, typ, grant, status, asis, guard):
     e = json.loads(json.dumps(base)); e.update({'key': key, 'owner': 'lens.heat', 'domain': 'lens.heat', 'label': label, 'type': typ, 'grant': grant, 'status': status, 'asisMap': asis, 'v23': [], 'reservedReason': None if status == 'active' else 'لا تقرير'}); e['guard'] = guard; return e
 G = lambda kind, st: {'kind': kind, 'resources': ['bassam_plan_v1', 'bassam_rounds_v1'], 'detail': 'عدسةُ إضافةٍ (اختبار القبول)', 'status': st}
@@ -59,7 +63,8 @@ pt = subprocess.run([sys.executable, 'tools/perm_tree.py', 'emit', '--src', S], 
 ok(g1.returncode == 0 and pt.returncode == 0, 'المولِّدُ وشجرةُ v24.9 بعد الإضافة', ((g1.stdout + g1.stderr).strip().split('\n')[-1] + ' · ' + pt.stdout.strip())[:200])
 after = snap()
 changed = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
-want = {'src/plugins/lenses/heat/manifest.json', 'src/permissions/registry/registry-v24.9.json',                         # الملفّان (يدوياً)
+want = {'src/plugins/lenses/heat/manifest.json', 'src/permissions/registry/registry.base.json',                          # الملفّان (يدوياً)
+        'src/permissions/registry/registry-v24.9.json', 'workers/parts.json',                                           # V7 · د6: السجلُّ المجموع وفهرسُ الأجزاء مشتقّان
         'src/permissions/340-registry-v24-9.js', 'workers/parts/004-registry-2.js', 'workers/parts/006a-lens-plugins.js',  # المشتقّات
         'workers/_worker.js', 'src/manifests/255-page-manifest.js', 'src/manifests/perm-tree24.json'}
 ok(set(changed) == want, '★ (أ) ما تغيّر = manifest العدسة + سجلُّها (يدوياً) + المشتقّاتُ وحدها — لا ملفَّ كودٍ آخر (33x · طبقةُ الإنفاذ · الوحدات · الصفحات)',
@@ -70,8 +75,8 @@ pc = subprocess.run([sys.executable, 'tools/plugins.py', 'check', '--src', S], c
 ok(pc.returncode == 0 and '7 عدسة' in pc.stdout and 'heat' in pc.stdout, '★ (ب) tools/plugins.py check على النسخة: 7 عدسات · 0 مخالفة (heat خارج المرجع — تحرسها طبقةُ الإنفاذ)', pc.stdout.strip().split('\n')[-1][:200])
 T = json.load(open(os.path.join(S, 'manifests', 'perm-tree24.json'), encoding='utf-8'))
 lc = [c for c in T['containers'] if c['id'] == 'lenses'][0]; hl = [l for l in lc['leaves'] if l['owner'] == 'lens.heat']
-ok(len(hl) == 1 and hl[0].get('source') == 'plugin' and sorted(hl[0]['keys']) == sorted(man['keys']['own']) and T['counts']['leaves'] == 45 and T['counts']['keys'] == 259,
-   '★ (ب) شجرةُ v24.9: ورقةُ «عدسة الحرارة» في حاوية العدسات بمفاتيحها الأربعة (source: plugin) — 45 ورقة · 259 مفتاحاً', json.dumps(T['counts']))
+ok(len(hl) == 1 and hl[0].get('source') == 'plugin' and sorted(hl[0]['keys']) == sorted(man['keys']['own']) and T['counts']['leaves'] == T0['leaves'] + 1 and T['counts']['keys'] == T0['keys'] + 4,
+   '★ (ب) شجرةُ v24.9: ورقةُ «عدسة الحرارة» في حاوية العدسات بمفاتيحها الأربعة (source: plugin) — ورقةٌ واحدة وأربعةُ مفاتيح فوق ما كان (' + str(T0['leaves']) + ' · ' + str(T0['keys']) + ')', json.dumps(T['counts']))
 js = r'''
 const vm = require('vm'); const fs = require('fs'); const w = {}; const ctx = vm.createContext({ window: w }); ctx.KIVO = w;
 vm.runInContext(fs.readFileSync(process.argv[1], 'utf8'), ctx);

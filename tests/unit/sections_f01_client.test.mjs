@@ -40,10 +40,14 @@ function world(user) {
   const D = ctx.KIVO.BassamDepts; assert.ok(D && D.moveNode, 'BassamDepts موجودة');
   const M = rd('permissions/331-perm-model.js');
   const store = { caps: { a: ['emps', 'tasks', 'help'], d: ['emps'] }, emps: {} };
-  Object.assign(ctx, { PAGE_KEYS, permStore: () => store, permSave: () => {}, isSuper: () => !!(user && user.role === 'super'), curDept: () => D.active(),
-    patternSeed: (id) => { store.caps[id] = ['emps']; return { ok: true, n: 1 }; } });
-  for (const f of ['splitLeaf', 'rawCap', 'hasCap', 'effCap', 'capSetAnywhere', 'deptCap', 'seedCapFrom']) { const t = fnSrc(M, f, true); if (t) vm.runInContext(t, ctx); }
-  ctx.KIVO.BassamPerm = { seedCapFrom: ctx.seedCapFrom, hasCap: ctx.hasCap, deptCap: ctx.deptCap, effCap: ctx.effCap };
+  Object.assign(ctx, { PAGE_KEYS, permStore: () => store, permSave: () => {}, isSuper: () => !!(user && user.role === 'super'), curDept: () => D.active() });
+  /* V7 · د6 (ب4): البذرُ الجديد يقرأ الأنظمةَ التي تُطفأ من المحرّك (هنا بديلٌ مصطنع: tasks · plan · daily · help — وemps وadmin دائمتان) */
+  ctx.KIVO.Perm44 = { sysList: () => ['tasks', 'plan', 'daily', 'help'].map((k) => ({ key: k, toggle: true, leaves: [k] })) };
+  Object.assign(ctx, { PAGE_OF: {}, subKeysOf: () => [], onCap: (k, d) => ctx.deptCap(d).indexOf(k) !== -1 });
+  /* V7 · د6 (optIn): deptCap يقرأ السقفَ المفتوح من pageOpen (كلُّ الصفحات إلا أنظمةَ optIn من Perm44.sysList) — فتُحمَّل معه */
+  for (const f of ['splitLeaf', 'rawCap', 'hasCap', 'effCap', 'capSetAnywhere', 'pageOpen', 'deptCap', 'seedSystems', 'seedOnAt', 'seedMode', 'seedUnit', 'seedCapFrom']) { const t = fnSrc(M, f, true); if (t) vm.runInContext(t, ctx); }
+  vm.runInContext(fnSrc(M, 'seedSectionCap'), ctx);
+  ctx.KIVO.BassamPerm = { seedCapFrom: ctx.seedCapFrom, seedSectionCap: ctx.seedSectionCap, hasCap: ctx.hasCap, deptCap: ctx.deptCap, effCap: ctx.effCap };
   ctx.KIVO.BassamAuth = { user: () => user, isSuper: () => !!(user && user.role === 'super') };
   Object.assign(ctx, { D });
   vm.runInContext(fnSrc(rd('auth/330-auth.js'), 'gmDepts'), ctx);
@@ -90,7 +94,7 @@ test('F01 client (2) قاعدةُ الموضع وتصادمُ المعرّفات
   assert.equal(D.nodeSave('b', { name: 'اسم آخر' }).ok, false, 'عقدةٌ متصادمةٌ لا تُعدَّل');
 });
 
-test('F01 client (3) sectionAdd: مديرُ النظام ومديرُ الإدارة الأم وحدهما — وسقفُ القسم صريحٌ من سقف الإدارة', () => {
+test('F01 client (3) sectionAdd: مديرُ النظام ومديرُ الإدارة الأم وحدهما — وسقفُ القسم صريحٌ: مطفأٌ افتراضاً أو أنظمةُ إدارته (V7 · د6 · ب4)', () => {
   let W = world(SUPER);
   let r = W.D.sectionAdd({ name: 'قسم ب-1', deptId: 'b' });
   assert.equal(r.ok, true, JSON.stringify(r)); assert.equal(W.D.parentDeptOf(r.id), 'b');
@@ -99,7 +103,10 @@ test('F01 client (3) sectionAdd: مديرُ النظام ومديرُ الإدا
   W = world(MGR_A);
   r = W.D.sectionAdd({ name: 'قسم أ-2', deptId: 'a' });
   assert.equal(r.ok, true, 'مديرُ الإدارة الأم: ' + JSON.stringify(r));
-  assert.deepEqual(J(W.store.caps[r.id]), ['emps', 'tasks', 'help'], 'سقفُ القسم لقطةٌ من سقف إدارته');
+  /* V7 · د6 (ب4 — قرار المالك): القسمُ الجديد يبدأ وأنظمتُه مطفأة (الافتراضي) — كان: لقطةً من سقف إدارته؛ و'parent' = أنظمةُ إدارته */
+  assert.equal(r.cap, 'off'); assert.deepEqual(J(W.store.caps[r.id]), ['emps', 'admin'], 'سقفُ القسم الجديد: الصفحاتُ الدائمة وحدها');
+  r = W.D.sectionAdd({ name: 'قسم أ-3', deptId: 'a', seed: 'parent' });
+  assert.equal(r.cap, 'parent'); assert.deepEqual(J(W.store.caps[r.id]), ['emps', 'tasks', 'admin', 'help'], '«نفس أنظمة الأب»: أنظمةُ إدارته المفعّلة (المهام · المساعدة)');
   assert.equal(W.D.sectionAdd({ name: 'قسم د-2', deptId: 'd' }).ok, false, 'لا في إدارةٍ لا يديرها');
   W = world({ id: 'e1', role: 'staff', deptId: 'a', ekey: 'e1' });
   assert.equal(W.D.sectionAdd({ name: 'قسم موظف', deptId: 'a' }).ok, false, 'الموظفُ لا يُنشئ قسماً');

@@ -43,7 +43,7 @@ test('(أ)(ب) الاستعادةُ الشاملة لمدير النظام وح�
   assert.equal(b.status, 200, JSON.stringify(b.j).slice(0, 160)); assert.ok(!den(b, K), 'مديرُ النظام مقبول: ' + JSON.stringify(b.j.denied || {}).slice(0, 160));
   assert.match(String((await getv(C, su.ck, K)).v), /restored/);
 });
-test('(ج)(د) مفتاحٌ عامّ ⇒ not-mgr · نطاقُ الإدارة: بالمفتاح الممنوح صراحةً مقبولة · بلا المفتاح mgr-no-key', since(163), async () => {
+test('(ج)(د) مفتاحٌ عامّ ⇒ not-mgr · نطاقُ الإدارة: بالمفتاح الممنوح صراحةً مقبولة · ومديرُ الإدارة على إدارته بلا منح مقبولة (د6 QA ٦) · وعلى غيرها مرفوضة', since(163), async () => {
   const { C, su, dm } = await world();
   const c = await restore(C, dm.ck, { bassam_platform_v1: JSON.stringify({ brand: { name: 'x' } }) }, 'dept', su.ck);
   const dc = den(c, 'bassam_platform_v1'); assert.ok(c.status === 403 || dc, 'المفتاحُ العامّ مرفوض'); if (dc && dc.detail) assert.equal(dc.detail, 'not-mgr');
@@ -53,7 +53,10 @@ test('(ج)(د) مفتاحٌ عامّ ⇒ not-mgr · نطاقُ الإدارة: �
   const dm2 = await C.login('0000000102', '70102'); assert.ok(dm2.ok, 'tst_dm2');
   const K2 = 'bsdept:tst_d2:bassam_last_export_v1';
   const d = await restore(C, dm2.ck, { [K2]: JSON.stringify([{ id: 'TEST_ONLY_tpl', name: 'TEST_ONLY x' }]) }, 'dept', su.ck);
-  const dd = den(d, K2); assert.ok(d.status === 403 || dd, 'بلا مفتاح backup.restore مرفوضة: ' + JSON.stringify(d.j).slice(0, 160)); if (dd) assert.equal(dd.detail, 'mgr-no-key', JSON.stringify(dd));
+  /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يحمل backup.restore في إدارته بلا منحٍ صريح ⇒ مقبولة · وعلى إدارةٍ غيرِ إدارته مرفوضة (not-mgr) — كانت mgr-no-key */
+  assert.ok(!den(d, K2), 'مديرُ الإدارة على إدارته بلا منح: ' + JSON.stringify(d.j).slice(0, 160));
+  const x = await restore(C, dm2.ck, { [K]: JSON.stringify([{ id: 'TEST_ONLY_tpl', name: 'TEST_ONLY x' }]) }, 'dept', su.ck);
+  const dx = den(x, K); assert.ok(x.status === 403 || dx, 'على إدارةٍ أخرى مرفوضة: ' + JSON.stringify(x.j).slice(0, 160)); if (dx && dx.detail) assert.ok(['not-mgr', 'dept'].includes(dx.detail) || dx.why === 'dept', JSON.stringify(dx));
 });
 
 /* Schema 10: the same restore-marker policy (full-super-only · mgr-no-key) on a typed operational resource,
@@ -76,7 +79,7 @@ test('(أ)(ب) مورد تشغيلي مُنمَّط: الاستعادةُ الش
   assert.equal(b.status, 200, JSON.stringify(b.j).slice(0, 200)); assert.ok(!den(b, KO), 'مديرُ النظام مقبول: ' + JSON.stringify(b.j.denied || {}).slice(0, 160));
   assert.deepEqual((await opGet(C, su.ck, KO)).v, opValue('restored'));
 });
-test('(د) مورد تشغيلي مُنمَّط: نطاقُ الإدارة بالمفتاح الممنوح مقبولة · بلا المفتاح mgr-no-key', since(163), async () => {
+test('(د) مورد تشغيلي مُنمَّط: نطاقُ الإدارة بالمفتاح الممنوح مقبولة · ومديرُ الإدارة على إدارته بلا منح مقبولة (د6 QA ٦) · وعلى غيرها مرفوضة', since(163), async () => {
   const { env, C, su, dm } = await world();
   const ok = await opRestore(C, env, dm.ck, { [KO]: JSON.stringify(opValue('dept-ok')) }, 'dept', su.ck);
   assert.equal(ok.status, 200, JSON.stringify(ok.j).slice(0, 200)); assert.ok(!den(ok, KO), 'بالمفتاح: ' + JSON.stringify(ok.j.denied || {}).slice(0, 160));
@@ -84,7 +87,9 @@ test('(د) مورد تشغيلي مُنمَّط: نطاقُ الإدارة با�
   const dm2 = await C.login('0000000102', '70102'); assert.ok(dm2.ok, 'tst_dm2');
   const before = await opGet(C, su.ck, KO2);
   const d = await opRestore(C, env, dm2.ck, { [KO2]: JSON.stringify(opValue('x')) }, 'dept', su.ck);
-  const dd = den(d, KO2); assert.equal(d.status, 403, 'بلا مفتاح backup.restore مرفوضة: ' + JSON.stringify(d.j).slice(0, 200));
-  assert.equal(dd && dd.why, 'restore-policy', JSON.stringify(d.j).slice(0, 200)); assert.equal(dd.detail, 'mgr-no-key', JSON.stringify(dd));
-  assert.deepEqual(await opGet(C, su.ck, KO2), before, 'القيمةُ لم تتغيّر');
+  /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة على إدارته بلا منحٍ صريح مقبولة · وعلى إدارةٍ غيرِ إدارته مرفوضةٌ ولا تتغيّر القيمة — كانت mgr-no-key */
+  assert.equal(d.status, 200, 'مديرُ الإدارة على إدارته: ' + JSON.stringify(d.j).slice(0, 200)); assert.deepEqual((await opGet(C, su.ck, KO2)).v, opValue('x')); void before;
+  const before1 = await opGet(C, su.ck, KO), y = await opRestore(C, env, dm2.ck, { [KO]: JSON.stringify(opValue('y')) }, 'dept', su.ck);
+  assert.equal(y.status, 403, 'على إدارةٍ أخرى: ' + JSON.stringify(y.j).slice(0, 200));
+  assert.deepEqual(await opGet(C, su.ck, KO), before1, 'القيمةُ لم تتغيّر');
 });

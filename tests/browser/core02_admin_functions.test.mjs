@@ -57,7 +57,31 @@ const DELETED_D5H = {
     fields: ['input:السطر الأول - فارغ = اسم الجهة أو المنصة', 'input:السطر الثاني - مثال: الإدارة العامة لإدارة الحشود', 'input:السطر الثالث - {الإدارة} و{الصفحة} تُملآن تلقائياً',
       'input:نص التذييل', 'control:تاريخ الطباعة ووقتها', 'control:اسم من طبع'] },
 };
-const gone44 = (t, kind, x) => !!(DELETED44[t] && (DELETED44[t][kind] || []).includes(x)) || !!(DELETED_D5H[t] && (DELETED_D5H[t][kind] || []).includes(x));
+/* V7 · د6 (ب1 — الأمرُ ينصّ على حذف صفحة «الهيكل» المستقلة وصفحة الوحدة): الشجرةُ ثابتةٌ بجوار الوحدة في الشاشة الواحدة، فزرُّ الرجوع إليها
+   («طيّ لوحة التفاصيل» ثم «العودة إلى الهيكل») لا مقابلَ له — يُثبَّت غيابُه بالاسم. كلُّ ما عداه من أفعال «الإدارات» باقٍ في مكانه الجديد (MOVED). */
+const DELETED_D6 = { depts: { actions: ['طيّ لوحة التفاصيل'] } };
+/* V7 · د6 (walkfix ③ — قرار المالك، موثَّق كـNOHELP5H في core01_shell/core02_console؛ اللقطةُ نفسُها لا تُعدَّل): زرُّ تصفية «سجل الأنشطة» لا يسمّي
+   نظاماً مطفأً لوحدة حامله (أو على المنصة). أزرارُ النظام تُقرأ من المصدر المولَّد (ET_FILTER: [النوع، الاسم، ورقةُ النظام]) ويُحكم بإطفائها وقتَ التشغيل
+   في الصفحة نفسِها (KIVO.Perm44.sysList · ceiling للوحدة النشطة · BassamPerm.platOff — القاعدةُ التي يرسم بها السجلُّ أزرارَه). لا يُرفع من المسجَّل إلا
+   تلك الأسماءُ بعينها، ويُثبَّت لكلٍّ منها أنه نظامٌ مطفأٌ هنا فعلاً وأن زرَّه غائب — فلا يخفي التحويلُ تراجعاً حقيقياً */
+const ET_CHIPS = (() => {
+  const src = fs.readFileSync(new URL('../../src/services/290-activity-log.js', import.meta.url), 'utf8'), line = (src.split(/\r?\n/).find((l) => /^\s*var ET_FILTER = \[/.test(l)) || '');
+  return [...line.matchAll(/\['([a-z_]+)', '([^']+)', '([a-zA-Z]+(?:\/[a-zA-Z]+)?)'\]/g)].map((m) => ({ et: m[1], name: m[2], leaf: m[3] }));
+})();
+const offChipsOf = (page) => page.evaluate((chips) => {
+  const P4 = KIVO.Perm44, Pm = KIVO.BassamPerm, d = KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : '';
+  const on = d && P4.ceiling ? (P4.ceiling(d).on || []) : null, po = Pm && Pm.platOff ? Pm.platOff() : [], site = KIVO.__ADMIN_MODE === 'site';
+  return chips.map((c) => { const s = P4.sysList().filter((x) => x && x.toggle !== false && (x.leaves || []).indexOf(c.leaf) !== -1)[0];
+    return s && (po.indexOf(s.key) !== -1 || (!site && on && on.indexOf(s.key) === -1)) ? { name: c.name, sys: s.key, why: po.indexOf(s.key) !== -1 ? 'platform' : 'unit ' + d } : null; }).filter(Boolean);
+}, ET_CHIPS);
+/* المسجَّلُ ناقصاً أزرارَ الأنظمة المطفأة هنا — ومع كلٍّ منها إثباتُه (مطفأٌ · زرُّه غائبٌ الآن) */
+async function offOplog(page, t, kind, rec, now) {
+  if (t !== 'oplog' || kind !== 'actions') return rec;
+  const offs = await offChipsOf(page), names = offs.map((o) => o.name), dropped = rec.filter((x) => names.includes(x));
+  for (const x of dropped) assert.ok(!now.actions.has(x), 'oplog: the filter button «' + x + '» of an OFF system (' + JSON.stringify(offs.find((o) => o.name === x)) + ') is hidden');
+  return rec.filter((x) => !names.includes(x));
+}
+const gone44 = (t, kind, x) => !!(DELETED44[t] && (DELETED44[t][kind] || []).includes(x)) || !!(DELETED_D5H[t] && (DELETED_D5H[t][kind] || []).includes(x)) || !!(DELETED_D6[t] && (DELETED_D6[t][kind] || []).includes(x));
 const SYS_TABS = ['overview', 'sec', 'users', 'plat', 'depts', 'oplog', 'backup', 'histimp'];
 const DEPT_TABS = ['backup', 'oplog', 'shifts'];
 /* V7 · د1-د (تصوّرٌ معتمد): تبويبُ «استيراد بيانات» حُذف من الإعدادات — الاستيرادُ صار في «بيانات الموظفين» (ملفات ← استيراد من Excel)
@@ -91,13 +115,16 @@ const MOVED = {
   /* V7 P1: a unit's details became its own page (#/sysadmin/org/<id>) in tabs. The «بيانات الإدارة» menu button became the «البيانات» tab
      (its four items — نسخة الإدارة · استيراد · مسح البيانات · حذف — stay recorded actions, checked as such), and «طيّ لوحة التفاصيل»
      became «العودة إلى الهيكل» (the structure page: the tree) */
-  depts: { 'بيانات الإدارة: نسخة - استيراد - مسح - حذف': '=البيانات', 'طيّ لوحة التفاصيل': '=العودة إلى الهيكل',
+  /* V7 · د6: the structure page and the unit page became ONE screen «الإدارات والصلاحيات» — «إضافة» is «+ إضافة» above the tree, «إضافة قسم» is
+     «+ إضافة تحتها» on a department (the one add dialog with the kind «قسم» prefilled; its recorded title is kept), and the accounts table is the
+     «المسؤولون» tab (was «الصلاحيات ← الأدوار ← مدير الوحدة») */
+  depts: { 'بيانات الإدارة: نسخة - استيراد - مسح - حذف': '=البيانات', 'إضافة': '=+ إضافة', 'إضافة قسم': '=+ إضافة تحتها',
     /* V7 P2: the accounts tab became the «مراقبة الحسابات» table, one row menu per account (_acctMenu); the manager
        card's icon buttons are that menu's items (same handlers: setDisById · resetPwById → the temporary-password dialog · the permissions
        dialog · removeDeptManager); «تعديل بيانات المدير» keeps its name.
        V7 · د5-ح (قرار المالك): the node tab was deleted — the same table is the fixed card «مدير الوحدة» of «الصلاحيات ← الأدوار»,
        reached by the «الصلاحيات» tab (its menu items are probed there below) */
-    'حسابات الإدارة #': '=الصلاحيات', 'إيقاف الحساب مؤقتاً — يمنع الدخول بلا حذف': '=تجميد الحساب',
+    'حسابات الإدارة #': '=المسؤولون', 'إيقاف الحساب مؤقتاً — يمنع الدخول بلا حذف': '=تجميد الحساب',
     'كلمة مرور مؤقتة — تُسلَّم له ويُطلب تغييرها عند أول دخول': '=إعادة تعيين كلمة المرور', 'الصلاحيات — يرث سقف الإدارة كاملاً، والتضييق اختياري': '=تعديل الصلاحيات',
     'حذف حساب المدير — تبقى الإدارة وبياناتها': '=حذف حساب المدير' },
   /* CORE-02 S7: the nine platform sections were in-page tabs; each is now a named item of the console sidebar (#/sysadmin/plat/<sub>) —
@@ -116,7 +143,7 @@ const OLD_NAMES = ['مدير النظام', 'المشرف العام', 'مشرف
    heading and its own item selected (aria-current="page"); الرئيسية is a single item with no heading, and إعدادات المنصة is selected
    with one of its sections. */
 const NAV = {
-  overview: ['الرئيسية'], depts: ['الإدارة المؤسسية', 'الإدارات'], users: ['الإدارة المؤسسية', 'مراقبة الحسابات'],   plat: ['إعدادات المنصة'], sec: ['الأمن والرقابة', 'الأمن'], oplog: ['الأمن والرقابة', 'سجل الأنشطة والتغييرات'],
+  overview: ['الرئيسية'], depts: ['الإدارة المؤسسية', 'الإدارات والصلاحيات'] /* V7 · د6 (ب1): كان «الإدارات» */, users: ['الإدارة المؤسسية', 'مراقبة الحسابات'],   plat: ['إعدادات المنصة'], sec: ['الأمن والرقابة', 'الأمن'], oplog: ['الأمن والرقابة', 'سجل الأنشطة والتغييرات'],
   backup: ['البيانات والاستمرارية', 'النسخة الاحتياطية'], histimp: ['البيانات والاستمرارية', 'استيراد البيانات التاريخية'],
 };
 /* the selected nav labels without a count badge («الأمن #») */
@@ -236,21 +263,21 @@ async function probes(page, scope, tab, each) {
     if (await m.count()) { await m.click({ timeout: 10000 }); await page.waitForTimeout(500); await snap('row-menu'); await page.keyboard.press('Escape'); await page.waitForTimeout(300); }
   }
   if (scope === 'sys' && tab === 'depts') {
-    /* V7 P1: #/sysadmin/org is the structure page (the tree alone); a unit's details are its own page #/sysadmin/org/<id>, reached by
-       clicking its row, in tabs (نظرة عامة · حسابات الإدارة · سقف الصفحات · البيانات). The recorded «بيانات الإدارة» menu is the «البيانات» tab */
-    const all = page.locator('main.bs-main a', { hasText: 'فرد الكل' }).first();
-    if (await all.count()) { await all.click({ timeout: 10000 }); await page.waitForTimeout(400); }
-    const row = page.locator('main.bs-main .tr-rw', { hasText: 'TEST_ONLY إدارة أ' }).first();
+    /* V7 · د6: one screen — the tree beside the selected unit. A unit is selected by its tree row (on a phone the tree is the sheet opened by the unit
+       button), then each of its tabs is opened; the manager row's action menu is in «المسؤولون»; rename and move are dialogs of the overview's actions card */
+    const sheet = async () => { const ub = page.locator('main.bs-main .og-ub'); if (await ub.isVisible()) { await ub.click({ timeout: 10000 }); await page.waitForTimeout(500); return true; } return false; };
+    if (await sheet()) { await snap('tree'); }
+    const row = page.locator('main.bs-main .og-rw[data-og-id="TEST_ONLY_A"] .og-nm').first();
     if (await row.count()) { await row.click({ timeout: 10000 }); await page.waitForTimeout(2000); await snap('node'); }
-    for (const label of ['الصلاحيات', 'البيانات']) {   /* V7 · د5-هـ (44): «الصلاحيات» مكانَ «سقف الصفحات» */
-      const b = page.locator('main.bs-main [aria-label="أقسام صفحة العقدة"] button', { hasText: label }).first();
-      if (await b.count()) { await b.click({ timeout: 10000 }); await page.waitForTimeout(700); await snap('tab:' + label); }
-      /* V7 P2 · د5-ح: the accounts table («مراقبة الحسابات» rows) is the «مدير الوحدة» card of «الصلاحيات ← الأدوار» — its manager row's action menu holds the former card buttons */
-      if (label === 'الصلاحيات') {
-        const rs = page.locator('main.bs-main nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأدوار' }).first();
-        if (await rs.count()) { await rs.click({ timeout: 10000 }); await page.waitForTimeout(600); }
-        const mc = page.locator('main.bs-main .p44-role', { hasText: 'مدير الوحدة' }).first();
-        if (await mc.count()) { await mc.click({ timeout: 10000 }); await page.waitForTimeout(600); await snap('card:مدير الوحدة'); }
+    for (const [k, act] of [['rename', 'rename'], ['move', 'move']]) {
+      const bt = page.locator('main.bs-main [data-org-tab="overview"] [data-og-act="' + act + '"]').first();
+      if (await bt.count()) { await bt.click({ timeout: 10000 }); await page.waitForTimeout(500); await snap('dlg:' + k); await page.locator('[data-og-dlg="' + k + '"] .ft button', { hasText: 'إلغاء' }).click({ timeout: 10000 }); await page.waitForTimeout(300); }
+    }
+    for (const label of ['الأنظمة', 'المسؤولون', 'الأدوار', 'الأشخاص', 'السجل', 'البيانات']) {
+      const b = page.locator('main.bs-main .og-tabs .og-tab', { hasText: label }).first();
+      if (await b.count()) { await b.scrollIntoViewIfNeeded(); await b.click({ timeout: 10000 }); await page.waitForTimeout(900); await snap('tab:' + label); }
+      /* V7 P2 · د5-ح · د6: the accounts table («مراقبة الحسابات» rows) is the «المسؤولون» tab — its manager row's action menu holds the former card buttons */
+      if (label === 'المسؤولون') {
         const r = page.locator('main.bs-main .mk .adm-tr.g-us', { hasText: 'TEST_ONLY مدير أ' }).filter({ has: page.locator('.adm-rmb') }).first();
         if (await r.count()) { await r.locator('.adm-rmb').click({ timeout: 10000 }); await page.waitForTimeout(500); await snap('tab-menu:' + label); await page.keyboard.press('Escape'); await page.waitForTimeout(300); }
       }
@@ -296,13 +323,15 @@ async function nav2(page, vn) {
   for (const t of SYS_TABS) {
     await asideGo(page, t === 'plat' ? '[data-con-tab="plat"][data-con-sub="id"]' : '[data-con-tab="' + t + '"]:not([data-con-sub])'); await page.waitForTimeout(900);
     const seg = t === 'depts' ? 'org' : t;   /* V7 P0: «الإدارات» = #/sysadmin/org */
-    if (t === 'depts') assert.match(await hash(), /^#\/sysadmin\/org(\/[^/]+)?$/, vn + ': the sidebar item writes #/sysadmin/org (with the unit selected in this page, if any)');
+    if (t === 'depts') assert.match(await hash(), /^#\/sysadmin\/org\/[^/]+\/[a-z]+$/, vn + ': the sidebar item opens the screen, which writes its unit and tab (#/sysadmin/org/<unit>/<tab>)');
     else assert.equal(await hash(), '#/sysadmin/' + seg + (t === 'plat' ? '/id' : ''), vn + ': the sidebar item writes #/sysadmin/' + seg);
     const r = await page.evaluate(collect); assert.ok(opened(t, r), vn + ': ' + t + ' selected as ' + JSON.stringify(NAV[t]) + ' (now ' + JSON.stringify(r.selected) + ')');
     const ov = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(ov <= 1, vn + ': ' + t + ': no horizontal page scroll (' + ov + 'px)');
     assert.equal(await page.locator('main .adm-tabbar:not(.adm-tabbar--d), main .adm-l2, main .adm-subtabs').count(), 0, vn + ': ' + t + ': no in-page strip and no second row of tabs');
-    assert.equal(await page.locator('main [role=tablist]').count(), 0, vn + ': ' + t + ': no tab row in the page (the sidebar is the one navigation)');
+    /* V7 · د6 (ب1): the unit's own tabs are the one tab row a console page has — «الإدارات والصلاحيات» alone, and only that strip */
+    assert.equal(await page.locator('main [role=tablist]:not(.og-tabs)').count(), 0, vn + ': ' + t + ': no tab row in the page (the sidebar is the one navigation)');
+    assert.equal(await page.locator('main [role=tablist].og-tabs').count(), t === 'depts' ? 1 : 0, vn + ': ' + t + ': the unit tab strip belongs to «الإدارات والصلاحيات» alone');
   }
   /* «التهيئة والاستعادة» is one item, under البيانات والاستمرارية, and opens the platform settings on its own section */
   assert.equal(await page.locator('aside.bsb [data-con-sub="setup"]').count(), 1, vn + ': one entry for «التهيئة والاستعادة»');
@@ -398,7 +427,9 @@ if (CAPTURE) {
       assert.equal(side.length, 14, 'the console sidebar holds 14 destinations (' + JSON.stringify(side) + ')');
       for (const x of ['خريطة الصلاحيات', 'الوحدات']) assert.ok(!side.includes(x), 'V7 · د5-هـ (44): «' + x + '» is deleted');
       assert.ok(!side.includes('الطباعة والتقارير'), 'V7 · د5-ح: «الطباعة والتقارير» is deleted');
-      for (const [from, x, to] of moved) assert.ok(to.startsWith('=') ? nowBy[from].actions.has(to.slice(1)) : to === 'aside' ? side.includes(x) : (NAV[to].includes(x) || side.includes(x) || variants(x).some((v) => nowBy[to].actions.has(v))), from + ': «' + x + '» (moved) is still reachable ' + (to === 'aside' ? 'in the console sidebar' : 'on ' + to));
+      /* V7 · د6 (ب1): بندُ الشريط «الإدارات» صار «الإدارات والصلاحيات» — الوجهةُ نفسُها باسمها الجديد */
+      const SIDE_NOW = { 'الإدارات': 'الإدارات والصلاحيات' };
+      for (const [from, x, to] of moved) assert.ok(to.startsWith('=') ? nowBy[from].actions.has(to.slice(1)) : to === 'aside' ? side.includes(x) : (NAV[to].includes(x) || NAV[to].includes(SIDE_NOW[x]) || side.includes(x) || variants(x).some((v) => nowBy[to].actions.has(v))), from + ': «' + x + '» (moved) is still reachable ' + (to === 'aside' ? 'in the console sidebar' : 'on ' + to));
       /* CORE-02 step 2: the page is titled «المنصة / مركز إدارة رشاد», the sidebar link reads «مركز إدارة رشاد», the user card reads «مسؤول المنصة» */
       assert.equal((await s.page.textContent('.bs-crumb')).replace(/\s+/g, ' ').trim(), 'المنصة / مركز إدارة رشاد', 'crumb names the admin interface');
       assert.ok((await s.page.$$eval('.nlbl', (els) => els.map((e) => e.textContent.trim()))).includes('مركز إدارة رشاد'), 'sidebar link «مركز إدارة رشاد»');
@@ -408,7 +439,7 @@ if (CAPTURE) {
         await s.page.goto(lab.base + '/#/sysadmin/' + t, { waitUntil: 'domcontentloaded' }); await s.page.waitForTimeout(4500);
         const r = await s.page.evaluate(collect), h = await s.page.evaluate(() => location.hash);
         if (t === 'plat') assert.match(h, /^#\/sysadmin\/plat\/(id|notif|login|side|print|app|about|setup)$/, t + ': the deep link opens the platform settings on a section (the last one opened) and names it in the address');
-        else if (t === 'depts') assert.match(h, /^#\/sysadmin\/org(\/[^/]+)?$/, t + ': the recorded #/sysadmin/depts opens and is written as #/sysadmin/org — with the unit still selected in this page (a same-document address change keeps the selection; V7 P0)');
+        else if (t === 'depts') assert.equal(h, '#/sysadmin/org/platform/overview', t + ': the recorded #/sysadmin/depts opens the screen and is redirected to its canonical address (V7 · د6)');
         else assert.equal(h, '#/sysadmin/' + t, t + ': the deep link stays on its address');
         assert.ok(opened(t, r), t + ': the deep link opens ' + JSON.stringify(NAV[t]) + ' (recorded «' + FX.sys[t].selected + '»; now ' + JSON.stringify(r.selected) + ')');
       }
@@ -439,7 +470,7 @@ if (CAPTURE) {
             await s.go('#/admin/' + t, 4000);
             const states = await probes(s.page, 'dept', t), now = union(states), rec = FX.dept[t];
             assert.ok(variants(rec.selected).some((v) => states[0].selected.includes(v)), 'admin/' + t + ': opens «' + rec.selected + '» (now ' + JSON.stringify(states[0].selected) + ')');
-            for (const kind of ['headings', 'actions', 'fields']) assert.deepEqual(missing(rec[kind], now, kind), [], 'admin/' + t + ': every recorded ' + kind + ' still reachable');
+            for (const kind of ['headings', 'actions', 'fields']) assert.deepEqual(missing(await offOplog(s.page, t, kind, rec[kind], now), now, kind), [], 'admin/' + t + ': every recorded ' + kind + ' still reachable');
           }
           for (const t of SYS_TABS) {
             await s.go('#/sysadmin/' + t, 2500);
@@ -493,7 +524,7 @@ if (CAPTURE) {
               };
               const states = await probes(s.page, scope, t, each), now = union(states);
               for (const kind of ['headings', 'actions', 'fields']) {
-                const miss = missing(rec[t][kind], now, kind).filter((x) => !(scope === 'sys' && gone44(t, kind, x))).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x])).filter((x) => !(kind === 'headings' && scope === 'sys' && merged(t, x, now)));
+                const miss = missing(scope === 'dept' ? await offOplog(s.page, t, kind, rec[t][kind], now) : rec[t][kind], now, kind).filter((x) => !(scope === 'sys' && gone44(t, kind, x))).filter((x) => !(kind === 'actions' && MOVED[t] && MOVED[t][x])).filter((x) => !(kind === 'headings' && scope === 'sys' && merged(t, x, now)));
                 if (miss.length) bad.push(vn + ' ' + scope + '/' + t + ': not reachable (' + kind + '): ' + miss.join(' · '));
               }
             }

@@ -8,12 +8,13 @@
 import { installIrshadFixture } from './irshad_legacy_seed_fx.mjs';
 import { installBusinessFixture } from './business_legacy_seed_fx.mjs';
 import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
+import { schemaFrom } from './harness.mjs';
 
 export async function installCurrentSchemaFixture(env) {
   const schema = () => env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v;
   const v = schema();
-  if (['8', '9', '10', '11'].includes(v)) await installIrshadFixture(env);
-  if (['9', '10', '11'].includes(v)) await installBusinessFixture(env);
-  if (v === '11') await installOperationalFixture(env);
+  if (schemaFrom(v, 8)) await installIrshadFixture(env);
+  if (schemaFrom(v, 9)) await installBusinessFixture(env);
+  if (schemaFrom(v, 11)) await installOperationalFixture(env);
   return v;
 }

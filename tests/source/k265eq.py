@@ -83,8 +83,8 @@ _SYS = [json.load(open(os.path.join(_SYSD, k, 'system.json'), encoding='utf-8'))
 #   ‎systems/_shared/<key>/*‎) تُعدّ من سجلّ الكتل المولَّد للحاضر (src/blocks.json ← قطعُ blocks.shell.*)، فالعددُ مشتقٌّ من الحاضر لا رقماً ثابتاً.
 #   القاعدة 64 = 63 كتلةَ js من القاعدة + منطقُ الغلاف المُصرَّف (root-logic).
 N_SYS_JS = sum(1 for b in json.load(open(os.path.join(ROOT, 'src', 'blocks.json'), encoding='utf-8'))['blocks'] if b.get('kind') == 'js' and str(b.get('id', '')).startswith('systems/'))
-N_JS = 64 + N_SYS_JS
-N_PG = 5 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة · د5-د: الجدولُ الشهري صار نظاماً بصفحته · د5-هـ: والتشغيلُ الميداني · والتقريرُ اليومي · والمتابعةُ اليومية (5 للقاعدة)
+N_JS = 65 + N_SYS_JS   # V7 · د6: 65 = 64 + services/325-org-route.js (عنوانُ شاشة «الإدارات والصلاحيات» — مصدرٌ واحد للإطار وصفحة الإعدادات وصفحة الشاشة)
+N_PG = 6 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة · د5-د: الجدولُ الشهري صار نظاماً بصفحته · د5-هـ: والتشغيلُ الميداني · والتقريرُ اليومي · والمتابعةُ اليومية (5 للقاعدة) · V7 · د6: 6 = 5 + Org (شاشة «الإدارات والصلاحيات» فُصلت صفحةً مستقلة عن Admin)
 kinds = {}
 for u in files:
     if u in retained: continue   # أصولُ الإصدارات السابقة المُبقاة (أُثبتت أعلاه) لا تُعدّ في أصناف الإصدار الحالي
@@ -93,8 +93,8 @@ ok(kinds.get('js') == N_JS and kinds.get('css') == 11 and kinds.get('fonts') == 
 JS = re.findall(r'<script([^>]*) src="(/assets/js/[^"]+)"></script>', shell)
 CSS = re.findall(r'<link rel="stylesheet"([^>]*) href="(/assets/css/[^"]+)">', shell)
 tags = re.findall(r'<script\b[^>]*>', shell)
-ok(len(JS) == N_JS and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٥ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٥ = ٧٤ + 385-calendar التقويم الموحّد V7 د5-د [ومنها 530 وقائعُ اليوم: صارت في مجلد الجدول الشهري فتُعدّ من كتل الأنظمة لا من ثابت القاعدة] · ٧٤ = ٧٣ + 060-bus ناقلُ الأحداث V7 د5-ب · ٧٣ = ٧٢ + 555-page-states حالاتُ الصفحة الموحَّدة V7 UX (ومعه ورقةُ أنماطه — css ١١) · ٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
-ok(len(tags) == N_JS + 1 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٦ وسمَ script: ٧٥ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
+ok(len(JS) == N_JS and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a) for a, _ in JS), '★ ٧٦ سكربتاً خارجياً كلاسيكياً حاجباً بترتيبها (٧٦ = ٧٥ + 325-org-route عنوانُ شاشة «الإدارات والصلاحيات» V7 د6 · ٧٥ = ٧٤ + 385-calendar التقويم الموحّد V7 د5-د [ومنها 530 وقائعُ اليوم: صارت في مجلد الجدول الشهري فتُعدّ من كتل الأنظمة لا من ثابت القاعدة] · ٧٤ = ٧٣ + 060-bus ناقلُ الأحداث V7 د5-ب · ٧٣ = ٧٢ + 555-page-states حالاتُ الصفحة الموحَّدة V7 UX (ومعه ورقةُ أنماطه — css ١١) · ٧٢ = ٧٤ − 480-final-delete · 510-emp-monthly-source (طبقتا توافقٍ بلا أثر) · ٧٤ = ٧٥ − 190-tabstrip-unify L-06 · ٧٥ = ٧٣ + 547-custody-api · 548-atomic-backup؛ ٧١ = ٦٩ + 545-task-self · 546-task-model المهام KIVO_265 · ٦٩ = ٦٨ + 535-profile-facts «ملفي» KIVO_264 · + منطقُ الغلاف المُصرَّف + manifest الصفحات · لا async/defer/module) — التنفيذُ بالتسلسل نفسِه كالمضمَّن', len(JS))
+ok(len(tags) == N_JS + 1 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٧ وسمَ script: ٧٦ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
 refs = set(u for _, u in JS) | set(u for _, u in CSS) | set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', shell))
 for u in list(files):
     if u.endswith('.css') or u.endswith('.js'): refs |= set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', files[u].decode('utf-8')))

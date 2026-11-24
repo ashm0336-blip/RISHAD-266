@@ -32,6 +32,11 @@ var ENT = {
   'bassam_irshad_v1':         { cols: [{ at: 'reports', idf: ['id'], lock: ['id'] }], empty: '{"reports":[]}' },
   'bassam_irshad_langs_v1':   { empty: '[]', primRoot: 1 },
   'bassam_irshad_locs_v1':    { empty: '[]', primRoot: 1 },
+  /* ── رصد الحالات ── */
+  'bassam_rasd_v1':           { cols: [{ at: 'reports', idf: ['id'], lock: ['id'] }], empty: '{"reports":[]}' },
+  /* القوائم: { zone, floor, type, act, party: [{ n, c }], spot: [{ n, z, g }] } — الاسمُ هويةُ البند */
+  'bassam_rasd_opts_v1':      { cols: [{ at: 'zone', idf: ['n'] }, { at: 'floor', idf: ['n'] }, { at: 'type', idf: ['n'] }, { at: 'act', idf: ['n'] }, { at: 'party', idf: ['n'] }, { at: 'spot', idf: ['n'] }],
+                               empty: '{"zone":[],"floor":[],"type":[],"act":[],"party":[],"spot":[]}' },
   /* ── المضبوطات ── */
   'bassam_seized_v1':         { cols: [{ at: 'reports', idf: ['id'], lock: ['id'] }], empty: '{"reports":[]}' },
   /* loadCat: { ver, cats:[{ name, items:[…] }] } */

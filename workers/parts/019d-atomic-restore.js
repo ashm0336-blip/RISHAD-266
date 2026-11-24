@@ -73,7 +73,7 @@ async function rsScopeOperational(env, capture, keys) {
    scope may be referenced elsewhere) widens the reference to the whole database, fenced alike. */
 async function rsReferenceWiden(env, reference) {
   var scope = reference.scope;
-  if (!scope || scope.all) return false;
+  if (!scope || scope.all || reference.noWiden) return false;   /* V7 · د6: استيرادُ الإدارة على أجزاء لا يحمّل القاعدةَ كلَّها ليحكم على صورةٍ لم تعد إدارتُه تذكرها — يحكم بفهرس المراجع (imgref)، والكنسُ يعيد الفحص قبل أي حذف (019g) */
   var P = env.__pre, later = JSON.stringify(scope.later), where = 'NOT ' + RS_SCOPE_KV + ' AND k NOT IN (SELECT value FROM json_each(?2))',
     rows = (await env.DB.prepare('SELECT k,seq,v FROM kv WHERE ' + where + ' ORDER BY k,seq').bind(scope.arg, later).all()).results || [],
     joined = kvJoin(rows), departments = parseJson(reference.inputKeys[K_DEPTS] || '[]', null);
@@ -818,12 +818,29 @@ function rsNFValidate(domain, scope) {
   });
   return out;
 }
+/* V7 · د6: عمودُ النطاق لكل جدول تنبيهات (الإعداداتُ ونقاطُ التتبّع للمنصة — لا نطاقَ إدارة لها) وقراءةُ صفوف نطاقاتٍ مسمّاة وحدها */
+function rsNFScopeCol(n) {
+  return n === 'states' ? 'message_scope' : n === 'overrides' || n === 'checkpoints' ? '' : 'scope';
+}
+function rsNFScopeWhere(n, only) {
+  return rsNFScopeCol(n) + ' IN (' + only.map(function (_, i) { return '?' + (i + 1); }).join(',') + ')';
+}
+async function rsNFReadScoped(env, only) {
+  var names = Object.keys(NF_TABLES).filter(rsNFScopeCol),
+    b = await env.DB.batch(names.map(function (n) { return rsBound(env.DB.prepare('SELECT * FROM ' + NF_TABLES[n][0] + ' WHERE ' + rsNFScopeWhere(n, only)), only); })),
+    o = { version: 1, overrides: [], checkpoints: [] };
+  names.forEach(function (n, i) { o[n] = b[i].results || []; });
+  return o;
+}
 async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
   rsShape(base, ['rev', 'configRev', 'broadcastRev']);
   ['rev', 'configRev', 'broadcastRev'].forEach(function (k) {
     rsNat(base[k]);
   });
-  var before = await nfRead(env),
+  /* V7 · د6: استعادةُ إدارةٍ لا تقرأ تنبيهاتِ المنصة كلِّها: صفوفُ نطاقها وحده (ونطاقِ ما يُنشأ معها) — تُقرأ وتُحرس وتُلتقط وتُحذف ثم تُدرج،
+     وما سواها لا يُمسّ (كان يُحذف ويُعاد كما هو). النتيجةُ في الجداول هي هي؛ والكلفةُ تتبع تنبيهاتِ الإدارة لا المنصة. */
+  var only = scope.kind === 'dept' ? ['d:' + scope.departmentId].concat((newDepts || []).map(function (d) { return 'd:' + d; })) : null,
+    before = only ? await rsNFReadScoped(env, only) : await nfRead(env),
     next = rsNFValidate(domain, scope),
     guards = [revGuard(env, NF_REV, base.rev), revGuard(env, NF_CFG_REV, base.configRev), revGuard(env, NF_BC_REV, base.broadcastRev)],
     st = [],
@@ -849,7 +866,8 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
   Object.keys(NF_TABLES).forEach(function (n) {
     var spec = NF_TABLES[n],
       rows = before[n];
-    guards.push.apply(guards, rsWitness(env, spec[0], spec[1], rows));
+    if (only && !rsNFScopeCol(n)) return;
+    guards.push.apply(guards, only ? rsWitness(env, spec[0], spec[1], rows, rsNFScopeWhere(n, only), only) : rsWitness(env, spec[0], spec[1], rows));
     snaps.push({ domain: 'notifications', table: spec[0], rows: rows });
     if (mode === 'merge') next[n] = rsMergeRows(rows, next[n], spec[1], pks[n]);
     else if (scope.kind === 'dept')
@@ -860,13 +878,15 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
         .concat(next[n]);
   });
   ['states', 'targets', 'messages', 'dedup', 'overrides', 'checkpoints'].forEach(function (n) {
-    st.push(env.DB.prepare('DELETE FROM ' + NF_TABLES[n][0]));
+    if (only && !rsNFScopeCol(n)) return;
+    st.push(only ? rsBound(env.DB.prepare('DELETE FROM ' + NF_TABLES[n][0] + ' WHERE ' + rsNFScopeWhere(n, only)), only) : env.DB.prepare('DELETE FROM ' + NF_TABLES[n][0]));
   });
   ['messages', 'targets', 'states', 'dedup', 'overrides', 'checkpoints'].forEach(function (n) {
+    if (only && !rsNFScopeCol(n)) return;
     st.push.apply(st, rsBulk(env, NF_TABLES[n][0], NF_TABLES[n][1], next[n]));
   });
   var unchanged = Object.keys(NF_TABLES).every(function (n) {
-    return rsSameRows(before[n], next[n]);
+    return (only && !rsNFScopeCol(n)) || rsSameRows(before[n], next[n]);
   });
   var revisionKeys = unchanged ? [] : [NF_REV];
   if (!unchanged && !rsSameRows(before.overrides, next.overrides)) revisionKeys.push(NF_CFG_REV);
@@ -954,7 +974,9 @@ async function rsPrepare(env, A, body, meta, internal) {
     (body.scope.kind === 'dept' && (typeof body.scope.departmentId !== 'string' || !body.scope.departmentId))
   )
     throw rsError('restore-scope');
-  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || (!body.reason.trim() && !reasonExempt(A)) || body.reason.length > 300)   /* السببُ الفارغ يُقبل من مدير المنصة وحده؛ حدُّ الطول 300 للجميع */
+  /* V7 · د6 (QA) · البند ١: السببُ لم يعد شرطاً لأحد — يُقبل غائباً أو فارغاً (يُطبَّع إلى "")، وحدُّ الطول 300 باقٍ لما يُرسل */
+  if (body.reason === undefined) body.reason = '';
+  if (!['merge', 'replace'].includes(body.mode) || typeof body.reason !== 'string' || body.reason.length > 300)
     throw rsError('restore-reason');
   /* A full backup declares its complete input. Never infer missing domains from
      its mode or silently reinterpret a sparse save as a complete backup. */
@@ -1093,6 +1115,8 @@ async function rsPrepare(env, A, body, meta, internal) {
       if (isDeviceKey(k)) throw rsError('restore-device-excluded');
     });
   var operationalInput=opRestoreDocuments(body,reference,A);
+  if (internal && internal.images && internal.images.skip) internal.images.skip.forEach(function (k) { delete operationalInput.keys[k]; operationalInput.physicalDeletes = operationalInput.physicalDeletes.filter(function (x) { return x !== k; }); });   /* V7 · د6: مواردُ تودَع على دفعات (019g) لا تمسّها الخطةُ العامة */
+  if (internal && internal.release) body.domains.operations = null;   /* V7 · د6: صفوفُ المجال التشغيلي صارت وثائقَ أعلاه ولا يقرؤها ما بعده — تُحرَّر (أكبرُ ما يُحمل في الذاكرة) */
   Object.assign(keys,operationalInput.keys);
   var selection = rsSelectMerge(body, A, inputKeys, inputRevs, keys, del, base);
   keys = selection.keys;
@@ -1120,14 +1144,7 @@ async function rsPrepare(env, A, body, meta, internal) {
       };
     }
     rsShape(requestedPerms, ['capSet', 'cap', 'emps', 'lenses']);
-    var retainedPerms = rsPermSlice(
-      JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))),
-      dept,
-      requestedPerms,
-      body.mode,
-      PG_KEYS,
-      KIVO_LENS_PLUGINS.keys,
-    );
+    var retainedPerms = rsDeptPermsKeep(JSON.parse(JSON.stringify(parseJson(inputKeys[K_PERM], {}))), dept, requestedPerms, body.mode);   /* V7 · د6 (QA ٦ — قرارُ المالك ب): السقفُ والمدير لا يغيّرهما استيراد */
     if (retainedPerms !== null) {
       keys[K_PERM] = JSON.stringify(retainedPerms);
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
@@ -1278,7 +1295,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     statements: [],
     snapshots: [],
     revisionKeys: [],
-    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept },
+    counts: { kv: kv.pend.filter(function(pd){return !opIsResource(pd.k);}).length, operations:0, dailyStats: 0, notifications: 0, custody: 0, irshad: 0, seized: 0, awards: 0, kept: selection.kept, perms: body.scope.kind === 'dept' ? rsPermsCounts(A, dept, keys) : undefined },
     authz: kv.authzRows || [],
     reauth: false,
     kv: kv,
@@ -1473,6 +1490,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     });
   }
   await bdRestorePlan(env,A,body,plan,domains,finalDeptIds,removedDepartments,keys);
+  if (internal && internal.images && internal.images.touch) internal.images.touch(plan);   /* V7 · د6: مراجعُ صور المفاتيح المودَعة على دفعات (019g) */
   if (internal && internal.images) await rsImageArchivePlan(env, A, plan, reference, internal.images);
   await rsImageMetadataPlan(env, A, plan, reference);
   return plan;
@@ -1512,6 +1530,7 @@ async function rsCommit(env, A, plan, meta) {
   });
   st.push.apply(st,rsBulk(env,'restore_snapshot_manifest',['snapshot_id','domain','table_key','row_count'],snapshotManifest));
   st.push.apply(st,rsBulk(env,'restore_preimage',['snapshot_id','domain','table_key','row_number','row_json'],snapshotRows));
+  (plan.snapshotSql || []).forEach(function (make) { st.push.apply(st, make(sid)); });   /* V7 · د6: لقطةُ ما قبل الاستيراد لمواردَ تُستبدل على دفعات — تُنسخ صفوفُها القائمة داخل القاعدة (019g) */
   if (changed)
     st.push(
       env.DB.prepare(
@@ -1612,7 +1631,8 @@ async function rsCommit(env, A, plan, meta) {
   };
 }
 async function rsRestoreInventory(env, A, scope, requestedDepartments) {
-  var reference = await rsReferenceSnapshot(env, A.u.id);
+  /* V7 · د6: جردُ إدارةٍ واحدة يقرأ النسخ (revs) وحدها — لا يحمّل المواردَ التشغيلية لكل الإدارات (كان يحمّلها كلَّها ليعيد أرقامَ نسخها) */
+  var reference = await rsReferenceSnapshot(env, A.u.id, scope && scope.kind === 'dept' && typeof scope.departmentId === 'string' && scope.departmentId && scope.departmentId.indexOf(':') < 0 ? { departments: [scope.departmentId], operationalKeys: [] } : undefined);
   env = reference.env;
   A = reference.A;
   if (!scope || !['full', 'dept'].includes(scope.kind) || (scope.kind === 'full' && A.u.role !== 'super'))
@@ -1669,6 +1689,99 @@ async function rsRestoreInventory(env, A, scope, requestedDepartments) {
     counts: { keys: Object.keys(kv).length, departments: depts.length },
   };
 }
+/* V7 · د6 (QA ٦ — قرارُ المالك ب، يلغي «الاستيرادُ يُبقي السقفَ المرفق» لنسخ الإدارة): استيرادُ نسخة الإدارة واستعادتُها لا يغيّران سقفَ الوحدة
+   (الأنظمة المشغَّلة · الأقسام · العدسات · الاستقلال · علامة البذر) ولا مديرَها: تبقى كما في الهدف. ما ينتقل أوراقُ موظفي الإدارة وحدها (بيانُ الإدارة)
+   — وصحيفةُ مدير المصدر «mgr:*» لا تنتقل، وصحيفةُ مدير الهدف (إن وُجدت) تبقى كما هي. السقفُ الهدف يحكمها وقتَ القرار (057 enfTranslated · enfKeyOnCeiling):
+   ما خارجه مخزَّنٌ بلا أثر. الدمجُ في إدارةٍ لها أوراقٌ لا يمسّها (كما كان). null = لا تغيير */
+void rsPermSlice;   /* V7 · د6 (QA ٦): قاعدةُ الشريحة (051c ← 320 permSlice) باقيةٌ للعميل وأداة المطابقة؛ الخادمُ لا يطبّقها على نسخ الإدارة بعد قرار المالك ب3 */
+/* V7 · د6 (QA ٦ — قرارُ المالك ب4): ما ينتقل من صلاحيات الإدارة بعدده — الأدوار · الإسنادات (أشخاصُ الأدوار + أوراقُ الموظفين) · وما لا أثرَ له لأن النظامَ
+   مطفأٌ في سقف الهدف (لكل نظام: عددُ الأدوار والأوراق التي تحمله). مصدرٌ واحد لملخّص ما قبل التأكيد (inspection.counts) وملخّص النجاح (counts) — 548 permsLine */
+function rsPermsCounts(A, d, keys) {
+  var out = { roles: 0, assignments: 0, inert: {} }, rk = perm44Key(d), E = perm44E(), on = perm44LeafOn(A, d), add = function (s) { out.inert[s] = (out.inert[s] || 0) + 1; };
+  if (Object.prototype.hasOwnProperty.call(keys, rk)) {
+    var R = perm44Rec(keys[rk]) || { roles: [], people: {} };
+    (R.roles || []).forEach(function (r) { out.roles++; Object.keys(isObj(r && r.sys) ? r.sys : {}).forEach(function (sy) { if (!E.sysOn(sy, on)) add(sy); }); });
+    out.assignments += Object.keys(isObj(R.people) ? R.people : {}).length;
+  }
+  if (Object.prototype.hasOwnProperty.call(keys, K_PERM)) {
+    var em = ((parseJson(keys[K_PERM], {}) || {}).emps || {})[d] || {};
+    Object.keys(em).forEach(function (ek) { if (isMgrKey(ek) || !isObj(em[ek])) return; out.assignments++; Object.keys(em[ek]).forEach(function (leaf) { if (!on(leaf)) add(leaf.split('/')[0]); }); });
+  }
+  return out;
+}
+function rsDeptPermsKeep(pm, id, PP, mode) {
+  if (!id || !isObj(PP)) return null;
+  pm = isObj(pm) ? pm : {}; pm.emps = isObj(pm.emps) ? pm.emps : {};
+  var cur = isObj(pm.emps[id]) ? pm.emps[id] : {}, inc = isObj(PP.emps) ? PP.emps : {}, out = {}, ek, empKeys = false;
+  for (ek in cur) if (!isMgrKey(ek)) empKeys = true;
+  if (mode !== 'replace' && empKeys) return null;
+  for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek];
+  for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) out[ek] = inc[ek];
+  if (deq(out, cur)) return null;
+  pm.emps[id] = out;
+  return pm;
+}
+/* V7 · د6: ثلاثُ قطعٍ من مسار الاستعادة صارت دوالَّ ليشاركه فيها الاستيرادُ على أجزاء (019g) بلا نسخةٍ ثانية: حكمُ الصلاحية · تحويلُ النسخة وتخطيطُها واعتمادُها · ترجمةُ الرفض */
+function rsScopeDenied(A, s) {
+  return !s || (s.kind === 'full' && A.u.role !== 'super') || (s.kind === 'dept' && A.u.role !== 'super' && (!isMgrOf(A, s.departmentId) || !enfHeld(A, s.departmentId, 'backup.restore')));
+}
+function rsErrorResponse(e) {
+  if (e.ocCode) return json({ok:0,err:e.ocCode},e.status||400);
+  if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
+  if (e.szCode || e.awCode) return bdErrorResponse(e);
+  if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
+  if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
+  if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
+  if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
+  if (/KIVO_RESTORE_EPOCH/.test(String(e))) return json({ ok: 0, err: 'restore-epoch-changed' }, 409);
+  if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e))) return json({ ok: 0, err: 'conflict' }, 409);
+  return null;
+}
+async function rsBackupRun(env, A, request, body, reference, rawFingerprint, stage) {
+    var converted = await rsConvertBackup(env, A, body.backup, {
+        scope: body.scope,
+        mode: body.mode,
+        legacyConsent: body.phase === 'inspect' || body.legacyConsent === true,
+        reference: reference,
+      }),
+      base = JSON.parse(JSON.stringify(body.base || {}));
+    if (stage) body.backup = null;   /* V7 · د6: نصُّ الملف لا يلزم بعد التحويل — يُحرَّر قبل التخطيط (نسخةٌ بياناتُها 10MB كانت تُبقي فوق 120MB حيّةً في الذاكرة) */
+    base.kv = base.kv || {};
+    Object.keys(converted.keys).forEach(function (k) {
+      if (base.kv[k] === undefined && !Object.prototype.hasOwnProperty.call(reference.inputKeys, k) && !reference.inputRevs[k])
+        base.kv[k] = 0;
+    });
+    var normalized = {
+      version: 1,
+      uid: body.uid,
+      requestId: body.requestId,
+      scope: body.scope,
+      mode: body.mode,
+      reason: body.reason,
+      base: base,
+      keys: converted.keys,
+      delete: [],
+      domains: converted.domains,
+      manifest: converted.manifest,
+    };
+    if (converted.permissionSlice !== undefined) normalized.permissionSlice = converted.permissionSlice;
+    var plan = await rsPrepare(env, A, normalized, reqMeta(request), {
+      reference: reference,
+      fingerprint: rawFingerprint,
+      images: stage || converted.images,
+      release: !!stage,
+    });
+    plan.guards.push.apply(plan.guards, converted.readGuards || []);
+    converted.summary.imagesReused = plan.imagesReused;
+    converted.summary.imagesMissing = plan.imagesMissing || 0;   /* V7-F: images the file mentions that the platform no longer holds — restored as missing (019e) */
+    if (plan.imagesMissingIds && plan.imagesMissingIds.length) converted.summary.imagesMissingIds = plan.imagesMissingIds;
+    /* V7-F (review, low item): a full replace-restore that drops or (re)introduces a unit id stamps that unit's orphans, as the unit routes do (019e) */
+    var unitsPd = ((plan.kv && plan.kv.pend) || []).filter(function (pd) { return pd.k === K_DEPTS; })[0];
+    if (unitsPd) rsImageUnitStamp(env, A, plan, unitsPd.act === 'del' ? [] : parseJson(unitsPd.v, []));
+    if (stage) stage.done(plan, converted.summary);
+    if (body.phase === 'inspect') return { ok: 1, inspection: { scope: body.scope, base: base, counts: plan.counts, summary: converted.summary || {} } };
+    return await rsCommit(env, A, plan, reqMeta(request));
+}
 async function rsRoute(env, request, url, ss) {
   var A = await actorOf(env, ss.uid);
   if (!A) return json({ ok: 0, err: 'session' }, 401);
@@ -1708,14 +1821,7 @@ async function rsRoute(env, request, url, ss) {
       var reference = await rsReferenceSnapshot(env, A.u.id);
       env = reference.env;
       A = reference.A;
-      if (
-        !body.scope ||
-        (body.scope.kind === 'full' && A.u.role !== 'super') ||
-        (body.scope.kind === 'dept' &&
-          A.u.role !== 'super' &&
-          (!isMgrOf(A, body.scope.departmentId) || !enfHeld(A, body.scope.departmentId, 'backup.restore')))
-      )
-        throw rsError('restore-policy', 403);
+      if (rsScopeDenied(A, body.scope)) throw rsError('restore-policy', 403);
       var rawFingerprint = hex(
           await crypto.subtle.digest(
             'SHA-256',
@@ -1730,59 +1836,12 @@ async function rsRoute(env, request, url, ss) {
         await env.DB.batch(rsReferenceGuards(env,reference));
         return json(await rsCommit(env, A, { receipt: existing }, reqMeta(request)));
       }
-      var converted = await rsConvertBackup(env, A, body.backup, {
-          scope: body.scope,
-          mode: body.mode,
-          legacyConsent: body.phase === 'inspect' || body.legacyConsent === true,
-          reference: reference,
-        }),
-        base = JSON.parse(JSON.stringify(body.base || {}));
-      base.kv = base.kv || {};
-      Object.keys(converted.keys).forEach(function (k) {
-        if (base.kv[k] === undefined && !Object.prototype.hasOwnProperty.call(reference.inputKeys, k) && !reference.inputRevs[k])
-          base.kv[k] = 0;
-      });
-      var normalized = {
-        version: 1,
-        uid: body.uid,
-        requestId: body.requestId,
-        scope: body.scope,
-        mode: body.mode,
-        reason: body.reason,
-        base: base,
-        keys: converted.keys,
-        delete: [],
-        domains: converted.domains,
-        manifest: converted.manifest,
-      };
-      if (converted.permissionSlice !== undefined) normalized.permissionSlice = converted.permissionSlice;
-      var plan = await rsPrepare(env, A, normalized, reqMeta(request), {
-        reference: reference,
-        fingerprint: rawFingerprint,
-        images: converted.images,
-      });
-      plan.guards.push.apply(plan.guards, converted.readGuards || []);
-      converted.summary.imagesReused = plan.imagesReused;
-      converted.summary.imagesMissing = plan.imagesMissing || 0;   /* V7-F: images the file mentions that the platform no longer holds — restored as missing (019e) */
-      if (plan.imagesMissingIds && plan.imagesMissingIds.length) converted.summary.imagesMissingIds = plan.imagesMissingIds;
-      /* V7-F (review, low item): a full replace-restore that drops or (re)introduces a unit id stamps that unit's orphans, as the unit routes do (019e) */
-      var unitsPd = ((plan.kv && plan.kv.pend) || []).filter(function (pd) { return pd.k === K_DEPTS; })[0];
-      if (unitsPd) rsImageUnitStamp(env, A, plan, unitsPd.act === 'del' ? [] : parseJson(unitsPd.v, []));
-      if (body.phase === 'inspect')
-        return json({ ok: 1, inspection: { scope: body.scope, base: base, counts: plan.counts, summary: converted.summary || {} } });
-      return json(await rsCommit(env, A, plan, reqMeta(request)));
+      return json(await rsBackupRun(env, A, request, body, reference, rawFingerprint));
     }
     return json(await rsCommit(env, A, await rsPrepare(env, A, body, reqMeta(request)), reqMeta(request)));
   } catch (e) {
-    if (e.ocCode) return json({ok:0,err:e.ocCode},e.status||400);
-    if (e.rs) return json({ ok: 0, err: e.rs, details: e.details }, e.status);
-    if (e.szCode || e.awCode) return bdErrorResponse(e);
-    if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
-    if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
-    if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
-    if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
-    if (/KIVO_RESTORE_EPOCH/.test(String(e))) return json({ ok: 0, err: 'restore-epoch-changed' }, 409);
-    if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e))) return json({ ok: 0, err: 'conflict' }, 409);
+    var failed = rsErrorResponse(e);
+    if (failed) return failed;
     throw e;
   }
 }

@@ -19,6 +19,8 @@ import { chromium, openAs } from './lab_browser.mjs';
 const SHOTS = process.env.KIVO_P44_SHOTS || '';
 const A = 'TEST_ONLY_A', EMP = 'TEST_ONLY_eA1', ROLE = 'TEST_ONLY مدخل المهام', OFF = { k: 'dstats', n: 'الإحصائيات اليومية' };
 const P = (p, sel, o) => p.locator('main .p44 ' + sel, o);
+/* V7 · د6: الأقسامُ الأربعة صارت تبويباتِ الشاشة الواحدة (شريطُ تبويبات الوحدة) — والعنوانُ يحمل الوحدة: #/admin/perm/<الوحدة>/<التبويب> */
+const T = (p, o) => p.locator('main .og-tabs .og-tab', o);
 const shot = async (p, name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await p.evaluate(() => window.scrollTo(0, 0)); await p.screenshot({ path: path.join(SHOTS, name + '.png') }); };
 const kv = (lab, k) => { const r = lab.env.DB.q('SELECT v FROM kv WHERE k=?1 ORDER BY seq', k).map((x) => x.v).join(''); return r ? JSON.parse(r) : null; };
 async function settle(lab, p, ms = 900) { await p.waitForTimeout(ms); await lab.idle(); }
@@ -28,7 +30,7 @@ test('V7 · د5-هـ (44 · المدير) · the department manager builds a rol
   try {
     /* (أ) super turns one ON system OFF for A */
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw); s.page.setDefaultTimeout(15000);
-    await s.go('#/sysadmin/org/' + A + '/perm/systems', 3000);
+    await s.go('#/sysadmin/org/' + A + '/systems', 3000);
     const row = P(s.page, '.p44-row', { hasText: OFF.n }).first();
     assert.equal(await row.getAttribute('data-on'), 'true', OFF.n + ' is ON for A before');
     await P(s.page, 'button.p44-sw[aria-label="' + OFF.n + '"]').click(); await s.page.waitForTimeout(200);
@@ -48,21 +50,23 @@ test('V7 · د5-هـ (44 · المدير) · the department manager builds a rol
     const tabs = (await p.locator('main .adm-tabbar--d [role=tab]').allInnerTexts()).map((x) => x.trim());
     assert.ok(tabs.includes('الصلاحيات'), 'his settings offer «الصلاحيات»: ' + JSON.stringify(tabs));
     await p.locator('main .adm-tabbar--d [role=tab]', { hasText: 'الصلاحيات' }).click(); await p.waitForTimeout(700);
-    assert.equal(await p.evaluate(() => location.hash), '#/admin/perm/roles');
-    assert.deepEqual(await P(p, 'nav[aria-label="أقسام الصلاحيات"] button').allInnerTexts(), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل'], 'V7 · د5-ح: «الأنظمة» too (read-only)');
+    assert.equal(await p.evaluate(() => location.hash), '#/admin/perm/' + A + '/overview', 'V7 · د6: the tab opens his unit on «نظرة عامة»');
+    assert.deepEqual((await T(p).allInnerTexts()).map((x) => x.trim()), ['نظرة عامة', 'الأنظمة', 'المسؤولون', 'الأدوار', 'الأشخاص', 'السجل'], 'V7 · د5-ح: «الأنظمة» too (read-only) · V7 · د6: six tabs, no «البيانات»');
+    await T(p, { hasText: 'الأدوار' }).click(); await p.waitForTimeout(600);
+    assert.equal(await p.evaluate(() => location.hash), '#/admin/perm/' + A + '/roles');
     assert.equal(await P(p, '[aria-label="شاهد الصفحة كـ"]').count(), 0, 'no view-as');
     assert.match(await P(p, '').first().innerText(), /أدوار موظفي إدارتك فقط/);
     const ceil = await p.evaluate((d) => { const E = KIVO.Perm44, on = E.ceiling(d).on; return E.sysList().filter((x) => on.includes(x.key)).map((x) => x.name); }, A);
     assert.ok(!ceil.includes(OFF.n) && ceil.includes('المهام'), 'his ceiling (engine): ' + JSON.stringify(ceil));
     /* V7 · د5-ح: «الأنظمة» قراءةً — المفعّلُ في سقفه وحده (القابلُ للتشغيل)، بلا مفاتيح، ولا يظهر المطفأ */
-    await P(p, 'nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأنظمة' }).click(); await p.waitForTimeout(500);
-    assert.equal(await p.evaluate(() => location.hash), '#/admin/perm/systems');
+    await T(p, { hasText: 'الأنظمة' }).click(); await p.waitForTimeout(500);
+    assert.equal(await p.evaluate(() => location.hash), '#/admin/perm/' + A + '/systems');
     const tg = await p.evaluate(() => KIVO.Perm44.sysList().filter((x) => x.toggle !== false).map((x) => x.name));
     assert.deepEqual((await P(p, '.p44-row b').allInnerTexts()).map((x) => x.trim()), ceil.filter((n) => tg.includes(n)), 'only the systems ON in his ceiling');
     assert.equal(await P(p, '.p44-row[data-on="false"]').count(), 0); assert.equal(await P(p, 'button.p44-sw').count(), 0, 'no switches');
     assert.equal(await P(p, '.p44-bar').count(), 0, 'nothing to save');
     assert.ok(!(await P(p, '').first().innerText()).includes(OFF.n), 'the OFF system is not shown');
-    await P(p, 'nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأدوار' }).click(); await p.waitForTimeout(500);
+    await T(p, { hasText: 'الأدوار' }).click(); await p.waitForTimeout(500);
     await shot(p, 'mgr_1_roles_empty');
 
     /* (ج) a role at «إدخال» for one system */
@@ -86,8 +90,8 @@ test('V7 · د5-هـ (44 · المدير) · the department manager builds a rol
     assert.ok(role, 'the server holds the role'); assert.deepEqual(role.sys, { tasks: { lvl: 'input' } });
 
     /* (د) assign it */
-    await P(p, 'nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأشخاص' }).click(); await p.waitForTimeout(600);
-    assert.equal(await p.evaluate(() => location.hash), '#/admin/perm/people');
+    await T(p, { hasText: 'الأشخاص' }).click(); await p.waitForTimeout(600);
+    assert.equal(await p.evaluate(() => location.hash), '#/admin/perm/' + A + '/people');
     await P(p, 'table.p44-people button', { hasText: 'TEST_ONLY موظف أ' }).first().click(); await p.waitForTimeout(400);
     await P(p, 'aside[aria-label="تفاصيل الشخص"] [role=radio]', { hasText: ROLE }).click(); await p.waitForTimeout(300);
     await P(p, '.p44-bar button', { hasText: 'مراجعة وحفظ' }).click(); await p.waitForTimeout(300);
@@ -109,7 +113,7 @@ test('V7 · د5-هـ (44 · المدير) · the department manager builds a rol
     assert.equal(await p.evaluate(([e, d]) => KIVO.BassamAuth.permLabel(e, d), [EMP, A]), ROLE, 'permLabel = the role name');
     assert.match(await P(p, 'table.p44-people').innerText(), new RegExp('TEST_ONLY موظف أ[\\s\\S]*' + ROLE), 'his people table carries the role');
     /* «اختبار الوصول» from the roles section: the button's answer is the server's */
-    await P(p, 'nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأدوار' }).click(); await p.waitForTimeout(500);
+    await T(p, { hasText: 'الأدوار' }).click(); await p.waitForTimeout(500);
     await P(p, '.p44-role', { hasText: ROLE }).click(); await p.waitForTimeout(300);
     await P(p, 'section[aria-label="اختبار الوصول"] select').selectOption(K.create[0]); await p.waitForTimeout(200);
     await P(p, 'section[aria-label="اختبار الوصول"] button', { hasText: 'اسأل الخادم' }).click(); await p.waitForTimeout(1200);
@@ -129,7 +133,7 @@ test('V7 · د5-هـ (44 · المدير) · the department manager builds a rol
     assert.equal(why(), 'cap', 'refused for the ceiling (perm44RolesWhy)');
     assert.equal(JSON.stringify(kv(lab, 'bsdept:' + A + ':bassam_roles_v1')), r0, 'nothing stored');
     /* …and not himself: the UI says so, and the server refuses */
-    await m.go('#/admin/perm/people', 2500);
+    await m.go('#/admin/perm/' + A + '/people', 2500);
     await P(p, 'table.p44-people button', { hasText: 'TEST_ONLY مدير أ' }).first().click(); await p.waitForTimeout(400);
     const side = P(p, 'aside[aria-label="تفاصيل الشخص"]');
     assert.match(await side.innerText(), /هذا سجلّك أنت/, 'his own row says he cannot change it');
@@ -148,7 +152,8 @@ test('V7 · د5-هـ (44 · المدير) · the department manager builds a rol
     const seen = await p.evaluate((d) => [localStorage.getItem('bsdept:' + d + ':bassam_roles_v1'), localStorage.getItem('bsdept:' + d + ':bassam_grants_v1')].map((x) => (x ? JSON.parse(x) : null)), A);
     assert.deepEqual(seen, [kv(lab, 'bsdept:' + A + ':bassam_roles_v1'), kv(lab, 'bsdept:' + A + ':bassam_grants_v1')], 'roles + grants readable by the unit manager in enforce mode');
     /* (و) his log */
-    await m.go('#/admin/perm/log', 3000);
+    await m.go('#/admin/perm/log', 3000);   /* V7 · د6: العنوانُ القديم بلا وحدة — يُحوَّل إلى وحدته */
+    assert.equal(await m.page.evaluate(() => location.hash), '#/admin/perm/' + A + '/log');
     const items = P(p, '.p44-log > li');
     assert.ok((await items.count()) >= 2, 'his two saves are listed: ' + await items.count());
     assert.match(await items.first().innerText(), new RegExp('TEST_ONLY مدير أ[\\s\\S]*TEST_ONLY موظف أ[\\s\\S]*' + ROLE), 'the latest: his assignment');

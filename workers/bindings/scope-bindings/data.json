@@ -1772,6 +1772,146 @@
    }
   },
   {
+   "key": "rz.dash.view",
+   "owner": "rasd/dash",
+   "type": "access",
+   "g": "exists",
+   "res": "bassam_rasd_v1",
+   "resources": [
+    "bassam_rasd_v1",
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "rz.rec.view",
+   "owner": "rasd/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_rasd_v1",
+   "resources": [
+    "bassam_rasd_v1",
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "rz.rec.create",
+   "owner": "rasd/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_rasd_v1",
+   "resources": [
+    "bassam_rasd_v1",
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "rz.rec.edit",
+   "owner": "rasd/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_rasd_v1",
+   "resources": [
+    "bassam_rasd_v1",
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
+   "key": "rz.rec.delete",
+   "owner": "rasd/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_rasd_v1",
+   "resources": [
+    "bassam_rasd_v1",
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
    "key": "award.new.view",
    "owner": "award/new",
    "type": "access",
@@ -5172,6 +5312,154 @@
    }
   },
   {
+   "key": "ref.rasd.list.view",
+   "owner": "rasd/records",
+   "type": "view",
+   "g": "exists",
+   "res": "bassam_rasd_opts_v1",
+   "resources": [
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.rasd.list.create",
+   "owner": "rasd/records",
+   "type": "create",
+   "g": "exists",
+   "res": "bassam_rasd_opts_v1",
+   "resources": [
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.rasd.list.edit",
+   "owner": "rasd/records",
+   "type": "edit",
+   "g": "exists",
+   "res": "bassam_rasd_opts_v1",
+   "resources": [
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "ref.rasd.list.delete",
+   "owner": "rasd/records",
+   "type": "delete",
+   "g": "exists",
+   "res": "bassam_rasd_opts_v1",
+   "resources": [
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "na",
+     "no-period-identity (reference/setting)"
+    ],
+    "Shift": [
+     "na",
+     "no-shift-identity"
+    ],
+    "Site": [
+     "na",
+     "no-site-identity (reference/setting)"
+    ]
+   }
+  },
+  {
+   "key": "rz.rec.bulk.delete",
+   "owner": "rasd/records",
+   "type": "operation",
+   "g": "to-bind",
+   "res": "bassam_rasd_v1",
+   "resources": [
+    "bassam_rasd_v1",
+    "bassam_rasd_opts_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "Branch": [
+     "branchCeiling"
+    ],
+    "DateRange": [
+     "periodLock"
+    ],
+    "Shift": [
+     "recordShift"
+    ],
+    "Site": [
+     "recordLoc"
+    ]
+   }
+  },
+  {
    "key": "award.doc.reset",
    "owner": "award/doc",
    "type": "operation",
@@ -5356,6 +5644,24 @@
    "res": "bassam_seized_v1",
    "resources": [
     "bassam_seized_v1"
+   ],
+   "dims": {
+    "Department": [
+     "keyDept"
+    ],
+    "DateRange": [
+     "periodLock"
+    ]
+   }
+  },
+  {
+   "key": "rz.rec.retro.open",
+   "owner": "rasd/records",
+   "type": "decision",
+   "g": "to-build",
+   "res": "bassam_rasd_v1",
+   "resources": [
+    "bassam_rasd_v1"
    ],
    "dims": {
     "Department": [
@@ -6193,6 +6499,25 @@
     "Global": "no-record-scope"
    }
   },
+  "bassam_rasd_v1": {
+   "items": "reportItems",
+   "evidence": "reports[id].{y,m,d} · zone · spot (ref.rasd.list) · قفلُ الواجهة على اليوم الهجري",
+   "lock": "rasd: الفترةُ المغلقة (G‑08 على اليوم الهجري) ∧ نافذةُ استدراكٍ سارية (bassam_rasd_retro_v1) — D3‑07",
+   "dims": {
+    "Department": "keyDept",
+    "Branch": "branchCeiling",
+    "Site": "recordLoc",
+    "Shift": "recordShift",
+    "DateRange": "periodLock"
+   },
+   "na": {
+    "Zone/Element": "no-element-identity",
+    "Assigned": "no-assignment-field",
+    "Own": "no-owner-identity (by = الراصد لا المالك)",
+    "Source": "department-resource",
+    "Global": "no-record-scope"
+   }
+  },
   "bassam_employees_v1": {
    "items": "employeeItems",
    "evidence": "[eid|nid|name] · هويةُ السجل = مفتاحُ الموظف (empKeyOf)",
@@ -6366,11 +6691,11 @@
   }
  },
  "counts": {
-  "keys": 250,
-  "pairs": 859,
+  "keys": 261,
+  "pairs": 911,
   "dims": 10,
   "evaluators": 10,
-  "resources": 17,
+  "resources": 18,
   "unknownDims": 0,
   "invalidDims": 0,
   "uninterpreted": 0,
@@ -6381,9 +6706,9 @@
     "na": 0
    },
    "DateRange": {
-    "keys": 151,
-    "evaluator": 109,
-    "na": 42
+    "keys": 162,
+    "evaluator": 116,
+    "na": 46
    },
    "Global": {
     "keys": 30,
@@ -6391,24 +6716,24 @@
     "na": 0
    },
    "Department": {
-    "keys": 213,
-    "evaluator": 213,
+    "keys": 224,
+    "evaluator": 224,
     "na": 0
    },
    "Branch": {
-    "keys": 186,
-    "evaluator": 186,
+    "keys": 196,
+    "evaluator": 196,
     "na": 0
    },
    "Shift": {
-    "keys": 65,
-    "evaluator": 44,
-    "na": 21
+    "keys": 75,
+    "evaluator": 50,
+    "na": 25
    },
    "Site": {
-    "keys": 108,
-    "evaluator": 66,
-    "na": 42
+    "keys": 118,
+    "evaluator": 72,
+    "na": 46
    },
    "Zone/Element": {
     "keys": 38,
@@ -6426,8 +6751,8 @@
     "na": 4
    }
   },
-  "evaluatorPairs": 750,
-  "naPairs": 109
+  "evaluatorPairs": 790,
+  "naPairs": 121
  },
  "interpretations": [
   {
@@ -8152,6 +8477,66 @@
     ],
     "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
    },
+   "bassam_rasd_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "rz.rec.view",
+     "rz.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "rasd/records:view",
+      "key": "rz.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "rasd/dash:view",
+      "key": "rz.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
+   "bassam_rasd_opts_v1": {
+    "scope": "dept",
+    "cls": "explicit read permission + explicit special read capability",
+    "keys": [
+     "rz.rec.view",
+     "ref.rasd.list.view",
+     "rz.dash.view",
+     "backup.view"
+    ],
+    "routes": [
+     {
+      "cap": "rasd/records:view",
+      "key": "rz.rec.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "rasd/records:view",
+      "key": "ref.rasd.list.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "rasd/dash:view",
+      "key": "rz.dash.view",
+      "source": "explicit-read"
+     },
+     {
+      "cap": "admin/backup:view",
+      "key": "backup.view",
+      "source": "special:backup.view"
+     }
+    ],
+    "note": "canRead0: سقفُ الإدارة (capOnDept) ثم readCapsOf × view"
+   },
    "bassam_award_v1": {
     "scope": "dept",
     "cls": "explicit read permission + explicit special read capability + reference-read routes",
@@ -8489,6 +8874,13 @@
     "routes": [],
     "note": "حالةُ نوافذ استدراك المضبوطات (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات المضبوطات) — لا مفتاحَ قراءةٍ مستقلاً"
    },
+   "bassam_rasd_retro_v1": {
+    "scope": "dept-state",
+    "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+    "keys": [],
+    "routes": [],
+    "note": "حالةُ نوافذ استدراك رصد الحالات: مفتاحُ إدارةٍ خارج RES_REG ⇒ لغير super رفض؛ مسارُ القراءة المعلَن GET /api/retro"
+   },
    "bassam_roles_v1": {
     "scope": "dept",
     "cls": "explicit read permission",
@@ -8636,6 +9028,11 @@
     "state": "RETRO.seized.state",
     "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
     "note": "حالةُ نوافذ استدراك المضبوطات (Phase 3 · D3‑01): مفتاحُ إدارةٍ خارج RES_REG ⇒ canRead0: resOf = null ⇒ رفضٌ لغير super (يُحقن لمدير النظام وحده عند boot)؛ مسارُ القراءة المعلَن للنوافذ هو GET /api/retro (قارئُ سجلات المضبوطات) — لا مفتاحَ قراءةٍ مستقلاً"
+   },
+   "bassam_rasd_retro_v1": {
+    "state": "RETRO.rasd.state",
+    "cls": "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)",
+    "note": "حالةُ نوافذ استدراك رصد الحالات — قراءتُها GET /api/retro"
    }
   },
   "readKindOutsideRoutes": [
@@ -8689,22 +9086,22 @@
    }
   ],
   "meta": {
-   "resources": 67,
-   "routes": 231,
+   "resources": 70,
+   "routes": 238,
    "byClass": {
     "intentionally no-read-key / session-global": 15,
     "explicit read permission": 3,
     "super-only (denied by name)": 1,
     "device-excluded": 8,
     "explicit read permission + explicit special read capability + reference-read routes": 21,
-    "explicit read permission + explicit special read capability": 12,
+    "explicit read permission + explicit special read capability": 14,
     "explicit special read capability (rule)": 5,
-    "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)": 2
+    "state key outside RES_REG — super-only at boot (unknown resource ⇒ deny)": 3
    },
    "bySource": {
-    "explicit-read": 104,
+    "explicit-read": 109,
     "reference-read": 72,
-    "special": 44,
+    "special": 46,
     "no-atom": 8,
     "special-rule": 3
    },

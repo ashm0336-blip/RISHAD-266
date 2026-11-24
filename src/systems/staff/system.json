@@ -118,6 +118,10 @@
    "order": 10,
    "file": "slots/planning.mounts.frag"
   },
+  "pages.tabAddr.planning": {
+   "order": 10,
+   "text": "\"staff\": 1"
+  },
   "planning.tabs.reg": {
    "order": 10,
    "text": "sched: { page: \"staff\", go: \"goSched\", on: \"schedOn\", act: \"onSched\" }, "

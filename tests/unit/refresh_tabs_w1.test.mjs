@@ -122,7 +122,7 @@ test('الإعدادات (R1 · AUX-06): #/admin/import|shifts|oplog — الت�
   const ry = Y.c._admTabsNow('site', true, ['overview', 'sec', 'depts'], g);
   assert.equal(ry.l, 'sec'); assert.equal(Y.c.state.admTab, 'sec'); Y.timers.splice(0).forEach((f) => f()); assert.equal(go, 'sec');
   const src = rd('modules/admin/logic.js'), rv = src.slice(src.indexOf('\n  renderVals() {'));
-  const iT = rv.indexOf('this._admTabsNow(i, n, p, g)'), iH = rv.indexOf('this._hashTab("admin", "perm" === h ? "perm/" + this._p44SubNow() : h)');   /* V7 · د5-هـ (44 · المدير): و«الصلاحيات» بقسمها (#/admin/perm/<قسم>) */
+  const iT = rv.indexOf('this._admTabsNow(i, n, p, g)'), iH = rv.indexOf('this._hashTab("admin", h)');   /* V7 · د6: عنوانُ «الصلاحيات» (الوحدة · التبويب) تكتبه شاشتُها؛ هنا #/admin/<تبويب> وحده */ void ('this._hashTab("admin", "perm" === h ? "perm/" + this._p44SubNow() : h)');   /* V7 · د5-هـ (44 · المدير): و«الصلاحيات» بقسمها (#/admin/perm/<قسم>) */
   assert.ok(iT > 0 && iH > iT, 'العنوانُ يُكتب بعد حلّ التبويب المطلوب (لا #/admin/backup)');
   assert.doesNotMatch(src, /setTimeout\(\s*\(\) =>\s*this\.setState\(\{ deptTab: q \}/);
 });
@@ -185,7 +185,7 @@ test('الخطة التشغيلية (PLAN-11): التبويبُ المزروع �
      (اختبارُ الزرع في refresh_seed_w1). هنا: renderVals الحقيقية على حالةٍ مزروعة */
   /* V7 · د5-د/د5-هـ: الحاويةُ عامة — سجلُّ التبويبات (PT_TABS) قطعٌ من مجلدات البرامج بشكلها { page · go · on · act · lazy }؛ تُستخرج الدوالُّ الحقيقية */
   const TABS = { sched: { page: 'staff', go: 'goSched', on: 'schedOn', act: 'onSched' }, plan: { page: 'plan', go: 'goPlan', on: 'planSeen', act: 'onPlan', lazy: true } };
-  const M = ['renderVals() {', '_tabOk(t) {', '_ids() {'];
+  const M = ['renderVals() {', '_tabOk(t) {', '_ids() {', '_bsHR() {', '_bsHT(t) {'];   /* V7 · د6: renderVals تقرأ عنوانَ التبويب وتكتبه (لكل تبويبٍ عنوانُه) */
   const P = page('planning', M, { state: { ptab: 'plan', seen: {} }, self: { PT_TABS: TABS, _ptOk: () => true, _bsGo() {} } });
   const V = P.c.renderVals();
   assert.equal(V.ptab, 'plan'); assert.equal(V.onPlan, true); assert.equal(V.planSeen, true, '«التشغيل الميداني» يُركَّب في أوّل رسم بلا علامة «رُئي»');

@@ -1,0 +1,15 @@
+<style>
+body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
+/* V7 · د6: نموذجُ الرصد ثلاثةُ أعمدة على الحاسوب ثم عمودان على اللوحي ثم عمودٌ واحد على الجوال · وأزرارُ التأثير الأربعة صفّان على الضيق */
+@media (max-width:900px){.rz-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media (max-width:640px){.rz-grid{grid-template-columns:minmax(0,1fr)!important}}
+@media (max-width:420px){.rz-seg{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+.rz-kpis{gap:16px}
+.rz-table td,.rz-table th{white-space:nowrap}
+@keyframes rztk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.rz-tk{display:flex;align-items:center;gap:20px;width:max-content;animation:rztk 34s linear infinite}
+.rz-tkw:hover .rz-tk{animation-play-state:paused}
+@keyframes rzpulse{0%,100%{opacity:1}50%{opacity:.25}}
+.rz-pulse{animation:rzpulse 1.6s infinite}
+</style>

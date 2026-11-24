@@ -28,11 +28,12 @@ async function done(mode) {
   return { W, dm };
 }
 
-test('[enforce] إعادةُ الفتح بلا سبب ⇒ رفضُ «يتطلب سبباً» ولا يُكتب شيء', async () => {
+/* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ إلزامياً — كان «بلا سبب ⇒ 403 why:reason» */
+test('[enforce] إعادةُ الفتح بلا سبب ⇒ تمضي (لا سببَ إلزامياً) ويُكتب حدثُ «أُعيد فتحُها»', async () => {
   const { W, dm } = await done('enforce');
   const r = await post(W, dm.ck, '/api/tasks/reopen', { k: DAY, id: ID, ekey: ME.eid });
-  assert.equal(r.status, 403, JSON.stringify(r.j)); assert.equal(r.j.err, 'denied'); assert.equal(r.j.why, 'reason', JSON.stringify(r.j));
-  assert.equal(row(W)[3], 'done', 'ما زالت منجزة'); assert.equal(reopened(W).length, 0, 'ولا حدثَ «أُعيد فتحُها»');
+  assert.equal(r.status, 200, JSON.stringify(r.j)); assert.equal(r.j.ok, 1);
+  assert.equal(row(W)[3], 'in_progress', 'أُعيد فتحُها'); assert.equal(reopened(W).length, 1, 'وحدثُ «أُعيد فتحُها»');
 });
 
 test('[enforce] إعادةُ الفتح بالسبب ⇒ تمضي والسببُ في سجل التدقيق', async () => {
@@ -81,20 +82,12 @@ async function page(W, ck, answer) {
   return { c, d, i: JSON.parse(store.get('bassam_tasks_v1'))[DAY].findIndex((r) => r[13] === ID && r[14] === ME.eid), toasts, asked };
 }
 
-for (const [label, answer] of [['الإلغاء', ''], ['السبب', TAG + ' سببٌ من نافذة الصفحة']]) {
-  test('[enforce · الصفحة] _doReopen: الرفضُ ⇒ نافذةُ السبب من 280 · ' + label + (answer ? ' ⇒ يُعاد الطلبُ به وتُعاد فتحاً' : ' ⇒ لا إعادةَ فتح وتنبيه'), async () => {
-    const { W, dm } = await done('enforce');
-    const P = await page(W, dm.ck, answer);
-    P.c._doReopen(P.d, P.i);
-    assert.ok(await until(() => P.asked.length === 1), 'عُرضت نافذةُ السبب: ' + JSON.stringify(P.toasts));
-    assert.ok(/bassam_tasks_v1$/.test(P.asked[0].k) && Array.isArray(P.asked[0].keys) && P.asked[0].keys.length, 'بمفتاح المهام ومفاتيح السبب: ' + JSON.stringify(P.asked[0]));
-    if (answer) {
-      assert.ok(await until(() => row(W)[3] === 'in_progress'), 'أُعيد فتحُها: ' + JSON.stringify(P.toasts));
-      assert.equal(JSON.parse(reopened(W)[0].aft).why, answer, 'بالسبب المكتوب');
-      assert.ok(await until(() => P.toasts.some(([t, k]) => k === 'ok')), 'وتنبيهُ النجاح');
-    } else {
-      assert.ok(await until(() => P.toasts.some(([t]) => /أُلغيت إعادةُ الفتح/.test(t))), 'تنبيهُ الإلغاء: ' + JSON.stringify(P.toasts));
-      await sleep(200); assert.equal(row(W)[3], 'done', 'لم تُعَد فتحاً'); assert.equal(reopened(W).length, 0);
-    }
-  });
-}
+/* V7 · د6 (QA) · البند ١: الصفحةُ لا تفتح نافذةَ سبب — الطلبُ الأول يمضي (التأكيدُ قبله في الصفحة: «إعادة فتح المهمة») */
+test('[enforce · الصفحة] _doReopen: بلا نافذة سبب ⇒ تُعاد فتحاً من الطلب الأول وتنبيهُ النجاح', async () => {
+  const { W, dm } = await done('enforce');
+  const P = await page(W, dm.ck, '');
+  P.c._doReopen(P.d, P.i);
+  assert.ok(await until(() => row(W)[3] === 'in_progress'), 'أُعيد فتحُها: ' + JSON.stringify(P.toasts));
+  assert.ok(await until(() => P.toasts.some(([t, k]) => k === 'ok')), 'وتنبيهُ النجاح');
+  assert.equal(P.asked.length, 0, 'لا نافذةَ سبب');
+});

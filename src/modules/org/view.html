@@ -1,0 +1,536 @@
+<!-- V7 · د6 · شاشة «الإدارات والصلاحيات» (ب1): صفحةٌ مستقلة تُحمَّل عند فتحها — تركّبها صفحةُ الإعدادات في موضعين بالمكوّن نفسه:
+     «مركز إدارة رشاد ← الإدارة المؤسسية» (#/sysadmin/org/<الوحدة>/<التبويب>) و«الإعدادات ← الصلاحيات» لمدير الوحدة (#/admin/perm/<الوحدة>/<التبويب>).
+     العمودان (RTL): اليمين شجرةُ الهيكل (تبقى مركَّبةً مع تبديل الوحدة والتبويب) · اليسار الوحدةُ المختارة: رأسٌ ثم التبويبات.
+     الوحدةُ والتبويبُ من العنوان وحده (logic.js _ogRoute)، وكلُّ تنقّلٍ يمرّ بـ go(unit, tab) وحارسه canLeave().
+     نقاطُ التركيب: كلُّ تبويبٍ قسمٌ مستقلّ هنا (data-org-tab) تملؤه دالةٌ واحدة في logic.js (ogTab…) — تُعدَّل كلٌّ على حدة. -->
+<div dir="rtl" data-screen-label="الإدارات والصلاحيات" class="og" data-og-mode="{{ogMode}}" data-og-unit="{{ogUnitSeg}}" data-og-tab="{{ogTab}}" data-og-sheet="{{ogSheetAttr}}">
+
+<sc-if value="{{ogNoneOn}}" hint-placeholder-val="{{ false }}"><div class="p44-empty" role="status" data-og-state="none">{{ogNoneTxt}}</div></sc-if>
+<sc-if value="{{ogOn}}" hint-placeholder-val="{{ true }}">
+
+<!-- ب2 · ب13: عند العرض الضيق الشجرةُ زرٌّ أعلى الصفحة يحمل اسمَ الوحدة ومسارَها ويفتحها لوحةً من الأسفل -->
+<button type="button" class="og-ub" aria-haspopup="dialog" aria-expanded="{{ogSheetAttr}}" onClick="{{ogSheetOpen}}" title="اختر وحدة من الهيكل">
+  <span class="og-ub-t"><b>{{ogU.name}}</b><small>{{ogU.pathTxt}}</small></span>
+  <span class="og-ub-k">تغيير الوحدة</span>
+</button>
+
+<div class="og-grid">
+
+<!-- ═══ ب2 · الشجرة ═══ -->
+<div class="og-treewrap" onClick="{{ogSheetOut}}">
+<aside class="og-tree" aria-label="شجرة الهيكل" onClick="{{ogKeep}}">
+  <div class="og-sheet-hd"><b>اختر وحدة</b><button type="button" class="og-b" onClick="{{ogSheetClose}}">إغلاق</button></div>
+  <div class="og-tb">
+    <span class="og-cnt">الوحدات <b dir="ltr">{{ogUnitCount}}</b></span>
+    <sc-if value="{{ogStructOn}}" hint-placeholder-val="{{ true }}">
+    <button type="button" class="og-b og-add" data-og-act="add" onClick="{{ogAddOpen}}" title="إضافة إلى الهيكل: إدارة عليا · قطاع · إدارة عامة · إدارة · قسم · وحدة">+ إضافة</button>
+    </sc-if>
+    <sc-if value="{{sdShow}}" hint-placeholder-val="{{ false }}">
+    <button type="button" class="og-b" onClick="{{sdGo}}" title="يزرع الهيكل الافتراضي للقطاع: الإدارة العليا ← القطاع ← 4 إدارات عامة ← 14 إدارة — وما وُجد باسمه يُربط ولا يُنشأ من جديد">{{sdLbl}}</button>
+    </sc-if>
+  </div>
+  <div class="og-sb">
+    <input type="search" class="og-q" value="{{ogQ}}" onInput="{{ogOnQ}}" onChange="{{ogOnQ}}" placeholder="ابحث في الهيكل…" aria-label="ابحث في الهيكل…" autocomplete="off">
+    <button type="button" class="og-l" data-og-act="expand" onClick="{{ogExpandAll}}">فرد الكل</button>
+    <button type="button" class="og-l" data-og-act="collapse" onClick="{{ogCollapseAll}}">طيّ الكل</button>
+  </div>
+  <div class="og-flt" role="group" aria-label="فلاتر الشجرة">
+    <sc-for list="{{ogFilters}}" as="f" hint-placeholder-count="3"><button type="button" data-og-flt="{{f.k}}" aria-pressed="{{f.on}}" onClick="{{f.pick}}">{{f.t}} <span>{{f.n}}</span></button></sc-for>
+  </div>
+  <!-- تحديد متعدد: الشريطُ يظهر عند تحديد وحدة فأكثر — التطبيقُ يمرّ بـ«مراجعة قبل الحفظ» (خطّاف orgBulkApply · الحدث bs:org-bulk) -->
+  <sc-if value="{{ogBulkOn}}" hint-placeholder-val="{{ false }}">
+  <div class="og-bulk" role="region" aria-label="الوحدات المحددة">
+    <span>{{ogBulkTxt}}</span>
+    <button type="button" class="og-b" data-og-bulk="on" onClick="{{ogBulkEnable}}">تفعيل أنظمة للمحدد</button>
+    <button type="button" class="og-b" data-og-bulk="off" onClick="{{ogBulkDisable}}">إطفاء أنظمة للمحدد</button>
+    <button type="button" class="og-b" data-og-bulk="clear" onClick="{{ogBulkClear}}">إلغاء التحديد</button>
+  </div>
+  </sc-if>
+  <!-- KIVO_265 · طلبُ المالك: السحبُ والإفلات — قبل/بعد صفٍّ للترتيب، وعلى وسطه للنقل تحته (باقٍ · والنقلُ بنافذة «نقل إلى…» أيضاً) -->
+  <sc-if value="{{ogDndOn}}" hint-placeholder-val="{{ true }}">
+  <div class="og-hint">اسحب صفاً وأفلته: على طرف صفٍّ آخر (أعلاه أو أسفله) للترتيب، أو على وسطه لنقله تحته — تُفتح نافذة النقل بأثره على الأنظمة قبل التأكيد</div>
+  </sc-if>
+  <div class="og-th" aria-hidden="true"><span class="og-c-nm">الوحدة</span><span class="og-c-kd">النوع</span><span class="og-c-n">تحتها</span><span class="og-c-mg">المدير</span><span class="og-c-n">الأشخاص</span><span class="og-c-n">الأنظمة</span></div>
+  <div class="og-rows" role="tree" aria-label="الهيكل">
+    <sc-for list="{{ogRows}}" as="r" hint-placeholder-count="4">
+    <div class="og-rw {{r.cls}}" role="treeitem" aria-level="{{r.level}}" aria-selected="{{r.sel}}" aria-expanded="{{r.exp}}" data-og-id="{{r.seg}}" data-og-kind="{{r.kindKey}}" draggable="{{r.drag}}" onDragStart="{{r.trDragStart}}" onDragOver="{{r.trDragOver}}" onDragLeave="{{r.trDragLeave}}" onDrop="{{r.trDrop}}" onDragEnd="{{r.trDragEnd}}" onClick="{{r.pick}}" title="{{r.tip}}">
+      <span class="og-ln" aria-hidden="true"></span>
+      <sc-if value="{{r.chkOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-ck" role="checkbox" aria-checked="{{r.chk}}" aria-label="تحديد {{r.name}}" onClick="{{r.chkFlip}}"></button></sc-if>
+      <sc-if value="{{r.kidsOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="og-cv" aria-label="طيّ أو فتح ما تحت {{r.name}}" onClick="{{r.toggle}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" data-i="i-c92915c6"></svg></button></sc-if>
+      <sc-if value="{{r.leaf}}" hint-placeholder-val="{{ true }}"><span class="og-cv og-cv--x" aria-hidden="true"></span></sc-if>
+      <span class="og-c-nm"><button type="button" class="og-nm" onClick="{{r.pick}}">{{r.name}}</button><sc-if value="{{r.cur}}" hint-placeholder-val="{{ false }}"><span class="og-cur">الحالية</span></sc-if></span>
+      <span class="og-c-kd"><span class="og-kd" data-k="{{r.kindKey}}">{{r.kind}}</span></span>
+      <span class="og-c-n" data-og-col="kids" title="ما تحتها مباشرةً">{{r.kids}}</span>
+      <span class="og-c-mg" data-og-col="mgr" data-has="{{r.mgrHas}}">{{r.mgr}}</span>
+      <span class="og-c-n" data-og-col="people" title="{{r.peopleTip}}">{{r.people}}</span>
+      <span class="og-c-n" data-og-col="systems" dir="ltr" title="{{r.sysTip}}">{{r.sys}}</span>
+    </div>
+    </sc-for>
+    <sc-if value="{{ogRowsNone}}" hint-placeholder-val="{{ false }}"><div class="og-none" role="status">{{ogRowsNoneTxt}}</div></sc-if>
+  </div>
+  <sc-if value="{{ogExportOn}}" hint-placeholder-val="{{ true }}">
+  <div class="og-exp"><button type="button" class="og-b" data-og-act="export-all" onClick="{{ogExportAll}}">تصدير النسخة الشاملة — كل الإدارات</button></div>
+  </sc-if>
+</aside>
+</div>
+
+<!-- ═══ ب1 · الوحدة المختارة: الرأس ثم التبويبات ═══ -->
+<section class="og-unit" aria-label="الوحدة المختارة">
+  <header class="og-hd">
+    <div class="og-path" data-og="path">{{ogU.pathTxt}}</div>
+    <div class="og-ttl">
+      <h3 data-og="name">{{ogU.name}}</h3>
+      <span class="og-kd" data-k="{{ogU.kindKey}}" data-og="kind">{{ogU.kind}}</span>
+      <span class="og-mg" data-has="{{ogU.mgrHas}}" data-og="mgr">{{ogU.mgrTxt}}</span>
+      <sc-if value="{{ogU.cur}}" hint-placeholder-val="{{ false }}"><span class="og-cur">الحالية</span></sc-if>
+      <sc-if value="{{ogU.switchOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="og-b" data-og-act="switch" onClick="{{ogSwitch}}">التبديل إليها</button></sc-if>
+    </div>
+  </header>
+  <div class="og-tabs" role="tablist" aria-label="تبويبات الوحدة">
+    <sc-for list="{{ogTabs}}" as="t" hint-placeholder-count="7"><a role="tab" class="og-tab" href="{{t.href}}" data-og-tab-btn="{{t.k}}" aria-selected="{{t.on}}" onClick="{{t.go}}">{{t.t}}</a></sc-for>
+  </div>
+
+  <!-- ══════════ نقطة التركيب · نظرة عامة (ب10 · logic.js ogTabOverview) ══════════ -->
+  <sc-if value="{{ogOnOverview}}" hint-placeholder-val="{{ true }}">
+  <div class="og-ov" data-org-tab="overview">
+    <section class="og-card" aria-label="ملخّص الوحدة">
+      <h4>ملخّص الوحدة</h4>
+      <div class="og-sum"><sc-for list="{{ogSum}}" as="c" hint-placeholder-count="3"><button type="button" class="og-sumc" data-og-sum="{{c.k}}" onClick="{{c.go}}"><small>{{c.t}}</small><b>{{c.v}}</b><span>{{c.s}}</span></button></sc-for></div>
+    </section>
+    <section class="og-card" aria-label="الموضع وأفعال الوحدة">
+      <h4>الموضع وأفعال الوحدة</h4>
+      <p class="og-pos">الموضع: <b data-og="pos">{{ogPosTxt}}</b></p>
+      <sc-if value="{{ogActsOn}}" hint-placeholder-val="{{ true }}">
+      <div class="og-acts">
+        <sc-if value="{{ogActAddOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b og-b--p" data-og-act="add-under" onClick="{{ogAddUnder}}" title="{{ogAddUnderTip}}">+ إضافة تحتها</button></sc-if>
+        <sc-if value="{{ogActEditOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b" data-og-act="rename" onClick="{{ogRenameOpen}}">إعادة التسمية</button></sc-if>
+        <sc-if value="{{ogActEditOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b" data-og-act="move" onClick="{{ogMoveOpen}}">نقل إلى…</button></sc-if>
+        <sc-if value="{{ogActEditOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="og-b og-b--dz" data-og-act="delete" onClick="{{ogDelOpen}}">{{ogDelLbl}}</button></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{ogActsNote}}" hint-placeholder-val="{{ false }}"><p class="og-note">{{ogActsNote}}</p></sc-if>
+    </section>
+    <section class="og-card" aria-label="ما تحتها">
+      <h4>ما تحتها <span class="og-n">{{ogKidsN}}</span></h4>
+      <sc-if value="{{ogKidsOn}}" hint-placeholder-val="{{ true }}">
+      <ul class="og-kids"><sc-for list="{{ogKids}}" as="k" hint-placeholder-count="2"><li><a href="{{k.href}}" onClick="{{k.go}}">{{k.name}}</a><span class="og-kd" data-k="{{k.kindKey}}">{{k.kind}}</span></li></sc-for></ul>
+      </sc-if>
+      <sc-if value="{{ogKidsNone}}" hint-placeholder-val="{{ false }}"><p class="og-note">لا شيء تحتها بعد.</p></sc-if>
+    </section>
+    <sc-if value="{{ogStepsOn}}" hint-placeholder-val="{{ true }}">
+    <section class="og-card" aria-label="قائمة التهيئة">
+      <h4>قائمة التهيئة</h4>
+      <ol class="og-steps"><sc-for list="{{ogSteps}}" as="s" hint-placeholder-count="4"><li data-og-step="{{s.k}}" data-ok="{{s.ok}}"><button type="button" onClick="{{s.go}}" title="{{s.tip}}"><span class="mk" aria-hidden="true">{{s.mark}}</span><b>{{s.t}}</b><small>{{s.st}}</small><span class="og-sr">{{s.sr}}</span></button></li></sc-for></ol>
+    </section>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ تبويباتُ «الصلاحيات» القائمة (د5-هـ 44) منقولةً كما هي: الرأسُ المشترك ثم قسمٌ لكل تبويب ══════════ -->
+  <sc-if value="{{p44Show}}" hint-placeholder-val="{{ false }}">
+  <div class="p44" aria-label="{{p44Head}}">
+    <div class="p44-top">
+      <div class="p44-ttl">
+        <h3>{{p44Head}} · {{ogU.name}}<sc-if value="{{ogHeadN}}" hint-placeholder-val="{{ false }}"> <span class="p44-mute" data-og="head-n">· {{ogHeadN}}</span></sc-if></h3>
+        <p>{{p44Lead}}</p>
+        <sc-if value="{{p44MgrV}}" hint-placeholder-val="{{ false }}"><span class="p44-chip">أدوار موظفي إدارتك فقط · تظهر هنا الأنظمة المفعّلة لإدارتك وحدها</span></sc-if>
+      </div>
+      <div class="p44-ctl">
+        <sc-if value="{{p44ViewOn}}" hint-placeholder-val="{{ true }}">
+        <div class="p44-as" role="group" aria-label="شاهد الصفحة كـ"><span>شاهد الصفحة كـ</span><div class="p44-seg"><sc-for list="{{p44Viewers}}" as="w" hint-placeholder-count="2"><button type="button" aria-pressed="{{w.on}}" onClick="{{w.pick}}">{{w.t}}</button></sc-for></div></div>
+        </sc-if>
+      </div>
+    </div>
+
+  <sc-if value="{{p44NoEng}}" hint-placeholder-val="{{ false }}"><div class="bs-retry" role="alert"><span class="m">محرّك الصلاحيات غير محمَّل — أعد تحميل الصفحة.</span></div></sc-if>
+  <sc-if value="{{p44Loading}}" hint-placeholder-val="{{ false }}"><div class="p44-empty" role="status">جارٍ تحميل الأدوار…</div></sc-if>
+  <sc-if value="{{p44Err}}" hint-placeholder-val="{{ false }}"><div class="bs-retry" role="alert"><span class="m">تعذّر تحميل الأدوار — تحقّق من الاتصال ثم أعد المحاولة</span><button type="button" class="b" onClick="{{p44Retry}}">أعد المحاولة</button></div></sc-if>
+
+  <!-- ══════════ نقطة التركيب · الأنظمة (ب5 · م5 · logic.js ogTabSystems ← logic-perm44.js _p44SysVals) ══════════ -->
+  <div data-org-tab="systems">
+  <sc-if value="{{p44OnSys}}" hint-placeholder-val="{{ true }}">
+  <div class="p44-grid">
+    <section class="p44-card p44-main" aria-label="أنظمة الوحدة">
+      <div class="p44-hd"><small>{{p44Unit.path}}</small><h4>{{p44Unit.n}}</h4><p class="p44-note">{{p44Unit.inh}}</p></div>
+      <!-- V7 · د6 (ب5 · م5): «تشغيل الكل» / «إطفاء الكل» — المقفلُ من فوق لا يتأثر — وعدّادُ «المفعّل من الكل» -->
+      <sc-if value="{{p44SysCtl}}" hint-placeholder-val="{{ true }}">
+      <div class="p44-all" role="group" aria-label="كل الأنظمة"><span data-og="sys-count">المفعّل من الكل: <b>{{p44SysOnOf}}</b></span>
+        <sc-if value="{{p44SysAllOk}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-b" data-og-act="all-on" onClick="{{p44SysAllOn}}">تشغيل الكل</button><button type="button" class="p44-b" data-og-act="all-off" onClick="{{p44SysAllOff}}">إطفاء الكل</button></sc-if>
+      </div>
+      </sc-if>
+      <sc-if value="{{p44SysNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">{{p44SysNoneTxt}}</div></sc-if>
+      <ul class="p44-rows">
+        <sc-for list="{{p44SysRows}}" as="s" hint-placeholder-count="8">
+        <li class="p44-row" data-on="{{s.on}}" data-sys="{{s.k}}">
+          <span class="p44-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-1b59ac83"></svg></span>
+          <span class="p44-f"><b>{{s.n}}</b><small>{{s.sub}}</small></span>
+          <sc-if value="{{s.locked}}" hint-placeholder-val="{{ false }}"><span class="p44-lock" data-og="lock">{{s.lockTxt}}</span></sc-if>
+          <sc-if value="{{s.srcOn}}" hint-placeholder-val="{{ false }}"><a class="p44-src" href="{{s.srcHref}}" data-og-act="src" onClick="{{s.srcGo}}">افتح مصدره</a></sc-if>
+          <sc-if value="{{s.sw}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-sw" role="switch" aria-checked="{{s.on}}" aria-label="{{s.n}}" disabled="{{s.locked}}" onClick="{{s.flip}}"></button></sc-if>
+        </li>
+        </sc-for>
+      </ul>
+    </section>
+    <aside class="p44-side" aria-label="المعاينة">
+      <sc-if value="{{p44SysNavOn}}" hint-placeholder-val="{{ true }}">
+      <section class="p44-card" aria-label="القائمة الجانبية لمدير الوحدة"><h4>{{p44SysNavT}}</h4><small>قائمتُه الجانبية كما تُرسم له الآن (المحفوظ)</small>
+        <ul class="p44-menu"><sc-for list="{{p44SysNav}}" as="m" hint-placeholder-count="5"><li data-k="{{m.k}}"><i aria-hidden="true"></i><span>{{m.n}}</span></li></sc-for></ul>
+      </section>
+      </sc-if>
+      <sc-if value="{{p44SysCtl}}" hint-placeholder-val="{{ true }}">
+      <section class="p44-card"><h4>أثر الحفظ</h4>
+        <div class="p44-kpis"><div><b>{{p44SysOnN}}</b><small>أنظمة مفعّلة</small></div><div><b>{{p44SysPeople}}</b><small>شخص يتأثر</small></div></div>
+        <!-- V7 · د6 (ب5 · قرار المالك ٤): ما يتغيّر بالحفظ بالأسماء — وما يُطفأ مع حاويته (Perm44.offWith) -->
+        <ul class="p44-eff" data-og="sys-effect" aria-live="polite">
+          <sc-if value="{{p44SysEffNone}}" hint-placeholder-val="{{ true }}"><li data-og-eff="none">لا تغيير غير محفوظ.</li></sc-if>
+          <sc-if value="{{p44SysEffOn}}" hint-placeholder-val="{{ false }}"><li data-og-eff="on"><b>سيُفعَّل:</b> {{p44SysEffOn}}</li></sc-if>
+          <sc-if value="{{p44SysEffOff}}" hint-placeholder-val="{{ false }}"><li data-og-eff="off"><b>سيُطفأ:</b> {{p44SysEffOff}}</li></sc-if>
+          <sc-if value="{{p44SysEffWith}}" hint-placeholder-val="{{ false }}"><li data-og-eff="with"><b>يُطفأ معها:</b> {{p44SysEffWith}}</li></sc-if>
+        </ul>
+        <p class="p44-note">إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل.</p>
+      </section>
+      </sc-if>
+    </aside>
+  </div>
+  <sc-if value="{{p44SysDirty}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-bar" role="region" aria-label="حفظ الأنظمة"><span>{{p44SysDirtyTxt}}</span><button type="button" class="u" onClick="{{p44SysUndo}}">تراجع</button><button type="button" class="s" onClick="{{p44SysReview}}">مراجعة وحفظ</button></div>
+  </sc-if>
+  </sc-if>
+  </div>
+
+  <!-- ══════════ نقطة التركيب · المسؤولون (ب6 · م6 · logic.js ogTabAdmins ← logic-perm44.js p44AdminsVals) ══════════
+       بطاقتا «مدير المنصة» (صف «المنصة كلها») و«مدير الوحدة» كما كانتا في «الأدوار» — وجدولُ حسابات الوحدة وأفعالُه محتوى بطاقة «مدير الوحدة»
+       القائم نفسُه: تركّبه الصفحةُ المضيفة (الإعدادات) هنا في الموضع ogSlotAdmins، ومنطقُه واحدٌ مع «مراقبة الحسابات» (_acctRow) -->
+  <sc-if value="{{ogOnAdmins}}" hint-placeholder-val="{{ false }}">
+  <div data-org-tab="admins">
+  <section class="p44-card p44-main" aria-label="المسؤولون">
+      <sc-if value="{{p44IsSup}}" hint-placeholder-val="{{ false }}">
+      <div class="p44-hd"><h4>{{p44Role.n}} <span class="p44-badge">{{p44Role.badge}}</span></h4><p>{{p44Role.d}}</p></div>
+      <div class="p44-super"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-e448ef4a"></svg><div><b>صلاحية كاملة بلا أي قيد</b><p>مدير المنصة لا يُمنح ولا يُقيَّد: يرى ويعدّل ويعتمد ويحذف في كل نظام وكل إدارة وكل فترة، بلا طلب سبب. كل ما يفعله يبقى مسجّلاً في سجل الأمن.</p></div></div>
+      </sc-if>
+      <sc-if value="{{p44IsMgr}}" hint-placeholder-val="{{ false }}">
+      <div class="p44-hd"><h4>{{p44Role.n}} <span class="p44-badge">{{p44Role.badge}}</span></h4><p>{{p44Role.d}}</p><small class="p44-mute">{{p44Role.members}}</small></div>
+      <sc-if value="{{p44MgrFull}}" hint-placeholder-val="{{ true }}">{{ogSlotAdmins}}</sc-if>
+      <sc-if value="{{p44MgrRO}}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{p44MgrNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا مدير لهذه الوحدة بعد — يعيّنه مدير المنصة.</div></sc-if>
+      <ul class="p44-menu" aria-label="حاملو الدور"><sc-for list="{{p44MgrHold}}" as="m" hint-placeholder-count="1"><li><i aria-hidden="true"></i><span>{{m.n}}</span><small>{{m.st}}</small></li></sc-for></ul>
+      </sc-if>
+      </sc-if>
+  </section>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ نقطة التركيب · الأدوار (ب7 · م6 · logic.js ogTabRoles ← logic-perm44.js _p44RoleVals) ══════════ -->
+  <div data-org-tab="roles">
+  <sc-if value="{{p44OnRoles}}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{p44Lvls}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-grid">
+    <aside class="p44-rail" aria-label="الأدوار">
+      <div class="p44-rh"><span>الأدوار · {{p44RoleN}}</span><sc-if value="{{p44RoleNewOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-add" onClick="{{p44RoleNew}}">+ دور جديد</button></sc-if></div>
+      <sc-for list="{{p44RoleList}}" as="r" hint-placeholder-count="5"><button type="button" class="p44-role" aria-pressed="{{r.on}}" onClick="{{r.pick}}"><span class="p44-f"><b>{{r.n}}</b><small>{{r.sub}}</small></span><sc-if value="{{r.lock}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="مقفل" data-i="i-3a0791fe"></svg></sc-if></button></sc-for>
+    </aside>
+    <section class="p44-card p44-main" aria-label="محرّر الدور">
+      <sc-if value="{{p44NoRole}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا أدوار في هذه الإدارة بعد — ابدأ بـ«+ دور جديد».</div></sc-if>
+      <sc-if value="{{p44NodeRoles}}" hint-placeholder-val="{{ false }}">
+      <div class="p44-note p44-nodes">الأدوار المخصّصة تُبنى في كل إدارة أو قسم على حدة — افتح أدوار وحدةٍ تحتها:
+      <ul class="og-kids" data-og="node-roles"><sc-for list="{{p44NodeUnits}}" as="u" hint-placeholder-count="2"><li><span>{{u.n}}</span> <a href="{{u.href}}" onClick="{{u.go}}" aria-label="افتح أدوار {{u.n}}">افتح أدوارها</a></li></sc-for></ul></div>
+      </sc-if>
+      <sc-if value="{{p44NotSup}}" hint-placeholder-val="{{ true }}">
+      <div class="p44-hd p44-ed">
+        <label class="p44-fld"><span>اسم الدور</span><input type="text" value="{{p44RoleName}}" onChange="{{p44RoleNameSet}}" maxlength="60"></label>
+        <label class="p44-fld"><span>الوصف</span><input type="text" value="{{p44RoleDesc}}" onChange="{{p44RoleDescSet}}" maxlength="200"></label>
+        <div class="p44-acts"><small>{{p44Role.members}}</small>
+          <button type="button" class="p44-sw p44-sm" role="switch" aria-checked="{{p44RoleSup}}" aria-label="دور إشرافي (الطاقم الإشرافي)" onClick="{{p44RoleSupFlip}}"></button><span class="p44-mute">إشرافي</span>
+          <button type="button" class="p44-b" onClick="{{p44RoleCopy}}">نسخ الدور</button>
+          <button type="button" class="p44-b dz" onClick="{{p44RoleDel}}">حذف الدور</button>
+        </div>
+      </div>
+      <div class="p44-strip"><span><b>{{p44OnN}}</b> من {{p44AllN}} أنظمة مفعّلة لهذا الدور</span><button type="button" onClick="{{p44AllOn}}">تفعيل الكل</button><button type="button" onClick="{{p44AllOff}}">إيقاف الكل</button></div>
+      <sc-if value="{{p44SysEdNone}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا نظام مفعّلاً في سقف هذه الإدارة — يفعّله مدير المنصة من «الأنظمة».</div></sc-if>
+      <ul class="p44-rows">
+        <sc-for list="{{p44SysEd}}" as="s" hint-placeholder-count="8">
+        <li class="p44-row" data-on="{{s.onTxt}}">
+          <span class="p44-f"><b>{{s.n}}</b><small>{{s.sub}}</small></span>
+          <sc-if value="{{s.isOn}}" hint-placeholder-val="{{ true }}"><label class="p44-lv"><span>المستوى</span><select value="{{s.lv}}" onChange="{{s.setLv}}" aria-label="مستوى {{s.n}}"><sc-for list="{{p44Lvls}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label></sc-if>
+          <button type="button" class="p44-sw" role="switch" aria-checked="{{s.onTxt}}" aria-label="تفعيل {{s.n}} لهذا الدور" onClick="{{s.flip}}"></button>
+          <sc-if value="{{s.custom}}" hint-placeholder-val="{{ false }}">
+          <div class="p44-keys" role="group" aria-label="أفعال {{s.n}}"><sc-for list="{{s.keys}}" as="x" hint-placeholder-count="4"><button type="button" class="p44-key" aria-pressed="{{x.on}}" onClick="{{x.flip}}">{{x.n}}<sc-if value="{{x.sens}}" hint-placeholder-val="{{ false }}"><span class="p44-sens">حسّاس</span></sc-if></button></sc-for></div>
+          </sc-if>
+        </li>
+        </sc-for>
+      </ul>
+      <section class="p44-cmp" aria-label="قارن مع دور آخر">
+        <label class="p44-fld"><span>قارن مع دور آخر</span><select value="{{p44CmpVal}}" onChange="{{p44CmpSet}}"><sc-for list="{{p44CmpOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+        <sc-if value="{{p44CmpOn}}" hint-placeholder-val="{{ false }}">
+        <table class="p44-tb"><thead><tr><th scope="col">النظام</th><th scope="col">{{p44Role.n}}</th><th scope="col">{{p44CmpName}}</th></tr></thead>
+          <tbody><sc-for list="{{p44CmpRows}}" as="c" hint-placeholder-count="4"><tr data-diff="{{c.diff}}"><td>{{c.n}}</td><td>{{c.a}}</td><td>{{c.b}}</td></tr></sc-for></tbody></table>
+        </sc-if>
+      </section>
+      </sc-if>
+    </section>
+    <aside class="p44-side" aria-label="المعاينة">
+      <sc-if value="{{p44NotSup}}" hint-placeholder-val="{{ true }}">
+      <section class="p44-card" aria-label="حاملو الدور" data-og="role-holders"><h4>حاملو الدور</h4>
+        <sc-if value="{{p44RoleHoldNone}}" hint-placeholder-val="{{ false }}"><small class="p44-mute">لا يحمل هذا الدور أحد بعد — أسنده من «الأشخاص».</small></sc-if>
+        <div class="p44-chips"><sc-for list="{{p44RoleHold}}" as="h" hint-placeholder-count="2"><button type="button" onClick="{{h.go}}">{{h.n}}</button></sc-for></div>
+      </section>
+      </sc-if>
+      <section class="p44-card"><h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-bdce9bcc"></svg>ماذا يرى حامل الدور</h4><small>قائمته الجانبية كما ستظهر له — تتغيّر مع كل تعديل</small>
+        <ul class="p44-menu"><sc-for list="{{p44Nav}}" as="m" hint-placeholder-count="5"><li><i aria-hidden="true"></i><span>{{m.n}}</span><small>{{m.l}}</small></li></sc-for></ul>
+      </section>
+      <sc-if value="{{p44NotSup}}" hint-placeholder-val="{{ true }}">
+      <section class="p44-card" aria-label="اختبار الوصول"><h4>اختبار الوصول</h4><small>هل يستطيع حامل الدور…؟ الجواب من قواعد الخادم نفسها</small>
+        <label class="p44-fld"><span>الفعل</span><select value="{{p44ChkKey}}" onChange="{{p44ChkSet}}"><sc-for list="{{p44ChkKeys}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+        <small class="p44-mute">{{p44ChkLocal}}</small>
+        <button type="button" class="p44-b" onClick="{{p44ChkRun}}" disabled="{{p44ChkBusy}}">اسأل الخادم</button>
+        <sc-if value="{{p44ChkHas}}" hint-placeholder-val="{{ false }}"><div class="p44-res" data-k="{{p44ChkRes.cls}}" role="status"><span aria-hidden="true">{{p44ChkRes.mark}}</span><span><b>{{p44ChkRes.q}}</b><small>{{p44ChkRes.why}}</small></span></div></sc-if>
+        <small class="p44-mute">{{p44ChkNote}}</small>
+      </section>
+      </sc-if>
+    </aside>
+  </div>
+  </sc-if>
+  </sc-if>
+  </div>
+
+  <!-- ══════════ نقطة التركيب · الأشخاص (ب8 · م6 · logic.js ogTabPeople ← logic-perm44.js _p44PeopleVals · _p44NodePeopleVals) ══════════ -->
+  <div data-org-tab="people">
+  <sc-if value="{{p44OnPeople}}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{p44PFilters}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-grid">
+    <section class="p44-card p44-main" aria-label="الأشخاص">
+      <div class="p44-bar2"><input type="search" class="adm-q" value="{{p44PQ}}" onChange="{{p44PQSet}}" placeholder="ابحث بالاسم أو الرقم الوظيفي" aria-label="بحث في الأشخاص">
+        <div class="p44-seg2"><sc-for list="{{p44PFilters}}" as="f" hint-placeholder-count="4"><button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}">{{f.t}} <span>{{f.n}}</span></button></sc-for></div></div>
+      <sc-if value="{{p44PEmpty}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">{{p44PEmptyTxt}}</div></sc-if>
+      <div class="p44-scroll"><table class="p44-tb p44-people"><thead><tr><th scope="col">الشخص</th><th scope="col">الدور</th><th scope="col">القسم</th><th scope="col">استثناءات</th><th scope="col">آخر دخول</th></tr></thead>
+        <tbody><sc-for list="{{p44PRows}}" as="p" hint-placeholder-count="6"><tr aria-selected="{{p.on}}"><td><button type="button" class="p44-who" onClick="{{p.pick}}"><span class="p44-av" aria-hidden="true">{{p.i}}</span><span><b>{{p.n}}</b><small>{{p.id}}</small></span><sc-if value="{{p.me}}" hint-placeholder-val="{{ false }}"><span class="p44-pill">أنت</span></sc-if></button></td><td><span class="p44-pill">{{p.role}}</span></td><td>{{p.unit}}</td><td><sc-if value="{{p.hasEx}}" hint-placeholder-val="{{ false }}"><span class="p44-pill ex">{{p.ex}}</span></sc-if></td><td class="p44-mute">{{p.last}}</td></tr></sc-for></tbody></table></div>
+    </section>
+    <sc-if value="{{p44PSelOn}}" hint-placeholder-val="{{ true }}">
+    <aside class="p44-card p44-side" aria-label="تفاصيل الشخص">
+      <div class="p44-who"><span class="p44-av" aria-hidden="true">{{p44PSel.i}}</span><span><b>{{p44PSel.n}}</b><small>{{p44PSel.id}} · {{p44PSel.role}}</small></span></div>
+      <sc-if value="{{p44PMgr}}" hint-placeholder-val="{{ false }}"><p class="p44-note">مدير الإدارة يعمل بكامل سقف إدارته — لا دور يُسند إليه هنا.</p></sc-if>
+      <sc-if value="{{p44PSelf}}" hint-placeholder-val="{{ false }}"><p class="p44-note p44-self" role="note">هذا سجلّك أنت — لا يغيّر أحدٌ صلاحياته بنفسه؛ يضبطها مدير المنصة.</p></sc-if>
+      <sc-if value="{{p44PEdit}}" hint-placeholder-val="{{ true }}">
+      <div><div class="p44-cap">الدور (واحد لكل شخص)</div><div class="p44-chips" role="radiogroup" aria-label="الدور"><sc-for list="{{p44PRoles}}" as="c" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{c.on}}" onClick="{{c.pick}}">{{c.t}}</button></sc-for></div></div>
+      <div><div class="p44-cap">استثناءات على هذا الشخص</div>
+        <sc-if value="{{p44PExNone}}" hint-placeholder-val="{{ true }}"><p class="p44-mute">لا استثناءات — صلاحياته هي دوره بالضبط.</p></sc-if>
+        <sc-for list="{{p44PEx}}" as="x" hint-placeholder-count="1"><div class="p44-ex" data-live="{{x.live}}"><span><b>{{x.n}}</b><small>{{x.meta}}</small></span><button type="button" class="p44-b" onClick="{{x.del}}" aria-label="إزالة الاستثناء">إزالة</button></div></sc-for>
+        <sc-if value="{{p44ExFormOn}}" hint-placeholder-val="{{ false }}">
+        <div class="p44-exf" role="group" aria-label="استثناء مؤقت">
+          <sc-if value="{{p44ExNoKeys}}" hint-placeholder-val="{{ false }}"><p class="p44-mute">دوره يشمل كل أفعال الأنظمة المفعّلة — لا استثناء يُضاف.</p></sc-if>
+          <label class="p44-fld"><span>الفعل</span><select value="{{p44ExKey}}" onChange="{{p44ExKeySet}}"><sc-for list="{{p44ExKeys}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></label>
+          <label class="p44-fld"><span>ينتهي في (اختياري)</span><input type="date" value="{{p44ExUntil}}" onChange="{{p44ExUntilSet}}"></label>
+          <label class="p44-fld"><span>ملاحظة</span><input type="text" value="{{p44ExNote}}" onChange="{{p44ExNoteSet}}" maxlength="120"></label>
+          <div class="p44-acts"><button type="button" class="p44-b" onClick="{{p44ExCancel}}">إلغاء</button><button type="button" class="p44-b s" onClick="{{p44ExOk}}">إضافة</button></div>
+        </div>
+        </sc-if>
+        <button type="button" class="p44-add" onClick="{{p44ExAdd}}">+ استثناء مؤقت</button>
+      </div>
+      </sc-if>
+      <div><div class="p44-cap">ما يراه الآن</div><sc-if value="{{p44PMgrLine}}" hint-placeholder-val="{{ false }}"><p class="p44-note" data-og="mgr-line">{{p44PMgrLine}}</p></sc-if><ul class="p44-menu"><sc-for list="{{p44PNav}}" as="m" hint-placeholder-count="4"><li><i aria-hidden="true"></i><span>{{m.n}}</span><small>{{m.l}}</small></li></sc-for></ul></div>
+    </aside>
+    </sc-if>
+  </div>
+  </sc-if>
+  </sc-if>
+  <sc-if value="{{p44NodePeople}}" hint-placeholder-val="{{ false }}">
+  <section class="p44-card p44-main" aria-label="أشخاص الفرع">
+    <div class="p44-bar2"><input type="search" class="adm-q" value="{{p44PQ}}" onChange="{{p44PQSet}}" placeholder="ابحث بالاسم أو الرقم الوظيفي" aria-label="بحث في أشخاص الفرع"></div>
+    <sc-if value="{{p44NPEmpty}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">{{p44NPEmptyTxt}}</div></sc-if>
+    <div class="p44-scroll"><table class="p44-tb p44-people"><thead><tr><th scope="col">الشخص</th><th scope="col">الدور</th><th scope="col">الوحدة</th><th scope="col">آخر دخول</th></tr></thead>
+      <tbody><sc-for list="{{p44NPRows}}" as="p" hint-placeholder-count="4"><tr><td><button type="button" class="p44-who" onClick="{{p.go}}"><span class="p44-av" aria-hidden="true">{{p.i}}</span><span><b>{{p.n}}</b><small>{{p.id}}</small></span></button></td><td>{{p.role}}</td><td>{{p.unit}}</td><td>{{p.last}}</td></tr></sc-for></tbody></table></div>
+    <small class="p44-mute">{{p44NPFoot}}</small>
+  </section>
+  </sc-if>
+  </div>
+
+  <!-- شريط الحفظ الواحد للأدوار والأشخاص · والمراجعة قبله -->
+  <sc-if value="{{p44Dirty}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-bar" role="region" aria-label="حفظ الصلاحيات"><span><b>{{p44DirtyTxt}}</b> · {{p44AffTxt}}</span><button type="button" class="u" onClick="{{p44Undo}}">تراجع</button><button type="button" class="s" onClick="{{p44Review}}">مراجعة وحفظ</button></div>
+  </sc-if>
+  <!-- V7 · د5-ح: «مراجعة قبل الحفظ» نافذةٌ في وسط الشاشة (الأنظمة · الأدوار · الأشخاص) — مديرُ حوارات الإطار يضع التركيزَ داخلها ويمنع Tab من الخروج،
+       وEscape نقرةٌ على الطبقة = «رجوع»؛ تُغلق بعد الحفظ -->
+  <sc-if value="{{p44RevOn}}" hint-placeholder-val="{{ false }}">
+  <div class="bs-dlg bs-dlg--modal" onClick="{{p44RevOut}}">
+    <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="p44RevT" class="bs-dlg-box adm-dlg adm-dlg--w p44-rev" onClick="{{p44Keep}}">
+      <b class="t" id="p44RevT">مراجعة قبل الحفظ</b>
+      <ul class="p44-ch"><sc-for list="{{p44RevRows}}" as="c" hint-placeholder-count="3"><li><span>{{c.what}}</span><s>{{c.from}}</s><span aria-hidden="true">←</span><b>{{c.to}}</b></li></sc-for></ul>
+      <p class="p44-mute">{{p44RevAffTxt}} <sc-for list="{{p44RevAff}}" as="n" hint-placeholder-count="3"><span class="p44-pill">{{n}}</span> </sc-for></p>
+      <sc-if value="{{p44RevNote}}" hint-placeholder-val="{{ false }}"><p class="p44-note">{{p44RevNote}}</p></sc-if>
+      <sc-if value="{{p44RevErr}}" hint-placeholder-val="{{ false }}"><div class="bs-retry" role="alert"><span class="m">{{p44RevErr}}</span></div></sc-if>
+      <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{p44RevSave}}" disabled="{{p44RevBusy}}">حفظ</button><button type="button" class="bs-btn" onClick="{{p44RevClose}}">رجوع</button></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ نقطة التركيب · السجل (ب8 · م6 · logic.js ogTabLog ← logic-perm44.js _p44LogVals) ══════════ -->
+  <div data-org-tab="log">
+  <sc-if value="{{ogLogRoot}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-empty" role="status" data-og="root-log">{{ogLogRootTxt}}
+    <ul class="og-loglinks"><sc-for list="{{ogLogRootLinks}}" as="l" hint-placeholder-count="2"><li><a href="#/sysadmin/oplog" data-og-log="{{l.k}}" onClick="{{l.go}}">{{l.t}}</a></li></sc-for></ul>
+  </div>
+  </sc-if>
+  <sc-if value="{{p44OnLog}}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{p44LogFilters}}" hint-placeholder-val="{{ false }}">
+  <div class="p44-seg2 p44-lf"><sc-for list="{{p44LogFilters}}" as="f" hint-placeholder-count="4"><button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}">{{f.t}}</button></sc-for></div>
+  <sc-if value="{{p44LogLoading}}" hint-placeholder-val="{{ false }}"><div class="p44-empty" role="status">جارٍ تحميل السجل…</div></sc-if>
+  <sc-if value="{{p44LogErr}}" hint-placeholder-val="{{ false }}"><div class="bs-retry" role="alert"><span class="m">تعذّر تحميل السجل — تحقّق من الاتصال ثم أعد المحاولة</span><button type="button" class="b" onClick="{{p44LogRetry}}">أعد المحاولة</button></div></sc-if>
+  <sc-if value="{{p44LogEmpty}}" hint-placeholder-val="{{ false }}"><div class="p44-empty">لا تغييرات مسجّلة بعد.</div></sc-if>
+  <ol class="p44-log">
+    <sc-for list="{{p44LogItems}}" as="e" hint-placeholder-count="4">
+    <li class="p44-card"><span class="p44-av" aria-hidden="true">{{e.i}}</span>
+      <div class="p44-f"><div><b>{{e.who}}</b> <span class="p44-pill" data-k="{{e.kind}}">{{e.tag}}</span></div>
+        <ul class="p44-ch"><sc-for list="{{e.ch}}" as="c" hint-placeholder-count="2"><li><span>{{c.sys}}</span><s>{{c.from}}</s><span aria-hidden="true">←</span><b>{{c.to}}</b></li></sc-for></ul>
+        <small class="p44-mute">{{e.when}} · {{e.aff}}</small></div>
+      <sc-if value="{{e.undoOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="p44-b" onClick="{{e.undo}}">تراجع عن هذا التغيير</button></sc-if>
+    </li>
+    </sc-for>
+  </ol>
+  </sc-if>
+  </sc-if>
+  </div>
+  </div>
+  </sc-if>
+
+  <!-- ══════════ نقطة التركيب · البيانات (ب8 · logic.js ogTabData) — المحتوى قسمُ «بيانات الإدارة» القائم (نسخة الإدارة · استيراد نسخة · مسح البيانات)
+       تركّبه الصفحةُ المضيفة في الموضع ogSlotData بمعالجاته القائمة؛ لمدير المنصة وحده ══════════ -->
+  <sc-if value="{{ogOnData}}" hint-placeholder-val="{{ false }}">
+  <div data-org-tab="data">
+    <sc-if value="{{ogDataNode}}" hint-placeholder-val="{{ false }}">
+    <section class="og-card" aria-label="بيانات الفرع">
+      <h4>البيانات · {{ogU.name}}</h4>
+      <p class="og-note">بيانات «{{ogU.name}}» تُدار في كل إدارة أو قسم تحتها على حدة (نسخة الإدارة · استيراد نسخة · مسح البيانات) — افتح بيانات وحدة:</p>
+      <ul class="og-kids"><sc-for list="{{ogDataUnits}}" as="k" hint-placeholder-count="2"><li><a href="{{k.href}}" onClick="{{k.go}}">{{k.name}}</a><span class="og-kd" data-k="{{k.kindKey}}">{{k.kind}}</span></li></sc-for></ul>
+      <sc-if value="{{ogDataUnitsNone}}" hint-placeholder-val="{{ false }}"><p class="og-note">لا إدارة تحتها بعد.</p></sc-if>
+    </section>
+    </sc-if>
+    <sc-if value="{{ogDataUnit}}" hint-placeholder-val="{{ true }}"><h4 class="og-dttl" data-og="data-name">البيانات · {{ogU.name}}</h4></sc-if>
+    <sc-if value="{{ogDataUnit}}" hint-placeholder-val="{{ true }}">{{ogSlotData}}</sc-if>
+  </div>
+  </sc-if>
+</section>
+</div>
+
+<!-- ═══ ب3 · نوافذ أفعال الهيكل: الإضافة · إعادة التسمية · النقل · الحذف — نافذةٌ واحدة لكل فعل، من «نظرة عامة» (والإضافة من فوق الشجرة أيضاً) ═══ -->
+<sc-if value="{{ogAddOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogAddT" class="bs-dlg-box og-dlg" data-og-dlg="add" onClick="{{ogKeep}}">
+    <b class="t" id="ogAddT">إضافة إلى الهيكل</b>
+    <label class="fl"><span>الاسم</span><input type="text" id="ogAddName" value="{{ogAdd.name}}" onChange="{{ogAddOnName}}" maxlength="120" placeholder="مثل: قطاع خدمات الحشود بالمسجد الحرام"></label>
+    <label class="fl"><span>نوع العقدة</span>
+      <select value="{{ogAdd.kind}}" onChange="{{ogAddOnKind}}" data-og-f="kind" title="نوع العقدة — «إدارة» هي وعاء البيانات (موظفون وجداول وتقارير)، وما فوقها تصنيفٌ وتجميع">
+        <option value="">— النوع —</option>
+        <sc-for list="{{ogAddKinds}}" as="k" hint-placeholder-count="6"><option value="{{k.id}}">{{k.name}}</option></sc-for>
+        <option value="__new">+ نوع جديد…</option>
+      </select></label>
+    <sc-if value="{{ogAddNewOn}}" hint-placeholder-val="{{ false }}">
+    <label class="fl"><span>النوع الجديد</span><input type="text" value="{{ogAdd.newKind}}" onChange="{{ogAddOnNewKind}}" maxlength="40" placeholder="اكتب النوع الجديد — مثل: شعبة"></label>
+    </sc-if>
+    <label class="fl"><span>العقدة الأب</span>
+      <select value="{{ogAdd.pid}}" onChange="{{ogAddOnPid}}" data-og-f="parent" title="العقدة الأب — والشجرة تُعرض بعمقها">
+        <option value="">— في الجذر (بلا أب) —</option>
+        <sc-for list="{{ogAddParents}}" as="o" hint-placeholder-count="4"><option value="{{o.id}}">{{o.name}}</option></sc-for>
+      </select></label>
+    <p class="og-pos">الموضع: <b data-og="add-pos">{{ogAddPath}}</b></p>
+    <!-- ب4 (م4): اختيارُ «أنظمة الوحدة الجديدة» يُمرَّر وسيطاً إلى مسار الإنشاء (logic.js _ogAddGo) -->
+    <div class="fl" role="radiogroup" aria-label="أنظمة الوحدة الجديدة"><span>أنظمة الوحدة الجديدة</span>
+      <div class="og-radio"><sc-for list="{{ogAddSys}}" as="c" hint-placeholder-count="2"><button type="button" role="radio" data-og-sys="{{c.k}}" aria-checked="{{c.on}}" onClick="{{c.pick}}">{{c.t}}</button></sc-for></div>
+      <small class="og-note" data-og="add-sys-note">«نفس أنظمة العقدة الأب»: تنسخ الوحدة سجلَّ أبيها كما هو الآن، ومفتاح المنصة فوق الجميع — ما يُعاد تشغيله على المنصة يصلها كما يصل أباها.</small>
+    </div>
+    <sc-if value="{{ogAdd.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogAdd.msg}}</div></sc-if>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="add" onClick="{{ogAddGo}}">أضف العقدة</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ogRenOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogRenT" class="bs-dlg-box og-dlg" data-og-dlg="rename" onClick="{{ogKeep}}">
+    <b class="t" id="ogRenT">إعادة تسمية «{{ogDlgName}}»</b>
+    <label class="fl"><span>الاسم الجديد</span><input type="text" id="ogRenName" aria-label="{{ogRenLbl}}" value="{{ogRen.name}}" onChange="{{ogRenOnName}}" maxlength="120"></label>
+    <sc-if value="{{ogRen.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogRen.msg}}</div></sc-if>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="rename" onClick="{{ogRenGo}}">حفظ الاسم</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ogMoveOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogMoveT" class="bs-dlg-box og-dlg" data-og-dlg="move" onClick="{{ogKeep}}">
+    <b class="t" id="ogMoveT">نقل «{{ogDlgName}}» إلى…</b>
+    <label class="fl"><span>الأب الجديد</span>
+      <select value="{{ogMove.pid}}" onChange="{{ogMoveOnPid}}" data-og-f="parent" aria-label="العقدة الأب في الهيكل — والشجرة تُعرض بعمقها" title="الوحدة نفسها وما تحتها لا يظهران في القائمة">
+        <sc-if value="{{ogMoveRootOn}}" hint-placeholder-val="{{ true }}"><option value="">— بلا أب (في الجذر) —</option></sc-if>
+        <sc-for list="{{ogMoveParents}}" as="o" hint-placeholder-count="3"><option value="{{o.id}}">{{o.name}}</option></sc-for>
+        <sc-if value="{{ogMoveNewOn}}" hint-placeholder-val="{{ false }}"><option value="__new">+ إدارة عامة جديدة…</option></sc-if>
+      </select></label>
+    <p class="og-pos">الموضع بعد النقل: <b data-og="move-pos">{{ogMovePath}}</b></p>
+    <sc-if value="{{ogMoveOrderOn}}" hint-placeholder-val="{{ false }}"><p class="og-pos">الترتيب: <b data-og="move-order">{{ogMoveOrder}}</b></p></sc-if>
+    <!-- V7 · د6 (قرار المالك): أثرُ النقل على الأنظمة — للوحدة ولكل ما تحتها، بالأسماء (logic.js _ogMoveEffect ← دالةُ الوراثة القائمة) -->
+    <section class="og-eff" data-og="move-effect" aria-label="أثر النقل على الأنظمة" aria-live="polite">
+      <h5>أثر النقل على الأنظمة</h5>
+      <sc-if value="{{ogEffOffOn}}" hint-placeholder-val="{{ false }}"><div class="og-eff-g" data-og-eff="off"><b>سيُطفأ بحكم الأب الجديد</b><ul><sc-for list="{{ogEffOff}}" as="u" hint-placeholder-count="1"><li><b>{{u.name}}</b>: {{u.txt}}</li></sc-for></ul></div></sc-if>
+      <sc-if value="{{ogEffOnOn}}" hint-placeholder-val="{{ false }}"><div class="og-eff-g" data-og-eff="on"><b>سيُفتح بالوراثة</b><ul><sc-for list="{{ogEffOn}}" as="u" hint-placeholder-count="1"><li><b>{{u.name}}</b>: {{u.txt}}</li></sc-for></ul></div></sc-if>
+      <sc-if value="{{ogEffNone}}" hint-placeholder-val="{{ true }}"><p class="og-note" data-og-eff="none">لا يتغيّر شيء في الأنظمة: لا نظام يُطفأ ولا نظام يُفتح.</p></sc-if>
+      <sc-if value="{{ogEffErr}}" hint-placeholder-val="{{ false }}"><p class="og-err" role="alert">تعذّر حساب أثر النقل — أغلق النافذة وأعد المحاولة.</p></sc-if>
+    </section>
+    <sc-if value="{{ogMove.msg}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert">{{ogMove.msg}}</div></sc-if>
+    <div class="ft"><button type="button" class="{{ogMoveOkCls}}" data-og-ok="move" onClick="{{ogMoveGo}}">{{ogMoveOkLbl}}</button><button type="button" class="bs-btn" onClick="{{ogDlgClose}}">إلغاء</button></div>
+  </div>
+</div>
+</sc-if>
+
+<!-- V7 · د6 (ب2 · م5): تطبيقُ الأنظمة على الوحدات المحددة — اختيارُ الأنظمة ← «مراجعة قبل الحفظ» لكل وحدة (ما يتغيّر · ما يُتخطّى بسببه) ← حفظٌ واحد كلُّه أو لا شيء -->
+<sc-if value="{{p44BulkOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{p44BulkClose}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogBulkT" class="bs-dlg-box og-dlg og-bulkdlg" data-og-dlg="bulk" data-og-mode="{{p44BulkMode}}" onClick="{{ogKeep}}">
+    <b class="t" id="ogBulkT">{{p44BulkT}}</b>
+    <p class="og-note" data-og="bulk-units">{{p44BulkUnits}}</p>
+    <sc-if value="{{p44BulkPick}}" hint-placeholder-val="{{ true }}">
+    <div class="og-bulk-hd"><span>اختر الأنظمة: <b>{{p44BulkPickN}}</b></span><button type="button" class="og-l" onClick="{{p44BulkAll}}">اختر الكل</button><button type="button" class="og-l" onClick="{{p44BulkNone}}">لا شيء</button></div>
+    <ul class="og-bulk-sys" role="group" aria-label="الأنظمة"><sc-for list="{{p44BulkSys}}" as="s" hint-placeholder-count="6"><li><button type="button" role="checkbox" class="og-pk" data-og-sys="{{s.k}}" aria-checked="{{s.on}}" onClick="{{s.flip}}">{{s.n}}</button></li></sc-for></ul>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="bulk-next" disabled="{{p44BulkNoPick}}" onClick="{{p44BulkNext}}">مراجعة قبل الحفظ</button><button type="button" class="bs-btn" onClick="{{p44BulkClose}}">إلغاء</button></div>
+    </sc-if>
+    <sc-if value="{{p44BulkRev}}" hint-placeholder-val="{{ false }}">
+    <h5 class="og-bulk-rt">مراجعة قبل الحفظ</h5>
+    <p class="og-pos" data-og="bulk-sum"><b>{{p44BulkSum}}</b></p>
+    <ul class="og-bulk-rows"><sc-for list="{{p44BulkRows}}" as="u" hint-placeholder-count="2"><li data-og-unit="{{u.id}}"><b>{{u.name}}</b>
+      <sc-if value="{{u.chOn}}" hint-placeholder-val="{{ true }}"><div data-og-b="ch"><span class="og-tag">{{u.chLbl}}</span> {{u.ch}}</div></sc-if>
+      <sc-if value="{{u.withOn}}" hint-placeholder-val="{{ false }}"><div data-og-b="with"><span class="og-tag">يُطفأ معها</span> {{u.with}}</div></sc-if>
+      <sc-if value="{{u.skipOn}}" hint-placeholder-val="{{ false }}"><sc-for list="{{u.skip}}" as="x" hint-placeholder-count="1"><div data-og-b="skip"><span class="og-tag og-tag--skip">تُخطّي</span> {{x.n}} — {{x.why}}</div></sc-for></sc-if>
+      <sc-if value="{{u.sameOn}}" hint-placeholder-val="{{ false }}"><div data-og-b="same" class="og-note">{{u.sameLbl}}: {{u.same}}</div></sc-if>
+      <sc-if value="{{u.none}}" hint-placeholder-val="{{ false }}"><div data-og-b="none" class="og-note">لا يتغيّر فيها شيء</div></sc-if>
+    </li></sc-for></ul>
+    <p class="og-note">{{p44BulkNote}}</p>
+    <sc-if value="{{p44BulkErr}}" hint-placeholder-val="{{ false }}"><div class="og-err" role="alert" data-og="bulk-err">{{p44BulkErr}}</div></sc-if>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ok="bulk-save" disabled="{{p44BulkSaveOff}}" onClick="{{p44BulkSave}}">حفظ</button><button type="button" class="bs-btn" disabled="{{p44BulkBusy}}" onClick="{{p44BulkBack}}">رجوع</button></div>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- V7 · د6 (ب11 · م5): تغييرٌ غيرُ محفوظ + وحدةٌ أخرى أو تبويبٌ آخر أو مغادرةُ الصفحة ⇒ ثلاثةُ أزرار. «حفظ ثم انتقال» يفتح «مراجعة قبل الحفظ» ويبقى إن رُفض -->
+<sc-if value="{{ogAskOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogAskStay}}">
+  <div dir="rtl" role="alertdialog" aria-modal="true" aria-labelledby="ogAskT" aria-describedby="ogAskM" class="bs-dlg-box og-dlg" data-og-dlg="unsaved" onClick="{{ogKeep}}">
+    <b class="t" id="ogAskT">تغييرات غير محفوظة</b>
+    <p class="m" id="ogAskM">{{ogAskTxt}}</p>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" data-og-ask="save" onClick="{{ogAskSave}}">حفظ ثم انتقال</button><button type="button" class="bs-btn" data-og-ask="drop" onClick="{{ogAskDrop}}">تجاهل وانتقال</button><button type="button" class="bs-btn" data-og-ask="stay" onClick="{{ogAskStay}}">البقاء</button></div>
+  </div>
+</div>
+</sc-if>
+
+<!-- الحذف: ما يمنعه يُذكر سببُه هنا (القاعدةُ القائمة: الفارغةُ وحدها) — وما لا مانعَ له يُؤكَّد بحوار التأكيد الواحد (KIVO.bsConfirm) أو بجرد الخادم للإدارة -->
+<sc-if value="{{ogDelOn}}" hint-placeholder-val="{{ false }}">
+<div class="bs-dlg bs-dlg--modal" onClick="{{ogDlgOut}}">
+  <div dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ogDelT" class="bs-dlg-box og-dlg" data-og-dlg="delete" onClick="{{ogKeep}}">
+    <b class="t" id="ogDelT">{{ogDelTitle}}</b>
+    <p class="m">تُحذف العقدة الفارغة وحدها: انقل ما تحتها واحذف حساب مديرها أولاً. لا تُمسّ بيانات أي إدارة.</p>
+    <div class="og-err" role="alert" data-og="del-why">{{ogDelWhy}}</div>
+    <div class="ft"><button type="button" class="bs-btn bs-btn--primary" onClick="{{ogDlgClose}}">إغلاق</button></div>
+  </div>
+</div>
+</sc-if>
+
+</sc-if>
+</div>

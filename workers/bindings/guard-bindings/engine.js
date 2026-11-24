@@ -476,7 +476,7 @@ var KIVO_GUARDS = (function (B, R) {
       var ks = union(a, b); for (i = 0; i < ks.length; i++) if (ks[i] !== 'reports' && !deq(a[ks[i]], b[ks[i]])) R.res(ks[i], 'unknown-root-key');
     };
   }
-  C['bassam_irshad_v1'] = recBulk('ir.rec'); C['bassam_seized_v1'] = recBulk('sz.rec');
+  C['bassam_irshad_v1'] = recBulk('ir.rec'); C['bassam_seized_v1'] = recBulk('sz.rec'); C['bassam_rasd_v1'] = recBulk('rz.rec');
   C['bassam_last_export_v1'] = function (R) { R.op('backup.create', 'stamp'); };
   /* ═══ الواجهة ═══ */
   function classify(resName, a, b, ctx) {

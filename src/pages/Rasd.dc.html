@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-serif;-webkit-font-smoothing:antialiased;font-synthesis:none;font-feature-settings:"tnum";color:var(--text-primary)}
+a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
+/* V7 · د6: نموذجُ الرصد ثلاثةُ أعمدة على الحاسوب ثم عمودان على اللوحي ثم عمودٌ واحد على الجوال · وأزرارُ التأثير الأربعة صفّان على الضيق */
+@media (max-width:900px){.rz-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media (max-width:640px){.rz-grid{grid-template-columns:minmax(0,1fr)!important}}
+@media (max-width:420px){.rz-seg{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+.rz-kpis{gap:16px}
+.rz-table td,.rz-table th{white-space:nowrap}
+@keyframes rztk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.rz-tk{display:flex;align-items:center;gap:20px;width:max-content;animation:rztk 34s linear infinite}
+.rz-tkw:hover .rz-tk{animation-play-state:paused}
+@keyframes rzpulse{0%,100%{opacity:1}50%{opacity:.25}}
+.rz-pulse{animation:rzpulse 1.6s infinite}
+</style>
+</helmet>
+<div dir="rtl" data-screen-label="نظام رصد الحالات" style="font-family:'Cairo',sans-serif;color:var(--fg-x141414);margin:0 auto;display:flex;flex-direction:column;gap:16px">
+<!-- صلاحية «عرض فقط»: سطرٌ واحد يقول السبب — الأزرار تختفي لا تُعطَّل -->
+<sc-if value="{{irPmReadOnly}}" hint-placeholder-val="{{ false }}">
+<div style="{{irPmNoteStyle}}">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+  <span>صلاحيتك على هذه الصفحة: <b style="font-weight:800">عرض فقط</b> — أدوات الإضافة والتعديل والحذف مخفيّة. راجع مسؤول المنصة إن احتجت تعديلاً.</span>
+</div>
+</sc-if>
+
+<!-- ═══ V7 · د6: لوحةُ مؤشرات رصد الحالات (تظهر في «مؤشرات الإدارة») — بنيةُ لوحة مؤشرات المضبوطات قسماً بقسم ═══ -->
+<sc-if value="{{rzOnDash}}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:13px">
+
+<sc-if value="{{irEmptyShow}}" hint-placeholder-val="{{ false }}">
+<div style="border-radius:14px;border:1px dashed var(--bd-a185151810p45);background:var(--bg-a185151810p06);padding:14px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <span style="width:36px;height:36px;border-radius:12px;background:var(--bg-a185151810p16);color:var(--fg-x8a6f35);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg></span>
+  <span style="flex:1;min-width:200px">
+    <b style="display:block;font-size:13px;font-weight:700;color:var(--fg-x8a6f35)">لا توجد أي حالات مرصودة بعد</b>
+    <span style="font-size:11.5px;font-weight:400;color:var(--fg-x94a3b8)">ابدأ برصد الحالات من صفحة <sc-if value="{{irRecLinkOn}}" hint-placeholder-val="{{ true }}"><a href="#/rasd" style="color:var(--fg-x8a6f35);font-weight:700;text-decoration:underline;text-underline-offset:3px">«نظام رصد الحالات»</a></sc-if><sc-if value="{{irRecLinkOff}}" hint-placeholder-val="{{ false }}">«نظام رصد الحالات»</sc-if> لتظهر المؤشرات هنا.</span>
+  </span>
+</div>
+</sc-if>
+
+<svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true"><defs><linearGradient id="irGaugeG" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#E9DEC6"></stop><stop offset="0.5" stop-color="#C9AC70"></stop><stop offset="1" stop-color="#8A6F35"></stop></linearGradient><linearGradient id="irAreaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b99751" stop-opacity="0.30"></stop><stop offset="1" stop-color="#b99751" stop-opacity="0"></stop></linearGradient><linearGradient id="irHeroG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6F35" stop-opacity="0.26"></stop><stop offset="1" stop-color="#8A6F35" stop-opacity="0"></stop></linearGradient><linearGradient id="irMiniG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b99751" stop-opacity="0.20"></stop><stop offset="1" stop-color="#b99751" stop-opacity="0"></stop></linearGradient></defs></svg>
+
+<!-- ═══════════ الشريط العلوي: السنة · الشهر · مباشر · الشريط المتحرك ═══════════ -->
+<div style="background:var(--bg-xffffff);border:1px solid var(--bd-xe6e9ed);border-radius:14px;box-shadow:var(--shadow-card);padding:8px 12px;display:flex;align-items:center;gap:10px;overflow:hidden;flex-wrap:wrap">
+  <div style="{{irDashYmBoxStyle}}">
+    <span style="color:var(--fg-x8a6f35);display:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg></span>
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">السنة</span>
+    <select value="{{irDashYear}}" onChange="{{irDashSetYear}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
+      <sc-for list="{{irDashYearOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.lbl}}</option></sc-for>
+    </select>
+    <span style="width:1px;height:22px;background:var(--bg-xe6e9ed);flex-shrink:0"></span>
+    <span style="color:var(--fg-x8a6f35);display:flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg></span>
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">الشهر</span>
+    <select value="{{irDashMonth}}" onChange="{{irDashSetMonth}}" style="appearance:none;border:0;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;color:var(--fg-x25343f);padding:5px 4px;cursor:pointer;outline:none">
+      <sc-for list="{{irDashMonthOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.lbl}}</option></sc-for>
+    </select>
+  </div>
+  <div style="display:flex;background:var(--bg-xf8f9fb);border:1px solid var(--bd-xe6e9ed);border-radius:11px;padding:3px;gap:2px;flex-shrink:0">
+    <sc-for list="{{irDashModeOpts}}" as="mo" hint-placeholder-count="2"><button onClick="{{mo.click}}" style="{{mo.style}}">{{mo.lbl}}</button></sc-for>
+  </div>
+  <sc-if value="{{irDashCustomOn}}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;border:1px solid var(--bd-a185151810p4);background:var(--bg-a185151810p07);border-radius:12px;padding:4px 9px;flex-shrink:1;min-width:0;max-width:100%;box-sizing:border-box">
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x8a6f35)">من</span>
+    <input type="date" value="{{irDashFrom}}" onChange="{{irDashSetFrom}}" style="height:28px;border:1px solid var(--bd-xe6e9ed);border-radius:9px;padding:0 7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;color:var(--fg-x25343f);background:var(--bg-xffffff)">
+    <span style="font-size:10.5px;font-weight:600;color:var(--fg-x8a6f35)">إلى</span>
+    <input type="date" value="{{irDashTo}}" onChange="{{irDashSetTo}}" style="height:28px;border:1px solid var(--bd-xe6e9ed);border-radius:9px;padding:0 7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;color:var(--fg-x25343f);background:var(--bg-xffffff)">
+    <span style="font-size:9.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:normal;min-width:0">{{irDashRangeHint}}</span>
+  </div>
+  </sc-if>
+  <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);border-radius:9999px;padding:4px 10px;font-size:10.5px;font-weight:700;color:var(--fg-x53565a);flex-shrink:0">
+    <span class="rz-pulse" style="width:7px;height:7px;border-radius:9999px;background:var(--bg-xd03b3b);display:inline-block"></span>LIVE
+  </span>
+  <span style="font-size:11.5px;font-weight:700;color:var(--fg-x8a6f35);white-space:nowrap;flex-shrink:0">{{irDashPerLbl}}</span>
+  <div class="rz-tkw" style="flex:1 1 240px;min-width:240px;overflow:hidden">
+    <div class="rz-tk">
+      <sc-for list="{{irDashTicker}}" as="t" hint-placeholder-count="8">
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">
+        <i style="{{t.dot}}"></i>{{t.n}} <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{t.v}}</b><em style="font-style:normal;color:var(--fg-x94a3b8);font-weight:600;font-size:10px">{{t.p}}</em>
+      </span>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--fg-x94a3b8);font-weight:400">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg>
+  {{irDashPeriodTxt}}
+</div>
+
+<!-- ═══════════ البطاقة القيادية ═══════════ -->
+<div style="position:relative;border-radius:22px;padding:18px;display:flex;gap:18px;align-items:stretch;overflow:hidden;background:var(--brand-pattern) center/96px 96px,linear-gradient(125deg,var(--hero-1) 0%,var(--hero-2) 38%,var(--hero-3) 72%,var(--hero-4) 100%);border:1px solid var(--bd-a185151810p3);box-shadow:0 10px 30px -20px color-mix(in srgb,var(--bg-x8a6f35) 55%,transparent);flex-wrap:wrap">
+  <div style="flex:1.42;min-width:290px;display:flex;flex-direction:column;position:relative;z-index:1;padding:4px 6px 0">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+      <span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:4px 10px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a138111530p4);color:var(--fg-x8a6f35);background:var(--bg-a2552552550p5)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>المؤشر القيادي</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;border-radius:9999px;padding:4px 10px;font-size:10.5px;font-weight:700;border:1px solid var(--bd-a09900p28);color:var(--fg-x006300);background:var(--bg-a12163120p09)"><span style="width:6px;height:6px;border-radius:9999px;background:var(--bg-x006300);display:inline-block"></span>محسوب من السجلات</span>
+    </div>
+    <div style="font-size:12.5px;font-weight:600;color:var(--fg-x8a6f35);opacity:.9">{{irDashHeroLbl}}</div>
+    <div style="font-size:52px;font-weight:800;color:var(--fg-x8a6f35);line-height:1.02;letter-spacing:-1px;margin:6px 0 4px;text-shadow:0 2px 0 var(--bg-a2552552550p5)">{{irDashHeroNum}}</div>
+    <div style="font-size:12.5px;font-weight:600;color:var(--fg-x6f5a2e);opacity:.85">{{irDashMetsLine}}</div>
+    <sc-if value="{{irDashSparkHas}}" hint-placeholder-val="{{ true }}">
+    <div style="margin-top:auto;padding-top:10px;height:62px">
+      <svg width="100%" height="62" viewBox="0 0 1000 100" preserveAspectRatio="none" style="display:block"><path d="{{irDashHeroArea}}" fill="url(#irHeroG)"></path><path d="{{irDashHeroLine}}" fill="none" stroke="var(--fg-x8a6f35)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path></svg>
+    </div>
+    </sc-if>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px">
+      <sc-if value="{{irDashCmpChipOn}}" hint-placeholder-val="{{ true }}">
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">مقابل السابق<span style="{{irDashCmpChipStyle}}">{{irDashCmpChipTxt}}</span><em style="font-style:normal;color:var(--fg-x94a3b8);font-size:9.5px;font-weight:600" dir="ltr">{{irDashCmpChipPrev}}</em></span>
+      </sc-if>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x006300)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"></path><path d="M17 7h4v4"></path></svg>أعلى <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{irDashHiVal}}</b><em style="font-style:normal;color:var(--fg-x94a3b8);font-size:9.5px;font-weight:600">{{irDashHiSub}}</em></span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xd03b3b)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7 6 6 4-4 8 8"></path><path d="M17 17h4v-4"></path></svg>أدنى <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{irDashLoVal}}</b><em style="font-style:normal;color:var(--fg-x94a3b8);font-size:9.5px;font-weight:600" dir="ltr">{{irDashLoSub}}</em></span>
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x8a6f35)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"></path></svg>متوسط <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{irDashAvgVal}}</b><em style="font-style:normal;color:var(--fg-x94a3b8);font-size:9.5px;font-weight:600">{{irDashAvgSub}}</em></span>
+      <sc-if value="{{irDashGapOn}}" hint-placeholder-val="{{ false }}">
+      <span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-a2552552550p72);border:1px solid var(--bd-a138111530p22);border-radius:11px;padding:5px 9px;font-size:10px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">بلا نشاط <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{irDashGapVal}}</b></span>
+      </sc-if>
+    </div>
+  </div>
+  <div style="flex:1;min-width:280px;display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;z-index:1">
+    <sc-for list="{{irDashMets}}" as="m" hint-placeholder-count="4">
+    <div style="background:var(--bg-a2552552550p82);border:1px solid var(--bd-a138111530p16);border-radius:15px;padding:11px 12px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--bd-a138111530p13)">
+        <span style="font-size:12px;font-weight:700;color:var(--fg-x25343f)">{{m.name}}</span>
+        <span title="{{m.desc}}" style="width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p16);color:var(--fg-x8a6f35);flex-shrink:0">
+          <sc-if value="{{m.i1}}" hint-placeholder-val="{{ true }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg></sc-if>
+          <sc-if value="{{m.i2}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg></sc-if>
+          <sc-if value="{{m.i3}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><path d="M5 7h14"></path><path d="m5 7-3 7h6z"></path><path d="m19 7-3 7h6z"></path></svg></sc-if>
+          <sc-if value="{{m.i4}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path></svg></sc-if>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="font-size:22px;font-weight:800;color:var(--fg-x8a6f35);line-height:1;letter-spacing:-.5px;overflow:hidden;text-overflow:ellipsis">{{m.num}}</div>
+        <div style="{{m.ring}}">
+          <div style="position:absolute;inset:6px;background:var(--bg-xfcfaf6);border-radius:9999px"></div>
+          <div style="position:relative;text-align:center;line-height:1.15">
+            <b style="display:block;font-size:10.5px;font-weight:700;color:var(--fg-x8a6f35)">{{m.pct}}</b>
+            <span style="font-size:7.5px;font-weight:600;color:var(--fg-x94a3b8)">حصة</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+</div>
+
+<!-- ═══════════ عدادات الأداء ═══════════ -->
+<div class="bs-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:13px">
+  <sc-for list="{{irDashGauges}}" as="g" hint-placeholder-count="4">
+  <div style="position:relative;background:var(--bg-xffffff);border:1px solid var(--bd-xe6e9ed);border-radius:16px;box-shadow:var(--shadow-card);padding:12px 13px 11px;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--bd-xeff1f4)">
+      <span style="font-size:12px;font-weight:700;color:var(--fg-x25343f);display:inline-flex;align-items:center;gap:7px"><span title="مصدر البيانات: الحالات المرصودة" style="width:7px;height:7px;border-radius:9999px;background:var(--bg-x0ca30c);box-shadow:0 0 0 3px color-mix(in srgb,var(--bg-x0ca30c) 14%,transparent);flex-shrink:0"></span>{{g.name}}</span>
+      <span style="width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p16);color:var(--fg-x8a6f35);flex-shrink:0">
+        <sc-if value="{{g.i1}}" hint-placeholder-val="{{ true }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg></sc-if>
+        <sc-if value="{{g.i2}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg></sc-if>
+        <sc-if value="{{g.i3}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><path d="M5 7h14"></path><path d="m5 7-3 7h6z"></path><path d="m19 7-3 7h6z"></path></svg></sc-if>
+        <sc-if value="{{g.i4}}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path></svg></sc-if>
+      </span>
+    </div>
+    <div style="font-size:22px;font-weight:800;color:var(--fg-x8a6f35);line-height:1;margin-top:10px;letter-spacing:-.5px">{{g.num}}</div>
+    <div style="font-size:10.5px;font-weight:400;color:var(--fg-x94a3b8);margin-top:5px;min-height:28px">{{g.desc}}</div>
+    <div style="position:relative;margin-top:4px">
+      <svg width="100%" height="34" viewBox="0 0 200 40" preserveAspectRatio="none" style="position:absolute;left:0;right:0;bottom:0;opacity:.45;display:block"><path d="{{g.spark}}" fill="url(#irMiniG)"></path></svg>
+      <svg width="100%" height="104" viewBox="0 0 200 104" style="display:block;position:relative"><path d="M 172 87 A 72 72 0 0 0 28 87" fill="none" stroke="url(#irGaugeG)" stroke-width="13"></path><line x1="165.5" y1="87" x2="178.5" y2="87" stroke="var(--fg-xffffff)" stroke-width="2" opacity="0.75"></line><line x1="100" y1="21.5" x2="100" y2="8.5" stroke="var(--fg-xffffff)" stroke-width="2" opacity="0.75"></line><line x1="34.5" y1="87" x2="21.5" y2="87" stroke="var(--fg-xffffff)" stroke-width="2" opacity="0.75"></line><line x1="100" y1="87" x2="{{g.nx}}" y2="{{g.ny}}" stroke="var(--fg-x1f2a33)" stroke-width="2.6" stroke-linecap="round"></line><circle cx="100" cy="87" r="7.5" fill="var(--fg-x1f2a33)"></circle><circle cx="100" cy="87" r="3" fill="var(--fg-xc9ac70)"></circle></svg>
+    </div>
+    <div style="display:flex;align-items:stretch;justify-content:space-between;gap:3px;margin-top:5px">
+      <div title="{{g.minTip}}" style="text-align:center;flex:1;min-width:0">
+        <div style="font-size:9px;font-weight:600;color:var(--fg-x94a3b8)">أدنى</div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--fg-x53565a);line-height:1.25" dir="ltr">{{g.min}}</div>
+        <div style="font-size:8.5px;font-weight:400;color:var(--fg-xb0b6bd);white-space:nowrap" dir="ltr">{{g.minDate}}</div>
+      </div>
+      <span style="width:1px;background:var(--bg-xeff1f4);flex-shrink:0"></span>
+      <div style="text-align:center;flex:1;min-width:0">
+        <div style="font-size:9px;font-weight:600;color:var(--fg-x8a6f35)">متوسط</div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--fg-x8a6f35);line-height:1.25" dir="ltr">{{g.avg}}</div>
+        <div style="font-size:8.5px;font-weight:400;color:var(--fg-xb0b6bd);white-space:nowrap">{{g.avgSub}}</div>
+      </div>
+      <span style="width:1px;background:var(--bg-xeff1f4);flex-shrink:0"></span>
+      <div title="{{g.maxTip}}" style="text-align:center;flex:1;min-width:0">
+        <div style="font-size:9px;font-weight:600;color:var(--fg-x94a3b8)">أعلى</div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--fg-x53565a);line-height:1.25" dir="ltr">{{g.max}}</div>
+        <div style="font-size:8.5px;font-weight:400;color:var(--fg-xb0b6bd);white-space:nowrap" dir="ltr">{{g.maxDate}}</div>
+      </div>
+    </div>
+    <div style="margin-top:9px;padding-top:8px;border-top:1px solid var(--bd-xeff1f4);display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:9.5px;font-weight:600;color:var(--fg-x94a3b8)">
+      <span>{{g.share}} من الإجمالي</span><span title="{{g.dTip}}" style="{{g.dStyle}}">{{g.dTxt}}</span>
+    </div>
+  </div>
+  </sc-for>
+</div>
+
+<!-- ═══════════ اتجاه الحالات عبر الزمن ═══════════ -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+    <div>
+      <h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">اتجاه الحالات عبر الزمن</h3>
+      <p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">{{irDashTrendDesc}}</p>
+    </div>
+    <div class="bs-subseg" style="display:flex;background:var(--bg-xf8f9fb);border:1px solid var(--bd-xe6e9ed);border-radius:9px;padding:2px;gap:1px">
+      <sc-for list="{{irDashBrkOpts}}" as="b" hint-placeholder-count="3"><button onClick="{{b.click}}" class="bs-subbtn" data-on="{{b.on}}" style="{{b.style}}">{{b.lbl}}</button></sc-for>
+    </div>
+  </div>
+  <sc-if value="{{irDashHasData}}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;gap:6px">
+    <div style="width:46px;position:relative;height:210px;flex-shrink:0">
+      <sc-for list="{{irDashTrendGrid}}" as="g" hint-placeholder-count="5"><div style="{{g.labStyle}}" dir="ltr">{{g.lab}}</div></sc-for>
+    </div>
+    <div style="flex:1;min-width:0;position:relative;height:210px">
+      <sc-for list="{{irDashTrendGrid}}" as="g" hint-placeholder-count="5"><div style="{{g.lineStyle}}"></div></sc-for>
+      <svg width="100%" height="100%" viewBox="0 0 1000 100" preserveAspectRatio="none" style="position:absolute;inset:0;display:block"><sc-if value="{{irDashPlain}}" hint-placeholder-val="{{ true }}"><path d="{{irDashArea}}" fill="url(#irAreaG)"></path><sc-if value="{{irDashGhostOn}}" hint-placeholder-val="{{ false }}"><path d="{{irDashGhost}}" fill="none" stroke="var(--fg-xb6bec7)" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round" vector-effect="non-scaling-stroke"></path></sc-if><path d="{{irDashLine}}" fill="none" stroke="var(--fg-xb99751)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path></sc-if><sc-if value="{{irDashStacked}}" hint-placeholder-val="{{ false }}"><sc-for list="{{irDashStackPaths}}" as="sp" hint-placeholder-count="3"><path d="{{sp.d}}" fill="{{sp.fill}}" fill-opacity="0.82" stroke="var(--fg-xffffff)" stroke-width="1.2" vector-effect="non-scaling-stroke"></path></sc-for></sc-if></svg>
+      <div style="position:absolute;inset:0;display:flex">
+        <sc-for list="{{irDashHits}}" as="h" hint-placeholder-count="10"><div title="{{h.tip}}" style="flex:1;height:100%;cursor:crosshair"></div></sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:5px">
+    <div style="width:46px;flex-shrink:0"></div>
+    <div style="flex:1;min-width:0;display:flex">
+      <sc-for list="{{irDashXLabels}}" as="x" hint-placeholder-count="10"><div style="flex:1;text-align:center;font-size:9px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap;overflow:hidden"><sc-if value="{{x.show}}" hint-placeholder-val="{{ true }}">{{x.lab}}</sc-if></div></sc-for>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11px;font-weight:600;color:var(--fg-x53565a);margin-top:10px">
+    <sc-for list="{{irDashLegend}}" as="l" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px"><i style="{{l.dot}}"></i>{{l.name}}</span></sc-for>
+    <sc-if value="{{irDashGhostOn}}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:14px;height:0;border-top:2px dashed var(--bd-xb6bec7);display:inline-block"></i>{{irDashGhostLbl}}</span></sc-if>
+  </div>
+  </sc-if>
+  <sc-if value="{{irDashNoData}}" hint-placeholder-val="{{ false }}"><div style="padding:40px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد حالات مرصودة ضمن هذه الفترة والفلاتر</div></sc-if>
+</div>
+
+<!-- ═══════════ خريطة النشاط اليومي ═══════════ -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+    <div>
+      <h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">خريطة النشاط اليومي <span style="font-size:11px;font-weight:600;color:var(--fg-x94a3b8)">— {{irDashHeatYear}}</span></h3>
+      <p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">{{irDashHeatDesc}}</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:var(--fg-x94a3b8)">
+      <span>أقل</span><sc-for list="{{irDashHeatScale}}" as="h" hint-placeholder-count="6"><i style="{{h.style}}"></i></sc-for><span>أكثر</span>
+    </div>
+  </div>
+  <sc-if value="{{irDashHeatOn}}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;align-items:flex-start;gap:8px;overflow-x:auto;padding-bottom:4px">
+    <div style="display:flex;flex-direction:column;gap:3px;margin-top:19px;flex-shrink:0">
+      <span style="height:15px;line-height:15px;font-size:9px;color:var(--fg-x94a3b8);font-weight:600;white-space:nowrap">السبت</span>
+      <span style="height:15px"></span>
+      <span style="height:15px;line-height:15px;font-size:9px;color:var(--fg-x94a3b8);font-weight:600;white-space:nowrap">الاثنين</span>
+      <span style="height:15px"></span>
+      <span style="height:15px;line-height:15px;font-size:9px;color:var(--fg-x94a3b8);font-weight:600;white-space:nowrap">الأربعاء</span>
+      <span style="height:15px"></span>
+      <span style="height:15px;line-height:15px;font-size:9px;color:var(--fg-x94a3b8);font-weight:600;white-space:nowrap">الجمعة</span>
+    </div>
+    <div style="min-width:max-content">
+      <div style="display:flex;gap:3px;height:14px;margin-bottom:5px">
+        <sc-for list="{{irDashHeatMonths}}" as="mo" hint-placeholder-count="20"><div style="width:15px;position:relative;flex-shrink:0"><sc-if value="{{mo.show}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:0;top:0;font-size:9.5px;font-weight:600;color:var(--fg-x94a3b8);white-space:nowrap">{{mo.lab}}</span></sc-if></div></sc-for>
+      </div>
+      <div style="display:flex;gap:3px">
+        <sc-for list="{{irDashHeatCols}}" as="col" hint-placeholder-count="20">
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+          <sc-for list="{{col.cells}}" as="c" hint-placeholder-count="7"><div title="{{c.tip}}" style="{{c.style}}"></div></sc-for>
+        </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{irDashHeatOff}}" hint-placeholder-val="{{ false }}"><div style="padding:34px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد بيانات لهذه السنة</div></sc-if>
+</div>
+
+<!-- ═══════════ اللغات + المواقع ═══════════ -->
+<div class="bs-grid bs-stackcards" style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+  <div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+    <div style="margin-bottom:10px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">الحالات حسب النوع</h3><p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">إجمالي <span dir="ltr">{{irDashLangTot}}</span> {{irDashLangTotW}}</p></div>
+    <sc-if value="{{irDashLangOn}}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{irDashLangRows}}" as="r" hint-placeholder-count="6">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:7px 8px;border-radius:10px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="font-size:12px;font-weight:600;color:var(--fg-x25343f);display:flex;align-items:center;gap:7px;min-width:0"><i style="{{r.dot}}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.name}}</span></span>
+        <span style="display:flex;align-items:baseline;gap:8px;white-space:nowrap"><em style="font-style:normal;font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8)" dir="ltr">{{r.pct}}</em><b style="font-size:13px;font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{r.val}}</b></span>
+        <div style="grid-column:1/-1;height:7px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden"><div style="{{r.bar}}"></div></div>
+      </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{irDashLangOff}}" hint-placeholder-val="{{ false }}"><div style="padding:30px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد بيانات ضمن هذه الفترة والفلاتر</div></sc-if>
+  </div>
+  <div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+    <div style="margin-bottom:10px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">الحالات حسب المنطقة</h3><p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">إجمالي <span dir="ltr">{{irDashLocTot}}</span> {{irDashLocTotW}}</p></div>
+    <sc-if value="{{irDashLocOn}}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{irDashLocRows}}" as="r" hint-placeholder-count="6">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:7px 8px;border-radius:10px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="font-size:12px;font-weight:600;color:var(--fg-x25343f);display:flex;align-items:center;gap:7px;min-width:0"><i style="{{r.dot}}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.name}}</span></span>
+        <span style="display:flex;align-items:center;gap:8px;white-space:nowrap"><span style="{{r.dStyle}}">{{r.dTxt}}</span><em style="font-style:normal;font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8)" dir="ltr">{{r.pct}}</em><b style="font-size:13px;font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{r.val}}</b></span>
+        <div style="grid-column:1/-1;height:7px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden"><div style="{{r.bar}}"></div></div>
+      </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{irDashLocOff}}" hint-placeholder-val="{{ false }}"><div style="padding:30px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد بيانات ضمن هذه الفترة والفلاتر</div></sc-if>
+  </div>
+</div>
+
+<!-- ═══════════ الورديات + الموظفون ═══════════ -->
+<div class="bs-grid bs-stackcards" style="display:grid;grid-template-columns:1fr 1.15fr;gap:13px">
+  <div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+    <div style="margin-bottom:12px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">توزيع مستوى التأثير</h3><p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">حصة كل مستوى تأثير من حالات الفترة</p></div>
+    <div style="display:flex;height:16px;border-radius:8px;overflow:hidden;gap:2px">
+      <sc-for list="{{irDashShareSegs}}" as="sg" hint-placeholder-count="4"><div style="{{sg.style}}"></div></sc-for>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;font-weight:600;color:var(--fg-x53565a);margin-top:12px">
+      <sc-for list="{{irDashShiftLegend}}" as="l" hint-placeholder-count="4"><span style="display:inline-flex;align-items:center;gap:6px"><i style="{{l.dot}}"></i>{{l.name}} <b style="font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{l.pct}}</b></span></sc-for>
+    </div>
+    <div style="margin-top:12px;border-top:1px solid var(--bd-xeff1f4);padding-top:6px">
+      <sc-for list="{{irDashShiftRows}}" as="r" hint-placeholder-count="4">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 8px;border-radius:10px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="font-size:12px;font-weight:600;color:var(--fg-x25343f);display:flex;align-items:center;gap:7px;min-width:0"><i style="{{r.dot}}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.name}}</span></span>
+        <span style="display:flex;align-items:baseline;gap:8px;white-space:nowrap"><em style="font-style:normal;font-size:10.5px;font-weight:600;color:var(--fg-x94a3b8)">{{r.sub}}</em><b style="font-size:13px;font-weight:700;color:var(--fg-x25343f)" dir="ltr">{{r.val}}</b></span>
+      </div>
+      </sc-for>
+    </div>
+    <div style="border-top:1px solid var(--bd-xeff1f4);margin-top:10px;padding-top:11px">
+      <div style="font-size:12.5px;font-weight:700;color:var(--fg-x25343f);margin-bottom:8px">مقارنة بـ {{irDashPrevLbl}}</div>
+      <sc-if value="{{irDashCmpOn}}" hint-placeholder-val="{{ true }}">
+      <sc-for list="{{irDashCmpRows}}" as="c" hint-placeholder-count="4">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:9px;font-size:12px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="font-weight:600;color:var(--fg-x53565a)">{{c.label}}</span>
+        <span style="display:flex;align-items:center;gap:9px"><span style="font-size:10.5px;color:var(--fg-x94a3b8);font-weight:600" dir="ltr">{{c.nums}}</span><span style="{{c.style}}">{{c.txt}}</span></span>
+      </div>
+      </sc-for>
+      </sc-if>
+      <sc-if value="{{irDashCmpOff}}" hint-placeholder-val="{{ false }}"><div style="padding:11px;border-radius:10px;background:var(--bg-xf8f9fb);font-size:11.5px;font-weight:400;color:var(--fg-x94a3b8);text-align:center">لا توجد فترة سابقة مسجّلة للمقارنة</div></sc-if>
+    </div>
+  </div>
+  <div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px 16px 16px">
+    <div style="margin-bottom:10px"><h3 style="font-size:14px;font-weight:700;margin:0;color:var(--fg-x25343f)">أكثر الراصدين نشاطاً</h3><p style="margin:2px 0 0;font-size:11px;color:var(--fg-x94a3b8);font-weight:400">الراصدون مرتّبون حسب عدد الحالات المرصودة، مع التغيّر مقابل الفترة السابقة</p></div>
+    <sc-if value="{{irDashEmpOn}}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:3px">
+      <sc-for list="{{irDashTopEmployees}}" as="e" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:11px" style-hover="background:var(--bg-xf8f9fb)">
+        <span style="{{e.numStyle}}">{{e.rank}}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12.5px;font-weight:600;color:var(--fg-x25343f);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{e.name}}</div>
+          <div style="font-size:10.5px;color:var(--fg-x94a3b8);font-weight:400;margin-top:1px">{{e.sub}}</div>
+        </div>
+        <div style="width:84px;height:6px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden;flex-shrink:0"><div style="{{e.bar}}"></div></div>
+        <span style="{{e.dStyle}}">{{e.dTxt}}</span>
+        <span style="width:56px;text-align:left;font-size:13.5px;font-weight:700;color:var(--fg-x8a6f35);flex-shrink:0" dir="ltr">{{e.ben}}</span>
+      </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{irDashEmpOff}}" hint-placeholder-val="{{ false }}"><div style="padding:30px;text-align:center;font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">لا توجد حالات ضمن هذه الفترة والفلاتر</div></sc-if>
+  </div>
+</div>
+
+<!-- ═══════════ الملخص التفصيلي — بالتصميم المعتمد: قائمة منسدلة + شريط بحث + جدول + فوتر ترقيم ═══════════ -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe6e9ed);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+  <div onClick="{{irDashSumToggle}}" style="display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer" style-hover="background:var(--bg-a2482502520p7)">
+    <span style="width:34px;height:34px;border-radius:12px;background:var(--bg-a185151810p12);color:var(--fg-xb99751);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-card)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M8 17V9"></path><path d="M13 17V5"></path><path d="M18 17v-5"></path></svg></span>
+    <span style="flex:1;min-width:0">
+      <span style="font-size:13.5px;font-weight:600;color:var(--fg-x141414)">الملخص التفصيلي حسب المنطقة</span>
+      <span style="display:inline-flex;align-items:center;margin-right:8px;border-radius:9999px;padding:3px 11px;font-size:10.5px;font-weight:600;font-family:'Cairo',sans-serif;background:var(--bg-a185151810p12);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p3)">{{irDashSumBadge}}</span>
+    </span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb0b6bd)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{irDashSumChev}}"><path d="m6 9 6 6 6-6"></path></svg>
+  </div>
+  <sc-if value="{{irDashSumOpen}}" hint-placeholder-val="{{ false }}">
+  <div style="border-top:2px solid var(--bd-a185151810p25)">
+
+    <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd-xe1e1e1);background:var(--bg-a2482502520p5)">
+      <div style="position:relative;flex:1;min-width:180px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input value="{{irDashSumQ}}" onChange="{{irDashSumSetQ}}" placeholder="بحث باسم المنطقة..." style="width:100%;height:34px;padding:0 34px 0 10px;font-size:12px;background:var(--bg-xffffff);border:1px solid var(--bd-xe2e8f0);border-radius:10px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px var(--bd-a185151810p2)">
+      </div>
+      <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum';flex-shrink:0;padding-left:4px">
+        <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{irDashSumShown}}</span>
+        <span style="color:var(--text-muted)"> / {{irDashSumAll}}</span>
+      </div>
+    </div>
+
+    <sc-if value="{{irDashSumHas}}" hint-placeholder-val="{{ true }}">
+    <div class="bs-hscroll bs-sthead" style="overflow-x:auto">
+      <table class="bs-rtable" style="width:100%;border-collapse:collapse;min-width:980px">
+        <thead>
+          <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المنطقة</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المواقع</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الراصدون</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الحالات</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">متوسط/يوم</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a37992350p1);color:var(--fg-x2a78d6)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">{{irDashMet1}}</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a271751220p12);color:var(--fg-x0f7a4a)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M9 13h6"></path><path d="M9 17h3"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">{{irDashMet2}}</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a235104520p12);color:var(--fg-xc2410c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">{{irDashMet34}}</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الحصة</span></div></th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{irDashSumRows}}" as="row" hint-placeholder-count="4">
+          <tr style="border-bottom:1px solid var(--bd-xf1f1f1)" style-hover="background:var(--bg-a2482502520p7)">
+            <td style="padding:11px 8px;text-align:center;font-weight:600;color:var(--fg-x141414);font-size:12px;white-space:nowrap"><span style="{{row.dot}}"></span>{{row.name}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.reports}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.emps}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12.5px">{{row.ben}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.avg}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.trans}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.bro}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:400;color:var(--fg-x141414);font-size:12px">{{row.ref}}</td>
+            <td style="padding:11px 8px;text-align:center">
+              <span style="display:inline-flex;align-items:center;gap:6px;justify-content:center">
+                <span style="width:66px;height:7px;border-radius:9999px;background:var(--bg-xeff1f4);overflow:hidden;display:inline-block"><span style="{{row.shareBar}}"></span></span>
+                <b dir="ltr" style="font-size:11.5px;font-weight:600;color:var(--fg-x53565a);min-width:38px;text-align:left">{{row.share}}</b>
+              </span>
+            </td>
+          </tr>
+          </sc-for>
+          <tr style="border-top:2px solid var(--bd-a185151810p3);background:var(--bg-a185151810p05)">
+            <td style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px;white-space:nowrap">{{irDashSumTotal.label}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.reports}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.emps}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12.5px">{{irDashSumTotal.ben}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.avg}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.trans}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.bro}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.ref}}</td>
+            <td dir="ltr" style="padding:11px 8px;text-align:center;font-weight:700;color:var(--fg-x8a6f35);font-size:12px">{{irDashSumTotal.share}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-surface);font-size:12px">
+      <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{irDashSumPgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{irDashSumPgTotal}}</span> {{irDashSumPgTotalW}}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
+        <select value="{{irDashSumPerPage}}" onChange="{{irDashSumOnPerPage}}" style="height:28px;width:78px;font-size:10px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;outline:none;cursor:pointer"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="0">الكل</option></select>
+        <div style="display:flex;align-items:center;border:1px solid var(--bd-xe1e1e1);border-radius:8px;overflow:hidden">
+          <button onClick="{{irDashSumPgFirst}}" title="الصفحة الأولى" style="{{irDashSumPgFirstStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 17 5-5-5-5"></path><path d="m6 17 5-5-5-5"></path></svg></button>
+          <button onClick="{{irDashSumPgPrev}}" title="السابق" style="{{irDashSumPgPrevStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+          <sc-for list="{{irDashSumPgNums}}" as="n" hint-placeholder-count="3">
+            <sc-if value="{{n.dots}}"><span style="height:28px;width:20px;display:flex;align-items:center;justify-content:center;color:var(--fg-x94a3b8);font-size:10px;border-right:1px solid var(--bd-xe1e1e1)">…</span></sc-if>
+            <sc-if value="{{n.cur}}"><button style="{{n.style}}">{{n.label}}</button></sc-if>
+            <sc-if value="{{n.plain}}"><button onClick="{{n.click}}" style="{{n.style}}" style-hover="background:var(--bg-xf5f5f5)">{{n.label}}</button></sc-if>
+          </sc-for>
+          <button onClick="{{irDashSumPgNext}}" title="التالي" style="{{irDashSumPgNextStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+          <button onClick="{{irDashSumPgLast}}" title="الصفحة الأخيرة" style="{{irDashSumPgLastStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17-5-5 5-5"></path><path d="m18 17-5-5 5-5"></path></svg></button>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{irDashSumEmpty}}" hint-placeholder-val="{{ false }}">
+    <div style="padding:28px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">{{irDashSumEmptyMsg}}</span></div>
+    </sc-if>
+  </div>
+  </sc-if>
+</div>
+
+<div style="text-align:center;font-size:11px;color:var(--fg-x94a3b8);padding-top:2px">جميع المؤشرات محسوبة مباشرة من الحالات المرصودة — وتتحدّث تلقائياً عند إضافة أي حالة أو تعديلها.</div>
+</div>
+</sc-if>
+
+
+<!-- ═══ صفحة السجلات ═══ -->
+<sc-if value="{{rzOnRecords}}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:16px">
+
+<!-- ═══ شريط التقويم المعتمد — كالاسترشاد والمضبوطات (سنة · شهر) ═══ -->
+<div style="border-radius:16px;border:1px solid var(--bd-a185151810p2);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+  <div class="bs-hbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--bd-a185151810p1);background:linear-gradient(to left,var(--bg-a185151810p05),transparent,var(--bg-a185151810p05));flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:4px">
+      <button onClick="{{rzPrevYear}}" title="السنة السابقة" style="width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--bg-xf5f5f5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:110px">
+        <span style="font-weight:400;font-size:14px;color:var(--fg-xb99751);line-height:1.3">{{rzYearLabel}}</span>
+        <span style="font-size:10px;color:var(--fg-x53565a);line-height:1.3;font-family:'Cairo',sans-serif;font-feature-settings:'tnum'">{{rzGregRange}}</span>
+      </div>
+      <button onClick="{{rzNextYear}}" title="السنة التالية" style="width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--fg-x53565a);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--bg-xf5f5f5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+      <button onClick="{{rzGoCurrent}}" style="height:28px;padding:0 8px;font-size:11px;color:var(--fg-x53565a);background:transparent;border:0;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif" style-hover="color:var(--fg-xb99751)">الحالية</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="{{rzBadgeStyle}}">{{rzBadgeLabel}}</span>
+    </div>
+  </div>
+  <div class="bs-hscroll" style="overflow-x:auto">
+    <div style="display:flex;gap:12px;padding:16px 12px;min-width:100%;box-sizing:border-box">
+      <sc-for list="{{rzMonths}}" as="m" hint-placeholder-count="12">
+      <div style="position:relative;flex:1 1 auto;min-width:100px">
+        <div onClick="{{m.click}}" onDoubleClick="{{m.dbl}}" title="{{m.tip}}" style="{{m.style}}" style-hover="box-shadow:var(--shadow-soft)">
+          <sc-if value="{{m.isCurrent}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-x3b82f6)"></span></sc-if>
+          <p style="font-size:11px;font-weight:400;line-height:1.3;margin:0;color:{{m.nameColor}}">{{m.name}}</p>
+          <p style="font-size:9px;color:var(--fg-x53565a);margin:2px 0 0;line-height:1.3">{{m.greg}}</p>
+          <div style="margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px;font-size:8px;font-weight:400;color:{{m.cntColor}}">
+            <sc-if value="{{m.cntShield}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path></svg></sc-if>
+            <sc-if value="{{m.cntIcon}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{m.footP1}}"></path><path d="{{m.footP2}}"></path></svg></sc-if>
+            <span>{{m.cntLabel}}</span>
+          </div>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ شريط أيام الشهر — نفس تصميم شريط أيام الاسترشاد ═══ -->
+<div style="display:flex;flex-direction:column;gap:6px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 10px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:10px;color:var(--fg-x53565a);white-space:nowrap">اليوم المحدد:</span>
+      <span style="font-size:10px;font-weight:400;color:var(--fg-xb99751);white-space:nowrap">{{rzSelDateLabel}}</span>
+    </div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px">
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xb99751)"></span><span style="font-size:8px;color:var(--fg-x53565a);white-space:nowrap">فيه حالات</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-xffffff);border:1px solid var(--bd-xe1e1e1);box-sizing:border-box"></span><span style="font-size:8px;color:var(--fg-x53565a);white-space:nowrap">فارغ</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--bg-x64748b)"></span><span style="font-size:8px;color:var(--fg-x53565a);white-space:nowrap">{{rzLegendLockTxt}}</span></div>
+    </div>
+  </div>
+  <div class="bs-daystrip" style="display:flex;align-items:center;gap:3px;flex-wrap:nowrap;padding:4px 0 6px">
+    <sc-for list="{{rzDays}}" as="d" hint-placeholder-count="30">
+    <div onClick="{{d.click}}" onDoubleClick="{{d.dbl}}" title="{{d.tip}}" style="{{d.style}}" style-hover="transform:scale(1.05)">
+      <span style="line-height:1;display:block">{{d.num}}</span>
+      <span style="{{d.sepStyle}}"></span>
+      <span style="line-height:1;display:block;font-weight:400">{{d.gnum}}</span>
+      <sc-if value="{{d.isToday}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-2px;left:2px;width:6px;height:6px;border-radius:9999px;background:var(--bg-xb99751);box-shadow:0 0 0 1px var(--bg-card)"></span></sc-if>
+      <sc-if value="{{d.lockClosed}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-xcbd5e1);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x475569)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span></sc-if>
+      <sc-if value="{{d.lockOpen}}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;left:-3px;width:12px;height:12px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p6);box-shadow:var(--shadow-card)"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg></span></sc-if>
+    </div>
+    </sc-for>
+  </div>
+</div>
+
+
+<!-- ═══ V7 · د6: مؤشرات الشهر — أربعةُ كروتٍ حلقية في صفٍّ أفقيٍّ يُسحب (بنيةُ كرت مؤشرات موظفي الإدارة) ═══ -->
+<div class="bs-hscroll" style="overflow-x:auto">
+  <div class="rz-kpis" style="display:flex;padding:2px 2px 6px;min-width:100%;box-sizing:border-box">
+    <sc-for list="{{rzKpiCards}}" as="k" hint-placeholder-count="4">
+    <div style="flex:1 0 260px;min-width:260px;border-radius:16px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px;display:flex;align-items:center;gap:14px">
+      <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:110px">
+        <div style="position:relative;width:96px;height:96px">
+          <svg width="96" height="96" viewBox="0 0 96 96" style="transform:rotate(-90deg);display:block"><circle cx="48" cy="48" r="41" fill="none" stroke="var(--bd-xeff1f4)" stroke-width="9"></circle><sc-for list="{{k.ring}}" as="s" hint-placeholder-count="3"><circle cx="48" cy="48" r="41" fill="none" stroke="{{s.color}}" stroke-width="9" stroke-dasharray="{{s.dash}}" stroke-dashoffset="{{s.off}}"></circle></sc-for></svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1">
+            <b dir="ltr" style="font-size:22px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum'">{{k.val}}</b>
+            <span dir="ltr" style="font-size:10px;font-weight:700;color:var(--fg-x8a6f35)">{{k.chip}}</span>
+          </div>
+        </div>
+        <span class="bs-tip-host" style="margin-top:6px;font-size:12px;font-weight:700;color:var(--fg-x25343f);text-align:center">{{k.title}}<span class="bs-tip">{{k.tip}}</span></span>
+        <i style="{{k.lineStyle}}"></i>
+        <span title="{{k.sub}}" style="font-size:10.5px;color:var(--fg-x64748b);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">{{k.sub}}</span>
+      </div>
+      <div style="width:1px;align-self:stretch;background:var(--bg-xeff1f4)"></div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+        <sc-for list="{{k.rows}}" as="r" hint-placeholder-count="4">
+        <div title="{{r.tip}}" style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--fg-x53565a)">
+          <i style="{{r.color}}"></i>
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.label}}</span>
+          <span dir="ltr" style="flex-shrink:0;font-size:11.5px;font-weight:700;color:var(--fg-x25343f)">{{r.n}}<em style="font-style:normal;font-size:10px;font-weight:600;color:var(--fg-x94a3b8);margin-left:6px">{{r.pct}}</em></span>
+        </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+</div>
+
+<sc-if value="{{rzEntryShow}}" hint-placeholder-val="{{ true }}">
+<!-- ═══ محضر الرصد — تسجيلٌ مباشر في بطاقة اليوم (بلا نافذة) أو رسالةُ القفل ═══ -->
+<div style="border-radius:16px;border:1px solid var(--bd-a185151810p2);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:visible">
+  <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 12px;border-bottom:2px solid var(--bd-a185151810p25);background:linear-gradient(to left,var(--bg-a2482502520p8),var(--bg-xffffff));border-radius:16px 16px 0 0">
+    <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:200px">
+      <span style="width:32px;height:32px;border-radius:10px;background:var(--bg-a185151810p12);color:var(--fg-xb99751);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+      <b style="font-size:13.5px;font-weight:700;color:var(--fg-x141414)">{{rzEntryTitle}}</b>
+    </div>
+    <sc-if value="{{rzCanEnter}}" hint-placeholder-val="{{ true }}">
+    <!-- يُسجَّل آلياً (الراصد · التاريخ · وقت الإدخال) — ووقتُ وقوع الحالة منفصلٌ قابلٌ للتعديل -->
+    <span title="{{rzAutoTip}}" style="font-size:11px;color:var(--fg-x53565a);background:var(--bg-xf8f9fb);border:1px solid var(--bd-xe2e8f0);border-radius:9999px;padding:3px 10px;font-feature-settings:'tnum';max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{rzAutoBy}}</span>
+    <label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--fg-x53565a)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> وقت وقوع الحالة <input type="time" value="{{rzWhen}}" max="{{rzWhenMax}}" onChange="{{rzSetWhen}}" aria-label="وقت وقوع الحالة" style="{{rzWhenStyle}}"></label>
+    </sc-if>
+  </div>
+  <sc-if value="{{rzWhenErrOn}}" hint-placeholder-val="{{ false }}"><div role="alert" style="font-size:10.5px;color:var(--fg-xdc2626);padding:4px 16px 0;text-align:left">{{rzWhenErr}}</div></sc-if>
+  <sc-if value="{{rzDayLockedHint}}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;padding:14px 16px;font-size:12px;color:var(--fg-x475569)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg> {{rzDayLockedTxt}}</div></sc-if>
+  <sc-if value="{{rzMonthAutoHint}}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;padding:14px 16px;font-size:12px;color:var(--fg-x475569)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg> {{rzMonthAutoTxt}}</div></sc-if>
+  <sc-if value="{{rzFutureHint}}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;padding:14px 16px;font-size:12px;color:var(--fg-x94a3b8)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> {{rzFutureTxt}}</div></sc-if>
+  <sc-if value="{{rzCanEnter}}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;gap:12px;padding:14px 16px 16px">
+    <div class="rz-grid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+      <!-- القوائم المُدارة من داخلها: اختيار · إضافة · تعديل (يسري على السجل) · حذف (يبقى نصُّه في السجل) -->
+      <sc-for list="{{rzFields}}" as="f" hint-placeholder-count="5">
+      <sc-if value="{{f.show}}" hint-placeholder-val="{{ true }}">
+      <div style="{{f.wrapStyle}}">
+        <div style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">{{f.label}} <span style="color:var(--fg-xdc2626)">*</span></div>
+        <button type="button" onClick="{{f.toggle}}" aria-haspopup="listbox" style="{{f.btnStyle}}"><i style="{{f.sq}}"></i><span style="flex:1;min-width:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{f.btnLabel}}</span><span style="opacity:.5;display:inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span></button>
+        <sc-if value="{{f.open}}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{f.close}}" style="position:fixed;inset:0;z-index:45;background:transparent"></div>
+        <div data-bs-dd="1" role="listbox" style="position:absolute;top:100%;right:0;left:0;z-index:46;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:12px;box-shadow:var(--shadow-elevated);padding:5px;max-height:300px;overflow-y:auto;text-align:right">
+          <sc-for list="{{f.rows}}" as="r" hint-placeholder-count="6">
+          <sc-if value="{{r.normal}}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{r.pick}}" style="{{r.rowStyle}}" style-hover="background:var(--bg-a185151810p06)">
+            <sc-if value="{{r.hasSq}}" hint-placeholder-val="{{ true }}"><i style="{{r.sq}}"></i></sc-if>
+            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.name}}</span>
+            <span style="font-size:10px;color:var(--fg-x94a3b8);white-space:nowrap">{{r.meta}}</span>
+            <sc-if value="{{r.lock}}" hint-placeholder-val="{{ false }}"><span title="قيمةٌ يعتمد عليها النظام — لا تُعدَّل ولا تُحذف" style="color:var(--fg-xcbd5e1);display:inline-flex"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span><span style="font-size:9.5px;color:var(--fg-x94a3b8)">أساسي</span></sc-if>
+            <sc-if value="{{r.tools}}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{r.startEdit}}" title="تعديل الاسم" aria-label="تعديل الاسم" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);color:var(--fg-x64748b);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0" style-hover="border-color:var(--bd-xb99751);color:var(--fg-x8a6f35)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button>
+            <button type="button" onClick="{{r.startDel}}" title="حذف من القائمة" aria-label="حذف من القائمة" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);color:var(--fg-x64748b);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0" style-hover="border-color:var(--bd-xdc2626);color:var(--fg-xdc2626)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            </sc-if>
+          </div>
+          </sc-if>
+          <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{r.stop}}" style="display:flex;align-items:center;gap:6px;padding:6px 8px">
+            <input value="{{r.editVal}}" onChange="{{r.setEditVal}}" onKeyDown="{{r.editKey}}" aria-label="الاسم الجديد" placeholder="الاسم الجديد" style="flex:1;min-width:0;height:30px;padding:0 9px;border-radius:8px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:12px;outline:none;box-sizing:border-box;color:var(--fg-x141414)">
+            <button type="button" onClick="{{r.saveEdit}}" style="height:30px;padding:0 10px;border-radius:8px;border:0;background:var(--bg-xb99751);color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:11.5px;cursor:pointer">حفظ</button>
+            <button type="button" onClick="{{r.cancel}}" style="height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:11.5px;cursor:pointer;color:var(--fg-x53565a)">إلغاء</button>
+          </div>
+          </sc-if>
+          <sc-if value="{{r.deleting}}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{r.stop}}" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 9px;border-radius:8px;background:var(--bg-a22038380p04)">
+            <span style="flex:1;min-width:140px;font-size:11.5px;color:var(--fg-x25343f)">حذف «{{r.name}}»؟ <span style="color:var(--fg-x94a3b8)">{{r.delMsg}}</span></span>
+            <button type="button" onClick="{{r.doDel}}" style="height:28px;padding:0 10px;border-radius:8px;border:0;background:var(--bg-xdc2626);color:var(--fg-xffffff);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer">حذف</button>
+            <button type="button" onClick="{{r.cancel}}" style="height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;color:var(--fg-x53565a)">إلغاء</button>
+          </div>
+          </sc-if>
+          </sc-for>
+          <sc-if value="{{f.canAdd}}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 6px 4px;margin-top:4px;border-top:1px solid var(--bd-xf1f5f9)">
+            <input value="{{f.newVal}}" onChange="{{f.setNew}}" onKeyDown="{{f.newKey}}" placeholder="{{f.addPh}}" aria-label="إضافة" style="flex:1;min-width:0;height:30px;padding:0 9px;border-radius:8px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:12px;outline:none;box-sizing:border-box;color:var(--fg-x141414)">
+            <button type="button" onClick="{{f.addNew}}" title="إضافة" aria-label="إضافة" style="width:30px;height:30px;border-radius:8px;border:0;background:var(--bg-xb99751);color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+          </div>
+          </sc-if>
+          <sc-if value="{{f.ddErrOn}}" hint-placeholder-val="{{ false }}"><div style="font-size:10.5px;color:var(--fg-xdc2626);padding:2px 8px 4px">{{f.ddErr}}</div></sc-if>
+        </div>
+        </sc-if>
+        <sc-if value="{{f.other}}" hint-placeholder-val="{{ false }}"><input value="{{f.otherVal}}" onChange="{{f.setOther}}" placeholder="{{f.otherPh}}" aria-label="{{f.otherPh}}" style="width:100%;height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:12px;outline:none;box-sizing:border-box"></sc-if>
+        <sc-if value="{{f.errOn}}" hint-placeholder-val="{{ false }}"><div style="font-size:10.5px;color:var(--fg-xdc2626)">{{f.err}}</div></sc-if>
+      </div>
+      </sc-if>
+      </sc-for>
+      <!-- الموقع التفصيلي: بحثٌ في القائمة المعتمدة مصفّاةً بالمنطقة · إضافةُ موقعٍ إلى المنطقة المختارة -->
+      <div style="display:flex;flex-direction:column;gap:5px;min-width:0;position:relative;order:3">
+        <div style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">{{rzSpotLabel}} <span style="color:var(--fg-xdc2626)">*</span></div>
+        <div style="position:relative">
+          <span style="position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--fg-x94a3b8);display:inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
+          <input value="{{rzSpotQ}}" onClick="{{rzSpotFocus}}" onChange="{{rzSpotSet}}" placeholder="{{rzSpotPh}}" aria-label="الموقع التفصيلي" style="{{rzSpotStyle}}">
+        </div>
+        <sc-if value="{{rzSpotOpen}}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{rzSpotClose}}" style="position:fixed;inset:0;z-index:45;background:transparent"></div>
+        <div data-bs-dd="1" role="listbox" style="position:absolute;top:100%;right:0;left:0;z-index:46;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:12px;box-shadow:var(--shadow-elevated);padding:5px;max-height:300px;overflow-y:auto;text-align:right">
+          <sc-for list="{{rzSpotRows}}" as="r" hint-placeholder-count="6">
+          <sc-if value="{{r.normal}}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{r.pick}}" style="{{r.rowStyle}}" style-hover="background:var(--bg-a185151810p06)">
+            <sc-if value="{{r.hasSq}}" hint-placeholder-val="{{ true }}"><i style="{{r.sq}}"></i></sc-if>
+            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.name}}</span>
+            <span style="font-size:10px;color:var(--fg-x94a3b8);white-space:nowrap">{{r.meta}}</span>
+            <sc-if value="{{r.lock}}" hint-placeholder-val="{{ false }}"><span title="قيمةٌ يعتمد عليها النظام — لا تُعدَّل ولا تُحذف" style="color:var(--fg-xcbd5e1);display:inline-flex"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span><span style="font-size:9.5px;color:var(--fg-x94a3b8)">أساسي</span></sc-if>
+            <sc-if value="{{r.tools}}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{r.startEdit}}" title="تعديل الاسم" aria-label="تعديل الاسم" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);color:var(--fg-x64748b);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0" style-hover="border-color:var(--bd-xb99751);color:var(--fg-x8a6f35)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button>
+            <button type="button" onClick="{{r.startDel}}" title="حذف من القائمة" aria-label="حذف من القائمة" style="width:24px;height:24px;border-radius:7px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);color:var(--fg-x64748b);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0" style-hover="border-color:var(--bd-xdc2626);color:var(--fg-xdc2626)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            </sc-if>
+          </div>
+          </sc-if>
+          <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{r.stop}}" style="display:flex;align-items:center;gap:6px;padding:6px 8px">
+            <input value="{{r.editVal}}" onChange="{{r.setEditVal}}" onKeyDown="{{r.editKey}}" aria-label="الاسم الجديد" placeholder="الاسم الجديد" style="flex:1;min-width:0;height:30px;padding:0 9px;border-radius:8px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:12px;outline:none;box-sizing:border-box;color:var(--fg-x141414)">
+            <button type="button" onClick="{{r.saveEdit}}" style="height:30px;padding:0 10px;border-radius:8px;border:0;background:var(--bg-xb99751);color:var(--text-on-brand);font-family:'Cairo',sans-serif;font-size:11.5px;cursor:pointer">حفظ</button>
+            <button type="button" onClick="{{r.cancel}}" style="height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:11.5px;cursor:pointer;color:var(--fg-x53565a)">إلغاء</button>
+          </div>
+          </sc-if>
+          <sc-if value="{{r.deleting}}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{r.stop}}" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 9px;border-radius:8px;background:var(--bg-a22038380p04)">
+            <span style="flex:1;min-width:140px;font-size:11.5px;color:var(--fg-x25343f)">حذف «{{r.name}}»؟ <span style="color:var(--fg-x94a3b8)">{{r.delMsg}}</span></span>
+            <button type="button" onClick="{{r.doDel}}" style="height:28px;padding:0 10px;border-radius:8px;border:0;background:var(--bg-xdc2626);color:var(--fg-xffffff);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer">حذف</button>
+            <button type="button" onClick="{{r.cancel}}" style="height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;color:var(--fg-x53565a)">إلغاء</button>
+          </div>
+          </sc-if>
+          </sc-for>
+          <sc-if value="{{rzSpotNone}}" hint-placeholder-val="{{ false }}"><div style="padding:9px 10px;font-size:11.5px;color:var(--fg-x94a3b8)">{{rzSpotNoneMsg}}</div></sc-if>
+          <sc-if value="{{rzSpotAddOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 6px 4px;margin-top:4px;border-top:1px solid var(--bd-xf1f5f9)">
+            <input value="{{rzSpotNew}}" onChange="{{rzSpotSetNew}}" onKeyDown="{{rzSpotNewKey}}" placeholder="{{rzSpotAddPh}}" aria-label="إضافة موقع" style="flex:1;min-width:0;height:30px;padding:0 9px;border-radius:8px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:12px;outline:none;box-sizing:border-box;color:var(--fg-x141414)">
+            <button type="button" onClick="{{rzSpotAdd}}" title="إضافة موقع" aria-label="إضافة موقع" style="width:30px;height:30px;border-radius:8px;border:0;background:var(--bg-xb99751);color:var(--text-on-brand);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+          </div>
+          </sc-if>
+          <sc-if value="{{rzSpotAddOff}}" hint-placeholder-val="{{ false }}"><div style="padding:7px 10px;font-size:10.5px;color:var(--fg-x94a3b8);border-top:1px solid var(--bd-xf1f5f9)">اختر المنطقة أولاً لإضافة موقع إليها</div></sc-if>
+          <sc-if value="{{rzSpotErrOn}}" hint-placeholder-val="{{ false }}"><div style="font-size:10.5px;color:var(--fg-xdc2626);padding:2px 8px 4px">{{rzSpotErr}}</div></sc-if>
+        </div>
+        </sc-if>
+        <sc-if value="{{rzSpotFErrOn}}" hint-placeholder-val="{{ false }}"><div style="font-size:10.5px;color:var(--fg-xdc2626)">{{rzSpotFErr}}</div></sc-if>
+      </div>
+    </div>
+
+    <!-- «ممنوعات»: القطعُ تُسجَّل في نظام المضبوطات حتى لا تتكرر (يظهر بحضوره مفعَّلاً — عبر الناقل) -->
+    <sc-if value="{{rzSzNote}}" hint-placeholder-val="{{ false }}">
+    <div role="note" style="display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;border:1px solid var(--bd-a185151810p3);background:var(--bg-a185151810p06);border-radius:11px;padding:9px 12px;font-size:12px;color:var(--fg-x8a6f35)">
+      <span style="display:inline-flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"></path><path d="M12 9v4M12 17h.01"></path></svg></span>
+      <span style="flex:1;min-width:200px">الممنوعات تُسجَّل قطعها في نظام المضبوطات — سجّل هنا الحالة فقط، والقطع هناك حتى لا تتكرر.</span>
+      <a href="#/seized" style="color:var(--fg-x8a6f35);font-weight:700;white-space:nowrap">فتح نظام المضبوطات ←</a>
+    </div>
+    </sc-if>
+
+    <!-- مستوى التأثير: أربعةُ أزرارٍ ثابتة ملوّنة -->
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">مستوى التأثير <span style="color:var(--fg-xdc2626)">*</span></div>
+      <div role="radiogroup" aria-label="مستوى التأثير" class="rz-seg" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+        <sc-for list="{{rzImpacts}}" as="im" hint-placeholder-count="4">
+        <button type="button" role="radio" aria-checked="{{im.aria}}" onClick="{{im.pick}}" style="{{im.style}}" style-hover="border-color:var(--bd-a185151810p4)">{{im.name}}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{rzImpErrOn}}" hint-placeholder-val="{{ false }}"><div style="font-size:10.5px;color:var(--fg-xdc2626)">{{rzImpErr}}</div></sc-if>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:11px;font-weight:600;color:var(--fg-x53565a)">ملاحظات <span style="font-weight:400">(اختياري)</span></span><span style="font-size:10px;color:var(--fg-x94a3b8);font-feature-settings:'tnum'">{{rzNotesLeft}}</span></div>
+      <textarea value="{{rzNotes}}" onChange="{{rzSetNotes}}" maxlength="500" aria-label="ملاحظات" placeholder="تفاصيل لا تغطيها القوائم: عدد تقريبي، وصف، ما الذي يحتاج متابعة…" style="width:100%;min-height:70px;padding:9px 12px;border-radius:11px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-a2482502520p8);font-family:'Cairo',sans-serif;font-size:12.5px;line-height:1.8;outline:none;box-sizing:border-box;resize:vertical;color:var(--fg-x141414)" style-focus="border-color:var(--bd-a185151810p4)"></textarea>
+    </div>
+
+    <sc-if value="{{rzAttHas}}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:10px;border:1px solid var(--bd-xe2e8f0);border-radius:11px;padding:7px 10px">
+      <img src="{{rzAttUrl}}" alt="مرفق الحالة" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0">
+      <span style="flex:1;min-width:0;font-size:11.5px;color:var(--fg-x53565a);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{rzAttName}}</span>
+      <button type="button" onClick="{{rzAttRemove}}" style="height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;color:var(--fg-xdc2626)">إزالة</button>
+    </div>
+    </sc-if>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+      <button type="button" onClick="{{rzSave}}" style="height:40px;padding:0 20px;border-radius:11px;border:0;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;color:var(--text-on-brand);display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,var(--bg-xb99751),var(--bg-a185151810p85))"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>إضافة</button>
+      <button type="button" onClick="{{rzAttPick}}" style="height:40px;padding:0 14px;border-radius:11px;border:1px solid var(--bd-a185151810p3);background:var(--bg-xffffff);cursor:pointer;font-family:'Cairo',sans-serif;font-size:12.5px;color:var(--fg-x8a6f35);display:inline-flex;align-items:center;gap:7px" style-hover="background:var(--bg-a185151810p06)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"></path><circle cx="12" cy="13" r="3"></circle></svg>مرفق</button>
+      <input type="file" id="rzAttInp" accept="image/*" capture="environment" onChange="{{rzAttOnFile}}" style="display:none">
+      <button type="button" onClick="{{rzClearDraft}}" title="تفريغ الحقول" aria-label="تفريغ الحقول" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);cursor:pointer;color:var(--fg-x64748b);display:inline-flex;align-items:center;justify-content:center" style-hover="border-color:var(--bd-xdc2626);color:var(--fg-xdc2626);background:var(--bg-a22038380p04)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+      <span style="font-size:10.5px;color:var(--fg-x94a3b8)">المرفق اختياري — صورة حتى 5 ميغابايت</span>
+      <sc-if value="{{rzSaveErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size:10.5px;color:var(--fg-xdc2626);font-size:11.5px">{{rzSaveErrMsg}}</span></sc-if>
+    </div>
+  </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ═══ سجل الحالات الشهري — جدولُ المنصة (بحث · ملفات · فلترة · ترتيب · ترقيم) ═══ -->
+<div style="border-radius:16px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);overflow:hidden">
+  <div onClick="{{rzLedgerToggle}}" style="display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer" style-hover="background:var(--bg-a2482502520p7)">
+    <span style="width:34px;height:34px;border-radius:12px;background:var(--bg-a185151810p12);color:var(--fg-xb99751);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-card)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"></path><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18"></path></svg></span>
+    <span style="flex:1;min-width:0">
+      <span style="font-size:13.5px;font-weight:600;color:var(--fg-x141414)">سجل الحالات الشهري</span>
+      <span style="display:inline-flex;align-items:center;margin-right:8px;border-radius:9999px;padding:3px 11px;font-size:10.5px;font-weight:600;font-family:'Cairo',sans-serif;background:var(--bg-a185151810p12);color:var(--fg-x8a6f35);border:1px solid var(--bd-a185151810p3)">{{rzLedgerCount}}</span>
+    </span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb0b6bd)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{rzLedgerChev}}"><path d="m6 9 6 6 6-6"></path></svg>
+  </div>
+  <sc-if value="{{rzLedgerOpen}}" hint-placeholder-val="{{ false }}">
+  <div style="border-top:2px solid var(--bd-a185151810p25)">
+
+    <!-- ═══ شريط أدوات السجل — بحث + ملفات (Excel · CSV · طباعة) + فلترة بالنوع والتأثير والنطاق ═══ -->
+    <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd-xe1e1e1);background:var(--bg-a2482502520p5)">
+      <div style="position:relative;flex:1;min-width:180px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-x94a3b8)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:10px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input value="{{rzLgSearch}}" onChange="{{rzLgSetSearch}}" aria-label="بحث في السجل" placeholder="بحث بالموقع أو النوع أو الإجراء أو الراصد…" style="width:100%;height:34px;padding:0 34px 0 10px;font-size:12px;background:var(--bg-xffffff);border:1px solid var(--bd-xe2e8f0);border-radius:10px;outline:none;font-family:'Cairo',sans-serif;box-sizing:border-box;color:var(--fg-x141414)" style-focus="background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px var(--bd-a185151810p2)">
+      </div>
+<sc-if value="{{irPmExport}}" hint-placeholder-val="{{ true }}">
+      <div style="position:relative">
+        <button onClick="{{rzLgFilesToggle}}" style="{{rzLgFilesBtnStyle}}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+          ملفات
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{rzLgFilesChev}}"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <sc-if value="{{rzLgFilesOpen}}" hint-placeholder-val="{{ false }}">
+        <div data-bs-dd="1" style="position:absolute;top:100%;left:0;z-index:55;min-width:210px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right">
+          <div onClick="{{rzLgExportXlsx}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+            <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a0132800p08);color:var(--fg-x008450);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M8 13h2"></path><path d="M14 13h2"></path><path d="M8 17h2"></path><path d="M14 17h2"></path></svg></span>
+            <div style="flex:1"><div>تصدير Excel</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">{{rzLgMonthLabel}} — حسب البحث والفلترة ({{rzLgShownLbl}})</div></div>
+          </div>
+          <div onClick="{{rzLgExportCsv}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+            <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a0132800p08);color:var(--fg-x008450);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M8 13h2"></path><path d="M14 13h2"></path><path d="M8 17h2"></path><path d="M14 17h2"></path></svg></span>
+            <div style="flex:1"><div>تصدير CSV</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">ملفٌ نصيّ بالأعمدة نفسها</div></div>
+          </div>
+          <div onClick="{{rzLgPrint}}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;cursor:pointer;color:var(--fg-x141414);transition:background .15s" style-hover="background:var(--bg-a185151810p06)">
+            <span style="display:inline-flex;width:24px;height:24px;border-radius:7px;align-items:center;justify-content:center;background:var(--bg-a141652330p08);color:var(--fg-x0369a1);flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"></path><rect x="6" y="14" width="12" height="8" rx="1"></rect></svg></span>
+            <div style="flex:1"><div>طباعة / حفظ PDF</div><div style="font-size:8px;color:var(--fg-x94a3b8);font-weight:400">نافذة الطباعة مباشرة</div></div>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+</sc-if>
+      <div style="height:20px;width:1px;background:var(--bg-xe2e8f0)"></div>
+      <span style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8)">فلترة:</span>
+      <div style="position:relative">
+        <button onClick="{{rzLgFtToggle}}" aria-haspopup="listbox" style="{{rzLgFtBtnStyle}}">
+          <span style="white-space:nowrap">{{rzLgFtLabel}}</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{rzLgFtChev}}"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <sc-if value="{{rzLgFtOpen}}" hint-placeholder-val="{{ false }}">
+        <div data-bs-dd="1" style="position:absolute;top:100%;right:0;z-index:50;min-width:150px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right;max-height:300px;overflow-y:auto">
+          <sc-for list="{{rzLgFtOpts}}" as="o" hint-placeholder-count="4">
+          <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+            <span style="flex:1;white-space:nowrap">{{o.name}}</span>
+            <sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+          </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+      <div style="position:relative">
+        <button onClick="{{rzLgFiToggle}}" aria-haspopup="listbox" style="{{rzLgFiBtnStyle}}">
+          <span style="white-space:nowrap">{{rzLgFiLabel}}</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{rzLgFiChev}}"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <sc-if value="{{rzLgFiOpen}}" hint-placeholder-val="{{ false }}">
+        <div data-bs-dd="1" style="position:absolute;top:100%;right:0;z-index:50;min-width:150px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right;max-height:300px;overflow-y:auto">
+          <sc-for list="{{rzLgFiOpts}}" as="o" hint-placeholder-count="4">
+          <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+            <span style="flex:1;white-space:nowrap">{{o.name}}</span>
+            <sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+          </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+      <div style="position:relative">
+        <button onClick="{{rzLgFdToggle}}" aria-haspopup="listbox" style="{{rzLgFdBtnStyle}}">
+          <span style="white-space:nowrap">{{rzLgFdLabel}}</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{rzLgFdChev}}"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        <sc-if value="{{rzLgFdOpen}}" hint-placeholder-val="{{ false }}">
+        <div data-bs-dd="1" style="position:absolute;top:100%;right:0;z-index:50;min-width:150px;margin-top:4px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p35);border-radius:10px;box-shadow:var(--shadow-elevated);overflow:hidden;padding:4px;text-align:right;max-height:300px;overflow-y:auto">
+          <sc-for list="{{rzLgFdOpts}}" as="o" hint-placeholder-count="4">
+          <div onClick="{{o.pick}}" style="{{o.style}}" style-hover="background:var(--bg-a185151810p06)">
+            <span style="flex:1;white-space:nowrap">{{o.name}}</span>
+            <sc-if value="{{o.selected}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--fg-xb99751)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+          </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+      <div style="margin-right:auto;font-size:11px;color:var(--fg-x64748b);font-feature-settings:'tnum'">
+        <span style="font-weight:400;color:var(--fg-xb99751)" dir="ltr">{{rzLgShownCount}}</span><span style="color:var(--text-muted)"> / {{rzLgTotalCount}}</span>
+      </div>
+    </div>
+
+    <sc-if value="{{rzLedgerHas}}" hint-placeholder-val="{{ true }}">
+    <div class="bs-hscroll bs-sthead" style="overflow-x:auto">
+      <table class="bs-rtable rz-table" style="width:100%;border-collapse:collapse;min-width:1320px">
+        <thead>
+          <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
+            <th onClick="{{rzSortDate}}" style="padding:8px 4px;cursor:pointer" style-hover="background:var(--bg-a185151810p05)"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">التاريخ والوقت <span style="{{rzArrDateC}}">{{rzArrDate}}</span></span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M15 8h2"></path><path d="M15 12h2"></path><path d="M6 16h12"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الراصد</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">إدارة الرصد</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المنطقة</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المستوى</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الموقع</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">النوع</span></div></th>
+            <th onClick="{{rzSortImp}}" style="padding:8px 4px;cursor:pointer" style-hover="background:var(--bg-a185151810p05)"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">التأثير <span style="{{rzArrImpC}}">{{rzArrImp}}</span></span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الإجراء</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الجهة المبلَّغة</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المرفق</span></div></th>
+            <th style="padding:8px 4px" aria-label="الإجراءات"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{rzLedgerRows}}" as="v" hint-placeholder-count="6">
+          <tr style="border-bottom:1px solid var(--bd-xf1f5f9);transition:background .15s" style-hover="background:var(--bg-a2452452450p5)">
+            <td data-label="التاريخ والوقت" style="padding:8px 6px;text-align:center">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                <span dir="ltr" style="font-size:12px;font-weight:400;color:var(--fg-x25343f);white-space:nowrap">{{v.hij}} هـ</span>
+                <span dir="ltr" style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{v.greg}}</span>
+                <span style="display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--fg-x8a6f35)"><span dir="ltr">{{v.time}}</span><sc-if value="{{v.lgOn}}" hint-placeholder-val="{{ false }}"><span style="font-weight:400;color:var(--fg-x94a3b8)">{{v.lg}}</span></sc-if></span>
+                <sc-if value="{{v.noteOn}}" hint-placeholder-val="{{ false }}"><span title="{{v.note}}" style="font-size:10px;font-weight:600;color:var(--fg-x64748b);cursor:help">📝 ملاحظة</span></sc-if>
+              </div>
+            </td>
+            <td data-label="الراصد" style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x141414)">{{v.by}}</span></td>
+            <td data-label="إدارة الرصد" style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">{{v.dept}}</span></td>
+            <td data-label="المنطقة" style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x25343f)">{{v.zone}}</span></td>
+            <td data-label="المستوى" style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x53565a)">{{v.floor}}</span></td>
+            <td data-label="الموقع" style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x25343f)">{{v.spot}}</span></td>
+            <td data-label="النوع" style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x25343f)">{{v.type}}</span></td>
+            <td data-label="التأثير" style="padding:8px 6px;text-align:center"><span style="{{v.impStyle}}">{{v.impact}}</span></td>
+            <td data-label="الإجراء" style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x25343f)">{{v.act}}</span></td>
+            <td data-label="الجهة المبلَّغة" style="padding:8px 6px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x53565a)">{{v.party}}</span></td>
+            <td data-label="المرفق" style="padding:8px 6px;text-align:center;white-space:nowrap">
+              <sc-if value="{{v.attNo}}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:var(--fg-x94a3b8)">—</span></sc-if>
+              <sc-if value="{{v.attImgOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{v.attView}}" title="عرض المرفق" aria-label="عرض المرفق" style="padding:0;border:1px solid var(--bd-xe2e8f0);border-radius:7px;background:var(--bg-xffffff);cursor:zoom-in;overflow:hidden;width:32px;height:32px"><img src="{{v.attImg}}" alt="مرفق الحالة" style="width:100%;height:100%;object-fit:cover;display:block"></button></sc-if>
+              <sc-if value="{{v.attWait}}" hint-placeholder-val="{{ false }}"><span title="جارٍ تحميل الصورة" style="display:inline-block;width:30px;height:30px;border-radius:6px;background:var(--bg-xf1f5f9)"></span></sc-if>
+            </td>
+            <td data-label="الإجراءات" style="padding:8px 6px;text-align:center">
+              <sc-if value="{{v.askDel}}" hint-placeholder-val="{{ false }}">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--fg-xdc2626);white-space:nowrap">حذف؟
+                <button type="button" onClick="{{v.delYes}}" style="height:26px;padding:0 9px;border-radius:7px;border:0;background:var(--bg-xdc2626);color:var(--fg-xffffff);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer">نعم</button>
+                <button type="button" onClick="{{v.delNo}}" style="height:26px;padding:0 9px;border-radius:7px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;color:var(--fg-x53565a)">لا</button>
+              </span>
+              </sc-if>
+              <sc-if value="{{v.notAsk}}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{v.rmHas}}" hint-placeholder-val="{{ true }}">
+              <span style="position:relative;display:inline-block">
+                <button onClick="{{v.rmToggle}}" title="إجراءات هذه الحالة" aria-label="إجراءات هذه الحالة" style="{{v.rmBtnStyle}}">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg>
+                </button>
+                <sc-if value="{{v.rmOpen}}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:100%;left:50%;transform:translateX(-50%);z-index:60;margin-top:5px;background:var(--bg-xffffff);border:1px solid var(--bd-a185151810p28);border-radius:11px;box-shadow:var(--shadow-elevated);padding:5px;display:flex;align-items:center;gap:4px;width:max-content">
+                  <sc-for list="{{v.rmItems}}" as="a" hint-placeholder-count="1">
+                  <button onClick="{{a.run}}" title="{{a.name}}" aria-label="{{a.name}}" style="{{a.style}}" style-hover="border-color:var(--bd-xdc2626);background:var(--bg-a22038380p06)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                  </button>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </span>
+              </sc-if>
+              </sc-if>
+            </td>
+          </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    <!-- ═══ فوتر الترقيم — مطابق لتذييل جدول المنصة ═══ -->
+    <div class="bs-hbar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--bd-xe1e1e1);background:var(--bg-surface);font-size:12px">
+      <span style="color:var(--fg-x53565a)">عرض <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{rzLedgerPgRange}}</span> من <span style="font-weight:400;color:var(--fg-x141414)" dir="ltr">{{rzLedgerPgTotal}}</span> {{rzLedgerPgTotalW}}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:var(--fg-x94a3b8);font-size:11px">لكل صفحة</span>
+        <select value="{{rzLedgerPerPage}}" onChange="{{rzLedgerOnPerPage}}" style="height:28px;width:78px;font-size:10px;border-radius:8px;border:1px solid var(--bd-xe1e1e1);background:var(--bg-xffffff);font-family:'Cairo',sans-serif;outline:none;cursor:pointer"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="0">الكل</option></select>
+        <div style="display:flex;align-items:center;border:1px solid var(--bd-xe1e1e1);border-radius:8px;overflow:hidden">
+          <button onClick="{{rzLedgerPgFirst}}" title="الصفحة الأولى" style="{{rzLedgerPgFirstStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 17 5-5-5-5"></path><path d="m6 17 5-5-5-5"></path></svg></button>
+          <button onClick="{{rzLedgerPgPrev}}" title="السابق" style="{{rzLedgerPgPrevStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+          <sc-for list="{{rzLedgerPgNums}}" as="n" hint-placeholder-count="5">
+            <sc-if value="{{n.dots}}"><span style="height:28px;width:20px;display:flex;align-items:center;justify-content:center;color:var(--fg-x94a3b8);font-size:10px;border-right:1px solid var(--bd-xe1e1e1)">…</span></sc-if>
+            <sc-if value="{{n.cur}}"><button style="{{n.style}}">{{n.label}}</button></sc-if>
+            <sc-if value="{{n.plain}}"><button onClick="{{n.click}}" style="{{n.style}}" style-hover="background:var(--bg-xf5f5f5)">{{n.label}}</button></sc-if>
+          </sc-for>
+          <button onClick="{{rzLedgerPgNext}}" title="التالي" style="{{rzLedgerPgNextStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+          <button onClick="{{rzLedgerPgLast}}" title="الصفحة الأخيرة" style="{{rzLedgerPgLastStyle}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17-5-5 5-5"></path><path d="m18 17-5-5 5-5"></path></svg></button>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{rzLedgerEmpty}}" hint-placeholder-val="{{ false }}">
+    <div style="padding:28px;text-align:center"><span style="font-size:12px;font-weight:400;color:var(--fg-x94a3b8)">{{rzLedgerEmptyMsg}}</span></div>
+    </sc-if>
+  </div>
+  </sc-if>
+</div>
+
+<!-- ═══ عرضُ مرفق الحالة ═══ -->
+<sc-if value="{{rzImgViewOn}}" hint-placeholder-val="{{ false }}">
+<div onClick="{{rzImgViewClose}}" role="dialog" aria-label="مرفق الحالة" style="position:fixed;inset:0;z-index:70;background:var(--bg-a0000p5);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out">
+  <img src="{{rzImgViewUrl}}" alt="مرفق الحالة" onClick="{{rzStop}}" style="max-width:100%;max-height:100%;border-radius:12px;box-shadow:var(--shadow-elevated);background:var(--bg-xffffff);cursor:default">
+</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">var __defProp=Object.defineProperty;var __defNormalProp=(obj,key,value)=>key in obj?__defProp(obj,key,{enumerable:!0,configurable:!0,writable:!0,value}):obj[key]=value;var __publicField=(obj,key,value)=>__defNormalProp(obj,typeof key!="symbol"?key+"":key,value);class Component extends KIVO.BassamPageKit.base(DCLogic,["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","admin+profile+seized","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","award+irshad+seized","irshad+seized+tasks","dstats+irshad","irshad+seized"]){constructor(){super(...arguments);__publicField(this,"RZ_PAL",["var(--bg-x0e7490)","var(--bg-x9c3d6b)","var(--bg-xb45309)","var(--bg-x1e9a66)","var(--bg-xa5566e)","var(--bg-x2f5f8a)","var(--bg-x6e8a3a)","var(--bg-x640f2a)"]);__publicField(this,"RZ_OTHER","أخرى");__publicField(this,"RZ_REPORT","إبلاغ جهة مختصة");__publicField(this,"RZ_NOPARTY","لم يتم الإبلاغ");__publicField(this,"RZ_NOACT","لم يتخذ إجراء بعد");__publicField(this,"RZ_SEIZED","ممنوعات");__publicField(this,"RZ_IMPACTS",["منخفض","متوسط","عالٍ","حرج"]);__publicField(this,"RZ_IMP_COL",{منخفض:"var(--success)",متوسط:"var(--warning)",عالٍ:"var(--fg-xc2410c)",حرج:"var(--danger)"});__publicField(this,"RZ_KEYS",["zone","floor","type","act","party"]);__publicField(this,"RZ_NOUN",{zone:"منطقة",floor:"مستوى",type:"نوع",act:"إجراء",party:"جهة",spot:"موقع"});__publicField(this,"RZ_LBL",{zone:"المنطقة",floor:"الدور / المستوى",type:"نوع الحالة",act:"الإجراء المتخذ",party:"الجهة التي تم إبلاغها",spot:"الموقع التفصيلي"});__publicField(this,"RZ_PH",{zone:"المنطقة",floor:"المستوى",type:"النوع",act:"الإجراء",party:"الجهة"});__publicField(this,"RZ_LOCK",{zone:["أخرى"],floor:[],type:["ممنوعات","أخرى"],act:["إبلاغ جهة مختصة","لم يتخذ إجراء بعد","أخرى"],party:["أخرى","لم يتم الإبلاغ"]});__publicField(this,"RZ_HIDE",{party:["لم يتم الإبلاغ"]});__publicField(this,"RZ_DEF",{zone:["الأبواب","المسعى","الرواق السعودي","توسعة الملك فهد","الساحة الشرقية","الساحة الغربية","أخرى"],floor:["القبو","الأرضي","الأول","الثاني","السطح","الساحات الخارجية","لا ينطبق"],type:["ممنوعات","ظاهرة سلبية","ازدحام","حالة صحية","إغلاق جزئي","عائق بالممر","تعثر تدفق","أخرى"],act:["منع إدخال","تنظيم حركة","توجيه لمسار بديل","إبلاغ جهة مختصة","لم يتخذ إجراء بعد","أخرى"],party:["العمليات المشتركة","العمليات الموحدة","مكافحة الظواهر السلبية","الجهة الفنية","أخرى","لم يتم الإبلاغ"]});__publicField(this,"RZ_SPOTS",[[[1,5,45,62,64,74,79,84,89,91,94,100].map(n=>"باب "+n),"باب","الأبواب"],[["باب الملك عبدالعزيز","باب الملك فهد","باب العمرة","باب الفتح","باب السلام"],"باب رئيسي","الأبواب"],[["ممر المسعى — الذهاب","ممر المسعى — العودة","ممر العربات","ممر الصفا","ممر المروة"],"ممر","المسعى"],[["جسر الراقوبة","جسر الشبيكة"],"جسر","الساحة الغربية"],[["منحدر الساحة الشرقية","مدخل الساحة الشرقية"],"ساحة","الساحة الشرقية"],[["سلم كهربائي 12","سلم كهربائي 28","مصعد 7"],"وصلة","الرواق السعودي"],[["سطح التوسعة — المدخل 3","ممر التوسعة الأوسط"],"ممر","توسعة الملك فهد"]]);__publicField(this,"RZ_K_REC","bassam_rasd_v1");__publicField(this,"RZ_K_OPT","bassam_rasd_opts_v1");__publicField(this,"state",(()=>{const t=this.hToday();return{rowMenu:null,rzTab:"records",rzYear:t.y,rzMonth:t.m,rzDay:t.d,rzRetro:null,rzDraft:this.emptyDraft(),rzErr:{},rzSaveErrMsg:"",rzDd:null,rzDdEdit:"",rzDdEditVal:"",rzDdDel:"",rzDdNew:"",rzDdErr:"",rzLedgerOpen:!0,rzLedgerPage:1,rzLedgerPerPage:10,rzLgSearch:"",rzLgFilesOpen:!1,rzLgFddOpen:null,rzLgType:"all",rzLgImp:"all",rzLgScope:"month",rzSortK:"date",rzSortD:-1,rzDelAsk:null,rzImgView:null,rzImgTick:0}})())}rzSeedOpts(){const o={};return this.RZ_KEYS.forEach(k=>o[k]=this.RZ_DEF[k].map((n,i)=>({n,c:this.RZ_PAL[i%this.RZ_PAL.length]}))),o.spot=[],this.RZ_SPOTS.forEach(([names,g,z])=>names.forEach(n=>o.spot.push({n,z,g}))),o}rzNormOpts(raw){const seed=this.rzSeedOpts(),src=raw&&typeof raw=="object"&&!Array.isArray(raw)?raw:{},named=x=>x&&typeof x.n=="string"&&x.n.trim(),o={};return this.RZ_KEYS.forEach(k=>{const kept=Array.isArray(src[k])?src[k].filter(named):[],list=(kept.length?kept:seed[k]).map(x=>({n:x.n,c:x.c||this.RZ_PAL[0]}));this.RZ_LOCK[k].forEach(n=>list.some(x=>x.n===n)||list.push({n,c:this.RZ_PAL[list.length%this.RZ_PAL.length]})),o[k]=list}),o.spot=Array.isArray(src.spot)?src.spot.filter(named).map(x=>({n:x.n,z:x.z||"",g:x.g||""})):seed.spot,o}_rzGet(key){try{return JSON.parse(localStorage.getItem(key))}catch{return null}}_rzPut(key,value,what){if(!this._irCanWrite())return this.permDeny(),!1;try{return localStorage.setItem(key,JSON.stringify(value)),!0}catch(e){return this.bsToast("تعذّر حفظ "+what+" — "+(e&&e.message||"خطأ في التخزين")),!1}}loadRzOpts(){return this.rzNormOpts(this._rzGet(this.RZ_K_OPT))}saveRzOpts(o){return this._rzPut(this.RZ_K_OPT,o,"القائمة")}loadRasd(){const d=this._rzGet(this.RZ_K_REC);return d&&Array.isArray(d.reports)?d:{reports:[]}}saveRasd(d){return this._rzPut(this.RZ_K_REC,d,"السجل")}rzLocked(k,n){return(this.RZ_LOCK[k]||[]).indexOf(n)>=0}rzBase(v){const s=String(v||"");return/^أخرى:/.test(s)?this.RZ_OTHER:s}rzHM(dt){const p=n=>(n<10?"0":"")+n;return p(dt.getHours())+":"+p(dt.getMinutes())}rzListAdd(opts,k,name,zone){const v=String(name||"").trim().slice(0,40);if(!v)return{err:"اكتب الاسم أولاً"};const list=opts[k]||[];if(list.some(x=>x.n===v))return{err:"«"+v+"» موجود في القائمة"};const o={...opts,[k]:list.slice()};if(k==="spot")return!zone||zone===this.RZ_OTHER?{err:"اختر المنطقة أولاً لإضافة موقع"}:(o.spot.push({n:v,z:zone,g:"مضاف"}),{opts:o,v});const item={n:v,c:this.RZ_PAL[o[k].length%this.RZ_PAL.length]},at=o[k].findIndex(x=>x.n===this.RZ_OTHER);return at>=0?o[k].splice(at,0,item):o[k].push(item),{opts:o,v}}rzListRename(opts,reports,k,from,to){const v=String(to||"").trim().slice(0,40);if(!v)return{err:"اكتب الاسم أولاً"};if(k!=="spot"&&this.rzLocked(k,from))return{err:"«"+from+"» قيمةٌ أساسية يعتمد عليها النظام — لا تُعدَّل"};const list=opts[k]||[];if(!list.some(x=>x.n===from))return{err:"«"+from+"» لم يعد في القائمة"};if(v!==from&&list.some(x=>x.n===v))return{err:"«"+v+"» موجود في القائمة"};const o={...opts,[k]:list.map(x=>x.n===from?{...x,n:v}:x)};k==="zone"&&(o.spot=(opts.spot||[]).map(s=>s.z===from?{...s,z:v}:s));let n=0;const r=(reports||[]).map(x=>x&&x[k]===from?(n++,{...x,[k]:v}):x);return{opts:o,reports:r,n,v}}rzListDel(opts,k,name){if(k!=="spot"&&this.rzLocked(k,name))return{err:"«"+name+"» قيمةٌ أساسية — لا تُحذف"};const list=opts[k]||[];return list.some(x=>x.n===name)?{opts:{...opts,[k]:list.filter(x=>x.n!==name)}}:{err:"«"+name+"» لم يعد في القائمة"}}rzValidate(dr,ctx){const d=dr||{},O=this.RZ_OTHER,E={},pick=k=>{if(d[k]!==O)return d[k]||"";const tx=String(d[k+"Tx"]||"").trim();return tx?O+": "+tx.slice(0,60):""},r={zone:pick("zone"),floor:d.floor||"",spot:d.spot||"",type:pick("type"),act:pick("act"),party:d.act===this.RZ_REPORT?pick("party"):this.RZ_NOPARTY,impact:d.impact||""},need={zone:"اختر المنطقة",floor:"اختر المستوى",spot:"اختر موقعاً من القائمة",type:"اختر نوع الحالة",act:"اختر الإجراء",party:"اختر الجهة",impact:"حدّد مستوى التأثير"};Object.keys(need).forEach(k=>{r[k]||(E[k]=d[k]===O?"اكتب التفاصيل":need[k])}),r.impact&&this.RZ_IMPACTS.indexOf(r.impact)<0&&(E.impact=need.impact);const t=String(d.t||ctx&&ctx.nowHM||"");return/^([01]\d|2[0-3]):[0-5]\d$/.test(t)?ctx&&ctx.isToday&&ctx.nowHM&&t>ctx.nowHM&&(E.t="وقت الوقوع لا يكون بعد الآن"):E.t="وقت الوقوع غير صالح",r.t=t,r.notes=String(d.notes||"").trim().slice(0,500),{ok:!Object.keys(E).length,errs:E,rec:r}}rzTop(reports,k,max,colOf){const m={};reports.forEach(r=>{const v=this.rzBase(r[k])||"—";m[v]=(m[v]||0)+1});const all=Object.keys(m).map(n=>({label:n,n:m[n]})).sort((a,b)=>b.n-a.n||(a.label<b.label?-1:1)),out=all.slice(0,max).map((x,i)=>({...x,color:colOf(x.label,i)})),rest=all.slice(max).reduce((s,x)=>s+x.n,0);return rest&&out.push({label:"غيرها",n:rest,color:"var(--fg-x94a3b8)"}),out}rzKpis(reports,opts){const R=reports||[],T=R.length,O=opts||this.rzNormOpts(null),CH=["var(--chart-1)","var(--chart-2)","var(--chart-3)","var(--chart-4)","var(--chart-5)"],colOf=k=>(n,i)=>{if(n===this.RZ_NOPARTY)return"var(--fg-x94a3b8)";const it=(O[k]||[]).find(x=>x.n===n);return it?it.c:CH[i%CH.length]},count=f=>R.filter(f).length,imp=this.RZ_IMPACTS.map(v=>({label:v,color:this.RZ_IMP_COL[v],n:count(r=>r.impact===v)})),top=k=>{const L=this.rzTop(R,k,4,colOf(k));return L.length?L:(O[k]||[]).filter(x=>x&&x.n!==this.RZ_NOPARTY&&x.n!==this.RZ_NOACT).slice(0,4).map((x,i)=>({label:x.n,color:x.c||CH[i%CH.length],n:0}))},type=top("type");return{total:T,hot:imp[2].n+imp[3].n,acted:T-count(r=>r.act===this.RZ_NOACT),reported:count(r=>r.party&&r.party!==this.RZ_NOPARTY),topType:T&&type.length?type[0]:null,impact:imp,type,act:top("act"),party:top("party")}}rzDateCells(r){const p=n=>(n<10?"0":"")+n;let g="—";try{const x=this.hGreg(r.y,r.m,r.d);g=x.getFullYear()+"/"+p(x.getMonth()+1)+"/"+p(x.getDate())}catch{g="—"}return{hij:r.y+"/"+p(r.m)+"/"+p(r.d),greg:g}}rzSearchHit(q,r){if(!q)return!0;const f=[r.spot,r.type,r.act,r.zone,r.byName,r.party,r.notes,r.floor,r.dept];try{if(KIVO.BassamFind&&KIVO.BassamFind.match)return!!KIVO.BassamFind.match(q,f)}catch{}return f.some(x=>String(x??"").toLowerCase().indexOf(q)>=0)}_rzSpotOk(opts,zone,spot){const s=(opts.spot||[]).find(i=>i.n===spot);return!zone||zone===this.RZ_OTHER||!s||s.z===zone}PC(a){try{return!!KIVO.BassamPerm&&KIVO.BassamPerm.can("rasd",a||"view")}catch{return!1}}permDeny(){try{this.bsToast("صلاحيتك على نظام رصد الحالات لا تشمل هذا الإجراء — راجع مدير الإدارة")}catch{}}bsMenusPatch(){return{rowMenu:null,rzLgFilesOpen:!1,rzLgFddOpen:null}}rzActorKey(){try{const u=KIVO.BassamAuth&&KIVO.BassamAuth.user?KIVO.BassamAuth.user():null;return u&&(u.id||u.ekey||u.un)||""}catch{return""}}rzDeptName(){try{return KIVO.BassamDepts&&KIVO.BassamDepts.activeName&&KIVO.BassamDepts.activeName()||""}catch{return""}}rzSeizedOn(){try{return KIVO.bus.read("seized.usable@1")===!0}catch{return!1}}emptyDraft(){return{zone:"",zoneTx:"",floor:"",spot:"",spotQ:"",type:"",typeTx:"",act:"",actTx:"",party:"",partyTx:"",impact:"",notes:"",t:"",att:null}}_bsHT(t){try{if(this.props&&this.props.solo)return;const h=String(location.hash||""),p="#/rasd";if(h.indexOf(p)!==0)return;const w=t?p+"/"+t:p;h!==w&&history.replaceState&&history.replaceState(null,"",location.pathname+location.search+w)}catch{}}_bsHR(){try{if(this.props&&this.props.solo)return"";const o=KIVO.__BS_OPEN_TAB;return!o||o.page!=="rasd"?"":(KIVO.__BS_OPEN_TAB=null,o.tab!=="records"&&o.tab!=="dash"?(this._bsHT(""),""):o.tab)}catch{return""}}renderVals(){const q=this._bsHR(),pv=this._irPermVals(),sub=t=>{try{return!KIVO.BassamPerm||!KIVO.BassamPerm.subOn||KIVO.BassamPerm.subOn("rasd",t)}catch{return!0}},solo=!(!this.props||this.props.solo!=="dash"),dOk=solo&&sub("dash"),rOk=sub("records");let h=solo?"dash":"records";h==="records"&&!rOk&&dOk&&(h="dash"),q&&q!==h&&this._bsHT(h);const onDash=h==="dash"&&dOk,onRec=h==="records"&&rOk,link=!!(rOk&&this.PC("view")),c={rzOnDash:onDash,rzOnRecords:onRec,irRecLinkOn:link,irRecLinkOff:!link,...pv};return onRec&&(this._rzEnsureRetro(),Object.assign(c,this._rzCalVals())),onDash&&Object.assign(c,this._rzDashVals()),c}_rzDashVals(){const t=this.state,e=this.hToday(),S=this.loadRasd().reports||[],O=this.loadRzOpts(),DAY=864e5,MN=this.MONTHS,GM=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],pc=x=>KIVO.bsPct?KIVO.bsPct(x):String(Math.round(x||0)),n=x=>Math.round(x||0).toLocaleString("en-US"),ar=x=>n(x).replace(/[0-9]/g,d=>"٠١٢٣٤٥٦٧٨٩"[+d]),fx=x=>(x=x||0,x>0&&x<10&&Math.round(x)!==x?x.toFixed(1):n(x)),days=x=>x===1?"يوم واحد":x===2?"يومين":x>=3&&x<=10?x+" أيام":KIVO.BassamCount(x,"يوم")+"",hp=ts=>this.hParts(new Date(ts)),d0=dt=>new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()).getTime(),pIso=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||"");return m?new Date(+m[1],+m[2]-1,+m[3]).getTime():null},iso=ts=>{const x=new Date(ts),p=k=>k<10?"0"+k:""+k;return x.getFullYear()+"-"+p(x.getMonth()+1)+"-"+p(x.getDate())},hLbl=p=>p.d+" "+MN[p.m-1]+" "+p.y+" هـ",kD=r=>1e4*r.y+100*r.m+r.d,kM=r=>100*r.y+r.m,one=()=>1,MET=[{name:"عالية/حرجة",desc:"عدد الحالات ذات التأثير العالي أو الحرج",f:r=>r.impact==="عالٍ"||r.impact==="حرج"?1:0,color:"var(--danger)"},{name:"اتُّخذ فيها إجراء",desc:"عدد الحالات التي اتُّخذ فيها إجراء",f:r=>r.act&&r.act!==this.RZ_NOACT?1:0,color:"var(--success)"},{name:"أُبلغت فيها جهة مختصة",desc:"عدد الحالات التي أُبلغت فيها جهةٌ مختصة",f:r=>r.party&&r.party!==this.RZ_NOPARTY?1:0,color:"var(--fg-x2a78d6)"}],yrs={},ym={};S.forEach(r=>r.y&&(yrs[r.y]=1,ym[r.y+"-"+r.m]=1));let Ys=Object.keys(yrs).map(Number).sort((a,b)=>b-a);Ys.length||(Ys=[e.y]);const allY=t.irDashYear==null||String(t.irDashYear)==="all";let Y=allY?Ys[0]:+t.irDashYear;Ys.indexOf(Y)<0&&(Y=Ys[0]);const Ms=[];for(let m=1;m<=12;m++)ym[Y+"-"+m]&&Ms.push(m);let M=allY?"all":t.irDashMonth==null?"":String(t.irDashMonth);!allY&&M!=="all"&&Ms.indexOf(+M)<0&&(M=Ms.length?String(Ms[Ms.length-1]):"all");const mDays=(y,m)=>this.hMonthDays(y,m),elapsed=(y,m)=>y>e.y?0:y<e.y||m<e.m?mDays(y,m):m===e.m?e.d:0,mode=t.irDashMode==="custom"?"custom":allY?"all":"month",today=d0(this.hGreg(e.y,e.m,e.d));let A=pIso(t.irDashFrom),B=pIso(t.irDashTo);mode==="custom"&&(A==null&&(A=today-29*DAY),B==null&&(B=today),A>B&&([A,B]=[B,A]));let cur=[],prev=[],X=[],daily=!0,perLbl="",prevLbl="",H=0,heatY=Y;const monthAxis=keys=>keys.map(k=>({k,lab:MN[k%100-1],full:MN[k%100-1]+" "+Math.floor(k/100)+" هـ"}));if(mode==="all"){cur=S.slice(),daily=!1;const mm={};S.forEach(r=>mm[kM(r)]=1),X=monthAxis(Object.keys(mm).map(Number).sort((a,b)=>a-b)),perLbl="كل الفترة";let lo=null;if(S.forEach(r=>{const k=kD(r);(lo==null||k<lo)&&(lo=k)}),lo!=null)try{H=Math.round((today-d0(this.hGreg(Math.floor(lo/1e4),Math.floor(lo/100)%100,lo%100)))/DAY)+1}catch{H=30*X.length}heatY=Ys[0]}else if(mode==="custom"){const ka=kD(hp(A)),kb=kD(hp(B));if(cur=S.filter(r=>kD(r)>=ka&&kD(r)<=kb),H=Math.round((B-A)/DAY)+1,daily=H<=62,daily)for(let ts=A;ts<=B;ts+=DAY){const p=hp(ts);X.push({k:kD(p),lab:String(p.d),full:hLbl(p)})}else{const mm={};for(let ts=A;ts<=B;ts+=DAY)mm[kM(hp(ts))]=1;X=monthAxis(Object.keys(mm).map(Number).sort((a,b)=>a-b))}perLbl=hLbl(hp(A))+" ← "+hLbl(hp(B));const q0=hp(A-H*DAY),q1=hp(A-DAY);prev=S.filter(r=>kD(r)>=kD(q0)&&kD(r)<=kD(q1)),prevLbl=hLbl(q0)+" ← "+hLbl(q1),heatY=e.y}else if(M==="all"){cur=S.filter(r=>r.y===Y),daily=!1;for(let m=1;m<=12;m++)elapsed(Y,m)>0&&X.push({k:100*Y+m,lab:MN[m-1],full:MN[m-1]+" "+Y+" هـ"});H=X.reduce((s,x)=>s+elapsed(Y,x.k%100),0),perLbl="كل أشهر "+Y+" هـ";const isCur=Y===e.y;let pr=yrs[Y-1]?S.filter(r=>r.y===Y-1):[];isCur&&(pr=pr.filter(r=>r.m<e.m||r.m===e.m&&r.d<=e.d)),prev=pr,prevLbl=isCur?"نفس الفترة من "+(Y-1)+" هـ":"سنة "+(Y-1)+" هـ"}else{const mo=+M,nd=elapsed(Y,mo)||mDays(Y,mo);cur=S.filter(r=>r.y===Y&&r.m===mo);for(let d=1;d<=nd;d++)X.push({k:1e4*Y+100*mo+d,lab:String(d),full:d+" "+MN[mo-1]+" "+Y+" هـ"});H=nd,perLbl=MN[mo-1]+" "+Y+" هـ";let py=Y,pm=mo-1;pm<1&&(pm=12,py=Y-1);const isCur=Y===e.y&&mo===e.m;let pr=ym[py+"-"+pm]?S.filter(r=>r.y===py&&r.m===pm):[];isCur&&(pr=pr.filter(r=>r.d<=e.d)),prev=pr,prevLbl=isCur?"أول "+days(e.d)+" من "+MN[pm-1]+" "+py+" هـ":MN[pm-1]+" "+py+" هـ"}const G=prev.length>0&&mode!=="all";mode==="all"&&(prevLbl="");const p2=k=>k<10?"0"+k:""+k,kNum=k=>daily?Math.floor(k/1e4)+"-"+p2(Math.floor(k/100)%100)+"-"+p2(k%100):Math.floor(k/100)+"-"+p2(k%100),KEY=daily?kD:kM,series=(rs,f)=>{const b={};return rs.forEach(r=>b[KEY(r)]=(b[KEY(r)]||0)+f(r)),X.map(x=>b[x.k]||0)},stat=f=>{const ser=series(cur,f),tot=ser.reduce((a,v)=>a+v,0);let mn=0,mx=0,act=0,iMx=-1,iMn=-1;ser.forEach((v,i)=>{v>0&&(act++,(mx===0||v>mx)&&(mx=v,iMx=i),(mn===0||v<mn)&&(mn=v,iMn=i))});const at=i=>i>=0?X[i]:null;return{ser,tot,min:mn,max:mx,avg:act?tot/act:0,act,gap:ser.length-act,peakShort:at(iMx)?at(iMx).full.replace(/ هـ$/,""):"—",lowShort:at(iMn)?at(iMn).full.replace(/ هـ$/,""):"—",peakNum:at(iMx)?kNum(at(iMx).k):"—",lowNum:at(iMn)?kNum(at(iMn).k):"—"}},W=stat(one),MS=MET.map((m,i)=>({m,st:stat(m.f),i1:i===0,i2:i===1,i3:i===2,i4:!1})),T=W.tot,Tp=prev.length,unit=daily?"يوم":"شهر",path=(ser,w,h,top2)=>{const L=ser.length;if(!L)return{line:"",area:""};const mx=top2||Math.max.apply(null,ser.concat([1])),xo=i=>L===1?w/2:w-i/(L-1)*w;let ln="";return ser.forEach((v,i)=>ln+=(i?"L":"M")+xo(i).toFixed(1)+" "+(h-(mx>0?v/mx*h:0)).toFixed(1)+" "),{line:ln,area:"M"+xo(0).toFixed(1)+" "+h+" "+ln.replace(/^M/,"L")+"L"+xo(L-1).toFixed(1)+" "+h+" Z"}},hero=path(W.ser,1e3,100),brk=t.irDashBrk||"total",PAL=this.RZ_PAL,zoneCol=(z,i)=>{const it=(O.zone||[]).find(x=>x&&x.n===z);return it&&it.c||PAL[i%PAL.length]};let layers=[];if(brk==="imp")layers=this.RZ_IMPACTS.map(v=>({name:v,color:this.RZ_IMP_COL[v],ser:series(cur.filter(r=>r.impact===v),one)})).filter(l=>l.ser.some(v=>v>0));else if(brk==="zone"){const zc2={};cur.forEach(r=>r.zone&&(zc2[r.zone]=(zc2[r.zone]||0)+1)),layers=Object.keys(zc2).sort((a,b)=>zc2[b]-zc2[a]).slice(0,6).map((z,i)=>({name:z,color:zoneCol(z,i),ser:series(cur.filter(r=>r.zone===z),one)}))}const stacked=brk!=="total"&&layers.length>0,main=stacked?X.map((x,i)=>layers.reduce((a,l)=>a+l.ser[i],0)):W.ser;let ghost=null;if(G&&!stacked){const b={};prev.forEach(r=>b[KEY(r)]=(b[KEY(r)]||0)+1);const pv=Object.keys(b).map(Number).sort((a,c)=>a-c).map(k=>b[k]),g=X.map((x,i)=>pv[i]==null?0:pv[i]);pv.length&&g.some(v=>v>0)&&(ghost=g)}const nice=v=>{if(!(v>0))return 10;const p=Math.pow(10,Math.floor(Math.log10(v))),r=v/p,st=[1,1.2,1.6,2,2.4,3,4,5,6,8,10];for(let i=0;i<st.length;i++)if(r<=st[i])return Math.max(4,st[i]*p);return 10*p},top=nice(Math.max.apply(null,[1].concat(main).concat(ghost||[]))),mainP=path(main,1e3,100,top),ghostP=ghost?path(ghost,1e3,100,top):null,stackP=[];if(stacked){const acc=X.map(()=>0),L=X.length,xo=i=>L===1?500:1e3-i/(L-1)*1e3,yo=v=>100-v/top*100;layers.forEach(l=>{const hi=l.ser.map((v,i)=>acc[i]+v),lo=acc.slice();let d="M"+xo(0).toFixed(1)+" "+yo(hi[0]).toFixed(1)+" ";for(let i=1;i<L;i++)d+="L"+xo(i).toFixed(1)+" "+yo(hi[i]).toFixed(1)+" ";for(let i=L-1;i>=0;i--)d+="L"+xo(i).toFixed(1)+" "+yo(lo[i]).toFixed(1)+" ";stackP.push({d:d+"Z",fill:l.color}),l.ser.forEach((v,i)=>acc[i]+=v)})}const grid=[];for(let i=4;i>=0;i--){const y=100*(1-i/4);grid.push({lab:fx(top*i/4),lineStyle:"position:absolute;right:0;left:0;top:"+y.toFixed(2)+"%;border-top:1px solid "+(i===0?"var(--bd-xd9dee4)":"var(--bd-xeff1f4)"),labStyle:"position:absolute;left:-52px;top:"+y.toFixed(2)+"%;transform:translateY(-50%);font-size:10px;font-weight:400;color:var(--fg-x94a3b8);direction:ltr;width:46px;text-align:left"})}const NX=X.length,stepX=Math.max(1,Math.ceil(NX/9)),xLabs=X.map((x,i)=>({show:i%stepX===0||i===NX-1,lab:x.lab})),hits=X.map((x,i)=>{let s=x.full+"  —  "+KIVO.BassamCount(n(main[i]),"حالة");return ghost&&(s+="  ·  السابق: "+n(ghost[i])),stacked&&layers.forEach(l=>l.ser[i]&&(s+=`
+`+l.name+": "+n(l.ser[i]))),{tip:s}}),SH=["var(--bg-xeff1f4)","color-mix(in srgb,var(--bg-xb99751) 22%,var(--bg-xffffff))","color-mix(in srgb,var(--bg-xb99751) 45%,var(--bg-xffffff))","color-mix(in srgb,var(--bg-xb99751) 72%,var(--bg-xffffff))","var(--bg-xb99751)","var(--bg-x8a6f35)"],heatCols=[],heatMos=[];let heatAct=0;try{const t0=d0(this.hGreg(heatY,1,1)),cells=[];let o=0;for(let m=1;m<=12;m++){const nd=mDays(heatY,m),el=elapsed(heatY,m);for(let d=1;d<=nd;d++,o++)d<=el&&cells.push({m,d,ts:t0+o*DAY})}if(cells.length){const cnt={};S.filter(r=>r.y===heatY).forEach(r=>cnt[r.m+"-"+r.d]=(cnt[r.m+"-"+r.d]||0)+1);const vals=Object.keys(cnt).map(k=>cnt[k]).filter(v=>v>0).sort((a,b)=>a-b);heatAct=vals.length;const q=p=>vals.length?vals[Math.min(vals.length-1,Math.floor(vals.length*p))]:1,cut=[q(.2),q(.4),q(.6),q(.85)],lvl=v=>v?v<=cut[0]?1:v<=cut[1]?2:v<=cut[2]?3:v<=cut[3]?4:5:0,at={};cells.forEach(c=>at[c.ts]=c);const first=cells[0].ts,last=cells[cells.length-1].ts,start=first-(new Date(first).getDay()+1)%7*DAY,weeks=Math.max(1,Math.floor((last-start)/DAY/7)+1);let lastM=-1,lastW=-9;for(let w=0;w<weeks;w++){const col=[];let mo=-1;for(let k=0;k<7;k++){const ts=start+(7*w+k)*DAY,c=at[ts];if(!c){col.push({style:"width:15px;height:15px;border-radius:3px;background:transparent",tip:""});continue}mo<0&&(mo=c.m);const v=cnt[c.m+"-"+c.d]||0,g=new Date(ts);col.push({style:"width:15px;height:15px;border-radius:3px;background:"+SH[lvl(v)],tip:c.d+" "+MN[c.m-1]+" "+heatY+" هـ · "+this.WEEKDAYS[g.getDay()]+" "+g.getDate()+" "+GM[g.getMonth()]+" — "+KIVO.BassamCount(n(v),"حالة")})}heatCols.push({cells:col});const show=mo>0&&mo!==lastM&&w-lastW>=3;show&&(lastW=w),mo>0&&(lastM=mo),heatMos.push({show,lab:mo>0?MN[mo-1]:""})}}}catch{heatCols.length=0}const heatScale=SH.map(c=>({style:"width:11px;height:11px;border-radius:3px;display:inline-block;background:"+c})),pill=(up,flat)=>"display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;border-radius:9999px;padding:2px 6px;"+(flat?"color:var(--fg-x94a3b8);background:var(--bg-a1481631840p14)":up?"color:var(--fg-x006300);background:var(--bg-a09900p09)":"color:var(--fg-xd03b3b);background:var(--bg-a20859590p09)"),delta=(v,p)=>{if(!G||!p)return{txt:"—",style:pill(!0,!0)};const x=(v-p)/p*100,fl=Math.abs(x)<.5;return{txt:(fl?"◆ ":x>=0?"▲ ":"▼ ")+pc(Math.abs(x))+"%",style:pill(x>=0,fl)}},group=(list,max,otherName)=>{if(list.length<=max)return list;const rest=list.slice(max-1);return list.slice(0,max-1).concat([{name:otherName(rest.length),v:rest.reduce((a,x)=>a+x.v,0),p:rest.reduce((a,x)=>a+(x.p||0),0),other:!0}])},dotBar=(x,col,max)=>({dot:"width:9px;height:9px;border-radius:3px;flex-shrink:0;background:"+(x.other?"var(--bg-xc9cfd6)":col),bar:"height:100%;border-radius:9999px;width:"+(x.v/max*100).toFixed(2)+"%;background:"+(x.other?"var(--bg-xc9cfd6)":col)}),tc={};cur.forEach(r=>{const k=r.type||"غير محدد";tc[k]=(tc[k]||0)+1});const types=group(Object.keys(tc).map((k,i)=>{const it=(O.type||[]).find(x=>x&&x.n===k);return{name:k,v:tc[k],c:it&&it.c||PAL[i%PAL.length]}}).sort((a,b)=>b.v-a.v),7,k=>"أنواع أخرى ("+k+")"),typeMax=Math.max.apply(null,[1].concat(types.map(x=>x.v))),typeRows=types.map(x=>({name:x.name,val:n(x.v),pct:(T?pc(x.v/T*100):"0")+"%",...dotBar(x,x.c,typeMax)})),zc={},zp={};cur.forEach(r=>r.zone&&(zc[r.zone]=(zc[r.zone]||0)+1)),prev.forEach(r=>r.zone&&(zp[r.zone]=(zp[r.zone]||0)+1));const zones=group(Object.keys(zc).map(k=>({name:k,v:zc[k],p:zp[k]||0})).sort((a,b)=>b.v-a.v),7,k=>"مناطق أخرى ("+k+")"),zoneMax=Math.max.apply(null,[1].concat(zones.map(x=>x.v))),zoneRows=zones.map(x=>{const dl=delta(x.v,x.p);return{name:x.name,val:n(x.v),pct:(T?pc(x.v/T*100):"0")+"%",dTxt:dl.txt,dStyle:dl.style,...dotBar(x,"var(--bg-x8a6f35)",zoneMax)}}),imp=this.RZ_IMPACTS.map(v=>({name:v,color:this.RZ_IMP_COL[v],v:cur.filter(r=>r.impact===v).length})),impTot=imp.reduce((a,x)=>a+x.v,0)||1,cmpRows=[["إجمالي الحالات",T,Tp]].concat(MS.map(x=>[x.m.name,x.st.tot,prev.reduce((a,r)=>a+x.m.f(r),0)])).map(x=>{const dl=delta(x[1],x[2]);return{label:x[0],nums:n(x[2])+" → "+n(x[1]),txt:dl.txt,style:dl.style}}),by={},byP={},byHot={},byNm={},whoOf=r=>r.by||r.byName;cur.forEach(r=>{const k=whoOf(r);k&&(by[k]=(by[k]||0)+1,byHot[k]=(byHot[k]||0)+MET[0].f(r),byNm[k]=r.byName||k)}),prev.forEach(r=>{const k=whoOf(r);k&&(byP[k]=(byP[k]||0)+1)});const RANK=["background:var(--bg-x8a6f35);color:var(--fg-xffffff)","background:var(--bg-a185151810p3);color:var(--fg-x8a6f35)","background:var(--bg-a185151810p16);color:var(--fg-x8a6f35)"],topR=Object.keys(by).map(k=>({v:by[k],p:byP[k]||0,hot:byHot[k]||0,nm:byNm[k]||"—"})).sort((a,b)=>b.v-a.v).slice(0,6),topMax=Math.max.apply(null,[1].concat(topR.map(x=>x.v))),topRows=topR.map((x,i)=>{const dl=delta(x.v,x.p);return{rank:String(i+1),name:x.nm,sub:x.hot?"منها "+KIVO.BassamCount(x.hot,"حالة")+" عالية/حرجة":"لا حالات عالية أو حرجة",ben:n(x.v),dTxt:dl.txt,dStyle:dl.style,bar:"height:100%;border-radius:9999px;background:var(--bg-xb99751);width:"+(x.v/topMax*100).toFixed(2)+"%",numStyle:"width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;flex-shrink:0;"+(RANK[i]||"background:var(--bg-xeff1f4);color:var(--fg-x53565a)")}}),Hd=Math.max(1,H),sumOf=rs=>{const sp={},em={};return rs.forEach(r=>(r.spot&&(sp[r.spot]=1),whoOf(r)&&(em[whoOf(r)]=1))),{reports:n(Object.keys(sp).length),emps:n(Object.keys(em).length),ben:n(rs.length),avg:(rs.length/Hd).toFixed(1),trans:n(rs.reduce((a,r)=>a+MET[0].f(r),0)),bro:n(rs.reduce((a,r)=>a+MET[1].f(r),0)),ref:n(rs.reduce((a,r)=>a+MET[2].f(r),0)),share:(T?pc(rs.length/T*100):"0")+"%"}},sumAll=Object.keys(zc).sort((a,b)=>zc[b]-zc[a]).map((z,i)=>{const rs=cur.filter(r=>r.zone===z),col=zoneCol(z,i);return{name:z,dot:"width:8px;height:8px;border-radius:3px;display:inline-block;margin-inline-end:7px;vertical-align:middle;background:"+col,shareBar:"display:block;height:100%;border-radius:9999px;background:"+col+";width:"+(T?(rs.length/T*100).toFixed(2):0)+"%",...sumOf(rs)}}),sq=(t.irDashSumQ||"").trim(),sumF=KIVO.BassamFind.filter(sq,sumAll.slice(),x=>[x.name]),pg=this._rzPager(sumF.length,t.irDashSumPerPage,t.irDashSumPage,k=>this.setState({irDashSumPage:k})),inF={};sumF.forEach(x=>inF[x.name]=1);const sumTot={label:sq?"إجمالي المعروض":"الإجمالي",...sumOf(cur.filter(r=>inF[r.zone]))},tick=[{dot:"var(--bg-xb99751)",n:"الإجمالي",v:n(T),p:""}].concat(MS.map(x=>({dot:x.m.color,n:x.m.name,v:n(x.st.tot),p:T?"("+pc(x.st.tot/T*100)+"٪)":""}))).concat([{dot:"var(--bg-x7b8a94)",n:"الراصدون",v:n(Object.keys(by).length),p:""},{dot:"var(--bg-x7b8a94)",n:"المتوسط لكل "+unit,v:fx(W.avg),p:""},{dot:"var(--bg-x7b8a94)",n:"أعلى",v:n(W.max),p:W.peakNum}]).map(x=>({dot:"width:7px;height:7px;border-radius:2px;flex-shrink:0;background:"+x.dot,n:x.n,v:x.v,p:x.p})),seg=on=>"border:0;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;"+(on?"background:var(--bg-xffffff);color:var(--fg-x8a6f35);box-shadow:var(--shadow-card)":"background:transparent;color:var(--fg-x94a3b8)"),heroD=delta(T,Tp),cu=mode==="custom",actSub=k=>daily?days(k):KIVO.BassamCount(k,"شهر")+"";return{irEmptyShow:S.length===0,irDashYear:allY?"all":String(Y),irDashYearOpts:[{v:"all",lbl:"كل السنوات"}].concat(Ys.map(y=>({v:String(y),lbl:y+" هـ"}))),irDashSetYear:ev=>this.setState({irDashYear:ev.target.value==="all"?"all":+ev.target.value,irDashMonth:null,irDashMode:null}),irDashMonth:M,irDashMonthOpts:allY?[{v:"all",lbl:"كل الأشهر"}]:Ms.map(m=>({v:String(m),lbl:MN[m-1]+" ("+p2(m)+")"})).concat([{v:"all",lbl:"كل أشهر السنة"}]),irDashSetMonth:ev=>this.setState({irDashMonth:ev.target.value,irDashMode:null}),irDashYmBoxStyle:"display:flex;align-items:center;gap:7px;border:1px solid "+(cu?"var(--bd-xe6e9ed)":"var(--bd-a185151810p45)")+";background:"+(cu?"var(--bg-xf8f9fb)":"var(--bg-a185151810p07)")+";border-radius:12px;padding:4px 11px;flex-shrink:0;opacity:"+(cu?".55":"1"),irDashModeOpts:[{lbl:"نطاق مخصص",style:seg(cu),click:()=>this.setState({irDashMode:cu?null:"custom",irDashFrom:t.irDashFrom||iso(today-29*DAY),irDashTo:t.irDashTo||iso(today)})}],irDashCustomOn:cu,irDashFrom:cu?iso(A):"",irDashTo:cu?iso(B):"",irDashSetFrom:ev=>this.setState({irDashFrom:ev.target.value,irDashMode:"custom"}),irDashSetTo:ev=>this.setState({irDashTo:ev.target.value,irDashMode:"custom"}),irDashRangeHint:cu?"= "+perLbl+" · "+days(H):"",irDashPerLbl:perLbl,irDashTicker:tick.concat(tick),irDashPeriodTxt:"الفترة: "+perLbl+" · "+days(H)+" · "+KIVO.BassamCount(cur.length,"حالة")+(G?" · تُقارَن بـ "+prevLbl:mode==="all"?"":" · لا توجد فترة سابقة للمقارنة"),irDashHeroLbl:"إجمالي الحالات المرصودة · "+perLbl,irDashHeroNum:ar(T),irDashMetsLine:MET.map(m=>m.name).join(" · "),irDashSparkHas:W.ser.length>1,irDashHeroLine:hero.line,irDashHeroArea:hero.area,irDashHiVal:n(W.max),irDashHiSub:W.peakNum,irDashLoVal:n(W.min),irDashLoSub:W.lowNum,irDashAvgVal:fx(W.avg),irDashAvgSub:actSub(W.act),irDashGapOn:W.gap>0,irDashGapVal:String(W.gap),irDashCmpChipOn:G,irDashCmpChipTxt:heroD.txt,irDashCmpChipStyle:heroD.style,irDashCmpChipPrev:n(Tp),irDashMets:MS.map(x=>{const p=T?(x.st.tot/T*100).toFixed(2):0;return{name:x.m.name,desc:x.m.desc,num:ar(x.st.tot),pct:"٪"+(T?pc(x.st.tot/T*100):"0"),ring:"width:50px;height:50px;border-radius:9999px;position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--bg-xb99751) 0% "+p+"%,var(--bg-a185151810p16) "+p+"% 100%)",i1:x.i1,i2:x.i2,i3:x.i3,i4:x.i4}}),irDashGauges:MS.map(x=>{const s=x.st,f=s.max>s.min?Math.max(0,Math.min(1,(s.avg-s.min)/(s.max-s.min))):.5,a=Math.PI*f,pv=prev.reduce((acc,r)=>acc+x.m.f(r),0),dl=delta(s.tot,pv);return{name:x.m.name,desc:x.m.desc+" خلال الفترة",num:ar(s.tot),nx:(100+60.5*Math.cos(a)).toFixed(1),ny:(87-60.5*Math.sin(a)).toFixed(1),min:n(s.min),minDate:s.lowNum,minTip:"أدنى "+x.m.name+" — "+s.lowShort,avg:fx(s.avg),avgSub:actSub(s.act),max:n(s.max),maxDate:s.peakNum,maxTip:"ذروة "+x.m.name+" — "+s.peakShort,share:(T?pc(s.tot/T*100):"0")+"٪",dTxt:dl.txt,dStyle:dl.style,dTip:G?x.m.name+" في "+prevLbl+": "+n(pv):"لا توجد فترة سابقة للمقارنة",spark:path(s.ser,200,40).area,i1:x.i1,i2:x.i2,i3:x.i3,i4:x.i4}}),irDashBrkOpts:[["total","الإجمالي"],["imp","حسب التأثير"],["zone","حسب المنطقة"]].map(o=>({lbl:o[1],on:brk===o[0],style:seg(brk===o[0]),click:()=>this.setState({irDashBrk:o[0]})})),irDashTrendDesc:(daily?"تجميع يومي":"تجميع شهري")+" · "+KIVO.BassamCount(NX,"نقطة")+(ghost?" · مع خط الفترة السابقة":""),irDashTrendGrid:grid,irDashXLabels:xLabs,irDashHits:hits,irDashPlain:!stacked,irDashStacked:stacked,irDashStackPaths:stackP,irDashLine:mainP.line,irDashArea:mainP.area,irDashGhostOn:!!ghostP,irDashGhost:ghostP?ghostP.line:"",irDashLegend:stacked?layers.map(l=>({name:l.name,dot:"width:9px;height:9px;border-radius:3px;display:inline-block;background:"+l.color})):[{name:"الحالات المرصودة — الفترة الحالية",dot:"width:9px;height:9px;border-radius:3px;display:inline-block;background:var(--bg-xb99751)"}],irDashGhostLbl:prevLbl,irDashHasData:NX>0&&T>0,irDashNoData:!(NX>0&&T>0),irDashHeatCols:heatCols,irDashHeatMonths:heatMos,irDashHeatScale:heatScale,irDashHeatDesc:"كل مربع = يوم واحد من سنة "+heatY+" هـ · "+KIVO.BassamCount(heatAct,"يوم")+" "+KIVO.BassamCount.agr(heatAct,"فيه","فيهما","فيها")+" نشاط · تعرض السنة كاملة مهما كان النطاق المختار",irDashHeatYear:heatY+" هـ",irDashHeatOn:heatCols.length>0,irDashHeatOff:heatCols.length===0,irDashLangRows:typeRows,irDashLangOn:typeRows.length>0,irDashLangOff:typeRows.length===0,...KIVO.BassamCount.pair("irDashLangTot",n(T),"حالة","g"),irDashLocRows:zoneRows,irDashLocOn:zoneRows.length>0,irDashLocOff:zoneRows.length===0,...KIVO.BassamCount.pair("irDashLocTot",n(T),"حالة","g"),irDashShareSegs:imp.filter(x=>x.v>0).map(x=>({style:"height:100%;width:"+(x.v/impTot*100).toFixed(2)+"%;background:"+x.color})),irDashShiftLegend:imp.filter(x=>x.v>0).map(x=>({name:x.name,pct:pc(x.v/impTot*100)+"%",dot:"width:9px;height:9px;border-radius:3px;display:inline-block;background:"+x.color})),irDashShiftRows:imp.map(x=>({name:x.name,val:n(x.v),sub:T?pc(x.v/T*100)+"٪ من الحالات":"—",dot:"width:9px;height:9px;border-radius:3px;flex-shrink:0;background:"+x.color})),irDashCmpOn:G,irDashCmpOff:!G,irDashCmpRows:cmpRows,irDashPrevLbl:G?prevLbl:"الفترة السابقة",irDashTopEmployees:topRows,irDashEmpOn:topRows.length>0,irDashEmpOff:topRows.length===0,irDashSumOpen:!!t.irDashSumOpen,irDashSumToggle:()=>this.setState({irDashSumOpen:!this.state.irDashSumOpen}),irDashSumChev:"transition:transform .2s;flex-shrink:0;"+(t.irDashSumOpen?"transform:rotate(180deg)":""),irDashSumBadge:KIVO.BassamCount(sumAll.length,"منطقة")+"",irDashSumQ:t.irDashSumQ||"",irDashSumSetQ:ev=>this.setState({irDashSumQ:ev.target.value,irDashSumPage:1}),irDashSumShown:String(sumF.length),irDashSumAll:String(sumAll.length),irDashSumRows:sumF.slice(pg.from,pg.to),irDashSumTotal:sumTot,irDashMet1:MET[0].name,irDashMet2:MET[1].name,irDashMet34:MET[2].name,irDashSumHas:sumF.length>0,irDashSumEmpty:sumF.length===0,irDashSumEmptyMsg:sq?"لا توجد منطقة مطابقة لـ «"+sq+"»":"لا توجد بيانات ضمن هذه الفترة",...KIVO.BassamCount.pair("irDashSumPgTotal",String(sumF.length),"سجل","g"),irDashSumPgRange:pg.range,irDashSumPgNums:pg.nums,irDashSumPerPage:String(pg.per),irDashSumOnPerPage:ev=>this.setState({irDashSumPerPage:+ev.target.value==0?0:+ev.target.value||10,irDashSumPage:1}),irDashSumPgFirst:()=>this.setState({irDashSumPage:1}),irDashSumPgPrev:()=>this.setState({irDashSumPage:Math.max(1,pg.page-1)}),irDashSumPgNext:()=>this.setState({irDashSumPage:Math.min(pg.pages,pg.page+1)}),irDashSumPgLast:()=>this.setState({irDashSumPage:pg.pages}),irDashSumPgFirstStyle:pg.navStyle(pg.page>1),irDashSumPgPrevStyle:pg.navStyle(pg.page>1),irDashSumPgNextStyle:pg.navStyle(pg.page<pg.pages),irDashSumPgLastStyle:pg.navStyle(pg.page<pg.pages)}}_rzPager(total,perRaw,pageRaw,go){const per=perRaw===0?0:perRaw||10,size=per===0?Math.max(1,total):per,pages=Math.max(1,Math.ceil(total/size)),page=Math.min(Math.max(1,pageRaw||1),pages),from=(page-1)*size,list=[];[1,page-1,page,page+1,pages].forEach(k=>k>=1&&k<=pages&&list.indexOf(k)<0&&list.push(k)),list.sort((a,b)=>a-b);const nums=[];return list.forEach((k,i)=>{i>0&&k-list[i-1]>1&&nums.push({dots:!0,label:"…"}),nums.push({dots:!1,label:String(k),cur:k===page,plain:k!==page,style:"height:28px;min-width:28px;padding:0 4px;border:0;border-right:1px solid var(--bd-xe1e1e1);font-size:11px;font-weight:400;cursor:pointer;font-family:'Cairo',sans-serif;font-feature-settings:'tnum';"+(k===page?"background:var(--bg-xb99751);color:var(--text-on-brand)":"background:transparent;color:var(--fg-x475569)"),click:()=>go(k)})}),{per,pages,page,from,to:from+size,nums,range:total===0?"0":from+1+"–"+Math.min(from+size,total),navStyle:on=>"height:28px;width:28px;border:0;border-right:1px solid var(--bd-xe1e1e1);background:transparent;display:flex;align-items:center;justify-content:center;"+(on?"color:var(--fg-x475569);cursor:pointer":"color:var(--fg-xcbd5e1);cursor:default")}}_rzRetroCtx(){try{const boot=window.__BS_BOOT||{},d=KIVO.BassamDepts&&KIVO.BassamDepts.active&&KIVO.BassamDepts.active();return boot.uid&&d?{uid:String(boot.uid),dept:String(d),key:boot.uid+"\0"+d}:null}catch{return null}}_rzEnsureRetro(force){const c=this._rzRetroCtx();!c||!force&&this._rzRetroFor===c.key||(this._rzRetroFor=c.key,fetch("/api/retro?"+new URLSearchParams({uid:c.uid,dept:c.dept,res:"rasd"}),{credentials:"same-origin",cache:"no-store"}).then(r=>r.json()).then(j=>{const n=this._rzRetroCtx();n&&n.key===c.key&&j&&j.ok&&Array.isArray(j.windows)&&this.setState({rzRetro:{windows:j.windows}})}).catch(()=>{this._rzRetroFor=""}))}_rzWins(){const r=this.state.rzRetro,now=Date.now();return r?r.windows.filter(w=>w&&w.scope&&!w.closedAt&&w.until>now):[]}_rzWinOf(y,m,d){return this._rzWins().find(w=>w.scope.y===y&&w.scope.m===m&&(w.scope.d==null?d==null:w.scope.d===d))||null}_rzCovers(y,m,d){return this._rzWins().some(w=>w.scope.y===y&&w.scope.m===m&&(w.scope.d==null||w.scope.d===d))}async _rzRetroToggle(scope){if(!this.PC("approve"))return void this.permDeny();const c=this._rzRetroCtx();if(!(!c||this._rzRetroBusy)){if(!this.state.rzRetro)return this.bsToast("انتظر قراءة نافذة الاستدراك من الخادم ثم أعد المحاولة"),void this._rzEnsureRetro(!0);this._rzRetroBusy=!0;try{const w=this._rzWinOf(scope.y,scope.m,scope.d),body={uid:c.uid,dept:c.dept,res:"rasd",act:w?"close":"open",...w?{id:w.id}:{scope}};if(!w&&!await(KIVO.bsConfirm?KIVO.bsConfirm({title:"فتح الفترة للاستدراك",msg:"تُفتح الفترةُ المغلقة للاستدراك لإدارتك 24 ساعة وتُسجَّل باسمك في سجل الحركة.",ok:"فتح الفترة"}):!1))return;const r=await fetch("/api/retro?uid="+encodeURIComponent(c.uid),{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}),j=await r.json().catch(()=>null);!r.ok||!j||!j.ok?this.bsToast(r.status===403?"فتحُ الفترة المقفلة للاستدراك يحتاج صلاحية الاعتماد — راجع مدير الإدارة":"تعذّر "+(w?"إغلاق":"فتح")+" نافذة الاستدراك"):this.bsAck(w?"أُغلقت نافذة الاستدراك":"فُتحت الفترة للاستدراك","ok")}catch{this.bsToast("تعذّر الاتصال بالخادم — لم تتغيّر نافذة الاستدراك")}finally{this._rzRetroBusy=!1,this._rzEnsureRetro(!0)}}}_rzCalVals(){const t=this.state,e=this.hToday(),Y=t.rzYear,M=t.rzMonth,all=this.loadRasd().reports||[],cnt=(y,m,d)=>all.filter(r=>r.y===y&&(m==null||r.m===m)&&(d==null||r.d===d)).length,nowM=12*e.y+e.m,AP=this.PC("approve"),NOAP="فتحُ الشهر أو اليوم المقفل للاستدراك وإعادةُ قفله تحتاج صلاحية الاعتماد — راجع مدير الإدارة",FILE=["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z","M14 2v6h6"],SHIELD=["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z",""],months=this.MONTHS.map((name,i)=>{const m=i+1,sel=M===m,key=Y+"-"+m,past=12*Y+m<nowM,open=!!this._rzWinOf(Y,m,null),locked=past&&!open,k=cnt(Y,m),cases=KIVO.BassamCount(k,"حالة")+"";let st="position:relative;width:100%;border-radius:12px;padding:8px;text-align:center;transition:all .2s;box-shadow:var(--shadow-card);cursor:pointer;box-sizing:border-box;font-family:'Cairo',sans-serif;border:1px ",nameC="var(--fg-x53565a)",cntC="var(--fg-xcbd5e1)",lbl="لا حالات",icon=null;locked?(st+=(sel?"solid var(--bd-x64748b);box-shadow:0 0 0 2px var(--bd-a1001161390p22);":"solid var(--bd-a1001161390p35);")+"background:var(--bg-a1001161390p08)",nameC=cntC="var(--fg-x475569)",lbl=k?cases:"انقضى — مقفل",icon=SHIELD):sel?(st+="solid var(--bd-xb99751);box-shadow:0 0 0 2px var(--bd-a185151810p3);background:var(--bg-a185151810p06)",nameC="var(--fg-xb99751)",k&&(lbl=cases,cntC="var(--fg-xb99751)",icon=FILE)):k?(st+="solid var(--bd-xe1e1e1);background:var(--bg-xffffff)",lbl=cases,cntC="var(--fg-xb99751)",icon=FILE):st+="dashed var(--bd-xe1e1e1);background:var(--bg-a2452452450p7);opacity:.9";const fresh={rzYear:Y,rzMonth:m,rzDay:Y===e.y&&m===e.m?e.d:1};return{name,greg:this.hGregMonthLabel(Y,m),style:st,nameColor:nameC,cntColor:cntC,cntLabel:lbl,cntIcon:!!icon&&!locked,cntShield:locked,isCurrent:Y===e.y&&m===e.m,tip:locked?(k?cases+" في "+name+" · ":"")+(AP?"الشهر انقضى — مقفل · نقرة مزدوجة لفتحه للاستدراك":"الشهر انقضى — مقفل · فتحه للاستدراك يحتاج صلاحية الاعتماد"):past&&open?"مفتوح للاستدراك"+(AP?" · نقرة مزدوجة لإغلاقه مجدداً":""):k?cases+" في "+name:"لا حالات مرصودة في "+name,click:()=>this.setState(sel?fresh:{...fresh,rzLedgerPage:1}),dbl:ev=>{if(ev&&ev.stopPropagation&&ev.stopPropagation(),!AP)return void((locked||past&&open)&&this.bsToast(NOAP));(locked||past&&open)&&(this.setState({rzYear:Y,rzMonth:m}),this._rzRetroToggle({y:Y,m,d:null}))}}}),selM=12*Y+M,mPast=selM<nowM,mLocked=mPast&&!this._rzWinOf(Y,M,null),nDays=this.hMonthDays(Y,M),g1=this.hGreg(Y,M,1),g0=new Date(g1.getFullYear(),g1.getMonth(),g1.getDate(),12),isCurM=Y===e.y&&M===e.m,days=[];for(let i=1;i<=nDays;i++){const k=cnt(Y,M,i),sel=i===t.rzDay,today=isCurM&&i===e.d,past=mPast||selM===nowM&&i<e.d,fut=selM>nowM||isCurM&&i>e.d,covered=this._rzCovers(Y,M,i),lockC=mLocked||past&&!covered,lockO=!lockC&&past&&covered;let bg="var(--bg-xffffff)",fg="var(--fg-x53565a)",bd="2px solid var(--bd-xe1e1e1)";k?(bg=lockC?"var(--bg-x64748b)":"var(--bg-xb99751)",fg="var(--fg-xffffff)",bd="2px solid transparent"):lockC&&(bg="var(--bg-a1481631840p12)",fg="var(--fg-x94a3b8)"),sel&&(bd="2px solid "+(lockC?"var(--bd-x64748b)":"var(--bd-xb99751)"));const gd=new Date(g0.getTime()+864e5*(i-1));let gl="";try{gl=gd.toLocaleDateString("ar-u-ca-gregory-nu-latn",{day:"numeric",month:"long",year:"numeric"})}catch{gl=""}days.push({num:String(i),gnum:String(gd.getDate()),isToday:today,lockClosed:lockC,lockOpen:lockO,sepStyle:"display:block;width:9px;height:1px;flex-shrink:0;margin:1px 0;background:"+(k?"var(--bg-a2552552550p5)":"var(--bg-a1481631840p55)"),tip:"يوم "+i+" "+this.MONTHS[M-1]+" "+Y+" هـ — الموافق "+gl+" م"+(k?" — "+KIVO.BassamCount(k,"حالة"):" — لا حالات")+(lockC?" — انقضى، مقفل · "+(AP?"نقرة مزدوجة لفتحه":"فتحه يحتاج صلاحية الاعتماد"):lockO?" — مفتوح للاستدراك"+(AP?" · نقرة مزدوجة لإغلاقه":""):fut?" — لم يأتِ بعد":""),click:()=>this.setState(sel?{rzDay:i}:{rzDay:i,rzDelAsk:null}),dbl:ev=>{if(ev&&ev.stopPropagation&&ev.stopPropagation(),!AP)return void((mLocked||past)&&this.bsToast(NOAP));mLocked?this._rzRetroToggle({y:Y,m:M,d:null}):past&&this._rzRetroToggle({y:Y,m:M,d:this._rzWinOf(Y,M,null)?null:i})},style:"position:relative;height:24px;flex:1 1 auto;min-width:28px;padding:0 3px;border-radius:4px;font-size:8px;font-weight:"+(sel?"900":"700")+";display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;background:"+bg+";color:"+fg+";border:"+bd+(sel?";box-shadow:var(--shadow-card);z-index:10":"")+(today&&!sel?";box-shadow:0 0 0 2px var(--bd-a185151810p6)":"")+(fut?";opacity:.55":"")})}const D=t.rzDay,dPast=mPast||selM===nowM&&D<e.d,dFut=selM>nowM||isCurM&&D>e.d,dayLocked=!mLocked&&dPast&&!this._rzCovers(Y,M,D),monthRows=all.filter(r=>r.y===Y&&r.m===M),opts=this.loadRzOpts();return{rzMonths:months,rzYearLabel:Y+" هـ",rzGregRange:this.hGregYearRange(Y),rzBadgeLabel:KIVO.BassamCount(cnt(Y),"حالة")+" هذه السنة",rzBadgeStyle:"display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;border-radius:9999px;padding:4px 12px;font-family:'Cairo',sans-serif;border:1px solid "+(isCurM?"var(--bd-a185151810p35);color:var(--fg-x9a7e40);background:var(--bg-a185151810p12)":"var(--bd-a1481631840p35);color:var(--fg-x64748b);background:var(--bg-a1481631840p1)"),rzPrevYear:()=>this.setState({rzYear:Y-1,rzLedgerPage:1}),rzNextYear:()=>this.setState({rzYear:Y+1,rzLedgerPage:1}),rzGoCurrent:()=>this.setState({rzYear:e.y,rzMonth:e.m,rzDay:e.d,rzLedgerPage:1}),rzDays:days,rzSelDateLabel:D+" "+this.MONTHS[M-1]+" "+Y+" هـ",rzLegendLockTxt:AP?"انقضى — مقفل · نقرة مزدوجة لفتحه":"انقضى — مقفل",rzKpiCards:this._rzKpiCards(this.rzKpis(monthRows,opts)),...this._rzEntryVals({Y,M,D,e,isCurM,mLocked,dayLocked,dFut,AP,opts,all}),...this._rzLedgerVals({Y,M,D,monthRows,opts})}}_rzKpiCards(K){const C=2*Math.PI*41,T=K.total,pct=k=>T?Math.round(100*k/T)+"٪":"—",ring=parts=>{const live=parts.filter(p=>p.n>0),gap=live.length>1;let off=0;return live.map(p=>{const len=C*p.n/(T||1),g=gap?Math.min(3,.12*len):0,o={color:p.color,dash:Math.round(10*Math.max(.5,len-g))/10+" "+Math.round(10*C)/10,off:String(-Math.round(10*off)/10),tip:p.label+": "+p.n+" ("+pct(p.n)+")"};return off+=len,o})},card=o=>({...o,ring:ring(o.parts),rows:o.parts.map(p=>({label:p.label,color:"width:8px;height:8px;border-radius:3px;flex-shrink:0;background:"+p.color,n:String(p.n),pct:pct(p.n),tip:p.label+" — "+KIVO.BassamCount(p.n,"حالة")+" ("+pct(p.n)+")"})),lineStyle:"display:block;width:82px;height:1px;margin:6px 0 5px;background:linear-gradient(90deg,transparent,"+o.accent+",transparent);opacity:.5"}),tt=K.topType,noAct=T-K.acted;return[card({title:"مستوى التأثير",tip:"توزيعُ حالات الشهر على مستويات التأثير الأربعة — النسبةُ للعالية والحرجة",val:String(T),chip:pct(K.hot),sub:"عالية/حرجة من حالات الشهر",accent:K.hot?"var(--danger)":"var(--fg-x53565a)",parts:K.impact}),card({title:"نوع الحالة",tip:"أكثرُ أنواع الحالات تكراراً هذا الشهر (أعلى أربعة ثم غيرها)",val:String(tt?tt.n:0),chip:pct(tt?tt.n:0),sub:tt?"الأكثر: "+tt.label:"—",accent:"var(--fg-xb99751)",parts:K.type}),card({title:"الإجراء المتخذ",tip:"الإجراءاتُ المتخذة في حالات الشهر — الرقمُ ما اتُّخذ فيه إجراء",val:String(K.acted),chip:pct(K.acted),sub:T?noAct?KIVO.BassamCount(noAct,"حالة")+" بلا إجراء":"اتُّخذ إجراءٌ في كلها":"لا حالات بعد",accent:noAct?"var(--warning)":"var(--success)",parts:K.act}),card({title:"الإبلاغ",tip:"الجهاتُ التي أُبلغت بحالات الشهر — الرقمُ ما أُبلغت فيه جهةٌ مختصة",val:String(K.reported),chip:pct(K.reported),sub:"أُبلغت فيها جهةٌ مختصة",accent:"var(--fg-xb99751)",parts:K.party})]}_rzEntryVals(x){const t=this.state,dr=t.rzDraft||this.emptyDraft(),opts=x.opts,nowHM=this.rzHM(new Date),isToday=x.isCurM&&x.D===x.e.d,canAdd=this.PC("add"),lists=this._irCanWrite(),E=t.rzErr||{},O=this.RZ_OTHER,draft=()=>this.state.rzDraft||this.emptyDraft(),set=p=>this.setState({rzDraft:{...draft(),...p},rzSaveErrMsg:""}),clr=k=>{const e2={...this.state.rzErr||{}};return delete e2[k],e2},used=(k,v)=>x.all.filter(r=>r[k]===v).length,ddReset={rzDdEdit:"",rzDdDel:"",rzDdNew:"",rzDdErr:""},stop=ev=>ev&&ev.stopPropagation&&ev.stopPropagation(),persistRename=(k,from,to)=>{const d0=this.loadRasd(),r=this.rzListRename(this.loadRzOpts(),d0.reports,k,from,to);if(r.err)return void this.setState({rzDdErr:r.err});if(!this.saveRzOpts(r.opts))return;r.n&&this.saveRasd({...d0,reports:r.reports});const cur=draft(),p={};cur[k]===from&&(p[k]=r.v),k==="spot"&&cur.spot===from&&(p.spot=r.v,p.spotQ=r.v),this.setState({rzDraft:{...cur,...p},rzDdEdit:"",rzDdEditVal:"",rzDdErr:""}),this.bsAck(r.n?"عُدّل الاسم في القائمة و"+KIVO.BassamCount(r.n,"حالة","g")+" في السجل والمؤشرات":"عُدّل الاسم في القائمة","ok")},persistDel=(k,name)=>{const r=this.rzListDel(this.loadRzOpts(),k,name);if(r.err)return void this.setState({rzDdErr:r.err});if(!this.saveRzOpts(r.opts))return;const cur=draft(),p=cur[k]===name?k==="spot"?{spot:"",spotQ:""}:{[k]:"",[k+"Tx"]:""}:{};this.setState({rzDraft:{...cur,...p},rzDdDel:"",rzDdErr:""}),this.bsAck("حُذف «"+name+"» من القائمة — الحالاتُ المسجّلة تبقى باسمها","ok")},persistAdd=k=>{const cur=draft(),r=this.rzListAdd(this.loadRzOpts(),k,this.state.rzDdNew,cur.zone);if(r.err)return void this.setState({rzDdErr:r.err});if(!this.saveRzOpts(r.opts))return;const p=k==="spot"?{spot:r.v,spotQ:r.v}:{[k]:r.v,[k+"Tx"]:""};this.setState({rzDraft:{...cur,...p},rzErr:clr(k),rzDd:null,rzDdNew:"",rzDdErr:""}),this.bsAck("أُضيف «"+r.v+"» إلى القائمة"+(k==="spot"?" في «"+cur.zone+"»":""),"ok")},rowsOf=(k,list)=>list.map(it=>{const v=it.n,lock=k!=="spot"&&this.rzLocked(k,v),k2=used(k,v),ed=t.rzDdEdit===v,del=t.rzDdDel===v,sel=dr[k]===v;return{name:v,sq:"width:10px;height:10px;border-radius:3px;flex-shrink:0;background:"+(it.c||"var(--bd-xe1e1e1)"),hasSq:k!=="spot",meta:k==="spot"?[it.g,it.z].filter(Boolean).join(" · "):k2?KIVO.BassamCount(k2,"حالة"):"",normal:!ed&&!del,editing:ed,deleting:del,lock,tools:!lock&&lists,sel,rowStyle:"display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:12.5px;font-weight:400;border-radius:8px;color:var(--fg-x25343f);"+(sel?"background:var(--bg-a185151810p08);color:var(--fg-x8a6f35)":""),pick:()=>{const cur=draft(),p=k==="spot"?{spot:v,spotQ:v}:{[k]:v,[k+"Tx"]:v===O?cur[k+"Tx"]:""};k==="act"&&v!==this.RZ_REPORT&&(p.party="",p.partyTx=""),k==="zone"&&cur.spot&&!this._rzSpotOk(opts,v,cur.spot)&&(p.spot="",p.spotQ=""),this.setState({rzDraft:{...cur,...p},rzErr:clr(k),rzDd:null,...ddReset,rzSaveErrMsg:""})},startEdit:ev=>(stop(ev),this.setState({rzDdEdit:v,rzDdEditVal:v,rzDdDel:"",rzDdErr:""})),startDel:ev=>(stop(ev),this.setState({rzDdDel:v,rzDdEdit:"",rzDdErr:""})),delMsg:k2?"مستخدم في "+KIVO.BassamCount(k2,"حالة","g")+" — تبقى في السجل باسمها":"غير مستخدم في أي حالة",editVal:ed?t.rzDdEditVal:"",setEditVal:ev=>this.setState({rzDdEditVal:ev.target.value}),editKey:ev=>{ev&&ev.key==="Enter"&&(ev.preventDefault&&ev.preventDefault(),persistRename(k,v,this.state.rzDdEditVal)),ev&&ev.key==="Escape"&&this.setState({rzDdEdit:"",rzDdErr:""})},saveEdit:ev=>(stop(ev),persistRename(k,v,this.state.rzDdEditVal)),cancel:ev=>(stop(ev),this.setState({rzDdEdit:"",rzDdDel:"",rzDdErr:""})),doDel:ev=>(stop(ev),persistDel(k,v)),stop}}),fieldOf=(k,ord)=>{const list=opts[k].filter(it2=>(this.RZ_HIDE[k]||[]).indexOf(it2.n)<0),v=dr[k],it=opts[k].find(i=>i.n===v),open=t.rzDd===k;return{k,label:this.RZ_LBL[k],show:k!=="party"||dr.act===this.RZ_REPORT,wrapStyle:"display:flex;flex-direction:column;gap:5px;min-width:0;position:relative;order:"+ord,btnLabel:v||"— اختر "+this.RZ_PH[k]+" —",btnStyle:"width:100%;height:40px;padding:0 12px;border-radius:11px;border:1px solid "+(E[k]?"var(--bd-xdc2626)":open?"var(--bd-a185151810p4)":"var(--bd-xe2e8f0)")+";background:var(--bg-a2482502520p8);display:flex;align-items:center;font-family:'Cairo',sans-serif;font-size:12.5px;font-weight:400;color:"+(v?"var(--fg-x141414)":"var(--fg-x94a3b8)")+";cursor:pointer;box-sizing:border-box;gap:8px",sq:"width:10px;height:10px;border-radius:3px;flex-shrink:0;background:"+(it?it.c:"var(--bd-xe1e1e1)"),open,toggle:()=>this.setState({rzDd:open?null:k,...ddReset}),close:()=>this.setState({rzDd:null,...ddReset}),rows:rowsOf(k,list),canAdd:lists,addPh:"إضافة "+this.RZ_NOUN[k]+" جديد…",newVal:open?t.rzDdNew:"",setNew:ev=>this.setState({rzDdNew:ev.target.value,rzDdErr:""}),newKey:ev=>ev&&ev.key==="Enter"&&(ev.preventDefault&&ev.preventDefault(),persistAdd(k)),addNew:()=>persistAdd(k),ddErr:open?t.rzDdErr:"",ddErrOn:open&&!!t.rzDdErr,other:v===O,otherVal:dr[k+"Tx"]||"",otherPh:"اكتب "+(k==="zone"?"المنطقة":k==="type"?"نوع الحالة":k==="act"?"الإجراء":"الجهة"),setOther:ev=>(set({[k+"Tx"]:ev.target.value}),E[k]&&this.setState({rzErr:clr(k)})),err:E[k]||"",errOn:!!E[k]}},zz=dr.zone,zFree=!zz||zz===O,sq=String(dr.spotQ||"").trim(),spotsHit=opts.spot.filter(s=>(zFree||s.z===zz)&&(!sq||sq===dr.spot||s.n.indexOf(sq)>=0||(s.g||"").indexOf(sq)>=0)).slice(0,40),spOpen=t.rzDd==="spot",IMP_ON={منخفض:"background:var(--success-bg);border-color:var(--success);color:var(--success-text)",متوسط:"background:var(--warning-bg);border-color:var(--warning);color:var(--warning-text)",عالٍ:"background:color-mix(in srgb,var(--fg-xc2410c) 12%,transparent);border-color:var(--fg-xc2410c);color:var(--fg-xc2410c)",حرج:"background:var(--danger-bg);border-color:var(--danger);color:var(--danger-text)"},hd=x.e,canEnter=canAdd&&!x.mLocked&&!x.dayLocked&&!x.dFut,lockTail=x.AP?"":" · فتحه للاستدراك يحتاج صلاحية الاعتماد — راجع مدير الإدارة";return{rzCanEnter:canEnter,rzEntryShow:canAdd,rzMonthAutoHint:canAdd&&x.mLocked,rzDayLockedHint:canAdd&&x.dayLocked,rzFutureHint:canAdd&&!x.mLocked&&x.dFut,rzDayLockedTxt:"اليوم انقضى — مقفل"+(x.AP?" · انقر بطاقة اليوم نقرة مزدوجة لفتحه ثم سجّل الحالة":lockTail),rzMonthAutoTxt:"الشهر انقضى — مقفل"+(x.AP?" · انقر بطاقة الشهر نقرة مزدوجة لفتحه ثم أضف الحالة":lockTail),rzFutureTxt:"هذا اليوم لم يأتِ بعد — الرصدُ لليوم الحالي أو لأيامٍ مضت مفتوحةٍ للاستدراك",rzEntryTitle:"محضر رصد — يوم "+x.D+" "+this.MONTHS[x.M-1]+" "+x.Y+" هـ",rzAutoBy:"يُسجَّل آلياً: "+this.irActor()+" · "+hd.d+" "+this.MONTHS[hd.m-1]+" "+hd.y+" هـ · "+nowHM,rzAutoTip:"اسمُ الراصد وإدارتُه وتاريخُ الإدخال ووقتُه تُسجَّل آلياً من الجلسة — لا تُكتب",rzWhen:dr.t||nowHM,rzWhenMax:isToday?nowHM:"23:59",rzSetWhen:ev=>(set({t:ev.target.value}),E.t&&this.setState({rzErr:clr("t")})),rzWhenErr:E.t||"",rzWhenErrOn:!!E.t,rzWhenStyle:"height:30px;border:1px solid "+(E.t?"var(--bd-xdc2626)":"var(--bd-xe2e8f0)")+";border-radius:8px;background:var(--bg-xffffff);padding:0 8px;font-size:12px;font-family:'Cairo',sans-serif;font-feature-settings:'tnum';color:var(--fg-x141414);outline:none",rzFields:[fieldOf("zone",1),fieldOf("floor",2),fieldOf("type",4),fieldOf("act",5),fieldOf("party",6)],rzSpotLabel:this.RZ_LBL.spot,rzSpotQ:dr.spotQ||"",rzSpotPh:zFree?"ابحث: باب، ممر، سلم…":"ابحث في مواقع «"+zz+"»…",rzSpotStyle:"width:100%;height:40px;padding:0 34px 0 12px;border-radius:11px;border:1px solid "+(E.spot?"var(--bd-xdc2626)":spOpen?"var(--bd-a185151810p4)":"var(--bd-xe2e8f0)")+";background:var(--bg-a2482502520p8);font-family:'Cairo',sans-serif;font-size:12.5px;color:var(--fg-x141414);outline:none;box-sizing:border-box",rzSpotOpen:spOpen,rzSpotFocus:()=>t.rzDd!=="spot"&&this.setState({rzDd:"spot",...ddReset}),rzSpotSet:ev=>this.setState({rzDraft:{...draft(),spotQ:ev.target.value,spot:""},rzDd:"spot"}),rzSpotClose:()=>this.setState({rzDd:null,...ddReset,rzDraft:{...draft(),spotQ:draft().spot}}),rzSpotRows:rowsOf("spot",spotsHit).map(r=>({...r,sel:dr.spot===r.name})),rzSpotNone:spotsHit.length===0,rzSpotNoneMsg:zFree?"لا نتيجة — الموقع ليس في القائمة المعتمدة":"لا مواقع معتمدة بهذا الاسم في «"+zz+"»",rzSpotAddOn:lists&&!zFree,rzSpotAddOff:lists&&zFree,rzSpotAddPh:"إضافة موقع إلى «"+zz+"»…",rzSpotNew:spOpen?t.rzDdNew:"",rzSpotSetNew:ev=>this.setState({rzDdNew:ev.target.value,rzDdErr:""}),rzSpotNewKey:ev=>ev&&ev.key==="Enter"&&(ev.preventDefault&&ev.preventDefault(),persistAdd("spot")),rzSpotAdd:()=>persistAdd("spot"),rzSpotErr:spOpen?t.rzDdErr:"",rzSpotErrOn:spOpen&&!!t.rzDdErr,rzSpotFErr:E.spot||"",rzSpotFErrOn:!!E.spot,rzSzNote:dr.type===this.RZ_SEIZED&&this.rzSeizedOn(),rzImpacts:this.RZ_IMPACTS.map(v=>({name:v,aria:dr.impact===v?"true":"false",pick:()=>this.setState({rzDraft:{...draft(),impact:v},rzErr:clr("impact")}),style:"height:42px;border:1px solid var(--bd-xe2e8f0);border-radius:11px;background:var(--bg-xffffff);cursor:pointer;font-size:12.5px;font-weight:600;font-family:'Cairo',sans-serif;color:var(--fg-x53565a);"+(dr.impact===v?IMP_ON[v]:"")})),rzImpErr:E.impact||"",rzImpErrOn:!!E.impact,rzNotes:dr.notes||"",rzSetNotes:ev=>set({notes:String(ev.target.value||"").slice(0,500)}),rzNotesLeft:String(500-String(dr.notes||"").length),rzAttHas:!!dr.att,rzAttNo:!dr.att,rzAttUrl:dr.att?dr.att.url:"",rzAttName:dr.att?dr.att.name||"صورة":"",rzAttPick:()=>this.rzOpenFile(),rzAttOnFile:ev=>this.rzOnFile(ev),rzAttRemove:()=>{const cur=draft();cur.att&&this.rzDropImg(cur.att.iid),this.setState({rzDraft:{...cur,att:null}})},rzClearDraft:()=>{const cur=draft();cur.att&&this.rzDropImg(cur.att.iid),this.setState({rzDraft:this.emptyDraft(),rzErr:{},rzSaveErrMsg:"",rzDd:null})},rzSaveErr:!!t.rzSaveErrMsg,rzSaveErrMsg:t.rzSaveErrMsg||"",rzSave:()=>this.rzSaveCase({Y:x.Y,M:x.M,D:x.D,isToday,canEnter}),rzStop:stop}}rzSaveCase(c){if(!this.PC("add"))return void this.permDeny();if(!c.canEnter)return void this.setState({rzSaveErrMsg:"هذا اليوم مقفل — افتحه للاستدراك أولاً"});const nowHM=this.rzHM(new Date),dr=this.state.rzDraft||this.emptyDraft(),v=this.rzValidate(dr,{isToday:c.isToday,nowHM});if(!v.ok)return void this.setState({rzErr:v.errs,rzSaveErrMsg:v.errs.t?v.errs.t:"أكمل الحقول المطلوبة"});const rec={id:"z"+Date.now().toString(36)+Math.floor(1e6*Math.random()).toString(36),y:c.Y,m:c.M,d:c.D,t:v.rec.t,lt:nowHM,by:this.rzActorKey(),byName:this.irActor(),dept:this.rzDeptName(),zone:v.rec.zone,floor:v.rec.floor,spot:v.rec.spot,type:v.rec.type,impact:v.rec.impact,act:v.rec.act,party:v.rec.party,notes:v.rec.notes,att:dr.att?dr.att.iid:null},d=this.loadRasd();if(!this.saveRasd({...d,reports:[...d.reports||[],rec]}))return;dr.att&&(this._rzImg=this._rzImg||{},this._rzImg[dr.att.iid]=dr.att.url);const hot=rec.impact==="حرج"||rec.impact==="عالٍ";this.setState({rzDraft:this.emptyDraft(),rzErr:{},rzSaveErrMsg:"",rzDd:null,rzLedgerPage:1}),this.bsAck(hot?"أُضيفت الحالة، ويُرسل تنبيهٌ فوري لمدير الإدارة (تأثير «"+rec.impact+"»)":"أُضيفت الحالة إلى السجل","ok")}rzOpenFile(){try{const el=document.getElementById("rzAttInp");el&&(el.value="",el.click())}catch{this.bsToast("تعذّر فتح منتقي الملفات")}}rzOnFile(ev){const f=ev&&ev.target&&ev.target.files&&ev.target.files[0];if(!f)return;if(f.size>5242880)return void this.bsToast("المرفق أكبر من 5 ميغابايت — اختر صورةً أصغر");if(!/^image\//.test(f.type||""))return void this.bsToast("المرفق صورةٌ فقط — ملفات PDF وغيرها لا تُحفظ في مخزن صور المنصة بعد");const im=new Image,u=URL.createObjectURL(f);im.onload=()=>{try{const s=Math.min(1,1280/Math.max(im.width,im.height)),cv=document.createElement("canvas");cv.width=Math.max(1,Math.round(im.width*s)),cv.height=Math.max(1,Math.round(im.height*s));const g=cv.getContext("2d");g.fillStyle="white",g.fillRect(0,0,cv.width,cv.height),g.drawImage(im,0,0,cv.width,cv.height);const data=cv.toDataURL("image/jpeg",.8),iid="img_rzd"+Date.now().toString(36)+"_"+Math.floor(1e9*Math.random()).toString(36);URL.revokeObjectURL(u),(this._rzImg=this._rzImg||{})[iid]=data;try{KIVO.BassamIDB&&KIVO.BassamIDB.set(iid,data)}catch{this.bsToast("تعذّر حفظ الصورة في المخزن")}const cur=this.state.rzDraft||this.emptyDraft();cur.att&&this.rzDropImg(cur.att.iid),this.setState({rzDraft:{...cur,att:{iid,url:data,name:f.name||"صورة"}}})}catch{this.bsToast("تعذّر معالجة الصورة")}},im.onerror=()=>(URL.revokeObjectURL(u),this.bsToast("الملف ليس صورة صالحة")),im.src=u}rzImgUrl(iid){if(!iid)return"";if(this._rzImg=this._rzImg||{},this._rzImg[iid]!==void 0)return this._rzImg[iid]||"";this._rzImg[iid]="";try{KIVO.BassamIDB&&KIVO.BassamIDB.get(iid).then(v=>{this._rzImg[iid]=typeof v=="string"?v:"",v&&this.setState({rzImgTick:(this.state.rzImgTick||0)+1})}).catch(()=>this._rzImg[iid]="")}catch{this._rzImg[iid]=""}return""}rzDropImg(iid){if(iid)try{KIVO.BassamIDB&&KIVO.BassamIDB.del(iid)}catch{}}_rzLedgerVals(x){const t=this.state,V=x.monthRows,ML=this.MONTHS[x.M-1]+" "+x.Y+" هـ",q=String(t.rzLgSearch||"").trim().toLowerCase(),IMPN={منخفض:1,متوسط:2,عالٍ:3,حرج:4},K=V.filter(r=>(t.rzLgType==="all"||this.rzBase(r.type)===t.rzLgType)&&(t.rzLgImp==="all"||r.impact===t.rzLgImp)&&(t.rzLgScope!=="day"||r.d===x.D)&&this.rzSearchHit(q,r)),key=r=>t.rzSortK==="impact"?IMPN[r.impact]||0:100*r.d+(r.t||"").replace(":","")/1e4,S=K.slice().sort((a,b)=>{const p=key(a),n=key(b);return(p>n?1:p<n||(a.lt||"")<(b.lt||"")?-1:1)*(t.rzSortD<0?-1:1)}),pg=this._rzPager(S.length,t.rzLedgerPerPage,t.rzLedgerPage,k=>this.setState({rzLedgerPage:k})),sortBy=k=>()=>this.setState(s=>({rzSortK:k,rzSortD:s.rzSortK===k?-s.rzSortD:-1,rzLedgerPage:1})),arr=k=>t.rzSortK===k?t.rzSortD<0?"↓":"↑":"⇅",arrC=k=>"font-size:11px;color:"+(t.rzSortK===k?"var(--fg-xb99751)":"var(--fg-xcbd5e1)"),fdd=(id,sk,all,list)=>{const cur=t[sk],open=t.rzLgFddOpen===id,hit=list.find(o=>o.v===cur);return{[id+"Open"]:open,[id+"Toggle"]:()=>this.setState(s=>({rzLgFddOpen:s.rzLgFddOpen===id?null:id})),[id+"Label"]:hit?hit.name:all,[id+"Chev"]:"transition:transform .2s;flex-shrink:0;opacity:.5;"+(open?"transform:rotate(180deg)":""),[id+"BtnStyle"]:"height:32px;min-width:100px;font-size:11px;border-radius:8px;border:1px "+(list[0].v===cur?"dashed var(--bd-xcbd5e1);color:var(--fg-x475569)":"solid var(--bd-a185151810p5);color:var(--fg-x9a7e40);font-weight:400")+";background:var(--bg-xffffff);padding:0 10px;cursor:pointer;font-family:'Cairo',sans-serif;display:inline-flex;align-items:center;justify-content:space-between;gap:6px"+(open?";box-shadow:0 0 0 2px var(--bd-a185151810p15)":""),[id+"Opts"]:list.map(op=>({name:op.name,selected:cur===op.v,pick:()=>this.setState({[sk]:op.v,rzLgFddOpen:null,rzLedgerPage:1}),style:"display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font-size:11px;cursor:pointer;transition:background .15s;"+(cur===op.v?"background:var(--bg-a185151810p08);color:var(--fg-x9a7e40);font-weight:400":"color:var(--fg-x141414)")}))}},canDel=this.PC("del"),tagOf=c=>"display:inline-flex;align-items:center;font-size:11px;font-weight:700;border-radius:9999px;padding:2px 10px;white-space:nowrap;border:1px solid "+c+";color:"+c+";background:color-mix(in srgb,"+c+" 10%,transparent)",exportRows=()=>[["التاريخ هـ","الموافق م","وقت الوقوع","وقت الإدخال","الراصد","إدارة الرصد","المنطقة","المستوى","الموقع","النوع","التأثير","الإجراء","الجهة المبلَّغة","ملاحظات","مرفق"]].concat(S.map(r=>{const dc=this.rzDateCells(r);return[dc.hij,dc.greg,r.t||"",r.lt||"",r.byName||"—",r.dept||"—",r.zone||"",r.floor||"",r.spot||"",r.type||"",r.impact||"",r.act||"",r.party||"",r.notes||"",r.att?"نعم":""]})),fileName=ext=>"rasd-"+this.MONTHS[x.M-1]+"-"+x.Y+"."+ext,failMsg=(kind,e)=>this.bsToast("تعذّر إنشاء ملف "+kind+" — "+(e&&e.message?e.message:"خطأ غير متوقع")+"."),delRec=r=>{if(!this.PC("del"))return void this.permDeny();const d=this.loadRasd();this.saveRasd({...d,reports:(d.reports||[]).filter(z=>z.id!==r.id)})&&(r.att&&this.rzDropImg(r.att),this.setState({rzDelAsk:null,rowMenu:null}),this.bsAck("حُذفت الحالة","ok"))};return{rzLedgerOpen:!!t.rzLedgerOpen,rzLedgerToggle:()=>this.setState({rzLedgerOpen:!this.state.rzLedgerOpen}),rzLedgerChev:"transition:transform .2s;flex-shrink:0;"+(t.rzLedgerOpen?"transform:rotate(180deg)":""),rzLedgerCount:KIVO.BassamCount(String(V.length),"حالة")+"",rzLgSearch:t.rzLgSearch||"",rzLgSetSearch:ev=>this.setState({rzLgSearch:ev.target.value,rzLedgerPage:1}),rzLgFilesOpen:!!t.rzLgFilesOpen,rzLgFilesToggle:()=>this.setState(s=>({rzLgFilesOpen:!s.rzLgFilesOpen})),rzLgFilesChev:"opacity:.5;transition:transform .2s;"+(t.rzLgFilesOpen?"transform:rotate(180deg)":""),rzLgFilesBtnStyle:"height:34px;display:flex;align-items:center;gap:6px;font-size:11.5px;border:1px solid var(--bd-xe2e8f0);border-radius:10px;padding:0 10px;cursor:pointer;font-family:'Cairo',sans-serif;background:var(--bg-xffffff);"+(t.rzLgFilesOpen?"color:var(--fg-xb99751);border-color:var(--bd-a185151810p4)":"color:var(--fg-x475569)"),rzLgMonthLabel:ML,rzLgShownLbl:KIVO.BassamCount(S.length,"حالة")+"",rzLgExportXlsx:()=>{if(!this.PC("export"))return void this.permDeny();try{KIVO.BassamXLSX?KIVO.BassamXLSX.download(exportRows(),fileName("xlsx")):this.bsToast("تعذّر تصدير Excel — مكتبة الجداول غير متاحة في هذه الجلسة. حدّث الصفحة وأعد المحاولة، أو استخدم «طباعة / حفظ PDF».")}catch(e){failMsg("Excel",e)}this.setState({rzLgFilesOpen:!1})},rzLgExportCsv:()=>{if(!this.PC("export"))return void this.permDeny();const esc=v=>{const s=String(v??"");return/[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};try{const b=new Blob(["\uFEFF"+exportRows().map(r=>r.map(esc).join(",")).join(`
+`)],{type:"text/csv;charset=utf-8"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u,a.download=fileName("csv"),document.body.appendChild(a),a.click(),a.remove(),setTimeout(()=>URL.revokeObjectURL(u),1500)}catch(e){failMsg("CSV",e)}this.setState({rzLgFilesOpen:!1})},rzLgPrint:()=>{this.PC("export")&&(this.setState({rzLgFilesOpen:!1}),setTimeout(()=>window.print(),150))},...fdd("rzLgFt","rzLgType","نوع الحالة",[{v:"all",name:"كل الأنواع"}].concat(x.opts.type.map(i=>({v:i.n,name:i.n})))),...fdd("rzLgFi","rzLgImp","مستوى التأثير",[{v:"all",name:"كل المستويات"}].concat(this.RZ_IMPACTS.map(v=>({v,name:v})))),...fdd("rzLgFd","rzLgScope","الشهر كاملاً",[{v:"month",name:"الشهر كاملاً"},{v:"day",name:"اليوم المحدد"}]),rzLgShownCount:String(S.length),rzLgTotalCount:String(V.length),rzSortDate:sortBy("date"),rzSortImp:sortBy("impact"),rzArrDate:arr("date"),rzArrImp:arr("impact"),rzArrDateC:arrC("date"),rzArrImpC:arrC("impact"),rzLedgerHas:S.length>0,rzLedgerEmpty:S.length===0,rzLedgerEmptyMsg:V.length===0?"لا حالات مرصودة في هذا الشهر بعد":"لا حالات تطابق البحث أو الفلترة الحالية",rzLedgerRows:S.slice(pg.from,pg.to).map(r=>{const dc=this.rzDateCells(r),ask=t.rzDelAsk===r.id,img=r.att?this.rzImgUrl(r.att):"";return{hij:dc.hij,greg:dc.greg,time:r.t||"—",lgOn:!!r.lt&&r.lt!==r.t,lg:"أُدخلت "+(r.lt||""),noteOn:!!r.notes,note:r.notes||"",by:r.byName||"—",dept:r.dept||"—",zone:r.zone||"—",floor:r.floor||"—",spot:r.spot||"—",type:r.type||"—",impact:r.impact||"—",impStyle:tagOf(this.RZ_IMP_COL[r.impact]||"var(--fg-x94a3b8)"),act:r.act||"—",party:r.party||"—",attOn:!!r.att,attNo:!r.att,attImg:img,attImgOn:!!img,attWait:!!r.att&&!img,attView:()=>img&&this.setState({rzImgView:r.att}),askDel:ask,notAsk:!ask,delYes:()=>delRec(r),delNo:()=>this.setState({rzDelAsk:null}),...this._rowMenu("rz"+r.id,[canDel?{name:"حذف الحالة",color:"var(--fg-xdc2626)",danger:!0,run:()=>this.setState({rzDelAsk:r.id})}:null])}}),...KIVO.BassamCount.pair("rzLedgerPgTotal",String(S.length),"حالة","g"),rzLedgerPgRange:pg.range,rzLedgerPgNums:pg.nums,rzLedgerPerPage:String(pg.per),rzLedgerOnPerPage:ev=>this.setState({rzLedgerPerPage:+ev.target.value==0?0:+ev.target.value||10,rzLedgerPage:1}),rzLedgerPgFirst:()=>this.setState({rzLedgerPage:1}),rzLedgerPgPrev:()=>this.setState({rzLedgerPage:Math.max(1,pg.page-1)}),rzLedgerPgNext:()=>this.setState({rzLedgerPage:Math.min(pg.pages,pg.page+1)}),rzLedgerPgLast:()=>this.setState({rzLedgerPage:pg.pages}),rzLedgerPgFirstStyle:pg.navStyle(pg.page>1),rzLedgerPgPrevStyle:pg.navStyle(pg.page>1),rzLedgerPgNextStyle:pg.navStyle(pg.page<pg.pages),rzLedgerPgLastStyle:pg.navStyle(pg.page<pg.pages),rzImgViewOn:!!t.rzImgView,rzImgViewUrl:t.rzImgView?this.rzImgUrl(t.rzImgView):"",rzImgViewClose:()=>this.setState({rzImgView:null})}}}</script>
+</body>
+</html>

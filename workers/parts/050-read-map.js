@@ -45,6 +45,9 @@ var RD_REG = {
   'bassam_seized_acts_v1':     ['seized/records', 'seized/dash'],
   'bassam_seized_locs_v1':     ['seized/records', 'seized/dash'],
   'bassam_seized_jew_v1':      ['seized/records', 'seized/dash'],
+  /* ── رصد الحالات ── */
+  'bassam_rasd_v1':            ['rasd/records', 'rasd/dash'],
+  'bassam_rasd_opts_v1':       ['rasd/records', 'rasd/dash'],
   /* ── جائزة التميز ── */
   'bassam_award_v1':           ['award/res', 'award/new', 'emps/data'],
   'bassam_award_docs_v1':      ['award/doc', 'award/res', 'award/new'],
@@ -71,5 +74,31 @@ function resOnCeiling(A, d, R) {
   if (!own.length) return true;
   for (var i = 0; i < own.length; i++) if (capOnDept(A, d, own[i])) return true;
   return false;
+}
+/* V7 · د6 (قرار المالك — قاعدةٌ واحدة لكل من في الوحدة عدا مدير المنصة): النظامُ المطفأ لوحدته (بالوراثة) أو على المنصة لا يُخدم ولا يُكتب.
+   هذا موضعُها الواحد في الخادم. المحرّكُ العام يطبّقها بالسؤال نفسِه (capOnDept: resOnCeiling أعلاه · 057 enfKeyOnCeiling) لكل دورٍ سوى مدير المنصة،
+   والمساراتُ الخاصة تسأل هذه الدوالّ: «مهامي» (062c) · «ملفي» اليوم والسجل (062b) · سطورُ السجل (052 audSysOff).
+     sysOfLeaf(leaf)        النظامُ القابلُ للإطفاء الذي يملك الورقة (perm44 sysList · toggle) — أو ''
+     sysOffAt(A, d, key)    النظامُ مطفأٌ على المنصة (A.off مع ما يسكن الحاوية) أو في سقف الوحدة d وأصولها — بلا استثناء دور
+     acctUnitOf(A)          وحدةُ الحساب: إدارتُه، أو عقدتُه لمدير العقدة (gm) — أو '' (المنصةُ وحدها تحكم)
+     sysServed(A, d, key)   يُخدم للفاعل: مديرُ المنصة دائماً، وغيرُه ما لم يكن مطفأً
+     resLeafOffAt(A, d, k)  ورقةُ المورد (RES_REG.cap) لنظامٍ قابلٍ للإطفاء وهي مطفأةٌ في d (صفحةً أو تبويباً، أو على المنصة) — موردٌ بلا ورقة نظام لا يتأثر */
+function sysOfLeaf(leaf) {
+  leaf = String(leaf || ''); if (!leaf) return '';
+  var s = perm44E().sysList().filter(function (x) { return x && x.toggle !== false && Array.isArray(x.leaves) && x.leaves.indexOf(leaf) !== -1; })[0];
+  return s ? String(s.key) : '';
+}
+function sysOffAt(A, d, key) {
+  if (!key) return false;
+  if (Array.isArray(A && A.off) && A.off.indexOf(key) !== -1) return true;
+  d = String(d || ''); return d ? !perm44E().sysOn(key, perm44LeafOn(A, d)) : false;
+}
+function acctUnitOf(A) { var u = (A && A.u) || {}; return String(u.deptId || (u.role === 'gm' ? u.gid || '' : '')); }
+function sysServed(A, d, key) { return !!(A && A.u) && (A.u.role === 'super' || !sysOffAt(A, d, key)); }
+function resLeafOffAt(A, d, k) {
+  var R = resOf(k), leaf = R && typeof R.cap === 'string' ? R.cap : '', sys = sysOfLeaf(leaf);
+  if (!sys) return false;
+  if (Array.isArray(A && A.off) && A.off.indexOf(sys) !== -1) return true;
+  return d ? !perm44LeafOn(A, String(d))(leaf) : false;
 }
 

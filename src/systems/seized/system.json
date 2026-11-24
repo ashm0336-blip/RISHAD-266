@@ -11,6 +11,7 @@
   "slug": "seized",
   "component": "Seized",
   "files": [
+   "client/549-seized-links.js",
    "client/defaults.json",
    "client/helmet.css",
    "client/logic.js",
@@ -186,7 +187,7 @@
   },
   "kpis.panels.mid": {
    "order": 10,
-   "text": "        { k: \"sz\", pk: \"seized\", sk: \"dash\" },\n"
+   "text": "        { k: \"sz\", a: \"seized\", pk: \"seized\", sk: \"dash\" },\n"
   },
   "kpis.tabs.mid": {
    "order": 10,
@@ -570,7 +571,7 @@
   },
   "activity.filter": {
    "order": 10,
-   "text": " ['seized', 'المضبوطات'],"
+   "text": " ['seized', 'المضبوطات', 'seized'],"
   },
   "res.empty.systems": {
    "order": 20,
@@ -666,6 +667,14 @@
   "nf.feed.known.seized": {
    "order": 10,
    "text": ""
+  },
+  "blocks.shell.systems": {
+   "order": 20,
+   "text": "  {\n   \"closeTag\": \"</script>\",\n   \"id\": \"systems/seized/client/549-seized-links.js\",\n   \"kind\": \"js\",\n   \"line\": 10494,\n   \"openTag\": \"<script>\",\n   \"origBytes\": null,\n   \"origSha256\": null,\n   \"new\": \"V7 · د6: ما يوفّره نظامُ المضبوطات لغيره عبر الناقل (seized.usable@1)\"\n  },\n"
+  },
+  "shell.blocks.systems": {
+   "order": 20,
+   "text": "@@KIVO_BLOCK:systems/seized/client/549-seized-links.js@@\n"
   }
  }
 }

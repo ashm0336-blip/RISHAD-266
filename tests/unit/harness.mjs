@@ -28,12 +28,34 @@ export const since = (n) => WORKER_N && WORKER_N < n ? { skip: 'يحتاج عا�
 export const DIST = process.env.KIVO_DIST || [WORKER_N ? 'pk' + (WORKER_N + 100) : '', 'pk251'].filter(Boolean).map(d => path.join(ROOT, d)).find(d => fs.existsSync(path.join(d, 'index.html'))) || path.join(ROOT, 'pk251');
 /* KIVO_251 · ADR-012: تخطيطُ المصدر — <src>/layout.json (الشجرةُ المستهدفة) أو التخطيطُ الانتقالي k2NN/src */
 export const SRC = process.env.KIVO_SRC || path.join(ROOT, 'src');
+/* V7 · د6 (pins): رقمُ المخطّط الحالي من مصدرٍ واحد — تصريحُ KIVO_SCHEMA_VERSION في جزء الترحيلات المولَّد (051a، من migrations/).
+   اختبارٌ يعني «المخطّط الحالي» يقارن به لا برقمٍ حرفيّ، فلا يكسره الترحيلُ القادم؛ والرقمُ التاريخيّ (مثل 0008 أو 9) يبقى حرفيّاً. */
+export const CURRENT_SCHEMA = (() => { const m = /var KIVO_SCHEMA_VERSION = (\d+);/.exec(fs.readFileSync(path.join(ROOT, 'workers', 'parts', '051a-schema-migrations.js'), 'utf8')); if (!m) throw Error('Canonical schema declaration missing'); return +m[1]; })();
+/* V7 · د6 (pins): meta.schema_version لقاعدةٍ مهيّأةٍ من الترحيل التاريخيّ «from» حتى الحالي — بدل القوائم الحرفيّة ['11','12'] */
+export const schemaFrom = (v, from) => /^\d+$/.test(String(v ?? '')) && +v >= from && +v <= CURRENT_SCHEMA;
 const LEGACY_LAYOUT = { migrations: 'migrations', workersParts: 'workers/parts', pages: 'client/pages', styles: 'client/css' };
 /* V7 · د2-ب — الأنظمةُ الحاضرة (src/systems/<key>/system.json): الاختبارُ الذي يحتاج نظاماً يُتخطّى بغيابه (needs)، والعُدّةُ المشتركة تعمل بالحالين.
    حذفُ مجلد نظامٍ يُخرجه من القاعدة (tools/systems.py)؛ فوحداتُ القاعدة تنجح بوجوده وبغيابه. */
 export const SYSTEMS = (() => { const d = path.join(SRC, 'systems'); try { return fs.readdirSync(d).filter((k) => fs.existsSync(path.join(d, k, 'system.json'))).sort(); } catch (e) { return []; } })();
 export const hasSystem = (...keys) => keys.every((k) => SYSTEMS.includes(k));
 export const needs = (...keys) => (hasSystem(...keys) ? {} : { skip: 'نظامٌ غير حاضر: ' + keys.filter((k) => !SYSTEMS.includes(k)).join(' + ') });
+/* V7 · د6 (gatefix): روابطُ صفحات القائمة الجانبية التشغيلية بترتيبها — مشتقّةً من المصدر لا مكتوبةً باليد: الروابطُ الثابتة في قالب الغلاف
+   (src/slots/layouts/index.template.html.tpl) وكلُّ فتحة @@SYS:shell.nav.*@@ تُبسط بقطع الأنظمة الحاضرة مرتَّبةً بـ(order ثم مفتاح النظام) كما يفعل tools/systems.py.
+   فنظامٌ جديدٌ يعلن رابطه (rasd) يدخل التوقّعَ من إعلانه، ونظامٌ محذوفٌ يخرج منه. */
+export function shellNavKeys() {
+  const frag = {}, add = (k, name, v) => { if (name.startsWith('shell.nav.')) for (const it of [].concat(v)) (frag[name] = frag[name] || []).push([it.order || 0, k, it]); };
+  for (const k of SYSTEMS) {
+    const dir = path.join(SRC, 'systems', k), d = JSON.parse(fs.readFileSync(path.join(dir, 'system.json'), 'utf8'));
+    for (const [name, v] of Object.entries(d.slots || {})) add(d.key, name, v);
+    let groups = []; try { groups = fs.readdirSync(path.join(dir, 'slots')).filter((f) => f.endsWith('.slots.json')).sort(); } catch (e) { /* بلا مجموعات */ }
+    for (const g of groups) for (const [name, v] of Object.entries(JSON.parse(fs.readFileSync(path.join(dir, 'slots', g), 'utf8')))) add(d.key, name, v);
+  }
+  /* قاعدةُ الموضع (only وحدها · last الأخيرة · first الأولى · وإلا text) */
+  const text = (it, i, n) => (n === 1 && 'only' in it ? it.only : i === n - 1 && 'last' in it ? it.last : i === 0 && 'first' in it ? it.first : it.text != null ? it.text : '');
+  for (const n in frag) frag[n].sort((x, y) => x[0] - y[0] || (x[1] < y[1] ? -1 : x[1] > y[1] ? 1 : 0));
+  const T = fs.readFileSync(path.join(SRC, 'slots', 'layouts', 'index.template.html.tpl'), 'utf8').replace(/@@SYS:(shell\.nav\.[\w.]+)@@/g, (m, n) => (frag[n] || []).map((f, i, a) => text(f[2], i, a.length)).join(''));
+  return [...T.matchAll(/<a class="\{\{n\w+\}\}" data-key="(\w+)"/g)].map((m) => m[1]);
+}
 /* ملفُّ اختبارٍ كلُّه يحتاج نظاماً (أو أكثر): «X.test.mjs» محمِّلٌ بسطرين و«X.body.mjs» الاختبارُ نفسُه — فبغياب النظام لا يُستورد الجسمُ أصلاً
    (استيرادُه الثابت لعُدّة نظامٍ غائب أو كودُه في أعلى الملف كان سيفشل قبل أي تخطٍّ)، ويُسجَّل اختبارٌ واحدٌ متخطّى باسم الملف وسببه.
    بحضور الأنظمة كلها: الجسمُ كما هو حرفاً، فلا يتبدّل ما يُختبر. */

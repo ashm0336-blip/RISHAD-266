@@ -24,4 +24,5 @@ var OC_TABLE_NAMES = {
 @@SYS:oc.names.staff.3@@  ops_staffing_month_employee_perm_days_values: { t: "ops_staffing_month_shifts_entry_choice_0", e: "ops_staffing_month_shifts_entry_choice_0" },
 @@SYS:oc.names.staff.4@@  ops_task_day: { t: "ops_task_day", e: null },
 @@SYS:oc.names.tasks.1@@  ops_work_types: { t: "ops_employment_types", e: null },
+  ops_zone_prayer_reading_choice_0: { t: "ops_staffing_month_shifts_entry_choice_0", e: "ops_staffing_month_shifts_entry_choice_0" },
 @@SYS:oc.names.plan.8@@};

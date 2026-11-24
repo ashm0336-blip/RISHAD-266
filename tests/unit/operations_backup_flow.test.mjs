@@ -55,7 +55,7 @@ test('lost full restore ACK retains ticket/file and exact retry, with no partial
   C.property('modules/admin/logic.js', 'importBackup')({ target: { files: [file] } });
   let lost = false;
   C.intercept((request, response) => {
-    if (!lost && request.method === 'POST' && request.url === '/api/backup/restore' && JSON.parse(request.body).phase === 'commit') {
+    if (!lost && request.method === 'POST' && request.url === '/api/backup/import' && JSON.parse(request.body).phase === 'commit') {
       assert.equal(response.status, 200, request.err); lost = true; throw Error('TEST_ONLY ACK lost after canonical commit');
     }
     return response;

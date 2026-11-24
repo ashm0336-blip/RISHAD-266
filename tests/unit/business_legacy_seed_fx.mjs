@@ -1,7 +1,7 @@
 /* Explicit TEST-ONLY schema9/10 SQL fixture cutover. Reuse the canonical
    source/empty-target witnesses; never clear a populated target or replay KV. */
 import assert from 'node:assert/strict';
-import { D1Shim, hasSystem, dropLegacyDocs } from './harness.mjs';
+import { D1Shim, hasSystem, dropLegacyDocs, schemaFrom } from './harness.mjs';
 import { candidateWorker } from './irshad_domain_fx.mjs';
 let worker;
 export async function installBusinessFixture(env) {
@@ -12,7 +12,7 @@ export async function installBusinessFixture(env) {
   if (!AW) dropLegacyDocs(env.DB, 'award');
   const W = await (worker ||= candidateWorker((SZ ? ['SZ_RES','szPredicate','szLegacyPrepare'] : []).concat(AW ? ['AW_RES','awLegacyPredicate','awLegacyPrepare'] : [], ['bdGuardRetired']))), DB = env.DB;
   const version = DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v;
-  assert.ok(['9','10','11'].includes(version), 'Actual initialized seized/award tables are required');
+  assert.ok(schemaFrom(version, 9), 'Actual initialized seized/award tables are required');
   const protectedRows = () => JSON.parse(JSON.stringify({
     keys: DB.q("SELECT k,seq,v FROM kv WHERE k IN('bassam_auth_users_v1','bassam_perms_v1') ORDER BY k,seq"),
     sessions: DB.q('SELECT * FROM sess ORDER BY tok'),

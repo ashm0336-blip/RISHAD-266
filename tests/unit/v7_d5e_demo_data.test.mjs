@@ -99,7 +99,7 @@ test('(أ) لقطة ← زرع (كلُّ نظامٍ حاضر له محتوى م�
   if (hasSystem('custody')) { const r = await q('/api/custody', { view: 'month' }); assert.equal(r.status, 200, JSON.stringify(r.j).slice(0, 300)); seen.custody = JSON.stringify(r.j).split('TEST_ONLY · ').length - 1; assert.ok(seen.custody > 0, JSON.stringify(r.j).slice(0, 300)); }
   if (hasSystem('dstats')) {
     const r = await C.api('/api/dstats?uid=' + uid, { cookie: su.ck }); assert.equal(r.status, 200);
-    seen.dstats = Object.values(r.j.data.haram).concat(Object.values(r.j.data.nabawi)).filter((v) => v.__m && v.__m.t === 'TEST_ONLY').length; assert.ok(seen.dstats > 0);
+    seen.dstats = Object.values(r.j.data.haram).concat(Object.values(r.j.data.nabawi)).filter((v) => v.__m && /TEST_ONLY/.test(v.__m.n) && typeof v.__m.t === 'number')   /* V7 · د6 (QA): بصمةٌ بشكل الصفحة — الوسمُ في n والوقتُ رقمي */.length; assert.ok(seen.dstats > 0);
     assert.equal(r.j.data.haram[W.realDay].worshippers, 4242, 'يومُ الإحصاء الحقيقي لم يُستبدل'); assert.equal(r.j.data.haram[W.realDay].__m, undefined);
   }
   /* إشعاراتُ مدير الإدارة التجريبية تُقرأ بهويته عبر جلسة الاختبار الداخلية (حسابُ العرض tst_* موسومٌ TEST_ONLY) */

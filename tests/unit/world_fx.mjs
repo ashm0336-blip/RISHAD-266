@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { PYTHON, makeTestEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, applySql, ROOT, DIST, SRC, hasSystem } from './harness.mjs';
+import { PYTHON, makeTestEnv, TEST_SUPER_USERNAME, TEST_SUPER_PIN, client, applySql, ROOT, DIST, SRC, hasSystem, schemaFrom } from './harness.mjs';
 import {installIrshadFixture} from './irshad_legacy_seed_fx.mjs';
 import {installBusinessFixture} from './business_legacy_seed_fx.mjs';
 import {installOperationalFixture,inspectOperationalFixture,isOperationalFixtureKey,replaceOperationalFixture} from './operational_legacy_seed_fx.mjs';
@@ -96,9 +96,9 @@ export function withPatch(w, patchFile) {
   const src = fs.readFileSync(w, 'utf8'), P = fs.readFileSync(path.join(PATCHES, patchFile), 'utf8').split('\n');
   const hunks = []; let cur = null, file = '';
   for (const l of P) {
-    if (l.startsWith('@@')) { cur = { a: [], b: [], file }; hunks.push(cur); continue; }
+    if (l.startsWith('@@')) { cur = { a: [], b: [], add: [], file }; hunks.push(cur); continue; }
     if (!cur || l.startsWith('--- ') || l.startsWith('+++ ')) { if (l.startsWith('--- ')) cur = null; if (l.startsWith('+++ b/')) file = l.slice(6).trim(); continue; }
-    if (l.startsWith('+')) cur.b.push(l.slice(1)); else if (l.startsWith('-')) cur.a.push(l.slice(1)); else if (l.startsWith(' ')) { cur.a.push(l.slice(1)); cur.b.push(l.slice(1)); } else if (l === '') { /* سطرٌ فارغٌ في نهاية الرقعة */ }
+    if (l.startsWith('+')) { cur.b.push(l.slice(1)); cur.add.push(l.slice(1)); } else if (l.startsWith('-')) cur.a.push(l.slice(1)); else if (l.startsWith(' ')) { cur.a.push(l.slice(1)); cur.b.push(l.slice(1)); } else if (l === '') { /* سطرٌ فارغٌ في نهاية الرقعة */ }
   }
   let out = src, merged = 0;
   for (const h of hunks) {
@@ -109,6 +109,8 @@ export function withPatch(w, patchFile) {
     const gone = (A.match(/function ([A-Za-z_$][\w$]*)\(/g) || []).map((x) => x.slice(9, -1)).filter((n) => !src.includes('function ' + n + '('));
     if (gone.length && out.split(A).length !== 2) { merged++; continue; }
     if (out.split(B).length === 2 && out.split(A).length !== 2) { merged++; continue; }
+    /* V7 · د6 (QA): مقطعٌ مدمجٌ تغيّر سطرُ سياقه بعد الدمج (059: «var ix = enfIx()» أُزيل مع السبب — 3a52671) — كلُّ سطرٍ مضافٍ قائمٌ مرّةً واحدة والأصلُ غائب ⇐ مدمج */
+    if (h.add.length && out.split(A).length !== 2 && h.add.every((x) => x.trim() === '' || out.split(x).length === 2)) { merged++; continue; }
     if (out.split(A).length !== 2) throw new Error(patchFile + ': مقطعٌ غيرُ فريد أو غائب — أعد بناء الرقعة على خط الأساس');
     out = out.replace(A, () => B);
   }
@@ -153,12 +155,12 @@ export async function world({ worker, mode = 'legacy', beforeCutover, lightWorke
   // The historical SQL seed must not recreate a retired business document in a
   // current database. Its actual canonical cutover preserves task/identity data.
   const schema = env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v;
-  if (['8','9','10','11'].includes(schema)) await installIrshadFixture(env);
-  if (['9','10','11'].includes(schema)) await installBusinessFixture(env);
+  if (schemaFrom(schema, 8)) await installIrshadFixture(env);
+  if (schemaFrom(schema, 9)) await installBusinessFixture(env);
   const seed = await tasksSeed(), store = seed ? seed.tasksStore() : null;
   await applySql(env.DB, p0Sql(store, seed));
   if (beforeCutover) await beforeCutover(env);   /* optional: shape the legacy KV seed before the real cutover (privacy_noeid) */
-  if (env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v === '11') await installOperationalFixture(env, lightWorker ? await (LIGHT_CANON ||= canonicalWorker()) : undefined);
+  if (schemaFrom(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, 11)) await installOperationalFixture(env, lightWorker ? await (LIGHT_CANON ||= canonicalWorker()) : undefined);
   if (mode === 'enforce') env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO UPDATE SET v='enforce'");
   const login = async (un, pw) => { const r = await C.login(un, pw); if (!r.ok) throw new Error('login ' + un + ' ' + JSON.stringify(r.j)); return r; };
   return { env, C, su, login, store, mode };
@@ -172,7 +174,7 @@ let taskRequestSequence = 0;
 export function taskCommandBody(env, path, body) {
   const route = String(path).split('?')[0];
   if (!['/api/tasks/create','/api/tasks/settings','/api/tasks/recur'].includes(route) || !body || typeof body !== 'object' || Array.isArray(body) ||
-      env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v !== '11') return body;
+      !schemaFrom(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, 11)) return body;
   const next = { ...body }, own = key => Object.prototype.hasOwnProperty.call(body, key);
   if (!own('requestId')) next.requestId = 'TEST_ONLY_task_fixture_' + ++taskRequestSequence;
   if (!own('epoch')) next.epoch = Number(env.DB.q("SELECT v FROM meta WHERE k='restore_epoch'")[0]?.v || 0);
@@ -184,7 +186,7 @@ let operationRequestSequence = 0;
    value (including malformed metadata) so protocol/ACL negatives stay real. */
 export function operationSaveBody(env, path, body) {
   if (String(path).split('?')[0] !== '/api/save' || !body || typeof body !== 'object' || Array.isArray(body) ||
-      env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v !== '11') return body;
+      !schemaFrom(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, 11)) return body;
   const keys = Object.keys(body.set && typeof body.set === 'object' && !Array.isArray(body.set) ? body.set : {}).concat(Array.isArray(body.del) ? body.del : []);
   if (!keys.some(key => isOperationalFixtureKey(env,key))) return body;
   const next = { ...body }, own = key => Object.prototype.hasOwnProperty.call(body,key);

@@ -758,10 +758,21 @@ function nfLeadShifts(A, u, d, refs) {
     st = @@SYS:nf.lead.staffing.staff|empty="{}"@@, opts = Array.isArray(r.shift_options_v1) ? r.shift_options_v1 : [],
     dayOf = function (T0) { return pfDay({ bucket: isObj(st[T0.ym]) ? st[T0.ym] : {}, rep: isObj(dr[T0.dk]) ? dr[T0.dk] : null, toks: toks, wd: T0.wd, opts: opts }); };
   if (!toks.length) return (memo[mk] = []);
-  var T = pfOpDay(Date.now(), dayOf), sh = String(dayOf(T).shift.name || ""), rep = dr[T.dk],
+  var T = nfDeptOpDay(dr, st, opts, Date.now()), sh = String(dayOf(T).shift.name || ""), rep = dr[T.dk],   /* V7 · د6 (LEAD_D6): يومُ الإدارة التشغيلي لا يومُ الشخص */
     s = sh && isObj(rep) && isObj(rep.shifts) && isObj(rep.shifts[sh]) ? rep.shifts[sh] : null, l = s && isObj(s.leaders) ? s.leaders : {},
     me = [u.name, L.rec && L.rec.name, L.rec && L.rec.eid, u.ekey].filter(function (x) { return x != null && String(x).trim() !== ""; }).map(String);
   return (memo[mk] = ["chief", "deputy"].some(function (x) { return l[x] != null && me.indexOf(String(l[x])) >= 0; }) ? [sh] : []);
+}
+/* V7 · د6 (LEAD_D6 · «اليوم التشغيلي بالقاعدة القائمة»): يومُ الإدارة التشغيلي يبدأ بأول ورديةٍ لها وينتهي بنهاية آخر ورديةٍ لها ولو بعد منتصف الليل —
+   ورديةٌ ليلية (نهايتُها ≤ بدايتها) من ورديات أمس (تقريرُه · جدولُ شهره · ورديات الإدارة) لم تنتهِ بعد ⇒ اليومُ يومُ أمس، وإلا يومُ التقويم (pfOpDay بالقاعدة نفسِها
+   لكن على ورديات الإدارة كلِّها). كان يُحسب بوردية الشخص وحده (pfOpDay(dayOf)) فيُعدّ رئيسُ اليوم التالي — ولا ورديةَ له أمس — رئيساً بعد منتصف الليل والليلةُ لم تنتهِ */
+function nfDeptOpDay(dr, st, opts, now) {
+  var C = pfHijriAt(now), P = pfHijriAt(now - 86400000), n = pfRiyadhMins(now), rep = isObj(dr) ? dr[P.dk] : null, bk = isObj(st) && isObj(st[P.ym]) ? st[P.ym] : {}, defs = [], s;
+  if (isObj(rep) && isObj(rep.shifts)) for (s in rep.shifts) { var x = rep.shifts[s]; defs.push(isObj(x) && isObj(x.def) && (x.def.tStart || x.def.tEnd) ? x.def : pfDef(bk, s, opts)); }
+  (Array.isArray(bk.__shifts) && bk.__shifts.length ? bk.__shifts : Array.isArray(opts) ? opts : []).forEach(function (o) { if (isObj(o)) defs.push(o); });
+  var night = defs.some(function (q) { var a = pfMins(q && q.tStart), b = pfMins(q && q.tEnd); return a != null && b != null && b <= a && n < b; });
+  if (night) { P.op = 'night'; return P; }
+  C.op = 'calendar'; return C;
 }
 function nfLeader(A, u, d, refs) {
   return nfLeadShifts(A, u, d, refs).length > 0;
@@ -1133,7 +1144,20 @@ async function nfCommit(env, A, st, base, action, scopes, casKey) {
   if (casKey === NF_BC_REV) receipt.broadcastRev = await nfRevision(env, NF_BC_REV);
   return receipt;
 }
-function nfLegacyConvert(keys) {
+/* V7 · د6 (remap): drop — سجلُّ ما يُسقط بنداً بنداً عند تحويل نسخةٍ قديمة (019f): تنبيهٌ بنوعٍ لا يعرفه الإصدار أو بقيمةٍ لا تُقبل ·
+   أو لإدارةٍ غير إدارة المخزن · علامةُ قراءةٍ لحسابٍ أو تنبيهٍ ليس في النسخة · مفتاحُ عدم تكرارٍ تالف — يُسقط وحده ويُعدّ (drop[سبب|نوع]) ولا يُرفض الملف.
+   بلا drop (الترحيلُ الحيّ 0005 · nfLegacyPrepare) يبقى الرفضُ كما كان حرفاً. */
+function nfLegacyConvert(keys, drop) {
+  function lost(e, type) {
+    if (!drop || !e || !e.nf) throw e;
+    var id = e.nf.replace(/^notification-cutover-/, '') + '|' + (type == null ? '' : String(type).slice(0, 60));
+    drop[id] = (drop[id] || 0) + 1;
+  }
+  function each(list, fn, type) {
+    list.forEach(function (x) {
+      try { fn(x); } catch (e) { lost(e, type ? type(x) : ''); }
+    });
+  }
   var out = { version: 1, messages: [], targets: [], states: [], dedup: [], overrides: [], checkpoints: [] },
     users = parseJson(keys[K_USERS] || "[]", null),
     depts = parseJson(keys["bassam_depts_v1"] || "[]", null),
@@ -1233,7 +1257,7 @@ function nfLegacyConvert(keys) {
       )
         throw nfErr("notification-cutover-department-unknown");
       nfShape(v, ["items", "read", "ack", "del", "seen", "v"]);
-      nfArr(v.items || [], 10000).forEach(function (x) {
+      each(nfArr(v.items || [], 10000), function (x) {
         nfShape(
           x,
           [
@@ -1263,6 +1287,8 @@ function nfLegacyConvert(keys) {
         if (!Object.prototype.hasOwnProperty.call(NF_TYPES, x.type) && x.type !== "bc_dept") throw nfErr("notification-cutover-type");
         nfShape(x.to, ["e", "r"]);
         var to = { e: x.to.e || [], r: x.to.r || [] };
+        /* V7 · د6 (remap): هدفٌ مكرَّر (بعد إعادة ربط مفتاح المدير) أو فارغ لا معنى له — يُطوى */
+        if (drop) to = { e: nfArr(to.e, 20000).filter(function (y, i, a) { return y !== "" && a.indexOf(y) === i; }), r: nfArr(to.r, 8).filter(function (y, i, a) { return a.indexOf(y) === i; }) };
         nfArr(to.e, 20000).forEach(function (y) {
           nfStr(y, 200, false);
         });
@@ -1292,15 +1318,17 @@ function nfLegacyConvert(keys) {
         if (
           m.category !== (m.type === "bc_dept" ? "bc" : NF_TYPES[m.type].k) ||
           ["info", "act", "urg"].indexOf(m.priority) < 0 ||
-          ["bell", "toast"].indexOf(m.channel) < 0 ||
-          (d && m.department !== d)
+          ["bell", "toast"].indexOf(m.channel) < 0
         )
           throw nfErr("notification-cutover-shape");
+        if (d && m.department !== d) throw nfErr(drop ? "notification-cutover-department" : "notification-cutover-shape");
         add(m, nfTargetRows(scope, m.id, to));
+      }, function (x) {
+        return isObj(x) ? x.type : "";
       });
       var seen = v.seen || {};
       if (!isObj(seen)) throw nfErr("notification-cutover-seen");
-      Object.keys(seen).forEach(function (once) {
+      each(Object.keys(seen), function (once) {
         nfStr(once, 500, false);
         var ts = nfTime(seen[once]);
         if (once === "__sec") out.checkpoints.push({ scope: scope, name: "security-ts", value: ts });
@@ -1312,7 +1340,7 @@ function nfLegacyConvert(keys) {
     ["read", "ack", "del"].forEach(function (field) {
       var map = store.v[field] || {};
       if (!isObj(map)) throw nfErr("notification-cutover-state");
-      Object.keys(map).forEach(function (alias) {
+      each(Object.keys(map), function (alias) {
         var candidates = users.filter(function (u) {
           return (
             u &&
@@ -1321,10 +1349,15 @@ function nfLegacyConvert(keys) {
             [u.id, u.ekey, u.un, u.alt].filter(Boolean).map(String).indexOf(alias) >= 0
           );
         });
-        if (candidates.length !== 1) throw nfErr("notification-cutover-state-identity-unknown");
+        if (candidates.length !== 1) {
+          if (!drop) throw nfErr("notification-cutover-state-identity-unknown");
+          var nm = "state-identity-unknown|" + field;   /* علاماتُ حسابٍ لا يُعرف في الوحدة الهدف: تُعدّ علامةً علامة */
+          drop[nm] = (drop[nm] || 0) + (isObj(map[alias]) ? Object.keys(map[alias]).length : 1);
+          return;
+        }
         var vals = map[alias];
         if (!isObj(vals)) throw nfErr("notification-cutover-state");
-        Object.keys(vals).forEach(function (id) {
+        each(Object.keys(vals), function (id) {
           var ts = nfTime(vals[id]),
             matches = out.messages.filter(function (m) {
               return id.slice(0, 3) === "bc:"
@@ -1349,7 +1382,11 @@ function nfLegacyConvert(keys) {
               column = { read: "read_at", ack: "acknowledged_at", del: "dismissed_at" }[field];
             r[column] = Math.max(r[column], ts);
           });
+        }, function () {
+          return field;
         });
+      }, function () {
+        return field;
       });
     });
   });
@@ -2443,6 +2480,8 @@ var NF_DENY_WHY = {
   shape: "قيمة خارج الحدود المسموحة طولاً أو شكلاً", unmapped: "تعديل غير مصنَّف رُفض احتياطاً", residual: "تعديل غير مصنَّف رُفض احتياطاً",
   unbound: "تعديل غير مصنَّف رُفض احتياطاً", keydel: "حذف السجل كاملاً غير مسموح", append: "السجل يقبل الإضافة فقط ولا يُعدَّل ما سبق فيه",
   unknown: "سجل لا يعرفه الخادم", device: "تفضيل خاص بالجهاز لا يُحفظ في الخادم",
+  /* V7 · د6: أسبابُ ما لا يُنقل في الاستيراد المقطَّع (019g rsiSkipWhy) */
+  "null": "قيمة فارغة في النسخة لا تُنقل", tpls: "صلاحيات بنظام القوالب الملغى لا تُنقل", grants: "منح صلاحيات صريحة لا تُنقل حتى لا تُفتح صلاحية لم تكن",
   srv: "سجلٌّ تكتبه خطوةُ خادمٍ وحدها (كأرشيف الجولات) — لا يُكتب من الصفحة",   /* V7 · د5-ح (13): 023 RES_READ_AS · 060 */
   session: "جلسة غير صالحة", base: "الطلب لم يذكر نسخة السجل التي بُني عليها",
   flag: "راية تهيئة يكتبها مدير الإدارة وحده", tech: "راية تهيئة لا يكتبها إلا من له كتابة في الإدارة",

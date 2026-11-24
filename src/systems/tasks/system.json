@@ -281,7 +281,7 @@
   },
   "kpis.panels.tasks": {
    "order": 10,
-   "text": "        { k: \"tk\", pk: \"tasks\", sk: \"\" },\n"
+   "text": "        { k: \"tk\", a: \"tasks\", pk: \"tasks\", sk: \"\" },\n"
   },
   "kpis.mounts.tasks": {
    "order": 10,
@@ -359,10 +359,6 @@
    "order": 10,
    "text": "              \"المهام المسندة\",\n"
   },
-  "perm.seed.cap.tasks": {
-   "order": 10,
-   "text": "'tasks',"
-  },
   "perm.legacy.tasks": {
    "order": 10,
    "text": "      /* تسامح: مفتاح الورقة القديم emps/tasks (من عهد «التوأم») يُقرأ tasks */\n      try { var mv = false; Object.keys(r.emps).forEach(function(d9){ Object.keys(r.emps[d9] || {}).forEach(function(ek){ var pm9 = r.emps[d9][ek] || {}; if (pm9['emps/tasks']) { if (!pm9.tasks) pm9.tasks = pm9['emps/tasks']; delete pm9['emps/tasks']; mv = true; } }); }); if (mv) permSave(r); } catch (e9) {}\n"
@@ -377,7 +373,15 @@
   },
   "activity.filter.tasks": {
    "order": 10,
-   "text": " ['task', 'المهام'],"
+   "text": " ['task', 'المهام', 'tasks'],"
+  },
+  "rsi.slice": {
+   "order": 40,
+   "text": "  'bassam_tasks_v1': ['^.', ['bassam_tasks_v1']],   /* V7 · د6: المهامُ خريطةُ أيام — تُقسم أياماً فلا تكبر كلفةُ طلبٍ بطول السجل */\n"
+  },
+  "bc.deptRefs": {
+   "order": 10,
+   "text": "  /* V7 · د6 (remap): منشئُ المهمة ومراجِعُها (071 tkWho · tkRvIn) يحملان مفتاحَ مدير الإدارة «mgr:<المعرّف>» — يُربطان بالوحدة الهدف عند استيراد نسخة إدارة */\n  bassam_tasks_v1: function (tk, fn) {\n    if (isObj(tk)) Object.keys(tk).forEach(function (day) {\n      if (Array.isArray(tk[day])) tk[day].forEach(function (r) {\n        var x = Array.isArray(r) && isObj(r[23]) ? r[23] : null;\n        if (x) ['by', 'rv'].forEach(function (f) { if (isObj(x[f])) fn('المهام', 0, x[f].e, function (v) { x[f].e = v; }); });\n      });\n    });\n  },\n"
   },
   "res.reg.tasks": {
    "order": 10,

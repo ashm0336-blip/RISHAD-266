@@ -1016,7 +1016,7 @@ export default {
 
       /* ── الحفظ المركزي — قلب المنظومة ── */
       if (path === '/api/notifications' || path === '/api/notifications/act' || path === '/api/notifications/export') return await nfRoute(env, request, url, ss);
-      if(path === '/api/backup/restore')return await rsRoute(env,request,url,ss);if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return await rsWipeRoute(env,request,url,ss);if(path === '/api/employees/transition')return await rsEmployeeRoute(env,request,url,ss);
+      if(path === '/api/backup/restore')return await rsRoute(env,request,url,ss);if(path === '/api/backup/import')return await rsImportRoute(env,request,ss);if(path === '/api/admin/dept-wipe'||path === '/api/admin/dept-delete')return await rsWipeRoute(env,request,url,ss);if(path === '/api/employees/transition')return await rsEmployeeRoute(env,request,url,ss);
 @@SYS:routes.custody@@@@SYS:routes.dispatch@@      /* RISHAD266: توليدُ المواعيد المتكررة ومسحُ المواعيد (التذكير · التأخر · الانقضاء) تشغيلُ نظامٍ يجري عند قراءة مخزن مهام الإدارة — كما كان طلبُ الصفحة المحذوف.
          يجري بعد أن تقبل القراءةُ نفسُها الطلبَ (الطريقة · الجلسة uid · المفاتيح · الصلاحية: 019r) ولم تحجب مفتاحَ المهام عن القارئ، وبالحارس المشترك 074؛
          فالطلبُ المرفوض لا يمسّ شيئاً. وإن جرى عملٌ أُعيدت القراءةُ ليصل أثرُه في الردّ نفسِه */
@@ -1322,6 +1322,8 @@ export default {
         /* READ-01: السجلُّ يتبع عقدَ القراءة نفسَه — لا يُعرض حدثٌ عن مجموعةِ بياناتٍ لا يقرؤها صاحبُ الجلسة */
         var nRawA = rowsA.length;
         rowsA = rowsA.filter(function (r) { return !r.k || r.k === 'system' || canRead(AU, r.k); });
+        /* V7 · د6: سطرُ نظامٍ مطفأ (على المنصة أو لوحدته أو لأصلٍ لها) لا يُعرض لأحد ما دام مطفأ — كتنبيهاته (019 nfSysOff): يُحجب عند القراءة ولا يُحذف */
+        rowsA = rowsA.filter(function (r) { return !audSysOff(AU, r); });
         /* سجلُّ كيانٍ في صفحةٍ لا يقرؤها صاحبُ الجلسة: رفضٌ صريحٌ لا قائمةٌ فارغةٌ مُلبِسة */
         if (entMode && nRawA > 0 && rowsA.length === 0) return json({ ok: 0, err: 'forbidden' }, 403);
         rowsA = rowsA.map(function (r) { var u = byIdU[r.uid]; return Object.assign({}, r, { name: u ? (u.name || u.un) : (r.un || ''), role: u ? u.role : '' }); });

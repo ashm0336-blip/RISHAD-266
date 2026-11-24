@@ -21,7 +21,7 @@
       p24Cover = I.p24Cover, p24Delta = I.p24Delta, p24Effective = I.p24Effective, p24GrantOf = I.p24GrantOf, p24Grantable = I.p24Grantable,
       p24Ix = I.p24Ix, p24KeyOn = I.p24KeyOn, p24LeafOn = I.p24LeafOn, p24LensHosted = I.p24LensHosted, p24LensOf = I.p24LensOf, p24R = I.p24R,
       p24SetGrant = I.p24SetGrant, p24Translate = I.p24Translate,
-      patternSeed = I.patternSeed, pinRole = I.pinRole,
+      pinRole = I.pinRole,
       pruneDeptAccounts = I.pruneDeptAccounts, pruneOrphanEmpPerms = I.pruneOrphanEmpPerms, pubUsers = I.pubUsers,
       purgeDeptAccounts = I.purgeDeptAccounts, pwCheck = I.pwCheck, pwRuleText = I.pwRuleText, rawCap = I.rawCap, rawUsers = I.rawUsers,
       removeBackupSuper = I.removeBackupSuper, removeDeptManager = I.removeDeptManager,
@@ -99,24 +99,76 @@
     var hiddenSide = (pl && pl.side && pl.side.hidden) || [], helpSide = !(pl && pl.side && pl.side.help === false);
     var pv = function(k){ return !!(perms[k] && perms[k].indexOf('view') !== -1); };
     var nameOf0 = function(k){ var p = PAGE_OF[k]; if (p) return p.name; var g = NAV_REG.filter(function(x){ return x.key === k; })[0]; return g ? g.name : k; };
+    /* V7 · د6: اسمُ البند بنوع الوحدة — «مؤشرات القسم» · «موظفو القسم» حين تكون الوحدةُ قسماً (BassamDepts.unitAl). الاسمُ هنا وحده: القائمةُ المرسومة
+       (root-logic) والبطاقاتُ (seenBy) تأخذانه من هذا المصدر */
+    var unitAl = 'الإدارة'; try { var D0 = KIVO.BassamDepts; if (D0 && D0.unitAl) unitAl = D0.unitAl(did || curDept()) || unitAl; } catch (e) { unitAl = 'الإدارة'; }
+    var unitName = function(n){ return unitAl !== 'الإدارة' && / الإدارة$/.test(n) ? n.replace(/ الإدارة$/, ' ' + unitAl) : n; };
     NO.groups.forEach(function(g){ g.keys.forEach(function(k){
       var on;
       if (k === 'kpis') on = navLeaves('kpis').some(function(x){ return kpiPanelOk(x[0], x[1], P || null, did); });
       else if (isContainer(k) || PAGE_REG.some(function(p){ return p.under === k; })) on = pv(k) || PAGE_REG.some(function(p){ return p.under === k && pv(p.key); });
       else on = pv(k);
       if (k === 'help') on = on && helpSide;
-      out.push({ k: k, n: nameOf0(k), on: !!on, hid: hiddenSide.indexOf(k) !== -1 });
+      out.push({ k: k, n: unitName(nameOf0(k)), on: !!on, hid: hiddenSide.indexOf(k) !== -1 });
     }); });
     return out;
   }
   /* صلاحياتُ مدير وحدةٍ did (بلا ورقةٍ مخزّنة — يرث سقفَها كاملاً) كما تحسبها 331 لحسابه: سقفُ الوحدة ∖ المطفأ على المنصة */
-  function mgrPerms(did){
-    var all = capAllPerms(did), off = [];
-    try { off = (KIVO.BassamPlat.get().mods || {}).off || []; } catch (e) {}
-    off.forEach(function(k){ if (k === 'admin') return; delete all[k]; leafKeysOf(k).forEach(function(l){ delete all[l]; }); });
-    return all;
+  function mgrPerms(did){ return I.platCut(capAllPerms(did)); }   /* V7 · د6 (أ1): القصُّ نفسُه الذي في myPerms (331 platCut) */
+  /* ═══ V7 · د6 (أ1 — قرار المالك): «ما يراه حاملٌ» من مصدرٍ واحد ═══
+     القائمةُ الجانبية الفعلية · «ما يراه مدير هذه الإدارة» · «ماذا يرى حامل الدور» · «ما يراه الآن» للشخص: كلُّها seenBy(h) = menuFor(holderPerms(h), h.did)
+     — القواعدُ قواعدُ menuFor وحدها، والفرقُ الوحيد بين الحاملين مجموعةُ الصلاحيات التي تُغذّى بها:
+       { kind: 'session' }                      الجلسةُ نفسُها (myPerms — من مفاتيح الخادم)
+       { kind: 'mgr', did }                     مديرُ الوحدة did (يرث سقفَها كاملاً)
+       { kind: 'role', did, keys }              حاملُ دورٍ في did: keys = مفاتيحُ الدور المترجَمة داخل السقف (KIVO.Perm44.compileRole) — بلا ورقةٍ قديمة
+       { kind: 'person', did, ekey, mgr, keys } شخصٌ بعينه: المحفوظُ له (ورقتُه · منحُه · استثناءاتُه السارية) — أو keys: مفاتيحُه الفعّالة من مسودة
+                                                المحرّر (KIVO.Perm44.effective) قبل الحفظ · mgr: حسابُه يحمل شارةَ المدير
+     وصلاحياتُ غير الجلسة تُشتقّ بقاعدة الجلسة نفسِها (331 heldPerms) من المفاتيح التي كان الخادمُ سيحملها له (057 enfHeld0: السقف · العدسة ·
+     الترجمة + المنح − الإسقاط · مهلةُ الاستثناء) — واختبارُ tests/unit/v7_d6_one_menu_source يطابقها بجواب الخادم لكل حساب. */
+  function holderKeys(did, ekey, mgr, inherit, sheet){
+    var G = p24GrantOf(ekey, did), now = Date.now(), un = G.until;
+    var plus = G.plus.filter(function(k){ return !(un && typeof un[k] === 'number' && un[k] <= now); });   /* استثناءٌ انتهت مهلتُه لا يُحمل (057 enfGrantOf) */
+    var E = p24Effective({ ekey: ekey, did: did, mgr: mgr, sheet: sheet, inherit: inherit, grant: { plus: plus, minus: G.minus, src: G.src } }) || { keys: {} };
+    return { keys: E.keys, plus: plus };
   }
-  KIVO.BassamPerm = { keyCap: keyCap, keyOn: keyOn, canW: canW, navOrder: navOrder, orderRows: orderRows, siteMap: siteMap, PAGE_KEYS: PAGE_KEYS, PAGE_REG: PAGE_REG, NAV_REG: NAV_REG, NAV2PERM: NAV2PERM, PERM2NAV: PERM2NAV, ALL_ACTS: ALL_ACTS, deptAccountsCount: deptAccountsCount, purgeDeptAccounts: purgeDeptAccounts, deptCap: deptCap, setDeptCap: setDeptCap, rawCap: rawCap, hasCap: hasCap, effCap: effCap, seedCapFrom: seedCapFrom, seedSectionCap: I.seedSectionCap, dropNodeCap: I.dropNodeCap, capOrphans: I.capOrphans,    patternSeed: patternSeed, _bust: function(){ I._pmMemo = null; },
+  /* مفاتيحُ لا تُمنح بالورقة ولا بالدور ويحملها صاحبُها بحكم موضعه (057 enfHeld0: self للجميع · role:mgr لمدير الوحدة) */
+  function standingKeys(H, mgr){
+    var R = p24R(), ix = p24Ix(); if (!R || !ix) return H;
+    R.keys.forEach(function(k){
+      var e = R.byKey[k]; if (!e || e.status !== 'active' || ix.superOnly[k]) return;
+      if (e.grant === 'self' || (e.grant === 'role' && ix.needMgr[k] && mgr)) H[k] = true;
+    });
+    return H;
+  }
+  function keysPerms(did, all, keys, plus, mgr){
+    var H = {}, C = null;
+    try { C = KIVO.Perm44 && KIVO.Perm44.ceiling ? KIVO.Perm44.ceiling(did).key : null; } catch (e) { C = null; }
+    (keys || []).forEach(function(k){ if (!C || C(k)) H[k] = true; });   /* السقفُ بالوراثة ∩ المنصة — ما كان الخادمُ ليحمله خارجَه */
+    if (!plus) plus = Object.keys(H);   /* = perm44 grantOf: منحُ صاحب الدور أو الاستثناء (plus) هو مفاتيحُه الفعّالة كلُّها */
+    return I.heldPerms(I.platCut(all || {}), standingKeys(H, mgr), plus, did);
+  }
+  function holderPerms(h){
+    h = h || {};
+    var kind = h.kind || 'session', d = h.did || curDept();
+    if (kind === 'session') return I.myPerms();
+    if (kind === 'mgr') return mgrPerms(d);
+    if (kind === 'role') return keysPerms(d, null, h.keys || [], null, false);
+    if (kind === 'person') {
+      var ek = String(h.ekey || ''), mgr = h.mgr !== undefined ? !!h.mgr : isMgrKey(ek), inherit = mgr && !hasOwnSheet(ek, d);
+      var sheet = inherit ? capAllPerms(d) : empPerms(ek, d), all = inherit ? capAllPerms(d) : derivePages(empPerms(ek, d));
+      if (Array.isArray(h.keys)) return keysPerms(d, all, h.keys, null, mgr);
+      var K = holderKeys(d, ek, mgr, inherit, sheet);
+      return keysPerms(d, all, Object.keys(K.keys), K.plus, mgr);
+    }
+    return {};
+  }
+  /* صفوفُ القائمة كاملةً [{ k, n, on, hid }] — للجلسة menuFor() نفسُها (بلا P: لوحاتُ المؤشرات تُسأل من الجلسة) */
+  function menuOf(h){ var kind = (h && h.kind) || 'session'; return kind === 'session' ? menuFor() : menuFor(holderPerms(h), (h && h.did) || curDept()); }
+  /* ما يُرسم له فعلاً: «صفحتي» (لكل صاحب حساب) ثم الروابطُ المملوكة غيرُ المخفيّة بإعداد المنصة — [{ k, n }] */
+  function seenBy(h){
+    return [{ k: 'profile', n: 'صفحتي' }].concat(menuOf(h).filter(function(x){ return x.on && !x.hid; }).map(function(x){ return { k: x.k, n: x.n }; }));
+  }
+  KIVO.BassamPerm = { keyCap: keyCap, keyOn: keyOn, canW: canW, navOrder: navOrder, orderRows: orderRows, siteMap: siteMap, PAGE_KEYS: PAGE_KEYS, PAGE_REG: PAGE_REG, NAV_REG: NAV_REG, NAV2PERM: NAV2PERM, PERM2NAV: PERM2NAV, ALL_ACTS: ALL_ACTS, deptAccountsCount: deptAccountsCount, purgeDeptAccounts: purgeDeptAccounts, deptCap: deptCap, setDeptCap: setDeptCap, rawCap: rawCap, hasCap: hasCap, effCap: effCap, seedCapFrom: seedCapFrom, seedSectionCap: I.seedSectionCap, dropNodeCap: I.dropNodeCap, capOrphans: I.capOrphans, capSeeded: I.capSeeded, _bust: function(){ I._pmMemo = null; },
     on: onCap, onAny: onAny, capSetAnywhere: capSetAnywhere, capState: I.capState, capOwnOf: I.capOwnOf, setCapOwn: I.setCapOwn, latentLeaves: I.latentLeaves, LENS_KEYS: LENS_KEYS, LENS_REG: LENS_REG, deptLenses: deptLenses, setDeptLenses: setDeptLenses, lensOn: I.lensOn,
     PAGE_OF: PAGE_OF, subKeysOf: subKeysOf, deptSubs: deptSubs, setDeptSubs: setDeptSubs, subOn: subOn,
     tabKeysOf: tabKeysOf, deptTabs: deptTabs, setDeptTabs: setDeptTabs, tabOn: tabOn,
@@ -124,7 +176,7 @@
     isContainer: isContainer, leafKeysOf: leafKeysOf, leafReg: leafReg, splitLeaf: splitLeaf, expandPerms: expandPerms, derivePages: derivePages, canSub: canSub,
     empLens: empLens, setEmpLens: setEmpLens, nameOf: nameOf, ACT_NAMES: ACT_NAMES,
     dropEmpPerms: dropEmpPerms, pruneOrphanEmpPerms: pruneOrphanEmpPerms,
-    myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk, menuFor: menuFor, mgrPerms: mgrPerms,
+    platOff: I.platOff, myPerms: I.myPerms, can: can, visiblePages: visiblePages, navLeaves: navLeaves, kpiPanelOk: kpiPanelOk, menuFor: menuFor, mgrPerms: mgrPerms, holderPerms: holderPerms, menuOf: menuOf, seenBy: seenBy,
     /* V7 · د5-ح: هل حُسمت صلاحياتُ الجلسة؟ — مديرُ المنصة دائماً · وغيرُه حين تصل مفاتيحُ الخادم (__BS_AUTHZ) فلا تُرسم صفحةٌ قبل قرارها */
     ready: function(){ try { return !!(isSuper() || (I.azZ && I.azZ())); } catch (e) { return true; } },
     key: azKey, authz: function(){ return azZ(); },
@@ -275,6 +327,9 @@
     changeOwnAccount: changeOwnAccount,
     staffStatus: staffStatus,
     staffMap: staffMap, activateStaffMany: activateStaffMany,
+    /* V7 · د6 (QA ١٢): بصمةُ كلمة المرور (p2) لمقترحات حسابات الانتقال (590 transitionPrepare يسأل BassamAuth.hashPw) — لم تكن مُصدَّرةً
+       فيفشل كلُّ انتقالٍ فيه حسابٌ جديد بـ«crypto» قبل أي طلب */
+    hashPw: hashPw,
     staffIsMgr: staffIsMgr,
     setStaffMgr: setStaffMgr,
     activateStaff: activateStaff,

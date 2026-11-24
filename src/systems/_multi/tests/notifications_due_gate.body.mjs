@@ -8,7 +8,7 @@
    Real canonical Worker + SQLite, fixed synthetic clocks (no wall-clock dependence), TEST_ONLY data only. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { world, seizedDocs, D1, clone } from './business_atomic_fx.mjs';
+import { world, CURRENT_SCHEMA, seizedDocs, D1, clone } from './business_atomic_fx.mjs';
 import { canonicalWorker } from '../../../../tests/unit/notifications_review_fx.mjs';
 import { candidateWorker } from '../../../../tests/unit/irshad_domain_fx.mjs';
 import { needs as needsSys } from '../../../../tests/unit/harness.mjs';
@@ -29,7 +29,7 @@ async function clock(start, fn) {
   finally { globalThis.Date = RealDate; }
 }
 async function fixture({ items = true, weekly = true, ageDays = 40, now } = {}) {
-  const B = await world({ schema: 11 });
+  const B = await world({ schema: CURRENT_SCHEMA });
   /* V7 · د5-ح (قرار المالك · البند ٧): تنبيهُ نظامٍ مطفأ لا يُولَّد — و«المضبوطات» ليست في سقف هذا العالم، فتُشغَّل أولاً كما يُشغَّل «الاسترشاد» أدناه */
   { const perms = clone(B.keys.bassam_perms_v1);
     Object.keys(perms.caps).forEach((d) => { if (!perms.caps[d].includes('seized')) perms.caps[d].push('seized'); });

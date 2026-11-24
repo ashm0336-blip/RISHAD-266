@@ -2,7 +2,9 @@
      · مدير المنصة: ينشئ خطة الشهر وموقعاً بصورة، ثم يستبدل الصورة بلا سبب ⇒ يُحفظ (معرّفُ الصورة يتغيّر فعلاً) بلا نافذة سبب ولا رسالة «لم يُحفظ»
        ولا تنبيهِ رفضٍ في الجرس ولا صفِّ رفضٍ في سجل الأمن.
      · مدير الإدارة: يستبدل الصورة ⇒ تظهر نافذة السبب قبل الحفظ؛ «إلغاء» لا يحفظ شيئاً؛ وبالسبب يُحفظ والسببُ يصل الخادم (سجلّ القرار).
-   الصورتان ملفّان PNG يُبنيان هنا ويُرفعان من نافذة اختيار الملف الحقيقية. */
+   الصورتان ملفّان PNG يُبنيان هنا ويُرفعان من نافذة اختيار الملف الحقيقية.
+   V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ لأحد — نافذةُ السبب صارت رسالةَ تأكيد «استبدال خريطة الموقع» للجميع (مدير المنصة ومدير الإدارة):
+   «إلغاء» لا يحفظ شيئاً وتبقى نافذةُ الموقع · «استبدال الخريطة» يحفظ بلا سبب، وسجلُّ القرار بلا نصّ سبب. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -21,9 +23,9 @@ function png(name, w, h, rgb) {
   const f = path.join(TMP, name); fs.writeFileSync(f, Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))])); return f;
 }
 const A = 'TEST_ONLY_A', KP = 'bsdept:' + A + ':bassam_plan_v1';
-const REASON_DLG = 'هذا الإجراء يتطلب سبباً';
+const REASON_DLG = 'هذا الإجراء يتطلب سبباً', CONFIRM_DLG = 'استبدال خريطة الموقع';
 
-test('إصلاح السبب · استبدال صورة الكانفس: مدير المنصة بلا سبب ينجح بلا رفض ولا تنبيه؛ مدير الإدارة تظهر له نافذة السبب ثم ينجح', { timeout: 420000 }, async () => {
+test('V7 · د6 (QA) · استبدال صورة الكانفس: بلا سبب لأحد — رسالةُ تأكيد ثم يُحفظ (مدير المنصة ومدير الإدارة)', { timeout: 420000 }, async () => {
   const imgA = png('map_a.png', 640, 480, [200, 220, 240]), imgB = png('map_b.png', 800, 500, [240, 220, 200]), imgC = png('map_c.png', 700, 520, [210, 240, 210]);
   const lab = await startLab(), b = await chromium.launch();
   try {
@@ -50,7 +52,9 @@ test('إصلاح السبب · استبدال صورة الكانفس: مدير 
     /* الاستبدال بلا سبب */
     const before = su.saves.length;
     await openEdit(su); await pick(su, imgB, su.page.locator('img[alt="خريطة الموقع"]').first());
-    await siteSave(su); await su.page.waitForTimeout(4500);
+    await siteSave(su); await su.page.waitForTimeout(1200);
+    assert.ok((await bodyText(su)).includes(CONFIRM_DLG), 'مدير المنصة: رسالةُ التأكيد قبل الاستبدال');
+    await su.page.getByText('استبدال الخريطة', { exact: true }).last().click(); await su.page.waitForTimeout(4500);
     let t = await bodyText(su);
     assert.equal(t.includes(REASON_DLG), false, 'مدير المنصة: لا نافذة سبب');
     assert.equal(/لم يُحفظ التعديل/.test(t), false, 'مدير المنصة: لا رسالة «لم يُحفظ التعديل»');
@@ -62,7 +66,7 @@ test('إصلاح السبب · استبدال صورة الكانفس: مدير 
     assert.deepEqual((nf.j.items || []).filter((i) => i.type === 'sc_deny').map((i) => i.body), [], 'لا تنبيه رفضٍ في الجرس');
     const sec = lab.env.DB.db.prepare("SELECT act,detail FROM sec WHERE act='denied'").all(); assert.deepEqual(sec, [], 'لا صفَّ رفضٍ في سجل الأمن');
     const az = lab.env.DB.db.prepare("SELECT decision,why,reason,keys FROM authz WHERE keys LIKE '%map.replace%' ORDER BY ts DESC LIMIT 1").get();
-    assert.ok(az, 'قرارُ map.replace مسجَّل'); assert.equal(az.decision, 'allow'); assert.equal(az.reason, 'بلا سبب (مدير المنصة)', 'السجل: «بلا سبب (مدير المنصة)»');
+    assert.ok(az, 'قرارُ map.replace مسجَّل'); assert.equal(az.decision, 'allow'); assert.equal(az.reason || '', '', 'السجل: بلا نصّ سبب (V7 · د6 QA)');
     assert.deepEqual(su.errs, [], 'مدير المنصة: لا أخطاء صفحة'); await su.ctx.close();
 
     /* ── مدير الإدارة ── */
@@ -71,20 +75,19 @@ test('إصلاح السبب · استبدال صورة الكانفس: مدير 
     await openEdit(m); await pick(m, imgC, m.page.locator('img[alt="خريطة الموقع"]').first());
     /* الإلغاء: لا حفظ */
     let n0 = m.saves.length; await siteSave(m); await m.page.waitForTimeout(1500);
-    t = await bodyText(m); assert.ok(t.includes(REASON_DLG), 'مدير الإدارة: نافذة السبب ظهرت قبل الحفظ');
-    await m.page.getByText('إلغاء التعديل', { exact: true }).last().click(); await m.page.waitForTimeout(1800);
+    t = await bodyText(m); assert.ok(t.includes(CONFIRM_DLG), 'مدير الإدارة: رسالةُ التأكيد ظهرت قبل الحفظ'); assert.equal(t.includes(REASON_DLG), false, 'ولا نافذةَ سبب');
+    await m.page.getByText('إلغاء', { exact: true }).last().click(); await m.page.waitForTimeout(1800);
     assert.equal(m.saves.length, n0, 'الإلغاء: لم يُرسَل حفظ'); assert.equal((await floor0(m)).iid, f2.iid, 'الإلغاء: الصورة كما هي');
     assert.match(await bodyText(m), /اسم الموقع وخريطته المرجعية/, 'الإلغاء: نافذة الموقع باقية');
-    /* بالسبب */
+    /* بالتأكيد — بلا سبب */
     await siteSave(m); await m.page.waitForTimeout(1500);
-    await m.page.locator('textarea[placeholder^="اكتب السبب"]').last().fill('TEST_ONLY خريطة محدَّثة');
-    await m.page.getByText('حفظ بالسبب', { exact: true }).last().click(); await m.page.waitForTimeout(5000);
+    await m.page.getByText('استبدال الخريطة', { exact: true }).last().click(); await m.page.waitForTimeout(5000);
     t = await bodyText(m); assert.equal(/لم يُحفظ التعديل/.test(t), false, 'مدير الإدارة بالسبب: لا رسالة رفض');
     const f3 = await floor0(m); assert.ok(f3.iid && f3.iid !== f2.iid, 'مدير الإدارة بالسبب: الصورة استُبدلت: ' + JSON.stringify([f2, f3])); assert.equal(f3.w, 700);
     const mv = m.saves.slice(n0); assert.ok(mv.length >= 1 && mv.every((x) => x.st === 200 && x.ok === 1), 'حفظُ مدير الإدارة قُبل: ' + JSON.stringify(mv.map((x) => [x.st, x.ok, x.denied])));
-    assert.ok(mv.some((x) => x.body.includes('TEST_ONLY خريطة محدَّثة')), 'السببُ أُرسل مع الحفظ');
+    assert.equal(mv.some((x) => /"why"\s*:/.test(x.body)), false, 'لم يُرسَل سبب');
     const az2 = lab.env.DB.db.prepare("SELECT decision,reason FROM authz WHERE keys LIKE '%map.replace%' ORDER BY ts DESC LIMIT 1").get();
-    assert.equal(az2.decision, 'allow'); assert.equal(az2.reason, 'TEST_ONLY خريطة محدَّثة', 'السببُ في سجلّ القرار');
+    assert.equal(az2.decision, 'allow'); assert.equal(az2.reason || '', '', 'سجلُّ القرار بلا نصّ سبب');
     assert.deepEqual(lab.env.DB.db.prepare("SELECT detail FROM sec WHERE act='denied'").all(), [], 'ولا رفضَ في سجل الأمن');
     assert.deepEqual(m.errs, [], 'مدير الإدارة: لا أخطاء صفحة'); await m.ctx.close();
   } finally { await b.close(); await lab.close(); fs.rmSync(TMP, { recursive: true, force: true }); }

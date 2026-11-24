@@ -99,9 +99,13 @@ function meTkKey(I) { return tkK(I.dept); }
 /* ── GET /api/me/tasks ── */
 /* SR-2.2 · F-7 (سياسةُ المالك «الصفحةُ غيرُ المفعّلة لا تُظهر أيَّ بياناتٍ تخصّها»): صفحةُ المهام في سقف إدارة الحساب وغيرُ مطفأةٍ على مستوى المنصة —
    deptCapOf (سقفُ الإدارة بتقاطع أسلافها · غيابُ السجل = مفتوح · وتسقط منه الوحدةُ المطفأة A.off) كما writePages؛ وإلا فلا قراءةَ ولا فعلَ ذاتيّ */
-function meTkPageOn(A) { var d = String(A.u.deptId || ''); return !!d && deptCapOf(A, d).indexOf('tasks') !== -1; }
+function meTkPageOn(A) { var d = String(A.u.deptId || ''); return !!d && !sysOffAt(A, d, 'tasks'); }   /* V7 · د6: القاعدةُ الواحدة (050 sysOffAt) — كان deptCapOf هنا */
 async function meTkList(env, A, url, request) {
-  if (!meTkPageOn(A)) return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
+  /* V7 · د6 (قرار المالك — قاعدةٌ واحدة لكل من في الوحدة عدا مدير المنصة · 050 sysServed): المهامُ مطفأةٌ لوحدة الحساب (إدارتُه، أو عقدتُه لمدير العقدة)
+     أو على المنصة ⇒ القراءةُ مرفوضة — الموظفُ ومديرُ الإدارة ومديرُ القسم ومديرُ العقدة سواء، كأفعال «مهامي» أدناه؛ والواجهةُ لا تسأل أصلاً (545 pageOn).
+     كانت 200 بعلامة off لمدير العقدة (حسابٌ بلا إدارة). مديرُ المنصة وحده كما كان (200 me.off). وحسابٌ بلا إدارةٍ والمهامُ مفعّلة: غيرُ مرتبط (لا «مهامي» له) */
+  if (!sysServed(A, acctUnitOf(A), 'tasks')) return json({ ok: 0, err: 'off', msg: 'صفحةُ المهام غيرُ مفعّلةٍ لإدارتك' }, 403);
+  if (A.u.role === 'super' && !meTkPageOn(A)) return json({ ok: 1, now: Date.now(), me: { linked: false, by: 'off', dept: String(A.u.deptId || ''), off: 1 }, rev: 0, n: 0, more: 0, months: [], rows: [] });   /* SR-2.2 · F-7 */
   var I = await meTkIdent(env, A), now = Date.now();
   var me = { linked: I.linked, by: I.by, dept: I.dept };
   if (!I.linked) return json({ ok: 1, now: now, me: me, rev: 0, n: 0, more: 0, months: [], rows: [] });

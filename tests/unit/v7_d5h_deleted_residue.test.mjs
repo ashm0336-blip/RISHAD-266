@@ -61,7 +61,8 @@ test('① ورقةُ «قوالب الصلاحيات» ومفاتيحُ tpl.* ل
   assert.ok(!REG.owners.some((o) => o.id === 'admin/ptpls') && !REG.atoms.some((a) => a.leaf === 'admin/ptpls'));
   const PAGES = JSON.parse(rd(path.join(SRC, 'manifests', 'pages.json')));
   assert.ok(!JSON.stringify(PAGES).includes('"ptpls"'), 'pages.json بلا الورقة');
-  assert.match(rd(path.join(SRC, 'permissions', '331-perm-model.js')), /admin:\['shifts','backup','import'\]/, 'بذرُ السقف «أساسي» بلا الورقة');
+  /* V7 · د6 (ب4 — قرار المالك): بذرُ السقف «أساسي» (SEED_BASIC) حُذف كلُّه مع استبدال البذر بالاختيار الصريح — فلا قائمةَ أقسامٍ فيه تحمل الورقة أو تخلو منها */
+  assert.doesNotMatch(rd(path.join(SRC, 'permissions', '331-perm-model.js')), /var SEED_BASIC|ptpls/, 'لا بذرَ «أساسي» ولا أثرَ للورقة في نموذج الصلاحيات');
 });
 
 test('② موردُ القوالب غيرُ مسجَّل في الخادم — يذكره الترحيلُ (063) ومحوّلُ النسخ (019f · بـenfTplsKey) وحدهما', () => {
@@ -107,7 +108,8 @@ test('③ مسارُ القرار الحيّ في الوضع القديم محذ
   const C = code(rd(path.join(SRC, 'permissions', '331-perm-model.js')));
   assert.doesNotMatch(C, /if \(!azZ\(\) \|\| isSuper\(\)\) return all;/); assert.doesNotMatch(C, /_lensOn0/);
   assert.match(C, /if \(isSuper\(\)\) return all;\s*if \(!azZ\(\)\) return \{\};\s*var H = azHeld\(curDept\(\)\); if \(H === null\) return \{\};/);
-  assert.doesNotMatch(code(rd(path.join(SRC, 'modules', 'admin', 'logic-perm44.js'))), /"enforce" === KIVO\.__BS_AUTHZ\.mode/, '«الصلاحيات» للمدير لا تتوقف على وضعٍ قديم');
+  /* V7 · د6: logic-perm44.js نُقل كما هو إلى صفحة «الإدارات والصلاحيات» (src/modules/org) — وقاعدةُ من يرى التبويب في صفحة الإعدادات (_permUnit) */
+  assert.doesNotMatch(code(rd(path.join(SRC, 'modules', 'org', 'logic-perm44.js'))) + code(rd(path.join(SRC, 'modules', 'org', 'logic.js'))) + code(rd(path.join(SRC, 'modules', 'admin', 'logic.js'))), /"enforce" === KIVO\.__BS_AUTHZ\.mode/, '«الصلاحيات» للمدير لا تتوقف على وضعٍ قديم');
 });
 
 test('④ تقريرُ السجلّ القديم (permv2) — لا مسارَ ولا عقدَ', () => {

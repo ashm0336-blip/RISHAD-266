@@ -94,7 +94,7 @@ def check(dst):
       ('سجلُّ المسارات: عنوانٌ ومالكٌ وحارس (SOT-095)', [py, 'tools/route_registry.py', '--check']),
       ('مساراتُ الخادم = العقد · لكلٍّ مالك · سقفُ الموزِّع (SOT-106)', [py, 'tools/api_routes.py', '--check']),
       ('محرّكُ نطاقٍ واحد في الخادم — الواجهةُ تستهلك قراره (SOT-098)', [py, 'tools/scope_single_engine.py', '--check']),
-      ('البناء: split + الصفحاتُ الكسولة', [py, 'tools/build.py', '--src', 'src', '--mode', 'split', '--pages', 'lazy', '--out', '_dist']),
+      ('البناء: split + الصفحاتُ الكسولة', [py, 'tools/build.py', '--src', 'src', '--mode', 'split', '--pages', 'lazy', '--minify-worker', '--out', '_dist']),
       ('البناء: النسخةُ الكاملة (monolith)', [py, 'tools/build.py', '--src', 'src', '--mode', 'monolith', '--out', '_mono/index.html']),
       ('ميزانيةُ الحجم: الصفحاتُ والغلافُ والعامل تحت سقوفها (AUD-024)', [py, 'tools/perf_budget.py', '_dist']),
       ('السكربتات: رأسُ استعمال · لا شيءَ يلمس Production افتراضياً (SOT-119)', [py, 'tools/scripts_check.py']),

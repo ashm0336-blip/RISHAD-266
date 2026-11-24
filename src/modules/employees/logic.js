@@ -53,7 +53,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         };
       if (!o || o.page !== "employees") {
         const sd = this.__bsSeeded;
-        sd && void 0 !== sd.empTab && ((this.__bsSeeded = null), this._bsHT(shown()));
+        sd && void 0 !== sd.empTab && (this.__bsSeeded = null);
+        /* V7 · د6 (أ2-5): العنوانُ الأساس يعرض تبويباً محفوظاً (من الجلسة أو من حالة العرض المزروعة) ⇒ يُصحَّح العنوانُ إلى ذلك التبويب — استبدالٌ لا مدخلُ تاريخٍ
+           جديد، مرةً لكل اختلاف، والتبويبُ المعروض لا يتغيّر */
+        const cur = (/^#\/employees\/([a-z]+)/i.exec(String(location.hash || "")) || [])[1] || "data", c0 = this.state.empTab, real = on(c0) ? c0 : "data";
+        cur === real ? (this.__bsFx = null) : this.__bsFx !== real && ((this.__bsFx = real), this._bsHT(shown()));
         return;
       }
       KIVO.__BS_OPEN_TAB = null;
@@ -229,7 +233,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   async _empDeleteOpen(indices, bulk) {
     if (!this.PC("del")) return this.permDeny();
-    if (this._empDeleteBusy || (this._empDeleteDraft && this._empDeleteDraft.uncertain)) return;
+    /* V7 · د6 (QA ١٢): لا خروجَ صامتاً — كلُّ رفضٍ يقول سببه */
+    if (this._empDeleteBusy || (this._empDeleteDraft && this._empDeleteDraft.uncertain)) return this.bsToast("عملية حذف سابقة لم تُحسم بعد؛ أكملها أو أعد محاولتها أولاً", "warn");
+    if (!this._empTransition()) return this.bsToast("أداة الحذف غير متاحة في هذه الصفحة؛ أعد تحميل الصفحة", "warn");
     const rows = indices.map(index => this.state.employees[index]).filter(Boolean), keys = rows.map(row => this._empKey(row));
     if (!keys.length || keys.some(key => !key) || new Set(keys).size !== keys.length) return this.bsToast("تعذر تحديد الموظفين بمعرّفات فريدة؛ حدّث القائمة قبل الحذف", "warn");
     this._empDeleteDraft = { keys, snapshot: null, ticket: null, uncertain: false, needsReview: false, rows, bulk: !!bulk, displayRows: this.state.employees };
@@ -238,7 +244,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   async _empDeleteReview() {
     const draft = this._empDeleteDraft, API = this._empTransition();
-    if (!draft || !API || this._empDeleteBusy || draft.uncertain) return;
+    if (!draft) return;
+    if (!API) { this.setState({ empDeleteError: "أداة الحذف غير متاحة؛ أعد تحميل الصفحة" }); return; }
+    if (this._empDeleteBusy) { this.bsToast("جارٍ تأكيد بيانات الإدارة من الخادم…", "warn"); return; }
+    if (draft.uncertain) { this.setState({ empDeleteError: "لم يُحسم طلب الحذف السابق؛ أعد محاولة الطلب نفسه" }); return; }
     this._empDeleteBusy = true; this.setState({ empDeleteBusy: true, empDeleteError: "" });
     try {
       const result = await API.read("delete"); if (this._empDeleteDraft !== draft) return;
@@ -260,13 +269,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   async _empDeleteCommit() {
     const draft = this._empDeleteDraft, API = this._empTransition();
-    if (!draft || !API || this._empDeleteBusy) return;
+    if (!draft) return this.bsToast("لا توجد عملية حذف مفتوحة؛ افتح الحذف من القائمة من جديد", "warn");
+    if (!API) { this.setState({ empDeleteError: "أداة الحذف غير متاحة؛ أعد تحميل الصفحة" }); this.bsToast("أداة الحذف غير متاحة؛ أعد تحميل الصفحة", "warn"); return; }
+    if (this._empDeleteBusy) return this.bsToast("جارٍ تنفيذ الطلب… انتظر اكتماله", "warn");
     if (!this.PC("del")) return this.permDeny();
     if (!draft.snapshot || draft.needsReview) { this.bsToast("راجع بيانات الإدارة الحالية قبل تأكيد الحذف", "warn"); return; }
     this._empDeleteBusy = true; this.setState({ empDeleteBusy: true, empDeleteError: "" });
     try {
       if (!draft.ticket) draft.ticket = await API.prepare("delete", { finalRows: draft.finalRows, deleteMode: draft.bulk && !draft.finalRows.length ? "all" : "selected" }, draft.snapshot);
-      if (draft.ticket.ok === 0) { this.setState({ empDeleteError: draft.ticket.message }); draft.ticket = null; return; }
+      if (draft.ticket.ok === 0) { const why = draft.ticket.message; this.setState({ empDeleteError: why }); this.bsToast(why, "warn"); draft.ticket = null; return; }
       const result = await API.send(draft.ticket); if (result.ticket) draft.ticket = result.ticket; if (this._empDeleteDraft !== draft) return;
       if (!result.ok) {
         draft.needsReview = result.err === "conflict"; draft.uncertain = ["network", "invalid", "session"].includes(result.err);
@@ -284,8 +295,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   _cuEmpty() { return { rev: 0, rows: [], items: [], summary: {}, total: 0, next: "", catalogNext: "" }; }
   _cuApi() { return KIVO.Custody; }
   _cuError(result) { this.setState({ cuError: result.message || "تعذّر تأكيد بيانات العهد من الخادم" }); this.bsToast(result.message || "تعذّر تأكيد العملية", "warn"); }
+  /* V7 · د6: العهدُ مفعّلٌ لهذه الوحدة؟ (القاعدةُ التي تُرسم بها تبويباتُه) — تُسأل قبل كل قراءة: تبويبٌ محفوظٌ من قبل الإطفاء لا يطلب بياناتِ نظامٍ مطفأ */
+  _cuOn() { try { const P = KIVO.BassamPerm; return !P || !P.subOn || !!P.subOn("emps", "custody"); } catch (e) { return !0; } }
   _cuEnsure() {
     if (!["custody", "store"].includes(this.state.empTab)) return;
+    if (!this._cuOn()) return;
     const API = this._cuApi(), actor = API && API.context();
     if (!actor) { this.state.cuData = this._cuEmpty(); this.state.cuError = "الجلسة غير متاحة — أعد تسجيل الدخول"; return; }
     if (this._cuActorKey && this._cuActorKey !== actor.key) {
@@ -302,7 +316,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   async _cuRefresh(cursor) {
     const API = this._cuApi(), actor = API && API.context();
-    if (!actor) return { ok: 0 };
+    if (!actor || !this._cuOn()) return { ok: 0 };
     const generation = this._cuGeneration = (this._cuGeneration || 0) + 1;
     const view = this.state.empTab === "store" ? "catalog" : "month";
     const options = { view, year: view === "catalog" ? undefined : this.state.cuYear || undefined, month: view === "catalog" ? undefined : this.state.cuMonth || undefined, q: this.state.cuSearch || "", limit: Math.min(view === "month" ? 100 : 200, this.state.cuPerPage || 10), cursor: cursor || "" };
@@ -1867,12 +1881,26 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   async setEmp(t, intent = t) {
     if (this.PC("add") || this.PC("edit") || this.PC("del")) {
       // Account removal is performed only by the explicit employee transition API.
+      /* V7 · د6 (QA ١٣): التفعيلُ التلقائي بعد الحفظ لصفوف هذا الحفظ وحدها (المضافُ أو مَن تغيّرت هويتُه أو جوالُه أو رقمُه الوظيفي).
+         كان يمرّ على كل موظفي الإدارة فيفعّل حساباتِ المعلّقين الآخرين («فُعّل تلقائياً حسابان» + طلبا حفظ) عند إضافة موظفٍ بالاسم وحده؛
+         تفعيلُ المعلّقين الآخرين فعلٌ صريح: «تفعيل الحساب» في قائمة الصف أو «تفعيل الحسابات» للمحددين */
+      const before = this.loadEmp() || [];
       if (!await this.persist(t, "employee-editor", intent)) return false;
-      this.setState({ employees: this.loadEmp(), selected: {} });
-      this.autoActivate(this.loadEmp());
+      const after = this.loadEmp();
+      this.setState({ employees: after, selected: {} });
+      this.autoActivate(this._empAcctTouched(before, after));
       return true;
     }
     this.permDeny(); return false;
+  }
+  _empAcctTouched(before, after) {
+    const k = (r) => (KIVO.BassamEmp && KIVO.BassamEmp.key ? KIVO.BassamEmp.key(r) : r.eid || r.nid || r.name || ""),
+      old = new Map((before || []).filter(Boolean).map((r) => [k(r), r]));
+    return (after || []).filter((r) => {
+      if (!r) return false;
+      const o = old.get(k(r));
+      return !o || ["nid", "phone", "empno"].some((f) => String(o[f] || "").trim() !== String(r[f] || "").trim());
+    });
   }
   autoActivate(t) {
     try {
@@ -6015,6 +6043,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       confirmScopeOn: !!(this._empDeleteDraft && this._empDeleteDraft.snapshot && this._empDeleteDraft.bulk && !this._empDeleteDraft.finalRows.length),
       confirmScope: "حذف الكل يمسح الجدول الشهري والتقارير والتسكينات والمهام وحسابات الموظفين وصلاحياتهم وحركات عهدهم وترشيحات التميز؛ يبقى حساب المالك وكتالوج العهد.",
       confirmError: e.empDeleteError || "",
+      confirmErrorOn: !!e.empDeleteError,
+      /* V7 · د6 (QA ١٢): سببُ تعطّل «تأكيد الحذف» ظاهرٌ في النافذة نفسِها (كان السببُ يُحفظ في الحالة ولا يُعرض فتبقى النافذة صامتة) */
+      confirmWait: !!(this._empDeleteDraft && !this._empDeleteDraft.snapshot && e.empDeleteBusy),
       confirmBusy: !!e.empDeleteBusy,
       confirmNeedsReview: !!e.empDeleteReview,
       confirmReady: !!(this._empDeleteDraft && this._empDeleteDraft.snapshot && !this._empDeleteDraft.needsReview && !e.empDeleteBusy),

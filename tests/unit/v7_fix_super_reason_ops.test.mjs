@@ -37,6 +37,9 @@ const savedOk = (r, key, rev) => !!(r.status === 200 && r.j && r.j.revs && r.j.r
 
 /* One case: seed(base) builds the «before» value from the fixture value; mut(v) is the change sent; pick(v) is the part that must move. */
 async function runCase({ key, res, place, how, seed, mut, pick, reasonOff }) {
+  /* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا سببَ إلزامياً لأيّ مفتاح ولأيّ مستخدم — كلُّ المفاتيح على قاعدة «السببُ مُطفأ»:
+     مديرُ الإدارة بلا سبب يُحفظ، ومديرُ المنصة لا يُكتب له «بلا سبب (مدير المنصة)» (كان: مديرُ الإدارة بلا سبب يُرفض why=reason) */
+  reasonOff = 1;
   const rk = K(res), W = await world({ worker: WU.file, mode: 'enforce' }), dm = await W.login(...DM);
   const before0 = seed(clone(stored(W.env, rk) || {}));
   const rec = { key, place, how, super: {}, mgrNoReason: {}, mgrReason: {}, note: '' };

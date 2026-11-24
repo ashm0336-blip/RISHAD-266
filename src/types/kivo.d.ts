@@ -55,6 +55,11 @@ export interface IrshadReport {
   id: string;
   [field: string]: unknown;
 }
+/** bassam_rasd_v1 · reports[] · حقولٌ إضافية تُحتمل (سجلّاتٌ قديمة) */
+export interface RasdReport {
+  id: string;
+  [field: string]: unknown;
+}
 /** bassam_seized_acts_v1 (الجذر) · حقولٌ إضافية تُحتمل (سجلّاتٌ قديمة) */
 export interface SeizedAct {
   id?: string;
@@ -171,6 +176,12 @@ export interface KivoResources {
   "bassam_platform_v1": unknown;
   /** dept · قاعدة: tech */
   "bassam_profile_v1": unknown;
+  /** dept · الورقة: rasd/records */
+  "bassam_rasd_opts_v1": { zone: Record<string, unknown>[]; floor: Record<string, unknown>[]; type: Record<string, unknown>[]; act: Record<string, unknown>[]; party: Record<string, unknown>[]; spot: Record<string, unknown>[]; [field: string]: unknown };
+  /** dept · الورقة: rasd/records */
+  "bassam_rasd_retro_v1": unknown;
+  /** dept · الورقة: rasd/records */
+  "bassam_rasd_v1": { reports: RasdReport[]; [field: string]: unknown };
   /** dept */
   "bassam_roles_v1": unknown;
   /** dept · الورقة: daily/rounds */
@@ -284,6 +295,7 @@ export interface KivoApi {
   "/api/employees/transition": { methods: "GET" | "POST"; access: "actor"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
   "/api/admin/dept-wipe": { methods: "GET" | "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
   "/api/admin/dept-delete": { methods: "GET" | "POST"; access: "super"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
+  "/api/backup/import": { methods: "POST"; access: "actor"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "404": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "410": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
   "/api/backup/restore": { methods: "GET" | "POST"; access: "actor"; responses: { "200": { ok: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
   "/api/irshad": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; dept: unknown; base: unknown }; "400": { ok: unknown; err: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
   "/api/irshad/act": { methods: "POST"; access: "actor"; responses: { "200": { ok: unknown; requestId: unknown; op: unknown; rev: unknown; n: unknown; base: unknown }; "400": { ok: unknown; err: unknown; at: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
@@ -300,8 +312,8 @@ export interface KivoApi {
 export type KivoApiPath = keyof KivoApi;
 
 /* ── (٤) سجلُّ الصفحات (src/manifests/pages.json) ── */
-export type KivoPageKey = "dstats" | "emps" | "planning" | "staff" | "plan" | "daily" | "dreport" | "tasks" | "irshad" | "seized" | "award" | "links" | "help" | "admin";
-export type KivoNavKey = "kpis" | "dstats" | "emps" | "planning" | "daily" | "irshad" | "seized" | "award";
+export type KivoPageKey = "dstats" | "emps" | "planning" | "staff" | "plan" | "daily" | "dreport" | "tasks" | "irshad" | "seized" | "rasd" | "award" | "links" | "help" | "admin";
+export type KivoNavKey = "kpis" | "dstats" | "emps" | "planning" | "daily" | "irshad" | "seized" | "rasd" | "award";
 export type KivoLensKey = "zones" | "paths" | "gates" | "marks" | "dist" | "dens";
 /** عدسةٌ كإضافة — src/plugins/lenses/<key>/manifest.json (المخطّط src/schemas/lens-plugin.schema.json) */
 export interface KivoLensPlugin { schema: 1; kind: "lens"; key: KivoLensKey; name: string; label: string; order: number; owner: string; hosts: string[];

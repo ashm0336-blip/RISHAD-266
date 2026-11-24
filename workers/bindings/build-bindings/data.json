@@ -274,15 +274,42 @@
     "seized/records:approve"
    ],
    "sensitive": true
+  },
+  {
+   "key": "rz.rec.retro.open",
+   "group": "D — retro (rasd)",
+   "mechanism": "حالةٌ خادمية لفترة الاستدراك بالآلية القائمة: bsdept:<d>:bassam_rasd_retro_v1 = { windows: [...] } تُفتح وتُغلق عبر POST /api/retro (شهرٌ أو يومٌ منقضٍ · ≤ 72 ساعة · سببٌ وسطرُ تدقيق) — محوّلُها server/047r-rasd-retro.js",
+   "inputs": "اليومُ الهجري للخادم (dsToday) · تواريخُ الحالات المتأثرة (y·m·d) · نوافذُ الإدارة · قرارُ rz.rec.retro.open (⇐ rasd/records:approve)",
+   "shadow_rule": "كتابةٌ تمسّ حالةً في فترةٍ مغلقة بلا نافذةٍ سارية تغطّيها ⇒ رفض (010 DateRange · RETRO_SYS)",
+   "asis_today": "الواجهةُ تفتح بنقرةٍ مزدوجة لحامل approve نافذةً خادمية (POST /api/retro) وتغلقها كذلك",
+   "expected_mismatch": "لا شيء",
+   "impl": [
+    "retroClosed",
+    "retroCover",
+    "rzRetroAdapter"
+   ],
+   "tests": [
+    "src/systems/rasd/tests/rasd_retro.test.mjs"
+   ],
+   "api": "GET/POST /api/retro (res: rasd)",
+   "status": "built",
+   "owner": "rasd/records",
+   "label": "فتح شهر/يوم مقفل للاستدراك",
+   "guardKind": "rule-new",
+   "guardStatus": "built",
+   "asisMap": [
+    "rasd/records:approve"
+   ],
+   "sensitive": true
   }
  ],
  "counts": {
-  "toBuild": 10,
-  "built": 10,
+  "toBuild": 11,
+  "built": 11,
   "unbuilt": 0,
   "unknownKeys": 0,
   "reservedEmitted": 0,
-  "implFns": 10
+  "implFns": 11
  },
  "importRes": [
   "bassam_employees_v1",

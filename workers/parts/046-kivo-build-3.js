@@ -2,12 +2,14 @@
 /* ═══ V7 · د5-هـ (44): نوافذُ الاستدراك (ir.rec.retro.open · sz.rec.retro.open) — حالةٌ خادمية لكل (إدارة · نظام) يقرؤها /api/retro (047) والإنفاذ (062 enfSavePrep · 010 KIVO_SCOPE).
    كانت هنا طبقةُ القياس الظلّية PERMV3 (R196 · Phase 3: عدّاداتُ import.run · backup.restore · بوابات العدسات · الاستدراك — permv3After · permv3Batch) — حُذفت: لم تحكم يوماً. ═══ */
 var RETRO = { irshad: { cap: 'irshad/records', key: 'ir.rec.retro.open', res: 'bassam_irshad_v1', state: 'bassam_irshad_retro_v1', name: 'الاسترشاد' },
-              seized: { cap: 'seized/records', key: 'sz.rec.retro.open', res: 'bassam_seized_v1', state: 'bassam_seized_retro_v1', name: 'المضبوطات' } };
-var RETRO_SYS_OF = { 'bassam_irshad_v1': 'irshad', 'bassam_seized_v1': 'seized' };
+              seized: { cap: 'seized/records', key: 'sz.rec.retro.open', res: 'bassam_seized_v1', state: 'bassam_seized_retro_v1', name: 'المضبوطات' },
+              rasd: { cap: 'rasd/records', key: 'rz.rec.retro.open', res: 'bassam_rasd_v1', state: 'bassam_rasd_retro_v1', name: 'رصد الحالات' } };
+var RETRO_SYS_OF = { 'bassam_irshad_v1': 'irshad', 'bassam_seized_v1': 'seized', 'bassam_rasd_v1': 'rasd' };
 function retroKey(d, sys) { return 'bsdept:' + d + ':' + RETRO[sys].state; }
 async function retroState(env, d, sys) {
   if (sys === 'irshad') { await irGuardRetired(env); return (await irRetroSnapshot(env, d)).state; }
   if(sys==='seized'){await szGuardRetired(env);return (await szRetroSnapshot(env,d)).state;}
+  if (sys === 'rasd') return await rzRetroState(env, d);
   throw rsError('retro-resource');
 }
 /* من يفتح نافذةَ استدراك: مدير النظام، أو حاملُ approve على ورقة السجلات في الإدارة — ذرّةُ G‑08 نفسُها التي تفتح الشهرَ واجهياً اليوم (وهي ترجمةُ ir/sz.rec.retro.open) */

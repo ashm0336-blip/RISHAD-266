@@ -25,7 +25,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { world, rd } from './core01_root_world.mjs';
-import { needs } from './harness.mjs';
+import { needs, shellNavKeys } from './harness.mjs';
 
 const T = rd('layouts/index.template.html'), R = rd('layouts/root-logic.js'), P = rd('layouts/260-bassam-plat.js');
 const L = rd('modules/admin/logic.js'), V = rd('modules/admin/view.html'), C = rd('modules/admin/helmet.css'), PG = rd('pages/Admin.dc.html');
@@ -67,7 +67,9 @@ test('(2) template: the operational sidebar is unchanged inside sc-if sbOps; the
   const ops = T.slice(ops0, con0), con = T.slice(con0, T.indexOf('</nav>'));
   for (const s of ['class="s-dept"', 'class="s-ghead"', 'مواقع ذات صلة', '{{goAdmin}}']) assert.ok(ops.includes(s), 'operational block keeps ' + s);
   assert.ok(!ops.includes('s-secadd'), 'V7 · د5-هـ (44): «+ قسم» is deleted from the side menu (sections are added from «الإدارات» only)');
-  deq([...ops.matchAll(/data-key="([a-z]+)"/g)].map((m) => m[1]), ['kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award'], 'the eight page links, in order');
+  /* V7 · د6 (gatefix): روابطُ الصفحات بترتيبها مشتقّةً من القالب وإعلانات الأنظمة (shellNavKeys) — «رصد الحالات» (rasd) أضاف رابطه */
+  deq([...ops.matchAll(/data-key="([a-z]+)"/g)].map((m) => m[1]), shellNavKeys(), 'the page links, in order');
+  for (const k of ['kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award']) assert.ok(ops.includes('data-key="' + k + '"'), 'the page link ' + k + ' stays');
   for (const s of ['data-key', 's-dept', 's-secadd', 'مواقع ذات صلة', 'goAdmin']) assert.ok(!con.includes(s), 'console block has no ' + s);
   for (const g of ['org', 'plat', 'sec', 'data']) assert.ok(con.includes('aria-labelledby="con-gh-' + g + '"') && con.includes('id="con-gh-' + g + '"'), 'group ' + g + ' labelled by its heading');
   assert.match(con, /<span class="nlbl">مركز إدارة رشاد<\/span>/, 'the space is named');
@@ -173,10 +175,12 @@ test('(4c) the admin page: request routed through _admGo / _plGo, section in the
   assert.match(body, /this\._plGo\(ps\)/); assert.match(body, /this\._admGo\(q\)/); assert.doesNotMatch(body, /this\.adGo\(/, 'no direct adGo');
   assert.match(body, /KIVO\.__ADMIN_OPEN_PSUB = null/);
   const rv = L.slice(L.indexOf('\n  renderVals() {'));
-  /* V7 P0: «الإدارات» تكتب #/sysadmin/org[/<id>] (_orgSeg) */
-  assert.match(rv, /this\._hashTab\("sysadmin", ps \? "plat\/" \+ ps : "depts" === d \? this\._orgSeg\(\) : d\)/, 'canonical #/sysadmin/plat/<sub> and #/sysadmin/org[/<id>]');
+  /* V7 P0: «الإدارات» تكتب #/sysadmin/org[/<id>] (_orgSeg) — V7 · د6: عنوانُ شاشة «الإدارات والصلاحيات» (الوحدة · التبويب) تكتبه الشاشةُ نفسُها
+     (src/modules/org · KIVO.BassamOrgRoute)؛ صفحةُ الإعدادات تكتب المدخلَ #/sysadmin/org وحده حين ليس العنوانُ عنوانَ الشاشة بعد */
+  assert.match(rv, /n && \(\("depts" === d && this\._orgHashIs\("site"\)\) \|\| this\._hashTab\("sysadmin", ps \? "plat\/" \+ ps : "depts" === d \? "org" : d\)\)/, 'canonical #/sysadmin/plat/<sub>; #/sysadmin/org/<unit>/<tab> is left to the screen');
   assert.ok(rv.indexOf('KIVO.BassamNav.conSync({') > rv.indexOf('this._hashTab("sysadmin"'), 'published after the address is written');
-  assert.match(R, /if \(key === "sysadmin"\) \{ KIVO\.__ADMIN_OPEN_TAB = this\._sysTabOf\(t\); KIVO\.__ADMIN_OPEN_PSUB = t === "plat" \? this\._hashSub\(\) \|\| null : null; KIVO\.__ADMIN_OPEN_ORG = t === "org" \? this\._hashOrgId\(\) \|\| null : null; \}/);
+  assert.match(R, /if \(key === "sysadmin"\) \{ KIVO\.__ADMIN_OPEN_TAB = this\._sysTabOf\(t\); KIVO\.__ADMIN_OPEN_PSUB = t === "plat" \? this\._hashSub\(\) \|\| null : null; \}/);
+  assert.doesNotMatch(R + L, /__ADMIN_OPEN_ORG|_hashOrgId/, 'V7 · د6: the unit id is no longer handed over by the shell — the screen reads the address itself');
 });
 
 test('(5) removed: the in-page strip, the platform tab row and their symbols; P and tokens', () => {
@@ -214,10 +218,12 @@ test('(6) review of S10: sidebar fits, gold edge faces the page, one history pat
   assert.match(L, /go: go\("backup"\)/); assert.match(L, /go: go\("sec", \{ adSecKind: "denied" \}\)/);
   /* V7 P1: both «تعديل» links open the unit's own page (#/sysadmin/org/<id> — a history entry) on the tab they edit */
   /* V7 · د5-هـ (44): the permission map is deleted (its «تعديل» link with it); «تعديل الصلاحيات» opens v2's people section */
-  assert.match(L, /const h = "#\/sysadmin\/org\/" \+ encodeURIComponent\(u\) \+ "\/perm\/people";\s*this\.__orgPend = h;\s*location\.hash = h;/, '«تعديل الصلاحيات» → #/sysadmin/org/<unit>/perm/people');
+  /* V7 · د6: the address is #/sysadmin/org/<unit>/people now, reached through the screen's one navigation point (_orgGoto → KIVO.BassamOrgRoute) */
+  assert.match(L, /if \("perm" === what\) return void \(u \? this\._orgGoto\(u, "people"\) : this\._ovGo\("depts"\)\);/, '«تعديل الصلاحيات» → the unit\'s «الأشخاص» tab');
+  assert.match(L, /location\.hash = KIVO\.BassamOrgRoute\.href\("site", unit, tab\);/, 'by the address when the screen is not mounted');
   /* V7 P2: the account menu is one (_acctMenu); from «مراقبة الحسابات» edit opens the account's node page — V7 · د5-ح: on «الصلاحيات ← الأدوار ← مدير الوحدة» (the node tab was deleted) */
   assert.match(L, /p\.push\(\{ t: "تعديل الصلاحيات", go: \(\) => this\._acctOpen\(a, "perm", here\) \}\)/, '«تعديل الصلاحيات» → _acctOpen');
-  assert.match(L, /if \(!here\) return void \(u \? this\.p44Open\(u, "roles", \{ sel: "__mgr" \}\) : this\._ovGo\("depts"\)\);/, 'outside the node page: the account\'s node, its «مدير الوحدة» card');
+  assert.match(L, /if \(!here\) return void \(u \? this\._orgGoto\(u, "admins"\) : this\._ovGo\("depts"\)\);/, 'outside the unit: the account\'s unit, its «المسؤولون» tab (V7 · د6 — was «الصلاحيات ← الأدوار ← مدير الوحدة»)');
   /* the group names: Admin keeps its own copy (V5), equal to the shell's */
   const gt = /GT = (\{[^}]+\})/.exec(R), g = /const G = (\{[^}]+\})/.exec(L);
   deq(JSON.parse(g[1].replace(/(\w+):/g, '"$1":')), JSON.parse(gt[1].replace(/(\w+):/g, '"$1":')), 'same four group names');
@@ -234,7 +240,10 @@ test('(6) review of S10: sidebar fits, gold edge faces the page, one history pat
   Y.c._conSync({ avail: ALL, tab: 'plat', sub: 'id', secBadge: 0, dirty: ['id'], dirtyN: 1 });
   assert.equal(await Y.c._goOps(), true); await new Promise((r) => setImmediate(r));
   assert.equal(Y.confirms.length, 1, 'the exit link asks once (no second question from BassamNav.go)'); assert.notEqual(Y.c.state.active, 'sysadmin');
-  assert.match(R, /if \(ok !== "sysadmin" && !this\.__conAsked && this\._conDirty\(\)\)/, 'Back / a typed address asks too');
+  /* V7 · د6: مسوّداتُ إعدادات المنصة صار اسمُ شرطها _platDirty — و_conDirty يجمعها مع تغييرات شاشة «الإدارات والصلاحيات» غير المحفوظة (_orgDirty) */
+  assert.match(R, /if \(ok !== "sysadmin" && !this\.__conAsked && this\._platDirty\(\)\)/, 'Back / a typed address asks too');
+  assert.match(R, /_conDirty\(\) \{\s*return this\._platDirty\(\) \|\| this\._orgDirty\(\);\s*\}/, 'every exit that asked for platform drafts now also asks the screen');
+  assert.match(R, /if \(!this\.__conAsked && this\._orgDirty\(\)\) \{\s*const O = KIVO\.BassamOrgRoute\.screen, keep = O\.href \? O\.href\(\) : "";/, 'V7 · د6: Back / a typed address with unsaved changes in the screen restores its address and asks its guard first');
   /* Arabic labels for server codes and storage keys in the activity log */
   const ctx = { KIVO: {}, console }; vm.createContext(ctx);
   ctx.KIVO.BassamKeyLabels = { all: { bassam_perms_v1: 1, bassam_notifications_domain_v1: 1 }, label: (k) => ({ bassam_perms_v1: 'الصلاحيات', bassam_notifications_domain_v1: 'التنبيهات والتعاميم' })[String(k).replace(/^bsdept:[^:]+:/, '')] || 'بيانات المنصة' };

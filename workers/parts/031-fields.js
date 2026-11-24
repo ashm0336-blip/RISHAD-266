@@ -33,6 +33,7 @@ var FIELDS = {
   /* ── B: الثابتُ وحده — وما داخلَه يتوسّع بحرّيته ── */
   'bassam_award_v1':      { cols: { recs:    { req: ['id', 'st'], type: { id: 'str', st: 'str' } } } },
   'bassam_irshad_v1':     { cols: { reports: { req: ['id'], type: { id: 'str' } } } },
+  'bassam_rasd_v1':       { cols: { reports: { req: ['id'], type: { id: 'str' } } } },
   'bassam_seized_v1':     { cols: { reports: { req: ['id'], type: { id: 'str' } } } },
   'bassam_seized_cat_v1': { cols: { cats:    { req: ['name'], type: { name: 'str' } } } },
   'bassam_seized_acts_v1':{ at: '', req: ['name'], type: { id: 'str', name: 'str' } }

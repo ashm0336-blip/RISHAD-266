@@ -1,4 +1,7 @@
-/* V7 · د5-هـ (44) — تبويبُ «الصلاحيات» في صفحة العقدة (src/modules/admin/logic-perm44.js + view.html): قيمُ الصفحة الفعلية من renderVals
+/* V7 · د6: أقسامُ «الصلاحيات» الأربعة صارت تبويباتِ الوحدة في صفحة «الإدارات والصلاحيات» المستقلة (src/modules/org/logic-perm44.js منقولاً كما هو + logic.js + view.html):
+   الوحدةُ والتبويبُ من العنوان (#/sysadmin/org/<id>/<تبويب> · #/admin/perm/<id>/<تبويب>) — لا حالةَ قسمٍ ولا قائمةَ «الوحدة» داخل «الأنظمة»، وبطاقتا
+   «مدير المنصة» و«مدير الوحدة» صارتا تبويبَ «المسؤولون». ما عدا ذلك يبقى كما كان ويُثبَّت هنا على الصفحة الجديدة (ما تغيّر معلَّمٌ بـ«V7 · د6»).
+   V7 · د5-هـ (44) — تبويبُ «الصلاحيات» في صفحة العقدة (src/modules/admin/logic-perm44.js + view.html): قيمُ الصفحة الفعلية من renderVals
    في عالمٍ مصطنع (TEST_ONLY) على نمط admin_department_context — والمحرّكُ هو KIVO.Perm44 الحقيقيُّ (340 + 345 المولَّد فوق مخزنٍ صغير —
    perm44_real.mjs؛ التوحيد: كان بديلَ اختبار): الأنظمةُ والمستوياتُ والمفاتيحُ والفرقُ والتراجعُ من المحرّك نفسِه الذي يحكم به الخادم.
    · الأدوار: تغييرُ المستوى ⇒ مسودةٌ متّسخة، مراجعةٌ بالفرق ومن يتأثر، وحفظٌ واحد: مسودةُ المحرّك الواحدة تحمل bassam_roles_v1 و
@@ -16,8 +19,10 @@ import vm from 'node:vm';
 import { moduleLogic, SRC } from './harness.mjs';
 import { perm44Real, rolesKey, grantsKey } from './perm44_real.mjs';
 
-const source = moduleLogic('admin');
-const view = fs.readFileSync(SRC + '/modules/admin/view.html', 'utf8');
+const source = moduleLogic('org');
+const view = fs.readFileSync(SRC + '/modules/org/view.html', 'utf8');
+const adminLogic = moduleLogic('admin'), adminView = fs.readFileSync(SRC + '/modules/admin/view.html', 'utf8');   /* الصفحةُ المضيفة: مدخلُ المدير وموضعُ «المسؤولون» */
+const routeSrc = fs.readFileSync(SRC + '/services/325-org-route.js', 'utf8');
 const J = (x) => JSON.parse(JSON.stringify(x));
 const DID = 'TEST_ONLY_D', SEC = 'TEST_ONLY_D_S', NODE = 'TEST_ONLY_N';
 
@@ -32,7 +37,8 @@ function world({ caps = { [DID]: ['staff', 'plan', 'tasks'] }, off = [], doc, su
   };
   const depts = [{ id: DID, name: 'TEST_ONLY إدارة' }, { id: SEC, name: 'TEST_ONLY قسم' }];
   const nodes = [{ id: NODE, name: 'TEST_ONLY قطاع', kind: 'قطاع' }];
-  const nodeOf = (id) => depts.concat(nodes).find((x) => x.id === id);
+  /* V7 · د6: الصفحةُ تقرأ نوعَ الوحدة من خدمة الهيكل (dept · sec) — البديلُ يعيدها بصيغة العقدة كما تفعل الخدمة */
+  const nodeOf = (id) => { const d = depts.find((x) => x.id === id); return d ? { ...d, dept: true, ...(id === SEC ? { sec: true, kind: 'قسم', pid: DID } : { kind: 'إدارة', pid: NODE }) } : nodes.find((x) => x.id === id); };
   const anc = (id) => (id === DID ? [NODE] : id === SEC ? [NODE, DID] : []);
   const users = [
     { id: 'TEST_ONLY_u1', name: 'TEST_ONLY سعد', un: '1200000101', role: 'staff', deptId: DID, ekey: 'TEST_ONLY_e1' },
@@ -51,6 +57,8 @@ function world({ caps = { [DID]: ['staff', 'plan', 'tasks'] }, off = [], doc, su
       active: () => DID, activeName: () => 'TEST_ONLY إدارة', list: () => depts, treeFlat: () => depts, nodes: () => nodes, groups: () => nodes, allNodes: () => nodes.concat(depts),
       nodeOf, ancestorsOf: anc, childrenOf: (id) => (id === DID ? [depts[1]] : []), parentIdOf: () => '', groupIdOf: (id) => (id === DID ? NODE : ''), groupName: () => '',
       pathOf: () => [], deptsUnder: () => [], needsStructure: () => false, nodeKinds: () => [], isSection: (id) => id === SEC,
+      railTree: () => [{ t: 'node', id: NODE, name: nodes[0].name, kind: 'قطاع', depth: 0, kids: 1 }, { t: 'dept', id: DID, name: depts[0].name, kind: 'إدارة', depth: 1, kids: 1 }, { t: 'dept', id: SEC, name: depts[1].name, kind: 'قسم', depth: 2, kids: 0, sec: true }],
+      descendantsOf: (id) => (id === NODE ? [DID, SEC] : id === DID ? [SEC] : []), canParent: () => true,
       context: () => ({ state: 'ready', dept: DID, message: '' }), raw: { getItem: () => null },
     },
     BassamPerm: {
@@ -62,6 +70,14 @@ function world({ caps = { [DID]: ['staff', 'plan', 'tasks'] }, off = [], doc, su
       /* V7 · د5-ح: مصدرُ القائمة الجانبية الواحد (334 menuFor على صلاحيات مدير الوحدة mgrPerms) — هنا بديلُه من السقف المصطنع */
       mgrPerms: (u) => ({ TEST_ONLY_unit: u }),
       menuFor: (P, d) => ['emps', 'staff', 'plan', 'tasks', 'links', 'admin'].map((k) => ({ k, n: 'TEST_ONLY ' + k, on: k === 'emps' || k === 'admin' || (!plat.mods.off.includes(k) && on(k, P.TEST_ONLY_unit)), hid: k === 'links' })),
+      /* V7 · د6 (أ1): المصدرُ الواحد لكل «ما يراه حامل» (334 seenBy) — بديلُه هنا: المديرُ من menuFor(mgrPerms) أعلاه؛ وحاملُ الدور والشخصُ (بمفاتيح المحرّك الحقيقي)
+         من كل نظامٍ مفعّلٍ في السقف يحمل منه مفتاحاً؛ وشخصٌ بلا مفاتيح ممرَّرة: المحفوظُ له (المديرُ قائمةُ المدير · غيرُه «صفحتي») */
+      seenBy: (h) => {
+        const head = [{ k: 'profile', n: 'صفحتي' }], B = KIVO.BassamPerm, E = KIVO.Perm44;
+        if (h.kind === 'mgr' || (h.kind === 'person' && h.mgr && !Array.isArray(h.keys))) return head.concat(B.menuFor(B.mgrPerms(h.did), h.did).filter((x) => x.on && !x.hid).map((x) => ({ k: x.k, n: x.n })));
+        const held = new Set(h.keys || []);
+        return head.concat(E.sysList().filter((s) => !plat.mods.off.includes(s.key) && on(s.key, h.did) && E.sysKeys(s.key).some((k) => held.has(k))).map((s) => ({ k: s.key, n: s.name })));
+      },
       /* سقفُ الوحدة لمحرّك الأدوار (= 331 p24Ceil · p24LeafOn): سجلُّها إن وُجد، والمطفأُ من المنصة خارجه */
       p24: { ceil: (u) => ({ page: (k) => !plat.mods.off.includes(k) && (!Array.isArray(caps0[u]) || caps0[u].includes(k)), sub: () => true, lens: () => true }), leafOn: (C0, leaf) => C0.page(String(leaf).split('/')[0]) },
     },
@@ -75,7 +91,8 @@ function world({ caps = { [DID]: ['staff', 'plan', 'tasks'] }, off = [], doc, su
       explain: () => '',
     }, flushAsync: async () => true },
   };
-  const C = { KIVO, DCLogic: class {}, __BS_BOOT: { cf: 1, srv: 1, uid: 'TEST_ONLY_OWNER' }, location: { hash: '#/sysadmin/org/' + DID }, history: { replaceState() {} }, setTimeout, clearTimeout, Date, console, document: { getElementById: () => null }, localStorage: { getItem: () => null, setItem() { throw Error('no write'); }, removeItem() { throw Error('no write'); } } };
+  const location = { hash: '#/sysadmin/org/' + DID + '/systems', pathname: '/', search: '' };
+  const C = { KIVO, DCLogic: class {}, __BS_BOOT: { cf: 1, srv: 1, uid: 'TEST_ONLY_OWNER' }, location, history: { replaceState(_s, _t, u) { location.hash = String(u).slice(String(u).indexOf('#')); } }, setTimeout, clearTimeout, Date, console, document: { getElementById: () => null }, localStorage: { getItem: () => null, setItem() { throw Error('no write'); }, removeItem() { throw Error('no write'); } } };
   C.window = C;
   vm.createContext(C);
   /* المحرّكُ الحقيقي فوق سجلَّي الوحدة — وكلُّ كتابةٍ تُعدّ (المسودةُ الواحدة تكتب مفتاحَيها مرةً) */
@@ -83,39 +100,44 @@ function world({ caps = { [DID]: ['staff', 'plan', 'tasks'] }, off = [], doc, su
   const set0 = C.localStorage.setItem;
   C.localStorage.setItem = (k, v) => { writes.push(k); set0(k, v); };
   KIVO.KIVO_REGISTRY = C.KIVO_REGISTRY;
-  vm.runInContext(source + '\nglobalThis.TEST_ONLY_Admin=Component;', C);
-  const page = Object.create(C.TEST_ONLY_Admin.prototype);
-  page.state = { admTab: 'depts', sysSel: DID, sysTab: 'perm', usrPage: 1, usrPerPage: 10 };
+  vm.runInContext(routeSrc, C);
+  vm.runInContext(source + '\nglobalThis.TEST_ONLY_Org=Component;', C);
+  /* V7 · د6: الصفحةُ تُنشأ بمُنشئها وتأخذ نمطَ الموضع من الصفحة المضيفة (host.mode) — هنا من KIVO.__ADMIN_MODE كما تضبطه صفحةُ الإعدادات */
+  const page = new C.TEST_ONLY_Org();
+  const hostCalls = [];
+  page.props = { host: { get mode() { return KIVO.__ADMIN_MODE === 'dept' ? 'dept' : 'site'; }, adWhen: () => 'TEST_ONLY اليوم', adFull: () => 'TEST_ONLY وقت', adRole: () => '', adUnit: () => '',
+    acctCtx: () => ({ l: {}, now: Date.now() }), deptDel: (t) => hostCalls.push(['deptDel', t]), switchDept: (id) => hostCalls.push(['switchDept', id]), exportAll: () => hostCalls.push(['exportAll']) },
+    children: [{ props: { 'data-org-slot': 'admins' }, TEST_ONLY: 'admins' }, { props: { 'data-org-slot': 'data' }, TEST_ONLY: 'data' }] };
   page.setState = (patch) => { page.state = { ...page.state, ...(typeof patch === 'function' ? patch(page.state) : patch) }; };
-  for (const n of ['_adPermVals', 'plVals', 'adVals', 'impVals', 'sfVals', 'tpVals', '_expInfo', '_gmRec', '_upDeptOf', 'up24Model', 'tp24Base']) page[n] = () => ({});
-  page._admTabsNow = () => ({ l: 'depts', h: 'depts' });
-  page._hashTab = () => {}; page._nodeRows = (_d, _s, r) => r; page._parentOpts = () => []; page._gmKind = () => 'TEST_ONLY';
-  page.t24On = () => false; page._unSplit = () => ({}); page.bsOn = () => true; page.bsKeyCap = () => ''; page.bsAck = () => {};
+  page.bsAck = () => {};
   page.bsToast = (m, k) => toasts.push([m, k]);
-  page.adWhen = () => 'TEST_ONLY اليوم'; page.adFull = () => 'TEST_ONLY وقت';
-  page._acctMenu = () => []; page._rowMenu = () => ({ rmItems: [], rmHas: false, rmOpen: false, rmToggle() {} });
   const render = () => page.renderVals();
-  const sub = (s, extra) => { page.setState({ p44: { ...(page.state.p44 || {}), sub: s, ...(extra || {}) } }); return render(); };
-  return { page, render, sub, writes, store: real.store, toasts, capW, platW, KIVO, C, E: KIVO.Perm44 };
+  /* تبويبُ الوحدة بالعنوان (كان حالةَ «قسم»): unit اختياريٌّ — الافتراضي وحدةُ العنوان الحالي */
+  const R = KIVO.BassamOrgRoute, modeNow = () => (KIVO.__ADMIN_MODE === 'dept' ? 'dept' : 'site');
+  const unitNow = () => { const p0 = R.parse(location.hash); return (p0 && p0.unit) || DID; };
+  const open = (unit, tab) => { location.hash = R.href(modeNow(), unit, tab); return render(); };
+  const sub = (s, extra) => { if (extra) page.setState({ p44: { ...(page.state.p44 || {}), ...extra } }); return open(unitNow(), s); };
+  return { page, render, sub, open, writes, store: real.store, toasts, capW, platW, KIVO, C, E: KIVO.Perm44, location, hostCalls };
 }
 const names = (rows) => rows.map((r) => r.n);
 
 test('the node page shows «الصلاحيات» in place of «سقف الصفحات»; four sections and the view-as switch', () => {
   const W = world(), v = W.sub('systems');
-  assert.equal(v.onTabPerm, true); assert.equal(v.tabCapShow, undefined, 'the old ceiling tab is deleted'); assert.equal(v.onTabCap, undefined);
-  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل']);
+  /* V7 · د6: الأقسامُ الأربعة تبويباتٌ في شريط تبويبات الوحدة (بين «نظرة عامة» و«البيانات») — لا تبويبَ «الصلاحيات» فوقها ولا شريطَ أقسامٍ داخله */
+  assert.equal(v.p44Show, true); assert.equal(v.p44OnSys, true); assert.equal(v.onTabPerm, undefined); assert.equal(v.p44Subs, undefined, 'the inner sections bar is gone');
+  assert.equal(v.tabCapShow, undefined, 'the old ceiling tab is deleted'); assert.equal(v.onTabCap, undefined);
+  assert.deepEqual(J(v.ogTabs.map((x) => x.t)), ['نظرة عامة', 'الأنظمة', 'المسؤولون', 'الأدوار', 'الأشخاص', 'السجل', 'البيانات']);
+  assert.deepEqual(J(v.ogTabs.filter((x) => x.on === 'true').map((x) => x.t)), ['الأنظمة']);
   assert.deepEqual(J(v.p44Viewers.map((x) => x.t)), ['مدير المنصة', 'مدير الإدارة']);
-  const tabs = view.slice(view.indexOf('aria-label="أقسام صفحة العقدة"'), view.indexOf('<!-- ═══ V7 P1 · نظرة عامة'));
-  assert.doesNotMatch(view, /tabCapShow|goTabCap|onTabCap|حفظ السقف/, '«سقف الصفحات» (tab · panel · its save) is deleted');
-  assert.match(tabs, /onClick="\{\{goTabPerm\}\}"[\s\S]*الصلاحيات/);
+  assert.doesNotMatch(view + adminView, /tabCapShow|goTabCap|onTabCap|حفظ السقف/, '«سقف الصفحات» (tab · panel · its save) is deleted');
+  assert.doesNotMatch(view + adminView, /goTabPerm|aria-label="أقسام صفحة العقدة"|aria-label="أقسام الصلاحيات"|p44Subs/, 'V7 · د6: the old unit-page tabs and the sections bar are gone');
+  assert.match(view, /<div class="og-tabs" role="tablist" aria-label="تبويبات الوحدة">/);
   assert.match(view, /إطفاء نظام لا يحذف بياناته: تبقى محفوظة وتعود كما هي عند التفعيل\./);
   assert.match(view, /<div class="p44-as" role="group" aria-label="شاهد الصفحة كـ">/);
-  /* the overview checklist's ceiling step now opens «الصلاحيات ← الأنظمة» */
-  W.page.state.sysTab = 'ov';
-  const st = W.render().ovSteps.find((x) => x.t === 'الصلاحيات');   /* V7 · د5-هـ (44 · المدير): الخطوةُ باسم التبويب الذي تفتحه (كانت «سقف الصفحات») */
-  assert.ok(!W.render().ovSteps.some((x) => x.t === 'سقف الصفحات'), 'the old label is gone');
-  assert.equal(st.goLbl, 'فتح الصلاحيات'); st.go();
-  assert.equal(W.page.state.sysTab, 'perm'); assert.equal(W.page.state.p44.sub, 'systems');
+  /* the overview checklist's systems step opens the «الأنظمة» tab (V7 · د6: was the «الصلاحيات» step opening «الصلاحيات ← الأنظمة») */
+  const ov = W.sub('overview'), st = ov.ogSteps.find((x) => x.k === 'systems');
+  assert.equal(st.t, 'الأنظمة'); assert.ok(!ov.ogSteps.some((x) => x.t === 'سقف الصفحات'), 'the old label is gone');
+  return Promise.resolve(st.go()).then(() => new Promise((r) => setImmediate(r))).then(() => { assert.equal(W.location.hash, '#/sysadmin/org/' + DID + '/systems'); assert.equal(W.render().p44OnSys, true); });
 });
 
 test('① systems: a unit row per system, locked by the platform or an ancestor; save goes through the existing ceiling writers', () => {
@@ -139,7 +161,9 @@ test('① systems: a unit row per system, locked by the platform or an ancestor;
   assert.deepEqual(J(W.capW), [[DID, ['staff', 'plan']]], 'tasks dropped from this unit\'s own ceiling record — data untouched');
   assert.equal(W.render().p44RevOn, false, 'the dialog closes after the save');
   /* the platform level: mods.off */
-  v = W.render(); v.p44Units[0].pick(); v = W.render();
+  /* V7 · د6: مفاتيحُ المنصة في صف «المنصة كلها» من الشجرة (كانت أولَ قائمة «الوحدة» داخل «الأنظمة» — حُذفت) */
+  assert.equal(W.render().p44Units, undefined, 'the unit picker inside «الأنظمة» is gone');
+  v = W.open('__plat', 'systems');
   assert.equal(v.p44Unit.n, 'المنصة كلها'); v.p44SysRows.find((r) => r.k === 'plan').flip(); W.render().p44SysReview(); W.render().p44RevSave();
   assert.deepEqual(J(W.platW.at(-1).mods.off), [], 'turning plan back on platform-wide');
 });
@@ -174,7 +198,7 @@ test('② roles: a level change is a dirty draft; review names the diff and the 
   /* undo of unsaved work, copy, new, compare */
   staff().flip(); v = W.render(); assert.equal(v.p44Dirty, true); v.p44Undo(); assert.equal(W.render().p44Dirty, false);
   W.render().p44RoleCopy(); v = W.render();
-  assert.match(v.p44RoleName, /^نسخة من TEST_ONLY مراقب$/); assert.equal(v.p44RoleList.length, 5, 'super + the unit manager (V7 · د5-ح) + 2 + the copy');
+  assert.match(v.p44RoleName, /^نسخة من TEST_ONLY مراقب$/); assert.equal(v.p44RoleList.length, 3, 'V7 · د6: the custom roles only (2 + the copy) — the two fixed cards moved to «المسؤولون»');
   v.p44CmpSet({ target: { value: 'r_sh' } }); v = W.render();
   assert.equal(v.p44CmpOn, true); assert.deepEqual(J(v.p44CmpRows.filter((r) => r.diff === 'true').map((r) => r.n)), ['المهام']);
   /* custom = an explicit key list, starting from the previous level's keys */
@@ -191,11 +215,13 @@ test('a department manager never sees a system that is OFF in his ceiling — no
   const W = world({ caps: { [DID]: ['staff', 'tasks'] } });   /* plan + seized OFF for this unit */
   const v = W.sub('roles', { viewer: 'mgr', sel: 'r_obs' });
   assert.equal(v.p44MgrV, true);
-  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل'], 'V7 · د5-ح: «الأنظمة» for the manager too (read-only)');
+  assert.ok(['systems', 'roles', 'people', 'log'].every((k) => v.ogTabs.some((x) => x.k === k)), 'V7 · د5-ح: «الأنظمة» for the manager too (read-only) — V7 · د6: tabs of the unit');
   assert.deepEqual(J(names(v.p44SysEd)), ['الجدول الشهري', 'المهام']);
   const offKeys = W.E.sysKeys('plan').concat(W.E.sysKeys('seized'));
   assert.ok(!JSON.stringify(v.p44Nav).includes('التشغيل') && !v.p44ChkKeys.some((x) => offKeys.includes(x.v)), 'nor in the menu or the access test');
   assert.ok(!v.p44RoleList.some((r) => r.n === 'مدير المنصة'));
+  assert.equal(W.sub('admins').p44IsSup, false, 'V7 · د6: nor in «المسؤولون» of a unit (the platform-admin card belongs to the root row)');
+  W.sub('roles');
   /* a role that still holds an OFF system: compiled within the ceiling only */
   W.page.state.p44.d.roles[0].sys.plan = { lvl: 'full' };
   assert.ok(!JSON.stringify(W.render().p44Nav).includes('التشغيل'));
@@ -207,10 +233,14 @@ test('a department manager never sees a system that is OFF in his ceiling — no
 });
 
 test('the platform-admin card: «صلاحية كاملة بلا أي قيد», no editor, nothing granted', () => {
-  const W = world(), v = W.sub('roles', { viewer: 'plat', sel: '__super' });
-  assert.equal(v.p44IsSup, true); assert.equal(v.p44NotSup, false); assert.equal(v.p44SysEd, undefined, 'no level editor');
-  assert.equal(v.p44RoleList[0].n, 'مدير المنصة'); assert.equal(v.p44RoleList[0].lock, true); assert.equal(v.p44RoleList[0].on, 'true');
+  /* V7 · د6 (قرار المالك — الرد 3): البطاقةُ مكانُها «المسؤولون» في صف «المنصة كلها» (كانت أولَ قائمة «الأدوار» في كل وحدة) */
+  const W = world(), v = W.open('__plat', 'admins');
+  assert.equal(v.ogOnAdmins, true); assert.equal(v.p44IsSup, true); assert.equal(v.p44IsMgr, false); assert.equal(v.p44SysEd, undefined, 'no level editor');
+  assert.equal(v.p44Role.n, 'مدير المنصة'); assert.equal(v.p44Role.badge, 'دور النظام');
   assert.match(view, /<b>صلاحية كاملة بلا أي قيد<\/b>/);
+  const adm = view.slice(view.indexOf('data-org-tab="admins"'), view.indexOf('data-org-tab="roles"'));
+  assert.match(adm, /<sc-if value="\{\{p44IsSup\}\}"[\s\S]*صلاحية كاملة بلا أي قيد/, 'the card is rendered in the «المسؤولون» section');
+  const r = W.open(DID, 'roles'); assert.ok(!r.p44RoleList.some((x) => x.n === 'مدير المنصة' || x.n === 'مدير الوحدة'), 'not in the roles list any more'); assert.equal(r.p44IsSup, undefined);
   assert.deepEqual(W.writes, [], 'nothing written');
 });
 
@@ -290,7 +320,7 @@ test('loading and error states for the roles; the access test asks the server an
   v = W.render(); assert.equal(v.p44Err, true); assert.equal(v.p44Loading, false);
   /* the check: GET /api/perm44/check — the server's answer is shown */
   const X = world(), seen = [];
-  X.page.state.p44 = { sub: 'roles', sel: 'r_obs' };
+  X.sub('roles', { sel: 'r_obs' });
   X.C.fetch = async (u) => { seen.push(u); return { ok: true, json: async () => ({ ok: 1, allow: false, why: 'TEST_ONLY خارج الدور' }) }; };
   {
     const K = X.E.keysFor('tasks', 'sensitive').slice(-1)[0];
@@ -301,28 +331,24 @@ test('loading and error states for the roles; the access test asks the server an
   }
 });
 
-test('the address: #/sysadmin/org/<id>/perm/<section> is read by the shell and written by the page', () => {
+test('the address: #/sysadmin/org/<id>/<tab> is read and written by the page itself; the old #/sysadmin/org/<id>/perm/<section> is redirected', () => {
+  /* V7 · د6: الإطارُ لا يقرأ معرّفَ الوحدة ولا القسم (‎_hashOrgId و __ADMIN_OPEN_ORG حُذفا) — الصفحةُ تقرأ العنوانَ بخدمته (KIVO.BassamOrgRoute) وتكتبه قانونياً */
   const root = fs.readFileSync(SRC + '/layouts/root-logic.js', 'utf8');
-  const fn = (name) => { const i = root.indexOf('\n  ' + name + '() {'); assert.ok(i >= 0, name); let d = 0, j = root.indexOf('{', i); for (let k = j; k < root.length; k++) { if (root[k] === '{') d++; else if (root[k] === '}' && --d === 0) return root.slice(i, k + 1); } };
-  const C = { location: { hash: '' } }; vm.createContext(C);
-  vm.runInContext('globalThis.o = {' + fn('_hashOrgId') + '};', C);
-  for (const [h, id] of [['#/sysadmin/org/TEST_ONLY_D', 'TEST_ONLY_D'], ['#/sysadmin/org/TEST_ONLY_D/perm/roles', 'TEST_ONLY_D'], ['#/sysadmin/org/TEST_ONLY_D/perm/x', '']]) {
-    C.location.hash = h; assert.equal(C.o._hashOrgId(), id, h);
-  }
-  /* the page opens the section named by the address (_admTabsNow), and writes it back (_orgSeg) */
+  assert.doesNotMatch(root + adminLogic, /_hashOrgId|__ADMIN_OPEN_ORG|_orgSeg|__orgTab/);
   const W = world();
-  W.C.location.hash = '#/sysadmin/org/' + DID + '/perm/log';
-  W.page._admTabsNow = W.C.TEST_ONLY_Admin.prototype._admTabsNow;
-  W.page._orgOpen = () => {}; W.page._admGo = () => {};
-  W.KIVO.__ADMIN_OPEN_TAB = 'depts'; W.KIVO.__ADMIN_OPEN_ORG = DID;
-  W.page._admTabsNow('site', true, ['depts'], []);
-  assert.equal(W.page.__orgTab, 'perm'); assert.equal(W.page.state.p44.sub, 'log');
-  W.sub('people');
-  assert.equal(W.page._orgSeg(), 'org/TEST_ONLY_D/perm/people');
-  W.page.state.sysTab = 'ov'; assert.equal(W.page._orgSeg(), 'org/TEST_ONLY_D');
+  for (const [h, canon, tab] of [['#/sysadmin/org/TEST_ONLY_D', '#/sysadmin/org/TEST_ONLY_D/overview', 'overview'], ['#/sysadmin/org/TEST_ONLY_D/perm/roles', '#/sysadmin/org/TEST_ONLY_D/roles', 'roles'],
+    ['#/sysadmin/org/TEST_ONLY_D/perm/log', '#/sysadmin/org/TEST_ONLY_D/log', 'log'], ['#/sysadmin/org/TEST_ONLY_D/perm/x', '#/sysadmin/org/TEST_ONLY_D/systems', 'systems'], ['#/sysadmin/org/TEST_ONLY_D/people', '#/sysadmin/org/TEST_ONLY_D/people', 'people']]) {
+    W.location.hash = h; const v = W.render();
+    assert.equal(v.ogTab, tab, h); assert.equal(W.location.hash, canon, h + ' → ' + canon);
+  }
+  /* the section of the address is the one shown */
+  W.location.hash = '#/sysadmin/org/' + DID + '/perm/log'; assert.equal(W.render().p44OnLog, true);
+  assert.equal(W.sub('people').p44OnPeople, true); assert.equal(W.location.hash, '#/sysadmin/org/TEST_ONLY_D/people');
+  assert.equal(W.page._p44SubNow(), 'people'); assert.equal(W.sub('overview').p44Show, false); assert.equal(W.page._p44SubNow(), '');
 });
 
-/* ── V7 · د5-هـ (44 · المدير): المستوى الثاني — مديرُ الإدارة يمنح موظفيه داخل السقف من «الإعدادات ← الصلاحيات» (#/admin/perm/<قسم>) ── */
+/* ── V7 · د5-هـ (44 · المدير): المستوى الثاني — مديرُ الإدارة يمنح موظفيه داخل السقف من «الإعدادات ← الصلاحيات» ──
+   V7 · د6: العنوانُ #/admin/perm/<الوحدة>/<التبويب> والمحتوى صفحةُ الشاشة نفسُها (host.mode = dept)؛ صفحةُ الإعدادات تقرّر عرضَ التبويب وتركّبها (adminHost) */
 function deptWorld(user, opts) {
   const W = world(Object.assign({ caps: { [DID]: ['staff', 'tasks'] }, sup: user.role === 'super' }, opts || {}));   /* plan + seized OFF for this unit */
   W.KIVO.__ADMIN_MODE = 'dept';
@@ -330,11 +356,20 @@ function deptWorld(user, opts) {
   W.KIVO.BassamAuth.user = () => user;
   W.KIVO.BassamDepts.parentDeptOf = (id) => (id === SEC ? DID : '');
   W.C.__BS_BOOT.cf = 1;
-  const hashes = [];
-  W.page._hashTab = (pg, t) => hashes.push(pg + '/' + t);
-  W.page._admTabsNow = W.C.TEST_ONLY_Admin.prototype._admTabsNow;
-  W.page.state = { ...W.page.state, admTab: undefined, sysTab: 'ov', deptTab: 'backup' };
-  return Object.assign(W, { hashes });
+  W.location.hash = '#/admin/backup';
+  return W;
+}
+/* صفحةُ الإعدادات الفعلية (المضيفة) في العالم نفسه: تبويبُ «الصلاحيات» يُعرض ويُركَّب من هنا */
+function adminHost(W) {
+  vm.runInContext('globalThis.TEST_ONLY_Admin=(function(){' + adminLogic + '\nreturn Component;})();', W.C);
+  const page = Object.create(W.C.TEST_ONLY_Admin.prototype), hashes = [];
+  page.state = { deptTab: 'backup', usrPage: 1, usrPerPage: 10 };
+  page.setState = (patch, cb) => { page.state = { ...page.state, ...(typeof patch === 'function' ? patch(page.state) : patch) }; cb && cb(); };
+  for (const n of ['_adPermVals', 'plVals', 'adVals', 'impVals', 'sfVals', 'tpVals', '_expInfo', '_gmRec', '_upDeptOf', 'up24Model', 'tp24Base', 'audLoad']) page[n] = () => ({});
+  page._hashTab = (pg, t) => hashes.push(pg + '/' + t);
+  page._gmKind = () => 'TEST_ONLY'; page.t24On = () => false; page._unSplit = () => ({}); page.bsOn = () => true; page.bsKeyCap = () => ''; page.bsAck = () => {}; page.bsToast = () => {};
+  page._acctMenu = () => []; page._rowMenu = () => ({ rmItems: [], rmHas: false, rmOpen: false, rmToggle() {} });
+  return { page, hashes, render: () => page.renderVals() };
 }
 const MGR = { id: 'TEST_ONLY_m', role: 'staff', deptId: DID, ekey: 'mgr:' + DID, mgr: 1 };
 
@@ -356,56 +391,68 @@ test('gating: who sees «الصلاحيات» in a unit\'s settings — the serv
   assert.equal(g(null, DID), false); assert.equal(g(MGR, ''), false);
 });
 
-test('the manager\'s tab: offered in his settings, the same page in the manager view (roles · people · log), only his ceiling, the address #/admin/perm/<section>', () => {
-  const W = deptWorld(MGR);
+test('the manager\'s tab: offered in his settings, the same page in the manager view (roles · people · log), only his ceiling, the address #/admin/perm/<unit>/<tab>', () => {
+  const W = deptWorld(MGR), A = adminHost(W);
+  let a = A.render();
+  assert.equal(a.dTabPmOn, true, 'the tab is offered'); assert.equal(a.showDeptPerm, false); assert.equal(a.orgOn, false, 'not shown until opened');
+  assert.equal(a.dTabBarShow, true);
+  a.dTabGoPerm(); a = A.render();
+  assert.equal(a.showDeptPerm, true); assert.equal(a.orgOn, true, 'V7 · د6: the settings page mounts the screen'); assert.equal(a.orgHost.mode, 'dept', 'in the manager placement');
+  assert.equal(A.hashes.at(-1), 'admin/perm', 'the settings page writes the entry address; the screen then writes the unit and the tab');
+  assert.equal(a.orgSlotAdmins, false, 'no accounts-table slot for the manager (read-only holders)'); assert.equal(a.orgSlotData, false);
+  /* the same page, the manager view */
+  W.location.hash = '#/admin/perm';
   let v = W.render();
-  assert.equal(v.dTabPmOn, true, 'the tab is offered'); assert.equal(v.showDeptPerm, false); assert.equal(v.p44Show, false, 'not shown until opened');
-  assert.equal(v.dTabBarShow, true);
-  v.dTabGoPerm(); v = W.render();
-  assert.equal(v.showDeptPerm, true); assert.equal(v.p44Show, true);
-  assert.equal(v.p44MgrV, true); assert.equal(v.p44ViewOn, false, 'no view-as');
-  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل'], 'V7 · د5-ح: «الأنظمة» read-only too');
-  assert.equal(W.hashes.at(-1), 'admin/perm/roles', 'the address names the section (his default: «الأدوار»)');
+  assert.equal(W.location.hash, '#/admin/perm/' + DID + '/overview', 'his entry opens on his unit');
+  assert.deepEqual(J(v.ogTabs.map((x) => x.t)), ['نظرة عامة', 'الأنظمة', 'المسؤولون', 'الأدوار', 'الأشخاص', 'السجل'], 'V7 · د5-ح: «الأنظمة» read-only too — V7 · د6: six tabs, no «البيانات»');
   v = W.sub('roles', { sel: 'r_obs', viewer: 'plat' });
-  assert.equal(v.p44MgrV, true, 'the manager view whatever was chosen');
+  assert.equal(v.p44Show, true); assert.equal(v.p44MgrV, true, 'the manager view whatever was chosen'); assert.equal(v.p44ViewOn, false, 'no view-as');
+  assert.equal(W.location.hash, '#/admin/perm/' + DID + '/roles', 'the address names the unit and the tab');
   assert.deepEqual(J(v.p44SysEd.map((r) => r.n)), ['الجدول الشهري', 'المهام'], 'the role editor: only the systems ON in his ceiling');
   assert.ok(!v.p44RoleList.some((r) => r.n === 'مدير المنصة'));
-  W.sub('people'); assert.equal(W.hashes.at(-1), 'admin/perm/people');
-  /* the address opens the section (root → __ADMIN_OPEN_DTAB = "perm") */
-  const X = deptWorld(MGR);
-  X.C.location.hash = '#/admin/perm/log'; X.KIVO.__ADMIN_OPEN_DTAB = 'perm';
-  v = X.render();
-  assert.equal(v.showDeptPerm, true); assert.equal(X.page.state.p44.sub, 'log'); assert.equal(v.p44OnLog, true);
-  /* the console node page keeps its own placement: no dept tab there, and its p44Show is the node tab */
+  W.sub('people'); assert.equal(W.location.hash, '#/admin/perm/' + DID + '/people');
+  /* his old address opens the section (root → __ADMIN_OPEN_DTAB = "perm"), and the settings page leaves the screen's address alone */
+  const X = deptWorld(MGR), XA = adminHost(X);
+  X.location.hash = '#/admin/perm/log'; X.KIVO.__ADMIN_OPEN_DTAB = 'perm';
+  a = XA.render();
+  assert.equal(a.showDeptPerm, true); assert.equal(a.orgOn, true); assert.deepEqual(XA.hashes, [], 'the address of the screen is not rewritten by the settings page');
+  v = X.render(); assert.equal(v.p44OnLog, true); assert.equal(X.location.hash, '#/admin/perm/' + DID + '/log', 'his current address keeps working (redirected to the canonical one)');
+  /* the console keeps its own placement: no dept tab there, the view-as switch is his */
   const S = world(), sv = S.sub('roles');
-  assert.ok(!sv.dTabPmOn, 'no dept tab in the console'); assert.equal(sv.p44Show, true); assert.equal(sv.p44ViewOn, true);
+  assert.equal(sv.ogMode, 'site'); assert.equal(sv.p44Show, true); assert.equal(sv.p44ViewOn, true);
 });
 
 test('the manager\'s tab: never for a plain employee (nor by the address); the platform admin viewing a department gets the manager view', () => {
-  const E = deptWorld({ id: 'TEST_ONLY_u1', role: 'staff', deptId: DID, ekey: 'TEST_ONLY_e1' });
-  E.C.location.hash = '#/admin/perm/roles'; E.KIVO.__ADMIN_OPEN_DTAB = 'perm';
+  const E = deptWorld({ id: 'TEST_ONLY_u1', role: 'staff', deptId: DID, ekey: 'TEST_ONLY_e1' }), EA = adminHost(E);
+  E.location.hash = '#/admin/perm/roles'; E.KIVO.__ADMIN_OPEN_DTAB = 'perm';
+  let a = EA.render();
+  assert.equal(a.dTabPmOn, false); assert.equal(a.showDeptPerm, false); assert.equal(a.orgOn, false);
+  EA.page.state.deptTab = 'perm'; a = EA.render();
+  assert.equal(a.orgOn, false, 'a stale tab state opens nothing');
+  /* and the screen itself, were it mounted, shows him nothing (no permissions values at all) */
   let v = E.render();
-  assert.equal(v.dTabPmOn, false); assert.equal(v.showDeptPerm, false); assert.equal(v.p44Show, false);
-  assert.equal(v.p44Subs, undefined, 'no permissions values at all');
-  E.page.state.deptTab = 'perm'; v = E.render();
-  assert.equal(v.p44Show, false, 'a stale tab state opens nothing');
-  const S = deptWorld({ id: 'TEST_ONLY_OWNER', role: 'super' });
-  S.page.state.deptTab = 'perm'; v = S.render();
+  assert.equal(v.ogOn, false); assert.equal(v.ogNoneOn, true); assert.equal(v.p44Show, undefined); assert.equal(v.ogRows, undefined); assert.equal(v.p44RoleList, undefined);
+  const S = deptWorld({ id: 'TEST_ONLY_OWNER', role: 'super' }), SA = adminHost(S);
+  SA.page.state.deptTab = 'perm'; a = SA.render();
+  assert.equal(a.orgOn, true); assert.equal(a.orgHost.mode, 'dept');
+  S.location.hash = '#/admin/perm'; v = S.sub('roles');
   assert.equal(v.p44Show, true); assert.equal(v.p44MgrV, true); assert.equal(v.p44ViewOn, false);
-  assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل']);
+  assert.ok(['systems', 'roles', 'people', 'log'].every((k) => v.ogTabs.some((x) => x.k === k)));
   /* V7 · د5-ح (القفل · البند 9): لا وضعَ قديماً — التبويبُ يُفتح للمدير بقاعدة isMgrOf وحدها، أيّاً كان وصفُ الوضع في الواجهة (كان مخفيّاً له في الوضع القديم) */
   const L = deptWorld(MGR, { mode: 'legacy' });
-  assert.equal(L.render().dTabPmOn, true, 'the manager has the tab: no legacy mode any more');
+  assert.equal(adminHost(L).render().dTabPmOn, true, 'the manager has the tab: no legacy mode any more');
   const LS = deptWorld({ id: 'TEST_ONLY_OWNER', role: 'super' }, { mode: 'legacy' });
-  assert.equal(LS.render().dTabPmOn, true);
+  assert.equal(adminHost(LS).render().dTabPmOn, true);
 });
 
 test('the manager\'s own row: shown as his, not editable (the server refuses «self»); the manager row stays «مدير الإدارة» with its full ceiling', () => {
   const W = deptWorld(MGR);
-  W.page.state.deptTab = 'perm';
+  W.location.hash = '#/admin/perm';
   let v = W.sub('people', { pSel: 'mgr:' + DID });
   assert.equal(v.p44PSelf, true); assert.equal(v.p44PEdit, false); assert.equal(v.p44PMgr, true);
-  assert.deepEqual(J(v.p44PNav), [{ n: 'كل الأنظمة المفعّلة لإدارته', l: 'كامل داخل السقف' }]);
+  /* V7 · د6 (أ1 — قرار المالك): «ما يراه الآن» للمدير = قائمتُه الفعلية من المصدر الواحد (seenBy) — كان سطراً ثابتاً «كل الأنظمة المفعّلة لإدارته · كامل داخل السقف» */
+  assert.deepEqual(J(v.p44PNav), [{ k: 'profile', n: 'صفحتي' }].concat(W.KIVO.BassamPerm.menuFor({ TEST_ONLY_unit: DID }, DID).filter((x) => x.on && !x.hid)).map((x) => ({ n: x.n, l: '' })), 'the manager row shows his real menu');
+  assert.ok(v.p44PNav.length > 2 && v.p44PNav.some((m) => m.n === 'TEST_ONLY admin'));
   const row = v.p44PRows.find((r) => r.n === 'TEST_ONLY المدير');
   assert.equal(row.me, true); assert.equal(row.role, 'مدير الإدارة');
   assert.ok(v.p44PRows.filter((r) => r.n !== 'TEST_ONLY المدير').every((r) => r.me === false));
@@ -416,7 +463,7 @@ test('the manager\'s own row: shown as his, not editable (the server refuses «s
 
 test('the manager\'s log: no ceiling change (the platform admin\'s) and no change in a system OFF in his ceiling', async () => {
   const W = deptWorld(MGR);
-  W.page.state.deptTab = 'perm';
+  W.location.hash = '#/admin/perm';
   const rows = [
     { id: 'TEST_ONLY_a', at: 3, who: { uid: 'TEST_ONLY_m', name: 'TEST_ONLY المدير' }, unit: DID, affected: [], changes: [{ what: 'sys', role: 'r_obs', sys: 'plan', from: null, to: { lvl: 'view' } }, { what: 'sys', role: 'r_obs', sys: 'tasks', from: { lvl: 'input' }, to: { lvl: 'edit' } }] },
     { id: 'TEST_ONLY_b', at: 2, who: { uid: 'TEST_ONLY_OWNER', name: 'TEST_ONLY المالك' }, unit: DID, affected: [], changes: [{ what: 'ceil.caps', unit: DID, from: ['staff', 'plan', 'tasks'], to: ['staff', 'tasks'] }] },
@@ -433,25 +480,26 @@ test('the manager\'s log: no ceiling change (the platform admin\'s) and no chang
 });
 
 /* ── V7 · د5-ح: ملاحظاتُ تجربة المالك على Preview (البنود ١–٦ من «أ») ── */
-const logic = fs.readFileSync(SRC + '/slots/modules/admin/logic.js.tpl', 'utf8');
+const logic = fs.readFileSync(SRC + '/slots/modules/admin/logic.js.tpl', 'utf8') + fs.readFileSync(SRC + '/modules/org/logic.js', 'utf8') + fs.readFileSync(SRC + '/modules/org/logic-perm44.js', 'utf8');   /* V7 · د6: الصفحتان */
 function nodeWorld(opts) {
   const W = world(opts);
   W.KIVO.BassamDepts.deptsUnder = (id) => (id === NODE ? [DID, SEC] : id === DID ? [SEC] : []);
   W.KIVO.BassamDepts.descendantsOf = (id) => (id === NODE ? [DID, SEC] : id === DID ? [SEC] : []);
   W.KIVO.BassamDepts.parentDeptOf = (id) => (id === SEC ? DID : '');
   W.KIVO.BassamAuth.groupManagers = (id) => (id === NODE ? [{ id: 'TEST_ONLY_gm', name: 'TEST_ONLY المدير العام', role: 'gm', gid: NODE }] : []);
-  W.page.state.sysSel = NODE;
+  W.location.hash = '#/sysadmin/org/' + NODE + '/systems';   /* V7 · د6: الوحدةُ المختارة من العنوان */
   return W;
 }
 
 test('V7 · د5-ح ① every unit kind (sector node · department · section) carries «الصلاحيات» with its four sections, scoped to it', async () => {
   for (const [id, label] of [[NODE, 'قطاع'], [DID, 'إدارة'], [SEC, 'قسم']]) {
-    const W = nodeWorld(); W.page.state.sysSel = id;
+    const W = nodeWorld();
     const seen = []; W.C.fetch = async (u) => { seen.push(u); return { ok: true, json: async () => ({ ok: 1, rows: [] }) }; };
+    W.page.setState({ p44: { viewer: 'plat' } });
     for (const [sub, on] of [['systems', 'p44OnSys'], ['roles', 'p44OnRoles'], ['people', 'p44OnPeople'], ['log', 'p44OnLog']]) {
-      const v = W.sub(sub, { viewer: 'plat' });
+      const v = W.open(id, sub);
       assert.equal(v.p44Show, true, label + ' ' + sub + ': the tab is shown');
-      assert.deepEqual(J(v.p44Subs.map((x) => x.t)), ['الأنظمة', 'الأدوار', 'الأشخاص', 'السجل'], label + ': four sections');
+      assert.deepEqual(J(v.ogTabs.map((x) => x.t)), ['نظرة عامة', 'الأنظمة', 'المسؤولون', 'الأدوار', 'الأشخاص', 'السجل', 'البيانات'], label + ': V7 · د6 — the seven tabs');
       assert.equal(v[on], true, label + ' ' + sub);
       assert.equal(v.p44NodeOnly, undefined, label + ': no «open a unit below» placeholder');
     }
@@ -459,67 +507,79 @@ test('V7 · د5-ح ① every unit kind (sector node · department · section) ca
     assert.ok(seen.some((u) => u === '/api/perm44/log?d=' + encodeURIComponent(id) + '&limit=50'), label + ': its own log');
   }
   assert.doesNotMatch(view, /p44NodeOnly/, 'the node placeholder is deleted');
-  /* the sector: its roles are the two fixed cards (custom roles live in each unit below — linked), its people are its branch's accounts */
+  /* the sector: no custom roles of its own (they live in each unit below — linked); its «المسؤولون» is its general manager's card; its people are its branch's accounts */
   const N = nodeWorld();
-  let v = N.sub('roles', { viewer: 'plat' });
-  assert.deepEqual(J(v.p44RoleList.map((r) => r.n)), ['مدير المنصة', 'مدير الوحدة']); assert.equal(v.p44IsMgr, true, 'opens on «مدير الوحدة»');
-  assert.equal(v.p44RoleNewOn, false, 'no «+ دور جديد» on a supervisory node'); assert.equal(v.p44NodeRoles, true);
-  assert.deepEqual(J(v.p44NodeUnits.map((u) => [u.n, u.href])), [['TEST_ONLY إدارة', '#/sysadmin/org/TEST_ONLY_D/perm/roles'], ['TEST_ONLY قسم', '#/sysadmin/org/TEST_ONLY_D_S/perm/roles']]);
-  assert.deepEqual(J(v.p44MgrHold), [{ n: 'TEST_ONLY المدير العام', st: 'نشط' }], 'its general manager holds the card');
+  N.page.setState({ p44: { viewer: 'plat' } });
+  let v = N.sub('roles');
+  assert.deepEqual(J(v.p44RoleList.map((r) => r.n)), [], 'V7 · د6: the two fixed cards moved to «المسؤولون»');
+  assert.equal(v.p44RoleNewOn, false, 'no «+ دور جديد» on a supervisory node'); assert.equal(v.p44NodeRoles, true); assert.equal(v.p44NoRole, false, 'no «ابدأ بـ + دور جديد» on a node');
+  assert.deepEqual(J(v.p44NodeUnits.map((u) => [u.n, u.href])), [['TEST_ONLY إدارة', '#/sysadmin/org/TEST_ONLY_D/roles'], ['TEST_ONLY قسم', '#/sysadmin/org/TEST_ONLY_D_S/roles']]);
+  v = N.sub('admins');
+  assert.equal(v.p44IsMgr, true, '«المسؤولون» of the node = the «مدير الوحدة» card'); assert.deepEqual(J(v.p44MgrHold), [{ n: 'TEST_ONLY المدير العام', st: 'نشط' }], 'its general manager holds the card');
   v = N.sub('people');
   assert.equal(v.p44NodePeople, true);
-  assert.deepEqual(J(v.p44NPRows.map((r) => [r.n, r.role])), [['TEST_ONLY سعد', 'موظف'], ['TEST_ONLY فهد', 'موظف'], ['TEST_ONLY ريم', 'موظف'], ['TEST_ONLY المدير', 'مدير الوحدة']]);
-  N.C.location.hash = '#/sysadmin/org/' + NODE + '/perm/people';
-  v.p44NPRows[0].go();
-  assert.equal(N.C.location.hash, '#/sysadmin/org/TEST_ONLY_D/perm/people', 'a person opens in «الأشخاص» of his unit');
+  assert.deepEqual(J(v.p44NPRows.map((r) => r.n)), ['TEST_ONLY سعد', 'TEST_ONLY فهد', 'TEST_ONLY ريم', 'TEST_ONLY المدير']);
+  assert.equal(v.p44NPRows[3].role, 'مدير الوحدة');
+  v.p44NPRows[0].go(); await new Promise((r) => setImmediate(r));
+  assert.equal(N.location.hash, '#/sysadmin/org/TEST_ONLY_D/people', 'a person opens in «الأشخاص» of his unit');
   assert.equal(N.page.state.p44.pSel, 'TEST_ONLY_e1');
+  N.open(NODE, 'people').p44NPRows[3].go(); await new Promise((r) => setImmediate(r));
+  assert.equal(N.location.hash, '#/sysadmin/org/TEST_ONLY_D/admins', 'V7 · د6: a manager opens in «المسؤولون» of his unit');
 });
 
-test('V7 · د5-ح ② «مدير الوحدة»: a fixed card with its holders; the old node tab moved into it as is; only the platform admin adds', () => {
+test('V7 · د5-ح ② «مدير الوحدة»: a fixed card with its holders; the old node tab moved into it as is; only the platform admin adds', async () => {
+  /* V7 · د6: البطاقةُ صارت تبويبَ «المسؤولون» للوحدة (كانت ثانيَ قائمة «الأدوار») — محتواها القائم (جدولُ حسابات الوحدة وقائمةُ أفعاله) تملكه صفحةُ الإعدادات
+     وتمرّره للشاشة موضعاً (data-org-slot="admins" ⇒ ogSlotAdmins)، فالمنطقُ واحدٌ مع «مراقبة الحسابات» */
   const W = world();
   W.KIVO.BassamAuth.deptManagers = () => [{ id: 'TEST_ONLY_m', name: 'TEST_ONLY المدير', role: 'staff', mgr: 1, deptId: DID }];
-  let v = W.sub('roles', { viewer: 'plat', sel: '__mgr' });
-  assert.deepEqual(J(v.p44RoleList.slice(0, 2).map((r) => [r.n, r.lock])), [['مدير المنصة', true], ['مدير الوحدة', true]], 'beside «مدير المنصة»');
-  assert.match(v.p44RoleList[1].sub, /^1 شخص · كامل داخل السقف$/);
-  assert.equal(v.p44IsMgr, true); assert.equal(v.p44NotSup, false); assert.equal(v.p44NoRole, false); assert.equal(v.p44SysEd, undefined, 'no level editor');
+  W.page.setState({ p44: { viewer: 'plat' } });
+  let v = W.sub('admins');
+  assert.equal(v.ogOnAdmins, true); assert.equal(v.p44Show, true); assert.equal(v.p44Head, 'المسؤولون');
+  assert.equal(v.p44IsMgr, true); assert.equal(v.p44IsSup, false); assert.equal(v.p44SysEd, undefined, 'no level editor');
+  assert.equal(v.p44Role.n, 'مدير الوحدة'); assert.match(v.p44Role.members, /^1 شخص /); assert.match(v.p44Lead, /1 مدير/);
   assert.equal(v.p44MgrFull, true, 'the accounts table (the old tab\'s content)'); assert.equal(v.p44MgrAddOn, true, 'the platform admin adds');
-  assert.equal(v.mgTitle, 'مديرو الإدارة'); assert.equal(typeof v.mgAdd, 'function'); assert.ok(Array.isArray(v.ndRows), 'the same rows (_acctRow)');
+  assert.equal(v.ogSlotAdmins.TEST_ONLY, 'admins', 'the host\'s existing block is placed in the tab');
   assert.equal(v.mgCount, undefined, 'the tab badge is gone');
   /* the manager view: holders read-only, no add, no accounts table */
-  v = W.sub('roles', { viewer: 'mgr', sel: '__mgr' });
+  W.page.setState({ p44: { viewer: 'mgr' } });
+  v = W.sub('admins');
   assert.equal(v.p44IsMgr, true); assert.equal(v.p44MgrFull, false); assert.equal(v.p44MgrRO, true); assert.equal(v.p44MgrAddOn, false);
   assert.deepEqual(J(v.p44MgrHold), [{ n: 'TEST_ONLY المدير', st: 'نشط' }]);
-  /* the view: the card holds the old block (accounts table · row menu · + gated to the platform admin); the node tab is gone without residue */
-  const card = view.slice(view.indexOf('<sc-if value="{{p44IsMgr}}"'), view.indexOf('<sc-if value="{{p44NodeRoles}}"'));
-  assert.match(card, /<div class="mk ac7">[\s\S]*<sc-if value="\{\{p44MgrAddOn\}\}"[^>]*><button class="add" onClick="\{\{mgAdd\}\}"[\s\S]*\{\{ndRows\}\}[\s\S]*\{\{u\.rmItems\}\}[\s\S]*\{\{ndFoot\}\}[\s\S]*\{\{mgStaffTxt\}\}/, 'the whole block, as is');
-  for (const b of ['{{ndFoot}}', '{{mgStaffTxt}}', '{{ndRows}}', 'class="mk ac7"']) assert.equal(view.split(b).length, 2, b + ': once, inside the card');
+  /* the views: the screen places the slot in the card; the host keeps the old block as is (accounts table · row menu · + gated to the platform admin) */
+  const adm = view.slice(view.indexOf('data-org-tab="admins"'), view.indexOf('data-org-tab="roles"'));
+  assert.match(adm, /<sc-if value="\{\{p44IsMgr\}\}"[\s\S]*<sc-if value="\{\{p44MgrFull\}\}"[^>]*>\{\{ogSlotAdmins\}\}<\/sc-if>[\s\S]*<sc-if value="\{\{p44MgrRO\}\}"[\s\S]*\{\{p44MgrHold\}\}/);
+  const card = adminView.slice(adminView.indexOf('<div data-org-slot="admins">'), adminView.indexOf('<div data-org-slot="data">'));
+  assert.match(card, /<div class="mk ac7">[\s\S]*<sc-if value="\{\{mgAddOn\}\}"[^>]*><button class="add" onClick="\{\{mgAdd\}\}"[\s\S]*\{\{ndRows\}\}[\s\S]*\{\{u\.rmItems\}\}[\s\S]*\{\{ndFoot\}\}[\s\S]*\{\{mgStaffTxt\}\}/, 'the whole block, as is');
+  for (const b of ['{{ndFoot}}', '{{mgStaffTxt}}', '{{ndRows}}', 'class="mk ac7"']) { assert.equal(adminView.split(b).length, 2, b + ': once, inside the slot'); assert.equal(view.split(b).length, 1, b + ': not copied into the screen'); }
   const tags = (x, t) => (x.match(new RegExp('<' + t + '[\\s>]', 'g')) || []).length - (x.match(new RegExp('</' + t + '>', 'g')) || []).length;
-  for (const t of ['sc-if', 'sc-for', 'div', 'section']) assert.equal(tags(card, t), 0, 'the card is balanced: ' + t);
-  for (const re of [/المسؤولون والحسابات/, /TabEmps|tabEmps|onTabEmps|mgCount/]) { assert.doesNotMatch(view, re); assert.doesNotMatch(logic, re); }
+  for (const t of ['sc-if', 'sc-for', 'section']) assert.equal(tags(card, t), 0, 'the slot is balanced: ' + t);
+  for (const re of [/المسؤولون والحسابات/, /TabEmps|tabEmps|onTabEmps|mgCount/]) { assert.doesNotMatch(view + adminView, re); assert.doesNotMatch(logic, re); }
   assert.doesNotMatch(logic, /"emps" === l|sysTab: "emps"|_orgNav\(u, "emps"\)/, 'no route or state for the old tab');
-  /* the overview checklist and «مراقبة الحسابات» open the card */
-  W.page.state.sysTab = 'ov';
-  const st = W.render().ovSteps.find((x) => x.t === 'المسؤول');
-  assert.equal(st.goLbl, 'فتح «مدير الوحدة»'); st.go();
-  assert.equal(W.page.state.sysTab, 'perm'); assert.equal(W.page.state.p44.sub, 'roles'); assert.equal(W.page.state.p44.sel, '__mgr');
-  W.C.location.hash = '#/sysadmin/users';
-  W.page._acctOpen({ id: 'TEST_ONLY_m', role: 'staff', deptId: DID }, 'edit', false);
-  assert.equal(W.C.location.hash, '#/sysadmin/org/TEST_ONLY_D/perm/roles'); assert.equal(W.page.state.p44.sel, '__mgr');
+  /* the overview checklist and «مراقبة الحسابات» open the tab */
+  const st = W.sub('overview').ogSteps.find((x) => x.t === 'المسؤول');
+  st.go(); await new Promise((r) => setImmediate(r));
+  assert.equal(W.location.hash, '#/sysadmin/org/TEST_ONLY_D/admins');
+  const A = adminHost(W); A.page.state.admTab = 'users'; A.page._acctUnit = (a) => a.deptId; A.page._ovGo = () => {};
+  W.location.hash = '#/sysadmin/users';
+  A.page._acctOpen({ id: 'TEST_ONLY_m', role: 'staff', deptId: DID }, 'edit', false);
+  assert.equal(W.location.hash, '#/sysadmin/org/TEST_ONLY_D/admins', 'from «مراقبة الحسابات»: the account\'s unit, its «المسؤولون» tab');
+  A.page._acctOpen({ id: 'TEST_ONLY_u1', role: 'staff', deptId: DID }, 'perm', false);
+  assert.equal(W.location.hash, '#/sysadmin/org/TEST_ONLY_D/people');
 });
 
 test('V7 · د5-ح ③ the department manager sees «الأنظمة» read-only: only what is ON in his ceiling, no switches, never an OFF one', () => {
-  for (const mk of [() => world({ caps: { [DID]: ['staff', 'tasks'] } }), () => deptWorld(MGR)]) {
+  for (const mk of [() => world({ caps: { [DID]: ['staff', 'tasks'] } }), () => { const X = deptWorld(MGR); X.location.hash = '#/admin/perm'; return X; }]) {
     const W = mk();
-    if (W.hashes) W.page.state.deptTab = 'perm';
     const v = W.sub('systems', { viewer: 'mgr' });
     assert.equal(v.p44OnSys, true); assert.equal(v.p44SysRO, true); assert.equal(v.p44SysCtl, false);
     assert.deepEqual(J(v.p44SysRows.map((r) => [r.n, r.on, r.sw, r.locked])), [['الجدول الشهري', 'true', false, false], ['المهام', 'true', false, false]]);
-    assert.deepEqual(J(v.p44Units), [], 'no unit chain to switch'); assert.equal(v.p44SysDirty, false); assert.equal(v.p44SysReview, undefined, 'nothing to save');
+    assert.equal(v.p44Units, undefined, 'V7 · د6: no unit chain at all (the tree picks the unit)'); assert.equal(v.p44SysDirty, false); assert.equal(v.p44SysReview, undefined, 'nothing to save');
     const txt = JSON.stringify(J(v));
     for (const off of ['التشغيل الميداني', 'المضبوطات', 'مطفأ']) assert.ok(!txt.includes(off), 'never shown: ' + off);
   }
   assert.match(view, /<sc-if value="\{\{s\.sw\}\}"[^>]*><button type="button" class="p44-sw" role="switch"/, 'the switch exists only where it can flip');
-  assert.match(logic, /\/\^#\\\/admin\\\/perm\\\/\(systems\|roles\|people\|log\)\$\//, 'the manager\'s own tab opens «الأنظمة» by its address');
+  /* V7 · د6: عنوانُ المدير يقرؤه مصدرُ العنوان الواحد (KIVO.BassamOrgRoute) — القديمُ #/admin/perm/systems والجديدُ #/admin/perm/<وحدته>/systems */
+  for (const h of ['#/admin/perm/systems', '#/admin/perm/' + DID + '/systems']) { const X = deptWorld(MGR); X.location.hash = h; const xv = X.render(); assert.equal(xv.p44OnSys, true, h); assert.equal(xv.p44SysRO, true); assert.equal(X.location.hash, '#/admin/perm/' + DID + '/systems'); }
 });
 
 test('V7 · د5-ح ④ «مراجعة قبل الحفظ» is a centered dialog (summary · حفظ · رجوع) in systems, roles and people — closes after the save', async () => {
@@ -594,7 +654,8 @@ test('V7 · د5-ح ⑥ creating a role is logged with its systems and their leve
 
 /* ── V7 · د5-ح (off2 · البند ٦): «الإعدادات» لا ترسم تبويباً قبل حسم الصلاحية · المطلوبُ غيرُ المسموح ⇒ أولُ مسموح · لا مسموحَ ⇒ رسالة ── */
 test('V7 · د5-ح (off2) ⑥ the settings tabs: nothing drawn before the permission is decided; a disallowed tab ⇒ the first allowed one; none ⇒ a message', () => {
-  const W = deptWorld(MGR);
+  /* V7 · د6: تبويباتُ «الإعدادات» في صفحتها (المضيفة) — الاختبارُ عليها كما كان؛ «الصلاحيات» فيها تركيبُ الشاشة */
+  const W0 = deptWorld(MGR), W = Object.assign(adminHost(W0), { KIVO: W0.KIVO, C: W0.C });
   let ready = false;
   W.KIVO.BassamPerm.ready = () => ready;
   W.KIVO.BassamPerm.subOn = (pk, sk) => pk === 'admin' && ['backup', 'oplog'].includes(sk);
@@ -609,10 +670,32 @@ test('V7 · د5-ح (off2) ⑥ the settings tabs: nothing drawn before the permis
   assert.equal(v.showDeptBk, true, 'the first allowed tab'); assert.equal(W.page.state.deptTab, 'backup');
   assert.equal(W.hashes.at(-1), 'admin/backup', 'the address is corrected');
   /* no allowed tab at all (a plain account with «الإعدادات» but no tab of it) ⇒ a clear message, not a blank page */
-  const E = deptWorld({ id: 'TEST_ONLY_u1', role: 'staff', deptId: DID, ekey: 'TEST_ONLY_e1' });
+  const E0 = deptWorld({ id: 'TEST_ONLY_u1', role: 'staff', deptId: DID, ekey: 'TEST_ONLY_e1' }), E = Object.assign(adminHost(E0), { KIVO: E0.KIVO });
   E.KIVO.BassamPerm.ready = () => true; E.KIVO.BassamPerm.subOn = () => false;
   v = E.render();
   assert.equal(v.dNoneOn, true); for (const k of ['showDeptBk', 'showDeptSf', 'showDeptAud', 'showDeptPerm']) assert.equal(v[k], false, k);
-  assert.match(view, /<sc-if value="\{\{dNoneOn\}\}"[^>]*><div class="bs-card adm-none" role="status" data-d-state="none">لا إعدادات متاحة لك/);
-  assert.match(view, /<sc-if value="\{\{dLoadOn\}\}"[^>]*><div ref="\{\{dStates\}\}"/);
+  assert.match(adminView, /<sc-if value="\{\{dNoneOn\}\}"[^>]*><div class="bs-card adm-none" role="status" data-d-state="none">لا إعدادات متاحة لك/);
+  assert.match(adminView, /<sc-if value="\{\{dLoadOn\}\}"[^>]*><div ref="\{\{dStates\}\}"/);
+});
+
+/* V7 · د6 (QA ٤): «مخصّص» بلا أي فعل يبدو مفعّلاً ولا يعطي شيئاً — يُمنع الحفظ برسالةٍ تسمّي الدور والنظام، ولا كتابة */
+test('④ custom level with zero actions: the save is refused with «اختر فعلاً واحداً على الأقل أو أطفئ النظام» and nothing is written', async () => {
+  const W = world();
+  W.sub('roles', { viewer: 'plat', sel: 'r_obs' });
+  const tasks = () => W.render().p44SysEd.find((s) => s.k === 'tasks');
+  tasks().setLv({ target: { value: 'custom' } });
+  for (const k of tasks().keys.filter((x) => x.on === 'true')) tasks().keys.find((x) => x.n === k.n).flip();
+  assert.equal(tasks().keys.filter((x) => x.on === 'true').length, 0, 'every action off');
+  let v = W.render(); assert.equal(v.p44Dirty, true);
+  v.p44Review(); v = W.render();
+  assert.match(v.p44RevErr, /^اختر فعلاً واحداً على الأقل أو أطفئ النظام — TEST_ONLY مراقب · /, 'named before saving');
+  const ok = await v.p44RevSave();
+  assert.equal(ok, false); v = W.render();
+  assert.match(v.p44RevErr, /اختر فعلاً واحداً على الأقل أو أطفئ النظام/);
+  assert.deepEqual(W.writes, [], 'nothing written');
+  assert.ok(!W.toasts.some((t) => /حُفظت الصلاحيات/.test(t[0])));
+  /* one action back ⇒ the save goes through */
+  tasks().keys[0].flip(); v = W.render(); v.p44Review(); v = W.render();
+  assert.equal(v.p44RevErr, '');
+  assert.equal(await v.p44RevSave(), true);
 });

@@ -20,10 +20,14 @@ const run = (code) => JSON.parse(vm.runInContext('JSON.stringify((function () {'
 const SHAPE = `function shape(P, resource) { var R = ocForResource(P, resource); return { tables: R.order.map(function (s) { return [s.table, s.entityTable || null, s.columns]; }).sort(), entities: Object.keys(R.entities).sort().map(function (n) { return [n, R.entities[n].columns]; }) }; }`;
 
 test('① every existing shape is stored in exactly the same table before and after: per resource, same shape tables, entity tables, columns and CREATE statements', () => {
+  /* V7 · د6 (schemafix): أشكالُ «القراءة بالسعة» الثلاثة (0012) جديدة بأسمائها المعلنة (ops_zone_prayer_*) — لا اسمَ قديماً لها لتطابقه؛
+     تُردّ أسماؤها بالترتيب إلى المعلنة ثم يُقارَن كلُّ ما سواها حرفاً كما كان */
   const r = run(SHAPE + `var before = ocPrepare(__DEFS), after = ocPrepare(__DEFS, OC_TABLE_NAMES), out = { resources: __DEFS.length, diff: [] };
-    __DEFS.forEach(function (d) { if (JSON.stringify(shape(before, d.resource)) !== JSON.stringify(shape(after, d.resource))) out.diff.push(d.resource); });
-    out.ddl = JSON.stringify(ocCreateStatements(before)) === JSON.stringify(ocCreateStatements(after)); out.nEntities = Object.keys(after.entities).length; return out;`);
-  assert.ok(r.resources >= 20, 'موارد: ' + r.resources); assert.deepEqual(r.diff, []); assert.equal(r.ddl, true, 'جملُ الإنشاء متطابقة'); assert.equal(r.nEntities, 57);
+    function fresh(text) { return text.replace(/ops_[a-z_]+_zones_element_prayer_counts_reading_capacity/g, 'ops_zone_prayer_capacity').replace(/ops_[a-z_]+_zones_element_prayer_counts_reading/g, 'ops_zone_prayer_reading').replace(/ops_[a-z_]+_zones_element_prayer_counts/g, 'ops_zone_prayer_counts'); }
+    function norm(sh, rename) { var t = JSON.parse(rename ? fresh(JSON.stringify(sh)) : JSON.stringify(sh)); t.tables.sort(); t.entities.sort(); return JSON.stringify(t); }
+    __DEFS.forEach(function (d) { if (norm(shape(before, d.resource), true) !== norm(shape(after, d.resource))) out.diff.push(d.resource); });
+    out.ddl = JSON.stringify(JSON.parse(fresh(JSON.stringify(ocCreateStatements(before)))).sort()) === JSON.stringify(ocCreateStatements(after).slice().sort()); out.nEntities = Object.keys(after.entities).length; return out;`);
+  assert.ok(r.resources >= 20, 'موارد: ' + r.resources); assert.deepEqual(r.diff, []); assert.equal(r.ddl, true, 'جملُ الإنشاء متطابقة'); assert.equal(r.nEntities, 58);
 });
 
 test('② a table name follows neither registration order nor which programs are present', () => {

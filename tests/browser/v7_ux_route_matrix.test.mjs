@@ -49,6 +49,18 @@ const EXCLUDED = {
   help: 'the address opens no screen for the lab account: the shell falls back to another page (observed, and checked on every run)',
 };
 
+/* V7 · د6 (gatefix): نظامٌ مطفأٌ للحامل الآن لا يُفتح عنوانُه («المطفأ لا يظهر لأحد») — يُشتقّ وقتَ التشغيل في الصفحة بالقاعدة المشتركة نفسِها التي
+   تمشي بها اختباراتُ الإطار (core01_shell · core02_console · core02_admin_functions): نظامٌ من KIVO.Perm44.sysList() ورقتُه هذه الصفحة (أو قسمُها)، وهو في
+   BassamPerm.platOff أو خارج Perm44.ceiling(<الوحدة النشطة>).on (وبلا وحدةٍ نشطة: optIn). مثالُه اليوم «رصد الحالات» (optIn، وسقفُ المختبر CAP لا يضمّه).
+   لا قائمةَ يدوية: ما كان مفعّلاً يُمشى كما كان، والمطفأُ يُثبَت أنّ عنوانَه لا يفتح. */
+const OFF_NOW = ({ leaves }) => {
+  const P4 = KIVO.Perm44, Pm = KIVO.BassamPerm, d = KIVO.BassamDepts && KIVO.BassamDepts.active ? KIVO.BassamDepts.active() : '';
+  const on = d && P4 && P4.ceiling ? (P4.ceiling(d).on || []) : null, po = Pm && Pm.platOff ? Pm.platOff() : [], sys = P4 && P4.sysList ? P4.sysList() : [];
+  const s = sys.filter((x) => x && x.leaves && leaves.indexOf(String(x.leaves[0])) !== -1)[0];
+  if (!s) return null;
+  const off = po.indexOf(s.key) !== -1 || (on ? on.indexOf(s.key) === -1 : s.optIn === true);
+  return off ? { key: s.key, name: s.name, optIn: s.optIn === true, platOff: po.indexOf(s.key) !== -1, unit: d } : null;
+};
 /* a tab the page shows and pages.json lists as display-only (shellTabs: it has no permission leaf of its own); the page owns its address */
 const EXTRA = { employees: ['store'] };
 /* routes held to two more checks (reviewer, 13 Nov): no refresh button of the page's own, and — on a phone-wide screen — nothing to press
@@ -213,7 +225,7 @@ test('every pages.json route × first open · first entry within the session · 
   for (const d of Object.keys(P.caps)) P.caps[d] = CAP;   /* the lab departments get every page in their ceiling (TEST_ONLY data) */
   await lab.env.DB.batch([lab.env.DB.prepare('DELETE FROM kv WHERE k=?1').bind('bassam_perms_v1'), ...lab.W.kvPutStmts(lab.env, 'kv', 'bassam_perms_v1', JSON.stringify(P)),
     lab.env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, 1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind('bassam_perms_v1')]);
-  const b = await chromium.launch(); const rows = [], failures = [], skipped = [], shapes = new Set();
+  const b = await chromium.launch(); const rows = [], failures = [], skipped = [], offRoutes = [], shapes = new Set();
   try {
     /* the platform administrator: the one lab account that owns every page (the administration centre included) */
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw, { viewport: VIEWPORT, onPage: (p) => p.addInitScript(SAMPLER) }); const page = s.page; page.setDefaultTimeout(60000);
@@ -243,6 +255,16 @@ test('every pages.json route × first open · first entry within the session · 
         const at = await page.evaluate(() => location.hash);
         assert.ok(!at.startsWith('#/' + r.nav), r.route + ' is listed as unreachable and yet opens (' + at + ')');
         skipped.push(r.route + ' — ' + EXCLUDED[r.route]); continue;
+      }
+      {
+        const pk = (M.pages.find((x) => x.nav === r.nav) || {}).key || r.nav, sub = r.route.indexOf('/') !== -1 ? r.route.split('/').slice(1).join('/') : '';
+        const off = await page.evaluate(OFF_NOW, { leaves: [pk].concat(sub ? [pk + '/' + sub] : []) });
+        if (off) {
+          await goto('#/' + r.route); await page.waitForTimeout(1500);
+          const at = await page.evaluate(() => location.hash);
+          assert.ok(!at.startsWith('#/' + r.nav), r.route + ': its system «' + off.name + '» is OFF for the lab account and yet the address opens (' + at + ')');
+          offRoutes.push(r.route); skipped.push(r.route + ' — system «' + off.key + '» is OFF for the account now (' + (off.platOff ? 'platform switch' : off.unit ? 'outside the ceiling of ' + off.unit : 'optIn, open ceiling') + '): the address falls back to ' + at); continue;
+        }
       }
       slow = true;
       const cells = {};
@@ -289,6 +311,10 @@ test('every pages.json route × first open · first entry within the session · 
       } else rows.push({ route: r.route, kind: 'secondary-fail', skip: 'no secondary read on entry' });
     }
     assert.deepEqual(s.errs, [], 'no page errors');
+    /* V7 · د6 (gatefix): ما لم يُطفأ يُمشى كلُّه — كلُّ عنوانٍ إمّا مُشي وإمّا مستثنًى بسببه (EXCLUDED أو نظامُه مطفأٌ الآن) */
+    const walked = new Set(rows.map((x) => x.route));
+    assert.equal(walked.size + skipped.length, list.length, 'every route is walked or excluded with its reason');
+    if (list.length === all.length) assert.ok(walked.size >= 30 && offRoutes.length < walked.size, 'the OFF rule does not swallow the matrix (walked ' + walked.size + ' · OFF ' + offRoutes.join(' ') + ')');
   } finally {
     await b.close(); await lab.close();
     if (process.env.KIVO_UX_MATRIX_OUT) {

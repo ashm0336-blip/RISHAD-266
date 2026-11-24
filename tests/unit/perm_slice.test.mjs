@@ -52,7 +52,14 @@ test('permSlice الأصلية نفسها مولدة للخادم؛ الاستع
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'workers/parts/051c-department-permission-slice.js'), 'utf8'), context);
   assert.equal(context.rsPermSlice.toString(), D.permSlice.toString(), 'الوظيفة المولدة هي نص السياسة الأصلية نفسه');
   const rs = fs.readFileSync(path.join(ROOT, 'workers/parts/019d-atomic-restore.js'), 'utf8');
-  assert.match(rs, /rsPermSlice\([\s\S]*?body\.mode,\s*PG_KEYS,\s*KIVO_LENS_PLUGINS\.keys,\s*\)/, 'مصدر مفاتيح الصفحات والعدسات هو سجل المنصة الحالي');
+  /* V7 · د6 (QA) — قرارُ المالك ب3 (mgrimport): الاستيرادُ لا يغيّر السقفَ ولا العدسات ولا صحيفةَ المدير؛ الخادمُ يطبّق rsDeptPermsKeep على نسخ الإدارة
+     (كان هنا: «rsPermSlice(… body.mode, PG_KEYS, KIVO_LENS_PLUGINS.keys)» — القاعدةُ السابقة). المشتق: الشريحةُ المولَّدة = نصُّ العميل (أعلاه) باقية،
+     وطريقُ الاستعادة يمرّ بـ rsDeptPermsKeep بوضع الطلب، ولا يستدعي rsPermSlice على نسخ الإدارة؛ السلوكُ نفسه في v7_d6_mgrimport (٣). */
+  assert.match(rs, /rsDeptPermsKeep\([\s\S]*?inputKeys\[K_PERM\][\s\S]*?dept,\s*requestedPerms,\s*body\.mode\)/, 'طريقُ الاستعادة يحفظ السقفَ والمدير: rsDeptPermsKeep بوضع الطلب');
+  const noCm = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(noCm(rs), /rsPermSlice\s*\(/, 'لا يطبّق الخادمُ شريحةَ السقف على نسخ الإدارة (قرار المالك ب3)');
+  const keep = /function rsDeptPermsKeep\([\s\S]*?\n}\n/.exec(rs); assert.ok(keep, 'rsDeptPermsKeep موجودة');
+  assert.doesNotMatch(keep[0], /\.(caps|lenses|subs|capOwn|capSeed)\b/, 'rsDeptPermsKeep لا تمسّ السقفَ ولا العدسات');
 });
 
 test('★ الاستبدال: السقفُ والعدساتُ المستعادة = ما في النسخة (مصفّاةً بمفاتيح المنصة الحالية وحدها) — لا تسقط صفحةٌ ولا عدسةٌ أُضيفت لاحقاً', needs('award', 'seized'), () => {

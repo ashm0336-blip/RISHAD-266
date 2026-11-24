@@ -76,6 +76,7 @@
 @@KIVO_BLOCK:core/300-bassam-ack.js@@
 @@KIVO_BLOCK:services/310-image-refs.js@@
 @@KIVO_BLOCK:services/320-dept-storage.js@@
+@@KIVO_BLOCK:services/325-org-route.js@@
 @@KIVO_BLOCK:auth/330-auth.js@@
 @@KIVO_BLOCK:permissions/331-perm-model.js@@
 @@KIVO_BLOCK:services/332-find-day.js@@
@@ -101,7 +102,7 @@
 @@KIVO_BLOCK:services/490-emp-key.js@@
 @@KIVO_BLOCK:services/500-element-uid.js@@
 @@SYS:shell.svc.daily.2@@@@SYS:shell.blocks.staff@@@@SYS:shell.blocks.plan.p3@@@@SYS:shell.blocks.plan.p4@@@@SYS:shell.blocks.dreport@@@@SYS:shell.blocks.dreport.r3@@@@SYS:shell.blocks.daily.t2@@@@SYS:shell.blocks.daily.t3@@@@KIVO_BLOCK:services/535-profile-facts.js@@
-@@SYS:shell.blocks.tasks@@@@SYS:shell.blocks.custody@@@@KIVO_BLOCK:services/548-atomic-backup.js@@
+@@SYS:shell.blocks.tasks@@@@SYS:shell.blocks.custody@@@@SYS:shell.blocks.systems@@@@KIVO_BLOCK:services/548-atomic-backup.js@@
 @@KIVO_BLOCK:styles/540-busy.css@@
 @@KIVO_BLOCK:components/550-bassam-busy.js@@
 @@KIVO_BLOCK:styles/555-page-states.css@@
@@ -423,6 +424,19 @@
         <div style="font-size:17px;font-weight:600;color:var(--fg-x047857)">{{bkcFresh}}</div>
       </div>
     </div>
+    <!-- V7 · د6: ملخّصُ النسخة قبل التأكيد (الإدارة · تاريخ التصدير · المفاتيح والصور · الحجم · ما لن يُنقل وسببُه) -->
+    <sc-if value="{{bkcSumOn}}" hint-placeholder-val="{{ false }}">
+    <div data-bkc="summary" style="border:1px solid var(--bd-xe2e8f0);border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:11.5px;line-height:1.9;color:var(--fg-x53565a)">
+      <div style="font-size:12px;font-weight:600;color:var(--fg-x141414)">ملخّص النسخة</div>
+      <div data-bkc="sum-line">{{bkcSumLine}}</div>
+      <sc-if value="{{bkcSkipOn}}" hint-placeholder-val="{{ false }}">
+      <div data-bkc="skip-head" style="margin-top:4px;font-weight:600;color:var(--fg-xb45309)">{{bkcSkipHead}}</div>
+      <ul data-bkc="skip" style="margin:2px 0 0;padding:0 18px 0 0;max-height:132px;overflow:auto">
+        <sc-for list="{{bkcSkip}}" as="x" hint-placeholder-count="2"><li><bdi dir="ltr">{{x.k}}</bdi> — {{x.text}}</li></sc-for>
+      </ul>
+      </sc-if>
+    </div>
+    </sc-if>
     <sc-if value="{{bkcPick}}" hint-placeholder-val="{{ true }}">
     <div style="display:flex;flex-direction:column;gap:8px">
       <div onClick="{{bkcMerge}}" style="text-align:right;border:1px solid var(--bd-xe1e1e1);border-radius:14px;padding:13px 14px;cursor:pointer;background:var(--bg-xffffff);display:flex;align-items:flex-start;gap:11px;transition:all .15s" style-hover="border-color:var(--bd-x0891b2);background:var(--bg-a81451780p05)">
@@ -448,14 +462,48 @@
       <button onClick="{{bkcCancel}}" class="bs-btn">إلغاء الاستيراد</button>
     </div>
     </sc-if>
+    <!-- V7 · د6: ليست تأكيداً — الرفعُ والتحققُ لا يغيّران شيئاً؛ التأكيدُ الوحيد بعدهما بملخّص الخادم -->
     <sc-if value="{{bkcConfirm}}" hint-placeholder-val="{{ false }}">
-    <div style="background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);border-radius:14px;padding:14px">
-      <div style="font-size:13px;font-weight:600;color:var(--fg-xdc2626);margin-bottom:5px">تأكيد الاستبدال</div>
+    <div data-bkc="upload" style="background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);border-radius:14px;padding:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--fg-x141414);margin-bottom:5px">{{bkcUpHead}}</div>
       <p style="font-size:11.5px;color:var(--fg-x53565a);line-height:1.9;margin:0 0 12px">{{bkcWarn}}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onClick="{{bkcDoReplace}}" class="bs-btn bs-btn--danger">نعم، استبدل</button>
+        <button onClick="{{bkcDoReplace}}" class="bs-btn bs-btn--primary">ارفع وتحقّق</button>
         <button onClick="{{bkcBack}}" class="bs-btn">رجوع</button>
       </div>
+    </div>
+    </sc-if>
+    <!-- V7 · د6: التقدّم (الجزء الحالي من الكل · الصور) — لا زرَّ يُضغط بلا أثر أثناء الإرسال -->
+    <sc-if value="{{bkcRun}}" hint-placeholder-val="{{ false }}">
+    <div data-bkc="run" role="status" aria-live="polite">
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:8px;color:var(--fg-x141414)">{{bkcRunHead}}</div>
+      <div role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{bkcPct}}" aria-label="تقدّم الاستيراد" style="height:10px;border-radius:6px;background:var(--bg-xf8fafc);border:1px solid var(--bd-xe2e8f0);overflow:hidden"><div data-bkc="bar" style="{{bkcBarStyle}}"></div></div>
+      <p data-bkc="run-text" style="font-size:11.5px;color:var(--fg-x53565a);margin:8px 0 0;line-height:1.8">{{bkcRunText}}</p>
+      <sc-if value="{{bkcAbortOn}}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;justify-content:flex-start;margin-top:12px"><button onClick="{{bkcAbort}}" class="bs-btn">إيقاف الاستيراد</button></div>
+      </sc-if>
+    </div>
+    </sc-if>
+    <!-- V7 · د6: الفشل بسببه — «إعادة المحاولة» تكمل من الجزء الذي توقّف، و«إغلاق» يحذف المؤقت -->
+    <sc-if value="{{bkcFail}}" hint-placeholder-val="{{ false }}">
+    <div data-bkc="fail" role="alert" style="background:var(--bg-xfef2f2);border:1px solid var(--bd-xfecaca);border-radius:14px;padding:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--fg-xdc2626);margin-bottom:5px">لم يكتمل الاستيراد — لم يتغيّر شيء في الإدارة</div>
+      <p data-bkc="fail-msg" style="font-size:11.5px;color:var(--fg-x53565a);line-height:1.9;margin:0 0 12px">{{bkcFailMsg}}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onClick="{{bkcRetry}}" class="bs-btn bs-btn--primary">إعادة المحاولة</button>
+        <button onClick="{{bkcCancel}}" class="bs-btn">إغلاق</button>
+      </div>
+    </div>
+    </sc-if>
+    <!-- V7 · د6: ملخّصُ ما بعد النجاح -->
+    <sc-if value="{{bkcDone}}" hint-placeholder-val="{{ false }}">
+    <div data-bkc="done" role="status" style="border:1px solid var(--bd-xe2e8f0);border-radius:14px;padding:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--fg-x047857);margin-bottom:5px">اكتمل الاستيراد</div>
+      <p data-bkc="done-msg" style="font-size:11.5px;color:var(--fg-x53565a);line-height:1.9;margin:0 0 12px">{{bkcDoneMsg}}</p>
+      <sc-if value="{{bkcSysOn}}" hint-placeholder-val="{{ false }}">
+      <p data-bkc="done-sys" style="font-size:11.5px;color:var(--fg-xb45309);line-height:1.9;margin:0 0 12px">النسخة لا تحمل صلاحيات: أنظمة الوحدة ما زالت مطفأة — <a href="{{bkcSysHref}}" onClick="{{bkcClose}}">افتح أنظمة الوحدة</a></p>
+      </sc-if>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{bkcClose}}" class="bs-btn bs-btn--primary">تم</button></div>
     </div>
     </sc-if>
   </div>

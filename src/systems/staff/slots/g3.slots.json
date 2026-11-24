@@ -45,11 +45,7 @@
  },
  "activity.filter.staff": {
   "order": 10,
-  "text": " ['staffing', 'التسكين الشهري'],"
- },
- "perm.seed.cap.staff": {
-  "order": 10,
-  "text": "'staff',"
+  "text": " ['staffing', 'التسكين الشهري', 'staff'],"
  },
  "tree.keyCap.staff": {
   "order": 10,

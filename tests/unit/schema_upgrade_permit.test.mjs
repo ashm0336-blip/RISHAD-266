@@ -90,8 +90,10 @@ test('a failure after permit deletion rolls back the deletion and every statemen
   const B = await fixture(), raw = permit(B), N = B.W.KIVO_MIGRATIONS.length, last = B.W.KIVO_MIGRATIONS[N - 1].name;
   B.DB.failIf = sql => /^INSERT OR IGNORE INTO d1_migrations/.test(sql) && stamp(B.DB) === String(N);
   await assert.rejects(B.W.migrateDb(B.env), /injected failure/); B.DB.failIf = null;
-  assert.equal(stamp(B.DB), String(N - 1)); assert.equal(readPermit(B.DB), raw);
+  /* V7 · د6 (schemafix): من 5 تُطبَّق 0010 وما بعدها (0011 · 0012) دفعةً واحدة مع تحويل KV التشغيلي (052) — فالتراجعُ يعيدها كلَّها: الختمُ 9 */
+  assert.equal(stamp(B.DB), '9'); assert.equal(readPermit(B.DB), raw);
   assert.equal(B.DB.q("SELECT COUNT(*) n FROM pragma_table_info('sess') WHERE name IN ('dv','br')")[0].n, 0, 'final (0011) migration columns rolled back');   /* V7 · د5-هـ: الترحيلُ الأخير صار 0011 */
+  assert.equal(B.DB.q("SELECT COUNT(*) n FROM sqlite_master WHERE name IN ('ops_nodes','ops_zone_prayer_capacity')")[0].n, 0, 'the 0010–0012 batch rolled back as one');
   assert.equal(B.DB.q("SELECT COUNT(*) n FROM d1_migrations WHERE name=?", last)[0].n, 0);
   await B.W.migrateDb(B.env); assert.equal(stamp(B.DB), String(B.W.KIVO_MIGRATIONS.length)); assert.equal(readPermit(B.DB), undefined);
 });

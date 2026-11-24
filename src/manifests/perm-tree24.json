@@ -448,6 +448,55 @@
    ]
   },
   {
+   "id": "rasd",
+   "label": "نظام رصد الحالات",
+   "kind": "page",
+   "page": "rasd",
+   "nav": "rasd",
+   "leaves": [
+    {
+     "owner": "rasd/dash",
+     "label": "لوحة المؤشرات",
+     "kind": "offpage",
+     "route": "#/kpis",
+     "ownerKind": "page",
+     "keys": [
+      "rz.dash.view"
+     ],
+     "reserved": [],
+     "page": "rasd",
+     "sub": "dash",
+     "docKind": "sub",
+     "docRoute": "#/rasd (التبويب الأول)",
+     "platform": "تُعرض في «مؤشرات الإدارة» وحدها (KIVO_261 · SOT-003 — الوثيقة: sub · #/rasd (التبويب الأول))"
+    },
+    {
+     "owner": "rasd/records",
+     "label": "السجلات",
+     "kind": "tab",
+     "route": "#/rasd (التبويب الثاني)",
+     "ownerKind": "page",
+     "keys": [
+      "rz.rec.view",
+      "rz.rec.create",
+      "rz.rec.edit",
+      "rz.rec.delete",
+      "ref.rasd.list.view",
+      "ref.rasd.list.create",
+      "ref.rasd.list.edit",
+      "ref.rasd.list.delete",
+      "rz.rec.bulk.delete",
+      "rz.rec.retro.open"
+     ],
+     "reserved": [
+      "rz.rec.status"
+     ],
+     "page": "rasd",
+     "sub": "records"
+    }
+   ]
+  },
+  {
    "id": "award",
    "label": "جائزة التميز",
    "kind": "page",
@@ -907,8 +956,8 @@
   }
  },
  "counts": {
-  "containers": 13,
-  "leaves": 43,
-  "keys": 250
+  "containers": 14,
+  "leaves": 45,
+  "keys": 261
  }
 }

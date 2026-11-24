@@ -11,7 +11,7 @@ import { WORKER, ROOT } from './harness.mjs';
 
 async function workerFns() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'p44s-')), f = path.join(dir, 'w.mjs');
-  fs.writeFileSync(f, fs.readFileSync(WORKER, 'utf8') + '\nexport { enfHeld, enfIx, reasonExempt, enfSuperGate, enfNo, perm44Decide, perm44RolesWhy, KIVO_REGISTRY };\n');
+  fs.writeFileSync(f, fs.readFileSync(WORKER, 'utf8') + '\nexport { enfHeld, enfIx, reasonLogged, enfSuperGate, enfNo, perm44Decide, perm44RolesWhy, KIVO_REGISTRY };\n');
   try { return await import(pathToFileURL(f).href); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 const D = 'TEST_ONLY_d1';
@@ -35,8 +35,8 @@ test('perm44 · super: no reason is ever asked — reasonExempt and the 056 gate
   const M = await workerFns(), A = actor('super'), ix = M.enfIx();
   const reasonKeys = Object.keys(ix.reason);
   assert.ok(reasonKeys.length > 0, 'registry has keys that need a reason');
-  assert.equal(M.reasonExempt(A), true);
-  assert.equal(M.reasonExempt(actor('mgr')), false);
+  /* V7 · د6 (QA) · البند ١: reasonExempt أُزيل (لا سببَ إلزامياً لأحد) — reasonLogged لا يكتب «بلا سبب (مدير المنصة)» لأحد، والسببُ المكتوب يُحفظ كما هو */
+  assert.equal(M.reasonLogged(A, ''), ''); assert.equal(M.reasonLogged(actor('mgr'), ''), ''); assert.equal(M.reasonLogged(actor('mgr'), ' TEST_ONLY '), 'TEST_ONLY');
   const lifted = M.enfSuperGate(A, M.enfNo('reason', { keys: [reasonKeys[0]] }));
   assert.deepEqual([lifted.ok, lifted.path, lifted.lifted], [true, 'super', 'reason']);
   assert.equal(M.enfSuperGate(actor('mgr'), M.enfNo('reason')).ok, false, 'others still asked');

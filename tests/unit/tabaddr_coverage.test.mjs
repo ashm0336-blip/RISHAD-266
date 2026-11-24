@@ -40,6 +40,8 @@ test('every page that writes #/<page>/<tab> is in tabAddr, with each literal tab
   for (const w of W) {
     assert.equal(w.navs.length, 1, w.module + ' writes one page prefix: ' + w.navs);
     const p = byNav[w.navs[0]];
+    /* V7 · د6: حاويةُ عرضٍ («مؤشرات الإدارة») تكتب #/<حاوية>/<لوحة> لكل لوحةٍ من مراجعها — الحاويةُ في سجلّ الحاويات لا في سجلّ الصفحات، ولوحاتُها قطعُ أنظمة */
+    if (!p && M.containers.some((c) => c.nav === w.navs[0])) { assert.deepEqual(w.tails, [], w.module + ': a container writes no literal tab'); continue; }
     assert.ok(p, w.module + ': #/' + w.navs[0] + ' is a registered page');
     assert.ok(M.tabAddr[p.key], w.module + ': ' + p.key + ' is in tabAddr');
     for (const t of w.tails.filter((x) => !(SOLO_ONLY[p.key] || []).includes(x))) assert.ok(covers(p.key, t), w.module + ': #/' + w.navs[0] + '/' + t + ' is in tabAddr');

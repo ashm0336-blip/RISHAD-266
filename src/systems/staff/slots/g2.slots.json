@@ -106,7 +106,7 @@
  },
  "me.changes.staff": {
   "order": 10,
-  "text": "    var q = env.DB.prepare(\"SELECT ts, uid, act, bef, aft FROM aud WHERE dept = ?1 AND etype = 'staffing' AND ctx LIKE ?2 AND eid IN (\" + I.toks.map(function (_, n) { return '?' + (n + 3); }).join(',') + ') ORDER BY ts DESC, id DESC LIMIT 120');\n    var ra = await q.bind.apply(q, [u.deptId, '%\"plan\":\"' + ym + '\"%'].concat(I.toks)).all();\n    res.changes = meChanges((ra && ra.results) || [], users);\n"
+  "text": "    if (!(D.off && D.off.bassam_staffing_v3)) {   /* V7 · د6: تغييراتُ الجدول الشهري لا تُقرأ والجدولُ مطفأ (062b meOffOf) */\n    var q = env.DB.prepare(\"SELECT ts, uid, act, bef, aft FROM aud WHERE dept = ?1 AND etype = 'staffing' AND ctx LIKE ?2 AND eid IN (\" + I.toks.map(function (_, n) { return '?' + (n + 3); }).join(',') + ') ORDER BY ts DESC, id DESC LIMIT 120');\n    var ra = await q.bind.apply(q, [u.deptId, '%\"plan\":\"' + ym + '\"%'].concat(I.toks)).all();\n    res.changes = meChanges((ra && ra.results) || [], users);\n    }\n"
  },
  "nfc.kind.color.staff": {
   "order": 10,

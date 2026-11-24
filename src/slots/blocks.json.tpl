@@ -412,6 +412,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "services/325-org-route.js",
+   "kind": "js",
+   "line": 4505,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "V7 · د6 — عنوانُ شاشة «الإدارات والصلاحيات» (مصدرٌ واحد)"
+  },
+  {
+   "closeTag": "</script>",
    "id": "auth/330-auth.js",
    "kind": "js",
    "line": 5068,
@@ -638,7 +648,7 @@
    "origSha256": null,
    "new": "KIVO_264 · ملفي (OD-3)"
   },
-@@SYS:blocks.shell.tasks@@@@SYS:blocks.shell.custody@@  {
+@@SYS:blocks.shell.tasks@@@@SYS:blocks.shell.custody@@@@SYS:blocks.shell.systems@@  {
    "id": "services/548-atomic-backup.js",
    "kind": "js",
    "openTag": "<script>",
@@ -858,6 +868,14 @@
     "sha256": "3dbb9998ebe38712baf1ac54c26dfa67f8f5841b2f7f77114ba83121a9090311"
    },
    {
+    "b64Sha256": null,
+    "bytes": null,
+    "file": "client/pages/Org.dc.html",
+    "name": "Org",
+    "sha256": null,
+    "new": "V7 · د6 — شاشة «الإدارات والصلاحيات» صفحةٌ مستقلة (فُصلت عن Admin)"
+   },
+   {
     "b64Sha256": "0b1e7af69b7a566a9e44062eb39f49f44385b2713cc9b170fee4926df0bc8ab1",
     "bytes": 157711,
     "file": "client/pages/Profile.dc.html",
@@ -882,6 +900,7 @@
   "order": [
    "Employees",
 @@SYS:blocks.order.tasks@@@@SYS:blocks.order.daily@@@@SYS:blocks.order.plan@@@@SYS:blocks.order.staff@@   "Admin",
+   "Org",
    "Profile",
 @@SYS:blocks.order.irshad@@@@SYS:blocks.order.award@@@@SYS:blocks.order.dreport@@   "Planning",
 @@SYS:blocks.order.seized@@   "KPIs"@@SYS:blocks.order.tail@@

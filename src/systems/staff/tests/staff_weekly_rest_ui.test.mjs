@@ -11,6 +11,7 @@ import { parse } from 'acorn';
 import { world, D1, D2, G1, IDS, ROOT, identitySnapshot } from '../../../../tests/unit/canonical_fx.mjs';
 import { installOperationalFixture, inspectOperationalFixture, replaceOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 import { loadClient, until } from '../../../../tests/unit/k264_vm.mjs';
+import { CURRENT_SCHEMA } from '../../../../tests/unit/harness.mjs';
 
 const EMPLOYEE = { eid: 'TEST_ONLY_UI_REST_EMP', name: 'TEST_ONLY_UI_EMP_A_EDITED' };
 const SHIFT = 'الوردية الأولى';
@@ -48,7 +49,7 @@ function actualPick() {
 
 async function page(t, { visiblePolling = false } = {}) {
   const B = await world();
-  assert.equal(B.W.KIVO_SCHEMA_VERSION, 11);
+  assert.equal(B.W.KIVO_SCHEMA_VERSION, CURRENT_SCHEMA);   /* V7 · د6 (pins): المخطّطُ الحالي من المصدر الواحد */
   await installOperationalFixture(B.env, B.W);
   // The general custody fixture omits the monthly-staff page. Declare this
   // synthetic test department's ceiling explicitly; keep real guards enabled.

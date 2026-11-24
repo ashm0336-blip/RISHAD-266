@@ -10,7 +10,7 @@
 import os, sys, re, json, hashlib, subprocess
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # KIVO_251: tools/ في الجذر
 sha = lambda b: hashlib.sha256(b).hexdigest()
-SLUG = {'Employees': 'employees', 'Tasks': 'tasks', 'Daily Sessions': 'daily', 'Operational Plan': 'plan', 'Staffing': 'staff', 'Admin': 'admin', 'Profile': 'profile', 'Irshad': 'irshad', 'Award': 'award', 'Daily Report': 'dreport', 'Planning': 'planning', 'Seized': 'seized', 'KPIs': 'kpis', 'Daily Stats': 'dstats'}
+SLUG = {'Employees': 'employees', 'Tasks': 'tasks', 'Daily Sessions': 'daily', 'Operational Plan': 'plan', 'Staffing': 'staff', 'Admin': 'admin', 'Org': 'org', 'Profile': 'profile', 'Irshad': 'irshad', 'Award': 'award', 'Daily Report': 'dreport', 'Planning': 'planning', 'Seized': 'seized', 'KPIs': 'kpis', 'Daily Stats': 'dstats'}
 RE = re.compile(r'^(?P<pre>[\s\S]*?<x-dc>\n<helmet>\n?)(?P<helmet>[\s\S]*?)(?P<mid>\n?</helmet>\n)(?P<view>[\s\S]*?)(?P<mid2>\n</x-dc>\n)(?P<stag><script(?: type="text/x-dc")? data-dc-script[^>]*>)(?P<script>[\s\S]*?)(?P<post></script>\n?[\s\S]*)$')
 def logic_files(meta): return ['logic.js'] + list(meta.get('logicParts') or [])   # KIVO_265 · البند 19: الأجزاءُ بترتيب الإعلان
 def read_logic(d, meta):

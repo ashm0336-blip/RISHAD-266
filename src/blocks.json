@@ -413,6 +413,16 @@
   },
   {
    "closeTag": "</script>",
+   "id": "services/325-org-route.js",
+   "kind": "js",
+   "line": 4505,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "V7 · د6 — عنوانُ شاشة «الإدارات والصلاحيات» (مصدرٌ واحد)"
+  },
+  {
+   "closeTag": "</script>",
    "id": "auth/330-auth.js",
    "kind": "js",
    "line": 5068,
@@ -806,6 +816,16 @@
    "new": "Typed custody API transport included by the runtime shell"
   },
   {
+   "closeTag": "</script>",
+   "id": "systems/seized/client/549-seized-links.js",
+   "kind": "js",
+   "line": 10494,
+   "openTag": "<script>",
+   "origBytes": null,
+   "origSha256": null,
+   "new": "V7 · د6: ما يوفّره نظامُ المضبوطات لغيره عبر الناقل (seized.usable@1)"
+  },
+  {
    "id": "services/548-atomic-backup.js",
    "kind": "js",
    "openTag": "<script>",
@@ -1090,6 +1110,14 @@
     "sha256": "3dbb9998ebe38712baf1ac54c26dfa67f8f5841b2f7f77114ba83121a9090311"
    },
    {
+    "b64Sha256": null,
+    "bytes": null,
+    "file": "client/pages/Org.dc.html",
+    "name": "Org",
+    "sha256": null,
+    "new": "V7 · د6 — شاشة «الإدارات والصلاحيات» صفحةٌ مستقلة (فُصلت عن Admin)"
+   },
+   {
     "b64Sha256": "0b1e7af69b7a566a9e44062eb39f49f44385b2713cc9b170fee4926df0bc8ab1",
     "bytes": 157711,
     "file": "client/pages/Profile.dc.html",
@@ -1144,6 +1172,13 @@
     "file": "client/pages/Daily Stats.dc.html",
     "name": "Daily Stats",
     "sha256": "07c4807e8fdfab2386f43410010bd0475f8b919836a7ff3246cbf66a60eeed8a"
+   },
+   {
+    "b64Sha256": "e2c1e365fdfeb1a7b9ef161d89515c0a8507f5e851a6eaf7eee23b0616ff074f",
+    "bytes": 196201,
+    "file": "client/pages/Rasd.dc.html",
+    "name": "Rasd",
+    "sha256": "275f82c5a5821f8cf9620f0c33eff4325f7d55b0564b959e34859fdb4de52187"
    }
   ],
   "order": [
@@ -1153,6 +1188,7 @@
    "Operational Plan",
    "Staffing",
    "Admin",
+   "Org",
    "Profile",
    "Irshad",
    "Award",
@@ -1160,7 +1196,8 @@
    "Planning",
    "Seized",
    "KPIs",
-   "Daily Stats"
+   "Daily Stats",
+   "Rasd"
   ],
   "zlibLevel": 9
  },

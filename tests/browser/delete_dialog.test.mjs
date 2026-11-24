@@ -27,14 +27,18 @@ try {
   const p = s.page;
   await s.go('#/sysadmin/depts');   /* the recorded address: it becomes #/sysadmin/org (V7 P0) */
   const open = async (name) => {
-    /* V7 P1: the structure page (#/sysadmin/org) is the tree; a row opens the unit's own page, whose «البيانات» tab holds the delete
-       (it was the last item of the «بيانات الإدارة» row menu). Each open starts from the structure page */
-    await s.go('#/sysadmin/org', 1500);
-    await p.locator('main .tr-sb a', { hasText: 'فرد الكل' }).click(); await p.waitForTimeout(400);
-    await p.locator('main .tr-rw', { hasText: name }).first().click(); await p.waitForTimeout(1200);
-    const tab = p.locator('main [aria-label="أقسام صفحة العقدة"] button', { hasText: 'البيانات' }).first();
-    if (await tab.count()) { await tab.click(); await p.waitForTimeout(400); await p.locator('main .ov7 button.dz').first().click(); }
-    else res.push('DEBUG no data tab: ' + JSON.stringify(await p.evaluate(() => [location.hash].concat([...document.querySelectorAll('main [aria-label="أقسام صفحة العقدة"] button')].map(x => x.textContent.trim().slice(0, 30))))));
+    /* V7 P1 · د6: the one screen «الإدارات والصلاحيات» — the tree is beside the unit; a row selects it and its «نظرة عامة» holds «حذف…»
+       (it was the «البيانات» tab of the unit's own page, and before that the last item of the «بيانات الإدارة» row menu). Each open starts from the root row */
+    /* نافذةُ سبب المنع (الحذفُ المرفوض قبل أي سؤال) تُغلق قبل الفتح التالي */
+    if (await p.locator('main [data-og-dlg="delete"]').count()) { await p.locator('main [data-og-dlg="delete"] button', { hasText: 'إغلاق' }).click(); await p.waitForTimeout(300); }
+    await s.go('#/sysadmin/org/platform/overview', 1500);
+    /* عند العرض ≤ 1280 الشجرةُ خلف زرّ الوحدة (ب13): يُفتح أولاً، واختيارُ الصف يغلقها */
+    if (await p.locator('main .og-ub').isVisible().catch(() => false)) { await p.locator('main .og-ub').click(); await p.waitForTimeout(400); }
+    await p.locator('main [data-og-act="expand"]').first().click(); await p.waitForTimeout(400);
+    await p.locator('main .og-rw', { hasText: name }).first().locator('.og-nm').click(); await p.waitForTimeout(1200);
+    const del = p.locator('main [data-org-tab="overview"] [data-og-act="delete"]').first();
+    if (await del.count()) { await del.click(); }
+    else res.push('DEBUG no delete action: ' + JSON.stringify(await p.evaluate(() => [location.hash].concat([...document.querySelectorAll('main .og-tabs .og-tab')].map(x => x.textContent.trim().slice(0, 30))))));
     await p.waitForSelector('#bsCfm', { timeout: 8000 }).catch(() => {}); await p.waitForTimeout(300);
     const dd = await dlg(p); if (!dd.open) res.push('DEBUG no dialog: ' + JSON.stringify(await p.evaluate(() => ({ toast: (document.querySelector('#bs-toast')||{}).textContent, mbk: document.querySelectorAll('main span.mbk').length, mi: [...document.querySelectorAll('main button.mi.dz, main button.dz')].map(x => x.className + '|' + x.title) }))));
     return dd;
@@ -58,6 +62,7 @@ try {
   ok('A and S1 untouched', depts().includes('TEST_ONLY_A') && depts().includes('TEST_ONLY_A_S1') && keysOf('TEST_ONLY_A') > 0, { keysA: keysOf('TEST_ONLY_A') });
   // A has a section -> refused before any dialog
   d = await open('TEST_ONLY إدارة أ'); ok('dept with section: no dialog (refused)', !d.open, d);
+  { const why = await p.locator('main [data-og-dlg="delete"] [data-og="del-why"]').innerText().catch(() => ''); ok('… and the reason is said (V7 · د6: in the screen\'s own dialog)', /\S/.test(why), { why }); }
   ok('A still on server', depts().includes('TEST_ONLY_A'));
   // section S1
   d = await open('TEST_ONLY قسم أ١');

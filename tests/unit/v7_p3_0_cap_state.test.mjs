@@ -17,7 +17,7 @@ import { needs } from './harness.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
-const M = rd('src/permissions/331-perm-model.js'), T = rd('src/permissions/334-perm-tree-tpl.js'), L = rd('src/modules/admin/logic.js'), V = rd('src/modules/admin/view.html');
+const M = rd('src/permissions/331-perm-model.js'), T = rd('src/permissions/334-perm-tree-tpl.js'), L = rd('src/modules/org/logic.js'), V = rd('src/modules/org/view.html'), LA = rd('src/modules/admin/logic.js');   /* V7 · د6: الشجرةُ وقائمةُ التهيئة و_capStateTxt في صفحة «الإدارات والصلاحيات» */
 function fnSrc(src, name, lead = '\n  function ') {
   const i = src.indexOf(lead + name + '('); assert.ok(i >= 0, name + ' exists');
   let j = src.indexOf('{', i), d = 0;
@@ -51,10 +51,15 @@ test('capState: open · inherit · own · independent · empty — from the exis
 test('the admin center shows the state from that one source in the tree and the overview checklist (V7 · د5-هـ 44: the ceiling editor was deleted)', () => {
   const f = fnSrc(L, '_capStateTxt', '\n  ');
   assert.match(f, /P\.capState\(o\)/, 'reads capState');
-  assert.match(L, /step\("الصلاحيات", capSt\.txt, capSt\.ok, "cap"\)/, 'checklist: its text and ✓/! from the source (open is not ✓) — V7 · د5-هـ (44 · المدير): the step is named after the tab it opens (was «سقف الصفحات»)');
-  assert.match(L, /capSt = this\._capStateTxt\(o\),/);
+  /* V7 · د6: الخطوةُ اسمُها «الأنظمة» (التبويبُ الذي تفتحه)؛ علامتُها ✓/! من المصدر نفسه (المفتوحُ والفارغُ ليسا ✓) ونصُّها نصُّه حين لا تكتمل */
+  assert.match(L, /const cs = this\._capStateTxt\(c\.unit\),/);
+  assert.match(L, /capOk = !!cs\.kind && cs\.ok,/, 'checklist: ✓/! from the source (open is not ✓)');
+  assert.match(L, /step\("systems", "الأنظمة", capTxt, capOk, "systems", "site" === c\.mode \? cs\.txt : ""\)/, 'the step opens the «الأنظمة» tab, and its tip carries the state text');
+  assert.match(L, /capOk \|\| !cs\.txt \? sys\.on \+ " من " \+ sys\.all \+ " مفعّلة" : cs\.txt,/, 'a step that is not done says the full state text (as the old checklist did)');
+  assert.doesNotMatch(LA, /_capStateTxt|_capOwnRecEmpty/, 'one source: nothing left in the settings page');
   assert.doesNotMatch(L, /"موروثٌ من الأعلى"/, 'the P1 text that called every unit without a record «inherited» is gone');
-  assert.match(L, /trCapTxt: this\._capStateTxt\(r\.id\)\.short,/, 'tree');
+  /* V7 · د6: عمودُ «الأنظمة» في الشجرة (المفعّل/الكل) وتلميحُه نصُّ الحالة القصير نفسُه (كان سطراً تحت اسم الإدارة) */
+  assert.match(L, /"الأنظمة المفعّلة من الكل" \+ \(this\._capStateTxt\(b\.id\)\.short \? " — " \+ this\._capStateTxt\(b\.id\)\.short : ""\)/, 'tree'); assert.match(V, /data-og-col="systems" dir="ltr" title="\{\{r\.sysTip\}\}"/);
   assert.doesNotMatch(L, /: "السقف مفتوح";/, 'the tree no longer calls a limited unit «open»');
   assert.doesNotMatch(L, /subLine:/, 'the unrendered tree subtitle (a second ceiling count) is gone');
   /* V7 · د5-هـ (44): رأسُ محرّر السقف وتنبيهُه حُذفا مع «سقف الصفحات» — والحالةُ نفسُها باقيةٌ في الشجرة وقائمة التهيئة */
@@ -81,18 +86,15 @@ test('the admin center shows the state from that one source in the tree and the 
   assert.equal(r.txt, 'سقفٌ خاصّ مستقلّ فارغ — لا صفحة مفعّلة لهذه الوحدة', 'independent and empty: its own record, no ancestor assumed');
 });
 
-test('the unused patterns are gone; the live seed keeps its behaviour (and a stored «أساسي» still wins)', needs('custody', 'tasks'), () => {
+/* V7 · د6 (ب4 — owner decision): the remaining «أساسي» seed (SEED_BASIC · seedBasic · patternSeed · the stored patterns.basic) is gone as well — the new unit's seed is the
+   explicit choice 'off' | 'parent' (tests/unit/dept_cap_seed.test.mjs · v7_d6_new_unit_off.test.mjs). This case pinned «the live seed keeps its behaviour»; it now pins its removal. */
+test('the unused patterns are gone — and since V7 · د6 the «أساسي» seed too: a new unit is seeded by the explicit choice', needs('custody', 'tasks'), () => {
   for (const n of ['PATTERN_META', 'PATTERN_DEF', 'patternMeta', 'patternApply', 'patternSet', 'function patterns(']) {
     assert.ok(!code(M).includes(n), '331 no longer has ' + n); assert.ok(!code(T).includes(n), '334 no longer has ' + n);
   }
   for (const n of ['capPatRows', 'capPatSaveDo', 'capPatSaveTip', 'capPat']) { assert.ok(!L.includes(n), 'admin logic: no ' + n); assert.ok(!V.includes(n), 'admin view: no ' + n); }
-  assert.match(M, /if \(!inh\.length\) \{ var sd = patternSeed\(id\);/, 'seedCapFrom still seeds «أساسي» under an empty parent');
-  const sb = fnSrc(M, 'seedBasic');
-  const SEED = /var SEED_BASIC = (\{[^\n]+\});/.exec(M)[1];
-  const run = (store) => vm.runInNewContext('var SEED_BASIC = ' + SEED + ';(' + sb + ')()', { permStore: () => store, JSON, Array });
-  assert.deepEqual(run({}).cap, ['emps', 'tasks', 'planning', 'staff', 'links', 'help', 'admin'], 'the built-in «أساسي» (unchanged)');
-  assert.deepEqual(run({}).subs, { emps: ['data', 'custody'], planning: ['readiness'], admin: ['shifts', 'backup', 'import'] });   /* V7 · د5-ح: بلا ورقة «قوالب الصلاحيات» */
-  assert.deepEqual(run({ patterns: { basic: { cap: ['help'], subs: {}, tabs: {}, lenses: [] } } }).cap, ['help'], 'a stored patterns.basic wins, as before');
-  assert.deepEqual(run({ patterns: { basic: { cap: 'x' } } }).cap.length, 7, 'a malformed stored pattern falls back');
+  for (const n of ['var SEED_BASIC', 'function seedBasic(', 'function patternSeed(', 'patternSeed']) { assert.ok(!code(M).includes(n), '331 no longer has ' + n); assert.ok(!code(T).includes(n), '334 no longer has ' + n); }
+  assert.match(M, /function seedMode\(opt\)\{ var m = opt && typeof opt === 'object' \? opt\.seed : opt; return m === 'parent' \? 'parent' : 'off'; \}/, 'the seed is an explicit choice, default «off»');
+  assert.match(M, /function seedCapFrom\(id, pid, opt\)\{/); assert.match(M, /function seedSectionCap\(id, did, opt\)\{/);
   assert.ok(!/والجذر يبدأ فارغاً/.test(M), 'the stale comment («the root starts empty») is corrected');
 });

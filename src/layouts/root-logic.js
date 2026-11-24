@@ -6,7 +6,7 @@ class Component extends DCLogic {
      نسخةَ العالم فتُعاد كما كانت. المُحدِّثُ الدالّيُّ يُعامَل بحذرٍ: يرفعها. */
   setState(u, cb) {
     try {
-      const CH = { sidebarOpen: 1, toast: 1, deptOpen: 1, deptNodeOpen: 1, nfOpen: 1, nfToast: 1, nfTick: 1, nfKinds: 1, nfFilt: 1, nfCompose: 1, bkConf: 1, bkStep: 1, navPending: 1, conTick: 1, conCx: 1 };
+      const CH = { sidebarOpen: 1, toast: 1, deptOpen: 1, deptNodeOpen: 1, nfOpen: 1, nfToast: 1, nfTick: 1, nfKinds: 1, nfFilt: 1, nfCompose: 1, bkConf: 1, bkStep: 1, bkMode: 1, navPending: 1, conTick: 1, conCx: 1 };
       let bump = true;
       if (u && typeof u === "object") { bump = false; for (const k in u) if (!CH[k]) { bump = true; break; } }
       if (bump) KIVO.__dcWorld = (KIVO.__dcWorld || 0) + 1;
@@ -49,28 +49,23 @@ class Component extends DCLogic {
     try { const m = /^#\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
   }
   _hashTab() {
-    try { const m = /^#\/[a-z]+\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
+    try { const m = /^#\/[a-z]+\/([a-z]+(?:-[a-z]+)*)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }   /* V7 · د6: رمزُ تبويبٍ بشرطة (#/kpis/haram-analysis) */
   }
   /* CORE-02 S7: المقطعُ الثالث — قسمُ إعدادات المنصة (#/sysadmin/plat/<sub>) */
   _hashSub() {
     try { const m = /^#\/[a-z]+\/[a-z]+\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
   }
-  /* V7 P0: «الإدارات» في المركز عنوانُها #/sysadmin/org[/<معرّف العقدة أو الوحدة>] — والتبويبُ في الصفحة اسمُه depts كما هو.
+  /* V7 · د6: «الإدارات والصلاحيات» عنوانُها #/sysadmin/org/<الوحدة>/<التبويب> — يقرؤه ويكتبه مصدرٌ واحد (KIVO.BassamOrgRoute · صفحةُ الشاشة)،
+     والإطارُ يعرف منه المقطعَ الأول وحده (org ⇐ التبويب depts)؛ المعرّفُ والتبويبُ لا يُقرآن هنا.
+     V7 P0: «الإدارات» في المركز عنوانُها #/sysadmin/org[/<معرّف العقدة أو الوحدة>] — والتبويبُ في الصفحة اسمُه depts كما هو.
      العنوانُ القديم #/sysadmin/depts يُقرأ بالقاعدة نفسها (مقطعٌ يُترجَم) ثم تكتب الصفحةُ العنوانَ الجديد. المعرّفُ مُرمَّزٌ (encodeURIComponent):
      المعرّفاتُ المخزَّنة ليست صيغةً واحدة (n…/d…/s… بأساس 36 · والمستورَدةُ قديماً بأحرفٍ كبيرة وشرطة سفلية) — فلا يُفترض شكلُها؛
      والصفحةُ لا تفتح إلا معرّفاً موجوداً في الهيكل، والرابطُ لا يمنح شيئاً: «مركز إدارة رشاد» لمسؤول المنصة وحده (_pageAllowed) والخادمُ هو الحَكَم */
   _sysSeg(tab) { return tab === "depts" ? "org" : tab; }
   _sysTabOf(seg) { return seg === "org" ? "depts" : seg; }
-  _hashOrgId() {
-    try {
-      const m = /^#\/sysadmin\/org\/([^/?#]+)(?:\/perm\/(?:systems|roles|people|log))?$/.exec(String(location.hash || "")); if (!m) return "";   /* V7 · د5-هـ (44): وذيلُ «الصلاحيات» */
-      const id = decodeURIComponent(m[1]);
-      return id.length <= 128 && !/[\u0000-\u001f<>"'`\\]/.test(id) ? id : "";
-    } catch (e) { return ""; }
-  }
   /* ذيل العنوان لصفحتَي الإعدادات ومدير النظام يُمرَّر لصفحة الإعدادات عبر خطّافيها (القائم __ADMIN_OPEN_TAB والجديد __ADMIN_OPEN_DTAB) */
   _applyHashTab(key) {
-    try { const t = this._hashTab(); if (!t) return; if (key === "sysadmin") { KIVO.__ADMIN_OPEN_TAB = this._sysTabOf(t); KIVO.__ADMIN_OPEN_PSUB = t === "plat" ? this._hashSub() || null : null; KIVO.__ADMIN_OPEN_ORG = t === "org" ? this._hashOrgId() || null : null; } else if (key === "admin") KIVO.__ADMIN_OPEN_DTAB = t; else KIVO.__BS_OPEN_TAB = { page: key, tab: t }; } catch (e) {}
+    try { const t = this._hashTab(); if (!t) return; if (key === "sysadmin") { KIVO.__ADMIN_OPEN_TAB = this._sysTabOf(t); KIVO.__ADMIN_OPEN_PSUB = t === "plat" ? this._hashSub() || null : null; } else if (key === "admin") KIVO.__ADMIN_OPEN_DTAB = t; else KIVO.__BS_OPEN_TAB = { page: key, tab: t }; } catch (e) {}
   }
   _hashWrite(key, push) {
     try {
@@ -180,18 +175,31 @@ class Component extends DCLogic {
         const narrow = window.innerWidth <= 1024;
         if (narrow && !this._wasNarrow && this.state.sidebarOpen) this.setState({ sidebarOpen: false });
         this._wasNarrow = narrow;
+        const tightW = window.innerWidth <= 1280;   /* V7 · د6: عبورُ عتبة الطيّ المؤقت يعيد الرسم */
+        if (tightW !== this._wasTightW) { this._wasTightW = tightW; this.__fitWant && this.setState({ conTick: (this.state.conTick | 0) + 1 }); }
       };
       window.addEventListener("resize", this._onResizeSB);
       /* ═══ العنوان: الرجوع/التقدّم أو رابطٌ ملصوق → نفس حرّاس الصفحة المحفوظة ═══ */
       this._hashWrite(this.state.active, false);
       this._onHash = () => { try {
         const k = this._hashKey(); if (!k) return;
+        /* V7 · د6: عنوانٌ تغيّر (رجوعٌ · عنوانٌ مكتوب · رابط) وفي شاشة «الإدارات والصلاحيات» تغييرٌ غيرُ محفوظ — يُعاد عنوانُها ويُسأل حارسُها أولاً،
+           سواءٌ كانت الوجهةُ وحدةً أو تبويباً آخر فيها أو صفحةً أخرى. ما تنتقل إليه الشاشةُ نفسُها (go) عنوانٌ قبلته فلا يُسأل عنه مرتين */
+        if (!this.__conAsked && this._orgDirty()) {
+          const O = KIVO.BassamOrgRoute.screen, keep = O.href ? O.href() : "";
+          if (keep && String(location.hash || "") !== keep) {
+            const want = location.href;
+            try { history.replaceState(null, "", location.pathname + location.search + keep); } catch (e) {}
+            Promise.resolve(O.canLeave({ leave: true, href: want })).then((y) => { if (!y) return; try { history.replaceState(null, "", want); } catch (e) {} this.__conAsked = true; try { this._onHash(); } finally { this.__conAsked = false; } });
+            return;
+          }
+        }
         if (k === this.state.active) { this._applyHashTab(k); this.setState({ hashTick: Date.now() }); return; }
         const ok = this._pageAllowed(k);
         if (!ok) { this._hashWrite(this.state.active, false); return; }
         /* مراجعة S10: الخروجُ من المركز بالرجوع أو بعنوانٍ مكتوب ومسوّداتُ إعدادات المنصة غيرُ محفوظة — يبقى العنوانُ على المركز ويُسأل أولاً
            (السؤالُ نفسُه في _conLeaveOk لكل مخرج) */
-        if (ok !== "sysadmin" && !this.__conAsked && this._conDirty()) {
+        if (ok !== "sysadmin" && !this.__conAsked && this._platDirty()) {
           const want = location.href, lc = this.__lastCon || ["overview", null];
           KIVO.__ADMIN_MODE = "site";
           try { history.replaceState(null, "", location.pathname + location.search + "#/sysadmin/" + this._sysSeg(lc[0]) + (lc[1] ? "/" + lc[1] : "")); } catch (e) {}
@@ -546,7 +554,7 @@ class Component extends DCLogic {
     const MAP = {
       employees: /employees|options|custody|perms|auth_users/, staffing: /staffing|shift_options|callsigns|leave_kinds|roles|perm_limit|employees/,
       plan: /plan_v1|zone_opts|gate_opts|mark_kinds|employees/, planning: /plan_v1|staffing|employees|rounds|dreport/,
-      irshad: /irshad/, seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, award: /award|employees/, profile: /auth_users|employees|staffing|shift_options|tasks|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
+      irshad: /irshad/, seized: /seized|employees|staffing|shift_options|dreport|rounds|dayshift/, rasd: /rasd/, award: /award|employees/, profile: /auth_users|employees|staffing|shift_options|tasks|dreport|rounds|plan_v1|dayshift|platform/, links: /^$/,
       admin: /depts|gdepts|auth_users|perms|platform|last_export/, sysadmin: /depts|gdepts|auth_users|perms|platform|last_export/
     };
     const re = MAP[page]; if (!re) return true;
@@ -872,7 +880,7 @@ class Component extends DCLogic {
         }
         const id = did || D.active(),
           name = (D.list().find((d) => d.id === id) || {}).name || id;
-        this._bkPend = { file: obj, did: id, keys: Object.keys(obj.data), ticket: null };
+        const pend = (this._bkPend = { file: obj, did: id, keys: Object.keys(obj.data), ticket: null });
         this.setState({
           bkStep: "pick",
           bkConf: {
@@ -885,6 +893,13 @@ class Component extends DCLogic {
             capNote: "ستُراجع الصلاحيات والنطاق قبل الكتابة",
           },
         });
+        /* V7 · د6: ملخّصُ ما قبل التأكيد — من خدمة النسخ (548 summary): ما لن يُنقل يحسمه الخادم؛ ورفضُه (صلاحية · جلسة) يُعرض هنا قبل أي إرسال */
+        const svc = KIVO.BackupRestore;
+        if (svc && svc.summary)
+          Promise.resolve(svc.summary(obj, { kind: "dept", departmentId: id })).then((sum) => {
+            if (this._bkPend !== pend || !this.state.bkConf) return;
+            this.setState({ bkConf: { ...this.state.bkConf, sum: sum && sum.ok ? { ...sum, fileBytes: file.size || 0 } : null, sumErr: sum && !sum.ok ? sum.message : "" } });
+          }, () => {});
       } catch (error) {
         this.bkToast("تعذّرت قراءة ملف النسخة", true);
       }
@@ -892,6 +907,8 @@ class Component extends DCLogic {
     reader.onerror = () => this.bkToast("تعذّرت قراءة الملف", true);
     reader.readAsText(file);
   }
+  /* V7 · د6: الاستيرادُ بمراحله الظاهرة — التقدّم (run) · الفشل بسببه وإعادةُ المحاولة (fail) · ملخّص النجاح (done). لا تبقى نافذةُ التأكيد بزرٍّ بلا أثر:
+     كلُّ ضغطةٍ إمّا تبدأ مرحلةً ظاهرة وإمّا تُعرض رسالتُها. الإرسالُ على أجزاء في خدمة النسخ (548)، والاعتمادُ دفعةٌ واحدة في الخادم. */
   async bkCommit(mode) {
     const pend = this._bkPend,
       svc = KIVO.BackupRestore;
@@ -901,27 +918,48 @@ class Component extends DCLogic {
       return;
     }
     this._bkSaving = true;
+    const show = (patch, step) => { if (this.state.bkConf) this.setState({ bkConf: { ...this.state.bkConf, ...patch }, ...(step ? { bkStep: step } : {}) }); };
+    const fail = (result) => {
+      pend.failed = result;
+      show({ fail: { msg: result.message, mode } }, "fail");
+      this.bkToast(result.message, true);
+    };
     try {
       if (!pend.ticket || pend.mode !== mode) {
-        const prepared = await svc.prepare(pend.file, { scope: { kind: "dept", departmentId: pend.did }, mode });
+        /* فشلٌ سابقٌ قابلٌ للإكمال بطريقةٍ أخرى: يُحذف مؤقتُه ويبدأ من جديد */
+        if (pend.failed && pend.failed.resumable && pend.mode !== mode && svc.cancel) { await svc.cancel(pend.failed); pend.failed = null; }
+        pend.stop = false;
+        show({ run: { step: "start" } }, "run");
+        const prepared = await svc.prepare(pend.file, {
+          scope: { kind: "dept", departmentId: pend.did },
+          mode,
+          onProgress: (p) => { if (this._bkPend === pend) show({ run: p }, "run"); },
+          shouldStop: () => !!pend.stop,
+          resume: pend.failed && pend.failed.resumable ? pend.failed : undefined,
+        });
+        pend.mode = mode;
         if (!prepared.ok) {
-          this.bkToast(prepared.message, true);
+          if (prepared.err === "cancelled" || prepared.err === "reason") { pend.failed = null; show({}, "pick"); this.bkToast(prepared.message, true); }
+          else fail(prepared);
           return;
         }
+        pend.failed = null;
         pend.ticket = prepared.ticket;
         pend.prepared = prepared;
-        pend.mode = mode;
         pend.confirmed = false;
       }
       if (!pend.confirmed) {
-        if (!(await svc.confirm(pend.prepared))) return;
+        show({ run: { step: "review" } }, "run");
+        /* التأكيدُ الوحيد: بعد الرفع والتحقق، بملخّص الخادم */
+        if (!(await svc.confirm(pend.prepared, mode === "replace" ? { title: "تأكيد الاستبدال", ok: "نعم، استبدل" } : { title: "تأكيد الدمج", ok: "نعم، ادمج" }))) { show({}, "confirm"); return; }
         const approved = svc.approve(pend.ticket);
         if (!approved.ok) {
-          this.bkToast(approved.message, true);
+          fail(approved);
           return;
         }
         pend.confirmed = true;
       }
+      show({ run: { step: "commit" } }, "run");
       const result = await svc.send(pend.ticket);
       if (!result.ok) {
         pend.uncertain = result.uncertain;
@@ -929,12 +967,12 @@ class Component extends DCLogic {
           pend.ticket = null;
           pend.confirmed = false;
         }
-        this.bkToast(result.message, true);
+        fail(result);
         return;
       }
       if (this._bkPend !== pend) return;
       this._bkPend = null;
-      this.setState({ bkConf: null, bkStep: "pick", tick: (this.state.tick || 0) + 1 });
+      this.setState({ bkConf: { ...(this.state.bkConf || {}), done: { receipt: result.receipt, summary: pend.prepared.inspection.summary, mode, noPerms: pend.file.perms == null, unit: pend.did } }, bkStep: "done", tick: (this.state.tick || 0) + 1 });
       this.bkToast("اكتملت استعادة الإدارة وأُنشئت لقطة ما قبلها");
       await svc.refresh();
     } finally {
@@ -942,6 +980,47 @@ class Component extends DCLogic {
     }
   }
 
+  /* V7 · د6: نصوصُ مراحل نافذة الاستيراد من حالتها (bkConf.sum · run · fail · done) */
+  /* عنوانُ تبويب «الأنظمة» للوحدة في شاشة «الإدارات والصلاحيات» — موضعٌ واحد يُعدَّل إن تغيّر مخططُ العناوين (services/325-org-route.js حين يحضر) */
+  _bkSysHref(unit) {
+    const R = KIVO.BassamOrgRoute;   /* V7 · د6 (م1): عنوانُ تبويب «الأنظمة» للوحدة من خدمة عنوان الشاشة الواحدة (325-org-route) — مدير المنصة يستورد وحده ⇒ المركز */
+    try { if (R && typeof R.href === "function") return R.href("site", unit, "systems"); } catch (e) { /* المخططُ الافتراضي أدناه */ }
+    return "#/sysadmin/org/" + encodeURIComponent(unit || "") + "/systems";
+  }
+  _bkView(c, step) {
+    const N = (n, w) => (KIVO.BassamCount ? KIVO.BassamCount(n, w) : n + " " + w), mb = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + " ميجابايت" : Math.max(1, Math.round(n / 1024)) + " كيلوبايت");
+    const sum = c.sum, run = c.run || {}, done = c.done, skip = (sum && sum.skip) || [];
+    let when = "";
+    try { if (sum && sum.exportedAt) when = new Date(sum.exportedAt).toLocaleString("ar-SA-u-nu-latn", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { when = (sum && sum.exportedAt) || ""; }
+    const parts = run.parts || 0, pct = run.step === "upload" && parts ? Math.max(2, Math.round(((run.part - 1) / parts) * 78)) : run.step === "slice" && parts ? 80 + Math.round((run.part / parts) * 10) : run.step === "inspect" || run.step === "review" ? 92 : run.step === "commit" ? 97 : 1;
+    const runText = run.stopping ? "يتوقّف بعد الجزء الجاري…" : run.step === "upload" ? "الجزء " + run.part + " من " + parts + (run.images ? " · الصور: " + (run.image || 0) + " من " + run.images : "") + " — لا يتغيّر شيء في الإدارة قبل الاعتماد."
+      : run.step === "slice" ? "اكتمل الإرسال — تُجهَّز البيانات الكبيرة على دفعات: " + run.part + " من " + parts + "."
+      : run.step === "inspect" ? "اكتمل إرسال الأجزاء (" + parts + ") — تُفحص النسخة وتُطابَق مع الإدارة."
+      : run.step === "review" ? "اكتمل الرفع والتحقق — راجع الملخّص ثم أكّد."
+      : run.step === "commit" ? "تُطبَّق النسخة في خطوة واحدة…" : "تُجهَّز أجزاء النسخة…";
+    /* V7 · د6 (schemafix): حقولُ الموارد التي لم تُنقل (transient · field · field-type) تُعدّ وحدها — «لم يُنقل» للمفاتيح كما كان */
+    const s2 = (done && done.summary) || {}, r = (done && done.receipt) || {}, cn = r.counts || {}, lost0 = s2.notTransferred || [], fwhy = { transient: 1, field: 1, "field-type": 1 },
+      lost = lost0.filter((x) => !fwhy[x.why] && !/^nf-/.test(x.why)), lostF = lost0.filter((x) => fwhy[x.why]), lostN = lost0.filter((x) => /^nf-/.test(x.why)), BR = KIVO.BackupRestore;
+    return {
+      bkcSumOn: (step === "pick" || step === "confirm") && (!!sum || !!c.sumErr),
+      bkcSumLine: sum ? "المصدر: «" + (sum.dept || c.src) + "»" + (when ? " · صُدّرت: " + when : "") + " · " + N(sum.keys, "مجموعة بيانات") + " و" + N(sum.images, "صورة") + " · الحجم: " + mb(sum.fileBytes || sum.bytes) +
+        (sum.legacy ? " · نسخة بالشكل القديم: تُحوَّل إلى المخطط الحالي قبل الكتابة." : "") : c.sumErr || "",
+      bkcSkipOn: skip.length > 0, bkcSkip: skip, bkcSkipHead: "لن يُنقل (" + skip.length + ") — لا مقابل له في المنصة الحالية:",
+      bkcRun: step === "run", bkcRunHead: run.step === "commit" ? "جارٍ اعتماد النسخة…" : run.step === "review" ? "بانتظار تأكيدك" : "جارٍ إرسال النسخة على أجزاء…", bkcRunText: runText,
+      bkcPct: pct, bkcBarStyle: "height:100%;width:" + pct + "%;background:var(--bg-x8a6f35);transition:width .2s", bkcAbortOn: step === "run" && run.step === "upload" && !run.stopping,
+      bkcFail: step === "fail", bkcFailMsg: (c.fail && c.fail.msg) || "",
+      bkcDone: step === "done", bkcSysOn: step === "done" && !!(done && done.noPerms), bkcSysHref: done ? this._bkSysHref(done.unit) : "",
+      bkcDoneMsg: done ? "استُعيدت " + N(cn.kv || 0, "مجموعة بيانات") + " و" + N(cn.operations || 0, "مورد تشغيلي") + (cn.notifications ? " و" + N(cn.notifications, "تنبيه") : "") +
+        " · الصور: " + (s2.imagesNew || 0) + " جديدة و" + (s2.imagesReused || 0) + " موجودة مطابقة" + (s2.imagesMissing ? " و" + s2.imagesMissing + " مفقودة" : "") +
+        (KIVO.BackupRestore && KIVO.BackupRestore.permsLine ? KIVO.BackupRestore.permsLine(cn).replace(/^ /, " · ") : "") +   /* V7 · د6 (QA ٦ — ب4) · (QA gfx2): بفاصلٍ كبقية الأسطر — كان «مطابقة الصلاحيات:» ملتصقاً */
+        (lost.length ? " · لم يُنقل " + lost.length + ": " + lost.slice(0, 12).map((x) => x.k).join("، ") + (lost.length > 12 ? "…" : "") : "") +
+        (lostF.length ? " · حقول لم تُنقل: " + lostF.reduce((n, x) => n + (x.n || 0), 0) + " في " + lostF.length + " مساراً (مذكورة في ملخّص التأكيد)" : "") +
+        /* V7 · د6 (remap): التنبيهاتُ المُسقطة وحدها بعددها · وإعادةُ ربط معرّف الإدارة (النصُّ نفسُه في التأكيد — 548 remapLine) */
+        (lostN.length ? " · تنبيهات لم تُنقل: " + lostN.reduce((n, x) => n + (x.n || 0), 0) + " (" + lostN.map((x) => x.k.replace(/^bassam_notif_v1 · /, "") + ": " + x.n).join("، ") + ")" : "") +
+        (BR && BR.remapLine ? BR.remapLine(s2).replace(/^ /, " · ") : "") +
+        " · حُفظت لقطة ما قبل الاستيراد (" + (r.snapshot || "") + ") وسُجّل الاستيراد في السجل." : "",
+    };
+  }
   /* CORE-01: رسالةُ الإطار تمرّ بالتوست الواحد (KIVO.bsToast · 280) — long: true ⇒ 4.2 ث · رقمٌ ⇒ مدّتُه */
   bkToast(msg, long) {
     try { KIVO.bsToast(msg, { ms: typeof long === "number" ? long : long ? 4200 : 2600 }); } catch (e) { /* عرضٌ فقط */ }
@@ -952,7 +1031,7 @@ class Component extends DCLogic {
   _sysNav() {
     return {
       home: [["overview", null, "الرئيسية"]],
-      org: [["depts", null, "الإدارات"], ["users", null, "مراقبة الحسابات"]],
+      org: [["depts", null, "الإدارات والصلاحيات"], ["users", null, "مراقبة الحسابات"]],   /* V7 · د6 (ب1): كان «الإدارات» — يفتح الشاشةَ الواحدة مباشرةً */
       plat: [["plat", "id", "هوية المنصة"], ["plat", "notif", "التنبيهات والتعاميم"],
         ["plat", "login", "شاشة تسجيل الدخول", 1], ["plat", "side", "القوائم"], ["plat", "app", "تطبيق الجوال"],
         ["plat", "about", "حول المنصة", 1]],
@@ -1082,18 +1161,27 @@ class Component extends DCLogic {
   /* «مساحة العمل التشغيلية»: آخرُ صفحةٍ تشغيلية فُتحت، وإلا أولُ صفحةٍ متاحة — والوحدةُ النشطة كما هي.
      مسوّداتُ إعدادات المنصة في حالة الصفحة وحدها: تُفقد بالخروج، فيُسأل المستخدم أولاً */
   /* مسوّداتُ إعدادات المنصة غيرُ المحفوظة والصفحةُ صفحةُ المركز */
-  _conDirty() {
+  _platDirty() {
     return this.state.active === "sysadmin" && ((this.__con || {}).dirtyN | 0) > 0;
+  }
+  _conDirty() {
+    return this._platDirty() || this._orgDirty();
+  }
+  /* V7 · د6: تغييرٌ غيرُ محفوظ في شاشة «الإدارات والصلاحيات» (في المركز أو في إعدادات المدير) — الشاشةُ تجيب (KIVO.BassamOrgRoute.screen.dirty) والسؤالُ سؤالُها
+     (canLeave): كلُّ مخرجٍ يسأل _conLeaveOk يمرّ به، والعنوانُ المكتوب أو الرجوع يُعاد إلى عنوانها حتى تجيب (_onHash) */
+  _orgDirty() {
+    try { const O = KIVO.BassamOrgRoute.screen; return !!(O && O.dirty && O.dirty()); } catch (e) { return false; }
   }
   /* سؤالٌ واحد قبل مغادرة المركز بمسوّداتٍ غير محفوظة — لكل مخرج: «مساحة العمل التشغيلية» · الرجوع والعنوان المكتوب · الجرس · بطاقة المستخدم */
   async _conLeaveOk() {
-    if (!this._conDirty()) return true;
+    if (this._orgDirty()) { try { if (!(await KIVO.BassamOrgRoute.screen.canLeave({ leave: true }))) return false; } catch (e) { return false; } }
+    if (!this._platDirty()) return true;
     try { return !!(await KIVO.bsConfirm({ title: "تغييرات غير محفوظة", msg: "لديك تغييرات غير محفوظة في إعدادات المنصة، والخروج يتجاهلها.", ok: "اخرج دون حفظ", cancel: "البقاء", danger: true })); } catch (e) { return false; }
   }
   async _goOps() {
     if (!(await this._conLeaveOk())) return false;
     const last = this.__lastOps && this._pageAllowed(this.__lastOps);
-    const k = last || (this._kpisOk(1) ? "kpis" : (["dstats", "employees", "planning", "daily", "irshad", "seized", "award", "links"].find((x) => this._pageAllowed(x)) || "profile"));
+    const k = last || (this._kpisOk(1) ? "kpis" : (["dstats", "employees", "planning", "daily", "irshad", "seized", "rasd", "award", "links"].find((x) => this._pageAllowed(x)) || "profile"));
     try { KIVO.BassamNav.go(k, true); } catch (e) {}
     /* رابطُ الخروج يزول مع شريط المركز فيسقط التركيزُ إلى body: يُنقل إلى الصفحة الحالية في الشريط التشغيلي (والدرجُ يُغلق ⇒ زرُّ القائمة) — ما لم يتحرّك المستخدم */
     const f = (n) => { try { const ae = document.activeElement; if (ae && ae !== document.body && !(ae.closest && ae.closest("aside.bsb"))) return;
@@ -1127,13 +1215,17 @@ class Component extends DCLogic {
     /* CORE-02 S7: صفحةُ «مركز إدارة رشاد» (لمسؤول المنصة وحده — _pageAllowed) مساحةٌ مستقلّة: شريطُها تنقّلُ المركز وحده،
        ممدودٌ افتراضاً وطيُّه على الحاسوب conCx (لا يمسّ sidebarOpen في الصفحات التشغيلية) · على الشاشة الضيّقة الدرجُ نفسُه */
     const sbConsole = platPage && !!(KIVO.BassamAuth && KIVO.BassamAuth.isSuper && KIVO.BassamAuth.isSuper());
-    const sbOpen = sbConsole && wide ? !this.state.conCx : open;
+    /* V7 · د6 (قرار المالك — العمودان من 1024): شاشةُ «الإدارات والصلاحيات» تطلب العرض (BassamNav.fit) — فتُطوى القائمةُ الجانبية ما دام العرضُ ≤ 1280
+       (التابلت الأفقي) إلى أن يفتحها المستخدم بزرّها؛ طيٌّ مؤقت لا يُحفظ ولا يمسّ تفضيلَه (conCx · sidebarOpen) */
+    const tight = !!this.__fitWant && !this.__fitUser && wide && window.innerWidth <= 1280;
+    const sbOpen = sbConsole && wide ? !(this.state.conCx || tight) : open && !tight;
     const slide = (this.__sbToggled && wide) ? (sbOpen ? "animation:bsSlideOpen .3s ease-in-out;" : "animation:bsSlideClose .3s ease-in-out;") : "";
     /* مفتاح الصفحة في منظومة الصلاحيات مقابل مفتاح التنقل */
     const NAVP = (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || { employees: "emps", staffing: "staff", plan: "plan", daily: "daily", tasks: "tasks", irshad: "irshad", admin: "admin" };
     /* V7 · د5-ح: القائمةُ الجانبية من مصدرٍ واحد — BassamPerm.menuFor (334) على صلاحيات الجلسة؛ وهو نفسُه يبني «ما يراه مدير هذه الإدارة» في «الصلاحيات ← الأنظمة».
        «الإعدادات» دائمةٌ في صلاحيات مدير المنصة (331) فلا استثناءَ له هنا */
-    const _menu = (() => { try { const m = {}; KIVO.BassamPerm.menuFor().forEach((x) => { m[x.k] = x.on; }); return m; } catch (e) { return null; } })();
+    const _mName = {};   /* V7 · د6: اسمُ البند من المصدر نفسِه (menuFor يسمّيه بنوع الوحدة) */
+    const _menu = (() => { try { const m = {}; KIVO.BassamPerm.menuFor().forEach((x) => { m[x.k] = x.on; _mName[x.k] = x.n; }); return m; } catch (e) { return null; } })();
     const _pOK = (pk) => { try { if (_menu && pk in _menu) return !!_menu[pk]; return !KIVO.BassamPerm || KIVO.BassamPerm.can(pk, "view"); } catch (e) { return true; } };
     const _pAny = (ks) => ks.some(_pOK);
     /* «مدير النظام»: لمدير النظام وحده (كان: الشرط يتطلّب user() صادقة، فغياب الجلسة يتخطّى الخروج المبكر ويفتح الشاشة) */
@@ -1154,10 +1246,10 @@ class Component extends DCLogic {
     // كانت «إدارة الموظفين» غلافاً بلا محتوى: شريط تبويبات يستضيف ثلاث صفحات، فتصل
     // إلى وجهتك بنقرتين ويُكتب لك مسارٌ من مستويين لمكانٍ واحد. حُذف الغلاف وصارت
     // الصفحات الثلاث عناصر مستقلة في القائمة الجانبية بترتيب سير العمل نفسه.
-    const inPlanning = ["employees","staffing","plan","daily","tasks","irshad","seized","award"].includes(a);
+    const inPlanning = ["employees","staffing","plan","daily","tasks","irshad","seized","rasd","award"].includes(a);
     /* F01: اسمُ الصفحة بنوع الوحدة النشطة — «موظفو القسم» · «مؤشرات القسم» حين تكون قسماً */
     const _ua = (() => { try { const D = KIVO.BassamDepts; return D && D.unitAl ? D.unitAl(D.active()) : "الإدارة"; } catch (e) { return "الإدارة"; } })();
-    const labels = { kpis:"مؤشرات " + _ua, employees:"موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
+    const labels = { kpis: _mName.kpis || "مؤشرات " + _ua, employees: _mName.emps || "موظفو " + _ua, staffing:"الجدول الشهري", plan:"التشغيل الميداني", daily:"المتابعة اليومية", dreport:"التقرير اليومي", planning:"الخطة التشغيلية", tasks:"المهام", irshad:"نظام الاسترشاد", seized:"نظام المضبوطات", rasd:"نظام رصد الحالات", award:"جائزة التميز", links:"مواقع ذات صلة", admin:"الإعدادات", sysadmin:"مركز إدارة رشاد" };
     return {
       sidebarOpen: open,
       lKpis: labels.kpis, lEmployees: labels.employees, deptDdHead: _ua === "القسم" ? "الوحدة النشطة" : "الإدارة النشطة",
@@ -1200,7 +1292,7 @@ class Component extends DCLogic {
           /* كانت مربوطة بـ«الجدول الشهري» وحده فتختفي عمّن له «التشغيل الميداني» فقط */
           nPlanning: "n" + (a === "planning" ? " on" : "") + ((_menu && "planning" in _menu ? _menu.planning : _pAny(["planning","staff","plan"])) ? "" : " gone"), tPlanning: tip("planning"),
           nIrshad: cls("irshad", "irshad"), tIrshad: tip("irshad"), nSeized: cls("seized", "seized"), tSeized: tip("seized"),
-          nAward: cls("award", "award"), tAward: tip("award"),
+nRasd: cls("rasd", "rasd"), tRasd: tip("rasd"),           nAward: cls("award", "award"), tAward: tip("award"),
           nLinks: cls("links", "links"), tLinks: tip("links"),
           tAdmin: "الإعدادات — نسخة الإدارة الاحتياطية",
         };
@@ -1212,6 +1304,7 @@ class Component extends DCLogic {
       /* الطبقة المعتمة تظهر مع الشريط المفتوح — والـCSS يقصرها على الشاشات الصغيرة */
       scrimOn: !!this.state.sidebarOpen,
       toggleSidebar: () => {
+        if (tight) { this.__fitUser = true; this.setState({ conTick: (this.state.conTick | 0) + 1 }); return; }   /* V7 · د6: المستخدمُ فتحها — لا تُطوى ثانيةً في هذه الزيارة */
         if (sbConsole && typeof window !== "undefined" && window.innerWidth > 1024) {
           const v = !this.state.conCx; this._conCxRaw(v ? "1" : "0");
           this.setState({ conCx: v }); return;
@@ -1307,25 +1400,35 @@ class Component extends DCLogic {
       bkcStop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       ...((() => {
         const c = this.state.bkConf;
-        const off = { bkcOpen: false, bkcPick: true, bkcConfirm: false, bkcCur: 0, bkcFile: 0, bkcOver: 0, bkcFresh: 0,
+        const off = { bkcOpen: false, bkcPick: true, bkcConfirm: false, bkcRun: false, bkcFail: false, bkcDone: false, bkcSysOn: false, bkcSysHref: "", bkcUpHead: "", bkcSumOn: false, bkcSkipOn: false, bkcSkip: [], bkcAbortOn: false, bkcCur: 0, bkcFile: 0, bkcOver: 0, bkcFresh: 0,
           bkcMergeDesc: "", bkcReplaceDesc: "", bkcWarn: "", bkcHead: "", bkcSub: "",
-          bkcCancel: () => {}, bkcMerge: () => {}, bkcAskReplace: () => {}, bkcDoReplace: () => {}, bkcBack: () => {} };
+          bkcCancel: () => {}, bkcMerge: () => {}, bkcAskReplace: () => {}, bkcDoReplace: () => {}, bkcBack: () => {}, bkcRetry: () => {}, bkcAbort: () => {}, bkcClose: () => {} };
         if (!c) return off;
         const D = KIVO.BassamDepts;
         return {
-          bkcOpen: true, bkcPick: this.state.bkStep !== "confirm", bkcConfirm: this.state.bkStep === "confirm",
+          bkcOpen: true, bkcPick: this.state.bkStep === "pick", bkcConfirm: this.state.bkStep === "confirm",
+          ...this._bkView(c, this.state.bkStep),
           bkcCur: "—", bkcFile: c.file, bkcOver: "—", bkcFresh: "—",
           /* الوجهة قد لا تكون الإدارة المفتوحة — تُسمّى صراحةً حتى لا يستورد أحدٌ لغير ما ظنّ */
           bkcHead: "إدارة «" + (c.dest || (D ? D.activeName() : "")) + "» تحتوي بيانات",
           bkcSub: "ملف النسخة سيُستورد داخل إدارة «" + (c.dest || (D ? D.activeName() : "")) + "» — اختر طريقة التعامل مع بياناتها الحالية.",
           bkcMergeDesc: "تُضاف مجموعات البيانات المفقودة فقط؛ المجموعات والمجالات الموجودة تبقى كما هي، دون دمج السجلات داخلها.",
           bkcReplaceDesc: "تعرض المنصة جرد الإدارة الهدف، ثم يستبدل مواردها المعلنة بالنسخة في معاملة واحدة ويحفظ لقطة ما قبلها.",
-          bkcWarn: "الإدارات الأخرى والمجالات العامة لا تتأثر. ستُراجع الصلاحيات والنطاق قبل التأكيد النهائي.",
-          bkcCancel: () => { if(this._bkSaving||this._bkPend&&this._bkPend.uncertain){this.bkToast("تعذّر تأكيد نتيجة الطلب؛ أعد المحاولة نفسها قبل إغلاق الملف",true);return;}this._bkPend = null; this.setState({ bkConf: null, bkStep: "pick" }); this.bkToast("أُلغي الاستيراد — لم يتغيّر شيء"); },
-          bkcMerge: () => this.bkCommit("merge"),
-          bkcAskReplace: () => this.setState({ bkStep: "confirm" }),
+          bkcUpHead: this.state.bkMode === "merge" ? "الدمج: رفع النسخة والتحقق منها" : "الاستبدال: رفع النسخة والتحقق منها",
+          bkcWarn: "تُرفع النسخة على أجزاء ثم تُتحقَّق — لا يتغيّر شيء في الإدارة حتى تؤكّد بعد ذلك، ومعك ملخّص ما سيُنقل وما لن يُنقل. الإدارات الأخرى والمجالات العامة لا تتأثر.",
+          bkcCancel: () => { if (this.state.bkStep === "done") { this.setState({ bkConf: null, bkStep: "pick" }); return; }
+            if (this.state.bkStep === "run") return;   /* V7 · د6: أثناء الإرسال لا يُغلق بنقرةٍ خارج النافذة — «إيقاف الاستيراد» زرُّه الظاهر */
+            if(this._bkSaving||this._bkPend&&this._bkPend.uncertain){this.bkToast("تعذّر تأكيد نتيجة الطلب؛ أعد المحاولة نفسها قبل إغلاق الملف",true);return;}
+            const pend = this._bkPend, svc = KIVO.BackupRestore;
+            if (pend && svc && svc.cancel) { try { Promise.resolve(svc.cancel(pend.failed || pend.ticket)).catch(() => {}); } catch (e) { /* مهلةُ الخادم تحذف المؤقت */ } }
+            this._bkPend = null; this.setState({ bkConf: null, bkStep: "pick" }); this.bkToast("أُلغي الاستيراد — لم يتغيّر شيء"); },
+          bkcRetry: () => { const f = c.fail; if (f) this.bkCommit(f.mode); },
+          bkcAbort: () => { if (this._bkPend) { this._bkPend.stop = true; this.setState({ bkConf: { ...c, run: { ...(c.run || {}), stopping: true } } }); } },
+          bkcClose: () => this.setState({ bkConf: null, bkStep: "pick" }),
+          bkcMerge: () => this.setState({ bkStep: "confirm", bkMode: "merge" }),
+          bkcAskReplace: () => this.setState({ bkStep: "confirm", bkMode: "replace" }),
           bkcBack: () => this.setState({ bkStep: "pick" }),
-          bkcDoReplace: () => this.bkCommit("replace"),
+          bkcDoReplace: () => this.bkCommit(this.state.bkMode === "merge" ? "merge" : "replace"),
         };
       })()),
 
@@ -1340,7 +1443,7 @@ class Component extends DCLogic {
           cfmIcCls: c.danger ? "is-danger" : "",
           cfmYes: () => { match && this.cfmClose(true); }, cfmNo: () => this.cfmClose(false) }; })(),
       ...this._nfVals(),
-      goPlan: go("plan"), goDaily: go("daily"), goDreport: go("dreport"), goPlanning: go("planning"), goIrshad: go("irshad"), goSeized: go("seized"), goAward: go("award"), goLinks: go("links"),
+      goPlan: go("plan"), goDaily: go("daily"), goDreport: go("dreport"), goPlanning: go("planning"), goIrshad: go("irshad"), goSeized: go("seized"), goRasd: go("rasd"), goAward: go("award"), goLinks: go("links"),
       ...((() => {
         let pr = null;
         try { if (KIVO.BassamAuth && KIVO.BassamAuth.display) pr = KIVO.BassamAuth.display(); } catch (e) {}
@@ -1351,12 +1454,14 @@ class Component extends DCLogic {
       __nav: (KIVO.BassamNav = { go: (k, asked) => { try { (k === "sysadmin" ? goSys : go(k, asked))(); } catch (e) {} },
         again: () => this.setState({ navPending: true }, () => this.setState({ navPending: false })),   /* V7 UX: «أعد المحاولة» في حالات الصفحة — يُعاد تركيبُ الصفحة المفتوحة فتعيد قراءتَها */
         conSync: (s) => this._conSync(s), conGo: (tab, sub) => this._conGo(tab, sub, false),
+        /* V7 · د6: صفحةٌ تحتاج العرض كلَّه تطلب طيَّ القائمة الجانبية مؤقتاً (true عند تركيبها · false عند إزالتها) */
+        fit: (on) => { if (!!on === !!this.__fitWant) return; this.__fitWant = !!on; this.__fitUser = false; Promise.resolve().then(() => this.setState({ conTick: (this.state.conTick | 0) + 1 })); },
         /* CORE-02 S8: «عرض الكل» في «أحداث المنصة الأخيرة» يفتح الجرس (بعد نقرة الفتح كي لا يغلقه مستمعُ النقر خارجه) */
         bell: () => setTimeout(() => { if (!this.state.nfOpen) this.setState({ nfOpen: true, nfToast: null }, () => this._nfReload()); }, 0) }),
       goAdmin: () => { KIVO.__ADMIN_MODE = "dept"; this._savePage("admin"); this.setState({ active: "admin" }); }, goProfile: (ev) => { try { if (ev && ev.target && ev.target.closest && ev.target.closest(".s-logout")) return; } catch (e) {} go("profile")(); }, bsVerTxt: "الإصدار " + (KIVO.__BS_VER || ""),
       pageName: this._pageNames()[a] || "لوحة التحكم",
       isKpis: ap === "kpis", isDstats: ap === "dstats",
-      isEmployees: ap === "employees", isStaffing: ap === "staffing", isDaily: ap === "daily", isDreport: ap === "dreport", isPlanning: ap === "planning", isTasks: ap === "tasks", isIrshad: ap === "irshad", isSeized: ap === "seized", isAward: ap === "award", isSysAdmin: ap === "sysadmin", isPlan: ap === "plan", isAdmin: ap === "admin", isProfile: ap === "profile", isPlaceholder: !this.state.navPending && !["kpis","dstats","employees","planning","staffing","plan","daily","dreport","tasks","irshad","seized","award","admin","sysadmin","profile","links"].includes(a),
+      isEmployees: ap === "employees", isStaffing: ap === "staffing", isDaily: ap === "daily", isDreport: ap === "dreport", isPlanning: ap === "planning", isTasks: ap === "tasks", isIrshad: ap === "irshad", isSeized: ap === "seized", isRasd: ap === "rasd", isAward: ap === "award", isSysAdmin: ap === "sysadmin", isPlan: ap === "plan", isAdmin: ap === "admin", isProfile: ap === "profile", isPlaceholder: !this.state.navPending && !["kpis","dstats","employees","planning","staffing","plan","daily","dreport","tasks","irshad","seized","rasd","award","admin","sysadmin","profile","links"].includes(a),
       isLinks: ap === "links",
       ...((() => {
         /* «مواقع ذات صلة» — قائمة روابط تُقرأ من إعدادات المنصة (links) ويحرّرها مدير النظام من الصفحة نفسها */

@@ -126,7 +126,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   async _saveLocks(next,site){
     if(!this.PC("approve",site)){ this.bsToast("الاعتمادُ والقفل يحتاج صلاحية الاعتماد","warn"); return false; }
     const all=this.load(); all.locks=next; const ok=await this.save(all);
-    if(ok) this.setState(pr=>({tick:(pr.tick||0)+1})); else this.bsToast("تعذّر حفظُ حالة القفل","err");
+    /* V7 · د6 (QA): لا رفضَ صامت — سببُ الخادم (ومنه اسمُ اليوم المخالف) يُلحق بالرسالة */
+    if(ok) this.setState(pr=>({tick:(pr.tick||0)+1})); else this.bsToast("تعذّر حفظُ حالة القفل"+(KIVO.DailyStats&&KIVO.DailyStats.error()&&KIVO.DailyStats.error()!=="busy"?" — "+KIVO.DailyStats.message():""),"err");
     return ok; }
   async setMonthOpen(site,y,m,on){ const k=this.MKEY(site,y,m), L=Object.assign({},this._locks());
     const r=Object.assign({}, this._rec(site,y,m)); delete r.ap;
@@ -1478,7 +1479,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     const w=k?p+"/"+k:p; h!==w && history.replaceState && history.replaceState(null,"",location.pathname+location.search+w); } catch(e) { /* لا يمنع العرض — يُتجاوز بصمت */ } }
   _bsHR(){ try { if(this.SOLO()) return; const o=KIVO.__BS_OPEN_TAB;
     const shown=()=>{ const s=this.SITE(); return s&&s!=="haram"?s:""; };   /* العنوانُ يحمل المسجدَ المعروض فعلاً — والحرمُ (الافتراضي) بلا ذيل */
-    if(!o||o.page!=="dstats"){ const sd=this.__bsSeeded; if(sd&&sd.site!==void 0){ this.__bsSeeded=null; this._bsHT(shown()); } return; }
+    if(!o||o.page!=="dstats"){ const sd=this.__bsSeeded; if(sd&&sd.site!==void 0){ this.__bsSeeded=null; this._bsHT(shown()); }
+      /* V7 · د6 (أ2-5): العنوانُ الأساس يعرض تبويباً محفوظاً من الجلسة ⇒ يُصحَّح العنوانُ إلى ذلك التبويب (استبدالٌ لا مدخلُ تاريخٍ جديد) — التبويبُ المعروض لا يتغيّر */
+      const cur=(/^#\/dstats\/([a-z]+)/i.exec(String(location.hash||""))||[])[1]||"haram"; cur!==(this.SITE()||"haram") && this._bsHT(shown());
+      return; }
     KIVO.__BS_OPEN_TAB=null; this.__bsSeeded=null;
     const k=o.tab; if(this.SITES().indexOf(k)<0){ this._bsHT(shown()); return; }
     if(this.state.site!==k) this.state=Object.assign({},this.state,{site:k,draft:null});

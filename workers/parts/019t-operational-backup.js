@@ -7,7 +7,7 @@ function opBackupDecode(domain) {
   rsShape(domain,['version','scope','resource','rows']); rsShape(domain.scope,['departmentId']);
   if(domain.version!==1||typeof domain.resource!=='string'||!opRegistry()[domain.resource])throw rsError('restore-operations-domain');
   var d=domain.scope.departmentId, k='bsdept:'+d+':'+domain.resource, info=opInfo(k);
-  return {key:k,domain:ocFromPhysical(info.prepared,d,info.resource,domain.rows),info:info};
+  return {key:k,domain:ocFromPhysical(info.prepared,d,info.resource,osLegacyPhysical(domain.rows,ocPhysicalTables(info.prepared))),info:info};   /* V7 · د6 (schemafix): صفوفُ نسخةٍ قبل الترحيل 0012 بترميزها الجديد */
 }
 function opValidateBackupDomains(domains,departments) {
   if(!Array.isArray(domains))throw rsError('restore-incomplete-operations');
@@ -53,16 +53,21 @@ function opConvertBackupBoundary(keys,domains,departments,scope,source,version,s
     var sourceDepartments=scope.kind==='dept'?[source]:departments;
     domains.operations=opValidateBackupDomains(domains.operations,sourceDepartments).map(function(decoded){
       var target=scope.kind==='dept'?scope.departmentId:decoded.info.dept, projection=ocInflate(decoded.info.prepared,decoded.domain);
+      /* V7 · د6 (remap): موردٌ يعلن مواضعَ إشاراتٍ (019f RS_DEPT_REFS — المهام) في نسخةٍ حديثة من وحدةٍ أخرى — مفتاحُ مديرها يصير مديرَ الوحدة الهدف */
+      if(target!==source&&projection.present&&RS_DEPT_REFS[decoded.info.resource]){var docs={};docs[decoded.info.resource]=projection.value;summary.remap=summary.remap||rsBCRemapRec(source,target);rsBCDeptRemap(docs,null,source,target,summary.remap);}
       return opBackupDomain(decoded.info.prepared,ocConvert(decoded.info.prepared,target,decoded.info.resource,projection.value,projection.present));
     });
   } else {
     if(domains.operations!==undefined)throw rsError('backup-operations-manifest-version');
     domains.operations=[];
+    /* V7 · د6 (schemafix): نسخةٌ قديمة لا تُرفض كلُّها بسبب حقل — وثيقتُها تُطابَق بمخطّطها قبل ترميزها (019g rsiFields) وما لا يُعرف يُذكر في «ما لن يُنقل» */
+    var fields={};
     departments.forEach(function(d){opDefinitions().forEach(function(def){
       var k='bsdept:'+d+':'+def.resource,prepared=opPrepared(def.resource),present=ocOwn(keys,k),value;
-      if(present){opInfo(k);value=rsBCParse(keys[k]);}else summary.emptyDomains.push('operations:'+k);
+      if(present){opInfo(k);keys[k]=rsiFields(fields,k,keys[k]);value=rsBCParse(keys[k]);}else summary.emptyDomains.push('operations:'+k);
       domains.operations.push(opBackupDomain(prepared,ocConvert(prepared,d,def.resource,value,present)));
     });});
+    var dropped=rsiFieldList([fields]);if(dropped.length)summary.notTransferred=(summary.notTransferred||[]).concat(dropped);
   }
   oldKeys.forEach(function(k){delete keys[k];});
 }

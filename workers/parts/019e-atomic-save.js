@@ -36,8 +36,12 @@ function rsImageArchiveShape(images) {
   return ids;
 }
 async function rsImageArchivePlan(env, A, plan, reference, archive) {
-  var images = archive || {},
-    ids = rsImageArchiveShape(images);
+  /* V7 · د6: الاستيرادُ على أجزاء (019g) يسلّم صورَ النسخة من المنطقة المؤقتة لا في الذاكرة: archive.rsiStage — المعرّفاتُ من بيان البدء (فُحصت صيغتُها جزءاً جزءاً
+     عند الرفع)، ونصُّ الصورة يُقرأ عند المقارنة وحدها. والصورةُ التي لا تحملها المنصة إطلاقاً (لا صفَّ ملكية ولا جسم) ويشير إليها سجلٌّ تكتبه هذه العملية
+     «جديدة»: يُكتب جسمُها من المؤقت في دفعة الاعتماد نفسِها وتُربط بسجلّها (rsImageMetadataPlan). مسارُ الاستعادة القديم (بلا rsiStage) كما كان حرفاً. */
+  var stage = archive && archive.rsiStage ? archive : null,
+    images = stage ? stage.ids : archive || {},
+    ids = stage ? Object.keys(images) : rsImageArchiveShape(images);
   function reject() {
     throw rsError('backup-image-reuse-rejected', 409);
   }
@@ -69,7 +73,11 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
       if (found[id]) mentions.get(id).push(key);
     });
   });
-  if (
+  if (stage) {
+    stage.unref = ids.filter(function (id) { return !mentions.get(id).length; });
+    ids = ids.filter(function (id) { return mentions.get(id).length; });
+    if (!ids.length) { plan.imagesReused = 0; return; }
+  } else if (
     ids.some(function (id) {
       return !mentions.get(id).length;
     })
@@ -95,7 +103,10 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
     presentWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, presentArgs),
     presentRows = (await rsBound(env.DB.prepare("SELECT DISTINCT CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END AS id FROM imgs WHERE " + presentWhere), presentArgs).all()).results || [],
     present = new Set(presentRows.map(function (row) { return row.id; })),
-    gone = new Set(ids.filter(function (id) { var own = ownerMap.get(id); return own ? own.st === 'dead' : !present.has(id); }));
+    gone = new Set(ids.filter(function (id) { var own = ownerMap.get(id); return own ? own.st === 'dead' : !present.has(id); })),
+    touched = new Set((plan.imgTouch || []).map(function (t) { return t.k; })),
+    fresh = !stage ? [] : ids.filter(function (id) { return !ownerMap.get(id) && !present.has(id) && mentions.get(id).some(function (k) { return touched.has(k); }); });
+  if (stage) { stage.fresh = fresh; plan.imagesFresh = new Set(fresh); }
   var checkedKeys = new Set();
   for (var id of ids) {
     if (gone.has(id)) continue;
@@ -111,6 +122,17 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
         if (await imgForeignIn(env, A, key, finalKeys[key], (plan.relationalImageCurrent||{})[key] || (plan.relationalImageBefore||{})[key] || reference.inputKeys[key] || '')) reject();
       }
   }
+  /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور القائمة كلَّها معاً (21MB في النسخة المقيسة): صورةً صورة — القائمُ يُقارن بالمودَع ثم يُحرَّر،
+     والسياجُ عددُ صفوف جسمها ومجموعُ أطوالها (لا نصُّها)، وللغائبة «لا صفّ»؛ وجزءُ رفعٍ معلّق لمعرّفٍ منها يرفض كما كان. */
+  if (stage) {
+    var sArgs = [], sWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, sArgs);
+    if (await rsBound(env.DB.prepare("SELECT 1 x FROM imgs WHERE substr(k,1,5)='~stg~' AND " + sWhere + ' LIMIT 1'), sArgs).first()) reject();
+    for (var sid9 of ids) {
+      if (!gone.has(sid9)) { var held9 = await imgLoad(env, sid9); if (held9 == null || held9 !== (await stage.text(sid9))) reject(); held9 = null; }
+      var sig9 = await env.DB.prepare("SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) s FROM imgs WHERE k=?1").bind(sid9).first('s');
+      plan.guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) FROM imgs WHERE k=?1)!=?2 THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g").bind(sid9, sig9));
+    }
+  } else {
   // Include any upload fragments for these exact IDs. A late fragment or owner
   // change rejects the SQL transaction even if it appeared after body matching.
   var bodyArgs = [],
@@ -134,12 +156,14 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
         reject();
       }
     }
-    if (actual !== images[id]) reject();
+    if (actual !== (stage ? await stage.text(id) : images[id])) reject();
   }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], rows, bodyWhere, bodyArgs));
+  }
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], owners, ownWhere, ownArgs));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], refs, ownWhere, ownArgs));
   plan.imagesReused = ids.length - gone.size;
+  for (var freshId of fresh) { gone.delete(freshId); plan.statements.push.apply(plan.statements, await stage.store(freshId)); }
   if (gone.size) { rsImageMissingNote(plan, Array.from(gone)); plan.imagesMissing = Math.max(plan.imagesMissing || 0, gone.size); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
 }
 /* V7-F · owner decision 3 (and the independent review's low item): whenever the unit list changes — a unit removed (unit delete, or a full
@@ -200,9 +224,13 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       ),
       bodyArgs = [],
       bodyWhere = rsImageIn('k', newIds, bodyArgs),
-      knownBodies =
+      /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور المذكورة ليعرف القائمَ منها — يسأل عن معرّفاتها وتوقيعها (عددُ الصفوف ومجموعُ الأطوال)، وسياجُه التوقيعُ نفسُه */
+      bodySig = "SELECT COALESCE(group_concat(k||'='||c||':'||n,','),'') s FROM (SELECT k,COUNT(*) c,SUM(length(v)) n FROM imgs WHERE " + bodyWhere + ' GROUP BY k ORDER BY k)',
+      knownBodies = plan.imagesFresh ? [] :
         (await rsBound(env.DB.prepare('SELECT k,seq,v FROM imgs WHERE ' + bodyWhere + ' ORDER BY k,seq'), bodyArgs).all()).results || [],
+      sigNow = plan.imagesFresh ? String((await rsBound(env.DB.prepare(bodySig), bodyArgs).first('s')) || '') : '',
       known = new Set(
+        plan.imagesFresh ? sigNow.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }) :
         knownBodies.map(function (r) {
           return r.k;
         }),
@@ -210,9 +238,10 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
     /* V7-F · owner decision 2 (ii): a backup that mentions an image the platform no longer holds (swept after its grace) is still restored —
        the reference is written as it is and READS AS MISSING (054 imgVerdict → 404); the witness below still fences that the body is absent
        at commit, and the receipt carries the warning. No image body is ever written by a restore. */
-    var missing = newIds.filter(function (id) { return !known.has(id); });
+    var missing = newIds.filter(function (id) { return !known.has(id) && !(plan.imagesFresh && plan.imagesFresh.has(id)); });   /* V7 · د6: الصورةُ الجديدة يُكتب جسمُها في الدفعة نفسِها (019g) فليست مفقودة */
     if (missing.length) { rsImageMissingNote(plan, missing); plan.imagesMissing = Math.max(plan.imagesMissing || 0, missing.length); plan.warnings = Array.from(new Set((plan.warnings || []).concat(['images-missing']))); }
-    plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
+    if (plan.imagesFresh) plan.guards.push(rsBound(env.DB.prepare("SELECT CASE WHEN (" + bodySig + ")!=?" + (bodyArgs.length + 1) + " THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g"), bodyArgs.concat([sigNow])));
+    else plan.guards.push.apply(plan.guards, rsWitness(env, 'imgs', ['k', 'seq', 'v'], knownBodies, bodyWhere, bodyArgs));
   }
   var ownArgs = [],
     ownWhere = rsImageIn('img', Array.from(ids), ownArgs),
@@ -222,6 +251,8 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
         return [r.img, r];
       }),
     );
+  /* V7 · د6: الصورةُ الجديدة تُعامل كرفعٍ من المستورِد نفسِه لم يُربط بعد ('claim') — فيربطها بسجلّها الحكمُ القائمُ أدناه، والشاهدُ يبقى على الصفوف الحقيقية (لا صفَّ لها) */
+  if (plan.imagesFresh) plan.imagesFresh.forEach(function (id) { if (!owners.has(id)) owners.set(id, { img: id, st: 'claim', k: '', uid: A.u.id, dept: '', ts: Date.now() }); });
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgref', ['img', 'k'], oldRefs, where, args));
   plan.guards.push.apply(plan.guards, rsWitness(env, 'imgown', ['img', 'st', 'k', 'uid', 'dept', 'ts'], oldOwn, ownWhere, ownArgs));
   if (plan.snapshotRequired) {
@@ -730,7 +761,7 @@ async function rsWipeRoute(env, request, url, ss) {
       /* F01: وسجلُّ الصلاحيات في الدفعة الذرّية نفسِها — سقفُ الوحدة ووضعُه وتبويباتُها وعدساتُها وأوراقُها وعدساتُ موظفيها وقوالبُهم
          (caps · capOwn · subs · lenses · emps · empLens · tplOf). كان يبقى يتيماً بعد الحذف (والواجهةُ لا تنظّف شيئاً بنفسها) */
       var perms0 = isObj(current.perms) ? current.perms : {}, perms1 = Object.assign({}, perms0), permsHit = false;
-      ['caps', 'capOwn', 'subs', 'lenses', 'emps', 'empLens', 'tplOf'].forEach(function (f) {
+      ['caps', 'capOwn', 'capSeed', 'subs', 'lenses', 'emps', 'empLens', 'tplOf'].forEach(function (f) {   /* V7 · د6 (ب4): وعلامةُ البذر */
         if (!isObj(perms0[f]) || !Object.prototype.hasOwnProperty.call(perms0[f], input.dept)) return;
         var m = Object.assign({}, perms0[f]);
         delete m[input.dept];

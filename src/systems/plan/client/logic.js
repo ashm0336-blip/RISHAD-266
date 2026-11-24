@@ -74,7 +74,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } finally {
       this._opBusy--;
     }
-    if (result && result.ok === 1) log("save-rebased", result.noop ? "لا فرقَ عن أحدث نسخة" : "حُفظ تعديلي فوق أحدث نسخة");
+    if (result && result.ok === 1) {
+      log("save-rebased", result.noop ? "لا فرقَ عن أحدث نسخة" : "حُفظ تعديلي فوق أحدث نسخة");
+      /* V7 · د6 (51ج): إيصالُ الحفظ المُعاد بناؤه — الناتجُ كما في الخادم */
+      if (plan)
+        try {
+          this._planOwn = JSON.stringify(service.get(name));
+        } catch (e) {
+          this._planOwn = null;
+        }
+    }
     else if (result && "changed" === result.err) {
       log("save-kept", "عدّل غيرُك ما عدّلتَه — لم يُحفظ");
       this.bsToast("عدّل مستخدمٌ آخر هذا العنصر في الوقت نفسه — لم يُحفظ تعديلك؛ تظهر نسختُه الآن، أعد تعديلك عليها إن لزم", "warn");
@@ -172,6 +181,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         if (JSON.stringify(service.get(name)) === JSON.stringify(changes[name])) {
           this._opDrafts[name] = service.draft();
           (this._opBase || (this._opBase = Object.create(null)))[name] = JSON.stringify(changes[name]);
+          /* V7 · د6 (51ج): إيصالُ حفظي — ما كتبتُه أنا بنصّه، أساسٌ للنافذة المفتوحة (الحفظُ الآليُّ بعد الرسم يضيف cap/eid…) */
+          "bassam_plan_v1" === name && (this._planOwn = JSON.stringify(changes[name]));
         }
       });
       return result;
@@ -2306,6 +2317,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         s.retroAsk)
     )
       return !1;
+    /* V7 · د6: المفتاحُ أُسقط بخبر /api/changes وقراءتُه الجديدة لم تصل بعد ⇒ لا دمجَ على خطةٍ فارغة (كان يُعلن العنصرَ المفتوح «عدّله غيرُك أو حذفه»
+       وهو باقٍ، فيُمنع حفظُه) — يُرجأ كحفظٍ في الطريق، ووصولُ القراءة يعيد المحاولة */
+    if (h("bassam_plan_v1")) {
+      const service = KIVO.__BS_SRV && KIVO.__BS_SRV.operations,
+        known = service && typeof service.state === "function" ? service.state("bassam_plan_v1") : "ready";
+      if ("ready" !== known && "absent" !== known) return !1;
+    }
     if (this._opDrafts)
       Object.keys(this._opDrafts).forEach((name) => {
         if (h(name)) delete this._opDrafts[name];
@@ -2346,7 +2364,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             mine = JSON.stringify(was),
             known = clash[key] ? clash[key].mine : mine,
             theirs = n < 0 ? null : JSON.stringify(e.next[n]);
-          if (theirs !== known) {
+          if (theirs !== known && !(null !== theirs && !clash[key] && theirs === this._planOwnEl(e.kind, e.idk, id, r.sid, i))) {
             /* غيري عدّل (أو حذف) العنصرَ المفتوح أمامي: نسختي تبقى في مكانها حتى أُغلق النافذة، ولا تُكتب فوق نسخته */
             clash[key] || (this._planNote = !0);
             clash[key] = { kind: e.kind, idk: e.idk, id: id, mine: known, theirs: theirs, had: !0 };
@@ -2385,6 +2403,21 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         } catch (t) {}
       });
     return !0;
+  }
+  /* V7 · د6 (51ج): نسخةُ العنصر في آخر حفظٍ أقرّه الخادمُ لهذه الصفحة (إيصالُها) — الواردُ المطابقُ لها حفظي أنا لا «كاتبٌ آخر»:
+     يصير أساسَ النافذة المفتوحة (الحالةُ تأخذه بما أضافه الحفظ: cap · eid…)، وما عداه من جهازٍ آخر يبقى تعارضاً يُعلَن */
+  _planOwnEl(kind, idk, id, sid, at) {
+    if (!this._planOwn || null == id) return void 0;
+    try {
+      const d = JSON.parse(this._planOwn),
+        F = Array.isArray(d.floors) ? d.floors : [],
+        f = (null != sid && F.find((x) => x && x.sid === sid)) || F[at] || {},
+        list = Array.isArray(f[kind]) ? f[kind] : [],
+        x = list.find((y) => y && y[idk] === id);
+      return x ? JSON.stringify(x) : void 0;
+    } catch (e) {
+      return void 0;
+    }
   }
   loadPlan() {
     try {
@@ -11907,7 +11940,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                                       {
                                         zones: (t.zones || []).map((t) => {
                                           const { area: e, share: s, shareName: n, cap: a, ...i } = t;
-                                          return { ...i, area: null, share: null, shareName: null, cap: null };
+                                          /* V7 · د6 (schemafix): share · shareName حقلان قديمان لا يعرفهما المخطّط — «مسح السعة» يزيلهما ولا يكتبهما null (كان الحفظُ يُرفض operations-unknown-field-share) */
+                                          return { ...i, area: null, cap: null };
                                         }),
                                         floors: (t.floors || []).map((e, s) => (s === t.floor ? { ...e, mpu: null } : e)),
                                         calMode: null,
@@ -17079,15 +17113,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               /* إصلاح: استبدالُ صورة الخريطة (map.replace · audit.reason) — في وضع الإنفاذ يُسأل غيرُ مدير المنصة عن السبب قبل الحفظ ويُرسل معه
                  (280 why)؛ الإلغاءُ يُبقي النافذة مفتوحة بلا حفظ. مدير المنصة لا يُسأل. */
               if ((t.img || null) !== (s.img || null) && (s.img || s.iid)) {
-                const S9 = KIVO.__BS_SRV;
-                if (KIVO.__BS_AUTHZ && S9 && "function" === typeof S9.askReason && !(S9.reasonExempt && S9.reasonExempt())) {
-                  let D9 = "";
-                  try { D9 = KIVO.BassamDepts.active() || ""; } catch (t) {}
-                  const K9 = "bsdept:" + D9 + ":bassam_plan_v1",
-                    W9 = await new Promise((t) => S9.askReason(K9, ["map.replace"], t));
-                  if (!W9) return;
-                  S9.why(K9, W9);
-                }
+                /* V7 · د6 (QA) · البند ١: لا سبب — رسالةُ تأكيدٍ قبل استبدال الخريطة؛ الإلغاءُ يُبقي النافذة مفتوحة بلا حفظ */
+                if (KIVO.bsConfirm && !(await KIVO.bsConfirm({ title: "استبدال خريطة الموقع", msg: "تُستبدل صورةُ الخريطة الحالية بالصورة الجديدة ويُسجَّل الاستبدال في سجل الحركة.", ok: "استبدال الخريطة" }))) return;
               }
               const n = t.img
                   ? t.img !== s.img

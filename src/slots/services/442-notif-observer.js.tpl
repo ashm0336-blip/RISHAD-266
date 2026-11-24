@@ -73,7 +73,7 @@
     rec.d.forEach(function(f){ [['gates', f.gates || []], ['zones', f.zones || []], ['marks', f.marks || []]].forEach(function(pair){ pair[1].forEach(function(el){ if (!el) return; var closed = pair[0] === 'gates' ? !!el.closed : !!el.off; (el.emp || []).forEach(function(t){ out[t] = { label: elLabel(pair[0], el), closed: closed }; }); }); }); });
     return out;
   }
-@@SYS:nfo.watch.daily@@@@SYS:nfo.watch.plan@@  // Seized and Award events are issued by their server transaction.
+@@SYS:nfo.watch.daily@@@@SYS:nfo.watch.plan@@@@SYS:nfo.watch@@  // Seized and Award events are issued by their server transaction.
   /* F01: أحداثُ سجلّ الوحدات بنوعها — القسمُ يُنبَّه عنه قسماً تحت إدارته الأم (320 unitEvents) لا «أُنشئت إدارة» */
   WATCH['bassam_depts_v1'] = function(did, o, n){ var D = KIVO.BassamDepts; if (D && D.unitEvents) { D.unitEvents(o, n, who()).forEach(function(e){ emit(e.t, { vars: e.vars }); }); return; } var d = diffList(Array.isArray(o) ? o : [], Array.isArray(n) ? n : [], function(x){ return x.id; }); d.added.forEach(function(x){ emit('sy_dept', { vars: { 'الفعل': 'أُنشئت إدارة', 'الإدارة': x.name, 'التفصيل': '' } }); }); d.removed.forEach(function(x){ emit('sy_ddel', { vars: { 'النوع': 'إدارة', 'الإدارة': x.name, 'المُعدّل': who() } }); }); };
   WATCH['bassam_gdepts_v1'] = function(did, o, n){ var d = diffList(Array.isArray(o) ? o : [], Array.isArray(n) ? n : [], function(x){ return x.id; }); d.added.forEach(function(x){ emit('sy_dept', { vars: { 'الفعل': 'أُنشئت إدارة عامة', 'الإدارة': x.name, 'التفصيل': '' } }); }); d.removed.forEach(function(x){ emit('sy_ddel', { vars: { 'النوع': 'إدارة عامة', 'الإدارة': x.name, 'المُعدّل': who() } }); }); };

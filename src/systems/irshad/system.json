@@ -163,7 +163,7 @@
   },
   "kpis.panels.mid": {
    "order": 20,
-   "text": "        { k: \"ir\", pk: \"irshad\", sk: \"dash\" },\n"
+   "text": "        { k: \"ir\", a: \"irshad\", pk: \"irshad\", sk: \"dash\" },\n"
   },
   "kpis.tabs.mid": {
    "order": 20,
@@ -609,7 +609,7 @@
   },
   "activity.filter": {
    "order": 20,
-   "text": " ['irshad', 'الاسترشاد'],"
+   "text": " ['irshad', 'الاسترشاد', 'irshad'],"
   },
   "res.empty.systems": {
    "order": 10,

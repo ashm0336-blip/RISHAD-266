@@ -47,38 +47,23 @@ function page({ role = 'staff', authz = true, rule = true, reg = false } = {}) {
   return { T, C, D, toasts, KV };
 }
 const settle = () => sleep(250);
-const click = (D, sel, text) => { const dl = D.open()[0]; assert.ok(dl, 'النافذة مفتوحة'); if (text != null) dl.querySelector('textarea').value = text; dl.querySelector(sel).onclick(); };
 
-test('① ② السبب قبل الإرسال: لا طلبَ قبل السبب · «حفظ بالسبب» ⇒ طلبٌ واحد يحمل السبب', async () => {
+/* V7 · د6 (QA) · البند ١ (قرارُ المالك): لا يُسأل أحدٌ عن سبب — هذه الحالاتُ كانت تثبت «النافذة أولاً» وصارت تثبت غيابَها:
+   كتابةٌ كانت تُعدّ «تتطلب سبباً» (قاعدةُ المورد أو التنبّؤ من السجلّ) تُرسل فوراً طلباً واحداً بلا why ولا نافذة ولا رسالةَ رفض */
+test('① ② ③ لا نافذةَ سبب: كتابةُ مفتاحٍ كان يتطلب سبباً تُرسل فوراً طلباً واحداً بلا سبب', async () => {
   const { T, C, D, toasts } = page();
   try {
     T.set(K, '"TEST_ONLY_new"'); await settle();
-    assert.equal(C.saves.length, 0, 'لا طلبَ قبل كتابة السبب'); assert.equal(D.open().length, 1, 'نافذةُ السبب مفتوحة أولاً');
-    click(D, '[data-ok]', 'TEST_ONLY reason text'); await settle();
-    assert.equal(C.saves.length, 1, 'طلبٌ واحد'); assert.equal(C.saves[0].set[K], '"TEST_ONLY_new"'); assert.equal(C.saves[0].why[K], 'TEST_ONLY reason text');
-    assert.equal(toasts.filter((x) => x.tone === 'err').length, 0, 'لا رسالةَ رفض');
+    assert.equal(D.open().length, 0, 'لا نافذة'); assert.equal(C.saves.length, 1, 'طلبٌ واحد'); assert.equal(C.saves[0].set[K], '"TEST_ONLY_new"');
+    assert.equal(C.saves[0].why, undefined, 'بلا سبب'); assert.equal(toasts.filter((x) => x.tone === 'err').length, 0, 'لا رسالةَ رفض');
   } finally { T.dispose(); }
 });
 
-test('③ الإلغاء: صفرُ طلبات · لا رسالةَ رفض · تعود القيمةُ المحفوظة', async () => {
-  const { T, C, D, toasts } = page();
-  try {
-    T.set(K, '"TEST_ONLY_new"'); await settle();
-    click(D, '[data-no]'); await settle();
-    assert.equal(C.saves.length, 0, 'لا شيءَ أُرسل'); assert.equal(toasts.length, 0, 'لا رسالة');
-    assert.equal(T.get(K), '"TEST_ONLY_old"', 'القيمةُ المحفوظة');
-    T.set(K, '"TEST_ONLY_other"'); await settle();
-    assert.equal(C.saves.length, 1, 'كتابةٌ لا تتطلب سبباً تُرسل كالمعتاد'); assert.equal(C.saves[0].why, undefined);
-  } finally { T.dispose(); }
-});
-
-test('التنبّؤ من السجلّ: كلُّ مفاتيح الكتابة المحمولة على المورد مفاتيحُ سبب ⇒ يُسأل أولاً', async () => {
+test('التنبّؤ من السجلّ لم يعد يسأل: كلُّ مفاتيح الكتابة على المورد مفاتيحُ audit.reason ⇒ يُرسل بلا نافذة', async () => {
   const { T, C, D } = page({ rule: false, reg: true });
   try {
     T.set(K, '"TEST_ONLY_any"'); await settle();
-    assert.equal(C.saves.length, 0); assert.equal(D.open().length, 1);
-    click(D, '[data-ok]', 'TEST_ONLY reg reason'); await settle();
-    assert.equal(C.saves.length, 1); assert.equal(C.saves[0].why[K], 'TEST_ONLY reg reason');
+    assert.equal(D.open().length, 0); assert.equal(C.saves.length, 1); assert.equal(C.saves[0].why, undefined);
   } finally { T.dispose(); }
 });
 
@@ -92,20 +77,13 @@ test('④ مديرُ المنصة لا يُسأل · ⑤ الوضعُ القدي
   }
 });
 
-test('⑥ reasonFirst: الإلغاءُ go:false بلا طلب · القبولُ يُعلِّم المفتاح فتحمله الكتابةُ الأولى · مديرُ المنصة go:true بلا نافذة', async () => {
-  let { T, C, D, KV } = page({ rule: false });
-  try {
-    let r = null; KV.__BS_SRV.reasonFirst(K, ['backup.restore'], (x) => { r = x; }); await settle();
-    click(D, '[data-no]'); await settle();
-    assert.deepEqual(JSON.parse(JSON.stringify(r)), { go: false, reason: '' }); assert.equal(C.saves.length, 0);
-    KV.__BS_SRV.reasonFirst(K, ['backup.restore'], (x) => { r = x; }); await settle();
-    click(D, '[data-ok]', 'TEST_ONLY first'); await settle();
-    assert.equal(r.go, true); T.set(K, '"TEST_ONLY_v2"'); await settle();
-    assert.equal(C.saves.length, 1); assert.equal(C.saves[0].why[K], 'TEST_ONLY first');
-  } finally { T.dispose(); }
-  ({ T, C, D, KV } = page({ role: 'super', rule: false }));
-  try {
-    let r = null; KV.__BS_SRV.reasonFirst(K, ['backup.restore'], (x) => { r = x; }); await settle();
-    assert.equal(D.open().length, 0); assert.equal(r.go, true); assert.equal(r.reason, '');
-  } finally { T.dispose(); }
+test('⑥ reasonFirst (للتوافق): go:true فوراً بلا نافذة لأيّ حساب — V7 · د6 (QA)', async () => {
+  for (const o of [{ rule: false }, { role: 'super', rule: false }]) {
+    const { T, D, KV } = page(o);
+    try {
+      let r = null; KV.__BS_SRV.reasonFirst(K, ['backup.restore'], (x) => { r = x; }); await settle();
+      assert.equal(D.open().length, 0, 'لا نافذة: ' + JSON.stringify(o)); assert.equal(r.go, true); assert.equal(r.reason, '');
+      assert.equal(KV.__BS_SRV.reasonExempt(), true, 'كلُّ حسابٍ معفًى');
+    } finally { T.dispose(); }
+  }
 });

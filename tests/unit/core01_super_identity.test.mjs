@@ -9,7 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { world, rd, UNITS } from './core01_root_world.mjs';
-import { needs } from './harness.mjs';
+import { needs, shellNavKeys } from './harness.mjs';
 
 /* display() as shipped: the object-literal method of BassamAuth in 334, run with cur() returning the session */
 function realDisplay() {
@@ -92,7 +92,9 @@ test('shell markup: title in installed-app mode, data-key nav, key-based orderin
   assert.doesNotMatch(T + R, /notAppMode/, 'the title is not gated on display-mode');
   assert.match(T, /<div class="bs-crumb">\{\{crumbUnit\}\} \/ <span>\{\{pageName\}\}<\/span><\/div>/);
   const keys = [...T.matchAll(/<a class="\{\{n\w+\}\}" data-key="(\w+)"/g)].map((m) => m[1]);
-  assert.deepEqual(keys, ['kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award']);
+  /* V7 · د6 (gatefix): الترتيبُ مشتقٌّ من القالب وإعلانات الأنظمة (shellNavKeys) — «رصد الحالات» (rasd · order 25) أضاف رابطه بين المضبوطات والجوائز */
+  assert.deepEqual(keys, shellNavKeys());
+  for (const k of ['kpis', 'dstats', 'emps', 'planning', 'daily', 'irshad', 'seized', 'award']) assert.ok(keys.includes(k), 'the page link ' + k + ' stays');
   const P = rd('layouts/260-bassam-plat.js');
   assert.match(P, /a\[data-key="' \+ k \+ '"\]\{order:/); assert.doesNotMatch(P, /nth-of-type/);
   const L = rd('components/240-bassam-link.js');

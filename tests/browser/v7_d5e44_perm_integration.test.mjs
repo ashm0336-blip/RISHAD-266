@@ -1,11 +1,11 @@
 /* V7 · د5-هـ (44 · التوحيد) — «الصلاحيات» على المحرّك الحقيقي والخادم الحقيقي في المختبر المعزول (TEST_ONLY، بلا بديل ولا page.route):
-   (أ) مديرُ المنصة يفتح #/sysadmin/org/<إدارة>/perm/roles، ينشئ دوراً بنظامٍ واحد على «تعديل»، يراجع ويحفظ — وبعد إعادة التحميل الدورُ قائم؛
+   (أ) مديرُ المنصة يفتح #/sysadmin/org/<إدارة>/roles (V7 · د6 — كان …/perm/roles)، ينشئ دوراً بنظامٍ واحد على «تعديل»، يراجع ويحفظ — وبعد إعادة التحميل الدورُ قائم؛
    (ب) يُسنده في «الأشخاص» لموظفٍ TEST_ONLY — فيجيب الخادم /api/perm44/check بالسماح لمفتاح تعديلٍ في ذلك النظام وبالمنع لمفتاح حذف،
        ويظهر اسمُ الدور في بطاقة الموظف الجانبية وسطرِ «صفحتي»؛
    (ج) يطفئ نظاماً للإدارة في «الأنظمة» — فلا يراه مديرُ الإدارة في قائمته ولا في سقفه (المحرّك) ولا في محرّر الأدوار («شاهد الصفحة كـ مدير الإدارة»)
        ويقول الخادم «ceiling»، وصفحاتُ المنصة تفتح بلا أخطاء — ثم يعيده؛
    (د) يكرّر (ج) لكل نظامٍ قابلٍ للتشغيل مرةً (الخادم + القائمة، خفيفاً) — الخطوةُ الأولى في تجربة المالك؛ ويُطبع جدولُ النتائج؛
-   (هـ) «تعديل الصلاحيات» في قائمة الحساب يصل إلى …/perm/people.
+   (هـ) «تعديل الصلاحيات» في قائمة الحساب يصل إلى …/people.
    KIVO_P44_TABLE=<ملف> يحفظ جدولَ (د). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,11 +33,11 @@ const menuOf = (s, sys) => s.page.evaluate(([sys, d]) => {
   return { top, dom, vis, ceil: KIVO.Perm44.ceiling(d).on.indexOf(sys) !== -1 };
 }, [sys, A]);
 async function sysRows(p) { return P(p, '.p44-row').evaluateAll((L) => L.map((x) => ({ n: x.querySelector('b').innerText.trim(), on: x.dataset.on === 'true', locked: !!x.querySelector('button.p44-sw').disabled }))); }
-const UA = 'TEST_ONLY إدارة أ', UG = 'TEST_ONLY إدارة عامة';
+/* V7 · د6: الوحدةُ تُختار من العنوان (الشجرةُ بجانب التبويب) — كان عمودَ الوحدات داخل «الأنظمة» */
+const UA = A, UG = 'TEST_ONLY_G';
 async function pickUnit(s, unit) {
-  const p = s.page;
-  if (!/\/perm\/systems$/.test(await p.evaluate(() => location.hash))) { await s.go('#/sysadmin/org/' + A + '/perm/systems', 2500); }
-  await P(p, '.p44-unit', { hasText: unit }).first().click(); await p.waitForTimeout(300);
+  const p = s.page, h = '#/sysadmin/org/' + unit + '/systems';
+  if ((await p.evaluate(() => location.hash)) !== h) { await s.go(h, 2500); }
 }
 /* يجعل صفوفَ «الأنظمة» لوحدةٍ (الإدارة أو أصلها) كما في want ({اسم: مفعّل}) ثم «مراجعة وحفظ» ← «حفظ» — بالواجهة وحدها؛ المقفلُ من أصلٍ يُترك لأصله */
 async function setSystems(lab, s, want, unit = UA) {
@@ -64,8 +64,8 @@ test('V7 · د5-هـ (44) · real engine + real server: build a role, save, relo
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw); const p = s.page; p.setDefaultTimeout(15000);
     const saves = []; p.on('request', (r) => { if (r.method() === 'POST' && /\/api\/save$/.test(new URL(r.url()).pathname)) saves.push(JSON.parse(r.postData() || '{}')); });
     /* (أ) a role with one system at «تعديل» */
-    await s.go('#/sysadmin/org/' + A + '/perm/roles', 3000);
-    assert.equal(await p.evaluate(() => location.hash), '#/sysadmin/org/' + A + '/perm/roles');
+    await s.go('#/sysadmin/org/' + A + '/roles', 3000);
+    assert.equal(await p.evaluate(() => location.hash), '#/sysadmin/org/' + A + '/roles');
     await P(p, 'button', { hasText: '+ دور جديد' }).click(); await p.waitForTimeout(400);
     await P(p, 'input[maxlength="60"]').fill(ROLE); await P(p, 'input[maxlength="60"]').dispatchEvent('change'); await p.waitForTimeout(300);
     await P(p, 'button[aria-label="تفعيل المهام لهذا الدور"]').click(); await p.waitForTimeout(300);
@@ -96,10 +96,10 @@ test('V7 · د5-هـ (44) · real engine + real server: build a role, save, relo
     const stored = JSON.parse(lab.env.DB.q("SELECT v FROM kv WHERE k=?1 ORDER BY seq", 'bsdept:' + A + ':bassam_roles_v1').map((r) => r.v).join(''));
     const role = stored.roles.find((r) => r.name === ROLE);
     assert.ok(role, 'the server holds the role'); assert.deepEqual(role.sys, { tasks: { lvl: 'edit' } });
-    await reloadAs(s); await s.go('#/sysadmin/org/' + A + '/perm/roles', 3000);
+    await reloadAs(s); await s.go('#/sysadmin/org/' + A + '/roles', 3000);
     assert.equal(await P(p, '.p44-role', { hasText: ROLE }).count(), 1, 'after a reload the role is there');
     /* (ب) assign it in «الأشخاص» */
-    await s.go('#/sysadmin/org/' + A + '/perm/people', 2500);
+    await s.go('#/sysadmin/org/' + A + '/people', 2500);
     await P(p, 'table.p44-people button', { hasText: 'TEST_ONLY موظف أ' }).first().click(); await p.waitForTimeout(400);
     await P(p, 'aside[aria-label="تفاصيل الشخص"] [role=radio]', { hasText: ROLE }).click(); await p.waitForTimeout(300);
     await P(p, '.p44-bar button', { hasText: 'مراجعة وحفظ' }).click(); await p.waitForTimeout(300);
@@ -119,7 +119,7 @@ test('V7 · د5-هـ (44) · real engine + real server: build a role, save, relo
     const ev = lab.env.DB.q("SELECT k, aft FROM aud WHERE etype='perm44' AND dept=?1 ORDER BY ts", A);
     assert.ok(ev.length >= 2, 'the server wrote an audit event per save: ' + ev.length);
     assert.ok(ev.some((r) => JSON.parse(r.aft).changes.some((c) => c.what === 'person' && c.person === EMP && c.to === role.id)), 'the assignment, as the engine\'s diff');
-    await s.go('#/sysadmin/org/' + A + '/perm/log', 3000);
+    await s.go('#/sysadmin/org/' + A + '/log', 3000);
     const items = P(p, '.p44-log > li');
     assert.ok((await items.count()) >= 2, 'the log lists the changes');
     assert.match(await items.first().innerText(), new RegExp('TEST_ONLY موظف أ[\\s\\S]*' + ROLE), 'the latest: the assignment, by name');
@@ -137,13 +137,13 @@ test('V7 · د5-هـ (44) · real engine + real server: build a role, save, relo
     assert.match(await e.page.locator('main').innerText(), new RegExp('TEST_ONLY إدارة أ [·-] ' + ROLE), '«صفحتي» role line');
     assert.equal(await e.page.evaluate(() => KIVO.BassamPerm.can('tasks', 'edit')), true, 'he can edit tasks');
     assert.deepEqual(quiet(e.errs), []);
-    /* (هـ) the account menu entry «تعديل الصلاحيات» lands on …/perm/people */
+    /* (هـ) the account menu entry «تعديل الصلاحيات» lands on …/people */
     await s.go('#/sysadmin/users', 4000);
     const row = p.locator('main .adm-tr.g-us', { hasText: 'TEST_ONLY موظف أ' }).filter({ has: p.locator('.adm-rmb') }).last();
     await row.locator('.adm-rmb').first().click(); await p.waitForTimeout(600);
     await row.locator('[data-bs-dd]').getByText('تعديل الصلاحيات', { exact: true }).click(); await p.waitForTimeout(3000);
-    assert.equal(await p.evaluate(() => location.hash), '#/sysadmin/org/' + A + '/perm/people');
-    assert.deepEqual(await P(p, 'nav button[aria-current=page]').allInnerTexts(), ['الأشخاص'], 'the people section is open');
+    assert.equal(await p.evaluate(() => location.hash), '#/sysadmin/org/' + A + '/people');
+    assert.deepEqual((await p.locator('main .og-tabs .og-tab[aria-selected="true"]').allInnerTexts()).map((x) => x.trim()), ['الأشخاص'], 'the «الأشخاص» tab is open (V7 · د6)');
     assert.match(await P(p, 'table.p44-people').innerText(), new RegExp('TEST_ONLY موظف أ[\\s\\S]*' + ROLE), 'and the person carries the role');
     assert.deepEqual(quiet(s.errs), [], 'no page errors');
   } finally { await b.close(); await lab.close(); }
@@ -162,14 +162,14 @@ test('V7 · د5-هـ (44) · every system OFF then ON for a department: absent f
   try {
     const s = await openAs(b, lab, LAB.superUn, LAB.superPw); const p = s.page; p.setDefaultTimeout(15000);
     const m = await openAs(b, lab, LAB.mgrA, LAB.pw); m.page.setDefaultTimeout(15000);
-    await s.go('#/sysadmin/org/' + A + '/perm/systems', 3000);
+    await s.go('#/sysadmin/org/' + A + '/systems', 3000);
     await pickUnit(s, UG); const origG = Object.fromEntries((await sysRows(p)).map((r) => [r.n, r.on]));
     await pickUnit(s, UA); const orig = Object.fromEntries((await sysRows(p)).map((r) => [r.n, r.on]));
     const SYS = await p.evaluate(() => KIVO.Perm44.sysList().filter((x) => x.toggle !== false).map((x) => ({ k: x.key, n: x.name, key: KIVO.Perm44.sysKeys(x.key)[0] || '' })));
     assert.deepEqual(SYS.map((x) => x.n).sort(), Object.keys(orig).sort(), 'a switch for every toggleable system');
     /* the role editor as the department manager sees it (super · «شاهد الصفحة كـ مدير الإدارة») */
     const editorNames = async () => {
-      await s.go('#/sysadmin/org/' + A + '/perm/roles', 2000);
+      await s.go('#/sysadmin/org/' + A + '/roles', 2000);
       await P(p, '[aria-label="شاهد الصفحة كـ"] button', { hasText: 'مدير الإدارة' }).click(); await p.waitForTimeout(400);
       await P(p, '.p44-role', { hasText: 'TEST_ONLY كل الأنظمة' }).click(); await p.waitForTimeout(400);
       const names = await P(p, '.p44-rows .p44-row b').allInnerTexts();
@@ -202,13 +202,13 @@ test('V7 · د5-هـ (44) · every system OFF then ON for a department: absent f
       if (before) await setSystems(lab, s, { [S.n]: true });
       else {
         await p.evaluate((v) => { localStorage.setItem('bassam_perms_v1', v); return KIVO.__BS_SRV.flushAsync(); }, snap); await settle(lab, p, 800);
-        await s.go('#/sysadmin/org/' + A + '/perm/systems', 1500);
+        await s.go('#/sysadmin/org/' + A + '/systems', 1500);
       }
       await reloadAs(m);
       const on = await menuOf(m, S.k), srvOn = await check(m, S.key || 'task.view');
       if (before) {
         await p.evaluate((v) => { localStorage.setItem('bassam_perms_v1', v); return KIVO.__BS_SRV.flushAsync(); }, snap); await settle(lab, p, 800);
-        await s.go('#/sysadmin/org/' + A + '/perm/systems', 1500);
+        await s.go('#/sysadmin/org/' + A + '/systems', 1500);
       }
       const back = on.vis === pre.vis && on.dom === pre.dom && on.ceil === pre.ceil && (!before || (on.vis && on.ceil));
       const srvBack = Array.isArray(srvOn.on) && (srvOn.on.indexOf(S.k) !== -1) === (preSrv.on || []).includes(S.k) && srvOn.why === preSrv.why;

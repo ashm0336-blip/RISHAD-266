@@ -235,6 +235,27 @@ var KIVO_MIGRATIONS = [
    "ALTER TABLE sess ADD COLUMN br TEXT",
    "INSERT INTO meta(k,v)VALUES('schema_version','11')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
   ]
+ },
+ {
+  "name": "0012_prayer_readings",
+  "sql": [
+   "CREATE TABLE IF NOT EXISTS ops_zone_prayer_capacity(\"department_id\" TEXT NOT NULL,\"resource\" TEXT NOT NULL,\"row_key\" TEXT NOT NULL,\"entity_kind\" TEXT NOT NULL,\"f_cap_kind\" INTEGER,\"f_cap_text\" TEXT,\"f_cap_number\" REAL,\"f_cap_position\" INTEGER,\"f_n_kind\" INTEGER,\"f_n_text\" TEXT,\"f_n_number\" REAL,\"f_n_position\" INTEGER,\"f_p_kind\" INTEGER,\"f_p_text\" TEXT,\"f_p_number\" REAL,\"f_p_position\" INTEGER,CHECK(entity_kind='ops_zone_prayer_capacity'),PRIMARY KEY(department_id,resource,row_key),FOREIGN KEY(department_id,resource,row_key,entity_kind) REFERENCES ops_nodes(department_id,resource,row_key,entity_kind) ON DELETE CASCADE) WITHOUT ROWID",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_rm_kind\" INTEGER",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_rm_text\" TEXT",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_rm_number\" REAL",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_rm_position\" INTEGER",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_src_kind\" INTEGER",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_src_text\" TEXT",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_src_number\" REAL",
+   "ALTER TABLE ops_round_day_move ADD COLUMN \"f_src_position\" INTEGER",
+   "UPDATE ops_round_day_move SET f_rm_kind=0,f_src_kind=0",
+   "INSERT INTO ops_nodes(department_id,resource,row_key,parent_key,member_key,position,node_kind,variant,tuple_length,schema_id,entity_kind) SELECT e.department_id,e.resource,e.row_key||'/v:0',e.row_key,'@',0,7,NULL,NULL,'ops_staffing_month_shifts_entry_choice_0','ops_staffing_month_shifts_entry_choice_0' FROM ops_nodes e JOIN ops_nodes m ON m.department_id=e.department_id AND m.resource=e.resource AND m.row_key=e.parent_key JOIN ops_nodes z ON z.department_id=m.department_id AND z.resource=m.resource AND z.row_key=m.parent_key WHERE e.node_kind=7 AND e.schema_id='ops_staffing_month_shifts_entry_choice_0' AND m.schema_id='ops_plan_deleted_months' AND m.member_key='pc' AND z.schema_id='ops_plan_live_floors_floor_zones_element'",
+   "INSERT INTO ops_staffing_month_shifts_entry_choice_0(department_id,resource,row_key,entity_kind,value_kind,value_text,value_number) SELECT v.department_id,v.resource,v.row_key||'/v:0',v.entity_kind,v.value_kind,v.value_text,v.value_number FROM ops_staffing_month_shifts_entry_choice_0 v JOIN ops_nodes e ON e.department_id=v.department_id AND e.resource=v.resource AND e.row_key=v.row_key JOIN ops_nodes m ON m.department_id=e.department_id AND m.resource=e.resource AND m.row_key=e.parent_key JOIN ops_nodes z ON z.department_id=m.department_id AND z.resource=m.resource AND z.row_key=m.parent_key WHERE e.node_kind=7 AND e.schema_id='ops_staffing_month_shifts_entry_choice_0' AND m.schema_id='ops_plan_deleted_months' AND m.member_key='pc' AND z.schema_id='ops_plan_live_floors_floor_zones_element'",
+   "DELETE FROM ops_staffing_month_shifts_entry_choice_0 WHERE (department_id,resource,row_key) IN(SELECT e.department_id,e.resource,e.row_key FROM ops_nodes e JOIN ops_nodes m ON m.department_id=e.department_id AND m.resource=e.resource AND m.row_key=e.parent_key JOIN ops_nodes z ON z.department_id=m.department_id AND z.resource=m.resource AND z.row_key=m.parent_key WHERE e.schema_id='ops_staffing_month_shifts_entry_choice_0' AND m.schema_id='ops_plan_deleted_months' AND m.member_key='pc' AND z.schema_id='ops_plan_live_floors_floor_zones_element')",
+   "UPDATE ops_nodes SET node_kind=CASE WHEN node_kind=7 THEN 6 ELSE node_kind END,variant=CASE WHEN node_kind=7 THEN 0 ELSE NULL END,schema_id='ops_zone_prayer_reading',entity_kind=NULL WHERE schema_id='ops_staffing_month_shifts_entry_choice_0' AND (department_id,resource,parent_key) IN(SELECT m.department_id,m.resource,m.row_key FROM ops_nodes m JOIN ops_nodes z ON z.department_id=m.department_id AND z.resource=m.resource AND z.row_key=m.parent_key WHERE m.schema_id='ops_plan_deleted_months' AND m.member_key='pc' AND z.schema_id='ops_plan_live_floors_floor_zones_element')",
+   "UPDATE ops_nodes SET schema_id='ops_zone_prayer_counts' WHERE schema_id='ops_plan_deleted_months' AND member_key='pc' AND (department_id,resource,parent_key) IN(SELECT z.department_id,z.resource,z.row_key FROM ops_nodes z WHERE z.schema_id='ops_plan_live_floors_floor_zones_element')",
+   "INSERT INTO meta(k,v)VALUES('schema_version','12')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
+  ]
  }
 ];
-var KIVO_SCHEMA_VERSION = 11;
+var KIVO_SCHEMA_VERSION = 12;

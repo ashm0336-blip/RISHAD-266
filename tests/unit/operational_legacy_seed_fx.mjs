@@ -1,7 +1,7 @@
 /* Explicit synthetic SQL seed installation. The production cutover planner
    supplies every target/source guard; no runtime compatibility reader exists. */
 import assert from 'node:assert/strict';
-import { D1Shim } from './harness.mjs';
+import { D1Shim, schemaFrom } from './harness.mjs';
 import { canonicalWorker } from './canonical_fx.mjs';
 const installed = new WeakMap();
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -10,7 +10,7 @@ export async function installOperationalFixture(env, worker) {
   /* Idempotent per isolated env: a shared world (canonical_fx) may already have run the canonical cutover. */
   if (installed.has(env)) return { documents: 0, already: true };
   const DB = env.DB, W = worker || await canonicalWorker();
-  assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, '11');
+  assert.ok(schemaFrom(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, 11));
   const protectedState = () => ({
     keys: clone(DB.q("SELECT k,seq,v FROM kv WHERE k IN('bassam_auth_users_v1','bassam_perms_v1') ORDER BY k,seq")),
     sessions: clone(DB.q('SELECT * FROM sess ORDER BY tok')),
@@ -32,7 +32,7 @@ export async function adoptOperationalFixture(env, worker) {
   assert.ok(env.DB instanceof D1Shim, 'Isolated in-memory fixture SQLite only');
   if (installed.has(env)) return { already: true };
   const W = worker || await canonicalWorker();
-  assert.equal(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, '11');
+  assert.ok(schemaFrom(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v, 11));
   await W.opGuardRetired(env);
   installed.set(env, W);
   return { adopted: true };

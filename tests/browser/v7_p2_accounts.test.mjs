@@ -7,7 +7,8 @@
      · إعادة تعيين كلمة المرور (one confirmation → the temporary-password dialog) · تعديل الصلاحيات (V7 · د5-هـ 44: the people section of the «الصلاحيات» tab — the dialog was deleted)
      · إنهاء جلساته الآن (when signed in) · حذف حساب المدير / حذف حساب الدخول (by kind, one confirmation).
    Scope: a unit lists its own accounts (and its sections'), a supervisory node its general managers and its branch's accounts,
-   managers first. From «مراقبة الحسابات», «تعديل بيانات المدير» opens the account's node page on this card (V7 · د5-ح: …/perm/roles)
+   managers first. V7 · د6 (ب6 · ب9 — the owner's order): the «المسؤولون» tab lists the selected node's OWN admins only (its managers; a supervisory
+   node its general managers); the employees' and legacy accounts keep the same row and the same menu in «مراقبة الحسابات». From «مراقبة الحسابات», «تعديل بيانات المدير» opens the account's node page on this card (V7 · د5-ح: …/perm/roles)
    (the dialogs live there). Phone (390×844) in light and dark: no sideways scroll, the row menu is not clipped; keyboard opens it. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,24 +26,23 @@ async function world(view) {
   const H = () => p.evaluate(() => location.hash);
   /* V7 · د5-هـ (أمن ٣): لا نومٌ ثابت — كلُّ خطوةٍ تنتظر شرطَها الحقيقي (التبويبُ الحالي · القائمةُ ظاهرة · الحوار · قيمةُ الخادم) */
   const until = async (fn, what, ms = 15000) => { const t0 = Date.now(); for (;;) { if (await fn()) return; if (Date.now() - t0 > ms) throw new Error('timed out waiting for ' + what); await new Promise((r) => setTimeout(r, 50)); } };
-  const TABS = 'main [aria-label="أقسام صفحة العقدة"] button';
+  /* V7 · د6: الشاشةُ الواحدة «الإدارات والصلاحيات» — تبويباتُ الوحدة (.og-tabs) وعنوانُها #/sysadmin/org/<الوحدة>/<التبويب> */
+  const TABS = 'main .og-tabs .og-tab';
   const go = async (hash, ready) => { await p.evaluate((h) => { location.hash = h; }, hash); await p.waitForFunction((h) => location.hash === h, hash); await p.locator(ready).first().waitFor(); };
-  const node = (id) => go('#/sysadmin/org/' + id, TABS);
+  const node = (id) => go('#/sysadmin/org/' + id + '/overview', TABS);
   const tab = async (t) => {
     await p.locator(TABS, { hasText: t }).first().click();
-    await p.waitForFunction(([sel, t]) => [...document.querySelectorAll(sel)].some((x) => x.getAttribute('aria-current') === 'true' && x.textContent.includes(t)), [TABS, t]);
+    await p.waitForFunction(([sel, t]) => [...document.querySelectorAll(sel)].some((x) => x.getAttribute('aria-selected') === 'true' && x.textContent.includes(t)), [TABS, t]);
     await p.locator(NODE).first().waitFor();
   };
-  /* V7 · د5-ح: «الصلاحيات ← الأدوار ← مدير الوحدة» (كان تبويبَ العقدة للمسؤولين والحسابات) */
-  const onCard = () => p.evaluate(() => [...document.querySelectorAll('main .p44 .p44-role')].some((x) => x.getAttribute('aria-pressed') === 'true' && x.textContent.includes('مدير الوحدة')));
+  /* V7 · د5-ح · د6: تبويب «المسؤولون» (كان «الصلاحيات ← الأدوار ← مدير الوحدة»، وقبله تبويبَ العقدة للمسؤولين والحسابات) */
+  const onCard = () => p.evaluate(() => [...document.querySelectorAll('main .og-tabs .og-tab')].some((x) => x.getAttribute('aria-selected') === 'true' && x.textContent.includes('المسؤولون')) && !!document.querySelector('main [data-org-tab="admins"] .mk.ac7'));
   const card = async () => {
-    await p.locator(TABS, { hasText: 'الصلاحيات' }).first().click();
-    await p.locator('main nav[aria-label="أقسام الصلاحيات"] button', { hasText: 'الأدوار' }).first().click();
-    await p.locator('main .p44 .p44-role', { hasText: 'مدير الوحدة' }).first().click();
-    await p.waitForFunction(() => [...document.querySelectorAll('main .p44 .p44-role')].some((x) => x.getAttribute('aria-pressed') === 'true' && x.textContent.includes('مدير الوحدة')));
+    await p.locator(TABS, { hasText: 'المسؤولون' }).first().click();
+    await p.waitForFunction(() => [...document.querySelectorAll('main .og-tabs .og-tab')].some((x) => x.getAttribute('aria-selected') === 'true' && x.textContent.includes('المسؤولون')));
     await p.locator(NODE).first().waitFor();
   };
-  const cur = () => p.evaluate(() => { const e = [...document.querySelectorAll('main [aria-label="أقسام صفحة العقدة"] button')].find((x) => x.getAttribute('aria-current') === 'true'); return e ? e.textContent.replace(/[\d٠-٩\u200e\u200f\u202a-\u202e\u2066-\u2069]+/g, '').replace(/\s+/g, ' ').trim() : ''; });
+  const cur = () => p.evaluate(() => { const e = [...document.querySelectorAll('main .og-tabs .og-tab')].find((x) => x.getAttribute('aria-selected') === 'true'); return e ? e.textContent.replace(/[\d٠-٩\u200e\u200f\u202a-\u202e\u2066-\u2069]+/g, '').replace(/\s+/g, ' ').trim() : ''; });
   const rows = (scope) => p.evaluate((sc) => [...document.querySelectorAll(sc + ' .adm-tr.g-us:not(.adm-th)')].map((r) => r.querySelector('.adm-b').textContent.trim()), scope);
   const row = (scope, name) => p.locator(scope + ' .adm-tr.g-us', { hasText: name }).filter({ has: p.locator('.adm-rmb') }).first();
   const open = async (r) => { await r.locator('.adm-rmb').click(); await r.locator('[data-bs-dd] [role=menuitem]').first().waitFor(); };
@@ -53,7 +53,7 @@ async function world(view) {
   const closeDialog = async (rx, sel = '[role=dialog]') => { await p.keyboard.press('Escape'); if (!(await p.locator(sel).last().waitFor({ state: 'hidden', timeout: 1500 }).then(() => true, () => false))) { await p.locator('[role=dialog] button', { hasText: rx }).last().click().catch(() => {}); await p.locator(sel).last().waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {}); } };
   return { lab, b, s, p, H, go, node, until, tab, card, onCard, cur, rows, row, menu, open, pick, confirmOpen, answer, closeDialog };
 }
-const TABS0 = 'main [aria-label="أقسام صفحة العقدة"] button';
+const TABS0 = 'main .og-tabs .og-tab';
 const NODE = 'main .mk.ac7', ALL = 'main section[aria-label^="مراقبة الحسابات"]';
 const MGR = ['تعديل بيانات المدير', 'تجميد الحساب', 'إعادة تعيين كلمة المرور', 'تعديل الصلاحيات', 'حذف حساب المدير'];
 const EMP = ['تجميد الحساب', 'إعادة تعيين كلمة المرور', 'تعديل الصلاحيات', 'حذف حساب الدخول'];
@@ -65,9 +65,9 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     await node('TEST_ONLY_A');
     assert.ok(!(await p.locator(TABS0).allInnerTexts()).some((x) => /المسؤولون والحسابات/.test(x)), 'V7 · د5-ح: the node tab is deleted');
     await card();
-    assert.equal(await cur(), 'الصلاحيات', 'the accounts live in «الصلاحيات»'); assert.ok(await onCard(), '… on the «مدير الوحدة» card');
-    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A/perm/roles');
-    assert.deepEqual(await rows(NODE), ['TEST_ONLY مدير أ', 'TEST_ONLY موظف أ', 'TEST_ONLY حساب إدارة أ'], 'unit A: managers first, then its accounts');
+    assert.equal(await cur(), 'المسؤولون', 'V7 · د6: the accounts live in the «المسؤولون» tab'); assert.ok(await onCard(), '… with the accounts card');
+    assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_A/admins');
+    assert.deepEqual(await rows(NODE), ['TEST_ONLY مدير أ'], 'unit A: its own admins only (V7 · د6 ب6 · ب9 — was: its manager, then its employee and legacy accounts)');
     assert.equal(await p.locator(NODE + ' .adm-th.g-us').count(), 1, 'the central table header');
     await node('TEST_ONLY_A_S1'); await card();
     assert.deepEqual(await rows(NODE), [], 'section S1: no accounts');
@@ -75,35 +75,40 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     assert.match(s1, /لا مدير لهذا القسم بعد/, 'one empty state, worded for a section'); assert.doesNotMatch(s1, /لا حسابات دخول في هذا النطاق بعد/, 'not a second empty message');
     await node('TEST_ONLY_G'); await card();
     const g = await rows(NODE);
-    assert.deepEqual(g.slice(0, 2).sort(), ['TEST_ONLY مدير أ', 'TEST_ONLY مدير ب'], 'node G: the unit managers of its branch first'); assert.equal(g.length, 4, JSON.stringify(g));
+    assert.deepEqual(g, [], 'node G: its own general managers (none in the lab) — not the unit managers of its branch (V7 · د6 ب9)');
+    assert.match(await p.locator(NODE).innerText(), /لا مدير/, 'one clear empty state');
     assert.ok(!g.includes('Test Administrator'), 'the platform administrator is not in a node scope');
     /* search inside the scope */
-    await p.fill(NODE + ' input.adm-q', 'موظف'); await until(async () => (await rows(NODE)).length === 1, 'the search');
-    assert.deepEqual(await rows(NODE), ['TEST_ONLY موظف أ'], 'search narrows the scope');
+    await node('TEST_ONLY_A'); await card();
+    await p.fill(NODE + ' input.adm-q', 'TEST_ONLY_لا_أحد'); await until(async () => (await rows(NODE)).length === 0, 'the search');
+    assert.match(await p.locator(NODE).innerText(), /لا حسابات تطابق البحث/, 'search narrows the scope');
+    await p.fill(NODE + ' input.adm-q', ''); await until(async () => (await rows(NODE)).length === 1, 'the search cleared');   /* the search is kept per unit: clear it before coming back */
     /* the search belongs to one node page: opening another node starts unfiltered (independent review, V7 P2) */
-    await node('TEST_ONLY_A'); await card(); await until(async () => (await rows(NODE)).length > 1, 'the unfiltered scope').catch(() => {});
+    await node('TEST_ONLY_B'); await card(); await until(async () => (await rows(NODE)).length > 0, 'the unfiltered scope').catch(() => {});
     assert.equal(await p.inputValue(NODE + ' input.adm-q'), '', 'another node: the search is empty');
-    assert.equal((await rows(NODE)).length, 3, 'another node: its whole scope');
+    assert.deepEqual(await rows(NODE), ['TEST_ONLY مدير ب'], 'another node: its own admins');
 
     /* one menu, both places */
     await go('#/sysadmin/users', ALL + ' .adm-tr.g-us .adm-rmb');
     const cMgr = await menu(ALL, 'TEST_ONLY مدير أ'); await p.keyboard.press('Escape');
     const cEmp = await menu(ALL, 'TEST_ONLY موظف أ'); await p.keyboard.press('Escape');
+    /* V7 · د6: the legacy account is not an admin of the unit — its row and menu are in «مراقبة الحسابات» */
+    assert.deepEqual(await menu(ALL, 'TEST_ONLY حساب إدارة أ'), ['تجميد الحساب — غير متاح', 'إعادة تعيين كلمة المرور'], 'legacy account: what the server refuses is marked');
+    await p.keyboard.press('Escape');
     await node('TEST_ONLY_A'); await card();
     const nMgr = await menu(NODE, 'TEST_ONLY مدير أ'); await p.keyboard.press('Escape');
-    const nEmp = await menu(NODE, 'TEST_ONLY موظف أ'); await p.keyboard.press('Escape');
     assert.deepEqual(cMgr, MGR); assert.deepEqual(nMgr, MGR, 'manager: the same menu in the node tab');
-    assert.deepEqual(cEmp, EMP); assert.deepEqual(nEmp, EMP, 'employee: the same menu in the node tab');
-    assert.deepEqual(await menu(NODE, 'TEST_ONLY حساب إدارة أ'), ['تجميد الحساب — غير متاح', 'إعادة تعيين كلمة المرور'], 'legacy account: what the server refuses is marked');
-    await p.keyboard.press('Escape');
+    assert.deepEqual(cEmp, EMP, 'employee: the same menu, in «مراقبة الحسابات» (V7 · د6: not an admin of the unit)');
 
     /* node tab: the dialogs open in place */
     /* V7 · د5-هـ (44): نافذةُ صلاحيات الموظف حُذفت — «تعديل الصلاحيات» يفتح قسم «الأشخاص» في تبويب «الصلاحيات» لوحدة الحساب (مجموعة v2) */
     for (const who of ['TEST_ONLY مدير أ', 'TEST_ONLY موظف أ']) {
+      const where = who === 'TEST_ONLY مدير أ' ? NODE : ALL;   /* V7 · د6: the employee's row is in «مراقبة الحسابات» */
+      if (where === ALL) await go('#/sysadmin/users', ALL + ' .adm-tr.g-us .adm-rmb');
       await p.evaluate(() => { window.__h44 = []; addEventListener('hashchange', (e) => window.__h44.push(new URL(e.newURL).hash)); });
-      await pick(NODE, who, 'تعديل الصلاحيات'); await p.waitForTimeout(1200);
+      await pick(where, who, 'تعديل الصلاحيات'); await p.waitForTimeout(1200);
       /* the address the menu writes (the tab itself is group v2's: until it is merged the page settles on the unit's page) */
-      assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_A/perm/people'), who + ': → the people section of the unit\'s «الصلاحيات» tab');
+      assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_A/people'), who + ': → the people section of the unit\'s «الصلاحيات» tab');
       assert.equal(await p.locator('[role=dialog]').count(), 0, who + ': no permissions dialog');
       await s.go('#/sysadmin/org/TEST_ONLY_A', 3000); await card();
     }
@@ -132,10 +137,13 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
     await pick(NODE, 'TEST_ONLY مدير أ', 'حذف حساب المدير'); assert.ok(await confirmOpen());
     await answer('#bsCfmNo');
     assert.ok(users(lab).some((u) => u.id === id), 'cancel: the manager account stays');
-    await pick(NODE, 'TEST_ONLY موظف أ', 'حذف حساب الدخول'); await answer('#bsCfmOk'); await until(() => !users(lab).some((u) => u.name === 'TEST_ONLY موظف أ'), 'the delete on the server').catch(() => {});
+    await go('#/sysadmin/users', ALL + ' .adm-tr.g-us .adm-rmb');   /* V7 · د6: the employee's login, from «مراقبة الحسابات» */
+    await pick(ALL, 'TEST_ONLY موظف أ', 'حذف حساب الدخول'); await answer('#bsCfmOk'); await until(() => !users(lab).some((u) => u.name === 'TEST_ONLY موظف أ'), 'the delete on the server').catch(() => {});
     assert.ok(!users(lab).some((u) => u.name === 'TEST_ONLY موظف أ'), 'the employee login is deleted (removeStaffAccount)');
-    await until(async () => (await rows(NODE)).length === 2, 'the table to follow').catch(() => {});
-    assert.deepEqual(await rows(NODE), ['TEST_ONLY مدير أ', 'TEST_ONLY حساب إدارة أ'], 'the table follows');
+    await until(async () => !(await rows(ALL)).includes('TEST_ONLY موظف أ'), 'the table to follow').catch(() => {});
+    assert.ok(!(await rows(ALL)).includes('TEST_ONLY موظف أ'), 'the table follows');
+    await node('TEST_ONLY_A'); await card();
+    assert.deepEqual(await rows(NODE), ['TEST_ONLY مدير أ'], 'the unit\'s admins are unchanged');
 
     /* from «مراقبة الحسابات»: edit and permissions open the account's node page on this tab */
     for (const item of ['تعديل بيانات المدير', 'تعديل الصلاحيات']) {
@@ -143,12 +151,12 @@ test('V7 P2 · node tab lists its scope with the central row; one action menu in
       await p.evaluate(() => { window.__h44 = []; addEventListener('hashchange', (e) => window.__h44.push(new URL(e.newURL).hash)); });
       await pick(ALL, 'TEST_ONLY مدير ب', item);
       if (item === 'تعديل الصلاحيات') {
-        await p.waitForFunction(() => (window.__h44 || []).includes('#/sysadmin/org/TEST_ONLY_B/perm/people')).catch(() => {});
-        assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_B/perm/people'), item + ' → unit B, people section (V7 · د5-هـ 44)');
+        await p.waitForFunction(() => (window.__h44 || []).includes('#/sysadmin/org/TEST_ONLY_B/people')).catch(() => {});
+        assert.ok((await p.evaluate(() => window.__h44)).includes('#/sysadmin/org/TEST_ONLY_B/people'), item + ' → unit B, people section (V7 · د5-هـ 44)');
       } else {
-        await p.waitForFunction(() => location.hash === '#/sysadmin/org/TEST_ONLY_B/perm/roles').catch(() => {});
-        await until(onCard, 'the «مدير الوحدة» card').catch(() => {});
-        assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B/perm/roles', item + ' → unit B, «الصلاحيات ← الأدوار»'); assert.ok(await onCard(), '… on «مدير الوحدة»');
+        await p.waitForFunction(() => location.hash === '#/sysadmin/org/TEST_ONLY_B/admins').catch(() => {});
+        await until(onCard, 'the «المسؤولون» tab').catch(() => {});
+        assert.equal(await H(), '#/sysadmin/org/TEST_ONLY_B/admins', item + ' → unit B, «المسؤولون» (V7 · د6)'); assert.ok(await onCard(), '… with the accounts card');
       }
       await p.goBack(); await p.waitForFunction(() => location.hash === '#/sysadmin/users').catch(() => {}); assert.equal(await H(), '#/sysadmin/users', 'Back returns');
     }
@@ -162,7 +170,7 @@ test('V7 P2 · phone light and dark: the node accounts table fits, its menu is n
     const bad = [];
     for (const th of ['light', 'dark']) {
       await p.evaluate((x) => KIVO.__bsThemeSet(x), th); await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));   /* a synchronous attribute; two frames to paint */
-      for (const id of ['TEST_ONLY_A', 'TEST_ONLY_G']) {
+      for (const id of ['TEST_ONLY_A', 'TEST_ONLY_B']) {   /* V7 · د6: G has no admin of its own in the lab (its table is empty) — B has one */
         await node(id); await card();
         const ov = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         if (ov > 1) bad.push(th + ' ' + id + ': scrolls sideways ' + ov);
