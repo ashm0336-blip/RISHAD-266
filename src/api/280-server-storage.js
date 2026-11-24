@@ -1309,6 +1309,8 @@
     var pre = K + '@';
     Object.keys(operationKnown9).forEach(function (key) { if (key.indexOf(pre) === 0) { delete mem[key]; delete baseVal[key]; delete krev[key]; operationKnown9[key] = { state: 'unloaded' }; } });
     delete periodGroups9[K]; delete periodLogicalRev9[K];
+    /* أُسقط المورد (خبرُ تغييرٍ من غيري · رفض · تغيّرُ الصلاحيات): القراءةُ التالية «وثيقةٌ جديدة» — مراجعةُ العرض تتقدّم فلا تتبنّاها مسودةٌ قديمة (كما كانت مراجعةُ K) */
+    if (periodOwn9(periodViewRev9, K)) periodViewRev9[K]++;
   }
   /* «الوثيقة» المعروضة للصفحة: الرأس + الفتراتُ المحمَّلة. known.rev (أساسُ المسودة) يتقدّم حين يتغيّر ما سبق تحميلُه فقط —
      فتحميلُ شهرٍ آخر بالتنقّل لا يُبطل مسودةً مفتوحة؛ krev يتقدّم مع كل تغيّرٍ في النص (بصمةُ الرسم في الصفحات). */
