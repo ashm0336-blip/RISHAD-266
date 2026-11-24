@@ -104,8 +104,9 @@ var REG = [
   function isMgr(){ var u = me(); return !!(u && (u.role === 'dept' || u.role === 'gm' || (u.role === 'staff' && u.mgr))); }
   var HMON = ["محرم","صفر","ربيع الأول","ربيع الآخر","جمادى الأولى","جمادى الآخرة","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"];
   /* V7 · 53 تقويم (ق1 · ق9): الشهرُ الميلادي «YYYY-MM» باسمه الميلادي («نوفمبر 2026»)؛ ومفتاحُ شهرٍ هجري قديم (13xx–15xx) يُقرأ كما كُتب باسمه الهجري */
-  var GMON = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-  function monLbl(mk){ var m = /^(\d{3,4})[-\/](\d{1,2})$/.exec(String(mk || '')); if (!m) return String(mk || ''); if (/^(19|20|21)\d\d$/.test(m[1]) && GMON[+m[2] - 1]) return GMON[+m[2] - 1] + ' ' + m[1]; return HMON[+m[2] - 1] ? HMON[+m[2] - 1] + ' ' + m[1] + ' هـ' : String(mk || ''); }
+  /* V7 · 53 تقويم (§7): اليومُ «YYYY-MM-DD» نصّاً ميلادياً («24 نوفمبر 2026»)، ومفتاحُ يومٍ هجري قديم كما كُتب */
+  function dayLbl(k){ try { var C = KIVO.BassamCal; if (C.isGKey(String(k || '').slice(0, 10), 'day')) return C.fmtDay(String(k).slice(0, 10)); } catch(e){} return String(k || '').replace(/-/g, '/'); }
+  function monLbl(mk){ var m = /^(\d{3,4})[-\/](\d{1,2})$/.exec(String(mk || '')); if (!m) return String(mk || ''); if (/^(19|20|21)\d\d$/.test(m[1]) && +m[2] >= 1 && +m[2] <= 12) { try { return KIVO.BassamCal.fmtMonth(m[1] + '-' + (+m[2] < 10 ? '0' : '') + (+m[2])); } catch(e){} } return HMON[+m[2] - 1] ? HMON[+m[2] - 1] + ' ' + m[1] + ' هـ' : String(mk || ''); }
   /* R183 (الملاحظة ١٢): «{العدد} قطعة» في نصّ التنبيه ← صيغةُ العدّ للعدد الفعلي، والصفةُ التالية تتبعه؛
      وبعد حرف الجرّ المثنى مجرور («منذ يومين»). غيرُ العدد («{الفعل} مهمة») يبقى كما هو. */
   var CNT_ADJ = { 'موظف': { 'جديداً': 'موظف|جديد', 'موزَّعين': 'موظف|موزَّع' }, 'قطعة': { 'محفوظة': 'قطعة|محفوظة' }, 'محاولة': { 'فاشلة': 'محاولة|فاشلة' } };
@@ -379,6 +380,6 @@ var REG = [
   I.CH=CH; I.D=D; I.GO_NAV=GO_NAV; I.goNav=goNav; I.goKpi=goKpi; I.J=J; I.KC=KC; I.KI=KI; I.KN=KN; I.LEAVES=LEAVES; I.LV=LV; I.P=P; I.REG=REG; I.TO=TO;
   I.ack=ack; I.act=act; I.bcAll=bcAll; I.bcDue=bcDue; I.bcPreviewMe=bcPreviewMe; I.bcRemind=bcRemind; I.bcSend=bcSend; I.bcSendDept=bcSendDept; I.bcStats=bcStats; I.bcWithdraw=bcWithdraw;
   I.bkTime=bkTime; I.cfg=cfg; I.deptName=deptName; I.depts=depts; I.dismiss=dismiss; I.dismissAll=dismissAll; I.emit=emit; I.exportDomain=exportDomain; I.fill=fill; I.flushEvents=flushEvents; I.goOk=goOk;
-  I.isMgr=isMgr; I.isSuper=isSuper; I.list=list; I.markAll=markAll; I.markRead=markRead; I.me=me; I.monLbl=monLbl; I.muteGet=muteGet; I.muteSet=muteSet; I.myDept=myDept;
+  I.isMgr=isMgr; I.isSuper=isSuper; I.list=list; I.markAll=markAll; I.markRead=markRead; I.me=me; I.monLbl=monLbl; I.dayLbl=dayLbl; I.muteGet=muteGet; I.muteSet=muteSet; I.myDept=myDept;
   I.rawGet=rawGet; I.rawSet=rawSet; I.refresh=refresh; I.poll=poll; I.loadMore=loadMore; I.refreshManagement=refreshManagement; I.loadMoreBroadcasts=loadMoreBroadcasts; I.resetCfg=resetCfg; I.securityPoll=securityPoll; I.setCfg=setCfg; I.status=status; I.targets=targets; I.typeOf=typeOf; I.types=types; I.unread=unread; I.actorType=actorType; I.selfAct=selfAct;
 })();
