@@ -17,6 +17,7 @@ ALLOW = [  # (نمط · السبب) — المولَّدُ يُعاد توليد
     ('styles/080-theme-dark.css',       'مولَّد: tools/tokens.py من src/styles/tokens'),
     ('core/020-react-dom.js',           'مورَّد: react-dom 18.3.1 كما نُشر (docs/dependencies-policy.md)'),
     ('core/030-pages-loader.js',        'مورَّد: fflate 0.8.3 مصغَّراً كما نُشر (docs/dependencies-policy.md)'),
+    ('assets/vendor/html2canvas-*.min.js', 'مورَّد: html2canvas 1.4.1 مصغَّراً كما نُشر (docs/dependencies-policy.md · V7 · 53)'),
     ('assets/icons/catalog.json',       'بيانات: جسمُ أيقونةٍ (SVG) نصاً واحداً — tools/icons.py extract/index'),
     ('slots/tools/*.tpl',               'قالب: ملفُّ إعدادٍ في tools/ (خارج src) بسطوره كما هي — يُحقن بـtools/systems.py (V7 · د2)'),
 ]
