@@ -105,7 +105,7 @@ async function opLoadMany(env, keys, retired) {
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
   requests.forEach(function (request) {
     var info = request.info, physical = physicalByKey[request.key];
-    var domain = ocFromPhysical(info.prepared, info.dept, info.resource, physical), projection = ocInflate(info.prepared, domain);
+    var read53 = ocFromPhysicalRead(info.prepared, info.dept, info.resource, physical), domain = read53.domain, projection = read53.projection;   /* V7 · 53 (البند 6): فكٌّ واحد لا اثنان */
     values[request.key] = projection.present ? JSON.stringify(projection.value) : null;
     domains[request.key] = domain;
     guards.push.apply(guards, opStateGuards(env, info, domain, empty));

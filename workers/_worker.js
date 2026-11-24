@@ -18623,7 +18623,16 @@ function ocOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 function ocObj(o) { return o !== null && typeof o === 'object' && !Array.isArray(o) && Object.prototype.toString.call(o) === '[object Object]'; }
 function ocSet(o, k, v) { Object.defineProperty(o, k, { value: v, enumerable: true, configurable: true, writable: true }); }
 function ocIdentifier(s) { if (typeof s !== 'string' || !/^[a-z][a-z0-9_]*$/.test(s)) throw ocError('sql-identifier'); return s; }
+/* V7 · 53 (البند 6 · الأداء): اسمُ العمود دالةٌ نقيّة لاسم الحقل — يُحفظ بعد أول حساب (كان يُعاد بتعبيرين منتظمين لكل حقلٍ في كل صفّ عند كل قراءة) */
+var OC_FIELD_CACHE = new Map();
+/* V7 · 53 (الأداء): أعمدةُ «_kind» (قيمتُها الافتراضية 0) لكل قائمة أعمدة — تُحسب مرةً لا لكل صفّ */
+var OC_KIND_COLS = new WeakMap();
+function ocKindCols(columns) { var k = OC_KIND_COLS.get(columns); if (!k) { k = columns.map(function (c) { return /_kind$/.test(c); }); OC_KIND_COLS.set(columns, k); } return k; }
 function ocField(k) {
+  var hit = OC_FIELD_CACHE.get(k); if (hit !== undefined) return hit;
+  var out = ocFieldOf(k); if (OC_FIELD_CACHE.size < 4096) OC_FIELD_CACHE.set(k, out); return out;
+}
+function ocFieldOf(k) {
   if (!/^[A-Za-z0-9_]+$/.test(k)) throw ocError('field-definition');
   // SQLite identifiers ignore case; cAt and cat are distinct business fields.
   // Escape underscores too, so a literal escape-looking key cannot collide.
@@ -18744,7 +18753,9 @@ function ocScalarUnpack(row, prefix, type, missing) {
   var kind = row[prefix + 'kind'], text = row[prefix + 'text'], number = row[prefix + 'number'];
   if (kind === 0 && missing) { if (text !== null || number !== null) throw ocError('noncanonical-scalar'); return undefined; }
   var value = kind === 1 ? null : kind === 2 ? text : kind === 3 ? number : kind === 4 && (number === 0 || number === 1) ? !!number : undefined;
-  if (value === undefined || JSON.stringify(ocScalarPack(value, type)) !== JSON.stringify([kind, text, number])) throw ocError('noncanonical-scalar');
+  /* V7 · 53 (الأداء): المقارنةُ نفسُها عنصراً بعنصر بدل JSON.stringify مرتين لكل قيمة (الأعدادُ منتهية، و0/−0 سواءٌ في الطريقتين) */
+  var canon = value === undefined ? null : ocScalarPack(value, type);
+  if (value === undefined || canon[0] !== kind || canon[1] !== text || canon[2] !== number) throw ocError('noncanonical-scalar');
   return value;
 }
 function ocEntry(spec, key) {
@@ -18762,7 +18773,7 @@ function ocConvert(prepared, department, resource, value, present) {
   var root = prepared.resources[resource]; if (!root) throw ocError('resource');
   var rows = {}; prepared.order.forEach(function (spec) { rows[spec.table] = []; });
   function freshRow(spec, key, parent, member, position) {
-    var row = {}; spec.columns.forEach(function (column) { row[column] = /_kind$/.test(column) ? 0 : null; });
+    var row = {}, K = ocKindCols(spec.columns); spec.columns.forEach(function (column, n) { row[column] = K[n] ? 0 : null; });
     Object.assign(row, { department_id: department, resource: resource, row_key: key, parent_key: parent, member_key: member, position: position });
     rows[spec.table].push(row); return row;
   }
@@ -18822,6 +18833,14 @@ function ocInflate(prepared, domain) {
       map.set(row.row_key, row);
     }); byTable[spec.table] = map;
   });
+  /* V7 · 53 (البند 6 · الأداء): فهرسُ الأبناء بالأب لكل جدول — يُبنى مرةً عند أول حاجة. كان كلُّ عنصرِ مصفوفةٍ أو خريطة يمسح الجدولَ كلَّه
+     (تربيعيٌّ في حجم المستند: 500 موظف · أيامُ الجدول والتقرير). الترتيبُ داخل كل أبٍ ترتيبُ الإدراج نفسُه، فالنتيجةُ هي هي */
+  var kids = {};
+  function childrenOf(table, parent) {
+    var idx = kids[table];
+    if (!idx) { idx = kids[table] = new Map(); byTable[table].forEach(function (r) { var a = idx.get(r.parent_key); if (!a) idx.set(r.parent_key, a = []); a.push(r); }); }
+    return idx.get(parent) || [];
+  }
   function read(spec, row) {
     used.add(spec.table + '\0' + row.row_key);
     if (row.node_kind === 1) return null;
@@ -18836,7 +18855,7 @@ function ocInflate(prepared, domain) {
     }
     value = kind === 'array' || kind === 'tuple' ? [] : {};
     if (kind === 'array') {
-      var entries = Array.from(byTable[spec.entry.table].values()).filter(function (r) { return r.parent_key === row.row_key; }).sort(function (a, b) { return a.position - b.position; });
+      var entries = childrenOf(spec.entry.table, row.row_key).slice().sort(function (a, b) { return a.position - b.position; });
       entries.forEach(function (entry, index) { if (entry.position !== index) throw ocError('array-position'); value.push(read(spec.entry, entry)); });
       return value;
     }
@@ -18860,7 +18879,7 @@ function ocInflate(prepared, domain) {
     });
     if (kind === 'map') {
       var candidates = [spec.entry].concat(spec.patterns.map(function (p) { return p.spec; })).filter(Boolean), entries = [], visited = new Set();
-      candidates.forEach(function (candidate) { if (visited.has(candidate.table)) return; visited.add(candidate.table); byTable[candidate.table].forEach(function (entry) { if (entry.parent_key === row.row_key && entry.row_key.startsWith(row.row_key + '/e:')) entries.push({ spec: candidate, row: entry }); }); });
+      candidates.forEach(function (candidate) { if (visited.has(candidate.table)) return; visited.add(candidate.table); childrenOf(candidate.table, row.row_key).forEach(function (entry) { if (entry.parent_key === row.row_key && entry.row_key.startsWith(row.row_key + '/e:')) entries.push({ spec: candidate, row: entry }); }); });
       entries.sort(function (a, b) { return a.row.position - b.row.position; }).forEach(function (entry) {
         var key = entry.row.member_key;
         if (typeof key !== 'string' || members.some(function (m) { return m.key === key; }) || ocOwn(spec.fields, key) || ocEntry(spec, key) !== entry.spec) throw ocError('map-member');
@@ -18878,7 +18897,8 @@ function ocInflate(prepared, domain) {
   prepared.order.forEach(function (spec) { byTable[spec.table].forEach(function (row) { if (!used.has(spec.table + '\0' + row.row_key)) throw ocError('orphan-row'); }); });
   var canonical = ocConvert(prepared, domain.departmentId, domain.resource, result.value, result.present);
   prepared.order.forEach(function (spec) {
-    function sorted(list) { return list.slice().sort(function (a, b) { return a.row_key.localeCompare(b.row_key); }).map(function (r) { return spec.columns.map(function (c) { return r[c]; }); }); }
+    /* V7 · 53 (الأداء): ترتيبٌ ثابت بوحدات النص بدل localeCompare — المفاتيحُ فريدة في الطرفين (row · byTable)، فالمساواةُ بعد الترتيب هي هي */
+    function sorted(list) { return list.slice().sort(function (a, b) { return a.row_key < b.row_key ? -1 : a.row_key > b.row_key ? 1 : 0; }).map(function (r) { return spec.columns.map(function (c) { return r[c]; }); }); }
     if (JSON.stringify(sorted(canonical.rows[spec.table])) !== JSON.stringify(sorted(rows[spec.table] || []))) throw ocError('noncanonical-rows');
   });
   return result;
@@ -18926,11 +18946,19 @@ function ocFromPhysical(prepared, department, resource, physical) {
     var entity = spec.entityTable ? entities[spec.entityTable].get(node.row_key) : {};
     if (!entity) throw ocError('missing-entity');
     if (spec.entityTable) used.add(spec.entityTable + '\0' + node.row_key);
-    var row = {}; spec.columns.forEach(function (column) { row[column] = ocOwn(node, column) ? node[column] : ocOwn(entity, column) ? entity[column] : /_kind$/.test(column) ? 0 : null; });
+    var row = {}, K = ocKindCols(spec.columns); spec.columns.forEach(function (column, n) { row[column] = ocOwn(node, column) ? node[column] : ocOwn(entity, column) ? entity[column] : K[n] ? 0 : null; });
     domain.rows[spec.table].push(row);
   });
   Object.keys(entities).forEach(function (name) { entities[name].forEach(function (row) { if (!used.has(name + '\0' + row.row_key)) throw ocError('orphan-entity'); }); });
-  ocInflate(prepared, domain); return domain;
+  OC_INFLATED.set(domain, ocInflate(prepared, domain)); return domain;
+}
+/* V7 · 53 (البند 6 · الأداء): القراءةُ (019r) كانت تفكّ المستندَ مرتين — ocFromPhysical تفكّه للتحقق ثم ocInflate من جديد للقيمة نفسها.
+   ocFromPhysicalRead تعيد الاثنين من فكٍّ واحد؛ ocFromPhysical وocInflate لبقية المستدعين كما هما */
+var OC_INFLATED = new WeakMap();
+function ocFromPhysicalRead(prepared, department, resource, physical) {
+  var domain = ocFromPhysical(prepared, department, resource, physical), projection = OC_INFLATED.get(domain);
+  OC_INFLATED.delete(domain);
+  return { domain: domain, projection: projection || ocInflate(prepared, domain) };
 }
 function ocCreateStatements(prepared) {
   var out = ["CREATE TABLE IF NOT EXISTS ops_nodes(department_id TEXT NOT NULL,resource TEXT NOT NULL,row_key TEXT NOT NULL,parent_key TEXT,member_key TEXT,position INTEGER NOT NULL,node_kind INTEGER NOT NULL,variant INTEGER,tuple_length INTEGER,schema_id TEXT NOT NULL,entity_kind TEXT,PRIMARY KEY(department_id,resource,row_key),UNIQUE(department_id,resource,row_key,entity_kind),FOREIGN KEY(department_id,resource,parent_key)REFERENCES ops_nodes(department_id,resource,row_key)ON DELETE CASCADE)WITHOUT ROWID",
@@ -20379,7 +20407,7 @@ async function opLoadMany(env, keys, retired) {
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
   requests.forEach(function (request) {
     var info = request.info, physical = physicalByKey[request.key];
-    var domain = ocFromPhysical(info.prepared, info.dept, info.resource, physical), projection = ocInflate(info.prepared, domain);
+    var read53 = ocFromPhysicalRead(info.prepared, info.dept, info.resource, physical), domain = read53.domain, projection = read53.projection;   /* V7 · 53 (البند 6): فكٌّ واحد لا اثنان */
     values[request.key] = projection.present ? JSON.stringify(projection.value) : null;
     domains[request.key] = domain;
     guards.push.apply(guards, opStateGuards(env, info, domain, empty));
