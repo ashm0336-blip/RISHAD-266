@@ -1184,7 +1184,10 @@
           delete sent9[key]; delete why9[key]; return;
         }
         var present = key in operation.snap.set;
-        if (present) { mem[key] = operation.snap.set[key]; baseVal[key] = mem[key]; } else { delete mem[key]; delete baseVal[key]; }
+        /* V7 · 53 (port-sync · بند 12 · 0022): الخادمُ أعاد ما حُجب عنّي من المخزَّن فاختلف المحفوظُ عمّا أرسلتُه — ما يراه لي (norm) هو أساسي وقيمتي
+           المحفوظة، لا ما أرسلتُه (كان يُعدّ الفرقُ بعدها كاتباً آخر: «حلّت قيمةٌ أخرى محلَّ تعديلك»)؛ والتعارضُ الحقيقيُّ يُعلن كما كان */
+        var nv53 = present && operationObject9(data.norm) && typeof data.norm[key] === 'string' ? data.norm[key] : null;
+        if (present) { mem[key] = nv53 !== null && !(key in pSet) ? nv53 : operation.snap.set[key]; baseVal[key] = nv53 !== null ? nv53 : mem[key]; } else { delete mem[key]; delete baseVal[key]; }
         krev[key] = revs[key]; operationKnown9[key] = { state: present ? 'ready' : 'absent', epoch: operation.epoch, rev: revs[key], stamp: operation.stamp };
         delete sent9[key]; delete why9[key]; notify(key);
       });
@@ -1613,9 +1616,10 @@
   // Only this closure can prove that a dispatched change event already has a
   // confirmed typed read. Arbitrary/custom remote events still invalidate.
   var operationRemoteProof9 = new WeakMap();
-  function operationDispatchRemote9(keys, v, confirmed, foreign) {
-    /* foreign: مفاتيحُ العمليات التي تغيّرت مراجعتُها فعلاً عمّا في هذا التبويب (تعديلُ جهازٍ آخر) — صدى حفظي أنا ليس منها */
-    var event = new CustomEvent('bassam:remote', { detail: { keys: keys, v: v, foreign: foreign || [] } });
+  function operationDispatchRemote9(keys, v, confirmed, foreign, by) {
+    /* foreign: مفاتيحُ العمليات التي تغيّرت مراجعتُها فعلاً عمّا في هذا التبويب (تعديلُ جهازٍ آخر) — صدى حفظي أنا ليس منها
+       V7 · 53 (port-sync · بند 5): by — أسماءُ من عدّل يرسلها الخادمُ مع التغيير (/api/changes) فتصل إلى تنبيه الصفحة */
+    var event = new CustomEvent('bassam:remote', { detail: { keys: keys, v: v, foreign: foreign || [], by: Array.isArray(by) ? by.slice(0, 3).map(String) : [] } });
     operationRemoteProof9.set(event, new Set(confirmed || []));
     try { window.dispatchEvent(event); } finally { operationRemoteProof9.delete(event); }
   }
@@ -2272,7 +2276,7 @@
                 if (j.meChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:me', { detail: privateDetail })); } catch (eM) {}
                 if (j.tasksChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:tasks', { detail: privateDetail })); } catch (eT) {}
               }
-              if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed, result.foreign); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
+              if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed, result.foreign, j.by); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
               if (ks.some(function (k) { return SLICEK9.test(k); })) { var s9 = slice9(); if (s9 !== slice0) { slice0 = s9; readSet9(false); } }
               if (j.more && BOOT.v === j.v && ++pages < MORE_MAX9 && !sx9) return ask(false);   /* C2: البقيةُ فوراً من آخر مراجعةٍ وصلت */
             });

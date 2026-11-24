@@ -313,7 +313,7 @@ async function szCalendar(ctx, q, clock, catalog) {
       sql.indexOf("$MONTH") >= 0 ? { y: y, m: m } : null,
     );
     if (sql.indexOf("$MONTH") >= 0)
-      sql = sql.replace("$MONTH", irQueryMonth(p, y, m));
+      sql = sql.split("$MONTH").join(irQueryMonth(p, y, m));
     if (sql.indexOf("$YEAR") >= 0)
       sql = sql.replace("$YEAR", irQueryParam(p, y));
     p.sql = sql;
@@ -335,6 +335,10 @@ async function szCalendar(ctx, q, clock, catalog) {
   add(
     "SELECT DISTINCT COALESCE(location,'')value FROM data WHERE $MONTH ORDER BY value",
   );
+  /* V7 · 53 (port-sync · بند 8 · 0013): مجاميعُ الشهر لكروت المؤشرات — القطعُ بالتصنيف والبند، والمحاضرُ بالموقع والمسجِّل ([نوع, اسم, عدد]) */
+  add(
+    "SELECT 'c't,i.category k,SUM(i.qty)n FROM line i JOIN data r ON i.report_id=r.report_id WHERE $MONTH GROUP BY 2 UNION ALL SELECT 'i',i.item_name,SUM(i.qty)FROM line i JOIN data r ON i.report_id=r.report_id WHERE $MONTH GROUP BY 2 UNION ALL SELECT 'l',COALESCE(location,''),COUNT(*)FROM data WHERE $MONTH GROUP BY 2 UNION ALL SELECT 'b',rec_name,COUNT(*)FROM data WHERE $MONTH GROUP BY 2",
+  );
   var r = await szPlans(ctx, plans),
     actions = {};
   r[4].forEach(function (x) {
@@ -351,7 +355,7 @@ async function szCalendar(ctx, q, clock, catalog) {
     days: r[2].filter(function (x) {
       return x.d >= 1 && x.d <= 30;
     }),
-    monthTotals: szMetrics(r[3][0], actions),
+    monthTotals: Object.assign(szMetrics(r[3][0], actions), { by: r[6].map(function (x) { return [x.t, x.k, x.n]; }) }),
     facets: {
       locations: r[5].map(function (x) {
         return x.value;

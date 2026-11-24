@@ -56,6 +56,9 @@
  "derived": [
   "src/pages/Irshad.dc.html"
  ],
+ "shared": [
+  "kpiring"
+ ],
  "sharedStaysInBase": [
   "workers/parts/046-kivo-build-3.js",
   "workers/parts/047-retro.js"
@@ -103,7 +106,7 @@
   },
   "budget.page.irshad": {
    "order": 10,
-   "text": "  \"page:Irshad\": 41100,\r\n"
+   "text": "  \"page:Irshad\": 42000,\r\n"
   },
   "uxStates.irshad": {
    "order": 10,

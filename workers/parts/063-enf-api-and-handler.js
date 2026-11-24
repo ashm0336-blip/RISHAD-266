@@ -1029,7 +1029,22 @@ async function changesRoute(env, url, ss) {
   /* V7 · 53 (العقد §5): مفاتيحُ الفترات التي تغيّرت (K@p · K@) بحكم رؤية */
   var pkC = ((ch && ch.results) || []).filter(function (r) { if (r.rev > vC) return false; var x = String(r.k).indexOf('@') > 0 ? opPeriodKey(r.k) : null; return x && x.period !== '*' && canSee(AC, x.key); }).map(function (r) { return r.k; });
   if (pkC.length) outC.pk = pkC.slice(0, CHANGES_MAX * 4);
+  var byC = await changesBy(env, AC, since, ksC); if (byC.length) outC.by = byC;   /* V7 · 53 (port-sync · بند 5) */
   return json(outC);
+}
+/* V7 · 53 (port-sync · بند 5 · قرار المالك): مَن عدّل؟ — تنبيهُ «حُدّثت البيانات» يسمّي صاحبَ التعديل، والاسمُ يرسله الخادمُ مع التغيير نفسِه:
+   أسماءُ أصحاب آخر التعديلات على المفاتيح المُعادة وحدَها (وهي ما يراه الطالبُ أصلاً بعقد القراءة) من سجل النشاط aud الذي تكتب فيه كلُّ حفظةٍ صفّاً
+   على الأقل — نافذةُ عشر دقائق على فهرس aud_ts؛ الطالبُ نفسُه لا يُذكر؛ ثلاثةٌ على الأكثر. الحقلُ اختياريّ: يغيب إن لم يُعرف أحد أو تعذّرت القراءة. */
+async function changesBy(env, A, since, keys) {
+  try {
+    if (!keys.length) return [];
+    var rs = await env.DB.prepare('SELECT uid, MAX(rev) AS r FROM aud WHERE ts > ?1 AND rev >= ?2 AND k IN (SELECT value FROM json_each(?3)) GROUP BY uid ORDER BY r DESC LIMIT 4').bind(Date.now() - 600000, since, JSON.stringify(keys)).all(), out = [];
+    ((rs && rs.results) || []).forEach(function (r) {
+      var u = (A.users || []).filter(function (x) { return x && x.id === r.uid; })[0];
+      if (r.uid && r.uid !== A.u.id && out.length < 3) out.push(String((u && u.name) || (u && u.role === 'super' ? 'مدير النظام' : 'مستخدم')).slice(0, 60));
+    });
+    return out;
+  } catch (e) { return []; }
 }
 /* ── سحب مفاتيح بعينها بأحدث قيمها — للتحديث الحي بلا إعادة تحميل (KIVO_264: نُقل من handle حرفاً + C2) ── */
 async function getRoute(env, url, ss) {
@@ -1190,6 +1205,7 @@ export default {
       if (path === '/api/seized' || path === '/api/seized/act' || path === '/api/seized/export') return await bdRoute(env, request, url, ss, 'seized');
       if (path === '/api/award' || path === '/api/award/act' || path === '/api/award/export') return await bdRoute(env, request, url, ss, 'awards');
       if (path === '/api/dstats') return await dsDomainRoute(env, request, url, ss);
+      if (path === '/api/plan/opt-ref') return await poRoute(env, request, url, ss);
       /* RISHAD266: توليدُ المواعيد المتكررة ومسحُ المواعيد (التذكير · التأخر · الانقضاء) تشغيلُ نظامٍ يجري عند قراءة مخزن مهام الإدارة — كما كان طلبُ الصفحة المحذوف.
          يجري بعد أن تقبل القراءةُ نفسُها الطلبَ (الطريقة · الجلسة uid · المفاتيح · الصلاحية: 019r) ولم تحجب مفتاحَ المهام عن القارئ، وبالحارس المشترك 074؛
          فالطلبُ المرفوض لا يمسّ شيئاً. وإن جرى عملٌ أُعيدت القراءةُ ليصل أثرُه في الردّ نفسِه */

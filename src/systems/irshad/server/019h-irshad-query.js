@@ -104,8 +104,12 @@ async function irQueryCalendar(ctx, q, clock) {
   months.sql = 'SELECT hijri_month m,COUNT(*) n FROM data WHERE hijri_year=' + irQueryParam(months, y) + ' GROUP BY hijri_month ORDER BY hijri_month';
   days.sql = 'SELECT hijri_day d,COUNT(*) n FROM data WHERE ' + irQueryMonth(days, y, m) + ' GROUP BY hijri_day ORDER BY hijri_day';
   stats.sql = 'SELECT ' + irQueryMetricSql() + ' FROM data WHERE ' + irQueryMonth(stats, y, m);
-  var rows = await irQueryBatch(ctx, [total, months, days, stats]), metrics = irQueryMetrics(rows[3][0]);
+  /* V7 · 53 (port-sync · بند 8 · 0013): مجاميعُ الشهر لكروت المؤشرات — مستفيدو الترجمة باللغة، والتقاريرُ بالوردية، والمستفيدون بالموقع ([نوع, اسم, عدد]) */
+  var by = irQueryPlan(ctx), w = irQueryMonth(by, y, m);
+  by.sql = "SELECT 'g' t,l.language k,SUM(l.count) n FROM data r JOIN irshad_report_languages l ON l.department_id=r.department_id AND l.report_id=r.report_id WHERE " + w + " GROUP BY 2 UNION ALL SELECT 's',shift,COUNT(*) FROM data WHERE " + w + " GROUP BY 2 UNION ALL SELECT 'l',location,SUM(ben) FROM data WHERE " + w + ' GROUP BY 2';
+  var rows = await irQueryBatch(ctx, [total, months, days, stats, by]), metrics = irQueryMetrics(rows[3][0]);
   delete metrics.employees;
+  metrics.by = rows[4].map(function (x) { return [x.t, x.k, x.n]; });
   return { year: y, month: m, total: rows[0][0].total, yearTotal: rows[0][0].yearTotal,
     months: rows[1].filter(function (r) { return r.m >= 1 && r.m <= 12; }),
     days: rows[2].filter(function (r) { return r.d >= 1 && r.d <= 30; }), monthTotals: metrics };

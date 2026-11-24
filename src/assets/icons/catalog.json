@@ -362,7 +362,7 @@
     "modules/admin/view.html": 1,
     "modules/employees/view.html": 3,
     "modules/kpis/view.html": 1,
-    "systems/seized/client/view.html": 3
+    "systems/seized/client/view.html": 2
    },
    "viewBox": "0 0 24 24"
   },
@@ -1021,7 +1021,8 @@
    "body": "<rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\"></rect><circle cx=\"9\" cy=\"10\" r=\"2\"></circle><path d=\"M15 8h2\"></path><path d=\"M15 12h2\"></path><path d=\"M6 16h12\"></path>",
    "uses": {
     "systems/irshad/client/view.html": 1,
-    "systems/rasd/client/view.html": 1
+    "systems/rasd/client/view.html": 1,
+    "systems/seized/client/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -1037,10 +1038,10 @@
    "uses": {
     "systems/award/client/view.html": 5,
     "systems/daily/client/view.html": 3,
-    "systems/irshad/client/view.html": 6,
+    "systems/irshad/client/view.html": 5,
     "systems/plan/client/view.html": 1,
     "systems/rasd/client/view.html": 5,
-    "systems/seized/client/view.html": 6,
+    "systems/seized/client/view.html": 5,
     "systems/staff/client/view.html": 1,
     "systems/tasks/client/view.html": 1
    },
@@ -1317,7 +1318,9 @@
   "i-7c685a60": {
    "body": "<circle cx=\"48\" cy=\"48\" r=\"41\" fill=\"none\" stroke=\"var(--bd-xeff1f4)\" stroke-width=\"9\"></circle><sc-for list=\"{{k.ring}}\" as=\"s\" hint-placeholder-count=\"3\"><circle cx=\"48\" cy=\"48\" r=\"41\" fill=\"none\" stroke=\"{{s.color}}\" stroke-width=\"9\" stroke-dasharray=\"{{s.dash}}\" stroke-dashoffset=\"{{s.off}}\"></circle></sc-for>",
    "uses": {
-    "systems/rasd/client/view.html": 1
+    "systems/irshad/client/view.html": 1,
+    "systems/rasd/client/view.html": 1,
+    "systems/seized/client/view.html": 1
    },
    "viewBox": "0 0 96 96"
   },
@@ -1731,7 +1734,7 @@
   "i-9c9eaa30": {
    "body": "<path d=\"M21 8v13H3V8M1 3h22v5H1zM10 12h4\"></path>",
    "uses": {
-    "systems/seized/client/view.html": 2
+    "systems/seized/client/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -1875,9 +1878,9 @@
   "i-a394ca52": {
    "body": "<path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"></path><path d=\"M14 2v6h6\"></path>",
    "uses": {
-    "systems/irshad/client/view.html": 9,
+    "systems/irshad/client/view.html": 7,
     "systems/rasd/client/view.html": 4,
-    "systems/seized/client/view.html": 4
+    "systems/seized/client/view.html": 3
    },
    "viewBox": "0 0 24 24"
   },
@@ -1942,7 +1945,7 @@
     "systems/dstats/client/view.html": 1,
     "systems/irshad/client/view.html": 4,
     "systems/rasd/client/view.html": 1,
-    "systems/seized/client/view.html": 11
+    "systems/seized/client/view.html": 10
    },
    "viewBox": "0 0 24 24"
   },
@@ -1967,13 +1970,6 @@
    "body": "<path d=\"{{dsEyePathsIcon}}\"></path><sc-if value=\"{{dsLayPaths}}\" hint-placeholder-val=\"{{ true }}\"><circle cx=\"12\" cy=\"12\" r=\"3\"></circle></sc-if>",
    "uses": {
     "systems/daily/client/view.html": 1
-   },
-   "viewBox": "0 0 24 24"
-  },
-  "i-aa214fa8": {
-   "body": "<path d=\"m5 8 6 6\"></path><path d=\"m4 14 6-6 2-3\"></path><path d=\"M2 5h12\"></path><path d=\"M7 2h1\"></path><path d=\"m22 22-5-10-5 10\"></path><path d=\"M14 18h6\"></path>",
-   "uses": {
-    "systems/irshad/client/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -2426,7 +2422,7 @@
   "i-cb5c501e": {
    "body": "<path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"></path><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"></path>",
    "uses": {
-    "systems/irshad/client/view.html": 3
+    "systems/irshad/client/view.html": 2
    },
    "viewBox": "0 0 24 24"
   },

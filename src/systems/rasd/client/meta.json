@@ -1,6 +1,9 @@
 {
  "name": "Rasd",
  "slug": "rasd",
+ "logicParts": [
+  "../../_shared/kpiring/kpi-ring.js"
+ ],
  "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
  "mid": "\n</helmet>\n",
  "mid2": "\n</x-dc>\n",
@@ -19,7 +22,10 @@
    "src/systems/rasd/client/view.html",
    "src/systems/rasd/client/helmet.css"
   ],
-  "domain": "src/systems/rasd/client/logic.js",
+  "domain": [
+   "src/systems/rasd/client/logic.js",
+   "src/systems/rasd/client/../../_shared/kpiring/kpi-ring.js"
+  ],
   "data": [
    "bassam_dayshift_v1",
    "bassam_employees_v1",

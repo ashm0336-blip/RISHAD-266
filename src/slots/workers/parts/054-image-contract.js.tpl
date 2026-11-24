@@ -1438,9 +1438,19 @@ function nodeCapAck(out) {
   else if (out.revs && out.revs[K_PERM] != null) { out.conflicts = out.conflicts || {}; out.conflicts[K_PERM] = { cur: m.echo, rev: out.revs[K_PERM], by: '', at: Date.now(), self: true }; delete out.revs[K_PERM]; }
   return out;
 }
+/* V7 · 53 (port-sync · بند 12 · 0022): الخادمُ أعاد في الحفظة ما حُجب عن الفاعل من المخزَّن (دمجُ 061) فاختلف المحفوظُ عمّا أرسله — يعيد إليه
+   ما يراه هو من المحفوظ (norm[k]: إسقاطُه، بلا أيام الأرشيف التي لم يرسلها) فيبني العميلُ عليه أساسَه، لا على ما أرسله؛ وإلا عدّ الفرقَ كاتباً آخر */
+function enfNorm(env, A, k, v, sent, refs, out) {
+  try {
+    var n = parseJson(enfProjectStr(A, k, v, refs), null), s = parseJson(sent, null), X = env.__dailyArc && env.__dailyArc[k], q;
+    if (X && isObj(n) && isObj(s)) for (q in X.keep) if (!(q in s)) delete n[q];
+    if (n != null && !deq(n, s)) (out.norm = out.norm || {})[k] = JSON.stringify(n);
+  } catch (e) { swallow('enf-norm', e); }
+}
 async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ مهامٍ في الخادم يبني من القيمة الحالية · { quiet } الرفضُ لا يُسجَّل هنا (يحكم المستدعي) — F-10 */
   var planOnly=!!(opt && opt.__restorePlan===RESTORE_INTERNAL_TOKEN);
   if (planOnly && opt.__serverDepartmentWipes) A.__udel = 1;
+  if (planOnly && opt.__optRef === ENF_OPTREF && isObj(opt.__optRefRes)) A.__optRef = opt.__optRefRes;   /* V7 · 53 (port-sync · بند 3): الأمرُ المعلن plan.optRef وحده (057 enfOptRefLock) */
   if (planOnly && opt.__srvRestore === RESTORE_INTERNAL_TOKEN) { A.__srvRst = 1; A.__srvRstD = String(opt.__srvRestoreDept || ''); }   /* V7 · 53: ووحدةُ استعادة الإدارة (062) */   /* RISHAD266 (مراجعة المالك على aae024c): الاستعادةُ الخادمية المتحقَّقة (019d) وحدها — علامةُ الاستعادة القادمة من العميل لا تستثني من سلامة العلاقات */   /* RISHAD266: حفظةُ الحذف الذرّيّ نفسُه (019e rsWipeRoute · رمزٌ داخليّ) — الطريقُ الوحيد لحذف وحدة (018 deptShapeWhy) */
  if(!planOnly&&!(opt&&opt.__cuPass===RESTORE_INTERNAL_TOKEN)&&rsSaveNeedsAtomic(body))return nodeCapAck(await rsSaveCommit(env,A,body,ip,opt));
   var set = (body && body.set) || {}, del = (body && body.del) || [], base = (body && body.base) || {};
@@ -1696,7 +1706,7 @@ async function applySave(env, body, A, ip, opt) {   /* opt: { srv } مسارُ �
     };
     /* merge-on-write: ما يُحجب عن الفاعل في القراءة يعود من القيمة الحالية قبل التصنيف — فلا يمحوه ولا يكتب فيه */
     /* …ومحاولةُ الكتابة في المحجوب (أو فشلُ الدمج) رفضٌ صريح — fail-closed */
-    if (it0.act === 'set' && it0.v != null && cur0 != null) { try { var mc9 = enfMergeChk(A, k0, it0.v, cur0, ENFX.refs); it0.v = mc9.v; if (mc9.hidden) ctx0.enfHidden = 'hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)'; } catch (eM9) { ctx0.enfHidden = 'merge-failed'; } }
+    if (it0.act === 'set' && it0.v != null && cur0 != null) { try { var sn9 = it0.v, mc9 = enfMergeChk(A, k0, it0.v, cur0, ENFX.refs); it0.v = mc9.v; if (it0.v !== sn9 && opIsResource(k0)) enfNorm(env, A, k0, it0.v, sn9, ENFX.refs, out); if (mc9.hidden) ctx0.enfHidden = 'hidden-data (outside the actor view: shift · site/zone · assignment · lens · source)'; } catch (eM9) { ctx0.enfHidden = 'merge-failed'; } }
     ctx0.imp = !!d00 && enfHeld(A, d00, 'import.replace');
     ctx0.enf = enfCtxFor(ENFX, k0, d00);
 @@SYS:save.fill.daily@@    if (i < regN9) regRst9[i] = !!(ctx0.enf && ctx0.enf.restore);   /* F01: علامةُ الاستعادة كما رآها حكمُه (044 · 060) */

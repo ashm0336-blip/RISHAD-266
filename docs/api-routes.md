@@ -59,6 +59,7 @@
 | `/api/perm44/check` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `057b-perm44.js` `perm44Route` · `063-enf-api-and-handler.js` `handle` |
 | `/api/perm44/log` | GET | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `057b-perm44.js` `perm44Route` · `063-enf-api-and-handler.js` `handle` |
 | `/api/ping` | GET | public — بلا جلسة (حارسُ المحاولات/المصدر حيث يلزم) | `063-enf-api-and-handler.js` `handle` |
+| `/api/plan/opt-ref` | POST | actor — جلسة + فاعلٌ قائم — كلُّ مفتاحٍ يمرّ بـcanWrite/canRead (أو الإنفاذ: enfCanWrite/enfRead) | `063-enf-api-and-handler.js` `handle` |
 | `/api/policy` | GET / POST | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/presence` | GET | super — مديرُ النظام وحده (isAdminPath ⇒ role super) | `063-enf-api-and-handler.js` `handle` |
 | `/api/recover` | POST | public — بلا جلسة (حارسُ المحاولات/المصدر حيث يلزم) | `062a-auth-routes.js` `authPublicRoutes` |

@@ -1,6 +1,9 @@
 {
  "name": "Irshad",
  "slug": "irshad",
+ "logicParts": [
+  "../../_shared/kpiring/kpi-ring.js"
+ ],
  "pre": "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<script src=\"./support.js\"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n",
  "mid": "\n</helmet>\n",
  "mid2": "\n</x-dc>\n",
@@ -20,7 +23,10 @@
    "src/systems/irshad/client/view.html",
    "src/systems/irshad/client/helmet.css"
   ],
-  "domain": "src/systems/irshad/client/logic.js",
+  "domain": [
+   "src/systems/irshad/client/logic.js",
+   "src/systems/irshad/client/../../_shared/kpiring/kpi-ring.js"
+  ],
   "data": [
    "bassam_employees_v1",
    "bassam_shift_options_v1"

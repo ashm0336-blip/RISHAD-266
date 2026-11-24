@@ -348,7 +348,7 @@ class Component extends DCLogic {
          الصفحات التي تستمع بنفسها (المتابعة اليومية، التقرير اليومي، المهام) تتحدّث في مكانها؛ والباقي يُحدَّث
          بالمفتاح: خطّاف _bsLiveReload لمن يحمل بياناته في حالته، ثم رسمٌ خفيفٌ واحد يمرّ عبر shouldComponentUpdate —
          ولا يُقاطَع المستخدم وهو يكتب أو أمام نافذة: يُؤجَّل حتى يفرغ. */
-      this._onRemote = (ev) => { try { const ks = (ev.detail && ev.detail.keys) || []; if (ev.detail && ev.detail.azSame) { try { KIVO.BassamPerm && KIVO.BassamPerm._bust(); } catch (e) {} this.setState({ tick: (this.state.tick || 0) + 1 }); } else if (this._permKeys(ks)) this._permsChanged(); else this._liveQueue(ks, (ev.detail && ev.detail.foreign) || []); } catch (e) {} };
+      this._onRemote = (ev) => { try { const ks = (ev.detail && ev.detail.keys) || []; if (ev.detail && ev.detail.azSame) { try { KIVO.BassamPerm && KIVO.BassamPerm._bust(); } catch (e) {} this.setState({ tick: (this.state.tick || 0) + 1 }); } else if (this._permKeys(ks)) this._permsChanged(); else this._liveQueue(ks, (ev.detail && ev.detail.foreign) || [], (ev.detail && ev.detail.by) || []); } catch (e) {} };
       window.addEventListener("bassam:remote", this._onRemote);
       /* ═══ الجرس: تنبيه محلي (أوقعته أنا) أو وارد من الخادم ═══ */
       this._onNotif = (ev) => { try {
@@ -586,14 +586,19 @@ class Component extends DCLogic {
     const re = MAP[page]; if (!re) return true;
     return keys.some(k => { const nm = String(k).replace(/^bsdept:[^:]+:/, ""); return re.test(nm) || !/^bassam_/.test(nm); });
   }
-  _liveQueue(keys, foreign) {
+  /* V7 · 53 (port-sync · بند 5 · قرار المالك): تنبيهُ التحديث الوارد يسمّي صاحبَه — الأسماءُ يرسلها الخادمُ مع التغيير (bassam:remote ← by) وتُجمع حتى يُطبَّق */
+  _liveNoteText() {
+    const w = this._liveBy || [], tail = " — تظهر بعد إغلاق النافذة";
+    return w.length ? "عدّل " + (w.length === 1 ? w[0] : w.length === 2 ? w[0] + " و" + w[1] : w[0] + " وآخرون") + " البيانات" + tail : "حُدّثت البيانات من جهاز آخر" + tail;
+  }
+  _liveQueue(keys, foreign, by) {
     const SELF = { daily: 1, dreport: 1, tasks: 1, sysadmin: 1, admin: 1 };   /* تستمع بنفسها أو تقرأ المخزن مع كل رسم (مدير النظام يحدّث نفسه دورياً) */
     const a = this.state.active;
     if (!a || SELF[a] || !this._liveTouches(keys, a)) return;
     /* تُجمَع المفاتيحُ الواصلة حتى تُطبَّق دفعةً واحدة */
     const acc = this._liveKeys || []; (keys || []).forEach(k => { if (acc.indexOf(k) === -1) acc.push(k); }); this._liveKeys = acc;
     this._livePend = true;
-    if (foreign && foreign.length && this._liveTouches(foreign, a)) this._liveForeign = true;   /* تعديلُ جهازٍ آخر لما تعرضه هذه الصفحة */
+    if (foreign && foreign.length && this._liveTouches(foreign, a)) { this._liveForeign = true; const w = this._liveBy || []; (by || []).forEach((n) => { n = String(n || "").trim(); if (n && w.indexOf(n) === -1) w.push(n); }); this._liveBy = w; }   /* تعديلُ جهازٍ آخر لما تعرضه هذه الصفحة · V7 · 53: ومن عدّله */
     clearTimeout(this._liveT); this._liveT = setTimeout(() => this._liveTry(0), 250);   /* 41-د: كان ٦٠٠ م.ث */
   }
   _liveBusy() {
@@ -616,17 +621,17 @@ class Component extends DCLogic {
     }
     if (!merged && this._liveBusy() && n < 240) {
       /* تغيّر ما تعرضه هذه الصفحة وأمام المستخدم نافذةٌ أو كتابة: تنبيهٌ صغير مرةً واحدة، والتطبيقُ بعد أن يفرغ — بلا قطع عمله */
-      if (this._liveForeign && !this._liveNoted) { this._liveNoted = true; try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog("deferred", this.state.active, "نافذةٌ مفتوحة أو كتابةٌ جارية — يُطبَّق بعدها", this._liveKeys); } catch (e) {} try { this.bkToast("حُدّثت البيانات من جهاز آخر — تظهر بعد إغلاق النافذة", 3500); } catch (e) {} }
+      if (this._liveForeign && !this._liveNoted) { this._liveNoted = true; try { if (KIVO.__bsLiveLog) KIVO.__bsLiveLog("deferred", this.state.active, "نافذةٌ مفتوحة أو كتابةٌ جارية — يُطبَّق بعدها", this._liveKeys); } catch (e) {} try { this.bkToast(this._liveNoteText(), 3500); } catch (e) {} }
       this._liveT = setTimeout(() => this._liveTry(n + 1), 1500); return;   /* حتى ٦ دقائق ثم يُطبَّق */
     }
-    const a = this.state.active; if (!a) { this._livePend = false; this._liveKeys = []; return; }
+    const a = this.state.active; if (!a) { this._livePend = false; this._liveKeys = []; this._liveBy = []; return; }
     const keys = (this._liveKeys || []).slice();
     /* ═══ لا إعادةَ تركيب: المكوّناتُ التي تحمل بياناتَها في حالتها تُعيد قراءتَها من المخزن في مكانها (خطّاف _bsLiveReload).
        خطّافٌ يُعيد false = مشغولٌ الآن (رسمٌ على الخريطة، تحريرٌ مضمَّن…) — يُعاد بعد لحظة كالمعتاد. ═══ */
     let deferred = false;
     this._liveComps().forEach(c => { try { const L = c.logic; if (L && typeof L._bsLiveReload === "function" && L._bsLiveReload(keys) === false) deferred = true; } catch (e) {} });
     if (deferred && n < 240) { this._liveT = setTimeout(() => this._liveTry(n + 1), 1500); return; }
-    this._livePend = false; this._liveKeys = []; this._liveNoted = false; this._liveForeign = false;
+    this._livePend = false; this._liveKeys = []; this._liveNoted = false; this._liveForeign = false; this._liveBy = [];
     /* تحديثُ React خفيفٌ واحد — بعد الإطار وخارج أولوية الإدخال: الجذرُ يُعاد رسمُه، وتمرُّ الصفحاتُ عبر
        shouldComponentUpdate فلا يُعاد رسمُ إلا من قرأ مفتاحاً تغيّر. لا unmount ولا scrollTo ولا استعادةَ تبويب. */
     const tick = () => {

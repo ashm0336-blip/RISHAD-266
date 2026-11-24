@@ -227,3 +227,14 @@ test('Invalid presence metadata refuses reads and write contexts without repairi
     assert.equal(X.DB.db.prepare('SELECT v FROM meta WHERE k=?').get(key).v, value, 'Never hide corrupt metadata by repairing it during a read');
   }
 });
+
+/* V7 · 53 (port-sync · بند 8 · 0013): مجاميعُ الشهر لكروت المؤشرات الحلقية — مستفيدو الترجمة باللغة، والتقاريرُ بالوردية، والمستفيدون بالموقع، في مسار مجاميع الشهر نفسِه */
+test('V7 · 53: calendar month totals carry the KPI groups (languages · shifts · locations)', async () => {
+  const rows = [report('a'), report('b', { shift: 'ب', loc: 'TEST_ONLY_other', langs: [{ lang: 'العربية', count: 2 }, { lang: 'الأردية', count: 4 }], bro: 0, pros: 0 }), report('c', { m: 2, langs: [{ lang: 'الفارسية', count: 9 }] })];
+  const X = await world(rows), M = (await X.read('super', { view: 'calendar', year: 1448, month: 1 })).monthTotals;
+  const g = (t0) => Object.fromEntries(M.by.filter((x) => x[0] === t0).map((x) => [x[1], x[2]]));
+  assert.deepEqual(g('g'), { 'العربية': 5, 'الأردية': 4 }, 'الترجمةُ باللغة — الشهرُ وحده');
+  assert.deepEqual(g('s'), { 'أ': 1, 'ب': 1 }, 'التقاريرُ بالوردية');
+  assert.deepEqual(g('l'), { TEST_ONLY_location: 6, TEST_ONLY_other: 6 }, 'المستفيدون بالموقع');
+  assert.deepEqual((await X.read('super', { view: 'calendar', year: 1448, month: 5 })).monthTotals.by, [], 'الشهرُ الفارغ بلا مجاميع');
+});

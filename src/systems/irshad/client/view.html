@@ -532,37 +532,35 @@
   </div>
 </div>
 
-<!-- ═══ مؤشرات سريعة للشهر المحدد ═══ -->
-<div class="bs-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
-  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
-    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></div>
-    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiCount}}</div>
-    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">{{irKpiCountW}} هذا الشهر</div>
-  </div>
-  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
-    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-cb5c501e"></svg></div>
-    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiBen}}</div>
-    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">إجمالي المستفيدين</div>
-  </div>
-  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
-    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-aa214fa8"></svg></div>
-    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiTrans}}</div>
-    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">مستفيدو الترجمة</div>
-  </div>
-  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
-    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-a394ca52"></svg></div>
-    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiBro}}</div>
-    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">مطويات موزّعة</div>
-  </div>
-  <div style="flex:1;min-width:120px;border-radius:14px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:13px 14px">
-    <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--bg-a185151810p12);color:var(--fg-xb99751);margin-bottom:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5f1a581b"></svg></div>
-    <div dir="ltr" style="font-size:20px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum';text-align:right">{{irKpiRef}}</div>
-    <div style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a)">إجمالي الإحالات</div>
-    <div style="display:flex;align-items:center;gap:5px;margin-top:4px;font-size:9.5px;font-weight:400;color:var(--fg-x94a3b8)">
-      <span>نيابة <b dir="ltr" style="color:var(--fg-x53565a);font-weight:600">{{irKpiPros}}</b></span>
-      <span style="width:3px;height:3px;border-radius:9999px;background:var(--bg-xcbd5e1);display:inline-block;flex-shrink:0"></span>
-      <span>شرطة <b dir="ltr" style="color:var(--fg-x53565a);font-weight:600">{{irKpiPol}}</b></span>
+<!-- ═══ V7 · 53 (port-sync · بند 8): مؤشرات الشهر — كرتُ «رصد الحالات» الحلقي نفسُه (بانيه: src/systems/_shared/kpiring) ═══ -->
+<div class="bs-hscroll" style="overflow-x:auto">
+  <div class="rz-kpis" style="display:flex;padding:2px 2px 6px;min-width:100%;box-sizing:border-box">
+    <sc-for list="{{irKpiCards}}" as="k" hint-placeholder-count="4">
+    <div style="flex:1 0 260px;min-width:260px;border-radius:16px;border:1px solid var(--bd-xe2e8f0);background:var(--bg-xffffff);box-shadow:var(--shadow-card);padding:14px;display:flex;align-items:center;gap:14px">
+      <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:110px">
+        <div style="position:relative;width:96px;height:96px">
+          <svg width="96" height="96" viewBox="0 0 96 96" style="transform:rotate(-90deg);display:block" data-i="i-7c685a60"></svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1">
+            <b dir="ltr" style="font-size:22px;font-weight:800;color:var(--fg-x141414);font-feature-settings:'tnum'">{{k.val}}</b>
+            <span dir="ltr" style="font-size:10px;font-weight:700;color:var(--fg-x8a6f35)">{{k.chip}}</span>
+          </div>
+        </div>
+        <span class="bs-tip-host" style="margin-top:6px;font-size:12px;font-weight:700;color:var(--fg-x25343f);text-align:center">{{k.title}}<span class="bs-tip">{{k.tip}}</span></span>
+        <i style="{{k.lineStyle}}"></i>
+        <span title="{{k.sub}}" style="font-size:10.5px;color:var(--fg-x64748b);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">{{k.sub}}</span>
+      </div>
+      <div style="width:1px;align-self:stretch;background:var(--bg-xeff1f4)"></div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+        <sc-for list="{{k.rows}}" as="r" hint-placeholder-count="4">
+        <div title="{{r.tip}}" style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--fg-x53565a)">
+          <i style="{{r.color}}"></i>
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.label}}</span>
+          <span dir="ltr" style="flex-shrink:0;font-size:11.5px;font-weight:700;color:var(--fg-x25343f)">{{r.n}}<em style="font-style:normal;font-size:10px;font-weight:600;color:var(--fg-x94a3b8);margin-left:6px">{{r.pct}}</em></span>
+        </div>
+        </sc-for>
+      </div>
     </div>
+    </sc-for>
   </div>
 </div>
 
@@ -871,7 +869,7 @@
         <thead>
           <tr style="background:linear-gradient(to left,var(--bg-a185151810p05),var(--bg-a185151810p03),var(--bg-a185151810p05));border-bottom:2px solid var(--bd-a185151810p25)">
             <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2d1e2ff8"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">التاريخ والوقت</span></div></th>
-            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5edd7f95"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المستخدم</span></div></th>
+            <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-5edd7f95"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">المسجِّل</span></div></th>
             <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fab3c0b3"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الوردية</span></div></th>
             <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-07c54a8a"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الموظف</span></div></th>
             <th style="padding:8px 4px"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-card);background:var(--bg-a185151810p12);color:var(--fg-xb99751)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-i="i-fd713264"></svg></div><span style="font-size:10.5px;font-weight:600;color:var(--fg-x53565a);white-space:nowrap">الموقع</span></div></th>
@@ -889,8 +887,9 @@
           <tr style="border-bottom:1px solid var(--bd-xf1f5f9);transition:background .15s" style-hover="background:var(--bg-a2452452450p5)">
             <td style="padding:8px 6px;text-align:center">
               <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-                <span dir="ltr" style="font-size:12px;font-weight:400;color:var(--fg-x25343f);white-space:nowrap">{{v.dayLabel}}</span>
-                <span dir="ltr" style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{v.gregLabel}} · {{v.timeLabel}}</span>
+                <span dir="ltr" style="font-size:12px;font-weight:400;color:var(--fg-x25343f);white-space:nowrap">{{v.dayLabel}} هـ</span>
+                <span dir="ltr" style="font-size:10px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{v.gregLabel}}</span>
+                <span dir="ltr" style="font-size:10.5px;font-weight:700;color:var(--fg-x8a6f35)">{{v.timeLabel}}</span>
               </div>
             </td>
             <td style="padding:8px 6px;text-align:center"><span style="font-size:11.5px;font-weight:400;color:var(--fg-x94a3b8);white-space:nowrap">{{v.actor}}</span></td>

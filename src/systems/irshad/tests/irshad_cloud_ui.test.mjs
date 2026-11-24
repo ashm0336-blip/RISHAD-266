@@ -9,6 +9,7 @@ import { ROOT } from '../../../../tests/unit/harness.mjs';
 import { calendar, callers } from '../../../../tests/unit/cal_kit.mjs';   /* V7 · د5-د: التقويم الموحّد */
 
 const source = fs.readFileSync(path.join(ROOT, 'src/systems/irshad/client/logic.js'), 'utf8');
+const kpiRing = fs.readFileSync(path.join(ROOT, 'src/systems/_shared/kpiring/kpi-ring.js'), 'utf8');   /* V7 · 53: القطعةُ المشتركة كما تضمّها الصفحة (meta.json ← logicParts) */
 const base = { epoch: 2, reports: 3, languages: 4, locations: 5, retro: 6 };
 const clock = { y: 1448, m: 5, d: 19, now: 1793318400000 };
 const json = (value, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => value });
@@ -39,7 +40,7 @@ test('Irshad uses the existing page-kit toast with the same warning/success pres
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/533-staff-g3.js'), 'utf8'), W);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/systems/staff/client/534-staff-g4.js'), 'utf8'), W);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/components/565-page-kit.js'), 'utf8'), W);
-  vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
+  vm.runInContext(source + '\n' + kpiRing + '\nglobalThis.TestComponent = Component;', W);
   const page = new W.TestComponent();
   page.bsToast('TEST_ONLY warning', 'warn');
   assert.equal(node.textContent, '⚠  TEST_ONLY warning'); assert.match(attributes.style, /var\(--toast-warn\)/);
@@ -78,7 +79,7 @@ function browser(handler = async () => json({ ok: 0 }, 500)) {
     fetch: async (url, options = {}) => { calls.push({ url: String(url), options }); return handler(String(url), options); }, print() { notices.push('print'); } };
   W.window = W; vm.createContext(W); calendar(W);
   for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/534-staff-g4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), W);   /* V7 · د5-د2: الناقل (قلب المنصة) وقراءاتُ الجدول الشهري المعلنة عليه — الصفحةُ تسأل بالاسم */
-  vm.runInContext(source + '\nglobalThis.TestComponent = Component;', W);
+  vm.runInContext(source + '\n' + kpiRing + '\nglobalThis.TestComponent = Component;', W);
   const page = new W.TestComponent();
   page.bsToast = message => notices.push(message); page.bsAck = message => notices.push(message);
   page.state.irTab = 'records'; page.state.irYear = 1448; page.state.irMonth = 5; page.state.irDay = 19;
