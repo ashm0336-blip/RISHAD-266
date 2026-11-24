@@ -82,6 +82,13 @@ function enfIx() {
 }
 /* سقفُ العدسة للإدارة: perms.lenses[d] (غيابُه = كلُّ العدسات — نصُّ الواجهة نفسُه) */
 function enfLensDeptOn(A, d, L) { var dl = ((A.perms && A.perms.lenses) || {})[d]; return Array.isArray(dl) ? dl.indexOf(L) !== -1 : true; }
+/* V7 · د7 (أ — قرار المالك: العدساتُ كالأنظمة): بوابةُ العدسة بالوراثة — lensGate (سقفُ الوحدة · عدساتُ الموظف) ∧ سقفُ كلِّ أصل (perm44LensOn: السلسلةُ
+   نفسُها لسقف الأدوار). كانت lensGate تقرأ سقفَ الوحدة وحده فتبقى العدسةُ المطفأةُ في الإدارة مفتوحةً في قسمها على الخادم. مديرُ المنصة كما كان */
+function enfLensGate(A, d, L) {
+  var g = KIVO_BUILD.lensGate(A.perms, A.u, d, L);
+  if (g.on && !(A.u && A.u.role === 'super') && !perm44LensOn(A, d)(L)) { g.on = false; g.deptOn = false; g.anc = true; }
+  return g;
+}
 /* Department Ceiling: المفتاحُ داخل سقف الإدارة؟ (صفحتُه/ورقتُه على السقف · مضيفُ العدسة على السقف ∧ العدسةُ في سقف الإدارة)
    — لا يتجاوزه أحدٌ ولو مُنح صراحةً؛ والإعداداتُ لمدير النظام دائماً (admFree كما في AS‑IS) */
 function enfKeyOnCeiling(A, d, key) {
@@ -176,7 +183,7 @@ function enfHeld0(A, d, key) {
   if (ENF_MGR_FULL[key] && enfDeptMgrFull(A, d) && !enfGrantOf(A, d).minus[key]) return true;   /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يحمل الاستعادةَ والاستبدال في إدارته وحدها — بلا منحٍ صريح (الإسقاطُ الصريح من مدير المنصة يبقى نافذاً) */
   var L = ix.lens[key];
   if (L) {                                                               /* D3-04: Ceiling ∧ Employee Lens Assignment — enable بوابةٌ لا تمنح العملية */
-    var g = KIVO_BUILD.lensGate(A.perms, u, d, L);
+    var g = enfLensGate(A, d, L);   /* V7 · د7 (أ): بالوراثة */
     if (!g.on) return false;
     if (key === 'lens.' + L + '.enable') return true;
   }

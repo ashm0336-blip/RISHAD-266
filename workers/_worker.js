@@ -26321,6 +26321,13 @@ function enfIx() {
 }
 /* سقفُ العدسة للإدارة: perms.lenses[d] (غيابُه = كلُّ العدسات — نصُّ الواجهة نفسُه) */
 function enfLensDeptOn(A, d, L) { var dl = ((A.perms && A.perms.lenses) || {})[d]; return Array.isArray(dl) ? dl.indexOf(L) !== -1 : true; }
+/* V7 · د7 (أ — قرار المالك: العدساتُ كالأنظمة): بوابةُ العدسة بالوراثة — lensGate (سقفُ الوحدة · عدساتُ الموظف) ∧ سقفُ كلِّ أصل (perm44LensOn: السلسلةُ
+   نفسُها لسقف الأدوار). كانت lensGate تقرأ سقفَ الوحدة وحده فتبقى العدسةُ المطفأةُ في الإدارة مفتوحةً في قسمها على الخادم. مديرُ المنصة كما كان */
+function enfLensGate(A, d, L) {
+  var g = KIVO_BUILD.lensGate(A.perms, A.u, d, L);
+  if (g.on && !(A.u && A.u.role === 'super') && !perm44LensOn(A, d)(L)) { g.on = false; g.deptOn = false; g.anc = true; }
+  return g;
+}
 /* Department Ceiling: المفتاحُ داخل سقف الإدارة؟ (صفحتُه/ورقتُه على السقف · مضيفُ العدسة على السقف ∧ العدسةُ في سقف الإدارة)
    — لا يتجاوزه أحدٌ ولو مُنح صراحةً؛ والإعداداتُ لمدير النظام دائماً (admFree كما في AS‑IS) */
 function enfKeyOnCeiling(A, d, key) {
@@ -26415,7 +26422,7 @@ function enfHeld0(A, d, key) {
   if (ENF_MGR_FULL[key] && enfDeptMgrFull(A, d) && !enfGrantOf(A, d).minus[key]) return true;   /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يحمل الاستعادةَ والاستبدال في إدارته وحدها — بلا منحٍ صريح (الإسقاطُ الصريح من مدير المنصة يبقى نافذاً) */
   var L = ix.lens[key];
   if (L) {                                                               /* D3-04: Ceiling ∧ Employee Lens Assignment — enable بوابةٌ لا تمنح العملية */
-    var g = KIVO_BUILD.lensGate(A.perms, u, d, L);
+    var g = enfLensGate(A, d, L);   /* V7 · د7 (أ): بالوراثة */
     if (!g.on) return false;
     if (key === 'lens.' + L + '.enable') return true;
   }
@@ -26540,7 +26547,7 @@ function enfHeldAnyDept(A, key) {
 }
 /* ═══ V7 · د5-هـ (44) — محرّكُ الأدوار (الخادم): مولَّدٌ بأداة tools/generate.py من permissions/registry/perm44-levels.json (جدولُ المستويات) و
    perm44-core.js (المحرّكُ المشترك — نصُّه في الواجهة والخادم حرفاً) وperm44-server.js وقائمةِ الأنظمة من manifests/pages.json — لا يُحرَّر يدوياً. ═══ */
-var KIVO_PERM44_DATA = {"v":1,"levels":[{"key":"view","name":"مشاهدة فقط","types":["access","view"],"sensitive":false},{"key":"input","name":"إدخال","types":["access","view","create"],"sensitive":false},{"key":"edit","name":"تعديل","types":["access","view","create","edit"],"sensitive":false},{"key":"full","name":"كامل","types":"*","sensitive":false},{"key":"sensitive","name":"حسّاس","types":"*","sensitive":true},{"key":"custom","name":"مخصّص","custom":true}],"names":{"custom":"صلاحيات مخصّصة","none":"بلا صلاحيات","super":"صلاحية كاملة بلا أي قيد"},"systems":[{"key":"dstats","name":"الإحصائيات اليومية","leaves":["dstats","dstats/haram","dstats/nabawi","dstats/anHaram","dstats/anNabawi","dstats/anCmp","dstats/anTime"],"toggle":true,"plat":false},{"key":"emps","name":"موظفو الإدارة","leaves":["emps","emps/data"],"toggle":false,"plat":false},{"key":"custody","name":"عهد الموظفين","leaves":["emps/custody"],"toggle":true,"plat":false,"under":"emps"},{"key":"planning","name":"الخطة التشغيلية","leaves":["planning","planning/readiness"],"toggle":true,"plat":true},{"key":"staff","name":"الجدول الشهري","leaves":["staff"],"toggle":true,"plat":false,"under":"planning"},{"key":"plan","name":"التشغيل الميداني","leaves":["plan"],"toggle":true,"plat":false,"under":"planning"},{"key":"daily","name":"المتابعة اليومية","leaves":["daily","daily/kpiDaily","daily/kpiOcc","daily/kpiZones","daily/rounds","daily/field"],"toggle":true,"plat":true},{"key":"dreport","name":"التقرير اليومي","leaves":["dreport"],"toggle":true,"plat":false,"under":"daily"},{"key":"tasks","name":"المهام","leaves":["tasks"],"toggle":true,"plat":false,"under":"daily"},{"key":"irshad","name":"نظام الاسترشاد","leaves":["irshad","irshad/dash","irshad/records"],"toggle":true,"plat":true},{"key":"seized","name":"نظام المضبوطات","leaves":["seized","seized/dash","seized/records"],"toggle":true,"plat":true},{"key":"rasd","name":"نظام رصد الحالات","leaves":["rasd","rasd/dash","rasd/records"],"toggle":true,"plat":true,"optIn":true},{"key":"award","name":"جائزة التميز","leaves":["award","award/new","award/res","award/doc"],"toggle":true,"plat":true},{"key":"links","name":"مواقع ذات صلة","leaves":["links"],"toggle":true,"plat":false},{"key":"help","name":"المساعدة","leaves":["help"],"toggle":true,"plat":false}]};
+var KIVO_PERM44_DATA = {"v":1,"levels":[{"key":"view","name":"مشاهدة فقط","types":["access","view"],"sensitive":false},{"key":"input","name":"إدخال","types":["access","view","create"],"sensitive":false},{"key":"edit","name":"تعديل","types":["access","view","create","edit"],"sensitive":false},{"key":"full","name":"كامل","types":"*","sensitive":false},{"key":"sensitive","name":"حسّاس","types":"*","sensitive":true},{"key":"custom","name":"مخصّص","custom":true}],"names":{"custom":"صلاحيات مخصّصة","none":"بلا صلاحيات","super":"صلاحية كاملة بلا أي قيد"},"systems":[{"key":"dstats","name":"الإحصائيات اليومية","leaves":["dstats","dstats/haram","dstats/nabawi","dstats/anHaram","dstats/anNabawi","dstats/anCmp","dstats/anTime"],"toggle":true,"plat":false},{"key":"emps","name":"موظفو الإدارة","leaves":["emps","emps/data"],"toggle":false,"plat":false},{"key":"custody","name":"عهد الموظفين","leaves":["emps/custody"],"toggle":true,"plat":false,"under":"emps"},{"key":"planning","name":"الخطة التشغيلية","leaves":["planning","planning/readiness"],"toggle":true,"plat":true},{"key":"staff","name":"الجدول الشهري","leaves":["staff"],"toggle":true,"plat":false,"under":"planning"},{"key":"plan","name":"التشغيل الميداني","leaves":["plan"],"toggle":true,"plat":false,"under":"planning"},{"key":"daily","name":"المتابعة اليومية","leaves":["daily","daily/kpiDaily","daily/kpiOcc","daily/kpiZones","daily/rounds","daily/field"],"toggle":true,"plat":true},{"key":"dreport","name":"التقرير اليومي","leaves":["dreport"],"toggle":true,"plat":false,"under":"daily"},{"key":"tasks","name":"المهام","leaves":["tasks"],"toggle":true,"plat":false,"under":"daily"},{"key":"irshad","name":"نظام الاسترشاد","leaves":["irshad","irshad/dash","irshad/records"],"toggle":true,"plat":true},{"key":"seized","name":"نظام المضبوطات","leaves":["seized","seized/dash","seized/records"],"toggle":true,"plat":true},{"key":"rasd","name":"نظام رصد الحالات","leaves":["rasd","rasd/dash","rasd/records"],"toggle":true,"plat":true,"optIn":true},{"key":"award","name":"جائزة التميز","leaves":["award","award/new","award/res","award/doc"],"toggle":true,"plat":true},{"key":"links","name":"مواقع ذات صلة","leaves":["links"],"toggle":true,"plat":false},{"key":"help","name":"المساعدة","leaves":["help"],"toggle":true,"plat":false}],"lenses":[{"key":"zones","name":"المصليات","hosts":["plan","daily/rounds"]},{"key":"paths","name":"المسارات","hosts":["plan","daily/rounds"]},{"key":"gates","name":"البوابات","hosts":["plan","daily/rounds"]},{"key":"marks","name":"العلامات","hosts":["plan","daily/rounds"]},{"key":"dist","name":"التوزيع","hosts":["plan","daily/rounds"]},{"key":"dens","name":"الكثافة","hosts":["plan","daily/rounds"]}]};
 /* V7 · د5-هـ (44): المحرّكُ المشترك للأدوار — نصٌّ واحدٌ يُحقن حرفياً في الواجهة (345-perm44.js) والخادم (057b-perm44.js) بأداة tools/generate.py.
    دالّةٌ نقيّة: لا تقرأ مخزناً ولا جلسة — السجلُّ (R = KIVO_REGISTRY) والجدول (D = KIVO_PERM44_DATA) والسقفُ (دالّةٌ على المفتاح) تأتيها من المضيف. */
 function perm44Make(R, D) {
@@ -26548,6 +26555,9 @@ function perm44Make(R, D) {
   var LV = {}, SY = {}, sysKeysC = {}, ix = { leaf: {}, hosts: {}, sys: {} }, i, j;
   for (i = 0; i < D.levels.length; i++) LV[D.levels[i].key] = D.levels[i];
   for (i = 0; i < D.systems.length; i++) SY[D.systems[i].key] = D.systems[i];
+  /* V7 · د7 (أ): العدساتُ صفوفٌ في الدور بمفتاح مالكها في السجلّ (lens.<L>) ومستوياتِ الأنظمة نفسِها — LZ[lens.<L>] = { key, name, hosts } */
+  var LZ = {}, LENS = Array.isArray(D.lenses) ? D.lenses : [];
+  for (i = 0; i < LENS.length; i++) LZ['lens.' + LENS[i].key] = LENS[i];
   var leafSys = {};
   for (i = 0; i < D.systems.length; i++) for (j = 0; j < D.systems[i].leaves.length; j++) leafSys[D.systems[i].leaves[j]] = D.systems[i].key;
   function clone(x) { return x == null ? x : JSON.parse(JSON.stringify(x)); }
@@ -26562,7 +26572,7 @@ function perm44Make(R, D) {
     var o = R.owners[e.owner], own = [];
     if (e.ownerKind === 'page') { ix.leaf[k] = e.owner; own = [e.owner]; }
     else if (e.ownerKind === 'reference') { ix.leaf[k] = (o && o.managedIn) || leaves[0] || ''; own = [ix.leaf[k]]; }
-    else if (e.ownerKind === 'lens') { ix.hosts[k] = leaves; own = leaves; }
+    else if (e.ownerKind === 'lens') { ix.hosts[k] = leaves.length ? leaves : ((LZ[e.owner] && LZ[e.owner].hosts) || []).slice(); own = ix.hosts[k]; }   /* V7 · د7 (أ): بلا ذرّة = مضيفو العدسة (= 057 enfIx) — كان [] فلا سقفَ لمفتاح العدسة */
     var ss = [];
     for (j = 0; j < own.length; j++) if (leafSys[own[j]] && ss.indexOf(leafSys[own[j]]) === -1) ss.push(leafSys[own[j]]);
     if (ss.length) ix.sys[k] = ss;
@@ -26572,14 +26582,17 @@ function perm44Make(R, D) {
   function sysKeys(s) {
     if (sysKeysC[s]) return sysKeysC[s].slice();
     var out = [], n;
-    for (n = 0; n < R.keys.length; n++) { var q = R.keys[n]; if (grantable(q) && ix.sys[q] && ix.sys[q].indexOf(s) !== -1) out.push(q); }
+    /* V7 · د7 (أ): صفُّ العدسة = مفاتيحُها (مالكُها lens.<L>) · وصفُّ النظام المضيف بلا مفاتيح العدسات — فلا يتغيّر ما يمنحه دورٌ قائم */
+    for (n = 0; n < R.keys.length; n++) { var q = R.keys[n]; if (!grantable(q)) continue; if (LZ[s] ? R.byKey[q].owner === s : (ix.sys[q] && ix.sys[q].indexOf(s) !== -1 && !LZ[R.byKey[q].owner])) out.push(q); }
     return (sysKeysC[s] = out).slice();
   }
   function levels() { return clone(D.levels); }
   function sysList() { return clone(D.systems); }
+  /* V7 · د7 (أ): العدساتُ { key: lens.<L>, name, hosts, lens: L } — وsys: الأنظمةُ المضيفة (مالكو أوراق مضيفيها) */
+  function lensList() { return LENS.map(function (x) { var ss = []; x.hosts.forEach(function (h) { if (leafSys[h] && ss.indexOf(leafSys[h]) === -1) ss.push(leafSys[h]); }); return { key: 'lens.' + x.key, name: x.name, hosts: x.hosts.slice(), lens: x.key, sys: ss }; }); }
   /* مستوى → مفاتيح (بترتيب السجلّ): view {access, view} · input +create · edit +edit · full كلُّ غير الحسّاس · sensitive الكلّ · custom القائمةُ ∩ مفاتيحُ النظام */
   function keysFor(s, lvl, custom) {
-    if (!SY[s]) return [];
+    if (!SY[s] && !LZ[s]) return [];
     var L = LV[lvl], all = sysKeys(s), out = [], n;
     if (!L) return [];
     if (L.custom) { var want = {}; (Array.isArray(custom) ? custom : []).forEach(function (x) { want[String(x)] = 1; }); return all.filter(function (x) { return want[x]; }); }
@@ -26742,7 +26755,7 @@ function perm44Make(R, D) {
     var base = Array.isArray(keys) ? keys : [];
     return offClosure(base).filter(function (k) { return base.indexOf(k) === -1 && (typeof onFn !== 'function' || !!onFn(k)); });
   }
-  return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
+  return { offClosure: offClosure, offWith: offWith, levels: levels, sysList: sysList, lensList: lensList, sysKeys: sysKeys, sysOfKey: function (k) { return (ix.sys[k] || []).slice(); }, grantable: grantable, keysFor: keysFor,
            keyOn: keyOn, sysOn: sysOn, roleById: roleById, compileRole: compileRole, effective: effective, grantOf: grantOf, normRec: normRec, shapeWhy: shapeWhy,
            diff: diff, undo: undo, names: clone(D.names), data: D };
 }
@@ -27405,7 +27418,7 @@ function enfViewCtx(A, d, rn, refs) {
   var V = { d: d, rn: rn, held: held, restrict: rs, sources: enfSources(A, 'read'), fieldOnly: enfFieldOnly(A, d), ekey: String(A.u.ekey || ''),
     lens: {}, toks: rn === 'bassam_rounds_v1' && refs && refs.emps ? enfToksOf(refs.emps[d], String(A.u.ekey || '')) : null };
   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (KIVO_LENS_PLUGINS.keys) — بوابةُ كلٍّ منها بالمرجع نفسِه */
-  for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = KIVO_BUILD.lensGate(A.perms, A.u, d, KIVO_LENS_PLUGINS.keys[li]).on;
+  for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = enfLensGate(A, d, KIVO_LENS_PLUGINS.keys[li]).on;   /* V7 · د7 (أ): بالوراثة (057) */
   return (cache[ck] = V);
 }
 /* هويّاتُ المحرّك نفسُها (KIVO_238 IH-01/02: uid أولاً · sid للطابق) */
@@ -30468,7 +30481,7 @@ function enfMe(A, refs) {
   var ds = enfDeptsOf(A), out = { ver: ENF_VER, mode: 'enforce', n: enfIx().order.length, perm: enfPermMigrated(A), depts: {} }, i, L;
   for (i = 0; i < ds.length; i++) {
     var d = ds[i], lens = [];
-    for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) { L = KIVO_LENS_PLUGINS.keys[li]; if (KIVO_BUILD.lensGate(A.perms, A.u, d, L).on) lens.push(L); }   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (الترتيبُ نفسُه) */
+    for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) { L = KIVO_LENS_PLUGINS.keys[li]; if (enfLensGate(A, d, L).on) lens.push(L); }   /* V7 · د7 (أ): بالوراثة (057) */   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (الترتيبُ نفسُه) */
     /* p: مفاتيحُ المنح الصريح (plus) المحمولة فعلاً — لتُضاف أفعالُها إلى الواجهة (الورقةُ القديمة لا تعرفها) */
     var gr = A.__grants && A.__grants[d] && A.u.ekey ? A.__grants[d].emp[A.u.ekey] : null, plus = [];
     if (isObj(gr) && Array.isArray(gr.plus)) gr.plus.forEach(function (k) { k = String(k); if (enfHeld(A, d, k) && plus.indexOf(k) === -1) plus.push(k); });

@@ -55,7 +55,7 @@ function enfViewCtx(A, d, rn, refs) {
   var V = { d: d, rn: rn, held: held, restrict: rs, sources: enfSources(A, 'read'), fieldOnly: enfFieldOnly(A, d), ekey: String(A.u.ekey || ''),
     lens: {}, toks: @@SYS:enf.toks.daily|empty="null"@@ };
   /* KIVO_259 · AUD-030: العدساتُ من الإضافات (KIVO_LENS_PLUGINS.keys) — بوابةُ كلٍّ منها بالمرجع نفسِه */
-  for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = KIVO_BUILD.lensGate(A.perms, A.u, d, KIVO_LENS_PLUGINS.keys[li]).on;
+  for (var li = 0; li < KIVO_LENS_PLUGINS.keys.length; li++) V.lens[KIVO_LENS_PLUGINS.keys[li]] = enfLensGate(A, d, KIVO_LENS_PLUGINS.keys[li]).on;   /* V7 · د7 (أ): بالوراثة (057) */
   return (cache[ck] = V);
 }
 /* هويّاتُ المحرّك نفسُها (KIVO_238 IH-01/02: uid أولاً · sid للطابق) */
