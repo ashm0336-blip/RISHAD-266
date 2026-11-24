@@ -1200,7 +1200,7 @@
           operationUncertain9(operation, 'confirmation-read', status); operation.result.committed = 1; return;
         }
       }
-      if (operation.period) periodSettled9(operation);   /* V7 · 53 */
+      if (operation.period) periodSettled9(operation, data);   /* V7 · 53 */
       inflight = null; operation.state = 'confirmed'; operation.result = { ok: 1, receipt: operationClone9(data) }; operationActive9 = null;
       operationCommitted9(operation);
       warn(false); settleWaiters(!dirty); kickIfDirty(); return;
@@ -1557,8 +1557,10 @@
     return { changes: out, meta: meta };
   }
   /* بعد إيصال الحفظ: تُبنى «الوثيقة» من جديد (ونصُّها نصُّ ما كتبته الصفحةُ إن طابقه، فمقارنةُ الصفحة لحفظها تصدق) */
-  function periodSettled9(operation) {
+  function periodSettled9(operation, data) {
+    var logical = data && operationObject9(data.logical) ? data.logical : {};
     (operation.period.Ks || []).forEach(function (K) {
+      if (operationInteger9(logical[K])) periodLogicalRev9[K] = logical[K];   /* المراجعةُ المنطقية من الإيصال (أوامرُ المهام: base) */
       periodView9(K, true);
       var doc = operation.period.docs[K];
       if (doc !== null && doc !== undefined && periodOwn9(mem, K) && cj9(JSON.parse(doc)) === cj9(JSON.parse(mem[K]))) { mem[K] = doc; baseVal[K] = doc; }

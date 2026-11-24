@@ -482,6 +482,8 @@ async function opPeriodSaveBody(env, A, bs) {
 async function opPeriodSaveResult(env, ps, r) {
   var out = Object.assign({}, r), map = function (obj) { var m = {}; Object.keys(obj || {}).forEach(function (K) { if (ocOwn(ps.byK, K)) ps.byK[K].keys.forEach(function (k) { m[k] = obj[K]; }); else m[K] = obj[K]; }); return m; };
   out.denied = map(r.denied); out.conflicts = map(r.conflicts);
+  /* V7 · 53 (periodsui): المراجعةُ المنطقية لكل K كُتبت فتراتُه — يأخذها العميلُ من الإيصال (أوامرُ المهام تحملها base) بلا قراءةٍ أخرى */
+  if (r.revs) Object.keys(ps.byK).forEach(function (K) { if (Number.isSafeInteger(r.revs[K])) (out.logical || (out.logical = {}))[K] = r.revs[K]; });
   if (r.revs) {
     var want = []; Object.keys(ps.byK).forEach(function (K) { want.push(K + '@*'); ps.byK[K].keys.forEach(function (k) { want.push(k); }); });
     var rows = (await env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(want)).all()).results || [], revs = {};
