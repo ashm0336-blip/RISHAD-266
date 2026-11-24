@@ -86,7 +86,7 @@
     drafted('daily.month.clear@1', draft);
     var rounds = draft.get(KEY), changed = false;
     if (rounds && typeof rounds === 'object') {
-      var day = payload.y + '-' + payload.m + '-', mark = 'm:' + payload.y + '-' + payload.m;
+      var ym = payload.y + '-' + (payload.m < 10 ? '0' : '') + payload.m, day = ym + '-', mark = 'm:' + ym;   /* V7 · 53 تقويم: مفاتيحُ ISO مبطَّنة — كان «2026-6-» فلا يطابق «2026-06-02» فتبقى جولاتُ الشهر المحذوف */
       Object.keys(rounds).forEach(function (key) {
         if (key.indexOf(day) === 0 || key === mark) { delete rounds[key]; changed = true; }
       });
