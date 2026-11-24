@@ -48,3 +48,15 @@ export function periodIndex(url, docs, rev, out) {
     (out.index || (out.index = {}))[K] = P ? Object.keys(P.periods).map((p, seq) => ({ p, grp: grpOf(name, p), seq, rev: typeof rev === 'function' ? rev(K + '@' + p) : rev })) : [];
   });
 }
+/* V7 · 53 (basefix): every period of every split resource, from the (fake or real) server's index (280 index → want) — what the page asks for by
+   month and then re-reads on «bassam:remote», which never reaches a page in another vm context. Used by attachTaskOperations and the hand-written stubs */
+export async function loadAllPeriods(operations) {
+  if (!operations || !operations.split) return;
+  for (const name of operations.resources) {
+    if (!operations.split(name)) continue;
+    const ix = await operations.index(name);
+    if (!ix || ix.ok !== 1) throw new Error('period index ' + name + ': ' + JSON.stringify(ix));
+    const periods = ix.index.map((x) => x.p);
+    if (periods.length) { const r = await operations.want(name, { periods, quiet: true }); if (!r || r.ok !== 1) throw new Error('period load ' + name + ': ' + JSON.stringify(r)); }
+  }
+}

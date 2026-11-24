@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { afterEach } from "node:test";
 import { loadClient } from "./k264_vm.mjs";
-import { periodRead, periodSave, periodIndex } from "./periods_fake_fx.mjs";   /* V7 · 53 */
+import { periodRead, periodSave, periodIndex, loadAllPeriods } from "./periods_fake_fx.mjs";   /* V7 · 53 */
 
 const tabs = new Set();
 afterEach(() => {
@@ -133,16 +133,7 @@ export async function attachTaskOperations(
   /* V7 · 53 (basefix): المورد المخزَّن بالفترة (المهام · الخطة · الجدول … — 280 split) يُقرأ رأسُه وحده بقراءة المفتاح المنطقي، وتطلب الصفحةُ
      أشهرَها (want) ثم تعيد القراءة بخبر «bassam:remote» — والصفحةُ هنا في vm آخر لا يصله الخبر، وتُرسم متزامنةً. فتُحمَّل هنا فتراتُ كلِّ موردٍ
      مقسومٍ كلُّها من فهرس الخادم (280 index → want) قبل بناء الصفحة وعند كلِّ مزامنة — كأن الصفحةَ أكملت تحميلَ ما طلبته. على العامل الحقيقي وحده */
-  const loadPeriods = async () => {
-    if (!operations.split) return;
-    for (const name of operations.resources) {
-      if (!operations.split(name)) continue;
-      const ix = await operations.index(name);
-      assert.equal(ix.ok, 1, "period index " + name + ": " + JSON.stringify(ix));
-      const periods = ix.index.map((x) => x.p);
-      if (periods.length) { const r = await operations.want(name, { periods, quiet: true }); assert.equal(r.ok, 1, "period load " + name + ": " + JSON.stringify(r)); }
-    }
-  };
+  const loadPeriods = () => loadAllPeriods(operations);   /* periods_fake_fx — العاملُ الحقيقي والنقلُ المصطنع معاً */
   await loadPeriods();
   // Existing tests retain a Map for device preferences and assertion access.
   // Its business reads are confirmed in-memory projections, never Storage.
