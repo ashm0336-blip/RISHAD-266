@@ -101,7 +101,9 @@ test('V7 · د7 (52 · الكامن) ① a system turned OFF after a role grant:
     assert.deepEqual(bKeys.filter((k) => (g1.minus || []).includes(k)), [], 'B\'s keys are not masked');
     assert.deepEqual(aOnly.filter((k) => g1.plus.includes(k) && !(g1.minus || []).includes(k)), [], 'A\'s keys (entry) do not stay effective — kept stored and masked (no guard relaxed): ' + JSON.stringify(g1));
     await flip(b, lab, OFF, true);
-    assert.deepEqual(kv(lab, KG).emp[EMP], g1, 'no additional save of his grant');
+    /* V7 · د7 (REPLY_52_2): the widening's step 2 (the platform admin's own save) recomputes him from role B — no manager save; B's level only */
+    const g2 = kv(lab, KG).emp[EMP], e2 = g2.plus.filter((k) => /^dstats\./.test(k) && !(g2.minus || []).includes(k)).sort();
+    assert.deepEqual(e2, bKeys.slice().sort(), 'ON again ⇒ exactly B\'s ' + OFF.k + ' keys: ' + JSON.stringify(g2));
     const e = await openAs(b, lab, LAB.empA, LAB.pw); await e.go('#/profile', 3000);
     assert.equal(await e.page.evaluate(() => KIVO.BassamPerm.can('dstats', 'view')), true, 'ON again ⇒ B\'s ' + OFF.k + ' view right');
     const held = await e.page.evaluate(() => Object.keys((KIVO.__BS_AUTHZ && KIVO.__BS_AUTHZ.depts && Object.values(KIVO.__BS_AUTHZ.depts)[0]) || {}).filter((k) => /^dstats\./.test(k)));
