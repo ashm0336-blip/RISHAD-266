@@ -79,7 +79,9 @@ function perm44GrantsWhy(A, d) {
     var want = people[e] ? perm44Effective(people[e], R, C, now) : { keys: [], role: null, live: [] }, g = emp[e];
     var has = isObj(g) && Array.isArray(g.plus) ? g.plus.map(String).slice().sort() : [];
     if (!want.role && !want.live.length) { if (isObj(g) && PERM44_SRC.test(String(g.src || '')) && has.length) return 'p44-grants'; continue; }
-    if (!isObj(g) || JSON.stringify(has) !== JSON.stringify(want.keys.slice().sort())) return 'p44-grants';
+    /* V7 · د7 (52 · الكامن): المتوقَّعُ = الدورُ داخل السقف + ما كان في مدخله المخزَّن خارجَه (perm44-core keepOff — القاعدةُ نفسُها التي يكتب بها العميل) */
+    var wk = E.keepOff({ plus: want.keys }, emp0[e], C).plus.map(String).slice().sort();
+    if (!isObj(g) || JSON.stringify(has) !== JSON.stringify(wk)) return 'p44-grants';
   }
   return '';
 }

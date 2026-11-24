@@ -243,7 +243,7 @@ test('⑦ the server refuses a lens action for everyone in the unit when the len
   assert.equal(await addGate('sec', A_S1), true);
 });
 
-test('⑧ carry what is outside the view: a lens row of a role sits outside the ceiling (lens OFF) — a manager\'s edit of the role keeps it as stored, and it is held again when the lens is ON', Object.assign({ todo: 'V7 · د7: يمرّ بعد دمج مجموعة «latent» (المُعيدُ يحمل منحَ ما خارج السقف كما هو — latentLossWhy يرفض الآن حفظَ المدير)' }, needs('plan', 'daily')), async () => {
+test('⑧ carry what is outside the view: a lens row of a role sits outside the ceiling (lens OFF) — a manager\'s edit of the role keeps it as stored, and it is held again when the lens is ON', needs('plan', 'daily'), async () => {
   const W = await holdersWorld();
   await applyState(W, 'allOn');
   const RK = 'bsdept:' + A + ':bassam_roles_v1';
@@ -266,6 +266,8 @@ test('⑧ carry what is outside the view: a lens row of a role sits outside the 
     assert.equal(m.K.Perm44.setRoles(dr, A, d).ok, true);
     const r = await m.K.Perm44.commit(dr); assert.equal(r.ok, true, 'his edit is accepted: ' + JSON.stringify(r));
   } finally { m.dispose(); }
+  const g = stored(W.env, 'bsdept:' + A + ':bassam_grants_v1').emp[E_ROLE];
+  assert.ok(g.plus.includes('lens.gates.edit'), 'the stored out-of-ceiling grant is carried (keepOff) — ' + JSON.stringify(g.plus));
   const st = stored(W.env, RK).roles[0];
   assert.equal(st.name, 'TEST_ONLY دور معدّل'); assert.deepEqual(st.sys['lens.gates'], { lvl: 'edit' }, 'the hidden lens row is carried exactly as stored');
   const c = await clientOf(W, 'su', A);
