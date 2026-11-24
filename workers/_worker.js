@@ -21962,10 +21962,12 @@ async function opPeriodsMigrateRoute(env, request, session) {
     var A = await actorOf(env, session.uid); if (!A) return json({ ok: 0, err: 'session' }, 401);
     if (A.u.role !== 'super') return json({ ok: 0, err: 'operations-periods-migrate-permission' }, 403);
     var body = parseJson(await request.text(), null), shapeError = bodyCheck('/api/operations/periods-migrate', body); if (shapeError) return json({ ok: 0, err: 'bad-body', at: shapeError }, 400);   /* V7 · 53: SOT-101 */
-    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];       var t0 = Date.now(), budget = Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000), from = isObj(body.from) ? body.from : null;
+    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.concat(Object.keys(await calPend(env)).filter(function (x) { return pending.indexOf(x) < 0; })) : rsScopeDepartments([body.dept]) || [], out = [];       var t0 = Date.now(), budget = Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000), from = isObj(body.from) ? body.from : null;
     for (var d of list) {
       var rep = { dept: d, resources: {}, ok: 0 }, revPairs = [], Rs = opSplitResources(), r0 = from && d === body.dept ? Math.max(0, Rs.indexOf(from.r)) : 0;
       try {
+        /* V7 · 53 تقويم (REVIEW 33): المسارُ الخلفي للمدير — فتراتُ الإدارة الهجرية كلُّها بالمحوِّل نفسِه وبتقدّمٍ مرئي، ثم التحقّقُ كما كان */
+        var cl = await calLazyDept(env, d, Math.max(1000, budget - (Date.now() - t0))); if (cl.left) { rep.more = 1; rep.calendar = cl; out.push(rep); return json({ ok: 0, more: 1, departments: out, next: { dept: d }, pending: pending }); }
         for (var ri = 0; ri < Rs.length; ri++) {
           var R = Rs[ri];
           var K = 'bsdept:' + d + ':' + R, info = opInfo(K), def = opPeriodDef(info), tables = ocPhysicalTables(info.prepared);

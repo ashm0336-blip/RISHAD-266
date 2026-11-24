@@ -112,6 +112,13 @@ test('③ إدارةٌ صغيرة: مديرُ الإدارة الأم يستور
     p0.caps[S1] = p0.caps[S1].filter((x) => x !== 'plan');
     await T.DB.batch([...T.lab.W.kvPutStmts(T.lab.env, 'kv', 'bassam_perms_v1', JSON.stringify(p0)), T.DB.prepare('UPDATE revs SET rev=rev+1 WHERE k=?1').bind('bassam_perms_v1')]);
     const withPlan = await small(['bassam_employees_v1', 'bassam_staffing_v3', 'bassam_plan_v1']);
+    /* (ب) REVIEW 24 · القاعدتان 2 و5: مديرُ العقدة يملك ما فُعِّل لعقدته — نسختُه ببيانات نظامٍ مطفأ تُرفض كلُّها بلا أثر، ورسالتُها تقول السببَ وما العمل */
+    const before = T.DB.q('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1', S1)[0].n;
+    const b = await protocol(T, mgrA, withPlan, { scope: { kind: 'dept', departmentId: S1 }, slice: false }).run(), lastB = b.commit || b.inspect || b.begin;
+    assert.equal(lastB.status, 403); assert.equal(lastB.j.err, 'restore-operations-resource-denied');
+    assert.equal(T.DB.q('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1', S1)[0].n, before, 'لا أثر');
+    const kitText = fs.readFileSync(new URL('../../src/services/548-import-kit.js', import.meta.url), 'utf8');
+    assert.match(/'restore-operations-resource-denied': '([^']*)'/.exec(kitText)[1], /نظامٍ مطفأ.*لم يتغيّر شيء.*مدير المنصة.*«محفوظة — غير مفعّلة».*فعّل النظام/, 'رسالةُ الرفض بالعربي: السببُ وما العمل');
     /* (ج) مديرُ المنصة: تُحفظ الخطةُ «محفوظة — غير مفعّلة» ولا يُسقط شيء */
     const c = await importDept(T, NEW, T.su, withPlan, S1, false);
     assert.ok(c.got.bassam_plan_v1 && c.got.bassam_plan_v1.floors.length, 'الخطةُ محفوظةٌ في القسم والنظامُ مطفأ');

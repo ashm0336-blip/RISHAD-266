@@ -97,3 +97,17 @@ test('④ التحقّق المتقاطع: اليومُ التشغيلي وحك�
     assert.equal(H.closedPeriod(T, T.y, T.m, T.d), false, 'today open');
   }
 });
+
+/* ⑤ REVIEW 22 (مسحُ التدقيق): لا عرضَ هجريّاً وحده في صفحات cal-ops — لا اسمَ شهرٍ هجري ثابتاً في نصٍّ معروض («صفر» اسماً للشهر يُتبع بسنته؛ والصفرُ العدديُّ في النصوص ليس شهراً) (كان «خطة محرم متوفرة» و«بدون خطة لـ محرم»
+   في شرائح أدوار الخطة) · وختمُ صورة الإثبات في المهام ميلاديٌّ أولاً (fmtDay) ثم الهجريُّ المقابل (hDayText) — كان hText الهجريَّ وحده */
+test('⑤ REVIEW 22: لا اسمَ شهرٍ هجري ثابتاً في نصوص صفحات cal-ops · وختمُ الإثبات ميلاديٌّ ثم هجري', () => {
+  const HM = /"[^"\n]*(محرم|صفر \d|ربيع الأول|ربيع الآخر|جمادى الأولى|جمادى الآخرة|رجب|شعبان|رمضان|شوال|ذو القعدة|ذو الحجة)[^"\n]*"/;
+  for (const f of ['src/systems/plan/client/logic.js', 'src/systems/daily/client/logic.js.tpl', 'src/systems/dreport/client/logic.js', 'src/systems/staff/client/logic.js',
+    'src/systems/tasks/client/logic.js', 'src/systems/tasks/client/logic-proof.js', 'src/slots/modules/profile/logic.js.tpl']) {
+    const code = read(f).replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.doesNotMatch(code, HM, f);
+  }
+  const pr = read('src/systems/tasks/client/logic-proof.js'), clk = pr.slice(pr.indexOf('_tkRiyadhClock(t) {'));
+  assert.doesNotMatch(clk.slice(0, 600), /hText\(/, 'لا ختمَ هجريّاً وحده');
+  assert.match(clk, /C\.fmtDay\(k\) \+ " م" \+ \(h \? " · " \+ h \+ " هـ" : ""\)/);
+});
