@@ -6816,7 +6816,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             { dot: "#2fa372", n: "المسارات", v: r(G), p: "" },
             { dot: "#d9793a", n: "المعالم", v: r(Z), p: "" },
             { dot: "#8A6F35", n: "القراءات", v: r(Y), p: K ? "من " + r(5 * K) : "" },
-            { dot: "#047857", n: "الإشغال الموزون", v: o(wC ? Math.round((wN / wC) * 1e3) / 10 : 0) + "٪", p: "", tip: "مجموع الأعداد ÷ مجموع السعات — يُوزَن كل مصلى بسعته" },
+            { dot: "#047857", n: "الإشغال الموزون", v: o(wC ? Math.round((wN / wC) * 1e3) / 10 : 0) + "٪", p: "", tip: "مجموع الأعداد ÷ مجموع السعات — يُوزَن كل مصلى بسعته · متوسط القراءات (بلا وزن): " + o(_) + "٪" },
             { dot: "#7b8a94", n: "أيام معتمدة", v: r(H), p: Q ? "(" + o((H / Q) * 100) + "٪)" : "" },
           ],
       et = (t) => ({
@@ -8461,12 +8461,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             (null == e[t] && ((e[t] = 0), s.push(t), (n[t] = i)), e[t]++);
           },
           /* V7 · 53 (ك10): أساسٌ واحد في اللوحة كلها = مصليات الدور كلها — المعطّلُ في سطره «معطّلة» في كل تفصيل */
-          o = "fill" === t || "read" === t ? [] : de.filter((t) => !t.off || (i("معطّلة", "#64748b"), !1));
+          cO = "#64748b",
+          cU = "#94a3b8",
+          o = "fill" === t || "read" === t ? [] : de.filter((t) => !t.off || (i("معطّلة", cO), !1));
         "fill" === t
           ? de.forEach((t) => {
-              if (t.off) return void i("معطّلة", "#64748b");
+              if (t.off) return void i("معطّلة", cO);
               /* V7 · 53 (ك9): المصلّى بلا قراءة «بلا قراءة» — لا يُحسب 0٪ «منخفضة» */
-              if (null == t.count || "" === t.count) return void i("بلا قراءة", "#94a3b8");
+              if (null == t.count || "" === t.count) return void i("بلا قراءة", cU);
               const e = +t.count;
               e > 100
                 ? i("اكتظاظ", "#991b1b")
@@ -8479,8 +8481,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           : "read" === t
             ? de.forEach((t) =>
                 t.off
-                  ? i("معطّلة", "#64748b")
-                  : i(null != t.count && "" !== t.count ? "مقروءة" : "بلا قراءة", null != t.count && "" !== t.count ? "#10b981" : "#94a3b8"),
+                  ? i("معطّلة", cO)
+                  : i(null != t.count && "" !== t.count ? "مقروءة" : "بلا قراءة", null != t.count && "" !== t.count ? "#10b981" : cU),
               )
             : "zcat" === t
               ? o.forEach((t) => {
@@ -8870,6 +8872,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           st = tt.filter((t) => S(Tt(t))).length,
           /* V7 · 53 (15 · ك17): الاحتياطُ القابل للنقل (غيرُ المكلَّف) · والحاضرون من الطاقم الإشرافي */
           Rm = et.filter((t) => !O(t)).length,
+          cN = i.non,   /* لونُ «لا احتياج» نفسُه في مفتاح الخريطة */
           pS = tt.filter((t) => E(Tt(t)) && S(Tt(t))).length,
           nt = (t, e) => {
             const s = f(t),
@@ -9379,7 +9382,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               return null;
             /* V7 · 53 (ك7): بلا احتياجٍ محدَّد الحلقةُ «—» بلونٍ محايد لا 0٪ أحمر */
             const t = 2 * Math.PI * 40,
-              e = U ? (V >= 90 ? "#059669" : V >= 75 ? "#d97706" : "#dc2626") : "#94a3b8",
+              e = U ? (V >= 90 ? "#059669" : V >= 75 ? "#d97706" : "#dc2626") : cN,
               i = (t, e, s, i, o, a, l) =>
                 n(
                   "div",

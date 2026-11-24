@@ -86,3 +86,10 @@ test('ك27: الكودُ الميّت الذي يحسب مؤشراتٍ قديم�
   assert.ok(!src.includes('pe.length && Math.round((Ie / pe.length) * 100)'), 'نسبةُ الأبواب المفتوحة (نتيجةٌ تُرمى)');
   assert.ok(render({ zones: [{}] }).covNode !== undefined);
 });
+
+test('ك24 (تحقّق — أصلحته 52): لا «قالب صلاحيات موسوم» في الموضعين — تلميحُ «الطاقم الإشرافي» في «حالة التغطية» ومجموعةُ «طاقم إشرافي» في قائمة التسكين', () => {
+  const src = process.env.DAILY_LOGIC ? fs.readFileSync(process.env.DAILY_LOGIC, 'utf8') : fs.readFileSync(path.join(ROOT, 'src/systems/daily/client/logic.js.tpl'), 'utf8');
+  assert.ok(!src.includes('قالب صلاحيات موسوم'), 'النصُّ القديم غائب');
+  assert.ok(src.includes('"حاملو دورٍ إشرافي من أدوار الإدارة ورئيس ونائب الوردية من تقرير اليوم — لا يُسكَّنون ولا يُحسبون في التغطية"'), 'الموضع الأول (تلميح الكرت)');
+  assert.ok(src.includes('["sup", "طاقم إشرافي", !1, "دورٌ إشرافي من أدوار الإدارة أو رئيس/نائب الوردية من تقرير اليوم — خارج التسكين"]'), 'الموضع الثاني (قائمة التسكين)');
+});
