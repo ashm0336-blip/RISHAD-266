@@ -46,7 +46,8 @@ async function page(W, ck, storeJson, emps, extra) {
   return { c, opsFixture, store, toasts, xlsx, prints };
 }
 /* شهرٌ خالٍ من بذور tasks_fx: بعد شهرين من اليوم */
-const FUT = Date.now() + 62 * 864e5, [Y, M] = hij(FUT).split('-').map(Number), YM = Y + '-' + M, K1 = YM + '-5', K2 = YM + '-6';
+/* V7 · 53 تقويم: مفاتيحُ ISO المبطَّنة (YYYY-MM · YYYY-MM-05) — كانت «-5» غيرَ مبطَّنة فلا تطابق مفتاحَ الصفحة */
+const FUT = Date.now() + 62 * 864e5, [Y, M] = hij(FUT).split('-').map(Number), YM = hij(FUT).slice(0, 7), K1 = YM + '-05', K2 = YM + '-06';
 
 test('البند 8 · الإنتاجية للشهر المختار: لكل موظف (بورديته من الجدول) ولكل وردية — المسندة · المنجزة · في الوقت/متأخرة · متوسط الفعلي/المخطط · التوثيق بالصور · تصدير وطباعة', async () => {
   const W = await world({ worker: WU.file }); const dm = await W.login('0000000101', '70101');

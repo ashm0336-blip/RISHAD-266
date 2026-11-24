@@ -9,7 +9,8 @@ import assert from 'node:assert/strict';
 import { page, NOW } from '../../../../tests/unit/w1_pages.mjs';
 import { row, ME, MATE } from './tasks_fx.mjs';
 
-const H = 36e5, Y = 1448, M = 5, K = (d, m = M) => Y + '-' + m + '-' + d;
+/* V7 · 53 تقويم: مفاتيحُ ISO الميلادية للشهر الجاري (أكتوبر 2026 = شهرُ الساعة الثابتة) — كانت 1448-5 فيرفضها المرمِّز */
+const H = 36e5, Y = 2026, M = 10, p2 = (n) => String(n).padStart(2, '0'), K = (d, m = M) => Y + '-' + p2(m) + '-' + p2(d);
 const EMPS = [{ eid: ME.eid, name: ME.name, work: 'TEST_ONLY مراقب' }, { eid: MATE.eid, name: MATE.name, work: 'TEST_ONLY مراقب' }];
 const withX = (r, x) => { r[22] = null; r[23] = x; return r; };
 const CAN = { v: 1, asg: 'cancelled', can: { why: 'TEST_ONLY أُنهي التكرار' } };
@@ -29,7 +30,7 @@ function auditMonth() {
 function tasksPage(S, can) {
   const OPS = { resources: [], status: () => ({ state: 'idle', epoch: 0 }), context: () => null, state: () => 'ready', begin: () => ({ ok: true }), draft: () => null };
   const P = page('tasks', { store: { bassam_tasks_v1: S, bassam_employees_v1: EMPS }, can, srv: { operations: OPS, rev: () => 0 } });
-  P.c.setState({ perPage: 0, tkDaySel: { k: Y + '-' + M, d: 0 } });   /* الشهر كاملاً */
+  P.c.setState({ perPage: 0, tkDaySel: { k: Y + '-' + p2(M), d: 0 } });   /* الشهر كاملاً */
   return P;
 }
 const sum = (L) => L.reduce((a, x) => a + (+x.count || +x.n || 0), 0);

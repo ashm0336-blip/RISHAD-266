@@ -12,7 +12,8 @@ import { page, NOW } from '../../../../tests/unit/w1_pages.mjs';
 import { row, ME, MATE } from './tasks_fx.mjs';
 import { SRC } from '../../../../tests/unit/harness.mjs';
 
-const H = 36e5, Y = 1448, M = 5, K = (d, m = M) => Y + '-' + m + '-' + d;
+/* V7 · 53 تقويم: مفاتيحُ ISO الميلادية للشهر الجاري (أكتوبر 2026 = شهرُ الساعة الثابتة) — كانت 1448-5 فيرفضها المرمِّز */
+const H = 36e5, Y = 2026, M = 10, p2 = (n) => String(n).padStart(2, '0'), K = (d, m = M) => Y + '-' + p2(m) + '-' + p2(d);
 const EMPS = [{ eid: ME.eid, name: ME.name, work: 'TEST_ONLY مراقب' }, { eid: MATE.eid, name: MATE.name, work: 'TEST_ONLY مراقب' }];
 const CAN = { v: 1, asg: 'cancelled', can: { why: 'TEST_ONLY أُنهي التكرار' } };
 let SEQ = 0;
@@ -27,7 +28,7 @@ function month() {
 }
 /* RISHAD-266: الصفحةُ تقرأ مواردَها التشغيلية عبر خدمة العمليات (_tkOps) — خدمةٌ بلا موارد هنا فيُقرأ المخزنُ المحلّيّ الاصطناعيّ كما هو */
 const OPS = { resources: [], status: () => ({ state: 'idle', epoch: 0 }), context: () => null, state: () => 'ready', begin: () => ({ ok: true }), draft: () => null };
-const tasks = (S, st) => { const P = page('tasks', { store: { bassam_tasks_v1: S, bassam_employees_v1: EMPS }, srv: { operations: OPS, rev: () => 0 } }); P.c.setState(Object.assign({ perPage: 0, tkDaySel: { k: Y + '-' + M, d: 0 } }, st || {})); return P; };
+const tasks = (S, st) => { const P = page('tasks', { store: { bassam_tasks_v1: S, bassam_employees_v1: EMPS }, srv: { operations: OPS, rev: () => 0 } }); P.c.setState(Object.assign({ perPage: 0, tkDaySel: { k: Y + '-' + p2(M), d: 0 } }, st || {})); return P; };
 const J = (o) => JSON.parse(JSON.stringify(o));
 const LABELS = ['انتظار', 'جارية', 'منجزة', 'متأخرة', 'لم تُقبل', 'اعتذار'];
 
@@ -78,7 +79,7 @@ test('DG-03 · تذييلُ بطاقة اللوحة يلتفّ: «بواسطة �
 
 test('DG-12 · الحالةُ الفارغة: أيقونةُ SVG للمنصة في المربّع الذهبي لا رمزٌ تعبيري — تقويمٌ لليوم الفارغ · بحثٌ للفلاتر · قائمةٌ للشهر الفارغ', () => {
   /* يومٌ بلا مهام (20) */
-  let V = tasks(month(), { tkDaySel: { k: Y + '-' + M, d: 20 } }).V();
+  let V = tasks(month(), { tkDaySel: { k: Y + '-' + p2(M), d: 20 } }).V();
   assert.equal(V.isEmptyDay, true); assert.equal(V.emptyTitle, 'لا توجد مهام في هذا اليوم');
   assert.deepEqual([V.emptyIcQ, V.emptyIcCal, V.emptyIcList], [false, true, false]);
   assert.equal(V.emptyEmoji, undefined, 'لا رمزَ تعبيرياً');
