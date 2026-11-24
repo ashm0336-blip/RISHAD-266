@@ -402,3 +402,21 @@ test("seized dashboard retains configured timestamp-derived overnight shift and 
   assert.equal(d.employees[0].name, "TEST_ONLY latest snapshot");
   assert.equal(d.employees[0].shift, "TEST_ONLY night");
 });
+
+/* V7 · 53 (port-sync · بند 8 · 0013): مجاميعُ الشهر لكروت المؤشرات الحلقية — القطعُ بالتصنيف والبند، والمحاضرُ بالموقع والمسجِّل، في مسار مجاميع الشهر نفسِه */
+test("V7 · 53: calendar month totals carry the KPI groups (category · item pieces · records by location and recorder)", async (t) => {
+  const B = await commandWorld();
+  t.after(() => B.DB.db.close());
+  for (const loc of ["TEST_ONLY location", "TEST_ONLY free location"])
+    await B.act(await B.body("create", { data: reportData(B, { loc, items: [
+      { id: 23, n: 100, val: 0, act: "sto", kind: "", kindTxt: "", photos: [] },
+      { id: 24, n: 2, val: 300, act: "sec", kind: "TEST_ONLY kind", kindTxt: "", photos: [] },
+    ] }) }));
+  const M = (await B.read({ view: "calendar" })).monthTotals, g = (t0) => Object.fromEntries(M.by.filter((x) => x[0] === t0).map((x) => [x[1], x[2]]));
+  assert.deepEqual(g("c"), { "TEST_ONLY cash": 6 }, "القطعُ بالتصنيف");
+  assert.deepEqual(g("i"), { "TEST_ONLY money": 2, "TEST_ONLY jewelry": 4 }, "وبالبند");
+  assert.deepEqual(g("l"), { "TEST_ONLY location": 1, "TEST_ONLY free location": 1 }, "المحاضرُ بالموقع");
+  assert.deepEqual(g("b"), { "TEST_ONLY owner": 2 }, "وبالمسجِّل");
+  const empty = (await B.read({ view: "calendar", year: 1400, month: 1 })).monthTotals;
+  assert.deepEqual(empty.by, [], "الشهرُ الفارغ بلا مجاميع");
+});

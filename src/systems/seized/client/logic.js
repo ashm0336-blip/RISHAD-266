@@ -159,18 +159,34 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const e = this.unitOf(t.id);
     return "sar" === e ? parseInt(t.n, 10) || 0 : ("pcval" === e && parseInt(t.val, 10)) || 0;
   }
-  /* V7 · 53 (port-sync · بند 8 · 0013): كرتُ مؤشرات الشهر الحلقي — بنيةُ كرت «رصد الحالات» نفسُه (القطعة المشتركة _kpiRing) من مجاميع الشهر
-     التي يحسبها الخادم (monthTotals: القطع · المبالغ · الإجراءات) — ظاهرٌ دائماً وبأصفارٍ في الشهر الفارغ */
+  /* V7 · 53 (port-sync · بند 8 · 0013): كروتُ مؤشرات الشهر الحلقية — بنيةُ كرت «رصد الحالات» نفسُه (القطعة المشتركة _kpiRing) من مجاميع الشهر
+     التي يحسبها الخادم (monthTotals: القطع · المبالغ · الإجراءات · by: التصنيف والبند والموقع والمسجِّل) — ظاهرةٌ دائماً وبأصفارٍ في الشهر الفارغ */
   _szKpiCards(M, nR) {
     const acts = this.loadActs(),
       tot = M.qty || 0,
       sar = M.sar || 0,
       CH = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"],
       parts = acts.map((a, i) => ({ label: a.name, color: a.color || CH[i % CH.length], n: (M.actions || {})[a.k] || 0 })),
-      kept = (M.actions || {}).sto || 0;
+      kept = (M.actions || {}).sto || 0,
+      G = { c: {}, i: {}, l: {}, b: {} },
+      none = { c: "غير مصنّف", i: "بند محذوف", l: "—", b: "—" },
+      cats = (this.loadCat().cats || []).map((c) => ({ name: c.name, color: c.color })),
+      pc = (n, T) => (T ? Math.round((100 * n) / T) + "٪" : "—");
+    (M.by || []).forEach((x) => { if (G[x[0]]) G[x[0]][x[1] || none[x[0]]] = (G[x[0]][x[1] || none[x[0]]] || 0) + (x[2] || 0); });
+    const cT = this._kpiTop(G.c, (k) => (cats.find((c) => c.name === k) || {}).color, cats.map((c) => c.name)),
+      iT = this._kpiTop(G.i, null, []),
+      lT = this._kpiTop(G.l, null, this.loadIrshadLocs().map((x) => (x && (x.name || x.n)) || x)),
+      bT = this._kpiTop(G.b, null, []),
+      top = (L) => (L[0] && L[0].n > 0 ? L[0] : { label: "", n: 0 }),
+      most = (L, e) => (top(L).n ? "الأكثر: " + top(L).label : e),
+      ring = (o) => this._kpiRing({ accent: "var(--fg-xb99751)", ...o });
     return [
-      this._kpiRing({ title: "الإجراء على القطع", tip: "قطعُ الشهر بحسب الإجراء — الرقمُ إجماليُّ القطع والنسبةُ ما تُصُرِّف فيه (أُحيل أو أُتلف)", val: String(tot), chip: tot ? Math.round((100 * (tot - kept)) / tot) + "٪" : "—",
-        sub: KIVO.BassamCount(nR || 0, "محضر") + (sar ? " · " + sar.toLocaleString("en-US") + " ريال" : ""), accent: "var(--fg-xb99751)", parts, T: tot, unit: "قطعة" }),
+      ring({ title: "الإجراء على القطع", tip: "قطعُ الشهر بحسب الإجراء — الرقمُ إجماليُّ القطع والنسبةُ ما تُصُرِّف فيه (أُحيل أو أُتلف)", val: String(tot), chip: pc(tot - kept, tot),
+        sub: KIVO.BassamCount(nR || 0, "محضر") + (sar ? " · " + sar.toLocaleString("en-US") + " ريال" : ""), parts, T: tot, unit: "قطعة" }),
+      ring({ title: "التصنيف", tip: "أكثرُ تصنيفات القطع هذا الشهر (أعلى أربعة ثم غيرها) — الرقمُ قطعُ التصنيف الأكثر", val: String(top(cT).n), chip: pc(top(cT).n, tot), sub: most(cT, "—"), parts: cT, unit: "قطعة" }),
+      ring({ title: "البنود", tip: "أكثرُ البنود ضبطاً هذا الشهر — الرقمُ قطعُ البند الأكثر", val: String(top(iT).n), chip: pc(top(iT).n, tot), sub: most(iT, "—"), parts: iT, unit: "قطعة" }),
+      ring({ title: "مواقع الضبط", tip: "محاضرُ الشهر بحسب موقع الضبط — الرقمُ عددُ المحاضر والنسبةُ حصةُ الموقع الأكثر", val: String(nR || 0), chip: pc(top(lT).n, nR), sub: most(lT, "لا محاضر بعد"), parts: lT, unit: "محضر" }),
+      ring({ title: "المسجّلون", tip: "مَن سجّل محاضرَ الشهر — الرقمُ عددُ المسجّلين والنسبةُ حصةُ الأكثر تسجيلاً", val: String(Object.keys(G.b).length), chip: pc(top(bT).n, nR), sub: most(bT, "لا محاضر بعد"), parts: bT, unit: "محضر" }),
     ];
   }
   benOf(t) {

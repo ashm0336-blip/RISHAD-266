@@ -62,19 +62,39 @@ function method(file, name, self) {
   const ctx = vm.createContext({ KIVO, Math, String, Object, Array, JSON, self });
   return (...x) => vm.runInContext('(function (' + args + ') {' + s.slice(s.indexOf('{', a) + 1, b) + '\n})', ctx).apply(self, x);
 }
-test('③ الأرقام من مجاميع الشهر (الخادم) — وأصفارٌ في الشهر الفارغ', () => {
-  const P = kit(), sz = Object.assign(Object.create(P), { loadActs: () => [{ k: 'sec', name: 'TEST_ONLY تحريز', color: '#a00' }, { k: 'des', name: 'TEST_ONLY إتلاف', color: '#0a0' }, { k: 'sto', name: 'TEST_ONLY حفظ', color: '#00a' }] });
+test('③ الكروتُ كلُّها كما في Production (0013) — أرقامُها من مجاميع الشهر في الخادم، وأصفارٌ في الشهر الفارغ', () => {
+  const P = kit(), rows = (c) => c.rows.map((r) => [r.label, r.n]);
+  const sz = Object.assign(Object.create(P), { loadActs: () => [{ k: 'sec', name: 'TEST_ONLY تحريز', color: '#a00' }, { k: 'des', name: 'TEST_ONLY إتلاف', color: '#0a0' }, { k: 'sto', name: 'TEST_ONLY حفظ', color: '#00a' }],
+    loadCat: () => ({ cats: [{ name: 'TEST_ONLY نقد', color: '#123456' }, { name: 'TEST_ONLY ذهب', color: '#654321' }] }), loadIrshadLocs: () => ['TEST_ONLY بوابة'] });
   const S = method('src/systems/seized/client/logic.js', '_szKpiCards', sz);
-  const [c] = S({ reports: 4, qty: 10, sar: 1500, actions: { sec: 3, des: 2, sto: 5 } }, 4);
-  assert.equal(c.val, '10'); assert.equal(c.chip, '50٪', 'ما تُصُرِّف فيه'); same(c.rows.map((r) => [r.label, r.n, r.pct]), [['TEST_ONLY تحريز', '3', '30٪'], ['TEST_ONLY إتلاف', '2', '20٪'], ['TEST_ONLY حفظ', '5', '50٪']]);
-  assert.match(c.sub, /4 محضر · 1,500 ريال/); assert.equal(c.ring.length, 3);
-  const [z] = S({ reports: 0, qty: 0, sar: 0, actions: {} }, 0);
-  assert.equal(z.val, '0'); assert.equal(z.chip, '—'); assert.equal(z.ring.length, 0); assert.equal(z.rows.length, 3, 'الشرائحُ ظاهرةٌ بأصفار');
-  const ir = Object.create(P), I = method('src/systems/irshad/client/logic.js', '_irKpiCards', ir);
-  const [b, r] = I({ reports: 3, ben: 20, trans: 10, bro: 5, pros: 3, pol: 2 }, 3);
-  assert.equal(b.val, '20'); assert.equal(b.chip, '50٪'); same(b.rows.map((x) => x.n), ['10', '5', '3', '2']); assert.match(b.sub, /3 تقرير/);
-  assert.equal(r.val, '5'); assert.equal(r.chip, '25٪'); same(r.rows.map((x) => [x.n, x.pct]), [['3', '60٪'], ['2', '40٪']]);
-  const [b0] = I({ reports: 0 }, 0); assert.equal(b0.val, '0'); assert.equal(b0.ring.length, 0);
+  const M = { reports: 4, qty: 10, sar: 1500, actions: { sec: 3, des: 2, sto: 5 },
+    by: [['c', 'TEST_ONLY نقد', 7], ['c', 'TEST_ONLY ذهب', 3], ['i', 'TEST_ONLY ريال', 7], ['i', 'TEST_ONLY خاتم', 3], ['l', 'TEST_ONLY بوابة', 3], ['l', '', 1], ['b', 'TEST_ONLY سالم', 3], ['b', 'TEST_ONLY فهد', 1]] };
+  const C = S(M, 4);
+  same(C.map((c) => c.title), ['الإجراء على القطع', 'التصنيف', 'البنود', 'مواقع الضبط', 'المسجّلون']);
+  assert.equal(C[0].val, '10'); assert.equal(C[0].chip, '50٪'); same(rows(C[0]), [['TEST_ONLY تحريز', '3'], ['TEST_ONLY إتلاف', '2'], ['TEST_ONLY حفظ', '5']]); assert.match(C[0].sub, /4 محضر · 1,500 ريال/);
+  assert.equal(C[1].val, '7'); assert.equal(C[1].chip, '70٪'); assert.equal(C[1].sub, 'الأكثر: TEST_ONLY نقد'); same(rows(C[1]), [['TEST_ONLY نقد', '7'], ['TEST_ONLY ذهب', '3']]);
+  assert.match(C[1].rows[0].color, /#123456$/, 'لونُ التصنيف من الكتالوج');
+  assert.equal(C[2].val, '7'); same(rows(C[2]), [['TEST_ONLY ريال', '7'], ['TEST_ONLY خاتم', '3']]);
+  assert.equal(C[3].val, '4'); assert.equal(C[3].chip, '75٪'); same(rows(C[3]), [['TEST_ONLY بوابة', '3'], ['—', '1']]);
+  assert.equal(C[4].val, '2'); assert.equal(C[4].chip, '75٪'); assert.equal(C[4].sub, 'الأكثر: TEST_ONLY سالم');
+  const Z = S({ reports: 0, qty: 0, sar: 0, actions: {}, by: [] }, 0);
+  assert.equal(Z.length, 5); same(Z.map((c) => c.val), ['0', '0', '0', '0', '0']); assert.ok(Z.every((c) => c.ring.length === 0));
+  same(rows(Z[1]), [['TEST_ONLY نقد', '0'], ['TEST_ONLY ذهب', '0']], 'الشهرُ الفارغ: التصنيفاتُ المعتمدة بصفر'); same(rows(Z[3]), [['TEST_ONLY بوابة', '0']]);
+  const ir = Object.assign(Object.create(P), { loadIrshadLangs: () => ['TEST_ONLY عربية'], loadShiftOptsIr: () => [{ name: 'TEST_ONLY أ' }], loadIrshadLocs: () => ['TEST_ONLY موقع'] }),
+    I = method('src/systems/irshad/client/logic.js', '_irKpiCards', ir);
+  const R = I({ reports: 3, ben: 20, trans: 10, bro: 5, pros: 3, pol: 2,
+    by: [['g', 'TEST_ONLY عربية', 6], ['g', 'TEST_ONLY أردية', 4], ['s', 'TEST_ONLY أ', 2], ['s', 'TEST_ONLY ب', 1], ['l', 'TEST_ONLY موقع', 15], ['l', 'TEST_ONLY آخر', 5]] }, 3);
+  same(R.map((c) => c.title), ['المستفيدون', 'اللغات', 'الإحالات', 'الورديات', 'مواقع الإرشاد']);
+  assert.equal(R[0].val, '20'); assert.equal(R[0].chip, '50٪'); same(R[0].rows.map((x) => x.n), ['10', '5', '3', '2']); assert.match(R[0].sub, /3 تقرير/);
+  assert.equal(R[1].val, '10'); assert.equal(R[1].chip, '60٪'); same(rows(R[1]), [['TEST_ONLY عربية', '6'], ['TEST_ONLY أردية', '4']]); assert.equal(R[1].sub, 'الأكثر: TEST_ONLY عربية');
+  assert.equal(R[2].val, '5'); assert.equal(R[2].chip, '25٪');
+  assert.equal(R[3].val, '3'); assert.equal(R[3].chip, '67٪'); same(rows(R[3]), [['TEST_ONLY أ', '2'], ['TEST_ONLY ب', '1']]);
+  assert.equal(R[4].val, '2'); assert.equal(R[4].chip, '75٪'); same(rows(R[4]), [['TEST_ONLY موقع', '15'], ['TEST_ONLY آخر', '5']]);
+  const R0 = I({ reports: 0, by: [] }, 0);
+  assert.equal(R0.length, 5); assert.ok(R0.every((c) => c.ring.length === 0)); same(rows(R0[1]), [['TEST_ONLY عربية', '0']]); same(rows(R0[3]), [['TEST_ONLY أ', '0']]);
+  /* الأعلى أربعٌ — أو ثلاثٌ ثم «غيرها» */
+  const many = S({ reports: 5, qty: 5, actions: {}, by: [1, 2, 3, 4, 5].map((n) => ['i', 'TEST_ONLY ' + n, n]) }, 5)[2];
+  same(rows(many), [['TEST_ONLY 5', '5'], ['TEST_ONLY 4', '4'], ['TEST_ONLY 3', '3'], ['غيرها', '3']]);
 });
 
 test('④ السجلّ الموحَّد: سنة/شهر/يوم هـ · ميلاديٌّ رقمي · ساعةٌ بأربعٍ وعشرين · «المسجِّل» عمودٌ مستقل', () => {
