@@ -868,6 +868,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   drDayAllAp(t, r, e, n, a) {
     var i = t[r + "-" + e + "-" + n];
     if (!i || !i.created) return !1;
+    if (void 0 !== i.__sumAp) return !!i.__sumAp;   /* V7 · 53: يومٌ من الملخّص (غيرُ محمَّل) */
     var s = {},
       o = 0;
     if (
@@ -887,6 +888,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return !0;
   }
   drAnyShiftAp(t) {
+    if (t && void 0 !== t.__sumAnyAp) return !!t.__sumAnyAp;   /* V7 · 53: يومٌ من الملخّص */
     if (!t || !t.shifts) return !1;
     for (var r = Object.keys(t.shifts), e = 0; e < r.length; e++) if (t.shifts[r[e]] && t.shifts[r[e]].ap) return !0;
     return !1;
@@ -1555,11 +1557,38 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             return t !== n;
           }));
   }
+  /* V7 · 53: التقريرُ مخزَّنٌ باليوم — يُطلب اليومُ المختار وأمسُه وعلامةُ شهره (والشهرُ كلُّه إن اتّسع لحدّ القراءة)، والجدولُ والخطةُ لشهره.
+     بطاقاتُ الأشهر وخاناتُ الأيام غيرِ المحمَّلة من ملخّص الخادم (للعرض وحده — لا يُحفظ ولا يدخل الحالة) */
+  _drPeriods(t) {
+    var S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations, r = this;
+    if (!S || !S.split || !S.split("bassam_dreport_v1")) return;
+    var ym = t.rpY + "-" + t.rpM, dk = ym + "-" + t.rpD, sig = dk;
+    if (this._drWant === sig) return;
+    this._drWant = sig;
+    var w = function (name, spec) { return S.resources.indexOf(name) !== -1 && S.split(name) ? S.want(name, spec) : Promise.resolve({ ok: 1 }); },
+      days = [dk, "m:" + ym].concat(t.rpD > 1 ? [ym + "-" + (t.rpD - 1)] : []);
+    /* التقريرُ بأيامه (يملكه هذا النظام)، وما سواه من مجموعة القراءة المعلنة بلا تسميته (wantPage) */
+    Promise.all([w("bassam_dreport_v1", { periods: days }), S.wantPage("Daily Report", { groups: [ym], except: ["bassam_dreport_v1"] })]);   /* فشلٌ ⇒ حالةُ الخطأ في القراءة؛ التنقّلُ يعيد الطلب */
+    if (this._drSumYear !== t.rpY) {
+      this._drSumYear = t.rpY;
+      S.summary("bassam_dreport_v1", { groups: this.MONTHS.map(function (a, i) { return t.rpY + "-" + (i + 1); }) }).then(function (q) {
+        if (!q || 1 !== q.ok) return;
+        var m = {};
+        q.rows.forEach(function (x) {
+          x && "string" === typeof x.p && 0 !== x.p.indexOf("m:") && (m[x.p] = { created: x.v && 0 === x.v.created ? 0 : 1, __sumAp: x.v && x.v.ap ? 1 : 0, __sumAnyAp: x.v && x.v.anyAp ? 1 : 0 });
+        });
+        r._drSum = m;
+        r.setState({ _drSumTick: Date.now() });
+      });
+    }
+  }
   renderVals() {
+    this._drPeriods(this.state);
     var t = this.state,
       r = this,
       e = this.hParts(new Date()),
       n = this.rpLoad(),
+      N9 = this._drSum ? Object.assign({}, this._drSum, n) : n,
       a = this.hMonthDays(t.rpY, t.rpM),
       i = this.drDistShifts(),
       s = this.drDayShifts(),
@@ -1572,11 +1601,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     for (
       var c = (p && p.color) || "#b99751",
         l = function (r) {
-          var e = n[t.rpY + "-" + t.rpM + "-" + r];
+          var e = N9[t.rpY + "-" + t.rpM + "-" + r];
           return !(!e || !e.created);
         },
         f = function (e) {
-          return r.drDayAllAp(n, t.rpY, t.rpM, e, i);
+          return r.drDayAllAp(N9, t.rpY, t.rpM, e, i);
         },
         h = 0,
         u = 1;
@@ -1590,8 +1619,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             o = t.rpM === s,
             d = t.rpY === e.y && s === e.m,
             p =
-              Object.keys(n).filter(function (r) {
-                return 0 === r.indexOf(t.rpY + "-" + s + "-") && n[r] && n[r].created;
+              Object.keys(N9).filter(function (r) {
+                return 0 === r.indexOf(t.rpY + "-" + s + "-") && N9[r] && N9[r].created;
               }).length > 0,
             c = t.rpY < e.y || (t.rpY === e.y && s < e.m),
             l = (function () {
@@ -1600,7 +1629,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               if (!e) return !1;
               var a = r.drDistShiftsFor(r.drBucketFor(t.rpY, s));
               if (!a.length) return !1;
-              for (var i = 1; i <= e; i++) if (!r.drDayAllAp(n, t.rpY, s, i, a)) return !1;
+              for (var i = 1; i <= e; i++) if (!r.drDayAllAp(N9, t.rpY, s, i, a)) return !1;
               return !0;
             })(),
             f =
@@ -1725,7 +1754,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           w =
             "display:block;width:9px;height:1px;flex-shrink:0;margin:1px 0;background:" +
             ("c" === i ? "rgba(255,255,255,0.5)" : "rgba(148,163,184,0.55)"),
-          O = n[t.rpY + "-" + t.rpM + "-" + a];
+          O = N9[t.rpY + "-" + t.rpM + "-" + a];
         b.push({
           num: String(a),
           gnum: String(S.getDate()),

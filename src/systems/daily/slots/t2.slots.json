@@ -120,6 +120,10 @@
   "order": 10,
   "text": "bassam_rounds_v1: '{}', bassam_rounds_arc_v1: '{}', "
  },
+ "store.period.daily": {
+  "order": 10,
+  "text": " bassam_rounds_v1: '', bassam_rounds_arc_v1: '',"
+ },
  "store.opResources.daily": {
   "order": 10,
   "text": " 'bassam_rounds_v1', 'bassam_rounds_arc_v1',"
