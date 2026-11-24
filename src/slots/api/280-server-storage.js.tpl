@@ -1200,9 +1200,10 @@
   // Only this closure can prove that a dispatched change event already has a
   // confirmed typed read. Arbitrary/custom remote events still invalidate.
   var operationRemoteProof9 = new WeakMap();
-  function operationDispatchRemote9(keys, v, confirmed, foreign) {
-    /* foreign: مفاتيحُ العمليات التي تغيّرت مراجعتُها فعلاً عمّا في هذا التبويب (تعديلُ جهازٍ آخر) — صدى حفظي أنا ليس منها */
-    var event = new CustomEvent('bassam:remote', { detail: { keys: keys, v: v, foreign: foreign || [] } });
+  function operationDispatchRemote9(keys, v, confirmed, foreign, by) {
+    /* foreign: مفاتيحُ العمليات التي تغيّرت مراجعتُها فعلاً عمّا في هذا التبويب (تعديلُ جهازٍ آخر) — صدى حفظي أنا ليس منها
+       V7 · 53 (port-sync · بند 5): by — أسماءُ من عدّل يرسلها الخادمُ مع التغيير (/api/changes) فتصل إلى تنبيه الصفحة */
+    var event = new CustomEvent('bassam:remote', { detail: { keys: keys, v: v, foreign: foreign || [], by: Array.isArray(by) ? by.slice(0, 3).map(String) : [] } });
     operationRemoteProof9.set(event, new Set(confirmed || []));
     try { window.dispatchEvent(event); } finally { operationRemoteProof9.delete(event); }
   }
@@ -1927,7 +1928,7 @@
                 var privateDetail = { uid: UID9, dept: meIdentity[2], ekey: meIdentity[3], v: j.v };
                 if (j.meChanged === 1) try { window.dispatchEvent(new CustomEvent('bassam:me', { detail: privateDetail })); } catch (eM) {}
 @@SYS:store.changed.tasks.event@@              }
-              if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed, result.foreign); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
+              if (result.changed.length) { try { operationDispatchRemote9(ks, j.v, result.confirmed, result.foreign, j.by); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
               if (ks.some(function (k) { return SLICEK9.test(k); })) { var s9 = slice9(); if (s9 !== slice0) { slice0 = s9; readSet9(false); } }
               if (j.more && BOOT.v === j.v && ++pages < MORE_MAX9 && !sx9) return ask(false);   /* C2: البقيةُ فوراً من آخر مراجعةٍ وصلت */
             });
