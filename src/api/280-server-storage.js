@@ -2052,7 +2052,7 @@
       });
       // Keep the cursor behind a queued/uncertain command. The normal polling
       // backoff retries after that exact ticket is settled; never rebase it.
-      if (operationKeys.some(function (key) { return busyKey9(key) || !!(operationActive9 && operationActive9.keys.indexOf(key) !== -1); }))
+      if (operationKeys.some(function (key) { return busyKey9(key) || !!(operationActive9 && operationActive9.keys.some(function (k) { return k === key || k.indexOf(key + '@') === 0; })); }))   /* V7 · 53: وفتراتُه */
         return Promise.reject(Error('operations-sync-pending'));
       // Do not render a transient empty value between invalidation and ACK.
       // A failed read still publishes its normal fail-closed error state.
