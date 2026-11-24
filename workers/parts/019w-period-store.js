@@ -168,8 +168,8 @@ async function opPeriodsMigrateRoute(env, request, session) {
           var total = Number((await env.DB.prepare(sum(function (t2) { return t2 + ' WHERE department_id=?1 AND resource=?2'; })).bind(d, R).first('n')) || 0);
           if (!total) { rep.resources[R] = { periods: 0, rows: 0 }; continue; }
           var names = members.map(function (m) { return m.m; }), sums = [], ranges = opHeadRanges(def);
-          names.forEach(function (p) { ranges = ranges.concat(opPeriodRanges(def, p)); });
-          var covered = Number((await env.DB.prepare(sum(function (t2) { return "json_each(?3) q JOIN " + t2 + " t ON t.department_id=?1 AND t.resource=?2 AND t.row_key>=json_extract(q.value,'$[0]') AND t.row_key<json_extract(q.value,'$[1]')"; })).bind(d, R, JSON.stringify(ranges)).first('n')) || 0);
+                    /* تغطيةٌ بلا مدياتٍ كثيرة: كلُّ عقدةٍ تحت الحاوية/e: جذرُها عضوٌ في الحاوية (صفُّ جذرها موجود) — والكياناتُ مربوطةٌ بعقدها (FK) */
+          var E = opContainerKey(def) + '/e:', L = E.length, orphans = Number((await env.DB.prepare("SELECT COUNT(*) n FROM ops_nodes x WHERE x.department_id=?1 AND x.resource=?2 AND x.row_key>=?3 AND x.row_key<?4 AND NOT EXISTS(SELECT 1 FROM ops_nodes m WHERE m.department_id=?1 AND m.resource=?2 AND m.parent_key=?5 AND m.row_key=CASE WHEN instr(substr(x.row_key,?6),'/')>0 THEN substr(x.row_key,1,?7+instr(substr(x.row_key,?6),'/')-1) ELSE x.row_key END)").bind(d, R, E, opContainerKey(def) + '/e;', opContainerKey(def), L + 1, L).first('n')) || 0), covered = orphans ? total - orphans : total;
           if (ri < r0) { rep.resources[R] = { periods: names.length, rows: total, earlier: 1 }; if (covered !== total) throw Object.assign(ocError('period-coverage'), { rows: total, covered: covered }); continue; }
           var i0 = from && ri === r0 && d === body.dept ? Math.max(0, Number(from.i) || 0) : 0;
           for (var i = i0; i < names.length; i += 20) {
