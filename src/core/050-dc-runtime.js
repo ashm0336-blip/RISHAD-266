@@ -1883,7 +1883,8 @@
       });
       const t0 = Date.now();
       const run = (n) => attempt().catch((error) => {
-        if (pageContextKey(name) !== key || n >= DATA_RETRY_MS.length || sessionGone() || Date.now() - t0 > DATA_SLOW_MS) throw error;
+        if (Date.now() - t0 > DATA_SLOW_MS) throw error;   /* V7 · 53 (S7) */
+        if (pageContextKey(name) !== key || n >= DATA_RETRY_MS.length || sessionGone()) throw error;
         return pause(DATA_RETRY_MS[n]).then(() => pageContextKey(name) === key ? run(n + 1) : void 0);
       });
       const promise = run(0).then(() => {

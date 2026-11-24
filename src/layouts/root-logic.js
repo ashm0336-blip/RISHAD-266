@@ -130,9 +130,10 @@ class Component extends DCLogic {
       };
       /* عنوانٌ صالح ومسموح يغلب الصفحة المحفوظة وهبوط أول دخول — فمن فتح رابطاً وسجّل دخوله وصل إلى مقصده */
       const hk0 = this._hashKey(), hk = this._pageAllowed(hk0);
-      /* V7 · 53 (ج): عنوانٌ مرفوضٌ عند التحميل الأول أو إعادة التحميل — لا تُرسم الصفحةُ المرفوضة ولا يُرتدّ بصمت إلى صفحةٍ محفوظة:
+      /* V7 · 53 (ج): عنوانُ صفحةٍ معروفة مرفوضٌ بالصلاحية عند التحميل الأول أو إعادة التحميل (المساعدةُ نافذةٌ لا صفحة، والمقطعُ المجهول كما كان) — لا تُرسم الصفحةُ المرفوضة ولا يُرتدّ بصمت إلى صفحةٍ محفوظة:
          تُفتح «صفحتي» ويُحسم العنوانُ بعد ثبوت الصلاحيات (_hashRefused53 عند التركيب) — تحويلٌ برسالة، أو الصفحةُ نفسُها إن صارت متاحة */
-      if (hk0 && !hk) { const P0 = KIVO.BassamPerm; this.__hashRefused = { key: hk0, href: String(location.hash || ""), wait: !!(P0 && P0.ready && !P0.ready()) }; return "profile"; }
+      const NAV0 = Object.assign({ profile: null, sysadmin: null, kpis: null }, (KIVO.BassamPerm && KIVO.BassamPerm.NAV2PERM) || {});
+      if (hk0 && !hk && hk0 !== "help" && Object.prototype.hasOwnProperty.call(NAV0, hk0)) { const P0 = KIVO.BassamPerm; this.__hashRefused = { key: hk0, href: String(location.hash || ""), wait: !!(P0 && P0.ready && !P0.ready()) }; return "profile"; }
       if (hk === "help") this._helpRequested=true;
       if (hk && hk !== "help") { try { const RAWH = KIVO.__BS_RAWLS; if (RAWH && RAWH.getItem.call(localStorage, "bassam_fresh_login_v1") === "1") RAWH.removeItem.call(localStorage, "bassam_fresh_login_v1"); } catch (eh) {} this._applyHashTab(hk); return hk; }
       /* بطلب المستخدم: كل تسجيل دخول جديد يهبط على «الصفحة الشخصية» — فهي
