@@ -19,8 +19,6 @@ var RSI_TTL = 3600e3, RSI_ROW = 200000, RSI_SEG = { f: 1000000, i: 4000000 }, RS
 var RSI_SLICE = {
 @@SYS:rsi.slice@@};
 var RSI_SLICE_MIN = 1500000;
-/* V7 · 53 تقويم: علاماتُ أشهر التقرير (m:) مشتركةٌ في كل دفعة كما في الجولات — قاعدةُ ق3 تحتاج علاماتِ الشهرين الهجريين معاً لكل شهرٍ ميلادي */
-if (RSI_SLICE.bassam_dreport_v1) RSI_SLICE.bassam_dreport_v1 = ['^\\d{4}-\\d{1,2}-\\d{1,2}$', RSI_SLICE.bassam_dreport_v1[1]];
 /* V7 · د6 (QA ٦ — قرارُ المالك): الدفعاتُ (مسارُ الذاكرة المحدودة) لمدير المنصة ولمدير الإدارة على إدارته (057 enfDeptMgrFull) — كان لمدير المنصة وحده فتُرفض نسخةُ Production لمديرها */
 function rsiSliceOk(A, d) { return A.u.role === 'super' || enfDeptMgrFull(A, d); }
 async function rsiSliceSpec(env, A, s, keys, mode) {
