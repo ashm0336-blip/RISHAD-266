@@ -115,7 +115,6 @@ test('canonical Award HTTP opens a missing-id legacy detail, preserves existing 
   assert.deepEqual(B.W.awInflate(await B.W.awExportDomain(B.env, D1)).records, before); assert.equal(C.page._bcTickets.size, 0);
   assert.equal(Object.hasOwn(B.W.awInflate(await B.W.awExportDomain(B.env, D1)).records.recs.find(record => record.name === legacy.name), 'id'), false);
   C.page.state.awArm = { id: row.recordKey, ts: Date.now() }; await C.page.awDel(row.recordKey, 'TEST_ONLY legacy');
-  if (C.page._bcReasons?.size) { C.page.state.awArm = { id: row.recordKey, ts: Date.now() }; await C.page.awDel(row.recordKey, 'TEST_ONLY legacy'); }
   assert.equal((await C.read('records', { limit: 10 })).total, 1);
   const owner = mount(t, B, 'award'), refs = await owner.read('references'); assert.equal(refs.references.document.A.title, 'AHTTP');
   const next = clone(refs.references.document); next.A.secs[0].body = '<p>TEST_ONLY department edit</p>';

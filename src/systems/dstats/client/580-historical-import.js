@@ -53,15 +53,8 @@ KIVO.DailyStats = (function () {
       var body = { uid: uid, base: base, data: data };
       if (opts.operation) body.operation = opts.operation;
       if (opts.reason) body.reason = String(opts.reason).trim();
-      var r, v;
-      for (var attempt = 0; attempt < 2; attempt++) {
-        r = await fetch('/api/dstats', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); v = await r.json();
-        if (attempt === 0 && r.status === 403 && v && v.why === 'reason' && KIVO.__BS_SRV && KIVO.__BS_SRV.askReason) {
-          var reason = await new Promise(function (resolve) { KIVO.__BS_SRV.askReason('bassam_dstats_v1', v.reasonKeys || [], resolve); });
-          if (!reason) return fail('denied'); body.reason = reason; continue;
-        }
-        break;
-      }
+      /* V7 · 53 (noreason · قرارُ المالك): طلبٌ واحد — لا نافذةَ سببٍ بعد رفضٍ ولا إعادةَ إرسالٍ بسبب */
+      var r = await fetch('/api/dstats', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), v = await r.json();
       if (!r.ok || !valid(v) || v.rev < base) return fail(v && v.err || 'network', v && v.at, v && v.why);
       cache = clone(v.data); rev = v.rev; error = ''; return true;
     } catch (e) { return fail('network'); } finally { busy = false; }

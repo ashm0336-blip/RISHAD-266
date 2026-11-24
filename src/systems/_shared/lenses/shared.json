@@ -62,10 +62,6 @@
   "enf.reasonOff.lens": {
    "order": 0,
    "text": " 'lens.zones.status.change': 1, 'lens.gates.status.change': 1, 'lens.marks.status.change': 1, 'lens.paths.status.change': 1 "
-  },
-  "client.reasonOff.lens": {
-   "order": 0,
-   "text": " \"lens.zones.status.change\": 1, \"lens.gates.status.change\": 1, \"lens.marks.status.change\": 1, \"lens.paths.status.change\": 1 "
   }
  },
  "note": "V7 · د5-ح: العدساتُ الست (zones · paths · gates · marks · dist · dens) خرجت من القاعدة — لا مضيفَ لها إلا صفحتا التشغيل الميداني والمتابعة اليومية. تبقى ما حضر أحدُهما وتغيب بغيابهما: إضافاتُها (plugins/lenses/<key>/manifest.json) · صفوفُها في وثائق الصلاحيات (permissions.json — tools/perm_parts.py) · جداولُها في محرّكات الروابط (قطعُ slots). يحذفها اختبارُ الحذف حين يغيب المالكان (tools/removal_test.py plan+daily)."

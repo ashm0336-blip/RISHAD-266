@@ -289,7 +289,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const result = await API.send(draft.ticket); if (result.ticket) draft.ticket = result.ticket; if (this._empDeleteDraft !== draft) return;
       if (!result.ok) {
         draft.needsReview = result.err === "conflict"; draft.uncertain = ["network", "invalid", "session"].includes(result.err);
-        if (!draft.uncertain && !draft.needsReview && !["reason", "reason-cancelled"].includes(result.err)) draft.ticket = null;
+        if (!draft.uncertain && !draft.needsReview) draft.ticket = null;
         this.setState({ empDeleteError: result.message, empDeleteReview: draft.needsReview }); this.bsToast(result.message, "warn"); return;
       }
       this._empDeleteDraft = null;

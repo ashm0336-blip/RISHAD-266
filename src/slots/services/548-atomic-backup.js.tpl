@@ -75,7 +75,6 @@
       network: 'تعذّر تأكيد الاستعادة؛ الملف محفوظ، أعد المحاولة بالطلب نفسه',
       invalid: 'لم يصل إقرار كامل من الخادم؛ لم يُعرض نجاح',
       conflict: 'تغيّرت البيانات؛ راجع الجرد مجددًا قبل اعتماد الاستعادة',
-      reason: 'أُلغي الاستيراد لعدم إدخال سبب',
       cancelled: 'أُلغيت الاستعادة دون كتابة',
       'backup-image-reuse-rejected': 'تعذّر اعتماد صور النسخة؛ تُقبل فقط صور موجودة ومطابقة ومصرّح بمرجعها. إن كانت النسخة تحمل صورة أُزيل مرجعها من سجلّها (بانتظار انتهاء مهلتها) فاطلب من مسؤول المنصة أو مدير إدارتها الأصلية تنفيذ الاستعادة ليُعاد ربطها، وإلا فبعد انتهاء المهلة تُستعاد البيانات وتظهر الصورة مفقودة',
       'restore-credential-change': 'النسخة تغيّر بيانات دخول حساب قائم؛ أُوقفت لحماية كلمات المرور الحالية',
@@ -95,7 +94,7 @@
           : data && data.details && data.details.k ? 'السبب: «' + data.details.k + '» وحده أكبر مما يُعالَج في طلب واحد.' : 'اختر «استبدال كامل» بحساب مدير المنصة (تُرسل البيانات الكبيرة على دفعات)، أو امسح بيانات الإدارة الهدف أولاً ثم استورد.'),
       'import-too-large': 'النسخة أكبر من سقف الاستيراد؛ لم يتغيّر شيء ولم يُرسل منها شيء. حجمها ' + (data && data.details && data.details.chars ? Math.round(data.details.chars / 1e6) : '؟') + ' مليون حرف، والحدّ ' + (data && data.details && data.details.limit ? Math.round(data.details.limit / 1e6) : 256) + ' مليون حرف.',
       'restore-epoch-changed': 'جرت استعادة أخرى أثناء الاستيراد؛ لم يتغيّر شيء — أعد المحاولة',
-      'restore-reason': 'سبب الاستيراد مطلوب (300 حرف على الأكثر)؛ لم يتغيّر شيء',
+      'restore-reason': 'طلب الاستيراد غير صالح (النمط أو ملاحظة أطول من 300 حرف)؛ لم يتغيّر شيء',
       'authz-unavailable': 'خدمة الصلاحيات غير متاحة الآن؛ لم يتغيّر شيء — أعد المحاولة بعد قليل',
       'backup-data-shape': 'في النسخة قيمة ليست نصًّا صالحًا؛ لم يتغيّر شيء',
       'backup-unknown-resource': 'في النسخة مفتاح لا تعرفه المنصة الحالية؛ لم يتغيّر شيء',
@@ -218,19 +217,6 @@
         return n.toString(16).padStart(2, '0');
       }).join('')
     );
-  }
-  function askReason(scope) {
-    var srv = KIVO.__BS_SRV;
-    if (!srv || typeof srv.askReason !== 'function') return Promise.resolve('');
-    return new Promise(function (resolve) {
-      srv.askReason(
-        scope.kind === 'dept' ? 'bsdept:' + scope.departmentId + ':bassam_employees_v1' : 'bassam_depts_v1',
-        ['backup.restore'],
-        function (reason) {
-          resolve(String(reason || ''));
-        },
-      );
-    });
   }
   /* V7 · د6 — النقلُ على أجزاء */
   var IMPORT = '/api/backup/import', LONG = 180000, jobs = new WeakMap(), live = new Set();
@@ -491,10 +477,8 @@
       return result;
     }
     if (!job) {
-      /* مدير المنصة لا يُطلب منه سبب: لا نافذة، ويُرسل السبب فارغاً (الخادمُ يقبله منه وحده ويسجّل «بلا سبب (مدير المنصة)») */
-      var srvR = KIVO.__BS_SRV, exempt = !!(srvR && typeof srvR.reasonExempt === 'function' && srvR.reasonExempt());
-      var reason = typeof opt.reason === 'string' ? opt.reason.trim() : exempt ? '' : await askReason(scope);
-      if (!reason && !exempt) return failure('reason', 403);
+      /* V7 · 53 (noreason · قرارُ المالك): لا يُسأل أحدٌ عن سبب — نافذةُ المراجعة قبل الاستيراد هي التأكيد؛ ملاحظةٌ يمرّرها المستدعي (opt.reason) تُرسل كما هي وإلا فارغة */
+      var reason = typeof opt.reason === 'string' ? opt.reason.trim() : '';
       if (!same(stamp)) return failure('session', 401);
       /* ما قد يُقسم دفعاتٍ يعلنه الخادم (begin dry): أسماءُ الموارد في النسخة — مفاتيحُ data في القديمة، ومواردُ domains.operations في الحديثة */
       var legacyKeys = {}, resources = {}, spec = {}, min = 0, old = !file.manifest && record(file.data);

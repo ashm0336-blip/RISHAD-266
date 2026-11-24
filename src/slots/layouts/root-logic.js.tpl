@@ -961,7 +961,7 @@ class Component extends DCLogic {
         });
         pend.mode = mode;
         if (!prepared.ok) {
-          if (prepared.err === "cancelled" || prepared.err === "reason") { pend.failed = null; show({}, "pick"); this.bkToast(prepared.message, true); }
+          if (prepared.err === "cancelled") { pend.failed = null; show({}, "pick"); this.bkToast(prepared.message, true); }
           else fail(prepared);
           return;
         }
