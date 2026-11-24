@@ -9299,7 +9299,7 @@ function empApplySchedule(values, meta, validKeys, result) {
     result.warnings.push('schedule-disabled');
     return;
   }
-  var mk = meta.year + '-' + meta.month,
+  var mk = calGYm(meta.year, meta.month),   /* V7 · 53 تقويم: شهرُ الجدول ISO YYYY-MM كما في empPrepareTransition (كان «2026-3» غيرَ مبطَّن) */
     locks = values.bassam_staffing_locks_v1 || {};
   if (locks[mk]) {
     result.warnings.push('schedule-locked');

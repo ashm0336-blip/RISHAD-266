@@ -20,6 +20,8 @@ const dk = (d, r) => 'bsdept:' + d + ':bassam_' + r;
 const K = { 'd1.seized': dk('tst_d1', 'seized_v1'), 'd2.seized': dk('tst_d2', 'seized_v1'), 'd1.award': dk('tst_d1', 'award_v1'), 'd2.award': dk('tst_d2', 'award_v1'), 'd2.irshad': dk('tst_d2', 'irshad_v1') };
 const L = Object.keys(K);
 let DAY = null;
+/* V7 · 53 تقويم: يومُ المضبوطات المخزَّن ميلاديٌّ (يومُ الرياض التشغيلي — كما يكتبه العميل اليوم وكما يولّده gen_fixture لبقية العالم) */
+const GDAY = (() => { const x = new Date(Date.now()); return { y: x.getUTCFullYear(), m: x.getUTCMonth() + 1, d: x.getUTCDate() }; })();
 function seedSql() {
   const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {};
   f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); DAY = o;
@@ -32,7 +34,7 @@ async function world(mode) {
   const su = await C.login(TEST_SUPER_USERNAME, TEST_SUPER_PIN); assert.ok(su.ok);
   await applySql(env.DB, seedSql());
   /* بياناتٌ من قبل إخراج الصفحتين من سقف tst_d2 — تُزرع في المصدر القديم قبل التحويل فتنقلها أداةُ التحويل الحقيقية إلى الجداول (schema 9/10) */
-  for (const [k, v] of [[K['d2.seized'], JSON.stringify({ reports: [{ id: 'tstsz2', y: DAY.year, m: DAY.month, d: DAY.day, loc: 'TEST_ONLY', test: 'TEST_ONLY' }] })], [K['d2.award'], '{"recs":[{"id":"tstaw9","ekey":"tst_e_emp2","name":"TEST_ONLY","st":"TEST_ONLY"}]}']]) {
+  for (const [k, v] of [[K['d2.seized'], JSON.stringify({ reports: [{ id: 'tstsz2', y: GDAY.y, m: GDAY.m, d: GDAY.d, loc: 'TEST_ONLY', test: 'TEST_ONLY' }] })], [K['d2.award'], '{"recs":[{"id":"tstaw9","ekey":"tst_e_emp2","name":"TEST_ONLY","st":"TEST_ONLY"}]}']]) {
     env.DB.db.prepare('INSERT INTO kv (k, seq, v) VALUES (?1, 0, ?2)').run({ '1': k, '2': v });
     env.DB.db.prepare('INSERT OR REPLACE INTO revs (k, rev) VALUES (?1, 1)').run({ '1': k });
   }

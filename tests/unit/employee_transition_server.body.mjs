@@ -64,12 +64,12 @@ for (const mode of ['enforce'])
   test(mode + ': selected last delete retains unrelated ledgers; all delete explicitly empties the full history', async () => {
     const t = await world(mode),
       emp = { eid: 'TEST_ONLY_last', name: 'TEST_ONLY last', nid: '1900000001' },
-      staff = { '1448-1': { TEST_ONLY_last: { shift: 'TEST_ONLY' }, TEST_ONLY_old_orphan: { shift: 'TEST_ONLY' }, __shifts: [] } },
+      staff = { '2026-11': { TEST_ONLY_last: { shift: 'TEST_ONLY' }, TEST_ONLY_old_orphan: { shift: 'TEST_ONLY' }, __shifts: [] } },
       aw = { recs: [{ ekey: 'TEST_ONLY_old_orphan', name: 'TEST_ONLY old orphan' }] };
     await t.put(key('bassam_employees_v1'), [emp]);
     await t.put(key('bassam_staffing_v3'), staff);
-    /* Schema 10: the daily report is a typed map keyed by a Hijri day; the wipe must clear a real day record. */
-    await t.put(key('bassam_dreport_v1'), { '1448-1-2': { created: 1, shifts: {} } });
+    /* Schema 10: the daily report is a typed map keyed by a day (V7 · 53 تقويم: ISO Gregorian); the wipe must clear a real day record. */
+    await t.put(key('bassam_dreport_v1'), { '2026-11-02': { created: 1, shifts: {} } });
     /* Schema 9: Award records are the typed awards domain (award_* tables), seeded through the real installer. */
     await t.awards(D1, aw);
     let p = copy(t.keys.bassam_perms_v1);
@@ -81,7 +81,7 @@ for (const mode of ['enforce'])
       all = await t.prepare(c, { finalRows: [], deleteMode: 'all' });
     assert.equal(selected.body.set[key('bassam_dreport_v1')], undefined);
     assert.deepEqual(JSON.parse(selected.body.set[key('bassam_staffing_v3')]), {
-      '1448-1': { TEST_ONLY_old_orphan: { shift: 'TEST_ONLY' }, __shifts: [] },
+      '2026-11': { TEST_ONLY_old_orphan: { shift: 'TEST_ONLY' }, __shifts: [] },
     });
     assert.equal(selected.context.serverEmployeeIntent.kind, 'employee-delete');
     assert.equal(all.context.serverEmployeeIntent.kind, 'employee-wipe');
@@ -127,7 +127,7 @@ test('autoactivation preserves existing frozen credentials and manager accounts 
       intent: 'import',
       deleteMode: undefined,
       finalRows: c.employees.concat([extra]),
-      import: { mode: 'add', year: 1448, month: 1, schedule: [] },
+      import: { mode: 'add', year: 2026, month: 11, schedule: [] },
       accountProposals: [{ ekey: extra.eid, ph: 'p2$100000$' + 'c'.repeat(32) + '$' + 'd'.repeat(64) }],
     }),
     users = JSON.parse(out.body.set.bassam_auth_users_v1);
@@ -150,7 +150,7 @@ test('account proposal cannot change an existing frozen account, target another 
   const t = await world(),
     c = await t.context('super', 'import'),
     ph = 'p2$100000$' + 'c'.repeat(32) + '$' + 'd'.repeat(64),
-    body = { intent: 'import', deleteMode: undefined, import: { mode: 'update', year: 1448, month: 1, schedule: [] } };
+    body = { intent: 'import', deleteMode: undefined, import: { mode: 'update', year: 2026, month: 11, schedule: [] } };
   for (const proposal of [
     { ekey: EKEYS.frozen, ph },
     { ekey: EKEYS.employee2, ph },
@@ -176,7 +176,7 @@ test('import context and commit retain the original add AND mode-action policy; 
         intent: 'import',
         deleteMode: undefined,
         finalRows: c.employees.concat([{ eid: 'TEST_ONLY_no_account_new', name: 'TEST_ONLY no account' }]),
-        import: { mode: 'update', year: 1448, month: 1, schedule: [] },
+        import: { mode: 'update', year: 2026, month: 11, schedule: [] },
       },
       'employee1',
     );
@@ -187,7 +187,7 @@ test('import context and commit retain the original add AND mode-action policy; 
   await assert.rejects(
     t.prepare(
       add,
-      { intent: 'import', deleteMode: undefined, import: { mode: 'update', year: 1448, month: 1, schedule: [] } },
+      { intent: 'import', deleteMode: undefined, import: { mode: 'update', year: 2026, month: 11, schedule: [] } },
       'employee1',
     ),
     (e) => e.cuStatus === 403,
@@ -287,12 +287,12 @@ test('import schedule mapping uses the server scope (template policy deleted —
   const c = await t.context('super', 'import'),
     imp = {
       mode: 'update',
-      year: 1448,
+      year: 2026,
       month: 3,
       schedule: [{ key: c.employees[0].eid, shift: 'TEST_ONLY shift', rest: 'الجمعة والسبت', cs: 'TEST_ONLY', muk: 'نعم' }],
     };
   const out = await t.prepare(c, { intent: 'import', deleteMode: undefined, import: imp }),
-    row = JSON.parse(out.body.set[key('bassam_staffing_v3')])['1448-3'][c.employees[0].eid];
+    row = JSON.parse(out.body.set[key('bassam_staffing_v3')])['2026-03'][c.employees[0].eid];
   assert.equal(row.shift, 'TEST_ONLY shift');
   assert.deepEqual(row.rest, ['الجمعة', 'السبت']);
   assert.equal(row.muk, true);
@@ -330,7 +330,7 @@ test('original cross-resource cleanup removes known identities and keeps a survi
      slots (6 performance list, 10-12 numbers). Award records are the typed awards domain (schema 9), cleaned at commit. */
   const awardSeed = { recs: [{ ekey: target.eid, name: target.name }, { ekey: 'TEST_ONLY_prior_orphan', name: target.name }] };
   await t.awards(D1, awardSeed);
-  const DAY = '1448-1-2',
+  const DAY = '2026-11-02',
     refs = [target.eid, target.nid, target.name, 'TEST_ONLY_prior_orphan'],
     task = Array(15).fill('');
   task[6] = [];

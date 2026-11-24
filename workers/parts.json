@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "86c3c25ea190c1f810aec362d0cd246ff0e82d5f065b8c7f407ac7137ad62e37",
+  "sha256": "14baa8d4f6b68137770ca162f9883c87016fbce6286bae7ec43c3e18fdc6ca1b",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -357,8 +357,8 @@
         9029,
         9643
       ],
-      "bytes": 27036,
-      "sha256": "45db1cedb2ca60be5789a1839af019faaf1f34e757ddb4c41ec4be9a3f33a96a"
+      "bytes": 27175,
+      "sha256": "ecd5714969ed455160a46aa5e601faf06245d50cc1c9a0c6e284c22ca9b9fa2f"
     },
     {
       "file": "019d-atomic-restore.js",

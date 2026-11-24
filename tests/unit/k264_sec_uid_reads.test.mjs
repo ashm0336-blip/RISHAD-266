@@ -29,7 +29,7 @@ for (const mode of ['enforce']) test('(C1 · القراءة) [' + mode + '] ?uid
   const emp = await C.login('0000000113', '70113'); assert.ok(emp.ok, 'tst_emp1');
   const v = +(env.DB.q("SELECT v FROM meta WHERE k = 'rev'")[0]).v;
   const base = await C.api('/api/changes?since=0', { cookie: emp.ck }); assert.equal(base.status, 200); assert.ok(base.j.keys.includes(K));
-  const year=env.DB.q('SELECT hijri_year y FROM irshad_reports WHERE department_id=?1 ORDER BY sequence LIMIT 1','tst_d1')[0].y,
+  const year=env.DB.q('SELECT greg_year y FROM irshad_reports WHERE department_id=?1 ORDER BY sequence LIMIT 1','tst_d1')[0].y,
     typed='/api/irshad?'+new URLSearchParams({dept:'tst_d1',view:'calendar',year:String(year)});
   for (const other of ['tst_sup1', 'su', '']) {
     const q = '&uid=' + encodeURIComponent(other);

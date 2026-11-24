@@ -63,10 +63,10 @@ test('(ب) الأجسامُ في مساراتها: السليمُ يمرّ · ا
   assert.equal(pol.status, 200); assert.equal(pol.j.ok, 1); assert.equal(pol.j.policy.sessH, 12);
   assert.equal((await post('/api/recovery/new', { pw: 'خطأ' }, su.ck)).j.ok, 0, 'كلمةٌ خاطئة: ok:0 بلا كتابة');
   const g1 = await post('/api/guard/unlock', { gk: 'u:admin', gks: ['p:admin|1.2.3.4', 'ip:1.2.3.4'] }, su.ck); assert.equal(g1.status, 200); assert.equal(g1.j.ok, 1);
-  const ret = await post('/api/retro', { res: 'irshad', dept: 'tst_d1', act: 'open', scope: { y: 1440, m: 1 }, reason: 'TEST_ONLY سبب' }, su.ck);
+  const ret = await post('/api/retro', { res: 'irshad', dept: 'tst_d1', act: 'open', scope: { y: 2019, m: 1 }, reason: 'TEST_ONLY سبب' }, su.ck);
   assert.equal(ret.status, 200, JSON.stringify(ret.j).slice(0, 200)); assert.equal(ret.j.ok, 1, 'نافذةُ استدراكٍ بشكل العميل');
   const rc = await post('/api/retro', { act: 'close', res: 'irshad', dept: 'tst_d1', id: ret.j.window.id }, su.ck); assert.equal(rc.j.ok, 1, 'الإغلاقُ بشكل مشغّل المصفوفة');
-  for (const res of ['__proto__', 'constructor', 'toString']) { const rp = await post('/api/retro', { res, dept: 'tst_d1', act: 'open', scope: { y: 1440, m: 1 }, reason: 'x' }, su.ck); assert.equal(rp.status, 400, res + ' ⇒ ' + rp.status); assert.equal(rp.j.err, 'res'); }   /* كانت تمرّ فتنهار 500 */
+  for (const res of ['__proto__', 'constructor', 'toString']) { const rp = await post('/api/retro', { res, dept: 'tst_d1', act: 'open', scope: { y: 2019, m: 1 }, reason: 'x' }, su.ck); assert.equal(rp.status, 400, res + ' ⇒ ' + rp.status); assert.equal(rp.j.err, 'res'); }   /* كانت تمرّ فتنهار 500 */
   const other = await C.login('0000000113', '70113');
   assert.equal((await C.api('/api/me/sess/kill', { method: 'POST', cookie: emp.ck, body: '{}' })).j.ok, 1, 'إنهاءُ جلساتي بجسم {} (كما يرسل العميل)');
   assert.equal((await C.api('/api/whoami', { cookie: other.ck })).status, 401, 'أُنهيت الأخرى');

@@ -74,7 +74,7 @@ test('الاستيراد الفعلي يرفض هوية حساب إدارة أخ
     const r = await f.api('super','/api/employees/transition',{method:'POST',body:{
       uid:IDS.super,dept:D1,intent:'import',requestId:'TEST_ONLY_foreign_import',base:c.json.base,
       finalRows:c.json.employees.concat([{eid:'TEST_ONLY_foreign_collision',name:'TEST_ONLY collision',nid:foreign.un,empno:''}]),
-      import:{mode:'add',year:1448,month:1,schedule:[]},accountProposals:[]
+      import:{mode:'add',year:2026,month:11,schedule:[]},accountProposals:[]
     }});
     assert.equal(r.json.ok, 0, JSON.stringify(r.json));
     assert.match(JSON.stringify(r.json), /emp-dup/);
