@@ -45,6 +45,7 @@ export async function backupBrowser(B){
   };
   const context=vm.createContext({KIVO,window:{__BS_BOOT:{srv:1,cf:1,uid:IDS.super,v:data.v},crypto:webcrypto,confirm:()=>true},localStorage:{},fetch,AbortController,setTimeout,clearTimeout,Uint8Array,URLSearchParams,Blob,Date,URL:{createObjectURL(blob){blobs.push(blob);return 'blob:TEST_ONLY';},revokeObjectURL(){}},document:{getElementById:()=>null,body:{appendChild(){}},createElement:()=>({click(){downloads.push(this.download);},remove(){}})},FileReader:class{readAsText(file){this.result=JSON.stringify(file);this.onload();}}});
   vm.runInContext(fs.readFileSync(path.join(ROOT,'src/services/548-atomic-backup.js'),'utf8'),context);
+  vm.runInContext(fs.readFileSync(path.join(ROOT,'src/services/548-import-kit.js'),'utf8'),context);   /* V7 · 53 تقويم: أداةُ الاستيراد الكسولة — تُحمَّل كما تحمّلها الواجهةُ عند أول استيراد (548 kit()) */
   return {KIVO,context,page,requests,writes,reads,toasts,states,blobs,downloads,
     intercept(fn){intercept=fn;},
     method(file,name){return vm.runInContext('({'+part(file,'MethodDefinition',name).text+'}).'+name,context);},

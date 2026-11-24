@@ -196,6 +196,10 @@
    "out": "src/services/548-atomic-backup.js"
   },
   {
+   "tpl": "services/548-import-kit.js.tpl",
+   "out": "src/services/548-import-kit.js"
+  },
+  {
    "tpl": "modules/admin/logic.js.tpl",
    "out": "src/modules/admin/logic.js"
   },
