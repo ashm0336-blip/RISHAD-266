@@ -8,13 +8,13 @@ let inst = 0;
 /* العاملُ مع دوالّ الترحيل مصدَّرةً (الدالةُ الواحدة للمورد) */
 export async function load(source, tag) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_c14_')), file = path.join(dir, tag + '.mjs');
-  fs.writeFileSync(file, source + (tag === 'new' ? '\nexport { calMigDoc, calMigOnce, opInfo };\n' : ''));
+  fs.writeFileSync(file, source + (tag === 'new' ? '\nexport { ' + ['calMigDoc', 'calMigOnce', 'opInfo', 'calLegacyEnv'].filter((n) => new RegExp('function ' + n + '\\b').test(source)).join(', ') + ' };\n' : ''));
   try { return await import(pathToFileURL(file).href + '?inst=' + ++inst); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 /* ── الأوراكل المستقل: أم القرى من Intl (لا من 016/019v) · قاعدةُ القفل نسخةٌ حرفية من 010 lockedIn ── */
 const HF = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'UTC', year: 'numeric', month: 'numeric', day: 'numeric' });
 const pad = (n) => String(n).padStart(2, '0');
-export const H2G = (() => { const m = new Map(); for (let t = Date.UTC(2015, 0, 1); t < Date.UTC(2032, 0, 1); t += 864e5) { const o = {}; HF.formatToParts(new Date(t)).forEach((p) => { o[p.type] = +p.value; }); const d = new Date(t); m.set(o.year + '-' + o.month + '-' + o.day, d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate())); } return m; })();
+export const H2G = (() => { const m = new Map(); for (let t = Date.UTC(1975, 0, 1); t < Date.UTC(2035, 0, 1); t += 864e5) { const o = {}; HF.formatToParts(new Date(t)).forEach((p) => { o[p.type] = +p.value; }); const d = new Date(t); m.set(o.year + '-' + o.month + '-' + o.day, d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate())); } return m; })();
 export const G2H = new Map([...H2G].map(([h, g]) => [g, h]));
 export const hKey = (k) => { const p = String(k).split('-').map(Number); return p[0] + '-' + p[1] + '-' + p[2]; };
 export function lockedIn(rec, y, m, d, T) {

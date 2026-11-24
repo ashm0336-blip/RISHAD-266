@@ -21892,7 +21892,8 @@ function calMigOnce(k) {
 /* V7 · 53 تقويم (قرارُ الاقتران مع cal-rest، cal_api.md): خطواتُ 0004/0006/0008/0009 تكتب بخرائط أعمدةٍ صارت greg_* والجداولُ بعدُ hijri_* — تُشغَّل
    على قاعدةٍ تعيد كتابة الأسماء إلى hijri_* ما دام 0014 لم يُطبَّق، فيحوّلها 0014 بالمطابقة نفسِها كأيِّ صفٍّ آخر. */
 function calLegacyEnv(env) {
-  var DB = env.DB, rx = /\bgreg_(year|month|day|date)\b/g, out = Object.assign({}, env);
+  /* المعرّفاتُ وحدها: مساراتُ json_extract ('$.greg_year') تقرأ مفاتيحَ الصفوف المربوطة كما هي (greg_*) فلا تُمسّ — وإلا عادت القيمُ NULL */
+  var DB = env.DB, rx = /(?<!\$\.)\bgreg_(year|month|day|date)\b/g, out = Object.assign({}, env);
   out.DB = { prepare: function (s) { return DB.prepare(String(s).replace(rx, 'hijri_$1')); }, batch: function (a) { return DB.batch(a); }, exec: function (s) { return DB.exec(String(s).replace(rx, 'hijri_$1')); } };
   return out;
 }
@@ -22054,6 +22055,8 @@ async function calMigPrepare(env) {
   var dd = ((await D.prepare('SELECT scope,once_key,created_at,message_id FROM notification_dedup WHERE created_at>?1').bind(now - 7 * 864e5).all()).results) || [], drows2 = [];
   dd.forEach(function (r) { calMigOnce(String(r.once_key)).forEach(function (k2) { drows2.push([r.scope, k2, r.created_at, r.message_id]); }); });
   calMigChunks(drows2).forEach(function (part) { after.push(D.prepare("INSERT OR IGNORE INTO notification_dedup(scope,once_key,created_at,message_id) SELECT json_extract(j.value,'$[0]'),json_extract(j.value,'$[1]'),json_extract(j.value,'$[2]'),json_extract(j.value,'$[3]') FROM json_each(?1) j").bind(JSON.stringify(part))); });
+  /* ⑥ب الإداراتُ المعلَّقة (كما في ملف 0014) — تُعاد هنا في آخر الدفعة: على قاعدةٍ أقدم من 10 تُكتب صفوفُ 0010 التشغيلية بعد عبارات 0014 */
+  after.push(D.prepare("INSERT INTO meta (k, v) SELECT '" + CAL_MIG_PENDING + "', x FROM (SELECT json_group_array(d) x, COUNT(*) n FROM (SELECT DISTINCT department_id d FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY d)) WHERE n > 0 ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(CAL_MIG_RES)));
   /* ⑥ اليومُ المرجعي T للمرحلة ٢ (ثابتٌ لكل إداراتها، فإعادتُها حتمية) */
   after.push(D.prepare("INSERT INTO meta(k,v) VALUES('" + CAL_MIG_TKEY + "',?1) ON CONFLICT(k) DO NOTHING").bind(T));
   return { before: before, after: after };
@@ -22272,8 +22275,9 @@ async function calMigRoute(env, request, session) {
     var list = body.dept === 'all' ? P.slice() : P.indexOf(body.dept) >= 0 ? [body.dept] : [], out = [], t0 = Date.now(), budget = t0 + Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000);
     for (var d of list) {
       var rep = { dept: d, ok: 0 }, t1 = Date.now();
-      /* 0013 أولاً: إدارةٌ لم تُتمّ مرحلةَ التخزين بالفترة تُرحَّل بعد periods-migrate (ترتيبُ الأوامر في التشغيل) */
-      if (L.indexOf(d) >= 0) { rep.err = 'ops-layout-pending-first'; out.push(rep); continue; }
+      /* ترتيبُ الأوامر على قاعدةٍ تحمل 0013 و0014 معاً: calendar-migrate أولاً (يعيد ترميز الموارد المقسومة كلِّها بملخّصاتها) ثم periods-migrate
+         (يتحقق ويُخرج الإدارة من ops_layout_pending) — قراءةُ 0013 مرفوضةٌ ما دامت الإدارةُ معلَّقةً تقويمياً */
+      if (L.indexOf(d) >= 0) rep.layout = 1;
       try {
         var r = await calMigDept(env, d, T, budget);
         if (r.more) { rep.more = 1; rep.at = r.at; rep.ms = Date.now() - t1; out.push(rep); return json({ ok: 0, more: 1, departments: out, next: { dept: d }, pending: P }); }
@@ -25786,9 +25790,11 @@ async function migrateDb(env) {
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
     /* V7 · د6 (schemafix): تحويلُ KV التشغيلي (0010) يكتب صفوفَه بمرمّز اليوم — فجداولُه وأعمدتُه التي أضافتها ترحيلاتٌ بعد 0010 (0012: القراءةُ بالسعة)
        يجب أن توجد قبله: ترحيلاتُ هذا التشغيل التي بعد 0010 تُطبَّق في الدفعة نفسِها قبل صفوف التحويل — ذرّيّةٌ واحدة كما كانت */
+    /* V7 · 53 تقويم: وخطةُ بيانات 0014 (المطابقة قبل عباراته، وما بعدها في آخر الدفعة بعد صفوف 0010) — فقاعدةٌ أقدم من 10 تصل ميلاديةً في التشغيل نفسِه */
+    var foldAfter = [];
     if (dataPlan && pending[i].name === '0010_operational_domains')
-      while (i + 1 < pending.length) { i++; for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j])); }
-    if (dataPlan) st = st.concat(dataPlan.after);
+      while (i + 1 < pending.length) { i++; var fold = pending[i].name === '0014_gregorian_calendar' ? await calMigPrepare(env) : null; if (fold) st = st.concat(fold.before); for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j])); if (fold) foldAfter = foldAfter.concat(fold.after); }
+    if (dataPlan) st = st.concat(dataPlan.after, foldAfter);
     if (permit && pending[i].name === names[names.length - 1])
       st.push(env.DB.prepare('DELETE FROM meta WHERE k=?1 AND v=?2').bind(DB_UPGRADE_PERMIT, permit.raw));
     /* V7 · د5-ح (القفل): قاعدةٌ وُلدت الآن (لا جدولَ ولا سجلَّ ترحيلٍ قبلها) لا بياناتِ صلاحياتٍ قديمة فيها ⇒ تُختم enforce مع آخر ترحيل.

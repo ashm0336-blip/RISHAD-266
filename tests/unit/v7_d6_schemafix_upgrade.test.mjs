@@ -15,6 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { D1Shim, ROOT, WORKER, CURRENT_SCHEMA, allowTestSchemaUpgrade, hasSystem } from './harness.mjs';
 import { world as canvas } from './canvas_world.mjs';
+import { load as loadCal } from './v7_cal_migrate_fx.mjs';
 
 const OLD_REV = process.env.KIVO_UPGRADE_REV || '0113db33';
 const D = 'TEST_ONLY_upgrade_dept', G = 'TEST_ONLY_upgrade_group', SUPER = 'TEST_ONLY_upgrade_super', TOK = 'TEST_ONLY_upgrade_session';
@@ -136,14 +137,17 @@ test('(١) قاعدةٌ بناها العاملُ القديم (الإصدار 1
   assert.equal(E.DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE schema_id='ops_plan_deleted_months' AND member_key='pc'")[0].n, 0, 'لا صفَّ pc بالترميز القديم');
   assert.deepEqual(E.DB.q('PRAGMA foreign_key_check'), []);
 
+  /* V7 · 53 تقويم: 0014 في التشغيل نفسِه — الإدارةُ معلَّقةٌ تقويمياً حتى المرحلة ٢ (calendar-migrate قبل periods-migrate) — والقيمُ بعدها هي قيمُ ما قبل الترقية محوَّلةً بالدالة الواحدة */
+  for (let n = 0, r; n < 200; n++) { r = await call2('/api/operations/calendar-migrate', { method: 'POST', body: { dept: D } }); assert.equal(r.status, 200, JSON.stringify(r.json).slice(0, 300)); if (!r.json.more) { assert.equal(r.json.ok, 1, JSON.stringify(r.json).slice(0, 300)); break; } }
+  const T14 = E.DB.q("SELECT v FROM meta WHERE k='cal_mig_t'")[0].v, CAL14 = await loadCal(fs.readFileSync(WORKER, 'utf8'), 'new'), conv = Object.fromEntries(ALL.map((r) => [key(r), CAL14.calMigDoc(r, before[key(r)], { T: T14, rep: null })]));
   /* (أ) كلُّ قيمةٍ كما كُتبت: القراءةُ المرمَّزة حرفاً · وتصديرُ الإدارة (الجديد · والقديم المصدَّر قبل الترقية) مفكوكاً مفتاحاً مفتاحاً */
   const after = (await read(call2, ALL)).json.resources;
-  for (const r of ALL) assert.equal(JSON.stringify(after[key(r)]), JSON.stringify(before[key(r)]), r + ' كما كُتب قبل الترقية');
+  for (const r of ALL) assert.equal(JSON.stringify(after[key(r)]), JSON.stringify(conv[key(r)]), r + ' كما كُتب قبل الترقية (ميلادياً)');
   const I = await internals(), newExport = await call2('/api/operations/export?' + new URLSearchParams({ uid: SUPER, dept: D }));
   assert.equal(newExport.status, 200, JSON.stringify(newExport.json).slice(0, 300));
   for (const [tag, ex] of [['الجديد', newExport.json], ['القديم (قبل الترقية)', oldExport.json]]) {
     const docsOf = Object.fromEntries(ex.domains.map((dom) => { const dec = I.opBackupDecode(dom), p = I.ocInflate(dec.info.prepared, dec.domain); return [dec.key, p.present ? JSON.stringify(p.value) : null]; }));
-    for (const r of ALL) assert.equal(docsOf[key(r)], JSON.stringify(before[key(r)]), 'تصديرُ الإدارة ' + tag + ': ' + r);
+    for (const r of ALL) assert.equal(docsOf[key(r)], JSON.stringify((tag === 'الجديد' ? conv : before)[key(r)]), 'تصديرُ الإدارة ' + tag + ': ' + r);
   }
 
   /* V7 · 53: الكتابةُ التشغيلية بعد 0013 تنتظر المرحلةَ ٢ لهذه الإدارة (أمرُ مدير المنصة) — كما في دليل الترحيل */
