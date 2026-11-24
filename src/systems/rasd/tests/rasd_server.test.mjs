@@ -77,7 +77,8 @@ test('rasd · ⑤ التنبيهُ العاجل لمدير الإدارة (rz_ho
   const T = await lab();
   try {
     const mgr = await T.as(LAB.mgrA, LAB.pw), vars = { 'النوع': 'ازدحام', 'الموقع': 'باب 1', 'التأثير': 'حرج', 'الإجراء': 'تنظيم حركة', 'الراصد': 'TEST_ONLY راصد' };
-    const emit = (once) => T.call('/api/notifications/act', { ck: mgr.ck, body: { uid: mgr.uid, op: 'emit', type: 'rz_hot', dept: A, vars, once } });
+    /* V7 · 53: srvfix (٨) — الفاعلُ لا يُنبَّه بفعله (rz_hot «فور الحفظ»): يُصدره مديرُ المنصة ويقرؤه مديرُ الإدارة (المستلم) */
+    const emit = (once) => T.call('/api/notifications/act', { ck: T.su.ck, body: { uid: T.su.uid, op: 'emit', type: 'rz_hot', dept: A, vars, once } });
     const feed = async () => { const r = await T.call('/api/notifications?uid=' + encodeURIComponent(mgr.uid), { ck: mgr.ck }); assert.equal(r.status, 200, r.t.slice(0, 200)); return JSON.stringify(r.j); };
     await rasdOn(T, A, false);
     const r0 = await emit('TEST_ONLY_rz_off');

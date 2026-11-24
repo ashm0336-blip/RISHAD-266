@@ -175,7 +175,7 @@ function tkClock(ms) { try { if (!TK_TFMT) TK_TFMT = new Intl.DateTimeFormat('ar
 async function tkNotify(env, request, A, d, items, meta) {
   if (!items || !items.length || !d) return 0;
   try {
-    var events = items.filter(function(it){ return TK_NOTIFICATION_TYPES.indexOf(it.type) !== -1; }).map(function(it){ var e={type:it.type,dept:d,own:it.own||[],vars:it.vars||{}}; if(it.once)e.once=it.once; return e; });
+    var events = items.filter(function(it){ return TK_NOTIFICATION_TYPES.indexOf(it.type) !== -1; }).map(function(it){ var e={type:it.type,dept:d,own:it.own||[],vars:it.vars||{}}; if(it.once)e.once=it.once; if(it.sys)e.sys=1; /* V7 · 53: حدثُ الخادم بلا فاعل (019 nfPlanEvents) */ return e; });
     if (!events.length) return 0;
     return (await nfEmitEvents(env,A,events,true)).n || 0;
   } catch(e) { swallow('tk-notify',e,env.__rid); return 0; }

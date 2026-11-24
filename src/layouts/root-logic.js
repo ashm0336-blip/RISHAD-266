@@ -877,7 +877,7 @@ class Component extends DCLogic {
             /* ختمُ آخر تصدير لهذه الإدارة — يقرؤه سطحُ الإعدادات فيُذكّر بدوريّة النسخ */
             /* KIVO_263: الختمُ رقمُ اللحظة (JSON صالح) — نصُّ ISO الخام ليس JSON فيرفضه الخادمُ في الإنفاذ («shape») فلا يصل الختمُ بقيةَ الأجهزة؛ القرّاءُ (bkTime · _expInfo) يقبلون الصيغتين */
             try { D.raw.setItem.call(localStorage, "bsdept:" + id + ":bassam_last_export_v1", String(dt.getTime())); } catch (eStamp) {}
-            const grp = Object.keys(data).concat(Object.keys(business.domains || {}).filter(n => n !== "operations").map(n => n === "awards" ? "bassam_award_v1" : "bassam_" + n + "_v1"));   /* V7 · 53 (قرار المالك ٦): مجالُ النظام المطفأ يُعدّ «محفوظة — غير مفعّلة» كالمفاتيح */
+            const DK9 = { irshad:"bassam_irshad_v1", seized:"bassam_seized_v1", awards:"bassam_award_v1",  }, grp = Object.keys(data).concat(Object.keys(business.domains || {}).map(n => DK9[n]).filter(Boolean));   /* مفتاحُ كلِّ مجالٍ من إعلان نظامه (root.deptBackup.domainKey) — القاعدةُ لا تسمّي مفتاحَ نظام */   /* V7 · 53 (قرار المالك ٦): مجالُ النظام المطفأ يُعدّ «محفوظة — غير مفعّلة» كالمفاتيح */
             this.bkToast("✓ تم تصدير نسخة «" + nm + "» (" + KIVO.BassamCount(grp.length,"مجموعة بيانات") + "" + this.bkCapNote(grp, id) + " و " + KIVO.BassamCount(Object.keys(business.images || {}).length,"صورة") + ")" + (KIVO.BackupRestore.missingNote ? KIVO.BackupRestore.missingNote(business.missing) : ""));
           } catch (e) { this.bkToast("تعذّر التصدير" + (e && e.message ? ": " + e.message : ""), true); }   /* V7 · 53 (قرار المالك ٦): الرسالةُ تذكر سببها */
         };

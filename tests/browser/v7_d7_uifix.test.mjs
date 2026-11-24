@@ -171,11 +171,13 @@ test('(١٠) iPhone 13 · التقرير اليومي: حقلا «رئيس ال�
     const m = await openAs(b, lab, m1.un, m1.pw, phoneCtx), p = m.page;
     await m.go('#/dreport', 5000);
     const r = await p.evaluate(() => {
-      const lead = [...document.querySelectorAll('main span')].filter((x) => /رئيس.*الوردية/.test(x.textContent) && x.children.length === 0).map((x) => x.parentElement);
-      if (lead.length < 2) return { n: lead.length };
+      /* V7 · 53: خانتا القيادة بوسمهما data-dr-lead (لا كلُّ span بالنص) — بطاقةُ «الصلاحيات» (52) تُسمّي الدورين بالنص نفسِه داخل شريطها الأفقي */
+      const other = [...document.querySelectorAll('main span')].filter((x) => /رئيس.*الوردية/.test(x.textContent) && x.children.length === 0 && !x.closest('[data-dr-lead]')).map((x) => x.textContent.trim());
+      const lead = [...document.querySelectorAll('main [data-dr-lead]')].filter((x) => x.firstElementChild && /رئيس.*الوردية/.test(x.firstElementChild.textContent));
+      if (lead.length < 2) return { n: lead.length, other };
       const row = lead[0].parentElement, R = row.getBoundingClientRect();
       const box = lead.map((x) => { const q = x.getBoundingClientRect(); return { l: Math.round(q.left), r: Math.round(q.right), t: Math.round(q.top), w: Math.round(q.width) }; });
-      return { n: lead.length, over: row.scrollWidth - row.clientWidth, rowW: Math.round(R.width), box, vw: innerWidth, doc: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+      return { n: lead.length, other, over: row.scrollWidth - row.clientWidth, rowW: Math.round(R.width), box, vw: innerWidth, doc: document.documentElement.scrollWidth - document.documentElement.clientWidth };
     });
     assert.equal(r.n, 2, 'the two leader fields are shown: ' + JSON.stringify(r));
     assert.ok(r.over <= 0, 'the shift row does not scroll sideways: ' + JSON.stringify(r));

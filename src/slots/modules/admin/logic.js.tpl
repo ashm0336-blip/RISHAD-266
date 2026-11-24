@@ -107,6 +107,24 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   SH_PAL() {
     return ["#b99751", "#2f8f86", "#2f5f8a", "#1e9a66", "#b45309", "#9c3d6b", "#8b1a3a", "#2f8f86"];
   }
+  /* V7 · 53 (M1): الإعداداتُ لا تتوقّف على قراءة بيانات الوحدة النشطة — قراءتُها المعلنة فارغة (meta.json operationsRead)، وكلُّ قسمٍ يحتاج
+     مورداً تشغيلياً يقرؤه عند فتحه هو وحده، ويعرض فشلَه في موضعه بمكوّن حالات الصفحة («أعد المحاولة»). الورديات: خياراتُها، وجدولُها إن كان مفعَّلاً */
+  _m1Need(names) {
+    const ops = KIVO.__BS_SRV && KIVO.__BS_SRV.operations, c = ops && ops.context();
+    if (!c) return { state: "loading" };
+    const keys = names.map((n) => "bsdept:" + c.dept + ":" + n);
+    if (ops.ready(keys)) return { state: "ready" };
+    const all = this._m1Reads || (this._m1Reads = Object.create(null)), tag = JSON.stringify([c, keys]), e = all[tag] || (all[tag] = {});
+    if (!e.promise && !e.failed)
+      e.promise = Promise.resolve()
+        .then(() => ops.read(keys))
+        .then((r) => { e.failed = !(r && r.ok === 1 && ops.ready(keys)); }, () => { e.failed = !0; })
+        .then(() => { e.promise = null; this._nfDisposed || this.setState({ m1Tick: Date.now() }); });
+    return { state: e.failed ? "error" : "loading", retry: () => { e.failed = !1; this.setState({ m1Tick: Date.now() }); } };
+  }
+  _sfNeed() {
+    return this._m1Need(["bassam_shift_options_v1"].concat(this.sfUsage("").on ? ["bassam_staffing_v3", "bassam_staffing_locks_v1"] : []));
+  }
   sfRead() {
     return this.sfItems(KIVO.__BS_SRV.operations.get("bassam_shift_options_v1")).filter(t => t && t.name);
   }
@@ -4072,13 +4090,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           dTabBkOn: -1 !== g.indexOf("backup"),
           dTabLgOn: -1 !== g.indexOf("oplog"),
           dTabSfOn: -1 !== g.indexOf("shifts"),
-          showDeptSf: "dept" === i && "shifts" === h,
+          showDeptSf: "dept" === i && "shifts" === h && "ready" === this._sfNeed().state,
+          sfWaitOn: "dept" === i && "shifts" === h && "ready" !== this._sfNeed().state,
+          sfStates: (el) => { const q = this._sfNeed(); return KIVO.PageStates && KIVO.PageStates.host(el, { state: q.state, name: "الورديات", region: !0, retry: q.retry }); },
           dTabGoSf: () => this._orgLeave(() => this.setState({ deptTab: "shifts" })),
           /* V7 · د5-هـ (44 · المدير): «الصلاحيات» — الأدوار · الأشخاص · السجل لوحدته وحدها (#/admin/perm/<القسم>) */
           dTabPmOn: -1 !== g.indexOf("perm"),
           showDeptPerm: "dept" === i && "perm" === h,
           dTabGoPerm: () => this.setState({ deptTab: "perm" }),
-          ...("dept" === i && "shifts" === h ? this.sfVals() : {}),
+          ...("dept" === i && "shifts" === h && "ready" === this._sfNeed().state ? this.sfVals() : {}),
           dbkExport: () => {
             KIVO.BassamDeptBackup && KIVO.BassamDeptBackup.export();
           },
@@ -4584,7 +4604,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   async nfLoadManagement(more) {
     const N=this.nfN();if(!N)return;
     this.nfRefreshTargets();
-    const result=await (more ? N.loadMoreBroadcasts() : N.refreshManagement());
+    let result=await (more ? N.loadMoreBroadcasts() : N.refreshManagement());
+    if(this._nfDisposed)return;
+    /* V7 · 53 (M1): الصفحةُ تُرسم الآن قبل حسم سياق الوحدة، فقراءةٌ بدأت قبل الحسم تعود «تغيّر النطاق» — تُعاد القراءةُ (بلا أثر) مرّتين */
+    for(let again=0;!more&&!(result&&result.ok===1)&&again<2&&!this._nfDisposed;again++){await new Promise(r=>setTimeout(r,400*(again+1)));if(this._nfDisposed)return;result=await N.refreshManagement();}
     if(this._nfDisposed)return;
     this.setState({nfTick:(this.state.nfTick || 0)+1,nfManageError:result && result.ok === 1 ? "" : (result && result.err) || "تعذّر تحميل سجل التعاميم"});
   }

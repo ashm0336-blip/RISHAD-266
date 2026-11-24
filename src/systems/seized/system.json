@@ -585,6 +585,10 @@
    "order": 20,
    "text": "seized:1,"
   },
+  "root.deptBackup.domainKey": {
+   "order": 20,
+   "text": "seized:\"bassam_seized_v1\", "
+  },
   "enf.compat": {
    "order": 20,
    "text": "'sz.rec.retro.open': 'seized/records:approve'"
