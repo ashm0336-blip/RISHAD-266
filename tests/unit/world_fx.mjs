@@ -50,7 +50,9 @@ const BUMP = (k) => ["INSERT INTO meta (k, v) VALUES ('rev', '1') ON CONFLICT(k)
   'INSERT INTO revs (k, rev) VALUES (' + q(k) + ", (SELECT CAST(v AS INTEGER) FROM meta WHERE k = 'rev')) ON CONFLICT(k) DO UPDATE SET rev = excluded.rev;"];
 export function stdSeed() {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_fx_tasks_'));
-  execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', T.y + '-' + T.m + '-' + T.d, '--out', out], { stdio: 'pipe' });
+  /* V7 · 53 تقويم: اليومُ الميلادي المدنيّ بالرياض (ساعةُ العهد cuClock) للأنظمة العلائقية الميلادية في البذرة */
+  const G = new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
+  execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', T.y + '-' + T.m + '-' + T.d, '--gtoday', G, '--out', out], { stdio: 'pipe' });
   const s = fs.readFileSync(out + '/test_seed.sql', 'utf8'); try { fs.rmSync(out, { recursive: true, force: true }); } catch (e) {}
   return s;
 }

@@ -140,8 +140,10 @@ function cuError(code, status) {
   e.cuStatus = status || 400;
   return e;
 }
+/* V7 · 53 تقويم (cal-rest · ق1 · ق2): ساعةُ الأنظمة العلائقية (العهد · الاسترشاد · المضبوطات · نقلُ الموظف) ميلاديةٌ — تاريخُ الرياض المدنيّ بلا مهلة
+   كما كانت (pfHijriAt)، وكلُّ مستهلكيها يكتبون أو يقرؤون أعمدةَ greg_* */
 function cuClock() {
-  var x = pfHijriAt(Date.now());
+  var x = pfDayAt(Date.now());
   if (!x || !x.y || !x.m || !x.d) throw cuError('custody-clock-unavailable', 503);
   return { y: x.y, m: x.m, d: x.d };
 }

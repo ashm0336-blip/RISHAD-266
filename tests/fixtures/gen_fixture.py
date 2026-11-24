@@ -19,6 +19,7 @@ ap.add_argument('--today', required=True, help='today Y-M-D: the Gregorian serve
 ap.add_argument('--out', required=True)
 ap.add_argument('--daily-stats-storage', choices=['relational', 'legacy-kv'], default='relational', help='legacy-kv is only for explicitly testing historical workers')
 ap.add_argument('--custody-storage', choices=['relational', 'legacy-kv'], default='relational', help='legacy-kv is explicit historical-fixture data only; never a fallback')
+ap.add_argument('--gtoday', default=None, help='V7 · 53 تقويم: اليومُ الميلادي YYYY-MM-DD للأنظمة العلائقية الميلادية (العهد) — بغيابه يُقدَّر من --today حسابياً (TEST_ONLY)')
 A = ap.parse_args()
 y, m, d = [int(x) for x in A.today.split('-')]
 # V7 · 53 تقويم (ق١): the fixture's keys are ISO padded Gregorian (YYYY-MM-DD · YYYY-MM). A Hijri --today from an older caller is the same day
@@ -30,6 +31,13 @@ if 1300 <= y <= 1599:
            "for(let i=0;i<80;i++){const o=h(t),c=(o.year-Y)*400+(o.month-M)*31+(o.day-D);if(!c){const g=new Date(t+3*36e5);console.log(g.getUTCFullYear()+'-'+(g.getUTCMonth()+1)+'-'+g.getUTCDate());process.exit(0)}t-=Math.sign(c)*864e5*(Math.abs(c)>40?20:1)}process.exit(1)")
     y, m, d = [int(x) for x in subprocess.check_output(['node', '-e', _js, str(y), str(m), str(d)]).decode().strip().split('-')]
 T = {'y': y, 'm': m, 'd': d}
+def _greg_of(hy, hm, hd):
+    # V7 · 53 تقويم: --today الميلادي (1900–2199) يُؤخذ كما هو؛ والهجري يُقدَّر بالتقويم الهجري الحسابي (TEST_ONLY: يومٌ ميلاديٌّ صحيحٌ حتميّ قريبٌ من أم القرى)
+    if 1900 <= hy <= 2199: return (hy, hm, hd)
+    import datetime, math
+    jd = hd + math.ceil(29.5 * (hm - 1)) + (hy - 1) * 354 + (3 + 11 * hy) // 30 + 1948439 - 1
+    return datetime.date.fromordinal(jd - 1721425).timetuple()[:3]
+GY, GM, GD = [int(x) for x in A.gtoday.split('-')] if A.gtoday else _greg_of(y, m, d)
 PM = {'y': y - 1, 'm': 12} if m == 1 else {'y': y, 'm': m - 1}
 MK, PMK = '%04d-%02d' % (y, m), '%04d-%02d' % (PM['y'], PM['m'])
 DAY = '%04d-%02d-%02d' % (y, m, d)
@@ -154,7 +162,7 @@ CU_DEPT, CU_MARK = 'tst_d1', 'tst_fixture_custody_v1'
 CU_ROWS = {
     'custody_items': [{'department_id': CU_DEPT, 'item_id': 'tst_fixture_item', 'name': TAG + ' جهاز', 'qty': 5, 'prefix': None, 'color': None, 'presence_mask': 1}],
     'custody_issues': [{'department_id': CU_DEPT, 'issue_id': 'tst_fixture_issue', 'item_id': 'tst_fixture_item', 'serial': 'TST-001', 'serial_number': 1, 'legacy_identity': 'serial:TST-001'}],
-    'custody_movements': [{'department_id': CU_DEPT, 'move_id': 'tst_fixture_move', 'issue_id': 'tst_fixture_issue', 'item_id': 'tst_fixture_item', 'sequence': 0, 'kind': 'out', 'holder_key': 'tst_e_emp1', 'greg_year': y, 'greg_month': m, 'greg_day': d, 'condition': None, 'note': None, 'color_snapshot': None, 'actor_uid': None, 'actor_label': None, 'holder_nid_snapshot': None, 'holder_empno_snapshot': None, 'holder_name_snapshot': None, 'presence_mask': 0, 'created_at': None}],
+    'custody_movements': [{'department_id': CU_DEPT, 'move_id': 'tst_fixture_move', 'issue_id': 'tst_fixture_issue', 'item_id': 'tst_fixture_item', 'sequence': 0, 'kind': 'out', 'holder_key': 'tst_e_emp1', 'greg_year': GY, 'greg_month': GM, 'greg_day': GD, 'condition': None, 'note': None, 'color_snapshot': None, 'actor_uid': None, 'actor_label': None, 'holder_nid_snapshot': None, 'holder_empno_snapshot': None, 'holder_name_snapshot': None, 'presence_mask': 0, 'created_at': None}],
     'custody_requests': [], 'custody_request_outputs': []
 }
 CU_COLUMNS = {
@@ -206,7 +214,7 @@ put('tst_d2', 'bassam_plan_v1', {'floors': [cp(floor('tsts21', 'موقع إدا�
 put('tst_d3', 'bassam_plan_v1', {'floors': [cp(floor('tsts31', 'موقع إدارة ٣', 1, 31))]})
 for dd, rec in SCOPE.items(): put(dd, 'bassam_scope_v1', rec)
 for dd, rec in GRANTS.items(): put(dd, 'bassam_grants_v1', rec)
-DSTATS_YEAR = 9999 if A.daily_stats_storage == 'relational' else 1400
+DSTATS_YEAR = 2199 if A.daily_stats_storage == 'relational' else 1400   # V7 · 53 تقويم: سنةُ الاختبار المحجوزة ميلاديةٌ (أقصى المدى 1900–2199) — والقديمُ (legacy-kv) يبقى هجرياً
 DSTATS_DAY = '%d-01-01' % DSTATS_YEAR
 DSTATS_DAY2 = '%d-01-02' % DSTATS_YEAR
 # Reserved fixture dates; typed rows also carry an explicit TEST_ONLY attribution tag.
@@ -258,7 +266,7 @@ def obj_remove(key, tree):
 DS_MARK = 'tst_fixture_daily_stats_v1'
 DS_OWNED = "EXISTS (SELECT 1 FROM meta WHERE k = '%s' AND v = '1')" % DS_MARK
 DS_TAGGED = "CASE WHEN json_valid(meta_json) THEN COALESCE(json_extract(meta_json, '$.t') = 'TEST_ONLY', 0) ELSE 0 END"
-DS_DATES = "('9999-01-01', '9999-01-02')"
+DS_DATES = "('2199-01-01', '2199-01-02')"
 def ds_schema():
     if A.daily_stats_storage == 'legacy-kv': return ''
     canonical = (Path(__file__).resolve().parents[2] / 'migrations' / '0004_daily_stats.sql').read_text(encoding='utf-8')
@@ -267,17 +275,17 @@ def ds_schema():
     return '-- Canonical daily-statistics tables; no schema/migration stamp.\n' + '\n'.join(' '.join(t.split()) for t in tables) + '\n'
 def ds_preflight():
     if A.daily_stats_storage == 'legacy-kv': return ''
-    return ("SELECT CASE WHEN EXISTS (SELECT 1 FROM daily_stats_days WHERE greg_date LIKE '9999-01-%%' AND (greg_date NOT IN %s OR NOT (%s))) "
-            "OR EXISTS (SELECT 1 FROM daily_stats_month_locks WHERE greg_year = 9999 AND greg_month = 1 AND NOT (%s)) "
-            "OR EXISTS (SELECT 1 FROM daily_stats_day_locks WHERE greg_year = 9999 AND greg_month = 1 AND (greg_day != 1 OR NOT (%s))) "
+    return ("SELECT CASE WHEN EXISTS (SELECT 1 FROM daily_stats_days WHERE greg_date LIKE '2199-01-%%' AND (greg_date NOT IN %s OR NOT (%s))) "
+            "OR EXISTS (SELECT 1 FROM daily_stats_month_locks WHERE greg_year = 2199 AND greg_month = 1 AND NOT (%s)) "
+            "OR EXISTS (SELECT 1 FROM daily_stats_day_locks WHERE greg_year = 2199 AND greg_month = 1 AND (greg_day != 1 OR NOT (%s))) "
             "THEN json_extract('{}', 'KIVO_FIXTURE_DSTATS_TARGET_COLLISION') END;\n") % (DS_DATES, DS_TAGGED, DS_OWNED, DS_OWNED)
 def ds_remove():
     if A.daily_stats_storage == 'legacy-kv': return obj_remove('bassam_dstats_v1', DSTATS_DEL)
-    return ("DELETE FROM daily_stats_day_locks WHERE greg_year = 9999 AND greg_month = 1 AND greg_day = 1 AND %s;\n"
+    return ("DELETE FROM daily_stats_day_locks WHERE greg_year = 2199 AND greg_month = 1 AND greg_day = 1 AND %s;\n"
             "DELETE FROM daily_stats_days WHERE greg_date IN %s AND (%s);\n"
-            "DELETE FROM daily_stats_month_locks WHERE greg_year = 9999 AND greg_month = 1 AND %s "
-            "AND NOT EXISTS (SELECT 1 FROM daily_stats_day_locks d WHERE d.site = daily_stats_month_locks.site AND d.greg_year = 9999 AND d.greg_month = 1) "
-            "AND NOT EXISTS (SELECT 1 FROM daily_stats_days d WHERE d.site = daily_stats_month_locks.site AND d.greg_date LIKE '9999-01-%%');\n"
+            "DELETE FROM daily_stats_month_locks WHERE greg_year = 2199 AND greg_month = 1 AND %s "
+            "AND NOT EXISTS (SELECT 1 FROM daily_stats_day_locks d WHERE d.site = daily_stats_month_locks.site AND d.greg_year = 2199 AND d.greg_month = 1) "
+            "AND NOT EXISTS (SELECT 1 FROM daily_stats_days d WHERE d.site = daily_stats_month_locks.site AND d.greg_date LIKE '2199-01-%%');\n"
             "DELETE FROM meta WHERE k = %s;\n") % (DS_OWNED, DS_DATES, DS_TAGGED, DS_OWNED, q(DS_MARK))
 def ds_seed():
     if A.daily_stats_storage == 'legacy-kv': return obj_patch('bassam_dstats_v1', DSTATS_ADD)
@@ -289,8 +297,8 @@ def ds_seed():
             columns = ['site', 'greg_date', 'field_mask'] + fields + ['meta_json']
             values = [q(site), q(date), str(sum(1 << metrics.index(field) for field in fields))] + [str(row[field]) for field in fields] + [q(J(row['__m']))]
             s += 'INSERT INTO daily_stats_days (%s) VALUES (%s);\n' % (', '.join(columns), ', '.join(values))
-        s += "INSERT INTO daily_stats_month_locks (site, greg_year, greg_month, approved, reopened, legacy_boolean) VALUES (%s, 9999, 1, 0, 1, 0);\n" % q(site)
-        s += "INSERT INTO daily_stats_day_locks (site, greg_year, greg_month, greg_day, is_open, is_shut) VALUES (%s, 9999, 1, 1, 1, 0);\n" % q(site)
+        s += "INSERT INTO daily_stats_month_locks (site, greg_year, greg_month, approved, reopened, legacy_boolean) VALUES (%s, 2199, 1, 0, 1, 0);\n" % q(site)
+        s += "INSERT INTO daily_stats_day_locks (site, greg_year, greg_month, greg_day, is_open, is_shut) VALUES (%s, 2199, 1, 1, 1, 0);\n" % q(site)
     return s + "INSERT INTO meta (k, v) VALUES (%s, '1');\n" % q(DS_MARK)
 # CU ownership is an exact witness for the known TEST_ONLY row set. Refuse
 # collision/drift before global account or scoped cleanup, including reset.

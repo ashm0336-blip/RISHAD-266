@@ -20,8 +20,7 @@ function permv4Sources(A) {
 function permv4DeptCeiling(dim, dept, actor) { return null; }
 function permv4Ctx(A, d, k, okMap, ctx) {
   var ac = permv4Actor(A), pv4 = (ctx && ctx.pv4) || {}, staffing = pv4.staffing || null;
-  /* V7 · 53 تقويم: today لقواعد الفترة (010 closedPeriod · lockedIn) يومُ الرياض الميلادي — المفاتيحُ ISO (calToday · 016) */
-  return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: calToday(Date.now()), now: Date.now(),
+  return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: dsToday(Date.now()), now: Date.now(),
            retroWin: (ctx && ctx.retroWin) || {}, locks: { staffing: pv4.staffingLocks, tasks: pv4.tasksLocks },
            srvRoute: !!(A.__tkSrv || A.__tkSelf || (ctx && ctx.restore)),   /* V7 · 53: كتابةُ مسارٍ خادمي (يحكم فترتَه بنفسه) أو استعادةٌ خادمية — لا الحفظُ الخامّ */
            actorShift: function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; },
