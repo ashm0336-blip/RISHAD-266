@@ -116,7 +116,7 @@ for(const count of [201,500])test('holder card waits for an acknowledged read an
   const item=B.page.cuCatalog()[0],clock=B.page.state.cuData.clock;
   await B.DB.batch([
     B.DB.prepare("WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i+1 FROM n WHERE i<?3) INSERT INTO custody_issues(department_id,issue_id,item_id,serial,serial_number) SELECT ?1,'TEST_ONLY_page_issue_'||i,?2,'RD-'||i,i FROM n").bind(D1,item.id,count),
-    B.DB.prepare("WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i+1 FROM n WHERE i<?4) INSERT INTO custody_movements(department_id,move_id,issue_id,item_id,sequence,kind,holder_key,hijri_year,hijri_month,hijri_day,condition,holder_name_snapshot,presence_mask,created_at) SELECT ?1,'TEST_ONLY_page_move_'||i,'TEST_ONLY_page_issue_'||i,?2,i,'out',?3,?5,?6,1,'جديد','TEST_ONLY holder',65535,1 FROM n").bind(D1,item.id,EKEYS.employee1,count,clock.y,clock.m)
+    B.DB.prepare("WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i+1 FROM n WHERE i<?4) INSERT INTO custody_movements(department_id,move_id,issue_id,item_id,sequence,kind,holder_key,greg_year,greg_month,greg_day,condition,holder_name_snapshot,presence_mask,created_at) SELECT ?1,'TEST_ONLY_page_move_'||i,'TEST_ONLY_page_issue_'||i,?2,i,'out',?3,?5,?6,1,'جديد','TEST_ONLY holder',65535,1 FROM n").bind(D1,item.id,EKEYS.employee1,count,clock.y,clock.m)
   ]);
   B.page.state.empTab='custody';await B.page._cuRefresh();const data=B.page.state.cuData;assert.equal(data.summary.held,count);B.page._cuOpenHolder(EKEYS.employee1,true);
   let settle,started;const begin=new Promise(resolve=>{started=resolve;}),original=B.W.fetch,readsBefore=B.calls.length;

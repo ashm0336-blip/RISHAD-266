@@ -144,10 +144,11 @@ DREPORT = {DAY: {'created': TS0 + 3000, 'shifts': {SA: {'pulled': True, 'roster'
            PDAY: {'created': TS0 + 4000, 'shifts': {SA: {'pulled': True, 'roster': roster(SA), 'ap': 1, 'apAt': '1/1', 'apBy': TAG}}}}
 def ir(i, dd, sh, by): return {'id': 'tstir%d' % i, 'y': dd['y'], 'm': dd['m'], 'd': dd['d'], 'loc': TAG + ' موقع', 'shift': sh, 'lang': TAG + ' لغة', 'n': 1, 'by': by, 'test': TAG}
 IRSHAD = {'reports': [ir(1, T, SA, 'tst_e_emp1'), ir(2, T, SB, 'tst_e_supB'), ir(3, {'y': PM['y'], 'm': PM['m'], 'd': 10}, SA, 'tst_e_emp1'), ir(4, T, SA, 'tst_e_sup1')]}
-SEIZED = {'reports': [{'id': 'tstsz1', 'y': y, 'm': m, 'd': d, 'loc': TAG + ' موقع', 'shift': SA, 'test': TAG}]}
+# V7 · 53 تقويم: سجلّاتُ الأنظمة العلائقية (المضبوطات · العهد · الاسترشاد) بيومٍ ميلادي
+SEIZED = {'reports': [{'id': 'tstsz1', 'y': GY, 'm': GM, 'd': GD, 'loc': TAG + ' موقع', 'shift': SA, 'test': TAG}]}
 def task(tid, title, st, ek, nm): return [TAG + ' ' + title, '', 'med', st, None, None, None, [ek] if ek else [], nm, None, None, (TS0 + 50) if st != 'pending' else None, None, tid, ek, None, None, None, None, None, None, None]
 TASKS = {DAY: [task(TS0 + 101, 'مهمة الموظف', 'pending', 'tst_e_emp1', TAG + ' · ' + NAMES['tst_emp1']), task(TS0 + 102, 'مهمة المشرف', 'in_progress', 'tst_e_sup1', TAG + ' · ' + NAMES['tst_sup1']), task(TS0 + 103, 'مهمة عامة', 'pending', '', '')]}
-CUSTODY = {'items': [{'name': TAG + ' جهاز', 'qty': 5}], 'moves': [{'t': 'out', 'eid': 'tst_e_emp1', 'item': TAG + ' جهاز', 'ser': 'TST-001', 'y': y, 'm': m, 'd': d}]}
+CUSTODY = {'items': [{'name': TAG + ' جهاز', 'qty': 5}], 'moves': [{'t': 'out', 'eid': 'tst_e_emp1', 'item': TAG + ' جهاز', 'ser': 'TST-001', 'y': GY, 'm': GM, 'd': GD}]}
 # This fixture has exactly one item and one historical out movement. These
 # literal rows describe that fixed document, not another custody converter.
 CU_DEPT, CU_MARK = 'tst_d1', 'tst_fixture_custody_v1'
@@ -201,7 +202,7 @@ put('tst_d1', 'bassam_tasks_locks_v1', {PMK: True})
 if A.custody_storage == 'legacy-kv': put('tst_d1', 'bassam_custody_v1', CUSTODY)
 put('tst_d1', 'bassam_award_v1', AWARD)
 put('tst_d1', 'bassam_options_v1', {'type': [TAG + ' رسمي'], 'work': [TAG + ' مراقب']})
-put('tst_d2', 'bassam_irshad_v1', {'reports': [{'id': 'tstir21', 'y': y, 'm': m, 'd': d, 'loc': TAG + ' موقع', 'shift': SA, 'test': TAG}]})
+put('tst_d2', 'bassam_irshad_v1', {'reports': [{'id': 'tstir21', 'y': GY, 'm': GM, 'd': GD, 'loc': TAG + ' موقع', 'shift': SA, 'test': TAG}]})
 put('tst_d2', 'bassam_plan_v1', {'floors': [cp(floor('tsts21', 'موقع إدارة ٢', 1, 21))]})
 put('tst_d3', 'bassam_plan_v1', {'floors': [cp(floor('tsts31', 'موقع إدارة ٣', 1, 31))]})
 for dd, rec in SCOPE.items(): put(dd, 'bassam_scope_v1', rec)
@@ -259,12 +260,15 @@ DS_MARK = 'tst_fixture_daily_stats_v1'
 DS_OWNED = "EXISTS (SELECT 1 FROM meta WHERE k = '%s' AND v = '1')" % DS_MARK
 DS_TAGGED = "CASE WHEN json_valid(meta_json) THEN COALESCE(json_extract(meta_json, '$.t') = 'TEST_ONLY', 0) ELSE 0 END"
 DS_DATES = "('2199-01-01', '2199-01-02')"
+def cal_g(ddl):
+    # V7 · 53 تقويم: الشكلُ الحالي بعد 0014 (أعمدةُ greg_* · اليومُ حتى 31) — النصُّ القانوني نفسُه بالأسماء الميلادية، بلا ختم ترحيل
+    return re.sub(r'hijri_(year|month|day|date)', r'greg_\1', ddl).replace('BETWEEN 1 AND 30', 'BETWEEN 1 AND 31').replace('BETWEEN 0 AND 30', 'BETWEEN 0 AND 31')
 def ds_schema():
     if A.daily_stats_storage == 'legacy-kv': return ''
     canonical = (Path(__file__).resolve().parents[2] / 'migrations' / '0004_daily_stats.sql').read_text(encoding='utf-8')
     tables = re.findall(r'CREATE TABLE IF NOT EXISTS daily_stats_\w+\s*\([\s\S]*?\) WITHOUT ROWID;', canonical)
     if len(tables) != 3: raise ValueError('Expected the three canonical daily-statistics tables')
-    return '-- Canonical daily-statistics tables; no schema/migration stamp.\n' + '\n'.join(' '.join(t.split()) for t in tables) + '\n'
+    return '-- Canonical daily-statistics tables; no schema/migration stamp.\n' + '\n'.join(cal_g(' '.join(t.split())) for t in tables) + '\n'
 def ds_preflight():
     if A.daily_stats_storage == 'legacy-kv': return ''
     return ("SELECT CASE WHEN EXISTS (SELECT 1 FROM daily_stats_days WHERE greg_date LIKE '2199-01-%%' AND (greg_date NOT IN %s OR NOT (%s))) "
@@ -302,7 +306,7 @@ def cu_schema():
     canonical = (Path(__file__).resolve().parents[2] / 'migrations' / '0006_custody.sql').read_text(encoding='utf-8')
     ddl = re.findall(r'CREATE TABLE IF NOT EXISTS custody_\w+\s*\([\s\S]*?\) WITHOUT ROWID;|CREATE(?: UNIQUE)? INDEX IF NOT EXISTS custody_\w+[\s\S]*?;', canonical)
     if sum(t.startswith('CREATE TABLE') for t in ddl) != 5: raise ValueError('Expected five canonical custody tables')
-    return '-- Canonical custody DDL only; no migration/schema stamp.\n' + '\n'.join(' '.join(t.split()) for t in ddl) + '\n'
+    return '-- Canonical custody DDL only; no migration/schema stamp.\n' + '\n'.join(cal_g(' '.join(t.split())) for t in ddl) + '\n'
 
 def cu_preflight():
     if A.custody_storage == 'legacy-kv': return ''
