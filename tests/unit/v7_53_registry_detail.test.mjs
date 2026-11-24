@@ -31,7 +31,11 @@ test('V7 · 53 ①: نسخةُ الواجهة = السجلُّ حرفاً · ن�
   assert.equal(c, JSON.stringify(reg), '340 = السجلُّ المجموع حرفاً (النصوصُ كاملة)');
   const want = JSON.parse(c); let n = 0;
   for (const e of want.registry) if (e.guard && e.guard.detail) { e.guard.detail = MARK; n++; }
-  assert.equal(s, JSON.stringify(want), '004 = 340 والفرقُ guard.detail وحده');
+  /* والفرقُ المعلن الآخر في الهدف نفسه (وضوح الصلاحيات: omitFields — نصّا العرض verb · place للواجهة وحدها) — يُطبَّق من targets.json نفسه، ولا فرقَ غيرُهما */
+  const OMIT = SERVER.omitFields || [], cut = (x) => (x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).filter(([k]) => !OMIT.includes(k))) : x);
+  if (OMIT.length) { want.registry = want.registry.map(cut); want.atoms = want.atoms.map(cut); }
+  assert.deepEqual(Object.keys(SERVER).filter((k) => !['file', 'header', 'tail'].includes(k)).sort(), ['guardDetailMarker', 'omitFields'].filter((k) => k in SERVER).sort(), 'لا فرقَ معلنٌ ثالث');
+  assert.equal(s, JSON.stringify(want), '004 = 340 والفرقُ المعلن وحده (guard.detail · omitFields)');
   assert.ok(n > 200, 'الفرقُ في ' + n + ' مدخلاً');
   /* والمحرّكُ (engine.js) والترويسةُ نفسُهما في النسختين */
   const engine = rd(path.join(SRC, 'permissions', 'registry', SPEC.engine));

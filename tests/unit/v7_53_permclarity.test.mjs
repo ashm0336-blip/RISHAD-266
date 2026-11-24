@@ -258,7 +258,10 @@ test('53 · وضوح — نصّا الفعل والمكان في الواجهة 
   const R = JSON.parse(rd('src/permissions/registry/registry-v24.9.json')), drop = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== 'verb' && k !== 'place'));
   const dataOf = (f) => JSON.parse(/var KIVO_REGISTRY_DATA = (.*);\n/.exec(rd(f))[1]);
   assert.deepEqual(dataOf('src/permissions/340-registry-v24-9.js'), R, 'the client carries the registry as generated (with the texts)');
-  assert.deepEqual(dataOf('workers/parts/004-registry-2.js'), Object.assign({}, R, { registry: R.registry.map(drop), atoms: R.atoms.map(drop) }), 'the server: the same registry without verb · place');
+  /* والفرقُ المعلن الآخر (REVIEW البند ٨: guard.detail علامةً في نسخة الخادم وحدها · targets.json guardDetailMarker) — من المصدر نفسه */
+  const MK = (JSON.parse(rd('src/permissions/registry/targets.json')).targets.find((t) => /004-registry-2\.js$/.test(t.file)) || {}).guardDetailMarker;
+  const mark = (e) => (MK && e.guard && e.guard.detail ? Object.assign({}, e, { guard: Object.assign({}, e.guard, { detail: MK }) }) : e);
+  assert.deepEqual(dataOf('workers/parts/004-registry-2.js'), Object.assign({}, R, { registry: R.registry.map(drop).map(mark), atoms: R.atoms.map(drop) }), 'the server: the same registry without verb · place (and guard.detail as the declared marker)');
   assert.ok(R.registry.filter((e) => e.verb).length >= 164 && R.atoms.filter((a) => a.verb).length >= 25, 'the texts are in the generated registry');
   assert.doesNotMatch(rd('workers/_worker.js'), /\.verb\b|\.place\b|"verb"|"place"|'verb'|'place'/, 'nothing in the worker reads them');
 });

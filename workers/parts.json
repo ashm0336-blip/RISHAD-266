@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "e2a331a745d4549379ba24f5bc5551c9e2a03eb67a409a1a0dbeb2040b26d705",
+  "sha256": "61ed15cf1883894cc810150e4f111225872105aa8191a70a56457e1b0ed13ea1",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -48,8 +48,8 @@
         133,
         224
       ],
-      "bytes": 230029,
-      "sha256": "75befaf3e5438bb2339ee5fc2e62d12a6ab6cabe356be606ff62d264d3f72824",
+      "bytes": 196752,
+      "sha256": "cd022f4490f302dfd6aa1290a45c36a0842ccb40c3a1c3fc35fda99663b0dc64",
       "head": "/* ═══ KIVO — Master Permission Registry v24.9 (generated R203 · Phase 4.5 — Integrated Identity→Scope Preflight) ═══"
     },
     {
