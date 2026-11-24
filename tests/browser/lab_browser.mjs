@@ -3,7 +3,13 @@
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 const pwRoot = process.env.KIVO_PLAYWRIGHT || (execSync('npm root -g').toString().trim() + '/');
-export const { chromium } = createRequire(pwRoot)('playwright');
+const PW = createRequire(pwRoot)('playwright');
+/* V7 · د7: المتصفّحُ الآليّ يعمل بمحلّيّةٍ UTF-8 كمتصفّح المستخدم. بلا LANG (محلّيّةُ POSIX «C» في الحاوية) يحوّل Chromium على لينكس اسمَ الملف المقترح
+   (سمةُ download) إلى ترميز النظام، فيعجز عن العربيّ ويقترح «download» بلا امتداد — عَرَضُ بيئةٍ لا خللٌ في التنزيل (BassamXLSX.download).
+   محلّيّةُ الأحرف (LC_ALL) تُضبط على C.UTF-8 — موجودةٌ في كل توزيعات لينكس الحديثة، ولا تتوقّف على محلّيّةٍ مثبَّتة (en_US.UTF-8 غيرُ المثبَّتة
+   ترتدّ إلى «C» فيعود العَرَض). من يمرّر LC_ALL بنفسه في env يبقى على ما مرّر. */
+export function launchEnv(env) { return Object.assign({}, process.env, { LC_ALL: 'C.UTF-8' }, env || {}); }
+export const chromium = Object.create(PW.chromium, { launch: { value: (o = {}) => PW.chromium.launch(Object.assign({}, o, { env: launchEnv(o.env) })) } });
 export async function openAs(browser, lab, un, pw, opts = {}) {
   const ctx = await browser.newContext(Object.assign({ viewport: opts.viewport || { width: 1366, height: 900 } }, opts.context || {}));   /* opts.context: e.g. timezoneId */
   const page = await ctx.newPage(), errs = [], writes = [];

@@ -94,9 +94,19 @@
     var known = function (k) { return !!KL.all[String(k || '').replace(/^bsdept:[^:]+:/, '').replace(/:.*$/, '')]; };
     return KL.label(known(n) || !known(r.k) ? n : r.k);
   }
+  /* V7 · د7 (٩): حذفُ وحدةٍ (/api/admin/dept-delete) يصل حدثاً على مجموعة «الإدارات» فرقُه يحمل سجلَّ الوحدة المحذوفة كاملاً (f بلا t) —
+     فيُسمّى بنوعها: «حُذف القسم «…»» أو «حُذفت الإدارة «…»» بدل «عُدِّل — الإدارات». يصحّ للأحداث القديمة أيضاً (لا تغييرَ في الخادم) */
+  function unitGone(r) {
+    if (r.etype !== 'dataset' || (r.eid !== 'bassam_depts_v1' && r.k !== 'bassam_depts_v1')) return '';
+    var a = parseJ(r.aft != null ? r.aft : r.after), out = [];
+    if (!Array.isArray(a)) return '';
+    for (var i = 0; i < a.length; i++) { var d = a[i]; if (!isObj(d) || d.t !== undefined || !isObj(d.f) || !d.f.id || !/^\[[^\]]+\]$/.test(String(d.p || ''))) continue; out.push((d.f.kind === 'قسم' ? 'حُذف القسم «' : 'حُذفت الإدارة «') + String(d.f.name || d.f.id) + '»'); }
+    return out.join(' · ');
+  }
   function describe(r) {
     var et = ET_AR[r.etype] || r.etype, act = actAr(r.act);
     var nm = r.ename ? ' «' + r.ename + '»' : '';
+    var gone = unitGone(r); if (gone) return gone;
     if (r.etype === 'dataset' || r.etype === 'system') return act + ' — ' + dsName(r);
     return act + ' ' + et + nm;
   }

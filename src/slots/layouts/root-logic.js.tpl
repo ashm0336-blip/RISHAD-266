@@ -194,8 +194,12 @@ class Component extends DCLogic {
           }
         }
         if (k === this.state.active) { this._applyHashTab(k); this.setState({ hashTick: Date.now() }); return; }
-        const ok = this._pageAllowed(k);
-        if (!ok) { this._hashWrite(this.state.active, false); return; }
+        /* V7 · د7 (١٤): عنوانٌ غيرُ متاح (نظامٌ مطفأ · صفحةٌ بلا صلاحية · مقطعٌ مجهول) لا يُبقي المستخدمَ على الصفحة السابقة صامتاً — يُحوَّل إلى «صفحتي»
+           برسالة «هذه الصفحة غير متاحة لك». العنوانُ المرفوض يُستبدل في السجلّ (لا يُدفع) فلا يعيده زرُّ الرجوع. ويمرّ التحويلُ بحرّاس المغادرة أدناه
+           (مسوّداتُ إعدادات المنصة) كأي انتقال. الصفحةُ الدائمة وعناوينُ الشاشة وتبويبُ الإعدادات غيرُ المسموح (أول تبويبٍ مسموح) لا تمرّ من هنا */
+        let ok = this._pageAllowed(k);
+        const denied = !ok;
+        if (denied) ok = "profile";
         /* مراجعة S10: الخروجُ من المركز بالرجوع أو بعنوانٍ مكتوب ومسوّداتُ إعدادات المنصة غيرُ محفوظة — يبقى العنوانُ على المركز ويُسأل أولاً
            (السؤالُ نفسُه في _conLeaveOk لكل مخرج) */
         if (ok !== "sysadmin" && !this.__conAsked && this._platDirty()) {
@@ -206,6 +210,7 @@ class Component extends DCLogic {
           return;
         }
         if (ok === "help") {this._openHelpRoute();return;}
+        if (denied) { try { history.replaceState(null, "", location.pathname + location.search + "#/profile"); } catch (e) {} this.bkToast("هذه الصفحة غير متاحة لك", 3500); }
         this._applyHashTab(ok);
         this._savePage(ok);                                   /* يلتقط موضعَ الصفحة المغادَرة */
         const drawer = (typeof window !== "undefined" && window.innerWidth <= 1024);

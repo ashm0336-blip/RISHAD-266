@@ -840,10 +840,12 @@
           <p class="ov7-n">النسخة تُصدَّر من الإدارة النشطة · الاستيراد يدمج أو يستبدل · المسح يفرّغ البيانات ويبقي الإدارة · الحذف يمرّ بجرد الخادم.</p>
           <div class="ac">
             <sc-if value="{{dhActive}}" hint-placeholder-val="{{ true }}"><button class="t" onClick="{{dhExp}}" title="نسخة الإدارة — تصدير كل بيانات هذه الإدارة إلى ملف"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></i>نسخة الإدارة</button></sc-if>
-            <sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}"><button class="t off" disabled title="نسخة الإدارة — بدّل إلى هذه الإدارة أولاً"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></i>نسخة الإدارة</button></sc-if>
+            <sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}"><button class="t off" data-dh="exp-off" disabled="{{dhNotActive}}" aria-disabled="true" aria-describedby="dh-exp-why" title="نسخة الإدارة — بدّل إلى هذه الإدارة أولاً"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-2ef48b8f"></svg></i>نسخة الإدارة</button></sc-if>
             <label class="b t" title="استيراد نسخة احتياطية إلى هذه الإدارة — دمج أو استبدال"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" data-i="i-9420a7bd"></svg></i>استيراد نسخة<input type="file" accept="application/json,.json" onChange="{{dhImpPick}}" onClick="{{dhImpStop}}" style="display:none"></label>
             <button class="o" onClick="{{dhWipe}}" title="مسح البيانات — يفرّغ الإدارة من كل بياناتها ويبقيها في الهيكل"><i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" data-i="i-2a91be15"></svg></i>مسح البيانات</button>
           </div>
+          <!-- V7 · د7: «نسخة الإدارة» المعطّلة تقول سببها بسطرٍ ظاهر تحت الأزرار (لا تلميح وحده) -->
+          <sc-if value="{{dhNotActive}}" hint-placeholder-val="{{ false }}"><p class="ov7-why" id="dh-exp-why" data-dh="exp-why">بدّل إلى هذه الإدارة أولاً<a onClick="{{dhSwitch}}">التبديل إلى الإدارة ←</a></p></sc-if>
         </section>
       </div>
   </sc-if>
