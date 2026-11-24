@@ -101,7 +101,10 @@
     try {
       o = o || {};
       var text = String(msg == null ? "" : msg); if (!text) return;
-      if (o.tone === "err" && text.charAt(0) !== "⚠") text = "⚠ " + text;
+      /* V7 · 53 (nosilent · REVIEW 26): نبرةُ السطر (ok · warn · err) — رمزُها في أوله ولونُها من data-tone، فالتوستُ الواحد يحمل ما كانت تحمله نسخُ الصفحات */
+      var tone9 = o.tone === "err" || o.tone === "warn" || o.tone === "ok" ? o.tone : "";
+      if ((tone9 === "err" || tone9 === "warn") && text.charAt(0) !== "⚠") text = "⚠ " + text;
+      if (tone9 === "ok" && text.charAt(0) !== "✓") text = "✓ " + text;
       if (o.tone === "err" || o.tone === "warn") saveErrAt53 = Date.now();   /* V7 · 53: الصفحةُ قالت الفشل — لا رسالةَ مركزيةَ مكرَّرة */
       var host = document.body || document.documentElement; if (!host) return;
       if (!toastBox9 || !toastBox9.parentNode) {
@@ -112,6 +115,7 @@
       var line = null;
       for (var i = 0; i < toastLines9.length; i++) if (toastLines9[i].text === text) { line = toastLines9.splice(i, 1)[0]; break; }
       if (!line) { line = { text: text, el: document.createElement("div") }; line.el.textContent = text; toastBox9.appendChild(line.el); }
+      if (tone9) line.el.setAttribute("data-tone", tone9); else line.el.removeAttribute("data-tone");
       toastLines9.push(line);
       while (toastLines9.length > 3) toastDrop9(toastLines9[0]);
       clearTimeout(line.t); line.t = setTimeout(function () { toastDrop9(line); }, o.ms || 6500);
@@ -1940,8 +1944,13 @@
 
   /* CORE-01: تنبيهُ المغادرة الواحد — لا يُسأل المستخدم إلا وفي الطابور ما لم يُحفظ، أو طلبٌ في الطريق، أو عمليةٌ جارية؛
      ولا بعد الخروج أو تبدّل الجلسة (ما بقي حينها معزولٌ لا يُرسل). الإعادةُ المقصودة (تبديلُ الوحدة · السحبُ للتحديث) تحفظ قبلها فلا تسأل. */
+  /* V7 · 53 (nosilent · REVIEW 26 ب3): وعمليةٌ ظاهرة في مؤشر التحميل الموحّد (BassamBusy — ملفٌّ يُجهَّز · صورةٌ تُضغط · طلبٌ ينتظر تأكيده)
+     أو صورةٌ في طريقها إلى المستودع — مغادرتُها تقطعها، فيُسأل المستخدم كما يُسأل عن تعديلٍ لم يُحفظ */
+  function busy53() {
+    try { var B = KIVO.BassamBusy, I = KIVO.__BS_IMG_INFLIGHT; return !!(B && B.active && B.active() > 0) || !!(I && I.length); } catch (e) { return false; }
+  }
   window.addEventListener("beforeunload", function (e) {
-    if (ANON9 || bye9 || sx9 || !(dirty || inflight || operationActive9)) return;
+    if (ANON9 || bye9 || sx9 || !(dirty || inflight || operationActive9 || busy53())) return;
     try { e.preventDefault(); e.returnValue = ""; } catch (eB) { /* متصفحٌ قديم */ }
     return "";
   });
