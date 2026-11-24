@@ -328,7 +328,8 @@ test('⑤ no other place computes the calendar: one client service, one server p
   assert.deepEqual(defs, ['src/components/565-page-kit.js', 'src/systems/daily/client/logic.js', 'src/systems/daily/client/logic.js.tpl', 'src/systems/dreport/client/logic.js']);   /* د5-هـ: مرتَّبة — التقريرُ في مجلده  */
   const service = read('src/i18n/385-calendar.js'), part = read('workers/parts/016-base-shared.js');
   for (const n of ['hPartsRiyadh', 'hNow', 'hText', 'hGregExact', 'hGregUTC', 'hMonthDays', 'hMonthDaysNoon', 'hWeekdayIndex']) { assert.match(service, new RegExp('function ' + n + '\\('), n); assert.match(service, new RegExp('\\b' + n + ': ' + n + '\\b'), n + ' مُصدَّرة'); }
-  for (const n of ['calHijriAt', 'calHijriOk', 'calRiyadhMid', 'calDayNum', 'calHijriMid', 'calHijriDayMid', 'dsToday']) assert.match(part, new RegExp('function ' + n + '\\('), n);
+  for (const n of ['calHijriAt', 'calHijriOk', 'calRiyadhMid', 'calDayNum', 'dsToday']) assert.match(part, new RegExp('function ' + n + '\\('), n);
+  for (const n of ['calHijriMid', 'calHijriDayMid']) assert.doesNotMatch(part, new RegExp('function ' + n + '\\('), n + ': V7 · 53 S3 — removed (no caller since the tasks calendar went Gregorian)');
   /* 016 يسبق كلَّ مستعملٍ في ترتيب أجزاء العامل */
   const order = JSON.parse(read('workers/parts.json')).parts.map((p) => p.file), at = (re) => order.findIndex((f) => re.test(f));
   assert.ok(at(/016-base-shared\.js$/) >= 0 && at(/016-base-shared\.js$/) < at(/062b-me-history\.js$/) && at(/016-base-shared\.js$/) < at(/070-task-core\.js$/) && at(/070-task-core\.js$/) < at(/073-task-recur\.js$/));

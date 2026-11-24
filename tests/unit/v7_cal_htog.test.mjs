@@ -59,9 +59,9 @@ test('② month splitting: a Hijri month spreads over 1–2 Gregorian months los
     const L = S.calGMonthsOfH(y, m), len = S.calHMonthLen(y, m);
     assert.ok(L.length >= 1 && L.length <= 2);
     assert.equal(L.reduce((a, x) => a + x.days, 0), len);
-    deq([...S.calHtoGMonth(y + '-' + m)], L.map((x) => x.g));
-    deq([...S.calHtoGMonth('m:' + y + '-' + m)], L.map((x) => 'm:' + x.g));
-    if (L.length === 2) assert.equal(S.calGAddMonths(L[0].g, 1), L[1].g);
+    /* V7 · 53 S3: calHtoGMonth (only caller: the removed calHtoGKey) ⇒ the live month path calHtoGScope gives the same Gregorian months */
+    deq(S.calHtoGScope({ y: y, m: m, d: null }).map((x) => S.calGYm(x.y, x.m)), L.map((x) => x.g));
+    if (L.length === 2) { const p = S.calGParse(L[0].g), i = p.y * 12 + p.m; assert.equal(S.calGYm(Math.floor(i / 12), (i % 12) + 1), L[1].g); }
   }
   for (let y = 2019; y <= 2038; y++) for (let m = 1; m <= 12; m++) {
     const gm = S.calGYm(y, m), P = S.calHMonthsOfG(gm), mj = S.calMajority(gm);
@@ -72,8 +72,8 @@ test('② month splitting: a Hijri month spreads over 1–2 Gregorian months los
     assert.equal(mj.days, max); assert.equal(mj.h, P.find((x) => x.days === max).h);
     assert.equal(mj.tie, P.filter((x) => x.days === max).length > 1);
   }
-  deq([...S.calHtoGMonth('2026-11')], ['2026-11']);
-  assert.equal(S.calHtoGMonth('1448-6-1'), null);
+  deq(JSON.parse(JSON.stringify(S.calHtoGScope({ y: 2026, m: 11, d: null }))), [{ y: 2026, m: 11, d: null }]);
+  assert.equal(S.calHtoGScope({ y: 1448, m: 13, d: null }), null);
 });
 
 const randDays = (p) => { const o = {}; for (let d = 1; d <= 30; d++) if (rnd() < p) o[d] = 1; return o; };
@@ -128,8 +128,9 @@ test('③b month rule shapes: all approved ⇒ {ap}; reason fields from the majo
 });
 
 test('④ ranges · windows (ق7 · ق10) · recurring day (ق6) · day-less month locks (ق3)', () => {
-  deq({ ...S.calHtoGRange('1448-6-1', '1448-6-29') }, { from: '2026-11-11', to: '2026-12-09' });
-  assert.equal(S.calHtoGRange('1448-6-29', '1448-6-1'), null);
+  /* V7 · 53 S3: calHtoGRange had no caller ⇒ its two ends on the live day converter, and their order */
+  assert.equal(S.calHtoGDay('1448-6-1'), '2026-11-11'); assert.equal(S.calHtoGDay('1448-6-29'), '2026-12-09');
+  assert.equal(S.calGCmp(S.calHtoGDay('1448-6-29'), S.calHtoGDay('1448-6-1')), 1);
   deq(JSON.parse(JSON.stringify(S.calHtoGScope({ y: 1448, m: 6, d: null }))), [{ y: 2026, m: 11, d: null }, { y: 2026, m: 12, d: null }]);
   deq(JSON.parse(JSON.stringify(S.calHtoGScope({ y: 1448, m: 5, d: 0 }))), [{ y: 2026, m: 10, d: 0 }]);
   deq(JSON.parse(JSON.stringify(S.calHtoGScope({ y: 1448, m: 6, d: 14 }))), [{ y: 2026, m: 11, d: 24 }]);

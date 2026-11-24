@@ -24,6 +24,16 @@ const PF = (() => {
   const X = { Intl, Date, Math }; vm.createContext(X); vm.runInContext(t.slice(a, b), X); return X;
 })();
 const from = Date.UTC(2017, 0, 1), to = Date.UTC(2039, 11, 31);
+/* V7 · 53 S3: the server's display-only helpers (calGWeekday · CAL_DAY_LETTERS · calGDayText · calPrintLine · calHRangeOfMonth · calGAddMonths · calGMk ·
+   CAL_H_MONTHS) had no caller and were removed; the client results are checked against the same rule built here from the LIVE server functions */
+const HM = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'], LETTERS = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+const sDay = (k) => { const p = S.calGParse(k); return p.d + ' ' + S.CAL_G_MONTHS[p.m - 1] + ' ' + p.y; };
+const sPrint = (k) => { const h = S.calHOf(k); return sDay(k) + ' · الموافق ' + h.d + ' ' + HM[h.m - 1] + ' ' + h.y; };
+const sRange = (ym) => { const L = S.calGDays(ym), a = S.calHOf(L[0]), b = S.calHOf(L[L.length - 1]);
+  if (a.y === b.y && a.m === b.m) return a.d + ' – ' + b.d + ' ' + HM[a.m - 1] + ' ' + a.y;
+  if (a.y === b.y) return a.d + ' ' + HM[a.m - 1] + ' – ' + b.d + ' ' + HM[b.m - 1] + ' ' + a.y;
+  return a.d + ' ' + HM[a.m - 1] + ' ' + a.y + ' – ' + b.d + ' ' + HM[b.m - 1] + ' ' + b.y; };
+const sAddM = (ym, n) => { const p = S.calGParse(ym), i = p.y * 12 + p.m - 1 + n; return S.calGYm(Math.floor(i / 12), (i % 12) + 1); };
 
 test('① every day 2017–2039: client = server, Hijri = Intl Umm al-Qura', () => {
   let n = 0;
@@ -33,10 +43,10 @@ test('① every day 2017–2039: client = server, Hijri = Intl Umm al-Qura', () 
     const h = { y: o.year, m: o.month, d: o.day };
     assert.deepEqual(J(C.hOf(k)), h, k); assert.deepEqual(J(S.calHOf(k)), h, k);
     assert.deepEqual(J(C.gParse(k)), J(S.calGParse(k)));
-    assert.equal(C.gWeekday(k), x.getUTCDay()); assert.equal(S.calGWeekday(k), x.getUTCDay());
-    assert.equal(C.gLetter(k), S.CAL_DAY_LETTERS[x.getUTCDay()]);
+    assert.equal(C.gWeekday(k), x.getUTCDay()); assert.equal(S.calGOfUTC(t).wd, x.getUTCDay());
+    assert.equal(C.gLetter(k), LETTERS[x.getUTCDay()]);
     assert.equal(C.hLine(k), h.d + '/' + h.m);
-    assert.equal(C.fmtDay(k), S.calGDayText(k)); assert.equal(C.fmtPrint(k), S.calPrintLine(k));
+    assert.equal(C.fmtDay(k), sDay(k)); assert.equal(C.fmtPrint(k), sPrint(k));
     assert.equal(C.gAddDays(k, 1), S.calGAddDays(k, 1)); assert.equal(C.gAddDays(k, -31), S.calGAddDays(k, -31));
     assert.equal(C.gAddDays(k, 1), new Date(t + 864e5).toISOString().slice(0, 10));
     assert.ok(C.isGKey(k, 'day') && S.calIsGKey(k, 'day') && C.keyCal(k) === 'g');
@@ -53,11 +63,11 @@ test('② every month 2017–2039: length · days · Hijri span · text · navig
     assert.equal(ym, S.calGYm(y, m));
     assert.equal(C.gMonthDays(y, m), new Date(Date.UTC(y, m, 0)).getUTCDate()); assert.equal(C.gMonthDays(ym), S.calGMonthDays(ym));
     assert.deepEqual(J(C.gDays(ym)), J(S.calGDays(ym)));
-    assert.equal(C.hRangeOfMonth(ym), S.calHRangeOfMonth(ym)); assert.ok(C.hRangeOfMonth(ym).length > 8);
+    assert.equal(C.hRangeOfMonth(ym), sRange(ym)); assert.ok(C.hRangeOfMonth(ym).length > 8);
     assert.deepEqual(J(C.hMonthsOf(ym)), J(S.calHMonthsOf(ym)));
     assert.equal(C.fmtMonth(ym), S.calGMonthText(ym)); assert.equal(C.fmtMonth(ym), S.CAL_G_MONTHS[m - 1] + ' ' + y);
-    assert.equal(C.gNextMonth(ym), S.calGAddMonths(ym, 1)); assert.equal(C.gPrevMonth(ym), S.calGAddMonths(ym, -1));
-    assert.equal(C.gMk(ym), S.calGMk(ym)); assert.equal(C.gMk(y, m), 'm:' + ym);
+    assert.equal(C.gNextMonth(ym), sAddM(ym, 1)); assert.equal(C.gPrevMonth(ym), sAddM(ym, -1));
+    assert.equal(C.gMk(ym), 'm:' + ym); assert.equal(C.gMk(y, m), 'm:' + ym);
     assert.deepEqual(J(C.gMonthRange(ym)), { from: ym + '-01', to: S.calGDays(ym).slice(-1)[0], days: S.calGMonthDays(ym) });
   }
   assert.equal(C.hRangeOfMonth('2026-11'), '21 جمادى الأولى – 20 جمادى الآخرة 1448');
@@ -104,7 +114,7 @@ test('⑤ keys: format detection by year, strict ISO, names, letters, card state
   }
   assert.equal(S.calGregOk(2026, 11, 24), true); assert.equal(S.calGregOk(2026, 11, 31), false); assert.equal(S.calGregOk(1448, 6, 14), false);
   assert.equal(S.calGregOk(2026, 11, 0), false); assert.equal(S.calGregOk(2026, 11, 0, true), true); assert.equal(S.calGregOk(2026, 11, 1.5), false);
-  assert.deepEqual([...C.DAY_LETTERS], ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س']); assert.deepEqual([...C.G_MONTHS], [...S.CAL_G_MONTHS]); assert.deepEqual([...C.H_MONTHS], [...S.CAL_H_MONTHS]);
+  assert.deepEqual([...C.DAY_LETTERS], ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س']); assert.deepEqual([...C.G_MONTHS], [...S.CAL_G_MONTHS]); assert.deepEqual([...C.H_MONTHS], HM);
   assert.equal(C.gLetter('2026-11-24'), 'ث'); assert.equal(C.gLetter('2026-11-27'), 'ج');
   assert.equal(C.fileTag('2026-11'), '2026-11'); assert.equal(C.fmtDayLong('2026-11-24'), 'الثلاثاء 24 نوفمبر 2026');
   assert.equal(C.monthOptions(2026).length, 12); assert.equal(C.monthOptions(2026)[10].sub, C.hRangeOfMonth('2026-11'));

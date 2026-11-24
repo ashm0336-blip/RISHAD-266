@@ -84,7 +84,7 @@ test('④ التحقّق المتقاطع: اليومُ التشغيلي وحك�
   for (const now of at) {
     const T = S.calToday(now), R = pf.pfDayAt(now - 3 * hr);
     assert.deepEqual([T.y, T.m, T.d], [R.y, R.m, R.d], 'same operational day at ' + new Date(now).toISOString());
-    const prev = S.calGAddMonths(T.ym, -1).split('-').map(Number), next = S.calGAddMonths(T.ym, 1).split('-').map(Number);
+    const addM = (n) => { const i = T.y * 12 + T.m - 1 + n; return [Math.floor(i / 12), (i % 12) + 1]; }, prev = addM(-1), next = addM(1);   /* V7 · 53 S3: calGAddMonths removed (no caller) */
     const tkPast = (y, m) => 12 * y + m < 12 * T.y + T.m;                                          /* 070b tkPeriodWhy */
     const arcClosed = (y, m) => (y * 12 + m) <= (T.y * 12 + T.m) - 2;                               /* 019p3 dailyArcClosed (هامشُ شهر) */
     assert.equal(H.closedPeriod(T, prev[0], prev[1], null), true, 'previous month closed');

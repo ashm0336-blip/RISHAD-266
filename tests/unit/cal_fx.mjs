@@ -32,7 +32,7 @@ export function hToIso(k, mode) {
   const S = srv(), p = S.calGParse(k);
   if (!p || p.cal !== 'h') return k;
   if (p.kind === 'day') return S.calHtoGDay(k) || k;
-  const all = S.calHtoGMonth(k); if (!all) return k;
+  const pre0 = p.kind === 'mctl' ? 'm:' : '', all = S.calGMonthsOfH(p.y, p.m).map((x) => pre0 + x.g); if (!all.length) return k;   /* V7 · 53 S3: = the removed calHtoGMonth */
   if (mode === 'all') return all;
   if (mode === 'first') return all[0];
   const pre = p.kind === 'mctl' ? 'm:' : '', L = S.calGMonthsOfH(p.y, p.m);
