@@ -47,6 +47,22 @@ class Component extends DCLogic {
   _hashKey() {
     try { const m = /^#\/([a-z]+)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }
   }
+  /* V7 · 53 (ج): حسمُ العنوان المرفوض عند التحميل — ينتظر الصلاحيات (BassamPerm.ready · حتى ١٥ ث) ثم يقرّر مرّةً واحدة */
+  _hashRefused53() {
+    const R = this.__hashRefused; if (!R) return; this.__hashRefused = null;
+    const decide = (n) => {
+      try {
+        const P = KIVO.BassamPerm;
+        if (P && P.ready && !P.ready() && n < 60) { setTimeout(() => decide(n + 1), 250); return; }
+        if (this._hashKey() !== "profile" || this.state.active !== "profile") return;   /* المستخدمُ انتقل في الأثناء */
+        const ok = this._pageAllowed(R.key);
+        if (ok && ok !== "help") { try { history.replaceState(null, "", location.pathname + location.search + R.href); } catch (e) {} this._applyHashTab(ok); this.setState({ active: ok }); return; }
+        try { history.replaceState(null, "", location.pathname + location.search + "#/profile"); } catch (e) {}
+        this.bkToast("هذه الصفحة غير متاحة لك", 3500);
+      } catch (e) { /* الحسمُ عرضٌ فقط */ }
+    };
+    decide(0);
+  }
   _hashTab() {
     try { const m = /^#\/[a-z]+\/([a-z]+(?:-[a-z]+)*)/i.exec(String(location.hash || "")); return m ? m[1].toLowerCase() : ""; } catch (e) { return ""; }   /* V7 · د6: رمزُ تبويبٍ بشرطة (#/kpis/haram-analysis) */
   }
@@ -112,7 +128,10 @@ class Component extends DCLogic {
         return "profile";
       };
       /* عنوانٌ صالح ومسموح يغلب الصفحة المحفوظة وهبوط أول دخول — فمن فتح رابطاً وسجّل دخوله وصل إلى مقصده */
-      const hk = this._pageAllowed(this._hashKey());
+      const hk0 = this._hashKey(), hk = this._pageAllowed(hk0);
+      /* V7 · 53 (ج): عنوانٌ مرفوضٌ عند التحميل الأول أو إعادة التحميل — لا تُرسم الصفحةُ المرفوضة ولا يُرتدّ بصمت إلى صفحةٍ محفوظة:
+         تُفتح «صفحتي» ويُحسم العنوانُ بعد ثبوت الصلاحيات (_hashRefused53 عند التركيب) — تحويلٌ برسالة، أو الصفحةُ نفسُها إن صارت متاحة */
+      if (hk0 && !hk) { const P0 = KIVO.BassamPerm; this.__hashRefused = { key: hk0, href: String(location.hash || ""), wait: !!(P0 && P0.ready && !P0.ready()) }; return "profile"; }
       if (hk === "help") this._helpRequested=true;
       if (hk && hk !== "help") { try { const RAWH = KIVO.__BS_RAWLS; if (RAWH && RAWH.getItem.call(localStorage, "bassam_fresh_login_v1") === "1") RAWH.removeItem.call(localStorage, "bassam_fresh_login_v1"); } catch (eh) {} this._applyHashTab(hk); return hk; }
       /* بطلب المستخدم: كل تسجيل دخول جديد يهبط على «الصفحة الشخصية» — فهي
@@ -180,6 +199,7 @@ class Component extends DCLogic {
       window.addEventListener("resize", this._onResizeSB);
       /* ═══ العنوان: الرجوع/التقدّم أو رابطٌ ملصوق → نفس حرّاس الصفحة المحفوظة ═══ */
       this._hashWrite(this.state.active, false);
+      this._hashRefused53();
       this._onHash = () => { try {
         const k = this._hashKey(); if (!k) return;
         /* V7 · د6: عنوانٌ تغيّر (رجوعٌ · عنوانٌ مكتوب · رابط) وفي شاشة «الإدارات والصلاحيات» تغييرٌ غيرُ محفوظ — يُعاد عنوانُها ويُسأل حارسُها أولاً،
