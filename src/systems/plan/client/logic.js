@@ -2603,7 +2603,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       const n = c.y * 12 + (c.m - 1) + i;
       g.push(this._mKey(Math.floor(n / 12), (n % 12) + 1));
     }
-    setTimeout(() => S.want("bassam_plan_v1", { groups: g }), 0);
+    setTimeout(() => S.want("bassam_plan_v1", { groups: g }), 1500);   /* بعد فتح الصفحة — لا يؤخّره */
   }
   _plWithPeriod(i, k) {
     const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;

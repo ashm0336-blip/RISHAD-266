@@ -1229,13 +1229,13 @@
     if (!operationObject9(data) || data.ok !== 1 || data.uid !== stamp.uid || !operationInteger9(data.epoch) || !operationInteger9(data.v)
         || !operationObject9(data.resources) || !Array.isArray(data.absent) || !Array.isArray(data.denied) || !operationObject9(data.base)) return false;
     var failed = data.failed === undefined ? {} : data.failed, ranges = data.ranges === undefined ? {} : data.ranges;
-    if (data.logical !== undefined && (!operationObject9(data.logical) || Object.keys(data.logical).some(function (k) { return k !== q.K || !operationInteger9(data.logical[k]); }))) return false;
+    if (data.logical !== undefined && (!operationObject9(data.logical) || Object.keys(data.logical).some(function (k) { return q.Ks.indexOf(k) === -1 || !operationInteger9(data.logical[k]); }))) return false;
     if (!operationObject9(failed) || !operationObject9(ranges) || Object.keys(ranges).some(function (r) { return q.range.indexOf(r) === -1; })) return false;
     var expect = q.keys.slice();
     for (var i = 0; i < q.range.length; i++) {
-      var list = ranges[q.range[i]];
-      if (list === undefined && q.K && data.denied.indexOf(q.K + '@') !== -1) list = [];   /* المورد محجوب: لا مدى في الجواب */
-      if (!Array.isArray(list) || list.some(function (key) { var x = periodParse9(key); return !x || x.K !== q.K; })) return false;
+      var list = ranges[q.range[i]], rK = q.range[i].slice(0, q.range[i].lastIndexOf('@'));
+      if (list === undefined && data.denied.indexOf(rK + '@') !== -1) list = [];   /* المورد محجوب: لا مدى في الجواب */
+      if (!Array.isArray(list) || list.some(function (key) { var x = periodParse9(key); return !x || x.K !== rK; })) return false;
       list.forEach(function (key) { if (expect.indexOf(key) === -1) expect.push(key); });
     }
     var covered = Object.keys(data.resources).concat(data.absent, data.denied, Object.keys(failed)), readable = Object.keys(data.resources).concat(data.absent);
@@ -1252,7 +1252,7 @@
       w.day = true; w.groups = w.groups.filter(function (g) { return q.range.indexOf(q.K + '@' + g) === -1; });
       var ks = q.keys.slice();
       now.days.concat(now.groups.map(function (g) { return 'm:' + g; })).forEach(function (p) { if (ks.indexOf(q.K + '@' + p) === -1) ks.push(q.K + '@' + p); });
-      return periodFetch9({ K: q.K, keys: ks, range: [], retried: 1 }, stamp);
+      return periodFetch9({ K: q.K, Ks: [q.K], keys: ks, range: [], retried: 1 }, stamp);
     }
     return { q: q, response: response, data: data };
   }
@@ -1270,12 +1270,15 @@
       if (periodLogical9(key)) { add(key).logical = true; return; }
       plain.push(key);
     });
-    var reqs = plain.length ? [{ K: null, keys: plain, range: [] }] : [];
+    var reqs = plain.length ? [{ K: null, Ks: [], keys: plain, range: [], small: true, cost: 0 }] : [];
     Object.keys(split).forEach(function (K) {
       var s = split[K], want = s.logical ? periodWanted9(K) : { groups: [], periods: [] }, more = (extra && extra[K]) || { groups: [], periods: [] }, ks = [K + '@'], range = [];
       (s.logical ? [] : s.keys).concat(want.periods.concat(more.periods || []).map(function (p) { return K + '@' + p; })).forEach(function (k) { if (ks.indexOf(k) === -1) ks.push(k); });
       want.groups.concat(more.groups || []).forEach(function (g) { if (range.indexOf(K + '@' + g) === -1) range.push(K + '@' + g); });
-      reqs.push({ K: K, logical: s.logical, keys: ks, range: range });
+      /* مواردُ شهرُها فترةٌ واحدة أو تُقرأ بالأيام (عددُ فتراتها معروف) تُضمّ إلى طلبٍ واحد ما دام ≤ 40 فترة — طلباتٌ أقل (كلفةُ كلِّ طلبٍ في D1) */
+      var known = PERIOD_MONTHLY9[unscoped(K)] || !range.length, cost = ks.length - 1 + range.length, into = known && reqs.filter(function (q) { return q.small && q.cost + cost <= 40; })[0];
+      if (into) { into.Ks.push(K); into.keys = into.keys.concat(ks); into.range = into.range.concat(range); into.cost += cost; into.K = null; return; }
+      reqs.push({ K: K, Ks: [K], logical: s.logical, keys: ks, range: range, small: known, cost: cost });
     });
     var readId = ++operationReadId9;
     keys.forEach(function (key) { operationReads9[key] = readId; });
@@ -1302,9 +1305,9 @@
       var out = { ok: 1, uid: stamp.uid, epoch: epoch, v: v, resources: {}, absent: [], denied: [], base: {} }, failedAll = {}, bump = Object.create(null);
       answers.forEach(function (x) {
         var data = x.data, failed = data.failed || {};
-        if (x.q.K && data.logical && periodOwn9(data.logical, x.q.K)) periodLogicalRev9[x.q.K] = data.logical[x.q.K];
+        if (data.logical) x.q.Ks.forEach(function (K) { if (periodOwn9(data.logical, K)) periodLogicalRev9[K] = data.logical[K]; });
         Object.keys(data.ranges || {}).forEach(function (r) {
-          var K = x.q.K, g = r.slice(K.length + 1), order = (periodOrder9[K] || []).slice(), list = data.ranges[r];
+          var K = r.slice(0, r.lastIndexOf('@')), g = r.slice(K.length + 1), order = (periodOrder9[K] || []).slice(), list = data.ranges[r];
           /* فترةٌ كانت في هذا الشهر عندي ولم تعد في جوابه: حُذفت في الخادم ⇒ تُنسى (لا تبقى قيمةً قديمة) */
           Object.keys(periodGrpOf9).forEach(function (key) { if (periodGrpOf9[key] === g && key.indexOf(K + '@') === 0 && list.indexOf(key) === -1) { delete periodGrpOf9[key]; delete mem[key]; delete baseVal[key]; delete krev[key]; operationKnown9[key] = { state: 'unloaded' }; bump[K] = 1; } });
           list.forEach(function (key) { var p = periodParse9(key).p; periodGrpOf9[key] = g; if (order.indexOf(p) === -1) order.push(p); });
