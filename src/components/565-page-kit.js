@@ -780,6 +780,8 @@
       gregOf(t, e) {
         return KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(t, e + 1));
       }
+      /* V7 · 53 تقويم (REVIEW 22 — لقطة «العناوين»): السنةُ المعروضة ميلادية، فسطرُها الصغير هو المدى الهجري المقابل («1447 – 1448 هـ»).
+         كان يحوّلها كأنها هجرية فيكتب «2587 – 2588 م» تحت 2026 في الخطة والجدول الشهري */
       gregYearRange(t) {
         return KIVO.BassamCal.hRangeOfYear(t);
       }

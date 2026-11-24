@@ -81,3 +81,13 @@ test('REVIEW 22 ④: «صفحتي» task history — Gregorian day with the smal
   assert.equal(ev.whenH, C.KIVO.BassamCal.hDayText(k) + ' هـ');
   assert.match(rd('systems/tasks/slots/profile.view.popups.tasks.frag'), /\{\{ev\.when\}\}<\/div><sc-if value="\{\{ev\.whenH\}\}"[^>]*><div style="font-size:9px[^"]*">\{\{ev\.whenH\}\}<\/div><\/sc-if>/, 'shown as a small line under the date');
 });
+
+test('REVIEW 22 ⑤: plan and staffing year card — the small line under 2026 is «1447 – 1448 هـ», not «2587 – 2588 م»', () => {
+  const { C } = ctx();
+  /* the trait both pages declare (plan+staff) — the real 565 method, without the pages' storage */
+  assert.match(rd('systems/staff/client/logic.js'), /BassamPageKit\.base\(DCLogic, \[[^\]]*"plan\+staff"/);
+  assert.match(rd('systems/plan/client/logic.js'), /BassamPageKit\.base\(DCLogic, \[[^\]]*"plan\+staff"/);
+  const K = vm.runInContext('KIVO.BassamPageKit.base(DCLogic, ["plan+staff"])', C), page = new K({});
+  assert.equal(page.gregYearRange(2026), '1447 – 1448 هـ');
+  assert.doesNotMatch(page.gregYearRange(2026), /25\d\d|م$/);
+});
