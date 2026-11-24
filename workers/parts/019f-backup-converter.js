@@ -148,6 +148,22 @@ function rsBCForbiddenKey(key) {
   var n = resName(key);
   return isDeviceKey(key) || isDeviceKey(n) || /(?:^|_)(?:sessions?|recovery|recover|cookies?|tokens?|credentials?)(?:_|$)/i.test(n);
 }
+/* V7 · د7: قوالبُ نسخة الإدارة ← سجلُّ أدوار الوحدة الهدف (الأدوارُ في النسخة إن وُجدت أساسٌ لا يُستبدل) · tplOf: {مفتاحُ الموظف: القالب} — أو بالإدارة.
+   صحيفةُ المدير (mgr:*) لا يحكمها دور (قرار المالك ب1) فلا تُسند. ما حُوِّل يُذكر في الملخّص (summary.tplRoles) */
+function rsBCTplsRoles(keys, perms, d, src, summary) {
+  var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = 'bsdept:' + d + ':bassam_perm_tpls_v1', rk = perm44Key(d);
+  if (T0) {
+    of = Object.keys(T0).every(function (k) { return typeof T0[k] === 'string'; }) ? T0 : (isObj(T0[src]) ? T0[src] : isObj(T0[d]) ? T0[d] : null);
+    delete perms.tplOf;
+  }
+  var tpls = rsBCOwn(keys, tk) ? parseJson(keys[tk], null) : null;
+  if (!Array.isArray(tpls) || !tpls.length) return;
+  var assign = {};
+  Object.keys(of || {}).forEach(function (ek) { if (!isMgrKey(ek)) assign[ek] = of[ek]; });
+  var X = enfRolesFromTpls(tpls, assign, rsBCOwn(keys, rk) ? parseJson(keys[rk], null) : null);
+  if (X.rep.roles || X.rep.people) keys[rk] = JSON.stringify(X.rec);
+  summary.tplRoles = { roles: X.rep.roles, people: X.rep.people, unknownTpl: X.rep.unknownTpl, lensDropped: X.rep.lensDropped };
+}
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
   var required = scope.kind === 'full' ? ['kv', 'dailyStats', 'notifications', 'custody'] : ['kv', 'notifications', 'custody'];
@@ -559,7 +575,10 @@ async function rsConvertBackup(env, A, file, opt) {
   cuKeys.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
-  /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها) */
+  /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها)
+     V7 · د7 (قرار المالك — 51ب): في نسخة الإدارة تُحوَّل قبل الإسقاط إلى أدوار الوحدة الهدف بالقاعدة نفسِها التي رحّلت المنصةَ (063 enfRolesFromTpls)،
+     وإسناداتُها من tplOf في شريحة الصلاحيات (ثم يُزال منها فيبقى شكلُ الشريحة كما هو — 019d). المنحُ المترجَم يبنيه الخادمُ عند الاعتماد (019d rsRoleGrants) */
+  if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });

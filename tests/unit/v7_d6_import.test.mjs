@@ -41,6 +41,8 @@ async function compare(T, who, file, dept = B) {
   /* ما لا مقابلَ له لم يُكتب */
   for (const k of Object.keys(NOT_TRANSFERRED)) assert.equal(k in kv, false, k + ' لم يُنقل');
   assert.equal(T.DB.q("SELECT COUNT(*) n FROM kv WHERE k GLOB '*bassam_grants_v1' OR k GLOB '*bassam_perm_tpls*'")[0].n, 0, 'لا منحَ ولا قوالب');
+  /* V7 · د7 (قرار المالك — 51ب): القوالبُ صارت أدواراً للوحدة الهدف (بلا أشخاص — الملفُّ المقيس بلا tplOf، فلا منح) */
+  assert.deepEqual(JSON.parse(kv.bassam_roles_v1).roles.map((r) => r.id), JSON.parse(file.data.bassam_perm_tpls_v1).map((t) => t.id), 'القوالبُ أدوارٌ بمعرّفاتها');
   /* الصور: بايتاتُها ومالكُها ومرجعُها */
   for (const [id, body] of Object.entries(file.idbImages)) {
     const g = await readImage(T, who, id);

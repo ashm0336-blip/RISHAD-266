@@ -10538,6 +10538,12 @@ async function rsPrepare(env, A, body, meta, internal) {
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
     } else delete keys[K_PERM];
   }
+  /* V7 · د7: نسخةُ الإدارة تحمل سجلَّ أدوار (حديثةً، أو محوَّلاً من قوالبها — 019f rsBCTplsRoles) ⇒ منحُه المترجَم يُبنى هنا بسقف الهدف (لا يغيّره الاستيراد — ب3)
+     كما يبنيه محرّرُ الأدوار (perm44 grantOf): فالحفظةُ ذرّيةٌ بالسجلّين (057b perm44GrantsWhy). ما خارج السقف يُخزَّن بلا أثر */
+  if (body.scope.kind === 'dept' && Object.prototype.hasOwnProperty.call(keys, perm44Key(dept)) && keys[perm44Key(dept)] != null) {
+    var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
+    if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
+  }
   /* 330-auth.pruneDeptAccounts: restore only removes staff/dept identities bound
      to removed departments, never GM/Super accounts. The result still traverses
      applySave's unchanged password, uniqueness and final-super validators. */
@@ -11096,6 +11102,15 @@ function rsPermsCounts(A, d, keys) {
     Object.keys(em).forEach(function (ek) { if (isMgrKey(ek) || !isObj(em[ek])) return; out.assignments++; Object.keys(em[ek]).forEach(function (leaf) { if (!on(leaf)) add(leaf.split('/')[0]); }); });
   }
   return out;
+}
+/* V7 · د7: المنحُ المترجَم لسجلّ أدوارٍ يُكتب بالاستعادة — مدخلاتُ غير الأدوار في منح الهدف كما هي، ومدخلُ كلِّ شخصٍ في السجلّ = grantOf بسقف الوحدة. null = لا تغيير */
+function rsRoleGrants(A, d, rolesVal, curVal) {
+  var E = perm44E(), R = E.normRec(perm44Rec(rolesVal)), cur = perm44Rec(curVal), out = isObj(cur) ? JSON.parse(JSON.stringify(cur)) : { v: 1, emp: {} }, C = perm44CeilingFn(A, d), now = Date.now(), e;
+  if (!isObj(out.emp)) out.emp = {};
+  for (e in out.emp) if (isObj(out.emp[e]) && PERM44_SRC.test(String(out.emp[e].src || ''))) delete out.emp[e];
+  for (e in R.people) { var g = E.grantOf(R.people[e], R, C, now, null); if (g) { var o = isObj(cur) && isObj(cur.emp) ? cur.emp[e] : null; out.emp[e] = o && deq(o.plus, g.plus) && deq(o.minus || [], g.minus) && o.src === g.src ? o : Object.assign(g, { at: now, by: String(A.u.id || '') }); } }
+  if (!isObj(cur) && !Object.keys(out.emp).length) return null;   /* لا منحَ قائم ولا شخصَ في الأدوار ⇒ لا وثيقةَ فارغة */
+  return deq(out, cur) ? null : JSON.stringify(out);
 }
 function rsDeptPermsKeep(pm, id, PP, mode) {
   if (!id || !isObj(PP)) return null;
@@ -12341,6 +12356,22 @@ function rsBCForbiddenKey(key) {
   var n = resName(key);
   return isDeviceKey(key) || isDeviceKey(n) || /(?:^|_)(?:sessions?|recovery|recover|cookies?|tokens?|credentials?)(?:_|$)/i.test(n);
 }
+/* V7 · د7: قوالبُ نسخة الإدارة ← سجلُّ أدوار الوحدة الهدف (الأدوارُ في النسخة إن وُجدت أساسٌ لا يُستبدل) · tplOf: {مفتاحُ الموظف: القالب} — أو بالإدارة.
+   صحيفةُ المدير (mgr:*) لا يحكمها دور (قرار المالك ب1) فلا تُسند. ما حُوِّل يُذكر في الملخّص (summary.tplRoles) */
+function rsBCTplsRoles(keys, perms, d, src, summary) {
+  var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = 'bsdept:' + d + ':bassam_perm_tpls_v1', rk = perm44Key(d);
+  if (T0) {
+    of = Object.keys(T0).every(function (k) { return typeof T0[k] === 'string'; }) ? T0 : (isObj(T0[src]) ? T0[src] : isObj(T0[d]) ? T0[d] : null);
+    delete perms.tplOf;
+  }
+  var tpls = rsBCOwn(keys, tk) ? parseJson(keys[tk], null) : null;
+  if (!Array.isArray(tpls) || !tpls.length) return;
+  var assign = {};
+  Object.keys(of || {}).forEach(function (ek) { if (!isMgrKey(ek)) assign[ek] = of[ek]; });
+  var X = enfRolesFromTpls(tpls, assign, rsBCOwn(keys, rk) ? parseJson(keys[rk], null) : null);
+  if (X.rep.roles || X.rep.people) keys[rk] = JSON.stringify(X.rec);
+  summary.tplRoles = { roles: X.rep.roles, people: X.rep.people, unknownTpl: X.rep.unknownTpl, lensDropped: X.rep.lensDropped };
+}
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
   var required = scope.kind === 'full' ? ['kv', 'dailyStats', 'notifications', 'custody'] : ['kv', 'notifications', 'custody'];
@@ -12752,7 +12783,10 @@ async function rsConvertBackup(env, A, file, opt) {
   cuKeys.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
-  /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها) */
+  /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها)
+     V7 · د7 (قرار المالك — 51ب): في نسخة الإدارة تُحوَّل قبل الإسقاط إلى أدوار الوحدة الهدف بالقاعدة نفسِها التي رحّلت المنصةَ (063 enfRolesFromTpls)،
+     وإسناداتُها من tplOf في شريحة الصلاحيات (ثم يُزال منها فيبقى شكلُ الشريحة كما هو — 019d). المنحُ المترجَم يبنيه الخادمُ عند الاعتماد (019d rsRoleGrants) */
+  if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });
@@ -14367,9 +14401,10 @@ function rsiFieldList(recs) {
 }
 /* سببُ عدم نقل مفتاحٍ من نسخةٍ قديمة ('' = يُنقل): null قيمةٌ فارغة في الملف · device تفضيلُ جهازٍ أو مستخدم · tpls قوالبُ الصلاحيات (حُذفت — الأدوارُ بديلُها) ·
    grants منحٌ صريحة لموظفين (لا تُفتح صلاحيةٌ لم تكن) · unknown لا موردَ له في سجل الموارد الحالي */
-function rsiSkipWhy(k, v) {
+/* V7 · د7: قوالبُ نسخة الإدارة (bassam_perm_tpls_v1) لا تُسقط هنا — تصير أدواراً في التحويل (019f rsBCTplsRoles). النسخةُ الشاملة وصيغةُ «named» كما كانتا */
+function rsiSkipWhy(k, v, kind) {
   var n = resName(k), r = resOf(k);
-  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? 'tpls' : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
+  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? (kind === 'dept' && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
 }
 function rsiSweepStmt(env, now, uid) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id IN (SELECT snapshot_id FROM ' + RSI_T + " WHERE domain='meta' AND snapshot_id>='stage:' AND snapshot_id<'stage;' AND (row_number<?1 OR table_key=?2))").bind(now - RSI_TTL, uid);
@@ -14402,7 +14437,7 @@ async function rsImportRoute(env, request, ss) {
     var now = Date.now(), id = 'stage:' + b.requestId, op = b.op || b.phase, D = env.DB, s = b.scope, T = RSI_T;
     if (op === 'begin') {
       if (!isObj(s) || ['full', 'dept'].indexOf(s.kind) < 0 || rsScopeDenied(A, s) || (s.kind === 'dept' && !A.depts.some(function (d) { return d.id === s.departmentId; }))) throw rsError('restore-policy', 403);
-      var skip = Object.keys(b.keys || {}).map(function (k) { return { k: k, why: rsiSkipWhy(k, b.keys[k] ? null : '') }; }).filter(function (x) { return x.why; });
+      var skip = Object.keys(b.keys || {}).map(function (k) { return { k: k, why: rsiSkipWhy(k, b.keys[k] ? null : '', s.kind) }; }).filter(function (x) { return x.why; });
       var spec = await rsiSliceSpec(env, A, s, b.resources || b.keys || {}, b.mode);
       if (b.dry) return json({ ok: 1, skip: skip, slice: spec, sliceMin: RSI_SLICE_MIN });
       var im = b.images || {}, ids = Object.keys(im), total = b.n, meta = { scope: s, n: b.n, f: b.f, images: {}, slices: b.slices || {}, mode: b.mode || '' }, bases = {};
@@ -14474,7 +14509,7 @@ async function rsImportRoute(env, request, ss) {
     if (isObj(file.data) && Object.keys(M.slices).some(function (k) { return file.data[k.replace(/#\d+$/, '')] != null; })) throw rsError('import-shape');
     if (isObj(file.data) && !rsBCOwn(file, 'manifest'))
       Object.keys(file.data).forEach(function (k) {
-        var why = rsiSkipWhy(k, file.data[k]);
+        var why = rsiSkipWhy(k, file.data[k], M.scope && M.scope.kind);
         if (why) { drop.push(why === 'grants' ? { k: k, why: why, n: Object.keys((parseJson(file.data[k], null) || {}).emp || {}).length } : { k: k, why: why }); delete file.data[k]; }   /* المنحُ تُذكر بعددها */
       });
     stage = {
@@ -26840,13 +26875,16 @@ function perm44RolesWhy(A, k, newVal, curVal) {
     if (!perm44Held(A, d, 'perm.assign')) return 'grant';
     /* ما يضيفه المديرُ أو يغيّره في دورٍ: داخل سقف وحدته · ويحمله هو — والمحفوظُ خارج السقف (نظامٌ أُطفئ بعدُ) يبقى كما هو بلا مساس */
     var C = perm44CeilingFn(A, d), D0 = E.diff(o, n), i, j;
+    /* V7 · د7 (قرار المالك — 51ب): في الاستعادة الخادمية المتحقَّقة (A.__srvRst) لمدير الإدارة نفسِه، مفتاحُ دورٍ خارج سقف الوحدة يُخزَّن بلا أثر
+       (يقصّه السقفُ وقتَ القرار) — لا يُرفض به استيرادُ نسخته. داخل السقف يبقى الحكمُ كما هو (يحمله هو) */
+    var rst44 = !!A.__srvRst && enfDeptMgrFull(A, d);
     for (i = 0; i < D0.changes.length; i++) {
       var c = D0.changes[i], sysEntries = [];
       if (c.what === 'sys' && c.to) sysEntries.push([c.sys, c.to]);
       if (c.what === 'role' && c.to && isObj(c.to.sys)) for (var s in c.to.sys) sysEntries.push([s, c.to.sys[s]]);
       for (j = 0; j < sysEntries.length; j++) {
         var ks = perm44KeysFor(sysEntries[j][0], sysEntries[j][1].lvl, sysEntries[j][1].keys);
-        for (var q = 0; q < ks.length; q++) { if (!C(ks[q])) return 'cap'; if (!perm44Held(A, d, ks[q])) return 'grant'; }
+        for (var q = 0; q < ks.length; q++) { if (!C(ks[q])) { if (rst44) continue; return 'cap'; } if (!perm44Held(A, d, ks[q])) return 'grant'; }
       }
       if (c.what === 'ex' && c.to) { if (!E.grantable(c.to.key) || !C(c.to.key)) return 'cap'; if (!perm44Held(A, d, c.to.key)) return 'grant'; }
       if ((c.what === 'person' || c.what === 'ex') && c.person === String(u.ekey || '')) return 'self';   /* لا يمنح المرءُ نفسَه */

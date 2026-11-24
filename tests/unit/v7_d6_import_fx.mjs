@@ -80,7 +80,8 @@ const pad2 = (n) => String(n);
 const pathD = (chars, salt) => { let d = 'M0 0'; for (let i = 0; d.length < chars; i++) d += ' L' + ((i * 7 + salt) % 997) + ' ' + ((i * 13 + salt * 3) % 991); return d + ' Z'; };
 /* المفاتيحُ التي لا مقابلَ لها في الكود الحالي كما في الملف المقيس — وسببُ كلٍّ منها (019g rsiSkipWhy) */
 export const NOT_TRANSFERRED = {
-  bassam_dr_grp_v1: 'null', bassam_perm_tpls_v1: 'tpls', bassam_grants_v1: 'grants',
+  /* V7 · د7 (قرار المالك — 51ب): bassam_perm_tpls_v1 لم يعد هنا — يصير أدواراً للوحدة الهدف (019f rsBCTplsRoles · v7_d7_tpls_roles) */
+  bassam_dr_grp_v1: 'null', bassam_grants_v1: 'grants',
   'bassam_notif_dev_v1:TEST_ONLY_u1': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u2': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u3': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u4': 'null',
   'bassam_notif_dev_v1:TEST_ONLY_u5': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u6': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u7': 'null', 'bassam_notif_dev_v1:TEST_ONLY_u8': 'device',
 };

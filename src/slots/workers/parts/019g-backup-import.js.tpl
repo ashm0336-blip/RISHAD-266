@@ -194,9 +194,10 @@ function rsiFieldList(recs) {
 }
 /* سببُ عدم نقل مفتاحٍ من نسخةٍ قديمة ('' = يُنقل): null قيمةٌ فارغة في الملف · device تفضيلُ جهازٍ أو مستخدم · tpls قوالبُ الصلاحيات (حُذفت — الأدوارُ بديلُها) ·
    grants منحٌ صريحة لموظفين (لا تُفتح صلاحيةٌ لم تكن) · unknown لا موردَ له في سجل الموارد الحالي */
-function rsiSkipWhy(k, v) {
+/* V7 · د7: قوالبُ نسخة الإدارة (bassam_perm_tpls_v1) لا تُسقط هنا — تصير أدواراً في التحويل (019f rsBCTplsRoles). النسخةُ الشاملة وصيغةُ «named» كما كانتا */
+function rsiSkipWhy(k, v, kind) {
   var n = resName(k), r = resOf(k);
-  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? 'tpls' : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
+  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? (kind === 'dept' && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
 }
 function rsiSweepStmt(env, now, uid) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id IN (SELECT snapshot_id FROM ' + RSI_T + " WHERE domain='meta' AND snapshot_id>='stage:' AND snapshot_id<'stage;' AND (row_number<?1 OR table_key=?2))").bind(now - RSI_TTL, uid);
@@ -229,7 +230,7 @@ async function rsImportRoute(env, request, ss) {
     var now = Date.now(), id = 'stage:' + b.requestId, op = b.op || b.phase, D = env.DB, s = b.scope, T = RSI_T;
     if (op === 'begin') {
       if (!isObj(s) || ['full', 'dept'].indexOf(s.kind) < 0 || rsScopeDenied(A, s) || (s.kind === 'dept' && !A.depts.some(function (d) { return d.id === s.departmentId; }))) throw rsError('restore-policy', 403);
-      var skip = Object.keys(b.keys || {}).map(function (k) { return { k: k, why: rsiSkipWhy(k, b.keys[k] ? null : '') }; }).filter(function (x) { return x.why; });
+      var skip = Object.keys(b.keys || {}).map(function (k) { return { k: k, why: rsiSkipWhy(k, b.keys[k] ? null : '', s.kind) }; }).filter(function (x) { return x.why; });
       var spec = await rsiSliceSpec(env, A, s, b.resources || b.keys || {}, b.mode);
       if (b.dry) return json({ ok: 1, skip: skip, slice: spec, sliceMin: RSI_SLICE_MIN });
       var im = b.images || {}, ids = Object.keys(im), total = b.n, meta = { scope: s, n: b.n, f: b.f, images: {}, slices: b.slices || {}, mode: b.mode || '' }, bases = {};
@@ -301,7 +302,7 @@ async function rsImportRoute(env, request, ss) {
     if (isObj(file.data) && Object.keys(M.slices).some(function (k) { return file.data[k.replace(/#\d+$/, '')] != null; })) throw rsError('import-shape');
     if (isObj(file.data) && !rsBCOwn(file, 'manifest'))
       Object.keys(file.data).forEach(function (k) {
-        var why = rsiSkipWhy(k, file.data[k]);
+        var why = rsiSkipWhy(k, file.data[k], M.scope && M.scope.kind);
         if (why) { drop.push(why === 'grants' ? { k: k, why: why, n: Object.keys((parseJson(file.data[k], null) || {}).emp || {}).length } : { k: k, why: why }); delete file.data[k]; }   /* المنحُ تُذكر بعددها */
       });
     stage = {

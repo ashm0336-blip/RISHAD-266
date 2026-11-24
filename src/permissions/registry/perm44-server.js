@@ -44,13 +44,16 @@ function perm44RolesWhy(A, k, newVal, curVal) {
     if (!perm44Held(A, d, 'perm.assign')) return 'grant';
     /* ما يضيفه المديرُ أو يغيّره في دورٍ: داخل سقف وحدته · ويحمله هو — والمحفوظُ خارج السقف (نظامٌ أُطفئ بعدُ) يبقى كما هو بلا مساس */
     var C = perm44CeilingFn(A, d), D0 = E.diff(o, n), i, j;
+    /* V7 · د7 (قرار المالك — 51ب): في الاستعادة الخادمية المتحقَّقة (A.__srvRst) لمدير الإدارة نفسِه، مفتاحُ دورٍ خارج سقف الوحدة يُخزَّن بلا أثر
+       (يقصّه السقفُ وقتَ القرار) — لا يُرفض به استيرادُ نسخته. داخل السقف يبقى الحكمُ كما هو (يحمله هو) */
+    var rst44 = !!A.__srvRst && enfDeptMgrFull(A, d);
     for (i = 0; i < D0.changes.length; i++) {
       var c = D0.changes[i], sysEntries = [];
       if (c.what === 'sys' && c.to) sysEntries.push([c.sys, c.to]);
       if (c.what === 'role' && c.to && isObj(c.to.sys)) for (var s in c.to.sys) sysEntries.push([s, c.to.sys[s]]);
       for (j = 0; j < sysEntries.length; j++) {
         var ks = perm44KeysFor(sysEntries[j][0], sysEntries[j][1].lvl, sysEntries[j][1].keys);
-        for (var q = 0; q < ks.length; q++) { if (!C(ks[q])) return 'cap'; if (!perm44Held(A, d, ks[q])) return 'grant'; }
+        for (var q = 0; q < ks.length; q++) { if (!C(ks[q])) { if (rst44) continue; return 'cap'; } if (!perm44Held(A, d, ks[q])) return 'grant'; }
       }
       if (c.what === 'ex' && c.to) { if (!E.grantable(c.to.key) || !C(c.to.key)) return 'cap'; if (!perm44Held(A, d, c.to.key)) return 'grant'; }
       if ((c.what === 'person' || c.what === 'ex') && c.person === String(u.ekey || '')) return 'self';   /* لا يمنح المرءُ نفسَه */
