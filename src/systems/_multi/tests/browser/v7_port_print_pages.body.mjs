@@ -8,7 +8,9 @@
         the page out exactly as the print frame did. The plan panel carries the touch-only register (.bs-oreg), hidden on a desktop by
         `@media (hover:hover) and (pointer:fine)`; an SVG image has no pointer, so the register came back inside the image only and
         pushed the panel's bottom border and rounded corners under the clip. Asserted on the pixels of the downloaded file's own page
-        image: the panel's gold bottom border is there, right above the clip edge, on every site page of both files. */
+        image: the panel's gold bottom border is there, right above the clip edge, on every site page of both files.
+   V7 · 53 (annex 6 · item 10): both files now open with the report cover (a full-bleed A3 image) — page 1 of the file, before the pages of the
+   print document; the print document's own pages and n/N footers are unchanged. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startLab, LAB } from '../../../../../tests/browser/local_server.mjs';
@@ -73,9 +75,12 @@ test('V7 port · real print button: plan = one page per site, rounds = indicator
       /* A — the pages */
       assert.deepEqual(doc.map((g) => latin(g.title)), titles, name + ': the pages of the print document');
       assert.deepEqual(doc.map((g) => latin(g.foot)), titles.map((_, i) => (i + 1) + '/' + titles.length), name + ': the n/N footers');
-      assert.equal((txt.match(/\/Type \/Page /g) || []).length, titles.length, name + ': pages in the file');
-      assert.equal((txt.match(/\/MediaBox \[0 0 1190\.55 841\.89\]/g) || []).length, titles.length, name + ': A3 landscape');
-      const imgs = jpegs(buf); assert.equal(imgs.length, titles.length, name + ': one image per page');
+      assert.equal((txt.match(/\/Type \/Page /g) || []).length, titles.length + 1, name + ': pages in the file (the cover + the document)');
+      assert.equal((txt.match(/\/MediaBox \[0 0 1190\.55 841\.89\]/g) || []).length, titles.length + 1, name + ': A3 landscape');
+      const all = jpegs(buf); assert.equal(all.length, titles.length + 1, name + ': one image per page');
+      assert.deepEqual([all[0].w, all[0].h], [2480, 1754], name + ': page 1 is the cover');
+      assert.match(txt, /q 1190\.55 0 0 841\.89 0\.00 0\.00 cm \/Im0 Do Q/, name + ': the cover fills its page');
+      const imgs = all.slice(1);   /* the print document's pages, in order */
       assert.equal(await p.evaluate(() => window.__dialogs), 0, name + ': no print dialog');
       /* B — every site page: the panel fits its column in the document, all six cards inside … */
       for (const [i, g] of doc.entries()) {

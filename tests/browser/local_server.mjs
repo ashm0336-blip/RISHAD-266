@@ -82,7 +82,8 @@ export async function startLab({ port = 0, mode = 'enforce' } = {}) {   /* V7 ·
       delete h['content-length']; delete h['content-encoding'];
       /* the harness asset stub serves octet-stream; real Pages serves by extension — mirror that for the browser */
       const ext = (/\.([a-z0-9]+)$/i.exec(new URL(url).pathname) || [])[1];
-      const MIME = { js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', png: 'image/png', woff2: 'font/woff2', json: 'application/json', webmanifest: 'application/manifest+json', html: 'text/html; charset=utf-8', txt: 'text/plain; charset=utf-8', ico: 'image/x-icon' };
+      /* V7 · 53: jpg — غلافُ التقرير (assets/img/report-cover.*.jpg) كما يقدّمه Cloudflare Pages */
+      const MIME = { js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', woff2: 'font/woff2', json: 'application/json', webmanifest: 'application/manifest+json', html: 'text/html; charset=utf-8', txt: 'text/plain; charset=utf-8', ico: 'image/x-icon' };
       if (ext && MIME[ext.toLowerCase()] && (!h['content-type'] || /octet-stream/.test(h['content-type']))) h['content-type'] = MIME[ext.toLowerCase()];
       res.writeHead(r.status, h); res.end(out);
     } catch (e) { res.writeHead(500, { 'content-type': 'text/plain' }); res.end('lab error ' + (e && e.stack || e)); }

@@ -3757,6 +3757,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       dsPmDel: this.PC("del"),
       dsPmApprove: this.PC("approve"),
       dsPmExport: this.PC("export"),
+      /* V7 · 53 (ملحق 6 · البند 1 — قرار المالك 24 نوفمبر): طباعةُ الخريطة والتقرير (زرُّ الطابعة · PDF الخريطة · المؤشرات) لكل من يرى الصفحة؛ وتصديرُ البيانات (Excel · CSV · PDF السجلات) يبقى على «تصدير» (قرار «أ»: «كامل» و«حسّاس» ويُختار في «مخصّص») */
+      dsPmPrint: this.PC("view"),
       dsPmWrite: t,
       dsPmReadOnly: !t,
       dsPmNoteStyle:
@@ -13678,7 +13680,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         66,
       ),
       Bn = () => {
-        if (!this.PC("export")) return void this.permDeny();
+        if (!this.PC("view")) return void this.permDeny();   /* V7 · 53 (البند 1): الطباعةُ لمن يرى الصفحة */
         try {
           const t = document.getElementById("bs-print-veil");
           t && t.remove();
@@ -13689,12 +13691,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               "position:fixed;inset:0;z-index:99999;background:var(--bg-a2552552550p97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:'Cairo',sans-serif",
             ),
             (e.innerHTML =
-              '<div style="width:46px;height:46px;border-radius:9999px;border:4px solid var(--bd-a185151810p22);border-top-color:var(--bd-xb99751);animation:bsvspin .9s linear infinite"></div><div style="font-size:15px;font-weight:600;color:var(--fg-x8a6f35)">جاري تجهيز التقرير للطباعة…</div><style>@keyframes bsvspin{to{transform:rotate(360deg)}}</style>'),
+              '<div style="width:46px;height:46px;border-radius:9999px;border:4px solid var(--bd-a185151810p22);border-top-color:var(--bd-xb99751);animation:bsvspin .9s linear infinite"></div><div style="font-size:15px;font-weight:600;color:var(--fg-x8a6f35)">جاري تحميل الملف…</div><style>@keyframes bsvspin{to{transform:rotate(360deg)}}</style>'),
             document.body.appendChild(e),
             setTimeout(() => {
               try {
                 const t = document.getElementById("bs-print-veil");
-                t && t.remove();
+                /* V7 · 53 (البند 9): ملفُّ PDF قيد الصنع (data-pdf من نواة الطباعة) ⇒ الستارُ باقٍ حتى يجهز — مهلةٌ قصوى 2.5 دقيقة */
+                t && (t.dataset.pdf ? setTimeout(() => { try { t.remove(); } catch (e) {} }, 15e4) : t.remove());
               } catch (t) {}
             }, 3e4));
         } catch (t) {}

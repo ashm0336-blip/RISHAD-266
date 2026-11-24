@@ -50,6 +50,13 @@ for r, _, fs in os.walk(os.path.join(DIR, 'assets')):
 # KIVO_257 (إفصاح — عُدّة): build.json المونوليث يكتبه k253cache (G6) لا البناء؛ فإن غاب يُقرأ وضعُ الصفحات من build.json الحزمة نفسِها (يكتبه البناء) بدل افتراض «bundled»
 info = json.load(open(DIR + '.mono/build.json', encoding='utf-8')) if os.path.exists(DIR + '.mono/build.json') else (json.load(open(DIR + '.build.json', encoding='utf-8')) if os.path.exists(DIR + '.build.json') else {'pages': 'bundled'})
 
+# V7 · 53 (ملحق 6 · البندان 9 و10): نواةُ الطباعة المشتركة (حاضرةٌ ما حضر أحدُ مالكيها) تشير من ملفّها في /assets/js إلى أصلين لا يُحمَّلان إلا عند صنع
+# ملف PDF: مكتبةٌ مورَّدة (src/assets/vendor/*.js ← /assets/js/<الاسم>.<بصمة>.js · html2canvas لأجهزة أبل) وغلافُ التقرير (report-cover.jpg ← /assets/img).
+# كلاهما مشارٌ إليه من ملف النواة لا من الغلاف: يُعدّ مرجعاً من سكربتٍ كما تُعدّ الصورُ والخطوط — باسمه الكامل المعلن وحده (لا أيُّ /assets/js)
+_VDIR = os.path.join(ROOT, 'src', json.load(open(os.path.join(ROOT, 'src', 'layout.json'), encoding='utf-8'))['assets'].get('vendor', 'assets/vendor'))
+VEN_STEMS = sorted(os.path.splitext(f)[0] for f in os.listdir(_VDIR) if f.endswith('.js')) if os.path.isdir(_VDIR) else []
+VEN = re.compile(r'/assets/js/(?:' + '|'.join(re.escape(s) for s in VEN_STEMS) + r')\.[0-9a-f]{10}\.js' if VEN_STEMS else r'(?!x)x')
+def js_refs(text): return set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', text)) | set(VEN.findall(text))
 print('╔═ البصماتُ والمراجع ═╗')
 bad = [u for u, b in files.items() if not re.fullmatch(r'/assets/(js|css|fonts|img|pages)/[A-Za-z0-9_.-]+\.([0-9a-f]{10})\.[a-z0-9.]+', u) or re.search(r'\.([0-9a-f]{10})\.[a-z0-9.]+$', u).group(1) != sha(b)[:10]]
 ok(not bad and len(files) > 60, '★ اسمُ كلّ أصلٍ = sha256(محتواه)[:10] — ' + str(len(files)) + ' أصلاً', bad[:3])
@@ -61,7 +68,7 @@ RETD = {os.path.basename(r): os.path.join(os.path.dirname(DIR.rstrip('/')), r) f
 _JS0 = re.findall(r'<script[^>]* src="(/assets/js/[^"]+)"></script>', shell); _CSS0 = re.findall(r'<link rel="stylesheet"[^>]* href="(/assets/css/[^"]+)">', shell)
 cur = set(_JS0) | set(_CSS0) | set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', shell))
 for u in list(cur):
-    if u in files and (u.endswith('.css') or u.endswith('.js')): cur |= set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', files[u].decode('utf-8')))
+    if u in files and (u.endswith('.css') or u.endswith('.js')): cur |= js_refs(files[u].decode('utf-8'))   # V7 · 53: ومكتبةٌ مورَّدة معلنة
 cur |= set(i['src'] for i in json.loads(rdb('manifest.webmanifest').decode('utf-8')).get('icons', []))
 oldonly = sorted(u for u in files if u not in cur)
 retained = sorted('/' + p for p in bjw.get('retainedFiles', []))
@@ -85,11 +92,14 @@ _SYS = [json.load(open(os.path.join(_SYSD, k, 'system.json'), encoding='utf-8'))
 N_SYS_JS = sum(1 for b in json.load(open(os.path.join(ROOT, 'src', 'blocks.json'), encoding='utf-8'))['blocks'] if b.get('kind') == 'js' and str(b.get('id', '')).startswith('systems/'))
 N_JS = 65 + N_SYS_JS   # V7 · د6: 65 = 64 + services/325-org-route.js (عنوانُ شاشة «الإدارات والصلاحيات» — مصدرٌ واحد للإطار وصفحة الإعدادات وصفحة الشاشة)
 N_PG = 6 + sum(1 for d in _SYS if d.get('client', {}).get('slug'))   # د4-ج: نظامٌ بلا صفحة (العهد) لا يضيف صفحة · د5-د: الجدولُ الشهري صار نظاماً بصفحته · د5-هـ: والتشغيلُ الميداني · والتقريرُ اليومي · والمتابعةُ اليومية (5 للقاعدة) · V7 · د6: 6 = 5 + Org (شاشة «الإدارات والصلاحيات» فُصلت صفحةً مستقلة عن Admin)
+# V7 · 53: ما حضرت نواةُ الطباعة (كتلةُ الغلاف systems/_shared/print) أضافت أصلين: صورةَ الغلاف (img) والمكتبةَ المورَّدة (js)
+PRINT_ON = any(b.get('id') == 'systems/_shared/print/566-print-core.js' for b in json.load(open(os.path.join(ROOT, 'src', 'blocks.json'), encoding='utf-8'))['blocks'])
+N_VEN = sum(1 for u in files if VEN.fullmatch(u)); N_IMG = 4 + (1 if PRINT_ON else 0)
 kinds = {}
 for u in files:
     if u in retained: continue   # أصولُ الإصدارات السابقة المُبقاة (أُثبتت أعلاه) لا تُعدّ في أصناف الإصدار الحالي
     kinds[u.split('/')[2]] = kinds.get(u.split('/')[2], 0) + 1
-ok(kinds.get('js') == N_JS and kinds.get('css') == 11 and kinds.get('fonts') == 6 and kinds.get('img') == 4 and (kinds.get('pages', 0) >= N_PG if info.get('pages') == 'lazy' else 'pages' not in kinds), '   الأصناف: ' + json.dumps(kinds, ensure_ascii=False), '')
+ok(kinds.get('js') == N_JS + N_VEN and N_VEN == (len(VEN_STEMS) if PRINT_ON else 0) and kinds.get('css') == 11 and kinds.get('fonts') == 6 and kinds.get('img') == N_IMG and (kinds.get('pages', 0) >= N_PG if info.get('pages') == 'lazy' else 'pages' not in kinds), '   الأصناف: ' + json.dumps(kinds, ensure_ascii=False), '')
 JS = re.findall(r'<script([^>]*) src="(/assets/js/[^"]+)"></script>', shell)
 CSS = re.findall(r'<link rel="stylesheet"([^>]*) href="(/assets/css/[^"]+)">', shell)
 tags = re.findall(r'<script\b[^>]*>', shell)
@@ -97,7 +107,7 @@ ok(len(JS) == N_JS and all(not re.search(r'\b(async|defer|type=|nomodule)\b', a)
 ok(len(tags) == N_JS + 1 and tags.count('<script type="text/x-dc" data-dc-script="">') == 1, '   في الغلاف ٧٧ وسمَ script: ٧٦ خارجياً + منطقُ x-dc الجذر مضمَّناً (نصاً؛ تنفيذُه من root-logic المُصرَّف)', len(tags))
 refs = set(u for _, u in JS) | set(u for _, u in CSS) | set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', shell))
 for u in list(files):
-    if u.endswith('.css') or u.endswith('.js'): refs |= set(re.findall(r'(/assets/(?:img|fonts|pages)/[A-Za-z0-9_.-]+)', files[u].decode('utf-8')))
+    if u.endswith('.css') or u.endswith('.js'): refs |= js_refs(files[u].decode('utf-8'))   # V7 · 53: ومكتبةٌ مورَّدة معلنة
 man = json.loads(rdb('manifest.webmanifest').decode('utf-8'))
 refs |= set(i['src'] for i in man.get('icons', []))
 missing = sorted(u for u in refs if u not in files)
@@ -127,11 +137,14 @@ if META.get('gateBlock'):
 print('\n╔═ إعادةُ التركيب = النصُّ الكامل بايتاً ═╗')
 DATA = {'.png': lambda b: 'data:image/png;base64,' + base64.b64encode(b).decode('ascii'),
         '.woff2': lambda b: 'data:font/woff2;base64,' + base64.b64encode(b).decode('ascii'),
-        '.svg': lambda b: 'data:image/svg+xml,' + urllib.parse.quote(b.decode('utf-8'), safe='/')}
+        '.svg': lambda b: 'data:image/svg+xml,' + urllib.parse.quote(b.decode('utf-8'), safe='/'),
+        '.jpg': lambda b: 'data:image/jpeg;base64,' + base64.b64encode(b).decode('ascii'),          # V7 · 53: غلافُ التقرير
+        '.js': lambda b: 'data:text/javascript;base64,' + base64.b64encode(b).decode('ascii')}      # V7 · 53: المكتبةُ المورَّدة (المونوليث: data:)
 
 
 def as_data(text):
-    return re.sub(r'/assets/(?:img|fonts)/[A-Za-z0-9_.-]+\.[0-9a-f]{10}(\.png|\.woff2|\.svg)', lambda m: DATA[m.group(1)](files[m.group(0)]), text)
+    text = re.sub(r'/assets/(?:img|fonts)/[A-Za-z0-9_.-]+\.[0-9a-f]{10}(\.png|\.woff2|\.svg|\.jpg)', lambda m: DATA[m.group(1)](files[m.group(0)]), text)
+    return VEN.sub(lambda m: DATA['.js'](files[m.group(0)]), text)   # V7 · 53: المكتبةُ المورَّدة المعلنة وحدها
 
 
 SRC = os.path.join(ROOT, 'src')
