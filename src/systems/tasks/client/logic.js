@@ -1669,7 +1669,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
     if (!S || !S.split || !S.split("bassam_tasks_v1") || this._tkWant === e.year) return;
     this._tkWant = e.year;
-    S.want("bassam_tasks_v1", { groups: this.MONTHS.map((t, i) => e.year + "-" + (i + 1)) });
+    /* الشهرُ المعروض أولاً، وبقيةُ أشهر السنة (أعدادُ البطاقات) بعد فتح الصفحة — لا تؤخّر الفتح */
+    S.want("bassam_tasks_v1", { groups: [e.year + "-" + e.month] });
+    setTimeout(() => this._tkWant === e.year && S.want("bassam_tasks_v1", { groups: this.MONTHS.map((t, i) => e.year + "-" + (i + 1)) }), 1500);
   }
   renderVals() {
     if (this.props && "kpi" === this.props.solo) return this._tkSoloVals();

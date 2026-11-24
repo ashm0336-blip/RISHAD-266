@@ -34,13 +34,14 @@ function server() {
     if (u.pathname === '/api/operations/read') {
       const keys = (u.searchParams.get('keys') || '').split(',').filter(Boolean), range = (u.searchParams.get('range') || '').split(',').filter(Boolean);
       reads.push({ keys, range });
-      const denied = keys.find((k) => S.deny && k.endsWith('@') && S.deny.includes(k.slice(0, -1)));
-      if (denied) return json({ ok: 1, uid: UID, v: 0, epoch: 0, resources: {}, absent: [], denied: keys.slice(), base: {}, ranges: {} });   /* as the «periods» server: a denied resource, no range, no epoch */
+      const hidden = (k) => !!S.deny && S.deny.some((d) => k === d || k.indexOf(d + '@') === 0);   /* as the «periods» server: a denied resource has no range; alone, no epoch */
+      if (keys.every(hidden)) return json({ ok: 1, uid: UID, v: 0, epoch: 0, resources: {}, absent: [], denied: keys.slice(), base: {}, ranges: {} });
       const out = { ok: 1, uid: UID, epoch: 3, v, resources: {}, absent: [], denied: [], failed: {}, base: {}, ranges: {} };
       const all = keys.slice();
-      range.forEach((r) => { const at = r.lastIndexOf('@'), k = r.slice(0, at), g = r.slice(at + 1); out.ranges[r] = Object.keys(S.periods).filter((pk) => pk.indexOf(k + '@') === 0 && grp(k, pk.slice(k.length + 1)) === g && pk !== k + '@'); out.ranges[r].forEach((pk) => { if (!all.includes(pk)) all.push(pk); }); });
+      range.filter((r) => !hidden(r)).forEach((r) => { const at = r.lastIndexOf('@'), k = r.slice(0, at), g = r.slice(at + 1); out.ranges[r] = Object.keys(S.periods).filter((pk) => pk.indexOf(k + '@') === 0 && grp(k, pk.slice(k.length + 1)) === g && pk !== k + '@'); out.ranges[r].forEach((pk) => { if (!all.includes(pk)) all.push(pk); }); });
       if (all.filter((k) => /@./.test(k)).length > 40) return json({ ok: 0, err: 'read-too-large', msg: 'TEST_ONLY' }, 413);
       all.forEach((k) => {
+        if (hidden(k)) { out.denied.push(k); return; }
         const val = k in S.heads ? S.heads[k] : k in S.periods ? S.periods[k] : k in S.plain ? S.plain[k] : undefined;
         if (/@/.test(k) ? !(/^bsdept:[^:]+:bassam_(plan|rounds|dreport)_v1@/.test(k)) : /bassam_(plan|rounds|dreport)_v1$/.test(k)) { out.failed[k] = 'operations-period-key'; return; }
         if (val === undefined) out.absent.push(k); else out.resources[k] = copy(val);

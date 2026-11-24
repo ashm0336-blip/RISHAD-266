@@ -859,7 +859,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       sig = want.join(",");
     if (this._stWant === sig) return;
     this._stWant = sig;
-    S.want("bassam_staffing_v3", { groups: want });   /* فشلٌ ⇒ حالةُ الخطأ في القراءة؛ التنقّلُ يعيد الطلب (لا إعادةَ مع كل رسم) */
+    S.want("bassam_staffing_v3", { groups: want.slice(-1) });   /* السابقُ للمختار الآن (النسخ)، وأشهرُ السنة بعد الفتح */
+    setTimeout(() => this._stWant === sig && S.want("bassam_staffing_v3", { groups: want }), 1500);   /* فشلٌ ⇒ حالةُ الخطأ في القراءة؛ التنقّلُ يعيد الطلب (لا إعادةَ مع كل رسم) */
   }
   renderVals() {
     this._stPeriods(this.state);
