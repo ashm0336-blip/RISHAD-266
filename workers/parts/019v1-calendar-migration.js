@@ -75,7 +75,7 @@ async function calMigPrepare(env) {
     dup.forEach(function (x) { after.push(D.prepare('INSERT INTO ' + tw + '(' + gc.join(',') + ') SELECT ' + pick.join(',') + ' FROM ' + tw + ' WHERE department_id=?1 AND window_id=?2').bind(x[0], x[1], x[2], x[3], x[4], x[5])); });
   }
   /* ④ الرصد (KV): reports[].{y,m,d} · نوافذُه windows[].scope (ق7 كما فوق) */
-  var kvs = kvJoin(((await D.prepare("SELECT k,seq,v FROM kv WHERE k GLOB '*bassam_rasd_v1' OR k GLOB '*bassam_rasd_retro_v1' ORDER BY k,seq").all()).results) || []);
+  var kvs = kvJoin(((await D.prepare("SELECT k,seq,v FROM kv WHERE EXISTS(SELECT 1 FROM json_each(?1) j WHERE kv.k GLOB '*' || j.value) ORDER BY k,seq").bind(JSON.stringify(Object.keys(CAL_CONV_SLOTS).filter(function (r) { return calConvKind(r) === 'retroDoc'; }))).all()).results) || []);
   Object.keys(kvs).forEach(function (k) {
     var v = parseJson(kvs[k], null); if (!calConvRasd(v, now, k)) return;
     after.push.apply(after, kvPutStmts(env, 'kv', k, JSON.stringify(v)));
@@ -86,7 +86,7 @@ async function calMigPrepare(env) {
   dd.forEach(function (r) { calConvOnce(String(r.once_key)).forEach(function (k2) { drows2.push([r.scope, k2, r.created_at, r.message_id]); }); });
   after.push.apply(after, calRowsInsert(D, 'notification_dedup', ['scope', 'once_key', 'created_at', 'message_id'], drows2, 'INSERT OR IGNORE'));
   /* ⑥ب العلامة cal_pend {إدارة: [موارد]} (كما في ملف 0014) — تُعاد هنا في آخر الدفعة: على قاعدةٍ أقدم من 10 تُكتب صفوفُ 0010 التشغيلية بعد عبارات 0014 */
-  after.push(D.prepare("INSERT INTO meta (k, v) SELECT 'cal_pend', x FROM (SELECT json_group_object(d, json(r)) x, COUNT(*) n FROM (SELECT department_id d, json_group_array(resource) r FROM (SELECT DISTINCT department_id, resource FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY 1, 2) GROUP BY department_id)) WHERE n > 0 ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(CAL_CONV_RES)));
+  after.push(D.prepare("INSERT INTO meta (k, v) SELECT 'cal_pend', x FROM (SELECT json_group_object(d, json(r)) x, COUNT(*) n FROM (SELECT department_id d, json_group_array(resource) r FROM (SELECT DISTINCT department_id, resource FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY 1, 2) GROUP BY department_id)) WHERE n > 0 ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(Object.keys(CAL_CONV_SLOTS).filter(calConvIs))));
   /* ⑥ اليومُ المرجعي T للتحويل الكسول (ثابتٌ لكل فترة، فالقفلُ كما كان لحظةَ النشر) */
   after.push(D.prepare("INSERT INTO meta(k,v) SELECT '" + CAL_MIG_TKEY + "',?1 WHERE EXISTS(SELECT 1 FROM meta WHERE k='cal_pend') ON CONFLICT(k) DO NOTHING").bind(T));
   return { before: before, after: after };
@@ -238,7 +238,7 @@ async function calLazyDays(env, info, want, ctx, deadline) {
 }
 /* الجدول (ق4) والخطة (ق5): الشهرُ الميلادي من مصادره الهجرية؛ المصدرُ يُحذف مع آخر شهرٍ ميلاديٍّ يحتاجه، والمواضعُ متصلة بترتيب الأشهر */
 async function calLazyMonths(env, info, want, ctx, deadline) {
-  var d = info.dept, R = info.resource, K = opKeyOf(info), plan = R === 'bassam_plan_v1', C = plan ? '$/f:months' : '$';
+  var d = info.dept, R = info.resource, K = opKeyOf(info), fld = (opPeriodDef(info) || {}).field, plan = !!fld, C = plan ? '$/f:' + encodeURIComponent(fld) : '$';
   var lay = await calLayout(env, d, R, C), H = lay.filter(function (x) { return calKeyCal(x.m) === 'h'; }), byH = {}, months = {};
   var delH = plan ? (await calLayout(env, d, R, '$/f:delMonths')).filter(function (x) { return calKeyCal(x.m) === 'h'; }) : [];
   if (!H.length && !delH.length) { await env.DB.batch([calPendDrop(env, d, R)]); return; }
@@ -251,7 +251,7 @@ async function calLazyMonths(env, info, want, ctx, deadline) {
     var gm = G[gi]; if (have[gm] || (want && !want(gm))) continue;
     if (Date.now() > deadline) throw calPrepError(gi, total);
     var srcN = calHMonthsOfG(gm).filter(function (x) { return ocOwn(byH, x.h); });
-    var got = (await calMigRead(env, d, R, calMigHeadRanges(C).concat(calMigMemberRanges(C, srcN.map(function (x) { return byH[x.h].m; }))), true)) || {}, box = plan ? (got.months || {}) : got, src = {};
+    var got = (await calMigRead(env, d, R, calMigHeadRanges(C).concat(calMigMemberRanges(C, srcN.map(function (x) { return byH[x.h].m; }))), true)) || {}, box = plan ? (got[fld] || {}) : got, src = {};
     srcN.forEach(function (x) { if (ocOwn(box, byH[x.h].m)) src[x.h] = box[byH[x.h].m]; });
     var v = plan ? calConvPlanMonth(gm, src, ctx) : calConvStaffMonth(gm, src, ctx, R + '/' + gm);
     have[gm] = 1;
@@ -263,7 +263,7 @@ async function calLazyMonths(env, info, want, ctx, deadline) {
     if (gone.length) st = st.concat(calMigDrop(env, d, R, calMigMemberRanges(C, gone.map(function (h) { return h.m; }))));
     if (v !== undefined) {
       var w = {}, inner = {}; ocSet(inner, gm, v);
-      if (plan) { Object.keys(got).forEach(function (k) { if (k !== 'months') ocSet(w, k, got[k]); }); ocSet(w, 'months', inner); } else w = inner;
+      if (plan) { Object.keys(got).forEach(function (k) { if (k !== fld) ocSet(w, k, got[k]); }); ocSet(w, fld, inner); } else w = inner;
       st = st.concat(calMigMemberRows(env, d, R, C, w, gm, order.findIndex(function (x) { return x.g; })), opSummaryStatements(env, info, [{ p: gm, value: v }]));
       ctx.rep.months++;
     }
@@ -277,7 +277,7 @@ async function calLazyMonths(env, info, want, ctx, deadline) {
     var dm = (await calMigRead(env, d, R, calMigHeadRanges(C), true)) || {}, del = isObj(dm.delMonths) ? dm.delMonths : {}, conv = calConvPlanMap(del, ctx, true, 'plan/delMonths');
     var keep = (await calLayout(env, d, R, '$/f:delMonths')).filter(function (x) { return calKeyCal(x.m) !== 'h'; }), st3 = calMigDrop(env, d, R, calMigMemberRanges('$/f:delMonths', delH.map(function (x) { return x.m; }))), n = keep.length;
     st3 = st3.concat(calRenum(env, d, R, keep));
-    Object.keys(conv).forEach(function (k) { if (ocOwn(del, k)) return; var w2 = {}, d2 = {}; Object.keys(dm).forEach(function (f) { if (f !== 'delMonths' && f !== 'months') ocSet(w2, f, dm[f]); }); ocSet(d2, k, conv[k]); ocSet(w2, 'months', {}); ocSet(w2, 'delMonths', d2); st3 = st3.concat(calMigMemberRows(env, d, R, '$/f:delMonths', w2, k, n++)); });
+    Object.keys(conv).forEach(function (k) { if (ocOwn(del, k)) return; var w2 = {}, d2 = {}; Object.keys(dm).forEach(function (f) { if (f !== 'delMonths' && f !== fld) ocSet(w2, f, dm[f]); }); ocSet(d2, k, conv[k]); ocSet(w2, fld, {}); ocSet(w2, 'delMonths', d2); st3 = st3.concat(calMigMemberRows(env, d, R, '$/f:delMonths', w2, k, n++)); });
     if (!H.some(function (h) { return needs(h, have); })) st3.push(calPendDrop(env, d, R));
     await calCommit(env, [revGuard(env, K, await calMigRev(env, K))], st3, [K]);
   }
@@ -299,15 +299,16 @@ async function calLazyEnsure(env, keys, want, opts) {
     var w = want && want[k], f = w && w.length ? function (g) { return w.some(function (p) { return p === g || p === 'm:' + g.slice(0, 7) || g.indexOf(p) === 0; }); } : null;
     for (var tries = 0; ; tries++) {
       try {
-        if (['bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_dreport_v1', 'bassam_tasks_v1'].indexOf(info.resource) >= 0) await calLazyDays(env, info, f, ctx, deadline);
-        else if (info.resource === 'bassam_staffing_v3' || info.resource === 'bassam_plan_v1') await calLazyMonths(env, info, f, ctx, deadline);
+        var kd = calConvKind(info.resource);
+        if (kd === 'dayMap' || kd === 'dayMapRec') await calLazyDays(env, info, f, ctx, deadline);
+        else if (kd === 'monthStaff' && opPeriodDef(info) || kd === 'monthPlan') await calLazyMonths(env, info, f, ctx, deadline);
         else await calLazySmall(env, info, ctx);
         break;
       } catch (e) { if (tries < 2 && /KIVO_REV_CONFLICT/.test(String(e && e.message || e))) continue; throw e; }   /* كاتبٌ آخر سبق: يُعاد على حالته فلا يُحوَّل مرتين */
     }
     n++;
   }
-  if (n && (ctx.rep.conflicts.length || ctx.rep.recurring.length || ctx.rep.plan.length)) {
+  if (n && (ctx.rep.conflicts.length || ctx.rep.recurring.length || ctx.rep.major.length)) {
     /* ملخّصُ ما حُوِّل (ق4 · ق5 · ق6) لمدير الإدارة — يُضاف إلى ما سبق */
     var d0 = opInfo(keys[0]).dept, row = await env.DB.prepare('SELECT v FROM meta WHERE k=?1').bind(CAL_MIG_SUM + d0).first(), sum = calConvMergeRep(Object.assign(calConvRep(), parseJson(row && row.v, {}) || {}), ctx.rep);
     sum.conflicts = sum.conflicts.slice(-200); sum.recurring = sum.recurring.slice(-500);

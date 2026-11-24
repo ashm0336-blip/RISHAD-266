@@ -23,11 +23,9 @@ var RSI_SLICE = {
   'bassam_plan_v1': [null, ['bassam_plan_v1']],   /* V7 · د6: المخططُ كلُّه في طلبه (جذرُه ليس خريطةَ أعضاء) — لا يُضاف إلى بقية النسخة */
   'bassam_staffing_v3': [null, ['bassam_staffing_v3']],   /* V7 · د6: جدولُ الورديات كلُّه في طلبه — لا يُضاف إلى بقية النسخة */
   'bassam_tasks_v1': ['^.', ['bassam_tasks_v1']],   /* V7 · د6: المهامُ خريطةُ أيام — تُقسم أياماً فلا تكبر كلفةُ طلبٍ بطول السجل */
-  'bassam_dreport_v1': ['^.', ['bassam_dreport_v1']],   /* V7 · د6: التقريرُ اليومي خريطةُ أيام — يُقسم أياماً */
+  'bassam_dreport_v1': ['^\\d{4}-\\d{1,2}-\\d{1,2}$', ['bassam_dreport_v1']],   /* V7 · 53 تقويم: الأيامُ وحدها — علاماتُ m: مشتركةٌ في كل دفعة (ق3 يحتاج الشهرين) · V7 · د6: التقريرُ اليومي خريطةُ أيام — يُقسم أياماً */
 };
 var RSI_SLICE_MIN = 1500000;
-/* V7 · 53 تقويم: علاماتُ أشهر التقرير (m:) مشتركةٌ في كل دفعة كما في الجولات — قاعدةُ ق3 تحتاج علاماتِ الشهرين الهجريين معاً لكل شهرٍ ميلادي */
-if (RSI_SLICE.bassam_dreport_v1) RSI_SLICE.bassam_dreport_v1 = ['^\\d{4}-\\d{1,2}-\\d{1,2}$', RSI_SLICE.bassam_dreport_v1[1]];
 /* V7 · د6 (QA ٦ — قرارُ المالك): الدفعاتُ (مسارُ الذاكرة المحدودة) لمدير المنصة ولمدير الإدارة على إدارته (057 enfDeptMgrFull) — كان لمدير المنصة وحده فتُرفض نسخةُ Production لمديرها */
 function rsiSliceOk(A, d) { return A.u.role === 'super' || enfDeptMgrFull(A, d); }
 async function rsiSliceSpec(env, A, s, keys, mode) {

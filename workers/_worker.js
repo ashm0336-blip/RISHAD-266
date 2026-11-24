@@ -14596,11 +14596,9 @@ var RSI_SLICE = {
   'bassam_plan_v1': [null, ['bassam_plan_v1']],   /* V7 · د6: المخططُ كلُّه في طلبه (جذرُه ليس خريطةَ أعضاء) — لا يُضاف إلى بقية النسخة */
   'bassam_staffing_v3': [null, ['bassam_staffing_v3']],   /* V7 · د6: جدولُ الورديات كلُّه في طلبه — لا يُضاف إلى بقية النسخة */
   'bassam_tasks_v1': ['^.', ['bassam_tasks_v1']],   /* V7 · د6: المهامُ خريطةُ أيام — تُقسم أياماً فلا تكبر كلفةُ طلبٍ بطول السجل */
-  'bassam_dreport_v1': ['^.', ['bassam_dreport_v1']],   /* V7 · د6: التقريرُ اليومي خريطةُ أيام — يُقسم أياماً */
+  'bassam_dreport_v1': ['^\\d{4}-\\d{1,2}-\\d{1,2}$', ['bassam_dreport_v1']],   /* V7 · 53 تقويم: الأيامُ وحدها — علاماتُ m: مشتركةٌ في كل دفعة (ق3 يحتاج الشهرين) · V7 · د6: التقريرُ اليومي خريطةُ أيام — يُقسم أياماً */
 };
 var RSI_SLICE_MIN = 1500000;
-/* V7 · 53 تقويم: علاماتُ أشهر التقرير (m:) مشتركةٌ في كل دفعة كما في الجولات — قاعدةُ ق3 تحتاج علاماتِ الشهرين الهجريين معاً لكل شهرٍ ميلادي */
-if (RSI_SLICE.bassam_dreport_v1) RSI_SLICE.bassam_dreport_v1 = ['^\\d{4}-\\d{1,2}-\\d{1,2}$', RSI_SLICE.bassam_dreport_v1[1]];
 /* V7 · د6 (QA ٦ — قرارُ المالك): الدفعاتُ (مسارُ الذاكرة المحدودة) لمدير المنصة ولمدير الإدارة على إدارته (057 enfDeptMgrFull) — كان لمدير المنصة وحده فتُرفض نسخةُ Production لمديرها */
 function rsiSliceOk(A, d) { return A.u.role === 'super' || enfDeptMgrFull(A, d); }
 async function rsiSliceSpec(env, A, s, keys, mode) {
@@ -21390,6 +21388,11 @@ async function opPeriodSaveResult(env, ps, r) {
   }
   return out;
 }
+/* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019v0-calendar-slots.js.tpl */
+/* V7 · 53 تقويم: مواردُ التاريخ القديم يعلنها كلُّ نظامٍ في فتحته (slots/cal.slots.json: cal.conv) — المفتاحُ ونوعُ التحويل؛ القاعدةُ تمرّ على المعلَن وحده.
+   الأنواع: dayMap (خريطةُ أيام وعلاماتُ أشهر) · dayMapRec (ومعها التكرارُ ق6) · monthLocks · monthStaff (ق4) · monthPlan (ق5) · dayKeys · ymd ·
+   legacyKv (وثيقةُ KV علائقية قديمة) · statsDoc (الإحصائيات وأقفالُها) · retroDoc (التقاريرُ ونوافذُ الاستدراك، ق7). */
+var CAL_CONV_SLOTS = { bassam_award_v1: 'legacyKv', bassam_custody_v1: 'legacyKv', bassam_rounds_v1: 'dayMap', bassam_rounds_arc_v1: 'dayMap', bassam_dreport_v1: 'dayMap', bassam_dstats_v1: 'statsDoc', bassam_irshad_v1: 'legacyKv', bassam_irshad_retro_v1: 'legacyKv', bassam_plan_v1: 'monthPlan', bassam_rasd_v1: 'retroDoc', bassam_rasd_retro_v1: 'retroDoc', bassam_seized_v1: 'legacyKv', bassam_seized_retro_v1: 'legacyKv', bassam_staffing_v3: 'monthStaff', bassam_staffing_v2: 'monthStaff', bassam_staffing_locks_v1: 'monthLocks', bassam_tasks_v1: 'dayMapRec', bassam_tasks_locks_v1: 'monthLocks', bassam_dayshift_v1: 'dayKeys', bassam_dayfocus_v1: 'ymd' };
 /* ══ V7 · 53 تقويم: الدالةُ النقية «هجري ⇐ ميلادي» (cal_api.md §4 · التصميم §3.1 · §3.3 · ق3–ق7 · ق10) — يستعملها الترحيل 0014 والاستيراد.
    نقيةٌ حتمية: لا تخزين ولا ساعة (اليومُ المرجعي T معامل). لا تبني مُنسِّقاً: كلُّ هجريٍّ من تقويم الخادم الواحد (016: calHDay · calHOf · calHMonthsOf ·
    calHMonthSpan · calHMonthLen). المدخلُ الميلادي يعود كما هو، فإعادةُ التحويل لا تغيّر شيئاً. المفتاحُ الذي لا يُعرف تحويله يعود null — المستدعي
@@ -21516,10 +21519,12 @@ function calMonthLockRule(gm, src) {
    · قواعدُ الموارد (ق3–ق7 · ق10): calConvMarks · calConvDayMap · calConvLocks · calConvStaffing/StaffMonth · calConvPlan* · calConvDstats · calConvRasd · calConvDoc · calConvText
    · مداخلُ النسخ: calConvBackup · calConvDomains · calConvLegacyKV — ctx = { T: اليومُ التشغيلي الميلادي الثابت للعملية · rep: calConvRep() }.
    المفتاحُ الذي لا يُعرف تحويلُه يرمي calendar-unmapped باسم مساره، والمختلطُ calendar-mixed، والميلاديُّ يعود كما هو. ══ */
-var CAL_CONV_RES = ['bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_dreport_v1', 'bassam_tasks_v1', 'bassam_tasks_locks_v1', 'bassam_staffing_v3', 'bassam_staffing_v2', 'bassam_staffing_locks_v1', 'bassam_plan_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1'];
-function calConvIs(resource) { return CAL_CONV_RES.indexOf(resource) >= 0; }
+/* المواردُ يعلنها كلُّ نظامٍ في فتحته (019v0 CAL_CONV_SLOTS: مفتاح ⇐ نوع) — القاعدةُ لا تسمّي مفتاحَ نظام */
+var CAL_CONV_OPS = { dayMap: 1, dayMapRec: 1, monthLocks: 1, monthStaff: 1, monthPlan: 1, dayKeys: 1, ymd: 1 };
+function calConvKind(r) { return ocOwn(CAL_CONV_SLOTS, r) ? CAL_CONV_SLOTS[r] : ''; }
+function calConvIs(resource) { return !!CAL_CONV_OPS[calConvKind(resource)]; }
 function calConvError(code, path, status) { var e = rsError(code, status || 409); if (path) e.details = { at: e.path = String(path).slice(0, 200) }; return e; }   /* V7 · 53 تقويم (cal-import): الموضعُ في الردّ (details.at) — تعرضه المعاينة */
-function calConvRep() { return { days: 0, months: 0, conflicts: [], recurring: [], plan: [], locks: [], extra: [], custodyDay0: 0, retro: 0 }; }
+function calConvRep() { return { days: 0, months: 0, conflicts: [], recurring: [], major: [], locks: [], extra: [], custodyDay0: 0, retro: 0 }; }
 function calConvClone(v) { return v === undefined ? v : JSON.parse(JSON.stringify(v)); }
 /* القيمةُ الواحدة: نصٌّ هو يومٌ هجري (مبطَّن أو لا، ولاحقةُ الجولات) ⇐ يومُه الميلادي · يومٌ هجريٌّ لا وجود له ⇐ calendar-unmapped باسم مساره · غيرُ ذلك يعود كما هو.
    (cal-import يلفّ كاشفَه — dd/mm/yyyy · أرقامُ Excel · أسماءُ الأشهر · «هـ/م» — حول هذه الدالة) */
@@ -21538,17 +21543,16 @@ function calConvYmd(o, fy, fm, fd, path, rep) {
   return true;
 }
 function calConvFixed(resource) { var r = opRegistry()[resource], s = r && r.prepared.resources[resource].spec; return (s && s.fields) || {}; }
-/* قيمةُ اليوم: ما فيها من مفاتيح أيامٍ هجرية (imp.day · from في الجولات · cont في التقرير · rec/idem في المهام ق6) */
+/* قيمةُ اليوم: كلُّ نصٍّ فيها هو يومٌ هجري ⇐ يومُه (dayMap) · ومعها مفتاحُ عدم التكرار وقاعدةُ التكرار الشهري ق6 (dayMapRec) */
+function calConvStrs(v, path) {
+  if (Array.isArray(v)) v.forEach(function (x, i) { if (typeof x === 'string') v[i] = calConvDay(x, path); else calConvStrs(x, path); });
+  else if (isObj(v)) Object.keys(v).forEach(function (k) { var x = v[k]; if (typeof x === 'string') v[k] = calConvDay(x, path + '.' + k); else if (x && typeof x === 'object') calConvStrs(x, path); });
+}
 function calConvDayValue(resource, v, ctx, path) {
   if (v === null || typeof v !== 'object') return v;
   var x = calConvClone(v);
-  if (resource === 'bassam_rounds_v1' || resource === 'bassam_rounds_arc_v1') {
-    if (isObj(x.imp) && typeof x.imp.day === 'string') x.imp.day = calConvDay(x.imp.day, path + '/imp.day', 1);
-    if (typeof x.from === 'string') x.from = calConvDay(x.from, path + '/from', 1);
-  } else if (resource === 'bassam_dreport_v1') {
-    if (typeof x.cont === 'string') x.cont = calConvDay(x.cont, path + '/cont', 1);
-    if (isObj(x.shifts)) Object.keys(x.shifts).forEach(function (s) { var o = x.shifts[s]; if (isObj(o) && typeof o.cont === 'string') o.cont = calConvDay(o.cont, path + '/' + s + '/cont', 1); });
-  } else if (resource === 'bassam_tasks_v1' && Array.isArray(x)) {
+  if (calConvKind(resource) === 'dayMap') calConvStrs(x, path);
+  else if (Array.isArray(x)) {
     x.forEach(function (row, i) {
       var m = Array.isArray(row) ? row[23] : null; if (!isObj(m)) return;
       if (typeof m.idem === 'string') m.idem = m.idem.replace(/^(r:[^:]*:)([^:]+)(:.*)?$/, function (all, a, d, b) { return a + calConvDay(d, path + '[' + i + '].idem', 1) + (b || ''); });
@@ -21662,17 +21666,17 @@ function calConvStaffMonth(gm, srcs, ctx, path) {
   });
   if (q4.length && ctx.rep) ctx.rep.conflicts.push({ g: gm, n: q4.length, items: q4.slice(0, 20) });   /* الملخّصُ مختصر — القائمةُ كاملةً في الشهر نفسِه (__calq4) */
   /* القائمةُ مع شهرها في الجدول نفسِه حيث يراها مديرُ الإدارة (cal_api: __calq4) — إن عرفها المخطّط؛ وإلا ففي ملخّص الترحيل وحده */
-  if (q4.length && ocOwn(calConvBucketFixed(), '__calq4')) ocSet(out, '__calq4', q4);
+  if (q4.length && ocOwn(calConvBucketFixed(String(path).split('/')[0]), '__calq4')) ocSet(out, '__calq4', q4);
   return out;
 }
-function calConvBucketFixed() { var s = opRegistry().bassam_staffing_v3.prepared.resources.bassam_staffing_v3.spec; return (s.entry && s.entry.fields) || {}; }
+function calConvBucketFixed(res) { var e = opRegistry()[res], s = e && e.prepared.resources[res].spec; return (s && s.entry && s.entry.fields) || {}; }
 /* أشهرُ الجدول (v3: كلُّ مفتاحٍ شهر · v2: مفاتيحُ الأشهر بنمطها، وغيرُها صفوفُ موظفين تبقى) */
 function calConvStaffing(resource, doc, ctx) {
   if (!isObj(doc)) return doc;
   var src = {}, keep = {}, months = {}, seen = {}, out = {};
   Object.keys(doc).forEach(function (k) {
     var p = calGParse(k);
-    if (!p || p.kind !== 'month') { if (resource === 'bassam_staffing_v2') { ocSet(keep, k, doc[k]); return; } throw calConvError('calendar-unmapped', resource + '/' + k); }
+    if (!p || p.kind !== 'month') { ocSet(keep, k, doc[k]); return; }   /* ليس شهراً (صفوفُ الموظفين في الجدول القديم) يبقى كما هو */
     seen[p.cal] = 1;
     if (p.cal === 'g') { ocSet(keep, k, doc[k]); return; }
     src[p.y + '-' + p.m] = doc[k]; calGMonthsOfH(p.y, p.m).forEach(function (x) { months[x.g] = 1; });
@@ -21687,7 +21691,7 @@ function calConvStaffing(resource, doc, ctx) {
 function calConvPlanMonth(gm, src, ctx) {
   var L = calHMonthsOfG(gm).filter(function (x) { return ocOwn(src, x.h); }); if (!L.length) return undefined;
   var maj = calMajority(gm), best = L.slice().sort(function (a, b) { return b.days - a.days || (a.h === maj.h ? -1 : b.h === maj.h ? 1 : 0); })[0];
-  if (ctx.rep && (L.length > 1 || maj.tie)) ctx.rep.plan.push({ g: gm, from: best.h, also: L.filter(function (x) { return x !== best; }).map(function (x) { return x.h; }), tie: maj.tie ? 1 : 0 });
+  if (ctx.rep && (L.length > 1 || maj.tie)) ctx.rep.major.push({ g: gm, from: best.h, also: L.filter(function (x) { return x !== best; }).map(function (x) { return x.h; }), tie: maj.tie ? 1 : 0 });
   return calConvClone(src[best.h]);
 }
 function calConvPlanMap(map, ctx, all, label) {
@@ -21710,12 +21714,13 @@ function calConvPlan(doc, ctx) {
 /* الدالةُ الواحدة للمورد كلِّه (الاستيراد · المرحلة ٢ للموارد الصغيرة) */
 function calConvDoc(resource, doc, ctx) {
   if (doc === undefined || doc === null || !calConvIs(resource)) return doc;
-  if (resource === 'bassam_rounds_v1' || resource === 'bassam_rounds_arc_v1' || resource === 'bassam_dreport_v1' || resource === 'bassam_tasks_v1') return calConvDayMap(resource, doc, ctx);
-  if (resource === 'bassam_dayshift_v1') { if (!isObj(doc)) return doc; var o = {}, h = Object.keys(doc).some(function (k) { return calKeyCal(k) === 'h'; }); Object.keys(doc).forEach(function (k) { ocSet(o, h ? calConvDay(k, resource + '/' + k) : k, doc[k]); }); return o; }
-  if (resource === 'bassam_tasks_locks_v1' || resource === 'bassam_staffing_locks_v1') return calConvLocks(resource, doc, ctx);
-  if (resource === 'bassam_staffing_v3' || resource === 'bassam_staffing_v2') return calConvStaffing(resource, doc, ctx);
-  if (resource === 'bassam_plan_v1') return calConvPlan(doc, ctx);
-  if (resource === 'bassam_dayfocus_v1') { var f = calConvClone(doc); return calConvYmd(f, 'y', 'm', 'd', resource, null) ? f : doc; }
+  var kd = calConvKind(resource);
+  if (kd === 'dayMap' || kd === 'dayMapRec') return calConvDayMap(resource, doc, ctx);
+  if (kd === 'dayKeys') { if (!isObj(doc)) return doc; var o = {}, h = Object.keys(doc).some(function (k) { return calKeyCal(k) === 'h'; }); Object.keys(doc).forEach(function (k) { ocSet(o, h ? calConvDay(k, resource + '/' + k) : k, doc[k]); }); return o; }
+  if (kd === 'monthLocks') return calConvLocks(resource, doc, ctx);
+  if (kd === 'monthStaff') return calConvStaffing(resource, doc, ctx);
+  if (kd === 'monthPlan') return calConvPlan(doc, ctx);
+  if (kd === 'ymd') { var f = calConvClone(doc); return calConvYmd(f, 'y', 'm', 'd', resource, null) ? f : doc; }
   return doc;
 }
 /* نصُّ وثيقةٍ (الاستيراد): يعيد النصَّ نفسَه إن لم يتغيّر شيء */
@@ -21794,22 +21799,16 @@ function calConvBackup(keys, domains, summary, T, rep0) {
   Object.keys(keys || {}).forEach(function (k) {
     var r = resName(k);
     if (calConvIs(r)) keys[k] = calConvText(r, keys[k], ctx);
-    else if ((r === 'bassam_rasd_v1' || r === 'bassam_rasd_retro_v1') && typeof keys[k] === 'string') { var v = parseJson(keys[k], null); if (calConvRasd(v, now, k)) keys[k] = JSON.stringify(v); }
+    else if (calConvKind(r) === 'retroDoc' && typeof keys[k] === 'string') { var v = parseJson(keys[k], null); if (calConvRasd(v, now, k)) keys[k] = JSON.stringify(v); }
   });
-  ['irshad', 'custody', 'seized', 'awards'].forEach(function (n) {
-    (Array.isArray(domains && domains[n]) ? domains[n] : []).forEach(function (dom) {
-      if (!dom || !isObj(dom.rows)) return;
-      Object.keys(dom.rows).forEach(function (t) { (Array.isArray(dom.rows[t]) ? dom.rows[t] : []).forEach(function (row, i) { calConvRow(row, rep, n + '/' + t + '[' + i + ']'); }); });
-    });
-  });
-  if (domains && domains.dailyStats && isObj(domains.dailyStats.data)) domains.dailyStats.data = calConvDstats(domains.dailyStats.data, ctx);
+  calConvDomains(domains, rep, T);
   if (summary) summary.calendar = calConvSummaryText(rep);
   return rep;
 }
 /* صفوفُ مجالاتٍ علائقية في نسخةٍ حديثة صُدِّرت قبل 0014: أسماءُ أعمدتها hijri_* ⇐ greg_* (ق2) وقيمُها ⇐ ميلادية — قبل التحقّق من شكلها */
-function calConvDomains(domains, rep) {
-  ['irshad', 'custody', 'seized', 'awards'].forEach(function (n) {
-    (Array.isArray(domains && domains[n]) ? domains[n] : []).forEach(function (dom) {
+function calConvDomains(domains, rep, T) {
+  Object.keys(domains || {}).forEach(function (n) {   /* كلُّ مجالٍ علائقيٍّ في النسخة (مصفوفةُ نطاقاتٍ بصفوف) — بلا تسمية */
+    (Array.isArray(domains[n]) ? domains[n] : []).forEach(function (dom) {
       if (!dom || !isObj(dom.rows)) return;
       Object.keys(dom.rows).forEach(function (t) {
         (Array.isArray(dom.rows[t]) ? dom.rows[t] : []).forEach(function (row, i) {
@@ -21820,12 +21819,11 @@ function calConvDomains(domains, rep) {
       });
     });
   });
-  if (domains && domains.dailyStats && isObj(domains.dailyStats.data)) domains.dailyStats.data = calConvDstats(domains.dailyStats.data, { T: calToday(Date.now()).k, rep: rep });
+  if (domains && domains.dailyStats && isObj(domains.dailyStats.data)) domains.dailyStats.data = calConvDstats(domains.dailyStats.data, { T: T || calToday(Date.now()).k, rep: rep });
   return rep;
 }
 /* وثائقُ KV القديمة للمجالات العلائقية (بشكل Production — قبل جداولها): كلُّ {y,m,d} بسنةٍ هجرية ⇐ ميلادي (الشهرُ بلا يوم ⇐ شهرُ يومه الأول · يومُ 0 يبقى، ق10)
    وكلُّ نصٍّ هو مفتاحُ يومٍ هجري ⇐ يومُه الميلادي. الإحصائياتُ بقاعدة أقفالها (ق3). تُحوَّل قبل bc.convert.* فيتحقّق المحوِّلُ من قيمٍ ميلادية */
-var CAL_CONV_KV = ['bassam_custody_v1', 'bassam_irshad_v1', 'bassam_irshad_retro_v1', 'bassam_seized_v1', 'bassam_seized_retro_v1', 'bassam_award_v1'];
 function calConvWalk(v, rep, path) {
   if (Array.isArray(v)) { for (var i = 0; i < v.length; i++) { if (typeof v[i] === 'string') v[i] = calConvDay(v[i], path + '[' + i + ']'); else calConvWalk(v[i], rep, path + '[' + i + ']'); } return; }
   if (!isObj(v)) return;
@@ -21835,8 +21833,8 @@ function calConvWalk(v, rep, path) {
 function calConvLegacyKV(keys, T, rep) {
   Object.keys(keys || {}).forEach(function (k) {
     var r = resName(k), raw = keys[k]; if (typeof raw !== 'string') return;
-    if (r === 'bassam_dstats_v1') { var ds = parseJson(raw, null); if (isObj(ds)) { var o = calConvDstats(ds, { T: T, rep: rep }); if (JSON.stringify(o) !== raw) keys[k] = JSON.stringify(o); } return; }
-    if (CAL_CONV_KV.indexOf(r) < 0) return;
+    if (calConvKind(r) === 'statsDoc') { var ds = parseJson(raw, null); if (isObj(ds)) { var o = calConvDstats(ds, { T: T, rep: rep }); if (JSON.stringify(o) !== raw) keys[k] = JSON.stringify(o); } return; }
+    if (calConvKind(r) !== 'legacyKv') return;
     var v = parseJson(raw, null); if (v === null || typeof v !== 'object') return;
     var before = JSON.stringify(v); calConvWalk(v, rep, k); var after = JSON.stringify(v); if (after !== before) keys[k] = after;
   });
@@ -21845,9 +21843,9 @@ function calConvLegacyKV(keys, T, rep) {
 /* سطرُ الملخّص قبل التأكيد (التصميم §4): «حُوِّل إلى الميلادي: n يوماً · m شهراً · k تعارضاً» — الأرقامُ والأسماءُ للواجهة (548) */
 function calConvSummaryText(rep) {
   return { days: rep.days, months: rep.months, conflicts: rep.conflicts.reduce(function (n, c) { return n + c.n; }, 0), conflictMonths: rep.conflicts.map(function (c) { return c.g; }),
-    recurring: rep.recurring.slice(0, 50), plan: rep.plan.map(function (x) { return x.g; }), custodyDay0: rep.custodyDay0 };
+    recurring: rep.recurring.slice(0, 50), plan: rep.major.map(function (x) { return x.g; }), custodyDay0: rep.custodyDay0 };
 }
-function calConvMergeRep(a, b) { if (!b) return a; a.days += b.days || 0; a.months += b.months || 0; a.custodyDay0 += b.custodyDay0 || 0; ['conflicts', 'recurring', 'plan', 'locks', 'extra'].forEach(function (f) { (b[f] || []).forEach(function (x) { a[f].push(x); }); }); return a; }
+function calConvMergeRep(a, b) { if (!b) return a; a.days += b.days || 0; a.months += b.months || 0; a.custodyDay0 += b.custodyDay0 || 0; ['conflicts', 'recurring', 'major', 'locks', 'extra'].forEach(function (f) { (b[f] || []).forEach(function (x) { a[f].push(x); }); }); return a; }
 /* V7 · 53: التخزين بالفترة (§3ب) — طبقةٌ لا تعرف شكل التاريخ؛ التفصيل في تقرير periods ووثيقة العقد. */
 var OP_LIM = { day: 1048576, mctl: 524288, month: 3145728, head: 3145728, readPeriods: 40, readNodes: 60000, batchBytes: 30000000, batchStmts: 900, rangeGroups: 26, summaryRows: 800 };   /* V7 · 53: readNodes = عُقدُ القراءة المنطقية الكاملة لموردٍ مقسوم؛ مقيسٌ: 39001 عقدة ≈ ≤6.4MB في نداءٍ واحد (v7_d6_import ١٥) ⇒ 60000 ≈ ≤10MB، ثلثُ سقف 32MiB */
 /* V7 · 53: مدياتُ الفترات في استدعاء D1 الواحد لكل جدول — مدىً لكل فترة (ومدَيان للرأس) ⇒ ≤64 فترة؛ «صفحتي» (اليوم: أسبوعُ التقرير وشهرُه · الجدولُ 3 أشهر · الخطة · الجولات) تقع في استدعاءٍ واحد (me_history ٦: ≤4 جولات) */
@@ -22136,7 +22134,7 @@ async function calMigPrepare(env) {
     dup.forEach(function (x) { after.push(D.prepare('INSERT INTO ' + tw + '(' + gc.join(',') + ') SELECT ' + pick.join(',') + ' FROM ' + tw + ' WHERE department_id=?1 AND window_id=?2').bind(x[0], x[1], x[2], x[3], x[4], x[5])); });
   }
   /* ④ الرصد (KV): reports[].{y,m,d} · نوافذُه windows[].scope (ق7 كما فوق) */
-  var kvs = kvJoin(((await D.prepare("SELECT k,seq,v FROM kv WHERE k GLOB '*bassam_rasd_v1' OR k GLOB '*bassam_rasd_retro_v1' ORDER BY k,seq").all()).results) || []);
+  var kvs = kvJoin(((await D.prepare("SELECT k,seq,v FROM kv WHERE EXISTS(SELECT 1 FROM json_each(?1) j WHERE kv.k GLOB '*' || j.value) ORDER BY k,seq").bind(JSON.stringify(Object.keys(CAL_CONV_SLOTS).filter(function (r) { return calConvKind(r) === 'retroDoc'; }))).all()).results) || []);
   Object.keys(kvs).forEach(function (k) {
     var v = parseJson(kvs[k], null); if (!calConvRasd(v, now, k)) return;
     after.push.apply(after, kvPutStmts(env, 'kv', k, JSON.stringify(v)));
@@ -22147,7 +22145,7 @@ async function calMigPrepare(env) {
   dd.forEach(function (r) { calConvOnce(String(r.once_key)).forEach(function (k2) { drows2.push([r.scope, k2, r.created_at, r.message_id]); }); });
   after.push.apply(after, calRowsInsert(D, 'notification_dedup', ['scope', 'once_key', 'created_at', 'message_id'], drows2, 'INSERT OR IGNORE'));
   /* ⑥ب العلامة cal_pend {إدارة: [موارد]} (كما في ملف 0014) — تُعاد هنا في آخر الدفعة: على قاعدةٍ أقدم من 10 تُكتب صفوفُ 0010 التشغيلية بعد عبارات 0014 */
-  after.push(D.prepare("INSERT INTO meta (k, v) SELECT 'cal_pend', x FROM (SELECT json_group_object(d, json(r)) x, COUNT(*) n FROM (SELECT department_id d, json_group_array(resource) r FROM (SELECT DISTINCT department_id, resource FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY 1, 2) GROUP BY department_id)) WHERE n > 0 ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(CAL_CONV_RES)));
+  after.push(D.prepare("INSERT INTO meta (k, v) SELECT 'cal_pend', x FROM (SELECT json_group_object(d, json(r)) x, COUNT(*) n FROM (SELECT department_id d, json_group_array(resource) r FROM (SELECT DISTINCT department_id, resource FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY 1, 2) GROUP BY department_id)) WHERE n > 0 ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(Object.keys(CAL_CONV_SLOTS).filter(calConvIs))));
   /* ⑥ اليومُ المرجعي T للتحويل الكسول (ثابتٌ لكل فترة، فالقفلُ كما كان لحظةَ النشر) */
   after.push(D.prepare("INSERT INTO meta(k,v) SELECT '" + CAL_MIG_TKEY + "',?1 WHERE EXISTS(SELECT 1 FROM meta WHERE k='cal_pend') ON CONFLICT(k) DO NOTHING").bind(T));
   return { before: before, after: after };
@@ -22299,7 +22297,7 @@ async function calLazyDays(env, info, want, ctx, deadline) {
 }
 /* الجدول (ق4) والخطة (ق5): الشهرُ الميلادي من مصادره الهجرية؛ المصدرُ يُحذف مع آخر شهرٍ ميلاديٍّ يحتاجه، والمواضعُ متصلة بترتيب الأشهر */
 async function calLazyMonths(env, info, want, ctx, deadline) {
-  var d = info.dept, R = info.resource, K = opKeyOf(info), plan = R === 'bassam_plan_v1', C = plan ? '$/f:months' : '$';
+  var d = info.dept, R = info.resource, K = opKeyOf(info), fld = (opPeriodDef(info) || {}).field, plan = !!fld, C = plan ? '$/f:' + encodeURIComponent(fld) : '$';
   var lay = await calLayout(env, d, R, C), H = lay.filter(function (x) { return calKeyCal(x.m) === 'h'; }), byH = {}, months = {};
   var delH = plan ? (await calLayout(env, d, R, '$/f:delMonths')).filter(function (x) { return calKeyCal(x.m) === 'h'; }) : [];
   if (!H.length && !delH.length) { await env.DB.batch([calPendDrop(env, d, R)]); return; }
@@ -22312,7 +22310,7 @@ async function calLazyMonths(env, info, want, ctx, deadline) {
     var gm = G[gi]; if (have[gm] || (want && !want(gm))) continue;
     if (Date.now() > deadline) throw calPrepError(gi, total);
     var srcN = calHMonthsOfG(gm).filter(function (x) { return ocOwn(byH, x.h); });
-    var got = (await calMigRead(env, d, R, calMigHeadRanges(C).concat(calMigMemberRanges(C, srcN.map(function (x) { return byH[x.h].m; }))), true)) || {}, box = plan ? (got.months || {}) : got, src = {};
+    var got = (await calMigRead(env, d, R, calMigHeadRanges(C).concat(calMigMemberRanges(C, srcN.map(function (x) { return byH[x.h].m; }))), true)) || {}, box = plan ? (got[fld] || {}) : got, src = {};
     srcN.forEach(function (x) { if (ocOwn(box, byH[x.h].m)) src[x.h] = box[byH[x.h].m]; });
     var v = plan ? calConvPlanMonth(gm, src, ctx) : calConvStaffMonth(gm, src, ctx, R + '/' + gm);
     have[gm] = 1;
@@ -22324,7 +22322,7 @@ async function calLazyMonths(env, info, want, ctx, deadline) {
     if (gone.length) st = st.concat(calMigDrop(env, d, R, calMigMemberRanges(C, gone.map(function (h) { return h.m; }))));
     if (v !== undefined) {
       var w = {}, inner = {}; ocSet(inner, gm, v);
-      if (plan) { Object.keys(got).forEach(function (k) { if (k !== 'months') ocSet(w, k, got[k]); }); ocSet(w, 'months', inner); } else w = inner;
+      if (plan) { Object.keys(got).forEach(function (k) { if (k !== fld) ocSet(w, k, got[k]); }); ocSet(w, fld, inner); } else w = inner;
       st = st.concat(calMigMemberRows(env, d, R, C, w, gm, order.findIndex(function (x) { return x.g; })), opSummaryStatements(env, info, [{ p: gm, value: v }]));
       ctx.rep.months++;
     }
@@ -22338,7 +22336,7 @@ async function calLazyMonths(env, info, want, ctx, deadline) {
     var dm = (await calMigRead(env, d, R, calMigHeadRanges(C), true)) || {}, del = isObj(dm.delMonths) ? dm.delMonths : {}, conv = calConvPlanMap(del, ctx, true, 'plan/delMonths');
     var keep = (await calLayout(env, d, R, '$/f:delMonths')).filter(function (x) { return calKeyCal(x.m) !== 'h'; }), st3 = calMigDrop(env, d, R, calMigMemberRanges('$/f:delMonths', delH.map(function (x) { return x.m; }))), n = keep.length;
     st3 = st3.concat(calRenum(env, d, R, keep));
-    Object.keys(conv).forEach(function (k) { if (ocOwn(del, k)) return; var w2 = {}, d2 = {}; Object.keys(dm).forEach(function (f) { if (f !== 'delMonths' && f !== 'months') ocSet(w2, f, dm[f]); }); ocSet(d2, k, conv[k]); ocSet(w2, 'months', {}); ocSet(w2, 'delMonths', d2); st3 = st3.concat(calMigMemberRows(env, d, R, '$/f:delMonths', w2, k, n++)); });
+    Object.keys(conv).forEach(function (k) { if (ocOwn(del, k)) return; var w2 = {}, d2 = {}; Object.keys(dm).forEach(function (f) { if (f !== 'delMonths' && f !== fld) ocSet(w2, f, dm[f]); }); ocSet(d2, k, conv[k]); ocSet(w2, fld, {}); ocSet(w2, 'delMonths', d2); st3 = st3.concat(calMigMemberRows(env, d, R, '$/f:delMonths', w2, k, n++)); });
     if (!H.some(function (h) { return needs(h, have); })) st3.push(calPendDrop(env, d, R));
     await calCommit(env, [revGuard(env, K, await calMigRev(env, K))], st3, [K]);
   }
@@ -22360,15 +22358,16 @@ async function calLazyEnsure(env, keys, want, opts) {
     var w = want && want[k], f = w && w.length ? function (g) { return w.some(function (p) { return p === g || p === 'm:' + g.slice(0, 7) || g.indexOf(p) === 0; }); } : null;
     for (var tries = 0; ; tries++) {
       try {
-        if (['bassam_rounds_v1', 'bassam_rounds_arc_v1', 'bassam_dreport_v1', 'bassam_tasks_v1'].indexOf(info.resource) >= 0) await calLazyDays(env, info, f, ctx, deadline);
-        else if (info.resource === 'bassam_staffing_v3' || info.resource === 'bassam_plan_v1') await calLazyMonths(env, info, f, ctx, deadline);
+        var kd = calConvKind(info.resource);
+        if (kd === 'dayMap' || kd === 'dayMapRec') await calLazyDays(env, info, f, ctx, deadline);
+        else if (kd === 'monthStaff' && opPeriodDef(info) || kd === 'monthPlan') await calLazyMonths(env, info, f, ctx, deadline);
         else await calLazySmall(env, info, ctx);
         break;
       } catch (e) { if (tries < 2 && /KIVO_REV_CONFLICT/.test(String(e && e.message || e))) continue; throw e; }   /* كاتبٌ آخر سبق: يُعاد على حالته فلا يُحوَّل مرتين */
     }
     n++;
   }
-  if (n && (ctx.rep.conflicts.length || ctx.rep.recurring.length || ctx.rep.plan.length)) {
+  if (n && (ctx.rep.conflicts.length || ctx.rep.recurring.length || ctx.rep.major.length)) {
     /* ملخّصُ ما حُوِّل (ق4 · ق5 · ق6) لمدير الإدارة — يُضاف إلى ما سبق */
     var d0 = opInfo(keys[0]).dept, row = await env.DB.prepare('SELECT v FROM meta WHERE k=?1').bind(CAL_MIG_SUM + d0).first(), sum = calConvMergeRep(Object.assign(calConvRep(), parseJson(row && row.v, {}) || {}), ctx.rep);
     sum.conflicts = sum.conflicts.slice(-200); sum.recurring = sum.recurring.slice(-500);

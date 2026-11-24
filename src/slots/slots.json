@@ -180,6 +180,10 @@
    "out": "workers/parts/019g-backup-import.js"
   },
   {
+   "tpl": "workers/parts/019v0-calendar-slots.js.tpl",
+   "out": "workers/parts/019v0-calendar-slots.js"
+  },
+  {
    "tpl": "workers/parts/046-kivo-build-3.js.tpl",
    "out": "workers/parts/046-kivo-build-3.js"
   },
