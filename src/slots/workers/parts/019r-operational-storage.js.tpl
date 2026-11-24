@@ -229,9 +229,9 @@ async function opReadOnce(env, url, session) {
     // a foreign department requested by a malicious/obsolete client.
     var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: wanted.map(function (key) { return opInfo(key).dept; }) }), A = reference.A,
       eligible=new Set(wanted.filter(function(key){return canRead(A,key);})),refs=Array.from(eligible);
-    /* V7 · 53 (البند 6 · الأداء): الجدولُ الشهريّ مرجعٌ لإسقاط ENF_PROJ وحده (061 enfRefsFor · enfProjectStr يعيد القيمةَ كما هي لما لا إسقاطَ له،
+    /* V7 · 53 (البند 6 · الأداء): مراجعُ البرامج (الجدولُ الشهريّ من قطعته) لإسقاط ENF_PROJ وحده (061 enfRefsFor · enfProjectStr يعيد القيمةَ كما هي لما لا إسقاطَ له،
        والخصوصيةُ 019u تقرأ سجلَّ الموظفين فقط) — فقراءةُ «الموظفين» لا تحمّل الجدولَ بتاريخه كلّه (كان كلُّ طلبٍ يفكّ الجدولَ كاملاً معها) */
-    eligible.forEach(function (key) { var d = opInfo(key).dept, pj = ocOwn(ENF_PROJ, resName(resReadAs(key))); [@@SYS:oc.read.refs.staff@@'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { if (r === 'bassam_staffing_v3' && !pj) return; refs.push('bsdept:' + d + ':' + r); }); });
+    eligible.forEach(function (key) { var d = opInfo(key).dept, pj = ocOwn(ENF_PROJ, resName(resReadAs(key))); [@@SYS:oc.read.refs.staff@@'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { if (!pj && r !== 'bassam_shift_options_v1' && r !== 'bassam_employees_v1') return; refs.push('bsdept:' + d + ':' + r); }); });
     var operational=await opCaptureReferences(reference.env,reference.inputKeys,refs);
     reference.operational=operational;reference.inputKeys=operational.keys;Object.assign(reference.inputRevs,operational.revs);
     reference.env=Object.assign({},reference.env,{__opCapture:operational,__pre:Object.assign({},reference.env.__pre,{kv:operational.keys,revs:reference.inputRevs})});
