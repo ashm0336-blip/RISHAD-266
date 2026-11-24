@@ -294,22 +294,6 @@ Object.assign(Component.prototype, {
   _p44Label(k) {
     return this._p44Try(() => KIVO.KIVO_REGISTRY.byKey[k].label, "") || (/^ff\.[\w.]+\.export$/.test(k) ? "تصدير" : k);   /* V7 · 53: علمُ التصدير (ليس مفتاحاً في السجلّ) */
   },
-  /* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): أفعالُ صفٍّ في الدور بترتيب السجلّ { k · a: الفعل · w: المكان (verb · place من السجلّ المولَّد وحده)
-     · m: أدنى مستوى يحمله · f: علمُ تصدير · no: ما لا يُمنح بالأدوار — grant none «للمدير فقط» · self «لكل موظف على ما يخصه» }:
-     ما يحكمه الصفّ في المحرّك نفسِه (keysFor «إشراف» + أعلامُ النظام) — ومفاتيحُ عدسةٍ لها صفٌّ في الدور يحكمها صفُّها (compileRole) فلا تُعدّ هنا */
-  _p44Acts(sk, rs) {
-    const E = this._p44E(),
-      R = KIVO.KIVO_REGISTRY,
-      lz = /^lens\./.test(sk),
-      S = lz ? null : this._p44Try(() => E.sysList().filter((x) => x.key === sk)[0], null),
-      L = this._p44Lvls().filter((l) => "custom" !== l.v).map((l) => l.v),
-      fe = {};
-    Object.keys(R.atoms || {}).forEach((q) => (R.atoms[q].targets || []).forEach((f) => (fe[f] = R.atoms[q])));
-    const gk = this._p44Keys(sk).filter((k) => !(!lz && rs && rs[R.byKey[k].owner] && /^lens\./.test(R.byKey[k].owner))),
-      no = lz || !S ? [] : R.keys.filter((k) => { const e = R.byKey[k]; return ("none" === e.grant && "page" === e.ownerKind && S.leaves.indexOf(e.owner) !== -1) || ("self" === e.grant && (E.sysOfKey(k) || []).indexOf(sk) !== -1); }),
-      row = (k, e, f) => ({ k: k, a: (e && e.verb) || this._p44Label(k), w: (e && e.place) || "", f: f, m: L.filter((l) => (f ? E.flagsFor(sk, l) : E.keysFor(sk, l)).indexOf(k) !== -1)[0] || "", no: e && "none" === e.grant ? "للمدير فقط" : e && "self" === e.grant ? "لكل موظف على ما يخصه" : "" });
-    return R.keys.filter((k) => gk.indexOf(k) !== -1 || no.indexOf(k) !== -1).map((k) => row(k, R.byKey[k], !1)).concat((this._p44Try(() => E.sysFlags(sk), []) || []).map((f) => row(f, fe[f], !0)));
-  },
   _p44Keys(sk) {
     const E = this._p44E(),
       all = this._p44Try(() => E.keysFor(sk, "sensitive"), []);
@@ -816,8 +800,7 @@ Object.assign(Component.prototype, {
     let rows = sys.map((s) => {
       const g = (role.sys || {})[s.k],
         isOn = !!g,
-        lv = g ? g.lvl : "",
-        open = isOn && "custom" === lv;
+        lv = g ? g.lvl : "";
       return {
         k: s.k,
         n: s.n,
@@ -839,18 +822,9 @@ Object.assign(Component.prototype, {
         /* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): تحت المستوى المختار سطرُه الوصفي وجدولُ أفعال الصف كلِّها (الفعل · المكان · الحالة) — وفي «مخصّص» مربعٌ عند كل فعلٍ يُمنح */
         lvD: isOn ? (this._p44Lvls().filter((l) => l.v === lv)[0] || {}).d || "" : "",
         tb: isOn
-          ? this._p44Acts(s.k, role.sys).map((x, i, A) => {   /* V7 · 53: «تصدير» فعلٌ يُختار في «مخصّص» */
-              const has = (g.keys || []).indexOf(x.k) !== -1,
-                hv = A.hv || (A.hv = open ? [] : this._p44E().keysFor(s.k, lv).concat(this._p44E().flagsFor(s.k, lv)));
-              return {
-                k: x.k,
-                a: x.a,
-                w: x.w,
-                st: x.no || (open ? this._p44LvName(x.m) : hv.indexOf(x.k) !== -1 ? "✔" : "✕ يحتاج " + this._p44LvName(x.m)),   /* «مخصّص»: بجانب المربع مستوى الفعل (الحسّاسُ «إشراف») */
-                ck: open && !x.no,
-                on: has ? "true" : "false",
-                flip: () => upd((r) => ((r.sys[s.k].keys = has ? r.sys[s.k].keys.filter((y) => y !== x.k) : (r.sys[s.k].keys || []).concat([x.k])))),
-              };
+          ? this._p44Try(() => this._p44E().acts(s.k, role.sys, lv), []).map((x) => {   /* V7 · 53: «تصدير» فعلٌ يُختار في «مخصّص» — وبجانب المربع مستوى الفعل (الحسّاسُ «إشراف») */
+              const has = (g.keys || []).indexOf(x.k) !== -1;
+              return Object.assign(x, { on: has ? "true" : "false", flip: () => upd((r) => (r.sys[s.k].keys = has ? r.sys[s.k].keys.filter((y) => y !== x.k) : (r.sys[s.k].keys || []).concat([x.k]))) });
             })
           : [],
       };

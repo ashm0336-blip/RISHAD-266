@@ -476,6 +476,30 @@ function latentText(detail, did) {
   else S.forEach(function (s) { if (!sys && s.leaves.indexOf(x) !== -1) sys = s.name; });
   return 'لم يُحفظ شيء: الحفظُ كان سيحذف صلاحيةَ «' + (who || 'موظف') + '» في «' + (sys || 'نظامٍ مطفأ') + '» — النظامُ مطفأٌ في سقف الوحدة فصلاحيتُه فيه مخفيّة، وتعود كما كانت متى أُعيد تشغيلُه. أعد تحميل الصفحة ثم كرّر التعديل';
 }
+/* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): جدولُ أفعال صفٍّ في الدور (نظامٌ أو عدسة) بترتيب السجلّ = ما يحكمه الصفّ في المحرّك نفسِه: keysFor «إشراف»
+   وأعلامُ تصديره (sysFlags)، بلا مفاتيح عدسةٍ لها صفٌّ في الدور rs (يحكمها صفُّها — compileRole)؛ ومعها ما لا يُمنح بالأدوار من أفعال النظام:
+   grant none ⇒ «للمدير فقط» · self ⇒ «لكل موظف على ما يخصه» (بلا مربع). النصّان (الفعل a · المكان w) من السجلّ المولَّد (verb · place) وحده؛ m = أدنى مستوى
+   يحمل الفعل؛ st = حالتُه في المستوى lvl («✔» · «✕ يحتاج <المستوى>») — وفي «مخصّص» (ck: مربعٌ عند كل فعلٍ يُمنح) اسمُ مستواه. عرضٌ فقط: لا يغيّر منحاً */
+function acts(sk, rs, lvl) {
+  var E = eng(), R = (typeof KIVO_REGISTRY !== 'undefined' && KIVO_REGISTRY) || KIVO.KIVO_REGISTRY, lz = /^lens\./.test(sk), S = null, fe = {}, nm = {}, cust = false, out = [], q;
+  E.sysList().forEach(function (x) { if (x.key === sk) S = x; });
+  for (q in R.atoms) (R.atoms[q].targets || []).forEach(function (f) { fe[f] = R.atoms[q]; });
+  var L = E.levels().filter(function (l) { nm[l.key] = l.name; if (l.key === lvl) cust = !!l.custom; return !l.custom; });
+  var gk = E.keysFor(sk, 'sensitive'), hv = cust ? [] : E.keysFor(sk, lvl).concat(E.flagsFor(sk, lvl));
+  function row(k, e, f) {
+    var m = '', n, no = e && e.grant === 'none' ? 'للمدير فقط' : e && e.grant === 'self' ? 'لكل موظف على ما يخصه' : '';
+    for (n = 0; n < L.length && !m; n++) if ((f ? E.flagsFor(sk, L[n].key) : E.keysFor(sk, L[n].key)).indexOf(k) !== -1) m = L[n].key;
+    return { k: k, a: (e && (e.verb || e.label)) || k, w: (e && e.place) || '', m: m, ck: cust && !no, st: no || (cust ? nm[m] || '' : hv.indexOf(k) !== -1 ? '✔' : '✕ يحتاج ' + (nm[m] || '')) };
+  }
+  R.keys.forEach(function (k) {
+    var e = R.byKey[k];
+    if (gk.indexOf(k) !== -1 ? !lz && obj(rs) && /^lens\./.test(e.owner) && obj(rs[e.owner])
+      : lz || !S || !((e.grant === 'none' && e.ownerKind === 'page' && S.leaves.indexOf(e.owner) !== -1) || (e.grant === 'self' && E.sysOfKey(k).indexOf(sk) !== -1))) return;
+    out.push(row(k, e, false));
+  });
+  E.sysFlags(sk).forEach(function (f) { out.push(row(f, fe[f], true)); });
+  return out;
+}
 var API = {
   latentText: latentText,
   refreshUnits: refreshUnits,
@@ -492,6 +516,7 @@ var API = {
   offClosure: function (list) { return eng().offClosure(list); },
   offWith: function (keys, onFn) { return eng().offWith(keys, onFn); },   /* V7 · د6: ما يُطفأ مع تغييرٍ معلَّق (لـ«أثر الحفظ») */   /* V7 · د6: إغلاقُ المطفأ على المنصة (المحرّكُ المشترك) */
   sysKeys: function (s) { return eng().sysKeys(s); },
+  acts: acts,   /* V7 · 53 (وضوح الصلاحيات): جدولُ أفعال الصف تحت مستواه */
   sysFlags: function (s) { return eng().sysFlags(s); },   /* V7 · 53: أعلامُ التصدير — أفعالُ «مخصّص» */
   flagsFor: function (s, lvl, custom) { return eng().flagsFor(s, lvl, custom); },
   flagsOf: function (rec, roles, leafOn) { return eng().flagsOf(rec, roles, leafOn); },

@@ -227,13 +227,14 @@ test('rasd · ④ «الإدارات والصلاحيات»: الأنظمة (ا�
     await rs.click(); await p.waitForTimeout(600);
     const lv = p.locator('main select[aria-label="مستوى نظام رصد الحالات"]');
     const lvs = await lv.locator('option').allInnerTexts();
-    for (const x of ['مشاهدة فقط', 'إدخال', 'تعديل', 'كامل', 'مخصّص']) assert.ok(lvs.includes(x), 'level ' + x + ' missing: ' + lvs.join(','));
+    for (const x of ['مشاهدة', 'إدخال', 'تعديل', 'تشغيل', 'إشراف', 'مخصّص']) assert.ok(lvs.includes(x), 'level ' + x + ' missing: ' + lvs.join(','));   /* V7 · 53 (وضوح الصلاحيات): الأسماءُ الجديدة */
     await lv.selectOption({ label: 'مخصّص' }); await p.waitForTimeout(800);
-    const keys = await p.locator('main [role=group][aria-label="أفعال نظام رصد الحالات"] button').evaluateAll((bs) => bs.map((x) => ({ t: x.firstChild.textContent.trim(), s: !!x.querySelector('.p44-sens') })));
-    const has = (t, s) => keys.some((k) => k.t.includes(t) && k.s === s);
-    assert.ok(has('إضافة سجل', false) && has('عرض السجلات', false), 'rasd actions in custom: ' + JSON.stringify(keys));
-    assert.ok(has('حذف سجل', true) && has('فتح شهر/يوم مقفل للاستدراك', true) && has('حذف جميع تقارير رصد الحالات للشهر', true), 'rasd sensitive actions are not marked: ' + JSON.stringify(keys));
-    assert.ok(!keys.some((k) => k.t.includes('تغيير الحالة')), 'the reserved rz.rec.status is assignable');
+    /* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): «مخصّص» = جدولُ الأفعال (الفعل · المكان · الحالة) بمربعٍ عند كل فعلٍ يُمنح؛ الحسّاسُ مستواه «إشراف» بجانب مربعه (كان شارة «حسّاس») */
+    const keys = await p.locator('main table[aria-label="أفعال نظام رصد الحالات"] tbody tr').evaluateAll((rs) => rs.map((r) => ({ t: r.cells[0].textContent.trim(), w: r.cells[1].textContent.trim(), st: r.cells[2].textContent.trim(), ck: !!r.cells[2].querySelector('[role=checkbox]') })));
+    const has = (t, s) => keys.some((k) => k.t === t && k.ck && (k.st === 'إشراف') === s && k.w);
+    assert.ok(has('يضيف سجل رصد', false) && has('يعرض سجلات رصد الحالات', false), 'rasd actions in custom: ' + JSON.stringify(keys));
+    assert.ok(has('يحذف سجل رصد', true) && has('يفتح شهراً أو يوماً مقفلاً للاستدراك', true) && has('يحذف جميع تقارير رصد الحالات لشهر', true), 'rasd sensitive actions are not marked: ' + JSON.stringify(keys));
+    assert.ok(keys.some((k) => k.t === 'يغيّر حالة سجل رصد' && k.st === 'للمدير فقط' && !k.ck), 'the reserved rz.rec.status: «للمدير فقط» without a checkbox: ' + JSON.stringify(keys));
     const chk = await p.locator('main [aria-label="اختبار الوصول"] select option').evaluateAll((os) => os.map((o) => o.value));
     for (const k of ['rz.rec.view', 'rz.rec.create', 'rz.rec.retro.open', 'ref.rasd.list.edit']) assert.ok(chk.includes(k), 'rasd action ' + k + ' is not in the access check');
     assert.deepEqual(su.errs, [], 'page errors: ' + su.errs.join(' | '));

@@ -703,3 +703,25 @@ test('④ custom level with zero actions: the save is refused with «اختر ف
   assert.equal(v.p44RevErr, '');
   assert.equal(await v.p44RevSave(), true);
 });
+
+/* V7 · 53 (وضوح الصلاحيات — REVIEW بند 4 ب): تحت المستوى المختار سطرُه الوصفي وجدولُ أفعال النظام كلِّها (الفعل · المكان · الحالة) من المحرّك (KIVO.Perm44.acts) —
+   وفي «مخصّص» مربعٌ عند كل فعلٍ يُمنح يقلب المسودةَ وحدها؛ ما لا يُمنح بالأدوار بلا مربع */
+test('V7 · 53 (وضوح) the role editor: under the chosen level its line and the table of every action of the system; «مخصّص» = the same table with a checkbox', () => {
+  const W = world();
+  W.sub('roles', { viewer: 'plat', sel: 'r_obs' });
+  const tasks = () => W.render().p44SysEd.find((s) => s.k === 'tasks'), R = W.KIVO.KIVO_REGISTRY;
+  let t = tasks();
+  assert.equal(t.lv, 'input'); assert.equal(t.lvD, '+ يضيف جديداً');
+  assert.deepEqual(J(t.tb.map((x) => x.k)), J(W.E.sysKeys('tasks').concat(['self.task.respond', 'ff.task.export'])).sort((a, b) => R.keys.concat(['ff.task.export']).indexOf(a) - R.keys.concat(['ff.task.export']).indexOf(b)), 'every action of the system, registry order');
+  const st = (k) => t.tb.find((x) => x.k === k);
+  assert.deepEqual([st('task.view').st, st('task.create').st, st('task.edit').st, st('task.accept').st, st('task.delete').st, st('ff.task.export').st, st('self.task.respond').st],
+    ['✔', '✔', '✕ يحتاج تعديل', '✕ يحتاج تشغيل', '✕ يحتاج إشراف', '✕ يحتاج تشغيل', 'لكل موظف على ما يخصه']);
+  assert.equal(st('task.delete').a, 'يحذف مهمة'); assert.equal(st('task.delete').w, 'المهام');
+  assert.ok(t.tb.every((x) => x.ck === false), 'no checkbox outside «مخصّص»');
+  t.setLv({ target: { value: 'custom' } }); t = tasks();
+  assert.equal(t.lvD, 'تختار الأفعال واحداً واحداً');
+  assert.equal(st('self.task.respond').ck, false, 'self: no checkbox'); assert.ok(t.tb.filter((x) => x.k !== 'self.task.respond').every((x) => x.ck === true));
+  assert.equal(st('task.delete').on, 'false'); st('task.delete').flip(); t = tasks();
+  assert.equal(st('task.delete').on, 'true'); assert.ok(W.page._p44S().d.roles.find((r) => r.id === 'r_obs').sys.tasks.keys.includes('task.delete'), 'the draft carries it');
+  assert.equal(W.render().p44Dirty, true); assert.deepEqual(W.writes, [], 'nothing written before the review');
+});
