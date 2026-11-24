@@ -1137,7 +1137,7 @@
      الحفظُ يغيّر ما غيّره المستخدم وحده). اسمُ الفترة نصُّ المفتاح القائم كما هو، ولا تحليلَ تاريخٍ في هذه الطبقة: «الشهرُ الحالي واليوم»
      يسمّيهما التقويمُ في periodNow9 وحدها، والصفحةُ تطلب ما تعرضه بـoperations.want. */
   var periodWant9 = Object.create(null), periodGroups9 = Object.create(null), periodOrder9 = Object.create(null);
-  var periodLogicalRev9 = Object.create(null), periodGrpOf9 = Object.create(null), periodViewRev9 = Object.create(null), periodTextRev9 = Object.create(null), periodSeq9 = 0, periodLoadSeq9 = Object.create(null), periodGetSeq9 = Object.create(null), periodPk9 = null;
+  var periodWantP9 = Object.create(null), periodLogicalRev9 = Object.create(null), periodGrpOf9 = Object.create(null), periodViewRev9 = Object.create(null), periodTextRev9 = Object.create(null), periodSeq9 = 0, periodLoadSeq9 = Object.create(null), periodGetSeq9 = Object.create(null), periodPk9 = null;
   function periodName9(name) { return Object.prototype.hasOwnProperty.call(PERIOD_RES9, name) && operationResources9.indexOf(name) !== -1; }
   function periodParse9(k) { var m = /^(bsdept:[^:\s,@]+:(bassam_[A-Za-z0-9_]+))@([^,@*;\u0000-\u001f]{0,64})$/.exec(String(k)); return m && periodName9(m[2]) ? { K: m[1], name: m[2], p: m[3] } : null; }
   function periodLogical9(k) { var m = /^bsdept:[^:\s,@]+:(bassam_[A-Za-z0-9_]+)$/.exec(String(k)); return !!m && periodName9(m[1]); }
@@ -1276,6 +1276,8 @@
       (s.logical ? [] : s.keys).concat(want.periods.concat(more.periods || []).map(function (p) { return K + '@' + p; })).forEach(function (k) { if (ks.indexOf(k) === -1) ks.push(k); });
       want.groups.concat(more.groups || []).forEach(function (g) { if (range.indexOf(K + '@' + g) === -1) range.push(K + '@' + g); });
       /* مواردُ شهرُها فترةٌ واحدة أو تُقرأ بالأيام (عددُ فتراتها معروف) تُضمّ إلى طلبٍ واحد ما دام ≤ 40 فترة — طلباتٌ أقل (كلفةُ كلِّ طلبٍ في D1) */
+      /* أشهرُ موردٍ يومي كثيرة (بطاقاتُ السنة): طلبٌ لكل شهر (≤ 40 فترة لكلٍّ)، في القراءة الواحدة نفسِها */
+      if (more.chunk && range.length > 1) { range.forEach(function (r, i) { reqs.push({ K: K, Ks: [K], logical: s.logical, keys: i ? [K + '@'] : ks, range: [r], small: false, cost: 0 }); }); return; }
       var known = PERIOD_MONTHLY9[unscoped(K)] || !range.length, cost = ks.length - 1 + range.length, into = known && reqs.filter(function (q) { return q.small && q.cost + cost <= 40; })[0];
       if (into) { into.Ks.push(K); into.keys = into.keys.concat(ks); into.range = into.range.concat(range); into.cost += cost; into.K = null; return; }
       reqs.push({ K: K, Ks: [K], logical: s.logical, keys: ks, range: range, small: known, cost: cost });
@@ -1369,10 +1371,13 @@
       var known = operationKnown9[K + '@' + p]; return !fresh || !known || !known.stamp || !operationSame9(known.stamp) || known.epoch !== operationEpoch9 || (known.state !== 'ready' && known.state !== 'absent');
     });
     if (!needG.length && !needP.length) return Promise.resolve({ ok: 1, cached: 1 });
-    var quiet = !!(spec && spec.quiet), parts = PERIOD_MONTHLY9[name] || needG.length < 2 ? [{ groups: needG, periods: needP }]
-      : needG.map(function (g) { return { groups: [g], periods: [] }; }).concat(needP.length ? [{ groups: [], periods: needP }] : []);   /* شهرُ أيامٍ لكل طلب (≤ 40 فترة) */
-    return Promise.all(parts.map(function (part) { var extra = {}; extra[K] = part; return periodRead9([K + '@'], extra, quiet); })).then(function (all) {
-      var bad = all.filter(function (r) { return !r || r.ok !== 1; })[0];
+    var quiet = !!(spec && spec.quiet), extra = {};
+    extra[K] = { groups: needG, periods: needP, chunk: !PERIOD_MONTHLY9[name] };   /* شهرُ أيامٍ لكل طلب (≤ 40 فترة) */
+    /* طلبان للمورد نفسِه في الوقت نفسِه يُسقط أحدُهما الآخر («stale»): الثاني ينتظر الأول */
+    var run = (periodWantP9[K] || Promise.resolve()).then(function () { return periodRead9([K + '@'], extra, quiet); });
+    periodWantP9[K] = run.then(function () {}, function () {});
+    return run.then(function (r) {
+      var all = [r], bad = all.filter(function (x) { return !x || x.ok !== 1; })[0];
       /* الصفحاتُ تعيد قراءة حالتها بخبر «bassam:remote» (root-logic _bsLiveReload) — خبرٌ مؤكَّد (لا يُسقط ما قُرئ للتوّ) وليس من جهازٍ آخر */
       if (!bad && !quiet) { try { operationDispatchRemote9([K], BOOT.v, [K], []); } catch (e) { /* إبلاغٌ للشاشات فقط */ } }
       return bad || all[all.length - 1];

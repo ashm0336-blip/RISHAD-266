@@ -231,3 +231,16 @@ test('a resource the reader may not see comes back denied without range or epoch
     assert.equal(f.ops.ready([PL, DR, E]), true, 'the page is ready (denied counts as answered)');
   } finally { f.T.dispose(); }
 });
+
+test('several months of a day resource are read month by month in one read, all kept (year cards); a second want waits for the first', async () => {
+  const f = client();
+  try {
+    await f.ops.read([RD]);
+    const n0 = f.reads.length;
+    const [a, b] = await Promise.all([f.ops.want('bassam_rounds_v1', { groups: ['1448-5', '1448-6', '1448-4'] }), f.ops.want('bassam_rounds_v1', { periods: ['m:1448-3'] })]);
+    assert.equal(a.ok, 1, JSON.stringify(a)); assert.equal(b.ok, 1, JSON.stringify(b));
+    assert.deepEqual(copy(f.ops.loaded('bassam_rounds_v1').groups).sort(), ['1448-4', '1448-5', '1448-6']);
+    assert.ok(f.reads.slice(n0).every((q) => q.range.length <= 1), 'one month per request: ' + JSON.stringify(f.reads.slice(n0)));
+    assert.deepEqual(copy(f.ops.get('bassam_rounds_v1'))['1448-5-29'], { t: 1 });
+  } finally { f.T.dispose(); }
+});
