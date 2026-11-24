@@ -34,6 +34,8 @@ function server() {
     if (u.pathname === '/api/operations/read') {
       const keys = (u.searchParams.get('keys') || '').split(',').filter(Boolean), range = (u.searchParams.get('range') || '').split(',').filter(Boolean);
       reads.push({ keys, range });
+      const denied = keys.find((k) => S.deny && k.endsWith('@') && S.deny.includes(k.slice(0, -1)));
+      if (denied) return json({ ok: 1, uid: UID, v: 0, epoch: 0, resources: {}, absent: [], denied: keys.slice(), base: {}, ranges: {} });   /* as the «periods» server: a denied resource, no range, no epoch */
       const out = { ok: 1, uid: UID, epoch: 3, v, resources: {}, absent: [], denied: [], failed: {}, base: {}, ranges: {} };
       const all = keys.slice();
       range.forEach((r) => { const at = r.lastIndexOf('@'), k = r.slice(0, at), g = r.slice(at + 1); out.ranges[r] = Object.keys(S.periods).filter((pk) => pk.indexOf(k + '@') === 0 && grp(k, pk.slice(k.length + 1)) === g && pk !== k + '@'); out.ranges[r].forEach((pk) => { if (!all.includes(pk)) all.push(pk); }); });
@@ -214,5 +216,17 @@ test('a month range over the read limit falls back to the shown days', async () 
     const last = f.reads[f.reads.length - 1];
     assert.deepEqual(last.range, []);
     assert.ok(last.keys.includes(RD + '@1448-6-14') && last.keys.includes(RD + '@m:1448-6'));
+  } finally { f.T.dispose(); }
+});
+
+test('a resource the reader may not see comes back denied without range or epoch; the other resources are still read', async () => {
+  const f = client();
+  try {
+    f.S.deny = [DR];
+    const r = await f.ops.read([PL, DR, E]);
+    assert.equal(r.ok, 1, JSON.stringify(r));
+    assert.equal(f.ops.state('bassam_dreport_v1'), 'denied');
+    assert.equal(f.ops.state('bassam_plan_v1'), 'ready');
+    assert.equal(f.ops.ready([PL, DR, E]), true, 'the page is ready (denied counts as answered)');
   } finally { f.T.dispose(); }
 });

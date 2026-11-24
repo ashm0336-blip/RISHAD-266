@@ -45,11 +45,17 @@ async function open(b, lab, hash, un, opts) {
   await s.page.waitForTimeout(100); await ready(s.page); await s.page.waitForTimeout(600);
   return { ...s, reads, saves, ms: Date.now() - t0 };
 }
-/* حفظُ الفترة الحالية عبر خدمة الصفحة نفسِها (الوثيقةُ كما تراها الصفحة ⇒ الطبقةُ ترسل ما تغيّر) */
-const patchIn = (p, name, src, arg) => p.evaluate(async ([name, src, arg]) => {
-  const svc = KIVO.__BS_SRV.operations, r = await svc.patch({}, 'TEST_ONLY:' + name, name, (doc) => { (0, eval)('(' + src + ')')(doc, arg); return doc; });
-  return { ok: r && r.ok, err: r && r.err, status: r && r.status };
-}, [name, src.toString(), arg]);
+/* حفظُ الفترة الحالية عبر خدمة الصفحة نفسِها (الوثيقةُ كما تراها الصفحة ⇒ الطبقةُ ترسل ما تغيّر). التعديلُ وصفٌ بلا eval (سياسةُ المحتوى تمنعه):
+   path إلى الحقل، وset قيمةٌ جديدة أو append نصٌّ يُلحق */
+const patchIn = (p, name, edit) => p.evaluate(async ([name, edit]) => {
+  let thrown = null;
+  const svc = KIVO.__BS_SRV.operations, r = await svc.patch({}, 'TEST_ONLY:' + name, name, (doc) => {
+    try { let o = doc; edit.path.slice(0, -1).forEach((k) => { o = o[k]; }); const last = edit.path[edit.path.length - 1]; o[last] = 'append' in edit ? o[last] + edit.append : edit.set; }
+    catch (e) { thrown = String(e && e.message) + ' · keys ' + Object.keys(doc || {}).join(',').slice(0, 200); throw e; }
+    return doc;
+  });
+  return { ok: r && r.ok, err: r && r.err, status: r && r.status, thrown };
+}, [name, edit]);
 
 test('53 · كل صفحة تفتح بفتراتها، وحفظُ شهرٍ أو يومٍ يرسل تلك الفترةَ وحدها، وما لم يُعرض مخزَّنٌ كما كان', { timeout: 1800000, ...need }, async (t) => {
   const lab = await startLab(), b = await chromium.launch(), W = docs();
@@ -64,10 +70,10 @@ test('53 · كل صفحة تفتح بفتراتها، وحفظُ شهرٍ أو �
     assert.ok(before.bassam_plan_v1 && before.bassam_staffing_v3, 'the server answers period keys (periods contract): ' + JSON.stringify(Object.keys(before)));
 
     const cases = [
-      ['#/plan', 'bassam_plan_v1', CUR, (d, cur) => { d.months[cur].d[0].zones[0].name += ' (TEST_ONLY 53)'; }],
-      ['#/staffing', 'bassam_staffing_v3', CUR, (d, cur) => { d[cur].TEST_ONLY_e1.cs = 'TEST_ONLY-53'; }],
-      ['#/dreport', 'bassam_dreport_v1', DAY, (d, day) => { d[day].note53 = 'TEST_ONLY'; }],
-      ['#/daily/rounds', 'bassam_rounds_v1', DAY, (d, day) => { d[day].d[0].zones[0].name += ' (TEST_ONLY 53)'; }],
+      ['#/plan', 'bassam_plan_v1', CUR, { path: ['months', CUR, 'd', 0, 'zones', 0, 'name'], append: ' (TEST_ONLY 53)' }],
+      ['#/staffing', 'bassam_staffing_v3', CUR, { path: [CUR, 'TEST_ONLY_e1', 'cs'], set: 'TEST_ONLY-53' }],
+      ['#/dreport', 'bassam_dreport_v1', DAY, { path: [DAY, 'shifts', 'TEST_ONLY-A', 'pulled'], set: false }],
+      ['#/daily/rounds', 'bassam_rounds_v1', DAY, { path: [DAY, 'd', 0, 'zones', 0, 'name'], append: ' (TEST_ONLY 53)' }],
       ['#/tasks', null],
     ];
     for (const [hash, name, period, edit] of cases) {
@@ -79,7 +85,7 @@ test('53 · كل صفحة تفتح بفتراتها، وحفظُ شهرٍ أو �
         assert.ok(s.reads.length > 0, hash + ': the page read its data');
         assert.ok((await s.page.evaluate(() => document.querySelector('main.bs-main').innerText.length)) > 50, hash + ': the page shows content');
         if (!name) continue;
-        const n0 = s.saves.length, r = await patchIn(s.page, name, edit, period);
+        const n0 = s.saves.length, r = await patchIn(s.page, name, edit);
         assert.equal(r.ok, 1, hash + ' save: ' + JSON.stringify(r));
         const sent = s.saves.slice(n0);
         assert.equal(sent.length, 1, hash + ': one request');
@@ -87,7 +93,7 @@ test('53 · كل صفحة تفتح بفتراتها، وحفظُ شهرٍ أو �
         assert.deepEqual(sent[0].body.del, []);
         const stored = (await get(K(name) + '@' + period)).resources[K(name) + '@' + period], periodBytes = Buffer.byteLength(JSON.stringify(JSON.stringify(stored)));
         assert.ok(sent[0].bytes < periodBytes + 4096, hash + ': request bytes ≈ the period (' + sent[0].bytes + ' vs ' + periodBytes + ')');
-        assert.match(JSON.stringify(stored), /TEST_ONLY.53|TEST_ONLY-53|note53/, hash + ': stored');
+        assert.match(JSON.stringify(stored), 'append' in edit ? /TEST_ONLY 53/ : 'string' === typeof edit.set ? /TEST_ONLY-53/ : /"pulled":false/, hash + ': stored');
         assert.deepEqual(s.errs, [], hash + ': no page errors');
       } finally { await s.ctx.close(); }
     }
@@ -99,6 +105,7 @@ test('53 · كل صفحة تفتح بفتراتها، وحفظُ شهرٍ أو �
       const s = await open(b, lab, '#/profile', LAB.empA, opts);
       try {
         times['#/profile ' + label] = s.ms;
+        t.diagnostic('profile ' + label + ' open ' + s.ms + ' ms · reads ' + JSON.stringify(s.reads.map((u) => decodeURIComponent(new URL(u).search).replace(/bsdept:[^:]+:/g, '').slice(0, 220))));
         assert.deepEqual(s.reads.flatMap(wholeSplit), [], 'profile ' + label + ': no whole-document read');
         assert.deepEqual(s.errs, [], 'profile ' + label + ': no page errors');
       } finally { await s.ctx.close(); }

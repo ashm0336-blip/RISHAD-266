@@ -1225,6 +1225,7 @@
     var expect = q.keys.slice();
     for (var i = 0; i < q.range.length; i++) {
       var list = ranges[q.range[i]];
+      if (list === undefined && q.K && data.denied.indexOf(q.K + '@') !== -1) list = [];   /* المورد محجوب: لا مدى في الجواب */
       if (!Array.isArray(list) || list.some(function (key) { var x = periodParse9(key); return !x || x.K !== q.K; })) return false;
       list.forEach(function (key) { if (expect.indexOf(key) === -1) expect.push(key); });
     }
@@ -1283,8 +1284,10 @@
         keys.forEach(function (key) { if (operationReads9[key] === readId) operationForget9(key, 'error'); });
         return Object.assign(operationFailure9(typeof rd.err === 'string' ? rd.err : 'read', refused.response.status), typeof rd.msg === 'string' ? { msg: rd.msg } : {});
       }
-      if (answers.some(function (x) { return !periodValid9(x.q, x.data, stamp); }) || new Set(answers.map(function (x) { return x.data.epoch; })).size !== 1) throw Error('operations-read-invalid');
-      var epoch = answers[0].data.epoch, v = Math.max.apply(null, answers.map(function (x) { return x.data.v; }));
+      /* جوابٌ كلُّه محجوب لا يحمل حقبةً (0): لا يدخل في اتّساق الحقبة */
+      var dated = answers.filter(function (x) { return x.data && operationObject9(x.data.resources) && (Object.keys(x.data.resources).length || (Array.isArray(x.data.absent) && x.data.absent.length)); });
+      if (answers.some(function (x) { return !periodValid9(x.q, x.data, stamp); }) || new Set(dated.map(function (x) { return x.data.epoch; })).size > 1) throw Error('operations-read-invalid');
+      var epoch = dated.length ? dated[0].data.epoch : (operationEpoch9 !== null ? operationEpoch9 : answers[0].data.epoch), v = Math.max.apply(null, answers.map(function (x) { return x.data.v; }));
       if (operationEpoch9 !== null && operationEpoch9 !== epoch) { operationInvalidate9(); stamp = operationContext9(); }
       operationEpoch9 = epoch;
       var out = { ok: 1, uid: stamp.uid, epoch: epoch, v: v, resources: {}, absent: [], denied: [], base: {} }, failedAll = {}, bump = Object.create(null);
