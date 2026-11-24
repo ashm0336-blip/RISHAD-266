@@ -12,7 +12,9 @@
    "file": "../workers/parts/004-registry-2.js",
    "omitFields": ["verb", "place"],
    "header": "/* ═══ KIVO — Master Permission Registry v24.9 (generated R203 · Phase 4.5 — Integrated Identity→Scope Preflight) ═══\n   ARCHITECTURE REFERENCE v24.9 — v24.8 + Phase 4.5 (IP-01…IP-06); shadow only · no scope writes · no production writes\n   مولَّدٌ آلياً من الوثيقة v24.9 (SHA-256 6e9aba634577b9ac09498edcb0a5b42453bf44c1509e6ae272281162d2a1cdde) بأداة registry10/gen_registry.py — لا يُحرَّر يدوياً.\n   مفاتيحُ KIVO_REGISTRY_DATA هي مفاتيحُ v24.3/v24.4/v24.5/v24.5.1/v24.6/v24.7/v24.8 نفسُها (269)؛ v24.9 لا يغيّر مفتاحاً (ربطُ القراءة في KIVO_SCOPE_BINDINGS.readBindings) — نسخةٌ واحدة تُحقن حرفياً في الواجهة والخادم (Single Source of Truth).\n   Phase 4.1.1: shadow · validation · comparison فقط — القرارُ النافذُ للنظام القديم (PAGE_REG/PG_REG) حتى مراحل الحراسة والترحيل. */\n",
-   "tail": ""
+   "tail": "",
+   "guardDetailMarker": "·"
   }
- ]
+ ],
+ "guardDetailNote": "V7 · 53 (REVIEW.md البند ٨، الخيار أ): الفرقُ الوحيد المعلن بين نسخة الواجهة (340) ونسخة الخادم (004) — guard.detail غيرُ الفارغ علامةٌ «·» في الخادم؛ يبرهنه tests/unit/v7_53_registry_detail.test.mjs"
 }

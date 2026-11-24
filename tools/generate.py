@@ -33,6 +33,7 @@ def gen_registry(S):
     spec = json.load(open(os.path.join(S, R, 'targets.json'), encoding='utf-8'))
     obj = json.load(open(os.path.join(S, R, spec['source']), encoding='utf-8'))
     engine = rd(os.path.join(S, R, spec['engine']))
+<<<<<<< HEAD
     # V7 · 53 (وضوح الصلاحيات): omitFields — نصوصُ العرض (verb · place) تقرؤها الواجهة وحدها؛ لا تُشحن في الخادم (المصدرُ كما هو)
     def body(t):
         o, drop = obj, t.get('omitFields') or []
@@ -40,6 +41,21 @@ def gen_registry(S):
             o = dict(obj, **{a: [{k: v for k, v in e.items() if k not in drop} if isinstance(e, dict) else e for e in obj[a]] for a in ('registry', 'atoms')})
         return 'var KIVO_REGISTRY_DATA = ' + json.dumps(o, ensure_ascii=False, separators=(',', ':')) + ';\n'
     return {norm(t['file']): (t['header'] + body(t) + engine + t['tail']).encode('utf-8') for t in spec['targets']}
+=======
+    def data_for(t):
+        # V7 · 53 (REVIEW.md البند ٨ — قرارُ المراجع بتفويض المالك، الخيار أ): نسخةُ الخادم وحدها تحمل guard.detail علامةً قصيرة
+        # (guardDetailMarker) بدل النصّ — الخادمُ لا يقرأ منه إلا أنه غيرُ فارغ (validate · noGuard)؛ نسخةُ الواجهة كاملة.
+        # الفرقُ المعلن وحده يقبله tests/unit/v7_53_registry_detail.test.mjs (ويبرهن أنّ لا قارئَ آخر).
+        o = obj; m = t.get('guardDetailMarker')
+        if m is not None:
+            if not isinstance(m, str) or not m: raise SystemExit('registry: guardDetailMarker يجب أن يكون نصّاً غيرَ فارغ')
+            o = json.loads(json.dumps(obj))
+            for e in o['registry']:
+                g = e.get('guard')
+                if isinstance(g, dict) and g.get('detail'): g['detail'] = m
+        return 'var KIVO_REGISTRY_DATA = ' + json.dumps(o, ensure_ascii=False, separators=(',', ':')) + ';\n'
+    return {norm(t['file']): (t['header'] + data_for(t) + engine + t['tail']).encode('utf-8') for t in spec['targets']}
+>>>>>>> 30066f8
 
 def gen_worker(S, produced):
     L = layout(S); PD = norm(L['workersParts'])
