@@ -232,6 +232,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           return same(f, o) ? o : f;
         });
       },
+      cur = this.state && this.state.year + "-" + this.state.month,
       out = { ...value };
     if (Array.isArray(value.floors)) out.floors = floors(value.floors, base.floors);
     if (value.months && "object" === typeof value.months && base.months && "object" === typeof base.months) {
@@ -242,7 +243,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           mo = (x) => !!x && !Array.isArray(x) && "object" === typeof x && !!x.mo;
         if (void 0 === b || v === b) M[k] = v;
         else if (same(v, b)) M[k] = b;
-        else if (ym && this.monthPast(+ym[1], +ym[2]) && !mo(b) && !mo(v)) M[k] = b;   /* شهرٌ ماضٍ مقفل قبلُ وبعدُ ⇒ كما خُزِّن */
+        else if (ym && k !== cur && this.monthPast(+ym[1], +ym[2]) && !mo(b) && !mo(v)) M[k] = b;   /* شهرٌ ماضٍ مقفل قبلُ وبعدُ وليس الشهرَ المعروض ⇒ كما خُزِّن (V7 · د7 52: تعديلُ المستخدم في الشهر المعروض يُرسل كما هو ويحكم فيه الخادم) */
         else if (Array.isArray(v)) M[k] = floors(v, b);
         else if (v && "object" === typeof v && Array.isArray(v.d) && b && "object" === typeof b && Array.isArray(b.d)) M[k] = { ...v, d: floors(v.d, b.d) };
         else M[k] = v;
