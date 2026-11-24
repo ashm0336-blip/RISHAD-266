@@ -1,9 +1,9 @@
 /* V7 · 53 (وضوح الصلاحيات — docs/handoff/REVIEW.md بند 4 · معتمدٌ من المالك): عرضٌ وأسماءٌ فقط — منطقُ الصلاحيات ومفاتيحُ المستويات كما هي، ولا ترحيلَ بيانات.
-   أ. أسماءُ المستويات وسطرُها الوصفي من مصدرٍ واحد (src/permissions/registry/perm44-levels.json): مشاهدة · إدخال · تعديل · تشغيل · إشراف · مخصّص.
+   أ. أسماءُ المستويات وسطرُها الوصفي من مصدرٍ واحد (src/permissions/registry/perm44-levels.json): مشاهدة · إدخال · تعديل · تشغيل · اعتماد وحذف · مخصّص.
    ب. تحت كلِّ مستوى مختار جدولُ أفعال النظام كلِّها (KIVO.Perm44.acts): الفعل · المكان (verb · place في السجلّ المولَّد من permissions.json لكل نظام) · الحالة.
    الاختبارات الستة (REVIEW 4.ج) — TEST_ONLY (tests/fixtures/gen_fixture.py):
      ① كلُّ صلاحيات الأنظمة الأحد عشر (العددُ من السجلّ = 164) في جدول نظامها، بالمستوى الصحيح، بفعلٍ ومكانٍ غير فارغين;
-     ② لا حسّاسَ في مشاهدة/إدخال/تعديل/تشغيل، وكلُّ حذفٍ/اعتمادٍ/قفلٍ/إعادةِ فتح في «إشراف»;
+     ② لا حسّاسَ في مشاهدة/إدخال/تعديل/تشغيل، وكلُّ حذفٍ/اعتمادٍ/قفلٍ/إعادةِ فتح في «اعتماد وحذف»;
      ③ الصلاحياتُ الفعلية لكل شخص في بياناتٍ بشكل Production قبل التغيير = بعده (العاملُ الحقيقي: الأساس c090be0 ⇄ الحالي);
      ④ الأربعُ «للمدير فقط» لا تُمنح من الواجهة ولا من الخادم;
      ⑤ لا اسمَ قديم لمستوى في أي نصٍّ بالمنصة (المبنيّ pk265 والعامل);
@@ -16,7 +16,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { ROOT, SRC, DIST, PYTHON, makeLegacyTestEnv as makeEnv, client, applySql } from './harness.mjs';
+import { randomUUID } from 'node:crypto';
+import { ROOT, SRC, DIST, PYTHON, makeLegacyTestEnv as makeEnv, makeEnv as emptyEnv, seedLegacyTestAdmin, client, applySql } from './harness.mjs';
 import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 
 const rd = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -46,7 +47,7 @@ function systemKeys() {
 test('53 · وضوح ① أ — أسماءُ المستويات وسطرُها من perm44-levels.json وحده (المفاتيح كما هي)، والصفحةُ بلا قائمة أسماء', () => {
   assert.deepEqual(LV.map((l) => [l.key, l.name, l.desc]), [
     ['view', 'مشاهدة', 'يشاهد فقط'], ['input', 'إدخال', '+ يضيف جديداً'], ['edit', 'تعديل', '+ يعدّل ويُسند ويُرفق'],
-    ['full', 'تشغيل', '+ يقبل وينهي ويصدّر'], ['sensitive', 'إشراف', '+ يحذف ويعتمد ويقفل ويعيد الفتح'], ['custom', 'مخصّص', 'تختار الأفعال واحداً واحداً']]);
+    ['full', 'تشغيل', '+ يقبل وينهي ويصدّر'], ['sensitive', 'اعتماد وحذف', '+ يحذف ويعتمد ويقفل ويعيد الفتح'], ['custom', 'مخصّص', 'تختار الأفعال واحداً واحداً']]);
   const { E } = clientEngine();
   assert.deepEqual(J(E.levels()).map((l) => [l.key, l.name, l.desc]), LV.map((l) => [l.key, l.name, l.desc]), 'the engine (client) carries them');
   const org = rd('src/modules/org/logic-perm44.js');
@@ -77,9 +78,9 @@ test('53 · وضوح ① ب — كلُّ صلاحيات الأنظمة الأح�
         assert.equal(x.ck, false);
         assert.equal(x.st, E.keysFor(s, L).includes(k) ? '✔' : '✕ يحتاج ' + NAME[min], s + ' · ' + L + ' · ' + k);
       }
-      /* وأفعالُ التصدير (أعلام ff) بنصّها من ذرّتها، في «تشغيل» و«إشراف» */
+      /* وأفعالُ التصدير (أعلام ff) بنصّها من ذرّتها، في «تشغيل» و«اعتماد وحذف» */
       for (const f of E.sysFlags(s)) { const x = by[f]; assert.ok(x && x.a.trim() && x.w.trim(), f + ' row'); if (L !== 'custom') assert.equal(x.st, ['full', 'sensitive'].includes(L) ? '✔' : '✕ يحتاج تشغيل', f + ' · ' + L); }
-      /* لا صفَّ غيرَ ما يحكمه الصفّ: المفاتيحُ الممنوحة بالنظام (keysFor «إشراف») + ما لا يُمنح منه + أعلامُه */
+      /* لا صفَّ غيرَ ما يحكمه الصفّ: المفاتيحُ الممنوحة بالنظام (keysFor «اعتماد وحذف») + ما لا يُمنح منه + أعلامُه */
       const want = R.keys.filter((k) => E.keysFor(s, 'sensitive').includes(k) || (keys.includes(k) && ['none', 'self'].includes(R.byKey[k].grant))).concat(E.sysFlags(s));
       assert.deepEqual(T.map((x) => x.k), J(want), s + ' · ' + L + ': exactly the row\'s actions, in registry order');
     }
@@ -93,7 +94,7 @@ test('53 · وضوح ① ب — كلُّ صلاحيات الأنظمة الأح�
   assert.deepEqual(J(E.acts('lens.zones', {}, 'edit')).map((x) => x.k), J(lzAll), 'the lens table = the lens keys');
 });
 
-test('53 · وضوح ② لا حسّاسَ في مشاهدة/إدخال/تعديل/تشغيل · وكلُّ حذفٍ/اعتمادٍ/قفلٍ/إعادةِ فتح في «إشراف» (التصنيفُ الحالي بلا تغيير)', () => {
+test('53 · وضوح ② لا حسّاسَ في مشاهدة/إدخال/تعديل/تشغيل · وكلُّ حذفٍ/اعتمادٍ/قفلٍ/إعادةِ فتح في «اعتماد وحذف» (التصنيفُ الحالي بلا تغيير)', () => {
   const { E, R } = clientEngine(), sys = J(E.sysList()).map((s) => s.key).concat(J(E.lensList()).map((x) => x.key)), bad = [];
   for (const s of sys) {
     for (const k of E.keysFor(s, 'sensitive')) {
@@ -137,8 +138,8 @@ function serverEngine(src) {
   vm.runInContext(src + '\n;this.E = perm44E();', ctx);
   return ctx.E;
 }
-async function world(workerFile) {
-  const env = makeEnv(); env.__worker = (await import(pathToFileURL(workerFile).href + '?pc=' + Math.random())).default;
+async function world(workerFile, mk) {
+  const env = (mk || makeEnv)(); env.__worker = (await import(pathToFileURL(workerFile).href + '?pc=' + Math.random())).default;
   const C = client(env);
   assert.ok((await C.login('admin', 'admin')).ok);
   await applySql(env.DB, seedSql()); await installCurrentSchemaFixture(env);
@@ -164,8 +165,8 @@ function rolesFor(E) {
   people.tst_e_field = { role: null, ex: [{ key: 'field.view', until: null }] };
   return { v: 1, roles, people };
 }
-async function effective(workerFile, coreSrc) {
-  const W = await world(workerFile), E = serverEngine(coreSrc), rec = rolesFor(E), cur = W.kv(KG) || { v: 1, emp: {} }, emp = Object.assign({}, cur.emp);
+async function effective(workerFile, coreSrc, mk) {
+  const W = await world(workerFile, mk), E = serverEngine(coreSrc), rec = rolesFor(E), cur = W.kv(KG) || { v: 1, emp: {} }, emp = Object.assign({}, cur.emp);
   const C = (k) => true;
   for (const e of Object.keys(rec.people)) emp[e] = J(E.grantOf(rec.people[e], rec, C, Date.now(), null));
   const r = await W.save({ [KR]: rec, [KG]: Object.assign({}, cur, { emp }) });
@@ -182,13 +183,26 @@ function baseWorker() {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_pc_base_')), f = path.join(dir, 'worker_base.mjs');
     fs.writeFileSync(f, execFileSync('git', ['-C', ROOT, 'show', BASE + ':workers/_worker.js'], { maxBuffer: 64 << 20 }));
     const core = ['workers/parts/004-registry-2.js', 'workers/parts/057b-perm44.js'].map((p) => execFileSync('git', ['-C', ROOT, 'show', BASE + ':' + p], { maxBuffer: 64 << 20 }).toString()).join('\n');
-    return { f, core };
+    /* V7 · 53: كلُّ عاملٍ على قاعدةٍ بمخطّطه هو — ترحيلاتُ الأساس نفسُها من git (makeLegacyTestEnv للأساس: الخطّ الأساسي + إذنُ الترقية بقائمة ترحيلاته) */
+    const mig = execFileSync('git', ['-C', ROOT, 'ls-tree', '--name-only', BASE, 'migrations/'], { encoding: 'utf8' }).split('\n').map((x) => x.replace(/^migrations\//, '')).filter((x) => /^\d{4}_.+\.sql$/.test(x)).sort().map((x) => x.slice(0, -4));
+    const baseline = execFileSync('git', ['-C', ROOT, 'show', BASE + ':migrations/0001_baseline.sql'], { encoding: 'utf8' });
+    const mk = () => {
+      const env = emptyEnv();
+      env.DB.exec(baseline);
+      env.DB.exec('CREATE TABLE d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+      env.DB.db.prepare('INSERT INTO d1_migrations(name) VALUES(?)').run('0001_baseline');
+      const from = Number(env.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0]?.v || 0), expiresAt = Date.now() + 600000;
+      env.DB.db.prepare('INSERT INTO meta(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v').run('schema_upgrade_permit_v1', JSON.stringify({ version: 1, from, to: mig.length, migrations: mig.slice(from), operationId: randomUUID(), expiresAt }));
+      env.DB.exec("INSERT INTO meta (k, v) VALUES ('authz_mode', 'enforce') ON CONFLICT(k) DO NOTHING");
+      return seedLegacyTestAdmin(env);
+    };
+    return { f, core, mk, n: mig.length };
   } catch (e) { return null; }
 }
 const B0 = baseWorker();
 
 test('53 · وضوح ③ الصلاحياتُ الفعلية لكل شخص (العامل الحقيقي · بيانات بشكل Production) قبل التغيير = بعده — صفرُ فرق', { timeout: 600000, skip: B0 ? false : 'الأساس ' + BASE + ' غيرُ موجود في تاريخ git (KIVO_PERMCLARITY_BASE)' }, async () => {
-  const before = await effective(B0.f, B0.core);
+  const before = await effective(B0.f, B0.core, B0.mk);   /* الأساسُ على قاعدةٍ بترحيلاته هو (B0.n) */
   const after = await effective(path.join(ROOT, 'workers', '_worker.js'), rd('workers/parts/004-registry-2.js') + '\n' + rd('workers/parts/057b-perm44.js'));
   assert.deepEqual(before.save, [200, {}], 'the roles + grants save (before)'); assert.deepEqual(after.save, [200, {}], 'the roles + grants save (after)');
   const n = Object.values(after.me).filter((x) => Array.isArray(x) && x[0] === 200 && x[1]).length;
@@ -227,9 +241,10 @@ test('53 · وضوح ④ الخادم — الأربعُ «للمدير فقط»
 });
 
 /* ⑤ لا اسمَ قديمٌ لمستوى في نصوص المنصة المبنيّة (pk265 · العامل): «مشاهدة فقط» · «كامل» · «حسّاس» كلمةً مستقلّة — والباقي صفاتٌ عادية مسمّاة هنا بعبارتها */
-const OLD = /(?<![\p{L}\p{M}])(مشاهدة فقط|كامل|حسّاس|حساس)(?![\p{L}\p{M}])/gu;
+/* V7 · 53 (REVIEW بند 12): «إشراف» اسمُ المستوى السابق لـsensitive (التبس بمفتاح الدور «إشرافي») — ممنوعٌ اسماً لمستوى مثل «حسّاس» و«كامل» */
+const OLD = /(?<![\p{L}\p{M}])(مشاهدة فقط|كامل|حسّاس|حساس|إشراف)(?![\p{L}\p{M}])/gu;
 const NOT_LEVEL = ['شهر كامل', 'استبدال كامل', 'كامل الصلاحية', 'عجز كامل', 'إقرار كامل', 'تأكيد كامل', 'تأكيد حفظ كامل', 'حضور كامل', 'رصد كامل', 'بشكل كامل', 'تقرير كامل الورديات', 'إجراءٌ حسّاس'];
-test('53 · وضوح ⑤ لا يظهر الاسمان القديمان (ولا «مشاهدة فقط») اسماً لمستوى في أي نصٍّ بالمنصة', () => {
+test('53 · وضوح ⑤ لا يظهر اسمٌ قديم («كامل» · «حسّاس» · «إشراف» · «مشاهدة فقط») اسماً لمستوى في أي نصٍّ بالمنصة', () => {
   const hits = [], files = [];
   const walk = (d) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); if (fs.statSync(p).isDirectory()) walk(p); else if (/\.(js|html|txt|json)$/.test(f)) files.push(p); } };
   walk(DIST);
@@ -241,6 +256,7 @@ test('53 · وضوح ⑤ لا يظهر الاسمان القديمان (ولا �
   assert.deepEqual(hits, [], 'an old level name in the platform text');
   /* وصفحةُ «الإدارات والصلاحيات» ومحرّكُ الأدوار بلا أيٍّ منها البتّة */
   for (const f of ['src/modules/org/view.html', 'src/permissions/registry/perm44-levels.json']) assert.doesNotMatch(rd(f), OLD, f);
+  assert.equal(LV.find((l) => l.key === 'sensitive').name, 'اعتماد وحذف', 'REVIEW بند 12: the sensitive level is «اعتماد وحذف» (key unchanged)');
 });
 
 test('53 · وضوح ⑥ الهامش: page:Admin ≤ 94,560 gz (≥ 4%) · page:Org ≥ 2% — بلا رفع سقف', () => {

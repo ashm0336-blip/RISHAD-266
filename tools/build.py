@@ -59,7 +59,7 @@ if A.verify:
 META = json.loads(rd('blocks.json'))
 PAGES_LOADER = [b['id'] for b in META['blocks'] if b['id'].endswith('-pages-loader.js')][0]   # حارسُ الجلب الكسول بجوار المحمِّل
 BLK = {b['id']: b for b in META['blocks']}
-MIME = {'.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/manifest+json'}
+MIME = {'.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.json': 'application/manifest+json'}   # V7 · 53: .js (مكتبةٌ مورَّدة تُحمَّل عند الحاجة) · .jpg (غلافُ التقرير)
 OUTFILES = {}                                     # dist-relative path → bytes  (split)
 URL_OF = {}                                       # block id → hashed URL (split)
 
@@ -76,7 +76,7 @@ def hashed(dirname, stem, ext, data):
     OUTFILES[path] = data; return '/' + path
 def asset_url(rel):
     b = rdb(asset_path(rel)); d, f = rel.split('/', 1); stem, ext = os.path.splitext(f)
-    return hashed({'img': 'img', 'fonts': 'fonts'}[d], stem, ext, b)
+    return hashed({'img': 'img', 'fonts': 'fonts', 'vendor': 'js'}[d], stem, ext, b)   # V7 · 53: vendor ← ملفُّ html2canvas (نواةُ الطباعة · أجهزةُ أبل)
 def resolve_assets(text, mode):
     # monolith: every asset back as the exact data: URI of KIVO_240 · split: content-hashed file URL (fonts too — print and map-image
     # export get their data:font rules from BassamCssText.fontData()/fontSheets(), see client/js/115-css-text.js)

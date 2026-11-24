@@ -59,6 +59,7 @@ function osSchemaRoundsResources() {
     {
       resource: "bassam_rounds_v1",
       name: "rounds",
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiRounds, arc: { res: DAILY_ARC_RES, due: dailyArcDue }, me: 'today' },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
       schema: ocMap("ops_rounds", null, {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
@@ -78,6 +79,7 @@ function osSchemaRoundsResources() {
     {
       resource: DAILY_ARC_RES,
       name: "rounds_arc",
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiRounds, me: 'today' },
       late: 1,   /* نسخٌ احتياطية قبل هذه الحزمة لا تحمله: يُستعاد منها فارغاً (019t opValidateBackupDomains) */
       schema: ocMap("ops_rounds_arc", null, {
         fixed: { __pMig: ocScalar("scalar") },
@@ -116,6 +118,17 @@ function dailyArcClosed(ctrl, y, m, T) {
   if (c && (c.mo || (isObj(c.dopen) && Object.keys(c.dopen).length))) return false;
   return !!(T && T.y > 0 && T.m > 0 && (y * 12 + m) <= (T.y * 12 + T.m) - 2);
 }
+/* V7 · 53 (periodsui 9): أيامُ الحيّ التي تنتقل إلى الأرشيف (شهرٌ مقفل) — حفظُ الفترة يضيفها إلى نطاقه فتنتقل في دفعته (dailyArcPend)؛ أقدمُها
+   أولاً و31 يوماً على الأكثر في الحفظة (حيٌّ تراكمَ فيه تاريخٌ طويل يُفرَّغ على حفظات، لا في دفعةٍ تتجاوز الميزانية) */
+/* V7 · 53 (kpi 9): v.kpi لليوم — مرآةُ _kLean (daily client) حرفاً */
+var OS_KPI_ROUNDS = { top: ['ap'], zones: ['uid', 'code', 'name', 'ztype', 'zcat', 'off', 'cap', 'yard', 'region', 'level', 'pc', 'count', 'emp', 'needN', 'needS', 'fAt'],
+  gates: ['gid', 'leafN', 'pOf', 'num', 'label', 'name', 'closed', 'cWhy', 'cAt', 'emp', 'needN', 'needS', 'fAt'], marks: ['label', 'name', 'kind', 'off', 'emp', 'needN', 'needS', 'fAt'] };
+function osKpiRounds(p, v) { if (!v || typeof v !== 'object') return v; if (/^m:/.test(p) || Array.isArray(v)) return null; return Object.assign(osKpiPick(v, OS_KPI_ROUNDS.top), { d: osKpiFloors(v.d, OS_KPI_ROUNDS, 1) }); }
+function dailyArcDue(names, ctl) {
+  var T = dsToday(Date.now());
+  return names.filter(function (p) { var d = dailyArcDay(p); return d && dailyArcClosed(ctl[d.mk], d.y, d.m, T); })
+    .sort(function (a, b) { var x = dailyArcDay(a), y = dailyArcDay(b); return (x.y * 12 + x.m) - (y.y * 12 + y.m); }).slice(0, 31);
+}
 function dailyArcStep(live, arc, T) {
   var L = {}, R = {}, moved = [], back = [], gone = Object.create(null), k, p;
   live = isObj(live) ? live : {}; arc = isObj(arc) ? arc : {};
@@ -143,9 +156,28 @@ function dailyArcStep(live, arc, T) {
    ③ dailyArcPend (بعد الحكم · قبل تصفية غير المتغيّر): القيمةُ المقبولة تُقسم بخطوة الأرشفة إلى الحيّ (الأشهرُ المفتوحة + العلامات) والأرشيف
       (الأشهرُ المقفلة) — كتابتان في الدفعة الذرّية نفسِها بنسختيهما المقروءتين (حارسُ النسخة يرفض التزامن)، ويعود المرجعُ إلى المخزَّن.
    الردُّ يسمّي ما طلبه العميلُ وحده (revs ← plan.operationKeys). والاستعادةُ (019d) تقسم ما تستعيده بالخطوة نفسِها (③ بلا ①②). */
+/* V7 · 53 (S13): يومٌ يُفتح (dopen جديد) في شهرٍ مقفل — معتمد، أو ماضٍ لم يُفتح للاستدراك (mo) — لا يُقبل وحده: كان يُحفظ ولا أثرَ له
+   (قاعدةُ الصفحة isMonthAp والخادم lockedIn: الشهرُ المقفل يغلب أيامَه). يعيد خريطةَ الرفض لمفتاحه أو null */
+function dailyLoneDayOpen(cur, next, T) {
+  var c = isObj(cur) ? cur : {}, n = isObj(next) ? next : {}, q, m, r, o, d;
+  for (q in n) {
+    if (!Object.prototype.hasOwnProperty.call(n, q) || !(m = /^m:(\d{4})-(\d{1,2})$/.exec(q))) continue;
+    r = n[q] === true || n[q] === 1 ? { ap: 1 } : isObj(n[q]) ? n[q] : {}; o = isObj(c[q]) ? c[q] : {};
+    var past = !!(T && T.y > 0 && (+m[1] * 12 + +m[2]) < (T.y * 12 + T.m)), locked = !!r.ap || (past && !r.mo);
+    if (!locked || !isObj(r.dopen)) continue;
+    for (d in r.dopen) if (Object.prototype.hasOwnProperty.call(r.dopen, d) && r.dopen[d] && !(isObj(o.dopen) && o.dopen[d])) return { why: 'day-needs-month', detail: q + '-' + d };
+  }
+  return null;
+}
 async function dailyArcPre(env, body) {
-  var set = (body && body.set) || {}, cap = env.__opCapture, T = dsToday(Date.now()), k;
-  if (!cap || !cap.keys || !env.__pre || !env.__pre.live) return;
+  var set = (body && body.set) || {}, cap = env.__opCapture, T = dsToday(Date.now()), k, no = null;
+  for (k in set) {
+    if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || resName(k) !== 'bassam_rounds_v1') continue;
+    var lone = dailyLoneDayOpen(parseJson(await opResourceGet(env, k), null), parseJson(set[k], null), T);
+    if (lone) (no = no || {})[k] = lone;
+  }
+  if (no) return no;
+  if (!cap || !cap.keys || !env.__pre || !env.__pre.live) return null;
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || resName(k) !== 'bassam_rounds_v1') continue;
     var d = parseKey(k).dept; if (!d) continue;
@@ -162,7 +194,9 @@ async function dailyArcPre(env, body) {
     (env.__dailyArc = env.__dailyArc || Object.create(null))[k] = { live: liveRaw, keep: keep };
     if (Object.keys(arc).length && isObj(live)) cap.keys[k] = JSON.stringify(L);
   }
+  return null;
 }
+
 function dailyArcFill(env, k, v, cur) {
   var X = env.__dailyArc && env.__dailyArc[k]; if (!X || v == null || cur == null) return v;
   var n = parseJson(v, null), c = parseJson(cur, null), add = 0, q;

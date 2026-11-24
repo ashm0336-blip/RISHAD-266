@@ -422,29 +422,51 @@ function imgStageRowsStmt(env, ik) { return env.DB.prepare('DELETE FROM imgs WHE
 /* imgref completeness for the typed tables (see THE RULE): every typed resource is re-read once and every id its stored value mentions is
    inserted — only if the record was not saved meanwhile (a save writes its own complete imgref). A cursor in meta lets it resume. */
 async function imgRefScan(env) {
+  /* V7 · 53: المواردُ المقسَّمة (019w) تُقرأ فتراتٍ (20 في كل استدعاء) لا كاملةً — موردٌ بتاريخٍ طويل يتجاوز سقفَ الاستدعاء كاملاً فلا يكتمل الفهرسُ أبداً؛
+     والمؤشّرُ يحفظ موضعَ الفترة (k · i) فيُستأنف في المرور التالي */
   var cur = await env.DB.prepare('SELECT v FROM meta WHERE k = ?1').bind(IMG_SCAN_KEY).first(), pos = { d: '', r: '' }, round, chars = 0;
   if (cur && cur.v === 'done') return true;
   if (cur) { var pj = parseJson(cur.v, null); if (pj && typeof pj.d === 'string' && typeof pj.r === 'string') pos = pj; }
   var put = function (v) { return env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = excluded.v').bind(IMG_SCAN_KEY, v); };
-  for (round = 0; round < 5 && chars < 6e6; round++) {
-    var keys = [], i;
-    for (i = 0; i < 12; i++) {
-      var nx = await env.DB.prepare('SELECT department_id AS d, resource AS r FROM ops_nodes WHERE (department_id, resource) > (?1, ?2) ORDER BY department_id, resource LIMIT 1').bind(pos.d, pos.r).first();
-      if (!nx) break;
-      pos = { d: String(nx.d), r: String(nx.r) };
-      var k = 'bsdept:' + pos.d + ':' + pos.r, ok = false;
-      try { ok = !!opInfo(k); } catch (eK) { ok = false; }                    /* a row no resource of this version owns: nothing to read */
-      if (ok) keys.push(k);
+  var refStmt = function (ids, k2, rev) { return env.DB.prepare('INSERT OR IGNORE INTO imgref (img, k) SELECT value, ?2 FROM json_each(?1) WHERE COALESCE((SELECT rev FROM revs WHERE k = ?2), 0) = ?3').bind(JSON.stringify(ids), k2, rev || 0); };
+  var split = async function (k2, from) {
+    var info = opInfo(k2), names = (await opPeriodMembers(env, info)).map(function (m) { return m.m; });
+    for (var j = from; j < names.length; j += 20) {
+      if (chars >= 1.5e6) return j;   /* V7 · 53: مرورُ الكنس في waitUntil يحسب على وقت المعالج — 1.5M حرف من الفترات في المرور، ويُستأنف */
+      var sc = {}; sc[k2] = { periods: names.slice(j, j + 20) };
+      var got = await opLoadMany(env, [k2], 0, sc), v = got.values[k2] || '', ids = Object.keys(imgIdsIn(v)); chars += v.length;
+      if (ids.length) await env.DB.batch([refStmt(ids, k2, got.revs[k2])]);
     }
-    var st = [], done = i < 12;
-    if (keys.length) {
+    return -1;
+  };
+  if (typeof pos.k === 'string') {
+    var at = await split(pos.k, Number(pos.i) || 0);
+    if (at >= 0) { await env.DB.batch([put(JSON.stringify({ d: pos.d, r: pos.r, k: pos.k, i: at }))]); return false; }
+    var pk0 = parseKey(pos.k); pos = { d: String(pk0.dept), r: resName(pos.k) };
+  }
+  for (round = 0; round < 5 && chars < 6e6; round++) {
+    var keys = [], i, st = [];
+    var flush = async function () {
+      if (!keys.length) return;
       var got = await opLoadMany(env, keys, 0);
       keys.forEach(function (k2) {
         var v = got.values[k2] || '', ids = Object.keys(imgIdsIn(v)); chars += v.length;
-        if (ids.length) st.push(env.DB.prepare('INSERT OR IGNORE INTO imgref (img, k) SELECT value, ?2 FROM json_each(?1) WHERE COALESCE((SELECT rev FROM revs WHERE k = ?2), 0) = ?3')
-          .bind(JSON.stringify(ids), k2, got.revs[k2] || 0));
+        if (ids.length) st.push(refStmt(ids, k2, got.revs[k2]));
       });
+      keys = [];
+    };
+    for (i = 0; i < 12; i++) {
+      var nx = await env.DB.prepare('SELECT department_id AS d, resource AS r FROM ops_nodes WHERE (department_id, resource) > (?1, ?2) ORDER BY department_id, resource LIMIT 1').bind(pos.d, pos.r).first();
+      if (!nx) break;
+      var before = pos, k = 'bsdept:' + String(nx.d) + ':' + String(nx.r), ok = false;
+      try { ok = !!opInfo(k); } catch (eK) { ok = false; }                    /* a row no resource of this version owns: nothing to read */
+      if (ok && opSplitResource(k) && keys.length) { await flush(); }          /* ما جُمع قبله يُقرأ أولاً، ثم المقسَّمُ فتراتٍ */
+      pos = { d: String(nx.d), r: String(nx.r) };
+      if (ok && opSplitResource(k)) { var at2 = await split(k, 0); if (at2 >= 0) { await env.DB.batch(st.concat([put(JSON.stringify({ d: before.d, r: before.r, k: k, i: at2 }))])); return false; } continue; }
+      if (ok) keys.push(k);
     }
+    var done = i < 12;
+    await flush();
     st.push(put(done ? 'done' : JSON.stringify(pos)));
     await env.DB.batch(st);
     if (done) return true;

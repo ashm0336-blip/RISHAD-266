@@ -99,7 +99,10 @@ test('PLAN-06 · الجوال واللوحي: ترويسةُ الخريطة صف
     assert.doesNotMatch(h, /position:\s*sticky/, f + ': لا شيءَ مثبَّت في الترويسة');
     assert.match(h, /\n\s*<div class="bs-hbar" style="display:flex;align-items:center;gap:8px;min-width:0">\n/, f + ': شريطُ الأدوات');
     /* زرُّ الطباعة في مكانه: داخل مربّع التكبير بجوار ملء الشاشة */
-    assert.match(h, /<sc-if value="\{\{(?:pl|ds)PmExport\}\}"[^>]*>\s*<button onClick="\{\{doPrint\}\}"[^\n]*<\/button>\s*<\/sc-if>\s*<div style="height:16px;width:1px;[^"]*"><\/div>\s*<button onClick="\{\{toggleFs\}\}"/, f + ': الطباعة');
+    /* V7 · 53 (ملحق 6 · البند 1 — قرار المالك 24 نوفمبر): الزرُّ لكل من يرى الصفحة (PmPrint = PC("view")) لا لحامل «تصدير» */
+    assert.match(h, /<sc-if value="\{\{(?:pl|ds)PmPrint\}\}"[^>]*>\s*<button onClick="\{\{doPrint\}\}"[^\n]*<\/button>\s*<\/sc-if>\s*<div style="height:16px;width:1px;[^"]*"><\/div>\s*<button onClick="\{\{toggleFs\}\}"/, f + ': الطباعة');
+    assert.doesNotMatch(h, /PmExport\}\}/, f + ': لا شرطَ تصديرٍ على زرّ الطباعة');
+    assert.ok(rd(f.replace('view.html', 'logic.js')).includes((/plan/.test(f) ? 'pl' : 'ds') + 'PmPrint: this.PC("view"),'), f + ': علَمُ الطباعة = عرضُ الصفحة');
     /* قائمةُ المواقع يضعها 650 (لا مستطيلُ نقرةٍ محسوبٌ في المنطق) */
     assert.match(h, /<button class="bs-canvas-site-trigger" onClick="\{\{fldToggle\}\}" aria-expanded="\{\{fldOpen\}\}"/, f);
     assert.match(h, /<div class="bs-pop bs-canvas-site-menu" data-bs-site-menu="1">\s*<div class="bs-canvas-site-list">/, f);

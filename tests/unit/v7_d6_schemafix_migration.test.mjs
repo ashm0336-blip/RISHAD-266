@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { randomUUID } from 'node:crypto';
-import { D1Shim, ROOT } from './harness.mjs';
+import { D1Shim, ROOT, CURRENT_SCHEMA } from './harness.mjs';
 import { SCHED_PARTS } from './sched_parts.mjs';
 
 const DEPT = 'TEST_ONLY_D6_SCHEMAFIX';
@@ -74,7 +74,7 @@ test('(١) 0012 على قاعدةٍ بالإصدار 11: كلُّ pc (رقم · 
   assert.ok(before >= 8, 'صفوفُ pc القديمة موجودة: ' + before);
   permit(DB, W);
   await W.migrateDb(env);
-  assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, '12');
+  assert.equal(DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, String(CURRENT_SCHEMA));   // V7 · 53: إلى المخطّط الحالي (0013 بعد 0012)
   assert.deepEqual(DB.q('PRAGMA foreign_key_check'), []);
   assert.equal(DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE schema_id='ops_plan_deleted_months' AND member_key='pc'")[0].n, 0, 'لا عقدةَ pc بالشكل القديم');
   assert.ok(DB.q("SELECT COUNT(*) n FROM ops_nodes WHERE schema_id='ops_plan_deleted_months' AND member_key='needS'")[0].n >= 1, 'needS (الشكلُ المشترك القديم) لم يُمسّ');

@@ -71,13 +71,20 @@ Object.assign(Component.prototype, {
       md = inv ? v <= mid : v >= mid;
     return ok ? "var(--success-text)" : md ? "var(--warning-text)" : "var(--danger-text)";
   },
+  /* V7 · 53: المهامُ مخزّنةٌ باليوم — شهرُ المؤشرات المعروض يُطلب (أيامُه وحدها)، ووصولُه يعيد الرسم بخبر المخزن */
+  _tkKpiWant(ym) {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (!S || !S.split || !S.split("bassam_tasks_v1") || this._tkKpiYm === ym) return;
+    this._tkKpiYm = ym;
+    S.want("bassam_tasks_v1", { groups: [ym] });
+  },
   _tkKpiVals(e) {
     const s = this.state,
       T = this._tkNow(),
       Y = s.tkY || T.y,
       M = s.tkM || T.m,
       HM = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"],
-      k = this._tkKpi(this._tkStore(), Y, M),
+      k = (this._tkKpiWant(Y + "-" + M), this._tkKpi(this._tkStore(), Y, M)),
       P = (v) => (null == v ? "—" : v + "٪");
     ((e.tkKpiTitle = HM[M - 1] + " " + Y + (Y === T.y && M === T.m ? " — الشهر الحالي" : "")),
       (e.tkKpiSub = k.n ? k.n + " مهمة · " + k.done + " منجزة · " + k.open + " مفتوحة · " + k.dec + " معتذَر عنها" + (k.can ? " · " + k.can + " ملغاة (خارج الحساب)" : "") : ""),

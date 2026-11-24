@@ -9,7 +9,7 @@
      هنا كلُّ صفحةٍ من وثيقة الطباعة نفسِها (التصميمُ نفسُه) تُرسم صورةً واحدة جاهزة، وتُجمع الصورُ في ملف PDF يُكتب هنا حرفاً — بلا مكتبةٍ ولا خادم.
      الوثيقةُ مكتفيةٌ بذاتها (أنماطُها وخطوطُها data: وصورُها data:) فتُرسم داخل SVG foreignObject كما يرسمها المتصفحُ في الصفحة.
      أيُّ تعذّرٍ (متصفحٌ يمنع قراءةَ اللوحة · مهلة) ⇒ false، فيعود المنادي إلى نافذة الطباعة كما كانت. */
-  const PDF_Q = 0.92, PT = 72 / 25.4, PG_W = 420 * PT, PG_H = 297 * PT, M_X = 12 * PT, M_TOP = 12 * PT;
+  const WHITE = "#ffffff", PDF_Q = 0.92, PT = 72 / 25.4, PG_W = 420 * PT, PG_H = 297 * PT, M_X = 12 * PT, M_TOP = 12 * PT;
   function pageImage(x, pg, css, PDF_SCALE) {
     return new Promise((ok, no) => {
       try {
@@ -32,7 +32,7 @@
             const c = document.createElement("canvas");
             ((c.width = w * PDF_SCALE), (c.height = h * PDF_SCALE));
             const g = c.getContext("2d");
-            ((g.fillStyle = "#ffffff"), g.fillRect(0, 0, c.width, c.height), g.drawImage(img, 0, 0, c.width, c.height));
+            ((g.fillStyle = WHITE), g.fillRect(0, 0, c.width, c.height), g.drawImage(img, 0, 0, c.width, c.height));
             const d = c.toDataURL("image/jpeg", PDF_Q);
             if (!(d.length > 2e3 && 0 === d.indexOf("data:image/jpeg"))) throw new Error("canvas " + c.width + "x" + c.height);   /* لوحةٌ أكبر من حدّ المتصفح تعود فارغة بلا خطأ */
             const b = atob(d.slice(d.indexOf(",") + 1)), u = new Uint8Array(b.length);
@@ -76,8 +76,9 @@
     obj(2, "<< /Type /Pages /Count " + N + " /Kids [" + kids.join(" ") + "] >>");
     obj(3, "<< /Title " + hex(title) + " /Producer (KIVO) >>");
     pages.forEach((p, i) => {
-      const a = 4 + 3 * i, wPt = (p.w * 72) / 96, hPt = (p.h * 72) / 96,
-        cm = "q " + wPt.toFixed(2) + " 0 0 " + hPt.toFixed(2) + " " + M_X.toFixed(2) + " " + (PG_H - M_TOP - hPt).toFixed(2) + " cm /Im0 Do Q";
+      /* V7 · 53 (ملحق 6 · البند 10): full = الغلاف — الصفحةُ كاملةً بلا هوامش */
+      const a = 4 + 3 * i, wPt = p.full ? PG_W : (p.w * 72) / 96, hPt = p.full ? PG_H : (p.h * 72) / 96,
+        cm = "q " + wPt.toFixed(2) + " 0 0 " + hPt.toFixed(2) + " " + (p.full ? 0 : M_X).toFixed(2) + " " + (p.full ? 0 : PG_H - M_TOP - hPt).toFixed(2) + " cm /Im0 Do Q";
       obj(a, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + PG_W.toFixed(2) + " " + PG_H.toFixed(2) + "] /Resources << /XObject << /Im0 " + (a + 2) + " 0 R >> >> /Contents " + (a + 1) + " 0 R >>");
       obj(a + 1, "<< /Length " + cm.length + " >>", cm);
       obj(a + 2, "<< /Type /XObject /Subtype /Image /Width " + p.pw + " /Height " + p.ph + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + p.jpg.length + " >>", p.jpg);
@@ -107,10 +108,217 @@
       }
     });
   }
-  function pdfDownload(x, title) {
+  /* ═══ V7 · 53 (ملحق 6 · البند 9 — سلوكُ البرودكشن 9ff484d · c26d55f · ba52a5d · d071fc9 بأدوات النواة): PDF على الآيباد والآيفون ═══
+     كلُّ متصفحات أجهزة أبل على محرّك سفاري، وثلاثةُ أسبابٍ فيه كانت تُسقط التنزيلَ إلى نافذة الطباعة:
+     (1) إطارُ الطباعة محميٌّ (sandbox بلا allow-scripts) فلا يُنفَّذ نداءٌ يُسجَّل على نافذته: الانتظارُ بإطاره (requestAnimationFrame · fonts.ready بلا مهلة)
+         لا ينتهي ← الانتظارُ من الصفحة نفسِها وبمهلة (أسفل build)
+     (2) صورةُ الصفحة (SVG foreignObject) تخرج فيه ناقصة (بلا اللوحة الجانبية ولا الشعار) أو تُمنع قراءةُ لوحتها (SecurityError) ← تُرسم الصفحةُ بمكتبة
+         html2canvas (ترسم على اللوحة مباشرةً بلا foreignObject) — من البداية في سفاري، وعند أول رفضٍ في غيره
+     (3) المكتبةُ لا تعمل داخل الإطار المحمي ← تُرسم من نسخةٍ للصفحة في إطارٍ مخفيّ مؤقّت يُحذف بعدها؛ وإطارُ الطباعة يبقى محمياً كما كان.
+     المكتبةُ ملفٌّ في الحزمة (CSP: script-src 'self') لا يُحمَّل إلا حين يلزم، والملفُّ يُجمع بالبنّاء نفسِه (pdfBytes). */
+  function isWK() {
+    try {
+      return /^Apple/.test(navigator.vendor || "");   /* «Apple Computer, Inc.» في محرّك سفاري وحده (الآيباد والآيفون بكل متصفحاتهما، وسفاري على الماك) */
+    } catch (e) {
+      return !1;
+    }
+  }
+  const H2C_URL = "@@KIVO_ASSET:vendor/html2canvas-1.4.1.min.js@@";
+  let h2cP = null;
+  function h2c() {
+    if (window.html2canvas) return Promise.resolve(window.html2canvas);
+    if (!/^\/assets\//.test(H2C_URL)) return Promise.reject(new Error("html2canvas unavailable"));   /* حزمةُ المونوليث (اختبار): لا ملفاتِ أصول */
+    if (!h2cP)
+      h2cP = new Promise((ok, no) => {
+        const s = document.createElement("script");
+        ((s.src = H2C_URL), (s.async = !0));
+        ((s.onload = () => (window.html2canvas ? ok(window.html2canvas) : no(new Error("html2canvas missing")))), (s.onerror = () => no(new Error("html2canvas load"))));
+        document.head.appendChild(s);
+      }).catch((e) => ((h2cP = null), Promise.reject(e)));
+    return h2cP;
+  }
+  function jpegOf(c) {
+    const d = c.toDataURL("image/jpeg", PDF_Q);
+    if (!(d.length > 2e3 && 0 === d.indexOf("data:image/jpeg"))) throw new Error("canvas " + c.width + "x" + c.height);
+    const b = atob(d.slice(d.indexOf(",") + 1)), u = new Uint8Array(b.length);
+    for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+    return u;
+  }
+  function pageImageAlt(pg, PDF_SCALE) {
+    return h2c().then((H) => {
+      const r = pg.getBoundingClientRect(), w = Math.round(r.width), h = Math.round(r.height);
+      if (!(w > 10 && h > 10)) throw new Error("page size");
+      /* المكتبةُ ترسم النصَّ حرفاً حرفاً حين يكون للعنصر تباعدُ أحرف فتنفصل حروفُ العربية — في نسختها المرسومة وحدها يُصفَّر التباعد */
+      const flat = (doc) => {
+        try {
+          const st = doc.createElement("style");
+          ((st.textContent = ".pg, .pg * { letter-spacing: 0 !important; }"), (doc.head || doc.documentElement).appendChild(st));
+        } catch (e) {}
+      };
+      const tmo = new Promise((t, no) => setTimeout(() => no(new Error("html2canvas timeout")), 6e4));
+      return Promise.race([tmo, H(pg, { scale: PDF_SCALE, width: w, height: h, backgroundColor: WHITE, logging: !1, useCORS: !1, foreignObjectRendering: !1, imageTimeout: 2e4, onclone: flat })]).then((c) => {
+        const u = jpegOf(c), pw = c.width, ph = c.height;
+        ((c.width = 1), (c.height = 1));
+        return { jpg: u, pw: pw, ph: ph, w: w, h: h };
+      });
+    });
+  }
+  /* ستارُ الانتظار أثناء صنع الملف: نصٌّ صادق («جاري تحميل الملف…» لا «الطباعة») وسطرُ تقدّمٍ بالصفحة ن من م — على الآيباد يأخذ الملفُّ ثوانيَ كثيرة؛
+     والستارُ يغطي الشاشة فلا يُضغط الزرُّ مرتين. data-pdf يُبقيه بعد مؤقّت الأمان في الوحدة (30 ث) حتى يجهز الملف */
+  function veilSay(msg, sub) {
+    try {
+      const v = document.getElementById("bs-print-veil");
+      if (!v) return;
+      v.dataset.pdf = "1";
+      const t = v.children[1];
+      t && (t.textContent = msg);
+      let u = v.querySelector(".bs-veil-sub");
+      if (!u) {
+        u = document.createElement("div");
+        u.className = "bs-veil-sub";
+        u.setAttribute("style", "font-size:12.5px;font-weight:600;color:var(--fg-x475569);opacity:.85");
+        t && t.parentNode === v ? v.insertBefore(u, t.nextSibling) : v.appendChild(u);
+      }
+      u.textContent = sub || "";
+    } catch (e) {}
+  }
+  /* أجهزةُ أبل اللمسية (الآيباد والآيفون) — وخاصةً المنصةُ مفتوحةً تطبيقاً من الشاشة الرئيسية — لا تحفظ رابطَ التنزيل المباشر (a[download]): يُصنع الملفُّ
+     ثم لا يُحفظ في أي مكان. فتُعرض شاشةُ «الملف جاهز» بزرٍّ يفتح قائمةَ المشاركة في الجهاز (حفظ في الملفات · واتساب · بريد · طباعة).
+     الزرُّ لازم: قائمةُ المشاركة لا تُفتح إلا بلمسةٍ من المستخدم، ولمسةُ الطابعة انتهت صلاحيتُها أثناء صنع الصفحات. والحاسوبُ يبقى على التنزيل المباشر */
+  function shareMode(file) {
+    try {
+      const touch = (navigator.maxTouchPoints || 0) > 1 || /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+      return !!(isWK() && touch && typeof navigator.share === "function" && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] }));
+    } catch (e) {
+      return !1;
+    }
+  }
+  function pdfReady(file) {
+    try {
+      const old = document.getElementById("bs-print-veil");
+      old && old.remove();
+      const prev = document.getElementById("bs-pdf-ready");
+      prev && prev.remove();
+      const v = document.createElement("div"), name = file.name.replace(/\.pdf$/, "");
+      ((v.id = "bs-pdf-ready"), v.setAttribute("dir", "rtl"), v.setAttribute("role", "dialog"), v.setAttribute("aria-label", "الملف جاهز"));
+      v.setAttribute(
+        "style",
+        "position:fixed;inset:0;z-index:99999;background:var(--bg-a2552552550p97);display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;padding:24px",
+      );
+      const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+      v.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;max-width:420px;width:100%;text-align:center">' +
+        '<div style="width:58px;height:58px;border-radius:9999px;background:var(--bg-x008450);color:var(--fg-xffffff);display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
+        '<div style="font-size:18px;font-weight:700;color:var(--fg-x8a6f35)">الملف جاهز</div>' +
+        '<div style="font-size:12.5px;font-weight:600;color:var(--fg-x475569);word-break:break-word">' + esc(name) + "</div>" +
+        '<button type="button" data-act="share" style="margin-top:8px;width:100%;height:48px;border:0;border-radius:12px;background:var(--bg-xb99751);color:var(--fg-xffffff);font:700 15px Cairo,sans-serif;cursor:pointer">حفظ أو مشاركة الملف</button>' +
+        '<button type="button" data-act="close" style="width:100%;height:44px;border:1px solid var(--bd-a185151810p22);border-radius:12px;background:transparent;color:var(--fg-x475569);font:600 14px Cairo,sans-serif;cursor:pointer">إغلاق</button>' +
+        '<div style="font-size:11.5px;color:var(--fg-x475569);opacity:.8;line-height:1.7">من القائمة اختر «حفظ في الملفات» أو التطبيق الذي تريد الإرسال إليه</div>' +
+        "</div>";
+      const close = () => {
+        try {
+          v.remove();
+        } catch (e) {}
+      };
+      v.addEventListener("click", (ev) => {
+        const b = ev.target && ev.target.closest && ev.target.closest("button[data-act]");
+        if (!b) return;
+        if (b.dataset.act === "close") return void close();
+        navigator.share({ files: [file], title: name }).then(
+          () => {
+            close();
+            try {
+              KIVO.BassamBusy && KIVO.BassamBusy.flash("تم حفظ التقرير PDF", "", "ok");
+            } catch (e) {}
+          },
+          (e) => {
+            /* إلغاءُ المستخدم لقائمة المشاركة ليس خطأً: تبقى الشاشةُ ليعيد أو يغلق */
+            if (!(e && e.name === "AbortError"))
+              try {
+                console.warn("[print-pdf] share", e);
+              } catch (e2) {}
+          },
+        );
+      });
+      document.body.appendChild(v);
+      return !0;
+    } catch (e) {
+      return !1;
+    }
+  }
+  /* ── V7 · 53 (ملحق 6 · البند 10 — سلوكُ البرودكشن 6171818): غلافُ التقرير صفحةً أولى في ملف PDF (تصميمُ المالك) ──
+     الخلفيةُ والأشكالُ والشعاران من ملف التصميم الأصلي (صورةٌ واحدة بقياس A3 — src/assets/images/report-cover.jpg، لا تُحمَّل إلا عند الطباعة)،
+     والنصوصُ من المنصة: العنوان، وسطرُ «لتحديث الخطة التشغيلية لعام <السنة الهجرية للتقرير>هـ» بخطٍّ ينتهي مع نهاية العنوان، واسما الإدارة العامة والإدارة.
+     يُرسم على لوحة رسمٍ مباشرةً (لا نسخَ للوثيقة) فيخرج واحداً على الحاسوب والآيباد. إن تعذّر تحميلُ الخلفية خرج الملفُّ بلا غلاف ولم يتعطّل */
+  const COVER_URL = "@@KIVO_ASSET:img/report-cover.jpg@@";
+  function coverPage(info) {
+    const W = 2480, H = 1754, MM = W / 420, ar = (t) => String(t).replace(/[0-9]/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+    const img = new Image();
+    const loaded = new Promise((ok, no) => {
+      img.onload = () => ok();
+      img.onerror = () => no(new Error("cover image"));
+      img.src = COVER_URL;
+    });
+    const fonts = (() => {
+      try {
+        return Promise.race([Promise.all(["700 80px Cairo", "600 40px Cairo", "500 40px Cairo"].map((f) => document.fonts.load(f, "التقرير"))), new Promise((t) => setTimeout(t, 3e3))]);
+      } catch (e) {
+        return Promise.resolve();
+      }
+    })();
+    return Promise.race([Promise.all([loaded, fonts.catch(() => {})]), new Promise((t, no) => setTimeout(() => no(new Error("cover timeout")), 2e4))]).then(() => {
+      const c = document.createElement("canvas");
+      ((c.width = W), (c.height = H));
+      const g = c.getContext("2d");
+      g.drawImage(img, 0, 0, W, H);
+      ((g.direction = "rtl"), (g.textBaseline = "alphabetic"), (g.fillStyle = WHITE));
+      /* العنوان */
+      const tR = W * 0.92, tSize = 21 * MM, title = "التقرير التنفيذي";
+      ((g.font = "700 " + tSize + "px Cairo, sans-serif"), (g.textAlign = "right"));
+      const tW = g.measureText(title).width, tBase = H * 0.406 + tSize * 0.93;
+      g.fillText(title, tR, tBase);
+      /* السطرُ تحته: خطٌّ ثم النص، وينتهي الصفُّ عند نهاية العنوان */
+      const sub = "لتحديث الخطة التشغيلية" + (info.year ? " لعام " + ar(info.year) + "هـ" : ""), sSize = 6.6 * MM, gap = 3.5 * MM;
+      g.font = "500 " + sSize + "px Cairo, sans-serif";
+      const sW = g.measureText(sub).width, lineLen = Math.max(8 * MM, tW - sW - gap), sBase = tBase + 6.5 * MM + sSize * 1.15;
+      g.globalAlpha = 0.95;
+      g.fillText(sub, tR - lineLen - gap, sBase);
+      g.fillRect(tR - lineLen, sBase - sSize * 0.42, lineLen, 0.5 * MM);
+      g.globalAlpha = 1;
+      /* الإدارةُ العامة والإدارة — في وسط صندوقهما، ويصغر الخطُّ إن طال الاسم */
+      const lines = [info.group, info.dept].filter((t) => t && String(t).trim()), bx = W * (0.242 + 0.316 / 2), by = H * (0.65 + 0.226 / 2), maxW = W * 0.316 - 10 * MM;
+      if (lines.length) {
+        let dSize = 7.4 * MM;
+        g.font = "600 " + dSize + "px Cairo, sans-serif";
+        const widest = Math.max.apply(null, lines.map((t) => g.measureText(t).width));
+        if (widest > maxW) dSize *= maxW / widest;
+        ((g.font = "600 " + dSize + "px Cairo, sans-serif"), (g.textAlign = "center"), (g.fillStyle = "#f4ecdc"));
+        const lh = dSize * 1.45, top = by - (lh * lines.length) / 2;
+        lines.forEach((t, k) => g.fillText(t, bx, top + lh * k + dSize * 1.05));
+      }
+      const u = jpegOf(c);
+      ((c.width = 1), (c.height = 1));
+      return { jpg: u, pw: W, ph: H, w: W, h: H, full: !0 };
+    });
+  }
+  /* بياناتُ الغلاف: سنةُ التقرير من سطر تاريخه (يومُ الجولة · اليوم) وإلا السنةُ الهجرية الجارية، والإدارةُ والإدارةُ العامة النشطتان */
+  function coverInfo(dateLine, dept) {
+    let yr = (String(dateLine || "").match(/(\d{4})\s*هـ/) || [])[1] || "", grp = "";
+    if (!yr)
+      try {
+        yr = String(KIVO.BassamHijri.now().y || "");
+      } catch (e) {}
+    try {
+      grp = (KIVO.BassamDepts && KIVO.BassamDepts.activeGroupName && KIVO.BassamDepts.activeGroupName()) || "";
+    } catch (e) {}
+    return { dept: dept || "", group: grp, year: yr };
+  }
+  function pdfDownload(x, title, cov) {
     try {
       const pgs = [].slice.call(x.querySelectorAll(".pg"));
       if (!pgs.length) return Promise.resolve(!1);
+      const N = pgs.length, say = (k) => veilSay("جاري تحميل الملف…", N > 1 ? "الصفحة " + (k + 1) + " من " + N : "صفحة واحدة");
+      say(0);
       const css = frozenMedia(
           [].map.call(x.querySelectorAll("style"), (t) => t.textContent || "").join("\n"),
           (q) => x.defaultView.matchMedia(q).matches,
@@ -122,29 +330,72 @@
       try {
         coarse = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
       } catch (e) {}
-      let scales = coarse ? [3, 2] : [4, 3, 2];
-      const one = (pg) => {
+      /* سفاري: الرسّامُ البديل من البداية بدقّة ×2 (حدُّ لوحة الرسم في أجهزة أبل أصغر) — وفي غيره أولُ رفضٍ للقراءة (SecurityError) أو تعذّرُ صورة الصفحة ينقل إليه */
+      const wk = isWK();
+      let scales = wk ? [2, 1.5] : coarse ? [3, 2] : [4, 3, 2], alt = wk, rf = null;
+      /* (3) نسخةٌ للصفحة التي تُرسم وحدها في إطارٍ مخفيّ مؤقّت غيرِ محمي (rf): المكتبةُ تنسخ الوثيقةَ كلَّها عند كل صفحة، فنسخةُ الصفحات كلِّها تضاعف الوقت */
+      const raster = (k) => {
+        if (!rf) {
+          rf = document.createElement("iframe");
+          (rf.setAttribute("aria-hidden", "true"), rf.setAttribute("tabindex", "-1"), (rf.id = "bs-print-raster"));
+          rf.setAttribute("style", "position:fixed;right:-10000px;top:0;width:1497px;height:1047px;border:0");
+          document.body.appendChild(rf);
+        }
+        const h = x.documentElement.cloneNode(!0);
+        [].forEach.call(h.querySelectorAll(".pg"), (g, j) => {
+          j !== k && g.remove();
+        });
+        const d = rf.contentDocument || rf.contentWindow.document;
+        (d.open(), d.write("<!DOCTYPE html>" + h.outerHTML), d.close());
+        const ready = d.fonts && d.fonts.ready ? Promise.race([d.fonts.ready, new Promise((t) => setTimeout(t, 3500))]) : new Promise((t) => setTimeout(t, 600));
+        return ready.then(() => d.querySelector(".pg") || Promise.reject(new Error("raster page")));
+      };
+      const altOk = (e) => !!(e && (e.name === "SecurityError" || /^page image$/.test(e.message || "")));
+      const one = (pg, k) => {
         const go = (i) =>
-          pageImage(x, pg, css, scales[i]).catch((e) => {
+          (alt ? raster(k).then((P) => pageImageAlt(P, scales[i])) : pageImage(x, pg, css, scales[i])).catch((e) => {
+            if (!alt && altOk(e)) return ((alt = !0), (scales = [2, 1.5]), go(0));
             if (i + 1 >= scales.length) throw e;
             return go(i + 1).then((r) => ((scales = scales.slice(i + 1)), r));
           });
         return go(0);
       };
+      const drop = () => {
+        try {
+          rf && rf.remove();
+        } catch (e) {}
+      };
+      const cover = cov
+        ? coverPage(cov).then(
+            (r) => void imgs.push(r),
+            (e) => {
+              try {
+                console.warn("[print-pdf] cover", e);
+              } catch (e2) {}
+            },
+          )
+        : Promise.resolve();
       return pgs
-        .reduce((q, pg) => q.then(() => one(pg)).then((r) => void imgs.push(r)), Promise.resolve())
+        .reduce((q, pg, k) => q.then(() => (say(k), one(pg, k))).then((r) => void imgs.push(r)), cover)
         .then(() => {
-          const bytes = pdfBytes(imgs, title), url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })), a = document.createElement("a");
-          ((a.href = url), (a.download = String(title || "report").replace(/[\\/:*?"<>|]+/g, " ").trim() + ".pdf"), (a.style.display = "none"));
+          const bytes = pdfBytes(imgs, title), fname = String(title || "report").replace(/[\\/:*?"<>|]+/g, " ").trim() + ".pdf";
+          let file = null;
+          try {
+            file = new File([bytes], fname, { type: "application/pdf" });
+          } catch (e) {}
+          if (file && shareMode(file) && pdfReady(file)) return (drop(), "share");
+          const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })), a = document.createElement("a");
+          ((a.href = url), (a.download = fname), (a.style.display = "none"));
           (document.body.appendChild(a), a.click());
           setTimeout(() => {
             try {
               (a.remove(), URL.revokeObjectURL(url));
             } catch (e) {}
           }, 6e4);
-          return !0;
+          return (drop(), !0);
         })
         .catch((e) => {
+          drop();
           try {
             console.warn("[print-pdf]", e);
           } catch (e2) {}
@@ -617,7 +868,7 @@
                          وكانت الصورةُ المستقلّة بلا اتجاه الصفحة فينعكس ترتيبُ الكلمات. O.vector يُبقيها متّجهةً لمن يطلبها */
                       /* تنزيلُ الملف (الأصل): الخريطةُ تبقى رسماً في الصفحة فتُرسم مرّةً واحدة بدقّة الصفحة كاملةً — تحويلُها هنا إلى JPEG ثم رسمُ
                          الصفحة صورةً كان تحويلَين متتاليَين يُغبّشان حوافَّها. التحويلُ هنا لمسار نافذة الطباعة وحده (O.dialog) */
-                      if (O.vector || !O.dialog) return void e();
+                      if (O.vector || (!O.dialog && !isWK())) return void e();   /* V7 · 53: سفاري — الخريطةُ صورةٌ قبل الرسّام البديل (نسخُها رسماً بطيءٌ فيه) */
                       const n = 2.5,
                         i = Math.min(4200, Math.round(s.width * n)),
                         o = Math.min(4200, Math.round(s.height * n)),
@@ -667,7 +918,7 @@
                               const e = document.createElement("canvas");
                               ((e.width = i), (e.height = o));
                               const s = e.getContext("2d");
-                              ((s.fillStyle = "#ffffff"), s.fillRect(0, 0, i, o), s.drawImage(d, 0, 0, i, o));
+                              ((s.fillStyle = WHITE), s.fillRect(0, 0, i, o), s.drawImage(d, 0, 0, i, o));
                               const n = e.toDataURL("image/jpeg", 0.92),
                                 r = x.createElement("img");
                               ((r.src = n),
@@ -736,9 +987,13 @@
               };
               /* الأصل: ملفُّ PDF يُنزَّل مباشرةً (كلُّ صفحةٍ صورةٌ جاهزة). O.dialog يطلب نافذةَ الطباعة صراحةً */
               if (O.dialog) return void dialog();
-              pdfDownload(x, f).then((ok) => {
+              pdfDownload(x, f, coverInfo(o, i)).then((ok) => {
                 if (!ok) return void dialog();
                 (n(), drop());
+                if (ok === "share") return;   /* شاشةُ «الملف جاهز» تتولّى الحفظ والإشعار */
+                try {
+                  KIVO.BassamBusy && KIVO.BassamBusy.flash("تم تنزيل التقرير PDF", "تجده في التنزيلات", "ok");
+                } catch (e) {}
               });
             },
             () => {
@@ -754,15 +1009,20 @@
             },
           );
       },
+      /* V7 · 53 (البند 9 · السبب 1): سفاري لا ينفّذ نداءً يُسجَّل على نافذة الإطار المحمي — كان الانتظارُ بإطاره (requestAnimationFrame) وبخطوطه بلا مهلة
+         لا ينتهي فلا ملفَّ. الانتظارُ من الصفحة نفسِها، مرّةً واحدة، وللخطوط مهلة */
+      v1 = { d: !1 },
       v = () => {
+        if (v1.d) return;
+        v1.d = !0;
         try {
-          m.contentWindow.requestAnimationFrame(() => setTimeout(k, 80));
+          requestAnimationFrame(() => setTimeout(k, 80));
         } catch (t) {
           setTimeout(k, 350);
         }
       };
     try {
-      x.fonts && x.fonts.ready ? x.fonts.ready.then(v).catch(v) : setTimeout(v, 550);
+      x.fonts && x.fonts.ready ? (Promise.race([x.fonts.ready, new Promise((t) => setTimeout(t, 3500))]).then(v, v), setTimeout(v, 3600)) : setTimeout(v, 550);
     } catch (t) {
       setTimeout(v, 550);
     }
@@ -874,5 +1134,5 @@
       { name: ((e.floors || [])[t] || {}).name || "موقع بلا اسم", svg: i.outerHTML, panel: o.outerHTML, panelW: 760 }
     );
   }
-  KIVO.BassamPrintCore = { build: build, capture: capture, pdfBytes: pdfBytes, frozenMedia: frozenMedia };
+  KIVO.BassamPrintCore = { build: build, capture: capture, pdfBytes: pdfBytes, frozenMedia: frozenMedia, isWK: isWK, shareMode: shareMode, coverInfo: coverInfo };
 })();

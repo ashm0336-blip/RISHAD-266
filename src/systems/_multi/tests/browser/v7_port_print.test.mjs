@@ -6,6 +6,7 @@
    and this test moved with it from tests/browser/ — it runs while either owner is present, on that owner's page) with two SYNTHETIC captured sites (a rectangle and one label each),
    through the real pipeline: print document → embedded platform fonts → every page drawn as one image → hand-written PDF → download.
    Asserted: a download event with a .pdf name, a %PDF- header, one A3 page and one JPEG per site, no print dialog, no frame left.
+   V7 · 53 (annex 6 · item 10): the report cover is page 1 of the file (a full-bleed A3 image) — so the file has the cover + one page per site.
    Not covered here: the button → capture → build wiring of the two modules, real maps, the indicators page, tablets. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -43,15 +44,20 @@ test('V7 port · print core: two synthetic sites → a two-page PDF is downloade
     assert.match(d.suggestedFilename(), /^التقرير التنفيذي لتحديث الخطة التشغيلية.*\.pdf$/, 'download name: ' + d.suggestedFilename());
     const txt = fs.readFileSync(f).toString('latin1');
     assert.ok(txt.startsWith('%PDF-1.4\n'), 'PDF header'); assert.ok(txt.trimEnd().endsWith('%%EOF'), 'PDF trailer');
-    assert.equal((txt.match(/\/Type \/Page /g) || []).length, 2, 'one page per site');
-    assert.equal((txt.match(/\/MediaBox \[0 0 1190\.55 841\.89\]/g) || []).length, 2, 'A3 landscape');
-    assert.equal((txt.match(/\/Filter \/DCTDecode/g) || []).length, 2, 'every page is one image');
+    assert.equal((txt.match(/\/Type \/Page /g) || []).length, 3, 'the cover + one page per site');
+    assert.equal((txt.match(/\/MediaBox \[0 0 1190\.55 841\.89\]/g) || []).length, 3, 'A3 landscape');
+    assert.equal((txt.match(/\/Filter \/DCTDecode/g) || []).length, 3, 'every page is one image');
+    const cms = [...txt.matchAll(/q [^\n]* cm \/Im0 Do Q/g)].map((m) => m[0]);
+    assert.equal(cms[0], 'q 1190.55 0 0 841.89 0.00 0.00 cm /Im0 Do Q', 'V7 · 53: page 1 is the full-bleed cover');
+    assert.ok(cms.slice(1).every((c) => /^q 1122\.75 0 0 /.test(c)), 'the site pages keep their margins: ' + JSON.stringify(cms));
     for (const m of txt.matchAll(/\/Filter \/DCTDecode \/Length (\d+) >>\nstream\n/g)) {
       const at = m.index + m[0].length;
       assert.equal(txt.charCodeAt(at), 0xff); assert.equal(txt.charCodeAt(at + 1), 0xd8, 'a real JPEG in the page');
       assert.ok(+m[1] > 20000, 'the page image is not blank-sized: ' + m[1]);
     }
-    const wh = /\/Width (\d+) \/Height (\d+)/.exec(txt);
+    const all = [...txt.matchAll(/\/Width (\d+) \/Height (\d+)/g)];
+    assert.deepEqual([+all[0][1], +all[0][2]], [2480, 1754], 'the cover image (A3 at 150 dpi)');
+    const wh = all[1];
     assert.ok(+wh[1] >= 2900 && +wh[2] >= 2000, 'page image resolution ' + wh[1] + 'x' + wh[2]);
     await p.waitForTimeout(500);
     assert.equal(await p.evaluate(() => window.__printCalls), 0, 'no print dialog on the page');

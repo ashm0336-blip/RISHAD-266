@@ -10,7 +10,7 @@ import path from 'node:path';
 import { loadClient } from './k264_vm.mjs';
 
 const ROOT = path.resolve(new URL('../..', import.meta.url).pathname);
-const A = 'bsdept:dA:bassam_employees_v1', B = 'bsdept:dA:bassam_staffing_v3', UID = 'TEST_ONLY owner';
+const A = 'bsdept:dA:bassam_employees_v1', B = 'bsdept:dA:bassam_callsigns_v1'   /* V7 · 53: a resource stored whole (staffing_v3 is stored by period: tests/unit/v7_d53_periods_client.test.mjs) */, UID = 'TEST_ONLY owner';
 const copy = (v) => JSON.parse(JSON.stringify(v));
 const json = (v, status = 200) => new Response(JSON.stringify(v), { status, headers: { 'Content-Type': 'application/json' } });
 function world(save) {
@@ -61,7 +61,7 @@ test('② a participant adds its own change to the publisher\'s draft: one save 
   try {
     await f.operations.read([A, B]);
     /* the participant owns bassam_staffing_v3 and reacts to the publisher's event inside the same draft */
-    f.bus.participant('thing.saved@1', (payload, draft) => { draft.set('bassam_staffing_v3', { ...draft.get('bassam_staffing_v3'), from: payload.eid }); });
+    f.bus.participant('thing.saved@1', (payload, draft) => { draft.set('bassam_callsigns_v1', { ...draft.get('bassam_callsigns_v1'), from: payload.eid }); });
     const result = await f.operations.commit({}, 'editor', { add: 'TEST_ONLY e2' }, (draft) => {
       draft.set('bassam_employees_v1', [...draft.get('bassam_employees_v1'), { eid: 'TEST_ONLY e2' }]);
       assert.equal(f.bus.participate('thing.saved@1', { eid: 'TEST_ONLY e2' }, draft), 1);
@@ -85,7 +85,7 @@ test('③ atomic: a throwing participant sends nothing; a refusing server change
   f = world((request) => json({ ok: 0, requestId: request.requestId, epoch: request.epoch, atomic: 1, revs: {}, denied: { [B]: { why: 'perm' } }, conflicts: {} }, 403));
   try {
     await f.operations.read([A, B]);
-    f.bus.participant('thing.saved@1', (payload, draft) => { draft.set('bassam_staffing_v3', { changed: 1 }); });
+    f.bus.participant('thing.saved@1', (payload, draft) => { draft.set('bassam_callsigns_v1', { changed: 1 }); });
     const result = await f.operations.commit({}, 'editor', { add: 'x' }, (draft) => { draft.set('bassam_employees_v1', []); f.bus.participate('thing.saved@1', {}, draft); });
     assert.equal(result.ok, 0); assert.equal(result.err, 'denied'); assert.equal(f.seen.length, 1);
     assert.deepEqual(f.documents[A].map((x) => x.eid), ['TEST_ONLY e1'], 'the publisher\'s key did not change either'); assert.deepEqual(f.documents[B], { 'TEST_ONLY': 1 });

@@ -545,6 +545,7 @@ test('U5 · نهايةٌ قبل اليوم: في التحويل «اختر تا�
   /* النموذج: مهمةٌ لمرةٍ واحدة قبل يومين تُحوَّل بنهايةٍ أمس (يومُها في الشهر الجاري) */
   if (+DAY.split('-')[2] >= 3) {
     const s = MID(Date.now()) - 2 * 864e5 + 10 * HR, k = hij(s);
+    await replaceOperationalFixture(W.env, 'bsdept:' + D + ':bassam_tasks_locks_v1', { [k]: { mo: 1 } });   /* V7 · 53 (قرار المالك ٧): الإنشاءُ في يومٍ منقضٍ يحتاج فتحَه (كزرّ الإضافة في الصفحة) */
     const c = await W.C.api('/api/tasks/create', { method: 'POST', cookie: dm.ck, body: taskCommandBody(W.env, "/api/tasks/create", { k, t: TAG + ' ماضية', s, e: s + 45 * 60e3, asg: [ME.eid], rv: 'none', force: true }) });
     assert.equal(c.status, 200, JSON.stringify(c.j));
     /* KIVO_265 · قفلُ اليوم: اليومُ المنقضي مقفلٌ تلقائياً — يُفتح بأثر رجعي ({mo:1}) قبل تعديل مهمته */

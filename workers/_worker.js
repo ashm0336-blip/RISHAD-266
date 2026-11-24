@@ -1088,9 +1088,17 @@ var KIVO_SCOPE = (function (S, R) {
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; var x = arr(a[k]), y = arr(b[k]); if (deq(x, y)) continue; var day = parseDay(k), mk = day ? day.y + '-' + day.m : '', ls = lockState(L, mk), lk = { locked: ls, why: ls === null ? 'lock-evidence-missing (bassam_tasks_locks_v1 not loaded)' : (ls ? 'month-locked' : 'open') };
       /* V7 · 53 (قرار المالك ٧): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد، ولا يُفتح إلا للاستدراك ({mo:1}) */
-      if (ls === false && day && closedPeriod(ctx.today, day.y, day.m) && !(isObj(obj(L)[mk]) && obj(L)[mk].mo)) lk = { locked: true, why: 'month-past' };
+      var dl = null;
+      if (ls === false && day) {   /* V7 · 53: واليومُ (قاعدةُ الصفحة _tkDayLockOf): المُغلقُ بيده · والمنقضي من الشهر الجاري ما لم يُفتح هو أو شهرُه */
+        var mo9 = isObj(obj(L)[mk]) && obj(L)[mk].mo, dv9 = obj(L)[mk + '-' + day.d];
+        if (closedPeriod(ctx.today, day.y, day.m)) { if (!mo9) lk = { locked: true, why: 'month-past' }; }
+        /* اليومُ للحفظ الخامّ وحده — مساراتُ الخادم والاستعادة (ctx.srvRoute) تحكم اليومَ بنفسها: الإنشاءُ والتعديلُ باليوم، وسيرُ العمل بالشهر */
+        else if (!ctx.srvRoute && dv9 === true) dl = { locked: true, why: 'day-shut' };
+        else if (!ctx.srvRoute && closedPeriod(ctx.today, day.y, day.m, day.d) && !mo9 && !(isObj(dv9) && dv9.mo)) dl = { locked: true, why: 'day-past' };
+      }
+      dl = dl || lk;   /* قفلُ اليوم للإضافة (زرُّ الإضافة في الصفحة · tasksCanAdd)؛ التعديلُ والحذفُ على قفل الشهر (والحذفُ الفعليّ للحديث وحده · task-del) */
       var m = matchById(x, y, function (r) { return Array.isArray(r) && r[13] != null ? String(r[13]) : null; });
-      for (q = 0; q < m.added.length; q++) items.push(it({ what: 'task', kind: 'added', id: m.added[q].id, path: k + '[' + m.added[q].id + ']', period: pair(null, day), owner: pair(null, str(arr(m.added[q].b)[14])), lock: lk }));
+      for (q = 0; q < m.added.length; q++) items.push(it({ what: 'task', kind: 'added', id: m.added[q].id, path: k + '[' + m.added[q].id + ']', period: pair(null, day), owner: pair(null, str(arr(m.added[q].b)[14])), lock: dl }));
       for (q = 0; q < m.removed.length; q++) items.push(it({ what: 'task', kind: 'removed', id: m.removed[q].id, path: k + '[' + m.removed[q].id + ']', period: pair(day, null), owner: pair(str(arr(m.removed[q].a)[14]), null), lock: lk }));
       for (q = 0; q < m.changed.length; q++) items.push(it({ what: 'task', kind: 'changed', id: m.changed[q].id, path: k + '[' + m.changed[q].id + ']', period: pair(day, day), owner: pair(str(arr(m.changed[q].a)[14]), str(arr(m.changed[q].b)[14])), lock: lk }));
     }
@@ -9407,7 +9415,7 @@ async function empPrepareTransition(env, A, input) {
   /* V7 · د7: تكرارٌ مع إدارةٍ أخرى أو حساب ⇒ رفضٌ بتفصيله (يذكر العميلُ الصف) */
   if (input.intent === 'import') {
     var dupList = empDupList(A, before, after, d, await empDupContext(env, A, d, before, after));
-    if (dupList.length) { var dupErr = cuError('emp-dup', 403); dupErr.cuDup = dupList.slice(0, 200); throw dupErr; }
+    if (dupList.length) { var dupErr = cuError('emp-dup', 403); dupErr.dupList = dupList.slice(0, 200);   /* V7 · 53: اسمٌ محايد — «cu» بادئةُ العهد، والقاعدةُ لا تسمّي برنامجاً (removal ④) */ throw dupErr; }
   }
   EMP_TRANSITION_RELATED.forEach(function (n) {
     var k = empTransitionKey(d, n),
@@ -9638,7 +9646,7 @@ async function rsScopeOperational(env, capture, keys) {
   capture.snapshots.push.apply(capture.snapshots, state.snapshots);
   capture.guards.push.apply(capture.guards, state.guards);
 }
-/* V7 · 53 (ملحق 4): rsReferenceWiden (توسيعُ المرجع إلى القاعدة كلها لحكم صورة) أُزيل — 019e rsImageHeldSql يسأل D1 بالمعرّفات. */
+/* V7 · 53 (ملحق 4): rsReferenceWiden (توسيعُ المرجع إلى القاعدة كلها */
 async function rsReferenceSnapshot(env, uid, options) {
   /* One coherent reference snapshot feeds actor construction and applySave. Its
      complete row witness is rechecked INSIDE the eventual write transaction. */
@@ -11591,9 +11599,7 @@ async function rsImageArchivePlan(env, A, plan, reference, archive) {
       plan.guards.push(env.DB.prepare("SELECT CASE WHEN (SELECT COUNT(*)||':'||COALESCE(SUM(length(v)),0) FROM imgs WHERE k=?1)!=?2 THEN json_extract('{}','KIVO_REV_CONFLICT') END AS g").bind(sid9, sig9));
     }
   } else {
-  /* V7 · 53 (ملحق 4): كانت أجسامُ كلِّ الصور المذكورة تُقرأ في استدعاءٍ واحد ثم تُرسل كلُّها شاهداً (rsWitness) — استعادةٌ فيها خرائطُ بحجمها الحقيقي
-     (عشرُ صورٍ من 3MB) تتجاوز سقفَ D1 (32MiB للاستدعاء). الآن كما الاستيرادُ على أجزاء: صورةً صورة (استدعاءٌ بحجم صورةٍ واحدة)، والسياجُ عددُ صفوف
-     جسمها ومجموعُ أطوالها داخل الدفعة؛ وجزءُ رفعٍ معلّق لمعرّفٍ منها يرفض كما كان، والغائبةُ تبقى «لا صفّ». */
+  /* V7 · 53 (ملحق 4): كانت أجسامُ كلِّ الصور المذكورة تُقرأ في استدعاءٍ */
   var bodyArgs = [],
     bodyWhere = rsImageIn("CASE WHEN substr(k,1,5)='~stg~' THEN substr(k,6,instr(substr(k,6),'~')-1) ELSE k END", ids, bodyArgs);
   if (await rsBound(env.DB.prepare("SELECT 1 x FROM imgs WHERE substr(k,1,5)='~stg~' AND " + bodyWhere + ' LIMIT 1'), bodyArgs).first()) reject();
@@ -11640,28 +11646,26 @@ function rsImageFinalValues(plan, reference) {
   (plan.imgTouch || []).forEach(function(t){values[t.k]=t.v;});
   return values;
 }
-/* V7 · 53 (ملحق 4): أيُّ المعرّفات ids (بشكل الماسح وحده) يذكره نصٌّ خارج المفاتيح keys — عبارةٌ واحدة تجيب بالمعرّفات لا بالنصوص.
-   kv: الصفُّ كلُّه وحدودُ الصفوف (كما IMG_KV_JOIN) · السجلاتُ التشغيلية: نصوصُ كلِّ جدول ops_* (كما opstxt — 054 imgOpsCols) خارج موارد keys
-   (والموردُ المخزَّن بالفترة res@<الفترة> من المورد نفسِه). الحدُّ بعد المطابقة كدلالة imgIdsIn ([^a-z0-9] أو نهايةُ النص).
-   الجواب: المعرّفاتُ الممسوكة مرتّبةً بفواصل؛ أو — إن حمل نصٌّ خارجها هروبَ \u00XX (قد يخفي معرّفاً لا تراه المطابقةُ الحرفية) — '!' ثم بصمةُ
-   تلك النصوص (مفتاحٌ وطولٌ لكلٍّ) فيقرؤها rsImageHeldEsc ويفكّها كما يفعل الحفظ (imgDeep)، والسياجُ البصمةُ نفسُها. */
+/* V7 · 53 (ملحق 4): أيُّ المعرّفات ids (بشكل الماسح وحده) يذكره نصٌّ */
 function rsImageHeldSql(ids, keys) {
+  /* V7 · 53 (طلبُ المراجع على fc76361): السجلاتُ التشغيلية بفهرس imgref متى اكتمل (imgref_scan_v1='done')، وقبل ذلك وحده بمسح نصوصها (opstxt) */
   var ops = keys.filter(opIsResource).map(function (k) { var i = opInfo(k); return [i.dept, i.resource]; }),
     mine = "EXISTS(SELECT 1 FROM json_each(?3) p WHERE json_extract(p.value,'$[0]')=o.d AND (json_extract(p.value,'$[1]')=o.r OR substr(o.r,1,length(json_extract(p.value,'$[1]'))+1)=json_extract(p.value,'$[1]')||'@'))",
     txt = imgOpsCols().map(function (x, j) { return 'SELECT ' + j + ' AS j, department_id AS d, resource AS r, row_key AS k, ' + imgOpsJoin(x[1]) + ' AS t FROM ' + x[0]; }).join(' UNION ALL '),
-    out = 'k NOT IN (SELECT value FROM json_each(?2))',
+    out = 'k NOT IN (SELECT value FROM json_each(?2))', done = "(SELECT v FROM meta WHERE k='" + IMG_SCAN_KEY + "') IS 'done'",
     has = function (t) { return 'instr(' + t + ', j.value) > 0 AND (' + t + " GLOB '*' || j.value || '[^a-z0-9]*' OR " + t + " GLOB '*' || j.value)"; },
     pair = 'FROM kv b JOIN kv a ON a.k = b.k AND a.seq = b.seq - 1 WHERE b.seq > 0 AND b.' + out;
   return { args: [JSON.stringify(ids), JSON.stringify(keys), JSON.stringify(ops)],
-    sql: 'WITH opstxt(j, d, r, k, t) AS MATERIALIZED (' + txt + '), ops(j, d, r, k, t) AS MATERIALIZED (SELECT * FROM opstxt o WHERE NOT ' + mine + ')' +
+    sql: 'WITH opstxt(j, d, r, k, t) AS NOT MATERIALIZED (' + txt + '), ops(j, d, r, k, t) AS NOT MATERIALIZED (SELECT * FROM opstxt o WHERE NOT ' + mine + ')' +   /* بلا تجسيد: شرطُ «لم يكتمل الفهرس» الثابت يمنع المسحَ كلَّه متى اكتمل */
       ', esck(k) AS MATERIALIZED (SELECT k FROM kv WHERE ' + out + ' AND ' + imgEscCond('v') + ' UNION SELECT b.k ' + pair + ' AND ' + imgEscCond(IMG_ESC_WIN) + ')' +
       ", esc(s) AS MATERIALIZED (SELECT 'k' || k || char(2) || (SELECT SUM(length(CAST(x.v AS BLOB))) FROM kv x WHERE x.k = esck.k) FROM esck" +
-      " UNION ALL SELECT 'o' || j || char(2) || d || char(2) || r || char(2) || k || char(2) || length(CAST(t AS BLOB)) FROM ops WHERE " + imgEscCond('t') + ')' +
+      " UNION ALL SELECT 'o' || j || char(2) || d || char(2) || r || char(2) || k || char(2) || length(CAST(t AS BLOB)) FROM ops WHERE NOT " + done + ' AND ' + imgEscCond('t') + ')' +
       " SELECT CASE WHEN EXISTS(SELECT 1 FROM esc) THEN '!' || (SELECT group_concat(s, char(1)) FROM (SELECT s FROM esc ORDER BY s))" +
       " ELSE COALESCE((SELECT group_concat(id, ',') FROM (SELECT j.value AS id FROM json_each(?1) j WHERE" +
-      ' EXISTS(SELECT 1 FROM kv WHERE ' + out + ' AND ' + has('v') + ')' +
+      ' (' + done + ' AND EXISTS(SELECT 1 FROM imgref r WHERE r.img = j.value AND r.' + out + '))' +
+      ' OR EXISTS(SELECT 1 FROM kv WHERE ' + out + ' AND ' + has('v') + ')' +
       ' OR EXISTS(SELECT 1 ' + pair + ' AND instr(substr(CAST(a.v AS BLOB), -(length(CAST(j.value AS BLOB)) - 1)) || substr(CAST(b.v AS BLOB), 1, length(CAST(j.value AS BLOB)) - 1), j.value) > 0)' +
-      " OR EXISTS(SELECT 1 FROM ops WHERE " + has('t') + ") ORDER BY j.value)), '') END AS h" };
+      " OR (NOT " + done + " AND EXISTS(SELECT 1 FROM ops WHERE " + has('t') + ")) ORDER BY j.value)), '') END AS h" };
 }
 /* '!' من rsImageHeldSql: تُقرأ النصوصُ التي تحمل الهروبَ (وحدها، صفحاتٍ ≤ IMG_ESC_PAGE بايت، ومجموعها ≤ IMG_ESC_CHARS) وتُفكّ — يعيد المعرّفاتِ
    التي يذكرها أحدُها، أو null إن لم يُحسم (أكبرُ من الحد · فكٌّ لم ينتهِ) فيبقى كلُّ شيءٍ كما هو (لا يتيم). */
@@ -11730,7 +11734,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       bodyWhere = rsImageIn('k', newIds, bodyArgs),
       /* V7 · د6: الاستيرادُ على أجزاء لا يحمّل أجسامَ الصور المذكورة ليعرف القائمَ منها — يسأل عن معرّفاتها وتوقيعها (عددُ الصفوف ومجموعُ الأطوال)، وسياجُه التوقيعُ نفسُه */
       bodySig = "SELECT COALESCE(group_concat(k||'='||c||':'||n,','),'') s FROM (SELECT k,COUNT(*) c,SUM(length(v)) n FROM imgs WHERE " + bodyWhere + ' GROUP BY k ORDER BY k)',
-      /* V7 · 53 (ملحق 4): المعرّفاتُ والتوقيعُ وحدهما دائماً (لا أجسامُ الصور ولا شاهدُها — استعادةٌ بخرائط حقيقية كانت تتجاوز 32MiB للاستدعاء) */
+      /* V7 · 53 (ملحق 4): المعرّفاتُ والتوقيعُ وحدهما دائماً (لا أجسامُ الصور */
       sigNow = String((await rsBound(env.DB.prepare(bodySig), bodyArgs).first('s')) || ''),
       known = new Set(sigNow.split(',').filter(Boolean).map(function (x) { return x.slice(0, x.lastIndexOf('=')); }));
     /* V7-F · owner decision 2 (ii): a backup that mentions an image the platform no longer holds (swept after its grace) is still restored —
@@ -11761,12 +11765,7 @@ async function rsImageMetadataPlan(env, A, plan, reference) {
       live.add(id);
     });
   });
-  /* V7 · 53 (ملحق 4 · السبب الجذري لـ500 على Preview): صورةٌ لم تعد القيمُ المنطاقة تذكرها قد يذكرها مفتاحٌ آخر في القاعدة. كان الحكمُ يوسّع المرجعَ
-     إلى القاعدة كلها (rsReferenceWiden: كلُّ kv خارج النطاق وكلُّ الموارد التشغيلية لكل الإدارات إلى العامل، ثم كلُّها شاهداً في دفعة الحفظ) —
-     فيكبر الاستدعاءُ بحجم القاعدة لا بحجم الحفظ، ويتجاوز سقفَ D1 (32MiB للاستدعاء) فيعود 500 save-failed. الآن يسأل D1 نفسَها بعبارةٍ واحدة
-     (rsImageHeldSql) أيُّ هذه المعرّفات ما زال نصٌّ خارج المفاتيح المحفوظة يذكره — kv صفّاً صفّاً وعبر حدود الصفوف · نصوصُ السجلات التشغيلية —
-     فلا يعبر إلا المعرّفات. والسياجُ العبارةُ نفسُها داخل دفعة الحفظ: أيُّ كتابةٍ متزامنة تغيّر الجواب ⇒ KIVO_REV_CONFLICT (كما كان الشاهد).
-     نصٌّ قديم يحمل هروبَ \u00XX (قد يخفي معرّفاً) خارج المحفوظ ⇒ لا يُحكم: كلُّها تبقى كما هي (لا يتيم) — والكنسُ (054 imgSweep) يقرّر وحده بعد ذلك. */
+  /* V7 · 53 (ملحق 4 · السبب الجذري لـ500 على Preview): صورةٌ لم تعد */
   var lost = Array.from(ids).filter(function (id) { return !live.has(id); }), scope = reference.scope;
   if (lost.length && scope && !scope.all && !reference.noWiden) {
     lost.filter(function (id) { return !IMG_SCAN_ID_RX.test(id); }).forEach(function (id) { live.add(id); });
@@ -11943,7 +11942,8 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       operationReadGuards.push(revGuard(env,readKey,readBase));
     }
   }
-  await dailyArcPre(env, body);   /* V7 · د5-ح (13): الجولاتُ وثيقةٌ منطقية (الأرشيفُ تحت الحيّ) لأحكام الحفظ — 019p3 */
+  var arcNo = await dailyArcPre(env, body);   /* V7 · د5-ح (13): الجولاتُ وثيقةٌ منطقية (الأرشيفُ تحت الحيّ) لأحكام الحفظ — 019p3 */
+  if (arcNo) return { ok: 0, requestId: operationRequestId, epoch: body.epoch, v: await curRev(env), revs: {}, denied: arcNo, conflicts: {}, atomic: 1 };   /* V7 · 53 (S13): يومٌ وحده في شهرٍ مقفل ⇒ رفضٌ صريح */
   var kv = await applySave(env, body, A, meta, Object.assign({}, opt, { quiet: true, __restorePlan: RESTORE_INTERNAL_TOKEN }));
   kv.revs = kv.revs || reference.inputRevs;
   if (opt.__serverDepartmentWipes) {
@@ -12405,7 +12405,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
     if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
-    if (e.cuCode) return json(Object.assign({ ok: 0, err: e.cuCode }, e.cuDup ? { dup: e.cuDup } : {}), e.cuStatus);
+    if (e.cuCode) return json(Object.assign({ ok: 0, err: e.cuCode }, e.dupList ? { dup: e.dupList } : {}), e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))
@@ -14844,14 +14844,18 @@ async function rsImportRoute(env, request, ss) {
                 D.prepare('INSERT INTO ' + T + "(snapshot_id,domain,table_key,row_number,row_json) SELECT ?3,'operations-sql',?4,ROW_NUMBER() OVER (ORDER BY row_key),json_array(" + packs.join(',') + ') FROM ' + t + where).bind(info.dept, info.resource, snap, k + ':' + t)];
             });
           });
+          var st0 = plan.statements.length;
           plan.statements.push(D.prepare('UPDATE ops_nodes SET parent_key=NULL' + where).bind(info.dept, info.resource));
           names.slice().reverse().forEach(function (t) { plan.statements.push(D.prepare('DELETE FROM ' + t + where).bind(info.dept, info.resource)); });
           plan.revisionKeys.push(k); plan.counts.operations++;
+          /* V7 · 53: كتابةٌ بالجملة لا تعرف فتراتها ⇒ K@* (مراجعةُ كل فترةٍ */
+          if (opSplitResource(k)) { plan.revisionKeys.push(k + '@*'); plan.statements.push(D.prepare('DELETE FROM ops_period_summary WHERE department_id=?1 AND resource=?2').bind(info.dept, info.resource)); }
+          plan.statements.slice(st0).forEach(function (st) { opTag(st, [k]); });
         });
         rows.sort(function (x, y) { return x[2] - y[2]; }).forEach(function (r) {
           var cols = ocPhysicalTables(opInfo(r[0]).prepared)[r[1]], mutable = cols.filter(function (c) { return c !== 'department_id' && c !== 'resource' && c !== 'row_key'; });
-          plan.statements.push(D.prepare('INSERT INTO ' + r[1] + '(' + cols.join(',') + ') SELECT ' + cols.map(function (c) { return "json_extract(j.value,'$." + c + "')"; }).join(',') + ' FROM ' + T +
-            " s, json_each(s.row_json) j WHERE s.snapshot_id=?1 AND s.domain='q' AND s.row_number=?2 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET " + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(id, r[2]));
+          plan.statements.push(opTag(D.prepare('INSERT INTO ' + r[1] + '(' + cols.join(',') + ') SELECT ' + cols.map(function (c) { return "json_extract(j.value,'$." + c + "')"; }).join(',') + ' FROM ' + T +
+            " s, json_each(s.row_json) j WHERE s.snapshot_id=?1 AND s.domain='q' AND s.row_number=?2 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET " + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(id, r[2]), [r[0]]));
         });
         /* ما أُخرج من نصّ الملف ليُرسل دفعاتٍ ليس «مجموعةً غائبة عن النسخة» */
         Object.keys(M.slices).forEach(function (k) { var gone = 'operations:' + fk(k); summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== gone; }); });
@@ -19058,8 +19062,10 @@ function ocConvert(prepared, department, resource, value, present) {
   if (present !== false) write(root.spec, value, '$', null, null, 0);
   return { departmentId: department, resource: resource, rows: rows };
 }
-function ocInflate(prepared, domain) {
-  var root = prepared.resources[domain.resource], rows = domain.rows, used = new Set(), byTable = {};
+/* V7 · 53 */
+function ocInflate(prepared, domain, opts) {
+  opts = opts || {};
+  var root = prepared.resources[domain.resource], rows = domain.rows, used = new Set(), byTable = {}, kids = {};
   if (!root || !rows || !ocObj(rows)) throw ocError('domain');
   prepared.order.forEach(function (spec) {
     var list = rows[spec.table] || [], map = new Map();
@@ -19068,16 +19074,10 @@ function ocInflate(prepared, domain) {
       if (!ocObj(row) || row.department_id !== domain.departmentId || row.resource !== domain.resource || typeof row.row_key !== 'string' || map.has(row.row_key) ||
           Object.keys(row).length !== spec.columns.length || spec.columns.some(function (c) { return !ocOwn(row, c); })) throw ocError('row');
       map.set(row.row_key, row);
+      if (row.parent_key != null) { var bucket = kids[spec.table] || (kids[spec.table] = new Map()), list = bucket.get(row.parent_key); if (list) list.push(row); else bucket.set(row.parent_key, [row]); }
     }); byTable[spec.table] = map;
   });
-  /* V7 · 53 (البند 6 · الأداء): فهرسُ الأبناء بالأب لكل جدول — يُبنى مرةً عند أول حاجة. كان كلُّ عنصرِ مصفوفةٍ أو خريطة يمسح الجدولَ كلَّه
-     (تربيعيٌّ في حجم المستند: 500 موظف · أيامُ الجدول والتقرير). الترتيبُ داخل كل أبٍ ترتيبُ الإدراج نفسُه، فالنتيجةُ هي هي */
-  var kids = {};
-  function childrenOf(table, parent) {
-    var idx = kids[table];
-    if (!idx) { idx = kids[table] = new Map(); byTable[table].forEach(function (r) { var a = idx.get(r.parent_key); if (!a) idx.set(r.parent_key, a = []); a.push(r); }); }
-    return idx.get(parent) || [];
-  }
+  function children(table, parent) { var bucket = kids[table]; return (bucket && bucket.get(parent)) || []; }
   function read(spec, row) {
     used.add(spec.table + '\0' + row.row_key);
     if (row.node_kind === 1) return null;
@@ -19092,7 +19092,7 @@ function ocInflate(prepared, domain) {
     }
     value = kind === 'array' || kind === 'tuple' ? [] : {};
     if (kind === 'array') {
-      var entries = childrenOf(spec.entry.table, row.row_key).slice().sort(function (a, b) { return a.position - b.position; });
+      var entries = children(spec.entry.table, row.row_key).slice().sort(function (a, b) { return a.position - b.position; });
       entries.forEach(function (entry, index) { if (entry.position !== index) throw ocError('array-position'); value.push(read(spec.entry, entry)); });
       return value;
     }
@@ -19116,25 +19116,27 @@ function ocInflate(prepared, domain) {
     });
     if (kind === 'map') {
       var candidates = [spec.entry].concat(spec.patterns.map(function (p) { return p.spec; })).filter(Boolean), entries = [], visited = new Set();
-      candidates.forEach(function (candidate) { if (visited.has(candidate.table)) return; visited.add(candidate.table); childrenOf(candidate.table, row.row_key).forEach(function (entry) { if (entry.parent_key === row.row_key && entry.row_key.startsWith(row.row_key + '/e:')) entries.push({ spec: candidate, row: entry }); }); });
+      candidates.forEach(function (candidate) { if (visited.has(candidate.table)) return; visited.add(candidate.table); children(candidate.table, row.row_key).forEach(function (entry) { if (entry.row_key.startsWith(row.row_key + '/e:')) entries.push({ spec: candidate, row: entry }); }); });
+      var seenKeys = new Set(members.map(function (m) { return m.key; }));
       entries.sort(function (a, b) { return a.row.position - b.row.position; }).forEach(function (entry) {
         var key = entry.row.member_key;
-        if (typeof key !== 'string' || members.some(function (m) { return m.key === key; }) || ocOwn(spec.fields, key) || ocEntry(spec, key) !== entry.spec) throw ocError('map-member');
+        if (typeof key !== 'string' || seenKeys.has(key) || ocOwn(spec.fields, key) || ocEntry(spec, key) !== entry.spec) throw ocError('map-member');
+        seenKeys.add(key);
         members.push({ key: key, value: read(entry.spec, entry.row), position: entry.row.position });
       });
     }
     members.sort(function (a, b) { return a.position - b.position; }).forEach(function (member, index) {
-      if (member.position !== index) throw ocError('member-position');
+      if (member.position !== index && !(opts.partial && kind === 'map')) throw ocError('member-position');
       ocSet(value, member.key, member.value);
     });
     if (kind === 'tuple' && (!Number.isSafeInteger(row.tuple_length) || row.tuple_length < 0 || row.tuple_length > spec.node.slots.length || value.length !== row.tuple_length)) throw ocError('tuple-length');
     return value;
   }
   var rootRow = byTable[root.spec.table].get('$'), result = rootRow ? { present: true, value: read(root.spec, rootRow) } : { present: false };
+  if (opts.partial || opts.trust) { if (!opts.partial) prepared.order.forEach(function (spec) { byTable[spec.table].forEach(function (row) { if (!used.has(spec.table + '\0' + row.row_key)) throw ocError('orphan-row'); }); }); return result; }
   prepared.order.forEach(function (spec) { byTable[spec.table].forEach(function (row) { if (!used.has(spec.table + '\0' + row.row_key)) throw ocError('orphan-row'); }); });
   var canonical = ocConvert(prepared, domain.departmentId, domain.resource, result.value, result.present);
   prepared.order.forEach(function (spec) {
-    /* V7 · 53 (الأداء): ترتيبٌ ثابت بوحدات النص بدل localeCompare — المفاتيحُ فريدة في الطرفين (row · byTable)، فالمساواةُ بعد الترتيب هي هي */
     function sorted(list) { return list.slice().sort(function (a, b) { return a.row_key < b.row_key ? -1 : a.row_key > b.row_key ? 1 : 0; }).map(function (r) { return spec.columns.map(function (c) { return r[c]; }); }); }
     if (JSON.stringify(sorted(canonical.rows[spec.table])) !== JSON.stringify(sorted(rows[spec.table] || []))) throw ocError('noncanonical-rows');
   });
@@ -19158,10 +19160,15 @@ function ocPhysicalRows(prepared, domain) {
       }
     });
   });
-  out.ops_nodes.sort(function (a, b) { return a.row_key.split('/').length - b.row_key.split('/').length || a.row_key.localeCompare(b.row_key); });
+  out.ops_nodes.sort(function (a, b) { return a.row_key.split('/').length - b.row_key.split('/').length || (a.row_key < b.row_key ? -1 : a.row_key > b.row_key ? 1 : 0); });   /* V7 · 53: مقارنةٌ ثنائية لا localeCompare */
   return out;
 }
-function ocFromPhysical(prepared, department, resource, physical) {
+/* V7 · 53 (البند 6 · uiqa): فكٌّ واحد للقراءة مع التحقق الكامل — على opts.skip */
+function ocFromPhysicalRead(prepared, department, resource, physical, opts) {
+  var domain = ocFromPhysical(prepared, department, resource, physical, { skip: 1 });
+  return { domain: domain, projection: ocInflate(prepared, domain, opts) };
+}
+function ocFromPhysical(prepared, department, resource, physical, opts) {
   var domain = { departmentId: department, resource: resource, rows: {} }, entities = {}, used = new Set();
   var physicalTables = ocPhysicalTables(prepared), nodeIds = new Set();
   if (!ocObj(physical) || Object.keys(physical).some(function (table) { return !ocOwn(physicalTables, table); })) throw ocError('physical-tables');
@@ -19187,15 +19194,7 @@ function ocFromPhysical(prepared, department, resource, physical) {
     domain.rows[spec.table].push(row);
   });
   Object.keys(entities).forEach(function (name) { entities[name].forEach(function (row) { if (!used.has(name + '\0' + row.row_key)) throw ocError('orphan-entity'); }); });
-  OC_INFLATED.set(domain, ocInflate(prepared, domain)); return domain;
-}
-/* V7 · 53 (البند 6 · الأداء): القراءةُ (019r) كانت تفكّ المستندَ مرتين — ocFromPhysical تفكّه للتحقق ثم ocInflate من جديد للقيمة نفسها.
-   ocFromPhysicalRead تعيد الاثنين من فكٍّ واحد؛ ocFromPhysical وocInflate لبقية المستدعين كما هما */
-var OC_INFLATED = new WeakMap();
-function ocFromPhysicalRead(prepared, department, resource, physical) {
-  var domain = ocFromPhysical(prepared, department, resource, physical), projection = OC_INFLATED.get(domain);
-  OC_INFLATED.delete(domain);
-  return { domain: domain, projection: projection || ocInflate(prepared, domain) };
+  if (!opts || !opts.skip) ocInflate(prepared, domain, opts); return domain;   /* V7 · 53: opts.skip */
 }
 function ocCreateStatements(prepared) {
   var out = ["CREATE TABLE IF NOT EXISTS ops_nodes(department_id TEXT NOT NULL,resource TEXT NOT NULL,row_key TEXT NOT NULL,parent_key TEXT,member_key TEXT,position INTEGER NOT NULL,node_kind INTEGER NOT NULL,variant INTEGER,tuple_length INTEGER,schema_id TEXT NOT NULL,entity_kind TEXT,PRIMARY KEY(department_id,resource,row_key),UNIQUE(department_id,resource,row_key,entity_kind),FOREIGN KEY(department_id,resource,parent_key)REFERENCES ops_nodes(department_id,resource,row_key)ON DELETE CASCADE)WITHOUT ROWID",
@@ -19720,6 +19719,64 @@ function osSchemaBaseResources() {
     },
   ];
 }
+/* V7 · 53 (التخزين بالفترة): هنا وحده يُقرأ نصُّ مفتاح الفترة القائم */
+function osPeriodIndex(p) {
+  var m = /^(m:)?(\d+)-(\d+)(?:-(\d+))?/.exec(String(p));
+  if (!m) return { grp: '', seq: 0, kind: 'day' };
+  return { grp: m[2] + '-' + m[3], seq: (Number(m[2]) * 100 + Number(m[3])) * 100 + (m[4] ? Number(m[4]) : 0), kind: m[1] ? 'mctl' : m[4] ? 'day' : 'month' };
+}
+function osPeriodCtx(p) { var m = /^(\d+-\d+)-\d+/.exec(String(p)); return m ? ['m:' + m[1]] : []; }
+function osSumNum(x) { return typeof x === 'number' && isFinite(x) ? x : 0; }
+/* ملخّصاتُ الفترة (ops_period_summary): أعدادٌ تُحسب من قيمة الفترة المحفوظة في الدفعة نفسِها — لا يحملها سجلٌّ شخصي */
+function osSumRounds(p, v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return { kind: 'scalar' };
+  if (/^m:/.test(p)) return { ap: v.ap ? 1 : 0, mo: v.mo ? 1 : 0, open: Object.keys(v.dopen || {}).length, shut: Object.keys(v.dshut || {}).length };
+  var out = { floors: 0, zones: 0, readings: 0, observed: 0, capacity: 0, ap: v.ap ? 1 : 0, fst: {}, prayers: {} };
+  (Array.isArray(v.d) ? v.d : []).forEach(function (f) {
+    if (!f || typeof f !== 'object') return; out.floors++;
+    (Array.isArray(f.zones) ? f.zones : []).forEach(function (z) {
+      if (!z || typeof z !== 'object') return; out.zones++;
+      if (z.fst) out.fst[z.fst] = (out.fst[z.fst] || 0) + 1;
+      var pc = z.pc && typeof z.pc === 'object' ? z.pc : {};
+      Object.keys(pc).forEach(function (k) {
+        var r = pc[k], n = typeof r === 'number' ? r : r && typeof r === 'object' ? osSumNum(r.n) : 0, cap = r && typeof r === 'object' ? osSumNum(r.cap) : 0;
+        if (r == null) return; var P = out.prayers[k] || (out.prayers[k] = { readings: 0, observed: 0, capacity: 0 });
+        P.readings++; P.observed += n; P.capacity += cap; out.readings++; out.observed += n; out.capacity += cap;
+      });
+    });
+  });
+  return out;
+}
+function osSumStaffing(p, v) {
+  var out = { employees: 0, byShift: {}, leaves: 0, perms: 0 };
+  Object.keys(v && typeof v === 'object' ? v : {}).forEach(function (e) {
+    var r = v[e]; if (e === '__shifts' || !r || typeof r !== 'object') return; out.employees++;
+    if (r.shift) out.byShift[r.shift] = (out.byShift[r.shift] || 0) + 1;
+    if (Array.isArray(r.leaves) && r.leaves.length) out.leaves++;
+    if (Array.isArray(r.perm) && r.perm.length) out.perms++;
+  });
+  return out;
+}
+function osSumPlan(p, v) { var d = v && typeof v === 'object' ? (Array.isArray(v) ? v : v.d) : null; return { floors: Array.isArray(d) ? d.length : 0, zones: (Array.isArray(d) ? d : []).reduce(function (n, f) { return n + (f && Array.isArray(f.zones) ? f.zones.length : 0); }, 0) }; }
+function osSumReport(p, v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return { kind: 'scalar' };
+  if (/^m:/.test(p)) return { ap: v.ap ? 1 : 0, mo: v.mo ? 1 : 0, open: Object.keys(v.dopen || {}).length, shut: Object.keys(v.dshut || {}).length };
+  var out = { created: v.created ? 1 : 0, ap: 0, anyAp: 0, shifts: 0, roster: 0, byStatus: {}, byShift: {} }, apN = 0;
+  Object.keys(v.shifts && typeof v.shifts === 'object' ? v.shifts : {}).forEach(function (sh) {
+    var s = v.shifts[sh]; out.shifts++; if (s && s.ap) apN++;
+    (s && Array.isArray(s.roster) ? s.roster : []).forEach(function (r) { out.roster++; var st = r && r.st ? String(r.st) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; out.byShift[sh] = (out.byShift[sh] || 0) + 1; });
+  });
+  out.ap = out.shifts && apN === out.shifts ? 1 : 0; out.anyAp = apN ? 1 : 0;   // V7 · 53 (periodsui طلب 1): ألوانُ التقويم للأيام غير المحمَّلة
+  return out;
+}
+function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }
+/* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') */
+function osPeriodNowMonth() { var T = dsToday(Date.now()); return T ? T.y + '-' + T.m : ''; }
+/* V7 · 53 (kpi طلب 9): أدواتُ إسقاط v.kpi المشتركة — قوائمُ الحقول يعلنها كلُّ نظامٍ لمورده (مرآةُ _kLean) */
+function osKpiPick(o, ks) { var r = {}; if (o && typeof o === 'object') ks.forEach(function (k) { if (o[k] !== undefined) r[k] = o[k]; }); return r; }
+function osKpiArr(a, f) { return Array.isArray(a) ? a.map(function (x) { return x && typeof x === 'object' ? f(x) : x; }) : a; }
+/* أرضياتُ المواقع (zones · gates · marks) بقوائم حقولٍ يعلنها النظام — paths بعددها أصفاراً إن طُلب */
+function osKpiFloors(d, L, paths) { return osKpiArr(d, function (f) { var o = { zones: osKpiArr(f.zones, function (z) { return osKpiPick(z, L.zones); }), gates: osKpiArr(f.gates, function (g) { return osKpiPick(g, L.gates); }), marks: osKpiArr(f.marks, function (m) { return osKpiPick(m, L.marks); }) }; if (paths) o.paths = Array.isArray(f.paths) ? f.paths.map(function () { return 0; }) : f.paths; return o; }); }
 function osSchemaStaffRow(table) {
   var fields = osSchemaFields(["shift", "muk", "cs"]);
   fields.rest = osSchemaScalars(table + "_rest");
@@ -19755,6 +19812,7 @@ function osSchemaStaffResources() {
     {
       resource: "bassam_staffing_v3",
       name: "staffing",
+      period: { root: 1, index: osPeriodIndex, summary: osSumStaffing, kpi: osKpiStaffing, current: osPeriodNowMonth, me: 'months3' },   // V7 · 53: كلُّ شهرٍ فترة (019w)
       schema: ocMap("ops_staffing", osSchemaMonthBucket("ops_staffing_month")),
     },
     {
@@ -19805,6 +19863,9 @@ function osSchemaStaffResources() {
     },
   ];
 }
+
+/* V7 · 53 (kpi 9): v.kpi للشهر — مرآةُ _kLean */
+function osKpiStaffing(p, v) { if (!v || typeof v !== 'object') return v; var r = {}; Object.keys(v).forEach(function (k) { if (k.indexOf('__') !== 0 && v[k] && typeof v[k] === 'object') r[k] = osKpiPick(v[k], ['rest']); }); return r; }
 // V7 · د5-هـ (م1): شكلُ الطابق وعناصره (أبواب · مصليات · مسارات · معالم · نطاقات) مشتركٌ بين الخطة وأيام الجولات المنسوخة منها — جزءُ قاعدة.
 // كان في جزء الخطة (019p2)؛ تبقى أيامُ الجولات تُقرأ وتُكتب بشكلها ولو غاب التشغيلُ الميداني.
 function osSchemaPoint(table) {
@@ -20104,6 +20165,7 @@ function osSchemaRoundsResources() {
     {
       resource: "bassam_rounds_v1",
       name: "rounds",
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiRounds, arc: { res: DAILY_ARC_RES, due: dailyArcDue }, me: 'today' },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
       schema: ocMap("ops_rounds", null, {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
@@ -20123,6 +20185,7 @@ function osSchemaRoundsResources() {
     {
       resource: DAILY_ARC_RES,
       name: "rounds_arc",
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiRounds, me: 'today' },
       late: 1,   /* نسخٌ احتياطية قبل هذه الحزمة لا تحمله: يُستعاد منها فارغاً (019t opValidateBackupDomains) */
       schema: ocMap("ops_rounds_arc", null, {
         fixed: { __pMig: ocScalar("scalar") },
@@ -20161,6 +20224,17 @@ function dailyArcClosed(ctrl, y, m, T) {
   if (c && (c.mo || (isObj(c.dopen) && Object.keys(c.dopen).length))) return false;
   return !!(T && T.y > 0 && T.m > 0 && (y * 12 + m) <= (T.y * 12 + T.m) - 2);
 }
+/* V7 · 53 (periodsui 9): أيامُ الحيّ التي تنتقل إلى الأرشيف (شهرٌ مقفل) — حفظُ الفترة يضيفها إلى نطاقه فتنتقل في دفعته (dailyArcPend)؛ أقدمُها
+   أولاً و31 يوماً على الأكثر في الحفظة (حيٌّ تراكمَ فيه تاريخٌ طويل يُفرَّغ على حفظات، لا في دفعةٍ تتجاوز الميزانية) */
+/* V7 · 53 (kpi 9): v.kpi لليوم — مرآةُ _kLean (daily client) حرفاً */
+var OS_KPI_ROUNDS = { top: ['ap'], zones: ['uid', 'code', 'name', 'ztype', 'zcat', 'off', 'cap', 'yard', 'region', 'level', 'pc', 'count', 'emp', 'needN', 'needS', 'fAt'],
+  gates: ['gid', 'leafN', 'pOf', 'num', 'label', 'name', 'closed', 'cWhy', 'cAt', 'emp', 'needN', 'needS', 'fAt'], marks: ['label', 'name', 'kind', 'off', 'emp', 'needN', 'needS', 'fAt'] };
+function osKpiRounds(p, v) { if (!v || typeof v !== 'object') return v; if (/^m:/.test(p) || Array.isArray(v)) return null; return Object.assign(osKpiPick(v, OS_KPI_ROUNDS.top), { d: osKpiFloors(v.d, OS_KPI_ROUNDS, 1) }); }
+function dailyArcDue(names, ctl) {
+  var T = dsToday(Date.now());
+  return names.filter(function (p) { var d = dailyArcDay(p); return d && dailyArcClosed(ctl[d.mk], d.y, d.m, T); })
+    .sort(function (a, b) { var x = dailyArcDay(a), y = dailyArcDay(b); return (x.y * 12 + x.m) - (y.y * 12 + y.m); }).slice(0, 31);
+}
 function dailyArcStep(live, arc, T) {
   var L = {}, R = {}, moved = [], back = [], gone = Object.create(null), k, p;
   live = isObj(live) ? live : {}; arc = isObj(arc) ? arc : {};
@@ -20188,9 +20262,28 @@ function dailyArcStep(live, arc, T) {
    ③ dailyArcPend (بعد الحكم · قبل تصفية غير المتغيّر): القيمةُ المقبولة تُقسم بخطوة الأرشفة إلى الحيّ (الأشهرُ المفتوحة + العلامات) والأرشيف
       (الأشهرُ المقفلة) — كتابتان في الدفعة الذرّية نفسِها بنسختيهما المقروءتين (حارسُ النسخة يرفض التزامن)، ويعود المرجعُ إلى المخزَّن.
    الردُّ يسمّي ما طلبه العميلُ وحده (revs ← plan.operationKeys). والاستعادةُ (019d) تقسم ما تستعيده بالخطوة نفسِها (③ بلا ①②). */
+/* V7 · 53 (S13): يومٌ يُفتح (dopen جديد) في شهرٍ مقفل — معتمد، أو ماضٍ لم يُفتح للاستدراك (mo) — لا يُقبل وحده: كان يُحفظ ولا أثرَ له
+   (قاعدةُ الصفحة isMonthAp والخادم lockedIn: الشهرُ المقفل يغلب أيامَه). يعيد خريطةَ الرفض لمفتاحه أو null */
+function dailyLoneDayOpen(cur, next, T) {
+  var c = isObj(cur) ? cur : {}, n = isObj(next) ? next : {}, q, m, r, o, d;
+  for (q in n) {
+    if (!Object.prototype.hasOwnProperty.call(n, q) || !(m = /^m:(\d{4})-(\d{1,2})$/.exec(q))) continue;
+    r = n[q] === true || n[q] === 1 ? { ap: 1 } : isObj(n[q]) ? n[q] : {}; o = isObj(c[q]) ? c[q] : {};
+    var past = !!(T && T.y > 0 && (+m[1] * 12 + +m[2]) < (T.y * 12 + T.m)), locked = !!r.ap || (past && !r.mo);
+    if (!locked || !isObj(r.dopen)) continue;
+    for (d in r.dopen) if (Object.prototype.hasOwnProperty.call(r.dopen, d) && r.dopen[d] && !(isObj(o.dopen) && o.dopen[d])) return { why: 'day-needs-month', detail: q + '-' + d };
+  }
+  return null;
+}
 async function dailyArcPre(env, body) {
-  var set = (body && body.set) || {}, cap = env.__opCapture, T = dsToday(Date.now()), k;
-  if (!cap || !cap.keys || !env.__pre || !env.__pre.live) return;
+  var set = (body && body.set) || {}, cap = env.__opCapture, T = dsToday(Date.now()), k, no = null;
+  for (k in set) {
+    if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || resName(k) !== 'bassam_rounds_v1') continue;
+    var lone = dailyLoneDayOpen(parseJson(await opResourceGet(env, k), null), parseJson(set[k], null), T);
+    if (lone) (no = no || {})[k] = lone;
+  }
+  if (no) return no;
+  if (!cap || !cap.keys || !env.__pre || !env.__pre.live) return null;
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || resName(k) !== 'bassam_rounds_v1') continue;
     var d = parseKey(k).dept; if (!d) continue;
@@ -20207,7 +20300,9 @@ async function dailyArcPre(env, body) {
     (env.__dailyArc = env.__dailyArc || Object.create(null))[k] = { live: liveRaw, keep: keep };
     if (Object.keys(arc).length && isObj(live)) cap.keys[k] = JSON.stringify(L);
   }
+  return null;
 }
+
 function dailyArcFill(env, k, v, cur) {
   var X = env.__dailyArc && env.__dailyArc[k]; if (!X || v == null || cur == null) return v;
   var n = parseJson(v, null), c = parseJson(cur, null), add = 0, q;
@@ -20338,6 +20433,7 @@ function osSchemaPlanResources() {
       resource: "bassam_plan_v1",
       name: "plan",
       schema: osSchemaPlan("ops_plan"),
+      period: { field: "months", index: osPeriodIndex, summary: osSumPlan, kpi: osKpiPlan, me: 'month' },   // V7 · 53: كلُّ شهرٍ من months فترة (019w)
     },
     {
       resource: "bassam_zone_opts_v1",
@@ -20356,6 +20452,10 @@ function osSchemaPlanResources() {
     },
   ];
 }
+
+/* V7 · 53 (kpi 9): v.kpi للشهر — مرآةُ _kLean */
+var OS_KPI_PLAN = { zones: ['code', 'name', 'needN', 'needS'], gates: ['num', 'label', 'needN', 'needS'], marks: ['label', 'kind', 'needN', 'needS'] };
+function osKpiPlan(p, v) { if (!v || typeof v !== 'object') return v; return { d: osKpiFloors(Array.isArray(v) ? v : v.d, OS_KPI_PLAN, 0) }; }
 /* ملف مولَّد — لا يُحرَّر يدوياً، المصدر: src/slots/workers/parts/019p9-scheduling-registry.js.tpl */
 // V7 · د5-د: مواردُ الجدولة المسجَّلة = ما يعلنه كلُّ برنامجٍ حاضر (قطعةٌ من مجلده) ثم مواردُ القاعدة ثم الخطة.
 var OC_SCHEDULING_RESOURCES = [].concat(
@@ -20486,6 +20586,8 @@ function ocptReportMonth(table) {
     })
   ]);
 }
+/* V7 · 53 (kpi 9): v.kpi ليوم التقرير — مرآةُ _kLean */
+function osKpiReport(p,v){if(!v||typeof v!=='object')return v;if(/^m:/.test(p)||Array.isArray(v))return null;var sh={};Object.keys(v.shifts&&typeof v.shifts==='object'?v.shifts:{}).forEach(function(k){var s=v.shifts[k];if(s&&typeof s==='object')sh[k]=Object.assign(osKpiPick(s,['pulled','ap','rest','tout']),{roster:osKpiArr(s.roster,function(r){return osKpiPick(r,['st','ekey']);})});});return Object.assign(osKpiPick(v,['created']),{shifts:sh});}
 var OC_PEOPLE_TASK_RESOURCES = [
   {
     resource:'bassam_employees_v1',name:'employees',
@@ -20509,6 +20611,7 @@ var OC_PEOPLE_TASK_RESOURCES = [
   },
   {
     resource:'bassam_dreport_v1',name:'dailyReports',
+    period:{root:1,index:osPeriodIndex,ctx:osPeriodCtx,summary:osSumReport,kpi:osKpiReport,me:'monthWeek'},   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
     schema:ocMap('ops_daily_reports',null, {
       fixed:{__ldcs:ocMap('ops_report_leader_callsigns',ocScalar('text'))},
       patterns:[
@@ -20526,6 +20629,7 @@ var OC_PEOPLE_TASK_RESOURCES = [
   },
   {
     resource:'bassam_tasks_v1',name:'tasks',
+    period:{root:1,index:osPeriodIndex,summary:osSumTasks},   // V7 · 53: كلُّ يومٍ فترة (019w)
     schema:ocMap('ops_tasks',null, {patterns:[
       {pattern:'^\\d{4}-\\d{1,2}-\\d{1,2}$',schema:ocArray('ops_task_day',ocptTaskRow('ops_task_row'))}
     ]})
@@ -20564,7 +20668,7 @@ function opPhysicalTables() {
 function opResetStatements(env) {
   return Object.keys(opPhysicalTables()).filter(function (table) { return table !== 'ops_nodes'; })
     .map(function (table) { return env.DB.prepare('DELETE FROM ' + table); })
-    .concat([env.DB.prepare('UPDATE ops_nodes SET parent_key=NULL'),env.DB.prepare('DELETE FROM ops_nodes')]);
+    .concat([env.DB.prepare('DELETE FROM ops_period_summary'),env.DB.prepare('UPDATE ops_nodes SET parent_key=NULL'),env.DB.prepare('DELETE FROM ops_nodes')]);   /* V7 · 53: والملخّصاتُ معها */
 }
 function opBulkInstall(env, resource, domain) {
   var statements = [], prepared = opPrepared(resource), rows = ocPhysicalRows(prepared, domain), tables = ocPhysicalTables(prepared);
@@ -20578,28 +20682,7 @@ function opUpsertRows(env, spec, rows) {
       ' FROM json_each(?1) j WHERE 1 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET ' + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(JSON.stringify(part));
   });
 }
-function opStateGuards(env, info, domain, empty) {
-  var guards = [];
-  var tables = ocPhysicalTables(info.prepared), physical = ocPhysicalRows(info.prepared, domain);
-  Object.keys(tables).forEach(function (table) {
-    var rows = physical[table] || [];
-    if (!rows.length) (empty[table] = empty[table] || []).push([info.dept, info.resource]);
-    else guards.push.apply(guards, rsWitness(env, table, tables[table], rows, 'department_id=?1 AND resource=?2', [info.dept, info.resource]));
-  });
-  return guards;
-}
-// Set-based form of the per-resource guards: one EXISTS per physical table over
-// every (department, resource) pair that read empty, and one CAS over all revs.
-function opEmptyGuards(env, empty) {
-  var tables = Object.keys(empty), guards = [];
-  for (var i = 0; i < tables.length; i += 24) {
-    var part = tables.slice(i, i + 24);
-    guards.push(rsBound(env.DB.prepare('SELECT CASE WHEN ' + part.map(function (table, n) {
-      return 'EXISTS(SELECT 1 FROM ' + ocIdentifier(table) + " WHERE (department_id,resource) IN(SELECT json_extract(j.value,'$[0]'),json_extract(j.value,'$[1]')FROM json_each(?" + (n + 1) + ')j))';
-    }).join(' OR ') + " THEN json_extract('{}','KIVO_RESTORE_TARGET') END"), part.map(function (table) { return JSON.stringify(empty[table]); })));
-  }
-  return guards;
-}
+/* V7 · 53 */
 function opRevGuards(env, pairs) {
   return rsChunks(pairs).map(function (part) {
     return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1)j WHERE COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$[0]')),0)<>json_extract(j.value,'$[1]'))THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(JSON.stringify(part));
@@ -20610,29 +20693,43 @@ function opLegacyError(error) {
   var e = ocError('legacy-source-present'); e.status = 503; return e;
 }
 // retired: also run opRetiredGuard inside the read batch (replaces a separate opGuardRetired round trip).
-async function opLoadMany(env, keys, retired) {
-  var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {};
+/* V7 · 53: scopes { <key>: { periods:[…], base? , bases:{p:rev}? } } */
+async function opLoadMany(env, keys, retired, scopes) {
+  scopes = scopes || env.__opScope || {};
+  var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {}, revKeys = [];
   wanted.forEach(function (key) {
     var info = opInfo(key); if (!info) throw ocError('resource');
-    var request = { key: key, info: info, tables: ocPhysicalTables(info.prepared) }; physicalByKey[key] = {};
+    var def = opPeriodDef(info), scope = def && ocOwn(scopes, key) ? Object.assign({}, scopes[key], { periods: Array.from(new Set(scopes[key].periods)) }) : null, ranges = [['', '￿']];
+    if (scope) {
+      ranges = opHeadRanges(def);
+      scope.periods.forEach(function (p) { ranges = ranges.concat(opPeriodRanges(def, p)); });
+      revKeys.push(key + '@', key + '@*'); scope.periods.forEach(function (p) { revKeys.push(key + '@' + p); });
+    }
+    var request = { key: key, info: info, def: def, scope: scope, tables: ocPhysicalTables(info.prepared) }; physicalByKey[key] = {};
     Object.keys(request.tables).forEach(function (table) {
-      if (!tableRequests[table]) tableRequests[table] = { columns:request.tables[table], pairs:[] };
-      tableRequests[table].pairs.push({department_id:info.dept,resource:info.resource}); physicalByKey[key][table] = [];
+      if (!tableRequests[table]) tableRequests[table] = { columns:request.tables[table], ranges:[] };
+      ranges.forEach(function (r) { tableRequests[table].ranges.push([info.dept, info.resource, r[0], r[1]]); });
+      physicalByKey[key][table] = [];
     });
     requests.push(request);
   });
-  var tableNames=Object.keys(tableRequests);
+  var tableNames=Object.keys(tableRequests), later=[];
+  /* V7 · 53: مدياتٌ كثيرة (فتراتٌ كثيرة) تُقرأ قطعاً في استدعاءات D1 متتالية بعد هذه الدفعة (مراجعاتُها فيها، وحارسُ CAS عند الاعتماد) — فلا يقترب استدعاءٌ من سقف 32MiB */
   tableNames.forEach(function(table){
-    var query=tableRequests[table];
-    batch.push(env.DB.prepare('SELECT '+query.columns.join(',')+' FROM '+table+" WHERE (department_id,resource) IN(SELECT json_extract(j.value,'$.department_id'),json_extract(j.value,'$.resource')FROM json_each(?1)j)").bind(JSON.stringify(query.pairs)));
+    var query=tableRequests[table], sel='SELECT '+query.columns.map(function(c){return 't.'+c;}).join(',')+' FROM json_each(?1) q CROSS JOIN '+table+" t ON t.department_id=json_extract(q.value,'$[0]') AND t.resource=json_extract(q.value,'$[1]') AND t.row_key>=json_extract(q.value,'$[2]') AND t.row_key<json_extract(q.value,'$[3]')";
+    for (var c0 = 0; c0 < query.ranges.length || !c0; c0 += 48) { var st0 = env.DB.prepare(sel).bind(JSON.stringify(query.ranges.slice(c0, c0 + 48))); if (!c0) batch.push(st0); else (later[c0 / 48 - 1] = later[c0 / 48 - 1] || []).push({ table: table, st: st0 }); }
   });
-  if (!batch.length) { if (retired) await opGuardRetired(env); return { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, globalRev:await bdGlobalRevision(env) }; }
+  if (!batch.length) { if (retired) await opGuardRetired(env); return { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, members: {}, globalRev:await bdGlobalRevision(env) }; }
   if (retired) batch.unshift(opRetiredGuard(env));
   var offset = retired ? 1 : 0;
-  var revisionIndex=batch.length-offset;
-  batch.push(env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(wanted)));
+  var revisionIndex=batch.length-offset, scoped = requests.filter(function (r) { return r.scope; });
+  batch.push(env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(wanted.concat(revKeys))));
   batch.push(env.DB.prepare("SELECT v FROM meta WHERE k='rev'"));
-  var result, values = {}, domains = {}, guards = [], snapshots = [], empty = {}, revPairs = [];
+  batch.push(opLayoutStatement(env));
+  /* أعضاءُ الحاوية (اسمُ الفترة · row_key · موضعُها) لكل موردٍ منطاق — من فهرس ops_nodes_parent، صفٌّ لكل فترة لا شجرتُها */
+  if (scoped.length) batch.push(env.DB.prepare("SELECT n.department_id d,n.resource r,n.member_key m,n.row_key k,n.position p FROM json_each(?1) q CROSS JOIN ops_nodes n ON n.department_id=json_extract(q.value,'$[0]') AND n.resource=json_extract(q.value,'$[1]') AND n.parent_key=json_extract(q.value,'$[2]')")
+    .bind(JSON.stringify(scoped.map(function (r) { return [r.info.dept, r.info.resource, opContainerKey(r.def)]; }))));
+  var result, values = {}, domains = {}, guards = [], snapshots = [], revPairs = [], periodItems = [], members = {};
   try { result = await env.DB.batch(batch); } catch (error) { throw opLegacyError(error); }
   result.forEach(function (entry) { if (!entry || entry.success === false) throw ocError('read'); });
   result = result.slice(offset);
@@ -20641,19 +20738,33 @@ async function opLoadMany(env, keys, retired) {
     if(!physicalByKey[key]||!physicalByKey[key][table])throw ocError('read-scope');
     physicalByKey[key][table].push(row);
   });});
+  for (var piece of later) {
+    var got = await env.DB.batch(piece.map(function (x) { return x.st; }));
+    piece.forEach(function (x, i) { (got[i].results || []).forEach(function (row) { var key = 'bsdept:' + row.department_id + ':' + row.resource; if (!physicalByKey[key] || !physicalByKey[key][x.table]) throw ocError('read-scope'); physicalByKey[key][x.table].push(row); }); });
+  }
   (result[revisionIndex].results || []).forEach(function (row) { revs[row.k] = rsNat(row.rev); });
+  var pending = opLayoutPendingOf(((result[revisionIndex + 2].results) || [])[0]);
+  if (scoped.length) (result[revisionIndex + 3].results || []).forEach(function (row) { var k = 'bsdept:' + row.d + ':' + row.r; (members[k] = members[k] || []).push({ p: row.m, k: row.k, pos: row.p }); });
   requests.forEach(function (request) {
-    var info = request.info, physical = physicalByKey[request.key];
-    var read53 = ocFromPhysicalRead(info.prepared, info.dept, info.resource, physical), domain = read53.domain, projection = read53.projection;   /* V7 · 53 (البند 6): فكٌّ واحد لا اثنان */
-    values[request.key] = projection.present ? JSON.stringify(projection.value) : null;
-    domains[request.key] = domain;
-    guards.push.apply(guards, opStateGuards(env, info, domain, empty));
-    Object.keys(request.tables).forEach(function (table) { snapshots.push({ domain: 'operations', table: request.key + ':' + table, rows: physical[table] }); });
-    if (!ocOwn(revs, request.key)) revs[request.key] = 0;
-    revPairs.push([request.key, revs[request.key]]);
+    var info = request.info, physical = physicalByKey[request.key], key = request.key;
+    var read53 = ocFromPhysicalRead(info.prepared, info.dept, info.resource, physical, request.scope ? { partial: 1 } : { trust: 1 }), domain = read53.domain, projection = read53.projection;
+    values[key] = projection.present ? JSON.stringify(projection.value) : null;
+    domains[key] = domain;
+    if (request.scope) {
+      domain.scope = { periods: request.scope.periods.slice(), members: members[key] || [], pending: pending.indexOf(info.dept) >= 0 };
+      /* الحفظُ بالفترة (063 opPeriodSave): ما قرأه العميلُ لكل فترةٍ يطابق الآن — وإلا تعارض؛ ومراجعةُ المفتاح كلِّه لا تُحرس (فتراتٌ أخرى تُكتب بالتوازي بلا تعارض) */
+      var bases = request.scope.bases || {};
+      Object.keys(bases).forEach(function (p) { if (opPeriodRev(revs, key, p) !== bases[p]) { var e = rsError('conflict', 409); e.period = p; e.key = key; throw e; } });
+      if (request.scope.base !== undefined) revs[key] = request.scope.base;
+      periodItems.push([key, '', opPeriodRev(revs, key, '')]);
+      request.scope.periods.forEach(function (p) { periodItems.push([key, p, opPeriodRev(revs, key, p)]); });
+    } else domain.scope = { pending: pending.indexOf(info.dept) >= 0 };
+    Object.keys(request.tables).forEach(function (table) { snapshots.push({ domain: 'operations', table: key + ':' + table, rows: physical[table] }); });
+    if (!ocOwn(revs, key)) revs[key] = 0;
+    if (!request.scope) revPairs.push([key, revs[key]]);
   });
-  guards.push.apply(guards, opEmptyGuards(env, empty).concat(opRevGuards(env, revPairs)));
-  return { values: values, domains: domains, guards: guards, snapshots: snapshots, revs: revs, globalRev:opGlobalRevOf(result[revisionIndex+1]) };
+  guards.push.apply(guards, opRevGuards(env, revPairs).concat(periodItems.length ? opPeriodRevGuards(env, periodItems) : []));
+  return { values: values, domains: domains, guards: guards, snapshots: snapshots, revs: revs, members: members, pending: pending, globalRev:opGlobalRevOf(result[revisionIndex+1]) };
 }
 function opGlobalRevOf(r) { var row=(r&&r.results||[])[0];if(!row)return 0;var value=Number(row.v);if(!Number.isSafeInteger(value)||value<0)throw rsError('domain-revision',503);return value; }   // RISHAD-266: an absent global rev row is 0 (as every writer COALESCEs it); a corrupt one is a named 503, not a TypeError 500
 async function opResourceMany(env, keys) {
@@ -20705,8 +20816,26 @@ async function opChangeStatements(env, key, nextRaw, options) {
   if (base !== state.revs[key]) throw rsError('conflict', 409);
   var next;
   try { next = nextRaw == null ? undefined : JSON.parse(nextRaw); } catch (e) { throw ocError('json'); }
-  var after = ocConvert(info.prepared, info.dept, info.resource, next, nextRaw != null), statements = [], changed = false,
-    physicalBefore = ocPhysicalRows(info.prepared, before), physicalAfter = ocPhysicalRows(info.prepared, after), tables = ocPhysicalTables(info.prepared);
+  var def = opPeriodDef(info), scope = before && before.scope && before.scope.periods ? before.scope : null;
+  /* V7 · 53: إدارةٌ لم تُتمَّ المرحلةَ الثانية من 0013 */
+  if (def && before && before.scope && before.scope.pending) throw opLimError('ops-layout-pending', 503);
+  var after = ocConvert(info.prepared, info.dept, info.resource, next, nextRaw != null), statements = [], changed = false, extra = [], periodKeys = [], sums = [];
+  if (def && options.bulk) { periodKeys.push(key + '@*'); }   /* استبدالٌ بالجملة (الاستعادة · الاستيراد): K@* بلا مقارنة فترات ولا ملخّصات */
+  else if (def) {
+    /* ما تغيّر من الفترات والرأس (بالقيمة) — لمراجعاتها وملخّصاتها وحدّ حجمها */
+    var prevRaw = state.values && ocOwn(state.values, key) ? state.values[key] : null, prev = prevRaw == null ? undefined : JSON.parse(prevRaw),
+      A0 = opSplit(info, prev), B0 = opSplit(info, next), names = new Set(Object.keys(A0.periods).concat(Object.keys(B0.periods)));
+    if (scope) Array.from(names).forEach(function (p) { if (scope.periods.indexOf(p) < 0) throw ocError('period-scope'); });
+    names.forEach(function (p) {
+      var x = ocOwn(A0.periods, p) ? JSON.stringify(A0.periods[p]) : undefined, y = ocOwn(B0.periods, p) ? JSON.stringify(B0.periods[p]) : undefined;
+      if (x === y) return;
+      if (y !== undefined) opPeriodSizeCheck(def, p, B0.periods[p]);
+      periodKeys.push(key + '@' + p); sums.push({ p: p, value: y === undefined ? undefined : B0.periods[p] });
+    });
+    if (JSON.stringify(A0.head) !== JSON.stringify(B0.head)) { opPeriodSizeCheck(def, '', B0.head); periodKeys.push(key + '@'); }
+    if (scope) extra = opScopedPositions(env, info, def, before, after, scope, next);
+  }
+  var physicalBefore = ocPhysicalRows(info.prepared, before), physicalAfter = ocPhysicalRows(info.prepared, after), tables = ocPhysicalTables(info.prepared);
   Object.keys(tables).reverse().forEach(function (table) {
     var keep = new Set(physicalAfter[table].map(function (row) { return row.row_key; })), remove = physicalBefore[table].filter(function (row) { return !keep.has(row.row_key); });
     if (!remove.length) return; changed = true;
@@ -20727,8 +20856,43 @@ async function opChangeStatements(env, key, nextRaw, options) {
     if (write.length) changed = true;
     statements.push.apply(statements, opUpsertRows(env, spec, write));
   });
+  if (extra.length) { changed = true; statements.push.apply(statements, extra); }
+  if (changed && def && options.bulk) statements.push(env.DB.prepare('DELETE FROM ops_period_summary WHERE department_id=?1 AND resource=?2').bind(info.dept, info.resource));
+  else if (changed && def) statements.push.apply(statements, opSummaryStatements(env, info, sums));
+  statements.forEach(function (st) { opTag(st, [key]); });
   return { guards: [opRetiredGuard(env)].concat(state.guards), statements: statements, snapshots: state.snapshots,
-    revisionKeys: changed ? [key] : [], changed: changed, domain: after };
+    revisionKeys: changed ? [key].concat(periodKeys) : [], changed: changed, domain: after };
+}
+/* V7 · 53: حفظٌ منطاق (الرأس + فتراتٌ بعينها): ocConvert رقّم أعضاءَ */
+function opScopedPositions(env, info, def, before, after, scope, next) {
+  var C = opContainerKey(def), cspec = opContainerSpec(info), oldPos = {}, members = scope.members || [];
+  members.forEach(function (m) { if (typeof m.p === 'string') oldPos[m.p] = m.pos; });
+  var crow = function (rows, table, rk) { return (rows[table] || []).filter(function (r) { return r.row_key === rk; })[0]; };
+  Object.keys(cspec.fields || {}).forEach(function (f) {
+    if (cspec.fields[f].kind !== 'scalar') return;
+    var seg = cspec.fieldSpecs[f], rk = seg === cspec ? C : C + '/p:' + cspec.segments.indexOf(seg), r = crow(before.rows, seg.table, rk);
+    if (r && r[ocField(f) + '_kind'] !== 0) oldPos[f] = r[ocField(f) + '_position'];
+  });
+  var box = def.field ? (next && ocObj(next) && ocObj(next[def.field]) ? next[def.field] : null) : (ocObj(next) ? next : null);
+  if (!box) return [];
+  var nextKeys = Object.keys(box), inNext = new Set(nextKeys), inScope = new Set(scope.periods);
+  var fixed = function (k) { return ocOwn(cspec.fields || {}, k); };
+  var order = Object.keys(oldPos).sort(function (a, b) { return oldPos[a] - oldPos[b]; })
+    .filter(function (k) { return inNext.has(k) || !(inScope.has(k) || fixed(k)); });
+  nextKeys.forEach(function (k) { if (!ocOwn(oldPos, k)) order.push(k); });
+  var newPos = {}; order.forEach(function (k, i) { newPos[k] = i; });
+  /* الصفوفُ المكتوبة: مواضعُ أعضاء الحاوية والحقولِ الثابتة المفردة */
+  Object.keys(after.rows).forEach(function (table) {
+    after.rows[table].forEach(function (r) {
+      if (r.parent_key === C && typeof r.member_key === 'string' && ocOwn(newPos, r.member_key)) r.position = newPos[r.member_key];
+      if (r.row_key === C || r.row_key.indexOf(C + '/p:') === 0 && r.parent_key === C)
+        Object.keys(cspec.fields || {}).forEach(function (f) { if (cspec.fields[f].kind === 'scalar' && ocOwn(r, ocField(f) + '_position') && r[ocField(f) + '_kind'] !== 0 && ocOwn(newPos, f)) r[ocField(f) + '_position'] = newPos[f]; });
+    });
+  });
+  var moved = members.filter(function (m) { return !inScope.has(m.p) && !fixed(m.p) && ocOwn(newPos, m.p) && newPos[m.p] !== m.pos; }).map(function (m) { return [m.k, newPos[m.p]]; });
+  return rsChunks(moved).map(function (part) {
+    return env.DB.prepare("UPDATE ops_nodes SET position=(SELECT json_extract(j.value,'$[1]') FROM json_each(?3)j WHERE json_extract(j.value,'$[0]')=ops_nodes.row_key) WHERE department_id=?1 AND resource=?2 AND row_key IN(SELECT json_extract(value,'$[0]') FROM json_each(?3))").bind(info.dept, info.resource, JSON.stringify(part));
+  });
 }
 async function opCompilePending(env, plan, pending, capture) {
   for (var item of pending) {
@@ -20736,12 +20900,13 @@ async function opCompilePending(env, plan, pending, capture) {
       var current=capture&&capture.domains[item.k]|| (await opLoadMany(env,[item.k])).domains[item.k];
       if(ocInflate(opInfo(item.k).prepared,current).present)throw rsError('restore-operations-merge-target-not-empty',409);
     }
-    var addition = await opChangeStatements(env, item.k, item.act === 'del' ? null : item.v, { base: item.have, state: capture && capture.domains[item.k] ? {
-      domains: capture.domains, revs: capture.revs, guards: [] , snapshots: capture.snapshots.filter(function (s) { return s.table.startsWith(item.k + ':'); })
+    var addition = await opChangeStatements(env, item.k, item.act === 'del' ? null : item.v, { bulk: plan.operation !== 'save', base: item.have, state: capture && capture.domains[item.k] ? {
+      domains: capture.domains, revs: capture.revs, values: capture.keys, guards: [] , snapshots: capture.snapshots.filter(function (s) { return s.table.startsWith(item.k + ':'); })
     } : undefined });
     plan.guards.push.apply(plan.guards, addition.guards); plan.statements.push.apply(plan.statements, addition.statements);
     plan.revisionKeys.push.apply(plan.revisionKeys, addition.revisionKeys); plan.snapshots.push.apply(plan.snapshots, addition.snapshots);
   }
+  if (plan.operation === 'save') opSaveBudget(plan.statements);   /* V7 · 53: حدٌّ مبكر برسالة لا سقفُ D1 */
 }
 /* V7 · د5-هـ (أمن ٣): القراءةُ تُعاد مرّةً واحدة إن أخفق سياجُها — السياجُ يثبت أن جولاتِها لقطةٌ واحدة متّسقة (السلطةُ والبيانات من لحظةٍ واحدة)
    ولا يحمي كتابة؛ فكتابةٌ متزامنة في جولاتها تعني لقطةً جديدة لا تعارضاً يُعرض. القراءةُ بلا أثر فإعادتُها آمنة، وإخفاقان ⇒ 409 كما كان (لا حلقة).
@@ -20757,38 +20922,419 @@ async function opReadRoute(env, request, url, session) {
 }
 function opReadFailed(error) {
   var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
-  if (error.rs || error.ocCode) return json({ ok: 0, err: error.rs || error.ocCode }, error.status || 400);
+  if (error.rs || error.ocCode) return json(Object.assign({ ok: 0, err: error.rs || error.ocCode }, error.msg ? { msg: error.msg } : {}, error.details ? { at: error.details } : {}), error.status || 400);
   if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
-  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 (§3ب.7) */
+  var limit = dbLimitResponse(null, error, '/api/operations/read'); if (limit) return limit;   /* V7 · 53: لا 500 لخطأ D1 */
   throw error;
 }
+/* V7 · 53 */
+var OP_READ_REFS = ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'];
+function opReadList(url, name) { return Array.from(new Set(String(url.searchParams.get(name) || '').split(',').filter(Boolean))); }
 async function opReadOnce(env, url, session) {
   {
-    var wanted = Array.from(new Set(String(url.searchParams.get('keys') || '').split(',').filter(Boolean)));
-    if (!wanted.length || wanted.length > GET_MAX || wanted.some(function (key) { return !opInfo(key); })) throw ocError('read-keys');
+    var wanted = opReadList(url, 'keys'), rangeIn = opReadList(url, 'range'), indexIn = opReadList(url, 'index'), groups = {}, mixed = false;
+    var group = function (K) { return groups[K] || (groups[K] = { periods: new Set(), full: false, info: opInfo(K) }); };
+    if ((!wanted.length && !rangeIn.length && !indexIn.length) || wanted.length > GET_MAX || rangeIn.length > OP_LIM.rangeGroups || indexIn.length > GET_MAX) throw ocError('read-keys');
+    wanted.forEach(function (key) {
+      var pk = key.indexOf('@') >= 0 ? opPeriodKey(key) : null;
+      if (pk) { if (pk.period === '*') throw ocError('read-keys'); group(pk.key).periods.add(pk.period); return; }
+      if (!opInfo(key)) throw ocError('read-keys'); group(key).full = true;
+    });
+    var rangeOf = {};
+    rangeIn.forEach(function (r) { var i = r.lastIndexOf('@'), K = r.slice(0, i), g = r.slice(i + 1); if (i < 0 || !g || !opSplitResource(K)) throw ocError('read-keys'); (rangeOf[K] = rangeOf[K] || []).push(g); group(K); });
+    indexIn.forEach(function (K) { if (!opSplitResource(K)) throw ocError('read-keys'); group(K); });
+    Object.keys(groups).forEach(function (K) { if (groups[K].full && (groups[K].periods.size || rangeOf[K])) mixed = true; });
+    if (mixed) throw ocError('period-mixed');
+    var depts = Array.from(new Set(Object.keys(groups).map(function (K) { return groups[K].info.dept; })));
     // Establish authority before loading any business rows, including rows of
     // a foreign department requested by a malicious/obsolete client.
-    var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: wanted.map(function (key) { return opInfo(key).dept; }) }), A = reference.A,
-      eligible=new Set(wanted.filter(function(key){return canRead(A,key);})),refs=Array.from(eligible);
-    /* V7 · 53 (البند 6 · الأداء): مراجعُ البرامج (الجدولُ الشهريّ من قطعته) لإسقاط ENF_PROJ وحده (061 enfRefsFor · enfProjectStr يعيد القيمةَ كما هي لما لا إسقاطَ له،
-       والخصوصيةُ 019u تقرأ سجلَّ الموظفين فقط) — فقراءةُ «الموظفين» لا تحمّل الجدولَ بتاريخه كلّه (كان كلُّ طلبٍ يفكّ الجدولَ كاملاً معها) */
-    eligible.forEach(function (key) { var d = opInfo(key).dept, pj = ocOwn(ENF_PROJ, resName(resReadAs(key))); ['bassam_staffing_v3', 'bassam_shift_options_v1', 'bassam_employees_v1'].forEach(function (r) { if (!pj && r !== 'bassam_shift_options_v1' && r !== 'bassam_employees_v1') return; refs.push('bsdept:' + d + ':' + r); }); });
-    var operational=await opCaptureReferences(reference.env,reference.inputKeys,refs);
-    reference.operational=operational;reference.inputKeys=operational.keys;Object.assign(reference.inputRevs,operational.revs);
-    reference.env=Object.assign({},reference.env,{__opCapture:operational,__pre:Object.assign({},reference.env.__pre,{kv:operational.keys,revs:reference.inputRevs})});
+    var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: depts }), A = reference.A;
     env = reference.env;
-    var resources = {}, absent = [], denied = [], base = {}, enfRefs = await enfRefsFor(env, Array.from(new Set(wanted.map(function (key) { return opInfo(key).dept; }))), reference.inputKeys);
-    wanted.forEach(function (key) {
-      if (!eligible.has(key)||!canRead(A, key)) { denied.push(key); return; }
-      var raw = reference.inputKeys[key];
-      if (raw != null) raw = enfProjectStr(A, key, raw, enfRefs);
-      raw = privOut(A, key, raw, reference.inputKeys);   // PRIVACY batch (019u): personal fields by purpose · old nid references as eid
-      if (raw == null) absent.push(key); else resources[key] = JSON.parse(raw);
-      base[key] = reference.inputRevs[key] || 0;
+    var eligible = new Set(Object.keys(groups).filter(function (K) { return canRead(A, K); }));
+    /* أعضاءُ الحاوية للمديات والفهارس (صفٌّ لكل فترة) — قبل تحميل أي محتوى */
+    var listed = Object.keys(groups).filter(function (K) { return eligible.has(K) && opPeriodDef(groups[K].info) && (rangeOf[K] || indexIn.indexOf(K) >= 0 || groups[K].full); }), memberOf = {}, nodesOf = {};
+    if (listed.length) {
+      var lr = await env.DB.batch([
+        env.DB.prepare("SELECT n.department_id d,n.resource r,n.member_key m FROM json_each(?1) q CROSS JOIN ops_nodes n ON n.department_id=json_extract(q.value,'$[0]') AND n.resource=json_extract(q.value,'$[1]') AND n.parent_key=json_extract(q.value,'$[2]')")
+          .bind(JSON.stringify(listed.map(function (K) { var I = groups[K].info; return [I.dept, I.resource, opContainerKey(opPeriodDef(I))]; }))),
+        env.DB.prepare("SELECT q.value AS k,(SELECT COUNT(*) FROM ops_nodes n WHERE n.department_id=json_extract(q.value,'$[1]') AND n.resource=json_extract(q.value,'$[2]')) AS n FROM json_each(?1) q")
+          .bind(JSON.stringify(listed.filter(function (K) { return groups[K].full; }).map(function (K) { var I = groups[K].info; return [K, I.dept, I.resource]; })))]);
+      (lr[0].results || []).forEach(function (row) { var K = 'bsdept:' + row.d + ':' + row.r, I = groups[K].info; if (typeof row.m === 'string' && !ocOwn(opContainerSpec(I).fields || {}, row.m) || opPeriodDef(I).field) (memberOf[K] = memberOf[K] || []).push(row.m); });
+      (lr[1].results || []).forEach(function (row) { var x = parseJson(row.k, null); if (Array.isArray(x)) nodesOf[x[0]] = Number(row.n) || 0; });
+    }
+    var ranges = {};
+    Object.keys(rangeOf).forEach(function (K) {
+      if (!eligible.has(K)) return; var def = opPeriodDef(groups[K].info);
+      rangeOf[K].forEach(function (g) {
+        var hit = opPeriodOrder(def, (memberOf[K] || []).filter(function (p) { return opPeriodIdx(def, p).grp === g; }));
+        ranges[K + '@' + g] = hit.map(function (p) { groups[K].periods.add(p); return K + '@' + p; });
+      });
+    });
+    var periodCount = 0; Object.keys(groups).forEach(function (K) { periodCount += groups[K].periods.size; });
+    if (periodCount > OP_LIM.readPeriods) throw opLimError('read-too-large', 413, { periods: periodCount, cap: OP_LIM.readPeriods });
+    var failed = {}, scopes = {}, loadKeys = [];
+    Object.keys(groups).forEach(function (K) {
+      if (!eligible.has(K)) return;
+      var G = groups[K];
+      if (G.full) { if (opPeriodDef(G.info) && (nodesOf[K] || 0) > OP_LIM.readNodes) { failed[K] = 'read-too-large'; return; } loadKeys.push(K); }
+      else if (G.periods.size) { scopes[K] = { periods: Array.from(G.periods).filter(function (p) { return p !== ''; }) }; loadKeys.push(K); }
+    });
+    /* مراجعُ الإسقاط لكل إدارةٍ مقروءة: الموظفون وخياراتُ الورديات كاملين (صغيران)، والجدولُ الشهريُّ بشهوره اللازمة وحدها */
+    var refKeys = [];
+    Array.from(new Set(loadKeys.map(function (K) { return groups[K].info.dept; }))).forEach(function (d) {
+      var pj = loadKeys.some(function (K) { return groups[K].info.dept === d && ocOwn(ENF_PROJ, resName(resReadAs(K))); });   // uiqa (البند 6): مراجعُ البرامج للإسقاط وحده
+      OP_READ_REFS.forEach(function (r) {
+        if (!pj && r !== 'bassam_shift_options_v1' && r !== 'bassam_employees_v1') return;
+        var R = 'bsdept:' + d + ':' + r, I = opSplitResource(R);
+        if (ocOwn(groups, R) && groups[R].full) return;
+        if (I) {
+          var months = new Set(), cur = typeof opPeriodDef(I).current === 'function' ? opPeriodDef(I).current() : '';
+          if (cur) months.add(cur);
+          loadKeys.filter(function (K) { return groups[K].info.dept === d; }).forEach(function (K) { var def = opPeriodDef(groups[K].info); if (def) groups[K].periods.forEach(function (p) { if (p) { var g = opPeriodIdx(def, p).grp; if (g) months.add(g); } }); });
+          if (!ocOwn(scopes, R)) { scopes[R] = { periods: Array.from(months) }; refKeys.push(R); }
+        } else if (refKeys.indexOf(R) < 0 && loadKeys.indexOf(R) < 0) refKeys.push(R);
+      });
+    });
+    var state = { values: {}, domains: {}, guards: [], snapshots: [], revs: {}, globalRev: 0 }, merge = function (x) { ['values', 'domains', 'revs'].forEach(function (f) { Object.assign(state[f], x[f]); }); state.guards = state.guards.concat(x.guards); state.globalRev = Math.max(state.globalRev, x.globalRev || 0); };
+    var all = loadKeys.concat(refKeys.filter(function (k) { return loadKeys.indexOf(k) < 0; }));
+    if (all.length) {
+      try { merge(await opLoadMany(env, all, 1, scopes)); }
+      catch (error) {
+        if (!dbLimitFailure(error) && !(error && error.rs === 'period-too-large')) throw error;
+        /* فشلُ دفعةٍ واحدة لا يُسقط القراءة: كلُّ موردٍ في دفعته، وما فشل وحده في failed */
+        for (var one of all) {
+          try { merge(await opLoadMany(env, [one], 1, scopes)); }
+          catch (e1) { var f1 = dbLimitFailure(e1); if (!f1) throw e1; if (loadKeys.indexOf(one) >= 0) failed[one] = f1.err; }
+        }
+      }
+    }
+    reference.operational = { guards: state.guards, keys: state.values, domains: state.domains, revs: state.revs, globalRev: state.globalRev, snapshots: [] };
+    Object.assign(reference.inputRevs, state.revs);
+    var projKeys = Object.assign(Object.create(null), reference.inputKeys, state.values);
+    var resources = {}, absent = [], denied = [], base = {}, enfRefs = await enfRefsFor(env, depts, projKeys), index = {};
+    var out = function (key, has, value, rev) { if (has) resources[key] = value; else absent.push(key); base[key] = rev; };
+    Object.keys(groups).forEach(function (K) {
+      var G = groups[K], def = opPeriodDef(G.info), periodKeys = Array.from(G.periods).map(function (p) { return K + '@' + p; });
+      var named = (G.full ? [K] : []).concat(periodKeys.filter(function (pk) { return wanted.indexOf(pk) >= 0 || Object.keys(ranges).some(function (r) { return ranges[r].indexOf(pk) >= 0; }); }));
+      if (!eligible.has(K) || !canRead(A, K)) { named.forEach(function (k) { denied.push(k); }); return; }
+      if (failed[K]) { periodKeys.forEach(function (pk) { if (named.indexOf(pk) >= 0) failed[pk] = failed[K]; }); if (!G.full) delete failed[K]; return; }
+      if (indexIn.indexOf(K) >= 0) index[K] = opPeriodOrder(def, memberOf[K] || []).map(function (p) { var x = opPeriodIdx(def, p); return { p: p, grp: x.grp, seq: x.seq, rev: opPeriodRev(state.revs, K, p) }; });
+      if (!named.length) return;
+      var raw = ocOwn(state.values, K) ? state.values[K] : null;
+      try {
+        if (raw != null) raw = enfProjectStr(A, K, raw, enfRefs);
+        raw = privOut(A, K, raw, projKeys);   // PRIVACY batch (019u): personal fields by purpose · old nid references as eid
+      } catch (eP) { if (eP && (eP.rs || eP.ocCode)) { named.forEach(function (k) { failed[k] = eP.rs || eP.ocCode; }); return; } throw eP; }
+      if (G.full) { out(K, raw != null, raw == null ? null : JSON.parse(raw), state.revs[K] || reference.inputRevs[K] || 0); }
+      if (!periodKeys.length) return;
+      var parts = opSplit(G.info, raw == null ? undefined : JSON.parse(raw));
+      named.forEach(function (pk) {
+        if (pk === K) return; var p = pk.slice(K.length + 1);
+        if (p === '') out(pk, raw != null, parts.head, opPeriodRev(state.revs, K, ''));
+        else out(pk, ocOwn(parts.periods, p), parts.periods[p], opPeriodRev(state.revs, K, p));
+      });
     });
     await env.DB.batch(rsReferenceGuards(env,reference));
-    return json({ ok: 1, uid: session.uid, v:reference.operational.globalRev, epoch: Number(reference.inputMeta.restore_epoch || 0), resources: resources, absent: absent, denied: denied, base: base });
+    var body = { ok: 1, uid: session.uid, v:reference.operational.globalRev, epoch: Number(reference.inputMeta.restore_epoch || 0), resources: resources, absent: absent, denied: denied, base: base };
+    if (Object.keys(failed).length) body.failed = failed;
+    if (rangeIn.length) body.ranges = ranges;
+    if (indexIn.length) body.index = index;
+    /* V7 · 53 (periodsui طلب 6): المراجعةُ المنطقية لكل موردٍ قُرئ بفتراته — لمساراتٍ ما زالت تحرس بها (أوامرُ المهام) */
+    var logical = {}; Object.keys(groups).forEach(function (K) { if (!groups[K].full && groups[K].periods.size && eligible.has(K) && !failed[K]) logical[K] = state.revs[K] || 0; });
+    if (Object.keys(logical).length) body.logical = logical;
+    return json(body);
   }
+}
+
+/* V7 · 53 */
+async function opPeriodSaveBody(env, A, bs) {
+  var keys = Object.keys(bs.set || {}).concat(bs.del || []).map(String);
+  if (!keys.some(function (k) { return k.indexOf('@') >= 0; })) return null;
+  var byK = {}, origin = {};
+  keys.forEach(function (k) {
+    if (k.indexOf('@') < 0) return;
+    var x = opPeriodKey(k); if (!x || x.period === '*') throw ocError('period-key');
+    var G = byK[x.key] || (byK[x.key] = { info: x.info, set: {}, del: [], keys: [] });
+    G.keys.push(k); origin[k] = x.key;
+    if (ocOwn(bs.set || {}, k)) G.set[x.period] = bs.set[k]; else { if (x.period === '') throw ocError('period-head'); G.del.push(x.period); }
+    if (!bs.base || !Number.isSafeInteger(bs.base[k]) || bs.base[k] < 0) throw ocError('period-base');
+  });
+  keys.forEach(function (k) { if (ocOwn(byK, k)) throw ocError('period-mixed'); });
+  var Ks = Object.keys(byK), scopes = {}, fp = await cuFingerprint({ uid: A.u.id, body: bs });
+  if (Ks.some(function (K) { return !canRead(A, K); })) throw rsError('operations-denied', 403);   /* السلطةُ قبل أي صفّ */
+  var replay = typeof bs.requestId === 'string' && await env.DB.prepare('SELECT 1 AS x FROM restore_operations WHERE account_uid=?1 AND request_id=?2').bind(A.u.id, bs.requestId).first();
+  Ks.forEach(function (K) {
+    var G = byK[K], def = opPeriodDef(G.info), written = Object.keys(G.set).filter(function (p) { return p !== ''; }).concat(G.del), ctx = [];
+    written.forEach(function (p) { opPeriodCtx(def, p).forEach(function (c) { if (written.indexOf(c) < 0 && ctx.indexOf(c) < 0) ctx.push(c); }); });
+    G.written = written; scopes[K] = { periods: written.concat(ctx) };
+  });
+  /* V7 · 53 (periodsui 9): الأرشفة — أيامُ الشهر المقفل في الحيّ تدخل نطاقَ الحفظ (مع علامات الأشهر) فتنقلها خطوةُ الأرشيف في الدفعة نفسِها كما كان
+     الحفظُ الكامل؛ وفتحُ شهرٍ (علامتُه مكتوبة) يُدخل أيامَه من الأرشيف ليعود إلى الحيّ. الأرشيفُ بنطاقٍ مثلِه (ومنه مرجعُ dailyArcPre) */
+  for (var K0 of Ks) {
+    var I0 = byK[K0].info, def0 = opPeriodDef(I0); if (!def0.arc || typeof def0.arc.due !== 'function') continue;
+    var AK = 'bsdept:' + I0.dept + ':' + def0.arc.res, AI = opSplitResource(AK);
+    var names0 = (await opPeriodMembers(env, I0)).map(function (m) { return m.m; }), mct = names0.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; });
+    var sc0 = {}; sc0[K0] = { periods: mct };
+    var ctlDoc = mct.length ? (await opLoadMany(env, [K0], 1, sc0)).values[K0] : null, ctl = opSplit(I0, ctlDoc == null ? undefined : JSON.parse(ctlDoc)).periods;
+    var due = def0.arc.due(names0.filter(function (p) { return opPeriodIdx(def0, p).kind !== 'mctl'; }), ctl);
+    scopes[K0].periods = Array.from(new Set(scopes[K0].periods.concat(mct, due)));
+    if (!AI) continue;
+    var opened = byK[K0].written.filter(function (p) { return opPeriodIdx(def0, p).kind === 'mctl'; }).map(function (p) { return opPeriodIdx(def0, p).grp; });
+    var arcNames = opened.length ? (await opPeriodMembers(env, AI)).map(function (m) { return m.m; }).filter(function (p) { return opened.indexOf(opPeriodIdx(opPeriodDef(AI), p).grp) >= 0; }) : [];
+    scopes[K0].periods = Array.from(new Set(scopes[K0].periods.concat(arcNames)));   /* ما يعود من الأرشيف يُكتب في الحيّ */
+    scopes[AK] = { periods: scopes[K0].periods.slice() };
+  }
+  var cur = await opLoadMany(env, Ks, 1, scopes), out = { set: {}, del: [], base: {} }, conflicts = {};
+  Object.keys(bs.base || {}).forEach(function (k) { if (k.indexOf('@') < 0) out.base[k] = bs.base[k]; });
+  Object.keys(bs.set || {}).forEach(function (k) { if (k.indexOf('@') < 0) out.set[k] = bs.set[k]; });
+  (bs.del || []).forEach(function (k) { if (String(k).indexOf('@') < 0) out.del.push(k); });
+  Ks.forEach(function (K) {
+    var G = byK[K], raw = cur.values[K], doc = raw == null ? undefined : JSON.parse(raw), parts = opSplit(G.info, doc), bases = {};
+    /* V7 · 53 (periodsui خلل 7): base 0 لفترةٍ غائبةٍ الآن = «أعرف أنها غائبة» فيُقبل (ومراجعتُها الحالية تُحرس حتى الاعتماد)؛ وما سواه بمراجعتها الفعلية */
+    G.keys.forEach(function (k) {
+      var p = k.slice(K.length + 1), now = opPeriodRev(cur.revs, K, p), absentNow = p === '' ? doc === undefined : !ocOwn(parts.periods, p);
+      if (!replay && now !== bs.base[k] && !(bs.base[k] === 0 && absentNow)) conflicts[k] = { why: 'conflict' };
+      bases[p] = bs.base[k] === 0 && absentNow ? now : bs.base[k];
+    });
+    /* ما قرأته الترجمةُ من رأسٍ وسياق يبقى كما هو حتى الاعتماد — وإلا تعارضٌ فيُعاد البناء */
+    scopes[K].periods.concat(['']).forEach(function (p) { if (!ocOwn(bases, p)) bases[p] = opPeriodRev(cur.revs, K, p); });
+    var head = ocOwn(G.set, '') ? JSON.parse(G.set['']) : parts.head;
+    if (head === undefined || head === null) head = opPeriodDef(G.info).field ? (function () { var h = {}; h[opPeriodDef(G.info).field] = {}; return h; })() : {};
+    var pos = Object.assign({}, parts.pos), top = Math.max.apply(null, [-1].concat(Object.keys(parts.pos).map(function (p) { return parts.pos[p]; }), Object.keys(parts.hpos).map(function (k) { return parts.hpos[k]; })));
+    G.del.forEach(function (p) { delete parts.periods[p]; });
+    Object.keys(G.set).forEach(function (p) { if (p === '') return; var v; try { v = JSON.parse(G.set[p]); } catch (e) { throw ocError('json'); } ocSet(parts.periods, p, v); if (!ocOwn(pos, p)) pos[p] = ++top; });
+    var next = opJoin(G.info, { head: head, hpos: parts.hpos, periods: parts.periods, pos: pos });
+    out.set[K] = JSON.stringify(next); out.base[K] = cur.revs[K] || 0;
+    scopes[K] = { periods: scopes[K].periods, bases: replay ? {} : bases, base: cur.revs[K] || 0 };
+  });
+  /* V7 · 53: مراجعُ أحكام الحفظ بنطاقها كذلك — الجدولُ الشهري بشهور الفترات المكتوبة والشهر الجاري (048 actorShift)، وأرشيفُ الجولات بأيامها (019p3 dailyArcPre) */
+  Ks.forEach(function (K) {
+    var I = byK[K].info, def = opPeriodDef(I);
+    /* مرجعُ الشهر الذي يعلنه نظامُه (period.current — الجدولُ الشهري) بشهور الفترات المكتوبة والشهر الجاري */
+    opDefinitions().filter(function (d0) { return d0.period && typeof d0.period.current === 'function'; }).forEach(function (d0) {
+      var S = 'bsdept:' + I.dept + ':' + d0.resource, months = new Set(), cur0 = d0.period.current(); if (!opSplitResource(S) || ocOwn(scopes, S)) return;
+      if (cur0) months.add(cur0);
+      byK[K].written.forEach(function (p) { var g = opPeriodIdx(def, p).grp; if (g) months.add(g); });
+      scopes[S] = { periods: Array.from(months) };
+    });
+  });
+  var body = Object.assign({}, bs, out);
+  if (Array.isArray(bs.aud)) body.aud = bs.aud.map(function (e) { return e && ocOwn(origin, e.k) ? Object.assign({}, e, { k: origin[e.k] }) : e; });
+  return { body: body, scopes: scopes, byK: byK, fp: fp, conflicts: conflicts, origin: origin };
+}
+/* نتيجةُ الحفظ المنطقي بمفاتيح الفترة التي أرسلها العميل: مراجعةُ كلِّ فترةٍ بعد الاعتماد (MAX(K@p, K@*)) · الرفضُ والتعارضُ لكلِّ مفتاحٍ منها */
+async function opPeriodSaveResult(env, ps, r) {
+  var out = Object.assign({}, r), map = function (obj) { var m = {}; Object.keys(obj || {}).forEach(function (K) { if (ocOwn(ps.byK, K)) ps.byK[K].keys.forEach(function (k) { m[k] = obj[K]; }); else m[K] = obj[K]; }); return m; };
+  out.denied = map(r.denied); out.conflicts = map(r.conflicts);
+  if (r.revs) {
+    var want = []; Object.keys(ps.byK).forEach(function (K) { want.push(K + '@*'); ps.byK[K].keys.forEach(function (k) { want.push(k); }); });
+    var rows = (await env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(want)).all()).results || [], revs = {};
+    rows.forEach(function (row) { revs[row.k] = rsNat(row.rev); });
+    out.revs = {}; Object.keys(r.revs).forEach(function (K) { if (ocOwn(ps.byK, K)) ps.byK[K].keys.forEach(function (k) { out.revs[k] = opPeriodRev(revs, K, k.slice(K.length + 1)); }); else out.revs[K] = r.revs[K]; });
+  }
+  return out;
+}
+/* V7 · 53: التخزين بالفترة (§3ب) — طبقةٌ لا تعرف شكل التاريخ؛ التفصيل في تقرير periods ووثيقة العقد. */
+var OP_LIM = { day: 1048576, mctl: 524288, month: 3145728, head: 3145728, readPeriods: 40, readNodes: 60000, batchBytes: 30000000, batchStmts: 900, rangeGroups: 26, summaryRows: 800 };   /* V7 · 53: readNodes = عُقدُ القراءة المنطقية الكاملة لموردٍ مقسوم؛ مقيسٌ: 39001 عقدة ≈ ≤6.4MB في نداءٍ واحد (v7_d6_import ١٥) ⇒ 60000 ≈ ≤10MB، ثلثُ سقف 32MiB */
+var OP_LIM_MSG = {
+  'read-too-large': 'طُلبت فترات أكثر من المسموح في قراءة واحدة. اختر مدى أقصر.',
+  'period-too-large': 'بيانات هذه الفترة تجاوزت الحد المسموح. راجع الإدخال أو تواصل مع مدير المنصة.',
+  'batch-budget': 'العملية أكبر من أن تُنفَّذ مرة واحدة. احفظ شهراً واحداً أو يوماً واحداً في كل مرة.',
+  'ops-layout-pending': 'جارٍ تحويل تخزين بيانات هذه الإدارة. أعد المحاولة بعد دقائق.',
+  'operations-period-required': 'حُدِّثت المنصة. أعد تحميل الصفحة ثم احفظ.'
+};
+var OP_PERIOD_RX = /^[^,@*;\u0000-\u001f\u007f]{1,64}$/, OP_LAYOUT_KEY = 'ops_layout_pending';
+function opLimError(code, status, extra) { var e = rsError(code, status || 413); e.msg = OP_LIM_MSG[code] || ''; if (extra) e.details = extra; return e; }
+function opPeriodDef(info) { return (info && info.definition && info.definition.period) || null; }
+function opSplitResource(key) { var info = null; try { info = opInfo(key); } catch (e) { info = null; } return info && opPeriodDef(info) ? info : null; }
+function opPeriodKey(k) {
+  var s = String(k), i = s.indexOf('@'); if (i < 0) return null;
+  var key = s.slice(0, i), p = s.slice(i + 1), info = opSplitResource(key);
+  if (!info || (p !== '' && p !== '*' && !OP_PERIOD_RX.test(p))) return null;
+  return { key: key, period: p, info: info };
+}
+function opContainerKey(def) { return def.field ? '$/f:' + encodeURIComponent(def.field) : '$'; }
+function opPeriodRoot(def, p) { return opContainerKey(def) + '/e:' + encodeURIComponent(p); }
+function opContainerSpec(info) { var spec = info.prepared.resources[info.resource].spec, def = opPeriodDef(info); return def.field ? spec.children[def.field] : spec; }
+function opPeriodIdx(def, p) {
+  var x = typeof def.index === 'function' ? def.index(p) : null;
+  return { grp: x && typeof x.grp === 'string' ? x.grp : '', seq: x && Number.isSafeInteger(x.seq) ? x.seq : 0, kind: (x && x.kind) || 'day' };
+}
+function opPeriodOrder(def, list) {
+  return list.slice().sort(function (a, b) { var x = opPeriodIdx(def, a), y = opPeriodIdx(def, b); return x.seq - y.seq || (a < b ? -1 : a > b ? 1 : 0); });
+}
+function opPeriodCtx(def, p) { var c = typeof def.ctx === 'function' ? def.ctx(p) : []; return Array.isArray(c) ? c.filter(function (x) { return typeof x === 'string' && x !== p; }) : []; }
+function opSplit(info, doc) {
+  var def = opPeriodDef(info), out = { head: doc, hpos: {}, periods: {}, pos: {} };
+  if (doc === undefined || doc === null) return out;
+  if (def.field) {
+    if (!ocObj(doc) || !ocObj(doc[def.field])) return out;
+    var head = {}; Object.keys(doc).forEach(function (k) { ocSet(head, k, k === def.field ? {} : doc[k]); });
+    Object.keys(doc[def.field]).forEach(function (p, i) { ocSet(out.periods, p, doc[def.field][p]); out.pos[p] = i; });
+    out.head = head; return out;
+  }
+  if (!ocObj(doc)) return out;
+  var spec = opContainerSpec(info), h = {};
+  Object.keys(doc).forEach(function (k, i) {
+    if (ocOwn(spec.fields, k)) { ocSet(h, k, doc[k]); out.hpos[k] = i; }
+    else { ocSet(out.periods, k, doc[k]); out.pos[k] = i; }
+  });
+  out.head = h; return out;
+}
+function opJoin(info, parts) {
+  var def = opPeriodDef(info), head = parts.head, names = Object.keys(parts.periods || {});
+  if (head === undefined || head === null) { if (names.length) throw ocError('period-without-head'); return head; }
+  var byPos = function (pos) { return function (a, b) { var x = ocOwn(pos, a) ? pos[a] : Infinity, y = ocOwn(pos, b) ? pos[b] : Infinity; return x - y; }; };
+  if (def.field) {
+    if (!ocObj(head) || !ocObj(head[def.field])) { if (names.length) throw ocError('period-container'); return head; }
+    var out = {}, box = {};
+    names.slice().sort(byPos(parts.pos || {})).forEach(function (p) { ocSet(box, p, parts.periods[p]); });
+    Object.keys(head).forEach(function (k) { ocSet(out, k, k === def.field ? box : head[k]); });
+    return out;
+  }
+  if (!ocObj(head)) { if (names.length) throw ocError('period-container'); return head; }
+  var pos = Object.assign({}, parts.pos || {}), all = Object.keys(head).concat(names);
+  Object.keys(head).forEach(function (k) { pos[k] = parts.hpos && ocOwn(parts.hpos, k) ? parts.hpos[k] : -1; });
+  var r = {}; all.slice().sort(byPos(pos)).forEach(function (k) { ocSet(r, k, ocOwn(head, k) ? head[k] : parts.periods[k]); });
+  return r;
+}
+function opHeadRanges(def) { var e = opContainerKey(def) + '/e'; return [['', e + ':'], [e + ';', '￿']]; }
+function opPeriodRanges(def, p) { var r = opPeriodRoot(def, p); return [[r, r + '\u0001'], [r + '/', r + '0']]; }
+function opPeriodRev(revs, key, p) { return Math.max(rsNat(revs[key + '@' + p] || 0), rsNat(revs[key + '@*'] || 0)); }
+function opPeriodRevGuards(env, items) {
+  return rsChunks(items.map(function (x) { return { a: x[0] + '@' + x[1], b: x[0] + '@*', r: x[2] }; })).map(function (part) {
+    return env.DB.prepare("SELECT CASE WHEN EXISTS(SELECT 1 FROM json_each(?1)j WHERE MAX(COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$.a')),0),COALESCE((SELECT rev FROM revs WHERE k=json_extract(j.value,'$.b')),0))<>json_extract(j.value,'$.r'))THEN json_extract('{}','KIVO_REV_CONFLICT')END").bind(JSON.stringify(part));
+  });
+}
+function opPeriodSizeCheck(def, p, value) {
+  var kind = p === '' ? 'head' : opPeriodIdx(def, p).kind, cap = OP_LIM[kind] || OP_LIM.day, n = value === undefined ? 0 : JSON.stringify(value).length;
+  if (n > cap) throw opLimError('period-too-large', 413, { period: p, bytes: n, cap: cap });
+}
+function opSummaryValue(info, p, value) {
+  var def = opPeriodDef(info); if (p === '' || typeof def.summary !== 'function') return null;
+  try { var out = def.summary(p, value); if (out && typeof out === 'object' && typeof def.kpi === 'function') out.kpi = def.kpi(p, value); return out; } catch (e) { return null; }
+}
+function opSummaryStatements(env, info, changes) {
+  var put = [], drop = [];
+  changes.forEach(function (c) { if (c.p === '') return; var v = c.value === undefined ? undefined : opSummaryValue(info, c.p, c.value); if (v == null) drop.push(c.p); else put.push({ p: c.p, v: JSON.stringify(v) }); });
+  var st = [];
+  if (drop.length) st.push(opTag(env.DB.prepare('DELETE FROM ops_period_summary WHERE department_id=?1 AND resource=?2 AND period IN(SELECT value FROM json_each(?3))').bind(info.dept, info.resource, JSON.stringify(drop)), [opKeyOf(info)]));
+  rsChunks(put).forEach(function (part) {
+    st.push(opTag(env.DB.prepare("INSERT INTO ops_period_summary(department_id,resource,period,rev,v_json) SELECT ?1,?2,json_extract(j.value,'$.p'),COALESCE((SELECT CAST(v AS INTEGER) FROM meta WHERE k='rev'),0),json_extract(j.value,'$.v') FROM json_each(?3)j WHERE 1 ON CONFLICT(department_id,resource,period) DO UPDATE SET rev=excluded.rev,v_json=excluded.v_json")
+      .bind(info.dept, info.resource, JSON.stringify(part)), [opKeyOf(info)]));
+  });
+  return st;
+}
+function opKeyOf(info) { return 'bsdept:' + info.dept + ':' + info.resource; }
+function opTag(statement, keys) { try { statement.__opKeys = keys; } catch (e) { return statement; } return statement; }
+function opLayoutPendingOf(row) { var v = parseJson(row && row.v, []); return Array.isArray(v) ? v.filter(function (d) { return typeof d === 'string'; }) : []; }
+function opLayoutStatement(env) { return env.DB.prepare("SELECT v FROM meta WHERE k='" + OP_LAYOUT_KEY + "'"); }
+function opSplitResources() { return opDefinitions().filter(function (d) { return !!d.period; }).map(function (d) { return d.resource; }); }
+function opPeriodsLegacyPrepare(env) {
+  return { before: [], after: [env.DB.prepare("INSERT INTO meta(k,v) SELECT '" + OP_LAYOUT_KEY + "',x FROM (SELECT json_group_array(d) x,COUNT(*) n FROM (SELECT DISTINCT department_id d FROM ops_nodes WHERE resource IN (SELECT value FROM json_each(?1)) ORDER BY d)) WHERE n>0 ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(opSplitResources()))] };
+}
+function opRouteError(error) {
+  var guard = dbGuardFailure(error); if (guard) return json({ ok: 0, err: guard.err }, guard.status);
+  if (error && (error.rs || error.ocCode)) return json(Object.assign({ ok: 0, err: error.rs || error.ocCode }, error.msg ? { msg: error.msg } : {}), error.status || 400);
+  if (/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_RESTORE_EPOCH/.test(String(error))) return json({ ok: 0, err: 'conflict' }, 409);
+  var lim = dbLimitResponse(null, error, '/api/operations'); if (lim) return lim;
+  throw error;
+}
+async function opPeriodMembers(env, info) {
+  var def = opPeriodDef(info), spec = opContainerSpec(info);
+  var rows = (await env.DB.prepare('SELECT member_key AS m, position AS p FROM ops_nodes WHERE department_id=?1 AND resource=?2 AND parent_key=?3 ORDER BY position, member_key').bind(info.dept, info.resource, opContainerKey(def)).all()).results || [];
+  return rows.filter(function (r) { return typeof r.m === 'string' && (def.field || !ocOwn(spec.fields || {}, r.m)); });
+}
+async function opSummaryRoute(env, request, url, session) {
+  if (request.method !== 'GET') return json({ ok: 0, err: 'method' }, 405);
+  var mismatch = sessUidMismatch(env, url, session, '/api/operations/summary'); if (mismatch) return mismatch;
+  try {
+    var K = String(url.searchParams.get('key') || ''), info = opSplitResource(K); if (!info) throw ocError('read-keys');
+    var def = opPeriodDef(info), grps = String(url.searchParams.get('grp') || '').split(',').filter(Boolean), from = url.searchParams.get('from'), to = url.searchParams.get('to');
+    if ((!grps.length && (from == null || to == null)) || grps.length > OP_LIM.rangeGroups) throw ocError('read-keys');
+    var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: [info.dept] }), A = reference.A; env = reference.env;
+    if (!canRead(A, K)) return json({ ok: 0, err: 'operations-denied' }, 403);
+    var lo = from == null ? 0 : opPeriodIdx(def, from).seq, hi = to == null ? 0 : opPeriodIdx(def, to).seq;
+    var names = opPeriodOrder(def, (await opPeriodMembers(env, info)).map(function (r) { return r.m; }).filter(function (p) {
+      var x = opPeriodIdx(def, p); return grps.length ? grps.indexOf(x.grp) >= 0 : x.seq >= lo && x.seq <= hi;
+    }));
+    if (names.length > OP_LIM.summaryRows) throw opLimError('read-too-large', 413, { periods: names.length, cap: OP_LIM.summaryRows });
+    var got = await env.DB.batch([env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(names.map(function (p) { return K + '@' + p; }).concat([K + '@*'])))]);
+    var have = {}, revs = {}; (got[0].results || []).forEach(function (r) { revs[r.k] = rsNat(r.rev); });
+    for (var c1 = 0; c1 < names.length; c1 += 31) (((await env.DB.prepare('SELECT period,rev,v_json FROM ops_period_summary WHERE department_id=?1 AND resource=?2 AND period IN(SELECT value FROM json_each(?3))').bind(info.dept, info.resource, JSON.stringify(names.slice(c1, c1 + 31))).all()).results) || []).forEach(function (r) { have[r.period] = r; });   /* v.kpi يكبر بالفترة: شهرٌ في كل استدعاء */
+    var stale = names.filter(function (p) { return !have[p] || rsNat(have[p].rev) < opPeriodRev(revs, K, p); }), fresh = {}, later = stale.slice(OP_LIM.readPeriods * 3);
+    stale = stale.slice(0, OP_LIM.readPeriods * 3);
+    for (var i = 0; i < stale.length; i += OP_LIM.readPeriods) {
+      var part = stale.slice(i, i + OP_LIM.readPeriods), sc = {}; sc[K] = { periods: part };
+      var st = await opLoadMany(env, [K], 1, sc), parts = opSplit(info, st.values[K] == null ? undefined : JSON.parse(st.values[K]));
+      part.forEach(function (p) { fresh[p] = ocOwn(parts.periods, p) ? opSummaryValue(info, p, parts.periods[p]) : null; });
+    }
+    await env.DB.batch(rsReferenceGuards(env, reference));
+    return json({ ok: 1, key: K, rows: names.map(function (p) { var x = opPeriodIdx(def, p); return { p: p, grp: x.grp, seq: x.seq, rev: opPeriodRev(revs, K, p), v: ocOwn(fresh, p) ? fresh[p] : later.indexOf(p) >= 0 ? null : parseJson(have[p].v_json, null), stale: later.indexOf(p) >= 0 ? 1 : undefined }; }) });
+  } catch (error) { return opRouteError(error); }
+}
+async function opReceiptRoute(env, request, url, session) {
+  if (request.method !== 'GET') return json({ ok: 0, err: 'method' }, 405);
+  var mismatch = sessUidMismatch(env, url, session, '/api/operations/receipt'); if (mismatch) return mismatch;
+  var id = String(url.searchParams.get('id') || '');
+  if (!/^[-A-Za-z0-9_]{8,100}$/.test(id)) return json({ ok: 0, err: 'operations-request-id' }, 400);
+  var row = await env.DB.prepare("SELECT revision,result_json FROM restore_operations WHERE account_uid=?1 AND request_id=?2 AND mode='operations'").bind(session.uid, id).first();
+  if (!row) return json({ ok: 1, found: 0 });
+  var r = parseJson(row.result_json, {}) || {};
+  return json({ ok: 1, found: 1, v: rsNat(row.revision), revs: isObj(r.revs) ? r.revs : {} });
+}
+async function opPeriodsMigrateRoute(env, request, session) {
+  if (request.method !== 'POST') return json({ ok: 0, err: 'method' }, 405);
+  try {
+    var A = await actorOf(env, session.uid); if (!A) return json({ ok: 0, err: 'session' }, 401);
+    if (A.u.role !== 'super') return json({ ok: 0, err: 'operations-periods-migrate-permission' }, 403);
+    var body = parseJson(await request.text(), null); if (!isObj(body) || typeof body.dept !== 'string') return json({ ok: 0, err: 'bad-body' }, 400);
+    var pending = opLayoutPendingOf(await opLayoutStatement(env).first()), list = body.dept === 'all' ? pending.slice() : rsScopeDepartments([body.dept]) || [], out = [];       var t0 = Date.now(), budget = Math.min(Math.max(Number(body.budgetMs) || 20000, 1000), 25000), from = isObj(body.from) ? body.from : null;
+    for (var d of list) {
+      var rep = { dept: d, resources: {}, ok: 0 }, revPairs = [], Rs = opSplitResources(), r0 = from && d === body.dept ? Math.max(0, Rs.indexOf(from.r)) : 0;
+      try {
+        for (var ri = 0; ri < Rs.length; ri++) {
+          var R = Rs[ri];
+          var K = 'bsdept:' + d + ':' + R, info = opInfo(K), def = opPeriodDef(info), tables = ocPhysicalTables(info.prepared);
+          var members = await opPeriodMembers(env, info), rv = await env.DB.prepare('SELECT rev FROM revs WHERE k=?1').bind(K).first();
+          revPairs.push([K, rsNat(rv && rv.rev || 0)]);
+          var pos = members.map(function (m) { return m.p; }).sort(function (a, b) { return a - b; });
+          var tnames = Object.keys(tables), sum = function (where) { return 'SELECT ' + tnames.map(function (t2) { return '(SELECT COUNT(*) FROM ' + where(t2) + ')'; }).join('+') + ' AS n'; };
+          var total = Number((await env.DB.prepare(sum(function (t2) { return t2 + ' WHERE department_id=?1 AND resource=?2'; })).bind(d, R).first('n')) || 0);
+          if (!total) { rep.resources[R] = { periods: 0, rows: 0 }; continue; }
+          var names = members.map(function (m) { return m.m; }), sums = [];
+                    /* تغطيةٌ بلا مدياتٍ كثيرة: كلُّ عقدةٍ تحت الحاوية/e: جذرُها عضوٌ في الحاوية (صفُّ جذرها موجود) — والكياناتُ مربوطةٌ بعقدها (FK) */
+          var E = opContainerKey(def) + '/e:', L = E.length, orphans = Number((await env.DB.prepare("SELECT COUNT(*) n FROM ops_nodes x WHERE x.department_id=?1 AND x.resource=?2 AND x.row_key>=?3 AND x.row_key<?4 AND NOT EXISTS(SELECT 1 FROM ops_nodes m WHERE m.department_id=?1 AND m.resource=?2 AND m.parent_key=?5 AND m.row_key=CASE WHEN instr(substr(x.row_key,?6),'/')>0 THEN substr(x.row_key,1,?7+instr(substr(x.row_key,?6),'/')-1) ELSE x.row_key END)").bind(d, R, E, opContainerKey(def) + '/e;', opContainerKey(def), L + 1, L).first('n')) || 0), covered = orphans ? total - orphans : total;
+          if (ri < r0) { rep.resources[R] = { periods: names.length, rows: total, earlier: 1 }; if (covered !== total) throw Object.assign(ocError('period-coverage'), { rows: total, covered: covered }); continue; }
+          var i0 = from && ri === r0 && d === body.dept ? Math.max(0, Number(from.i) || 0) : 0;
+          for (var i = i0; i < names.length; i += 20) {
+            if (Date.now() - t0 > budget) { if (sums.length) for (var j0 = 0; j0 < sums.length; j0 += 200) await env.DB.batch(opSummaryStatements(env, info, sums.slice(j0, j0 + 200))); rep.more = 1; rep.next = { r: R, i: i }; out.push(rep); return json({ ok: 0, more: 1, departments: out, next: { dept: d, from: rep.next }, pending: opLayoutPendingOf(await opLayoutStatement(env).first()) }); }
+            var part = names.slice(i, i + 20), sc = {}; sc[K] = { periods: part };
+            var st = await opLoadMany(env, [K], 1, sc), parts = opSplit(info, st.values[K] == null ? undefined : JSON.parse(st.values[K]));
+            part.forEach(function (p) { if (!ocOwn(parts.periods, p)) throw Object.assign(ocError('period-verify'), { period: p }); sums.push({ p: p, value: parts.periods[p] }); });
+          }
+          if (covered !== total) throw Object.assign(ocError('period-coverage'), { rows: total, covered: covered });
+          if (new Set(pos).size !== pos.length) throw ocError('period-positions');             for (var j = 0; j < sums.length; j += 200) await env.DB.batch(opSummaryStatements(env, info, sums.slice(j, j + 200)));
+          rep.resources[R] = { periods: names.length, rows: total };
+        }
+                await env.DB.batch(opRevGuards(env, revPairs).concat([env.DB.prepare("UPDATE meta SET v=(SELECT COALESCE(json_group_array(value),'[]') FROM json_each(meta.v) WHERE value<>?1) WHERE k='" + OP_LAYOUT_KEY + "'").bind(d)]));
+        rep.ok = 1;
+        logEv('info', 'ops-periods-migrate', { rid: env.__rid, dept: d, res: Object.keys(rep.resources).length });
+      } catch (e) {
+        if (!(e && (e.ocCode || e.rs)) && !dbLimitFailure(e)) throw e;
+        rep.err = e.ocCode || e.rs || dbLimitFailure(e).err; if (e.period) rep.period = e.period;
+      }
+      out.push(rep);
+    }
+    var left = opLayoutPendingOf(await opLayoutStatement(env).first());
+    return json({ ok: out.every(function (r) { return r.ok; }) ? 1 : 0, departments: out, pending: left });
+  } catch (error) { return opRouteError(error); }
+}
+function opSaveBudget(statements) {
+  /* حجمُ المسلسل كما يقيسه D1 (نصٌّ فيه حرفٌ فوق U+00FF بايتان للحرف) — 30MB تحت سقف 32MiB للاستدعاء */
+  var size = function (t) { return /[^\u0000-\u00ff]/.test(t) ? t.length * 2 : t.length; }, n = 0;
+  statements.forEach(function (s) { n += size(String((s && s.__sql) || '')); ((s && s.__args) || []).forEach(function (v) { if (typeof v === 'string') n += size(v); }); });
+  if (statements.length > OP_LIM.batchStmts || n > OP_LIM.batchBytes) throw opLimError('batch-budget', 413, { statements: statements.length, bytes: n });
 }
 /* One-time canonical KV cutover. Runtime access is typed SQL in019r; this
    reader exists only while initialization validates the original documents. */
@@ -23414,6 +23960,7 @@ function permv4Ctx(A, d, k, okMap, ctx) {
   var ac = permv4Actor(A), pv4 = (ctx && ctx.pv4) || {}, staffing = pv4.staffing || null;
   return { dept: d, keyName: k, actor: ac.actor, allowedDepts: ac.allowedDepts, deptInScope: function (x) { return deptInScope(A, x); }, today: dsToday(Date.now()), now: Date.now(),
            retroWin: (ctx && ctx.retroWin) || {}, locks: { staffing: pv4.staffingLocks, tasks: pv4.tasksLocks },
+           srvRoute: !!(A.__tkSrv || A.__tkSelf || (ctx && ctx.restore)),   /* V7 · 53: كتابةُ مسارٍ خادمي (يحكم فترتَه بنفسه) أو استعادةٌ خادمية — لا الحفظُ الخامّ */
            actorShift: function (mk) { var m = staffing && isObj(staffing) ? staffing[mk] : null; var r = m && isObj(m) ? m[A.u.ekey] : null; return (r && isObj(r) && r.shift) ? String(r.shift) : null; },
            held: okMap || {}, fieldOnly: !!d && enfFieldOnly(A, d), sources: permv4Sources(A), scopeValues: null, deptCeiling: permv4DeptCeiling };
 }
@@ -23928,9 +24475,16 @@ var KIVO_MIGRATIONS = [
    "UPDATE ops_nodes SET schema_id='ops_zone_prayer_counts' WHERE schema_id='ops_plan_deleted_months' AND member_key='pc' AND (department_id,resource,parent_key) IN(SELECT z.department_id,z.resource,z.row_key FROM ops_nodes z WHERE z.schema_id='ops_plan_live_floors_floor_zones_element')",
    "INSERT INTO meta(k,v)VALUES('schema_version','12')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
   ]
+ },
+ {
+  "name": "0013_period_storage",
+  "sql": [
+   "CREATE TABLE IF NOT EXISTS ops_period_summary (department_id TEXT NOT NULL, resource TEXT NOT NULL, period TEXT NOT NULL, rev INTEGER NOT NULL, v_json TEXT NOT NULL, PRIMARY KEY (department_id, resource, period)) WITHOUT ROWID",
+   "INSERT INTO meta (k, v) VALUES ('schema_version', '13') ON CONFLICT(k) DO UPDATE SET v = excluded.v"
+  ]
  }
 ];
-var KIVO_SCHEMA_VERSION = 12;
+var KIVO_SCHEMA_VERSION = 13;
 /* ═══ KIVO_263 · SOT-101 — مخطّطاتُ أجسام الطلبات المغيِّرة: المصدرُ src/schemas/api/bodies.schema.json (JSON Schema) ═══
    هذه النسخةُ مطابقةٌ له حرفاً (يفرضها tests/unit/body_schemas.test.mjs) — فالقاعدةُ واحدةٌ مكتوبةٌ مرةً، قابلةٌ للاختبار بلا واجهة.
    bodyCheck(route, body) ⇒ null (سليم) أو موضعُ أوّل مخالفة ('set.<k>' · 'base.<k>' · 'del[3]' …) — والمسارُ يردّ 400 {ok:0, err:'bad-body', at}
@@ -24227,7 +24781,7 @@ async function migrateDb(env) {
   }
   for (i = 0; i < pending.length; i++) {
     var dataPlan = pending[i].name === '0004_daily_stats' ? await dsLegacyPrepare(env) :
-      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : null;
+      pending[i].name === '0005_notifications' ? await nfLegacyPrepare(env) : pending[i].name === '0006_custody' ? await cuLegacyPrepare(env) : pending[i].name === '0008_irshad' ? await irLegacyPrepare(env) : pending[i].name === '0009_seized_awards' ? await bdMigrationPrepare(env) : pending[i].name === '0010_operational_domains' ? await opLegacyPrepare(env) : pending[i].name === '0013_period_storage' ? opPeriodsLegacyPrepare(env) : null;
     var st = [dbMigrationFence(env, state, permit)], first = i;
     if (dataPlan) st = st.concat(dataPlan.before);
     for (j = 0; j < pending[i].sql.length; j++) st.push(env.DB.prepare(pending[i].sql[j]));
@@ -24283,8 +24837,7 @@ function dbGuardError(code, status) {
   e.dbGuardStatus = status || 503;
   return e;
 }
-/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ الأعطال 500 بلا رسالة. سقفُ الاستدعاء (32MiB — حتميٌّ، الإعادةُ لا تنفع) ⇒
-   413 batch-budget · وأيُّ خطأ D1 آخر (ذاكرة · ازدحام · مهلة) ⇒ 503 db-busy مع Retry-After. لا شيء كُتب (الدفعةُ ذرّية) والرسالةُ عربية. */
+/* V7 · 53 (ملحق 4 · §3ب.7): خطأُ D1 الذي لا يعرفه المسار لا يصل درعَ */
 var DB_LIMIT_MSG = { 'batch-budget': 'العملية أكبر من أن تُنفَّذ مرة واحدة. احفظ شهراً واحداً أو يوماً واحداً في كل مرة.', 'db-busy': 'الخادم مشغول الآن. أعد المحاولة بعد لحظات، وبياناتك محفوظة كما هي.' };
 function dbLimitFailure(e) {
   var text = String((e && e.message) || e || '');
@@ -24381,6 +24934,25 @@ async function dbGuardFallback(env, tok) {
     guard: dbGuardCapture(meta, (result[1] && result[1].results) || []),
   };
 }
+/* V7 · 53 */
+var DB_OPS_WRITE = /^\s*(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|UPDATE|DELETE\s+FROM)\s+(ops_\w+)/i;
+function dbGuardRevised(a) {
+  var bumped = new Set(), wide = false, need = [];
+  a.forEach(function (s) {
+    var sql = String((s && s.__sql) || '');
+    if (/restore_epoch|DELETE\s+FROM\s+revs\b/i.test(sql)) wide = true;
+    if (/INTO\s+revs\b/i.test(sql)) (s.__args || []).forEach(function (v) {
+      if (typeof v !== 'string') return;
+      if (v.slice(0, 7) === 'bsdept:') bumped.add(v);
+      else if (v.charAt(0) === '[') { var j = parseJson(v, null); if (Array.isArray(j)) j.forEach(function (x) { var k = typeof x === 'string' ? x : x && x.k; if (typeof k === 'string') bumped.add(k); }); }
+    });
+    if (s && s.__guardReadOnly !== true && DB_OPS_WRITE.test(sql) && !/^\s*(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|UPDATE|DELETE\s+FROM)\s+ops_period_summary\b/i.test(sql)) need.push(s);   /* الملخّصُ مشتقٌّ بمراجعته (لا يُقرأ بحارس) */
+  });
+  need.forEach(function (s) {
+    var keys = s.__opKeys;
+    if (!keys ? !wide : keys.some(function (k) { return !bumped.has(k); })) throw dbGuardError('db-unrevised-ops-write', 500);
+  });
+}
 function dbGuard(DB, pre, preserve) {
   var capture = pre.guard;
   if (!capture) throw dbGuardError('db-guard-unavailable');
@@ -24411,7 +24983,7 @@ function dbGuard(DB, pre, preserve) {
   }
   function wrap(st, sql, args) {
     var read = dbGuardReadOnly(sql),
-      q = { __st: st, __guard: capture, __guardReadOnly: read };
+      q = { __st: st, __guard: capture, __guardReadOnly: read, __sql: sql, __args: args || [] };
     q.bind = function () {
       return wrap(st.bind.apply(st, arguments), sql, Array.prototype.slice.call(arguments));
     };
@@ -24421,7 +24993,7 @@ function dbGuard(DB, pre, preserve) {
           if (!read) throw dbGuardError('db-unfenced-raw', 409);
           return st.raw.apply(st, arguments);
         }
-        if (!read) off(sql, args);
+        if (!read) { off(sql, args); dbGuardRevised([q]); }
         var out = await DB.batch([dbGuardStatement(DB, capture), unwrap(st)]);
         return resultOf(out[1], method, arguments);
       };
@@ -24435,6 +25007,7 @@ function dbGuard(DB, pre, preserve) {
     batch: async function (statements) {
       var a = statements || [];
       a.forEach(compatible);
+      dbGuardRevised(a);
       if (
         a.some(function (s) {
           return !s || s.__guardReadOnly !== true;
@@ -25003,29 +25576,51 @@ function imgStageRowsStmt(env, ik) { return env.DB.prepare('DELETE FROM imgs WHE
 /* imgref completeness for the typed tables (see THE RULE): every typed resource is re-read once and every id its stored value mentions is
    inserted — only if the record was not saved meanwhile (a save writes its own complete imgref). A cursor in meta lets it resume. */
 async function imgRefScan(env) {
+  /* V7 · 53: المواردُ المقسَّمة (019w) تُقرأ فتراتٍ (20 في كل استدعاء) لا كاملةً — موردٌ بتاريخٍ طويل يتجاوز سقفَ الاستدعاء كاملاً فلا يكتمل الفهرسُ أبداً؛
+     والمؤشّرُ يحفظ موضعَ الفترة (k · i) فيُستأنف في المرور التالي */
   var cur = await env.DB.prepare('SELECT v FROM meta WHERE k = ?1').bind(IMG_SCAN_KEY).first(), pos = { d: '', r: '' }, round, chars = 0;
   if (cur && cur.v === 'done') return true;
   if (cur) { var pj = parseJson(cur.v, null); if (pj && typeof pj.d === 'string' && typeof pj.r === 'string') pos = pj; }
   var put = function (v) { return env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = excluded.v').bind(IMG_SCAN_KEY, v); };
-  for (round = 0; round < 5 && chars < 6e6; round++) {
-    var keys = [], i;
-    for (i = 0; i < 12; i++) {
-      var nx = await env.DB.prepare('SELECT department_id AS d, resource AS r FROM ops_nodes WHERE (department_id, resource) > (?1, ?2) ORDER BY department_id, resource LIMIT 1').bind(pos.d, pos.r).first();
-      if (!nx) break;
-      pos = { d: String(nx.d), r: String(nx.r) };
-      var k = 'bsdept:' + pos.d + ':' + pos.r, ok = false;
-      try { ok = !!opInfo(k); } catch (eK) { ok = false; }                    /* a row no resource of this version owns: nothing to read */
-      if (ok) keys.push(k);
+  var refStmt = function (ids, k2, rev) { return env.DB.prepare('INSERT OR IGNORE INTO imgref (img, k) SELECT value, ?2 FROM json_each(?1) WHERE COALESCE((SELECT rev FROM revs WHERE k = ?2), 0) = ?3').bind(JSON.stringify(ids), k2, rev || 0); };
+  var split = async function (k2, from) {
+    var info = opInfo(k2), names = (await opPeriodMembers(env, info)).map(function (m) { return m.m; });
+    for (var j = from; j < names.length; j += 20) {
+      if (chars >= 1.5e6) return j;   /* V7 · 53: مرورُ الكنس في waitUntil يحسب على وقت المعالج — 1.5M حرف من الفترات في المرور، ويُستأنف */
+      var sc = {}; sc[k2] = { periods: names.slice(j, j + 20) };
+      var got = await opLoadMany(env, [k2], 0, sc), v = got.values[k2] || '', ids = Object.keys(imgIdsIn(v)); chars += v.length;
+      if (ids.length) await env.DB.batch([refStmt(ids, k2, got.revs[k2])]);
     }
-    var st = [], done = i < 12;
-    if (keys.length) {
+    return -1;
+  };
+  if (typeof pos.k === 'string') {
+    var at = await split(pos.k, Number(pos.i) || 0);
+    if (at >= 0) { await env.DB.batch([put(JSON.stringify({ d: pos.d, r: pos.r, k: pos.k, i: at }))]); return false; }
+    var pk0 = parseKey(pos.k); pos = { d: String(pk0.dept), r: resName(pos.k) };
+  }
+  for (round = 0; round < 5 && chars < 6e6; round++) {
+    var keys = [], i, st = [];
+    var flush = async function () {
+      if (!keys.length) return;
       var got = await opLoadMany(env, keys, 0);
       keys.forEach(function (k2) {
         var v = got.values[k2] || '', ids = Object.keys(imgIdsIn(v)); chars += v.length;
-        if (ids.length) st.push(env.DB.prepare('INSERT OR IGNORE INTO imgref (img, k) SELECT value, ?2 FROM json_each(?1) WHERE COALESCE((SELECT rev FROM revs WHERE k = ?2), 0) = ?3')
-          .bind(JSON.stringify(ids), k2, got.revs[k2] || 0));
+        if (ids.length) st.push(refStmt(ids, k2, got.revs[k2]));
       });
+      keys = [];
+    };
+    for (i = 0; i < 12; i++) {
+      var nx = await env.DB.prepare('SELECT department_id AS d, resource AS r FROM ops_nodes WHERE (department_id, resource) > (?1, ?2) ORDER BY department_id, resource LIMIT 1').bind(pos.d, pos.r).first();
+      if (!nx) break;
+      var before = pos, k = 'bsdept:' + String(nx.d) + ':' + String(nx.r), ok = false;
+      try { ok = !!opInfo(k); } catch (eK) { ok = false; }                    /* a row no resource of this version owns: nothing to read */
+      if (ok && opSplitResource(k) && keys.length) { await flush(); }          /* ما جُمع قبله يُقرأ أولاً، ثم المقسَّمُ فتراتٍ */
+      pos = { d: String(nx.d), r: String(nx.r) };
+      if (ok && opSplitResource(k)) { var at2 = await split(k, 0); if (at2 >= 0) { await env.DB.batch(st.concat([put(JSON.stringify({ d: before.d, r: before.r, k: k, i: at2 }))])); return false; } continue; }
+      if (ok) keys.push(k);
     }
+    var done = i < 12;
+    await flush();
     st.push(put(done ? 'done' : JSON.stringify(pos)));
     await env.DB.batch(st);
     if (done) return true;
@@ -26984,7 +27579,7 @@ function enfHeldAnyDept(A, key) {
 }
 /* ═══ V7 · د5-هـ (44) — محرّكُ الأدوار (الخادم): مولَّدٌ بأداة tools/generate.py من permissions/registry/perm44-levels.json (جدولُ المستويات) و
    perm44-core.js (المحرّكُ المشترك — نصُّه في الواجهة والخادم حرفاً) وperm44-server.js وقائمةِ الأنظمة من manifests/pages.json — لا يُحرَّر يدوياً. ═══ */
-var KIVO_PERM44_DATA = {"v":1,"levels":[{"key":"view","name":"مشاهدة","desc":"يشاهد فقط","types":["access","view"],"sensitive":false},{"key":"input","name":"إدخال","desc":"+ يضيف جديداً","types":["access","view","create"],"sensitive":false},{"key":"edit","name":"تعديل","desc":"+ يعدّل ويُسند ويُرفق","types":["access","view","create","edit"],"sensitive":false},{"key":"full","name":"تشغيل","desc":"+ يقبل وينهي ويصدّر","types":"*","sensitive":false,"ff":true},{"key":"sensitive","name":"إشراف","desc":"+ يحذف ويعتمد ويقفل ويعيد الفتح","types":"*","sensitive":true,"ff":true},{"key":"custom","name":"مخصّص","desc":"تختار الأفعال واحداً واحداً","custom":true}],"names":{"custom":"صلاحيات مخصّصة","none":"بلا صلاحيات","super":"صلاحية كاملة بلا أي قيد"},"systems":[{"key":"dstats","name":"الإحصائيات اليومية","leaves":["dstats","dstats/haram","dstats/nabawi","dstats/anHaram","dstats/anNabawi","dstats/anCmp","dstats/anTime"],"toggle":true,"plat":false},{"key":"emps","name":"موظفو الإدارة","leaves":["emps","emps/data"],"toggle":false,"plat":false},{"key":"custody","name":"عهد الموظفين","leaves":["emps/custody"],"toggle":true,"plat":false,"under":"emps"},{"key":"planning","name":"الخطة التشغيلية","leaves":["planning","planning/readiness"],"toggle":true,"plat":true},{"key":"staff","name":"الجدول الشهري","leaves":["staff"],"toggle":true,"plat":false,"under":"planning"},{"key":"plan","name":"التشغيل الميداني","leaves":["plan"],"toggle":true,"plat":false,"under":"planning"},{"key":"daily","name":"المتابعة اليومية","leaves":["daily","daily/kpiDaily","daily/kpiOcc","daily/kpiZones","daily/rounds","daily/field"],"toggle":true,"plat":true},{"key":"dreport","name":"التقرير اليومي","leaves":["dreport"],"toggle":true,"plat":false,"under":"daily"},{"key":"tasks","name":"المهام","leaves":["tasks"],"toggle":true,"plat":false,"under":"daily"},{"key":"irshad","name":"نظام الاسترشاد","leaves":["irshad","irshad/dash","irshad/records"],"toggle":true,"plat":true},{"key":"seized","name":"نظام المضبوطات","leaves":["seized","seized/dash","seized/records"],"toggle":true,"plat":true},{"key":"rasd","name":"نظام رصد الحالات","leaves":["rasd","rasd/dash","rasd/records"],"toggle":true,"plat":true,"optIn":true},{"key":"award","name":"جائزة التميز","leaves":["award","award/new","award/res","award/doc"],"toggle":true,"plat":true},{"key":"links","name":"مواقع ذات صلة","leaves":["links"],"toggle":true,"plat":false},{"key":"help","name":"المساعدة","leaves":["help"],"toggle":true,"plat":false}],"lenses":[{"key":"zones","name":"المصليات","hosts":["plan","daily/rounds"]},{"key":"paths","name":"المسارات","hosts":["plan","daily/rounds"]},{"key":"gates","name":"البوابات","hosts":["plan","daily/rounds"]},{"key":"marks","name":"العلامات","hosts":["plan","daily/rounds"]},{"key":"dist","name":"التوزيع","hosts":["plan","daily/rounds"]},{"key":"dens","name":"الكثافة","hosts":["plan","daily/rounds"]}]};
+var KIVO_PERM44_DATA = {"v":1,"levels":[{"key":"view","name":"مشاهدة","desc":"يشاهد فقط","types":["access","view"],"sensitive":false},{"key":"input","name":"إدخال","desc":"+ يضيف جديداً","types":["access","view","create"],"sensitive":false},{"key":"edit","name":"تعديل","desc":"+ يعدّل ويُسند ويُرفق","types":["access","view","create","edit"],"sensitive":false},{"key":"full","name":"تشغيل","desc":"+ يقبل وينهي ويصدّر","types":"*","sensitive":false,"ff":true},{"key":"sensitive","name":"اعتماد وحذف","desc":"+ يحذف ويعتمد ويقفل ويعيد الفتح","types":"*","sensitive":true,"ff":true},{"key":"custom","name":"مخصّص","desc":"تختار الأفعال واحداً واحداً","custom":true}],"names":{"custom":"صلاحيات مخصّصة","none":"بلا صلاحيات","super":"صلاحية كاملة بلا أي قيد"},"systems":[{"key":"dstats","name":"الإحصائيات اليومية","leaves":["dstats","dstats/haram","dstats/nabawi","dstats/anHaram","dstats/anNabawi","dstats/anCmp","dstats/anTime"],"toggle":true,"plat":false},{"key":"emps","name":"موظفو الإدارة","leaves":["emps","emps/data"],"toggle":false,"plat":false},{"key":"custody","name":"عهد الموظفين","leaves":["emps/custody"],"toggle":true,"plat":false,"under":"emps"},{"key":"planning","name":"الخطة التشغيلية","leaves":["planning","planning/readiness"],"toggle":true,"plat":true},{"key":"staff","name":"الجدول الشهري","leaves":["staff"],"toggle":true,"plat":false,"under":"planning"},{"key":"plan","name":"التشغيل الميداني","leaves":["plan"],"toggle":true,"plat":false,"under":"planning"},{"key":"daily","name":"المتابعة اليومية","leaves":["daily","daily/kpiDaily","daily/kpiOcc","daily/kpiZones","daily/rounds","daily/field"],"toggle":true,"plat":true},{"key":"dreport","name":"التقرير اليومي","leaves":["dreport"],"toggle":true,"plat":false,"under":"daily"},{"key":"tasks","name":"المهام","leaves":["tasks"],"toggle":true,"plat":false,"under":"daily"},{"key":"irshad","name":"نظام الاسترشاد","leaves":["irshad","irshad/dash","irshad/records"],"toggle":true,"plat":true},{"key":"seized","name":"نظام المضبوطات","leaves":["seized","seized/dash","seized/records"],"toggle":true,"plat":true},{"key":"rasd","name":"نظام رصد الحالات","leaves":["rasd","rasd/dash","rasd/records"],"toggle":true,"plat":true,"optIn":true},{"key":"award","name":"جائزة التميز","leaves":["award","award/new","award/res","award/doc"],"toggle":true,"plat":true},{"key":"links","name":"مواقع ذات صلة","leaves":["links"],"toggle":true,"plat":false},{"key":"help","name":"المساعدة","leaves":["help"],"toggle":true,"plat":false}],"lenses":[{"key":"zones","name":"المصليات","hosts":["plan","daily/rounds"]},{"key":"paths","name":"المسارات","hosts":["plan","daily/rounds"]},{"key":"gates","name":"البوابات","hosts":["plan","daily/rounds"]},{"key":"marks","name":"العلامات","hosts":["plan","daily/rounds"]},{"key":"dist","name":"التوزيع","hosts":["plan","daily/rounds"]},{"key":"dens","name":"الكثافة","hosts":["plan","daily/rounds"]}]};
 /* V7 · د5-هـ (44): المحرّكُ المشترك للأدوار — نصٌّ واحدٌ يُحقن حرفياً في الواجهة (345-perm44.js) والخادم (057b-perm44.js) بأداة tools/generate.py.
    دالّةٌ نقيّة: لا تقرأ مخزناً ولا جلسة — السجلُّ (R = KIVO_REGISTRY) والجدول (D = KIVO_PERM44_DATA) والسقفُ (دالّةٌ على المفتاح) تأتيها من المضيف. */
 function perm44Make(R, D) {
@@ -26998,7 +27593,7 @@ function perm44Make(R, D) {
   var leafSys = {};
   for (i = 0; i < D.systems.length; i++) for (j = 0; j < D.systems[i].leaves.length; j++) leafSys[D.systems[i].leaves[j]] = D.systems[i].key;
   /* V7 · 53 (قرار المالك — التصدير «أ»): أعلامُ التصدير ff.<نظام>.export — ذرّاتُ «تصدير» حُوِّلت إلى أعلام ميزات (converted_to_feature) فلا مفاتيحَ لها
-     في السجلّ ولا تحملها بتّاتُ الخادم. يحملها مستوى ff (تشغيل full · إشراف sensitive) ويُختار العلمُ في «مخصّص»؛ لا تُعطى لمشاهدة ولا إدخال ولا تعديل · FFL[علم] = ورقتُه */
+     في السجلّ ولا تحملها بتّاتُ الخادم. يحملها مستوى ff (تشغيل full · اعتماد وحذف sensitive) ويُختار العلمُ في «مخصّص»؛ لا تُعطى لمشاهدة ولا إدخال ولا تعديل · FFL[علم] = ورقتُه */
   var FFS = {}, FFL = {}, AT = R.atoms || {}, ak;
   for (ak in AT) {
     var at0 = AT[ak]; if (!at0 || at0.act !== 'export' || at0.disposition !== 'converted_to_feature') continue;
@@ -27469,7 +28064,7 @@ function enfSources(A, mode) {
    + المصادر + مفاتيحُ الفاعل المحمولة (لا قرارُ الظلّ) — cx.enf علامةُ الإنفاذ للمقيِّمات أعلاه */
 function enfScopeCtx(A, d, k, heldMap, X, mode) {
   X = X || {};
-  var cx = permv4Ctx(A, d, k, heldMap, { pv4: X.pv4 || {}, retroWin: X.retroWin || {} });
+  var cx = permv4Ctx(A, d, k, heldMap, { pv4: X.pv4 || {}, retroWin: X.retroWin || {}, restore: enfLockBypass(A, d, X) });
   cx.enf = { mode: mode || 'write' };
   cx.sources = enfSources(A, mode || 'write');
   cx.scopeValues = null;
@@ -28797,9 +29392,18 @@ function meRec(rec) {
   for (i = 0; i < F.length; i++) if (rec[F[i]] != null && String(rec[F[i]]).trim() !== '') o[F[i]] = String(rec[F[i]]).trim().slice(0, 120);
   return o;
 }
-async function meDeptData(env, deptId, extra, A) {
+/* V7 · 53 */
+function meScopes(deptId, C) {
+  /* ما تقرؤه «صفحتي» من كل موردٍ مقسَّم يعلنه نظامُه (period.me): months3 · month · monthWeek · today */
+  var ym = function (k) { var mm = C.m + k, yy = C.y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } return yy + '-' + mm; }, P = pfHijriAt(Date.now() - 86400000), out = {}, i, d;
+  var days = function (x) { var o = ['m:' + x]; for (d = 1; d <= 30; d++) o.push(x + '-' + d); return o; };
+  var span = { months3: [ym(-1), ym(0), ym(1)], month: [ym(0)], monthWeek: days(ym(0)).concat([1, 2, 3, 4, 5, 6, 7].map(function (k) { return pfHijriAt(Date.now() - k * 86400000).dk; })), today: ['m:' + ym(0), C.dk, P.dk] };
+  for (i = 0; i < ME_KEYS.length; i++) { var K = 'bsdept:' + deptId + ':' + ME_KEYS[i], I = opSplitResource(K), me = I && opPeriodDef(I).me; if (me && span[me]) out[K] = { periods: span[me] }; }
+  return out;
+}
+async function meDeptData(env, deptId, extra, A, scopes) {
   var ks = ME_KEYS.map(function (n) { return 'bsdept:' + deptId + ':' + n; });
-  var capture = await opCaptureReferences(env, Object.create(null), ks),
+  var capture = await opCaptureReferences(scopes ? Object.assign({}, env, { __opScope: scopes }) : env, Object.create(null), ks),
     rs = await env.DB.batch(capture.guards.concat(extra || [])),
     off = meOffOf(A, deptId), kj = meDropOff(capture.keys, ks, off), P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
   return { emps: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_employees_v1'], []); return Array.isArray(a) ? a : []; })(),
@@ -28865,7 +29469,7 @@ async function meSelfRoutes(request, env, path, ss) {
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
   var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (eligible) { D = await meDeptData(env, u.deptId, extra, A); ex = D.extra; I = meIdent(u, D, users); }
+  if (eligible) { try { D = await meDeptData(env, u.deptId, extra, A, hist ? null : meScopes(u.deptId, C)); } catch (eM) { var limM = dbLimitResponse(env, eM, path); if (limM) return limM; throw eM; } ex = D.extra; I = meIdent(u, D, users); }   // V7 · 53: لا 500 لخطأ D1
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: (D && D.staffing && D.staffing[T0.ym]) || {}, rep: (D && D.dreport && D.dreport[T0.dk]) || null, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
@@ -29123,7 +29727,9 @@ async function meTkAct(env, request, A, b) {
   var K = meTkKey(I), act = String(b.act), dk = String(b.k);
   if (act === 'accept') act = 'start'; else if (act === 'finish') act = 'submit';                  /* أسماءُ المرحلة الأولى (والحزمةُ 242 SR-2) باقية */
   if ((act === 'decline' || act === 'stall') && !String(b.why || '').trim()) return json({ ok: 0, err: 'bad-body', at: 'why' }, 400);
-  if (await tkLocked(env, I.dept, tkYm(dk))) return json({ ok: 0, err: 'locked', msg: 'شهرُ المهمة معتمدٌ ومقفل' }, 409);
+  /* V7 · 53 (قرار ٧): قاعدةُ الفترة نفسُها لكتابة الموظف — عدا «الانقضاء» (expire): تسجيلٌ آليٌّ لحالةٍ وقعت (تفتحه «ملفي» بنفسها · F-3)، لا فعلٌ للموظف */
+  if (act !== 'expire') { var lw53 = await tkPeriodWhy(env, A, I.dept, dk); if (lw53) return json({ ok: 0, err: 'locked', msg: lw53 }, 409); }
+  else if (await tkPeriodWhy(env, A, I.dept, dk) === 'شهرُ المهمة معتمدٌ ومقفل') return json({ ok: 0, err: 'locked', msg: 'شهرُ المهمة معتمدٌ ومقفل' }, 409);   /* كما كان: المعتمدُ وحده */
   /* وسمُ الخادم: كتابةُ الذات على مخزن المهام تأتي من هذا المسار وحده (الرقعة 06: selfTaskOnly وself.task.respond يشترطانه — فلا تُصنع
      حالةٌ أو أداءٌ أو تجاوزٌ للمراجعة بحفظٍ خام /api/save ممّن يقرأ المخزن). لا يصل إليه مدخلٌ من الطلب: الفاعلُ يُبنى في الخادم من الجلسة */
   try { Object.defineProperty(A, '__tkSelf', { value: 1, enumerable: false, configurable: true }); } catch (eM) { A.__tkSelf = 1; }
@@ -29524,26 +30130,28 @@ function tkHeld(A, d, key) {
 /* ── مفاتيحُ المخازن ── */
 function tkK(d) { return 'bsdept:' + d + ':bassam_tasks_v1'; }
 async function tkRev(env, k) { var r = await env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(k).first(); return (r && r.rev) || 0; }
-/* قفلُ الشهر في الخادم = الاعتمادُ الصريح وحده (true) — {mo:1} شهرٌ منقضٍ فُتح فهو مفتوح (lockState في 010) */
-async function tkLocked(env, d, ym) {
-  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
-  var v = isObj(L) ? L[ym] : undefined; return v === true || v === 1;
-}
 function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]); }
 /* V7 · 53 (قرارا المالك ٧ و٨): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد ولا يُفتح إلا للاستدراك ({mo:1}).
    الرسالةُ بحسب القارئ: من يملك فتحَ الشهر (task.month.reopen) يُقال له افتحه، وغيرُه يُحال إلى مدير الإدارة */
 var TK_PAST_MGR = 'الشهر مقفل — افتحه للاستدراك أولاً', TK_PAST_EMP = 'الشهر مقفل — راجع مدير الإدارة';
-async function tkPastLocked(env, d, ym) {
-  var p = String(ym).split('-'), y = +p[0], m = +p[1], T = dsToday(Date.now()); if (!T || !(y > 0 && m > 0) || 12 * y + m >= 12 * T.y + T.m) return false;
-  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}), v = isObj(L) ? L[y + '-' + m] : undefined;
-  return !(isObj(v) && v.mo);
-}
 function tkPastMsg(A, d) { return tkHeld(A, d, 'task.month.reopen') ? TK_PAST_MGR : TK_PAST_EMP; }
-/* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */
-async function tkDayShut(env, d, k) {
-  var p = String(k).split('-'), L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {});
-  return isObj(L) && L[(+p[0]) + '-' + (+p[1]) + '-' + (+p[2])] === true;
+/* V7 · 53 (قرار المالك ٧ — «قاعدةُ الفترة المقفلة نفسُها كبقية الأنظمة»): حكمُ الفترة لكل كتابةٍ على مهمة (المسؤول · الموظف · التكرار) — قاعدةُ الصفحة
+   (tasks/client): الشهرُ المعتمد مقفل · الشهرُ الماضي مقفلٌ ما لم يُفتح ({mo:1}) — لكل كتابة (monthLockedT). day = true (الإنشاء — tasksCanAdd):
+   اليومُ المُغلق بيده مقفل · واليومُ المنقضي من الشهر الجاري مقفلٌ ما لم يُفتح هو أو شهرُه. day = 'shut' (التعديل — كما كان tkDayShut): المُغلقُ بيده وحده. أفعالُ سير العمل (المراجعة · التمديد ·
+   إعادةُ الإسناد · الإلغاء · أفعالُ الموظف) على قفل الشهر وحده كما في الصفحة (_tkP2Menu). يعيد نصَّ الرفض بحسب القارئ أو '' */
+var TK_DAY_MGR = 'اليوم مقفل — افتحه للاستدراك أولاً', TK_DAY_EMP = 'اليوم مقفل — راجع مدير الإدارة';
+async function tkPeriodWhy(env, A, d, k, day) {
+  var p = String(k).split('-'), y = +p[0], m = +p[1], dd = +p[2], ym = y + '-' + m, dk = ym + '-' + dd;
+  var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(L)) L = {};
+  var mv = L[ym], dv = L[dk], mo = isObj(mv) && !!mv.mo, T = dsToday(Date.now());
+  if (mv === true || mv === 1) return 'شهرُ المهمة معتمدٌ ومقفل';
+  if (day && dv === true) return 'اليومُ مُغلق — افتحه من صفحة المهام أولاً';
+  if (!T || !(y > 0 && m > 0)) return '';
+  if (12 * y + m < 12 * T.y + T.m) return mo ? '' : tkPastMsg(A, d);
+  if (day === true && 12 * y + m === 12 * T.y + T.m && dd > 0 && dd < T.d && !mo && !(isObj(dv) && dv.mo)) return tkHeld(A, d, 'task.month.reopen') ? TK_DAY_MGR : TK_DAY_EMP;
+  return '';
 }
+/* KIVO_265 · قفلُ اليوم: اليومُ المُغلق بيده (true على مفتاح «y-m-d» في مخزن الأقفال) لا تُضاف إليه مهامٌ جديدة — الإنشاءُ يُرفض والتكرارُ يتخطّاه */
 /* ── حدثُ تدقيقٍ للمهمة (etype=task · eid = هويةُ الكيان) ── */
 function tkAud(K, r, act, ctx, bef, aft) {
   var now = Date.now();
@@ -29849,9 +30457,7 @@ async function tkCreate(env, request, A, b) {
   /* KIVO_265 · srvrec: سلسلةٌ بلا مكلَّف لا تولِّد شيئاً أبداً (نسخةٌ لكل مكلَّف) — تُرفض بدل أن تُقبل صامتة */
   if (RC.rec && !asg.length && !SH) return tkNo(400, 'rec-asg', 'المهمةُ المتكررة تحتاج مكلَّفاً واحداً على الأقل — تُولَّد نسخةٌ لكل مكلَّف', { at: 'rec' }).err;   /* S10: مفاتيحُ 400 المعقودة (ok · err · at) */
   if (!tkHeld(A, d, 'task.create') || ((asg.length || SH) && !tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'إنشاءُ المهام وإسنادُها للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
-  if (await tkPastLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', tkPastMsg(A, d)).err;   /* V7 · 53 (قرار ٧): إنشاءٌ في شهرٍ ماضٍ لم يُفتح للاستدراك */
-  if (await tkDayShut(env, d, b.k)) return tkNo(409, 'locked', 'اليومُ مُغلق — افتحه من صفحة المهام أولاً').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k, true); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد — الإنشاءُ باليوم */
   var RV = await tkRvIn(env, A, d, b.rv); if (RV.bad) return tkNo(400, 'bad-body', RV.msg || '', { at: RV.bad }).err;
   if (RV.rv && RV.rv.e && asg.indexOf(RV.rv.e) !== -1) return tkNo(400, 'bad-body', 'المراجِعُ لا يكون المكلَّفَ نفسَه', { at: 'rv' }).err;
   var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), byE = nmap(), EL = [], skipped = [], i;
@@ -29928,7 +30534,7 @@ async function tkReview(env, request, A, b) {
   if (!tkStrOk(b.why, METK_WHY_MAX)) return tkNo(400, 'bad-body', '', { at: 'why' }).err;
   var why = tkWhyOf(b); if (b.decision === 'return' && !why) return tkNo(400, 'bad-body', 'اذكر ما ينقص الإثبات', { at: 'why' }).err;
   if (!canRead(A, K)) return tkNo(403, 'forbidden').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var out = null;
   var R = await tkSave(env, request, A, K, function (S) {
     var P0 = tkPick(S, b.k, b.id, b.ekey); if (!P0) return tkNo(404, 'not-found');
@@ -29955,7 +30561,7 @@ async function tkExtend(env, request, A, b) {
   if (!(typeof b.e === 'number' && isFinite(b.e))) return tkNo(400, 'bad-body', '', { at: 'e' }).err;
   if (!tkStrOk(b.why, METK_WHY_MAX)) return tkNo(400, 'bad-body', '', { at: 'why' }).err;
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'تمديدُ المهلة يحتاج صلاحية تعديل المهام').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var out = null;
   var R = await tkSave(env, request, A, K, function (S) {
     var P0 = tkPick(S, b.k, b.id, b.ekey); if (!P0) return tkNo(404, 'not-found');
@@ -29980,7 +30586,7 @@ async function tkReassign(env, request, A, b) {
   if (b.e != null && !(typeof b.e === 'number' && isFinite(b.e))) return tkNo(400, 'bad-body', '', { at: 'e' }).err;
   if (String(b.from) === String(b.to)) return tkNo(400, 'bad-body', 'المكلَّفُ الجديد هو نفسُه', { at: 'to' }).err;
   if (!tkHeld(A, d, 'task.assign')) return tkNo(403, 'denied', 'إعادةُ الإسناد للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
   if (!em) return tkNo(400, 'asg', tkEidShared(emps, b.to) ? TK_EID_DUP : 'موظفٌ غير معروف بمعرّفه الثابت في سجل الإدارة', { at: 'to' }).err;
   var S00 = parseJson(await opResourceGet(env, K), {}), P00 = isObj(S00) ? tkPick(S00, b.k, b.id, b.from) : null; if (!P00) return tkNo(404, 'not-found').err;
@@ -30023,7 +30629,7 @@ async function tkCancel(env, request, A, b) {
   if (!METK_DAY_RX.test(String(b.k || '')) || !tkIdOk(b.id) || !(b.ekey == null || tkStrOk(b.ekey, 80))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkStrOk(b.why, METK_WHY_MAX)) return tkNo(400, 'bad-body', '', { at: 'why' }).err;   /* V7 · 53 (REVIEW ١١-أ): سببُ الإلغاء اختياريّ — يُحفظ إن كُتب ولا يُرفض الإلغاءُ بغيابه */
   if (!(tkHeld(A, d, 'task.delete') || tkHeld(A, d, 'task.edit'))) return tkNo(403, 'denied', 'الإلغاءُ للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var out = null;
   var R = await tkSave(env, request, A, K, function (S) {
     var P0 = tkPick(S, b.k, b.id, b.ekey == null ? null : b.ekey); if (!P0) return tkNo(404, 'not-found');
@@ -30042,7 +30648,7 @@ async function tkRelink(env, request, A, b) {
   var D0 = tkDeptOf(A, b.dept); if (D0.err) return D0.err; var d = D0.d, K = tkK(d);
   if (!METK_DAY_RX.test(String(b.k || '')) || !tkIdOk(b.id) || !tkStrOk(b.from, 160, true) || !tkStrOk(b.to, 80, true)) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkHeld(A, d, 'task.assign')) return tkNo(403, 'denied', 'ربطُ الإسناد للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), em = tkEmpByEid(emps, b.to);
   if (!em) return tkNo(400, 'asg', tkEidShared(emps, b.to) ? TK_EID_DUP : 'موظفٌ غير معروف بمعرّفه الثابت', { at: 'to' }).err;
   /* KIVO_265 · المراجعةُ الموحّدة (R-6 — منخفض): الربطُ تصحيحُ هويةٍ لا إسنادٌ لغير صاحب الصفّ — كان يقبل صفّاً «مرتبطاً برقم الهوية» وصفّاً منجزاً
@@ -30080,7 +30686,7 @@ async function tkSettingsPrepare(env, A, b, d, K, S) {
   if (b.dec != null && b.dec !== 0 && b.dec !== 1) return tkNo(400, 'bad-body', '', { at: 'dec' }).err;
   var P = b.pol === undefined ? null : tkPolIn(b.pol); if (P && P.bad) return tkNo(400, 'bad-body', '', { at: P.bad }).err;
   if (!tkHeld(A, d, 'task.edit')) return tkNo(403, 'denied', 'تعديلُ إعدادات المهمة يحتاج صلاحية تعديل المهام').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   /* المراجِع: «المنشئ» = منشئُ المهمة المسجَّل (x.by) إن ملك الاعتماد — وإلا أنت (كما في الإنشاء) · «بلا» · أو حسابٌ مسمّى يملك الاعتماد */
   var S00 = S, L00 = isObj(S00) && Array.isArray(S00[b.k]) ? S00[b.k] : [];
   var pick = function (L) {
@@ -30136,8 +30742,7 @@ async function tkEditPrepare(env, A, b, d, K, S, rev) {
       !tkStrOk(edit.t, 300, true) || !tkStrOk(edit.desc, 4000) || !(edit.prio === null || typeof edit.prio === 'string') ||
       !Number.isFinite(edit.s) || !Number.isFinite(edit.e) || edit.e <= edit.s ||
       !(edit.ekey == null || tkStrOk(edit.ekey, 80)) || !tkStrOk(edit.wt, 80)) return tkNo(400, 'bad-body', '', { at: 'edit' });
-  if (await tkLocked(env, d, tkYm(b.k)) || await tkLocked(env, d, tkYm(edit.k)) ||
-      await tkDayShut(env, d, b.k) || await tkDayShut(env, d, edit.k)) return tkNo(409, 'locked');
+  { var lw53 = (await tkPeriodWhy(env, A, d, b.k, 'shut')) || (await tkPeriodWhy(env, A, d, edit.k, 'shut')); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧) */
   var L = Array.isArray(S[b.k]) ? S[b.k] : [], ix = [];
   if (b.grp != null) L.forEach(function (row, index) { if (Array.isArray(row) && String(row[17] || '') === String(b.grp)) ix.push(index); });
   else { var picked = tkPick(S, b.k, b.id, b.ekey == null ? null : b.ekey); if (picked) ix.push(picked.idx); }
@@ -30227,7 +30832,7 @@ async function tkReopen(env, request, A, b) {
   if (!METK_DAY_RX.test(String(b.k || '')) || !tkIdOk(b.id) || !(b.ekey == null || tkStrOk(b.ekey, 80))) return tkNo(400, 'bad-body', '', { at: 'k' }).err;
   if (!tkStrOk(b.why, METK_WHY_MAX)) return tkNo(400, 'bad-body', '', { at: 'why' }).err;
   if (!(tkHeld(A, d, 'task.reopen') || tkHeld(A, d, 'task.edit'))) return tkNo(403, 'denied', 'إعادةُ فتح المهمة للمديرين والمخوَّلين').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧): حكمُ الفترة الواحد */
   var out = null;
   var R = await tkSave(env, request, A, K, function (S) {
     var P0 = tkPick(S, b.k, b.id, b.ekey == null ? null : b.ekey); if (!P0) return tkNo(404, 'not-found');
@@ -30843,7 +31448,7 @@ async function tkRecurStartPrepare(env, A, b, d, K, S) {
   if (!isObj(b.rec)) return tkNo(400, 'bad-body', 'حدّد قاعدةَ التكرار', { at: 'rec' }).err;
   var RC = tkRecIn(b.rec, b.k); if (RC.bad) return tkNo(400, 'bad-body', RC.msg || '', { at: RC.bad }).err;
   if (!(tkHeld(A, d, 'task.create') && tkHeld(A, d, 'task.edit') && tkHeld(A, d, 'task.assign'))) return tkNo(403, 'denied', 'تحويلُ المهمة إلى متكررة يحتاج صلاحياتِ إنشاء المهام وتعديلها وإسنادها').err;
-  if (await tkLocked(env, d, tkYm(b.k))) return tkNo(409, 'locked', 'شهرُ المهمة معتمدٌ ومقفل').err;
+  { var lw53 = await tkPeriodWhy(env, A, d, b.k); if (lw53) return tkNo(409, 'locked', lw53).err; }   /* V7 · 53 (قرار ٧) */
   var emps = tkEmps(await opResourceGet(env, 'bsdept:' + d + ':bassam_employees_v1')), kN = String(b.k).replace(/-0(\d)/g, '-$1');
   var pick = function (L) {
     if (b.grp != null) { var o = []; for (var q = 0; q < L.length; q++) if (Array.isArray(L[q]) && String(L[q][17] || '') === String(b.grp)) o.push(q); return o; }
@@ -31371,6 +31976,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
       }else if(opIsResource(w.k)){
         var add2=await opChangeStatements(env,w.k,R2.W[w.k].v,{base:w.rev});
         guards2.push.apply(guards2,add2.guards);st2.push.apply(st2,add2.statements);
+        add2.revisionKeys.filter(function(k){return k!==w.k;}).forEach(function(k){st2.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(k,rev));});   // V7 · 53: ومراجعاتُ فتراته
       }else{
         guards2.push(revGuard(env,w.k,w.rev));
         st2 = st2.concat(kvPutStmts(env, 'kv', w.k, R2.W[w.k].v));
@@ -31417,6 +32023,7 @@ async function enfMigrateApi(env, request, A, url, meta) {
       if(opIsResource(kk)){
         var add3=await opChangeStatements(env,kk,byK[kk].existed?byK[kk].v:null,{base:revNow[kk]||0});
         guards3.push.apply(guards3,add3.guards);st3.push.apply(st3,add3.statements);
+        add3.revisionKeys.filter(function(k){return k!==kk;}).forEach(function(k){st3.push(env.DB.prepare('INSERT INTO revs (k, rev) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET rev = ?2').bind(k,rev2));});   // V7 · 53: ومراجعاتُ فتراته
       }else{
         guards3.push(revGuard(env,kk,revNow[kk]||0));
         if (byK[kk].existed) st3 = st3.concat(kvPutStmts(env, 'kv', kk, byK[kk].v)); else st3.push(env.DB.prepare('DELETE FROM kv WHERE k = ?1').bind(kk));
@@ -31971,15 +32578,20 @@ async function saveRoute(env, request, path, ss) {
     A1.sessTs = ss.ts;   /* KIVO_264 · D14: لحظةُ الدخول — «الدخولُ الأوّل الإجباري» بجلسةٍ حديثة وحدها (selfCurState) */
     var rlS = await rlHit(env, 'sv', A1.u.id, RL_SAVE);
     if (rlS) return tooMany(rlS);
+    /* V7 · 53: حفظٌ بمفاتيح الفترة (K@p) يُترجم إلى حفظ K بوثيقةٍ جزئية */
+    var ps = await opPeriodSaveBody(env, A1, bs), bsIn = bs;
+    if (ps && Object.keys(ps.conflicts).length) return json({ ok: 0, requestId: bs.requestId, epoch: bs.epoch, atomic: 1, revs: {}, denied: {}, conflicts: ps.conflicts }, 409);
+    if (ps) { bs = ps.body; env = Object.assign({}, env, { __opScope: ps.scopes }); }
     var operationKeys=Object.keys(bs.set||{}).concat(bs.del||[]), operationalSave=operationKeys.some(opIsResource);
     if(operationalSave && (typeof bs.requestId!=='string'||!/^[-A-Za-z0-9_]{8,100}$/.test(bs.requestId)||!Number.isSafeInteger(bs.epoch)||bs.epoch<0||operationKeys.some(function(k){return !bs.base||!Number.isSafeInteger(bs.base[k])||bs.base[k]<0;})))
       return json({ok:0,err:'operations-request-envelope'},400);
     /* V7 · د5-هـ (أمن ٣): حفظُ موردٍ تشغيلي يُعاد مرّةً واحدة إن أخفق سياجُ مرجعه بكتابةٍ متزامنة (لم يُكتب شيء — الدفعةُ ذرّية): الإعادةُ لقطةٌ جديدة
        تعيد الحكمَ بالسلطة الحالية وتقارن «base» العميل بالنسخة الحالية — فتعديلُ المورد نفسِه يبقى تعارضاً (409)، والكتابةُ غيرُ ذات الصلة لا تُفشله. */
     for (var svTry = 0; ; svTry++) {
-      try { var r2 = await applySave(env, bs, A1, reqMeta(request)); break; }
+      try { var r2 = await applySave(env, bs, A1, reqMeta(request), ps ? { __operationFingerprint: ps.fp } : undefined); break; }
       catch (eT) { if (svTry || !operationalSave || !opFenceRetry(eT)) throw eT; }
     }
+    if (ps) r2 = await opPeriodSaveResult(env, ps, r2);
     if(operationalSave) return json(Object.assign({},r2,{ok:r2.ok===1?1:0,requestId:bs.requestId,epoch:bs.epoch,atomic:1}),r2.ok===1?200:Object.keys(r2.conflicts||{}).length?409:403);
     /* V7 · د5-هـ (أمن ١): لا ok:1 لحفظٍ لم يُكتب منه مفتاح — كلُّ مفتاحٍ طُلب رُفض أو تعارض ⇒ ok:0 (والنتيجةُ لكل مفتاح كما هي).
        للعميل الذي يعلن فهمه (ack ≥ 2) وحده: صفحةٌ قديمة في نافذة الإصدارين ترى ok:0 إقراراً غيرَ صالح فتعيد الإرسالَ بلا نهاية (caps_own_stale) */
@@ -31988,7 +32600,8 @@ async function saveRoute(env, request, path, ss) {
   } catch (eS) {
     var guardSave=dbGuardFailure(eS);if(guardSave)return json({ok:0,err:guardSave.err},guardSave.status);
     /* فشل الحفظ يظهر باسمه في سجلات المشروع وفي فاحص الشبكة — لا صمت */
-    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); var limS = dbLimitResponse(env, eS, path); if (limS) return limS; logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
+    if (ps && eS && eS.rs === 'conflict' && eS.period !== undefined && eS.key) { var cfP = {}; (ps.byK[eS.key] ? ps.byK[eS.key].keys : []).forEach(function (k) { cfP[k] = { why: 'conflict' }; }); return json({ ok: 0, requestId: bsIn.requestId, epoch: bsIn.epoch, atomic: 1, revs: {}, denied: {}, conflicts: cfP }, 409); }   /* V7 · 53 */
+    if(eS.rs||eS.cuCode||eS.nf||eS.ocCode)return json(Object.assign({ok:0,err:eS.rs||eS.cuCode||eS.nf||eS.ocCode},eS.msg?{msg:eS.msg}:{}),eS.status||eS.cuStatus||400);if(/KIVO_RESTORE_EPOCH/.test(String(eS)))return json({ok:0,err:'restore-epoch-changed'},409);if(/KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(eS)))return json({ok:0,err:'conflict'},409); var limS = dbLimitResponse(env, eS, path); if (limS) return limS; logEv('error', 'save-failed', { rid: env.__rid, p: path, st: 500, err: errMsg(eS) }); return json({ ok: 0, err: 'save-failed', rid: env.__rid }, 500);   /* KIVO_259 · SR-6: نصُّ الخطأ الداخلي في السجل وحده (بالمعرّف rid) — لا في الاستجابة */
   }
 }
 /* KIVO_264 · C1 للقراءة (اختياري — العقدُ نفسُه لـ/api/save): ?uid= على /api/changes و/api/get = هويةُ الجلسة التي بُني لها التبويب (BOOT.uid)؛
@@ -32033,6 +32646,9 @@ async function changesRoute(env, url, ss) {
   if (meSnapshotChanged(AC, (ch && ch.results) || [], vC)) outC.meChanged = 1;
   if (meTasksChanged(AC, (ch && ch.results) || [], vC)) outC.tasksChanged = 1;
   if (cutC.more) outC.more = 1;
+  /* V7 · 53 (العقد §5): مفاتيحُ الفترات التي تغيّرت (K@p · K@) بحكم رؤية */
+  var pkC = ((ch && ch.results) || []).filter(function (r) { if (r.rev > vC) return false; var x = String(r.k).indexOf('@') > 0 ? opPeriodKey(r.k) : null; return x && x.period !== '*' && canSee(AC, x.key); }).map(function (r) { return r.k; });
+  if (pkC.length) outC.pk = pkC.slice(0, CHANGES_MAX * 4);
   return json(outC);
 }
 /* ── سحب مفاتيح بعينها بأحدث قيمها — للتحديث الحي بلا إعادة تحميل (KIVO_264: نُقل من handle حرفاً + C2) ── */
@@ -32204,6 +32820,9 @@ export default {
         } catch (eTk) { swallow('tk-lazy-read', eTk, env.__rid); }
         return rsp; }
       if (path === '/api/operations/export') return await opExport(env,request,url,ss);
+      if (path === '/api/operations/summary') return await opSummaryRoute(env,request,url,ss);   /* V7 · 53 (019w) */
+      if (path === '/api/operations/receipt') return await opReceiptRoute(env,request,url,ss);
+      if (path === '/api/operations/periods-migrate') return await opPeriodsMigrateRoute(env,request,ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
       /* ── ماذا تغيّر منذ نسختي؟ — تستعمله لافتة «تحديثات جديدة» ── */

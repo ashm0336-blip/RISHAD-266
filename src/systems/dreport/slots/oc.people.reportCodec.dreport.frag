@@ -41,3 +41,5 @@ function ocptReportMonth(table) {
     })
   ]);
 }
+/* V7 · 53 (kpi 9): v.kpi ليوم التقرير — مرآةُ _kLean */
+function osKpiReport(p,v){if(!v||typeof v!=='object')return v;if(/^m:/.test(p)||Array.isArray(v))return null;var sh={};Object.keys(v.shifts&&typeof v.shifts==='object'?v.shifts:{}).forEach(function(k){var s=v.shifts[k];if(s&&typeof s==='object')sh[k]=Object.assign(osKpiPick(s,['pulled','ap','rest','tout']),{roster:osKpiArr(s.roster,function(r){return osKpiPick(r,['st','ekey']);})});});return Object.assign(osKpiPick(v,['created']),{shifts:sh});}

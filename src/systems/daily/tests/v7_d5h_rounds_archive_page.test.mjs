@@ -32,13 +32,16 @@ test('V7 · د5-ح (13): حفظةٌ حقيقية من صفحة الجولات ت
     const r = await p.evaluate(([y, m, d]) => KIVO.BassamRound.ensure(y, m, d).then((x) => ({ status: x.status, err: x.err || '' })), [T.y, T.m, T.d]);
     assert.equal(r.status, 'created', JSON.stringify(r));
     assert.equal(saves.length, 1, 'حفظةٌ واحدة');
-    assert.deepEqual(Object.keys(saves[0].set), [KR], 'العميلُ لا يكتب الأرشيف');
+    /* V7 · 53: الجولاتُ مخزّنةٌ باليوم — الحفظةُ تكتب يومَ الجولة وحده (K@<اليوم>)، ولا شيءَ من الأرشيف ولا من غيره من أيام الجولات */
+    assert.deepEqual(Object.keys(saves[0].set), [KR + '@' + T.y + '-' + T.m + '-' + T.d], 'العميلُ لا يكتب الأرشيف');
     const R = (await s.api('/api/operations/read?keys=' + encodeURIComponent(KR + ',' + KA))).j.resources;
     assert.ok(R[KR][T.y + '-' + T.m + '-' + T.d], 'جولةُ اليوم في الحيّ');
     assert.ok(!Object.keys(R[KR]).some((k) => k.startsWith(OLD + '-')), 'لا يومَ من الشهر المقفل في الحيّ');
     for (let d = 1; d <= 10; d++) assert.deepEqual(R[KA][OLD + '-' + d], old[OLD + '-' + d], 'اليوم ' + d + ' في الأرشيف كما هو');
     /* الصفحةُ تقرأ الأرشيف بعد أن يبلغها التغيير (/api/changes) — أو بقراءة الخدمة نفسِها؛ أيامُه مع الحيّ في قراءة المالك المعلنة */
     await p.evaluate((ka) => KIVO.__BS_SRV.operations.read([ka]), KA);
+    /* V7 · 53: الأرشيفُ مخزَّنٌ باليوم — الصفحةُ تطلب شهرَه حين تعرضه (القراءةُ المنطقية تجلب الشهرَ الجاري وحده) */
+    await p.evaluate((old) => KIVO.__BS_SRV.operations.want('bassam_rounds_arc_v1', { groups: [old] }), OLD);
     await p.waitForFunction((old) => { try { const v = KIVO.__BS_SRV.operations.get('bassam_rounds_arc_v1'); return !!(v && v[old + '-1']); } catch (e) { return false; } }, OLD, { timeout: 60000 });
     const seen = await p.evaluate((old) => { const v = KIVO.bus.read('daily.days@1') || {}; return Object.keys(v).filter((k) => k.startsWith(old + '-')).length; }, OLD);
     assert.equal(seen, 10, 'daily.days@1 يرى الأيامَ المؤرشفة');
@@ -46,8 +49,10 @@ test('V7 · د5-ح (13): حفظةٌ حقيقية من صفحة الجولات ت
     const r2 = await p.evaluate(([y, m, d]) => KIVO.BassamRound.setShiftAp(y, m, d, 'TEST_ONLY_SHIFT', 1).then((x) => ({ status: x.status, err: x.err || '' })), [T.y, T.m, T.d]);
     assert.equal(r2.status, 'approved', JSON.stringify(r2));
     assert.equal(saves.length, 2);
-    const sent = JSON.parse(saves[1].set[KR]);
-    assert.ok(!Object.keys(sent).some((k) => k.startsWith(OLD + '-')), 'الأيامُ المؤرشفة لا تُرسل');
+    /* V7 · 53: الحفظةُ بالفترة — لا مفتاحَ ليومٍ مؤرشف (ولا الأرشيفُ نفسُه) فيها، ويومُ اليوم وحده من الجولات */
+    const sent = Object.keys(saves[1].set);
+    assert.ok(!sent.some((k) => k.startsWith(KR + '@' + OLD + '-') || k.startsWith(KA)), 'الأيامُ المؤرشفة لا تُرسل: ' + JSON.stringify(sent));
+    assert.ok(sent.includes(KR + '@' + T.y + '-' + T.m + '-' + T.d), 'يومُ اليوم في الحفظة: ' + JSON.stringify(sent));
     const R2 = (await s.api('/api/operations/read?keys=' + encodeURIComponent(KR + ',' + KA))).j.resources;
     assert.deepEqual(R2[KA], R[KA], 'الأرشيفُ كما هو');
     assert.equal(R2[KR][T.y + '-' + T.m + '-' + T.d].shAp.TEST_ONLY_SHIFT.ap, 1);

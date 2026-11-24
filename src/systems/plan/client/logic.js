@@ -832,7 +832,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         ["التغطية", IC.pie],
         ["الحالة", IC.power],
       ];
-      srch = (m) => [m.code, "#" + m.code, m.yard, m.region, m.level, m.ztype, m.zcat].concat(m.emp);
+      srch = (m) => [m.code, "#" + m.code, m.yard, m.region, m.level, m.ztype, m.zcat].concat(KIVO.zoneCodeFind(m.code), m.emp);   /* V7 · 53 (ملحق 6 · 2): البحثُ بالكتابتين */
       fsList = [
         ["all", "كل المصليات", () => !0],
         ["on", "المفعّلة", (m) => !m.off && !m.unp],
@@ -841,7 +841,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       ].concat(M.some((m) => m.unp) ? [["unp", "بلا موضع", (m) => m.unp]] : []);
       M.forEach((m) => {
         m.cells = [
-          this._olVal(m.code ? "#" + m.code : "مصلى", { dir: "ltr" }),
+          this._olVal(m.code ? "#" + this._zc(m.code) : "مصلى", { dir: "ltr" }),
           this._olTxt(m.yard),
           this._olTxt(m.region),
           this._olTxt(m.level),
@@ -2610,13 +2610,54 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         })
       : t || [];
   }
+  /* V7 · 53: الخطةُ مخزّنةٌ بالشهر — شهرٌ لم يُحمَّل يُطلب أولاً (قراءةٌ صامتة بلا رسمٍ وسيط)، ثم يُفتح كما كان ويُضمّ إلى أشهر الصفحة */
+  _plPeriod(y, m, again) {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations, k = this._mKey(y, m);
+    if (!S || !S.split || !S.split("bassam_plan_v1")) return !1;
+    try {
+      if (S.loaded("bassam_plan_v1").groups.indexOf(k) !== -1) return !1;
+    } catch (x) {
+      return !1;
+    }
+    if (this._plWanting === k) return !0;
+    this._plWanting = k;
+    S.want("bassam_plan_v1", { groups: [k], quiet: !0 }).then((r) => {
+      this._plWanting = null;
+      r && 1 === r.ok ? again() : this.bsToast((r && r.msg) || "تعذّر تحميل خطة هذا الشهر — أعد المحاولة", "warn");
+    });
+    return !0;
+  }
+  /* V7 · 53: بعد الرسم الأول — الأشهرُ الاثنا عشر الماضية والشهران التاليان (قائمةُ «نسخ خطة شهرٍ آخر» · حذفُ الموقع وتعديلُه يشملها كما كان) */
+  _plAround() {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (!S || !S.split || !S.split("bassam_plan_v1")) return;
+    const c = this.curHijri(),
+      g = [];
+    for (let i = -12; i <= 2; i++) {
+      const n = c.y * 12 + (c.m - 1) + i;
+      g.push(this._mKey(Math.floor(n / 12), (n % 12) + 1));
+    }
+    setTimeout(() => S.want("bassam_plan_v1", { groups: g }), 1500);   /* بعد فتح الصفحة — لا يؤخّره */
+  }
+  _plWithPeriod(i, k) {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (i[k] || !S || !S.split || !S.split("bassam_plan_v1")) return i;
+    let v;
+    try {
+      v = S.period("bassam_plan_v1", k);
+    } catch (x) {
+      v = void 0;
+    }
+    return v ? { ...i, ...this._normMonths({ [k]: v }) } : i;
+  }
   goTo(t, e) {
+    if (this._plPeriod(t, e, () => this.goTo(t, e))) return;
     const s = this.state,
       n = this._mKey(s.year, s.month),
       a = (s.floors || []).map((t, e) =>
         e === s.floor ? { ...t, zones: s.zones, gates: s.gates, marks: s.marks || [], paths: s.paths || [] } : t,
       ),
-      i = { ...(s.planMonths || {}) };
+      i = this._plWithPeriod({ ...(s.planMonths || {}) }, this._mKey(t, e));
     this._hasPlanFor(i, n) && (i[n] = { ...(i[n] && !Array.isArray(i[n]) ? i[n] : {}), c: 1, d: this._snapshot(a) });
     const w9 = this._plLeftDirty(n, i, a),
       r = this._mKey(t, e),
@@ -3365,7 +3406,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       if (!t) return void this.bsToast("اختر المنطقة أولاً — قائمة الأدوار / المستويات تتبع المنطقة المختارة");
       if (n.some((e) => this._optName(e) === s && ((e && e.r) || "") === t))
         return void this.bsToast("يوجد خيار بهذا الاسم في هذه المنطقة");
-      const e = (this.state.zDdNewC || "").trim();
+      const e = this._codeOk(this.state.zDdNewC);
       return e
         ? (this.setState({ zDdNew: "", zDdNewC: "" }),
           void this.saveZoneOpts({ ...(this.state.zoneOpts || {}), level: [...n, { n: s, c: e, r: t }] }))
@@ -3374,7 +3415,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     if ("zcat" !== t && n.some((t) => this._optName(t) === s)) this.bsToast("يوجد خيار بهذا الاسم");
     else {
       if (e) {
-        const e = (this.state.zDdNewC || "").trim();
+        const e = this._codeOk(this.state.zDdNewC);
         return e
           ? ("region" === t || "ztype" === t) && n.some((t) => this._optCode(t) === e)
             ? void this.bsToast("هذا الرمز مستخدم لخيار آخر")
@@ -3488,7 +3529,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       );
     let d = "";
     if (e) {
-      if (((d = (this.state.zDdEditC || "").trim()), !d)) return void this.bsToast("اكتب الرمز — حرف أو رقم يميّز هذا الخيار");
+      if (((d = this._codeOk(this.state.zDdEditC)), !d)) return void this.bsToast("اكتب الرمز — حرف أو رقم يميّز هذا الخيار");
       if (("region" === t.key || "ztype" === t.key) && n.some((t, e) => e !== a && this._optCode(t) === d))
         return void this.bsToast("هذا الرمز مستخدم لخيار آخر");
     }
@@ -3610,6 +3651,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       plPmDel: this.PC("del"),
       plPmApprove: this.PC("approve"),
       plPmExport: this.PC("export"),
+      /* V7 · 53 (ملحق 6 · البند 1 — قرار المالك 24 نوفمبر): طباعةُ الخريطة والتقرير (زرُّ الطابعة · PDF الخريطة · المؤشرات) لكل من يرى الصفحة؛ وتصديرُ البيانات (Excel · CSV · PDF السجلات) يبقى على «تصدير» (قرار «أ»: «كامل» و«حسّاس» ويُختار في «مخصّص») */
+      plPmPrint: this.PC("view"),
       plPmWrite: t,
       plPmReadOnly: !t,
       plPmNoteStyle:
@@ -3986,6 +4029,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {}
   }
   componentDidMount() {
+    this._plAround();
     this._bsSigV = this._bsSig();
     this._bsShown = (t) => {
       try {
@@ -6068,7 +6112,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         const e = String(null == t.lsz ? "" : t.lsz).trim();
         if ("" === e) return null;
         let s = parseFloat(e);
-        return isNaN(s) ? null : Math.min(40, Math.max(4, Math.round(10 * s) / 10));
+        return isNaN(s) ? null : Math.min(40, Math.max(0.5, Math.round(10 * s) / 10));   /* V7 · 53 (ملحق 6 · 4): حجمُ خط رمز المصلى ينزل إلى 0.5 */
       })();
     this.setState(
       {
@@ -7146,7 +7190,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 (Math.abs(u) > 1 ? ((g = m / (3 * u)), (f = y / (3 * u))) : ((g = (l + o) / 2), (f = (d + h) / 2)),
                   (g = Math.max(l + 0.12 * p, Math.min(o - 0.12 * p, g))),
                   (f = Math.max(d + 0.12 * c, Math.min(h - 0.12 * c, f))));
-                const b = t.code || "";
+                const b = t.code ? this._zc(t.code) : "",   /* V7 · 53 (ملحق 6 · 2): الملصقُ بفاصل « / » — والرمزُ المخزَّن كما هو */
+                  bL = KIVO.zoneCodeLen(t.code);
                 if (!b) return null;
                 const x = e.rotdrag,
                   k = !(!x || !e.sel || "zone" !== e.sel.t || e.zones[e.sel.i] !== t);
@@ -7175,10 +7220,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   w = A ? A.w : p,
                   z = A ? A.h : c,
                   E = A ? A.deg : 0;
-                let M = Math.min(0.62 * z, (0.92 * w) / Math.max(1, 0.6 * b.length));
+                let M = Math.min(0.62 * z, (0.92 * w) / Math.max(1, 0.6 * bL));
                 if (((M = Math.min(M, 17)), k && this._rotLab && null != this._rotLab.fs)) M = this._rotLab.fs;
                 else {
-                  for (let t = 0; t < 26 && M > 1.2 && !this._boxFits(v, S, M * b.length * 0.6, 0.78 * M, E, a); t++) M *= 0.88;
+                  for (let t = 0; t < 26 && M > 1.2 && !this._boxFits(v, S, M * bL * 0.6, 0.78 * M, E, a); t++) M *= 0.88;
                   (M < 1.2 && (M = 1.2), k && this._rotLab && (this._rotLab.fs = M));
                 }
                 return (
@@ -7270,7 +7315,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         } else null != p && (l = { value: j(p), unit: "مصلٍّ", label: "الطاقة الاستيعابية" });
         ot = {
           accent: o,
-          code: t.code || "—",
+          code: this._zc(t.code) || "—",
           title: t.ztype || "مصلى",
           status: { text: t.off ? "معطّلة" : "مفعّلة", tone: t.off ? "off" : "ok" },
           hero: l,
@@ -8322,7 +8367,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           : "gate" === t.t
             ? (null == e.num ? "" : String(e.num).trim()) || e.label || "باب"
             : "zone" === t.t
-              ? e.code || e.name || "مصلى"
+              ? this._zc(e.code) || e.name || "مصلى"
               : e.label || e.kind || "معلم";
       },
       Jt = Zt.filter((t) => !/^(ال)?إدار/.test(String((u[t] || {}).work || "").trim()) || Ht.has(t)).map((t) => {
@@ -9036,7 +9081,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       geNeedTot: e.gEdit ? String(this._needTotOf("gEdit")) : "0",
       onGeNeed: (t) => this.setState({ gEdit: { ...this.state.gEdit, needN: t.target.value.replace(/[^0-9]/g, "").slice(0, 4) } }),
       zeCodePreview: e.zEdit
-        ? this._composeZoneCode(e.zEdit.region, e.zEdit.level, (e.zEdit.ser || "").trim() || "00", null, e.zEdit.ztype)
+        ? this._zc(this._composeZoneCode(e.zEdit.region, e.zEdit.level, (e.zEdit.ser || "").trim() || "00", null, e.zEdit.ztype))
         : "",
       zeDelete: () => {
         const t = this.state.zEdit;
@@ -9176,7 +9221,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                       flexShrink: 0,
                     },
                   },
-                  "#" + e,
+                  "/\u2009" + e,   /* V7 · 53 (ملحق 6 · 2): رمزُ الخيار جزءٌ من رمز المصلى — يسبقه « / » لا # */
                 ),
               v = u.map((e, i) => {
                 const d = e.o,
@@ -9820,7 +9865,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               t(
                 "div",
                 { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
-                i("lsz", "حجم الخط (4–40)", 4, 40, 0.5),
+                i("lsz", "حجم الخط (0.5–40)", 0.5, 40, 0.5),
                 i("lang", "الدوران (°)", -360, 360, 1),
               ),
               t(
@@ -13634,7 +13679,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               pctAll: "",
               tip:
                 "عناصر فيها موظفون في راحة اليوم وتغطيتها الفعلية دون الاحتياج: " +
-                e.map((t) => (t.code ? "#" + t.code : t.num ? "باب #" + t.num : t.label || t.name || "عنصر")).join(" · "),
+                e.map((t) => (t.code ? "#" + this._zc(t.code) : t.num ? "باب #" + t.num : t.label || t.name || "عنصر")).join(" · "),
               markOn: !1,
               mark: "",
               markTitle: "",
@@ -15573,7 +15618,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             olR: t,
             olI: e,
             gk: Cs(t),
-            name: (t.code ? "#" + t.code : "مصلى") + (t.region ? " — " + t.region : ""),
+            name: (t.code ? "#" + this._zc(t.code) : "مصلى") + (t.region ? " — " + t.region : ""),
             meta: [
               t.off ? "معطّلة" : "مفعّلة",
               [String(t.ztype || "").trim(), String(t.zcat || "").trim()].filter(Boolean).join(" · ") || null,
@@ -15795,7 +15840,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             n = {},
             a = {};
           ((("dist" === Y && this.bsLensOn("zones")) || "zones" === Y ? r : []).forEach((t, e) => {
-            const a = t.code ? "#" + t.code : "مصلى";
+            const a = t.code ? "#" + this._zc(t.code) : "مصلى";
             ((n[a] = e), (t.emp || []).forEach((t) => s(t, a, { t: "zone", i: e })));
           }),
             (("dist" === Y && this.bsLensOn("gates")) || "gates" === Y ? l : []).forEach((t, e) =>
@@ -15847,6 +15892,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             t.meta,
             t.code,
             t.type,
+            (t.olR && t.olR.code) || "",   /* V7 · 53 (ملحق 6 · 2): الاسمُ بفاصل « / » والبحثُ بالرمز المخزَّن أيضاً */
           ]));
         const Is = e.regOpen || {},
           js = [],
@@ -16355,7 +16401,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                       flexShrink: 0,
                     },
                   },
-                  "#" + t,
+                  "/\u2009" + t,
                 ),
               i = (t) =>
                 s("span", {
@@ -16729,7 +16775,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           eyeGatesLabel: $ ? "إخفاء الأبواب" : "إظهار الأبواب",
           eyeMarksLabel: tt ? "إخفاء المعالم" : "إظهار المعالم",
           doPrint: () => {
-            if (!this.PC("export")) return void this.permDeny();
+            if (!this.PC("view")) return void this.permDeny();   /* V7 · 53 (البند 1): الطباعةُ لمن يرى الصفحة */
             try {
               const t = document.getElementById("bs-print-veil");
               t && t.remove();
@@ -16740,12 +16786,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   "position:fixed;inset:0;z-index:99999;background:var(--bg-a2552552550p97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:'Cairo',sans-serif",
                 ),
                 (e.innerHTML =
-                  '<div style="width:46px;height:46px;border-radius:9999px;border:4px solid var(--bd-a185151810p22);border-top-color:var(--bd-xb99751);animation:bsvspin .9s linear infinite"></div><div style="font-size:15px;font-weight:600;color:var(--fg-x8a6f35)">جاري تجهيز التقرير للطباعة…</div><style>@keyframes bsvspin{to{transform:rotate(360deg)}}</style>'),
+                  '<div style="width:46px;height:46px;border-radius:9999px;border:4px solid var(--bd-a185151810p22);border-top-color:var(--bd-xb99751);animation:bsvspin .9s linear infinite"></div><div style="font-size:15px;font-weight:600;color:var(--fg-x8a6f35)">جاري تحميل الملف…</div><style>@keyframes bsvspin{to{transform:rotate(360deg)}}</style>'),
                 document.body.appendChild(e),
                 setTimeout(() => {
                   try {
                     const t = document.getElementById("bs-print-veil");
-                    t && t.remove();
+                    /* V7 · 53 (البند 9): ملفُّ PDF قيد الصنع (data-pdf من نواة الطباعة) ⇒ الستارُ باقٍ حتى يجهز — مهلةٌ قصوى 2.5 دقيقة */
+                    t && (t.dataset.pdf ? setTimeout(() => { try { t.remove(); } catch (e) {} }, 15e4) : t.remove());
                   } catch (t) {}
                 }, 3e4));
             } catch (t) {}
@@ -17515,13 +17562,13 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   ? ("" !== (t.num || "") ? "#" + t.num + " — " : "") + (t.label || t.name || "باب")
                   : "marks" === h
                     ? t.label || t.name || "معلم"
-                    : (t.code ? t.code + " — " : "") + (t.name || "مصلى"),
+                    : (t.code ? this._zc(t.code) + " — " : "") + (t.name || "مصلى"),
               n = "zones" === h ? l[t.cat] || t.ztype || "مصلى" : t.kind || "بلا نوع",
               a = "gates" === h ? !!t.closed : !!t.off;
             return { i: e, el: t, key: h + ":" + e, name: s, meta: n, dead: a, deadTxt: a ? ("gates" === h ? "مغلق" : "معطّل") : "" };
           })
           .filter((t) => !("gates" === h && KIVO.BassamLeaf.isParent(t.el)));
-        a && (g = KIVO.BassamFind.filter(a, g, (t) => [t.name, t.meta]));
+        a && (g = KIVO.BassamFind.filter(a, g, (t) => [t.name, t.meta, (t.el && t.el.code) || ""]));
         const f = g.map((t) => t.key),
           u = g.map((t) => {
             const e = ((t) => {
@@ -17799,12 +17846,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 ? ("" !== (t.num || "") ? "#" + t.num + " — " : "") + (t.label || t.name || "باب")
                 : "marks" === o
                   ? t.label || t.name || "معلم"
-                  : (t.code ? t.code + " — " : "") + (t.name || "مصلى"),
+                  : (t.code ? this._zc(t.code) + " — " : "") + (t.name || "مصلى"),
             meta: "zones" === o ? l[t.cat] || t.ztype || "مصلى" : t.kind || "بلا نوع",
             dead: "gates" === o ? !!t.closed : !!t.off,
           }))
           .filter((t) => !("gates" === o && KIVO.BassamLeaf.isParent(t.el)));
-        i && (f = KIVO.BassamFind.filter(i, f, (t) => [t.name, t.meta]));
+        i && (f = KIVO.BassamFind.filter(i, f, (t) => [t.name, t.meta, (t.el && t.el.code) || ""]));
         const u = (n && e[o]) || [],
           m = { أ: 0, ب: 0, ج: 0, none: 0 };
         u.forEach((t) => {

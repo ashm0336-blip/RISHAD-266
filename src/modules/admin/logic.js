@@ -237,6 +237,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   sfSchedOn() {
     return !!this.sfUsage("").on;
   }
+  /* V7 · 53: أشهرُ الجدول التي تستعمل الوردية ولم تُحمَّل تُحمَّل قبل المسودة — فتشملها إعادةُ التسمية كما كانت تشمل كلَّ شهر */
+  async sfLoadUsing(t) {
+    const u = this.sfUsage(t);
+    if (u && "function" === typeof u.load) await u.load();
+  }
   sfRenameEverywhere(draft, t, e, deleting) {
     return KIVO.bus.participate("shifts.renamed@1", { from: t, to: e, deleting: !!deleting }, draft);
   }
@@ -244,6 +249,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (!this.PC("edit")) { this.bsToast("صلاحيتك على الإعدادات عرضٌ فقط", "warn"); return false; }
     const s = String(e || "").trim();
     if (!s || s === t) { this.setState({ shRen: null }); return false; }
+    await this.sfLoadUsing(t);
     if (!await this.sfCommit({ op: "rename", from: t, to: s }, draft => {
       const a = this.sfItems(draft.get("bassam_shift_options_v1"));
       if (!a.some(e => e && e.name === t) || a.some(e => e && e.name === s)) throw Error("shift-name");
@@ -298,6 +304,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   async sfDelDo() {
     const t = this.state.shDel;
     if (!t || !this.PC("del")) return false;
+    await this.sfLoadUsing(t.name);
     if (!await this.sfCommit({ op: "delete", name: t.name }, draft => {
       this.sfRenameEverywhere(draft, t.name, "", true);
       draft.set("bassam_shift_options_v1", this.sfItems(draft.get("bassam_shift_options_v1")).filter(e => !e || e.name !== t.name));

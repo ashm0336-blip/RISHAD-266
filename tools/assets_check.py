@@ -7,6 +7,9 @@
 import os, re, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CAP = {'images': 128 * 1024, 'fonts': 96 * 1024}
+# V7 · 53 (ملحق 6 · البند 10): سقفٌ مسمّى لملفٍّ واحد — غلافُ التقرير (report-cover.jpg = 207,087 بايت) هو ملفُّ تصميم المالك الأصلي بايتاً كما في البرودكشن
+# (6171818)؛ إعادةُ ضغطه تغيّر التصميم. لا يُحمَّل إلا عند صنع ملف PDF. السقف 212,000 (هامش 2.37٪)، وسقفُ بقية الصور كما هو
+CAP_FILE = {'images/report-cover.jpg': 212000}
 
 def main(a):
     src = os.path.join(ROOT, a[a.index('--src') + 1] if '--src' in a else 'src')
@@ -27,6 +30,13 @@ def main(a):
                 for d, ds, fs in os.walk(os.path.join(full, 'systems', k)):
                     for f in fs:
                         if f.endswith(('.js', '.html', '.json', '.css', '.frag', '.tpl')): gone.append(open(os.path.join(d, f), encoding='utf-8', errors='replace').read())
+        # V7 · 53: والقطعُ المشتركة الغائبة معها (systems/_shared/<قطعة> — نواةُ الطباعة تُحذف بغياب الخطة والمتابعة، ومعها مستعمِلُ غلاف التقرير)
+        SH = os.path.join(full, 'systems', '_shared')
+        for k in sorted(os.listdir(SH)) if os.path.isdir(SH) else []:
+            if os.path.isdir(os.path.join(SH, k)) and not os.path.isdir(os.path.join(src, 'systems', '_shared', k)):
+                for d, ds, fs in os.walk(os.path.join(SH, k)):
+                    for f in fs:
+                        if f.endswith(('.js', '.html', '.json', '.css', '.frag', '.tpl')): gone.append(open(os.path.join(d, f), encoding='utf-8', errors='replace').read())
     gone = '\n'.join(gone)
     bad, n = [], 0
     for sub in ('images', 'fonts'):
@@ -36,7 +46,8 @@ def main(a):
             stem = re.sub(r'-(latin-ext|latin|arabic|bullet)\.woff2$', '', f)
             if f not in readme and not (sub == 'fonts' and stem in readme): bad.append(rel + ': غيرُ مذكورٍ في README')
             if f not in corpus and f not in gone: bad.append(rel + ': غيرُ مستعمَلٍ في المصدر (اسمُه الكامل غائبٌ عن src)')
-            if len(b) > CAP[sub]: bad.append('%s: %d بايت > السقف %d' % (rel, len(b), CAP[sub]))
+            cap = CAP_FILE.get(rel, CAP[sub])
+            if len(b) > cap: bad.append('%s: %d بايت > السقف %d' % (rel, len(b), cap))
             if b'Exif' in b[:65536] or b'GPS' in b[:65536] or (f.endswith('.png') and any(t in b for t in (b'tEXt', b'iTXt', b'zTXt'))): bad.append(rel + ': بياناتٌ وصفية')
     for x in bad: print('  ✘', x)
     print('النتيجة: %d أصلاً ثابتاً — مذكورٌ ومستعمَلٌ وتحت سقفه وبلا بياناتٍ وصفية · %d مخالفة' % (n, len(bad)))

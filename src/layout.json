@@ -1,7 +1,8 @@
 {
  "assets": {
   "fonts": "assets/fonts",
-  "img": "assets/images"
+  "img": "assets/images",
+  "vendor": "assets/vendor"
  },
  "pages": "pages",
  "shell": "layouts/index.template.html",

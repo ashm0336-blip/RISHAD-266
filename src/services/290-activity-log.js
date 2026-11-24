@@ -155,7 +155,18 @@
 
   /* V7 · د6: زرُّ تصفيةٍ يعلن نظامُه ورقتَه (العنصرُ الثالث — من فتحة النظام نفسِه) لا يُعرض والنظامُ مطفأ: على المنصة (مع ما يسكن الحاوية — BassamPerm.platOff)
      أو في سقف الوحدة النشطة بالوراثة (Perm44.ceiling). في مركز الإدارة (سجلُّ كل الوحدات) المطفأُ على المنصة وحده. العطلُ يُبقي الزر */
+  /* V7 · 53 (ملحق 6 · ب): زرُّ تصفيةٍ لنوعٍ تملكه عدسةٌ لا يُعرض والعدسةُ مطفأةٌ للوحدة — بفحص الخريطة نفسِه (BassamPerm.lensOn)؛
+     مركزُ الإدارة (سجلُّ كل الوحدات) لا يُحكم فيه بعدسة وحدةٍ واحدة. العطلُ يُبقي الزر */
+  var ET_LENS = { zone: 'zones', gate: 'gates', mark: 'marks', path: 'paths' };
+  function etLens(o) {
+    try {
+      var L = o && ET_LENS[o[0]], Pm = KIVO.BassamPerm;
+      if (!L || KIVO.__ADMIN_MODE === 'site' || !Pm || typeof Pm.lensOn !== 'function') return true;
+      return !!Pm.lensOn(L);
+    } catch (e) { return true; }
+  }
   function etLive(o) {
+    if (!etLens(o)) return false;
     try {
       if (!o || !o[2]) return true;
       var P4 = KIVO.Perm44, Pm = KIVO.BassamPerm; if (!P4 || !P4.sysList) return true;

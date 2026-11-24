@@ -23,7 +23,7 @@ const raw = (W) => W.env.DB.db;
 both(test, 'finding 1 · a plan that repeats one map 5001 times and then mentions a fresh upload: the upload is BOUND with its reference, and 31 days later it is still there', async (mode) => {
   const T = await scene(mode), { W, S, id } = T, a = id('capa'), b = id('capb'), K = dk(D, 'plan');
   await bind(W, S.mgr, D, 'plan', a); await upload(W, S.mgr, b);
-  const s = await edit(W, S.mgr, D, 'plan', (v) => { const f0 = v.floors[0], fl = []; for (let q = 0; q < 5001; q++) fl.push(Object.assign({}, f0, { name: 'f' + q, sid: undefined, iid: a })); fl.push(Object.assign({}, f0, { name: 'last', sid: undefined, iid: b })); v.floors = fl; });
+  const s = await edit(W, S.mgr, D, 'plan', (v) => { const f0 = v.floors[0], fl = []; for (let q = 0; q < 5001; q++) fl.push(Object.assign({}, f0, { name: 'f' + q, sid: undefined, iid: a, zones: [], gates: [], marks: [], paths: [] }));   /* V7 · 53: الطوابقُ المكرَّرة بلا عناصرها — نسخُ عناصر الطابق 5001 مرة كان دفعةً بنحو 161MB، فوق سقف D1 (32MiB للاستدعاء) فيُرفض الآن مبكراً (batch-budget)؛ ذكرُ الصورة 5001 مرة كما هو */ fl.push(Object.assign({}, f0, { name: 'last', sid: undefined, iid: b })); v.floors = fl; });
   assert.ok(s.ok, 'one map repeated is one image — the save is accepted · ' + JSON.stringify(s.j).slice(0, 200));
   assert.ok(mentions(W, K, b));
   let st = await state(W, b);
