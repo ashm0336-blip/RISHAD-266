@@ -44,7 +44,7 @@ test('53 (mgrimp5 ١): مديرُ الإدارة — «لن يُنقل» بأس�
       const nm = norm(names.find((x) => x.eid === ek).name), mine = items.filter((t) => t.startsWith(nm + ' —'));
       assert.ok(mine.length, 'الموظفُ باسمه من سجلّ الموظفين: ' + nm + ' ⇐ ' + items.slice(0, 3).join(' | '));
       /* V7 · 53 (basefix): الورقةُ المحذوفة admin/ptpls تُسمّى «صفحة أُلغيت» تحت قسمها — لا اسمَ لها في الواجهة بعد حذفها (د5-ح · v7_d5h_deleted_residue ①) */
-      assert.ok(mine.some((t) => /الصفحة «الإعدادات · صفحة أُلغيت» — عرض/.test(t)) && mine.some((t) => /الصفحة «[^»]*سجل[^»]*» — عرض/.test(t)), nm + ': الصفحةُ والإجراء بالعربي: ' + mine.join(' | '));
+      assert.ok(mine.some((t) => /الصفحة «الإعدادات [·-] صفحة أُلغيت» — عرض/.test(t)) && mine.some((t) => /الصفحة «[^»]*سجل[^»]*» — عرض/.test(t)), nm + ': الصفحةُ والإجراء بالعربي: ' + mine.join(' | '));
       assert.ok(!mine.some((t) => /admin\/|:view|grant|cap\b/.test(t)), 'لا رموز: ' + mine.join(' | '));
     }
     const box = p.locator('[data-bkc="summary"]');
