@@ -122,6 +122,18 @@
     } catch (e) { /* عرضٌ فقط */ }
   }
   KIVO.bsToast = bsToast;
+  /* V7 · 53 تقويم (REVIEW 45 · REVIEW 26): الخادمُ يحوّل فتراتِ الإدارة الهجرية بمهلةٍ للطلب ⇒ 503 calendar-preparing بتقدّمه.
+     سطرٌ واحد يتجدّد «تُجهَّز البيانات … (n من m)» — لا خطأ ولا صمت — والقراءةُ أو الحفظُ يُعادان تلقائياً حتى يكتمل التحويل (بحدّ). */
+  var PREP_MAX9 = 120, PREP_MS9 = 1200, prepLine9 = null;
+  function calPrep9(status, data) { return status === 503 && !!data && data.err === 'calendar-preparing'; }
+  function prepText9(data) { var d = data && data.details; return 'تُجهَّز البيانات للتقويم الميلادي' + (d && d.total ? ' (' + d.done + ' من ' + d.total + ')' : ''); }
+  function prepShow9(data, save) {
+    var text = save ? prepText9(data) + ' — سيُحفظ تعديلك تلقائياً' : (data && typeof data.msg === 'string' && data.msg) || prepText9(data) + '. تُعرض بعد لحظات.';
+    try { if (prepLine9 && prepLine9.text !== text) toastDrop9(prepLine9); } catch (e) { /* عرضٌ فقط */ }
+    bsToast(text, { ms: 4000 }); prepLine9 = toastLines9 && toastLines9[toastLines9.length - 1] || null;
+    try { if (KIVO.__bsPrep) KIVO.__bsPrep(text); } catch (e) { /* عرضٌ فقط */ }
+  }
+  function prepWait9() { return new Promise(function (r) { setTimeout(r, PREP_MS9); }); }
   /* ── شريط التعارض: ثابت أعلى الصفحة تحت الرأس، باسم مَن سبقك ووقته وعدد الخانات — يبقى حتى تغلقه ── */
   var bannerT = null;
   function esc9(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch]; }); }
@@ -740,14 +752,15 @@
     return !(data && typeof data.err === 'string' && SAVE_FATAL53[data.err]);   /* انقطاعُ الشبكة لا يُعاد آلياً: «غير مؤكَّد» كما كان (الإعادةُ بالطلب نفسِه للمستخدم) */
   }
   function saveRetry53(operation, status, data) {
-    if (operationActive9 !== operation || !saveTransient53(status, data) || (operation.transient53 || 0) >= SAVE_RETRY53) return false;
+    var prep = calPrep9(status, data);   /* التحويلُ جارٍ: التعديلُ باقٍ والطلبُ نفسُه يُعاد بتقدّمه حتى يكتمل — لا «تم» قبل الإيصال ولا رسالةَ فشل */
+    if (operationActive9 !== operation || !saveTransient53(status, data) || (operation.transient53 || 0) >= (prep ? PREP_MAX9 : SAVE_RETRY53)) return false;
     operation.transient53 = (operation.transient53 || 0) + 1; operation.lastStatus53 = status || 0; operation.lastErr53 = (data && data.err) || 'http-' + status;
     operationUncertainLog9('transient-retry-' + operation.transient53 + ' · ' + operation.lastErr53, operation.keys);
     if (inflight === operation.snap) inflight = null;
     operation.state = 'queued';
     operation.keys.forEach(function (key) { if (key in operation.snap.set) pSet[key] = operation.snap.set[key]; else pDel[key] = 1; });
-    recount(); link9("off", "تعذّر الحفظ مؤقتاً — يُعاد الطلبُ نفسُه تلقائياً");
-    setTimeout(function () { if (operationActive9 === operation && operation.state === 'queued') sendNow(); }, 400 * Math.pow(2, operation.transient53 - 1));
+    recount(); if (prep) prepShow9(data, 1); else link9("off", "تعذّر الحفظ مؤقتاً — يُعاد الطلبُ نفسُه تلقائياً");
+    setTimeout(function () { if (operationActive9 === operation && operation.state === 'queued') sendNow(); }, prep ? PREP_MS9 : 400 * Math.pow(2, operation.transient53 - 1));
     return true;
   }
   function saveText53(err, status) {
@@ -827,9 +840,13 @@
     var readId = ++operationReadId9;
     keys.forEach(function (key) { operationReads9[key] = readId; });
     try {
-      var response = await fetch('/api/operations/read?keys=' + encodeURIComponent(keys.join(',')) + '&uid=' + encodeURIComponent(stamp.uid), { credentials: 'same-origin', cache: 'no-store', signal: saveReadSignal53() });
-      if (response.status === 401) { sessGone9(); operationInvalidate9(); return operationFailure9('session', 401); }
-      var data = await response.json();
+      for (var prep = 0; ; prep++) {
+        var response = await fetch('/api/operations/read?keys=' + encodeURIComponent(keys.join(',')) + '&uid=' + encodeURIComponent(stamp.uid), { credentials: 'same-origin', cache: 'no-store', signal: saveReadSignal53() });
+        if (response.status === 401) { sessGone9(); operationInvalidate9(); return operationFailure9('session', 401); }
+        var data = await response.json();
+        if (!calPrep9(response.status, data) || prep >= PREP_MAX9) break;
+        prepShow9(data); await prepWait9();
+      }
       if (response.status === 409 && data && data.err === 'session-changed') { sesChanged9(null, '409'); operationInvalidate9(); return operationFailure9('session', 409); }
       if (!operationSame9(stamp) || keys.some(function (key) { return operationReads9[key] !== readId; })) return operationFailure9('stale', 409);
       if (!response.ok || !operationObject9(data) || data.ok !== 1 || data.uid !== stamp.uid || !operationInteger9(data.epoch) || !operationInteger9(data.v)
@@ -1363,6 +1380,7 @@
   async function periodFetch9(q, stamp) {
     var response = await fetch(periodQuery9(q, stamp), { credentials: 'same-origin', cache: 'no-store' }), data = null;
     try { data = await response.json(); } catch (e) { data = null; }
+    if (calPrep9(response.status, data) && (q.prep = (q.prep || 0) + 1) <= PREP_MAX9) { prepShow9(data); await prepWait9(); return periodFetch9(q, stamp); }
     /* شهرُ موردٍ يوميٍّ تجاوز حدَّ القراءة (تقريرُ إدارةٍ كبيرة · S6): يُطلب اليومان وعلامةُ الشهر وحدها، ويبقى المورد بالأيام في هذه الصفحة */
     if (response.status === 413 && data && data.err === 'read-too-large' && q.K && q.logical && q.range.length && !q.retried) {
       var now = periodNow9(), w = periodWant9[q.K] || (periodWant9[q.K] = { groups: [], periods: [], day: false });
@@ -2394,6 +2412,10 @@
           return operationObject9(value) && typeof value.why === 'string' ? whyText9(value.why) : '';
         }) : [];
         if (operationObject9(conflicts) && Object.keys(conflicts).length) parts.push(OPERATION_CONFLICT9);
+        /* V7 · 53 تقويم (REVIEW 45): السببُ الحقيقي لا «راجع التغييرات والصلاحيات» — التحويلُ الجاري بتقدّمه (وتعديلُك باقٍ ويُحفظ تلقائياً)، والعابرُ برسالته */
+        if (!parts.length && result && result.err === 'calendar-preparing') parts.push(prepText9(result) + ' — سيُحفظ تعديلك تلقائياً');
+        else if (!parts.length && result && typeof result.msg === 'string' && result.msg) parts.push(result.msg);
+        else if (!parts.length && result && (result.status >= 500 || result.err === 'network')) parts.push(saveText53(result.err, result.status));
         return Array.from(new Set(parts.filter(Boolean))).join(' · ');
       },
       ready: operationReady9,
