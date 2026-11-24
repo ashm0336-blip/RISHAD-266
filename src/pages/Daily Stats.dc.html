@@ -2193,7 +2193,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
   /* ── ٣) خرائطُ الكثافة — AnalyticsDensityHeatmap: لونٌ = color-mix(اللون 18+٪×78، شفّاف) ── */
   _zHeat(site,days,A){
     const self=this, s=this.state, md=this.ZMODE();
-    const SH=["محرم","صفر","ر١","ر٢","ج١","ج٢","رجب","شعبان","رمضان","شوال","ق","ح"];
+    const SH=KIVO.BassamCal.G_MONTHS.map(x=>x.slice(0,3));   /* V7 · 53 تقويم: أشهرُ الخريطة ميلادية (اختصارٌ بثلاثة أحرف) */
     A.hmTitle= md==="y"?"خرائط الكثافة الشهرية":md==="a"?"خرائط الكثافة السنوية":"خرائط الكثافة اليومية";
     A.hmSub= md==="y"?"توزيع كل مؤشر شهريًا خلال السنة المختارة. مربعات أغمق = حركة أكبر."
       : md==="a"?"توزيع كل مؤشر سنةً بسنة عبر السنوات المسجّلة. مربعات أغمق = حركة أكبر."

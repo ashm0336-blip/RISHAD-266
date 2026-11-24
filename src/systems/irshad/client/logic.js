@@ -1027,7 +1027,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDashHeatDesc:
         "كل مربع = يوم واحد من سنة " +
         G +
-        " هـ · " +
+        " · " +
         KIVO.BassamCount(Dt, "يوم") +
         " " +
         KIVO.BassamCount.agr(Dt, "فيه", "فيهما", "فيها") +

@@ -67,6 +67,7 @@ test('real module saves with a lost committed ACK, retries once, edits, aggregat
       }
       return response;
     } };
+  C.React = { createElement: (t, p, ...ch) => ({ t, p, ch }), Fragment: 'F' };   /* V7 · 53 تقويم: كروتُ التقويم من المكوّن الواحد */
   C.window = C; vm.createContext(C); calendar(C);
   for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/534-staff-g4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), C);   /* V7 · د5-د2: الناقل (قلب المنصة) وقراءاتُ الجدول الشهري المعلنة عليه — الصفحةُ تسأل بالاسم */
   const source = fs.readFileSync(path.join(ROOT, 'src/systems/irshad/client/logic.js'), 'utf8');
