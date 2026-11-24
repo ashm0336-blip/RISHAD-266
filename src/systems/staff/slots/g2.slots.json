@@ -66,7 +66,7 @@
  },
  "emp.replace.staff": {
   "order": 10,
-  "text": "  if (replace && values.__staffOn) {\n    var mk = input.import.year + '-' + input.import.month;\n    delete values.bassam_staffing_locks_v1[mk];\n  }\n"
+  "text": "  if (replace && values.__staffOn) {\n    var mk = calGYm(input.import.year, input.import.month);   /* V7 · 53 تقويم: شهرُ الجدول ISO YYYY-MM (019p1) — السنةُ ميلادية (calYearCal يرفض غيرها أعلاه) */\n    delete values.bassam_staffing_locks_v1[mk];\n  }\n"
  },
  "emp.schedule.call": {
   "order": 10,

@@ -116,20 +116,17 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   function PC(a) { try { return !!(KIVO.BassamPerm && KIVO.BassamPerm.can && KIVO.BassamPerm.can("emps", a)); } catch (e) { return false; } }
   function permDeny() { toast("\u0635\u0644\u0627\u062D\u064A\u062A\u0643 \u0639\u0644\u0649 \u0645\u0648\u0638\u0641\u064A \u0627\u0644\u0625\u062F\u0627\u0631\u0629 \u0644\u0627 \u062A\u0633\u0645\u062D \u0628\u0647\u0630\u0627 \u0627\u0644\u0625\u062C\u0631\u0627\u0621"); }
   function toast(m, kind) { if (toastFn) toastFn(m, kind || "warn"); }
-  /* الشهر الهجري الجاري — أساسُ المنتقي حين لا يختار المستعمل شهراً */
+  /* الشهر الجاري — أساسُ المنتقي حين لا يختار المستعمل شهراً (V7 · 53 تقويم: الميلادي، يومُ الرياض — الجدولُ الشهري ميلادي) */
   function curHij() {
-    try {
-      const h = KIVO.BassamCal.hParts(new Date()), y = h.y, m = h.m;   /* V7 · د5-د2 */
-      if (y && m) return { y: y, m: m };
-    } catch (e) {}
-    return { y: 1448, m: 1 };
+    const h = KIVO.BassamCal.gAt(new Date());
+    return { y: h.y, m: h.m };
   }
   function schedY() { return ST.y || curHij().y; }
   function schedM() { return ST.m || curHij().m; }
   function curHijriKey() {
     try {
-      const h = KIVO.BassamCal.hParts(new Date()), y = h.y, m = h.m;   /* V7 · د5-د2 */
-      if (y && m) return y + "-" + m;
+      const h = KIVO.BassamCal.gAt(new Date());   /* V7 · 53 تقويم: مفتاحُ الشهر ISO */
+      if (h.y && h.m) return h.ym;
     } catch (e) {}
     return "";
   }
@@ -660,7 +657,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
           p = !!(o.shift || o.rest || o.cs || o.muk);
         let l = !1;
         try {
-          l = !!(KIVO.bus.read("staff.locks@1") || {})[r + "-" + i];
+          l = !!(KIVO.bus.read("staff.locks@1") || {})[KIVO.BassamCal.gYm(r, i)];
         } catch (t) {}
         const d = [o.shift ? "الوردية" : "", o.rest ? "أيام الراحة" : "", o.cs ? "رمز النداء" : "", o.muk ? "التكليف" : ""].filter(Boolean);
         return {
@@ -674,21 +671,9 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
           impSchedOn: p,
           impSchedYear: String(r),
           impSchedMonth: String(i),
-          impYearOpts: [a.y - 1, a.y, a.y + 1].map((t) => ({ v: String(t), lbl: t + " هـ" })),
-          impMonthOpts: [
-            "محرم",
-            "صفر",
-            "ربيع الأول",
-            "ربيع الآخر",
-            "جمادى الأولى",
-            "جمادى الآخرة",
-            "رجب",
-            "شعبان",
-            "رمضان",
-            "شوال",
-            "ذو القعدة",
-            "ذو الحجة",
-          ].map((t, e) => ({ v: String(e + 1), lbl: t + (a.m === e + 1 && a.y === r ? " (الجاري)" : "") })),
+          impYearOpts: [a.y - 1, a.y, a.y + 1].map((t) => ({ v: String(t), lbl: String(t) })),   /* V7 · 53 تقويم: السنةُ ميلادية */
+          impMonthOpts: KIVO.BassamCal.G_MONTHS.slice(   /* V7 · 53 تقويم: أشهرُ الجدول ميلادية */
+          ).map((t, e) => ({ v: String(e + 1), lbl: t + (a.m === e + 1 && a.y === r ? " (الجاري)" : "") })),
           impSetY: (e) => {
             (t.setMonth(parseInt(e.target.value, 10) || 0, t.month().m), tick(c));
           },
