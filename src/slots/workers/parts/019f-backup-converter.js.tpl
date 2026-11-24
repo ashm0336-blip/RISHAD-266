@@ -219,7 +219,9 @@ async function rsConvertBackup(env, A, file, opt) {
   if (!isObj(reference)) rsBCFail('reference-required');
   var input = Object.create(null),
     keys = Object.create(null),
-    domains = file.domains === undefined ? {} : rsBCClone(file.domains);
+    domains = file.domains === undefined ? {} : rsBCClone(file.domains),
+    /* V7 · 53 تقويم (ف٧ · ق12): التحويلُ قبل كل بناءٍ وتحقّق — صفوفُ نسخةٍ حديثة صُدِّرت قبل 0014 (hijri_*) هنا، ووثائقُ KV القديمة قبل bc.convert.* أدناه */
+    calT = (env && env.__calT) || calToday(Date.now()).k, calRep = calMigDomains(domains, calMigRep());
   @@SYS:bc.domains.dstats|pre="rsShape(domains, ["|empty="rsShape(domains, ["@@'notifications', @@SYS:bc.domains.systems|post="'operations']);"|empty="'operations']);"@@
   Object.keys(file.data).forEach(function (k) {
     if (k === 'bassam_active_dept_v1') {
@@ -330,6 +332,7 @@ async function rsConvertBackup(env, A, file, opt) {
     });
     rsBCManifest(file.manifest, sourceScope, sourceKeys, domains, scope.kind === 'dept' ? [source] : deptIds);
   }
+  calMigLegacyKV(keys, calT, calRep);   /* V7 · 53 تقويم: العهدة · الاسترشاد · المضبوطات · الجائزة · الإحصائيات (KV هجرية) ⇐ ميلادية قبل تحويلها صفوفاً وتحقّقها */
 @@SYS:bc.convert.irshad@@  for(var def of bdDefinitions()) {
     if(domains[def.name]!==undefined) {
       if(!Array.isArray(domains[def.name]))rsBCFail(def.name+'-shape');
@@ -462,7 +465,7 @@ async function rsConvertBackup(env, A, file, opt) {
   });
   /* V7 · 53 تقويم (ف٧ · ق12): نسخةٌ قديمة أو ملفُّ Production (هجري) ⇐ ميلاديةٌ بالقاعدة نفسِها التي يرحّل بها 0014 — قبل ترميز المواردِ التشغيلية صفوفاً (opConvertBackupBoundary) والتخطيطِ والحفظ (calMigBackup، 019v1).
      النسخةُ الميلادية تعود كما هي، والمختلطةُ تُرفض باسم مفتاحها. T = يومُ بدء الاستيراد (019g env.__calT) أو اليوم */
-  calMigBackup(keys, domains, summary, (env && env.__calT) || calToday(Date.now()).k);
+  calMigBackup(keys, domains, summary, calT, calRep);
   opConvertBackupBoundary(keys,domains,deptIds,scope,source,modern?file.manifest.version:0,summary);
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
   // its existing hash, final-owner and session policy for the eventual commit.

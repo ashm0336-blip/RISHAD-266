@@ -282,8 +282,8 @@ function calMigDstats(data, ctx) {
   return out;
 }
 /* نسخةٌ (استيرادٌ أو استعادة — 019f rsConvertBackup): كلُّ موردٍ تقويميٍّ في keys وكلُّ صفٍّ علائقيٍّ في domains ⇐ ميلادي بالقاعدة نفسِها (ق12) */
-function calMigBackup(keys, domains, summary, T) {
-  var rep = calMigRep(), ctx = { T: T, rep: rep }, now = Date.now();
+function calMigBackup(keys, domains, summary, T, rep0) {
+  var rep = rep0 || calMigRep(), ctx = { T: T, rep: rep }, now = Date.now();
   Object.keys(keys || {}).forEach(function (k) {
     var r = resName(k);
     if (calMigIs(r)) keys[k] = calMigText(r, keys[k], ctx);
@@ -297,6 +297,46 @@ function calMigBackup(keys, domains, summary, T) {
   });
   if (domains && domains.dailyStats && isObj(domains.dailyStats.data)) domains.dailyStats.data = calMigDstats(domains.dailyStats.data, ctx);
   if (summary) summary.calendar = calMigSummaryText(rep);
+  return rep;
+}
+/* صفوفُ مجالاتٍ علائقية في نسخةٍ حديثة صُدِّرت قبل 0014: أسماءُ أعمدتها hijri_* ⇐ greg_* (ق2) وقيمُها ⇐ ميلادية — قبل التحقّق من شكلها */
+function calMigDomains(domains, rep) {
+  ['irshad', 'custody', 'seized', 'awards'].forEach(function (n) {
+    (Array.isArray(domains && domains[n]) ? domains[n] : []).forEach(function (dom) {
+      if (!dom || !isObj(dom.rows)) return;
+      Object.keys(dom.rows).forEach(function (t) {
+        (Array.isArray(dom.rows[t]) ? dom.rows[t] : []).forEach(function (row, i) {
+          if (!isObj(row)) return;
+          calMigRow(row, rep, n + '/' + t + '[' + i + ']');
+          Object.keys(row).forEach(function (c) { var m = /^hijri_(year|month|day|date)$/.exec(c); if (m && !ocOwn(row, 'greg_' + m[1])) { row['greg_' + m[1]] = row[c]; delete row[c]; } });
+        });
+      });
+    });
+  });
+  if (domains && domains.dailyStats && isObj(domains.dailyStats.data)) domains.dailyStats.data = calMigDstats(domains.dailyStats.data, { T: calToday(Date.now()).k, rep: rep });
+  return rep;
+}
+/* وثائقُ KV القديمة للمجالات العلائقية (بشكل Production — قبل جداولها): كلُّ {y,m,d} بسنةٍ هجرية ⇐ ميلادي (الشهرُ بلا يوم ⇐ شهرُ يومه الأول · يومُ 0 يبقى، ق10)
+   وكلُّ نصٍّ هو مفتاحُ يومٍ هجري ⇐ يومُه الميلادي. الإحصائياتُ بقاعدة أقفالها (ق3). تُحوَّل قبل bc.convert.* فيتحقّق المحوِّلُ من قيمٍ ميلادية */
+var CAL_MIG_KV = ['bassam_custody_v1', 'bassam_irshad_v1', 'bassam_irshad_retro_v1', 'bassam_seized_v1', 'bassam_seized_retro_v1', 'bassam_award_v1'];
+function calMigWalk(v, rep, path) {
+  if (Array.isArray(v)) { for (var i = 0; i < v.length; i++) { if (typeof v[i] === 'string' && calMigH(v[i]) && calGParse(v[i]).kind === 'day') v[i] = calMigDay(v[i], path + '[' + i + ']'); else calMigWalk(v[i], rep, path + '[' + i + ']'); } return; }
+  if (!isObj(v)) return;
+  if (v.y != null && v.m != null && calYearCal(+v.y) === 'h' && +v.m >= 1 && +v.m <= 12) {
+    var d = v.d == null || v.d === '' ? null : +v.d, s = calHtoGScope({ y: +v.y, m: +v.m, d: d }); if (!s) throw calMigError('calendar-unmapped', path);
+    v.y = typeof v.y === 'string' ? String(s[0].y) : s[0].y; v.m = typeof v.m === 'string' ? String(s[0].m) : s[0].m; if (d != null) v.d = typeof v.d === 'string' ? String(s[0].d) : s[0].d;
+    if (rep) { rep.days++; if (d === 0) rep.custodyDay0++; }
+  }
+  Object.keys(v).forEach(function (k) { var x = v[k]; if (typeof x === 'string' && calMigH(x) && calGParse(x).kind === 'day') v[k] = calMigDay(x, path + '.' + k); else if (x && typeof x === 'object') calMigWalk(x, rep, path + '.' + k); });
+}
+function calMigLegacyKV(keys, T, rep) {
+  Object.keys(keys || {}).forEach(function (k) {
+    var r = resName(k), raw = keys[k]; if (typeof raw !== 'string') return;
+    if (r === 'bassam_dstats_v1') { var ds = parseJson(raw, null); if (isObj(ds)) { var o = calMigDstats(ds, { T: T, rep: rep }); if (JSON.stringify(o) !== raw) keys[k] = JSON.stringify(o); } return; }
+    if (CAL_MIG_KV.indexOf(r) < 0) return;
+    var v = parseJson(raw, null); if (v === null || typeof v !== 'object') return;
+    var before = JSON.stringify(v); calMigWalk(v, rep, k); var after = JSON.stringify(v); if (after !== before) keys[k] = after;
+  });
   return rep;
 }
 /* سطرُ الملخّص قبل التأكيد (التصميم §4): «حُوِّل إلى الميلادي: n يوماً · m شهراً · k تعارضاً» — الأرقامُ والأسماءُ للواجهة (548) */
