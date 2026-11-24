@@ -635,7 +635,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     if (!t) return "";
     const e = this._covKind || "gates";
     if ("marks" === e) return t.label || t.kind || "معلم";
-    if ("zones" === e) return t.code || t.name || "مصلى";
+    if ("zones" === e) return this._zc(t.code) || t.name || "مصلى";
     const s = KIVO.BassamLeaf,
       n = this._covCurGates(),
       i = t.pOf ? s.leafLabel(s.parentOf(n, t) || t, t) : t.num || "";
@@ -1889,7 +1889,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       if (!t) return void this.bsToast("اختر المنطقة أولاً — قائمة الأدوار / المستويات تتبع المنطقة المختارة");
       if (n.some((e) => this._optName(e) === s && ((e && e.r) || "") === t))
         return void this.bsToast("يوجد خيار بهذا الاسم في هذه المنطقة");
-      const e = (this.state.zDdNewC || "").trim();
+      const e = this._codeOk(this.state.zDdNewC);
       return e
         ? (this.setState({ zDdNew: "", zDdNewC: "" }),
           void this.saveZoneOpts({ ...(this.state.zoneOpts || {}), level: [...n, { n: s, c: e, r: t }] }))
@@ -1898,7 +1898,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     if ("zcat" !== t && n.some((t) => this._optName(t) === s)) this.bsToast("يوجد خيار بهذا الاسم");
     else {
       if (e) {
-        const e = (this.state.zDdNewC || "").trim();
+        const e = this._codeOk(this.state.zDdNewC);
         return e
           ? ("region" === t || "ztype" === t) && n.some((t) => this._optCode(t) === e)
             ? void this.bsToast("هذا الرمز مستخدم لخيار آخر")
@@ -2003,7 +2003,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
       );
     let d = "";
     if (e) {
-      if (((d = (this.state.zDdEditC || "").trim()), !d)) return void this.bsToast("اكتب الرمز — حرف أو رقم يميّز هذا الخيار");
+      if (((d = this._codeOk(this.state.zDdEditC)), !d)) return void this.bsToast("اكتب الرمز — حرف أو رقم يميّز هذا الخيار");
       if (("region" === t.key || "ztype" === t.key) && n.some((t, e) => e !== i && this._optCode(t) === d))
         return void this.bsToast("هذا الرمز مستخدم لخيار آخر");
     }
@@ -2157,7 +2157,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         const e = String(null == t.lsz ? "" : t.lsz).trim();
         if ("" === e) return null;
         let s = parseFloat(e);
-        return isNaN(s) ? null : Math.min(40, Math.max(4, Math.round(10 * s) / 10));
+        return isNaN(s) ? null : Math.min(40, Math.max(0.5, Math.round(10 * s) / 10));   /* V7 · 53 (ملحق 6 · 4): حجمُ خط رمز المصلى ينزل إلى 0.5 */
       })();
     (this._updRound((o) => {
       const r = (o.zones || [])[t.i];
@@ -7580,7 +7580,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           ? (_.zones || [])
               .map((t, e) => {
                 const n = s.dsZoneTmp && s.dsZoneTmp.i === e ? { ...t, ...s.dsZoneTmp.z } : t,
-                  i = n.code || "";
+                  i = n.code ? this._zc(n.code) : "",   /* V7 · 53 (ملحق 6 · 2): الملصقُ بفاصل « / » — والرمزُ المخزَّن كما هو */
+                  iL = KIVO.zoneCodeLen(n.code);
                 if (!bt || n.hideLabel || !i) return null;
                 const o = this._dsPtsHs(n.d).pts;
                 if (!o || o.length < 3) return null;
@@ -7632,9 +7633,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   z = w ? w.w : c,
                   E = w ? w.h : g,
                   M = w ? w.deg : 0;
-                let O = Math.min(0.62 * E, (0.92 * z) / Math.max(1, 0.6 * i.length));
+                let O = Math.min(0.62 * E, (0.92 * z) / Math.max(1, 0.6 * iL));
                 ((O = Math.min(O, 17)), v && this._rotLab && null != this._rotLab.fs && (O = this._rotLab.fs));
-                for (let t = 0; t < 26 && O > 1.2 && !this._boxFits(S, A, O * i.length * 0.6, 0.78 * O, M, o); t++) O *= 0.88;
+                for (let t = 0; t < 26 && O > 1.2 && !this._boxFits(S, A, O * iL * 0.6, 0.78 * O, M, o); t++) O *= 0.88;
                 return (
                   O < 1.2 && (O = 1.2),
                   v && this._rotLab && null == this._rotLab.fs && (this._rotLab.fs = O),
@@ -8840,7 +8841,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           },
           W = (e) => {
             if ("marks" === d) return e.label || e.kind || "معلم";
-            if ("zones" === d) return (e.code || e.name || "مصلى") + (e.zcat ? " — " + e.zcat : "");
+            if ("zones" === d) return (this._zc(e.code) || e.name || "مصلى") + (e.zcat ? " — " + e.zcat : "");
             const s = !!e.pOf,
               n = s ? t.leafLabel(t.parentOf(pe, e) || e, e) : e.num || "",
               i = (!s && (e.label || e.name)) || "";
@@ -10116,8 +10117,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           edit: () => {
             Q && this.openZoneEditor(e);
           },
+          zcode: t.code || "",
           name:
-            (t.code || "مصلى") +
+            (this._zc(t.code) || "مصلى") +
             " — " +
             ([String(t.ztype || "").trim(), String(t.zcat || "").trim()].filter(Boolean).join(" · ") ||
               ((s = t.cat), "men" === s ? "مصلى رجال" : "women" === s ? "مصلى نساء" : "service" === s ? "منطقة خدمات" : "مصلى")),
@@ -13556,7 +13558,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           ((t[o] = t[o] ? t[o] + " · " + n : n), e[o] || (e[o] = i));
         };
       ((("dist" === Te && this.bsLensOn("zones")) || "zones" === Te ? de : []).forEach((t, e) =>
-        (t.emp || []).forEach((n) => s(n, t.code || "مصلى", { t: "zone", i: e })),
+        (t.emp || []).forEach((n) => s(n, this._zc(t.code) || "مصلى", { t: "zone", i: e })),
       ),
         (("dist" === Te && this.bsLensOn("gates")) || "gates" === Te ? pe : []).forEach((t, e) =>
           (t.emp || []).forEach((n) => s(n, t.label || t.name || "باب", { t: "gate", i: e })),
@@ -13637,6 +13639,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         t.meta,
         t.code,
         t.type,
+        t.zcode || "",   /* V7 · 53 (ملحق 6 · 2): الاسمُ بفاصل « / » والبحثُ بالرمز المخزَّن أيضاً */
       ]));
     const Gn = s.regOpen || {},
       Zn = [],
@@ -14408,7 +14411,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
             n = (t.ser || "").trim() || "00";
           return {
             zeTitle: t.isNew ? "بيانات المصلى الجديد" : "تعديل بيانات المصلى",
-            zeCodePreview: s.zEdit ? this._composeZoneCode(t.region, t.level, n, null, t.ztype) : "",
+            zeCodePreview: s.zEdit ? this._zc(this._composeZoneCode(t.region, t.level, n, null, t.ztype)) : "",
             zeSer: null != t.ser ? t.ser : "",
             onZeSer: (t) => this.setState({ zEdit: { ...this.state.zEdit, ser: t.target.value.replace(/[^0-9]/g, "").slice(0, 3) } }),
             onZeKey: (t) => {
@@ -14545,7 +14548,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                                 flexShrink: 0,
                               },
                             },
-                            "#" + t,
+                            "/\u2009" + t,   /* V7 · 53 (ملحق 6 · 2): رمزُ الخيار جزءٌ من رمز المصلى — يسبقه « / » لا # */
                           ),
                         v = f.map((s) => {
                           const r = s.o,
@@ -15214,7 +15217,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                         e(
                           "div",
                           { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
-                          o("lsz", "حجم الخط (4–40)", 4, 40, 0.5),
+                          o("lsz", "حجم الخط (0.5–40)", 0.5, 40, 0.5),
                           o("lang", "الدوران (°)", -360, 360, 1),
                         ),
                         e(
@@ -15555,12 +15558,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                   ? ("" !== (t.num || "") ? "#" + t.num + " — " : "") + (t.label || t.name || "باب")
                   : "marks" === l
                     ? t.label || t.name || "معلم"
-                    : (t.code ? t.code + " — " : "") + (t.name || "مصلى"),
+                    : (t.code ? this._zc(t.code) + " — " : "") + (t.name || "مصلى"),
               n = "zones" === l ? o[t.cat] || t.ztype || "مصلى" : t.kind || "بلا نوع",
               i = "gates" === l ? !!t.closed : !!t.off;
             return { i: e, el: t, name: s, meta: n, dead: i, deadTxt: i ? ("gates" === l ? "مغلق" : "معطّل") : "" };
           });
-          n && (h = KIVO.BassamFind.filter(n, h, (t) => [t.name, t.meta]));
+          n && (h = KIVO.BassamFind.filter(n, h, (t) => [t.name, t.meta, (t.el && t.el.code) || ""]));
           const c = h.map((t) => {
               const e = ((t) => {
                   const e = parseInt(String(null == t ? "" : t).trim(), 10);
@@ -15984,7 +15987,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     flexShrink: 0,
                   },
                 },
-                "#" + t,
+                "/\u2009" + t,
               ),
             o = (t) =>
               e("span", {
@@ -18198,7 +18201,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               return "gate" === t.t
                 ? (null == e.num ? "" : String(e.num).trim()) || e.label || "باب"
                 : "zone" === t.t
-                  ? e.code || e.name || "مصلى"
+                  ? this._zc(e.code) || e.name || "مصلى"
                   : e.label || e.kind || "معلم";
             },
             S = d.map((t) => {
@@ -18407,7 +18410,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                 !("dist" === s.lens && !this.bsLensOn("dist")) &&
                 !("density" === s.lens && !this.bsLensOn("dens")),
               selLabel: n
-                ? n.code || "مصلى"
+                ? this._zc(n.code) || "مصلى"
                 : i
                   ? (() => {
                       const t = KIVO.BassamLeaf,
@@ -19528,7 +19531,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
                     o(b, g),
                     {
                       accent: b ? b.S.c : u,
-                      code: t.code || "—",
+                      code: this._zc(t.code) || "—",
                       title: t.ztype || "مصلى",
                       status: b
                         ? { text: b.S.t, tone: "closed" === b.st ? "off" : "open" === b.st ? "ok" : "warn" }

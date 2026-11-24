@@ -5,6 +5,25 @@
    إلا بتعديل المنهج نفسِه — وحينها يسري على كل وحداته معاً (وهو الغرض). */
 (function () {
   var T = {};
+  /* V7 · 53 (ملحق 6 · 2): رمزُ المصلى يُخزَّن بشرطاتٍ بين أجزائه (منطقة-دور-نوع-تسلسل) ويبقى كذلك هويّةً للربط بين الخطة والجولات والاستيراد؛
+     العرضُ وحده يضع « / » (ZSEP: مسافةٌ رفيعة · / · مسافةٌ رفيعة). الشرطةُ التي تبدأ الرمزَ أو تسبقها شرطةٌ علامةُ سالبٍ لا فاصل (دور -1).
+     طبقةُ الأرقام العربية (120) لا تقطع الكلمةَ عند المسافة الرفيعة وتجمع الأرقامَ عبر ZSEP، فيبقى الرمزُ المعروض معرّفاً واحداً. */
+  var ZSEP = "\u2009/\u2009";
+  KIVO.zoneCode = function (t) {
+    var s = String(null == t ? "" : t);
+    return /[^-]-/.test(s) ? s.replace(/([^-])-/g, "$1" + ZSEP) : s;
+  };
+  KIVO.zoneCode.SEP = ZSEP;
+  /* طولُ ملصق الخريطة بالمحارف: الفاصلُ المعروض أعرضُ من الشرطة بنصف محرف */
+  KIVO.zoneCodeLen = function (t) {
+    var s = String(null == t ? "" : t);
+    return s.length + 0.5 * (s.match(/[^-]-/g) || []).length;
+  };
+  /* البحث يقبل الكتابتين: الرمزُ المخزَّن (بالشرطات) وما يُعرض (« / » بمسافاتٍ أو بدونها) */
+  KIVO.zoneCodeFind = function (t) {
+    var s = String(null == t ? "" : t);
+    return !/[^-]-/.test(s) ? [] : [KIVO.zoneCode(s), s.replace(/([^-])-/g, "$1/"), s.replace(/([^-])-/g, "$1 / ")];
+  };
   /* ── admin · award · daily · dreport · employees · irshad · plan · profile · seized · staff · tasks (1) ── */
   T["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks"] = function (B) {
     return class extends B {
@@ -488,10 +507,17 @@
         return e && e.eid ? String(e.eid) : t;
       }
       _codeSan(t) {
-        return String(null == t ? "" : t)
+        const s = String(null == t ? "" : t)
           .replace(/[٠-٩]/g, (t) => String.fromCharCode(t.charCodeAt(0) - 1584))
-          .replace(/[۰-۹]/g, (t) => String.fromCharCode(t.charCodeAt(0) - 1728))
-          .replace(/[^0-9A-Za-zء-غف-يٱ-ۓ]/g, "");
+          .replace(/[۰-۹]/g, (t) => String.fromCharCode(t.charCodeAt(0) - 1728));
+        /* V7 · 53 (ملحق 6 · 2): سالبٌ في أوّل الرمز وحده (دور -1) — في وسطه يُحذف؛ والسالبُ وحده لا يُحفظ (_codeOk) */
+        return (/^\s*[-−‐–]/.test(s) ? "-" : "") + s.replace(/[^0-9A-Za-zء-غف-يٱ-ۓ]/g, "");
+      }
+      _codeOk(t) {
+        return String(null == t ? "" : t).trim().replace(/^-$/, "");
+      }
+      _zc(t) {
+        return KIVO.zoneCode(t);
       }
       _empIdx() {
         let t = null;
