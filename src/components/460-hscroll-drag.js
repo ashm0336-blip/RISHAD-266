@@ -85,3 +85,44 @@
     e.preventDefault();
   }, { passive: false, capture: true });
 })();
+/* V7 · د7 (١٠): «إلى الحالي» — مساعدٌ واحد لكل أشرطة الأشهر والأيام (المتابعة اليومية · التقرير اليومي · الإحصائيات · الخطة · الجدول الشهري ·
+   المهام · الإرشاد · المضبوطات · الرصد · الموظفون). الكرتُ الحالي يحمل في المصدر data-strip-cur="true" (الشهرُ الحالي isCurrent · اليومُ الحالي
+   isToday)، فيُمرَّر الشريطُ الذي يحويه أفقياً حتى يتوسّطه — على كل الأحجام، بلا تمريرٍ رأسيّ للصفحة. لا يعاند المستخدم: يُعاد التمرير فقط حين
+   يتغيّر الكرتُ الحالي نفسُه (شهرٌ أو سنةٌ أخرى · رسمٌ جديد) أو يتغيّر عرضُ الشريط (تدوير الجهاز · تغيّر الحجم). تصميمُ الكروت الجديد يكفيه أن يُبقي السمة. */
+(function(){
+  var SEEN = typeof WeakMap === "function" ? new WeakMap() : null, T = 0;
+  function scroller(el){
+    for (var n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+      var ox = getComputedStyle(n).overflowX;
+      if ((ox === "auto" || ox === "scroll") && n.scrollWidth - n.clientWidth > 4) return n;
+    }
+    return null;
+  }
+  function center(sc, el){
+    var a = sc.getBoundingClientRect(), b = el.getBoundingClientRect();
+    if (!a.width || !b.width) return false;
+    var dx = (b.left + b.width / 2) - (a.left + a.width / 2);
+    if (Math.abs(dx) > 1) sc.scrollLeft += dx;   /* فرقٌ فيزيائيّ — يصحّ في RTL (scrollLeft سالبٌ هناك) */
+    return true;
+  }
+  function run(){
+    T = 0;
+    try {
+      var L = document.querySelectorAll('[data-strip-cur="true"]');
+      for (var i = 0; i < L.length; i++) {
+        var el = L[i], sc = scroller(el); if (!sc) continue;
+        var w = sc.clientWidth, was = SEEN && SEEN.get(sc);
+        if (was && was.el === el && was.w === w) continue;
+        if (center(sc, el) && SEEN) SEEN.set(sc, { el: el, w: w });
+      }
+    } catch (e) { /* مساعدُ عرضٍ — لا يكسر الصفحة */ }
+  }
+  function soon(){ if (!T) T = setTimeout(function(){ KIVO.__bsAfterQuiet ? KIVO.__bsAfterQuiet(run) : run(); }, 60); }
+  KIVO.BassamStripCur = { run: run, soon: soon };
+  function start(){
+    try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-strip-cur"] }); } catch (e) {}
+    try { KIVO.__bsTick.add(soon, "geo"); } catch (e) { window.addEventListener("resize", soon); }   /* تحجيمٌ · تدويرٌ · نهايةُ حركة الشريط — المجدولُ الموحّد (140) */
+    soon();
+  }
+  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+})();

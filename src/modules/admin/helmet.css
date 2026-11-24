@@ -11,6 +11,9 @@ a{color:var(--brand-fg);text-decoration:none}a:hover{color:var(--brand-text)}
 .ov7-n{margin:0 0 8px;font-size:11px;line-height:1.8;color:var(--text-secondary)}
 .ov7 .ac{margin-top:8px}
 .ov7 .ac button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+/* V7 · د7: الزرُّ المعطّل لا يتلوّن عند المرور ولا يرتفع — شكلُ تعطيلٍ واضح، وسطرُ السبب تحته */
+.ov7 .ac button:disabled,.ov7 .ac button:disabled:hover{opacity:.45;cursor:not-allowed;transform:none;border-style:dashed;border-color:var(--border-default);color:var(--text-faint);background:var(--bg-surface-2)}.ov7 .ac button:disabled i{background:var(--bg-surface-3);color:var(--text-faint)}
+.ov7-why{margin:6px 0 0;font-size:11px;font-weight:700;color:var(--warning-text);display:flex;gap:10px;flex-wrap:wrap;align-items:center}.ov7-why a{color:var(--brand-text);cursor:pointer;font-weight:700}
 .dh .ac{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
 .dh .ac button,.dh .ac label.b{height:32px;padding:0 12px 0 6px;border-radius:9px;border:1px solid var(--border-default);background:var(--bg-surface);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;color:var(--text-secondary);cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s;box-sizing:border-box;margin:0}
 .dh .ac i{width:22px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg-surface-3);color:var(--text-secondary);font-style:normal}

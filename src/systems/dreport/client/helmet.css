@@ -7,6 +7,11 @@ body{margin:0;background:var(--bg-app);font-family:'Cairo',-apple-system,sans-se
 @media (pointer: coarse){.dr-trbox button{min-height:36px}}
 /* صف مؤشرات اليوم: 4 متساوية على الكمبيوتر — وتنكسر 2×2 ثم عموداً، بلا 3+1 ولا تمرير */
 .rp-kpis{gap:12px;margin-bottom:14px}
+/* V7 · د7 (١٠): صفُّ الوردية وقيادتها يلتفّ فعلاً (قاعدةُ .bs-hbar العامة nowrap!important كانت تغلب التفافَه فيحتاج سحباً أفقياً) — وعلى الجوال
+   حقلا «رئيس الوردية» و«نائبه» سطران كاملا العرض بلا سحب */
+.bs-hbar[data-dr-head]{flex-wrap:wrap!important;row-gap:10px}
+.bs-hbar[data-dr-head]>*{flex-shrink:1;min-width:0}
+@media (max-width:600px){.bs-hbar[data-dr-head]>[data-dr-lead]{flex:1 1 100%!important;min-width:0!important}}
 
 
 </style>

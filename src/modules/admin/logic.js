@@ -2721,6 +2721,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         )
       : this.bsToast("لم يُعثر على سجل الموظف — أعد التفعيل من صفحة الموظفين");
   }
+  /* V7 · د7 (٩): نوعُ الوحدة في نافذة الجرد ورسائل الحذف — «قسم» أو «إدارة» (من جرد الخادم department.kind، وقبله من سجل الوحدة) */
+  _deptKindW(kind) {
+    const s = kind === "قسم";
+    return { a: s ? "قسم" : "إدارة", the: s ? "القسم" : "الإدارة", empty: s ? "القسم خالٍ" : "الإدارة خالية", its: s ? "تعريفه" : "تعريفها", has: s ? "يحتوي القسم" : "تحتوي الإدارة", gone: s ? "لم يُحذف القسم" : "لم تُحذف الإدارة" };
+  }
   async deptDel(target) {
     if (!target || !target.id || this._deptDeleteBusy || this._wpBusy || this._wpUncertain) return;
     const actor = this._wpActor(); if (!actor) return this.bsToast("حذف الإدارة يتطلب جلسة مسؤول المنصة الحالية", "warn");
@@ -2728,28 +2733,29 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (pending && pending.uncertain && pending.dept !== target.id) return this.bsToast("لم يُحسم طلب الحذف السابق؛ أعد محاولته نفسه قبل اختيار إدارة أخرى", "warn");
     if (pending && pending.dept === target.id && pending.actor === actor && pending.confirmed && !pending.needsReview) return this._deptDelGo(target);
     let execute = false;
-    this._deptDeleteBusy = true; this.setState({ deptMsg: "جارٍ جرد بيانات الإدارة وحساباتها على الخادم…" });
+    this._deptDeleteBusy = true; let W = this._deptKindW(target.kind); this.setState({ deptMsg: "جارٍ جرد بيانات " + W.the + " وحساباتها على الخادم…" });
     try {
       const result = await this._wpCall(target.id, null, actor, "delete");
-      if (!result.ok) { this.bsToast("تعذر جرد الإدارة أو رفض الخادم حذفها؛ لم تُنفّذ أي كتابة", "warn"); return; }
+      if (!result.ok) { this.bsToast("تعذر جرد " + W.the + " أو رفض الخادم حذفها؛ لم تُنفّذ أي كتابة", "warn"); return; }
       const data = result.body, base = data.base, natural = value => Number.isSafeInteger(value) && value >= 0,
         globalKeys = ["bassam_depts_v1", "bassam_auth_users_v1", "bassam_perms_v1"];
       if (data.kind !== "delete" || data.dept !== target.id || !data.department || data.department.id !== target.id || typeof data.department.name !== "string" || !base || !natural(base.epoch) || !natural(base.custody) || !base.kv || typeof base.kv !== "object" || Array.isArray(base.kv) || globalKeys.some(key => !natural(base.kv[key])) || Object.entries(base.kv).some(([key, value]) => (!key.startsWith("bsdept:" + target.id + ":") && !globalKeys.includes(key)) || !natural(value)) || !this._businessBaseValid(base) || !base.notifications || ["rev", "configRev", "broadcastRev"].some(key => !natural(base.notifications[key])) || !data.counts || ["keys", "accounts", "custody", "notifications", "irshad", "seized", "awards"].some(key => !natural(data.counts[key]))) {
-        this.bsToast("وصل جرد ناقص من الخادم؛ لم يُسمح بحذف الإدارة", "warn"); return;
+        this.bsToast("وصل جرد ناقص من الخادم؛ لم يُسمح بحذف " + W.the, "warn"); return;
       }
       /* F01: إدارةٌ لها أقسام لا تُحذف — يسمّيها جردُ الخادم ويرفض الحذفَ نفسَه (dept-has-sections) */
       if (Array.isArray(data.sections) && data.sections.length) { this.bsToast("«" + data.department.name + "» لها أقسام (" + data.sections.map(x => x.name).join("، ") + ") — احذفها أولاً؛ لم تُنفّذ أي كتابة", "warn"); return; }
-      const draft = { dept: target.id, actor, data: JSON.parse(JSON.stringify(data)), ticket: null, uncertain: false, needsReview: false, confirmed: false };
+      W = this._deptKindW(data.department.kind);
+      const draft = { dept: target.id, actor, data: JSON.parse(JSON.stringify(data)), ticket: null, uncertain: false, needsReview: false, confirmed: false, W };
       this._deptDeleteDraft = draft;
       const counts = data.counts, populated = counts.keys + counts.accounts + counts.custody + counts.notifications + counts.irshad + counts.seized + counts.awards > 0,
         name = data.department.name;
       if (populated) {
-        const accepted = await KIVO.bsConfirm({ title: "حذف إدارة «" + name + "»", msg: "جرد الخادم: " + counts.keys + " مورد بيانات، " + counts.accounts + " حساب إدارة/موظف، " + counts.custody + " سجل عهدة، " + counts.notifications + " تنبيه، " + counts.irshad + " سجل استرشاد، "+counts.seized+" من بيانات المضبوطات، "+counts.awards+" من بيانات التكريم. سيُحذف تعريف الإدارة وحساباتها وبياناتها ومراجع صورها نهائياً. حسابات مسؤول المنصة والإدارات العامة والإدارات الأخرى محفوظة. صدّر نسخة احتياطية قبل الحذف إن احتجتها.", ok: "احذف الإدارة وكل بياناتها", danger: true, typed: name });
+        const accepted = await KIVO.bsConfirm({ title: "حذف " + W.a + " «" + name + "»", msg: "جرد الخادم: " + counts.keys + " مورد بيانات، " + counts.accounts + " حساب إدارة/موظف، " + counts.custody + " سجل عهدة، " + counts.notifications + " تنبيه، " + counts.irshad + " سجل استرشاد، "+counts.seized+" من بيانات المضبوطات، "+counts.awards+" من بيانات التكريم. سيُحذف تعريف " + W.the + " وحساباتها وبياناتها ومراجع صورها نهائياً. حسابات مسؤول المنصة والإدارات العامة والإدارات الأخرى محفوظة. صدّر نسخة احتياطية قبل الحذف إن احتجتها.", ok: "احذف " + W.the + " وكل بياناتها", danger: true, typed: name });
         if (!accepted || this._deptDeleteDraft !== draft || this._wpActor() !== actor) return;
         draft.confirmed = true; execute = true;
       } else {
         /* CORE-02: الإدارةُ الخالية تُؤكَّد بالحوار نفسه (KIVO.bsConfirm) بدل الضغطة الثانية خلال ٤ ثوانٍ */
-        const accepted = await KIVO.bsConfirm({ title: "حذف إدارة «" + name + "»", msg: "الإدارة خالية وفق جرد الخادم: لا بيانات ولا حسابات. سيُحذف تعريفها نهائياً.", ok: "احذف الإدارة", danger: true });
+        const accepted = await KIVO.bsConfirm({ title: "حذف " + W.a + " «" + name + "»", msg: W.empty + " وفق جرد الخادم: لا بيانات ولا حسابات. سيُحذف " + W.its + " نهائياً.", ok: "احذف " + W.the, danger: true });
         if (!accepted || this._deptDeleteDraft !== draft || this._wpActor() !== actor) return;
         draft.confirmed = true; execute = true;
       }
@@ -2759,6 +2765,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   async _deptDelGo(target) {
     const draft = this._deptDeleteDraft, actor = this._wpActor();
     if (this._deptDeleteBusy || !draft || draft.dept !== target.id || !draft.confirmed || draft.needsReview || draft.actor !== actor) return;
+    const W = draft.W || this._deptKindW(draft.data && draft.data.department && draft.data.department.kind);   /* V7 · د7 (٩) */
     if (!draft.ticket) {
       if (!window.crypto || !window.crypto.getRandomValues) return this.bsToast("تعذّر إعداد طلب حذف موثوق", "warn");
       const random = new Uint8Array(20); window.crypto.getRandomValues(random);
@@ -2774,7 +2781,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       const srv = KIVO.__BS_SRV;
       if (!result.ok) {
         draft.uncertain = ["network", "receipt", "server", "session"].includes(result.err); draft.needsReview = result.err === "conflict";
-        return this.bsToast(draft.needsReview ? "تغيّرت بيانات الإدارة؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "unknown-data" ? "تحتوي الإدارة على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ لم تُحذف الإدارة حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف الإدارة؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
+        return this.bsToast(draft.needsReview ? "تغيّرت بيانات " + W.the + "؛ اضغط الحذف مجدداً لمراجعة جرد جديد وتأكيده. لم يُنفّذ الطلب بهذه النسخة." : result.err === "reason" ? "يشترط الخادم سبباً؛ تأكيد الحذف محفوظ" : result.err === "unknown-data" ? W.has + " على " + (result.unknownCount > 0 ? KIVO.BassamCount(result.unknownCount, ["مُدخل واحد", "مُدخلان", "مُدخلَين", "مُدخلات", "مُدخلاً", "مُدخل"], "g") + " " : "") + "من البيانات لا تتعرّف عليها المنصة؛ " + W.gone + " حمايةً لسلامة البيانات، ولم يُحذف أي شيء. تواصل مع مسؤول المنصة لمراجعة هذه المدخلات." : result.err === "permission" ? "صلاحيتك لا تسمح بحذف " + W.the + "؛ لم يُعتمد تغيير" : "لم يصل تأكيد الحذف؛ أعد محاولة الطلب نفسه، لم يُعرض نجاح", "warn");
       }
       const receipt = result.body, natural = value => Number.isSafeInteger(value) && value >= 0;
       if (receipt.mode !== "dept-delete" || receipt.dept !== draft.dept || receipt.requestId !== draft.ticket.requestId || !natural(receipt.rev) || !receipt.revs || typeof receipt.revs !== "object" || Array.isArray(receipt.revs) || Object.values(receipt.revs).some(value => !natural(value)) || !receipt.counts || ["keys", "accounts", "custody", "notifications", "irshad", "seized", "awards"].some(key => !natural(receipt.counts[key]))) {
@@ -2783,9 +2790,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       try { if (srv && srv.mine) srv.mine(receipt.revs); } catch (_) {}   /* V7 · د6 (QA) · البند ٥: ما كتبه الحذفُ من فعلي — لا شريطَ «عدّله كاتب آخر» */
       if (this._wpActor() !== actor || this._deptDeleteDraft !== draft) return;
       this._deptDeleteDraft = null;
-      this.setState({ deptMsg: "حذف الخادم إدارة «" + draft.data.department.name + "» وحساباتها وبياناتها", tick: (this.state.tick || 0) + 1 });
+      this.setState({ deptMsg: "حذف الخادم " + W.a + " «" + draft.data.department.name + "» وحساباتها وبياناتها", tick: (this.state.tick || 0) + 1 });
       this._orgGoto(KIVO.BassamOrgRoute.ROOT, "overview", !0);   /* V7 · د6: الوحدةُ المحذوفة لا تبقى مختارةً في الشجرة */
-      this.bsAck("اعتمد الخادم حذف إدارة «" + draft.data.department.name + "» وحساباتها وبياناتها", "ok");
+      this.bsAck("اعتمد الخادم حذف " + W.a + " «" + draft.data.department.name + "» وحساباتها وبياناتها", "ok");
       try { if (srv && srv.resync) srv.resync(false); } catch (_) {}
     } finally { this._deptDeleteBusy = false; }
   }
