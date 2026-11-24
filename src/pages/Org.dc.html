@@ -565,8 +565,8 @@
           <div class="p44-keys" role="group" aria-label="أفعال {{s.n}}"><sc-for list="{{s.keys}}" as="x" hint-placeholder-count="4"><button type="button" class="p44-key" aria-pressed="{{x.on}}" onClick="{{x.flip}}">{{x.n}}<sc-if value="{{x.sens}}" hint-placeholder-val="{{ false }}"><span class="p44-sens">حسّاس</span></sc-if></button></sc-for></div>
           </sc-if>
         </li>
-        <!-- V7 · د7 (أ): كلُّ عدسةٍ مفعّلةٍ للوحدة صفٌّ تحت مضيفها بالمستويات نفسِها -->
-        <sc-if value="{{s.lzOn}}" hint-placeholder-val="{{ false }}"><li class="p44-lz"><ul class="p44-rows" aria-label="عدسات {{s.n}}">
+        <!-- V7 · د7 (أ): كلُّ عدسةٍ مفعّلةٍ للوحدة صفٌّ تحت مضيفها بالمستويات نفسِها (52 · قرار المالك ٣: تلميحُ «مخصّص» بلا أفعال) -->
+        <sc-if value="{{s.lzOn}}" hint-placeholder-val="{{ false }}"><li class="p44-lz" title="العدسةُ بلا صفٍّ في الدور تأخذ مستوى نظامها. لمنع عدسةٍ وحدها: «مخصّص» بلا أفعال."><small class="p44-mute">العدسةُ بلا صفٍّ تأخذ مستوى نظامها · لمنعها وحدها: «مخصّص» بلا أفعال</small><ul class="p44-rows" aria-label="عدسات {{s.n}}">
           <sc-for list="{{s.lz}}" as="z" hint-placeholder-count="6">
           <li class="p44-lrow" data-on="{{z.onTxt}}" data-sys="{{z.k}}" data-kind="lens">
             <span class="p44-f"><b>{{z.n}}</b><small>{{z.sub}}</small></span>
