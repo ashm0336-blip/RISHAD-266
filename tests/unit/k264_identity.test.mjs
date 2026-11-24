@@ -51,7 +51,7 @@ test('D-3: 409 session-changed ⇒ لا يُعاد إرسالُ الطابور �
     assert.ok(await until(() => S.saved.length === 1, 3000), 'حفظُ X الأول قُبل');
     /* انقطاع: تعديلُ X يبقى في الطابور */
     T.net.down = true; T.W.dispatchEvent(new Event('offline'));
-    T.set(K2, JSON.stringify({ [TODAY.year + '-1-1']: [['TEST_ONLY مهمة X']] }));
+    T.set(K2, JSON.stringify({ [TODAY.year + '-01-01']: [['TEST_ONLY مهمة X']] }));
     await sleep(400);
     assert.equal(T.W.KIVO.__BS_SRV.dirty(), true, 'التعديلُ معلَّق');
     /* في تبويبٍ آخر خرج X ودخل Y — الكوكي الآن لـY */

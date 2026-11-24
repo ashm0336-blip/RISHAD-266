@@ -119,7 +119,8 @@ export const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 export async function until(fn, ms = 6000, step = 50) { const t0 = Date.now(); while (Date.now() - t0 < ms) { let v; try { v = await fn(); } catch (e) { v = false; } if (v) return v; await sleep(step); } return false; }
 
 /* اليومُ الهجريّ للخادم (أم القرى · الرياض بمهلة ٣ ساعات) — كما يولّده المُثبِّت (tests/fixtures/gen_fixture.py) */
-export const TODAY = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return o; })();
+/* V7 · 53 تقويم: اليومُ التشغيليُّ الميلادي (الرياض − 3 ساعات) — كان أم القرى، والصفحاتُ ومفاتيحُها ميلاديةٌ الآن */
+export const TODAY = (() => { const f = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return o; })();
 let FX = null;
 export function fixture() {
   if (FX) return FX;
