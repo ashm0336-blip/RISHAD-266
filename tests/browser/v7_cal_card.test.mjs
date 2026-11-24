@@ -1,7 +1,7 @@
 /* V7 · 53 تقويم — كرتُ اليوم/الشهر/السنة المشترك (KIVO.BassamCalCard، src/i18n/385-calendar.js) في متصفحٍ حقيقي — iPhone 13 وسطح المكتب، فاتحاً وداكناً.
    المعيار: docs/handoff/day_card_design.md (قرارُ المالك · REVIEW 21) — كلُّ قاعدةٍ فيه مختبَرة هنا. TEST_ONLY.
    الصفحةُ تُبنى من ملفات المصدر نفسِها (الرموز 070/080 · React 010/020 · KIVO 005 · التقويم 380/385)، فلا خادمَ ولا بيانات. اليومُ المرجعي 2026-11-24.
-   ① المقاس: ارتفاع 36 · عرضٌ أدنى 28 · زوايا 5 — ولا يتغيّر بالمرور.
+   ① المقاس: ارتفاع 36 · عرضٌ أدنى 28 · زوايا 5 — والمرورُ يرفع الكرت 2px ويكبّره 6% (المرجعُ المرئي) بلا تغيير مقاسه في الشريط.
    ② الأسطر: حرفُ اليوم 7.5px/800 خافت (الجمعة والسبت بالذهبي) · الميلادي 12.5px/900 · الهجري 7.5px/600 خافت · 2px بين الأسطر · بهذا الترتيب من الأعلى.
    ③ الحالات: مغلق = --cal-lockb ورقمٌ بـ--cal-lock وقفلٌ في دائرة 11px بالزاوية العليا · مفتوح = إطارٌ ذهبيٌّ متقطّع 1.5px بلا قفل · اليوم = حلقةٌ ذهبية 2px ·
       المحدَّد = تدرّجٌ ذهبيٌّ ونصٌّ أبيض · القادم = شفافية 0.55 · لونان فقط للحالتين.
@@ -130,9 +130,13 @@ for (const [name, dev] of VIEWS) for (const theme of ['light', 'dark']) {
       assert.equal(R.mon[9].bStyle, 'dashed'); assert.equal(R.mon[11].when, 'future'); assert.equal(R.yr[0].state, 'closed'); assert.equal(R.yr[2].opacity, '0.55');
       /* المرورُ لا يغيّر المقاس */
       const before = by('2026-11-24').rect;
-      await page.hover('#day [data-cal-key="2026-11-24"]');
-      const after = await page.evaluate(() => { const r = document.querySelector('#day [data-cal-key="2026-11-24"]').getBoundingClientRect(); return { width: r.width, height: r.height }; });
-      assert.equal(after.height, before.height); assert.equal(after.width, before.width);
+      await page.hover('#day [data-cal-key="2026-11-24"]'); await page.waitForTimeout(300);   /* انتقالٌ 0.15 ث */
+      /* تفاعلُ المرور المعتمد: يرتفع 2px ويكبر 6% (تحويل) ومقاسُه في الشريط هو هو، ويعود عند الخروج */
+      const after = await page.evaluate(() => { const e = document.querySelector('#day [data-cal-key="2026-11-24"]'); return { width: e.offsetWidth, height: e.offsetHeight, tf: getComputedStyle(e).transform, z: getComputedStyle(e).zIndex }; });
+      assert.equal(after.height, Math.round(before.height)); assert.equal(after.width, Math.round(before.width));
+      assert.equal(after.tf, 'matrix(1.06, 0, 0, 1.06, 0, -2)'); assert.equal(after.z, '5');
+      await page.mouse.move(1, 1); await page.waitForTimeout(300);
+      assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#day [data-cal-key="2026-11-24"]')).transform), 'none');
       assert.ok(R.docW <= R.vw + 1, 'no horizontal page scroll (the strip scrolls inside itself)');
       await ctx.close();
     } finally { await browser.close(); }

@@ -277,7 +277,7 @@
     var sel = !!p.sel, now = st.when === 'now', future = st.when === 'future', openPast = !st.closed && st.when === 'past';
     var we = kind === 'day' && (C.gWeekday(k) === 5 || C.gWeekday(k) === 6);
     var style = assign({ position: 'relative', boxSizing: 'border-box', borderRadius: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: 2, lineHeight: 1, cursor: 'pointer', userSelect: 'none', textAlign: 'center', whiteSpace: 'nowrap',
+      gap: 2, lineHeight: 1, cursor: 'pointer', transition: 'transform .15s, box-shadow .15s', userSelect: 'none', textAlign: 'center', whiteSpace: 'nowrap',
       background: 'var(--cal-card)', border: '1px solid var(--cal-line)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-card)' }, p.style, BOX[kind]);
     var num = null;
     if (st.closed) { style.background = 'var(--cal-lockb)'; style.border = '1px solid color-mix(in srgb, var(--cal-lock) 35%, transparent)'; num = 'var(--cal-lock)'; }
@@ -301,7 +301,10 @@
       h('svg', { viewBox: '0 0 24 24', width: 6, height: 6, fill: 'none', stroke: 'var(--cal-lock)', strokeWidth: 3 },
         h('rect', { x: 5, y: 11, width: 14, height: 10, rx: 2 }), h('path', { d: 'M8 11V7a4 4 0 0 1 8 0v4' }))));
     return h('div', assign({}, p.attrs || {}, { key: p.key, title: M.title, 'aria-label': M.title.replace(/\n/g, ' · '), 'data-cal-kind': kind, 'data-cal-state': M.state, 'data-cal-when': M.when,
-      'data-cal-sel': M.sel ? '1' : '0', 'data-cal-key': M.k, onClick: p.onClick, onDoubleClick: p.onDoubleClick, style: M.style }), kids);
+      'data-cal-sel': M.sel ? '1' : '0', 'data-cal-key': M.k, onClick: p.onClick, onDoubleClick: p.onDoubleClick, style: M.style,
+      /* تفاعلُ المرور المعتمد (المرجعُ المرئي): يرتفع الكرتُ 2px ويكبر 6% فوق جيرانه — تحويلٌ لا يمسّ مقاسَه في الشريط */
+      onMouseEnter: function (e) { var t = e.currentTarget.style; t.transform = 'translateY(-2px) scale(1.06)'; t.zIndex = 5; if (p.attrs && p.attrs.onMouseEnter) p.attrs.onMouseEnter(e); },
+      onMouseLeave: function (e) { var t = e.currentTarget.style; t.transform = ''; t.zIndex = M.style.zIndex == null ? '' : M.style.zIndex; if (p.attrs && p.attrs.onMouseLeave) p.attrs.onMouseLeave(e); } }), kids);
   }
   KIVO.BassamCalCard = Object.freeze({
     day: function (p) { return render('day', p); }, month: function (p) { return render('month', p); }, year: function (p) { return render('year', p); }, model: model
