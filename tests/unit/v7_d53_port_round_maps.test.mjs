@@ -24,8 +24,8 @@ async function shaped() {
   const plan = clone(BASE), [A, B] = plan.floors;
   assert.ok(A.sid && B.sid && A.iid && B.iid, 'طابقا النسخة بمعرّفٍ وصورة');
   const snap = (f, iid) => ({ ...clone(f), iid });
-  plan.months = { '1448-4': { c: 1, d: [snap(B, 'img_TEST_ONLY_B_m4'), snap(A, 'img_TEST_ONLY_A_m4')] }, '1448-5': { c: 1, d: [snap(A, 'img_TEST_ONLY_A_m5'), snap(B, 'img_TEST_ONLY_B_m5')] } };
-  const rounds = { '1448-4-10': roundOf([B, A]), '1448-5-3': roundOf([A, B]), '1448-6-2': roundOf([A, B]) };
+  plan.months = { '2026-09': { c: 1, d: [snap(B, 'img_TEST_ONLY_B_m4'), snap(A, 'img_TEST_ONLY_A_m4')] }, '2026-10': { c: 1, d: [snap(A, 'img_TEST_ONLY_A_m5'), snap(B, 'img_TEST_ONLY_B_m5')] } };
+  const rounds = { '2026-09-10': roundOf([B, A]), '2026-10-03': roundOf([A, B]), '2026-11-02': roundOf([A, B]) };
   return { plan, rounds, A, B };
 }
 function page(D, get) {
@@ -41,17 +41,17 @@ function page(D, get) {
 
 test('ملحق 6 · 11 — جولةُ شهرٍ ماضٍ تعرض خريطةَ لقطة شهرها بمعرّف الموقع (لا خريطةَ الخطة الحالية ولا موضعَ الصف)', async () => {
   const D = await shaped(), P = page(D), before = JSON.stringify(P.op.data);
-  P.at(1448, 4, 10); P.c._loadFloorImgs(); await flush();
+  P.at(2026, 9, 10); P.c._loadFloorImgs(); await flush();
   assert.equal(P.c.state.fimgs[0], img('img_TEST_ONLY_A_m4'), 'الموقعُ الأول (A) في شهر 4 بخريطة لقطته — وهو ثاني صفٍّ في اللقطة');
   assert.equal(P.c.state.fimgs[1], img('img_TEST_ONLY_B_m4'));
   assert.equal(P.shown(), img('img_TEST_ONLY_A_m4'), 'الخريطةُ المرسومة');
   /* شهرٌ آخر بخريطةٍ أخرى: يُعاد التحميل من لقطته (componentDidUpdate) */
-  const prev = { ...P.c.state }; P.at(1448, 5, 3); P.c.componentDidUpdate({}, prev); await flush();
+  const prev = { ...P.c.state }; P.at(2026, 10, 3); P.c.componentDidUpdate({}, prev); await flush();
   assert.equal(P.c.state.fimgs[0], img('img_TEST_ONLY_A_m5'), 'شهر 5 بخريطة لقطته');
   assert.equal(P.c.state.fimgs[1], img('img_TEST_ONLY_B_m5'));
   assert.equal(P.shown(), img('img_TEST_ONLY_A_m5'));
   /* شهرٌ بلا لقطة: طوابقُ الخطة الحالية كما كان */
-  const prev2 = { ...P.c.state }; P.at(1448, 6, 2); P.c.componentDidUpdate({}, prev2); await flush();
+  const prev2 = { ...P.c.state }; P.at(2026, 11, 2); P.c.componentDidUpdate({}, prev2); await flush();
   assert.equal(P.c.state.fimgs[0], img(D.A.iid), 'بلا لقطة: الخطةُ الحالية');
   assert.equal(JSON.stringify(P.op.data), before, 'العرضُ لا يكتب شيئاً');
   assert.equal(P.op.control.stages.length, 0);
@@ -59,15 +59,15 @@ test('ملحق 6 · 11 — جولةُ شهرٍ ماضٍ تعرض خريطةَ ل
 
 test('ملحق 6 · 11 — موقعٌ غائبٌ عن لقطة الشهر أو بلا صورةٍ فيها لا يستعير صورةَ غيره · والردُّ المتأخر من شهرٍ سابق لا يدخل', async () => {
   const D = await shaped();
-  D.plan.months['1448-4'].d = [{ ...D.plan.months['1448-4'].d[0], iid: null }];   /* B بلا صورة · A غائب */
+  D.plan.months['2026-09'].d = [{ ...D.plan.months['2026-09'].d[0], iid: null }];   /* B بلا صورة · A غائب */
   const pend = new Map(), P = page(D, (k) => new Promise((r) => pend.set(k, r)));
-  P.at(1448, 4, 10); P.c._loadFloorImgs(); await flush();
+  P.at(2026, 9, 10); P.c._loadFloorImgs(); await flush();
   assert.deepEqual(P.calls, [], 'لا طلبَ صورةٍ لموقعٍ بلا صورة في لقطة شهره');
   assert.equal(P.shown(), null);
   /* ردٌّ متأخر: يُطلب شهر 5 ثم يُنتقل إلى 6 قبل الرد */
-  const p1 = { ...P.c.state }; P.at(1448, 5, 3); P.c.componentDidUpdate({}, p1); await flush();
+  const p1 = { ...P.c.state }; P.at(2026, 10, 3); P.c.componentDidUpdate({}, p1); await flush();
   assert.ok(pend.has('img_TEST_ONLY_A_m5'));
-  const p2 = { ...P.c.state }; P.at(1448, 6, 2); P.c.componentDidUpdate({}, p2); await flush();
+  const p2 = { ...P.c.state }; P.at(2026, 11, 2); P.c.componentDidUpdate({}, p2); await flush();
   pend.get('img_TEST_ONLY_A_m5')(img('img_TEST_ONLY_A_m5')); await flush();
   assert.notEqual(P.c.state.fimgs[0], img('img_TEST_ONLY_A_m5'), 'ردُّ شهر 5 لا يدخل شهر 6');
   pend.get(D.A.iid)(img(D.A.iid)); await flush();
@@ -78,10 +78,10 @@ test('ملحق 6 · 11 — موقعٌ غائبٌ عن لقطة الشهر أو �
 test('ملحق 6 · ج — نطاقاتُ الموقع من لقطة شهرها بمعرّف الموقع لا بموضع الصف', async () => {
   const D = await shaped();
   const sec = (code, x) => [{ id: 'sec_TEST_ONLY_' + code, code, name: 'TEST_ONLY ' + code, pts: [{ x, y: 10 }, { x: x + 190, y: 10 }, { x: x + 190, y: 200 }] }];
-  D.plan.months['1448-4'].d[0].sectors = sec('B4', 500); D.plan.months['1448-4'].d[1].sectors = sec('A4', 10);   /* اللقطة: B ثم A */
-  D.plan.months['1448-4'].d.forEach((x) => (x.hideSectors = false));
+  D.plan.months['2026-09'].d[0].sectors = sec('B4', 500); D.plan.months['2026-09'].d[1].sectors = sec('A4', 10);   /* اللقطة: B ثم A */
+  D.plan.months['2026-09'].d.forEach((x) => (x.hideSectors = false));
   const P = page(D);
-  P.at(1448, 4, 10);
+  P.at(2026, 9, 10);
   const node = P.c.renderVals().dsSectorNodes, txt = JSON.stringify(node);
   assert.ok(node, 'نطاقاتُ الموقع A مرسومة');
   assert.match(txt, /"M10 10 L200 10 L200 200 Z"/, 'الموقعُ الأول (A) بنطاقات A في لقطة شهره: ' + txt.slice(0, 200));

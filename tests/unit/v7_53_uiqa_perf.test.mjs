@@ -12,7 +12,7 @@ import { WORKER } from './harness.mjs';
 
 const A = 'TEST_ONLY_A', K = (r) => 'bsdept:' + A + ':' + r;
 const emps = Array.from({ length: 500 }, (_, i) => ({ eid: 'TEST_ONLY_n' + i, name: 'TEST_ONLY كثير ' + i, nid: String(1400000000 + i), empno: String(50000 + i), type: 'رسمي', gender: 'ذكر' }));
-const staffing = () => { const st = {}; for (const ym of ['1448-4', '1448-5', '1448-6']) { st[ym] = {}; emps.forEach((e) => { st[ym][e.eid] = { shift: 'الأولى', rest: ['الجمعة'] }; }); } return st; };
+const staffing = () => { const st = {}; for (const ym of ['2026-09', '2026-10', '2026-11']) { st[ym] = {}; emps.forEach((e) => { st[ym][e.eid] = { shift: 'الأولى', rest: ['الجمعة'] }; }); } return st; };
 async function session(lab, un) {
   const r = await fetch(lab.base + '/api/login', { method: 'POST', headers: { 'content-type': 'application/json', origin: lab.base }, body: JSON.stringify({ u: un, p: LAB.pw }) });
   return (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).join('; ');

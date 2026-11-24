@@ -19,16 +19,17 @@ const DAILY = process.env.DAILY_LOGIC ? fs.readFileSync(process.env.DAILY_LOGIC,
 const AUDIT = process.env.KIVO_AUDIT || path.join(SRC, 'services', '290-activity-log.js');
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
+/* V7 · 53 تقويم: يومُ الساعة الثابتة ميلادياً 2026-10-20 (كان 1448-5-9 = اليومُ نفسُه هجرياً) — جولةُ اليوم الجاري المفتوحة */
 async function densPage(perm) {
   const f = await oldFile({ small: true }), plan = JSON.parse(f.data.bassam_plan_v1), src = JSON.parse(f.data.bassam_rounds_v1);
-  const k0 = Object.keys(src).find((k) => /^\d+-\d+-\d+$/.test(k) && src[k].d), rounds = { 'm:1448-5': { ap: 0 }, '1448-5-9': { ...clone(src[k0]), ap: 0 } };
-  rounds['1448-5-9'].d.forEach((x) => delete x.ap);
+  const k0 = Object.keys(src).find((k) => /^\d+-\d+-\d+$/.test(k) && src[k].d), rounds = { 'm:2026-10': { ap: 0 }, '2026-10-20': { ...clone(src[k0]), ap: 0 } };
+  rounds['2026-10-20'].d.forEach((x) => delete x.ap);
   const W = world(), c = W.logic('daily', DAILY);
   const op = operations({ bassam_plan_v1: plan, bassam_rounds_v1: rounds, bassam_zone_opts_v1: {} });
   W.KIVO.__BS_SRV = { ...(W.KIVO.__BS_SRV || {}), operations: op.service, rev: () => 0 };
   W.KIVO.BassamPerm = { ...W.KIVO.BassamPerm, ...perm };
   c.bsToast = () => {};
-  c.state = { ...c.state, year: 1448, month: 5, day: 9, floor: 0, rounds, lens: 'density', panelTab: 'zones', tool: 'select', dsTab: 'rounds', dsAsn: false, dview: { x: 0, y: 0, w: 1000, h: 600 }, dsSel: { t: 'zone', i: 0 }, selMulti: [0], prayer: 'fajr' };
+  c.state = { ...c.state, year: 2026, month: 10, day: 20, floor: 0, rounds, lens: 'density', panelTab: 'zones', tool: 'select', dsTab: 'rounds', dsAsn: false, dview: { x: 0, y: 0, w: 1000, h: 600 }, dsSel: { t: 'zone', i: 0 }, selMulti: [0], prayer: 'fajr' };
   return { W, c, op };
 }
 const ev = (v) => ({ target: { value: v }, preventDefault() {}, stopPropagation() {} });

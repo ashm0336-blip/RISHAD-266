@@ -9,8 +9,8 @@ import { world, D1, IDS, EKEYS } from './notifications_review_fx.mjs';
 import { isOperationalFixtureKey, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { needs } from './harness.mjs';
 
-const HF = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
-const dk = (ts) => { const o = {}; HF.formatToParts(new Date(ts)).forEach((p) => { o[p.type] = +p.value; }); return o.year + '-' + o.month + '-' + o.day; };
+const HF = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
+const dk = (ts) => { const o = {}; HF.formatToParts(new Date(ts)).forEach((p) => { o[p.type] = +p.value; }); return o.year + '-' + String(o.month).padStart(2, '0') + '-' + String(o.day).padStart(2, '0'); };   /* V7 · 53 تقويم: يومُ الرياض الميلادي ISO (كان أم القرى) */
 const NOW = Date.now(), TODAY = dk(NOW), YESTERDAY = dk(NOW - 86400000);
 const KROLES = 'bsdept:' + D1 + ':bassam_roles_v1', KREP = 'bsdept:' + D1 + ':bassam_dreport_v1';
 const SUP = 'TEST_ONLY_role_supervisor', PLAIN = 'TEST_ONLY_role_plain';
