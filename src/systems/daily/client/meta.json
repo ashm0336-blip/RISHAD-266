@@ -24,9 +24,11 @@
   "data": [
    "bassam_dayshift_v1",
    "bassam_employees_v1",
+   "bassam_plan_v1",
    "bassam_rounds_arc_v1",
    "bassam_rounds_v1",
-   "bassam_shift_options_v1"
+   "bassam_shift_options_v1",
+   "bassam_staffing_v3"
   ],
   "permissions": [
    "daily/field",

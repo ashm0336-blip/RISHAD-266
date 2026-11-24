@@ -1530,7 +1530,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         if (!q || 1 !== q.ok) return;
         var m = {};
         q.rows.forEach(function (x) {
-          x && "string" == typeof x.p && 0 !== x.p.indexOf("m:") && (m[x.p] = { created: x.v && 0 === x.v.created ? 0 : 1, __sumAp: x.v && x.v.ap ? 1 : 0, __sumAnyAp: x.v && x.v.anyAp ? 1 : 0 });
+          x && "string" === typeof x.p && 0 !== x.p.indexOf("m:") && (m[x.p] = { created: x.v && 0 === x.v.created ? 0 : 1, __sumAp: x.v && x.v.ap ? 1 : 0, __sumAnyAp: x.v && x.v.anyAp ? 1 : 0 });
         });
         r._drSum = m;
         r.setState({ _drSumTick: Date.now() });

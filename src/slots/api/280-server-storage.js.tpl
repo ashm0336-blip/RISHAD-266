@@ -25,9 +25,10 @@
     'bassam_employees_v1', 'bassam_options_v1',@@SYS:store.opResources.staff@@
     'bassam_shift_options_v1',@@SYS:store.opResources.plan@@@@SYS:store.opResources.daily@@ 'bassam_dayshift_v1', 'bassam_dayfocus_v1'@@SYS:store.opResources.dreport@@@@SYS:store.opResources.tasks@@
   ]);
-  /* V7 · 53: الموارد المخزّنة بالفترة (عقد الخادم) — الحقلُ الحاوي للفترات ('' = أعضاءُ الجذر) · والمواردُ التي تُقرأ بالأيام افتراضاً */
-  var PERIOD_RES9 = Object.freeze({ bassam_plan_v1: 'months', bassam_staffing_v3: '', bassam_rounds_v1: '', bassam_rounds_arc_v1: '', bassam_dreport_v1: '', bassam_tasks_v1: '' });
-  var PERIOD_DAY9 = Object.freeze({ bassam_dreport_v1: 1 }), PERIOD_MONTHLY9 = Object.freeze({ bassam_plan_v1: 1, bassam_staffing_v3: 1 });   /* شهرُها فترةٌ واحدة */
+  /* V7 · 53: الموارد المخزّنة بالفترة (عقد الخادم) — الحقلُ الحاوي للفترات ('' = أعضاءُ الجذر) · والمواردُ التي تُقرأ بالأيام افتراضاً.
+     يعلنها كلُّ نظامٍ في قطعته (store.period · store.periodDay · store.periodMonthly) — القاعدةُ لا تسمّي مواردَ الأنظمة */
+  var PERIOD_RES9 = Object.freeze({@@SYS:store.period.plan@@@@SYS:store.period.staff@@@@SYS:store.period.daily@@@@SYS:store.period.dreport@@@@SYS:store.period.tasks@@ });
+  var PERIOD_DAY9 = Object.freeze({@@SYS:store.periodDay.dreport@@ }), PERIOD_MONTHLY9 = Object.freeze({@@SYS:store.periodMonthly.plan@@@@SYS:store.periodMonthly.staff@@ });   /* شهرُها فترةٌ واحدة */
   function operationResource9(k) { return operationResources9.indexOf(String(k).replace(/^bsdept:[^:]+:/, '').replace(/@[^@]*$/, '')) !== -1; }   /* V7 · 53: K@p مورد عمليات كذلك */
   function operationKey9(k) { return typeof k === 'string' && (/^bsdept:[^:\s,]+:bassam_[A-Za-z0-9_]+$/.test(k) && operationResource9(k) || !!periodParse9(k)); }
   var DEVK9 = { bassam_session_v1: 1, bassam_theme: 1,
@@ -775,7 +776,7 @@
     if (periodLogical9(key)) periodGetSeq9[key] = periodSeq9;
     var known = operationKnown9[key];
     if (!known || !known.stamp || !operationSame9(known.stamp) || (known.state !== 'ready' && known.state !== 'absent')) throw Error('operations-read-required');
-    return known.state === 'absent' || mem[key] == null ? null : mem[key];
+    return known.state === 'absent' || mem[key] === undefined ? null : mem[key];
   }
   function operationScoped9(name) {
     var stamp = operationContext9();
@@ -1442,7 +1443,7 @@
     (operation.period.Ks || []).forEach(function (K) {
       periodView9(K, true);
       var doc = operation.period.docs[K];
-      if (doc != null && periodOwn9(mem, K) && cj9(JSON.parse(doc)) === cj9(JSON.parse(mem[K]))) { mem[K] = doc; baseVal[K] = doc; }
+      if (doc !== null && doc !== undefined && periodOwn9(mem, K) && cj9(JSON.parse(doc)) === cj9(JSON.parse(mem[K]))) { mem[K] = doc; baseVal[K] = doc; }
       notify(K);
     });
   }

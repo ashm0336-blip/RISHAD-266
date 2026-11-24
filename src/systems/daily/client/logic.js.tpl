@@ -7007,7 +7007,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
         if (!r || 1 !== r.ok) return;
         const m = {};
         r.rows.forEach((x) => {
-          x && "string" == typeof x.p && 0 !== x.p.indexOf("m:") && (m[x.p] = { d: [], ap: x.v && x.v.ap ? 1 : 0 });
+          x && "string" === typeof x.p && 0 !== x.p.indexOf("m:") && (m[x.p] = { d: [], ap: x.v && x.v.ap ? 1 : 0 });
         });
         this._dsSum = m;
         this.setState((t) => ({ extTick: (t.extTick || 0) + 1 }));

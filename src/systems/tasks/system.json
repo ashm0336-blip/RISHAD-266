@@ -335,6 +335,10 @@
    "order": 10,
    "text": "              \"task-asg\": \"بدأ الموظفُ هذه المهمة أو أنهاها أو اعتذر عنها (أو أُغلقت) — لا يُغيَّر مكلَّفُها بالتعديل؛ استعمل «إعادة إسناد» من قائمة المهمة فيبقى سجلُّ الأول وإثباتُه\",\n"
   },
+  "store.period.tasks": {
+   "order": 10,
+   "text": " bassam_tasks_v1: '',"
+  },
   "store.opResources.tasks": {
    "order": 10,
    "text": ", 'bassam_tasks_v1', 'bassam_tasks_locks_v1'"
