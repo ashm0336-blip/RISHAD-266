@@ -84,7 +84,9 @@ test('③ operational day with the 3-hour grace (ق11) and the civil day: client
     const civ = C.gAt(t), pf = PF.pfDayAt(t);
     assert.deepEqual(J(civ), J(S.calGAt(t)));
     assert.equal(pf.dk, civ.k); assert.equal(pf.ym, civ.ym); assert.equal(pf.wd, PF.PF_WD[civ.wd]);
-    const ph = PF.pfHijriAt(t); assert.deepEqual(J(pf.h), { y: ph.y, m: ph.m, d: ph.d });
+    /* V7 · 53 تقويم: pfHijriAt حلّ محلَّه pfDayAt.h — هجريُّ PF-CORE (pfHOf) = هجريُّ الخدمة للخادم (calHOf) وللواجهة (hOf) لليوم المدنيّ نفسِه */
+    const ph = PF.pfHOf(t); assert.deepEqual(J(pf.h), { y: ph.y, m: ph.m, d: ph.d });
+    assert.deepEqual(J(pf.h), J(S.calHOf(civ.k))); assert.deepEqual(J(pf.h), J(C.hOf(civ.k)));
   }
   /* 02:59 الرياض يومُ أمس تشغيلياً، و03:00 اليومُ نفسُه */
   assert.equal(C.gToday(Date.parse('2026-11-24T23:59:00Z')).k, '2026-11-24');
