@@ -1165,7 +1165,10 @@
           delete sent9[key]; delete why9[key]; return;
         }
         var present = key in operation.snap.set;
-        if (present) { mem[key] = operation.snap.set[key]; baseVal[key] = mem[key]; } else { delete mem[key]; delete baseVal[key]; }
+        /* V7 · 53 (port-sync · بند 12 · 0022): الخادمُ أعاد ما حُجب عنّي من المخزَّن فاختلف المحفوظُ عمّا أرسلتُه — ما يراه لي (norm) هو أساسي وقيمتي
+           المحفوظة، لا ما أرسلتُه (كان يُعدّ الفرقُ بعدها كاتباً آخر: «حلّت قيمةٌ أخرى محلَّ تعديلك»)؛ والتعارضُ الحقيقيُّ يُعلن كما كان */
+        var nv53 = present && operationObject9(data.norm) && typeof data.norm[key] === 'string' ? data.norm[key] : null;
+        if (present) { mem[key] = nv53 !== null && !(key in pSet) ? nv53 : operation.snap.set[key]; baseVal[key] = nv53 !== null ? nv53 : mem[key]; } else { delete mem[key]; delete baseVal[key]; }
         krev[key] = revs[key]; operationKnown9[key] = { state: present ? 'ready' : 'absent', epoch: operation.epoch, rev: revs[key], stamp: operation.stamp };
         delete sent9[key]; delete why9[key]; notify(key);
       });

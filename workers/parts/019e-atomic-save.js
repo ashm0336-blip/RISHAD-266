@@ -566,6 +566,7 @@ async function rsSaveCommit(env, A, body, meta, opt) {
       return /wipe|replace/.test(t.intent);
     }),
   };
+  if (operationRequestId && kv.out && kv.out.norm) opt = Object.assign({}, opt, { __operationResult: Object.assign({}, opt.__operationResult || {}, { norm: kv.out.norm }) });   /* V7 · 53 (port-sync · بند 12): ما يراه الفاعلُ من المحفوظ (054 enfNorm) مع الإيصال */
   if (operationRequestId) { plan.fingerprint=operationFingerprint; plan.intent='operations'; plan.operationKeys=Array.from(new Set(operationKeys)); plan.operationResult=opt.__operationResult||{}; }
   plan.guards.push.apply(plan.guards,operationReadGuards);
   var referenceMark = rsReferenceMark(reference), referenceOperational = referenceDependentSave || operationalSave;
