@@ -208,26 +208,15 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       n > 0 ? n : 0
     );
   }
+  /* V7 · 53 تقويم (ق1 · ق9): شهرُ الجدول «YYYY-MM» ميلاديٌّ باسمه («نوفمبر 2026»)، ومفتاحٌ هجريٌّ قديم (13xx–15xx) يُقرأ كما كُتب باسمه الهجري */
   SF_MONTHS() {
-    return [
-      "محرّم",
-      "صفر",
-      "ربيع الأول",
-      "ربيع الآخر",
-      "جمادى الأولى",
-      "جمادى الآخرة",
-      "رجب",
-      "شعبان",
-      "رمضان",
-      "شوّال",
-      "ذو القعدة",
-      "ذو الحجة",
-    ];
+    return KIVO.BassamCal.H_MONTHS.slice();
   }
   sfMonthLabel(t) {
     const e = String(t).split("-"),
       s = +e[1];
-    return (this.SF_MONTHS()[s - 1] || "الشهر " + s) + " " + e[0];
+    if (KIVO.BassamCal.keyCal(String(t)) === "g") return KIVO.BassamCal.fmtMonth(KIVO.BassamCal.gYm(+e[0], s));
+    return (this.SF_MONTHS()[s - 1] || "الشهر " + s) + " " + e[0] + " هـ";
   }
   /* V7 · د5-د: الإعداداتُ لا تقرأ مفاتيحَ الجدول الشهري ولا تكتبها — تسأل مالكَها بالاسم (الناقل). بغياب الجدول: لا مسكَّنين ولا تبعة. */
   sfUsage(t) {
@@ -904,7 +893,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     try {
       const e = new Date(t);
       return (
-        (KIVO.BassamHijri && KIVO.BassamHijri.fmt ? KIVO.BassamHijri.fmt(e) : e.toLocaleDateString("ar-SA-u-nu-latn")) +
+        (KIVO.BassamCal.fmtDay(KIVO.BassamCal.gAt(e).k) + (KIVO.BassamCal.hDayText(KIVO.BassamCal.gAt(e).k) ? " (" + KIVO.BassamCal.hDayText(KIVO.BassamCal.gAt(e).k) + " هـ)" : "")) +   /* V7 · 53 تقويم (§7): الميلادي ثم الهجري */
         " · " +
         this.adClock(t)
       );
@@ -1405,7 +1394,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           '</h2><p>يُحفظ في مكان آمن. يفتح حساب مسؤول المنصة من شاشة الدخول ← «تعذّر الدخول؟» ويُبطل بعد الاستعمال.</p><p style="font-family:monospace;font-size:28px;letter-spacing:4px;direction:ltr;text-align:center;border:2px dashed var(--bd-x999999);padding:20px">' +
           e +
           "</p><p>أُنشئ: " +
-          new Date().toLocaleString("ar-SA-u-nu-latn") +
+          new Date().toLocaleString("ar-SA-u-ca-gregory-nu-latn") +   /* V7 · 53 تقويم: الميلادي (ar-SA وحده يعرض الهجري) */
           "</p></body></html>",
       ),
         s.document.close(),
@@ -3759,7 +3748,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
             "div",
             {
               style: { fontSize: 10.5, color: "var(--text-muted)", whiteSpace: "nowrap", fontFeatureSettings: "'tnum'" },
-              title: new Date(r.ts).toLocaleString("ar-SA"),
+              title: new Date(r.ts).toLocaleString("ar-SA-u-ca-gregory-nu-latn"),   /* V7 · 53 تقويم: الميلادي */
             },
             v.date + " · " + v.t,
           ),
@@ -4874,7 +4863,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       },
       N = (t) => {
         try {
-          return KIVO.BassamCal.hText(new Date(t), { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });   /* V7 · د5-د2 */
+          return KIVO.BassamCal.fmtDayLong(KIVO.BassamCal.gAt(new Date(t)).k) + " · " + new Date(t).toLocaleTimeString("ar-SA-u-ca-gregory-nu-latn", { hour: "2-digit", minute: "2-digit" });   /* V7 · 53 تقويم (§7): اليومُ الميلادي */
         } catch (e) {
           return new Date(t).toLocaleString();
         }

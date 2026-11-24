@@ -1400,7 +1400,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       data = {
       ekey: t.ekey,
       cat: t.cat,
-      hij: this.hStr(this.hToday()),
+      hij: KIVO.BassamCal.gToday().k,   /* V7 · 53 تقويم (ق1): تاريخُ الإقرار يومٌ ميلاديٌّ ISO (الحقلُ hij باقٍ اسماً) */
       score: "emp" === t.cat ? e : null,
       cases: "work" === t.cat ? r : null,
       fileOk: t.fileOk,
@@ -1756,7 +1756,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       awByTitle: t.byAuto && !t.byTitle ? this.awMgrTitle() : t.byTitle,
       awOnByTitle: (t) =>
         this.setState({ byTitle: t.target.value, by: this.state.by || this.awMgrName(), byAuto: 0, awErr: this.awClrErr("byTitle") }),
-      awToday: this.hStr(this.hToday()),
+      awToday: KIVO.BassamCal.fmtDay(KIVO.BassamCal.gToday().k) + " · " + KIVO.BassamCal.hDayText(KIVO.BassamCal.gToday().k) + " هـ",   /* V7 · 53 تقويم (§7): الميلادي ثم الهجري */
       awEligMsg:
         l > 0
           ? "⛔ غير مؤهل — يوجد " + KIVO.BassamCount(l, "شرط|غير مستوفى") + "، ولا يجوز اعتماد الترشيح."
@@ -2055,6 +2055,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           score: "emp" === a.cat ? e(a.score) : KIVO.BassamCount(a.cases, "حالة") + "",
           scoreCol: "emp" === a.cat ? this.awGradeCol(a.score) : "#53565a",
           date: a.hij,
+          dateH: KIVO.BassamCal.keyCal(a.hij) === "g" && KIVO.BassamCal.hDayText(a.hij) ? KIVO.BassamCal.hDayText(a.hij) + " هـ" : "",   /* V7 · 53 تقويم (§7): الهجريُّ المقابل سطرٌ صغير */
           st: a.st,
           stStyle:
             "font-size:10px;font-weight:600;padding:3px 10px;border-radius:9999px;white-space:nowrap;background:" +
