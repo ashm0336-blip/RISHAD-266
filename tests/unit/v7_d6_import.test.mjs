@@ -41,6 +41,8 @@ async function compare(T, who, file, dept = B) {
   /* ما لا مقابلَ له لم يُكتب */
   for (const k of Object.keys(NOT_TRANSFERRED)) assert.equal(k in kv, false, k + ' لم يُنقل');
   assert.equal(T.DB.q("SELECT COUNT(*) n FROM kv WHERE k GLOB '*bassam_grants_v1' OR k GLOB '*bassam_perm_tpls*'")[0].n, 0, 'لا منحَ ولا قوالب');
+  /* V7 · د7 (قرار المالك — 51ب): القوالبُ صارت أدواراً للوحدة الهدف (بلا أشخاص — الملفُّ المقيس بلا tplOf، فلا منح) */
+  assert.deepEqual(JSON.parse(kv.bassam_roles_v1).roles.map((r) => r.id), JSON.parse(file.data.bassam_perm_tpls_v1).map((t) => t.id), 'القوالبُ أدوارٌ بمعرّفاتها');
   /* الصور: بايتاتُها ومالكُها ومرجعُها */
   for (const [id, body] of Object.entries(file.idbImages)) {
     const g = await readImage(T, who, id);
@@ -813,12 +815,15 @@ test('(١٩) معرّفُ الإدارة المصدر غيرُ معرّف الو
       const kept = new Set(R.kept), byType = (t) => nf.items.filter((x) => kept.has(x.id) && x.type === t).map((x) => x.id).sort();
       const feed = async (un, uid) => { const who = await T.login(un, LAB.pw), r = await T.call('/api/notifications?uid=' + uid, { ck: who.ck }); assert.equal(r.status, 200, tag + ' ' + uid + ': ' + r.t.slice(0, 200)); return r.j.items; };
       const mgr = await feed(LAB.mgrB, 'TEST_ONLY_mgrB'), emp = await feed('1200000102', 'TEST_ONLY_empB'), ids = (L, t) => L.filter((m) => m.type === t).map(mid).sort();
-      assert.deepEqual(ids(mgr, 'bc_dept'), byType('bc_dept'), tag + ': مديرُ الوحدة — تعميمُ الإدارة'); assert.deepEqual(ids(mgr, 'emp_add'), byType('emp_add'), tag + ': ومفتاحُه في الأهداف');
+      /* V7 · د7 (البند ٨): منشئُ تعميم الإدارة بعد إعادة الربط مديرُ الوحدة نفسُه (mgr:B) — فلا يُنبَّه بفعله؛ يراه موظفُها (أدناه) */
+      assert.deepEqual(ids(mgr, 'bc_dept'), [], tag + ': مديرُ الوحدة لا يُنبَّه بتعميمٍ منشئُه هو'); assert.deepEqual(ids(mgr, 'emp_add'), byType('emp_add'), tag + ': ومفتاحُه في الأهداف');
       assert.deepEqual(ids(emp, 'bc_dept'), byType('bc_dept'), tag + ': موظفُ الوحدة — تعميمُ الإدارة'); assert.deepEqual(ids(emp, 'task_new'), byType('task_new'), tag + ': والمسنَدُ إليه باسمه');
       for (const L of [mgr, emp]) assert.equal(L.some((m) => m.type === 'pm_tpl' || mid(m) === 'TEST_ONLY_n5'), false, tag + ': لا pm_tpl ولا تنبيهَ الإدارة الأخرى');
-      const n0 = mgr.find((m) => mid(m) === 'TEST_ONLY_n0'), n6 = mgr.find((m) => mid(m) === 'TEST_ONLY_n6');
-      assert.equal(n0.un, false, tag + ': علامةُ قراءة مدير المصدر صارت علامةَ مدير الوحدة (مقروء)'); assert.equal(n6.un, true, tag + ': وغيرُه غيرُ مقروء');
-      assert.equal(n0.by, 'mgr:' + B, tag + ': منشئُ التنبيه مديرُ الوحدة'); assert.equal(n0.dept, B);
+      /* V7 · د7: العلامةُ والمنشئ يُقرآن من القاعدة (التعميمُ خارج خلاصة منشئه — البند ٨) */
+      const st = (id) => T.DB.q("SELECT read_at FROM notification_user_state WHERE account_uid='TEST_ONLY_mgrB' AND message_scope=?1 AND message_id=?2", 'd:' + B, id)[0];
+      assert.ok(st('TEST_ONLY_n0') && st('TEST_ONLY_n0').read_at > 0, tag + ': علامةُ قراءة مدير المصدر صارت علامةَ مدير الوحدة (مقروء)'); assert.ok(!st('TEST_ONLY_n6') || !st('TEST_ONLY_n6').read_at, tag + ': وغيرُه غيرُ مقروء');
+      const m0 = T.DB.q("SELECT author_key,department FROM notification_messages WHERE scope=?1 AND id='TEST_ONLY_n0'", 'd:' + B)[0];
+      assert.equal(m0.author_key, 'mgr:' + B, tag + ': منشئُ التنبيه مديرُ الوحدة'); assert.equal(m0.department, B);
       assert.equal(T.DB.q("SELECT COUNT(*) n FROM notification_messages WHERE scope='d:" + B + "' AND department<>'" + B + "'")[0].n, 0, tag + ': كلُّ تنبيهٍ للوحدة الهدف');
       /* (هـ) المهام تُفتح: «مهامّي» للموظف بمسارها الحقيقي · وقراءةُ صفحة المهام للمدير — منشئُها ومراجِعُها مديرُ الوحدة الهدف */
       const ew = await T.login('1200000102', LAB.pw), mine = await T.call('/api/me/tasks?uid=TEST_ONLY_empB', { ck: ew.ck });

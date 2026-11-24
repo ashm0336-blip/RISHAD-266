@@ -31,7 +31,8 @@ const shift = (leaders, rosterOf, def) => Object.assign({ pulled: true, roster: 
 const has = (items, id) => items.some((x) => x.id === id);
 async function inbox(W, who) { const r = await W.get(who); assert.equal(r.status, 200, who + ': inbox read'); assert.equal(r.json.ok, 1); return r.json.items; }
 async function emit(W, vars, tag) {
-  const r = await W.act('manager1', { op: 'emit', type: 'rep_pull', dept: D1, vars: Object.assign({ 'المُعدّل': 'TEST_ONLY ' + tag }, vars) });
+  /* V7 · د7 (البند ٨): المرسِلُ المديرُ العام — الفاعلُ لا يُنبَّه بفعله، ومديرُ الوحدة مستلمٌ يُفحص */
+  const r = await W.act('gm', { op: 'emit', type: 'rep_pull', dept: D1, vars: Object.assign({ 'المُعدّل': 'TEST_ONLY ' + tag }, vars) });
   assert.equal(r.status, 200, tag + ': ' + JSON.stringify(r.json).slice(0, 200)); assert.equal(r.json.ok, 1);
   return r.json.id;
 }
@@ -49,6 +50,7 @@ test('[د6 · LEAD] today\'s DEPUTY receives his shift\'s notification · a lead
   assert.ok(has(await inbox(W, 'employee1'), a), 'today\'s deputy of shift A receives the shift-A notification');
   assert.equal(has(await inbox(W, 'leader'), a), false, 'the chief of shift B today does not receive shift A\'s');
   assert.ok(has(await inbox(W, 'manager1'), a), 'the manager receives');
+  assert.equal(has(await inbox(W, 'gm'), a), false, 'the actor (the general manager who emitted) is not notified of his own action');
   const b = await emit(W, { 'الوردية': S2, 'اليوم': TODAY }, 'B');
   assert.ok(has(await inbox(W, 'leader'), b), 'the chief of B receives B');
   assert.equal(has(await inbox(W, 'employee1'), b), false, 'the deputy of A does not receive B');

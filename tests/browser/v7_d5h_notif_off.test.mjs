@@ -36,14 +36,16 @@ test('V7 · د5-ح (البند ٧) · notifications of an OFF system: not genera
     await setCaps(lab, FULL, FULL);
     const su = await openAs(b, lab, LAB.superUn, LAB.superPw); su.page.setDefaultTimeout(15000);
     await su.page.evaluate((d) => KIVO.BassamDepts.setActive(d), A); await su.page.reload({ waitUntil: 'domcontentloaded' }); await su.page.waitForTimeout(2500);
-    /* ON: emitted for A (the employee is its «own», the manager its «mgr») and for B */
-    let e = await emit(su, A, ['TEST_ONLY_eA1']); assert.equal(e.status, 200, JSON.stringify(e.j));
+    /* ON: emitted for A (the employee is its «own», the manager its «mgr») and for B
+       V7 · د7 (البند ٨): A's batch is emitted by manager A, so super (the «sys» recipient of bx_del) is not its actor. Manager A, the actor, does not
+       get his own bx_del («فور الحذف») but still gets task_late (a condition event — exempt from the actor rule) */
+    const mA = await openAs(b, lab, LAB.mgrA, LAB.pw), eA = await openAs(b, lab, LAB.empA, LAB.pw), mB = await openAs(b, lab, LAB.mgrB, LAB.pw);
+    let e = await emit(mA, A, ['TEST_ONLY_eA1']); assert.equal(e.status, 200, JSON.stringify(e.j));
     e = await emit(su, B, []); assert.equal(e.status, 200, JSON.stringify(e.j));
     await lab.idle();
     const rows0 = stored(lab); assert.equal(rows0.length, 4, 'four stored: ' + JSON.stringify(rows0));
-    const mA = await openAs(b, lab, LAB.mgrA, LAB.pw), eA = await openAs(b, lab, LAB.empA, LAB.pw), mB = await openAs(b, lab, LAB.mgrB, LAB.pw);
     const who = { 'manager A': mA, 'employee A': eA };
-    const ON = { 'manager A': 2, 'employee A': 1 };
+    const ON = { 'manager A': 1, 'employee A': 1 };
     for (const [n, s] of Object.entries(who)) assert.equal((await sees(s)).list, ON[n], 'ON: ' + n + ' sees them');
     assert.equal((await sees(mB)).list, 2, 'ON: manager B sees B\'s');
     assert.equal((await sees(su, A)).list, 1, 'ON: super in A\'s space sees A\'s «sys» one');

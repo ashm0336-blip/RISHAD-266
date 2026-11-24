@@ -1084,6 +1084,11 @@ async function rsNFPlan(env, domain, scope, base, mode, newDepts) {
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
     } else delete keys[K_PERM];
   }
+  /* V7 · د7: سجلُّ أدوار النسخة ⇒ منحُه بسقف الهدف (perm44GrantsWhy) */
+  if (body.scope.kind === 'dept' && Object.prototype.hasOwnProperty.call(keys, perm44Key(dept)) && keys[perm44Key(dept)] != null) {
+    var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
+    if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
+  }
   /* 330-auth.pruneDeptAccounts: restore only removes staff/dept identities bound
      to removed departments, never GM/Super accounts. The result still traverses
      applySave's unchanged password, uniqueness and final-super validators. */
@@ -1467,6 +1472,15 @@ function rsPermsCounts(A, d, keys) {
     Object.keys(em).forEach(function (ek) { if (isMgrKey(ek) || !isObj(em[ek])) return; out.assignments++; Object.keys(em[ek]).forEach(function (leaf) { if (!on(leaf)) add(leaf.split('/')[0]); }); });
   }
   return out;
+}
+/* V7 · د7: منحُ الأدوار grantOf — غيرُ الأدوار كما هو · null = لا تغيير */
+function rsRoleGrants(A, d, rolesVal, curVal) {
+  var E = perm44E(), R = E.normRec(perm44Rec(rolesVal)), cur = perm44Rec(curVal), out = isObj(cur) ? JSON.parse(JSON.stringify(cur)) : { v: 1, emp: {} }, C = perm44CeilingFn(A, d), now = Date.now(), e;
+  if (!isObj(out.emp)) out.emp = {};
+  for (e in out.emp) if (isObj(out.emp[e]) && PERM44_SRC.test(String(out.emp[e].src || ''))) delete out.emp[e];
+  for (e in R.people) { var g = E.grantOf(R.people[e], R, C, now, null); if (g) { var o = isObj(cur) && isObj(cur.emp) ? cur.emp[e] : null; out.emp[e] = o && deq(o.plus, g.plus) && deq(o.minus || [], g.minus) && o.src === g.src ? o : Object.assign(g, { at: now, by: String(A.u.id || '') }); } }
+  if (!isObj(cur) && !Object.keys(out.emp).length) return null;
+  return deq(out, cur) ? null : JSON.stringify(out);
 }
 function rsDeptPermsKeep(pm, id, PP, mode) {
   if (!id || !isObj(PP)) return null;

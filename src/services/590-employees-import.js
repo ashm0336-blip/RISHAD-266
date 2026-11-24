@@ -182,6 +182,8 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
         }
         /* V7 · د1-د: رفضٌ سببُه تكرارُ الهوية أو الجوال أو الرقم الوظيفي (emp-dup — قد يكون مع موظفٍ في وحدةٍ أخرى) يُقال بسببه، لا «صلاحيتك لا تسمح» */
         if (response.status === 403 && denials.length && denials.every(function (pair) { return pair[1] && pair[1].why === 'emp-dup'; })) return fail('emp-dup', 403);
+        /* V7 · د7: رفضُ التكرار المفصَّل من الانتقال (019c empDupList): الحقل · القيمة · أين — يُترجمه المستدعي إلى أرقام صفوف الملف */
+        if (response.status === 403 && value && value.err === 'emp-dup') return Object.assign(fail('emp-dup', 403), { dup: Array.isArray(value.dup) ? value.dup.filter(function (x) { return x && typeof x.v === 'string' && typeof x.f === 'string'; }) : [] });
         var code = response.status === 401 ? 'session' : response.status === 403 ? 'forbidden' : response.status === 409 ? 'conflict' : String(value && value.err || 'invalid');
         return fail(code, response.status);
       }
@@ -260,7 +262,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     }
     var ack = result.data;
     if (ack.dept !== prepared.stamp.dept || ack.intent !== ticket.intent || ack.requestId !== ticket.requestId || !nonnegative(ack.rev) || !ack.revs || typeof ack.revs !== 'object' || Array.isArray(ack.revs) || !Object.keys(ack.revs).every(function (key) { return nonnegative(ack.revs[key]); }) || !ack.counts || typeof ack.counts !== 'object' || Array.isArray(ack.counts) || !['employees', 'removed', 'accountsCreated', 'accountsRemoved', 'schedule'].every(function (name) { return nonnegative(ack.counts[name]); })) return fail('invalid');
-    try { if (KIVO.__BS_SRV && KIVO.__BS_SRV.mine) KIVO.__BS_SRV.mine(ack.revs); } catch (e) { /* V7 · د6 (QA) · البند ٥: علامةٌ للشريط وحده */ }   /* نقلٌ · إنشاءُ حسابات · استيراد · حذف: من فعلي */
+    try { if (KIVO.__BS_SRV && KIVO.__BS_SRV.mine) await KIVO.__BS_SRV.mine(ack.revs); } catch (e) { /* V7 · د6 (QA) · البند ٥: علامةٌ للشريط · V7 · د7: وتجديدُ حقبة طبقة الحفظ قبل إعلان النجاح (280 srvSettle9) */ }   /* نقلٌ · إنشاءُ حسابات · استيراد · حذف: من فعلي */
     return { ok: 1, receipt: deep(ack) };
   }
   var Transition = Object.freeze({ context: actor, read: transitionRead, prepare: transitionPrepare, send: transitionSend });
@@ -268,8 +270,18 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
   function importSummary(pend, employees) {
     var keys = new Set(); (employees || []).forEach(function (emp) { matchKeys(emp).forEach(function (key) { keys.add(key); }); });
     var duplicate = pend.cands.filter(function (c) { return matchKeys(c.emp).some(function (key) { return keys.has(key); }); }).length;
-    return { file: pend.cands.length, cur: employees.length, dup: duplicate, fresh: pend.cands.length - duplicate };
+    /* V7 · د7: المعاينةُ تحذّر قبل الاختيار — الصفوفُ التي سيرفضها كلُّ خيار برقم صفّها وسببها (القاعدةُ نفسُها: prepareImport) */
+    var cur = { employees: employees || [], options: { type: [], work: [] } }, R = {};
+    ['update', 'add', 'replace'].forEach(function (mode) { R[mode] = prepareImport(pend, mode, cur).rejects; });
+    var seen = {}, rejects = [];
+    R.update.concat(R.add, R.replace).forEach(function (x) { var k = x.row + '|' + x.why; if (!seen[k]) { seen[k] = 1; rejects.push(x); } });
+    rejects.sort(function (a, b) { return a.row - b.row; });
+    return { file: pend.cands.length, cur: employees.length, dup: duplicate, fresh: pend.cands.length - duplicate, rejects: rejects, rej: { update: R.update.length, add: R.add.length, replace: R.replace.length } };
   }
+  /* «الصف 5 — الاسم: السبب» — نصٌّ واحد للمعاينة والملخّص */
+  function rejLine(x) { return 'الصف ' + x.row + (x.name ? ' (' + x.name + ')' : '') + ': ' + x.why; }
+  function rejList(list, max) { max = max || 5; return list.slice(0, max).map(rejLine).join(' · ') + (list.length > max ? ' · و' + (list.length - max) + ' صفاً آخر' : ''); }
+  var DUP_F = { nid: 'رقم الهوية', phone: 'رقم الجوال', empno: 'الرقم الوظيفي' }, DUP_W = { file: 'مكرر في الملف نفسه', other: 'مكرر — مسجّل لموظف في إدارة أخرى', account: 'مكرر — مسجّل اسمَ دخول لحساب خارج هذه الإدارة' };
   function matchKeys(emp) {
     var keys = [], nid = String(emp && emp.nid || '').trim(), no = String(emp && emp.empno || '').trim(), name = normAr(emp && emp.name);
     if (nid) keys.push(nid); if (no) keys.push('E:' + no); if (name) keys.push('N:' + name + '|' + String(emp && emp.phone || '').trim()); return keys;
@@ -294,10 +306,9 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     if (changed > 0) parts.push('حُدّث ' + changed + ' موظف');
     if (plan.same) parts.push(changed > 0 || plan.added ? 'بلا تغيير: ' + plan.same : 'لا تغيير — بيانات الملف مطابقة للقائمة الحالية (' + plan.same + ')');
     if (plan.skipped) parts.push('تُخطي ' + plan.skipped + ' مكرر');
-    if (plan.rejected) parts.push('رُفض ' + plan.rejected + ' صف مخالف لقواعد الأرقام أو التكرار');
+    if (plan.rejected) parts.push('رُفض ' + plan.rejected + ' صف ولم يُستورد — ' + rejList(plan.rejects || []));   /* V7 · د7: رقمُ الصف وسببه */
     if (pend.inFileDup) parts.push('تكرار داخل الملف: ' + pend.inFileDup);
     if (pend.noName) parts.push('صفوف بلا اسم: ' + pend.noName);
-    if (pend.badLen) parts.push('أُفرغت قيم الهوية/الجوال غير الصالحة في ' + pend.badLen + ' صف');
     if ((pend.derived || []).length) parts.push('أعمدة محسوبة لم تُستورد: ' + pend.derived.map(function (d) { return d.t; }).join('، '));
     if ((pend.unknown || []).length) parts.push('أعمدة غير معروفة تُجوهلت: ' + pend.unknown.join('، '));
     return parts;
@@ -323,6 +334,14 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       if (result.ticket) ST.ticket = result.ticket;
       if (ST.pend !== pend) return;
       if (!result.ok) {
+        if (result.err === 'emp-dup' && result.dup && result.dup.length) {
+          /* V7 · د7: كلُّ قيمةٍ مكرّرة ← صفوفُها في الملف وسببُها */
+          var dupRows = [];
+          result.dup.forEach(function (x) { pend.cands.forEach(function (c) { if (String(c.emp[x.f] || '').trim() === x.v) dupRows.push({ row: c.row, name: c.emp.name, why: (DUP_F[x.f] || x.f) + ' ' + x.v + ' ' + (DUP_W[x.where] || 'مكرر') }); }); });
+          dupRows.sort(function (a, b) { return a.row - b.row; });
+          if (dupRows.length) result.message = 'رُفض الاستيراد ولم يُحفظ شيء — ' + rejList(dupRows, 8) + '. صحّح هذه الصفوف أو احذفها ثم ارفع الملف من جديد.';
+          ST.ticket = null;
+        }
         ST.error = result.message; ST.needsReview = result.err === 'conflict';
         ST.uncertain = result.err === 'network' || result.err === 'invalid' || result.err === 'session';
         if (!ST.uncertain && !ST.needsReview && result.err !== 'reason' && result.err !== 'reason-cancelled') ST.ticket = null;
@@ -373,28 +392,32 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
     /* ═══ قواعد الأرقام تسري على الاستيراد أيضاً — وإلا صار باباً خلفياً للتكرار ═══
        الهوية والجوال: 10 أرقام أو فارغ؛ الرقم الوظيفي: 5 أو 6 أرقام أو فارغ؛ ولا
        تكرار داخل الملف نفسه ولا مع أي إدارة في الموقع. الصف المخالف يُرفض ويُعدّ. */
-    const seenN = {}, seenP = {}, seenO = {};
-    (base || []).forEach(e => { if (e) { if (e.nid) seenN[String(e.nid).trim()] = 1; if (e.phone) seenP[String(e.phone).trim()] = 1; if (e.empno) seenO[String(e.empno).trim()] = 1; } });
-    const rowOk = (emp, isUpdate) => {
+    /* V7 · د7: كلُّ رفضٍ بسببه ومكانه — rowWhy يعيد نصَّ السبب ('' = مقبول)، والمرفوضُ يُسجَّل برقم صفّه في الملف (rejects) */
+    const seenN = {}, seenP = {}, seenO = {}, rejects = [];
+    const at9 = (e) => "مع «" + ((e && e.name) || "موظف") + "» " + (e && e.__row ? "في الصف " + e.__row + " من الملف" : "في هذه الإدارة");
+    (base || []).forEach(e => { if (e) { if (e.nid) seenN[String(e.nid).trim()] = e; if (e.phone) seenP[String(e.phone).trim()] = e; if (e.empno) seenO[String(e.empno).trim()] = e; } });
+    const rowWhy = (emp, isUpdate, rowNo) => {
       const n = String(emp.nid || "").trim(), ph = String(emp.phone || "").trim(), no = String(emp.empno || "").trim();
-      if (n && !/^\d{10}$/.test(n)) return false;
-      if (ph && !/^\d{10}$/.test(ph)) return false;
-      if (no && !/^\d{5,6}$/.test(no)) return false;
+      if (n && !/^\d{10}$/.test(n)) return "رقم الهوية «" + n + "» يجب أن يكون 10 أرقام";
+      if (ph && !/^\d{10}$/.test(ph)) return "رقم الجوال «" + ph + "» يجب أن يكون 10 أرقام";
+      if (no && !/^\d{5,6}$/.test(no)) return "الرقم الوظيفي «" + no + "» يجب أن يكون 5 أو 6 أرقام";
       if (!isUpdate) {
-        if (n && seenN[n]) return false;
-        if (ph && seenP[ph]) return false;
-        if (no && seenO[no]) return false;
+        if (n && seenN[n]) return "رقم الهوية " + n + " مكرر " + at9(seenN[n]);
+        if (ph && seenP[ph]) return "رقم الجوال " + ph + " مكرر " + at9(seenP[ph]);
+        if (no && seenO[no]) return "الرقم الوظيفي " + no + " مكرر " + at9(seenO[no]);
       }
-      if (n) seenN[n] = 1; if (ph) seenP[ph] = 1; if (no) seenO[no] = 1;
-      return true;
+      const src = { name: emp.name, __row: rowNo };
+      if (n) seenN[n] = src; if (ph) seenP[ph] = src; if (no) seenO[no] = src;
+      return "";
     };
+    const rowOk = (emp, isUpdate, c) => { const why = rowWhy(emp, isUpdate, c && c.row); if (why) rejects.push({ row: (c && c.row) || 0, name: emp.name || "", why: why }); return !why; };
     cands.forEach(c => {
       const emp = c.emp;
       ["type","work"].forEach(k => { if (emp[k] && opts[k] && opts[k].indexOf(emp[k]) === -1) opts[k] = [...opts[k], emp[k]]; });
       const at = findAt(emp);
       if (at >= 0) {
         if (mode !== "update") { skipped++; return; }
-        if (!rowOk(emp, true)) { rejected++; return; }
+        if (!rowOk(emp, true, c)) { rejected++; return; }
         const mg = { ...list[at] };
         // كان: الخلية الفارغة تُتجاهل فلا يمكن تفريغ حقل من الملف — نميّز غياب العمود عن الخلية الفارغة
         ["name","empno","phone","type","work","gender"].forEach(k => { if (!hasCol[k]) return; if (c.blank && c.blank[k]) return; if (k === "name" && !emp[k]) return; mg[k] = emp[k] || ""; });
@@ -402,14 +425,14 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
         list[at] = mg; updated++;
         if (c.sh || c.rs || c.cs || c.muk) schedRows.push({ key: schedKey(mg), shift: c.sh, rest: c.rs, cs: c.cs, muk: c.muk });
       } else {
-        if (!rowOk(emp, false)) { rejected++; return; }
+        if (!rowOk(emp, false, c)) { rejected++; return; }
         fresh.push(emp); added++;
         if (c.sh || c.rs || c.cs || c.muk) schedRows.push({ key: schedKey(emp), shift: c.sh, rest: c.rs, cs: c.cs, muk: c.muk });
       }
     });
     // كان: وضع الاستبدال يعكس ترتيب الملف رغم أن الملف هو القائمة كاملة — العكس للإضافة فقط (محاكاة unshift)
     const finalList = mode === "replace" ? fresh.concat(list) : fresh.slice().reverse().concat(list);
-    return { finalRows: finalList, options: opts, schedule: schedRows, added: added, updated: updated, skipped: skipped, rejected: rejected, same: same };
+    return { finalRows: finalList, options: opts, schedule: schedRows, added: added, updated: updated, skipped: skipped, rejected: rejected, same: same, rejects: rejects };
   }
   /* الملتقِط: يفتح مربّع الملفات ثم يقرأ ويحضّر المرشّحين — كما كان حرفاً بحرف */
   function pickFile() {
@@ -442,7 +465,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
               if (ix.name === -1) { toast("لم يتم العثور على عمود «اسم الموظف» — تأكد من صف العناوين"); return; }
               const fileSeen = new Set();
               const cands = [];
-              let inFileDup = 0, noName = 0, badLen = 0;
+              let inFileDup = 0, noName = 0;
               /* V7 · د1-د (قرار المراجع): تكرارُ الهوية أو الرقم الوظيفي أو الجوال داخل الملف نفسه يرفض الملفَّ كلَّه قبل نافذة التأكيد —
                  القيمةُ ← أرقامُ صفوفها في الملف. الصفوفُ المتطابقة حرفاً تكرارٌ كذلك. */
               const dupN = new Map(), dupO = new Map(), dupP = new Map();
@@ -464,14 +487,11 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
                 }
                 // كان: صف المثال في النموذج الفارغ يُستورد كموظف حقيقي ويحجز الهوية 1010101010 — نتخطاه
                 if (/^مثال/.test(name) || name.indexOf("احذف هذا الصف") !== -1) return;
-                // كان: الاستيراد يتجاوز فحص 10 أرقام فتنشأ سجلات يتعذّر حفظ أي تعديل عليها — نُفرّغ القيمة غير الصالحة ونعدّ الصف
-                let nid = g(ix.nid).replace(/\D/g, "");
-                let phone = g(ix.phone).replace(/\D/g, "");
+                // كان: الاستيراد يتجاوز فحص 10 أرقام فتنشأ سجلات يتعذّر حفظ أي تعديل عليها — ثم صارت القيمةُ تُفرَّغ صامتة.
+                /* V7 · د7 (قرار المالك): الصفُّ ذو الهوية أو الجوال المخالف يُرفض برقم صفّه وسببه (prepareImport rowWhy) — لا يُستورد بحقلٍ مفرَّغ */
+                const nid = g(ix.nid).replace(/\D/g, "");
+                const phone = g(ix.phone).replace(/\D/g, "");
                 const blank = {};
-                let badRow = false;
-                if (nid && nid.length !== 10) { nid = ""; badRow = true; }
-                if (phone && phone.length !== 10) { phone = ""; blank.phone = 1; badRow = true; }
-                if (badRow) badLen++;
                 const empno = g(ix.empno);
                 const gRaw = g(ix.gender).trim();
                 const gender = /^ذكر/.test(gRaw) ? "ذكر" : (/^(أنثى|انثى|أنثي|انثي)/.test(gRaw) ? "أنثى" : "");
@@ -482,7 +502,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
                 const key = empKey(emp);
                 if (key && fileSeen.has(key)) { inFileDup++; return; }
                 if (key) fileSeen.add(key);
-                cands.push({ emp, sh: g(ix.shift), rs: ixRestAll.map(g).filter(Boolean).join(" - "), blank: blank,
+                cands.push({ emp, row: rowNo, sh: g(ix.shift), rs: ixRestAll.map(g).filter(Boolean).join(" - "), blank: blank,
                   cs: g(ix.cs), muk: g(ix.muk) });
               });
               const dups = [];
@@ -490,7 +510,7 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
               if (dups.length) { toast("رُفض الملف — فيه تكرار: " + dups.slice(0, 3).join(" · ") + (dups.length > 3 ? " · و" + (dups.length - 3) + " تكراراً آخر" : "") + ". صحّح الملف ثم ارفعه من جديد — لم يُحفظ شيء.", "err"); return; }
               // كان: عند سقوط كل الصفوف لا يُذكر سبب الإسقاط — نُظهر عدد الصفوف بلا اسم
               if (!cands.length) { toast("لا توجد صفوف صالحة في الملف" + (noName ? " · " + KIVO.BassamCount(noName,"صف") + " بلا اسم" : "")); return; }
-              ST.pend = { cands: cands, inFileDup: inFileDup, noName: noName, badLen: badLen, cols: { name: ix.name !== -1, empno: ix.empno !== -1, phone: ix.phone !== -1, type: ix.type !== -1, work: ix.work !== -1, gender: ix.gender !== -1 },
+              ST.pend = { cands: cands, inFileDup: inFileDup, noName: noName, cols: { name: ix.name !== -1, empno: ix.empno !== -1, phone: ix.phone !== -1, type: ix.type !== -1, work: ix.work !== -1, gender: ix.gender !== -1 },
                 sched: { shift: ix.shift !== -1, rest: ixRestAll.length > 0, cs: ix.cs !== -1, muk: ix.muk !== -1 },
                 /* ما وُجد في الملف ولا يُستورد — يُصارَح به المستعمل بدل التجاهل الصامت */
                 derived: HM.derived, unknown: HM.unknown };
@@ -712,12 +732,16 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
           impFileCount: s.file,
           impDupCount: s.dup,
           impNewCount: s.fresh,
+          /* V7 · د7: تحذيرُ المعاينة قبل الاختيار — رقمُ الصف وسببه */
+          impRejects: (s.rejects || []).slice(0, 30).map((x) => ({ row: x.row, name: x.name, why: x.why })),
+          impRejMore: Math.max(0, (s.rejects || []).length - 30),
+          impRejTitle: (s.rejects || []).length ? "صفوف لن تُستورد (" + KIVO.BassamCount((s.rejects || []).length, "صف") + ") — صحّحها في الملف إن أردت استيرادها:" : "",
           impUpdateDesc:
             "يُحدَّث " +
             KIVO.BassamCount(s.dup, "موظف|موجود") +
             " ببيانات الملف (المطابقة برقم الهوية، فإن غاب فبالرقم الوظيفي، فإن غاب فبالاسم مع الجوال)، ويُضاف " +
             KIVO.BassamCount(s.fresh, "موظف|جديد") +
-            ". لا يُحذف أحد.",
+            ". لا يُحذف أحد." + (s.rej && s.rej.update ? " ويُرفض " + KIVO.BassamCount(s.rej.update, "صف") + " مخالف." : ""),
           impAddDesc:
             "يُضاف " +
             KIVO.BassamCount(s.fresh, "موظف|جديد") +
@@ -725,14 +749,14 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
             KIVO.BassamCount(s.dup, "موظف|موجود") +
             " " +
             KIVO.BassamCount.agr(s.dup, "كما هو", "كما هما", "كما هم") +
-            " دون أي تعديل.",
+            " دون أي تعديل." + (s.rej && s.rej.add ? " ويُرفض " + KIVO.BassamCount(s.rej.add, "صف") + " مخالف." : ""),
           impReplaceDesc:
             "يُحذف " +
             KIVO.BassamCount(s.cur, "موظف") +
             " من القائمة الحالية ثم تُستورد بيانات الملف (" +
             KIVO.BassamCount(s.file, "موظف") +
             ") من جديد" +
-            (impSched() ? "، ويُبنى الجدول الشهري " + KIVO.BassamCount.agr(s.file, "له", "لهما", "لهم") + " من الصفر." : "."),
+            (impSched() ? "، ويُبنى الجدول الشهري " + KIVO.BassamCount.agr(s.file, "له", "لهما", "لهم") + " من الصفر." : ".") + (s.rej && s.rej.replace ? " ويُرفض " + KIVO.BassamCount(s.rej.replace, "صف") + " مخالف." : ""),
           impReplaceWarn:
             "سيُحذف " +
             KIVO.BassamCount(s.cur, "موظف") +
@@ -810,6 +834,8 @@ function wkNorm9(v){ var s = String(v == null ? "" : v).trim().replace(/\s*ـ?\s
       '<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--fg-x8a6f35);white-space:nowrap">' + svg("cal", 15, 0) + " يُكتب الجدول الشهري في شهر</span>" +
       sel("impSetM", V.impSchedMonth, V.impMonthOpts) + sel("impSetY", V.impSchedYear, V.impYearOpts) + '<span style="' + esc(V.impSchedLockStyle) + '">' + esc(V.impSchedLock) + "</span></div>" +
       '<div style="font-size:10.5px;font-weight:400;color:var(--fg-x94a3b8);margin-top:8px;line-height:1.9">' + esc(V.impSchedCols) + "</div></div>";
+    if ((V.impRejects || []).length) h += '<div data-emp-imp-rej role="alert" style="border:1px solid var(--bd-xfecaca);background:var(--bg-xfef2f2);border-radius:14px;padding:12px 14px;margin-bottom:14px"><div style="font-size:12px;font-weight:600;color:var(--fg-xb91c1c);margin-bottom:6px">' + esc(V.impRejTitle) + '</div><ul style="margin:0;padding:0 18px 0 0;font-size:11px;line-height:1.9;color:var(--fg-x53565a)">' +
+      V.impRejects.map(function (x) { return '<li data-emp-imp-rej-row="' + esc(x.row) + '">الصف ' + esc(x.row) + (x.name ? " (" + esc(x.name) + ")" : "") + ": " + esc(x.why) + "</li>"; }).join("") + (V.impRejMore ? "<li>و" + esc(V.impRejMore) + " صفاً آخر</li>" : "") + "</ul></div>";
     if (V.impError) h += '<p role="alert" style="color:var(--danger-text);font-size:12px">' + esc(V.impError) + "</p>";
     if (V.impBusy) h += '<p role="status">جارٍ تأكيد العملية مع الخادم…</p>';
     if (V.impNeedsReview) h += '<button data-ei="impReview"' + (V.impReviewDisabled ? " disabled" : "") + ' class="ei-b" style="height:38px;background:var(--bg-surface);color:var(--text-secondary);border:1px solid var(--border-default)">مراجعة بيانات الإدارة الحالية</button>';

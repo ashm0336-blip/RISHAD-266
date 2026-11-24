@@ -33,8 +33,9 @@ async function inbox(W, who) {
   return r.json.items;
 }
 async function emitShift(W, sh, tag) {
-  const r = await W.act('manager1', { op: 'emit', type: 'rep_pull', dept: D1, vars: { 'الوردية': sh, 'اليوم': TODAY, 'المُعدّل': 'TEST_ONLY ' + tag } });
-  assert.equal(r.status, 200, 'the unit manager emits rep_pull for ' + sh + ': ' + JSON.stringify(r.json).slice(0, 200)); assert.equal(r.json.ok, 1);
+  /* V7 · د7 (البند ٨): المرسِلُ المديرُ العام لا مديرُ الوحدة — فالفاعلُ لا يُنبَّه بفعله، ومديرُ الوحدة مستلمٌ يُفحص */
+  const r = await W.act('gm', { op: 'emit', type: 'rep_pull', dept: D1, vars: { 'الوردية': sh, 'اليوم': TODAY, 'المُعدّل': 'TEST_ONLY ' + tag } });
+  assert.equal(r.status, 200, 'the general manager emits rep_pull for ' + sh + ': ' + JSON.stringify(r.json).slice(0, 200)); assert.equal(r.json.ok, 1);
   return r.json.id;
 }
 const has = (items, id) => items.some((x) => x.id === id);

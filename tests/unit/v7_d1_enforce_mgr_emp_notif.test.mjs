@@ -91,20 +91,29 @@ async function produce(x, who = 'tst_dm1') {
 
 for (const mode of ['enforce']) {
   /* ── the reproduction (fails on 09a5fe8 in enforce: the manager's feed is empty) ── */
-  test('V7 D1 · ' + mode + ': the unit manager adds an employee through the real save → his own feed contains «emp_add»', async () => {
+  /* V7 · د7 (البند ٨ — قرار المالك): لا يُنبَّه أحدٌ بفعلٍ قام به هو. كان المديرُ نفسُه يضيف ثم يقرأ؛ صار غيرُه يضيف (مسؤول المنصة) فيقرأ المدير،
+     وإضافتُه هو لا تصله — والقراءةُ في الإنفاذ (قرار D1) باقيةٌ كما هي */
+  test('V7 D1 · ' + mode + ': an employee added through the real save → the unit manager\'s feed contains «emp_add» (and his own add does not notify him)', async () => {
     const x = await mk(mode), before = x.denied();
-    ok(await x.save('tst_dm1', (v) => v.concat([NEW(1)])), 'the save');
+    ok(await x.save('super', (v) => v.concat([NEW(1)])), 'the save');
     const mine = await x.feed('tst_dm1');
     assert.deepEqual(mine.map((m) => m.type), ['emp_add'], 'GET /api/notifications?uid=<manager> holds the notice of his own unit');
     assert.equal(mine[0].srv, 1, 'issued by the server');
     assert.equal(x.denied(), before, 'no «denied» row');
+    ok(await x.save('tst_dm1', (v) => v.concat([NEW(2)])), 'the manager\'s own save');
+    assert.deepEqual((await x.feed('tst_dm1')).map((m) => m.type), ['emp_add'], 'his own add did not notify him (still one emp_add)');
+    assert.equal((await x.feed('tst_gm1')).filter((m) => m.type === 'emp_add').length, 2, 'the general manager reads both');
   });
 
   /* ── who reads: one table for both modes ── */
   test('V7 D1 · ' + mode + ': manager-targeted employee notices reach the unit manager, the unit account and the general manager of the node — and nobody else (enforce == legacy)', async () => {
     const x = await mk(mode); await produce(x);
+    /* V7 · د7 (البند ٨): الفاعلُ (tst_dm1) لا يقرأ ما فعله؛ ومن يقرأ غيرُه كما هو. وعالمٌ ثانٍ يفعل فيه مسؤولُ المنصة: يقرأ المديرُ والجدولُ كما هو عدا الفاعل */
+    const notActor = (list, who) => list.filter((x) => x !== who);
+    for (const type of Object.keys(READERS)) assert.deepEqual(await x.readers(type), notActor(READERS[type], 'tst_dm1'), mode + ' ' + type + ' readers (actor tst_dm1 excluded)');
+    const y = await mk(mode); await produce(y, 'super');
+    for (const type of Object.keys(READERS)) assert.deepEqual(await y.readers(type), notActor(READERS[type], 'super'), mode + ' ' + type + ' readers (actor super excluded)');
     if (process.env.V7_D1_DUMP === '1') { const t = {}; for (const type of Object.keys(READERS)) t[type] = await x.readers(type); console.log(mode, JSON.stringify(t)); }
-    for (const type of Object.keys(READERS)) assert.deepEqual(await x.readers(type), READERS[type], mode + ' ' + type + ' readers');
     /* (a) staff holder of emps/custody only · (b) tasks:view + plus ref.employment_type.delete · (c) managers of other units ·
        (d) manager-flagged account whose own sheet is emps/data:view only (enforce: minus emp.view) · a non-manager with the whole
        employees sheet · the supervisor and the importer who hold emps/data */
@@ -147,7 +156,7 @@ for (const mode of ['enforce']) {
 
 /* ── the enforce narrowing: an explicit minus on the manager himself ── */
 test('V7 D1 · enforce: a «minus emp.view» on the unit manager drops the employee notices from his feed, and only his', async () => {
-  const x = await mk('enforce'); await produce(x);
+  const x = await mk('enforce'); await produce(x, 'super');   /* V7 · د7 (البند ٨): غيرُ المدير يفعل — فعلُه هو لا يصله أصلاً */
   assert.equal((await x.feed('tst_dm1')).length, 5);
   const G = stored(x.env, KG); G.emp['mgr:' + D] = Object.assign({}, G.emp['mgr:' + D], { minus: ['emp.view'] }); putKV(x.env, KG, G);
   assert.deepEqual(await x.feed('tst_dm1'), [], 'the manager whose emp.view is dropped reads none');

@@ -98,7 +98,8 @@ for (const mode of ['enforce']) {
     }
     for (const type of ['emp_add', 'emp_edit', 'emp_type', 'emp_del', 'emp_imp']) {
       assert.equal(x.of(type).length, 1, 'exactly one ' + type + ' message: ' + JSON.stringify(x.msgs().map((m) => m.type)));
-      assert.deepEqual(await x.readers(type), want[type], type + ' recipients are those measured on e34fa23 (enforce: the legacy row — owner decision 1)');
+      /* V7 · د7 (البند ٨ — قرار المالك): الفاعلُ (tst_dm1 يحفظ) لا يُنبَّه بفعله؛ بقيةُ المستلمين كما قيسوا */
+      assert.deepEqual(await x.readers(type), BASELINE ? want[type] : want[type].filter((w) => w !== 'tst_dm1'), type + ' recipients are those measured on e34fa23 (enforce: the legacy row — owner decision 1), less the actor');
     }
     /* mandatory test 2: the manager-flagged account with a view-only sheet reads none of the manager-targeted ones (as on e34fa23) */
     assert.deepEqual((await x.feed('tst_m2')).filter((m) => TYPES.includes(m.type)), [], 'tst_m2 reads no emp_* (identical to e34fa23)');
@@ -107,7 +108,8 @@ for (const mode of ['enforce']) {
     if (BASELINE) assert.equal((await x.emit(mode === 'enforce' ? 'super' : 'tst_dm2', 'emp_wipe', { dept: D2 })).status, 200, 'baseline client emit emp_wipe');
     else ok(await x.transition('super', D2, 'all', () => false), 'wipe by the platform administrator');
     assert.equal(x.of('emp_wipe').length, 1, 'exactly one emp_wipe message');
-    assert.deepEqual(await x.readers('emp_wipe', ['super', 'tst_dm1', 'tst_dm2', 'tst_gm1', 'tst_m2']), want.emp_wipe, 'emp_wipe recipients are those measured on e34fa23');
+    /* V7 · د7 (البند ٨): المسحُ فعلُ مسؤول المنصة نفسِه — مستلمُه الوحيد («sys») هو الفاعل فلا يُنبَّه؛ الرسالةُ مخزَّنة (أعلاه) */
+    assert.deepEqual(await x.readers('emp_wipe', ['super', 'tst_dm1', 'tst_dm2', 'tst_gm1', 'tst_m2']), BASELINE ? want.emp_wipe : want.emp_wipe.filter((w) => w !== 'super'), 'emp_wipe recipients are those measured on e34fa23, less the actor');
   });
   if (BASELINE) continue;
 
@@ -122,7 +124,9 @@ for (const mode of ['enforce']) {
     assert.equal(m[0].body, 'أُضيف TEST_ONLY · جديد 1 (TEST_ONLY رسمي) إلى موظفي الإدارة', 'wording as the browser emitted it');
     assert.equal(m[0].author_key, 'mgr:' + D); assert.equal(m[0].author_name, DM1);
     assert.equal(x.denied(), before, 'no false security alert');
-    assert.ok((await x.feed('tst_dm1')).some((i) => i.type === 'emp_add' && i.srv === 1), 'and it is in the manager\'s feed');
+    /* V7 · د7 (البند ٨): المديرُ هو الفاعل فلا يصله؛ يصل المديرَ العام */
+    assert.ok(!(await x.feed('tst_dm1')).some((i) => i.type === 'emp_add'), 'the actor (the manager) is not notified of his own add');
+    assert.ok((await x.feed('tst_gm1')).some((i) => i.type === 'emp_add' && i.srv === 1), 'and it is in the general manager\'s feed');
     /* the retired browser emit is refused — it is no longer how the event is produced (e34fa23 enforce: 403 notification-scope for the legitimate manager) */
     const r = await x.emit('tst_dm1', 'emp_add');
     assert.equal(r.status, 200, 'dropped, not refused'); assert.equal(x.msgs().length, m.length, 'and it produced nothing');

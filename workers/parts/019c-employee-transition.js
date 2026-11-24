@@ -355,6 +355,18 @@ function empApplySchedule(values, meta, validKeys, result) {
   result.counts.schedule = rows.length;
 }
 /* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — لا يمنح الاستيرادُ صلاحياتٍ بعمود «الصلاحيات» بعد اليوم؛ الأدوارُ تُسنَد من «الصلاحيات ← الأشخاص» */
+/* V7 · د7: سياقُ التفرّد (كـ054 edCtx9) */
+async function empDupContext(env, A, d, before, after) {
+  var o = empIdents(before), n = empIdents(after), q, chg = false;
+  for (q in n.n) if (!o.n[q]) chg = true; for (q in n.p) if (!o.p[q]) chg = true; for (q in n.o) if (!o.o[q]) chg = true;
+  if (!chg) return null;
+  var dl = parseJson(await kvGet(env, 'kv', 'bassam_depts_v1'), null), ids = [];
+  (Array.isArray(dl) ? dl : (dl && Array.isArray(dl.list) ? dl.list : [])).forEach(function (x) { if (x && x.id && String(x.id) !== d) ids.push(String(x.id)); });
+  var em = ids.length ? await opResourceMany(env, ids.map(function (id) { return 'bsdept:' + id + ':bassam_employees_v1'; })) : {},
+    E = { others: {}, users: Array.isArray(A.users) ? A.users : parseJson(await kvGet(env, 'kv', K_USERS), []) };
+  ids.forEach(function (id) { var k = 'bsdept:' + id + ':bassam_employees_v1'; E.others[id] = parseJson(em[k] == null ? '[]' : String(em[k]), []); });
+  return E;
+}
 async function empPrepareTransition(env, A, input) {
   if (!A || !A.u) throw cuError('employee-transition-forbidden', 403);
   empShape(input, [
@@ -437,6 +449,11 @@ async function empPrepareTransition(env, A, input) {
       counts: { removed: removed.length, employees: after.length, accountsCreated: 0, accountsRemoved: 0, schedule: 0 },
       warnings: [],
     };
+  /* V7 · د7: تكرارٌ مع إدارةٍ أخرى أو حساب ⇒ رفضٌ بتفصيله (يذكر العميلُ الصف) */
+  if (input.intent === 'import') {
+    var dupList = empDupList(A, before, after, d, await empDupContext(env, A, d, before, after));
+    if (dupList.length) { var dupErr = cuError('emp-dup', 403); dupErr.cuDup = dupList.slice(0, 200); throw dupErr; }
+  }
   EMP_TRANSITION_RELATED.forEach(function (n) {
     var k = empTransitionKey(d, n),
       raw = source.keys[k];

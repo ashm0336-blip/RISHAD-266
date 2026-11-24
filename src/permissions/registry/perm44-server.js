@@ -44,6 +44,8 @@ function perm44RolesWhy(A, k, newVal, curVal) {
     if (!perm44Held(A, d, 'perm.assign')) return 'grant';
     /* ما يضيفه المديرُ أو يغيّره في دورٍ: داخل سقف وحدته · ويحمله هو — والمحفوظُ خارج السقف (نظامٌ أُطفئ بعدُ) يبقى كما هو بلا مساس */
     var C = perm44CeilingFn(A, d), D0 = E.diff(o, n), i, j;
+    /* V7 · د7: الاستعادةُ المتحقَّقة لمدير الإدارة: خارجُ السقف يُخزَّن بلا أثر */
+    var rst44 = !!A.__srvRst && enfDeptMgrFull(A, d);
     for (i = 0; i < D0.changes.length; i++) {
       var c = D0.changes[i], sysEntries = [];
       if (c.what === 'sys' && c.to) sysEntries.push([c.sys, c.to]);
@@ -56,7 +58,7 @@ function perm44RolesWhy(A, k, newVal, curVal) {
              — لا يُرفض به حفظُ صفِّ المضيف؛ وصفُّ العدسة المطفأة نفسُه يبقى مرفوضاً ('cap') */
           var ow = (KIVO_REGISTRY.byKey[ks[q]] || {}).owner || '';
           if (hostRow && /^lens\./.test(ow) && (isObj(rs[ow]) || !C(ks[q]))) continue;
-          if (!C(ks[q])) return 'cap'; if (!perm44Held(A, d, ks[q])) return 'grant';
+          if (!C(ks[q])) { if (rst44) continue; return 'cap'; } if (!perm44Held(A, d, ks[q])) return 'grant';
         }
       }
       if (c.what === 'ex' && c.to) { if (!E.grantable(c.to.key) || !C(c.to.key)) return 'cap'; if (!perm44Held(A, d, c.to.key)) return 'grant'; }

@@ -119,6 +119,21 @@ function rsBCRemapRec(from, to) {
   var n = resName(key);
   return isDeviceKey(key) || isDeviceKey(n) || /(?:^|_)(?:sessions?|recovery|recover|cookies?|tokens?|credentials?)(?:_|$)/i.test(n);
 }
+/* V7 · د7: القوالب ← أدوار الهدف (063 enfRolesFromTpls) · tplOf بالموظف أو بالإدارة · mgr:* لا يُسند (ب1) */
+function rsBCTplsRoles(keys, perms, d, src, summary) {
+  var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = 'bsdept:' + d + ':bassam_perm_tpls_v1', rk = perm44Key(d);
+  if (T0) {
+    of = Object.keys(T0).every(function (k) { return typeof T0[k] === 'string'; }) ? T0 : (isObj(T0[src]) ? T0[src] : isObj(T0[d]) ? T0[d] : null);
+    delete perms.tplOf;
+  }
+  var tpls = rsBCOwn(keys, tk) ? parseJson(keys[tk], null) : null;
+  if (!Array.isArray(tpls) || !tpls.length) return;
+  var assign = {};
+  Object.keys(of || {}).forEach(function (ek) { if (!isMgrKey(ek)) assign[ek] = of[ek]; });
+  var X = enfRolesFromTpls(tpls, assign, rsBCOwn(keys, rk) ? parseJson(keys[rk], null) : null);
+  if (X.rep.roles || X.rep.people) keys[rk] = JSON.stringify(X.rec);
+  summary.tplRoles = { roles: X.rep.roles, people: X.rep.people, unknownTpl: X.rep.unknownTpl, lensDropped: X.rep.lensDropped };
+}
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
   var required = scope.kind === 'full' @@SYS:bc.required.dstats|pre="? ['kv', "|empty="? ['kv', "@@'notifications'@@SYS:bc.required.custody@@] : ['kv', 'notifications'@@SYS:bc.required.custody@@];
@@ -435,7 +450,10 @@ async function rsConvertBackup(env, A, file, opt) {
   @@SYS:bc.retired.custody|empty="[]"@@.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
-  /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها) */
+  /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها)
+
+     V7 · د7 (51ب): في نسخة الإدارة تصير أدواراً قبل الإسقاط (rsBCTplsRoles) */
+  if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });

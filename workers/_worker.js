@@ -2507,23 +2507,28 @@ function empIdents(rows) {
   });
   return m;
 }
-function empDupWhy(A, a, b, d, ctx) {
-  var E = ctx && ctx.ed; if (!E || !Array.isArray(b)) return '';
-  var old = empIdents(a), seen = { n: {}, p: {}, o: {} }, other = { n: {}, p: {}, o: {} }, dd, i, e, n, p, o, m;
-  for (dd in E.others) { if (dd === d) continue; m = empIdents(E.others[dd]); for (i in m.n) other.n[i] = 1; for (i in m.p) other.p[i] = 1; for (i in m.o) other.o[i] = 1; }
+/* V7 · د7: التكرارُ بتفصيله {f, v, where: file|other|account} — empDupWhy منه */
+function empDupList(A, a, b, d, E) {
+  var out = []; if (!E || !Array.isArray(b)) return out;
+  var old = empIdents(a), seen = { n: {}, p: {}, o: {} }, other = { n: {}, p: {}, o: {} }, dd, i, e, m, F = { n: 'nid', p: 'phone', o: 'empno' };
+  for (dd in E.others) { if (dd === d) continue; m = empIdents(E.others[dd]); for (i in m.n) other.n[i] = 'other'; for (i in m.p) other.p[i] = 'other'; for (i in m.o) other.o[i] = 'other'; }
   (Array.isArray(E.users) ? E.users : []).forEach(function (u) {
     if (!isObj(u) || u.deptId === d) return;
-    if (u.un) { other.n[String(u.un)] = 1; other.p[String(u.un)] = 1; }
-    if (u.alt) { other.n[String(u.alt)] = 1; other.p[String(u.alt)] = 1; }
+    [u.un, u.alt].forEach(function (x) { if (!x) return; x = String(x); if (!other.n[x]) other.n[x] = 'account'; if (!other.p[x]) other.p[x] = 'account'; });
   });
   for (i = 0; i < b.length; i++) {
     e = b[i]; if (!isObj(e)) continue;
-    n = String(e.nid || '').trim(); p = String(e.phone || '').trim(); o = String(e.empno || '').trim();
-    if (n) { if (seen.n[n] && !old.n[n]) return 'emp-dup'; seen.n[n] = 1; if (!old.n[n] && other.n[n]) return 'emp-dup'; }
-    if (p) { if (seen.p[p] && !old.p[p]) return 'emp-dup'; seen.p[p] = 1; if (!old.p[p] && other.p[p]) return 'emp-dup'; }
-    if (o) { if (seen.o[o] && !old.o[o]) return 'emp-dup'; seen.o[o] = 1; if (!old.o[o] && other.o[o]) return 'emp-dup'; }
+    [['n', e.nid], ['p', e.phone], ['o', e.empno]].forEach(function (pr) {
+      var f = pr[0], v = String(pr[1] || '').trim(); if (!v) return;
+      if (seen[f][v] && !old[f][v]) out.push({ f: F[f], v: v, where: 'file' });
+      else if (!old[f][v] && other[f][v]) out.push({ f: F[f], v: v, where: other[f][v] });
+      seen[f][v] = 1;
+    });
   }
-  return '';
+  return out;
+}
+function empDupWhy(A, a, b, d, ctx) {
+  return empDupList(A, a, b, d, ctx && ctx.ed).length ? 'emp-dup' : '';
 }
 function taskRawWhy(A, a, b, d, ctx) { return taskXWhy(A, a, b, d, ctx) || taskAsgWhy(A, a, b, d, ctx) || taskOwnWhy(A, a, b, d, ctx) || taskDelWhy(A, a, b, d, ctx) || taskAcctWhy(A, a, b, d, ctx); }
 /* KIVO_264 · D14 · OD-7: حكمُ تعديل صاحب الحساب لسجلّه هو (a المخزَّن · b الوارد) — null مقبول، وإلا سببُ الرفض:
@@ -4420,6 +4425,20 @@ var NF_TYPES = {
   },
 };
 
+/* V7 · د7 (٨): الفاعلُ لا يُنبَّه بفعله — نوعٌ «فور…» غيرُ أمني (السجلّ: when) · لا المعاينة */
+function nfActorType(type) {
+  if (type === "bc_dept") return true;
+  var T = Object.prototype.hasOwnProperty.call(NF_TYPES, type) ? NF_TYPES[type] : null;
+  return !!(T && T.k !== "sec" && /^فور/.test(String(T.when || "")));
+}
+function nfActorTypes() {
+  return Object.keys(NF_TYPES).filter(nfActorType).concat(["bc_dept"]);
+}
+function nfSelfAct(m, u) {
+  if (!m || !u || m.preview || !m.author_key || !nfActorType(m.type)) return false;
+  var a = String(m.author_key);
+  return a === String(u.id || "") || (!!u.ekey && a === String(u.ekey));
+}
 var NF_REV = "bassam_notifications_domain_v1",
   NF_CFG_REV = "bassam_notif_cfg_v1",
   NF_BC_REV = "bassam_bc_v1",
@@ -4859,6 +4878,7 @@ function nfPage(A, d, type, cat, act) {
   );
 }
 function nfTargetHit(A, m, targets, u, refs) {
+  if (nfSelfAct(m, u)) return false;
   if (m.kind === "broadcast") {
     if (u.role === "super") return true;
     if (u.dis) return false;
@@ -5559,6 +5579,11 @@ async function nfFeedRows(env, A, opts) {
     audience.off.forEach(function (o) { (byScope9[o.scope] = byScope9[o.scope] || []).push(o.type); });
     where += " AND NOT (m.kind='event' AND (" + Object.keys(byScope9).map(function (sc) { return "(m.scope=" + q9(sc) + " AND m.type IN (" + byScope9[sc].map(q9).join(",") + "))"; }).join(" OR ") + "))";
   }
+  /* V7 · د7 (٨): القائمة والعدّادات */
+  var q8 = function (s) { return "'" + String(s).replace(/'/g, "''") + "'"; },
+    me8 = [String(A.u.id || "")].concat(A.u.ekey ? [String(A.u.ekey)] : []).filter(Boolean);
+  if (me8.length)
+    where += " AND NOT (m.preview=0 AND m.author_key IN (" + me8.map(q8).join(",") + ") AND m.type IN (" + nfActorTypes().map(q8).join(",") + "))";
   bind.push(opts.dept || A.u.deptId || "");
   where += " AND json_valid(?5) AND ?6 IS NOT NULL";
 
@@ -9113,6 +9138,18 @@ function empApplySchedule(values, meta, validKeys, result) {
   result.counts.schedule = rows.length;
 }
 /* V7 · د5-ح: قوالبُ الصلاحيات حُذفت — لا يمنح الاستيرادُ صلاحياتٍ بعمود «الصلاحيات» بعد اليوم؛ الأدوارُ تُسنَد من «الصلاحيات ← الأشخاص» */
+/* V7 · د7: سياقُ التفرّد (كـ054 edCtx9) */
+async function empDupContext(env, A, d, before, after) {
+  var o = empIdents(before), n = empIdents(after), q, chg = false;
+  for (q in n.n) if (!o.n[q]) chg = true; for (q in n.p) if (!o.p[q]) chg = true; for (q in n.o) if (!o.o[q]) chg = true;
+  if (!chg) return null;
+  var dl = parseJson(await kvGet(env, 'kv', 'bassam_depts_v1'), null), ids = [];
+  (Array.isArray(dl) ? dl : (dl && Array.isArray(dl.list) ? dl.list : [])).forEach(function (x) { if (x && x.id && String(x.id) !== d) ids.push(String(x.id)); });
+  var em = ids.length ? await opResourceMany(env, ids.map(function (id) { return 'bsdept:' + id + ':bassam_employees_v1'; })) : {},
+    E = { others: {}, users: Array.isArray(A.users) ? A.users : parseJson(await kvGet(env, 'kv', K_USERS), []) };
+  ids.forEach(function (id) { var k = 'bsdept:' + id + ':bassam_employees_v1'; E.others[id] = parseJson(em[k] == null ? '[]' : String(em[k]), []); });
+  return E;
+}
 async function empPrepareTransition(env, A, input) {
   if (!A || !A.u) throw cuError('employee-transition-forbidden', 403);
   empShape(input, [
@@ -9195,6 +9232,11 @@ async function empPrepareTransition(env, A, input) {
       counts: { removed: removed.length, employees: after.length, accountsCreated: 0, accountsRemoved: 0, schedule: 0 },
       warnings: [],
     };
+  /* V7 · د7: تكرارٌ مع إدارةٍ أخرى أو حساب ⇒ رفضٌ بتفصيله (يذكر العميلُ الصف) */
+  if (input.intent === 'import') {
+    var dupList = empDupList(A, before, after, d, await empDupContext(env, A, d, before, after));
+    if (dupList.length) { var dupErr = cuError('emp-dup', 403); dupErr.cuDup = dupList.slice(0, 200); throw dupErr; }
+  }
   EMP_TRANSITION_RELATED.forEach(function (n) {
     var k = empTransitionKey(d, n),
       raw = source.keys[k];
@@ -10505,6 +10547,11 @@ async function rsPrepare(env, A, body, meta, internal) {
       if (!Object.prototype.hasOwnProperty.call(base, K_PERM)) base[K_PERM] = inputRevs[K_PERM] || 0;
     } else delete keys[K_PERM];
   }
+  /* V7 · د7: سجلُّ أدوار النسخة ⇒ منحُه بسقف الهدف (perm44GrantsWhy) */
+  if (body.scope.kind === 'dept' && Object.prototype.hasOwnProperty.call(keys, perm44Key(dept)) && keys[perm44Key(dept)] != null) {
+    var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
+    if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
+  }
   /* 330-auth.pruneDeptAccounts: restore only removes staff/dept identities bound
      to removed departments, never GM/Super accounts. The result still traverses
      applySave's unchanged password, uniqueness and final-super validators. */
@@ -11063,6 +11110,15 @@ function rsPermsCounts(A, d, keys) {
     Object.keys(em).forEach(function (ek) { if (isMgrKey(ek) || !isObj(em[ek])) return; out.assignments++; Object.keys(em[ek]).forEach(function (leaf) { if (!on(leaf)) add(leaf.split('/')[0]); }); });
   }
   return out;
+}
+/* V7 · د7: منحُ الأدوار grantOf — غيرُ الأدوار كما هو · null = لا تغيير */
+function rsRoleGrants(A, d, rolesVal, curVal) {
+  var E = perm44E(), R = E.normRec(perm44Rec(rolesVal)), cur = perm44Rec(curVal), out = isObj(cur) ? JSON.parse(JSON.stringify(cur)) : { v: 1, emp: {} }, C = perm44CeilingFn(A, d), now = Date.now(), e;
+  if (!isObj(out.emp)) out.emp = {};
+  for (e in out.emp) if (isObj(out.emp[e]) && PERM44_SRC.test(String(out.emp[e].src || ''))) delete out.emp[e];
+  for (e in R.people) { var g = E.grantOf(R.people[e], R, C, now, null); if (g) { var o = isObj(cur) && isObj(cur.emp) ? cur.emp[e] : null; out.emp[e] = o && deq(o.plus, g.plus) && deq(o.minus || [], g.minus) && o.src === g.src ? o : Object.assign(g, { at: now, by: String(A.u.id || '') }); } }
+  if (!isObj(cur) && !Object.keys(out.emp).length) return null;
+  return deq(out, cur) ? null : JSON.stringify(out);
 }
 function rsDeptPermsKeep(pm, id, PP, mode) {
   if (!id || !isObj(PP)) return null;
@@ -12114,7 +12170,7 @@ async function rsEmployeeRoute(env, request, url, ss) {
     if (e.rs) return json({ ok: 0, err: e.rs }, e.status);
     if (e.szCode || e.awCode) return bdErrorResponse(e);
     if (e.irCode) return json({ ok: 0, err: e.irCode, at: e.irPath }, e.irStatus);
-    if (e.cuCode) return json({ ok: 0, err: e.cuCode }, e.cuStatus);
+    if (e.cuCode) return json(Object.assign({ ok: 0, err: e.cuCode }, e.cuDup ? { dup: e.cuDup } : {}), e.cuStatus);
     if (e.nf) return json({ ok: 0, err: e.nf }, e.status);
     if (/KIVO_IRSHAD_LEGACY_SOURCE/.test(String(e))) return json({ ok: 0, err: 'irshad-legacy-source-present' }, 503);
     if (/KIVO_RESTORE_EPOCH|KIVO_RESTORE_TARGET|KIVO_REV_CONFLICT|KIVO_CUSTODY_TARGET_CHANGED/.test(String(e)))
@@ -12323,6 +12379,21 @@ function rsBCRemapIR(domain, source, target) {
 function rsBCForbiddenKey(key) {
   var n = resName(key);
   return isDeviceKey(key) || isDeviceKey(n) || /(?:^|_)(?:sessions?|recovery|recover|cookies?|tokens?|credentials?)(?:_|$)/i.test(n);
+}
+/* V7 · د7: القوالب ← أدوار الهدف (063 enfRolesFromTpls) · tplOf بالموظف أو بالإدارة · mgr:* لا يُسند (ب1) */
+function rsBCTplsRoles(keys, perms, d, src, summary) {
+  var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = 'bsdept:' + d + ':bassam_perm_tpls_v1', rk = perm44Key(d);
+  if (T0) {
+    of = Object.keys(T0).every(function (k) { return typeof T0[k] === 'string'; }) ? T0 : (isObj(T0[src]) ? T0[src] : isObj(T0[d]) ? T0[d] : null);
+    delete perms.tplOf;
+  }
+  var tpls = rsBCOwn(keys, tk) ? parseJson(keys[tk], null) : null;
+  if (!Array.isArray(tpls) || !tpls.length) return;
+  var assign = {};
+  Object.keys(of || {}).forEach(function (ek) { if (!isMgrKey(ek)) assign[ek] = of[ek]; });
+  var X = enfRolesFromTpls(tpls, assign, rsBCOwn(keys, rk) ? parseJson(keys[rk], null) : null);
+  if (X.rep.roles || X.rep.people) keys[rk] = JSON.stringify(X.rec);
+  summary.tplRoles = { roles: X.rep.roles, people: X.rep.people, unknownTpl: X.rep.unknownTpl, lensDropped: X.rep.lensDropped };
 }
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
@@ -12735,7 +12806,10 @@ async function rsConvertBackup(env, A, file, opt) {
   cuKeys.concat(nfKeys, dsKeys, irKeys, businessKeys).forEach(function (k) {
     delete keys[k];
   });
-  /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها) */
+  /* V7 · د5-ح: قوالبُ الصلاحيات موردٌ حُذف (063 «tpls-retire») — نسخةٌ أُخذت قبل القفل تحملها فتُسقط هنا ولا تُستعاد (الأدوارُ بديلُها)
+
+     V7 · د7 (51ب): في نسخة الإدارة تصير أدواراً قبل الإسقاط (rsBCTplsRoles) */
+  if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });
@@ -14350,9 +14424,10 @@ function rsiFieldList(recs) {
 }
 /* سببُ عدم نقل مفتاحٍ من نسخةٍ قديمة ('' = يُنقل): null قيمةٌ فارغة في الملف · device تفضيلُ جهازٍ أو مستخدم · tpls قوالبُ الصلاحيات (حُذفت — الأدوارُ بديلُها) ·
    grants منحٌ صريحة لموظفين (لا تُفتح صلاحيةٌ لم تكن) · unknown لا موردَ له في سجل الموارد الحالي */
-function rsiSkipWhy(k, v) {
+/* V7 · د7: قوالبُ نسخة الإدارة تصير أدواراً (019f) */
+function rsiSkipWhy(k, v, kind) {
   var n = resName(k), r = resOf(k);
-  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? 'tpls' : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
+  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? (kind === 'dept' && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
 }
 function rsiSweepStmt(env, now, uid) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id IN (SELECT snapshot_id FROM ' + RSI_T + " WHERE domain='meta' AND snapshot_id>='stage:' AND snapshot_id<'stage;' AND (row_number<?1 OR table_key=?2))").bind(now - RSI_TTL, uid);
@@ -14385,7 +14460,7 @@ async function rsImportRoute(env, request, ss) {
     var now = Date.now(), id = 'stage:' + b.requestId, op = b.op || b.phase, D = env.DB, s = b.scope, T = RSI_T;
     if (op === 'begin') {
       if (!isObj(s) || ['full', 'dept'].indexOf(s.kind) < 0 || rsScopeDenied(A, s) || (s.kind === 'dept' && !A.depts.some(function (d) { return d.id === s.departmentId; }))) throw rsError('restore-policy', 403);
-      var skip = Object.keys(b.keys || {}).map(function (k) { return { k: k, why: rsiSkipWhy(k, b.keys[k] ? null : '') }; }).filter(function (x) { return x.why; });
+      var skip = Object.keys(b.keys || {}).map(function (k) { return { k: k, why: rsiSkipWhy(k, b.keys[k] ? null : '', s.kind) }; }).filter(function (x) { return x.why; });
       var spec = await rsiSliceSpec(env, A, s, b.resources || b.keys || {}, b.mode);
       if (b.dry) return json({ ok: 1, skip: skip, slice: spec, sliceMin: RSI_SLICE_MIN });
       var im = b.images || {}, ids = Object.keys(im), total = b.n, meta = { scope: s, n: b.n, f: b.f, images: {}, slices: b.slices || {}, mode: b.mode || '' }, bases = {};
@@ -14457,7 +14532,7 @@ async function rsImportRoute(env, request, ss) {
     if (isObj(file.data) && Object.keys(M.slices).some(function (k) { return file.data[k.replace(/#\d+$/, '')] != null; })) throw rsError('import-shape');
     if (isObj(file.data) && !rsBCOwn(file, 'manifest'))
       Object.keys(file.data).forEach(function (k) {
-        var why = rsiSkipWhy(k, file.data[k]);
+        var why = rsiSkipWhy(k, file.data[k], M.scope && M.scope.kind);
         if (why) { drop.push(why === 'grants' ? { k: k, why: why, n: Object.keys((parseJson(file.data[k], null) || {}).emp || {}).length } : { k: k, why: why }); delete file.data[k]; }   /* المنحُ تُذكر بعددها */
       });
     stage = {
@@ -26871,6 +26946,8 @@ function perm44RolesWhy(A, k, newVal, curVal) {
     if (!perm44Held(A, d, 'perm.assign')) return 'grant';
     /* ما يضيفه المديرُ أو يغيّره في دورٍ: داخل سقف وحدته · ويحمله هو — والمحفوظُ خارج السقف (نظامٌ أُطفئ بعدُ) يبقى كما هو بلا مساس */
     var C = perm44CeilingFn(A, d), D0 = E.diff(o, n), i, j;
+    /* V7 · د7: الاستعادةُ المتحقَّقة لمدير الإدارة: خارجُ السقف يُخزَّن بلا أثر */
+    var rst44 = !!A.__srvRst && enfDeptMgrFull(A, d);
     for (i = 0; i < D0.changes.length; i++) {
       var c = D0.changes[i], sysEntries = [];
       if (c.what === 'sys' && c.to) sysEntries.push([c.sys, c.to]);
@@ -26883,7 +26960,7 @@ function perm44RolesWhy(A, k, newVal, curVal) {
              — لا يُرفض به حفظُ صفِّ المضيف؛ وصفُّ العدسة المطفأة نفسُه يبقى مرفوضاً ('cap') */
           var ow = (KIVO_REGISTRY.byKey[ks[q]] || {}).owner || '';
           if (hostRow && /^lens\./.test(ow) && (isObj(rs[ow]) || !C(ks[q]))) continue;
-          if (!C(ks[q])) return 'cap'; if (!perm44Held(A, d, ks[q])) return 'grant';
+          if (!C(ks[q])) { if (rst44) continue; return 'cap'; } if (!perm44Held(A, d, ks[q])) return 'grant';
         }
       }
       if (c.what === 'ex' && c.to) { if (!E.grantable(c.to.key) || !C(c.to.key)) return 'cap'; if (!perm44Held(A, d, c.to.key)) return 'grant'; }

@@ -507,6 +507,23 @@
     if (!revs || typeof revs !== "object") return;
     var k; for (k in revs) { delete mine9[k]; var r = Number(revs[k]) || 0; if (r > (own9[k] || 0)) own9[k] = r; }
     overQ9 = overQ9.filter(function (x) { return !(x.k in revs); });
+    return srvSettle9(revs);
+  }
+  /* V7 · د7 (409 restore-epoch-changed بعد حذف موظف): السببُ الجذري — مسارُ الخادم (نقلُ الموظفين وحذفُهم · مسحُ إدارة · الاستيراد والاستعادة)
+     يرفع حقبةَ الاستعادة (019e bumpEpoch)، وطبقةُ الحفظ كانت تعلّم مفاتيحَه «من فعلي» وتبقي حقبتَها القديمة (operationEpoch9) ومراجعاتِها حتى
+     يصل إشعارُ التغييرات؛ فالمحرِّرُ الذي يُفتح قبله (إضافةُ موظف) يرسل الحقبةَ القديمة فيردّه الخادم 409. الآن: إيصالُ مسار الخادم يُعيد قراءةَ
+     ما تعرفه الطبقةُ من موارد التشغيل ومفاتيحِ الإيصال في الإدارة الحالية (operationRead9 — يجدّد الحقبةَ ويُسقط ما سواها كما في أي تغيّرٍ للحقبة)،
+     ونقلُ الموظفين (590) ينتظر الوعدَ قبل إعلان النجاح؛ حذفُ الإدارة والاستعادةُ يستفيدان منه دون انتظار. */
+  function srvSettle9(revs) {
+    var stamp = operationContext9();
+    if (!stamp) return Promise.resolve({ ok: 0, err: 'session' });
+    var keys = Object.keys(operationKnown9).filter(function (key) {
+      var known = operationKnown9[key];
+      return known && known.stamp && operationSame9(known.stamp) && ['ready', 'absent'].includes(known.state);
+    }).concat(Object.keys(revs || {}).filter(function (key) { return operationKey9(key) && key.split(':')[1] === stamp.dept; }));
+    keys = Array.from(new Set(keys)).slice(0, 80);
+    if (!keys.length) return Promise.resolve({ ok: 1 });   /* لا موردَ معروف ⇒ لا مسودةَ ممكنة؛ أولُ قراءةٍ تجلب الحقبةَ الجديدة */
+    return operationRead9(keys).then(function (r) { return r && r.ok === 1 ? { ok: 1 } : { ok: 0, err: (r && r.err) || 'read' }; }, function () { return { ok: 0, err: 'read' }; });
   }
 
   /* ── الطابور والإرسال ───────────────────────────────────────────────────── */
