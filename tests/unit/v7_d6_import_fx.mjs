@@ -231,15 +231,17 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
       if (slice !== false && keys) {
         const dry = await post({ op: 'begin', dry: true, scope, keys, mode });
         const spec = (dry.j && dry.j.slice) || {}, min = typeof slice === 'number' ? slice : (dry.j && dry.j.sliceMin) || Infinity;
-        for (const name of Object.keys(spec)) {
-          const raw = rest.data[name];
+        /* V7 · د7: النسخةُ الشاملة — كلُّ مفتاحٍ «bsdept:<إدارة>:<مورد>» يُقسم كمفتاح نسخة الإدارة، والدفعةُ باسم «<إدارة>/<مورد>#n» (كالعميل 548 split) */
+        const each = scope.kind === 'full' ? Object.keys(rest.data).map((k) => /^bsdept:([^:]+):(.+)$/.exec(k)).filter((m) => m && spec[m[2]]).map((m) => [m[0], m[1] + '/' + m[2], m[2]]) : Object.keys(spec).map((n) => [n, n, n]);
+        for (const [dk, sn, name] of each) {
+          const raw = rest.data[dk];
           /* موردٌ لا ينقسم بأعضائه (النمط null): كلُّه دفعةً واحدة في طلبه — دائماً */
-          if (!spec[name][0]) { if (typeof raw === 'string' && raw.length > 2) { delete rest.data[name]; P.slices[name + '#0'] = raw.length; cut(raw, SEG.f).forEach((t, n) => sl.push({ k: '#' + name + '#0', s: n, t })); } continue; }
+          if (!spec[name][0]) { if (typeof raw === 'string' && raw.length > 2) { delete rest.data[dk]; P.slices[sn + '#0'] = raw.length; cut(raw, SEG.f).forEach((t, n) => sl.push({ k: '#' + sn + '#0', s: n, t })); } continue; }
           if (typeof raw !== 'string' || raw.length < min) continue;
           const texts = sliceKey(raw, spec[name][0], sliceTarget);
           if (texts.length < 2) continue;
-          delete rest.data[name];
-          texts.forEach((t, n) => { P.slices[name + '#' + n] = t.length; sl.push({ k: '#' + name + '#' + n, s: 0, t }); });
+          delete rest.data[dk];
+          texts.forEach((t, n) => { P.slices[sn + '#' + n] = t.length; sl.push({ k: '#' + sn + '#' + n, s: 0, t }); });
         }
       }
       P.text = JSON.stringify(rest); P.fparts = cut(P.text, SEG.f); P.sliceCount = Object.keys(P.slices).length;
@@ -248,7 +250,8 @@ export function protocol(T, who, file, { scope, mode = 'replace', reason = 'TEST
     begin: async (extra = {}) => { await P.build(); return post({ op: 'begin', scope, n: P.text.length, f: P.fparts.length, images: Object.fromEntries(Object.entries(idbImages).map(([k, v]) => [k, v.length])), slices: P.slices, mode, ...(keys ? { keys } : {}), ...extra }); },
     part: (i) => post({ op: 'part', items: [P.parts[i]] }),
     sliceStep: (i) => post({ phase: 'slice', i, reason }),
-    inventory: async () => { const q = new URLSearchParams({ kind: scope.kind, departments: '[]' }); if (scope.kind === 'dept') q.set('dept', scope.departmentId); return (await T.call('/api/backup/restore?' + q, { ck: who.ck })).j; },
+    /* V7 · د7: إداراتُ النسخة في الجرد كما يرسلها العميل (548 prepare) — إدارةٌ جديدة في النسخة الشاملة لها نسخُها (0) */
+    inventory: async () => { let ds = []; try { ds = JSON.parse((rest0.data || {}).bassam_depts_v1 || '[]').map((d) => d.id); } catch (e) { ds = []; } const q = new URLSearchParams({ kind: scope.kind, departments: JSON.stringify(ds) }); if (scope.kind === 'dept') q.set('dept', scope.departmentId); return (await T.call('/api/backup/restore?' + q, { ck: who.ck })).j; },
     inspect: async () => { const inv = await P.inventory(); return post({ phase: 'inspect', scope, mode, reason, base: inv && inv.base, legacyConsent: false }); },
     /* V7 · د6 (posfix): كلُّ اعتمادٍ ناجح في كل اختبارٍ يمرّ بهذا السائق يتبعه «اقرأ كلَّ شيء» (readBack) — نجاحُ الاعتماد وحده لا يثبت أن البيانات تُقرأ */
     commit: async (base, extra = {}) => { const r = await post({ phase: 'commit', scope, mode, reason, base, legacyConsent: true, ...extra }); if (r.status === 200 && r.j && r.j.ok) await readAll(T, scope); return r; },

@@ -1637,7 +1637,7 @@ async function rsCommit(env, A, plan, meta) {
 }
 async function rsRestoreInventory(env, A, scope, requestedDepartments) {
   /* V7 · د6: جردُ إدارةٍ واحدة يقرأ النسخ (revs) وحدها — لا يحمّل المواردَ التشغيلية لكل الإدارات (كان يحمّلها كلَّها ليعيد أرقامَ نسخها) */
-  var reference = await rsReferenceSnapshot(env, A.u.id, scope && scope.kind === 'dept' && typeof scope.departmentId === 'string' && scope.departmentId && scope.departmentId.indexOf(':') < 0 ? { departments: [scope.departmentId], operationalKeys: [] } : undefined);
+  var reference = await rsReferenceSnapshot(env, A.u.id, scope && scope.kind === 'dept' && typeof scope.departmentId === 'string' && scope.departmentId && scope.departmentId.indexOf(':') < 0 ? { departments: [scope.departmentId], operationalKeys: [] } : { operationalKeys: [] });   /* V7 · د7: والشاملةُ كذلك — النسخُ وحدها لا المواردُ التشغيلية لكل الإدارات */
   env = reference.env;
   A = reference.A;
   if (!scope || !['full', 'dept'].includes(scope.kind) || (scope.kind === 'full' && A.u.role !== 'super'))

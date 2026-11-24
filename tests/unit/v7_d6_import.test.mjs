@@ -410,7 +410,9 @@ test('(١١) ما لا يُقسم لا يُحاوَل إن كان أثقلَ م�
     await refused(protocol(T, T.su, big, { scope: SCOPE, mode: 'merge' }), 'دمجٌ في هدفٍ غير فارغ');
     /* النسخةُ الشاملة بهذا الحجم */
     const full = { app: 'bassam-crowd', version: 3, kind: 'full', exportedAt: '2026-11-21T10:00:00.000Z', preImport: false, data: Object.fromEntries(Object.entries(big.data).filter(([, v]) => v !== null).map(([k, v]) => ['bsdept:' + B + ':' + k, v])) };
-    const fr = await refused(protocol(T, T.su, full, { scope: { kind: 'full' } }), 'النسخةُ الشاملة'); assert.equal(fr.j.details.kind, 'full');
+    /* V7 · د7: الدمجُ الشامل لا يُقسم (كما كان) فيُرفض بهذا الحجم · والاستبدالُ الشامل صار يُقسم لكل إدارة بمسار نسخة الإدارة (كان يُرفض هنا — بند «النسخة الشاملة» في ج من أمر د7) */
+    const fr = await refused(protocol(T, T.su, full, { scope: { kind: 'full' }, mode: 'merge' }), 'النسخةُ الشاملة دمجاً'); assert.equal(fr.j.details.kind, 'full');
+    { const fp = protocol(T, T.su, full, { scope: { kind: 'full' } }); assert.equal((await fp.begin()).status, 200, 'الاستبدالُ الشامل: دفعات'); assert.ok(Object.keys(fp.slices).filter((k) => k.startsWith(B + '/bassam_rounds_v1#')).length > 10); await fp.cancel(); }
     /* مديرُ الإدارة بمفتاح الاستعادة: لا دفعاتَ له، فالكبيرُ يُرفض عند البدء */
     const GK = 'bsdept:' + B + ':bassam_grants_v1';
     await T.DB.batch([...T.lab.W.kvPutStmts(T.lab.env, 'kv', GK, JSON.stringify({ v: 1, emp: { ['mgr:' + B]: { plus: ['backup.restore'], minus: [] } } })), T.DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind(GK)]);
@@ -605,11 +607,13 @@ test('(١٥) لا تراجعَ عمّا كان يُستعاد قبل د6: نسخ
     const rounds = {}; for (let i = 0; i < 600; i++) rounds['1448-6-' + (1 + (i % 28)) + '-x' + i] = Object.values(ops.bassam_rounds_arc_v1)[0];
     full.data['bsdept:' + B + ':bassam_rounds_v1'] = JSON.stringify(rounds);
     for (const k of Object.keys(full.data)) if (/^bassam_(notifications_domain|notif_)/.test(k) || /:bassam_(first_boot|last_export|grants)_v1$/.test(k)) delete full.data[k];
-    const P = protocol(T, T.su, full, { scope: { kind: 'full' } }); await P.build();
+    /* V7 · د7: طلبٌ واحد كما كان (slice:false) — والمسارُ المقسوم للنسخة نفسِها يُعتمد كذلك بعده */
+    const P = protocol(T, T.su, full, { scope: { kind: 'full' }, slice: false }); await P.build();
     assert.ok(P.text.length > 3e6 && P.text.length < 8e6, 'النسخةُ الشاملة ≈' + Math.round(P.text.length / 1e5) / 10 + 'M حرف (فوق تقدير الكلفة ودون حدّ الطلب القديم)');
     const out = await P.run();
     assert.equal(out.begin.status, 200, 'لا رفضَ مبكراً لما كان يقبله المسارُ القديم: ' + JSON.stringify(out.begin.j));
     assert.equal(out.commit && out.commit.status, 200, JSON.stringify((out.commit || out.inspect).j).slice(0, 300));
+    { const P2 = protocol(T, T.su, full, { scope: { kind: 'full' } }), o2 = await P2.run(); assert.ok(P2.sliceCount > 0, 'د7: الاستبدالُ الشامل نفسُه بدفعات'); assert.equal(o2.commit && o2.commit.status, 200, JSON.stringify((o2.commit || o2.inspect || o2.begin).j).slice(0, 300)); }
     /* وفوق 8MB (لم يكن المسارُ القديم يقبلها أصلاً: 413) تُرفض مبكراً بسببها */
     const over = await protocol(T, T.su, full, { scope: { kind: 'full' } }).post({ op: 'begin', scope: { kind: 'full' }, mode: 'replace', n: 9e6, f: 10, keys: { bassam_depts_v1: 0 } });
     assert.equal(over.status, 413); assert.equal(over.j.err, 'import-too-heavy'); assert.equal(over.j.details.kind, 'full');
