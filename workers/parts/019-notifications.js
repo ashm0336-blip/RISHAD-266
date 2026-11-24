@@ -306,6 +306,31 @@ var NF_TYPES = {
     txt: "تغيّرت وردية {الاسم} في {الشهر} من {القديم} إلى {الجديد} — بواسطة {المُعدّل}",
     go: "افتح الجدول الشهري",
   },
+  /* V7 · 53 (FIX_53_LIVEQA ١ · ٣): الفعلُ الجماعي تنبيهٌ مجمّعٌ واحد للمدير ورئيس الوردية — والموظفُ ورديتُه هو */
+  st_shiftm: {
+    id: "st_shiftm",
+    k: "staff",
+    name: "إسناد وردية لعدة موظفين دفعة واحدة",
+    when: "فور الحفظ",
+    on: true,
+    to: ["lead", "mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "أُسندت {الوردية} لـ{العدد} في جدول {الشهر} — بواسطة {المُعدّل}",
+    go: "افتح الجدول الشهري",
+  },
+  st_myshift: {
+    id: "st_myshift",
+    k: "staff",
+    name: "ورديتك في الجدول الشهري",
+    when: "فور الحفظ",
+    on: true,
+    to: ["own"],
+    lvl: "info",
+    chan: "bell",
+    txt: "ورديتك في جدول {الشهر}: {الوردية} — بواسطة {المُعدّل}",
+    go: "",
+  },
   st_rest: {
     id: "st_rest",
     k: "staff",
@@ -364,6 +389,19 @@ var NF_TYPES = {
     lvl: "info",
     chan: "toast",
     txt: "نُشر جدول {الشهر} — {العدد} موظفاً موزَّعين",
+    go: "افتح الجدول الشهري",
+  },
+  /* V7 · 53 (FIX_53_SCALE S12): ملءُ شهرٍ مضى ليس «نشر جدول شهر جديد» — تنبيهٌ واحد للمدير، ولا شيء للموظفين */
+  st_past: {
+    id: "st_past",
+    k: "staff",
+    name: "تحديث جدول شهر سابق",
+    when: "فور الحفظ",
+    on: true,
+    to: ["mgr"],
+    lvl: "info",
+    chan: "bell",
+    txt: "حُدّث جدول شهر سابق: {الشهر} — {العدد} · بواسطة {المُعدّل}",
     go: "افتح الجدول الشهري",
   },
   st_lock: {
@@ -2664,8 +2702,10 @@ function nfFill(txt, vars) {
   Object.keys(vars || {}).forEach(function (k) {
     s = s.split(k.charAt(0) === "{" ? k : "{" + k + "}").join(String(vars[k] == null ? "" : vars[k]));
   });
+  /* V7 · 53 (FIX_53_LIVEQA ١٤): متغيّرٌ فارغ بين قوسين لا يترك «()» في النص (emp_add بلا نوع توظيف) */
   return s
     .replace(/\{[^}]+\}/g, "")
+    .replace(/\s*\(\s*\)/g, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
@@ -3015,7 +3055,7 @@ function nfEmployeeEvents(A, d, before, after) {
     if (!changed.length) return;
     var own = [String(key(b)).slice(0, 200)];
     if (changed.indexOf("type") !== -1)
-      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "—") } });
+      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "غير محدّد") } });
     var rest = changed.filter(function (f) {
       return f !== "type" && f !== "email";
     });

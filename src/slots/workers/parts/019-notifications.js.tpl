@@ -1790,8 +1790,10 @@ function nfFill(txt, vars) {
   Object.keys(vars || {}).forEach(function (k) {
     s = s.split(k.charAt(0) === "{" ? k : "{" + k + "}").join(String(vars[k] == null ? "" : vars[k]));
   });
+  /* V7 · 53 (FIX_53_LIVEQA ١٤): متغيّرٌ فارغ بين قوسين لا يترك «()» في النص (emp_add بلا نوع توظيف) */
   return s
     .replace(/\{[^}]+\}/g, "")
+    .replace(/\s*\(\s*\)/g, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
@@ -2141,7 +2143,7 @@ function nfEmployeeEvents(A, d, before, after) {
     if (!changed.length) return;
     var own = [String(key(b)).slice(0, 200)];
     if (changed.indexOf("type") !== -1)
-      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "—") } });
+      events.push({ type: "emp_type", dept: d, own: own, vars: { الحقل: NF_EMP_FIELDS.type, القيمة: text(b.type || "غير محدّد") } });
     var rest = changed.filter(function (f) {
       return f !== "type" && f !== "email";
     });
