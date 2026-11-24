@@ -12617,7 +12617,7 @@ function rsBCForbiddenKey(key) {
 }
 /* V7 · د7: القوالب ← أدوار الهدف (063 enfRolesFromTpls) · tplOf بالموظف أو بالإدارة · mgr:* لا يُسند (ب1) */
 function rsBCTplsRoles(keys, perms, d, src, summary) {
-  var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = 'bsdept:' + d + ':bassam_perm_tpls_v1', rk = perm44Key(d);
+  var T0 = isObj(perms) && isObj(perms.tplOf) ? perms.tplOf : null, of = null, tk = enfTplsDeptKey(d), rk = perm44Key(d);
   if (T0) {
     of = Object.keys(T0).every(function (k) { return typeof T0[k] === 'string'; }) ? T0 : (isObj(T0[src]) ? T0[src] : isObj(T0[d]) ? T0[d] : null);
     delete perms.tplOf;
@@ -14676,7 +14676,7 @@ function rsiFieldList(recs) {
 /* V7 · د7: قوالبُ نسخة الإدارة تصير أدواراً (019f) */
 function rsiSkipWhy(k, v, kind) {
   var n = resName(k), r = resOf(k);
-  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? ((kind === 'dept' || kind === 'full') && n === 'bassam_perm_tpls_v1' ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
+  return v === null ? 'null' : rsBCForbiddenKey(k) || (r && (r.rule === 'selfdev' || r.scope === 'device')) ? 'device' : ENF_TPLS_RES[n] ? ((kind === 'dept' || kind === 'full') && n === ENF_TPLS_ROLES_RES ? '' : 'tpls') : n === ENF_GRANTS_RES ? 'grants' : r ? '' : 'unknown';
 }
 function rsiSweepStmt(env, now, uid) {
   return env.DB.prepare('DELETE FROM ' + RSI_T + ' WHERE snapshot_id IN (SELECT snapshot_id FROM ' + RSI_T + " WHERE domain='meta' AND snapshot_id>='stage:' AND snapshot_id<'stage;' AND (row_number<?1 OR table_key=?2))").bind(now - RSI_TTL, uid);
@@ -31156,6 +31156,9 @@ async function enfRetirePlan(env, seed, now, T, keys, revs, capture, reference) 
    (والاسمان بلا إدارة إن وُجدا) يُحذف بلقطةٍ كاملة ورجوعٍ بالمسار القائم (rollback) — مثل «scope-retire» حرفاً. الشرط: ترحيلُ «perm44-roles» لا يبقى له
    ما يكتبه (القوالبُ مصدرُه الوحيد — تُقرأ خاماً من D1 قبل هذه الخطوة). الإسنادُ tplOf في bassam_perms_v1 بيانٌ يبقى ولا يُقرأ بعد الترحيل. */
 var ENF_TPLS_PART = 'tpls-retire', ENF_TPLS_RES = { bassam_perm_tpls_v1: 1, bassam_perm_tpls_named_v1: 1 };
+/* V7 · 53: موردُ القوالب الذي يُحوَّل أدواراً عند الاستيراد (019f · 019g — قرار 51ب) يُسمّى هنا وحده (v7_d5h_deleted_residue ②) */
+var ENF_TPLS_ROLES_RES = 'bassam_perm_tpls_v1';
+function enfTplsDeptKey(d) { return 'bsdept:' + d + ':' + ENF_TPLS_ROLES_RES; }
 function enfTplsKey(k) { k = String(k); return !!ENF_TPLS_RES[resName(k)] && (k.indexOf('bsdept:') === 0 || !!ENF_TPLS_RES[k]); }
 async function enfTplsPlan(env, seed, now, T, keys, revs, capture) {
   var ks = Object.keys(keys).filter(enfTplsKey).sort(), W = {}, sig = [ENF_TPLS_PART, seed], i;

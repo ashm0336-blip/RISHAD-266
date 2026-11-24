@@ -322,7 +322,7 @@ Object.assign(Component.prototype, {
      «المتابعة اليومية»)، أو «استثناء» لنظامٍ خارج دوره */
   _p44Menu(keys, role, did, person) {
     const S = this._p44Sys(),
-      h = person ? { kind: "person", did: did, ekey: person.ekey, mgr: !!person.mgr } : { kind: "role", did: did, keys: keys || [] },
+      h = person ? { kind: "person", did: did, ekey: person.ekey, mgr: !!person.mgr } : { kind: "role", did: did, keys: keys || [], role: role || null },   /* V7 · 53: role — لأعلام التصدير (334 holderFlags) */
       lvOf = (k) => (role && role.sys && role.sys[k] ? this._p44LvName(role.sys[k].lvl) : "");
     person && Array.isArray(keys) && (h.keys = keys);
     return this._p44Try(() => KIVO.BassamPerm.seenBy(h), [{ k: "profile", n: "صفحتي" }]).map((x) => {
