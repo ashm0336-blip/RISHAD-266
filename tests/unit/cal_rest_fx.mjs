@@ -19,7 +19,9 @@ let S1 = null;
 export function hYmdToG(o) {
   const S = S1 || (S1 = loadServerCal()), out = S.calHtoGScope({ y: o.y, m: o.m, d: o.d == null ? null : o.d });
   if (!out || !out.length) throw new Error('hYmdToG: unmapped ' + JSON.stringify(o));
-  return { ...o, y: out[0].y, m: out[0].m, d: o.d == null ? o.d : out[0].d };
+  const g = { ...o, y: out[0].y, m: out[0].m };
+  if (Object.prototype.hasOwnProperty.call(o, 'd')) g.d = o.d == null ? o.d : out[0].d;
+  return g;
 }
 /* gMonthOfH(y, m, d=1) — {year, month} الميلاديان ليومٍ هجري (للاستعلام بالشهر الميلادي المقابل) */
 export function gMonthOfH(y, m, d = 1) { const g = hYmdToG({ y, m, d }); return { year: g.y, month: g.m }; }
