@@ -1,6 +1,6 @@
 {
   "worker": "_worker.js",
-  "sha256": "00b9e3ac8d2e27fcb7cae92ddcb77cedb9320cf95e75a6dce722a6431ebe28b8",
+  "sha256": "b06eaca8463a32112f033752729e438546d665f8117502c382bb714b211df79b",
   "parts": [
     {
       "file": "000-header-constants.js",
@@ -68,8 +68,8 @@
         226,
         734
       ],
-      "bytes": 57216,
-      "sha256": "d17c08e6e3b82d4416b13518e35690af8379f3425a7a8590ac80fbfad5bb2f35",
+      "bytes": 48231,
+      "sha256": "049132f545f80ba7702f6194eb435c3e0d13ef43f630ecf39dc60b944f7fb22a",
       "head": "/* ═══ KIVO · R203 · Phase 4.5 — Guard Binding Shadow على v24.9 (مولَّدٌ آلياً من registry10/guard_bindings.py — لا يُحرَّر يدوياً؛ المصنِّفُ كما في Phase 3) ═══"
     },
     {
@@ -119,8 +119,8 @@
         823,
         1400
       ],
-      "bytes": 189660,
-      "sha256": "bebccbe13ea1d4366dbbcfc3977ed98353eebb250021b34a466f3a687bd37b33",
+      "bytes": 139131,
+      "sha256": "eb38b48c5a874c390c7623c16ee7b153c0fc25a6f7b747b8bdc667f0e660b8f7",
       "head": "/* ═══ KIVO · R203 · Phase 4.5 — Read Binding Closure + Identity Binding على v24.9 (مولَّدٌ آلياً من registry10/scope_bindings.py + scope_engine.js + read_inventory.json — لا يُحرَّر يدوياً) ═══"
     },
     {
