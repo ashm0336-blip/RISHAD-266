@@ -25,10 +25,10 @@
 | dreport (Daily Report) | 20 | 0 | 74 | 0 | 1 |
 | dstats (Daily Stats) | 14 | 1 | 37 | 0 | 0 |
 | employees (Employees) | 53 | 9 | 108 | 0 | 7 |
-| irshad (Irshad) | 18 | 0 | 16 | 0 | 6 |
+| irshad (Irshad) | 19 | 0 | 17 | 0 | 6 |
 | kpis (KPIs) | 1 | 0 | 3 | 0 | 1 |
 | org (Org) | 33 | 3 | 44 | 0 | 12 |
-| plan (Operational Plan) | 58 | 10 | 115 | 0 | 4 |
+| plan (Operational Plan) | 59 | 10 | 120 | 0 | 4 |
 | planning (Planning) | 0 | 0 | 7 | 0 | 0 |
 | profile (Profile) | 31 | 18 | 107 | 0 | 11 |
 | rasd (Rasd) | 16 | 1 | 35 | 0 | 2 |
