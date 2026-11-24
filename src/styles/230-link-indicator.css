@@ -6,7 +6,10 @@
 .bs-link .l{font-size:11.5px;font-weight:700;white-space:nowrap}
 .bs-link .x{font-size:10.5px;color:var(--text-muted);margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 /* CORE-01: المؤشرُ يظهر عند الانقطاع وحده — الاتصالُ السليم لا يشغل مكاناً ولا انتباهاً */
-.bs-link:not([data-st="off"]){display:none}
+.bs-link:not([data-st="off"]):not([data-st="saving"]):not([data-st="saved"]){display:none}
+/* V7 · 53 (nosilent · REVIEW 26 ب1): «يُحفظ…» ثم «حُفظ» لحظةً — فوق «متصل» وحده */
+.bs-link[data-st="saving"]{background:var(--tone-gold-50-a18)}.bs-link[data-st="saving"] .d{background:var(--border-brand);animation:bsLinkPulse 1.1s infinite}.bs-link[data-st="saving"] .l{color:var(--text-primary)}
+.bs-link[data-st="saved"]{background:var(--success-bg)}.bs-link[data-st="saved"] .d{background:var(--success-text)}.bs-link[data-st="saved"] .l{color:var(--success-text)}
 .bs-link[data-st="off"]{background:var(--bg-pink-30-a8)}.bs-link[data-st="off"] .d{background:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,.16);animation:bsLinkPulse 1.4s infinite}.bs-link[data-st="off"] .l{color:var(--danger-text)}
 @keyframes bsLinkPulse{0%,100%{opacity:1}50%{opacity:.35}}
 aside.bsb.cx .bs-link{margin:10px auto 2px;padding:7px;justify-content:center;width:auto}

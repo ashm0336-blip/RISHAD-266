@@ -100,6 +100,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   async _irRequest(path, options, context) {
     if (!context || !this._irSame(context)) return this._irFailure("session", 401);
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20000);
+    /* V7 · 53 (nosilent · REVIEW 26 ب2/ب3): الأمرُ الكاتب في مؤشر التحميل الموحّد — الزرُّ يتجمّد والمغادرةُ تُسأل حتى يصل الإقرار */
+    const B = options && options.method && options.method !== "GET" && KIVO.BassamBusy, busy = B ? B.start("جارٍ تأكيد العملية…") : null;
     try {
       const response = await window.fetch(path, { credentials: "same-origin", cache: "no-store", ...options, signal: controller.signal });
       if (!this._irSame(context)) return this._irFailure("session", 401);
@@ -110,7 +112,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       if (!response.ok || !body || body.ok !== 1) return { ...this._irFailure(response.status === 403 ? "forbidden" : response.status === 409 ? "conflict" : String(body?.err || "invalid"), response.status), why: body?.why, keys: body?.keys, details: body?.details };
       return { ok: 1, data: body };
     } catch (e) { return this._irFailure(this._irSame(context) ? "network" : "session"); }
-    finally { clearTimeout(timer); }
+    finally { clearTimeout(timer); if (busy) busy.done(); }
   }
   async _irRead(view, options = {}, context = this._irContext()) {
     if (!context) return this._irFailure("session", 401);

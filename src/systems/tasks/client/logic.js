@@ -1141,7 +1141,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ? { credentials: "same-origin", cache: "no-store" }
           : { method: "POST", credentials: "same-origin", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ dept: this._tkDept() || void 0, uid: U || void 0 }, b)) };
     void 0 === b && U && (p += (p.indexOf("?") >= 0 ? "&" : "?") + "uid=" + encodeURIComponent(U));
-    return fetch(p, o).then(
+    /* V7 · 53 (nosilent · REVIEW 26 ب2/ب3): الكتابةُ (POST) في مؤشر التحميل الموحّد — الزرُّ يتجمّد والمغادرةُ تُسأل حتى يصل الرد؛ القراءةُ بلا مؤشر */
+    const B = void 0 !== b && KIVO.BassamBusy, busy = B ? B.start("جارٍ الحفظ…") : null;
+    return fetch(p, o).finally(() => busy && busy.done()).then(
       (r) =>
         r.text().then((t) => {
           let j = null;

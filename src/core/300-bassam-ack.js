@@ -23,7 +23,9 @@
         return false;
       });
     };
-    return loop();
+    /* V7 · 53 (nosilent · REVIEW 26 ب4): الصفحةُ تنادي الرسالةَ ثم تحفظ في الإطار نفسه (setState(…, () => حفظ) ثم bsAck) — كان الفحصُ يجري
+       قبل أن يدخل الحفظُ الطابور فيجده فارغاً ويقول «تم» قبل الخادم. الفحصُ الأول بعد أن ينتهي الإطارُ الجاري ووعودُه */
+    return new Promise(function(r){ setTimeout(r, 0); }).then(loop);
   }
   /* toast(inst, msg, kind, o): o.local صيغةٌ للتخزين المحلّي الصِّرف (بلا خادم) · o.pending بديلُ رسالة الانتظار · o.ms المهلة */
   function toast(inst, msg, kind, o){
