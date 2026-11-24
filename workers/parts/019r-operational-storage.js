@@ -25,7 +25,7 @@ function opPhysicalTables() {
 function opResetStatements(env) {
   return Object.keys(opPhysicalTables()).filter(function (table) { return table !== 'ops_nodes'; })
     .map(function (table) { return env.DB.prepare('DELETE FROM ' + table); })
-    .concat([env.DB.prepare('UPDATE ops_nodes SET parent_key=NULL'),env.DB.prepare('DELETE FROM ops_nodes')]);
+    .concat([env.DB.prepare('UPDATE ops_nodes SET parent_key=NULL'),env.DB.prepare('DELETE FROM ops_nodes'),env.DB.prepare('DELETE FROM ops_period_summary')]);   /* V7 · 53: والملخّصاتُ معها */
 }
 function opBulkInstall(env, resource, domain) {
   var statements = [], prepared = opPrepared(resource), rows = ocPhysicalRows(prepared, domain), tables = ocPhysicalTables(prepared);
@@ -262,6 +262,7 @@ async function opCompilePending(env, plan, pending, capture) {
     plan.guards.push.apply(plan.guards, addition.guards); plan.statements.push.apply(plan.statements, addition.statements);
     plan.revisionKeys.push.apply(plan.revisionKeys, addition.revisionKeys); plan.snapshots.push.apply(plan.snapshots, addition.snapshots);
   }
+  if (plan.operation === 'save') opSaveBudget(plan.statements);   /* V7 · 53: حدٌّ مبكر برسالة لا سقفُ D1 */
 }
 /* V7 · د5-هـ (أمن ٣): القراءةُ تُعاد مرّةً واحدة إن أخفق سياجُها — السياجُ يثبت أن جولاتِها لقطةٌ واحدة متّسقة (السلطةُ والبيانات من لحظةٍ واحدة)
    ولا يحمي كتابة؛ فكتابةٌ متزامنة في جولاتها تعني لقطةً جديدة لا تعارضاً يُعرض. القراءةُ بلا أثر فإعادتُها آمنة، وإخفاقان ⇒ 409 كما كان (لا حلقة).

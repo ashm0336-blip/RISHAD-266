@@ -870,6 +870,9 @@ async function changesRoute(env, url, ss) {
   var outC = enfChangesOut(env, AC, vC, ksC, allC);
   if (meSnapshotChanged(AC, (ch && ch.results) || [], vC)) outC.meChanged = 1;
 @@SYS:changes.tasks@@  if (cutC.more) outC.more = 1;
+  /* V7 · 53 (العقد §5): مفاتيحُ الفترات التي تغيّرت (K@p · K@) بحكم رؤية مفتاحها المنطقي — keys تبقى منطقيةً كما كانت (كلُّ كتابةٍ ترفع K أيضاً) */
+  var pkC = ((ch && ch.results) || []).filter(function (r) { if (r.rev > vC) return false; var x = String(r.k).indexOf('@') > 0 ? opPeriodKey(r.k) : null; return x && x.period !== '*' && canSee(AC, x.key); }).map(function (r) { return r.k; });
+  if (pkC.length) outC.pk = pkC.slice(0, CHANGES_MAX * 4);
   return json(outC);
 }
 /* ── سحب مفاتيح بعينها بأحدث قيمها — للتحديث الحي بلا إعادة تحميل (KIVO_264: نُقل من handle حرفاً + C2) ── */
@@ -1029,6 +1032,9 @@ export default {
       if (path === '/api/operations/read') { var rsp = await opReadRoute(env,request,url,ss)@@SYS:ops.read.vars.tasks@@;
 @@SYS:ops.read.jobs.tasks@@        return rsp; }
       if (path === '/api/operations/export') return await opExport(env,request,url,ss);
+      if (path === '/api/operations/summary') return await opSummaryRoute(env,request,url,ss);   /* V7 · 53 (019w) */
+      if (path === '/api/operations/receipt') return await opReceiptRoute(env,request,url,ss);
+      if (path === '/api/operations/periods-migrate') return await opPeriodsMigrateRoute(env,request,ss);
       if (path === '/api/save' && request.method === 'POST') return await saveRoute(env, request, path, ss);
 
       /* ── ماذا تغيّر منذ نسختي؟ — تستعمله لافتة «تحديثات جديدة» ── */

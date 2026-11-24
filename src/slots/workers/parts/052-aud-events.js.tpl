@@ -372,7 +372,7 @@ function dbGuardRevised(a) {
       if (v.slice(0, 7) === 'bsdept:') bumped.add(v);
       else if (v.charAt(0) === '[') { var j = parseJson(v, null); if (Array.isArray(j)) j.forEach(function (x) { var k = typeof x === 'string' ? x : x && x.k; if (typeof k === 'string') bumped.add(k); }); }
     });
-    if (s && s.__guardReadOnly !== true && DB_OPS_WRITE.test(sql)) need.push(s);
+    if (s && s.__guardReadOnly !== true && DB_OPS_WRITE.test(sql) && !/^\s*(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|UPDATE|DELETE\s+FROM)\s+ops_period_summary\b/i.test(sql)) need.push(s);   /* الملخّصُ مشتقٌّ بمراجعته (لا يُقرأ بحارس) */
   });
   need.forEach(function (s) {
     var keys = s.__opKeys;

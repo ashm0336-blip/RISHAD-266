@@ -313,9 +313,21 @@ function meRec(rec) {
   for (i = 0; i < F.length; i++) if (rec[F[i]] != null && String(rec[F[i]]).trim() !== '') o[F[i]] = String(rec[F[i]]).trim().slice(0, 120);
   return o;
 }
-async function meDeptData(env, deptId, extra, A) {
+/* V7 · 53 (§3ب.5 «صفحتي»): بلا ?ym= تقرأ الصفحةُ اليومَ وأسبوعَه وشهرَه — فالمواردُ المقسَّمة تُقرأ بفترات الشهر السابق والجاري والتالي وحدها
+   (الأيام وعلاماتُ الأشهر · أشهرُ الجدول والخطة) لا تاريخَها كلَّه. أسماءُ الفترات بنصّ المفاتيح القائمة (مولِّدُها هنا كما في بقية هذا الجزء). */
+function meScopes(deptId, C) {
+  var yms = [], y = C.y, m = C.m, out = {}, i, d;
+  [-1, 0, 1].forEach(function (k) { var mm = m + k, yy = y; if (mm < 1) { mm += 12; yy--; } if (mm > 12) { mm -= 12; yy++; } yms.push(yy + '-' + mm); });
+  var days = []; yms.forEach(function (ym) { days.push('m:' + ym); for (d = 1; d <= 30; d++) days.push(ym + '-' + d); });
+  for (i = 0; i < ME_KEYS.length; i++) {
+    var K = 'bsdept:' + deptId + ':' + ME_KEYS[i], I = opSplitResource(K); if (!I) continue;
+    out[K] = { periods: opPeriodDef(I).field || ME_KEYS[i] === 'bassam_staffing_v3' ? yms.slice() : days.slice() };
+  }
+  return out;
+}
+async function meDeptData(env, deptId, extra, A, scopes) {
   var ks = ME_KEYS.map(function (n) { return 'bsdept:' + deptId + ':' + n; });
-  var capture = await opCaptureReferences(env, Object.create(null), ks),
+  var capture = await opCaptureReferences(scopes ? Object.assign({}, env, { __opScope: scopes }) : env, Object.create(null), ks),
     rs = await env.DB.batch(capture.guards.concat(extra || [])),
     off = meOffOf(A, deptId), kj = meDropOff(capture.keys, ks, off), P = function (n, d) { var v = parseJson(kj['bsdept:' + deptId + ':' + n], d); return v && typeof v === 'object' ? v : d; };
   return { emps: (function () { var a = parseJson(kj['bsdept:' + deptId + ':bassam_employees_v1'], []); return Array.isArray(a) ? a : []; })(),
@@ -381,7 +393,7 @@ async function meSelfRoutes(request, env, path, ss) {
     .bind('%"id":"' + String(u.id).replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '"%') : null;
   var minQ = hist && eligible ? env.DB.prepare('SELECT MIN(ts) AS t FROM aud WHERE dept = ?1').bind(u.deptId) : null;
   var extra = [secQ, minQ].filter(Boolean), D = null, ex = [], I = { L: { rec: null, by: 'none' }, toks: [] };
-  if (eligible) { D = await meDeptData(env, u.deptId, extra, A); ex = D.extra; I = meIdent(u, D, users); }
+  if (eligible) { D = await meDeptData(env, u.deptId, extra, A, hist ? null : meScopes(u.deptId, C)); ex = D.extra; I = meIdent(u, D, users); }
   else if (extra.length) ex = await env.DB.batch(extra);
   var dayOf = function (T0) { return pfDay({ bucket: (D && D.staffing && D.staffing[T0.ym]) || {}, rep: (D && D.dreport && D.dreport[T0.dk]) || null, toks: I.toks, wd: T0.wd, opts: D && D.opts }); };
   var T = I.toks.length ? pfOpDay(now, dayOf) : (function () { var x = pfHijriAt(now); x.op = 'calendar'; return x; })();
