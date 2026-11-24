@@ -570,8 +570,19 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   _occStop() {
     (this._occT && (clearTimeout(this._occT), (this._occT = null)), this._occI && (clearInterval(this._occI), (this._occI = null)));
   }
+  /* V7 · 53 (ملحق 6 · أ): تسجيلُ قراءة الكثافة — تعديلُ المتابعة اليومية ومفتاحُ lens.dens.reading.record، والجولةُ غيرُ مقفلة (open) */
+  _dsDensCan(open) {
+    if (!open || !this._dsCanWrite()) return !1;
+    try {
+      const K = KIVO.BassamPerm && KIVO.BassamPerm.key;
+      return !K || K("lens.dens.reading.record") !== !1;
+    } catch (e) {
+      return !0;   /* بلا طبقة الصلاحيات: الخادمُ يحكم */
+    }
+  }
   _occHold(t, e) {
     this._occStop();
+    if (!this._dsDensCan(!0)) return;
     const s = this._occApply;
     if (!s || !s[t]) return;
     let n = "n" === t ? (null == s.curN ? 0 : +s.curN) : null == s.curP ? 0 : +s.curP;
@@ -1820,23 +1831,30 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
   /* V7 · 53 (ملحق 6 · 11): صورةُ خريطة الموقع من لقطة شهر الجولة المعروضة، مطابَقةً بمعرّف الموقع (sid) — كانت من طوابق الخطة الحالية
      بترتيبها، فجولةُ شهرٍ ماضٍ تغيّرت خريطتُه أو ترتيبُ مواقعه تُظهر صورةً خاطئة. شهرٌ بلا لقطة ⇒ طوابقُ الخطة الحالية كما كان؛
      لقطةٌ بلا هذا الموقع أو بلا صورة ⇒ لا صورة (لا يُستعار غيرُها)؛ والموضعُ للبيانات القديمة التي لا sid فيها أصلاً وحدها. */
-  _floorImgRefs(plan) {
+  /* موقعُ لقطة الشهر المعروض المقابلُ لموقع الخطة f (بلا لقطة ⇒ موقعُ الخطة الحالية) — للصورة والنطاقات معاً */
+  _floorImgSite(plan, f) {
     const s = this.state,
       key = s.year + "-" + s.month,
       floors = plan && Array.isArray(plan.floors) ? plan.floors : [],
       has = !!(plan && plan.months && Object.prototype.hasOwnProperty.call(plan.months, key)),
       mo = has ? plan.months[key] : null,
       monthly = has ? (Array.isArray(mo) ? mo : mo && Array.isArray(mo.d) ? mo.d : []) : null,
-      bySid = new Map(),
-      noSid = (x) => !x || null == x.sid || "" === x.sid;
-    (monthly || []).forEach((x) => {
-      if (!noSid(x)) bySid.set(String(x.sid), bySid.has(String(x.sid)) ? null : x);
-    });
-    const legacy = !!monthly && monthly.every(noSid) && floors.every(noSid);
+      noSid = (x) => !x || null == x.sid || "" === x.sid,
+      fl = floors[f];
+    if (!monthly) return fl;
+    if (!noSid(fl)) {
+      const hit = monthly.filter((x) => !noSid(x) && String(x.sid) === String(fl.sid));
+      return 1 === hit.length ? hit[0] : null;
+    }
+    return monthly.every(noSid) && floors.every(noSid) ? monthly[f] : null;
+  }
+  _floorImgRefs(plan) {
+    const s = this.state,
+      floors = plan && Array.isArray(plan.floors) ? plan.floors : [];
     return {
-      key,
+      key: s.year + "-" + s.month,
       refs: floors.map((f, i) => {
-        const src = !monthly ? f : !noSid(f) ? bySid.get(String(f.sid)) : legacy ? monthly[i] : null;
+        const src = this._floorImgSite(plan, i);
         return (src && src.iid) || null;
       }),
     };
@@ -17644,9 +17662,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
           try {
             const t = KIVO.bus.read("plan.doc@1", (k) => this._opRead(k));
             if (!t) return null;
-            const e = t.months && t.months[s.year + "-" + s.month],
-              n = e ? (Array.isArray(e) ? e : e.d) : null,
-              i = Array.isArray(n) && n[f] ? n[f] : (t.floors || [])[f];
+            /* V7 · 53 (ملحق 6 · ج): نطاقاتُ الموقع من لقطة شهر الجولة بمعرّف الموقع (sid) لا بموضع الصف — كصورته (_floorImgSite) */
+            const i = this._floorImgSite(t, f);
             if (
               !i ||
               !0 === i.hideSectors ||
@@ -18674,13 +18691,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
               capNowOn: et > 0,
               capNoneOn: et <= 0,
               capNoneHint: "هذا المصلى بلا سعة — عرّف مساحته في عدسة الكثافة بالخطة التشغيلية ليتحوّل الإدخال إلى عددٍ ونسبة معاً",
+              /* V7 · 53 (ملحق 6 · أ): حقولُ القراءة للعرض فقط لمن لا يملك التعديل (مشاهدة) أو والجولةُ مقفلة — نمطُ disabled القائم؛ والكتابةُ تُرفض هنا أيضاً */
+              occRO: !this._dsDensCan(!this._dsLockInfo().locked),
               occNVal: at && "n" === at.k ? at.v : null == pt ? "" : String(pt),
               onOccN: (t) => {
+                if (!this._dsDensCan(!this._dsLockInfo().locked)) return;
                 const e = ht(String(null == t.target.value ? "" : t.target.value)).replace(/[^0-9]/g, "");
                 (this.setState({ occDraft: { k: "n", v: e, i: ot, pid: nt } }), st("" !== e ? Math.max(0, parseInt(e, 10)) : null));
               },
               occPctVal: at && "p" === at.k ? at.v : null == dt ? "" : String(dt),
               onOccPct: (t) => {
+                if (!this._dsDensCan(!this._dsLockInfo().locked)) return;
                 let e = ht(String(null == t.target.value ? "" : t.target.value)).replace(/[^0-9.]/g, "");
                 const s = e.indexOf(".");
                 if (

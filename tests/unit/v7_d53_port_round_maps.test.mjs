@@ -73,3 +73,17 @@ test('ملحق 6 · 11 — موقعٌ غائبٌ عن لقطة الشهر أو �
   pend.get(D.A.iid)(img(D.A.iid)); await flush();
   assert.equal(P.shown(), img(D.A.iid));
 });
+
+/* V7 · 53 (ملحق 6 · ج — من المنسّق): نطاقاتُ الموقع (dsSectorNodes) كانت من لقطة الشهر بموضع الصف (n[f]) — الصنفُ نفسُه: بمعرّف الموقع */
+test('ملحق 6 · ج — نطاقاتُ الموقع من لقطة شهرها بمعرّف الموقع لا بموضع الصف', async () => {
+  const D = await shaped();
+  const sec = (code, x) => [{ id: 'sec_TEST_ONLY_' + code, code, name: 'TEST_ONLY ' + code, pts: [{ x, y: 10 }, { x: x + 190, y: 10 }, { x: x + 190, y: 200 }] }];
+  D.plan.months['1448-4'].d[0].sectors = sec('B4', 500); D.plan.months['1448-4'].d[1].sectors = sec('A4', 10);   /* اللقطة: B ثم A */
+  D.plan.months['1448-4'].d.forEach((x) => (x.hideSectors = false));
+  const P = page(D);
+  P.at(1448, 4, 10);
+  const node = P.c.renderVals().dsSectorNodes, txt = JSON.stringify(node);
+  assert.ok(node, 'نطاقاتُ الموقع A مرسومة');
+  assert.match(txt, /"M10 10 L200 10 L200 200 Z"/, 'الموقعُ الأول (A) بنطاقات A في لقطة شهره: ' + txt.slice(0, 200));
+  assert.doesNotMatch(txt, /M500 10/, 'لا نطاقاتِ الموقع B الواقع في الصف الأول من اللقطة');
+});
