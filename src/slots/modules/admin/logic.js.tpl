@@ -2702,11 +2702,6 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         )
       : this.bsToast("لم يُعثر على سجل الموظف — أعد التفعيل من صفحة الموظفين");
   }
-  /* V7 · د7 (٩): نوعُ الوحدة في نافذة الجرد ورسائل الحذف — «قسم» أو «إدارة» (من جرد الخادم department.kind، وقبله من سجل الوحدة) */
-  _deptKindW(kind) {
-    const s = kind === "قسم";
-    return { a: s ? "قسم" : "إدارة", the: s ? "القسم" : "الإدارة", empty: s ? "القسم خالٍ" : "الإدارة خالية", its: s ? "تعريفه" : "تعريفها", has: s ? "يحتوي القسم" : "تحتوي الإدارة", gone: s ? "لم يُحذف القسم" : "لم تُحذف الإدارة" };
-  }
   async deptDel(target) {
     if (!target || !target.id || this._deptDeleteBusy || this._wpBusy || this._wpUncertain) return;
     const actor = this._wpActor(); if (!actor) return this.bsToast("حذف الإدارة يتطلب جلسة مسؤول المنصة الحالية", "warn");
@@ -2714,7 +2709,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (pending && pending.uncertain && pending.dept !== target.id) return this.bsToast("لم يُحسم طلب الحذف السابق؛ أعد محاولته نفسه قبل اختيار إدارة أخرى", "warn");
     if (pending && pending.dept === target.id && pending.actor === actor && pending.confirmed && !pending.needsReview) return this._deptDelGo(target);
     let execute = false;
-    this._deptDeleteBusy = true; let W = this._deptKindW(target.kind); this.setState({ deptMsg: "جارٍ جرد بيانات " + W.the + " وحساباتها على الخادم…" });
+    this._deptDeleteBusy = true; /* V7 · د7 (٩): نوعُ الوحدة في نافذة الجرد ورسائل الحذف — «قسم» أو «إدارة» (من جرد الخادم department.kind، وقبله من سجل الوحدة) */ const KW = (kind) => { const q = kind === "قسم"; return { a: q ? "قسم" : "إدارة", the: q ? "القسم" : "الإدارة", empty: q ? "القسم خالٍ" : "الإدارة خالية", its: q ? "تعريفه" : "تعريفها", has: q ? "يحتوي القسم" : "تحتوي الإدارة", gone: q ? "لم يُحذف القسم" : "لم تُحذف الإدارة" }; }; let W = KW(target.kind); this.setState({ deptMsg: "جارٍ جرد بيانات " + W.the + " وحساباتها على الخادم…" });
     try {
       const result = await this._wpCall(target.id, null, actor, "delete");
       if (!result.ok) { this.bsToast("تعذر جرد " + W.the + " أو رفض الخادم حذفها؛ لم تُنفّذ أي كتابة", "warn"); return; }
@@ -2725,7 +2720,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       }
       /* F01: إدارةٌ لها أقسام لا تُحذف — يسمّيها جردُ الخادم ويرفض الحذفَ نفسَه (dept-has-sections) */
       if (Array.isArray(data.sections) && data.sections.length) { this.bsToast("«" + data.department.name + "» لها أقسام (" + data.sections.map(x => x.name).join("، ") + ") — احذفها أولاً؛ لم تُنفّذ أي كتابة", "warn"); return; }
-      W = this._deptKindW(data.department.kind);
+      W = KW(data.department.kind);
       const draft = { dept: target.id, actor, data: JSON.parse(JSON.stringify(data)), ticket: null, uncertain: false, needsReview: false, confirmed: false, W };
       this._deptDeleteDraft = draft;
       const counts = data.counts, populated = counts.keys + counts.accounts@@SYS:admin.delete.custodyPopulated@@ + counts.notifications@@SYS:admin.delete.populated@@ > 0,
@@ -2746,7 +2741,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   async _deptDelGo(target) {
     const draft = this._deptDeleteDraft, actor = this._wpActor();
     if (this._deptDeleteBusy || !draft || draft.dept !== target.id || !draft.confirmed || draft.needsReview || draft.actor !== actor) return;
-    const W = draft.W || this._deptKindW(draft.data && draft.data.department && draft.data.department.kind);   /* V7 · د7 (٩) */
+    const W = draft.W || { a: "إدارة", the: "الإدارة", has: "تحتوي الإدارة", gone: "لم تُحذف الإدارة" };   /* V7 · د7 (٩): النوعُ حُفظ مع المسوّدة من جرد الخادم */
     if (!draft.ticket) {
       if (!window.crypto || !window.crypto.getRandomValues) return this.bsToast("تعذّر إعداد طلب حذف موثوق", "warn");
       const random = new Uint8Array(20); window.crypto.getRandomValues(random);

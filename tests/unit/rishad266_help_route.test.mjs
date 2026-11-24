@@ -66,14 +66,17 @@ test('direct help opens the actual platform dialog over the saved permitted page
 test('hash help navigation reopens the dialog without installing an unavailable page or bypassing page guards',()=>{
   const W=world({hash:'#/tasks'});W.mount();W.navigate('#/help');
   assert.ok(W.nodes.has('bs-plat-about'));assert.equal(W.root.state.active,'tasks');W.close();
-  W.navigate('#/employees');assert.equal(W.root.state.active,'tasks');assert.equal(W.location.hash,'#/tasks');
-  W.navigate('#/help');assert.ok(W.nodes.has('bs-plat-about'));assert.equal(W.root.state.active,'tasks');
+  /* V7 · د7 (١٤ · أمر المالك): العنوانُ غيرُ المتاح لا يُبقي على الصفحة السابقة — يحوّل إلى «صفحتي» (كان: يبقى على tasks) */
+  W.navigate('#/employees');assert.equal(W.root.state.active,'profile');assert.equal(W.location.hash,'#/profile');
+  W.navigate('#/help');assert.ok(W.nodes.has('bs-plat-about'));assert.equal(W.root.state.active,'profile');
 });
 
 test('denied help and an unauthenticated actor cannot open the dialog through the direct route',()=>{
   for(const options of [{help:false},{signedIn:false}]){
     const W=world(options);W.mount();W.navigate('#/help');
-    assert.equal(W.nodes.has('bs-plat-about'),false);assert.notEqual(W.root.state.active,'help');assert.equal(W.location.hash,'#/tasks');
+    /* V7 · د7 (١٤): المساعدةُ المطفأة عنوانٌ غيرُ متاح — «صفحتي» لا الصفحةُ السابقة (كان: '#/tasks') · وبلا جلسةٍ يبقى حارسُ المساعدة نفسُه
+       (_openHelpRoute يعيد عنوانَ الصفحة الحالية) · والنافذةُ لا تُفتح في الحالتين كما كان */
+    assert.equal(W.nodes.has('bs-plat-about'),false);assert.notEqual(W.root.state.active,'help');assert.equal(W.location.hash,options.help===false ? '#/profile' : '#/tasks');
   }
 });
 
