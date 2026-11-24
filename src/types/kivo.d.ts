@@ -308,6 +308,9 @@ export interface KivoApi {
   "/api/award/export": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; domains: unknown }; "400": { ok: unknown; err: unknown }; "401": { ok: unknown; err: unknown }; "403": { ok: unknown; err: unknown }; "405": { ok: unknown; err: unknown }; "409": { ok: unknown; err: unknown }; "413": { ok: unknown; err: unknown }; "503": { ok: unknown; err: unknown } } };
   "/api/operations/read": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; uid: unknown; v: unknown; epoch: unknown; resources: unknown; absent: unknown; denied: unknown; base: unknown }; "400": { ok: unknown; err: unknown } } };
   "/api/operations/export": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; version: unknown; globalRev: unknown; epoch: unknown; domains: unknown }; "400": { ok: unknown; err: unknown } } };
+  "/api/operations/summary": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; key: unknown; rows: unknown }; "400": { ok: unknown; err: unknown } } };
+  "/api/operations/receipt": { methods: "GET"; access: "actor"; responses: { "200": { ok: unknown; found: unknown }; "400": { ok: unknown; err: unknown } } };
+  "/api/operations/periods-migrate": { methods: "POST"; access: "super"; responses: { "200": { ok: unknown; departments: unknown; pending: unknown }; "400": { ok: unknown; err: unknown } } };
 }
 export type KivoApiPath = keyof KivoApi;
 

@@ -68,7 +68,7 @@ async function rsScopeOperational(env, capture, keys) {
   capture.snapshots.push.apply(capture.snapshots, state.snapshots);
   capture.guards.push.apply(capture.guards, state.guards);
 }
-/* V7 · 53 (ملحق 4): rsReferenceWiden (توسيعُ المرجع إلى القاعدة كلها لحكم صورة) أُزيل — 019e rsImageHeldSql يسأل D1 بالمعرّفات. */
+/* V7 · 53 (ملحق 4): rsReferenceWiden (توسيعُ المرجع إلى القاعدة كلها */
 async function rsReferenceSnapshot(env, uid, options) {
   /* One coherent reference snapshot feeds actor construction and applySave. Its
      complete row witness is rechecked INSIDE the eventual write transaction. */

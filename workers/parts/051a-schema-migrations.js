@@ -256,6 +256,13 @@ var KIVO_MIGRATIONS = [
    "UPDATE ops_nodes SET schema_id='ops_zone_prayer_counts' WHERE schema_id='ops_plan_deleted_months' AND member_key='pc' AND (department_id,resource,parent_key) IN(SELECT z.department_id,z.resource,z.row_key FROM ops_nodes z WHERE z.schema_id='ops_plan_live_floors_floor_zones_element')",
    "INSERT INTO meta(k,v)VALUES('schema_version','12')ON CONFLICT(k)DO UPDATE SET v=excluded.v"
   ]
+ },
+ {
+  "name": "0013_period_storage",
+  "sql": [
+   "CREATE TABLE IF NOT EXISTS ops_period_summary (department_id TEXT NOT NULL, resource TEXT NOT NULL, period TEXT NOT NULL, rev INTEGER NOT NULL, v_json TEXT NOT NULL, PRIMARY KEY (department_id, resource, period)) WITHOUT ROWID",
+   "INSERT INTO meta (k, v) VALUES ('schema_version', '13') ON CONFLICT(k) DO UPDATE SET v = excluded.v"
+  ]
  }
 ];
-var KIVO_SCHEMA_VERSION = 12;
+var KIVO_SCHEMA_VERSION = 13;
