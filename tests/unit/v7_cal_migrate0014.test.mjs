@@ -16,6 +16,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { D1Shim, ROOT, WORKER, CURRENT_SCHEMA, allowTestSchemaUpgrade, hasSystem } from './harness.mjs';
 import { build } from '../load/s1_world.mjs';
 import { legacyDocs } from './v7_d6_import_fx.mjs';
+import { load, H2G, G2H, oracle } from './v7_cal_migrate_fx.mjs';
 
 const OLD_REV = process.env.KIVO_UPGRADE14_REV || '5f1411e';
 const D1 = 'tst_demo_d1', D2 = 'TEST_ONLY_c14_prod', G = 'TEST_ONLY_c14_group', SUPER = 'TEST_ONLY_c14_super', TOK = 'TEST_ONLY_c14_session';
@@ -24,11 +25,7 @@ try { oldSource = execFileSync('git', ['-C', ROOT, 'show', OLD_REV + ':workers/_
 catch (e) { why = 'يحتاج تاريخ git للمرجع ' + OLD_REV; }
 const need = !oldSource ? { skip: why } : hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات والمهام والجدول والتقرير' };
 let inst = 0;
-export async function load(source, tag) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_c14_')), file = path.join(dir, tag + '.mjs');
-  fs.writeFileSync(file, source + (tag === 'new' ? '\nexport { calMigDoc, calMigOnce, opInfo };\n' : ''));
-  try { return await import(pathToFileURL(file).href + '?inst=' + ++inst); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
-}
+const pad = (n) => String(n).padStart(2, '0');
 function env(DB) { return { DB: DB || new D1Shim(), KIVO_AUTHZ_MODE: 'enforce', KIVO_TEST_FIXTURE: 'allow', KIVO_TEST_HOST: 'x', ASSETS: { fetch: async () => new Response('<!doctype html><html><head><!--BS_BOOT--></head><body>TEST_ONLY</body></html>', { headers: { 'Content-Type': 'text/html' } }) } }; }
 function api(W, E) {
   return async (route, { method = 'GET', body } = {}) => {
@@ -68,42 +65,8 @@ function addProdDept(E) {
 function snapshot(DB) { const f = path.join(os.tmpdir(), 'kivo_c14_bookmark_' + process.pid + '_' + ++inst + '.db'); DB.db.exec("VACUUM INTO '" + f + "'"); return f; }
 function restore(file) { const S = new D1Shim(); S.db = new DatabaseSync(file); return S; }
 
-/* ── الأوراكل المستقل: أم القرى من Intl (لا من 016/019v) · قاعدةُ القفل نسخةٌ حرفية من 010 lockedIn ── */
-const HF = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'UTC', year: 'numeric', month: 'numeric', day: 'numeric' });
-const pad = (n) => String(n).padStart(2, '0');
-export const H2G = (() => { const m = new Map(); for (let t = Date.UTC(2015, 0, 1); t < Date.UTC(2032, 0, 1); t += 864e5) { const o = {}; HF.formatToParts(new Date(t)).forEach((p) => { o[p.type] = +p.value; }); const d = new Date(t); m.set(o.year + '-' + o.month + '-' + o.day, d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate())); } return m; })();
-export const G2H = new Map([...H2G].map(([h, g]) => [g, h]));
-export const hKey = (k) => { const p = String(k).split('-').map(Number); return p[0] + '-' + p[1] + '-' + p[2]; };
-export function lockedIn(rec, y, m, d, T) {
-  if (rec === true || rec === 1) rec = { ap: 1 }; else if (!rec || typeof rec !== 'object') rec = {};
-  if (rec.ap) return true;
-  const mPast = !!T && (y < T.y || (y === T.y && m < T.m)), dPast = mPast || (!!T && y === T.y && m === T.m && d != null && d < T.d);
-  if (mPast && !rec.mo) return true;
-  if (d == null) return false;
-  return dPast ? !(rec.dopen && rec.dopen[d]) : !!(rec.dshut && rec.dshut[d]);
-}
-const isDay = (k) => /^\d{4}-\d{1,2}-\d{1,2}$/.test(k), isMk = (k) => /^m:\d{4}-\d{1,2}$/.test(k);
-/* لكل يومٍ هجري في مدى العلامات والأيام: حالتُه بالقاعدة القديمة = حالةُ يومه الميلادي بالقاعدة نفسِها على السجل الجديد · وقيمتُه هي هي */
-export function oracle(before, after, T, label) {
-  const Tg = { y: +T.slice(0, 4), m: +T.slice(5, 7), d: +T.slice(8, 10) }, Th = (() => { const p = G2H.get(T).split('-').map(Number); return { y: p[0], m: p[1], d: p[2] }; })();
-  const hMonths = new Set();
-  Object.keys(before).forEach((k) => { if (isMk(k)) hMonths.add(k.slice(2)); if (isDay(k)) { const p = k.split('-').map(Number); hMonths.add(p[0] + '-' + p[1]); } });
-  let days = 0;
-  for (const hm of hMonths) for (let d = 1; d <= 30; d++) {
-    const h = hm + '-' + d, g = H2G.get(h); if (!g) continue;
-    const [y, m] = hm.split('-').map(Number), gm = g.slice(0, 7);
-    const old = lockedIn(before['m:' + hm], y, m, d, Th), now = lockedIn(after['m:' + gm], +g.slice(0, 4), +g.slice(5, 7), +g.slice(8, 10), Tg);
-    assert.equal(now, old, label + ': قفلُ اليوم ' + h + ' (' + g + ') لم يتغيّر');
-    days++;
-  }
-  const bd = Object.keys(before).filter(isDay), ad = Object.keys(after).filter(isDay);
-  assert.equal(ad.length, bd.length, label + ': عددُ الأيام محفوظ');
-  for (const k of bd) { const g = H2G.get(hKey(k)); assert.ok(g, label + ': ' + k + ' يومٌ معروف'); assert.ok(Object.prototype.hasOwnProperty.call(after, g), label + ': اليوم ' + k + ' ← ' + g + ' لم يُسقط'); assert.deepEqual(after[g], before[k], label + ': قيمةُ اليوم ' + k + ' كما هي'); }
-  assert.ok(Object.keys(after).every((k) => !/^(?:m:)?1[3-5]\d\d-/.test(k)), label + ': لا مفتاحَ هجرياً باقٍ');
-  return days;
-}
 /* بياناتُ العرض كما يولّدها ويصدّرها العاملُ السابق (Preview) — legacyDocs بالحزمة السابقة (الحاليةُ تكتب greg_* قبل أن تنتقل أنظمتُها) */
-export async function oldDemo() {
+async function oldDemo() {
   const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_c14w_')), 'old_worker.js'), was = process.env.KIVO_WORKER;
   fs.writeFileSync(f, oldSource); process.env.KIVO_WORKER = f;
   try { return await legacyDocs(); } finally { if (was === undefined) delete process.env.KIVO_WORKER; else process.env.KIVO_WORKER = was; fs.rmSync(path.dirname(f), { recursive: true, force: true }); }
