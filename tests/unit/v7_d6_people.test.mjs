@@ -148,7 +148,7 @@ test('ب8 · «الأشخاص»: الدور · الاستثناءات · «ما 
   W.open('#/sysadmin/org/' + A + '/people');
   W.page._p44Set({ pSel: 'mgr:' + A }); let v = W.render();
   assert.equal(v.p44PSel.n, 'TEST_ONLY مدير أ'); assert.equal(v.p44PMgr, true);
-  assert.equal(v.p44PMgrLine, 'مدير الوحدة · كامل داخل سقف وحدته', 'owner reply 2 · 3: one line above the real menu');
+  assert.equal(v.p44PMgrLine, 'مدير الوحدة · يعمل بسقف وحدته كله', 'owner reply 2 · 3: one line above the real menu (V7 · 53 · REVIEW بند 4: «كامل» لم يعد اسمَ مستوى — صيغ السطرُ بلا الكلمة، معناه كما هو)');
   assert.equal(v.p44PEdit, false, 'no role is assigned to the unit manager');
   const ph = W.seen.filter((x) => x.kind === 'person').pop(); deq([ph.did, ph.ekey, ph.mgr], [A, 'mgr:' + A, true], 'his real menu: seenBy for the person');
   deq(v.p44PNav.map((x) => x.n), ['صفحتي', 'TEST_ONLY المهام'], 'the line describes, the list stays');
