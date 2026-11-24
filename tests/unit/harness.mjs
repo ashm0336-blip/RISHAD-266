@@ -78,13 +78,13 @@ export function moduleDir(slug) { return _moduleDir(SRC, slug); }
 export function moduleFile(slug, name) { return path.join(moduleDir(slug), name); }
 export function moduleLogic(slug) { const d = moduleDir(slug); let meta = {}; try { meta = JSON.parse(fs.readFileSync(path.join(d, 'meta.json'), 'utf8')); } catch (e) { /* بلا meta: logic.js وحده */ } return ['logic.js'].concat(meta.logicParts || []).map((f) => { const t = fs.readFileSync(path.join(d, f), 'utf8'); return t.endsWith('\n') ? t : t + '\n'; }).join(''); }
 /* ── D1 بديل: الواجهة التي يستعملها العامل فقط (prepare/bind/first/all/run · batch · withSession) ── */
-/* V7 · 53: سقوفُ D1 الحقيقية في وضع limits (اختياري: DB.limits = true، أو KIVO_D1_LIMITS=1) — بلا هذا الوضع لا يتغيّر شيء.
+/* V7 · 53: سقوفُ D1 الحقيقية — مفروضةٌ افتراضياً (V7 · 53 تقويم · مانعُ Preview: ما ينجح في المختبر وحده لا يُقبل؛ KIVO_D1_LIMITS=0 يطفئها لقياسٍ مقارن).
    call: «Serialized RPC arguments or return values are limited to 32MiB» (مقيسٌ على Preview، ملحق 53 (4)) — الحجمُ بمسلسل V8 نفسِه
    (v8.serialize) لمعاملات الاستدعاء (نصوصُ العبارات ومعاملاتُها) ولنتيجته، فالاستدعاءُ first/all/run أو batch واحد.
    sql: نصُّ العبارة ≤ 100KB · params: ≤ 100 معامل للعبارة · value: نصٌّ أو كتلة ≤ 2MB (حدودُ D1 المنشورة). */
 export const D1_LIMITS = { call: 32 * 1048576, sql: 100000, params: 100, value: 2000000 };
 export class D1Shim {
-  constructor() { this.db = new DatabaseSync(':memory:'); this.failIf = null; this.log = []; this.trips = 0; this._inBatch = false; this.limits = process.env.KIVO_D1_LIMITS === '1'; this.peak = 0; }
+  constructor() { this.db = new DatabaseSync(':memory:'); this.failIf = null; this.log = []; this.trips = 0; this._inBatch = false; this.limits = process.env.KIVO_D1_LIMITS !== '0'; this.peak = 0; }
   _lim() { return this.limits === true ? D1_LIMITS : this.limits || null; }
   _rpc(value) { const L = this._lim(); if (!L) return; const n = v8.serialize(value).length; if (n > this.peak) this.peak = n; if (n > L.call) throw new Error('D1_ERROR: Serialized RPC arguments or return values are limited to 32MiB, but the size of this value was: ' + n + ' bytes.'); }
   _stmtLimits(sql, args) { const L = this._lim(); if (!L) return; if (Buffer.byteLength(sql) > L.sql) throw new Error('D1_ERROR: statement too long: SQLITE_TOOBIG'); if (args.length > L.params) throw new Error('D1_ERROR: too many SQL variables: SQLITE_RANGE'); for (const a of args) if (typeof a === 'string' && Buffer.byteLength(a) > L.value) throw new Error('D1_ERROR: string or blob too big: SQLITE_TOOBIG'); }   /* KIVO_255 · AUD-037: trips = جولاتُ D1 (كلُّ first/all/run/raw جولة · batch جولةٌ واحدة) */
