@@ -2593,6 +2593,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     });
     return !0;
   }
+  /* V7 · 53: بعد الرسم الأول — الأشهرُ الاثنا عشر الماضية والشهران التاليان (قائمةُ «نسخ خطة شهرٍ آخر» · حذفُ الموقع وتعديلُه يشملها كما كان) */
+  _plAround() {
+    const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
+    if (!S || !S.split || !S.split("bassam_plan_v1")) return;
+    const c = this.curHijri(),
+      g = [];
+    for (let i = -12; i <= 2; i++) {
+      const n = c.y * 12 + (c.m - 1) + i;
+      g.push(this._mKey(Math.floor(n / 12), (n % 12) + 1));
+    }
+    setTimeout(() => S.want("bassam_plan_v1", { groups: g }), 0);
+  }
   _plWithPeriod(i, k) {
     const S = KIVO.__BS_SRV && KIVO.__BS_SRV.operations;
     if (i[k] || !S || !S.split || !S.split("bassam_plan_v1")) return i;
@@ -3981,6 +3993,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, [
     } catch (t) {}
   }
   componentDidMount() {
+    this._plAround();
     this._bsSigV = this._bsSig();
     this._bsShown = (t) => {
       try {

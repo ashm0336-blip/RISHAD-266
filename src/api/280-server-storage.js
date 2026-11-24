@@ -1320,7 +1320,7 @@
           periodOrder9[K] = order; (periodGroups9[K] || (periodGroups9[K] = Object.create(null)))[g] = 1;
         });
         Object.keys(data.resources).concat(data.absent, data.denied, Object.keys(failed)).forEach(function (key) {
-          var x2 = periodParse9(key), prior = operationKnown9[key], had = prior && prior.stamp && operationSame9(prior.stamp) && (prior.state === 'ready' || prior.state === 'absent');
+          var x2 = periodParse9(key), prior = operationKnown9[key], had = prior && prior.stamp && operationSame9(prior.stamp) && (prior.state === 'ready' || prior.state === 'absent'), priorText = mem[key];
           if (data.denied.indexOf(key) !== -1) { operationForget9(key, 'denied', !!x2); operationKnown9[key].stamp = stamp; if (x2) bump[x2.K] = 1; else out.denied.push(key); return; }
           if (periodOwn9(failed, key)) { operationForget9(key, 'error', !!x2); operationKnown9[key].stamp = stamp; failedAll[key] = String(failed[key]); if (x2) bump[x2.K] = 1; return; }
           var present = periodOwn9(data.resources, key);
@@ -1328,7 +1328,7 @@
           krev[key] = data.base[key];
           if (x2 && keys.indexOf(key) !== -1) { if (present) out.resources[key] = data.resources[key]; else out.absent.push(key); out.base[key] = data.base[key]; }   /* فترةٌ طُلبت بعينها (قراءةُ التحقق) */
           if (x2) {
-            if (had && (prior.rev !== data.base[key] || prior.state !== (present ? 'ready' : 'absent'))) bump[x2.K] = 1;
+            if (had && (prior.state !== (present ? 'ready' : 'absent') || (present && priorText !== mem[key]))) bump[x2.K] = 1;   /* المحتوى تغيّر (لا مجرّدُ المراجعة) ⇒ المسودةُ المبنيّةُ عليه تُراجَع */
             if (!had || prior.state !== 'ready') periodLoadSeq9[key] = ++periodSeq9;
             if (x2.p && present && (periodOrder9[x2.K] || []).indexOf(x2.p) === -1) (periodOrder9[x2.K] || (periodOrder9[x2.K] = [])).push(x2.p);
           } else { out.resources[key] = data.resources[key]; if (!present) { delete out.resources[key]; out.absent.push(key); } out.base[key] = data.base[key]; }
