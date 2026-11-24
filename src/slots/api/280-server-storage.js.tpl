@@ -1260,9 +1260,12 @@
     var out = { groups: [], days: [] };
     /* V7 · 53 تقويم (cal-ops): مفاتيحُ الفترات ميلاديةٌ ISO — اليومُ وأمسُ يومُ الرياض المدني (UTC+3 ثابتاً) بحسابٍ مباشر بلا مُنسِّق ولا جدول؛
        كان أم القرى («1448-6»)، فكانت الصفحةُ تطلب فترةً لا وجود لها ويغيب شهرُها الجاري (الجدول الشهري) */
+    var C = KIVO.BassamCal;
     [0, 864e5].forEach(function (back) {
-      var x = new Date(Date.now() - back + 3 * 36e5), z = function (n) { return (n < 10 ? '0' : '') + n; };
-      var g = x.getUTCFullYear() + '-' + z(x.getUTCMonth() + 1), d = g + '-' + z(x.getUTCDate());
+      var at = new Date(Date.now() - back), h = null, z = function (n) { return (n < 10 ? '0' : '') + n; };
+      try { h = C && C.gAt ? C.gAt(at) : null; } catch (e) { h = null; }   /* خدمةُ التقويم إن حضرت (والاختبارُ يثبّت بها «الآن») */
+      if (!h || !h.y) { var x = new Date(at.getTime() + 3 * 36e5); h = { y: x.getUTCFullYear(), m: x.getUTCMonth() + 1, d: x.getUTCDate() }; }
+      var g = h.y + '-' + z(h.m), d = g + '-' + z(h.d);
       if (out.groups.indexOf(g) === -1) out.groups.push(g);
       if (out.days.indexOf(d) === -1) out.days.push(d);
     });

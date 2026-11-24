@@ -80,6 +80,8 @@ export function loadClient({ C, boot, jar = { cookie: '' }, blocks = ['280-serve
   const ctx = vm.createContext(W);
   vm.runInContext(fs.readFileSync(blockFile('005-kivo-ns.js'), 'utf8'), ctx, { filename: '005-kivo-ns.js' });
   vm.runInContext(fs.readFileSync(blockFile('060-bus.js'), 'utf8'), ctx, { filename: '060-bus.js' });   /* V7 · د5-د: الناقل من قلب المنصة — الصفحاتُ تسأل غيرَها بالاسم */
+  /* V7 · 53 تقويم (cal-ops): خدمةُ التقويم الواحدة كما في كل صفحة — الصفحاتُ تبني مفاتيحَها ISO بها (KIVO.BassamCal.gKey/gYm/gMk) */
+  for (const b of ['380-hijri-fallback.js', '385-calendar.js']) vm.runInContext(fs.readFileSync(blockFile(b), 'utf8'), ctx, { filename: b });
   const T = {
     W, ctx, net, log, urls, jar,
     run: (names) => { for (const b of names) vm.runInContext(fs.readFileSync(blockFile(b), 'utf8'), ctx, { filename: b }); return T; },

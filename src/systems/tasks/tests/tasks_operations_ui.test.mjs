@@ -1,3 +1,4 @@
+/* V7 · 53 تقويم: مفاتيحُ ISO بقاعدة world_fx hFx (1448-5 ⇐ 2026-10 · 1448-6 ⇐ 2026-11) */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -11,7 +12,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const response = (value, status = 200) => new Response(JSON.stringify(value), { status });
 function row() { return ['TEST_ONLY title', '', 'normal', 'pending', 'normal', 'added', null, [], '', 'TEST_ONLY creator', 30, null, null, 101, null, 1000, 2000, null, null, null, null, null]; }
 async function world({ save, command, deniedTask = false } = {}) {
-  const docs = { [TASK]: { '1448-5-1': [row()], '1448-6-1': [row()] }, [LOCK]: { '1448-5': true, '1448-5-1': { mo: 1 }, '1448-6': true } }, calls = [], actor = { uid: UID, dept: DEPT };
+  const docs = { [TASK]: { '2026-10-01': [row()], '2026-11-01': [row()] }, [LOCK]: { '2026-10': true, '2026-10-01': { mo: 1 }, '2026-11': true } }, calls = [], actor = { uid: UID, dept: DEPT };
   let rev = 4;
   const C = { req: async (url, options = {}) => {
     if (url.startsWith('/api/operations/read?')) {
@@ -56,7 +57,7 @@ async function world({ save, command, deniedTask = false } = {}) {
   KIVO.BassamPageKit = { base: () => class {} }; T.W.DCLogic = class {};
   vm.runInContext('(()=>{' + read('src/systems/tasks/client/logic.js') + read('src/systems/tasks/client/logic-filters.js') + read('src/systems/tasks/client/logic-actions.js') + ';globalThis.__Tasks = Component;})()', T.ctx);
   const c = Object.create(T.W.__Tasks.prototype), toasts = [];
-  Object.assign(c, { state: { year: 1448, month: 5, locked: plain(docs[LOCK]), tasksAll: deniedTask ? {} : plain(docs[TASK]) },
+  Object.assign(c, { state: { year: 2026, month: 10, locked: plain(docs[LOCK]), tasksAll: deniedTask ? {} : plain(docs[TASK]) },
     setState(value, done) { Object.assign(this.state, typeof value === 'function' ? value(this.state) : value); done?.(); },
     bsToast(message, kind) { toasts.push({ message, kind }); }, _tkCanWrite: () => true, PC: () => true, _tkIdx: (_list, index) => index, _tkShut: () => false });
   await KIVO.__BS_SRV.operations.read([TASK, LOCK]);
@@ -71,9 +72,9 @@ test('Tasks accepts only after the actual sealed queue ACK; the dialog and confi
     W.c._tkOpen({ acceptRef: { d: 1, i: 0, k: 'TEST_ONLY identity' } });
     const pending = W.c._doAccept('TEST_ONLY employee', 'TEST_ONLY eid');
     await until(() => finish);
-    assert.ok(W.c.state.acceptRef); assert.equal(W.c.loadAllTasks()['1448-5-1'][0][3], 'pending');
+    assert.ok(W.c.state.acceptRef); assert.equal(W.c.loadAllTasks()['2026-10-01'][0][3], 'pending');
     finish(); await pending;
-    assert.equal(W.c.state.acceptRef, null); assert.equal(W.c.loadAllTasks()['1448-5-1'][0][3], 'in_progress');
+    assert.equal(W.c.state.acceptRef, null); assert.equal(W.c.loadAllTasks()['2026-10-01'][0][3], 'in_progress');
     assert.deepEqual(W.T.nativeLS(), {});
   } finally { W.T.dispose(); }
 });
@@ -87,11 +88,11 @@ test('Lost task ACK keeps the dialog; retry sends the exact same ticket/body wit
   try {
     W.c._tkOpen({ acceptRef: { d: 1, i: 0, k: 'TEST_ONLY identity' } });
     await W.c._doAccept('TEST_ONLY employee', 'TEST_ONLY eid');
-    assert.ok(W.c.state.acceptRef); assert.equal(W.c.loadAllTasks()['1448-5-1'][0][3], 'pending');
+    assert.ok(W.c.state.acceptRef); assert.equal(W.c.loadAllTasks()['2026-10-01'][0][3], 'pending');
     await W.c._tkClose('acceptRef', { acceptRef: null }); assert.ok(W.c.state.acceptRef);
     await W.c._doAccept('TEST_ONLY employee', 'TEST_ONLY eid');
     assert.equal(W.calls.length, 2); assert.equal(W.calls[0].body, W.calls[1].body);
-    assert.equal(W.c.state.acceptRef, null); assert.equal(W.c.loadAllTasks()['1448-5-1'][0][14], 'TEST_ONLY eid');
+    assert.equal(W.c.state.acceptRef, null); assert.equal(W.c.loadAllTasks()['2026-10-01'][0][14], 'TEST_ONLY eid');
   } finally { W.T.dispose(); }
 });
 
@@ -99,12 +100,12 @@ test('Deleting a task month and its month/day locks uses one atomic ticket and p
   const W = await world();
   try {
     W.c._tkOpen({ delMonth: { n: 5 } });
-    assert.equal(await W.c._tkDeleteMonth(1448, 5), true);
+    assert.equal(await W.c._tkDeleteMonth(2026, 10), true);
     assert.equal(W.calls.length, 1);
     /* V7 · 53 (basefix): المهامُ مخزّنةٌ بالفترة (periodsui) — التذكرةُ الواحدة تحمل الأقفالَ كاملةً وحذفَ أيام الشهر من المهام (لا وثيقةَ المهام كلَّها) */
     const sent = JSON.parse(W.calls[0].body);
-    assert.deepEqual(Object.keys(sent.set).sort(), [LOCK]); assert.deepEqual(sent.del.slice().sort(), [TASK + '@1448-5-1']);
-    assert.deepEqual(Object.keys(W.docs[TASK]), ['1448-6-1']); assert.deepEqual(W.docs[LOCK], { '1448-6': true });
+    assert.deepEqual(Object.keys(sent.set).sort(), [LOCK]); assert.deepEqual(sent.del.slice().sort(), [TASK + '@2026-10-01']);
+    assert.deepEqual(Object.keys(W.docs[TASK]), ['2026-11-01']); assert.deepEqual(W.docs[LOCK], { '2026-11': true });
   } finally { W.T.dispose(); }
 });
 
@@ -114,7 +115,7 @@ test('An editor opened before another confirmed revision is rejected; no stale w
     W.c._tkOpen({ confirmFinish: { d: 1, i: 0 } });
     // Confirm a distinct write through the same real queue, then try the old editor.
     /* V7 · 53 (basefix): بالفترات لا تُبطل كتابةٌ لا تمسّ المهامَ المحمَّلة محرِّراً مفتوحاً (280 periodView9) — فالمراجعةُ الأخرى المؤكَّدة تغيّر المهامَ نفسَها */
-    const d = W.ops.draft(), t = d.get('bassam_tasks_v1'); t['1448-6-1'][0][0] = 'TEST_ONLY another confirmed revision'; d.set('bassam_tasks_v1', t); d.set('bassam_tasks_locks_v1', {}); await W.ops.flush(d.stage());
+    const d = W.ops.draft(), t = d.get('bassam_tasks_v1'); t['2026-11-01'][0][0] = 'TEST_ONLY another confirmed revision'; d.set('bassam_tasks_v1', t); d.set('bassam_tasks_locks_v1', {}); await W.ops.flush(d.stage());
     await W.ops.read([TASK, LOCK]);
     assert.equal(await W.c._doFinish(1, 0), false);
     assert.equal(W.calls.length, 1);
@@ -128,7 +129,7 @@ test('Task create command retries its original body and requestId after a lost A
   const W = await world({ command: (_body, ack) => { count++; if (count === 1) throw Error('TEST_ONLY lost ACK'); return ack(); } });
   try {
     W.c._tkOpen({ newTaskOpen: true });
-    const body = { k: '1448-5-1', t: 'TEST_ONLY command', s: 1000, e: 2000 };
+    const body = { k: '2026-10-01', t: 'TEST_ONLY command', s: 1000, e: 2000 };
     const first = await W.c._tkCommandApi('/api/tasks/create', body);
     assert.equal(first.j.ok, 0); assert.ok(W.c._tkCommands.newTaskOpen);
     await W.c._tkClose('newTaskOpen', { newTaskOpen: false }); assert.equal(W.c.state.newTaskOpen, true);
@@ -151,7 +152,7 @@ test('A successful-looking command with an incomplete ACK remains uncertain; a p
     }; }) });
     try {
       W.c._tkOpen({ newTaskOpen: true });
-      const pending = W.c._tkCommandApi('/api/tasks/create', { k: '1448-5-1', t: 'TEST_ONLY create', s: 1000, e: 2000 });
+      const pending = W.c._tkCommandApi('/api/tasks/create', { k: '2026-10-01', t: 'TEST_ONLY create', s: 1000, e: 2000 });
       await until(() => release); await release();
       assert.equal((await pending).j.ok, 0); assert.equal(W.c.state.newTaskOpen, true);
       assert.equal(W.c._tkCommands.newTaskOpen.state, 'uncertain');
@@ -166,7 +167,7 @@ test('Profile keeps its existing self-task API and fails closed when that servic
     vm.runInContext('(()=>{' + read('src/modules/profile/logic.js') + ';globalThis.__Profile = Component;})()', W.T.ctx);
     const c = Object.create(W.T.W.__Profile.prototype); c.state = {}; c.setState = () => {}; c.bsToast = () => {};
     assert.deepEqual(plain(c._tkAll()), {});
-    const result = await c._tkAct('1448-5-1', 0, 'start'); assert.equal(result.ok, false);
+    const result = await c._tkAct('2026-10-01', 0, 'start'); assert.equal(result.ok, false);
     assert.deepEqual(W.T.nativeLS(), {}); assert.equal(W.calls.length, 0);
     assert.equal(c._tkSave, undefined); assert.equal(c._tkMut, undefined); assert.equal(c.pfTaskSet, undefined);
   } finally { W.T.dispose(); }
@@ -183,7 +184,7 @@ test('Profile field observation awaits its existing service ACK and passes the o
     W.T.W.KIVO.BassamField = { KINDS: ['gates'], KIND_AL: { gates: 'TEST_ONLY gate' }, KIND_T: {}, FLOWS: {}, FLOW_ORDER: [], REASONS: ['TEST_ONLY reason'],
       canField: () => true, flowOn: () => false, stateOf: () => 'open', label: () => 'TEST_ONLY gate', clock: () => '00:00',
       observe: (...args) => { seen.push(args); return new Promise(resolve => { finish = resolve; }); } };
-    const dto = {}, input = { isStaff: true, DK: '1448-5-1', mySpots: [{ fi: 0, i: 0, kind: 'gates' }], rnd: { d: [{ gates: [spot] }] } };
+    const dto = {}, input = { isStaff: true, DK: '2026-10-01', mySpots: [{ fi: 0, i: 0, kind: 'gates' }], rnd: { d: [{ gates: [spot] }] } };
     c._pfField(dto, input, c.state);
     const pending = dto.fdDlgOk(); assert.ok(c.state.fdDlg); assert.equal(success.length, 0);
     assert.equal(seen[0][3].expected, spot);
@@ -208,9 +209,9 @@ test('Task projection memoization follows confirmed revisions and never returns 
   const W = await world();
   try {
     const first = W.c.loadAllTasks(); assert.equal(W.c.loadAllTasks(), first);
-    const draft = W.ops.draft(), changed = draft.get('bassam_tasks_v1'); changed['1448-5-1'][0][0] = 'TEST_ONLY confirmed newer'; draft.set('bassam_tasks_v1', changed);
+    const draft = W.ops.draft(), changed = draft.get('bassam_tasks_v1'); changed['2026-10-01'][0][0] = 'TEST_ONLY confirmed newer'; draft.set('bassam_tasks_v1', changed);
     assert.equal((await W.ops.flush(draft.stage())).ok, 1);
-    const next = W.c.loadAllTasks(); assert.notEqual(next, first); assert.equal(next['1448-5-1'][0][0], 'TEST_ONLY confirmed newer');
+    const next = W.c.loadAllTasks(); assert.notEqual(next, first); assert.equal(next['2026-10-01'][0][0], 'TEST_ONLY confirmed newer');
     W.actor.uid = 'TEST_ONLY different account';
     assert.throws(() => W.c.loadAllTasks(), /operations-scope-required|operations-read-required/);
   } finally { W.T.dispose(); }
@@ -220,7 +221,7 @@ test('Profile cannot close or replace a self-task draft while its existing comma
   const W = await world();
   try {
     vm.runInContext('(()=>{' + read('src/modules/profile/logic.js') + ';globalThis.__Profile = Component;})()', W.T.ctx);
-    const c = Object.create(W.T.W.__Profile.prototype), dto = { k: '1448-5-1', id: 101, i: 0, t: 'TEST_ONLY self task' };
+    const c = Object.create(W.T.W.__Profile.prototype), dto = { k: '2026-10-01', id: 101, i: 0, t: 'TEST_ONLY self task' };
     Object.assign(c, { state: { pfPanel: 'tkfin', tkRef: { day: dto.k, idx: 0 }, tkImgs: ['TEST_ONLY in-memory image'] },
       setState(value) { Object.assign(this.state, value); }, bsToast() {} });
     let settle;
@@ -239,7 +240,7 @@ test('The create-only task editor uses confirmed epoch/context without reading o
   try {
     assert.equal(W.ops.state('bassam_tasks_v1'), 'denied'); assert.throws(() => W.ops.get('bassam_tasks_v1'), /operations-read-required/);
     W.c._tkOpen({ newTaskOpen: true }); assert.equal(W.c.state.newTaskOpen, true);
-    const result = await W.c._tkCommandApi('/api/tasks/create', { k: '1448-5-1', t: 'TEST_ONLY create without view', s: 1000, e: 2000 });
+    const result = await W.c._tkCommandApi('/api/tasks/create', { k: '2026-10-01', t: 'TEST_ONLY create without view', s: 1000, e: 2000 });
     assert.equal(result.j.ok, 1); assert.equal(W.calls.length, 1);
     const body = JSON.parse(W.calls[0].body); assert.equal(Object.hasOwn(body, 'base'), false); assert.equal(body.epoch, 3); assert.equal(body.uid, UID);
     assert.deepEqual(plain(W.c.loadAllTasks()), {}); assert.equal(W.ops.state('bassam_tasks_v1'), 'denied'); assert.deepEqual(W.T.nativeLS(), {});
