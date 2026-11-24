@@ -10553,7 +10553,7 @@ async function rsPrepare(env, A, body, meta, internal) {
     if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
   }
   /* V7 · 53: والنسخةُ الشاملة لكل إدارةٍ فيها سجلُّ أدوار ولا منحَ معه (قوالبُ حُوِّلت · 019f): المنحُ المترجَم فوق منح الهدف كما في نسخة الإدارة — نسخةٌ تحمل منحَها تبقى كما هي */
-  if (body.scope.kind === 'full') Object.keys(keys).forEach(function (k) { var d = parseKey(k).dept, gk = enfGrantsKey(d); if (!d || k !== perm44Key(d) || keys[k] == null || keys[gk] !== undefined) return; var gv = rsRoleGrants(A, d, keys[k], inputKeys[gk]); if (gv !== null) { keys[gk] = gv; if (!Object.prototype.hasOwnProperty.call(base, gk)) base[gk] = inputRevs[gk] || 0; } });
+  if (body.scope.kind === 'full') ((internal && internal.tplDepts) || []).forEach(function (d) { var k = perm44Key(d), gk = enfGrantsKey(d); if (keys[k] == null || keys[gk] !== undefined) return; var gv = rsRoleGrants(A, d, keys[k], inputKeys[gk]); if (gv !== null) { keys[gk] = gv; if (!Object.prototype.hasOwnProperty.call(base, gk)) base[gk] = inputRevs[gk] || 0; } });
   /* 330-auth.pruneDeptAccounts: restore only removes staff/dept identities bound
      to removed departments, never GM/Super accounts. The result still traverses
      applySave's unchanged password, uniqueness and final-super validators. */
@@ -11199,6 +11199,7 @@ async function rsBackupRun(env, A, request, body, reference, rawFingerprint, sta
       fingerprint: rawFingerprint,
       images: stage || converted.images,
       release: !!stage,
+      tplDepts: converted.tplDepts,
     });
     plan.guards.push.apply(plan.guards, converted.readGuards || []);
     converted.summary.imagesReused = plan.imagesReused;
@@ -12396,6 +12397,7 @@ function rsBCTplsRoles(keys, perms, d, src, summary) {
   var X = enfRolesFromTpls(tpls, assign, rsBCOwn(keys, rk) ? parseJson(keys[rk], null) : null);
   if (X.rep.roles || X.rep.people) keys[rk] = JSON.stringify(X.rec);
   var S = summary.tplRoles || (summary.tplRoles = { roles: 0, people: 0, unknownTpl: 0, lensDropped: 0 }); for (var q in S) S[q] += X.rep[q];   /* V7 · 53: يُجمع لكل إدارةٍ في النسخة الشاملة */
+  return X.rep.people > 0;
 }
 function rsBCManifest(manifest, scope, keys, domains, departments) {
   rsShape(manifest, ['version', 'scope', 'domains', 'departments', 'keys']);
@@ -12813,7 +12815,7 @@ async function rsConvertBackup(env, A, file, opt) {
      V7 · د7 (51ب): في نسخة الإدارة تصير أدواراً قبل الإسقاط (rsBCTplsRoles) */
   if (scope.kind === 'dept') rsBCTplsRoles(keys, perms, target, source, summary);
   /* V7 · 53 (رد المالك د7_1): النسخةُ الشاملة كذلك، إدارةً إدارة — إسناداتُ كلٍّ من tplOf[<الإدارة>] في سجلّ صلاحياتها (019d rsRoleGrants يبني المنح) */
-  else if (scope.kind === 'full') { var fp9 = parseJson(keys[K_PERM], null), of9 = isObj(fp9) && isObj(fp9.tplOf) ? fp9.tplOf : {}; deptIds.forEach(function (d) { rsBCTplsRoles(keys, { tplOf: isObj(of9[d]) ? of9[d] : {} }, d, d, summary); }); }
+  else if (scope.kind === 'full') { var fp9 = parseJson(keys[K_PERM], null), of9 = isObj(fp9) && isObj(fp9.tplOf) ? fp9.tplOf : {}; var tplD9 = deptIds.filter(function (d) { return rsBCTplsRoles(keys, { tplOf: isObj(of9[d]) ? of9[d] : {} }, d, d, summary); }); }
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });
@@ -12851,6 +12853,7 @@ async function rsConvertBackup(env, A, file, opt) {
   var result = { keys: keys, domains: domains, manifest: manifest, summary: summary, readGuards: readGuards, images: file.idbImages || {} };
   if (scope.kind === 'dept') rsBCMgrSheetDrop(perms, summary);
   if (perms !== undefined) result.permissionSlice = perms;
+  if (tplD9 && tplD9.length) result.tplDepts = tplD9;   /* V7 · 53: إداراتُ النسخة الشاملة التي صارت قوالبُها أدواراً بأشخاص (019d يبني منحها) */
   return result;
 }
 /* Typed Irshad business domain. Plans never commit or allocate revisions. */

@@ -254,7 +254,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   rpCarry(t) {
     try {
       var S = KIVO.__BS_SRV.operations.get("bassam_dreport_v1");
-      if (!S || "object" != typeof S || !t || "object" != typeof t) return;
+      if (!S || "object" !== typeof S || !t || "object" !== typeof t) return;
       var N = this.rpNorm(JSON.parse(JSON.stringify(S)));
       Object.keys(t).forEach(function (k) { if (void 0 !== S[k] && JSON.stringify(N[k]) === JSON.stringify(t[k])) t[k] = S[k]; });
       ["__lv", "__lvU"].forEach(function (k) { if (void 0 !== S[k] && void 0 === t[k]) t[k] = S[k]; });
