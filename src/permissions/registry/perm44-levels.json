@@ -1,12 +1,12 @@
 {
- "note": "V7 · د5-هـ (44): جدولُ المستويات — المصدرُ الواحد لمحرّك الأدوار في الواجهة (src/permissions/345-perm44.js) والخادم (workers/parts/057b-perm44.js). tools/generate.py يولّد الملفين منه ومن perm44-core.js (المحرّكُ المشترك) ومن قائمة الأنظمة المشتقّة من manifests/pages.json. types: أنواعُ مفاتيح السجلّ (type) التي يمنحها المستوى ('*' = كلُّ الأنواع) · sensitive: يشمل المفاتيحَ الحسّاسة (sensitive:true) · custom: قائمةٌ صريحة من مفاتيح النظام.",
+ "note": "V7 · د5-هـ (44): جدولُ المستويات — المصدرُ الواحد لمحرّك الأدوار في الواجهة (src/permissions/345-perm44.js) والخادم (workers/parts/057b-perm44.js). tools/generate.py يولّد الملفين منه ومن perm44-core.js (المحرّكُ المشترك) ومن قائمة الأنظمة المشتقّة من manifests/pages.json. types: أنواعُ مفاتيح السجلّ (type) التي يمنحها المستوى ('*' = كلُّ الأنواع) · sensitive: يشمل المفاتيحَ الحسّاسة (sensitive:true) · custom: قائمةٌ صريحة من مفاتيح النظام. ff (V7 · 53 — قرار المالك «أ»): المستوى يحمل أعلامَ التصدير ff.<نظام>.export (ذرّاتُ converted_to_feature — ليست مفاتيحَ سجلّ ولا تُمنح بالمنح) · وفي «مخصّص» تُختار فعلاً.",
  "v": 1,
  "levels": [
   { "key": "view", "name": "مشاهدة فقط", "types": ["access", "view"], "sensitive": false },
   { "key": "input", "name": "إدخال", "types": ["access", "view", "create"], "sensitive": false },
   { "key": "edit", "name": "تعديل", "types": ["access", "view", "create", "edit"], "sensitive": false },
-  { "key": "full", "name": "كامل", "types": "*", "sensitive": false },
-  { "key": "sensitive", "name": "حسّاس", "types": "*", "sensitive": true },
+  { "key": "full", "name": "كامل", "types": "*", "sensitive": false, "ff": true },
+  { "key": "sensitive", "name": "حسّاس", "types": "*", "sensitive": true, "ff": true },
   { "key": "custom", "name": "مخصّص", "custom": true }
  ],
  "names": { "custom": "صلاحيات مخصّصة", "none": "بلا صلاحيات", "super": "صلاحية كاملة بلا أي قيد" }

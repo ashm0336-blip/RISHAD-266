@@ -206,7 +206,9 @@ test('② roles: a level change is a dirty draft; review names the diff and the 
   const t = W.render().p44SysEd.find((s) => s.k === 'tasks');
   const lab = (k) => W.KIVO.KIVO_REGISTRY.byKey[k].label;
   assert.equal(t.custom, true); assert.deepEqual(J(t.keys.filter((k) => k.on === 'true').map((k) => k.n)), J(W.E.keysFor('tasks', 'input').map(lab)), 'custom starts from «إدخال»');
-  assert.deepEqual(J(t.keys.map((k) => k.n)), J(W.E.sysKeys('tasks').map(lab)), 'every key of the system to choose from');
+  /* V7 · 53 (قرار المالك — التصدير «أ»): و«تصدير» (علمُ ff.task.export — ليس مفتاحاً) فعلٌ يُختار في «مخصّص» بعد مفاتيح النظام */
+  assert.deepEqual(J(t.keys.map((k) => k.n)), J(W.E.sysKeys('tasks').map(lab).concat(['تصدير'])), 'every key of the system to choose from, then the export action');
+  assert.equal(t.keys[t.keys.length - 1].on, 'false', 'export is not chosen when «مخصّص» starts from «إدخال»');
   const sens = W.E.sysKeys('tasks').filter((k) => W.KIVO.KIVO_REGISTRY.byKey[k].sensitive);
   assert.ok(sens.length && sens.every((k) => t.keys.find((x) => x.n === lab(k)).sens === true), 'a sensitive key is marked');
 });
