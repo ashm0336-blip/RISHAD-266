@@ -59,8 +59,8 @@
   function empName(did, key){ try { var emps = J(rawGet('bsdept:' + did + ':bassam_employees_v1'), []) || []; var e = emps.filter(function(x){ return x.eid === key || x.nid === key || x.name === key; })[0]; return e ? e.name : String(key); } catch(e){ return String(key); } }
 @@SYS:nfo.watch.staff@@@@SYS:nfo.watch.tasks@@  // Custody notifications belong to the typed server transaction; no retired KV observer.
 @@SYS:nfo.watch.dreport@@  var WD = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-  function wdName(day){ /* اسم يوم الأسبوع لتاريخ هجري y-m-d بالتقويم أم القرى */
-    try { var p = day.split('-').map(Number); return WD[KIVO.BassamCal.hWeekdayIndex(p[0], p[1], p[2], 400)] || ''; } catch(e){} return '';   /* V7 · د5-د2: البحثُ (±400 يوماً) صار في الخدمة */
+  function wdName(day){ /* اسم يوم الأسبوع ليومٍ «YYYY-MM-DD» — V7 · 53 تقويم: اليومُ ميلادي (gWeekday)، ومفتاحُ يومٍ هجري قديم بأم القرى كما كان */
+    try { var C = KIVO.BassamCal; if (C.keyCal && C.keyCal(day) === 'g') return WD[C.gWeekday(String(day).slice(0, 10))] || ''; var p = day.split('-').map(Number); return WD[C.hWeekdayIndex(p[0], p[1], p[2], 400)] || ''; } catch(e){} return '';   /* V7 · د5-د2: البحثُ (±400 يوماً) صار في الخدمة */
   }
   function isRestOn(rest, wdn){ return !!wdn && (rest || []).some(function(r){ return r === wdn || ('ال' + r) === wdn || r === ('ال' + wdn); }); }
   function restBase(did, day, ek){ @@SYS:nfo.restBase.staff|empty="return [];"@@ }
@@ -116,7 +116,8 @@
   }
 
   /* ═══ الفحص الدوري (المهلات والنصاب والمستودع) — في متصفح المدير/مدير النظام، مرة لكل مهلة ═══ */
-  function todayKey(){ try { var h = KIVO.BassamCal.hParts(new Date()); return { y:h.y, m:h.m, d:h.d, key: h.y + '-' + h.m + '-' + h.d }; } catch(e){ var d = new Date(); return { y:d.getFullYear(), m:d.getMonth() + 1, d:d.getDate(), key:'g' + d.toISOString().slice(0, 10) }; } }   /* V7 · د5-د2 */
+  /* V7 · 53 تقويم (ق1): اليومُ ميلاديٌّ بالرياض — key «YYYY-MM-DD» وym «YYYY-MM» (المفاتيحُ التي تقرؤها المراقباتُ من الوثائق)، كما يكتبها الخادم (pfDayAt) */
+  function todayKey(){ try { var g = KIVO.BassamCal.gAt(new Date()); return { y:g.y, m:g.m, d:g.d, key: g.k, ym: g.ym }; } catch(e){ var d = new Date(), k = d.toISOString().slice(0, 10); return { y:d.getFullYear(), m:d.getMonth() + 1, d:d.getDate(), key: k, ym: k.slice(0, 7) }; } }
   /* بدايةُ تشغيل المنصة من الخادم (لمدير النظام وحده): تُقرأ مرةً وتُحفظ في الذاكرة؛ الفشلُ أو الغيابُ يُعاد في الفحص التالي */
   var FIRST = 0, FIRST_P = null;
   function firstAt(){

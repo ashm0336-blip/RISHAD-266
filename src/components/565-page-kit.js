@@ -35,7 +35,8 @@
   /* ── daily · dreport · dstats · irshad · plan · seized · staff · tasks (1) ── */
   T["daily+dreport+dstats+irshad+plan+seized+staff+tasks"] = function (B) {
     return class extends B {
-      MONTHS = ["محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"];
+      /* V7 · 53 تقويم (REVIEW 22 · عيب 1): الأشهرُ ميلادية — كانت الهجريةَ فتقرأها الإحصائياتُ (وحدها بلا تعريفٍ خاص) فوق أشهرٍ ميلادية («محرم» ليناير) */
+      MONTHS = KIVO.BassamCal.G_MONTHS.slice();
     };
   };
   /* ── daily · dreport · irshad · plan · seized · staff · tasks (1) ── */

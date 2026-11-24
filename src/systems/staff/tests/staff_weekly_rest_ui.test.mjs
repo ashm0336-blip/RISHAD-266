@@ -56,11 +56,11 @@ async function page(t, { visiblePolling = false } = {}) {
   const permissions = JSON.parse(JSON.stringify(B.keys.bassam_perms_v1));
   for (const scope of [D1, G1]) permissions.caps[scope] = [...new Set([...permissions.caps[scope], 'staff'])];
   await B.DB.batch(B.W.kvPutStmts(B.env, 'kv', 'bassam_perms_v1', JSON.stringify(permissions)));
-  const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', {
+  const parts = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', {
     year: 'numeric', month: 'numeric', day: 'numeric', timeZone: 'Asia/Riyadh',
   }).formatToParts(new Date());
   const now = Object.fromEntries(['year', 'month', 'day'].map(name => [name, +parts.find(part => part.type === name).value]));
-  const month = now.year + '-' + now.month;
+  const month = now.year + '-' + String(now.month).padStart(2, '0');
   await replaceOperationalFixture(B.env, scoped('bassam_employees_v1'), [EMPLOYEE]);
   await replaceOperationalFixture(B.env, scoped('bassam_shift_options_v1'), [{ name: SHIFT, color: '#b99751' }]);
   await replaceOperationalFixture(B.env, scoped('bassam_staffing_v3'), {

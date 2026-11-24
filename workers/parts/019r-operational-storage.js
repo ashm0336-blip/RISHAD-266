@@ -54,6 +54,7 @@ function opLegacyError(error) {
 async function opLoadMany(env, keys, retired, scopes) {
   scopes = scopes || env.__opScope || {};
   var wanted = Array.from(new Set(keys)), requests = [], batch = [], revs = {}, tableRequests = {}, physicalByKey = {}, revKeys = [], rootsOf = {};
+  await calLazyEnsure(env, wanted, calWantScopes(scopes));   /* V7 · 53 تقويم (REVIEW 33): الفترةُ الهجرية تُحوَّل ذرّياً قبل قراءة صفوفها أو الكتابة فوقها (019v1) */
   /* مدياتُ الفترات قد تتداخل (فترةٌ وأختُها التي تمدّ اسمَها كلتاهما مطلوبتان) ⇒ الصفُّ يُعدّ مرةً لكل جدول */
   var seenRow = {}, keep = function (key, row, table) {
     var R = rootsOf[key]; if (!R) return true; if (!opRowInScope(R.def, R.roots, row.row_key)) return false;
@@ -314,6 +315,8 @@ async function opReadOnce(env, url, session) {
     var reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: depts }), A = reference.A;
     env = reference.env;
     var eligible = new Set(Object.keys(groups).filter(function (K) { return canRead(A, K); }));
+    /* V7 · 53 تقويم (REVIEW 33): قبل جرد الأعضاء (المديات تُحلّ بأسماء الفترات) — وإن حُوِّل شيءٌ تُؤخذ اللقطةُ من جديد */
+    if (await calLazyEnsure(env, Array.from(eligible), calWantRead(groups, rangeOf))) { reference = await rsReferenceSnapshot(env, session.uid, { operationalKeys: [], departments: depts }); A = reference.A; env = reference.env; }
     /* أعضاءُ الحاوية للمديات والفهارس (صفٌّ لكل فترة) — قبل تحميل أي محتوى */
     var listed = Object.keys(groups).filter(function (K) { return eligible.has(K) && opPeriodDef(groups[K].info) && (rangeOf[K] || indexIn.indexOf(K) >= 0 || groups[K].full); }), memberOf = {}, nodesOf = {};
     if (listed.length) {

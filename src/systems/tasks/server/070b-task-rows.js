@@ -37,7 +37,7 @@ function tkHeld(A, d, key) {
 /* ── مفاتيحُ المخازن ── */
 function tkK(d) { return 'bsdept:' + d + ':bassam_tasks_v1'; }
 async function tkRev(env, k) { var r = await env.DB.prepare('SELECT rev FROM revs WHERE k = ?1').bind(k).first(); return (r && r.rev) || 0; }
-function tkYm(k) { var p = String(k).split('-'); return (+p[0]) + '-' + (+p[1]); }
+function tkYm(k) { return String(k).slice(0, 7); }   /* V7 · 53 تقويم: شهرُ يومٍ ISO ('2026-11-24' ⇐ '2026-11') — المفتاحُ مبطَّنٌ دائماً (METK_DAY_RX) */
 /* V7 · 53 (قرارا المالك ٧ و٨): قاعدةُ الصفحة نفسُها — الشهرُ الماضي مقفلٌ اعتُمد أو لم يُعتمد ولا يُفتح إلا للاستدراك ({mo:1}).
    الرسالةُ بحسب القارئ: من يملك فتحَ الشهر (task.month.reopen) يُقال له افتحه، وغيرُه يُحال إلى مدير الإدارة */
 var TK_PAST_MGR = 'الشهر مقفل — افتحه للاستدراك أولاً', TK_PAST_EMP = 'الشهر مقفل — راجع مدير الإدارة';
@@ -48,9 +48,9 @@ function tkPastMsg(A, d) { return tkHeld(A, d, 'task.month.reopen') ? TK_PAST_MG
    إعادةُ الإسناد · الإلغاء · أفعالُ الموظف) على قفل الشهر وحده كما في الصفحة (_tkP2Menu). يعيد نصَّ الرفض بحسب القارئ أو '' */
 var TK_DAY_MGR = 'اليوم مقفل — افتحه للاستدراك أولاً', TK_DAY_EMP = 'اليوم مقفل — راجع مدير الإدارة';
 async function tkPeriodMsg(env, A, d, k, day) {
-  var p = String(k).split('-'), y = +p[0], m = +p[1], dd = +p[2], ym = y + '-' + m, dk = ym + '-' + dd;
+  var p = String(k).split('-'), y = +p[0], m = +p[1], dd = +p[2], ym = calGYm(y, m), dk = calGKey(y, m, dd);   /* V7 · 53 تقويم: أقفالُ YYYY-MM / YYYY-MM-DD */
   var L = parseJson(await opResourceGet(env, 'bsdept:' + d + ':bassam_tasks_locks_v1'), {}); if (!isObj(L)) L = {};
-  var mv = L[ym], dv = L[dk], mo = isObj(mv) && !!mv.mo, T = dsToday(Date.now());
+  var mv = L[ym], dv = L[dk], mo = isObj(mv) && !!mv.mo, T = calToday(Date.now());
   if (mv === true || mv === 1) return 'شهرُ المهمة معتمدٌ ومقفل';
   if (day && dv === true) return 'اليومُ مُغلق — افتحه من صفحة المهام أولاً';
   if (!T || !(y > 0 && m > 0)) return '';

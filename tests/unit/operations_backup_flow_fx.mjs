@@ -121,6 +121,7 @@ export async function browser(B, t, opt = {}) {
   const custodyApi = path.join(SRC, 'systems', 'custody', 'client', '547-custody-api.js');
   if (fs.existsSync(custodyApi)) vm.runInContext(fs.readFileSync(custodyApi, 'utf8'), T.ctx, { filename: '547-custody-api.js' });
   vm.runInContext(fs.readFileSync(path.join(SRC, 'services', '548-atomic-backup.js'), 'utf8'), T.ctx, { filename: '548-atomic-backup.js' });
+  vm.runInContext(fs.readFileSync(path.join(SRC, 'services', '548-import-kit.js'), 'utf8'), T.ctx, { filename: '548-import-kit.js' });   /* V7 · 53 تقويم: أداةُ الاستيراد الكسولة — تُحمَّل كما تحمّلها الواجهةُ عند أول استيراد (548 kit()) */
   const page = { state: {}, setState(patch) { Object.assign(this.state, patch); }, bkToast: (...args) => toasts.push(args) };
   function method(file, name) { return vm.runInContext('({' + sourcePart(file, 'MethodDefinition', name) + '}).' + name, T.ctx); }
   function property(file, name) { return vm.runInContext('(function(){const s=true;return {' + sourcePart(file, 'Property', name) + '};})', T.ctx).call(page)[name]; }

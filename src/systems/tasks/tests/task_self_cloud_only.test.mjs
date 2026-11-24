@@ -7,7 +7,8 @@ import vm from 'node:vm';
 import { ROOT } from '../../../../tests/unit/harness.mjs';
 
 const source = fs.readFileSync(path.join(ROOT, 'src/systems/tasks/client/545-task-self.js'), 'utf8');
-const row = { k: '1448-5-19', id: 'TEST_ONLY_task', i: 0, w: true, st: 'in_progress', acc: 1 };
+/* V7 · 53 تقويم: مفاتيحُ الأيام ISO (world_fx hFx) */
+const row = { k: '2026-10-19', id: 'TEST_ONLY_task', i: 0, w: true, st: 'in_progress', acc: 1 };
 const image = 'data:image/png;base64,TEST_ONLY';
 const json = (value, status = 200) => ({ status, ok: status >= 200 && status < 300, text: async () => JSON.stringify(value) });
 const ack = (body, overrides) => json(Object.assign({ ok: 1, rev: 5, row: { ...row, st: 'done', proof: { imgs: body.imgs || [], note: body.note || '' } } }, overrides));
@@ -67,7 +68,7 @@ test('lost action acknowledgement retries explicitly with the same idem and with
 test('malformed or mismatched task ACKs do not patch task rows or announce success', async () => {
   for (const invalid of [
     { ok: 1 }, { ok: 1, rev: 5, row: { ...row, id: 'TEST_ONLY_other' } },
-    { ok: 1, rev: '5', row }, { ok: 1, rev: 5, row: { ...row, k: '1448-5-20' } },
+    { ok: 1, rev: '5', row }, { ok: 1, rev: 5, row: { ...row, k: '2026-10-20' } },
   ]) {
     const B = browser(async () => json(invalid));
     const result = await B.api.act(row, 'ack');

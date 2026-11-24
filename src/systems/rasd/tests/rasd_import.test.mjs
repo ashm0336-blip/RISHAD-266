@@ -5,6 +5,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { target, oldFile, protocol, png, readImage, NOT_TRANSFERRED } from '../../../../tests/unit/v7_d6_import_fx.mjs';
 import { A, REC, OPT, key, readK, REPORTS, OPTS, report } from './rasd_fx.mjs';
+import { hYmdToG } from '../../../../tests/unit/cal_rest_fx.mjs';
+/* V7 · 53 تقويم (ق12): النسخةُ القديمة هجرية؛ تُستورد بأيامها الميلادية (أم القرى) بالقاعدة التي يرحّل بها 0014 — وكلُّ ما عدا التاريخ نصُّه كما هو */
+const gDoc = (d) => ({ ...d, reports: d.reports.map((r) => (r && r.y != null ? hYmdToG(r) : r)) });
 
 const IMG = 'img_rzdtestonly_d6';
 
@@ -14,6 +17,8 @@ async function copyWithRasd() {
   doc.reports.push(report(5, { att: IMG, impact: 'حرج', type: 'ممنوعات' }));
   /* سجلٌّ قديم يحمل حقولاً تجاوزها Production (st/cAt/cBy — «حالة الحالة» المرفوضة): يبقى كما هو ولا يُقرأ منه شيء */
   doc.reports.push(report(6, { st: 'open', cAt: 1795000000000, cBy: 'TEST_ONLY_u1' }));
+  /* V7 · 53 تقويم: ملفُّ Production هجريٌّ (عُدّةُ الرصد صارت ميلادية للصفحة) — أيامُ الحالات في السنة الهجرية 1448 كما يكتبها Production */
+  doc.reports.forEach((r) => { r.y = 1448; });
   file.data[REC] = JSON.stringify(doc);
   file.data[OPT] = JSON.stringify(OPTS());
   file.idbImages[IMG] = png(1400, 77);
@@ -33,8 +38,8 @@ test('rasd · نسخةُ Production القديمة فيها رصد الحالا�
     assert.deepEqual(skip.map((x) => x.k).sort(), Object.keys(NOT_TRANSFERRED).sort());
     assert.equal(out.inspect && out.inspect.status, 200, out.inspect && out.inspect.t.slice(0, 400));
     assert.equal(out.commit && out.commit.status, 200, out.commit && out.commit.t.slice(0, 400));
-    /* مفتاحاً مفتاحاً: القيمةُ في القاعدة = النصُّ في النسخة (بلا تحويل) */
-    assert.deepEqual(readK(T.DB, key(A, REC)), doc);
+    /* مفتاحاً مفتاحاً: القيمةُ في القاعدة = النصُّ في النسخة (بلا تحويلٍ يدوي؛ التاريخُ وحده ميلادي — ق12) */
+    assert.deepEqual(readK(T.DB, key(A, REC)), gDoc(doc));
     assert.deepEqual(readK(T.DB, key(A, OPT)), OPTS());
     assert.deepEqual(readK(T.DB, key(A, REC)).reports.map((r) => Object.keys(r).sort().join(',')), doc.reports.map((r) => Object.keys(r).sort().join(',')));
     /* المرفقُ: الصورةُ التي يذكرها سجلُّ الحالة كُتبت بايتاً */

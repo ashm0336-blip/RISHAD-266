@@ -128,7 +128,7 @@ for (const mode of MODES) {
 
   test('PRIVACY 7 [' + mode + ']: the refusal message says nothing was written and asks for a full copy exported after the data was entered — never to clear fields', async () => {
     const fs = await import('node:fs');
-    const src = fs.readFileSync(new URL('../../src/services/548-atomic-backup.js', import.meta.url), 'utf8');
+    const src = fs.readFileSync(new URL('../../src/services/548-import-kit.js', import.meta.url)   /* V7 · 53 تقويم: نصوصُ رفض الاستيراد في أداته الكسولة */, 'utf8');
     const m = /'restore-personal-blank':\s*'([^']*)'/.exec(src);
     assert.ok(m, 'client message present');
     for (const p of ['لم يُكتب شيء', 'فلا يمكن التحقق', 'نسخةً كاملة صدّرها مدير الوحدة أو مسؤول المنصة بعد إدخال']) assert.ok(m[1].includes(p), p);

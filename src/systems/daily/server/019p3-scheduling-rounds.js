@@ -64,11 +64,11 @@ function osSchemaRoundsResources() {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
           {
-            pattern: "^m:\\d{4}-\\d{1,2}$",
+            pattern: OS_RX_MCTL,
             schema: osSchemaMonthControl("ops_round_month"),
           },
           {
-            pattern: "^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$",
+            pattern: OS_RX_DAY_LEGACY,
             schema: osSchemaRoundDay("ops_round_day"),
           },
         ],
@@ -85,11 +85,11 @@ function osSchemaRoundsResources() {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
           {
-            pattern: "^m:\\d{4}-\\d{1,2}$",
+            pattern: OS_RX_MCTL,
             schema: osSchemaMonthControl("ops_round_month"),
           },
           {
-            pattern: "^\\d{4}-\\d{1,2}-\\d{1,2}(?:-.+)?$",
+            pattern: OS_RX_DAY_LEGACY,
             schema: osSchemaRoundDay("ops_round_day"),
           },
         ],
@@ -108,9 +108,9 @@ function osSchemaRoundsResources() {
    إلى الحيّ (الحيُّ يغلب) — فتطبيقُها مرّتين لا يغيّر شيئاً (idempotent). تجري في حفظة الجولات نفسِها (dailyArcPend · الدفعةُ الذرّية الواحدة)
    وفي ترحيل «rounds-arc» المحمي لما سبقها. لا يكتب الأرشيفَ العميلُ أبداً (RES_REG srv) — يُقرأ بسياسة الجولات حرفاً (RES_READ_AS). */
 var DAILY_ARC_RES = 'bassam_rounds_arc_v1', DAILY_ARC_PART = 'rounds-arc';
-function dailyArcDay(k) {
-  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:-.+)?$/.exec(String(k));
-  return m ? { y: +m[1], m: +m[2], mk: 'm:' + (+m[1]) + '-' + (+m[2]) } : null;
+function dailyArcDay(k) {   /* V7 · 53 تقويم: اليومُ ISO وعلامةُ شهره m:YYYY-MM من نصّه نفسِه (بلا تطبيع) */
+  var m = /^(\d{4})-(\d{2})-(\d{2})(?:-.+)?$/.exec(String(k));
+  return m ? { y: +m[1], m: +m[2], mk: 'm:' + m[1] + '-' + m[2] } : null;
 }
 function dailyArcClosed(ctrl, y, m, T) {
   var c = isObj(ctrl) ? ctrl : null;
@@ -125,7 +125,7 @@ var OS_KPI_ROUNDS = { top: ['ap'], zones: ['uid', 'code', 'name', 'ztype', 'zcat
   gates: ['gid', 'leafN', 'pOf', 'num', 'label', 'name', 'closed', 'cWhy', 'cAt', 'emp', 'needN', 'needS', 'fAt'], marks: ['label', 'name', 'kind', 'off', 'emp', 'needN', 'needS', 'fAt'] };
 function osKpiRounds(p, v) { if (!v || typeof v !== 'object') return v; if (/^m:/.test(p) || Array.isArray(v)) return null; return Object.assign(osKpiPick(v, OS_KPI_ROUNDS.top), { d: osKpiFloors(v.d, OS_KPI_ROUNDS, 1) }); }
 function dailyArcDue(names, ctl) {
-  var T = dsToday(Date.now());
+  var T = calToday(Date.now());
   return names.filter(function (p) { var d = dailyArcDay(p); return d && dailyArcClosed(ctl[d.mk], d.y, d.m, T); })
     .sort(function (a, b) { var x = dailyArcDay(a), y = dailyArcDay(b); return (x.y * 12 + x.m) - (y.y * 12 + y.m); }).slice(0, 31);
 }
@@ -161,7 +161,7 @@ function dailyArcStep(live, arc, T) {
 function dailyLoneDayOpen(cur, next, T) {
   var c = isObj(cur) ? cur : {}, n = isObj(next) ? next : {}, q, m, r, o, d;
   for (q in n) {
-    if (!Object.prototype.hasOwnProperty.call(n, q) || !(m = /^m:(\d{4})-(\d{1,2})$/.exec(q))) continue;
+    if (!Object.prototype.hasOwnProperty.call(n, q) || !(m = /^m:(\d{4})-(\d{2})$/.exec(q))) continue;
     r = n[q] === true || n[q] === 1 ? { ap: 1 } : isObj(n[q]) ? n[q] : {}; o = isObj(c[q]) ? c[q] : {};
     var past = !!(T && T.y > 0 && (+m[1] * 12 + +m[2]) < (T.y * 12 + T.m)), locked = !!r.ap || (past && !r.mo);
     if (!locked || !isObj(r.dopen)) continue;
@@ -170,7 +170,7 @@ function dailyLoneDayOpen(cur, next, T) {
   return null;
 }
 async function dailyArcPre(env, body) {
-  var set = (body && body.set) || {}, cap = env.__opCapture, T = dsToday(Date.now()), k, no = null;
+  var set = (body && body.set) || {}, cap = env.__opCapture, T = calToday(Date.now()), k, no = null;
   for (k in set) {
     if (!Object.prototype.hasOwnProperty.call(set, k) || set[k] == null || resName(k) !== 'bassam_rounds_v1') continue;
     var lone = dailyLoneDayOpen(parseJson(await opResourceGet(env, k), null), parseJson(set[k], null), T);
@@ -205,7 +205,7 @@ function dailyArcFill(env, k, v, cur) {
   return add ? JSON.stringify(n) : v;
 }
 async function dailyArcPend(env, kv, reference) {
-  var T = dsToday(Date.now()), cap = env.__opCapture, n = kv.pend.length, i;
+  var T = calToday(Date.now()), cap = env.__opCapture, n = kv.pend.length, i;
   for (i = 0; i < n; i++) {
     var pd = kv.pend[i];
     if (!pd || resName(pd.k) !== 'bassam_rounds_v1') continue;

@@ -31,8 +31,8 @@ function oldCodec() {
 }
 const zone = (uid, pc) => ({ uid, code: uid.slice(-1), cap: 300, count: null, pc });
 const ROUNDS = {
-  'm:1448-1': { ap: false, mo: false },
-  '1448-1-16': {
+  'm:2026-06': { ap: false, mo: false },   /* V7 · 53 تقويم: مفاتيحُ ISO (1448-1 ⇐ 2026-06 بقاعدة world_fx hFx) */
+  '2026-06-16': {
     t: 1,
     d: [{ sid: 'S1', name: 'TEST_ONLY', zones: [zone('TEST_ONLY_Z1', { fajr: 35, dhuhr: null, asr: '12' }), zone('TEST_ONLY_Z2', {}), zone('TEST_ONLY_Z3', null)] }],
     shAp: { A: { ap: true, at: 1, snap: [{ zones: [zone('TEST_ONLY_Z4', { isha: 7 })] }] } },

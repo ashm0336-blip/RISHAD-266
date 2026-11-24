@@ -95,7 +95,8 @@ function client(W, env, world, actor) {
 const msgCount = (env) => env.DB.q('SELECT COUNT(*) n FROM notification_messages')[0].n;
 const targets = (env, ids) => env.DB.q('SELECT message_id,kind,value FROM notification_targets').filter((t) => ids.includes(t.message_id));
 /* شهرُ اليوم الهجري (أم القرى) كما يحسبه العميل، وشهرٌ قبل سنتين */
-function months(ctxKIVO) { const h = ctxKIVO.BassamCal.hParts(new Date()); const cur = h.y + '-' + h.m; return { cur, past: (h.y - 2) + '-' + h.m }; }
+/* V7 · 53 تقويم: أشهرُ الجدول ميلاديةٌ «YYYY-MM» على يوم المراقب الميلادي (442 todayKey) */
+function months(ctxKIVO) { const h = ctxKIVO.BassamCal.gAt(new Date()); return { cur: h.ym, past: ctxKIVO.BassamCal.gYm(h.y - 2, h.m) }; }
 const row = (shift) => ({ shift, rest: [] });
 
 async function bulkCase(actor) {

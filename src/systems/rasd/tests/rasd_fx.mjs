@@ -43,7 +43,7 @@ export async function lab() {
 /* حالةٌ بالحقول كلِّها كما يكتبها المحضر — أسماءُ المفاتيح وقيمُها الثابتة («لم يتم الإبلاغ» · «أخرى: …») كما في Production */
 export function report(i, over = {}) {
   return Object.assign({
-    id: 'zTEST_ONLY' + i, y: 1448, m: 5, d: 1 + (i % 20), t: '09:1' + (i % 10), lt: '09:2' + (i % 10), by: 'TEST_ONLY_u' + (i % 3), byName: 'TEST_ONLY راصد ' + (i % 3),
+    id: 'zTEST_ONLY' + i, y: 2026, m: 5, d: 1 + (i % 20), t: '09:1' + (i % 10), lt: '09:2' + (i % 10), by: 'TEST_ONLY_u' + (i % 3), byName: 'TEST_ONLY راصد ' + (i % 3),
     dept: 'TEST_ONLY إدارة أ', zone: 'الأبواب', floor: 'الأرضي', spot: 'باب ' + [1, 5, 45][i % 3], type: ['ازدحام', 'ممنوعات', 'أخرى: TEST_ONLY وصف'][i % 3],
     impact: ['منخفض', 'متوسط', 'عالٍ', 'حرج'][i % 4], act: i % 2 ? 'إبلاغ جهة مختصة' : 'تنظيم حركة', party: i % 2 ? 'العمليات المشتركة' : 'لم يتم الإبلاغ', notes: i % 2 ? 'TEST_ONLY ملاحظة ' + i : '', att: null,
   }, over);

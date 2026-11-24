@@ -17,9 +17,13 @@ function osSchemaStaffRow(table) {
   ]);
   return ocObject(table, fields);
 }
+/* V7 · 53 تقويم (ق٤): calq4 — تقريرُ التعارضات الذي يكتبه الترحيل 0014 في الشهر الميلادي الذي جمع شهرين هجريين بقيمتين مختلفتين
+   (وردية · مكافأة · نداء · تعريفاتُ الورديات). كلُّ سطرٍ نصُّ JSON: { e, f, a, b, ha, hb, pick, tie } — يراه مديرُ الإدارة في الجدول الشهري
+   ويحذفه «تمت المراجعة» (حفظُ فترة الشهر نفسِها). مصفوفةُ نصوصٍ بجداولَ قائمة (لا جدولَ D1 جديداً). الشكلُ واحدٌ لكل دلاء الشهر
+   (الحيّ والقديم والأرشيف) كي تبقى جداولُها جدولاً واحداً (019o توقيعُ الشكل) — ولا كاتبَ له إلا الترحيل في الحيّ */
 function osSchemaMonthBucket(table) {
   return ocMap(table, osSchemaStaffRow(table + "_employee"), {
-    fixed: { __shifts: osSchemaShiftList(table + "_shifts") },
+    fixed: { __shifts: osSchemaShiftList(table + "_shifts"), __calq4: osSchemaScalars(table + "_calq4") },
   });
 }
 function osSchemaMonthLock(table) {
@@ -34,7 +38,8 @@ function osSchemaStaffResources() {
       resource: "bassam_staffing_v3",
       name: "staffing",
       period: { root: 1, index: osPeriodIndex, summary: osSumStaffing, kpi: osKpiStaffing, current: osPeriodNowMonth, me: 'months3' },   // V7 · 53: كلُّ شهرٍ فترة (019w)
-      schema: ocMap("ops_staffing", osSchemaMonthBucket("ops_staffing_month")),
+      /* V7 · 53 تقويم (ق١ · الخطر ٤): مفتاحُ الشهر YYYY-MM وحده (019p0) — كان أيَّ مفتاح فيُقبل الهجريُّ من عميلٍ قديم */
+      schema: ocMap("ops_staffing", null, { patterns: [{ pattern: OS_RX_YM, schema: osSchemaMonthBucket("ops_staffing_month") }] }),
     },
     {
       resource: "bassam_staffing_v2",
@@ -67,10 +72,8 @@ function osSchemaStaffResources() {
     {
       resource: "bassam_staffing_locks_v1",
       name: "staffingLocks",
-      schema: ocMap(
-        "ops_staffing_locks",
-        osSchemaMonthLock("ops_staffing_lock"),
-      ),
+      /* V7 · 53 تقويم: اعتمادُ الشهر بمفتاح YYYY-MM وحده */
+      schema: ocMap("ops_staffing_locks", null, { patterns: [{ pattern: OS_RX_YM, schema: osSchemaMonthLock("ops_staffing_lock") }] }),
     },
     {
       resource: "bassam_callsigns_v1",

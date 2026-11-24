@@ -2,6 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { candidateWorker, world, authorizeCandidateUpgrade } from '../../../../tests/unit/irshad_domain_fx.mjs';
 import { D1, D2, identitySnapshot } from '../../../../tests/unit/canonical_fx.mjs';
+import { hYmdToG } from '../../../../tests/unit/cal_rest_fx.mjs';
+/* V7 · 53 تقويم: بعد الترحيل (0008 ثم 0014) التقاريرُ ونطاقاتُ النوافذ المنتهية بأيامها/أشهرها الميلادية (أم القرى) — وكلُّ ما عداها حرفاً */
+const gDoc = (d) => ({ ...d, reports: { ...d.reports, reports: d.reports.reports.map((r) => (r.y == null ? r : hYmdToG(r))) }, retro: { ...d.retro, windows: d.retro.windows.map((w) => ({ ...w, scope: hYmdToG(w.scope) })) } });
 
 const doc = () => ({
   reports: {
@@ -124,7 +127,7 @@ test('actual migration8 startup under canonical schema9 backfills four resources
   }
   await f.W.initDb(f.env);
   assert.equal(f.DB.q("SELECT v FROM meta WHERE k='schema_version'")[0].v, String(f.W.KIVO_SCHEMA_VERSION));
-  assert.deepEqual(f.W.irInflate(await f.W.irSnapshot(f.env, D1)), legacy);
+  assert.deepEqual(f.W.irInflate(await f.W.irSnapshot(f.env, D1)), gDoc(legacy));
   assert.deepEqual(identitySnapshot(f.DB), before);
   assert.deepEqual(f.DB.q('SELECT * FROM revs'), revBefore);
   assert.equal(await f.W.irLegacyPresent(f.env), false);

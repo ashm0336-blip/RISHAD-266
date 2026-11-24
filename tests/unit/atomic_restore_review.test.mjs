@@ -355,6 +355,7 @@ test('actual AppBackup export from redacted GET cache restores existing credenti
     page[name] = vm.runInContext('({' + source.slice(method.start, method.end) + '}).' + name, context);
   }
   vm.runInContext(fs.readFileSync(path.join(SRC,'services/548-atomic-backup.js'),'utf8'),context);
+  vm.runInContext(fs.readFileSync(path.join(SRC,'services/548-import-kit.js'),'utf8'),context);   /* V7 · 53 تقويم: أداةُ الاستيراد الكسولة — تُحمَّل كما تحمّلها الواجهةُ عند أول استيراد (548 kit()) */
   factory.call(page)();
   for (let i = 0, end = Date.now() + 20000; (i < 50 || Date.now() < end) && !page._encPend; i++) await new Promise((r) => setImmediate(r));   /* time-bounded: real WebCrypto work */
   assert.ok(page._encPend, JSON.stringify(page.state));
@@ -838,6 +839,7 @@ test('actual staged department export includes a manifest and normalized domains
     messages = [],
     page = { bkToast: (...v) => messages.push(v) };
   vm.runInContext(fs.readFileSync(path.join(SRC,'services/548-atomic-backup.js'),'utf8'),context);
+  vm.runInContext(fs.readFileSync(path.join(SRC,'services/548-import-kit.js'),'utf8'),context);   /* V7 · 53 تقويم: أداةُ الاستيراد الكسولة — تُحمَّل كما تحمّلها الواجهةُ عند أول استيراد (548 kit()) */
   vm.runInContext('({' + source.slice(node.start, node.end) + '}).bkExportRun', context).call(page);
   for (let i = 0, end = Date.now() + 20000; (i < 100 || Date.now() < end) && !blobs.length; i++) await new Promise((r) => setImmediate(r));   /* time-bounded: real WebCrypto work */
   assert.equal(blobs.length, 1, JSON.stringify(messages));

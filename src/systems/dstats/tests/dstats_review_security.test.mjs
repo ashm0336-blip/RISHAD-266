@@ -42,7 +42,7 @@ function actor(W, mode, operations) {
 
 test('entry alone cannot close or reopen a day or month in either permission mode', async () => {
   for (const mode of ['enforce']) for (const lock of [true, { mo: 1 }, { dopen: { 1: 1 } }, { dshut: { 1: 1 } }]) {
-    const { W, env } = await world(), data = empty(); data.locks['haram|9999-1'] = lock;
+    const { W, env } = await world(), data = empty(); data.locks['haram|2199-01'] = lock;
     const r = await W.dsDomainCommit(env, actor(W, mode, ['add', 'edit']), { base: 0, data });
     assert.equal(r.status, 403, mode + ': lock changes require the lock operation');
     assert.deepEqual((await W.dsDomainRead(env)).data, empty());
@@ -51,9 +51,9 @@ test('entry alone cannot close or reopen a day or month in either permission mod
 
 test('approval alone cannot insert or edit numeric daily statistics', async () => {
   for (const mode of ['enforce']) {
-    const { W, env } = await world(), before = empty(); before.haram['9999-01-01'] = { worshippers: 10 };
+    const { W, env } = await world(), before = empty(); before.haram['2199-01-01'] = { worshippers: 10 };
     await env.DB.batch(W.dsDomainStatements(env, empty(), before));
-    for (const mutation of [d => d.haram['9999-01-01'].worshippers = 12, d => d.haram['9999-01-02'] = { worshippers: 12 }]) {
+    for (const mutation of [d => d.haram['2199-01-01'].worshippers = 12, d => d.haram['2199-01-02'] = { worshippers: 12 }]) {
       const next = copy(before); mutation(next);
       const r = await W.dsDomainCommit(env, actor(W, mode, ['approve']), { base: 0, data: next });
       assert.equal(r.status, 403, mode + ': approval does not confer entry');
@@ -64,17 +64,17 @@ test('approval alone cannot insert or edit numeric daily statistics', async () =
 
 test('a mosque-scoped projected save preserves omitted hidden rows and locks', async () => {
   const { W, env } = await world(), before = empty();
-  before.haram['9999-01-01'] = { worshippers: 10, umrah: null };
-  before.nabawi['9999-01-01'] = { worshippers: 33, salam_corridor: 7 };
-  before.locks['nabawi|9999-1'] = true;
+  before.haram['2199-01-01'] = { worshippers: 10, umrah: null };
+  before.nabawi['2199-01-01'] = { worshippers: 33, salam_corridor: 7 };
+  before.locks['nabawi|2199-01'] = true;
   await env.DB.batch(W.dsDomainStatements(env, empty(), before));
   const A = actor(W, 'enforce', ['add', 'edit']), projected = await W.dsDomainView(env, A, before, { recs: {} });
   assert.equal(projected.nabawi, undefined);
-  projected.haram['9999-01-01'].worshippers = 11;
+  projected.haram['2199-01-01'].worshippers = 11;
   const r = await W.dsDomainCommit(env, A, { base: 0, data: projected });
   assert.equal(r.status, 200);
   const actual = (await W.dsDomainRead(env)).data;
-  assert.equal(actual.haram['9999-01-01'].worshippers, 11);
+  assert.equal(actual.haram['2199-01-01'].worshippers, 11);
   assert.deepEqual(actual.nabawi, before.nabawi);
   assert.deepEqual(actual.locks, before.locks);
   assert.equal(r.body.data.nabawi, undefined, 'The acknowledgement must also remain projected');
@@ -83,7 +83,7 @@ test('a mosque-scoped projected save preserves omitted hidden rows and locks', a
 test('unexpected fields cannot be written through the relational API even by an otherwise authorized writer', async () => {
   const { W, env, DB } = await world();
   for (const row of [{ worshippers: 10, TEST_ONLY_unknown: 3 }, { worshippers: 10, salam_corridor: 3 }, { worshippers: 10, __f: { carts: 'invalid attribution' } }]) {
-    const data = empty(); data.haram['9999-01-01'] = row;
+    const data = empty(); data.haram['2199-01-01'] = row;
     const r = await W.dsDomainCommit(env, actor(W, 'enforce', ['add', 'edit', 'approve']), { base: 0, data });
     assert.equal(r.status, 400); assert.equal(r.body.err, 'dstats-shape');
   }
@@ -98,7 +98,7 @@ test('platform reset includes the daily-statistics domain in the same transactio
     ...W.kvPutStmts(env, 'kv', 'bassam_auth_users_v1', JSON.stringify([{ id: 'su', un: '0501234567', role: 'super', ph: await W.hashPw(fixturePin) }])),
     DB.prepare("INSERT INTO meta(k,v) VALUES('rk',?1)").bind(await W.hashKey(fixtureKey))
   ]);
-  const data = empty(); data.haram['9999-01-01'] = { worshippers: 9 }; data.locks['haram|9999-1'] = { ap: 1, dshut: { 1: 1 } };
+  const data = empty(); data.haram['2199-01-01'] = { worshippers: 9 }; data.locks['haram|2199-01'] = { ap: 1, dshut: { 1: 1 } };
   await DB.batch(W.dsDomainStatements(env, empty(), data));
   const api = async (route, body, cookie) => {
     const headers = { Origin: 'http://x', 'Content-Type': 'application/json' }; if (cookie) headers.Cookie = cookie;

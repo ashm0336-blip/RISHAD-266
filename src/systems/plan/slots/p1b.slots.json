@@ -54,7 +54,7 @@
  },
  "enf.lockAll.plan": {
   "order": 10,
-  "text": "  /* V7 · 53 (قرار المالك ٩): الموقعُ المعتمد والشهرُ الماضي بلا mo مقفلان لأي تغيير — لا لنوع الختم وحده: مفتاحُ هندسة البوابة بلا بُعد DateRange، وطوابقُ floors بلا فترة، فكانا يمرّان.\n     إلا مديرَ المنصة (enfSuperGate لا يصلها) والاستعادةَ الخادمية (enfLockBypass)؛ ونافذةُ الاستدراك في الخطة هي فتحُ الشهر (mo) · V7 · 53 (port-sync · بند 3 · قرار المالك 24 نوفمبر): والأمرُ المعلن plan.optRef (019p6 — حقولُ الخيار وحدها، poOnly) */\n  if (rn === 'bassam_plan_v1' && A.u.role !== 'super' && !enfLockBypass(A, d, X) && !enfOptRefLock(A, rn)) { var pl9 = KIVO_SCOPE.extract(rn, a, b, { today: dsToday(Date.now()) }).filter(function (x) { return !x.lockOp && x.lock && x.lock.locked; })[0]; if (pl9) return enfNo('scope', { dims: ['DateRange'], detail: pl9.path + ': locked-period: ' + pl9.lock.why }); }\n"
+  "text": "  /* V7 · 53 (قرار المالك ٩): الموقعُ المعتمد والشهرُ الماضي بلا mo مقفلان لأي تغيير — لا لنوع الختم وحده: مفتاحُ هندسة البوابة بلا بُعد DateRange، وطوابقُ floors بلا فترة، فكانا يمرّان.\n     إلا مديرَ المنصة (enfSuperGate لا يصلها) والاستعادةَ الخادمية (enfLockBypass)؛ ونافذةُ الاستدراك في الخطة هي فتحُ الشهر (mo) · V7 · 53 (port-sync · بند 3 · قرار المالك 24 نوفمبر): والأمرُ المعلن plan.optRef (019p6 — حقولُ الخيار وحدها، poOnly) */\n  if (rn === 'bassam_plan_v1' && A.u.role !== 'super' && !enfLockBypass(A, d, X) && !enfOptRefLock(A, rn)) { var pl9 = KIVO_SCOPE.extract(rn, a, b, { today: calToday(Date.now()) }).filter(function (x) { return !x.lockOp && x.lock && x.lock.locked; })[0]; if (pl9) return enfNo('scope', { dims: ['DateRange'], detail: pl9.path + ': locked-period: ' + pl9.lock.why }); }\n"
  },
  "enf.empsLoad.plan": {
   "order": 10,

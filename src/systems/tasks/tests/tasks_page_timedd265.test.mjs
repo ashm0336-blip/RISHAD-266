@@ -45,7 +45,8 @@ async function page() {
   c.bsToast = (m, k) => toasts.push([m, k || 'err']);
   return { c, opsFixture, toasts, ctx, V: () => c.renderVals() };
 }
-const open = (P, o) => P.c.setState(Object.assign({ year: 1448, month: 5, newTaskOpen: true, editRef: null, newDay: 9, newEDay: 9, newSh: 8, newSm: 0, newSap: 'ص', newEh: 10, newEm: 0, newEap: 'ص', tkTp: null, tkTpQ: '' }, o || {}));
+/* V7 · 53 تقويم: سنةُ الصفحة وشهرُها ميلاديان (أكتوبر 2026 = شهرُ الساعة الثابتة) — كانت 1448-5 بمساعدات الهجري (hGreg · hMonthDays) */
+const open = (P, o) => P.c.setState(Object.assign({ year: 2026, month: 10, newTaskOpen: true, editRef: null, newDay: 9, newEDay: 9, newSh: 8, newSm: 0, newSap: 'ص', newEh: 10, newEm: 0, newEap: 'ص', tkTp: null, tkTpQ: '' }, o || {}));
 const st = (P) => { const s = P.c.state; return [s.newDay, s.newSh, s.newSm, s.newSap, s.newEDay, s.newEh, s.newEm, s.newEap].join(' '); };
 
 test('الحقلُ والقائمة: مغلقةٌ بلا خيارات · مفتوحةٌ بـ96 وقتاً كلَّ ربع ساعة والمختارُ معلَّم · فتحُ الأخرى يغلقها · النقرُ خارجها يغلقها', async () => {
@@ -76,7 +77,7 @@ test('تغييرُ البداية يُبقي المدة — وتعبر النه�
   assert.equal(st(P), '9 2 0 م 9 4 0 م', 'المدةُ ساعتان كما كانت');
   P.V().tkTpSToggle(); P.V().tkTpSOpts.find((o) => o.t === '11:00 م').click();
   assert.equal(st(P), '9 11 0 م 10 1 0 ص', 'النهايةُ في اليوم التالي'); assert.equal(P.V().tkDurTxt, '2 س');
-  const P2 = await page(); open(P2); const last = P2.c.hMonthDays(1448, 5);
+  const P2 = await page(); open(P2); const last = P2.c.gMonthDaysOf(2026, 10);
   open(P2, { newDay: last, newEDay: last, newSh: 8, newSap: 'م', newEh: 10, newEap: 'م' });
   P2.V().tkTpSToggle(); P2.V().tkTpSOpts.find((o) => o.t === '11:30 م').click();
   assert.equal(st(P2), [last, 11, 30, 'م', last, 10, 0, 'م'].join(' '), 'آخرُ يومٍ في الشهر: البدايةُ تتغيّر والنهايةُ لا تخرج عن الشهر');
@@ -104,8 +105,8 @@ test('النهايةُ قبل البداية تُعلَّم في الحقل · �
   const P = await page(); open(P, { newEh: 7, newEap: 'ص' });
   const V = P.V(); assert.match(V.tkTpEBtn, /danger-border/); assert.doesNotMatch(V.tkTpSBtn, /danger-border/); assert.equal(V.tkDurTxt, 'النهاية قبل البداية');
   const WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-  const g = P.c.hGreg(1448, 5, 9), lbl = V.tkStartDays.find((d) => d.v === '9').label;
-  assert.ok(lbl.startsWith(WD[g.getDay()] + ' 9 '), lbl); assert.match(lbl, /١٤٤٨|1448/);
+  const g = P.c.gDate(2026, 10, 9), lbl = V.tkStartDays.find((d) => d.v === '9').label;
+  assert.ok(lbl.startsWith(WD[g.getDay()] + ' 9 '), lbl); assert.match(lbl, /أكتوبر 2026/, 'التاريخُ الميلادي (الشهرُ والسنة) — كان السنةَ الهجرية');
   const L = V.tkStartDays.map((d) => WD.indexOf(d.label.split(' ')[0])); assert.ok(L.every((w, i) => i === 0 || w === (L[i - 1] + 1) % 7), 'أيامٌ متتالية');
 });
 
@@ -149,35 +150,35 @@ test('التوقيت الصيفي: المدةُ بالساعة الفعلية (m
     assert.match(out, /# pass 1/); assert.match(out, /# fail 0/);
     return;
   }
-  /* 2027-03-14 = 6 شوال 1448: في نيويورك تقفز الساعة من 2:00 إلى 3:00 ص ⇒ من 1:00 إلى 4:00 ص ساعتان فعليتان لا ثلاث */
-  const P = await page(); open(P, { year: 1448, month: 10, newDay: 6, newEDay: 6, newSh: 1, newSm: 0, newSap: 'ص', newEh: 4, newEm: 0, newEap: 'ص' });
-  const g = P.c.hGreg(1448, 10, 6); assert.equal([g.getFullYear(), g.getMonth() + 1, g.getDate()].join('-'), '2027-3-14');
+  /* 2027-03-14 (6 شوال 1448): في نيويورك تقفز الساعة من 2:00 إلى 3:00 ص ⇒ من 1:00 إلى 4:00 ص ساعتان فعليتان لا ثلاث */
+  const P = await page(); open(P, { year: 2027, month: 3, newDay: 14, newEDay: 14, newSh: 1, newSm: 0, newSap: 'ص', newEh: 4, newEm: 0, newEap: 'ص' });
+  const g = P.c.gDate(2027, 3, 14); assert.equal([g.getFullYear(), g.getMonth() + 1, g.getDate()].join('-'), '2027-3-14');
   assert.equal(P.V().tkDurTxt, '2 س');
   P.V().tkTpEToggle(); assert.equal(P.V().tkTpEOpts.find((o) => o.t === '04:00 ص').sub, '2 س', 'مدةُ الخيار كما يحسبها الخادم');
   P.c.setState({ tkTp: null }); P.V().tkTpSToggle(); P.V().tkTpSOpts.find((o) => o.t === '05:00 ص').click();
-  assert.equal(st(P), '6 5 0 ص 6 7 0 ص', 'تبقى المدةُ ساعتين فعليتين'); assert.equal(P.V().tkDurTxt, '2 س');
-  /* 2026-11-01 = 21 جمادى الأولى 1448: تتكرّر 1:00–1:59 ص — وقتُها الثاني يُختم كأوّلها فتُقدَّم النهايةُ إلى أقرب وقتٍ يُختم كما هو (لا تسبق البداية ولا تقصر المدة) */
-  const Q = await page(); open(Q, { year: 1448, month: 5, newDay: 21, newEDay: 21, newSh: 12, newSm: 30, newSap: 'ص', newEh: 1, newEm: 30, newEap: 'ص' });
-  const g2 = Q.c.hGreg(1448, 5, 21); assert.equal([g2.getFullYear(), g2.getMonth() + 1, g2.getDate()].join('-'), '2026-11-1');
+  assert.equal(st(P), '14 5 0 ص 14 7 0 ص', 'تبقى المدةُ ساعتين فعليتين'); assert.equal(P.V().tkDurTxt, '2 س');
+  /* 2026-11-01 (21 جمادى الأولى 1448): تتكرّر 1:00–1:59 ص — وقتُها الثاني يُختم كأوّلها فتُقدَّم النهايةُ إلى أقرب وقتٍ يُختم كما هو (لا تسبق البداية ولا تقصر المدة) */
+  const Q = await page(); open(Q, { year: 2026, month: 11, newDay: 1, newEDay: 1, newSh: 12, newSm: 30, newSap: 'ص', newEh: 1, newEm: 30, newEap: 'ص' });
+  const g2 = Q.c.gDate(2026, 11, 1); assert.equal([g2.getFullYear(), g2.getMonth() + 1, g2.getDate()].join('-'), '2026-11-1');
   assert.equal(Q.V().tkDurTxt, '1 س');
   Q.V().tkTpSToggle(); Q.V().tkTpSOpts.find((o) => o.t === '01:00 ص').click();
-  assert.equal(st(Q), '21 1 0 ص 21 2 0 ص', 'لا «النهاية قبل البداية»'); assert.equal(Q.V().tkDurTxt, '2 س');
-  open(Q, { year: 1448, month: 5, newDay: 21, newEDay: 21, newSh: 12, newSm: 0, newSap: 'ص', newEh: 1, newEm: 30, newEap: 'ص' });
+  assert.equal(st(Q), '1 1 0 ص 1 2 0 ص', 'لا «النهاية قبل البداية»'); assert.equal(Q.V().tkDurTxt, '2 س');
+  open(Q, { year: 2026, month: 11, newDay: 1, newEDay: 1, newSh: 12, newSm: 0, newSap: 'ص', newEh: 1, newEm: 30, newEap: 'ص' });
   Q.V().tkTpSToggle(); Q.V().tkTpSOpts.find((o) => o.t === '12:30 ص').click();
-  assert.equal(st(Q), '21 12 30 ص 21 2 0 ص', 'لا تقصر المدةُ بصمت');
+  assert.equal(st(Q), '1 12 30 ص 1 2 0 ص', 'لا تقصر المدةُ بصمت');
   /* مسحٌ شامل ليومي التحويل: كلُّ بدايةٍ ونهايةٍ ونقلٍ للبداية بين 00:00 و04:00 ⇒ النهايةُ بعد البداية دائماً */
-  for (const [M, D] of [[5, 21], [10, 6]]) {
+  for (const [Y, M, D] of [[2026, 11, 1], [2027, 3, 14]]) {
     let bad = 0;
     for (let s0 = 0; s0 <= 240; s0 += 15) for (let e0 = s0 + 15; e0 <= s0 + 180; e0 += 15) for (let s1 = 0; s1 <= 240; s1 += 15) {
       const a = Q.c._tkHMA(s0), b = Q.c._tkHMA(e0);
-      open(Q, { year: 1448, month: M, newDay: D, newEDay: D, newSh: a.h, newSm: a.m, newSap: a.ap, newEh: b.h, newEm: b.m, newEap: b.ap });
-      const r0 = Q.c.tkStamp(1448, M, D, a.h, a.m, a.ap), o0 = Q.c.tkStamp(1448, M, D, b.h, b.m, b.ap);
+      open(Q, { year: Y, month: M, newDay: D, newEDay: D, newSh: a.h, newSm: a.m, newSap: a.ap, newEh: b.h, newEm: b.m, newEap: b.ap });
+      const r0 = Q.c.tkStamp(Y, M, D, a.h, a.m, a.ap), o0 = Q.c.tkStamp(Y, M, D, b.h, b.m, b.ap);
       if (!(o0 > r0)) continue;
-      Q.c._tkSetT('s', s1, { y: 1448, m: M, sd: D, days: Q.c.hMonthDays(1448, M), dur: Math.round((o0 - r0) / 6e4) });
-      const S = Q.c.state, r1 = Q.c.tkStamp(1448, M, S.newDay, S.newSh, S.newSm, S.newSap), o1 = Q.c.tkStamp(1448, M, S.newEDay, S.newEh, S.newEm, S.newEap);
+      Q.c._tkSetT('s', s1, { y: Y, m: M, sd: D, days: Q.c.gMonthDaysOf(Y, M), dur: Math.round((o0 - r0) / 6e4) });
+      const S = Q.c.state, r1 = Q.c.tkStamp(Y, M, S.newDay, S.newSh, S.newSm, S.newSap), o1 = Q.c.tkStamp(Y, M, S.newEDay, S.newEh, S.newEm, S.newEap);
       if (!(o1 > r1) || o1 - r1 < o0 - r0) bad++;
     }
-    assert.equal(bad, 0, '1448-' + M + '-' + D);
+    assert.equal(bad, 0, Y + '-' + M + '-' + D);
   }
 });
 

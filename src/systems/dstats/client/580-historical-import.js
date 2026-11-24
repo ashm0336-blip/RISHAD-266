@@ -133,7 +133,7 @@ KIVO.BassamHistImport = (function () {
     if (f == null || !isFinite(f)) throw ValErr("قيمة غير رقمية: '" + val + "'");
     return f;
   }
-  /* ── _normalize_hijri: 1446-09-01 · 1446/09/01 · 01-09-1446 · 01/09/1446 (والأرقامُ العربية، ولاحقةُ «هـ») — التاريخُ الميلاديّ مرفوض ── */
+  /* ── _normalize_hijri: 1446-09-01 · 1446/09/01 · 01-09-1446 · 01/09/1446 (والأرقامُ العربية، ولاحقةُ «هـ») ⇐ يومُه الميلادي ISO؛ والتاريخُ الميلادي ISO يُقبل (V7 · 53 تقويم) ── */
   function normHijri(raw) {
     if (raw == null) return null;
     if (typeof raw === 'object' && (raw.k === 'dt' || raw.k === 'd')) return null;
@@ -144,8 +144,18 @@ KIVO.BassamHistImport = (function () {
     var m = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/.exec(s), y, mo, d;
     if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
     else { m = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/.exec(s); if (!m) return null; d = +m[1]; mo = +m[2]; y = +m[3]; }
+    /* V7 · 53 تقويم (ق1 · ق12 · §1.10): المفتاحُ المخزَّن يومٌ ميلاديٌّ ISO — التاريخُ الهجري في الملف (أم القرى) يُحوَّل إلى يومه الميلادي تماماً،
+       والميلاديُّ الصحيح (1900–2199) يُقبل كما هو؛ وما لا يُعرف يومُه تماماً يُرفض صفّاً بدل يومٍ قريب */
+    var C = KIVO.BassamCal;
+    if (y >= 1900 && y <= 2199) return mo >= 1 && mo <= 12 && d >= 1 && d <= C.gMonthDays(y, mo) ? C.gKey(y, mo, d) : null;
     if (!(y >= 1300 && y <= 1600 && mo >= 1 && mo <= 12 && d >= 1 && d <= 30)) return null;
-    return (y < 1000 ? ('000' + y).slice(-4) : String(y)) + '-' + (mo < 10 ? '0' : '') + mo + '-' + (d < 10 ? '0' : '') + d;
+    return hToG(y, mo, d);
+  }
+  function hToG(y, mo, d) {
+    var C = KIVO.BassamCal, g = C.hGregExact(y, mo, d); if (!g) return null;
+    var k0 = g.toISOString().slice(0, 10), steps = [0, -1, 1, -2, 2];
+    for (var i = 0; i < steps.length; i++) { var k = C.gAddDays(k0, steps[i]), h = k && C.hOf(k); if (h && h.y === y && h.m === mo && h.d === d) return k; }
+    return null;
   }
 
   /* ── خطأ الخادم: { status, detail } كما كان يُرجعه (HTTPException) ── */

@@ -836,6 +836,17 @@
    "new": "Shared atomic backup transport; handlers replace local restore writers"
   },
   {
+   "id": "services/548-import-kit.js",
+   "kind": "js",
+   "lazy": true,
+   "openTag": "<script>",
+   "closeTag": "</script>",
+   "line": null,
+   "origBytes": null,
+   "origSha256": null,
+   "new": "V7 · 53 تقويم (REVIEW 23–27): أداةُ الاستيراد — ملفٌّ ذو بصمة يُجلب عند أول استيراد (لا وسمَ له في الغلاف): المرجعُ KIVO_LAZY في 548"
+  },
+  {
    "closeTag": "</style>",
    "id": "styles/540-busy.css",
    "inlineWhy": "KIVO_242: CSSOM يسلسل var() داخل الاختصارات بقيمٍ فارغة (قاعدتان) — تبقى <style> فيُنسخ نصُّها حرفاً في وثائق الطباعة",

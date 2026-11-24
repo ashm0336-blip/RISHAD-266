@@ -60,7 +60,7 @@ test('مؤشراتُ التقرير المطبوع تتبع يومَ الجول�
   const lg = fs.readFileSync(path.join(SRC, 'systems', 'daily', 'client', 'logic.js'), 'utf8');
   const body = lg.slice(lg.indexOf('  _kpiPrintBody() {'), lg.indexOf('  _kpiPrintFit(t) {'));
   assert.match(body, /const t = this\._kpiPrintSel\(\)\.filter\(\(t\) => t\.y === st\.year && t\.m === st\.month && t\.d === dd\);/);
-  assert.match(body, /dd = Math\.min\(st\.day, this\.hMonthDays\(st\.year, st\.month\)\);/, 'اليومُ مقصوصٌ بطول الشهر كما في سطر التذييل');
+  assert.match(body, /dd = Math\.min\(st\.day, this\.gMonthDaysOf\(st\.year, st\.month\)\);/, 'اليومُ مقصوصٌ بطول الشهر كما في سطر التذييل');   /* V7 · 53 تقويم: الشهرُ ميلادي (gMonthDaysOf كما في مفتاح اليوم) */
   assert.doesNotMatch(body, /_kpiSelLast/, 'لا يتبع اختيارَ لوحة المؤشرات');
   assert.match(body, /if \(!t\.length\) return "";/, 'يومٌ بلا جولة ⇒ لا صفحةَ مؤشرات');
 });
@@ -117,7 +117,7 @@ test('كاتبُ PDF: ملفٌّ صالح البنية — صفحةٌ لكل ص�
 });
 
 test('الطابعةُ تُنزل الملفَّ مباشرةً ونافذةُ الطباعة مسارٌ بديل عند التعذّر', () => {
-  assert.match(core, /if \(O\.dialog\) return void dialog\(\);\s*pdfDownload\(x, f, coverInfo\(o, i\)\)\.then\(\(ok\) => \{\s*if \(!ok\) return void dialog\(\);/);   /* V7 · 53 (البند 10): والغلافُ صفحةً أولى */
+  assert.match(core, /if \(O\.dialog\) return void dialog\(\);\s*pdfDownload\(x, f, coverInfo\(o, i\)\)\.then\(\(ok\) => \{\s*(?:\/\*[^*]*\*\/\s*)?if \("cancel" === ok\) \{[^}]*\{[^}]*\} catch \(e\) \{\}\s*return;\s*\}\s*if \(!ok\) \{\s*try \{[^}]*\} catch \(e\) \{\}\s*return void dialog\(\);\s*\}/);   /* V7 · 53 (nosilent): الإلغاءُ لا يفتح النافذة، والتعذّرُ يعود إليها بعد إشعارٍ بسببه */   /* V7 · 53 (البند 10): والغلافُ صفحةً أولى */
   assert.match(core, /let scales = wk \? \[2, 1\.5\] : coarse \? \[3, 2\] : \[4, 3, 2\], alt = wk, rf = null;/, 'دقّةٌ ×4 على الحاسوب و×3 على اللمس و×2 في سفاري، وتنزل عند الرفض');
   /* V7 · 53 (ملحق 6 · البند 9): أسبابُ سفاري الثلاثة التي كانت تُسقط التنزيلَ إلى نافذة الطباعة على الآيباد والآيفون */
   assert.match(core, /return \/\^Apple\/\.test\(navigator\.vendor \|\| ""\);/, 'محرّكُ سفاري يُعرف بمورّده');
@@ -182,15 +182,19 @@ test('53 · البند 10: الغلافُ صفحةٌ كاملة بلا هوام�
 });
 
 test('53 · البند 10: بياناتُ الغلاف — سنةُ التقرير من سطر تاريخه وإلا السنةُ الجارية، والإدارةُ العامة والإدارة النشطتان', () => {
-  const K = { BassamDepts: { activeGroupName: () => 'TEST_ONLY الإدارة العامة' }, BassamCal: { hToday: () => ({ y: 1448, m: 1, d: 1 }) } };
+  /* V7 · 53 تقويم (القاعدة 11): السنةُ ميلاديةٌ أساساً («لعام ٢٠٢٦م») والهجريةُ المقابلة سطرٌ صغير تحتها («١٤٤٨هـ») — من سطر التاريخ، وإلا اليومُ التشغيلي */
+  const Cal = (y, hy) => ({ gToday: () => ({ y, k: y + '-11-24' }), hOf: () => ({ y: hy }) });
+  const K = { BassamDepts: { activeGroupName: () => 'TEST_ONLY الإدارة العامة' }, BassamCal: Cal(2026, 1448) };
   const C = loadCoreWith(IPAD, K);
-  assert.deepEqual(JSON.parse(JSON.stringify(C.coverInfo('جولة يوم 5 رجب 1447هـ الموافق 25 ديسمبر 2025', 'TEST_ONLY إدارة'))), { dept: 'TEST_ONLY إدارة', group: 'TEST_ONLY الإدارة العامة', year: '1447' });
-  assert.equal(C.coverInfo('', 'TEST_ONLY إدارة').year, '1448', 'بلا سطر تاريخ ⇒ السنةُ الهجرية الجارية');
-  const C2 = loadCoreWith(IPAD, { BassamCal: { hToday: () => ({ y: 1447 }) } });
-  assert.deepEqual(JSON.parse(JSON.stringify(C2.coverInfo('12 شعبان 1447هـ', ''))), { dept: '', group: '', year: '1447' }, 'بلا خدمة الإدارات ⇒ سطرٌ فارغ لا عطل');
+  assert.deepEqual(JSON.parse(JSON.stringify(C.coverInfo('جولة يوم 25 ديسمبر 2025 · الموافق 5 رجب 1447', 'TEST_ONLY إدارة'))), { dept: 'TEST_ONLY إدارة', group: 'TEST_ONLY الإدارة العامة', year: '2025', hyear: '1447' });
+  assert.deepEqual(JSON.parse(JSON.stringify(C.coverInfo('', 'TEST_ONLY إدارة'))), { dept: 'TEST_ONLY إدارة', group: 'TEST_ONLY الإدارة العامة', year: '2026', hyear: '1448' }, 'بلا سطر تاريخ ⇒ السنةُ الجارية الميلادية وهجريُّها');
+  const C2 = loadCoreWith(IPAD, { BassamCal: Cal(2025, 1447) });
+  assert.deepEqual(JSON.parse(JSON.stringify(C2.coverInfo('12 فبراير 2026 · الموافق 24 شعبان 1447', ''))), { dept: '', group: '', year: '2026', hyear: '1447' }, 'بلا خدمة الإدارات ⇒ سطرٌ فارغ لا عطل');
+  assert.match(core, /" لعام " \+ ar\(info\.year\) \+ "م"/, 'الغلاف: «لعام ٢٠٢٦م»');
+  assert.match(core, /g\.fillText\(ar\(info\.hyear\) \+ "هـ", /, 'والهجريُّ سطرٌ صغيرٌ تحته');
   /* الغلافُ من الأصل في الحزمة، ويُرسم بلا نسخٍ للوثيقة؛ وتعذّرُ خلفيته لا يُسقط الملف */
   assert.match(core, /const COVER_URL = "@@KIVO_ASSET:img\/report-cover\.jpg@@";/);
-  assert.match(core, /\.reduce\(\(q, pg, k\) => q\.then\(\(\) => \(say\(k\), one\(pg, k\)\)\)\.then\(\(r\) => void imgs\.push\(r\)\), cover\)/, 'الغلافُ قبل الصفحات');
+  assert.match(core, /\.reduce\(\(q, pg, k\) => q\.then\(\(\) => \{ if \(run\.stop\) throw PDF_STOP53; return \(say\(k\), one\(pg, k\)\); \}\)\.then\(\(r\) => void imgs\.push\(r\)\), cover\)/, 'الغلافُ قبل الصفحات');   /* V7 · 53 (nosilent): و«إلغاء» يُفحص بين الصفحات */
   assert.match(core, /coverPage\(cov\)\.then\(\s*\(r\) => void imgs\.push\(r\),\s*\(e\) => \{/, 'تعذّرُ الغلاف ⇒ الملفُّ بلا غلاف');
 });
 
@@ -211,7 +215,7 @@ test('53 · البند 9: محرّكُ سفاري ومسارُ «الملف جا
   }
   assert.equal(loadCoreWith(Object.assign({}, IPAD, { canShare: () => { throw new Error('x'); } })).shareMode(file), false, 'canShare يرمي ⇒ التنزيلُ المباشر');
   /* الزرُّ يفتح قائمةَ المشاركة بلمسة المستخدم (لا تلقائياً)، والملفُّ نفسُه؛ وإلغاءُ القائمة ليس خطأً */
-  assert.match(core, /if \(file && shareMode\(file\) && pdfReady\(file\)\) return \(drop\(\), "share"\);/);
+  assert.match(core, /if \(file && shareMode\(file\) && pdfReady\(file\)\) return \(drop\(\), end\("share"\)\);/);   /* V7 · 53 (nosilent): end يُنهي مؤشرَ التحميل ويُبقي النتيجة */
   assert.match(core, /navigator\.share\(\{ files: \[file\], title: name \}\)/);
   assert.ok(core.indexOf('navigator.share({') > core.indexOf('v.addEventListener("click"'), 'المشاركةُ من نقرة الزر');
   assert.ok(core.includes('>الملف جاهز</div>') && core.includes('>حفظ أو مشاركة الملف</button>'));

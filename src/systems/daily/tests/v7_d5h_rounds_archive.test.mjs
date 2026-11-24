@@ -14,7 +14,9 @@ import { PYTHON, makeTestEnv, client, applySql, ROOT, TEST_SUPER_USERNAME, TEST_
 import { installCurrentSchemaFixture } from '../../../../tests/unit/current_schema_fx.mjs';
 import { replaceOperationalFixture } from '../../../../tests/unit/operational_legacy_seed_fx.mjs';
 
-const T = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach((p) => { if (p.type !== 'literal') o[p.type] = +p.value; }); return o; })();
+/* V7 · 53 تقويم: اليومُ التشغيلي للخادم ميلاديٌّ (calToday: الرياض − 3 ساعات) والمفاتيحُ ISO — كان أم القرى بلا بطانة */
+const T = (() => { const x = new Date(Date.now()); return { year: x.getUTCFullYear(), month: x.getUTCMonth() + 1, day: x.getUTCDate() }; })();
+const D2 = (n) => String(n).padStart(2, '0'), YM = (y, m) => y + '-' + D2(m), DK = (y, m, d) => YM(y, m) + '-' + D2(d);
 const KR = 'bsdept:tst_d1:bassam_rounds_v1', KA = 'bsdept:tst_d1:bassam_rounds_arc_v1';
 const ym = (k) => { const x = T.year * 12 + (T.month - 1) + k; return { y: Math.floor(x / 12), m: (x % 12) + 1 }; };
 const isDay = (k) => /^\d+-\d+-\d+$/.test(k);
@@ -56,10 +58,10 @@ function sixMonths(base) {
   const floors = base[Object.keys(base).find((k) => isDay(k) && Array.isArray(base[k].d) && base[k].d.length)].d, doc = {}, closed = new Set();
   for (let k = -5; k <= 0; k++) {
     const { y, m } = ym(k);
-    for (let d = 1; d <= 29; d++) doc[y + '-' + m + '-' + d] = { t: 1, ap: k < 0 ? 1 : 0, d: JSON.parse(JSON.stringify(floors)) };
-    if (k === -4) doc['m:' + y + '-' + m] = { ap: 1 };
-    if (k === -3) doc['m:' + y + '-' + m] = { mo: 1 };
-    if (k === -5 || k === -4 || k === -2) closed.add(y + '-' + m);
+    for (let d = 1; d <= 29; d++) doc[DK(y, m, d)] = { t: 1, ap: k < 0 ? 1 : 0, d: JSON.parse(JSON.stringify(floors)) };
+    if (k === -4) doc['m:' + YM(y, m)] = { ap: 1 };
+    if (k === -3) doc['m:' + YM(y, m)] = { mo: 1 };
+    if (k === -5 || k === -4 || k === -2) closed.add(YM(y, m));
   }
   return { doc, closed };
 }
@@ -123,19 +125,19 @@ for (const mode of ['enforce', 'legacy'])
 test('[' + mode + '] السلوكُ الجاري: اعتمادُ الشهر ينقل أيامَه إلى الأرشيف في الحفظة نفسِها · نسخةٌ قديمة لا تغيّره · الفتحُ يعيدها · لا كتابةَ من العميل · القراءةُ بسياسة الجولات', async () => {
   const W = await world(mode);
   /* أيامُ الشهر الماضي سُجّلت وهو مفتوح (تُكتب في التخزين مباشرةً: الإنفاذُ يقفل الفترةَ الماضية على الإنشاء) */
-  const full = (await read(W, [KR])).resources[KR], P = ym(-1), PK = P.y + '-' + P.m, cur = ym(0);
+  const full = (await read(W, [KR])).resources[KR], P = ym(-1), PK = YM(P.y, P.m), cur = ym(0);
   const floors = full[Object.keys(full).find((k) => isDay(k) && full[k].d.length)].d, seeded = JSON.parse(JSON.stringify(full));
-  for (let d = 1; d <= 29; d++) seeded[PK + '-' + d] = { t: 1, ap: 1, d: JSON.parse(JSON.stringify(floors)) };
+  for (let d = 1; d <= 29; d++) seeded[PK + '-' + D2(d)] = { t: 1, ap: 1, d: JSON.parse(JSON.stringify(floors)) };
   await replaceOperationalFixture(W.env, KR, seeded);
   /* الجولاتُ كما يراها مديرُ الإدارة (في الإنفاذ تُسقَط بعدسات سقف الإدارة) — منها يبني حفظاته */
   const doc = (await read(W, [KR], W.dm)).resources[KR];
-  const L0 = (await read(W, [KR, KA])); assert.ok(PK + '-1' in L0.resources[KR], 'الشهرُ الماضي حيٌّ (هامش شهر)'); assert.equal(L0.resources[KA], undefined);
+  const L0 = (await read(W, [KR, KA])); assert.ok(PK + '-01' in L0.resources[KR], 'الشهرُ الماضي حيٌّ (هامش شهر)'); assert.equal(L0.resources[KA], undefined);
   /* ما يراه كلُّ حسابٍ من يومٍ في الشهر الماضي وهو في الجولات */
   const who = [];
   for (const c of fixture().creds) { const r = await W.C.login(c.un, c.pw); if (r.ok) who.push({ id: c.id, ck: r.ck }); }
   assert.ok(who.length >= 10, 'حساباتُ المُثبِّت');
   const seenBefore = {};
-  for (const u of who) { const j = await read(W, [KR], u.ck); seenBefore[u.id] = { denied: (j.denied || []).includes(KR), day: j.resources && j.resources[KR] ? j.resources[KR][PK + '-5'] : undefined }; }
+  for (const u of who) { const j = await read(W, [KR], u.ck); seenBefore[u.id] = { denied: (j.denied || []).includes(KR), day: j.resources && j.resources[KR] ? j.resources[KR][PK + '-05'] : undefined }; }
   /* اعتمادُ الشهر (مديرُ الإدارة) — الأيامُ تنتقل في الحفظة نفسِها */
   const ap = JSON.parse(JSON.stringify(doc)); ap['m:' + PK] = { ap: 1 };
   const r1 = await save(W, { [KR]: ap }, W.dm); okSave(r1);
@@ -143,16 +145,16 @@ test('[' + mode + '] السلوكُ الجاري: اعتمادُ الشهر ين
   const L1 = await read(W, [KR, KA]), live1 = L1.resources[KR], arc1 = L1.resources[KA];
   assert.ok(!Object.keys(live1).some((k) => k.startsWith(PK + '-')), 'لا يومَ من الشهر المعتمد في الحيّ');
   assert.deepEqual(live1['m:' + PK], { ap: 1 }, 'علامتُه تبقى في الحيّ');
-  for (let d = 1; d <= 29; d++) assert.deepEqual(arc1[PK + '-' + d], seeded[PK + '-' + d], 'اليوم ' + d + ' في الأرشيف كما هو');
-  assert.ok(Object.keys(live1).some((k) => k.startsWith(cur.y + '-' + cur.m + '-')), 'الشهرُ الجاري حيّ');
+  for (let d = 1; d <= 29; d++) assert.deepEqual(arc1[PK + '-' + D2(d)], seeded[PK + '-' + D2(d)], 'اليوم ' + d + ' في الأرشيف كما هو');
+  assert.ok(Object.keys(live1).some((k) => k.startsWith(YM(cur.y, cur.m) + '-')), 'الشهرُ الجاري حيّ');
   /* القراءةُ بسياسة الجولات حرفاً: الرفضُ نفسُه والإسقاطُ نفسُه لكل حساب */
   for (const u of who) {
     const j = await read(W, [KA], u.ck);
     assert.equal((j.denied || []).includes(KA), seenBefore[u.id].denied, u.id + ': حكمُ القراءة نفسُه');
-    if (!seenBefore[u.id].denied) assert.deepEqual(j.resources[KA][PK + '-5'], seenBefore[u.id].day, u.id + ': ما يراه من اليوم نفسُه');
+    if (!seenBefore[u.id].denied) assert.deepEqual(j.resources[KA][PK + '-05'], seenBefore[u.id].day, u.id + ': ما يراه من اليوم نفسُه');
   }
   /* نسخةٌ قديمة في الصفحة (تحمل أيامَ الشهر المؤرشف) تُحفظ مرةً أخرى: الأرشيفُ لا يتغيّر والحيُّ بلا أيامه */
-  const arcRev = L1.base[KA], stale = JSON.parse(JSON.stringify(ap)), today = T.year + '-' + T.month + '-' + T.day;
+  const arcRev = L1.base[KA], stale = JSON.parse(JSON.stringify(ap)), today = DK(T.year, T.month, T.day);
   assert.ok(stale[today], 'جولةُ اليوم في المُثبِّت'); stale[today].t = 3;   /* تعديلٌ حقيقيٌّ على يومٍ مفتوح مع أيام الشهر المؤرشف كما في الصفحة */
   okSave(await save(W, { [KR]: stale }, W.dm));
   const L2 = await read(W, [KR, KA]);
@@ -168,6 +170,6 @@ test('[' + mode + '] السلوكُ الجاري: اعتمادُ الشهر ين
   const open = JSON.parse(JSON.stringify(L2.resources[KR])); open['m:' + PK] = { mo: 1 };
   okSave(await save(W, { [KR]: open }, W.dm, { [KR]: 'TEST_ONLY إعادةُ فتح الشهر' }));
   const L3 = await read(W, [KR, KA]);
-  for (let d = 1; d <= 29; d++) assert.deepEqual(L3.resources[KR][PK + '-' + d], seeded[PK + '-' + d], 'اليوم ' + d + ' عاد حيّاً');
+  for (let d = 1; d <= 29; d++) assert.deepEqual(L3.resources[KR][PK + '-' + D2(d)], seeded[PK + '-' + D2(d)], 'اليوم ' + d + ' عاد حيّاً');
   assert.ok(!Object.keys(L3.resources[KA]).length, 'الأرشيفُ فارغ');
 });

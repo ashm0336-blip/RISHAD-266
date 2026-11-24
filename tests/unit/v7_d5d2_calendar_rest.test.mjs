@@ -197,11 +197,18 @@ function proof() {
     assert.equal(B.tkRiyMid(day + 5e6), A.tkRiyMid(day + 5e6)); assert.equal(B.calRiyadhMid(day + 5e6), day);
     for (const ms of [day - 1, day, day + 3 * 36e5 - 1, day + 3 * 36e5, day + 12 * 36e5]) {
       R.srvInstants++;
-      const a = A.tkHij(ms), b = B.tkHij(ms); assert.deepEqual(J(b), J(a), 'tkHij'); assert.deepEqual(J(B.dsToday(ms)), J(A.dsToday(ms)), 'dsToday'); assert.deepEqual(J(B.tkToday(ms)), J(A.tkToday(ms)));
-      assert.equal(B.tkDayNum(b.k), A.tkDayNum(a.k));
+      /* V7 · 53 تقويم: tkHij (هجريُّ المهام) أُزيل — المهامُ ميلادية. الضمانُ نفسُه على الدوالّ الحيّة: الهجريُّ في الخادم موضعٌ واحد (calHijriAt)
+         يعطي ما كانت تعطيه النسخةُ المحذوفة، ويومُ المهمة الميلادي (tkDay/tkToday) هو يومُ الرياض المدنيّ/التشغيلي نفسُه (calGAt/calToday) وهجريُّه هو اليومُ القديم */
+      const a = A.tkHij(ms), c0 = B.calHijriAt(ms), b = { y: c0.y, m: c0.m, d: c0.d, k: c0.y + '-' + c0.m + '-' + c0.d };
+      assert.deepEqual(J(b), J({ y: a.y, m: a.m, d: a.d, k: a.k }), 'calHijriAt = tkHij'); assert.deepEqual(J(B.dsToday(ms)), J(A.dsToday(ms)), 'dsToday');
+      const g = B.tkDay(ms), gt = B.tkToday(ms); assert.deepEqual(J(g), J((({ y, m, d, k, ym }) => ({ y, m, d, k, ym }))(B.calGAt(ms))), 'tkDay = calGAt'); assert.equal(gt.k, B.calToday(ms).k, 'tkToday = calToday');
+      assert.equal(B.calHDay(a.y, a.m, a.d), g.k, 'the removed Hijri task day and the live Gregorian one are the same civil day');
+      const at = A.tkToday(ms); assert.equal(B.calHDay(at.y, at.m, at.d), gt.k, 'and the same operational day (3-hour grace)');
+      assert.equal(B.tkDayNum(g.k), +g.k.replace(/-/g, ''));
       /* كتلةُ PF-CORE (خادماً وواجهةً) تعطي اليومَ نفسَه الذي يعطيه الموضعان الموحَّدان */
-      const pf = P.pfHijriAt(ms), c = B.calHijriAt(ms); assert.deepEqual([pf.y, pf.m, pf.d], [c.y, c.m, c.d], 'PF-CORE = calHijriAt');
-      const pc = PC.KIVO.BassamProfileFacts.hijriAt(ms), r = C.hPartsRiyadh(new Date(ms)); assert.deepEqual([pc.y, pc.m, pc.d], [r.y, r.m, r.d], 'PF-CORE = hPartsRiyadh'); assert.deepEqual([c.y, c.m, c.d], [r.y, r.m, r.d], 'الخادم = الواجهة');
+      const pf = P.pfDayAt(ms).h, c = B.calHijriAt(ms); assert.deepEqual([pf.y, pf.m, pf.d], [c.y, c.m, c.d], 'PF-CORE = calHijriAt');   /* V7 · 53 تقويم: pfHijriAt ⇐ pfDayAt.h */
+      assert.equal(P.pfDayAt(ms).dk, B.calGAt(ms).k, 'PF-CORE Gregorian day = calGAt');
+      const pc = PC.KIVO.BassamProfileFacts.dayAt(ms).h, r = C.hPartsRiyadh(new Date(ms)); assert.deepEqual([pc.y, pc.m, pc.d], [r.y, r.m, r.d], 'PF-CORE = hPartsRiyadh'); assert.deepEqual([c.y, c.m, c.d], [r.y, r.m, r.d], 'الخادم = الواجهة');
     }
     const k = A.tkHij(day + 12 * 36e5).k, k0 = k.replace(/-(\d)$/, '-0$1');
     /* من اليوم نفسِه ومن بعيدٍ أمامه لكل يوم؛ ومن بعيدٍ خلفه ومن جواره على حدود الشهر ومنتصفه */
@@ -209,13 +216,18 @@ function proof() {
     for (const near of edge ? [day, day + 40 * 864e5, day + 7e6, day - 400 * 864e5, day + 3 * 864e5] : [day, day + 40 * 864e5]) {
       R.srvMid++;
       /* الحفظُ يُفرَّغ قبل كل مقارنة (فتُحسب من near فعلاً) — والمحفوظةُ تُقارَن بعد الحلقة */
-      A.TK_HMID = Object.create(null); B.CAL_HMID = Object.create(null);
-      assert.equal(B.tkHijMid(k, near), A.tkHijMid(k, near), 'tkHijMid ' + [k, near - day]); assert.equal(B.tkHijMid(k, near), day);
-      assert.equal(B.tkRecDayMid(k, near), A.tkRecDayMid(k, near), 'tkRecDayMid ' + [k, near - day]); assert.equal(B.tkRecDayMid(k0, near), A.tkRecDayMid(k0, near));
+      /* V7 · 53 تقويم: tkHijMid أُزيل — منتصفُ ليل اليوم يُحسب من مفتاحه الميلادي (tkDayMid · حسابٌ خالص) فيساوي ما كانت تعطيه النسخةُ القديمة لمفتاحه الهجري */
+      A.TK_HMID = Object.create(null);
+      const gk = B.calHDay(...k.split('-').map(Number));
+      assert.equal(B.tkDayMid(gk), A.tkHijMid(k, near), 'tkDayMid(Gregorian) = removed tkHijMid(Hijri) ' + [k, near - day]); assert.equal(B.tkDayMid(gk), day);
+      /* tkRecDayMid: اليومُ نفسُه بالضبط دائماً (المفتاحُ الميلادي لا يحتاج بحثاً)، ويساوي النسخةَ القديمة حيث كانت دقيقة (المرجعُ هو اليومُ نفسُه) */
+      assert.equal(B.tkRecDayMid(gk, near), day, 'tkRecDayMid ' + [k, near - day]); if (near === day) assert.equal(B.tkRecDayMid(gk, near), A.tkRecDayMid(k, near)); assert.equal(B.tkRecDayMid(k0, near), A.tkRecDayMid(k0, near), 'a padded Hijri key is not a day: the slot midnight, as before');
     }
-    assert.equal(B.tkHijMid(k0, day), A.tkHijMid(k0, day)); assert.equal(B.tkHijMid('TEST_ONLY', day), A.tkHijMid('TEST_ONLY', day)); assert.equal(B.tkHijMid('1448-13-40', day), A.tkHijMid('1448-13-40', day));
+    /* مفتاحٌ غيرُ يومٍ ميلادي صالح (هجريٌّ قديم · نصّ · يومٌ مستحيل) لا يُحسب يوماً: 0 كما كان للمفتاح التالف */
+    assert.equal(B.tkDayMid(k), 0); assert.equal(B.tkDayMid(k0), 0); assert.equal(B.tkDayMid('TEST_ONLY'), 0); assert.equal(B.tkDayMid('2026-13-40'), 0); assert.equal(A.tkHijMid('TEST_ONLY', day), 0);
   }
-  for (let y = Y0; y <= Y1; y++) for (let m = 1; m <= 12; m++) assert.equal(P.pfMonthDays(y, m).length, C.hMonthDaysNoon(y, m), 'PF-CORE: طولُ الشهر');
+  /* V7 · 53 تقويم: أيامُ الشهر في PF-CORE صارت الشهرَ الميلادي — طولُه = طولُ الشهر في تقويم الخادم والواجهة لكل شهرٍ في المدى */
+  for (let y = 2017; y <= 2039; y++) for (let m = 1; m <= 12; m++) { assert.equal(P.pfMonthDays(y, m).length, B.calGMonthDays(y, m), 'PF-CORE: طولُ الشهر'); assert.equal(P.pfMonthDays(y, m).length, C.gMonthDays(y, m)); }
   return R;
 }
 
@@ -272,10 +284,12 @@ test('② without calendar support: each caller keeps the fallback it had (30 fo
   assert.ok(a.y > 1300 && a.y < 1600, 'hNow هجريٌّ دائماً'); assert.equal(b.y, 2026, 'hPartsSafe تعيد ما أعطاه Intl');
   /* الخادم بلا دعم: null وخطأٌ مسجَّل بوسم صاحبه كما كان */
   const A = oldServer(Thrower), B = newServer(Thrower);
-  assert.equal(B.dsToday(Date.now()), null); assert.equal(A.dsToday(Date.now()), null); assert.equal(B.tkHij(Date.now()), null); assert.equal(A.tkHij(Date.now()), null);
-  assert.deepEqual(B.log, A.log); assert.deepEqual(B.log, ['dstats', 'tk-hij']);
-  assert.equal(B.tkHijMid('1448-1-1', Date.now()), 0); assert.equal(A.tkHijMid('1448-1-1', Date.now()), 0);
-  const s = Date.UTC(2026, 10, 20, 9); assert.equal(B.tkRecDayMid('1448-1-1', s), A.tkRecDayMid('1448-1-1', s));
+  assert.equal(B.dsToday(Date.now()), null); assert.equal(A.dsToday(Date.now()), null); assert.equal(A.tkHij(Date.now()), null);
+  /* V7 · 53 تقويم: يومُ المهام ميلاديٌّ بحسابٍ خالص — يبقى صحيحاً بلا دعم التقويم (كان null)، والخطأُ المسجَّل لصاحب الهجري وحده (dsToday) */
+  const now = Date.now(); assert.deepEqual(J(B.tkDay(now)), J((({ y, m, d, k, ym }) => ({ y, m, d, k, ym }))(B.calGAt(now)))); assert.throws(() => B.calHijriAt(now));
+  assert.deepEqual(A.log, ['dstats', 'tk-hij']); assert.deepEqual(B.log.filter((x) => x !== 'cal'), ['dstats']);
+  assert.equal(A.tkHijMid('1448-1-1', Date.now()), 0); assert.equal(B.tkDayMid('1448-1-1'), 0);
+  const s = Date.UTC(2026, 10, 20, 9); assert.equal(B.tkRecDayMid('1448-1-1', s), A.tkRecDayMid('1448-1-1', s), 'a key that is not a Gregorian day falls back to the Riyadh midnight of the slot, as before');
 });
 
 test('⑤ no other place computes the calendar: one client service, one server part, one-line callers', () => {
@@ -286,7 +300,7 @@ test('⑤ no other place computes the calendar: one client service, one server p
   /* كتلةُ PF-CORE («ملفي»): نصٌّ واحدٌ حرفاً في الواجهة (535) والخادم (062b) فلا تنادي KIVO ولا 016 — مستثناةٌ بحدودها وحدها، ومطابقتُها مثبتةٌ أعلاه */
   const CORE = ['src/services/535-profile-facts.js', 'workers/parts/062b-me-history.js', 'src/slots/workers/parts/062b-me-history.js.tpl'];
   const strip = (rel, s) => { if (!CORE.includes(rel)) return s; const a = s.indexOf('/* ══ PF-CORE:BEGIN'), b = s.indexOf('/* ══ PF-CORE:END ══ */'); assert.ok(a >= 0 && b > a, rel + ': علامتا PF-CORE'); return s.slice(0, a) + s.slice(b); };
-  const GONE = /\b(_cuFmt|cuParts|__cuF|__olHF|__stf|_hf|TK_HFMT|TK_HMID|PF_HF)\b/, bad = [], names = [], table = [];
+  const GONE = /\b(_cuFmt|cuParts|__cuF|__olHF|__stf|_hf|TK_HFMT|TK_HMID|PF_HF|tkHij|tkHijMid)\b/,   /* V7 · 53 تقويم: والأسماءُ الهجرية التي أزالها التقويم */ bad = [], names = [], table = [];
   for (const f of files) {
     const rel = path.relative(ROOT, f).split(path.sep).join('/'), s = strip(rel, fs.readFileSync(f, 'utf8'));
     if (/islamic-umalqura/.test(s) && !CLIENT.includes(rel) && !SERVER.includes(rel)) bad.push(rel);
@@ -295,25 +309,31 @@ test('⑤ no other place computes the calendar: one client service, one server p
   }
   assert.deepEqual(bad, [], 'ملفٌّ يبني تقويمَ أم القرى خارج الموضعين');
   assert.deepEqual(names, [], 'اسمٌ قديم باقٍ');
+  /* V7 · 53 تقويم: pfHijriAt أُزيل (pfDayAt.h بدلَه) — لا تعريفَ له في أي موضع */
+  assert.deepEqual(files.filter((f) => /function pfHijriAt\s*\(/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(ROOT, f)), [], 'pfHijriAt removed');
   assert.deepEqual(table, [], 'جدولُ الاحتياط يُسأل من الخدمة وحدها (hNow)');
   /* المنادياتُ الباقية بأسمائها القديمة سطرٌ واحد إلى الموضع الموحَّد */
   const ONE = [
     ['src/components/565-page-kit.js', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDays\(t, e\);$/],
     ['src/components/565-page-kit.js', 'curHijri', /^const t = KIVO\.BassamCal\.hToday\(\); return \{ y: t\.y, m: t\.m \};$/],
-    ['src/systems/daily/client/logic.js.tpl', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, e\);$/],
-    ['src/systems/dreport/client/logic.js', 'hMonthDays', /^return KIVO\.BassamCal\.hMonthDaysNoon\(t, r\);$/],
-    ['src/systems/dstats/client/logic.js', 'hOfDate', /^const h=KIVO\.BassamCal\.hParts\(dt\); return \{ year:h\.y, month:h\.m, day:h\.d \};$/],
-    ['src/systems/dstats/client/logic.js', 'gOf', /^return KIVO\.BassamCal\.hGregUTC\(y,m,d\);$/],
-    ['src/systems/dstats/client/logic.js', 'dim', /^return KIVO\.BassamCal\.hMonthDaysNoon\(y,m,29\);$/],
-    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGreg', /^return KIVO\.BassamCal\.hGreg\(t, e, r\);$/],
-    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregMonthLabel', /^return KIVO\.BassamCal\.hGregMonthLabel\(t, e\);$/],
-    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregYearRange', /^return KIVO\.BassamCal\.hGregYearRange\(t\);$/],
-    ['src/systems/daily/client/520-field-monitor.js', 'function hParts', /^return KIVO\.BassamCal\.hPartsSafe\(dt\);$/],
+    /* V7 · 53 تقويم: الإحصائياتُ ميلادية — اليومُ حسابٌ ميلاديٌّ خالص (بلا Intl) وطولُ الشهر من الخدمة الواحدة */
+    ['src/systems/dstats/client/logic.js', 'hOfDate', /^return \{ year:dt\.getFullYear\(\), month:dt\.getMonth\(\)\+1, day:dt\.getDate\(\) \};$/],
+    ['src/systems/dstats/client/logic.js', 'gOf', /^return new Date\(Date\.UTC\(y,m-1,d\)\);$/],
+    ['src/systems/dstats/client/logic.js', 'dim', /^return KIVO\.BassamCal\.gMonthDays\(y,m\);$/],
+    /* V7 · 53 تقويم: العهدُ ميلادي — اليومُ حسابٌ ميلاديٌّ خالص، والسطرُ الصغير المدى الهجري من الخدمة الواحدة */
+    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGreg', /^return new Date\(t, e - 1, r\);$/],
+    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregMonthLabel', /^return KIVO\.BassamCal\.hRangeOfMonth\(KIVO\.BassamCal\.gYm\(t, e\)\);$/],
+    ['src/systems/custody/slots/emp.logic.custody.frag', 'cuGregYearRange', /^return KIVO\.BassamCal\.hRangeOfYear\(t\);$/],
+    /* V7 · 53 تقويم: المتابعةُ ميلادية — hParts زالت، ومفتاحُ اليوم سطرٌ واحد إلى الخدمة الواحدة */
+    ['src/systems/daily/client/520-field-monitor.js', 'function todayKey', /^return KIVO\.BassamCal\.gAt\(new Date\(\)\)\.k;$/],
     ['src/systems/tasks/server/070-task-core.js', 'function tkDayNum', /^return calDayNum\(k\);$/],
-    ['src/systems/tasks/server/073-task-recur.js', 'function tkHijMid', /^return calHijriMid\(k, near, tkHij\);$/],
     ['src/systems/tasks/server/073-task-recur.js', 'function tkRiyMid', /^return calRiyadhMid\(t\);$/],
-    ['src/systems/tasks/server/073-task-recur.js', 'function tkRecDayMid', /^return calHijriDayMid\(dk, s, tkHij\);$/],
+    /* V7 · 53 تقويم: المهامُ ميلادية — يومُها من تقويم الخادم (calGAt · calGParse) وحسابٌ خالص، لا مُنسِّق */
+    ['src/systems/tasks/server/070-task-core.js', 'function tkDay', /^if \(typeof ms !== 'number' \|\| !isFinite\(ms\)\) return null;\s*var o = calGAt\(ms\);\s*return \{ y: o\.y, m: o\.m, d: o\.d, k: o\.k, ym: o\.ym \};$/],
+    ['src/systems/tasks/server/073-task-recur.js', 'function tkDayMid', /^var p = calGParse\(k\); return p && p\.cal === 'g' && p\.kind === 'day' \? Date\.UTC\(p\.y, p\.m - 1, p\.d\) - 3 \* 36e5 : 0;$/],
+    ['src/systems/tasks/server/073-task-recur.js', 'function tkRecDayMid', /^return tkDayMid\(dk\) \|\| calRiyadhMid\(s\);$/],
   ];
+  assert.doesNotMatch(read('src/systems/daily/client/520-field-monitor.js'), /function\s+hParts\s*\(/, '520: لا نسخةَ محلية لحساب الهجري');
   for (const [f, name, want] of ONE) {
     const src = read(f), re = new RegExp('(?:^|\\n)[ \\t]*' + name.replace(/ /g, '\\s+') + '\\s*\\(([^)]*)\\)\\s*\\{', 'g'), m = re.exec(src);
     assert.ok(m, f + ' :: ' + name);
@@ -323,10 +343,12 @@ test('⑤ no other place computes the calendar: one client service, one server p
   }
   /* لا صفحةَ ولا نظامَ يعرّف hMonthDays غير العُدّة وصفحتَي الظهر */
   const defs = files.filter((f) => /(?:^|\n)[ \t]*hMonthDays\s*\([^)]*\)\s*\{/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(ROOT, f).split(path.sep).join('/')).sort();
-  assert.deepEqual(defs, ['src/components/565-page-kit.js', 'src/systems/daily/client/logic.js', 'src/systems/daily/client/logic.js.tpl', 'src/systems/dreport/client/logic.js']);   /* د5-هـ: مرتَّبة — التقريرُ في مجلده  */
+  /* V7 · 53 تقويم: صفحتا الظهر (المتابعة · التقرير) ميلاديتان — لم تعودا تعرّفان hMonthDays؛ تبقى العُدّةُ وحدها */
+  assert.deepEqual(defs, ['src/components/565-page-kit.js']);
   const service = read('src/i18n/385-calendar.js'), part = read('workers/parts/016-base-shared.js');
   for (const n of ['hPartsRiyadh', 'hNow', 'hText', 'hGregExact', 'hGregUTC', 'hMonthDays', 'hMonthDaysNoon', 'hWeekdayIndex']) { assert.match(service, new RegExp('function ' + n + '\\('), n); assert.match(service, new RegExp('\\b' + n + ': ' + n + '\\b'), n + ' مُصدَّرة'); }
-  for (const n of ['calHijriAt', 'calHijriOk', 'calRiyadhMid', 'calDayNum', 'calHijriMid', 'calHijriDayMid', 'dsToday']) assert.match(part, new RegExp('function ' + n + '\\('), n);
+  for (const n of ['calHijriAt', 'calHijriOk', 'calRiyadhMid', 'calDayNum', 'dsToday']) assert.match(part, new RegExp('function ' + n + '\\('), n);
+  for (const n of ['calHijriMid', 'calHijriDayMid']) assert.doesNotMatch(part, new RegExp('function ' + n + '\\('), n + ': V7 · 53 S3 — removed (no caller since the tasks calendar went Gregorian)');
   /* 016 يسبق كلَّ مستعملٍ في ترتيب أجزاء العامل */
   const order = JSON.parse(read('workers/parts.json')).parts.map((p) => p.file), at = (re) => order.findIndex((f) => re.test(f));
   assert.ok(at(/016-base-shared\.js$/) >= 0 && at(/016-base-shared\.js$/) < at(/062b-me-history\.js$/) && at(/016-base-shared\.js$/) < at(/070-task-core\.js$/) && at(/070-task-core\.js$/) < at(/073-task-recur\.js$/));

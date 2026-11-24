@@ -70,7 +70,7 @@ function enfSeed() { var b = new Uint8Array(32), s = '', i; crypto.getRandomValu
 async function enfMigPlan(env, seed, opts) {
   opts = opts || {};
   /* الخطةُ دالّةٌ حتمية في (البذرة · لحظةِ التوليد · البيانات): التطبيقُ يعيد بناءها بلحظة الخطة نفسِها فتتطابق البصمةُ ما لم تتغيّر البيانات */
-  var now = opts.now || Date.now(), T = dsToday(now), reference = opts.reference,
+  var now = opts.now || Date.now(), T = calToday(now), reference = opts.reference,   /* V7 · 53 تقويم: يومُ الخطة ميلادي (أرشيفُ الجولات 019p3) */
     capture = reference ? reference.operational : await opCaptureReferences(env, await kvAll(env, 'kv')),
     keys = reference ? reference.inputKeys : capture.keys,
     revs = reference ? reference.inputRevs : Object.assign({},await revsAll(env),capture.revs), i, d;
@@ -536,7 +536,7 @@ function demoKvPut(env, k, text, lens) {
 function demoRandDigits(n) { var b = new Uint8Array(n), s = '', i; crypto.getRandomValues(b); for (i = 0; i < n; i++) s += String(b[i] % 10); return s.charAt(0) === '0' ? '7' + s.slice(1) : s; }
 /* ── السياق: ما يحتاجه كلُّ نظامٍ ليكتب محتواه — اليومُ الهجري · الإدارات · الموظفون · الورديات · المواقعُ (نموذجُ الطوابق المشترك) ── */
 function demoContext(now) {
-  var t = pfHijriAt(now); if (!t || !t.y) throw new Error('demo-clock');
+  var t = pfDayAt(now); if (!t || !t.y) throw new Error('demo-clock');   /* V7 · 53 تقويم (ق1): بياناتُ العرض التجريبي على اليوم الميلادي، ومفاتيحُ الشهر ISO مبطَّنة */
   var T = { y: t.y, m: t.m, d: t.d }, P = T.m > 1 ? { y: T.y, m: T.m - 1 } : { y: T.y - 1, m: 12 }, days = [];
   for (var i = 0; i < 3 && T.d - i >= 1; i++) days.push({ y: T.y, m: T.m, d: T.d - i });
   var D = { g: DEMO_PRE + 'g', d1: DEMO_PRE + 'd1', d2: DEMO_PRE + 'd2', s1: DEMO_PRE + 's1' };
@@ -554,7 +554,7 @@ function demoContext(now) {
       paths: [{ uid: 'tstdp' + k, id: 'DP' + k, pts: [{ x: 0, y: 0 }, { x: 5, y: 5 * num }], active: true }] };
   }
   var sites = {}; sites[D.d1] = [site(D.d1, 11, 'موقع تجريبي ١', 1), site(D.d1, 12, 'موقع تجريبي ٢', 2)]; sites[D.d2] = [site(D.d2, 21, 'موقع الإدارة ٢', 1)];
-  return { now: now, today: T, prev: P, days: days, mk: T.y + '-' + T.m, pmk: P.y + '-' + P.m, pre: DEMO_PRE, tag: DEMO_TAG, depts: D, units: [D.d1, D.d2], emps: emps, shifts: shifts, sites: sites,
+  return { now: now, today: T, prev: P, days: days, mk: calGYm(T.y, T.m), pmk: calGYm(P.y, P.m), pre: DEMO_PRE, tag: DEMO_TAG, depts: D, units: [D.d1, D.d2], emps: emps, shifts: shifts, sites: sites,
     copy: function (o) { return JSON.parse(JSON.stringify(o)); } };
 }
 /* ── الخطة: الإداراتُ والحساباتُ والصلاحياتُ (دمجاً) ثم قطعُ الأنظمة — بلا كتابة ── */

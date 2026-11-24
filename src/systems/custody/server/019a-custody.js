@@ -13,9 +13,9 @@ var CU_TABLES = {
       'sequence',
       'kind',
       'holder_key',
-      'hijri_year',
-      'hijri_month',
-      'hijri_day',
+      'greg_year',
+      'greg_month',
+      'greg_day',
       'condition',
       'note',
       'color_snapshot',
@@ -140,13 +140,9 @@ function cuConvert(dept, doc) {
     if (
       ['out', 'in', 'dmg', 'lost'].indexOf(m.t) < 0 ||
       ![m.y, m.m, m.d].every(Number.isSafeInteger) ||
-      m.y < 1000 ||
-      m.y > 9999 ||
-      m.m < 1 ||
-      m.m > 12 ||
-      m.d < 0 ||
-      m.d > 30
-    )
+      !(calYearCal(m.y) === 'h' ? m.m >= 1 && m.m <= 12 && m.d >= 0 && m.d <= 30 : calGregOk(m.y, m.m, m.d, true))
+    )   /* V7 · 53 تقويم (ق10 · §1.10): هذا محوِّلُ الوثيقة القديمة (الترحيل · النسخ القديمة · العرض التجريبي) — يومُها الهجري بقاعدته القديمة (≤ 30، ويحوّله 0014/الاستيراد)،
+           والميلادي يومٌ صحيح بطول شهره (الصفرُ = يومٌ غير معروف). وما سواهما يُرفض */
       throw cuError('custody-cutover-date-kind');
     ['cond', 'note', 'by', 'nid', 'empno', 'name', 'color'].forEach(function (k) {
       if (m[k] !== undefined) cuHistoricalText(m[k]);
@@ -184,9 +180,9 @@ function cuConvert(dept, doc) {
       sequence: index,
       kind: m.t,
       holder_key: m.eid,
-      hijri_year: m.y,
-      hijri_month: m.m,
-      hijri_day: m.d,
+      greg_year: m.y,
+      greg_month: m.m,
+      greg_day: m.d,
       presence_mask: 0,
       created_at: null,
       actor_uid: null,
@@ -308,11 +304,11 @@ function cuLatest(deptSlot, cutoffSlot) {
   return (
     'm.department_id=' +
     deptSlot +
-    ' AND m.hijri_year*12+m.hijri_month<=' +
+    ' AND m.greg_year*12+m.greg_month<=' +
     cutoffSlot +
-    ' AND NOT EXISTS(SELECT 1 FROM custody_movements z WHERE z.department_id=m.department_id AND z.issue_id=m.issue_id AND z.hijri_year*12+z.hijri_month<=' +
+    ' AND NOT EXISTS(SELECT 1 FROM custody_movements z WHERE z.department_id=m.department_id AND z.issue_id=m.issue_id AND z.greg_year*12+z.greg_month<=' +
     cutoffSlot +
-    ' AND (z.hijri_year,z.hijri_month,z.hijri_day,z.sequence)>(m.hijri_year,m.hijri_month,m.hijri_day,m.sequence))'
+    ' AND (z.greg_year,z.greg_month,z.greg_day,z.sequence)>(m.greg_year,m.greg_month,m.greg_day,m.sequence))'
   );
 }
 async function cuAuthority(env, A, d, op, meta) {
@@ -387,7 +383,7 @@ async function cuNotifyCommitted(env, A, d, ack) {
         الرقم: r.serial,
         الاسم: r.holder_name_snapshot || r.holder_key,
         الحالة: r.kind === 'dmg' ? 'تالفة' : 'مفقودة',
-        التاريخ: r.hijri_year + '-' + r.hijri_month + '-' + r.hijri_day,
+        التاريخ: r.greg_day ? calGKey(r.greg_year, r.greg_month, r.greg_day) : calGYm(r.greg_year, r.greg_month),   /* V7 · 53 تقويم: ISO ميلادي */
       },
     };
   });

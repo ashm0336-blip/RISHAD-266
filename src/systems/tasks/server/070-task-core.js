@@ -115,16 +115,14 @@ function tkPhase(r, now) {
   if (r[15] && now < r[15]) return 'upcoming';
   return 'new';
 }
-/* ── اليومُ الهجريّ (أم القرى · الرياض) ووقتُ اليوم بالدقائق — الرياضُ UTC+3 ثابتاً بلا توقيتٍ صيفي ── */
-/* V7 · د5-د2: المُنسِّقُ وفحصُ المدى في تقويم الخادم الواحد (016: calHijriAt · calHijriOk) — هنا الشكلُ الذي تريده المهام (k · ym) ووسمُ خطئها */
-function tkHij(ms) {
-  try {
-    var o = calHijriAt(ms);
-    if (calHijriOk(o)) return { y: o.y, m: o.m, d: o.d, k: o.y + '-' + o.m + '-' + o.d, ym: o.y + '-' + o.m };
-  } catch (e) { swallow('tk-hij', e); }
-  return null;
+/* ── يومُ المهمة ووقتُ اليوم بالدقائق — الرياضُ UTC+3 ثابتاً بلا توقيتٍ صيفي ──
+   V7 · 53 تقويم (ق١ · ق١١): اليومُ الميلاديُّ المدنيّ للرياض (calGAt · 016) — k = 'YYYY-MM-DD' · ym = 'YYYY-MM' مبطَّنان؛ لا مُنسِّقَ هجريّ هنا */
+function tkDay(ms) {
+  if (typeof ms !== 'number' || !isFinite(ms)) return null;
+  var o = calGAt(ms);
+  return { y: o.y, m: o.m, d: o.d, k: o.k, ym: o.ym };
 }
-function tkToday(now) { return tkHij(now - 3 * 3600 * 1000); }                      /* اليومُ التشغيلي — مهلةُ الثلاث ساعات نفسُها (dsToday) */
+function tkToday(now) { return tkDay(now - 3 * 3600 * 1000); }                      /* اليومُ التشغيلي — مهلةُ الثلاث ساعات نفسُها (dsToday) */
 function tkMinOfDay(ms) { return Math.floor(((ms / 60000) + 180) % 1440 + 1440) % 1440; }
 function tkWdOf(ms) { return new Date(ms + 3 * 3600 * 1000).getUTCDay(); }           /* 0 = الأحد */
 var TK_WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];

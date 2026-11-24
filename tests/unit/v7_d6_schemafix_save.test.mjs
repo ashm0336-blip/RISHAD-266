@@ -38,7 +38,8 @@ async function roundTrip(B, resource, value, tag) {
 }
 /* صفحةُ الجولات على يومٍ حاليّ: مصلى بسعة (z1) ومصلى بلا سعة (z2) · المصلى المحدَّد · الصلاةُ المختارة */
 function dailyPage(prayer, i) {
-  const W = canvas(), c = W.logic('daily', DAILY), h = c.hParts(new Date()), RK = h.y + '-' + h.m + '-' + h.d;
+  /* V7 · 53 تقويم: يومُ الصفحة ميلاديٌّ ISO (gParts · YYYY-MM-DD) — كان hParts الهجري */
+  const W = canvas(), c = W.logic('daily', DAILY), h = c.gParts(new Date()), RK = h.y + '-' + String(h.m).padStart(2, '0') + '-' + String(h.d).padStart(2, '0');
   const rounds = { [RK]: { t: 1, d: [{ sid: 'TEST_ONLY_S1', zones: [
     { uid: 'TEST_ONLY_z1', code: '1', d: D0, cx: 250, cy: 200, cap: 300, count: null, pc: {}, emp: [] },
     { uid: 'TEST_ONLY_z2', code: '2', d: D1Z, cx: 600, cy: 200, count: 35, emp: [] },
@@ -73,9 +74,9 @@ test('① «القراءةُ بالسعة» من الصفحة نفسِها تُ�
   await roundTrip(B, KR, doc, 'reading-cleared');
   /* والأرشيفُ بالشكل نفسِه: يومٌ من شهرٍ منقضٍ يُحفظ في الجولات فينقله الخادمُ إلى أرشيفها (الأرشيفُ لا يكتبه العميل) */
   const past = copy(doc[X.RK]); past.d[0].zones[0].pc = { fajr: { n: 1086, cap: 3094 }, isha: { n: null, cap: 0, p: 12 } };
-  const withPast = { ...copy(doc), '1440-1-1': past }, moved = await save(B, KR, withPast, 'TEST_ONLY_schemafix_archive');
+  const withPast = { ...copy(doc), '2018-06-01': past }, moved = await save(B, KR, withPast, 'TEST_ONLY_schemafix_archive');
   assert.equal(moved.status, 200, 'archive: ' + JSON.stringify(moved.json));
-  assert.deepEqual(inspectOperationalFixture(B.env, 'bsdept:' + D1 + ':bassam_rounds_arc_v1')['1440-1-1'], past, 'الأرشيفُ يحمل القراءةَ بالسعة كما كُتبت');
+  assert.deepEqual(inspectOperationalFixture(B.env, 'bsdept:' + D1 + ':bassam_rounds_arc_v1')['2018-06-01'], past, 'الأرشيفُ يحمل القراءةَ بالسعة كما كُتبت');
   assert.equal(JSON.stringify(inspectOperationalFixture(B.env, 'bsdept:' + D1 + ':' + KR)), JSON.stringify(doc), 'والحيُّ بلا اليوم المنقضي');
   /* المخطّطُ مغلقٌ كما كان: حقلٌ غيرُ n · cap · p يُرفض */
   const bad = copy(doc); bad[X.RK].d[0].zones[0].pc = { fajr: { n: 1, cap: 2, nNow: 1 } };
@@ -108,12 +109,12 @@ test('③ «مسحُ السعة» في المخطط من الصفحة نفسِه
   const zone = (uid, n) => ({ uid, code: String(n), d: D0, cx: 250, cy: 200, area: 120, cap: 300, share: 0.5, shareName: 'TEST_ONLY', emp: [] });
   const site = { sid: 's_TEST_ONLY_1', name: 'TEST_ONLY', num: 1, mpu: 2, zones: [zone('TEST_ONLY_pz1', 1), zone('TEST_ONLY_pz2', 2)], gates: [], marks: [], paths: [], sectors: [] };
   const F = [site];
-  W.store.set(KP, JSON.stringify({ pMig: 3, zones: site.zones, gates: [], marks: [], paths: [], floors: F, months: { '1448-5': { c: 1, d: F } }, cfg: {}, delMonths: {} }));
+  W.store.set(KP, JSON.stringify({ pMig: 3, zones: site.zones, gates: [], marks: [], paths: [], floors: F, months: { '2026-10': { c: 1, d: F } }, cfg: {}, delMonths: {} }));
   const F1 = JSON.parse(JSON.stringify(F));
-  c.state = Object.assign({}, c.state, { year: 1448, month: 5, floor: 0, floors: F1, zones: F1[0].zones.slice(), gates: [], marks: [], paths: [], planMonths: { '1448-5': { c: 1, d: F1 } }, sel: null, selMulti: [], tool: 'select', lens: 'plan', clearAsk: { kind: 'cap' } });
+  c.state = Object.assign({}, c.state, { year: 2026, month: 10, floor: 0, floors: F1, zones: F1[0].zones.slice(), gates: [], marks: [], paths: [], planMonths: { '2026-10': { c: 1, d: F1 } }, sel: null, selMulti: [], tool: 'select', lens: 'plan', clearAsk: { kind: 'cap' } });
   c.renderVals().clearAskDo();
   await new Promise((go) => setTimeout(go, 0)); W.flushTimers();
-  const doc = JSON.parse(W.store.get(KP)), zones = doc.months['1448-5'].d[0].zones;
+  const doc = JSON.parse(W.store.get(KP)), zones = doc.months['2026-10'].d[0].zones;
   assert.equal(zones.length, 2);
   for (const z of zones) {
     assert.equal('share' in z, false, 'share لم يُكتب'); assert.equal('shareName' in z, false, 'shareName لم يُكتب');
@@ -121,7 +122,7 @@ test('③ «مسحُ السعة» في المخطط من الصفحة نفسِه
   }
   await roundTrip(B, KP, doc, 'plan-clear-capacity');
   /* المخطّطُ لا يعرف share: ما كانت الصفحةُ تكتبه يُرفض — فالصفحةُ لا تكتبه */
-  const old = copy(doc); old.months['1448-5'].d[0].zones[0].share = null;
+  const old = copy(doc); old.months['2026-10'].d[0].zones[0].share = null;
   const no = await save(B, KP, old, 'TEST_ONLY_schemafix_share_null');
   assert.equal(no.status, 400); assert.equal(no.json.err, 'operations-unknown-field-share');
 });

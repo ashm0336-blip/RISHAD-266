@@ -3,9 +3,10 @@
     a = obj(a); b = obj(b); var items = [], i, k, q, ks = union(a, b), T = ctx.today;
     for (i = 0; i < ks.length; i++) {
       k = ks[i]; if (deq(a[k], b[k])) continue;
-      if (/^m:\d{4}-\d{1,2}$/.test(k)) { items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(parseMonth(k), parseMonth(k)), lockOp: true })); continue; }
+      if (/^m:(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/.test(k)) {   /* V7 · 53 تقويم: ISO */
+      items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(parseMonth(k), parseMonth(k)), lockOp: true })); continue; }
       var day = parseDay(k); if (!day) { items.push(it({ what: 'dayOther', kind: kindOf(a[k], b[k]), id: k, path: k })); continue; }
-      var rec = a['m:' + day.y + '-' + day.m], x = a[k], y = b[k];
+      var rec = a[mkOf(day)], x = a[k], y = b[k];
       var locked = !!(isObj(x) && x.ap) || lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: locked, why: (isObj(x) && x.ap) ? 'day-approved' : (locked ? 'period-locked (m:y-m/dsLockedIn)' : 'open') };
       if (x === undefined) {
         items.push(it({ what: 'day', kind: 'added', id: k, path: k, period: pair(null, day), lock: { locked: lockedIn(rec, day.y, day.m, day.d, T), why: 'period-locked' } }));

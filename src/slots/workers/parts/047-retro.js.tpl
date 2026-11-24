@@ -5,7 +5,7 @@ async function retroApi(env, request, A, url, meta) {
   catch (error) { return bdErrorResponse(error); }
 }
 async function retroApiRun(env, request, A, url, meta) {
-  var now = Date.now(), T = dsToday(now), b = null, sys, d;
+  var now = Date.now(), T = calToday(now), b = null, sys, d;   /* V7 · 53 تقويم (ق11): اليومُ التشغيلي الميلادي (مهلةُ الثلاث ساعات) */
   if (request.method === 'GET') { sys = String(url.searchParams.get('res') || ''); d = String(url.searchParams.get('dept') || A.u.deptId || ''); }
   else { var rb = await bodyRead(request, '/api/retro'); if (rb.res) return rb.res; b = rb.v; sys = String(b.res || ''); d = String(b.dept || A.u.deptId || ''); }   /* KIVO_264 · SOT-101: مخطّطُ الجسم (src/schemas/api/bodies.schema.json) */
   if (!Object.prototype.hasOwnProperty.call(RETRO, sys)) return json({ ok: 0, err: 'res' }, 400);   /* KIVO_264: «__proto__» وأمثالُه ليست نظاماً (كانت تمرّ فتنهار 500) */
@@ -30,7 +30,8 @@ async function retroApiRun(env, request, A, url, meta) {
   var st9 = domainState.state, w, scope;
   if (act === 'open') {
     var sc0 = isObj(b.scope) ? b.scope : {}, y = parseInt(sc0.y, 10), m = parseInt(sc0.m, 10), dd0 = (sc0.d == null || sc0.d === '') ? null : parseInt(sc0.d, 10);
-    if (!(y > 1300 && y < 1700 && m >= 1 && m <= 12) || (dd0 !== null && !(dd0 >= 1 && dd0 <= 30))) return json({ ok: 0, err: 'scope' }, 400);
+    /* V7 · 53 تقويم (ق1 · §1.10): النطاقُ شهرٌ أو يومٌ ميلادي (1900–2199 · اليومُ ≤ طولِ الشهر) — نطاقٌ هجري من عميلٍ قديم يُرفض */
+    if (!(y >= 1900 && y <= 2199 && m >= 1 && m <= 12) || (dd0 !== null && !(dd0 >= 1 && dd0 <= calGMonthDays(y, m)))) return json({ ok: 0, err: 'scope' }, 400);
     scope = { y: y, m: m, d: dd0 };
     if (!T) return json({ ok: 0, err: 'today' }, 500);
     if (!KIVO_BUILD.retroClosed(T, y, m, dd0)) return json({ ok: 0, err: 'not-closed', today: T }, 400);          /* الفترةُ المفتوحة لا تحتاج استدراكاً */

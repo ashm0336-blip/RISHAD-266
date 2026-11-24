@@ -191,27 +191,27 @@ test('④ الرجوع يعيد القيمةَ السابقة حرفاً — و�
 });
 
 test('⑤ أوامرُ الجولات وإنشاءُ اليوم: بالمعرّف لا بالموضع', () => {
-  const { bus, R, KIVO } = client(), now = KIVO.BassamCal.hPartsRiyadh(new Date()), next = (now.y + 1) + '-1-1';
+  const { bus, R, KIVO } = client(), now = KIVO.BassamCal.gAt(new Date()), next = KIVO.BassamCal.gKey(now.y + 1, 1, 1), past = KIVO.BassamCal.gKey(now.y - 1, 1, 1);   /* V7 · 53 تقويم: يومُ الرياض الميلادي ومفاتيح ISO */
   const s = (id) => ({ sid: id, zones: [{ code: 'TEST_ONLY_' + id }], gates: [], marks: [], paths: [] });
-  const store = { bassam_rounds_v1: { [next]: { d: [s('A'), s('B'), { zones: [], gates: [], marks: [], paths: [] }] }, [(now.y - 1) + '-1-1']: { d: [s('B'), s('A')] } } };
+  const store = { bassam_rounds_v1: { [next]: { d: [s('A'), s('B'), { zones: [], gates: [], marks: [], paths: [] }] }, [past]: { d: [s('B'), s('A')] } } };
   /* حذفُ الموقع B (موضعُه في الخطة 0 بعد إعادة الترتيب) — بمعرّفه من كل يوم؛ الطابقُ بلا sid لا يُمسّ ويُعدّ */
   const got = {}, r = bus.call('daily.site.remove@1', { index: 0, sid: 'B' }, { get: (k) => copy(store[k]), set: (k, v) => (got[k] = v) });
   assert.equal(r.ok, 1); assert.equal(r.unlinked, 1);
   assert.deepEqual(got.bassam_rounds_v1[next].d.map((f) => f.sid || null), ['A', null]);
   /* V7 · د7 (planprove · رد المالك 52 §2): اليومُ الماضي لا يُمسّ (قاعدةُ sites.patch/pad) — كان يُحذف منه B فيرفض الخادمُ الحفظَ بـlocked-period */
-  assert.deepEqual(got.bassam_rounds_v1[(now.y - 1) + '-1-1'].d.map((f) => f.sid), ['B', 'A'], 'الماضي لا يُمسّ');
+  assert.deepEqual(got.bassam_rounds_v1[past].d.map((f) => f.sid), ['B', 'A'], 'الماضي لا يُمسّ');
   /* إكمالُ المواقع: يُلحق ما لا يحمل اليومُ معرّفَه (C) — لا بالعدد (كان يُلحق sites[2] = A مكرَّراً) */
   const got2 = {}, r2 = bus.call('daily.sites.pad@1', { sites: [{ sid: 'B' }, { sid: 'A' }, { sid: 'C' }] }, { get: (k) => copy(store[k]), set: (k, v) => (got2[k] = v) });
   assert.equal(r2.changed, true); assert.deepEqual(got2.bassam_rounds_v1[next].d.map((f) => f.sid || null), ['A', 'B', null, 'C']);
-  assert.deepEqual(got2.bassam_rounds_v1[(now.y - 1) + '-1-1'].d.map((f) => f.sid), ['B', 'A'], 'الماضي لا يُمسّ');
+  assert.deepEqual(got2.bassam_rounds_v1[past].d.map((f) => f.sid), ['B', 'A'], 'الماضي لا يُمسّ');
   /* بيانات بمعرّفاتٍ متّسقة: الإكمالُ كما كان حرفاً */
   const aligned = { bassam_rounds_v1: { [next]: { d: [s('A'), s('B')] } } }, got3 = {};
   bus.call('daily.sites.pad@1', { sites: [{ sid: 'A' }, { sid: 'B' }, { sid: 'N' }] }, { get: (k) => copy(aligned[k]), set: (k, v) => (got3[k] = v) });
   assert.equal(J(got3.bassam_rounds_v1[next].d[2]), J({ zones: [], gates: [], marks: [], paths: [], sid: 'N' }));
   /* إنشاءُ يومٍ من لقطة شهرٍ طابقُها الثاني بلا sid: لا يُحلّ موضعياً من plan.floors[1] — يبقى غيرَ مربوط */
-  const c2 = client({ bassam_plan_v1: { floors: [{ sid: 'P0' }, { sid: 'P1' }], months: { '1448-3': { d: [{ sid: 'P0', zones: [], gates: [] }, { zones: [], gates: [] }] } } }, bassam_rounds_v1: {} });
+  const c2 = client({ bassam_plan_v1: { floors: [{ sid: 'P0' }, { sid: 'P1' }], months: { '2026-11': { d: [{ sid: 'P0', zones: [], gates: [] }, { zones: [], gates: [] }] } } }, bassam_rounds_v1: {} });
   const draft = { v: {}, get: (k) => (k in draft.v ? draft.v[k] : c2.KIVO.__BS_SRV.operations.get(k)), set: (k, v) => (draft.v[k] = v) };
-  const made = c2.R.prepareEnsure(draft, 1448, 3, 1);
+  const made = c2.R.prepareEnsure(draft, 2026, 11, 1);   /* V7 · 53 تقويم: شهرٌ ميلادي ومفتاحٌ ISO */
   assert.equal(made.status, 'created');
-  assert.deepEqual(draft.v.bassam_rounds_v1['1448-3-1'].d.map((f) => f.sid === undefined ? null : f.sid), ['P0', null]);
+  assert.deepEqual(draft.v.bassam_rounds_v1['2026-11-01'].d.map((f) => f.sid === undefined ? null : f.sid), ['P0', null]);
 });

@@ -5,7 +5,7 @@
       k = ks[i]; if (deq(a[k], b[k])) continue;
       if (/^m:/.test(k)) { var lx = normLock(a[k]), ly = normLock(b[k]), per = parseMonth(k); if (!deq(lx.perm, ly.perm)) items.push(it({ what: 'monthPerm', kind: 'changed', id: k, path: k + '.perm', period: pair(per, per), lock: { locked: lockedIn(a[k], per.y, per.m, null, T), why: 'month-lock' } })); var rest = union(lx, ly).filter(function (f) { return f !== 'perm' && !deq(lx[f], ly[f]); }); if (rest.length) items.push(it({ what: 'monthLock', kind: kindOf(a[k], b[k]), id: k, path: k, period: pair(per, per), lockOp: true })); continue; }
       var day = parseDay(k); if (!day) { items.push(it({ what: 'dayOther', kind: kindOf(a[k], b[k]), id: k, path: k })); continue; }
-      var rec = a['m:' + day.y + '-' + day.m], dayLocked = lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: dayLocked, why: dayLocked ? 'period-locked (m:y-m/dsLockedIn)' : 'open' };
+      var rec = a[mkOf(day)], dayLocked = lockedIn(rec, day.y, day.m, day.d, T), lk = { locked: dayLocked, why: dayLocked ? 'period-locked (m:y-m/dsLockedIn)' : 'open' };
       var x = a[k], y = b[k];
       if (x === undefined) {
         items.push(it({ what: 'day', kind: 'added', id: k, path: k, period: pair(null, day), lock: lk }));

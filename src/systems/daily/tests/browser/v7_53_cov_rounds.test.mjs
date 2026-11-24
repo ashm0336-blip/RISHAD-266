@@ -13,8 +13,9 @@ import { world, grant, ACTORS, LAB, A, EKEY, chromium, openAs, mainText, norm, r
 import { replaceOperationalFixture } from '../../../../../tests/unit/world_fx.mjs';
 
 const KP = 'bsdept:' + A + ':bassam_plan_v1', KR = 'bsdept:' + A + ':bassam_rounds_v1';
-const H = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date()).forEach((q) => { if (q.type !== 'literal') o[q.type] = +q.value; }); return { y: o.year, m: o.month, d: o.day }; })();
-const TODAY = H.y + '-' + H.m + '-' + H.d, PAST = (H.m > 1 ? H.y + '-' + (H.m - 1) : (H.y - 1) + '-12') + '-3';
+const H = (() => { const f = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date()).forEach((q) => { if (q.type !== 'literal') o[q.type] = +q.value; }); return { y: o.year, m: o.month, d: o.day }; })();
+const P2 = (n) => String(n).padStart(2, '0');   /* V7 · 53 تقويم: يومُ الرياض الميلادي ومفاتيح ISO */
+const TODAY = H.y + '-' + P2(H.m) + '-' + P2(H.d), PAST = (H.m > 1 ? H.y + '-' + P2(H.m - 1) : (H.y - 1) + '-12') + '-03';
 const LEVELS_FULL = { daily: 'full', 'lens.zones': 'full', 'lens.dens': 'full', 'lens.dist': 'full' };
 const LEVELS_VIEW = { daily: 'view', 'lens.zones': 'view', 'lens.dens': 'view', 'lens.dist': 'view' };
 const zone = (i, cap) => ({ uid: 'TEST_ONLY_z' + i, code: 'TZ' + i, name: 'TEST_ONLY مصلى ' + (i + 1), cat: 'men', d: 'M' + (100 + i * 150) + ' 100 L' + (200 + i * 150) + ' 100 L' + (200 + i * 150) + ' 200 L' + (100 + i * 150) + ' 200 Z', cx: 150 + i * 150, cy: 150, area: 10000, cap, emp: [] });

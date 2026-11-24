@@ -260,7 +260,9 @@ async function rsConvertBackup(env, A, file, opt) {
   if (!isObj(reference)) rsBCFail('reference-required');
   var input = Object.create(null),
     keys = Object.create(null),
-    domains = file.domains === undefined ? {} : rsBCClone(file.domains);
+    domains = file.domains === undefined ? {} : rsBCClone(file.domains),
+    /* V7 · 53 تقويم (ف٧ · ق12): التحويلُ قبل كل بناءٍ وتحقّق — صفوفُ نسخةٍ حديثة صُدِّرت قبل 0014 (hijri_*) هنا، ووثائقُ KV القديمة قبل bc.convert.* أدناه */
+    calT = (env && env.__calT) || calToday(Date.now()).k, calRep = calConvDomains(domains, calConvRep());
   rsShape(domains, ['dailyStats', 'notifications', 'custody', 'irshad', 'seized', 'awards', 'operations']);
   Object.keys(file.data).forEach(function (k) {
     if (k === 'bassam_active_dept_v1') {
@@ -382,6 +384,7 @@ async function rsConvertBackup(env, A, file, opt) {
     });
     rsBCManifest(file.manifest, sourceScope, sourceKeys, domains, scope.kind === 'dept' ? [source] : deptIds);
   }
+  calConvLegacyKV(keys, calT, calRep);   /* V7 · 53 تقويم: العهدة · الاسترشاد · المضبوطات · الجائزة · الإحصائيات (KV هجرية) ⇐ ميلادية قبل تحويلها صفوفاً وتحقّقها */
   if (domains.irshad !== undefined) {
     if (!Array.isArray(domains.irshad)) rsBCFail('irshad-shape');
     domains.irshad = domains.irshad.map(function (domain) {
@@ -465,9 +468,9 @@ async function rsConvertBackup(env, A, file, opt) {
       domains.dailyStats = { version: 1, data: current.data };
       summary.preservedGlobals.push('dailyStats');
       [
-        ['days', 'daily_stats_days', ['site', 'hijri_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
-        ['months', 'daily_stats_month_locks', ['site', 'hijri_year', 'hijri_month', 'approved', 'reopened', 'legacy_boolean']],
-        ['locks', 'daily_stats_day_locks', ['site', 'hijri_year', 'hijri_month', 'hijri_day', 'is_open', 'is_shut']],
+        ['days', 'daily_stats_days', ['site', 'greg_date', 'field_mask'].concat(DS_METRICS, ['meta_json', 'fields_json'])],
+        ['months', 'daily_stats_month_locks', ['site', 'greg_year', 'greg_month', 'approved', 'reopened', 'legacy_boolean']],
+        ['locks', 'daily_stats_day_locks', ['site', 'greg_year', 'greg_month', 'greg_day', 'is_open', 'is_shut']],
       ].forEach(function (spec) {
         readGuards.push.apply(readGuards, rsWitness(env, spec[1], spec[2], current.rows[spec[0]]));
       });
@@ -584,6 +587,9 @@ async function rsConvertBackup(env, A, file, opt) {
   Object.keys(keys).forEach(function (k) {
     if (enfTplsKey(k)) delete keys[k];
   });
+  /* V7 · 53 تقويم (ف٧ · ق12): نسخةٌ قديمة أو ملفُّ Production (هجري) ⇐ ميلاديةٌ بالقاعدة نفسِها التي يرحّل بها 0014 — قبل ترميز المواردِ التشغيلية صفوفاً (opConvertBackupBoundary) والتخطيطِ والحفظ (calConvBackup، 019v1).
+     النسخةُ الميلادية تعود كما هي، والمختلطةُ تُرفض باسم مفتاحها. T = يومُ بدء الاستيراد (019g env.__calT) أو اليوم */
+  calConvBackup(keys, domains, summary, calT, calRep);
   opConvertBackupBoundary(keys,domains,deptIds,scope,source,modern?file.manifest.version:0,summary);
   // Conversion preserves credentials byte-for-byte; applySave/restore retains
   // its existing hash, final-owner and session policy for the eventual commit.

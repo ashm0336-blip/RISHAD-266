@@ -84,7 +84,7 @@ function enfDecide(A, k, rn, d, a, b, curVal, newVal, ctx, X, opts) {
   var cx = { dept: d, actor: { id: A.u.id, ekey: enfTaskSelfEkey(A, rn), role: A.u.role }, imp: !!(X && X.imp), empsEmpty: !!(ctx && ctx.empsEmpty), emps: (ctx && ctx.emps) || null, restore: !!(X && X.restore), op: (X && X.op && X.op.op) || '' };
   /* V7 · 53 (قرار المالك ٩): الموقعُ المعتمد والشهرُ الماضي بلا mo مقفلان لأي تغيير — لا لنوع الختم وحده: مفتاحُ هندسة البوابة بلا بُعد DateRange، وطوابقُ floors بلا فترة، فكانا يمرّان.
      إلا مديرَ المنصة (enfSuperGate لا يصلها) والاستعادةَ الخادمية (enfLockBypass)؛ ونافذةُ الاستدراك في الخطة هي فتحُ الشهر (mo) · V7 · 53 (port-sync · بند 3 · قرار المالك 24 نوفمبر): والأمرُ المعلن plan.optRef (019p6 — حقولُ الخيار وحدها، poOnly) */
-  if (rn === 'bassam_plan_v1' && A.u.role !== 'super' && !enfLockBypass(A, d, X) && !enfOptRefLock(A, rn)) { var pl9 = KIVO_SCOPE.extract(rn, a, b, { today: dsToday(Date.now()) }).filter(function (x) { return !x.lockOp && x.lock && x.lock.locked; })[0]; if (pl9) return enfNo('scope', { dims: ['DateRange'], detail: pl9.path + ': locked-period: ' + pl9.lock.why }); }
+  if (rn === 'bassam_plan_v1' && A.u.role !== 'super' && !enfLockBypass(A, d, X) && !enfOptRefLock(A, rn)) { var pl9 = KIVO_SCOPE.extract(rn, a, b, { today: calToday(Date.now()) }).filter(function (x) { return !x.lockOp && x.lock && x.lock.locked; })[0]; if (pl9) return enfNo('scope', { dims: ['DateRange'], detail: pl9.path + ': locked-period: ' + pl9.lock.why }); }
   var res = KIVO_GUARDS.covers.indexOf(rn) !== -1 ? enfPlugOps(KIVO_GUARDS.classify(rn, a, b, cx)) : null;
   var real = [], anyG = [], alt = [], i, j, key;
   if (res) {
@@ -305,13 +305,14 @@ function enfDstatsWrite(A, k, newVal, curVal, ctx, X) {
     if (DS_SITES.indexOf(kk) !== -1) {
       var a9 = o[kk] === undefined ? {} : o[kk], b9 = n[kk] === undefined ? {} : n[kk];
       if (!isObj(a9) || !isObj(b9)) return enfNo('dstats');
-      for (q in b9) if (!deq(a9[q], b9[q]) && (!/^\d{4}-\d{2}-\d{2}$/.test(q) || !dsDayOk(b9[q]))) return enfNo('dstats');
+      for (q in b9) if (!deq(a9[q], b9[q]) && (!/^\d{4}-\d{2}-\d{2}$/.test(q) || calKeyCal(q) !== 'g' || !dsDayOk(b9[q]))) return enfNo('dstats');
       continue;
     }
     if (kk === 'locks') {
       var la = o.locks === undefined ? {} : o.locks, lb = n.locks === undefined ? {} : n.locks;
       if (!isObj(la) || !isObj(lb)) return enfNo('dstats');
-      for (q in lb) if (!deq(la[q], lb[q]) && (!/^(haram|nabawi)\|\d{4}-\d{1,2}$/.test(String(q)) || !dsLockOk(lb[q]))) return enfNo('dstats');
+      /* V7 · 53 تقويم (ق1): قفلٌ جديدٌ أو معدَّل بمفتاحٍ ميلادي «site|YYYY-MM» وحده — المفتاحُ الهجري من عميلٍ قديم يُرفض؛ وحذفُ مفتاحٍ قديم (هجري) يبقى مسموحاً */
+      for (q in lb) if (!deq(la[q], lb[q]) && (!/^(haram|nabawi)\|\d{4}-\d{2}$/.test(String(q)) || calKeyCal(String(q).split('|')[1]) !== 'g' || !dsLockOk(lb[q]))) return enfNo('dstats');
       for (q in la) if (lb[q] === undefined && !/^(haram|nabawi)\|\d{4}-\d{1,2}$/.test(String(q))) return enfNo('dstats');
       continue;
     }

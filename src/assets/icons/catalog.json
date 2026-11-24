@@ -557,8 +557,7 @@
    "body": "<path d=\"M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z\"></path>",
    "uses": {
     "modules/employees/view.html": 2,
-    "systems/daily/client/view.html": 3,
-    "systems/dreport/client/view.html": 1,
+    "systems/daily/client/view.html": 2,
     "systems/irshad/client/view.html": 2,
     "systems/plan/client/view.html": 2,
     "systems/seized/client/view.html": 6,
@@ -606,13 +605,8 @@
    "uses": {
     "modules/admin/view.html": 1,
     "modules/org/view.html": 1,
-    "systems/daily/client/view.html": 1,
-    "systems/dreport/client/view.html": 3,
-    "systems/dstats/client/view.html": 1,
-    "systems/irshad/client/view.html": 1,
-    "systems/rasd/client/view.html": 1,
-    "systems/seized/client/view.html": 1,
-    "systems/tasks/client/view.html": 2
+    "systems/dreport/client/view.html": 2,
+    "systems/tasks/client/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -1040,7 +1034,7 @@
     "systems/daily/client/view.html": 3,
     "systems/irshad/client/view.html": 5,
     "systems/plan/client/view.html": 1,
-    "systems/rasd/client/view.html": 5,
+    "systems/rasd/client/view.html": 4,
     "systems/seized/client/view.html": 5,
     "systems/staff/client/view.html": 1,
     "systems/tasks/client/view.html": 1
@@ -1224,13 +1218,6 @@
    },
    "viewBox": "0 0 66 66"
   },
-  "i-738df9c5": {
-   "body": "<path d=\"M7 11V7a5 5 0 0 1 9.9-1\"></path><path d=\"M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z\"></path>",
-   "uses": {
-    "systems/tasks/client/view.html": 1
-   },
-   "viewBox": "0 0 24 24"
-  },
   "i-74a971cb": {
    "body": "<circle cx=\"48\" cy=\"48\" r=\"41\" fill=\"none\" stroke=\"var(--fg-a185151810p13)\" stroke-width=\"7\"></circle><circle cx=\"48\" cy=\"48\" r=\"41\" fill=\"none\" stroke=\"{{ckK1Col}}\" stroke-width=\"7\" stroke-linecap=\"round\" stroke-dasharray=\"{{ckK1Ring}}\"></circle>",
    "uses": {
@@ -1349,21 +1336,6 @@
    "body": "<path d=\"M4 20h16M7 20V9M12 20V4M17 20v-7\"></path>",
    "uses": {
     "modules/kpis/view.html": 1
-   },
-   "viewBox": "0 0 24 24"
-  },
-  "i-81de76b2": {
-   "body": "<path d=\"{{m.footP1}}\"></path><path d=\"{{m.footP2}}\"></path>",
-   "uses": {
-    "modules/employees/view.html": 1,
-    "systems/daily/client/view.html": 1,
-    "systems/dreport/client/view.html": 1,
-    "systems/dstats/client/view.html": 1,
-    "systems/irshad/client/view.html": 1,
-    "systems/plan/client/view.html": 1,
-    "systems/rasd/client/view.html": 1,
-    "systems/seized/client/view.html": 1,
-    "systems/staff/client/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -1678,7 +1650,7 @@
    "body": "<path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\"></path><path d=\"M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z\"></path>",
    "uses": {
     "modules/kpis/view.html": 1,
-    "systems/tasks/client/view.html": 5
+    "systems/tasks/client/view.html": 4
    },
    "viewBox": "0 0 24 24"
   },
@@ -2102,13 +2074,7 @@
   "i-b64167e0": {
    "body": "<rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 9.9-1\"></path>",
    "uses": {
-    "systems/daily/client/view.html": 1,
-    "systems/dreport/client/view.html": 1,
-    "systems/dstats/client/view.html": 1,
-    "systems/irshad/client/view.html": 1,
-    "systems/rasd/client/view.html": 1,
-    "systems/seized/client/view.html": 1,
-    "systems/tasks/client/view.html": 2
+    "systems/tasks/client/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },
@@ -2169,7 +2135,7 @@
     "systems/dreport/client/view.html": 1,
     "systems/plan/client/view.html": 1,
     "systems/staff/client/view.html": 1,
-    "systems/tasks/client/view.html": 2
+    "systems/tasks/client/view.html": 1
    },
    "viewBox": "0 0 24 24"
   },

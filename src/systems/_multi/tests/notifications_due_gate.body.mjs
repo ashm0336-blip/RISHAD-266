@@ -195,7 +195,7 @@ const MIDNIGHT = at('2026-10-30T21:00:00Z');            /* Saturday 00:00 Riyadh
 test('irshad daily: a report landing in the final interval before midnight is caught up once after the close', needsSys('award', 'custody', 'dstats'), async () => {
   await clock(MIDNIGHT - 4 * 6e4, async (set) => {      /* Friday 23:56 Riyadh */
     const B = await fixture({ items: false, now: MIDNIGHT });
-    const H = await candidateWorker(['pfHijriAt']), day = H.pfHijriAt(MIDNIGHT - 4 * 6e4);
+    const H = await candidateWorker(['pfDayAt']), day = H.pfDayAt(MIDNIGHT - 4 * 6e4);   /* V7 · 53 تقويم: يومُ الرياض الميلادي (pfHijriAt زالت) */
     const perms = clone(B.keys.bassam_perms_v1);
     Object.keys(perms.caps).forEach((d) => { if (!perms.caps[d].includes('irshad')) perms.caps[d].push('irshad'); });
     await B.put('bassam_perms_v1', perms);
@@ -233,7 +233,7 @@ test('seized due: stock landing in the final interval before midnight is caught 
   const CLOSE = at('2026-10-28T21:00:00Z');             /* Thursday 00:00 Riyadh (Wednesday's window closes) */
   await clock(CLOSE - 4 * 6e4, async (set) => {         /* Wednesday 23:56 Riyadh */
     const B = await fixture({ items: false, now: CLOSE });
-    const H = await candidateWorker(['pfHijriAt']), day = H.pfHijriAt(CLOSE - 4 * 6e4);
+    const H = await candidateWorker(['pfDayAt']), day = H.pfDayAt(CLOSE - 4 * 6e4);   /* V7 · 53 تقويم: يومُ الرياض الميلادي */
     const first = await B.read();
     assert.ok(first.deferred && first.costly > 0 && first.trips <= 7, 'control: 23:56 checks Wednesday (nothing old yet)');
     assert.equal(bx(B).length, 0);
@@ -247,7 +247,7 @@ test('seized due: stock landing in the final interval before midnight is caught 
     set(CLOSE + 3e4);                                    /* Thursday 00:00:30 */
     const caught = await B.read();
     assert.ok(caught.deferred && caught.trips <= 7, 'the catch-up runs off the read path: ' + caught.trips);
-    assert.deepEqual(bxOnce(B), ['bx_old:' + day.y + '-' + day.m + '-' + day.d], 'exactly one reminder, under Wednesday\'s once key');
+    assert.deepEqual(bxOnce(B), ['bx_old:' + day.dk], 'exactly one reminder, under Wednesday\'s once key');
     for (const t of [CLOSE + 6e4, CLOSE + 30 * 6e4, CLOSE + 2 * 3600000, CLOSE + 3.5 * 3600000, CLOSE + 5 * 3600000]) {   /* until 05:00 Riyadh, before Thursday's own window */
       set(t);
       const r = await B.read();

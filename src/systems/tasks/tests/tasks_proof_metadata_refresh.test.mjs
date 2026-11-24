@@ -8,7 +8,7 @@ import vm from 'node:vm';
 import {createHash} from 'node:crypto';
 import {ROOT,moduleLogic} from '../../../../tests/unit/harness.mjs';
 import {attachTaskOperations} from '../../../../tests/unit/vm_operations_fx.mjs';
-const ME={eid:'TEST_ONLY_EMP',name:'TEST_ONLY employee'},D='tst_d1',DAY='1448-5-20';
+const ME={eid:'TEST_ONLY_EMP',name:'TEST_ONLY employee'},D='tst_d1',DAY='2026-10-20';   /* V7 · 53 تقويم: مفتاحُ يومٍ ISO (world_fx hFx: الشهرُ الهجري ⇐ الميلادي المقابل له اليوم، واليومُ نفسُه) */
 function asset(kind,name){assert.ok(process.env.KIVO_DIST,'Explicit actual build required');const dist=path.resolve(ROOT,process.env.KIVO_DIST),m=JSON.parse(fs.readFileSync(dist+'.build.json','utf8')),r=new RegExp('^assets/'+kind+'/'+name.replaceAll('.','\\.')+'\\.[a-f0-9]{10}\\.js$'),a=Object.keys(m.files).filter(n=>r.test(n));assert.equal(a.length,1);const b=fs.readFileSync(path.join(dist,a[0]));assert.equal(createHash('sha256').update(b).digest('hex'),m.files[a[0]].sha256);return b.toString('utf8');}
 async function page(storeJson, emitted) {
   const store = new Map([['bassam_tasks_v1', storeJson], ['bassam_employees_v1', JSON.stringify([{ eid: ME.eid, name: ME.name }])]]);
@@ -41,7 +41,7 @@ function allRows(V) { const out = [], seen = new Set(); const walk = (o, d) => {
 
 for(const emitted of [false,true])test((emitted?'emitted':'source')+' task proof tooltip and viewer follow the current submitted note after an old draft',async()=>{
  const now=Date.now(),old=["TEST_ONLY task","","normal","in_progress","normal","مضافة",null,[],ME.name,'TEST_ONLY owner',60,now-60000,null,1790000000000,ME.eid,now-120000,now+3600000,null,null,null,null,{imgs:[],note:'TEST_ONLY ORIGINAL_DRAFT',draft:1,at:now-30000},null,{v:2,rv:{u:'TEST_ONLY reviewer',n:'TEST_ONLY reviewer'}}];
- const P=await page(JSON.stringify({[DAY]:[old]}),emitted);P.c.setState({year:1448,month:5,perPage:0});
+ const P=await page(JSON.stringify({[DAY]:[old]}),emitted);P.c.setState({year:2026,month:10,perPage:0});
  let V=P.c.renderVals(),row=allRows(V).find(r=>r.tkcT[13]===old[13]);assert.ok(row);assert.match(row.proofTip,/ORIGINAL_DRAFT/);assert.match(row.proofCnt,/مسودّة/);
  const current=JSON.parse(JSON.stringify(old));current[12]=now;current[21]={imgs:[],note:'TEST_ONLY FINAL_SUBMISSION',sub:now,at:now,h:[{at:now-20000,imgs:[],note:'TEST_ONLY ORIGINAL_DRAFT'},{at:now,imgs:[],note:'TEST_ONLY FINAL_SUBMISSION'}]};
  await P.opsFixture.replace('bassam_tasks_v1',{[DAY]:[current]});P.c.setState({tasksAll:JSON.parse(P.opsFixture.text('bassam_tasks_v1'))});

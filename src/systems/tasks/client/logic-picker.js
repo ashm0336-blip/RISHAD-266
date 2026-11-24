@@ -10,7 +10,7 @@ Object.assign(Component.prototype, {
           r = a.getHours();
         let s = n;
         try {
-          const e = this.tkHParts(t);
+          const e = this.tkGParts(t);
           e && e.d && (s = e.d);
         } catch (t) {}
         return { d: s, h: r % 12 || 12, m: a.getMinutes(), ap: r >= 12 ? "م" : "ص" };
@@ -108,7 +108,7 @@ Object.assign(Component.prototype, {
           return 0;
         }
       })(),
-      key = e.year + "-" + e.month + "|" + t + "|" + (r ? 1 : 0),
+      key = KIVO.BassamCal.gYm(e.year, e.month) + "|" + t + "|" + (r ? 1 : 0),
       C = this._tkPickC;
     if (C && C.key === key && C.n === n && C.ST === ST && C.DR === DR && C.TP === TP && C.SO === SO && C.uv === uv) return C.model;
     const AC = this._tkAcctMap(n),
@@ -116,7 +116,7 @@ Object.assign(Component.prototype, {
       a = (t) => (KIVO.BassamEmp ? KIVO.BassamEmp.key(t) : t.eid || t.nid || t.name),
       dig = (v) => (KIVO.BassamFind && KIVO.BassamFind.dig ? KIVO.BassamFind.dig(String(v || "")) : String(v || ""));
     let s = {};
-    r && ST && "object" == typeof ST && (s = ST[e.year + "-" + e.month] || {});
+    r && ST && "object" == typeof ST && (s = ST[KIVO.BassamCal.gYm(e.year, e.month)] || {});
     let o = "";
     try {
       const n = this.tkStamp(e.year, e.month, t, 12, 0, "م");
@@ -124,7 +124,7 @@ Object.assign(Component.prototype, {
     } catch (t) {}
     const i = {};
     try {
-      const n = DR && "object" === typeof DR ? DR[e.year + "-" + e.month + "-" + t] : null;
+      const n = DR && "object" === typeof DR ? DR[KIVO.BassamCal.gKey(e.year, e.month, t)] : null;
       n &&
         n.shifts &&
         Object.keys(n.shifts).forEach((t) => {

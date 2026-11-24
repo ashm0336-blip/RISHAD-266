@@ -90,6 +90,8 @@ export async function pageFor(A,{who='super',employees=A.keys[EMP],absent=[]}={}
     }};
   W.window=W;W.globalThis=W;vm.createContext(W);
   const source=file=>fs.readFileSync(path.join(ROOT,file),'utf8');
+  /* V7 · 53 تقويم: خدمةُ التقويم الواحدة وكرتُها كما في الصفحة (العهدُ بالأشهر الميلادية) */
+  W.React={createElement:(t,p,...ch)=>({t,p,ch}),Fragment:'F'};for(const f of ['src/i18n/380-hijri-fallback.js','src/i18n/385-calendar.js'])vm.runInContext(source(f),W);
   vm.runInContext(source('src/services/440-count.js'),W);
   vm.runInContext(source('src/systems/custody/client/547-custody-api.js'),W);
   vm.runInContext(source('src/modules/employees/logic.js')+'\nglobalThis.TEST_ONLY_Page=Component;',W);

@@ -74,7 +74,11 @@ Object.assign(Component.prototype, {
   },
   _tkRiyadhClock(t) {
     try {
-      return KIVO.BassamCal.hText(new Date(t), { timeZone: "Asia/Riyadh", year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: !0 });   /* V7 · د5-د2 */
+      /* V7 · 53 تقويم (REVIEW 22): ختمُ الصورة ميلاديٌّ أولاً ثم الهجريُّ المقابل ثم الساعة (الرياض) — كان هجرياً وحده */
+      const C = KIVO.BassamCal, k = C.gAt(+t).k, h = C.hDayText(k),
+        tm = new Date(t).toLocaleTimeString("ar-SA-u-nu-latn", { timeZone: "Asia/Riyadh", hour: "2-digit", minute: "2-digit", hour12: !0 });
+      if (!C.fmtDay(k)) throw new Error("bad-day");
+      return C.fmtDay(k) + " م" + (h ? " · " + h + " هـ" : "") + " — " + tm;
     } catch (e) {
       return this.tkClock(t);
     }

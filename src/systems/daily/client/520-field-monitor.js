@@ -114,12 +114,8 @@
     };
     return dispatch(pending, false);
   }
-  function hParts(dt) {
-    return KIVO.BassamCal.hPartsSafe(dt);   /* V7 · د5-د2: المُنسِّقُ والتراجعُ (جدولُ الاحتياط ثم ثابت) في الخدمة — هما هما */
-  }
   function todayKey() {
-    var T = hParts(new Date());
-    return T.y + "-" + T.m + "-" + T.d;
+    return KIVO.BassamCal.gAt(new Date()).k;   /* V7 · 53 تقويم: يومُ الرياض الميلادي ISO (كان الهجري بلا بطانة) */
   }
   function clock(ts) {
     var d = new Date(ts || Date.now());

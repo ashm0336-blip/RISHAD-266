@@ -73,7 +73,7 @@ test('الصفحة · الإنشاءُ من الخادم بالإعدادات ا
   await V.submitTask();
   assert.ok(await until(() => !P.c.state.newTaskOpen), 'أُغلق النموذج بعد ردّ الخادم: ' + JSON.stringify(P.toasts));
   const mine = rowsOf(stored(W.env, KT), ME.eid).filter(q => q.r[0] === 'TEST_ONLY من صفحة المهام');
-  assert.ok(mine.length >= 1, 'أُنشئت في الخادم'); const r0 = mine.find(q => q.day === y + '-' + m + '-' + d) || mine[0], x = r0.r[23];
+  assert.ok(mine.length >= 1, 'أُنشئت في الخادم'); const r0 = mine.find(q => q.day === y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')) || mine[0], x = r0.r[23];
   assert.deepEqual(x.pol, { m: 'img', n: 2, steps: ['TEST_ONLY الخطوة أ', 'TEST_ONLY الخطوة ب'] }); assert.equal(x.rv.u, 'tst_dm1'); assert.equal(x.dec, 0); assert.equal(x.rec.t, 'daily'); assert.ok(x.rec.to);
   assert.equal(typeof r0.r[22], 'string', 'طابعُ هوية الكيان'); assert.ok(P.toasts.some(([t, k]) => k === 'ok' && /أُسندت/.test(t)));
   /* (2) الموظفُ يبدأ ويسلّم بصورتين وخطوتيه ⇒ بانتظار المراجعة */
@@ -150,10 +150,10 @@ test('الصفحة · «غير مرتبطة» شارةٌ وربطٌ يدويّ �
   assert.ok(stored(W.env, KT)[yd].find(q => q[13] === 1760000000105)[16] > Date.now(), 'مُدّدت');
   /* الأهليةُ عند الإنشاء: tst_e_emp1 (وردية TST-A 06–14) في 03:00 الغد ⇒ «غير متاح» ⇒ نافذةُ تأكيد — ثم «إسنادٌ رغم ذلك» */
   const T0 = Math.floor((Date.now() + 3 * 3600e3) / 864e5) * 864e5 - 3 * 3600e3 + 864e5;
-  const Sf = stored(W.env, 'bsdept:' + D + ':bassam_staffing_v3') || {}; const hk = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(T0 + 12 * 3600e3)).reduce((o, p) => (o[p.type] = +p.value, o), {});
-  const ym = hk.year + '-' + hk.month; Sf[ym] = Sf[ym] || {}; Sf[ym].tst_e_emp1 = { shift: 'TST-A', rest: [] }; await replaceOperationalFixture(W.env, 'bsdept:' + D + ':bassam_staffing_v3', Sf);
+  const Sf = stored(W.env, 'bsdept:' + D + ':bassam_staffing_v3') || {}; const hk = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(T0 + 12 * 3600e3)).reduce((o, p) => (o[p.type] = +p.value, o), {});
+  const ym = hk.year + '-' + String(hk.month).padStart(2, '0'); Sf[ym] = Sf[ym] || {}; Sf[ym].tst_e_emp1 = { shift: 'TST-A', rest: [] }; await replaceOperationalFixture(W.env, 'bsdept:' + D + ':bassam_staffing_v3', Sf);
   const sMs = T0 + 3 * 3600e3, eMs = sMs + 3600e3;
-  P.c._tkCreateSrv({ k: hk.year + '-' + hk.month + '-' + hk.day, t: 'TEST_ONLY خارج الوردية', s: sMs, e: eMs, asg: ['tst_e_emp1'], pol: { m: 'any' }, rv: 'creator', dec: 1 });
+  P.c._tkCreateSrv({ k: hk.year + '-' + String(hk.month).padStart(2, '0') + '-' + String(hk.day).padStart(2, '0'), t: 'TEST_ONLY خارج الوردية', s: sMs, e: eMs, asg: ['tst_e_emp1'], pol: { m: 'any' }, rv: 'creator', dec: 1 });
   assert.ok(await until(() => !!P.c.state.tkElig), 'نافذةُ الأهلية: ' + JSON.stringify(P.toasts));
   V = P.c.renderVals(); assert.equal(V.tkEligOn, true); assert.equal(V.tkEligItems[0].res, 'غير متاح'); assert.match(V.tkEligItems[0].why, /خارج وقت ورديته/);
   V.tkEligForce(); assert.ok(await until(() => !P.c.state.tkElig && !P.c.state.tkBusy), 'أُنشئت بالتأكيد');

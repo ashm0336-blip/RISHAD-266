@@ -13,7 +13,7 @@ export function page(slug, o = {}) {
   const store = o.store instanceof Map ? o.store : new Map(Object.entries(o.store || {}).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]));
   const KIVO = {}, toasts = [];
   class FDate extends Date { constructor(...a) { if (a.length) super(...a); else super(NOW); } static now() { return NOW; } }
-  const ctx = { KIVO, console, Intl, Date: FDate, Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, parseFloat,
+  const ctx = { KIVO, React: { createElement: (t, p, ...ch) => ({ t, p, ch }), Fragment: 'F' }, console, Intl, Date: FDate,   /* V7 · 53 تقويم: كروتُ التقويم عناصرُ React من المكوّن الواحد */ Math, JSON, Promise, Object, Array, String, Number, RegExp, Set, Map, Error, isNaN, parseInt, parseFloat,
     setTimeout: () => 0, clearTimeout: () => 0, setInterval: () => 0, clearInterval: () => 0, requestAnimationFrame: () => 0,
     localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
     document: { hidden: false, querySelector: () => null, querySelectorAll: () => [], getElementById: () => null, addEventListener: () => {}, removeEventListener: () => {}, documentElement: { classList: { contains: () => false } } },

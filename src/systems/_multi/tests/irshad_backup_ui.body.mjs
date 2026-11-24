@@ -78,6 +78,7 @@ function browser(kind, failure = '', { mgr = true, backupGrant = null, role = nu
     } };
   C.window = C; vm.createContext(C);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/services/548-atomic-backup.js'), 'utf8'), C);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/services/548-import-kit.js'), 'utf8'), C);   /* V7 · 53 تقويم: أداةُ الاستيراد الكسولة — تُحمَّل كما تحمّلها الواجهةُ عند أول استيراد (548 kit()) */
   const page = { state: {}, setState(value) { Object.assign(this.state, value); }, bkToast: message => messages.push(message) };
   if (kind === 'full') {
     page._fullStamp = () => null;

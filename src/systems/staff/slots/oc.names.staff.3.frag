@@ -42,6 +42,8 @@
   ops_staffing_lock_open: { t: "ops_staffing_lock_open", e: "ops_staffing_lock_open" },
   ops_staffing_locks: { t: "ops_staffing_locks", e: null },
   ops_staffing_month: { t: "ops_staffing_month", e: null },
+  ops_staffing_month_calq4: { t: "ops_staffing_month_employee_perm_days", e: null },
+  ops_staffing_month_calq4_values: { t: "ops_staffing_month_shifts_entry_choice_0", e: "ops_staffing_month_shifts_entry_choice_0" },
   ops_staffing_month_employee: { t: "ops_staffing_month_employee", e: "ops_staffing_month_employee" },
   ops_staffing_month_employee_leave_range: { t: "ops_staffing_month_employee_leave_range", e: "ops_staffing_month_employee_leave_range" },
   ops_staffing_month_employee_leave_ranges: { t: "ops_staffing_month_employee_leave_ranges", e: null },

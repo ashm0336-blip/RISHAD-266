@@ -17,7 +17,9 @@ function osSchemaPlan(table) {
       osSchemaElement(table + "_root_" + kind + "_element", kind),
     );
   });
-  fields.months = ocMap(table + "_months", osSchemaPlanMonth(table + "_month"));
+  /* V7 · 53 تقويم (ق١ · الخطر ٤): نسخُ الأشهر بمفتاح YYYY-MM وحده (019p0) — كان أيَّ مفتاح */
+  fields.months = ocMap(table + "_months", null, { patterns: [{ pattern: OS_RX_YM, schema: osSchemaPlanMonth(table + "_month") }] });
+  /* delMonths يبقى مدخلاً عاماً: شكلُه (خريطةُ قيم) يشاركه جدولُه أشكالٌ أخرى (shift_needs · 019o توقيعُ الشكل) — ومفتاحُه يُحرس في المصنِّف (guard.classify.plan) */
   fields.delMonths = ocMap(table + "_deleted_months", ocScalar("scalar"));
   // No inner cfg writer exists in the current source. Unknown legacy members
   // fail before DDL instead of being hidden in a JSON/attribute fallback.

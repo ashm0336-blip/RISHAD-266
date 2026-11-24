@@ -44,9 +44,10 @@ for (const [slug, [what, name]] of Object.entries(PAGES)) {
     assert.doesNotMatch(v, /padding:4px 9px;flex-shrink:0">\s*<span[^>]*>من<\/span>/);
     const i = v.indexOf('اليوم المحدد:'), row = v.slice(v.lastIndexOf('<div style="display:flex;align-items:center;justify-content:space-between', i), v.indexOf('<div class="bs-daystrip"', i));
     assert.match(row, /^<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 10px">/);
-    assert.match(row, /<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px">/);
+    /* V7 · 53 تقويم (§7): مفتاحُ الألوان زال (حالتان في الكرت والسببُ في التلميح) — يبقى السطرُ ملتفّاً وعنصراه («اليوم المحدد:» وقيمتُه) لا ينكسران */
+    assert.doesNotMatch(row, /<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px">/, 'لا مفتاحَ ألوان');
     const labels = [...row.matchAll(/<span style="([^"]*)">([^<]+)<\/span>/g)].filter((m) => m[2].trim());
-    assert.ok(labels.length >= 5);
+    assert.deepEqual(labels.map((m) => m[2].trim()), ['اليوم المحدد:', '{{irSelDateLabel}}']);
     for (const [, st, t] of labels) assert.match(st, /white-space:nowrap/, '«' + t + '» لا ينكسر');
   });
 }

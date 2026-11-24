@@ -303,7 +303,7 @@ async function szRows(ctx, ids) {
   });
 }
 async function szCalendar(ctx, q, clock, catalog) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199),
     m = irQueryInt(q.month, clock.m, 1, 12),
     plans = [];
   function add(sql) {
@@ -320,13 +320,13 @@ async function szCalendar(ctx, q, clock, catalog) {
     plans.push(p);
   }
   add(
-    "SELECT COUNT(*)total,COALESCE(SUM(hijri_year=$YEAR),0)yearTotal FROM data",
+    "SELECT COUNT(*)total,COALESCE(SUM(greg_year=$YEAR),0)yearTotal FROM data",
   );
   add(
-    "SELECT hijri_month m,COUNT(*)n FROM data WHERE hijri_year=$YEAR GROUP BY hijri_month ORDER BY hijri_month",
+    "SELECT greg_month m,COUNT(*)n FROM data WHERE greg_year=$YEAR GROUP BY greg_month ORDER BY greg_month",
   );
   add(
-    "SELECT hijri_day d,COUNT(*)n FROM data WHERE $MONTH GROUP BY hijri_day ORDER BY hijri_day",
+    "SELECT greg_day d,COUNT(*)n FROM data WHERE $MONTH GROUP BY greg_day ORDER BY greg_day",
   );
   add("SELECT " + szMetricsSql() + " FROM data WHERE $MONTH");
   add(
@@ -353,7 +353,7 @@ async function szCalendar(ctx, q, clock, catalog) {
       return x.m >= 1 && x.m <= 12;
     }),
     days: r[2].filter(function (x) {
-      return x.d >= 1 && x.d <= 30;
+      return x.d >= 1 && x.d <= calGMonthDays(y, m);   /* V7 · 53 تقويم: الشهرُ ميلادي (28–31) */
     }),
     monthTotals: Object.assign(szMetrics(r[3][0], actions), { by: r[6].map(function (x) { return [x.t, x.k, x.n]; }) }),
     facets: {
@@ -364,7 +364,7 @@ async function szCalendar(ctx, q, clock, catalog) {
   };
 }
 async function szRecords(ctx, q, clock, catalog) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199),
     m = irQueryInt(q.month, clock.m, 1, 12),
     limit = irQueryInt(q.limit, 10, 1, 200),
     term = irQueryText(q.q, 500).trim(),
@@ -374,7 +374,7 @@ async function szRecords(ctx, q, clock, catalog) {
     descriptor = {
       year: y,
       month: m,
-      day: irQueryInt(q.day, clock.d, 1, 30),
+      day: irQueryInt(q.day, clock.d, 1, 31),
       limit: limit,
       q: term,
       loc: loc,
@@ -460,7 +460,7 @@ async function szRecords(ctx, q, clock, catalog) {
   selected.sql =
     "SELECT report_id FROM data WHERE " +
     matches(selected) +
-    " ORDER BY COALESCE(hijri_day,0)DESC,COALESCE(created_at,0)DESC,sequence LIMIT " +
+    " ORDER BY COALESCE(greg_day,0)DESC,COALESCE(created_at,0)DESC,sequence LIMIT " +
     limit +
     " OFFSET " +
     (page - 1) * limit;
@@ -495,10 +495,10 @@ function szReference(ctx, name) {
   return parseJson(enfProjectStr(ctx.A, k, ctx.rawKeys[k], ctx.refs), null);
 }
 function szDayContext(ctx, q, clock) {
-  var y = irQueryInt(q.year, clock.y, 1000, 9999),
+  var y = irQueryInt(q.year, clock.y, 1900, 2199),
     m = irQueryInt(q.month, clock.m, 1, 12),
-    day = irQueryInt(q.day, clock.d, 1, 30),
-    key = y + "-" + m + "-" + day,
+    day = irQueryInt(q.day, clock.d, 1, calGMonthDays(y, m)),   /* V7 · 53 تقويم (ق1): يومٌ ميلاديٌّ ومفاتيحُ ISO مبطَّنة */
+    key = calGKey(y, m, day),
     employees = szReference(ctx, "bassam_employees_v1"),
     index = Object.create(null);
   (Array.isArray(employees) ? employees : []).forEach(function (e) {
@@ -507,7 +507,7 @@ function szDayContext(ctx, q, clock) {
     });
   });
   var report = (srvBusRead("dreport.docSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب مالك التقرير {} — لا تقريرَ لليوم */
-    sched = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[y + "-" + m] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
+    sched = (srvBusRead("staff.scheduleSeen@1", ctx) || {})[calGYm(y, m)] || {},   /* V7 · د5-د2: بغياب مالك الجدول {} — لا وردياتٍ من الجدول */
     round = (srvBusRead("daily.daysSeen@1", ctx) || {})[key],   /* V7 · د5-هـ: بغياب المتابعة اليومية {} — لا جولةَ لليوم */
     shifts = [],
     rows = {},

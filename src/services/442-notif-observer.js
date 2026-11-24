@@ -155,8 +155,8 @@
           else if (p && (p.loc || '') !== (r.loc || '') && r.loc) emit('rep_here', { dept: did, own: [r.ekey], vars: { 'الموقع': r.loc, 'الوردية': sh } }); }); }); });
   };
   var WD = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-  function wdName(day){ /* اسم يوم الأسبوع لتاريخ هجري y-m-d بالتقويم أم القرى */
-    try { var p = day.split('-').map(Number); return WD[KIVO.BassamCal.hWeekdayIndex(p[0], p[1], p[2], 400)] || ''; } catch(e){} return '';   /* V7 · د5-د2: البحثُ (±400 يوماً) صار في الخدمة */
+  function wdName(day){ /* اسم يوم الأسبوع ليومٍ «YYYY-MM-DD» — V7 · 53 تقويم: اليومُ ميلادي (gWeekday)، ومفتاحُ يومٍ هجري قديم بأم القرى كما كان */
+    try { var C = KIVO.BassamCal; if (C.keyCal && C.keyCal(day) === 'g') return WD[C.gWeekday(String(day).slice(0, 10))] || ''; var p = day.split('-').map(Number); return WD[C.hWeekdayIndex(p[0], p[1], p[2], 400)] || ''; } catch(e){} return '';   /* V7 · د5-د2: البحثُ (±400 يوماً) صار في الخدمة */
   }
   function isRestOn(rest, wdn){ return !!wdn && (rest || []).some(function(r){ return r === wdn || ('ال' + r) === wdn || r === ('ال' + wdn); }); }
   function restBase(did, day, ek){ try { var st = J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}) || {}; var mk = day.split('-').slice(0, 2).join('-'); var e = (st[mk] || {})[ek]; return e && Array.isArray(e.rest) ? e.rest : []; } catch(e){ return []; } }
@@ -274,7 +274,8 @@
   }
 
   /* ═══ الفحص الدوري (المهلات والنصاب والمستودع) — في متصفح المدير/مدير النظام، مرة لكل مهلة ═══ */
-  function todayKey(){ try { var h = KIVO.BassamCal.hParts(new Date()); return { y:h.y, m:h.m, d:h.d, key: h.y + '-' + h.m + '-' + h.d }; } catch(e){ var d = new Date(); return { y:d.getFullYear(), m:d.getMonth() + 1, d:d.getDate(), key:'g' + d.toISOString().slice(0, 10) }; } }   /* V7 · د5-د2 */
+  /* V7 · 53 تقويم (ق1): اليومُ ميلاديٌّ بالرياض — key «YYYY-MM-DD» وym «YYYY-MM» (المفاتيحُ التي تقرؤها المراقباتُ من الوثائق)، كما يكتبها الخادم (pfDayAt) */
+  function todayKey(){ try { var g = KIVO.BassamCal.gAt(new Date()); return { y:g.y, m:g.m, d:g.d, key: g.k, ym: g.ym }; } catch(e){ var d = new Date(), k = d.toISOString().slice(0, 10); return { y:d.getFullYear(), m:d.getMonth() + 1, d:d.getDate(), key: k, ym: k.slice(0, 7) }; } }
   /* بدايةُ تشغيل المنصة من الخادم (لمدير النظام وحده): تُقرأ مرةً وتُحفظ في الذاكرة؛ الفشلُ أو الغيابُ يُعاد في الفحص التالي */
   var FIRST = 0, FIRST_P = null;
   function firstAt(){
@@ -288,9 +289,9 @@
       /* المضبوطات: قطع محفوظة أكثر من 30 يوماً */
       /* المهام: «يقترب موعدها» و«متأخرة» صار يُصدرهما الخادمُ مرةً واحدة لكل صفّ (KIVO_265 · البند 10 — workers/parts/074-task-due.js) ولو لم تكن المنصةُ مفتوحةً عند المسؤول — فلا إصدارَ هنا */
       /* التقرير: مسحوب بلا اعتماد قبل نهاية الوردية بساعة */
-      try { var dr = J(rawGet('bsdept:' + did + ':bassam_dreport_v1'), {}); var day = dr[T.y + '-' + T.m + '-' + T.d]; var shifts = J(rawGet('bsdept:' + did + ':bassam_shift_options_v1'), []) || []; if (day && day.shifts) Object.keys(day.shifts).forEach(function(sh){ var s = day.shifts[sh]; if (!s.pulled || s.ap) return; var so = (shifts || []).filter(function(x){ return (x.name || x) === sh; })[0]; var end = so && so.tEnd; if (!end) return; var m = /^(\d+):(\d+)/.exec(end); if (!m) return; var endMin = +m[1] * 60 + +m[2], nowMin = hh * 60 + now.getMinutes(); if (endMin - nowMin > 0 && endMin - nowMin <= 60) emit('rep_late', { dept: did, vars: { 'الوردية': sh, 'الوقت': end }, once: 'rep_late:' + T.key + ':' + sh }); }); } catch(e){}
+      try { var dr = J(rawGet('bsdept:' + did + ':bassam_dreport_v1'), {}); var day = dr[T.key];   /* V7 · 53 تقويم: يومُ التقرير ISO (442 todayKey) */ var shifts = J(rawGet('bsdept:' + did + ':bassam_shift_options_v1'), []) || []; if (day && day.shifts) Object.keys(day.shifts).forEach(function(sh){ var s = day.shifts[sh]; if (!s.pulled || s.ap) return; var so = (shifts || []).filter(function(x){ return (x.name || x) === sh; })[0]; var end = so && so.tEnd; if (!end) return; var m = /^(\d+):(\d+)/.exec(end); if (!m) return; var endMin = +m[1] * 60 + +m[2], nowMin = hh * 60 + now.getMinutes(); if (endMin - nowMin > 0 && endMin - nowMin <= 60) emit('rep_late', { dept: did, vars: { 'الوردية': sh, 'الوقت': end }, once: 'rep_late:' + T.key + ':' + sh }); }); } catch(e){}
       /* نقص الغد */
-      if (hh >= 16) try { var stf = J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}); var mon = stf[T.y + '-' + T.m] || {}; var cnt = {}; Object.keys(mon).forEach(function(ek){ var r = mon[ek]; if (!r || typeof r !== 'object' || ek.indexOf('__') === 0) return; cnt[r.shift] = (cnt[r.shift] || 0) + 1; }); var vals = Object.keys(cnt).map(function(k){ return cnt[k]; }); var avg = vals.length ? vals.reduce(function(a, b){ return a + b; }, 0) / vals.length : 0; Object.keys(cnt).forEach(function(sh){ if (avg && cnt[sh] < avg * 0.5) emit('st_gap', { dept: did, vars: { 'الوردية': sh, 'العدد': Math.ceil(avg * 0.5 - cnt[sh]) }, once: 'gap:' + T.key + ':' + sh }); }); } catch(e){}
+      if (hh >= 16) try { var stf = J(rawGet('bsdept:' + did + ':bassam_staffing_v3'), {}); var mon = stf[T.ym] || {};   /* V7 · 53 تقويم: شهرُ الجدول YYYY-MM (442 todayKey) */ var cnt = {}; Object.keys(mon).forEach(function(ek){ var r = mon[ek]; if (!r || typeof r !== 'object' || ek.indexOf('__') === 0) return; cnt[r.shift] = (cnt[r.shift] || 0) + 1; }); var vals = Object.keys(cnt).map(function(k){ return cnt[k]; }); var avg = vals.length ? vals.reduce(function(a, b){ return a + b; }, 0) / vals.length : 0; Object.keys(cnt).forEach(function(sh){ if (avg && cnt[sh] < avg * 0.5) emit('st_gap', { dept: did, vars: { 'الوردية': sh, 'العدد': Math.ceil(avg * 0.5 - cnt[sh]) }, once: 'gap:' + T.key + ':' + sh }); }); } catch(e){}
       /* العهد المتأخرة */
       // No custody history polling on the client; due notices require server support.
       /* ملخص الاسترشاد اليومي 23:30 */

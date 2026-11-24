@@ -76,8 +76,8 @@ for (const mode of MODES) {
     assert.ok(m0, 'fixture: a staffing month');
     delete S0[m0][C3];
     S0[m0][NID3] = { shift: 'TST-A', rest: [], leaves: {}, perm: {}, cs: 'TST-NID', muk: false };
-    const m1 = '1440-1'; S0[m1] = JSON.parse(JSON.stringify(S0[m0]));
-    S0[m1][C3] = Object.assign({}, S0[m0][NID3], { cs: 'TST-E' }); S0[m1][NID3] = Object.assign({}, S0[m0][NID3], { cs: 'TST-N' });   /* duplicate: eid and nid entries */
+    const m1 = '2018-09'; assert.notEqual(m1, m0); S0[m1] = JSON.parse(JSON.stringify(S0[m0]));
+    S0[m1][C3] = Object.assign({}, S0[m0][NID3], { cs: 'TST-E' }); S0[m1][NID3] = Object.assign({}, S0[m0][NID3], { cs: 'TST-N' });   /* duplicate: eid and nid entries — V7 · 53 تقويم: شهرٌ ميلاديٌّ ISO (المفتاحُ الهجري 1440-1 يرفضه المخطّط الآن: unknown-map-key) */
     await put(w, KS, S0);
     const P0 = stored(w.env, KPL); P0.floors[0].zones[1].emp = [NID3]; await put(w, KPL, P0);
     const before = stored(w.env, KS);

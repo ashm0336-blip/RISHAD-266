@@ -190,7 +190,7 @@ function szItemData(ctx, value, old, index, catalog, now) {
     out.hist.push({
       from: old.act || "",
       to: out.act,
-      at: new Date(now).toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" }),
+      at: new Date(now).toLocaleString("ar-SA-u-ca-gregory", { timeZone: "Asia/Riyadh" }),   /* V7 · 53 تقويم: نصُّ السجل الجديد ميلادي (القديمُ يبقى كما كُتب — ق9) */
       by: String(ctx.A.u.name || ctx.A.u.un || ctx.A.u.id),
       t: now,
     });
@@ -248,13 +248,14 @@ function szReportData(ctx, b, old, catalog, now) {
     ["y", "m", "d"].forEach(function (k) {
       if (!Number.isSafeInteger(out[k])) throw szError("seized-date");
     });
+    /* V7 · 53 تقويم (ق1 · §1.10): يومٌ ميلاديٌّ صحيح — اليومُ الهجري من عميلٍ قديم يُرفض */
     if (
-      out.y < 1000 ||
-      out.y > 9999 ||
+      out.y < 1900 ||
+      out.y > 2199 ||
       out.m < 1 ||
       out.m > 12 ||
       out.d < 1 ||
-      out.d > 30
+      out.d > calGMonthDays(out.y, out.m)
     )
       throw szError("seized-date");
     out.id = "sz-" + randTok();
@@ -740,9 +741,9 @@ async function hSeizedAct(env, actor, b, meta) {
           p = { args: scope.args.slice() };
         where =
           scope.sql +
-          " AND r.hijri_year=" +
-          irQueryParam(p, irQueryInt(b.year, 0, 1000, 9999)) +
-          " AND r.hijri_month=" +
+          " AND r.greg_year=" +
+          irQueryParam(p, irQueryInt(b.year, 0, 1900, 2199)) +
+          " AND r.greg_month=" +
           irQueryParam(p, irQueryInt(b.month, 0, 1, 12));
         selected = (
           await szReadBatch(ctx, [
@@ -820,7 +821,7 @@ async function hSeizedAct(env, actor, b, meta) {
           item.hist.push({
             from: item.act || "",
             to: b.act,
-            at: new Date(now).toLocaleString("ar-SA", {
+            at: new Date(now).toLocaleString("ar-SA-u-ca-gregory", {   /* V7 · 53 تقويم: ميلادي */
               timeZone: "Asia/Riyadh",
             }),
             by: String(A.u.name || A.u.un || A.u.id),

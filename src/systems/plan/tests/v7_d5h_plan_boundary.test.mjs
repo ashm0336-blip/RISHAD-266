@@ -15,7 +15,7 @@ import { replaceOperationalFixture } from '../../../../tests/unit/operational_le
 import { partners, present, busFacts, assertBus, saves, savedCount, assertNoAbsentKeys, openRoute, today, png, watchToasts, toasts } from '../../../../tests/removal/boundary_fx.mjs';
 
 const SYS = 'plan', P = partners(SYS), A = 'TEST_ONLY_A', KP = 'bsdept:' + A + ':bassam_plan_v1', KR = 'bsdept:' + A + ':bassam_rounds_v1';
-const H = today(), TODAY = H.y + '-' + H.m + '-' + H.d;
+const H = today(), TODAY = H.dk;
 const REFUSED = /لم يُحفظ|لم يصل|عدّل مستخدم|خارج الصلاحية|رُفض/;
 const absentOwners = P.owners.filter((o) => !present(o));
 

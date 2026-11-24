@@ -8,7 +8,7 @@ import { chromium, openAs } from './lab_browser.mjs';
 import { replaceOperationalFixture, inspectOperationalFixture } from '../unit/operational_legacy_seed_fx.mjs';
 import { present, openRoute, today, logicOf } from '../removal/boundary_fx.mjs';
 
-const A = 'TEST_ONLY_A', SHIFT = 'TEST_ONLY_S', H = today(), YM = H.y + '-' + H.m, DAY = YM + '-' + H.d;
+const A = 'TEST_ONLY_A', SHIFT = 'TEST_ONLY_S', H = today(), YM = H.ym, DAY = H.dk;
 const PD = H.d > 1 ? H.d - 1 : null, PDAY = PD ? YM + '-' + PD : null;
 const EMPS = [1, 2, 3].map((i) => ({ eid: 'TEST_ONLY_eA' + i, name: 'TEST_ONLY موظف أ' + i, nid: '12000000' + String(i).padStart(2, '0') }));
 /* نافذةُ الوردية لا تشمل الساعةَ الآن (الرياض) */

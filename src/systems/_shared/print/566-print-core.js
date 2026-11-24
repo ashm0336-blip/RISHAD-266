@@ -262,7 +262,7 @@
   }
   /* ── V7 · 53 (ملحق 6 · البند 10 — سلوكُ البرودكشن 6171818): غلافُ التقرير صفحةً أولى في ملف PDF (تصميمُ المالك) ──
      الخلفيةُ والأشكالُ والشعاران من ملف التصميم الأصلي (صورةٌ واحدة بقياس A3 — src/assets/images/report-cover.jpg، لا تُحمَّل إلا عند الطباعة)،
-     والنصوصُ من المنصة: العنوان، وسطرُ «لتحديث الخطة التشغيلية لعام <السنة الهجرية للتقرير>هـ» بخطٍّ ينتهي مع نهاية العنوان، واسما الإدارة العامة والإدارة.
+     والنصوصُ من المنصة: العنوان، وسطرُ «لتحديث الخطة التشغيلية لعام <السنة الميلادية للتقرير>م» بخطٍّ ينتهي مع نهاية العنوان، واسما الإدارة العامة والإدارة.
      يُرسم على لوحة رسمٍ مباشرةً (لا نسخَ للوثيقة) فيخرج واحداً على الحاسوب والآيباد. إن تعذّر تحميلُ الخلفية خرج الملفُّ بلا غلاف ولم يتعطّل */
   const COVER_URL = "@@KIVO_ASSET:img/report-cover.jpg@@";
   function coverPage(info) {
@@ -292,12 +292,15 @@
       const tW = g.measureText(title).width, tBase = H * 0.406 + tSize * 0.93;
       g.fillText(title, tR, tBase);
       /* السطرُ تحته: خطٌّ ثم النص، وينتهي الصفُّ عند نهاية العنوان */
-      const sub = "لتحديث الخطة التشغيلية" + (info.year ? " لعام " + ar(info.year) + "هـ" : ""), sSize = 6.6 * MM, gap = 3.5 * MM;
+      /* V7 · 53 تقويم (§7): سنةُ التقرير ميلادية («لعام ٢٠٢٦م») */
+      const sub = "لتحديث الخطة التشغيلية" + (info.year ? " لعام " + ar(info.year) + "م" : ""), sSize = 6.6 * MM, gap = 3.5 * MM;
       g.font = "500 " + sSize + "px Cairo, sans-serif";
       const sW = g.measureText(sub).width, lineLen = Math.max(8 * MM, tW - sW - gap), sBase = tBase + 6.5 * MM + sSize * 1.15;
       g.globalAlpha = 0.95;
       g.fillText(sub, tR - lineLen - gap, sBase);
       g.fillRect(tR - lineLen, sBase - sSize * 0.42, lineLen, 0.5 * MM);
+      /* V7 · 53 تقويم (القاعدة 11): السنةُ الهجرية المقابلة سطرٌ صغير تحت السنة الميلادية («١٤٤٨هـ»)، في نهاية الصف نفسِه */
+      if (info.hyear) { const hSize = 4.4 * MM; g.font = "500 " + hSize + "px Cairo, sans-serif"; g.globalAlpha = 0.8; g.fillText(ar(info.hyear) + "هـ", tR - lineLen - gap, sBase + hSize * 1.45); }
       g.globalAlpha = 1;
       /* الإدارةُ العامة والإدارة — في وسط صندوقهما، ويصغر الخطُّ إن طال الاسم */
       const lines = [info.group, info.dept].filter((t) => t && String(t).trim()), bx = W * (0.242 + 0.316 / 2), by = H * (0.65 + 0.226 / 2), maxW = W * 0.316 - 10 * MM;
@@ -315,17 +318,24 @@
       return { jpg: u, pw: W, ph: H, w: W, h: H, full: !0 };
     });
   }
-  /* بياناتُ الغلاف: سنةُ التقرير من سطر تاريخه (يومُ الجولة · اليوم) وإلا السنةُ الهجرية الجارية، والإدارةُ والإدارةُ العامة النشطتان */
+  /* بياناتُ الغلاف: سنةُ التقرير من سطر تاريخه (يومُ الجولة · اليوم) وإلا السنةُ الجارية، والإدارةُ والإدارةُ العامة النشطتان
+     V7 · 53 تقويم (§7): السنةُ ميلادية — أولُ سنةٍ ميلادية (19xx–21xx) في سطر التاريخ (قبل «الموافق» الهجري)، وإلا سنةُ اليوم التشغيلي الميلادي */
   function coverInfo(dateLine, dept) {
-    let yr = (String(dateLine || "").match(/(\d{4})\s*هـ/) || [])[1] || "", grp = "";
+    let yr = (String(dateLine || "").match(/(?:^|[^\d])((?:19|20|21)\d{2})(?!\d)/) || [])[1] || "", grp = "";
     if (!yr)
       try {
-        yr = String(KIVO.BassamCal.hToday().y || "");   /* V7 · 53: من خدمة التقويم الواحدة (v7_d5d2_calendar_rest ⑤) */
+        yr = String(KIVO.BassamCal.gToday().y || "");
+      } catch (e) {}
+    /* والسنةُ الهجرية المقابلة للسطر الصغير: سنةُ «الموافق» في سطر التاريخ، وإلا هجريُّ اليوم التشغيلي */
+    let hy = (String(dateLine || "").match(/(?:^|[^\d])(1[3-5]\d{2})(?!\d)/) || [])[1] || "";
+    if (!hy)
+      try {
+        hy = String((KIVO.BassamCal.hOf(KIVO.BassamCal.gToday().k) || {}).y || "");
       } catch (e) {}
     try {
       grp = (KIVO.BassamDepts && KIVO.BassamDepts.activeGroupName && KIVO.BassamDepts.activeGroupName()) || "";
     } catch (e) {}
-    return { dept: dept || "", group: grp, year: yr };
+    return { dept: dept || "", group: grp, year: yr, hyear: hy };
   }
   function pdfDownload(x, title, cov) {
     let end = (r) => r;
@@ -449,27 +459,16 @@
       i = (KIVO.BassamDepts && KIVO.BassamDepts.activeName()) || i;
     } catch (t) {}
     let o = "";
-    /* سطرُ التاريخ: «round» = يومُ الجولة المختار في الحالة (هجري) والموافقُ الميلادي بحثاً · «today» = اليوم (BassamHijri) والموافقُ اليوم */
+    /* سطرُ التاريخ — V7 · 53 تقويم (§7): الميلادي أساساً والهجريُّ «الموافق» بعده («24 نوفمبر 2026 · الموافق 14 جمادى الآخرة 1448») من الخدمة الواحدة:
+       «round» = يومُ الجولة المختار في الحالة (ميلادي) · «today» = اليومُ التشغيلي. وإن لم يُعرف الهجريُّ تماماً سقط «الموافق» كما كان */
     if (O.date === "today")
       try {
-        const t = KIVO.BassamCal.hNow(),
-          e = t.d + " " + (ctx.MONTHS[t.m - 1] || "") + " " + t.y + "هـ",
-          s = new Date().toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" });
-        o = e + " الموافق " + s;
+        o = KIVO.BassamCal.fmtPrint(KIVO.BassamCal.gToday().k);
       } catch (t) {}
     else
       try {
-        const t = s.year,
-          e = s.month,
-          n = Math.min(s.day, ctx.hMonthDays(t, e)),
-          i = "جولة يوم " + n + " " + (ctx.MONTHS[e - 1] || "") + " " + t + "هـ";
-        let r = "";
-        try {
-          /* V7 · د5-د2: الموافقُ الميلادي من الخدمة الواحدة (كان هنا بحثٌ ±30 يوماً بمُنسِّقٍ خاص) — وإن لم يُعرف اليومُ تماماً فلا «الموافق» كما كان */
-          const a = KIVO.BassamCal.hGregExact(t, e, n);
-          a && (r = a.toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" }));
-        } catch (t) {}
-        o = i + (r ? " الموافق " + r : "");
+        const C = KIVO.BassamCal, t = s.year, e = s.month, n = Math.min(s.day, C.gMonthDays(t, e));
+        o = "جولة يوم " + C.fmtPrint(C.gKey(t, e, n));
       } catch (t) {}
 
     const r = O.logo,

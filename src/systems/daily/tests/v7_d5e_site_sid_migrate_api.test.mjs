@@ -11,8 +11,9 @@ import { execFileSync } from 'node:child_process';
 import { PYTHON, makeTestEnv, client, applySql, ROOT, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from '../../../../tests/unit/harness.mjs';
 import { installCurrentSchemaFixture } from '../../../../tests/unit/current_schema_fx.mjs';
 
-const T = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach((p) => { if (p.type !== 'literal') o[p.type] = +p.value; }); return o; })();
-const YM = T.year + '-' + T.month, D1 = YM + '-1', D2 = YM + '-2';
+const T = (() => { const x = new Date(Date.now()); return { year: x.getUTCFullYear(), month: x.getUTCMonth() + 1, day: x.getUTCDate() }; })();   /* V7 · 53 تقويم: اليومُ التشغيلي ميلادي (الرياض − 3 ساعات) */
+const P2 = (n) => String(n).padStart(2, '0');
+const YM = T.year + '-' + P2(T.month), D1 = YM + '-01', D2 = YM + '-02';
 const KP = 'bsdept:tst_d1:bassam_plan_v1', KR = 'bsdept:tst_d1:bassam_rounds_v1';
 function seedSql() {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_fx_sid_'));

@@ -1049,7 +1049,7 @@ class Component extends DCLogic {
     const N = (n, w) => (KIVO.BassamCount ? KIVO.BassamCount(n, w) : n + " " + w), mb = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + " ميجابايت" : Math.max(1, Math.round(n / 1024)) + " كيلوبايت");
     const sum = c.sum, run = c.run || {}, done = c.done, skip = (sum && sum.skip) || [];
     let when = "";
-    try { if (sum && sum.exportedAt) when = new Date(sum.exportedAt).toLocaleString("ar-SA-u-nu-latn", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { when = (sum && sum.exportedAt) || ""; }
+    try { if (sum && sum.exportedAt) when = new Date(sum.exportedAt).toLocaleString("ar-SA-u-ca-gregory-nu-latn", { dateStyle: "medium", timeStyle: "short" });   /* V7 · 53 تقويم: الميلادي (ar-SA وحده هجري) */ } catch (e) { when = (sum && sum.exportedAt) || ""; }
     const parts = run.parts || 0, pct = run.step === "upload" && parts ? Math.max(2, Math.round(((run.part - 1) / parts) * 78)) : run.step === "slice" && parts ? 80 + Math.round((run.part / parts) * 10) : run.step === "inspect" || run.step === "review" ? 92 : run.step === "commit" ? 97 : 1;
     const runText = run.stopping ? "يتوقّف بعد الجزء الجاري…" : run.step === "upload" ? "الجزء " + run.part + " من " + parts + (run.images ? " · الصور: " + (run.image || 0) + " من " + run.images : "") + " — لا يتغيّر شيء في الإدارة قبل الاعتماد."
       : run.step === "slice" ? "اكتمل الإرسال — تُجهَّز البيانات الكبيرة على دفعات: " + run.part + " من " + parts + "."

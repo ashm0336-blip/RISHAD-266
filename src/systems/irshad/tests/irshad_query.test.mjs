@@ -49,7 +49,7 @@ async function world(reports = []) {
     bassam_perms_v1: { caps: { [D]: ['irshad'], [OTHER]: ['irshad'] }, emps: { [D]: {
       TEST_ONLY_e1: { 'irshad/records': ['view'], 'irshad/dash': ['view'] }, TEST_ONLY_no_view: {},
     } } },
-    ['bsdept:' + D + ':bassam_staffing_v3']: { '1448-1': { TEST_ONLY_e1: { shift: 'أ' } }, '1448-2': { TEST_ONLY_e1: { shift: 'ب' } } },
+    ['bsdept:' + D + ':bassam_staffing_v3']: { '2026-01': { TEST_ONLY_e1: { shift: 'أ' } }, '2026-02': { TEST_ONLY_e1: { shift: 'ب' } } },
     ['bsdept:' + D + ':bassam_scope_v1']: { ceiling: { Site: { mode: 'ALL' }, 'Zone/Element': { mode: 'ALL' } }, emp: { TEST_ONLY_e1: { Shift: { mode: 'staffing-bound' } } } },
     ['bsdept:' + D + ':bassam_shift_options_v1']: [{ name: 'أ' }, { name: 'ب' }],
     ['bsdept:' + D + ':bassam_employees_v1']: [{ eid: 'TEST_ONLY_e1', name: 'TEST_ONLY current name must not replace history' }],
@@ -67,13 +67,13 @@ async function world(reports = []) {
     for (let i = 0; i < 4; i++) await DB.prepare('INSERT INTO revs(k,rev) VALUES(?1,1) ON CONFLICT(k) DO UPDATE SET rev=rev+1').bind(W.irKey(d, i)).run();
   }
   await install(D, reports, { languages: [], locations: ['TEST_ONLY_location'] });
-  await install(OTHER, [{ id: 'TEST_ONLY_foreign', y: 1448, m: 1, d: 1, shift: 'أ', bro: 9999 }]);
+  await install(OTHER, [{ id: 'TEST_ONLY_foreign', y: 2026, m: 1, d: 1, shift: 'أ', bro: 9999 }]);
   const actor = id => ({ u: { id: 'TEST_ONLY_' + id } });
   const read = (who, q = {}) => W.irRead(env, actor(who), { dept: D, ...q });
   return { W, DB, env, users, keys, put, install, actor, read };
 }
 function report(id, patch = {}) {
-  return { id, y: 1448, m: 1, d: 2, ts: 10, shift: 'أ', eid: 'TEST_ONLY_e1', name: 'أحمد عبد الله', loc: 'TEST_ONLY_location',
+  return { id, y: 2026, m: 1, d: 2, ts: 10, shift: 'أ', eid: 'TEST_ONLY_e1', name: 'أحمد عبد الله', loc: 'TEST_ONLY_location',
     langs: [{ lang: 'العربية', count: 3 }], bro: 2, pros: 1, pol: 0, ...patch };
 }
 const copy = value => JSON.parse(JSON.stringify(value));
@@ -93,20 +93,20 @@ test('The generated search engine matches actual client norm/tok/match/filter in
 test('Records preserve lossless rows, canonical match, stable ordering and bounded numeric/cursor pages', async () => {
   const rows = [report('a'), report('b', { d: 3, ts: 1, name: 'عبدالله ١٢٣' }), report('c', { d: 3, ts: 1, name: 'عبد الله ۱۲۳', langs: null }), report('d', { m: 2, name: 'أحمد' })];
   const X = await world(rows), F = oracleFind();
-  const first = await X.read('super', { view: 'records', year: 1448, month: 1, limit: 1 });
+  const first = await X.read('super', { view: 'records', year: 2026, month: 1, limit: 1 });
   assert.equal(first.total, 3); assert.equal(first.monthTotal, 3); assert.deepEqual(first.rows, [rows[1]]); assert.ok(first.next);
-  const second = await X.read('super', { view: 'records', year: 1448, month: 1, limit: 1, cursor: first.next });
+  const second = await X.read('super', { view: 'records', year: 2026, month: 1, limit: 1, cursor: first.next });
   assert.equal(second.page, 2); assert.deepEqual(second.rows, [rows[2]]); assert.ok(second.prev);
-  const last = await X.read('super', { view: 'records', year: 1448, month: 1, limit: 1, page: 999999 });
+  const last = await X.read('super', { view: 'records', year: 2026, month: 1, limit: 1, page: 999999 });
   assert.equal(last.page, 3); assert.deepEqual(last.rows, [rows[0]]); assert.equal(last.next, '');
   for (const q of ['عبدالله', 'عبد الله', '۱۲', 'احمد', 'دل']) {
-    const actual = await X.read('super', { view: 'records', year: 1448, month: 1, q, limit: 200 });
+    const actual = await X.read('super', { view: 'records', year: 2026, month: 1, q, limit: 200 });
     const expected = [rows[1], rows[2], rows[0]].filter(r => F.match(q, [r.name, r.loc, r.shift, r.empno]));
     assert.deepEqual(actual.rows, expected, q);
   }
-  await assert.rejects(() => X.read('super', { view: 'records', year: 1448, month: 1, limit: 0 }), /irshad-query/);
+  await assert.rejects(() => X.read('super', { view: 'records', year: 2026, month: 1, limit: 0 }), /irshad-query/);
   for (const cursor of ['not@aCursor', Buffer.from('null').toString('base64url')])
-    await assert.rejects(() => X.read('super', { view: 'records', year: 1448, month: 1, cursor }), /irshad-(cursor|shape)/);
+    await assert.rejects(() => X.read('super', { view: 'records', year: 2026, month: 1, cursor }), /irshad-(cursor|shape)/);
 });
 
 test('SQL visible scope is differential to actual061 across months, null/blank identity, manager and Site', async () => {
@@ -117,11 +117,11 @@ test('SQL visible scope is differential to actual061 across months, null/blank i
   const scope = X.W.irQueryScope(context, 'i'), stmt = X.DB.prepare('SELECT i.report_id FROM irshad_reports i WHERE ' + scope.sql + ' ORDER BY i.sequence');
   const actual = (await stmt.bind(...scope.args).all()).results.map(r => r.report_id);
   assert.deepEqual(actual, X.DB.q('SELECT report_id FROM irshad_reports WHERE department_id=? ORDER BY sequence', D).map(r => r.report_id));
-  const staff = (await X.read('staff', { view: 'calendar', year: 1448, month: 1 })).monthTotals.reports, manager = (await X.read('manager', { view: 'calendar', year: 1448, month: 1 })).monthTotals.reports;
+  const staff = (await X.read('staff', { view: 'calendar', year: 2026, month: 1 })).monthTotals.reports, manager = (await X.read('manager', { view: 'calendar', year: 2026, month: 1 })).monthTotals.reports;
   assert.equal(manager, 3); assert.equal(staff, manager);
   await X.put('bsdept:' + D + ':bassam_scope_v1', { emp: { TEST_ONLY_e1: { Shift: { mode: 'n/a' }, Site: { mode: 'unknown' } } } });
-  assert.equal((await X.read('staff', { view: 'calendar', year: 1448, month: 1 })).monthTotals.reports, staff, 'Retired scope documents do not affect reads');
-  await assert.rejects(() => X.read('noview', { view: 'calendar', year: 1448, month: 1 }), /irshad-denied/);
+  assert.equal((await X.read('staff', { view: 'calendar', year: 2026, month: 1 })).monthTotals.reports, staff, 'Retired scope documents do not affect reads');
+  await assert.rejects(() => X.read('noview', { view: 'calendar', year: 2026, month: 1 }), /irshad-denied/);
 });
 
 test('Context guards reject raw authority changes without revision and write-only context does not grant reads', async () => {
@@ -138,7 +138,7 @@ test('Context guards reject raw authority changes without revision and write-onl
 
 test('Cursor witnesses reject cross-principal, scope, raw permission and resource/epoch changes', async () => {
   const X = await world([report('a'), report('b')]);
-  const q = { view: 'records', year: 1448, month: 1, limit: 1 };
+  const q = { view: 'records', year: 2026, month: 1, limit: 1 };
   const page = await X.read('super', q);
   await assert.rejects(() => X.read('manager', { ...q, cursor: page.next }), /irshad-cursor-stale/);
   await assert.rejects(() => X.read('super', { ...q, dept: OTHER, cursor: page.next }), /irshad-cursor-stale/);
@@ -162,9 +162,9 @@ test('Cursor witnesses reject cross-principal, scope, raw permission and resourc
 
 test('Dashboard uses SQL totals, historical snapshots, distinct summary union, bounded top groups and configured charts', async () => {
   const rows = Array.from({ length: 9 }, (_, i) => report('g' + i, { d: i + 1, shift: i % 2 ? 'ب' : 'أ', loc: 'TEST_ONLY_loc_' + i, langs: [{ lang: 'TEST_ONLY_lang_' + i, count: 1 }], name: 'TEST_ONLY old ' + i }));
-  rows.push(report('old', { m: 12, y: 1447, d: 1, bro: 4 }));
+  rows.push(report('old', { m: 12, y: 2025, d: 1, bro: 4 }));
   rows.push(report('unconfigured', { shift: 'TEST_ONLY_unconfigured', bro: 10, langs: [] }));
-  const X = await world(rows), reply = await X.read('super', { view: 'dashboard', mode: 'month', year: 1448, month: 1, heatYear: 1448, bucket: 'day' }), d = reply.dashboard;
+  const X = await world(rows), reply = await X.read('super', { view: 'dashboard', mode: 'month', year: 2026, month: 1, heatYear: 2026, bucket: 'day' }), d = reply.dashboard;
   assert.equal(d.totals.reports, 10); assert.equal(d.totals.employees, 1);
   assert.equal(d.summary.totals.reports, 9); assert.equal(d.summary.totals.employees, 1, 'Union distinct, not sum of per-shift employee counts');
   assert.equal(d.languages.length, 7); assert.equal(d.languages[6].other, true); assert.equal(d.languages[6].value, 3);
@@ -172,20 +172,20 @@ test('Dashboard uses SQL totals, historical snapshots, distinct summary union, b
   assert.equal(d.employees[0].name, 'أحمد عبد الله', 'Last original selected sequence snapshot, not live employee lookup');
   assert.deepEqual(d.shifts.map(r => r.name), ['أ', 'ب']); assert.equal(d.shiftSeries.length, 2);
   assert.equal(d.locationSeries.length, 1); assert.equal(d.locationSeries[0].points.length, 1);
-  assert.equal(d.available.total, 11); assert.deepEqual(d.available.first, { y: 1447, m: 12, d: 1 });
+  assert.equal(d.available.total, 11); assert.deepEqual(d.available.first, { y: 2025, m: 12, d: 1 });
   assert.ok(!('rows' in d) && !('reports' in d), 'No report history in aggregate DTO');
-  const narrowed = (await X.read('super', { view: 'dashboard', mode: 'month', year: 1448, month: 1, sumQ: 'أ', bucket: 'day' })).dashboard;
+  const narrowed = (await X.read('super', { view: 'dashboard', mode: 'month', year: 2026, month: 1, sumQ: 'أ', bucket: 'day' })).dashboard;
   assert.deepEqual(narrowed.summary.rows.map(r => r.name), ['أ']); assert.equal(narrowed.summary.totals.reports, 5);
 });
 
 test('Custom ranges, prior range and missing/empty catalogs preserve the explicit DTO contract', async () => {
-  const X = await world([report('one', { d: 1 }), report('two', { d: 2 }), report('previous', { y: 1447, m: 12, d: 30 })]);
+  const X = await world([report('one', { d: 1 }), report('two', { d: 2 }), report('previous', { y: 2025, m: 12, d: 30 })]);
   const catalogs = await X.read('super', { view: 'catalogs' });
   assert.deepEqual(catalogs.catalogs.languages, { present: true, values: [] });
-  const d = (await X.read('super', { view: 'dashboard', mode: 'custom', year: 1448, month: 1, from: '1448-1-1', to: '1448-1-2', previousFrom: '1447-12-29', previousTo: '1447-12-30', bucket: 'day' })).dashboard;
+  const d = (await X.read('super', { view: 'dashboard', mode: 'custom', year: 2026, month: 1, from: '2026-01-01', to: '2026-01-02', previousFrom: '2025-12-29', previousTo: '2025-12-30', bucket: 'day' })).dashboard;
   assert.equal(d.totals.reports, 2); assert.equal(d.previous.reports, 1);
   assert.equal(d.series.length, 2); assert.equal(d.previousSeries.length, 1); assert.equal(d.selection.bucket, 'day');
-  await assert.rejects(() => X.read('super', { view: 'dashboard', mode: 'custom', from: 'bad', to: '1448-1-1' }), /irshad-range/);
+  await assert.rejects(() => X.read('super', { view: 'dashboard', mode: 'custom', from: 'bad', to: '2026-01-01' }), /irshad-range/);
 });
 
 test('A manual permission change after capture rejects the in-flight read before returning any data', async () => {
@@ -199,13 +199,13 @@ test('A manual permission change after capture rejects the in-flight read before
     }
     return prepare(sql);
   };
-  await assert.rejects(() => X.read('super', { view: 'calendar', year: 1448, month: 1 }), /irshad-read-race/);
+  await assert.rejects(() => X.read('super', { view: 'calendar', year: 2026, month: 1 }), /irshad-read-race/);
   assert.equal(raced, true);
 });
 
 test('An explicit empty location or shift filter differs from an omitted filter and its cursor', async () => {
   const X = await world([report('normal'), report('empty', { loc: '', shift: '' }), report('null', { loc: null })]);
-  const q = { view: 'records', year: 1448, month: 1, limit: 1 };
+  const q = { view: 'records', year: 2026, month: 1, limit: 1 };
   const unfiltered = await X.read('super', q);
   assert.equal(unfiltered.total, 3);
   const emptyLocation = await X.read('super', { ...q, loc: '', limit: 200 });
@@ -231,10 +231,10 @@ test('Invalid presence metadata refuses reads and write contexts without repairi
 /* V7 · 53 (port-sync · بند 8 · 0013): مجاميعُ الشهر لكروت المؤشرات الحلقية — مستفيدو الترجمة باللغة، والتقاريرُ بالوردية، والمستفيدون بالموقع، في مسار مجاميع الشهر نفسِه */
 test('V7 · 53: calendar month totals carry the KPI groups (languages · shifts · locations)', async () => {
   const rows = [report('a'), report('b', { shift: 'ب', loc: 'TEST_ONLY_other', langs: [{ lang: 'العربية', count: 2 }, { lang: 'الأردية', count: 4 }], bro: 0, pros: 0 }), report('c', { m: 2, langs: [{ lang: 'الفارسية', count: 9 }] })];
-  const X = await world(rows), M = (await X.read('super', { view: 'calendar', year: 1448, month: 1 })).monthTotals;
+  const X = await world(rows), M = (await X.read('super', { view: 'calendar', year: 2026, month: 1 })).monthTotals;
   const g = (t0) => Object.fromEntries(M.by.filter((x) => x[0] === t0).map((x) => [x[1], x[2]]));
   assert.deepEqual(g('g'), { 'العربية': 5, 'الأردية': 4 }, 'الترجمةُ باللغة — الشهرُ وحده');
   assert.deepEqual(g('s'), { 'أ': 1, 'ب': 1 }, 'التقاريرُ بالوردية');
   assert.deepEqual(g('l'), { TEST_ONLY_location: 6, TEST_ONLY_other: 6 }, 'المستفيدون بالموقع');
-  assert.deepEqual((await X.read('super', { view: 'calendar', year: 1448, month: 5 })).monthTotals.by, [], 'الشهرُ الفارغ بلا مجاميع');
+  assert.deepEqual((await X.read('super', { view: 'calendar', year: 2026, month: 5 })).monthTotals.by, [], 'الشهرُ الفارغ بلا مجاميع');
 });

@@ -21,15 +21,26 @@ export const TAG = 'TEST_ONLY';
 export const D = 'tst_d1';
 export const KN = 'bsdept:' + D + ':bassam_notif_v1';
 export const KE = 'bsdept:' + D + ':bassam_employees_v1';
-/* اليومُ الهجريّ للخادم (أم القرى · الرياض · مهلةُ 3 ساعات) — كما تفعل اختباراتُ المُثبِّت */
-export const T = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return { y: o.year, m: o.month, d: o.day }; })();
-export const hij = (ms) => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(ms)).forEach(p => { o[p.type] = +p.value; }); return o.year + '-' + o.month + '-' + o.day; };
-export const DAY = T.y + '-' + T.m + '-' + T.d;
+/* V7 · 53 تقويم (عُدّةُ التثبيت المشتركة): اليومُ التشغيلي للخادم — يومُ الرياض الميلادي بمهلة 3 ساعات (calToday · 016)، والمفاتيحُ ISO مبطَّنة.
+   كانت أم القرى والمفاتيحُ غيرَ مبطَّنة؛ الأسماءُ المصدَّرة كما هي (hij يعيد مفتاحَ اليوم ISO) فلا يتغيّر اختبارٌ يستعملها ولا تضعف مقارنة. */
+const pad2 = (n) => (n < 10 ? '0' : '') + n;
+const gOf = (ms) => { const x = new Date(ms + 3 * 3600 * 1000); return { y: x.getUTCFullYear(), m: x.getUTCMonth() + 1, d: x.getUTCDate() }; };
+export const isoDay = (y, m, d) => y + '-' + pad2(m) + '-' + pad2(d);
+export const isoYm = (y, m) => y + '-' + pad2(m);
+/* hFx — نقلُ مفاتيح بيانات الاختبار المصطنعة (TEST_ONLY) من الهجري إلى ISO بقاعدةٍ واحدة تحفظ بنيةَ الاختبار: الشهرُ الهجري n من 1448 ⇐ الشهرُ الميلادي
+   الذي يقابل أيامَه اليوم (1448-6 ⇐ 2026-11 · وساعةُ الاختبار 1448-5-9 ⇐ 2026-10)، ورقمُ اليوم كما هو (1–30) — فالماضي ماضٍ والجاري جارٍ والقادم قادم.
+   ليس تحويلاً تقويمياً (ذاك hToIso في cal_fx.mjs للتواريخ الحقيقية): هو لبيانات الاختبار التي تعني «هذا الشهر · الشهر الماضي · اليوم 3». المفتاحُ الميلادي يعود كما هو. */
+export const hFxYM = (y, m) => { const i = (y - 1448) * 12 + (m - 1) + 2026 * 12 + 5; return { y: Math.floor(i / 12), m: (i % 12) + 1 }; };
+export const hFx = (k) => { const x = /^(m:)?(\d{4})-(\d{1,2})(?:-(\d{1,2}))?(-.+)?$/.exec(String(k)); if (!x || +x[2] < 1300 || +x[2] > 1599) return k;
+  const g = hFxYM(+x[2], +x[3]); return (x[1] || '') + isoYm(g.y, g.m) + (x[4] ? '-' + pad2(+x[4]) : '') + (x[5] || ''); };
+export const T = gOf(Date.now() - 3 * 3600 * 1000);
+export const hij = (ms) => { const o = gOf(ms); return isoDay(o.y, o.m, o.d); };
+export const DAY = isoDay(T.y, T.m, T.d);
 const NOW = Date.now(), H = 3600 * 1000;
 export const TOMORROW = hij(NOW - 3 * H + 24 * H), YESTERDAY = hij(NOW - 3 * H - 24 * H);
 const PM = T.m === 1 ? { y: T.y - 1, m: 12 } : { y: T.y, m: T.m - 1 };
-export const PDAY = PM.y + '-' + PM.m + '-10';            /* يومٌ في الشهر الماضي */
-export const ODAY = PM.y + '-' + PM.m + '-3';             /* صفٌّ قديمُ الشكل */
+export const PDAY = isoDay(PM.y, PM.m, 10);            /* يومٌ في الشهر الماضي */
+export const ODAY = isoDay(PM.y, PM.m, 3);             /* صفٌّ قديمُ الشكل */
 
 /* ── الموظفون الجدد وحساباتهم (أرقامٌ اصطناعية) ── */
 export const P0 = [1, 2, 3, 4, 5, 6, 7].map(n => ({ uid: 'tst_p0e' + n, un: String(2000000200 + n), pw: String(70200 + n), eid: 'tst_e_p0_' + n, name: TAG + ' · موظف مهام ' + n }));
@@ -45,7 +56,9 @@ const BUMP = (k) => ["INSERT INTO meta (k, v) VALUES ('rev', '1') ON CONFLICT(k)
   'INSERT INTO revs (k, rev) VALUES (' + q(k) + ", (SELECT CAST(v AS INTEGER) FROM meta WHERE k = 'rev')) ON CONFLICT(k) DO UPDATE SET rev = excluded.rev;"];
 export function stdSeed() {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_fx_tasks_'));
-  execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', T.y + '-' + T.m + '-' + T.d, '--out', out], { stdio: 'pipe' });
+  /* V7 · 53 تقويم: اليومُ الميلادي المدنيّ بالرياض (ساعةُ العهد cuClock) للأنظمة العلائقية الميلادية في البذرة */
+  const G = new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
+  execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', T.y + '-' + T.m + '-' + T.d, '--gtoday', G, '--out', out], { stdio: 'pipe' });
   const s = fs.readFileSync(out + '/test_seed.sql', 'utf8'); try { fs.rmSync(out, { recursive: true, force: true }); } catch (e) {}
   return s;
 }

@@ -63,7 +63,7 @@ for (const module of ['employees', 'staff']) {
 }
 
 test('monthly staffing reads preserve V3 source keys and do not rewrite name aliases', () => {
-  const staffing = { '1448-5': { 'TEST_ONLY legacy': { shift: 'TEST_ONLY old shift', rest: ['الجمعة'] } } };
+  const staffing = { '2026-10': { 'TEST_ONLY legacy': { shift: 'TEST_ONLY old shift', rest: ['الجمعة'] } } };
   const f = page('staff', { bassam_employees_v1: [{ eid: 'TEST_ONLY e1', name: 'TEST_ONLY legacy' }], bassam_staffing_v3: staffing });
   assert.deepEqual(plain(f.instance.loadStaffing()), staffing);
   assert.deepEqual(f.writes, []);
@@ -79,7 +79,7 @@ test('shift reads keep stored names and derive orphan presentation without savin
   const shifts = ['الصباحية', 'المسائية', 'الليلية'].map(name => ({ name, color: '#b99751' }));
   const f = page('staff', {
     bassam_shift_options_v1: shifts,
-    bassam_staffing_v3: { '1448-5': { 'TEST_ONLY e1': { shift: 'TEST_ONLY orphan shift' } } },
+    bassam_staffing_v3: { '2026-10': { 'TEST_ONLY e1': { shift: 'TEST_ONLY orphan shift' } } },
   });
   const result = plain(f.instance.loadShiftOpts());
   assert.deepEqual(result.slice(0, 3), shifts);
@@ -88,6 +88,7 @@ test('shift reads keep stored names and derive orphan presentation without savin
   assert.deepEqual(JSON.parse(f.values.get('bassam_shift_options_v1')), shifts);
 });
 
+/* V7 · 53 تقويم: يومُ المراقب ميلاديٌّ (الرياض) — 30 أكتوبر 2026، وشهرُ الجدول «2026-10» ويومُ التقرير «2026-10-30» */
 const NOW = Date.UTC(2026, 9, 30, 17);
 class Clock extends Date {
   constructor(...args) { super(...(args.length ? args : [NOW])); }
@@ -132,7 +133,7 @@ function observer(live, snapshot) {
 test('notification gap uses live V3 and never reads a retired snapshot bucket', () => {
   const rows = Object.fromEntries(Array.from({ length: 6 }, (_, i) => ['TEST_ONLY e' + i, { shift: i === 5 ? 'TEST_ONLY thin' : 'TEST_ONLY full' }]));
   const stale = Object.fromEntries(Array.from({ length: 6 }, (_, i) => ['TEST_ONLY e' + i, { shift: i < 3 ? 'TEST_ONLY thin' : 'TEST_ONLY full' }]));
-  const f = observer({ '1448-5': rows }, { '1448-5': { bucket: stale } });
+  const f = observer({ '2026-10': rows }, { '2026-10': { bucket: stale } });
   f.context.KIVO.BassamNotif.tick();
   assert.deepEqual(f.events.filter(e => e.type === 'st_gap').map(e => e.detail.vars['الوردية']), ['TEST_ONLY thin']);
   assert.equal(f.reads.some(key => key.endsWith('bassam_staffing_snap_v1')), false);
@@ -142,9 +143,9 @@ test('notification gap uses live V3 and never reads a retired snapshot bucket', 
 test('report notification fallback uses live rest, while an explicit pulled-report rest map wins', () => {
   for (const frozen of [false, true]) {
     const everyDay = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    const f = observer({ '1448-5': { 'TEST_ONLY e1': { rest: [] } } }, { '1448-5': { bucket: { 'TEST_ONLY e1': { rest: everyDay } } } });
+    const f = observer({ '2026-10': { 'TEST_ONLY e1': { rest: [] } } }, { '2026-10': { bucket: { 'TEST_ONLY e1': { rest: everyDay } } } });
     const key = f.scoped('bassam_dreport_v1');
-    f.values.set(key, JSON.stringify({ '1448-5-19': { shifts: { 'TEST_ONLY shift': { pulled: true, roster: [{ ekey: 'TEST_ONLY e1', st: 'pr' }], ...(frozen ? { rest: { 'TEST_ONLY e1': everyDay } } : {}) } } } }));
+    f.values.set(key, JSON.stringify({ '2026-10-30': { shifts: { 'TEST_ONLY shift': { pulled: true, roster: [{ ekey: 'TEST_ONLY e1', st: 'pr' }], ...(frozen ? { rest: { 'TEST_ONLY e1': everyDay } } : {}) } } } }));
     f.listeners.get('bassam:operations-commit')({ detail: { uid: f.context.KIVO.__BS_I.notif.me().id, dept: 'TEST_ONLY dept', requestId: 'TEST_ONLY confirmed report', changes: [{ key, before: '{}', after: f.values.get(key) }] } });
     assert.equal(f.events.some(e => e.type === (frozen ? 'rep_restday' : 'rep_today')), true);
     assert.equal(f.events.some(e => e.type === (frozen ? 'rep_today' : 'rep_restday')), false);

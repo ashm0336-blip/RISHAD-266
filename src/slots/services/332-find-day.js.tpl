@@ -274,7 +274,7 @@
         var me = null; emps.forEach(function(e){ if (me || !e) return; if (keyOf(e) === u.ekey || toksOf(e).indexOf(u.ekey) !== -1) me = e; });
         var myKey = me ? keyOf(me) : u.ekey;
         var found = '';
-        var rec = (KIVO.bus.read('dreport.doc@1') || {})[y + '-' + m + '-' + d];   /* V7 · د5-هـ: التقريرُ يُسأل مالكُه بالاسم؛ بغيابه لا يومَ مسحوب */
+        var rec = (KIVO.bus.read('dreport.doc@1') || {})[key(y, m, d)];   /* V7 · د5-هـ: التقريرُ يُسأل مالكُه بالاسم؛ بغيابه لا يومَ مسحوب */
         if (rec && rec.shifts) Object.keys(rec.shifts).forEach(function(nm){
           if (found) return; var sr = rec.shifts[nm]; if (!sr || !sr.pulled) return;
           (sr.roster || []).forEach(function(x){ if (found || !x || !x.ekey) return;
@@ -282,7 +282,7 @@
             if ((e2 ? keyOf(e2) : x.ekey) === myKey) found = nm; }); });
         if (!found) {
           /* V7 · د5-د2: شهرُ الجدولة يُسأل مالكُه بالاسم (الناقل)؛ بغيابه لا وردية من الجدول */
-          var b = (KIVO.bus.read('staff.months@1') || {})[y + '-' + m] || {};
+          var b = (KIVO.bus.read('staff.months@1') || {})[KIVO.BassamCal.gYm(y, m)] || {};   /* V7 · 53 تقويم: شهرُ الجدول ISO */
           var st = (E && E.entry && me) ? E.entry(b, me) : b[myKey];
           if (st && typeof st === 'object' && st.shift) found = st.shift;
         }
@@ -296,7 +296,7 @@
       var o = KIVO.__BS_SRV.operations.get(K);
       return o && typeof o === 'object' ? o : {};
     }
-    function key(y, m, d){ return y + '-' + m + '-' + d; }
+    function key(y, m, d){ return KIVO.BassamCal.gKey(y, m, d); }   /* V7 · 53 تقويم: يومُ الوردية والتقرير ISO YYYY-MM-DD */
     function get(y, m, d){ var mine = myShiftOf(y, m, d); if (mine) return mine.shift; var v = all()[key(y, m, d)]; return typeof v === 'string' ? v : ''; }
     function prepareSet(draft, y, m, d, name){
       var mine = myShiftOf(y, m, d);

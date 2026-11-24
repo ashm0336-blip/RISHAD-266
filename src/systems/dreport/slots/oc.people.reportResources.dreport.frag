@@ -4,8 +4,8 @@
     schema:ocMap('ops_daily_reports',null, {
       fixed:{__ldcs:ocMap('ops_report_leader_callsigns',ocScalar('text'))},
       patterns:[
-        {pattern:'^m:\\d{4}-\\d{1,2}$',schema:ocptReportMonth('ops_report_month')},
-        {pattern:'^\\d{4}-\\d{1,2}-\\d{1,2}$',schema:ocptReportDay('ops_report_day')}
+        {pattern:OS_RX_MCTL,schema:ocptReportMonth('ops_report_month')},   // V7 · 53 تقويم: m:YYYY-MM · YYYY-MM-DD وحدهما (019p0) — مفتاحٌ هجريٌّ من عميلٍ قديم يُرفض
+        {pattern:OS_RX_DAY,schema:ocptReportDay('ops_report_day')}
       ]
       //__lv/__lvU have deletion readers but no proven current value shape.
       //Reject their presence before DDL rather than invent/drop business data.

@@ -12,6 +12,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
+const DK = (y, m, d) => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0'), YM = (y, m) => y + '-' + String(m).padStart(2, '0');   /* V7 · 53 تقويم: مفاتيحُ ISO (كما تكتبها الصفحةُ الآن) */
+import { hToIso as H } from '../../../../tests/unit/cal_fx.mjs';   /* V7 · 53 تقويم: مفاتيحُ الاختبار الهجرية ⇐ ISO بالعُدّة المشتركة (الأغلبية للشهر) */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
 const rd = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const copy = (v) => JSON.parse(JSON.stringify(v));
@@ -35,7 +37,7 @@ function pageDraft(store) {
 /* ── نسخٌ مرجعية من الكود القديم (src/systems/plan/client/logic.js قبل د5-هـ) ── */
 function oldKeyNow(KIVO, key) {
   try {
-    const now = KIVO.BassamCal.hPartsRiyadh(new Date()), m = /^(?:m:)?(\d+)-(\d+)(?:-(\d+))?$/.exec(String(key));
+    const now = KIVO.BassamCal.gAt(new Date()), m = /^(?:m:)?(\d+)-(\d+)(?:-(\d+))?$/.exec(String(key));
     if (!m) return !1;
     const y = +m[1], mo = +m[2], d = null == m[3] ? null : +m[3];
     return y !== now.y ? y > now.y : mo !== now.m ? mo > now.m : null == d || d >= now.d;
@@ -59,9 +61,9 @@ function oldMonthClear(opRead, _opRelated, t) {
   try {
     const e = opRead('bassam_rounds_v1');
     if (e && 'object' == typeof e) {
-      const s = t.y + '-' + t.m + '-';
+      const s = YM(t.y, t.m) + '-';
       let n = !1;
-      (Object.keys(e).forEach((a) => { (0 !== a.indexOf(s) && a !== 'm:' + t.y + '-' + t.m) || (delete e[a], (n = !0)); }), n && (_opRelated.bassam_rounds_v1 = e));
+      (Object.keys(e).forEach((a) => { (0 !== a.indexOf(s) && a !== 'm:' + YM(t.y, t.m)) || (delete e[a], (n = !0)); }), n && (_opRelated.bassam_rounds_v1 = e));
     }
   } catch (t) {}
 }
@@ -89,17 +91,17 @@ function oldSitesPad(KIVO, opRead, _opRelated, a) {
 }
 /* أيامُ جولاتٍ حول اليوم: ماضٍ · اليوم · قادم · معتمد · موقعٌ معتمد · علاماتُ شهر — ليُختبر حدُّ «اليومَ فصاعداً» */
 function roundsAround(KIVO) {
-  const now = KIVO.BassamCal.hPartsRiyadh(new Date()), site = (n) => ({ sid: 'TEST_ONLY_S' + n, zones: [{ region: 'TEST_ONLY_R', level: 'TEST_ONLY_L' }], gates: [{ loc: 'TEST_ONLY loc', cats: ['TEST_ONLY_C'] }], marks: [], paths: [] });
-  const y = now.y, m = now.m, d = now.d, past = (y - 1) + '-' + m + '-' + d, today = y + '-' + m + '-' + d, next = (y + 1) + '-1-1';
+  const now = KIVO.BassamCal.gAt(new Date()), site = (n) => ({ sid: 'TEST_ONLY_S' + n, zones: [{ region: 'TEST_ONLY_R', level: 'TEST_ONLY_L' }], gates: [{ loc: 'TEST_ONLY loc', cats: ['TEST_ONLY_C'] }], marks: [], paths: [] });
+  const y = now.y, m = now.m, d = now.d, past = DK(y - 1, m, d), today = DK(y, m, d), next = DK(y + 1, 1, 1);
   return {
     [past]: { d: [site(0), site(1)] },
     [today]: { d: [site(0), { ...site(1), ap: 1 }] },
     [next]: { d: [site(0), site(1)] },
-    [(y + 1) + '-1-2']: { ap: 1, d: [site(0), site(1)] },
-    ['m:' + y + '-' + m]: { ap: 0 },
-    ['m:' + (y - 1) + '-' + m]: { ap: 0 },
-    [(y + 1) + '-1-3']: { d: [site(0)] },
-    [y + '-' + m + '-x']: null,
+    [DK(y + 1, 1, 2)]: { ap: 1, d: [site(0), site(1)] },
+    ['m:' + YM(y, m)]: { ap: 0 },
+    ['m:' + YM(y - 1, m)]: { ap: 0 },
+    [DK(y + 1, 1, 3)]: { d: [site(0)] },
+    [YM(y, m) + '-x']: null,
     TEST_ONLY_junk: { d: 'no' },
   };
 }
@@ -120,15 +122,15 @@ test('① rounds commands write exactly what the Plan page used to write into th
     same(b.cache, a.cache, 'مسودةُ الصفحة تُعدَّل في مكانها كما كانت'); assert.deepEqual(b.reads, a.reads);
   }
   { const a = pageDraft(store), want = oldPurge(c.KIVO, a.read, {}, purgeSite);
-    const days = want.bassam_rounds_v1, now = c.KIVO.BassamCal.hPartsRiyadh(new Date());
-    assert.equal(days[(now.y - 1) + '-' + now.m + '-' + now.d].d[0].gates[0].loc, 'TEST_ONLY loc', 'الماضي لا يُمسّ');
-    assert.equal(days[now.y + '-' + now.m + '-' + now.d].d[0].gates[0].loc, '', 'اليومُ يُنقّى');
-    assert.equal(days[now.y + '-' + now.m + '-' + now.d].d[1].gates[0].loc, 'TEST_ONLY loc', 'الموقعُ المعتمد لا يُمسّ');
-    assert.equal(days[(now.y + 1) + '-1-2'].d[0].gates[0].loc, 'TEST_ONLY loc', 'اليومُ المعتمد لا يُمسّ'); }
+    const days = want.bassam_rounds_v1, now = c.KIVO.BassamCal.gAt(new Date());
+    assert.equal(days[DK(now.y - 1, now.m, now.d)].d[0].gates[0].loc, 'TEST_ONLY loc', 'الماضي لا يُمسّ');
+    assert.equal(days[DK(now.y, now.m, now.d)].d[0].gates[0].loc, '', 'اليومُ يُنقّى');
+    assert.equal(days[DK(now.y, now.m, now.d)].d[1].gates[0].loc, 'TEST_ONLY loc', 'الموقعُ المعتمد لا يُمسّ');
+    assert.equal(days[DK(now.y + 1, 1, 2)].d[0].gates[0].loc, 'TEST_ONLY loc', 'اليومُ المعتمد لا يُمسّ'); }
   /* daily.month.clear@1 = planDelDo · daily.site.remove@1 = delFloorDo · daily.sites.pad@1 = siteModalSave (إضافة) */
-  const now = c.KIVO.BassamCal.hPartsRiyadh(new Date());
+  const now = c.KIVO.BassamCal.gAt(new Date());
   const cases = [
-    ['daily.month.clear@1', (t) => ({ y: t.y, m: t.m }), (rel, read, t) => oldMonthClear(read, rel, t), [{ y: now.y, m: now.m }, { y: now.y - 1, m: now.m }, { y: 1300, m: 1 }]],
+    ['daily.month.clear@1', (t) => ({ y: t.y, m: t.m }), (rel, read, t) => oldMonthClear(read, rel, t), [{ y: now.y, m: now.m }, { y: now.y - 1, m: now.m }, { y: 1900, m: 1 }]],
     /* V7 · د5-هـ (t4): الحذفُ والإكمالُ بمعرّف الموقع sid لا بموضعه — يساويان القديمَ حرفاً حين تحمل الأيامُ والمواقعُ معرّفاتٍ متّسقة (كما هنا: TEST_ONLY_S<i> في الموضع i)؛
        ما يختلف فيه الموضعُ عن المعرّف (إعادةُ ترتيب · طابقٌ بلا sid) يختبره src/systems/daily/tests/v7_d5e_rounds_sid_migration.test.mjs */
     ['daily.site.remove@1', (t) => ({ index: t.i, sid: 'TEST_ONLY_S' + t.i }), (rel, read, t) => oldSiteRemove(c.KIVO, read, rel, t), [{ i: 0 }, { i: 1 }, { i: 5 }]],
@@ -168,7 +170,7 @@ test('② plan commands write what the rounds page used to fold into its own sav
 });
 
 test('③ declared reads use the caller\'s own reading path and fail the same way', () => {
-  const store = { bassam_plan_v1: { floors: [{ sid: 'P' }] }, bassam_zone_opts_v1: { region: ['R'] }, bassam_gate_opts_v1: { loc: ['L'] }, bassam_rounds_v1: { '1448-1-1': { d: [] } } }, c = client({ store });
+  const store = { bassam_plan_v1: { floors: [{ sid: 'P' }] }, bassam_zone_opts_v1: { region: ['R'] }, bassam_gate_opts_v1: { loc: ['L'] }, bassam_rounds_v1: { [H('1448-1-1')]: { d: [] } } }, c = client({ store });
   for (const [name, key] of [['plan.doc@1', 'bassam_plan_v1'], ['plan.zoneOpts@1', 'bassam_zone_opts_v1'], ['plan.gateOpts@1', 'bassam_gate_opts_v1'], ['daily.days@1', 'bassam_rounds_v1']]) {
     const page = pageDraft(store);
     assert.equal(c.bus.read(name, page.read), page.read(key), name + ': قارئُ الصفحة (النسخةُ نفسُها)');
@@ -186,10 +188,10 @@ test('③ declared reads use the caller\'s own reading path and fail the same wa
   same(k.bus.read('daily.lensFilter@1', copy(sites))[0].marks, [], 'عدسةُ المعالم مطفأة');
   same(k.bus.read('daily.names@1'), { bassam_rounds_v1: 'الجولات اليومية' });
   /* الجولةُ الأولى في الشهر من خطة الشهر عبر plan.doc@1 داخل مسودة المصنع — وبغياب الخطة «noplan» */
-  const month = { bassam_rounds_v1: {}, bassam_plan_v1: { floors: [{ sid: 'TEST_ONLY_SITE' }], months: { '1448-1': { d: [{ zones: [], gates: [], marks: [], paths: [] }] } } } };
+  const month = { bassam_rounds_v1: {}, bassam_plan_v1: { floors: [{ sid: 'TEST_ONLY_SITE' }], months: { '2026-01': { d: [{ zones: [], gates: [], marks: [], paths: [] }] } } } };   /* V7 · 53 تقويم: شهرٌ ميلادي ISO */
   const draft = (s) => ({ get: (x) => copy(s[x]), set() {} });
-  assert.equal(client().KIVO.BassamRound.prepareEnsure(draft(month), 1448, 1, 4).status, 'created');
-  assert.equal(client({ plan: false }).KIVO.BassamRound.prepareEnsure(draft(month), 1448, 1, 4).status, 'noplan');
+  assert.equal(client().KIVO.BassamRound.prepareEnsure(draft(month), 2026, 1, 4).status, 'created');
+  assert.equal(client({ plan: false }).KIVO.BassamRound.prepareEnsure(draft(month), 2026, 1, 4).status, 'noplan');
 });
 
 test('④ owner absent: reads are undefined, commands report absence, nothing is written', () => {
