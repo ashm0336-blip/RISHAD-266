@@ -17,7 +17,7 @@ import { installCurrentSchemaFixture } from './current_schema_fx.mjs';
 import { needs } from './harness.mjs';
 
 const T = (() => { const f = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }); const o = {}; f.formatToParts(new Date(Date.now() - 3 * 3600 * 1000)).forEach(p => { o[p.type] = +p.value; }); return o; })();
-const DAY = T.year + '-' + T.month + '-' + T.day;
+const DAY = new Date().toISOString().slice(0, 10);   /* V7 · 53 تقويم: مفتاحُ اليوم ISO ميلادي — يومُ الرياض التشغيلي (الآن − 3 ساعات) = تاريخُ UTC الآن، كما يكتبه gen_fixture لـ --today الهجري */
 function seedSql() {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'kivo_fx_r266sr_'));
   execFileSync(PYTHON, [ROOT + '/tests/fixtures/gen_fixture.py', '--today', T.year + '-' + T.month + '-' + T.day, '--out', out], { stdio: 'pipe' });
@@ -119,7 +119,7 @@ test('[enforce] القراءة: لا إسقاطَ بالوردية ولا بال
   const W = await world();
   const ir = async () => { const r = await W.C.api('/api/irshad?dept=tst_d1&view=records', { cookie: W.L.supB }); assert.equal(r.status, 200, JSON.stringify(r.j)); return r.j.rows.map(x => x.id).sort(); };
   const shiftsOf = async (who) => { const v = await getV(W, who, KDR); return Object.keys((v && v[DAY] && v[DAY].shifts) || {}).sort(); };
-  const staffRows = async (who) => { const v = await getV(W, who, KST); const mk = T.year + '-' + T.month; return Object.keys((v && v[mk]) || {}).filter(k => k !== '__shifts').sort(); };
+  const staffRows = async (who) => { const v = await getV(W, who, KST); const mk = DAY.slice(0, 7);   /* V7 · 53 تقويم: شهرُ الجدول ISO YYYY-MM */ return Object.keys((v && v[mk]) || {}).filter(k => k !== '__shifts').sort(); };
   const withRec = { ir: await ir(), dr: await shiftsOf('supB'), st: await staffRows('supB') };
   assert.ok(withRec.ir.includes('tstir1') && withRec.ir.includes('tstir2'), 'مشرف ب يرى محاضرَ الورديتين (كان TST-B وحدها): ' + withRec.ir);
   assert.deepEqual(withRec.dr, ['TST-A', 'TST-B'], 'التقرير اليومي بالورديتين');
