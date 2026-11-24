@@ -48,7 +48,7 @@ function element(tag, append) {
 }
 
 function world({ registered = false, readResponse = response } = {}) {
-  const B = built(), calls = [], errors = [], constructors = [], timers = new Set(), events = new Map();
+  const B = built(), calls = [], ranges = [], errors = [], constructors = [], timers = new Set(), events = new Map();
   const registry = [{ id: 'real', name: 'TEST_ONLY real emitted department' }], rows = [{ eid: 'TEST_ONLY_employee', name: 'TEST_ONLY SQL employee' }];
   const W = { console: { log() {}, warn() {}, error(...values) { errors.push(values.map(String).join(' ')); } }, Intl, Date, URL, URLSearchParams, Blob, TextEncoder, TextDecoder, AbortController, Uint8Array,
     crypto: webcrypto, Event, CustomEvent, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 }, navigator: { onLine: true, sendBeacon() { throw Error('No beacon in this fixture'); } },
@@ -97,8 +97,11 @@ function world({ registered = false, readResponse = response } = {}) {
     const url = new URL(route, 'http://x');
     if (url.pathname === '/api/operations/read') {
       const requested = url.searchParams.get('keys').split(','), key = requested.find(key => key.endsWith(':bassam_employees_v1'));
-      calls.push(requested);
-      return readResponse({ ok: 1, uid: UID, epoch: 3, v: 7, resources: key ? { [key]: rows } : {}, absent: requested.filter(item => item !== key), denied: [], base: Object.fromEntries(requested.map(item => [item, 0])) });
+      /* V7 · 53 تقويم: مع خدمة التقويم (385) تحسب 280 الشهرَ الجاري فيُطلب مدى الجولات وأرشيفِها في طلبٍ موازٍ من القراءة نفسِها (Promise.all) —
+         القراءةُ الواحدة = طلبُها الرئيس (فيه مفتاحُ الموظفين)؛ طلباتُ المدى الموازية تُحفظ في ranges ويُتحقّق من نطاقها */
+      if (key) calls.push(requested); else ranges.push(requested);
+      const range = (url.searchParams.get('range') || '').split(',').filter(Boolean);   /* مدى الشهر الجاري: لا أيامَ مخزّنة في هذه الإدارة */
+      return readResponse({ ok: 1, uid: UID, epoch: 3, v: 7, resources: key ? { [key]: rows } : {}, absent: requested.filter(item => item !== key), denied: [], base: Object.fromEntries(requested.map(item => [item, 0])), ...(range.length ? { ranges: Object.fromEntries(range.map(r => [r, []])) } : {}) });
     }
     if (url.pathname.startsWith('/assets/pages/')) return new Response(B.file(url.pathname.slice(1)).source, { headers: { 'Content-Type': 'text/plain' } });
     throw Error('Unexpected fixture route: ' + route);
@@ -124,7 +127,7 @@ function world({ registered = false, readResponse = response } = {}) {
     const Dispatcher = runtime.getDC('Employees'), tree = Dispatcher({}), component = new tree.type(tree.props);
     component.componentDidMount(); return component;
   }
-  return { W, runtime, calls, errors, constructors, rows, registry, body, mount,
+  return { W, runtime, calls, ranges, errors, constructors, rows, registry, body, mount,
     dispose() { for (const timer of timers) { clearTimeout(timer); clearInterval(timer); } timers.clear(); } };
 }
 
@@ -153,6 +156,7 @@ test('actual emitted runtime blocks a missing department then waits for typed AC
     component.render();
     assert.equal(f.constructors.length, 1); assert.deepEqual(f.constructors[0].employees, f.rows);
     assert.equal(f.calls[0].every(key => key.startsWith('bsdept:real:')), true);
+    assert.equal(f.ranges.every(list => list.every(key => key.startsWith('bsdept:real:'))), true, 'وطلباتُ المدى الموازية في الإدارة الحقيقية وحدها');
     assert.equal(f.errors.some(error => /operations-read-required|initializer|construct/.test(error)), false);
   } finally { release(); f.dispose(); }
 });

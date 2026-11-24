@@ -23,7 +23,8 @@ const D0 = 'M100 100 L400 100 L400 300 L100 300 Z';
 const SP = [{ x: 500, y: 100 }, { x: 700, y: 100 }, { x: 700, y: 300 }, { x: 500, y: 300 }];
 const gate = (uid, x, y, n) => ({ uid, x, y, label: 'باب ' + n, emp: [], hideLabel: true });
 const site = (o = {}) => Object.assign({ sid: 's_TEST_ONLY_1', name: 'TEST_ONLY', num: 1, zones: [], gates: [], marks: [], paths: [], sectors: [], iid: 'img_TEST_ONLY' }, o);
-const stored = (F) => JSON.stringify({ pMig: 3, zones: F[0].zones, gates: F[0].gates, marks: [], paths: F[0].paths, floors: F, months: { '1448-5': { c: 1, d: F } }, cfg: {}, delMonths: {} });
+/* V7 · 53 تقويم: شهرُ الخطة ميلاديٌّ ISO (2026-10 = شهرُ الساعة الثابتة) — كان 1448-5 فيرفضه المرمِّز */
+const stored = (F) => JSON.stringify({ pMig: 3, zones: F[0].zones, gates: F[0].gates, marks: [], paths: F[0].paths, floors: F, months: { '2026-10': { c: 1, d: F } }, cfg: {}, delMonths: {} });
 
 /* موقعٌ بمصلّى ونطاقٍ وبابين ومسار · صورتُه في IndexedDB تصل حين يشاء الاختبار (land) · كلُّ عقدةٍ من الصفحة في الخريطة (ومقابضُ المحدَّد) */
 function plan(lens = 'plan', sel = null, pathOptions = null) {
@@ -34,8 +35,8 @@ function plan(lens = 'plan', sel = null, pathOptions = null) {
     sectors: [{ uid: 'TEST_ONLY_s1', name: 'TEST_ONLY', pts: SP }] })];
   W.store.set(KP, stored(F));
   const F1 = JSON.parse(JSON.stringify(F));
-  c.state = Object.assign({}, c.state, { year: 1448, month: 5, floor: 0, floors: F1, zones: F1[0].zones.slice(), gates: F1[0].gates.slice(), marks: [], paths: F1[0].paths.slice(),
-    planMonths: { '1448-5': { c: 1, d: F1 } }, sel, selMulti: pathOptions && sel ? [sel.i] : [], tool: 'select', lens, view: { x: 0, y: 0, w: 1000, h: 600 } });
+  c.state = Object.assign({}, c.state, { year: 2026, month: 10, floor: 0, floors: F1, zones: F1[0].zones.slice(), gates: F1[0].gates.slice(), marks: [], paths: F1[0].paths.slice(),
+    planMonths: { '2026-10': { c: 1, d: F1 } }, sel, selMulti: pathOptions && sel ? [sel.i] : [], tool: 'select', lens, view: { x: 0, y: 0, w: 1000, h: 600 } });
   const S = { saves: 0, toasts: [] };
   const save0 = c.savePlan; c.savePlan = function () { S.saves++; return save0.apply(this, arguments); };
   c.bsToast = (m) => S.toasts.push(m);
@@ -119,7 +120,7 @@ test('W1-C2 (أ): تحديثٌ من جهازٍ آخر طُبِّق في الحا
   pinchEnd(X, el.zone, [300, 200]);
   c.savePlan();
   const st = JSON.parse(W.store.get(KP));
-  assert.equal(st.months['1448-5'].d[0].zones.map((z) => z.uid).join(' '), 'TEST_ONLY_zR TEST_ONLY_z1', 'الحفظُ يحمل نسخةَ الجهاز الآخر');
+  assert.equal(st.months['2026-10'].d[0].zones.map((z) => z.uid).join(' '), 'TEST_ONLY_zR TEST_ONLY_z1', 'الحفظُ يحمل نسخةَ الجهاز الآخر');
 });
 
 test('W1-C2 (أ): كاتبٌ آخر زحزح المصليات (مصلّى جديدٌ في أوّلها) أثناء سحبٍ قصير ⇒ يعود المصلّى المسحوب بهويته لا بفهرسه · والجديدُ باقٍ', () => {
@@ -193,13 +194,13 @@ test('W1: سحبٌ مقصود (> 350ms) ثمّ إصبعٌ ثانٍ ⇒ يُحف�
 /* ── (ب) R3-C2b-REVERT: التحديثُ الحيّ أثناء السحب كما قبل الجولة 2 ── */
 /* جهازٌ آخر حفظ الخطة: بابٌ جديدٌ في أوّل القائمة ومصلّى جديد — 280 كتبه في المخزن (وصار أساسَ المزامنة) ثمّ أبلغ الشاشة */
 function remote(X) {
-  const F = JSON.parse(X.W.store.get(KP)).months['1448-5'].d;
+  const F = JSON.parse(X.W.store.get(KP)).months['2026-10'].d;
   F[0].gates = [gate('TEST_ONLY_gR', 50, 50, 9)].concat(F[0].gates);
   F[0].zones = F[0].zones.concat([{ uid: 'TEST_ONLY_zR', d: 'M10 10 L60 10 L60 60 Z', cx: 30, cy: 30, emp: [] }]);
   X.W.store.set(KP, stored(F));
   return X.c._bsLiveReload([KP]);
 }
-const st = (X) => JSON.parse(X.W.store.get(KP)).months['1448-5'].d[0];
+const st = (X) => JSON.parse(X.W.store.get(KP)).months['2026-10'].d[0];
 const mouse = (x, y) => tp(x, y, 1, { pointerType: 'mouse' });
 
 test('R3-C2b-REVERT: تحديثٌ حيّ يصل أثناء ضغطة المصلّى باللمس يُطبَّق في الحال ثمّ إصبعٌ ثانٍ ⇒ لا يعيده undoLead ولا يكتب حفظٌ قديمٌ فوقه', () => {
@@ -271,7 +272,7 @@ test('W1: بلا تحديثٍ حيّ يُحفظ سحبُ المسار عند ا�
 /* ── الجولاتُ اليومية: الآليةُ نفسُها — سحبُ رأس المصلّى في أوّل 350ms يعود، وجولةُ الجهاز الآخر التي وصلت بينهما تبقى ── */
 test('W1-C2 (الجولات اليومية): رأسُ المصلّى سُحب لحظةً ووصلت جولةُ جهازٍ آخر ثمّ إصبعٌ ثانٍ ⇒ يعود السحبُ وحدَه وتبقى الجولةُ الواردة', () => {
   const W = world(), c = W.logic('daily', DAILY);
-  const h = c.hParts(new Date()), RK = h.y + '-' + h.m + '-' + h.d;
+  const h = c.gParts(new Date()), RK = h.y + '-' + String(h.m).padStart(2, '0') + '-' + String(h.d).padStart(2, '0');   /* V7 · 53 تقويم: يومُ الصفحة ميلاديٌّ ISO */
   const R0 = { [RK]: { d: [{ zones: [{ uid: 'TEST_ONLY_z1', d: D0, cx: 250, cy: 200 }], paths: [], gates: [], marks: [] }] } };
   W.store.set('bassam_rounds_v1', JSON.stringify(R0));
   c.state = Object.assign({}, c.state, { year: h.y, month: h.m, day: h.d, floor: 0, lens: 'zones', tool: 'select', dview: { x: 0, y: 0, w: 1000, h: 600 }, dsSel: { t: 'zone', i: 0 }, rounds: JSON.parse(JSON.stringify(R0)) });
@@ -443,7 +444,7 @@ test('Production paths: touch/mouse vertex edit keeps one colored axis while pai
     assertLiveAxis(el.pa0_0.parentNode,[{x:100,y:550},{x:330,y:520}]);
     W.dispatch(el.pv1,'pointerup',ev(330,520)); W.flushTimers();
     assert.equal(X.S.saves,1,'existing save path commits once');
-    const saved = c.loadPlan().months['1448-5'].d[0].paths;
+    const saved = c.loadPlan().months['2026-10'].d[0].paths;
     assert.equal(saved.length,1); assert.equal(saved[0].uid,'TEST_ONLY_p1'); assert.equal(saved[0].id,'TEST_ONLY_path_id');
     assert.equal(saved[0].pts[1].x,330); assert.equal(saved[0].pts[1].y,520);
     c.state.paths = JSON.parse(JSON.stringify(saved)); assertAxis(c.renderVals().pathNodes,saved[0].pts);
@@ -462,7 +463,7 @@ test('Production paths: second touch zoom cancels lead drag without changing or 
 });
 
 function dailyPath(options = {}, approved = false) {
-  const W = world(), c = W.logic('daily',DAILY), h = c.hParts(new Date()), key = h.y+'-'+h.m+'-'+h.d;
+  const W = world(), c = W.logic('daily',DAILY), h = c.gParts(new Date()), key = h.y+'-'+String(h.m).padStart(2,'0')+'-'+String(h.d).padStart(2,'0');   /* V7 · 53 تقويم: يومُ الصفحة ميلاديٌّ ISO */
   const path = {uid:'TEST_ONLY_p1',id:'TEST_ONLY_path_id',pts:[{x:100,y:550},{x:300,y:550}],...pathCase(options)};
   const rounds = {[key]:{ap:approved,t:12345,d:[site({paths:[path]})]}};
   W.store.set('bassam_rounds_v1',JSON.stringify(rounds));
