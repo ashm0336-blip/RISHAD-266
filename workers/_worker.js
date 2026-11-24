@@ -2718,6 +2718,20 @@ function deptPermShapeOk(eo, en, to, tn, lo, ln) {
       && chk(to, tn, function (v) { return v === null || (typeof v === 'string' && v.length <= 64); })
       && chk(lo, ln, function (v) { return Array.isArray(v) && v.length <= 32 && v.every(function (x) { return typeof x === 'string' && x.length <= 32; }); });
 }
+/* V7 · د7 (ك1): تضييقٌ وحده — كلُّ وحدةٍ تغيّرت قائمتُها يديرها الفاعل (isMgrOf)، والقائمةُ الجديدة مصفوفةٌ كلُّ عدسةٍ فيها مفعّلةٌ قبلها (الغيابُ = كلُّ العدسات)؛
+   حذفُ السجلّ (= كلُّ العدسات) أو إضافةُ عدسةٍ توسيعٌ فيُرفض. لا يُستدعى إلا من استيرادٍ أو استعادةٍ خادمية متحقَّقة (A.__srvRst) */
+function lensesNarrowOnly(A, a, b) {
+  if ((b !== undefined && !isObj(b)) || (a !== undefined && a !== null && !isObj(a))) return false;
+  a = isObj(a) ? a : {}; b = isObj(b) ? b : {};
+  var all = perm44E().lensList().map(function (x) { return x.lens; }), ks = {}, d;
+  Object.keys(a).concat(Object.keys(b)).forEach(function (x) { ks[x] = 1; });
+  for (d in ks) {
+    if (deq(a[d], b[d])) continue;
+    var x = Array.isArray(a[d]) ? a[d] : all, y = b[d];
+    if (!Array.isArray(y) || !isMgrOf(A, d) || y.some(function (L) { return x.indexOf(L) === -1; })) return false;
+  }
+  return true;
+}
 /* الصلاحيات: السقوف والعدسات والتبويبات لمدير النظام، وصلاحيات الموظفين لمدير إدارتهم داخل السقف */
 function permsRule(A, newJson, curJson) {
   var n = parseJson(newJson, null), o = parseJson(curJson, {});
@@ -2730,6 +2744,7 @@ function permsRule(A, newJson, curJson) {
        عند أوّل تحميل) وكانت تُتخطّى كلياً فيكتب فيها غيرُ مدير النظام أيَّ قيمةٍ وبأيّ حجم في مفتاحٍ عامّ يقرؤه الجميع. الآن: كما هي أو 1 من غياب — وما سواها ممنوع */
     if (k === 'lensZ') { if (deq(o.lensZ, n.lensZ) || (n.lensZ === 1 && !o.lensZ)) continue; return { ok: false, why: 'super' }; }
     if (k === 'lenses' && lensesUpgradeOnly(o.lenses, n.lenses)) continue;
+    if (k === 'lenses' && A.__srvRst && lensesNarrowOnly(A, o.lenses, n.lenses)) continue;   /* V7 · د7 (ك1): الاستيرادُ الخادمي المتحقَّق (019d rsDeptLensNarrow) يضيّق عدساتِ وحدة مديرها ولا يوسّعها */
     var ov = o[k] === undefined ? {} : o[k], nv = n[k] === undefined ? {} : n[k];   /* الغائب والفارغ سواء */
     if (!deq(ov, nv)) return { ok: false, why: 'super' };   /* V7 · د5-هـ (44): السقفُ لمدير المنصة وحده — بذرُ سقف القسم الجديد ذهب مع إنشائه (الأقسامُ لمدير المنصة) */
   }
@@ -11057,9 +11072,25 @@ function rsDeptPermsKeep(pm, id, PP, mode) {
   if (mode !== 'replace' && empKeys) return null;
   for (ek in cur) if (isMgrKey(ek)) out[ek] = cur[ek];
   for (ek in inc) if (!isMgrKey(ek) && !Object.prototype.hasOwnProperty.call(out, ek)) out[ek] = inc[ek];
-  if (deq(out, cur)) return null;
-  pm.emps[id] = out;
+  var lens = rsDeptLensNarrow(pm, id, PP), same = deq(out, cur);
+  if (same && lens === null) return null;
+  if (!same) pm.emps[id] = out;
+  if (lens !== null) { pm.lenses = isObj(pm.lenses) ? pm.lenses : {}; pm.lenses[id] = lens; }
   return pm;
+}
+/* V7 · د7 (ك1 — «إعدادُ العدسات في النسخة يُحترم عند الاستيراد، وما لم يكن مفعّلاً لا يُفعَّل»): كان rsDeptPermsKeep يُسقط perms.lenses من النسخة كلياً،
+   فوحدةٌ بلا سجلّ عدسات (الغيابُ = الستُّ مفعّلة) تبقى بالستّ بعد استيراد نسخةٍ عدساتُها ثلاث. القاعدةُ الواحدة لمدير المنصة ومدير الإدارة:
+   عدساتُ الوحدة بعد الاستيراد = عدساتُها قبله ∩ عدساتُ النسخة — تضييقٌ لا توسيع (قرارُ المالك ب3: الاستيرادُ لا يوسّع السقف · ومديرُ الإدارة لا يوسّع سقفَ نفسه).
+   نسخةٌ بلا قائمة عدسات (Production: الغيابُ = الكلّ) لا تغيّر شيئاً؛ والقائمةُ الفارغة = لا عدسة. وتُطبَّق حيث تُطبَّق أوراقُ الموظفين (الاستبدال ·
+   أو الدمجُ في وحدةٍ بلا أوراق). null = لا تغيير. الموضعُ الواحد القابلُ للرجوع: إن قرّر المالك أن «يُطبَّق سقفُ النسخة كما هو» لمدير المنصة
+   (ب4 القديم) فهنا وحده: cur = all حين A.u.role === 'super'. */
+function rsDeptLensNarrow(pm, id, PP) {
+  if (!Array.isArray(PP.lenses)) return null;
+  var all = perm44E().lensList().map(function (x) { return x.lens; }),
+    had = isObj(pm.lenses) && Array.isArray(pm.lenses[id]) ? pm.lenses[id] : null,
+    next = (had || all).filter(function (L) { return PP.lenses.indexOf(L) !== -1; });
+  if (had ? deq(had, next) : next.length === all.length) return null;
+  return next;
 }
 /* V7 · د6: ثلاثُ قطعٍ من مسار الاستعادة صارت دوالَّ ليشاركه فيها الاستيرادُ على أجزاء (019g) بلا نسخةٍ ثانية: حكمُ الصلاحية · تحويلُ النسخة وتخطيطُها واعتمادُها · ترجمةُ الرفض */
 function rsScopeDenied(A, s) {
@@ -26396,6 +26427,16 @@ var ENF_MGR_FULL = { 'backup.restore': 1, 'import.replace': 1 };
 /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يكتب في الفترات المقفلة/المنقضية من إدارته بلا نافذةٍ رجعية — في الاستيراد والاستعادة الخادمية المتحقَّقة وحدها (A.__srvRst).
    هذا هو الموضعُ الواحد القابلُ للرجوع: إن قرّر المالك أن يشمل الكتابةَ الحيّة كذلك يُحذف شرطُ (X.restore ∧ A.__srvRst) هنا وحده. */
 function enfLockBypass(A, d, X) { return !!(X && X.restore && A && A.__srvRst) && enfDeptMgrFull(A, d); }
+/* V7 · د7 (ك1): استيرادُ مدير الإدارة نسخةَ إدارته يضيّق عدساتِها إلى ما في النسخة (019d rsDeptLensNarrow)، ونسخةُ Production تحمل بياناتِ عدساتها المطفأة
+   (البوابات · العلامات في المخطط) — فكان استيرادُها مرةً ثانية يُرفض «lens.gates.create». في الاستيراد والاستعادة الخادمية المتحقَّقة (A.__srvRst) وحدها
+   ولمدير الإدارة في إدارته وحدها: مفتاحُ عدسةٍ مطفأة نظامُها المضيف مفعّلٌ في السقف = بياناتٌ مخزَّنةٌ بلا أثر (كأوراق الموظفين خارج السقف · قرارُ المالك ب3) —
+   العدسةُ تبقى مطفأةً لا تظهر لأحد، والكتابةُ الحيّة على حكمها. الموضعُ الواحد القابلُ للرجوع: حذفُ هذه الدالة يعيد الرفض */
+function enfLensInertRestore(A, d, key) {
+  var ix = enfIx(), hs = ix.hosts[key];
+  if (!hs || !ix.lens[key] || !(A && A.__srvRst) || !enfDeptMgrFull(A, d)) return false;
+  for (var i = 0; i < hs.length; i++) if (capOnDept(A, d, hs[i])) return true;
+  return false;
+}
 function enfDeptMgrFull(A, d) { return !!(A && A.u) && A.u.role === 'staff' && !!d && isUnitId(A, d) && isMgrOf(A, d); }   /* V7 · د6 (QA): دورُ «dept» المتقاعد ليس مديرَ إدارة هنا — يبقى مرفوضاً في التصدير وجرد الاستعادة (privacy_backup f) */
 /* هل يحمل الفاعلُ المفتاحَ في الإدارة d؟ (سقف الإدارة ∧ بوابة العدسة ∧ الدور ∧ الترجمة/المنح الصريح − الإسقاط) */
 function enfHeld(A, d, key) {
@@ -26418,6 +26459,7 @@ function enfHeld0(A, d, key) {
   /* …وكلُّ مفتاحٍ بعدها: لا مفتاحَ على عقدةٍ فوقية ولا معرّفٍ مجهول لأحد (gm على عقدةٍ كان يحمل على العقدة تحتها مفاتيحَ الوحدة) */
   if (!isUnitId(A, d)) return false;
   if (!sup && !deptInScope(A, d)) return false;
+  if (enfLensInertRestore(A, d, key)) return true;   /* V7 · د7 (ك1) */
   if (!enfKeyOnCeiling(A, d, key)) return false;
   if (ENF_MGR_FULL[key] && enfDeptMgrFull(A, d) && !enfGrantOf(A, d).minus[key]) return true;   /* V7 · د6 (QA ٦ — قرارُ المالك): مديرُ الإدارة يحمل الاستعادةَ والاستبدال في إدارته وحدها — بلا منحٍ صريح (الإسقاطُ الصريح من مدير المنصة يبقى نافذاً) */
   var L = ix.lens[key];

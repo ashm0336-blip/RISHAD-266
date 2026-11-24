@@ -222,6 +222,20 @@ function deptPermShapeOk(eo, en, to, tn, lo, ln) {
       && chk(to, tn, function (v) { return v === null || (typeof v === 'string' && v.length <= 64); })
       && chk(lo, ln, function (v) { return Array.isArray(v) && v.length <= 32 && v.every(function (x) { return typeof x === 'string' && x.length <= 32; }); });
 }
+/* V7 · د7 (ك1): تضييقٌ وحده — كلُّ وحدةٍ تغيّرت قائمتُها يديرها الفاعل (isMgrOf)، والقائمةُ الجديدة مصفوفةٌ كلُّ عدسةٍ فيها مفعّلةٌ قبلها (الغيابُ = كلُّ العدسات)؛
+   حذفُ السجلّ (= كلُّ العدسات) أو إضافةُ عدسةٍ توسيعٌ فيُرفض. لا يُستدعى إلا من استيرادٍ أو استعادةٍ خادمية متحقَّقة (A.__srvRst) */
+function lensesNarrowOnly(A, a, b) {
+  if ((b !== undefined && !isObj(b)) || (a !== undefined && a !== null && !isObj(a))) return false;
+  a = isObj(a) ? a : {}; b = isObj(b) ? b : {};
+  var all = perm44E().lensList().map(function (x) { return x.lens; }), ks = {}, d;
+  Object.keys(a).concat(Object.keys(b)).forEach(function (x) { ks[x] = 1; });
+  for (d in ks) {
+    if (deq(a[d], b[d])) continue;
+    var x = Array.isArray(a[d]) ? a[d] : all, y = b[d];
+    if (!Array.isArray(y) || !isMgrOf(A, d) || y.some(function (L) { return x.indexOf(L) === -1; })) return false;
+  }
+  return true;
+}
 /* الصلاحيات: السقوف والعدسات والتبويبات لمدير النظام، وصلاحيات الموظفين لمدير إدارتهم داخل السقف */
 function permsRule(A, newJson, curJson) {
   var n = parseJson(newJson, null), o = parseJson(curJson, {});
@@ -234,6 +248,7 @@ function permsRule(A, newJson, curJson) {
        عند أوّل تحميل) وكانت تُتخطّى كلياً فيكتب فيها غيرُ مدير النظام أيَّ قيمةٍ وبأيّ حجم في مفتاحٍ عامّ يقرؤه الجميع. الآن: كما هي أو 1 من غياب — وما سواها ممنوع */
     if (k === 'lensZ') { if (deq(o.lensZ, n.lensZ) || (n.lensZ === 1 && !o.lensZ)) continue; return { ok: false, why: 'super' }; }
     if (k === 'lenses' && lensesUpgradeOnly(o.lenses, n.lenses)) continue;
+    if (k === 'lenses' && A.__srvRst && lensesNarrowOnly(A, o.lenses, n.lenses)) continue;   /* V7 · د7 (ك1): الاستيرادُ الخادمي المتحقَّق (019d rsDeptLensNarrow) يضيّق عدساتِ وحدة مديرها ولا يوسّعها */
     var ov = o[k] === undefined ? {} : o[k], nv = n[k] === undefined ? {} : n[k];   /* الغائب والفارغ سواء */
     if (!deq(ov, nv)) return { ok: false, why: 'super' };   /* V7 · د5-هـ (44): السقفُ لمدير المنصة وحده — بذرُ سقف القسم الجديد ذهب مع إنشائه (الأقسامُ لمدير المنصة) */
   }

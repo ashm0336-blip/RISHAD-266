@@ -57,7 +57,9 @@ test('(٣) قرارُ المالك ب: صحيفةُ مدير المصدر لا �
       assert.deepEqual(nt, [{ k: 'perms · mgr', why: 'mgr-sheet', n: 1 }], as + ': صحيفةُ مدير المصدر تُذكر فيما لن يُنقل');
       const now = permsOf(T);
       assert.deepEqual(now.caps[B], before.caps[B], as + ': سقفُ الوحدة كما في الهدف (لا سقفَ النسخة)');
-      for (const f of ['subs', 'lenses', 'capOwn', 'capSeed']) assert.deepEqual((now[f] || {})[B], (before[f] || {})[B], as + ': ' + f + ' كما في الهدف');
+      for (const f of ['subs', 'capOwn', 'capSeed']) assert.deepEqual((now[f] || {})[B], (before[f] || {})[B], as + ': ' + f + ' كما في الهدف');
+      /* V7 · د7 (ك1 — ملف المالك 53): العدساتُ = عدساتُ الهدف ∩ عدساتُ النسخة (019d rsDeptLensNarrow) — الهدفُ بلا سجلّ (الستّ) والنسخةُ [zones, paths, dens] */
+      assert.equal((before.lenses || {})[B], undefined); assert.deepEqual(now.lenses[B], file.perms.lenses, as + ': lenses = الهدف ∩ النسخة (تضييقٌ لا توسيع)');
       assert.deepEqual(Object.fromEntries(Object.entries(now.emps[B]).filter(([k]) => k.startsWith('mgr:'))), MGR0, as + ': صحيفةُ مدير الهدف كما كانت (أو لا صحيفة) — لا تُستبدل ولا تُضاف');
       assert.deepEqual(now.emps[B].tst_demo_e11, file.perms.emps.tst_demo_e11, as + ': ورقةُ الموظف انتقلت كما هي (مخزَّنة)');
       assert.equal(usersOf(T), users, as + ': الحساباتُ (والمدير) كما هي');
