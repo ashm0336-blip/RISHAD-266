@@ -76,7 +76,7 @@ function opPeriodSizeCheck(def, p, value) {
 }
 function opSummaryValue(info, p, value) {
   var def = opPeriodDef(info); if (p === '' || typeof def.summary !== 'function') return null;
-  try { return def.summary(p, value); } catch (e) { return null; }
+  try { var out = def.summary(p, value); if (out && typeof out === 'object' && typeof def.kpi === 'function') out.kpi = def.kpi(p, value); return out; } catch (e) { return null; }
 }
 function opSummaryStatements(env, info, changes) {
   var put = [], drop = [];
@@ -123,10 +123,9 @@ async function opSummaryRoute(env, request, url, session) {
       var x = opPeriodIdx(def, p); return grps.length ? grps.indexOf(x.grp) >= 0 : x.seq >= lo && x.seq <= hi;
     }));
     if (names.length > OP_LIM.summaryRows) throw opLimError('read-too-large', 413, { periods: names.length, cap: OP_LIM.summaryRows });
-    var got = await env.DB.batch([
-      env.DB.prepare('SELECT period,rev,v_json FROM ops_period_summary WHERE department_id=?1 AND resource=?2 AND period IN(SELECT value FROM json_each(?3))').bind(info.dept, info.resource, JSON.stringify(names)),
-      env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(names.map(function (p) { return K + '@' + p; }).concat([K + '@*'])))]);
-    var have = {}, revs = {}; (got[0].results || []).forEach(function (r) { have[r.period] = r; }); (got[1].results || []).forEach(function (r) { revs[r.k] = rsNat(r.rev); });
+    var got = await env.DB.batch([env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(names.map(function (p) { return K + '@' + p; }).concat([K + '@*'])))]);
+    var have = {}, revs = {}; (got[0].results || []).forEach(function (r) { revs[r.k] = rsNat(r.rev); });
+    for (var c1 = 0; c1 < names.length; c1 += 31) (((await env.DB.prepare('SELECT period,rev,v_json FROM ops_period_summary WHERE department_id=?1 AND resource=?2 AND period IN(SELECT value FROM json_each(?3))').bind(info.dept, info.resource, JSON.stringify(names.slice(c1, c1 + 31))).all()).results) || []).forEach(function (r) { have[r.period] = r; });   /* v.kpi يكبر بالفترة: شهرٌ في كل استدعاء */
     var stale = names.filter(function (p) { return !have[p] || rsNat(have[p].rev) < opPeriodRev(revs, K, p); }), fresh = {}, later = stale.slice(OP_LIM.readPeriods * 3);
     stale = stale.slice(0, OP_LIM.readPeriods * 3);
     for (var i = 0; i < stale.length; i += OP_LIM.readPeriods) {

@@ -19707,6 +19707,38 @@ function osSumReport(p, v) {
 function osSumTasks(p, v) { var out = { total: 0, byStatus: {} }; (Array.isArray(v) ? v : []).forEach(function (r) { out.total++; var st = Array.isArray(r) && r[3] != null ? String(r[3]) : ''; out.byStatus[st] = (out.byStatus[st] || 0) + 1; }); return out; }
 /* V7 · 53: شهرُ اليوم التشغيلي بنصّ المفتاح القائم ('1448-6') */
 function osPeriodNowMonth() { var T = dsToday(Date.now()); return T ? T.y + '-' + T.m : ''; }
+/* V7 · 53 (kpi طلب 9): v.kpi — إسقاطٌ بقائمة حقولٍ ثابتة لقيمة الفترة كما خُزّنت (بلا إعادة تسمية ولا قيمٍ افتراضية)، مرآةُ _kLean في
+   src/systems/daily/client/logic.js.tpl حرفاً. القوائمُ إعلانٌ واحد هنا (OS_KPI_LEAN) — من يغيّر أحدهما يغيّر الآخر (اختبارُ v7_d53_periods يقارنهما). */
+var OS_KPI_LEAN = {
+  rounds: { top: ['ap'], zones: ['uid', 'code', 'name', 'ztype', 'zcat', 'off', 'cap', 'yard', 'region', 'level', 'pc', 'count', 'emp', 'needN', 'needS', 'fAt'],
+    gates: ['gid', 'leafN', 'pOf', 'num', 'label', 'name', 'closed', 'cWhy', 'cAt', 'emp', 'needN', 'needS', 'fAt'], marks: ['label', 'name', 'kind', 'off', 'emp', 'needN', 'needS', 'fAt'] },
+  dreport: { top: ['created'], shift: ['pulled', 'ap', 'rest', 'tout'], roster: ['st', 'ekey'] },
+  staffing: { row: ['rest'] },
+  plan: { zones: ['code', 'name', 'needN', 'needS'], gates: ['num', 'label', 'needN', 'needS'], marks: ['label', 'kind', 'needN', 'needS'] }
+};
+function osKpiPick(o, ks) { var r = {}; if (o && typeof o === 'object') ks.forEach(function (k) { if (o[k] !== undefined) r[k] = o[k]; }); return r; }
+function osKpiArr(a, f) { return Array.isArray(a) ? a.map(function (x) { return x && typeof x === 'object' ? f(x) : x; }) : a; }
+function osKpiLean(kind, p, v) {
+  if (!v || typeof v !== 'object') return v;
+  var L = OS_KPI_LEAN[kind];
+  if (kind === 'rounds') {
+    if (/^m:/.test(p) || Array.isArray(v)) return null;
+    return Object.assign(osKpiPick(v, L.top), { d: osKpiArr(v.d, function (f) { return { zones: osKpiArr(f.zones, function (z) { return osKpiPick(z, L.zones); }), gates: osKpiArr(f.gates, function (g) { return osKpiPick(g, L.gates); }), marks: osKpiArr(f.marks, function (m) { return osKpiPick(m, L.marks); }), paths: Array.isArray(f.paths) ? f.paths.map(function () { return 0; }) : f.paths }; }) });
+  }
+  if (kind === 'dreport') {
+    if (/^m:/.test(p) || Array.isArray(v)) return null;
+    var sh = {};
+    Object.keys(v.shifts && typeof v.shifts === 'object' ? v.shifts : {}).forEach(function (k) { var s = v.shifts[k]; if (s && typeof s === 'object') sh[k] = Object.assign(osKpiPick(s, L.shift), { roster: osKpiArr(s.roster, function (r) { return osKpiPick(r, L.roster); }) }); });
+    return Object.assign(osKpiPick(v, L.top), { shifts: sh });
+  }
+  if (kind === 'staffing') { var r = {}; Object.keys(v).forEach(function (k) { if (k.indexOf('__') !== 0 && v[k] && typeof v[k] === 'object') r[k] = osKpiPick(v[k], L.row); }); return r; }
+  if (kind === 'plan') {
+    var d = Array.isArray(v) ? v : v.d;
+    return { d: osKpiArr(d, function (f) { return { zones: osKpiArr(f.zones, function (z) { return osKpiPick(z, L.zones); }), gates: osKpiArr(f.gates, function (g) { return osKpiPick(g, L.gates); }), marks: osKpiArr(f.marks, function (m) { return osKpiPick(m, L.marks); }) }; }) };
+  }
+  return null;
+}
+function osKpiOf(kind) { return function (p, v) { return osKpiLean(kind, p, v); }; }
 function osSchemaStaffRow(table) {
   var fields = osSchemaFields(["shift", "muk", "cs"]);
   fields.rest = osSchemaScalars(table + "_rest");
@@ -19742,7 +19774,7 @@ function osSchemaStaffResources() {
     {
       resource: "bassam_staffing_v3",
       name: "staffing",
-      period: { root: 1, index: osPeriodIndex, summary: osSumStaffing, current: osPeriodNowMonth },   // V7 · 53: كلُّ شهرٍ فترة (019w)
+      period: { root: 1, index: osPeriodIndex, summary: osSumStaffing, kpi: osKpiOf('staffing'), current: osPeriodNowMonth },   // V7 · 53: كلُّ شهرٍ فترة (019w)
       schema: ocMap("ops_staffing", osSchemaMonthBucket("ops_staffing_month")),
     },
     {
@@ -20092,7 +20124,7 @@ function osSchemaRoundsResources() {
     {
       resource: "bassam_rounds_v1",
       name: "rounds",
-      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds') },   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
       schema: ocMap("ops_rounds", null, {
         fixed: { __pMig: ocScalar("scalar") },
         patterns: [
@@ -20112,7 +20144,7 @@ function osSchemaRoundsResources() {
     {
       resource: DAILY_ARC_RES,
       name: "rounds_arc",
-      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds },
+      period: { root: 1, index: osPeriodIndex, ctx: osPeriodCtx, summary: osSumRounds, kpi: osKpiOf('rounds') },
       late: 1,   /* نسخٌ احتياطية قبل هذه الحزمة لا تحمله: يُستعاد منها فارغاً (019t opValidateBackupDomains) */
       schema: ocMap("ops_rounds_arc", null, {
         fixed: { __pMig: ocScalar("scalar") },
@@ -20328,7 +20360,7 @@ function osSchemaPlanResources() {
       resource: "bassam_plan_v1",
       name: "plan",
       schema: osSchemaPlan("ops_plan"),
-      period: { field: "months", index: osPeriodIndex, summary: osSumPlan },   // V7 · 53: كلُّ شهرٍ من months فترة (019w)
+      period: { field: "months", index: osPeriodIndex, summary: osSumPlan, kpi: osKpiOf('plan') },   // V7 · 53: كلُّ شهرٍ من months فترة (019w)
     },
     {
       resource: "bassam_zone_opts_v1",
@@ -20500,7 +20532,7 @@ var OC_PEOPLE_TASK_RESOURCES = [
   },
   {
     resource:'bassam_dreport_v1',name:'dailyReports',
-    period:{root:1,index:osPeriodIndex,ctx:osPeriodCtx,summary:osSumReport},   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
+    period:{root:1,index:osPeriodIndex,ctx:osPeriodCtx,summary:osSumReport,kpi:osKpiOf('dreport')},   // V7 · 53: كلُّ يومٍ وعلامةُ كلِّ شهرٍ فترة (019w)
     schema:ocMap('ops_daily_reports',null, {
       fixed:{__ldcs:ocMap('ops_report_leader_callsigns',ocScalar('text'))},
       patterns:[
@@ -21083,7 +21115,7 @@ function opPeriodSizeCheck(def, p, value) {
 }
 function opSummaryValue(info, p, value) {
   var def = opPeriodDef(info); if (p === '' || typeof def.summary !== 'function') return null;
-  try { return def.summary(p, value); } catch (e) { return null; }
+  try { var out = def.summary(p, value); if (out && typeof out === 'object' && typeof def.kpi === 'function') out.kpi = def.kpi(p, value); return out; } catch (e) { return null; }
 }
 function opSummaryStatements(env, info, changes) {
   var put = [], drop = [];
@@ -21130,10 +21162,9 @@ async function opSummaryRoute(env, request, url, session) {
       var x = opPeriodIdx(def, p); return grps.length ? grps.indexOf(x.grp) >= 0 : x.seq >= lo && x.seq <= hi;
     }));
     if (names.length > OP_LIM.summaryRows) throw opLimError('read-too-large', 413, { periods: names.length, cap: OP_LIM.summaryRows });
-    var got = await env.DB.batch([
-      env.DB.prepare('SELECT period,rev,v_json FROM ops_period_summary WHERE department_id=?1 AND resource=?2 AND period IN(SELECT value FROM json_each(?3))').bind(info.dept, info.resource, JSON.stringify(names)),
-      env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(names.map(function (p) { return K + '@' + p; }).concat([K + '@*'])))]);
-    var have = {}, revs = {}; (got[0].results || []).forEach(function (r) { have[r.period] = r; }); (got[1].results || []).forEach(function (r) { revs[r.k] = rsNat(r.rev); });
+    var got = await env.DB.batch([env.DB.prepare('SELECT k,rev FROM revs WHERE k IN(SELECT value FROM json_each(?1))').bind(JSON.stringify(names.map(function (p) { return K + '@' + p; }).concat([K + '@*'])))]);
+    var have = {}, revs = {}; (got[0].results || []).forEach(function (r) { revs[r.k] = rsNat(r.rev); });
+    for (var c1 = 0; c1 < names.length; c1 += 31) (((await env.DB.prepare('SELECT period,rev,v_json FROM ops_period_summary WHERE department_id=?1 AND resource=?2 AND period IN(SELECT value FROM json_each(?3))').bind(info.dept, info.resource, JSON.stringify(names.slice(c1, c1 + 31))).all()).results) || []).forEach(function (r) { have[r.period] = r; });   /* v.kpi يكبر بالفترة: شهرٌ في كل استدعاء */
     var stale = names.filter(function (p) { return !have[p] || rsNat(have[p].rev) < opPeriodRev(revs, K, p); }), fresh = {}, later = stale.slice(OP_LIM.readPeriods * 3);
     stale = stale.slice(0, OP_LIM.readPeriods * 3);
     for (var i = 0; i < stale.length; i += OP_LIM.readPeriods) {

@@ -144,3 +144,40 @@ test('53 · periodsui: فترةٌ غائبة تُنشأ بـbase 0 بعد حذف
     assert.equal(lr.j.logical[RK], lf.j.base[RK]);
   } finally { await T.close(); }
 });
+
+/* V7 · 53 · kpi (طلب 9): v.kpi في الملخّص = إسقاطُ _kLean حرفاً — من الخادم (019p0 OS_KPI_LEAN) ومن منطق صفحة الجولات حين يحمل _kLean */
+import fs from 'node:fs';
+import { SRC } from './harness.mjs';
+function clientLean() {
+  let src = ''; try { src = fs.readFileSync(process.env.KIVO_KLEAN_FROM || SRC + '/systems/daily/client/logic.js.tpl', 'utf8'); } catch (e) { return null; }
+  const i = src.indexOf('  _kLean(kind, p, v) {'); if (i < 0) return null;
+  const j = src.indexOf('\n  }\n', i);
+  return new Function('kind', 'p', 'v', src.slice(src.indexOf('{', i) + 1, j));
+}
+test('53 · kpi: v.kpi لكل فترة (الجولات · التقرير · الجدول · الخطة) إسقاطٌ بقائمة الحقول، وm: ⇒ null، ومطابقٌ لـ_kLean في العميل', { timeout: 120000 }, async () => {
+  const { T, save, env } = await lab();
+  try {
+    const PK = K('bassam_plan_v1'), SK = K('bassam_staffing_v3'), DK = K('bassam_dreport_v1');
+    const rounds = { __pMig: 2, 'm:1448-6': { ap: 0 }, '1448-6-1': { ...day(1), d: [{ sid: 's', name: 'TEST_ONLY', zones: [{ uid: 'z', code: 'Z', name: 'TEST_ONLY', pc: { fajr: { n: 3, cap: 9 } }, emp: ['e1'], needN: 2, cx: 5, d: 'M0 0' }], gates: [{ gid: 'g', num: '1', closed: 1, cWhy: 'TEST_ONLY', x: 1 }], marks: [{ label: 'TEST_ONLY', kind: 'k', x: 2 }], paths: [{ id: 'p' }, { id: 'q' }] }] } };
+    let r = await save({ set: { [RK]: JSON.stringify(rounds) }, base: { [RK]: 0 } }); assert.equal(r.status, 200, r.t.slice(0, 300));
+    await replaceOperationalFixture(env, DK, { 'm:1448-6': { ap: 0 }, '1448-6-2': { created: 1, shifts: { A: { pulled: true, roster: [{ ekey: 'e1', st: 'pr', name: 'TEST_ONLY' }] } } } });
+    await replaceOperationalFixture(env, SK, { '1448-6': { e1: { shift: 'A', rest: ['fri'], cs: '' } } });
+    await replaceOperationalFixture(env, PK, { floors: [], months: { '1448-6': { c: 1, d: [{ sid: 's', zones: [{ code: 'Z', name: 'TEST_ONLY', needN: 1, cx: 3 }], gates: [{ num: '1', label: 'G', x: 1 }], marks: [], paths: [] }] } }, delMonths: {} });
+    const docs = { rounds: [RK, rounds], dreport: [DK, null], staffing: [SK, null], plan: [PK, null] }, lean = clientLean();
+    for (const [kind, [key]] of Object.entries(docs)) {
+      const sm = await T.call('/api/operations/summary?key=' + encodeURIComponent(key) + '&grp=1448-6&uid=' + encodeURIComponent(T.su.uid), { ck: T.su.ck });
+      assert.equal(sm.status, 200, sm.t.slice(0, 300));
+      const full = (await T.call('/api/operations/read?keys=' + encodeURIComponent(key) + '&uid=' + encodeURIComponent(T.su.uid), { ck: T.su.ck })).j.resources[key];
+      const box = kind === 'plan' ? full.months : full;
+      for (const row of sm.j.rows) {
+        if (/^m:/.test(row.p)) { assert.equal(row.v.kpi, null, kind + ' ' + row.p); continue; }
+        assert.ok(row.v.kpi && typeof row.v.kpi === 'object', kind + ' ' + row.p);
+        if (lean) assert.deepEqual(row.v.kpi, JSON.parse(JSON.stringify(lean('bassam_' + { rounds: 'rounds_v1', dreport: 'dreport_v1', staffing: 'staffing_v3', plan: 'plan_v1' }[kind], row.p, box[row.p]))), 'مطابقٌ لـ_kLean: ' + kind + ' ' + row.p);
+      }
+      if (kind === 'rounds') { const k = sm.j.rows.find((x) => x.p === '1448-6-1').v.kpi; assert.deepEqual(k.d[0].zones[0], { uid: 'z', code: 'Z', name: 'TEST_ONLY', pc: { fajr: { n: 3, cap: 9 } }, emp: ['e1'], needN: 2 }); assert.deepEqual(k.d[0].paths, [0, 0]); assert.deepEqual(k.d[0].gates[0], { gid: 'g', num: '1', closed: 1, cWhy: 'TEST_ONLY' }); }
+      if (kind === 'dreport') assert.deepEqual(sm.j.rows.find((x) => x.p === '1448-6-2').v.kpi, { created: 1, shifts: { A: { pulled: true, roster: [{ st: 'pr', ekey: 'e1' }] } } });
+      if (kind === 'staffing') assert.deepEqual(sm.j.rows[0].v.kpi, { e1: { rest: ['fri'] } });
+      if (kind === 'plan') assert.deepEqual(sm.j.rows[0].v.kpi, { d: [{ zones: [{ code: 'Z', name: 'TEST_ONLY', needN: 1 }], gates: [{ num: '1', label: 'G' }], marks: [] }] });
+    }
+  } finally { await T.close(); }
+});
