@@ -10552,8 +10552,8 @@ async function rsPrepare(env, A, body, meta, internal) {
     var grantsKey = enfGrantsKey(dept), grantsVal = rsRoleGrants(A, dept, keys[perm44Key(dept)], inputKeys[grantsKey]);
     if (grantsVal !== null) { keys[grantsKey] = grantsVal; if (!Object.prototype.hasOwnProperty.call(base, grantsKey)) base[grantsKey] = inputRevs[grantsKey] || 0; }
   }
-  /* V7 · 53: والنسخةُ الشاملة لكل إدارةٍ فيها سجلُّ أدوار — منحُ النسخة أساسٌ (لا منحُ الهدف: الاستبدالُ كامل) */
-  if (body.scope.kind === 'full') Object.keys(keys).forEach(function (k) { var d = parseKey(k).dept, gk = enfGrantsKey(d); if (!d || k !== perm44Key(d) || keys[k] == null) return; var gv = rsRoleGrants(A, d, keys[k], keys[gk]); if (gv !== null) { keys[gk] = gv; if (!Object.prototype.hasOwnProperty.call(base, gk)) base[gk] = inputRevs[gk] || 0; } });
+  /* V7 · 53: والنسخةُ الشاملة لكل إدارةٍ فيها سجلُّ أدوار ولا منحَ معه (قوالبُ حُوِّلت · 019f): المنحُ المترجَم فوق منح الهدف كما في نسخة الإدارة — نسخةٌ تحمل منحَها تبقى كما هي */
+  if (body.scope.kind === 'full') Object.keys(keys).forEach(function (k) { var d = parseKey(k).dept, gk = enfGrantsKey(d); if (!d || k !== perm44Key(d) || keys[k] == null || keys[gk] !== undefined) return; var gv = rsRoleGrants(A, d, keys[k], inputKeys[gk]); if (gv !== null) { keys[gk] = gv; if (!Object.prototype.hasOwnProperty.call(base, gk)) base[gk] = inputRevs[gk] || 0; } });
   /* 330-auth.pruneDeptAccounts: restore only removes staff/dept identities bound
      to removed departments, never GM/Super accounts. The result still traverses
      applySave's unchanged password, uniqueness and final-super validators. */
