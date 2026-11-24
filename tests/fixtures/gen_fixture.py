@@ -220,9 +220,10 @@ DSTATS_YEAR = 2199 if A.daily_stats_storage == 'relational' else 1400   # V7 · 
 DSTATS_DAY = '%d-01-01' % DSTATS_YEAR
 DSTATS_DAY2 = '%d-01-02' % DSTATS_YEAR
 # Reserved fixture dates; typed rows also carry an explicit TEST_ONLY attribution tag.
+DSTATS_LOCK_YM = ('%d-01' if A.daily_stats_storage == 'relational' else '%d-1') % DSTATS_YEAR   # V7 · 53 تقويم (ق1): قفلُ الشهر الميلادي «site|YYYY-MM» مبطَّن · والقديمُ (legacy-kv) كما كان
 DSTATS_ADD = {'haram': {DSTATS_DAY: {'worshippers': 1001, 'umrah': 11, '__m': {'t': TAG}}, DSTATS_DAY2: {'worshippers': 1002, '__m': {'t': TAG}}},
               'nabawi': {DSTATS_DAY: {'worshippers': 2002, '__m': {'t': TAG}}},
-              'locks': {'haram|%d-1' % DSTATS_YEAR: {'mo': 1, 'dopen': {'1': 1}}, 'nabawi|%d-1' % DSTATS_YEAR: {'mo': 1, 'dopen': {'1': 1}}}}
+              'locks': {'haram|' + DSTATS_LOCK_YM: {'mo': 1, 'dopen': {'1': 1}}, 'nabawi|' + DSTATS_LOCK_YM: {'mo': 1, 'dopen': {'1': 1}}}}
 DSTATS_DEL = {'haram': {DSTATS_DAY: None, DSTATS_DAY2: None}, 'nabawi': {DSTATS_DAY: None}, 'locks': {key: None for key in DSTATS_ADD['locks']}}
 
 fixture = {'tag': TAG, 'version': 'KIVO_243-fixture-1', 'today': T, 'prevMonth': PM, 'MK': MK, 'PMK': PMK, 'DAY': DAY, 'PDAY': PDAY, 'shifts': [SA, SB],
