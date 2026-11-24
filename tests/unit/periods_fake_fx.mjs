@@ -41,3 +41,10 @@ export function periodSave(k, value, docs) {
   if (value === undefined) delete box[p]; else box[p] = value;
   return true;
 }
+/* index=K… → out.index[K] = [{ p, grp, seq, rev }] in document order */
+export function periodIndex(url, docs, rev, out) {
+  (url.searchParams.get('index') || '').split(',').filter(Boolean).forEach((K) => {
+    const name = K.split(':').at(-1), P = parts(docs[name], name);
+    (out.index || (out.index = {}))[K] = P ? Object.keys(P.periods).map((p, seq) => ({ p, grp: grpOf(name, p), seq, rev: typeof rev === 'function' ? rev(K + '@' + p) : rev })) : [];
+  });
+}
