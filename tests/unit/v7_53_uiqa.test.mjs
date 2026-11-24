@@ -41,7 +41,9 @@ test('S15 — رفضُ «الإحصائيات اليومية» بالنطاق ي
 });
 
 test('S14 — رأسُ مؤشرات الإشغال: العددُ سجلاتُ «مصلى × يوم» فالتسميةُ تقول ذلك (لا «المصليات 36» لستة مصليات)', () => {
-  for (const rel of ['src/systems/daily/client/logic.js', 'src/pages/Daily Sessions.dc.html']) {
+  const pg = rd('src/pages/Daily Sessions.dc.html');   /* الصفحةُ المبنيّة (مصغّرة): النصّان فيها */
+  for (const w of ['سجلات المصليات', 'مصلى × يوم', 'سجلات الأبواب', 'باب × يوم']) assert.ok(pg.includes(w), 'built page: ' + w);
+  for (const rel of ['src/systems/daily/client/logic.js']) {
     const s = rd(rel);
     assert.doesNotMatch(s, /n: "المصليات", v: r\(I\)/, rel + ': not labelled as a count of prayer halls');
     assert.match(s, /n: "سجلات المصليات", v: r\(I\), p: "مصلى × يوم"/, rel);
