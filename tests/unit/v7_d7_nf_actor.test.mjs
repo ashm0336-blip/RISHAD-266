@@ -17,9 +17,13 @@ import { installOperationalFixture } from './operational_legacy_seed_fx.mjs';
 async function load() {
   const src = fs.readFileSync(WORKER, 'utf8');
   const dir = fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'nfact-')), f = path.join(dir, 'w.mjs');
-  fs.writeFileSync(f, src + '\nexport { initDb, kvPutStmts, NF_TYPES, nfTargetHit, nfActorType, nfSelfAct, opLegacyPrepare, opGuardRetired };\n');
+  /* nfActorType · nfSelfAct لا يُصدَّران إلا إن وُجدا — فيُشغَّل الاختبارُ نفسُه على بناءٍ سابق لإثبات «يفشل قبل» بالسلوك لا بالتصدير */
+  const names = ['initDb', 'kvPutStmts', 'NF_TYPES', 'nfTargetHit', 'opLegacyPrepare', 'opGuardRetired'].concat(['nfActorType', 'nfSelfAct'].filter((n) => new RegExp('^function ' + n + '\\(', 'm').test(src)));
+  fs.writeFileSync(f, src + '\nexport { ' + names.join(', ') + ' };\n');
   try { return await import(pathToFileURL(f).href); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
+/* القاعدةُ كما يقرّرها البند من السجلّ نفسه (مستقلّةٌ عن التنفيذ) */
+const rule = (W, t) => t === 'bc_dept' || (!!W.NF_TYPES[t] && W.NF_TYPES[t].k !== 'sec' && /^فور/.test(W.NF_TYPES[t].when));
 const D = 'TEST_ONLY_D', NOW = Date.now() - 60000;
 const EXEMPT = ['sc_dev', 'sc_fail', 'sc_pw', 'sc_kill', 'sc_deny', 'sc_guard', 'sc_policy', 'sc_rk', 'sy_nobk', 'sy_sync', 'task_late', 'st_gap', 'bx_old', 'cu_late', 'task_soon', 'bc_rem'];
 const ACTOR = ['emp_add', 'emp_edit', 'emp_del', 'emp_imp', 'acct_on', 'acct_pw', 'task_new', 'task_done', 'cu_out', 'st_shift', 'pl_place', 'rep_pull', 'rn_close', 'bx_new', 'aw_new', 'pm_chg', 'sy_dept', 'sy_bk', 'bc_new', 'bc_dept'];
@@ -74,7 +78,7 @@ test('د7 ٨ · registry rule: «فور …» non-security types are actor-suppr
   const W = await load();
   for (const t of EXEMPT) assert.equal(W.nfActorType(t), false, t + ' is exempt (automatic / security)');
   for (const t of ACTOR) assert.equal(W.nfActorType(t), true, t + ' happens upon someone\'s action');
-  for (const [t, T] of Object.entries(W.NF_TYPES)) assert.equal(W.nfActorType(t), T.k !== 'sec' && /^فور/.test(T.when), t + ' follows its registry «when»');
+  for (const t of Object.keys(W.NF_TYPES).concat(['bc_dept'])) assert.equal(W.nfActorType(t), rule(W, t), t + ' follows its registry «when»');
 });
 
 test('د7 ٨ · server feed + counters: for EVERY type the actor does not get his own notification, others still do', { timeout: 300000 }, async () => {
@@ -88,7 +92,7 @@ test('د7 ٨ · server feed + counters: for EVERY type the actor does not get hi
     for (const type of types) {
       if (!has(j, type, 'TEST_ONLY_other')) continue;   /* نوعٌ لا يراه هذا القارئ أصلاً */
       covered.add(type);
-      const actor = W.nfActorType(type);
+      const actor = rule(W, type);
       assert.equal(has(j, type, self), !actor, who + ' · ' + type + ': ' + (actor ? 'does not see' : 'still sees') + ' his own event');
       for (const other of Object.values(V).map((x) => x[0]).filter((x) => x !== self))
         if (who !== 'u' || other !== 'TEST_ONLY_super') assert.equal(has(j, type, other), true, who + ' · ' + type + ': sees ' + other + '\'s event');
@@ -109,8 +113,9 @@ test('د7 ٨ · recipient counting (nfTargetHit) skips the actor for actor types
   assert.equal(W.nfTargetHit(A, bc('bc_new', 'mgr:' + D), [], me, {}), false, 'the author of a broadcast is not its recipient');
   assert.equal(W.nfTargetHit(A, bc('bc_new', 'TEST_ONLY_super'), [], me, {}), true, 'another person\'s broadcast is counted');
   assert.equal(W.nfTargetHit(A, bc('bc_new', 'TEST_ONLY_m'), [], me, {}), false, 'matched by account id too');
-  for (const t of Object.keys(W.NF_TYPES)) assert.equal(W.nfSelfAct({ type: t, author_key: 'mgr:' + D, preview: 0 }, me), W.nfActorType(t), t);
-  assert.equal(W.nfSelfAct({ type: 'bc_dept', author_key: 'mgr:' + D, preview: 1 }, me), false, 'a self preview is kept');
+  for (const t of Object.keys(W.NF_TYPES)) assert.equal(W.nfTargetHit(A, { ...bc('bc_new', 'mgr:' + D), type: t }, [], me, {}), !rule(W, t), t);
+  assert.equal(W.nfTargetHit(A, { ...bc('bc_dept', 'mgr:' + D), preview: 1 }, [], me, {}), true, 'a self preview is kept');
+  if (W.nfSelfAct) assert.equal(W.nfSelfAct({ type: 'bc_dept', author_key: 'mgr:' + D, preview: 1 }, me), false, 'a self preview is kept');
 });
 
 test('د7 ٨ · client 441 list(): the actor\'s own items are not shown (and so not toasted), for every type', async () => {
@@ -137,8 +142,8 @@ test('د7 ٨ · client 441 list(): the actor\'s own items are not shown (and so 
   const r1 = await N.loadMore(); assert.equal(r1.ok, 1, JSON.stringify(r1));
   const shown = N.list();
   for (const t of types) {
-    const actor = W.nfActorType(t);
-    assert.equal(I.actorType(t), actor, t + ': the client rule equals the server rule');
+    const actor = rule(W, t);
+    if (I.actorType) assert.equal(I.actorType(t), actor, t + ': the client rule equals the server rule');
     for (const by of ['TEST_ONLY_ekey', 'TEST_ONLY_uid']) assert.equal(shown.some((x) => x.type === t && x.by === by && !x.test), !actor, t + ' by ' + by);
     assert.ok(shown.some((x) => x.type === t && x.by === 'TEST_ONLY_other'), t + ': another person\'s item stays');
   }
