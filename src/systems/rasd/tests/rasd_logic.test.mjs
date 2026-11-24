@@ -27,7 +27,7 @@ function world({ seized } = {}) {
   C.window = C; C.globalThis = C;
   vm.createContext(C);
   for (const f of ['i18n/380-hijri-fallback.js', 'i18n/385-calendar.js', 'services/440-count.js', 'components/565-page-kit.js']) vm.runInContext(rd(f), C, { filename: f });
-  vm.runInContext(rd('systems/rasd/client/logic.js') + '\nglobalThis.TEST_ONLY_Rasd = Component;', C, { filename: 'rasd/logic.js' });
+  vm.runInContext(rd('systems/rasd/client/logic.js') + '\n' + rd('systems/_shared/kpiring/kpi-ring.js') + '\nglobalThis.TEST_ONLY_Rasd = Component;', C, { filename: 'rasd/logic.js' });   /* V7 · 53: والقطعةُ المشتركة كما تضمّها الصفحة (meta.json ← logicParts) */
   const page = new C.TEST_ONLY_Rasd({});
   page.bsToast = (t) => toasts.push(t);
   return { page, store, writes, toasts, acks, perm, KIVO };

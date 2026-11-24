@@ -41,6 +41,9 @@
  "derived": [
   "src/pages/Rasd.dc.html"
  ],
+ "shared": [
+  "kpiring"
+ ],
  "slots": {
   "modules.tail": {
    "order": 20,

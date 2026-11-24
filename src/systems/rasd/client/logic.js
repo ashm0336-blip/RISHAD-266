@@ -1261,27 +1261,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
   }
   /* كرتُ المؤشر: حلقةٌ بعددٍ ونسبة · عنوانٌ بتلميح · سطرٌ فرعي · مفتاحُ الشرائح — بنيةُ كرت مؤشرات موظفي الإدارة */
   _rzKpiCards(K) {
-    const C = 2 * Math.PI * 41,
-      T = K.total,
+    /* V7 · 53 (port-sync · بند 8): البناءُ في القطعة المشتركة (src/systems/_shared/kpiring — _kpiRing) — الكرتُ نفسُه في المضبوطات والاسترشاد */
+    const T = K.total,
       pct = (k) => (T ? Math.round((100 * k) / T) + "٪" : "—"),
-      ring = (parts) => {
-        const live = parts.filter((p) => p.n > 0),
-          gap = live.length > 1;
-        let off = 0;
-        return live.map((p) => {
-          const len = (C * p.n) / (T || 1),
-            g = gap ? Math.min(3, 0.12 * len) : 0,
-            o = { color: p.color, dash: Math.round(10 * Math.max(0.5, len - g)) / 10 + " " + Math.round(10 * C) / 10, off: String(-Math.round(10 * off) / 10), tip: p.label + ": " + p.n + " (" + pct(p.n) + ")" };
-          off += len;
-          return o;
-        });
-      },
-      card = (o) => ({
-        ...o,
-        ring: ring(o.parts),
-        rows: o.parts.map((p) => ({ label: p.label, color: "width:8px;height:8px;border-radius:3px;flex-shrink:0;background:" + p.color, n: String(p.n), pct: pct(p.n), tip: p.label + " — " + KIVO.BassamCount(p.n, "حالة") + " (" + pct(p.n) + ")" })),
-        lineStyle: "display:block;width:82px;height:1px;margin:6px 0 5px;background:linear-gradient(90deg,transparent," + o.accent + ",transparent);opacity:.5",
-      }),
+      card = (o) => this._kpiRing({ ...o, T }),
       tt = K.topType,
       noAct = T - K.acted;
     return [

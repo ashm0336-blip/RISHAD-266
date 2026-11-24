@@ -70,7 +70,7 @@ test('real module saves with a lost committed ACK, retries once, edits, aggregat
   C.window = C; vm.createContext(C); calendar(C);
   for (const f of ['src/core/060-bus.js', 'src/systems/staff/client/534-staff-g4.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), C);   /* V7 · د5-د2: الناقل (قلب المنصة) وقراءاتُ الجدول الشهري المعلنة عليه — الصفحةُ تسأل بالاسم */
   const source = fs.readFileSync(path.join(ROOT, 'src/systems/irshad/client/logic.js'), 'utf8');
-  vm.runInContext(source + '\nglobalThis.TestComponent = Component;', C);
+  vm.runInContext(source + '\n' + fs.readFileSync(path.join(ROOT, 'src/systems/_shared/kpiring/kpi-ring.js'), 'utf8') + '\nglobalThis.TestComponent = Component;', C);   /* V7 · 53: والقطعةُ المشتركة كما تضمّها الصفحة (meta.json ← logicParts) */
   const page = new C.TestComponent(); page.bsToast = () => {}; page.bsAck = () => {};
   t.after(() => timers.forEach(clearTimeout));
   async function reads() {

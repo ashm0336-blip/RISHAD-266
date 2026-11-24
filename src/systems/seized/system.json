@@ -75,7 +75,8 @@
   "workers/parts/019k-seized-defaults.js"
  ],
  "shared": [
-  "business"
+  "business",
+  "kpiring"
  ],
  "sharedStaysInBase": [
   "workers/parts/019k-business-context.js",
@@ -127,7 +128,7 @@
   },
   "budget.page.seized": {
    "order": 10,
-   "text": "  \"page:Seized\": 53650,\r\n"
+   "text": "  \"page:Seized\": 54650,\r\n"
   },
   "uxStates.seized": {
    "order": 10,

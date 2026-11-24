@@ -159,6 +159,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     const e = this.unitOf(t.id);
     return "sar" === e ? parseInt(t.n, 10) || 0 : ("pcval" === e && parseInt(t.val, 10)) || 0;
   }
+  /* V7 · 53 (port-sync · بند 8 · 0013): كرتُ مؤشرات الشهر الحلقي — بنيةُ كرت «رصد الحالات» نفسُه (القطعة المشتركة _kpiRing) من مجاميع الشهر
+     التي يحسبها الخادم (monthTotals: القطع · المبالغ · الإجراءات) — ظاهرٌ دائماً وبأصفارٍ في الشهر الفارغ */
+  _szKpiCards(M, nR) {
+    const acts = this.loadActs(),
+      tot = M.qty || 0,
+      sar = M.sar || 0,
+      CH = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"],
+      parts = acts.map((a, i) => ({ label: a.name, color: a.color || CH[i % CH.length], n: (M.actions || {})[a.k] || 0 })),
+      kept = (M.actions || {}).sto || 0;
+    return [
+      this._kpiRing({ title: "الإجراء على القطع", tip: "قطعُ الشهر بحسب الإجراء — الرقمُ إجماليُّ القطع والنسبةُ ما تُصُرِّف فيه (أُحيل أو أُتلف)", val: String(tot), chip: tot ? Math.round((100 * (tot - kept)) / tot) + "٪" : "—",
+        sub: KIVO.BassamCount(nR || 0, "محضر") + (sar ? " · " + sar.toLocaleString("en-US") + " ريال" : ""), accent: "var(--fg-xb99751)", parts, T: tot, unit: "قطعة" }),
+    ];
+  }
   benOf(t) {
     return (t.items || []).reduce((t, e) => t + this.qtyOf(e), 0);
   }
@@ -1786,19 +1800,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         let e = "—";
         try {
           const s = this.hGreg(t.y, t.m, t.d);
-          e = s.getDate() + "/" + (s.getMonth() + 1) + "/" + s.getFullYear();
+          /* V7 · 53 (port-sync · بند 8): رقميٌّ هجريٌّ وميلاديّ (سنة/شهر/يوم) · ساعةٌ بأربعٍ وعشرين — كسجلّ «رصد الحالات» (rzDateCells) */
+          e = s.getFullYear() + "/" + String(s.getMonth() + 1).padStart(2, "0") + "/" + String(s.getDate()).padStart(2, "0");
         } catch (t) {}
         let s = "—";
         try {
           if (t.ts) {
             const e = new Date(t.ts);
-            let a = e.getHours();
-            const r = e.getMinutes(),
-              i = a >= 12 ? "م" : "ص";
-            ((a %= 12), 0 === a && (a = 12), (s = String(a).padStart(2, "0") + ":" + String(r).padStart(2, "0") + " " + i));
+            s = String(e.getHours()).padStart(2, "0") + ":" + String(e.getMinutes()).padStart(2, "0");
           }
         } catch (t) {}
-        return { dayLabel: t.d + "/" + t.m + "/" + t.y, gregLabel: e, timeLabel: s };
+        return { dayLabel: t.y + "/" + String(t.m).padStart(2, "0") + "/" + String(t.d).padStart(2, "0"), gregLabel: e, timeLabel: s };
       },
       ft = 0 === t.irLedgerPerPage ? 0 : t.irLedgerPerPage || 10,
       bt = 0 === ft ? Math.max(1, total) : ft,
@@ -2033,6 +2045,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       szCatVer: N.ver || this.SZ_VER,
       ...KIVO.BassamCount.pair("irKpiCount", String(monthCount), "محضر"),
       irKpiBen: nt.toLocaleString("en-US"),
+      szKpiCards: this._szKpiCards(monthTotals, monthCount),   /* V7 · 53 (port-sync · بند 8) */
       irKpiSar: pt.toLocaleString("en-US"),
       irKpiSarHas: pt > 0,
       irKpiA0: lt(ht.k).toLocaleString("en-US"),

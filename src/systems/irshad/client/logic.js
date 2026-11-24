@@ -307,6 +307,18 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if (confirmed) confirmed(result.receipt, result);
     return result;
   }
+  /* V7 · 53 (port-sync · بند 8 · 0013): كروتُ مؤشرات الشهر الحلقية — بنيةُ كرت «رصد الحالات» نفسُه (القطعة المشتركة _kpiRing) من مجاميع الشهر
+     التي يحسبها الخادم (monthTotals) — ظاهرةٌ دائماً وبأصفارٍ في الشهر الفارغ */
+  _irKpiCards(M, nR) {
+    const tr = M.trans || 0, bro = M.bro || 0, pros = M.pros || 0, pol = M.pol || 0, G = M.ben || tr + bro + pros + pol,
+      pc = (n, T) => (T ? Math.round((100 * n) / T) + "٪" : "—");
+    return [
+      this._kpiRing({ title: "المستفيدون", tip: "مستفيدو الشهر بحسب نوع الخدمة — الرقمُ إجماليُّ المستفيدين والنسبةُ مستفيدو الترجمة", val: String(G), chip: pc(tr, G), sub: KIVO.BassamCount(nR || 0, "تقرير"), accent: "var(--fg-xb99751)", T: G, unit: "مستفيد",
+        parts: [{ label: "الترجمة", color: "var(--chart-1)", n: tr }, { label: "مطويات موزّعة", color: "var(--chart-2)", n: bro }, { label: "إحالة للنيابة", color: "var(--chart-3)", n: pros }, { label: "إحالة للشرطة", color: "var(--chart-4)", n: pol }] }),
+      this._kpiRing({ title: "الإحالات", tip: "إحالاتُ الشهر للنيابة والشرطة — النسبةُ من إجمالي المستفيدين", val: String(pros + pol), chip: pc(pros + pol, G), sub: "من مستفيدي الشهر", accent: "var(--fg-xb99751)", unit: "إحالة",
+        parts: [{ label: "النيابة", color: "var(--chart-3)", n: pros }, { label: "الشرطة", color: "var(--chart-4)", n: pol }] }),
+    ];
+  }
   benOf(t) {
     return (t.langs || []).reduce((t, e) => t + (e.count || 0), 0) + (t.bro || 0) + (t.pros || 0) + (t.pol || 0);
   }
@@ -1362,19 +1374,17 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         let e = "—";
         try {
           const r = this.hGreg(t.y, t.m, t.d);
-          e = r.getDate() + "/" + (r.getMonth() + 1) + "/" + r.getFullYear();
+          /* V7 · 53 (port-sync · بند 8): رقميٌّ هجريٌّ وميلاديّ (سنة/شهر/يوم) · ساعةٌ بأربعٍ وعشرين — كسجلّ «رصد الحالات» (rzDateCells) */
+          e = r.getFullYear() + "/" + String(r.getMonth() + 1).padStart(2, "0") + "/" + String(r.getDate()).padStart(2, "0");
         } catch (t) {}
         let r = "—";
         try {
           if (t.ts) {
             const e = new Date(t.ts);
-            let a = e.getHours();
-            const i = e.getMinutes(),
-              s = a >= 12 ? "م" : "ص";
-            ((a %= 12), 0 === a && (a = 12), (r = String(a).padStart(2, "0") + ":" + String(i).padStart(2, "0") + " " + s));
+            r = String(e.getHours()).padStart(2, "0") + ":" + String(e.getMinutes()).padStart(2, "0");
           }
         } catch (t) {}
-        return { dayLabel: t.d + "/" + t.m + "/" + t.y, gregLabel: e, timeLabel: r };
+        return { dayLabel: t.y + "/" + String(t.m).padStart(2, "0") + "/" + String(t.d).padStart(2, "0"), gregLabel: e, timeLabel: r };
       },
       X = 0 === t.irLedgerPerPage ? 0 : t.irLedgerPerPage || 10,
       Q = 0 === X ? Math.max(1, filteredTotal) : X,
@@ -1447,6 +1457,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irKpiRef: (z + U).toLocaleString("en-US"),
       irKpiPros: z.toLocaleString("en-US"),
       irKpiPol: U.toLocaleString("en-US"),
+      irKpiCards: this._irKpiCards(calendar.monthTotals, monthTotal),   /* V7 · 53 (port-sync · بند 8) */
       irInputFocusStyle: "background:var(--bg-xffffff);border-color:var(--bd-a185151810p4);box-shadow:0 0 0 2px rgba(185,151,81,0.2)",
       irShiftOpts: k,
       irDraftShift: O.shift,
