@@ -1,4 +1,7 @@
 class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dreport+employees+irshad+plan+profile+seized+staff+tasks","daily+dreport+dstats+irshad+plan+seized+staff+tasks","daily+dreport+irshad+plan+seized+staff+tasks","dreport+irshad+planning+profile+seized+staff+tasks","daily+dreport+irshad+plan+profile+seized","daily+plan+seized+staff","admin+profile+seized","award+irshad+seized","irshad+seized+tasks","admin+seized","irshad+seized"]) {
+  /* V7 · 53 تقويم (ق1 · §7): الصفحةُ بالأشهر الميلادية — السنةُ والشهرُ واليومُ في الحالة ميلادية، ويومُ التقويم تاريخٌ محليٌّ بلا ساعة (الحسابُ بالأيام) */
+  gDate(y, m, d) { return new Date(y, m - 1, d); }
+  gParts(t) { return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() }; }
   _businessSpec() {
     return { prefix: "sz", path: "/api/seized", logical: "bassam_seized_v1", resources: ["reports", "catalog", "actions", "locations", "jew", "retro"], rows: "rows",
       views: ["records", "calendar", "catalogs", "dashboard", "context", "retro"], /* V7 · د5-د2: مواردُ الجدول الشهري يسمّيها مالكُها (staff.resources@1)؛ بغيابه لا موردَ منها يُنتظر تغيّرُه */
@@ -80,7 +83,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._szDraftStamp = null; this._szNeedsReview = false; this.setState({ irDraft: this.emptyDraft(), irSaveErrMsg: "", irEditId: null, bcMessage: "" });
   }
   _szDashboardQuery() {
-    const state = this.state, today = this.hToday(), context = this._bcContext();
+    const state = this.state, today = KIVO.BassamCal.gToday(), context = this._bcContext();
     const available = this._bcData("dashboard")?.dashboard.available || (this._szAvailable?.context === context?.key ? this._szAvailable.value : { years: [], months: [] });
     const years = available.years.length ? available.years : [today.y], all = state.irDashYear == null || String(state.irDashYear) === "all";
     const year = all || !years.includes(+state.irDashYear) ? years[0] : +state.irDashYear;
@@ -91,11 +94,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       bucket: all || month === "all" ? "month" : "day", heatYear: year, sumQ: (state.irDashSumQ || "").trim() };
     if (query.mode === "custom") {
       const parse = value => { const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || ""); return match ? new Date(+match[1], +match[2] - 1, +match[3]).getTime() : null; };
-      const current = this.hGreg(today.y, today.m, today.d), end = new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime();
+      const current = this.gDate(today.y, today.m, today.d), end = new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime();
       let from = parse(state.irDashFrom), to = parse(state.irDashTo); if (from == null) from = end - 29 * 864e5; if (to == null) to = end;
       if (from > to) [from, to] = [to, from];
-      const date = value => { const h = this.hParts(new Date(value)); return h.y + "-" + h.m + "-" + h.d; }, length = Math.round((to - from) / 864e5) + 1;
-      Object.assign(query, { from: date(from), to: date(to), previousFrom: date(from - length * 864e5), previousTo: date(from - 864e5), heatYear: this.hParts(new Date(to)).y, bucket: length <= 62 ? "day" : "month" });
+      const date = value => { const h = this.gParts(new Date(value)); return h.y + "-" + h.m + "-" + h.d; }, length = Math.round((to - from) / 864e5) + 1;
+      Object.assign(query, { from: date(from), to: date(to), previousFrom: date(from - length * 864e5), previousTo: date(from - 864e5), heatYear: this.gParts(new Date(to)).y, bucket: length <= 62 ? "day" : "month" });
     }
     return query;
   }
@@ -352,7 +355,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     return { ...data, shiftOf: eid => Object.keys(data.rows || {}).filter(shift => data.rows[shift].some(row => row.eid === eid)).pop() || "" };
   }
   state = (() => {
-    const t = this.hToday();
+    const t = KIVO.BassamCal.gToday();
     return {
       rowMenu: null,
       irTab: "dash",
@@ -549,10 +552,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }, totals = dash.totals, previous = dash.previous;
     if (source) this._szAvailable = { context: source._contextKey, value: dash.available };
     const t = this.state,
-      e = this.hToday(),
+      e = KIVO.BassamCal.gToday(),
       s = dash.heat,
       a = 864e5,
-      r = this.MONTHS,
+      r = KIVO.BassamCal.G_MONTHS,
       i = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
       o = (t) => (KIVO.bsPct ? KIVO.bsPct(t) : String(Math.round(t || 0))),
       n = (t) => Math.round(t || 0).toLocaleString("en-US"),
@@ -567,7 +570,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               : n(t),
       c = (t) => (1 === t ? "يوم واحد" : 2 === t ? "يومين" : t >= 3 && t <= 10 ? t + " أيام" : KIVO.BassamCount(t, "يوم") + "");
     this.__hpc = this.__hpc || {};
-    const d = (t) => (this.__hpc[t] || (this.__hpc[t] = this.hParts(new Date(t))), this.__hpc[t]),
+    const d = (t) => (this.__hpc[t] || (this.__hpc[t] = this.gParts(new Date(t))), this.__hpc[t]),
       p = (t) => new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime(),
       m = (t) => {
         const e = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t || "");
@@ -578,7 +581,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           s = (t) => (t < 10 ? "0" + t : "" + t);
         return e.getFullYear() + "-" + s(e.getMonth() + 1) + "-" + s(e.getDate());
       },
-      u = (t) => t.d + " " + r[t.m - 1] + " " + t.y + " هـ",
+      u = (t) => t.d + " " + r[t.m - 1] + " " + t.y,
       f = this.loadActs(),
       b = key => row => row.actions?.[key] || 0,
       y = row => row.qty || 0,
@@ -599,10 +602,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     for (let t = 1; t <= 12; t++) w[v + "-" + t] && E.push(t);
     let L = O ? "all" : null == t.irDashMonth ? "" : String(t.irDashMonth);
     !O && "all" !== L && E.indexOf(+L) < 0 && (L = E.length ? String(E[E.length - 1]) : "all");
-    const P = (t, e) => this.hMonthDays(t, e),
+    const P = (t, e) => KIVO.BassamCal.gMonthDays(t, e),
       I = (t, s) => (t > e.y ? 0 : t < e.y || s < e.m ? P(t, s) : s === e.m ? e.d : 0),
       C = "custom" === t.irDashMode ? "custom" : O ? "all" : "month",
-      M = p(this.hGreg(e.y, e.m, e.d));
+      M = p(this.gDate(e.y, e.m, e.d));
     let A = m(t.irDashFrom),
       T = m(t.irDashTo);
     if ("custom" === C && (null == A && (A = M - 29 * a), null == T && (T = M), A > T)) {
@@ -620,10 +623,10 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     if ("all" === C) {
       B = false;
       N = dash.available.months.slice().sort((a, b) => a.y - b.y || a.m - b.m)
-        .map(row => ({ k: 100 * row.y + row.m, lab: r[row.m - 1], full: r[row.m - 1] + " " + row.y + " هـ" }));
+        .map(row => ({ k: 100 * row.y + row.m, lab: r[row.m - 1], full: r[row.m - 1] + " " + row.y }));
       K = "كل الفترة";
       const first = dash.available.first;
-      if (first) H = Math.round((M - p(this.hGreg(first.y, first.m, first.d))) / a) + 1;
+      if (first) H = Math.round((M - p(this.gDate(first.y, first.m, first.d))) / a) + 1;
       R = k[0];
     } else if ("custom" === C) {
       const t = d(A),
@@ -646,7 +649,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         N = Object.keys(t)
           .map(Number)
           .sort((t, e) => t - e)
-          .map((e) => ({ k: e, lab: r[t[e].m - 1], full: r[t[e].m - 1] + " " + t[e].y + " هـ" }));
+          .map((e) => ({ k: e, lab: r[t[e].m - 1], full: r[t[e].m - 1] + " " + t[e].y }));
       }
       K = u(t) + " ← " + u(e);
       const o = A - a,
@@ -656,20 +659,20 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       R = e.y;
     } else if ("all" === L) {
       B = false;
-      for (let t = 1; t <= 12; t++) I(v, t) > 0 && N.push({ k: 100 * v + t, lab: r[t - 1], full: r[t - 1] + " " + v + " هـ" });
-      ((H = N.reduce((t, e) => t + I(v, e.k % 100), 0)), (K = "كل أشهر " + v + " هـ"));
+      for (let t = 1; t <= 12; t++) I(v, t) > 0 && N.push({ k: 100 * v + t, lab: r[t - 1], full: r[t - 1] + " " + v });
+      ((H = N.reduce((t, e) => t + I(v, e.k % 100), 0)), (K = "كل أشهر " + v));
       const t = v === e.y;
-      V = t ? "نفس الفترة من " + (v - 1) + " هـ" : "سنة " + (v - 1) + " هـ";
+      V = t ? "نفس الفترة من " + (v - 1) : "سنة " + (v - 1);
     } else {
       B = true;
       const t = I(v, +L) || P(v, +L);
-      for (let e = 1; e <= t; e++) N.push({ k: 1e4 * v + 100 * +L + e, lab: String(e), full: e + " " + r[+L - 1] + " " + v + " هـ" });
-      ((H = t), (K = r[+L - 1] + " " + v + " هـ"));
+      for (let e = 1; e <= t; e++) N.push({ k: 1e4 * v + 100 * +L + e, lab: String(e), full: e + " " + r[+L - 1] + " " + v });
+      ((H = t), (K = r[+L - 1] + " " + v));
       let s = v,
         a = +L - 1;
       a < 1 && ((a = 12), (s = v - 1));
       const i = v === e.y && +L === e.m;
-      V = i ? "أول " + c(e.d) + " من " + r[a - 1] + " " + s + " هـ" : r[a - 1] + " " + s + " هـ";
+      V = i ? "أول " + c(e.d) + " من " + r[a - 1] + " " + s : r[a - 1] + " " + s;
     }
     const G = previous.reports > 0 && "all" !== C;
     "all" === C && (V = "");
@@ -824,7 +827,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       zt = [];
     let wt = 0;
     try {
-      const t = p(this.hGreg(R, 1, 1)),
+      const t = p(this.gDate(R, 1, 1)),
         e = [];
       let o = 0;
       for (let s = 1; s <= 12; s++) {
@@ -868,18 +871,16 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
               g = new Date(l);
             s.push({
               style: "width:15px;height:15px;border-radius:3px;background:" + c[d(m)],
+              /* V7 · 53 تقويم (§7): الشبكةُ سنةٌ ميلادية — اليومُ الميلادي ثم الهجريُّ المقابل */
               tip:
+                this.WEEKDAYS[g.getDay()] +
+                " " +
                 h.d +
                 " " +
                 r[h.m - 1] +
                 " " +
                 R +
-                " هـ · " +
-                this.WEEKDAYS[g.getDay()] +
-                " " +
-                g.getDate() +
-                " " +
-                i[g.getMonth()] +
+                (KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(R, h.m, h.d)) ? " · " + KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(R, h.m, h.d)) + " هـ" : "") +
                 " — " +
                 KIVO.BassamCount(n(m), "قطعة") +
                 "",
@@ -1081,7 +1082,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ye = vt($, tt);
     return {
       irDashYear: O ? "all" : String(v),
-      irDashYearOpts: [{ v: "all", lbl: "كل السنوات" }].concat(k.map((t) => ({ v: String(t), lbl: t + " هـ" }))),
+      irDashYearOpts: [{ v: "all", lbl: "كل السنوات" }].concat(k.map((t) => ({ v: String(t), lbl: String(t), sub: KIVO.BassamCal.hRangeOfYear(t) }))),
       irDashSetYear: (t) =>
         this.setState({ irDashYear: "all" === t.target.value ? "all" : +t.target.value, irDashMonth: null, irDashMode: null }),
       irDashMonth: L,
@@ -1228,12 +1229,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irDashHeatDesc:
         "كل مربع = يوم واحد من سنة " +
         R +
-        " هـ · " +
+        " · " +
         KIVO.BassamCount(wt, "يوم") +
         " " +
         KIVO.BassamCount.agr(wt, "فيه", "فيهما", "فيها") +
         " نشاط · تعرض السنة كاملة مهما كان النطاق المختار",
-      irDashHeatYear: R + " هـ",
+      irDashHeatYear: R,
       irDashHeatOn: Dt.length > 0,
       irDashHeatOff: 0 === Dt.length,
       irDashLangRows: Mt,
@@ -1301,7 +1302,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     this._bcEnsure("context", { year: this.state.irYear, month: this.state.irMonth, day: this.state.irDay });
     this._szEnsureRetro();
     const t = this.state,
-      e = this.hToday(),
+      e = KIVO.BassamCal.gToday(),
       s = t.irYear,
       a = t.irMonth,
       calendar = this._bcData("calendar"),
@@ -1315,7 +1316,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       flags = this._szRetroFlags(),
       d = flags.months,
       p = flags.days,
-      m = this.MONTHS.map((t, r) => {
+      m = KIVO.BassamCal.G_MONTHS.map((t, r) => {
         const i = r + 1,
           o = a === i,
           n = s === e.y && i === e.m,
@@ -1359,7 +1360,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
                 : (f += "dashed #E1E1E1;background:var(--bg-a2452452450p7);opacity:.9"),
           {
             name: t,
-            greg: this.hGregMonthLabel(s, i),
+            greg: KIVO.BassamCal.hRangeOfMonth(KIVO.BassamCal.gYm(s, i)),
             style: f,
             nameColor: b,
             cntColor: y,
@@ -1398,8 +1399,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       f = g < c,
       b = !!d[u],
       y = f && !b,
-      S = this.hMonthDays(s, a),
-      x = this.hGreg(s, a, 1),
+      S = KIVO.BassamCal.gMonthDays(s, a),
+      x = this.gDate(s, a, 1),
       D = new Date(x.getFullYear(), x.getMonth(), x.getDate(), 12),
       z = [];
     for (let r = 1; r <= S; r++) {
@@ -1436,7 +1437,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           "يوم " +
           r +
           " " +
-          this.MONTHS[a - 1] +
+          KIVO.BassamCal.G_MONTHS[a - 1] +
           " " +
           s +
           " هـ — الموافق " +
@@ -1468,12 +1469,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     }
     const w = s === e.y && a === e.m,
       k = t.irDay,
-      O = this.MONTHS[a - 1],
+      O = KIVO.BassamCal.G_MONTHS[a - 1],
       v = !!p[s + "-" + a + "-" + k],
       E = f || (g === c && k < e.d),
       L = !y && E && !v,
       P = !!calendar && !!this._bcData("catalogs") && !!this._bcData("context") && !y && !L && this._irCanWrite(),
-      I = this.WEEKDAYS[this.hGreg(s, a, k).getDay()],
+      I = this.WEEKDAYS[this.gDate(s, a, k).getDay()],
       C = this.szDayCtx(s, a, k, I),
       M = this.szAutoFill(t.irDraft || this.emptyDraft(), C, !!t.irEditId),
       A = (t) => {
@@ -1815,9 +1816,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       ut = (t) => {
         let e = "—";
         try {
-          const s = this.hGreg(t.y, t.m, t.d);
-          /* V7 · 53 (port-sync · بند 8): رقميٌّ هجريٌّ وميلاديّ (سنة/شهر/يوم) · ساعةٌ بأربعٍ وعشرين — كسجلّ «رصد الحالات» (rzDateCells) */
-          e = s.getFullYear() + "/" + String(s.getMonth() + 1).padStart(2, "0") + "/" + String(s.getDate()).padStart(2, "0");
+          /* V7 · 53 تقويم (§7): التاريخُ ميلاديٌّ أساساً (dayLabel) والهجريُّ المقابل سطرٌ صغير (gregLabel — الاسمُ باقٍ للعرض والتصدير) · ساعةٌ بأربعٍ وعشرين */
+          const h = KIVO.BassamCal.hOf(KIVO.BassamCal.gKey(t.y, t.m, t.d));
+          h && (e = h.y + "/" + String(h.m).padStart(2, "0") + "/" + String(h.d).padStart(2, "0") + " هـ");
         } catch (t) {}
         let s = "—";
         try {
@@ -2011,9 +2012,14 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           })()
         : { szGalOpen: !1 };
     return {
-      irMonths: m,
-      irYearLabel: s + " هـ",
-      irGregRange: this.hGregYearRange(s),
+      /* V7 · 53 تقويم (§7 · day_card_design · REVIEW 21): كرتا الشهر واليوم من المكوّن الواحد KIVO.BassamCalCard — الميلاديُّ أساساً والهجريُّ سطرٌ صغير،
+         وحالتان فقط (مغلق بقفل · مفتوح)، والسببُ الإداري في التلميح. القفلُ والاستدراك بالقاعدة نفسِها (انقضى بلا نافذة · نافذةٌ سارية) */
+      irMonths: m.map((x, i) => {
+        const n = i + 1, ym = KIVO.BassamCal.gYm(s, n), past = 12 * s + n < c, open = !!d[s + "-" + n];
+        return Object.assign(x, { card: KIVO.BassamCalCard.month({ key: ym, ym, closed: past && !open, why: past && !open ? "past" : past && open ? "retro" : "", sel: a === n, T: e.k, onClick: x.click, onDoubleClick: x.dbl, attrs: { "data-strip-cur": String(x.isCurrent) } }) });
+      }),
+      irYearLabel: s,
+      irGregRange: KIVO.BassamCal.hRangeOfYear(s),
       irBadgeLabel: KIVO.BassamCount(h, "محضر") + " هذه السنة",
       irBadgeStyle:
         "display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;border-radius:9999px;padding:4px 12px;font-family:'Cairo',sans-serif;border:1px solid " +
@@ -2023,8 +2029,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irPrevYear: () => this.setState({ irYear: s - 1, irOpenMonths: {}, irOpenDays: {}, irLedgerOpen: !1 }),
       irNextYear: () => this.setState({ irYear: s + 1, irOpenMonths: {}, irOpenDays: {}, irLedgerOpen: !1 }),
       irGoCurrent: () => this.setState({ irYear: e.y, irMonth: e.m, irDay: e.d, irOpenMonths: {}, irOpenDays: {}, irLedgerOpen: !1 }),
-      irDays: z,
-      irSelDateLabel: t.irDay + " " + this.MONTHS[a - 1] + " " + s + " هـ",
+      irDays: z.map((v, i) => {
+        const k = KIVO.BassamCal.gKey(s, a, i + 1);
+        return Object.assign(v, { card: KIVO.BassamCalCard.day({ key: k, k, closed: v.lockClosed, why: v.lockClosed ? "past" : v.lockOpen ? "retro" : "", sel: t.irDay === i + 1, T: e.k, onClick: v.click, onDoubleClick: v.dbl, attrs: { "data-strip-cur": String(v.isToday) } }) });
+      }),
+      irSelDateLabel: t.irDay + " " + KIVO.BassamCal.G_MONTHS[a - 1] + " " + s + (KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(s, a, t.irDay)) ? " · " + KIVO.BassamCal.hDayText(KIVO.BassamCal.gKey(s, a, t.irDay)) + " هـ" : ""),
       irMonthAutoHint: y,
       irDayLockedHint: L,
       /* IRSZ-4: نصُّ التلميح بحسب الصلاحية — «نقرة مزدوجة لفتحه» لمن يملك الاعتماد وحده */
@@ -2054,7 +2063,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         this.setState({ irDraft: { ...e, loc: t }, irLocFreeVal: "", irLocPopOpen: !1, irSaveErrMsg: "" });
       },
       szMyName: this.irActor(),
-      irEntryTitle: (t.irEditId ? "تعديل محضر — يوم " : "محضر مضبوطات — يوم ") + k + " " + O + " " + s + " هـ",
+      irEntryTitle: (t.irEditId ? "تعديل محضر — يوم " : "محضر مضبوطات — يوم ") + k + " " + O + " " + s,
       irSaveBtnTitle: t.irEditId ? "حفظ التعديل" : "حفظ المحضر",
       szAddTitle: t.irEditId ? "حفظ التعديل على السجل" : "إضافة — تُحفظ فوراً في سجل الحركة",
       szAddLbl: t.irEditId ? "حفظ التعديل" : "إضافة",
@@ -2321,8 +2330,8 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           }),
           e = [
             [
-              "التاريخ هـ",
-              "الموافق م",
+              "التاريخ",
+              "الموافق هـ",
               "وقت الحفظ",
               "المُسجّل",
               "رقم المحضر",
@@ -2337,7 +2346,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           ].concat(t);
         try {
           KIVO.BassamXLSX
-            ? KIVO.BassamXLSX.download(e, "seized-" + O + "-" + s + ".xlsx")
+            ? KIVO.BassamXLSX.download(e, "seized-" + KIVO.BassamCal.fileTag(KIVO.BassamCal.gYm(s, a)) + ".xlsx")
             : this.bsToast(
                 "تعذّر تصدير Excel — مكتبة الجداول غير متاحة في هذه الجلسة. حدّث الصفحة وأعد المحاولة، أو استخدم «طباعة / حفظ PDF».",
               );
@@ -2349,7 +2358,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLgPrintTable: () => {
         this.PC("export") && (this.setState({ irLgFilesOpen: !1 }), setTimeout(() => window.print(), 150));
       },
-      irLgMonthLabel: O + " " + s + " هـ",
+      irLgMonthLabel: O + " " + s,
       irLgClearAllItemStyle:
         "display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:400;transition:background .15s;" +
         (monthCount > 0 ? "cursor:pointer;color:var(--fg-x141414)" : "cursor:not-allowed;color:var(--fg-xcbd5e1);opacity:.6"),
@@ -2363,7 +2372,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         this.PC("del")
           ? 0 !== monthCount
             ? this.setState({ irLgFilesOpen: !1, irLgClearAllConfirm: !0 })
-            : this.bsToast("لا محاضر في " + O + " " + s + " هـ لحذفها — اختر شهراً فيه محاضر.")
+            : this.bsToast("لا محاضر في " + O + " " + s + " لحذفها — اختر شهراً فيه محاضر.")
           : this.permDeny();
       },
       irLgClearAllOpen: !!t.irLgClearAllConfirm,
@@ -2374,7 +2383,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         O +
         " " +
         s +
-        " هـ نهائياً (" +
+        " نهائياً (" +
         KIVO.BassamCount(monthCount, "محضر|مسجّل") +
         ") مع " +
         KIVO.BassamCount.agr(monthCount, "صوره", "صورهما", "صورها") +
@@ -2385,7 +2394,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         if (!result.ok) return void this.bsToast(result.message);
         if (!result.matches) return void this.bsToast("أُكّد الحذف السابق؛ راجع الفترة الحالية قبل تنفيذ حذف آخر", "warn");
         this.setState({ irLgClearAllConfirm: false, irLedgerPage: 1 });
-        this.bsAck("تم حذف " + KIVO.BassamCount(result.data.n, "محضر", "g") + " من " + O + " " + s + " هـ.", "ok");
+        this.bsAck("تم حذف " + KIVO.BassamCount(result.data.n, "محضر", "g") + " من " + O + " " + s + ".", "ok");
       },
       ...(() => {
         const e = (e, s, a, r) => {
@@ -2439,7 +2448,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
       irLgShownCount: String(total),
       irLgTotalCount: String(monthCount),
       irLedgerCount: KIVO.BassamCount(String(monthCount), "محضر") + "",
-      irLedgerSub: "كل محاضر المضبوطات المسجّلة خلال " + O + " " + s + " هـ",
+      irLedgerSub: "كل محاضر المضبوطات المسجّلة خلال " + O + " " + s,
       irLedgerHas: gt.length > 0,
       irLedgerEmpty: 0 === gt.length,
       irLedgerEmptyMsg: !records ? "انتظر قراءة المحاضر من الخادم" : 0 === monthCount ? "لا محاضر مسجّلة في هذا الشهر بعد" : "لا نتائج مطابقة للبحث/الفلترة الحالية",
