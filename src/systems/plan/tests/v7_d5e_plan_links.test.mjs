@@ -65,10 +65,13 @@ function oldMonthClear(opRead, _opRelated, t) {
     }
   } catch (t) {}
 }
-function oldSiteRemove(opRead, _opRelated, t) {
+/* V7 · د7 (planprove · رد المالك 52 §2): حذفُ الموقع يتبع قاعدةَ sites.patch/pad نفسَها — اليومُ المعتمد (ap) والماضي لا يُمسّ،
+   ولا تُكتب الوثيقةُ إن لم يُحذف من يوم (كان يُحذف من كل يوم فيُرفض الحفظُ الذرّي بـlocked-period — tests/browser/v7_d7_planprove.test.mjs) */
+function oldSiteRemove(KIVO, opRead, _opRelated, t) {
   try {
     const e = opRead('bassam_rounds_v1');
-    e && 'object' == typeof e && (Object.keys(e).forEach((s) => { const n = e[s]; n && Array.isArray(n.d) && n.d.length > t.i && n.d.splice(t.i, 1); }), (_opRelated.bassam_rounds_v1 = e));
+    let c = !1;
+    e && 'object' == typeof e && (Object.keys(e).forEach((s) => { const n = e[s]; n && Array.isArray(n.d) && !n.ap && oldKeyNow(KIVO, s) && n.d.length > t.i && (n.d.splice(t.i, 1), (c = !0)); }), c && (_opRelated.bassam_rounds_v1 = e));
   } catch (t) {}
 }
 function oldSitesPad(KIVO, opRead, _opRelated, a) {
@@ -128,7 +131,7 @@ test('① rounds commands write exactly what the Plan page used to write into th
     ['daily.month.clear@1', (t) => ({ y: t.y, m: t.m }), (rel, read, t) => oldMonthClear(read, rel, t), [{ y: now.y, m: now.m }, { y: now.y - 1, m: now.m }, { y: 1300, m: 1 }]],
     /* V7 · د5-هـ (t4): الحذفُ والإكمالُ بمعرّف الموقع sid لا بموضعه — يساويان القديمَ حرفاً حين تحمل الأيامُ والمواقعُ معرّفاتٍ متّسقة (كما هنا: TEST_ONLY_S<i> في الموضع i)؛
        ما يختلف فيه الموضعُ عن المعرّف (إعادةُ ترتيب · طابقٌ بلا sid) يختبره src/systems/daily/tests/v7_d5e_rounds_sid_migration.test.mjs */
-    ['daily.site.remove@1', (t) => ({ index: t.i, sid: 'TEST_ONLY_S' + t.i }), (rel, read, t) => oldSiteRemove(read, rel, t), [{ i: 0 }, { i: 1 }, { i: 5 }]],
+    ['daily.site.remove@1', (t) => ({ index: t.i, sid: 'TEST_ONLY_S' + t.i }), (rel, read, t) => oldSiteRemove(c.KIVO, read, rel, t), [{ i: 0 }, { i: 1 }, { i: 5 }]],
     ['daily.sites.pad@1', (a) => ({ sites: a }), (rel, read, a) => oldSitesPad(c.KIVO, read, rel, a), [[{ sid: 'TEST_ONLY_S0' }, { sid: 'TEST_ONLY_S1' }, { sid: 'TEST_ONLY_NEW' }], [{ sid: 'TEST_ONLY_S0' }], [{ sid: 'TEST_ONLY_S0' }, { sid: 'TEST_ONLY_S1' }, { sid: 'TEST_ONLY_S2' }, { sid: 'D' }]]],
   ];
   for (const [name, payload, old, inputs] of cases)
