@@ -315,9 +315,9 @@ function ocPhysicalRows(prepared, domain) {
   return out;
 }
 /* V7 · 53 (البند 6 · uiqa): فكٌّ واحد للقراءة مع التحقق الكامل — على opts.skip */
-function ocFromPhysicalRead(prepared, department, resource, physical) {
+function ocFromPhysicalRead(prepared, department, resource, physical, opts) {
   var domain = ocFromPhysical(prepared, department, resource, physical, { skip: 1 });
-  return { domain: domain, projection: ocInflate(prepared, domain) };
+  return { domain: domain, projection: ocInflate(prepared, domain, opts) };
 }
 function ocFromPhysical(prepared, department, resource, physical, opts) {
   var domain = { departmentId: department, resource: resource, rows: {} }, entities = {}, used = new Set();

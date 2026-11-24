@@ -19099,9 +19099,9 @@ function ocPhysicalRows(prepared, domain) {
   return out;
 }
 /* V7 · 53 (البند 6 · uiqa): فكٌّ واحد للقراءة مع التحقق الكامل — على opts.skip */
-function ocFromPhysicalRead(prepared, department, resource, physical) {
+function ocFromPhysicalRead(prepared, department, resource, physical, opts) {
   var domain = ocFromPhysical(prepared, department, resource, physical, { skip: 1 });
-  return { domain: domain, projection: ocInflate(prepared, domain) };
+  return { domain: domain, projection: ocInflate(prepared, domain, opts) };
 }
 function ocFromPhysical(prepared, department, resource, physical, opts) {
   var domain = { departmentId: department, resource: resource, rows: {} }, entities = {}, used = new Set();
@@ -20668,7 +20668,7 @@ async function opLoadMany(env, keys, retired, scopes) {
   if (scoped.length) (result[revisionIndex + 3].results || []).forEach(function (row) { var k = 'bsdept:' + row.d + ':' + row.r; (members[k] = members[k] || []).push({ p: row.m, k: row.k, pos: row.p }); });
   requests.forEach(function (request) {
     var info = request.info, physical = physicalByKey[request.key], key = request.key;
-    var domain = ocFromPhysical(info.prepared, info.dept, info.resource, physical, { skip: 1 }), projection = ocInflate(info.prepared, domain, request.scope ? { partial: 1 } : { trust: 1 });
+    var read53 = ocFromPhysicalRead(info.prepared, info.dept, info.resource, physical, request.scope ? { partial: 1 } : { trust: 1 }), domain = read53.domain, projection = read53.projection;
     values[key] = projection.present ? JSON.stringify(projection.value) : null;
     domains[key] = domain;
     if (request.scope) {
@@ -21038,7 +21038,7 @@ async function opPeriodSaveResult(env, ps, r) {
   return out;
 }
 /* V7 · 53: التخزين بالفترة (§3ب) — طبقةٌ لا تعرف شكل التاريخ؛ التفصيل في تقرير periods ووثيقة العقد. */
-var OP_LIM = { day: 524288, mctl: 524288, month: 1572864, head: 1048576, readPeriods: 40, readNodes: 30000, batchBytes: 12582912, batchStmts: 400, rangeGroups: 26, summaryRows: 800 };
+var OP_LIM = { day: 1048576, mctl: 524288, month: 3145728, head: 3145728, readPeriods: 40, readNodes: 30000, batchBytes: 30000000, batchStmts: 900, rangeGroups: 26, summaryRows: 800 };
 var OP_LIM_MSG = {
   'read-too-large': 'طُلبت فترات أكثر من المسموح في قراءة واحدة. اختر مدى أقصر.',
   'period-too-large': 'بيانات هذه الفترة تجاوزت الحد المسموح. راجع الإدخال أو تواصل مع مدير المنصة.',
@@ -21129,7 +21129,7 @@ function opSummaryStatements(env, info, changes) {
   return st;
 }
 function opKeyOf(info) { return 'bsdept:' + info.dept + ':' + info.resource; }
-function opTag(statement, keys) { try { statement.__opKeys = keys; } catch (e) {  } return statement; }
+function opTag(statement, keys) { try { statement.__opKeys = keys; } catch (e) { return statement; } return statement; }
 function opLayoutPendingOf(row) { var v = parseJson(row && row.v, []); return Array.isArray(v) ? v.filter(function (d) { return typeof d === 'string'; }) : []; }
 function opLayoutStatement(env) { return env.DB.prepare("SELECT v FROM meta WHERE k='" + OP_LAYOUT_KEY + "'"); }
 function opSplitResources() { return opDefinitions().filter(function (d) { return !!d.period; }).map(function (d) { return d.resource; }); }
@@ -21205,7 +21205,7 @@ async function opPeriodsMigrateRoute(env, request, session) {
           var tnames = Object.keys(tables), sum = function (where) { return 'SELECT ' + tnames.map(function (t2) { return '(SELECT COUNT(*) FROM ' + where(t2) + ')'; }).join('+') + ' AS n'; };
           var total = Number((await env.DB.prepare(sum(function (t2) { return t2 + ' WHERE department_id=?1 AND resource=?2'; })).bind(d, R).first('n')) || 0);
           if (!total) { rep.resources[R] = { periods: 0, rows: 0 }; continue; }
-          var names = members.map(function (m) { return m.m; }), sums = [], ranges = opHeadRanges(def);
+          var names = members.map(function (m) { return m.m; }), sums = [];
                     /* تغطيةٌ بلا مدياتٍ كثيرة: كلُّ عقدةٍ تحت الحاوية/e: جذرُها عضوٌ في الحاوية (صفُّ جذرها موجود) — والكياناتُ مربوطةٌ بعقدها (FK) */
           var E = opContainerKey(def) + '/e:', L = E.length, orphans = Number((await env.DB.prepare("SELECT COUNT(*) n FROM ops_nodes x WHERE x.department_id=?1 AND x.resource=?2 AND x.row_key>=?3 AND x.row_key<?4 AND NOT EXISTS(SELECT 1 FROM ops_nodes m WHERE m.department_id=?1 AND m.resource=?2 AND m.parent_key=?5 AND m.row_key=CASE WHEN instr(substr(x.row_key,?6),'/')>0 THEN substr(x.row_key,1,?7+instr(substr(x.row_key,?6),'/')-1) ELSE x.row_key END)").bind(d, R, E, opContainerKey(def) + '/e;', opContainerKey(def), L + 1, L).first('n')) || 0), covered = orphans ? total - orphans : total;
           if (ri < r0) { rep.resources[R] = { periods: names.length, rows: total, earlier: 1 }; if (covered !== total) throw Object.assign(ocError('period-coverage'), { rows: total, covered: covered }); continue; }
@@ -21234,7 +21234,9 @@ async function opPeriodsMigrateRoute(env, request, session) {
   } catch (error) { return opRouteError(error); }
 }
 function opSaveBudget(statements) {
-  var n = 0; statements.forEach(function (s) { n += String((s && s.__sql) || '').length; ((s && s.__args) || []).forEach(function (v) { if (typeof v === 'string') n += v.length; }); });
+  /* حجمُ المسلسل كما يقيسه D1 (نصٌّ فيه حرفٌ فوق U+00FF بايتان للحرف) — 30MB تحت سقف 32MiB للاستدعاء */
+  var size = function (t) { return /[^\u0000-\u00ff]/.test(t) ? t.length * 2 : t.length; }, n = 0;
+  statements.forEach(function (s) { n += size(String((s && s.__sql) || '')); ((s && s.__args) || []).forEach(function (v) { if (typeof v === 'string') n += size(v); }); });
   if (statements.length > OP_LIM.batchStmts || n > OP_LIM.batchBytes) throw opLimError('batch-budget', 413, { statements: statements.length, bytes: n });
 }
 /* One-time canonical KV cutover. Runtime access is typed SQL in019r; this
@@ -25470,29 +25472,51 @@ function imgStageRowsStmt(env, ik) { return env.DB.prepare('DELETE FROM imgs WHE
 /* imgref completeness for the typed tables (see THE RULE): every typed resource is re-read once and every id its stored value mentions is
    inserted — only if the record was not saved meanwhile (a save writes its own complete imgref). A cursor in meta lets it resume. */
 async function imgRefScan(env) {
+  /* V7 · 53: المواردُ المقسَّمة (019w) تُقرأ فتراتٍ (20 في كل استدعاء) لا كاملةً — موردٌ بتاريخٍ طويل يتجاوز سقفَ الاستدعاء كاملاً فلا يكتمل الفهرسُ أبداً؛
+     والمؤشّرُ يحفظ موضعَ الفترة (k · i) فيُستأنف في المرور التالي */
   var cur = await env.DB.prepare('SELECT v FROM meta WHERE k = ?1').bind(IMG_SCAN_KEY).first(), pos = { d: '', r: '' }, round, chars = 0;
   if (cur && cur.v === 'done') return true;
   if (cur) { var pj = parseJson(cur.v, null); if (pj && typeof pj.d === 'string' && typeof pj.r === 'string') pos = pj; }
   var put = function (v) { return env.DB.prepare('INSERT INTO meta (k, v) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET v = excluded.v').bind(IMG_SCAN_KEY, v); };
-  for (round = 0; round < 5 && chars < 6e6; round++) {
-    var keys = [], i;
-    for (i = 0; i < 12; i++) {
-      var nx = await env.DB.prepare('SELECT department_id AS d, resource AS r FROM ops_nodes WHERE (department_id, resource) > (?1, ?2) ORDER BY department_id, resource LIMIT 1').bind(pos.d, pos.r).first();
-      if (!nx) break;
-      pos = { d: String(nx.d), r: String(nx.r) };
-      var k = 'bsdept:' + pos.d + ':' + pos.r, ok = false;
-      try { ok = !!opInfo(k); } catch (eK) { ok = false; }                    /* a row no resource of this version owns: nothing to read */
-      if (ok) keys.push(k);
+  var refStmt = function (ids, k2, rev) { return env.DB.prepare('INSERT OR IGNORE INTO imgref (img, k) SELECT value, ?2 FROM json_each(?1) WHERE COALESCE((SELECT rev FROM revs WHERE k = ?2), 0) = ?3').bind(JSON.stringify(ids), k2, rev || 0); };
+  var split = async function (k2, from) {
+    var info = opInfo(k2), names = (await opPeriodMembers(env, info)).map(function (m) { return m.m; });
+    for (var j = from; j < names.length; j += 20) {
+      if (chars >= 6e6) return j;
+      var sc = {}; sc[k2] = { periods: names.slice(j, j + 20) };
+      var got = await opLoadMany(env, [k2], 0, sc), v = got.values[k2] || '', ids = Object.keys(imgIdsIn(v)); chars += v.length;
+      if (ids.length) await env.DB.batch([refStmt(ids, k2, got.revs[k2])]);
     }
-    var st = [], done = i < 12;
-    if (keys.length) {
+    return -1;
+  };
+  if (typeof pos.k === 'string') {
+    var at = await split(pos.k, Number(pos.i) || 0);
+    if (at >= 0) { await env.DB.batch([put(JSON.stringify({ d: pos.d, r: pos.r, k: pos.k, i: at }))]); return false; }
+    var pk0 = parseKey(pos.k); pos = { d: String(pk0.dept), r: resName(pos.k) };
+  }
+  for (round = 0; round < 5 && chars < 6e6; round++) {
+    var keys = [], i, st = [];
+    var flush = async function () {
+      if (!keys.length) return;
       var got = await opLoadMany(env, keys, 0);
       keys.forEach(function (k2) {
         var v = got.values[k2] || '', ids = Object.keys(imgIdsIn(v)); chars += v.length;
-        if (ids.length) st.push(env.DB.prepare('INSERT OR IGNORE INTO imgref (img, k) SELECT value, ?2 FROM json_each(?1) WHERE COALESCE((SELECT rev FROM revs WHERE k = ?2), 0) = ?3')
-          .bind(JSON.stringify(ids), k2, got.revs[k2] || 0));
+        if (ids.length) st.push(refStmt(ids, k2, got.revs[k2]));
       });
+      keys = [];
+    };
+    for (i = 0; i < 12; i++) {
+      var nx = await env.DB.prepare('SELECT department_id AS d, resource AS r FROM ops_nodes WHERE (department_id, resource) > (?1, ?2) ORDER BY department_id, resource LIMIT 1').bind(pos.d, pos.r).first();
+      if (!nx) break;
+      var before = pos, k = 'bsdept:' + String(nx.d) + ':' + String(nx.r), ok = false;
+      try { ok = !!opInfo(k); } catch (eK) { ok = false; }                    /* a row no resource of this version owns: nothing to read */
+      if (ok && opSplitResource(k) && keys.length) { await flush(); }          /* ما جُمع قبله يُقرأ أولاً، ثم المقسَّمُ فتراتٍ */
+      pos = { d: String(nx.d), r: String(nx.r) };
+      if (ok && opSplitResource(k)) { var at2 = await split(k, 0); if (at2 >= 0) { await env.DB.batch(st.concat([put(JSON.stringify({ d: before.d, r: before.r, k: k, i: at2 }))])); return false; } continue; }
+      if (ok) keys.push(k);
     }
+    var done = i < 12;
+    await flush();
     st.push(put(done ? 'done' : JSON.stringify(pos)));
     await env.DB.batch(st);
     if (done) return true;

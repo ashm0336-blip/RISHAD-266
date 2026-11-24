@@ -1,5 +1,5 @@
 /* V7 · 53: التخزين بالفترة (§3ب) — طبقةٌ لا تعرف شكل التاريخ؛ التفصيل في تقرير periods ووثيقة العقد. */
-var OP_LIM = { day: 524288, mctl: 524288, month: 1572864, head: 1048576, readPeriods: 40, readNodes: 30000, batchBytes: 12582912, batchStmts: 400, rangeGroups: 26, summaryRows: 800 };
+var OP_LIM = { day: 1048576, mctl: 524288, month: 3145728, head: 3145728, readPeriods: 40, readNodes: 30000, batchBytes: 30000000, batchStmts: 900, rangeGroups: 26, summaryRows: 800 };
 var OP_LIM_MSG = {
   'read-too-large': 'طُلبت فترات أكثر من المسموح في قراءة واحدة. اختر مدى أقصر.',
   'period-too-large': 'بيانات هذه الفترة تجاوزت الحد المسموح. راجع الإدخال أو تواصل مع مدير المنصة.',
@@ -90,7 +90,7 @@ function opSummaryStatements(env, info, changes) {
   return st;
 }
 function opKeyOf(info) { return 'bsdept:' + info.dept + ':' + info.resource; }
-function opTag(statement, keys) { try { statement.__opKeys = keys; } catch (e) {  } return statement; }
+function opTag(statement, keys) { try { statement.__opKeys = keys; } catch (e) { return statement; } return statement; }
 function opLayoutPendingOf(row) { var v = parseJson(row && row.v, []); return Array.isArray(v) ? v.filter(function (d) { return typeof d === 'string'; }) : []; }
 function opLayoutStatement(env) { return env.DB.prepare("SELECT v FROM meta WHERE k='" + OP_LAYOUT_KEY + "'"); }
 function opSplitResources() { return opDefinitions().filter(function (d) { return !!d.period; }).map(function (d) { return d.resource; }); }
@@ -166,7 +166,7 @@ async function opPeriodsMigrateRoute(env, request, session) {
           var tnames = Object.keys(tables), sum = function (where) { return 'SELECT ' + tnames.map(function (t2) { return '(SELECT COUNT(*) FROM ' + where(t2) + ')'; }).join('+') + ' AS n'; };
           var total = Number((await env.DB.prepare(sum(function (t2) { return t2 + ' WHERE department_id=?1 AND resource=?2'; })).bind(d, R).first('n')) || 0);
           if (!total) { rep.resources[R] = { periods: 0, rows: 0 }; continue; }
-          var names = members.map(function (m) { return m.m; }), sums = [], ranges = opHeadRanges(def);
+          var names = members.map(function (m) { return m.m; }), sums = [];
                     /* تغطيةٌ بلا مدياتٍ كثيرة: كلُّ عقدةٍ تحت الحاوية/e: جذرُها عضوٌ في الحاوية (صفُّ جذرها موجود) — والكياناتُ مربوطةٌ بعقدها (FK) */
           var E = opContainerKey(def) + '/e:', L = E.length, orphans = Number((await env.DB.prepare("SELECT COUNT(*) n FROM ops_nodes x WHERE x.department_id=?1 AND x.resource=?2 AND x.row_key>=?3 AND x.row_key<?4 AND NOT EXISTS(SELECT 1 FROM ops_nodes m WHERE m.department_id=?1 AND m.resource=?2 AND m.parent_key=?5 AND m.row_key=CASE WHEN instr(substr(x.row_key,?6),'/')>0 THEN substr(x.row_key,1,?7+instr(substr(x.row_key,?6),'/')-1) ELSE x.row_key END)").bind(d, R, E, opContainerKey(def) + '/e;', opContainerKey(def), L + 1, L).first('n')) || 0), covered = orphans ? total - orphans : total;
           if (ri < r0) { rep.resources[R] = { periods: names.length, rows: total, earlier: 1 }; if (covered !== total) throw Object.assign(ocError('period-coverage'), { rows: total, covered: covered }); continue; }
@@ -195,6 +195,8 @@ async function opPeriodsMigrateRoute(env, request, session) {
   } catch (error) { return opRouteError(error); }
 }
 function opSaveBudget(statements) {
-  var n = 0; statements.forEach(function (s) { n += String((s && s.__sql) || '').length; ((s && s.__args) || []).forEach(function (v) { if (typeof v === 'string') n += v.length; }); });
+  /* حجمُ المسلسل كما يقيسه D1 (نصٌّ فيه حرفٌ فوق U+00FF بايتان للحرف) — 30MB تحت سقف 32MiB للاستدعاء */
+  var size = function (t) { return /[^\u0000-\u00ff]/.test(t) ? t.length * 2 : t.length; }, n = 0;
+  statements.forEach(function (s) { n += size(String((s && s.__sql) || '')); ((s && s.__args) || []).forEach(function (v) { if (typeof v === 'string') n += size(v); }); });
   if (statements.length > OP_LIM.batchStmts || n > OP_LIM.batchBytes) throw opLimError('batch-budget', 413, { statements: statements.length, bytes: n });
 }
