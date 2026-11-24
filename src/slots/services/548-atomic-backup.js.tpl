@@ -208,7 +208,7 @@
   }
   /* المفتاحُ الكبير (يعلنه الخادم: الاسم ونمطُ أعضائه التي تُقسم) يُرسل دفعاتٍ كلٌّ منها وثيقةٌ صغيرة: الأعضاءُ المشتركة + مجموعةُ أيام (≤ ~0.7M حرف) —
      فلا يحمله الخادمُ كلَّه في ذاكرته. ما لا ينقسم (ليس خريطةً · يومٌ واحد أكبر من الحد) يبقى في نصّ الملف كما كان. */
-  function split(file, spec, min) {
+  function split(file, spec, min, full) {
     var images = record(file.idbImages) ? file.idbImages : {}, rest = Object.assign({}, file), slices = {}, list = [], big = '', over = -1;
     delete rest.idbImages;
     function add(name, texts) {
@@ -232,30 +232,35 @@
       return out;
     }
     /* أسرةُ الموارد تُقسم معاً إن بلغ أحدُها الحد (الحيُّ وأرشيفُه: خطوةُ الأرشفة تجري في دفعاتهما) */
-    var ops0 = record(file.domains) && Array.isArray(file.domains.operations) ? file.domains.operations : [];
+    var ops0 = record(file.domains) && Array.isArray(file.domains.operations) ? file.domains.operations : [], tags = full ? [] : [''];
+    /* V7 · د7: النسخةُ الشاملة تُقسم لكل إدارةٍ فيها بالمسار نفسِه — مفاتيحُها «bsdept:<إدارة>:<مورد>» وصفوفُها بإدارتها، والدفعةُ «<إدارة>/<مورد>#n» */
+    if (full) Object.keys(record(file.data) ? file.data : {}).map(function (k) { return (/^bsdept:([^:]+):/.exec(k) || [])[1]; }).concat(ops0.map(function (d) { return record(d) && record(d.scope) && d.scope.departmentId; })).forEach(function (x) { if (typeof x === 'string' && x && tags.indexOf(x + '/') < 0) tags.push(x + '/'); });
+    tags.forEach(function (tag) {
+    var pre = tag && 'bsdept:' + tag.slice(0, -1) + ':';
+    function mine(d) { return record(d) && (!tag || (record(d.scope) && d.scope.departmentId + '/' === tag)); }
     function weight(name) {
-      var raw = record(file.data) ? file.data[name] : null, w = typeof raw === 'string' ? raw.length : 0;
-      ops0.forEach(function (d) { if (record(d) && d.resource === name && record(d.rows)) w = Math.max(w, JSON.stringify(d.rows).length); });
+      var raw = record(file.data) ? file.data[pre + name] : null, w = typeof raw === 'string' ? raw.length : 0;
+      ops0.forEach(function (d) { if (mine(d) && d.resource === name && record(d.rows)) w = Math.max(w, JSON.stringify(d.rows).length); });
       return w;
     }
     function due(name) {
       return (Array.isArray(spec[name]) && Array.isArray(spec[name][1]) ? spec[name][1] : [name]).some(function (n) { return Object.prototype.hasOwnProperty.call(spec, n) && weight(n) >= min; });
     }
     Object.keys(spec || {}).forEach(function (name) {
-      var rx, raw = record(file.data) ? file.data[name] : null, doc;
+      var rx, raw = record(file.data) ? file.data[pre + name] : null, doc;
       if (!min) return;
       /* موردٌ لا ينقسم بأعضائه (النمط null): يُرسل كلُّه دفعةً واحدة في طلبه — دائماً، فلا يدخل كلفةَ بقية النسخة ولا يُحمَّل القائمُ منه في الهدف */
       if (!spec[name][0]) {
         var at0 = -1;
-        ops0.forEach(function (d, i) { if (record(d) && d.resource === name && record(d.rows)) at0 = i; });
+        ops0.forEach(function (d, i) { if (mine(d) && d.resource === name && record(d.rows)) at0 = i; });
         if (typeof raw === 'string' && raw.length > 2) {
           if (rest.data === file.data) rest.data = Object.assign({}, file.data);
-          delete rest.data[name];
-          whole(name, raw);
+          delete rest.data[pre + name];
+          whole(tag + name, raw);
         } else if (at0 >= 0 && (ops0[at0].rows.ops_nodes || []).length) {
           var blank = {};
           Object.keys(ops0[at0].rows).forEach(function (t) { blank[t] = []; });
-          whole(name, JSON.stringify({ version: ops0[at0].version, scope: ops0[at0].scope, resource: name, rows: ops0[at0].rows }));
+          whole(tag + name, JSON.stringify({ version: ops0[at0].version, scope: ops0[at0].scope, resource: name, rows: ops0[at0].rows }));
           rest.domains = Object.assign({}, rest.domains || file.domains, { operations: ((rest.domains || file.domains).operations).map(function (d, i) { return i === at0 ? Object.assign({}, d, { rows: blank }) : d; }) });
         }
         return;
@@ -268,17 +273,17 @@
         if (!record(doc)) return;
         var shared = {}, days = Object.keys(doc).filter(function (k) { if (rx.test(k)) return true; shared[k] = doc[k]; return false; });
         var plan = groups(JSON.stringify(shared).length, days.map(function (k) { return JSON.stringify(doc[k]).length + k.length + 4; }));
-        if (!plan) { if (over >= 0 && !big) big = name + ' › ' + days[over]; return; }
+        if (!plan) { if (over >= 0 && !big) big = tag + name + ' › ' + days[over]; return; }
         var texts = plan.map(function (idx) { var g = Object.assign({}, shared); idx.forEach(function (i) { g[days[i]] = doc[days[i]]; }); return JSON.stringify(g); });
         if (texts.some(function (t) { return t.length > 1000000; })) return;
         if (rest.data === file.data) rest.data = Object.assign({}, file.data);
-        delete rest.data[name];
-        add(name, texts);
+        delete rest.data[pre + name];
+        add(tag + name, texts);
         return;
       }
       /* نسخةٌ حديثة: صفوفُ المورد في domains.operations — تُجمع صفوفُ كل عضوٍ (بادئةُ مفتاح صفّه) مع الجذر والأعضاء المشتركة */
       var ops = record(file.domains) && Array.isArray(file.domains.operations) ? file.domains.operations : [], at = -1;
-      ops.forEach(function (d, i) { if (record(d) && d.resource === name && record(d.rows) && Array.isArray(d.rows.ops_nodes)) at = i; });
+      ops.forEach(function (d, i) { if (mine(d) && d.resource === name && record(d.rows) && Array.isArray(d.rows.ops_nodes)) at = i; });
       if (at < 0) return;
       var entry = ops[at], nodes = entry.rows.ops_nodes, root = nodes.filter(function (r) { return r && r.parent_key == null; })[0], tables = Object.keys(entry.rows);
       if (!root) return;
@@ -293,7 +298,7 @@
       });
       var dayKids = kids.filter(function (r) { return owner[r.row_key]; }), sharedKids = kids.filter(function (r) { return !owner[r.row_key]; });
       var plan2 = groups(JSON.stringify(bucket['']).length, dayKids.map(function (r) { return JSON.stringify(bucket[r.row_key]).length; }));
-      if (!plan2) { if (over >= 0 && !big) big = name + ' › ' + dayKids[over].member_key; return; }
+      if (!plan2) { if (over >= 0 && !big) big = tag + name + ' › ' + dayKids[over].member_key; return; }
       /* V7 · د6 (posfix): الحقلُ الثابت القياسي للجذر (__pMig: عمودُ <حقل>_position في صفّ كيانه) عضوٌ مشترك — المشتركةُ بمواضعها ثم الأيام */
       var head = sharedKids.map(function (r) { return { p: r.position, k: r.row_key }; }), fix = {};
       tables.forEach(function (t) {
@@ -320,7 +325,8 @@
       var empty = {};
       tables.forEach(function (t) { empty[t] = []; });
       rest.domains = Object.assign({}, rest.domains || file.domains, { operations: ((rest.domains || file.domains).operations).map(function (d, i) { return i === at ? Object.assign({}, d, { rows: empty }) : d; }) });
-      add(name, texts2);
+      add(tag + name, texts2);
+    });
     });
     /* لا عضوَ أكبر من الدفعة: يُسمّى أكبرُ ما بقي في نصّ الملف (≥ 1M حرف) إن رُفض لثقله */
     if (!big && record(rest.data)) Object.keys(rest.data).forEach(function (k) { var v = rest.data[k]; if (typeof v === 'string' && v.length >= 1e6 && (!big || v.length > rest.data[big].length)) big = k; });
@@ -442,13 +448,13 @@
       /* ما قد يُقسم دفعاتٍ يعلنه الخادم (begin dry): أسماءُ الموارد في النسخة — مفاتيحُ data في القديمة، ومواردُ domains.operations في الحديثة */
       var legacyKeys = {}, resources = {}, spec = {}, min = 0, old = !file.manifest && record(file.data);
       if (old) Object.keys(file.data).forEach(function (k) { legacyKeys[k] = resources[k] = file.data[k] === null ? 1 : 0; });
-      else if (record(file.domains) && Array.isArray(file.domains.operations)) file.domains.operations.forEach(function (d) { if (record(d) && typeof d.resource === 'string') resources[d.resource] = 0; });
-      if (scope.kind === 'dept' && Object.keys(resources).length) {
+      else if (record(file.domains) && Array.isArray(file.domains.operations)) file.domains.operations.forEach(function (d) { if (record(d) && typeof d.resource === 'string') if (scope.kind !== 'full') resources[d.resource] = 0; else if (record(d.scope)) resources['bsdept:' + d.scope.departmentId + ':' + d.resource] = record(d.rows) && Array.isArray(d.rows.ops_nodes) && d.rows.ops_nodes.length ? 0 : 1; });   /* V7 · د7: الشاملة بإدارتها · 1 = بلا صفوف */
+      if (Object.keys(resources).length) {
         var asked = await post({ op: 'begin', dry: true, requestId: id, scope: scope, resources: resources, mode: opt.mode }, stamp);
         if (!asked.ok) return asked;
         if (record(asked.data.slice) && integer(asked.data.sliceMin)) { spec = asked.data.slice; min = asked.data.sliceMin; }
       }
-      var parts = split(file, spec, min), texts = cut(parts.text, 1000000), sizes = {}, list = [], imageOf = {};
+      var parts = split(file, spec, min, scope.kind === 'full'), texts = cut(parts.text, 1000000), sizes = {}, list = [], imageOf = {};
       texts.forEach(function (t, n) { list.push({ k: '', s: n, t: t }); });
       parts.list.forEach(function (item) { list.push(item); });
       parts.ids.forEach(function (k, i) {

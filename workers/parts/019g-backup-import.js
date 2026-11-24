@@ -30,6 +30,8 @@ var RSI_SLICE_MIN = 1500000;
 function rsiSliceOk(A, d) { return A.u.role === 'super' || enfDeptMgrFull(A, d); }
 async function rsiSliceSpec(env, A, s, keys, mode) {
   var out = {};
+  /* V7 · د7: النسخةُ الشاملة — استبدالٌ كامل بمدير المنصة: كلُّ أسرةٍ تُقسم لكل إدارة (الاستبدالُ يطرح القائم) · الدمجُ كما كان (لا دفعات) */
+  if (s.kind === 'full') return A.u.role === 'super' && mode === 'replace' ? RSI_SLICE : out;
   if (s.kind !== 'dept' || !rsiSliceOk(A, s.departmentId)) return out;   /* V7 · د6 (QA ٦): مديرُ الإدارة على إدارته بالمسار نفسِه وحدوده */
   for (var n in RSI_SLICE) {
     if (!ocOwn(keys, n) || keys[n]) continue;
@@ -42,26 +44,29 @@ async function rsiSliceSpec(env, A, s, keys, mode) {
 /* كلفةُ التخطيط في طلبٍ واحد (حيث لا دفعات): مقيسةٌ ≈16MB كومةً لكل مليون حرف من نسخةٍ قديمة و≈7MB من حديثة، و≈0.02MB لكل عقدةٍ قائمة يحمّلها المرجع.
    ما فوق RSI_BUDGET يُرفض عند البدء — قبل أي رفعٍ أو عملٍ ثقيل — بسببٍ واضح، ولا يُحاوَل فيموت العازل. */
 var RSI_BUDGET = 40;
-async function rsiHeavy(env, s, n, legacy, sliced) {
-  var fam = [];
-  sliced.forEach(function (k) { fam = fam.concat(RSI_SLICE[k][1]); });
+async function rsiHeavy(env, s, n, legacy, sliced, present) {
+  var fam = [], load = [], cut = [];
+  sliced.forEach(function (k) { var p = rsiName(s, k); fam = fam.concat(RSI_SLICE[p[1]][1]); cut = cut.concat(rsiFam(p[0], p[1])); });
+  /* V7 · د7: الشاملة — يُعدّ ما سيحمّله المرجعُ وحده: كلُّ عقدةٍ خارج الأُسر · ومن الأُسر مفتاحٌ في بقية النسخة لم يُقسم (الغائبُ والإدارةُ المحذوفة يُطرحان داخل القاعدة — rsiGone) */
+  if (s.kind === 'full') Object.keys(present).forEach(function (k) { var i = opInfo(k); if (!present[k] && i && RSI_SLICE[i.resource] && cut.indexOf(k) < 0) load = load.concat(rsiFam(i.dept, i.resource)); });   /* الأسرةُ كلُّها: الجولاتُ في بقية النسخة تكتب أرشيفَها */
   /* V7 · د6: وتنبيهاتُ الإدارة القائمة (خطةُ تنبيهات الإدارة تقرأ نطاقَها وحده — 019d rsNFPlan) تُعدّ كالعقد */
-  var nodes = await (s.kind === 'dept' ? env.DB.prepare("SELECT (SELECT COUNT(*) FROM ops_nodes WHERE department_id=?1 AND resource NOT IN (SELECT value FROM json_each(?2)))+(SELECT COUNT(*) FROM notification_messages WHERE scope=?3)+(SELECT COUNT(*) FROM notification_targets WHERE scope=?3)+(SELECT COUNT(*) FROM notification_user_state WHERE message_scope=?3) n").bind(s.departmentId, JSON.stringify(fam), 'd:' + s.departmentId) : env.DB.prepare('SELECT COUNT(*) n FROM ops_nodes')).first('n'),
+  var nodes = await (s.kind === 'dept' ? env.DB.prepare("SELECT (SELECT COUNT(*) FROM ops_nodes WHERE department_id=?1 AND resource NOT IN (SELECT value FROM json_each(?2)))+(SELECT COUNT(*) FROM notification_messages WHERE scope=?3)+(SELECT COUNT(*) FROM notification_targets WHERE scope=?3)+(SELECT COUNT(*) FROM notification_user_state WHERE message_scope=?3) n").bind(s.departmentId, JSON.stringify(fam), 'd:' + s.departmentId) : env.DB.prepare("SELECT COUNT(*) n FROM ops_nodes WHERE resource NOT IN (SELECT value FROM json_each(?1)) OR 'bsdept:'||department_id||':'||resource IN (SELECT value FROM json_each(?2))").bind(JSON.stringify(Object.keys(RSI_SLICE)), JSON.stringify(load))).first('n'),
     cost = (n / 1e6) * (legacy ? 16 : 7) + nodes * 0.02;
   if (cost > RSI_BUDGET) throw Object.assign(rsError('import-too-heavy', 413), { details: { cost: Math.round(cost), budget: RSI_BUDGET, chars: n, nodes: nodes, kind: s.kind } });
 }
 /* دفعةٌ واحدة: حكمٌ ثم صفوف — مواضعُ الأعضاء تُرقَّم على المجموع (المشتركةُ أولاً ثم الأيامُ بترتيب الدفعات) */
 async function rsiSlice(env, A, request, id, M, b) {
-  var D = env.DB, T = RSI_T, name = Object.keys(M.slices)[b.i], base = name && name.replace(/#\d+$/, '');
+  var D = env.DB, T = RSI_T, name = Object.keys(M.slices)[b.i];
   if (!name) throw rsError('import-part');
+  var nm = rsiName(M.scope, name), dept = nm[0], base = nm[1];   /* V7 · د7: دفعةُ النسخة الشاملة تحمل إدارتها في اسمها (<إدارة>/<مورد>#n) */
   var done = (await D.prepare('SELECT row_number r,row_json j FROM ' + T + " WHERE snapshot_id=?1 AND domain='sr' AND row_number<?2").bind(id, b.i).all()).results || [],
     got = await rsiText(env, id, 's', name);
   if (done.length !== b.i || got.text.length !== M.slices[name]) throw rsError('import-incomplete', 409);
   /* مرجعُ الإدارة وحدها، وبلا تحميل مواردها التشغيلية: مواردُ الأسرة تُعرض للحكم فارغةً — الاستبدالُ يطرح القائمَ منها كلَّه (كما يفعل المسارُ الواحد:
      الموردُ الغائب عن النسخة يُستعاد فارغاً)، وفي غير الاستبدال هي فارغةٌ شرطاً. والقائمُ منها يُعرف بعدٍّ: موردٌ قائمٌ لم تنتج له الدفعاتُ شيئاً يُكتب فارغاً. */
-  var dept = M.scope.departmentId, reference = await rsReferenceSnapshot(env, A.u.id, { departments: [dept], operationalKeys: [] }), key = 'bsdept:' + dept + ':' + base, set = {}, bs = {}, ops = {}, why = {}, held = [];
+  var reference = await rsReferenceSnapshot(env, A.u.id, { departments: [dept], operationalKeys: [] }), key = 'bsdept:' + dept + ':' + base, set = {}, bs = {}, ops = {}, why = {}, held = [];
   env = reference.env; A = reference.A;
-  if (!rsiSliceOk(A, dept) || rsScopeDenied(A, M.scope) || !RSI_SLICE[base]) throw rsError('restore-policy', 403);
+  if (!dept || !rsiSliceOk(A, dept) || rsScopeDenied(A, M.scope) || !RSI_SLICE[base]) throw rsError('restore-policy', 403);
   for (var fr of RSI_SLICE[base][1]) {
     reference.operational.keys['bsdept:' + dept + ':' + fr] = null;
     if (await D.prepare('SELECT COUNT(*) n FROM ops_nodes WHERE department_id=?1 AND resource=?2').bind(dept, fr).first('n')) held.push('bsdept:' + dept + ':' + fr);
@@ -77,7 +82,7 @@ async function rsiSlice(env, A, request, id, M, b) {
   first = null;
   /* V7 · د6 (remap): دفعةُ موردٍ يعلن مواضعَ إشاراتٍ (RS_DEPT_REFS) من نسخةٍ قديمة — إدارةُ النسخة تُعرف من بقية الملف (أُودِعت كلُّها قبل الدفعات) بالحكم نفسِه (019f rsBCDeptFind) فتُربط إشاراتُها بالوحدة */
   var remap = null;
-  if (legacy && RS_DEPT_REFS[base]) {
+  if (legacy && RS_DEPT_REFS[base] && M.scope.kind === 'dept') {
     var rest = await rsiText(env, id, 'f', ''), rf = rest.segs === M.f && rest.text.length === M.n ? parseJson(rest.text, null) : null;
     rest = null;
     if (!isObj(rf) || !isObj(rf.data)) throw rsError('import-incomplete', 409);
@@ -100,7 +105,7 @@ async function rsiSlice(env, A, request, id, M, b) {
   var rx = RSI_SLICE[base][0] ? new RegExp(RSI_SLICE[base][0]) : null, before = {}, out = { keys: {}, have: {}, imgs: {}, rows: [] }, seq = 0,
     st = [D.prepare('DELETE FROM ' + T + " WHERE snapshot_id=?1 AND domain='q' AND row_number/100000=?2").bind(id, b.i)];
   done.forEach(function (r) { var o = JSON.parse(r.j); Object.keys(o.keys).forEach(function (k) { before[k] = (before[k] || 0) + o.keys[k]; }); });
-  if (!b.i || Object.keys(M.slices)[b.i - 1].replace(/#\d+$/, '') !== base) out.authz = kv.authzRows || [];
+  if (!b.i || Object.keys(M.slices)[b.i - 1].replace(/#\d+$/, '') !== name.replace(/#\d+$/, '')) out.authz = kv.authzRows || [];
   /* أولُ دفعةٍ لموردها: ما كان قائماً من الأسرة ولم يرد في حكمها يُكتب فارغاً (جذرُه وحده) — فيُستبدل القائمُ ولو لم تأتِ له أيام */
   if (out.authz) held.forEach(function (k) { if (!kv.pend.some(function (pd) { return pd.k === k; })) kv.pend.push({ k: k, act: 'set', v: (ENT[resName(k)] && ENT[resName(k)].empty) || '{}', have: reference.inputRevs[k] || 0 }); });
   out.fields = {};
@@ -135,6 +140,11 @@ async function rsiSlice(env, A, request, id, M, b) {
   });
   st.push(D.prepare('INSERT OR REPLACE INTO ' + T + ' SELECT ?1,?2,?3,?4,?5 WHERE EXISTS(SELECT 1 FROM ' + T + " WHERE snapshot_id=?1 AND domain='meta')").bind(id, 'sr', '', b.i, JSON.stringify(out)));
   await env.DB.batch(st);
+}
+/* V7 · د7: اسمُ الدفعة ⇒ [الإدارة · المورد]: «<مورد>#n» لنسخة الإدارة (إدارتُها النطاق) · «<إدارة>/<مورد>#n» للنسخة الشاملة. غيرُ ذلك ⇒ إدارةٌ فارغة (يُرفض) */
+function rsiName(s, k) {
+  var b = k.replace(/#\d+$/, ''), j = b.lastIndexOf('/'), d = j < 0 ? s.departmentId : b.slice(0, j);
+  return [(j < 0) === (s.kind === 'dept') && rsScopeDepartments([d]) ? d : '', b.slice(j + 1)];
 }
 /* V7 · د6 (posfix): أعضاءُ جذر الخريطة في صفوف المرمِّز (ocConvert) بمواضعها — كما يعدّها ocInflate عند القراءة حرفاً:
    صفٌّ ابنٌ للجذر بمفتاح عضو (مدخلٌ · أو حقلٌ ثابتٌ غيرُ قياسي) موضعُه r.position؛ وحقلٌ ثابتٌ قياسيٌّ حاضر (kind ≠ 0) موضعُه عمودُ <الحقل>_position
@@ -223,6 +233,17 @@ async function rsiText(env, id, dom, key) {
   } while (rows.length === 16);
   return { text: out, segs: seen.size };
 }
+/* V7 · د7: الشاملة — أسرةُ المورد لإدارة · إداراتُ النسخة والهدف (ما له صفوف) ومفاتيحُ الأسر القائمة فيه (بعدٍّ لا بتحميل) · وهل المفتاحُ في بقية النسخة (قديمةٌ: data · حديثة: صفوفُه في domains.operations) */
+function rsiFam(d, r) { return RSI_SLICE[r][1].map(function (x) { return 'bsdept:' + d + ':' + x; }); }
+async function rsiHeld(env, file) {
+  var rows = (await env.DB.prepare('SELECT DISTINCT department_id d,resource r FROM ops_nodes WHERE parent_key IS NULL').all()).results || [], ds = [];
+  [].concat(parseJson((file.data || {})[K_DEPTS] || '[]', []), rows).forEach(function (x) { x = x && (x.id || x.d); if (rsScopeDepartments([x]) && ds.indexOf(x) < 0) ds.push(x); });
+  return { ds: ds, held: rows.filter(function (x) { return RSI_SLICE[x.r]; }).map(function (x) { return 'bsdept:' + x.d + ':' + x.r; }) };
+}
+function rsiInRest(file, k) {
+  var i = opInfo(k), o = isObj(file.domains) && file.domains.operations;
+  return (isObj(file.data) && file.data[k] != null) || (Array.isArray(o) && o.some(function (d) { return isObj(d) && d.resource === i.resource && isObj(d.scope) && d.scope.departmentId === i.dept && isObj(d.rows) && (d.rows.ops_nodes || []).length > 0; }));
+}
 async function rsImportRoute(env, request, ss) {
   var A = await actorOf(env, ss.uid), sid = '', stage = null;
   if (!A) return json({ ok: 0, err: 'session' }, 401);
@@ -242,10 +263,10 @@ async function rsImportRoute(env, request, ss) {
       if (b.dry) return json({ ok: 1, skip: skip, slice: spec, sliceMin: RSI_SLICE_MIN });
       var im = b.images || {}, ids = Object.keys(im), total = b.n, meta = { scope: s, n: b.n, f: b.f, images: {}, slices: b.slices || {}, mode: b.mode || '' }, bases = {};
       Object.keys(meta.slices).forEach(function (k) {
-        var sb = k.replace(/#\d+$/, '');
-        if (!ocOwn(spec, sb) || !(meta.slices[k] > 1) || (spec[sb][0] && meta.slices[k] > RSI_SEG.f)) throw rsError('import-shape');
+        var sb = k.replace(/#\d+$/, ''), sn = rsiName(s, k);
+        if (!sn[0] || !ocOwn(spec, sb = sn[1]) || !(meta.slices[k] > 1) || (spec[sb][0] && meta.slices[k] > RSI_SEG.f)) throw rsError('import-shape');
         if ((meta.slices[k] / 1e6) * 16 > RSI_BUDGET) throw Object.assign(rsError('import-too-heavy', 413), { details: { cost: Math.round((meta.slices[k] / 1e6) * 16), budget: RSI_BUDGET, chars: meta.slices[k], k: sb, kind: s.kind } });
-        total += meta.slices[k]; bases[k.replace(/#\d+$/, '')] = 1;
+        total += meta.slices[k]; bases[k.replace(/#\d+$/, '')] = 1;   /* V7 · د7: باسمها كاملاً (بإدارتها في الشاملة) */
       });
       ids.forEach(function (k) {
         if (!/^(?:img|szp)_[a-z0-9]+_[a-z0-9]+$/.test(k) || !(im[k] > 0) || im[k] > IMG_TOTAL_MAX) throw Object.assign(rsError('import-shape'), { details: { k: k.slice(0, 80) } });   /* الصورةُ المرفوضة تُسمّى */
@@ -254,7 +275,7 @@ async function rsImportRoute(env, request, ss) {
       });
       if (!(b.n > 1) || !(b.f > 0) || b.f > Math.ceil(b.n / (RSI_SEG.f - 1)) || ids.length > IMG_CAP || total > RSI_MAX) throw Object.assign(rsError(total > RSI_MAX ? 'import-too-large' : 'import-shape', total > RSI_MAX ? 413 : 400), { details: { chars: total, limit: RSI_MAX } });
       /* ما كان يقبله المسارُ القديم أصلاً (النسخةُ كلُّها ≤ حدِّ طلبه 8MB) لا يُرفض هنا — لا تراجعَ عمّا كان يُستعاد قبل د6 */
-      if (total > 8e6) await rsiHeavy(env, s, b.n, Object.keys(b.keys || {}).length > 0, Object.keys(bases));
+      if (total > 8e6) await rsiHeavy(env, s, b.n, Object.keys(b.keys || {}).length > 0, Object.keys(bases), b.resources || b.keys || {});
       await D.batch([rsiSweepStmt(env, now, A.u.id), D.prepare('INSERT INTO ' + T + " VALUES(?1,'meta',?2,?3,?4)").bind(id, A.u.id, now, JSON.stringify(meta))]);
       return json({ ok: 1, skip: skip, seg: RSI_SEG });
     }
@@ -306,7 +327,8 @@ async function rsImportRoute(env, request, ss) {
     got = null;
     if (!isObj(file) || sizes.length !== Object.keys(M.images).length || sizes.some(function (r) { var d = M.images[r.k]; return !d || d[0] !== r.n || d[1] !== r.c; })) throw rsError('import-incomplete', 409);
     delete file.idbImages;
-    if (isObj(file.data) && Object.keys(M.slices).some(function (k) { return file.data[k.replace(/#\d+$/, '')] != null; })) throw rsError('import-shape');
+    var full = s.kind === 'full', fk = function (k) { var p = rsiName(s, k); return 'bsdept:' + p[0] + ':' + p[1]; };   /* V7 · د7: مفتاحُ الدفعة كاملاً بإدارتها */
+    if (isObj(file.data) && Object.keys(M.slices).some(function (k) { return file.data[full ? fk(k) : rsiName(s, k)[1]] != null; })) throw rsError('import-shape');
     if (isObj(file.data) && !rsBCOwn(file, 'manifest'))
       Object.keys(file.data).forEach(function (k) {
         var why = rsiSkipWhy(k, file.data[k]);
@@ -328,6 +350,7 @@ async function rsImportRoute(env, request, ss) {
       /* مراجعُ الصور في المفاتيح المودَعة على دفعات: تدخل حسابَ الصور كما لو كانت وثائقُها في الخطة */
       touch: function (plan) {
         var ids = {};
+        gone.forEach(function (k) { ids[k] = {}; });   /* V7 · د7: ما يُطرح لا يذكر صورة */
         sr.forEach(function (o) { Object.keys(o.imgs).forEach(function (k) { o.imgs[k].forEach(function (x) { (ids[k] = ids[k] || {})[x] = 1; }); }); });
         Object.keys(ids).forEach(function (k) { (plan.imgTouch || (plan.imgTouch = [])).push({ k: k, v: Object.keys(ids[k]).join(' ') }); });
       },
@@ -336,6 +359,8 @@ async function rsImportRoute(env, request, ss) {
            حارسُ نسخة المورد كما قرأتها دفعاتُه · لقطةُ ما قبله (صفوفُه القائمة تُنسخ إلى restore_preimage) · إزالةُ القائم منه · ثم عبارةٌ لكل صفٍّ مودَع (≤ 500KB)
            بترتيب إيداعه · نسخةُ المورد تتقدّم · سطرُ قرار الصلاحية. */
         var keys = {}, rows = [], imgs = {};
+        /* V7 · د7: الشاملة — مفتاحُ أسرةٍ قائمٌ في الهدف غائبٌ عن النسخة (أو إدارتُه حذفتها النسخة): لقطتُه وإزالتُه داخل القاعدة بلا تحميل (rsiGone) */
+        gone.forEach(function (k) { keys[k] = reference.inputRevs[k] || 0; });
         sr.forEach(function (o) {
           Object.keys(o.have).forEach(function (k) { if (ocOwn(keys, k) && keys[k] !== o.have[k]) throw rsError('conflict', 409); keys[k] = o.have[k]; });
           rows = rows.concat(o.rows);
@@ -367,7 +392,7 @@ async function rsImportRoute(env, request, ss) {
             " s, json_each(s.row_json) j WHERE s.snapshot_id=?1 AND s.domain='q' AND s.row_number=?2 ON CONFLICT(department_id,resource,row_key) DO UPDATE SET " + mutable.map(function (c) { return c + '=excluded.' + c; }).join(',')).bind(id, r[2]));
         });
         /* ما أُخرج من نصّ الملف ليُرسل دفعاتٍ ليس «مجموعةً غائبة عن النسخة» */
-        Object.keys(M.slices).forEach(function (k) { var gone = 'operations:bsdept:' + s.departmentId + ':' + k.replace(/#\d+$/, ''); summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== gone; }); });
+        Object.keys(M.slices).forEach(function (k) { var gone = 'operations:' + fk(k); summary.emptyDomains = summary.emptyDomains.filter(function (x) { return x !== gone; }); });
         /* V7 · د6 (schemafix): وما لا يعرفه المخطّط من حقول الموارد: من بقية الملف (019t) ومن الدفعات — بعدده */
         /* V7 · د6 (remap): إشاراتُ المعرّف المصدر في الدفعات تُجمع إلى إشارات بقية الملف */
         sr.forEach(function (o) {
@@ -383,11 +408,13 @@ async function rsImportRoute(env, request, ss) {
       },
     };
     /* مرجعُ استيراد الإدارة: الإدارةُ وحدها (لا مواردَ الإدارات الأخرى)، وبلا أسرة الموارد المودَعة على دفعات — فلا يُحمَّل القائمُ منها ولا تمسّها الخطةُ العامة */
-    var fam = [], famKeys = [];
-    Object.keys(M.slices).forEach(function (k) { fam = fam.concat(RSI_SLICE[k.replace(/#\d+$/, '')][1]); });
-    fam.forEach(function (r) { var fk = 'bsdept:' + s.departmentId + ':' + r; if (famKeys.indexOf(fk) < 0) famKeys.push(fk); });
-    stage.skip = famKeys;
-    var reference = await rsReferenceSnapshot(env, A.u.id, s.kind === 'dept' ? { departments: [s.departmentId], operationalKeys: opDefinitions().map(function (def) { return 'bsdept:' + s.departmentId + ':' + def.resource; }).filter(function (k) { return famKeys.indexOf(k) < 0; }) } : undefined);
+    var famKeys = [], gone = [], h = full && await rsiHeld(env, file), ds = h ? h.ds : [s.departmentId];
+    Object.keys(M.slices).forEach(function (k) { var p = rsiName(s, k); rsiFam(p[0], p[1]).forEach(function (x) { if (famKeys.indexOf(x) < 0) famKeys.push(x); }); });
+    /* V7 · د7: النسخةُ الشاملة استبدالاً: مفتاحُ أسرةٍ غيرُ مقسوم وغائبٌ عن بقية النسخة وله صفوفٌ في الهدف (إدارةٌ تحذفها النسخة · أو موردٌ لا تحمله) يُطرح داخل القاعدة كالمقسوم —
+       فلا يحمّل المرجعُ أسرةَ أيِّ إدارة. والحاضرُ في بقية النسخة (أصغرُ من أن يُقسم) يمرّ بالخطة العامة كما كان */
+    if (h && M.mode === 'replace') gone = h.held.filter(function (k) { var i = opInfo(k); return famKeys.indexOf(k) < 0 && !rsiFam(i.dept, i.resource).some(function (x) { return rsiInRest(file, x); }); });   /* الأسرةُ وحدة: عضوٌ منها في بقية النسخة ⇒ الخطةُ العامة لها كلِّها */
+    stage.skip = famKeys.concat(gone);
+    var reference = await rsReferenceSnapshot(env, A.u.id, s.kind === 'dept' || stage.skip.length ? { departments: full ? null : ds, operationalKeys: rsScopeOperationalKeys(ds).filter(function (k) { return stage.skip.indexOf(k) < 0; }) } : undefined);
     if (rsScopeDenied(reference.A, s)) throw rsError('restore-policy', 403);
     reference.noWiden = s.kind === 'dept';
     var run = { version: 1, uid: A.u.id, requestId: b.requestId, scope: s, mode: b.mode, reason: b.reason, base: b.base, backup: file, legacyConsent: b.legacyConsent === true, phase: op };
