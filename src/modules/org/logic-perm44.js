@@ -1120,7 +1120,9 @@ Object.assign(Component.prototype, {
   },
   _p44Day(ms) {
     try {
-      return KIVO.BassamCal.hText(new Date(ms), { day: "numeric", month: "long" });   /* V7 · د5-هـ (44): التقويمُ من خدمته الواحدة (385) */
+      /* V7 · 53 تقويم (REVIEW 22 · عيب 2 · القاعدة 11): اليومُ الميلادي أساساً والهجريُّ المقابل بعده — كان هجرياً وحده */
+      const C = KIVO.BassamCal, k = C.gAt(new Date(ms)).k, h = C.hDayText(k);
+      return C.fmtDay(k) + (h ? " · " + h + " هـ" : "");
     } catch (e) {
       return new Date(ms).toISOString().slice(0, 10);
     }
