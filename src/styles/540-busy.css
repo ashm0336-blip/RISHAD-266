@@ -21,3 +21,5 @@
 .bsb-frozen{opacity:.7!important;pointer-events:none!important;cursor:progress!important}
 .bsb-btnsp{display:inline-block;width:13px;height:13px;border-radius:50%;border:2px solid var(--tone-neutral-100-a35);border-top-color:currentColor;animation:bsb-spin .8s linear infinite;margin-inline-end:6px;vertical-align:-2px;flex-shrink:0}
 @media print{#bs-busy{display:none!important}}
+/* V7 · 53 (nosilent): ستارُ ملف PDF (566) يحمل التقدّم نفسَه — الحبّةُ لا تُعاد فوقه؛ تبقى وحدها حارسَ المغادرة */
+body:has(#bs-print-veil) #bs-busy{display:none}

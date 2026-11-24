@@ -11,6 +11,7 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     };
     return super.setState(typeof update === "function" ? (state, props) => capture(update(state, props), state) : capture(update, this.state), done);
   }
+  _stMonthName(n) { return "«" + ((this.MONTHS && this.MONTHS[n - 1]) || n) + " " + this.state.year + " هـ»"; }
   async _opsSave(intent, edit) {
     if (!["sdOpen", "restOpen", "permOpen", "csOpen", "csEdit", "wkOpen", "mkNew", "lockConfirm", "delMonth", "retroAsk"].some(key => this.state[key] != null && this.state[key] !== false) && KIVO.__BS_SRV.operations.status().state === "idle") KIVO.__BS_SRV.operations.begin(this, "staff-editor");
     const result = await KIVO.__BS_SRV.operations.commit(this, "staff-editor", intent, draft => {
@@ -2288,7 +2289,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
         delete s[this.state.year + "-" + t.n];
         if (await this._opsSave({ op: "delete-month", year: this.state.year, month: t.n }, draft => {
           draft.set("bassam_staffing_v3", e); draft.set("bassam_staffing_locks_v1", s);
-        })) this.setState({ delMonth: null, staffing: this.loadStaffing(), locked: this.loadLocks() });
+        })) {
+          this.setState({ delMonth: null, staffing: this.loadStaffing(), locked: this.loadLocks() });
+          /* V7 · 53 (nosilent · REVIEW 37 ب3): لا حذفَ بصمت — بعد إقرار العملية وحده */
+          this.bsAck("حُذف جدول " + this._stMonthName(t.n) + " — لم يبقَ فيه توزيع", "ok");
+        }
       },
       lockConfirmOpen: !!s.lockConfirm,
       lcStop: (t) => t.stopPropagation(),
@@ -2343,7 +2348,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
           draft.set("bassam_staffing_locks_v1", s);
           if (r[e] && typeof r[e] === "object") draft.set("bassam_staffing_v3", r);
           if (restoredShifts) draft.set("bassam_shift_options_v1", restoredShifts);
-        })) this.setState({ lockConfirm: null, locked: this.loadLocks(), staffing: this.loadStaffing(), ...(restoredShifts ? { shiftOpts: this.loadShiftOpts() } : {}) });
+        })) {
+          this.setState({ lockConfirm: null, locked: this.loadLocks(), staffing: this.loadStaffing(), ...(restoredShifts ? { shiftOpts: this.loadShiftOpts() } : {}) });
+          /* V7 · 53 (nosilent · REVIEW 37 ب3): لا اعتمادَ ولا فتحَ بصمت (قاعدة المالك 7) — بعد إقرار العملية وحده */
+          this.bsAck(t.locked ? "فُتح جدول " + this._stMonthName(t.n) + " للتعديل" : "اعتُمد جدول " + this._stMonthName(t.n) + " وأُقفل", "ok");
+        }
       },
       lcTitle: s.lockConfirm && s.lockConfirm.locked ? "فتح الجدول للتعديل" : "اعتماد وإغلاق الجدول",
       lcMsg: s.lockConfirm

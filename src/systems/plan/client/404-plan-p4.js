@@ -55,9 +55,12 @@
     if (!c || !p) return Promise.resolve({ ok: 0, err: 'session' });
     var body = { uid: c.uid, dept: c.dept, kind: p.kind, was: p.was, name: p.name, base: S.rev(O.key(RES.zoneOpts)) || 0 };
     if (p.reg) body.reg = p.reg; if (p.kind !== 'zcat') body.code = p.code;
+    /* V7 · 53 (nosilent · REVIEW 26 ب1–ب3): التعديلُ يسري على كل الأشهر — في مؤشر التحميل الموحّد حتى تعود القراءة، فالزرُّ يتجمّد والمغادرةُ تُسأل */
+    var B = KIVO.BassamBusy, busy = B ? B.start('جارٍ تعديل الخيار في كل الأشهر والجولات…') : null;
     return fetch('/api/plan/opt-ref', { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json(); })
       .then(function (j) { return j && j.ok === 1 && S.resync ? S.resync().then(function () { return j; }) : j || { ok: 0, err: 'invalid' }; })
-      .catch(function () { return { ok: 0, err: 'network' }; });
+      .catch(function () { return { ok: 0, err: 'network' }; })
+      .then(function (j) { if (busy) busy.done(); return j; });
   });
 })();

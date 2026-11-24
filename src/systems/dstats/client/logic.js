@@ -594,9 +594,11 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
         : c[0]==="__gd" ? (g? this.iso(new Date(Date.UTC(g.getUTCFullYear(),g.getUTCMonth(),g.getUTCDate()))) : "")
         : (r[c[0]]==null ? "" : r[c[0]]) ));
     }
-    try { KIVO.BassamXLSX.download(aoa, "الإحصائيات-"+this.SN[site]+"-"+this.MONTHS[s.month-1]+"-"+s.year+"هـ.xlsx"); }
+    /* V7 · 53 (nosilent · REVIEW 37 ب2): «صُدِّر» بعد أن يُبنى الملفُ فعلاً — الإخفاقُ يقوله 570 بسببه */
+    let done;
+    try { done=KIVO.BassamXLSX.download(aoa, "الإحصائيات-"+this.SN[site]+"-"+this.MONTHS[s.month-1]+"-"+s.year+"هـ.xlsx", { quiet:true }); }
     catch(e){ return this.bsToast("تعذّر تجهيز ملف Excel","err"); }
-    this.bsToast("صُدِّر "+KIVO.BassamCount(nd,"يوم")+" — الأعمدةُ نفسُها تصلح للاستيراد","ok");
+    return Promise.resolve(done).then(ok=>{ if(ok!==false) this.bsToast("صُدِّر "+KIVO.BassamCount(nd,"يوم")+" — الأعمدةُ نفسُها تصلح للاستيراد","ok"); return ok; });
   }
 
   impXlsx(){

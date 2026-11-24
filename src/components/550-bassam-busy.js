@@ -85,7 +85,7 @@
   }
   /* إشعارٌ قصير بعد عملٍ انتهى (كحفظٍ طال) — CORE-01: عبر التوست الواحد (KIVO.bsToast · 280) لا عبر حبّة المؤشر */
   function flash(label, s, tone){
-    try { KIVO.bsToast((label || '') + (s ? ' — ' + s : ''), { tone: tone === 'err' ? 'err' : '', ms: tone === 'err' ? 4200 : 2600 }); } catch(e){}
+    try { KIVO.bsToast((label || '') + (s ? ' — ' + s : ''), { tone: tone === 'err' || tone === 'warn' || tone === 'ok' ? tone : '', ms: tone === 'err' ? 4200 : 2600 }); } catch(e){}
   }
   KIVO.BassamBusy = { start: start, wrap: wrap, run: run, flash: flash, fmtBytes: fmtBytes, active: function(){ return toks.filter(function(t){ return !t.ended; }).length; } };
 

@@ -494,9 +494,12 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["admin+award+daily+dre
     });
   }
   adFetch(t, e, keepErr) {
+    /* V7 · 53 (nosilent · REVIEW 26 ب2/ب3): الأمرُ (POST) في مؤشر التحميل الموحّد — الزرُّ يتجمّد والمغادرةُ تُسأل حتى يصل الرد */
+    const B = e && KIVO.BassamBusy, busy = B ? B.start("جارٍ التنفيذ…") : null;
     return fetch(t, e ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(e) } : {})
       .then((t) => (t.ok ? t.json() : keepErr ? t.json().catch(() => null) : null))
-      .catch(() => null);
+      .catch(() => null)
+      .finally(() => busy && busy.done());
   }
   adLoad(t) {
     if (!this.adOnSrv()) return;

@@ -338,6 +338,12 @@
   }
   KIVO.BassamImgVerify = verifyMany;
 
+  /* V7 · 53 (nosilent): سببُ إخفاق الرفع بلغةٍ عادية — نصُّ الطبقة إن كان عربياً، وإلا رمزُ الرفض أو انقطاعُ الاتصال */
+  function imgFail53(e) {
+    var m = String((e && e.message) || ''), h = /HTTP (\d{3})/.exec(m);
+    var why = /[\u0600-\u06FF]/.test(m) ? m.replace(/\s*—\s*أعد المحاولة$/, '') : h ? 'رُفضت (رمز ' + h[1] + ')' : 'انقطع الاتصال قبل اكتمالها';
+    return 'لم تُرفع الصورة — ' + why + ' · أعد إرفاقها';
+  }
   KIVO.BassamIDB = Object.assign({}, base, { get: function(key){
     /* لا مؤشّرَ انشغالٍ عامٌّ لقراءةٍ عادية: صورةٌ واحدةٌ كانت تُشعل شريطَ
        التطبيق كلِّه فيبدو مشغولاً وهو ليس كذلك. القراءةُ تملأ إطارَها وحدَه. */
@@ -355,11 +361,20 @@
     imcPend.set(k, p);
     return p;
   }, set: function(key, val){
-    var p = base.set(key, val), B = KIVO.BassamBusy;
-    if (B) B.wrap(p, 'جارٍ رفع الصورة إلى الخادم…', { sub: B.fmtBytes(String(val == null ? '' : val).length) + ' · لا تغلق الصفحة' }).catch(function(){});
+    var p0 = base.set(key, val), B = KIVO.BassamBusy, tk = B ? B.start('جارٍ رفع الصورة…', { sub: B.fmtBytes(String(val == null ? '' : val).length) + ' · لا تغلق الصفحة' }) : null;
+    /* V7 · 53 (nosilent · REVIEW 26 ب4/ب5): كان الإخفاقُ يُبلع هنا (catch فارغ) — فصفحةٌ لا تنتظر الرفع تقول «أُضيف» وصورتُها لم تصل.
+       الآن: إن لم تتسلّم الصفحةُ النتيجةَ (لم تنتظرها بـthen/await) يقول المؤشرُ نفسُه سببَ الإخفاق؛ وإن تسلّمتها فرسالتُها هي التي تُقال — لا رسالتان */
+    var heard = false, p = new Promise(function (res, rej) { p0.then(res, rej); });
+    var th = p.then;
+    p.then = function () { heard = true; return th.apply(p, arguments); };
+    p.catch = function (f) { return p.then(undefined, f); };
+    th.call(p, null, function () {});   /* لا «رفضٌ غيرُ مُعالَج» في وحدة التحكم — الإخفاقُ يُقال أدناه */
+    p0.then(function () { if (tk) tk.done(); }, function (e) {
+      setTimeout(function () { if (!tk) return; if (heard) tk.done(); else tk.fail(imgFail53(e)); }, 0);
+    });
     /* الذاكرةُ تُمحى فور بدء الكتابة، وتُملأ من داخلها بالقيمة المخزَّنة فعلاً */
     imcDrop(String(key));
-    try { KIVO.__BS_IMG_INFLIGHT = KIVO.__BS_IMG_INFLIGHT || []; KIVO.__BS_IMG_INFLIGHT.push(p); p.then(function(){}, function(){}).then(function(){ var a = KIVO.__BS_IMG_INFLIGHT, i = a.indexOf(p); i >= 0 && a.splice(i, 1); }); } catch(e){}
+    try { KIVO.__BS_IMG_INFLIGHT = KIVO.__BS_IMG_INFLIGHT || []; KIVO.__BS_IMG_INFLIGHT.push(p0); p0.then(function(){}, function(){}).then(function(){ var a = KIVO.__BS_IMG_INFLIGHT, i = a.indexOf(p0); i >= 0 && a.splice(i, 1); }); } catch(e){}
     return p;
   },
   del: function (key) { imcDrop(String(key)); return base.del(key); },
