@@ -1641,7 +1641,9 @@ class Component extends KIVO.BassamPageKit.base(DCLogic, ["daily+dreport+dstats+
     for(let d=1;d<=nd;d++){
       const r=store[this.dk(s.year,s.month,d)]||{}, g=this.gOf(s.year,s.month,d);
       aoa.push(cols.map(c=> c[0]==="__site" ? this.SN[site]
-        : c[0]==="__hd" ? this.dk(s.year,s.month,d)
+        /* V7 · 53 تقويم (REVIEW 22 — لقطة التصدير): عمودُ «التاريخ الهجري» يحمل اليومَ الهجريَّ المقابل (أم القرى) — كان يكرّر الميلاديَّ تحت اسمٍ هجري.
+           الاستيرادُ يقرؤه ويحوّله إلى اليوم الميلادي نفسِه (HD ← GOFH)، فيبقى «الملفُ نفسُه يصلح للاستيراد» */
+        : c[0]==="__hd" ? (h=>h? h.y+"-"+String(h.m).padStart(2,"0")+"-"+String(h.d).padStart(2,"0") : "")(KIVO.BassamCal.hOf(this.dk(s.year,s.month,d)))
         : c[0]==="__gd" ? (g? this.iso(new Date(Date.UTC(g.getUTCFullYear(),g.getUTCMonth(),g.getUTCDate()))) : "")
         : (r[c[0]]==null ? "" : r[c[0]]) ));
     }

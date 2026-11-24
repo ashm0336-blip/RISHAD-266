@@ -91,3 +91,18 @@ test('REVIEW 22 ⑤: plan and staffing year card — the small line under 2026 i
   assert.equal(page.gregYearRange(2026), '1447 – 1448 هـ');
   assert.doesNotMatch(page.gregYearRange(2026), /25\d\d|م$/);
 });
+
+test('REVIEW 22 ⑥: dstats Excel export — the «التاريخ الهجري» column holds the Hijri day (not the Gregorian one again), and the same file imports back to the same day', () => {
+  const { C } = ctx();
+  vm.runInContext(rd('systems/dstats/client/logic.js') + '\nglobalThis.TEST_ONLY_DS = Component;', C, { filename: 'dstats/logic.js' });
+  const page = new C.TEST_ONLY_DS({}); let aoa = null;
+  C.KIVO.BassamXLSX = { download: (a) => { aoa = a; return Promise.resolve(true); } };
+  page.state = { ...page.state, year: 2026, month: 11, day: 24 }; page.PC = () => true; page.load = () => ({}); page.SITE = () => 'haram'; page.bsToast = () => {};
+  page.expXlsx();
+  const H = aoa[0].indexOf('التاريخ الهجري'), G = aoa[0].indexOf('التاريخ الميلادي'), row = aoa[24];
+  assert.equal(row[G], '2026-11-24');
+  const h = C.KIVO.BassamCal.hOf('2026-11-24');
+  assert.equal(row[H], h.y + '-' + String(h.m).padStart(2, '0') + '-' + String(h.d).padStart(2, '0'));
+  assert.notEqual(row[H], row[G], 'the Hijri column is not the Gregorian date again');
+  assert.deepEqual(JSON.parse(JSON.stringify(page.HD(row[H]))), { y: 2026, m: 11, d: 24 }, 'importing the Hijri column gives back the same Gregorian day');
+});
