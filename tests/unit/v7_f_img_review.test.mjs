@@ -40,7 +40,7 @@ both(test, 'finding 1 · rounds history (260 days × 20 rounds reusing one map) 
   /* the history is written the way an import or a restore leaves it: as the stored record (the manager's own typed save of a year of days is a matter of
      his date scope, not of images); then the manager saves his ordinary edit of today on top of it */
   const v = stored(W.env, K), last = Object.keys(v).filter(isDay).sort().pop(), [y] = last.split('-'), out = {}; let c = 0;
-  for (let mm = 1; mm <= 12 && c < 5200; mm++) for (let dd = 1; dd <= 29 && c < 5200; dd++) { const day = { d: [] }; for (let q = 0; q < 20; q++) { day.d.push({ iid: a }); c++; } out[(y - 1) + '-' + mm + '-' + dd] = day; }
+  for (let mm = 1; mm <= 12 && c < 5200; mm++) for (let dd = 1; dd <= 29 && c < 5200; dd++) { const day = { d: [] }; for (let q = 0; q < 20; q++) { day.d.push({ iid: a }); c++; } out[(y - 1) + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0')] = day; }
   for (const k of Object.keys(v)) out[k] = v[k];
   const { replaceOperationalFixture } = await import('./world_fx.mjs'); await replaceOperationalFixture(W.env, K, out);
   const all = JSON.stringify(stored(W.env, K)).match(/img_[a-z0-9]+_[a-z0-9]+/g) || [];

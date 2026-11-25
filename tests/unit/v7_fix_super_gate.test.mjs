@@ -49,7 +49,7 @@ test('② the gate: every lifted kind is lifted for the platform admin only; kep
 });
 
 test('③ a real save: a round of a PAST day (outside the period) — the platform admin saves it and the data changes; the unit manager is refused as before', async () => {
-  const key = 'bsdept:' + D + ':bassam_rounds_v1', past = (T.m > 1 ? T.y + '-' + (T.m - 1) : (T.y - 1) + '-12') + '-3';
+  const key = 'bsdept:' + D + ':bassam_rounds_v1', past = (T.m > 1 ? T.y + '-' + String(T.m - 1).padStart(2, '0') : (T.y - 1) + '-12') + '-03';
   const epoch = (W) => Number(W.env.DB.q("SELECT v FROM meta WHERE k='restore_epoch'")[0]?.v || 0);
   let seq = 0;
   const attempt = async (who) => {
