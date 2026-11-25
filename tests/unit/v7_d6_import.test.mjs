@@ -74,6 +74,7 @@ const audits = (T) => T.DB.q("SELECT COUNT(*) n FROM aud WHERE k='atomic_restore
 async function heavy(scale, t, { inline = false } = {}) {
   /* inline: بلا مستودعٍ كائنيّ — أجسامُ الصور في D1 مقطَّعةً (تُنسخ من المؤقت داخل دفعة الاعتماد) · وإلا فالمستودعُ الكائنيّ (يوضع الكائنُ عند الاعتماد) */
   const t0 = Date.now(), file = await oldFile({ scale }), size = sizeOf(file), T = await target(inline ? { IMG_R2: null } : {});
+  if (scale > 1) T.DB.limits = false;   /* V7 · 53 (قرار المالك 25 نوفمبر: الملفات الكبيرة مؤجّلة): نسخة 62MB تُختبر بشروطها الأصلية بلا سقوف D1 — تحت السقوف أولُ قراءةٍ بعد الاعتماد تُرجع ≈40MB في استدعاءٍ واحد (> 32MiB) · مسجَّلٌ في RELEASE_53 «ليس في هذا الإصدار» */
   try {
     /* الشكلُ والتوزيع المقيسان */
     assert.deepEqual(Object.keys(file).sort(), ['app', 'data', 'dept', 'exportedAt', 'idbImages', 'kind', 'perms', 'preImport', 'version']);
@@ -612,6 +613,7 @@ test('(١٤) صورةٌ يذكرها سجلٌّ في إدارةٍ أخرى لا 
 
 test('(١٥) لا تراجعَ عمّا كان يُستعاد قبل د6: نسخةٌ شاملة (ونسخةُ إدارةٍ بالدمج) يقبلها المسارُ القديم بحجمها تُقبل على المسار الجديد — والرفضُ المبكر لما فوق حدّ الطلب القديم وحده · ورسالةُ السقف بحجمه وحدِّه', { timeout: 300000, ...need }, async () => {
   const T = await target();
+  T.DB.limits = false;   /* V7 · 53 (قرار المالك 25 نوفمبر: الملفات الكبيرة مؤجّلة): بشروطه الأصلية بلا سقوف D1 — تحت السقوف دفعةُ اعتماد الاستبدال الكامل بالدفعات ≈52MB (> 32MiB) · مسجَّلٌ في RELEASE_53 «ليس في هذا الإصدار» */
   try {
     assert.equal((await protocol(T, T.su, await oldFile({ small: true }), { scope: SCOPE }).run()).commit.status, 200);
     /* نسخةٌ شاملة من القاعدة نفسِها مكبَّرةً بمفتاحٍ نصيّ إلى ≈5M حرف (دون 8MB): كانت تُقبل طلباً واحداً — تُقبل الآن وتُعتمد */
