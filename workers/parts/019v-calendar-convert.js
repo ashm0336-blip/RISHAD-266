@@ -49,7 +49,7 @@ function calLockedIn(rec, y, m, d, T) {
   var o = rec.dopen, s = rec.dshut;
   return dPast ? !(o && typeof o === 'object' && o[d]) : !!(s && typeof s === 'object' && s[d]);
 }
-function calWhy(rec, y, m, d, T) {
+function calLockKind(rec, y, m, d, T) {
   rec = calNormLock(rec); if (rec.ap) return 'ap';
   var mPast = y < T.y || (y === T.y && m < T.m), dPast = mPast || (y === T.y && m === T.m && d < T.d);
   if (mPast && !rec.mo) return 'past';
@@ -67,7 +67,7 @@ function calMonthRule(gm, src, T) {
   for (i = 0; i < L.length; i++) {
     var h = calHOf(L[i]); if (!h) return { rec: null, days: [], ok: false, extra: {}, err: 'cal-unknown-day' };
     var hk = h.y + '-' + h.m; if (!(hk in srcs)) { srcs[hk] = get(hk); order.push(hk); cnt[hk] = 0; } cnt[hk]++;
-    days.push({ g: L[i], h: hk + '-' + h.d, locked: calLockedIn(srcs[hk], h.y, h.m, h.d, Th), why: calWhy(srcs[hk], h.y, h.m, h.d, Th) });
+    days.push({ g: L[i], h: hk + '-' + h.d, locked: calLockedIn(srcs[hk], h.y, h.m, h.d, Th), why: calLockKind(srcs[hk], h.y, h.m, h.d, Th) });
   }
   var N = order.map(function (k) { return calNormLock(srcs[k]); }), all = function (f) { return N.every(function (r) { return !!r[f]; }); };
   var rec = {}, gPast = G.y * 12 + G.m < Tg.y * 12 + Tg.m, anyOpen = false;
