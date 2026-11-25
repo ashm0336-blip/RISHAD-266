@@ -9,7 +9,9 @@
    (٧) النسخةُ الشاملة (kind:'full') تمرّ بالمسار نفسِه · واستيرادُ الموظفين (/api/employees/transition) لم يُمسّ */
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { hasSystem } from './harness.mjs';
+import fs from 'node:fs';
+import { WORKER, hasSystem } from './harness.mjs';
+import { load } from './v7_cal_migrate_fx.mjs';
 import { internals } from './internals.mjs';
 import { target, oldFile, sizeOf, protocol, staged, snapshot, changed, readOps, readImage, NOT_TRANSFERRED, LAB, SEG, withoutDropped, fieldDrops, fieldDropsOf, remapOf, nfDropsOf, SRC_DEPT, readBack, readAll, wantOf, dayKeys } from './v7_d6_import_fx.mjs';
 
@@ -17,16 +19,27 @@ const B = 'TEST_ONLY_B', A = 'TEST_ONLY_A', SCOPE = { kind: 'dept', departmentId
 const need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport', 'custody') ? {} : { skip: 'يحتاج أنظمة المخطط والجولات والمهام والتشغيل والتقرير والعهد (بياناتُ العرض المصدر)' };
 const quiet = console.log; console.log = (...a) => { if (!/^\{"v":1/.test(String(a[0]))) quiet(...a); };   /* سطورُ سجلّ الطلبات لا تُغرق المخرجات */
 after(() => { console.log = quiet; });
+/* V7 · 53 تقويم: الاستيرادُ يحوّل الهجريَّ إلى الميلادي (REVIEW 23/39) — فالمتوقَّعُ لموارد التقويم هو الوثيقةُ المحوَّلة بدالة العامل نفسها (كما في v7_cal_import14 · v7_d7_lensimp) */
+const CALR = ['bassam_rounds_v1', 'bassam_dreport_v1', 'bassam_tasks_v1', 'bassam_staffing_v3', 'bassam_plan_v1', 'bassam_tasks_locks_v1', 'bassam_staffing_locks_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1'];
+let NEW = null;
+const NEWW = async () => (NEW = NEW || await load(fs.readFileSync(WORKER, 'utf8'), 'new'));
+const conv = (r, doc) => CALR.includes(r) ? NEW.calConvDoc(r, doc, { T: new Date().toISOString().slice(0, 10), rep: null }) : doc;
+/* wantOf بعد التحويل: كلُّ موردٍ كما يُتوقَّع أن يُقرأ */
+async function wantConv(T, file, dept) { await NEWW(); return Object.fromEntries(Object.entries(wantOf(T, file, dept)).map(([r, doc]) => [r, conv(r, doc)])); }
+/* مفتاحُ جولاتٍ هجريٌّ واحد ⇐ مفتاحُه بعد التحويل (بالمحوِّل نفسِه على وثيقةٍ فيها ذلك المفتاحُ من النسخة) */
+/* مفاتيحُ جذر الجولات المعدودة ⇐ مفاتيحُها بعد التحويل وبترتيبها (المحوِّلُ نفسُه على وثيقةٍ بهذه المفاتيح من النسخة — العلاماتُ الهجرية لا مقابلَ لها مفتاحاً) */
+async function convKeys(rounds, ks) { await NEWW(); return Object.keys(conv('bassam_rounds_v1', Object.fromEntries(ks.map((k) => [k, rounds[k]])))); }
+async function convKey(rounds, k) { await NEWW(); const ks = Object.keys(conv('bassam_rounds_v1', { [k]: rounds[k] })); assert.equal(ks.length, 1, 'مفتاحٌ واحد لـ' + k + ': ' + ks.join(' ')); return ks[0]; }
 
 /* مطابقةُ ما في القاعدة بما في الملف: مفتاحاً مفتاحاً وصورةً صورة */
 async function compare(T, who, file, dept = B) {
   const W = T.lab.W, names = Object.keys(file.data), ops = names.filter((k) => file.data[k] !== null && W.opInfo('bsdept:' + dept + ':' + k));
   /* V7 · د6 (posfix): كلُّ موردٍ تشغيليٍّ للإدارة يُقرأ وحده بـ200 · صفوفُه قانونية · ويطابق النسخةَ مفتاحاً مفتاحاً وبترتيبها */
-  await readBack(T, dept, wantOf(T, file, dept));
+  await readBack(T, dept, await wantConv(T, file, dept));
   const got = await readOps(T, who, dept, ops.concat(['bassam_rounds_arc_v1']));
   for (const k of ops) {
     /* V7 · د6 (schemafix): حقولُ المصلى العابرة/غير المعروفة (nNow · capNow · share · shareName) يُسقطها الاستيراد ويذكرها — وكلُّ ما سواها كما في النسخة */
-    const want = withoutDropped(JSON.parse(remapped(file.data[k], dept)));
+    const want = conv(k, withoutDropped(JSON.parse(remapped(file.data[k], dept))));   /* V7 · 53 تقويم: محوَّلةً إلى الميلادي */
     /* الجولات: أيامُ الأشهر المنقضية ينقلها الخادمُ إلى أرشيفها (د5-ح) — المطابقةُ على مجموع الموردين */
     if (k === 'bassam_rounds_v1') assert.deepEqual({ ...(got.bassam_rounds_arc_v1 || {}), ...(got[k] || {}) }, want, 'الجولات (مع أرشيفها) كما في النسخة');
     else assert.deepEqual(got[k], want, k + ' كما في النسخة');
@@ -392,7 +405,9 @@ test('(١٠) استبدالٌ فوق إدارةٍ فيها جولات: الدف�
     const names = ['bassam_rounds_v1', 'bassam_rounds_arc_v1'], da = await readOps(A, A.su, B, names), dz = await readOps(Z, Z.su, B, names);
     assert.equal(JSON.stringify(dz), JSON.stringify(da), 'الوثيقتان بترتيب أعضائهما');
     const arc = Object.keys(dz.bassam_rounds_arc_v1);
-    assert.equal(arc.includes(dayKeys(JSON.parse(file.data.bassam_rounds_v1))[0]), false, 'يومٌ قائم ليس في النسخة الجديدة يزول (استبدال — كالمسار الواحد)'); assert.ok(arc.includes('1448-2-20'), 'واليومُ الجديد أُضيف');
+    /* V7 · 53 تقويم: المفتاحان بعد التحويل إلى الميلادي (بالمحوِّل نفسِه) */
+    const r0 = JSON.parse(file.data.bassam_rounds_v1), gone = await convKey(r0, dayKeys(r0)[0]), added = await convKey(JSON.parse(next.data.bassam_rounds_v1), '1448-2-20');
+    assert.equal(arc.includes(gone), false, 'يومٌ قائم ليس في النسخة الجديدة يزول (استبدال — كالمسار الواحد)'); assert.ok(arc.includes(added), 'واليومُ الجديد أُضيف');
     /* لقطةُ ما قبل الاستيراد: صفوفُ الموردين القائمة نُسخت داخل القاعدة تحت معرّف لقطة هذا الاعتماد */
     const snap = Z.DB.q("SELECT table_key k, COUNT(*) n FROM restore_preimage WHERE snapshot_id=?1 AND domain='operations-sql' GROUP BY table_key", done.j.snapshot), total = snap.reduce((n, r) => n + r.n, 0);
     const manifest = Z.DB.q("SELECT SUM(row_count) n FROM restore_snapshot_manifest WHERE snapshot_id=?1 AND domain='operations-sql'", done.j.snapshot)[0].n;
@@ -801,7 +816,7 @@ test('(١٩) معرّفُ الإدارة المصدر غيرُ معرّف الو
         assert.equal(ins.status, 200, tag + ': ' + JSON.stringify(ins.j).slice(0, 400));
         const com = await T.call('/api/backup/restore', { ck: T.su.ck, body: { ...body, base: ins.j.inspection.base, phase: 'commit' } });
         assert.equal(com.status, 200, tag + ': ' + JSON.stringify(com.j).slice(0, 400));
-        await readBack(T, B, wantOf(T, strip, B));   /* V7 · د6 (posfix): بعد الاستعادة يُقرأ كلُّ شيء ويطابق النسخة */
+        await readBack(T, B, await wantConv(T, strip, B));   /* V7 · د6 (posfix): بعد الاستعادة يُقرأ كلُّ شيء ويطابق النسخة */
         s = ins.j.inspection.summary;
       }
       ends.push(rowsOf(T));   /* قبل أي دخول (الدخولُ يكتب تنبيهَ «جهاز جديد») */
@@ -856,20 +871,22 @@ test('(٢٠) [posfix] الحقلُ الثابت __pMig أولُ مفتاحٍ ف�
     assert.equal(out.commit && out.commit.status, 200, JSON.stringify((out.commit || out.inspect || out.part || out.begin).j).slice(0, 300));
     const live = P.parts.filter((p) => /^#bassam_rounds_v1#/.test(p.k) && p.t.includes('"1448-6-')).length;
     assert.ok(P.sliceCount > 2 && live >= 2, 'أكثرُ من دفعة، والأيامُ الحيّة في دفعتين على الأقل (' + P.sliceCount + ' · ' + live + ')');
-    const t0 = Date.now(), got = await readBack(T, B, wantOf(T, big, B));
+    const t0 = Date.now(), got = await readBack(T, B, await wantConv(T, big, B));
     t.diagnostic('قراءةُ كلِّ موارد الإدارة بعد الاستيراد: ' + Object.keys(got).length + ' مورداً في ' + (Date.now() - t0) + ' ms');
-    assert.deepEqual(Object.keys(got.bassam_rounds_v1), ['__pMig', 'm:1448-5', 'm:1448-6', '1448-6-1', '1448-6-2', '1448-6-3'], 'الحيُّ: الحقلُ الثابت ثم العلامات ثم أيامُ الشهر المفتوح');
+    const bigR = JSON.parse(big.data.bassam_rounds_v1);   /* V7 · 53 تقويم: المفاتيحُ المتوقَّعة بعد التحويل إلى الميلادي */
+    assert.deepEqual(Object.keys(got.bassam_rounds_v1), await convKeys(bigR, ['__pMig', 'm:1448-5', 'm:1448-6', '1448-6-1', '1448-6-2', '1448-6-3']), 'الحيُّ: الحقلُ الثابت ثم العلامات ثم أيامُ الشهر المفتوح');
     assert.equal(got.bassam_rounds_v1.__pMig, 2);
     /* الحفظُ في الجولات بعد الاستيراد 200 (كان 400 مع الخلل) — والقراءةُ بعده كذلك */
     const k = 'bsdept:' + B + ':bassam_rounds_v1', cur = (await T.call('/api/operations/read?keys=' + encodeURIComponent(k), { ck: T.su.ck })).j, doc = cur.resources[k];
-    doc['1448-6-2'].d[0].zones[0].name += ' (حُفظ بعد الاستيراد)';
+    const d2 = await convKey(bigR, '1448-6-2');
+    doc[d2].d[0].zones[0].name += ' (حُفظ بعد الاستيراد)';
     const sv = await T.call('/api/save', { ck: T.su.ck, body: { uid: T.su.uid, requestId: 'TEST_ONLY_posfix_save', epoch: cur.epoch, set: { [k]: JSON.stringify(doc) }, del: [], base: cur.base } });
     assert.equal(sv.status, 200, sv.t.slice(0, 300)); assert.equal(sv.j.ok, 1, sv.t.slice(0, 300));
-    assert.match((await readBack(T, B)).bassam_rounds_v1['1448-6-2'].d[0].zones[0].name, /حُفظ بعد الاستيراد/);
+    assert.match((await readBack(T, B)).bassam_rounds_v1[d2].d[0].zones[0].name, /حُفظ بعد الاستيراد/);
     /* (ج) استبدالٌ كامل فوق الإدارة نفسِها بالنسخة نفسِها: يعيد كتابة الجولات كلِّها فتطابق النسخة */
     const again = await protocol(T, T.su, big, { scope: SCOPE }).run();
     assert.equal(again.commit && again.commit.status, 200, JSON.stringify((again.commit || again.inspect || again.begin).j).slice(0, 300));
-    await readBack(T, B, wantOf(T, big, B));
+    await readBack(T, B, await wantConv(T, big, B));
   } finally { await T.close(); }
   /* (ب) نسخةٌ صغيرة بالشكل نفسِه: المسارُ الواحد · الدفعات (مفروضة صغيرة) · /api/backup/restore — كلٌّ إلى منصةٍ جديدة */
   const file = await oldFile({ small: true, images: false, openDays: 2 }), ends = [];
@@ -888,8 +905,9 @@ test('(٢٠) [posfix] الحقلُ الثابت __pMig أولُ مفتاحٍ ف�
         assert.equal(r.commit && r.commit.status, 200, how + ': ' + JSON.stringify((r.commit || r.inspect || r.part || r.begin).j).slice(0, 300));
         if (how === 'sliced') assert.ok(Object.keys(P.slices).filter((x) => /^bassam_rounds_v1#/.test(x)).length >= 3, 'الجولاتُ قُسمت (' + Object.keys(P.slices).join(' ') + ')');
       }
-      const got = await readBack(Z, B, wantOf(Z, file, B));
-      assert.deepEqual(Object.keys(got.bassam_rounds_v1).slice(0, 3), ['__pMig', 'm:1448-5', 'm:1448-6'], how);
+      const got = await readBack(Z, B, await wantConv(Z, file, B));
+      const head = await convKeys(JSON.parse(file.data.bassam_rounds_v1), ['__pMig', 'm:1448-5', 'm:1448-6']);   /* V7 · 53 تقويم: بعد التحويل */
+      assert.deepEqual(Object.keys(got.bassam_rounds_v1).slice(0, head.length), head, how);
       ends.push(Object.fromEntries(Object.entries(rowsOf(Z)).filter(([n]) => /^ops_/.test(n))));
     } finally { await Z.close(); }
   }
@@ -928,11 +946,11 @@ test('(٢١) [posfix] صفوفُ الخلل القائمة: القراءةُ ت�
         assert.deepEqual(pos(T), good, 'التصحيحُ يعيد المواضعَ حرفاً كما يكتبها ocConvert');
         const once = rowsOf(T); T.DB.exec(POSFIX_REPAIR_SQL(B)); T.DB.exec(POSFIX_REPAIR_SQL(A));
         assert.deepEqual(rowsOf(T), once, 'محروس: تكرارُه (وعلى إدارةٍ بلا تصادم) لا يغيّر شيئاً');
-        await readBack(T, B, wantOf(T, file, B));
+        await readBack(T, B, await wantConv(T, file, B));
         const again = await protocol(T, T.su, file, { scope: SCOPE, slice: false }).run();
         assert.equal(again.commit && again.commit.status, 200, 'وبعده يمرّ المسارُ الواحد: ' + JSON.stringify((again.commit || again.inspect || again.begin).j).slice(0, 300));
       }
-      await readBack(T, B, wantOf(T, file, B));
+      await readBack(T, B, await wantConv(T, file, B));
     } finally { await T.close(); }
   }
 });
