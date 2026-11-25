@@ -8,13 +8,18 @@
    وبعد كل اعتماد تُقرأ كلُّ موارد الإدارة (readBack). TEST_ONLY — بياناتٌ مولَّدة في الذاكرة وحدها. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hasSystem, client } from './harness.mjs';
+import fs from 'node:fs';
+import { WORKER, hasSystem, client } from './harness.mjs';
 import { target, oldFile, protocol, staged, readBack, wantOf, LAB, PROD_LENSES } from './v7_d6_import_fx.mjs';
 import { clientOf } from './v7_d6_holders_fx.mjs';
+import { load } from './v7_cal_migrate_fx.mjs';
 
 const B = 'TEST_ONLY_B', SCOPE = { kind: 'dept', departmentId: B }, ALL = ['zones', 'paths', 'gates', 'marks', 'dist', 'dens'];
 const need = hasSystem('plan', 'daily', 'tasks', 'staff', 'dreport', 'custody') ? {} : { skip: 'يحتاج أنظمة بيانات العرض المصدر' };
 const quiet = console.log; console.log = (...a) => { if (!/^\{"v":1/.test(String(a[0]))) quiet(...a); };
+/* الاستيرادُ يحوّل الهجريَّ إلى الميلادي (53 تقويم) — فالمتوقَّعُ لموارد التقويم هو الوثيقةُ المحوَّلة بدالة العامل نفسها (كما في v7_cal_import14) */
+const CALR = ['bassam_rounds_v1', 'bassam_dreport_v1', 'bassam_tasks_v1', 'bassam_staffing_v3', 'bassam_plan_v1', 'bassam_tasks_locks_v1', 'bassam_staffing_locks_v1', 'bassam_dayshift_v1', 'bassam_dayfocus_v1'];
+let NEW = null;
 const permsOf = (T) => JSON.parse(T.DB.q("SELECT group_concat(v,'') v FROM (SELECT v FROM kv WHERE k='bassam_perms_v1' ORDER BY seq)")[0].v);
 
 /* سقفُ الهدف: النظامان المضيفان للعدسات (plan · daily) مفعّلان — فالعدسةُ تُحكم بقائمة العدسات وحدها · lens: سجلُّ عدسات الوحدة قبل الاستيراد (undefined = بلا سجلّ) */
@@ -31,7 +36,15 @@ async function importAs(T, as, file) {
   const run = await protocol(T, who, file, { scope: SCOPE }).run();
   assert.equal(run.commit && run.commit.status, 200, as + ': ' + JSON.stringify((run.commit || run.inspect || run.begin).j).slice(0, 400));
   assert.equal(staged(T.DB), 0);
-  await readBack(T, B, wantOf(T, file, B));   /* كلُّ موردٍ بعد الاعتماد — ومطابقةُ النسخة */
+  NEW = NEW || await load(fs.readFileSync(WORKER, 'utf8'), 'new');
+  const Tday = new Date().toISOString().slice(0, 10), expect = {};
+  for (const [r, doc] of Object.entries(wantOf(T, file, B))) expect[r] = CALR.includes(r) ? NEW.calConvDoc(r, doc, { T: Tday, rep: null }) : doc;
+  const got = await readBack(T, B, Object.fromEntries(Object.entries(expect).filter(([r]) => r !== 'bassam_rounds_v1')));   /* كلُّ موردٍ بعد الاعتماد — ومطابقةُ النسخة المحوَّلة */
+  if (expect.bassam_rounds_v1) {   /* الجولات: الحيُّ + الأرشيف معاً = الجولاتُ المحوَّلة */
+    const rounds = { ...(got.bassam_rounds_arc_v1 || {}), ...(got.bassam_rounds_v1 || {}) };
+    assert.deepEqual(Object.keys(rounds).sort(), Object.keys(expect.bassam_rounds_v1).sort(), as + ': الجولات: المفاتيح');
+    for (const k of Object.keys(expect.bassam_rounds_v1)) assert.deepEqual(rounds[k], expect.bassam_rounds_v1[k], as + ': الجولات ' + k);
+  }
   return run;
 }
 /* العدساتُ الفعلية للوحدة من ثلاثة مصادر: الخادم (عدساتُ جلسة مديرها · سقفُ الأدوار) والواجهة الحقيقية (deptLenses في node:vm) */
