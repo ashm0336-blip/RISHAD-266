@@ -44,9 +44,12 @@ function page(slug, docs, src) {
   const toasts = []; c.bsToast = (m) => toasts.push(String(m)); c.bsAck = async () => true;
   return { W, c, op, toasts };
 }
-/* يومٌ من جولات النسخة بمفتاح الصفحة (y-m-d بلا أصفار) وموقعُه الأول بإظهار الرموز */
+/* يومٌ من جولات النسخة بمفتاح الصفحة: الصفحةُ ميلادية (V7 · 53 تقويم) فيُنقل اليومُ إلى اليوم التشغيليّ الجاري (clock.mjs) بمفتاح
+   BassamCal الميلادي (YYYY-MM-DD) — يومٌ حيٌّ قابلٌ للتحرير كما كان — وموقعُه الأول بإظهار الرموز */
+let TODAY = null;
+const today = () => { if (!TODAY) { const W = world(); W.logic('daily', DAILY); TODAY = W.KIVO.BassamCal.gToday(); } return TODAY; };
 function liveDay(D) {
-  const rounds = D.rounds, k0 = Object.keys(rounds).find((k) => /^\d+-\d+-\d+$/.test(k) && rounds[k].d), [y, m, d] = k0.split('-').map(Number), day = y + '-' + m + '-' + d;
+  const rounds = D.rounds, k0 = Object.keys(rounds).find((k) => /^\d+-\d+-\d+$/.test(k) && rounds[k].d), { y, m, d, k: day } = today();
   if (day !== k0) { rounds[day] = rounds[k0]; delete rounds[k0]; }
   rounds[day].d.forEach((f) => (f.showCodes = true));
   return { rounds, day, y, m, d };
@@ -84,7 +87,7 @@ test('ملحق 6 · 2 — الرمزُ المخزَّن بشرطاتٍ كما ه
     const plan = D.plan, f0 = plan.floors[0];
     f0.zones[1] = { ...f0.zones[1], region: 'TEST_ONLY الشرقية', level: 'TEST_ONLY قبو', ztype: 'TEST_ONLY رجال', ser: '05', code: 'A--1-M-05' };
     const { c, op } = page('plan', { bassam_plan_v1: plan, bassam_zone_opts_v1: clone(OPTS) }, PLAN);
-    c.state = { ...c.state, year: 1448, month: 5, floor: 0, floors: plan.floors, zones: clone(f0.zones), gates: [], marks: [], paths: [], zoneOpts: clone(OPTS), tool: 'select', lens: 'plan', view: { x: 0, y: 0, w: 1000, h: 600 }, sel: null, selMulti: [],
+    c.state = { ...c.state, year: 2026, month: 10, floor: 0, floors: plan.floors, zones: clone(f0.zones), gates: [], marks: [], paths: [], zoneOpts: clone(OPTS), tool: 'select', lens: 'plan', view: { x: 0, y: 0, w: 1000, h: 600 }, sel: null, selMulti: [],
       zEdit: { i: 1, region: 'TEST_ONLY الشرقية', level: 'TEST_ONLY قبو', ztype: 'TEST_ONLY رجال', ser: '05' } };
     const v = c.renderVals(), L = labels(v.zoneLabelNodes);
     assert.ok(L.some((x) => x.text === 'D6Z0' + T + '/' + T + '0'), 'ملصقُ مصلى النسخة: ' + JSON.stringify(L.map((x) => x.text)));
@@ -154,7 +157,7 @@ test('ملحق 6 · 4 — حجمُ خط رمز المصلى ينزل إلى 0.5 
   {
     const plan = D.plan, f0 = plan.floors[0];
     const { c } = page('plan', { bassam_plan_v1: plan, bassam_zone_opts_v1: clone(OPTS) }, PLAN);
-    c.state = { ...c.state, year: 1448, month: 5, floor: 0, floors: plan.floors, zones: clone(f0.zones), gates: [], marks: [], paths: [], zoneOpts: clone(OPTS), tool: 'select', lens: 'plan', view: { x: 0, y: 0, w: 1000, h: 600 }, sel: null, selMulti: [] };
+    c.state = { ...c.state, year: 2026, month: 10, floor: 0, floors: plan.floors, zones: clone(f0.zones), gates: [], marks: [], paths: [], zoneOpts: clone(OPTS), tool: 'select', lens: 'plan', view: { x: 0, y: 0, w: 1000, h: 600 }, sel: null, selMulti: [] };
     c.savePlan = () => {};
     c.state = { ...c.state, zEdit: { i: 0, ser: '00', lsz: '0.5', lang: '' } };
     c.saveZoneEdit();

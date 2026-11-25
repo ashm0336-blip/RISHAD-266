@@ -13,7 +13,7 @@ import { oldFile } from './v7_d6_import_fx.mjs';
 
 const DAILY = process.env.DAILY_LOGIC ? fs.readFileSync(process.env.DAILY_LOGIC, 'utf8') : undefined;
 const clone = (v) => JSON.parse(JSON.stringify(v));
-const DAY = '1448-5-9', OLD_AP = '1448-4-3', OLD_OPEN = '1448-4-5';   /* اليومُ الجاري (clock.mjs) · يومان تاريخيان */
+const DAY = '2026-10-20', OLD_AP = '2026-09-14', OLD_OPEN = '2026-09-16';   /* اليومُ الجاري (clock.mjs) · يومان تاريخيان — مفاتيحُ الصفحة الميلادية (BassamCal.gKey: YYYY-MM-DD) */
 const flush = async () => { for (let i = 0; i < 12; i++) await new Promise((r) => setImmediate(r)); };
 
 let BASE = null;
@@ -26,7 +26,7 @@ async function shaped() {
   });
   /* التاريخ كما في Production: عناصرُ بلا uid ولا eid — لا يجوز أن يُختم أو يُعاد كتابته */
   const legacy = clone(live.d).map((f) => ({ ...f, zones: f.zones.map((z) => { const x = { ...z }; delete x.uid; delete x.eid; return x; }) }));
-  const rounds = { __pMig: 2, 'm:1448-4': { ap: 0 }, 'm:1448-5': { ap: 0 }, [OLD_AP]: { t: 1, ap: 1, d: clone(legacy) }, [OLD_OPEN]: { t: 1, ap: 0, d: clone(legacy) }, [DAY]: { ...live, ap: 0 } };
+  const rounds = { __pMig: 2, 'm:2026-09': { ap: 0 }, 'm:2026-10': { ap: 0 }, [OLD_AP]: { t: 1, ap: 1, d: clone(legacy) }, [OLD_OPEN]: { t: 1, ap: 0, d: clone(legacy) }, [DAY]: { ...live, ap: 0 } };
   return { plan, rounds };
 }
 function page(D) {
@@ -35,7 +35,7 @@ function page(D) {
   W.KIVO.__BS_SRV = { ...(W.KIVO.__BS_SRV || {}), operations: op.service, rev: () => 0 };
   let answer = true; W.KIVO.bsConfirm = (o) => { asks.push(o); return Promise.resolve(answer); };
   c.bsToast = (m, k) => toasts.push([String(m), k || '']);
-  c.state = { ...c.state, year: 1448, month: 5, day: 9, floor: 0, rounds: D.rounds, lens: 'zones', panelTab: 'zones', tool: 'select', dsTab: 'rounds', dsAsn: false, dview: { x: 0, y: 0, w: 1000, h: 600 }, dsSel: null, selMulti: [] };
+  c.state = { ...c.state, year: 2026, month: 10, day: 20, floor: 0, rounds: D.rounds, lens: 'zones', panelTab: 'zones', tool: 'select', dsTab: 'rounds', dsAsn: false, dview: { x: 0, y: 0, w: 1000, h: 600 }, dsSel: null, selMulti: [] };
   const ev = () => ({ ctrlKey: false, metaKey: false, stopPropagation() {}, preventDefault() {}, pointerType: 'touch', clientX: 10, clientY: 10, pointerId: 1, isPrimary: true, button: 0 });
   const tap = (i) => { const z = c.renderVals().mapZones[i]; z.down(ev()); z.click(ev()); };
   return { W, c, op, toasts, asks, tap, say: (v) => (answer = v) };
@@ -89,7 +89,7 @@ test('ملحق 6 · 6 — «تفعيل المحدَّد»: نافذةُ تأكي
 test('ملحق 6 · 6 — القفلُ والسياق: يومٌ مقفل لا يُسأل عنه ولا يُكتب · تغيّرُ الموقع بين التحديد والتأكيد يُلغي · رفضُ الخادم لا يكتب شيئاً', async () => {
   /* شهرٌ معتمد */
   {
-    const D = await shaped(); D.rounds['m:1448-5'] = { ap: 1 };
+    const D = await shaped(); D.rounds['m:2026-10'] = { ap: 1 };
     const P = page(D), { c } = P;
     c.setState({ dsMulti: true, dsSel: { t: 'zone', i: 0 }, selMulti: [0, 1] });
     assert.equal(c.renderVals().dsMultiToolOn, false, 'الأداةُ لا تظهر في جولةٍ مقفلة');
