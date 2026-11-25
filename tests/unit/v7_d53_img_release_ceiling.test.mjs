@@ -40,7 +40,7 @@ async function world() {
   assert.equal(p0.status, 200, p0.t.slice(0, 300));
   /* الإدارة ب: جدولٌ شهري لـ500 موظف — بياناتُ إدارةٍ أخرى لا يمسّها الحفظ */
   const eids = Array.from({ length: EMP }, (_, i) => 'TEST_ONLY_e' + i), staffing = {};
-  for (let m = 0; m < STF_M; m++) staffing[(1446 + Math.floor(m / 12)) + "-" + (m % 12 + 1)] = Object.fromEntries(eids.map((e, i) => [e, { shift: 'TEST_ONLY-' + 'ABCD'[(i + m) % 4], rest: [['fri', 'sat', 'sun'][i % 3]], leaves: {}, perm: {}, cs: '', muk: false }]));
+  for (let m = 0; m < STF_M; m++) staffing[(2024 + Math.floor(m / 12)) + "-" + (m % 12 + 1)]   /* V7 · 53 تقويم: أشهرُ الجدول ميلادية (كانت 1446-م هجرية ⇒ operations-unknown-map-key) */ = Object.fromEntries(eids.map((e, i) => [e, { shift: 'TEST_ONLY-' + 'ABCD'[(i + m) % 4], rest: [['fri', 'sat', 'sun'][i % 3]], leaves: {}, perm: {}, cs: '', muk: false }]));
   /* V7 · 53: يُبذر بالمرمِّز نفسِه (حفظُ 26 شهراً دفعةً واحدة يُرفض الآن مبكراً 413 batch-budget) — الصفوفُ هي التي كان يكتبها الحفظ */
   seed(T.lab, { bassam_staffing_v3: staffing }, {}, B);
   return { T, env, save, plan };
