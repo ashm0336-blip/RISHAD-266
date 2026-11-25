@@ -21,6 +21,7 @@ async function world() {
   const T = await target({ KIVO_TEST_FIXTURE: 'allow' });
   delete T.lab.env.IMG_R2;   /* Preview: الصورُ في D1 (جدول imgs) */
   const W = T.lab.W, env = T.lab.env;
+  env.DB.limits = false;   /* V7 · 53: التهيئةُ بلا سقوف كما كُتب الاختبار — السقوفُ تُفرض حول العملية المقيسة وحدها (env.DB.limits = true أدناه)؛ صارت مفروضةً افتراضياً في 752b5f34. حفظُ خطة الإدارة ب الأول (مرجعُ خريطةٍ مع جدولٍ 26 شهراً × 500) يتجاوز 32MiB تحتها ⇒ مسجَّلٌ للتحديث القادم في STATUS */
   /* خرائطُ بحجم حقيقي: 1920×1080 وأكبر (PNG ضجيجٍ لا ينضغط، ≈ 3–6MB نصّاً) — تملكها الخطةُ في الإدارة أ */
   const bodies = [png(3_200_000, 1), png(4_500_000, 2), png(6_000_000, 3)];
   const st = [];
@@ -40,7 +41,7 @@ async function world() {
   assert.equal(p0.status, 200, p0.t.slice(0, 300));
   /* الإدارة ب: جدولٌ شهري لـ500 موظف — بياناتُ إدارةٍ أخرى لا يمسّها الحفظ */
   const eids = Array.from({ length: EMP }, (_, i) => 'TEST_ONLY_e' + i), staffing = {};
-  for (let m = 0; m < STF_M; m++) staffing[(2024 + Math.floor(m / 12)) + "-" + (m % 12 + 1)]   /* V7 · 53 تقويم: أشهرُ الجدول ميلادية (كانت 1446-م هجرية ⇒ operations-unknown-map-key) */ = Object.fromEntries(eids.map((e, i) => [e, { shift: 'TEST_ONLY-' + 'ABCD'[(i + m) % 4], rest: [['fri', 'sat', 'sun'][i % 3]], leaves: {}, perm: {}, cs: '', muk: false }]));
+  for (let m = 0; m < STF_M; m++) staffing[(2024 + Math.floor(m / 12)) + "-" + String(m % 12 + 1).padStart(2, "0")]   /* V7 · 53 تقويم: أشهرُ الجدول ميلادية (كانت 1446-م هجرية ⇒ operations-unknown-map-key) */ = Object.fromEntries(eids.map((e, i) => [e, { shift: 'TEST_ONLY-' + 'ABCD'[(i + m) % 4], rest: [['fri', 'sat', 'sun'][i % 3]], leaves: {}, perm: {}, cs: '', muk: false }]));
   /* V7 · 53: يُبذر بالمرمِّز نفسِه (حفظُ 26 شهراً دفعةً واحدة يُرفض الآن مبكراً 413 batch-budget) — الصفوفُ هي التي كان يكتبها الحفظ */
   seed(T.lab, { bassam_staffing_v3: staffing }, {}, B);
   return { T, env, save, plan };
