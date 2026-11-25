@@ -1,5 +1,6 @@
 /* V7 · د6 (QA) البند ٢ — بذرةُ العرض تكتب لكل مسجدٍ حقوله وحدها وببصمةٍ بشكل الصفحة، فبعد الزرع يُقبل كلُّ حفظٍ في «الإحصائيات اليومية»
    (أرقامُ يوم · اعتمادُ الشهر) · و«حذف البيانات التجريبية» يحذف أيامها · ويومٌ مخزَّنٌ مخالف لا يمنع قفلَ الشهر، والرفضُ يسمّي اليوم المخالف. TEST_ONLY */
+import './clock.mjs';   /* ساعةُ المختبر المثبَّتة (2026-10-20 10:00 الرياض) */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTestEnv, client, needs, TEST_SUPER_USERNAME, TEST_SUPER_PIN } from './harness.mjs';
@@ -14,7 +15,8 @@ async function world() {
   const read = async () => { const r = await C.api('/api/dstats?uid=' + uid, { cookie: su.ck }); assert.equal(r.status, 200, JSON.stringify(r.j)); return r.j; };
   return { env, C, su, post, read };
 }
-const today = () => new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date(Date.now() - 3 * 3600e3)).reduce((o, p) => (o[p.type] = +p.value, o), {});
+/* V7 · تقويم ميلادي (ترحيل 0014): مفاتيحُ اليوم YYYY-MM-DD والشهر YYYY-MM مبطَّنةٌ بالأصفار، واليومُ التشغيلي = الآن − 3 ساعات بتوقيت الرياض */
+const today = () => { const o = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(Date.now() - 3 * 3600e3)).reduce((o, p) => (o[p.type] = p.value, o), {}); return { year: o.year, month: o.month, day: o.day }; };
 
 test('(٢) بعد زرع العرض: حفظُ أرقام يومٍ واعتمادُ الشهر يُقبلان (200) لمدير المنصة · والحذفُ يزيل أيامَ العرض', needs('dstats'), async () => {
   const W = await world();
@@ -42,9 +44,9 @@ test('(٢) بعد زرع العرض: حفظُ أرقام يومٍ واعتماد
 });
 
 test('(٢) يومٌ مخزَّنٌ مخالف لا يمنع قفلَ الشهر · وتغييرُه يُرفض باسم اليوم (at)', needs('dstats'), async () => {
-  const W = await world(), T = today(), bad = T.year + '-' + String(T.month).padStart(2, '0') + '-01';
+  const W = await world(), T = today(), bad = T.year + '-' + T.month + '-01';
   /* صفٌّ مخالفٌ مباشرةً في D1 (كما يتركه أيُّ مصدرٍ قديم): umrah (البت 1) للنبوي، وبصمةٌ وقتُها نص */
-  W.env.DB.exec("INSERT INTO daily_stats_days (site, hijri_date, field_mask, worshippers, umrah, meta_json) VALUES ('nabawi', '" + bad + "', 3, 10, 5, '{\"t\":\"TEST_ONLY\"}')");
+  W.env.DB.exec("INSERT INTO daily_stats_days (site, greg_date, field_mask, worshippers, umrah, meta_json) VALUES ('nabawi', '" + bad + "', 3, 10, 5, '{\"t\":\"TEST_ONLY\"}')");
   const v = await W.read(); assert.equal(v.data.nabawi[bad].umrah, 5);
   const mk = 'nabawi|' + T.year + '-' + T.month, d = JSON.parse(JSON.stringify(v.data)); d.locks = Object.assign({}, d.locks, { [mk]: { ap: 1 } });
   const r = await W.post('/api/dstats', { base: v.rev, data: d }); assert.equal(r.status, 200, JSON.stringify(r.j));
