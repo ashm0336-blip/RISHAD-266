@@ -9,8 +9,10 @@ import { world, D1, IDS, EKEYS } from './notifications_review_fx.mjs';
 import { isOperationalFixtureKey, replaceOperationalFixture } from './operational_legacy_seed_fx.mjs';
 import { needs } from './harness.mjs';
 
-const HF = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
-const dk = (ts) => { const o = {}; HF.formatToParts(new Date(ts)).forEach((p) => { o[p.type] = +p.value; }); return o.year + '-' + o.month + '-' + o.day; };
+/* يومُ الرياض التقويميّ — V7 · 53 تقويم: ميلاديٌّ بمفتاح ISO (YYYY-MM-DD) كما يقرؤه الخادم (nfDeptOpDay · pfDayAt) ويكتبه BassamCal.gKey */
+const HF = new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric' });
+const P2 = (n) => String(n).padStart(2, '0');
+const dk = (ts) => { const o = {}; HF.formatToParts(new Date(ts)).forEach((p) => { o[p.type] = +p.value; }); return o.year + '-' + P2(o.month) + '-' + P2(o.day); };
 const DAY = 86400000, H = 3600000;
 const KROLES = 'bsdept:' + D1 + ':bassam_roles_v1', KREP = 'bsdept:' + D1 + ':bassam_dreport_v1';
 const SUP = 'TEST_ONLY_role_supervisor', PLAIN = 'TEST_ONLY_role_plain';

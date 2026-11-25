@@ -73,8 +73,10 @@ test('V7 · د6 (walkfix2 ①) · one rule for «مهامي» and the tasks syst
 });
 
 /* ── «ملفي» على المُثبِّت (tests/fixtures/gen_fixture.py) كما في me_history.test.mjs ── */
-const hij = (ts) => { const o = {}; new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short' }).formatToParts(new Date(ts)).forEach((p) => { o[p.type] = p.type === 'weekday' ? p.value : +p.value; }); return o; };
-const T = hij(Date.now()), MK = T.year + '-' + T.month, DAY = MK + '-' + T.day;
+/* يومُ الرياض التقويميّ — V7 · 53 تقويم: ميلاديٌّ بمفاتيح ISO (YYYY-MM · YYYY-MM-DD) كما يكتبها المُثبِّت وتقرؤها الصفحة */
+const hij = (ts) => { const o = {}; new Intl.DateTimeFormat('en-u-ca-gregory-nu-latn', { timeZone: 'Asia/Riyadh', year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short' }).formatToParts(new Date(ts)).forEach((p) => { o[p.type] = p.type === 'weekday' ? p.value : +p.value; }); return o; };
+const P2 = (n) => String(n).padStart(2, '0');
+const T = hij(Date.now()), MK = T.year + '-' + P2(T.month), DAY = MK + '-' + P2(T.day);
 const q = (s) => "'" + String(s).replace(/'/g, "''") + "'";
 const stored = (env, k) => { if (isOperationalFixtureKey(env, k)) return inspectOperationalFixture(env, k); const r = env.DB.q('SELECT v FROM kv WHERE k = ? ORDER BY seq', k); return r.length ? JSON.parse(r.map((x) => x.v).join('')) : null; };
 async function putKey(env, k, v) {
