@@ -53,7 +53,7 @@ test('② activity log: Gregorian date first with the small Hijri line; an old H
 });
 
 test('③ print: the PDF date line is Gregorian with «الموافق» Hijri, and the report cover year is Gregorian', () => {
-  const C = loadClientCal(), src = read('src/systems/_shared/print/566-print-core.js');
+  const C = loadClientCal({ Date: fixedDate(NOV24) }), src = read('src/systems/_shared/print/566-print-core.js');   /* V7 · 53: «اليوم» من الساعة الثابتة (كان التقويم يقرأ ساعة الجهاز فيفشل بعد 24 نوفمبر) */
   const block = slice(src, '    if (O.date === "today")', '\n\n');
   const line = (O, s) => { const ctx = { KIVO: { BassamCal: C }, O, s, o: '', Date: fixedDate(NOV24) }; vm.runInNewContext(block, ctx); return ctx.o; };
   assert.equal(line({ date: 'round' }, { year: 2026, month: 11, day: 24 }), 'جولة يوم 24 نوفمبر 2026 · الموافق 14 جمادى الآخرة 1448');
